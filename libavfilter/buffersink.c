@@ -155,6 +155,41 @@ static av_cold int common_init(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
 
+#if FF_API_BUFFERSINK_OPTS
+
+#define CHECK_LIST_SIZE(field) \
+        if (buf->field ## _size % sizeof(*buf->field)) { \
+            av_log(ctx, AV_LOG_ERROR, "Invalid size for " #field ": %d, " \
+                   "should be multiple of %d\n", \
+                   buf->field ## _size, (int)sizeof(*buf->field)); \
+            return AVERROR(EINVAL); \
+        }
+
+    if (ctx->input_pads[0].type == AVMEDIA_TYPE_VIDEO) {
+        if ((buf->pixel_fmts_size || buf->color_spaces_size || buf->color_ranges_size) &&
+            (buf->nb_pixel_formats || buf->nb_colorspaces || buf->nb_colorranges)) {
+            av_log(ctx, AV_LOG_ERROR, "Cannot combine old and new format lists\n");
+            return AVERROR(EINVAL);
+        }
+
+        CHECK_LIST_SIZE(pixel_fmts)
+        CHECK_LIST_SIZE(color_spaces)
+        CHECK_LIST_SIZE(color_ranges)
+    } else {
+        if ((buf->sample_fmts_size || buf->channel_layouts_str || buf->sample_rates_size) &&
+            (buf->nb_sample_formats || buf->nb_samplerates || buf->nb_channel_layouts)) {
+            av_log(ctx, AV_LOG_ERROR, "Cannot combine old and new format lists\n");
+            return AVERROR(EINVAL);
+        }
+
+        CHECK_LIST_SIZE(sample_fmts)
+        CHECK_LIST_SIZE(sample_rates)
+    }
+
+#undef CHECK_LIST_SIZE
+
+#endif
+
     buf->warning_limit = 100;
     return 0;
 }
@@ -291,14 +326,6 @@ int av_buffersink_get_ch_layout(const AVFilterContext *ctx, AVChannelLayout *out
 
 #if FF_API_BUFFERSINK_OPTS
 #define NB_ITEMS(list) (list ## _size / sizeof(*list))
-
-#define CHECK_LIST_SIZE(field) \
-        if (buf->field ## _size % sizeof(*buf->field)) { \
-            av_log(ctx, AV_LOG_ERROR, "Invalid size for " #field ": %d, " \
-                   "should be multiple of %d\n", \
-                   buf->field ## _size, (int)sizeof(*buf->field)); \
-            return AVERROR(EINVAL); \
-        }
 #endif
 
 static int vsink_query_formats(AVFilterContext *ctx)
@@ -307,12 +334,6 @@ static int vsink_query_formats(AVFilterContext *ctx)
     int ret;
 
 #if FF_API_BUFFERSINK_OPTS
-    if ((buf->pixel_fmts_size || buf->color_spaces_size || buf->color_ranges_size) &&
-        (buf->nb_pixel_formats || buf->nb_colorspaces || buf->nb_colorranges)) {
-        av_log(ctx, AV_LOG_ERROR, "Cannot combine old and new format lists\n");
-        return AVERROR(EINVAL);
-    }
-
     if (buf->nb_pixel_formats || buf->nb_colorspaces || buf->nb_colorranges) {
 #endif
         if (buf->nb_pixel_formats) {
@@ -333,9 +354,6 @@ static int vsink_query_formats(AVFilterContext *ctx)
 #if FF_API_BUFFERSINK_OPTS
     } else {
     unsigned i;
-    CHECK_LIST_SIZE(pixel_fmts)
-    CHECK_LIST_SIZE(color_spaces)
-    CHECK_LIST_SIZE(color_ranges)
     if (buf->pixel_fmts_size) {
         AVFilterFormats *formats = NULL;
         for (i = 0; i < NB_ITEMS(buf->pixel_fmts); i++)
@@ -374,12 +392,6 @@ static int asink_query_formats(AVFilterContext *ctx)
     int ret;
 
 #if FF_API_BUFFERSINK_OPTS
-    if ((buf->sample_fmts_size || buf->channel_layouts_str || buf->sample_rates_size) &&
-        (buf->nb_sample_formats || buf->nb_samplerates || buf->nb_channel_layouts)) {
-        av_log(ctx, AV_LOG_ERROR, "Cannot combine old and new format lists\n");
-        return AVERROR(EINVAL);
-    }
-
     if (buf->nb_sample_formats || buf->nb_samplerates || buf->nb_channel_layouts) {
 #endif
         if (buf->nb_sample_formats) {
@@ -403,8 +415,6 @@ static int asink_query_formats(AVFilterContext *ctx)
     AVChannelLayout layout = { 0 };
     AVFilterChannelLayouts *layouts = NULL;
     unsigned i;
-    CHECK_LIST_SIZE(sample_fmts)
-    CHECK_LIST_SIZE(sample_rates)
 
     if (buf->sample_fmts_size) {
         for (i = 0; i < NB_ITEMS(buf->sample_fmts); i++)
