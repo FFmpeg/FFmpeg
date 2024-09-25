@@ -154,6 +154,7 @@ int attribute_align_arg av_buffersink_get_samples(AVFilterContext *ctx,
 static av_cold int common_init(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
+    int ret = 0;
 
 #if FF_API_BUFFERSINK_OPTS
 
@@ -184,6 +185,44 @@ static av_cold int common_init(AVFilterContext *ctx)
 
         CHECK_LIST_SIZE(sample_fmts)
         CHECK_LIST_SIZE(sample_rates)
+
+        if (buf->channel_layouts_str) {
+            const char *cur = buf->channel_layouts_str;
+
+            if (buf->all_channel_counts)
+                av_log(ctx, AV_LOG_WARNING,
+                       "Conflicting all_channel_counts and list in options\n");
+
+            while (cur) {
+                void *tmp;
+                char *next = strchr(cur, '|');
+                if (next)
+                    *next++ = 0;
+
+                // +2 for the new element and terminator
+                tmp = av_realloc_array(buf->channel_layouts, buf->nb_channel_layouts + 2,
+                                       sizeof(*buf->channel_layouts));
+                if (!tmp)
+                    return AVERROR(ENOMEM);
+
+                memset(&buf->channel_layouts[buf->nb_channel_layouts], 0,
+                       sizeof(*buf->channel_layouts));
+                buf->nb_channel_layouts++;
+
+                ret = av_channel_layout_from_string(&buf->channel_layouts[buf->nb_channel_layouts - 1], cur);
+                if (ret < 0) {
+                    av_log(ctx, AV_LOG_ERROR, "Error parsing channel layout: %s.\n", cur);
+                    return ret;
+                }
+                if (ret < 0)
+                    return ret;
+
+                cur = next;
+            }
+
+            if (buf->nb_channel_layouts)
+                buf->channel_layouts[buf->nb_channel_layouts] = (AVChannelLayout){ 0 };
+        }
     }
 
 #undef CHECK_LIST_SIZE
@@ -412,8 +451,6 @@ static int asink_query_formats(AVFilterContext *ctx)
 #if FF_API_BUFFERSINK_OPTS
     } else {
     AVFilterFormats *formats = NULL;
-    AVChannelLayout layout = { 0 };
-    AVFilterChannelLayouts *layouts = NULL;
     unsigned i;
 
     if (buf->sample_fmts_size) {
@@ -424,37 +461,9 @@ static int asink_query_formats(AVFilterContext *ctx)
             return ret;
     }
 
-    if (buf->channel_layouts_str || buf->all_channel_counts) {
-        if (buf->channel_layouts_str) {
-            const char *cur = buf->channel_layouts_str;
-
-            while (cur) {
-                char *next = strchr(cur, '|');
-                if (next)
-                    *next++ = 0;
-
-                ret = av_channel_layout_from_string(&layout, cur);
-                if (ret < 0) {
-                    av_log(ctx, AV_LOG_ERROR, "Error parsing channel layout: %s.\n", cur);
-                    return ret;
-                }
-                ret = ff_add_channel_layout(&layouts, &layout);
-                av_channel_layout_uninit(&layout);
-                if (ret < 0)
-                    return ret;
-
-                cur = next;
-            }
-        }
-
-        if (buf->all_channel_counts) {
-            if (layouts)
-                av_log(ctx, AV_LOG_WARNING,
-                       "Conflicting all_channel_counts and list in options\n");
-            else if (!(layouts = ff_all_channel_counts()))
-                return AVERROR(ENOMEM);
-        }
-        if ((ret = ff_set_common_channel_layouts(ctx, layouts)) < 0)
+    if (buf->nb_channel_layouts) {
+        ret = ff_set_common_channel_layouts_from_list(ctx, buf->channel_layouts);
+        if (ret < 0)
             return ret;
     }
 
