@@ -42,6 +42,7 @@
 typedef struct BufferSinkContext {
     const AVClass *class;
     unsigned warning_limit;
+    unsigned frame_size;
 
     /* only used for video */
     enum AVPixelFormat *pixel_fmts;     ///< list of accepted pixel formats
@@ -162,11 +163,25 @@ static int activate(AVFilterContext *ctx)
     return 0;
 }
 
+static int config_input_audio(AVFilterLink *inlink)
+{
+    BufferSinkContext *buf = inlink->dst->priv;
+    FilterLink *l = ff_filter_link(inlink);
+
+    l->min_samples = l->max_samples = buf->frame_size;
+
+    return 0;
+}
+
 void av_buffersink_set_frame_size(AVFilterContext *ctx, unsigned frame_size)
 {
-    FilterLink *inlink = ff_filter_link(ctx->inputs[0]);
+    BufferSinkContext *buf = ctx->priv;
+    buf->frame_size = frame_size;
 
-    inlink->min_samples = inlink->max_samples = frame_size;
+    if (ctx->inputs && ctx->inputs[0]) {
+        FilterLink *l = ff_filter_link(ctx->inputs[0]);
+        l->min_samples = l->max_samples = buf->frame_size;
+    }
 }
 
 #define MAKE_AVFILTERLINK_ACCESSOR(type, field) \
@@ -368,6 +383,14 @@ const AVFilter ff_vsink_buffer = {
     FILTER_QUERY_FUNC(vsink_query_formats),
 };
 
+static const AVFilterPad inputs_audio[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .config_props = config_input_audio,
+    },
+};
+
 const AVFilter ff_asink_abuffer = {
     .name          = "abuffersink",
     .description   = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
@@ -376,7 +399,7 @@ const AVFilter ff_asink_abuffer = {
     .init          = common_init,
     .uninit        = uninit,
     .activate      = activate,
-    FILTER_INPUTS(ff_audio_default_filterpad),
+    FILTER_INPUTS(inputs_audio),
     .outputs       = NULL,
     FILTER_QUERY_FUNC(asink_query_formats),
 };
