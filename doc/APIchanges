@@ -2,6 +2,11 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-09-xx - xxxxxxxxxx - lavu 59
+  Deprecate av_int_list_length_for_size(), av_int_list_length(), and
+  av_opt_set_int_list() without replacement. All AVOptions using these
+  should be replaced with AV_OPT_TYPE_FLAG_ARRAY.
+
 2024-09-xx - xxxxxxxxxx - lavfi 10.6.100
   Buffersink now has array-type options
     - pixel_formats

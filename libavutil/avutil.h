@@ -314,6 +314,7 @@ static inline void *av_x_if_null(const void *p, const void *x)
     return (void *)(intptr_t)(p ? p : x);
 }
 
+#if FF_API_OPT_INT_LIST
 /**
  * Compute the length of an integer list.
  *
@@ -322,6 +323,7 @@ static inline void *av_x_if_null(const void *p, const void *x)
  * @param list    pointer to the list
  * @return  length of the list, in elements, not counting the terminator
  */
+attribute_deprecated
 unsigned av_int_list_length_for_size(unsigned elsize,
                                      const void *list, uint64_t term) av_pure;
 
@@ -334,6 +336,7 @@ unsigned av_int_list_length_for_size(unsigned elsize,
  */
 #define av_int_list_length(list, term) \
     av_int_list_length_for_size(sizeof(*(list)), list, term)
+#endif
 
 /**
  * Return the fractional representation of the internal time base.

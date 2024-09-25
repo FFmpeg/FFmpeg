@@ -51,6 +51,7 @@ char av_get_picture_type_char(enum AVPictureType pict_type)
     }
 }
 
+#if FF_API_OPT_INT_LIST
 unsigned av_int_list_length_for_size(unsigned elsize,
                                      const void *list, uint64_t term)
 {
@@ -69,6 +70,7 @@ unsigned av_int_list_length_for_size(unsigned elsize,
     }
     return i;
 }
+#endif
 
 char *av_fourcc_make_string(char *buf, uint32_t fourcc)
 {

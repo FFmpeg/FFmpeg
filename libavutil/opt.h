@@ -886,6 +886,7 @@ int av_opt_set_chlayout(void *obj, const char *name, const AVChannelLayout *layo
  */
 int av_opt_set_dict_val(void *obj, const char *name, const AVDictionary *val, int search_flags);
 
+#if FF_API_OPT_INT_LIST
 /**
  * Set a binary option to an integer list.
  *
@@ -901,6 +902,7 @@ int av_opt_set_dict_val(void *obj, const char *name, const AVDictionary *val, in
      AVERROR(EINVAL) : \
      av_opt_set_bin(obj, name, (const uint8_t *)(val), \
                     av_int_list_length(val, term) * sizeof(*(val)), flags))
+#endif
 
 /**
  * Add, replace, or remove elements for an array option. Which of these
