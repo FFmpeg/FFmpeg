@@ -4141,9 +4141,9 @@ DISABLE_I8MM
 #endif
 
 function vvc_put_qpel_hv4_8_end_neon
-         vvc_load_qpel_filterh x5
-         mov             x7, #(VVC_MAX_PB_SIZE * 2)
-         b               1f
+        vvc_load_qpel_filterh x5
+        mov             x7, #(VVC_MAX_PB_SIZE * 2)
+        b               1f
 endfunc
 
 function hevc_put_hevc_qpel_hv4_8_end_neon
