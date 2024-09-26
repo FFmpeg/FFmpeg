@@ -233,10 +233,9 @@ static void lumRangeFromJpeg16_c(int16_t *_dst, int width)
     if (DEBUG_SWSCALE_BUFFERS)                  \
         av_log(c, AV_LOG_DEBUG, __VA_ARGS__)
 
-static int swscale(SwsContext *c, const uint8_t *src[],
-                   int srcStride[], int srcSliceY, int srcSliceH,
-                   uint8_t *dst[], int dstStride[],
-                   int dstSliceY, int dstSliceH)
+int ff_swscale(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+               int srcSliceY, int srcSliceH, uint8_t *const dst[],
+               const int dstStride[], int dstSliceY, int dstSliceH)
 {
     const int scale_dst = dstSliceY > 0 || dstSliceH < c->dstH;
 
@@ -287,20 +286,29 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     int hasLumHoles = 1;
     int hasChrHoles = 1;
 
+    const uint8_t *src2[4];
+    int srcStride2[4];
+
     if (isPacked(c->srcFormat)) {
-        src[1] =
-        src[2] =
-        src[3] = src[0];
-        srcStride[1] =
-        srcStride[2] =
-        srcStride[3] = srcStride[0];
+        src2[0] =
+        src2[1] =
+        src2[2] =
+        src2[3] = src[0];
+        srcStride2[0] =
+        srcStride2[1] =
+        srcStride2[2] =
+        srcStride2[3] = srcStride[0];
+    } else {
+        memcpy(src2, src, sizeof(src2));
+        memcpy(srcStride2, srcStride, sizeof(srcStride2));
     }
-    srcStride[1] *= 1 << c->vChrDrop;
-    srcStride[2] *= 1 << c->vChrDrop;
+
+    srcStride2[1] *= 1 << c->vChrDrop;
+    srcStride2[2] *= 1 << c->vChrDrop;
 
     DEBUG_BUFFERS("swscale() %p[%d] %p[%d] %p[%d] %p[%d] -> %p[%d] %p[%d] %p[%d] %p[%d]\n",
-                  src[0], srcStride[0], src[1], srcStride[1],
-                  src[2], srcStride[2], src[3], srcStride[3],
+                  src2[0], srcStride2[0], src2[1], srcStride2[1],
+                  src2[2], srcStride2[2], src2[3], srcStride2[3],
                   dst[0], dstStride[0], dst[1], dstStride[1],
                   dst[2], dstStride[2], dst[3], dstStride[3]);
     DEBUG_BUFFERS("srcSliceY: %d srcSliceH: %d dstY: %d dstH: %d\n",
@@ -320,10 +328,10 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     }
 
 #if ARCH_X86
-    if (   (uintptr_t)dst[0]&15 || (uintptr_t)dst[1]&15 || (uintptr_t)dst[2]&15
-        || (uintptr_t)src[0]&15 || (uintptr_t)src[1]&15 || (uintptr_t)src[2]&15
-        || dstStride[0]&15 || dstStride[1]&15 || dstStride[2]&15 || dstStride[3]&15
-        || srcStride[0]&15 || srcStride[1]&15 || srcStride[2]&15 || srcStride[3]&15
+    if (   (uintptr_t) dst[0]&15 || (uintptr_t) dst[1]&15 || (uintptr_t) dst[2]&15
+        || (uintptr_t)src2[0]&15 || (uintptr_t)src2[1]&15 || (uintptr_t)src2[2]&15
+        ||  dstStride[0]&15 ||  dstStride[1]&15 ||  dstStride[2]&15 ||  dstStride[3]&15
+        || srcStride2[0]&15 || srcStride2[1]&15 || srcStride2[2]&15 || srcStride2[3]&15
     ) {
         SwsContext *const ctx = c->parent ? c->parent : c;
         int cpu_flags = av_get_cpu_flags();
@@ -356,7 +364,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     ff_init_vscale_pfn(c, yuv2plane1, yuv2planeX, yuv2nv12cX,
                    yuv2packed1, yuv2packed2, yuv2packedX, yuv2anyX, c->use_mmx_vfilter);
 
-    ff_init_slice_from_src(src_slice, (uint8_t**)src, srcStride, c->srcW,
+    ff_init_slice_from_src(src_slice, (uint8_t**)src2, srcStride2, c->srcW,
             srcSliceY, srcSliceH, chrSrcSliceY, chrSrcSliceH, 1);
 
     ff_init_slice_from_src(vout_slice, (uint8_t**)dst, dstStride, c->dstW,
@@ -1054,8 +1062,8 @@ static int scale_internal(SwsContext *c,
         if (scale_dst)
             dst2[0] += dstSliceY * dstStride2[0];
     } else {
-        ret = swscale(c, src2, srcStride2, srcSliceY_internal, srcSliceH,
-                      dst2, dstStride2, dstSliceY, dstSliceH);
+        ret = ff_swscale(c, src2, srcStride2, srcSliceY_internal, srcSliceH,
+                         dst2, dstStride2, dstSliceY, dstSliceH);
     }
 
     if (c->dstXYZ && !(c->srcXYZ && c->srcW==c->dstW && c->srcH==c->dstH)) {

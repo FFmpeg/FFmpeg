@@ -1121,7 +1121,8 @@ typedef struct SwsFilterDescriptor
 
 // warp input lines in the form (src + width*i + j) to slice format (line[i][j])
 // relative=true means first line src[x][0] otherwise first line is src[x][lum/crh Y]
-int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int srcW, int lumY, int lumH, int chrY, int chrH, int relative);
+int ff_init_slice_from_src(SwsSlice * s, uint8_t *const src[4], const int stride[4],
+                           int srcW, int lumY, int lumH, int chrY, int chrH, int relative);
 
 // Initialize scaler filter descriptor chain
 int ff_init_filters(SwsContext *c);
@@ -1164,6 +1165,11 @@ void ff_init_vscale_pfn(SwsContext *c, yuv2planar1_fn yuv2plane1, yuv2planarX_fn
 
 void ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
                          int nb_jobs, int nb_threads);
+
+int ff_swscale(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+               int srcSliceY, int srcSliceH, uint8_t *const dst[],
+               const int dstStride[], int dstSliceY, int dstSliceH);
+
 
 //number of extra lines to process
 #define MAX_LINES_AHEAD 4

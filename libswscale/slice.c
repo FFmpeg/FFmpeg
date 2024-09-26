@@ -145,7 +145,8 @@ int ff_rotate_slice(SwsSlice *s, int lum, int chr)
     return 0;
 }
 
-int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int srcW, int lumY, int lumH, int chrY, int chrH, int relative)
+int ff_init_slice_from_src(SwsSlice * s, uint8_t *const src[4], const int stride[4],
+                           int srcW, int lumY, int lumH, int chrY, int chrH, int relative)
 {
     int i = 0;
 
