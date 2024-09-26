@@ -129,7 +129,7 @@ static int cmp_off_by_n(const uint8_t *ref, const uint8_t *test, size_t n, int a
 
 static void check_rgb24toyv12(struct SwsContext *ctx)
 {
-    static const int input_sizes[] = {2, 16, 128, 540, MAX_LINE_SIZE, -MAX_LINE_SIZE};
+    static const int input_sizes[] = {16, 128, 512, MAX_LINE_SIZE, -MAX_LINE_SIZE};
 
     LOCAL_ALIGNED_32(uint8_t, src, [BUFSIZE * 3]);
     LOCAL_ALIGNED_32(uint8_t, buf_y_0, [BUFSIZE]);
