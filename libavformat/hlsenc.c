@@ -1668,7 +1668,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
         ff_hls_write_playlist_header(hls->sub_m3u8_out, hls->version, hls->allowcache,
                                      target_duration, sequence, PLAYLIST_TYPE_NONE, 0);
         for (en = vs->segments; en; en = en->next) {
-            ret = ff_hls_write_file_entry(hls->sub_m3u8_out, 0, byterange_mode,
+            ret = ff_hls_write_file_entry(hls->sub_m3u8_out, en->discont, byterange_mode,
                                           en->duration, 0, en->size, en->pos,
                                           hls->baseurl, en->sub_filename, NULL, 0, 0, 0);
             if (ret < 0) {
