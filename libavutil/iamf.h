@@ -37,20 +37,29 @@
 #include "rational.h"
 
 /**
+ * @defgroup lavu_iamf Immersive Audio Model and Formats
+ * @ingroup lavu_audio
+ *
+ * Immersive Audio Model and Formats related functions and defines
+ *
  * @defgroup lavu_iamf_params Parameter Definition
+ * @ingroup lavu_iamf
  * @{
  * Parameters as defined in section 3.6.1 and 3.8 of IAMF.
  * @}
+ *
  * @defgroup lavu_iamf_audio Audio Element
+ * @ingroup lavu_iamf
  * @{
  * Audio Elements as defined in section 3.6 of IAMF.
  * @}
+ *
  * @defgroup lavu_iamf_mix Mix Presentation
+ * @ingroup lavu_iamf
  * @{
  * Mix Presentations as defined in section 3.7 of IAMF.
  * @}
  *
- * @}
  * @addtogroup lavu_iamf_params
  * @{
  */
@@ -673,6 +682,7 @@ AVIAMFSubmixLayout *av_iamf_submix_add_layout(AVIAMFSubmix *submix);
  *                         upon return, *mix_presentation will be set to NULL.
  */
 void av_iamf_mix_presentation_free(AVIAMFMixPresentation **mix_presentation);
+
 /**
  * @}
  */
