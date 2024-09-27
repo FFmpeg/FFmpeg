@@ -283,6 +283,7 @@ typedef struct HEIFItem {
     int64_t extent_offset;
     int width;
     int height;
+    int rotation;
     int type;
     int is_idat_relative;
 } HEIFItem;

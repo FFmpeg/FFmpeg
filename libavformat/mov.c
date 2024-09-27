@@ -40,6 +40,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
+#include "libavutil/display.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/aes.h"
@@ -8933,6 +8934,27 @@ static int mov_read_ispe(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_irot(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    int angle;
+
+    angle = avio_r8(pb) & 0x3;
+
+    av_log(c->fc, AV_LOG_TRACE, "irot: item_id %d, angle %u\n",
+           c->cur_item_id, angle);
+
+    for (int i = 0; i < c->nb_heif_item; i++) {
+        if (c->heif_item[i].item_id == c->cur_item_id) {
+            // angle * 90 specifies the angle (in anti-clockwise direction)
+            // in units of degrees.
+            c->heif_item[i].rotation = angle * 90;
+            break;
+        }
+    }
+
+    return 0;
+}
+
 static int mov_read_iprp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     typedef struct MOVAtoms {
@@ -9159,6 +9181,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('i','d','a','t'), mov_read_idat },
 { MKTAG('i','r','e','f'), mov_read_iref },
 { MKTAG('i','s','p','e'), mov_read_ispe },
+{ MKTAG('i','r','o','t'), mov_read_irot },
 { MKTAG('i','p','r','p'), mov_read_iprp },
 { MKTAG('i','i','n','f'), mov_read_iinf },
 { MKTAG('a','m','v','e'), mov_read_amve }, /* ambient viewing environment box */
@@ -9828,6 +9851,26 @@ fail:
     return ret;
 }
 
+static int set_display_matrix_from_item(AVPacketSideData **coded_side_data, int *nb_coded_side_data,
+                                        const HEIFItem *item)
+{
+    int32_t *matrix;
+    AVPacketSideData *sd = av_packet_side_data_new(coded_side_data,
+                                                   nb_coded_side_data,
+                                                   AV_PKT_DATA_DISPLAYMATRIX,
+                                                   9 * sizeof(*matrix), 0);
+    if (!sd)
+        return AVERROR(ENOMEM);
+
+    matrix = (int32_t*)sd->data;
+    /* rotation is in the counter-clockwise direction whereas
+     * av_display_rotation_set() expects its argument to be
+     * oriented clockwise, so we need to negate it. */
+    av_display_rotation_set(matrix, -item->rotation);
+
+    return 0;
+}
+
 static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
                            AVStreamGroupTileGrid *tile_grid)
 {
@@ -9860,6 +9903,14 @@ static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
     /* actual width and height of output image */
     tile_grid->width  = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
     tile_grid->height = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
+
+    /* rotation */
+    if (item->rotation) {
+        int ret = set_display_matrix_from_item(&tile_grid->coded_side_data,
+                                               &tile_grid->nb_coded_side_data, item);
+        if (ret < 0)
+            return ret;
+    }
 
     av_log(c->fc, AV_LOG_TRACE, "grid: grid_rows %d grid_cols %d output_width %d output_height %d\n",
            tile_rows, tile_cols, tile_grid->width, tile_grid->height);
@@ -9951,6 +10002,15 @@ static int read_image_iovl(AVFormatContext *s, const HEIFGrid *grid,
     tile_grid->coded_width  = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
     tile_grid->height       =
     tile_grid->coded_height = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
+
+    /* rotation */
+    if (item->rotation) {
+        int ret = set_display_matrix_from_item(&tile_grid->coded_side_data,
+                                               &tile_grid->nb_coded_side_data, item);
+        if (ret < 0)
+            return ret;
+    }
+
     av_log(c->fc, AV_LOG_TRACE, "iovl: output_width %d, output_height %d\n",
            tile_grid->width, tile_grid->height);
 
@@ -10152,6 +10212,13 @@ static int mov_read_header(AVFormatContext *s)
 
             if (item->item_id == mov->primary_item_id)
                 st->disposition |= AV_DISPOSITION_DEFAULT;
+
+            if (item->rotation) {
+                int ret = set_display_matrix_from_item(&st->codecpar->coded_side_data,
+                                                       &st->codecpar->nb_coded_side_data, item);
+                if (ret < 0)
+                    return ret;
+            }
 
             mov_build_index(mov, st);
         }
