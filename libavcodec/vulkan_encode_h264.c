@@ -130,12 +130,12 @@ static int init_pic_rc(AVCodecContext *avctx, FFHWBaseEncodePicture *pic,
         .consecutiveBFrameCount = FFMAX(ctx->base.b_per_p - 1, 0),
         .temporalLayerCount = 0,
     };
-
     rc_info->pNext = &hp->vkrc_info;
-    rc_info->virtualBufferSizeInMs = enc->unit_opts.hrd_buffer_size;
-    rc_info->initialVirtualBufferSizeInMs = enc->unit_opts.initial_buffer_fullness;
 
     if (rc_info->rateControlMode > VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) {
+        rc_info->virtualBufferSizeInMs = (enc->unit_opts.hrd_buffer_size * 1000LL) / avctx->bit_rate;
+        rc_info->initialVirtualBufferSizeInMs = (enc->unit_opts.initial_buffer_fullness * 1000LL) / avctx->bit_rate;
+
         hp->vkrc_layer_info = (VkVideoEncodeH264RateControlLayerInfoKHR) {
             .sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_KHR,
 
