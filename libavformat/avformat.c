@@ -102,6 +102,8 @@ void ff_free_stream_group(AVStreamGroup **pstg)
     case AV_STREAM_GROUP_PARAMS_TILE_GRID:
         av_opt_free(stg->params.tile_grid);
         av_freep(&stg->params.tile_grid->offsets);
+        av_packet_side_data_free(&stg->params.tile_grid->coded_side_data,
+                                 &stg->params.tile_grid->nb_coded_side_data);
         av_freep(&stg->params.tile_grid);
         break;
     case AV_STREAM_GROUP_PARAMS_LCEVC:

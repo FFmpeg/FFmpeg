@@ -1082,6 +1082,19 @@ typedef struct AVStreamGroupTileGrid {
      * final image before presentation.
      */
     int height;
+
+    /**
+     * Additional data associated with the grid.
+     *
+     * Should be allocated with av_packet_side_data_new() or
+     * av_packet_side_data_add(), and will be freed by avformat_free_context().
+     */
+    AVPacketSideData *coded_side_data;
+
+    /**
+     * Amount of entries in @ref coded_side_data.
+     */
+    int nb_coded_side_data;
 } AVStreamGroupTileGrid;
 
 /**
