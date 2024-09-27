@@ -602,8 +602,8 @@ static void dump_stream_format(const AVFormatContext *ic, int i,
     const FFStream *const sti = cffstream(st);
     const AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
     const char *separator = ic->dump_separator;
-    const char *group_indent = group_index >= 0 ? "    " : "";
-    const char *extra_indent = group_index >= 0 ? "        " : "      ";
+    const char *group_indent = group_index >= 0 ? "  " : "";
+    const char *extra_indent = group_index >= 0 ? "      " : "    ";
     AVCodecContext *avctx;
     int ret;
 
