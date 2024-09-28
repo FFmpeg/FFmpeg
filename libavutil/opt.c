@@ -58,26 +58,29 @@ const AVOption *av_opt_next(const void *obj, const AVOption *last)
     return NULL;
 }
 
-static const size_t opt_elem_size[] = {
-    [AV_OPT_TYPE_FLAGS]         = sizeof(unsigned),
-    [AV_OPT_TYPE_INT]           = sizeof(int),
-    [AV_OPT_TYPE_INT64]         = sizeof(int64_t),
-    [AV_OPT_TYPE_UINT]          = sizeof(unsigned),
-    [AV_OPT_TYPE_UINT64]        = sizeof(uint64_t),
-    [AV_OPT_TYPE_DOUBLE]        = sizeof(double),
-    [AV_OPT_TYPE_FLOAT]         = sizeof(float),
-    [AV_OPT_TYPE_STRING]        = sizeof(char *),
-    [AV_OPT_TYPE_RATIONAL]      = sizeof(AVRational),
-    [AV_OPT_TYPE_BINARY]        = sizeof(uint8_t *),
-    [AV_OPT_TYPE_DICT]          = sizeof(AVDictionary *),
-    [AV_OPT_TYPE_IMAGE_SIZE]    = sizeof(int[2]),
-    [AV_OPT_TYPE_VIDEO_RATE]    = sizeof(AVRational),
-    [AV_OPT_TYPE_PIXEL_FMT]     = sizeof(int),
-    [AV_OPT_TYPE_SAMPLE_FMT]    = sizeof(int),
-    [AV_OPT_TYPE_DURATION]      = sizeof(int64_t),
-    [AV_OPT_TYPE_COLOR]         = sizeof(uint8_t[4]),
-    [AV_OPT_TYPE_CHLAYOUT]      = sizeof(AVChannelLayout),
-    [AV_OPT_TYPE_BOOL]          = sizeof(int),
+static const struct {
+    size_t      size;
+    const char *name;
+} opt_type_desc[] = {
+    [AV_OPT_TYPE_FLAGS]         = { sizeof(unsigned),       "<flags>" },
+    [AV_OPT_TYPE_INT]           = { sizeof(int),            "<int>" },
+    [AV_OPT_TYPE_INT64]         = { sizeof(int64_t),        "<int64>" },
+    [AV_OPT_TYPE_UINT]          = { sizeof(unsigned),       "<unsigned>" },
+    [AV_OPT_TYPE_UINT64]        = { sizeof(uint64_t),       "<uint64>" },
+    [AV_OPT_TYPE_DOUBLE]        = { sizeof(double),         "<double>" },
+    [AV_OPT_TYPE_FLOAT]         = { sizeof(float),          "<float>" },
+    [AV_OPT_TYPE_STRING]        = { sizeof(char *),         "<string>" },
+    [AV_OPT_TYPE_RATIONAL]      = { sizeof(AVRational),     "<rational>" },
+    [AV_OPT_TYPE_BINARY]        = { sizeof(uint8_t *),      "<binary>" },
+    [AV_OPT_TYPE_DICT]          = { sizeof(AVDictionary *), "<dictionary>" },
+    [AV_OPT_TYPE_IMAGE_SIZE]    = { sizeof(int[2]),         "<image_size>" },
+    [AV_OPT_TYPE_VIDEO_RATE]    = { sizeof(AVRational),     "<video_rate>" },
+    [AV_OPT_TYPE_PIXEL_FMT]     = { sizeof(int),            "<pix_fmt>" },
+    [AV_OPT_TYPE_SAMPLE_FMT]    = { sizeof(int),            "<sample_fmt>" },
+    [AV_OPT_TYPE_DURATION]      = { sizeof(int64_t),        "<duration>" },
+    [AV_OPT_TYPE_COLOR]         = { sizeof(uint8_t[4]),     "<color>" },
+    [AV_OPT_TYPE_CHLAYOUT]      = { sizeof(AVChannelLayout),"<channel_layout>" },
+    [AV_OPT_TYPE_BOOL]          = { sizeof(int),            "<boolean>" },
 };
 
 // option is plain old data
@@ -114,7 +117,7 @@ static uint8_t opt_array_sep(const AVOption *o)
 static void *opt_array_pelem(const AVOption *o, void *array, unsigned idx)
 {
     av_assert1(o->type & AV_OPT_TYPE_FLAG_ARRAY);
-    return (uint8_t *)array + idx * opt_elem_size[TYPE_BASE(o->type)];
+    return (uint8_t *)array + idx * opt_type_desc[TYPE_BASE(o->type)].size;
 }
 
 static unsigned *opt_array_pcount(const void *parray)
@@ -670,7 +673,7 @@ static int opt_set_array(void *obj, void *target_obj, const AVOption *o,
                          const char *val, void *dst)
 {
     const AVOptionArrayDef *arr = o->default_val.arr;
-    const size_t      elem_size = opt_elem_size[TYPE_BASE(o->type)];
+    const size_t      elem_size = opt_type_desc[TYPE_BASE(o->type)].size;
     const uint8_t           sep = opt_array_sep(o);
     uint8_t                *str = NULL;
 
@@ -1441,36 +1444,15 @@ static char *get_opt_flags_string(void *obj, const char *unit, int64_t value)
 static void log_type(void *av_log_obj, const AVOption *o,
                      enum AVOptionType parent_type)
 {
-    const char *desc[] = {
-        [AV_OPT_TYPE_FLAGS]         = "<flags>",
-        [AV_OPT_TYPE_INT]           = "<int>",
-        [AV_OPT_TYPE_INT64]         = "<int64>",
-        [AV_OPT_TYPE_UINT]          = "<unsigned>",
-        [AV_OPT_TYPE_UINT64]        = "<uint64>",
-        [AV_OPT_TYPE_DOUBLE]        = "<double>",
-        [AV_OPT_TYPE_FLOAT]         = "<float>",
-        [AV_OPT_TYPE_STRING]        = "<string>",
-        [AV_OPT_TYPE_RATIONAL]      = "<rational>",
-        [AV_OPT_TYPE_BINARY]        = "<binary>",
-        [AV_OPT_TYPE_DICT]          = "<dictionary>",
-        [AV_OPT_TYPE_IMAGE_SIZE]    = "<image_size>",
-        [AV_OPT_TYPE_VIDEO_RATE]    = "<video_rate>",
-        [AV_OPT_TYPE_PIXEL_FMT]     = "<pix_fmt>",
-        [AV_OPT_TYPE_SAMPLE_FMT]    = "<sample_fmt>",
-        [AV_OPT_TYPE_DURATION]      = "<duration>",
-        [AV_OPT_TYPE_COLOR]         = "<color>",
-        [AV_OPT_TYPE_CHLAYOUT]      = "<channel_layout>",
-        [AV_OPT_TYPE_BOOL]          = "<boolean>",
-    };
     const enum AVOptionType type = TYPE_BASE(o->type);
 
     if (o->type == AV_OPT_TYPE_CONST && TYPE_BASE(parent_type) == AV_OPT_TYPE_INT)
         av_log(av_log_obj, AV_LOG_INFO, "%-12"PRId64" ", o->default_val.i64);
-    else if (type < FF_ARRAY_ELEMS(desc) && desc[type]) {
+    else if (type < FF_ARRAY_ELEMS(opt_type_desc) && opt_type_desc[type].name) {
         if (o->type & AV_OPT_TYPE_FLAG_ARRAY)
-            av_log(av_log_obj, AV_LOG_INFO, "[%-10s]", desc[type]);
+            av_log(av_log_obj, AV_LOG_INFO, "[%-10s]", opt_type_desc[type].name);
         else
-            av_log(av_log_obj, AV_LOG_INFO, "%-12s ", desc[type]);
+            av_log(av_log_obj, AV_LOG_INFO, "%-12s ", opt_type_desc[type].name);
     }
     else
         av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "");
@@ -2068,7 +2050,7 @@ static int opt_copy_elem(void *logctx, enum AVOptionType type,
         if (dst != src)
             return av_channel_layout_copy(dst, src);
     } else if (opt_is_pod(type)) {
-        size_t size = opt_elem_size[type];
+        size_t size = opt_type_desc[type].size;
         memcpy(dst, src, size);
     } else {
         av_log(logctx, AV_LOG_ERROR, "Unhandled option type: %d\n", type);
@@ -2092,7 +2074,7 @@ static int opt_copy_array(void *logctx, const AVOption *o,
 
     opt_free_array(o, pdst, opt_array_pcount(pdst));
 
-    dst = av_calloc(nb_elems, opt_elem_size[TYPE_BASE(o->type)]);
+    dst = av_calloc(nb_elems, opt_type_desc[TYPE_BASE(o->type)].size);
     if (!dst)
         return AVERROR(ENOMEM);
 
@@ -2160,7 +2142,7 @@ int av_opt_get_array(void *obj, const char *name, int search_flags,
                      unsigned int start_elem, unsigned int nb_elems,
                      enum AVOptionType out_type, void *out_val)
 {
-    const size_t elem_size_out = opt_elem_size[TYPE_BASE(out_type)];
+    const size_t elem_size_out = opt_type_desc[TYPE_BASE(out_type)].size;
 
     const AVOption *o;
     void *target_obj;
@@ -2248,7 +2230,7 @@ int av_opt_set_array(void *obj, const char *name, int search_flags,
                      unsigned int start_elem, unsigned int nb_elems,
                      enum AVOptionType val_type, const void *val)
 {
-    const size_t elem_size_val = opt_elem_size[TYPE_BASE(val_type)];
+    const size_t elem_size_val = opt_type_desc[TYPE_BASE(val_type)].size;
 
     const AVOption *o;
     const AVOptionArrayDef *arr;
@@ -2271,7 +2253,7 @@ int av_opt_set_array(void *obj, const char *name, int search_flags,
     arr        = o->default_val.arr;
     parray     = (uint8_t *)target_obj + o->offset;
     array_size = opt_array_pcount(parray);
-    elem_size  = opt_elem_size[TYPE_BASE(o->type)];
+    elem_size  = opt_type_desc[TYPE_BASE(o->type)].size;
 
     if (start_elem > *array_size)
         return AVERROR(EINVAL);
