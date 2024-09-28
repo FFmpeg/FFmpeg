@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-10-xx - xxxxxxxxxx - lavu 59.41.100 - log.h
+  Add AVClass.state_flags_offset and AV_CLASS_STATE_INITIALIZED.
+
 2024-09-30 - xxxxxxxxxx - lavf 61.9.100 - avformat.h
   Add {nb_}coded_side_data to AVStreamGroupTileGrid.
 

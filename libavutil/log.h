@@ -46,6 +46,15 @@ typedef enum {
     AV_CLASS_CATEGORY_NB  ///< not part of ABI/API
 }AVClassCategory;
 
+enum AVClassStateFlags {
+    /**
+     * Object initialization has finished and it is now in the 'runtime' stage.
+     * This affects e.g. what options can be set on the object (only
+     * AV_OPT_FLAG_RUNTIME_PARAM options can be set on initialized objects).
+     */
+    AV_CLASS_STATE_INITIALIZED         = (1 << 0),
+};
+
 #define AV_IS_INPUT_DEVICE(category) \
     (((category) == AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT) || \
      ((category) == AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT) || \
@@ -155,6 +164,15 @@ typedef struct AVClass {
      *       instance of this class.
      */
     const struct AVClass* (*child_class_iterate)(void **iter);
+
+    /**
+     * When non-zero, offset in the object to an unsigned int holding object
+     * state flags, a combination of AVClassStateFlags values. The flags are
+     * updated by the object to signal its state to the generic code.
+     *
+     * Added in version 59.41.100.
+     */
+    int state_flags_offset;
 } AVClass;
 
 /**

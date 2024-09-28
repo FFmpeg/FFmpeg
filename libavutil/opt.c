@@ -185,6 +185,39 @@ static int opt_set_init(void *obj, const char *name, int search_flags,
         return AVERROR(EINVAL);
     }
 
+    if (!(o->flags & AV_OPT_FLAG_RUNTIME_PARAM)) {
+        unsigned *state_flags = NULL;
+        const AVClass *class;
+
+        // try state flags first from the target (child), then from its parent
+        class = *(const AVClass**)tgt;
+        if (
+#if LIBAVUTIL_VERSION_MAJOR < 60
+            class->version >= AV_VERSION_INT(59, 41, 100) &&
+#endif
+            class->state_flags_offset)
+            state_flags = (unsigned*)((uint8_t*)tgt + class->state_flags_offset);
+
+        if (!state_flags && obj != tgt) {
+            class = *(const AVClass**)obj;
+            if (
+#if LIBAVUTIL_VERSION_MAJOR < 60
+                class->version >= AV_VERSION_INT(59, 41, 100) &&
+#endif
+                class->state_flags_offset)
+                state_flags = (unsigned*)((uint8_t*)obj + class->state_flags_offset);
+        }
+
+        if (state_flags && (*state_flags & AV_CLASS_STATE_INITIALIZED)) {
+            av_log(obj, AV_LOG_ERROR, "Option '%s' is not a runtime option and "
+                   "so cannot be set after the object has been initialized\n",
+                   o->name);
+#if LIBAVUTIL_VERSION_MAJOR >= 60
+            return AVERROR(EINVAL);
+#endif
+        }
+    }
+
     if (o->flags & AV_OPT_FLAG_DEPRECATED)
         av_log(obj, AV_LOG_WARNING, "The \"%s\" option is deprecated: %s\n", name, o->help);
 
