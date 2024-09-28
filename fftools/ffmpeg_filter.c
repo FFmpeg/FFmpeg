@@ -1588,15 +1588,9 @@ static int configure_output_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
     int ret;
 
     snprintf(name, sizeof(name), "out_%s", ofp->name);
-    ofp->filter = avfilter_graph_alloc_filter(graph,
-                                              avfilter_get_by_name("abuffersink"),
-                                              name);
-    if (!ofp->filter)
-        return AVERROR(ENOMEM);
-    if ((ret = av_opt_set_int(ofp->filter, "all_channel_counts", 1, AV_OPT_SEARCH_CHILDREN)) < 0)
-        return ret;
-
-    ret = avfilter_init_dict(ofp->filter, NULL);
+    ret = avfilter_graph_create_filter(&ofp->filter,
+                                       avfilter_get_by_name("abuffersink"),
+                                       name, NULL, NULL, graph);
     if (ret < 0)
         return ret;
 
