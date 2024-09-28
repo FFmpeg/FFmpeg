@@ -77,7 +77,9 @@ typedef struct AVClass {
     const char* (*item_name)(void* ctx);
 
     /**
-     * a pointer to the first option specified in the class if any or NULL
+     * An array of options for the structure or NULL.
+     * When non-NULL, the array must be terminated by an option with a NULL
+     * name.
      *
      * @see av_set_default_options()
      */
@@ -85,43 +87,50 @@ typedef struct AVClass {
 
     /**
      * LIBAVUTIL_VERSION with which this structure was created.
-     * This is used to allow fields to be added without requiring major
-     * version bumps everywhere.
+     * This is used to allow fields to be added to AVClass without requiring
+     * major version bumps everywhere.
      */
 
     int version;
 
     /**
-     * Offset in the structure where log_level_offset is stored.
-     * 0 means there is no such variable
+     * Offset in the structure where the log level offset is stored. The log
+     * level offset is an int added to the log level for logging with this
+     * object as the context.
+     *
+     * 0 means there is no such variable.
      */
     int log_level_offset_offset;
 
     /**
      * Offset in the structure where a pointer to the parent context for
      * logging is stored. For example a decoder could pass its AVCodecContext
-     * to eval as such a parent context, which an av_log() implementation
+     * to eval as such a parent context, which an ::av_log() implementation
      * could then leverage to display the parent context.
-     * The offset can be NULL.
+     *
+     * When the pointer is NULL, or this offset is zero, the object is assumed
+     * to have no parent.
      */
     int parent_log_context_offset;
 
     /**
-     * Category used for visualization (like color)
-     * This is only set if the category is equal for all objects using this class.
-     * available since version (51 << 16 | 56 << 8 | 100)
+     * Category used for visualization (like color).
+     *
+     * Only used when ::get_category() is NULL. Use this field when all
+     * instances of this class have the same category, use ::get_category()
+     * otherwise.
      */
     AVClassCategory category;
 
     /**
-     * Callback to return the category.
-     * available since version (51 << 16 | 59 << 8 | 100)
+     * Callback to return the instance category. Use this callback when
+     * different instances of this class may have different categories,
+     * ::category otherwise.
      */
     AVClassCategory (*get_category)(void* ctx);
 
     /**
      * Callback to return the supported/allowed ranges.
-     * available since version (52.12)
      */
     int (*query_ranges)(struct AVOptionRanges **, void *obj, const char *key, int flags);
 
@@ -139,9 +148,11 @@ typedef struct AVClass {
      * @return AVClass for the next AVOptions-enabled child or NULL if there are
      *         no more such children.
      *
-     * @note The difference between child_next and this is that child_next
-     *       iterates over _already existing_ objects, while child_class_iterate
-     *       iterates over _all possible_ children.
+     * @note The difference between ::child_next() and ::child_class_iterate()
+     *       is that ::child_next() iterates over _actual_ children of an
+     *       _existing_ object instance, while ::child_class_iterate() iterates
+     *       over the classes of all _potential_ children of any possible
+     *       instance of this class.
      */
     const struct AVClass* (*child_class_iterate)(void **iter);
 } AVClass;
