@@ -2436,13 +2436,14 @@ ffmpeg -re -i in.ts -b:a:0 32k -b:a:1 64k -b:v:0 1000k \
 @item
 Create a single variant stream. Add the @code{#EXT-X-MEDIA} tag with
 @code{TYPE=SUBTITLES} in the master playlist with webvtt subtitle group name
-'subtitle'. Make sure the input file has one text subtitle stream at least.
+'subtitle' and optional subtitle name, e.g. 'English'. Make sure the input
+file has one text subtitle stream at least.
 @example
 ffmpeg -y -i input_with_subtitle.mkv \
  -b:v:0 5250k -c:v h264 -pix_fmt yuv420p -profile:v main -level 4.1 \
  -b:a:0 256k \
  -c:s webvtt -c:a mp2 -ar 48000 -ac 2 -map 0:v -map 0:a:0 -map 0:s:0 \
- -f hls -var_stream_map "v:0,a:0,s:0,sgroup:subtitle" \
+ -f hls -var_stream_map "v:0,a:0,s:0,sgroup:subtitle,sname:English" \
  -master_pl_name master.m3u8 -t 300 -hls_time 10 -hls_init_time 4 -hls_list_size \
  10 -master_pl_publish_rate 10 -hls_flags \
  delete_segments+discont_start+split_by_time ./tmp/video.m3u8
