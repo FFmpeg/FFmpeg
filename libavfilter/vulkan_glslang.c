@@ -137,7 +137,7 @@ static const glslang_resource_t glslc_resource_limits = {
 };
 
 static int glslc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
-                                FFVkSPIRVShader *shd, uint8_t **data,
+                                FFVulkanShader *shd, uint8_t **data,
                                 size_t *size, const char *entrypoint,
                                 void **opaque)
 {
@@ -153,7 +153,7 @@ static int glslc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
 
     const glslang_input_t glslc_input = {
         .language                          = GLSLANG_SOURCE_GLSL,
-        .stage                             = glslc_stage[shd->shader.stage],
+        .stage                             = glslc_stage[shd->stage],
         .client                            = GLSLANG_CLIENT_VULKAN,
         /* GLSLANG_TARGET_VULKAN_1_2 before 11.6 resulted in targeting 1.0 */
 #if (((GLSLANG_VERSION_MAJOR) > 11) || ((GLSLANG_VERSION_MAJOR) == 11 && \

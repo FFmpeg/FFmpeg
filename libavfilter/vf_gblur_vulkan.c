@@ -38,11 +38,9 @@ typedef struct GBlurVulkanContext {
     FFVkExecPool e;
     FFVkQueueFamilyCtx qf;
     VkSampler sampler;
-    FFVulkanPipeline pl_hor;
-    FFVkSPIRVShader shd_hor;
+    FFVulkanShader shd_hor;
     FFVkBuffer params_hor;
-    FFVulkanPipeline pl_ver;
-    FFVkSPIRVShader shd_ver;
+    FFVulkanShader shd_ver;
     FFVkBuffer params_ver;
 
     int size;
@@ -123,8 +121,8 @@ static av_cold void init_gaussian_params(GBlurVulkanContext *s)
         init_kernel_size(s, &s->sizeV);
 }
 
-static int init_gblur_pipeline(GBlurVulkanContext *s, FFVulkanPipeline *pl,
-                               FFVkSPIRVShader *shd, FFVkBuffer *params_buf,
+static int init_gblur_pipeline(GBlurVulkanContext *s,
+                               FFVulkanShader *shd, FFVkBuffer *params_buf,
                                int ksize, float sigma, FFVkSPIRVCompiler *spv)
 {
     int err = 0;
@@ -150,7 +148,7 @@ static int init_gblur_pipeline(GBlurVulkanContext *s, FFVulkanPipeline *pl,
 
     buf_desc.buf_content = kernel_def;
 
-    RET(ff_vk_pipeline_descriptor_set_add(&s->vkctx, pl, shd, &buf_desc, 1, 1, 0));
+    RET(ff_vk_shader_add_descriptor_set(&s->vkctx, shd, &buf_desc, 1, 1, 0));
 
     GLSLD(   gblur_func                                               );
     GLSLC(0, void main()                                              );
@@ -173,10 +171,9 @@ static int init_gblur_pipeline(GBlurVulkanContext *s, FFVulkanPipeline *pl,
 
     RET(spv->compile_shader(spv, s, shd, &spv_data, &spv_len, "main",
                             &spv_opaque));
-    RET(ff_vk_shader_create(&s->vkctx, shd, spv_data, spv_len, "main"));
+    RET(ff_vk_shader_link(&s->vkctx, shd, spv_data, spv_len, "main"));
 
-    RET(ff_vk_init_compute_pipeline(&s->vkctx, pl, shd));
-    RET(ff_vk_exec_pipeline_register(&s->vkctx, &s->e, pl));
+    RET(ff_vk_shader_register_exec(&s->vkctx, &s->e, shd));
 
     RET(ff_vk_create_buf(&s->vkctx, params_buf, sizeof(float) * ksize, NULL, NULL,
                          VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
@@ -187,10 +184,9 @@ static int init_gblur_pipeline(GBlurVulkanContext *s, FFVulkanPipeline *pl,
     init_gaussian_kernel((float *)kernel_mapped, sigma, ksize);
 
     RET(ff_vk_unmap_buffer(&s->vkctx, params_buf, 1));
-
-    RET(ff_vk_set_descriptor_buffer(&s->vkctx, pl, NULL, 1, 0, 0,
-                                    params_buf, 0, params_buf->size,
-                                    VK_FORMAT_UNDEFINED));
+    RET(ff_vk_shader_update_desc_buffer(&s->vkctx, &s->e.contexts[0], shd, 1, 0, 0,
+                                        params_buf, 0, params_buf->size,
+                                        VK_FORMAT_UNDEFINED));
 
 fail:
     av_free(kernel_def);
@@ -206,7 +202,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     FFVulkanContext *vkctx = &s->vkctx;
     const int planes = av_pix_fmt_count_planes(s->vkctx.output_format);
 
-    FFVkSPIRVShader *shd;
+    FFVulkanShader *shd;
     FFVkSPIRVCompiler *spv;
     FFVulkanDescriptorSetBinding *desc;
 
@@ -219,10 +215,6 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     ff_vk_qf_init(vkctx, &s->qf, VK_QUEUE_COMPUTE_BIT);
     RET(ff_vk_exec_pool_init(vkctx, &s->qf, &s->e, s->qf.nb_queues*4, 0, 0, 0, NULL));
     RET(ff_vk_init_sampler(vkctx, &s->sampler, 1, VK_FILTER_LINEAR));
-    RET(ff_vk_shader_init(&s->pl_hor, &s->shd_hor, "gblur_hor_compute",
-                          VK_SHADER_STAGE_COMPUTE_BIT, 0));
-    RET(ff_vk_shader_init(&s->pl_ver, &s->shd_ver, "gblur_ver_compute",
-                          VK_SHADER_STAGE_COMPUTE_BIT, 0));
 
     desc = (FFVulkanDescriptorSetBinding []) {
         {
@@ -248,22 +240,30 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
     {
         shd = &s->shd_hor;
-        ff_vk_shader_set_compute_sizes(shd, 32, 1, 1);
+        RET(ff_vk_shader_init(vkctx, shd, "gblur_hor",
+                              VK_SHADER_STAGE_COMPUTE_BIT,
+                              NULL, 0,
+                              32, 1, 1,
+                              0));
 
-        RET(ff_vk_pipeline_descriptor_set_add(vkctx, &s->pl_hor, shd, desc, 2, 0, 0));
+        RET(ff_vk_shader_add_descriptor_set(vkctx, shd, desc, 2, 0, 0));
 
         GLSLC(0, #define OFFSET (vec2(i, 0.0)));
-        RET(init_gblur_pipeline(s, &s->pl_hor, shd, &s->params_hor, s->size, s->sigma, spv));
+        RET(init_gblur_pipeline(s, shd, &s->params_hor, s->size, s->sigma, spv));
     }
 
     {
         shd = &s->shd_ver;
-        ff_vk_shader_set_compute_sizes(shd, 1, 32, 1);
+        RET(ff_vk_shader_init(vkctx, shd, "gblur_hor",
+                              VK_SHADER_STAGE_COMPUTE_BIT,
+                              NULL, 0,
+                              1, 32, 1,
+                              0));
 
-        RET(ff_vk_pipeline_descriptor_set_add(vkctx, &s->pl_ver, shd, desc, 2, 0, 0));
+        RET(ff_vk_shader_add_descriptor_set(vkctx, shd, desc, 2, 0, 0));
 
         GLSLC(0, #define OFFSET (vec2(0.0, i)));
-        RET(init_gblur_pipeline(s, &s->pl_ver, shd, &s->params_ver, s->sizeV, s->sigmaV, spv));
+        RET(init_gblur_pipeline(s, shd, &s->params_ver, s->sizeV, s->sigmaV, spv));
     }
 
     s->initialized = 1;
@@ -282,8 +282,6 @@ static av_cold void gblur_vulkan_uninit(AVFilterContext *avctx)
     FFVulkanFunctions *vk = &vkctx->vkfn;
 
     ff_vk_exec_pool_free(vkctx, &s->e);
-    ff_vk_pipeline_free(vkctx, &s->pl_hor);
-    ff_vk_pipeline_free(vkctx, &s->pl_ver);
     ff_vk_shader_free(vkctx, &s->shd_hor);
     ff_vk_shader_free(vkctx, &s->shd_ver);
     ff_vk_free_buf(vkctx, &s->params_hor);
@@ -322,7 +320,7 @@ static int gblur_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
         RET(init_filter(ctx, in));
 
     RET(ff_vk_filter_process_2pass(&s->vkctx, &s->e,
-                                   (FFVulkanPipeline *[2]){ &s->pl_hor, &s->pl_ver },
+                                   (FFVulkanShader *[2]){ &s->shd_hor, &s->shd_ver },
                                    out, tmp, in, s->sampler, NULL, 0));
 
     err = av_frame_copy_props(out, in);

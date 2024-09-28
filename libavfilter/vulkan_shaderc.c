@@ -22,7 +22,7 @@
 #include "vulkan_spirv.h"
 
 static int shdc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
-                               FFVkSPIRVShader *shd, uint8_t **data,
+                               FFVulkanShader *shd, uint8_t **data,
                                size_t *size, const char *entrypoint,
                                void **opaque)
 {
@@ -57,7 +57,7 @@ static int shdc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
 
     res = shaderc_compile_into_spv((shaderc_compiler_t)ctx->priv,
                                    shd->src.str, strlen(shd->src.str),
-                                   shdc_kind[shd->shader.stage],
+                                   shdc_kind[shd->stage],
                                    shd->name, entrypoint, opts);
     shaderc_compile_options_release(opts);
 
