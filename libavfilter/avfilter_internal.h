@@ -100,9 +100,8 @@ typedef struct FFFilterContext {
 
     avfilter_execute_func *execute;
 
-    // 1 when avfilter_init_*() was successfully called on this filter
-    // 0 otherwise
-    int initialized;
+    // AV_CLASS_STATE_FLAG_*
+    unsigned state_flags;
 } FFFilterContext;
 
 static inline FFFilterContext *fffilterctx(AVFilterContext *ctx)

@@ -159,7 +159,8 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
         src->outputs[srcpad]      || dst->inputs[dstpad])
         return AVERROR(EINVAL);
 
-    if (!fffilterctx(src)->initialized || !fffilterctx(dst)->initialized) {
+    if (!(fffilterctx(src)->state_flags & AV_CLASS_STATE_INITIALIZED) ||
+        !(fffilterctx(dst)->state_flags & AV_CLASS_STATE_INITIALIZED)) {
         av_log(src, AV_LOG_ERROR, "Filters must be initialized before linking.\n");
         return AVERROR(EINVAL);
     }
@@ -676,6 +677,7 @@ static const AVClass avfilter_class = {
     .child_next = filter_child_next,
     .child_class_iterate = filter_child_class_iterate,
     .option           = avfilter_options,
+    .state_flags_offset = offsetof(FFFilterContext, state_flags),
 };
 
 static int default_execute(AVFilterContext *ctx, avfilter_action_func *func, void *arg,
@@ -909,7 +911,7 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
     FFFilterContext *ctxi = fffilterctx(ctx);
     int ret = 0;
 
-    if (ctxi->initialized) {
+    if (ctxi->state_flags & AV_CLASS_STATE_INITIALIZED) {
         av_log(ctx, AV_LOG_ERROR, "Filter already initialized\n");
         return AVERROR(EINVAL);
     }
@@ -940,7 +942,7 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
             return ret;
     }
 
-    ctxi->initialized = 1;
+    ctxi->state_flags |= AV_CLASS_STATE_INITIALIZED;
 
     return 0;
 }
