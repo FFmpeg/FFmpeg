@@ -85,6 +85,15 @@ W_AVG_FUN(8)
 W_AVG_FUN(10)
 W_AVG_FUN(12)
 
+#define DMVR_FUN(fn, bd) \
+    void ff_vvc_dmvr_ ## fn ## bd ## _neon(int16_t *dst, \
+        const uint8_t *_src, ptrdiff_t _src_stride, int height, \
+        intptr_t mx, intptr_t my, int width);
+
+DMVR_FUN(hv_, 8)
+DMVR_FUN(hv_, 10)
+DMVR_FUN(hv_, 12)
+
 void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -157,6 +166,7 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
 
         c->inter.avg = ff_vvc_avg_8_neon;
         c->inter.w_avg = vvc_w_avg_8;
+        c->inter.dmvr[1][1] = ff_vvc_dmvr_hv_8_neon;
 
         for (int i = 0; i < FF_ARRAY_ELEMS(c->sao.band_filter); i++)
             c->sao.band_filter[i] = ff_h26x_sao_band_filter_8x8_8_neon;
@@ -198,12 +208,14 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
     } else if (bd == 10) {
         c->inter.avg = ff_vvc_avg_10_neon;
         c->inter.w_avg = vvc_w_avg_10;
+        c->inter.dmvr[1][1] = ff_vvc_dmvr_hv_10_neon;
 
         c->alf.filter[LUMA] = alf_filter_luma_10_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_10_neon;
     } else if (bd == 12) {
         c->inter.avg = ff_vvc_avg_12_neon;
         c->inter.w_avg = vvc_w_avg_12;
+        c->inter.dmvr[1][1] = ff_vvc_dmvr_hv_12_neon;
 
         c->alf.filter[LUMA] = alf_filter_luma_12_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_12_neon;
