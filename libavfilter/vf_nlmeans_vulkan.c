@@ -836,7 +836,7 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     }
 
     /* Execution context */
-    exec = ff_vk_exec_get(&s->e);
+    exec = ff_vk_exec_get(&s->vkctx, &s->e);
     ff_vk_exec_start(vkctx, exec);
 
     /* Dependencies */

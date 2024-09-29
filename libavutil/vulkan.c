@@ -482,11 +482,18 @@ VkResult ff_vk_exec_get_query(FFVulkanContext *s, FFVkExecContext *e,
                                    pool->qd_size, qf);
 }
 
-FFVkExecContext *ff_vk_exec_get(FFVkExecPool *pool)
+FFVkExecContext *ff_vk_exec_get(FFVulkanContext *s, FFVkExecPool *pool)
 {
-    uint32_t idx = pool->idx++;
-    idx %= pool->pool_size;
-    return &pool->contexts[idx];
+    FFVulkanFunctions *vk = &s->vkfn;
+    FFVkExecContext *e = &pool->contexts[pool->idx];
+
+    /* Check if last submission has already finished.
+     * If so, don't waste resources and reuse the same buffer. */
+    if (vk->GetFenceStatus(s->hwctx->act_dev, e->fence) == VK_SUCCESS)
+        return e;
+
+    pool->idx = (pool->idx + 1) % pool->pool_size;
+    return &pool->contexts[pool->idx];
 }
 
 void ff_vk_exec_wait(FFVulkanContext *s, FFVkExecContext *e)

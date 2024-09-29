@@ -339,7 +339,7 @@ static int vulkan_encode_issue(AVCodecContext *avctx,
                                          size_align);
 
     /* Start command buffer recording */
-    exec = vp->exec = ff_vk_exec_get(&ctx->enc_pool);
+    exec = vp->exec = ff_vk_exec_get(&ctx->s, &ctx->enc_pool);
     ff_vk_exec_start(&ctx->s, exec);
     cmd_buf = exec->buf;
 

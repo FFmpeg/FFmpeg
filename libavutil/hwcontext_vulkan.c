@@ -2253,7 +2253,7 @@ static int prepare_frame(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
     };
 
     VkCommandBuffer cmd_buf;
-    FFVkExecContext *exec = ff_vk_exec_get(ectx);
+    FFVkExecContext *exec = ff_vk_exec_get(&p->vkctx, ectx);
     cmd_buf = exec->buf;
     ff_vk_exec_start(&p->vkctx, exec);
 
@@ -3190,7 +3190,7 @@ static int vulkan_map_from_drm_frame_sync(AVHWFramesContext *hwfc, AVFrame *dst,
             }
         }
 
-        exec = ff_vk_exec_get(&fp->compute_exec);
+        exec = ff_vk_exec_get(&p->vkctx, &fp->compute_exec);
         cmd_buf = exec->buf;
 
         ff_vk_exec_start(&p->vkctx, exec);
@@ -4098,7 +4098,7 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
         }
     }
 
-    exec = ff_vk_exec_get(&fp->upload_exec);
+    exec = ff_vk_exec_get(&p->vkctx, &fp->upload_exec);
     cmd_buf = exec->buf;
 
     ff_vk_exec_start(&p->vkctx, exec);

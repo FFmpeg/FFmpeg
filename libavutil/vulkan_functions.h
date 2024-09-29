@@ -110,6 +110,7 @@ typedef enum FFVulkanExtensions {
     /* Fences */                                                                         \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateFence)                             \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              WaitForFences)                           \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              GetFenceStatus)                                        \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              ResetFences)                             \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroyFence)                            \
                                                                                          \

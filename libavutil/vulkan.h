@@ -387,7 +387,7 @@ void ff_vk_exec_pool_free(FFVulkanContext *s, FFVkExecPool *pool);
 /**
  * Retrieve an execution pool. Threadsafe.
  */
-FFVkExecContext *ff_vk_exec_get(FFVkExecPool *pool);
+FFVkExecContext *ff_vk_exec_get(FFVulkanContext *s, FFVkExecPool *pool);
 
 /**
  * Performs nb_queries queries and returns their results and statuses.

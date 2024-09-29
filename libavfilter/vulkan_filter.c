@@ -249,7 +249,7 @@ int ff_vk_filter_process_simple(FFVulkanContext *vkctx, FFVkExecPool *e,
     int nb_img_bar = 0;
 
     /* Update descriptors and init the exec context */
-    FFVkExecContext *exec = ff_vk_exec_get(e);
+    FFVkExecContext *exec = ff_vk_exec_get(vkctx, e);
     ff_vk_exec_start(vkctx, exec);
 
     RET(ff_vk_exec_add_dep_frame(vkctx, exec, out_f,
@@ -321,7 +321,7 @@ int ff_vk_filter_process_2pass(FFVulkanContext *vkctx, FFVkExecPool *e,
     int nb_img_bar = 0;
 
     /* Update descriptors and init the exec context */
-    FFVkExecContext *exec = ff_vk_exec_get(e);
+    FFVkExecContext *exec = ff_vk_exec_get(vkctx, e);
     ff_vk_exec_start(vkctx, exec);
 
     RET(ff_vk_exec_add_dep_frame(vkctx, exec, in,
@@ -409,7 +409,7 @@ int ff_vk_filter_process_Nin(FFVulkanContext *vkctx, FFVkExecPool *e,
     int nb_img_bar = 0;
 
     /* Update descriptors and init the exec context */
-    FFVkExecContext *exec = ff_vk_exec_get(e);
+    FFVkExecContext *exec = ff_vk_exec_get(vkctx, e);
     ff_vk_exec_start(vkctx, exec);
 
     /* Add deps and create temporary imageviews */

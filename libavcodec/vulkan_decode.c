@@ -293,7 +293,7 @@ void ff_vk_decode_flush(AVCodecContext *avctx)
     };
 
     VkCommandBuffer cmd_buf;
-    FFVkExecContext *exec = ff_vk_exec_get(&dec->exec_pool);
+    FFVkExecContext *exec = ff_vk_exec_get(&ctx->s, &dec->exec_pool);
     int had_submission = exec->had_submission;
     ff_vk_exec_start(&ctx->s, exec);
     cmd_buf = exec->buf;
@@ -345,7 +345,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
     size_t data_size = FFALIGN(vp->slices_size,
                                ctx->caps.minBitstreamBufferSizeAlignment);
 
-    FFVkExecContext *exec = ff_vk_exec_get(&dec->exec_pool);
+    FFVkExecContext *exec = ff_vk_exec_get(&ctx->s, &dec->exec_pool);
 
     /* The current decoding reference has to be bound as an inactive reference */
     VkVideoReferenceSlotInfoKHR *cur_vk_ref;
