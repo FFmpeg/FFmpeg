@@ -162,31 +162,11 @@ typedef struct FFVkExecContext {
     unsigned int frame_update_alloc_size;
 } FFVkExecContext;
 
-typedef struct FFVkExecPool {
-    FFVkExecContext *contexts;
-    atomic_int_least64_t idx;
-
-    VkCommandPool cmd_buf_pool;
-    VkCommandBuffer *cmd_bufs;
-    int pool_size;
-
-    VkQueryPool query_pool;
-    void *query_data;
-    int query_results;
-    int query_statuses;
-    int query_64bit;
-    int query_status_stride;
-    int nb_queries;
-    size_t qd_size;
-} FFVkExecPool;
-
 typedef struct FFVulkanDescriptorSet {
-    FFVkBuffer             buf;
-    uint8_t               *desc_mem;
-    VkDeviceSize           layout_size;
-    VkDeviceSize           aligned_size; /* descriptorBufferOffsetAlignment */
-    VkDeviceSize           total_size; /* Once registered to an exec context */
-    VkBufferUsageFlags     usage;
+    /* Descriptor buffer */
+    VkDeviceSize layout_size;
+    VkDeviceSize aligned_size; /* descriptorBufferOffsetAlignment */
+    VkBufferUsageFlags usage;
 
     VkDescriptorSetLayoutBinding *binding;
     VkDeviceSize *binding_offset;
@@ -225,22 +205,61 @@ typedef struct FFVulkanShader {
     VkPushConstantRange *push_consts;
     int push_consts_num;
 
+    /* Descriptor sets */
+    FFVulkanDescriptorSet *desc_set;
+    int nb_descriptor_sets;
+
     /* Descriptor buffer */
     VkDescriptorSetLayout *desc_layout;
-    FFVulkanDescriptorSet *desc_set;
-    VkDescriptorBufferBindingInfoEXT *desc_bind;
     uint32_t *bound_buffer_indices;
-    int nb_descriptor_sets;
 
     /* Descriptor pool */
     int use_push;
-    VkDescriptorSet *desc_sets;
-    VkDescriptorPool desc_pool;
     VkDescriptorPoolSize *desc_pool_size;
     int nb_desc_pool_size;
-    int total_desc_sets;
-    FFVkExecPool *assoc_pool;
 } FFVulkanShader;
+
+typedef struct FFVulkanDescriptorSetData {
+    /* Descriptor buffer */
+    FFVkBuffer buf;
+    uint8_t *desc_mem;
+} FFVulkanDescriptorSetData;
+
+typedef struct FFVulkanShaderData {
+    /* Shader to which this data belongs to */
+    FFVulkanShader *shd;
+    int nb_descriptor_sets;
+
+    /* Descriptor buffer */
+    FFVulkanDescriptorSetData *desc_set_buf;
+    VkDescriptorBufferBindingInfoEXT *desc_bind;
+
+    /* Descriptor pools */
+    VkDescriptorSet *desc_sets;
+    VkDescriptorPool desc_pool;
+} FFVulkanShaderData;
+
+typedef struct FFVkExecPool {
+    FFVkExecContext *contexts;
+    atomic_int_least64_t idx;
+
+    VkCommandPool cmd_buf_pool;
+    VkCommandBuffer *cmd_bufs;
+    int pool_size;
+
+    VkQueryPool query_pool;
+    void *query_data;
+    int query_results;
+    int query_statuses;
+    int query_64bit;
+    int query_status_stride;
+    int nb_queries;
+    size_t qd_size;
+
+    /* Registered shaders' data */
+    FFVulkanShaderData *reg_shd;
+    int nb_reg_shd;
+} FFVkExecPool;
 
 typedef struct FFVulkanContext {
     const AVClass *class;
