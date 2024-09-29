@@ -67,6 +67,7 @@ typedef struct FlashSVContext {
     unsigned        packet_size;
     int64_t         last_key_frame;
     uint8_t         tmpblock[3 * 256 * 256];
+    int             compression_level;
 } FlashSVContext;
 
 static int copy_region_enc(const uint8_t *sptr, uint8_t *dptr, int dx, int dy,
@@ -121,6 +122,10 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
     nb_blocks = h_blocks * v_blocks;
     s->packet_size = 4 + nb_blocks * (2 + 3 * BLOCK_WIDTH * BLOCK_HEIGHT);
 
+    s->compression_level = avctx->compression_level == FF_COMPRESSION_DEFAULT
+                         ? Z_DEFAULT_COMPRESSION
+                         : av_clip(avctx->compression_level, 0, 9);
+
     return 0;
 }
 
@@ -170,9 +175,10 @@ static int encode_bitstream(FlashSVContext *s, const AVFrame *p, uint8_t *buf,
                                   p->linesize[0], previous_frame);
 
             if (res || *I_frame) {
-                unsigned long zsize = 3 * block_width * block_height;
+                unsigned long zsize = 3 * block_width * block_height + 12;
                 ret = compress2(ptr + 2, &zsize, s->tmpblock,
-                                3 * cur_blk_width * cur_blk_height, 9);
+                                3 * cur_blk_width * cur_blk_height,
+                                s->compression_level);
 
                 if (ret != Z_OK)
                     av_log(s->avctx, AV_LOG_ERROR,
