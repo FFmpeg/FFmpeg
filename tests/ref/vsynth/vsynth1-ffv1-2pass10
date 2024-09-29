@@ -1,4 +1,4 @@
-48d69c54e68d4f1878e2371e8b3083ad *tests/data/fate/vsynth1-ffv1-2pass10.avi
-3972962 tests/data/fate/vsynth1-ffv1-2pass10.avi
-c31e6caada921ffa3daad3432ef3b754 *tests/data/fate/vsynth1-ffv1-2pass10.out.rawvideo
-stddev:    1.85 PSNR: 42.78 MAXDIFF:   29 bytes:  7603200/  7603200
+1093853767c7eff69cb235895de52c1e *tests/data/fate/vsynth1-ffv1-2pass10.avi
+2563110 tests/data/fate/vsynth1-ffv1-2pass10.avi
+4c9d3ec84a39f77860f92538c8e542ad *tests/data/fate/vsynth1-ffv1-2pass10.out.rawvideo
+stddev:    1.29 PSNR: 45.90 MAXDIFF:   21 bytes:  7603200/  7603200
