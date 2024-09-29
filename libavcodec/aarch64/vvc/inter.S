@@ -235,7 +235,7 @@ vvc_avg w_avg, 12
  * x5: intptr_t my
  * w6: int width
  */
-function ff_vvc_dmvr_hv_8_neon, export=1
+function ff_vvc_dmvr_8_neon, export=1
         dst             .req x0
         src             .req x1
         src_stride      .req x2
@@ -243,6 +243,91 @@ function ff_vvc_dmvr_hv_8_neon, export=1
         mx              .req x4
         my              .req x5
         width           .req w6
+
+        sxtw            x6, w6
+        mov             x7, #(VVC_MAX_PB_SIZE * 2 + 8)
+        cmp             width, #16
+        sub             src_stride, src_stride, x6
+        cset            w15, gt                     // width > 16
+        movi            v16.8h, #2                  // DMVR_SHIFT
+        sub             x7, x7, x6, lsl #1
+1:
+        cbz             w15, 2f
+        ldr             q0, [src], #16
+        uxtl            v1.8h, v0.8b
+        uxtl2           v2.8h, v0.16b
+        ushl            v1.8h, v1.8h, v16.8h
+        ushl            v2.8h, v2.8h, v16.8h
+        stp             q1, q2, [dst], #32
+        b               3f
+2:
+        ldr             d0, [src], #8
+        uxtl            v1.8h, v0.8b
+        ushl            v1.8h, v1.8h, v16.8h
+        str             q1, [dst], #16
+3:
+        subs            height, height, #1
+        ldr             s3, [src], #4
+        uxtl            v4.8h, v3.8b
+        ushl            v4.4h, v4.4h, v16.4h
+        st1             {v4.4h}, [dst], x7
+
+        add             src, src, src_stride
+        b.ne            1b
+
+        ret
+endfunc
+
+function ff_vvc_dmvr_12_neon, export=1
+        sxtw            x6, w6
+        mov             x7, #(VVC_MAX_PB_SIZE * 2 + 8)
+        cmp             width, #16
+        sub             src_stride, src_stride, x6, lsl #1
+        cset            w15, gt                     // width > 16
+        movi            v16.8h, #2                  // offset4
+        sub             x7, x7, x6, lsl #1
+1:
+        cbz             w15, 2f
+        ldp             q0, q1, [src], #32
+        uaddl           v2.4s, v0.4h, v16.4h
+        uaddl2          v3.4s, v0.8h, v16.8h
+        uaddl           v4.4s, v1.4h, v16.4h
+        uaddl2          v5.4s, v1.8h, v16.8h
+        ushr            v2.4s, v2.4s, #2
+        ushr            v3.4s, v3.4s, #2
+        ushr            v4.4s, v4.4s, #2
+        ushr            v5.4s, v5.4s, #2
+        uqxtn           v2.4h, v2.4s
+        uqxtn2          v2.8h, v3.4s
+        uqxtn           v4.4h, v4.4s
+        uqxtn2          v4.8h, v5.4s
+
+        stp             q2, q4, [dst], #32
+        b               3f
+2:
+        ldr             q0, [src], #16
+        uaddl           v2.4s, v0.4h, v16.4h
+        uaddl2          v3.4s, v0.8h, v16.8h
+        ushr            v2.4s, v2.4s, #2
+        ushr            v3.4s, v3.4s, #2
+        uqxtn           v2.4h, v2.4s
+        uqxtn2          v2.8h, v3.4s
+        str             q2, [dst], #16
+3:
+        subs            height, height, #1
+        ldr             d0, [src], #8
+        uaddl           v3.4s, v0.4h, v16.4h
+        ushr            v3.4s, v3.4s, #2
+        uqxtn           v3.4h, v3.4s
+        st1             {v3.4h}, [dst], x7
+
+        add             src, src, src_stride
+        b.ne            1b
+
+        ret
+endfunc
+
+function ff_vvc_dmvr_hv_8_neon, export=1
         tmp0            .req x7
         tmp1            .req x8
 
