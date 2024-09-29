@@ -1478,6 +1478,7 @@ int ff_vk_shader_init(FFVulkanContext *s, FFVulkanShader *shd, const char *name,
     /* Common utilities */
     GLSLC(0, #define IS_WITHIN(v1, v2) ((v1.x < v2.x) && (v1.y < v2.y))       );
     GLSLC(0,                                                                  );
+    GLSLC(0, #extension GL_EXT_scalar_block_layout : require                  );
     GLSLC(0, #extension GL_EXT_buffer_reference : require                     );
     GLSLC(0, #extension GL_EXT_buffer_reference2 : require                    );
 

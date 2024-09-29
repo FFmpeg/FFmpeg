@@ -1501,6 +1501,7 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     p->device_features_1_1.uniformAndStorageBuffer16BitAccess = dev_features_1_1.uniformAndStorageBuffer16BitAccess;
 
     p->device_features_1_2.timelineSemaphore = 1;
+    p->device_features_1_2.scalarBlockLayout = dev_features_1_2.scalarBlockLayout;
     p->device_features_1_2.bufferDeviceAddress = dev_features_1_2.bufferDeviceAddress;
     p->device_features_1_2.hostQueryReset = dev_features_1_2.hostQueryReset;
     p->device_features_1_2.storagePushConstant8 = dev_features_1_2.storagePushConstant8;
