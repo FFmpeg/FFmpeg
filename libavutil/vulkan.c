@@ -1598,6 +1598,47 @@ static int init_compute_pipeline(FFVulkanContext *s, FFVulkanShader *shd,
     return 0;
 }
 
+static int create_shader_object(FFVulkanContext *s, FFVulkanShader *shd,
+                                uint8_t *spirv, size_t spirv_len,
+                                const char *entrypoint)
+{
+    VkResult ret;
+    FFVulkanFunctions *vk = &s->vkfn;
+    size_t shader_size = 0;
+
+    VkShaderCreateInfoEXT shader_obj_create = {
+        .sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,
+        .flags = shd->subgroup_info.requiredSubgroupSize ?
+                 VK_SHADER_CREATE_REQUIRE_FULL_SUBGROUPS_BIT_EXT : 0x0,
+        .stage = shd->stage,
+        .nextStage = 0,
+        .codeType = VK_SHADER_CODE_TYPE_SPIRV_EXT,
+        .pCode = spirv,
+        .codeSize = spirv_len,
+        .pName = entrypoint,
+        .pSetLayouts = shd->desc_layout,
+        .setLayoutCount = shd->nb_descriptor_sets,
+        .pushConstantRangeCount = shd->push_consts_num,
+        .pPushConstantRanges = shd->push_consts,
+        .pSpecializationInfo = NULL,
+    };
+
+    ret = vk->CreateShadersEXT(s->hwctx->act_dev, 1, &shader_obj_create,
+                               s->hwctx->alloc, &shd->object);
+    if (ret != VK_SUCCESS) {
+        av_log(s, AV_LOG_ERROR, "Unable to create shader object: %s\n",
+               ff_vk_ret2str(ret));
+        return AVERROR_EXTERNAL;
+    }
+
+    if (vk->GetShaderBinaryDataEXT(s->hwctx->act_dev, shd->object,
+                                   &shader_size, NULL) == VK_SUCCESS)
+        av_log(s, AV_LOG_VERBOSE, "Shader %s size: %zu binary (%zu SPIR-V)\n",
+               shd->name, shader_size, spirv_len);
+
+    return 0;
+}
+
 static int init_descriptors(FFVulkanContext *s, FFVulkanShader *shd)
 {
     VkResult ret;
@@ -1687,7 +1728,11 @@ int ff_vk_shader_link(FFVulkanContext *s, FFVulkanShader *shd,
             shd->bound_buffer_indices[i] = i;
     }
 
-    {
+    if (s->extensions & FF_VK_EXT_SHADER_OBJECT) {
+        err = create_shader_object(s, shd, spirv, spirv_len, entrypoint);
+        if (err < 0)
+            return err;
+    } else {
         VkShaderModule mod;
         err = create_shader_module(s, shd, &mod, spirv, spirv_len);
         if (err < 0)
@@ -2178,8 +2223,12 @@ void ff_vk_exec_bind_shader(FFVulkanContext *s, FFVkExecContext *e,
     VkDeviceSize offsets[1024];
     FFVulkanShaderData *sd = get_shd_data(e, shd);
 
-    /* Bind pipeline */
-    vk->CmdBindPipeline(e->buf, shd->bind_point, shd->pipeline);
+    if (s->extensions & FF_VK_EXT_SHADER_OBJECT) {
+        VkShaderStageFlagBits stages = shd->stage;
+        vk->CmdBindShadersEXT(e->buf, 1, &stages, &shd->object);
+    } else {
+        vk->CmdBindPipeline(e->buf, shd->bind_point, shd->pipeline);
+    }
 
     if (sd->nb_descriptor_sets) {
         if (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) {
@@ -2213,6 +2262,8 @@ void ff_vk_shader_free(FFVulkanContext *s, FFVulkanShader *shd)
                                 s->hwctx->alloc);
 #endif
 
+    if (shd->object)
+        vk->DestroyShaderEXT(s->hwctx->act_dev, shd->object, s->hwctx->alloc);
     if (shd->pipeline)
         vk->DestroyPipeline(s->hwctx->act_dev, shd->pipeline, s->hwctx->alloc);
     if (shd->pipeline_layout)
