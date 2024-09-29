@@ -284,7 +284,7 @@ $(TARGET_SAMPLES)/hevc/mv_nuh_layer_id.bit|$\
 $(TARGET_SAMPLES)/hevc-conformance/NoOutPrior_B_Qualcomm_1.bit|$\
 $(TARGET_SAMPLES)/hevc-conformance/MVHEVCS_A.bit
 fate-hevc-mv-switch: CMD = framecrc -i "concat:$(INPUT)" -fps_mode passthrough -map 0:vidx:0 -map 0:vidx:1 -sws_flags +accurate_rnd+bitexact
-FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, CONCAT_PROTOCOL) += fate-hevc-mv-switch
+FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, SCALE_FILTER CONCAT_PROTOCOL) += fate-hevc-mv-switch
 
 # multiview stream, select view by position
 # (depends on Three Dimensional Reference Displays Information SEI)
