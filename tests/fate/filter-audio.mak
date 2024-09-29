@@ -420,7 +420,7 @@ fate-filter-atempo: REF = $(SAMPLES)/filter-reference/atempo.pcm
 
 fate-filter-crazychannels: tests/data/filtergraphs/crazychannels
 fate-filter-crazychannels: CMD = framecrc -auto_conversion_filters -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/crazychannels
-FATE_AFILTER-$(call FILTERFRAMECRC, SINE JOIN ATRIM CHANNELMAP CHANNELSPLIT) += fate-filter-crazychannels
+FATE_AFILTER-$(call FILTERFRAMECRC, ARESAMPLE SINE JOIN ATRIM CHANNELMAP CHANNELSPLIT) += fate-filter-crazychannels
 
 FATE_AFILTER-yes += fate-filter-formats
 fate-filter-formats: libavfilter/tests/formats$(EXESUF)
