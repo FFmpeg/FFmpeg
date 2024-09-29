@@ -138,7 +138,7 @@ fate-mov-mp4-chapters: CMD = transcode ogg $(TARGET_SAMPLES)/vorbis/vorbis_chapt
 
 FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call TRANSCODE, PNG, MP4 MOV, MJPEG_DECODER SCALE_FILTER) \
                           += fate-mov-cover-image
-fate-mov-cover-image: CMD = transcode mov $(TARGET_SAMPLES)/cover_art/Owner-iTunes_9.0.3.15.m4a mp4 "-map 0 -map 0:v -c:a copy -c:v:0 copy -filter:v:1 scale -c:v:1 png" "-map 0 -t 0.1 -c copy" "-show_entries stream_disposition=attached_pic:stream=index,codec_name"
+fate-mov-cover-image: CMD = transcode mov $(TARGET_SAMPLES)/cover_art/Owner-iTunes_9.0.3.15.m4a mp4 "-map 0 -map 0:v -c:a copy -c:v:0 copy -filter:v:1 scale -c:v:1 png -compression_level:v:1 0" "-map 0 -t 0.1 -c copy" "-show_entries stream_disposition=attached_pic:stream=index,codec_name"
 
 FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call TRANSCODE, TTML SUBRIP, MP4 MOV, SRT_DEMUXER TTML_MUXER) += fate-mov-mp4-ttml-stpp fate-mov-mp4-ttml-dfxp
 fate-mov-mp4-ttml-stpp: CMD = transcode srt $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt mp4 "-map 0:s -c:s ttml -time_base:s 1:1000" "-map 0 -c copy" "-of json -show_entries packet:stream=index,codec_type,codec_tag_string,codec_tag,codec_name,time_base,start_time,duration_ts,duration,nb_frames,nb_read_packets:stream_tags"

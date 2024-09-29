@@ -1,5 +1,5 @@
-54a8870d5d1e6cc4da28ae422aa70898 *tests/data/fate/mov-cover-image.mp4
-1011919 tests/data/fate/mov-cover-image.mp4
+ecc0c7b60d4b00a2f04367c2ecd402c2 *tests/data/fate/mov-cover-image.mp4
+2063262 tests/data/fate/mov-cover-image.mp4
 #extradata 0:        2, 0x00340022
 #tb 0: 1/44100
 #media_type 0: audio
@@ -20,7 +20,7 @@
 0,      -1088,      -1088,     1024,        6, 0x027e00e8, F=0x5
 0,        -64,        -64,     1024,        6, 0x027e00e8
 1,          0,          0,        0,    25441, 0xe82503b0
-2,          0,          0,        0,    32657, 0x080255d2
+2,          0,          0,        0,  1084000, 0x70fc8139
 0,        960,        960,     1024,        6, 0x027e00e8
 0,       1984,       1984,     1024,        6, 0x027e00e8
 0,       3008,       3008,     1024,        6, 0x027e00e8

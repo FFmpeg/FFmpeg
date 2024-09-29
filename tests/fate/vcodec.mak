@@ -190,7 +190,7 @@ fate-vsynth%-ffvhuff422p10left:  ENCOPTS = -c:v ffvhuff -pix_fmt yuv422p10le -pr
 fate-vsynth%-ffvhuff444p16:      ENCOPTS = -c:v ffvhuff -pix_fmt yuv444p16le -pred plane
 
 FATE_VCODEC_SCALE-$(call ENCDEC, FLASHSV, FLV) += flashsv
-fate-vsynth%-flashsv:            ENCOPTS = -sws_flags neighbor+full_chroma_int
+fate-vsynth%-flashsv:            ENCOPTS = -sws_flags neighbor+full_chroma_int -compression_level 0
 fate-vsynth%-flashsv:            DECOPTS = -sws_flags area
 fate-vsynth%-flashsv:            FMT     = flv
 
@@ -347,6 +347,7 @@ FATE_VCODEC_SCALE-$(call ENCDEC, MSRLE, AVI) += msrle
 fate-vsynth%-msrle:              CODEC   = msrle
 
 FATE_VCODEC_SCALE-$(call ENCDEC, PNG, AVI) += mpng
+fate-vsynth%-mpng:               ENCOPTS = -compression_level 0
 fate-vsynth%-mpng:               CODEC   = png
 
 FATE_VCODEC_SCALE-$(call ENCDEC, MSVIDEO1, AVI) += msvideo1
@@ -476,6 +477,7 @@ FATE_VCODEC-$(call ENCDEC, YUV4, AVI) += yuv4
 FATE_VCODEC_SCALE-$(call ENCDEC, Y41P, AVI) += y41p
 
 FATE_VCODEC_SCALE-$(call ENCDEC, ZLIB, AVI) += zlib
+fate-vsynth%-zlib:               ENCOPTS = -compression_level 0
 
 FATE_VCODEC-$(CONFIG_SCALE_FILTER) += $(FATE_VCODEC_SCALE-yes)
 FATE_VCODEC += $(FATE_VCODEC-yes)
