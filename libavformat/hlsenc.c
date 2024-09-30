@@ -1202,6 +1202,22 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls,
     return 0;
 }
 
+static int extract_segment_number(const char *filename) {
+    const char *dot = strrchr(filename, '.');
+    const char *num_start = dot - 1;
+
+    while (num_start > filename && *num_start >= '0' && *num_start <= '9') {
+        num_start--;
+    }
+
+    num_start++;
+
+    if (num_start == dot)
+        return -1;
+
+    return atoi(num_start);
+}
+
 static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs)
 {
     HLSContext *hls = s->priv_data;
@@ -1295,6 +1311,20 @@ static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs
                     goto fail;
                 }
                 ff_format_set_url(vs->avf, new_file);
+
+                if (vs->has_subtitle) {
+                    int vtt_index = extract_segment_number(line);
+                    const char *vtt_basename = av_basename(vs->vtt_basename);
+                    int len = strlen(vtt_basename) + 11;
+                    char *vtt_file = av_mallocz(len);
+                    if (!vtt_file) {
+                        ret = AVERROR(ENOMEM);
+                        goto fail;
+                    }
+                    snprintf(vtt_file, len, vtt_basename, vtt_index);
+                    ff_format_set_url(vs->vtt_avf, vtt_file);
+                }
+
                 is_segment = 0;
                 new_start_pos = avio_tell(vs->avf->pb);
                 vs->size = new_start_pos - vs->start_pos;
