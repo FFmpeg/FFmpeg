@@ -1234,14 +1234,26 @@ static int mov_read_wfex(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_clap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
+    HEIFItem *item;
     AVPacketSideData *sd;
+    int width, height;
     AVRational aperture_width, aperture_height, horiz_off, vert_off;
     AVRational pc_x, pc_y;
     uint64_t top, bottom, left, right;
 
-    if (c->fc->nb_streams < 1)
+    item = heif_cur_item(c);
+    st = get_curr_st(c);
+    if (!st)
         return 0;
-    st = c->fc->streams[c->fc->nb_streams-1];
+
+    width  = st->codecpar->width;
+    height = st->codecpar->height;
+    if ((!width || !height) && item) {
+        width  = item->width;
+        height = item->height;
+    }
+    if (!width || !height)
+        return AVERROR_INVALIDDATA;
 
     aperture_width.num  = avio_rb32(pb);
     aperture_width.den  = avio_rb32(pb);
@@ -1263,9 +1275,9 @@ static int mov_read_clap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
            aperture_width.num, aperture_width.den, aperture_height.num, aperture_height.den,
            horiz_off.num, horiz_off.den, vert_off.num, vert_off.den);
 
-    pc_x   = av_mul_q((AVRational) { st->codecpar->width  - 1, 1 }, (AVRational) { 1, 2 });
+    pc_x   = av_mul_q((AVRational) { width  - 1, 1 }, (AVRational) { 1, 2 });
     pc_x   = av_add_q(pc_x, horiz_off);
-    pc_y   = av_mul_q((AVRational) { st->codecpar->height - 1, 1 }, (AVRational) { 1, 2 });
+    pc_y   = av_mul_q((AVRational) { height - 1, 1 }, (AVRational) { 1, 2 });
     pc_y   = av_add_q(pc_y, vert_off);
 
     aperture_width  = av_sub_q(aperture_width,  (AVRational) { 1, 1 });
@@ -1278,18 +1290,18 @@ static int mov_read_clap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     top    = av_q2d(av_sub_q(pc_y, aperture_height));
     bottom = av_q2d(av_add_q(pc_y, aperture_height));
 
-    if (bottom > (st->codecpar->height - 1) ||
-        right  > (st->codecpar->width  - 1))
+    if (bottom > (height - 1) ||
+        right  > (width  - 1))
         return AVERROR_INVALIDDATA;
 
-    bottom = st->codecpar->height - 1 - bottom;
-    right  = st->codecpar->width  - 1 - right;
+    bottom = height - 1 - bottom;
+    right  = width  - 1 - right;
 
     if (!(left | right | top | bottom))
         return 0;
 
-    if ((left + right) >= st->codecpar->width ||
-        (top + bottom) >= st->codecpar->height)
+    if ((left + right) >= width ||
+        (top + bottom) >= height)
         return AVERROR_INVALIDDATA;
 
     sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
