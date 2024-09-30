@@ -189,29 +189,41 @@ static int mov_read_mac_string(MOVContext *c, AVIOContext *pb, int len,
 }
 
 /**
+ * Get the current item in the parsing process.
+ */
+static HEIFItem *heif_cur_item(MOVContext *c)
+{
+    HEIFItem *item = NULL;
+
+    for (int i = 0; i < c->nb_heif_item; i++) {
+        if (c->heif_item[i].item_id != c->cur_item_id)
+            continue;
+
+        item = &c->heif_item[i];
+        break;
+    }
+
+    return item;
+}
+
+/**
  * Get the current stream in the parsing process. This can either be the
  * latest stream added to the context, or the stream referenced by an item.
  */
 static AVStream *get_curr_st(MOVContext *c)
 {
     AVStream *st = NULL;
+    HEIFItem *item;
 
     if (c->fc->nb_streams < 1)
         return NULL;
 
-    for (int i = 0; i < c->nb_heif_item; i++) {
-        HEIFItem *item = &c->heif_item[i];
+    if (c->cur_item_id == -1)
+        return c->fc->streams[c->fc->nb_streams-1];
 
-        if (!item->st)
-            continue;
-        if (item->st->id != c->cur_item_id)
-            continue;
-
+    item = heif_cur_item(c);
+    if (item)
         st = item->st;
-        break;
-    }
-    if (!st && c->cur_item_id == -1)
-        st = c->fc->streams[c->fc->nb_streams-1];
 
     return st;
 }
@@ -8912,6 +8924,7 @@ static int mov_read_iref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 static int mov_read_ispe(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
+    HEIFItem *item;
     uint32_t width, height;
 
     avio_r8(pb);  /* version */
@@ -8922,12 +8935,10 @@ static int mov_read_ispe(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_log(c->fc, AV_LOG_TRACE, "ispe: item_id %d, width %u, height %u\n",
            c->cur_item_id, width, height);
 
-    for (int i = 0; i < c->nb_heif_item; i++) {
-        if (c->heif_item[i].item_id == c->cur_item_id) {
-            c->heif_item[i].width  = width;
-            c->heif_item[i].height = height;
-            break;
-        }
+    item = heif_cur_item(c);
+    if (item) {
+        item->width  = width;
+        item->height = height;
     }
 
     return 0;
