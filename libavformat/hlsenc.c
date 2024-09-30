@@ -1706,7 +1706,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
             }
         }
 
-        if (last)
+        if (last && !(hls->flags & HLS_OMIT_ENDLIST))
             ff_hls_write_end_list(hls->sub_m3u8_out);
 
     }
