@@ -520,6 +520,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
         avctx->slices > 1)
         s->version = FFMAX(s->version, 2);
 
+    if ((avctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2)) && s->ac == AC_GOLOMB_RICE) {
+        av_log(avctx, AV_LOG_ERROR, "2 Pass mode is not possible with golomb coding\n");
+        return AVERROR(EINVAL);
+    }
+
     // Unspecified level & slices, we choose version 1.2+ to ensure multithreaded decodability
     if (avctx->slices == 0 && avctx->level < 0 && avctx->width * avctx->height > 720*576)
         s->version = FFMAX(s->version, 2);
