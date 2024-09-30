@@ -2031,13 +2031,17 @@ static int mov_read_pcmc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
+    HEIFItem *item = NULL;
     char color_parameter_type[5] = { 0 };
     uint16_t color_primaries, color_trc, color_matrix;
     int ret;
 
     st = get_curr_st(c);
-    if (!st)
-        return 0;
+    if (!st) {
+        item = heif_cur_item(c);
+        if (!item)
+            return 0;
+    }
 
     ret = ffio_read_size(pb, color_parameter_type, 4);
     if (ret < 0)
@@ -2051,16 +2055,29 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     if (!strncmp(color_parameter_type, "prof", 4)) {
-        AVPacketSideData *sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
-                                                       &st->codecpar->nb_coded_side_data,
-                                                       AV_PKT_DATA_ICC_PROFILE,
-                                                       atom.size - 4, 0);
-        if (!sd)
-            return AVERROR(ENOMEM);
-        ret = ffio_read_size(pb, sd->data, atom.size - 4);
+        AVPacketSideData *sd;
+        uint8_t *icc_profile;
+        if (st) {
+            sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
+                                         &st->codecpar->nb_coded_side_data,
+                                         AV_PKT_DATA_ICC_PROFILE,
+                                         atom.size - 4, 0);
+            if (!sd)
+                return AVERROR(ENOMEM);
+            icc_profile = sd->data;
+        } else {
+            av_freep(&item->icc_profile);
+            icc_profile = item->icc_profile = av_malloc(atom.size - 4);
+            if (!icc_profile) {
+                item->icc_profile_size = 0;
+                return AVERROR(ENOMEM);
+            }
+            item->icc_profile_size = atom.size - 4;
+        }
+        ret = ffio_read_size(pb, icc_profile, atom.size - 4);
         if (ret < 0)
             return ret;
-    } else {
+    } else if (st) {
         color_primaries = avio_rb16(pb);
         color_trc = avio_rb16(pb);
         color_matrix = avio_rb16(pb);
@@ -9714,8 +9731,10 @@ static int mov_read_close(AVFormatContext *s)
 
     av_freep(&mov->aes_decrypt);
     av_freep(&mov->chapter_tracks);
-    for (i = 0; i < mov->nb_heif_item; i++)
+    for (i = 0; i < mov->nb_heif_item; i++) {
         av_freep(&mov->heif_item[i].name);
+        av_freep(&mov->heif_item[i].icc_profile);
+    }
     av_freep(&mov->heif_item);
     for (i = 0; i < mov->nb_heif_grid; i++) {
         av_freep(&mov->heif_grid[i].tile_id_list);
@@ -9861,6 +9880,20 @@ fail:
     return ret;
 }
 
+static int set_icc_profile_from_item(AVPacketSideData **coded_side_data, int *nb_coded_side_data,
+                                     const HEIFItem *item)
+{
+    AVPacketSideData *sd = av_packet_side_data_new(coded_side_data, nb_coded_side_data,
+                                                   AV_PKT_DATA_ICC_PROFILE,
+                                                   item->icc_profile_size, 0);
+    if (!sd)
+        return AVERROR(ENOMEM);
+
+    memcpy(sd->data, item->icc_profile, item->icc_profile_size);
+
+    return 0;
+}
+
 static int set_display_matrix_from_item(AVPacketSideData **coded_side_data, int *nb_coded_side_data,
                                         const HEIFItem *item)
 {
@@ -9914,6 +9947,13 @@ static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
     tile_grid->width  = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
     tile_grid->height = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
 
+    /* ICC profile */
+    if (item->icc_profile_size) {
+        int ret = set_icc_profile_from_item(&tile_grid->coded_side_data,
+                                            &tile_grid->nb_coded_side_data, item);
+        if (ret < 0)
+            return ret;
+    }
     /* rotation */
     if (item->rotation) {
         int ret = set_display_matrix_from_item(&tile_grid->coded_side_data,
@@ -10017,6 +10057,14 @@ static int read_image_iovl(AVFormatContext *s, const HEIFGrid *grid,
     if (item->rotation) {
         int ret = set_display_matrix_from_item(&tile_grid->coded_side_data,
                                                &tile_grid->nb_coded_side_data, item);
+        if (ret < 0)
+            return ret;
+    }
+
+    /* ICC profile */
+    if (item->icc_profile_size) {
+        int ret = set_icc_profile_from_item(&tile_grid->coded_side_data,
+                                            &tile_grid->nb_coded_side_data, item);
         if (ret < 0)
             return ret;
     }
