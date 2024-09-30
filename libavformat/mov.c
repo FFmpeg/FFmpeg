@@ -188,6 +188,10 @@ static int mov_read_mac_string(MOVContext *c, AVIOContext *pb, int len,
     return p - dst;
 }
 
+/**
+ * Get the current stream in the parsing process. This can either be the
+ * latest stream added to the context, or the stream referenced by an item.
+ */
 static AVStream *get_curr_st(MOVContext *c)
 {
     AVStream *st = NULL;
@@ -206,7 +210,7 @@ static AVStream *get_curr_st(MOVContext *c)
         st = item->st;
         break;
     }
-    if (!st)
+    if (!st && c->cur_item_id == -1)
         st = c->fc->streams[c->fc->nb_streams-1];
 
     return st;
