@@ -1236,7 +1236,7 @@ static int mov_read_clap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     AVStream *st;
     HEIFItem *item;
     AVPacketSideData *sd;
-    int width, height;
+    int width, height, err = 0;
     AVRational aperture_width, aperture_height, horiz_off, vert_off;
     AVRational pc_x, pc_y;
     uint64_t top, bottom, left, right;
@@ -1252,8 +1252,10 @@ static int mov_read_clap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         width  = item->width;
         height = item->height;
     }
-    if (!width || !height)
-        return AVERROR_INVALIDDATA;
+    if (!width || !height) {
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
 
     aperture_width.num  = avio_rb32(pb);
     aperture_width.den  = avio_rb32(pb);
@@ -1267,9 +1269,10 @@ static int mov_read_clap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (aperture_width.num  < 0 || aperture_width.den  < 0 ||
         aperture_height.num < 0 || aperture_height.den < 0 ||
-        horiz_off.den       < 0 || vert_off.den        < 0)
-        return AVERROR_INVALIDDATA;
-
+        horiz_off.den       < 0 || vert_off.den        < 0) {
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
     av_log(c->fc, AV_LOG_TRACE, "clap: apertureWidth %d/%d, apertureHeight %d/%d "
                                 "horizOff %d/%d vertOff %d/%d\n",
            aperture_width.num, aperture_width.den, aperture_height.num, aperture_height.den,
@@ -1291,8 +1294,10 @@ static int mov_read_clap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     bottom = av_q2d(av_add_q(pc_y, aperture_height));
 
     if (bottom > (height - 1) ||
-        right  > (width  - 1))
-        return AVERROR_INVALIDDATA;
+        right  > (width  - 1)) {
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
 
     bottom = height - 1 - bottom;
     right  = width  - 1 - right;
@@ -1301,8 +1306,10 @@ static int mov_read_clap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
 
     if ((left + right) >= width ||
-        (top + bottom) >= height)
-        return AVERROR_INVALIDDATA;
+        (top + bottom) >= height) {
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
 
     sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
                                  &st->codecpar->nb_coded_side_data,
@@ -1316,7 +1323,15 @@ static int mov_read_clap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     AV_WL32A(sd->data + 8,  left);
     AV_WL32A(sd->data + 12, right);
 
-    return 0;
+fail:
+    if (err < 0) {
+        int explode = !!(c->fc->error_recognition & AV_EF_EXPLODE);
+        av_log(c->fc, explode ? AV_LOG_ERROR : AV_LOG_WARNING, "Invalid clap box\n");
+        if (!explode)
+            err = 0;
+    }
+
+    return err;
 }
 
 /* This atom overrides any previously set aspect ratio */
