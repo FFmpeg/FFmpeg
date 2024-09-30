@@ -8994,6 +8994,25 @@ static int mov_read_irot(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_imir(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    HEIFItem *item;
+    int axis;
+
+    axis = avio_r8(pb) & 0x1;
+
+    av_log(c->fc, AV_LOG_TRACE, "imir: item_id %d, axis %u\n",
+           c->cur_item_id, axis);
+
+    item = heif_cur_item(c);
+    if (item) {
+        item->hflip =  axis;
+        item->vflip = !axis;
+    }
+
+    return 0;
+}
+
 static int mov_read_iprp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     typedef struct MOVAtoms {
@@ -9218,6 +9237,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('p','i','t','m'), mov_read_pitm },
 { MKTAG('e','v','c','C'), mov_read_glbl },
 { MKTAG('i','d','a','t'), mov_read_idat },
+{ MKTAG('i','m','i','r'), mov_read_imir },
 { MKTAG('i','r','e','f'), mov_read_iref },
 { MKTAG('i','s','p','e'), mov_read_ispe },
 { MKTAG('i','r','o','t'), mov_read_irot },
@@ -9922,6 +9942,7 @@ static int set_display_matrix_from_item(AVPacketSideData **coded_side_data, int 
      * av_display_rotation_set() expects its argument to be
      * oriented clockwise, so we need to negate it. */
     av_display_rotation_set(matrix, -item->rotation);
+    av_display_matrix_flip(matrix, item->hflip, item->vflip);
 
     return 0;
 }
@@ -9967,7 +9988,7 @@ static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
             return ret;
     }
     /* rotation */
-    if (item->rotation) {
+    if (item->rotation || item->hflip || item->vflip) {
         int ret = set_display_matrix_from_item(&tile_grid->coded_side_data,
                                                &tile_grid->nb_coded_side_data, item);
         if (ret < 0)
@@ -10066,7 +10087,7 @@ static int read_image_iovl(AVFormatContext *s, const HEIFGrid *grid,
     tile_grid->coded_height = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
 
     /* rotation */
-    if (item->rotation) {
+    if (item->rotation || item->hflip || item->vflip) {
         int ret = set_display_matrix_from_item(&tile_grid->coded_side_data,
                                                &tile_grid->nb_coded_side_data, item);
         if (ret < 0)
@@ -10283,7 +10304,7 @@ static int mov_read_header(AVFormatContext *s)
             if (item->item_id == mov->primary_item_id)
                 st->disposition |= AV_DISPOSITION_DEFAULT;
 
-            if (item->rotation) {
+            if (item->rotation || item->hflip || item->vflip) {
                 int ret = set_display_matrix_from_item(&st->codecpar->coded_side_data,
                                                        &st->codecpar->nb_coded_side_data, item);
                 if (ret < 0)
