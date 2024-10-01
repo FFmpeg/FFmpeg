@@ -1,0 +1,85 @@
+#extradata 0:      100, 0xee3e15e9
+#extradata 1:       99, 0xdaa315b8
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: hevc
+#dimensions 0: 1280x720
+#sar 0: 0/1
+#tb 1: 1/1
+#media_type 1: video
+#codec_id 1: hevc
+#dimensions 1: 128x72
+#sar 1: 0/1
+0,          0,          0,        1,   111554, 0xa0679859
+1,          0,          0,        1,     1667, 0xbe5c3b85
+[STREAM]
+index=0
+id=0x3ea
+DISPOSITION:default=1
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=0
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[SIDE_DATA]
+side_data_type=Frame Cropping
+crop_top=180
+crop_bottom=180
+crop_left=320
+crop_right=320
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Display Matrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[/STREAM]
+[STREAM]
+index=1
+id=0x3ed
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=0
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[SIDE_DATA]
+side_data_type=Display Matrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[/STREAM]
