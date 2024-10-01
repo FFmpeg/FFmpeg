@@ -127,9 +127,10 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    AVFilterLink *outlink = ctx->outputs[0];
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_RGBA,
         AV_PIX_FMT_NONE
@@ -137,7 +138,7 @@ static int query_formats(AVFilterContext *ctx)
     int ret;
 
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if ((ret = ff_formats_ref(fmts_list, &outlink->incfg.formats)) < 0)
+    if ((ret = ff_formats_ref(fmts_list, &cfg_out[0]->formats)) < 0)
         return ret;
 
     return 0;
@@ -482,7 +483,7 @@ const AVFilter ff_vf_drawgraph = {
     .uninit        = uninit,
     FILTER_INPUTS(drawgraph_inputs),
     FILTER_OUTPUTS(drawgraph_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
 
 #endif // CONFIG_DRAWGRAPH_FILTER
@@ -506,6 +507,6 @@ const AVFilter ff_avf_adrawgraph = {
     .uninit        = uninit,
     FILTER_INPUTS(adrawgraph_inputs),
     FILTER_OUTPUTS(drawgraph_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
 #endif // CONFIG_ADRAWGRAPH_FILTER
