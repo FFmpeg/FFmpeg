@@ -671,7 +671,9 @@ static int request_frame(AVFilterLink *outlink)
     return ff_filter_frame(outlink, frame);
 }
 
-static int qrencodesrc_query_formats(AVFilterContext *ctx)
+static int qrencodesrc_query_formats(const AVFilterContext *ctx,
+                                     AVFilterFormatsConfig **cfg_in,
+                                     AVFilterFormatsConfig **cfg_out)
 {
     enum AVPixelFormat pix_fmt;
     FFDrawContext draw;
@@ -686,7 +688,7 @@ static int qrencodesrc_query_formats(AVFilterContext *ctx)
             (ret = ff_add_format(&fmts, pix_fmt)) < 0)
             return ret;
 
-    return ff_set_common_formats(ctx, fmts);
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out, fmts);
 }
 
 static const AVFilterPad qrencodesrc_outputs[] = {
@@ -707,7 +709,7 @@ const AVFilter ff_vsrc_qrencodesrc = {
     .uninit        = uninit,
     .inputs        = NULL,
     FILTER_OUTPUTS(qrencodesrc_outputs),
-    FILTER_QUERY_FUNC(qrencodesrc_query_formats),
+    FILTER_QUERY_FUNC2(qrencodesrc_query_formats),
 };
 
 #endif // CONFIG_QRENCODESRC_FILTER
@@ -772,9 +774,11 @@ static int qrencode_config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int qrencode_query_formats(AVFilterContext *ctx)
+static int qrencode_query_formats(const AVFilterContext *ctx,
+                                  AVFilterFormatsConfig **cfg_in,
+                                  AVFilterFormatsConfig **cfg_out)
 {
-    return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out, ff_draw_supported_pixel_formats(0));
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
@@ -818,7 +822,7 @@ const AVFilter ff_vf_qrencode = {
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_vf_qrencode_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(qrencode_query_formats),
+    FILTER_QUERY_FUNC2(qrencode_query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
 
