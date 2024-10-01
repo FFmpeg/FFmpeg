@@ -246,9 +246,11 @@ static av_cold int color_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-static int color_query_formats(AVFilterContext *ctx)
+static int color_query_formats(const AVFilterContext *ctx,
+                               AVFilterFormatsConfig **cfg_in,
+                               AVFilterFormatsConfig **cfg_out)
 {
-    return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out, ff_draw_supported_pixel_formats(0));
 }
 
 static int color_config_props(AVFilterLink *inlink)
@@ -303,7 +305,7 @@ const AVFilter ff_vsrc_color = {
     .activate        = activate,
     .inputs          = NULL,
     FILTER_OUTPUTS(color_outputs),
-    FILTER_QUERY_FUNC(color_query_formats),
+    FILTER_QUERY_FUNC2(color_query_formats),
     .process_command = color_process_command,
 };
 
@@ -927,9 +929,11 @@ static av_cold int test2_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-static int test2_query_formats(AVFilterContext *ctx)
+static int test2_query_formats(const AVFilterContext *ctx,
+                               AVFilterFormatsConfig **cfg_in,
+                               AVFilterFormatsConfig **cfg_out)
 {
-    return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out, ff_draw_supported_pixel_formats(0));
 }
 
 static int test2_config_props(AVFilterLink *inlink)
@@ -964,7 +968,7 @@ const AVFilter ff_vsrc_testsrc2 = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_testsrc2_outputs),
-    FILTER_QUERY_FUNC(test2_query_formats),
+    FILTER_QUERY_FUNC2(test2_query_formats),
 };
 
 #endif /* CONFIG_TESTSRC2_FILTER */
@@ -1410,7 +1414,9 @@ static const enum AVPixelFormat smptebars_pix_fmts[] = {
     AV_PIX_FMT_NONE,
 };
 
-static int smptebars_query_formats(AVFilterContext *ctx)
+static int smptebars_query_formats(const AVFilterContext *ctx,
+                                   AVFilterFormatsConfig **cfg_in,
+                                   AVFilterFormatsConfig **cfg_out)
 {
     enum AVColorSpace csp;
     int ret;
@@ -1421,11 +1427,13 @@ static int smptebars_query_formats(AVFilterContext *ctx)
         csp = AVCOL_SPC_BT470BG;
     }
 
-    if ((ret = ff_set_common_color_spaces(ctx, ff_make_formats_list_singleton(csp))))
+    if ((ret = ff_set_common_color_spaces2(ctx, cfg_in, cfg_out,
+                                           ff_make_formats_list_singleton(csp))))
         return ret;
-    if ((ret = ff_set_common_color_ranges(ctx, ff_make_formats_list_singleton(AVCOL_RANGE_MPEG))))
+    if ((ret = ff_set_common_color_ranges2(ctx, cfg_in, cfg_out,
+                                           ff_make_formats_list_singleton(AVCOL_RANGE_MPEG))))
         return ret;
-    return ff_set_common_formats_from_list(ctx, smptebars_pix_fmts);
+    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, smptebars_pix_fmts);
 }
 
 AVFILTER_DEFINE_CLASS_EXT(palbars, "pal(75|100)bars", options);
@@ -1468,7 +1476,7 @@ const AVFilter ff_vsrc_pal75bars = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(smptebars_query_formats),
+    FILTER_QUERY_FUNC2(smptebars_query_formats),
 };
 
 #endif  /* CONFIG_PAL75BARS_FILTER */
@@ -1509,7 +1517,7 @@ const AVFilter ff_vsrc_pal100bars = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(smptebars_query_formats),
+    FILTER_QUERY_FUNC2(smptebars_query_formats),
 };
 
 #endif  /* CONFIG_PAL100BARS_FILTER */
@@ -1574,7 +1582,7 @@ const AVFilter ff_vsrc_smptebars = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(smptebars_query_formats),
+    FILTER_QUERY_FUNC2(smptebars_query_formats),
 };
 
 #endif  /* CONFIG_SMPTEBARS_FILTER */
@@ -1675,7 +1683,7 @@ const AVFilter ff_vsrc_smptehdbars = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(smptebars_query_formats),
+    FILTER_QUERY_FUNC2(smptebars_query_formats),
 };
 
 #endif  /* CONFIG_SMPTEHDBARS_FILTER */
@@ -2193,12 +2201,15 @@ static const enum AVPixelFormat zoneplate_pix_fmts[] = {
     AV_PIX_FMT_NONE,
 };
 
-static int zoneplate_query_formats(AVFilterContext *ctx)
+static int zoneplate_query_formats(const AVFilterContext *ctx,
+                                   AVFilterFormatsConfig **cfg_in,
+                                   AVFilterFormatsConfig **cfg_out)
 {
     int ret;
-    if ((ret = ff_set_common_color_ranges(ctx, ff_make_formats_list_singleton(AVCOL_RANGE_JPEG))))
+    if ((ret = ff_set_common_color_ranges2(ctx, cfg_in, cfg_out,
+                                           ff_make_formats_list_singleton(AVCOL_RANGE_JPEG))))
         return ret;
-    return ff_set_common_formats_from_list(ctx, zoneplate_pix_fmts);
+    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, zoneplate_pix_fmts);
 }
 
 static const AVFilterPad avfilter_vsrc_zoneplate_outputs[] = {
@@ -2219,7 +2230,7 @@ const AVFilter ff_vsrc_zoneplate = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_zoneplate_outputs),
-    FILTER_QUERY_FUNC(zoneplate_query_formats),
+    FILTER_QUERY_FUNC2(zoneplate_query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
