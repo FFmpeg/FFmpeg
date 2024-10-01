@@ -146,9 +146,10 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    AVFilterLink *outlink = ctx->outputs[0];
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_RGBA,
         AV_PIX_FMT_NONE
@@ -156,7 +157,7 @@ static int query_formats(AVFilterContext *ctx)
     int ret;
 
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if ((ret = ff_formats_ref(fmts_list, &outlink->incfg.formats)) < 0)
+    if ((ret = ff_formats_ref(fmts_list, &cfg_out[0]->formats)) < 0)
         return ret;
 
     return 0;
@@ -587,7 +588,7 @@ const AVFilter ff_vf_graphmonitor = {
     .activate      = activate,
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(graphmonitor_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .process_command = ff_filter_process_command,
 };
 
@@ -605,7 +606,7 @@ const AVFilter ff_avf_agraphmonitor = {
     .activate      = activate,
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(graphmonitor_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .process_command = ff_filter_process_command,
 };
 #endif // CONFIG_AGRAPHMONITOR_FILTER
