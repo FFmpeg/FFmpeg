@@ -564,7 +564,8 @@ static av_cold void sws_init_swscale(SwsContext *c)
                              &c->yuv2nv12cX, &c->yuv2packed1,
                              &c->yuv2packed2, &c->yuv2packedX, &c->yuv2anyX);
 
-    ff_sws_init_input_funcs(c);
+    ff_sws_init_input_funcs(c, &c->lumToYV12, &c->alpToYV12, &c->chrToYV12,
+                            &c->readLumPlanar, &c->readAlpPlanar, &c->readChrPlanar);
 
     if (c->srcBpc == 8) {
         if (c->dstBpc <= 14) {

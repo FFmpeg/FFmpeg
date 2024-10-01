@@ -988,7 +988,13 @@ void ff_get_unscaled_swscale_aarch64(SwsContext *c);
 
 void ff_sws_init_scale(SwsContext *c);
 
-void ff_sws_init_input_funcs(SwsContext *c);
+void ff_sws_init_input_funcs(SwsContext *c,
+                             planar1_YV12_fn *lumToYV12,
+                             planar1_YV12_fn *alpToYV12,
+                             planar2_YV12_fn *chrToYV12,
+                             planarX_YV12_fn *readLumPlanar,
+                             planarX_YV12_fn *readAlpPlanar,
+                             planarX2_YV12_fn *readChrPlanar);
 void ff_sws_init_output_funcs(SwsContext *c,
                               yuv2planar1_fn *yuv2plane1,
                               yuv2planarX_fn *yuv2planeX,
