@@ -1005,13 +1005,13 @@ static int activate(AVFilterContext *ctx)
     return ret;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    EBUR128Context *ebur128 = ctx->priv;
+    const EBUR128Context *ebur128 = ctx->priv;
     AVFilterFormats *formats;
-    AVFilterChannelLayouts *layouts;
-    AVFilterLink *inlink = ctx->inputs[0];
-    AVFilterLink *outlink = ctx->outputs[0];
+    int out_idx = 0;
     int ret;
 
     static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_NONE };
@@ -1020,27 +1020,17 @@ static int query_formats(AVFilterContext *ctx)
     /* set optional output video format */
     if (ebur128->do_video) {
         formats = ff_make_format_list(pix_fmts);
-        if ((ret = ff_formats_ref(formats, &outlink->incfg.formats)) < 0)
+        if ((ret = ff_formats_ref(formats, &cfg_out[0]->formats)) < 0)
             return ret;
-        outlink = ctx->outputs[1];
+        out_idx = 1;
     }
 
     /* set input and output audio formats
      * Note: ff_set_common_* functions are not used because they affect all the
      * links, and thus break the video format negotiation */
     formats = ff_make_format_list(sample_fmts);
-    if ((ret = ff_formats_ref(formats, &inlink->outcfg.formats)) < 0 ||
-        (ret = ff_formats_ref(formats, &outlink->incfg.formats)) < 0)
-        return ret;
-
-    layouts = ff_all_channel_layouts();
-    if ((ret = ff_channel_layouts_ref(layouts, &inlink->outcfg.channel_layouts)) < 0 ||
-        (ret = ff_channel_layouts_ref(layouts, &outlink->incfg.channel_layouts)) < 0)
-        return ret;
-
-    formats = ff_all_samplerates();
-    if ((ret = ff_formats_ref(formats, &inlink->outcfg.samplerates)) < 0 ||
-        (ret = ff_formats_ref(formats, &outlink->incfg.samplerates)) < 0)
+    if ((ret = ff_formats_ref(formats, &cfg_in[0]->formats)) < 0 ||
+        (ret = ff_formats_ref(formats, &cfg_out[out_idx]->formats)) < 0)
         return ret;
 
     return 0;
@@ -1128,7 +1118,7 @@ const AVFilter ff_af_ebur128 = {
     .activate      = activate,
     FILTER_INPUTS(ebur128_inputs),
     .outputs       = NULL,
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class    = &ebur128_class,
     .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
