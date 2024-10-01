@@ -22,7 +22,7 @@
 
 #include <stdatomic.h>
 
-#include "libavutil/executor.h"
+#include "libavcodec/executor.h"
 #include "libavutil/mem.h"
 #include "libavutil/thread.h"
 
@@ -55,7 +55,7 @@ typedef enum VVCTaskStage {
 typedef struct VVCTask {
     union {
         struct VVCTask *next;                //for executor debug only
-        AVTask task;
+        FFTask task;
     } u;
 
     VVCTaskStage stage;
@@ -109,7 +109,7 @@ static void add_task(VVCContext *s, VVCTask *t)
 
     atomic_fetch_add(&ft->nb_scheduled_tasks, 1);
 
-    av_executor_execute(s->executor, &t->u.task);
+    ff_executor_execute(s->executor, &t->u.task);
 }
 
 static void task_init(VVCTask *t, VVCTaskStage stage, VVCFrameContext *fc, const int rx, const int ry)
@@ -372,7 +372,7 @@ static int task_is_stage_ready(VVCTask *t, int add)
     return task_has_target_score(t, stage, score);
 }
 
-static int task_ready(const AVTask *_t, void *user_data)
+static int task_ready(const FFTask *_t, void *user_data)
 {
     VVCTask *t = (VVCTask*)_t;
 
@@ -385,7 +385,7 @@ static int task_ready(const AVTask *_t, void *user_data)
             return (a) < (b);               \
     } while (0)
 
-static int task_priority_higher(const AVTask *_a, const AVTask *_b)
+static int task_priority_higher(const FFTask *_a, const FFTask *_b)
 {
     const VVCTask *a = (const VVCTask*)_a;
     const VVCTask *b = (const VVCTask*)_b;
@@ -661,7 +661,7 @@ static void task_run_stage(VVCTask *t, VVCContext *s, VVCLocalContext *lc)
     return;
 }
 
-static int task_run(AVTask *_t, void *local_context, void *user_data)
+static int task_run(FFTask *_t, void *local_context, void *user_data)
 {
     VVCTask *t          = (VVCTask*)_t;
     VVCContext *s       = (VVCContext *)user_data;
@@ -683,21 +683,21 @@ static int task_run(AVTask *_t, void *local_context, void *user_data)
     return 0;
 }
 
-AVExecutor* ff_vvc_executor_alloc(VVCContext *s, const int thread_count)
+FFExecutor* ff_vvc_executor_alloc(VVCContext *s, const int thread_count)
 {
-    AVTaskCallbacks callbacks = {
+    FFTaskCallbacks callbacks = {
         s,
         sizeof(VVCLocalContext),
         task_priority_higher,
         task_ready,
         task_run,
     };
-    return av_executor_alloc(&callbacks, thread_count);
+    return ff_executor_alloc(&callbacks, thread_count);
 }
 
-void ff_vvc_executor_free(AVExecutor **e)
+void ff_vvc_executor_free(FFExecutor **e)
 {
-    av_executor_free(e);
+    ff_executor_free(e);
 }
 
 void ff_vvc_frame_thread_free(VVCFrameContext *fc)

@@ -25,8 +25,8 @@
 
 #include "dec.h"
 
-struct AVExecutor* ff_vvc_executor_alloc(VVCContext *s, int thread_count);
-void ff_vvc_executor_free(struct AVExecutor **e);
+struct FFExecutor* ff_vvc_executor_alloc(VVCContext *s, int thread_count);
+void ff_vvc_executor_free(struct FFExecutor **e);
 
 int ff_vvc_frame_thread_init(VVCFrameContext *fc);
 void ff_vvc_frame_thread_free(VVCFrameContext *fc);
