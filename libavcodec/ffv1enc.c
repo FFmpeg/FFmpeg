@@ -416,7 +416,7 @@ static int write_extradata(FFV1Context *f)
         if (f->version == 3) {
             f->micro_version = 4;
         } else if (f->version == 4)
-            f->micro_version = 2;
+            f->micro_version = 3;
         put_symbol(&c, state, f->micro_version, 0);
     }
 

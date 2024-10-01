@@ -187,10 +187,10 @@ static int decode_slice_header(const FFV1Context *f,
     if (sx > f->num_h_slices - sw || sy > f->num_v_slices - sh)
         return AVERROR_INVALIDDATA;
 
-    sc->slice_x      =  sx       * (int64_t)f->width  / f->num_h_slices;
-    sc->slice_y      =  sy       * (int64_t)f->height / f->num_v_slices;
-    sc->slice_width  = (sx + sw) * (int64_t)f->width  / f->num_h_slices - sc->slice_x;
-    sc->slice_height = (sy + sh) * (int64_t)f->height / f->num_v_slices - sc->slice_y;
+    sc->slice_x      =  ff_slice_coord(f, f->width , sx     , f->num_h_slices, f->chroma_h_shift);
+    sc->slice_y      =  ff_slice_coord(f, f->height, sy     , f->num_v_slices, f->chroma_v_shift);
+    sc->slice_width  =  ff_slice_coord(f, f->width , sx + sw, f->num_h_slices, f->chroma_h_shift) - sc->slice_x;
+    sc->slice_height =  ff_slice_coord(f, f->height, sy + sh, f->num_v_slices, f->chroma_v_shift) - sc->slice_y;
 
     av_assert0((unsigned)sc->slice_width  <= f->width &&
                 (unsigned)sc->slice_height <= f->height);

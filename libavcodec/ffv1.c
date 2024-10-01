@@ -126,6 +126,19 @@ int ff_need_new_slices(int width, int num_h_slices, int chroma_shift) {
     return width % mpw && (width - i) % mpw == 0;
 }
 
+int ff_slice_coord(const FFV1Context *f, int width, int sx, int num_h_slices, int chroma_shift) {
+    int mpw = 1<<chroma_shift;
+    int awidth = FFALIGN(width, mpw);
+
+    if (f->version < 4 || f->version == 4 && f->micro_version < 3)
+        return width * sx / num_h_slices;
+
+    sx = (2LL * awidth * sx + num_h_slices * mpw) / (2 * num_h_slices * mpw) * mpw;
+    if (sx == awidth)
+        sx = width;
+    return sx;
+}
+
 av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
 {
     int max_slice_count = f->num_h_slices * f->num_v_slices;
@@ -142,10 +155,10 @@ av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
         FFV1SliceContext *sc = &f->slices[i];
         int sx          = i % f->num_h_slices;
         int sy          = i / f->num_h_slices;
-        int sxs         = f->avctx->width  *  sx      / f->num_h_slices;
-        int sxe         = f->avctx->width  * (sx + 1) / f->num_h_slices;
-        int sys         = f->avctx->height *  sy      / f->num_v_slices;
-        int sye         = f->avctx->height * (sy + 1) / f->num_v_slices;
+        int sxs         = ff_slice_coord(f, f->avctx->width , sx    , f->num_h_slices, f->chroma_h_shift);
+        int sxe         = ff_slice_coord(f, f->avctx->width , sx + 1, f->num_h_slices, f->chroma_h_shift);
+        int sys         = ff_slice_coord(f, f->avctx->height, sy   ,  f->num_v_slices, f->chroma_v_shift);
+        int sye         = ff_slice_coord(f, f->avctx->height, sy + 1, f->num_v_slices, f->chroma_v_shift);
 
         sc->slice_width  = sxe - sxs;
         sc->slice_height = sye - sys;

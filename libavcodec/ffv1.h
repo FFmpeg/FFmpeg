@@ -177,6 +177,11 @@ void ff_ffv1_clear_slice_state(const FFV1Context *f, FFV1SliceContext *sc);
 int ff_ffv1_close(AVCodecContext *avctx);
 int ff_need_new_slices(int width, int num_h_slices, int chroma_shift);
 
+/**
+ * This is intended for both width and height
+ */
+int ff_slice_coord(const FFV1Context *f, int width, int sx, int num_h_slices, int chroma_shift);
+
 static av_always_inline int fold(int diff, int bits)
 {
     if (bits == 8)
