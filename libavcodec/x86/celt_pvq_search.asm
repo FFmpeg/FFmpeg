@@ -20,7 +20,6 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "config.asm"
 %include "libavutil/x86/x86util.asm"
 
 %ifdef __NASM_VER__
