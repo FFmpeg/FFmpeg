@@ -119,6 +119,13 @@ av_cold int ff_ffv1_init_slices_state(FFV1Context *f)
     return 0;
 }
 
+int ff_need_new_slices(int width, int num_h_slices, int chroma_shift) {
+    int mpw = 1<<chroma_shift;
+    int i = width * (int64_t)(num_h_slices - 1) / num_h_slices;
+
+    return width % mpw && (width - i) % mpw == 0;
+}
+
 av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
 {
     int max_slice_count = f->num_h_slices * f->num_v_slices;

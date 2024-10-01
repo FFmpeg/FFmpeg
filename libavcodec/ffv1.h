@@ -171,6 +171,7 @@ PlaneContext *ff_ffv1_planes_alloc(void);
 int ff_ffv1_allocate_initial_states(FFV1Context *f);
 void ff_ffv1_clear_slice_state(const FFV1Context *f, FFV1SliceContext *sc);
 int ff_ffv1_close(AVCodecContext *avctx);
+int ff_need_new_slices(int width, int num_h_slices, int chroma_shift);
 
 static av_always_inline int fold(int diff, int bits)
 {
