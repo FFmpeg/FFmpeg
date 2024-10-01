@@ -223,17 +223,12 @@ static av_cold void qsv_stack_uninit(AVFilterContext *ctx)
     av_freep(&sctx->qsv_param.ext_buf);
 }
 
-static int qsv_stack_query_formats(AVFilterContext *ctx)
-{
-    static const enum AVPixelFormat pixel_formats[] = {
-        AV_PIX_FMT_NV12,
-        AV_PIX_FMT_P010,
-        AV_PIX_FMT_QSV,
-        AV_PIX_FMT_NONE,
-    };
-
-    return ff_set_common_formats_from_list(ctx, pixel_formats);
-}
+static const enum AVPixelFormat qsv_stack_pix_fmts[] = {
+    AV_PIX_FMT_NV12,
+    AV_PIX_FMT_P010,
+    AV_PIX_FMT_QSV,
+    AV_PIX_FMT_NONE,
+};
 
 #include "stack_internal.c"
 

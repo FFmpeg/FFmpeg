@@ -220,15 +220,10 @@ static av_cold void vaapi_stack_uninit(AVFilterContext *avctx)
     av_freep(&sctx->rects);
 }
 
-static int vaapi_stack_query_formats(AVFilterContext *avctx)
-{
-    static const enum AVPixelFormat pixel_formats[] = {
-        AV_PIX_FMT_VAAPI,
-        AV_PIX_FMT_NONE,
-    };
-
-    return ff_set_common_formats_from_list(avctx, pixel_formats);
-}
+static const enum AVPixelFormat vaapi_stack_pix_fmts[] = {
+    AV_PIX_FMT_VAAPI,
+    AV_PIX_FMT_NONE,
+};
 
 #include "stack_internal.c"
 

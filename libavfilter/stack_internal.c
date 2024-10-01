@@ -350,7 +350,7 @@ static const AVFilterPad stack_outputs[] = {
         .init           = api##_stack_init,                             \
         .uninit         = api##_stack_uninit,                           \
         .activate       = stack_activate,                               \
-        FILTER_QUERY_FUNC(api##_stack_query_formats),                   \
+        FILTER_PIXFMTS_ARRAY(api ## _stack_pix_fmts),                   \
         FILTER_OUTPUTS(stack_outputs),                                  \
         .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,                 \
         .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS | filter_flags,  \
