@@ -873,6 +873,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
                     continue;
                 if (maxw * maxh * (int64_t)(s->bits_per_raw_sample+1) * plane_count > 8<<24)
                     continue;
+                if (s->version < 4)
+                    if (  ff_need_new_slices(avctx->width , s->num_h_slices, s->chroma_h_shift)
+                        ||ff_need_new_slices(avctx->height, s->num_v_slices, s->chroma_v_shift))
+                        continue;
                 if (avctx->slices == s->num_h_slices * s->num_v_slices && avctx->slices <= MAX_SLICES || !avctx->slices)
                     goto slices_ok;
             }
