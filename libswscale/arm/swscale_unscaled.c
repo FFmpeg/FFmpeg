@@ -34,9 +34,9 @@ extern void rgbx_to_nv12_neon_16(const uint8_t *src, uint8_t *y, uint8_t *chroma
                 int y_stride, int c_stride, int src_stride,
                 int32_t coeff_tbl[9]);
 
-static int rgbx_to_nv12_neon_32_wrapper(SwsContext *context, const uint8_t *src[],
-                        int srcStride[], int srcSliceY, int srcSliceH,
-                        uint8_t *dst[], int dstStride[]) {
+static int rgbx_to_nv12_neon_32_wrapper(SwsContext *context, const uint8_t *const src[],
+                        const int srcStride[], int srcSliceY, int srcSliceH,
+                        uint8_t *const dst[], const int dstStride[]) {
 
     rgbx_to_nv12_neon_32(src[0] + srcSliceY * srcStride[0],
             dst[0] + srcSliceY * dstStride[0],
@@ -48,9 +48,9 @@ static int rgbx_to_nv12_neon_32_wrapper(SwsContext *context, const uint8_t *src[
     return 0;
 }
 
-static int rgbx_to_nv12_neon_16_wrapper(SwsContext *context, const uint8_t *src[],
-                        int srcStride[], int srcSliceY, int srcSliceH,
-                        uint8_t *dst[], int dstStride[]) {
+static int rgbx_to_nv12_neon_16_wrapper(SwsContext *context, const uint8_t *const src[],
+                        const int srcStride[], int srcSliceY, int srcSliceH,
+                        uint8_t *const dst[], int dstStride[]) {
 
     rgbx_to_nv12_neon_16(src[0] + srcSliceY * srcStride[0],
             dst[0] + srcSliceY * dstStride[0],
@@ -78,9 +78,10 @@ int ff_##ifmt##_to_##ofmt##_neon(int w, int h,                                  
                                  int y_offset,                                              \
                                  int y_coeff);                                              \
                                                                                             \
-static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *src[],             \
-                                           int srcStride[], int srcSliceY, int srcSliceH,   \
-                                           uint8_t *dst[], int dstStride[]) {               \
+static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *const src[],       \
+                                           const int srcStride[], int srcSliceY,            \
+                                           int srcSliceH, uint8_t *const dst[],             \
+                                           const int dstStride[]) {                         \
     const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
                                                                                             \
     ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                        \
@@ -113,9 +114,10 @@ int ff_##ifmt##_to_##ofmt##_neon(int w, int h,                                  
                                  int y_offset,                                              \
                                  int y_coeff);                                              \
                                                                                             \
-static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *src[],             \
-                                           int srcStride[], int srcSliceY, int srcSliceH,   \
-                                           uint8_t *dst[], int dstStride[]) {               \
+static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *const src[],       \
+                                           const int srcStride[], int srcSliceY,            \
+                                           int srcSliceH, uint8_t *const dst[],             \
+                                           const int dstStride[]) {                         \
     const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
                                                                                             \
     ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                        \

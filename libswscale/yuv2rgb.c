@@ -135,9 +135,9 @@ const int *sws_getCoefficients(int colorspace)
     dst2_##l[2 * i + 1] = r[Y];
 
 #define YUV2RGBFUNC(func_name, dst_type, alpha, yuv422, nb_dst_planes)      \
-    static int func_name(SwsContext *c, const uint8_t *src[],               \
-                         int srcStride[], int srcSliceY, int srcSliceH,     \
-                         uint8_t *dst[], int dstStride[])                   \
+    static int func_name(SwsContext *c, const uint8_t *const src[],         \
+                         const int srcStride[], int srcSliceY, int srcSliceH, \
+                         uint8_t *const dst[], const int dstStride[])       \
     {                                                                       \
         int y;                                                              \
                                                                             \

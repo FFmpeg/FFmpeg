@@ -96,9 +96,9 @@ typedef struct RangeList {
 
 int ff_range_add(RangeList *r, unsigned int start, unsigned int len);
 
-typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t *src[],
-                       int srcStride[], int srcSliceY, int srcSliceH,
-                       uint8_t *dst[], int dstStride[]);
+typedef int (*SwsFunc)(struct SwsContext *c, const uint8_t *const src[],
+                       const int srcStride[], int srcSliceY, int srcSliceH,
+                       uint8_t *const dst[], const int dstStride[]);
 
 /**
  * Write one line of horizontally scaled data to planar output
@@ -1005,9 +1005,9 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
                             int dstWidth, const uint8_t *src1,
                             const uint8_t *src2, int srcW, int xInc);
 
-int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
-                          int srcStride[], int srcSliceY, int srcSliceH,
-                          uint8_t *dst[], int dstStride[]);
+int ff_sws_alphablendaway(SwsContext *c, const uint8_t *const src[],
+                          const int srcStride[], int srcSliceY, int srcSliceH,
+                          uint8_t *const dst[], const int dstStride[]);
 
 void ff_copyPlane(const uint8_t *src, int srcStride,
                   int srcSliceY, int srcSliceH, int width,

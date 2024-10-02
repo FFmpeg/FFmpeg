@@ -253,7 +253,7 @@ static void BAYER_RENAME(rgb48_interpolate)(const uint8_t *src, int src_stride, 
     }
 }
 
-static void BAYER_RENAME(yv12_copy)(const uint8_t *src, int src_stride, uint8_t *dstY, uint8_t *dstU, uint8_t *dstV, int luma_stride, int width, int32_t *rgb2yuv)
+static void BAYER_RENAME(yv12_copy)(const uint8_t *src, int src_stride, uint8_t *dstY, uint8_t *dstU, uint8_t *dstV, int luma_stride, int width, const int32_t *rgb2yuv)
 {
     uint8_t dst[12];
     const int dst_stride = 6;
@@ -268,7 +268,7 @@ static void BAYER_RENAME(yv12_copy)(const uint8_t *src, int src_stride, uint8_t 
     }
 }
 
-static void BAYER_RENAME(yv12_interpolate)(const uint8_t *src, int src_stride, uint8_t *dstY, uint8_t *dstU, uint8_t *dstV, int luma_stride, int width, int32_t *rgb2yuv)
+static void BAYER_RENAME(yv12_interpolate)(const uint8_t *src, int src_stride, uint8_t *dstY, uint8_t *dstU, uint8_t *dstV, int luma_stride, int width, const int32_t *rgb2yuv)
 {
     uint8_t dst[12];
     const int dst_stride = 6;

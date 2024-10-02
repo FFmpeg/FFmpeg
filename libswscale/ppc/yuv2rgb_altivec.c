@@ -295,9 +295,9 @@ static inline vector unsigned char vec_xl(signed long long offset, const ubyte *
 #endif /* !HAVE_VSX */
 
 #define DEFCSP420_CVT(name, out_pixels)                                       \
-static int altivec_ ## name(SwsContext *c, const unsigned char **in,          \
-                            int *instrides, int srcSliceY, int srcSliceH,     \
-                            unsigned char **oplanes, int *outstrides)         \
+static int altivec_ ## name(SwsContext *c, const unsigned char *const *in,    \
+                            const int *instrides, int srcSliceY, int srcSliceH,   \
+                            unsigned char *const *oplanes, const int *outstrides) \
 {                                                                             \
     int w = c->srcW;                                                          \
     int h = srcSliceH;                                                        \
@@ -471,9 +471,9 @@ static const vector unsigned char
 /*
  * this is so I can play live CCIR raw video
  */
-static int altivec_uyvy_rgb32(SwsContext *c, const unsigned char **in,
-                              int *instrides, int srcSliceY, int srcSliceH,
-                              unsigned char **oplanes, int *outstrides)
+static int altivec_uyvy_rgb32(SwsContext *c, const unsigned char *const *in,
+                              const int *instrides, int srcSliceY, int srcSliceH,
+                              unsigned char *const *oplanes, const int *outstrides)
 {
     int w = c->srcW;
     int h = srcSliceH;

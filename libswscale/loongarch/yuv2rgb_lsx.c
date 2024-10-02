@@ -113,9 +113,9 @@
 }
 
 #define YUV2RGBFUNC(func_name, dst_type, alpha)                                     \
-           int func_name(SwsContext *c, const uint8_t *src[],                       \
-                         int srcStride[], int srcSliceY, int srcSliceH,             \
-                         uint8_t *dst[], int dstStride[])                           \
+           int func_name(SwsContext *c, const uint8_t *const src[],                 \
+                         const int srcStride[], int srcSliceY, int srcSliceH,       \
+                         uint8_t *const dst[], const int dstStride[])               \
 {                                                                                   \
     int x, y, h_size, vshift, res;                                                  \
     __m128i m_y1, m_y2, m_u, m_v;                                                   \
@@ -142,9 +142,9 @@
         for(x = 0; x < h_size; x++) {                                               \
 
 #define YUV2RGBFUNC32(func_name, dst_type, alpha)                                   \
-           int func_name(SwsContext *c, const uint8_t *src[],                       \
-                         int srcStride[], int srcSliceY, int srcSliceH,             \
-                         uint8_t *dst[], int dstStride[])                           \
+           int func_name(SwsContext *c, const uint8_t *const src[],                 \
+                         const int srcStride[], int srcSliceY, int srcSliceH,       \
+                         uint8_t *const dst[], const int dstStride[])               \
 {                                                                                   \
     int x, y, h_size, vshift, res;                                                  \
     __m128i m_y1, m_y2, m_u, m_v;                                                   \
