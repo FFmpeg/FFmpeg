@@ -241,7 +241,7 @@ static int decode_slice_header(const FFV1Context *f,
     if (f->version > 3) {
         sc->slice_reset_contexts = get_rac(c, state);
         sc->slice_coding_mode = get_symbol(c, state, 0);
-        if (sc->slice_coding_mode != 1) {
+        if (sc->slice_coding_mode != 1 && f->colorspace == 1) {
             sc->slice_rct_by_coef = get_symbol(c, state, 0);
             sc->slice_rct_ry_coef = get_symbol(c, state, 0);
             if ((uint64_t)sc->slice_rct_by_coef + (uint64_t)sc->slice_rct_ry_coef > 4) {
