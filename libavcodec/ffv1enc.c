@@ -954,7 +954,7 @@ static void encode_slice_header(FFV1Context *f, FFV1SliceContext *sc)
         if (sc->slice_coding_mode == 1)
             ff_ffv1_clear_slice_state(f, sc);
         put_symbol(c, state, sc->slice_coding_mode, 0);
-        if (sc->slice_coding_mode != 1) {
+        if (sc->slice_coding_mode != 1 && f->colorspace == 1) {
             put_symbol(c, state, sc->slice_rct_by_coef, 0);
             put_symbol(c, state, sc->slice_rct_ry_coef, 0);
         }
@@ -1070,7 +1070,7 @@ static int encode_slice(AVCodecContext *c, void *arg)
                                 p->data[3] ? p->data[3] + ps*x + y*p->linesize[3] : NULL};
 
     sc->slice_coding_mode = 0;
-    if (f->version > 3) {
+    if (f->version > 3 && f->colorspace == 1) {
         choose_rct_params(f, sc, planes, p->linesize, width, height);
     } else {
         sc->slice_rct_by_coef = 1;
