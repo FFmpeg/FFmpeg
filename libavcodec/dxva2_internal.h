@@ -171,11 +171,15 @@ void ff_dxva2_h264_fill_picture_parameters(const AVCodecContext *avctx, AVDXVACo
 
 void ff_dxva2_h264_fill_scaling_lists(const AVCodecContext *avctx, AVDXVAContext *ctx, DXVA_Qmatrix_H264 *qm);
 
+#if CONFIG_HEVC_D3D12VA_HWACCEL || CONFIG_HEVC_D3D11VA_HWACCEL || CONFIG_HEVC_D3D11VA2_HWACCEL || CONFIG_HEVC_DXVA2_HWACCEL
 void ff_dxva2_hevc_fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *ctx, DXVA_PicParams_HEVC *pp);
 
 void ff_dxva2_hevc_fill_scaling_lists(const AVCodecContext *avctx, AVDXVAContext *ctx, DXVA_Qmatrix_HEVC *qm);
+#endif
 
+#if CONFIG_VP9_D3D12VA_HWACCEL || CONFIG_VP9_D3D11VA_HWACCEL || CONFIG_VP9_D3D11VA2_HWACCEL || CONFIG_VP9_DXVA2_HWACCEL
 int ff_dxva2_vp9_fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *ctx, DXVA_PicParams_VP9 *pp);
+#endif
 
 #if CONFIG_AV1_D3D12VA_HWACCEL || CONFIG_AV1_D3D11VA_HWACCEL || CONFIG_AV1_D3D11VA2_HWACCEL || CONFIG_AV1_DXVA2_HWACCEL
 int ff_dxva2_av1_fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *ctx, DXVA_PicParams_AV1 *pp);
