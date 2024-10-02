@@ -64,7 +64,7 @@
 
 #define RETCODE_USE_CASCADE -12345
 
-struct SwsContext;
+typedef struct SwsContext SwsContext;
 
 typedef enum SwsDither {
     SWS_DITHER_NONE = 0,
@@ -96,7 +96,7 @@ typedef struct RangeList {
 
 int ff_range_add(RangeList *r, unsigned int start, unsigned int len);
 
-typedef int (*SwsFunc)(struct SwsContext *c, const uint8_t *const src[],
+typedef int (*SwsFunc)(SwsContext *c, const uint8_t *const src[],
                        const int srcStride[], int srcSliceY, int srcSliceH,
                        uint8_t *const dst[], const int dstStride[]);
 
@@ -296,7 +296,7 @@ struct SwsSlice;
 struct SwsFilterDescriptor;
 
 /* This struct should be aligned on at least a 32-byte boundary. */
-typedef struct SwsContext {
+struct SwsContext {
     /**
      * info on struct for av_log
      */
@@ -680,7 +680,7 @@ typedef struct SwsContext {
     atomic_int   data_unaligned_warned;
 
     Half2FloatTables *h2f_tables;
-} SwsContext;
+};
 //FIXME check init (where 0)
 
 SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c);
