@@ -41,6 +41,14 @@ static int shdc_shader_compile(FFVulkanContext *s, FFVkSPIRVCompiler *ctx,
         [VK_SHADER_STAGE_VERTEX_BIT]   = shaderc_glsl_vertex_shader,
         [VK_SHADER_STAGE_FRAGMENT_BIT] = shaderc_glsl_fragment_shader,
         [VK_SHADER_STAGE_COMPUTE_BIT]  = shaderc_glsl_compute_shader,
+        [VK_SHADER_STAGE_MESH_BIT_EXT] = shaderc_mesh_shader,
+        [VK_SHADER_STAGE_TASK_BIT_EXT] = shaderc_task_shader,
+        [VK_SHADER_STAGE_RAYGEN_BIT_KHR] = shaderc_raygen_shader,
+        [VK_SHADER_STAGE_ANY_HIT_BIT_KHR] = shaderc_anyhit_shader,
+        [VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR] = shaderc_closesthit_shader,
+        [VK_SHADER_STAGE_MISS_BIT_KHR] = shaderc_miss_shader,
+        [VK_SHADER_STAGE_INTERSECTION_BIT_KHR] = shaderc_intersection_shader,
+        [VK_SHADER_STAGE_CALLABLE_BIT_KHR] = shaderc_callable_shader,
     };
 
     shaderc_compile_options_t opts = shaderc_compile_options_initialize();
@@ -49,11 +57,17 @@ static int shdc_shader_compile(FFVulkanContext *s, FFVkSPIRVCompiler *ctx,
         return AVERROR(ENOMEM);
 
     shaderc_compile_options_set_target_env(opts, shaderc_target_env_vulkan,
-                                           shaderc_env_version_vulkan_1_2);
-    shaderc_compile_options_set_target_spirv(opts, shaderc_spirv_version_1_5);
-    shaderc_compile_options_set_generate_debug_info(opts);
-    shaderc_compile_options_set_optimization_level(opts,
-                                                   shaderc_optimization_level_performance);
+                                           shaderc_env_version_vulkan_1_3);
+    shaderc_compile_options_set_target_spirv(opts, shaderc_spirv_version_1_6);
+
+    if (s->extensions & FF_VK_EXT_DEBUG_UTILS) {
+        shaderc_compile_options_set_generate_debug_info(opts);
+        shaderc_compile_options_set_optimization_level(opts,
+                                                       shaderc_optimization_level_zero);
+    } else {
+        shaderc_compile_options_set_optimization_level(opts,
+                                                       shaderc_optimization_level_performance);
+    }
 
     res = shaderc_compile_into_spv((shaderc_compiler_t)ctx->priv,
                                    shd->src.str, strlen(shd->src.str),
