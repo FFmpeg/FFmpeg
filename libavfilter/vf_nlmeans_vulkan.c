@@ -402,7 +402,7 @@ static av_cold int init_weights_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
 
     GLSLC(0, }                                                                   );
 
-    RET(spv->compile_shader(spv, vkctx, shd, &spv_data, &spv_len, "main", &spv_opaque));
+    RET(spv->compile_shader(vkctx, spv, shd, &spv_data, &spv_len, "main", &spv_opaque));
     RET(ff_vk_shader_link(vkctx, shd, spv_data, spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(vkctx, exec, shd));
@@ -553,7 +553,7 @@ static av_cold int init_denoise_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
     GLSLC(1, imageStore(output_img[plane], pos, r);                           );
     GLSLC(0, }                                                                );
 
-    RET(spv->compile_shader(spv, vkctx, shd, &spv_data, &spv_len, "main", &spv_opaque));
+    RET(spv->compile_shader(vkctx, spv, shd, &spv_data, &spv_len, "main", &spv_opaque));
     RET(ff_vk_shader_link(vkctx, shd, spv_data, spv_len, "main"));
 
     RET(ff_vk_shader_register_exec(vkctx, exec, shd));

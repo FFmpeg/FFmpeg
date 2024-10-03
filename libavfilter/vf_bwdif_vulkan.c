@@ -244,7 +244,7 @@ static av_cold int init_filter(AVFilterContext *ctx)
 
     GLSLC(0, }                                                                     );
 
-    RET(spv->compile_shader(spv, ctx, &s->shd, &spv_data, &spv_len, "main",
+    RET(spv->compile_shader(vkctx, spv, &s->shd, &spv_data, &spv_len, "main",
                             &spv_opaque));
     RET(ff_vk_shader_link(vkctx, &s->shd, spv_data, spv_len, "main"));
 

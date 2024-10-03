@@ -136,7 +136,7 @@ static const glslang_resource_t glslc_resource_limits = {
     }
 };
 
-static int glslc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
+static int glslc_shader_compile(FFVulkanContext *s, FFVkSPIRVCompiler *ctx,
                                 FFVulkanShader *shd, uint8_t **data,
                                 size_t *size, const char *entrypoint,
                                 void **opaque)
@@ -183,8 +183,8 @@ static int glslc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
         return AVERROR(ENOMEM);
 
     if (!glslang_shader_preprocess(glslc_shader, &glslc_input)) {
-        ff_vk_shader_print(avctx, shd, AV_LOG_WARNING);
-        av_log(avctx, AV_LOG_ERROR, "Unable to preprocess shader: %s (%s)!\n",
+        ff_vk_shader_print(s, shd, AV_LOG_WARNING);
+        av_log(s, AV_LOG_ERROR, "Unable to preprocess shader: %s (%s)!\n",
                glslang_shader_get_info_log(glslc_shader),
                glslang_shader_get_info_debug_log(glslc_shader));
         glslang_shader_delete(glslc_shader);
@@ -192,8 +192,8 @@ static int glslc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
     }
 
     if (!glslang_shader_parse(glslc_shader, &glslc_input)) {
-        ff_vk_shader_print(avctx, shd, AV_LOG_WARNING);
-        av_log(avctx, AV_LOG_ERROR, "Unable to parse shader: %s (%s)!\n",
+        ff_vk_shader_print(s, shd, AV_LOG_WARNING);
+        av_log(s, AV_LOG_ERROR, "Unable to parse shader: %s (%s)!\n",
                glslang_shader_get_info_log(glslc_shader),
                glslang_shader_get_info_debug_log(glslc_shader));
         glslang_shader_delete(glslc_shader);
@@ -209,8 +209,8 @@ static int glslc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
 
     if (!glslang_program_link(glslc_program, GLSLANG_MSG_SPV_RULES_BIT |
                                              GLSLANG_MSG_VULKAN_RULES_BIT)) {
-        ff_vk_shader_print(avctx, shd, AV_LOG_WARNING);
-        av_log(avctx, AV_LOG_ERROR, "Unable to link shader: %s (%s)!\n",
+        ff_vk_shader_print(s, shd, AV_LOG_WARNING);
+        av_log(s, AV_LOG_ERROR, "Unable to link shader: %s (%s)!\n",
                glslang_program_get_info_log(glslc_program),
                glslang_program_get_info_debug_log(glslc_program));
         glslang_program_delete(glslc_program);
@@ -222,10 +222,10 @@ static int glslc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
 
     messages = glslang_program_SPIRV_get_messages(glslc_program);
     if (messages) {
-        ff_vk_shader_print(avctx, shd, AV_LOG_WARNING);
-        av_log(avctx, AV_LOG_WARNING, "%s\n", messages);
+        ff_vk_shader_print(s, shd, AV_LOG_WARNING);
+        av_log(s, AV_LOG_WARNING, "%s\n", messages);
     } else {
-        ff_vk_shader_print(avctx, shd, AV_LOG_VERBOSE);
+        ff_vk_shader_print(s, shd, AV_LOG_VERBOSE);
     }
 
     glslang_shader_delete(glslc_shader);

@@ -169,7 +169,7 @@ static int init_gblur_pipeline(GBlurVulkanContext *s,
     }
     GLSLC(0, }                                                        );
 
-    RET(spv->compile_shader(spv, s, shd, &spv_data, &spv_len, "main",
+    RET(spv->compile_shader(&s->vkctx, spv, shd, &spv_data, &spv_len, "main",
                             &spv_opaque));
     RET(ff_vk_shader_link(&s->vkctx, shd, spv_data, spv_len, "main"));
 

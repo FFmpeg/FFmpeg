@@ -21,7 +21,7 @@
 #include "libavutil/mem.h"
 #include "vulkan_spirv.h"
 
-static int shdc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
+static int shdc_shader_compile(FFVulkanContext *s, FFVkSPIRVCompiler *ctx,
                                FFVulkanShader *shd, uint8_t **data,
                                size_t *size, const char *entrypoint,
                                void **opaque)
@@ -71,11 +71,11 @@ static int shdc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
 
     loglevel = err ? AV_LOG_ERROR : warn ? AV_LOG_WARNING : AV_LOG_VERBOSE;
 
-    ff_vk_shader_print(avctx, shd, loglevel);
+    ff_vk_shader_print(s, shd, loglevel);
     if (message && (err || warn))
-        av_log(avctx, loglevel, "%s\n", message);
+        av_log(s, loglevel, "%s\n", message);
     status = ret < FF_ARRAY_ELEMS(shdc_result) ? shdc_result[ret] : "unknown";
-    av_log(avctx, loglevel, "shaderc compile status '%s' (%d errors, %d warnings)\n",
+    av_log(s, loglevel, "shaderc compile status '%s' (%d errors, %d warnings)\n",
            status, err, warn);
 
     if (err > 0)

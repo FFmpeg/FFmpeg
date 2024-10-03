@@ -121,7 +121,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in, enum FlipType 
     }
     GLSLC(0, }                                                                              );
 
-    RET(spv->compile_shader(spv, ctx, shd, &spv_data, &spv_len, "main",
+    RET(spv->compile_shader(vkctx, spv, shd, &spv_data, &spv_len, "main",
                             &spv_opaque));
     RET(ff_vk_shader_link(vkctx, shd, spv_data, spv_len, "main"));
 
