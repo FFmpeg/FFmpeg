@@ -2347,6 +2347,8 @@ int ff_vk_init(FFVulkanContext *s, void *log_parent,
 
     s->extensions = ff_vk_extensions_to_mask(s->hwctx->enabled_dev_extensions,
                                              s->hwctx->nb_enabled_dev_extensions);
+    s->extensions |= ff_vk_extensions_to_mask(s->hwctx->enabled_inst_extensions,
+                                              s->hwctx->nb_enabled_inst_extensions);
 
     err = ff_vk_load_functions(s->device, &s->vkfn, s->extensions, 1, 1);
     if (err < 0) {

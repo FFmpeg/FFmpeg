@@ -151,6 +151,8 @@ skip:
 
     s->extensions = ff_vk_extensions_to_mask(vk_dev->enabled_dev_extensions,
                                              vk_dev->nb_enabled_dev_extensions);
+    s->extensions |= ff_vk_extensions_to_mask(vk_dev->enabled_inst_extensions,
+                                              vk_dev->nb_enabled_inst_extensions);
 
     err = ff_vk_load_functions(device_ctx, &s->vkfn, s->extensions, 1, 1);
     if (err < 0) {
