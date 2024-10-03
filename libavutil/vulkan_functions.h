@@ -62,6 +62,7 @@ typedef uint64_t FFVulkanExtensions;
 #define FF_VK_EXT_VIDEO_ENCODE_H264      (1ULL << 51) /* VK_KHR_video_encode_h264 */
 #define FF_VK_EXT_VIDEO_ENCODE_H265      (1ULL << 52) /* VK_KHR_video_encode_h265 */
 
+#define FF_VK_EXT_PORTABILITY_SUBSET     (1ULL << 62)
 #define FF_VK_EXT_NO_FLAG                (1ULL << 63)
 
 /* Macro containing every function that we utilize in our codebase */
