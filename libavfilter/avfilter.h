@@ -501,8 +501,17 @@ struct AVFilterContext {
     struct AVFilterCommand *command_queue;
 
     char *enable_str;               ///< enable expression string
-    void *enable;                   ///< parsed expression (AVExpr*)
-    double *var_values;             ///< variable values for the enable expression
+#if FF_API_CONTEXT_PUBLIC
+    /**
+     * @deprecated unused
+     */
+    attribute_deprecated
+    void *enable;
+    /**
+     * @deprecated unused
+     */
+    double *var_values;
+#endif
     int is_disabled;                ///< the enabled state from the last expression evaluation
 
     /**

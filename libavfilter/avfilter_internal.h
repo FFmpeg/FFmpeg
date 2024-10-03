@@ -109,6 +109,11 @@ typedef struct FFFilterContext {
      * a higher value suggests a more urgent activation.
      */
     unsigned ready;
+
+    ///< parsed expression
+    struct AVExpr *enable;
+    ///< variable values for the enable expression
+    double *var_values;
 } FFFilterContext;
 
 static inline FFFilterContext *fffilterctx(AVFilterContext *ctx)

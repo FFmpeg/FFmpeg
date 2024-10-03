@@ -564,11 +564,12 @@ enum {
     VAR_VARS_NB
 };
 
-static int set_enable_expr(AVFilterContext *ctx, const char *expr)
+static int set_enable_expr(FFFilterContext *ctxi, const char *expr)
 {
+    AVFilterContext *ctx = &ctxi->p;
     int ret;
     char *expr_dup;
-    AVExpr *old = ctx->enable;
+    AVExpr *old = ctxi->enable;
 
     if (!(ctx->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE)) {
         av_log(ctx, AV_LOG_ERROR, "Timeline ('enable' option) not supported "
@@ -580,15 +581,15 @@ static int set_enable_expr(AVFilterContext *ctx, const char *expr)
     if (!expr_dup)
         return AVERROR(ENOMEM);
 
-    if (!ctx->var_values) {
-        ctx->var_values = av_calloc(VAR_VARS_NB, sizeof(*ctx->var_values));
-        if (!ctx->var_values) {
+    if (!ctxi->var_values) {
+        ctxi->var_values = av_calloc(VAR_VARS_NB, sizeof(*ctxi->var_values));
+        if (!ctxi->var_values) {
             av_free(expr_dup);
             return AVERROR(ENOMEM);
         }
     }
 
-    ret = av_expr_parse((AVExpr**)&ctx->enable, expr_dup, var_names,
+    ret = av_expr_parse(&ctxi->enable, expr_dup, var_names,
                         NULL, NULL, NULL, NULL, 0, ctx->priv);
     if (ret < 0) {
         av_log(ctx->priv, AV_LOG_ERROR,
@@ -618,7 +619,7 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
             av_log(filter, AV_LOG_INFO, "%s", res);
         return 0;
     }else if(!strcmp(cmd, "enable")) {
-        return set_enable_expr(filter, arg);
+        return set_enable_expr(fffilterctx(filter), arg);
     }else if(filter->filter->process_command) {
         return filter->filter->process_command(filter, cmd, arg, res, res_len, flags);
     }
@@ -792,10 +793,12 @@ static void free_link(AVFilterLink *link)
 
 void avfilter_free(AVFilterContext *filter)
 {
+    FFFilterContext *ctxi;
     int i;
 
     if (!filter)
         return;
+    ctxi = fffilterctx(filter);
 
     if (filter->graph)
         ff_filter_graph_remove_filter(filter->graph, filter);
@@ -829,9 +832,9 @@ void avfilter_free(AVFilterContext *filter)
         command_queue_pop(filter);
     }
     av_opt_free(filter);
-    av_expr_free(filter->enable);
-    filter->enable = NULL;
-    av_freep(&filter->var_values);
+    av_expr_free(ctxi->enable);
+    ctxi->enable = NULL;
+    av_freep(&ctxi->var_values);
     av_free(filter);
 }
 
@@ -939,7 +942,7 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
         return ret;
 
     if (ctx->enable_str) {
-        ret = set_enable_expr(ctx, ctx->enable_str);
+        ret = set_enable_expr(ctxi, ctx->enable_str);
         if (ret < 0)
             return ret;
     }
@@ -1559,6 +1562,7 @@ int ff_inlink_evaluate_timeline_at_frame(AVFilterLink *link, const AVFrame *fram
 {
     FilterLink *l = ff_filter_link(link);
     AVFilterContext *dstctx = link->dst;
+    FFFilterContext *dsti = fffilterctx(dstctx);
     int64_t pts = frame->pts;
 #if FF_API_FRAME_PKT
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -1569,15 +1573,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!dstctx->enable_str)
         return 1;
 
-    dstctx->var_values[VAR_N] = l->frame_count_out;
-    dstctx->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
-    dstctx->var_values[VAR_W] = link->w;
-    dstctx->var_values[VAR_H] = link->h;
+    dsti->var_values[VAR_N] = l->frame_count_out;
+    dsti->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
+    dsti->var_values[VAR_W] = link->w;
+    dsti->var_values[VAR_H] = link->h;
 #if FF_API_FRAME_PKT
-    dstctx->var_values[VAR_POS] = pos == -1 ? NAN : pos;
+    dsti->var_values[VAR_POS] = pos == -1 ? NAN : pos;
 #endif
 
-    return fabs(av_expr_eval(dstctx->enable, dstctx->var_values, NULL)) >= 0.5;
+    return fabs(av_expr_eval(dsti->enable, dsti->var_values, NULL)) >= 0.5;
 }
 
 void ff_inlink_request_frame(AVFilterLink *link)
