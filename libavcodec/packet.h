@@ -368,11 +368,11 @@ enum AVPacketSideDataType {
  *
  * Global side data is handled as follows:
  * - During demuxing, it may be exported through
- *   @ref AVStream.codecpar.side_data "AVStream's codec parameters", which can
+ *   @ref AVCodecParameters.coded_side_data "AVStream's codec parameters", which can
  *   then be passed as input to decoders through the
  *   @ref AVCodecContext.coded_side_data "decoder context's side data", for
  *   initialization.
- * - For muxing, it can be fed through @ref AVStream.codecpar.side_data
+ * - For muxing, it can be fed through @ref AVCodecParameters.coded_side_data
  *   "AVStream's codec parameters", typically  the output of encoders through
  *   the @ref AVCodecContext.coded_side_data "encoder context's side data", for
  *   initialization.
