@@ -1207,6 +1207,12 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     if (multi_layer_ext) {
         const RepFormat *rf = &sps->vps->rep_format;
 
+        if (sps->vps->nb_layers == 1) {
+            av_log(avctx, AV_LOG_WARNING, "SPS %d references an unsupported VPS extension. Ignoring\n",
+                   *sps_id);
+            return AVERROR_INVALIDDATA;
+        }
+
         if (get_bits1(gb) &&    // update_rep_format_flag
             get_bits(gb, 8)) {  // sps_rep_format_idx
             av_log(avctx, AV_LOG_ERROR, "sps_rep_format_idx!=0\n");
