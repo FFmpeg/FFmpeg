@@ -1769,7 +1769,7 @@ cglobal mdct_inv_float, 4, 14, 16, 320, ctx, out, in, stride, len, lut, exp, t1,
     RET
 %endmacro
 
-%if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
+%if ARCH_X86_64
 IMDCT_FN avx2
 %endif
 
