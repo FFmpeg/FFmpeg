@@ -995,6 +995,38 @@ static int default_filter_frame(AVFilterLink *link, AVFrame *frame)
     return ff_filter_frame(link->dst->outputs[0], frame);
 }
 
+/**
+ * Evaluate the timeline expression of the link for the time and properties
+ * of the frame.
+ * @return  >0 if enabled, 0 if disabled
+ * @note  It does not update link->dst->is_disabled.
+ */
+static int evaluate_timeline_at_frame(AVFilterLink *link, const AVFrame *frame)
+{
+    FilterLink *l = ff_filter_link(link);
+    AVFilterContext *dstctx = link->dst;
+    FFFilterContext *dsti = fffilterctx(dstctx);
+    int64_t pts = frame->pts;
+#if FF_API_FRAME_PKT
+FF_DISABLE_DEPRECATION_WARNINGS
+    int64_t pos = frame->pkt_pos;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    if (!dstctx->enable_str)
+        return 1;
+
+    dsti->var_values[VAR_N] = l->frame_count_out;
+    dsti->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
+    dsti->var_values[VAR_W] = link->w;
+    dsti->var_values[VAR_H] = link->h;
+#if FF_API_FRAME_PKT
+    dsti->var_values[VAR_POS] = pos == -1 ? NAN : pos;
+#endif
+
+    return fabs(av_expr_eval(dsti->enable, dsti->var_values, NULL)) >= 0.5;
+}
+
 static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
 {
     FilterLink *l = ff_filter_link(link);
@@ -1013,7 +1045,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     }
 
     ff_inlink_process_commands(link, frame);
-    dstctx->is_disabled = !ff_inlink_evaluate_timeline_at_frame(link, frame);
+    dstctx->is_disabled = !evaluate_timeline_at_frame(link, frame);
 
     if (dstctx->is_disabled &&
         (dstctx->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC))
@@ -1451,7 +1483,7 @@ static void consume_update(FilterLinkInternal *li, const AVFrame *frame)
     update_link_current_pts(li, frame->pts);
     ff_inlink_process_commands(link, frame);
     if (link == link->dst->inputs[0])
-        link->dst->is_disabled = !ff_inlink_evaluate_timeline_at_frame(link, frame);
+        link->dst->is_disabled = !evaluate_timeline_at_frame(link, frame);
     li->l.frame_count_out++;
     li->l.sample_count_out += frame->nb_samples;
 }
@@ -1557,32 +1589,6 @@ int ff_inlink_process_commands(AVFilterLink *link, const AVFrame *frame)
         cmd = ctxi->command_queue;
     }
     return 0;
-}
-
-int ff_inlink_evaluate_timeline_at_frame(AVFilterLink *link, const AVFrame *frame)
-{
-    FilterLink *l = ff_filter_link(link);
-    AVFilterContext *dstctx = link->dst;
-    FFFilterContext *dsti = fffilterctx(dstctx);
-    int64_t pts = frame->pts;
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-    int64_t pos = frame->pkt_pos;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
-    if (!dstctx->enable_str)
-        return 1;
-
-    dsti->var_values[VAR_N] = l->frame_count_out;
-    dsti->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
-    dsti->var_values[VAR_W] = link->w;
-    dsti->var_values[VAR_H] = link->h;
-#if FF_API_FRAME_PKT
-    dsti->var_values[VAR_POS] = pos == -1 ? NAN : pos;
-#endif
-
-    return fabs(av_expr_eval(dsti->enable, dsti->var_values, NULL)) >= 0.5;
 }
 
 void ff_inlink_request_frame(AVFilterLink *link)

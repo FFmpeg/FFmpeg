@@ -222,12 +222,4 @@ int ff_filter_graph_run_once(AVFilterGraph *graph);
  */
 int ff_inlink_process_commands(AVFilterLink *link, const AVFrame *frame);
 
-/**
- * Evaluate the timeline expression of the link for the time and properties
- * of the frame.
- * @return  >0 if enabled, 0 if disabled
- * @note  It does not update link->dst->is_disabled.
- */
-int ff_inlink_evaluate_timeline_at_frame(AVFilterLink *link, const AVFrame *frame);
-
 #endif /* AVFILTER_AVFILTER_INTERNAL_H */
