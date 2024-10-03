@@ -134,7 +134,7 @@ static int extract_extradata_support(AVCodecContext *avctx)
 static int mediacodec_init_bsf(AVCodecContext *avctx)
 {
     MediaCodecEncContext *s = avctx->priv_data;
-    char str[128];
+    char str[128] = {0};
     int ret;
     int crop_right = s->width - avctx->width;
     int crop_bottom = s->height - avctx->height;
