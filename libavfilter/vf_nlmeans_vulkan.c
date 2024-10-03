@@ -240,7 +240,8 @@ static av_cold int init_weights_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
 
     RET(ff_vk_shader_init(vkctx, shd, "nlmeans_weights",
                           VK_SHADER_STAGE_COMPUTE_BIT,
-                          NULL, 0,
+                          (const char *[]) { "GL_EXT_buffer_reference",
+                                             "GL_EXT_buffer_reference2" }, 2,
                           wg_size, 1, 1,
                           0));
 
@@ -431,7 +432,8 @@ static av_cold int init_denoise_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
 
     RET(ff_vk_shader_init(vkctx, shd, "nlmeans_denoise",
                           VK_SHADER_STAGE_COMPUTE_BIT,
-                          NULL, 0,
+                          (const char *[]) { "GL_EXT_buffer_reference",
+                                             "GL_EXT_buffer_reference2" }, 2,
                           32, 32, 1,
                           0));
 
