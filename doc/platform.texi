@@ -158,7 +158,7 @@ You will need the following prerequisites:
 To set up a proper environment in MSYS2, you need to run @code{msys_shell.bat} from
 the Visual Studio or Intel Compiler command prompt.
 
-Place @code{yasm.exe} somewhere in your @code{PATH}.
+Place @code{nasm.exe} somewhere in your @code{PATH}.
 
 Next, make sure any other headers and libs you want to use, such as zlib, are
 located in a spot that the compiler can see. Do so by modifying the @code{LIB}
@@ -301,7 +301,7 @@ These library packages are only available from
 @uref{http://sourceware.org/cygwinports/, Cygwin Ports}:
 
 @example
-yasm, libSDL-devel, libgsm-devel, libmp3lame-devel,
+libSDL-devel, libgsm-devel, libmp3lame-devel,
 speex-devel, libtheora-devel, libxvidcore-devel
 @end example
 

@@ -825,7 +825,7 @@ filters, bitstream filters, parsers. If its not possible to do that, add
 an explanation why to your patchset, its ok to not test if theres a reason.
 
 @item
-If you added YASM code please check that things still work with --disable-yasm.
+If you added NASM code please check that things still work with --disable-x86asm.
 
 @item
 Test your code with valgrind and or Address Sanitizer to ensure it's free

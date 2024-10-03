@@ -4415,16 +4415,6 @@ for opt do
             test $action = enable && warn_if_gets_disabled $list
             $action $list
         ;;
-        --enable-yasm|--disable-yasm)
-            warn "The ${opt} option is only provided for compatibility and will be\n"\
-                 "removed in the future. Use --enable-x86asm / --disable-x86asm instead."
-            test $opt = --enable-yasm && x86asm=yes || x86asm=no
-        ;;
-        --yasmexe=*)
-            warn "The --yasmexe option is only provided for compatibility and will be\n"\
-                 "removed in the future. Use --x86asmexe instead."
-            x86asmexe="$optval"
-        ;;
         --enable-?*|--disable-?*)
             eval $(echo "$opt" | sed 's/--/action=/;s/-/ option=/;s/-/_/g')
             if is_in $option $COMPONENT_LIST; then
@@ -6445,26 +6435,19 @@ EOF
         x86asmexe_probe=$1
         if test_cmd $x86asmexe_probe -v; then
             x86asmexe=$x86asmexe_probe
-            x86asm_type=nasm
             x86asm_debug="-g -F dwarf"
             X86ASMDEP=
             X86ASM_DEPFLAGS='-MD $(@:.o=.d)'
-        elif test_cmd $x86asmexe_probe --version; then
-            x86asmexe=$x86asmexe_probe
-            x86asm_type=yasm
-            x86asm_debug="-g dwarf2"
-            X86ASMDEP='$(DEPX86ASM) $(X86ASMFLAGS) -M $(X86ASM_O) $< > $(@:.o=.d)'
-            X86ASM_DEPFLAGS=
         fi
         check_x86asm x86asm "movbe ecx, [5]"
     }
 
     if ! disabled_any asm mmx x86asm; then
         disable x86asm
-        for program in $x86asmexe nasm yasm; do
+        for program in $x86asmexe nasm; do
             probe_x86asm $program && break
         done
-        disabled x86asm && die "nasm/yasm not found or too old. Use --disable-x86asm for a crippled build."
+        disabled x86asm && die "nasm not found or too old. Use --disable-x86asm for a crippled build."
         X86ASMFLAGS="-f $objformat"
         test -n "$extern_prefix"  && append X86ASMFLAGS "-DPREFIX"
         case "$objformat" in

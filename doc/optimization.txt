@@ -188,7 +188,7 @@ Code that depends on data in registries being untouched, should be written as
 a single __asm__() statement. Ideally, a single function contains only one
 __asm__() block.
 
-Use external asm (nasm/yasm) or inline asm (__asm__()), do not use intrinsics.
+Use external asm (nasm) or inline asm (__asm__()), do not use intrinsics.
 The latter requires a good optimizing compiler which gcc is not.
 
 When debugging a x86 external asm compilation issue, if lost in the macro
@@ -199,7 +199,7 @@ actual lines causing issues.
 Inline asm vs. external asm
 ---------------------------
 Both inline asm (__asm__("..") in a .c file, handled by a compiler such as gcc)
-and external asm (.s or .asm files, handled by an assembler such as nasm/yasm)
+and external asm (.s or .asm files, handled by an assembler such as nasm)
 are accepted in FFmpeg. Which one to use differs per specific case.
 
 - if your code is intended to be inlined in a C function, inline asm is always
