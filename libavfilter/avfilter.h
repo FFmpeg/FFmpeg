@@ -518,7 +518,12 @@ struct AVFilterContext {
      */
     double *var_values;
 #endif
-    int is_disabled;                ///< the enabled state from the last expression evaluation
+    /**
+     * MUST NOT be accessed from outside avfilter.
+     *
+     * the enabled state from the last expression evaluation
+     */
+    int is_disabled;
 
     /**
      * For filters which will create hardware frames, sets the device the
