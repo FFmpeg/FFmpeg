@@ -30,7 +30,7 @@ function ff_resample_common_apply_filter_x4_float_neon, export=1
     vpadd.f32           d0, d0, d1                                     @ pair adding of the 4x32-bit accumulated values
     vpadd.f32           d0, d0, d0                                     @ pair adding of the 4x32-bit accumulator values
     vst1.32             {d0[0]}, [r0]                                  @ write accumulator
-    mov pc, lr
+    bx                  lr
 endfunc
 
 function ff_resample_common_apply_filter_x8_float_neon, export=1
@@ -46,7 +46,7 @@ function ff_resample_common_apply_filter_x8_float_neon, export=1
     vpadd.f32           d0, d0, d1                                     @ pair adding of the 4x32-bit accumulated values
     vpadd.f32           d0, d0, d0                                     @ pair adding of the 4x32-bit accumulator values
     vst1.32             {d0[0]}, [r0]                                  @ write accumulator
-    mov pc, lr
+    bx                  lr
 endfunc
 
 function ff_resample_common_apply_filter_x4_s16_neon, export=1
@@ -59,7 +59,7 @@ function ff_resample_common_apply_filter_x4_s16_neon, export=1
     vpadd.s32           d0, d0, d1                                     @ pair adding of the 4x32-bit accumulated values
     vpadd.s32           d0, d0, d0                                     @ pair adding of the 4x32-bit accumulator values
     vst1.32             {d0[0]}, [r0]                                  @ write accumulator
-    mov pc, lr
+    bx                  lr
 endfunc
 
 function ff_resample_common_apply_filter_x8_s16_neon, export=1
@@ -73,5 +73,5 @@ function ff_resample_common_apply_filter_x8_s16_neon, export=1
     vpadd.s32           d0, d0, d1                                     @ pair adding of the 4x32-bit accumulated values
     vpadd.s32           d0, d0, d0                                     @ pair adding of the 4x32-bit accumulator values
     vst1.32             {d0[0]}, [r0]                                  @ write accumulator
-    mov pc, lr
+    bx                  lr
 endfunc

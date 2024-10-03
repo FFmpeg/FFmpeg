@@ -73,6 +73,5 @@ function ff_yuv2planeX_8_neon, export=1
     subs                r4, r4, #8                                     @ dstW -= 8
     bgt                 2b                                             @ loop until width is consumed
     vpop                {q4-q7}
-    pop                 {r4-r12, lr}
-    mov                 pc, lr
+    pop                 {r4-r12, pc}
 endfunc
