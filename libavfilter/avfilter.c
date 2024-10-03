@@ -80,10 +80,11 @@ static void tlog_ref(void *ctx, AVFrame *ref, int end)
 
 static void command_queue_pop(AVFilterContext *filter)
 {
-    AVFilterCommand *c= filter->command_queue;
+    FFFilterContext *ctxi = fffilterctx(filter);
+    AVFilterCommand *c    = ctxi->command_queue;
     av_freep(&c->arg);
     av_freep(&c->command);
-    filter->command_queue= c->next;
+    ctxi->command_queue = c->next;
     av_free(c);
 }
 
@@ -828,9 +829,8 @@ void avfilter_free(AVFilterContext *filter)
     av_freep(&filter->inputs);
     av_freep(&filter->outputs);
     av_freep(&filter->priv);
-    while(filter->command_queue){
+    while (ctxi->command_queue)
         command_queue_pop(filter);
-    }
     av_opt_free(filter);
     av_expr_free(ctxi->enable);
     ctxi->enable = NULL;
@@ -1545,7 +1545,8 @@ int ff_inlink_make_frame_writable(AVFilterLink *link, AVFrame **rframe)
 
 int ff_inlink_process_commands(AVFilterLink *link, const AVFrame *frame)
 {
-    AVFilterCommand *cmd = link->dst->command_queue;
+    FFFilterContext *ctxi = fffilterctx(link->dst);
+    AVFilterCommand *cmd  = ctxi->command_queue;
 
     while(cmd && cmd->time <= frame->pts * av_q2d(link->time_base)){
         av_log(link->dst, AV_LOG_DEBUG,
@@ -1553,7 +1554,7 @@ int ff_inlink_process_commands(AVFilterLink *link, const AVFrame *frame)
                cmd->time, cmd->command, cmd->arg);
         avfilter_process_command(link->dst, cmd->command, cmd->arg, 0, 0, cmd->flags);
         command_queue_pop(link->dst);
-        cmd= link->dst->command_queue;
+        cmd = ctxi->command_queue;
     }
     return 0;
 }

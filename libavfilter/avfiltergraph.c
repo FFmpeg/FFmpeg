@@ -1348,8 +1348,9 @@ int avfilter_graph_queue_command(AVFilterGraph *graph, const char *target, const
 
     for (i = 0; i < graph->nb_filters; i++) {
         AVFilterContext *filter = graph->filters[i];
+        FFFilterContext *ctxi   = fffilterctx(filter);
         if(filter && (!strcmp(target, "all") || !strcmp(target, filter->name) || !strcmp(target, filter->filter->name))){
-            AVFilterCommand **queue = &filter->command_queue, *next;
+            AVFilterCommand **queue = &ctxi->command_queue, *next;
             while (*queue && (*queue)->time <= ts)
                 queue = &(*queue)->next;
             next = *queue;

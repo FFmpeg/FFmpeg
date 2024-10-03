@@ -498,7 +498,13 @@ struct AVFilterContext {
      */
     int nb_threads;
 
+#if FF_API_CONTEXT_PUBLIC
+    /**
+     * @deprecated unused
+     */
+    attribute_deprecated
     struct AVFilterCommand *command_queue;
+#endif
 
     char *enable_str;               ///< enable expression string
 #if FF_API_CONTEXT_PUBLIC

@@ -114,6 +114,8 @@ typedef struct FFFilterContext {
     struct AVExpr *enable;
     ///< variable values for the enable expression
     double *var_values;
+
+    struct AVFilterCommand *command_queue;
 } FFFilterContext;
 
 static inline FFFilterContext *fffilterctx(AVFilterContext *ctx)
