@@ -262,8 +262,7 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
     increment_and_test_\ifmt
     bgt                 1b
     vpop                {q4-q7}
-    pop                 {r4-r12, lr}
-    mov                 pc, lr
+    pop                 {r4-r12, pc}
 endfunc
 .endm
 
