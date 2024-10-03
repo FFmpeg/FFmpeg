@@ -1481,6 +1481,8 @@ int ff_vk_shader_init(FFVulkanContext *s, FFVulkanShader *shd, const char *name,
     GLSLC(0, #extension GL_EXT_scalar_block_layout : require                  );
     GLSLC(0, #extension GL_EXT_buffer_reference : require                     );
     GLSLC(0, #extension GL_EXT_buffer_reference2 : require                    );
+    if (s->extensions & FF_VK_EXT_RELAXED_EXTENDED_INSTR)
+        GLSLC(0, #extension GL_EXT_debug_printf : require                     );
 
     if (stage == VK_SHADER_STAGE_TASK_BIT_EXT ||
         stage == VK_SHADER_STAGE_MESH_BIT_EXT)

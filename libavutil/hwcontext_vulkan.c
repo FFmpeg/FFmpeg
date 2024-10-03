@@ -100,6 +100,9 @@ typedef struct VulkanDevicePriv {
     VkPhysicalDeviceOpticalFlowFeaturesNV optical_flow_features;
     VkPhysicalDeviceShaderObjectFeaturesEXT shader_object_features;
     VkPhysicalDeviceVideoMaintenance1FeaturesKHR video_maint_1_features;
+#ifdef VK_KHR_shader_relaxed_extended_instruction
+    VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR relaxed_extended_instr_features;
+#endif
 
     /* Queues */
     pthread_mutex_t **qf_mutex;
@@ -620,6 +623,28 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
             err = AVERROR(EINVAL);
             goto fail;
         }
+    }
+
+#ifdef VK_KHR_shader_relaxed_extended_instruction
+    if (dev && debug_mode == FF_VULKAN_DEBUG_PRINTF) {
+        tstr = VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME;
+        found = 0;
+        for (int j = 0; j < sup_ext_count; j++) {
+            if (!strcmp(tstr, sup_ext[j].extensionName)) {
+                found = 1;
+                break;
+            }
+        }
+        if (found) {
+            av_log(ctx, AV_LOG_VERBOSE, "Using %s extension %s\n", mod, tstr);
+            ADD_VAL_TO_LIST(extension_names, extensions_found, tstr);
+        } else {
+            av_log(ctx, AV_LOG_ERROR, "Debug printf enabled, but extension \"%s\" not found!\n",
+                   tstr);
+            err = AVERROR(EINVAL);
+            goto fail;
+        }
+#endif
     }
 
     if (user_exts_str) {
@@ -1419,9 +1444,19 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     VkPhysicalDeviceTimelineSemaphoreFeatures timeline_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
     };
+#ifdef VK_KHR_shader_relaxed_extended_instruction
+    VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR relaxed_extended_instr_features = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR,
+        .pNext = &timeline_features,
+    };
+#endif
     VkPhysicalDeviceVideoMaintenance1FeaturesKHR video_maint_1_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR,
+#ifdef VK_KHR_shader_relaxed_extended_instruction
+        .pNext = &relaxed_extended_instr_features,
+#else
         .pNext = &timeline_features,
+#endif
     };
     VkPhysicalDeviceShaderObjectFeaturesEXT shader_object_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT,
@@ -1534,6 +1569,10 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     p->optical_flow_features.opticalFlow = optical_flow_features.opticalFlow;
 
     p->shader_object_features.shaderObject = shader_object_features.shaderObject;
+
+#ifdef VK_KHR_shader_relaxed_extended_instruction
+    p->relaxed_extended_instr_features.shaderRelaxedExtendedInstruction = relaxed_extended_instr_features.shaderRelaxedExtendedInstruction;
+#endif
 
     /* Find and enable extensions */
     if ((err = check_extensions(ctx, 1, opts, &dev_info.ppEnabledExtensionNames,
