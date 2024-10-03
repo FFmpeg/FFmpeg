@@ -518,12 +518,13 @@ struct AVFilterContext {
      */
     AVBufferRef *hw_device_ctx;
 
+#if FF_API_CONTEXT_PUBLIC
     /**
-     * Ready status of the filter.
-     * A non-0 value means that the filter needs activating;
-     * a higher value suggests a more urgent activation.
+     * @deprecated this field should never have been accessed by callers
      */
+    attribute_deprecated
     unsigned ready;
+#endif
 
     /**
      * Sets the number of extra hardware frames which the filter will

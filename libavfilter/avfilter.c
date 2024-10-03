@@ -237,7 +237,8 @@ static void update_link_current_pts(FilterLinkInternal *li, int64_t pts)
 
 void ff_filter_set_ready(AVFilterContext *filter, unsigned priority)
 {
-    filter->ready = FFMAX(filter->ready, priority);
+    FFFilterContext *ctxi = fffilterctx(filter);
+    ctxi->ready = FFMAX(ctxi->ready, priority);
 }
 
 /**
@@ -473,6 +474,7 @@ void ff_tlog_link(void *ctx, AVFilterLink *link, int end)
 int ff_request_frame(AVFilterLink *link)
 {
     FilterLinkInternal * const li = ff_link_internal(link);
+    FFFilterContext * const ctxi_dst = fffilterctx(link->dst);
 
     FF_TPRINTF_START(NULL, request_frame); ff_tlog_link(NULL, link, 1);
 
@@ -482,7 +484,7 @@ int ff_request_frame(AVFilterLink *link)
     if (li->status_in) {
         if (ff_framequeue_queued_frames(&li->fifo)) {
             av_assert1(!li->frame_wanted_out);
-            av_assert1(link->dst->ready >= 300);
+            av_assert1(ctxi_dst->ready >= 300);
             return 0;
         } else {
             /* Acknowledge status change. Filters using ff_request_frame() will
@@ -1384,12 +1386,13 @@ static int ff_filter_activate_default(AVFilterContext *filter)
 
 int ff_filter_activate(AVFilterContext *filter)
 {
+    FFFilterContext *ctxi = fffilterctx(filter);
     int ret;
 
     /* Generic timeline support is not yet implemented but should be easy */
     av_assert1(!(filter->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC &&
                  filter->filter->activate));
-    filter->ready = 0;
+    ctxi->ready = 0;
     ret = filter->filter->activate ? filter->filter->activate(filter) :
           ff_filter_activate_default(filter);
     if (ret == FFERROR_NOT_READY)

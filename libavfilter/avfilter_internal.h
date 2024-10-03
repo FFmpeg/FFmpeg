@@ -102,6 +102,13 @@ typedef struct FFFilterContext {
 
     // AV_CLASS_STATE_FLAG_*
     unsigned state_flags;
+
+    /**
+     * Ready status of the filter.
+     * A non-0 value means that the filter needs activating;
+     * a higher value suggests a more urgent activation.
+     */
+    unsigned ready;
 } FFFilterContext;
 
 static inline FFFilterContext *fffilterctx(AVFilterContext *ctx)
