@@ -522,7 +522,7 @@ static int64_t guess_status_pts(AVFilterContext *ctx, int status, AVRational lin
     return AV_NOPTS_VALUE;
 }
 
-static int ff_request_frame_to_filter(AVFilterLink *link)
+static int request_frame_to_filter(AVFilterLink *link)
 {
     FilterLinkInternal * const li = ff_link_internal(link);
     int ret = -1;
@@ -1027,7 +1027,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return fabs(av_expr_eval(dsti->enable, dsti->var_values, NULL)) >= 0.5;
 }
 
-static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
+static int filter_frame_framed(AVFilterLink *link, AVFrame *frame)
 {
     FilterLink *l = ff_filter_link(link);
     int (*filter_frame)(AVFilterLink *, AVFrame *);
@@ -1181,7 +1181,7 @@ static int take_samples(FilterLinkInternal *li, unsigned min, unsigned max,
     return 0;
 }
 
-static int ff_filter_frame_to_filter(AVFilterLink *link)
+static int filter_frame_to_filter(AVFilterLink *link)
 {
     FilterLinkInternal * const li = ff_link_internal(link);
     AVFrame *frame = NULL;
@@ -1201,9 +1201,9 @@ static int ff_filter_frame_to_filter(AVFilterLink *link)
        produce one or more: unblock its outputs. */
     filter_unblock(dst);
     /* AVFilterPad.filter_frame() expect frame_count_out to have the value
-       before the frame; ff_filter_frame_framed() will re-increment it. */
+       before the frame; filter_frame_framed() will re-increment it. */
     li->l.frame_count_out--;
-    ret = ff_filter_frame_framed(link, frame);
+    ret = filter_frame_framed(link, frame);
     if (ret < 0 && ret != li->status_out) {
         link_set_out_status(link, ret, AV_NOPTS_VALUE);
     } else {
@@ -1230,7 +1230,7 @@ static int forward_status_change(AVFilterContext *filter, FilterLinkInternal *li
 
         if (!li_out->status_in) {
             progress++;
-            ret = ff_request_frame_to_filter(filter->outputs[out]);
+            ret = request_frame_to_filter(filter->outputs[out]);
             if (ret < 0)
                 return ret;
         }
@@ -1249,7 +1249,7 @@ static int forward_status_change(AVFilterContext *filter, FilterLinkInternal *li
     return 0;
 }
 
-static int ff_filter_activate_default(AVFilterContext *filter)
+static int filter_activate_default(AVFilterContext *filter)
 {
     unsigned i;
 
@@ -1267,7 +1267,7 @@ static int ff_filter_activate_default(AVFilterContext *filter)
     for (i = 0; i < filter->nb_inputs; i++) {
         FilterLinkInternal *li = ff_link_internal(filter->inputs[i]);
         if (samples_ready(li, li->l.min_samples)) {
-            return ff_filter_frame_to_filter(filter->inputs[i]);
+            return filter_frame_to_filter(filter->inputs[i]);
         }
     }
     for (i = 0; i < filter->nb_inputs; i++) {
@@ -1281,7 +1281,7 @@ static int ff_filter_activate_default(AVFilterContext *filter)
         FilterLinkInternal * const li = ff_link_internal(filter->outputs[i]);
         if (li->frame_wanted_out &&
             !li->frame_blocked_in) {
-            return ff_request_frame_to_filter(filter->outputs[i]);
+            return request_frame_to_filter(filter->outputs[i]);
         }
     }
     return FFERROR_NOT_READY;
@@ -1429,7 +1429,7 @@ int ff_filter_activate(AVFilterContext *filter)
                  filter->filter->activate));
     ctxi->ready = 0;
     ret = filter->filter->activate ? filter->filter->activate(filter) :
-          ff_filter_activate_default(filter);
+          filter_activate_default(filter);
     if (ret == FFERROR_NOT_READY)
         ret = 0;
     return ret;
