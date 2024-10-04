@@ -77,9 +77,12 @@ static const AVOption datascope_options[] = {
 
 AVFILTER_DEFINE_CLASS(datascope);
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out,
+                                  ff_draw_supported_pixel_formats(0));
 }
 
 static void draw_text(FFDrawContext *draw, AVFrame *frame, FFDrawColor *color,
@@ -455,7 +458,7 @@ const AVFilter ff_vf_datascope = {
     .priv_class    = &datascope_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
@@ -735,7 +738,7 @@ const AVFilter ff_vf_pixscope = {
     .priv_class    = &pixscope_class,
     FILTER_INPUTS(pixscope_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = pixscope_process_command,
 };
@@ -1134,7 +1137,7 @@ const AVFilter ff_vf_oscilloscope = {
     .uninit        = oscilloscope_uninit,
     FILTER_INPUTS(oscilloscope_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = oscilloscope_process_command,
 };
