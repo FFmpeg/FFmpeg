@@ -281,7 +281,10 @@ static void device_features_copy_needed(VulkanDeviceFeatures *dst, VulkanDeviceF
 
     COPY_VAL(atomic_float.shaderBufferFloat32Atomics);
     COPY_VAL(atomic_float.shaderBufferFloat32AtomicAdd);
+
+#ifdef VK_KHR_shader_relaxed_extended_instruction
     COPY_VAL(relaxed_extended_instruction.shaderRelaxedExtendedInstruction);
+#endif
 
     COPY_VAL(optical_flow.opticalFlow);
 #undef COPY_VAL
@@ -774,8 +777,8 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
             err = AVERROR(EINVAL);
             goto fail;
         }
-#endif
     }
+#endif
 
     if (user_exts_str) {
         char *save, *token = av_strtok(user_exts_str, "+", &save);
