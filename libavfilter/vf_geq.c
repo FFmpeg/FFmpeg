@@ -336,9 +336,11 @@ end:
     return ret;
 }
 
-static int geq_query_formats(AVFilterContext *ctx)
+static int geq_query_formats(const AVFilterContext *ctx,
+                             AVFilterFormatsConfig **cfg_in,
+                             AVFilterFormatsConfig **cfg_out)
 {
-    GEQContext *geq = ctx->priv;
+    const GEQContext *geq = ctx->priv;
     static const enum AVPixelFormat yuv_pix_fmts[] = {
         AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUV440P,
@@ -371,7 +373,7 @@ static int geq_query_formats(AVFilterContext *ctx)
     };
     const enum AVPixelFormat *pix_fmts = geq->is_rgb ? rgb_pix_fmts : yuv_pix_fmts;
 
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
+    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts);
 }
 
 static int geq_config_props(AVFilterLink *inlink)
@@ -532,7 +534,7 @@ const AVFilter ff_vf_geq = {
     .uninit        = geq_uninit,
     FILTER_INPUTS(geq_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(geq_query_formats),
+    FILTER_QUERY_FUNC2(geq_query_formats),
     .priv_class    = &geq_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
