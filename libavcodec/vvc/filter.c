@@ -543,9 +543,9 @@ static av_always_inline int deblock_bs(const VVCLocalContext *lc,
     const uint8_t chroma       = !!c_idx;
     const int tu_p             = (y_p >> log2_min_tu_size) * min_tu_width  + (x_p >>  log2_min_tu_size);
     const int tu_q             = (y_q >> log2_min_tu_size) * min_tu_width  + (x_q >>  log2_min_tu_size);
-    const uint8_t pcmf         = fc->tab.pcmf[chroma][tu_p] && fc->tab.pcmf[chroma][tu_q];
     const int cb_p             = (y_p >> log2_min_cb_size) * min_cb_width  + (x_p >>  log2_min_cb_size);
     const int cb_q             = (y_q >> log2_min_cb_size) * min_cb_width  + (x_q >>  log2_min_cb_size);
+    const uint8_t pcmf         = fc->tab.pcmf[chroma][cb_p] && fc->tab.pcmf[chroma][cb_q];
     const uint8_t intra        = fc->tab.cpm[chroma][cb_p] == MODE_INTRA || fc->tab.cpm[chroma][cb_q] == MODE_INTRA;
     const uint8_t same_mode    = fc->tab.cpm[chroma][cb_p] == fc->tab.cpm[chroma][cb_q];
 

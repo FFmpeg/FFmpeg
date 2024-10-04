@@ -1240,16 +1240,18 @@ static void set_cu_tabs(const VVCLocalContext *lc, const CodingUnit *cu)
 
     set_cb_tab(lc, fc->tab.mmi, pu->mi.motion_model_idc);
     set_cb_tab(lc, fc->tab.msf, pu->merge_subblock_flag);
-    if (cu->tree_type != DUAL_TREE_CHROMA)
+    if (cu->tree_type != DUAL_TREE_CHROMA) {
         set_cb_tab(lc, fc->tab.skip, cu->skip_flag);
+        set_cb_tab(lc, fc->tab.pcmf[LUMA], cu->bdpcm_flag[LUMA]);
+    }
+    if (cu->tree_type != DUAL_TREE_LUMA)
+        set_cb_tab(lc, fc->tab.pcmf[CHROMA], cu->bdpcm_flag[CHROMA]);
 
     while (tu) {
           for (int j = 0; j < tu->nb_tbs; j++) {
             const TransformBlock *tb = tu->tbs + j;
             if (tb->c_idx != LUMA)
                 set_qp_c_tab(lc, tu, tb);
-            if (tb->c_idx != CR && cu->bdpcm_flag[tb->c_idx])
-                set_tb_tab(fc->tab.pcmf[tb->c_idx], 1, fc, tb);
         }
         tu = tu->next;
     }
