@@ -31,7 +31,7 @@ const char av_codec_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 
 unsigned avcodec_version(void)
 {
-    static_assert(AV_CODEC_ID_LEAD         ==   269 &&
+    static_assert(AV_CODEC_ID_DNXUC        ==   270 &&
                   AV_CODEC_ID_PCM_SGA      == 65572 &&
                   AV_CODEC_ID_ADPCM_XMD    == 69683 &&
                   AV_CODEC_ID_CBD2_DPCM    == 81928 &&
