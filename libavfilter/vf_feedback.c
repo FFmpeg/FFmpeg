@@ -106,11 +106,14 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    return ff_set_common_formats(ctx, ff_formats_pixdesc_filter(0, AV_PIX_FMT_FLAG_BITSTREAM |
-                                                                   AV_PIX_FMT_FLAG_HWACCEL |
-                                                                   AV_PIX_FMT_FLAG_PAL));
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out,
+                                  ff_formats_pixdesc_filter(0, AV_PIX_FMT_FLAG_BITSTREAM |
+                                                               AV_PIX_FMT_FLAG_HWACCEL |
+                                                               AV_PIX_FMT_FLAG_PAL));
 }
 
 static int activate(AVFilterContext *ctx)
@@ -332,7 +335,7 @@ const AVFilter ff_vf_feedback = {
     .uninit      = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };
