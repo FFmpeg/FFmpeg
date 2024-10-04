@@ -351,10 +351,8 @@ typedef struct SwsContext {
      * downscaling factor that needs to be supported in one scaler.
      */
     struct SwsContext *cascaded_context[3];
-    int cascaded_tmpStride[4];
-    uint8_t *cascaded_tmp[4];
-    int cascaded1_tmpStride[4];
-    uint8_t *cascaded1_tmp[4];
+    int cascaded_tmpStride[2][4];
+    uint8_t *cascaded_tmp[2][4];
     int cascaded_mainindex;
 
     double gamma_value;

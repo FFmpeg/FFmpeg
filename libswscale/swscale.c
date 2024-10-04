@@ -837,26 +837,26 @@ static int scale_gamma(SwsContext *c,
 {
     int ret = scale_internal(c->cascaded_context[0],
                              srcSlice, srcStride, srcSliceY, srcSliceH,
-                             c->cascaded_tmp, c->cascaded_tmpStride, 0, c->srcH);
+                             c->cascaded_tmp[0], c->cascaded_tmpStride[0], 0, c->srcH);
 
     if (ret < 0)
         return ret;
 
     if (c->cascaded_context[2])
-        ret = scale_internal(c->cascaded_context[1], (const uint8_t * const *)c->cascaded_tmp,
-                             c->cascaded_tmpStride, srcSliceY, srcSliceH,
-                             c->cascaded1_tmp, c->cascaded1_tmpStride, 0, c->dstH);
+        ret = scale_internal(c->cascaded_context[1], (const uint8_t * const *)c->cascaded_tmp[0],
+                             c->cascaded_tmpStride[0], srcSliceY, srcSliceH,
+                             c->cascaded_tmp[1], c->cascaded_tmpStride[1], 0, c->dstH);
     else
-        ret = scale_internal(c->cascaded_context[1], (const uint8_t * const *)c->cascaded_tmp,
-                             c->cascaded_tmpStride, srcSliceY, srcSliceH,
+        ret = scale_internal(c->cascaded_context[1], (const uint8_t * const *)c->cascaded_tmp[0],
+                             c->cascaded_tmpStride[0], srcSliceY, srcSliceH,
                              dstSlice, dstStride, dstSliceY, dstSliceH);
 
     if (ret < 0)
         return ret;
 
     if (c->cascaded_context[2]) {
-        ret = scale_internal(c->cascaded_context[2], (const uint8_t * const *)c->cascaded1_tmp,
-                             c->cascaded1_tmpStride, c->cascaded_context[1]->dstY - ret,
+        ret = scale_internal(c->cascaded_context[2], (const uint8_t * const *)c->cascaded_tmp[1],
+                             c->cascaded_tmpStride[1], c->cascaded_context[1]->dstY - ret,
                              c->cascaded_context[1]->dstY,
                              dstSlice, dstStride, dstSliceY, dstSliceH);
     }
@@ -871,12 +871,12 @@ static int scale_cascaded(SwsContext *c,
 {
     int ret = scale_internal(c->cascaded_context[0],
                              srcSlice, srcStride, srcSliceY, srcSliceH,
-                             c->cascaded_tmp, c->cascaded_tmpStride,
+                             c->cascaded_tmp[0], c->cascaded_tmpStride[0],
                              0, c->cascaded_context[0]->dstH);
     if (ret < 0)
         return ret;
     ret = scale_internal(c->cascaded_context[1],
-                         (const uint8_t * const * )c->cascaded_tmp, c->cascaded_tmpStride,
+                         (const uint8_t * const * )c->cascaded_tmp[0], c->cascaded_tmpStride[0],
                          0, c->cascaded_context[0]->dstH,
                          dstSlice, dstStride, dstSliceY, dstSliceH);
     return ret;
