@@ -19,7 +19,7 @@
 #ifndef AVFILTER_VULKAN_SPIRV_H
 #define AVFILTER_VULKAN_SPIRV_H
 
-#include "libavutil/vulkan.h"
+#include "vulkan.h"
 
 #include "config.h"
 

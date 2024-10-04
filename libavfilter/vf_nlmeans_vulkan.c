@@ -20,9 +20,9 @@
 
 #include "libavutil/mem.h"
 #include "libavutil/random_seed.h"
+#include "libavutil/vulkan_spirv.h"
 #include "libavutil/opt.h"
 #include "vulkan_filter.h"
-#include "vulkan_spirv.h"
 
 #include "filters.h"
 #include "video.h"

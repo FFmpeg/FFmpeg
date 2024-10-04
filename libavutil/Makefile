@@ -228,6 +228,8 @@ SKIPHEADERS-$(CONFIG_VDPAU)            += hwcontext_vdpau.h
 SKIPHEADERS-$(CONFIG_VULKAN)           += hwcontext_vulkan.h vulkan.h   \
                                           vulkan_functions.h            \
                                           vulkan_loader.h
+SKIPHEADERS-$(CONFIG_LIBSHADERC)       += vulkan_spirv.h
+SKIPHEADERS-$(CONFIG_LIBGLSLANG)       += vulkan_spirv.h
 
 TESTPROGS = adler32                                                     \
             aes                                                         \

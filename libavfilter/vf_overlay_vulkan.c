@@ -20,8 +20,8 @@
 
 #include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
+#include "libavutil/vulkan_spirv.h"
 #include "vulkan_filter.h"
-#include "vulkan_spirv.h"
 
 #include "filters.h"
 #include "framesync.h"
