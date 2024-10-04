@@ -908,9 +908,11 @@ static int activate(AVFilterContext *ctx)
     }
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    FieldMatchContext *fm = ctx->priv;
+    const FieldMatchContext *fm = ctx->priv;
 
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
@@ -939,17 +941,17 @@ static int query_formats(AVFilterContext *ctx)
     if (!fmts_list)
         return AVERROR(ENOMEM);
     if (!fm->ppsrc) {
-        return ff_set_common_formats(ctx, fmts_list);
+        return ff_set_common_formats2(ctx, cfg_in, cfg_out, fmts_list);
     }
 
-    if ((ret = ff_formats_ref(fmts_list, &ctx->inputs[INPUT_MAIN]->outcfg.formats)) < 0)
+    if ((ret = ff_formats_ref(fmts_list, &cfg_in[INPUT_MAIN]->formats)) < 0)
         return ret;
     fmts_list = ff_make_format_list(unproc_pix_fmts);
     if (!fmts_list)
         return AVERROR(ENOMEM);
-    if ((ret = ff_formats_ref(fmts_list, &ctx->outputs[0]->incfg.formats)) < 0)
+    if ((ret = ff_formats_ref(fmts_list, &cfg_out[0]->formats)) < 0)
         return ret;
-    if ((ret = ff_formats_ref(fmts_list, &ctx->inputs[INPUT_CLEANSRC]->outcfg.formats)) < 0)
+    if ((ret = ff_formats_ref(fmts_list, &cfg_in[INPUT_CLEANSRC]->formats)) < 0)
         return ret;
     return 0;
 }
@@ -1080,7 +1082,7 @@ const AVFilter ff_vf_fieldmatch = {
     .uninit         = fieldmatch_uninit,
     .inputs         = NULL,
     FILTER_OUTPUTS(fieldmatch_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class     = &fieldmatch_class,
     .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
