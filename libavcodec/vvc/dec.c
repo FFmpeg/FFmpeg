@@ -207,8 +207,6 @@ static void min_tu_nz_tl_init(TabList *l, VVCFrameContext *fc)
     tl_init(l, 0, changed);
 
     for (int i = LUMA; i <= CHROMA; i++) {
-        TL_ADD(tb_pos_x0[i], pic_size_in_min_tu);
-        TL_ADD(tb_pos_y0[i], pic_size_in_min_tu);
         TL_ADD(tb_width[i],  pic_size_in_min_tu);
         TL_ADD(tb_height[i], pic_size_in_min_tu);
     }

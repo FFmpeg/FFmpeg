@@ -172,8 +172,6 @@ typedef struct VVCFrameContext {
 
         uint8_t *tu_coded_flag[VVC_MAX_SAMPLE_ARRAYS];  ///< tu_y_coded_flag[][],  tu_cb_coded_flag[][],  tu_cr_coded_flag[][]
         uint8_t *tu_joint_cbcr_residual_flag;           ///< tu_joint_cbcr_residual_flag[][]
-        int     *tb_pos_x0[2];
-        int     *tb_pos_y0[2];
         uint8_t *tb_width[2];
         uint8_t *tb_height[2];
         uint8_t *pcmf[2];
