@@ -37,14 +37,16 @@ typedef struct HWMapContext {
     int            reverse;
 } HWMapContext;
 
-static int hwmap_query_formats(AVFilterContext *avctx)
+static int hwmap_query_formats(const AVFilterContext *avctx,
+                               AVFilterFormatsConfig **cfg_in,
+                               AVFilterFormatsConfig **cfg_out)
 {
     int ret;
 
     if ((ret = ff_formats_ref(ff_all_formats(AVMEDIA_TYPE_VIDEO),
-                              &avctx->inputs[0]->outcfg.formats)) < 0 ||
+                              &cfg_in[0]->formats)) < 0 ||
         (ret = ff_formats_ref(ff_all_formats(AVMEDIA_TYPE_VIDEO),
-                              &avctx->outputs[0]->incfg.formats)) < 0)
+                              &cfg_out[0]->formats)) < 0)
         return ret;
 
     return 0;
@@ -428,7 +430,7 @@ const AVFilter ff_vf_hwmap = {
     .priv_class     = &hwmap_class,
     FILTER_INPUTS(hwmap_inputs),
     FILTER_OUTPUTS(hwmap_outputs),
-    FILTER_QUERY_FUNC(hwmap_query_formats),
+    FILTER_QUERY_FUNC2(hwmap_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
     .flags          = AVFILTER_FLAG_HWDEVICE,
 };
