@@ -220,8 +220,7 @@ static int vulkan_encode_issue(AVCodecContext *avctx,
         .sType = VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR,
         .pNext = NULL,
         .codedOffset = { 0 },
-        .codedExtent = (VkExtent2D){ ctx->base.surface_width,
-                                     ctx->base.surface_height },
+        .codedExtent = (VkExtent2D){ avctx->width, avctx->height },
         .baseArrayLayer = ctx->common.layered_dpb ? slot_index : 0,
         .imageViewBinding = vp->dpb.view,
     };
@@ -565,8 +564,8 @@ static int vulkan_encode_create_dpb(AVCodecContext *avctx, FFVulkanEncodeContext
 
     base_ctx->recon_frames->format    = AV_PIX_FMT_VULKAN;
     base_ctx->recon_frames->sw_format = dpb_format;
-    base_ctx->recon_frames->width     = base_ctx->surface_width;
-    base_ctx->recon_frames->height    = base_ctx->surface_height;
+    base_ctx->recon_frames->width     = avctx->width;
+    base_ctx->recon_frames->height    = avctx->height;
 
     hwfc->format[0]    = ctx->pic_format;
     hwfc->create_pnext = &ctx->profile_list;
@@ -915,9 +914,9 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
 
     /* Setup width/height alignment */
     base_ctx->surface_width = avctx->coded_width =
-        FFALIGN(avctx->width, ctx->caps.pictureAccessGranularity.width);
+        FFALIGN(avctx->width, ctx->enc_caps.encodeInputPictureGranularity.width);
     base_ctx->surface_height = avctx->coded_height =
-        FFALIGN(avctx->height, ctx->caps.pictureAccessGranularity.height);
+        FFALIGN(avctx->height, ctx->enc_caps.encodeInputPictureGranularity.height);
 
     /* Setup slice width/height */
     base_ctx->slice_block_width = ctx->enc_caps.encodeInputPictureGranularity.width;
