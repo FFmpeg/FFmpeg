@@ -830,7 +830,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV420P,   AV_PIX_FMT_YUV422P,   AV_PIX_FMT_YUV444P,
@@ -840,32 +842,34 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
     int res;
-    ColorSpaceContext *s = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterFormats *formats = ff_make_format_list(pix_fmts);
+    const ColorSpaceContext *s = ctx->priv;
+    AVFilterFormats *formats;
 
-    res = ff_formats_ref(ff_make_formats_list_singleton(s->out_csp), &outlink->incfg.color_spaces);
+    res = ff_formats_ref(ff_make_formats_list_singleton(s->out_csp), &cfg_out[0]->color_spaces);
     if (res < 0)
         return res;
     if (s->user_rng != AVCOL_RANGE_UNSPECIFIED) {
-        res = ff_formats_ref(ff_make_formats_list_singleton(s->user_rng), &outlink->incfg.color_ranges);
+        res = ff_formats_ref(ff_make_formats_list_singleton(s->user_rng), &cfg_out[0]->color_ranges);
         if (res < 0)
             return res;
     }
 
+    formats = ff_make_format_list(pix_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
     if (s->user_format == AV_PIX_FMT_NONE)
-        return ff_set_common_formats(ctx, formats);
-    res = ff_formats_ref(formats, &ctx->inputs[0]->outcfg.formats);
+        return ff_set_common_formats2(ctx, cfg_in, cfg_out, formats);
+
+    res = ff_formats_ref(formats, &cfg_in[0]->formats);
     if (res < 0)
         return res;
+
     formats = NULL;
     res = ff_add_format(&formats, s->user_format);
     if (res < 0)
         return res;
 
-    return ff_formats_ref(formats, &outlink->incfg.formats);
+    return ff_formats_ref(formats, &cfg_out[0]->formats);
 }
 
 static int config_props(AVFilterLink *outlink)
@@ -1035,6 +1039,6 @@ const AVFilter ff_vf_colorspace = {
     .priv_class      = &colorspace_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
