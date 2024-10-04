@@ -23,7 +23,7 @@
 
 #include "avfilter.h"
 
-#include "vulkan.h"
+#include "libavutil/vulkan.h"
 
 /**
  * General lavfi IO functions

@@ -662,7 +662,7 @@ SKIPHEADERS-$(CONFIG_LIBVIDSTAB)             += vidstabutils.h
 SKIPHEADERS-$(CONFIG_QSVVPP)                 += qsvvpp.h stack_internal.h
 SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl.h
 SKIPHEADERS-$(CONFIG_VAAPI)                  += vaapi_vpp.h stack_internal.h
-SKIPHEADERS-$(CONFIG_VULKAN)                 += vulkan.h vulkan_filter.h
+SKIPHEADERS-$(CONFIG_VULKAN)                 += vulkan_filter.h
 SKIPHEADERS-$(CONFIG_LIBSHADERC)             += vulkan_spirv.h
 SKIPHEADERS-$(CONFIG_LIBGLSLANG)             += vulkan_spirv.h
 

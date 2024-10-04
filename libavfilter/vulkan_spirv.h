@@ -21,7 +21,6 @@
 
 #include "libavutil/vulkan.h"
 
-#include "vulkan.h"
 #include "config.h"
 
 typedef struct FFVkSPIRVCompiler {
