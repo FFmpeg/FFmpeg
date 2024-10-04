@@ -184,11 +184,11 @@ static int glslc_shader_compile(FFVulkanContext *s, FFVkSPIRVCompiler *ctx,
 
 #if ((GLSLANG_VERSION_MAJOR) >= 12)
     glslang_spv_options_t glslc_opts = {
-        .generate_debug_info = !!(s->extensions & FF_VK_EXT_DEBUG_UTILS),
+        .generate_debug_info = !!(s->extensions & (FF_VK_EXT_DEBUG_UTILS | FF_VK_EXT_RELAXED_EXTENDED_INSTR)),
         .emit_nonsemantic_shader_debug_info = !!(s->extensions & FF_VK_EXT_RELAXED_EXTENDED_INSTR),
         .emit_nonsemantic_shader_debug_source = !!(s->extensions & FF_VK_EXT_RELAXED_EXTENDED_INSTR),
         .disable_optimizer = !!(s->extensions & FF_VK_EXT_DEBUG_UTILS),
-        .strip_debug_info = !(s->extensions & FF_VK_EXT_DEBUG_UTILS),
+        .strip_debug_info = !(s->extensions & (FF_VK_EXT_DEBUG_UTILS | FF_VK_EXT_RELAXED_EXTENDED_INSTR)),
         .optimize_size = 0,
         .disassemble = 0,
         .validate = 1,

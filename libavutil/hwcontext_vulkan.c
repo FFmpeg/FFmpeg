@@ -642,6 +642,10 @@ enum FFVulkanDebugMode {
     FF_VULKAN_DEBUG_PRINTF = 2,
     /* Enables extra printouts */
     FF_VULKAN_DEBUG_PRACTICES = 3,
+    /* Disables validation but keeps shader debug info and optimizations */
+    FF_VULKAN_DEBUG_PROFILE = 4,
+
+    FF_VULKAN_DEBUG_NB,
 };
 
 static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
@@ -705,7 +709,10 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
         tstr = optional_exts[i].name;
         found = 0;
 
-        if (dev && debug_mode &&
+        if (dev &&
+            ((debug_mode == FF_VULKAN_DEBUG_VALIDATE) ||
+             (debug_mode == FF_VULKAN_DEBUG_PRINTF) ||
+             (debug_mode == FF_VULKAN_DEBUG_PRACTICES)) &&
             !strcmp(tstr, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME)) {
             continue;
         }
@@ -748,7 +755,8 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
     }
 
 #ifdef VK_KHR_shader_relaxed_extended_instruction
-    if (dev && debug_mode == FF_VULKAN_DEBUG_PRINTF) {
+    if (((debug_mode == FF_VULKAN_DEBUG_PRINTF) ||
+         (debug_mode == FF_VULKAN_DEBUG_PROFILE)) && dev) {
         tstr = VK_KHR_SHADER_RELAXED_EXTENDED_INSTRUCTION_EXTENSION_NAME;
         found = 0;
         for (int j = 0; j < sup_ext_count; j++) {
@@ -761,7 +769,7 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
             av_log(ctx, AV_LOG_VERBOSE, "Using %s extension %s\n", mod, tstr);
             ADD_VAL_TO_LIST(extension_names, extensions_found, tstr);
         } else {
-            av_log(ctx, AV_LOG_ERROR, "Debug printf enabled, but extension \"%s\" not found!\n",
+            av_log(ctx, AV_LOG_ERROR, "Debug_printf/profile enabled, but extension \"%s\" not found!\n",
                    tstr);
             err = AVERROR(EINVAL);
             goto fail;
@@ -847,7 +855,9 @@ static int check_layers(AVHWDeviceContext *ctx, AVDictionary *opts,
 
     /* Check for any properly supported validation layer */
     if (debug_opt) {
-        if (!strcmp(debug_opt->value, "printf")) {
+        if (!strcmp(debug_opt->value, "profile")) {
+            mode = FF_VULKAN_DEBUG_PROFILE;
+        } else if (!strcmp(debug_opt->value, "printf")) {
             mode = FF_VULKAN_DEBUG_PRINTF;
         } else if (!strcmp(debug_opt->value, "validate")) {
             mode = FF_VULKAN_DEBUG_VALIDATE;
@@ -857,7 +867,7 @@ static int check_layers(AVHWDeviceContext *ctx, AVDictionary *opts,
             char *end_ptr = NULL;
             int idx = strtol(debug_opt->value, &end_ptr, 10);
             if (end_ptr == debug_opt->value || end_ptr[0] != '\0' ||
-                idx < 0 || idx > FF_VULKAN_DEBUG_PRACTICES) {
+                idx < 0 || idx >= FF_VULKAN_DEBUG_NB) {
                 av_log(ctx, AV_LOG_ERROR, "Invalid debugging mode \"%s\"\n",
                        debug_opt->value);
                 err = AVERROR(EINVAL);
@@ -887,6 +897,8 @@ static int check_layers(AVHWDeviceContext *ctx, AVDictionary *opts,
             err = AVERROR(ENOTSUP);
             goto end;
         }
+    } else if (mode == FF_VULKAN_DEBUG_PROFILE) {
+        *debug_mode = mode;
     }
 
     /* Process any custom layers enabled */

@@ -60,14 +60,16 @@ static int shdc_shader_compile(FFVulkanContext *s, FFVkSPIRVCompiler *ctx,
                                            shaderc_env_version_vulkan_1_3);
     shaderc_compile_options_set_target_spirv(opts, shaderc_spirv_version_1_6);
 
-    if (s->extensions & FF_VK_EXT_DEBUG_UTILS) {
+    /* If either extension is set, turn on debug info */
+    if (s->extensions & (FF_VK_EXT_DEBUG_UTILS | FF_VK_EXT_RELAXED_EXTENDED_INSTR))
         shaderc_compile_options_set_generate_debug_info(opts);
+
+    if (s->extensions & FF_VK_EXT_DEBUG_UTILS)
         shaderc_compile_options_set_optimization_level(opts,
                                                        shaderc_optimization_level_zero);
-    } else {
+    else
         shaderc_compile_options_set_optimization_level(opts,
                                                        shaderc_optimization_level_performance);
-    }
 
     res = shaderc_compile_into_spv((shaderc_compiler_t)ctx->priv,
                                    shd->src.str, strlen(shd->src.str),

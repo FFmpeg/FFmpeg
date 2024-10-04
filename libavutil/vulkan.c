@@ -1479,7 +1479,8 @@ int ff_vk_shader_init(FFVulkanContext *s, FFVulkanShader *shd, const char *name,
     GLSLC(0, #define IS_WITHIN(v1, v2) ((v1.x < v2.x) && (v1.y < v2.y))       );
     GLSLC(0,                                                                  );
     GLSLC(0, #extension GL_EXT_scalar_block_layout : require                  );
-    if (s->extensions & FF_VK_EXT_RELAXED_EXTENDED_INSTR)
+    if ((s->extensions & FF_VK_EXT_DEBUG_UTILS) &&
+        (s->extensions & FF_VK_EXT_RELAXED_EXTENDED_INSTR))
         GLSLC(0, #extension GL_EXT_debug_printf : require                     );
 
     if (stage == VK_SHADER_STAGE_TASK_BIT_EXT ||
