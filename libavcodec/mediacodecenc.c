@@ -429,6 +429,16 @@ static int mediacodec_receive(AVCodecContext *avctx, AVPacket *pkt)
     }
 
     if (out_info.flags & ff_AMediaCodec_getBufferFlagCodecConfig(codec)) {
+        if (avctx->codec_id == AV_CODEC_ID_AV1) {
+            // Skip AV1CodecConfigurationRecord without configOBUs
+            if (out_info.size <= 4) {
+                ff_AMediaCodec_releaseOutputBuffer(codec, index, false);
+                return mediacodec_receive(avctx, pkt);
+            }
+            out_info.size -= 4;
+            out_info.offset += 4;
+        }
+
         ret = av_reallocp(&s->extradata, out_info.size);
         if (ret)
             goto bailout;
