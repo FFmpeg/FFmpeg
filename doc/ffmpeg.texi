@@ -526,6 +526,38 @@ reads an input video and
 
 @end itemize
 
+Such a transcoding pipeline can be represented with the following diagram:
+@verbatim
+┌──────────┬───────────────┐
+│ demuxer  │               │   ┌─────────┐            ┌─────────┐    ┌────────────────────┐
+╞══════════╡ video stream  │   │  video  │            │  video  │    │ null muxer         │
+│   INPUT  │               ├──⮞│ decoder ├──┬────────⮞│ encoder ├─┬─⮞│(discards its input)│
+│          │               │   └─────────┘  │         │(libx264)│ │  └────────────────────┘
+└──────────┴───────────────┘                │         └─────────┘ │
+                                 ╭───────⮜──╯   ┌─────────┐       │
+                                 │              │loopback │       │
+                                 │ ╭─────⮜──────┤ decoder ├────⮜──╯
+                                 │ │            └─────────┘
+                                 │ │
+                                 │ │
+                                 │ │  ┌───────────────────┐
+                                 │ │  │complex filtergraph│
+                                 │ │  ╞═══════════════════╡
+                                 │ │  │  ┌─────────────┐  │
+                                 ╰─╫─⮞├─⮞│   hstack    ├─⮞├╮
+                                   ╰─⮞├─⮞│             │  ││
+                                      │  └─────────────┘  ││
+                                      └───────────────────┘│
+                                                           │
+┌──────────┬───────────────┐  ┌─────────┐                  │
+│ muxer    │               │  │  video  │                  │
+╞══════════╡ video stream  │⮜─┤ encoder ├───────⮜──────────╯
+│  OUTPUT  │               │  │ (ffv1)  │
+│          │               │  └─────────┘
+└──────────┴───────────────┘
+@end verbatim
+
+
 @c man end DETAILED DESCRIPTION
 
 @anchor{Stream selection}
