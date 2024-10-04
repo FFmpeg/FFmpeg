@@ -101,7 +101,9 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
     const FadeContext *s = ctx->priv;
     static const enum AVPixelFormat pix_fmts[] = {
@@ -162,7 +164,7 @@ static int query_formats(AVFilterContext *ctx)
         else
             pixel_fmts = pix_fmts_rgb;
     }
-    return ff_set_common_formats_from_list(ctx, pixel_fmts);
+    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, pixel_fmts);
 }
 
 const static enum AVPixelFormat studio_level_pix_fmts[] = {
@@ -566,7 +568,7 @@ const AVFilter ff_vf_fade = {
     .priv_class    = &fade_class,
     FILTER_INPUTS(avfilter_vf_fade_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS |
                      AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
