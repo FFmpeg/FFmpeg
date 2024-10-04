@@ -42,6 +42,7 @@ typedef struct ProgressListener {
 typedef enum VVCTaskStage {
     VVC_TASK_STAGE_INIT,                    // for CTU(0, 0) only
     VVC_TASK_STAGE_PARSE,
+    VVC_TASK_STAGE_DEBLOCK_BS,
     VVC_TASK_STAGE_INTER,
     VVC_TASK_STAGE_RECON,
     VVC_TASK_STAGE_LMCS,
@@ -111,6 +112,7 @@ static void add_task(VVCContext *s, VVCTask *t)
     const int priorities[] = {
         0,                  // VVC_TASK_STAGE_INIT,
         0,                  // VVC_TASK_STAGE_PARSE,
+        1,                  // VVC_TASK_STAGE_DEBLOCK_BS
         // For an 8K clip, a CTU line completed in the reference frame may trigger 64 and more inter tasks.
         // We assign these tasks the lowest priority to avoid being overwhelmed with inter tasks.
         PRIORITY_LOWEST,    // VVC_TASK_STAGE_INTER
@@ -181,6 +183,8 @@ static int task_has_target_score(VVCTask *t, const VVCTaskStage stage, const uin
     // l:left, r:right, t: top, b: bottom
     static const uint8_t target_score[] =
     {
+        2,          //VVC_TASK_STAGE_DEBLOCK_BS,need l + t parse
+        0,          //VVC_TASK_STAGE_INTER,     not used
         2,          //VVC_TASK_STAGE_RECON,     need l + rt recon
         3,          //VVC_TASK_STAGE_LMCS,      need r + b + rb recon
         1,          //VVC_TASK_STAGE_DEBLOCK_V, need l deblock v
@@ -202,7 +206,7 @@ static int task_has_target_score(VVCTask *t, const VVCTaskStage stage, const uin
     } else if (stage == VVC_TASK_STAGE_INTER) {
         target = atomic_load(&t->target_inter_score);
     } else {
-        target = target_score[stage - VVC_TASK_STAGE_RECON];
+        target = target_score[stage - VVC_TASK_STAGE_DEBLOCK_BS];
     }
 
     //+1 for previous stage
@@ -348,6 +352,10 @@ static void task_stage_done(const VVCTask *t, VVCContext *s)
 
     //this is a reserve map of ready_score, ordered by zigzag
     if (stage == VVC_TASK_STAGE_PARSE) {
+        ADD( 0,  1, VVC_TASK_STAGE_DEBLOCK_BS);
+        ADD( 1,  0, VVC_TASK_STAGE_DEBLOCK_BS);
+        if (t->rx < 0 || t->rx >= ft->ctu_width || t->ry < 0 || t->ry >= ft->ctu_height)
+            return;
         parse_task_done(s, fc, t->rx, t->ry);
     } else if (stage == VVC_TASK_STAGE_RECON) {
         ADD(-1,  1, VVC_TASK_STAGE_RECON);
@@ -481,6 +489,14 @@ static int run_parse(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
     return 0;
 }
 
+static int run_deblock_bs(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
+{
+    if (!lc->sc->sh.r->sh_deblocking_filter_disabled_flag)
+        ff_vvc_deblock_bs(lc, t->rx, t->ry, t->rs);
+
+    return 0;
+}
+
 static int run_inter(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
 {
     VVCFrameContext *fc = lc->fc;
@@ -590,6 +606,7 @@ static int run_alf(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
 const static char* task_name[] = {
     "INIT",
     "P",
+    "B",
     "I",
     "R",
     "L",
@@ -611,6 +628,7 @@ static void task_run_stage(VVCTask *t, VVCContext *s, VVCLocalContext *lc)
     static const run_func run[] = {
         run_init,
         run_parse,
+        run_deblock_bs,
         run_inter,
         run_recon,
         run_lmcs,
@@ -701,9 +719,9 @@ static void frame_thread_init_score(VVCFrameContext *fc)
     const VVCFrameThread *ft = fc->ft;
     VVCTask task;
 
-    task_init(&task, VVC_TASK_STAGE_RECON, fc, 0, 0);
+    task_init(&task, VVC_TASK_STAGE_PARSE, fc, 0, 0);
 
-    for (int i = VVC_TASK_STAGE_RECON; i < VVC_TASK_STAGE_LAST; i++) {
+    for (int i = VVC_TASK_STAGE_PARSE; i < VVC_TASK_STAGE_LAST; i++) {
         task.stage = i;
 
         for (task.rx = -1; task.rx <= ft->ctu_width; task.rx++) {

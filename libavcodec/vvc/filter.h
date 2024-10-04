@@ -34,6 +34,15 @@
 void ff_vvc_lmcs_filter(const VVCLocalContext *lc, const int x0, const int y0);
 
 /**
+ * derive boundary strength for the CTU
+ * @param lc local context for CTU
+ * @param rx raster x position for the CTU
+ * @param ry raster y position for the CTU
+ * @param rs raster position for the CTU
+ */
+void ff_vvc_deblock_bs(VVCLocalContext *lc, const int rx, const int ry, const int rs);
+
+/**
  * vertical deblock filter for the CTU
  * @param lc local context for CTU
  * @param x0 x position for the CTU

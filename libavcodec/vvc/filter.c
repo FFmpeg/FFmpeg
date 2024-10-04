@@ -678,12 +678,14 @@ static void vvc_deblock_bs_chroma(const VVCLocalContext *lc,
 typedef void (*deblock_bs_fn)(const VVCLocalContext *lc, const int x0, const int y0,
     const int width, const int height, const int rs, const int vertical);
 
-static void vvc_deblock_bs(const VVCLocalContext *lc, const int x0, const int y0, const int rs, const int vertical)
+void ff_vvc_deblock_bs(VVCLocalContext *lc, const int rx, const int ry, const int rs)
 {
     const VVCFrameContext *fc  = lc->fc;
     const VVCSPS *sps          = fc->ps.sps;
     const VVCPPS *pps          = fc->ps.pps;
     const int ctb_size         = sps->ctb_size_y;
+    const int x0               = rx << sps->ctb_log2_size_y;
+    const int y0               = ry << sps->ctb_log2_size_y;
     const int x_end            = FFMIN(x0 + ctb_size, pps->width) >> MIN_TU_LOG2;
     const int y_end            = FFMIN(y0 + ctb_size, pps->height) >> MIN_TU_LOG2;
     const int has_chroma       = !!sps->r->sps_chroma_format_idc;
@@ -691,15 +693,18 @@ static void vvc_deblock_bs(const VVCLocalContext *lc, const int x0, const int y0
         vvc_deblock_bs_luma, vvc_deblock_bs_chroma
     };
 
-    for (int is_chroma = 0; is_chroma <= has_chroma; is_chroma++) {
-        const int hs = sps->hshift[is_chroma];
-        const int vs = sps->vshift[is_chroma];
-        for (int y = y0 >> MIN_TU_LOG2; y < y_end; y++) {
-            for (int x = x0 >> MIN_TU_LOG2; x < x_end; x++) {
-                const int off = y * fc->ps.pps->min_tu_width + x;
-                if ((fc->tab.tb_pos_x0[is_chroma][off] >> MIN_TU_LOG2) == x && (fc->tab.tb_pos_y0[is_chroma][off] >> MIN_TU_LOG2) == y) {
-                    deblock_bs[is_chroma](lc, x << MIN_TU_LOG2, y << MIN_TU_LOG2,
-                        fc->tab.tb_width[is_chroma][off] << hs, fc->tab.tb_height[is_chroma][off] << vs, rs, vertical);
+    ff_vvc_decode_neighbour(lc, x0, y0, rx, ry, rs);
+    for (int vertical = 0; vertical <= 1; vertical++) {
+        for (int is_chroma = 0; is_chroma <= has_chroma; is_chroma++) {
+            const int hs = sps->hshift[is_chroma];
+            const int vs = sps->vshift[is_chroma];
+            for (int y = y0 >> MIN_TU_LOG2; y < y_end; y++) {
+                for (int x = x0 >> MIN_TU_LOG2; x < x_end; x++) {
+                    const int off = y * fc->ps.pps->min_tu_width + x;
+                    if ((fc->tab.tb_pos_x0[is_chroma][off] >> MIN_TU_LOG2) == x && (fc->tab.tb_pos_y0[is_chroma][off] >> MIN_TU_LOG2) == y) {
+                        deblock_bs[is_chroma](lc, x << MIN_TU_LOG2, y << MIN_TU_LOG2,
+                            fc->tab.tb_width[is_chroma][off] << hs, fc->tab.tb_height[is_chroma][off] << vs, rs, vertical);
+                    }
                 }
             }
         }
@@ -794,8 +799,6 @@ static void vvc_deblock(const VVCLocalContext *lc, int x0, int y0, const int rs,
     //not use this yet, may needed by plt.
     const uint8_t no_p[4]  = { 0 };
     const uint8_t no_q[4]  = { 0 } ;
-
-    vvc_deblock_bs(lc, x0, y0, rs, vertical);
 
     if (!vertical) {
         FFSWAP(int, x_end, y_end);
