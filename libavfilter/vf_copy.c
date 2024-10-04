@@ -28,9 +28,12 @@
 #include "formats.h"
 #include "video.h"
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    return ff_set_common_formats(ctx, ff_formats_pixdesc_filter(0, AV_PIX_FMT_FLAG_HWACCEL));
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out,
+                                  ff_formats_pixdesc_filter(0, AV_PIX_FMT_FLAG_HWACCEL));
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -72,5 +75,5 @@ const AVFilter ff_vf_copy = {
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_vf_copy_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
