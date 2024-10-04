@@ -37,12 +37,9 @@
 /* public XPSNR DSP structure definition */
 
 typedef struct XPSNRDSPContext {
-    uint64_t (*sse_line) (const uint8_t *buf, const uint8_t *ref, const int w);
     uint64_t (*highds_func) (const int x_act, const int y_act, const int w_act, const int h_act, const int16_t *o_m0, const int o);
     uint64_t (*diff1st_func)(const uint32_t w_act, const uint32_t h_act, const int16_t *o_m0, int16_t *o_m1, const int o);
     uint64_t (*diff2nd_func)(const uint32_t w_act, const uint32_t h_act, const int16_t *o_m0, int16_t *o_m1, int16_t *o_m2, const int o);
-} PSNRDSPContext;
-
-void ff_xpsnr_init_x86(PSNRDSPContext *dsp, const int bpp);
+} XPSNRDSPContext;
 
 #endif /* AVFILTER_XPSNR_H */

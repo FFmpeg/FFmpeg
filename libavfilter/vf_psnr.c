@@ -82,30 +82,6 @@ static inline double get_psnr(double mse, uint64_t nb_frames, int max)
     return 10.0 * log10(pow_2(max) / (mse / nb_frames));
 }
 
-static uint64_t sse_line_8bit(const uint8_t *main_line,  const uint8_t *ref_line, int outw)
-{
-    int j;
-    unsigned m2 = 0;
-
-    for (j = 0; j < outw; j++)
-        m2 += pow_2(main_line[j] - ref_line[j]);
-
-    return m2;
-}
-
-static uint64_t sse_line_16bit(const uint8_t *_main_line, const uint8_t *_ref_line, int outw)
-{
-    int j;
-    uint64_t m2 = 0;
-    const uint16_t *main_line = (const uint16_t *) _main_line;
-    const uint16_t *ref_line = (const uint16_t *) _ref_line;
-
-    for (j = 0; j < outw; j++)
-        m2 += pow_2(main_line[j] - ref_line[j]);
-
-    return m2;
-}
-
 typedef struct ThreadData {
     const uint8_t *main_data[4];
     const uint8_t *ref_data[4];
@@ -358,10 +334,7 @@ static int config_input_ref(AVFilterLink *inlink)
     }
     s->average_max = lrint(average_max);
 
-    s->dsp.sse_line = desc->comp[0].depth > 8 ? sse_line_16bit : sse_line_8bit;
-#if ARCH_X86
-    ff_psnr_init_x86(&s->dsp, desc->comp[0].depth);
-#endif
+    ff_psnr_init(&s->dsp, desc->comp[0].depth);
 
     s->score = av_calloc(s->nb_threads, sizeof(*s->score));
     if (!s->score)

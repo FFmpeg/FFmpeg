@@ -36,6 +36,7 @@
 #include "drawutils.h"
 #include "filters.h"
 #include "framesync.h"
+#include "psnr.h"
 #include "xpsnr.h"
 
 /* XPSNR structure definition */
@@ -68,7 +69,8 @@ typedef struct XPSNRContext {
     double          sum_xpsnr [3];
     int             and_is_inf[3];
     int             is_rgb;
-    PSNRDSPContext  dsp;
+    XPSNRDSPContext dsp;
+    PSNRDSPContext  pdsp;
 } XPSNRContext;
 
 /* required macro definitions */
@@ -142,22 +144,6 @@ static uint64_t diff2nd(const uint32_t w_act, const uint32_t h_act, const int16_
     return (ta_act * XPSNR_GAMMA);
 }
 
-static uint64_t sse_line_16bit(const uint8_t *blk_org8, const uint8_t *blk_rec8, int block_width)
-{
-    const uint16_t *blk_org = (const uint16_t *) blk_org8;
-    const uint16_t *blk_rec = (const uint16_t *) blk_rec8;
-    uint64_t sse = 0; /* sum for one pixel line */
-
-    for (int x = 0; x < block_width; x++) {
-        const int64_t error = (int64_t) blk_org[x] - (int64_t) blk_rec[x];
-
-        sse += error * error;
-    }
-
-    /* sum of squared errors for the pixel line */
-    return sse;
-}
-
 static inline uint64_t calc_squared_error(XPSNRContext const *s,
                                           const int16_t *blk_org,     const uint32_t stride_org,
                                           const int16_t *blk_rec,     const uint32_t stride_rec,
@@ -166,7 +152,7 @@ static inline uint64_t calc_squared_error(XPSNRContext const *s,
     uint64_t sse = 0;  /* sum of squared errors */
 
     for (uint32_t y = 0; y < block_height; y++) {
-        sse += s->dsp.sse_line((const uint8_t *) blk_org, (const uint8_t *) blk_rec, (int) block_width);
+        sse += s->pdsp.sse_line((const uint8_t *) blk_org, (const uint8_t *) blk_rec, (int) block_width);
         blk_org += stride_org;
         blk_rec += stride_rec;
     }
@@ -609,13 +595,11 @@ static int config_input_ref(AVFilterLink *inlink)
     s->plane_height[1] = s->plane_height[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->plane_height[0] = s->plane_height[3] = inlink->h;
 
-    s->dsp.sse_line = sse_line_16bit;
+    /* XPSNR always operates with 16-bit internal precision */
+    ff_psnr_init(&s->pdsp, 15);
     s->dsp.highds_func = highds; /* initialize filtering methods */
     s->dsp.diff1st_func = diff1st;
     s->dsp.diff2nd_func = diff2nd;
-#if ARCH_X86
-    ff_xpsnr_init_x86(&s->dsp, 15); /* initialize x86 SSE method */
-#endif
 
     return 0;
 }

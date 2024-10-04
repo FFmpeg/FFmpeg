@@ -18,17 +18,47 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_PSNR_H
-#define AVFILTER_PSNR_H
+#include "config.h"
 
 #include <stddef.h>
 #include <stdint.h>
 
-typedef struct PSNRDSPContext {
-    uint64_t (*sse_line)(const uint8_t *buf, const uint8_t *ref, int w);
-} PSNRDSPContext;
+#include "psnr.h"
 
-void ff_psnr_init(PSNRDSPContext *dsp, int bpp);
-void ff_psnr_init_x86(PSNRDSPContext *dsp, int bpp);
+static uint64_t sse_line_8bit(const uint8_t *main_line,  const uint8_t *ref_line, int outw)
+{
+    int j;
+    unsigned m2 = 0;
 
-#endif /* AVFILTER_PSNR_H */
+    for (j = 0; j < outw; j++) {
+        unsigned error = main_line[j] - ref_line[j];
+
+        m2 += error * error;
+    }
+
+    return m2;
+}
+
+static uint64_t sse_line_16bit(const uint8_t *_main_line, const uint8_t *_ref_line, int outw)
+{
+    int j;
+    uint64_t m2 = 0;
+    const uint16_t *main_line = (const uint16_t *) _main_line;
+    const uint16_t *ref_line = (const uint16_t *) _ref_line;
+
+    for (j = 0; j < outw; j++) {
+        unsigned error = main_line[j] - ref_line[j];
+
+        m2 += error * error;
+    }
+
+    return m2;
+}
+
+void ff_psnr_init(PSNRDSPContext *dsp, int bpp)
+{
+    dsp->sse_line = bpp > 8 ? sse_line_16bit : sse_line_8bit;
+#if ARCH_X86
+    ff_psnr_init_x86(dsp, bpp);
+#endif
+}
