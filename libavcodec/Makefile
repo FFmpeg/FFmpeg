@@ -1194,6 +1194,7 @@ OBJS-$(CONFIG_DCA_PARSER)              += dca_parser.o dca_exss.o dca.o \
                                           dca_sample_rate_tab.o
 OBJS-$(CONFIG_DIRAC_PARSER)            += dirac_parser.o
 OBJS-$(CONFIG_DNXHD_PARSER)            += dnxhd_parser.o dnxhddata.o
+OBJS-$(CONFIG_DNXUC_PARSER)            += dnxuc_parser.o
 OBJS-$(CONFIG_DOLBY_E_PARSER)          += dolby_e_parser.o dolby_e_parse.o
 OBJS-$(CONFIG_DPX_PARSER)              += dpx_parser.o
 OBJS-$(CONFIG_DVAUDIO_PARSER)          += dvaudio_parser.o

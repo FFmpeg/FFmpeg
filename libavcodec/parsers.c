@@ -35,6 +35,7 @@ extern const AVCodecParser ff_cri_parser;
 extern const AVCodecParser ff_dca_parser;
 extern const AVCodecParser ff_dirac_parser;
 extern const AVCodecParser ff_dnxhd_parser;
+extern const AVCodecParser ff_dnxuc_parser;
 extern const AVCodecParser ff_dolby_e_parser;
 extern const AVCodecParser ff_dpx_parser;
 extern const AVCodecParser ff_dvaudio_parser;
