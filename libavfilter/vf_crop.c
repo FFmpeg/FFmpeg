@@ -95,11 +95,14 @@ typedef struct CropContext {
     double var_values[VAR_VARS_NB];
 } CropContext;
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
     int reject_flags = AV_PIX_FMT_FLAG_BITSTREAM | FF_PIX_FMT_FLAG_SW_FLAT_SUB;
 
-    return ff_set_common_formats(ctx, ff_formats_pixdesc_filter(0, reject_flags));
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out,
+                                  ff_formats_pixdesc_filter(0, reject_flags));
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -405,6 +408,6 @@ const AVFilter ff_vf_crop = {
     .uninit          = uninit,
     FILTER_INPUTS(avfilter_vf_crop_inputs),
     FILTER_OUTPUTS(avfilter_vf_crop_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .process_command = process_command,
 };
