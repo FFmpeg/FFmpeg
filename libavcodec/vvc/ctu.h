@@ -23,6 +23,8 @@
 #ifndef AVCODEC_VVC_CTU_H
 #define AVCODEC_VVC_CTU_H
 
+#include <stdbool.h>
+
 #include "libavcodec/cabac.h"
 #include "libavutil/mem_internal.h"
 
@@ -172,6 +174,7 @@ typedef struct TransformUnit {
     int y0;
     int width;
     int height;
+    bool avail[CHROMA + 1];                             // contains luma/chroma block
 
     uint8_t joint_cbcr_residual_flag;                   ///< tu_joint_cbcr_residual_flag
 

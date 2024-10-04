@@ -241,6 +241,7 @@ static TransformUnit* add_tu(VVCFrameContext *fc, CodingUnit *cu, const int x0, 
     tu->height = tu_height;
     tu->joint_cbcr_residual_flag = 0;
     memset(tu->coded_flag, 0, sizeof(tu->coded_flag));
+    tu->avail[LUMA] = tu->avail[CHROMA] = 0;
     tu->nb_tbs = 0;
 
     return tu;
@@ -267,6 +268,7 @@ static TransformBlock* add_tb(TransformUnit *tu, VVCLocalContext *lc,
     tb->ts = 0;
     tb->coeffs = lc->coeffs;
     lc->coeffs += tb_width * tb_height;
+    tu->avail[!!c_idx] = true;
     return tb;
 }
 

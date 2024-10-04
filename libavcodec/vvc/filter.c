@@ -451,15 +451,15 @@ static int boundary_strength(const VVCLocalContext *lc, const MvField *curr, con
 
 //part of 8.8.3.3 Derivation process of transform block boundary
 static void derive_max_filter_length_luma(const VVCFrameContext *fc, const int qx, const int qy,
-                                          const int is_intra, const int has_subblock, const int vertical, uint8_t *max_len_p, uint8_t *max_len_q)
+    const int size_q, const int has_subblock, const int vertical, uint8_t *max_len_p, uint8_t *max_len_q)
 {
     const int px =  vertical ? qx - 1 : qx;
     const int py = !vertical ? qy - 1 : qy;
     const uint8_t *tb_size = vertical ? fc->tab.tb_width[LUMA] : fc->tab.tb_height[LUMA];
     const int size_p = tb_size[(py >> MIN_TU_LOG2) * fc->ps.pps->min_tu_width + (px >> MIN_TU_LOG2)];
-    const int size_q = tb_size[(qy >> MIN_TU_LOG2) * fc->ps.pps->min_tu_width + (qx >> MIN_TU_LOG2)];
     const int min_cb_log2 = fc->ps.sps->min_cb_log2_size_y;
     const int off_p = (py >> min_cb_log2) * fc->ps.pps->min_cb_width + (px >> min_cb_log2);
+
     if (size_p <= 4 || size_q <= 4) {
         *max_len_p = *max_len_q = 1;
     } else {
@@ -525,7 +525,7 @@ static void vvc_deblock_subblock_bs(const VVCLocalContext *lc,
 }
 
 static av_always_inline int deblock_bs(const VVCLocalContext *lc,
-    const int x_p, const int y_p, const int x_q, const int y_q,
+    const int x_p, const int y_p, const int x_q, const int y_q, const CodingUnit *cu, const TransformUnit *tu,
     const RefPicList *rpl_p, const int c_idx, const int off_to_cb, const uint8_t has_sub_block)
 {
     const VVCFrameContext *fc  = lc->fc;
@@ -542,12 +542,10 @@ static av_always_inline int deblock_bs(const VVCLocalContext *lc,
     const MvField *mvf_q       = &tab_mvf[pu_q];
     const uint8_t chroma       = !!c_idx;
     const int tu_p             = (y_p >> log2_min_tu_size) * min_tu_width  + (x_p >>  log2_min_tu_size);
-    const int tu_q             = (y_q >> log2_min_tu_size) * min_tu_width  + (x_q >>  log2_min_tu_size);
     const int cb_p             = (y_p >> log2_min_cb_size) * min_cb_width  + (x_p >>  log2_min_cb_size);
-    const int cb_q             = (y_q >> log2_min_cb_size) * min_cb_width  + (x_q >>  log2_min_cb_size);
-    const uint8_t pcmf         = fc->tab.pcmf[chroma][cb_p] && fc->tab.pcmf[chroma][cb_q];
-    const uint8_t intra        = fc->tab.cpm[chroma][cb_p] == MODE_INTRA || fc->tab.cpm[chroma][cb_q] == MODE_INTRA;
-    const uint8_t same_mode    = fc->tab.cpm[chroma][cb_p] == fc->tab.cpm[chroma][cb_q];
+    const uint8_t pcmf         = fc->tab.pcmf[chroma][cb_p] && cu->bdpcm_flag[chroma];
+    const uint8_t intra        = fc->tab.cpm[chroma][cb_p] == MODE_INTRA || cu->pred_mode == MODE_INTRA;
+    const uint8_t same_mode    = fc->tab.cpm[chroma][cb_p] == cu->pred_mode;
 
     if (pcmf)
         return 0;
@@ -557,12 +555,12 @@ static av_always_inline int deblock_bs(const VVCLocalContext *lc,
 
     if (chroma) {
         return fc->tab.tu_coded_flag[c_idx][tu_p] ||
-               fc->tab.tu_coded_flag[c_idx][tu_q] ||
                fc->tab.tu_joint_cbcr_residual_flag[tu_p] ||
-               fc->tab.tu_joint_cbcr_residual_flag[tu_q];
+               tu->coded_flag[c_idx] ||
+               tu->joint_cbcr_residual_flag;
     }
 
-    if (fc->tab.tu_coded_flag[LUMA][tu_p] || fc->tab.tu_coded_flag[LUMA][tu_q])
+    if (fc->tab.tu_coded_flag[LUMA][tu_p] || tu->coded_flag[LUMA])
         return 1;
 
     if ((off_to_cb && ((off_to_cb % 8) || !has_sub_block)))
@@ -606,27 +604,23 @@ static int deblock_is_boundary(const VVCLocalContext *lc, const int boundary,
 }
 
 static void vvc_deblock_bs_luma(const VVCLocalContext *lc,
-    const int x0, const int y0, const int width, const int height, const int rs, const int vertical)
+    const int x0, const int y0, const int width, const int height,
+    const CodingUnit *cu, const TransformUnit *tu,  int rs, const int vertical)
 {
-    const VVCFrameContext *fc  = lc->fc;
-    const MvField *tab_mvf     = fc->tab.mvf;
-    const int mask             = LUMA_GRID - 1;
-    const int log2_min_pu_size = MIN_PU_LOG2;
-    const int min_pu_width     = fc->ps.pps->min_pu_width;
-    const int min_cb_log2      = fc->ps.sps->min_cb_log2_size_y;
-    const int min_cb_width     = fc->ps.pps->min_cb_width;
-    const int pos              = vertical ? x0 : y0;
-    const int off_q            = (y0 >> min_cb_log2) * min_cb_width + (x0 >> min_cb_log2);
-    const int cb               = (vertical ? fc->tab.cb_pos_x : fc->tab.cb_pos_y )[LUMA][off_q];
-    const int is_intra         = tab_mvf[(y0 >> log2_min_pu_size) * min_pu_width +
-            (x0 >> log2_min_pu_size)].pred_flag == PF_INTRA;
+    const VVCFrameContext *fc = lc->fc;
+    const PredictionUnit *pu  = &cu->pu;
+    const int mask            = LUMA_GRID - 1;
+    const int pos             = vertical ? x0 : y0;
+    const int cb              = vertical ? cu->x0 : cu->y0;
+    const int is_intra        = cu->pred_mode == MODE_INTRA;
+    const int cb_size         = vertical ? cu->cb_width : cu->cb_height;
+    const int has_sb          = !is_intra && (pu->merge_subblock_flag || pu->inter_affine_flag) && cb_size > 8;
 
     if (deblock_is_boundary(lc, pos > 0 && !(pos & mask), pos, rs, vertical)) {
         const int is_vb         = is_virtual_boundary(fc, pos, vertical);
         const int size          = vertical ? height : width;
+        const int size_q        = vertical ? width  : height;
         const int off           = cb - pos;
-        const int cb_size       = (vertical ? fc->tab.cb_width : fc->tab.cb_height)[LUMA][off_q];
-        const int has_sb        = !is_intra && (fc->tab.msf[off_q] || fc->tab.iaf[off_q]) && cb_size > 8;
         const int flag          = vertical ? BOUNDARY_LEFT_SLICE : BOUNDARY_UPPER_SLICE;
         const RefPicList *rpl_p =
             (lc->boundary_flags & flag) ? ff_vvc_get_ref_list(fc, fc->ref, x0 - vertical, y0 - !vertical) : lc->sc->rpl;
@@ -635,24 +629,23 @@ static void vvc_deblock_bs_luma(const VVCLocalContext *lc,
             const int x = x0 + i * !vertical;
             const int y = y0 + i * vertical;
             uint8_t max_len_p, max_len_q;
-            const int bs = is_vb ? 0 : deblock_bs(lc, x - vertical, y - !vertical, x, y, rpl_p, LUMA, off, has_sb);
+            const int bs = is_vb ? 0 : deblock_bs(lc, x - vertical, y - !vertical, x, y, cu, tu, rpl_p, LUMA, off, has_sb);
 
             TAB_BS(fc->tab.bs[vertical][LUMA], x, y) = bs;
 
-            derive_max_filter_length_luma(fc, x, y, is_intra, has_sb, vertical, &max_len_p, &max_len_q);
+            derive_max_filter_length_luma(fc, x, y, size_q, has_sb, vertical, &max_len_p, &max_len_q);
             TAB_MAX_LEN(fc->tab.max_len_p[vertical], x, y) = max_len_p;
             TAB_MAX_LEN(fc->tab.max_len_q[vertical], x, y) = max_len_q;
         }
     }
 
-    if (!is_intra) {
-        if (fc->tab.msf[off_q] || fc->tab.iaf[off_q])
-            vvc_deblock_subblock_bs(lc, cb, x0, y0, width, height, vertical);
-    }
+    if (has_sb)
+        vvc_deblock_subblock_bs(lc, cb, x0, y0, width, height, vertical);
 }
 
 static void vvc_deblock_bs_chroma(const VVCLocalContext *lc,
-    const int x0, const int y0, const int width, const int height, const int rs, const int vertical)
+    const int x0, const int y0, const int width, const int height,
+    const CodingUnit *cu, const TransformUnit *tu, const int rs, const int vertical)
 {
     const VVCFrameContext *fc = lc->fc;
     const int shift           = (vertical ? fc->ps.sps->hshift : fc->ps.sps->vshift)[CHROMA];
@@ -667,7 +660,7 @@ static void vvc_deblock_bs_chroma(const VVCLocalContext *lc,
             for (int i = 0; i < size; i += 2) {
                 const int x  = x0 + i * !vertical;
                 const int y  = y0 + i * vertical;
-                const int bs = is_vb ? 0 : deblock_bs(lc, x - vertical, y - !vertical, x, y, NULL, c_idx, 0, 0);
+                const int bs = is_vb ? 0 : deblock_bs(lc, x - vertical, y - !vertical, x, y, cu, tu, NULL, c_idx, 0, 0);
 
                 TAB_BS(fc->tab.bs[vertical][c_idx], x, y) = bs;
             }
@@ -682,29 +675,20 @@ void ff_vvc_deblock_bs(VVCLocalContext *lc, const int rx, const int ry, const in
 {
     const VVCFrameContext *fc  = lc->fc;
     const VVCSPS *sps          = fc->ps.sps;
-    const VVCPPS *pps          = fc->ps.pps;
-    const int ctb_size         = sps->ctb_size_y;
     const int x0               = rx << sps->ctb_log2_size_y;
     const int y0               = ry << sps->ctb_log2_size_y;
-    const int x_end            = FFMIN(x0 + ctb_size, pps->width) >> MIN_TU_LOG2;
-    const int y_end            = FFMIN(y0 + ctb_size, pps->height) >> MIN_TU_LOG2;
-    const int has_chroma       = !!sps->r->sps_chroma_format_idc;
-    deblock_bs_fn deblock_bs[] = {
-        vvc_deblock_bs_luma, vvc_deblock_bs_chroma
-    };
 
     ff_vvc_decode_neighbour(lc, x0, y0, rx, ry, rs);
-    for (int vertical = 0; vertical <= 1; vertical++) {
-        for (int is_chroma = 0; is_chroma <= has_chroma; is_chroma++) {
-            const int hs = sps->hshift[is_chroma];
-            const int vs = sps->vshift[is_chroma];
-            for (int y = y0 >> MIN_TU_LOG2; y < y_end; y++) {
-                for (int x = x0 >> MIN_TU_LOG2; x < x_end; x++) {
-                    const int off = y * fc->ps.pps->min_tu_width + x;
-                    if ((fc->tab.tb_pos_x0[is_chroma][off] >> MIN_TU_LOG2) == x && (fc->tab.tb_pos_y0[is_chroma][off] >> MIN_TU_LOG2) == y) {
-                        deblock_bs[is_chroma](lc, x << MIN_TU_LOG2, y << MIN_TU_LOG2,
-                            fc->tab.tb_width[is_chroma][off] << hs, fc->tab.tb_height[is_chroma][off] << vs, rs, vertical);
-                    }
+    for (const CodingUnit *cu = fc->tab.cus[rs]; cu; cu = cu->next) {
+        for (const TransformUnit *tu = cu->tus.head; tu; tu = tu->next) {
+            for (int vertical = 0; vertical <= 1; vertical++) {
+                if (tu->avail[LUMA])
+                    vvc_deblock_bs_luma(lc, tu->x0, tu->y0, tu->width, tu->height, cu, tu, rs, vertical);
+                if (tu->avail[CHROMA]) {
+                    if (cu->isp_split_type != ISP_NO_SPLIT && cu->tree_type == SINGLE_TREE)
+                        vvc_deblock_bs_chroma(lc, cu->x0, cu->y0, cu->cb_width, cu->cb_height, cu, tu, rs, vertical);
+                    else
+                        vvc_deblock_bs_chroma(lc, tu->x0, tu->y0, tu->width, tu->height, cu, tu, rs, vertical);
                 }
             }
         }
