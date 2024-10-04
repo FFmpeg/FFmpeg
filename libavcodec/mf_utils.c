@@ -240,6 +240,7 @@ static struct GUID_Entry guid_names[] = {
     GUID_ENTRY(MFMediaType_Video),
     GUID_ENTRY(MFAudioFormat_PCM),
     GUID_ENTRY(MFAudioFormat_Float),
+    GUID_ENTRY(ff_MFVideoFormat_AV1),
     GUID_ENTRY(MFVideoFormat_H264),
     GUID_ENTRY(MFVideoFormat_H264_ES),
     GUID_ENTRY(ff_MFVideoFormat_HEVC),
@@ -507,6 +508,7 @@ void ff_media_type_dump(void *log, IMFMediaType *type)
 const CLSID *ff_codec_to_mf_subtype(enum AVCodecID codec)
 {
     switch (codec) {
+    case AV_CODEC_ID_AV1:               return &ff_MFVideoFormat_AV1;
     case AV_CODEC_ID_H264:              return &MFVideoFormat_H264;
     case AV_CODEC_ID_HEVC:              return &ff_MFVideoFormat_HEVC;
     case AV_CODEC_ID_AC3:               return &MFAudioFormat_Dolby_AC3;
