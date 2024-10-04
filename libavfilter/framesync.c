@@ -103,14 +103,14 @@ int ff_framesync_init(FFFrameSync *fs, AVFilterContext *parent, unsigned nb_in)
     return 0;
 }
 
-static void framesync_eof(FFFrameSync *fs)
+static void framesync_eof(FFFrameSync *fs, int64_t pts)
 {
     fs->eof = 1;
     fs->frame_ready = 0;
-    ff_outlink_set_status(fs->parent->outputs[0], AVERROR_EOF, AV_NOPTS_VALUE);
+    ff_outlink_set_status(fs->parent->outputs[0], AVERROR_EOF, pts);
 }
 
-static void framesync_sync_level_update(FFFrameSync *fs)
+static void framesync_sync_level_update(FFFrameSync *fs, int64_t eof_pts)
 {
     unsigned i, level = 0;
 
@@ -131,7 +131,7 @@ static void framesync_sync_level_update(FFFrameSync *fs)
     if (level)
         fs->sync_level = level;
     else
-        framesync_eof(fs);
+        framesync_eof(fs, eof_pts);
 }
 
 int ff_framesync_configure(FFFrameSync *fs)
@@ -179,7 +179,7 @@ int ff_framesync_configure(FFFrameSync *fs)
     for (i = 0; i < fs->nb_in; i++)
         fs->in[i].pts = fs->in[i].pts_next = AV_NOPTS_VALUE;
     fs->sync_level = UINT_MAX;
-    framesync_sync_level_update(fs);
+    framesync_sync_level_update(fs, AV_NOPTS_VALUE);
 
     return 0;
 }
@@ -200,7 +200,7 @@ static int framesync_advance(FFFrameSync *fs)
             if (fs->in[i].have_next && fs->in[i].pts_next < pts)
                 pts = fs->in[i].pts_next;
         if (pts == INT64_MAX) {
-            framesync_eof(fs);
+            framesync_eof(fs, AV_NOPTS_VALUE);
             break;
         }
         for (i = 0; i < fs->nb_in; i++) {
@@ -222,7 +222,7 @@ static int framesync_advance(FFFrameSync *fs)
                     fs->frame_ready = 1;
                 if (fs->in[i].state == STATE_EOF &&
                     fs->in[i].after == EXT_STOP)
-                    framesync_eof(fs);
+                    framesync_eof(fs, AV_NOPTS_VALUE);
             }
         }
         if (fs->frame_ready)
@@ -255,15 +255,14 @@ static void framesync_inject_frame(FFFrameSync *fs, unsigned in, AVFrame *frame)
     fs->in[in].have_next  = 1;
 }
 
-static void framesync_inject_status(FFFrameSync *fs, unsigned in, int status, int64_t pts)
+static void framesync_inject_status(FFFrameSync *fs, unsigned in, int status, int64_t eof_pts)
 {
     av_assert0(!fs->in[in].have_next);
-    pts = fs->in[in].state != STATE_RUN || fs->in[in].after == EXT_INFINITY
-        ? INT64_MAX : framesync_pts_extrapolate(fs, in, fs->in[in].pts);
     fs->in[in].sync = 0;
-    framesync_sync_level_update(fs);
+    framesync_sync_level_update(fs, status == AVERROR_EOF ? eof_pts : AV_NOPTS_VALUE);
     fs->in[in].frame_next = NULL;
-    fs->in[in].pts_next   = pts;
+    fs->in[in].pts_next   = fs->in[in].state != STATE_RUN || fs->in[in].after == EXT_INFINITY
+                            ? INT64_MAX : framesync_pts_extrapolate(fs, in, fs->in[in].pts);
     fs->in[in].have_next  = 1;
 }
 
