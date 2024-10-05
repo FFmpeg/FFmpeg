@@ -31,30 +31,28 @@
 #include "libavutil/lfg.h"
 #include "libavutil/sfc64.h"
 #include "libavutil/frame.h"
+#include "libavutil/opt.h"
+#include "libavutil/time.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/avassert.h"
 #include "libavutil/macros.h"
 
 #include "libswscale/swscale.h"
 
-enum {
-    WIDTH  = 96,
-    HEIGHT = 96,
-};
-
 struct options {
     enum AVPixelFormat src_fmt;
     enum AVPixelFormat dst_fmt;
     double prob;
+    int w, h;
+    int threads;
+    int iters;
+    int bench;
 };
 
 struct mode {
     SwsFlags flags;
     SwsDither dither;
 };
-
-const int dst_w[] = { WIDTH,  WIDTH  - WIDTH  / 3, WIDTH  + WIDTH  / 3 };
-const int dst_h[] = { HEIGHT, HEIGHT - HEIGHT / 3, HEIGHT + HEIGHT / 3 };
 
 const struct mode modes[] = {
     { SWS_FAST_BILINEAR },
@@ -114,7 +112,8 @@ static void get_mse(int mse[4], const AVFrame *a, const AVFrame *b, int comps)
     }
 }
 
-static int scale_legacy(AVFrame *dst, const AVFrame *src, struct mode mode)
+static int scale_legacy(AVFrame *dst, const AVFrame *src, struct mode mode,
+                        struct options opts)
 {
     SwsContext *sws_legacy;
     int ret;
@@ -131,23 +130,28 @@ static int scale_legacy(AVFrame *dst, const AVFrame *src, struct mode mode)
     sws_legacy->dst_format = dst->format;
     sws_legacy->flags      = mode.flags;
     sws_legacy->dither     = mode.dither;
+    sws_legacy->threads    = opts.threads;
 
-    ret = sws_init_context(sws_legacy, NULL, NULL);
-    if (!ret)
+    if ((ret = sws_init_context(sws_legacy, NULL, NULL)) < 0)
+        goto error;
+
+    for (int i = 0; !ret && i < opts.iters; i++)
         ret = sws_scale_frame(sws_legacy, dst, src);
 
+error:
     sws_freeContext(sws_legacy);
     return ret;
 }
 
 /* Runs a series of ref -> src -> dst -> out, and compares out vs ref */
 static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
-                    int dst_w, int dst_h, struct mode mode, const AVFrame *ref,
-                    const int mse_ref[4])
+                    int dst_w, int dst_h, struct mode mode, struct options opts,
+                    const AVFrame *ref, const int mse_ref[4])
 {
     AVFrame *src = NULL, *dst = NULL, *out = NULL;
     int mse[4], mse_sws[4], ret = -1;
     const int comps = fmt_comps(src_fmt) & fmt_comps(dst_fmt);
+    int64_t time, time_ref = 0;
 
     src = av_frame_alloc();
     dst = av_frame_alloc();
@@ -174,11 +178,19 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
     sws[1]->flags  = mode.flags;
     sws[1]->dither = mode.dither;
-    if (sws_scale_frame(sws[1], dst, src) < 0) {
-        fprintf(stderr, "Failed %s ---> %s\n", av_get_pix_fmt_name(src->format),
-                av_get_pix_fmt_name(dst->format));
-        goto error;
+    sws[1]->threads = opts.threads;
+
+    time = av_gettime_relative();
+
+    for (int i = 0; i < opts.iters; i++) {
+        if (sws_scale_frame(sws[1], dst, src) < 0) {
+            fprintf(stderr, "Failed %s ---> %s\n", av_get_pix_fmt_name(src->format),
+                    av_get_pix_fmt_name(dst->format));
+            goto error;
+        }
     }
+
+    time = av_gettime_relative() - time;
 
     if (sws_scale_frame(sws[2], out, dst) < 0) {
         fprintf(stderr, "Failed %s ---> %s\n", av_get_pix_fmt_name(dst->format),
@@ -196,11 +208,13 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
     if (!mse_ref) {
         /* Compare against the legacy swscale API as a reference */
-        if (scale_legacy(dst, src, mode) < 0) {
+        time_ref = av_gettime_relative();
+        if (scale_legacy(dst, src, mode, opts) < 0) {
             fprintf(stderr, "Failed ref %s ---> %s\n", av_get_pix_fmt_name(src->format),
                     av_get_pix_fmt_name(dst->format));
             goto error;
         }
+        time_ref = av_gettime_relative() - time_ref;
 
         if (sws_scale_frame(sws[2], out, dst) < 0)
             goto error;
@@ -221,6 +235,15 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
         }
     }
 
+    if (opts.bench && time_ref) {
+        printf("  time=%"PRId64" us, ref=%"PRId64" us, speedup=%.3fx %s\n",
+                time / opts.iters, time_ref / opts.iters,
+                (double) time_ref / time,
+                time <= time_ref ? "faster" : "\033[1;33mslower\033[0m");
+    } else if (opts.bench) {
+        printf("  time=%"PRId64" us\n", time / opts.iters);
+    }
+
     fflush(stdout);
     ret = 0; /* fall through */
  error:
@@ -232,6 +255,9 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
 static int run_self_tests(const AVFrame *ref, struct options opts)
 {
+    const int dst_w[] = { opts.w, opts.w - opts.w / 3, opts.w + opts.w / 3 };
+    const int dst_h[] = { opts.h, opts.h - opts.h / 3, opts.h + opts.h / 3 };
+
     enum AVPixelFormat src_fmt, dst_fmt,
                        src_fmt_min = 0,
                        dst_fmt_min = 0,
@@ -254,8 +280,9 @@ static int run_self_tests(const AVFrame *ref, struct options opts)
                     for (int m = 0; m < FF_ARRAY_ELEMS(modes); m++) {
                         if (ff_sfc64_get(&prng_state) > UINT64_MAX * opts.prob)
                             continue;
+
                         if (run_test(src_fmt, dst_fmt, dst_w[w], dst_h[h],
-                                     modes[m], ref, NULL) < 0)
+                                     modes[m], opts, ref, NULL) < 0)
                             return -1;
                     }
         }
@@ -300,7 +327,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, struct options opts)
             opts.dst_fmt != AV_PIX_FMT_NONE && dst_fmt != opts.dst_fmt)
             continue;
 
-        if (run_test(src_fmt, dst_fmt, dw, dh, mode, ref, mse) < 0)
+        if (run_test(src_fmt, dst_fmt, dw, dh, mode, opts, ref, mse) < 0)
             return -1;
     }
 
@@ -312,7 +339,11 @@ int main(int argc, char **argv)
     struct options opts = {
         .src_fmt = AV_PIX_FMT_NONE,
         .dst_fmt = AV_PIX_FMT_NONE,
-        .prob = 1.0,
+        .w       = 96,
+        .h       = 96,
+        .threads = 1,
+        .iters   = 1,
+        .prob    = 1.0,
     };
 
     AVFrame *rgb = NULL, *ref = NULL;
@@ -335,6 +366,10 @@ int main(int argc, char **argv)
                     "       Only test the specified destination pixel format\n"
                     "   -src <pixfmt>\n"
                     "       Only test the specified source pixel format\n"
+                    "   -bench <iters>\n"
+                    "       Run benchmarks with the specified number of iterations. This mode also increases the size of the test images\n"
+                    "   -threads <threads>\n"
+                    "       Use the specified number of threads\n"
                     "   -cpuflags <cpuflags>\n"
                     "       Uses the specified cpuflags in the tests\n"
             );
@@ -368,6 +403,14 @@ int main(int argc, char **argv)
                 fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
                 goto error;
             }
+        } else if (!strcmp(argv[i], "-bench")) {
+            opts.bench = 1;
+            opts.iters = atoi(argv[i + 1]);
+            opts.iters = FFMAX(opts.iters, 1);
+            opts.w = 1920;
+            opts.h = 1080;
+        } else if (!strcmp(argv[i], "-threads")) {
+            opts.threads = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-p")) {
             opts.prob = atof(argv[i + 1]);
         } else {
@@ -390,8 +433,8 @@ bad_option:
     rgb = av_frame_alloc();
     if (!rgb)
         goto error;
-    rgb->width  = WIDTH  / 12;
-    rgb->height = HEIGHT / 12;
+    rgb->width  = opts.w / 12;
+    rgb->height = opts.h / 12;
     rgb->format = AV_PIX_FMT_RGBA;
     if (av_frame_get_buffer(rgb, 32) < 0)
         goto error;
@@ -406,8 +449,8 @@ bad_option:
     ref = av_frame_alloc();
     if (!ref)
         goto error;
-    ref->width  = WIDTH;
-    ref->height = HEIGHT;
+    ref->width  = opts.w;
+    ref->height = opts.h;
     ref->format = AV_PIX_FMT_YUVA420P;
 
     if (sws_scale_frame(sws[0], ref, rgb) < 0)
