@@ -2022,7 +2022,7 @@ static inline FFVulkanShaderData *get_shd_data(FFVkExecContext *e,
     for (int i = 0; i < e->parent->nb_reg_shd; i++)
         if (e->parent->reg_shd[i].shd == shd)
             return &e->parent->reg_shd[i];
-    av_assert0(0);
+    return NULL;
 }
 
 static inline void update_set_descriptor(FFVulkanContext *s, FFVkExecContext *e,
@@ -2239,7 +2239,7 @@ void ff_vk_exec_bind_shader(FFVulkanContext *s, FFVkExecContext *e,
         vk->CmdBindPipeline(e->buf, shd->bind_point, shd->pipeline);
     }
 
-    if (sd->nb_descriptor_sets) {
+    if (sd && sd->nb_descriptor_sets) {
         if (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) {
             for (int i = 0; i < sd->nb_descriptor_sets; i++)
                 offsets[i] = shd->desc_set[i].singular ? 0 : shd->desc_set[i].aligned_size*e->idx;
