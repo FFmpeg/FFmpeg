@@ -257,7 +257,5 @@ cglobal lpc_apply_welch_window, 3, 5, 8, data, len, out, off1, off2
 INIT_XMM sse2
 APPLY_WELCH_FN
 
-%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 APPLY_WELCH_FN
-%endif
