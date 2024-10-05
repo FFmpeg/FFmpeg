@@ -10227,6 +10227,65 @@ static int mov_parse_tiles(AVFormatContext *s)
     return 0;
 }
 
+static int mov_parse_heif_items(AVFormatContext *s)
+{
+    MOVContext *mov = s->priv_data;
+    int err;
+
+    for (int i = 0; i < mov->nb_heif_item; i++) {
+        HEIFItem *item = &mov->heif_item[i];
+        MOVStreamContext *sc;
+        AVStream *st;
+        int64_t offset = 0;
+
+        if (!item->st) {
+            if (item->item_id == mov->thmb_item_id) {
+                av_log(s, AV_LOG_ERROR, "HEIF thumbnail doesn't reference a stream\n");
+                return AVERROR_INVALIDDATA;
+            }
+            continue;
+        }
+        if (item->is_idat_relative) {
+            if (!mov->idat_offset) {
+                av_log(s, AV_LOG_ERROR, "Missing idat box for item %d\n", item->item_id);
+                return AVERROR_INVALIDDATA;
+            }
+            offset = mov->idat_offset;
+        }
+
+        st = item->st;
+        sc = st->priv_data;
+        st->codecpar->width  = item->width;
+        st->codecpar->height = item->height;
+
+        if (sc->sample_count != 1 || sc->chunk_count != 1)
+            return AVERROR_INVALIDDATA;
+
+        sc->sample_sizes[0]  = item->extent_length;
+        sc->chunk_offsets[0] = item->extent_offset + offset;
+
+        if (item->item_id == mov->primary_item_id)
+            st->disposition |= AV_DISPOSITION_DEFAULT;
+
+        if (item->rotation || item->hflip || item->vflip) {
+            err = set_display_matrix_from_item(&st->codecpar->coded_side_data,
+                                               &st->codecpar->nb_coded_side_data, item);
+            if (err < 0)
+                return err;
+        }
+
+        mov_build_index(mov, st);
+    }
+
+    if (mov->nb_heif_grid) {
+        err = mov_parse_tiles(s);
+        if (err < 0)
+            return err;
+    }
+
+    return 0;
+}
+
 static AVStream *mov_find_reference_track(AVFormatContext *s, AVStream *st,
                                           int first_index)
 {
@@ -10284,56 +10343,9 @@ static int mov_read_header(AVFormatContext *s)
     av_log(mov->fc, AV_LOG_TRACE, "on_parse_exit_offset=%"PRId64"\n", avio_tell(pb));
 
     if (mov->found_iloc && mov->found_iinf) {
-        for (i = 0; i < mov->nb_heif_item; i++) {
-            HEIFItem *item = &mov->heif_item[i];
-            MOVStreamContext *sc;
-            AVStream *st;
-            int64_t offset = 0;
-
-            if (!item->st) {
-                if (item->item_id == mov->thmb_item_id) {
-                    av_log(s, AV_LOG_ERROR, "HEIF thumbnail doesn't reference a stream\n");
-                    return AVERROR_INVALIDDATA;
-                }
-                continue;
-            }
-            if (item->is_idat_relative) {
-                if (!mov->idat_offset) {
-                    av_log(s, AV_LOG_ERROR, "Missing idat box for item %d\n", item->item_id);
-                    return AVERROR_INVALIDDATA;
-                }
-                offset = mov->idat_offset;
-            }
-
-            st = item->st;
-            sc = st->priv_data;
-            st->codecpar->width  = item->width;
-            st->codecpar->height = item->height;
-
-            if (sc->sample_count != 1 || sc->chunk_count != 1)
-                return AVERROR_INVALIDDATA;
-
-            sc->sample_sizes[0]  = item->extent_length;
-            sc->chunk_offsets[0] = item->extent_offset + offset;
-
-            if (item->item_id == mov->primary_item_id)
-                st->disposition |= AV_DISPOSITION_DEFAULT;
-
-            if (item->rotation || item->hflip || item->vflip) {
-                int ret = set_display_matrix_from_item(&st->codecpar->coded_side_data,
-                                                       &st->codecpar->nb_coded_side_data, item);
-                if (ret < 0)
-                    return ret;
-            }
-
-            mov_build_index(mov, st);
-        }
-
-        if (mov->nb_heif_grid) {
-            err = mov_parse_tiles(s);
-            if (err < 0)
-                return err;
-        }
+        err = mov_parse_heif_items(s);
+        if (err < 0)
+            return err;
     }
     // prevent iloc and iinf boxes from being parsed while reading packets.
     // this is needed because an iinf box may have been parsed but ignored
