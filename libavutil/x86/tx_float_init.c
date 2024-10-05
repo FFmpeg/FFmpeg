@@ -282,7 +282,6 @@ const FFTXCodelet * const ff_tx_codelet_list_float_x86[] = {
     TX_DEF(fft_sr_ns, FFT, 64, 2097152, 2, 0, 352, b8_i2, fma3,  FMA3,  AV_TX_INPLACE | FF_TX_PRESHUFFLE,
            AV_CPU_FLAG_AVXSLOW),
 
-#if HAVE_AVX2_EXTERNAL
     TX_DEF(fft15, FFT, 15, 15, 15, 0, 320, factor_init, avx2, AVX2,
            AV_TX_INPLACE, AV_CPU_FLAG_AVXSLOW),
     TX_DEF(fft15_ns, FFT, 15, 15, 15, 0, 384, factor_init, avx2, AVX2,
@@ -304,7 +303,6 @@ const FFTXCodelet * const ff_tx_codelet_list_float_x86[] = {
 
     TX_DEF(mdct_inv, MDCT, 16, TX_LEN_UNLIMITED, 2, TX_FACTOR_ANY, 384, m_inv_init, avx2, AVX2,
            FF_TX_INVERSE_ONLY, AV_CPU_FLAG_AVXSLOW | AV_CPU_FLAG_SLOW_GATHER),
-#endif
 #endif
 
     NULL,

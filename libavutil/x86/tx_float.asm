@@ -1517,10 +1517,8 @@ FFT_SPLIT_RADIX_FN avx, 0
 FFT_SPLIT_RADIX_FN avx, 1
 FFT_SPLIT_RADIX_FN fma3, 0
 FFT_SPLIT_RADIX_FN fma3, 1
-%if HAVE_AVX2_EXTERNAL
 FFT_SPLIT_RADIX_FN avx2, 0
 FFT_SPLIT_RADIX_FN avx2, 1
-%endif
 %endif
 
 %macro FFT15_FN 2
@@ -1581,7 +1579,7 @@ cglobal fft15_ %+ %2, 4, 10, 16, ctx, out, in, stride, len, lut, tmp, tgt5, stri
     RET
 %endmacro
 
-%if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
+%if ARCH_X86_64
 FFT15_FN 0, float
 FFT15_FN 1, ns_float
 %endif
