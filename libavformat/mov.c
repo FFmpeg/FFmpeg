@@ -10301,6 +10301,56 @@ static AVStream *mov_find_reference_track(AVFormatContext *s, AVStream *st,
     return NULL;
 }
 
+static int mov_parse_lcevc_streams(AVFormatContext *s)
+{
+    int err;
+
+    for (int i = 0; i < s->nb_streams; i++) {
+        AVStreamGroup *stg;
+        AVStream *st = s->streams[i];
+        AVStream *st_base;
+        MOVStreamContext *sc = st->priv_data;
+        int j = 0;
+
+        /* Find an enhancement stream. */
+        if (st->codecpar->codec_id != AV_CODEC_ID_LCEVC ||
+            !(sc->tref_flags & MOV_TREF_FLAG_ENHANCEMENT))
+            continue;
+
+        st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+
+        stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_LCEVC, NULL);
+        if (!stg)
+            return AVERROR(ENOMEM);
+
+        stg->id = st->id;
+        stg->params.lcevc->width  = st->codecpar->width;
+        stg->params.lcevc->height = st->codecpar->height;
+        st->codecpar->width = 0;
+        st->codecpar->height = 0;
+
+        while (st_base = mov_find_reference_track(s, st, j)) {
+            err = avformat_stream_group_add_stream(stg, st_base);
+            if (err < 0)
+                return err;
+
+            j = st_base->index + 1;
+        }
+        if (!j) {
+            av_log(s, AV_LOG_ERROR, "Failed to find base stream for enhancement stream\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        err = avformat_stream_group_add_stream(stg, st);
+        if (err < 0)
+            return err;
+
+        stg->params.lcevc->lcevc_index = stg->nb_streams - 1;
+    }
+
+    return 0;
+}
+
 static int mov_read_header(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
@@ -10387,48 +10437,9 @@ static int mov_read_header(AVFormatContext *s)
     export_orphan_timecode(s);
 
     /* Create LCEVC stream groups. */
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStreamGroup *stg;
-        AVStream *st = s->streams[i];
-        AVStream *st_base;
-        MOVStreamContext *sc = st->priv_data;
-
-        /* Find an enhancement stream. */
-        if (st->codecpar->codec_id != AV_CODEC_ID_LCEVC ||
-            !(sc->tref_flags & MOV_TREF_FLAG_ENHANCEMENT))
-            continue;
-
-        st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
-
-        stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_LCEVC, NULL);
-        if (!stg)
-            return AVERROR(ENOMEM);
-
-        stg->id = st->id;
-        stg->params.lcevc->width  = st->codecpar->width;
-        stg->params.lcevc->height = st->codecpar->height;
-        st->codecpar->width = 0;
-        st->codecpar->height = 0;
-
-        j = 0;
-        while (st_base = mov_find_reference_track(s, st, j)) {
-            err = avformat_stream_group_add_stream(stg, st_base);
-            if (err < 0)
-                return err;
-
-            j = st_base->index + 1;
-        }
-        if (!j) {
-            av_log(s, AV_LOG_ERROR, "Failed to find base stream for enhancement stream\n");
-            return AVERROR_INVALIDDATA;
-        }
-
-        err = avformat_stream_group_add_stream(stg, st);
-        if (err < 0)
-            return err;
-
-        stg->params.lcevc->lcevc_index = stg->nb_streams - 1;
-    }
+    err = mov_parse_lcevc_streams(s);
+    if (err < 0)
+        return err;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
