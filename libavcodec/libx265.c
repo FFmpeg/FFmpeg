@@ -661,7 +661,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     libx265Context *ctx = avctx->priv_data;
     x265_picture x265pic;
-#if X265_BUILD >= 210
+#if (X265_BUILD >= 210) && (X265_BUILD < 213)
     x265_picture x265pic_layers_out[MAX_SCALABLE_LAYERS];
     x265_picture* x265pic_lyrptr_out[MAX_SCALABLE_LAYERS];
 #else
@@ -805,7 +805,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 #endif
     }
 
-#if X265_BUILD >= 210
+#if (X265_BUILD >= 210) && (X265_BUILD < 213)
     for (i = 0; i < MAX_SCALABLE_LAYERS; i++)
         x265pic_lyrptr_out[i] = &x265pic_layers_out[i];
 
@@ -844,7 +844,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             pkt->flags |= AV_PKT_FLAG_KEY;
     }
 
-#if X265_BUILD >= 210
+#if (X265_BUILD >= 210) && (X265_BUILD < 213)
     x265pic_out = x265pic_lyrptr_out[0];
 #else
     x265pic_out = &x265pic_solo_out;
