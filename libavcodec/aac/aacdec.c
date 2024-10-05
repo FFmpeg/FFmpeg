@@ -538,7 +538,9 @@ static av_cold void flush(AVCodecContext *avctx)
         }
     }
 
+#if CONFIG_AAC_DECODER
     ff_aac_usac_reset_state(ac, &ac->oc[1]);
+#endif
 }
 
 /**
