@@ -215,6 +215,18 @@ ALF_FUNCS(16, 12, avx2)
 
 #endif
 
+#define AVG_INIT(bd, opt) do {                                       \
+    c->inter.avg    = bf(vvc_avg, bd, opt);                          \
+    c->inter.w_avg  = bf(vvc_w_avg, bd, opt);                        \
+} while (0)
+
+#define DMVR_INIT(bd) do {                                           \
+    c->inter.dmvr[0][0]   = ff_vvc_dmvr_##bd##_avx2;                 \
+    c->inter.dmvr[0][1]   = ff_vvc_dmvr_h_##bd##_avx2;               \
+    c->inter.dmvr[1][0]   = ff_vvc_dmvr_v_##bd##_avx2;               \
+    c->inter.dmvr[1][1]   = ff_vvc_dmvr_hv_##bd##_avx2;              \
+} while (0)
+
 #define PEL_LINK(dst, C, W, idx1, idx2, name, D, opt)                              \
     dst[C][W][idx1][idx2] = vvc_put_## name ## _ ## D ## _##opt;                   \
     dst ## _uni[C][W][idx1][idx2] = ff_h2656_put_uni_ ## name ## _ ## D ## _##opt; \
@@ -280,17 +292,8 @@ ALF_FUNCS(16, 12, avx2)
     MC_TAP_LINKS_16BPC_AVX2(LUMA,   8, bd);                          \
     MC_TAP_LINKS_16BPC_AVX2(CHROMA, 4, bd);
 
-#define AVG_INIT(bd, opt) do {                                       \
-    c->inter.avg    = bf(vvc_avg, bd, opt);                          \
-    c->inter.w_avg  = bf(vvc_w_avg, bd, opt);                        \
-} while (0)
-
-#define DMVR_INIT(bd) do {                                           \
-    c->inter.dmvr[0][0]   = ff_vvc_dmvr_##bd##_avx2;                 \
-    c->inter.dmvr[0][1]   = ff_vvc_dmvr_h_##bd##_avx2;               \
-    c->inter.dmvr[1][0]   = ff_vvc_dmvr_v_##bd##_avx2;               \
-    c->inter.dmvr[1][1]   = ff_vvc_dmvr_hv_##bd##_avx2;              \
-} while (0)
+int ff_vvc_sad_avx2(const int16_t *src0, const int16_t *src1, int dx, int dy, int block_w, int block_h);
+#define SAD_INIT() c->inter.sad = ff_vvc_sad_avx2
 
 #define ALF_INIT(bd) do {                                            \
     c->alf.filter[LUMA]   = vvc_alf_filter_luma_##bd##_avx2;         \
@@ -298,8 +301,6 @@ ALF_FUNCS(16, 12, avx2)
     c->alf.classify       = vvc_alf_classify_##bd##_avx2;            \
 } while (0)
 
-int ff_vvc_sad_avx2(const int16_t *src0, const int16_t *src1, int dx, int dy, int block_w, int block_h);
-#define SAD_INIT() c->inter.sad = ff_vvc_sad_avx2
 #endif
 
 
@@ -319,12 +320,15 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
 #endif
 #if HAVE_AVX2_EXTERNAL
         if (EXTERNAL_AVX2_FAST(cpu_flags)) {
-            ALF_INIT(8);
+            // inter
             AVG_INIT(8, avx2);
+            DMVR_INIT(8);
             MC_LINKS_AVX2(8);
             OF_INIT(8);
-            DMVR_INIT(8);
             SAD_INIT();
+
+            // filter
+            ALF_INIT(8);
         }
 #endif
         break;
@@ -336,13 +340,16 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
 #endif
 #if HAVE_AVX2_EXTERNAL
         if (EXTERNAL_AVX2_FAST(cpu_flags)) {
-            ALF_INIT(10);
+            // inter
             AVG_INIT(10, avx2);
+            DMVR_INIT(10);
             MC_LINKS_AVX2(10);
             MC_LINKS_16BPC_AVX2(10);
             OF_INIT(10);
-            DMVR_INIT(10);
             SAD_INIT();
+
+            // filter
+            ALF_INIT(10);
         }
 #endif
         break;
@@ -354,13 +361,16 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
 #endif
 #if HAVE_AVX2_EXTERNAL
         if (EXTERNAL_AVX2_FAST(cpu_flags)) {
-            ALF_INIT(12);
+            // inter
             AVG_INIT(12, avx2);
+            DMVR_INIT(12);
             MC_LINKS_AVX2(12);
             MC_LINKS_16BPC_AVX2(12);
             OF_INIT(12);
-            DMVR_INIT(12);
             SAD_INIT();
+
+            // filter
+            ALF_INIT(12);
         }
 #endif
         break;
