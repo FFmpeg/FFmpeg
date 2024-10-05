@@ -64,8 +64,6 @@ typedef struct NLMeansVulkanContext {
     } opts;
 } NLMeansVulkanContext;
 
-extern const char *ff_source_prefix_sum_comp;
-
 static void insert_first(FFVulkanShader *shd, int r, const char *off, int horiz, int plane, int comp)
 {
     GLSLF(4, s1    = texture(input_img[%i], pos + ivec2(%i + %s, %i + %s))[%i];
