@@ -44,51 +44,7 @@ typedef struct BWDIFParameters {
     int current_field;
 } BWDIFParameters;
 
-static const char filter_fn[] = {
-    "const vec4 coef_lf[2] = { vec4(4309), vec4(213), };\n"
-    "const vec4 coef_hf[3] = { vec4(5570), vec4(3801), vec4(1016) };\n"
-    "const vec4 coef_sp[2] = { vec4(5077), vec4(981), };\n"
-    C(0,                                                                                              )
-    C(0, vec4 process_intra(vec4 cur[4])                                                              )
-    C(0, {                                                                                            )
-    C(1,     return (coef_sp[0]*(cur[1] + cur[2]) - coef_sp[1]*(cur[0] + cur[3])) / (1 << 13);        )
-    C(0, }                                                                                            )
-    C(0,                                                                                              )
-    C(0, vec4 process_line(vec4 prev2[5], vec4 prev1[2], vec4 cur[4], vec4 next1[2], vec4 next2[5])   )
-    C(0, {                                                                                            )
-    C(1,     vec4 fc = cur[1];                                                                        )
-    C(1,     vec4 fe = cur[2];                                                                        )
-    C(1,     vec4 fs = prev2[2] + next2[2];                                                           )
-    C(1,     vec4 fd = fs / 2;                                                                        )
-    C(0,                                                                                              )
-    C(1,     vec4 temp_diff[3];                                                                       )
-    C(1,     temp_diff[0] = abs(prev2[2] - next2[2]);                                                 )
-    C(1,     temp_diff[1] = (abs(prev1[0] - fc) + abs(prev1[1] - fe)) / 2;                            )
-    C(1,     temp_diff[1] = (abs(next1[0] - fc) + abs(next1[1] - fe)) / 2;                            )
-    C(1,     vec4 diff = max(temp_diff[0] / 2, max(temp_diff[1], temp_diff[2]));                      )
-    C(1,     bvec4 diff_mask = equal(diff, vec4(0));                                                  )
-    C(0,                                                                                              )
-    C(1,     vec4 fbs = prev2[1] + next2[1];                                                          )
-    C(1,     vec4 ffs = prev2[3] + next2[3];                                                          )
-    C(1,     vec4 fb = (fbs / 2) - fc;                                                                )
-    C(1,     vec4 ff = (ffs / 2) - fe;                                                                )
-    C(1,     vec4 dc = fd - fc;                                                                       )
-    C(1,     vec4 de = fd - fe;                                                                       )
-    C(1,     vec4 mmax = max(de, max(dc, min(fb, ff)));                                               )
-    C(1,     vec4 mmin = min(de, min(dc, max(fb, ff)));                                               )
-    C(1,     diff = max(diff, max(mmin, -mmax));                                                      )
-    C(0,                                                                                              )
-"    vec4 interpolate_all = (((coef_hf[0]*(fs) - coef_hf[1]*(fbs + ffs) +\n"
-"                              coef_hf[2]*(prev2[0] + next2[0] + prev2[4] + next2[4])) / 4) +\n"
-"                            coef_lf[0]*(fc + fe) - coef_lf[1]*(cur[0] + cur[3])) / (1 << 13);\n"
-"    vec4 interpolate_cur = (coef_sp[0]*(fc + fe) - coef_sp[1]*(cur[0] + cur[3])) / (1 << 13);\n"
-    C(0,                                                                                              )
-    C(1,     bvec4 interpolate_cnd1 = greaterThan(abs(fc - fe), temp_diff[0]);                        )
-    C(1,     vec4 interpol = mix(interpolate_cur, interpolate_all, interpolate_cnd1);                 )
-    C(1,     interpol = clamp(interpol, fd - diff, fd + diff);                                        )
-    C(1,     return mix(interpol, fd, diff_mask);                                                     )
-    C(0, }                                                                                            )
-};
+extern const char *ff_source_bwdif_comp;
 
 static av_cold int init_filter(AVFilterContext *ctx)
 {
@@ -167,81 +123,46 @@ static av_cold int init_filter(AVFilterContext *ctx)
     ff_vk_shader_add_push_const(&s->shd, 0, sizeof(BWDIFParameters),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
 
-    GLSLD(   filter_fn                                                             );
+    GLSLD(ff_source_bwdif_comp                                                     );
     GLSLC(0, void main()                                                           );
     GLSLC(0, {                                                                     );
-    GLSLC(1,     vec4 res;                                                         );
     GLSLC(1,     ivec2 size;                                                       );
-    GLSLC(1,     vec4 dcur[4];                                                     );
-    GLSLC(1,     vec4 prev1[2];                                                    );
-    GLSLC(1,     vec4 next1[2];                                                    );
-    GLSLC(1,     vec4 prev2[5];                                                    );
-    GLSLC(1,     vec4 next2[5];                                                    );
     GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);                );
     GLSLC(1,     bool filter_field = ((pos.y ^ parity) & 1) == 1;                  );
     GLSLF(1,     bool is_intra = filter_field && (current_field == %i);           ,YADIF_FIELD_END);
     GLSLC(1,     bool field_parity = (parity ^ tff) != 0;                          );
     GLSLC(0,                                                                       );
-
+    GLSLC(1,     size = imageSize(dst[0]);                                         );
+    GLSLC(1,     if (!IS_WITHIN(pos, size)) {                                      );
+    GLSLC(2,         return;                                                       );
+    GLSLC(1,     } else if (is_intra) {                                            );
     for (int i = 0; i < planes; i++) {
-        GLSLC(0,                                                                   );
-        GLSLF(1, size = imageSize(dst[%i]);                                      ,i);
-        GLSLC(1, if (!IS_WITHIN(pos, size)) {                                      );
-        GLSLC(2,     return;                                                       );
-        GLSLC(1, } else if (is_intra) {                                            );
-        GLSLF(2,     dcur[0] = texture(cur[%i], pos - ivec2(0, 3));              ,i);
-        GLSLF(2,     dcur[1] = texture(cur[%i], pos - ivec2(0, 1));              ,i);
-        GLSLF(2,     dcur[2] = texture(cur[%i], pos + ivec2(0, 1));              ,i);
-        GLSLF(2,     dcur[3] = texture(cur[%i], pos + ivec2(0, 3));              ,i);
-        GLSLC(0,                                                                   );
-        GLSLC(2,     res = process_intra(dcur);                                    );
-        GLSLF(2,     imageStore(dst[%i], pos, res);                              ,i);
-        GLSLC(1, } else if (filter_field) {                                        );
-        GLSLF(2,     dcur[0] = texture(cur[%i], pos - ivec2(0, 3));              ,i);
-        GLSLF(2,     dcur[1] = texture(cur[%i], pos - ivec2(0, 1));              ,i);
-        GLSLF(2,     dcur[2] = texture(cur[%i], pos + ivec2(0, 1));              ,i);
-        GLSLF(2,     dcur[3] = texture(cur[%i], pos + ivec2(0, 3));              ,i);
-        GLSLC(0,                                                                   );
-        GLSLF(2,     prev1[0] = texture(prev[%i], pos - ivec2(0, 1));            ,i);
-        GLSLF(2,     prev1[1] = texture(prev[%i], pos + ivec2(0, 1));            ,i);
-        GLSLC(0,                                                                   );
-        GLSLF(2,     next1[0] = texture(next[%i], pos - ivec2(0, 1));            ,i);
-        GLSLF(2,     next1[1] = texture(next[%i], pos + ivec2(0, 1));            ,i);
-        GLSLC(0,                                                                   );
-        GLSLC(2,     if (field_parity) {                                           );
-        GLSLF(3,         prev2[0] = texture(prev[%i], pos - ivec2(0, 4));        ,i);
-        GLSLF(3,         prev2[1] = texture(prev[%i], pos - ivec2(0, 2));        ,i);
-        GLSLF(3,         prev2[2] = texture(prev[%i], pos);                      ,i);
-        GLSLF(3,         prev2[3] = texture(prev[%i], pos + ivec2(0, 2));        ,i);
-        GLSLF(3,         prev2[4] = texture(prev[%i], pos + ivec2(0, 4));        ,i);
-        GLSLC(0,                                                                   );
-        GLSLF(3,         next2[0] = texture(cur[%i], pos - ivec2(0, 4));         ,i);
-        GLSLF(3,         next2[1] = texture(cur[%i], pos - ivec2(0, 2));         ,i);
-        GLSLF(3,         next2[2] = texture(cur[%i], pos);                       ,i);
-        GLSLF(3,         next2[3] = texture(cur[%i], pos + ivec2(0, 2));         ,i);
-        GLSLF(3,         next2[4] = texture(cur[%i], pos + ivec2(0, 4));         ,i);
-        GLSLC(2,     } else {                                                      );
-        GLSLF(3,         prev2[0] = texture(cur[%i], pos - ivec2(0, 4));         ,i);
-        GLSLF(3,         prev2[1] = texture(cur[%i], pos - ivec2(0, 2));         ,i);
-        GLSLF(3,         prev2[2] = texture(cur[%i], pos);                       ,i);
-        GLSLF(3,         prev2[3] = texture(cur[%i], pos + ivec2(0, 2));         ,i);
-        GLSLF(3,         prev2[4] = texture(cur[%i], pos + ivec2(0, 4));         ,i);
-        GLSLC(0,                                                                   );
-        GLSLF(3,         next2[0] = texture(next[%i], pos - ivec2(0, 4));        ,i);
-        GLSLF(3,         next2[1] = texture(next[%i], pos - ivec2(0, 2));        ,i);
-        GLSLF(3,         next2[2] = texture(next[%i], pos);                      ,i);
-        GLSLF(3,         next2[3] = texture(next[%i], pos + ivec2(0, 2));        ,i);
-        GLSLF(3,         next2[4] = texture(next[%i], pos + ivec2(0, 4));        ,i);
-        GLSLC(2,     }                                                             );
-        GLSLC(0,                                                                   );
-        GLSLC(2,     res = process_line(prev2, prev1, dcur, next1, next2);         );
-        GLSLF(2,     imageStore(dst[%i], pos, res);                              ,i);
-        GLSLC(1, } else {                                                          );
-        GLSLF(2,     res = texture(cur[%i], pos);                                ,i);
-        GLSLF(2,     imageStore(dst[%i], pos, res);                              ,i);
-        GLSLC(1, }                                                                 );
+        if (i == 1) {
+            GLSLF(2, size = imageSize(dst[%i]);                                    ,i);
+            GLSLC(2, if (!IS_WITHIN(pos, size))                                    );
+            GLSLC(3,     return;                                                   );
+        }
+        GLSLF(2,     process_plane_intra(%i, pos);                                 ,i);
     }
-
+    GLSLC(1,     } else if (filter_field) {                                        );
+    for (int i = 0; i < planes; i++) {
+        if (i == 1) {
+            GLSLF(2, size = imageSize(dst[%i]);                                    ,i);
+            GLSLC(2, if (!IS_WITHIN(pos, size))                                    );
+            GLSLC(3,     return;                                                   );
+        }
+        GLSLF(2,     process_plane(%i, pos, filter_field, is_intra, field_parity); ,i);
+    }
+    GLSLC(1,     } else {                                                          );
+    for (int i = 0; i < planes; i++) {
+        if (i == 1) {
+            GLSLF(2, size = imageSize(dst[%i]);                                    ,i);
+            GLSLC(2, if (!IS_WITHIN(pos, size))                                    );
+            GLSLC(3,     return;                                                   );
+        }
+        GLSLF(2,     imageStore(dst[%i], pos, texture(cur[%i], pos));              ,i, i);
+    }
+    GLSLC(1,     }                                                                 );
     GLSLC(0, }                                                                     );
 
     RET(spv->compile_shader(vkctx, spv, &s->shd, &spv_data, &spv_len, "main",
