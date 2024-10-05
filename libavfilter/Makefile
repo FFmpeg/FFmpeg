@@ -682,6 +682,6 @@ libavfilter/opencl/%.c: $(SRC_PATH)/libavfilter/opencl/%.cl
 
 VULKAN = $(subst $(SRC_PATH)/,,$(wildcard $(SRC_PATH)/libavfilter/vulkan/*.comp))
 .SECONDARY: $(VULKAN:.comp=.c)
-libavfilter/vulkan/%.c: TAG = OPENCL
+libavfilter/vulkan/%.c: TAG = VULKAN
 libavfilter/vulkan/%.c: $(SRC_PATH)/libavfilter/vulkan/%.comp
 	$(M)$(SRC_PATH)/tools/source2c $< $@
