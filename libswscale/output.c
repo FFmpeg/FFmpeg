@@ -2674,6 +2674,11 @@ yuv2xv36le_X_c(SwsContext *c, const int16_t *lumFilter,
         dest[pos + 1] = Y;  \
         dest[pos + 2] = U; \
         dest[pos + 3] = V;  \
+    } else if (target == AV_PIX_FMT_UYVA) { \
+        dest[pos + 0] = U; \
+        dest[pos + 1] = Y;  \
+        dest[pos + 2] = V; \
+        dest[pos + 3] = A;  \
     } else { /* AV_PIX_FMT_VUYA || AV_PIX_FMT_VUYX */ \
         dest[pos + 0] = V;  \
         dest[pos + 1] = U; \
@@ -2866,6 +2871,7 @@ static void yuv2 ## name ## _1_c(SwsContext *c, const int16_t *buf0, \
 
 AYUVPACKEDWRAPPER(vuyX, AV_PIX_FMT_VUYX)
 AYUVPACKEDWRAPPER(ayuv, AV_PIX_FMT_AYUV)
+AYUVPACKEDWRAPPER(uyva, AV_PIX_FMT_UYVA)
 
 #define output_pixel(pos, val, bits) \
     AV_WL16(pos, av_clip_uintp2(val >> shift, bits) << output_shift);
@@ -3429,6 +3435,11 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         *yuv2packed1 = yuv2vuyX_1_c;
         *yuv2packed2 = yuv2vuyX_2_c;
         *yuv2packedX = yuv2vuyX_X_c;
+        break;
+    case AV_PIX_FMT_UYVA:
+        *yuv2packed1 = yuv2uyva_1_c;
+        *yuv2packed2 = yuv2uyva_2_c;
+        *yuv2packedX = yuv2uyva_X_c;
         break;
     case AV_PIX_FMT_XV30LE:
         *yuv2packedX = yuv2xv30le_X_c;
