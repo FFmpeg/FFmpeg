@@ -237,6 +237,7 @@ static const PixelFormatTag raw_pix_fmt_tags[] = {
     { AV_PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', '2') },
     { AV_PIX_FMT_YUYV422, MKTAG('y', 'u', 'v', 's') },
     { AV_PIX_FMT_YUYV422, MKTAG('D', 'V', 'O', 'O') }, /* Digital Voodoo SD 8 Bit */
+    { AV_PIX_FMT_AYUV,    MKTAG('y', '4', '0', '8') },
     { AV_PIX_FMT_RGB555LE,MKTAG('L', '5', '5', '5') },
     { AV_PIX_FMT_RGB565LE,MKTAG('L', '5', '6', '5') },
     { AV_PIX_FMT_RGB565BE,MKTAG('B', '5', '6', '5') },
