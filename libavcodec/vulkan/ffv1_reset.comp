@@ -1,0 +1,55 @@
+/*
+ * FFv1 codec
+ *
+ * Copyright (c) 2024 Lynne <dev@lynne.ee>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+void main(void)
+{
+    const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
+
+    if (slice_ctx[slice_idx].slice_coding_mode == 0 && key_frame == 0)
+        return;
+
+    uint64_t slice_state_off = uint64_t(slice_state) +
+                               slice_idx*plane_state_size*codec_planes;
+
+#ifdef GOLOMB
+    uint64_t start = slice_state_off +
+                     (gl_WorkGroupID.z*context_count +
+                      gl_LocalInvocationID.x)*VLC_STATE_SIZE;
+    for (uint x = gl_LocalInvocationID.x; x < context_count; x += gl_WorkGroupSize.x) {
+        VlcState sb = VlcState(start);
+        sb.drift     =  int16_t(0);
+        sb.error_sum = uint16_t(4);
+        sb.bias      =   int8_t(0);
+        sb.count     =  uint8_t(1);
+        start += gl_WorkGroupSize.x*VLC_STATE_SIZE;
+    }
+#else
+    uint64_t start = slice_state_off +
+                     (gl_WorkGroupID.z*context_count)*CONTEXT_SIZE +
+                     (gl_LocalInvocationID.x << 2 /* dwords */); /* Bytes */
+    uint count_total = context_count*(CONTEXT_SIZE /* bytes */ >> 2 /* dwords */);
+    for (uint x = gl_LocalInvocationID.x; x < count_total; x += gl_WorkGroupSize.x) {
+        u32buf(start).v = 0x80808080;
+        start += gl_WorkGroupSize.x*(CONTEXT_SIZE >> 3 /* 1/8th of context */);
+    }
+#endif
+}

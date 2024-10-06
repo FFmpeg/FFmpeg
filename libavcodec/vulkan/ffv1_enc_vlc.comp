@@ -1,0 +1,112 @@
+/*
+ * FFv1 codec
+ *
+ * Copyright (c) 2024 Lynne <dev@lynne.ee>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+struct RLEState {
+    int count;
+    int diff;
+    int index;
+    bool mode;
+};
+
+void calc_new_state(inout RLEState state, int context)
+{
+    if (context == 0)
+        state.mode = false;
+
+    if (!state.mode)
+        return;
+
+    if (state.diff > 0) {
+        while (state.count >= (1 << log2_run[state.index])) {
+            state.count -= 1 << log2_run[state.index];
+            state.index++;
+        }
+        if (state.index > 0)
+            state.index--;
+        state.count = 0;
+        state.mode = false;
+        if (state.diff > 0)
+            state.diff--;
+    } else {
+        state.count++;
+    }
+}
+
+void encode_line(inout SliceContext sc, uint64_t state,
+                 int y, int p, int comp, int bits, inout int run_index)
+{
+    ivec2 sp = sc.slice_pos;
+
+    int w = sc.slice_dim.x;
+    if (p > 0 && p < 3) {
+        w >>= chroma_shift.x;
+        sp >>= chroma_shift;
+    }
+
+    int run_count = 0;
+    bool run_mode = false;
+
+    for (int x = 0; x < w; x++) {
+        ivec2 d = get_diff(sp + ivec2(x, y), ivec2(x, y), p, comp, w, bits);
+
+        if (d[0] == 0)
+            run_mode = true;
+
+        if (run_mode) {
+            if (d[1] != 0) {
+                /* A very unlikely loop */
+                while (run_count >= 1 << log2_run[run_index]) {
+                    run_count -= 1 << log2_run[run_index];
+                    run_index++;
+                    put_bits(sc.pb, 1, 1);
+                }
+
+                put_bits(sc.pb, 1 + log2_run[run_index], run_count);
+                if (run_index != 0)
+                    run_index--;
+                run_count = 0;
+                run_mode  = false;
+                if (d[1] > 0)
+                    d[1]--;
+            } else {
+                run_count++;
+            }
+        }
+
+        if (!run_mode) {
+            VlcState sb = VlcState(state + VLC_STATE_SIZE*d[0]);
+            Symbol sym = get_vlc_symbol(sb, d[1], bits);
+            put_bits(sc.pb, sym.bits, sym.val);
+        }
+    }
+
+    if (run_mode) {
+        while (run_count >= (1 << log2_run[run_index])) {
+            run_count -= 1 << log2_run[run_index];
+            run_index++;
+            put_bits(sc.pb, 1, 1);
+        }
+
+        if (run_count > 0)
+            put_bits(sc.pb, 1, 1);
+    }
+}

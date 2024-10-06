@@ -1,0 +1,170 @@
+/*
+ * Copyright (c) 2024 Lynne <dev@lynne.ee>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+layout(buffer_reference, buffer_reference_align = 1) buffer u8buf {
+    uint8_t v;
+};
+
+layout(buffer_reference, buffer_reference_align = 2) buffer u16buf {
+    uint16_t v;
+};
+
+layout(buffer_reference, buffer_reference_align = 4) buffer u32buf {
+    uint32_t v;
+};
+
+layout(buffer_reference, buffer_reference_align = 8) buffer u64buf {
+    uint64_t v;
+};
+
+#define OFFBUF(type, b, l) \
+    type(uint64_t(b) + uint64_t(l))
+
+#define zero_extend(a, p) \
+    ((a) & ((1 << (p)) - 1))
+
+#define sign_extend(val, bits) \
+    bitfieldExtract(val, 0, bits)
+
+#define fold(diff, bits) \
+    sign_extend(diff, bits)
+
+#define mid_pred(a, b, c) \
+    max(min((a), (b)), min(max((a), (b)), (c)))
+
+/* TODO: optimize */
+uint align(uint src, uint a)
+{
+    uint res = src % a;
+    if (res == 0)
+        return src;
+    return src + a - res;
+}
+
+/* TODO: optimize */
+uint64_t align64(uint64_t src, uint64_t a)
+{
+    uint64_t res = src % a;
+    if (res == 0)
+        return src;
+    return src + a - res;
+}
+
+#define reverse4(src) \
+    (pack32(unpack8(uint32_t(src)).wzxy))
+
+uint64_t reverse8(uint64_t src)
+{
+    u32vec2 tmp = unpack32(src);
+    tmp.x = reverse4(tmp.x);
+    tmp.y = reverse4(tmp.y);
+    return pack64(tmp.yx);
+}
+
+#ifdef PB_32
+#define BIT_BUF_TYPE uint32_t
+#define BUF_TYPE u32buf
+#define BUF_REVERSE(src) reverse4(src)
+#define BUF_BITS uint8_t(32)
+#define BUF_BYTES uint8_t(4)
+#define BYTE_EXTRACT(src, byte_off) \
+    (uint8_t(bitfieldExtract((src), ((byte_off) << 3), 8)))
+#else
+#define BIT_BUF_TYPE uint64_t
+#define BUF_TYPE u64buf
+#define BUF_REVERSE(src) reverse8(src)
+#define BUF_BITS uint8_t(64)
+#define BUF_BYTES uint8_t(8)
+#define BYTE_EXTRACT(src, byte_off) \
+    (uint8_t(((src) >> ((byte_off) << 3)) & 0xFF))
+#endif
+
+struct PutBitContext {
+    uint64_t buf_start;
+    uint64_t buf;
+
+    BIT_BUF_TYPE bit_buf;
+    uint8_t bit_left;
+};
+
+void put_bits(inout PutBitContext pb, const uint32_t n, uint32_t value)
+{
+    if (n < pb.bit_left) {
+        pb.bit_buf = (pb.bit_buf << n) | value;
+        pb.bit_left -= uint8_t(n);
+    } else {
+        pb.bit_buf <<= pb.bit_left;
+        pb.bit_buf |= (value >> (n - pb.bit_left));
+
+#ifdef PB_UNALIGNED
+        u8buf bs = u8buf(pb.buf);
+        [[unroll]]
+        for (uint8_t i = uint8_t(0); i < BUF_BYTES; i++)
+            bs[i].v = BYTE_EXTRACT(pb.bit_buf, BUF_BYTES - uint8_t(1) - i);
+#else
+#ifdef DEBUG
+        if ((pb.buf % BUF_BYTES) != 0)
+            debugPrintfEXT("put_bits buffer is not aligned!");
+#endif
+
+        BUF_TYPE bs = BUF_TYPE(pb.buf);
+        bs.v = BUF_REVERSE(pb.bit_buf);
+#endif
+        pb.buf = uint64_t(bs) + BUF_BYTES;
+
+        pb.bit_left += BUF_BITS - uint8_t(n);
+        pb.bit_buf = value;
+    }
+}
+
+uint32_t flush_put_bits(inout PutBitContext pb)
+{
+    /* Align bits to MSBs */
+    if (pb.bit_left < BUF_BITS)
+        pb.bit_buf <<= pb.bit_left;
+
+    if (pb.bit_left < BUF_BITS) {
+        uint to_write = ((BUF_BITS - pb.bit_left) >> 3) + 1;
+
+        u8buf bs = u8buf(pb.buf);
+        for (int i = 0; i < to_write; i++)
+            bs[i].v = BYTE_EXTRACT(pb.bit_buf, BUF_BYTES - uint8_t(1) - i);
+        pb.buf = uint64_t(bs) + BUF_BYTES;
+    }
+
+    pb.bit_left = BUF_BITS;
+    pb.bit_buf = 0x0;
+
+    return uint32_t(pb.buf - pb.buf_start);
+}
+
+void init_put_bits(out PutBitContext pb, u8buf data, uint64_t len)
+{
+    pb.buf_start = uint64_t(data);
+    pb.buf = uint64_t(data);
+
+    pb.bit_buf = 0;
+    pb.bit_left = BUF_BITS;
+}
+
+uint64_t put_bits_count(in PutBitContext pb)
+{
+    return (pb.buf - pb.buf_start)*8 + BUF_BITS - pb.bit_left;
+}

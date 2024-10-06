@@ -116,6 +116,7 @@ extern const FFCodec ff_escape130_decoder;
 extern const FFCodec ff_exr_encoder;
 extern const FFCodec ff_exr_decoder;
 extern const FFCodec ff_ffv1_encoder;
+extern const FFCodec ff_ffv1_vulkan_encoder;
 extern const FFCodec ff_ffv1_decoder;
 extern const FFCodec ff_ffvhuff_encoder;
 extern const FFCodec ff_ffvhuff_decoder;

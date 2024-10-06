@@ -370,6 +370,7 @@ OBJS-$(CONFIG_EXR_ENCODER)             += exrenc.o float2half.o
 OBJS-$(CONFIG_FASTAUDIO_DECODER)       += fastaudio.o
 OBJS-$(CONFIG_FFV1_DECODER)            += ffv1dec.o ffv1.o
 OBJS-$(CONFIG_FFV1_ENCODER)            += ffv1enc.o ffv1.o
+OBJS-$(CONFIG_FFV1_VULKAN_ENCODER)     += ffv1enc.o ffv1.o ffv1enc_vulkan.o
 OBJS-$(CONFIG_FFWAVESYNTH_DECODER)     += ffwavesynth.o
 OBJS-$(CONFIG_FIC_DECODER)             += fic.o
 OBJS-$(CONFIG_FITS_DECODER)            += fitsdec.o fits.o

@@ -1,0 +1,67 @@
+/*
+ * FFv1 codec
+ *
+ * Copyright (c) 2024 Lynne <dev@lynne.ee>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+void encode_slice(inout SliceContext sc, const uint slice_idx)
+{
+    int bits = bits_per_raw_sample;
+
+#ifndef GOLOMB
+    if (sc.slice_coding_mode == 1) {
+        for (int p = 0; p < planes; p++) {
+
+            int h = sc.slice_dim.y;
+            if (p > 0 && p < 3)
+                h >>= chroma_shift.y;
+
+            for (int y = 0; y < h; y++)
+                encode_line_pcm(sc, y, p, 0, bits);
+        }
+    } else
+#endif
+    {
+        uint64_t slice_state_off = uint64_t(slice_state) +
+                                   slice_idx*plane_state_size*codec_planes;
+
+        for (int p = 0; p < planes; p++) {
+            int run_index = 0;
+
+            int h = sc.slice_dim.y;
+            if (p > 0 && p < 3)
+                h >>= chroma_shift.y;
+
+            for (int y = 0; y < h; y++)
+                encode_line(sc, slice_state_off, y, p, 0, bits, run_index);
+
+            /* For the second chroma plane, reuse the first plane's state */
+            if (p != 1)
+                slice_state_off += plane_state_size;
+        }
+    }
+
+    finalize_slice(sc, slice_idx);
+}
+
+void main(void)
+{
+    const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
+    encode_slice(slice_ctx[slice_idx], slice_idx);
+}

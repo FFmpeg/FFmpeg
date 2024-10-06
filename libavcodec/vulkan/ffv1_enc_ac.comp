@@ -1,0 +1,83 @@
+/*
+ * Copyright (c) 2024 Lynne <dev@lynne.ee>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+void put_rac(inout RangeCoder c, uint64_t state, bool bit)
+{
+    put_rac_norenorm(c, state, bit);
+    if (c.range < 0x100)
+        renorm_encoder(c);
+}
+
+/* Note - only handles signed values */
+void put_symbol(inout RangeCoder c, uint64_t state, int v)
+{
+    bool is_nil = (v == 0);
+    put_rac(c, state, is_nil);
+    if (is_nil)
+        return;
+
+    const int a = abs(v);
+    const int e = findMSB(a);
+
+    state += 1;
+    for (int i = 0; i < e; i++)
+        put_rac(c, state + min(i, 9), true);
+    put_rac(c, state + min(e, 9), false);
+
+    state += 21;
+    for (int i = e - 1; i >= 0; i--)
+        put_rac(c, state + min(i, 9), bool(bitfieldExtract(a, i, 1)));
+
+    put_rac(c, state - 11 + min(e, 10), v < 0);
+}
+
+void encode_line_pcm(inout SliceContext sc, int y, int p, int comp,
+                     int bits)
+{
+    ivec2 sp = sc.slice_pos;
+    int w = sc.slice_dim.x;
+    if (p > 0 && p < 3) {
+        w >>= chroma_shift.x;
+        sp >>= chroma_shift;
+    }
+
+    for (int x = 0; x < w; x++) {
+        uint v = imageLoad(src[p], (sp + ivec2(x, y)))[comp];
+        for (int i = (bits - 1); i >= 0; i--)
+            put_rac_equi(sc.c, bool(bitfieldExtract(v, i, 1)));
+    }
+}
+
+void encode_line(inout SliceContext sc, uint64_t state,
+                 int y, int p, int comp, int bits, const int run_index)
+{
+    ivec2 sp = sc.slice_pos;
+
+    int w = sc.slice_dim.x;
+    if (p > 0 && p < 3) {
+        w >>= chroma_shift.x;
+        sp >>= chroma_shift;
+    }
+
+    for (int x = 0; x < w; x++) {
+        const ivec2 d = get_diff(sp + ivec2(x, y), ivec2(x, y), p, comp, w, bits);
+        put_symbol(sc.c, state + CONTEXT_SIZE*d[0], d[1]);
+    }
+}
