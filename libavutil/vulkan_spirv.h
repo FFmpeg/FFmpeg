@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_VULKAN_SPIRV_H
-#define AVFILTER_VULKAN_SPIRV_H
+#ifndef AVUTIL_VULKAN_SPIRV_H
+#define AVUTIL_VULKAN_SPIRV_H
 
 #include "vulkan.h"
 
@@ -41,4 +41,4 @@ FFVkSPIRVCompiler *ff_vk_shaderc_init(void);
 #define ff_vk_spirv_init ff_vk_shaderc_init
 #endif
 
-#endif /* AVFILTER_VULKAN_H */
+#endif /* AVUTIL_VULKAN_H */
