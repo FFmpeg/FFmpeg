@@ -246,6 +246,7 @@ isYUV:
   p412le
   p416be
   p416le
+  uyva
   uyvy422
   uyyvyy411
   vuya
@@ -730,6 +731,7 @@ ALPHA:
   rgbaf16le
   rgbaf32be
   rgbaf32le
+  uyva
   vuya
   ya16be
   ya16le
@@ -821,6 +823,7 @@ Packed:
   rgbaf32le
   rgbf32be
   rgbf32le
+  uyva
   uyvy422
   uyyvyy411
   vuya
