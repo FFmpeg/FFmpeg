@@ -2668,11 +2668,24 @@ yuv2xv36le_X_c(SwsContext *c, const int16_t *lumFilter,
     }
 }
 
-static void
-yuv2vuyX_1_c(SwsContext *c, const int16_t *buf0,
-             const int16_t *ubuf[2], const int16_t *vbuf[2],
-             const int16_t *abuf0, uint8_t *dest, int dstW,
-             int uvalpha, int y)
+#define output_pixels(pos, A, Y, U, V) \
+    if (target == AV_PIX_FMT_AYUV) { \
+        dest[pos + 0] = A; \
+        dest[pos + 1] = Y;  \
+        dest[pos + 2] = U; \
+        dest[pos + 3] = V;  \
+    } else { /* AV_PIX_FMT_VUYA || AV_PIX_FMT_VUYX */ \
+        dest[pos + 0] = V;  \
+        dest[pos + 1] = U; \
+        dest[pos + 2] = Y;  \
+        dest[pos + 3] = A; \
+    }
+
+static av_always_inline void
+yuv2ayuv_1_c_template(SwsContext *c, const int16_t *buf0,
+                      const int16_t *ubuf[2], const int16_t *vbuf[2],
+                      const int16_t *abuf0, uint8_t *dest, int dstW,
+                      int uvalpha, int y, enum AVPixelFormat target)
 {
     int hasAlpha = !!abuf0;
     int i;
@@ -2697,10 +2710,7 @@ yuv2vuyX_1_c(SwsContext *c, const int16_t *buf0,
                     A = av_clip_uint8(A);
             }
 
-            dest[4 * i    ] = V;
-            dest[4 * i + 1] = U;
-            dest[4 * i + 2] = Y;
-            dest[4 * i + 3] = A;
+            output_pixels(i * 4, A, Y, U, V)
         }
     } else {
         for (i = 0; i < dstW; i++) {
@@ -2722,19 +2732,17 @@ yuv2vuyX_1_c(SwsContext *c, const int16_t *buf0,
                     A = av_clip_uint8(A);
             }
 
-            dest[4 * i    ] = V;
-            dest[4 * i + 1] = U;
-            dest[4 * i + 2] = Y;
-            dest[4 * i + 3] = A;
+            output_pixels(i * 4, A, Y, U, V)
         }
     }
 }
 
-static void
-yuv2vuyX_2_c(SwsContext *c, const int16_t *buf[2],
-            const int16_t *ubuf[2], const int16_t *vbuf[2],
-            const int16_t *abuf[2], uint8_t *dest, int dstW,
-            int yalpha, int uvalpha, int y)
+static av_always_inline void
+yuv2ayuv_2_c_template(SwsContext *c, const int16_t *buf[2],
+                      const int16_t *ubuf[2], const int16_t *vbuf[2],
+                      const int16_t *abuf[2], uint8_t *dest, int dstW,
+                      int yalpha, int uvalpha, int y,
+                      enum AVPixelFormat target)
 {
     int hasAlpha = abuf && abuf[0] && abuf[1];
     const int16_t *buf0  = buf[0],  *buf1  = buf[1],
@@ -2767,19 +2775,17 @@ yuv2vuyX_2_c(SwsContext *c, const int16_t *buf[2],
             A = av_clip_uint8(A);
         }
 
-        dest[4 * i    ] = V;
-        dest[4 * i + 1] = U;
-        dest[4 * i + 2] = Y;
-        dest[4 * i + 3] = A;
+        output_pixels(i * 4, A, Y, U, V)
     }
 }
 
-static void
-yuv2vuyX_X_c(SwsContext *c, const int16_t *lumFilter,
-             const int16_t **lumSrc, int lumFilterSize,
-             const int16_t *chrFilter, const int16_t **chrUSrc,
-             const int16_t **chrVSrc, int chrFilterSize,
-             const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
+static av_always_inline void
+yuv2ayuv_X_c_template(SwsContext *c, const int16_t *lumFilter,
+                      const int16_t **lumSrc, int lumFilterSize,
+                      const int16_t *chrFilter, const int16_t **chrUSrc,
+                      const int16_t **chrVSrc, int chrFilterSize,
+                      const int16_t **alpSrc, uint8_t *dest, int dstW,
+                      int y, enum AVPixelFormat target)
 {
     int i;
 
@@ -2820,12 +2826,46 @@ yuv2vuyX_X_c(SwsContext *c, const int16_t *lumFilter,
                 A = av_clip_uint8(A);
         }
 
-        dest[4 * i    ] = V;
-        dest[4 * i + 1] = U;
-        dest[4 * i + 2] = Y;
-        dest[4 * i + 3] = A;
+        output_pixels(i * 4, A, Y, U, V)
     }
 }
+
+#undef output_pixels
+
+#define AYUVPACKEDWRAPPER(name, fmt) \
+static void yuv2 ## name ## _X_c(SwsContext *c, const int16_t *lumFilter, \
+                                 const int16_t **lumSrc, int lumFilterSize, \
+                                 const int16_t *chrFilter, const int16_t **chrUSrc, \
+                                 const int16_t **chrVSrc, int chrFilterSize, \
+                                 const int16_t **alpSrc, uint8_t *dest, int dstW, \
+                                 int y) \
+{ \
+    yuv2ayuv_X_c_template(c, lumFilter, lumSrc, lumFilterSize, \
+                          chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
+                          alpSrc, dest, dstW, y, fmt); \
+} \
+ \
+static void yuv2 ## name ## _2_c(SwsContext *c, const int16_t *buf[2], \
+                                 const int16_t *ubuf[2], const int16_t *vbuf[2], \
+                                 const int16_t *abuf[2], uint8_t *dest, int dstW, \
+                                 int yalpha, int uvalpha, int y) \
+{ \
+    yuv2ayuv_2_c_template(c, buf, ubuf, vbuf, abuf, \
+                          dest, dstW, yalpha, uvalpha, y, fmt); \
+} \
+ \
+static void yuv2 ## name ## _1_c(SwsContext *c, const int16_t *buf0, \
+                                 const int16_t *ubuf[2], const int16_t *vbuf[2], \
+                                 const int16_t *abuf0, uint8_t *dest, int dstW, \
+                                 int uvalpha, int y) \
+{ \
+    yuv2ayuv_1_c_template(c, buf0, ubuf, vbuf, \
+                          abuf0, dest, dstW, uvalpha, \
+                          y, fmt); \
+}
+
+AYUVPACKEDWRAPPER(vuyX, AV_PIX_FMT_VUYX)
+AYUVPACKEDWRAPPER(ayuv, AV_PIX_FMT_AYUV)
 
 #define output_pixel(pos, val, bits) \
     AV_WL16(pos, av_clip_uintp2(val >> shift, bits) << output_shift);
@@ -3378,6 +3418,11 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         break;
     case AV_PIX_FMT_AYUV64LE:
         *yuv2packedX = yuv2ayuv64le_X_c;
+        break;
+    case AV_PIX_FMT_AYUV:
+        *yuv2packed1 = yuv2ayuv_1_c;
+        *yuv2packed2 = yuv2ayuv_2_c;
+        *yuv2packedX = yuv2ayuv_X_c;
         break;
     case AV_PIX_FMT_VUYA:
     case AV_PIX_FMT_VUYX:
