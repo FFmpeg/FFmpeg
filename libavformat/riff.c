@@ -296,6 +296,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '4', 'C', 'B') },
     { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '0', 'F', 'L') },
     { AV_CODEC_ID_RAWVIDEO,     MKTAG('I', '0', 'F', 'B') },
+    { AV_CODEC_ID_RAWVIDEO,     MKTAG('v', '4', '0', '8') },
     { AV_CODEC_ID_RAWVIDEO,     MKTAG('y', '4', '0', '8') },
     { AV_CODEC_ID_FRWU,         MKTAG('F', 'R', 'W', 'U') },
     { AV_CODEC_ID_R10K,         MKTAG('R', '1', '0', 'k') },
