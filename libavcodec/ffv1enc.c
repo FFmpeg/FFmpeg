@@ -767,22 +767,14 @@ av_cold int ff_ffv1_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int encode_init_internal(AVCodecContext *avctx)
+av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
+                                            enum AVPixelFormat pix_fmt)
 {
-    int ret;
     FFV1Context *s = avctx->priv_data;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
-
-    if ((ret = ff_ffv1_common_init(avctx)) < 0)
-        return ret;
-
-    if (s->ac == 1) // Compatbility with common command line usage
-        s->ac = AC_RANGE_CUSTOM_TAB;
-    else if (s->ac == AC_RANGE_DEFAULT_TAB_FORCE)
-        s->ac = AC_RANGE_DEFAULT_TAB;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
 
     s->plane_count = 3;
-    switch(avctx->pix_fmt) {
+    switch(pix_fmt) {
     case AV_PIX_FMT_GRAY9:
     case AV_PIX_FMT_YUV444P9:
     case AV_PIX_FMT_YUV422P9:
@@ -910,10 +902,31 @@ static int encode_init_internal(AVCodecContext *avctx)
         s->version = FFMAX(s->version, 1);
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "format not supported\n");
+        av_log(avctx, AV_LOG_ERROR, "format %s not supported\n",
+               av_get_pix_fmt_name(pix_fmt));
         return AVERROR(ENOSYS);
     }
     av_assert0(s->bits_per_raw_sample >= 8);
+
+    return av_pix_fmt_get_chroma_sub_sample(pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
+}
+
+static int encode_init_internal(AVCodecContext *avctx)
+{
+    int ret;
+    FFV1Context *s = avctx->priv_data;
+
+    if ((ret = ff_ffv1_common_init(avctx)) < 0)
+        return ret;
+
+    if (s->ac == 1) // Compatbility with common command line usage
+        s->ac = AC_RANGE_CUSTOM_TAB;
+    else if (s->ac == AC_RANGE_DEFAULT_TAB_FORCE)
+        s->ac = AC_RANGE_DEFAULT_TAB;
+
+    ret = ff_ffv1_encode_setup_plane_info(avctx, avctx->pix_fmt);
+    if (ret < 0)
+        return ret;
 
     if (s->bits_per_raw_sample > (s->version > 3 ? 16 : 8)) {
         if (s->ac == AC_GOLOMB_RICE) {
