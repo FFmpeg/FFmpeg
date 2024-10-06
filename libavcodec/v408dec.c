@@ -27,6 +27,8 @@ static av_cold int v408_decode_init(AVCodecContext *avctx)
 {
     avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
 
+    av_log(avctx, AV_LOG_WARNING, "This decoder is deprecated and will be removed.\n");
+
     return 0;
 }
 
