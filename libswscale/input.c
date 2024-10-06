@@ -710,6 +710,32 @@ static void read_vuya_A_c(uint8_t *dst, const uint8_t *src, const uint8_t *unuse
         dst[i] = src[i * 4 + 3];
 }
 
+static void read_ayuv_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src,
+                           const uint8_t *unused1, int width, uint32_t *unused2, void *opq)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        dstU[i] = src[i * 4 + 2];
+        dstV[i] = src[i * 4 + 3];
+    }
+}
+
+static void read_ayuv_Y_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0, const uint8_t *unused1, int width,
+                          uint32_t *unused2, void *opq)
+{
+    int i;
+    for (i = 0; i < width; i++)
+        dst[i] = src[i * 4 + 1];
+}
+
+static void read_ayuv_A_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0, const uint8_t *unused1, int width,
+                          uint32_t *unused2, void *opq)
+{
+    int i;
+    for (i = 0; i < width; i++)
+        dst[i] = src[i * 4];
+}
+
 static void read_xv30le_Y_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0, const uint8_t *unused1, int width,
                                uint32_t *unused2, void *opq)
 {
@@ -1444,6 +1470,9 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c,
     case AV_PIX_FMT_XV30LE:
         *chrToYV12 = read_xv30le_UV_c;
         break;
+    case AV_PIX_FMT_AYUV:
+        *chrToYV12 = read_ayuv_UV_c;
+        break;
     case AV_PIX_FMT_AYUV64LE:
         *chrToYV12 = read_ayuv64le_UV_c;
         break;
@@ -1845,6 +1874,9 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c,
     case AV_PIX_FMT_XV30LE:
         *lumToYV12 = read_xv30le_Y_c;
         break;
+    case AV_PIX_FMT_AYUV:
+        *lumToYV12 = read_ayuv_Y_c;
+        break;
     case AV_PIX_FMT_AYUV64LE:
         *lumToYV12 = read_ayuv64le_Y_c;
         break;
@@ -2030,6 +2062,9 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c,
             break;
         case AV_PIX_FMT_VUYA:
             *alpToYV12 = read_vuya_A_c;
+            break;
+        case AV_PIX_FMT_AYUV:
+            *alpToYV12 = read_ayuv_A_c;
             break;
         case AV_PIX_FMT_AYUV64LE:
             *alpToYV12 = read_ayuv64le_A_c;
