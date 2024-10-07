@@ -308,8 +308,8 @@ const AVCodecTag ff_codec_bmp_tags[] = {
 #if FF_API_V408_CODECID
     { AV_CODEC_ID_V308,         MKTAG('v', '3', '0', '8') },
     { AV_CODEC_ID_V408,         MKTAG('v', '4', '0', '8') },
-#endif
     { AV_CODEC_ID_V410,         MKTAG('v', '4', '1', '0') },
+#endif
     { AV_CODEC_ID_YUV4,         MKTAG('y', 'u', 'v', '4') },
     { AV_CODEC_ID_INDEO3,       MKTAG('I', 'V', '3', '1') },
     { AV_CODEC_ID_INDEO3,       MKTAG('I', 'V', '3', '2') },

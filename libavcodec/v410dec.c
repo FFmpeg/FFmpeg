@@ -46,6 +46,8 @@ static av_cold int v410_decode_init(AVCodecContext *avctx)
         }
     }
 
+    av_log(avctx, AV_LOG_WARNING, "This decoder is deprecated and will be removed.\n");
+
     return 0;
 }
 

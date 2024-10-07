@@ -2621,8 +2621,8 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
 #if FF_API_V408_CODECID
                            ||  track->par->codec_id == AV_CODEC_ID_V308
                            ||  track->par->codec_id == AV_CODEC_ID_V408
-#endif
                            ||  track->par->codec_id == AV_CODEC_ID_V410
+#endif
                            ||  track->par->codec_id == AV_CODEC_ID_V210);
 
     avio_wb32(pb, 0); /* size */

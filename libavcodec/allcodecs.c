@@ -350,9 +350,9 @@ extern const FFCodec ff_v308_encoder;
 extern const FFCodec ff_v308_decoder;
 extern const FFCodec ff_v408_encoder;
 extern const FFCodec ff_v408_decoder;
-#endif
 extern const FFCodec ff_v410_encoder;
 extern const FFCodec ff_v410_decoder;
+#endif
 extern const FFCodec ff_vb_decoder;
 extern const FFCodec ff_vbn_encoder;
 extern const FFCodec ff_vbn_decoder;

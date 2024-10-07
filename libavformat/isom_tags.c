@@ -66,8 +66,8 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
 #if FF_API_V408_CODECID
     { AV_CODEC_ID_V308,   MKTAG('v', '3', '0', '8') }, /* uncompressed  8-bit 4:4:4 */
     { AV_CODEC_ID_V408,   MKTAG('v', '4', '0', '8') }, /* uncompressed  8-bit 4:4:4:4 */
-#endif
     { AV_CODEC_ID_V410,   MKTAG('v', '4', '1', '0') }, /* uncompressed 10-bit 4:4:4 */
+#endif
     { AV_CODEC_ID_Y41P,   MKTAG('Y', '4', '1', 'P') }, /* uncompressed 12-bit 4:1:1 */
     { AV_CODEC_ID_YUV4,   MKTAG('y', 'u', 'v', '4') }, /* libquicktime packed yuv420p */
     { AV_CODEC_ID_TARGA_Y216, MKTAG('Y', '2', '1', '6') },
