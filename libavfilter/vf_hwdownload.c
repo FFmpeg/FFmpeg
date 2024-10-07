@@ -35,14 +35,16 @@ typedef struct HWDownloadContext {
     AVHWFramesContext *hwframes;
 } HWDownloadContext;
 
-static int hwdownload_query_formats(AVFilterContext *avctx)
+static int hwdownload_query_formats(const AVFilterContext *avctx,
+                                    AVFilterFormatsConfig **cfg_in,
+                                    AVFilterFormatsConfig **cfg_out)
 {
     int err;
 
     if ((err = ff_formats_ref(ff_formats_pixdesc_filter(AV_PIX_FMT_FLAG_HWACCEL, 0),
-                              &avctx->inputs[0]->outcfg.formats))  ||
+                              &cfg_in[0]->formats))  ||
         (err = ff_formats_ref(ff_formats_pixdesc_filter(0, AV_PIX_FMT_FLAG_HWACCEL),
-                              &avctx->outputs[0]->incfg.formats)))
+                              &cfg_out[0]->formats)))
         return err;
 
     return 0;
@@ -198,6 +200,6 @@ const AVFilter ff_vf_hwdownload = {
     .priv_class    = &hwdownload_class,
     FILTER_INPUTS(hwdownload_inputs),
     FILTER_OUTPUTS(hwdownload_outputs),
-    FILTER_QUERY_FUNC(hwdownload_query_formats),
+    FILTER_QUERY_FUNC2(hwdownload_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
