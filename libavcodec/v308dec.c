@@ -30,6 +30,8 @@ static av_cold int v308_decode_init(AVCodecContext *avctx)
     if (avctx->width & 1)
         av_log(avctx, AV_LOG_WARNING, "v308 requires width to be even.\n");
 
+    av_log(avctx, AV_LOG_WARNING, "This decoder is deprecated and will be removed.\n");
+
     return 0;
 }
 

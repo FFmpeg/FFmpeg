@@ -345,9 +345,9 @@ extern const FFCodec ff_utvideo_decoder;
 extern const FFCodec ff_v210_encoder;
 extern const FFCodec ff_v210_decoder;
 extern const FFCodec ff_v210x_decoder;
+#if FF_API_V408_CODECID
 extern const FFCodec ff_v308_encoder;
 extern const FFCodec ff_v308_decoder;
-#if FF_API_V408_CODECID
 extern const FFCodec ff_v408_encoder;
 extern const FFCodec ff_v408_decoder;
 #endif

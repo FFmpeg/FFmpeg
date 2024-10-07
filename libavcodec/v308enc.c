@@ -33,6 +33,8 @@ static av_cold int v308_encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
+    av_log(avctx, AV_LOG_WARNING, "This encoder is deprecated and will be removed.\n");
+
     avctx->bits_per_coded_sample = 24;
     avctx->bit_rate = ff_guess_coded_bitrate(avctx);
 
