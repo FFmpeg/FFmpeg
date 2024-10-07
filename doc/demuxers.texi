@@ -384,7 +384,7 @@ Default is 0, the first language unit.
 
 @item menu_vts @var{int}
 The VTS where the menu lives, or 0 if it is a VMG menu (root-level).
-Default is 0, VMG menu.
+Default is 1, menu of the first VTS.
 
 @item pgc @var{int}
 The entry PGC to start playback, in conjunction with @option{pg}.
