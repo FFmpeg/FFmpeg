@@ -1562,13 +1562,6 @@ static int dvdvideo_read_header(AVFormatContext *s)
             return AVERROR(EINVAL);
         }
 
-        if (!c->opt_menu_lu) {
-            av_log(s, AV_LOG_INFO, "Defaulting to menu language unit #1. "
-                                   "This is not always desirable, validation suggested.\n");
-
-            c->opt_menu_lu = 1;
-        }
-
         if ((ret = dvdvideo_ifo_open(s)) < 0                                         ||
             (c->opt_preindex && (ret = dvdvideo_chapters_setup_preindex(s)) < 0)     ||
             (ret = dvdvideo_menu_open(s, &c->play_state)) < 0                        ||
@@ -1782,7 +1775,7 @@ static const AVOption dvdvideo_options[] = {
     {"chapter_end",     "exit chapter (PTT) number (0=end)",                        OFFSET(opt_chapter_end),    AV_OPT_TYPE_INT,    { .i64=0 },     0,          99,        AV_OPT_FLAG_DECODING_PARAM },
     {"chapter_start",   "entry chapter (PTT) number",                               OFFSET(opt_chapter_start),  AV_OPT_TYPE_INT,    { .i64=1 },     1,          99,        AV_OPT_FLAG_DECODING_PARAM },
     {"menu",            "demux menu domain",                                        OFFSET(opt_menu),           AV_OPT_TYPE_BOOL,   { .i64=0 },     0,          1,         AV_OPT_FLAG_DECODING_PARAM },
-    {"menu_lu",         "menu language unit (0=auto)",                              OFFSET(opt_menu_lu),        AV_OPT_TYPE_INT,    { .i64=0 },     0,          99,        AV_OPT_FLAG_DECODING_PARAM },
+    {"menu_lu",         "menu language unit",                                       OFFSET(opt_menu_lu),        AV_OPT_TYPE_INT,    { .i64=1 },     1,          99,        AV_OPT_FLAG_DECODING_PARAM },
     {"menu_vts",        "menu VTS (0=VMG root menu)",                               OFFSET(opt_menu_vts),       AV_OPT_TYPE_INT,    { .i64=1 },     0,          99,        AV_OPT_FLAG_DECODING_PARAM },
     {"pg",              "entry PG number (when paired with PGC number)",            OFFSET(opt_pg),             AV_OPT_TYPE_INT,    { .i64=1 },     1,          255,       AV_OPT_FLAG_DECODING_PARAM },
     {"pgc",             "entry PGC number (0=auto)",                                OFFSET(opt_pgc),            AV_OPT_TYPE_INT,    { .i64=0 },     0,          999,       AV_OPT_FLAG_DECODING_PARAM },
