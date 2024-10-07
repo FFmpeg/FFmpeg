@@ -86,6 +86,12 @@ int ignore_unknown_streams = 0;
 int copy_unknown_streams = 0;
 int recast_media = 0;
 
+// this struct is passed as the optctx argument
+// to func_arg() for global options
+typedef struct GlobalOptionsContext {
+    Scheduler      *sch;
+} GlobalOptionsContext;
+
 static void uninit_options(OptionsContext *o)
 {
     /* all OPT_SPEC and OPT_TYPE_STRING can be freed in generic way */
@@ -611,8 +617,8 @@ static int opt_attach(void *optctx, const char *opt, const char *arg)
 
 static int opt_sdp_file(void *optctx, const char *opt, const char *arg)
 {
-    Scheduler *sch = optctx;
-    return sch_sdp_filename(sch, arg);
+    GlobalOptionsContext *go = optctx;
+    return sch_sdp_filename(go->sch, arg);
 }
 
 #if CONFIG_VAAPI
@@ -1150,18 +1156,18 @@ static int opt_audio_qscale(void *optctx, const char *opt, const char *arg)
 
 static int opt_filter_complex(void *optctx, const char *opt, const char *arg)
 {
-    Scheduler *sch = optctx;
+    GlobalOptionsContext *go = optctx;
     char *graph_desc = av_strdup(arg);
     if (!graph_desc)
         return AVERROR(ENOMEM);
 
-    return fg_create(NULL, graph_desc, sch);
+    return fg_create(NULL, graph_desc, go->sch);
 }
 
 #if FFMPEG_OPT_FILTER_SCRIPT
 static int opt_filter_complex_script(void *optctx, const char *opt, const char *arg)
 {
-    Scheduler *sch = optctx;
+    GlobalOptionsContext *go = optctx;
     char *graph_desc = file_read(arg);
     if (!graph_desc)
         return AVERROR(EINVAL);
@@ -1169,7 +1175,7 @@ static int opt_filter_complex_script(void *optctx, const char *opt, const char *
     av_log(NULL, AV_LOG_WARNING, "-%s is deprecated, use -/filter_complex %s instead\n",
            opt, arg);
 
-    return fg_create(NULL, graph_desc, sch);
+    return fg_create(NULL, graph_desc, go->sch);
 }
 #endif
 
@@ -1346,6 +1352,7 @@ static int open_files(OptionGroupList *l, const char *inout, Scheduler *sch,
 
 int ffmpeg_parse_options(int argc, char **argv, Scheduler *sch)
 {
+    GlobalOptionsContext go = { .sch = sch };
     OptionParseContext octx;
     const char *errmsg = NULL;
     int ret;
@@ -1361,7 +1368,7 @@ int ffmpeg_parse_options(int argc, char **argv, Scheduler *sch)
     }
 
     /* apply global options */
-    ret = parse_optgroup(sch, &octx.global_opts, options);
+    ret = parse_optgroup(&go, &octx.global_opts, options);
     if (ret < 0) {
         errmsg = "parsing global options";
         goto fail;
