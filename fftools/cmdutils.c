@@ -492,8 +492,9 @@ int locate_option(int argc, char **argv, const OptionDef *options,
     for (i = 1; i < argc; i++) {
         const char *cur_opt = argv[i];
 
-        if (*cur_opt++ != '-')
+        if (!(cur_opt[0] == '-' && cur_opt[1]))
             continue;
+        cur_opt++;
 
         po = find_option(options, cur_opt);
         if (!po->name && cur_opt[0] == 'n' && cur_opt[1] == 'o')
