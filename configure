@@ -6553,6 +6553,15 @@ if test -n "$custom_allocator"; then
     add_extralibs "$custom_allocator_extralibs"
 fi
 
+# Unlike other feature flags or libraries, spirv_compiler is not defined
+# within any of our predefined categories of components.
+# It gets defined if either libshaderc or libglslang check succeeds.
+# As such, its in a state of neither being explicitly enabled, nor
+# explicitly disabled, but even in this state, being mentioned in
+# _deps results in it always passing.
+# Disable it explicitly to fix this.
+disable spirv_compiler
+
 check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
 check_func  ${malloc_prefix}memalign            && enable memalign
 check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
