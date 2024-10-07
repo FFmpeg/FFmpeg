@@ -551,11 +551,12 @@ static void check_options(const OptionDef *po)
 
 void parse_loglevel(int argc, char **argv, const OptionDef *options)
 {
-    int idx = locate_option(argc, argv, options, "loglevel");
+    int idx;
     char *env;
 
     check_options(options);
 
+    idx = locate_option(argc, argv, options, "loglevel");
     if (!idx)
         idx = locate_option(argc, argv, options, "v");
     if (idx && argv[idx + 1])
