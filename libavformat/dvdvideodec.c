@@ -390,13 +390,15 @@ static int dvdvideo_menu_open(AVFormatContext *s, DVDVideoPlaybackState *state)
 }
 
 static int dvdvideo_menu_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState *state,
-                                       uint8_t *buf, int buf_size,
+                                       uint8_t *buf, int buf_size, int *p_is_nav_packet,
                                        void (*flush_cb)(AVFormatContext *s))
 {
     int64_t blocks_read                   = 0;
     uint8_t read_buf[DVDVIDEO_BLOCK_SIZE] = {0};
     pci_t pci                             = (pci_t) {0};
     dsi_t dsi                             = (dsi_t) {0};
+
+    (*p_is_nav_packet)  = 0;
 
     if (buf_size != DVDVIDEO_BLOCK_SIZE) {
         av_log(s, AV_LOG_ERROR, "Invalid buffer size (expected=%d actual=%d)\n",
@@ -481,7 +483,9 @@ static int dvdvideo_menu_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
                                 dsi.dsi_gi.nv_pck_lbn,
                                 pci.pci_gi.vobu_s_ptm, pci.pci_gi.vobu_e_ptm, state->ts_offset);
 
-        return FFERROR_REDO;
+        (*p_is_nav_packet) = 1;
+
+        return 0;
     }
 
     /* we are in the middle of a VOBU, so pass on the PS packet */
@@ -611,8 +615,7 @@ end_dvdnav_error:
 }
 
 static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState *state,
-                                       uint8_t *buf, int buf_size,
-                                       int *p_nav_event,
+                                       uint8_t *buf, int buf_size, int *p_is_nav_packet,
                                        void (*flush_cb)(AVFormatContext *s))
 {
     DVDVideoDemuxContext *c = s->priv_data;
@@ -626,6 +629,8 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
     int cur_title, cur_pgcn, cur_pgn, cur_angle, cur_title_unused, cur_ptt, cur_nb_angles;
     pci_t *e_pci;
     dsi_t *e_dsi;
+
+    (*p_is_nav_packet)  = 0;
 
     if (buf_size != DVDVIDEO_BLOCK_SIZE) {
         av_log(s, AV_LOG_ERROR, "Invalid buffer size (expected=%d actual=%d)\n",
@@ -780,9 +785,9 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
 
                 state->vobu_e_ptm = e_pci->pci_gi.vobu_e_ptm;
 
-                (*p_nav_event) = nav_event;
+                (*p_is_nav_packet) = 1;
 
-                return nav_len;
+                return 0;
             case DVDNAV_BLOCK_OK:
                 if (!state->in_ps) {
                     if (state->in_pgc)
@@ -810,8 +815,6 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
                                               state->pgn, cur_pgn);
 
                 memcpy(buf, &nav_buf, nav_len);
-
-                (*p_nav_event) = nav_event;
 
                 state->is_seeking = 0;
 
@@ -1442,18 +1445,18 @@ static int dvdvideo_subdemux_read_data(void *opaque, uint8_t *buf, int buf_size)
     AVFormatContext *s = opaque;
     DVDVideoDemuxContext *c = s->priv_data;
 
-    int ret = 0;
-    int nav_event;
+    int ret;
+    int is_nav_packet;
 
     if (c->play_end)
         return AVERROR_EOF;
 
     if (c->opt_menu)
-        ret = dvdvideo_menu_next_ps_block(s, &c->play_state, buf, buf_size,
+        ret = dvdvideo_menu_next_ps_block(s, &c->play_state, buf, buf_size, &is_nav_packet,
                                           dvdvideo_subdemux_flush);
     else
-        ret = dvdvideo_play_next_ps_block(opaque, &c->play_state, buf, buf_size,
-                                          &nav_event, dvdvideo_subdemux_flush);
+        ret = dvdvideo_play_next_ps_block(s, &c->play_state, buf, buf_size, &is_nav_packet,
+                                          dvdvideo_subdemux_flush);
 
     if (ret == AVERROR_EOF) {
         c->mpeg_pb.pub.eof_reached = 1;
@@ -1462,7 +1465,7 @@ static int dvdvideo_subdemux_read_data(void *opaque, uint8_t *buf, int buf_size)
         return AVERROR_EOF;
     }
 
-    if (ret >= 0 && nav_event == DVDNAV_NAV_PACKET)
+    if (ret == 0 && is_nav_packet)
         return FFERROR_REDO;
 
     return ret;
