@@ -637,23 +637,26 @@ static int check_image_pointers(const uint8_t * const data[4], enum AVPixelForma
     return 1;
 }
 
-static void xyz12Torgb48(struct SwsContext *c, uint16_t *dst,
-                         const uint16_t *src, int stride, int w, int h)
+static void xyz12Torgb48(struct SwsContext *c, uint8_t *dst, int dst_stride,
+                         const uint8_t *src, int src_stride, int w, int h)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
 
     for (int yp = 0; yp < h; yp++) {
+        const uint16_t *src16 = (const uint16_t *) src;
+        uint16_t *dst16 = (uint16_t *) dst;
+
         for (int xp = 0; xp < 3 * w; xp += 3) {
             int x, y, z, r, g, b;
 
             if (desc->flags & AV_PIX_FMT_FLAG_BE) {
-                x = AV_RB16(src + xp + 0);
-                y = AV_RB16(src + xp + 1);
-                z = AV_RB16(src + xp + 2);
+                x = AV_RB16(src16 + xp + 0);
+                y = AV_RB16(src16 + xp + 1);
+                z = AV_RB16(src16 + xp + 2);
             } else {
-                x = AV_RL16(src + xp + 0);
-                y = AV_RL16(src + xp + 1);
-                z = AV_RL16(src + xp + 2);
+                x = AV_RL16(src16 + xp + 0);
+                y = AV_RL16(src16 + xp + 1);
+                z = AV_RL16(src16 + xp + 2);
             }
 
             x = c->xyzgamma[x >> 4];
@@ -678,37 +681,41 @@ static void xyz12Torgb48(struct SwsContext *c, uint16_t *dst,
 
             // convert from sRGBlinear to RGB and scale from 12bit to 16bit
             if (desc->flags & AV_PIX_FMT_FLAG_BE) {
-                AV_WB16(dst + xp + 0, c->rgbgamma[r] << 4);
-                AV_WB16(dst + xp + 1, c->rgbgamma[g] << 4);
-                AV_WB16(dst + xp + 2, c->rgbgamma[b] << 4);
+                AV_WB16(dst16 + xp + 0, c->rgbgamma[r] << 4);
+                AV_WB16(dst16 + xp + 1, c->rgbgamma[g] << 4);
+                AV_WB16(dst16 + xp + 2, c->rgbgamma[b] << 4);
             } else {
-                AV_WL16(dst + xp + 0, c->rgbgamma[r] << 4);
-                AV_WL16(dst + xp + 1, c->rgbgamma[g] << 4);
-                AV_WL16(dst + xp + 2, c->rgbgamma[b] << 4);
+                AV_WL16(dst16 + xp + 0, c->rgbgamma[r] << 4);
+                AV_WL16(dst16 + xp + 1, c->rgbgamma[g] << 4);
+                AV_WL16(dst16 + xp + 2, c->rgbgamma[b] << 4);
             }
         }
-        src += stride;
-        dst += stride;
+
+        src += src_stride;
+        dst += dst_stride;
     }
 }
 
-static void rgb48Toxyz12(struct SwsContext *c, uint16_t *dst,
-                         const uint16_t *src, int stride, int w, int h)
+static void rgb48Toxyz12(struct SwsContext *c, uint8_t *dst, int dst_stride,
+                         const uint8_t *src, int src_stride, int w, int h)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->dstFormat);
 
     for (int yp = 0; yp < h; yp++) {
+        uint16_t *src16 = (uint16_t *) src;
+        uint16_t *dst16 = (uint16_t *) dst;
+
         for (int xp = 0; xp < 3 * w; xp += 3) {
             int x, y, z, r, g, b;
 
             if (desc->flags & AV_PIX_FMT_FLAG_BE) {
-                r = AV_RB16(src + xp + 0);
-                g = AV_RB16(src + xp + 1);
-                b = AV_RB16(src + xp + 2);
+                r = AV_RB16(src16 + xp + 0);
+                g = AV_RB16(src16 + xp + 1);
+                b = AV_RB16(src16 + xp + 2);
             } else {
-                r = AV_RL16(src + xp + 0);
-                g = AV_RL16(src + xp + 1);
-                b = AV_RL16(src + xp + 2);
+                r = AV_RL16(src16 + xp + 0);
+                g = AV_RL16(src16 + xp + 1);
+                b = AV_RL16(src16 + xp + 2);
             }
 
             r = c->rgbgammainv[r>>4];
@@ -733,17 +740,18 @@ static void rgb48Toxyz12(struct SwsContext *c, uint16_t *dst,
 
             // convert from XYZlinear to X'Y'Z' and scale from 12bit to 16bit
             if (desc->flags & AV_PIX_FMT_FLAG_BE) {
-                AV_WB16(dst + xp + 0, c->xyzgammainv[x] << 4);
-                AV_WB16(dst + xp + 1, c->xyzgammainv[y] << 4);
-                AV_WB16(dst + xp + 2, c->xyzgammainv[z] << 4);
+                AV_WB16(dst16 + xp + 0, c->xyzgammainv[x] << 4);
+                AV_WB16(dst16 + xp + 1, c->xyzgammainv[y] << 4);
+                AV_WB16(dst16 + xp + 2, c->xyzgammainv[z] << 4);
             } else {
-                AV_WL16(dst + xp + 0, c->xyzgammainv[x] << 4);
-                AV_WL16(dst + xp + 1, c->xyzgammainv[y] << 4);
-                AV_WL16(dst + xp + 2, c->xyzgammainv[z] << 4);
+                AV_WL16(dst16 + xp + 0, c->xyzgammainv[x] << 4);
+                AV_WL16(dst16 + xp + 1, c->xyzgammainv[y] << 4);
+                AV_WL16(dst16 + xp + 2, c->xyzgammainv[z] << 4);
             }
         }
-        src += stride;
-        dst += stride;
+
+        src += src_stride;
+        dst += dst_stride;
     }
 }
 
@@ -993,8 +1001,7 @@ static int scale_internal(SwsContext *c,
         base = srcStride[0] < 0 ? c->xyz_scratch - srcStride[0] * (srcSliceH-1) :
                                   c->xyz_scratch;
 
-        xyz12Torgb48(c, (uint16_t*)base, (const uint16_t*)src2[0], srcStride[0]/2,
-                     c->srcW, srcSliceH);
+        xyz12Torgb48(c, base, srcStride[0], src2[0], srcStride[0], c->srcW, srcSliceH);
         src2[0] = base;
     }
 
@@ -1052,21 +1059,21 @@ static int scale_internal(SwsContext *c,
     }
 
     if (c->dstXYZ && !(c->srcXYZ && c->srcW==c->dstW && c->srcH==c->dstH)) {
-        uint16_t *dst16;
+        uint8_t *dst;
 
         if (scale_dst) {
-            dst16 = (uint16_t *)dst2[0];
+            dst = dst2[0];
         } else {
             int dstY = c->dstY ? c->dstY : srcSliceY + srcSliceH;
 
             av_assert0(dstY >= ret);
             av_assert0(ret >= 0);
             av_assert0(c->dstH >= dstY);
-            dst16 = (uint16_t*)(dst2[0] + (dstY - ret) * dstStride2[0]);
+            dst = dst2[0] + (dstY - ret) * dstStride2[0];
         }
 
         /* replace on the same data */
-        rgb48Toxyz12(c, dst16, dst16, dstStride2[0]/2, c->dstW, ret);
+        rgb48Toxyz12(c, dst, dstStride2[0], dst, dstStride2[0], c->dstW, ret);
     }
 
     /* reset slice direction at end of frame */
