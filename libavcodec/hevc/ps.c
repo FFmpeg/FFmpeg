@@ -1210,7 +1210,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         if (sps->vps->nb_layers == 1) {
             av_log(avctx, AV_LOG_WARNING, "SPS %d references an unsupported VPS extension. Ignoring\n",
                    *sps_id);
-            return AVERROR_INVALIDDATA;
+            return AVERROR(ENOSYS);
         }
 
         if (get_bits1(gb) &&    // update_rep_format_flag
