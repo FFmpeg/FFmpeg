@@ -145,14 +145,16 @@ static const enum AVPixelFormat yuv_pix_fmts[] = { YUV_FORMATS, AV_PIX_FMT_NONE 
 static const enum AVPixelFormat rgb_pix_fmts[] = { RGB_FORMATS, AV_PIX_FMT_NONE };
 static const enum AVPixelFormat all_pix_fmts[] = { RGB_FORMATS, YUV_FORMATS, GRAY_FORMATS, AV_PIX_FMT_NONE };
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    LutContext *s = ctx->priv;
+    const LutContext *s = ctx->priv;
 
     const enum AVPixelFormat *pix_fmts = s->is_rgb ? rgb_pix_fmts :
                                                      s->is_yuv ? yuv_pix_fmts :
                                                                  all_pix_fmts;
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
+    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts);
 }
 
 /**
@@ -594,7 +596,7 @@ static const AVFilterPad inputs[] = {
         .uninit        = uninit,                                        \
         FILTER_INPUTS(inputs),                                          \
         FILTER_OUTPUTS(ff_video_default_filterpad),                     \
-        FILTER_QUERY_FUNC(query_formats),                               \
+        FILTER_QUERY_FUNC2(query_formats),                              \
         .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |       \
                          AVFILTER_FLAG_SLICE_THREADS,                   \
         .process_command = process_command,                             \
