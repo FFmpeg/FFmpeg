@@ -1097,7 +1097,8 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
         return AVERROR(ENOMEM);;
     graph->nb_threads = 1;
 
-    ret = graph_parse(graph, fgp->graph_desc, &inputs, &outputs, NULL);
+    ret = graph_parse(graph, fgp->graph_desc, &inputs, &outputs,
+                      hw_device_for_filter());
     if (ret < 0)
         goto fail;
 

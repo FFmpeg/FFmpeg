@@ -90,6 +90,9 @@ int recast_media = 0;
 // to func_arg() for global options
 typedef struct GlobalOptionsContext {
     Scheduler      *sch;
+
+    char          **filtergraphs;
+    int          nb_filtergraphs;
 } GlobalOptionsContext;
 
 static void uninit_options(OptionsContext *o)
@@ -1157,25 +1160,45 @@ static int opt_audio_qscale(void *optctx, const char *opt, const char *arg)
 static int opt_filter_complex(void *optctx, const char *opt, const char *arg)
 {
     GlobalOptionsContext *go = optctx;
-    char *graph_desc = av_strdup(arg);
+    char *graph_desc;
+    int ret;
+
+    graph_desc = av_strdup(arg);
     if (!graph_desc)
         return AVERROR(ENOMEM);
 
-    return fg_create(NULL, graph_desc, go->sch);
+    ret = GROW_ARRAY(go->filtergraphs, go->nb_filtergraphs);
+    if (ret < 0) {
+        av_freep(&graph_desc);
+        return ret;
+    }
+    go->filtergraphs[go->nb_filtergraphs - 1] = graph_desc;
+
+    return 0;
 }
 
 #if FFMPEG_OPT_FILTER_SCRIPT
 static int opt_filter_complex_script(void *optctx, const char *opt, const char *arg)
 {
     GlobalOptionsContext *go = optctx;
-    char *graph_desc = file_read(arg);
+    char *graph_desc;
+    int ret;
+
+    graph_desc = file_read(arg);
     if (!graph_desc)
         return AVERROR(EINVAL);
 
     av_log(NULL, AV_LOG_WARNING, "-%s is deprecated, use -/filter_complex %s instead\n",
            opt, arg);
 
-    return fg_create(NULL, graph_desc, go->sch);
+    ret = GROW_ARRAY(go->filtergraphs, go->nb_filtergraphs);
+    if (ret < 0) {
+        av_freep(&graph_desc);
+        return ret;
+    }
+    go->filtergraphs[go->nb_filtergraphs - 1] = graph_desc;
+
+    return 0;
 }
 #endif
 
@@ -1377,6 +1400,14 @@ int ffmpeg_parse_options(int argc, char **argv, Scheduler *sch)
     /* configure terminal and setup signal handlers */
     term_init();
 
+    /* create complex filtergraphs */
+    for (int i = 0; i < go.nb_filtergraphs; i++) {
+        ret = fg_create(NULL, go.filtergraphs[i], sch);
+        go.filtergraphs[i] = NULL;
+        if (ret < 0)
+            goto fail;
+    }
+
     /* open input files */
     ret = open_files(&octx.groups[GROUP_INFILE], "input", sch, ifile_open);
     if (ret < 0) {
@@ -1412,6 +1443,10 @@ int ffmpeg_parse_options(int argc, char **argv, Scheduler *sch)
         goto fail;
 
 fail:
+    for (int i = 0; i < go.nb_filtergraphs; i++)
+        av_freep(&go.filtergraphs[i]);
+    av_freep(&go.filtergraphs);
+
     uninit_parse_context(&octx);
     if (ret < 0 && ret != AVERROR_EXIT) {
         av_log(NULL, AV_LOG_FATAL, "Error %s: %s\n",
