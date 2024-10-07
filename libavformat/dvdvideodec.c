@@ -1743,7 +1743,7 @@ static int dvdvideo_read_seek(AVFormatContext *s, int stream_index, int64_t time
     if ((flags & AVSEEK_FLAG_BYTE))
         return AVERROR(ENOSYS);
 
-    if (timestamp < 0)
+    if (timestamp < 0 || timestamp > s->duration)
         return AVERROR(EINVAL);
 
     if (!c->seek_warned) {
