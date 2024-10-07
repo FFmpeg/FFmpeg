@@ -1565,9 +1565,9 @@ static int dvdvideo_read_header(AVFormatContext *s)
         if ((ret = dvdvideo_ifo_open(s)) < 0                                         ||
             (c->opt_preindex && (ret = dvdvideo_chapters_setup_preindex(s)) < 0)     ||
             (ret = dvdvideo_menu_open(s, &c->play_state)) < 0                        ||
-            (ret = dvdvideo_subdemux_open(s)) < 0                                    ||
             (ret = dvdvideo_video_stream_setup(s)) < 0                               ||
-            (ret = dvdvideo_audio_stream_add_all(s)) < 0)
+            (ret = dvdvideo_audio_stream_add_all(s)) < 0                             ||
+            (ret = dvdvideo_subdemux_open(s)) < 0)
         return ret;
 
         return 0;
@@ -1599,15 +1599,13 @@ static int dvdvideo_read_header(AVFormatContext *s)
     if (!c->opt_pgc && c->opt_preindex && (ret = dvdvideo_chapters_setup_preindex(s)) < 0)
         return ret;
 
-    if ((ret = dvdvideo_play_open(s, &c->play_state)) < 0   ||
-        (ret = dvdvideo_subdemux_open(s)) < 0               ||
-        (ret = dvdvideo_video_stream_setup(s)) < 0          ||
-        (ret = dvdvideo_audio_stream_add_all(s)) < 0        ||
-        (ret = dvdvideo_subp_stream_add_all(s)) < 0)
+    if ((ret = dvdvideo_play_open(s, &c->play_state)) < 0                                  ||
+        (!c->opt_pgc && !c->opt_preindex && (ret = dvdvideo_chapters_setup_simple(s)) < 0) ||
+        (ret = dvdvideo_video_stream_setup(s)) < 0                                         ||
+        (ret = dvdvideo_audio_stream_add_all(s)) < 0                                       ||
+        (ret = dvdvideo_subp_stream_add_all(s)) < 0                                        ||
+        (ret = dvdvideo_subdemux_open(s)) < 0)
         return ret;
-
-    if (!c->opt_pgc && !c->opt_preindex)
-        return dvdvideo_chapters_setup_simple(s);
 
     return 0;
 }
