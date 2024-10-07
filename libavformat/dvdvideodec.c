@@ -909,19 +909,26 @@ static int dvdvideo_chapters_setup_preindex(AVFormatContext *s)
 {
     DVDVideoDemuxContext *c = s->priv_data;
 
-    int ret = 0, interrupt = 0;
-    int nb_chapters = 0, last_ptt = c->opt_chapter_start;
+    int ret, partn, last_partn;
+    int interrupt = 0, nb_chapters = 0;
     uint64_t cur_chapter_offset = 0, cur_chapter_duration = 0;
     DVDVideoPlaybackState state = {0};
 
     uint8_t nav_buf[DVDVIDEO_BLOCK_SIZE];
-    int nav_event;
+    int is_nav_packet;
 
     if (c->opt_chapter_start == c->opt_chapter_end)
-        return ret;
+        return 0;
 
-    if ((ret = dvdvideo_play_open(s, &state)) < 0)
-        return ret;
+    if (c->opt_menu) {
+        if ((ret = dvdvideo_menu_open(s, &state)) < 0)
+            return ret;
+        last_partn = state.celln;
+    } else {
+        if ((ret = dvdvideo_play_open(s, &state)) < 0)
+            return ret;
+        last_partn = c->opt_chapter_start;
+    }
 
     if (state.pgc->nr_of_programs == 1)
         goto end_close;
@@ -930,15 +937,22 @@ static int dvdvideo_chapters_setup_preindex(AVFormatContext *s)
            "Indexing chapter markers, this will take a long time. Please wait...\n");
 
     while (!(interrupt = ff_check_interrupt(&s->interrupt_callback))) {
-        ret = dvdvideo_play_next_ps_block(s, &state, nav_buf, DVDVIDEO_BLOCK_SIZE,
-                                          &nav_event, NULL);
+        if (c->opt_menu)
+            ret = dvdvideo_menu_next_ps_block(s, &state, nav_buf, DVDVIDEO_BLOCK_SIZE, &is_nav_packet,
+                                              NULL);
+        else
+            ret = dvdvideo_play_next_ps_block(s, &state, nav_buf, DVDVIDEO_BLOCK_SIZE, &is_nav_packet,
+                                              NULL);
+
         if (ret < 0 && ret != AVERROR_EOF)
             goto end_close;
 
-        if (nav_event != DVDNAV_NAV_PACKET && ret != AVERROR_EOF)
+        if (!is_nav_packet && ret != AVERROR_EOF)
             continue;
 
-        if (state.ptt == last_ptt) {
+        partn = c->opt_menu ? state.celln : state.ptt;
+
+        if (partn == last_partn) {
             cur_chapter_duration += state.vobu_duration;
             /* ensure we add the last chapter */
             if (ret != AVERROR_EOF)
@@ -957,7 +971,7 @@ static int dvdvideo_chapters_setup_preindex(AVFormatContext *s)
 
         cur_chapter_offset += cur_chapter_duration;
         cur_chapter_duration = state.vobu_duration;
-        last_ptt = state.ptt;
+        last_partn = partn;
 
         if (ret == AVERROR_EOF)
             break;
@@ -977,7 +991,10 @@ static int dvdvideo_chapters_setup_preindex(AVFormatContext *s)
     ret = 0;
 
 end_close:
-    dvdvideo_play_close(s, &state);
+    if (c->opt_menu)
+        dvdvideo_menu_close(s, &state);
+    else
+        dvdvideo_play_close(s, &state);
 
     return ret;
 }
@@ -1523,11 +1540,10 @@ static int dvdvideo_read_header(AVFormatContext *s)
     if (c->opt_menu) {
         if (c->opt_region               ||
             c->opt_title > 1            ||
-            c->opt_preindex             ||
             c->opt_chapter_start > 1    ||
             c->opt_chapter_end > 0) {
             av_log(s, AV_LOG_ERROR, "-menu is not compatible with the -region, -title, "
-                                    "-preindex, or -chapter_start/-chapter_end options\n");
+                                    "or -chapter_start/-chapter_end options\n");
             return AVERROR(EINVAL);
         }
 
@@ -1544,10 +1560,11 @@ static int dvdvideo_read_header(AVFormatContext *s)
             c->opt_menu_lu = 1;
         }
 
-        if ((ret = dvdvideo_ifo_open(s)) < 0                    ||
-            (ret = dvdvideo_menu_open(s, &c->play_state)) < 0   ||
-            (ret = dvdvideo_subdemux_open(s)) < 0               ||
-            (ret = dvdvideo_video_stream_setup(s)) < 0          ||
+        if ((ret = dvdvideo_ifo_open(s)) < 0                                         ||
+            (c->opt_preindex && (ret = dvdvideo_chapters_setup_preindex(s)) < 0)     ||
+            (ret = dvdvideo_menu_open(s, &c->play_state)) < 0                        ||
+            (ret = dvdvideo_subdemux_open(s)) < 0                                    ||
+            (ret = dvdvideo_video_stream_setup(s)) < 0                               ||
             (ret = dvdvideo_audio_stream_add_all(s)) < 0)
         return ret;
 
