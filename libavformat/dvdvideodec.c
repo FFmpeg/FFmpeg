@@ -44,8 +44,6 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
-#include "libavutil/time.h"
-#include "libavutil/timestamp.h"
 
 #include "avformat.h"
 #include "avio_internal.h"
