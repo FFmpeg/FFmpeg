@@ -1643,28 +1643,23 @@ static int dvdvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    if (!st_mapped)
+    if (!st_mapped || pkt->pts == AV_NOPTS_VALUE || pkt->dts == AV_NOPTS_VALUE)
         goto discard;
 
-    if (pkt->pts != AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE) {
-        if (!c->play_started) {
-            /* try to start at the beginning of a GOP */
-            if (st_subdemux->codecpar->codec_type != AVMEDIA_TYPE_VIDEO || !is_key)
-                goto discard;
-
-            c->first_pts = pkt->pts;
-            c->play_started = 1;
-        }
-
-        pkt->pts += c->pts_offset - c->first_pts;
-        pkt->dts += c->pts_offset - c->first_pts;
-
-        if (pkt->pts < 0)
+    if (!c->play_started) {
+        /* try to start at the beginning of a GOP */
+        if (st_subdemux->codecpar->codec_type != AVMEDIA_TYPE_VIDEO || !is_key)
             goto discard;
-    } else {
-        av_log(s, AV_LOG_WARNING, "Unset PTS or DTS @ st=%d pts=%" PRId64 " dts=%" PRId64 "\n",
-                                  pkt->stream_index, pkt->pts, pkt->dts);
+
+        c->first_pts = pkt->pts;
+        c->play_started = 1;
     }
+
+    pkt->pts += c->pts_offset - c->first_pts;
+    pkt->dts += c->pts_offset - c->first_pts;
+
+    if (pkt->pts < 0)
+        goto discard;
 
     av_log(s, AV_LOG_TRACE, "st=%d pts=%" PRId64 " dts=%" PRId64 " "
                             "pts_offset=%" PRId64 " first_pts=%" PRId64 "\n",
