@@ -380,7 +380,7 @@ Default is false.
 
 @item menu_lu @var{int}
 The menu language to demux. In DVD, menus are grouped by language.
-Default is 0, the first language unit.
+Default is 1, the first language unit.
 
 @item menu_vts @var{int}
 The VTS where the menu lives, or 0 if it is a VMG menu (root-level).
