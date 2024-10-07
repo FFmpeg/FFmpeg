@@ -35,6 +35,7 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_RAWVIDEO, MKTAG('y', 'u', 'v', 's') }, /* same as 2VUY but byte-swapped */
     { AV_CODEC_ID_RAWVIDEO, MKTAG('v', '3', '0', '8') }, /* uncompressed  8-bit 4:4:4 */
     { AV_CODEC_ID_RAWVIDEO, MKTAG('v', '4', '0', '8') }, /* uncompressed  8-bit 4:4:4:4 */
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('v', '4', '1', '0') }, /* uncompressed 10-bit 4:4:4 */
 
     { AV_CODEC_ID_RAWVIDEO, MKTAG('L', '5', '5', '5') },
     { AV_CODEC_ID_RAWVIDEO, MKTAG('L', '5', '6', '5') },

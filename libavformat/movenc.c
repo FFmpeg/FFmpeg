@@ -1881,6 +1881,7 @@ static const struct {
     { AV_PIX_FMT_UYVY422, MKTAG('2','v','u','y'),  0 },
     { AV_PIX_FMT_VYU444,  MKTAG('v','3','0','8'),  0 },
     { AV_PIX_FMT_UYVA,    MKTAG('v','4','0','8'),  0 },
+    { AV_PIX_FMT_V30XLE,  MKTAG('v','4','1','0'),  0 },
     { AV_PIX_FMT_RGB555BE,MKTAG('r','a','w',' '), 16 },
     { AV_PIX_FMT_RGB555LE,MKTAG('L','5','5','5'), 16 },
     { AV_PIX_FMT_RGB565LE,MKTAG('L','5','6','5'), 16 },
@@ -2616,6 +2617,7 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
                            || (track->par->codec_id == AV_CODEC_ID_RAWVIDEO && track->par->format == AV_PIX_FMT_YUYV422)
                            || (track->par->codec_id == AV_CODEC_ID_RAWVIDEO && track->par->format == AV_PIX_FMT_VYU444)
                            || (track->par->codec_id == AV_CODEC_ID_RAWVIDEO && track->par->format == AV_PIX_FMT_UYVA)
+                           || (track->par->codec_id == AV_CODEC_ID_RAWVIDEO && track->par->format == AV_PIX_FMT_V30X)
                            ||  track->par->codec_id == AV_CODEC_ID_V308
                            ||  track->par->codec_id == AV_CODEC_ID_V408
                            ||  track->par->codec_id == AV_CODEC_ID_V410
