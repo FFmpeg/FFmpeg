@@ -39,6 +39,33 @@ typedef struct HWUploadContext {
     char *device_type;
 } HWUploadContext;
 
+static int hwupload_init(AVFilterContext *avctx)
+{
+    HWUploadContext *ctx = avctx->priv;
+    int err;
+
+    if (!avctx->hw_device_ctx) {
+        av_log(ctx, AV_LOG_ERROR, "A hardware device reference is required "
+               "to upload frames to.\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (ctx->device_type) {
+        err = av_hwdevice_ctx_create_derived(
+            &ctx->hwdevice_ref,
+            av_hwdevice_find_type_by_name(ctx->device_type),
+            avctx->hw_device_ctx, 0);
+        if (err < 0)
+            return err;
+    } else {
+        ctx->hwdevice_ref = av_buffer_ref(avctx->hw_device_ctx);
+        if (!ctx->hwdevice_ref)
+            return AVERROR(ENOMEM);
+    }
+
+    return 0;
+}
+
 static int hwupload_query_formats(AVFilterContext *avctx)
 {
     HWUploadContext *ctx = avctx->priv;
@@ -46,27 +73,6 @@ static int hwupload_query_formats(AVFilterContext *avctx)
     const enum AVPixelFormat *input_pix_fmts, *output_pix_fmts;
     AVFilterFormats *input_formats = NULL;
     int err, i;
-
-    if (ctx->hwdevice_ref) {
-        /* We already have a specified device. */
-    } else if (avctx->hw_device_ctx) {
-        if (ctx->device_type) {
-            err = av_hwdevice_ctx_create_derived(
-                &ctx->hwdevice_ref,
-                av_hwdevice_find_type_by_name(ctx->device_type),
-                avctx->hw_device_ctx, 0);
-            if (err < 0)
-                return err;
-        } else {
-            ctx->hwdevice_ref = av_buffer_ref(avctx->hw_device_ctx);
-            if (!ctx->hwdevice_ref)
-                return AVERROR(ENOMEM);
-        }
-    } else {
-        av_log(ctx, AV_LOG_ERROR, "A hardware device reference is required "
-               "to upload frames to.\n");
-        return AVERROR(EINVAL);
-    }
 
     constraints = av_hwdevice_get_hwframe_constraints(ctx->hwdevice_ref, NULL);
     if (!constraints) {
@@ -253,6 +259,7 @@ static const AVFilterPad hwupload_outputs[] = {
 const AVFilter ff_vf_hwupload = {
     .name          = "hwupload",
     .description   = NULL_IF_CONFIG_SMALL("Upload a normal frame to a hardware frame"),
+    .init          = hwupload_init,
     .uninit        = hwupload_uninit,
     .priv_size     = sizeof(HWUploadContext),
     .priv_class    = &hwupload_class,
