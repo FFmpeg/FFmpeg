@@ -1615,8 +1615,9 @@ static int dvdvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     DVDVideoDemuxContext *c = s->priv_data;
 
     int ret;
-    enum AVMediaType st_type;
-    int found_stream = 0;
+    int is_key     = 0;
+    int st_mapped  = 0;
+    AVStream *st_subdemux;
 
     if (c->play_end)
         return AVERROR_EOF;
@@ -1629,32 +1630,27 @@ static int dvdvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (!c->segment_started)
         c->segment_started = 1;
 
-    st_type = c->mpeg_ctx->streams[pkt->stream_index]->codecpar->codec_type;
+    st_subdemux = c->mpeg_ctx->streams[pkt->stream_index];
+    is_key      = pkt->flags & AV_PKT_FLAG_KEY;
 
     /* map the subdemuxer stream to the parent demuxer's stream (by startcode) */
     for (int i = 0; i < s->nb_streams; i++) {
-        if (s->streams[i]->id == c->mpeg_ctx->streams[pkt->stream_index]->id) {
+        if (s->streams[i]->id == st_subdemux->id) {
             pkt->stream_index = s->streams[i]->index;
-            found_stream = 1;
+            st_mapped         = 1;
+
             break;
         }
     }
 
-    if (!found_stream) {
-        av_log(s, AV_LOG_DEBUG, "discarding frame with stream that was not in IFO headers "
-                                "(stream id=%d)\n", c->mpeg_ctx->streams[pkt->stream_index]->id);
-
-        return FFERROR_REDO;
-    }
+    if (!st_mapped)
+        goto discard;
 
     if (pkt->pts != AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE) {
         if (!c->play_started) {
             /* try to start at the beginning of a GOP */
-            if (st_type != AVMEDIA_TYPE_VIDEO || !(pkt->flags & AV_PKT_FLAG_KEY)) {
-                av_log(s, AV_LOG_VERBOSE, "Discarding packet which is not a video keyframe or "
-                                          "with unset PTS/DTS at start\n");
-                return FFERROR_REDO;
-            }
+            if (st_subdemux->codecpar->codec_type != AVMEDIA_TYPE_VIDEO || !is_key)
+                goto discard;
 
             c->first_pts = pkt->pts;
             c->play_started = 1;
@@ -1663,13 +1659,8 @@ static int dvdvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->pts += c->play_state.ts_offset - c->first_pts;
         pkt->dts += c->play_state.ts_offset - c->first_pts;
 
-        if (pkt->pts < 0) {
-            av_log(s, AV_LOG_VERBOSE, "Discarding packet with negative PTS (st=%d pts=%" PRId64 "), "
-                                      "this is OK at start of playback\n",
-                                      pkt->stream_index, pkt->pts);
-
-            return FFERROR_REDO;
-        }
+        if (pkt->pts < 0)
+            goto discard;
     } else {
         av_log(s, AV_LOG_WARNING, "Unset PTS or DTS @ st=%d pts=%" PRId64 " dts=%" PRId64 "\n",
                                   pkt->stream_index, pkt->pts, pkt->dts);
@@ -1681,6 +1672,13 @@ static int dvdvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
                             c->play_state.ts_offset, c->first_pts);
 
     return c->play_end ? AVERROR_EOF : 0;
+
+discard:
+    av_log(s, st_mapped ? AV_LOG_VERBOSE : AV_LOG_DEBUG,
+           "Discarding frame @ st=%d pts=%" PRId64 " dts=%" PRId64 " is_key=%d st_mapped=%d\n",
+           st_mapped ? pkt->stream_index : -1, pkt->pts, pkt->dts, is_key, st_mapped);
+
+    return FFERROR_REDO;
 }
 
 static int dvdvideo_close(AVFormatContext *s)
