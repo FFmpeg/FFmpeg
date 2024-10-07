@@ -38,6 +38,7 @@
 #include <dvdread/ifo_types.h>
 #include <dvdread/nav_read.h>
 
+#include "libavcodec/ac3_parser.h"
 #include "libavutil/avstring.h"
 #include "libavutil/avutil.h"
 #include "libavutil/intreadwrite.h"
@@ -166,6 +167,7 @@ typedef struct DVDVideoDemuxContext {
     int64_t                     first_pts;          /* the PTS of the first video keyframe */
     int                         play_started;       /* signal that playback has started */
     DVDVideoPlaybackState       play_state;         /* the active playback state */
+    int64_t                     *prev_pts;          /* track the previous PTS emitted per stream */
     int64_t                     pts_offset;         /* PTS discontinuity offset (ex. VOB change) */
     int                         seek_warned;        /* signal that we warned about seeking limits */
     int                         subdemux_reset;     /* signal that subdemuxer should be reset */
@@ -1566,7 +1568,7 @@ static int dvdvideo_read_header(AVFormatContext *s)
             (ret = dvdvideo_subdemux_open(s)) < 0)
         return ret;
 
-        return 0;
+        goto end_ready;
     }
 
     if (c->opt_pgc && (c->opt_chapter_start > 1 || c->opt_chapter_end > 0 || c->opt_preindex)) {
@@ -1603,6 +1605,14 @@ static int dvdvideo_read_header(AVFormatContext *s)
         (ret = dvdvideo_subdemux_open(s)) < 0)
         return ret;
 
+end_ready:
+    c->prev_pts = av_malloc(s->nb_streams * sizeof(int64_t));
+    if (!c->prev_pts)
+        return AVERROR(ENOMEM);
+
+    for (int i = 0; i < s->nb_streams; i++)
+        c->prev_pts[i] = AV_NOPTS_VALUE;
+
     return 0;
 }
 
@@ -1614,6 +1624,8 @@ static int dvdvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     int is_key     = 0;
     int st_mapped  = 0;
     AVStream *st_subdemux;
+    uint8_t  ac3_bitstream_id;
+    uint16_t ac3_frame_size;
 
     ret = av_read_frame(c->mpeg_ctx, pkt);
     if (ret < 0) {
@@ -1661,10 +1673,26 @@ static int dvdvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->pts < 0)
         goto discard;
 
+    /* clean up after DVD muxers which end seamless PGs on duplicate or partial AC3 samples */
+    if (st_subdemux->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+        st_subdemux->codecpar->codec_id == AV_CODEC_ID_AC3) {
+
+        if (pkt->pts <= c->prev_pts[pkt->stream_index])
+            goto discard;
+
+        ret = av_ac3_parse_header(pkt->buf->data, pkt->size,
+                                  &ac3_bitstream_id, &ac3_frame_size);
+
+        if (ret < 0 || pkt->size != ac3_frame_size)
+            goto discard;
+    }
+
     av_log(s, AV_LOG_TRACE, "st=%d pts=%" PRId64 " dts=%" PRId64 " "
                             "pts_offset=%" PRId64 " first_pts=%" PRId64 "\n",
                             pkt->stream_index, pkt->pts, pkt->dts,
                             c->pts_offset, c->first_pts);
+
+    c->prev_pts[pkt->stream_index] = pkt->pts;
 
     return 0;
 
@@ -1672,6 +1700,9 @@ discard:
     av_log(s, st_mapped ? AV_LOG_VERBOSE : AV_LOG_DEBUG,
            "Discarding frame @ st=%d pts=%" PRId64 " dts=%" PRId64 " is_key=%d st_mapped=%d\n",
            st_mapped ? pkt->stream_index : -1, pkt->pts, pkt->dts, is_key, st_mapped);
+
+    if (st_mapped)
+        c->prev_pts[pkt->stream_index] = pkt->pts;
 
     return FFERROR_REDO;
 }
@@ -1688,6 +1719,9 @@ static int dvdvideo_close(AVFormatContext *s)
         dvdvideo_play_close(s, &c->play_state);
 
     dvdvideo_ifo_close(s);
+
+    if (c->prev_pts)
+        av_freep(&c->prev_pts);
 
     return 0;
 }
