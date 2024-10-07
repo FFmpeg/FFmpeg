@@ -537,7 +537,7 @@ static int dvdvideo_play_open(AVFormatContext *s, DVDVideoPlaybackState *state)
         goto end_dvdnav_error;
     }
 
-    if (c->opt_pgc > 0 && c->opt_pg > 0) {
+    if (c->opt_pgc > 0) {
         if (dvdnav_program_play(state->dvdnav, c->opt_title, c->opt_pgc, c->opt_pg) != DVDNAV_STATUS_OK) {
             av_log(s, AV_LOG_ERROR, "Unable to start playback at title %d, PGC %d, PG %d\n",
                                     c->opt_title, c->opt_pgc, c->opt_pg);
@@ -1541,13 +1541,6 @@ static int dvdvideo_read_header(AVFormatContext *s)
             c->opt_menu_lu = 1;
         }
 
-        if (!c->opt_pg) {
-            av_log(s, AV_LOG_INFO, "Defaulting to menu PG #1. "
-                                   "This is not always desirable, validation suggested.\n");
-
-            c->opt_pg = 1;
-        }
-
         if ((ret = dvdvideo_ifo_open(s)) < 0                    ||
             (ret = dvdvideo_menu_open(s, &c->play_state)) < 0   ||
             (ret = dvdvideo_subdemux_open(s)) < 0               ||
@@ -1558,7 +1551,13 @@ static int dvdvideo_read_header(AVFormatContext *s)
         return 0;
     }
 
-    if (c->opt_chapter_end != 0 && c->opt_chapter_start > c->opt_chapter_end) {
+    if (c->opt_pgc && (c->opt_chapter_start > 1 || c->opt_chapter_end > 0 || c->opt_preindex)) {
+        av_log(s, AV_LOG_ERROR, "PGC extraction not compatible with chapter or preindex options\n");
+
+        return AVERROR(EINVAL);
+    }
+
+    if (!c->opt_pgc && (c->opt_chapter_end != 0 && c->opt_chapter_start > c->opt_chapter_end)) {
         av_log(s, AV_LOG_ERROR, "Chapter (PTT) range [%d, %d] is invalid\n",
                                 c->opt_chapter_start, c->opt_chapter_end);
 
@@ -1570,18 +1569,6 @@ static int dvdvideo_read_header(AVFormatContext *s)
                                "This is not always the main feature, validation suggested.\n");
 
         c->opt_title = 1;
-    }
-
-    if (c->opt_pgc) {
-        if (c->opt_pg == 0) {
-            av_log(s, AV_LOG_ERROR, "Invalid coordinates. If -pgc is set, -pg must be set too.\n");
-
-            return AVERROR(EINVAL);
-        } else if (c->opt_chapter_start > 1 || c->opt_chapter_end > 0 || c->opt_preindex) {
-            av_log(s, AV_LOG_ERROR, "-pgc is not compatible with the -preindex or "
-                                    "-chapter_start/-chapter_end options\n");
-            return AVERROR(EINVAL);
-        }
     }
 
     if ((ret = dvdvideo_ifo_open(s)) < 0)
@@ -1761,7 +1748,7 @@ static const AVOption dvdvideo_options[] = {
     {"menu",            "demux menu domain",                                        OFFSET(opt_menu),           AV_OPT_TYPE_BOOL,   { .i64=0 },     0,          1,         AV_OPT_FLAG_DECODING_PARAM },
     {"menu_lu",         "menu language unit (0=auto)",                              OFFSET(opt_menu_lu),        AV_OPT_TYPE_INT,    { .i64=0 },     0,          99,        AV_OPT_FLAG_DECODING_PARAM },
     {"menu_vts",        "menu VTS (0=VMG main menu)",                               OFFSET(opt_menu_vts),       AV_OPT_TYPE_INT,    { .i64=0 },     0,          99,        AV_OPT_FLAG_DECODING_PARAM },
-    {"pg",              "entry PG number (0=auto)",                                 OFFSET(opt_pg),             AV_OPT_TYPE_INT,    { .i64=0 },     0,          255,       AV_OPT_FLAG_DECODING_PARAM },
+    {"pg",              "entry PG number (when paired with PGC number)",            OFFSET(opt_pg),             AV_OPT_TYPE_INT,    { .i64=1 },     1,          255,       AV_OPT_FLAG_DECODING_PARAM },
     {"pgc",             "entry PGC number (0=auto)",                                OFFSET(opt_pgc),            AV_OPT_TYPE_INT,    { .i64=0 },     0,          999,       AV_OPT_FLAG_DECODING_PARAM },
     {"preindex",        "enable for accurate chapter markers, slow (2-pass read)",  OFFSET(opt_preindex),       AV_OPT_TYPE_BOOL,   { .i64=0 },     0,          1,         AV_OPT_FLAG_DECODING_PARAM },
     {"region",          "playback region number (0=free)",                          OFFSET(opt_region),         AV_OPT_TYPE_INT,    { .i64=0 },     0,          8,         AV_OPT_FLAG_DECODING_PARAM },
