@@ -344,7 +344,7 @@ static int dvdvideo_menu_open(AVFormatContext *s, DVDVideoPlaybackState *state)
     }
 
     /* make sure the PGC is valid */
-    state->pgcn          = c->opt_pgc - 1;
+    state->pgcn          = c->opt_pgc;
     state->pgc           = pgci_ut->lu[c->opt_menu_lu - 1].pgcit->pgci_srp[c->opt_pgc - 1].pgc;
     if (!state->pgc || !state->pgc->program_map || !state->pgc->cell_playback) {
         av_log(s, AV_LOG_ERROR, "Invalid PGC structure for menu [LU %d, PGC %d]\n",
