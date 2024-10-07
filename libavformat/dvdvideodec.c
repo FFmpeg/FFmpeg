@@ -474,6 +474,7 @@ static int dvdvideo_menu_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
         }
 
         state->vobu_e_ptm        = pci.pci_gi.vobu_e_ptm;
+        state->vobu_duration     = pci.pci_gi.vobu_e_ptm - pci.pci_gi.vobu_s_ptm;
 
         av_log(s, AV_LOG_DEBUG, "NAV packet: sector=%d "
                                 "vobu_s_ptm=%d vobu_e_ptm=%d ts_offset=%" PRId64 "\n",
