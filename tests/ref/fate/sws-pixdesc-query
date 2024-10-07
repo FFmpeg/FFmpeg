@@ -251,6 +251,7 @@ isYUV:
   uyyvyy411
   vuya
   vuyx
+  vyu444
   xv30be
   xv30le
   xv36be
@@ -828,6 +829,7 @@ Packed:
   uyyvyy411
   vuya
   vuyx
+  vyu444
   x2bgr10be
   x2bgr10le
   x2rgb10be
@@ -1090,5 +1092,6 @@ SwappedChroma:
   nv42
   vuya
   vuyx
+  vyu444
   yvyu422
 
