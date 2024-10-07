@@ -640,11 +640,10 @@ static int check_image_pointers(const uint8_t * const data[4], enum AVPixelForma
 static void xyz12Torgb48(struct SwsContext *c, uint16_t *dst,
                          const uint16_t *src, int stride, int h)
 {
-    int xp,yp;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
 
-    for (yp=0; yp<h; yp++) {
-        for (xp=0; xp+2<stride; xp+=3) {
+    for (int yp = 0; yp < h; yp++) {
+        for (int xp = 0; xp + 2 < stride; xp += 3) {
             int x, y, z, r, g, b;
 
             if (desc->flags & AV_PIX_FMT_FLAG_BE) {
@@ -657,9 +656,9 @@ static void xyz12Torgb48(struct SwsContext *c, uint16_t *dst,
                 z = AV_RL16(src + xp + 2);
             }
 
-            x = c->xyzgamma[x>>4];
-            y = c->xyzgamma[y>>4];
-            z = c->xyzgamma[z>>4];
+            x = c->xyzgamma[x >> 4];
+            y = c->xyzgamma[y >> 4];
+            z = c->xyzgamma[z >> 4];
 
             // convert from XYZlinear to sRGBlinear
             r = c->xyz2rgb_matrix[0][0] * x +
@@ -696,11 +695,10 @@ static void xyz12Torgb48(struct SwsContext *c, uint16_t *dst,
 static void rgb48Toxyz12(struct SwsContext *c, uint16_t *dst,
                          const uint16_t *src, int stride, int h)
 {
-    int xp,yp;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->dstFormat);
 
-    for (yp=0; yp<h; yp++) {
-        for (xp=0; xp+2<stride; xp+=3) {
+    for (int yp = 0; yp < h; yp++) {
+        for (int xp = 0; xp + 2 < stride; xp += 3) {
             int x, y, z, r, g, b;
 
             if (desc->flags & AV_PIX_FMT_FLAG_BE) {
