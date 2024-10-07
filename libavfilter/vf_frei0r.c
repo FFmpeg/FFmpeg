@@ -330,9 +330,11 @@ static int config_input_props(AVFilterLink *inlink)
     return set_params(ctx, s->params);
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    Frei0rContext *s = ctx->priv;
+    const Frei0rContext *s = ctx->priv;
     AVFilterFormats *formats = NULL;
     int ret;
 
@@ -352,7 +354,7 @@ static int query_formats(AVFilterContext *ctx)
     if (!formats)
         return AVERROR(ENOMEM);
 
-    return ff_set_common_formats(ctx, formats);
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out, formats);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -432,7 +434,7 @@ const AVFilter ff_vf_frei0r = {
     .priv_class    = &frei0r_class,
     FILTER_INPUTS(avfilter_vf_frei0r_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
@@ -521,5 +523,5 @@ const AVFilter ff_vsrc_frei0r_src = {
     .uninit        = uninit,
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_frei0r_src_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
