@@ -637,8 +637,8 @@ static int check_image_pointers(const uint8_t * const data[4], enum AVPixelForma
     return 1;
 }
 
-static void xyz12Torgb48(struct SwsContext *c, uint8_t *dst, int dst_stride,
-                         const uint8_t *src, int src_stride, int w, int h)
+void ff_xyz12Torgb48(const SwsContext *c, uint8_t *dst, int dst_stride,
+                     const uint8_t *src, int src_stride, int w, int h)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
 
@@ -696,8 +696,8 @@ static void xyz12Torgb48(struct SwsContext *c, uint8_t *dst, int dst_stride,
     }
 }
 
-static void rgb48Toxyz12(struct SwsContext *c, uint8_t *dst, int dst_stride,
-                         const uint8_t *src, int src_stride, int w, int h)
+void ff_rgb48Toxyz12(const SwsContext *c, uint8_t *dst, int dst_stride,
+                     const uint8_t *src, int src_stride, int w, int h)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->dstFormat);
 
@@ -1001,7 +1001,7 @@ static int scale_internal(SwsContext *c,
         base = srcStride[0] < 0 ? c->xyz_scratch - srcStride[0] * (srcSliceH-1) :
                                   c->xyz_scratch;
 
-        xyz12Torgb48(c, base, srcStride[0], src2[0], srcStride[0], c->srcW, srcSliceH);
+        ff_xyz12Torgb48(c, base, srcStride[0], src2[0], srcStride[0], c->srcW, srcSliceH);
         src2[0] = base;
     }
 
@@ -1073,7 +1073,7 @@ static int scale_internal(SwsContext *c,
         }
 
         /* replace on the same data */
-        rgb48Toxyz12(c, dst, dstStride2[0], dst, dstStride2[0], c->dstW, ret);
+        ff_rgb48Toxyz12(c, dst, dstStride2[0], dst, dstStride2[0], c->dstW, ret);
     }
 
     /* reset slice direction at end of frame */

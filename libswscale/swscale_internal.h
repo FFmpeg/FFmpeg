@@ -1034,6 +1034,12 @@ void ff_copyPlane(const uint8_t *src, int srcStride,
                   int srcSliceY, int srcSliceH, int width,
                   uint8_t *dst, int dstStride);
 
+void ff_xyz12Torgb48(const SwsContext *c, uint8_t *dst, int dst_stride,
+                     const uint8_t *src, int src_stride, int w, int h);
+
+void ff_rgb48Toxyz12(const SwsContext *c, uint8_t *dst, int dst_stride,
+                     const uint8_t *src, int src_stride, int w, int h);
+
 static inline void fillPlane16(uint8_t *plane, int stride, int width, int height, int y,
                                int alpha, int bits, const int big_endian)
 {
