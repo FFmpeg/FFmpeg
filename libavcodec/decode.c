@@ -19,6 +19,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include "config.h"
@@ -1173,6 +1174,7 @@ int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
     const AVCodecHWConfigInternal *hw_config;
     const FFHWAccel *hwa;
     int i, ret;
+    bool clean_priv_data = false;
 
     for (i = 0;; i++) {
         hw_config = ffcodec(avctx->codec)->hw_configs[i];
@@ -1197,6 +1199,7 @@ int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
             av_buffer_unref(&frames_ref);
             return AVERROR(ENOMEM);
         }
+        clean_priv_data = true;
     }
 
     ret = hwa->frame_params(avctx, frames_ref);
@@ -1217,6 +1220,8 @@ int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
 
         *out_frames_ref = frames_ref;
     } else {
+        if (clean_priv_data)
+            av_freep(&avctx->internal->hwaccel_priv_data);
         av_buffer_unref(&frames_ref);
     }
     return ret;
