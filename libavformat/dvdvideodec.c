@@ -804,12 +804,12 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
                     return AVERROR_INPUT_CHANGED;
                 }
 
-                memcpy(buf, &nav_buf, nav_len);
-
                 if (state->pgn != cur_pgn)
                     av_log(s, AV_LOG_WARNING, "Unexpected PG change (expected=%d actual=%d); "
                                               "this could be due to a missed NAV packet\n",
                                               state->pgn, cur_pgn);
+
+                memcpy(buf, &nav_buf, nav_len);
 
                 (*p_nav_event) = nav_event;
 
