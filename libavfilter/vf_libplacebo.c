@@ -194,6 +194,8 @@ typedef struct LibplaceboContext {
     int color_trc;
     AVDictionary *extra_opts;
 
+    int have_hwdevice;
+
     /* pl_render_params */
     pl_options opts;
     char *upscaler;
@@ -493,11 +495,13 @@ static int parse_shader(AVFilterContext *avctx, const void *shader, size_t len)
 
 static void libplacebo_uninit(AVFilterContext *avctx);
 static int libplacebo_config_input(AVFilterLink *inlink);
+static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwctx);
 
 static int libplacebo_init(AVFilterContext *avctx)
 {
     int err = 0;
     LibplaceboContext *s = avctx->priv;
+    const AVVulkanDeviceContext *vkhwctx = NULL;
 
     /* Create libplacebo log context */
     s->log = pl_log_create(PL_API_VER, pl_log_params(
@@ -559,7 +563,14 @@ static int libplacebo_init(AVFilterContext *avctx)
     if (strcmp(s->fps_string, "none") != 0)
         RET(av_parse_video_rate(&s->fps, s->fps_string));
 
-    /* Note: s->vulkan etc. are initialized later, when hwctx is available */
+    if (avctx->hw_device_ctx) {
+        const AVHWDeviceContext *avhwctx = (void *) avctx->hw_device_ctx->data;
+        if (avhwctx->type == AV_HWDEVICE_TYPE_VULKAN)
+            vkhwctx = avhwctx->hwctx;
+    }
+
+    RET(init_vulkan(avctx, vkhwctx));
+
     return 0;
 
 fail:
@@ -648,6 +659,8 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
         err = AVERROR_EXTERNAL;
         goto fail;
 #endif
+
+        s->have_hwdevice = 1;
     } else {
         s->vulkan = pl_vulkan_create(s->log, pl_vulkan_params(
             .queue_count = 0, /* enable all queues for parallelization */
@@ -1081,17 +1094,8 @@ static int libplacebo_query_format(AVFilterContext *ctx)
 {
     int err;
     LibplaceboContext *s = ctx->priv;
-    const AVVulkanDeviceContext *vkhwctx = NULL;
     const AVPixFmtDescriptor *desc = NULL;
     AVFilterFormats *infmts = NULL, *outfmts = NULL;
-
-    if (ctx->hw_device_ctx) {
-        const AVHWDeviceContext *avhwctx = (void *) ctx->hw_device_ctx->data;
-        if (avhwctx->type == AV_HWDEVICE_TYPE_VULKAN)
-            vkhwctx = avhwctx->hwctx;
-    }
-
-    RET(init_vulkan(ctx, vkhwctx));
 
     while ((desc = av_pix_fmt_desc_next(desc))) {
         enum AVPixelFormat pixfmt = av_pix_fmt_desc_get_id(desc);
@@ -1103,10 +1107,8 @@ static int libplacebo_query_format(AVFilterContext *ctx)
             continue;
 #endif
 
-        if (pixfmt == AV_PIX_FMT_VULKAN) {
-            if (!vkhwctx || vkhwctx->act_dev != s->vulkan->device)
-                continue;
-        }
+        if (pixfmt == AV_PIX_FMT_VULKAN && !s->have_hwdevice)
+            continue;
 
         if (!pl_test_pixfmt(s->gpu, pixfmt))
             continue;
