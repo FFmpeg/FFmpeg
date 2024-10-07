@@ -740,6 +740,13 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
                     return AVERROR_EOF;
                 }
 
+                if (nav_len != DVDVIDEO_BLOCK_SIZE) {
+                    av_log(s, AV_LOG_ERROR, "Invalid NAV packet size (expected=%d actual=%d)\n",
+                                            DVDVIDEO_BLOCK_SIZE, nav_len);
+
+                    return AVERROR_INVALIDDATA;
+                }
+
                 e_pci = dvdnav_get_current_nav_pci(state->dvdnav);
                 e_dsi = dvdnav_get_current_nav_dsi(state->dvdnav);
 
