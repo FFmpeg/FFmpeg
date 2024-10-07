@@ -405,7 +405,6 @@ which requires a slow second pass read in order to index the chapter marker
 timestamps from NAV packets. This is non-ideal extra work for real optical drives.
 It is recommended and faster to use this option with a backup of the DVD structure
 stored on a hard drive. Not compatible with @option{pgc} and @option{pg}.
-Not applicable to menus.
 Default is 0, false.
 
 @item trim @var{bool}
