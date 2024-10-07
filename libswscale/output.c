@@ -2613,12 +2613,14 @@ yuv2ayuv64le_X_c(SwsContext *c, const int16_t *lumFilter,
     }
 }
 
-static void
-yuv2xv30le_X_c(SwsContext *c, const int16_t *lumFilter,
-               const int16_t **lumSrc, int lumFilterSize,
-               const int16_t *chrFilter, const int16_t **chrUSrc,
-               const int16_t **chrVSrc, int chrFilterSize,
-               const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
+
+static av_always_inline void
+yuv2v30_X_c_template(SwsContext *c, const int16_t *lumFilter,
+                     const int16_t **lumSrc, int lumFilterSize,
+                     const int16_t *chrFilter, const int16_t **chrUSrc,
+                     const int16_t **chrVSrc, int chrFilterSize,
+                     const int16_t **alpSrc, uint8_t *dest, int dstW, int y,
+                     int shift)
 {
     int i;
     for (i = 0; i < dstW; i++) {
@@ -2637,9 +2639,27 @@ yuv2xv30le_X_c(SwsContext *c, const int16_t *lumFilter,
         U = av_clip_uintp2(U >> 17, 10);
         V = av_clip_uintp2(V >> 17, 10);
 
-        AV_WL32(dest + 4 * i, U | Y << 10 | V << 20);
+        AV_WL32(dest + 4 * i, U << (shift +  0)  |
+                              Y << (shift + 10)  |
+                    (unsigned)V << (shift + 20));
     }
 }
+
+#define V30LE_WRAPPER(name, shift) \
+static void yuv2 ## name ## _X_c(SwsContext *c, const int16_t *lumFilter, \
+                                 const int16_t **lumSrc, int lumFilterSize, \
+                                 const int16_t *chrFilter, const int16_t **chrUSrc, \
+                                 const int16_t **chrVSrc, int chrFilterSize, \
+                                 const int16_t **alpSrc, uint8_t *dest, int dstW, \
+                                 int y) \
+{ \
+    yuv2v30_X_c_template(c, lumFilter, lumSrc, lumFilterSize, \
+                         chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
+                         alpSrc, dest, dstW, y, shift); \
+}
+
+V30LE_WRAPPER(xv30le, 0)
+V30LE_WRAPPER(v30xle, 2)
 
 static void
 yuv2xv36le_X_c(SwsContext *c, const int16_t *lumFilter,
@@ -3545,6 +3565,9 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         *yuv2packed1 = yuv2ya16be_1_c;
         *yuv2packed2 = yuv2ya16be_2_c;
         *yuv2packedX = yuv2ya16be_X_c;
+        break;
+    case AV_PIX_FMT_V30XLE:
+        *yuv2packedX = yuv2v30xle_X_c;
         break;
     case AV_PIX_FMT_AYUV64LE:
         *yuv2packedX = yuv2ayuv64le_X_c;
