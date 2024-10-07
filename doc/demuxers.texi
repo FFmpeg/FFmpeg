@@ -397,8 +397,7 @@ Default is 0, automatically resolve from value of @option{title}.
 The entry PG to start playback, in conjunction with @option{pgc}.
 Alternative to setting @option{title}.
 Chapter markers are not supported at this time.
-Default is 0, automatically resolve from value of @option{title}, or
-start from the beginning (PG 1) of the menu.
+Default is 1, the first PG of the PGC.
 
 @item preindex @var{bool}
 Enable this to have accurate chapter (PTT) markers and duration measurement,
