@@ -1058,8 +1058,10 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
     int ret = 0;
 
     fgp = av_mallocz(sizeof(*fgp));
-    if (!fgp)
+    if (!fgp) {
+        av_freep(&graph_desc);
         return AVERROR(ENOMEM);
+    }
     fg = &fgp->fg;
 
     if (pfg) {
@@ -1068,6 +1070,7 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
     } else {
         ret = av_dynarray_add_nofree(&filtergraphs, &nb_filtergraphs, fgp);
         if (ret < 0) {
+            av_freep(&graph_desc);
             av_freep(&fgp);
             return ret;
         }
