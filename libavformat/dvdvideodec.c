@@ -1051,9 +1051,7 @@ static int dvdvideo_video_stream_analyze(AVFormatContext *s, video_attr_t video_
     return 0;
 }
 
-static int dvdvideo_video_stream_add(AVFormatContext *s,
-                                     DVDVideoVTSVideoStreamEntry *entry,
-                                     enum AVStreamParseType need_parsing)
+static int dvdvideo_video_stream_add(AVFormatContext *s, DVDVideoVTSVideoStreamEntry *entry)
 {
     AVStream *st;
     FFStream *sti;
@@ -1077,7 +1075,7 @@ static int dvdvideo_video_stream_add(AVFormatContext *s,
 
     sti = ffstream(st);
     sti->request_probe = 0;
-    sti->need_parsing = need_parsing;
+    sti->need_parsing = AVSTREAM_PARSE_HEADERS;
     sti->display_aspect_ratio = entry->dar;
 
     avpriv_set_pts_info(st, DVDVIDEO_PTS_WRAP_BITS,
@@ -1101,7 +1099,7 @@ static int dvdvideo_video_stream_setup(AVFormatContext *s)
         video_attr = c->vts_ifo->vtsi_mat->vts_video_attr;
 
     if ((ret = dvdvideo_video_stream_analyze(s, video_attr, &entry)) < 0 ||
-        (ret = dvdvideo_video_stream_add(s, &entry, AVSTREAM_PARSE_HEADERS)) < 0) {
+        (ret = dvdvideo_video_stream_add(s, &entry)) < 0) {
 
         av_log(s, AV_LOG_ERROR, "Unable to add video stream\n");
         return ret;
@@ -1213,8 +1211,7 @@ static int dvdvideo_audio_stream_analyze(AVFormatContext *s, audio_attr_t audio_
     return 0;
 }
 
-static int dvdvideo_audio_stream_add(AVFormatContext *s, DVDVideoPGCAudioStreamEntry *entry,
-                                     enum AVStreamParseType need_parsing)
+static int dvdvideo_audio_stream_add(AVFormatContext *s, DVDVideoPGCAudioStreamEntry *entry)
 {
     AVStream *st;
     FFStream *sti;
@@ -1239,7 +1236,7 @@ static int dvdvideo_audio_stream_add(AVFormatContext *s, DVDVideoPGCAudioStreamE
 
     sti = ffstream(st);
     sti->request_probe = 0;
-    sti->need_parsing = need_parsing;
+    sti->need_parsing = AVSTREAM_PARSE_HEADERS;
 
     avpriv_set_pts_info(st, DVDVIDEO_PTS_WRAP_BITS,
                         DVDVIDEO_TIME_BASE_Q.num, DVDVIDEO_TIME_BASE_Q.den);
@@ -1282,7 +1279,7 @@ static int dvdvideo_audio_stream_add_all(AVFormatContext *s)
             if (s->streams[j]->id == entry.startcode)
                 continue;
 
-        if ((ret = dvdvideo_audio_stream_add(s, &entry, AVSTREAM_PARSE_HEADERS)) < 0)
+        if ((ret = dvdvideo_audio_stream_add(s, &entry)) < 0)
             goto break_error;
 
         continue;
@@ -1319,8 +1316,7 @@ static int dvdvideo_subp_stream_analyze(AVFormatContext *s, uint32_t offset, sub
     return 0;
 }
 
-static int dvdvideo_subp_stream_add(AVFormatContext *s, DVDVideoPGCSubtitleStreamEntry *entry,
-                                    enum AVStreamParseType need_parsing)
+static int dvdvideo_subp_stream_add(AVFormatContext *s, DVDVideoPGCSubtitleStreamEntry *entry)
 {
     AVStream *st;
     FFStream *sti;
@@ -1346,7 +1342,7 @@ static int dvdvideo_subp_stream_add(AVFormatContext *s, DVDVideoPGCSubtitleStrea
 
     sti = ffstream(st);
     sti->request_probe = 0;
-    sti->need_parsing = need_parsing;
+    sti->need_parsing = AVSTREAM_PARSE_HEADERS;
 
     avpriv_set_pts_info(st, DVDVIDEO_PTS_WRAP_BITS,
                         DVDVIDEO_TIME_BASE_Q.num, DVDVIDEO_TIME_BASE_Q.den);
@@ -1371,7 +1367,7 @@ static int dvdvideo_subp_stream_add_internal(AVFormatContext *s, uint32_t offset
         if (s->streams[i]->id == entry.startcode)
             return 0;
 
-    if ((ret = dvdvideo_subp_stream_add(s, &entry, AVSTREAM_PARSE_HEADERS)) < 0)
+    if ((ret = dvdvideo_subp_stream_add(s, &entry)) < 0)
         goto end_error;
 
     return 0;
