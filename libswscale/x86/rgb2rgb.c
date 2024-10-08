@@ -1484,7 +1484,7 @@ static inline void planar2x_mmxext(const uint8_t *src, uint8_t *dst, int srcWidt
 static inline void rgb24toyv12_mmxext(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                                        int width, int height,
                                        int lumStride, int chromStride, int srcStride,
-                                       int32_t *rgb2yuv)
+                                       const int32_t *rgb2yuv)
 {
 #define BGR2Y_IDX "16*4+16*32"
 #define BGR2U_IDX "16*4+16*33"

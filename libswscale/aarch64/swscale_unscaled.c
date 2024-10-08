@@ -150,7 +150,7 @@ void ff_nv24_to_yuv420p_chroma_neon(uint8_t *dst1, int dstStride1,
 
 static int nv24_to_yuv420p_neon_wrapper(SwsContext *c, const uint8_t *const src[],
                                         const int srcStride[], int srcSliceY, int srcSliceH,
-                                        const uint8_t *dst[], const int dstStride[])
+                                        uint8_t *const dst[], const int dstStride[])
 {
     uint8_t *dst1 = dst[1] + dstStride[1] * srcSliceY / 2;
     uint8_t *dst2 = dst[2] + dstStride[2] * srcSliceY / 2;

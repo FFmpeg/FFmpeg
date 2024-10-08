@@ -30,11 +30,11 @@
 // Only handle width aligned to 16
 void ff_rgb24toyv12_neon(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
                          uint8_t *vdst, int width, int height, int lumStride,
-                         int chromStride, int srcStride, int32_t *rgb2yuv);
+                         int chromStride, int srcStride, const int32_t *rgb2yuv);
 
 static void rgb24toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
                         uint8_t *vdst, int width, int height, int lumStride,
-                        int chromStride, int srcStride, int32_t *rgb2yuv)
+                        int chromStride, int srcStride, const int32_t *rgb2yuv)
 {
     int width_align = width & (~15);
 
