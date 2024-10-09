@@ -406,6 +406,9 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
                                                  FFHWBaseEncodePicture *pic)
 {
     FFHWBaseEncodeContext       *base_ctx = avctx->priv_data;
+#if !CONFIG_VAAPI_1
+    VAAPIEncodeContext               *ctx = avctx->priv_data;
+#endif
     VAAPIEncodeH264Context          *priv = avctx->priv_data;
     VAAPIEncodePicture         *vaapi_pic = pic->priv;
     VAAPIEncodeH264Picture          *hpic = pic->codec_priv;
