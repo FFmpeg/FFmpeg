@@ -2709,3 +2709,71 @@ SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
 
     return fmt;
 }
+
+int sws_test_format(enum AVPixelFormat format, int output)
+{
+    return output ? sws_isSupportedOutput(format) : sws_isSupportedInput(format);
+}
+
+int sws_test_colorspace(enum AVColorSpace csp, int output)
+{
+    switch (csp) {
+    case AVCOL_SPC_UNSPECIFIED:
+    case AVCOL_SPC_RGB:
+    case AVCOL_SPC_BT709:
+    case AVCOL_SPC_BT470BG:
+    case AVCOL_SPC_SMPTE170M:
+    case AVCOL_SPC_FCC:
+    case AVCOL_SPC_SMPTE240M:
+    case AVCOL_SPC_BT2020_NCL:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+int sws_test_primaries(enum AVColorPrimaries prim, int output)
+{
+    return prim > AVCOL_PRI_RESERVED0 && prim < AVCOL_PRI_NB &&
+           prim != AVCOL_PRI_RESERVED;
+}
+
+int sws_test_transfer(enum AVColorTransferCharacteristic trc, int output)
+{
+    return trc > AVCOL_TRC_RESERVED0 && trc < AVCOL_TRC_NB &&
+           trc != AVCOL_TRC_RESERVED;
+}
+
+static int test_range(enum AVColorRange range)
+{
+    return range >= 0 && range < AVCOL_RANGE_NB;
+}
+
+static int test_loc(enum AVChromaLocation loc)
+{
+    return loc >= 0 && loc < AVCHROMA_LOC_NB;
+}
+
+int ff_test_fmt(const SwsFormat *fmt, int output)
+{
+    return fmt->width > 0 && fmt->height > 0        &&
+           sws_test_format    (fmt->format, output) &&
+           sws_test_colorspace(fmt->csp,    output) &&
+           sws_test_primaries (fmt->prim,   output) &&
+           sws_test_transfer  (fmt->trc,    output) &&
+           test_range         (fmt->range)          &&
+           test_loc           (fmt->loc);
+}
+
+int sws_test_frame(const AVFrame *frame, int output)
+{
+    for (int field = 0; field < 2; field++) {
+        const SwsFormat fmt = ff_fmt_from_frame(frame, field);
+        if (!ff_test_fmt(&fmt, output))
+            return 0;
+        if (!fmt.interlaced)
+            break;
+    }
+
+    return 1;
+}

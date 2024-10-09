@@ -72,4 +72,6 @@ static inline int ff_fmt_align(enum AVPixelFormat fmt)
     }
 }
 
+int ff_test_fmt(const SwsFormat *fmt, int output);
+
 #endif /* SWSCALE_UTILS_H */

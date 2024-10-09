@@ -2,6 +2,14 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-10-23 - xxxxxxxxxx - lsws 8.8.100 - swscale.h
+  Add frame property testing API:
+    - sws_test_format()
+    - sws_test_colorspace()
+    - sws_test_primaries()
+    - sws_test_transfer()
+    - sws_test_frame()
+
 2024-10-23 - xxxxxxxxxx - lsws 8.7.100 - swscale.h
   Add sws_free_context().
 

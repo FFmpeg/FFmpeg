@@ -85,6 +85,61 @@ SwsContext *sws_alloc_context(void);
  */
 void sws_free_context(SwsContext **ctx);
 
+/***************************
+ * Supported frame formats *
+ ***************************/
+
+/**
+ * Test if a given pixel format is supported.
+ *
+ * @param output  If 0, test if compatible with the source/input frame;
+ *                otherwise, with the destination/output frame.
+ * @param format  The format to check.
+ *
+ * @return A positive integer if supported, 0 otherwise.
+ */
+int sws_test_format(enum AVPixelFormat format, int output);
+
+/**
+ * Test if a given color space is supported.
+ *
+ * @param output  If 0, test if compatible with the source/input frame;
+ *                otherwise, with the destination/output frame.
+ * @param colorspace The colorspace to check.
+ *
+ * @return A positive integer if supported, 0 otherwise.
+ */
+int sws_test_colorspace(enum AVColorSpace colorspace, int output);
+
+/**
+ * Test if a given set of color primaries is supported.
+ *
+ * @param output  If 0, test if compatible with the source/input frame;
+ *                otherwise, with the destination/output frame.
+ * @param primaries The color primaries to check.
+ *
+ * @return A positive integer if supported, 0 otherwise.
+ */
+int sws_test_primaries(enum AVColorPrimaries primaries, int output);
+
+/**
+ * Test if a given color transfer function is supported.
+ *
+ * @param output  If 0, test if compatible with the source/input frame;
+ *                otherwise, with the destination/output frame.
+ * @param trc     The color transfer function to check.
+ *
+ * @return A positive integer if supported, 0 otherwise.
+ */
+int sws_test_transfer(enum AVColorTransferCharacteristic trc, int output);
+
+/**
+ * Helper function to run all sws_test_* against a frame, as well as testing
+ * the basic frame properties for sanity. Ignores irrelevant properties - for
+ * example, AVColorSpace is not checked for RGB frames.
+ */
+int sws_test_frame(const AVFrame *frame, int output);
+
 /* values for the flags, the stuff on the command line is different */
 #define SWS_FAST_BILINEAR     1
 #define SWS_BILINEAR          2
