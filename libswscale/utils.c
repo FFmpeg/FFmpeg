@@ -2515,13 +2515,13 @@ void sws_freeContext(SwsContext *c)
     av_free(c);
 }
 
-struct SwsContext *sws_getCachedContext(struct SwsContext *context, int srcW,
-                                        int srcH, enum AVPixelFormat srcFormat,
-                                        int dstW, int dstH,
-                                        enum AVPixelFormat dstFormat, int flags,
-                                        SwsFilter *srcFilter,
-                                        SwsFilter *dstFilter,
-                                        const double *param)
+SwsContext *sws_getCachedContext(SwsContext *context, int srcW,
+                                 int srcH, enum AVPixelFormat srcFormat,
+                                 int dstW, int dstH,
+                                 enum AVPixelFormat dstFormat, int flags,
+                                 SwsFilter *srcFilter,
+                                 SwsFilter *dstFilter,
+                                 const double *param)
 {
     static const double default_param[2] = { SWS_PARAM_DEFAULT,
                                              SWS_PARAM_DEFAULT };

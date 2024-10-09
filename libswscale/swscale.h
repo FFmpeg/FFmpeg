@@ -150,7 +150,7 @@ typedef struct SwsFilter {
     SwsVector *chrV;
 } SwsFilter;
 
-struct SwsContext;
+typedef struct SwsContext SwsContext;
 
 /**
  * Return a positive value if pix_fmt is a supported input format, 0
@@ -176,7 +176,7 @@ int sws_isSupportedEndiannessConversion(enum AVPixelFormat pix_fmt);
  * sws_init_context(). For filling see AVOptions, options.c and
  * sws_setColorspaceDetails().
  */
-struct SwsContext *sws_alloc_context(void);
+SwsContext *sws_alloc_context(void);
 
 /**
  * Initialize the swscaler context sws_context.
@@ -185,13 +185,13 @@ struct SwsContext *sws_alloc_context(void);
  * error
  */
 av_warn_unused_result
-int sws_init_context(struct SwsContext *sws_context, SwsFilter *srcFilter, SwsFilter *dstFilter);
+int sws_init_context(SwsContext *sws_context, SwsFilter *srcFilter, SwsFilter *dstFilter);
 
 /**
  * Free the swscaler context swsContext.
  * If swsContext is NULL, then does nothing.
  */
-void sws_freeContext(struct SwsContext *swsContext);
+void sws_freeContext(SwsContext *swsContext);
 
 /**
  * Allocate and return an SwsContext. You need it to perform
@@ -214,10 +214,10 @@ void sws_freeContext(struct SwsContext *swsContext);
  * @note this function is to be removed after a saner alternative is
  *       written
  */
-struct SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
-                                  int dstW, int dstH, enum AVPixelFormat dstFormat,
-                                  int flags, SwsFilter *srcFilter,
-                                  SwsFilter *dstFilter, const double *param);
+SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
+                           int dstW, int dstH, enum AVPixelFormat dstFormat,
+                           int flags, SwsFilter *srcFilter,
+                           SwsFilter *dstFilter, const double *param);
 
 /**
  * Scale the image slice in srcSlice and put the resulting scaled
@@ -245,7 +245,7 @@ struct SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcForm
  *                  the destination image
  * @return          the height of the output slice
  */
-int sws_scale(struct SwsContext *c, const uint8_t *const srcSlice[],
+int sws_scale(SwsContext *c, const uint8_t *const srcSlice[],
               const int srcStride[], int srcSliceY, int srcSliceH,
               uint8_t *const dst[], const int dstStride[]);
 
@@ -265,7 +265,7 @@ int sws_scale(struct SwsContext *c, const uint8_t *const srcSlice[],
  *
  * @return 0 on success, a negative AVERROR code on failure
  */
-int sws_scale_frame(struct SwsContext *c, AVFrame *dst, const AVFrame *src);
+int sws_scale_frame(SwsContext *c, AVFrame *dst, const AVFrame *src);
 
 /**
  * Initialize the scaling process for a given pair of source/destination frames.
@@ -292,7 +292,7 @@ int sws_scale_frame(struct SwsContext *c, AVFrame *dst, const AVFrame *src);
  *
  * @see sws_frame_end()
  */
-int sws_frame_start(struct SwsContext *c, AVFrame *dst, const AVFrame *src);
+int sws_frame_start(SwsContext *c, AVFrame *dst, const AVFrame *src);
 
 /**
  * Finish the scaling process for a pair of source/destination frames previously
@@ -302,7 +302,7 @@ int sws_frame_start(struct SwsContext *c, AVFrame *dst, const AVFrame *src);
  *
  * @param c   The scaling context
  */
-void sws_frame_end(struct SwsContext *c);
+void sws_frame_end(SwsContext *c);
 
 /**
  * Indicate that a horizontal slice of input data is available in the source
@@ -316,7 +316,7 @@ void sws_frame_end(struct SwsContext *c);
  *
  * @return a non-negative number on success, a negative AVERROR code on failure.
  */
-int sws_send_slice(struct SwsContext *c, unsigned int slice_start,
+int sws_send_slice(SwsContext *c, unsigned int slice_start,
                    unsigned int slice_height);
 
 /**
@@ -336,7 +336,7 @@ int sws_send_slice(struct SwsContext *c, unsigned int slice_start,
  *                         output can be produced
  *         another negative AVERROR code on other kinds of scaling failure
  */
-int sws_receive_slice(struct SwsContext *c, unsigned int slice_start,
+int sws_receive_slice(SwsContext *c, unsigned int slice_start,
                       unsigned int slice_height);
 
 /**
@@ -347,7 +347,7 @@ int sws_receive_slice(struct SwsContext *c, unsigned int slice_start,
  *         Slice offsets and sizes passed to sws_receive_slice() must be
  *         multiples of the value returned from this function.
  */
-unsigned int sws_receive_slice_alignment(const struct SwsContext *c);
+unsigned int sws_receive_slice_alignment(const SwsContext *c);
 
 /**
  * @param c the scaling context
@@ -362,7 +362,7 @@ unsigned int sws_receive_slice_alignment(const struct SwsContext *c);
  * @return A negative error code on error, non negative otherwise.
  *         If `LIBSWSCALE_VERSION_MAJOR < 7`, returns -1 if not supported.
  */
-int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
+int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4],
                              int srcRange, const int table[4], int dstRange,
                              int brightness, int contrast, int saturation);
 
@@ -370,7 +370,7 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
  * @return A negative error code on error, non negative otherwise.
  *         If `LIBSWSCALE_VERSION_MAJOR < 7`, returns -1 if not supported.
  */
-int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table,
+int sws_getColorspaceDetails(SwsContext *c, int **inv_table,
                              int *srcRange, int **table, int *dstRange,
                              int *brightness, int *contrast, int *saturation);
 
@@ -415,11 +415,11 @@ void sws_freeFilter(SwsFilter *filter);
  * Be warned that srcFilter and dstFilter are not checked, they
  * are assumed to remain the same.
  */
-struct SwsContext *sws_getCachedContext(struct SwsContext *context,
-                                        int srcW, int srcH, enum AVPixelFormat srcFormat,
-                                        int dstW, int dstH, enum AVPixelFormat dstFormat,
-                                        int flags, SwsFilter *srcFilter,
-                                        SwsFilter *dstFilter, const double *param);
+SwsContext *sws_getCachedContext(SwsContext *context, int srcW, int srcH,
+                                 enum AVPixelFormat srcFormat, int dstW, int dstH,
+                                 enum AVPixelFormat dstFormat, int flags,
+                                 SwsFilter *srcFilter, SwsFilter *dstFilter,
+                                 const double *param);
 
 /**
  * Convert an 8-bit paletted frame into a frame with a color depth of 32 bits.
