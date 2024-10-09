@@ -1672,6 +1672,8 @@ static int mp4_read_iods(AVFormatContext *s, const uint8_t *buf, unsigned size,
     MP4DescrParseContext d;
     int ret;
 
+    d.predefined_SLConfigDescriptor_seen = 0;
+
     ret = init_MP4DescrParseContext(&d, s, buf, size, descr, max_descr_count);
     if (ret < 0)
         return ret;
