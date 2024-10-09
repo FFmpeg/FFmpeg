@@ -1324,8 +1324,9 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
     const int nb_images = ff_vk_count_images(vkf);
     const int nb_planes = av_pix_fmt_count_planes(hwfc->sw_format);
 
-    const size_t buf_size = sizeof(int) + nb_planes*sizeof(VkImageView);
-    ImageViewCtx *iv = av_mallocz(buf_size);
+    ImageViewCtx *iv;
+    const size_t buf_size = sizeof(*iv) + nb_planes*sizeof(VkImageView);
+    iv = av_mallocz(buf_size);
     if (!iv)
         return AVERROR(ENOMEM);
 
