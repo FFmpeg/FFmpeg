@@ -41,6 +41,8 @@
 #include "version.h"
 #endif
 
+typedef struct SwsContext SwsContext;
+
 /**
  * @defgroup libsws libswscale
  * Color conversion and scaling library.
@@ -60,6 +62,21 @@ const char *swscale_configuration(void);
  * Return the libswscale license.
  */
 const char *swscale_license(void);
+
+/**
+ * Get the AVClass for swsContext. It can be used in combination with
+ * AV_OPT_SEARCH_FAKE_OBJ for examining options.
+ *
+ * @see av_opt_find().
+ */
+const AVClass *sws_get_class(void);
+
+/**
+ * Allocate an empty SwsContext. This must be filled and passed to
+ * sws_init_context(). For filling see AVOptions, options.c and
+ * sws_setColorspaceDetails().
+ */
+SwsContext *sws_alloc_context(void);
 
 /* values for the flags, the stuff on the command line is different */
 #define SWS_FAST_BILINEAR     1
@@ -150,8 +167,6 @@ typedef struct SwsFilter {
     SwsVector *chrV;
 } SwsFilter;
 
-typedef struct SwsContext SwsContext;
-
 /**
  * Return a positive value if pix_fmt is a supported input format, 0
  * otherwise.
@@ -170,13 +185,6 @@ int sws_isSupportedOutput(enum AVPixelFormat pix_fmt);
  * supported, 0 otherwise.
  */
 int sws_isSupportedEndiannessConversion(enum AVPixelFormat pix_fmt);
-
-/**
- * Allocate an empty SwsContext. This must be filled and passed to
- * sws_init_context(). For filling see AVOptions, options.c and
- * sws_setColorspaceDetails().
- */
-SwsContext *sws_alloc_context(void);
 
 /**
  * Initialize the swscaler context sws_context.
@@ -444,14 +452,6 @@ void sws_convertPalette8ToPacked32(const uint8_t *src, uint8_t *dst, int num_pix
  * @param palette    array with [256] entries, which must match color arrangement (RGB or BGR) of src
  */
 void sws_convertPalette8ToPacked24(const uint8_t *src, uint8_t *dst, int num_pixels, const uint8_t *palette);
-
-/**
- * Get the AVClass for swsContext. It can be used in combination with
- * AV_OPT_SEARCH_FAKE_OBJ for examining options.
- *
- * @see av_opt_find().
- */
-const AVClass *sws_get_class(void);
 
 /**
  * @}
