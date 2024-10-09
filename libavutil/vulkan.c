@@ -646,7 +646,7 @@ int ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
         return 0;
     }
 
-    buf_size = sizeof(int) + sizeof(VkSemaphore)*nb;
+    buf_size = sizeof(*ts) + sizeof(VkSemaphore)*nb;
     ts = av_mallocz(buf_size);
     if (!ts) {
         err = AVERROR(ENOMEM);
