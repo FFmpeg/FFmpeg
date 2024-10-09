@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2024 Niklas Haas
  * Copyright (C) 2001-2011 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
@@ -77,6 +78,12 @@ const AVClass *sws_get_class(void);
  * sws_setColorspaceDetails().
  */
 SwsContext *sws_alloc_context(void);
+
+/**
+ * Free the context and everything associated with it, and write NULL
+ * to the provided pointer.
+ */
+void sws_free_context(SwsContext **ctx);
 
 /* values for the flags, the stuff on the command line is different */
 #define SWS_FAST_BILINEAR     1

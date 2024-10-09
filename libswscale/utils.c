@@ -2515,6 +2515,16 @@ void sws_freeContext(SwsContext *c)
     av_free(c);
 }
 
+void sws_free_context(SwsContext **pctx)
+{
+    SwsContext *ctx = *pctx;
+    if (!ctx)
+        return;
+
+    sws_freeContext(ctx);
+    *pctx = NULL;
+}
+
 SwsContext *sws_getCachedContext(SwsContext *context, int srcW,
                                  int srcH, enum AVPixelFormat srcFormat,
                                  int dstW, int dstH,
