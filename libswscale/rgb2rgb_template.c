@@ -640,7 +640,7 @@ static inline void uyvytoyv12_c(const uint8_t *src, uint8_t *ydst,
 }
 
 /**
- * Height should be a multiple of 2 and width should be a multiple of 2.
+ * width should be a multiple of 2.
  * (If this is a problem for anyone then tell me, and I will fix it.)
  */
 void ff_rgb24toyv12_c(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
@@ -659,6 +659,11 @@ void ff_rgb24toyv12_c(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
 
     for (y = 0; y < height; y += 2) {
         int i;
+        if (y + 1 == height) {
+            ydst2 = ydst1;
+            src2  = src1;
+        }
+
         for (i = 0; i < chromWidth; i++) {
             unsigned int b11 = src1[6 * i + 0];
             unsigned int g11 = src1[6 * i + 1];
