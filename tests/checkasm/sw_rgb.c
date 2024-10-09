@@ -127,7 +127,7 @@ static int cmp_off_by_n(const uint8_t *ref, const uint8_t *test, size_t n, int a
     return 0;
 }
 
-static void check_rgb24toyv12(struct SwsContext *ctx)
+static void check_rgb24toyv12(SwsInternal *ctx)
 {
     static const int input_sizes[] = {16, 128, 512, MAX_LINE_SIZE, -MAX_LINE_SIZE};
 
@@ -353,7 +353,7 @@ static const enum AVPixelFormat rgb_formats[] = {
         AV_PIX_FMT_ARGB,
 };
 
-static void check_rgb_to_y(struct SwsContext *ctx)
+static void check_rgb_to_y(SwsInternal *ctx)
 {
     LOCAL_ALIGNED_16(uint8_t, src24,  [MAX_LINE_SIZE * 3]);
     LOCAL_ALIGNED_16(uint8_t, src32,  [MAX_LINE_SIZE * 4]);
@@ -396,7 +396,7 @@ static void check_rgb_to_y(struct SwsContext *ctx)
     }
 }
 
-static void check_rgb_to_uv(struct SwsContext *ctx)
+static void check_rgb_to_uv(SwsInternal *ctx)
 {
     LOCAL_ALIGNED_16(uint8_t, src24,  [MAX_LINE_SIZE * 3]);
     LOCAL_ALIGNED_16(uint8_t, src32,  [MAX_LINE_SIZE * 4]);
@@ -450,7 +450,8 @@ static void check_rgb_to_uv(struct SwsContext *ctx)
 
 void checkasm_check_sw_rgb(void)
 {
-    struct SwsContext *ctx;
+    SwsContext *sws;
+    SwsInternal *c;
 
     ff_sws_rgb2rgb_init();
 
@@ -478,20 +479,21 @@ void checkasm_check_sw_rgb(void)
     check_deinterleave_bytes();
     report("deinterleave_bytes");
 
-    ctx = sws_getContext(MAX_LINE_SIZE, MAX_LINE_SIZE, AV_PIX_FMT_RGB24,
+    sws = sws_getContext(MAX_LINE_SIZE, MAX_LINE_SIZE, AV_PIX_FMT_RGB24,
                          MAX_LINE_SIZE, MAX_LINE_SIZE, AV_PIX_FMT_YUV420P,
                          SWS_ACCURATE_RND | SWS_BITEXACT, NULL, NULL, NULL);
-    if (!ctx)
+    if (!sws)
         fail();
 
-    check_rgb_to_y(ctx);
+    c = sws_internal(sws);
+    check_rgb_to_y(c);
     report("rgb_to_y");
 
-    check_rgb_to_uv(ctx);
+    check_rgb_to_uv(c);
     report("rgb_to_uv");
 
-    check_rgb24toyv12(ctx);
+    check_rgb24toyv12(c);
     report("rgb24toyv12");
 
-    sws_freeContext(ctx);
+    sws_freeContext(sws);
 }

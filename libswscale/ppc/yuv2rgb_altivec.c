@@ -252,7 +252,7 @@ static const vector unsigned char
                   (vector unsigned short)                               \
                       vec_max(y, ((vector signed short) { 0 })))
 
-static inline void cvtyuvtoRGB(SwsContext *c, vector signed short Y,
+static inline void cvtyuvtoRGB(SwsInternal *c, vector signed short Y,
                                vector signed short U, vector signed short V,
                                vector signed short *R, vector signed short *G,
                                vector signed short *B)
@@ -295,7 +295,7 @@ static inline vector unsigned char vec_xl(signed long long offset, const ubyte *
 #endif /* !HAVE_VSX */
 
 #define DEFCSP420_CVT(name, out_pixels)                                       \
-static int altivec_ ## name(SwsContext *c, const unsigned char *const *in,    \
+static int altivec_ ## name(SwsInternal *c, const unsigned char *const *in,   \
                             const int *instrides, int srcSliceY, int srcSliceH,   \
                             unsigned char *const *oplanes, const int *outstrides) \
 {                                                                             \
@@ -471,7 +471,7 @@ static const vector unsigned char
 /*
  * this is so I can play live CCIR raw video
  */
-static int altivec_uyvy_rgb32(SwsContext *c, const unsigned char *const *in,
+static int altivec_uyvy_rgb32(SwsInternal *c, const unsigned char *const *in,
                               const int *instrides, int srcSliceY, int srcSliceH,
                               unsigned char *const *oplanes, const int *outstrides)
 {
@@ -532,7 +532,7 @@ static int altivec_uyvy_rgb32(SwsContext *c, const unsigned char *const *in,
  *
  * So we just fall back to the C codes for this.
  */
-av_cold SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c)
+av_cold SwsFunc ff_yuv2rgb_init_ppc(SwsInternal *c)
 {
 #if HAVE_ALTIVEC
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
@@ -595,7 +595,7 @@ av_cold SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c)
     return NULL;
 }
 
-av_cold void ff_yuv2rgb_init_tables_ppc(SwsContext *c,
+av_cold void ff_yuv2rgb_init_tables_ppc(SwsInternal *c,
                                         const int inv_table[4],
                                         int brightness,
                                         int contrast,
@@ -630,7 +630,7 @@ av_cold void ff_yuv2rgb_init_tables_ppc(SwsContext *c,
 
 #if HAVE_ALTIVEC
 
-static av_always_inline void yuv2packedX_altivec(SwsContext *c,
+static av_always_inline void yuv2packedX_altivec(SwsInternal *c,
                                                  const int16_t *lumFilter,
                                                  const int16_t **lumSrc,
                                                  int lumFilterSize,
@@ -839,7 +839,7 @@ static av_always_inline void yuv2packedX_altivec(SwsContext *c,
 }
 
 #define YUV2PACKEDX_WRAPPER(suffix, pixfmt)                             \
-void ff_yuv2 ## suffix ## _X_altivec(SwsContext *c,                     \
+void ff_yuv2 ## suffix ## _X_altivec(SwsInternal *c,                    \
                                      const int16_t *lumFilter,          \
                                      const int16_t **lumSrc,            \
                                      int lumFilterSize,                 \

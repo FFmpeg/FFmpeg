@@ -26,7 +26,7 @@ void ff_range_chr_to_jpeg_16_rvv(int16_t *, int16_t *, int);
 void ff_range_lum_from_jpeg_16_rvv(int16_t *, int);
 void ff_range_chr_from_jpeg_16_rvv(int16_t *, int16_t *, int);
 
-av_cold static void ff_sws_init_range_convert_riscv(SwsContext *c, int flags)
+av_cold static void ff_sws_init_range_convert_riscv(SwsInternal *c, int flags)
 {
 #if HAVE_RVV
     static const struct {
@@ -65,7 +65,7 @@ RVV_INPUT(bgra32);
 RVV_INPUT(rgb24);
 RVV_INPUT(rgba32);
 
-av_cold void ff_sws_init_swscale_riscv(SwsContext *c)
+av_cold void ff_sws_init_swscale_riscv(SwsInternal *c)
 {
     int flags = av_get_cpu_flags();
 

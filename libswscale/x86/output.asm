@@ -572,7 +572,7 @@ yuv2nv12cX_fn yuv2nv21
 
 ;-----------------------------------------------------------------------------
 ; planar grb yuv2anyX functions
-; void ff_yuv2<gbr_format>_full_X_<opt>(SwsContext *c, const int16_t *lumFilter,
+; void ff_yuv2<gbr_format>_full_X_<opt>(SwsInternal *c, const int16_t *lumFilter,
 ;                                       const int16_t **lumSrcx, int lumFilterSize,
 ;                                       const int16_t *chrFilter, const int16_t **chrUSrcx,
 ;                                       const int16_t **chrVSrcx, int chrFilterSize,
@@ -581,8 +581,8 @@ yuv2nv12cX_fn yuv2nv21
 ;-----------------------------------------------------------------------------
 
 %if ARCH_X86_64
-struc SwsContext
-    .padding:           resb 40292 ; offsetof(SwsContext, yuv2rgb_y_offset)
+struc SwsInternal
+    .padding:           resb 40292 ; offsetof(SwsInternal, yuv2rgb_y_offset)
     .yuv2rgb_y_offset:  resd 1
     .yuv2rgb_y_coeff:   resd 1
     .yuv2rgb_v2r_coeff: resd 1
@@ -795,12 +795,12 @@ endstruc
 %endif
 
 cglobal yuv2%1_full_X, 12, 14, 16, ptr, lumFilter, lumSrcx, lumFilterSize, chrFilter, chrUSrcx, chrVSrcx, chrFilterSize, alpSrcx, dest, dstW, y, x, j
-    VBROADCASTSS m10, dword [ptrq + SwsContext.yuv2rgb_y_offset]
-    VBROADCASTSS m11, dword [ptrq + SwsContext.yuv2rgb_y_coeff]
-    VBROADCASTSS m12, dword [ptrq + SwsContext.yuv2rgb_v2r_coeff]
-    VBROADCASTSS m13, dword [ptrq + SwsContext.yuv2rgb_v2g_coeff]
-    VBROADCASTSS m14, dword [ptrq + SwsContext.yuv2rgb_u2g_coeff]
-    VBROADCASTSS m15, dword [ptrq + SwsContext.yuv2rgb_u2b_coeff]
+    VBROADCASTSS m10, dword [ptrq + SwsInternal.yuv2rgb_y_offset]
+    VBROADCASTSS m11, dword [ptrq + SwsInternal.yuv2rgb_y_coeff]
+    VBROADCASTSS m12, dword [ptrq + SwsInternal.yuv2rgb_v2r_coeff]
+    VBROADCASTSS m13, dword [ptrq + SwsInternal.yuv2rgb_v2g_coeff]
+    VBROADCASTSS m14, dword [ptrq + SwsInternal.yuv2rgb_u2g_coeff]
+    VBROADCASTSS m15, dword [ptrq + SwsInternal.yuv2rgb_u2b_coeff]
 
 %if DEPTH >= 16
     movu m9, [pd_yuv2gbrp16_start]

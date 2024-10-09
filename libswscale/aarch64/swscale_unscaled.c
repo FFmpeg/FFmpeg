@@ -37,7 +37,7 @@ int ff_##ifmt##_to_##ofmt##_neon(int w, int h,                                  
                                  int y_offset,                                              \
                                  int y_coeff);                                              \
                                                                                             \
-static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *const src[],       \
+static int ifmt##_to_##ofmt##_neon_wrapper(SwsInternal *c, const uint8_t *const src[],      \
                                            const int srcStride[], int srcSliceY,            \
                                            int srcSliceH, uint8_t *const dst[],             \
                                            const int dstStride[]) {                         \
@@ -65,7 +65,7 @@ int ff_##ifmt##_to_##ofmt##_neon(int w, int h,                                  
                                  uint8_t *dst1, int linesize1,                              \
                                  uint8_t *dst2, int linesize2);                             \
                                                                                             \
-static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *const src[],       \
+static int ifmt##_to_##ofmt##_neon_wrapper(SwsInternal *c, const uint8_t *const src[],      \
                                            const int srcStride[], int srcSliceY,            \
                                            int srcSliceH, uint8_t *const dst[],             \
                                            const int dstStride[]) {                         \
@@ -102,7 +102,7 @@ int ff_##ifmt##_to_##ofmt##_neon(int w, int h,                                  
                                  int y_offset,                                              \
                                  int y_coeff);                                              \
                                                                                             \
-static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *const src[],       \
+static int ifmt##_to_##ofmt##_neon_wrapper(SwsInternal *c, const uint8_t *const src[],      \
                                            const int srcStride[], int srcSliceY,            \
                                            int srcSliceH, uint8_t *const dst[],             \
                                            const int dstStride[]) {                         \
@@ -127,7 +127,7 @@ int ff_##ifmt##_to_##ofmt##_neon(int w, int h,                                  
                                  uint8_t *dst1, int linesize1,                              \
                                  uint8_t *dst2, int linesize2);                             \
                                                                                             \
-static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *const src[],       \
+static int ifmt##_to_##ofmt##_neon_wrapper(SwsInternal *c, const uint8_t *const src[],      \
                                            const int srcStride[], int srcSliceY,            \
                                            int srcSliceH, uint8_t *const dst[],             \
                                            const int dstStride[]) {                         \
@@ -148,7 +148,7 @@ void ff_nv24_to_yuv420p_chroma_neon(uint8_t *dst1, int dstStride1,
                                     const uint8_t *src, int srcStride,
                                     int w, int h);
 
-static int nv24_to_yuv420p_neon_wrapper(SwsContext *c, const uint8_t *const src[],
+static int nv24_to_yuv420p_neon_wrapper(SwsInternal *c, const uint8_t *const src[],
                                         const int srcStride[], int srcSliceY, int srcSliceH,
                                         uint8_t *const dst[], const int dstStride[])
 {
@@ -199,7 +199,7 @@ DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv21)
     SET_FF_NVX_TO_RGBX_FUNC(nvx, NVX, gbrp, GBRP, accurate_rnd);                            \
 } while (0)
 
-static void get_unscaled_swscale_neon(SwsContext *c) {
+static void get_unscaled_swscale_neon(SwsInternal *c) {
     int accurate_rnd = c->flags & SWS_ACCURATE_RND;
 
     SET_FF_NVX_TO_ALL_RGBX_FUNC(nv12, NV12, accurate_rnd);
@@ -213,7 +213,7 @@ static void get_unscaled_swscale_neon(SwsContext *c) {
         c->convert_unscaled = nv24_to_yuv420p_neon_wrapper;
 }
 
-void ff_get_unscaled_swscale_aarch64(SwsContext *c)
+void ff_get_unscaled_swscale_aarch64(SwsInternal *c)
 {
     int cpu_flags = av_get_cpu_flags();
     if (have_neon(cpu_flags))

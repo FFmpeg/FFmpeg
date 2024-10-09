@@ -62,7 +62,7 @@ static av_always_inline void fillPlane(uint8_t *plane, int stride, int width,
     }
 }
 
-static void hScale16To19_c(SwsContext *c, int16_t *_dst, int dstW,
+static void hScale16To19_c(SwsInternal *c, int16_t *_dst, int dstW,
                            const uint8_t *_src, const int16_t *filter,
                            const int32_t *filterPos, int filterSize)
 {
@@ -92,7 +92,7 @@ static void hScale16To19_c(SwsContext *c, int16_t *_dst, int dstW,
     }
 }
 
-static void hScale16To15_c(SwsContext *c, int16_t *dst, int dstW,
+static void hScale16To15_c(SwsInternal *c, int16_t *dst, int dstW,
                            const uint8_t *_src, const int16_t *filter,
                            const int32_t *filterPos, int filterSize)
 {
@@ -121,7 +121,7 @@ static void hScale16To15_c(SwsContext *c, int16_t *dst, int dstW,
 }
 
 // bilinear / bicubic scaling
-static void hScale8To15_c(SwsContext *c, int16_t *dst, int dstW,
+static void hScale8To15_c(SwsInternal *c, int16_t *dst, int dstW,
                           const uint8_t *src, const int16_t *filter,
                           const int32_t *filterPos, int filterSize)
 {
@@ -137,7 +137,7 @@ static void hScale8To15_c(SwsContext *c, int16_t *dst, int dstW,
     }
 }
 
-static void hScale8To19_c(SwsContext *c, int16_t *_dst, int dstW,
+static void hScale8To19_c(SwsInternal *c, int16_t *_dst, int dstW,
                           const uint8_t *src, const int16_t *filter,
                           const int32_t *filterPos, int filterSize)
 {
@@ -233,7 +233,7 @@ static void lumRangeFromJpeg16_c(int16_t *_dst, int width)
     if (DEBUG_SWSCALE_BUFFERS)                  \
         av_log(c, AV_LOG_DEBUG, __VA_ARGS__)
 
-int ff_swscale(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int ff_swscale(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                int srcSliceY, int srcSliceH, uint8_t *const dst[],
                const int dstStride[], int dstSliceY, int dstSliceH)
 {
@@ -318,7 +318,7 @@ int ff_swscale(SwsContext *c, const uint8_t *const src[], const int srcStride[],
 
     if (dstStride[0]&15 || dstStride[1]&15 ||
         dstStride[2]&15 || dstStride[3]&15) {
-        SwsContext *const ctx = c->parent ? c->parent : c;
+        SwsInternal *const ctx = c->parent ? sws_internal(c->parent) : c;
         if (flags & SWS_PRINT_INFO &&
             !atomic_exchange_explicit(&ctx->stride_unaligned_warned, 1, memory_order_relaxed)) {
             av_log(c, AV_LOG_WARNING,
@@ -333,7 +333,7 @@ int ff_swscale(SwsContext *c, const uint8_t *const src[], const int srcStride[],
         ||  dstStride[0]&15 ||  dstStride[1]&15 ||  dstStride[2]&15 ||  dstStride[3]&15
         || srcStride2[0]&15 || srcStride2[1]&15 || srcStride2[2]&15 || srcStride2[3]&15
     ) {
-        SwsContext *const ctx = c->parent ? c->parent : c;
+        SwsInternal *const ctx = c->parent ? sws_internal(c->parent) : c;
         int cpu_flags = av_get_cpu_flags();
         if (flags & SWS_PRINT_INFO && HAVE_MMXEXT && (cpu_flags & AV_CPU_FLAG_SSE2) &&
             !atomic_exchange_explicit(&ctx->stride_unaligned_warned,1, memory_order_relaxed)) {
@@ -540,7 +540,7 @@ int ff_swscale(SwsContext *c, const uint8_t *const src[], const int srcStride[],
     return dstY - lastDstY;
 }
 
-av_cold void ff_sws_init_range_convert(SwsContext *c)
+av_cold void ff_sws_init_range_convert(SwsInternal *c)
 {
     c->lumConvertRange = NULL;
     c->chrConvertRange = NULL;
@@ -565,7 +565,7 @@ av_cold void ff_sws_init_range_convert(SwsContext *c)
     }
 }
 
-static av_cold void sws_init_swscale(SwsContext *c)
+static av_cold void sws_init_swscale(SwsInternal *c)
 {
     enum AVPixelFormat srcFormat = c->srcFormat;
 
@@ -598,7 +598,7 @@ static av_cold void sws_init_swscale(SwsContext *c)
         c->needs_hcscale = 1;
 }
 
-void ff_sws_init_scale(SwsContext *c)
+void ff_sws_init_scale(SwsInternal *c)
 {
     sws_init_swscale(c);
 
@@ -646,7 +646,7 @@ static int check_image_pointers(const uint8_t * const data[4], enum AVPixelForma
     return 1;
 }
 
-void ff_xyz12Torgb48(const SwsContext *c, uint8_t *dst, int dst_stride,
+void ff_xyz12Torgb48(const SwsInternal *c, uint8_t *dst, int dst_stride,
                      const uint8_t *src, int src_stride, int w, int h)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
@@ -705,7 +705,7 @@ void ff_xyz12Torgb48(const SwsContext *c, uint8_t *dst, int dst_stride,
     }
 }
 
-void ff_rgb48Toxyz12(const SwsContext *c, uint8_t *dst, int dst_stride,
+void ff_rgb48Toxyz12(const SwsInternal *c, uint8_t *dst, int dst_stride,
                      const uint8_t *src, int src_stride, int w, int h)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->dstFormat);
@@ -764,7 +764,7 @@ void ff_rgb48Toxyz12(const SwsContext *c, uint8_t *dst, int dst_stride,
     }
 }
 
-void ff_update_palette(SwsContext *c, const uint32_t *pal)
+void ff_update_palette(SwsInternal *c, const uint32_t *pal)
 {
     for (int i = 0; i < 256; i++) {
         int r, g, b, y, u, v, a = 0xff;
@@ -839,13 +839,13 @@ void ff_update_palette(SwsContext *c, const uint32_t *pal)
     }
 }
 
-static int scale_internal(SwsContext *c,
+static int scale_internal(SwsContext *sws,
                           const uint8_t * const srcSlice[], const int srcStride[],
                           int srcSliceY, int srcSliceH,
                           uint8_t *const dstSlice[], const int dstStride[],
                           int dstSliceY, int dstSliceH);
 
-static int scale_gamma(SwsContext *c,
+static int scale_gamma(SwsInternal *c,
                        const uint8_t * const srcSlice[], const int srcStride[],
                        int srcSliceY, int srcSliceH,
                        uint8_t * const dstSlice[], const int dstStride[],
@@ -871,39 +871,40 @@ static int scale_gamma(SwsContext *c,
         return ret;
 
     if (c->cascaded_context[2]) {
+        const int dstY1 = sws_internal(c->cascaded_context[1])->dstY;
         ret = scale_internal(c->cascaded_context[2], (const uint8_t * const *)c->cascaded_tmp[1],
-                             c->cascaded_tmpStride[1], c->cascaded_context[1]->dstY - ret,
-                             c->cascaded_context[1]->dstY,
+                             c->cascaded_tmpStride[1], dstY1 - ret, dstY1,
                              dstSlice, dstStride, dstSliceY, dstSliceH);
     }
     return ret;
 }
 
-static int scale_cascaded(SwsContext *c,
+static int scale_cascaded(SwsInternal *c,
                           const uint8_t * const srcSlice[], const int srcStride[],
                           int srcSliceY, int srcSliceH,
                           uint8_t * const dstSlice[], const int dstStride[],
                           int dstSliceY, int dstSliceH)
 {
+    const int dstH0 = sws_internal(c->cascaded_context[0])->dstH;
     int ret = scale_internal(c->cascaded_context[0],
                              srcSlice, srcStride, srcSliceY, srcSliceH,
                              c->cascaded_tmp[0], c->cascaded_tmpStride[0],
-                             0, c->cascaded_context[0]->dstH);
+                             0, dstH0);
     if (ret < 0)
         return ret;
     ret = scale_internal(c->cascaded_context[1],
                          (const uint8_t * const * )c->cascaded_tmp[0], c->cascaded_tmpStride[0],
-                         0, c->cascaded_context[0]->dstH,
-                         dstSlice, dstStride, dstSliceY, dstSliceH);
+                         0, dstH0, dstSlice, dstStride, dstSliceY, dstSliceH);
     return ret;
 }
 
-static int scale_internal(SwsContext *c,
+static int scale_internal(SwsContext *sws,
                           const uint8_t * const srcSlice[], const int srcStride[],
                           int srcSliceY, int srcSliceH,
                           uint8_t *const dstSlice[], const int dstStride[],
                           int dstSliceY, int dstSliceH)
 {
+    SwsInternal *c = sws_internal(sws);
     const int scale_dst = dstSliceY > 0 || dstSliceH < c->dstH;
     const int frame_start = scale_dst || !c->sliceDir;
     int i, ret;
@@ -953,9 +954,12 @@ static int scale_internal(SwsContext *c,
         return scale_gamma(c, srcSlice, srcStride, srcSliceY, srcSliceH,
                            dstSlice, dstStride, dstSliceY, dstSliceH);
 
-    if (c->cascaded_context[0] && srcSliceY == 0 && srcSliceH == c->cascaded_context[0]->srcH)
+    if (c->cascaded_context[0] && srcSliceY == 0 &&
+        srcSliceH == sws_internal(c->cascaded_context[0])->srcH)
+    {
         return scale_cascaded(c, srcSlice, srcStride, srcSliceY, srcSliceH,
                               dstSlice, dstStride, dstSliceY, dstSliceH);
+    }
 
     if (!srcSliceY && (c->flags & SWS_BITEXACT) && c->dither == SWS_DITHER_ED && c->dither_error[0])
         for (i = 0; i < 4; i++)
@@ -1092,15 +1096,17 @@ static int scale_internal(SwsContext *c,
     return ret;
 }
 
-void sws_frame_end(struct SwsContext *c)
+void sws_frame_end(SwsContext *sws)
 {
+    SwsInternal *c = sws_internal(sws);
     av_frame_unref(c->frame_src);
     av_frame_unref(c->frame_dst);
     c->src_ranges.nb_ranges = 0;
 }
 
-int sws_frame_start(struct SwsContext *c, AVFrame *dst, const AVFrame *src)
+int sws_frame_start(SwsContext *sws, AVFrame *dst, const AVFrame *src)
 {
+    SwsInternal *c = sws_internal(sws);
     int ret, allocated = 0;
 
     ret = av_frame_ref(c->frame_src, src);
@@ -1129,9 +1135,10 @@ int sws_frame_start(struct SwsContext *c, AVFrame *dst, const AVFrame *src)
     return 0;
 }
 
-int sws_send_slice(struct SwsContext *c, unsigned int slice_start,
+int sws_send_slice(SwsContext *sws, unsigned int slice_start,
                    unsigned int slice_height)
 {
+    SwsInternal *c = sws_internal(sws);
     int ret;
 
     ret = ff_range_add(&c->src_ranges, slice_start, slice_height);
@@ -1141,18 +1148,20 @@ int sws_send_slice(struct SwsContext *c, unsigned int slice_start,
     return 0;
 }
 
-unsigned int sws_receive_slice_alignment(const struct SwsContext *c)
+unsigned int sws_receive_slice_alignment(const SwsContext *sws)
 {
+    SwsInternal *c = sws_internal(sws);
     if (c->slice_ctx)
-        return c->slice_ctx[0]->dst_slice_align;
+        return sws_internal(c->slice_ctx[0])->dst_slice_align;
 
     return c->dst_slice_align;
 }
 
-int sws_receive_slice(struct SwsContext *c, unsigned int slice_start,
+int sws_receive_slice(SwsContext *sws, unsigned int slice_start,
                       unsigned int slice_height)
 {
-    unsigned int align = sws_receive_slice_alignment(c);
+    SwsInternal *c = sws_internal(sws);
+    unsigned int align = sws_receive_slice_alignment(sws);
     uint8_t *dst[4];
 
     /* wait until complete input has been received */
@@ -1170,8 +1179,11 @@ int sws_receive_slice(struct SwsContext *c, unsigned int slice_start,
     }
 
     if (c->slicethread) {
-        int nb_jobs = c->slice_ctx[0]->dither == SWS_DITHER_ED ? 1 : c->nb_slice_ctx;
+        int nb_jobs = c->nb_slice_ctx;
         int ret = 0;
+
+        if (sws_internal(c->slice_ctx[0])->dither == SWS_DITHER_ED)
+            nb_jobs = 1;
 
         c->dst_slice_start  = slice_start;
         c->dst_slice_height = slice_height;
@@ -1195,24 +1207,24 @@ int sws_receive_slice(struct SwsContext *c, unsigned int slice_start,
         dst[i] = FF_PTR_ADD(c->frame_dst->data[i], offset);
     }
 
-    return scale_internal(c, (const uint8_t * const *)c->frame_src->data,
+    return scale_internal(sws, (const uint8_t * const *)c->frame_src->data,
                           c->frame_src->linesize, 0, c->srcH,
                           dst, c->frame_dst->linesize, slice_start, slice_height);
 }
 
-int sws_scale_frame(struct SwsContext *c, AVFrame *dst, const AVFrame *src)
+int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
 {
     int ret;
 
-    ret = sws_frame_start(c, dst, src);
+    ret = sws_frame_start(sws, dst, src);
     if (ret < 0)
         return ret;
 
-    ret = sws_send_slice(c, 0, src->height);
+    ret = sws_send_slice(sws, 0, src->height);
     if (ret >= 0)
-        ret = sws_receive_slice(c, 0, dst->height);
+        ret = sws_receive_slice(sws, 0, dst->height);
 
-    sws_frame_end(c);
+    sws_frame_end(sws);
 
     return ret;
 }
@@ -1221,24 +1233,28 @@ int sws_scale_frame(struct SwsContext *c, AVFrame *dst, const AVFrame *src)
  * swscale wrapper, so we don't need to export the SwsContext.
  * Assumes planar YUV to be in YUV order instead of YVU.
  */
-int attribute_align_arg sws_scale(struct SwsContext *c,
+int attribute_align_arg sws_scale(SwsContext *sws,
                                   const uint8_t * const srcSlice[],
                                   const int srcStride[], int srcSliceY,
                                   int srcSliceH, uint8_t *const dst[],
                                   const int dstStride[])
 {
-    if (c->nb_slice_ctx)
-        c = c->slice_ctx[0];
+    SwsInternal *c = sws_internal(sws);
+    if (c->nb_slice_ctx) {
+        sws = c->slice_ctx[0];
+        c = sws_internal(sws);
+    }
 
-    return scale_internal(c, srcSlice, srcStride, srcSliceY, srcSliceH,
+    return scale_internal(sws, srcSlice, srcStride, srcSliceY, srcSliceH,
                           dst, dstStride, 0, c->dstH);
 }
 
 void ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
                          int nb_jobs, int nb_threads)
 {
-    SwsContext *parent = priv;
-    SwsContext      *c = parent->slice_ctx[threadnr];
+    SwsInternal *parent = priv;
+    SwsContext     *sws = parent->slice_ctx[threadnr];
+    SwsInternal      *c = sws_internal(sws);
 
     const int slice_height = FFALIGN(FFMAX((parent->dst_slice_height + nb_jobs - 1) / nb_jobs, 1),
                                      c->dst_slice_align);
@@ -1257,7 +1273,7 @@ void ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
             dst[i] = parent->frame_dst->data[i] + offset;
         }
 
-        err = scale_internal(c, (const uint8_t * const *)parent->frame_src->data,
+        err = scale_internal(sws, (const uint8_t * const *)parent->frame_src->data,
                              parent->frame_src->linesize, 0, c->srcH,
                              dst, parent->frame_dst->linesize,
                              parent->dst_slice_start + slice_start, slice_end - slice_start);

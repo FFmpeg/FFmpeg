@@ -20,7 +20,7 @@
 
 #include "swscale_internal.h"
 
-int ff_sws_alphablendaway(SwsContext *c, const uint8_t *const src[],
+int ff_sws_alphablendaway(SwsInternal *c, const uint8_t *const src[],
                           const int srcStride[], int srcSliceY, int srcSliceH,
                           uint8_t *const dst[], const int dstStride[])
 {

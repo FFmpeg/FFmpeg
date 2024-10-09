@@ -24,7 +24,7 @@
 #include "libswscale/rgb2rgb.h"
 #include "libavutil/loongarch/cpu.h"
 
-av_cold void ff_sws_init_range_convert_loongarch(SwsContext *c)
+av_cold void ff_sws_init_range_convert_loongarch(SwsInternal *c)
 {
     int cpu_flags = av_get_cpu_flags();
 
@@ -58,7 +58,7 @@ av_cold void ff_sws_init_range_convert_loongarch(SwsContext *c)
 #endif // #if HAVE_LASX
 }
 
-av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
+av_cold void ff_sws_init_swscale_loongarch(SwsInternal *c)
 {
     int cpu_flags = av_get_cpu_flags();
     if (have_lsx(cpu_flags)) {
@@ -107,7 +107,7 @@ av_cold void rgb2rgb_init_loongarch(void)
 #endif // #if HAVE_LASX
 }
 
-av_cold SwsFunc ff_yuv2rgb_init_loongarch(SwsContext *c)
+av_cold SwsFunc ff_yuv2rgb_init_loongarch(SwsInternal *c)
 {
     int cpu_flags = av_get_cpu_flags();
 #if HAVE_LASX

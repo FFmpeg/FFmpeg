@@ -28,7 +28,7 @@ typedef struct GammaContext
 
 // gamma_convert expects 16 bit rgb format
 // it writes directly in src slice thus it must be modifiable (done through cascade context)
-static int gamma_convert(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
+static int gamma_convert(SwsInternal *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
 {
     GammaContext *instance = desc->instance;
     uint16_t *table = instance->table;
@@ -70,4 +70,3 @@ int ff_init_gamma_convert(SwsFilterDescriptor *desc, SwsSlice * src, uint16_t *t
 
     return 0;
 }
-

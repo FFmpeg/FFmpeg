@@ -38,7 +38,7 @@ typedef struct VScalerContext
 } VScalerContext;
 
 
-static int lum_planar_vscale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
+static int lum_planar_vscale(SwsInternal *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
 {
     VScalerContext *inst = desc->instance;
     int dstW = desc->dst->width;
@@ -71,7 +71,7 @@ static int lum_planar_vscale(SwsContext *c, SwsFilterDescriptor *desc, int slice
     return 1;
 }
 
-static int chr_planar_vscale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
+static int chr_planar_vscale(SwsInternal *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
 {
     const int chrSkipMask = (1 << desc->dst->v_chr_sub_sample) - 1;
     if (sliceY & chrSkipMask)
@@ -106,7 +106,7 @@ static int chr_planar_vscale(SwsContext *c, SwsFilterDescriptor *desc, int slice
     return 1;
 }
 
-static int packed_vscale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
+static int packed_vscale(SwsInternal *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
 {
     VScalerContext *inst = desc->instance;
     int dstW = desc->dst->width;
@@ -170,7 +170,7 @@ static int packed_vscale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, i
     return 1;
 }
 
-static int any_vscale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
+static int any_vscale(SwsInternal *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
 {
     VScalerContext *inst = desc->instance;
     int dstW = desc->dst->width;
@@ -211,7 +211,7 @@ static int any_vscale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int 
 
 }
 
-int ff_init_vscale(SwsContext *c, SwsFilterDescriptor *desc, SwsSlice *src, SwsSlice *dst)
+int ff_init_vscale(SwsInternal *c, SwsFilterDescriptor *desc, SwsSlice *src, SwsSlice *dst)
 {
     VScalerContext *lumCtx = NULL;
     VScalerContext *chrCtx = NULL;
@@ -255,7 +255,7 @@ int ff_init_vscale(SwsContext *c, SwsFilterDescriptor *desc, SwsSlice *src, SwsS
     return 0;
 }
 
-void ff_init_vscale_pfn(SwsContext *c,
+void ff_init_vscale_pfn(SwsInternal *c,
     yuv2planar1_fn yuv2plane1,
     yuv2planarX_fn yuv2planeX,
     yuv2interleavedX_fn yuv2nv12cX,
@@ -319,5 +319,3 @@ void ff_init_vscale_pfn(SwsContext *c,
             lumCtx->pfn.yuv2anyX = yuv2anyX;
     }
 }
-
-

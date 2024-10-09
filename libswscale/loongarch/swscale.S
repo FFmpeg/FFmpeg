@@ -23,7 +23,7 @@
 
 #include "libavcodec/loongarch/loongson_asm.S"
 
-/* void ff_hscale_8_to_15_lsx(SwsContext *c, int16_t *dst, int dstW,
+/* void ff_hscale_8_to_15_lsx(SwsInternal *c, int16_t *dst, int dstW,
  *                            const uint8_t *src, const int16_t *filter,
  *                            const int32_t *filterPos, int filterSize)
  */
@@ -470,7 +470,7 @@ function ff_hscale_8_to_15_lsx
     addi.d           sp,      sp,     72
 endfunc
 
-/* void ff_hscale_8_to_19_lsx(SwsContext *c, int16_t *dst, int dstW,
+/* void ff_hscale_8_to_19_lsx(SwsInternal *c, int16_t *dst, int dstW,
  *                            const uint8_t *src, const int16_t *filter,
  *                            const int32_t *filterPos, int filterSize)
  */
@@ -917,7 +917,7 @@ function ff_hscale_8_to_19_lsx
     addi.d           sp,      sp,     72
 endfunc
 
-/* void ff_hscale_16_to_15_sub_lsx(SwsContext *c, int16_t *dst, int dstW,
+/* void ff_hscale_16_to_15_sub_lsx(SwsInternal *c, int16_t *dst, int dstW,
  *                                 const uint8_t *src, const int16_t *filter,
  *                                 const int32_t *filterPos, int filterSize, int sh)
  */
@@ -1392,7 +1392,7 @@ function ff_hscale_16_to_15_sub_lsx
     addi.d           sp,      sp,     72
 endfunc
 
-/* void ff_hscale_16_to_19_sub_lsx(SwsContext *c, int16_t *dst, int dstW,
+/* void ff_hscale_16_to_19_sub_lsx(SwsInternal *c, int16_t *dst, int dstW,
  *                                 const uint8_t *src, const int16_t *filter,
  *                                 const int32_t *filterPos, int filterSize, int sh)
  */

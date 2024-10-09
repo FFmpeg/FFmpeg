@@ -33,7 +33,7 @@ SECTION .text
 ; horizontal line scaling
 ;
 ; void hscale8to15_<filterSize>_<opt>
-;                   (SwsContext *c, int16_t *dst,
+;                   (SwsInternal *c, int16_t *dst,
 ;                    int dstW, const uint8_t *src,
 ;                    const int16_t *filter,
 ;                    const int32_t *filterPos, int filterSize);

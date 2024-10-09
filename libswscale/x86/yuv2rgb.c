@@ -86,7 +86,7 @@ extern void ff_yuv_420_gbrp24_ssse3(x86_reg index, uint8_t *image, uint8_t *dst_
                                     const uint8_t *py_2index);
 #endif
 
-static inline int yuv420_rgb15_ssse3(SwsContext *c, const uint8_t *const src[],
+static inline int yuv420_rgb15_ssse3(SwsInternal *c, const uint8_t *const src[],
                                      const int srcStride[],
                                      int srcSliceY, int srcSliceH,
                                      uint8_t *const dst[], const int dstStride[])
@@ -104,7 +104,7 @@ static inline int yuv420_rgb15_ssse3(SwsContext *c, const uint8_t *const src[],
     return srcSliceH;
 }
 
-static inline int yuv420_rgb16_ssse3(SwsContext *c, const uint8_t *const src[],
+static inline int yuv420_rgb16_ssse3(SwsInternal *c, const uint8_t *const src[],
                                      const int srcStride[],
                                      int srcSliceY, int srcSliceH,
                                      uint8_t *const dst[], const int dstStride[])
@@ -122,7 +122,7 @@ static inline int yuv420_rgb16_ssse3(SwsContext *c, const uint8_t *const src[],
     return srcSliceH;
 }
 
-static inline int yuv420_rgb32_ssse3(SwsContext *c, const uint8_t *const src[],
+static inline int yuv420_rgb32_ssse3(SwsInternal *c, const uint8_t *const src[],
                                      const int srcStride[],
                                      int srcSliceY, int srcSliceH,
                                      uint8_t *const dst[], const int dstStride[])
@@ -136,7 +136,7 @@ static inline int yuv420_rgb32_ssse3(SwsContext *c, const uint8_t *const src[],
     return srcSliceH;
 }
 
-static inline int yuv420_bgr32_ssse3(SwsContext *c, const uint8_t *const src[],
+static inline int yuv420_bgr32_ssse3(SwsInternal *c, const uint8_t *const src[],
                                      const int srcStride[],
                                      int srcSliceY, int srcSliceH,
                                      uint8_t *const dst[], const int dstStride[])
@@ -150,7 +150,7 @@ static inline int yuv420_bgr32_ssse3(SwsContext *c, const uint8_t *const src[],
     return srcSliceH;
 }
 
-static inline int yuva420_rgb32_ssse3(SwsContext *c, const uint8_t *const src[],
+static inline int yuva420_rgb32_ssse3(SwsInternal *c, const uint8_t *const src[],
                                       const int srcStride[],
                                       int srcSliceY, int srcSliceH,
                                       uint8_t *const dst[], const int dstStride[])
@@ -164,7 +164,7 @@ static inline int yuva420_rgb32_ssse3(SwsContext *c, const uint8_t *const src[],
     return srcSliceH;
 }
 
-static inline int yuva420_bgr32_ssse3(SwsContext *c, const uint8_t *const src[],
+static inline int yuva420_bgr32_ssse3(SwsInternal *c, const uint8_t *const src[],
                                       const int srcStride[],
                                       int srcSliceY, int srcSliceH,
                                       uint8_t *const dst[], const int dstStride[])
@@ -179,7 +179,7 @@ static inline int yuva420_bgr32_ssse3(SwsContext *c, const uint8_t *const src[],
     return srcSliceH;
 }
 
-static inline int yuv420_rgb24_ssse3(SwsContext *c, const uint8_t *const src[],
+static inline int yuv420_rgb24_ssse3(SwsInternal *c, const uint8_t *const src[],
                                      const int srcStride[],
                                      int srcSliceY, int srcSliceH,
                                      uint8_t *const dst[], const int dstStride[])
@@ -193,7 +193,7 @@ static inline int yuv420_rgb24_ssse3(SwsContext *c, const uint8_t *const src[],
     return srcSliceH;
 }
 
-static inline int yuv420_bgr24_ssse3(SwsContext *c, const uint8_t *const src[],
+static inline int yuv420_bgr24_ssse3(SwsInternal *c, const uint8_t *const src[],
                                      const int srcStride[],
                                      int srcSliceY, int srcSliceH,
                                      uint8_t *const dst[], const int dstStride[])
@@ -208,7 +208,7 @@ static inline int yuv420_bgr24_ssse3(SwsContext *c, const uint8_t *const src[],
 }
 
 #if ARCH_X86_64
-static inline int yuv420_gbrp_ssse3(SwsContext *c, const uint8_t *const src[],
+static inline int yuv420_gbrp_ssse3(SwsInternal *c, const uint8_t *const src[],
                                     const int srcStride[],
                                     int srcSliceY, int srcSliceH,
                                     uint8_t *const dst[], const int dstStride[])
@@ -238,7 +238,7 @@ static inline int yuv420_gbrp_ssse3(SwsContext *c, const uint8_t *const src[],
 
 #endif /* HAVE_X86ASM */
 
-av_cold SwsFunc ff_yuv2rgb_init_x86(SwsContext *c)
+av_cold SwsFunc ff_yuv2rgb_init_x86(SwsInternal *c)
 {
 #if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();

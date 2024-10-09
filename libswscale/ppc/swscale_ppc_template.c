@@ -97,7 +97,7 @@ static void FUNC(yuv2planeX)(const int16_t *filter, int filterSize,
     yuv2planeX_u(filter, filterSize, src, dest, dstW, dither, offset, i);
 }
 
-static void FUNC(hScale_real)(SwsContext *c, int16_t *dst, int dstW,
+static void FUNC(hScale_real)(SwsInternal *c, int16_t *dst, int dstW,
                                 const uint8_t *src, const int16_t *filter,
                                 const int32_t *filterPos, int filterSize)
 {

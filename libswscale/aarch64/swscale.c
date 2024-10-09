@@ -41,7 +41,7 @@ void ff_hscale16to19_X4_neon_asm(int shift, int16_t *_dst, int dstW,
                       const uint8_t *_src, const int16_t *filter,
                       const int32_t *filterPos, int filterSize);
 
-static void ff_hscale16to15_4_neon(SwsContext *c, int16_t *_dst, int dstW,
+static void ff_hscale16to15_4_neon(SwsInternal *c, int16_t *_dst, int dstW,
                       const uint8_t *_src, const int16_t *filter,
                       const int32_t *filterPos, int filterSize)
 {
@@ -57,7 +57,7 @@ static void ff_hscale16to15_4_neon(SwsContext *c, int16_t *_dst, int dstW,
 
 }
 
-static void ff_hscale16to15_X8_neon(SwsContext *c, int16_t *_dst, int dstW,
+static void ff_hscale16to15_X8_neon(SwsInternal *c, int16_t *_dst, int dstW,
                       const uint8_t *_src, const int16_t *filter,
                       const int32_t *filterPos, int filterSize)
 {
@@ -73,7 +73,7 @@ static void ff_hscale16to15_X8_neon(SwsContext *c, int16_t *_dst, int dstW,
 
 }
 
-static void ff_hscale16to15_X4_neon(SwsContext *c, int16_t *_dst, int dstW,
+static void ff_hscale16to15_X4_neon(SwsInternal *c, int16_t *_dst, int dstW,
                       const uint8_t *_src, const int16_t *filter,
                       const int32_t *filterPos, int filterSize)
 {
@@ -88,7 +88,7 @@ static void ff_hscale16to15_X4_neon(SwsContext *c, int16_t *_dst, int dstW,
     ff_hscale16to15_X4_neon_asm(sh, _dst, dstW, _src, filter, filterPos, filterSize);
 }
 
-static void ff_hscale16to19_4_neon(SwsContext *c, int16_t *_dst, int dstW,
+static void ff_hscale16to19_4_neon(SwsInternal *c, int16_t *_dst, int dstW,
                            const uint8_t *_src, const int16_t *filter,
                            const int32_t *filterPos, int filterSize)
 {
@@ -106,7 +106,7 @@ static void ff_hscale16to19_4_neon(SwsContext *c, int16_t *_dst, int dstW,
 
 }
 
-static void ff_hscale16to19_X8_neon(SwsContext *c, int16_t *_dst, int dstW,
+static void ff_hscale16to19_X8_neon(SwsInternal *c, int16_t *_dst, int dstW,
                            const uint8_t *_src, const int16_t *filter,
                            const int32_t *filterPos, int filterSize)
 {
@@ -124,7 +124,7 @@ static void ff_hscale16to19_X8_neon(SwsContext *c, int16_t *_dst, int dstW,
 
 }
 
-static void ff_hscale16to19_X4_neon(SwsContext *c, int16_t *_dst, int dstW,
+static void ff_hscale16to19_X4_neon(SwsInternal *c, int16_t *_dst, int dstW,
                            const uint8_t *_src, const int16_t *filter,
                            const int32_t *filterPos, int filterSize)
 {
@@ -144,7 +144,7 @@ static void ff_hscale16to19_X4_neon(SwsContext *c, int16_t *_dst, int dstW,
 
 #define SCALE_FUNC(filter_n, from_bpc, to_bpc, opt) \
 void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( \
-                                                SwsContext *c, int16_t *data, \
+                                                SwsInternal *c, int16_t *data, \
                                                 int dstW, const uint8_t *src, \
                                                 const int16_t *filter, \
                                                 const int32_t *filterPos, int filterSize)
@@ -223,7 +223,7 @@ void ff_chrRangeFromJpeg_neon(int16_t *dstU, int16_t *dstV, int width);
 void ff_lumRangeToJpeg_neon(int16_t *dst, int width);
 void ff_chrRangeToJpeg_neon(int16_t *dstU, int16_t *dstV, int width);
 
-av_cold void ff_sws_init_range_convert_aarch64(SwsContext *c)
+av_cold void ff_sws_init_range_convert_aarch64(SwsInternal *c)
 {
     if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
         if (c->dstBpc <= 14) {
@@ -238,7 +238,7 @@ av_cold void ff_sws_init_range_convert_aarch64(SwsContext *c)
     }
 }
 
-av_cold void ff_sws_init_swscale_aarch64(SwsContext *c)
+av_cold void ff_sws_init_swscale_aarch64(SwsInternal *c)
 {
     int cpu_flags = av_get_cpu_flags();
 

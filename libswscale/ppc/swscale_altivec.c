@@ -229,7 +229,7 @@ yuv2plane1_float(yuv2plane1_float_bswap_altivec, uint32_t, BE)
 
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_sws_init_swscale_ppc(SwsContext *c)
+av_cold void ff_sws_init_swscale_ppc(SwsInternal *c)
 {
 #if HAVE_ALTIVEC
     enum AVPixelFormat dstFormat = c->dstFormat;

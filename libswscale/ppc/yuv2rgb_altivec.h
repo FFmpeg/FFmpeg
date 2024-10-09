@@ -29,7 +29,7 @@
 #include "libswscale/swscale_internal.h"
 
 #define YUV2PACKEDX_HEADER(suffix)                                  \
-    void ff_yuv2 ## suffix ## _X_altivec(SwsContext *c,             \
+    void ff_yuv2 ## suffix ## _X_altivec(SwsInternal *c,            \
                                          const int16_t *lumFilter,  \
                                          const int16_t **lumSrc,    \
                                          int lumFilterSize,         \

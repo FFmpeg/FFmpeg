@@ -83,7 +83,7 @@ int main(int argc, char **argv)
     double sum;
     float minimum, maximum, diff;
 
-    struct SwsContext *sws = NULL;
+    SwsContext *sws = NULL;
     AVLFG rand;
     FILE *fp = NULL;
 

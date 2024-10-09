@@ -135,7 +135,7 @@ const int *sws_getCoefficients(int colorspace)
     dst2_##l[2 * i + 1] = r[Y];
 
 #define YUV2RGBFUNC(func_name, dst_type, alpha, yuv422, nb_dst_planes)      \
-    static int func_name(SwsContext *c, const uint8_t *const src[],         \
+    static int func_name(SwsInternal *c, const uint8_t *const src[],         \
                          const int srcStride[], int srcSliceY, int srcSliceH, \
                          uint8_t *const dst[], const int dstStride[])       \
     {                                                                       \
@@ -558,7 +558,7 @@ YUV422FUNC_DITHER(yuv422p_bgr8,      uint8_t,  LOADDITHER8,   PUTRGB8,   8)
 YUV422FUNC_DITHER(yuv422p_bgr4,      uint8_t,  LOADDITHER4D,  PUTRGB4D,  4)
 YUV422FUNC_DITHER(yuv422p_bgr4_byte, uint8_t,  LOADDITHER4DB, PUTRGB4DB, 8)
 
-SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
+SwsFunc ff_yuv2rgb_get_func_ptr(SwsInternal *c)
 {
     SwsFunc t = NULL;
 
@@ -702,7 +702,7 @@ static uint16_t roundToInt16(int64_t f)
         return r;
 }
 
-av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
+av_cold int ff_yuv2rgb_c_init_tables(SwsInternal *c, const int inv_table[4],
                                      int fullRange, int brightness,
                                      int contrast, int saturation)
 {

@@ -61,7 +61,7 @@ DECLARE_ASM_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
 #include "swscale_template.c"
 #endif
 
-void ff_updateMMXDitherTables(SwsContext *c, int dstY)
+void ff_updateMMXDitherTables(SwsInternal *c, int dstY)
 {
     const int dstH= c->dstH;
     const int flags= c->flags;
@@ -226,7 +226,7 @@ YUV2YUVX_FUNC(avx2, 64)
 
 #define SCALE_FUNC(filter_n, from_bpc, to_bpc, opt) \
 void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( \
-                                                SwsContext *c, int16_t *data, \
+                                                SwsInternal *c, int16_t *data, \
                                                 int dstW, const uint8_t *src, \
                                                 const int16_t *filter, \
                                                 const int32_t *filterPos, int filterSize)
@@ -337,7 +337,7 @@ YUV2NV_DECL(nv12, avx2);
 YUV2NV_DECL(nv21, avx2);
 
 #define YUV2GBRP_FN_DECL(fmt, opt)                                                      \
-void ff_yuv2##fmt##_full_X_ ##opt(SwsContext *c, const int16_t *lumFilter,           \
+void ff_yuv2##fmt##_full_X_ ##opt(SwsInternal *c, const int16_t *lumFilter,           \
                                  const int16_t **lumSrcx, int lumFilterSize,         \
                                  const int16_t *chrFilter, const int16_t **chrUSrcx, \
                                  const int16_t **chrVSrcx, int chrFilterSize,        \
@@ -472,7 +472,7 @@ void ff_chrRangeToJpeg_ ##opt(int16_t *dstU, int16_t *dstV, int width);     \
 RANGE_CONVERT_FUNCS_DECL(sse2);
 RANGE_CONVERT_FUNCS_DECL(avx2);
 
-av_cold void ff_sws_init_range_convert_x86(SwsContext *c)
+av_cold void ff_sws_init_range_convert_x86(SwsInternal *c)
 {
     if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
         int cpu_flags = av_get_cpu_flags();
@@ -484,7 +484,7 @@ av_cold void ff_sws_init_range_convert_x86(SwsContext *c)
     }
 }
 
-av_cold void ff_sws_init_swscale_x86(SwsContext *c)
+av_cold void ff_sws_init_swscale_x86(SwsInternal *c)
 {
     int cpu_flags = av_get_cpu_flags();
 
@@ -792,9 +792,9 @@ switch(c->dstBpc){ \
 
     if(c->flags & SWS_FULL_CHR_H_INT) {
 
-        /* yuv2gbrp uses the SwsContext for yuv coefficients
+        /* yuv2gbrp uses the SwsInternal for yuv coefficients
            if struct offsets change the asm needs to be updated too */
-        av_assert0(offsetof(SwsContext, yuv2rgb_y_offset) == 40292);
+        av_assert0(offsetof(SwsInternal, yuv2rgb_y_offset) == 40292);
 
 #define YUV2ANYX_FUNC_CASE(fmt, name, opt)              \
         case fmt:                                       \

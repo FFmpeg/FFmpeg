@@ -1539,7 +1539,7 @@ static void rgbf16##endian_name##ToY_c(uint8_t *_dst, const uint8_t *_src, const
 rgbaf16_funcs_endian(le, 0)
 rgbaf16_funcs_endian(be, 1)
 
-av_cold void ff_sws_init_input_funcs(SwsContext *c,
+av_cold void ff_sws_init_input_funcs(SwsInternal *c,
                                      planar1_YV12_fn *lumToYV12,
                                      planar1_YV12_fn *alpToYV12,
                                      planar2_YV12_fn *chrToYV12,

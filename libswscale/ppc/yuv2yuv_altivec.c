@@ -31,7 +31,7 @@
 
 #if HAVE_ALTIVEC
 
-static int yv12toyuy2_unscaled_altivec(SwsContext *c, const uint8_t *const src[],
+static int yv12toyuy2_unscaled_altivec(SwsInternal *c, const uint8_t *const src[],
                                        const int srcStride[], int srcSliceY,
                                        int srcSliceH, uint8_t *const dstParam[],
                                        const int dstStride_a[])
@@ -107,7 +107,7 @@ static int yv12toyuy2_unscaled_altivec(SwsContext *c, const uint8_t *const src[]
     return srcSliceH;
 }
 
-static int yv12touyvy_unscaled_altivec(SwsContext *c, const uint8_t *const src[],
+static int yv12touyvy_unscaled_altivec(SwsInternal *c, const uint8_t *const src[],
                                        const int srcStride[], int srcSliceY,
                                        int srcSliceH, uint8_t *const dstParam[],
                                        const int dstStride_a[])
@@ -184,7 +184,7 @@ static int yv12touyvy_unscaled_altivec(SwsContext *c, const uint8_t *const src[]
 
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_get_unscaled_swscale_ppc(SwsContext *c)
+av_cold void ff_get_unscaled_swscale_ppc(SwsInternal *c)
 {
 #if HAVE_ALTIVEC
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))

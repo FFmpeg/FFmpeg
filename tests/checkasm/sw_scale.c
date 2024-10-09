@@ -99,7 +99,8 @@ static size_t show_differences(uint8_t *a, uint8_t *b, size_t len)
 
 static void check_yuv2yuv1(int accurate)
 {
-    struct SwsContext *ctx;
+    SwsContext *sws;
+    SwsInternal *c;
     int osi, isi;
     int dstW, offset;
     size_t fail_offset;
@@ -122,18 +123,19 @@ static void check_yuv2yuv1(int accurate)
 
     randomize_buffers((uint8_t*)dither, 8);
     randomize_buffers((uint8_t*)src_pixels, LARGEST_INPUT_SIZE * sizeof(int16_t));
-    ctx = sws_alloc_context();
+    sws = sws_alloc_context();
+    c = sws_internal(sws);
     if (accurate)
-        ctx->flags |= SWS_ACCURATE_RND;
-    if (sws_init_context(ctx, NULL, NULL) < 0)
+        c->flags |= SWS_ACCURATE_RND;
+    if (sws_init_context(sws, NULL, NULL) < 0)
         fail();
 
-    ff_sws_init_scale(ctx);
+    ff_sws_init_scale(c);
     for (isi = 0; isi < INPUT_SIZES; ++isi) {
         dstW = input_sizes[isi];
         for (osi = 0; osi < OFFSET_SIZES; osi++) {
             offset = offsets[osi];
-            if (check_func(ctx->yuv2plane1, "yuv2yuv1_%d_%d_%s", offset, dstW, accurate_str)){
+            if (check_func(c->yuv2plane1, "yuv2yuv1_%d_%d_%s", offset, dstW, accurate_str)){
                 memset(dst0, 0, LARGEST_INPUT_SIZE * sizeof(dst0[0]));
                 memset(dst1, 0, LARGEST_INPUT_SIZE * sizeof(dst1[0]));
 
@@ -154,12 +156,13 @@ static void check_yuv2yuv1(int accurate)
             }
         }
     }
-    sws_freeContext(ctx);
+    sws_freeContext(sws);
 }
 
 static void check_yuv2yuvX(int accurate)
 {
-    struct SwsContext *ctx;
+    SwsContext *sws;
+    SwsInternal *c;
     int fsi, osi, isi, i, j;
     int dstW;
 #define LARGEST_FILTER 16
@@ -188,13 +191,14 @@ static void check_yuv2yuvX(int accurate)
     uint8_t d_val = rnd();
     memset(dither, d_val, LARGEST_INPUT_SIZE);
     randomize_buffers((uint8_t*)src_pixels, LARGEST_FILTER * LARGEST_INPUT_SIZE * sizeof(int16_t));
-    ctx = sws_alloc_context();
+    sws = sws_alloc_context();
+    c = sws_internal(sws);
     if (accurate)
-        ctx->flags |= SWS_ACCURATE_RND;
-    if (sws_init_context(ctx, NULL, NULL) < 0)
+        c->flags |= SWS_ACCURATE_RND;
+    if (sws_init_context(sws, NULL, NULL) < 0)
         fail();
 
-    ff_sws_init_scale(ctx);
+    ff_sws_init_scale(c);
     for(isi = 0; isi < INPUT_SIZES; ++isi){
         dstW = input_sizes[isi];
         for(osi = 0; osi < 64; osi += 16){
@@ -225,9 +229,9 @@ static void check_yuv2yuvX(int accurate)
                     for(j = 0; j < 4; ++j)
                         vFilterData[i].coeff[j + 4] = filter_coeff[i];
                 }
-                if (check_func(ctx->yuv2planeX, "yuv2yuvX_%d_%d_%d_%s", filter_sizes[fsi], osi, dstW, accurate_str)){
+                if (check_func(c->yuv2planeX, "yuv2yuvX_%d_%d_%d_%s", filter_sizes[fsi], osi, dstW, accurate_str)){
                     // use vFilterData for the mmx function
-                    const int16_t *filter = ctx->use_mmx_vfilter ? (const int16_t*)vFilterData : &filter_coeff[0];
+                    const int16_t *filter = c->use_mmx_vfilter ? (const int16_t*)vFilterData : &filter_coeff[0];
                     memset(dst0, 0, LARGEST_INPUT_SIZE * sizeof(dst0[0]));
                     memset(dst1, 0, LARGEST_INPUT_SIZE * sizeof(dst1[0]));
 
@@ -250,7 +254,7 @@ static void check_yuv2yuvX(int accurate)
             }
         }
     }
-    sws_freeContext(ctx);
+    sws_freeContext(sws);
 #undef FILTER_SIZES
 }
 
@@ -274,7 +278,8 @@ static void check_hscale(void)
     static const int input_sizes[INPUT_SIZES] = {8, 24, 128, 144, 256, 512};
 
     int i, j, fsi, hpi, width, dstWi;
-    struct SwsContext *ctx;
+    SwsContext *sws;
+    SwsInternal *c;
 
     // padded
     LOCAL_ALIGNED_32(uint8_t, src, [FFALIGN(SRC_PIXELS + MAX_FILTER_WIDTH - 1, 4)]);
@@ -293,10 +298,11 @@ static void check_hscale(void)
                  const uint8_t *src, const int16_t *filter,
                  const int32_t *filterPos, int filterSize);
 
-    ctx = sws_alloc_context();
-    if (sws_init_context(ctx, NULL, NULL) < 0)
+    sws = sws_alloc_context();
+    if (sws_init_context(sws, NULL, NULL) < 0)
         fail();
 
+    c = sws_internal(sws);
     randomize_buffers(src, SRC_PIXELS + MAX_FILTER_WIDTH - 1);
 
     for (hpi = 0; hpi < HSCALE_PAIRS; hpi++) {
@@ -304,9 +310,9 @@ static void check_hscale(void)
             for (dstWi = 0; dstWi < INPUT_SIZES; dstWi++) {
                 width = filter_sizes[fsi];
 
-                ctx->srcBpc = hscale_pairs[hpi][0];
-                ctx->dstBpc = hscale_pairs[hpi][1];
-                ctx->hLumFilterSize = ctx->hChrFilterSize = width;
+                c->srcBpc = hscale_pairs[hpi][0];
+                c->dstBpc = hscale_pairs[hpi][1];
+                c->hLumFilterSize = c->hChrFilterSize = width;
 
                 for (i = 0; i < SRC_PIXELS; i++) {
                     filterPos[i] = i;
@@ -338,25 +344,25 @@ static void check_hscale(void)
 
                     filter[SRC_PIXELS * width + i] = rnd();
                 }
-                ctx->dstW = ctx->chrDstW = input_sizes[dstWi];
-                ff_sws_init_scale(ctx);
+                c->dstW = c->chrDstW = input_sizes[dstWi];
+                ff_sws_init_scale(c);
                 memcpy(filterAvx2, filter, sizeof(uint16_t) * (SRC_PIXELS * MAX_FILTER_WIDTH + MAX_FILTER_WIDTH));
-                ff_shuffle_filter_coefficients(ctx, filterPosAvx, width, filterAvx2, ctx->dstW);
+                ff_shuffle_filter_coefficients(c, filterPosAvx, width, filterAvx2, c->dstW);
 
-                if (check_func(ctx->hcScale, "hscale_%d_to_%d__fs_%d_dstW_%d", ctx->srcBpc, ctx->dstBpc + 1, width, ctx->dstW)) {
+                if (check_func(c->hcScale, "hscale_%d_to_%d__fs_%d_dstW_%d", c->srcBpc, c->dstBpc + 1, width, c->dstW)) {
                     memset(dst0, 0, SRC_PIXELS * sizeof(dst0[0]));
                     memset(dst1, 0, SRC_PIXELS * sizeof(dst1[0]));
 
-                    call_ref(NULL, dst0, ctx->dstW, src, filter, filterPos, width);
-                    call_new(NULL, dst1, ctx->dstW, src, filterAvx2, filterPosAvx, width);
-                    if (memcmp(dst0, dst1, ctx->dstW * sizeof(dst0[0])))
+                    call_ref(NULL, dst0, c->dstW, src, filter, filterPos, width);
+                    call_new(NULL, dst1, c->dstW, src, filterAvx2, filterPosAvx, width);
+                    if (memcmp(dst0, dst1, c->dstW * sizeof(dst0[0])))
                         fail();
-                    bench_new(NULL, dst0, ctx->dstW, src, filter, filterPosAvx, width);
+                    bench_new(NULL, dst0, c->dstW, src, filter, filterPosAvx, width);
                 }
             }
         }
     }
-    sws_freeContext(ctx);
+    sws_freeContext(sws);
 }
 
 void checkasm_check_sw_scale(void)

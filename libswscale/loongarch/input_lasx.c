@@ -201,7 +201,7 @@ void planar_rgb_to_y_lasx(uint8_t *_dst, const uint8_t *src[4], int width,
     }
 }
 
-av_cold void ff_sws_init_input_lasx(SwsContext *c)
+av_cold void ff_sws_init_input_lasx(SwsInternal *c)
 {
     enum AVPixelFormat srcFormat = c->srcFormat;
 

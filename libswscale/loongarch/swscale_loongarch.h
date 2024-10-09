@@ -26,27 +26,27 @@
 #include "libswscale/swscale_internal.h"
 #include "config.h"
 
-void ff_hscale_8_to_15_lsx(SwsContext *c, int16_t *dst, int dstW,
+void ff_hscale_8_to_15_lsx(SwsInternal *c, int16_t *dst, int dstW,
                            const uint8_t *src, const int16_t *filter,
                            const int32_t *filterPos, int filterSize);
 
-void ff_hscale_8_to_19_lsx(SwsContext *c, int16_t *_dst, int dstW,
+void ff_hscale_8_to_19_lsx(SwsInternal *c, int16_t *_dst, int dstW,
                            const uint8_t *src, const int16_t *filter,
                            const int32_t *filterPos, int filterSize);
 
-void ff_hscale_16_to_15_lsx(SwsContext *c, int16_t *_dst, int dstW,
+void ff_hscale_16_to_15_lsx(SwsInternal *c, int16_t *_dst, int dstW,
                             const uint8_t *_src, const int16_t *filter,
                             const int32_t *filterPos, int filterSize);
 
-void ff_hscale_16_to_15_sub_lsx(SwsContext *c, int16_t *_dst, int dstW,
+void ff_hscale_16_to_15_sub_lsx(SwsInternal *c, int16_t *_dst, int dstW,
                                 const uint8_t *_src, const int16_t *filter,
                                 const int32_t *filterPos, int filterSize, int sh);
 
-void ff_hscale_16_to_19_lsx(SwsContext *c, int16_t *_dst, int dstW,
+void ff_hscale_16_to_19_lsx(SwsInternal *c, int16_t *_dst, int dstW,
                             const uint8_t *_src, const int16_t *filter,
                             const int32_t *filterPos, int filterSize);
 
-void ff_hscale_16_to_19_sub_lsx(SwsContext *c, int16_t *_dst, int dstW,
+void ff_hscale_16_to_19_sub_lsx(SwsInternal *c, int16_t *_dst, int dstW,
                                 const uint8_t *_src, const int16_t *filter,
                                 const int32_t *filterPos, int filterSize, int sh);
 
@@ -89,9 +89,9 @@ void abgrToA_lsx(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
 void rgbaToA_lsx(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
                  const uint8_t *unused2, int width, uint32_t *unused, void *opq);
 
-av_cold void ff_sws_init_input_lsx(SwsContext *c);
+av_cold void ff_sws_init_input_lsx(SwsInternal *c);
 
-av_cold void ff_sws_init_output_lsx(SwsContext *c,
+av_cold void ff_sws_init_output_lsx(SwsInternal *c,
                                     yuv2planar1_fn *yuv2plane1,
                                     yuv2planarX_fn *yuv2planeX,
                                     yuv2interleavedX_fn *yuv2nv12cX,
@@ -100,38 +100,38 @@ av_cold void ff_sws_init_output_lsx(SwsContext *c,
                                     yuv2packedX_fn *yuv2packedX,
                                     yuv2anyX_fn *yuv2anyX);
 
-int yuv420_rgb24_lsx(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int yuv420_rgb24_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                      int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
 
-int yuv420_bgr24_lsx(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int yuv420_bgr24_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                      int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
 
-int yuv420_rgba32_lsx(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int yuv420_rgba32_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                       int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
 
-int yuv420_bgra32_lsx(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int yuv420_bgra32_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                       int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
 
-int yuv420_argb32_lsx(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int yuv420_argb32_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                       int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
 
-int yuv420_abgr32_lsx(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int yuv420_abgr32_lsx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                       int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
 
 #if HAVE_LASX
-void ff_hscale_8_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
+void ff_hscale_8_to_15_lasx(SwsInternal *c, int16_t *dst, int dstW,
                             const uint8_t *src, const int16_t *filter,
                             const int32_t *filterPos, int filterSize);
 
-void ff_hscale_8_to_19_lasx(SwsContext *c, int16_t *_dst, int dstW,
+void ff_hscale_8_to_19_lasx(SwsInternal *c, int16_t *_dst, int dstW,
                             const uint8_t *src, const int16_t *filter,
                             const int32_t *filterPos, int filterSize);
 
-void ff_hscale_16_to_19_lasx(SwsContext *c, int16_t *_dst, int dstW,
+void ff_hscale_16_to_19_lasx(SwsInternal *c, int16_t *_dst, int dstW,
                              const uint8_t *_src, const int16_t *filter,
                              const int32_t *filterPos, int filterSize);
 
-void ff_hscale_16_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
+void ff_hscale_16_to_15_lasx(SwsInternal *c, int16_t *dst, int dstW,
                              const uint8_t *_src, const int16_t *filter,
                              const int32_t *filterPos, int filterSize);
 
@@ -146,22 +146,22 @@ void planar_rgb_to_uv_lasx(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4]
 void planar_rgb_to_y_lasx(uint8_t *_dst, const uint8_t *src[4], int width,
                           int32_t *rgb2yuv, void *opq);
 
-int yuv420_rgb24_lasx(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int yuv420_rgb24_lasx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                       int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
 
-int yuv420_bgr24_lasx(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int yuv420_bgr24_lasx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                       int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
 
-int yuv420_rgba32_lasx(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int yuv420_rgba32_lasx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                        int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
 
-int yuv420_bgra32_lasx(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int yuv420_bgra32_lasx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                        int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
 
-int yuv420_argb32_lasx(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int yuv420_argb32_lasx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                        int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
 
-int yuv420_abgr32_lasx(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int yuv420_abgr32_lasx(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                        int srcSliceY, int srcSliceH, uint8_t *const dst[], const int dstStride[]);
 
 void ff_interleave_bytes_lasx(const uint8_t *src1, const uint8_t *src2,
@@ -196,9 +196,9 @@ void abgrToA_lasx(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
 void rgbaToA_lasx(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
                   const uint8_t *unused2, int width, uint32_t *unused, void *opq);
 
-av_cold void ff_sws_init_input_lasx(SwsContext *c);
+av_cold void ff_sws_init_input_lasx(SwsInternal *c);
 
-av_cold void ff_sws_init_output_lasx(SwsContext *c,
+av_cold void ff_sws_init_output_lasx(SwsInternal *c,
                                      yuv2planar1_fn *yuv2plane1,
                                      yuv2planarX_fn *yuv2planeX,
                                      yuv2interleavedX_fn *yuv2nv12cX,

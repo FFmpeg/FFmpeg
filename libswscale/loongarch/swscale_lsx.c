@@ -23,7 +23,7 @@
 
 #include "swscale_loongarch.h"
 
-void ff_hscale_16_to_15_lsx(SwsContext *c, int16_t *_dst, int dstW,
+void ff_hscale_16_to_15_lsx(SwsInternal *c, int16_t *_dst, int dstW,
                             const uint8_t *_src, const int16_t *filter,
                             const int32_t *filterPos, int filterSize)
 {
@@ -39,7 +39,7 @@ void ff_hscale_16_to_15_lsx(SwsContext *c, int16_t *_dst, int dstW,
     ff_hscale_16_to_15_sub_lsx(c, _dst, dstW, _src, filter, filterPos, filterSize, sh);
 }
 
-void ff_hscale_16_to_19_lsx(SwsContext *c, int16_t *_dst, int dstW,
+void ff_hscale_16_to_19_lsx(SwsInternal *c, int16_t *_dst, int dstW,
                             const uint8_t *_src, const int16_t *filter,
                             const int32_t *filterPos, int filterSize)
 {

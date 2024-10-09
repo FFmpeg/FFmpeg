@@ -27,7 +27,7 @@
 ; horizontal line scaling
 ;
 ; void hscale<source_width>to<intermediate_nbits>_<filterSize>_<opt>
-;                               (SwsContext *c, int{16,32}_t *dst,
+;                               (SwsInternal *c, int{16,32}_t *dst,
 ;                                int dstW, const uint{8,16}_t *src,
 ;                                const int16_t *filter,
 ;                                const int32_t *filterPos, int filterSize);
@@ -92,7 +92,7 @@ function ff_hscale8to15_X8_neon, export=1
 endfunc
 
 function ff_hscale8to15_X4_neon, export=1
-// x0  SwsContext *c (not used)
+// x0  SwsInternal *c (not used)
 // x1  int16_t *dst
 // w2  int dstW
 // x3  const uint8_t *src
@@ -199,7 +199,7 @@ function ff_hscale8to15_X4_neon, export=1
 endfunc
 
 function ff_hscale8to15_4_neon, export=1
-// x0  SwsContext *c (not used)
+// x0  SwsInternal *c (not used)
 // x1  int16_t *dst
 // x2  int dstW
 // x3  const uint8_t *src
@@ -349,7 +349,7 @@ function ff_hscale8to15_4_neon, export=1
 endfunc
 
 function ff_hscale8to19_4_neon, export=1
-        // x0               SwsContext *c (unused)
+        // x0               SwsInternal *c (unused)
         // x1               int32_t *dst
         // w2               int dstW
         // x3               const uint8_t *src // treat it as uint16_t *src
@@ -542,7 +542,7 @@ function ff_hscale8to19_X8_neon, export=1
 endfunc
 
 function ff_hscale8to19_X4_neon, export=1
-        // x0  SwsContext *c (not used)
+        // x0  SwsInternal *c (not used)
         // x1  int16_t *dst
         // w2  int dstW
         // x3  const uint8_t *src

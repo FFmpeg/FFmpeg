@@ -24,6 +24,7 @@
 #include <stdatomic.h>
 
 #include "config.h"
+#include "swscale.h"
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
@@ -64,7 +65,12 @@
 
 #define RETCODE_USE_CASCADE -12345
 
-typedef struct SwsContext SwsContext;
+typedef struct SwsInternal SwsInternal;
+
+static inline SwsInternal *sws_internal(const SwsContext *sws)
+{
+    return (SwsInternal *) sws;
+}
 
 typedef enum SwsDither {
     SWS_DITHER_NONE = 0,
@@ -96,7 +102,7 @@ typedef struct RangeList {
 
 int ff_range_add(RangeList *r, unsigned int start, unsigned int len);
 
-typedef int (*SwsFunc)(SwsContext *c, const uint8_t *const src[],
+typedef int (*SwsFunc)(SwsInternal *c, const uint8_t *const src[],
                        const int srcStride[], int srcSliceY, int srcSliceH,
                        uint8_t *const dst[], const int dstStride[]);
 
@@ -185,7 +191,7 @@ typedef void (*yuv2interleavedX_fn)(enum AVPixelFormat dstFormat,
  *                but can be used to generate comfort noise using dithering
  *                for some output formats.
  */
-typedef void (*yuv2packed1_fn)(struct SwsContext *c, const int16_t *lumSrc,
+typedef void (*yuv2packed1_fn)(SwsInternal *c, const int16_t *lumSrc,
                                const int16_t *chrUSrc[2],
                                const int16_t *chrVSrc[2],
                                const int16_t *alpSrc, uint8_t *dest,
@@ -218,7 +224,7 @@ typedef void (*yuv2packed1_fn)(struct SwsContext *c, const int16_t *lumSrc,
  *                but can be used to generate comfort noise using dithering
  *                for some output formats.
  */
-typedef void (*yuv2packed2_fn)(struct SwsContext *c, const int16_t *lumSrc[2],
+typedef void (*yuv2packed2_fn)(SwsInternal *c, const int16_t *lumSrc[2],
                                const int16_t *chrUSrc[2],
                                const int16_t *chrVSrc[2],
                                const int16_t *alpSrc[2],
@@ -250,7 +256,7 @@ typedef void (*yuv2packed2_fn)(struct SwsContext *c, const int16_t *lumSrc[2],
  *                      but can be used to generate comfort noise using dithering
  *                      or some output formats.
  */
-typedef void (*yuv2packedX_fn)(struct SwsContext *c, const int16_t *lumFilter,
+typedef void (*yuv2packedX_fn)(SwsInternal *c, const int16_t *lumFilter,
                                const int16_t **lumSrc, int lumFilterSize,
                                const int16_t *chrFilter,
                                const int16_t **chrUSrc,
@@ -284,7 +290,7 @@ typedef void (*yuv2packedX_fn)(struct SwsContext *c, const int16_t *lumFilter,
  *                      but can be used to generate comfort noise using dithering
  *                      or some output formats.
  */
-typedef void (*yuv2anyX_fn)(struct SwsContext *c, const int16_t *lumFilter,
+typedef void (*yuv2anyX_fn)(SwsInternal *c, const int16_t *lumFilter,
                             const int16_t **lumSrc, int lumFilterSize,
                             const int16_t *chrFilter,
                             const int16_t **chrUSrc,
@@ -321,16 +327,16 @@ struct SwsSlice;
 struct SwsFilterDescriptor;
 
 /* This struct should be aligned on at least a 32-byte boundary. */
-struct SwsContext {
+struct SwsInternal {
     /**
      * info on struct for av_log
      */
     const AVClass *av_class;
 
-    struct SwsContext *parent;
+    SwsContext *parent;
 
     AVSliceThread      *slicethread;
-    struct SwsContext **slice_ctx;
+    SwsContext        **slice_ctx;
     int                *slice_err;
     int              nb_slice_ctx;
 
@@ -376,7 +382,7 @@ struct SwsContext {
      * sequential steps, this is for example used to limit the maximum
      * downscaling factor that needs to be supported in one scaler.
      */
-    struct SwsContext *cascaded_context[3];
+    SwsContext *cascaded_context[3];
     int cascaded_tmpStride[2][4];
     uint8_t *cascaded_tmp[2][4];
     int cascaded_mainindex;
@@ -603,7 +609,7 @@ struct SwsContext {
 
     /**
      * Scale one horizontal line of input data using a bilinear filter
-     * to produce one line of output data. Compared to SwsContext->hScale(),
+     * to produce one line of output data. Compared to SwsInternal->hScale(),
      * please take note of the following caveats when using these:
      * - Scaling is done using only 7 bits instead of 14-bit coefficients.
      * - You can use no more than 5 input pixels to produce 4 output
@@ -617,13 +623,13 @@ struct SwsContext {
      *   two input pixels per output pixel in bilinear scaling, this is
      *   impossible and thus downscaling by any size will create artifacts.
      * To enable this type of scaling, set SWS_FLAG_FAST_BILINEAR
-     * in SwsContext->flags.
+     * in SwsInternal->flags.
      */
     /** @{ */
-    void (*hyscale_fast)(struct SwsContext *c,
+    void (*hyscale_fast)(SwsInternal *c,
                          int16_t *dst, int dstWidth,
                          const uint8_t *src, int srcW, int xInc);
-    void (*hcscale_fast)(struct SwsContext *c,
+    void (*hcscale_fast)(SwsInternal *c,
                          int16_t *dst1, int16_t *dst2, int dstWidth,
                          const uint8_t *src1, const uint8_t *src2,
                          int srcW, int xInc);
@@ -635,15 +641,15 @@ struct SwsContext {
      *
      * @param dst        pointer to destination buffer for horizontally scaled
      *                   data. If the number of bits per component of one
-     *                   destination pixel (SwsContext->dstBpc) is <= 10, data
+     *                   destination pixel (SwsInternal->dstBpc) is <= 10, data
      *                   will be 15 bpc in 16 bits (int16_t) width. Else (i.e.
-     *                   SwsContext->dstBpc == 16), data will be 19bpc in
+     *                   SwsInternal->dstBpc == 16), data will be 19bpc in
      *                   32 bits (int32_t) width.
      * @param dstW       width of destination image
      * @param src        pointer to source data to be scaled. If the number of
-     *                   bits per component of a source pixel (SwsContext->srcBpc)
+     *                   bits per component of a source pixel (SwsInternal->srcBpc)
      *                   is 8, this is 8bpc in 8 bits (uint8_t) width. Else
-     *                   (i.e. SwsContext->dstBpc > 8), this is native depth
+     *                   (i.e. SwsInternal->dstBpc > 8), this is native depth
      *                   in 16 bits (uint16_t) width. In other words, for 9-bit
      *                   YUV input, this is 9bpc, for 10-bit YUV input, this is
      *                   10bpc, and for 16-bit RGB or YUV, this is 16bpc.
@@ -660,10 +666,10 @@ struct SwsContext {
      *                   to simplify creating SIMD code.
      */
     /** @{ */
-    void (*hyScale)(struct SwsContext *c, int16_t *dst, int dstW,
+    void (*hyScale)(SwsInternal *c, int16_t *dst, int dstW,
                     const uint8_t *src, const int16_t *filter,
                     const int32_t *filterPos, int filterSize);
-    void (*hcScale)(struct SwsContext *c, int16_t *dst, int dstW,
+    void (*hcScale)(SwsInternal *c, int16_t *dst, int dstW,
                     const uint8_t *src, const int16_t *filter,
                     const int32_t *filterPos, int filterSize);
     /** @} */
@@ -699,25 +705,25 @@ struct SwsContext {
 };
 //FIXME check init (where 0)
 
-SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c);
-int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
+SwsFunc ff_yuv2rgb_get_func_ptr(SwsInternal *c);
+int ff_yuv2rgb_c_init_tables(SwsInternal *c, const int inv_table[4],
                              int fullRange, int brightness,
                              int contrast, int saturation);
-void ff_yuv2rgb_init_tables_ppc(SwsContext *c, const int inv_table[4],
+void ff_yuv2rgb_init_tables_ppc(SwsInternal *c, const int inv_table[4],
                                 int brightness, int contrast, int saturation);
 
-void ff_updateMMXDitherTables(SwsContext *c, int dstY);
+void ff_updateMMXDitherTables(SwsInternal *c, int dstY);
 
-void ff_update_palette(SwsContext *c, const uint32_t *pal);
+void ff_update_palette(SwsInternal *c, const uint32_t *pal);
 
-av_cold void ff_sws_init_range_convert(SwsContext *c);
-av_cold void ff_sws_init_range_convert_aarch64(SwsContext *c);
-av_cold void ff_sws_init_range_convert_loongarch(SwsContext *c);
-av_cold void ff_sws_init_range_convert_x86(SwsContext *c);
+av_cold void ff_sws_init_range_convert(SwsInternal *c);
+av_cold void ff_sws_init_range_convert_aarch64(SwsInternal *c);
+av_cold void ff_sws_init_range_convert_loongarch(SwsInternal *c);
+av_cold void ff_sws_init_range_convert_x86(SwsInternal *c);
 
-SwsFunc ff_yuv2rgb_init_x86(SwsContext *c);
-SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c);
-SwsFunc ff_yuv2rgb_init_loongarch(SwsContext *c);
+SwsFunc ff_yuv2rgb_init_x86(SwsInternal *c);
+SwsFunc ff_yuv2rgb_init_ppc(SwsInternal *c);
+SwsFunc ff_yuv2rgb_init_loongarch(SwsInternal *c);
 
 static av_always_inline int is16BPS(enum AVPixelFormat pix_fmt)
 {
@@ -982,21 +988,21 @@ extern const AVClass ff_sws_context_class;
  * Set c->convert_unscaled to an unscaled converter if one exists for the
  * specific source and destination formats, bit depths, flags, etc.
  */
-void ff_get_unscaled_swscale(SwsContext *c);
-void ff_get_unscaled_swscale_ppc(SwsContext *c);
-void ff_get_unscaled_swscale_arm(SwsContext *c);
-void ff_get_unscaled_swscale_aarch64(SwsContext *c);
+void ff_get_unscaled_swscale(SwsInternal *c);
+void ff_get_unscaled_swscale_ppc(SwsInternal *c);
+void ff_get_unscaled_swscale_arm(SwsInternal *c);
+void ff_get_unscaled_swscale_aarch64(SwsInternal *c);
 
-void ff_sws_init_scale(SwsContext *c);
+void ff_sws_init_scale(SwsInternal *c);
 
-void ff_sws_init_input_funcs(SwsContext *c,
+void ff_sws_init_input_funcs(SwsInternal *c,
                              planar1_YV12_fn *lumToYV12,
                              planar1_YV12_fn *alpToYV12,
                              planar2_YV12_fn *chrToYV12,
                              planarX_YV12_fn *readLumPlanar,
                              planarX_YV12_fn *readAlpPlanar,
                              planarX2_YV12_fn *readChrPlanar);
-void ff_sws_init_output_funcs(SwsContext *c,
+void ff_sws_init_output_funcs(SwsInternal *c,
                               yuv2planar1_fn *yuv2plane1,
                               yuv2planarX_fn *yuv2planeX,
                               yuv2interleavedX_fn *yuv2nv12cX,
@@ -1004,30 +1010,30 @@ void ff_sws_init_output_funcs(SwsContext *c,
                               yuv2packed2_fn *yuv2packed2,
                               yuv2packedX_fn *yuv2packedX,
                               yuv2anyX_fn *yuv2anyX);
-void ff_sws_init_swscale_ppc(SwsContext *c);
-void ff_sws_init_swscale_vsx(SwsContext *c);
-void ff_sws_init_swscale_x86(SwsContext *c);
-void ff_sws_init_swscale_aarch64(SwsContext *c);
-void ff_sws_init_swscale_arm(SwsContext *c);
-void ff_sws_init_swscale_loongarch(SwsContext *c);
-void ff_sws_init_swscale_riscv(SwsContext *c);
+void ff_sws_init_swscale_ppc(SwsInternal *c);
+void ff_sws_init_swscale_vsx(SwsInternal *c);
+void ff_sws_init_swscale_x86(SwsInternal *c);
+void ff_sws_init_swscale_aarch64(SwsInternal *c);
+void ff_sws_init_swscale_arm(SwsInternal *c);
+void ff_sws_init_swscale_loongarch(SwsInternal *c);
+void ff_sws_init_swscale_riscv(SwsInternal *c);
 
-void ff_hyscale_fast_c(SwsContext *c, int16_t *dst, int dstWidth,
+void ff_hyscale_fast_c(SwsInternal *c, int16_t *dst, int dstWidth,
                        const uint8_t *src, int srcW, int xInc);
-void ff_hcscale_fast_c(SwsContext *c, int16_t *dst1, int16_t *dst2,
+void ff_hcscale_fast_c(SwsInternal *c, int16_t *dst1, int16_t *dst2,
                        int dstWidth, const uint8_t *src1,
                        const uint8_t *src2, int srcW, int xInc);
 int ff_init_hscaler_mmxext(int dstW, int xInc, uint8_t *filterCode,
                            int16_t *filter, int32_t *filterPos,
                            int numSplits);
-void ff_hyscale_fast_mmxext(SwsContext *c, int16_t *dst,
+void ff_hyscale_fast_mmxext(SwsInternal *c, int16_t *dst,
                             int dstWidth, const uint8_t *src,
                             int srcW, int xInc);
-void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
+void ff_hcscale_fast_mmxext(SwsInternal *c, int16_t *dst1, int16_t *dst2,
                             int dstWidth, const uint8_t *src1,
                             const uint8_t *src2, int srcW, int xInc);
 
-int ff_sws_alphablendaway(SwsContext *c, const uint8_t *const src[],
+int ff_sws_alphablendaway(SwsInternal *c, const uint8_t *const src[],
                           const int srcStride[], int srcSliceY, int srcSliceH,
                           uint8_t *const dst[], const int dstStride[]);
 
@@ -1035,10 +1041,10 @@ void ff_copyPlane(const uint8_t *src, int srcStride,
                   int srcSliceY, int srcSliceH, int width,
                   uint8_t *dst, int dstStride);
 
-void ff_xyz12Torgb48(const SwsContext *c, uint8_t *dst, int dst_stride,
+void ff_xyz12Torgb48(const SwsInternal *c, uint8_t *dst, int dst_stride,
                      const uint8_t *src, int src_stride, int w, int h);
 
-void ff_rgb48Toxyz12(const SwsContext *c, uint8_t *dst, int dst_stride,
+void ff_rgb48Toxyz12(const SwsInternal *c, uint8_t *dst, int dst_stride,
                      const uint8_t *src, int src_stride, int w, int h);
 
 static inline void fillPlane16(uint8_t *plane, int stride, int width, int height, int y,
@@ -1117,7 +1123,7 @@ typedef struct SwsFilterDescriptor
     void *instance; ///< Filter instance data
 
     /// Function for processing input slice sliceH lines starting from line sliceY
-    int (*process)(SwsContext *c, struct SwsFilterDescriptor *desc, int sliceY, int sliceH);
+    int (*process)(SwsInternal *c, struct SwsFilterDescriptor *desc, int sliceY, int sliceH);
 } SwsFilterDescriptor;
 
 // warp input lines in the form (src + width*i + j) to slice format (line[i][j])
@@ -1126,10 +1132,10 @@ int ff_init_slice_from_src(SwsSlice * s, uint8_t *const src[4], const int stride
                            int srcW, int lumY, int lumH, int chrY, int chrH, int relative);
 
 // Initialize scaler filter descriptor chain
-int ff_init_filters(SwsContext *c);
+int ff_init_filters(SwsInternal *c);
 
 // Free all filter data
-int ff_free_filters(SwsContext *c);
+int ff_free_filters(SwsInternal *c);
 
 /*
  function for applying ring buffer logic into slice s
@@ -1157,17 +1163,17 @@ int ff_init_desc_chscale(SwsFilterDescriptor *desc, SwsSlice *src, SwsSlice *dst
 int ff_init_desc_no_chr(SwsFilterDescriptor *desc, SwsSlice * src, SwsSlice *dst);
 
 /// initializes vertical scaling descriptors
-int ff_init_vscale(SwsContext *c, SwsFilterDescriptor *desc, SwsSlice *src, SwsSlice *dst);
+int ff_init_vscale(SwsInternal *c, SwsFilterDescriptor *desc, SwsSlice *src, SwsSlice *dst);
 
 /// setup vertical scaler functions
-void ff_init_vscale_pfn(SwsContext *c, yuv2planar1_fn yuv2plane1, yuv2planarX_fn yuv2planeX,
+void ff_init_vscale_pfn(SwsInternal *c, yuv2planar1_fn yuv2plane1, yuv2planarX_fn yuv2planeX,
     yuv2interleavedX_fn yuv2nv12cX, yuv2packed1_fn yuv2packed1, yuv2packed2_fn yuv2packed2,
     yuv2packedX_fn yuv2packedX, yuv2anyX_fn yuv2anyX, int use_mmx);
 
 void ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
                          int nb_jobs, int nb_threads);
 
-int ff_swscale(SwsContext *c, const uint8_t *const src[], const int srcStride[],
+int ff_swscale(SwsInternal *c, const uint8_t *const src[], const int srcStride[],
                int srcSliceY, int srcSliceH, uint8_t *const dst[],
                const int dstStride[], int dstSliceY, int dstSliceH);
 
@@ -1176,5 +1182,5 @@ int ff_swscale(SwsContext *c, const uint8_t *const src[], const int srcStride[],
 #define MAX_LINES_AHEAD 4
 
 //shuffle filter and filterPos for hyScale and hcScale filters in avx2
-int ff_shuffle_filter_coefficients(SwsContext *c, int* filterPos, int filterSize, int16_t *filter, int dstW);
+int ff_shuffle_filter_coefficients(SwsInternal *c, int* filterPos, int filterSize, int16_t *filter, int dstW);
 #endif /* SWSCALE_SWSCALE_INTERNAL_H */

@@ -33,7 +33,7 @@ SECTION .text
 ; horizontal line scaling
 ;
 ; void hscale<source_width>to<intermediate_nbits>_<filterSize>_<opt>
-;                               (SwsContext *c, int{16,32}_t *dst,
+;                               (SwsInternal *c, int{16,32}_t *dst,
 ;                                int dstW, const uint{8,16}_t *src,
 ;                                const int16_t *filter,
 ;                                const int32_t *filterPos, int filterSize);

@@ -148,7 +148,7 @@ yuv2rgb_write(uint8_t *_dest, int i, int Y1, int Y2,
 }
 
 static void
-yuv2rgb_X_template_lsx(SwsContext *c, const int16_t *lumFilter,
+yuv2rgb_X_template_lsx(SwsInternal *c, const int16_t *lumFilter,
                        const int16_t **lumSrc, int lumFilterSize,
                        const int16_t *chrFilter, const int16_t **chrUSrc,
                        const int16_t **chrVSrc, int chrFilterSize,
@@ -476,7 +476,7 @@ yuv2rgb_X_template_lsx(SwsContext *c, const int16_t *lumFilter,
 }
 
 static void
-yuv2rgb_2_template_lsx(SwsContext *c, const int16_t *buf[2],
+yuv2rgb_2_template_lsx(SwsInternal *c, const int16_t *buf[2],
                        const int16_t *ubuf[2], const int16_t *vbuf[2],
                        const int16_t *abuf[2], uint8_t *dest, int dstW,
                        int yalpha, int uvalpha, int y,
@@ -583,7 +583,7 @@ yuv2rgb_2_template_lsx(SwsContext *c, const int16_t *buf[2],
 }
 
 static void
-yuv2rgb_1_template_lsx(SwsContext *c, const int16_t *buf0,
+yuv2rgb_1_template_lsx(SwsInternal *c, const int16_t *buf0,
                        const int16_t *ubuf[2], const int16_t *vbuf[2],
                        const int16_t *abuf0, uint8_t *dest, int dstW,
                        int uvalpha, int y, enum AVPixelFormat target,
@@ -733,7 +733,7 @@ yuv2rgb_1_template_lsx(SwsContext *c, const int16_t *buf0,
 }
 
 #define YUV2RGBWRAPPERX(name, base, ext, fmt, hasAlpha)                               \
-static void name ## ext ## _X_lsx(SwsContext *c, const int16_t *lumFilter,            \
+static void name ## ext ## _X_lsx(SwsInternal *c, const int16_t *lumFilter,           \
                                   const int16_t **lumSrc, int lumFilterSize,          \
                                   const int16_t *chrFilter, const int16_t **chrUSrc,  \
                                   const int16_t **chrVSrc, int chrFilterSize,         \
@@ -747,7 +747,7 @@ static void name ## ext ## _X_lsx(SwsContext *c, const int16_t *lumFilter,      
 
 #define YUV2RGBWRAPPERX2(name, base, ext, fmt, hasAlpha)                              \
 YUV2RGBWRAPPERX(name, base, ext, fmt, hasAlpha)                                       \
-static void name ## ext ## _2_lsx(SwsContext *c, const int16_t *buf[2],               \
+static void name ## ext ## _2_lsx(SwsInternal *c, const int16_t *buf[2],              \
                                   const int16_t *ubuf[2], const int16_t *vbuf[2],     \
                                   const int16_t *abuf[2], uint8_t *dest, int dstW,    \
                                   int yalpha, int uvalpha, int y)                     \
@@ -758,7 +758,7 @@ static void name ## ext ## _2_lsx(SwsContext *c, const int16_t *buf[2],         
 
 #define YUV2RGBWRAPPER(name, base, ext, fmt, hasAlpha)                                \
 YUV2RGBWRAPPERX2(name, base, ext, fmt, hasAlpha)                                      \
-static void name ## ext ## _1_lsx(SwsContext *c, const int16_t *buf0,                 \
+static void name ## ext ## _1_lsx(SwsInternal *c, const int16_t *buf0,                \
                                   const int16_t *ubuf[2], const int16_t *vbuf[2],     \
                                   const int16_t *abuf0, uint8_t *dest, int dstW,      \
                                   int uvalpha, int y)                                 \
@@ -784,7 +784,7 @@ YUV2RGBWRAPPER(yuv2rgb,,  4,     AV_PIX_FMT_RGB4,      0)
 YUV2RGBWRAPPER(yuv2rgb,,  4b,    AV_PIX_FMT_RGB4_BYTE, 0)
 
 // This function is copied from libswscale/output.c
-static av_always_inline void yuv2rgb_write_full(SwsContext *c,
+static av_always_inline void yuv2rgb_write_full(SwsInternal *c,
     uint8_t *dest, int i, int R, int A, int G, int B,
     int y, enum AVPixelFormat target, int hasAlpha, int err[4])
 {
@@ -964,7 +964,7 @@ static av_always_inline void yuv2rgb_write_full(SwsContext *c,
 }
 
 static void
-yuv2rgb_full_X_template_lsx(SwsContext *c, const int16_t *lumFilter,
+yuv2rgb_full_X_template_lsx(SwsInternal *c, const int16_t *lumFilter,
                             const int16_t **lumSrc, int lumFilterSize,
                             const int16_t *chrFilter, const int16_t **chrUSrc,
                             const int16_t **chrVSrc, int chrFilterSize,
@@ -1143,7 +1143,7 @@ yuv2rgb_full_X_template_lsx(SwsContext *c, const int16_t *lumFilter,
 }
 
 static void
-yuv2rgb_full_2_template_lsx(SwsContext *c, const int16_t *buf[2],
+yuv2rgb_full_2_template_lsx(SwsInternal *c, const int16_t *buf[2],
                             const int16_t *ubuf[2], const int16_t *vbuf[2],
                             const int16_t *abuf[2], uint8_t *dest, int dstW,
                             int yalpha, int uvalpha, int y,
@@ -1332,7 +1332,7 @@ yuv2rgb_full_2_template_lsx(SwsContext *c, const int16_t *buf[2],
 }
 
 static void
-yuv2rgb_full_1_template_lsx(SwsContext *c, const int16_t *buf0,
+yuv2rgb_full_1_template_lsx(SwsInternal *c, const int16_t *buf0,
                             const int16_t *ubuf[2], const int16_t *vbuf[2],
                             const int16_t *abuf0, uint8_t *dest, int dstW,
                             int uvalpha, int y, enum AVPixelFormat target,
@@ -1624,7 +1624,7 @@ YUV2RGBWRAPPER(yuv2, rgb_full, bgr8_full,   AV_PIX_FMT_BGR8,  0)
 YUV2RGBWRAPPER(yuv2, rgb_full, rgb8_full,   AV_PIX_FMT_RGB8,  0)
 
 
-av_cold void ff_sws_init_output_lsx(SwsContext *c,
+av_cold void ff_sws_init_output_lsx(SwsInternal *c,
                                     yuv2planar1_fn *yuv2plane1,
                                     yuv2planarX_fn *yuv2planeX,
                                     yuv2interleavedX_fn *yuv2nv12cX,
