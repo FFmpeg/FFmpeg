@@ -988,6 +988,9 @@ static void choose_rct_params(const FFV1Context *f, FFV1SliceContext *sc,
     int x, y, i, p, best;
     int16_t *sample[3];
     int lbd = f->bits_per_raw_sample <= 8;
+    int packed = !src[1];
+    int transparency = f->transparency;
+    int packed_size = (3 + transparency)*2;
 
     for (y = 0; y < h; y++) {
         int lastr=0, lastg=0, lastb=0;
@@ -1002,6 +1005,11 @@ static void choose_rct_params(const FFV1Context *f, FFV1SliceContext *sc,
                 b =  v        & 0xFF;
                 g = (v >>  8) & 0xFF;
                 r = (v >> 16) & 0xFF;
+            } else if (packed) {
+                const uint16_t *p = ((const uint16_t*)(src[0] + x*packed_size + stride[0]*y));
+                r = p[0];
+                g = p[1];
+                b = p[2];
             } else {
                 b = *((const uint16_t*)(src[0] + x*2 + stride[0]*y));
                 g = *((const uint16_t*)(src[1] + x*2 + stride[1]*y));
