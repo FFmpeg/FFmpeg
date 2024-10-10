@@ -180,6 +180,7 @@ isBE:
   rgb48be
   rgb555be
   rgb565be
+  rgba128be
   rgba64be
   rgbaf16be
   rgbaf32be
@@ -541,6 +542,8 @@ isRGB:
   rgb565be
   rgb565le
   rgb8
+  rgba128be
+  rgba128le
   rgba64be
   rgba64le
   rgbaf16be
@@ -701,6 +704,8 @@ AnyRGB:
   rgb565be
   rgb565le
   rgb8
+  rgba128be
+  rgba128le
   rgba64be
   rgba64le
   rgbaf16be
@@ -738,6 +743,8 @@ ALPHA:
   pal8
   rgb32
   rgb32_1
+  rgba128be
+  rgba128le
   rgba64be
   rgba64le
   rgbaf16be
@@ -828,6 +835,8 @@ Packed:
   rgb565be
   rgb565le
   rgb8
+  rgba128be
+  rgba128le
   rgba64be
   rgba64le
   rgbaf16be
@@ -1034,6 +1043,8 @@ PackedRGB:
   rgb565be
   rgb565le
   rgb8
+  rgba128be
+  rgba128le
   rgba64be
   rgba64le
   rgbaf16be

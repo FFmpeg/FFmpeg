@@ -451,6 +451,9 @@ enum AVPixelFormat {
     AV_PIX_FMT_RGBF16BE,    ///< IEEE-754 half precision packed RGB 16:16:16, 48bpp, RGBRGB..., big-endian
     AV_PIX_FMT_RGBF16LE,    ///< IEEE-754 half precision packed RGB 16:16:16, 48bpp, RGBRGB..., little-endian
 
+    AV_PIX_FMT_RGBA128BE,   ///< packed RGBA 32:32:32:32, 128bpp, RGBARGBA..., big-endian
+    AV_PIX_FMT_RGBA128LE,   ///< packed RGBA 32:32:32:32, 128bpp, RGBARGBA..., little-endian
+
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
@@ -561,6 +564,8 @@ enum AVPixelFormat {
 
 #define AV_PIX_FMT_RGBF32     AV_PIX_FMT_NE(RGBF32BE, RGBF32LE)
 #define AV_PIX_FMT_RGBAF32    AV_PIX_FMT_NE(RGBAF32BE, RGBAF32LE)
+
+#define AV_PIX_FMT_RGBA128    AV_PIX_FMT_NE(RGBA128BE, RGBA128LE)
 
 /**
   * Chromaticity coordinates of the source primaries.
