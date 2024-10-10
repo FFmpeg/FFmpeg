@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-11-25 - xxxxxxxxxx - lsws 8.11.100 - swscale.h
+  Replace #define-based SWS_* flags by enum SwsFlags.
+
 2024-11-25 - xxxxxxxxxx - lsws 8.10.100 - swscale.h
   Publicly expose struct SwsContext, enum SwsDither, and enum SwsAlphaBlend.
 

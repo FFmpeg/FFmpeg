@@ -91,6 +91,71 @@ typedef enum SwsAlphaBlend {
     SWS_ALPHA_BLEND_NB,  /* not part of the ABI */
 } SwsAlphaBlend;
 
+typedef enum SwsFlags {
+    /**
+     * Scaler selection options. Only one may be active at a time.
+     */
+    SWS_FAST_BILINEAR = 1 <<  0, ///< fast bilinear filtering
+    SWS_BILINEAR      = 1 <<  1, ///< bilinear filtering
+    SWS_BICUBIC       = 1 <<  2, ///< 2-tap cubic B-spline
+    SWS_X             = 1 <<  3, ///< experimental
+    SWS_POINT         = 1 <<  4, ///< nearest neighbor
+    SWS_AREA          = 1 <<  5, ///< area averaging
+    SWS_BICUBLIN      = 1 <<  6, ///< bicubic luma, bilinear chroma
+    SWS_GAUSS         = 1 <<  7, ///< gaussian approximation
+    SWS_SINC          = 1 <<  8, ///< unwindowed sinc
+    SWS_LANCZOS       = 1 <<  9, ///< 3-tap sinc/sinc
+    SWS_SPLINE        = 1 << 10, ///< cubic Keys spline
+
+    /**
+     * Emit verbose log of scaling parameters.
+     */
+    SWS_PRINT_INFO    = 1 << 12,
+
+    /**
+     * Perform full chroma upsampling when upscaling to RGB.
+     *
+     * For example, when converting 50x50 yuv420p to 100x100 rgba, setting this flag
+     * will scale the chroma plane from 25x25 to 100x100 (4:4:4), and then convert
+     * the 100x100 yuv444p image to rgba in the final output step.
+     *
+     * Without this flag, the chroma plane is instead scaled to 50x100 (4:2:2),
+     * with a single chroma sample being re-used for both of the horizontally
+     * adjacent RGBA output pixels.
+     */
+    SWS_FULL_CHR_H_INT = 1 << 13,
+
+    /**
+     * Perform full chroma interpolation when downscaling RGB sources.
+     *
+     * For example, when converting a 100x100 rgba source to 50x50 yuv444p, setting
+     * this flag will generate a 100x100 (4:4:4) chroma plane, which is then
+     * downscaled to the required 50x50.
+     *
+     * Without this flag, the chroma plane is instead generated at 50x100 (dropping
+     * every other pixel), before then being downscaled to the required 50x50
+     * resolution.
+     */
+    SWS_FULL_CHR_H_INP = 1 << 14,
+
+    /**
+     * Force bit-exact output. This will prevent the use of platform-specific
+     * optimizations that may lead to slight difference in rounding, in favor
+     * of always maintaining exact bit output compatibility with the reference
+     * C code.
+     *
+     * Note: It is recommended to set both of these flags simultaneously.
+     */
+    SWS_ACCURATE_RND   = 1 << 18,
+    SWS_BITEXACT       = 1 << 19,
+
+    /**
+     * Deprecated flags.
+     */
+    SWS_DIRECT_BGR      = 1 << 15, ///< This flag has no effect
+    SWS_ERROR_DIFFUSION = 1 << 23, ///< Set `SwsContext.dither` instead
+} SwsFlags;
+
 /***********************************
  * Context creation and management *
  ***********************************/
@@ -109,7 +174,7 @@ typedef struct SwsContext {
     void *opaque;
 
     /**
-     * Bitmask of SWS_*.
+     * Bitmask of SWS_*. See `SwsFlags` for details.
      */
     unsigned flags;
 
@@ -225,59 +290,10 @@ int sws_test_frame(const AVFrame *frame, int output);
  */
 int sws_is_noop(const AVFrame *dst, const AVFrame *src);
 
-/* values for the flags, the stuff on the command line is different */
-#define SWS_FAST_BILINEAR     1
-#define SWS_BILINEAR          2
-#define SWS_BICUBIC           4
-#define SWS_X                 8
-#define SWS_POINT          0x10
-#define SWS_AREA           0x20
-#define SWS_BICUBLIN       0x40
-#define SWS_GAUSS          0x80
-#define SWS_SINC          0x100
-#define SWS_LANCZOS       0x200
-#define SWS_SPLINE        0x400
-
 #define SWS_SRC_V_CHR_DROP_MASK     0x30000
 #define SWS_SRC_V_CHR_DROP_SHIFT    16
 
 #define SWS_PARAM_DEFAULT           123456
-
-#define SWS_PRINT_INFO              0x1000
-
-//the following 3 flags are not completely implemented
-
-/**
- * Perform full chroma upsampling when upscaling to RGB.
- *
- * For example, when converting 50x50 yuv420p to 100x100 rgba, setting this flag
- * will scale the chroma plane from 25x25 to 100x100 (4:4:4), and then convert
- * the 100x100 yuv444p image to rgba in the final output step.
- *
- * Without this flag, the chroma plane is instead scaled to 50x100 (4:2:2),
- * with a single chroma sample being re-used for both of the horizontally
- * adjacent RGBA output pixels.
- */
-#define SWS_FULL_CHR_H_INT    0x2000
-
-/**
- * Perform full chroma interpolation when downscaling RGB sources.
- *
- * For example, when converting a 100x100 rgba source to 50x50 yuv444p, setting
- * this flag will generate a 100x100 (4:4:4) chroma plane, which is then
- * downscaled to the required 50x50.
- *
- * Without this flag, the chroma plane is instead generated at 50x100 (dropping
- * every other pixel), before then being downscaled to the required 50x50
- * resolution.
- */
-#define SWS_FULL_CHR_H_INP    0x4000
-
-#define SWS_DIRECT_BGR        0x8000
-
-#define SWS_ACCURATE_RND      0x40000
-#define SWS_BITEXACT          0x80000
-#define SWS_ERROR_DIFFUSION  0x800000
 
 #define SWS_MAX_REDUCE_CUTOFF 0.002
 
