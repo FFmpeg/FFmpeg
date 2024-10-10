@@ -791,10 +791,6 @@ switch(c->dstBpc){ \
 
     if(c->flags & SWS_FULL_CHR_H_INT) {
 
-        /* yuv2gbrp uses the SwsInternal for yuv coefficients
-           if struct offsets change the asm needs to be updated too */
-        av_assert0(offsetof(SwsInternal, yuv2rgb_y_offset) == 40292);
-
 #define YUV2ANYX_FUNC_CASE(fmt, name, opt)              \
         case fmt:                                       \
             c->yuv2anyX = ff_yuv2##name##_full_X_##opt; \

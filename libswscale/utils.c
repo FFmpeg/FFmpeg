@@ -1228,8 +1228,6 @@ SwsContext *sws_alloc_context(void)
 {
     SwsInternal *c = av_mallocz(sizeof(SwsInternal));
 
-    av_assert0(offsetof(SwsInternal, redDither) + DITHER32_INT == offsetof(SwsInternal, dither32));
-
     if (c) {
         c->av_class = &ff_sws_context_class;
         av_opt_set_defaults(c);

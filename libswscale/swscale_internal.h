@@ -22,6 +22,7 @@
 #define SWSCALE_SWSCALE_INTERNAL_H
 
 #include <stdatomic.h>
+#include <assert.h>
 
 #include "config.h"
 #include "swscale.h"
@@ -704,6 +705,16 @@ struct SwsInternal {
     Half2FloatTables *h2f_tables;
 };
 //FIXME check init (where 0)
+
+static_assert(offsetof(SwsInternal, redDither) + DITHER32_INT == offsetof(SwsInternal, dither32),
+              "dither32 must be at the same offset as redDither + DITHER32_INT");
+
+#if ARCH_X86_64
+/* x86 yuv2gbrp uses the SwsInternal for yuv coefficients
+   if struct offsets change the asm needs to be updated too */
+static_assert(offsetof(SwsInternal, yuv2rgb_y_offset) == 40292,
+              "yuv2rgb_y_offset must be updated in x86 asm");
+#endif
 
 SwsFunc ff_yuv2rgb_get_func_ptr(SwsInternal *c);
 int ff_yuv2rgb_c_init_tables(SwsInternal *c, const int inv_table[4],
