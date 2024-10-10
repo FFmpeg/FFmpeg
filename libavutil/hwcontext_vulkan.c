@@ -256,6 +256,7 @@ static void device_features_copy_needed(VulkanDeviceFeatures *dst, VulkanDeviceF
     COPY_VAL(vulkan_1_2.storageBuffer8BitAccess);
     COPY_VAL(vulkan_1_2.uniformAndStorageBuffer8BitAccess);
     COPY_VAL(vulkan_1_2.shaderFloat16);
+    COPY_VAL(vulkan_1_2.shaderBufferInt64Atomics);
     COPY_VAL(vulkan_1_2.shaderSharedInt64Atomics);
     COPY_VAL(vulkan_1_2.vulkanMemoryModel);
     COPY_VAL(vulkan_1_2.vulkanMemoryModelDeviceScope);
