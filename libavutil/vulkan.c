@@ -2005,8 +2005,21 @@ print:
         if (prop->mem_quali && desc[i].mem_quali)
             GLSLA(" %s", desc[i].mem_quali);
 
-        if (prop->type)
-            GLSLA(" %s", prop->type);
+        if (prop->type) {
+            GLSLA(" ");
+            if (desc[i].type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+                if (desc[i].mem_layout) {
+                    int len = strlen(desc[i].mem_layout);
+                    if (desc[i].mem_layout[len - 1] == 'i' &&
+                        desc[i].mem_layout[len - 2] == 'u') {
+                        GLSLA("u");
+                    } else if (desc[i].mem_layout[len - 1] == 'i') {
+                        GLSLA("i");
+                    }
+                }
+            }
+            GLSLA("%s", prop->type);
+        }
 
         if (prop->dim_needed)
             GLSLA("%iD", desc[i].dimensions);
