@@ -54,6 +54,7 @@
 #include "progressframe.h"
 #include "refstruct.h"
 #include "thread.h"
+#include "threadprogress.h"
 
 static const uint8_t hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
 
@@ -2751,6 +2752,8 @@ static int hls_decode_entry_wpp(AVCodecContext *avctx, void *hevc_lclist,
     const uint8_t *data      = s->data + s->sh.offset[ctb_row];
     const size_t   data_size = s->sh.size[ctb_row];
 
+    int progress = 0;
+
     int ret;
 
     if (ctb_row)
@@ -2762,13 +2765,15 @@ static int hls_decode_entry_wpp(AVCodecContext *avctx, void *hevc_lclist,
 
         hls_decode_neighbour(lc, l, pps, sps, x_ctb, y_ctb, ctb_addr_ts);
 
-        ff_thread_await_progress2(s->avctx, ctb_row, thread, SHIFT_CTB_WPP);
+        if (ctb_row)
+            ff_thread_progress_await(&s->wpp_progress[ctb_row - 1],
+                                     progress + SHIFT_CTB_WPP + 1);
 
         /* atomic_load's prototype requires a pointer to non-const atomic variable
          * (due to implementations via mutexes, where reads involve writes).
          * Of course, casting const away here is nevertheless safe. */
         if (atomic_load((atomic_int*)&s->wpp_err)) {
-            ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
+            ff_thread_progress_report(&s->wpp_progress[ctb_row], INT_MAX);
             return 0;
         }
 
@@ -2792,19 +2797,19 @@ static int hls_decode_entry_wpp(AVCodecContext *avctx, void *hevc_lclist,
         ctb_addr_ts++;
 
         ff_hevc_save_states(lc, pps, ctb_addr_ts);
-        ff_thread_report_progress2(s->avctx, ctb_row, thread, 1);
+        ff_thread_progress_report(&s->wpp_progress[ctb_row], ++progress);
         ff_hevc_hls_filters(lc, l, pps, x_ctb, y_ctb, ctb_size);
 
         if (!more_data && (x_ctb+ctb_size) < sps->width && ctb_row != s->sh.num_entry_point_offsets) {
             /* Casting const away here is safe, because it is an atomic operation. */
             atomic_store((atomic_int*)&s->wpp_err, 1);
-            ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
+            ff_thread_progress_report(&s->wpp_progress[ctb_row], INT_MAX);
             return 0;
         }
 
         if ((x_ctb+ctb_size) >= sps->width && (y_ctb+ctb_size) >= sps->height ) {
             ff_hevc_hls_filter(lc, l, pps, x_ctb, y_ctb, ctb_size);
-            ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
+            ff_thread_progress_report(&s->wpp_progress[ctb_row], INT_MAX);
             return ctb_addr_ts;
         }
         ctb_addr_rs = pps->ctb_addr_ts_to_rs[ctb_addr_ts];
@@ -2814,15 +2819,41 @@ static int hls_decode_entry_wpp(AVCodecContext *avctx, void *hevc_lclist,
             break;
         }
     }
-    ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
+    ff_thread_progress_report(&s->wpp_progress[ctb_row], INT_MAX);
 
     return 0;
 error:
     l->tab_slice_address[ctb_addr_rs] = -1;
     /* Casting const away here is safe, because it is an atomic operation. */
     atomic_store((atomic_int*)&s->wpp_err, 1);
-    ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
+    ff_thread_progress_report(&s->wpp_progress[ctb_row], INT_MAX);
     return ret;
+}
+
+static int wpp_progress_init(HEVCContext *s, unsigned count)
+{
+    if (s->nb_wpp_progress < count) {
+        void *tmp = av_realloc_array(s->wpp_progress, count,
+                                     sizeof(*s->wpp_progress));
+        if (!tmp)
+            return AVERROR(ENOMEM);
+
+        s->wpp_progress = tmp;
+        memset(s->wpp_progress + s->nb_wpp_progress, 0,
+               (count - s->nb_wpp_progress) * sizeof(*s->wpp_progress));
+
+        for (int i = s->nb_wpp_progress; i < count; i++) {
+            int ret = ff_thread_progress_init(&s->wpp_progress[i], 1);
+            if (ret < 0)
+                return ret;
+            s->nb_wpp_progress = i + 1;
+        }
+    }
+
+    for (int i = 0; i < count; i++)
+        ff_thread_progress_reset(&s->wpp_progress[i]);
+
+    return 0;
 }
 
 static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
@@ -2909,7 +2940,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     }
 
     atomic_store(&s->wpp_err, 0);
-    res = ff_slice_thread_allocz_entries(s->avctx, s->sh.num_entry_point_offsets + 1);
+    res = wpp_progress_init(s, s->sh.num_entry_point_offsets + 1);
     if (res < 0)
         return res;
 
@@ -3826,6 +3857,10 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     ff_hevc_ps_uninit(&s->ps);
 
+    for (int i = 0; i < s->nb_wpp_progress; i++)
+        ff_thread_progress_destroy(&s->wpp_progress[i]);
+    av_freep(&s->wpp_progress);
+
     av_freep(&s->sh.entry_point_offset);
     av_freep(&s->sh.offset);
     av_freep(&s->sh.size);
@@ -3980,12 +4015,6 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
 {
     HEVCContext *s = avctx->priv_data;
     int ret;
-
-    if (avctx->active_thread_type & FF_THREAD_SLICE) {
-        ret = ff_slice_thread_init_progress(avctx);
-        if (ret < 0)
-            return ret;
-    }
 
     ret = hevc_init_context(avctx);
     if (ret < 0)

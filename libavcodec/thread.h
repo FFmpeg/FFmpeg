@@ -56,10 +56,6 @@ int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f, int flags);
 int ff_slice_thread_execute_with_mainfunc(AVCodecContext *avctx,
         int (*action_func2)(AVCodecContext *c, void *arg, int jobnr, int threadnr),
         int (*main_func)(AVCodecContext *c), void *arg, int *ret, int job_count);
-int ff_slice_thread_allocz_entries(AVCodecContext *avctx, int count);
-int ff_slice_thread_init_progress(AVCodecContext *avctx);
-void ff_thread_report_progress2(AVCodecContext *avctx, int field, int thread, int n);
-void ff_thread_await_progress2(AVCodecContext *avctx,  int field, int thread, int shift);
 
 enum ThreadingStatus {
     FF_THREAD_IS_COPY,
