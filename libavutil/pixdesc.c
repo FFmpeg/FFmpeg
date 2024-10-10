@@ -133,7 +133,7 @@ void av_write_image_line2(const void *src,
             uint32_t mask  = ((1ULL << depth) - 1) << offset;
 
             while (w--) {
-                uint16_t val = src_element_size == 4 ? *src32++ : *src16++;
+                unsigned val = src_element_size == 4 ? *src32++ : *src16++;
                 AV_WB32(p, (AV_RB32(p) & ~mask) | (val << offset));
                 p++;
             }
