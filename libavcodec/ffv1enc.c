@@ -559,8 +559,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     // CRC requires version 3+
-    if (s->ec)
+    if (s->ec == 1)
         s->version = FFMAX(s->version, 3);
+    if (s->ec == 2)
+        s->version = FFMAX(s->version, 4);
 
     if ((s->version == 2 || s->version>3) && avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
         av_log(avctx, AV_LOG_ERROR, "Version 2 or 4 needed for requested features but version 2 or 4 is experimental and not enabled\n");
@@ -1266,7 +1268,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 #define OFFSET(x) offsetof(FFV1Context, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "slicecrc", "Protect slices with CRCs", OFFSET(ec), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, VE },
+    { "slicecrc", "Protect slices with CRCs", OFFSET(ec), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 2, VE },
     { "coder", "Coder type", OFFSET(ac), AV_OPT_TYPE_INT,
             { .i64 = 0 }, -2, 2, VE, .unit = "coder" },
         { "rice", "Golomb rice", 0, AV_OPT_TYPE_CONST,
