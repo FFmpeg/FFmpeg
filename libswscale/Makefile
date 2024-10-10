@@ -9,6 +9,7 @@ OBJS = alphablend.o                                     \
        hscale.o                                         \
        hscale_fast_bilinear.o                           \
        gamma.o                                          \
+       graph.o                                          \
        half2float.o                                     \
        input.o                                          \
        options.o                                        \
