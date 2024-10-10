@@ -1312,8 +1312,8 @@ static enum AVPixelFormat alphaless_fmt(enum AVPixelFormat fmt)
     }
 }
 
-static av_cold int sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
-                                           SwsFilter *dstFilter)
+av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
+                                       SwsFilter *dstFilter)
 {
     int i;
     int usesVFilter, usesHFilter;
@@ -2064,7 +2064,7 @@ static int context_init_threaded(SwsContext *sws,
             return ret;
         slice->threads = 1;
 
-        ret = sws_init_single_context(slice, src_filter, dst_filter);
+        ret = ff_sws_init_single_context(slice, src_filter, dst_filter);
         if (ret < 0)
             return ret;
 
@@ -2109,7 +2109,7 @@ av_cold int sws_init_context(SwsContext *sws, SwsFilter *srcFilter,
         // threading disabled in this build, init as single-threaded
     }
 
-    return sws_init_single_context(sws, srcFilter, dstFilter);
+    return ff_sws_init_single_context(sws, srcFilter, dstFilter);
 }
 
 SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
