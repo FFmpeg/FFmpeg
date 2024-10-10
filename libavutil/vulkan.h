@@ -360,7 +360,18 @@ int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt);
 /**
  * Returns the format to use for images in shaders.
  */
-const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pixfmt);
+enum FFVkShaderRepFormat {
+    /* Native format with no conversion. May require casting. */
+    FF_VK_REP_NATIVE = 0,
+    /* Float conversion of the native format. */
+    FF_VK_REP_FLOAT,
+    /* Signed integer version of the native format */
+    FF_VK_REP_INT,
+    /* Unsigned integer version of the native format */
+    FF_VK_REP_UINT,
+};
+const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
+                                 enum FFVkShaderRepFormat rep_fmt);
 
 /**
  * Loads props/mprops/driver_props

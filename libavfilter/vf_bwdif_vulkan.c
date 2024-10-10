@@ -104,7 +104,7 @@ static av_cold int init_filter(AVFilterContext *ctx)
         {
             .name       = "dst",
             .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.output_format),
+            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.output_format, FF_VK_REP_FLOAT),
             .mem_quali  = "writeonly",
             .dimensions = 2,
             .elems      = planes,

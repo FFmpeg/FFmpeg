@@ -454,7 +454,7 @@ static av_cold int init_denoise_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
         {
             .name        = "output_img",
             .type        = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .mem_layout  = ff_vk_shader_rep_fmt(vkctx->output_format),
+            .mem_layout  = ff_vk_shader_rep_fmt(vkctx->output_format, FF_VK_REP_FLOAT),
             .mem_quali   = "writeonly",
             .dimensions  = 2,
             .elems       = planes,

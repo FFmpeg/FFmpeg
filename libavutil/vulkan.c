@@ -1286,11 +1286,133 @@ int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt)
     return 0;
 }
 
-const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pixfmt)
+const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
+                                 enum FFVkShaderRepFormat rep_fmt)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pixfmt);
-    const int high = desc->comp[0].depth > 8;
-    return high ? "rgba16f" : "rgba8";
+    switch (pix_fmt) {
+    case AV_PIX_FMT_RGBA:
+    case AV_PIX_FMT_BGRA:
+    case AV_PIX_FMT_RGB24:
+    case AV_PIX_FMT_BGR24:
+    case AV_PIX_FMT_BGR0:
+    case AV_PIX_FMT_RGB0:
+    case AV_PIX_FMT_RGB565:
+    case AV_PIX_FMT_BGR565:
+    case AV_PIX_FMT_YUYV422:
+    case AV_PIX_FMT_UYVY422: {
+        const char *rep_tab[] = {
+            [FF_VK_REP_NATIVE] = "rgba8ui",
+            [FF_VK_REP_FLOAT] = "rgba8",
+            [FF_VK_REP_INT] = "rgba8i",
+            [FF_VK_REP_UINT] = "rgba8ui",
+        };
+        return rep_tab[rep_fmt];
+    }
+    case AV_PIX_FMT_X2RGB10:
+    case AV_PIX_FMT_X2BGR10:
+    case AV_PIX_FMT_Y210: {
+        const char *rep_tab[] = {
+            [FF_VK_REP_NATIVE] = "rgb10_a2ui",
+            [FF_VK_REP_FLOAT] = "rgb10_a2",
+            [FF_VK_REP_INT] = NULL,
+            [FF_VK_REP_UINT] = "rgb10_a2ui",
+        };
+        return rep_tab[rep_fmt];
+    }
+    case AV_PIX_FMT_RGB48:
+    case AV_PIX_FMT_RGBA64:
+    case AV_PIX_FMT_Y212:
+    case AV_PIX_FMT_XV36: {
+        const char *rep_tab[] = {
+            [FF_VK_REP_NATIVE] = "rgba16ui",
+            [FF_VK_REP_FLOAT] = "rgba16",
+            [FF_VK_REP_INT] = "rgba16i",
+            [FF_VK_REP_UINT] = "rgba16ui",
+        };
+        return rep_tab[rep_fmt];
+    }
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GBRAP:
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUV444P: {
+        const char *rep_tab[] = {
+            [FF_VK_REP_NATIVE] = "r8ui",
+            [FF_VK_REP_FLOAT] = "r8",
+            [FF_VK_REP_INT] = "r8i",
+            [FF_VK_REP_UINT] = "r8ui",
+        };
+        return rep_tab[rep_fmt];
+    };
+    case AV_PIX_FMT_GRAY16:
+    case AV_PIX_FMT_GBRAP16:
+    case AV_PIX_FMT_YUV420P10:
+    case AV_PIX_FMT_YUV420P12:
+    case AV_PIX_FMT_YUV420P16:
+    case AV_PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_YUV422P12:
+    case AV_PIX_FMT_YUV422P16:
+    case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV444P12:
+    case AV_PIX_FMT_YUV444P16: {
+        const char *rep_tab[] = {
+            [FF_VK_REP_NATIVE] = "r16ui",
+            [FF_VK_REP_FLOAT] = "r16f",
+            [FF_VK_REP_INT] = "r16i",
+            [FF_VK_REP_UINT] = "r16ui",
+        };
+        return rep_tab[rep_fmt];
+    };
+    case AV_PIX_FMT_GRAYF32:
+    case AV_PIX_FMT_GBRPF32:
+    case AV_PIX_FMT_GBRAPF32: {
+        const char *rep_tab[] = {
+            [FF_VK_REP_NATIVE] = "r32f",
+            [FF_VK_REP_FLOAT] = "r32f",
+            [FF_VK_REP_INT] = "r32i",
+            [FF_VK_REP_UINT] = "r32ui",
+        };
+        return rep_tab[rep_fmt];
+    };
+    case AV_PIX_FMT_NV12:
+    case AV_PIX_FMT_NV16:
+    case AV_PIX_FMT_NV24: {
+        const char *rep_tab[] = {
+            [FF_VK_REP_NATIVE] = "rg8ui",
+            [FF_VK_REP_FLOAT] = "rg8",
+            [FF_VK_REP_INT] = "rg8i",
+            [FF_VK_REP_UINT] = "rg8ui",
+        };
+        return rep_tab[rep_fmt];
+    };
+    case AV_PIX_FMT_P010:
+    case AV_PIX_FMT_P210:
+    case AV_PIX_FMT_P410: {
+        const char *rep_tab[] = {
+            [FF_VK_REP_NATIVE] = "rgb10_a2ui",
+            [FF_VK_REP_FLOAT] = "rgb10_a2",
+            [FF_VK_REP_INT] = NULL,
+            [FF_VK_REP_UINT] = "rgb10_a2ui",
+        };
+        return rep_tab[rep_fmt];
+    };
+    case AV_PIX_FMT_P012:
+    case AV_PIX_FMT_P016:
+    case AV_PIX_FMT_P212:
+    case AV_PIX_FMT_P216:
+    case AV_PIX_FMT_P412:
+    case AV_PIX_FMT_P416: {
+        const char *rep_tab[] = {
+            [FF_VK_REP_NATIVE] = "rg16ui",
+            [FF_VK_REP_FLOAT] = "rg16",
+            [FF_VK_REP_INT] = "rg16i",
+            [FF_VK_REP_UINT] = "rg16ui",
+        };
+        return rep_tab[rep_fmt];
+    };
+    default:
+        return "rgba32f";
+    }
 }
 
 typedef struct ImageViewCtx {
