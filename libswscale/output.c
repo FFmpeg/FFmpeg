@@ -624,7 +624,7 @@ yuv2mono_X_c_template(SwsInternal *c, const int16_t *lumFilter,
             Y1 = av_clip_uint8(Y1);
             Y2 = av_clip_uint8(Y2);
         }
-        if (c->dither == SWS_DITHER_ED) {
+        if (c->opts.dither == SWS_DITHER_ED) {
             Y1 += (7*err + 1*c->dither_error[0][i] + 5*c->dither_error[0][i+1] + 3*c->dither_error[0][i+2] + 8 - 256)>>4;
             c->dither_error[0][i] = err;
             acc = 2*acc + (Y1 >= 128);
@@ -662,7 +662,7 @@ yuv2mono_2_c_template(SwsInternal *c, const int16_t *buf[2],
     int i;
     av_assert2(yalpha  <= 4096U);
 
-    if (c->dither == SWS_DITHER_ED) {
+    if (c->opts.dither == SWS_DITHER_ED) {
         int err = 0;
         unsigned acc = 0;
         for (i = 0; i < dstW; i +=2) {
@@ -720,7 +720,7 @@ yuv2mono_1_c_template(SwsInternal *c, const int16_t *buf0,
     const uint8_t * const d128 = ff_dither_8x8_220[y & 7];
     int i;
 
-    if (c->dither == SWS_DITHER_ED) {
+    if (c->opts.dither == SWS_DITHER_ED) {
         int err = 0;
         unsigned acc = 0;
         for (i = 0; i < dstW; i +=2) {
@@ -1989,7 +1989,7 @@ static av_always_inline void yuv2rgb_write_full(SwsInternal *c,
     {
         int r,g,b;
 
-        switch (c->dither) {
+        switch (c->opts.dither) {
         case SWS_DITHER_NONE:
             if (isrgb8) {
                 r = av_clip_uintp2(R >> 27, 3);
@@ -2265,7 +2265,7 @@ yuv2gbrp_full_X_c(SwsInternal *c, const int16_t *lumFilter,
                   const int16_t **alpSrc, uint8_t **dest,
                   int dstW, int y)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->dstFormat);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->opts.dst_format);
     int i;
     int hasAlpha = (desc->flags & AV_PIX_FMT_FLAG_ALPHA) && alpSrc;
     uint16_t **dest16 = (uint16_t**)dest;
@@ -2328,7 +2328,7 @@ yuv2gbrp_full_X_c(SwsInternal *c, const int16_t *lumFilter,
                 dest[3][i] = A >> 19;
         }
     }
-    if (SH != 22 && (!isBE(c->dstFormat)) != (!HAVE_BIGENDIAN)) {
+    if (SH != 22 && (!isBE(c->opts.dst_format)) != (!HAVE_BIGENDIAN)) {
         for (i = 0; i < dstW; i++) {
             dest16[0][i] = av_bswap16(dest16[0][i]);
             dest16[1][i] = av_bswap16(dest16[1][i]);
@@ -2347,7 +2347,7 @@ yuv2gbrp16_full_X_c(SwsInternal *c, const int16_t *lumFilter,
                     const int16_t **alpSrcx, uint8_t **dest,
                     int dstW, int y)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->dstFormat);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->opts.dst_format);
     int i;
     int hasAlpha = (desc->flags & AV_PIX_FMT_FLAG_ALPHA) && alpSrcx;
     uint16_t **dest16 = (uint16_t**)dest;
@@ -2400,7 +2400,7 @@ yuv2gbrp16_full_X_c(SwsInternal *c, const int16_t *lumFilter,
         if (hasAlpha)
             dest16[3][i] = av_clip_uintp2(A, 30) >> 14;
     }
-    if ((!isBE(c->dstFormat)) != (!HAVE_BIGENDIAN)) {
+    if ((!isBE(c->opts.dst_format)) != (!HAVE_BIGENDIAN)) {
         for (i = 0; i < dstW; i++) {
             dest16[0][i] = av_bswap16(dest16[0][i]);
             dest16[1][i] = av_bswap16(dest16[1][i]);
@@ -2419,7 +2419,7 @@ yuv2gbrpf32_full_X_c(SwsInternal *c, const int16_t *lumFilter,
                     const int16_t **alpSrcx, uint8_t **dest,
                     int dstW, int y)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->dstFormat);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->opts.dst_format);
     int i;
     int hasAlpha = (desc->flags & AV_PIX_FMT_FLAG_ALPHA) && alpSrcx;
     uint32_t **dest32 = (uint32_t**)dest;
@@ -2476,7 +2476,7 @@ yuv2gbrpf32_full_X_c(SwsInternal *c, const int16_t *lumFilter,
         if (hasAlpha)
             dest32[3][i] = av_float2int(float_mult * (float)(av_clip_uintp2(A, 30) >> 14));
     }
-    if ((!isBE(c->dstFormat)) != (!HAVE_BIGENDIAN)) {
+    if ((!isBE(c->opts.dst_format)) != (!HAVE_BIGENDIAN)) {
         for (i = 0; i < dstW; i++) {
             dest32[0][i] = av_bswap32(dest32[0][i]);
             dest32[1][i] = av_bswap32(dest32[1][i]);
@@ -3175,7 +3175,7 @@ av_cold void ff_sws_init_output_funcs(SwsInternal *c,
                                       yuv2packedX_fn *yuv2packedX,
                                       yuv2anyX_fn *yuv2anyX)
 {
-    enum AVPixelFormat dstFormat = c->dstFormat;
+    enum AVPixelFormat dstFormat = c->opts.dst_format;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(dstFormat);
 
     if (isSemiPlanarYUV(dstFormat) && isDataInHighBits(dstFormat)) {
@@ -3223,7 +3223,7 @@ av_cold void ff_sws_init_output_funcs(SwsInternal *c,
             *yuv2nv12cX = yuv2nv12cX_c;
     }
 
-    if(c->flags & SWS_FULL_CHR_H_INT) {
+    if(c->opts.flags & SWS_FULL_CHR_H_INT) {
         switch (dstFormat) {
             case AV_PIX_FMT_RGBA:
 #if CONFIG_SMALL

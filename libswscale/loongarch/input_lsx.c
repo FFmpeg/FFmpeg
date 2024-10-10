@@ -23,7 +23,7 @@
 
 av_cold void ff_sws_init_input_lsx(SwsInternal *c)
 {
-    enum AVPixelFormat srcFormat = c->srcFormat;
+    enum AVPixelFormat srcFormat = c->opts.src_format;
 
     switch (srcFormat) {
     case AV_PIX_FMT_YUYV422:

@@ -135,13 +135,13 @@ static void check_output_yuv2gbrp(void)
         fail();
 
     c = sws_internal(sws);
-    c->flags |= SWS_FULL_CHR_H_INT;
+    c->opts.flags |= SWS_FULL_CHR_H_INT;
 
     for (fmi = 0; fmi < FF_ARRAY_ELEMS(planar_fmts); fmi++) {
         for (fsi = 0; fsi < FILTER_SIZES; fsi++) {
             for (isi = 0; isi < FF_ARRAY_ELEMS(input_sizes); isi++ ) {
                 desc = av_pix_fmt_desc_get(planar_fmts[fmi]);
-                c->dstFormat = planar_fmts[fmi];
+                c->opts.dst_format = planar_fmts[fmi];
 
                 dstW = input_sizes[isi];
                 luma_filter_size = filter_sizes[fsi];
@@ -229,8 +229,8 @@ static void check_input_planar_rgb_to_y(void)
     for (fmi = 0; fmi < FF_ARRAY_ELEMS(planar_fmts); fmi++) {
         for (isi = 0; isi < FF_ARRAY_ELEMS(input_sizes); isi++ ) {
             desc = av_pix_fmt_desc_get(planar_fmts[fmi]);
-            c->srcFormat = planar_fmts[fmi];
-            c->dstFormat = AV_PIX_FMT_YUVA444P16;
+            c->opts.src_format = planar_fmts[fmi];
+            c->opts.dst_format = AV_PIX_FMT_YUVA444P16;
             byte_size = 2;
             dstW = input_sizes[isi];
 
@@ -300,8 +300,8 @@ static void check_input_planar_rgb_to_uv(void)
     for (fmi = 0; fmi < FF_ARRAY_ELEMS(planar_fmts); fmi++) {
         for (isi = 0; isi < FF_ARRAY_ELEMS(input_sizes); isi++ ) {
             desc = av_pix_fmt_desc_get(planar_fmts[fmi]);
-            c->srcFormat = planar_fmts[fmi];
-            c->dstFormat = AV_PIX_FMT_YUVA444P16;
+            c->opts.src_format = planar_fmts[fmi];
+            c->opts.dst_format = AV_PIX_FMT_YUVA444P16;
             byte_size = 2;
             dstW = input_sizes[isi];
 
@@ -373,8 +373,8 @@ static void check_input_planar_rgb_to_a(void)
             if (!(desc->flags & AV_PIX_FMT_FLAG_ALPHA))
                 continue;
 
-            c->srcFormat = planar_fmts[fmi];
-            c->dstFormat = AV_PIX_FMT_YUVA444P16;
+            c->opts.src_format = planar_fmts[fmi];
+            c->opts.dst_format = AV_PIX_FMT_YUVA444P16;
             byte_size = 2;
             dstW = input_sizes[isi];
 

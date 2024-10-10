@@ -329,10 +329,31 @@ struct SwsFilterDescriptor;
 
 /* This struct should be aligned on at least a 32-byte boundary. */
 struct SwsInternal {
-    /**
-     * info on struct for av_log
-     */
-    const AVClass *av_class;
+    /* Currently active user-facing options. */
+    struct {
+        const AVClass *av_class;
+
+        double scaler_params[2];       ///< Input parameters for scaling algorithms that need them.
+        int flags;                     ///< Flags passed by the user to select scaler algorithm, optimizations, subsampling, etc...
+        int threads;                   ///< Number of threads used for scaling
+
+        int src_w;                     ///< Width  of source      luma/alpha planes.
+        int src_h;                     ///< Height of source      luma/alpha planes.
+        int dst_w;                     ///< Width  of destination luma/alpha planes.
+        int dst_h;                     ///< Height of destination luma/alpha planes.
+        enum AVPixelFormat src_format; ///< Source      pixel format.
+        enum AVPixelFormat dst_format; ///< Destination pixel format.
+        int src_range;                 ///< 0 = MPG YUV range, 1 = JPG YUV range (source      image).
+        int dst_range;                 ///< 0 = MPG YUV range, 1 = JPG YUV range (destination image).
+        int src_h_chr_pos;
+        int dst_h_chr_pos;
+        int src_v_chr_pos;
+        int dst_v_chr_pos;
+        int gamma_flag;
+
+        SwsDither dither;
+        SwsAlphaBlend alpha_blend;
+    } opts;
 
     SwsContext *parent;
 
@@ -350,18 +371,12 @@ struct SwsInternal {
      * sws_scale() wrapper so they can be freely modified here.
      */
     SwsFunc convert_unscaled;
-    int srcW;                     ///< Width  of source      luma/alpha planes.
-    int srcH;                     ///< Height of source      luma/alpha planes.
-    int dstW;                     ///< Width  of destination luma/alpha planes.
-    int dstH;                     ///< Height of destination luma/alpha planes.
     int chrSrcW;                  ///< Width  of source      chroma     planes.
     int chrSrcH;                  ///< Height of source      chroma     planes.
     int chrDstW;                  ///< Width  of destination chroma     planes.
     int chrDstH;                  ///< Height of destination chroma     planes.
     int lumXInc, chrXInc;
     int lumYInc, chrYInc;
-    enum AVPixelFormat dstFormat; ///< Destination pixel format.
-    enum AVPixelFormat srcFormat; ///< Source      pixel format.
     int dstFormatBpp;             ///< Number of bits per pixel of the destination pixel format.
     int srcFormatBpp;             ///< Number of bits per pixel of the source      pixel format.
     int dstBpc, srcBpc;
@@ -371,8 +386,6 @@ struct SwsInternal {
     int chrDstVSubSample;         ///< Binary logarithm of vertical   subsampling factor between luma/alpha and chroma planes in destination image.
     int vChrDrop;                 ///< Binary logarithm of extra vertical subsampling factor in source image chroma planes specified by user.
     int sliceDir;                 ///< Direction that slices are fed to the scaler (1 = top-to-bottom, -1 = bottom-to-top).
-    int nb_threads;               ///< Number of threads used for scaling
-    double param[2];              ///< Input parameters for scaling algorithms that need them.
 
     AVFrame *frame_src;
     AVFrame *frame_dst;
@@ -389,7 +402,6 @@ struct SwsInternal {
     int cascaded_mainindex;
 
     double gamma_value;
-    int gamma_flag;
     int is_internal_gamma;
     uint16_t *gamma;
     uint16_t *inv_gamma;
@@ -459,7 +471,6 @@ struct SwsInternal {
     int warned_unuseable_bilinear;
 
     int dstY;                     ///< Last destination vertical line output from last slice.
-    int flags;                    ///< Flags passed by the user to select scaler algorithm, optimizations, subsampling, etc...
     void *yuvTable;             // pointer to the yuv->rgb table start so it can be freed()
     // alignment ensures the offset can be added in a single
     // instruction on e.g. ARM
@@ -485,16 +496,10 @@ struct SwsInternal {
     int contrast, brightness, saturation;    // for sws_getColorspaceDetails
     int srcColorspaceTable[4];
     int dstColorspaceTable[4];
-    int srcRange;                 ///< 0 = MPG YUV range, 1 = JPG YUV range (source      image).
-    int dstRange;                 ///< 0 = MPG YUV range, 1 = JPG YUV range (destination image).
     int src0Alpha;
     int dst0Alpha;
     int srcXYZ;
     int dstXYZ;
-    int src_h_chr_pos;
-    int dst_h_chr_pos;
-    int src_v_chr_pos;
-    int dst_v_chr_pos;
     int yuv2rgb_y_offset;
     int yuv2rgb_y_coeff;
     int yuv2rgb_v2r_coeff;
@@ -682,10 +687,6 @@ struct SwsInternal {
 
     int needs_hcscale; ///< Set if there are chroma planes to be converted.
 
-    SwsDither dither;
-
-    SwsAlphaBlend alphablend;
-
     // scratch buffer for converting packed rgb0 sources
     // filled with a copy of the input frame + fully opaque alpha,
     // then passed as input to further conversion
@@ -712,7 +713,7 @@ static_assert(offsetof(SwsInternal, redDither) + DITHER32_INT == offsetof(SwsInt
 #if ARCH_X86_64
 /* x86 yuv2gbrp uses the SwsInternal for yuv coefficients
    if struct offsets change the asm needs to be updated too */
-static_assert(offsetof(SwsInternal, yuv2rgb_y_offset) == 40292,
+static_assert(offsetof(SwsInternal, yuv2rgb_y_offset) == 40316,
               "yuv2rgb_y_offset must be updated in x86 asm");
 #endif
 

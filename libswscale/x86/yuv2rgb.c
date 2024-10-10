@@ -41,11 +41,11 @@
 #if HAVE_X86ASM
 
 #define YUV2RGB_LOOP(depth)                                          \
-    h_size = (c->dstW + 7) & ~7;                                     \
+    h_size = (c->opts.dst_w + 7) & ~7;                               \
     if (h_size * depth > FFABS(dstStride[0]))                        \
         h_size -= 8;                                                 \
                                                                      \
-    vshift = c->srcFormat != AV_PIX_FMT_YUV422P;                     \
+    vshift = c->opts.src_format != AV_PIX_FMT_YUV422P;               \
                                                                      \
     for (y = 0; y < srcSliceH; y++) {                                \
         uint8_t *image    = dst[0] + (y + srcSliceY) * dstStride[0]; \
@@ -215,11 +215,11 @@ static inline int yuv420_gbrp_ssse3(SwsInternal *c, const uint8_t *const src[],
 {
     int y, h_size, vshift;
 
-    h_size = (c->dstW + 7) & ~7;
+    h_size = (c->opts.dst_w + 7) & ~7;
     if (h_size * 3 > FFABS(dstStride[0]))
         h_size -= 8;
 
-    vshift = c->srcFormat != AV_PIX_FMT_YUV422P;
+    vshift = c->opts.src_format != AV_PIX_FMT_YUV422P;
 
     for (y = 0; y < srcSliceH; y++) {
         uint8_t *dst_g    = dst[0] + (y + srcSliceY) * dstStride[0];
@@ -244,9 +244,9 @@ av_cold SwsFunc ff_yuv2rgb_init_x86(SwsInternal *c)
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSSE3(cpu_flags)) {
-        switch (c->dstFormat) {
+        switch (c->opts.dst_format) {
         case AV_PIX_FMT_RGB32:
-            if (c->srcFormat == AV_PIX_FMT_YUVA420P) {
+            if (c->opts.src_format == AV_PIX_FMT_YUVA420P) {
 #if CONFIG_SWSCALE_ALPHA
                 return yuva420_rgb32_ssse3;
 #endif
@@ -254,7 +254,7 @@ av_cold SwsFunc ff_yuv2rgb_init_x86(SwsInternal *c)
             } else
                 return yuv420_rgb32_ssse3;
         case AV_PIX_FMT_BGR32:
-            if (c->srcFormat == AV_PIX_FMT_YUVA420P) {
+            if (c->opts.src_format == AV_PIX_FMT_YUVA420P) {
 #if CONFIG_SWSCALE_ALPHA
                 return yuva420_bgr32_ssse3;
 #endif

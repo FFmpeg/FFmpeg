@@ -232,7 +232,7 @@ yuv2plane1_float(yuv2plane1_float_bswap_altivec, uint32_t, BE)
 av_cold void ff_sws_init_swscale_ppc(SwsInternal *c)
 {
 #if HAVE_ALTIVEC
-    enum AVPixelFormat dstFormat = c->dstFormat;
+    enum AVPixelFormat dstFormat = c->opts.dst_format;
 
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
@@ -256,8 +256,8 @@ av_cold void ff_sws_init_swscale_ppc(SwsInternal *c)
 
     /* The following list of supported dstFormat values should
      * match what's found in the body of ff_yuv2packedX_altivec() */
-    if (!(c->flags & (SWS_BITEXACT | SWS_FULL_CHR_H_INT)) && !c->needAlpha) {
-        switch (c->dstFormat) {
+    if (!(c->opts.flags & (SWS_BITEXACT | SWS_FULL_CHR_H_INT)) && !c->needAlpha) {
+        switch (c->opts.dst_format) {
         case AV_PIX_FMT_ABGR:
             c->yuv2packedX = ff_yuv2abgr_X_altivec;
             break;

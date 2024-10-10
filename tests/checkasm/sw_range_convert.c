@@ -73,16 +73,16 @@ static void check_lumConvertRange(int from)
         fail();
 
     c = sws_internal(sws);
-    c->srcRange = from;
-    c->dstRange = !from;
+    c->opts.src_range = from;
+    c->opts.dst_range = !from;
 
     for (int pfi = 0; pfi < FF_ARRAY_ELEMS(pixel_formats); pfi++) {
         enum AVPixelFormat pix_fmt = pixel_formats[pfi];
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
         int bit_depth = desc->comp[0].depth;
         int sample_size = bit_depth == 16 ? sizeof(int32_t) : sizeof(int16_t);
-        c->srcFormat = pix_fmt;
-        c->dstFormat = pix_fmt;
+        c->opts.src_format = pix_fmt;
+        c->opts.dst_format = pix_fmt;
         c->dstBpc = bit_depth;
         ff_sws_init_scale(c);
         for (int dstWi = 0; dstWi < FF_ARRAY_ELEMS(input_sizes); dstWi++) {
@@ -123,16 +123,16 @@ static void check_chrConvertRange(int from)
         fail();
 
     c = sws_internal(sws);
-    c->srcRange = from;
-    c->dstRange = !from;
+    c->opts.src_range = from;
+    c->opts.dst_range = !from;
 
     for (int pfi = 0; pfi < FF_ARRAY_ELEMS(pixel_formats); pfi++) {
         enum AVPixelFormat pix_fmt = pixel_formats[pfi];
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
         int bit_depth = desc->comp[0].depth;
         int sample_size = bit_depth == 16 ? sizeof(int32_t) : sizeof(int16_t);
-        c->srcFormat = pix_fmt;
-        c->dstFormat = pix_fmt;
+        c->opts.src_format = pix_fmt;
+        c->opts.dst_format = pix_fmt;
         c->dstBpc = bit_depth;
         ff_sws_init_scale(c);
         for (int dstWi = 0; dstWi < FF_ARRAY_ELEMS(input_sizes); dstWi++) {

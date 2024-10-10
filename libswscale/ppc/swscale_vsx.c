@@ -1862,7 +1862,7 @@ static void hScale16To19_vsx(SwsInternal *c, int16_t *_dst, int dstW,
                              const uint8_t *_src, const int16_t *filter,
                              const int32_t *filterPos, int filterSize)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->opts.src_format);
     int i, j;
     int32_t *dst        = (int32_t *) _dst;
     const uint16_t *src = (const uint16_t *) _src;
@@ -1891,7 +1891,7 @@ static void hScale16To19_vsx(SwsInternal *c, int16_t *_dst, int dstW,
     };
     const vec_u8 vunused = vunusedtab[filterSize % 8];
 
-    if ((isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8) && desc->comp[0].depth<16) {
+    if ((isAnyRGB(c->opts.src_format) || c->opts.src_format==AV_PIX_FMT_PAL8) && desc->comp[0].depth<16) {
         sh = 9;
     } else if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) { /* float input are process like uint 16bpc */
         sh = 16 - 1 - 4;
@@ -1940,7 +1940,7 @@ static void hScale16To15_vsx(SwsInternal *c, int16_t *dst, int dstW,
                              const uint8_t *_src, const int16_t *filter,
                              const int32_t *filterPos, int filterSize)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->srcFormat);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->opts.src_format);
     int i, j;
     const uint16_t *src = (const uint16_t *) _src;
     int sh              = desc->comp[0].depth - 1;
@@ -1968,7 +1968,7 @@ static void hScale16To15_vsx(SwsInternal *c, int16_t *dst, int dstW,
     const vec_u8 vunused = vunusedtab[filterSize % 8];
 
     if (sh<15) {
-        sh = isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8 ? 13 : (desc->comp[0].depth - 1);
+        sh = isAnyRGB(c->opts.src_format) || c->opts.src_format==AV_PIX_FMT_PAL8 ? 13 : (desc->comp[0].depth - 1);
     } else if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) { /* float input are process like uint 16bpc */
         sh = 16 - 1;
     }
@@ -2019,7 +2019,7 @@ static void hScale16To15_vsx(SwsInternal *c, int16_t *dst, int dstW,
 av_cold void ff_sws_init_swscale_vsx(SwsInternal *c)
 {
 #if HAVE_VSX
-    enum AVPixelFormat dstFormat = c->dstFormat;
+    enum AVPixelFormat dstFormat = c->opts.dst_format;
     const int cpu_flags = av_get_cpu_flags();
     const unsigned char power8 = HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8;
 
@@ -2030,7 +2030,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsInternal *c)
     if (c->srcBpc == 8) {
         if (c->dstBpc <= 14) {
             c->hyScale = c->hcScale = hScale_real_vsx;
-            if (c->flags & SWS_FAST_BILINEAR && c->dstW >= c->srcW && c->chrDstW >= c->chrSrcW) {
+            if (c->opts.flags & SWS_FAST_BILINEAR && c->opts.dst_w >= c->opts.src_w && c->chrDstW >= c->chrSrcW) {
                 c->hyscale_fast = hyscale_fast_vsx;
                 c->hcscale_fast = hcscale_fast_vsx;
             }
@@ -2048,7 +2048,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsInternal *c)
     }
 #endif
 
-    if (!(c->flags & (SWS_BITEXACT | SWS_FULL_CHR_H_INT)) && !c->needAlpha) {
+    if (!(c->opts.flags & (SWS_BITEXACT | SWS_FULL_CHR_H_INT)) && !c->needAlpha) {
         switch (c->dstBpc) {
         case 8:
             c->yuv2plane1 = yuv2plane1_8_vsx;
@@ -2082,11 +2082,11 @@ av_cold void ff_sws_init_swscale_vsx(SwsInternal *c)
         }
     }
 
-    if (c->flags & SWS_BITEXACT)
+    if (c->opts.flags & SWS_BITEXACT)
         return;
 
 #if !HAVE_BIGENDIAN
-    if (c->flags & SWS_FULL_CHR_H_INT) {
+    if (c->opts.flags & SWS_FULL_CHR_H_INT) {
         switch (dstFormat) {
             case AV_PIX_FMT_RGB24:
                 if (power8) {

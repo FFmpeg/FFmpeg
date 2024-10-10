@@ -43,7 +43,7 @@ static int ifmt##_to_##ofmt##_neon_wrapper(SwsInternal *c, const uint8_t *const 
                                            const int dstStride[]) {                         \
     const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
                                                                                             \
-    return ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                 \
+    return ff_##ifmt##_to_##ofmt##_neon(c->opts.src_w, srcSliceH,                           \
                                         dst[0] + srcSliceY * dstStride[0], dstStride[0],    \
                                         src[0], srcStride[0],                               \
                                         src[1], srcStride[1],                               \
@@ -71,7 +71,7 @@ static int ifmt##_to_##ofmt##_neon_wrapper(SwsInternal *c, const uint8_t *const 
                                            const int dstStride[]) {                         \
     const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
                                                                                             \
-    return ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                 \
+    return ff_##ifmt##_to_##ofmt##_neon(c->opts.src_w, srcSliceH,                           \
                                         dst[0] + srcSliceY * dstStride[0], dstStride[0],    \
                                         src[0], srcStride[0],                               \
                                         src[1], srcStride[1],                               \
@@ -108,7 +108,7 @@ static int ifmt##_to_##ofmt##_neon_wrapper(SwsInternal *c, const uint8_t *const 
                                            const int dstStride[]) {                         \
     const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
                                                                                             \
-    return ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                 \
+    return ff_##ifmt##_to_##ofmt##_neon(c->opts.src_w, srcSliceH,                           \
                                         dst[0] + srcSliceY * dstStride[0], dstStride[0],    \
                                         src[0], srcStride[0], src[1], srcStride[1],         \
                                         yuv2rgb_table,                                      \
@@ -133,7 +133,7 @@ static int ifmt##_to_##ofmt##_neon_wrapper(SwsInternal *c, const uint8_t *const 
                                            const int dstStride[]) {                         \
     const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
                                                                                             \
-    return ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                 \
+    return ff_##ifmt##_to_##ofmt##_neon(c->opts.src_w, srcSliceH,                           \
                                         dst[0] + srcSliceY * dstStride[0], dstStride[0],    \
                                         src[0], srcStride[0], src[1], srcStride[1],         \
                                         yuv2rgb_table,                                      \
@@ -155,15 +155,17 @@ static int nv24_to_yuv420p_neon_wrapper(SwsInternal *c, const uint8_t *const src
     uint8_t *dst1 = dst[1] + dstStride[1] * srcSliceY / 2;
     uint8_t *dst2 = dst[2] + dstStride[2] * srcSliceY / 2;
 
-    ff_copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
+    ff_copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->opts.src_w,
                  dst[0], dstStride[0]);
 
-    if (c->srcFormat == AV_PIX_FMT_NV24)
+    if (c->opts.src_format == AV_PIX_FMT_NV24)
         ff_nv24_to_yuv420p_chroma_neon(dst1, dstStride[1], dst2, dstStride[2],
-                                       src[1], srcStride[1], c->srcW / 2, srcSliceH);
+                                       src[1], srcStride[1], c->opts.src_w / 2,
+                                       srcSliceH);
     else
         ff_nv24_to_yuv420p_chroma_neon(dst2, dstStride[2], dst1, dstStride[1],
-                                       src[1], srcStride[1], c->srcW / 2, srcSliceH);
+                                       src[1], srcStride[1], c->opts.src_w / 2,
+                                       srcSliceH);
 
     return srcSliceH;
 }
@@ -183,10 +185,10 @@ DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv21)
  * assembly might be writing as much as 4*15=60 extra bytes at the end of the
  * line, which won't fit the 32-bytes buffer alignment. */
 #define SET_FF_NVX_TO_RGBX_FUNC(ifmt, IFMT, ofmt, OFMT, accurate_rnd) do {                  \
-    if (c->srcFormat == AV_PIX_FMT_##IFMT                                                   \
-        && c->dstFormat == AV_PIX_FMT_##OFMT                                                \
-        && !(c->srcH & 1)                                                                   \
-        && !(c->srcW & 15)                                                                  \
+    if (c->opts.src_format == AV_PIX_FMT_##IFMT                                             \
+        && c->opts.dst_format == AV_PIX_FMT_##OFMT                                          \
+        && !(c->opts.src_h & 1)                                                             \
+        && !(c->opts.src_w & 15)                                                            \
         && !accurate_rnd)                                                                   \
         c->convert_unscaled = ifmt##_to_##ofmt##_neon_wrapper;                              \
 } while (0)
@@ -200,16 +202,16 @@ DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv21)
 } while (0)
 
 static void get_unscaled_swscale_neon(SwsInternal *c) {
-    int accurate_rnd = c->flags & SWS_ACCURATE_RND;
+    int accurate_rnd = c->opts.flags & SWS_ACCURATE_RND;
 
     SET_FF_NVX_TO_ALL_RGBX_FUNC(nv12, NV12, accurate_rnd);
     SET_FF_NVX_TO_ALL_RGBX_FUNC(nv21, NV21, accurate_rnd);
     SET_FF_NVX_TO_ALL_RGBX_FUNC(yuv420p, YUV420P, accurate_rnd);
     SET_FF_NVX_TO_ALL_RGBX_FUNC(yuv422p, YUV422P, accurate_rnd);
 
-    if (c->dstFormat == AV_PIX_FMT_YUV420P &&
-        (c->srcFormat == AV_PIX_FMT_NV24 || c->srcFormat == AV_PIX_FMT_NV42) &&
-        !(c->srcH & 1) && !(c->srcW & 15) && !accurate_rnd)
+    if (c->opts.dst_format == AV_PIX_FMT_YUV420P &&
+        (c->opts.src_format == AV_PIX_FMT_NV24 || c->opts.src_format == AV_PIX_FMT_NV42) &&
+        !(c->opts.src_h & 1) && !(c->opts.src_w & 15) && !accurate_rnd)
         c->convert_unscaled = nv24_to_yuv420p_neon_wrapper;
 }
 

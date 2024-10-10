@@ -1384,15 +1384,15 @@ static void RENAME(yuv2yuyv422_1)(SwsInternal *c, const int16_t *buf0,
 }
 static av_cold void RENAME(sws_init_swscale)(SwsInternal *c)
 {
-    enum AVPixelFormat dstFormat = c->dstFormat;
+    enum AVPixelFormat dstFormat = c->opts.dst_format;
 
     c->use_mmx_vfilter= 0;
     if (!is16BPS(dstFormat) && !isNBPS(dstFormat) && !isSemiPlanarYUV(dstFormat)
         && dstFormat != AV_PIX_FMT_GRAYF32BE && dstFormat != AV_PIX_FMT_GRAYF32LE
-        && !(c->flags & SWS_BITEXACT)) {
-            if (c->flags & SWS_ACCURATE_RND) {
-                if (!(c->flags & SWS_FULL_CHR_H_INT)) {
-                    switch (c->dstFormat) {
+        && !(c->opts.flags & SWS_BITEXACT)) {
+            if (c->opts.flags & SWS_ACCURATE_RND) {
+                if (!(c->opts.flags & SWS_FULL_CHR_H_INT)) {
+                    switch (c->opts.dst_format) {
                     case AV_PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X_ar);   break;
 #if HAVE_6REGS
                     case AV_PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X_ar);   break;
@@ -1405,8 +1405,8 @@ static av_cold void RENAME(sws_init_swscale)(SwsInternal *c)
                 }
             } else {
                 c->use_mmx_vfilter= 1;
-                if (!(c->flags & SWS_FULL_CHR_H_INT)) {
-                    switch (c->dstFormat) {
+                if (!(c->opts.flags & SWS_FULL_CHR_H_INT)) {
+                    switch (c->opts.dst_format) {
                     case AV_PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X);   break;
                     case AV_PIX_FMT_BGR32:   c->yuv2packedX = RENAME(yuv2bgr32_X);   break;
 #if HAVE_6REGS
@@ -1419,8 +1419,8 @@ static av_cold void RENAME(sws_init_swscale)(SwsInternal *c)
                     }
                 }
             }
-        if (!(c->flags & SWS_FULL_CHR_H_INT)) {
-            switch (c->dstFormat) {
+        if (!(c->opts.flags & SWS_FULL_CHR_H_INT)) {
+            switch (c->opts.dst_format) {
             case AV_PIX_FMT_RGB32:
                 c->yuv2packed1 = RENAME(yuv2rgb32_1);
                 c->yuv2packed2 = RENAME(yuv2rgb32_2);
@@ -1449,7 +1449,7 @@ static av_cold void RENAME(sws_init_swscale)(SwsInternal *c)
 
     if (c->srcBpc == 8 && c->dstBpc <= 14) {
         // Use the new MMX scaler if the MMXEXT one can't be used (it is faster than the x86 ASM one).
-        if (c->flags & SWS_FAST_BILINEAR && c->canMMXEXTBeUsed) {
+        if (c->opts.flags & SWS_FAST_BILINEAR && c->canMMXEXTBeUsed) {
             c->hyscale_fast = ff_hyscale_fast_mmxext;
             c->hcscale_fast = ff_hcscale_fast_mmxext;
         } else {

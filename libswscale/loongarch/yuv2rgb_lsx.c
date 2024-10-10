@@ -128,9 +128,9 @@
                                                                                     \
     YUV2RGB_LOAD_COE                                                                \
                                                                                     \
-    h_size = c->dstW >> 4;                                                          \
-    res = (c->dstW & 15) >> 1;                                                      \
-    vshift = c->srcFormat != AV_PIX_FMT_YUV422P;                                    \
+    h_size = c->opts.dst_w >> 4;                                                    \
+    res = (c->opts.dst_w & 15) >> 1;                                                \
+    vshift = c->opts.src_format != AV_PIX_FMT_YUV422P;                              \
     for (y = 0; y < srcSliceH; y += 2) {                                            \
         dst_type av_unused *r, *g, *b;                                              \
         dst_type *image1    = (dst_type *)(dst[0] + (y + srcSliceY) * dstStride[0]);\
@@ -156,9 +156,9 @@
                                                                                     \
     YUV2RGB_LOAD_COE                                                                \
                                                                                     \
-    h_size = c->dstW >> 4;                                                          \
-    res = (c->dstW & 15) >> 1;                                                      \
-    vshift = c->srcFormat != AV_PIX_FMT_YUV422P;                                    \
+    h_size = c->opts.dst_w >> 4;                                                    \
+    res = (c->opts.dst_w & 15) >> 1;                                                \
+    vshift = c->opts.src_format != AV_PIX_FMT_YUV422P;                              \
     for (y = 0; y < srcSliceH; y += 2) {                                            \
         int yd = y + srcSliceY;                                                     \
         dst_type av_unused *r, *g, *b;                                              \

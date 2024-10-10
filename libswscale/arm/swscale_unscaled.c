@@ -41,7 +41,7 @@ static int rgbx_to_nv12_neon_32_wrapper(SwsInternal *context, const uint8_t *con
     rgbx_to_nv12_neon_32(src[0] + srcSliceY * srcStride[0],
             dst[0] + srcSliceY * dstStride[0],
             dst[1] + (srcSliceY / 2) * dstStride[1],
-            context->srcW, srcSliceH,
+            context->opts.src_w, srcSliceH,
             dstStride[0], dstStride[1], srcStride[0],
             context->input_rgb2yuv_table);
 
@@ -55,7 +55,7 @@ static int rgbx_to_nv12_neon_16_wrapper(SwsInternal *context, const uint8_t *con
     rgbx_to_nv12_neon_16(src[0] + srcSliceY * srcStride[0],
             dst[0] + srcSliceY * dstStride[0],
             dst[1] + (srcSliceY / 2) * dstStride[1],
-            context->srcW, srcSliceH,
+            context->opts.src_w, srcSliceH,
             dstStride[0], dstStride[1], srcStride[0],
             context->input_rgb2yuv_table);
 
@@ -84,7 +84,7 @@ static int ifmt##_to_##ofmt##_neon_wrapper(SwsInternal *c, const uint8_t *const 
                                            const int dstStride[]) {                         \
     const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
                                                                                             \
-    ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                        \
+    ff_##ifmt##_to_##ofmt##_neon(c->opts.src_w, srcSliceH,                                  \
                                  dst[0] + srcSliceY * dstStride[0], dstStride[0],           \
                                  src[0], srcStride[0],                                      \
                                  src[1], srcStride[1],                                      \
@@ -120,7 +120,7 @@ static int ifmt##_to_##ofmt##_neon_wrapper(SwsInternal *c, const uint8_t *const 
                                            const int dstStride[]) {                         \
     const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
                                                                                             \
-    ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                        \
+    ff_##ifmt##_to_##ofmt##_neon(c->opts.src_w, srcSliceH,                                  \
                                  dst[0] + srcSliceY * dstStride[0], dstStride[0],           \
                                  src[0], srcStride[0], src[1], srcStride[1],                \
                                  yuv2rgb_table,                                             \
@@ -144,10 +144,10 @@ DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv21)
  * assembly might be writing as much as 4*15=60 extra bytes at the end of the
  * line, which won't fit the 32-bytes buffer alignment. */
 #define SET_FF_NVX_TO_RGBX_FUNC(ifmt, IFMT, ofmt, OFMT, accurate_rnd) do {                  \
-    if (c->srcFormat == AV_PIX_FMT_##IFMT                                                   \
-        && c->dstFormat == AV_PIX_FMT_##OFMT                                                \
-        && !(c->srcH & 1)                                                                   \
-        && !(c->srcW & 15)                                                                  \
+    if (c->opts.src_format == AV_PIX_FMT_##IFMT                                             \
+        && c->opts.dst_format == AV_PIX_FMT_##OFMT                                          \
+        && !(c->opts.src_h & 1)                                                             \
+        && !(c->opts.src_w & 15)                                                            \
         && !accurate_rnd) {                                                                 \
         c->convert_unscaled = ifmt##_to_##ofmt##_neon_wrapper;                              \
     }                                                                                       \
@@ -161,10 +161,10 @@ DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv21)
 } while (0)
 
 static void get_unscaled_swscale_neon(SwsInternal *c) {
-    int accurate_rnd = c->flags & SWS_ACCURATE_RND;
-    if (c->srcFormat == AV_PIX_FMT_RGBA
-            && c->dstFormat == AV_PIX_FMT_NV12
-            && (c->srcW >= 16)) {
+    int accurate_rnd = c->opts.flags & SWS_ACCURATE_RND;
+    if (c->opts.src_format == AV_PIX_FMT_RGBA
+            && c->opts.dst_format == AV_PIX_FMT_NV12
+            && (c->opts.src_w >= 16)) {
         c->convert_unscaled = accurate_rnd ? rgbx_to_nv12_neon_32_wrapper
                                            : rgbx_to_nv12_neon_16_wrapper;
     }

@@ -838,7 +838,7 @@ static av_always_inline void yuv2rgb_write_full(SwsInternal *c,
     {
         int r,g,b;
 
-        switch (c->dither) {
+        switch (c->opts.dither) {
         default:
         case SWS_DITHER_AUTO:
         case SWS_DITHER_ED:
@@ -1633,7 +1633,7 @@ av_cold void ff_sws_init_output_lsx(SwsInternal *c,
                                     yuv2packedX_fn *yuv2packedX,
                                     yuv2anyX_fn *yuv2anyX)
 {
-    enum AVPixelFormat dstFormat = c->dstFormat;
+    enum AVPixelFormat dstFormat = c->opts.dst_format;
 
     /* Add initialization once optimized */
     if (isSemiPlanarYUV(dstFormat) && isDataInHighBits(dstFormat)) {
@@ -1646,8 +1646,8 @@ av_cold void ff_sws_init_output_lsx(SwsInternal *c,
         *yuv2planeX = yuv2planeX_8_lsx;
     }
 
-    if(c->flags & SWS_FULL_CHR_H_INT) {
-        switch (c->dstFormat) {
+    if(c->opts.flags & SWS_FULL_CHR_H_INT) {
+        switch (c->opts.dst_format) {
         case AV_PIX_FMT_RGBA:
 #if CONFIG_SMALL
             c->yuv2packedX = yuv2rgba32_full_X_lsx;
@@ -1760,7 +1760,7 @@ av_cold void ff_sws_init_output_lsx(SwsInternal *c,
             break;
     }
     } else {
-        switch (c->dstFormat) {
+        switch (c->opts.dst_format) {
         case AV_PIX_FMT_RGB32:
         case AV_PIX_FMT_BGR32:
 #if CONFIG_SMALL

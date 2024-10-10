@@ -173,11 +173,11 @@
     __m256i shuf3 = {0x1E0F0E1C0D0C1A0B, 0x0101010101010101,                        \
                      0x1E0F0E1C0D0C1A0B, 0x0101010101010101};                       \
     YUV2RGB_LOAD_COE                                                                \
-    y      = (c->dstW + 7) & ~7;                                                    \
+    y      = (c->opts.dst_w + 7) & ~7;                                              \
     h_size = y >> 4;                                                                \
     res    = y & 15;                                                                \
                                                                                     \
-    vshift = c->srcFormat != AV_PIX_FMT_YUV422P;                                    \
+    vshift = c->opts.src_format != AV_PIX_FMT_YUV422P;                              \
     for (y = 0; y < srcSliceH; y += 2) {                                            \
         dst_type *image1    = (dst_type *)(dst[0] + (y + srcSliceY) * dstStride[0]);\
         dst_type *image2    = (dst_type *)(image1 +                   dstStride[0]);\
@@ -199,11 +199,11 @@
     __m256i a = __lasx_xvldi(0xFF);                                                 \
                                                                                     \
     YUV2RGB_LOAD_COE                                                                \
-    y      = (c->dstW + 7) & ~7;                                                    \
+    y      = (c->opts.dst_w + 7) & ~7;                                              \
     h_size = y >> 4;                                                                \
     res    = y & 15;                                                                \
                                                                                     \
-    vshift = c->srcFormat != AV_PIX_FMT_YUV422P;                                    \
+    vshift = c->opts.src_format != AV_PIX_FMT_YUV422P;                              \
     for (y = 0; y < srcSliceH; y += 2) {                                            \
         int yd = y + srcSliceY;                                                     \
         dst_type av_unused *r, *g, *b;                                              \

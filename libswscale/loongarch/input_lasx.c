@@ -203,7 +203,7 @@ void planar_rgb_to_y_lasx(uint8_t *_dst, const uint8_t *src[4], int width,
 
 av_cold void ff_sws_init_input_lasx(SwsInternal *c)
 {
-    enum AVPixelFormat srcFormat = c->srcFormat;
+    enum AVPixelFormat srcFormat = c->opts.src_format;
 
     switch (srcFormat) {
     case AV_PIX_FMT_YUYV422:

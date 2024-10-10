@@ -125,7 +125,7 @@ static void check_yuv2yuv1(int accurate)
     sws = sws_alloc_context();
     c = sws_internal(sws);
     if (accurate)
-        c->flags |= SWS_ACCURATE_RND;
+        c->opts.flags |= SWS_ACCURATE_RND;
     if (sws_init_context(sws, NULL, NULL) < 0)
         fail();
 
@@ -192,7 +192,7 @@ static void check_yuv2yuvX(int accurate)
     sws = sws_alloc_context();
     c = sws_internal(sws);
     if (accurate)
-        c->flags |= SWS_ACCURATE_RND;
+        c->opts.flags |= SWS_ACCURATE_RND;
     if (sws_init_context(sws, NULL, NULL) < 0)
         fail();
 
@@ -341,20 +341,20 @@ static void check_hscale(void)
 
                     filter[SRC_PIXELS * width + i] = rnd();
                 }
-                c->dstW = c->chrDstW = input_sizes[dstWi];
+                c->opts.dst_w = c->chrDstW = input_sizes[dstWi];
                 ff_sws_init_scale(c);
                 memcpy(filterAvx2, filter, sizeof(uint16_t) * (SRC_PIXELS * MAX_FILTER_WIDTH + MAX_FILTER_WIDTH));
-                ff_shuffle_filter_coefficients(c, filterPosAvx, width, filterAvx2, c->dstW);
+                ff_shuffle_filter_coefficients(c, filterPosAvx, width, filterAvx2, c->opts.dst_w);
 
-                if (check_func(c->hcScale, "hscale_%d_to_%d__fs_%d_dstW_%d", c->srcBpc, c->dstBpc + 1, width, c->dstW)) {
+                if (check_func(c->hcScale, "hscale_%d_to_%d__fs_%d_dstW_%d", c->srcBpc, c->dstBpc + 1, width, c->opts.dst_w)) {
                     memset(dst0, 0, SRC_PIXELS * sizeof(dst0[0]));
                     memset(dst1, 0, SRC_PIXELS * sizeof(dst1[0]));
 
-                    call_ref(NULL, dst0, c->dstW, src, filter, filterPos, width);
-                    call_new(NULL, dst1, c->dstW, src, filterAvx2, filterPosAvx, width);
-                    if (memcmp(dst0, dst1, c->dstW * sizeof(dst0[0])))
+                    call_ref(NULL, dst0, c->opts.dst_w, src, filter, filterPos, width);
+                    call_new(NULL, dst1, c->opts.dst_w, src, filterAvx2, filterPosAvx, width);
+                    if (memcmp(dst0, dst1, c->opts.dst_w * sizeof(dst0[0])))
                         fail();
-                    bench_new(NULL, dst0, c->dstW, src, filter, filterPosAvx, width);
+                    bench_new(NULL, dst0, c->opts.dst_w, src, filter, filterPosAvx, width);
                 }
             }
         }

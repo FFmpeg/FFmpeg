@@ -93,7 +93,7 @@ static int chr_planar_vscale(SwsInternal *c, SwsFilterDescriptor *desc, int slic
         uint16_t *filter = inst->filter[0] + (inst->isMMX ? 0 : chrSliceY * inst->filter_size);
 
         if (c->yuv2nv12cX) {
-            inst->pfn.yuv2interleavedX(c->dstFormat, c->chrDither8, filter, inst->filter_size, (const int16_t**)src1, (const int16_t**)src2, dst1[0], dstW);
+            inst->pfn.yuv2interleavedX(c->opts.dst_format, c->chrDither8, filter, inst->filter_size, (const int16_t**)src1, (const int16_t**)src2, dst1[0], dstW);
         } else if (inst->filter_size == 1) {
             inst->pfn.yuv2planar1((const int16_t*)src1[0], dst1[0], dstW, c->chrDither8, 0);
             inst->pfn.yuv2planar1((const int16_t*)src2[0], dst2[0], dstW, c->chrDither8, 3);
@@ -216,7 +216,7 @@ int ff_init_vscale(SwsInternal *c, SwsFilterDescriptor *desc, SwsSlice *src, Sws
     VScalerContext *lumCtx = NULL;
     VScalerContext *chrCtx = NULL;
 
-    if (isPlanarYUV(c->dstFormat) || (isGray(c->dstFormat) && !isALPHA(c->dstFormat))) {
+    if (isPlanarYUV(c->opts.dst_format) || (isGray(c->opts.dst_format) && !isALPHA(c->opts.dst_format))) {
         lumCtx = av_mallocz(sizeof(VScalerContext));
         if (!lumCtx)
             return AVERROR(ENOMEM);
@@ -228,7 +228,7 @@ int ff_init_vscale(SwsInternal *c, SwsFilterDescriptor *desc, SwsSlice *src, Sws
         desc[0].dst = dst;
         desc[0].alpha = c->needAlpha;
 
-        if (!isGray(c->dstFormat)) {
+        if (!isGray(c->opts.dst_format)) {
             chrCtx = av_mallocz(sizeof(VScalerContext));
             if (!chrCtx)
                 return AVERROR(ENOMEM);
@@ -268,8 +268,8 @@ void ff_init_vscale_pfn(SwsInternal *c,
     VScalerContext *chrCtx = NULL;
     int idx = c->numDesc - (c->is_internal_gamma ? 2 : 1); //FIXME avoid hardcoding indexes
 
-    if (isPlanarYUV(c->dstFormat) || (isGray(c->dstFormat) && !isALPHA(c->dstFormat))) {
-        if (!isGray(c->dstFormat)) {
+    if (isPlanarYUV(c->opts.dst_format) || (isGray(c->opts.dst_format) && !isALPHA(c->opts.dst_format))) {
+        if (!isGray(c->opts.dst_format)) {
             chrCtx = c->desc[idx].instance;
 
             chrCtx->filter[0] = use_mmx ? (int16_t*)c->chrMmxFilter : c->vChrFilter;

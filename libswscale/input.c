@@ -1563,7 +1563,7 @@ av_cold void ff_sws_init_input_funcs(SwsInternal *c,
                                      planarX_YV12_fn *readAlpPlanar,
                                      planarX2_YV12_fn *readChrPlanar)
 {
-    enum AVPixelFormat srcFormat = c->srcFormat;
+    enum AVPixelFormat srcFormat = c->opts.src_format;
 
     *chrToYV12 = NULL;
     switch (srcFormat) {

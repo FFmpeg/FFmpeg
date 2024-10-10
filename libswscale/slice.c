@@ -221,7 +221,7 @@ static void fill_ones(SwsSlice *s, int n, int bpc)
 static void get_min_buffer_size(SwsInternal *c, int *out_lum_size, int *out_chr_size)
 {
     int lumY;
-    int dstH = c->dstH;
+    int dstH = c->opts.dst_h;
     int chrDstH = c->chrDstH;
     int *lumFilterPos = c->vLumFilterPos;
     int *chrFilterPos = c->vChrFilterPos;
@@ -253,14 +253,14 @@ int ff_init_filters(SwsInternal * c)
     int index;
     int num_ydesc;
     int num_cdesc;
-    int num_vdesc = isPlanarYUV(c->dstFormat) && !isGray(c->dstFormat) ? 2 : 1;
+    int num_vdesc = isPlanarYUV(c->opts.dst_format) && !isGray(c->opts.dst_format) ? 2 : 1;
     int need_lum_conv = c->lumToYV12 || c->readLumPlanar || c->alpToYV12 || c->readAlpPlanar;
     int need_chr_conv = c->chrToYV12 || c->readChrPlanar;
     int need_gamma = c->is_internal_gamma;
     int srcIdx, dstIdx;
-    int dst_stride = FFALIGN(c->dstW * sizeof(int16_t) + 66, 16);
+    int dst_stride = FFALIGN(c->opts.dst_w * sizeof(int16_t) + 66, 16);
 
-    uint32_t * pal = usePal(c->srcFormat) ? c->pal_yuv : (uint32_t*)c->input_rgb2yuv_table;
+    uint32_t * pal = usePal(c->opts.src_format) ? c->pal_yuv : (uint32_t*)c->input_rgb2yuv_table;
     int res = 0;
 
     int lumBufSize;
@@ -284,7 +284,7 @@ int ff_init_filters(SwsInternal * c)
     c->descIndex[0] = num_ydesc + (need_gamma ? 1 : 0);
     c->descIndex[1] = num_ydesc + num_cdesc + (need_gamma ? 1 : 0);
 
-    if (isFloat16(c->srcFormat)) {
+    if (isFloat16(c->opts.src_format)) {
         c->h2f_tables = av_malloc(sizeof(*c->h2f_tables));
         if (!c->h2f_tables)
             return AVERROR(ENOMEM);
@@ -301,25 +301,25 @@ int ff_init_filters(SwsInternal * c)
         goto cleanup;
     }
 
-    res = alloc_slice(&c->slice[0], c->srcFormat, c->srcH, c->chrSrcH, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
+    res = alloc_slice(&c->slice[0], c->opts.src_format, c->opts.src_h, c->chrSrcH, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
     if (res < 0) goto cleanup;
     for (i = 1; i < c->numSlice-2; ++i) {
-        res = alloc_slice(&c->slice[i], c->srcFormat, lumBufSize, chrBufSize, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
+        res = alloc_slice(&c->slice[i], c->opts.src_format, lumBufSize, chrBufSize, c->chrSrcHSubSample, c->chrSrcVSubSample, 0);
         if (res < 0) goto cleanup;
-        res = alloc_lines(&c->slice[i], FFALIGN(c->srcW*2+78, 16), c->srcW);
+        res = alloc_lines(&c->slice[i], FFALIGN(c->opts.src_w*2+78, 16), c->opts.src_w);
         if (res < 0) goto cleanup;
     }
     // horizontal scaler output
-    res = alloc_slice(&c->slice[i], c->srcFormat, lumBufSize, chrBufSize, c->chrDstHSubSample, c->chrDstVSubSample, 1);
+    res = alloc_slice(&c->slice[i], c->opts.src_format, lumBufSize, chrBufSize, c->chrDstHSubSample, c->chrDstVSubSample, 1);
     if (res < 0) goto cleanup;
-    res = alloc_lines(&c->slice[i], dst_stride, c->dstW);
+    res = alloc_lines(&c->slice[i], dst_stride, c->opts.dst_w);
     if (res < 0) goto cleanup;
 
     fill_ones(&c->slice[i], dst_stride>>1, c->dstBpc);
 
     // vertical scaler output
     ++i;
-    res = alloc_slice(&c->slice[i], c->dstFormat, c->dstH, c->chrDstH, c->chrDstHSubSample, c->chrDstVSubSample, 0);
+    res = alloc_slice(&c->slice[i], c->opts.dst_format, c->opts.dst_h, c->chrDstH, c->chrDstHSubSample, c->chrDstVSubSample, 0);
     if (res < 0) goto cleanup;
 
     index = 0;

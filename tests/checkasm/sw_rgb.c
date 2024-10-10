@@ -370,7 +370,7 @@ static void check_rgb_to_y(SwsInternal *ctx)
     for (int i = 0; i < FF_ARRAY_ELEMS(rgb_formats); i++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(rgb_formats[i]);
 
-        ctx->srcFormat = rgb_formats[i];
+        ctx->opts.src_format = rgb_formats[i];
         ff_sws_init_scale(ctx);
 
         for (int j = 0; j < FF_ARRAY_ELEMS(input_sizes); j++) {
@@ -389,7 +389,7 @@ static void check_rgb_to_y(SwsInternal *ctx)
 
                 if (desc->nb_components == 3 ||
                     // only bench native endian formats
-                    (ctx->srcFormat == AV_PIX_FMT_RGB32 || ctx->srcFormat == AV_PIX_FMT_RGB32_1))
+                    (ctx->opts.src_format == AV_PIX_FMT_RGB32 || ctx->opts.src_format == AV_PIX_FMT_RGB32_1))
                     bench_new(dst1_y, src, NULL, NULL, w, ctx->input_rgb2yuv_table, NULL);
             }
         }
@@ -417,8 +417,8 @@ static void check_rgb_to_uv(SwsInternal *ctx)
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(src_fmt);
 
         ctx->chrSrcHSubSample = (i % 2) ? 0 : 1;
-        ctx->srcFormat = src_fmt;
-        ctx->dstFormat = ctx->chrSrcHSubSample ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_YUV444P;
+        ctx->opts.src_format = src_fmt;
+        ctx->opts.dst_format = ctx->chrSrcHSubSample ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_YUV444P;
         ff_sws_init_scale(ctx);
 
         for (int j = 0; j < FF_ARRAY_ELEMS(input_sizes); j++) {
@@ -441,7 +441,7 @@ static void check_rgb_to_uv(SwsInternal *ctx)
 
                 if (desc->nb_components == 3 ||
                     // only bench native endian formats
-                    (ctx->srcFormat == AV_PIX_FMT_RGB32 || ctx->srcFormat == AV_PIX_FMT_RGB32_1))
+                    (ctx->opts.src_format == AV_PIX_FMT_RGB32 || ctx->opts.src_format == AV_PIX_FMT_RGB32_1))
                     bench_new(dst1_u, dst1_v, NULL, src, src, w, ctx->input_rgb2yuv_table, NULL);
             }
         }
