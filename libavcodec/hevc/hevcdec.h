@@ -540,6 +540,9 @@ typedef struct HEVCContext {
     /** The target for the common_cabac_state of the local contexts. */
     HEVCCABACState cabac;
 
+    struct ThreadProgress *wpp_progress;
+    unsigned            nb_wpp_progress;
+
     atomic_int wpp_err;
 
     const uint8_t *data;

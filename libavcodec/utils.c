@@ -913,25 +913,6 @@ int ff_thread_can_start_frame(AVCodecContext *avctx)
 {
     return 1;
 }
-
-int ff_slice_thread_init_progress(AVCodecContext *avctx)
-{
-    return 0;
-}
-
-int ff_slice_thread_allocz_entries(AVCodecContext *avctx, int count)
-{
-    return 0;
-}
-
-void ff_thread_await_progress2(AVCodecContext *avctx, int field, int thread, int shift)
-{
-}
-
-void ff_thread_report_progress2(AVCodecContext *avctx, int field, int thread, int n)
-{
-}
-
 #endif
 
 const uint8_t *avpriv_find_start_code(const uint8_t *restrict p,
