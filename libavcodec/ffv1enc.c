@@ -1105,6 +1105,13 @@ retry:
         ret = encode_rgb_frame(f, sc, planes, width, height, p->linesize);
     }
 
+    if (f->ac != AC_GOLOMB_RICE) {
+        sc->ac_byte_count = ff_rac_terminate(&sc->c, 1);
+    } else {
+        flush_put_bits(&sc->pb); // FIXME: nicer padding
+        sc->ac_byte_count += put_bytes_output(&sc->pb);
+    }
+
     if (ret < 0) {
         av_assert0(sc->slice_coding_mode == 0);
         if (f->version < 4 || !f->ac) {
@@ -1229,14 +1236,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     buf_p = pkt->data;
     for (i = 0; i < f->slice_count; i++) {
         FFV1SliceContext *sc = &f->slices[i];
-        int bytes;
-
-        if (f->ac != AC_GOLOMB_RICE) {
-            bytes = ff_rac_terminate(&sc->c, 1);
-        } else {
-            flush_put_bits(&sc->pb); // FIXME: nicer padding
-            bytes = sc->ac_byte_count + put_bytes_output(&sc->pb);
-        }
+        int bytes = sc->ac_byte_count;
         if (i > 0 || f->version > 2) {
             av_assert0(bytes < pkt->size / f->slice_count);
             memmove(buf_p, sc->c.bytestream_start, bytes);
