@@ -488,6 +488,7 @@ int ff_swscale(SwsContext *c, const uint8_t *const src[], const int srcStride[],
 
 #if HAVE_MMX_INLINE
         ff_updateMMXDitherTables(c, dstY);
+        c->dstW_mmx = c->dstW;
 #endif
         if (should_dither) {
             c->chrDither8 = ff_dither_8x8_128[chrDstY & 7];
