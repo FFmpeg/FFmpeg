@@ -1949,7 +1949,11 @@ static int open_demux_for_component(AVFormatContext *s, struct representation *p
             return AVERROR(ENOMEM);
 
         st->id = i;
-        avcodec_parameters_copy(st->codecpar, ist->codecpar);
+
+        ret = avcodec_parameters_copy(st->codecpar, ist->codecpar);
+        if (ret < 0)
+            return ret;
+
         avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
 
         // copy disposition
