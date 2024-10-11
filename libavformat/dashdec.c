@@ -1932,11 +1932,10 @@ static int open_demux_for_component(AVFormatContext *s, struct representation *p
     int i;
 
     pls->parent = s;
-    pls->cur_seq_no  = calc_cur_seg_no(s, pls);
+    pls->cur_seq_no = calc_cur_seg_no(s, pls);
 
-    if (!pls->last_seq_no) {
+    if (!pls->last_seq_no)
         pls->last_seq_no = calc_max_seg_no(pls, s->priv_data);
-    }
 
     ret = reopen_demux_for_component(s, pls);
     if (ret < 0)
