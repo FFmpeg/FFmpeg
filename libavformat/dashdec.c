@@ -1939,16 +1939,15 @@ static int open_demux_for_component(AVFormatContext *s, struct representation *p
     }
 
     ret = reopen_demux_for_component(s, pls);
-    if (ret < 0) {
-        goto fail;
-    }
+    if (ret < 0)
+        return ret;
+
     for (i = 0; i < pls->ctx->nb_streams; i++) {
         AVStream *st = avformat_new_stream(s, NULL);
         AVStream *ist = pls->ctx->streams[i];
-        if (!st) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!st)
+            return AVERROR(ENOMEM);
+
         st->id = i;
         avcodec_parameters_copy(st->codecpar, ist->codecpar);
         avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
@@ -1958,8 +1957,6 @@ static int open_demux_for_component(AVFormatContext *s, struct representation *p
     }
 
     return 0;
-fail:
-    return ret;
 }
 
 static int is_common_init_section_exist(struct representation **pls, int n_pls)
