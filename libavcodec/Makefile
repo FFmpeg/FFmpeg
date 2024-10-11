@@ -70,6 +70,7 @@ include $(SRC_PATH)/libavcodec/aac/Makefile
 include $(SRC_PATH)/libavcodec/hevc/Makefile
 include $(SRC_PATH)/libavcodec/opus/Makefile
 include $(SRC_PATH)/libavcodec/vvc/Makefile
+include $(SRC_PATH)/libavcodec/vulkan/Makefile
 -include $(SRC_PATH)/libavcodec/$(ARCH)/vvc/Makefile
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
 OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o ac3.o ac3tab.o
@@ -1376,12 +1377,3 @@ $(SUBDIR)pcm.o: $(SUBDIR)pcm_tables.h
 $(SUBDIR)qdm2.o: $(SUBDIR)qdm2_tables.h
 $(SUBDIR)sinewin.o: $(SUBDIR)sinewin_tables.h
 endif
-
-clean::
-	$(RM) $(CLEANSUFFIXES:%=libavcodec/vulkan/%)
-
-VULKAN = $(subst $(SRC_PATH)/,,$(wildcard $(SRC_PATH)/libavcodec/vulkan/*.comp))
-.SECONDARY: $(VULKAN:.comp=.c)
-libavcodec/vulkan/%.c: TAG = VULKAN
-libavcodec/vulkan/%.c: $(SRC_PATH)/libavcodec/vulkan/%.comp
-	$(M)$(SRC_PATH)/tools/source2c $< $@
