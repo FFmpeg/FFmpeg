@@ -1335,8 +1335,8 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
     case AV_PIX_FMT_RGBF32:
     case AV_PIX_FMT_RGBAF32: {
         const char *rep_tab[] = {
-            [FF_VK_REP_NATIVE] = "rgba32",
-            [FF_VK_REP_FLOAT] = "rgba32",
+            [FF_VK_REP_NATIVE] = "rgba32f",
+            [FF_VK_REP_FLOAT] = "rgba32f",
             [FF_VK_REP_INT] = "rgba32i",
             [FF_VK_REP_UINT] = "rgba32ui",
         };
