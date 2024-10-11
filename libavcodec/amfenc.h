@@ -68,6 +68,7 @@ typedef struct AmfContext {
 
     int                 hwsurfaces_in_queue;
     int                 hwsurfaces_in_queue_max;
+    int                 query_timeout_supported;
 
     // helpers to handle async calls
     int                 delayed_drain;
@@ -77,6 +78,8 @@ typedef struct AmfContext {
     // shift dts back by max_b_frames in timing
     AVFifo             *timestamp_list;
     int64_t             dts_delay;
+    int                 submitted_frame;
+    amf_bool            use_b_frame;
 
     // common encoder option options
 

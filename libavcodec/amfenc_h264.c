@@ -483,6 +483,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_REF_B_PIC_DELTA_QP, ctx->ref_b_frame_delta_qp);
     }
 
+    // Wait inside QueryOutput() if supported by the driver
+    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_QUERY_TIMEOUT, 1);
+    res = ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_QUERY_TIMEOUT, &var);
+    ctx->query_timeout_supported = res == AMF_OK && var.int64Value;
+
     // Initialize Encoder
     res = ctx->encoder->pVtbl->Init(ctx->encoder, ctx->format, avctx->width, avctx->height);
     AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_BUG, "encoder->Init() failed with error %d\n", res);

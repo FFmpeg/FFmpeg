@@ -426,6 +426,8 @@ static int amf_init_encoder(AVCodecContext *avctx)
     res = ctx->factory->pVtbl->CreateComponent(ctx->factory, ctx->context, codec_id, &ctx->encoder);
     AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_ENCODER_NOT_FOUND, "CreateComponent(%ls) failed with error %d\n", codec_id, res);
 
+    ctx->submitted_frame = 0;
+
     return 0;
 }
 
@@ -541,7 +543,6 @@ static int amf_copy_buffer(AVCodecContext *avctx, AVPacket *pkt, AMFBuffer *buff
     if ((ctx->max_b_frames > 0 || ((ctx->pa_adaptive_mini_gop == 1) ? true : false)) && ctx->dts_delay == 0) {
         int64_t timestamp_last = AV_NOPTS_VALUE;
         size_t can_read = av_fifo_can_read(ctx->timestamp_list);
-
         AMF_RETURN_IF_FALSE(ctx, can_read > 0, AVERROR_UNKNOWN,
             "timestamp_list is empty while max_b_frames = %d\n", avctx->max_b_frames);
         av_fifo_peek(ctx->timestamp_list, &timestamp_last, 1, can_read - 1);
@@ -826,6 +827,13 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
 
             av_frame_unref(frame);
             ret = av_fifo_write(ctx->timestamp_list, &pts, 1);
+
+            if (ctx->submitted_frame == 0)
+            {
+                ctx->use_b_frame = (ctx->max_b_frames > 0 || ((ctx->pa_adaptive_mini_gop == 1) ? true : false));
+            }
+            ctx->submitted_frame++;
+
             if (ret < 0)
                 return ret;
         }
@@ -835,7 +843,7 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
     do {
         block_and_wait = 0;
         // poll data
-        if (!avpkt->data && !avpkt->buf) {
+        if (!avpkt->data && !avpkt->buf && (ctx->use_b_frame ? (ctx->submitted_frame >= 2) : true) ) {
             res_query = ctx->encoder->pVtbl->QueryOutput(ctx->encoder, &data);
             if (data) {
                 // copy data to packet
@@ -845,6 +853,7 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
                 data->pVtbl->QueryInterface(data, &guid, (void**)&buffer); // query for buffer interface
                 ret = amf_copy_buffer(avctx, avpkt, buffer);
 
+                ctx->submitted_frame++;
                 buffer->pVtbl->Release(buffer);
 
                 if (data->pVtbl->HasProperty(data, L"av_frame_ref")) {
@@ -884,6 +893,7 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
                 av_frame_unref(ctx->delayed_frame);
                 AMF_RETURN_IF_FALSE(ctx, res_resubmit == AMF_OK, AVERROR_UNKNOWN, "Repeated SubmitInput() failed with error %d\n", res_resubmit);
 
+                ctx->submitted_frame++;
                 ret = av_fifo_write(ctx->timestamp_list, &pts, 1);
                 if (ret < 0)
                     return ret;
@@ -902,7 +912,12 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
         if (query_output_data_flag == 0) {
             if (res_resubmit == AMF_INPUT_FULL || ctx->delayed_drain || (ctx->eof && res_query != AMF_EOF) || (ctx->hwsurfaces_in_queue >= ctx->hwsurfaces_in_queue_max)) {
                 block_and_wait = 1;
-                av_usleep(1000);
+
+                // Only sleep if the driver doesn't support waiting in QueryOutput()
+                // or if we already have output data so we will skip calling it.
+                if (!ctx->query_timeout_supported || avpkt->data || avpkt->buf) {
+                    av_usleep(1000);
+                }
             }
         }
     } while (block_and_wait);
