@@ -63,9 +63,11 @@ static const AVOption options[] = {
 
 AVFILTER_DEFINE_CLASS_EXT(premultiply, "(un)premultiply", options);
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    PreMultiplyContext *s = ctx->priv;
+    const PreMultiplyContext *s = ctx->priv;
 
     static const enum AVPixelFormat no_alpha_pix_fmts[] = {
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
@@ -86,7 +88,8 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    return ff_set_common_formats_from_list(ctx, s->inplace ? alpha_pix_fmts : no_alpha_pix_fmts);
+    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out,
+                                            s->inplace ? alpha_pix_fmts : no_alpha_pix_fmts);
 }
 
 static void premultiply8(const uint8_t *msrc, const uint8_t *asrc,
@@ -830,7 +833,7 @@ const AVFilter ff_vf_premultiply = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(premultiply_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class    = &premultiply_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_DYNAMIC_INPUTS |
@@ -851,7 +854,7 @@ const AVFilter ff_vf_unpremultiply = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(premultiply_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_DYNAMIC_INPUTS |
                      AVFILTER_FLAG_SLICE_THREADS,
