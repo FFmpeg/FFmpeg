@@ -471,9 +471,11 @@ static av_cold void uninit(AVFilterContext *ctx)
     scale->sws = NULL;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    ScaleContext *scale = ctx->priv;
+    const ScaleContext *scale = ctx->priv;
     AVFilterFormats *formats;
     const AVPixFmtDescriptor *desc;
     enum AVPixelFormat pix_fmt;
@@ -489,7 +491,7 @@ static int query_formats(AVFilterContext *ctx)
             return ret;
         }
     }
-    if ((ret = ff_formats_ref(formats, &ctx->inputs[0]->outcfg.formats)) < 0)
+    if ((ret = ff_formats_ref(formats, &cfg_in[0]->formats)) < 0)
         return ret;
 
     desc    = NULL;
@@ -502,29 +504,29 @@ static int query_formats(AVFilterContext *ctx)
             return ret;
         }
     }
-    if ((ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.formats)) < 0)
+    if ((ret = ff_formats_ref(formats, &cfg_out[0]->formats)) < 0)
         return ret;
 
     /* accept all supported inputs, even if user overrides their properties */
     if ((ret = ff_formats_ref(ff_make_format_list(sws_colorspaces),
-                              &ctx->inputs[0]->outcfg.color_spaces)) < 0)
+                              &cfg_in[0]->color_spaces)) < 0)
         return ret;
 
     if ((ret = ff_formats_ref(ff_all_color_ranges(),
-                              &ctx->inputs[0]->outcfg.color_ranges)) < 0)
+                              &cfg_in[0]->color_ranges)) < 0)
         return ret;
 
     /* propagate output properties if overridden */
     formats = scale->out_color_matrix != AVCOL_SPC_UNSPECIFIED
                 ? ff_make_formats_list_singleton(scale->out_color_matrix)
                 : ff_make_format_list(sws_colorspaces);
-    if ((ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.color_spaces)) < 0)
+    if ((ret = ff_formats_ref(formats, &cfg_out[0]->color_spaces)) < 0)
         return ret;
 
     formats = scale->out_range != AVCOL_RANGE_UNSPECIFIED
                 ? ff_make_formats_list_singleton(scale->out_range)
                 : ff_all_color_ranges();
-    if ((ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.color_ranges)) < 0)
+    if ((ret = ff_formats_ref(formats, &cfg_out[0]->color_ranges)) < 0)
         return ret;
 
     return 0;
@@ -1331,7 +1333,7 @@ const AVFilter ff_vf_scale = {
     .priv_class      = &scale_class,
     FILTER_INPUTS(avfilter_vf_scale_inputs),
     FILTER_OUTPUTS(avfilter_vf_scale_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .activate        = activate,
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_DYNAMIC_INPUTS,
@@ -1400,6 +1402,6 @@ const AVFilter ff_vf_scale2ref = {
     .priv_class      = &scale2ref_class,
     FILTER_INPUTS(avfilter_vf_scale2ref_inputs),
     FILTER_OUTPUTS(avfilter_vf_scale2ref_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .process_command = process_command,
 };
