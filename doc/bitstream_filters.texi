@@ -423,9 +423,21 @@ Please note that this filter is auto-inserted for MPEG-TS (muxer
 
 @section h264_redundant_pps
 
-This applies a specific fixup to some Blu-ray streams which contain
-redundant PPSs modifying irrelevant parameters of the stream which
-confuse other transformations which require correct extradata.
+This applies a specific fixup to some Blu-ray BDMV H264 streams
+which contain redundant PPSs. The PPSs modify irrelevant parameters
+of the stream, confusing other transformations which require
+the correct extradata.
+
+The encoder used on these impacted streams adds extra PPSs throughout
+the stream, varying the initial QP and whether weighted prediction
+was enabled. This causes issues after copying the stream into
+a global header container, as the starting PPS is not suitable
+for the rest of the stream. One side effect, for example,
+is seeking will return garbled output until a new PPS appears.
+
+This BSF removes the extra PPSs and rewrites the slice headers
+such that the stream uses a single leading PPS in the global header,
+which resolves the issue.
 
 @section hevc_metadata
 
