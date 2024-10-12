@@ -127,7 +127,6 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *formats = NULL;
     int i, ret;
 
-    s->outdesc = av_pix_fmt_desc_get(s->out_fmt);
     for (i = 0; av_pix_fmt_desc_get(i); i++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
         if (desc->comp[0].depth == s->outdesc->comp[0].depth &&
