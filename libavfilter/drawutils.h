@@ -29,6 +29,7 @@
 #include "libavutil/pixfmt.h"
 
 int ff_fill_rgba_map(uint8_t *rgba_map, enum AVPixelFormat pix_fmt);
+int ff_fill_ayuv_map(uint8_t *ayuv_map, enum AVPixelFormat pix_fmt);
 
 #define MAX_PLANES 4
 

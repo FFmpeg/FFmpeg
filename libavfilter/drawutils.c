@@ -32,19 +32,17 @@
 
 enum { RED = 0, GREEN, BLUE, ALPHA };
 
-int ff_fill_rgba_map(uint8_t *rgba_map, enum AVPixelFormat pix_fmt)
+static int fill_map(const AVPixFmtDescriptor *desc, uint8_t *map)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
-    if (!(desc->flags & AV_PIX_FMT_FLAG_RGB))
-        return AVERROR(EINVAL);
-    if (desc->flags & AV_PIX_FMT_FLAG_BITSTREAM)
+    if (desc->flags & (AV_PIX_FMT_FLAG_BITSTREAM | AV_PIX_FMT_FLAG_HWACCEL |
+                       AV_PIX_FMT_FLAG_BAYER | AV_PIX_FMT_FLAG_XYZ | AV_PIX_FMT_FLAG_PAL))
         return AVERROR(EINVAL);
     av_assert0(desc->nb_components == 3 + !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA));
     if (desc->flags & AV_PIX_FMT_FLAG_PLANAR) {
-        rgba_map[RED]   = desc->comp[0].plane;
-        rgba_map[GREEN] = desc->comp[1].plane;
-        rgba_map[BLUE]  = desc->comp[2].plane;
-        rgba_map[ALPHA] = (desc->flags & AV_PIX_FMT_FLAG_ALPHA) ? desc->comp[3].plane : 3;
+        map[RED]   = desc->comp[0].plane;
+        map[GREEN] = desc->comp[1].plane;
+        map[BLUE]  = desc->comp[2].plane;
+        map[ALPHA] = (desc->flags & AV_PIX_FMT_FLAG_ALPHA) ? desc->comp[3].plane : 3;
     } else {
         int had0 = 0;
         unsigned depthb = 0;
@@ -60,22 +58,38 @@ int ff_fill_rgba_map(uint8_t *rgba_map, enum AVPixelFormat pix_fmt)
                 return AVERROR(ENOSYS);
 
             had0 |= pos == 0;
-            rgba_map[i] = pos;
+            map[i] = pos;
             depthb = db;
         }
 
         if (desc->nb_components == 3)
-            rgba_map[ALPHA] = had0 ? 3 : 0;
+            map[ALPHA] = had0 ? 3 : 0;
     }
 
-    av_assert0(rgba_map[RED]   != rgba_map[GREEN]);
-    av_assert0(rgba_map[GREEN] != rgba_map[BLUE]);
-    av_assert0(rgba_map[BLUE]  != rgba_map[RED]);
-    av_assert0(rgba_map[RED]   != rgba_map[ALPHA]);
-    av_assert0(rgba_map[GREEN] != rgba_map[ALPHA]);
-    av_assert0(rgba_map[BLUE]  != rgba_map[ALPHA]);
+    av_assert0(map[RED]   != map[GREEN]);
+    av_assert0(map[GREEN] != map[BLUE]);
+    av_assert0(map[BLUE]  != map[RED]);
+    av_assert0(map[RED]   != map[ALPHA]);
+    av_assert0(map[GREEN] != map[ALPHA]);
+    av_assert0(map[BLUE]  != map[ALPHA]);
 
     return 0;
+}
+
+int ff_fill_rgba_map(uint8_t *rgba_map, enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    if (!(desc->flags & AV_PIX_FMT_FLAG_RGB))
+        return AVERROR(EINVAL);
+    return fill_map(desc, rgba_map);
+}
+
+int ff_fill_ayuv_map(uint8_t *ayuv_map, enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    if (desc->flags & AV_PIX_FMT_FLAG_RGB)
+        return AVERROR(EINVAL);
+    return fill_map(desc, ayuv_map);
 }
 
 int ff_draw_init2(FFDrawContext *draw, enum AVPixelFormat format, enum AVColorSpace csp,

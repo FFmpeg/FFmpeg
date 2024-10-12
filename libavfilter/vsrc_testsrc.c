@@ -71,6 +71,9 @@ typedef struct TestSourceContext {
     /* only used by testsrc2 */
     int alpha;
 
+    /* only used by yuvtest */
+    uint8_t ayuv_map[4];
+
     /* only used by colorspectrum */
     int type;
 
@@ -1141,118 +1144,56 @@ const AVFilter ff_vsrc_rgbtestsrc = {
 
 #if CONFIG_YUVTESTSRC_FILTER
 
-static void yuvtest_fill_picture8(AVFilterContext *ctx, AVFrame *frame)
+#define Y 0
+#define U 1
+#define V 2
+
+static void yuvtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
+                              int i, int j, unsigned y, unsigned u, unsigned v, enum AVPixelFormat fmt,
+                              uint8_t ayuv_map[4])
 {
-    int x, y, w = frame->width, h = frame->height / 3;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
-    const int factor = 1 << desc->comp[0].depth;
-    const int mid = 1 << (desc->comp[0].depth - 1);
-    uint8_t *ydst = frame->data[0];
-    uint8_t *udst = frame->data[1];
-    uint8_t *vdst = frame->data[2];
-    ptrdiff_t ylinesize = frame->linesize[0];
-    ptrdiff_t ulinesize = frame->linesize[1];
-    ptrdiff_t vlinesize = frame->linesize[2];
+    uint32_t n;
 
-    for (y = 0; y < h; y++) {
-        for (x = 0; x < w; x++) {
-            int c = factor * x / w;
-
-            ydst[x] = c;
-            udst[x] = mid;
-            vdst[x] = mid;
-        }
-
-        ydst += ylinesize;
-        udst += ulinesize;
-        vdst += vlinesize;
-    }
-
-    h += h;
-    for (; y < h; y++) {
-        for (x = 0; x < w; x++) {
-            int c = factor * x / w;
-
-            ydst[x] = mid;
-            udst[x] = c;
-            vdst[x] = mid;
-        }
-
-        ydst += ylinesize;
-        udst += ulinesize;
-        vdst += vlinesize;
-    }
-
-    for (; y < frame->height; y++) {
-        for (x = 0; x < w; x++) {
-            int c = factor * x / w;
-
-            ydst[x] = mid;
-            udst[x] = mid;
-            vdst[x] = c;
-        }
-
-        ydst += ylinesize;
-        udst += ulinesize;
-        vdst += vlinesize;
+    switch (fmt) {
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUVJ444P:
+        dstp[0][i + j*dst_linesizep[0]] = y;
+        dstp[1][i + j*dst_linesizep[1]] = u;
+        dstp[2][i + j*dst_linesizep[2]] = v;
+        break;
+    case AV_PIX_FMT_YUV444P9:
+    case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV444P12:
+    case AV_PIX_FMT_YUV444P14:
+    case AV_PIX_FMT_YUV444P16:
+        AV_WN16(&dstp[0][i*2 + j*dst_linesizep[0]], y);
+        AV_WN16(&dstp[1][i*2 + j*dst_linesizep[1]], u);
+        AV_WN16(&dstp[2][i*2 + j*dst_linesizep[2]], v);
+        break;
     }
 }
 
-static void yuvtest_fill_picture16(AVFilterContext *ctx, AVFrame *frame)
+static void yuvtest_fill_picture(AVFilterContext *ctx, AVFrame *frame)
 {
-    int x, y, w = frame->width, h = frame->height / 3;
+    TestSourceContext *test = ctx->priv;
+    int i, j, w = frame->width, h = frame->height;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
     const int factor = 1 << desc->comp[0].depth;
     const int mid = 1 << (desc->comp[0].depth - 1);
-    uint16_t *ydst = (uint16_t *)frame->data[0];
-    uint16_t *udst = (uint16_t *)frame->data[1];
-    uint16_t *vdst = (uint16_t *)frame->data[2];
-    ptrdiff_t ylinesize = frame->linesize[0] / 2;
-    ptrdiff_t ulinesize = frame->linesize[1] / 2;
-    ptrdiff_t vlinesize = frame->linesize[2] / 2;
 
-    for (y = 0; y < h; y++) {
-        for (x = 0; x < w; x++) {
-            int c = factor * x / w;
+    for (j = 0; j < h; j++) {
+         for (i = 0; i < w; i++) {
+             int c = factor * i / w;
+             int y = mid, u = mid, v = mid;
 
-            ydst[x] = c;
-            udst[x] = mid;
-            vdst[x] = mid;
-        }
+             if      (3*j < h  ) y = c;
+             else if (3*j < 2*h) u = c;
+             else                v = c;
 
-        ydst += ylinesize;
-        udst += ulinesize;
-        vdst += vlinesize;
-    }
-
-    h += h;
-    for (; y < h; y++) {
-        for (x = 0; x < w; x++) {
-            int c = factor * x / w;
-
-            ydst[x] = mid;
-            udst[x] = c;
-            vdst[x] = mid;
-        }
-
-        ydst += ylinesize;
-        udst += ulinesize;
-        vdst += vlinesize;
-    }
-
-    for (; y < frame->height; y++) {
-        for (x = 0; x < w; x++) {
-            int c = factor * x / w;
-
-            ydst[x] = mid;
-            udst[x] = mid;
-            vdst[x] = c;
-        }
-
-        ydst += ylinesize;
-        udst += ulinesize;
-        vdst += vlinesize;
-    }
+             yuvtest_put_pixel(frame->data, frame->linesize, i, j, y, u, v,
+                               ctx->outputs[0]->format, test->ayuv_map);
+         }
+     }
 }
 
 static av_cold int yuvtest_init(AVFilterContext *ctx)
@@ -1260,6 +1201,7 @@ static av_cold int yuvtest_init(AVFilterContext *ctx)
     TestSourceContext *test = ctx->priv;
 
     test->draw_once = 1;
+    test->fill_picture_fn = yuvtest_fill_picture;
     return init(ctx);
 }
 
@@ -1274,9 +1216,8 @@ static const enum AVPixelFormat yuvtest_pix_fmts[] = {
 static int yuvtest_config_props(AVFilterLink *outlink)
 {
     TestSourceContext *test = outlink->src->priv;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
 
-    test->fill_picture_fn = desc->comp[0].depth > 8 ? yuvtest_fill_picture16 : yuvtest_fill_picture8;
+    ff_fill_ayuv_map(test->ayuv_map, outlink->format);
     return config_props(outlink);
 }
 
