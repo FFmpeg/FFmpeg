@@ -68,7 +68,6 @@ static int dnxuc_parse(AVCodecParserContext *s,
                     const uint8_t **poutbuf, int *poutbuf_size,
                     const uint8_t *buf, int buf_size)
 {
-    char fourcc_buf[5];
     const int HEADER_SIZE = 37;
     int icmp_offset = 0;
 
@@ -96,9 +95,8 @@ static int dnxuc_parse(AVCodecParserContext *s,
     pc->nr_bytes = AV_RL32(buf+29+icmp_offset) - 8;
 
     if (!avctx->codec_tag) {
-        av_fourcc_make_string(fourcc_buf, pc->fourcc_tag);
         av_log(avctx, AV_LOG_INFO, "dnxuc_parser: '%s' %dx%d %dbpp %d\n",
-            fourcc_buf,
+            av_fourcc2str(pc->fourcc_tag),
             pc->width, pc->height,
             (pc->nr_bytes*8)/(pc->width*pc->height),
             pc->nr_bytes);
