@@ -121,9 +121,11 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    MergePlanesContext *s = ctx->priv;
+    const MergePlanesContext *s = ctx->priv;
     AVFilterFormats *formats = NULL;
     int i, ret;
 
@@ -137,12 +139,12 @@ static int query_formats(AVFilterContext *ctx)
     }
 
     for (i = 0; i < s->nb_inputs; i++)
-        if ((ret = ff_formats_ref(formats, &ctx->inputs[i]->outcfg.formats)) < 0)
+        if ((ret = ff_formats_ref(formats, &cfg_in[i]->formats)) < 0)
             return ret;
 
     formats = NULL;
     if ((ret = ff_add_format(&formats, s->out_fmt)) < 0 ||
-        (ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.formats)) < 0)
+        (ret = ff_formats_ref(formats, &cfg_out[0]->formats)) < 0)
         return ret;
 
     return 0;
@@ -318,6 +320,6 @@ const AVFilter ff_vf_mergeplanes = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(mergeplanes_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
