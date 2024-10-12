@@ -1090,10 +1090,12 @@ static int libplacebo_activate(AVFilterContext *ctx)
     return FFERROR_NOT_READY;
 }
 
-static int libplacebo_query_format(AVFilterContext *ctx)
+static int libplacebo_query_format(const AVFilterContext *ctx,
+                                   AVFilterFormatsConfig **cfg_in,
+                                   AVFilterFormatsConfig **cfg_out)
 {
     int err;
-    LibplaceboContext *s = ctx->priv;
+    const LibplaceboContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = NULL;
     AVFilterFormats *infmts = NULL, *outfmts = NULL;
 
@@ -1139,29 +1141,25 @@ static int libplacebo_query_format(AVFilterContext *ctx)
     }
 
     if (!infmts || !outfmts) {
-        if (s->out_format) {
-            av_log(s, AV_LOG_ERROR, "Invalid output format '%s'!\n",
-                   av_get_pix_fmt_name(s->out_format));
-        }
         err = AVERROR(EINVAL);
         goto fail;
     }
 
     for (int i = 0; i < s->nb_inputs; i++)
-        RET(ff_formats_ref(infmts, &ctx->inputs[i]->outcfg.formats));
-    RET(ff_formats_ref(outfmts, &ctx->outputs[0]->incfg.formats));
+        RET(ff_formats_ref(infmts, &cfg_in[i]->formats));
+    RET(ff_formats_ref(outfmts, &cfg_out[0]->formats));
 
     /* Set colorspace properties */
-    RET(ff_formats_ref(ff_all_color_spaces(), &ctx->inputs[0]->outcfg.color_spaces));
-    RET(ff_formats_ref(ff_all_color_ranges(), &ctx->inputs[0]->outcfg.color_ranges));
+    RET(ff_formats_ref(ff_all_color_spaces(), &cfg_in[0]->color_spaces));
+    RET(ff_formats_ref(ff_all_color_ranges(), &cfg_in[0]->color_ranges));
 
     outfmts = s->colorspace > 0 ? ff_make_formats_list_singleton(s->colorspace)
                                 : ff_all_color_spaces();
-    RET(ff_formats_ref(outfmts, &ctx->outputs[0]->incfg.color_spaces));
+    RET(ff_formats_ref(outfmts, &cfg_out[0]->color_spaces));
 
     outfmts = s->color_range > 0 ? ff_make_formats_list_singleton(s->color_range)
                                  : ff_all_color_ranges();
-    RET(ff_formats_ref(outfmts, &ctx->outputs[0]->incfg.color_ranges));
+    RET(ff_formats_ref(outfmts, &cfg_out[0]->color_ranges));
     return 0;
 
 fail:
@@ -1464,7 +1462,7 @@ const AVFilter ff_vf_libplacebo = {
     .activate       = &libplacebo_activate,
     .process_command = &libplacebo_process_command,
     FILTER_OUTPUTS(libplacebo_outputs),
-    FILTER_QUERY_FUNC(libplacebo_query_format),
+    FILTER_QUERY_FUNC2(libplacebo_query_format),
     .priv_class     = &libplacebo_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
     .flags          = AVFILTER_FLAG_HWDEVICE | AVFILTER_FLAG_DYNAMIC_INPUTS,
