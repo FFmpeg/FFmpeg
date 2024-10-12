@@ -131,7 +131,9 @@ static av_cold int init_noise(NoiseContext *n, int comp)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
     AVFilterFormats *formats = NULL;
     int fmt, ret;
@@ -143,7 +145,7 @@ static int query_formats(AVFilterContext *ctx)
                 return ret;
     }
 
-    return ff_set_common_formats(ctx, formats);
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out, formats);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -339,7 +341,7 @@ const AVFilter ff_vf_noise = {
     .uninit        = uninit,
     FILTER_INPUTS(noise_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class    = &noise_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
