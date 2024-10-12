@@ -6448,7 +6448,7 @@ EOF
         for program in $x86asmexe nasm; do
             probe_x86asm $program && break
         done
-        disabled x86asm && die "nasm not found or too old. Use --disable-x86asm for a crippled build."
+        disabled x86asm && die "nasm not found or too old. Please install/update nasm or use --disable-x86asm for a build without hand-optimized assembly."
         X86ASMFLAGS="-f $objformat"
         test -n "$extern_prefix"  && append X86ASMFLAGS "-DPREFIX"
         case "$objformat" in
