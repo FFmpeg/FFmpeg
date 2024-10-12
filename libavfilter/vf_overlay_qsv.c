@@ -366,7 +366,9 @@ static int activate(AVFilterContext *ctx)
     return ff_framesync_activate(&s->fs);
 }
 
-static int overlay_qsv_query_formats(AVFilterContext *ctx)
+static int overlay_qsv_query_formats(const AVFilterContext *ctx,
+                                     AVFilterFormatsConfig **cfg_in,
+                                     AVFilterFormatsConfig **cfg_out)
 {
     int i;
     int ret;
@@ -386,12 +388,12 @@ static int overlay_qsv_query_formats(AVFilterContext *ctx)
     };
 
     for (i = 0; i < ctx->nb_inputs; i++) {
-        ret = ff_formats_ref(ff_make_format_list(main_in_fmts), &ctx->inputs[i]->outcfg.formats);
+        ret = ff_formats_ref(ff_make_format_list(main_in_fmts), &cfg_in[i]->formats);
         if (ret < 0)
             return ret;
     }
 
-    ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->incfg.formats);
+    ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &cfg_out[0]->formats);
     if (ret < 0)
         return ret;
 
@@ -431,7 +433,7 @@ const AVFilter ff_vf_overlay_qsv = {
     .activate       = activate,
     FILTER_INPUTS(overlay_qsv_inputs),
     FILTER_OUTPUTS(overlay_qsv_outputs),
-    FILTER_QUERY_FUNC(overlay_qsv_query_formats),
+    FILTER_QUERY_FUNC2(overlay_qsv_query_formats),
     .priv_class     = &overlay_qsv_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
     .flags          = AVFILTER_FLAG_HWDEVICE,
