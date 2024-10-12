@@ -887,7 +887,9 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
 
         if (!(st = avformat_new_stream(loc, NULL)))
             return AVERROR(ENOMEM);
-        avcodec_parameters_copy(st->codecpar, vs->streams[i]->codecpar);
+        ret = avcodec_parameters_copy(st->codecpar, vs->streams[i]->codecpar);
+        if (ret < 0)
+            return ret;
         if (!oc->oformat->codec_tag ||
             av_codec_get_id (oc->oformat->codec_tag, vs->streams[i]->codecpar->codec_tag) == st->codecpar->codec_id ||
             av_codec_get_tag(oc->oformat->codec_tag, vs->streams[i]->codecpar->codec_id) <= 0) {
