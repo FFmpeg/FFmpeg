@@ -1152,9 +1152,28 @@ static void yuvtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
                               int i, int j, unsigned y, unsigned u, unsigned v, enum AVPixelFormat fmt,
                               uint8_t ayuv_map[4])
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
     uint32_t n;
 
     switch (fmt) {
+    case AV_PIX_FMT_VYU444:
+        n = (y << (ayuv_map[Y]*8)) + (u << (ayuv_map[U]*8)) + (v << (ayuv_map[V]*8));
+        AV_WL24(&dstp[0][i*3 + j*dst_linesizep[0]], n);
+        break;
+    case AV_PIX_FMT_V30XLE:
+    case AV_PIX_FMT_XV30LE:
+        n = (y << ((desc->comp[0].offset*8) + desc->comp[0].shift)) +
+            (u << ((desc->comp[1].offset*8) + desc->comp[1].shift)) +
+            (v << ((desc->comp[2].offset*8) + desc->comp[2].shift));
+        AV_WL32(&dstp[0][i*4 + j*dst_linesizep[0]], n);
+        break;
+    case AV_PIX_FMT_UYVA:
+    case AV_PIX_FMT_VUYA:
+    case AV_PIX_FMT_VUYX:
+    case AV_PIX_FMT_AYUV:
+        n = (y << (ayuv_map[Y]*8)) + (u << (ayuv_map[U]*8)) + (v << (ayuv_map[V]*8)) + (255U << (ayuv_map[A]*8));
+        AV_WL32(&dstp[0][i*4 + j*dst_linesizep[0]], n);
+        break;
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_YUVJ444P:
         dstp[0][i + j*dst_linesizep[0]] = y;
@@ -1177,7 +1196,7 @@ static void yuvtest_fill_picture(AVFilterContext *ctx, AVFrame *frame)
 {
     TestSourceContext *test = ctx->priv;
     int i, j, w = frame->width, h = frame->height;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(ctx->outputs[0]->format);
     const int factor = 1 << desc->comp[0].depth;
     const int mid = 1 << (desc->comp[0].depth - 1);
 
@@ -1209,7 +1228,10 @@ static const enum AVPixelFormat yuvtest_pix_fmts[] = {
     AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
     AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14,
-    AV_PIX_FMT_YUV444P16,
+    AV_PIX_FMT_YUV444P16, AV_PIX_FMT_VYU444,
+    AV_PIX_FMT_AYUV, AV_PIX_FMT_UYVA,
+    AV_PIX_FMT_VUYA, AV_PIX_FMT_VUYX,
+    AV_PIX_FMT_XV30LE, AV_PIX_FMT_V30XLE,
     AV_PIX_FMT_NONE
 };
 
