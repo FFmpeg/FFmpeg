@@ -41,10 +41,13 @@ void ff_vvc_dsp_init_riscv(VVCDSPContext *const c, const int bd)
 {
 #if HAVE_RVV
     const int flags = av_get_cpu_flags();
-    int vlenb = ff_get_rv_vlenb();
+    int vlenb;
 
-    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB) &&
-        vlenb >= 32) {
+    if (!(flags & AV_CPU_FLAG_RVV_I32) || !(flags & AV_CPU_FLAG_RVB))
+        return;
+
+    vlenb = ff_get_rv_vlenb();
+    if (vlenb >= 32) {
         switch (bd) {
             case 8:
                 c->inter.avg    = ff_vvc_avg_8_rvv_256;
@@ -55,8 +58,7 @@ void ff_vvc_dsp_init_riscv(VVCDSPContext *const c, const int bd)
             default:
                 break;
         }
-    } else if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB) &&
-               vlenb >= 16) {
+    } else if (vlenb >= 16) {
         switch (bd) {
             case 8:
                 c->inter.avg    = ff_vvc_avg_8_rvv_128;
