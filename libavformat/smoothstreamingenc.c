@@ -331,7 +331,9 @@ static int ism_write_header(AVFormatContext *s)
         if (!(st = avformat_new_stream(ctx, NULL))) {
             return AVERROR(ENOMEM);
         }
-        avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
+        if ((ret = avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar)) < 0) {
+            return ret;
+        }
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
 
