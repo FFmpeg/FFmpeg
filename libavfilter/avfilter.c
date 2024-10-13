@@ -475,7 +475,6 @@ void ff_tlog_link(void *ctx, AVFilterLink *link, int end)
 int ff_request_frame(AVFilterLink *link)
 {
     FilterLinkInternal * const li = ff_link_internal(link);
-    FFFilterContext * const ctxi_dst = fffilterctx(link->dst);
 
     FF_TPRINTF_START(NULL, request_frame); ff_tlog_link(NULL, link, 1);
 
@@ -485,7 +484,7 @@ int ff_request_frame(AVFilterLink *link)
     if (li->status_in) {
         if (ff_framequeue_queued_frames(&li->fifo)) {
             av_assert1(!li->frame_wanted_out);
-            av_assert1(ctxi_dst->ready >= 300);
+            av_assert1(fffilterctx(link->dst)->ready >= 300);
             return 0;
         } else {
             /* Acknowledge status change. Filters using ff_request_frame() will
