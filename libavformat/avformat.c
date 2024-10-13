@@ -147,13 +147,15 @@ void ff_flush_packet_queue(AVFormatContext *s)
 
 void avformat_free_context(AVFormatContext *s)
 {
+    FormatContextInternal *fci;
     FFFormatContext *si;
 
     if (!s)
         return;
-    si = ffformatcontext(s);
+    fci = ff_fc_internal(s);
+    si  = &fci->fc;
 
-    if (s->oformat && ffofmt(s->oformat)->deinit && si->initialized)
+    if (s->oformat && ffofmt(s->oformat)->deinit && fci->initialized)
         ffofmt(s->oformat)->deinit(s);
 
     av_opt_free(s);

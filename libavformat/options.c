@@ -185,7 +185,7 @@ AVFormatContext *avformat_alloc_context(void)
     }
 
 #if FF_API_LAVF_SHORTEST
-    si->shortest_end = AV_NOPTS_VALUE;
+    fci->shortest_end = AV_NOPTS_VALUE;
 #endif
 
     return s;

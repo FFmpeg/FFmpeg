@@ -186,7 +186,7 @@ static int validate_codec_tag(const AVFormatContext *s, const AVStream *st)
 
 static int init_muxer(AVFormatContext *s, AVDictionary **options)
 {
-    FFFormatContext *const si = ffformatcontext(s);
+    FormatContextInternal *const fci = ff_fc_internal(s);
     AVDictionary *tmp = NULL;
     const FFOutputFormat *of = ffofmt(s->oformat);
     AVDictionaryEntry *e;
@@ -347,13 +347,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         if (par->codec_type != AVMEDIA_TYPE_ATTACHMENT &&
             par->codec_id != AV_CODEC_ID_SMPTE_2038)
-            si->nb_interleaved_streams++;
+            fci->nb_interleaved_streams++;
     }
-    si->interleave_packet = of->interleave_packet;
-    if (!si->interleave_packet)
-        si->interleave_packet = si->nb_interleaved_streams > 1 ?
-                                    ff_interleave_packet_per_dts :
-                                    ff_interleave_packet_passthrough;
+    fci->interleave_packet = of->interleave_packet;
+    if (!fci->interleave_packet)
+        fci->interleave_packet = fci->nb_interleaved_streams > 1 ?
+                                 ff_interleave_packet_per_dts :
+                                 ff_interleave_packet_passthrough;
 
     if (!s->priv_data && of->priv_data_size > 0) {
         s->priv_data = av_mallocz(of->priv_data_size);
@@ -456,24 +456,24 @@ static void flush_if_needed(AVFormatContext *s)
 
 static void deinit_muxer(AVFormatContext *s)
 {
-    FFFormatContext *const si = ffformatcontext(s);
+    FormatContextInternal *const fci = ff_fc_internal(s);
     const FFOutputFormat *const of = ffofmt(s->oformat);
-    if (of && of->deinit && si->initialized)
+    if (of && of->deinit && fci->initialized)
         of->deinit(s);
-    si->initialized =
-    si->streams_initialized = 0;
+    fci->initialized =
+    fci->streams_initialized = 0;
 }
 
 int avformat_init_output(AVFormatContext *s, AVDictionary **options)
 {
-    FFFormatContext *const si = ffformatcontext(s);
+    FormatContextInternal *const fci = ff_fc_internal(s);
     int ret = 0;
 
     if ((ret = init_muxer(s, options)) < 0)
         return ret;
 
-    si->initialized = 1;
-    si->streams_initialized = ret;
+    fci->initialized = 1;
+    fci->streams_initialized = ret;
 
     if (ffofmt(s->oformat)->init && ret) {
         if ((ret = init_pts(s)) < 0)
@@ -487,9 +487,9 @@ int avformat_init_output(AVFormatContext *s, AVDictionary **options)
 
 int avformat_write_header(AVFormatContext *s, AVDictionary **options)
 {
-    FFFormatContext *const si = ffformatcontext(s);
-    int already_initialized = si->initialized;
-    int streams_already_initialized = si->streams_initialized;
+    FormatContextInternal *const fci = ff_fc_internal(s);
+    int already_initialized = fci->initialized;
+    int streams_already_initialized = fci->streams_initialized;
     int ret = 0;
 
     if (!already_initialized)
@@ -509,7 +509,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
     if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
         avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_UNKNOWN);
 
-    if (!si->streams_initialized) {
+    if (!fci->streams_initialized) {
         if ((ret = init_pts(s)) < 0)
             goto fail;
     }
@@ -529,12 +529,12 @@ FF_DISABLE_DEPRECATION_WARNINGS
 //FIXME merge with compute_pkt_fields
 static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
-    FFFormatContext *const si = ffformatcontext(s);
+    FormatContextInternal *const fci = ff_fc_internal(s);
     FFStream *const sti = ffstream(st);
     int delay = st->codecpar->video_delay;
     int frame_size;
 
-    if (!si->missing_ts_warning &&
+    if (!fci->missing_ts_warning &&
         !(s->oformat->flags & AVFMT_NOTIMESTAMPS) &&
         (!(st->disposition & AV_DISPOSITION_ATTACHED_PIC) || (st->disposition & AV_DISPOSITION_TIMED_THUMBNAILS)) &&
         (pkt->pts == AV_NOPTS_VALUE || pkt->dts == AV_NOPTS_VALUE)) {
@@ -542,7 +542,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
                "Timestamps are unset in a packet for stream %d. "
                "This is deprecated and will stop working in the future. "
                "Fix your code to set the timestamps properly\n", st->index);
-        si->missing_ts_warning = 1;
+        fci->missing_ts_warning = 1;
     }
 
     if (s->debug & FF_FDEBUG_TS)
@@ -960,7 +960,8 @@ static int interleave_compare_dts(AVFormatContext *s, const AVPacket *next,
 int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
                                  int flush, int has_packet)
 {
-    FFFormatContext *const si = ffformatcontext(s);
+    FormatContextInternal *const fci = ff_fc_internal(s);
+    FFFormatContext *const si = &fci->fc;
     int stream_count = 0;
     int noninterleaved_count = 0;
     int ret;
@@ -985,14 +986,14 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
         }
     }
 
-    if (si->nb_interleaved_streams == stream_count)
+    if (fci->nb_interleaved_streams == stream_count)
         flush = 1;
 
     if (s->max_interleave_delta > 0 &&
         si->packet_buffer.head &&
         si->packet_buffer.head->pkt.dts != AV_NOPTS_VALUE &&
         !flush &&
-        si->nb_interleaved_streams == stream_count+noninterleaved_count
+        fci->nb_interleaved_streams == stream_count+noninterleaved_count
     ) {
         AVPacket *const top_pkt = &si->packet_buffer.head->pkt;
         int64_t delta_dts = INT64_MIN;
@@ -1028,15 +1029,15 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
     if (si->packet_buffer.head &&
         eof &&
         (s->flags & AVFMT_FLAG_SHORTEST) &&
-        si->shortest_end == AV_NOPTS_VALUE) {
+        fci->shortest_end == AV_NOPTS_VALUE) {
         AVPacket *const top_pkt = &si->packet_buffer.head->pkt;
 
-        si->shortest_end = av_rescale_q(top_pkt->dts,
-                                       s->streams[top_pkt->stream_index]->time_base,
-                                       AV_TIME_BASE_Q);
+        fci->shortest_end = av_rescale_q(top_pkt->dts,
+                                         s->streams[top_pkt->stream_index]->time_base,
+                                         AV_TIME_BASE_Q);
     }
 
-    if (si->shortest_end != AV_NOPTS_VALUE) {
+    if (fci->shortest_end != AV_NOPTS_VALUE) {
         while (si->packet_buffer.head) {
             PacketListEntry *pktl = si->packet_buffer.head;
             AVPacket *const top_pkt = &pktl->pkt;
@@ -1045,7 +1046,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
             int64_t top_dts = av_rescale_q(top_pkt->dts, st->time_base,
                                         AV_TIME_BASE_Q);
 
-            if (si->shortest_end + 1 >= top_dts)
+            if (fci->shortest_end + 1 >= top_dts)
                 break;
 
             si->packet_buffer.head = pktl->next;
@@ -1134,9 +1135,10 @@ static int check_bitstream(AVFormatContext *s, FFStream *sti, AVPacket *pkt)
 static int interleaved_write_packet(AVFormatContext *s, AVPacket *pkt,
                                     int flush, int has_packet)
 {
-    FFFormatContext *const si = ffformatcontext(s);
+    FormatContextInternal *const fci = ff_fc_internal(s);
+
     for (;; ) {
-        int ret = si->interleave_packet(s, pkt, flush, has_packet);
+        int ret = fci->interleave_packet(s, pkt, flush, has_packet);
         if (ret <= 0)
             return ret;
 

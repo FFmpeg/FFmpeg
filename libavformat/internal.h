@@ -68,12 +68,6 @@ typedef struct FFFormatContext {
     AVFormatContext pub;
 
     /**
-     * Number of streams relevant for interleaving.
-     * Muxing only.
-     */
-    int nb_interleaved_streams;
-
-    /**
      * Whether the timestamp shift offset has already been determined.
      * -1: disabled, 0: not yet determined, 1: determined.
      */
@@ -83,12 +77,6 @@ typedef struct FFFormatContext {
         AVOID_NEGATIVE_TS_KNOWN    = 1,
     } avoid_negative_ts_status;
 #define AVOID_NEGATIVE_TS_ENABLED(status) ((status) >= 0)
-
-    /**
-     * The interleavement function in use. Always set for muxers.
-     */
-    int (*interleave_packet)(struct AVFormatContext *s, AVPacket *pkt,
-                             int flush, int has_packet);
 
     /**
      * This buffer is only needed when packets were already buffered but
@@ -137,32 +125,11 @@ typedef struct FFFormatContext {
      */
     int raw_packet_buffer_size;
 
-#if FF_API_COMPUTE_PKT_FIELDS2
-    int missing_ts_warning;
-#endif
-
 #if FF_API_AVSTREAM_SIDE_DATA
     int inject_global_side_data;
 #endif
 
     int avoid_negative_ts_use_pts;
-
-#if FF_API_LAVF_SHORTEST
-    /**
-     * Timestamp of the end of the shortest stream.
-     */
-    int64_t shortest_end;
-#endif
-
-    /**
-     * Whether or not avformat_init_output has already been called
-     */
-    int initialized;
-
-    /**
-     * Whether or not avformat_init_output fully initialized streams
-     */
-    int streams_initialized;
 
     /**
      * ID3v2 tag useful for MP3 demuxing
