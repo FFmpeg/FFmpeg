@@ -1929,6 +1929,7 @@ typedef struct AVFormatContext {
     int64_t duration_probesize;
 } AVFormatContext;
 
+#if FF_API_AVSTREAM_SIDE_DATA
 /**
  * This function will cause global side data to be injected in the next packet
  * of each stream as well as after any subsequent seek.
@@ -1938,8 +1939,15 @@ typedef struct AVFormatContext {
  *       in a @ref AVCodecContext.coded_side_data "decoder's side data" array if
  *       initialized with said stream's codecpar.
  * @see av_packet_side_data_get()
+ *
+ * @deprecated this function should never be needed, as global side data is now
+ *             exported in AVCodecParameters and should
+ *             be propagated from demuxers to decoders via
+ *             ::avcodec_parameters_to_context()
  */
+attribute_deprecated
 void av_format_inject_global_side_data(AVFormatContext *s);
+#endif
 
 #if FF_API_GET_DUR_ESTIMATE_METHOD
 /**

@@ -81,6 +81,7 @@ AVChapter *avpriv_new_chapter(AVFormatContext *s, int64_t id, AVRational time_ba
     return chapter;
 }
 
+#if FF_API_AVSTREAM_SIDE_DATA
 void av_format_inject_global_side_data(AVFormatContext *s)
 {
     FFFormatContext *const si = ffformatcontext(s);
@@ -90,6 +91,7 @@ void av_format_inject_global_side_data(AVFormatContext *s)
         ffstream(st)->inject_global_side_data = 1;
     }
 }
+#endif
 
 int avformat_queue_attached_pictures(AVFormatContext *s)
 {
