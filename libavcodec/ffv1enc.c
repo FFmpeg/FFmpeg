@@ -738,31 +738,7 @@ av_cold int ff_ffv1_encode_init(AVCodecContext *avctx)
         /* Disable slices when the version doesn't support them */
         s->num_h_slices = 1;
         s->num_v_slices = 1;
-    } else {
-        if ((ret = encode_determine_slices(avctx)) < 0)
-            return ret;
-
-        if ((ret = ff_ffv1_write_extradata(avctx)) < 0)
-            return ret;
     }
-
-    if ((ret = ff_ffv1_init_slice_contexts(s)) < 0)
-        return ret;
-    s->slice_count = s->max_slice_count;
-
-    for (int j = 0; j < s->slice_count; j++) {
-        for (int i = 0; i < s->plane_count; i++) {
-            PlaneContext *const p = &s->slices[j].plane[i];
-
-            p->quant_table_index = s->context_model;
-            p->context_count     = s->context_count[p->quant_table_index];
-        }
-
-        ff_build_rac_states(&s->slices[j].c, 0.05 * (1LL << 32), 256 - 8);
-    }
-
-    if ((ret = ff_ffv1_init_slices_state(s)) < 0)
-        return ret;
 
     return 0;
 }
@@ -940,6 +916,30 @@ static int encode_init_internal(AVCodecContext *avctx)
 
     ret = ff_ffv1_encode_init(avctx);
     if (ret < 0)
+        return ret;
+
+    if ((ret = encode_determine_slices(avctx)) < 0)
+        return ret;
+
+    if ((ret = ff_ffv1_write_extradata(avctx)) < 0)
+        return ret;
+
+    if ((ret = ff_ffv1_init_slice_contexts(s)) < 0)
+        return ret;
+    s->slice_count = s->max_slice_count;
+
+    for (int j = 0; j < s->slice_count; j++) {
+        for (int i = 0; i < s->plane_count; i++) {
+            PlaneContext *const p = &s->slices[j].plane[i];
+
+            p->quant_table_index = s->context_model;
+            p->context_count     = s->context_count[p->quant_table_index];
+        }
+
+        ff_build_rac_states(&s->slices[j].c, 0.05 * (1LL << 32), 256 - 8);
+    }
+
+    if ((ret = ff_ffv1_init_slices_state(s)) < 0)
         return ret;
 
 #define STATS_OUT_SIZE 1024 * 1024 * 6
