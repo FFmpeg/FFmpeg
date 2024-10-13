@@ -36,6 +36,7 @@
 #include "libavcodec/codec_desc.h"
 #include "libavcodec/packet_internal.h"
 #include "avformat.h"
+#include "avformat_internal.h"
 #include "avio.h"
 #include "demux.h"
 #include "mux.h"

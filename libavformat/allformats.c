@@ -25,6 +25,7 @@
 
 #include "libavformat/internal.h"
 #include "avformat.h"
+#include "avformat_internal.h"
 #include "demux.h"
 #include "mux.h"
 

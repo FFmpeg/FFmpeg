@@ -43,6 +43,7 @@
 #include "libavcodec/raw.h"
 
 #include "avformat.h"
+#include "avformat_internal.h"
 #include "avio_internal.h"
 #include "demux.h"
 #include "id3v2.h"

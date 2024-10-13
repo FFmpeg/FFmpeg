@@ -29,6 +29,7 @@
 #include "libavcodec/avcodec.h"
 
 #include "avformat.h"
+#include "avformat_internal.h"
 #include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"

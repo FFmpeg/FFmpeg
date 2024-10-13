@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "avformat_internal.h"
 #include "internal.h"
 #include "mux.h"
 #include "version.h"

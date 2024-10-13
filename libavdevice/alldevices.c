@@ -20,8 +20,8 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/attributes_internal.h"
+#include "libavformat/avformat_internal.h"
 #include "libavformat/demux.h"
-#include "libavformat/internal.h"
 #include "libavformat/mux.h"
 #include "avdevice.h"
 
