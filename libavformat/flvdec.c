@@ -97,7 +97,6 @@ typedef struct FLVContext {
     int64_t audio_bit_rate;
     int64_t *keyframe_times;
     int64_t *keyframe_filepositions;
-    int missing_streams;
     AVRational framerate;
     int64_t last_ts;
     int64_t time_offset;
@@ -189,6 +188,7 @@ static void add_keyframes_index(AVFormatContext *s)
 
 static AVStream *create_stream(AVFormatContext *s, int codec_type)
 {
+    FFFormatContext *const si = ffformatcontext(s);
     FLVContext *flv   = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
@@ -202,11 +202,11 @@ static AVStream *create_stream(AVFormatContext *s, int codec_type)
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
     if (codec_type == AVMEDIA_TYPE_AUDIO) {
         st->codecpar->bit_rate = flv->audio_bit_rate;
-        flv->missing_streams &= ~FLV_HEADER_FLAG_HASAUDIO;
+        si->missing_streams &= ~FLV_HEADER_FLAG_HASAUDIO;
     }
     if (codec_type == AVMEDIA_TYPE_VIDEO) {
         st->codecpar->bit_rate = flv->video_bit_rate;
-        flv->missing_streams &= ~FLV_HEADER_FLAG_HASVIDEO;
+        si->missing_streams &= ~FLV_HEADER_FLAG_HASVIDEO;
         st->avg_frame_rate = flv->framerate;
     }
 
@@ -843,6 +843,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
 
 static int flv_read_header(AVFormatContext *s)
 {
+    FFFormatContext *const si = ffformatcontext(s);
     int flags;
     FLVContext *flv = s->priv_data;
     int offset;
@@ -855,7 +856,7 @@ static int flv_read_header(AVFormatContext *s)
     avio_skip(s->pb, 4);
     flags = avio_r8(s->pb);
 
-    flv->missing_streams = flags & (FLV_HEADER_FLAG_HASVIDEO | FLV_HEADER_FLAG_HASAUDIO);
+    si->missing_streams = flags & (FLV_HEADER_FLAG_HASVIDEO | FLV_HEADER_FLAG_HASAUDIO);
 
     s->ctx_flags |= AVFMTCTX_NOHEADER;
 
@@ -1577,7 +1578,6 @@ static const AVOption options[] = {
     { "flv_metadata", "Allocate streams according to the onMetaData array", OFFSET(trust_metadata), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
     { "flv_full_metadata", "Dump full metadata of the onMetadata", OFFSET(dump_full_metadata), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
     { "flv_ignore_prevtag", "Ignore the Size of previous tag", OFFSET(trust_datasize), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
-    { "missing_streams", "", OFFSET(missing_streams), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 0xFF, VD | AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
     { NULL }
 };
 
