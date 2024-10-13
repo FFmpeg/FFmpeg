@@ -161,12 +161,15 @@ static int io_close2_default(AVFormatContext *s, AVIOContext *pb)
 
 AVFormatContext *avformat_alloc_context(void)
 {
-    FFFormatContext *const si = av_mallocz(sizeof(*si));
+    FormatContextInternal *fci;
+    FFFormatContext *si;
     AVFormatContext *s;
 
-    if (!si)
+    fci = av_mallocz(sizeof(*fci));
+    if (!fci)
         return NULL;
 
+    si = &fci->fc;
     s = &si->pub;
     s->av_class = &av_format_context_class;
     s->io_open  = io_open_default;

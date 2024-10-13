@@ -28,6 +28,16 @@
 #include <stdint.h>
 
 #include "avformat.h"
+#include "internal.h"
+
+typedef struct FormatContextInternal {
+    FFFormatContext fc;
+} FormatContextInternal;
+
+static av_always_inline FormatContextInternal *ff_fc_internal(AVFormatContext *s)
+{
+    return (FormatContextInternal*)s;
+}
 
 #define RELATIVE_TS_BASE (INT64_MAX - (1LL << 48))
 
