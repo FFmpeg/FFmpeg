@@ -34,6 +34,11 @@ struct AVDeviceInfoList;
  */
 #define FF_INFMT_FLAG_INIT_CLEANUP                             (1 << 0)
 
+/*
+ * Prefer the codec framerate for avg_frame_rate computation.
+ */
+#define FF_INFMT_FLAG_PREFER_CODEC_FRAMERATE                   (1 << 1)
+
 typedef struct FFInputFormat {
     /**
      * The public AVInputFormat. See avformat.h for it.

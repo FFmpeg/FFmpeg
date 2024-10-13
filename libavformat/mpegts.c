@@ -3113,8 +3113,6 @@ static int mpegts_read_header(AVFormatContext *s)
     int64_t pos, probesize = s->probesize;
     int64_t seekback = FFMAX(s->probesize, (int64_t)ts->resync_size + PROBE_PACKET_MAX_BUF);
 
-    ffformatcontext(s)->prefer_codec_framerate = 1;
-
     if (ffio_ensure_seekback(pb, seekback) < 0)
         av_log(s, AV_LOG_WARNING, "Failed to allocate buffers for seekback\n");
 
@@ -3446,6 +3444,7 @@ const FFInputFormat ff_mpegts_demuxer = {
     .read_packet    = mpegts_read_packet,
     .read_close     = mpegts_read_close,
     .read_timestamp = mpegts_get_dts,
+    .flags_internal  = FF_INFMT_FLAG_PREFER_CODEC_FRAMERATE,
 };
 
 const FFInputFormat ff_mpegtsraw_demuxer = {
@@ -3458,4 +3457,5 @@ const FFInputFormat ff_mpegtsraw_demuxer = {
     .read_packet    = mpegts_raw_read_packet,
     .read_close     = mpegts_read_close,
     .read_timestamp = mpegts_get_dts,
+    .flags_internal  = FF_INFMT_FLAG_PREFER_CODEC_FRAMERATE,
 };

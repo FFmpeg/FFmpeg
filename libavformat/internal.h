@@ -120,11 +120,6 @@ typedef struct FFFormatContext {
      * ID3v2 tag useful for MP3 demuxing
      */
     AVDictionary *id3v2_meta;
-
-    /*
-     * Prefer the codec framerate for avg_frame_rate computation.
-     */
-    int prefer_codec_framerate;
 } FFFormatContext;
 
 static av_always_inline FFFormatContext *ffformatcontext(AVFormatContext *s)
