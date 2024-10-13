@@ -63,6 +63,37 @@ typedef struct FormatContextInternal {
             int missing_ts_warning;
 #endif
         };
+
+        // demuxing only
+        struct {
+            /**
+             * Raw packets from the demuxer, prior to parsing and decoding.
+             * This buffer is used for buffering packets until the codec can
+             * be identified, as parsing cannot be done without knowing the
+             * codec.
+             */
+            PacketList raw_packet_buffer;
+
+            /**
+             * Sum of the size of packets in raw_packet_buffer, in bytes.
+             */
+            int raw_packet_buffer_size;
+
+            /**
+             * Packets split by the parser get queued here.
+             */
+            PacketList parse_queue;
+
+            /**
+             * Contexts and child contexts do not contain a metadata option
+             */
+            int metafree;
+
+            /**
+             * Set if chapter ids are strictly monotonic.
+             */
+            int chapter_ids_monotonic;
+        };
     };
 
 #if FF_API_LAVF_SHORTEST

@@ -137,12 +137,13 @@ void ff_remove_stream_group(AVFormatContext *s, AVStreamGroup *stg)
 /* XXX: suppress the packet queue */
 void ff_flush_packet_queue(AVFormatContext *s)
 {
-    FFFormatContext *const si = ffformatcontext(s);
-    avpriv_packet_list_free(&si->parse_queue);
+    FormatContextInternal *const fci = ff_fc_internal(s);
+    FFFormatContext *const si = &fci->fc;
+    avpriv_packet_list_free(&fci->parse_queue);
     avpriv_packet_list_free(&si->packet_buffer);
-    avpriv_packet_list_free(&si->raw_packet_buffer);
+    avpriv_packet_list_free(&fci->raw_packet_buffer);
 
-    si->raw_packet_buffer_size = 0;
+    fci->raw_packet_buffer_size = 0;
 }
 
 void avformat_free_context(AVFormatContext *s)
@@ -191,7 +192,8 @@ void avformat_free_context(AVFormatContext *s)
     av_packet_free(&si->parse_pkt);
     av_freep(&s->streams);
     av_freep(&s->stream_groups);
-    ff_flush_packet_queue(s);
+    if (s->iformat)
+        ff_flush_packet_queue(s);
     av_freep(&s->url);
     av_free(s);
 }

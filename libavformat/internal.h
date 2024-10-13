@@ -89,17 +89,6 @@ typedef struct FFFormatContext {
     int64_t data_offset; /**< offset of the first packet */
 
     /**
-     * Raw packets from the demuxer, prior to parsing and decoding.
-     * This buffer is used for buffering packets until the codec can
-     * be identified, as parsing cannot be done without knowing the
-     * codec.
-     */
-    PacketList raw_packet_buffer;
-    /**
-     * Packets split by the parser get queued here.
-     */
-    PacketList parse_queue;
-    /**
      * The generic code uses this as a temporary packet
      * to parse packets or for muxing, especially flushing.
      * For demuxers, it may also be used for other means
@@ -120,10 +109,6 @@ typedef struct FFFormatContext {
      * permanent ones).
      */
     AVPacket *pkt;
-    /**
-     * Sum of the size of packets in raw_packet_buffer, in bytes.
-     */
-    int raw_packet_buffer_size;
 
 #if FF_API_AVSTREAM_SIDE_DATA
     int inject_global_side_data;
@@ -140,16 +125,6 @@ typedef struct FFFormatContext {
      * Prefer the codec framerate for avg_frame_rate computation.
      */
     int prefer_codec_framerate;
-
-    /**
-     * Set if chapter ids are strictly monotonic.
-     */
-    int chapter_ids_monotonic;
-
-    /**
-     * Contexts and child contexts do not contain a metadata option
-     */
-    int metafree;
 } FFFormatContext;
 
 static av_always_inline FFFormatContext *ffformatcontext(AVFormatContext *s)
