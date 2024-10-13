@@ -145,6 +145,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     int ret = 0;
     AVCodecInternal *avci;
     const FFCodec *codec2;
+    const AVDictionaryEntry *e;
 
     if (avcodec_is_open(avctx))
         return 0;
@@ -175,8 +176,14 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (avctx->extradata_size < 0 || avctx->extradata_size >= FF_MAX_EXTRADATA_SIZE)
         return AVERROR(EINVAL);
 
-    if ((ret = av_opt_set_dict(avctx, options)) < 0)
-        return ret;
+    // set the whitelist from provided options dict,
+    // so we can check it immediately
+    e = options ? av_dict_get(*options, "codec_whitelist", NULL, 0) : NULL;
+    if (e) {
+        ret = av_opt_set(avctx, e->key, e->value, 0);
+        if (ret < 0)
+            return ret;
+    }
 
     if (avctx->codec_whitelist && av_match_list(codec->name, avctx->codec_whitelist, ',') <= 0) {
         av_log(avctx, AV_LOG_ERROR, "Codec (%s) not on whitelist \'%s\'\n", codec->name, avctx->codec_whitelist);
@@ -211,11 +218,13 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
                 av_opt_set_defaults(avctx->priv_data);
             }
         }
-        if (codec->priv_class && (ret = av_opt_set_dict(avctx->priv_data, options)) < 0)
-            goto free_and_end;
     } else {
         avctx->priv_data = NULL;
     }
+
+    ret = av_opt_set_dict2(avctx, options, AV_OPT_SEARCH_CHILDREN);
+    if (ret < 0)
+        goto free_and_end;
 
     // only call ff_set_dimensions() for non H.264/VP6F/DXV codecs so as not to overwrite previously setup dimensions
     if (!(avctx->coded_width && avctx->coded_height && avctx->width && avctx->height &&
