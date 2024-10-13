@@ -1071,6 +1071,7 @@ int av_opt_eval_q     (void *obj, const AVOption *o, const char *val, AVRational
  * @}
  */
 
+#if FF_API_OPT_PTR
 /**
  * Gets a pointer to the requested field in a struct.
  * This function allows accessing a struct even when its fields are moved or
@@ -1078,8 +1079,12 @@ int av_opt_eval_q     (void *obj, const AVOption *o, const char *val, AVRational
  *
  * @returns a pointer to the field, it can be cast to the correct type and read
  *          or written to.
+ *
+ * @deprecated direct access to AVOption-exported fields is not supported
  */
+attribute_deprecated
 void *av_opt_ptr(const AVClass *avclass, void *obj, const char *name);
+#endif
 
 /**
  * Check if given option is set to its default value.
