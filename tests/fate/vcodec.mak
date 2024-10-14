@@ -447,7 +447,10 @@ FATE_VCODEC_SCALE-$(call ENCDEC, R210, AVI)   += r210
 FATE_VCODEC_SCALE-$(call ENCDEC, V210, AVI)   += v210 v210-10
 fate-vsynth%-v210-10:            ENCOPTS = -pix_fmt yuv422p10
 
-FATE_VCODEC_SCALE-$(call ENCDEC, V308, AVI)   += v308
+FATE_VCODEC_SCALE-$(call ENCDEC, RAWVIDEO, AVI) += v308
+fate-vsynth%-v308:               ENCOPTS = -pix_fmt vyu444 -sws_flags neighbor+bitexact
+fate-vsynth%-v308:               DECOPTS = -sws_flags neighbor+bitexact
+fate-vsynth%-v308:               CODEC   = rawvideo
 
 FATE_VCODEC_SCALE-$(call ENCDEC, V408, AVI)   += v408
 fate-vsynth%-v408:               ENCOPTS = -sws_flags neighbor+bitexact
