@@ -1311,7 +1311,8 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
     }
     case AV_PIX_FMT_X2RGB10:
     case AV_PIX_FMT_X2BGR10:
-    case AV_PIX_FMT_Y210: {
+    case AV_PIX_FMT_Y210:
+    case AV_PIX_FMT_XV30: {
         const char *rep_tab[] = {
             [FF_VK_REP_NATIVE] = "rgb10_a2ui",
             [FF_VK_REP_FLOAT] = "rgb10_a2",
