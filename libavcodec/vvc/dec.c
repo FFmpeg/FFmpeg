@@ -1000,7 +1000,7 @@ static int vvc_decode_frame(AVCodecContext *avctx, AVFrame *output,
     if (ret < 0)
         return ret;
 
-    if (!fc->ft)
+    if (!fc->ft || !fc->ref)
         return avpkt->size;
 
     ret = submit_frame(s, fc, output, got_output);
