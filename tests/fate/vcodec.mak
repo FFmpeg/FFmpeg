@@ -452,9 +452,10 @@ fate-vsynth%-v308:               ENCOPTS = -pix_fmt vyu444 -sws_flags neighbor+b
 fate-vsynth%-v308:               DECOPTS = -sws_flags neighbor+bitexact
 fate-vsynth%-v308:               CODEC   = rawvideo
 
-FATE_VCODEC_SCALE-$(call ENCDEC, V408, AVI)   += v408
-fate-vsynth%-v408:               ENCOPTS = -sws_flags neighbor+bitexact
+FATE_VCODEC_SCALE-$(call ENCDEC, RAWVIDEO, AVI) += v408
+fate-vsynth%-v408:               ENCOPTS = -pix_fmt uyva -sws_flags neighbor+bitexact
 fate-vsynth%-v408:               DECOPTS = -sws_flags neighbor+bitexact
+fate-vsynth%-v408:               CODEC   = rawvideo
 
 FATE_VCODEC_SCALE-$(call ENCDEC, AVUI, MOV)   += avui
 fate-vsynth%-avui:               ENCOPTS = -s pal -strict experimental -sws_flags neighbor+bitexact
