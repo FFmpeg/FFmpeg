@@ -808,7 +808,6 @@ int show_filters(void *optctx, const char *opt, const char *arg)
     printf("Filters:\n"
            "  T.. = Timeline support\n"
            "  .S. = Slice threading\n"
-           "  ..C = Command support\n"
            "  A = Audio input/output\n"
            "  V = Video input/output\n"
            "  N = Dynamic number and/or type of input/output\n"
@@ -833,10 +832,9 @@ int show_filters(void *optctx, const char *opt, const char *arg)
                                   ( i && (filter->flags & AVFILTER_FLAG_DYNAMIC_OUTPUTS))) ? 'N' : '|';
         }
         *descr_cur = 0;
-        printf(" %c%c%c %-17s %-10s %s\n",
+        printf(" %c%c %-17s %-10s %s\n",
                filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE ? 'T' : '.',
                filter->flags & AVFILTER_FLAG_SLICE_THREADS    ? 'S' : '.',
-               filter->process_command                        ? 'C' : '.',
                filter->name, descr, filter->description);
     }
 #else
