@@ -1140,6 +1140,11 @@ const AVFilter ff_vsrc_rgbtestsrc = {
     FILTER_PIXFMTS_ARRAY(rgbtest_pix_fmts),
 };
 
+#undef R
+#undef G
+#undef B
+#undef A
+
 #endif /* CONFIG_RGBTESTSRC_FILTER */
 
 #if CONFIG_YUVTESTSRC_FILTER
@@ -1147,6 +1152,7 @@ const AVFilter ff_vsrc_rgbtestsrc = {
 #define Y 0
 #define U 1
 #define V 2
+#define A 3
 
 static void yuvtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
                               int i, int j, unsigned y, unsigned u, unsigned v, enum AVPixelFormat fmt,
@@ -1263,6 +1269,11 @@ const AVFilter ff_vsrc_yuvtestsrc = {
     FILTER_OUTPUTS(avfilter_vsrc_yuvtestsrc_outputs),
     FILTER_PIXFMTS_ARRAY(yuvtest_pix_fmts),
 };
+
+#undef Y
+#undef U
+#undef V
+#undef A
 
 #endif /* CONFIG_YUVTESTSRC_FILTER */
 
