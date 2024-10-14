@@ -274,6 +274,8 @@ uyva            planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0 
 vyu444          planes: 1, linesizes: 192   0   0   0, plane_sizes:  9216     0     0     0, plane_offsets:     0     0     0, total_size: 9216
 v30xbe          planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0     0     0, plane_offsets:     0     0     0, total_size: 12288
 v30xle          planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0     0     0, plane_offsets:     0     0     0, total_size: 12288
+rgbf16be        planes: 1, linesizes: 384   0   0   0, plane_sizes: 18432     0     0     0, plane_offsets:     0     0     0, total_size: 18432
+rgbf16le        planes: 1, linesizes: 384   0   0   0, plane_sizes: 18432     0     0     0, plane_offsets:     0     0     0, total_size: 18432
 
 image_fill_black tests
 yuv420p         total_size:   4608,  black_unknown_crc: 0xd00f6cc6,  black_tv_crc: 0xd00f6cc6,  black_pc_crc: 0x234969af
@@ -495,3 +497,5 @@ uyva            total_size:  12288,  black_unknown_crc: 0xdd657297,  black_tv_cr
 vyu444          total_size:   9216,  black_unknown_crc: 0x575e6fb1,  black_tv_crc: 0x575e6fb1,  black_pc_crc: 0x16564599
 v30xbe          total_size:  12288,  black_unknown_crc: 0x7108457c,  black_tv_crc: 0x7108457c,  black_pc_crc: 0xdefcbbe0
 v30xle          total_size:  12288,  black_unknown_crc: 0xf5b3c795,  black_tv_crc: 0xf5b3c795,  black_pc_crc: 0x0b56173c
+rgbf16be        total_size:  18432,  black_unknown_crc: 0x00000000,  black_tv_crc: 0x00000000,  black_pc_crc: 0x00000000
+rgbf16le        total_size:  18432,  black_unknown_crc: 0x00000000,  black_tv_crc: 0x00000000,  black_pc_crc: 0x00000000
