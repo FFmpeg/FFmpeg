@@ -728,7 +728,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     for (i = 0; i < MAX_QUANT_TABLE_SIZE; i++) {
         s->quant_table_count = 2;
-        if (s->bits_per_raw_sample <= 8) {
+        if ((s->qtable == -1 && s->bits_per_raw_sample <= 8) || s->qtable == 1) {
             s->quant_tables[0][0][i]=           quant11[i];
             s->quant_tables[0][1][i]=        11*quant11[i];
             s->quant_tables[0][2][i]=     11*11*quant11[i];
@@ -1289,6 +1289,8 @@ static const AVOption options[] = {
             { .i64 = 1 }, INT_MIN, INT_MAX, VE, .unit = "coder" },
     { "context", "Context model", OFFSET(context_model), AV_OPT_TYPE_INT,
             { .i64 = 0 }, 0, 1, VE },
+    { "qtable", "Quantization table", OFFSET(qtable), AV_OPT_TYPE_INT,
+            { .i64 = -1 }, -1, 2, VE },
 
     { NULL }
 };

@@ -138,6 +138,7 @@ typedef struct FFV1Context {
     int intra;
     int key_frame_ok;
     int context_model;
+    int qtable;
 
     int bits_per_raw_sample;
     int packed_at_lsb;
