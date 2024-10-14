@@ -24,6 +24,9 @@ OBJS = allfilters.o                                                     \
        version.o                                                        \
        video.o                                                          \
 
+include $(SRC_PATH)/libavfilter/dnn/Makefile
+include $(SRC_PATH)/libavfilter/vulkan/Makefile
+
 OBJS-$(HAVE_LIBC_MSVCRT)                     += file_open.o
 OBJS-$(HAVE_THREADS)                         += pthread.o
 
@@ -31,7 +34,6 @@ OBJS-$(HAVE_THREADS)                         += pthread.o
 OBJS-$(CONFIG_QSVVPP)                        += qsvvpp.o
 OBJS-$(CONFIG_SCENE_SAD)                     += scene_sad.o
 OBJS-$(CONFIG_DNN)                           += dnn_filter_common.o
-include $(SRC_PATH)/libavfilter/dnn/Makefile
 
 # audio filters
 OBJS-$(CONFIG_AAP_FILTER)                    += af_aap.o
@@ -218,8 +220,7 @@ OBJS-$(CONFIG_BOXBLUR_OPENCL_FILTER)         += vf_avgblur_opencl.o opencl.o \
 OBJS-$(CONFIG_BWDIF_FILTER)                  += vf_bwdif.o bwdifdsp.o yadif_common.o
 OBJS-$(CONFIG_BWDIF_CUDA_FILTER)             += vf_bwdif_cuda.o vf_bwdif_cuda.ptx.o \
                                                 yadif_common.o
-OBJS-$(CONFIG_BWDIF_VULKAN_FILTER)           += vf_bwdif_vulkan.o yadif_common.o vulkan.o vulkan_filter.o \
-                                                vulkan/bwdif.o
+OBJS-$(CONFIG_BWDIF_VULKAN_FILTER)           += vf_bwdif_vulkan.o yadif_common.o vulkan.o vulkan_filter.o
 OBJS-$(CONFIG_CAS_FILTER)                    += vf_cas.o
 OBJS-$(CONFIG_CCREPACK_FILTER)               += vf_ccrepack.o
 OBJS-$(CONFIG_CHROMABER_VULKAN_FILTER)       += vf_chromaber_vulkan.o vulkan.o vulkan_filter.o
@@ -679,10 +680,4 @@ OPENCL = $(subst $(SRC_PATH)/,,$(wildcard $(SRC_PATH)/libavfilter/opencl/*.cl))
 .SECONDARY: $(OPENCL:.cl=.c)
 libavfilter/opencl/%.c: TAG = OPENCL
 libavfilter/opencl/%.c: $(SRC_PATH)/libavfilter/opencl/%.cl
-	$(M)$(SRC_PATH)/tools/source2c $< $@
-
-VULKAN = $(subst $(SRC_PATH)/,,$(wildcard $(SRC_PATH)/libavfilter/vulkan/*.comp))
-.SECONDARY: $(VULKAN:.comp=.c)
-libavfilter/vulkan/%.c: TAG = VULKAN
-libavfilter/vulkan/%.c: $(SRC_PATH)/libavfilter/vulkan/%.comp
 	$(M)$(SRC_PATH)/tools/source2c $< $@
