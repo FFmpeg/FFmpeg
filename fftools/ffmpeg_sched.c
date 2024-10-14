@@ -1111,22 +1111,52 @@ static int mux_task_start(SchMux *mux)
         return ret;
 
     /* flush the pre-muxing queues */
-    for (unsigned i = 0; i < mux->nb_streams; i++) {
-        SchMuxStream *ms = &mux->streams[i];
+    while (1) {
+        int       min_stream = -1;
+        Timestamp min_ts     = { .ts = AV_NOPTS_VALUE };
+
         AVPacket *pkt;
 
-        while (av_fifo_read(ms->pre_mux_queue.fifo, &pkt, 1) >= 0) {
+        // find the stream with the earliest dts or EOF in pre-muxing queue
+        for (unsigned i = 0; i < mux->nb_streams; i++) {
+            SchMuxStream *ms = &mux->streams[i];
+
+            if (av_fifo_peek(ms->pre_mux_queue.fifo, &pkt, 1, 0) < 0)
+                continue;
+
+            if (!pkt || pkt->dts == AV_NOPTS_VALUE) {
+                min_stream = i;
+                break;
+            }
+
+            if (min_ts.ts == AV_NOPTS_VALUE ||
+                av_compare_ts(min_ts.ts, min_ts.tb, pkt->dts, pkt->time_base) > 0) {
+                min_stream = i;
+                min_ts     = (Timestamp){ .ts = pkt->dts, .tb = pkt->time_base };
+            }
+        }
+
+        if (min_stream >= 0) {
+            SchMuxStream *ms = &mux->streams[min_stream];
+
+            ret = av_fifo_read(ms->pre_mux_queue.fifo, &pkt, 1);
+            av_assert0(ret >= 0);
+
             if (pkt) {
                 if (!ms->init_eof)
-                    ret = tq_send(mux->queue, i, pkt);
+                    ret = tq_send(mux->queue, min_stream, pkt);
                 av_packet_free(&pkt);
                 if (ret == AVERROR_EOF)
                     ms->init_eof = 1;
                 else if (ret < 0)
                     return ret;
             } else
-                tq_send_finish(mux->queue, i);
+                tq_send_finish(mux->queue, min_stream);
+
+            continue;
         }
+
+        break;
     }
 
     atomic_store(&mux->mux_started, 1);
