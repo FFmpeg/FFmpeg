@@ -1170,6 +1170,46 @@ static av_always_inline void planar_rgbf32_to_y(uint8_t *_dst, const uint8_t *_s
     }
 }
 
+static av_always_inline void rgbf32_to_uv_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unused1,
+                                            const uint8_t *_src, const uint8_t *unused2,
+                                            int width, int is_be, int32_t *rgb2yuv)
+{
+    int i;
+    const float *src = (const float *)_src;
+    uint16_t *dstU       = (uint16_t *)_dstU;
+    uint16_t *dstV       = (uint16_t *)_dstV;
+    int32_t ru = rgb2yuv[RU_IDX], gu = rgb2yuv[GU_IDX], bu = rgb2yuv[BU_IDX];
+    int32_t rv = rgb2yuv[RV_IDX], gv = rgb2yuv[GV_IDX], bv = rgb2yuv[BV_IDX];
+
+    for (i = 0; i < width; i++) {
+        int r = lrintf(av_clipf(65535.0f * rdpx(&src[3*i]), 0.0f, 65535.0f));
+        int g = lrintf(av_clipf(65535.0f * rdpx(&src[3*i + 1]), 0.0f, 65535.0f));
+        int b = lrintf(av_clipf(65535.0f * rdpx(&src[3*i + 2]), 0.0f, 65535.0f));
+
+        dstU[i] = (ru*r + gu*g + bu*b + (0x10001 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT;
+        dstV[i] = (rv*r + gv*g + bv*b + (0x10001 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT;
+    }
+}
+
+static av_always_inline void rgbf32_to_y_c(uint8_t *_dst, const uint8_t *_src,
+                                           const uint8_t *unused1, const uint8_t *unused2,
+                                           int width, int is_be, int32_t *rgb2yuv)
+{
+    int i;
+    const float *src = (const float *)_src;
+    uint16_t *dst    = (uint16_t *)_dst;
+
+    int32_t ry = rgb2yuv[RY_IDX], gy = rgb2yuv[GY_IDX], by = rgb2yuv[BY_IDX];
+
+    for (i = 0; i < width; i++) {
+        int r = lrintf(av_clipf(65535.0f * rdpx(&src[3*i]), 0.0f, 65535.0f));
+        int g = lrintf(av_clipf(65535.0f * rdpx(&src[3*i + 1]), 0.0f, 65535.0f));
+        int b = lrintf(av_clipf(65535.0f * rdpx(&src[3*i + 2]), 0.0f, 65535.0f));
+
+        dst[i] = (ry*r + gy*g + by*b + (0x2001 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT;
+    }
+}
+
 static av_always_inline void grayf32ToY16_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1,
                                             const uint8_t *unused2, int width, int is_be, uint32_t *unused)
 {
@@ -1226,7 +1266,7 @@ rgb9plus_planar_transparency_funcs(12)
 rgb9plus_planar_transparency_funcs(14)
 rgb9plus_planar_transparency_funcs(16)
 
-#define rgbf32_planar_funcs_endian(endian_name, endian)                                             \
+#define rgbf32_funcs_endian(endian_name, endian)                                                    \
 static void planar_rgbf32##endian_name##_to_y(uint8_t *dst, const uint8_t *src[4],                  \
                                                   int w, int32_t *rgb2yuv, void *opq)               \
 {                                                                                                   \
@@ -1243,6 +1283,20 @@ static void planar_rgbf32##endian_name##_to_a(uint8_t *dst, const uint8_t *src[4
 {                                                                                                   \
     planar_rgbf32_to_a(dst, src, w, endian, rgb2yuv);                                               \
 }                                                                                                   \
+static void rgbf32##endian_name##_to_y_c(uint8_t *dst, const uint8_t *src,                          \
+                                         const uint8_t *unused1, const uint8_t *unused2,            \
+                                         int w, uint32_t *rgb2yuv, void *opq)                       \
+{                                                                                                   \
+    rgbf32_to_y_c(dst, src, unused1, unused2, w, endian, rgb2yuv);                                  \
+}                                                                                                   \
+static void rgbf32##endian_name##_to_uv_c(uint8_t *dstU, uint8_t *dstV,                             \
+                                        const uint8_t *unused1,                                     \
+                                        const uint8_t *src, const uint8_t *unused2,                 \
+                                        int w, uint32_t *rgb2yuv,                                   \
+                                        void *opq)                                                  \
+{                                                                                                   \
+    rgbf32_to_uv_c(dstU, dstV, unused1, src, unused2, w, endian, rgb2yuv);                          \
+}                                                                                                   \
 static void grayf32##endian_name##ToY16_c(uint8_t *dst, const uint8_t *src,                         \
                                           const uint8_t *unused1, const uint8_t *unused2,           \
                                           int width, uint32_t *unused, void *opq)                   \
@@ -1250,8 +1304,8 @@ static void grayf32##endian_name##ToY16_c(uint8_t *dst, const uint8_t *src,     
     grayf32ToY16_c(dst, src, unused1, unused2, width, endian, unused);                              \
 }
 
-rgbf32_planar_funcs_endian(le, 0)
-rgbf32_planar_funcs_endian(be, 1)
+rgbf32_funcs_endian(le, 0)
+rgbf32_funcs_endian(be, 1)
 
 #define rdpx(src) av_int2float(half2float(is_be ? AV_RB16(&src) : AV_RL16(&src), h2f_tbl))
 
@@ -1571,6 +1625,12 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c,
         break;
     case AV_PIX_FMT_Y212LE:
         *chrToYV12 = y212le_UV_c;
+        break;
+    case AV_PIX_FMT_RGBF32LE:
+        *chrToYV12 = rgbf32le_to_uv_c;
+        break;
+    case AV_PIX_FMT_RGBF32BE:
+        *chrToYV12 = rgbf32be_to_uv_c;
         break;
     }
     if (c->chrSrcHSubSample) {
@@ -2089,6 +2149,12 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c,
         break;
     case AV_PIX_FMT_RGBAF16LE:
         *lumToYV12 = rgbaf16leToY_c;
+        break;
+    case AV_PIX_FMT_RGBF32LE:
+        *lumToYV12 = rgbf32le_to_y_c;
+        break;
+    case AV_PIX_FMT_RGBF32BE:
+        *lumToYV12 = rgbf32be_to_y_c;
         break;
     }
     if (c->needAlpha) {
