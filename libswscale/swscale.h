@@ -140,6 +140,12 @@ int sws_test_transfer(enum AVColorTransferCharacteristic trc, int output);
  */
 int sws_test_frame(const AVFrame *frame, int output);
 
+/**
+ * Check if a given conversion is a noop. Returns a positive integer if
+ * no operation needs to be performed, 0 otherwise.
+ */
+int sws_is_noop(const AVFrame *dst, const AVFrame *src);
+
 /* values for the flags, the stuff on the command line is different */
 #define SWS_FAST_BILINEAR     1
 #define SWS_BILINEAR          2
