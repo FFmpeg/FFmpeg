@@ -6478,7 +6478,9 @@ check_cc intrinsics_sse2 emmintrin.h "__m128i test = _mm_setzero_si128()"
 
 check_ldflags -Wl,--as-needed
 check_ldflags -Wl,-z,noexecstack
-check_ldflags -Wl,-no_warn_duplicate_libraries
+if [ $target_os = "darwin" ]; then
+    check_ldflags -Wl,-no_warn_duplicate_libraries
+fi
 
 if ! disabled network; then
     check_func getaddrinfo $network_extralibs
