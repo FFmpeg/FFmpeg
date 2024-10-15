@@ -1064,7 +1064,7 @@ int ff_vk_map_buffers(FFVulkanContext *s, FFVkBuffer **buf, uint8_t *mem[],
                    ff_vk_ret2str(ret));
             return AVERROR_EXTERNAL;
         }
-        mem[i] = dst;
+        mem[i] = buf[i]->mapped_mem = dst;
     }
 
     if (!invalidate)
@@ -1126,8 +1126,10 @@ int ff_vk_unmap_buffers(FFVulkanContext *s, FFVkBuffer **buf, int nb_buffers,
         }
     }
 
-    for (int i = 0; i < nb_buffers; i++)
+    for (int i = 0; i < nb_buffers; i++) {
         vk->UnmapMemory(s->hwctx->act_dev, buf[i]->mem);
+        buf[i]->mapped_mem = NULL;
+    }
 
     return err;
 }
