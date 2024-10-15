@@ -279,9 +279,11 @@ static const enum AVPixelFormat other_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    Stereo3DContext *s = ctx->priv;
+    const Stereo3DContext *s = ctx->priv;
     const enum AVPixelFormat *pix_fmts;
 
     switch (s->out.format) {
@@ -305,7 +307,7 @@ static int query_formats(AVFilterContext *ctx)
         pix_fmts = other_pix_fmts;
     }
 
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
+    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts);
 }
 
 static inline uint8_t ana_convert(const int *coeff, const uint8_t *left, const uint8_t *right)
@@ -1116,7 +1118,7 @@ const AVFilter ff_vf_stereo3d = {
     .uninit        = uninit,
     FILTER_INPUTS(stereo3d_inputs),
     FILTER_OUTPUTS(stereo3d_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class    = &stereo3d_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
