@@ -2133,6 +2133,10 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .name = "cuda",
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
+    [AV_PIX_FMT_AMF_SURFACE] = {
+        .name = "amf",
+        .flags = AV_PIX_FMT_FLAG_HWACCEL,
+    },
     [AV_PIX_FMT_VYU444] = {
         .name = "vyu444",
         .nb_components = 3,
