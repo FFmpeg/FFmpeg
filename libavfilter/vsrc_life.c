@@ -422,15 +422,17 @@ static int request_frame(AVFilterLink *outlink)
     return ff_filter_frame(outlink, picref);
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    LifeContext *life = ctx->priv;
+    const LifeContext *life = ctx->priv;
     const enum AVPixelFormat pix_fmts[] = {
         life->draw == fill_picture_rgb ? AV_PIX_FMT_RGB24 : AV_PIX_FMT_MONOBLACK,
         AV_PIX_FMT_NONE
     };
 
-    return ff_set_common_formats_from_list(ctx, pix_fmts);
+    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts);
 }
 
 static const AVFilterPad life_outputs[] = {
@@ -451,5 +453,5 @@ const AVFilter ff_vsrc_life = {
     .uninit        = uninit,
     .inputs        = NULL,
     FILTER_OUTPUTS(life_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
