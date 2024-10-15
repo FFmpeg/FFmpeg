@@ -172,9 +172,11 @@ static const AVOption v360_options[] = {
 
 AVFILTER_DEFINE_CLASS(v360);
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    V360Context *s = ctx->priv;
+    const V360Context *s = ctx->priv;
     static const enum AVPixelFormat pix_fmts[] = {
         // YUVA444
         AV_PIX_FMT_YUVA444P,   AV_PIX_FMT_YUVA444P9,
@@ -250,7 +252,8 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    return ff_set_common_formats_from_list(ctx, s->alpha ? alpha_pix_fmts : pix_fmts);
+    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out,
+                                            s->alpha ? alpha_pix_fmts : pix_fmts);
 }
 
 #define DEFINE_REMAP1_LINE(bits, div)                                                    \
@@ -5000,7 +5003,7 @@ const AVFilter ff_vf_v360 = {
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class    = &v360_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
