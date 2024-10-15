@@ -124,6 +124,9 @@ fate-filter-yuvtestsrc-vyu444: CMD = framecrc -lavfi yuvtestsrc=rate=5:duration=
 FATE_FILTER-$(call FILTERFRAMECRC, YUVTESTSRC) += fate-filter-yuvtestsrc-xv30le
 fate-filter-yuvtestsrc-xv30le: CMD = framecrc -lavfi yuvtestsrc=rate=5:duration=1 -pix_fmt xv30le
 
+FATE_FILTER-$(call FILTERFRAMECRC, YUVTESTSRC SCALE) += fate-filter-yuvtestsrc-xv36
+fate-filter-yuvtestsrc-xv36: CMD = framecrc -lavfi yuvtestsrc=rate=5:duration=1,format=xv36,scale -pix_fmt xv36le
+
 FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC FORMAT CONCAT SCALE, LAVFI_INDEV FILE_PROTOCOL) += fate-filter-lavd-scalenorm
 fate-filter-lavd-scalenorm: tests/data/filtergraphs/scalenorm
 fate-filter-lavd-scalenorm: CMD = framecrc -f lavfi -graph_file $(TARGET_PATH)/tests/data/filtergraphs/scalenorm -i dummy

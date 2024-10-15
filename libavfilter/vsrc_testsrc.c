@@ -1159,6 +1159,7 @@ static void yuvtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
                               uint8_t ayuv_map[4])
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+    int shift = 0;
     uint32_t n;
 
     switch (fmt) {
@@ -1172,6 +1173,15 @@ static void yuvtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
             (u << ((desc->comp[1].offset*8) + desc->comp[1].shift)) +
             (v << ((desc->comp[2].offset*8) + desc->comp[2].shift));
         AV_WL32(&dstp[0][i*4 + j*dst_linesizep[0]], n);
+        break;
+    case AV_PIX_FMT_XV36:
+        shift = 4; // hardcoded as the alpha component in the descriptor has no values we can use
+    // fall-through
+    case AV_PIX_FMT_AYUV64:
+        AV_WN16(&dstp[0][i*8 + ayuv_map[Y]*2 + j*dst_linesizep[0]], y << desc->comp[0].shift);
+        AV_WN16(&dstp[0][i*8 + ayuv_map[U]*2 + j*dst_linesizep[0]], u << desc->comp[1].shift);
+        AV_WN16(&dstp[0][i*8 + ayuv_map[V]*2 + j*dst_linesizep[0]], v << desc->comp[2].shift);
+        AV_WN16(&dstp[0][i*8 + ayuv_map[A]*2 + j*dst_linesizep[0]], UINT16_MAX <<      shift);
         break;
     case AV_PIX_FMT_UYVA:
     case AV_PIX_FMT_VUYA:
@@ -1235,9 +1245,9 @@ static const enum AVPixelFormat yuvtest_pix_fmts[] = {
     AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14,
     AV_PIX_FMT_YUV444P16, AV_PIX_FMT_VYU444,
-    AV_PIX_FMT_AYUV, AV_PIX_FMT_UYVA,
+    AV_PIX_FMT_AYUV, AV_PIX_FMT_UYVA, AV_PIX_FMT_AYUV64,
     AV_PIX_FMT_VUYA, AV_PIX_FMT_VUYX,
-    AV_PIX_FMT_XV30LE, AV_PIX_FMT_V30XLE,
+    AV_PIX_FMT_XV30LE, AV_PIX_FMT_V30XLE, AV_PIX_FMT_XV36,
     AV_PIX_FMT_NONE
 };
 
