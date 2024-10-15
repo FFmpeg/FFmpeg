@@ -665,6 +665,13 @@ static void read_ayuv64le_Y_c(uint8_t *dst, const uint8_t *src, const uint8_t *u
         AV_WN16(dst + i * 2, AV_RL16(src + i * 8 + 2));
 }
 
+static void read_ayuv64be_Y_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0, const uint8_t *unused1, int width,
+                               uint32_t *unused2, void *opq)
+{
+    int i;
+    for (i = 0; i < width; i++)
+        AV_WN16(dst + i * 2, AV_RB16(src + i * 8 + 2));
+}
 
 static void read_ayuv64le_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src,
                                const uint8_t *unused1, int width, uint32_t *unused2, void *opq)
@@ -676,12 +683,30 @@ static void read_ayuv64le_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unus
     }
 }
 
+static void read_ayuv64be_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src,
+                               const uint8_t *unused1, int width, uint32_t *unused2, void *opq)
+{
+    int i;
+    for (i = 0; i < width; i++) {
+        AV_WN16(dstU + i * 2, AV_RB16(src + i * 8 + 4));
+        AV_WN16(dstV + i * 2, AV_RB16(src + i * 8 + 6));
+    }
+}
+
 static void read_ayuv64le_A_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0, const uint8_t *unused1, int width,
                               uint32_t *unused2, void *opq)
 {
     int i;
     for (i = 0; i < width; i++)
         AV_WN16(dst + i * 2, AV_RL16(src + i * 8));
+}
+
+static void read_ayuv64be_A_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0, const uint8_t *unused1, int width,
+                              uint32_t *unused2, void *opq)
+{
+    int i;
+    for (i = 0; i < width; i++)
+        AV_WN16(dst + i * 2, AV_RB16(src + i * 8));
 }
 
 static void read_vuyx_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src,
@@ -1684,6 +1709,9 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c,
     case AV_PIX_FMT_AYUV64LE:
         *chrToYV12 = read_ayuv64le_UV_c;
         break;
+    case AV_PIX_FMT_AYUV64BE:
+        *chrToYV12 = read_ayuv64be_UV_c;
+        break;
     case AV_PIX_FMT_UYVA:
         *chrToYV12 = read_uyva_UV_c;
         break;
@@ -2116,6 +2144,9 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c,
     case AV_PIX_FMT_AYUV64LE:
         *lumToYV12 = read_ayuv64le_Y_c;
         break;
+    case AV_PIX_FMT_AYUV64BE:
+        *lumToYV12 = read_ayuv64be_Y_c;
+        break;
     case AV_PIX_FMT_XV36LE:
         *lumToYV12 = read_xv36le_Y_c;
         break;
@@ -2323,6 +2354,9 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c,
             break;
         case AV_PIX_FMT_AYUV64LE:
             *alpToYV12 = read_ayuv64le_A_c;
+            break;
+        case AV_PIX_FMT_AYUV64BE:
+            *alpToYV12 = read_ayuv64be_A_c;
             break;
         case AV_PIX_FMT_PAL8 :
             *alpToYV12 = palToA_c;
