@@ -138,9 +138,12 @@ static av_cold void uninit(AVFilterContext *ctx)
         ass_library_done(ass->library);
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out,
+                                  ff_draw_supported_pixel_formats(0));
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -255,7 +258,7 @@ const AVFilter ff_vf_ass = {
     .uninit        = uninit,
     FILTER_INPUTS(ass_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class    = &ass_class,
 };
 #endif
@@ -510,7 +513,7 @@ const AVFilter ff_vf_subtitles = {
     .uninit        = uninit,
     FILTER_INPUTS(ass_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class    = &subtitles_class,
 };
 #endif
