@@ -136,22 +136,23 @@ static const AVOption setparams_options[] = {
 
 AVFILTER_DEFINE_CLASS(setparams);
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    SetParamsContext *s = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
+    const SetParamsContext *s = ctx->priv;
     int ret;
 
     if (s->colorspace >= 0) {
         ret = ff_formats_ref(ff_make_formats_list_singleton(s->colorspace),
-                             &outlink->incfg.color_spaces);
+                             &cfg_out[0]->color_spaces);
         if (ret < 0)
             return ret;
     }
 
     if (s->color_range >= 0) {
         ret = ff_formats_ref(ff_make_formats_list_singleton(s->color_range),
-                             &outlink->incfg.color_ranges);
+                             &cfg_out[0]->color_ranges);
         if (ret < 0)
             return ret;
     }
@@ -217,7 +218,7 @@ const AVFilter ff_vf_setparams = {
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
 
 #if CONFIG_SETRANGE_FILTER
@@ -258,7 +259,7 @@ const AVFilter ff_vf_setrange = {
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
 #endif /* CONFIG_SETRANGE_FILTER */
 
