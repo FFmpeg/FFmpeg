@@ -183,9 +183,11 @@ static av_cold int init(AVFilterContext *ctx)
 
 static enum AVColorRange convert_range_from_zimg(enum zimg_pixel_range_e color_range);
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    ZScaleContext *s = ctx->priv;
+    const ZScaleContext *s = ctx->priv;
     AVFilterFormats *formats;
     static const enum AVPixelFormat pixel_fmts[] = {
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
@@ -212,27 +214,27 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret;
 
-    ret = ff_formats_ref(ff_make_format_list(pixel_fmts), &ctx->inputs[0]->outcfg.formats);
+    ret = ff_formats_ref(ff_make_format_list(pixel_fmts), &cfg_in[0]->formats);
     if (ret < 0)
         return ret;
-    ret = ff_formats_ref(ff_make_format_list(pixel_fmts), &ctx->outputs[0]->incfg.formats);
+    ret = ff_formats_ref(ff_make_format_list(pixel_fmts), &cfg_out[0]->formats);
     if (ret < 0)
         return ret;
 
-    if ((ret = ff_formats_ref(ff_all_color_spaces(), &ctx->inputs[0]->outcfg.color_spaces)) < 0 ||
-        (ret = ff_formats_ref(ff_all_color_ranges(), &ctx->inputs[0]->outcfg.color_ranges)) < 0)
+    if ((ret = ff_formats_ref(ff_all_color_spaces(), &cfg_in[0]->color_spaces)) < 0 ||
+        (ret = ff_formats_ref(ff_all_color_ranges(), &cfg_in[0]->color_ranges)) < 0)
         return ret;
 
     formats = s->colorspace != ZIMG_MATRIX_UNSPECIFIED && s->colorspace > 0
         ? ff_make_formats_list_singleton(s->colorspace)
         : ff_all_color_spaces();
-    if ((ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.color_spaces)) < 0)
+    if ((ret = ff_formats_ref(formats, &cfg_out[0]->color_spaces)) < 0)
         return ret;
 
     formats = s->range != -1
         ? ff_make_formats_list_singleton(convert_range_from_zimg(s->range))
         : ff_all_color_ranges();
-    if ((ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.color_ranges)) < 0)
+    if ((ret = ff_formats_ref(formats, &cfg_out[0]->color_ranges)) < 0)
         return ret;
 
     return 0;
@@ -1133,7 +1135,7 @@ const AVFilter ff_vf_zscale = {
     .uninit          = uninit,
     FILTER_INPUTS(avfilter_vf_zscale_inputs),
     FILTER_OUTPUTS(avfilter_vf_zscale_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .process_command = process_command,
     .flags           = AVFILTER_FLAG_SLICE_THREADS,
 };
