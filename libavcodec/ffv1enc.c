@@ -317,7 +317,7 @@ static void write_quant_table(RangeCoder *c, int16_t *quant_table)
     uint8_t state[CONTEXT_SIZE];
     memset(state, 128, sizeof(state));
 
-    for (i = 1; i < 128; i++)
+    for (i = 1; i < MAX_QUANT_TABLE_SIZE/2; i++)
         if (quant_table[i] != quant_table[i - 1]) {
             put_symbol(c, state, i - last - 1, 0);
             last = i;
@@ -326,7 +326,7 @@ static void write_quant_table(RangeCoder *c, int16_t *quant_table)
 }
 
 static void write_quant_tables(RangeCoder *c,
-                               int16_t quant_table[MAX_CONTEXT_INPUTS][256])
+                               int16_t quant_table[MAX_CONTEXT_INPUTS][MAX_QUANT_TABLE_SIZE])
 {
     int i;
     for (i = 0; i < 5; i++)
@@ -726,7 +726,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             s->state_transition[i] = c.one_state[i];
     }
 
-    for (i = 0; i < 256; i++) {
+    for (i = 0; i < MAX_QUANT_TABLE_SIZE; i++) {
         s->quant_table_count = 2;
         if (s->bits_per_raw_sample <= 8) {
             s->quant_tables[0][0][i]=           quant11[i];

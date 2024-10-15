@@ -44,6 +44,8 @@
 #define CONTEXT_SIZE 32
 
 #define MAX_QUANT_TABLES 8
+#define MAX_QUANT_TABLE_SIZE 256
+#define MAX_QUANT_TABLE_MASK (MAX_QUANT_TABLE_SIZE - 1)
 #define MAX_CONTEXT_INPUTS 5
 
 #define AC_GOLOMB_RICE          0
@@ -124,7 +126,7 @@ typedef struct FFV1Context {
     const AVFrame *cur_enc_frame;
     int plane_count;
     int ac;                              ///< 1=range coder <-> 0=golomb rice
-    int16_t quant_tables[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS][256];
+    int16_t quant_tables[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS][MAX_QUANT_TABLE_SIZE];
     int context_count[MAX_QUANT_TABLES];
     uint8_t state_transition[256];
     uint8_t (*initial_states[MAX_QUANT_TABLES])[32];
