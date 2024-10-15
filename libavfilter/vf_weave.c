@@ -52,11 +52,14 @@ static const AVOption weave_options[] = {
 
 AVFILTER_DEFINE_CLASS_EXT(weave, "(double)weave", weave_options);
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
     int reject_flags = AV_PIX_FMT_FLAG_PAL | AV_PIX_FMT_FLAG_HWACCEL;
 
-    return ff_set_common_formats(ctx, ff_formats_pixdesc_filter(0, reject_flags));
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out,
+                                  ff_formats_pixdesc_filter(0, reject_flags));
 }
 
 static int config_props_output(AVFilterLink *outlink)
@@ -209,7 +212,7 @@ const AVFilter ff_vf_weave = {
     .uninit        = uninit,
     FILTER_INPUTS(weave_inputs),
     FILTER_OUTPUTS(weave_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
 
@@ -232,6 +235,6 @@ const AVFilter ff_vf_doubleweave = {
     .uninit        = uninit,
     FILTER_INPUTS(weave_inputs),
     FILTER_OUTPUTS(weave_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
