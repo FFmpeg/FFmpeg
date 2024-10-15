@@ -84,13 +84,17 @@ static int dovi_rpu_update_fragment_hevc(AVBSFContext *bsf, AVPacket *pkt,
     uint8_t *rpu = NULL;
     int rpu_size, ret;
 
-    if (!nal || nal->type != HEVC_NAL_UNSPEC62)
+    // HEVC_NAL_UNSPEC62 is Dolby Vision PRU and HEVC_NAL_UNSPEC63 is Dolby Vision EL
+    if (!nal || (nal->type != HEVC_NAL_UNSPEC62 && nal->type != HEVC_NAL_UNSPEC63))
         return 0;
 
     if (s->strip) {
         ff_cbs_delete_unit(au, au->nb_units - 1);
         return 0;
     }
+
+    if (nal->type == HEVC_NAL_UNSPEC63)
+        return 0;
 
     ret = update_rpu(bsf, pkt, 0, nal->data + 2, nal->data_size - 2, &rpu, &rpu_size);
     if (ret < 0)
