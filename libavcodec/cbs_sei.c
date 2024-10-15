@@ -23,24 +23,24 @@
 #include "cbs_h265.h"
 #include "cbs_h266.h"
 #include "cbs_sei.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 
-static void cbs_free_user_data_registered(FFRefStructOpaque unused, void *obj)
+static void cbs_free_user_data_registered(AVRefStructOpaque unused, void *obj)
 {
     SEIRawUserDataRegistered *udr = obj;
-    ff_refstruct_unref(&udr->data);
+    av_refstruct_unref(&udr->data);
 }
 
-static void cbs_free_user_data_unregistered(FFRefStructOpaque unused, void *obj)
+static void cbs_free_user_data_unregistered(AVRefStructOpaque unused, void *obj)
 {
     SEIRawUserDataUnregistered *udu = obj;
-    ff_refstruct_unref(&udu->data);
+    av_refstruct_unref(&udu->data);
 }
 
 int ff_cbs_sei_alloc_message_payload(SEIRawMessage *message,
                                      const SEIMessageTypeDescriptor *desc)
 {
-    void (*free_func)(FFRefStructOpaque, void*);
+    void (*free_func)(AVRefStructOpaque, void*);
 
     av_assert0(message->payload     == NULL &&
                message->payload_ref == NULL);
@@ -54,7 +54,7 @@ int ff_cbs_sei_alloc_message_payload(SEIRawMessage *message,
         free_func = NULL;
     }
 
-    message->payload_ref = ff_refstruct_alloc_ext(desc->size, 0,
+    message->payload_ref = av_refstruct_alloc_ext(desc->size, 0,
                                                   NULL, free_func);
     if (!message->payload_ref)
         return AVERROR(ENOMEM);
@@ -92,8 +92,8 @@ void ff_cbs_sei_free_message_list(SEIRawMessageList *list)
 {
     for (int i = 0; i < list->nb_messages; i++) {
         SEIRawMessage *message = &list->messages[i];
-        ff_refstruct_unref(&message->payload_ref);
-        ff_refstruct_unref(&message->extension_data);
+        av_refstruct_unref(&message->payload_ref);
+        av_refstruct_unref(&message->extension_data);
     }
     av_free(list->messages);
 }
@@ -299,7 +299,7 @@ int ff_cbs_sei_add_message(CodedBitstreamContext *ctx,
     if (payload_ref) {
         /* The following just increments payload_ref's refcount,
          * so that payload_ref is now owned by us. */
-        payload_ref = ff_refstruct_ref(payload_ref);
+        payload_ref = av_refstruct_ref(payload_ref);
     }
 
     message = &list->messages[list->nb_messages - 1];
@@ -352,8 +352,8 @@ static void cbs_sei_delete_message(SEIRawMessageList *list,
     av_assert0(0 <= position && position < list->nb_messages);
 
     message = &list->messages[position];
-    ff_refstruct_unref(&message->payload_ref);
-    ff_refstruct_unref(&message->extension_data);
+    av_refstruct_unref(&message->payload_ref);
+    av_refstruct_unref(&message->extension_data);
 
     --list->nb_messages;
 

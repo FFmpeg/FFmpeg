@@ -202,7 +202,7 @@ typedef struct VAAPIEncodeContext {
     AVVAAPIDeviceContext *hwctx;
 
     // Pool of (reusable) bitstream output buffers.
-    struct FFRefStructPool *output_buffer_pool;
+    struct AVRefStructPool *output_buffer_pool;
 
     // Global parameters which will be applied at the start of the
     // sequence (includes rate control parameters below).

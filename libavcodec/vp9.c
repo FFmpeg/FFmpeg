@@ -31,7 +31,7 @@
 #include "hwconfig.h"
 #include "profiles.h"
 #include "progressframe.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include "thread.h"
 #include "pthread_internal.h"
 
@@ -97,8 +97,8 @@ static void vp9_tile_data_free(VP9TileData *td)
 static void vp9_frame_unref(VP9Frame *f)
 {
     ff_progress_frame_unref(&f->tf);
-    ff_refstruct_unref(&f->extradata);
-    ff_refstruct_unref(&f->hwaccel_picture_private);
+    av_refstruct_unref(&f->extradata);
+    av_refstruct_unref(&f->hwaccel_picture_private);
     f->segmentation_map = NULL;
 }
 
@@ -113,9 +113,9 @@ static int vp9_frame_alloc(AVCodecContext *avctx, VP9Frame *f)
 
     sz = 64 * s->sb_cols * s->sb_rows;
     if (sz != s->frame_extradata_pool_size) {
-        ff_refstruct_pool_uninit(&s->frame_extradata_pool);
-        s->frame_extradata_pool = ff_refstruct_pool_alloc(sz * (1 + sizeof(VP9mvrefPair)),
-                                                          FF_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME);
+        av_refstruct_pool_uninit(&s->frame_extradata_pool);
+        s->frame_extradata_pool = av_refstruct_pool_alloc(sz * (1 + sizeof(VP9mvrefPair)),
+                                                          AV_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME);
         if (!s->frame_extradata_pool) {
             s->frame_extradata_pool_size = 0;
             ret = AVERROR(ENOMEM);
@@ -123,7 +123,7 @@ static int vp9_frame_alloc(AVCodecContext *avctx, VP9Frame *f)
         }
         s->frame_extradata_pool_size = sz;
     }
-    f->extradata = ff_refstruct_pool_get(s->frame_extradata_pool);
+    f->extradata = av_refstruct_pool_get(s->frame_extradata_pool);
     if (!f->extradata) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -147,13 +147,13 @@ static void vp9_frame_replace(VP9Frame *dst, const VP9Frame *src)
 {
     ff_progress_frame_replace(&dst->tf, &src->tf);
 
-    ff_refstruct_replace(&dst->extradata, src->extradata);
+    av_refstruct_replace(&dst->extradata, src->extradata);
 
     dst->segmentation_map = src->segmentation_map;
     dst->mv = src->mv;
     dst->uses_2pass = src->uses_2pass;
 
-    ff_refstruct_replace(&dst->hwaccel_picture_private,
+    av_refstruct_replace(&dst->hwaccel_picture_private,
                           src->hwaccel_picture_private);
 }
 
@@ -1239,7 +1239,7 @@ static av_cold int vp9_decode_free(AVCodecContext *avctx)
 
     for (int i = 0; i < 3; i++)
         vp9_frame_unref(&s->s.frames[i]);
-    ff_refstruct_pool_uninit(&s->frame_extradata_pool);
+    av_refstruct_pool_uninit(&s->frame_extradata_pool);
     for (i = 0; i < 8; i++) {
         ff_progress_frame_unref(&s->s.refs[i]);
         ff_progress_frame_unref(&s->next_refs[i]);
@@ -1802,7 +1802,7 @@ static int vp9_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
         vp9_frame_replace(&s->s.frames[i], &ssrc->s.frames[i]);
     for (int i = 0; i < 8; i++)
         ff_progress_frame_replace(&s->s.refs[i], &ssrc->next_refs[i]);
-    ff_refstruct_replace(&s->frame_extradata_pool, ssrc->frame_extradata_pool);
+    av_refstruct_replace(&s->frame_extradata_pool, ssrc->frame_extradata_pool);
     s->frame_extradata_pool_size = ssrc->frame_extradata_pool_size;
 
     s->s.h.invisible = ssrc->s.h.invisible;

@@ -51,7 +51,7 @@
 #include "hwconfig.h"
 #include "qsv.h"
 #include "qsv_internal.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 
 #if QSV_ONEVPL
 #include <mfxdispatcher.h>
@@ -984,7 +984,7 @@ static void qsv_decode_close_qsvcontext(QSVContext *q)
     ff_qsv_close_internal_session(&q->internal_qs);
 
     av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
-    ff_refstruct_unref(&q->frames_ctx.mids);
+    av_refstruct_unref(&q->frames_ctx.mids);
     av_buffer_pool_uninit(&q->pool);
 }
 

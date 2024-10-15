@@ -32,6 +32,7 @@
 #include "libavutil/film_grain_params.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mem.h"
+#include "libavutil/refstruct.h"
 #include "libavutil/stereo3d.h"
 
 #include "atsc_a53.h"
@@ -42,7 +43,6 @@
 #include "golomb.h"
 #include "h2645_sei.h"
 #include "itut35.h"
-#include "refstruct.h"
 
 #define IS_H264(codec_id) (CONFIG_H264_SEI && CONFIG_HEVC_SEI ? codec_id == AV_CODEC_ID_H264 : CONFIG_H264_SEI)
 #define IS_HEVC(codec_id) (CONFIG_H264_SEI && CONFIG_HEVC_SEI ? codec_id == AV_CODEC_ID_HEVC : CONFIG_HEVC_SEI)
@@ -496,8 +496,8 @@ int ff_h2645_sei_message_decode(H2645SEI *h, enum SEIType type,
     case SEI_TYPE_DISPLAY_ORIENTATION:
         return decode_display_orientation(&h->display_orientation, gb);
     case SEI_TYPE_FILM_GRAIN_CHARACTERISTICS:
-        ff_refstruct_unref(&h->film_grain_characteristics);
-        h->film_grain_characteristics = ff_refstruct_allocz(sizeof(*h->film_grain_characteristics));
+        av_refstruct_unref(&h->film_grain_characteristics);
+        h->film_grain_characteristics = av_refstruct_allocz(sizeof(*h->film_grain_characteristics));
         if (!h->film_grain_characteristics)
             return AVERROR(ENOMEM);
         return decode_film_grain_characteristics(h->film_grain_characteristics, codec_id, gb);
@@ -559,7 +559,7 @@ int ff_h2645_sei_ctx_replace(H2645SEI *dst, const H2645SEI *src)
     dst->mastering_display     = src->mastering_display;
     dst->content_light         = src->content_light;
 
-    ff_refstruct_replace(&dst->film_grain_characteristics,
+    av_refstruct_replace(&dst->film_grain_characteristics,
                           src->film_grain_characteristics);
 
     return 0;
@@ -934,6 +934,6 @@ void ff_h2645_sei_reset(H2645SEI *s)
     s->mastering_display.present = 0;
     s->content_light.present = 0;
 
-    ff_refstruct_unref(&s->film_grain_characteristics);
+    av_refstruct_unref(&s->film_grain_characteristics);
     ff_aom_uninit_film_grain_params(&s->aom_film_grain);
 }

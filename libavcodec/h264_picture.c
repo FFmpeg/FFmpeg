@@ -32,7 +32,7 @@
 #include "h264dec.h"
 #include "hwaccel_internal.h"
 #include "mpegutils.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include "thread.h"
 #include "threadframe.h"
 
@@ -46,35 +46,35 @@ void ff_h264_unref_picture(H264Picture *pic)
 
     ff_thread_release_ext_buffer(&pic->tf);
     av_frame_unref(pic->f_grain);
-    ff_refstruct_unref(&pic->hwaccel_picture_private);
+    av_refstruct_unref(&pic->hwaccel_picture_private);
 
-    ff_refstruct_unref(&pic->qscale_table_base);
-    ff_refstruct_unref(&pic->mb_type_base);
-    ff_refstruct_unref(&pic->pps);
+    av_refstruct_unref(&pic->qscale_table_base);
+    av_refstruct_unref(&pic->mb_type_base);
+    av_refstruct_unref(&pic->pps);
     for (i = 0; i < 2; i++) {
-        ff_refstruct_unref(&pic->motion_val_base[i]);
-        ff_refstruct_unref(&pic->ref_index[i]);
+        av_refstruct_unref(&pic->motion_val_base[i]);
+        av_refstruct_unref(&pic->ref_index[i]);
     }
-    ff_refstruct_unref(&pic->decode_error_flags);
+    av_refstruct_unref(&pic->decode_error_flags);
 
     memset((uint8_t*)pic + off, 0, sizeof(*pic) - off);
 }
 
 static void h264_copy_picture_params(H264Picture *dst, const H264Picture *src)
 {
-    ff_refstruct_replace(&dst->qscale_table_base, src->qscale_table_base);
-    ff_refstruct_replace(&dst->mb_type_base,      src->mb_type_base);
-    ff_refstruct_replace(&dst->pps, src->pps);
+    av_refstruct_replace(&dst->qscale_table_base, src->qscale_table_base);
+    av_refstruct_replace(&dst->mb_type_base,      src->mb_type_base);
+    av_refstruct_replace(&dst->pps, src->pps);
 
     for (int i = 0; i < 2; i++) {
-        ff_refstruct_replace(&dst->motion_val_base[i], src->motion_val_base[i]);
-        ff_refstruct_replace(&dst->ref_index[i],       src->ref_index[i]);
+        av_refstruct_replace(&dst->motion_val_base[i], src->motion_val_base[i]);
+        av_refstruct_replace(&dst->ref_index[i],       src->ref_index[i]);
     }
 
-    ff_refstruct_replace(&dst->hwaccel_picture_private,
+    av_refstruct_replace(&dst->hwaccel_picture_private,
                           src->hwaccel_picture_private);
 
-    ff_refstruct_replace(&dst->decode_error_flags, src->decode_error_flags);
+    av_refstruct_replace(&dst->decode_error_flags, src->decode_error_flags);
 
     dst->qscale_table = src->qscale_table;
     dst->mb_type      = src->mb_type;

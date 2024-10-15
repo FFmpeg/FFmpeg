@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-12-15 - xxxxxxxxxx - lavu 59.51.100 - refstruct.h
+  Add a new public header refstruct.h with new API for
+  reference-counted objects.
+
 2024-12-13 - xxxxxxxxxx - lavu 59.50.100 - channel_layout.h
   Add AV_CH_LAYOUT_9POINT1POINT6 and AV_CHANNEL_LAYOUT_9POINT1POINT6.
 

@@ -138,11 +138,11 @@ typedef struct VVCFrameContext {
 
     uint64_t decode_order;
 
-    struct FFRefStructPool *tab_dmvr_mvf_pool;
-    struct FFRefStructPool *rpl_tab_pool;
+    struct AVRefStructPool *tab_dmvr_mvf_pool;
+    struct AVRefStructPool *rpl_tab_pool;
 
-    struct FFRefStructPool *cu_pool;
-    struct FFRefStructPool *tu_pool;
+    struct AVRefStructPool *cu_pool;
+    struct AVRefStructPool *tu_pool;
 
     struct {
         int16_t *slice_idx;

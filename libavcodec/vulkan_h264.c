@@ -541,7 +541,7 @@ static int vk_h264_end_frame(AVCodecContext *avctx)
     return ff_vk_decode_frame(avctx, pic->f, vp, rav, rvp);
 }
 
-static void vk_h264_free_frame_priv(FFRefStructOpaque _hwctx, void *data)
+static void vk_h264_free_frame_priv(AVRefStructOpaque _hwctx, void *data)
 {
     AVHWDeviceContext *hwctx = _hwctx.nc;
     H264VulkanDecodePicture *hp = data;

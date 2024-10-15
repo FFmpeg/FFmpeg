@@ -52,7 +52,7 @@ typedef struct NVDECFrame {
 typedef struct NVDECContext {
     CUVIDPICPARAMS pic_params;
 
-    struct FFRefStructPool *decoder_pool;
+    struct AVRefStructPool *decoder_pool;
 
     struct NVDECDecoder  *decoder; ///< RefStruct reference
 

@@ -29,7 +29,7 @@
 #include "hevc.h"
 #include "hevcdec.h"
 #include "progressframe.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 
 void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
 {
@@ -39,15 +39,15 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
         av_frame_unref(frame->frame_grain);
         frame->needs_fg = 0;
 
-        ff_refstruct_unref(&frame->pps);
-        ff_refstruct_unref(&frame->tab_mvf);
+        av_refstruct_unref(&frame->pps);
+        av_refstruct_unref(&frame->tab_mvf);
 
-        ff_refstruct_unref(&frame->rpl);
+        av_refstruct_unref(&frame->rpl);
         frame->nb_rpl_elems = 0;
-        ff_refstruct_unref(&frame->rpl_tab);
+        av_refstruct_unref(&frame->rpl_tab);
         frame->refPicList = NULL;
 
-        ff_refstruct_unref(&frame->hwaccel_picture_private);
+        av_refstruct_unref(&frame->hwaccel_picture_private);
     }
 }
 
@@ -135,16 +135,16 @@ static HEVCFrame *alloc_frame(HEVCContext *s, HEVCLayerContext *l)
         if (ret < 0)
             return NULL;
 
-        frame->rpl = ff_refstruct_allocz(s->pkt.nb_nals * sizeof(*frame->rpl));
+        frame->rpl = av_refstruct_allocz(s->pkt.nb_nals * sizeof(*frame->rpl));
         if (!frame->rpl)
             goto fail;
         frame->nb_rpl_elems = s->pkt.nb_nals;
 
-        frame->tab_mvf = ff_refstruct_pool_get(l->tab_mvf_pool);
+        frame->tab_mvf = av_refstruct_pool_get(l->tab_mvf_pool);
         if (!frame->tab_mvf)
             goto fail;
 
-        frame->rpl_tab = ff_refstruct_pool_get(l->rpl_tab_pool);
+        frame->rpl_tab = av_refstruct_pool_get(l->rpl_tab_pool);
         if (!frame->rpl_tab)
             goto fail;
         frame->ctb_count = l->sps->ctb_width * l->sps->ctb_height;
@@ -161,7 +161,7 @@ static HEVCFrame *alloc_frame(HEVCContext *s, HEVCLayerContext *l)
         if (ret < 0)
             goto fail;
 
-        frame->pps = ff_refstruct_ref_c(s->pps);
+        frame->pps = av_refstruct_ref_c(s->pps);
 
         return frame;
 fail:

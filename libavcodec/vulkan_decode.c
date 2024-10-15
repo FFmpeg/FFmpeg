@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include "vulkan_video.h"
 #include "vulkan_decode.h"
 #include "config_components.h"
@@ -102,7 +102,7 @@ int ff_vk_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
             return err;
     }
 
-    ff_refstruct_replace(&dst_ctx->shared_ctx, src_ctx->shared_ctx);
+    av_refstruct_replace(&dst_ctx->shared_ctx, src_ctx->shared_ctx);
 
     if (src_ctx->session_params) {
         err = av_buffer_replace(&dst_ctx->session_params, src_ctx->session_params);
@@ -571,7 +571,7 @@ void ff_vk_decode_free_frame(AVHWDeviceContext *dev_ctx, FFVulkanDecodePicture *
     av_frame_free(&vp->dpb_frame);
 }
 
-static void free_common(FFRefStructOpaque unused, void *obj)
+static void free_common(AVRefStructOpaque unused, void *obj)
 {
     FFVulkanDecodeShared *ctx = obj;
     FFVulkanContext *s = &ctx->s;
@@ -605,7 +605,7 @@ static int vulkan_decode_bootstrap(AVCodecContext *avctx, AVBufferRef *frames_re
     if (dec->shared_ctx)
         return 0;
 
-    dec->shared_ctx = ff_refstruct_alloc_ext(sizeof(*ctx), 0, NULL,
+    dec->shared_ctx = av_refstruct_alloc_ext(sizeof(*ctx), 0, NULL,
                                              free_common);
     if (!dec->shared_ctx)
         return AVERROR(ENOMEM);
@@ -618,13 +618,13 @@ static int vulkan_decode_bootstrap(AVCodecContext *avctx, AVBufferRef *frames_re
     if (!(ctx->s.extensions & FF_VK_EXT_VIDEO_DECODE_QUEUE)) {
         av_log(avctx, AV_LOG_ERROR, "Device does not support the %s extension!\n",
                VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME);
-        ff_refstruct_unref(&dec->shared_ctx);
+        av_refstruct_unref(&dec->shared_ctx);
         return AVERROR(ENOSYS);
     }
 
     err = ff_vk_load_functions(device, &ctx->s.vkfn, ctx->s.extensions, 1, 1);
     if (err < 0) {
-        ff_refstruct_unref(&dec->shared_ctx);
+        av_refstruct_unref(&dec->shared_ctx);
         return err;
     }
 
@@ -1073,7 +1073,7 @@ int ff_vk_decode_uninit(AVCodecContext *avctx)
 
     av_freep(&dec->hevc_headers);
     av_buffer_unref(&dec->session_params);
-    ff_refstruct_unref(&dec->shared_ctx);
+    av_refstruct_unref(&dec->shared_ctx);
     av_freep(&dec->slice_off);
     return 0;
 }

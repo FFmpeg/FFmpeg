@@ -25,7 +25,7 @@
 #include "libavcodec/hwaccel_internal.h"
 #include "libavcodec/hwconfig.h"
 #include "libavcodec/profiles.h"
-#include "libavcodec/refstruct.h"
+#include "libavutil/refstruct.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 #include "libavutil/thread.h"
@@ -352,8 +352,8 @@ static void pic_arrays_free(VVCFrameContext *fc)
 {
     free_cus(fc);
     frame_context_for_each_tl(fc, tl_free);
-    ff_refstruct_pool_uninit(&fc->rpl_tab_pool);
-    ff_refstruct_pool_uninit(&fc->tab_dmvr_mvf_pool);
+    av_refstruct_pool_uninit(&fc->rpl_tab_pool);
+    av_refstruct_pool_uninit(&fc->tab_dmvr_mvf_pool);
 
     memset(&fc->tab.sz, 0, sizeof(fc->tab.sz));
 }
@@ -378,16 +378,16 @@ static int pic_arrays_init(VVCContext *s, VVCFrameContext *fc)
     memset(fc->tab.slice_idx, -1, sizeof(*fc->tab.slice_idx) * ctu_count);
 
     if (fc->tab.sz.ctu_count != ctu_count) {
-        ff_refstruct_pool_uninit(&fc->rpl_tab_pool);
-        fc->rpl_tab_pool = ff_refstruct_pool_alloc(ctu_count * sizeof(RefPicListTab), 0);
+        av_refstruct_pool_uninit(&fc->rpl_tab_pool);
+        fc->rpl_tab_pool = av_refstruct_pool_alloc(ctu_count * sizeof(RefPicListTab), 0);
         if (!fc->rpl_tab_pool)
             return AVERROR(ENOMEM);
     }
 
     if (fc->tab.sz.pic_size_in_min_pu != pic_size_in_min_pu) {
-        ff_refstruct_pool_uninit(&fc->tab_dmvr_mvf_pool);
-        fc->tab_dmvr_mvf_pool = ff_refstruct_pool_alloc(
-            pic_size_in_min_pu * sizeof(MvField), FF_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME);
+        av_refstruct_pool_uninit(&fc->tab_dmvr_mvf_pool);
+        fc->tab_dmvr_mvf_pool = av_refstruct_pool_alloc(
+            pic_size_in_min_pu * sizeof(MvField), AV_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME);
         if (!fc->tab_dmvr_mvf_pool)
             return AVERROR(ENOMEM);
     }
@@ -468,8 +468,8 @@ static void slices_free(VVCFrameContext *fc)
         for (int i = 0; i < fc->nb_slices_allocated; i++) {
             SliceContext *slice = fc->slices[i];
             if (slice) {
-                ff_refstruct_unref(&slice->ref);
-                ff_refstruct_unref(&slice->sh.r);
+                av_refstruct_unref(&slice->ref);
+                av_refstruct_unref(&slice->sh.r);
                 eps_free(slice);
                 av_free(slice);
             }
@@ -598,16 +598,16 @@ static int ref_frame(VVCFrame *dst, const VVCFrame *src)
     if (ret < 0)
         return ret;
 
-    ff_refstruct_replace(&dst->sps, src->sps);
-    ff_refstruct_replace(&dst->pps, src->pps);
+    av_refstruct_replace(&dst->sps, src->sps);
+    av_refstruct_replace(&dst->pps, src->pps);
 
-    ff_refstruct_replace(&dst->progress, src->progress);
+    av_refstruct_replace(&dst->progress, src->progress);
 
-    ff_refstruct_replace(&dst->tab_dmvr_mvf, src->tab_dmvr_mvf);
+    av_refstruct_replace(&dst->tab_dmvr_mvf, src->tab_dmvr_mvf);
 
-    ff_refstruct_replace(&dst->rpl_tab, src->rpl_tab);
-    ff_refstruct_replace(&dst->rpl, src->rpl);
-    ff_refstruct_replace(&dst->hwaccel_picture_private,
+    av_refstruct_replace(&dst->rpl_tab, src->rpl_tab);
+    av_refstruct_replace(&dst->rpl, src->rpl);
+    av_refstruct_replace(&dst->hwaccel_picture_private,
                           src->hwaccel_picture_private);
     dst->nb_rpl_elems = src->nb_rpl_elems;
 
@@ -628,8 +628,8 @@ static av_cold void frame_context_free(VVCFrameContext *fc)
 {
     slices_free(fc);
 
-    ff_refstruct_pool_uninit(&fc->tu_pool);
-    ff_refstruct_pool_uninit(&fc->cu_pool);
+    av_refstruct_pool_uninit(&fc->tu_pool);
+    av_refstruct_pool_uninit(&fc->cu_pool);
 
     for (int i = 0; i < FF_ARRAY_ELEMS(fc->DPB); i++) {
         ff_vvc_unref_frame(fc, &fc->DPB[i], ~0);
@@ -656,11 +656,11 @@ static av_cold int frame_context_init(VVCFrameContext *fc, AVCodecContext *avctx
         if (!fc->DPB[j].frame)
             return AVERROR(ENOMEM);
     }
-    fc->cu_pool = ff_refstruct_pool_alloc(sizeof(CodingUnit), 0);
+    fc->cu_pool = av_refstruct_pool_alloc(sizeof(CodingUnit), 0);
     if (!fc->cu_pool)
         return AVERROR(ENOMEM);
 
-    fc->tu_pool = ff_refstruct_pool_alloc(sizeof(TransformUnit), 0);
+    fc->tu_pool = av_refstruct_pool_alloc(sizeof(TransformUnit), 0);
     if (!fc->tu_pool)
         return AVERROR(ENOMEM);
 
@@ -743,7 +743,7 @@ static int slice_start(SliceContext *sc, VVCContext *s, VVCFrameContext *fc,
     if (ret < 0)
         return ret;
 
-    ff_refstruct_replace(&sc->ref, unit->content_ref);
+    av_refstruct_replace(&sc->ref, unit->content_ref);
 
     if (is_first_slice) {
         ret = frame_start(s, fc, sc);

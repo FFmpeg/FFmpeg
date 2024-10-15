@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/refstruct.h"
+#include "libavutil/refstruct.h"
 
 #include "cabac.h"
 #include "ctu.h"
@@ -209,7 +209,7 @@ static void set_qp_c(VVCLocalContext *lc)
 
 static TransformUnit* alloc_tu(VVCFrameContext *fc, CodingUnit *cu)
 {
-    TransformUnit *tu = ff_refstruct_pool_get(fc->tu_pool);
+    TransformUnit *tu = av_refstruct_pool_get(fc->tu_pool);
     if (!tu)
         return NULL;
 
@@ -1184,7 +1184,7 @@ static CodingUnit* alloc_cu(VVCLocalContext *lc, const int x0, const int y0)
     const int rx        = x0 >> sps->ctb_log2_size_y;
     const int ry        = y0 >> sps->ctb_log2_size_y;
     CodingUnit **cus    = fc->tab.cus + ry * pps->ctb_width + rx;
-    CodingUnit *cu      = ff_refstruct_pool_get(fc->cu_pool);
+    CodingUnit *cu      = av_refstruct_pool_get(fc->cu_pool);
 
     if (!cu)
         return NULL;
@@ -2550,11 +2550,11 @@ void ff_vvc_ctu_free_cus(CodingUnit **cus)
         while (*head) {
             TransformUnit *tu = *head;
             *head = tu->next;
-            ff_refstruct_unref(&tu);
+            av_refstruct_unref(&tu);
         }
         cu->tus.tail = NULL;
 
-        ff_refstruct_unref(&cu);
+        av_refstruct_unref(&cu);
     }
 }
 

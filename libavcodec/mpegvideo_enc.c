@@ -75,7 +75,7 @@
 #include "wmv2enc.h"
 #include "rv10enc.h"
 #include "packet_internal.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include <limits.h>
 #include "sp5x.h"
 
@@ -1033,12 +1033,12 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     ff_rate_control_uninit(&s->rc_context);
 
     ff_mpv_common_end(s);
-    ff_refstruct_pool_uninit(&s->picture_pool);
+    av_refstruct_pool_uninit(&s->picture_pool);
 
     if (s->input_picture && s->reordered_input_picture) {
         for (int i = 0; i < MAX_B_FRAMES + 1; i++) {
-            ff_refstruct_unref(&s->input_picture[i]);
-            ff_refstruct_unref(&s->reordered_input_picture[i]);
+            av_refstruct_unref(&s->input_picture[i]);
+            av_refstruct_unref(&s->reordered_input_picture[i]);
         }
     }
     for (i = 0; i < FF_ARRAY_ELEMS(s->tmp_frames); i++)
@@ -1232,7 +1232,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
         ff_dlog(s->avctx, "%d %d %"PTRDIFF_SPECIFIER" %"PTRDIFF_SPECIFIER"\n", pic_arg->linesize[0],
                 pic_arg->linesize[1], s->linesize, s->uvlinesize);
 
-        pic = ff_refstruct_pool_get(s->picture_pool);
+        pic = av_refstruct_pool_get(s->picture_pool);
         if (!pic)
             return AVERROR(ENOMEM);
 
@@ -1311,7 +1311,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
 
     return 0;
 fail:
-    ff_refstruct_unref(&pic);
+    av_refstruct_unref(&pic);
     return ret;
 }
 
@@ -1541,7 +1541,7 @@ static int set_bframe_chain_length(MpegEncContext *s)
             s->next_pic.ptr &&
             skip_check(s, s->input_picture[0], s->next_pic.ptr)) {
             // FIXME check that the gop check above is +-1 correct
-            ff_refstruct_unref(&s->input_picture[0]);
+            av_refstruct_unref(&s->input_picture[0]);
 
             ff_vbv_update(s, 0);
 
@@ -1607,7 +1607,7 @@ static int set_bframe_chain_length(MpegEncContext *s)
         } else if (s->b_frame_strategy == 2) {
             b_frames = estimate_best_b_count(s);
             if (b_frames < 0) {
-                ff_refstruct_unref(&s->input_picture[0]);
+                av_refstruct_unref(&s->input_picture[0]);
                 return b_frames;
             }
         }
@@ -1714,7 +1714,7 @@ static int select_input_picture(MpegEncContext *s)
     }
     return 0;
 fail:
-    ff_refstruct_unref(&s->reordered_input_picture[0]);
+    av_refstruct_unref(&s->reordered_input_picture[0]);
     return ret;
 }
 

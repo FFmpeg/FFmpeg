@@ -38,7 +38,7 @@
 #include "mathops.h"
 #include "ffv1.h"
 #include "progressframe.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include "thread.h"
 
 static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
@@ -780,8 +780,8 @@ static int read_header(FFV1Context *f)
         return AVERROR_INVALIDDATA;
     }
 
-    ff_refstruct_unref(&f->slice_damaged);
-    f->slice_damaged = ff_refstruct_allocz(f->slice_count * sizeof(*f->slice_damaged));
+    av_refstruct_unref(&f->slice_damaged);
+    f->slice_damaged = av_refstruct_allocz(f->slice_count * sizeof(*f->slice_damaged));
     if (!f->slice_damaged)
         return AVERROR(ENOMEM);
 
@@ -810,7 +810,7 @@ static int read_header(FFV1Context *f)
                         && (unsigned)sc->slice_y + (uint64_t)sc->slice_height <= f->height);
         }
 
-        ff_refstruct_unref(&sc->plane);
+        av_refstruct_unref(&sc->plane);
         sc->plane = ff_ffv1_planes_alloc();
         if (!sc->plane)
             return AVERROR(ENOMEM);
@@ -1059,7 +1059,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         FFV1SliceContext       *sc  = &fdst->slices[i];
         const FFV1SliceContext *sc0 = &fsrc->slices[i];
 
-        ff_refstruct_replace(&sc->plane, sc0->plane);
+        av_refstruct_replace(&sc->plane, sc0->plane);
 
         if (fsrc->version < 3) {
             sc->slice_x             = sc0->slice_x;
@@ -1069,7 +1069,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         }
     }
 
-    ff_refstruct_replace(&fdst->slice_damaged, fsrc->slice_damaged);
+    av_refstruct_replace(&fdst->slice_damaged, fsrc->slice_damaged);
 
     av_assert1(fdst->max_slice_count == fsrc->max_slice_count);
 

@@ -34,7 +34,7 @@
 #include "cbs_h264.h"
 #include "h264_parse.h"
 #include "h264_ps.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 
 typedef struct DTS2PTSNode {
     int64_t      dts;
@@ -62,7 +62,7 @@ typedef struct DTS2PTSH264Context {
 typedef struct DTS2PTSContext {
     struct AVTreeNode *root;
     AVFifo *fifo;
-    FFRefStructPool *node_pool;
+    AVRefStructPool *node_pool;
 
     // Codec specific function pointers and constants
     int (*init)(AVBSFContext *ctx);
@@ -112,7 +112,7 @@ static int dec_poc(void *opaque, void *elem)
 static int free_node(void *opaque, void *elem)
 {
     DTS2PTSNode *node = elem;
-    ff_refstruct_unref(&node);
+    av_refstruct_unref(&node);
     return 0;
 }
 
@@ -126,7 +126,7 @@ static int alloc_and_insert_node(AVBSFContext *ctx, int64_t ts, int64_t duration
         DTS2PTSNode *poc_node, *ret;
         if (!node)
             return AVERROR(ENOMEM);
-        poc_node = ff_refstruct_pool_get(s->node_pool);
+        poc_node = av_refstruct_pool_get(s->node_pool);
         if (!poc_node) {
             av_free(node);
             return AVERROR(ENOMEM);
@@ -137,7 +137,7 @@ static int alloc_and_insert_node(AVBSFContext *ctx, int64_t ts, int64_t duration
         ret = av_tree_insert(&s->root, poc_node, cmp_insert, &node);
         if (ret && ret != poc_node) {
             *ret = *poc_node;
-            ff_refstruct_unref(&poc_node);
+            av_refstruct_unref(&poc_node);
             av_free(node);
         }
     }
@@ -396,8 +396,8 @@ static int dts2pts_init(AVBSFContext *ctx)
     if (!s->fifo)
         return AVERROR(ENOMEM);
 
-    s->node_pool = ff_refstruct_pool_alloc(sizeof(DTS2PTSNode),
-                                           FF_REFSTRUCT_POOL_FLAG_NO_ZEROING);
+    s->node_pool = av_refstruct_pool_alloc(sizeof(DTS2PTSNode),
+                                           AV_REFSTRUCT_POOL_FLAG_NO_ZEROING);
 
     if (!s->node_pool)
         return AVERROR(ENOMEM);
@@ -467,7 +467,7 @@ static int dts2pts_filter(AVBSFContext *ctx, AVPacket *out)
                 if (!poc_node || poc_node->dts != out->pts)
                     continue;
                 av_tree_insert(&s->root, poc_node, cmp_insert, &node);
-                ff_refstruct_unref(&poc_node);
+                av_refstruct_unref(&poc_node);
                 av_free(node);
                 poc_node = av_tree_find(s->root, &dup, cmp_find, NULL);
             }
@@ -529,7 +529,7 @@ static void dts2pts_close(AVBSFContext *ctx)
     dts2pts_flush(ctx);
 
     av_fifo_freep2(&s->fifo);
-    ff_refstruct_pool_uninit(&s->node_pool);
+    av_refstruct_pool_uninit(&s->node_pool);
     ff_cbs_fragment_free(&s->au);
     ff_cbs_close(&s->cbc);
 }

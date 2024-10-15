@@ -42,11 +42,11 @@ typedef struct ScratchpadContext {
 } ScratchpadContext;
 
 typedef struct BufferPoolContext {
-    struct FFRefStructPool *mbskip_table_pool;
-    struct FFRefStructPool *qscale_table_pool;
-    struct FFRefStructPool *mb_type_pool;
-    struct FFRefStructPool *motion_val_pool;
-    struct FFRefStructPool *ref_index_pool;
+    struct AVRefStructPool *mbskip_table_pool;
+    struct AVRefStructPool *qscale_table_pool;
+    struct AVRefStructPool *mb_type_pool;
+    struct AVRefStructPool *motion_val_pool;
+    struct AVRefStructPool *ref_index_pool;
     int alloc_mb_width;                         ///< mb_width  used to allocate tables
     int alloc_mb_height;                        ///< mb_height used to allocate tables
     int alloc_mb_stride;                        ///< mb_stride used to allocate tables
@@ -114,7 +114,7 @@ typedef struct MPVWorkPicture {
 /**
  * Allocate a pool of MPVPictures.
  */
-struct FFRefStructPool *ff_mpv_alloc_pic_pool(int init_progress);
+struct AVRefStructPool *ff_mpv_alloc_pic_pool(int init_progress);
 
 /**
  * Allocate an MPVPicture's accessories (but not the AVFrame's buffer itself)

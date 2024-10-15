@@ -570,11 +570,11 @@ typedef struct H264Context {
 
     H264SEIContext sei;
 
-    struct FFRefStructPool *qscale_table_pool;
-    struct FFRefStructPool *mb_type_pool;
-    struct FFRefStructPool *motion_val_pool;
-    struct FFRefStructPool *ref_index_pool;
-    struct FFRefStructPool *decode_error_flags_pool;
+    struct AVRefStructPool *qscale_table_pool;
+    struct AVRefStructPool *mb_type_pool;
+    struct AVRefStructPool *motion_val_pool;
+    struct AVRefStructPool *ref_index_pool;
+    struct AVRefStructPool *decode_error_flags_pool;
     int ref2frm[MAX_SLICES][2][64];     ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
 
     int non_gray;                       ///< Did we encounter a intra frame after a gray gap frame

@@ -45,7 +45,7 @@
 #include "frame_thread_encoder.h"
 #include "hwconfig.h"
 #include "internal.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include "thread.h"
 
 /**
@@ -453,8 +453,8 @@ av_cold void ff_codec_close(AVCodecContext *avctx)
         av_frame_free(&avci->in_frame);
         av_frame_free(&avci->recon_frame);
 
-        ff_refstruct_unref(&avci->pool);
-        ff_refstruct_pool_uninit(&avci->progress_frame_pool);
+        av_refstruct_unref(&avci->pool);
+        av_refstruct_pool_uninit(&avci->progress_frame_pool);
         if (av_codec_is_decoder(avctx->codec))
             ff_decode_internal_uninit(avctx);
 

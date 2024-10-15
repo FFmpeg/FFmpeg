@@ -22,11 +22,11 @@
 #include "libavutil/mem.h"
 
 #include "container_fifo.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 
 struct ContainerFifo {
     AVFifo             *fifo;
-    FFRefStructPool    *pool;
+    AVRefStructPool    *pool;
 
     void*             (*container_alloc)(void);
     void              (*container_reset)(void *obj);
@@ -36,7 +36,7 @@ struct ContainerFifo {
 
 };
 
-static int container_fifo_init_entry(FFRefStructOpaque opaque, void *obj)
+static int container_fifo_init_entry(AVRefStructOpaque opaque, void *obj)
 {
     ContainerFifo *cf = opaque.nc;
     void **pobj = obj;
@@ -48,13 +48,13 @@ static int container_fifo_init_entry(FFRefStructOpaque opaque, void *obj)
     return 0;
 }
 
-static void container_fifo_reset_entry(FFRefStructOpaque opaque, void *obj)
+static void container_fifo_reset_entry(AVRefStructOpaque opaque, void *obj)
 {
     ContainerFifo *cf = opaque.nc;
     cf->container_reset(*(void**)obj);
 }
 
-static void container_fifo_free_entry(FFRefStructOpaque opaque, void *obj)
+static void container_fifo_free_entry(AVRefStructOpaque opaque, void *obj)
 {
     ContainerFifo *cf = opaque.nc;
     cf->container_free(*(void**)obj);
@@ -83,7 +83,7 @@ ff_container_fifo_alloc(void* (*container_alloc)(void),
     if (!cf->fifo)
         goto fail;
 
-    cf->pool = ff_refstruct_pool_alloc_ext(sizeof(void*), 0, cf,
+    cf->pool = av_refstruct_pool_alloc_ext(sizeof(void*), 0, cf,
                                            container_fifo_init_entry,
                                            container_fifo_reset_entry,
                                            container_fifo_free_entry,
@@ -109,11 +109,11 @@ void ff_container_fifo_free(ContainerFifo **pcf)
     if (cf->fifo) {
         void *obj;
         while (av_fifo_read(cf->fifo, &obj, 1) >= 0)
-            ff_refstruct_unref(&obj);
+            av_refstruct_unref(&obj);
         av_fifo_freep2(&cf->fifo);
     }
 
-    ff_refstruct_pool_uninit(&cf->pool);
+    av_refstruct_pool_uninit(&cf->pool);
 
     av_freep(pcf);
 }
@@ -128,7 +128,7 @@ int ff_container_fifo_read(ContainerFifo *cf, void *obj)
         return ret;
 
     ret = cf->fifo_read(obj, *psrc);
-    ff_refstruct_unref(&psrc);
+    av_refstruct_unref(&psrc);
 
     return ret;
 }
@@ -138,7 +138,7 @@ int ff_container_fifo_write(ContainerFifo *cf, void *obj)
     void **pdst;
     int ret;
 
-    pdst = ff_refstruct_pool_get(cf->pool);
+    pdst = av_refstruct_pool_get(cf->pool);
     if (!pdst)
         return AVERROR(ENOMEM);
 
@@ -152,7 +152,7 @@ int ff_container_fifo_write(ContainerFifo *cf, void *obj)
 
     return 0;
 fail:
-    ff_refstruct_unref(&pdst);
+    av_refstruct_unref(&pdst);
     return ret;
 }
 

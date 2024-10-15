@@ -1078,7 +1078,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
     ub(4, sps_seq_parameter_set_id);
     ub(4, sps_video_parameter_set_id);
     if (current->sps_video_parameter_set_id == 0 && !h266->vps[0]) {
-        H266RawVPS *vps = ff_refstruct_allocz(sizeof(*vps));
+        H266RawVPS *vps = av_refstruct_allocz(sizeof(*vps));
         if (!vps)
             return AVERROR(ENOMEM);
         vps->vps_max_layers_minus1 = 0;

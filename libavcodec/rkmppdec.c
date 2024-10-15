@@ -30,7 +30,7 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "hwconfig.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include "libavutil/buffer.h"
 #include "libavutil/common.h"
 #include "libavutil/frame.h"
@@ -126,11 +126,11 @@ static int rkmpp_write_data(AVCodecContext *avctx, uint8_t *buffer, int size, in
 static int rkmpp_close_decoder(AVCodecContext *avctx)
 {
     RKMPPDecodeContext *rk_context = avctx->priv_data;
-    ff_refstruct_unref(&rk_context->decoder);
+    av_refstruct_unref(&rk_context->decoder);
     return 0;
 }
 
-static void rkmpp_release_decoder(FFRefStructOpaque unused, void *obj)
+static void rkmpp_release_decoder(AVRefStructOpaque unused, void *obj)
 {
     RKMPPDecoder *decoder = obj;
 
@@ -161,7 +161,7 @@ static int rkmpp_init_decoder(AVCodecContext *avctx)
     avctx->pix_fmt = AV_PIX_FMT_DRM_PRIME;
 
     // create a decoder and a ref to it
-    decoder = ff_refstruct_alloc_ext(sizeof(*decoder), 0,
+    decoder = av_refstruct_alloc_ext(sizeof(*decoder), 0,
                                      NULL, rkmpp_release_decoder);
     if (!decoder) {
         ret = AVERROR(ENOMEM);
@@ -304,7 +304,7 @@ static void rkmpp_release_frame(void *opaque, uint8_t *data)
     RKMPPFrameContext *framecontext = opaque;
 
     mpp_frame_deinit(&framecontext->frame);
-    ff_refstruct_unref(&framecontext->decoder_ref);
+    av_refstruct_unref(&framecontext->decoder_ref);
 
     av_free(desc);
 }
@@ -449,7 +449,7 @@ static int rkmpp_retrieve_frame(AVCodecContext *avctx, AVFrame *frame)
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
-            framecontext->decoder_ref = ff_refstruct_ref(rk_context->decoder);
+            framecontext->decoder_ref = av_refstruct_ref(rk_context->decoder);
 
             frame->hw_frames_ctx = av_buffer_ref(decoder->frames_ref);
             if (!frame->hw_frames_ctx) {

@@ -35,7 +35,7 @@
 
 #include "avcodec.h"
 #include "qsv_internal.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 
 #define MFX_IMPL_VIA_MASK(impl) (0x0f00 & (impl))
 #define QSV_HAVE_USER_PLUGIN    !QSV_ONEVPL
@@ -745,7 +745,7 @@ int ff_qsv_init_internal_session(AVCodecContext *avctx, QSVSession *qs,
     return 0;
 }
 
-static void mids_buf_free(FFRefStructOpaque opaque, void *obj)
+static void mids_buf_free(AVRefStructOpaque opaque, void *obj)
 {
     AVBufferRef *hw_frames_ref = opaque.nc;
     av_buffer_unref(&hw_frames_ref);
@@ -765,7 +765,7 @@ static QSVMid *qsv_create_mids(AVBufferRef *hw_frames_ref)
     if (!hw_frames_ref1)
         return NULL;
 
-    mids = ff_refstruct_alloc_ext(nb_surfaces * sizeof(*mids), 0,
+    mids = av_refstruct_alloc_ext(nb_surfaces * sizeof(*mids), 0,
                                   hw_frames_ref1, mids_buf_free);
     if (!mids) {
         av_buffer_unref(&hw_frames_ref1);
@@ -806,7 +806,7 @@ static int qsv_setup_mids(mfxFrameAllocResponse *resp, AVBufferRef *hw_frames_re
         return AVERROR(ENOMEM);
     }
 
-    resp->mids[resp->NumFrameActual + 1] = ff_refstruct_ref(mids);
+    resp->mids[resp->NumFrameActual + 1] = av_refstruct_ref(mids);
 
     return 0;
 }
@@ -899,7 +899,7 @@ static mfxStatus qsv_frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
         }
 
         ret = qsv_setup_mids(resp, frames_ref, mids);
-        ff_refstruct_unref(&mids);
+        av_refstruct_unref(&mids);
         av_buffer_unref(&frames_ref);
         if (ret < 0) {
             av_log(ctx->logctx, AV_LOG_ERROR,
@@ -919,7 +919,7 @@ static mfxStatus qsv_frame_free(mfxHDL pthis, mfxFrameAllocResponse *resp)
         return MFX_ERR_NONE;
 
     av_buffer_unref((AVBufferRef**)&resp->mids[resp->NumFrameActual]);
-    ff_refstruct_unref(&resp->mids[resp->NumFrameActual + 1]);
+    av_refstruct_unref(&resp->mids[resp->NumFrameActual + 1]);
     av_freep(&resp->mids);
     return MFX_ERR_NONE;
 }
@@ -1139,7 +1139,7 @@ int ff_qsv_init_session_frames(AVCodecContext *avctx, mfxSession *psession,
 
         /* allocate the memory ids for the external frames */
         if (frames_hwctx->nb_surfaces) {
-            ff_refstruct_unref(&qsv_frames_ctx->mids);
+            av_refstruct_unref(&qsv_frames_ctx->mids);
             qsv_frames_ctx->mids = qsv_create_mids(qsv_frames_ctx->hw_frames_ctx);
             if (!qsv_frames_ctx->mids)
                 return AVERROR(ENOMEM);

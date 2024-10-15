@@ -52,7 +52,7 @@
 #include "mpegutils.h"
 #include "profiles.h"
 #include "rectangle.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include "thread.h"
 #include "threadframe.h"
 
@@ -156,10 +156,10 @@ void ff_h264_free_tables(H264Context *h)
     av_freep(&h->mb2b_xy);
     av_freep(&h->mb2br_xy);
 
-    ff_refstruct_pool_uninit(&h->qscale_table_pool);
-    ff_refstruct_pool_uninit(&h->mb_type_pool);
-    ff_refstruct_pool_uninit(&h->motion_val_pool);
-    ff_refstruct_pool_uninit(&h->ref_index_pool);
+    av_refstruct_pool_uninit(&h->qscale_table_pool);
+    av_refstruct_pool_uninit(&h->mb_type_pool);
+    av_refstruct_pool_uninit(&h->motion_val_pool);
+    av_refstruct_pool_uninit(&h->ref_index_pool);
 
 #if CONFIG_ERROR_RESILIENCE
     av_freep(&h->er.mb_index2xy);
@@ -313,7 +313,7 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     ff_h264_sei_uninit(&h->sei);
 
     if (avctx->active_thread_type & FF_THREAD_FRAME) {
-        h->decode_error_flags_pool = ff_refstruct_pool_alloc(sizeof(atomic_int), 0);
+        h->decode_error_flags_pool = av_refstruct_pool_alloc(sizeof(atomic_int), 0);
         if (!h->decode_error_flags_pool)
             return AVERROR(ENOMEM);
     }
@@ -364,7 +364,7 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
 
     h->cur_pic_ptr = NULL;
 
-    ff_refstruct_pool_uninit(&h->decode_error_flags_pool);
+    av_refstruct_pool_uninit(&h->decode_error_flags_pool);
 
     av_freep(&h->slice_ctx);
     h->nb_slice_ctx = 0;

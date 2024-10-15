@@ -28,7 +28,7 @@
 #include "dovi_rpu.h"
 #include "golomb.h"
 #include "get_bits.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 
 int ff_dovi_get_metadata(DOVIContext *s, AVDOVIMetadata **out_metadata)
 {
@@ -291,7 +291,7 @@ static int parse_ext_blocks(DOVIContext *s, GetBitContext *gb, int ver,
     align_get_bits(gb);
 
     if (num_ext_blocks && !ext) {
-        ext = s->ext_blocks = ff_refstruct_allocz(sizeof(*s->ext_blocks));
+        ext = s->ext_blocks = av_refstruct_allocz(sizeof(*s->ext_blocks));
         if (!ext)
             return AVERROR(ENOMEM);
     }
@@ -556,7 +556,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         int vdr_rpu_id = get_ue_golomb_31(gb);
         VALIDATE(vdr_rpu_id, 0, DOVI_MAX_DM_ID);
         if (!s->vdr[vdr_rpu_id]) {
-            s->vdr[vdr_rpu_id] = ff_refstruct_allocz(sizeof(AVDOVIDataMapping));
+            s->vdr[vdr_rpu_id] = av_refstruct_allocz(sizeof(AVDOVIDataMapping));
             if (!s->vdr[vdr_rpu_id]) {
                 ff_dovi_ctx_unref(s);
                 return AVERROR(ENOMEM);
@@ -675,7 +675,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         }
 
         if (!s->dm) {
-            s->dm = ff_refstruct_allocz(sizeof(AVDOVIColorMetadata));
+            s->dm = av_refstruct_allocz(sizeof(AVDOVIColorMetadata));
             if (!s->dm) {
                 ff_dovi_ctx_unref(s);
                 return AVERROR(ENOMEM);
@@ -735,7 +735,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         }
     } else {
         s->color = &ff_dovi_color_default;
-        ff_refstruct_unref(&s->ext_blocks);
+        av_refstruct_unref(&s->ext_blocks);
     }
 
     return 0;

@@ -31,7 +31,7 @@
 
 #include "avcodec.h"
 #include "ffv1.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 
 av_cold int ff_ffv1_common_init(AVCodecContext *avctx)
 {
@@ -53,7 +53,7 @@ av_cold int ff_ffv1_common_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void planes_free(FFRefStructOpaque opaque, void *obj)
+static void planes_free(AVRefStructOpaque opaque, void *obj)
 {
     PlaneContext *planes = obj;
 
@@ -67,7 +67,7 @@ static void planes_free(FFRefStructOpaque opaque, void *obj)
 
 PlaneContext* ff_ffv1_planes_alloc(void)
 {
-    return ff_refstruct_alloc_ext(sizeof(PlaneContext) * MAX_PLANES,
+    return av_refstruct_alloc_ext(sizeof(PlaneContext) * MAX_PLANES,
                                   0, NULL, planes_free);
 }
 
@@ -233,10 +233,10 @@ av_cold int ff_ffv1_close(AVCodecContext *avctx)
         av_freep(&sc->sample_buffer);
         av_freep(&sc->sample_buffer32);
 
-        ff_refstruct_unref(&sc->plane);
+        av_refstruct_unref(&sc->plane);
     }
 
-    ff_refstruct_unref(&s->slice_damaged);
+    av_refstruct_unref(&s->slice_damaged);
 
     av_freep(&avctx->stats_out);
     for (j = 0; j < s->quant_table_count; j++) {

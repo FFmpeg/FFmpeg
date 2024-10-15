@@ -24,7 +24,7 @@
 
 #include "libavutil/mem.h"
 #include "libavutil/thread.h"
-#include "libavcodec/refstruct.h"
+#include "libavutil/refstruct.h"
 #include "libavcodec/thread.h"
 #include "libavcodec/decode.h"
 
@@ -49,18 +49,18 @@ void ff_vvc_unref_frame(VVCFrameContext *fc, VVCFrame *frame, int flags)
     frame->flags &= ~flags;
     if (!frame->flags) {
         av_frame_unref(frame->frame);
-        ff_refstruct_unref(&frame->sps);
-        ff_refstruct_unref(&frame->pps);
-        ff_refstruct_unref(&frame->progress);
+        av_refstruct_unref(&frame->sps);
+        av_refstruct_unref(&frame->pps);
+        av_refstruct_unref(&frame->progress);
 
-        ff_refstruct_unref(&frame->tab_dmvr_mvf);
+        av_refstruct_unref(&frame->tab_dmvr_mvf);
 
-        ff_refstruct_unref(&frame->rpl);
+        av_refstruct_unref(&frame->rpl);
         frame->nb_rpl_elems = 0;
-        ff_refstruct_unref(&frame->rpl_tab);
+        av_refstruct_unref(&frame->rpl_tab);
 
         frame->collocated_ref = NULL;
-        ff_refstruct_unref(&frame->hwaccel_picture_private);
+        av_refstruct_unref(&frame->hwaccel_picture_private);
     }
 }
 
@@ -87,7 +87,7 @@ void ff_vvc_flush_dpb(VVCFrameContext *fc)
         ff_vvc_unref_frame(fc, &fc->DPB[i], ~0);
 }
 
-static void free_progress(FFRefStructOpaque unused, void *obj)
+static void free_progress(AVRefStructOpaque unused, void *obj)
 {
     FrameProgress *p = (FrameProgress *)obj;
 
@@ -99,13 +99,13 @@ static void free_progress(FFRefStructOpaque unused, void *obj)
 
 static FrameProgress *alloc_progress(void)
 {
-    FrameProgress *p = ff_refstruct_alloc_ext(sizeof(*p), 0, NULL, free_progress);
+    FrameProgress *p = av_refstruct_alloc_ext(sizeof(*p), 0, NULL, free_progress);
 
     if (p) {
         p->has_lock = !ff_mutex_init(&p->lock, NULL);
         p->has_cond = !ff_cond_init(&p->cond, NULL);
         if (!p->has_lock || !p->has_cond)
-            ff_refstruct_unref(&p);
+            av_refstruct_unref(&p);
     }
     return p;
 }
@@ -121,23 +121,23 @@ static VVCFrame *alloc_frame(VVCContext *s, VVCFrameContext *fc)
         if (frame->frame->buf[0])
             continue;
 
-        frame->sps = ff_refstruct_ref_c(fc->ps.sps);
-        frame->pps = ff_refstruct_ref_c(fc->ps.pps);
+        frame->sps = av_refstruct_ref_c(fc->ps.sps);
+        frame->pps = av_refstruct_ref_c(fc->ps.pps);
 
         ret = ff_thread_get_buffer(s->avctx, frame->frame, AV_GET_BUFFER_FLAG_REF);
         if (ret < 0)
             return NULL;
 
-        frame->rpl = ff_refstruct_allocz(s->current_frame.nb_units * sizeof(RefPicListTab));
+        frame->rpl = av_refstruct_allocz(s->current_frame.nb_units * sizeof(RefPicListTab));
         if (!frame->rpl)
             goto fail;
         frame->nb_rpl_elems = s->current_frame.nb_units;
 
-        frame->tab_dmvr_mvf = ff_refstruct_pool_get(fc->tab_dmvr_mvf_pool);
+        frame->tab_dmvr_mvf = av_refstruct_pool_get(fc->tab_dmvr_mvf_pool);
         if (!frame->tab_dmvr_mvf)
             goto fail;
 
-        frame->rpl_tab = ff_refstruct_pool_get(fc->rpl_tab_pool);
+        frame->rpl_tab = av_refstruct_pool_get(fc->rpl_tab_pool);
         if (!frame->rpl_tab)
             goto fail;
         frame->ctb_count = pps->ctb_width * pps->ctb_height;

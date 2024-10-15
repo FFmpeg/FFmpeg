@@ -26,24 +26,24 @@
 
 #include "avcodec.h"
 #include "mpegpicture.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 
-static void mpv_pic_reset(FFRefStructOpaque unused, void *obj)
+static void mpv_pic_reset(AVRefStructOpaque unused, void *obj)
 {
     MPVPicture *pic = obj;
 
     av_frame_unref(pic->f);
     ff_thread_progress_reset(&pic->progress);
 
-    ff_refstruct_unref(&pic->hwaccel_picture_private);
+    av_refstruct_unref(&pic->hwaccel_picture_private);
 
-    ff_refstruct_unref(&pic->mbskip_table);
-    ff_refstruct_unref(&pic->qscale_table_base);
-    ff_refstruct_unref(&pic->mb_type_base);
+    av_refstruct_unref(&pic->mbskip_table);
+    av_refstruct_unref(&pic->qscale_table_base);
+    av_refstruct_unref(&pic->mb_type_base);
 
     for (int i = 0; i < 2; i++) {
-        ff_refstruct_unref(&pic->motion_val_base[i]);
-        ff_refstruct_unref(&pic->ref_index[i]);
+        av_refstruct_unref(&pic->motion_val_base[i]);
+        av_refstruct_unref(&pic->ref_index[i]);
 
         pic->motion_val[i] = NULL;
     }
@@ -64,7 +64,7 @@ static void mpv_pic_reset(FFRefStructOpaque unused, void *obj)
     pic->coded_picture_number   = 0;
 }
 
-static int av_cold mpv_pic_init(FFRefStructOpaque opaque, void *obj)
+static int av_cold mpv_pic_init(AVRefStructOpaque opaque, void *obj)
 {
     MPVPicture *pic = obj;
     int ret, init_progress = (uintptr_t)opaque.nc;
@@ -79,7 +79,7 @@ static int av_cold mpv_pic_init(FFRefStructOpaque opaque, void *obj)
     return 0;
 }
 
-static void av_cold mpv_pic_free(FFRefStructOpaque unused, void *obj)
+static void av_cold mpv_pic_free(AVRefStructOpaque unused, void *obj)
 {
     MPVPicture *pic = obj;
 
@@ -87,17 +87,17 @@ static void av_cold mpv_pic_free(FFRefStructOpaque unused, void *obj)
     av_frame_free(&pic->f);
 }
 
-av_cold FFRefStructPool *ff_mpv_alloc_pic_pool(int init_progress)
+av_cold AVRefStructPool *ff_mpv_alloc_pic_pool(int init_progress)
 {
-    return ff_refstruct_pool_alloc_ext(sizeof(MPVPicture),
-                                       FF_REFSTRUCT_POOL_FLAG_FREE_ON_INIT_ERROR,
+    return av_refstruct_pool_alloc_ext(sizeof(MPVPicture),
+                                       AV_REFSTRUCT_POOL_FLAG_FREE_ON_INIT_ERROR,
                                        (void*)(uintptr_t)init_progress,
                                        mpv_pic_init, mpv_pic_reset, mpv_pic_free, NULL);
 }
 
 void ff_mpv_unref_picture(MPVWorkPicture *pic)
 {
-    ff_refstruct_unref(&pic->ptr);
+    av_refstruct_unref(&pic->ptr);
     memset(pic, 0, sizeof(*pic));
 }
 
@@ -121,13 +121,13 @@ static void set_workpic_from_pic(MPVWorkPicture *wpic, const MPVPicture *pic)
 void ff_mpv_replace_picture(MPVWorkPicture *dst, const MPVWorkPicture *src)
 {
     av_assert1(dst != src);
-    ff_refstruct_replace(&dst->ptr, src->ptr);
+    av_refstruct_replace(&dst->ptr, src->ptr);
     memcpy(dst, src, sizeof(*dst));
 }
 
 void ff_mpv_workpic_from_pic(MPVWorkPicture *wpic, MPVPicture *pic)
 {
-    ff_refstruct_replace(&wpic->ptr, pic);
+    av_refstruct_replace(&wpic->ptr, pic);
     if (!pic) {
         memset(wpic, 0, sizeof(*wpic));
         return;
@@ -207,7 +207,7 @@ static int alloc_picture_tables(BufferPoolContext *pools, MPVPicture *pic,
                                 int mb_height)
 {
 #define GET_BUFFER(name, buf_suffix, idx_suffix) do { \
-    pic->name ## buf_suffix idx_suffix = ff_refstruct_pool_get(pools->name ## _pool); \
+    pic->name ## buf_suffix idx_suffix = av_refstruct_pool_get(pools->name ## _pool); \
     if (!pic->name ## buf_suffix idx_suffix) \
         return AVERROR(ENOMEM); \
 } while (0)

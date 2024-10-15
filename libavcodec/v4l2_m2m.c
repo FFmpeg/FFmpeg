@@ -32,7 +32,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixfmt.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include "v4l2_context.h"
 #include "v4l2_fmt.h"
 #include "v4l2_m2m.h"
@@ -248,7 +248,7 @@ int ff_v4l2_m2m_codec_reinit(V4L2m2mContext *s)
     return 0;
 }
 
-static void v4l2_m2m_destroy_context(FFRefStructOpaque unused, void *context)
+static void v4l2_m2m_destroy_context(AVRefStructOpaque unused, void *context)
 {
     V4L2m2mContext *s = context;
 
@@ -282,7 +282,7 @@ int ff_v4l2_m2m_codec_end(V4L2m2mPriv *priv)
     ff_v4l2_context_release(&s->output);
 
     s->self_ref = NULL;
-    ff_refstruct_unref(&priv->context);
+    av_refstruct_unref(&priv->context);
 
     return 0;
 }
@@ -327,7 +327,7 @@ int ff_v4l2_m2m_codec_init(V4L2m2mPriv *priv)
 
 int ff_v4l2_m2m_create_context(V4L2m2mPriv *priv, V4L2m2mContext **s)
 {
-    *s = ff_refstruct_alloc_ext(sizeof(**s), 0, NULL,
+    *s = av_refstruct_alloc_ext(sizeof(**s), 0, NULL,
                                 &v4l2_m2m_destroy_context);
     if (!*s)
         return AVERROR(ENOMEM);
@@ -344,7 +344,7 @@ int ff_v4l2_m2m_create_context(V4L2m2mPriv *priv, V4L2m2mContext **s)
 
     priv->context->frame = av_frame_alloc();
     if (!priv->context->frame) {
-        ff_refstruct_unref(&priv->context);
+        av_refstruct_unref(&priv->context);
         *s = NULL; /* freed when unreferencing context */
         return AVERROR(ENOMEM);
     }

@@ -50,7 +50,7 @@
 #include "jpegquanttables.h"
 #include "mathops.h"
 #include "progressframe.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include "thread.h"
 #include "videodsp.h"
 #include "vp3data.h"
@@ -370,7 +370,7 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     /* release all frames */
     vp3_decode_flush(avctx);
 
-    ff_refstruct_unref(&s->coeff_vlc);
+    av_refstruct_unref(&s->coeff_vlc);
 
     return 0;
 }
@@ -2346,7 +2346,7 @@ static av_cold int allocate_tables(AVCodecContext *avctx)
 }
 
 
-static av_cold void free_vlc_tables(FFRefStructOpaque unused, void *obj)
+static av_cold void free_vlc_tables(AVRefStructOpaque unused, void *obj)
 {
     CoeffVLCs *vlcs = obj;
 
@@ -2459,7 +2459,7 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     }
 
     if (!avctx->internal->is_copy) {
-        CoeffVLCs *vlcs = ff_refstruct_alloc_ext(sizeof(*s->coeff_vlc), 0,
+        CoeffVLCs *vlcs = av_refstruct_alloc_ext(sizeof(*s->coeff_vlc), 0,
                                                  NULL, free_vlc_tables);
         if (!vlcs)
             return AVERROR(ENOMEM);
@@ -2527,7 +2527,7 @@ static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *
     const Vp3DecodeContext *s1 = src->priv_data;
     int qps_changed = 0;
 
-    ff_refstruct_replace(&s->coeff_vlc, s1->coeff_vlc);
+    av_refstruct_replace(&s->coeff_vlc, s1->coeff_vlc);
 
     // copy previous frame data
     ref_frames(s, s1);

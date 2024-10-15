@@ -53,7 +53,7 @@
 #include "lcevcdec.h"
 #include "packet_internal.h"
 #include "progressframe.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include "thread.h"
 #include "threadprogress.h"
 
@@ -1684,7 +1684,7 @@ static void attach_post_process_data(AVCodecContext *avctx, AVFrame *frame)
     if (dc->lcevc_frame) {
         FrameDecodeData *fdd = (FrameDecodeData*)frame->private_ref->data;
 
-        fdd->post_process_opaque = ff_refstruct_ref(dc->lcevc);
+        fdd->post_process_opaque = av_refstruct_ref(dc->lcevc);
         fdd->post_process_opaque_free = ff_lcevc_unref;
         fdd->post_process = ff_lcevc_process;
 
@@ -1833,11 +1833,11 @@ static void check_progress_consistency(const ProgressFrame *f)
 
 int ff_progress_frame_alloc(AVCodecContext *avctx, ProgressFrame *f)
 {
-    FFRefStructPool *pool = avctx->internal->progress_frame_pool;
+    AVRefStructPool *pool = avctx->internal->progress_frame_pool;
 
     av_assert1(!f->f && !f->progress);
 
-    f->progress = ff_refstruct_pool_get(pool);
+    f->progress = av_refstruct_pool_get(pool);
     if (!f->progress)
         return AVERROR(ENOMEM);
 
@@ -1859,7 +1859,7 @@ int ff_progress_frame_get_buffer(AVCodecContext *avctx, ProgressFrame *f, int fl
     ret = ff_thread_get_buffer(avctx, f->progress->f, flags);
     if (ret < 0) {
         f->f = NULL;
-        ff_refstruct_unref(&f->progress);
+        av_refstruct_unref(&f->progress);
         return ret;
     }
     return 0;
@@ -1870,14 +1870,14 @@ void ff_progress_frame_ref(ProgressFrame *dst, const ProgressFrame *src)
     av_assert1(src->progress && src->f && src->f == src->progress->f);
     av_assert1(!dst->f && !dst->progress);
     dst->f = src->f;
-    dst->progress = ff_refstruct_ref(src->progress);
+    dst->progress = av_refstruct_ref(src->progress);
 }
 
 void ff_progress_frame_unref(ProgressFrame *f)
 {
     check_progress_consistency(f);
     f->f = NULL;
-    ff_refstruct_unref(&f->progress);
+    av_refstruct_unref(&f->progress);
 }
 
 void ff_progress_frame_replace(ProgressFrame *dst, const ProgressFrame *src)
@@ -1907,7 +1907,7 @@ enum ThreadingStatus ff_thread_sync_ref(AVCodecContext *avctx, size_t offset)
 }
 #endif /* !HAVE_THREADS */
 
-static av_cold int progress_frame_pool_init_cb(FFRefStructOpaque opaque, void *obj)
+static av_cold int progress_frame_pool_init_cb(AVRefStructOpaque opaque, void *obj)
 {
     const AVCodecContext *avctx = opaque.nc;
     ProgressInternal *progress = obj;
@@ -1924,7 +1924,7 @@ static av_cold int progress_frame_pool_init_cb(FFRefStructOpaque opaque, void *o
     return 0;
 }
 
-static void progress_frame_pool_reset_cb(FFRefStructOpaque unused, void *obj)
+static void progress_frame_pool_reset_cb(AVRefStructOpaque unused, void *obj)
 {
     ProgressInternal *progress = obj;
 
@@ -1932,7 +1932,7 @@ static void progress_frame_pool_reset_cb(FFRefStructOpaque unused, void *obj)
     av_frame_unref(progress->f);
 }
 
-static av_cold void progress_frame_pool_free_entry_cb(FFRefStructOpaque opaque, void *obj)
+static av_cold void progress_frame_pool_free_entry_cb(AVRefStructOpaque opaque, void *obj)
 {
     ProgressInternal *progress = obj;
 
@@ -2047,8 +2047,8 @@ int ff_decode_preinit(AVCodecContext *avctx)
 
     if (ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_USES_PROGRESSFRAMES) {
         avci->progress_frame_pool =
-            ff_refstruct_pool_alloc_ext(sizeof(ProgressInternal),
-                                        FF_REFSTRUCT_POOL_FLAG_FREE_ON_INIT_ERROR,
+            av_refstruct_pool_alloc_ext(sizeof(ProgressInternal),
+                                        AV_REFSTRUCT_POOL_FLAG_FREE_ON_INIT_ERROR,
                                         avctx, progress_frame_pool_init_cb,
                                         progress_frame_pool_reset_cb,
                                         progress_frame_pool_free_entry_cb, NULL);
@@ -2264,11 +2264,11 @@ int ff_hwaccel_frame_priv_alloc(AVCodecContext *avctx, void **hwaccel_picture_pr
             return AVERROR(EINVAL);
 
         frames_ctx = (AVHWFramesContext *) avctx->hw_frames_ctx->data;
-        *hwaccel_picture_private = ff_refstruct_alloc_ext(hwaccel->frame_priv_data_size, 0,
+        *hwaccel_picture_private = av_refstruct_alloc_ext(hwaccel->frame_priv_data_size, 0,
                                                           frames_ctx->device_ctx,
                                                           hwaccel->free_frame_priv);
     } else {
-        *hwaccel_picture_private = ff_refstruct_allocz(hwaccel->frame_priv_data_size);
+        *hwaccel_picture_private = av_refstruct_allocz(hwaccel->frame_priv_data_size);
     }
 
     if (!*hwaccel_picture_private)
@@ -2305,7 +2305,7 @@ void ff_decode_internal_sync(AVCodecContext *dst, const AVCodecContext *src)
     const DecodeContext *src_dc = decode_ctx(src->internal);
     DecodeContext *dst_dc = decode_ctx(dst->internal);
 
-    ff_refstruct_replace(&dst_dc->lcevc, src_dc->lcevc);
+    av_refstruct_replace(&dst_dc->lcevc, src_dc->lcevc);
 }
 
 void ff_decode_internal_uninit(AVCodecContext *avctx)
@@ -2313,5 +2313,5 @@ void ff_decode_internal_uninit(AVCodecContext *avctx)
     AVCodecInternal *avci = avctx->internal;
     DecodeContext *dc = decode_ctx(avci);
 
-    ff_refstruct_unref(&dc->lcevc);
+    av_refstruct_unref(&dc->lcevc);
 }

@@ -36,7 +36,7 @@
 #include "hwconfig.h"
 #include "mathops.h"
 #include "progressframe.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include "thread.h"
 #include "vp8.h"
 #include "vp89_rac.h"
@@ -107,7 +107,7 @@ static int vp8_alloc_frame(VP8Context *s, VP8Frame *f, int ref)
                                            ref ? AV_GET_BUFFER_FLAG_REF : 0);
     if (ret < 0)
         return ret;
-    f->seg_map = ff_refstruct_allocz(s->mb_width * s->mb_height);
+    f->seg_map = av_refstruct_allocz(s->mb_width * s->mb_height);
     if (!f->seg_map) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -119,15 +119,15 @@ static int vp8_alloc_frame(VP8Context *s, VP8Frame *f, int ref)
     return 0;
 
 fail:
-    ff_refstruct_unref(&f->seg_map);
+    av_refstruct_unref(&f->seg_map);
     ff_progress_frame_unref(&f->tf);
     return ret;
 }
 
 static void vp8_release_frame(VP8Frame *f)
 {
-    ff_refstruct_unref(&f->seg_map);
-    ff_refstruct_unref(&f->hwaccel_picture_private);
+    av_refstruct_unref(&f->seg_map);
+    av_refstruct_unref(&f->hwaccel_picture_private);
     ff_progress_frame_unref(&f->tf);
 }
 
@@ -2905,8 +2905,8 @@ av_cold int ff_vp8_decode_init(AVCodecContext *avctx)
 static void vp8_replace_frame(VP8Frame *dst, const VP8Frame *src)
 {
     ff_progress_frame_replace(&dst->tf, &src->tf);
-    ff_refstruct_replace(&dst->seg_map, src->seg_map);
-    ff_refstruct_replace(&dst->hwaccel_picture_private,
+    av_refstruct_replace(&dst->seg_map, src->seg_map);
+    av_refstruct_replace(&dst->hwaccel_picture_private,
                           src->hwaccel_picture_private);
 }
 

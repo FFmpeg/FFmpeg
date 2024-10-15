@@ -28,7 +28,7 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "get_bits.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include "thread.h"
 #include "threadprogress.h"
 #include "unary.h"
@@ -110,7 +110,7 @@ typedef struct WavpackContext {
 
     DSDContext *dsdctx; ///< RefStruct reference
     ThreadProgress *curr_progress, *prev_progress; ///< RefStruct references
-    FFRefStructPool *progress_pool; ///< RefStruct reference
+    AVRefStructPool *progress_pool; ///< RefStruct reference
     int dsd_channels;
 } WavpackContext;
 
@@ -992,9 +992,9 @@ static int wv_dsd_reset(WavpackContext *s, int channels)
     int i;
 
     s->dsd_channels = 0;
-    ff_refstruct_unref(&s->dsdctx);
-    ff_refstruct_unref(&s->curr_progress);
-    ff_refstruct_unref(&s->prev_progress);
+    av_refstruct_unref(&s->dsdctx);
+    av_refstruct_unref(&s->curr_progress);
+    av_refstruct_unref(&s->prev_progress);
 
     if (!channels)
         return 0;
@@ -1003,7 +1003,7 @@ static int wv_dsd_reset(WavpackContext *s, int channels)
         channels > SIZE_MAX / sizeof(*s->dsdctx))
         return AVERROR(EINVAL);
 
-    s->dsdctx = ff_refstruct_allocz(channels * sizeof(*s->dsdctx));
+    s->dsdctx = av_refstruct_allocz(channels * sizeof(*s->dsdctx));
     if (!s->dsdctx)
         return AVERROR(ENOMEM);
     s->dsd_channels = channels;
@@ -1022,26 +1022,26 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     WavpackContext *fsrc = src->priv_data;
     WavpackContext *fdst = dst->priv_data;
 
-    ff_refstruct_replace(&fdst->curr_progress, fsrc->curr_progress);
-    ff_refstruct_replace(&fdst->dsdctx, fsrc->dsdctx);
+    av_refstruct_replace(&fdst->curr_progress, fsrc->curr_progress);
+    av_refstruct_replace(&fdst->dsdctx, fsrc->dsdctx);
     fdst->dsd_channels = fsrc->dsd_channels;
 
     return 0;
 }
 
-static av_cold int progress_pool_init_cb(FFRefStructOpaque opaque, void *obj)
+static av_cold int progress_pool_init_cb(AVRefStructOpaque opaque, void *obj)
 {
     ThreadProgress *progress = obj;
     return ff_thread_progress_init(progress, 1);
 }
 
-static void progress_pool_reset_cb(FFRefStructOpaque opaque, void *obj)
+static void progress_pool_reset_cb(AVRefStructOpaque opaque, void *obj)
 {
     ThreadProgress *progress = obj;
     ff_thread_progress_reset(progress);
 }
 
-static av_cold void progress_pool_free_entry_cb(FFRefStructOpaque opaque, void *obj)
+static av_cold void progress_pool_free_entry_cb(AVRefStructOpaque opaque, void *obj)
 {
     ThreadProgress *progress = obj;
     ff_thread_progress_destroy(progress);
@@ -1058,8 +1058,8 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
 
 #if HAVE_THREADS
     if (ff_thread_sync_ref(avctx, offsetof(WavpackContext, progress_pool)) == FF_THREAD_IS_FIRST_THREAD) {
-        s->progress_pool = ff_refstruct_pool_alloc_ext(sizeof(*s->curr_progress),
-                                                       FF_REFSTRUCT_POOL_FLAG_FREE_ON_INIT_ERROR, NULL,
+        s->progress_pool = av_refstruct_pool_alloc_ext(sizeof(*s->curr_progress),
+                                                       AV_REFSTRUCT_POOL_FLAG_FREE_ON_INIT_ERROR, NULL,
                                                        progress_pool_init_cb,
                                                        progress_pool_reset_cb,
                                                        progress_pool_free_entry_cb, NULL);
@@ -1080,7 +1080,7 @@ static av_cold int wavpack_decode_end(AVCodecContext *avctx)
     av_freep(&s->fdec);
     s->fdec_num = 0;
 
-    ff_refstruct_pool_uninit(&s->progress_pool);
+    av_refstruct_pool_uninit(&s->progress_pool);
     wv_dsd_reset(s, 0);
 
     return 0;
@@ -1552,8 +1552,8 @@ static int wavpack_decode_block(AVCodecContext *avctx, AVFrame *frame, int block
         av_assert1(!!wc->progress_pool == !!(avctx->active_thread_type & FF_THREAD_FRAME));
         if (wc->progress_pool) {
             if (wc->dsdctx) {
-                ff_refstruct_unref(&wc->prev_progress);
-                wc->prev_progress = ff_refstruct_pool_get(wc->progress_pool);
+                av_refstruct_unref(&wc->prev_progress);
+                wc->prev_progress = av_refstruct_pool_get(wc->progress_pool);
                 if (!wc->prev_progress)
                     return AVERROR(ENOMEM);
                 FFSWAP(ThreadProgress*, wc->prev_progress, wc->curr_progress);

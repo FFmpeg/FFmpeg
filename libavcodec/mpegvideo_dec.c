@@ -38,7 +38,7 @@
 #include "mpegvideo.h"
 #include "mpegvideodec.h"
 #include "mpeg4videodec.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 #include "thread.h"
 #include "threadprogress.h"
 #include "wmv2dec.h"
@@ -164,7 +164,7 @@ int ff_mpv_decode_close(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 
-    ff_refstruct_pool_uninit(&s->picture_pool);
+    av_refstruct_pool_uninit(&s->picture_pool);
     ff_mpv_common_end(s);
     return 0;
 }
@@ -216,7 +216,7 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
 static int alloc_picture(MpegEncContext *s, MPVWorkPicture *dst, int reference)
 {
     AVCodecContext *avctx = s->avctx;
-    MPVPicture *pic = ff_refstruct_pool_get(s->picture_pool);
+    MPVPicture *pic = av_refstruct_pool_get(s->picture_pool);
     int ret;
 
     if (!pic)

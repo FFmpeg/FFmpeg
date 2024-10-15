@@ -42,7 +42,7 @@
 #include "qsv.h"
 #include "qsv_internal.h"
 #include "qsvenc.h"
-#include "refstruct.h"
+#include "libavutil/refstruct.h"
 
 struct profile_names {
     mfxU16 profile;
@@ -2716,7 +2716,7 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
     ff_qsv_close_internal_session(&q->internal_qs);
 
     av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
-    ff_refstruct_unref(&q->frames_ctx.mids);
+    av_refstruct_unref(&q->frames_ctx.mids);
 
     cur = q->work_frames;
     while (cur) {
