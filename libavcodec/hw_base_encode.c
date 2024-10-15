@@ -804,6 +804,11 @@ int ff_hw_base_encode_init(AVCodecContext *avctx, FFHWBaseEncodeContext *ctx)
 
 int ff_hw_base_encode_close(FFHWBaseEncodeContext *ctx)
 {
+    FFHWBaseEncodePicture *pic;
+
+    for (pic = ctx->pic_start; pic; pic = pic->next)
+        base_encode_pic_free(pic);
+
     av_fifo_freep2(&ctx->encode_fifo);
 
     av_frame_free(&ctx->frame);
