@@ -2670,7 +2670,7 @@ yuv2xv36le_X_c(SwsContext *c, const int16_t *lumFilter,
 {
     int i;
     for (i = 0; i < dstW; i++) {
-        int Y = 1 << 14, U = 1 << 14, V = 1 << 14, A = 255;
+        int Y = 1 << 14, U = 1 << 14, V = 1 << 14, A = 65535;
         int j;
 
         for (j = 0; j < lumFilterSize; j++)
@@ -2684,7 +2684,7 @@ yuv2xv36le_X_c(SwsContext *c, const int16_t *lumFilter,
         AV_WL16(dest + 8 * i + 2, av_clip_uintp2(Y >> 15, 12) << 4);
         AV_WL16(dest + 8 * i + 0, av_clip_uintp2(U >> 15, 12) << 4);
         AV_WL16(dest + 8 * i + 4, av_clip_uintp2(V >> 15, 12) << 4);
-        AV_WL16(dest + 8 * i + 6, A);
+        AV_WL16(dest + 8 * i + 6, A << 4);
     }
 }
 
