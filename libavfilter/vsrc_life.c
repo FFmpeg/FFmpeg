@@ -160,6 +160,58 @@ static void show_life_grid(AVFilterContext *ctx)
 }
 #endif
 
+static void fill_picture_monoblack(AVFilterContext *ctx, AVFrame *picref)
+{
+    LifeContext *life = ctx->priv;
+    uint8_t *buf = life->buf[life->buf_idx];
+    int i, j, k;
+
+    /* fill the output picture with the old grid buffer */
+    for (i = 0; i < life->h; i++) {
+        uint8_t byte = 0;
+        uint8_t *p = picref->data[0] + i * picref->linesize[0];
+        for (k = 0, j = 0; j < life->w; j++) {
+            byte |= (buf[i*life->w+j] == ALIVE_CELL)<<(7-k++);
+            if (k==8 || j == life->w-1) {
+                k = 0;
+                *p++ = byte;
+                byte = 0;
+            }
+        }
+    }
+}
+
+// divide by 255 and round to nearest
+// apply a fast variant: (X+127)/255 = ((X+127)*257+257)>>16 = ((X+128)*257)>>16
+#define FAST_DIV255(x) ((((x) + 128) * 257) >> 16)
+
+static void fill_picture_rgb(AVFilterContext *ctx, AVFrame *picref)
+{
+    LifeContext *life = ctx->priv;
+    uint8_t *buf = life->buf[life->buf_idx];
+    int i, j;
+
+    /* fill the output picture with the old grid buffer */
+    for (i = 0; i < life->h; i++) {
+        uint8_t *p = picref->data[0] + i * picref->linesize[0];
+        for (j = 0; j < life->w; j++) {
+            uint8_t v = buf[i*life->w + j];
+            if (life->mold && v != ALIVE_CELL) {
+                const uint8_t *c1 = life-> mold_color;
+                const uint8_t *c2 = life->death_color;
+                int death_age = FFMIN((0xff - v) * life->mold, 0xff);
+                *p++ = FAST_DIV255((c2[0] << 8) + ((int)c1[0] - (int)c2[0]) * death_age);
+                *p++ = FAST_DIV255((c2[1] << 8) + ((int)c1[1] - (int)c2[1]) * death_age);
+                *p++ = FAST_DIV255((c2[2] << 8) + ((int)c1[2] - (int)c2[2]) * death_age);
+            } else {
+                const uint8_t *c = v == ALIVE_CELL ? life->life_color : life->death_color;
+                AV_WB24(p, c[0]<<16 | c[1]<<8 | c[2]);
+                p += 3;
+            }
+        }
+    }
+}
+
 static int init_pattern_from_file(AVFilterContext *ctx)
 {
     LifeContext *life = ctx->priv;
@@ -259,6 +311,13 @@ static av_cold int init(AVFilterContext *ctx)
             return ret;
     }
 
+    if (life->mold || memcmp(life-> life_color, "\xff\xff\xff", 3)
+                   || memcmp(life->death_color, "\x00\x00\x00", 3)) {
+        life->draw = fill_picture_rgb;
+    } else {
+        life->draw = fill_picture_monoblack;
+    }
+
     av_log(ctx, AV_LOG_VERBOSE,
            "s:%dx%d r:%d/%d rule:%s stay_rule:%d born_rule:%d stitch:%d seed:%"PRId64"\n",
            life->w, life->h, life->frame_rate.num, life->frame_rate.den,
@@ -345,58 +404,6 @@ static void evolve(AVFilterContext *ctx)
     life->buf_idx = !life->buf_idx;
 }
 
-static void fill_picture_monoblack(AVFilterContext *ctx, AVFrame *picref)
-{
-    LifeContext *life = ctx->priv;
-    uint8_t *buf = life->buf[life->buf_idx];
-    int i, j, k;
-
-    /* fill the output picture with the old grid buffer */
-    for (i = 0; i < life->h; i++) {
-        uint8_t byte = 0;
-        uint8_t *p = picref->data[0] + i * picref->linesize[0];
-        for (k = 0, j = 0; j < life->w; j++) {
-            byte |= (buf[i*life->w+j] == ALIVE_CELL)<<(7-k++);
-            if (k==8 || j == life->w-1) {
-                k = 0;
-                *p++ = byte;
-                byte = 0;
-            }
-        }
-    }
-}
-
-// divide by 255 and round to nearest
-// apply a fast variant: (X+127)/255 = ((X+127)*257+257)>>16 = ((X+128)*257)>>16
-#define FAST_DIV255(x) ((((x) + 128) * 257) >> 16)
-
-static void fill_picture_rgb(AVFilterContext *ctx, AVFrame *picref)
-{
-    LifeContext *life = ctx->priv;
-    uint8_t *buf = life->buf[life->buf_idx];
-    int i, j;
-
-    /* fill the output picture with the old grid buffer */
-    for (i = 0; i < life->h; i++) {
-        uint8_t *p = picref->data[0] + i * picref->linesize[0];
-        for (j = 0; j < life->w; j++) {
-            uint8_t v = buf[i*life->w + j];
-            if (life->mold && v != ALIVE_CELL) {
-                const uint8_t *c1 = life-> mold_color;
-                const uint8_t *c2 = life->death_color;
-                int death_age = FFMIN((0xff - v) * life->mold, 0xff);
-                *p++ = FAST_DIV255((c2[0] << 8) + ((int)c1[0] - (int)c2[0]) * death_age);
-                *p++ = FAST_DIV255((c2[1] << 8) + ((int)c1[1] - (int)c2[1]) * death_age);
-                *p++ = FAST_DIV255((c2[2] << 8) + ((int)c1[2] - (int)c2[2]) * death_age);
-            } else {
-                const uint8_t *c = v == ALIVE_CELL ? life->life_color : life->death_color;
-                AV_WB24(p, c[0]<<16 | c[1]<<8 | c[2]);
-                p += 3;
-            }
-        }
-    }
-}
-
 static int request_frame(AVFilterLink *outlink)
 {
     LifeContext *life = outlink->src->priv;
@@ -418,16 +425,10 @@ static int request_frame(AVFilterLink *outlink)
 static int query_formats(AVFilterContext *ctx)
 {
     LifeContext *life = ctx->priv;
-    enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_NONE, AV_PIX_FMT_NONE };
-
-    if (life->mold || memcmp(life-> life_color, "\xff\xff\xff", 3)
-                   || memcmp(life->death_color, "\x00\x00\x00", 3)) {
-        pix_fmts[0] = AV_PIX_FMT_RGB24;
-        life->draw = fill_picture_rgb;
-    } else {
-        pix_fmts[0] = AV_PIX_FMT_MONOBLACK;
-        life->draw = fill_picture_monoblack;
-    }
+    const enum AVPixelFormat pix_fmts[] = {
+        life->draw == fill_picture_rgb ? AV_PIX_FMT_RGB24 : AV_PIX_FMT_MONOBLACK,
+        AV_PIX_FMT_NONE
+    };
 
     return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
