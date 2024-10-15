@@ -23,7 +23,7 @@
 #include "codec_internal.h"
 #include <AMF/components/PreAnalysis.h>
 
-#define OFFSET(x) offsetof(AmfContext, x)
+#define OFFSET(x) offsetof(AMFEncoderContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
 static const AVOption options[] = {
@@ -105,9 +105,6 @@ static const AVOption options[] = {
     { "forced_idr",     "Force I frames to be IDR frames",          OFFSET(forced_idr)    ,AV_OPT_TYPE_BOOL,{ .i64 = 0  }, 0, 1, VE },
     { "aud",            "Inserts AU Delimiter NAL unit",            OFFSET(aud)           ,AV_OPT_TYPE_BOOL,{ .i64 = -1 }, -1, 1, VE },
 
-
-    { "log_to_dbg",     "Enable AMF logging to debug output",   OFFSET(log_to_dbg), AV_OPT_TYPE_BOOL,{ .i64 = 0 }, 0, 1, VE },
-
     //Pre Analysis options
     { "preanalysis",                            "Enable preanalysis",                                           OFFSET(preanalysis),                            AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
 
@@ -160,7 +157,7 @@ static av_cold int amf_encode_init_hevc(AVCodecContext *avctx)
 {
     int                 ret = 0;
     AMF_RESULT          res = AMF_OK;
-    AmfContext         *ctx = avctx->priv_data;
+    AMFEncoderContext  *ctx = avctx->priv_data;
     AMFVariantStruct    var = {0};
     amf_int64           profile = 0;
     amf_int64           profile_level = 0;
@@ -534,7 +531,7 @@ const FFCodec ff_hevc_amf_encoder = {
     .init           = amf_encode_init_hevc,
     FF_CODEC_RECEIVE_PACKET_CB(ff_amf_receive_packet),
     .close          = ff_amf_encode_close,
-    .priv_data_size = sizeof(AmfContext),
+    .priv_data_size = sizeof(AMFEncoderContext),
     .p.priv_class   = &hevc_amf_class,
     .defaults       = defaults,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |

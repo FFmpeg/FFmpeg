@@ -26,7 +26,7 @@
 #define AMF_VIDEO_ENCODER_AV1_CAP_WIDTH_ALIGNMENT_FACTOR_LOCAL                L"Av1WidthAlignmentFactor"          // amf_int64; default = 1
 #define AMF_VIDEO_ENCODER_AV1_CAP_HEIGHT_ALIGNMENT_FACTOR_LOCAL               L"Av1HeightAlignmentFactor"         // amf_int64; default = 1
 
-#define OFFSET(x) offsetof(AmfContext, x)
+#define OFFSET(x) offsetof(AMFEncoderContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
 
@@ -129,8 +129,6 @@ static const AVOption options[] = {
     { "1080p",                  "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_1080P_CODED_1082   }, 0, 0, VE, .unit = "align" },
     { "none",                   "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS          }, 0, 0, VE, .unit = "align" },
 
-    { "log_to_dbg",     "Enable AMF logging to debug output",   OFFSET(log_to_dbg), AV_OPT_TYPE_BOOL,{.i64 = 0 }, 0, 1, VE },
-
     //Pre Analysis options
     { "preanalysis",                            "Enable preanalysis",                                           OFFSET(preanalysis),                            AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
 
@@ -187,11 +185,11 @@ static av_cold int amf_encode_init_av1(AVCodecContext* avctx)
 {
     int                 ret = 0;
     AMF_RESULT          res = AMF_OK;
-    AmfContext* ctx = avctx->priv_data;
+    AMFEncoderContext  *ctx = avctx->priv_data;
     AMFVariantStruct    var = { 0 };
     amf_int64           profile = 0;
     amf_int64           profile_level = 0;
-    AMFBuffer* buffer;
+    AMFBuffer          *buffer;
     AMFGuid             guid;
     AMFRate             framerate;
     AMFSize             framesize = AMFConstructSize(avctx->width, avctx->height);
@@ -693,7 +691,7 @@ const FFCodec ff_av1_amf_encoder = {
     .init           = amf_encode_init_av1,
     FF_CODEC_RECEIVE_PACKET_CB(ff_amf_receive_packet),
     .close          = ff_amf_encode_close,
-    .priv_data_size = sizeof(AmfContext),
+    .priv_data_size = sizeof(AMFEncoderContext),
     .p.priv_class     = &av1_amf_class,
     .defaults       = defaults,
     .p.capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
