@@ -29,7 +29,7 @@ static inline int RENAME(predict)(TYPE *src, TYPE *last)
     return mid_pred(L, L + T - LT, T);
 }
 
-static inline int RENAME(get_context)(const int16_t quant_table[MAX_CONTEXT_INPUTS][256],
+static inline int RENAME(get_context)(const int16_t quant_table[MAX_CONTEXT_INPUTS][MAX_QUANT_TABLE_SIZE],
                                       TYPE *src, TYPE *last, TYPE *last2)
 {
     const int LT = last[-1];
@@ -40,14 +40,14 @@ static inline int RENAME(get_context)(const int16_t quant_table[MAX_CONTEXT_INPU
     if (quant_table[3][127] || quant_table[4][127]) {
         const int TT = last2[0];
         const int LL = src[-2];
-        return quant_table[0][(L - LT) & 0xFF] +
-               quant_table[1][(LT - T) & 0xFF] +
-               quant_table[2][(T - RT) & 0xFF] +
-               quant_table[3][(LL - L) & 0xFF] +
-               quant_table[4][(TT - T) & 0xFF];
+        return quant_table[0][(L - LT) & MAX_QUANT_TABLE_MASK] +
+               quant_table[1][(LT - T) & MAX_QUANT_TABLE_MASK] +
+               quant_table[2][(T - RT) & MAX_QUANT_TABLE_MASK] +
+               quant_table[3][(LL - L) & MAX_QUANT_TABLE_MASK] +
+               quant_table[4][(TT - T) & MAX_QUANT_TABLE_MASK];
     } else
-        return quant_table[0][(L - LT) & 0xFF] +
-               quant_table[1][(LT - T) & 0xFF] +
-               quant_table[2][(T - RT) & 0xFF];
+        return quant_table[0][(L - LT) & MAX_QUANT_TABLE_MASK] +
+               quant_table[1][(LT - T) & MAX_QUANT_TABLE_MASK] +
+               quant_table[2][(T - RT) & MAX_QUANT_TABLE_MASK];
 }
 
