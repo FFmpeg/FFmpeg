@@ -111,9 +111,12 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out,
+                                  ff_draw_supported_pixel_formats(0));
 }
 
 static int config_props(AVFilterLink *outlink)
@@ -292,6 +295,6 @@ const AVFilter ff_vf_tile = {
     .priv_size     = sizeof(TileContext),
     FILTER_INPUTS(tile_inputs),
     FILTER_OUTPUTS(tile_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class    = &tile_class,
 };
