@@ -263,7 +263,9 @@ int ff_vmafmotion_init(VMAFMotionData *s,
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
     AVFilterFormats *fmts_list = NULL;
     int format, ret;
@@ -278,7 +280,7 @@ static int query_formats(AVFilterContext *ctx)
             return ret;
     }
 
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out, fmts_list);
 }
 
 static int config_input_ref(AVFilterLink *inlink)
@@ -359,5 +361,5 @@ const AVFilter ff_vf_vmafmotion = {
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(vmafmotion_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
