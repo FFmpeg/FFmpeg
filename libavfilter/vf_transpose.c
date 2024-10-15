@@ -52,7 +52,9 @@ typedef struct TransContext {
     TransVtable vtables[4];
 } TransContext;
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
     AVFilterFormats *pix_fmts = NULL;
     const AVPixFmtDescriptor *desc;
@@ -68,7 +70,7 @@ static int query_formats(AVFilterContext *ctx)
     }
 
 
-    return ff_set_common_formats(ctx, pix_fmts);
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out, pix_fmts);
 }
 
 static inline void transpose_block_8_c(uint8_t *src, ptrdiff_t src_linesize,
@@ -412,6 +414,6 @@ const AVFilter ff_vf_transpose = {
     .priv_class    = &transpose_class,
     FILTER_INPUTS(avfilter_vf_transpose_inputs),
     FILTER_OUTPUTS(avfilter_vf_transpose_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
