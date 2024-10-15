@@ -41,10 +41,12 @@ typedef struct ShufflePlanesContext {
     int copy;
 } ShufflePlanesContext;
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
     AVFilterFormats *formats = NULL;
-    ShufflePlanesContext *s = ctx->priv;
+    const ShufflePlanesContext *s = ctx->priv;
     int fmt, ret, i;
 
     for (fmt = 0; av_pix_fmt_desc_get(fmt); fmt++) {
@@ -70,7 +72,7 @@ static int query_formats(AVFilterContext *ctx)
         }
     }
 
-    return ff_set_common_formats(ctx, formats);
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out, formats);
 }
 
 static av_cold int shuffleplanes_config_input(AVFilterLink *inlink)
@@ -161,6 +163,6 @@ const AVFilter ff_vf_shuffleplanes = {
     .priv_class   = &shuffleplanes_class,
     FILTER_INPUTS(shuffleplanes_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
