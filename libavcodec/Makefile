@@ -75,7 +75,7 @@ include $(SRC_PATH)/libavcodec/vulkan/Makefile
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
 OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o ac3.o ac3tab.o
 OBJS-$(CONFIG_ADTS_HEADER)             += adts_header.o mpeg4audio_sample_rates.o
-OBJS-$(CONFIG_AMF)                     += amfenc.o
+OBJS-$(CONFIG_AMF)                     += amfenc.o amfdec.o
 OBJS-$(CONFIG_AUDIO_FRAME_QUEUE)       += audio_frame_queue.o
 OBJS-$(CONFIG_ATSC_A53)                += atsc_a53.o
 OBJS-$(CONFIG_AUDIODSP)                += audiodsp.o
@@ -172,6 +172,7 @@ OBJS-$(CONFIG_TEXTUREDSPENC)           += texturedspenc.o
 OBJS-$(CONFIG_TPELDSP)                 += tpeldsp.o
 OBJS-$(CONFIG_VAAPI_ENCODE)            += vaapi_encode.o hw_base_encode.o
 OBJS-$(CONFIG_AV1_AMF_ENCODER)         += amfenc_av1.o
+OBJS-$(CONFIG_AV1_AMF_DECODER)         += amfdec.o
 OBJS-$(CONFIG_VC1DSP)                  += vc1dsp.o
 OBJS-$(CONFIG_VIDEODSP)                += videodsp.o
 OBJS-$(CONFIG_VP3DSP)                  += vp3dsp.o
@@ -418,6 +419,7 @@ OBJS-$(CONFIG_H264_DECODER)            += h264dec.o h264_cabac.o h264_cavlc.o \
                                           h264_refs.o \
                                           h264_slice.o h264data.o h274.o
 OBJS-$(CONFIG_H264_AMF_ENCODER)        += amfenc_h264.o
+OBJS-$(CONFIG_H264_AMF_DECODER)        += amfdec.o
 OBJS-$(CONFIG_H264_CUVID_DECODER)      += cuviddec.o
 OBJS-$(CONFIG_H264_MEDIACODEC_DECODER) += mediacodecdec.o
 OBJS-$(CONFIG_H264_MEDIACODEC_ENCODER) += mediacodecenc.o
@@ -444,6 +446,7 @@ OBJS-$(CONFIG_HDR_DECODER)             += hdrdec.o
 OBJS-$(CONFIG_HDR_ENCODER)             += hdrenc.o
 OBJS-$(CONFIG_HEVC_DECODER)            += aom_film_grain.o h274.o
 OBJS-$(CONFIG_HEVC_AMF_ENCODER)        += amfenc_hevc.o
+OBJS-$(CONFIG_HEVC_AMF_DECODER)        += amfdec.o
 OBJS-$(CONFIG_HEVC_CUVID_DECODER)      += cuviddec.o
 OBJS-$(CONFIG_HEVC_D3D12VA_ENCODER)    += d3d12va_encode_hevc.o h265_profile_level.o \
                                           h2645data.o hw_base_encode_h265.o
@@ -1282,7 +1285,7 @@ SKIPHEADERS                            += %_tablegen.h                  \
                                           bitstream_template.h          \
                                           $(ARCH)/vpx_arith.h           \
 
-SKIPHEADERS-$(CONFIG_AMF)              += amfenc.h
+SKIPHEADERS-$(CONFIG_AMF)              += amfenc.h amfdec.h
 SKIPHEADERS-$(CONFIG_D3D11VA)          += d3d11va.h dxva2_internal.h
 SKIPHEADERS-$(CONFIG_D3D12VA)          += d3d12va_decode.h d3d12va_encode.h
 SKIPHEADERS-$(CONFIG_DXVA2)            += dxva2.h dxva2_internal.h
