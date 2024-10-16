@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/mem.h"
 
@@ -1313,7 +1314,7 @@ static int init_base_units(AVCodecContext *avctx)
         if (!data)
             return AVERROR(ENOMEM);
     } else {
-        av_log(avctx, AV_LOG_ERROR, "Unable to get feedback for H.265 units = %lu\n", data_size);
+        av_log(avctx, AV_LOG_ERROR, "Unable to get feedback for H.265 units = %"SIZE_SPECIFIER"\n", data_size);
         return err;
     }
 
