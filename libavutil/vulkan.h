@@ -447,7 +447,7 @@ void ff_vk_exec_discard_deps(FFVulkanContext *s, FFVkExecContext *e);
  */
 int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
                             VkImageView views[AV_NUM_DATA_POINTERS],
-                            AVFrame *f);
+                            AVFrame *f, enum FFVkShaderRepFormat rep_fmt);
 
 void ff_vk_frame_barrier(FFVulkanContext *s, FFVkExecContext *e,
                          AVFrame *pic, VkImageMemoryBarrier2 *bar, int *nb_bar,

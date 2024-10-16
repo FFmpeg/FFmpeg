@@ -1457,9 +1457,96 @@ static void destroy_imageviews(void *opaque, uint8_t *data)
     av_free(iv);
 }
 
+static VkFormat map_fmt_to_rep(VkFormat fmt, enum FFVkShaderRepFormat rep_fmt)
+{
+#define REPS_FMT(fmt) \
+    [FF_VK_REP_NATIVE] = fmt ## _UINT, \
+    [FF_VK_REP_FLOAT]  = fmt ## _UNORM, \
+    [FF_VK_REP_INT]    = fmt ## _SINT, \
+    [FF_VK_REP_UINT]   = fmt ## _UINT,
+
+#define REPS_FMT_PACK(fmt, num) \
+    [FF_VK_REP_NATIVE] = fmt ## _UINT_PACK ## num, \
+    [FF_VK_REP_FLOAT]  = fmt ## _UNORM_PACK ## num, \
+    [FF_VK_REP_INT]    = fmt ## _SINT_PACK ## num, \
+    [FF_VK_REP_UINT]   = fmt ## _UINT_PACK ## num,
+
+    const VkFormat fmts_map[][4] = {
+        { REPS_FMT_PACK(VK_FORMAT_A2B10G10R10, 32) },
+        { REPS_FMT_PACK(VK_FORMAT_A2R10G10B10, 32) },
+        {
+            VK_FORMAT_B5G6R5_UNORM_PACK16,
+            VK_FORMAT_B5G6R5_UNORM_PACK16,
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_UNDEFINED,
+        },
+        {
+            VK_FORMAT_R5G6B5_UNORM_PACK16,
+            VK_FORMAT_R5G6B5_UNORM_PACK16,
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_UNDEFINED,
+        },
+        { REPS_FMT(VK_FORMAT_B8G8R8) },
+        { REPS_FMT(VK_FORMAT_B8G8R8A8) },
+        { REPS_FMT(VK_FORMAT_R8) },
+        { REPS_FMT(VK_FORMAT_R8G8) },
+        { REPS_FMT(VK_FORMAT_R8G8B8) },
+        { REPS_FMT(VK_FORMAT_R8G8B8A8) },
+        { REPS_FMT(VK_FORMAT_R16) },
+        { REPS_FMT(VK_FORMAT_R16G16) },
+        { REPS_FMT(VK_FORMAT_R16G16B16) },
+        { REPS_FMT(VK_FORMAT_R16G16B16A16) },
+        {
+            VK_FORMAT_R32_SFLOAT,
+            VK_FORMAT_R32_SFLOAT,
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_UNDEFINED,
+        },
+        {
+            VK_FORMAT_R32G32B32_SFLOAT,
+            VK_FORMAT_R32G32B32_SFLOAT,
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_UNDEFINED,
+        },
+        {
+            VK_FORMAT_R32G32B32A32_SFLOAT,
+            VK_FORMAT_R32G32B32A32_SFLOAT,
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_UNDEFINED,
+        },
+        {
+            VK_FORMAT_R32G32B32_UINT,
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_R32G32B32_SINT,
+            VK_FORMAT_R32G32B32_UINT,
+        },
+        {
+            VK_FORMAT_R32G32B32A32_UINT,
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_R32G32B32A32_SINT,
+            VK_FORMAT_R32G32B32A32_UINT,
+        },
+    };
+#undef REPS_FMT_PACK
+#undef REPS_FMT
+
+    if (fmt == VK_FORMAT_UNDEFINED)
+        return VK_FORMAT_UNDEFINED;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(fmts_map); i++) {
+        if (fmts_map[i][FF_VK_REP_NATIVE] == fmt ||
+            fmts_map[i][FF_VK_REP_FLOAT] == fmt ||
+            fmts_map[i][FF_VK_REP_INT] == fmt ||
+            fmts_map[i][FF_VK_REP_UINT] == fmt)
+            return fmts_map[i][rep_fmt];
+    }
+
+    return VK_FORMAT_UNDEFINED;
+}
+
 int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
                             VkImageView views[AV_NUM_DATA_POINTERS],
-                            AVFrame *f)
+                            AVFrame *f, enum FFVkShaderRepFormat rep_fmt)
 {
     int err;
     VkResult ret;
@@ -1488,7 +1575,7 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
             .pNext      = NULL,
             .image      = vkf->img[FFMIN(i, nb_images - 1)],
             .viewType   = VK_IMAGE_VIEW_TYPE_2D,
-            .format     = rep_fmts[i],
+            .format     = map_fmt_to_rep(rep_fmts[i], rep_fmt),
             .components = ff_comp_identity_map,
             .subresourceRange = {
                 .aspectMask = plane_aspect[(nb_planes != nb_images) +
@@ -1497,6 +1584,13 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
                 .layerCount = 1,
             },
         };
+        if (view_create_info.format == VK_FORMAT_UNDEFINED) {
+            av_log(s, AV_LOG_ERROR, "Unable to find a compatible representation "
+                                    "of format %i and mode %i\n",
+                   rep_fmts[i], rep_fmt);
+            err = AVERROR(EINVAL);
+            goto fail;
+        }
 
         ret = vk->CreateImageView(s->hwctx->act_dev, &view_create_info,
                                   s->hwctx->alloc, &iv->views[i]);
