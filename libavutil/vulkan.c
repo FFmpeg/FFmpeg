@@ -1553,6 +1553,7 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
     AVBufferRef *buf;
     FFVulkanFunctions *vk = &s->vkfn;
     AVHWFramesContext *hwfc = (AVHWFramesContext *)f->hw_frames_ctx->data;
+    AVVulkanFramesContext *vkfc = hwfc->hwctx;
     const VkFormat *rep_fmts = av_vkfmt_from_pixfmt(hwfc->sw_format);
     AVVkFrame *vkf = (AVVkFrame *)f->data[0];
     const int nb_images = ff_vk_count_images(vkf);
@@ -1570,9 +1571,15 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
                                               VK_IMAGE_ASPECT_PLANE_1_BIT,
                                               VK_IMAGE_ASPECT_PLANE_2_BIT, };
 
+        VkImageViewUsageCreateInfo view_usage_info = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
+            .usage = vkfc->usage &
+                     (~(VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR |
+                        VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR)),
+        };
         VkImageViewCreateInfo view_create_info = {
             .sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .pNext      = NULL,
+            .pNext      = &view_usage_info,
             .image      = vkf->img[FFMIN(i, nb_images - 1)],
             .viewType   = VK_IMAGE_VIEW_TYPE_2D,
             .format     = map_fmt_to_rep(rep_fmts[i], rep_fmt),
