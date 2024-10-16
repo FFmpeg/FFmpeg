@@ -112,7 +112,6 @@ static inline void put_rac(RangeCoder *c, uint8_t *const state, int bit)
 
 static inline void refill(RangeCoder *c)
 {
-    if (c->range < 0x100) {
         c->range <<= 8;
         c->low   <<= 8;
         if (c->bytestream < c->bytestream_end) {
@@ -120,7 +119,6 @@ static inline void refill(RangeCoder *c)
             c->bytestream++;
         } else
             c->overread ++;
-    }
 }
 
 static inline int get_rac(RangeCoder *c, uint8_t *const state)
@@ -130,13 +128,15 @@ static inline int get_rac(RangeCoder *c, uint8_t *const state)
     c->range -= range1;
     if (c->low < c->range) {
         *state = c->zero_state[*state];
-        refill(c);
+        if (c->range < 0x100)
+            refill(c);
         return 0;
     } else {
         c->low  -= c->range;
         *state   = c->one_state[*state];
         c->range = range1;
-        refill(c);
+        if (c->range < 0x100)
+            refill(c);
         return 1;
     }
 }
