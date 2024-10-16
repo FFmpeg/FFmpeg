@@ -62,7 +62,6 @@ void ff_build_rac_states(RangeCoder *c, int factor, int max_p);
 static inline void renorm_encoder(RangeCoder *c)
 {
     // FIXME: optimize
-    while (c->range < 0x100) {
         if (c->outstanding_byte < 0) {
             c->outstanding_byte = c->low >> 8;
         } else if (c->low <= 0xFF00) {
@@ -81,7 +80,6 @@ static inline void renorm_encoder(RangeCoder *c)
 
         c->low     = (c->low & 0xFF) << 8;
         c->range <<= 8;
-    }
 }
 
 static inline int get_rac_count(RangeCoder *c)
@@ -108,7 +106,8 @@ static inline void put_rac(RangeCoder *c, uint8_t *const state, int bit)
         *state   = c->one_state[*state];
     }
 
-    renorm_encoder(c);
+    while (c->range < 0x100)
+        renorm_encoder(c);
 }
 
 static inline void refill(RangeCoder *c)
