@@ -1,5 +1,5 @@
-47c59be230d16466ed808baf13ac7f95 *tests/data/fate/cover-art-aiff-id3v2-remux.aiff
-793474 tests/data/fate/cover-art-aiff-id3v2-remux.aiff
+330ad2bf538e91a31752b38024461df1 *tests/data/fate/cover-art-aiff-id3v2-remux.aiff
+608914 tests/data/fate/cover-art-aiff-id3v2-remux.aiff
 #tb 0: 1/44100
 #media_type 0: audio
 #codec_id 0: pcm_s16be
@@ -27,7 +27,7 @@
 #sar 4: 1/1
 0,          0,          0,     1024,     4096, 0xdac4695d
 1,          0,          0,        0,    19650, 0xd5662610
-2,          0,          0,        0,   369057, 0x037c9a8d
+2,          0,          0,        0,   184497, 0xc33f8d44
 3,          0,          0,        0,   368254, 0xfa7f4bd8
 4,          0,          0,        0,    19650, 0xd5662610
 0,       1024,       1024,     1024,     4096, 0xad05c909

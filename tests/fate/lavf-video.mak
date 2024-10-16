@@ -19,8 +19,8 @@ $(FATE_LAVF_VIDEO): CMD = lavf_video
 $(FATE_LAVF_VIDEO): REF = $(SRC_PATH)/tests/ref/lavf/$(@:fate-lavf-%=%)
 $(FATE_LAVF_VIDEO): $(VREF)
 
-fate-lavf-apng: CMD = lavf_video "-pix_fmt rgb24" "-compression_level 0"
-fate-lavf-apng.png: CMD = lavf_video "-pix_fmt rgb24" "-frames:v 1 -f apng -compression_level 0"
+fate-lavf-apng: CMD = lavf_video "-pix_fmt rgb24"
+fate-lavf-apng.png: CMD = lavf_video "-pix_fmt rgb24" "-frames:v 1 -f apng"
 fate-lavf-gray.fits: CMD = lavf_video "-pix_fmt gray"
 fate-lavf-gray16be.fits: CMD = lavf_video "-pix_fmt gray16be"
 fate-lavf-gbrp.fits: CMD = lavf_video "-pix_fmt gbrp"
