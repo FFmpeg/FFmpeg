@@ -106,7 +106,7 @@ static inline void put_rac(RangeCoder *c, uint8_t *const state, int bit)
         *state   = c->one_state[*state];
     }
 
-    while (c->range < 0x100)
+    if (c->range < 0x100)
         renorm_encoder(c);
 }
 
