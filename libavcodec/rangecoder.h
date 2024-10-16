@@ -62,10 +62,9 @@ void ff_build_rac_states(RangeCoder *c, int factor, int max_p);
 static inline void renorm_encoder(RangeCoder *c)
 {
     // FIXME: optimize
-        if (c->outstanding_byte < 0) {
-            c->outstanding_byte = c->low >> 8;
-        } else if (c->low <= 0xFF00) {
-            *c->bytestream++ = c->outstanding_byte;
+        if (c->low <= 0xFF00) {
+            *c->bytestream = c->outstanding_byte;
+            c->bytestream += c->outstanding_byte >= 0;
             for (; c->outstanding_count; c->outstanding_count--)
                 *c->bytestream++ = 0xFF;
             c->outstanding_byte = c->low >> 8;
