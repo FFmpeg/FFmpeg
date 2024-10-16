@@ -54,8 +54,8 @@
 #define AC_RANGE_DEFAULT_TAB_FORCE -2
 
 typedef struct VlcState {
+    uint32_t error_sum;
     int16_t drift;
-    uint16_t error_sum;
     int8_t bias;
     uint8_t count;
 } VlcState;

@@ -248,7 +248,7 @@ static inline void put_vlc_symbol(PutBitContext *pb, VlcState *const state,
         i += i;
     }
 
-    av_assert2(k <= 13);
+    av_assert2(k <= 16);
 
     code = v ^ ((2 * state->drift + state->count) >> 31);
 
@@ -707,10 +707,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
     av_assert0(s->bits_per_raw_sample >= 8);
 
-    if (s->bits_per_raw_sample > 8) {
+    if (s->bits_per_raw_sample > (s->version > 3 ? 16 : 8)) {
         if (s->ac == AC_GOLOMB_RICE) {
             av_log(avctx, AV_LOG_INFO,
-                    "bits_per_raw_sample > 8, forcing range coder\n");
+                    "high bits_per_raw_sample, forcing range coder\n");
             s->ac = AC_RANGE_CUSTOM_TAB;
         }
     }
