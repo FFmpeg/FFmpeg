@@ -1171,7 +1171,8 @@ static void yuvtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
     case AV_PIX_FMT_XV30LE:
         n = (y << ((desc->comp[0].offset*8) + desc->comp[0].shift)) +
             (u << ((desc->comp[1].offset*8) + desc->comp[1].shift)) +
-            (v << ((desc->comp[2].offset*8) + desc->comp[2].shift));
+            (v << ((desc->comp[2].offset*8) + desc->comp[2].shift)) +
+            (3U << (desc->comp[1].shift ? 0 : 30));
         AV_WL32(&dstp[0][i*4 + j*dst_linesizep[0]], n);
         break;
     case AV_PIX_FMT_XV36:
