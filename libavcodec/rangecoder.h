@@ -72,7 +72,7 @@ static inline void renorm_encoder(RangeCoder *c)
             *c->bytestream++ = c->outstanding_byte + 1;
             for (; c->outstanding_count; c->outstanding_count--)
                 *c->bytestream++ = 0x00;
-            c->outstanding_byte = (c->low >> 8) & 0xFF;
+            c->outstanding_byte = c->low >> 8;
         } else {
             c->outstanding_count++;
         }
