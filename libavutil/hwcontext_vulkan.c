@@ -2726,11 +2726,11 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
                             !(hwctx->usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR)));
         int sampleable = hwctx->usage & (VK_IMAGE_USAGE_SAMPLED_BIT |
                                          VK_IMAGE_USAGE_STORAGE_BIT);
+        hwctx->img_flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
         if (sampleable && !is_lone_dpb) {
-            hwctx->img_flags = VK_IMAGE_CREATE_ALIAS_BIT;
+            hwctx->img_flags |= VK_IMAGE_CREATE_ALIAS_BIT;
             if ((fmt->vk_planes > 1) && (hwctx->format[0] == fmt->vkf))
-                hwctx->img_flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT |
-                                    VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+                hwctx->img_flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
         }
     }
 
