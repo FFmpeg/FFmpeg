@@ -2648,7 +2648,7 @@ yuv2v30_X_c_template(SwsContext *c, const int16_t *lumFilter,
 {
     int i;
     for (i = 0; i < dstW; i++) {
-        int Y = 1 << 16, U = 1 << 16, V = 1 << 16;
+        int Y = 1 << 16, U = 1 << 16, V = 1 << 16, A = 0x3;
         int j;
 
         for (j = 0; j < lumFilterSize; j++)
@@ -2665,7 +2665,8 @@ yuv2v30_X_c_template(SwsContext *c, const int16_t *lumFilter,
 
         AV_WL32(dest + 4 * i, U << (shift +  0)  |
                               Y << (shift + 10)  |
-                    (unsigned)V << (shift + 20));
+                    (unsigned)V << (shift + 20)  |
+                    (unsigned)A << (shift ? 0 : 30 /* xv30le = 30, v30xle = 0 */));
     }
 }
 
