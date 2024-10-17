@@ -19,6 +19,7 @@ HEADERS = adler32.h                                                     \
           camellia.h                                                    \
           channel_layout.h                                              \
           common.h                                                      \
+          container_fifo.h                                              \
           cpu.h                                                         \
           crc.h                                                         \
           csp.h                                                         \
@@ -119,6 +120,7 @@ OBJS = adler32.o                                                        \
        cast5.o                                                          \
        camellia.o                                                       \
        channel_layout.o                                                 \
+       container_fifo.o                                                 \
        cpu.o                                                            \
        crc.o                                                            \
        csp.o                                                            \

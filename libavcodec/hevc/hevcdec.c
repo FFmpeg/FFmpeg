@@ -28,6 +28,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
+#include "libavutil/container_fifo.h"
 #include "libavutil/film_grain_params.h"
 #include "libavutil/internal.h"
 #include "libavutil/md5.h"
@@ -41,7 +42,6 @@
 #include "bswapdsp.h"
 #include "cabac_functions.h"
 #include "codec_internal.h"
-#include "container_fifo.h"
 #include "decode.h"
 #include "golomb.h"
 #include "hevc.h"
@@ -3748,7 +3748,7 @@ static int hevc_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
     s->pkt_dts = AV_NOPTS_VALUE;
 
-    if (ff_container_fifo_can_read(s->output_fifo))
+    if (av_container_fifo_can_read(s->output_fifo))
         goto do_output;
 
     av_packet_unref(avpkt);
@@ -3786,7 +3786,7 @@ static int hevc_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         return ret;
 
 do_output:
-    if (ff_container_fifo_read(s->output_fifo, frame) >= 0) {
+    if (av_container_fifo_read(s->output_fifo, frame, 0) >= 0) {
         if (!(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN))
             av_frame_remove_side_data(frame, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
 
@@ -3846,7 +3846,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     av_freep(&s->md5_ctx);
 
-    ff_container_fifo_free(&s->output_fifo);
+    av_container_fifo_free(&s->output_fifo);
 
     for (int layer = 0; layer < FF_ARRAY_ELEMS(s->layers); layer++) {
         HEVCLayerContext *l = &s->layers[layer];
@@ -3890,7 +3890,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->local_ctx[0].logctx = avctx;
     s->local_ctx[0].common_cabac_state = &s->cabac;
 
-    s->output_fifo = ff_container_fifo_alloc_avframe(0);
+    s->output_fifo = av_container_fifo_alloc_avframe(0);
     if (!s->output_fifo)
         return AVERROR(ENOMEM);
 

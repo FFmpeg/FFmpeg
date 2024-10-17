@@ -16,32 +16,32 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/error.h"
-#include "libavutil/fifo.h"
-#include "libavutil/frame.h"
-#include "libavutil/mem.h"
-
+#include "avassert.h"
 #include "container_fifo.h"
-#include "libavutil/refstruct.h"
+#include "error.h"
+#include "fifo.h"
+#include "frame.h"
+#include "mem.h"
+#include "refstruct.h"
 
-struct ContainerFifo {
+struct AVContainerFifo {
     AVFifo             *fifo;
     AVRefStructPool    *pool;
 
-    void*             (*container_alloc)(void);
-    void              (*container_reset)(void *obj);
-    void              (*container_free) (void *obj);
-    int               (*fifo_write)     (void *dst, void *src);
-    int               (*fifo_read)      (void *dst, void *src);
+    void               *opaque;
+    void*             (*container_alloc)(void *opaque);
+    void              (*container_reset)(void *opaque, void *obj);
+    void              (*container_free) (void *opaque, void *obj);
+    int               (*fifo_transfer)  (void *opaque, void *dst, void *src, unsigned flags);
 
 };
 
 static int container_fifo_init_entry(AVRefStructOpaque opaque, void *obj)
 {
-    ContainerFifo *cf = opaque.nc;
+    AVContainerFifo *cf = opaque.nc;
     void **pobj = obj;
 
-    *pobj = cf->container_alloc();
+    *pobj = cf->container_alloc(cf->opaque);
     if (!*pobj)
         return AVERROR(ENOMEM);
 
@@ -50,34 +50,35 @@ static int container_fifo_init_entry(AVRefStructOpaque opaque, void *obj)
 
 static void container_fifo_reset_entry(AVRefStructOpaque opaque, void *obj)
 {
-    ContainerFifo *cf = opaque.nc;
-    cf->container_reset(*(void**)obj);
+    AVContainerFifo *cf = opaque.nc;
+    cf->container_reset(cf->opaque, *(void**)obj);
 }
 
 static void container_fifo_free_entry(AVRefStructOpaque opaque, void *obj)
 {
-    ContainerFifo *cf = opaque.nc;
-    cf->container_free(*(void**)obj);
+    AVContainerFifo *cf = opaque.nc;
+    cf->container_free(cf->opaque, *(void**)obj);
 }
 
-ContainerFifo*
-ff_container_fifo_alloc(void* (*container_alloc)(void),
-                        void  (*container_reset)(void *obj),
-                        void  (*container_free) (void *obj),
-                        int   (*fifo_write)     (void *dst, void *src),
-                        int   (*fifo_read)      (void *dst, void *src))
+AVContainerFifo*
+av_container_fifo_alloc(void *opaque,
+                        void* (*container_alloc)(void *opaque),
+                        void  (*container_reset)(void *opaque, void *obj),
+                        void  (*container_free) (void *opaque, void *obj),
+                        int   (*fifo_transfer)  (void *opaque, void *dst, void *src, unsigned flags),
+                        unsigned flags)
 {
-    ContainerFifo *cf;
+    AVContainerFifo *cf;
 
     cf = av_mallocz(sizeof(*cf));
     if (!cf)
         return NULL;
 
+    cf->opaque          = opaque;
     cf->container_alloc = container_alloc;
     cf->container_reset = container_reset;
     cf->container_free  = container_free;
-    cf->fifo_write      = fifo_write;
-    cf->fifo_read       = fifo_read;
+    cf->fifo_transfer   = fifo_transfer;
 
     cf->fifo = av_fifo_alloc2(1, sizeof(void*), AV_FIFO_FLAG_AUTO_GROW);
     if (!cf->fifo)
@@ -93,13 +94,13 @@ ff_container_fifo_alloc(void* (*container_alloc)(void),
 
     return cf;
 fail:
-    ff_container_fifo_free(&cf);
+    av_container_fifo_free(&cf);
     return NULL;
 }
 
-void ff_container_fifo_free(ContainerFifo **pcf)
+void av_container_fifo_free(AVContainerFifo **pcf)
 {
-    ContainerFifo *cf;
+    AVContainerFifo *cf;
 
     if (!*pcf)
         return;
@@ -118,7 +119,7 @@ void ff_container_fifo_free(ContainerFifo **pcf)
     av_freep(pcf);
 }
 
-int ff_container_fifo_read(ContainerFifo *cf, void *obj)
+int av_container_fifo_read(AVContainerFifo *cf, void *obj, unsigned flags)
 {
     void **psrc;
     int ret;
@@ -127,13 +128,38 @@ int ff_container_fifo_read(ContainerFifo *cf, void *obj)
     if (ret < 0)
         return ret;
 
-    ret = cf->fifo_read(obj, *psrc);
+    ret = cf->fifo_transfer(cf->opaque, obj, *psrc, flags);
     av_refstruct_unref(&psrc);
 
     return ret;
 }
 
-int ff_container_fifo_write(ContainerFifo *cf, void *obj)
+int av_container_fifo_peek(AVContainerFifo *cf, void **pdst, size_t offset)
+{
+    void **pobj;
+    int ret;
+
+    ret = av_fifo_peek(cf->fifo, &pobj, 1, offset);
+    if (ret < 0)
+        return ret;
+
+    *pdst = *pobj;
+
+    return 0;
+}
+
+void av_container_fifo_drain(AVContainerFifo *cf, size_t nb_elems)
+{
+    av_assert0(nb_elems <= av_fifo_can_read(cf->fifo));
+    while (nb_elems--) {
+        void **pobj;
+        int ret = av_fifo_read(cf->fifo, &pobj, 1);
+        av_assert0(ret >= 0);
+        av_refstruct_unref(&pobj);
+    }
+}
+
+int av_container_fifo_write(AVContainerFifo *cf, void *obj, unsigned flags)
 {
     void **pdst;
     int ret;
@@ -142,7 +168,7 @@ int ff_container_fifo_write(ContainerFifo *cf, void *obj)
     if (!pdst)
         return AVERROR(ENOMEM);
 
-    ret = cf->fifo_write(*pdst, obj);
+    ret = cf->fifo_transfer(cf->opaque, *pdst, obj, flags);
     if (ret < 0)
         goto fail;
 
@@ -156,40 +182,38 @@ fail:
     return ret;
 }
 
-size_t ff_container_fifo_can_read(ContainerFifo *cf)
+size_t av_container_fifo_can_read(const AVContainerFifo *cf)
 {
     return av_fifo_can_read(cf->fifo);
 }
 
-static void *frame_alloc(void)
+static void *frame_alloc(void *opaque)
 {
     return av_frame_alloc();
 }
 
-static void frame_reset(void *obj)
+static void frame_reset(void *opaque, void *obj)
 {
     av_frame_unref(obj);
 }
 
-static void frame_free(void *obj)
+static void frame_free(void *opaque, void *obj)
 {
     AVFrame *frame = obj;
     av_frame_free(&frame);
 }
 
-static int frame_ref(void *dst, void *src)
+static int frame_transfer(void *opaque, void *dst, void *src, unsigned flags)
 {
-    return av_frame_ref(dst, src);
-}
+    if (flags & AV_CONTAINER_FIFO_FLAG_REF)
+        return av_frame_ref(dst, src);
 
-static int frame_move_ref(void *dst, void *src)
-{
     av_frame_move_ref(dst, src);
     return 0;
 }
 
-ContainerFifo *ff_container_fifo_alloc_avframe(unsigned flags)
+AVContainerFifo *av_container_fifo_alloc_avframe(unsigned flags)
 {
-    return ff_container_fifo_alloc(frame_alloc, frame_reset, frame_free,
-                                   frame_ref, frame_move_ref);
+    return av_container_fifo_alloc(NULL, frame_alloc, frame_reset, frame_free,
+                                   frame_transfer, 0);
 }

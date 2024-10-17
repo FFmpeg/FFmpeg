@@ -21,10 +21,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/container_fifo.h"
 #include "libavutil/mem.h"
 #include "libavutil/stereo3d.h"
 
-#include "container_fifo.h"
 #include "decode.h"
 #include "hevc.h"
 #include "hevcdec.h"
@@ -267,7 +267,7 @@ int ff_hevc_output_frames(HEVCContext *s,
 
             if (output) {
                 f->pkt_dts = s->pkt_dts;
-                ret = ff_container_fifo_write(s->output_fifo, f);
+                ret = av_container_fifo_write(s->output_fifo, f, AV_CONTAINER_FIFO_FLAG_REF);
             }
             ff_hevc_unref_frame(frame, HEVC_FRAME_FLAG_OUTPUT);
             if (ret < 0)

@@ -502,7 +502,7 @@ typedef struct HEVCContext {
     /** 1 if the independent slice segment header was successfully parsed */
     uint8_t slice_initialized;
 
-    struct ContainerFifo *output_fifo;
+    struct AVContainerFifo *output_fifo;
 
     HEVCParamSets ps;
     HEVCSEI sei;
