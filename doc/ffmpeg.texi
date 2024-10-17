@@ -921,24 +921,25 @@ ffmpeg -i INPUT -metadata:s:a:0 language=eng OUTPUT
 @end example
 
 @item -disposition[:stream_specifier] @var{value} (@emph{output,per-stream})
-Sets the disposition for a stream.
+Sets the disposition flags for a stream.
 
-By default, the disposition is copied from the input stream, unless the output
-stream this option applies to is fed by a complex filtergraph - in that case the
-disposition is unset by default.
+Default value: by default, all disposition flags are copied from the input stream,
+unless the output stream this option applies to is fed by a complex filtergraph
+- in that case no disposition flags are set by default.
 
-@var{value} is a sequence of items separated by '+' or '-'. The first item may
-also be prefixed with '+' or '-', in which case this option modifies the default
-value. Otherwise (the first item is not prefixed) this options overrides the
-default value. A '+' prefix adds the given disposition, '-' removes it. It is
-also possible to clear the disposition by setting it to 0.
+@var{value} is a sequence of disposition flags separated by '+' or '-'. A '+'
+prefix adds the given disposition, '-' removes it. If the first flag is also
+prefixed with '+' or '-', the resulting disposition is the default value
+updated by @var{value}. If the first flag is not prefixed, the resulting
+disposition is @var{value}. It is also possible to clear the disposition by
+setting it to 0.
 
 If no @code{-disposition} options were specified for an output file, ffmpeg will
-automatically set the 'default' disposition on the first stream of each type,
+automatically set the 'default' disposition flag on the first stream of each type,
 when there are multiple streams of this type in the output file and no stream of
 that type is already marked as default.
 
-The @code{-dispositions} option lists the known dispositions.
+The @code{-dispositions} option lists the known disposition flags.
 
 For example, to make the second audio stream the default stream:
 @example
@@ -954,6 +955,29 @@ ffmpeg -i in.mkv -c copy -disposition:s:0 0 -disposition:s:1 default out.mkv
 To add an embedded cover/thumbnail:
 @example
 ffmpeg -i in.mp4 -i IMAGE -map 0 -map 1 -c copy -c:v:1 png -disposition:v:1 attached_pic out.mp4
+@end example
+
+To add the 'original' and remove the 'comment' disposition flag from the first
+audio stream without removing its other disposition flags:
+@example
+ffmpeg -i in.mkv -c copy -disposition:a:0 +original-comment out.mkv
+@end example
+
+To remove the 'original' and add the 'comment' disposition flag to the first
+audio stream without removing its other disposition flags:
+@example
+ffmpeg -i in.mkv -c copy -disposition:a:0 -original+comment out.mkv
+@end example
+
+To set only the 'original' and 'comment' disposition flags on the first audio
+stream (and remove its other disposition flags):
+@example
+ffmpeg -i in.mkv -c copy -disposition:a:0 original+comment out.mkv
+@end example
+
+To remove all disposition flags from the first audio stream:
+@example
+ffmpeg -i in.mkv -c copy -disposition:a:0 0 out.mkv
 @end example
 
 Not all muxers support embedded thumbnails, and those who do, only support a few formats, like JPEG or PNG.
@@ -1358,8 +1382,8 @@ The default is the number of available CPUs.
 Specify the preset for matching stream(s).
 
 @item -stats (@emph{global})
-Print encoding progress/statistics. It is on by default, to explicitly
-disable it you need to specify @code{-nostats}.
+Log encoding progress/statistics as "info"-level log (see @code{-loglevel}).
+It is on by default, to explicitly disable it you need to specify @code{-nostats}.
 
 @item -stats_period @var{time} (@emph{global})
 Set period at which encoding progress/statistics are updated. Default is 0.5 seconds.
@@ -1370,9 +1394,15 @@ Send program-friendly progress information to @var{url}.
 Progress information is written periodically and at the end of
 the encoding process. It is made of "@var{key}=@var{value}" lines. @var{key}
 consists of only alphanumeric characters. The last key of a sequence of
-progress information is always "progress".
+progress information is always "progress" with the value "continue" or "end".
 
 The update period is set using @code{-stats_period}.
+
+For example, log progress information to stdout:
+
+@example
+ffmpeg -progress pipe:1 -i in.mkv out.mkv
+@end example
 
 @anchor{stdin option}
 @item -stdin
