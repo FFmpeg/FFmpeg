@@ -1,4 +1,4 @@
-c1c0524dc868fd3198102e528fbefdbc *tests/data/fate/vsynth3-v410.mov
+b117f4b63b88939c7e1bcddb8102ea0a *tests/data/fate/vsynth3-v410.mov
 231933 tests/data/fate/vsynth3-v410.mov
 a038ad7c3c09f776304ef7accdea9c74 *tests/data/fate/vsynth3-v410.out.rawvideo
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:    86700/    86700
