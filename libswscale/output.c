@@ -2716,7 +2716,7 @@ yuv2xv36_X_c(SwsContext *c, const int16_t *lumFilter,
         output_pixels(dest + 8 * i + 2, Y, 15, 12, 4)
         output_pixels(dest + 8 * i + 0, U, 15, 12, 4)
         output_pixels(dest + 8 * i + 4, V, 15, 12, 4)
-        AV_WN16(dest + 8 * i + 6, A << 4);
+        output_pixels(dest + 8 * i + 6, A,  0, 12, 4);
     }
 }
 
