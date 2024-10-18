@@ -84,7 +84,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (priv->pix_desc->flags & AV_PIX_FMT_FLAG_PAL)
         memcpy(out->data[1], in->data[1], AVPALETTE_SIZE);
 
-    for (c = 0; c < priv->pix_desc->nb_components; c++) {
+    for (c = 0; c < FF_ARRAY_ELEMS(priv->pix_desc->comp); c++) {
         const int w1 = c == 1 || c == 2 ? cw : w;
         const int h1 = c == 1 || c == 2 ? ch : h;
 
