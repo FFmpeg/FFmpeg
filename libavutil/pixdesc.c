@@ -45,6 +45,9 @@ void av_read_image_line2(void *dst,
     uint16_t *dst16 = dst;
     uint32_t *dst32 = dst;
 
+    if (!depth)
+        return;
+
     if (flags & AV_PIX_FMT_FLAG_BITSTREAM) {
         if (depth == 10) {
             // Assume all channels are packed into a 32bit value
@@ -123,6 +126,9 @@ void av_write_image_line2(const void *src,
     int flags = desc->flags;
     const uint32_t *src32 = src;
     const uint16_t *src16 = src;
+
+    if (!depth)
+        return;
 
     if (flags & AV_PIX_FMT_FLAG_BITSTREAM) {
         if (depth == 10) {
