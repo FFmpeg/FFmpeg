@@ -120,6 +120,8 @@ static int dxa_read_header(AVFormatContext *s)
             avio_skip(pb, fsize);
         }
         c->bpc = (fsize + (int64_t)c->frames - 1) / c->frames;
+        if (c->bpc < 0)
+            return AVERROR_INVALIDDATA;
         if(ast->codecpar->block_align) {
             if (c->bpc > INT_MAX - ast->codecpar->block_align + 1)
                 return AVERROR_INVALIDDATA;
