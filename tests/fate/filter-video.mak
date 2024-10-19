@@ -591,7 +591,7 @@ ifneq (,$(RUNNING_PIXFMTS_TESTS))
 endif
 
 FATE_FILTER_PIXDESC-$(call VIDEO_FILTER, SCALE FORMAT PIXDESCTEST) += $(addprefix fate-filter-pixdesc-, $(PIXFMTS))
-fate-filter-pixdesc-%: CMD = video_filter "scale,format=$(@:fate-filter-pixdesc-%=%),pixdesctest" -pix_fmt $(@:fate-filter-pixdesc-%=%)
+fate-filter-pixdesc-%: CMD = pixdesc
 
 fate-filter-pixdesc: $(FATE_FILTER_PIXDESC-yes)
 FATE_FILTER_VSYNTH-yes += $(FATE_FILTER_PIXDESC-yes)
