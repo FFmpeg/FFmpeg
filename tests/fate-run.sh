@@ -519,7 +519,7 @@ pixdesc(){
         $FLAGS $ENC_OPTS -vf "scale,format=$pix_fmt,pixdesctest" -vcodec rawvideo -frames:v 5 \
         "-pix_fmt $pix_fmt" -f nut md5:$md5file2
 
-    diff -u -q $md5file1 $md5file2 || return
+    diff -q $md5file1 $md5file2 || return
     printf '%-20s' $label
     cat $md5file1
 }
