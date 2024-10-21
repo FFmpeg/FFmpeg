@@ -46,6 +46,17 @@
 #include "libavutil/cpu.h"
 #include "libavutil/cpu_internal.h"
 
+#ifndef AT_HWCAP
+#define AT_HWCAP             16
+#endif
+#ifndef AT_HWCAP2
+#define AT_HWCAP2            26
+#endif
+
+#define HWCAP_PPC_VSX        (1 << 7)
+#define HWCAP_PPC_ALTIVEC    (1 << 28)
+#define HWCAP2_PPC_ARCH_2_07 (1 << 31)
+
 /**
  * This function MAY rely on signal() or fork() in order to make sure AltiVec
  * is present.
@@ -65,20 +76,14 @@ int ff_get_cpu_flags_ppc(void)
     int flags = 0;
 
     unsigned long hwcap = ff_getauxval(AT_HWCAP);
-#ifdef PPC_FEATURE2_ARCH_2_07
     unsigned long hwcap2 = ff_getauxval(AT_HWCAP2);
-#endif
 
-    if (hwcap & PPC_FEATURE_HAS_ALTIVEC)
+    if (hwcap & HWCAP_PPC_ALTIVEC)
        flags |= AV_CPU_FLAG_ALTIVEC;
-#ifdef PPC_FEATURE_HAS_VSX
-    if (hwcap & PPC_FEATURE_HAS_VSX)
+    if (hwcap & HWCAP_PPC_VSX)
        flags |= AV_CPU_FLAG_VSX;
-#endif
-#ifdef PPC_FEATURE2_ARCH_2_07
-    if (hwcap2 & PPC_FEATURE2_ARCH_2_07)
+    if (hwcap2 & HWCAP2_PPC_ARCH_2_07)
        flags |= AV_CPU_FLAG_POWER8;
-#endif
 
     return flags;
 #elif defined(__APPLE__) || defined(__NetBSD__) || defined(__OpenBSD__)
@@ -112,23 +117,17 @@ int ff_get_cpu_flags_ppc(void)
             if (buf[i] == AT_NULL)
                 goto out;
             if (buf[i] == AT_HWCAP) {
-                if (buf[i + 1] & PPC_FEATURE_HAS_ALTIVEC)
+                if (buf[i + 1] & HWCAP_PPC_ALTIVEC)
                     ret = AV_CPU_FLAG_ALTIVEC;
-#ifdef PPC_FEATURE_HAS_VSX
-                if (buf[i + 1] & PPC_FEATURE_HAS_VSX)
+                if (buf[i + 1] & HWCAP_PPC_VSX)
                     ret |= AV_CPU_FLAG_VSX;
-#endif
                 if (ret & AV_CPU_FLAG_VSX)
                     av_assert0(ret & AV_CPU_FLAG_ALTIVEC);
             }
-#ifdef AT_HWCAP2 /* not introduced until glibc 2.18 */
             else if (buf[i] == AT_HWCAP2) {
-#ifdef PPC_FEATURE2_ARCH_2_07
-                if (buf[i + 1] & PPC_FEATURE2_ARCH_2_07)
+                if (buf[i + 1] & HWCAP2_PPC_ARCH_2_07)
                     ret |= AV_CPU_FLAG_POWER8;
-#endif
             }
-#endif /* AT_HWCAP2 */
         }
     }
 
