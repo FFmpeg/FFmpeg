@@ -503,6 +503,18 @@ pixfmt_conversion(){
               $ENC_OPTS -f rawvideo -s 352x288 -pix_fmt yuv444p -color_range mpeg
 }
 
+pixfmt_conversion_ext(){
+    prefix=$1
+    color_range="${test#pixfmt-}"
+    color_range=${color_range%-*}
+    conversion="${test#pixfmt-$color_range-}"
+    outdir="tests/data/pixfmt"
+    file=${outdir}/${color_range}-${conversion}.yuv
+    cleanfiles="$cleanfiles $file"
+    do_avconv $file $DEC_OPTS -lavfi ${prefix}testsrc=s=352x288,format=${color_range},scale,format=$conversion \
+              $ENC_OPTS -t 1 -f rawvideo -s 352x288 -pix_fmt ${color_range}le -color_range mpeg
+}
+
 pixdesc(){
     pix_fmt=${test#filter-pixdesc-}
     label=${test#filter-}
