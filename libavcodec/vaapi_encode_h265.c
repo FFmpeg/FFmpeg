@@ -951,8 +951,10 @@ static av_cold int vaapi_encode_h265_get_encoder_caps(AVCodecContext *avctx)
            "min CB size %dx%d.\n", priv->ctu_size, priv->ctu_size,
            priv->min_cb_size, priv->min_cb_size);
 
-    base_ctx->surface_width  = FFALIGN(avctx->width,  priv->min_cb_size);
-    base_ctx->surface_height = FFALIGN(avctx->height, priv->min_cb_size);
+    base_ctx->surface_width  = FFALIGN(avctx->width,
+        FFMAX(priv->min_cb_size, priv->common.surface_alignment_width));
+    base_ctx->surface_height = FFALIGN(avctx->height,
+        FFMAX(priv->min_cb_size, priv->common.surface_alignment_height));
 
     base_ctx->slice_block_width = base_ctx->slice_block_height = priv->ctu_size;
 
