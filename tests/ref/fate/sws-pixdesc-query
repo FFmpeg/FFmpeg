@@ -25,6 +25,8 @@ is16BPS:
   rgbaf16le
   rgbf16be
   rgbf16le
+  y216be
+  y216le
   ya16be
   ya16le
   yuv420p16be
@@ -195,6 +197,7 @@ isBE:
   xyz12be
   y210be
   y212be
+  y216be
   ya16be
   yuv420p10be
   yuv420p12be
@@ -272,6 +275,8 @@ isYUV:
   y210le
   y212be
   y212le
+  y216be
+  y216le
   ya16be
   ya16le
   ya8
@@ -876,6 +881,8 @@ Packed:
   y210le
   y212be
   y212le
+  y216be
+  y216le
   ya16be
   ya16le
   ya8

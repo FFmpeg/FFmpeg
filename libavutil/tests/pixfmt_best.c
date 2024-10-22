@@ -50,6 +50,7 @@ static const enum AVPixelFormat packed_list[] = {
     AV_PIX_FMT_XV36,
     AV_PIX_FMT_XV30,
     AV_PIX_FMT_VUYX,
+    AV_PIX_FMT_Y216,
     AV_PIX_FMT_Y212,
     AV_PIX_FMT_Y210,
     AV_PIX_FMT_YUYV422,
@@ -210,6 +211,7 @@ int main(void)
     TEST_PACKED(AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUYV422);
     TEST_PACKED(AV_PIX_FMT_YUV422P10, AV_PIX_FMT_Y210);
     TEST_PACKED(AV_PIX_FMT_YUV422P12, AV_PIX_FMT_Y212);
+    TEST_PACKED(AV_PIX_FMT_YUV422P16, AV_PIX_FMT_Y216);
 
 #define TEST_SUBSAMPLED(input, expected) \
     test(input, expected, &pass, &fail, find_best_subsampled)
