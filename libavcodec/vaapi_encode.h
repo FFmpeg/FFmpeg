@@ -260,6 +260,10 @@ typedef struct VAAPIEncodeContext {
      * This is a RefStruct reference.
      */
     VABufferID     *coded_buffer_ref;
+
+    // Surface alignment required by driver.
+    int             surface_alignment_width;
+    int             surface_alignment_height;
 } VAAPIEncodeContext;
 
 typedef struct VAAPIEncodeType {

@@ -1133,6 +1133,68 @@ fail:
     return err;
 }
 
+static av_cold int vaapi_encode_surface_alignment(av_unused AVCodecContext *avctx)
+{
+#if VA_CHECK_VERSION(1, 21, 0)
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VASurfaceAttrib *attr_list = NULL;
+    unsigned int attr_count = 0;
+    VAConfigID va_config;
+    VAStatus vas;
+    int err = 0;
+
+    vas = vaCreateConfig(ctx->hwctx->display,
+                         ctx->va_profile, ctx->va_entrypoint,
+                         NULL, 0, &va_config);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to create temp encode pipeline "
+               "configuration: %d (%s).\n", vas, vaErrorStr(vas));
+        return AVERROR(EIO);
+    }
+
+    vas = vaQuerySurfaceAttributes(ctx->hwctx->display, va_config,
+                                   0, &attr_count);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to query surface attributes: "
+               "%d (%s).\n", vas, vaErrorStr(vas));
+        err = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    attr_list = av_malloc(attr_count * sizeof(*attr_list));
+    if (!attr_list) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    vas = vaQuerySurfaceAttributes(ctx->hwctx->display, va_config,
+                                   attr_list, &attr_count);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to query surface attributes: "
+               "%d (%s).\n", vas, vaErrorStr(vas));
+        err = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    for (unsigned int i = 0; i < attr_count; i++) {
+        if (attr_list[i].type == VASurfaceAttribAlignmentSize) {
+            ctx->surface_alignment_width =
+                1 << (attr_list[i].value.value.i & 0xf);
+            ctx->surface_alignment_height =
+                1 << ((attr_list[i].value.value.i & 0xf0) >> 4);
+            break;
+        }
+    }
+
+fail:
+    av_freep(&attr_list);
+    vaDestroyConfig(ctx->hwctx->display, va_config);
+    return err;
+#else
+    return 0;
+#endif
+}
+
 static const VAAPIEncodeRCMode vaapi_encode_rc_modes[] = {
     //                                  Bitrate   Quality
     //                                     | Maxrate | HRD/VBV
@@ -2108,6 +2170,10 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     ctx->hwctx = base_ctx->device->hwctx;
 
     err = vaapi_encode_profile_entrypoint(avctx);
+    if (err < 0)
+        goto fail;
+
+    err = vaapi_encode_surface_alignment(avctx);
     if (err < 0)
         goto fail;
 
