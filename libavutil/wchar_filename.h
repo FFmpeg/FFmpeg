@@ -57,7 +57,7 @@ static inline int wchartocp(unsigned int code_page, const wchar_t *filename_w,
         errno = EINVAL;
         return -1;
     }
-    *filename = av_malloc_array(num_chars, sizeof **filename);
+    *filename = (char *)av_malloc_array(num_chars, sizeof **filename);
     if (!*filename) {
         errno = ENOMEM;
         return -1;
