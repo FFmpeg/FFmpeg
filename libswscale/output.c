@@ -2984,6 +2984,47 @@ yuv2y2xx_wrapper(10)
 yuv2y2xx_wrapper(12)
 
 static void
+yuv2y216le_X_c(SwsContext *c, const int16_t *lumFilter,
+               const int16_t **_lumSrc, int lumFilterSize,
+               const int16_t *chrFilter,
+               const int16_t **_chrUSrc,
+               const int16_t **_chrVSrc, int chrFilterSize,
+               const int16_t **_alpSrc,
+               uint8_t *dest, int dstW, int y)
+{
+    const int32_t **lumSrc  = (const int32_t **)_lumSrc;
+    const int32_t **chrUSrc = (const int32_t **)_chrUSrc;
+    const int32_t **chrVSrc = (const int32_t **)_chrVSrc;
+    int shift = 15;
+
+    for (int i = 0; i < ((dstW + 1) >> 1); i++) {
+        int Y1 = 1 << (shift - 1), Y2 = 1 << (shift - 1);
+        int U  = 1 << (shift - 1), V  = 1 << (shift - 1);
+
+        /* See yuv2planeX_16_c_template for details. */
+        Y1 -= 0x40000000;
+        U  -= 0x40000000;
+        Y2 -= 0x40000000;
+        V  -= 0x40000000;
+
+        for (int j = 0; j < lumFilterSize; j++) {
+            Y1 += lumSrc[j][i * 2]     * (unsigned)lumFilter[j];
+            Y2 += lumSrc[j][i * 2 + 1] * (unsigned)lumFilter[j];
+        }
+
+        for (int j = 0; j < chrFilterSize; j++) {
+            U += chrUSrc[j][i] * (unsigned)chrFilter[j];
+            V += chrVSrc[j][i] * (unsigned)chrFilter[j];
+        }
+
+        AV_WL16(dest + 8 * i + 0, 0x8000 + av_clip_int16(Y1 >> shift));
+        AV_WL16(dest + 8 * i + 2, 0x8000 + av_clip_int16(U  >> shift));
+        AV_WL16(dest + 8 * i + 4, 0x8000 + av_clip_int16(Y2 >> shift));
+        AV_WL16(dest + 8 * i + 6, 0x8000 + av_clip_int16(V  >> shift));
+    }
+}
+
+static void
 yuv2vyu444_1_c(SwsContext *c, const int16_t *buf0,
                const int16_t *ubuf[2], const int16_t *vbuf[2],
                const int16_t *abuf0, uint8_t *dest, int dstW,
@@ -3655,6 +3696,9 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         break;
     case AV_PIX_FMT_Y212LE:
         *yuv2packedX = yuv2y212le_X_c;
+        break;
+    case AV_PIX_FMT_Y216LE:
+        *yuv2packedX = yuv2y216le_X_c;
         break;
     }
 }
