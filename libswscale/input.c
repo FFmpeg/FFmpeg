@@ -674,25 +674,41 @@ static void read_ayuv64be_Y_c(uint8_t *dst, const uint8_t *src, const uint8_t *u
         AV_WN16(dst + i * 2, AV_RB16(src + i * 8 + 2));
 }
 
-static void read_ayuv64le_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src,
-                               const uint8_t *unused1, int width, uint32_t *unused2, void *opq)
+static av_always_inline void ayuv64le_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, int width,
+                                           int u_offset, int v_offset)
 {
     int i;
     for (i = 0; i < width; i++) {
-        AV_WN16(dstU + i * 2, AV_RL16(src + i * 8 + 4));
-        AV_WN16(dstV + i * 2, AV_RL16(src + i * 8 + 6));
+        AV_WN16(dstU + i * 2, AV_RL16(src + i * 8 + u_offset));
+        AV_WN16(dstV + i * 2, AV_RL16(src + i * 8 + v_offset));
     }
 }
 
-static void read_ayuv64be_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src,
-                               const uint8_t *unused1, int width, uint32_t *unused2, void *opq)
+static av_always_inline void ayuv64be_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, int width,
+                                           int u_offset, int v_offset)
 {
     int i;
     for (i = 0; i < width; i++) {
-        AV_WN16(dstU + i * 2, AV_RB16(src + i * 8 + 4));
-        AV_WN16(dstV + i * 2, AV_RB16(src + i * 8 + 6));
+        AV_WN16(dstU + i * 2, AV_RB16(src + i * 8 + u_offset));
+        AV_WN16(dstV + i * 2, AV_RB16(src + i * 8 + v_offset));
     }
 }
+
+#define ayuv64_UV_funcs(pixfmt, U, V) \
+static void read_ ## pixfmt ## le_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src, \
+                                       const uint8_t *unused1, int width, uint32_t *unused2, void *opq) \
+{ \
+    ayuv64le_UV_c(dstU, dstV, src, width, U, V); \
+} \
+ \
+static void read_ ## pixfmt ## be_UV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src, \
+                                       const uint8_t *unused1, int width, uint32_t *unused2, void *opq) \
+{ \
+    ayuv64be_UV_c(dstU, dstV, src, width, U, V); \
+}
+
+ayuv64_UV_funcs(ayuv64, 4, 6)
+ayuv64_UV_funcs(xv48, 0, 4)
 
 static void read_ayuv64le_A_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused0, const uint8_t *unused1, int width,
                               uint32_t *unused2, void *opq)
@@ -1722,6 +1738,12 @@ av_cold void ff_sws_init_input_funcs(SwsInternal *c,
     case AV_PIX_FMT_XV36BE:
         *chrToYV12 = read_xv36be_UV_c;
         break;
+    case AV_PIX_FMT_XV48LE:
+        *chrToYV12 = read_xv48le_UV_c;
+        break;
+    case AV_PIX_FMT_XV48BE:
+        *chrToYV12 = read_xv48be_UV_c;
+        break;
     case AV_PIX_FMT_P010LE:
     case AV_PIX_FMT_P210LE:
     case AV_PIX_FMT_P410LE:
@@ -2146,9 +2168,11 @@ av_cold void ff_sws_init_input_funcs(SwsInternal *c,
         *lumToYV12 = read_ayuv_Y_c;
         break;
     case AV_PIX_FMT_AYUV64LE:
+    case AV_PIX_FMT_XV48LE:
         *lumToYV12 = read_ayuv64le_Y_c;
         break;
     case AV_PIX_FMT_AYUV64BE:
+    case AV_PIX_FMT_XV48BE:
         *lumToYV12 = read_ayuv64be_Y_c;
         break;
     case AV_PIX_FMT_XV36LE:
