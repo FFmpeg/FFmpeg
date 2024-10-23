@@ -460,6 +460,9 @@ enum AVPixelFormat {
     AV_PIX_FMT_Y216BE,      ///< packed YUV 4:2:2 like YUYV422, 32bpp, big-endian
     AV_PIX_FMT_Y216LE,      ///< packed YUV 4:2:2 like YUYV422, 32bpp, little-endian
 
+    AV_PIX_FMT_XV48BE,      ///< packed XVYU 4:4:4, 64bpp, big-endian, variant of Y416 where alpha channel is left undefined
+    AV_PIX_FMT_XV48LE,      ///< packed XVYU 4:4:4, 64bpp, little-endian, variant of Y416 where alpha channel is left undefined
+
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
@@ -555,6 +558,7 @@ enum AVPixelFormat {
 #define AV_PIX_FMT_Y216       AV_PIX_FMT_NE(Y216BE,  Y216LE)
 #define AV_PIX_FMT_XV30       AV_PIX_FMT_NE(XV30BE,  XV30LE)
 #define AV_PIX_FMT_XV36       AV_PIX_FMT_NE(XV36BE,  XV36LE)
+#define AV_PIX_FMT_XV48       AV_PIX_FMT_NE(XV48BE,  XV48LE)
 #define AV_PIX_FMT_V30X       AV_PIX_FMT_NE(V30XBE,  V30XLE)
 #define AV_PIX_FMT_X2RGB10    AV_PIX_FMT_NE(X2RGB10BE, X2RGB10LE)
 #define AV_PIX_FMT_X2BGR10    AV_PIX_FMT_NE(X2BGR10BE, X2BGR10LE)

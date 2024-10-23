@@ -2771,6 +2771,31 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_BE,
     },
+    [AV_PIX_FMT_XV48LE] = {
+        .name = "xv48le",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 8, 2, 0, 16 },        /* Y */
+            { 0, 8, 0, 0, 16 },        /* U */
+            { 0, 8, 4, 0, 16 },        /* V */
+            { 0, 8, 6, 0, 16 },        /* X */
+        },
+    },
+    [AV_PIX_FMT_XV48BE] = {
+        .name = "xv48be",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 8, 2, 0, 16 },        /* Y */
+            { 0, 8, 0, 0, 16 },        /* U */
+            { 0, 8, 4, 0, 16 },        /* V */
+            { 0, 8, 6, 0, 16 },        /* X */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE,
+    },
     [AV_PIX_FMT_V30XLE] = {
         .name = "v30xle",
         .nb_components = 3,
