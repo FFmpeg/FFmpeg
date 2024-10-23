@@ -618,34 +618,32 @@ static inline double avg_cycles_per_call(const CheckasmPerf *const p)
 static void print_benchs(CheckasmFunc *f)
 {
     if (f) {
+        CheckasmFuncVersion *v = &f->versions;
+        const CheckasmPerf *p = &v->perf;
+        const double baseline = avg_cycles_per_call(p);
+        double decicycles;
+
         print_benchs(f->child[0]);
 
-        /* Only print functions with at least one assembly version */
-        if (f->versions.cpu || f->versions.next) {
-            CheckasmFuncVersion *v = &f->versions;
-            const CheckasmPerf *p = &v->perf;
-            const double baseline = avg_cycles_per_call(p);
-            double decicycles;
-            do {
-                if (p->iterations) {
-                    p = &v->perf;
-                    decicycles = avg_cycles_per_call(p);
-                    if (state.csv || state.tsv) {
-                        const char sep = state.csv ? ',' : '\t';
-                        printf("%s%c%s%c%.1f\n", f->name, sep,
-                               cpu_suffix(v->cpu), sep,
-                               decicycles / 10.0);
-                    } else {
-                        const int pad_length = 10 + 50 -
-                            printf("%s_%s:", f->name, cpu_suffix(v->cpu));
-                        const double ratio = decicycles ?
-                            baseline / decicycles : 0.0;
-                        printf("%*.1f (%5.2fx)\n", FFMAX(pad_length, 0),
-                            decicycles / 10.0, ratio);
-                    }
+        do {
+            if (p->iterations) {
+                p = &v->perf;
+                decicycles = avg_cycles_per_call(p);
+                if (state.csv || state.tsv) {
+                    const char sep = state.csv ? ',' : '\t';
+                    printf("%s%c%s%c%.1f\n", f->name, sep,
+                           cpu_suffix(v->cpu), sep,
+                           decicycles / 10.0);
+                } else {
+                    const int pad_length = 10 + 50 -
+                        printf("%s_%s:", f->name, cpu_suffix(v->cpu));
+                    const double ratio = decicycles ?
+                        baseline / decicycles : 0.0;
+                    printf("%*.1f (%5.2fx)\n", FFMAX(pad_length, 0),
+                        decicycles / 10.0, ratio);
                 }
-            } while ((v = v->next));
-        }
+            }
+        } while ((v = v->next));
 
         print_benchs(f->child[1]);
     }
