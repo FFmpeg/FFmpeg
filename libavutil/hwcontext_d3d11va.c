@@ -103,7 +103,7 @@ static const struct {
     { DXGI_FORMAT_Y410,         AV_PIX_FMT_XV30 },
     { DXGI_FORMAT_P016,         AV_PIX_FMT_P012 },
     { DXGI_FORMAT_Y216,         AV_PIX_FMT_Y216 },
-    { DXGI_FORMAT_Y416,         AV_PIX_FMT_XV36 },
+    { DXGI_FORMAT_Y416,         AV_PIX_FMT_XV48 },
     // Special opaque formats. The pix_fmt is merely a place holder, as the
     // opaque format cannot be accessed directly.
     { DXGI_FORMAT_420_OPAQUE,   AV_PIX_FMT_YUV420P },
