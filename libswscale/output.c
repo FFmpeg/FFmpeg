@@ -2577,7 +2577,8 @@ yuv2ayuv64_X_c(SwsInternal *c, const int16_t *lumFilter,
                const int16_t **_lumSrc, int lumFilterSize,
                const int16_t *chrFilter, const int16_t **_chrUSrc,
                const int16_t **_chrVSrc, int chrFilterSize,
-               const int16_t **_alpSrc, uint8_t *dest, int dstW, int y, int is_be)
+               const int16_t **_alpSrc, uint8_t *dest, int dstW, int y,
+               int A_offset, int Y_offset, int U_offset, int V_offset, int is_be)
 {
     const int32_t **lumSrc  = (const int32_t **) _lumSrc,
                   **chrUSrc = (const int32_t **) _chrUSrc,
@@ -2612,20 +2613,19 @@ yuv2ayuv64_X_c(SwsInternal *c, const int16_t *lumFilter,
         Y = 0x8000 + av_clip_int16(Y >> 15);
         U = 0x8000 + av_clip_int16(U >> 15);
         V = 0x8000 + av_clip_int16(V >> 15);
-        A = 0x8000 + av_clip_int16(A >> 15);
+        if (hasAlpha)
+            A = 0x8000 + av_clip_int16(A >> 15);
 
-        output_pixels(dest + 8 * i, hasAlpha ? A : 65535);
-        output_pixels(dest + 8 * i + 2, Y);
-        output_pixels(dest + 8 * i + 4, U);
-        output_pixels(dest + 8 * i + 6, V);
+        output_pixels(dest + 8 * i + A_offset, hasAlpha ? A : 65535);
+        output_pixels(dest + 8 * i + Y_offset, Y);
+        output_pixels(dest + 8 * i + U_offset, U);
+        output_pixels(dest + 8 * i + V_offset, V);
     }
 }
 
-#undef output_pixels
-
-#define YUV2AYUV64(BE_LE, is_be) \
+#define YUV2AYUV64(pixfmt, BE_LE, A, Y, U, V, is_be) \
 static void \
-yuv2ayuv64 ## BE_LE ##_X_c(SwsInternal *c, const int16_t *lumFilter, \
+yuv2 ## pixfmt ## BE_LE ##_X_c(SwsInternal *c, const int16_t *lumFilter, \
                const int16_t **lumSrc, int lumFilterSize, \
                const int16_t *chrFilter, const int16_t **chrUSrc, \
                const int16_t **chrVSrc, int chrFilterSize, \
@@ -2633,11 +2633,16 @@ yuv2ayuv64 ## BE_LE ##_X_c(SwsInternal *c, const int16_t *lumFilter, \
 { \
     yuv2ayuv64_X_c(c, lumFilter, lumSrc, lumFilterSize, \
                    chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
-                   alpSrc, dest, dstW, y, is_be); \
+                   alpSrc, dest, dstW, y, A, Y, U, V, is_be); \
 }
 
-YUV2AYUV64(le, 0)
-YUV2AYUV64(be, 1)
+YUV2AYUV64(ayuv64, le, 0, 2, 4, 6, 0)
+YUV2AYUV64(ayuv64, be, 0, 2, 4, 6, 1)
+
+YUV2AYUV64(xv48, le, 6, 2, 0, 4, 0)
+YUV2AYUV64(xv48, be, 6, 2, 0, 4, 1)
+
+#undef output_pixels
 
 static av_always_inline void
 yuv2v30_X_c_template(SwsInternal *c, const int16_t *lumFilter,
@@ -3691,6 +3696,12 @@ av_cold void ff_sws_init_output_funcs(SwsInternal *c,
         break;
     case AV_PIX_FMT_XV36BE:
         *yuv2packedX = yuv2xv36be_X_c;
+        break;
+    case AV_PIX_FMT_XV48LE:
+        *yuv2packedX = yuv2xv48le_X_c;
+        break;
+    case AV_PIX_FMT_XV48BE:
+        *yuv2packedX = yuv2xv48be_X_c;
         break;
     case AV_PIX_FMT_Y210LE:
         *yuv2packedX = yuv2y210le_X_c;
