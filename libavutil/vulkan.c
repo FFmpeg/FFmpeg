@@ -1325,6 +1325,7 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
     case AV_PIX_FMT_RGB48:
     case AV_PIX_FMT_RGBA64:
     case AV_PIX_FMT_Y212:
+    case AV_PIX_FMT_Y216:
     case AV_PIX_FMT_XV36: {
         const char *rep_tab[] = {
             [FF_VK_REP_NATIVE] = "rgba16ui",
