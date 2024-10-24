@@ -271,10 +271,9 @@ static inline void put_vlc_symbol(PutBitContext *pb, VlcState *const state,
 
 static int encode_plane(FFV1Context *f, FFV1SliceContext *sc,
                         const uint8_t *src, int w, int h,
-                         int stride, int plane_index, int pixel_stride)
+                         int stride, int plane_index, int pixel_stride, int ac)
 {
     int x, y, i, ret;
-    const int ac = f->ac;
     const int pass1 = !!(f->avctx->flags & AV_CODEC_FLAG_PASS1);
     const int ring_size = f->context_model ? 3 : 2;
     int16_t *sample[3];
@@ -1068,6 +1067,7 @@ static int encode_slice(AVCodecContext *c, void *arg)
                                 p->data[1] ? p->data[1] + ps*x + y*p->linesize[1] : NULL,
                                 p->data[2] ? p->data[2] + ps*x + y*p->linesize[2] : NULL,
                                 p->data[3] ? p->data[3] + ps*x + y*p->linesize[3] : NULL};
+    int ac = f->ac;
 
     sc->slice_coding_mode = 0;
     if (f->version > 3 && f->colorspace == 1) {
@@ -1083,7 +1083,7 @@ retry:
     if (f->version > 2) {
         encode_slice_header(f, sc);
     }
-    if (f->ac == AC_GOLOMB_RICE) {
+    if (ac == AC_GOLOMB_RICE) {
         sc->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate(&sc->c, f->version > 2) : 0;
         init_put_bits(&sc->pb,
                       sc->c.bytestream_start + sc->ac_byte_count,
@@ -1096,24 +1096,24 @@ retry:
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
 
-        ret = encode_plane(f, sc, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1);
+        ret = encode_plane(f, sc, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1, ac);
 
         if (f->chroma_planes) {
-            ret |= encode_plane(f, sc, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
-            ret |= encode_plane(f, sc, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
+            ret |= encode_plane(f, sc, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1, ac);
+            ret |= encode_plane(f, sc, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1, ac);
         }
         if (f->transparency)
-            ret |= encode_plane(f, sc, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2, 1);
+            ret |= encode_plane(f, sc, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2, 1, ac);
     } else if (c->pix_fmt == AV_PIX_FMT_YA8) {
-        ret  = encode_plane(f, sc, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2);
-        ret |= encode_plane(f, sc, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 2);
+        ret  = encode_plane(f, sc, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2, ac);
+        ret |= encode_plane(f, sc, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 2, ac);
     } else if (f->use32bit) {
         ret = encode_rgb_frame32(f, sc, planes, width, height, p->linesize);
     } else {
         ret = encode_rgb_frame(f, sc, planes, width, height, p->linesize);
     }
 
-    if (f->ac != AC_GOLOMB_RICE) {
+    if (ac != AC_GOLOMB_RICE) {
         sc->ac_byte_count = ff_rac_terminate(&sc->c, 1);
     } else {
         flush_put_bits(&sc->pb); // FIXME: nicer padding
@@ -1122,11 +1122,12 @@ retry:
 
     if (ret < 0) {
         av_assert0(sc->slice_coding_mode == 0);
-        if (f->version < 4 || !f->ac) {
+        if (f->version < 4) {
             av_log(c, AV_LOG_ERROR, "Buffer too small\n");
             return ret;
         }
         av_log(c, AV_LOG_DEBUG, "Coding slice as PCM\n");
+        ac = 1;
         sc->slice_coding_mode = 1;
         sc->c = c_bak;
         goto retry;

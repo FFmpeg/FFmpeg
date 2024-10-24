@@ -120,9 +120,8 @@ static int is_input_end(RangeCoder *c, GetBitContext *gb, int ac)
 static int decode_plane(FFV1Context *f, FFV1SliceContext *sc,
                         GetBitContext *gb,
                         uint8_t *src, int w, int h, int stride, int plane_index,
-                         int pixel_stride)
+                        int pixel_stride, int ac)
 {
-    const int ac = f->ac;
     int x, y;
     int16_t *sample[2];
     sample[0] = sc->sample_buffer + 3;
@@ -273,6 +272,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     AVFrame * const p = f->picture.f;
     const int      si = sc - f->slices;
     GetBitContext gb;
+    int ac = f->ac || sc->slice_coding_mode == 1;
 
     if (!(p->flags & AV_FRAME_FLAG_KEY) && f->last_picture.f)
         ff_progress_frame_await(&f->last_picture, si);
@@ -305,7 +305,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     x      = sc->slice_x;
     y      = sc->slice_y;
 
-    if (f->ac == AC_GOLOMB_RICE) {
+    if (ac == AC_GOLOMB_RICE) {
         if (f->version == 3 && f->micro_version > 1 || f->version > 3)
             get_rac(&sc->c, (uint8_t[]) { 129 });
         sc->ac_byte_count = f->version > 2 || (!x && !y) ? sc->c.bytestream - sc->c.bytestream_start - 1 : 0;
@@ -320,17 +320,17 @@ static int decode_slice(AVCodecContext *c, void *arg)
         const int chroma_height = AV_CEIL_RSHIFT(height, f->chroma_v_shift);
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
-        decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1);
+        decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1, ac);
 
         if (f->chroma_planes) {
-            decode_plane(f, sc, &gb, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
-            decode_plane(f, sc, &gb, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
+            decode_plane(f, sc, &gb, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1, ac);
+            decode_plane(f, sc, &gb, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1, ac);
         }
         if (f->transparency)
-            decode_plane(f, sc, &gb, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], (f->version >= 4 && !f->chroma_planes) ? 1 : 2, 1);
+            decode_plane(f, sc, &gb, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], (f->version >= 4 && !f->chroma_planes) ? 1 : 2, 1, ac);
     } else if (f->colorspace == 0) {
-         decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0]    , width, height, p->linesize[0], 0, 2);
-         decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0] + 1, width, height, p->linesize[0], 1, 2);
+         decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0]    , width, height, p->linesize[0], 0, 2, ac);
+         decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0] + 1, width, height, p->linesize[0], 1, 2, ac);
     } else if (f->use32bit) {
         uint8_t *planes[4] = { p->data[0] + ps * x + y * p->linesize[0],
                                p->data[1] + ps * x + y * p->linesize[1],
@@ -344,7 +344,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
                                p->data[3] + ps * x + y * p->linesize[3] };
         decode_rgb_frame(f, sc, &gb, planes, width, height, p->linesize);
     }
-    if (f->ac != AC_GOLOMB_RICE && f->version > 2) {
+    if (ac != AC_GOLOMB_RICE && f->version > 2) {
         int v;
         get_rac(&sc->c, (uint8_t[]) { 129 });
         v = sc->c.bytestream_end - sc->c.bytestream - 2 - 5*!!f->ec;
