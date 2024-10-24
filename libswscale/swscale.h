@@ -42,8 +42,6 @@
 #include "version.h"
 #endif
 
-typedef struct SwsContext SwsContext;
-
 /**
  * @defgroup libsws libswscale
  * Color conversion and scaling library.
@@ -65,17 +63,98 @@ const char *swscale_configuration(void);
 const char *swscale_license(void);
 
 /**
- * Get the AVClass for swsContext. It can be used in combination with
+ * Get the AVClass for SwsContext. It can be used in combination with
  * AV_OPT_SEARCH_FAKE_OBJ for examining options.
  *
  * @see av_opt_find().
  */
 const AVClass *sws_get_class(void);
 
+/******************************
+ * Flags and quality settings *
+ ******************************/
+
+typedef enum SwsDither {
+    SWS_DITHER_NONE = 0, /* disable dithering */
+    SWS_DITHER_AUTO,     /* auto-select from preset */
+    SWS_DITHER_BAYER,    /* ordered dither matrix */
+    SWS_DITHER_ED,       /* error diffusion */
+    SWS_DITHER_A_DITHER, /* arithmetic addition */
+    SWS_DITHER_X_DITHER, /* arithmetic xor */
+    SWS_DITHER_NB,       /* not part of the ABI */
+} SwsDither;
+
+typedef enum SwsAlphaBlend {
+    SWS_ALPHA_BLEND_NONE = 0,
+    SWS_ALPHA_BLEND_UNIFORM,
+    SWS_ALPHA_BLEND_CHECKERBOARD,
+    SWS_ALPHA_BLEND_NB,  /* not part of the ABI */
+} SwsAlphaBlend;
+
+/***********************************
+ * Context creation and management *
+ ***********************************/
+
 /**
- * Allocate an empty SwsContext. This must be filled and passed to
- * sws_init_context(). For filling see AVOptions, options.c and
- * sws_setColorspaceDetails().
+ * Main external API structure. New fields can be added to the end with
+ * minor version bumps. Removal, reordering and changes to existing fields
+ * require a major version bump. sizeof(SwsContext) is not part of the ABI.
+ */
+typedef struct SwsContext {
+    const AVClass *av_class;
+
+    /**
+     * Private data of the user, can be used to carry app specific stuff.
+     */
+    void *opaque;
+
+    /**
+     * Bitmask of SWS_*.
+     */
+    unsigned flags;
+
+    /**
+     * Extra parameters for fine-tuning certain scalers.
+     */
+    double scaler_params[2];
+
+    /**
+     * How many threads to use for processing, or 0 for automatic selection.
+     */
+    int threads;
+
+    /**
+     * Dither mode.
+     */
+    SwsDither dither;
+
+    /**
+     * Alpha blending mode. See `SwsAlphaBlend` for details.
+     */
+    SwsAlphaBlend alpha_blend;
+
+    /**
+     * Use gamma correct scaling.
+     */
+    int gamma_flag;
+
+    /**
+     * Frame property overrides.
+     */
+    int src_w, src_h;  ///< Width and height of the source frame
+    int dst_w, dst_h;  ///< Width and height of the destination frame
+    int src_format;    ///< Source pixel format
+    int dst_format;    ///< Destination pixel format
+    int src_range;     ///< Source is full range
+    int dst_range;     ///< Destination is full range
+    int src_v_chr_pos; ///< Source vertical chroma position in luma grid / 256
+    int src_h_chr_pos; ///< Source horizontal chroma position
+    int dst_v_chr_pos; ///< Destination vertical chroma position
+    int dst_h_chr_pos; ///< Destination horizontal chroma position
+} SwsContext;
+
+/**
+ * Allocate an empty SwsContext and set its fields to default values.
  */
 SwsContext *sws_alloc_context(void);
 

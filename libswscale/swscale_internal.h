@@ -73,23 +73,6 @@ static inline SwsInternal *sws_internal(const SwsContext *sws)
     return (SwsInternal *) sws;
 }
 
-typedef enum SwsDither {
-    SWS_DITHER_NONE = 0,
-    SWS_DITHER_AUTO,
-    SWS_DITHER_BAYER,
-    SWS_DITHER_ED,
-    SWS_DITHER_A_DITHER,
-    SWS_DITHER_X_DITHER,
-    SWS_DITHER_NB,
-} SwsDither;
-
-typedef enum SwsAlphaBlend {
-    SWS_ALPHA_BLEND_NONE  = 0,
-    SWS_ALPHA_BLEND_UNIFORM,
-    SWS_ALPHA_BLEND_CHECKERBOARD,
-    SWS_ALPHA_BLEND_NB,
-} SwsAlphaBlend;
-
 typedef struct Range {
     unsigned int start;
     unsigned int len;
@@ -329,32 +312,10 @@ struct SwsFilterDescriptor;
 
 /* This struct should be aligned on at least a 32-byte boundary. */
 struct SwsInternal {
-    /* Currently active user-facing options. */
-    struct {
-        const AVClass *av_class;
+    /* Currently active user-facing options. Also contains AVClass */
+    SwsContext opts;
 
-        double scaler_params[2];       ///< Input parameters for scaling algorithms that need them.
-        int flags;                     ///< Flags passed by the user to select scaler algorithm, optimizations, subsampling, etc...
-        int threads;                   ///< Number of threads used for scaling
-
-        int src_w;                     ///< Width  of source      luma/alpha planes.
-        int src_h;                     ///< Height of source      luma/alpha planes.
-        int dst_w;                     ///< Width  of destination luma/alpha planes.
-        int dst_h;                     ///< Height of destination luma/alpha planes.
-        enum AVPixelFormat src_format; ///< Source      pixel format.
-        enum AVPixelFormat dst_format; ///< Destination pixel format.
-        int src_range;                 ///< 0 = MPG YUV range, 1 = JPG YUV range (source      image).
-        int dst_range;                 ///< 0 = MPG YUV range, 1 = JPG YUV range (destination image).
-        int src_h_chr_pos;
-        int dst_h_chr_pos;
-        int src_v_chr_pos;
-        int dst_v_chr_pos;
-        int gamma_flag;
-
-        SwsDither dither;
-        SwsAlphaBlend alpha_blend;
-    } opts;
-
+    /* Parent context (for slice contexts) */
     SwsContext *parent;
 
     AVSliceThread      *slicethread;
