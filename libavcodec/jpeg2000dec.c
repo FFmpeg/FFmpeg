@@ -2402,6 +2402,7 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
     Jpeg2000QuantStyle *qntsty  = s->qntsty;
     Jpeg2000POC         *poc    = &s->poc;
     uint8_t *properties         = s->properties;
+    uint8_t in_tile_headers     = 0;
 
     for (;;) {
         int len, ret = 0;
@@ -2484,7 +2485,7 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             ret = get_cap(s, codsty);
             break;
         case JPEG2000_COC:
-            if (s->in_tile_headers == 1 && s->isHT && (!s->Ccap15_b11)) {
+            if (in_tile_headers == 1 && s->isHT && (!s->Ccap15_b11)) {
                 av_log(s->avctx, AV_LOG_ERROR,
                     "COC marker found in a tile header but the codestream belongs to the HOMOGENEOUS set\n");
                 return AVERROR_INVALIDDATA;
@@ -2492,7 +2493,7 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             ret = get_coc(s, codsty, properties);
             break;
         case JPEG2000_COD:
-            if (s->in_tile_headers == 1 && s->isHT && (!s->Ccap15_b11)) {
+            if (in_tile_headers == 1 && s->isHT && (!s->Ccap15_b11)) {
                 av_log(s->avctx, AV_LOG_ERROR,
                     "COD marker found in a tile header but the codestream belongs to the HOMOGENEOUS set\n");
                 return AVERROR_INVALIDDATA;
@@ -2500,7 +2501,7 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             ret = get_cod(s, codsty, properties);
             break;
         case JPEG2000_RGN:
-            if (s->in_tile_headers == 1 && s->isHT && (!s->Ccap15_b11)) {
+            if (in_tile_headers == 1 && s->isHT && (!s->Ccap15_b11)) {
                 av_log(s->avctx, AV_LOG_ERROR,
                     "RGN marker found in a tile header but the codestream belongs to the HOMOGENEOUS set\n");
                 return AVERROR_INVALIDDATA;
@@ -2512,7 +2513,7 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             }
             break;
         case JPEG2000_QCC:
-            if (s->in_tile_headers == 1 && s->isHT && (!s->Ccap15_b11)) {
+            if (in_tile_headers == 1 && s->isHT && (!s->Ccap15_b11)) {
                 av_log(s->avctx, AV_LOG_ERROR,
                     "QCC marker found in a tile header but the codestream belongs to the HOMOGENEOUS set\n");
                 return AVERROR_INVALIDDATA;
@@ -2520,7 +2521,7 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             ret = get_qcc(s, len, qntsty, properties);
             break;
         case JPEG2000_QCD:
-            if (s->in_tile_headers == 1 && s->isHT && (!s->Ccap15_b11)) {
+            if (in_tile_headers == 1 && s->isHT && (!s->Ccap15_b11)) {
                 av_log(s->avctx, AV_LOG_ERROR,
                     "QCD marker found in a tile header but the codestream belongs to the HOMOGENEOUS set\n");
                 return AVERROR_INVALIDDATA;
@@ -2528,7 +2529,7 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             ret = get_qcd(s, len, qntsty, properties);
             break;
         case JPEG2000_POC:
-            if (s->in_tile_headers == 1 && s->isHT && (!s->Ccap15_b11)) {
+            if (in_tile_headers == 1 && s->isHT && (!s->Ccap15_b11)) {
                 av_log(s->avctx, AV_LOG_ERROR,
                     "POC marker found in a tile header but the codestream belongs to the HOMOGENEOUS set\n");
                 return AVERROR_INVALIDDATA;
@@ -2536,8 +2537,8 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             ret = get_poc(s, len, poc);
             break;
         case JPEG2000_SOT:
-            if (!s->in_tile_headers) {
-                s->in_tile_headers = 1;
+            if (!in_tile_headers) {
+                in_tile_headers = 1;
                 if (s->has_ppm) {
                     bytestream2_init(&s->packed_headers_stream, s->packed_headers, s->packed_headers_size);
                 }
@@ -2569,7 +2570,7 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             break;
         case JPEG2000_PPM:
             // Packed headers, main header
-            if (s->in_tile_headers) {
+            if (in_tile_headers) {
                 av_log(s->avctx, AV_LOG_ERROR, "PPM Marker can only be in Main header\n");
                 return AVERROR_INVALIDDATA;
             }

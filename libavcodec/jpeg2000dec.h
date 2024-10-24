@@ -86,7 +86,6 @@ typedef struct Jpeg2000DecoderContext {
     uint8_t         *packed_headers; // contains packed headers. Used only along with PPM marker
     int             packed_headers_size;
     GetByteContext  packed_headers_stream;
-    uint8_t         in_tile_headers;
 
     int             cdx[4], cdy[4];
     int             precision;
