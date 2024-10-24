@@ -123,12 +123,12 @@ static void check_yuv2yuv1(int accurate)
     randomize_buffers((uint8_t*)dither, 8);
     randomize_buffers((uint8_t*)src_pixels, LARGEST_INPUT_SIZE * sizeof(int16_t));
     sws = sws_alloc_context();
-    c = sws_internal(sws);
     if (accurate)
-        c->opts.flags |= SWS_ACCURATE_RND;
+        sws->flags |= SWS_ACCURATE_RND;
     if (sws_init_context(sws, NULL, NULL) < 0)
         fail();
 
+    c = sws_internal(sws);
     ff_sws_init_scale(c);
     for (isi = 0; isi < FF_ARRAY_ELEMS(input_sizes); ++isi) {
         dstW = input_sizes[isi];
@@ -190,12 +190,12 @@ static void check_yuv2yuvX(int accurate)
     memset(dither, d_val, LARGEST_INPUT_SIZE);
     randomize_buffers((uint8_t*)src_pixels, LARGEST_FILTER * LARGEST_INPUT_SIZE * sizeof(int16_t));
     sws = sws_alloc_context();
-    c = sws_internal(sws);
     if (accurate)
-        c->opts.flags |= SWS_ACCURATE_RND;
+        sws->flags |= SWS_ACCURATE_RND;
     if (sws_init_context(sws, NULL, NULL) < 0)
         fail();
 
+    c = sws_internal(sws);
     ff_sws_init_scale(c);
     for(isi = 0; isi < FF_ARRAY_ELEMS(input_sizes); ++isi){
         dstW = input_sizes[isi];
@@ -341,20 +341,20 @@ static void check_hscale(void)
 
                     filter[SRC_PIXELS * width + i] = rnd();
                 }
-                c->opts.dst_w = c->chrDstW = input_sizes[dstWi];
+                sws->dst_w = c->chrDstW = input_sizes[dstWi];
                 ff_sws_init_scale(c);
                 memcpy(filterAvx2, filter, sizeof(uint16_t) * (SRC_PIXELS * MAX_FILTER_WIDTH + MAX_FILTER_WIDTH));
-                ff_shuffle_filter_coefficients(c, filterPosAvx, width, filterAvx2, c->opts.dst_w);
+                ff_shuffle_filter_coefficients(c, filterPosAvx, width, filterAvx2, sws->dst_w);
 
-                if (check_func(c->hcScale, "hscale_%d_to_%d__fs_%d_dstW_%d", c->srcBpc, c->dstBpc + 1, width, c->opts.dst_w)) {
+                if (check_func(c->hcScale, "hscale_%d_to_%d__fs_%d_dstW_%d", c->srcBpc, c->dstBpc + 1, width, sws->dst_w)) {
                     memset(dst0, 0, SRC_PIXELS * sizeof(dst0[0]));
                     memset(dst1, 0, SRC_PIXELS * sizeof(dst1[0]));
 
-                    call_ref(NULL, dst0, c->opts.dst_w, src, filter, filterPos, width);
-                    call_new(NULL, dst1, c->opts.dst_w, src, filterAvx2, filterPosAvx, width);
-                    if (memcmp(dst0, dst1, c->opts.dst_w * sizeof(dst0[0])))
+                    call_ref(NULL, dst0, sws->dst_w, src, filter, filterPos, width);
+                    call_new(NULL, dst1, sws->dst_w, src, filterAvx2, filterPosAvx, width);
+                    if (memcmp(dst0, dst1, sws->dst_w * sizeof(dst0[0])))
                         fail();
-                    bench_new(NULL, dst0, c->opts.dst_w, src, filter, filterPosAvx, width);
+                    bench_new(NULL, dst0, sws->dst_w, src, filter, filterPosAvx, width);
                 }
             }
         }

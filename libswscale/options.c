@@ -27,7 +27,7 @@ static const char *sws_context_to_name(void *ptr)
     return "swscaler";
 }
 
-#define OFFSET(x) offsetof(SwsInternal, opts.x)
+#define OFFSET(x) offsetof(SwsContext, x)
 #define DEFAULT 0
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 

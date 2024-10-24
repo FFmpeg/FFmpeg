@@ -895,7 +895,7 @@ static int scale_cascaded(SwsInternal *c,
                           uint8_t * const dstSlice[], const int dstStride[],
                           int dstSliceY, int dstSliceH)
 {
-    const int dstH0 = sws_internal(c->cascaded_context[0])->opts.dst_h;
+    const int dstH0 = c->cascaded_context[0]->dst_h;
     int ret = scale_internal(c->cascaded_context[0],
                              srcSlice, srcStride, srcSliceY, srcSliceH,
                              c->cascaded_tmp[0], c->cascaded_tmpStride[0],
@@ -915,13 +915,13 @@ static int scale_internal(SwsContext *sws,
                           int dstSliceY, int dstSliceH)
 {
     SwsInternal *c = sws_internal(sws);
-    const int scale_dst = dstSliceY > 0 || dstSliceH < c->opts.dst_h;
+    const int scale_dst = dstSliceY > 0 || dstSliceH < sws->dst_h;
     const int frame_start = scale_dst || !c->sliceDir;
     int i, ret;
     const uint8_t *src2[4];
     uint8_t *dst2[4];
-    int macro_height_src = isBayer(c->opts.src_format) ? 2 : (1 << c->chrSrcVSubSample);
-    int macro_height_dst = isBayer(c->opts.dst_format) ? 2 : (1 << c->chrDstVSubSample);
+    int macro_height_src = isBayer(sws->src_format) ? 2 : (1 << c->chrSrcVSubSample);
+    int macro_height_dst = isBayer(sws->dst_format) ? 2 : (1 << c->chrDstVSubSample);
     // copy strides, so they can safely be modified
     int srcStride2[4];
     int dstStride2[4];
@@ -933,25 +933,25 @@ static int scale_internal(SwsContext *sws,
     }
 
     if ((srcSliceY  & (macro_height_src - 1)) ||
-        ((srcSliceH & (macro_height_src - 1)) && srcSliceY + srcSliceH != c->opts.src_h) ||
-        srcSliceY + srcSliceH > c->opts.src_h ||
-        (isBayer(c->opts.src_format) && srcSliceH <= 1)) {
+        ((srcSliceH & (macro_height_src - 1)) && srcSliceY + srcSliceH != sws->src_h) ||
+        srcSliceY + srcSliceH > sws->src_h ||
+        (isBayer(sws->src_format) && srcSliceH <= 1)) {
         av_log(c, AV_LOG_ERROR, "Slice parameters %d, %d are invalid\n", srcSliceY, srcSliceH);
         return AVERROR(EINVAL);
     }
 
     if ((dstSliceY  & (macro_height_dst - 1)) ||
-        ((dstSliceH & (macro_height_dst - 1)) && dstSliceY + dstSliceH != c->opts.dst_h) ||
-        dstSliceY + dstSliceH > c->opts.dst_h) {
+        ((dstSliceH & (macro_height_dst - 1)) && dstSliceY + dstSliceH != sws->dst_h) ||
+        dstSliceY + dstSliceH > sws->dst_h) {
         av_log(c, AV_LOG_ERROR, "Slice parameters %d, %d are invalid\n", dstSliceY, dstSliceH);
         return AVERROR(EINVAL);
     }
 
-    if (!check_image_pointers(srcSlice, c->opts.src_format, srcStride)) {
+    if (!check_image_pointers(srcSlice, sws->src_format, srcStride)) {
         av_log(c, AV_LOG_ERROR, "bad src image pointers\n");
         return AVERROR(EINVAL);
     }
-    if (!check_image_pointers((const uint8_t* const*)dstSlice, c->opts.dst_format, dstStride)) {
+    if (!check_image_pointers((const uint8_t* const*)dstSlice, sws->dst_format, dstStride)) {
         av_log(c, AV_LOG_ERROR, "bad dst image pointers\n");
         return AVERROR(EINVAL);
     }
@@ -960,22 +960,19 @@ static int scale_internal(SwsContext *sws,
     if (srcSliceH == 0)
         return 0;
 
-    if (c->opts.gamma_flag && c->cascaded_context[0])
+    if (sws->gamma_flag && c->cascaded_context[0])
         return scale_gamma(c, srcSlice, srcStride, srcSliceY, srcSliceH,
                            dstSlice, dstStride, dstSliceY, dstSliceH);
 
-    if (c->cascaded_context[0] && srcSliceY == 0 &&
-        srcSliceH == sws_internal(c->cascaded_context[0])->opts.src_h)
-    {
+    if (c->cascaded_context[0] && srcSliceY == 0 && srcSliceH == c->cascaded_context[0]->src_h)
         return scale_cascaded(c, srcSlice, srcStride, srcSliceY, srcSliceH,
                               dstSlice, dstStride, dstSliceY, dstSliceH);
-    }
 
-    if (!srcSliceY && (c->opts.flags & SWS_BITEXACT) && c->opts.dither == SWS_DITHER_ED && c->dither_error[0])
+    if (!srcSliceY && (sws->flags & SWS_BITEXACT) && sws->dither == SWS_DITHER_ED && c->dither_error[0])
         for (i = 0; i < 4; i++)
-            memset(c->dither_error[i], 0, sizeof(c->dither_error[0][0]) * (c->opts.dst_w+2));
+            memset(c->dither_error[i], 0, sizeof(c->dither_error[0][0]) * (sws->dst_w+2));
 
-    if (usePal(c->opts.src_format))
+    if (usePal(sws->src_format))
         ff_update_palette(c, (const uint32_t *)srcSlice[1]);
 
     memcpy(src2,       srcSlice,  sizeof(src2));
@@ -984,7 +981,7 @@ static int scale_internal(SwsContext *sws,
     memcpy(dstStride2, dstStride, sizeof(dstStride2));
 
     if (frame_start && !scale_dst) {
-        if (srcSliceY != 0 && srcSliceY + srcSliceH != c->opts.src_h) {
+        if (srcSliceY != 0 && srcSliceY + srcSliceH != sws->src_h) {
             av_log(c, AV_LOG_ERROR, "Slices start in the middle!\n");
             return AVERROR(EINVAL);
         }
@@ -993,7 +990,7 @@ static int scale_internal(SwsContext *sws,
     } else if (scale_dst)
         c->sliceDir = 1;
 
-    if (c->src0Alpha && !c->dst0Alpha && isALPHA(c->opts.dst_format)) {
+    if (c->src0Alpha && !c->dst0Alpha && isALPHA(sws->dst_format)) {
         uint8_t *base;
         int x,y;
 
@@ -1005,15 +1002,15 @@ static int scale_internal(SwsContext *sws,
         base = srcStride[0] < 0 ? c->rgb0_scratch - srcStride[0] * (srcSliceH-1) :
                                   c->rgb0_scratch;
         for (y=0; y<srcSliceH; y++){
-            memcpy(base + srcStride[0]*y, src2[0] + srcStride[0]*y, 4*c->opts.src_w);
-            for (x=c->src0Alpha-1; x<4*c->opts.src_w; x+=4) {
+            memcpy(base + srcStride[0]*y, src2[0] + srcStride[0]*y, 4*sws->src_w);
+            for (x=c->src0Alpha-1; x<4*sws->src_w; x+=4) {
                 base[ srcStride[0]*y + x] = 0xFF;
             }
         }
         src2[0] = base;
     }
 
-    if (c->srcXYZ && !(c->dstXYZ && c->opts.src_w==c->opts.dst_w && c->opts.src_h==c->opts.dst_h)) {
+    if (c->srcXYZ && !(c->dstXYZ && sws->src_w==sws->dst_w && sws->src_h==sws->dst_h)) {
         uint8_t *base;
 
         av_fast_malloc(&c->xyz_scratch, &c->xyz_scratch_allocated,
@@ -1024,7 +1021,7 @@ static int scale_internal(SwsContext *sws,
         base = srcStride[0] < 0 ? c->xyz_scratch - srcStride[0] * (srcSliceH-1) :
                                   c->xyz_scratch;
 
-        ff_xyz12Torgb48(c, base, srcStride[0], src2[0], srcStride[0], c->opts.src_w, srcSliceH);
+        ff_xyz12Torgb48(c, base, srcStride[0], src2[0], srcStride[0], sws->src_w, srcSliceH);
         src2[0] = base;
     }
 
@@ -1036,19 +1033,19 @@ static int scale_internal(SwsContext *sws,
         }
 
         src2[0] += (srcSliceH - 1) * srcStride[0];
-        if (!usePal(c->opts.src_format))
+        if (!usePal(sws->src_format))
             src2[1] += ((srcSliceH >> c->chrSrcVSubSample) - 1) * srcStride[1];
         src2[2] += ((srcSliceH >> c->chrSrcVSubSample) - 1) * srcStride[2];
         src2[3] += (srcSliceH - 1) * srcStride[3];
-        dst2[0] += ( c->opts.dst_h                         - 1) * dstStride[0];
-        dst2[1] += ((c->opts.dst_h >> c->chrDstVSubSample) - 1) * dstStride[1];
-        dst2[2] += ((c->opts.dst_h >> c->chrDstVSubSample) - 1) * dstStride[2];
-        dst2[3] += ( c->opts.dst_h                         - 1) * dstStride[3];
+        dst2[0] += ( sws->dst_h                         - 1) * dstStride[0];
+        dst2[1] += ((sws->dst_h >> c->chrDstVSubSample) - 1) * dstStride[1];
+        dst2[2] += ((sws->dst_h >> c->chrDstVSubSample) - 1) * dstStride[2];
+        dst2[3] += ( sws->dst_h                         - 1) * dstStride[3];
 
-        srcSliceY_internal = c->opts.src_h-srcSliceY-srcSliceH;
+        srcSliceY_internal = sws->src_h-srcSliceY-srcSliceH;
     }
-    reset_ptr(src2, c->opts.src_format);
-    reset_ptr((void*)dst2, c->opts.dst_format);
+    reset_ptr(src2, sws->src_format);
+    reset_ptr((void*)dst2, sws->dst_format);
 
     if (c->convert_unscaled) {
         int offset  = srcSliceY_internal;
@@ -1058,13 +1055,13 @@ static int scale_internal(SwsContext *sws,
         if (scale_dst) {
             av_assert0(offset == 0);
             for (i = 0; i < 4 && src2[i]; i++) {
-                if (!src2[i] || (i > 0 && usePal(c->opts.src_format)))
+                if (!src2[i] || (i > 0 && usePal(sws->src_format)))
                     break;
                 src2[i] += (dstSliceY >> ((i == 1 || i == 2) ? c->chrSrcVSubSample : 0)) * srcStride2[i];
             }
 
             for (i = 0; i < 4 && dst2[i]; i++) {
-                if (!dst2[i] || (i > 0 && usePal(c->opts.dst_format)))
+                if (!dst2[i] || (i > 0 && usePal(sws->dst_format)))
                     break;
                 dst2[i] -= (dstSliceY >> ((i == 1 || i == 2) ? c->chrDstVSubSample : 0)) * dstStride2[i];
             }
@@ -1081,7 +1078,7 @@ static int scale_internal(SwsContext *sws,
                          dst2, dstStride2, dstSliceY, dstSliceH);
     }
 
-    if (c->dstXYZ && !(c->srcXYZ && c->opts.src_w==c->opts.dst_w && c->opts.src_h==c->opts.dst_h)) {
+    if (c->dstXYZ && !(c->srcXYZ && sws->src_w==sws->dst_w && sws->src_h==sws->dst_h)) {
         uint8_t *dst;
 
         if (scale_dst) {
@@ -1091,16 +1088,16 @@ static int scale_internal(SwsContext *sws,
 
             av_assert0(dstY >= ret);
             av_assert0(ret >= 0);
-            av_assert0(c->opts.dst_h >= dstY);
+            av_assert0(sws->dst_h >= dstY);
             dst = dst2[0] + (dstY - ret) * dstStride2[0];
         }
 
         /* replace on the same data */
-        ff_rgb48Toxyz12(c, dst, dstStride2[0], dst, dstStride2[0], c->opts.dst_w, ret);
+        ff_rgb48Toxyz12(c, dst, dstStride2[0], dst, dstStride2[0], sws->dst_w, ret);
     }
 
     /* reset slice direction at end of frame */
-    if ((srcSliceY_internal + srcSliceH == c->opts.src_h) || scale_dst)
+    if ((srcSliceY_internal + srcSliceH == sws->src_h) || scale_dst)
         c->sliceDir = 0;
 
     return ret;
@@ -1124,9 +1121,9 @@ int sws_frame_start(SwsContext *sws, AVFrame *dst, const AVFrame *src)
         return ret;
 
     if (!dst->buf[0]) {
-        dst->width  = c->opts.dst_w;
-        dst->height = c->opts.dst_h;
-        dst->format = c->opts.dst_format;
+        dst->width  = sws->dst_w;
+        dst->height = sws->dst_h;
+        dst->format = sws->dst_format;
 
         ret = av_frame_get_buffer(dst, 0);
         if (ret < 0)
@@ -1177,10 +1174,10 @@ int sws_receive_slice(SwsContext *sws, unsigned int slice_start,
     /* wait until complete input has been received */
     if (!(c->src_ranges.nb_ranges == 1        &&
           c->src_ranges.ranges[0].start == 0 &&
-          c->src_ranges.ranges[0].len == c->opts.src_h))
+          c->src_ranges.ranges[0].len == sws->src_h))
         return AVERROR(EAGAIN);
 
-    if ((slice_start > 0 || slice_height < c->opts.dst_h) &&
+    if ((slice_start > 0 || slice_height < sws->dst_h) &&
         (slice_start % align || slice_height % align)) {
         av_log(c, AV_LOG_ERROR,
                "Incorrectly aligned output: %u/%u not multiples of %u\n",
@@ -1192,7 +1189,7 @@ int sws_receive_slice(SwsContext *sws, unsigned int slice_start,
         int nb_jobs = c->nb_slice_ctx;
         int ret = 0;
 
-        if (sws_internal(c->slice_ctx[0])->opts.dither == SWS_DITHER_ED)
+        if (c->slice_ctx[0]->dither == SWS_DITHER_ED)
             nb_jobs = 1;
 
         c->dst_slice_start  = slice_start;
@@ -1218,7 +1215,7 @@ int sws_receive_slice(SwsContext *sws, unsigned int slice_start,
     }
 
     return scale_internal(sws, (const uint8_t * const *)c->frame_src->data,
-                          c->frame_src->linesize, 0, c->opts.src_h,
+                          c->frame_src->linesize, 0, sws->src_h,
                           dst, c->frame_dst->linesize, slice_start, slice_height);
 }
 
@@ -1256,7 +1253,7 @@ int attribute_align_arg sws_scale(SwsContext *sws,
     }
 
     return scale_internal(sws, srcSlice, srcStride, srcSliceY, srcSliceH,
-                          dst, dstStride, 0, c->opts.dst_h);
+                          dst, dstStride, 0, sws->dst_h);
 }
 
 void ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
@@ -1284,7 +1281,7 @@ void ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
         }
 
         err = scale_internal(sws, (const uint8_t * const *)parent->frame_src->data,
-                             parent->frame_src->linesize, 0, c->opts.src_h,
+                             parent->frame_src->linesize, 0, sws->src_h,
                              dst, parent->frame_dst->linesize,
                              parent->dst_slice_start + slice_start, slice_end - slice_start);
     }
