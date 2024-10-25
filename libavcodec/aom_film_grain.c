@@ -26,7 +26,9 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/buffer.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 
 #include "aom_film_grain.h"
 #include "get_bits.h"
@@ -124,7 +126,7 @@ int ff_aom_parse_film_grain_sets(AVFilmGrainAFGS1Params *s,
 {
     GetBitContext gbc, *gb = &gbc;
     AVFilmGrainAOMParams *aom;
-    AVFilmGrainParams *fgp, *ref = NULL;
+    AVFilmGrainParams *fgp = NULL, *ref = NULL;
     int ret, num_sets, n, i, uv, num_y_coeffs, update_grain, luma_only;
 
     ret = init_get_bits8(gb, payload, payload_size);
@@ -135,28 +137,38 @@ int ff_aom_parse_film_grain_sets(AVFilmGrainAFGS1Params *s,
     if (!s->enable)
         return 0;
 
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->sets); i++)
+        av_buffer_unref(&s->sets[i]);
+
     skip_bits(gb, 4); // reserved
     num_sets = get_bits(gb, 3) + 1;
     for (n = 0; n < num_sets; n++) {
         int payload_4byte, payload_size, set_idx, apply_units_log2, vsc_flag;
         int predict_scaling, predict_y_scaling, predict_uv_scaling[2];
         int payload_bits, start_position;
+        size_t fgp_size;
 
         start_position = get_bits_count(gb);
         payload_4byte = get_bits1(gb);
         payload_size = get_bits(gb, payload_4byte ? 2 : 8);
         set_idx = get_bits(gb, 3);
-        fgp = &s->sets[set_idx];
+        fgp = av_film_grain_params_alloc(&fgp_size);
+        if (!fgp)
+            goto error;
         aom = &fgp->codec.aom;
 
         fgp->type = get_bits1(gb) ? AV_FILM_GRAIN_PARAMS_AV1 : AV_FILM_GRAIN_PARAMS_NONE;
-        if (!fgp->type)
+        if (!fgp->type) {
+            av_freep(&fgp);
             continue;
+        }
 
         fgp->seed = get_bits(gb, 16);
         update_grain = get_bits1(gb);
-        if (!update_grain)
+        if (!update_grain) {
+            av_freep(&fgp);
             continue;
+        }
 
         apply_units_log2  = get_bits(gb, 4);
         fgp->width  = get_bits(gb, 12) << apply_units_log2;
@@ -330,30 +342,47 @@ int ff_aom_parse_film_grain_sets(AVFilmGrainAFGS1Params *s,
         if (payload_bits > payload_size * 8)
             goto error;
         skip_bits(gb, payload_size * 8 - payload_bits);
+
+        av_buffer_unref(&s->sets[set_idx]);
+        s->sets[set_idx] = av_buffer_create((uint8_t *)fgp, fgp_size, NULL, NULL, 0);
+        if (!s->sets[set_idx])
+            goto error;
     }
     return 0;
 
 error:
-    memset(s, 0, sizeof(*s));
+    av_free(fgp);
+    ff_aom_uninit_film_grain_params(s);
     return AVERROR_INVALIDDATA;
 }
 
 int ff_aom_attach_film_grain_sets(const AVFilmGrainAFGS1Params *s, AVFrame *frame)
 {
-    AVFilmGrainParams *fgp;
     if (!s->enable)
         return 0;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->sets); i++) {
-        if (s->sets[i].type != AV_FILM_GRAIN_PARAMS_AV1)
+        AVBufferRef *buf;
+
+        if (!s->sets[i])
             continue;
-        fgp = av_film_grain_params_create_side_data(frame);
-        if (!fgp)
+
+        buf = av_buffer_ref(s->sets[i]);
+        if (!buf || !av_frame_new_side_data_from_buf(frame,
+                                                     AV_FRAME_DATA_FILM_GRAIN_PARAMS, buf)) {
+            av_buffer_unref(&buf);
             return AVERROR(ENOMEM);
-        memcpy(fgp, &s->sets[i], sizeof(*fgp));
+        }
     }
 
     return 0;
+}
+
+void ff_aom_uninit_film_grain_params(AVFilmGrainAFGS1Params *s)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->sets); i++)
+        av_buffer_unref(&s->sets[i]);
+    s->enable = 0;
 }
 
 // Taken from the AV1 spec. Range is [-2048, 2047], mean is 0 and stddev is 512
