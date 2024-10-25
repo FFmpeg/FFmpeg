@@ -516,7 +516,10 @@ static int h264_frame_start(H264Context *h)
     pic->f->crop_top    = h->crop_top;
     pic->f->crop_bottom = h->crop_bottom;
 
-    pic->needs_fg = h->sei.common.film_grain_characteristics.present && !h->avctx->hwaccel &&
+    pic->needs_fg =
+        h->sei.common.film_grain_characteristics &&
+        h->sei.common.film_grain_characteristics->present &&
+        !h->avctx->hwaccel &&
         !(h->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN);
 
     if ((ret = alloc_picture(h, pic)) < 0)
