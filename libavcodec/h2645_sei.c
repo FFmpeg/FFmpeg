@@ -42,6 +42,7 @@
 #include "golomb.h"
 #include "h2645_sei.h"
 #include "itut35.h"
+#include "refstruct.h"
 
 #define IS_H264(codec_id) (CONFIG_H264_SEI && CONFIG_HEVC_SEI ? codec_id == AV_CODEC_ID_H264 : CONFIG_H264_SEI)
 #define IS_HEVC(codec_id) (CONFIG_H264_SEI && CONFIG_HEVC_SEI ? codec_id == AV_CODEC_ID_HEVC : CONFIG_HEVC_SEI)
@@ -495,7 +496,11 @@ int ff_h2645_sei_message_decode(H2645SEI *h, enum SEIType type,
     case SEI_TYPE_DISPLAY_ORIENTATION:
         return decode_display_orientation(&h->display_orientation, gb);
     case SEI_TYPE_FILM_GRAIN_CHARACTERISTICS:
-        return decode_film_grain_characteristics(&h->film_grain_characteristics, codec_id, gb);
+        ff_refstruct_unref(&h->film_grain_characteristics);
+        h->film_grain_characteristics = ff_refstruct_allocz(sizeof(*h->film_grain_characteristics));
+        if (!h->film_grain_characteristics)
+            return AVERROR(ENOMEM);
+        return decode_film_grain_characteristics(h->film_grain_characteristics, codec_id, gb);
     case SEI_TYPE_FRAME_PACKING_ARRANGEMENT:
         return decode_frame_packing_arrangement(&h->frame_packing, gb, codec_id);
     case SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
@@ -550,6 +555,9 @@ int ff_h2645_sei_ctx_replace(H2645SEI *dst, const H2645SEI *src)
             return ret;
     }
     dst->aom_film_grain.enable = src->aom_film_grain.enable;
+
+    ff_refstruct_replace(&dst->film_grain_characteristics,
+                          src->film_grain_characteristics);
 
     return 0;
 }
@@ -820,8 +828,8 @@ int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
             return ret;
     }
 
-    if (sei->film_grain_characteristics.present) {
-        H2645SEIFilmGrainCharacteristics *fgc = &sei->film_grain_characteristics;
+    if (sei->film_grain_characteristics && sei->film_grain_characteristics->present) {
+        H2645SEIFilmGrainCharacteristics *fgc = sei->film_grain_characteristics;
         AVFilmGrainParams *fgp = av_film_grain_params_create_side_data(frame);
         AVFilmGrainH274Params *h274;
 
@@ -923,5 +931,6 @@ void ff_h2645_sei_reset(H2645SEI *s)
     s->mastering_display.present = 0;
     s->content_light.present = 0;
 
+    ff_refstruct_unref(&s->film_grain_characteristics);
     ff_aom_uninit_film_grain_params(&s->aom_film_grain);
 }
