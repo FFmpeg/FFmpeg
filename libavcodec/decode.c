@@ -1471,8 +1471,8 @@ static int side_data_map(AVFrame *dst,
 
 {
     for (int i = 0; map[i].packet < AV_PKT_DATA_NB; i++) {
-        const enum AVFrameSideDataType type_pkt   = map[i].packet;
-        const enum AVFrameSideDataType type_frame = map[i].frame;
+        const enum AVPacketSideDataType type_pkt   = map[i].packet;
+        const enum AVFrameSideDataType  type_frame = map[i].frame;
         const AVPacketSideData *sd_pkt;
         AVFrameSideData *sd_frame;
 
