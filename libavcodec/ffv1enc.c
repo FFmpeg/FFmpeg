@@ -1143,8 +1143,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t keystate    = 128;
     uint8_t *buf_p;
     int i, ret;
-    int64_t maxsize =   FF_INPUT_BUFFER_MIN_SIZE
-                      + avctx->width*avctx->height*37LL*4;
+    int64_t maxsize;
 
     if(!pict) {
         if (avctx->flags & AV_CODEC_FLAG_PASS1) {
@@ -1192,8 +1191,18 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return 0;
     }
 
-    if (f->version > 3)
-        maxsize = FF_INPUT_BUFFER_MIN_SIZE + avctx->width*avctx->height*3LL*4;
+    maxsize = avctx->width*avctx->height * (1 + f->transparency);
+    if (f->chroma_planes)
+        maxsize += AV_CEIL_RSHIFT(avctx->width, f->chroma_h_shift) * AV_CEIL_RSHIFT(f->height, f->chroma_v_shift) * 2;
+    maxsize += f->slice_count * 800; //for slice header
+    if (f->version > 3) {
+        maxsize *= f->bits_per_raw_sample + 1;
+    } else {
+        maxsize += f->slice_count * 2 * (avctx->width + avctx->height); //for bug with slices that code some pixels more than once
+        maxsize *= 8*(2*f->bits_per_raw_sample + 5);
+    }
+    maxsize >>= 3;
+    maxsize += FF_INPUT_BUFFER_MIN_SIZE;
 
     if (maxsize > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE - 32) {
         av_log(avctx, AV_LOG_WARNING, "Cannot allocate worst case packet size, the encoding could fail\n");
