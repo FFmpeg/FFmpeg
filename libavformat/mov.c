@@ -1673,6 +1673,8 @@ static int64_t get_frag_time(AVFormatContext *s, AVStream *dst_st,
     // to fragments that referenced this stream in the sidx
     if (sc->has_sidx) {
         frag_stream_info = get_frag_stream_info(frag_index, index, sc->id);
+        if (!frag_stream_info)
+            return AV_NOPTS_VALUE;
         if (frag_stream_info->sidx_pts != AV_NOPTS_VALUE)
             return frag_stream_info->sidx_pts;
         if (frag_stream_info->first_tfra_pts != AV_NOPTS_VALUE)
