@@ -28,11 +28,12 @@
 #ifndef AVCODEC_AOM_FILM_GRAIN_H
 #define AVCODEC_AOM_FILM_GRAIN_H
 
+#include "libavutil/buffer.h"
 #include "libavutil/film_grain_params.h"
 
 typedef struct AVFilmGrainAFGS1Params {
     int enable;
-    AVFilmGrainParams sets[8];
+    AVBufferRef *sets[8];
 } AVFilmGrainAFGS1Params;
 
 // Synthesizes film grain on top of `in` and stores the result to `out`. `out`
@@ -47,5 +48,8 @@ int ff_aom_parse_film_grain_sets(AVFilmGrainAFGS1Params *s,
 
 // Attach all valid film grain param sets to `frame`.
 int ff_aom_attach_film_grain_sets(const AVFilmGrainAFGS1Params *s, AVFrame *frame);
+
+// Free all allocations in `s` and zero the entire struct.
+void ff_aom_uninit_film_grain_params(AVFilmGrainAFGS1Params *s);
 
 #endif /* AVCODEC_AOM_FILM_GRAIN_H */

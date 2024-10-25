@@ -26,6 +26,7 @@
 #include "config_components.h"
 
 #include "libavutil/ambient_viewing_environment.h"
+#include "libavutil/buffer.h"
 #include "libavutil/display.h"
 #include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/film_grain_params.h"
@@ -542,6 +543,14 @@ int ff_h2645_sei_ctx_replace(H2645SEI *dst, const H2645SEI *src)
         }
     }
 
+    for (unsigned i = 0; i < FF_ARRAY_ELEMS(dst->aom_film_grain.sets); i++) {
+        ret = av_buffer_replace(&dst->aom_film_grain.sets[i],
+                                 src->aom_film_grain.sets[i]);
+        if (ret < 0)
+            return ret;
+    }
+    dst->aom_film_grain.enable = src->aom_film_grain.enable;
+
     return 0;
 }
 
@@ -913,5 +922,6 @@ void ff_h2645_sei_reset(H2645SEI *s)
     s->ambient_viewing_environment.present = 0;
     s->mastering_display.present = 0;
     s->content_light.present = 0;
-    s->aom_film_grain.enable = 0;
+
+    ff_aom_uninit_film_grain_params(&s->aom_film_grain);
 }
