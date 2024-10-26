@@ -78,7 +78,8 @@ Match the stream by stream id (e.g. PID in MPEG-TS container).
 @item m:@var{key}[:@var{value}]
 Matches streams with the metadata tag @var{key} having the specified value. If
 @var{value} is not given, matches streams that contain the given tag with any
-value.
+value. The colon character ':' in @var{key} or @var{value} needs to be
+backslash-escaped.
 @item disp:@var{dispositions}[:@var{additional_stream_specifier}]
 Matches streams with the given disposition(s). @var{dispositions} is a list of
 one or more dispositions (as printed by the @option{-dispositions} option)

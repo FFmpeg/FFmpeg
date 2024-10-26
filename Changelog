@@ -32,6 +32,15 @@ version 7.1:
 - LCEVC enhancement data exporting in H.26x and MP4/ISOBMFF
 - LCEVC filter
 - MV-HEVC decoding
+- minor stream specifier syntax changes:
+    - when matching by metadata (:m:<key>:<val>), the colon character
+      in keys or values now has to be backslash-escaped
+    - in optional maps (-map ....?) with a metadata-matching stream specifier,
+      the value has to be separated from the question mark by a colon, i.e.
+      -map ....:m:<key>:<val>:? (otherwise it would be ambiguous whether the
+      question mark is a part of <val> or not)
+    - multiple stream types in a single specifier (e.g. :s:s:0) now cause an
+      error, as such a specifier makes no sense
 
 
 version 7.0:
