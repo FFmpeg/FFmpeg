@@ -5,6 +5,7 @@ version <next>:
 - yasm support dropped, users need to use nasm
 - VVC VAAPI decoder
 - RealVideo 6.0 decoder
+- OpenMAX encoders deprecated
 
 version 7.1:
 - Raw Captions with Time (RCWT) closed caption demuxer

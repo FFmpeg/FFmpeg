@@ -7110,7 +7110,9 @@ enabled omx_rpi           && { test_code cc OMX_Core.h OMX_IndexConfigBrcmVideoR
                                  test_code cc OMX_Core.h OMX_IndexConfigBrcmVideoRequestIFrame; } ||
                                die "ERROR: OpenMAX IL headers from raspberrypi/firmware not found"; } &&
                              enable omx
-enabled omx               && require_headers OMX_Core.h
+enabled omx               && require_headers OMX_Core.h && \
+    warn "The OpenMAX encoders are deprecated and will be removed in future versions"
+
 enabled openssl           && { { check_pkg_config openssl "openssl >= 3.0.0" openssl/ssl.h OPENSSL_init_ssl &&
                                  { enabled gplv3 || ! enabled gpl || enabled nonfree || die "ERROR: OpenSSL >=3.0.0 requires --enable-version3"; }; } ||
                                { enabled gpl && ! enabled nonfree && die "ERROR: OpenSSL <3.0.0 is incompatible with the gpl"; } ||

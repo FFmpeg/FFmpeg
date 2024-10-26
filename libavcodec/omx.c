@@ -648,6 +648,10 @@ static av_cold int omx_encode_init(AVCodecContext *avctx)
     OMX_BUFFERHEADERTYPE *buffer;
     OMX_ERRORTYPE err;
 
+    av_log(avctx, AV_LOG_WARNING,
+           "The %s encoder is deprecated and will be removed in future versions\n",
+           avctx->codec->name);
+
     /* cleanup relies on the mutexes/conditions being initialized first. */
     ret = ff_pthread_init(s, omx_codec_context_offsets);
     if (ret < 0)
