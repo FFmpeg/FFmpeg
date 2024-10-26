@@ -47,6 +47,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config_components.h"
 #define USE_FIXED 1
 #include "ac3dec.h"
 #include "codec_internal.h"
@@ -152,7 +153,9 @@ static void ac3_downmix_c_fixed16(int16_t **samples, int16_t **matrix,
     }
 }
 
+#if CONFIG_EAC3_DECODER
 #include "eac3dec.c"
+#endif
 #include "ac3dec.c"
 
 static const AVOption options[] = {

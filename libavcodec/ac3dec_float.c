@@ -34,7 +34,9 @@
 #include "ac3dec.h"
 #include "codec_internal.h"
 #include "profiles.h"
+#if CONFIG_EAC3_DECODER
 #include "eac3dec.c"
+#endif
 #include "ac3dec.c"
 
 static const AVOption options[] = {
