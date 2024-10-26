@@ -95,7 +95,6 @@ static const struct {
     { MKTAG('P', '0', '1', '6'), AV_PIX_FMT_P012 },
     { MKTAG('Y', '2', '1', '6'), AV_PIX_FMT_Y216 },
     { MKTAG('Y', '4', '1', '6'), AV_PIX_FMT_XV48 },
-    { MKTAG('Y', '2', '1', '6'), AV_PIX_FMT_Y212 },
     { D3DFMT_P8,                 AV_PIX_FMT_PAL8 },
     { D3DFMT_A8R8G8B8,           AV_PIX_FMT_BGRA },
 };
