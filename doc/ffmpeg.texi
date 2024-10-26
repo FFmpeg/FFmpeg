@@ -1799,7 +1799,7 @@ Set the size of the canvas used to render subtitles.
 @section Advanced options
 
 @table @option
-@item -map [-]@var{input_file_id}[:@var{stream_specifier}][:@var{view_specifier}][?] | @var{[linklabel]} (@emph{output})
+@item -map [-]@var{input_file_id}[:@var{stream_specifier}][:@var{view_specifier}][:?] | @var{[linklabel]} (@emph{output})
 
 Create one or more streams in the output file. This option has two forms for
 specifying the data source(s): the first selects one or more streams from some
