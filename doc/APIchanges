@@ -2,6 +2,11 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-11-13 - xxxxxxxxxx - lavu 59.47.100 - channel_layout.h
+  Add AV_CHAN_BINAURAL_LEFT, AV_CHAN_BINAURAL_RIGHT
+  Add AV_CH_BINAURAL_LEFT, AV_CH_BINAURAL_RIGHT
+  Add AV_CH_LAYOUT_BINAURAL, AV_CHANNEL_LAYOUT_BINAURAL
+
 2024-10-26 - xxxxxxxxxx - lavu 59.46.100 - pixfmt.h
   Add AV_PIX_FMT_XV48.
 

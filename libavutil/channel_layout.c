@@ -79,6 +79,8 @@ static const struct channel_name channel_names[] = {
     [AV_CHAN_SIDE_SURROUND_RIGHT  ] = { "SSR",       "side surround right"   },
     [AV_CHAN_TOP_SURROUND_LEFT    ] = { "TTL",       "top surround left"     },
     [AV_CHAN_TOP_SURROUND_RIGHT   ] = { "TTR",       "top surround right"    },
+    [AV_CHAN_BINAURAL_LEFT        ] = { "BIL",       "binaural left"         },
+    [AV_CHAN_BINAURAL_RIGHT       ] = { "BIR",       "binaural right"        },
 };
 
 void av_channel_name_bprint(AVBPrint *bp, enum AVChannel channel_id)
@@ -220,6 +222,7 @@ static const struct channel_layout_name channel_layout_map[] = {
     { "7.2.3",          AV_CHANNEL_LAYOUT_7POINT2POINT3       },
     { "9.1.4",          AV_CHANNEL_LAYOUT_9POINT1POINT4_BACK  },
     { "hexadecagonal",  AV_CHANNEL_LAYOUT_HEXADECAGONAL       },
+    { "binaural",       AV_CHANNEL_LAYOUT_BINAURAL            },
     { "downmix",        AV_CHANNEL_LAYOUT_STEREO_DOWNMIX,     },
     { "22.2",           AV_CHANNEL_LAYOUT_22POINT2,           },
 };
