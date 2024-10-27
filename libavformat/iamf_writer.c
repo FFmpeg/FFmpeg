@@ -817,6 +817,9 @@ static int iamf_write_mixing_presentation(const IAMFContext *iamf,
                     av_log(log_ctx, AV_LOG_ERROR, "Invalid Sound System value in a submix\n");
                     return AVERROR(EINVAL);
                 }
+            } else if (submix_layout->layout_type != AV_IAMF_SUBMIX_LAYOUT_TYPE_BINAURAL) {
+                av_log(log_ctx, AV_LOG_ERROR, "Unsupported Layout Type value in a submix\n");
+                return AVERROR(EINVAL);
             }
             init_put_bits(&pbc, header, sizeof(header));
             put_bits(&pbc, 2, submix_layout->layout_type); // layout_type

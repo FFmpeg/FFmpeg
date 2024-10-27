@@ -493,10 +493,14 @@ typedef struct AVIAMFSubmixElement {
 enum AVIAMFSubmixLayoutType {
     /**
      * The layout follows the loudspeaker sound system convention of ITU-2051-3.
+     * @ref AVIAMFSubmixLayout.sound_system must be set.
      */
     AV_IAMF_SUBMIX_LAYOUT_TYPE_LOUDSPEAKERS = 2,
     /**
      * The layout is binaural.
+     *
+     * @note @ref AVIAMFSubmixLayout.sound_system may be set to
+     * AV_CHANNEL_LAYOUT_BINAURAL to simplify API usage, but it's not mandatory.
      */
     AV_IAMF_SUBMIX_LAYOUT_TYPE_BINAURAL = 3,
 };
@@ -514,9 +518,9 @@ typedef struct AVIAMFSubmixLayout {
 
     /**
      * Channel layout matching one of Sound Systems A to J of ITU-2051-3, plus
-     * 7.1.2ch and 3.1.2ch
-     * If layout_type is not AV_IAMF_SUBMIX_LAYOUT_TYPE_LOUDSPEAKERS, this field
-     * is undefined.
+     * 7.1.2ch, 3.1.2ch, and binaural.
+     * If layout_type is not AV_IAMF_SUBMIX_LAYOUT_TYPE_LOUDSPEAKERS or
+     * AV_IAMF_SUBMIX_LAYOUT_TYPE_BINAURAL, this field is undefined.
      */
     AVChannelLayout sound_system;
     /**

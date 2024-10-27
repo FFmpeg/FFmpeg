@@ -42,7 +42,7 @@ const AVChannelLayout ff_iamf_scalable_ch_layouts[10] = {
     // Front subset of "Loudspeaker configuration for Sound System J"
     AV_CHANNEL_LAYOUT_3POINT1POINT2,
     // Binaural
-    AV_CHANNEL_LAYOUT_STEREO,
+    AV_CHANNEL_LAYOUT_BINAURAL,
 };
 
 const struct IAMFSoundSystemMap ff_iamf_sound_system_map[13] = {

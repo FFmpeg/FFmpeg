@@ -157,7 +157,7 @@ duration=0
 constant_subblock_duration=0
 [/PIECE]
 [PIECE]
-sound_system=0 channels
+sound_system=binaural
 integrated_loudness=0/256
 digital_peak=0/256
 true_peak=0/1
