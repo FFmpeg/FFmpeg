@@ -169,6 +169,7 @@ typedef struct VVCPH {
 #define ALF_NUM_COEFF_CC         7
 
 typedef struct VVCALF {
+    const H266RawAPS *r;
     int16_t luma_coeff     [ALF_NUM_FILTERS_LUMA][ALF_NUM_COEFF_LUMA];
     uint8_t luma_clip_idx  [ALF_NUM_FILTERS_LUMA][ALF_NUM_COEFF_LUMA];
 

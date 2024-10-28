@@ -1043,13 +1043,21 @@ static void alf_derive(VVCALF *alf, const H266RawAPS *aps)
     alf_cc(alf, aps);
 }
 
+static void alf_free(FFRefStructOpaque unused, void *obj)
+{
+    VVCALF *alf = obj;
+
+    ff_refstruct_unref(&alf->r);
+}
+
 static int aps_decode_alf(const VVCALF **alf, const H266RawAPS *aps)
 {
-    VVCALF *a = ff_refstruct_allocz(sizeof(*a));
+    VVCALF *a = ff_refstruct_alloc_ext(sizeof(*a), 0, NULL, alf_free);
     if (!a)
         return AVERROR(ENOMEM);
 
     alf_derive(a, aps);
+    ff_refstruct_replace(&a->r, aps);
     ff_refstruct_replace(alf, a);
     ff_refstruct_unref(&a);
 
