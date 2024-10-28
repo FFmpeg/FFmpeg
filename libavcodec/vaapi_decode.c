@@ -39,12 +39,24 @@ int ff_vaapi_decode_make_param_buffer(AVCodecContext *avctx,
 {
     VAAPIDecodeContext *ctx = avctx->internal->hwaccel_priv_data;
     VAStatus vas;
-    VABufferID buffer;
 
-    av_assert0(pic->nb_param_buffers + 1 <= MAX_PARAM_BUFFERS);
+    av_assert0(pic->nb_param_buffers <= pic->nb_param_buffers_allocated);
+    if (pic->nb_param_buffers == pic->nb_param_buffers_allocated) {
+        VABufferID *tmp =
+            av_realloc_array(pic->param_buffers,
+                             pic->nb_param_buffers_allocated + 16,
+                             sizeof(*pic->param_buffers));
+        if (!tmp)
+            return AVERROR(ENOMEM);
+
+        pic->param_buffers = tmp;
+        pic->nb_param_buffers_allocated += 16;
+    }
+    av_assert0(pic->nb_param_buffers + 1 <= pic->nb_param_buffers_allocated);
 
     vas = vaCreateBuffer(ctx->hwctx->display, ctx->va_context,
-                         type, size, 1, (void*)data, &buffer);
+                         type, size, 1, (void*)data,
+                         &pic->param_buffers[pic->nb_param_buffers]);
     if (vas != VA_STATUS_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create parameter "
                "buffer (type %d): %d (%s).\n",
@@ -52,13 +64,13 @@ int ff_vaapi_decode_make_param_buffer(AVCodecContext *avctx,
         return AVERROR(EIO);
     }
 
-    pic->param_buffers[pic->nb_param_buffers++] = buffer;
-
     av_log(avctx, AV_LOG_DEBUG, "Param buffer (type %d, %zu bytes) "
-           "is %#x.\n", type, size, buffer);
+           "is %#x.\n", type, size, pic->param_buffers[pic->nb_param_buffers]);
+
+    ++pic->nb_param_buffers;
+
     return 0;
 }
-
 
 int ff_vaapi_decode_make_slice_buffer(AVCodecContext *avctx,
                                       VAAPIDecodePicture *pic,
@@ -222,7 +234,9 @@ fail:
     ff_vaapi_decode_destroy_buffers(avctx, pic);
 fail_at_end:
 exit:
-    pic->nb_param_buffers = 0;
+    pic->nb_param_buffers           = 0;
+    pic->nb_param_buffers_allocated = 0;
+    av_freep(&pic->param_buffers);
     pic->nb_slices        = 0;
     pic->slices_allocated = 0;
     av_freep(&pic->slice_buffers);
@@ -235,7 +249,9 @@ int ff_vaapi_decode_cancel(AVCodecContext *avctx,
 {
     ff_vaapi_decode_destroy_buffers(avctx, pic);
 
-    pic->nb_param_buffers = 0;
+    pic->nb_param_buffers           = 0;
+    pic->nb_param_buffers_allocated = 0;
+    av_freep(&pic->param_buffers);
     pic->nb_slices        = 0;
     pic->slices_allocated = 0;
     av_freep(&pic->slice_buffers);
