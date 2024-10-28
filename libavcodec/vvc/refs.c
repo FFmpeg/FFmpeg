@@ -29,10 +29,6 @@
 
 #include "refs.h"
 
-#define VVC_FRAME_FLAG_OUTPUT    (1 << 0)
-#define VVC_FRAME_FLAG_SHORT_REF (1 << 1)
-#define VVC_FRAME_FLAG_LONG_REF  (1 << 2)
-#define VVC_FRAME_FLAG_BUMPING   (1 << 3)
 
 typedef struct FrameProgress {
     atomic_int progress[VVC_PROGRESS_LAST];
