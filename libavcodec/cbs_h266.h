@@ -593,6 +593,7 @@ typedef struct H266RawPPS {
     uint16_t sub_pic_id_val[VVC_MAX_SLICES];                ///< SubpicIdVal
     uint16_t col_width_val[VVC_MAX_TILE_COLUMNS];           ///< ColWidthVal
     uint16_t row_height_val[VVC_MAX_TILE_ROWS];             ///< RowHeightVal
+    uint16_t slice_top_left_tile_idx[VVC_MAX_SLICES];
 } H266RawPPS;
 
 typedef struct H266RawAPS {

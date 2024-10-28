@@ -1976,6 +1976,7 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
             else
                 infer(pps_tile_idx_delta_present_flag, 0);
             for (i = 0; i < current->pps_num_slices_in_pic_minus1; i++) {
+                current->slice_top_left_tile_idx[i] = tile_idx;
                 tile_x = tile_idx % current->num_tile_columns;
                 tile_y = tile_idx / current->num_tile_columns;
                 if (tile_x != current->num_tile_columns - 1) {
@@ -2058,6 +2059,8 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
                         }
                         num_slices_in_tile = j;
                     }
+                    for (int k = 0; k < num_slices_in_tile; k++)
+                        current->slice_top_left_tile_idx[i + k] = tile_idx;
                     i += num_slices_in_tile - 1;
                 } else {
                     uint16_t height = 0;
@@ -2101,6 +2104,7 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
             if (i == current->pps_num_slices_in_pic_minus1) {
                 uint16_t height = 0;
 
+                current->slice_top_left_tile_idx[i] = tile_idx;
                 tile_x = tile_idx % current->num_tile_columns;
                 tile_y = tile_idx / current->num_tile_columns;
                 if (tile_y >= current->num_tile_rows)
