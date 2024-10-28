@@ -84,19 +84,19 @@ int ff_vaapi_decode_make_slice_buffer(AVCodecContext *avctx,
     VAStatus vas;
     int index;
 
-    av_assert0(pic->nb_slices <= pic->slices_allocated);
-    if (pic->nb_slices == pic->slices_allocated) {
+    av_assert0(pic->nb_slices <= pic->nb_slice_buffers_allocated);
+    if (pic->nb_slices == pic->nb_slice_buffers_allocated) {
         VABufferID *tmp =
             av_realloc_array(pic->slice_buffers,
-                             pic->slices_allocated ? pic->slices_allocated * 2 : 64,
+                             pic->nb_slice_buffers_allocated ? pic->nb_slice_buffers_allocated * 2 : 64,
                              2 * sizeof(*pic->slice_buffers));
         if (!tmp)
             return AVERROR(ENOMEM);
 
-        pic->slice_buffers    = tmp;
-        pic->slices_allocated = pic->slices_allocated ? pic->slices_allocated * 2 : 64;
+        pic->slice_buffers = tmp;
+        pic->nb_slice_buffers_allocated = pic->nb_slice_buffers_allocated ? pic->nb_slice_buffers_allocated * 2 : 64;
     }
-    av_assert0(pic->nb_slices + 1 <= pic->slices_allocated);
+    av_assert0(pic->nb_slices + 1 <= pic->nb_slice_buffers_allocated);
 
     index = 2 * pic->nb_slices;
 
@@ -237,8 +237,8 @@ exit:
     pic->nb_param_buffers           = 0;
     pic->nb_param_buffers_allocated = 0;
     av_freep(&pic->param_buffers);
-    pic->nb_slices        = 0;
-    pic->slices_allocated = 0;
+    pic->nb_slices                  = 0;
+    pic->nb_slice_buffers_allocated = 0;
     av_freep(&pic->slice_buffers);
 
     return err;
@@ -252,8 +252,8 @@ int ff_vaapi_decode_cancel(AVCodecContext *avctx,
     pic->nb_param_buffers           = 0;
     pic->nb_param_buffers_allocated = 0;
     av_freep(&pic->param_buffers);
-    pic->nb_slices        = 0;
-    pic->slices_allocated = 0;
+    pic->nb_slices                  = 0;
+    pic->nb_slice_buffers_allocated = 0;
     av_freep(&pic->slice_buffers);
 
     return 0;
