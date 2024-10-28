@@ -276,7 +276,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     // Picture control properties
-    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_GOP_SIZE, avctx->gop_size);
+    if (avctx->gop_size != -1) {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_GOP_SIZE, avctx->gop_size);
+    }
 
     // Setup header insertion mode only if this option was defined explicitly
     if (ctx->header_insertion_mode != -1) {
