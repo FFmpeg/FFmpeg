@@ -83,6 +83,7 @@ extern const struct FFHWAccel ff_vp9_nvdec_hwaccel;
 extern const struct FFHWAccel ff_vp9_vaapi_hwaccel;
 extern const struct FFHWAccel ff_vp9_vdpau_hwaccel;
 extern const struct FFHWAccel ff_vp9_videotoolbox_hwaccel;
+extern const struct FFHWAccel ff_vvc_vaapi_hwaccel;
 extern const struct FFHWAccel ff_wmv3_d3d11va_hwaccel;
 extern const struct FFHWAccel ff_wmv3_d3d11va2_hwaccel;
 extern const struct FFHWAccel ff_wmv3_d3d12va_hwaccel;

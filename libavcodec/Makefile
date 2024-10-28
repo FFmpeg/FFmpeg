@@ -1064,6 +1064,7 @@ OBJS-$(CONFIG_VP9_VAAPI_HWACCEL)          += vaapi_vp9.o
 OBJS-$(CONFIG_VP9_VDPAU_HWACCEL)          += vdpau_vp9.o
 OBJS-$(CONFIG_VP9_VIDEOTOOLBOX_HWACCEL)   += videotoolbox_vp9.o
 OBJS-$(CONFIG_VP8_QSV_HWACCEL)            += qsvdec.o
+OBJS-$(CONFIG_VVC_VAAPI_HWACCEL)          += vaapi_vvc.o
 
 # Objects duplicated from other libraries for shared builds
 SHLIBOBJS                              += log2_tab.o reverse.o

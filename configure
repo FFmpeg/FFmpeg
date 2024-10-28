@@ -3289,6 +3289,8 @@ vp9_vdpau_hwaccel_deps="vdpau VdpPictureInfoVP9"
 vp9_vdpau_hwaccel_select="vp9_decoder"
 vp9_videotoolbox_hwaccel_deps="videotoolbox"
 vp9_videotoolbox_hwaccel_select="vp9_decoder"
+vvc_vaapi_hwaccel_deps="vaapi VAPictureParameterBufferVVC"
+vvc_vaapi_hwaccel_select="vvc_decoder"
 wmv3_d3d11va_hwaccel_select="vc1_d3d11va_hwaccel"
 wmv3_d3d11va2_hwaccel_select="vc1_d3d11va2_hwaccel"
 wmv3_d3d12va_hwaccel_select="vc1_d3d12va_hwaccel"
@@ -7310,6 +7312,7 @@ if enabled vaapi; then
     check_cpp_condition vaapi_1 "va/va.h" "VA_CHECK_VERSION(1, 0, 0)"
 
     check_type "va/va.h va/va_dec_hevc.h" "VAPictureParameterBufferHEVC"
+    check_type "va/va.h va/va_dec_vvc.h" "VAPictureParameterBufferVVC"
     check_struct "va/va.h" "VADecPictureParameterBufferVP9" bit_depth
     check_struct "va/va.h" "VADecPictureParameterBufferAV1" bit_depth_idx
     check_type   "va/va.h va/va_vpp.h" "VAProcFilterParameterBufferHDRToneMapping"

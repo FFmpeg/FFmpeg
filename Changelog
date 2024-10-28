@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - yasm support dropped, users need to use nasm
+- VVC VAAPI decoder
 
 version 7.1:
 - Raw Captions with Time (RCWT) closed caption demuxer
