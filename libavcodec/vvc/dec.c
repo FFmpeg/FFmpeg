@@ -22,6 +22,8 @@
  */
 #include "libavcodec/codec_internal.h"
 #include "libavcodec/decode.h"
+#include "libavcodec/hwaccel_internal.h"
+#include "libavcodec/hwconfig.h"
 #include "libavcodec/profiles.h"
 #include "libavcodec/refstruct.h"
 #include "libavutil/cpu.h"
@@ -606,6 +608,8 @@ static int ref_frame(VVCFrame *dst, const VVCFrame *src)
 
     ff_refstruct_replace(&dst->rpl_tab, src->rpl_tab);
     ff_refstruct_replace(&dst->rpl, src->rpl);
+    ff_refstruct_replace(&dst->hwaccel_picture_private,
+                          src->hwaccel_picture_private);
     dst->nb_rpl_elems = src->nb_rpl_elems;
 
     dst->poc = src->poc;
@@ -766,18 +770,49 @@ static int slice_start(SliceContext *sc, VVCContext *s, VVCFrameContext *fc,
     return 0;
 }
 
-static void export_frame_params(VVCContext *s, const VVCFrameContext *fc)
+static enum AVPixelFormat get_format(AVCodecContext *avctx, const VVCSPS *sps)
+{
+#define HWACCEL_MAX 0
+
+    enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmt = pix_fmts;
+
+    switch (sps->pix_fmt) {
+    case AV_PIX_FMT_YUV420P:
+        break;
+    case AV_PIX_FMT_YUV420P10:
+        break;
+    }
+
+    *fmt++ = sps->pix_fmt;
+    *fmt = AV_PIX_FMT_NONE;
+
+    return ff_get_format(avctx, pix_fmts);
+}
+
+static int export_frame_params(VVCContext *s, const VVCFrameContext *fc)
 {
     AVCodecContext *c = s->avctx;
     const VVCSPS *sps = fc->ps.sps;
     const VVCPPS *pps = fc->ps.pps;
+    int ret;
 
-    c->pix_fmt      = sps->pix_fmt;
-    c->coded_width  = pps->width;
-    c->coded_height = pps->height;
-    c->width        = pps->width  - ((pps->r->pps_conf_win_left_offset + pps->r->pps_conf_win_right_offset) << sps->hshift[CHROMA]);
-    c->height       = pps->height - ((pps->r->pps_conf_win_top_offset + pps->r->pps_conf_win_bottom_offset) << sps->vshift[CHROMA]);
+    // Reset HW config if pix_fmt/w/h change.
+    if (s->pix_fmt != sps->pix_fmt || c->coded_width != pps->width || c->coded_height != pps->height) {
+        c->coded_width  = pps->width;
+        c->coded_height = pps->height;
+        ret = get_format(c, sps);
+        if (ret < 0)
+            return ret;
+
+        c->pix_fmt = ret;
+        s->pix_fmt = sps->pix_fmt;
+    }
+
+    c->width  = pps->width  - ((pps->r->pps_conf_win_left_offset + pps->r->pps_conf_win_right_offset) << sps->hshift[CHROMA]);
+    c->height = pps->height - ((pps->r->pps_conf_win_top_offset + pps->r->pps_conf_win_bottom_offset) << sps->vshift[CHROMA]);
     c->has_b_frames = sps->r->sps_dpb_params.dpb_max_num_reorder_pics[sps->r->sps_max_sublayers_minus1];
+
+    return 0;
 }
 
 static int frame_setup(VVCFrameContext *fc, VVCContext *s)
@@ -790,8 +825,11 @@ static int frame_setup(VVCFrameContext *fc, VVCContext *s)
     if (ret < 0)
         return ret;
 
-    export_frame_params(s, fc);
-    return ret;
+    ret = export_frame_params(s, fc);
+    if (ret < 0)
+        return ret;
+
+    return 0;
 }
 
 static int decode_slice(VVCContext *s, VVCFrameContext *fc, const H2645NAL *nal, const CodedBitstreamUnit *unit)
@@ -820,6 +858,20 @@ static int decode_slice(VVCContext *s, VVCFrameContext *fc, const H2645NAL *nal,
     ret = slice_init_entry_points(sc, fc, nal, unit);
     if (ret < 0)
         return ret;
+
+    if (s->avctx->hwaccel) {
+        if (is_first_slice) {
+            ret = FF_HW_CALL(s->avctx, start_frame, NULL, 0);
+            if (ret < 0)
+                return ret;
+        }
+
+        ret = FF_HW_CALL(s->avctx, decode_slice,
+                         nal->raw_data, nal->raw_size);
+        if (ret < 0)
+            return ret;
+    }
+
     fc->nb_slices++;
 
     return 0;
@@ -935,17 +987,26 @@ static int wait_delayed_frame(VVCContext *s, AVFrame *output, int *got_output)
 
 static int submit_frame(VVCContext *s, VVCFrameContext *fc, AVFrame *output, int *got_output)
 {
-    int ret = ff_vvc_frame_submit(s, fc);
+    int ret;
 
-    if (ret < 0) {
-        ff_vvc_report_frame_finished(fc->ref);
-        return ret;
+    if (s->avctx->hwaccel) {
+        if (ret = FF_HW_SIMPLE_CALL(s->avctx, end_frame) < 0) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Hardware accelerator failed to decode picture\n");
+            ff_vvc_unref_frame(fc, fc->ref, ~0);
+            return ret;
+        }
+    } else {
+        if (ret = ff_vvc_frame_submit(s, fc) < 0) {
+            ff_vvc_report_frame_finished(fc->ref);
+            return ret;
+        }
     }
 
     s->nb_frames++;
     s->nb_delayed++;
 
-    if (s->nb_delayed >= s->nb_fcs) {
+    if (s->nb_delayed >= s->nb_fcs || s->avctx->hwaccel) {
         if ((ret = wait_delayed_frame(s, output, got_output)) < 0)
             return ret;
     }
@@ -1090,6 +1151,8 @@ static av_cold int vvc_decode_init(AVCodecContext *avctx)
     s->eos = 1;
     GDR_SET_RECOVERED(s);
     ff_thread_once(&init_static_once, init_default_scale_m);
+
+    s->pix_fmt = AV_PIX_FMT_NONE;
 
     return 0;
 }

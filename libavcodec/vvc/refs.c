@@ -26,6 +26,7 @@
 #include "libavutil/thread.h"
 #include "libavcodec/refstruct.h"
 #include "libavcodec/thread.h"
+#include "libavcodec/decode.h"
 
 #include "refs.h"
 
@@ -59,6 +60,7 @@ void ff_vvc_unref_frame(VVCFrameContext *fc, VVCFrame *frame, int flags)
         ff_refstruct_unref(&frame->rpl_tab);
 
         frame->collocated_ref = NULL;
+        ff_refstruct_unref(&frame->hwaccel_picture_private);
     }
 }
 
@@ -151,6 +153,10 @@ static VVCFrame *alloc_frame(VVCContext *s, VVCFrameContext *fc)
 
         frame->progress = alloc_progress();
         if (!frame->progress)
+            goto fail;
+
+        ret = ff_hwaccel_frame_priv_alloc(s->avctx, &frame->hwaccel_picture_private);
+        if (ret < 0)
             goto fail;
 
         return frame;
