@@ -56,6 +56,10 @@ void (*shuffle_bytes_2103)(const uint8_t *src, uint8_t *dst, int src_size);
 void (*shuffle_bytes_1230)(const uint8_t *src, uint8_t *dst, int src_size);
 void (*shuffle_bytes_3012)(const uint8_t *src, uint8_t *dst, int src_size);
 void (*shuffle_bytes_3210)(const uint8_t *src, uint8_t *dst, int src_size);
+void (*shuffle_bytes_3102)(const uint8_t *src, uint8_t *dst, int src_size);
+void (*shuffle_bytes_2013)(const uint8_t *src, uint8_t *dst, int src_size);
+void (*shuffle_bytes_2130)(const uint8_t *src, uint8_t *dst, int src_size);
+void (*shuffle_bytes_1203)(const uint8_t *src, uint8_t *dst, int src_size);
 
 
 void (*yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc,

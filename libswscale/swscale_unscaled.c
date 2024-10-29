@@ -1497,6 +1497,13 @@ static int bayer_to_yv12_wrapper(SwsInternal *c, const uint8_t *const src[],
         || (x) == AV_PIX_FMT_BGR48BE   \
         )
 
+#define isAYUV(x) (                 \
+           (x) == AV_PIX_FMT_AYUV   \
+        || (x) == AV_PIX_FMT_VUYA   \
+        || (x) == AV_PIX_FMT_VUYX   \
+        || (x) == AV_PIX_FMT_UYVA   \
+        )
+
 /* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
 typedef void (* rgbConvFn) (const uint8_t *, uint8_t *, int);
 static rgbConvFn findRgbConvFn(SwsInternal *c)
@@ -1569,6 +1576,16 @@ static rgbConvFn findRgbConvFn(SwsInternal *c)
               || CONV_IS(BGRA64LE, BGR48BE)
               || CONV_IS(RGBA64BE, RGB48LE)
               || CONV_IS(BGRA64BE, BGR48LE)) conv = rgb64to48_bswap;
+    } else if (isAYUV(srcFormat) && isAYUV(dstFormat)) {
+        /* VUYX only for dst, to avoid copying undefined bytes */
+        if (     CONV_IS(AYUV, VUYA)
+              || CONV_IS(AYUV, VUYX)
+              || CONV_IS(VUYA, AYUV)) conv = shuffle_bytes_3210;
+        else if (CONV_IS(AYUV, UYVA)) conv = shuffle_bytes_2130;
+        else if (CONV_IS(VUYA, UYVA)) conv = shuffle_bytes_1203;
+        else if (CONV_IS(UYVA, AYUV)) conv = shuffle_bytes_3102;
+        else if (CONV_IS(UYVA, VUYA)
+              || CONV_IS(UYVA, VUYX)) conv = shuffle_bytes_2013;
     } else
     /* BGR -> BGR */
     if ((isBGRinInt(srcFormat) && isBGRinInt(dstFormat)) ||
@@ -2085,6 +2102,10 @@ void ff_get_unscaled_swscale(SwsInternal *c)
         (dstFormat == AV_PIX_FMT_YUV420P || dstFormat == AV_PIX_FMT_YUVA420P) &&
         !(flags & SWS_ACCURATE_RND) && !(dstW&1))
         c->convert_unscaled = bgr24ToYv12Wrapper;
+
+    /* AYUV/VUYA/UYVA -> AYUV/VUYA/UYVA */
+    if (isAYUV(srcFormat) && isAYUV(dstFormat) && findRgbConvFn(c))
+        c->convert_unscaled = rgbToRgbWrapper;
 
     /* RGB/BGR -> RGB/BGR (no dither needed forms) */
     if (isAnyRGB(srcFormat) && isAnyRGB(dstFormat) && findRgbConvFn(c)
