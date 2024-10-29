@@ -2348,6 +2348,10 @@ void ff_shuffle_bytes_0321_ssse3(const uint8_t *src, uint8_t *dst, int src_size)
 void ff_shuffle_bytes_1230_ssse3(const uint8_t *src, uint8_t *dst, int src_size);
 void ff_shuffle_bytes_3012_ssse3(const uint8_t *src, uint8_t *dst, int src_size);
 void ff_shuffle_bytes_3210_ssse3(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_3102_ssse3(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_2013_ssse3(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_2130_ssse3(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_1203_ssse3(const uint8_t *src, uint8_t *dst, int src_size);
 
 #if ARCH_X86_64
 void ff_shuffle_bytes_2103_avx2(const uint8_t *src, uint8_t *dst, int src_size);
@@ -2355,6 +2359,10 @@ void ff_shuffle_bytes_0321_avx2(const uint8_t *src, uint8_t *dst, int src_size);
 void ff_shuffle_bytes_1230_avx2(const uint8_t *src, uint8_t *dst, int src_size);
 void ff_shuffle_bytes_3012_avx2(const uint8_t *src, uint8_t *dst, int src_size);
 void ff_shuffle_bytes_3210_avx2(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_3102_avx2(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_2013_avx2(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_2130_avx2(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_1203_avx2(const uint8_t *src, uint8_t *dst, int src_size);
 
 void ff_uyvytoyuv422_sse2(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                           const uint8_t *src, int width, int height,
@@ -2424,6 +2432,10 @@ av_cold void rgb2rgb_init_x86(void)
         shuffle_bytes_1230 = ff_shuffle_bytes_1230_ssse3;
         shuffle_bytes_3012 = ff_shuffle_bytes_3012_ssse3;
         shuffle_bytes_3210 = ff_shuffle_bytes_3210_ssse3;
+        shuffle_bytes_3102 = ff_shuffle_bytes_3102_ssse3;
+        shuffle_bytes_2013 = ff_shuffle_bytes_2013_ssse3;
+        shuffle_bytes_2130 = ff_shuffle_bytes_2130_ssse3;
+        shuffle_bytes_1203 = ff_shuffle_bytes_1203_ssse3;
     }
 #if HAVE_AVX_EXTERNAL
     if (EXTERNAL_AVX(cpu_flags)) {
@@ -2437,6 +2449,10 @@ av_cold void rgb2rgb_init_x86(void)
         shuffle_bytes_1230 = ff_shuffle_bytes_1230_avx2;
         shuffle_bytes_3012 = ff_shuffle_bytes_3012_avx2;
         shuffle_bytes_3210 = ff_shuffle_bytes_3210_avx2;
+        shuffle_bytes_3102 = ff_shuffle_bytes_3102_avx2;
+        shuffle_bytes_2013 = ff_shuffle_bytes_2013_avx2;
+        shuffle_bytes_2130 = ff_shuffle_bytes_2130_avx2;
+        shuffle_bytes_1203 = ff_shuffle_bytes_1203_avx2;
     }
     if (EXTERNAL_AVX2_FAST(cpu_flags)) {
         uyvytoyuv422 = ff_uyvytoyuv422_avx2;

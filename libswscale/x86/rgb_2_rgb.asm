@@ -30,6 +30,10 @@ pb_shuffle0321: db 0, 3, 2, 1, 4, 7, 6, 5, 8, 11, 10, 9, 12, 15, 14, 13
 pb_shuffle1230: db 1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12
 pb_shuffle3012: db 3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14
 pb_shuffle3210: db 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
+pb_shuffle3102: db 3, 1, 0, 2, 7, 5, 4, 6, 11, 9, 8, 10, 15, 13, 12, 14
+pb_shuffle2013: db 2, 0, 1, 3, 6, 4, 5, 7, 10, 8, 9, 11, 14, 12, 13, 15
+pb_shuffle2130: db 2, 1, 3, 0, 6, 5, 7, 4, 10, 9, 11, 8, 14, 13, 15, 12
+pb_shuffle1203: db 1, 2, 0, 3, 5, 6, 4, 7, 9, 10, 8, 11, 13, 14, 12, 15
 
 SECTION .text
 
@@ -98,6 +102,10 @@ SHUFFLE_BYTES 0, 3, 2, 1
 SHUFFLE_BYTES 1, 2, 3, 0
 SHUFFLE_BYTES 3, 0, 1, 2
 SHUFFLE_BYTES 3, 2, 1, 0
+SHUFFLE_BYTES 3, 1, 0, 2
+SHUFFLE_BYTES 2, 0, 1, 3
+SHUFFLE_BYTES 2, 1, 3, 0
+SHUFFLE_BYTES 1, 2, 0, 3
 
 %if ARCH_X86_64
 %if HAVE_AVX2_EXTERNAL
@@ -107,6 +115,10 @@ SHUFFLE_BYTES 0, 3, 2, 1
 SHUFFLE_BYTES 1, 2, 3, 0
 SHUFFLE_BYTES 3, 0, 1, 2
 SHUFFLE_BYTES 3, 2, 1, 0
+SHUFFLE_BYTES 3, 1, 0, 2
+SHUFFLE_BYTES 2, 0, 1, 3
+SHUFFLE_BYTES 2, 1, 3, 0
+SHUFFLE_BYTES 1, 2, 0, 3
 %endif
 %endif
 
