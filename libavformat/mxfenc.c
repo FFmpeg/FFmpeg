@@ -1488,7 +1488,12 @@ static void mxf_write_jpeg2000_subdesc(AVFormatContext *s, AVStream *st)
     MXFStreamContext *sc = st->priv_data;
     AVIOContext *pb = s->pb;
     int64_t pos;
-    int component_count = av_pix_fmt_count_planes(st->codecpar->format);
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(st->codecpar->format);
+
+    if (!pix_desc) {
+        av_log(s, AV_LOG_ERROR, "Pixel format not set - not writing JPEG2000SubDescriptor\n");
+        return;
+    }
 
     /* JPEG2000 subdescriptor key */
     avio_write(pb, mxf_jpeg2000_subdescriptor_key, 16);
@@ -1527,15 +1532,15 @@ static void mxf_write_jpeg2000_subdesc(AVFormatContext *s, AVStream *st)
     avio_wb32(pb, sc->j2k_info.j2k_yt0siz);
     /* Image components number (Csiz) */
     mxf_write_local_tag(s, 2, 0x840A);
-    avio_wb16(pb, component_count);
+    avio_wb16(pb, pix_desc->nb_components);
     /* Array of picture components where each component comprises 3 bytes named Ssiz(i) (Pixel bitdepth - 1),
        XRSiz(i) (Horizontal sampling), YRSiz(i) (Vertical sampling). The array of 3-byte groups is preceded
        by the array header comprising a 4-byte value of the number of components followed by a 4-byte
        value of 3. */
-    mxf_write_local_tag(s, 8 + 3*component_count, 0x840B);
-    avio_wb32(pb, component_count);
+    mxf_write_local_tag(s, 8 + 3*pix_desc->nb_components, 0x840B);
+    avio_wb32(pb, pix_desc->nb_components);
     avio_wb32(pb, 3);
-    avio_write(pb, sc->j2k_info.j2k_comp_desc, 3*component_count);
+    avio_write(pb, sc->j2k_info.j2k_comp_desc, 3*pix_desc->nb_components);
 
     mxf_update_klv_size(pb, pos);
 }
@@ -2638,9 +2643,14 @@ static int mxf_parse_jpeg2000_frame(AVFormatContext *s, AVStream *st, AVPacket *
 {
     MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
-    int component_count = av_pix_fmt_count_planes(st->codecpar->format);
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(st->codecpar->format);
     GetByteContext g;
     uint32_t j2k_ncomponents;
+
+    if (!pix_desc) {
+        av_log(s, AV_LOG_ERROR, "Pixel format not set\n");
+        return AVERROR(EINVAL);
+    }
 
     if (mxf->header_written)
         return 1;
@@ -2671,7 +2681,7 @@ static int mxf_parse_jpeg2000_frame(AVFormatContext *s, AVStream *st, AVPacket *
     sc->j2k_info.j2k_xt0siz = bytestream2_get_be32u(&g);
     sc->j2k_info.j2k_yt0siz = bytestream2_get_be32u(&g);
     j2k_ncomponents = bytestream2_get_be16u(&g);
-    if (j2k_ncomponents != component_count) {
+    if (j2k_ncomponents != pix_desc->nb_components) {
         av_log(s, AV_LOG_ERROR, "Incoherence about components image number.\n");
         return AVERROR_INVALIDDATA;
     }
