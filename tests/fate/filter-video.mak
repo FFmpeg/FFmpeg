@@ -100,6 +100,18 @@ fate-filter-pal100bars: CMD = framecrc -lavfi pal100bars=rate=5:duration=1 -pix_
 FATE_FILTER-$(call FILTERFRAMECRC, RGBTESTSRC) += fate-filter-rgbtestsrc
 fate-filter-rgbtestsrc: CMD = framecrc -lavfi rgbtestsrc=rate=5:duration=1 -pix_fmt rgb24
 
+FATE_FILTER-$(call FILTERFRAMECRC, RGBTESTSRC) += fate-filter-rgbtestsrc-rgba
+fate-filter-rgbtestsrc-rgba: CMD = framecrc -lavfi rgbtestsrc=rate=5:duration=1 -pix_fmt rgba
+
+FATE_FILTER-$(call FILTERFRAMECRC, RGBTESTSRC) += fate-filter-rgbtestsrc-gbrp
+fate-filter-rgbtestsrc-gbrp: CMD = framecrc -lavfi rgbtestsrc=rate=5:duration=1 -pix_fmt gbrp
+
+FATE_FILTER-$(call FILTERFRAMECRC, RGBTESTSRC SCALE) += fate-filter-rgbtestsrc-gbrp12
+fate-filter-rgbtestsrc-gbrp12: CMD = framecrc -lavfi rgbtestsrc=rate=5:duration=1,format=gbrp12,scale -pix_fmt gbrp12le
+
+FATE_FILTER-$(call FILTERFRAMECRC, RGBTESTSRC) += fate-filter-rgbtestsrc-x2rgb10le
+fate-filter-rgbtestsrc-x2rgb10le: CMD = framecrc -lavfi rgbtestsrc=rate=5:duration=1 -pix_fmt x2rgb10le
+
 FATE_FILTER-$(call FILTERFRAMECRC, SMPTEBARS) += fate-filter-smptebars
 fate-filter-smptebars: CMD = framecrc -lavfi smptebars=rate=5:duration=1 -pix_fmt yuv420p
 
