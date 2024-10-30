@@ -1970,6 +1970,18 @@ static av_always_inline void yuv2rgb_write_full(SwsInternal *c,
         dest[2] = R >> 22;
         dest[3] = hasAlpha ? A : 255;
         break;
+    case AV_PIX_FMT_X2RGB10LE:
+        R >>= 20;
+        G >>= 20;
+        B >>= 20;
+        AV_WL32(dest, (3U << 30) + (R << 20) + (G << 10) + B);
+        break;
+    case AV_PIX_FMT_X2BGR10LE:
+        R >>= 20;
+        G >>= 20;
+        B >>= 20;
+        AV_WL32(dest, (3U << 30) + (B << 20) + (G << 10) + R);
+        break;
     case AV_PIX_FMT_BGR4_BYTE:
     case AV_PIX_FMT_RGB4_BYTE:
     case AV_PIX_FMT_BGR8:
@@ -2241,6 +2253,9 @@ YUV2RGBWRAPPER(yuv2, rgb_full, bgr4_byte_full,  AV_PIX_FMT_BGR4_BYTE, 0)
 YUV2RGBWRAPPER(yuv2, rgb_full, rgb4_byte_full,  AV_PIX_FMT_RGB4_BYTE, 0)
 YUV2RGBWRAPPER(yuv2, rgb_full, bgr8_full,   AV_PIX_FMT_BGR8,  0)
 YUV2RGBWRAPPER(yuv2, rgb_full, rgb8_full,   AV_PIX_FMT_RGB8,  0)
+
+YUV2RGBWRAPPER(yuv2, rgb_full, x2rgb10_full, AV_PIX_FMT_X2RGB10LE,  0)
+YUV2RGBWRAPPER(yuv2, rgb_full, x2bgr10_full, AV_PIX_FMT_X2BGR10LE,  0)
 
 static void
 yuv2gbrp_full_X_c(SwsInternal *c, const int16_t *lumFilter,
@@ -3396,6 +3411,16 @@ av_cold void ff_sws_init_output_funcs(SwsInternal *c,
             *yuv2packedX = yuv2rgb8_full_X_c;
             *yuv2packed2 = yuv2rgb8_full_2_c;
             *yuv2packed1 = yuv2rgb8_full_1_c;
+            break;
+        case AV_PIX_FMT_X2RGB10LE:
+            *yuv2packedX = yuv2x2rgb10_full_X_c;
+            *yuv2packed2 = yuv2x2rgb10_full_2_c;
+            *yuv2packed1 = yuv2x2rgb10_full_1_c;
+            break;
+        case AV_PIX_FMT_X2BGR10LE:
+            *yuv2packedX = yuv2x2bgr10_full_X_c;
+            *yuv2packed2 = yuv2x2bgr10_full_2_c;
+            *yuv2packed1 = yuv2x2bgr10_full_1_c;
             break;
         case AV_PIX_FMT_GBRP:
         case AV_PIX_FMT_GBRP9BE:
