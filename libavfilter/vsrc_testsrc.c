@@ -996,6 +996,7 @@ static void rgbtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
                               int x, int y, unsigned r, unsigned g, unsigned b, enum AVPixelFormat fmt,
                               uint8_t rgba_map[4])
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
     uint8_t *dst = dstp[0];
     ptrdiff_t dst_linesize = dst_linesizep[0];
     uint32_t v;
@@ -1020,6 +1021,15 @@ static void rgbtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
     case AV_PIX_FMT_ARGB:
     case AV_PIX_FMT_ABGR:
         v = (r << (rgba_map[R]*8)) + (g << (rgba_map[G]*8)) + (b << (rgba_map[B]*8)) + (255U << (rgba_map[A]*8));
+        p = dst + 4*x + y*dst_linesize;
+        AV_WL32(p, v);
+        break;
+    case AV_PIX_FMT_X2RGB10LE:
+    case AV_PIX_FMT_X2BGR10LE:
+        v = (r  << ((desc->comp[0].offset*8) + desc->comp[0].shift)) +
+            (g  << ((desc->comp[1].offset*8) + desc->comp[1].shift)) +
+            (b  << ((desc->comp[2].offset*8) + desc->comp[2].shift)) +
+            (3U << ((desc->comp[3].offset*8) + desc->comp[3].shift));
         p = dst + 4*x + y*dst_linesize;
         AV_WL32(p, v);
         break;
@@ -1106,6 +1116,7 @@ static const enum AVPixelFormat rgbtest_pix_fmts[] = {
         AV_PIX_FMT_RGB555, AV_PIX_FMT_BGR555,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
+        AV_PIX_FMT_X2RGB10LE, AV_PIX_FMT_X2BGR10LE,
         AV_PIX_FMT_NONE
     };
 
