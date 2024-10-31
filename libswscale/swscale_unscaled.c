@@ -921,6 +921,41 @@ static void gbr16ptopacked16(const uint16_t *src[], const int srcStride[],
     }
 }
 
+static void gbr16ptopacked30(const uint16_t *src[], const int srcStride[],
+                             uint8_t *dst, int dstStride, int srcSliceH,
+                             int swap, int bpp, int width)
+{
+    int x, h, i;
+    int shift = bpp - 10;
+    av_assert0(bpp >= 0);
+    for (h = 0; h < srcSliceH; h++) {
+        uint8_t *dest = dst + dstStride * h;
+
+        switch(swap) {
+        case 3:
+        case 1:
+            for (x = 0; x < width; x++) {
+                unsigned C0 = av_bswap16(src[0][x]) >> shift;
+                unsigned C1 = av_bswap16(src[1][x]) >> shift;
+                unsigned C2 = av_bswap16(src[2][x]) >> shift;
+                AV_WL32(dest + 4 * x, (3U << 30) + (C0 << 20) + (C1 << 10) + C2);
+            }
+            break;
+        default:
+            for (x = 0; x < width; x++) {
+                unsigned C0 = src[0][x] >> shift;
+                unsigned C1 = src[1][x] >> shift;
+                unsigned C2 = src[2][x] >> shift;
+                AV_WL32(dest + 4 * x, (3U << 30) + (C0 << 20) + (C1 << 10) + C2);
+            }
+            break;
+        }
+        for (i = 0; i < 3; i++)
+            src[i] += srcStride[i] >> 1;
+    }
+}
+
+
 static int planarRgb16ToRgb16Wrapper(SwsInternal *c, const uint8_t *const src[],
                                      const int srcStride[], int srcSliceY, int srcSliceH,
                                      uint8_t *const dst[], const int dstStride[])
@@ -971,6 +1006,16 @@ static int planarRgb16ToRgb16Wrapper(SwsInternal *c, const uint8_t *const src[],
         gbr16ptopacked16(src102, stride102,
                          dst[0] + srcSliceY * dstStride[0], dstStride[0],
                          srcSliceH, 1, swap, bits_per_sample, c->srcW);
+        break;
+    case AV_PIX_FMT_X2RGB10LE:
+        gbr16ptopacked30(src201, stride201,
+                         dst[0] + srcSliceY * dstStride[0], dstStride[0],
+                         srcSliceH, swap, bits_per_sample, c->srcW);
+        break;
+    case AV_PIX_FMT_X2BGR10LE:
+        gbr16ptopacked30(src102, stride102,
+                         dst[0] + srcSliceY * dstStride[0], dstStride[0],
+                         srcSliceH, swap, bits_per_sample, c->srcW);
         break;
     default:
         av_log(c, AV_LOG_ERROR,
@@ -2159,6 +2204,11 @@ void ff_get_unscaled_swscale(SwsInternal *c)
          dstFormat == AV_PIX_FMT_BGR48LE  || dstFormat == AV_PIX_FMT_BGR48BE  ||
          dstFormat == AV_PIX_FMT_RGBA64LE || dstFormat == AV_PIX_FMT_RGBA64BE ||
          dstFormat == AV_PIX_FMT_BGRA64LE || dstFormat == AV_PIX_FMT_BGRA64BE))
+        c->convert_unscaled = planarRgb16ToRgb16Wrapper;
+
+    if (av_pix_fmt_desc_get(srcFormat)->comp[0].depth >= 10 &&
+        isPlanarRGB(srcFormat) && !isFloat(srcFormat) &&
+        (dstFormat == AV_PIX_FMT_X2RGB10LE || dstFormat == AV_PIX_FMT_X2BGR10LE))
         c->convert_unscaled = planarRgb16ToRgb16Wrapper;
 
     if (av_pix_fmt_desc_get(srcFormat)->comp[0].depth == 8 &&
