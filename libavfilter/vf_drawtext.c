@@ -453,6 +453,12 @@ static av_cold int set_fontsize(AVFilterContext *ctx, unsigned int fontsize)
         return AVERROR(EINVAL);
     }
 
+    // Whenever the underlying FT_Face changes, harfbuzz has to be notified of the change.
+    for (int line = 0; line < s->line_count; line++) {
+        TextLine *cur_line = &s->lines[line];
+        hb_ft_font_changed(cur_line->hb_data.font);
+    }
+
     s->fontsize = fontsize;
 
     return 0;
@@ -1369,11 +1375,10 @@ static int shape_text_hb(DrawTextContext *s, HarfbuzzData* hb, const char* text,
     hb_buffer_set_script(hb->buf, HB_SCRIPT_LATIN);
     hb_buffer_set_language(hb->buf, hb_language_from_string("en", -1));
     hb_buffer_guess_segment_properties(hb->buf);
-    hb->font = hb_ft_font_create(s->face, NULL);
+    hb->font = hb_ft_font_create_referenced(s->face);
     if(hb->font == NULL) {
         return AVERROR(ENOMEM);
     }
-    hb_ft_font_set_funcs(hb->font);
     hb_buffer_add_utf8(hb->buf, text, textLen, 0, -1);
     hb_shape(hb->font, hb->buf, NULL, 0);
     hb->glyph_info = hb_buffer_get_glyph_infos(hb->buf, &hb->glyph_count);
@@ -1384,8 +1389,8 @@ static int shape_text_hb(DrawTextContext *s, HarfbuzzData* hb, const char* text,
 
 static void hb_destroy(HarfbuzzData *hb)
 {
-    hb_buffer_destroy(hb->buf);
     hb_font_destroy(hb->font);
+    hb_buffer_destroy(hb->buf);
     hb->buf = NULL;
     hb->font = NULL;
     hb->glyph_info = NULL;
