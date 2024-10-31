@@ -46,6 +46,12 @@ fate-vp60: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/ea-vp6/g36.vp6
 FATE_VP6-$(call FRAMECRC, EA, VP6) += fate-vp61
 fate-vp61: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/ea-vp6/MovieSkirmishGondor.vp6 -t 4
 
+FATE_VP6-$(call FRAMECRC, AVI, VP6) += fate-vp60-interlace1
+fate-vp60-interlace1: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp6/interlaced32x32.avi
+
+FATE_VP6-$(call FRAMECRC, AVI, VP6) += fate-vp60-interlace2
+fate-vp60-interlace2: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp6/interlaced32x64.avi
+
 FATE_VP6-$(call FRAMECRC, MOV, VP6A) += fate-vp6a
 fate-vp6a: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/flash-vp6/300x180-Scr-f8-056alpha.mov
 
