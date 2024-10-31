@@ -2607,6 +2607,11 @@ static int create_hwaccel(AVBufferRef **device_ctx)
     if (type == AV_HWDEVICE_TYPE_NONE)
         return AVERROR(ENOTSUP);
 
+    if (!vk_renderer) {
+        av_log(NULL, AV_LOG_ERROR, "Vulkan renderer is not available\n");
+        return AVERROR(ENOTSUP);
+    }
+
     ret = vk_renderer_get_hw_dev(vk_renderer, &vk_dev);
     if (ret < 0)
         return ret;
