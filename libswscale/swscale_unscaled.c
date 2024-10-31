@@ -1305,6 +1305,116 @@ static int rgbToPlanarRgbWrapper(SwsInternal *c, const uint8_t *const src[],
     return srcSliceH;
 }
 
+static void packed24togbrap(const uint8_t *src, int srcStride,
+                            uint8_t *const dst[], const int dstStride[],
+                            int srcSliceH, int width)
+{
+    uint8_t *dest[4];
+    int x, h;
+
+    dest[0] = dst[0];
+    dest[1] = dst[1];
+    dest[2] = dst[2];
+    dest[3] = dst[3];
+
+    for (h = 0; h < srcSliceH; h++) {
+        for (x = 0; x < width; x++) {
+            dest[0][x] = src[x * 3 + 0];
+            dest[1][x] = src[x * 3 + 1];
+            dest[2][x] = src[x * 3 + 2];
+            dest[3][x] = 0xff;
+        }
+        src     += srcStride;
+        dest[0] += dstStride[0];
+        dest[1] += dstStride[1];
+        dest[2] += dstStride[2];
+        dest[3] += dstStride[3];
+    }
+}
+
+static void packed32togbrap(const uint8_t *src, int srcStride,
+                            uint8_t *const dst[], const int dstStride[],
+                            int srcSliceH, int alpha_first, int width)
+{
+    uint8_t *dest[4];
+    int x, h;
+
+    dest[0] = dst[0];
+    dest[1] = dst[1];
+    dest[2] = dst[2];
+    dest[3] = dst[3];
+
+    for (h = 0; h < srcSliceH; h++) {
+        if (alpha_first) {
+            for (x = 0; x < width; x++) {
+                dest[0][x] = src[x * 4 + 1];
+                dest[1][x] = src[x * 4 + 2];
+                dest[2][x] = src[x * 4 + 3];
+                dest[3][x] = src[x * 4 + 0];
+            }
+        } else {
+            for (x = 0; x < width; x++) {
+                dest[0][x] = src[x * 4 + 0];
+                dest[1][x] = src[x * 4 + 1];
+                dest[2][x] = src[x * 4 + 2];
+                dest[3][x] = src[x * 4 + 3];
+            }
+        }
+        src     += srcStride;
+        dest[0] += dstStride[0];
+        dest[1] += dstStride[1];
+        dest[2] += dstStride[2];
+        dest[3] += dstStride[3];
+    }
+}
+
+static int rgbToPlanarRgbaWrapper(SwsInternal *c, const uint8_t *const src[],
+                                  const int srcStride[], int srcSliceY, int srcSliceH,
+                                  uint8_t *const dst[], const int dstStride[])
+{
+    int alpha_first = 0;
+    int stride102[] = { dstStride[1], dstStride[0], dstStride[2], dstStride[3] };
+    int stride201[] = { dstStride[2], dstStride[0], dstStride[1], dstStride[3] };
+    uint8_t *dst102[] = { dst[1] + srcSliceY * dstStride[1],
+                          dst[0] + srcSliceY * dstStride[0],
+                          dst[2] + srcSliceY * dstStride[2],
+                          dst[3] + srcSliceY * dstStride[3] };
+    uint8_t *dst201[] = { dst[2] + srcSliceY * dstStride[2],
+                          dst[0] + srcSliceY * dstStride[0],
+                          dst[1] + srcSliceY * dstStride[1],
+                          dst[3] + srcSliceY * dstStride[3] };
+
+    switch (c->srcFormat) {
+    case AV_PIX_FMT_RGB24:
+        packed24togbrap((const uint8_t *) src[0], srcStride[0], dst201,
+                        stride201, srcSliceH, c->srcW);
+        break;
+    case AV_PIX_FMT_BGR24:
+        packed24togbrap((const uint8_t *) src[0], srcStride[0], dst102,
+                        stride102, srcSliceH, c->srcW);
+        break;
+    case AV_PIX_FMT_ARGB:
+        alpha_first = 1;
+    case AV_PIX_FMT_RGBA:
+        packed32togbrap((const uint8_t *) src[0], srcStride[0], dst201,
+                        stride201, srcSliceH, alpha_first, c->srcW);
+        break;
+    case AV_PIX_FMT_ABGR:
+        alpha_first = 1;
+    case AV_PIX_FMT_BGRA:
+        packed32togbrap((const uint8_t *) src[0], srcStride[0], dst102,
+                        stride102, srcSliceH, alpha_first, c->srcW);
+        break;
+    default:
+        av_log(c, AV_LOG_ERROR,
+               "unsupported planar RGB conversion %s -> %s\n",
+               av_get_pix_fmt_name(c->srcFormat),
+               av_get_pix_fmt_name(c->dstFormat));
+    }
+
+    return srcSliceH;
+}
+
 #define BAYER_GBRG
 #define BAYER_8
 #define BAYER_RENAME(x) bayer_gbrg8_to_##x
@@ -2214,6 +2324,10 @@ void ff_get_unscaled_swscale(SwsInternal *c)
     if (av_pix_fmt_desc_get(srcFormat)->comp[0].depth == 8 &&
         isPackedRGB(srcFormat) && dstFormat == AV_PIX_FMT_GBRP)
         c->convert_unscaled = rgbToPlanarRgbWrapper;
+
+    if (av_pix_fmt_desc_get(srcFormat)->comp[0].depth == 8 &&
+        isPackedRGB(srcFormat) && dstFormat == AV_PIX_FMT_GBRAP)
+        c->convert_unscaled = rgbToPlanarRgbaWrapper;
 
     if (isBayer(srcFormat)) {
         c->dst_slice_align = 2;
