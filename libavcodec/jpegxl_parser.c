@@ -1311,7 +1311,7 @@ static int parse_frame_header(void *avctx, JXLParseContext *ctx, GetBitContext *
     // permuted toc
     if (get_bits1(gb)) {
         JXLEntropyDecoder dec;
-        uint32_t end, lehmer = 0;
+        int64_t end, lehmer = 0;
         ret = entropy_decoder_init(avctx, gb, &dec, 8);
         if (ret < 0)
             return ret;
@@ -1320,13 +1320,13 @@ static int parse_frame_header(void *avctx, JXLParseContext *ctx, GetBitContext *
             return AVERROR_BUFFER_TOO_SMALL;
         }
         end = entropy_decoder_read_symbol(gb, &dec, toc_context(toc_count));
-        if (end > toc_count) {
+        if (end < 0 || end > toc_count) {
             entropy_decoder_close(&dec);
             return AVERROR_INVALIDDATA;
         }
         for (uint32_t i = 0; i < end; i++) {
             lehmer = entropy_decoder_read_symbol(gb, &dec, toc_context(lehmer));
-            if (get_bits_left(gb) < 0) {
+            if (lehmer < 0 || get_bits_left(gb) < 0) {
                 entropy_decoder_close(&dec);
                 return AVERROR_BUFFER_TOO_SMALL;
             }
