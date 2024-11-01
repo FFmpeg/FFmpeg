@@ -1310,6 +1310,8 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
         avctx->profile = AV_PROFILE_H264_HIGH_444_PREDICTIVE;
     }
 
+    vui->bitstreamRestrictionFlag = cc->gopLength != 1 || avctx->profile < AV_PROFILE_H264_HIGH;
+
     h264->chromaFormatIDC = avctx->profile == AV_PROFILE_H264_HIGH_444_PREDICTIVE ? 3 : 1;
 
     h264->level = ctx->level;
