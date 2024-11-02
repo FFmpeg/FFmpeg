@@ -389,6 +389,14 @@ fate-smvjpeg: CMD = framecrc -idct simple -flags +bitexact -i $(TARGET_SAMPLES)/
 FATE_VIDEO-$(call FRAMECRC, AVI, VQC) += fate-vqc
 fate-vqc: CMD = framecrc -i $(TARGET_SAMPLES)/vqc/samp1.avi
 
+FATE_VIDEO-$(call FRAMECRC, RM, RV60) += fate-rv60-512x512
+fate-rv60-512x512: CMD = framecrc -i $(TARGET_SAMPLES)/rv60/test512x512.rmhd -an
+
+FATE_VIDEO-$(call FRAMECRC, RM, RV60) += fate-rv60-72x72
+fate-rv60-72x72: CMD = framecrc -i $(TARGET_SAMPLES)/rv60/test72x72.rmhd -an
+
+fate-rv60: fate-rv60-72x72 fate-rv60-512x512
+
 FATE_VIDEO += $(FATE_VIDEO-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_VIDEO)
