@@ -203,7 +203,8 @@ enc_dec_pcm(){
     ffmpeg -auto_conversion_filters -bitexact -i ${encfile} -c:a pcm_${pcm_fmt} -fflags +bitexact -f ${dec_fmt} -
 }
 
-FLAGS="-flags +bitexact -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
+SCALE_FLAGS="+accurate_rnd+bitexact"
+FLAGS="-flags +bitexact -sws_flags $SCALE_FLAGS -fflags +bitexact"
 DEC_OPTS="-threads $threads -thread_type $thread_type -idct simple $FLAGS"
 ENC_OPTS="-threads 1        -idct simple -dct fastint"
 
@@ -335,7 +336,7 @@ echov(){
 }
 
 AVCONV_OPTS="-nostdin -nostats -noauto_conversion_filters -y -cpuflags $cpuflags -filter_threads $threads"
-COMMON_OPTS="-flags +bitexact -idct simple -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
+COMMON_OPTS="-flags +bitexact -idct simple -sws_flags $SCALE_FLAGS -fflags +bitexact"
 DEC_OPTS="$COMMON_OPTS -threads $threads"
 ENC_OPTS="$COMMON_OPTS -threads 1 -dct fastint"
 
@@ -505,14 +506,15 @@ pixfmt_conversion(){
 
 pixfmt_conversion_ext(){
     prefix=$1
+    suffix=$2
     color_range="${test#pixfmt-}"
     color_range=${color_range%-*}
     conversion="${test#pixfmt-$color_range-}"
     outdir="tests/data/pixfmt"
     file=${outdir}/${color_range}-${conversion}.yuv
     cleanfiles="$cleanfiles $file"
-    do_avconv $file $DEC_OPTS -lavfi ${prefix}testsrc=s=352x288,format=${color_range},scale,format=$conversion \
-              $ENC_OPTS -t 1 -f rawvideo -s 352x288 -pix_fmt ${color_range}le -color_range mpeg
+    do_avconv $file $DEC_OPTS -lavfi ${prefix}testsrc=s=352x288,format=${color_range},scale=flags=$SCALE_FLAGS,format=$conversion \
+              $ENC_OPTS -t 1 -f rawvideo -s 352x288 -pix_fmt ${color_range}${suffix} -color_range mpeg
 }
 
 pixdesc(){
