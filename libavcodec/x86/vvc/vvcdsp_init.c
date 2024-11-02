@@ -30,6 +30,8 @@
 #include "libavcodec/vvc/dsp.h"
 #include "libavcodec/x86/h26x/h2656dsp.h"
 
+#if ARCH_X86_64
+
 #define PUT_PROTOTYPE(name, depth, opt) \
 void ff_vvc_put_ ## name ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride, int height, const int8_t *hf, const int8_t *vf, int width);
 
@@ -355,6 +357,9 @@ ALF_FUNCS(16, 12, avx2)
 int ff_vvc_sad_avx2(const int16_t *src0, const int16_t *src1, int dx, int dy, int block_w, int block_h);
 #define SAD_INIT() c->inter.sad = ff_vvc_sad_avx2
 #endif
+
+
+#endif // ARCH_X86_64
 
 void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
 {
