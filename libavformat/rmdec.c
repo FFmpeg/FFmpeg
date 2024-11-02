@@ -429,7 +429,8 @@ skip:
 static int rm_read_index(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    unsigned int size, n_pkts, str_id, next_off, n, pos, pts;
+    unsigned int size, ver, n_pkts, str_id, next_off, n, pts;
+    uint64_t pos;
     AVStream *st;
 
     do {
@@ -438,10 +439,14 @@ static int rm_read_index(AVFormatContext *s)
         size     = avio_rb32(pb);
         if (size < 20)
             return -1;
-        avio_skip(pb, 2);
+        ver = avio_rb16(pb);
+        if (ver != 0 && ver != 2)
+            return AVERROR_INVALIDDATA;
         n_pkts   = avio_rb32(pb);
         str_id   = avio_rb16(pb);
         next_off = avio_rb32(pb);
+        if (ver == 2)
+            avio_skip(pb, 4);
         for (n = 0; n < s->nb_streams; n++)
             if (s->streams[n]->id == str_id) {
                 st = s->streams[n];
@@ -466,7 +471,7 @@ static int rm_read_index(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             avio_skip(pb, 2);
             pts = avio_rb32(pb);
-            pos = avio_rb32(pb);
+            pos = (ver == 0) ? avio_rb32(pb) : avio_rb64(pb);
             avio_skip(pb, 4); /* packet no. */
 
             av_add_index_entry(st, pos, pts, 0, 0, AVINDEX_KEYFRAME);
@@ -547,8 +552,10 @@ static int rm_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     unsigned int tag;
     int tag_size;
+    int ver;
     unsigned int start_time, duration;
-    unsigned int data_off = 0, indx_off = 0;
+    unsigned int data_off = 0;
+    uint64_t indx_off = 0;
     char buf[128], mime[128];
     int flags = 0;
     int ret;
@@ -559,7 +566,7 @@ static int rm_read_header(AVFormatContext *s)
     if (tag == MKTAG('.', 'r', 'a', 0xfd)) {
         /* very old .ra format */
         return rm_read_header_old(s);
-    } else if (tag != MKTAG('.', 'R', 'M', 'F')) {
+    } else if (tag != MKTAG('.', 'R', 'M', 'F') && tag != MKTAG('.', 'R', 'M', 'P')) {
         return AVERROR(EIO);
     }
 
@@ -573,10 +580,11 @@ static int rm_read_header(AVFormatContext *s)
             return AVERROR_INVALIDDATA;
         tag = avio_rl32(pb);
         tag_size = avio_rb32(pb);
-        avio_rb16(pb);
+        ver = avio_rb16(pb);
         av_log(s, AV_LOG_TRACE, "tag=%s size=%d\n",
                av_fourcc2str(tag), tag_size);
-        if (tag_size < 10 && tag != MKTAG('D', 'A', 'T', 'A'))
+        if ((tag_size < 10 && tag != MKTAG('D', 'A', 'T', 'A')) ||
+            (ver != 0 && ver != 2))
             return AVERROR_INVALIDDATA;
         switch(tag) {
         case MKTAG('P', 'R', 'O', 'P'):
@@ -589,7 +597,7 @@ static int rm_read_header(AVFormatContext *s)
             duration = avio_rb32(pb); /* duration */
             s->duration = av_rescale(duration, AV_TIME_BASE, 1000);
             avio_rb32(pb); /* preroll */
-            indx_off = avio_rb32(pb); /* index offset */
+            indx_off = (ver == 0) ? avio_rb32(pb) : avio_rb64(pb); /* index offset */
             data_off = avio_rb32(pb); /* data offset */
             avio_rb16(pb); /* nb streams */
             flags = avio_rb16(pb); /* flags */
@@ -651,15 +659,17 @@ static int rm_read_header(AVFormatContext *s)
     rm->nb_packets = avio_rb32(pb); /* number of packets */
     if (!rm->nb_packets && (flags & 4))
         rm->nb_packets = 3600 * 25;
+    if (ver == 2)
+        avio_skip(pb, 12);
     avio_rb32(pb); /* next data header */
 
     if (!data_off)
-        data_off = avio_tell(pb) - 18;
+        data_off = avio_tell(pb) - (ver == 0 ? 18 : 30);
     if (indx_off && (pb->seekable & AVIO_SEEKABLE_NORMAL) &&
         !(s->flags & AVFMT_FLAG_IGNIDX) &&
         avio_seek(pb, indx_off, SEEK_SET) >= 0) {
         rm_read_index(s);
-        avio_seek(pb, data_off + 18, SEEK_SET);
+        avio_seek(pb, data_off + (ver == 0 ? 18 : 30), SEEK_SET);
     }
 
     return 0;
@@ -704,12 +714,19 @@ static int rm_sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stre
             state= (state<<8) + avio_r8(pb);
 
             if(state == MKBETAG('I', 'N', 'D', 'X')){
+                int ver;
                 int n_pkts;
                 int64_t expected_len;
                 len = avio_rb32(pb);
-                avio_skip(pb, 2);
+                ver = avio_rb16(pb);
+                if (ver != 0 && ver != 2)
+                    return AVERROR_INVALIDDATA;
                 n_pkts = avio_rb32(pb);
-                expected_len = 20 + n_pkts * 14LL;
+
+                if (ver == 0)
+                    expected_len = 20 + n_pkts * 14LL;
+                else if (ver == 2)
+                    expected_len = 24 + n_pkts * 18LL;
 
                 if (len == 20 && expected_len <= INT_MAX)
                     /* some files don't add index entries to chunk size... */
@@ -1079,7 +1096,7 @@ static int rm_probe(const AVProbeData *p)
 {
     /* check file header */
     if ((p->buf[0] == '.' && p->buf[1] == 'R' &&
-         p->buf[2] == 'M' && p->buf[3] == 'F' &&
+         p->buf[2] == 'M' && (p->buf[3] == 'F' || p->buf[3] == 'P') &&
          p->buf[4] == 0 && p->buf[5] == 0) ||
         (p->buf[0] == '.' && p->buf[1] == 'r' &&
          p->buf[2] == 'a' && p->buf[3] == 0xfd))
