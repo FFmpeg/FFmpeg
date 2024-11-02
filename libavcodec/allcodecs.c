@@ -296,6 +296,7 @@ extern const FFCodec ff_rv20_encoder;
 extern const FFCodec ff_rv20_decoder;
 extern const FFCodec ff_rv30_decoder;
 extern const FFCodec ff_rv40_decoder;
+extern const FFCodec ff_rv60_decoder;
 extern const FFCodec ff_s302m_encoder;
 extern const FFCodec ff_s302m_decoder;
 extern const FFCodec ff_sanm_decoder;

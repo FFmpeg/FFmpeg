@@ -1109,6 +1109,7 @@ following image formats are supported:
 @item RealVideo 3.0          @tab     @tab  X
     @tab still far from ideal
 @item RealVideo 4.0          @tab     @tab  X
+@item RealVideo 6.0          @tab     @tab  X
 @item Renderware TXD (TeXture Dictionary)  @tab     @tab  X
     @tab Texture dictionaries used by the Renderware Engine.
 @item RivaTuner Video        @tab     @tab  X

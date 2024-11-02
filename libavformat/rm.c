@@ -34,6 +34,7 @@ const AVCodecTag ff_rm_codec_tags[] = {
     { AV_CODEC_ID_RV20,   MKTAG('R','V','T','R') },
     { AV_CODEC_ID_RV30,   MKTAG('R','V','3','0') },
     { AV_CODEC_ID_RV40,   MKTAG('R','V','4','0') },
+    { AV_CODEC_ID_RV60,   MKTAG('R','V','6','0') },
     { AV_CODEC_ID_AC3,    MKTAG('d','n','e','t') },
     { AV_CODEC_ID_RA_144, MKTAG('l','p','c','J') },
     { AV_CODEC_ID_RA_288, MKTAG('2','8','_','8') },

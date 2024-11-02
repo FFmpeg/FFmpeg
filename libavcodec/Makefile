@@ -667,6 +667,7 @@ OBJS-$(CONFIG_RV20_DECODER)            += rv10.o
 OBJS-$(CONFIG_RV20_ENCODER)            += rv20enc.o
 OBJS-$(CONFIG_RV30_DECODER)            += rv30.o rv34.o rv30dsp.o
 OBJS-$(CONFIG_RV40_DECODER)            += rv40.o rv34.o rv40dsp.o
+OBJS-$(CONFIG_RV60_DECODER)            += rv60dec.o rv60dsp.o
 OBJS-$(CONFIG_SAMI_DECODER)            += samidec.o ass.o htmlsubtitles.o
 OBJS-$(CONFIG_S302M_DECODER)           += s302m.o
 OBJS-$(CONFIG_S302M_ENCODER)           += s302menc.o
