@@ -1314,8 +1314,6 @@ ff_jpeg2000_decode_htj2k(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c
         jpeg2000_decode_magref_segment(width, height, quad_buf_width, Dref, Lref,
                                        pLSB - 1, sample_buf, block_states);
 
-    pLSB = 31 - M_b;
-
     /* Reconstruct the sample values */
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
@@ -1328,12 +1326,7 @@ ff_jpeg2000_decode_htj2k(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c
             /* ROI shift, if necessary */
             if (roi_shift && (((uint32_t)val & ~mask) == 0))
                 val <<= roi_shift;
-            /* Convert sign-magnitude to two's complement. */
-            if (sign)
-                val = -val;
-            /* Shift down to 1 bit upper from decimal point for reconstruction value (= 0.5) */
-            val >>= (pLSB - 1);
-            t1->data[n] = val;
+            t1->data[n] = val | sign; /* NOTE: Binary point for reconstruction value is located in 31 - M_b */
         }
     }
 free:

@@ -260,9 +260,7 @@ static void init_band_stepsize(AVCodecContext *avctx,
                 band->f_stepsize *= F_LFTG_X * F_LFTG_X * 4;
                 break;
         }
-        if (codsty->transform == FF_DWT97) {
-            band->f_stepsize *= pow(F_LFTG_K, 2*(codsty->nreslevels2decode - reslevelno) + lband - 2);
-        }
+        band->f_stepsize *= pow(F_LFTG_K, 2*(codsty->nreslevels2decode - reslevelno) + lband - 2);
     }
 
     if (band->f_stepsize > (INT_MAX >> 15)) {
@@ -270,12 +268,7 @@ static void init_band_stepsize(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "stepsize out of range\n");
     }
 
-    band->i_stepsize = band->f_stepsize * (1 << 15);
-
-    /* FIXME: In OpenJPEG code stepsize = stepsize * 0.5. Why?
-     * If not set output of entropic decoder is not correct. */
-    if (!av_codec_is_encoder(avctx->codec))
-        band->f_stepsize *= 0.5;
+    band->i_stepsize = (int)floorf(band->f_stepsize * (1 << 15));
 }
 
 static int init_prec(AVCodecContext *avctx,

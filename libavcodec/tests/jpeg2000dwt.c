@@ -46,6 +46,11 @@ static int test_dwt(int *array, int *ref, int border[2][2], int decomp_levels, i
         fprintf(stderr, "ff_dwt_encode failed\n");
         return 1;
     }
+    if (type == FF_DWT97_INT) {
+        // pre-scaling to simulate dequantization which places the binary point at 1 bit above from LSB
+        for (j = 0; j< s->linelen[decomp_levels-1][0] * s->linelen[decomp_levels-1][1]; j++)
+            array[j] <<= I_PRESHIFT;
+    }
     ret = ff_dwt_decode(s, array);
     if (ret < 0) {
         fprintf(stderr, "ff_dwt_encode failed\n");

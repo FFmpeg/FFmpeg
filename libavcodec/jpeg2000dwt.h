@@ -32,6 +32,7 @@
 #define FF_DWT_MAX_DECLVLS 32 ///< max number of decomposition levels
 #define F_LFTG_K      1.230174104914001f
 #define F_LFTG_X      0.812893066115961f
+#define I_PRESHIFT 8
 
 enum DWTType {
     FF_DWT97,
