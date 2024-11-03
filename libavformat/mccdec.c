@@ -92,7 +92,7 @@ static int mcc_read_header(AVFormatContext *s)
 {
     MCCContext *mcc = s->priv_data;
     AVStream *st = avformat_new_stream(s, NULL);
-    AVRational rate;
+    AVRational rate = {0};
     int64_t ts, pos;
     uint8_t out[4096];
     char line[4096];
@@ -138,7 +138,7 @@ static int mcc_read_header(AVFormatContext *s)
             continue;
         }
 
-        if (av_sscanf(line, "%d:%d:%d:%d", &hh, &mm, &ss, &fs) != 4)
+        if (av_sscanf(line, "%d:%d:%d:%d", &hh, &mm, &ss, &fs) != 4 || rate.den <= 0)
             continue;
 
         ts = av_sat_add64(av_rescale(hh * 3600LL + mm * 60LL + ss, rate.num, rate.den), fs);
