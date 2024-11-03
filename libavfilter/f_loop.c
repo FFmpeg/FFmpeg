@@ -21,6 +21,7 @@
 #include "config_components.h"
 
 #include "libavutil/audio_fifo.h"
+#include "libavutil/avassert.h"
 #include "libavutil/fifo.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
@@ -90,7 +91,7 @@ static av_cold void auninit(AVFilterContext *ctx)
     av_audio_fifo_free(s->left);
 }
 
-static int push_samples(AVFilterContext *ctx, int nb_samples)
+static int push_samples(AVFilterContext *ctx, int nb_samples, AVFrame **frame)
 {
     AVFilterLink *outlink = ctx->outputs[0];
     LoopContext *s = ctx->priv;
@@ -112,9 +113,7 @@ static int push_samples(AVFilterContext *ctx, int nb_samples)
         i += out->nb_samples;
         s->current_sample += out->nb_samples;
 
-        ret = ff_filter_frame(outlink, out);
-        if (ret < 0)
-            return ret;
+        *frame = out;
 
         if (s->current_sample >= s->nb_samples) {
             s->duration = s->pts;
@@ -123,6 +122,8 @@ static int push_samples(AVFilterContext *ctx, int nb_samples)
             if (s->loop > 0)
                 s->loop--;
         }
+
+        return 0;
     }
 
     return ret;
@@ -162,10 +163,7 @@ static int afilter_frame(AVFilterLink *inlink, AVFrame *frame)
             s->pts += av_rescale_q(ret, (AVRational){1, outlink->sample_rate}, outlink->time_base);
             ret = ff_filter_frame(outlink, frame);
         } else {
-            int nb_samples = frame->nb_samples;
-
-            av_frame_free(&frame);
-            ret = push_samples(ctx, nb_samples);
+            av_assert0(0);
         }
     } else {
         s->ignored_samples += frame->nb_samples;
@@ -177,7 +175,7 @@ static int afilter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ret;
 }
 
-static int arequest_frame(AVFilterLink *outlink)
+static int arequest_frame(AVFilterLink *outlink, AVFrame **frame)
 {
     AVFilterContext *ctx = outlink->src;
     LoopContext *s = ctx->priv;
@@ -197,17 +195,11 @@ static int arequest_frame(AVFilterLink *outlink)
             av_audio_fifo_read(s->left, (void **)out->extended_data, nb_samples);
             out->pts = s->pts;
             s->pts += av_rescale_q(nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
-            ret = ff_filter_frame(outlink, out);
-            if (ret < 0)
-                return ret;
+            *frame = out;
         }
-        ret = ff_request_frame(ctx->inputs[0]);
+        return 0;
     } else {
-        ret = push_samples(ctx, 1024);
-    }
-
-    if (s->eof && s->nb_samples > 0 && s->loop != 0) {
-        ret = push_samples(ctx, 1024);
+        ret = push_samples(ctx, 1024, frame);
     }
 
     return ret;
@@ -224,33 +216,31 @@ static int aactivate(AVFilterContext *ctx)
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
-    if (!s->eof && (s->nb_samples < s->size || !s->loop || !s->size)) {
-        ret = ff_inlink_consume_frame(inlink, &frame);
-        if (ret < 0)
-            return ret;
-        if (ret > 0)
-            return afilter_frame(inlink, frame);
-    }
+retry:
+    ret = arequest_frame(outlink, &frame);
+    if (ret < 0)
+        return ret;
+    if (frame)
+        return ff_filter_frame(outlink, frame);
 
-    if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
-        if (status == AVERROR_EOF) {
+    ret = ff_inlink_consume_frame(inlink, &frame);
+    if (ret < 0)
+        return ret;
+    if (ret > 0)
+        return afilter_frame(inlink, frame);
+
+    ret = ff_inlink_acknowledge_status(inlink, &status, &pts);
+    if (ret) {
+        if (status == AVERROR_EOF && !s->eof) {
             s->size = s->nb_samples;
             s->eof = 1;
+            goto retry;
         }
-    }
-
-    if (s->eof && (!s->loop || !s->size)) {
-        ff_outlink_set_status(outlink, AVERROR_EOF, s->duration);
+        ff_outlink_set_status(outlink, status, pts);
         return 0;
     }
 
-    if (!s->eof && (!s->size ||
-        (s->nb_samples < s->size) ||
-        (s->nb_samples >= s->size && s->loop == 0))) {
-        FF_FILTER_FORWARD_WANTED(outlink, inlink);
-    } else if (s->loop && s->nb_samples == s->size) {
-        return arequest_frame(outlink);
-    }
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
 
     return FFERROR_NOT_READY;
 }
