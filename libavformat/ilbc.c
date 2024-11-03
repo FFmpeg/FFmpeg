@@ -61,7 +61,8 @@ static int ilbc_read_header(AVFormatContext *s)
     AVStream *st;
     uint8_t header[9];
 
-    avio_read(pb, header, 9);
+    if (avio_read(pb, header, 9) != 9)
+        return AVERROR_INVALIDDATA;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
