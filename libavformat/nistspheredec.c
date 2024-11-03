@@ -35,7 +35,7 @@ static int nist_probe(const AVProbeData *p)
 
 static int nist_read_header(AVFormatContext *s)
 {
-    char buffer[256], coding[32] = "pcm", format[32] = "01";
+    char buffer[256]= {0}, coding[32] = "pcm", format[32] = "01";
     int bps = 0, be = 0;
     int32_t header_size = -1;
     AVStream *st;
