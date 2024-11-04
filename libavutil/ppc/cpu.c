@@ -53,9 +53,9 @@
 #define AT_HWCAP2            26
 #endif
 
-#define HWCAP_PPC_VSX        (1 << 7)
-#define HWCAP_PPC_ALTIVEC    (1 << 28)
-#define HWCAP2_PPC_ARCH_2_07 (1 << 31)
+#define HWCAP_PPC_VSX        (1U << 7)
+#define HWCAP_PPC_ALTIVEC    (1U << 28)
+#define HWCAP2_PPC_ARCH_2_07 (1U << 31)
 
 /**
  * This function MAY rely on signal() or fork() in order to make sure AltiVec
