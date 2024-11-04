@@ -10612,15 +10612,15 @@ static int mov_switch_root(AVFormatContext *s, int64_t target, int index)
 
     if (index >= 0 && index < mov->frag_index.nb_items)
         target = mov->frag_index.item[index].moof_offset;
-    if (avio_seek(s->pb, target, SEEK_SET) != target) {
+    if (target >= 0 && avio_seek(s->pb, target, SEEK_SET) != target) {
         av_log(mov->fc, AV_LOG_ERROR, "root atom offset 0x%"PRIx64": partial file\n", target);
         return AVERROR_INVALIDDATA;
     }
 
     mov->next_root_atom = 0;
-    if (index < 0 || index >= mov->frag_index.nb_items)
+    if ((index < 0 && target >= 0) || index >= mov->frag_index.nb_items)
         index = search_frag_moof_offset(&mov->frag_index, target);
-    if (index < mov->frag_index.nb_items &&
+    if (index >= 0 && index < mov->frag_index.nb_items &&
         mov->frag_index.item[index].moof_offset == target) {
         if (index + 1 < mov->frag_index.nb_items)
             mov->next_root_atom = mov->frag_index.item[index + 1].moof_offset;
@@ -10750,10 +10750,43 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     MOVStreamContext *sc;
     AVIndexEntry *sample;
     AVStream *st = NULL;
+    FFStream *avsti = NULL;
     int64_t current_index;
     int ret;
+    int i;
     mov->fc = s;
  retry:
+    if (s->pb->pos == 0) {
+
+        // Discard current fragment index
+        if (mov->frag_index.allocated_size > 0) {
+            av_freep(&mov->frag_index.item);
+            mov->frag_index.nb_items = 0;
+            mov->frag_index.allocated_size = 0;
+            mov->frag_index.current = -1;
+            mov->frag_index.complete = 0;
+        }
+
+        for (i = 0; i < s->nb_streams; i++) {
+            AVStream *avst = s->streams[i];
+            MOVStreamContext *msc = avst->priv_data;
+
+            // Clear current sample
+            mov_current_sample_set(msc, 0);
+            msc->ctts_index = 0;
+
+            // Discard current index entries
+            avsti = ffstream(avst);
+            if (avsti->index_entries_allocated_size > 0) {
+                av_freep(&avsti->index_entries);
+                avsti->index_entries_allocated_size = 0;
+                avsti->nb_index_entries = 0;
+            }
+        }
+
+        if ((ret = mov_switch_root(s, -1, -1)) < 0)
+            return ret;
+    }
     sample = mov_find_next_sample(s, &st);
     if (!sample || (mov->next_root_atom && sample->pos > mov->next_root_atom)) {
         if (!mov->next_root_atom)
