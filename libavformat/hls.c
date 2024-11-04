@@ -2502,7 +2502,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         pb->eof_reached = 0;
         /* Clear any buffered data */
         pb->buf_end = pb->buf_ptr = pb->buffer;
-        /* Reset the pos, to let the mpegts demuxer know we've seeked. */
+        /* Reset the pos, to let the mpegts/mov demuxer know we've seeked. */
         pb->pos = 0;
         /* Flush the packet queue of the subdemuxer. */
         ff_read_frame_flush(pls->ctx);
