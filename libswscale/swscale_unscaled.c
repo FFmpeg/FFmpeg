@@ -1742,6 +1742,11 @@ static int bayer_to_yv12_wrapper(SwsInternal *c, const uint8_t *const src[],
         || (x) == AV_PIX_FMT_UYVA   \
         )
 
+#define isX2RGB(x) (                   \
+           (x) == AV_PIX_FMT_X2RGB10LE \
+        || (x) == AV_PIX_FMT_X2BGR10LE \
+        )
+
 /* {RGB,BGR}{15,16,24,32,32_1} -> {RGB,BGR}{15,16,24,32} */
 typedef void (* rgbConvFn) (const uint8_t *, uint8_t *, int);
 static rgbConvFn findRgbConvFn(SwsInternal *c)
@@ -1814,6 +1819,31 @@ static rgbConvFn findRgbConvFn(SwsInternal *c)
               || CONV_IS(BGRA64LE, BGR48BE)
               || CONV_IS(RGBA64BE, RGB48LE)
               || CONV_IS(BGRA64BE, BGR48LE)) conv = rgb64to48_bswap;
+    } else if (isX2RGB(srcFormat) && isRGB48(dstFormat)) {
+        if      (CONV_IS(X2RGB10LE, RGB48LE)
+              || CONV_IS(X2BGR10LE, BGR48LE)) conv = HAVE_BIGENDIAN ? x2rgb10to48_bswap
+                                                                    : x2rgb10to48_nobswap;
+        else if (CONV_IS(X2RGB10LE, RGB48BE)
+              || CONV_IS(X2BGR10LE, BGR48BE)) conv = HAVE_BIGENDIAN ? x2rgb10to48_nobswap
+                                                                    : x2rgb10to48_bswap;
+        else if (CONV_IS(X2RGB10LE, BGR48LE)
+              || CONV_IS(X2BGR10LE, RGB48LE)) conv = HAVE_BIGENDIAN ? x2rgb10tobgr48_bswap
+                                                                    : x2rgb10tobgr48_nobswap;
+        else if (CONV_IS(X2RGB10LE, BGR48BE)
+              || CONV_IS(X2BGR10LE, RGB48BE)) conv = HAVE_BIGENDIAN ? x2rgb10tobgr48_nobswap
+                                                                    : x2rgb10tobgr48_bswap;
+        else if (CONV_IS(X2RGB10LE, RGBA64LE)
+              || CONV_IS(X2BGR10LE, BGRA64LE)) conv = HAVE_BIGENDIAN ? x2rgb10to64_bswap
+                                                                     : x2rgb10to64_nobswap;
+        else if (CONV_IS(X2RGB10LE, RGBA64BE)
+              || CONV_IS(X2BGR10LE, BGRA64BE)) conv = HAVE_BIGENDIAN ? x2rgb10to64_nobswap
+                                                                     : x2rgb10to64_bswap;
+        else if (CONV_IS(X2RGB10LE, BGRA64LE)
+              || CONV_IS(X2BGR10LE, RGBA64LE)) conv = HAVE_BIGENDIAN ? x2rgb10tobgr64_bswap
+                                                                     : x2rgb10tobgr64_nobswap;
+        else if (CONV_IS(X2RGB10LE, BGRA64BE)
+              || CONV_IS(X2BGR10LE, RGBA64BE)) conv = HAVE_BIGENDIAN ? x2rgb10tobgr64_nobswap
+                                                                     : x2rgb10tobgr64_bswap;
     } else if (isAYUV(srcFormat) && isAYUV(dstFormat)) {
         /* VUYX only for dst, to avoid copying undefined bytes */
         if (     CONV_IS(AYUV, VUYA)

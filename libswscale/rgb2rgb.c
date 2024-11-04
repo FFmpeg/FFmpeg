@@ -425,3 +425,61 @@ void rgb48to64_ ## need_bswap(const uint8_t *src,                       \
 
 DEFINE_RGB48TO64(nobswap, 0)
 DEFINE_RGB48TO64(bswap, 1)
+
+#define DEFINE_X2RGB10TO16(need_bswap, swap, bits, alpha)                           \
+void x2rgb10to ## bits ## _ ## need_bswap(const uint8_t *src,                       \
+                                             uint8_t *dst, int src_size)            \
+{                                                                                   \
+    uint16_t *d = (uint16_t *)dst;                                                  \
+    const uint32_t *s = (const uint32_t *)src;                                      \
+    int i, num_pixels = src_size >> 2;                                              \
+    unsigned component;                                                             \
+                                                                                    \
+    for (i = 0; i < num_pixels; i++) {                                              \
+        unsigned p = AV_RL32(s + i);                                                \
+        component = (p >> 20) & 0x3FF;                                              \
+        d[(3 + alpha) * i + 0] = swap ? av_bswap16(component << 6 | component >> 4) \
+                                      :            component << 6 | component >> 4; \
+        component = (p >> 10) & 0x3FF;                                              \
+        d[(3 + alpha) * i + 1] = swap ? av_bswap16(component << 6 | component >> 4) \
+                                      :            component << 6 | component >> 4; \
+        component =  p        & 0x3FF;                                              \
+        d[(3 + alpha) * i + 2] = swap ? av_bswap16(component << 6 | component >> 4) \
+                                      :            component << 6 | component >> 4; \
+        if (alpha) d[(3 + alpha) * i + 3] = 0xffff;                                 \
+    }                                                                               \
+}
+
+DEFINE_X2RGB10TO16(nobswap, 0, 48, 0)
+DEFINE_X2RGB10TO16(bswap,   1, 48, 0)
+DEFINE_X2RGB10TO16(nobswap, 0, 64, 1)
+DEFINE_X2RGB10TO16(bswap,   1, 64, 1)
+
+#define DEFINE_X2RGB10TOBGR16(need_bswap, swap, bits, alpha)                        \
+void x2rgb10tobgr ## bits ## _ ## need_bswap(const uint8_t *src,                    \
+                                             uint8_t *dst, int src_size)            \
+{                                                                                   \
+    uint16_t *d = (uint16_t *)dst;                                                  \
+    const uint32_t *s = (const uint32_t *)src;                                      \
+    int i, num_pixels = src_size >> 2;                                              \
+    unsigned component;                                                             \
+                                                                                    \
+    for (i = 0; i < num_pixels; i++) {                                              \
+        unsigned p = AV_RL32(s + i);                                                \
+        component =  p        & 0x3FF;                                              \
+        d[(3 + alpha) * i + 0] = swap ? av_bswap16(component << 6 | component >> 4) \
+                                      :            component << 6 | component >> 4; \
+        component = (p >> 10) & 0x3FF;                                              \
+        d[(3 + alpha) * i + 1] = swap ? av_bswap16(component << 6 | component >> 4) \
+                                      :            component << 6 | component >> 4; \
+        component = (p >> 20) & 0x3FF;                                              \
+        d[(3 + alpha) * i + 2] = swap ? av_bswap16(component << 6 | component >> 4) \
+                                      :            component << 6 | component >> 4; \
+        if (alpha) d[(3 + alpha) * i + 3] = 0xffff;                                 \
+    }                                                                               \
+}
+
+DEFINE_X2RGB10TOBGR16(nobswap, 0, 48, 0)
+DEFINE_X2RGB10TOBGR16(bswap,   1, 48, 0)
+DEFINE_X2RGB10TOBGR16(nobswap, 0, 64, 1)
+DEFINE_X2RGB10TOBGR16(bswap,   1, 64, 1)
