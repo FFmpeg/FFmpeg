@@ -2263,7 +2263,8 @@ static int decode_slice(AVCodecContext *avctx, void *tdata, int cu_y, int thread
     thread.avg_linesize[1] = 32;
     thread.avg_linesize[2] = 32;
 
-    init_get_bits8(&gb, s->slice[cu_y].data, s->slice[cu_y].size);
+    if ((ret = init_get_bits8(&gb, s->slice[cu_y].data, s->slice[cu_y].size)) < 0)
+        return ret;
 
     for (int cu_x = 0; cu_x < s->cu_width; cu_x++) {
         if ((s->avctx->active_thread_type & FF_THREAD_SLICE) && cu_y)
@@ -2317,7 +2318,8 @@ static int rv60_decode_frame(AVCodecContext *avctx, AVFrame * frame,
     if (avpkt->size < header_size)
         return AVERROR_INVALIDDATA;
 
-    init_get_bits8(&gb, avpkt->data + header_size, avpkt->size - header_size);
+    if ((ret = init_get_bits8(&gb, avpkt->data + header_size, avpkt->size - header_size)) < 0)
+        return ret;
 
     if ((ret = read_frame_header(s, &gb, &width, &height)) < 0)
         return ret;
