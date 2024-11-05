@@ -2270,6 +2270,8 @@ static int decode_slice(AVCodecContext *avctx, void *tdata, int cu_y, int thread
             ff_thread_progress_await(&s->progress[cu_y - 1], cu_x + 2);
 
         qp = s->qp + read_qp_offset(&gb, s->qp_off_type);
+        if (qp < 0)
+            return AVERROR_INVALIDDATA;
         sel_qp = calc_sel_qp(s->osvquant, qp);
 
         memset(thread.coded_blk, 0, sizeof(thread.coded_blk));
