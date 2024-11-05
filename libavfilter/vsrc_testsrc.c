@@ -1000,6 +1000,7 @@ static void rgbtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
     uint8_t *dst = dstp[0];
     ptrdiff_t dst_linesize = dst_linesizep[0];
     uint32_t v;
+    uint64_t v16;
     uint8_t *p;
     uint16_t *p16;
 
@@ -1015,6 +1016,23 @@ static void rgbtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
         v = (r << (rgba_map[R]*8)) + (g << (rgba_map[G]*8)) + (b << (rgba_map[B]*8));
         p = dst + 3*x + y*dst_linesize;
         AV_WL24(p, v);
+        break;
+    case AV_PIX_FMT_RGB48:
+    case AV_PIX_FMT_BGR48:
+        v16 = ((uint64_t)r << (rgba_map[R]*16)) + ((uint64_t)g << (rgba_map[G]*16)) + ((uint64_t)b << (rgba_map[B]*16));
+        p16 = (uint16_t *)(dst + 6*x + y*dst_linesize);
+        *p16++ = v16 >> 32;
+        *p16++ = v16 >> 16;
+        *p16++ = v16;
+        break;
+    case AV_PIX_FMT_RGBA64:
+    case AV_PIX_FMT_BGRA64:
+        v16 = ((uint64_t)r << (rgba_map[R]*16)) + ((uint64_t)g << (rgba_map[G]*16)) + ((uint64_t)b << (rgba_map[B]*16));
+        p16 = (uint16_t *)(dst + 8*x + y*dst_linesize);
+        *p16++ = v16 >> 32;
+        *p16++ = v16 >> 16;
+        *p16++ = v16;
+        *p16++ = 0xffff;
         break;
     case AV_PIX_FMT_RGBA:
     case AV_PIX_FMT_BGRA:
@@ -1114,6 +1132,8 @@ static const enum AVPixelFormat rgbtest_pix_fmts[] = {
         AV_PIX_FMT_RGB444, AV_PIX_FMT_BGR444,
         AV_PIX_FMT_RGB565, AV_PIX_FMT_BGR565,
         AV_PIX_FMT_RGB555, AV_PIX_FMT_BGR555,
+        AV_PIX_FMT_RGB48, AV_PIX_FMT_BGR48,
+        AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_X2RGB10LE, AV_PIX_FMT_X2BGR10LE,
