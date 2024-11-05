@@ -2382,7 +2382,15 @@ void ff_get_unscaled_swscale(SwsInternal *c)
 
     /* RGB to planar RGB */
     if ((srcFormat == AV_PIX_FMT_GBRP && dstFormat == AV_PIX_FMT_GBRAP) ||
-        (srcFormat == AV_PIX_FMT_GBRAP && dstFormat == AV_PIX_FMT_GBRP))
+        (srcFormat == AV_PIX_FMT_GBRP10 && dstFormat == AV_PIX_FMT_GBRAP10) ||
+        (srcFormat == AV_PIX_FMT_GBRP12 && dstFormat == AV_PIX_FMT_GBRAP12) ||
+        (srcFormat == AV_PIX_FMT_GBRP14 && dstFormat == AV_PIX_FMT_GBRAP14) ||
+        (srcFormat == AV_PIX_FMT_GBRP16 && dstFormat == AV_PIX_FMT_GBRAP16) ||
+        (srcFormat == AV_PIX_FMT_GBRAP && dstFormat == AV_PIX_FMT_GBRP) ||
+        (srcFormat == AV_PIX_FMT_GBRAP10 && dstFormat == AV_PIX_FMT_GBRP10) ||
+        (srcFormat == AV_PIX_FMT_GBRAP12 && dstFormat == AV_PIX_FMT_GBRP12) ||
+        (srcFormat == AV_PIX_FMT_GBRAP14 && dstFormat == AV_PIX_FMT_GBRP14) ||
+        (srcFormat == AV_PIX_FMT_GBRAP16 && dstFormat == AV_PIX_FMT_GBRP16))
         c->convert_unscaled = planarRgbToplanarRgbWrapper;
 
 #define isByteRGB(f) (             \
