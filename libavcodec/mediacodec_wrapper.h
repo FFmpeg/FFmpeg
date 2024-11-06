@@ -178,6 +178,22 @@ struct FFAMediaCodecBufferInfo {
 typedef struct FFAMediaCodecBufferInfo FFAMediaCodecBufferInfo;
 
 typedef struct FFAMediaCodec FFAMediaCodec;
+
+typedef struct FFAMediaCodecOnAsyncNotifyCallback {
+    void (*onAsyncInputAvailable)(FFAMediaCodec *codec, void *userdata,
+                                  int32_t index);
+
+    void (*onAsyncOutputAvailable)(FFAMediaCodec *codec, void *userdata,
+                                   int32_t index,
+                                   FFAMediaCodecBufferInfo *buffer_info);
+
+    void (*onAsyncFormatChanged)(FFAMediaCodec *codec, void *userdata,
+                                 FFAMediaFormat *format);
+
+    void (*onAsyncError)(FFAMediaCodec *codec, void *userdata, int error,
+                         const char *detail);
+} FFAMediaCodecOnAsyncNotifyCallback;
+
 struct FFAMediaCodec {
     const AVClass *class;
 
@@ -219,6 +235,11 @@ struct FFAMediaCodec {
 
     // For encoder with FFANativeWindow as input.
     int (*signalEndOfInputStream)(FFAMediaCodec *);
+
+    // Introduced in Android API 28
+    int (*setAsyncNotifyCallback)(FFAMediaCodec *codec,
+                                  const FFAMediaCodecOnAsyncNotifyCallback *callback,
+                                  void *userdata);
 };
 
 static inline char *ff_AMediaCodec_getName(FFAMediaCodec *codec)
@@ -341,6 +362,13 @@ static inline int ff_AMediaCodec_cleanOutputBuffers(FFAMediaCodec *codec)
 static inline int ff_AMediaCodec_signalEndOfInputStream(FFAMediaCodec *codec)
 {
     return codec->signalEndOfInputStream(codec);
+}
+
+static inline int ff_AMediaCodec_setAsyncNotifyCallback(FFAMediaCodec *codec,
+        const FFAMediaCodecOnAsyncNotifyCallback *callback,
+        void *userdata)
+{
+    return codec->setAsyncNotifyCallback(codec, callback, userdata);
 }
 
 int ff_Build_SDK_INT(AVCodecContext *avctx);

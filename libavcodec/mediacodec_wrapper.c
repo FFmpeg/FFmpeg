@@ -1762,6 +1762,14 @@ static int mediacodec_jni_signalEndOfInputStream(FFAMediaCodec *ctx)
     return 0;
 }
 
+static int mediacodec_jni_setAsyncNotifyCallback(FFAMediaCodec *codec,
+                                                 const FFAMediaCodecOnAsyncNotifyCallback *callback,
+                                                 void *userdata)
+{
+    av_log(codec, AV_LOG_ERROR, "Doesn't support aync mode with JNI, please try ndk_codec=1\n");
+    return AVERROR(ENOSYS);
+}
+
 static const FFAMediaFormat media_format_jni = {
     .class = &amediaformat_class,
 
@@ -1821,6 +1829,7 @@ static const FFAMediaCodec media_codec_jni = {
     .getConfigureFlagEncode = mediacodec_jni_getConfigureFlagEncode,
     .cleanOutputBuffers = mediacodec_jni_cleanOutputBuffers,
     .signalEndOfInputStream = mediacodec_jni_signalEndOfInputStream,
+    .setAsyncNotifyCallback = mediacodec_jni_setAsyncNotifyCallback,
 };
 
 typedef struct FFAMediaFormatNdk {
@@ -1842,6 +1851,9 @@ typedef struct FFAMediaCodecNdk {
     AMediaCodec *impl;
     ANativeWindow *window;
 
+    FFAMediaCodecOnAsyncNotifyCallback async_cb;
+    void *async_userdata;
+
     // Available since API level 28.
     media_status_t (*getName)(AMediaCodec*, char** out_name);
     void (*releaseName)(AMediaCodec*, char* name);
@@ -1849,6 +1861,8 @@ typedef struct FFAMediaCodecNdk {
     // Available since API level 26.
     media_status_t (*setInputSurface)(AMediaCodec*, ANativeWindow *);
     media_status_t (*signalEndOfInputStream)(AMediaCodec *);
+    media_status_t (*setAsyncNotifyCallback)(AMediaCodec *,
+            struct AMediaCodecOnAsyncNotifyCallback callback, void *userdata);
 } FFAMediaCodecNdk;
 
 static const FFAMediaFormat media_format_ndk;
@@ -1865,6 +1879,32 @@ static const AVClass amediacodec_ndk_class = {
     .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
 };
+
+static int media_status_to_error(media_status_t status)
+{
+    switch (status) {
+    case AMEDIA_OK:
+        return 0;
+    case AMEDIACODEC_ERROR_INSUFFICIENT_RESOURCE:
+        return AVERROR(ENOMEM);
+    case AMEDIA_ERROR_MALFORMED:
+        return AVERROR_INVALIDDATA;
+    case AMEDIA_ERROR_UNSUPPORTED:
+        return AVERROR(ENOTSUP);
+    case AMEDIA_ERROR_INVALID_PARAMETER:
+        return AVERROR(EINVAL);
+    case AMEDIA_ERROR_INVALID_OPERATION:
+        return AVERROR(EOPNOTSUPP);
+    case AMEDIA_ERROR_END_OF_STREAM:
+        return AVERROR_EOF;
+    case AMEDIA_ERROR_IO:
+        return AVERROR(EIO);
+    case AMEDIA_ERROR_WOULD_BLOCK:
+        return AVERROR(EWOULDBLOCK);
+    default:
+        return AVERROR_EXTERNAL;
+    }
+}
 
 static FFAMediaFormat *mediaformat_ndk_create(AMediaFormat *impl)
 {
@@ -2060,6 +2100,7 @@ static inline FFAMediaCodec *ndk_codec_create(int method, const char *arg) {
 
     GET_SYMBOL(setInputSurface)
     GET_SYMBOL(signalEndOfInputStream)
+    GET_SYMBOL(setAsyncNotifyCallback)
 
 #undef GET_SYMBOL
 
@@ -2335,6 +2376,94 @@ static int mediacodec_ndk_signalEndOfInputStream(FFAMediaCodec *ctx)
     return 0;
 }
 
+static void mediacodec_ndk_onInputAvailable(AMediaCodec *impl, void *userdata,
+                                            int32_t index)
+{
+    FFAMediaCodecNdk *codec = userdata;
+    codec->async_cb.onAsyncInputAvailable((FFAMediaCodec *) codec,
+                                          codec->async_userdata, index);
+}
+
+static void mediacodec_ndk_onOutputAvailable(AMediaCodec *impl,
+                                             void *userdata,
+                                             int32_t index,
+                                             AMediaCodecBufferInfo *buffer_info)
+{
+    FFAMediaCodecNdk *codec = userdata;
+    FFAMediaCodecBufferInfo info = {
+            .offset = buffer_info->offset,
+            .size = buffer_info->size,
+            .presentationTimeUs = buffer_info->presentationTimeUs,
+            .flags = buffer_info->flags,
+    };
+
+    codec->async_cb.onAsyncOutputAvailable(&codec->api, codec->async_userdata,
+                                           index, &info);
+}
+
+static void mediacodec_ndk_onFormatChanged(AMediaCodec *impl, void *userdata,
+                                           AMediaFormat *format)
+{
+    FFAMediaCodecNdk *codec = userdata;
+    FFAMediaFormat *media_format = mediaformat_ndk_create(format);
+    if (!media_format)
+        return;
+
+    codec->async_cb.onAsyncFormatChanged(&codec->api, codec->async_userdata,
+                                         media_format);
+    ff_AMediaFormat_delete(media_format);
+}
+
+static void mediacodec_ndk_onError(AMediaCodec *impl, void *userdata,
+                                   media_status_t status,
+                                   int32_t actionCode,
+                                   const char *detail)
+{
+    FFAMediaCodecNdk *codec = userdata;
+    int error = media_status_to_error(status);
+
+    codec->async_cb.onAsyncError(&codec->api, codec->async_userdata, error,
+                                 detail);
+}
+
+static int mediacodec_ndk_setAsyncNotifyCallback(FFAMediaCodec *ctx,
+         const FFAMediaCodecOnAsyncNotifyCallback *callback,
+         void *userdata)
+{
+    FFAMediaCodecNdk *codec = (FFAMediaCodecNdk *)ctx;
+    struct AMediaCodecOnAsyncNotifyCallback cb = {
+            .onAsyncInputAvailable = mediacodec_ndk_onInputAvailable,
+            .onAsyncOutputAvailable = mediacodec_ndk_onOutputAvailable,
+            .onAsyncFormatChanged = mediacodec_ndk_onFormatChanged,
+            .onAsyncError = mediacodec_ndk_onError,
+    };
+    media_status_t status;
+
+    if (!codec->setAsyncNotifyCallback) {
+        av_log(codec, AV_LOG_ERROR, "setAsyncNotifyCallback unavailable\n");
+        return AVERROR(ENOSYS);
+    }
+
+    if (!callback ||
+        !callback->onAsyncInputAvailable ||
+        !callback->onAsyncOutputAvailable ||
+        !callback->onAsyncFormatChanged ||
+        !callback->onAsyncError)
+        return AVERROR(EINVAL);
+
+    codec->async_cb = *callback;
+    codec->async_userdata = userdata;
+
+    status = codec->setAsyncNotifyCallback(codec->impl, cb, codec);
+    if (status != AMEDIA_OK) {
+        av_log(codec, AV_LOG_ERROR, "setAsyncNotifyCallback failed, %d\n",
+               status);
+        return AVERROR_EXTERNAL;
+    }
+
+    return 0;
+}
+
 static const FFAMediaFormat media_format_ndk = {
     .class = &amediaformat_ndk_class,
 
@@ -2396,6 +2525,7 @@ static const FFAMediaCodec media_codec_ndk = {
     .getConfigureFlagEncode = mediacodec_ndk_getConfigureFlagEncode,
     .cleanOutputBuffers = mediacodec_ndk_cleanOutputBuffers,
     .signalEndOfInputStream = mediacodec_ndk_signalEndOfInputStream,
+    .setAsyncNotifyCallback = mediacodec_ndk_setAsyncNotifyCallback,
 };
 
 FFAMediaFormat *ff_AMediaFormat_new(int ndk)
