@@ -2271,15 +2271,17 @@ static int decode_slice(AVCodecContext *avctx, void *tdata, int cu_y, int thread
             ff_thread_progress_await(&s->progress[cu_y - 1], cu_x + 2);
 
         qp = s->qp + read_qp_offset(&gb, s->qp_off_type);
-        if (qp < 0)
-            return AVERROR_INVALIDDATA;
+        if (qp < 0) {
+            ret = AVERROR_INVALIDDATA;
+            break;
+        }
         sel_qp = calc_sel_qp(s->osvquant, qp);
 
         memset(thread.coded_blk, 0, sizeof(thread.coded_blk));
         thread.cu_split_pos = 0;
 
         if ((ret = decode_cu_r(s, frame, &thread, &gb, cu_x << 6, cu_y << 6, 6, qp, sel_qp)) < 0)
-            return ret;
+            break;
 
         if (s->deblock) {
             thread.cu_split_pos = 0;
@@ -2293,7 +2295,7 @@ static int decode_slice(AVCodecContext *avctx, void *tdata, int cu_y, int thread
     if (s->avctx->active_thread_type & FF_THREAD_SLICE)
         ff_thread_progress_report(&s->progress[cu_y], INT_MAX);
 
-    return 0;
+    return ret;
 }
 
 static int rv60_decode_frame(AVCodecContext *avctx, AVFrame * frame,
