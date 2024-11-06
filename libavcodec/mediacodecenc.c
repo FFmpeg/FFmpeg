@@ -23,11 +23,13 @@
 #include "config_components.h"
 
 #include "libavutil/avassert.h"
+#include "libavutil/fifo.h"
 #include "libavutil/avstring.h"
 #include "libavutil/hwcontext_mediacodec.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
+#include "libavutil/thread.h"
 
 #include "avcodec.h"
 #include "bsf.h"
@@ -78,6 +80,17 @@ typedef struct MediaCodecEncContext {
     int extract_extradata;
     // Ref. MediaFormat KEY_OPERATING_RATE
     int operating_rate;
+    int async_mode;
+
+    AVMutex input_mutex;
+    AVCond input_cond;
+    AVFifo *input_index;
+
+    AVMutex output_mutex;
+    AVCond output_cond;
+    int encode_status;
+    AVFifo *output_index;
+    AVFifo *output_buf_info;
 } MediaCodecEncContext;
 
 enum {
@@ -102,17 +115,26 @@ static const enum AVPixelFormat avc_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-static void mediacodec_output_format(AVCodecContext *avctx)
+static void mediacodec_dump_format(AVCodecContext *avctx,
+        FFAMediaFormat *out_format)
 {
     MediaCodecEncContext *s = avctx->priv_data;
-    char *name = ff_AMediaCodec_getName(s->codec);
-    FFAMediaFormat *out_format = ff_AMediaCodec_getOutputFormat(s->codec);
+    const char *name = s->name;
     char *str = ff_AMediaFormat_toString(out_format);
 
     av_log(avctx, AV_LOG_DEBUG, "MediaCodec encoder %s output format %s\n",
            name ? name : "unknown", str);
-    av_free(name);
     av_free(str);
+}
+
+static void mediacodec_output_format(AVCodecContext *avctx)
+{
+    MediaCodecEncContext *s = avctx->priv_data;
+    FFAMediaFormat *out_format = ff_AMediaCodec_getOutputFormat(s->codec);
+
+    if (!s->name)
+        s->name = ff_AMediaCodec_getName(s->codec);
+    mediacodec_dump_format(avctx, out_format);
     ff_AMediaFormat_delete(out_format);
 }
 
@@ -185,6 +207,135 @@ static int mediacodec_init_bsf(AVCodecContext *avctx)
     return ret;
 }
 
+static void copy_frame_to_buffer(AVCodecContext *avctx, const AVFrame *frame,
+                                 uint8_t *dst, size_t size)
+{
+    MediaCodecEncContext *s = avctx->priv_data;
+    uint8_t *dst_data[4] = {};
+    int dst_linesize[4] = {};
+
+    if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
+        dst_data[0] = dst;
+        dst_data[1] = dst + s->width * s->height;
+        dst_data[2] = dst_data[1] + s->width * s->height / 4;
+
+        dst_linesize[0] = s->width;
+        dst_linesize[1] = dst_linesize[2] = s->width / 2;
+    } else if (avctx->pix_fmt == AV_PIX_FMT_NV12) {
+        dst_data[0] = dst;
+        dst_data[1] = dst + s->width * s->height;
+
+        dst_linesize[0] = s->width;
+        dst_linesize[1] = s->width;
+    } else {
+        av_assert0(0);
+    }
+
+    av_image_copy2(dst_data, dst_linesize, frame->data, frame->linesize,
+                   avctx->pix_fmt, avctx->width, avctx->height);
+}
+
+static void on_input_available(FFAMediaCodec *codec, void *userdata,
+                               int32_t index)
+{
+    AVCodecContext *avctx = userdata;
+    MediaCodecEncContext *s = avctx->priv_data;
+
+    ff_mutex_lock(&s->input_mutex);
+
+    av_fifo_write(s->input_index, &index, 1);
+
+    ff_mutex_unlock(&s->input_mutex);
+    ff_cond_signal(&s->input_cond);
+}
+
+static void on_output_available(FFAMediaCodec *codec, void *userdata,
+                               int32_t index,
+                               FFAMediaCodecBufferInfo *out_info)
+{
+    AVCodecContext *avctx = userdata;
+    MediaCodecEncContext *s = avctx->priv_data;
+
+    ff_mutex_lock(&s->output_mutex);
+
+    av_fifo_write(s->output_index, &index, 1);
+    av_fifo_write(s->output_buf_info, out_info, 1);
+
+    ff_mutex_unlock(&s->output_mutex);
+    ff_cond_signal(&s->output_cond);
+}
+
+static void on_format_changed(FFAMediaCodec *codec, void *userdata,
+                              FFAMediaFormat *format)
+{
+    mediacodec_dump_format(userdata, format);
+}
+
+static void on_error(FFAMediaCodec *codec, void *userdata, int error,
+                     const char *detail)
+{
+    AVCodecContext *avctx = userdata;
+    MediaCodecEncContext *s = avctx->priv_data;
+
+    if (error == AVERROR(EAGAIN))
+        return;
+
+    av_log(avctx, AV_LOG_ERROR, "On error, %s, %s\n", av_err2str(error), detail);
+
+    ff_mutex_lock(&s->input_mutex);
+    ff_mutex_lock(&s->output_mutex);
+    s->encode_status = error;
+    ff_mutex_unlock(&s->output_mutex);
+    ff_mutex_unlock(&s->input_mutex);
+
+    ff_cond_signal(&s->output_cond);
+    ff_cond_signal(&s->input_cond);
+}
+
+static int mediacodec_init_async_state(AVCodecContext *avctx)
+{
+    MediaCodecEncContext *s = avctx->priv_data;
+    size_t fifo_size = 16;
+
+    if (!s->async_mode)
+        return 0;
+
+    ff_mutex_init(&s->input_mutex, NULL);
+    ff_cond_init(&s->input_cond, NULL);
+
+    ff_mutex_init(&s->output_mutex, NULL);
+    ff_cond_init(&s->output_cond, NULL);
+
+    s->input_index = av_fifo_alloc2(fifo_size, sizeof(int32_t), AV_FIFO_FLAG_AUTO_GROW);
+    s->output_index = av_fifo_alloc2(fifo_size, sizeof(int32_t), AV_FIFO_FLAG_AUTO_GROW);
+    s->output_buf_info = av_fifo_alloc2(fifo_size, sizeof(FFAMediaCodecBufferInfo), AV_FIFO_FLAG_AUTO_GROW);
+
+    if (!s->input_index || !s->output_index || !s->output_buf_info)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
+static void mediacodec_uninit_async_state(AVCodecContext *avctx)
+{
+    MediaCodecEncContext *s = avctx->priv_data;
+
+    if (!s->async_mode)
+        return;
+
+    ff_mutex_destroy(&s->input_mutex);
+    ff_cond_destroy(&s->input_cond);
+
+    ff_mutex_destroy(&s->output_mutex);
+    ff_cond_destroy(&s->output_cond);
+
+    av_fifo_freep2(&s->input_index);
+    av_fifo_freep2(&s->output_index);
+    av_fifo_freep2(&s->output_buf_info);
+
+    s->async_mode = 0;
+}
+
 static int mediacodec_generate_extradata(AVCodecContext *avctx);
 
 static av_cold int mediacodec_init(AVCodecContext *avctx)
@@ -194,6 +345,11 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
     FFAMediaFormat *format = NULL;
     int ret;
     int gop;
+
+    // Init async state first, so we can do cleanup safely on error path.
+    ret = mediacodec_init_async_state(avctx);
+    if (ret < 0)
+        return ret;
 
     if (s->use_ndk_codec < 0)
         s->use_ndk_codec = !av_jni_get_java_vm(avctx);
@@ -369,10 +525,21 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
         goto bailout;
     }
 
-    ret = ff_AMediaCodec_start(s->codec);
-    if (ret) {
-        av_log(avctx, AV_LOG_ERROR, "MediaCodec failed to start, %s\n", av_err2str(ret));
-        goto bailout;
+    if (s->async_mode) {
+        FFAMediaCodecOnAsyncNotifyCallback cb = {
+                .onAsyncInputAvailable = on_input_available,
+                .onAsyncOutputAvailable = on_output_available,
+                .onAsyncFormatChanged = on_format_changed,
+                .onAsyncError = on_error,
+        };
+
+        ret = ff_AMediaCodec_setAsyncNotifyCallback(s->codec, &cb, avctx);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_WARNING,
+                   "Try MediaCodec async mode failed, %s, switch to sync mode\n",
+                   av_err2str(ret));
+            mediacodec_uninit_async_state(avctx);
+        }
     }
 
     ret = mediacodec_init_bsf(avctx);
@@ -387,6 +554,13 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
         goto bailout;
     }
 
+    ret = ff_AMediaCodec_start(s->codec);
+    if (ret) {
+        av_log(avctx, AV_LOG_ERROR, "MediaCodec failed to start, %s\n",
+               av_err2str(ret));
+        goto bailout;
+    }
+
     ret = mediacodec_generate_extradata(avctx);
 
 bailout:
@@ -395,17 +569,62 @@ bailout:
     return ret;
 }
 
+static int mediacodec_get_output_index(AVCodecContext *avctx, ssize_t *index,
+                                       FFAMediaCodecBufferInfo *out_info)
+{
+    MediaCodecEncContext *s = avctx->priv_data;
+    FFAMediaCodec *codec = s->codec;
+    int64_t timeout_us = s->eof_sent ? OUTPUT_DEQUEUE_TIMEOUT_US : 0;
+    int n;
+    int ret;
+
+    if (!s->async_mode) {
+        *index = ff_AMediaCodec_dequeueOutputBuffer(codec, out_info, timeout_us);
+        return 0;
+    }
+
+    ff_mutex_lock(&s->output_mutex);
+
+    n = -1;
+    while (n < 0 && !s->encode_status) {
+        if (av_fifo_can_read(s->output_index)) {
+            av_fifo_read(s->output_index, &n, 1);
+            av_fifo_read(s->output_buf_info, out_info, 1);
+            break;
+        }
+
+        // Only wait after signalEndOfInputStream
+        if (n < 0 && s->eof_sent && !s->encode_status)
+            ff_cond_wait(&s->output_cond, &s->output_mutex);
+        else
+            break;
+    }
+
+    ret = s->encode_status;
+    *index = n;
+    ff_mutex_unlock(&s->output_mutex);
+
+    // Get output index success
+    if (*index >= 0)
+        return 0;
+
+    return ret ? ret : AVERROR(EAGAIN);
+}
+
 static int mediacodec_receive(AVCodecContext *avctx, AVPacket *pkt)
 {
     MediaCodecEncContext *s = avctx->priv_data;
     FFAMediaCodec *codec = s->codec;
+    ssize_t index;
     FFAMediaCodecBufferInfo out_info = {0};
     uint8_t *out_buf;
     size_t out_size = 0;
     int ret;
     int extradata_size = 0;
-    int64_t timeout_us = s->eof_sent ? OUTPUT_DEQUEUE_TIMEOUT_US : 0;
-    ssize_t index = ff_AMediaCodec_dequeueOutputBuffer(codec, &out_info, timeout_us);
+
+    ret = mediacodec_get_output_index(avctx, &index, &out_info);
+    if (ret < 0)
+        return ret;
 
     if (ff_AMediaCodec_infoTryAgainLater(codec, index))
         return AVERROR(EAGAIN);
@@ -480,32 +699,38 @@ bailout:
     return ret;
 }
 
-static void copy_frame_to_buffer(AVCodecContext *avctx, const AVFrame *frame, uint8_t *dst, size_t size)
+static int mediacodec_get_input_index(AVCodecContext *avctx, ssize_t *index)
 {
     MediaCodecEncContext *s = avctx->priv_data;
-    uint8_t *dst_data[4] = {};
-    int dst_linesize[4] = {};
+    FFAMediaCodec *codec = s->codec;
+    int ret = 0;
+    int32_t n;
 
-    if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
-        dst_data[0] = dst;
-        dst_data[1] = dst + s->width * s->height;
-        dst_data[2] = dst_data[1] + s->width * s->height / 4;
-
-        dst_linesize[0] = s->width;
-        dst_linesize[1] = dst_linesize[2] = s->width / 2;
-    } else if (avctx->pix_fmt == AV_PIX_FMT_NV12) {
-        dst_data[0] = dst;
-        dst_data[1] = dst + s->width * s->height;
-
-        dst_linesize[0] = s->width;
-        dst_linesize[1] = s->width;
-    } else {
-        av_assert0(0);
+    if (!s->async_mode) {
+        *index = ff_AMediaCodec_dequeueInputBuffer(codec, INPUT_DEQUEUE_TIMEOUT_US);
+        return 0;
     }
 
-    av_image_copy2(dst_data, dst_linesize, frame->data, frame->linesize,
-                   avctx->pix_fmt, avctx->width, avctx->height);
+    ff_mutex_lock(&s->input_mutex);
+
+    n = -1;
+    while (n < 0 && !s->encode_status) {
+        if (av_fifo_can_read(s->input_index) > 0) {
+            av_fifo_read(s->input_index, &n, 1);
+            break;
+        }
+
+        if (n < 0 && !s->encode_status)
+            ff_cond_wait(&s->input_cond, &s->input_mutex);
+    }
+
+    ret = s->encode_status;
+    *index = n;
+    ff_mutex_unlock(&s->input_mutex);
+
+    return ret;
 }
+
 
 static int mediacodec_send(AVCodecContext *avctx,
                            const AVFrame *frame) {
@@ -516,7 +741,7 @@ static int mediacodec_send(AVCodecContext *avctx,
     size_t input_size = 0;
     int64_t pts = 0;
     uint32_t flags = 0;
-    int64_t timeout_us;
+    int ret;
 
     if (s->eof_sent)
         return 0;
@@ -532,8 +757,10 @@ static int mediacodec_send(AVCodecContext *avctx,
         return 0;
     }
 
-    timeout_us = INPUT_DEQUEUE_TIMEOUT_US;
-    index = ff_AMediaCodec_dequeueInputBuffer(codec, timeout_us);
+    ret = mediacodec_get_input_index(avctx, &index);
+    if (ret < 0)
+        return ret;
+
     if (ff_AMediaCodec_infoTryAgainLater(codec, index))
         return AVERROR(EAGAIN);
 
@@ -666,7 +893,8 @@ static int mediacodec_generate_extradata(AVCodecContext *avctx)
     if (!(avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER))
         return 0;
 
-    if (!s->extract_extradata) {
+    // Send dummy frame and receive a packet doesn't work in async mode
+    if (s->async_mode || !s->extract_extradata) {
         av_log(avctx, AV_LOG_WARNING,
                "Mediacodec encoder doesn't support AV_CODEC_FLAG_GLOBAL_HEADER. "
                "Use extract_extradata bsf when necessary.\n");
@@ -723,6 +951,8 @@ static av_cold int mediacodec_close(AVCodecContext *avctx)
     av_bsf_free(&s->bsf);
     av_frame_free(&s->frame);
 
+    mediacodec_uninit_async_state(avctx);
+
     return 0;
 }
 
@@ -753,6 +983,8 @@ static const AVCodecHWConfigInternal *const mediacodec_hw_configs[] = {
 #define COMMON_OPTION                                                                                       \
     { "ndk_codec", "Use MediaCodec from NDK",                                                               \
                     OFFSET(use_ndk_codec), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE },                      \
+    { "ndk_async", "Try NDK MediaCodec in async mode",                                                      \
+                    OFFSET(async_mode), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, VE },                           \
     { "codec_name", "Select codec by name",                                                                 \
                     OFFSET(name), AV_OPT_TYPE_STRING, {0}, 0, 0, VE },                                      \
     { "bitrate_mode", "Bitrate control method",                                                             \
