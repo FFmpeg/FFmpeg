@@ -76,6 +76,8 @@ typedef struct MediaCodecEncContext {
     int level;
     int pts_as_dts;
     int extract_extradata;
+    // Ref. MediaFormat KEY_OPERATING_RATE
+    int operating_rate;
 } MediaCodecEncContext;
 
 enum {
@@ -354,6 +356,8 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
     }
     if (s->pts_as_dts == -1)
         s->pts_as_dts = avctx->max_b_frames <= 0;
+    if (s->operating_rate > 0)
+        ff_AMediaFormat_setInt32(format, "operating-rate", s->operating_rate);
 
     ret = ff_AMediaCodec_getConfigureFlagEncode(s->codec);
     ret = ff_AMediaCodec_configure(s->codec, format, s->window, NULL, ret);
@@ -764,7 +768,8 @@ static const AVCodecHWConfigInternal *const mediacodec_hw_configs[] = {
     { "pts_as_dts", "Use PTS as DTS. It is enabled automatically if avctx max_b_frames <= 0, "              \
                     "since most of Android devices don't output B frames by default.",                      \
                     OFFSET(pts_as_dts), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE },                         \
-
+    { "operating_rate", "The desired operating rate that the codec will need to operate at, zero for unspecified",    \
+            OFFSET(operating_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VE },                                          \
 
 #define MEDIACODEC_ENCODER_CLASS(name)              \
 static const AVClass name ## _mediacodec_class = {  \
