@@ -391,8 +391,8 @@ static int create_vk_by_placebo(VkRenderer *renderer,
     device_ctx->user_opaque = ctx;
 
     vk_dev_ctx = device_ctx->hwctx;
-    vk_dev_ctx->lock_queue = placebo_lock_queue,
-            vk_dev_ctx->unlock_queue = placebo_unlock_queue;
+    vk_dev_ctx->lock_queue = placebo_lock_queue;
+    vk_dev_ctx->unlock_queue = placebo_unlock_queue;
 
     vk_dev_ctx->get_proc_addr = ctx->placebo_instance->get_proc_addr;
 
