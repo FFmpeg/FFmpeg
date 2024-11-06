@@ -2355,6 +2355,8 @@ static int rv60_decode_frame(AVCodecContext *avctx, AVFrame * frame,
     ofs = get_bits_count(&gb) / 8;
 
     for (int i = 0; i < s->cu_height; i++) {
+        if (header_size + ofs >= avpkt->size)
+            return AVERROR_INVALIDDATA;
         s->slice[i].data = avpkt->data + header_size + ofs;
         s->slice[i].data_size = FFMIN(s->slice[i].size, avpkt->size - header_size - ofs);
         ofs += s->slice[i].size;
