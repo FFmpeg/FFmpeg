@@ -2237,7 +2237,7 @@ static int calc_sel_qp(int osvquant, int qp)
 {
     switch (osvquant) {
     case 0: return qp;
-    case 1: return qp < 25 ? qp + 5 : qp;
+    case 1: return qp <= 25 ? qp + 5 : qp;
     default:
         if (qp <= 18)
             return qp + 10;
