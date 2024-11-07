@@ -678,6 +678,7 @@ switch(c->dstBpc){ \
             case_rgb(abgr,  ABGR,  avx2);
             case_rgb(argb,  ARGB,  avx2);
             }
+        if (!(c->flags & SWS_ACCURATE_RND)) // FIXME
         switch (c->dstFormat) {
         case AV_PIX_FMT_NV12:
         case AV_PIX_FMT_NV24:
