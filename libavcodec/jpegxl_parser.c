@@ -352,6 +352,8 @@ static int decode_hybrid_varlen_uint(GetBitContext *gb, JXLEntropyDecoder *dec,
 
     if (bundle->lz77_enabled && token >= bundle->lz77_min_symbol) {
         const JXLSymbolDistribution *lz77dist = &bundle->dists[bundle->cluster_map[bundle->num_dist - 1]];
+        if (!dec->num_decoded)
+            return AVERROR_INVALIDDATA;
         ret = read_hybrid_uint(gb, &bundle->lz_len_conf, token - bundle->lz77_min_symbol, &dec->num_to_copy);
         if (ret < 0)
             return ret;
@@ -531,6 +533,7 @@ static int read_dist_clustering(GetBitContext *gb, JXLEntropyDecoder *dec, JXLDi
         dec->state = -1;
         /* it's not going to necessarily be zero after reading */
         dec->num_to_copy = 0;
+        dec->num_decoded = 0;
         dist_bundle_close(&nested);
         if (use_mtf) {
             uint8_t mtf[256];
