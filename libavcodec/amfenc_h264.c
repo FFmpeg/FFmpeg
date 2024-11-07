@@ -110,6 +110,9 @@ static const AVOption options[] = {
     /// Header Insertion Spacing
     { "header_spacing", "Header Insertion Spacing",             OFFSET(header_spacing),     AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1000, VE },
 
+    /// Maximum queued frames
+    { "async_depth",    "Set maximum encoding parallelism. Higher values increase output latency.", OFFSET(hwsurfaces_in_queue_max), AV_OPT_TYPE_INT, {.i64 = 16 }, 1, 16, VE },
+
     /// B-Frames
     // BPicturesPattern=bf
     { "bf_delta_qp",    "B-Picture Delta QP",                   OFFSET(b_frame_delta_qp),   AV_OPT_TYPE_INT,  { .i64 = 4 }, -10, 10, VE },

@@ -274,7 +274,6 @@ static int amf_init_context(AVCodecContext *avctx)
     av_unused int ret;
 
     ctx->hwsurfaces_in_queue = 0;
-    ctx->hwsurfaces_in_queue_max = 16;
 
     // configure AMF logger
     // the return of these functions indicates old state and do not affect behaviour
@@ -329,7 +328,7 @@ static int amf_init_context(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
 
         if (frames_ctx->initial_pool_size > 0)
-            ctx->hwsurfaces_in_queue_max = frames_ctx->initial_pool_size - 1;
+            ctx->hwsurfaces_in_queue_max = FFMIN(ctx->hwsurfaces_in_queue_max, frames_ctx->initial_pool_size - 1);
 
     } else if (avctx->hw_device_ctx) {
         AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)avctx->hw_device_ctx->data;
