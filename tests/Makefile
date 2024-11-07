@@ -313,6 +313,12 @@ $(FATE): $(FATE_UTILS:%=tests/%$(HOSTEXESUF)) | $(FATE_OUTDIRS)
 fate-list:
 	@printf '%s\n' $(sort $(FATE))
 
+fate-list-failing:
+	@! ls tests/data/fate/*.rep >/dev/null 2>&1 || awk -F: '$$2 != 0 { print "fate-" $$1 }' tests/data/fate/*.rep
+
+fate-clear-reports:
+	@rm -f tests/data/fate/*.rep
+
 coverage.info: TAG = LCOV
 coverage.info:
 	$(M)lcov -q -d $(CURDIR) -b $(patsubst src%,./,$(SRC_LINK)) --capture | \

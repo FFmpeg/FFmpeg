@@ -30,6 +30,13 @@ fate
 fate-list
     List all fate/regression test targets.
 
+fate-list-failing
+    List the fate tests that failed the last time they were executed.
+
+fate-clear-reports
+    Remove the test reports from previous test executions (getting rid of
+    potentially stale results from fate-list-failing).
+
 install
     Install headers, libraries and programs.
 

@@ -208,6 +208,13 @@ Download/synchronize sample files to the configured samples directory.
 @item fate-list
 Will list all fate/regression test targets.
 
+@item fate-list-failing
+List the fate tests that failed the last time they were executed.
+
+@item fate-clear-reports
+Remove the test reports from previous test executions (getting rid of
+potentially stale results from fate-list-failing).
+
 @item fate
 Run the FATE test suite (requires the fate-suite dataset).
 @end table
