@@ -291,6 +291,7 @@ typedef struct SANMVideoContext {
 
     int8_t p4x4glyphs[NGLYPHS][16];
     int8_t p8x8glyphs[NGLYPHS][64];
+    uint8_t c47itbl[0x10000];
 } SANMVideoContext;
 
 typedef struct SANMFrameHeader {
@@ -856,6 +857,55 @@ static int process_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *prev1,
     return 0;
 }
 
+static void codec47_read_interptable(SANMVideoContext *ctx)
+{
+    uint8_t *p1, *p2, *itbl = ctx->c47itbl;
+    int i, j;
+
+    for (i = 0; i < 256; i++) {
+        p1 = p2 = itbl + i;
+        for (j = 256 - i; j; j--) {
+            *p1 = *p2 = bytestream2_get_byte(&ctx->gb);
+            p1 += 1;
+            p2 += 256;
+        }
+        itbl += 256;
+    }
+}
+
+static void codec47_comp1(SANMVideoContext *ctx, uint8_t *dst_in, int width,
+                          int height, ptrdiff_t stride)
+{
+    uint8_t p1, *dst, *itbl = ctx->c47itbl;
+    uint16_t px;
+    int i, j;
+
+    dst = dst_in + stride;
+    for (i = 0; i < height; i += 2) {
+        p1 = bytestream2_get_byte(&ctx->gb);
+        *dst++ = p1;
+        *dst++ = p1;
+        px = p1;
+        for (j = 2; j < width; j += 2) {
+            p1 = bytestream2_get_byte(&ctx->gb);
+            px = (px << 8) | p1;
+            *dst++ = itbl[px];
+            *dst++ = p1;
+        }
+        dst += stride;
+    }
+
+    memcpy(dst_in, dst_in + stride, width);
+    dst = dst_in + stride + stride;
+    for (i = 2; i < height - 1; i += 2) {
+        for (j = 0; j < width; j++) {
+            px = (*(dst - stride) << 8) | *(dst + stride);
+            *dst++ = itbl[px];
+        }
+        dst += stride;
+    }
+}
+
 static int old_codec47(SANMVideoContext *ctx, int top,
                        int left, int width, int height)
 {
@@ -880,8 +930,11 @@ static int old_codec47(SANMVideoContext *ctx, int top,
         av_log(ctx->avctx, AV_LOG_WARNING, "Decoded size is too large.\n");
     }
 
-    if (skip & 1)
-        bytestream2_skip(&ctx->gb, 0x8080);
+    if (skip & 1) {
+        if (bytestream2_get_bytes_left(&ctx->gb) < 0x8080)
+            return AVERROR_INVALIDDATA;
+        codec47_read_interptable(ctx);
+    }
     if (!seq) {
         ctx->prev_seq = -1;
         memset(prev1, 0, ctx->height * stride);
@@ -900,15 +953,7 @@ static int old_codec47(SANMVideoContext *ctx, int top,
     case 1:
         if (bytestream2_get_bytes_left(&ctx->gb) < ((width + 1) >> 1) * ((height + 1) >> 1))
             return AVERROR_INVALIDDATA;
-        for (j = 0; j < height; j += 2) {
-            for (i = 0; i < width; i += 2) {
-                dst[i] =
-                dst[i + 1] =
-                dst[stride + i] =
-                dst[stride + i + 1] = bytestream2_get_byteu(&ctx->gb);
-            }
-            dst += stride * 2;
-        }
+        codec47_comp1(ctx, dst, width, height, stride);
         break;
     case 2:
         if (seq == ctx->prev_seq + 1) {
