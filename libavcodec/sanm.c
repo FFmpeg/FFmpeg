@@ -915,13 +915,16 @@ static int old_codec47(SANMVideoContext *ctx, int top,
     uint8_t *dst   = (uint8_t *)ctx->frm0 + left + top * stride;
     uint8_t *prev1 = (uint8_t *)ctx->frm1;
     uint8_t *prev2 = (uint8_t *)ctx->frm2;
+    uint8_t auxcol[2];
     int tbl_pos = bytestream2_tell(&ctx->gb);
     int seq     = bytestream2_get_le16(&ctx->gb);
     int compr   = bytestream2_get_byte(&ctx->gb);
     int new_rot = bytestream2_get_byte(&ctx->gb);
     int skip    = bytestream2_get_byte(&ctx->gb);
 
-    bytestream2_skip(&ctx->gb, 9);
+    bytestream2_skip(&ctx->gb, 7);
+    auxcol[0] = bytestream2_get_byteu(&ctx->gb);
+    auxcol[1] = bytestream2_get_byteu(&ctx->gb);
     decoded_size = bytestream2_get_le32(&ctx->gb);
     bytestream2_skip(&ctx->gb, 8);
 
@@ -937,8 +940,8 @@ static int old_codec47(SANMVideoContext *ctx, int top,
     }
     if (!seq) {
         ctx->prev_seq = -1;
-        memset(prev1, 0, ctx->height * stride);
-        memset(prev2, 0, ctx->height * stride);
+        memset(prev1, auxcol[0], ctx->height * stride);
+        memset(prev2, auxcol[1], ctx->height * stride);
     }
 
     switch (compr) {
