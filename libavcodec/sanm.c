@@ -913,8 +913,8 @@ static int old_codec47(SANMVideoContext *ctx, int top,
     int i, j;
     ptrdiff_t stride = ctx->pitch;
     uint8_t *dst   = (uint8_t *)ctx->frm0 + left + top * stride;
-    uint8_t *prev1 = (uint8_t *)ctx->frm1;
-    uint8_t *prev2 = (uint8_t *)ctx->frm2;
+    uint8_t *prev1 = (uint8_t *)ctx->frm1 + left + top * stride;
+    uint8_t *prev2 = (uint8_t *)ctx->frm2 + left + top * stride;
     uint8_t auxcol[2];
     int tbl_pos = bytestream2_tell(&ctx->gb);
     int seq     = bytestream2_get_le16(&ctx->gb);
@@ -940,8 +940,8 @@ static int old_codec47(SANMVideoContext *ctx, int top,
     }
     if (!seq) {
         ctx->prev_seq = -1;
-        memset(prev1, auxcol[0], ctx->height * stride);
-        memset(prev2, auxcol[1], ctx->height * stride);
+        memset(prev1, auxcol[0], (ctx->height - top) * stride);
+        memset(prev2, auxcol[1], (ctx->height - top) * stride);
     }
 
     switch (compr) {
