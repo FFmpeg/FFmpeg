@@ -1033,6 +1033,45 @@ static int process_frame_obj(SANMVideoContext *ctx)
     }
 }
 
+static int process_xpal(SANMVideoContext *ctx, int size)
+{
+    int16_t *dp = ctx->delta_pal;
+    uint32_t *pal = ctx->pal;
+    uint16_t cmd;
+    uint8_t c[3];
+    int i, j;
+
+    bytestream2_skip(&ctx->gb, 2);
+    cmd = bytestream2_get_be16(&ctx->gb);
+
+    if (cmd == 1) {
+        for (i = 0; i < PALETTE_DELTA; i += 3) {
+            c[0] = (*pal >> 16) & 0xFF;
+            c[1] = (*pal >>  8) & 0xFF;
+            c[2] = (*pal >>  0) & 0xFF;
+            for (j = 0; j < 3; j++) {
+                int cl = (c[j] * 129) + *dp++;
+                c[j] = av_clip_uint8(cl / 128) & 0xFF;
+            }
+            *pal++ = 0xFFU << 24 | c[0] << 16 | c[1] << 8 | c[2];
+        }
+    } else if (cmd == 2) {
+        if (size < PALETTE_DELTA * 2 + 4) {
+            av_log(ctx->avctx, AV_LOG_ERROR,
+                   "Incorrect palette change block size %"PRIu32".\n", size);
+            return AVERROR_INVALIDDATA;
+        }
+        for (i = 0; i < PALETTE_DELTA; i++)
+            dp[i] = bytestream2_get_le16u(&ctx->gb);
+
+        if (size >= PALETTE_DELTA * 2 + 4 + PALETTE_SIZE * 3) {
+            for (i = 0; i < PALETTE_SIZE; i++)
+                ctx->pal[i] = 0xFFU << 24 | bytestream2_get_be24u(&ctx->gb);
+        }
+    }
+    return 0;
+}
+
 static int decode_0(SANMVideoContext *ctx)
 {
     uint16_t *frm = ctx->frm0;
@@ -1472,34 +1511,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                     return ret;
                 break;
             case MKBETAG('X', 'P', 'A', 'L'):
-                if (size == 6 || size == 4) {
-                    uint8_t tmp[3];
-                    int j;
-
-                    for (i = 0; i < PALETTE_SIZE; i++) {
-                        for (j = 0; j < 3; j++) {
-                            int t = (ctx->pal[i] >> (16 - j * 8)) & 0xFF;
-                            tmp[j] = av_clip_uint8((t * 129 + ctx->delta_pal[i * 3 + j]) >> 7);
-                        }
-                        ctx->pal[i] = 0xFFU << 24 | AV_RB24(tmp);
-                    }
-                } else {
-                    if (size < PALETTE_DELTA * 2 + 4) {
-                        av_log(avctx, AV_LOG_ERROR,
-                               "Incorrect palette change block size %"PRIu32".\n",
-                               size);
-                        return AVERROR_INVALIDDATA;
-                    }
-                    bytestream2_skipu(&ctx->gb, 4);
-                    for (i = 0; i < PALETTE_DELTA; i++)
-                        ctx->delta_pal[i] = bytestream2_get_le16u(&ctx->gb);
-                    if (size >= PALETTE_DELTA * 5 + 4) {
-                        for (i = 0; i < PALETTE_SIZE; i++)
-                            ctx->pal[i] = 0xFFU << 24 | bytestream2_get_be24u(&ctx->gb);
-                    } else {
-                        memset(ctx->pal, 0, sizeof(ctx->pal));
-                    }
-                }
+                if (ret = process_xpal(ctx, size))
+                    return ret;
                 break;
             case MKBETAG('S', 'T', 'O', 'R'):
                 to_store = 1;
