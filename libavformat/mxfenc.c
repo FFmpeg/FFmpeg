@@ -1483,7 +1483,7 @@ static void mxf_write_avc_subdesc(AVFormatContext *s, AVStream *st)
     mxf_update_klv_size(s->pb, pos);
 }
 
-static void mxf_write_jpeg2000_subdesc(AVFormatContext *s, AVStream *st)
+static int mxf_write_jpeg2000_subdesc(AVFormatContext *s, AVStream *st)
 {
     MXFStreamContext *sc = st->priv_data;
     AVIOContext *pb = s->pb;
@@ -1492,7 +1492,7 @@ static void mxf_write_jpeg2000_subdesc(AVFormatContext *s, AVStream *st)
 
     if (!pix_desc) {
         av_log(s, AV_LOG_ERROR, "Pixel format not set - not writing JPEG2000SubDescriptor\n");
-        return;
+        return AVERROR(EINVAL);
     }
 
     /* JPEG2000 subdescriptor key */
@@ -1543,6 +1543,7 @@ static void mxf_write_jpeg2000_subdesc(AVFormatContext *s, AVStream *st)
     avio_write(pb, sc->j2k_info.j2k_comp_desc, 3*pix_desc->nb_components);
 
     mxf_update_klv_size(pb, pos);
+    return 0;
 }
 
 static int mxf_write_cdci_desc(AVFormatContext *s, AVStream *st)
@@ -1554,7 +1555,7 @@ static int mxf_write_cdci_desc(AVFormatContext *s, AVStream *st)
         mxf_write_avc_subdesc(s, st);
     }
     if (st->codecpar->codec_id == AV_CODEC_ID_JPEG2000) {
-         mxf_write_jpeg2000_subdesc(s, st);
+         return mxf_write_jpeg2000_subdesc(s, st);
     }
     return 0;
 }
