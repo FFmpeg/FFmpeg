@@ -197,10 +197,10 @@ static HEIFItem *heif_cur_item(MOVContext *c)
     HEIFItem *item = NULL;
 
     for (int i = 0; i < c->nb_heif_item; i++) {
-        if (c->heif_item[i].item_id != c->cur_item_id)
+        if (c->heif_item[i]->item_id != c->cur_item_id)
             continue;
 
-        item = &c->heif_item[i];
+        item = c->heif_item[i];
         break;
     }
 
@@ -8657,7 +8657,7 @@ static int mov_read_idat(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    HEIFItem *heif_item;
+    HEIFItem **heif_item;
     int version, offset_size, length_size, base_offset_size, index_size;
     int item_count, extent_count;
     int64_t base_offset, extent_offset, extent_length;
@@ -8688,12 +8688,12 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR(ENOMEM);
     c->heif_item = heif_item;
     if (item_count > c->nb_heif_item)
-        memset(c->heif_item + c->nb_heif_item, 0,
+        memset(&c->heif_item[c->nb_heif_item], 0,
                sizeof(*c->heif_item) * (item_count - c->nb_heif_item));
-    c->nb_heif_item = FFMAX(c->nb_heif_item, item_count);
 
     av_log(c->fc, AV_LOG_TRACE, "iloc: item_count %d\n", item_count);
     for (int i = 0; i < item_count; i++) {
+        HEIFItem *item = c->heif_item[i];
         int item_id = (version < 2) ? avio_rb16(pb) : avio_rb32(pb);
         int offset_type = (version > 0) ? avio_rb16(pb) & 0xf : 0;
 
@@ -8703,7 +8703,6 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             avpriv_report_missing_feature(c->fc, "iloc offset type %d", offset_type);
             return AVERROR_PATCHWELCOME;
         }
-        c->heif_item[i].item_id = item_id;
 
         avio_rb16(pb);  // data_reference_index.
         if (rb_size(pb, &base_offset, base_offset_size) < 0)
@@ -8714,19 +8713,28 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             avpriv_report_missing_feature(c->fc, "iloc: extent_count > 1");
             return AVERROR_PATCHWELCOME;
         }
-        for (int j = 0; j < extent_count; j++) {
+
             if (rb_size(pb, &extent_offset, offset_size) < 0 ||
                 rb_size(pb, &extent_length, length_size) < 0 ||
                 base_offset > INT64_MAX - extent_offset)
                 return AVERROR_INVALIDDATA;
+
+        if (!item)
+            item = c->heif_item[i] = av_mallocz(sizeof(*item));
+        if (!item)
+            return AVERROR(ENOMEM);
+
+        item->item_id = item_id;
+
             if (offset_type == 1)
-                c->heif_item[i].is_idat_relative = 1;
-            c->heif_item[i].extent_length = extent_length;
-            c->heif_item[i].extent_offset = base_offset + extent_offset;
+                item->is_idat_relative = 1;
+            item->extent_length = extent_length;
+            item->extent_offset = base_offset + extent_offset;
             av_log(c->fc, AV_LOG_TRACE, "iloc: item_idx %d, offset_type %d, "
                                         "extent_offset %"PRId64", extent_length %"PRId64"\n",
-                   i, offset_type, c->heif_item[i].extent_offset, c->heif_item[i].extent_length);
-        }
+                   i, offset_type, item->extent_offset, item->extent_length);
+
+        c->nb_heif_item = FFMAX(c->nb_heif_item, i + 1);
     }
 
     c->found_iloc = 1;
@@ -8735,6 +8743,7 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom, int idx)
 {
+    HEIFItem *item;
     AVBPrint item_name;
     int64_t size = atom.size;
     uint32_t item_type;
@@ -8774,15 +8783,21 @@ static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom, int idx)
     if (size > 0)
         avio_skip(pb, size);
 
+    item = c->heif_item[idx];
+    if (!item)
+        item = c->heif_item[idx] = av_mallocz(sizeof(*item));
+    if (!item)
+        return AVERROR(ENOMEM);
+
     if (ret)
-        av_bprint_finalize(&item_name, &c->heif_item[idx].name);
-    c->heif_item[idx].item_id = item_id;
-    c->heif_item[idx].type    = item_type;
+        av_bprint_finalize(&item_name, &c->heif_item[idx]->name);
+    c->heif_item[idx]->item_id = item_id;
+    c->heif_item[idx]->type    = item_type;
 
     switch (item_type) {
     case MKTAG('a','v','0','1'):
     case MKTAG('h','v','c','1'):
-        ret = heif_add_stream(c, &c->heif_item[idx]);
+        ret = heif_add_stream(c, c->heif_item[idx]);
         if (ret < 0)
             return ret;
         break;
@@ -8793,7 +8808,7 @@ static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom, int idx)
 
 static int mov_read_iinf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    HEIFItem *heif_item;
+    HEIFItem **heif_item;
     int entry_count;
     int version, got_stream = 0, ret, i;
 
@@ -8811,15 +8826,16 @@ static int mov_read_iinf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR(ENOMEM);
     c->heif_item = heif_item;
     if (entry_count > c->nb_heif_item)
-        memset(c->heif_item + c->nb_heif_item, 0,
+        memset(&c->heif_item[c->nb_heif_item], 0,
                sizeof(*c->heif_item) * (entry_count - c->nb_heif_item));
-    c->nb_heif_item = FFMAX(c->nb_heif_item, entry_count);
 
     for (i = 0; i < entry_count; i++) {
         MOVAtom infe;
 
-        if (avio_feof(pb))
-            return AVERROR_INVALIDDATA;
+        if (avio_feof(pb)) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
         infe.size = avio_rb32(pb) - 8;
         infe.type = avio_rl32(pb);
         ret = mov_read_infe(c, pb, infe, i);
@@ -8827,13 +8843,17 @@ static int mov_read_iinf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             goto fail;
         if (!ret)
             got_stream = 1;
+        c->nb_heif_item = FFMAX(c->nb_heif_item, i + 1);
     }
 
     c->found_iinf = got_stream;
     return 0;
 fail:
     for (; i >= 0; i--) {
-        HEIFItem *item = &c->heif_item[i];
+        HEIFItem *item = c->heif_item[i];
+
+        if (!item)
+            continue;
 
         av_freep(&item->name);
         if (!item->st)
@@ -8861,9 +8881,9 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
         }
     }
     for (int i = 0; i < c->nb_heif_item; i++) {
-        if (c->heif_item[i].item_id != from_item_id)
+        if (c->heif_item[i]->item_id != from_item_id)
             continue;
-        item = &c->heif_item[i];
+        item = c->heif_item[i];
 
         switch (item->type) {
         case MKTAG('g','r','i','d'):
@@ -9779,8 +9799,9 @@ static int mov_read_close(AVFormatContext *s)
     av_freep(&mov->aes_decrypt);
     av_freep(&mov->chapter_tracks);
     for (i = 0; i < mov->nb_heif_item; i++) {
-        av_freep(&mov->heif_item[i].name);
-        av_freep(&mov->heif_item[i].icc_profile);
+        av_freep(&mov->heif_item[i]->name);
+        av_freep(&mov->heif_item[i]->icc_profile);
+        av_freep(&mov->heif_item[i]);
     }
     av_freep(&mov->heif_item);
     for (i = 0; i < mov->nb_heif_grid; i++) {
@@ -10164,7 +10185,7 @@ static int mov_parse_tiles(AVFormatContext *s)
             int k;
 
             for (k = 0; k < mov->nb_heif_item; k++) {
-                HEIFItem *item = &mov->heif_item[k];
+                HEIFItem *item = mov->heif_item[k];
                 AVStream *st = item->st;
 
                 if (item->item_id != tile_id)
@@ -10233,7 +10254,7 @@ static int mov_parse_heif_items(AVFormatContext *s)
     int err;
 
     for (int i = 0; i < mov->nb_heif_item; i++) {
-        HEIFItem *item = &mov->heif_item[i];
+        HEIFItem *item = mov->heif_item[i];
         MOVStreamContext *sc;
         AVStream *st;
         int64_t offset = 0;
