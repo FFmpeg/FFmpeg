@@ -178,6 +178,8 @@ static int process_frame(DecodeContext *dc, AVFrame *frame)
     }
 
     ret = avcodec_send_frame(pd->enc, frame);
+    if (ret == AVERROR_EOF && !frame)
+        return 0;
     if (ret < 0) {
         fprintf(stderr, "Error submitting a frame for encoding\n");
         return ret;
