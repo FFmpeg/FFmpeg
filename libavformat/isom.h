@@ -355,7 +355,7 @@ typedef struct MOVContext {
     uint32_t max_stts_delta;
     int primary_item_id;
     int cur_item_id;
-    HEIFItem *heif_item;
+    HEIFItem **heif_item;
     int nb_heif_item;
     HEIFGrid *heif_grid;
     int nb_heif_grid;
