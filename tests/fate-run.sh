@@ -513,7 +513,7 @@ pixfmt_conversion_ext(){
     outdir="tests/data/pixfmt"
     file=${outdir}/${color_range}-${conversion}.yuv
     cleanfiles="$cleanfiles $file"
-    do_avconv $file $DEC_OPTS -lavfi ${prefix}testsrc=s=352x288,format=${color_range},scale=flags=$SCALE_FLAGS,format=$conversion \
+    do_avconv $file $DEC_OPTS -lavfi ${prefix}testsrc=s=352x288,format=${color_range},scale=flags=$SCALE_FLAGS:sws_dither=none,format=$conversion \
               $ENC_OPTS -t 1 -f rawvideo -s 352x288 -pix_fmt ${color_range}${suffix} -color_range mpeg
 }
 
