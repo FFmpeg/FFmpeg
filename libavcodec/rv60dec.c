@@ -485,7 +485,7 @@ static void ipred_init(IntraPredContext * i)
     i->has_t = i->has_tr = i->has_l = i->has_ld = 0;
 }
 
-static void populate_ipred(const RV60Context * s, CUContext * cu, uint8_t * src, int stride, int xoff, int yoff, int size, int is_luma)
+static void populate_ipred(const RV60Context * s, CUContext * cu, const uint8_t * src, int stride, int xoff, int yoff, int size, int is_luma)
 {
     if (is_luma)
         src += (cu->ypos + yoff) * stride + cu->xpos + xoff;
