@@ -660,7 +660,7 @@ static int graphs_build(AVFrame *in, AVFrame *out, const AVPixFmtDescriptor *des
     return 0;
 }
 
-static int realign_frame(AVFilterLink *link, const AVPixFmtDescriptor *desc, AVFrame **frame, int needs_copy)
+static int realign_frame(AVFilterLink *link, const AVPixFmtDescriptor *desc, AVFrame **frame)
 {
     AVFrame *aligned = NULL;
     int ret = 0, plane, planes;
@@ -674,10 +674,10 @@ static int realign_frame(AVFilterLink *link, const AVPixFmtDescriptor *desc, AVF
             if (!aligned)
                 return AVERROR(ENOMEM);
 
-            if (needs_copy && (ret = av_frame_copy(aligned, *frame)) < 0)
+            if ((ret = av_frame_copy(aligned, *frame)) < 0)
                 goto fail;
 
-            if (needs_copy && (ret = av_frame_copy_props(aligned, *frame)) < 0)
+            if ((ret = av_frame_copy_props(aligned, *frame)) < 0)
                 goto fail;
 
             av_frame_free(frame);
@@ -811,7 +811,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         out->colorspace = outlink->colorspace;
         out->color_range = outlink->color_range;
 
-        if ((ret = realign_frame(link, desc, &in, 1)) < 0)
+        if ((ret = realign_frame(link, desc, &in)) < 0)
             goto fail;
 
         snprintf(buf, sizeof(buf)-1, "%d", outlink->w);
