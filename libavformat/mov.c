@@ -8714,10 +8714,10 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             return AVERROR_PATCHWELCOME;
         }
 
-            if (rb_size(pb, &extent_offset, offset_size) < 0 ||
-                rb_size(pb, &extent_length, length_size) < 0 ||
-                base_offset > INT64_MAX - extent_offset)
-                return AVERROR_INVALIDDATA;
+        if (rb_size(pb, &extent_offset, offset_size) < 0 ||
+            rb_size(pb, &extent_length, length_size) < 0 ||
+            base_offset > INT64_MAX - extent_offset)
+            return AVERROR_INVALIDDATA;
 
         if (!item)
             item = c->heif_item[i] = av_mallocz(sizeof(*item));
@@ -8726,13 +8726,13 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
         item->item_id = item_id;
 
-            if (offset_type == 1)
-                item->is_idat_relative = 1;
-            item->extent_length = extent_length;
-            item->extent_offset = base_offset + extent_offset;
-            av_log(c->fc, AV_LOG_TRACE, "iloc: item_idx %d, offset_type %d, "
-                                        "extent_offset %"PRId64", extent_length %"PRId64"\n",
-                   i, offset_type, item->extent_offset, item->extent_length);
+        if (offset_type == 1)
+            item->is_idat_relative = 1;
+        item->extent_length = extent_length;
+        item->extent_offset = base_offset + extent_offset;
+        av_log(c->fc, AV_LOG_TRACE, "iloc: item_idx %d, offset_type %d, "
+                                    "extent_offset %"PRId64", extent_length %"PRId64"\n",
+               i, offset_type, item->extent_offset, item->extent_length);
 
         c->nb_heif_item = FFMAX(c->nb_heif_item, i + 1);
     }
