@@ -139,7 +139,9 @@ FFFramePool *ff_frame_pool_audio_init(AVBufferRef* (*alloc)(size_t size),
     if (ret < 0)
         goto fail;
 
-    pool->pools[0] = av_buffer_pool_init(pool->linesize[0], NULL);
+    if (pool->linesize[0] > SIZE_MAX - align)
+        goto fail;
+    pool->pools[0] = av_buffer_pool_init(pool->linesize[0] + align, NULL);
     if (!pool->pools[0])
         goto fail;
 
@@ -219,7 +221,7 @@ AVFrame *ff_frame_pool_get(FFFramePool *pool)
             if (!frame->buf[i])
                 goto fail;
 
-            frame->data[i] = frame->buf[i]->data;
+            frame->data[i] = (uint8_t *)FFALIGN((uintptr_t)frame->buf[i]->data, pool->align);
         }
 
         if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
@@ -256,13 +258,15 @@ AVFrame *ff_frame_pool_get(FFFramePool *pool)
             frame->buf[i] = av_buffer_pool_get(pool->pools[0]);
             if (!frame->buf[i])
                 goto fail;
-            frame->extended_data[i] = frame->data[i] = frame->buf[i]->data;
+            frame->extended_data[i] = frame->data[i] =
+                (uint8_t *)FFALIGN((uintptr_t)frame->buf[i]->data, pool->align);
         }
         for (i = 0; i < frame->nb_extended_buf; i++) {
             frame->extended_buf[i] = av_buffer_pool_get(pool->pools[0]);
             if (!frame->extended_buf[i])
                 goto fail;
-            frame->extended_data[i + AV_NUM_DATA_POINTERS] = frame->extended_buf[i]->data;
+            frame->extended_data[i + AV_NUM_DATA_POINTERS] =
+                (uint8_t *)FFALIGN((uintptr_t)frame->extended_buf[i]->data, pool->align);
         }
 
         break;
