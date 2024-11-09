@@ -660,7 +660,7 @@ static int graphs_build(AVFrame *in, AVFrame *out, const AVPixFmtDescriptor *des
     return 0;
 }
 
-static int realign_frame(const AVPixFmtDescriptor *desc, AVFrame **frame, int needs_copy)
+static int realign_frame(AVFilterLink *link, const AVPixFmtDescriptor *desc, AVFrame **frame, int needs_copy)
 {
     AVFrame *aligned = NULL;
     int ret = 0, plane, planes;
@@ -670,17 +670,9 @@ static int realign_frame(const AVPixFmtDescriptor *desc, AVFrame **frame, int ne
     for (plane = 0; plane < planes; plane++) {
         int p = desc->comp[plane].plane;
         if ((uintptr_t)(*frame)->data[p] % ZIMG_ALIGNMENT || (*frame)->linesize[p] % ZIMG_ALIGNMENT) {
-            if (!(aligned = av_frame_alloc())) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-
-            aligned->format = (*frame)->format;
-            aligned->width  = (*frame)->width;
-            aligned->height = (*frame)->height;
-
-            if ((ret = av_frame_get_buffer(aligned, ZIMG_ALIGNMENT)) < 0)
-                goto fail;
+            aligned = ff_default_get_video_buffer2(link, (*frame)->width, (*frame)->height, ZIMG_ALIGNMENT);
+            if (!aligned)
+                return AVERROR(ENOMEM);
 
             if (needs_copy && (ret = av_frame_copy(aligned, *frame)) < 0)
                 goto fail;
@@ -809,20 +801,17 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         (s->src_format.pixel_type !=s->dst_format.pixel_type) ||
         (s->src_format.transfer_characteristics !=s->dst_format.transfer_characteristics)
     ){
-        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        out = ff_default_get_video_buffer2(outlink, outlink->w, outlink->h, ZIMG_ALIGNMENT);
         if (!out) {
             ret =  AVERROR(ENOMEM);
             goto fail;
         }
 
-        if ((ret = realign_frame(odesc, &out, 0)) < 0)
-            goto fail;
-
         av_frame_copy_props(out, in);
         out->colorspace = outlink->colorspace;
         out->color_range = outlink->color_range;
 
-        if ((ret = realign_frame(desc, &in, 1)) < 0)
+        if ((ret = realign_frame(link, desc, &in, 1)) < 0)
             goto fail;
 
         snprintf(buf, sizeof(buf)-1, "%d", outlink->w);
