@@ -358,10 +358,12 @@ static int config_props(AVFilterLink *outlink)
     } else
         outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
 
-    av_log(ctx, AV_LOG_TRACE, "w:%d h:%d fmt:%s sar:%d/%d -> w:%d h:%d fmt:%s sar:%d/%d\n",
+    av_log(ctx, AV_LOG_DEBUG, "w:%d h:%d fmt:%s csp:%s range:%s sar:%d/%d -> w:%d h:%d fmt:%s csp:%s range:%s sar:%d/%d\n",
            inlink ->w, inlink ->h, av_get_pix_fmt_name( inlink->format),
+           av_color_space_name(inlink->colorspace), av_color_range_name(inlink->color_range),
            inlink->sample_aspect_ratio.num, inlink->sample_aspect_ratio.den,
            outlink->w, outlink->h, av_get_pix_fmt_name(outlink->format),
+           av_color_space_name(outlink->colorspace), av_color_range_name(outlink->color_range),
            outlink->sample_aspect_ratio.num, outlink->sample_aspect_ratio.den);
     return 0;
 
