@@ -628,9 +628,12 @@ static int graphs_build(AVFrame *in, AVFrame *out, const AVPixFmtDescriptor *des
     if (ret)
         return print_zimg_error(ctx);
 
+    if (size > (SIZE_MAX - ZIMG_ALIGNMENT))
+        return AVERROR(ENOMEM);
+
     if (s->tmp[job_nr])
         av_freep(&s->tmp[job_nr]);
-    s->tmp[job_nr] = av_calloc(size, 1);
+    s->tmp[job_nr] = av_mallocz(size + ZIMG_ALIGNMENT);
     if (!s->tmp[job_nr])
         return AVERROR(ENOMEM);
 
@@ -750,7 +753,9 @@ static int filter_slice(AVFilterContext *ctx, void *data, int job_nr, int n_jobs
     }
     if (!s->graph[job_nr])
         return AVERROR(EINVAL);
-    ret = zimg_filter_graph_process(s->graph[job_nr], &src_buf, &dst_buf, s->tmp[job_nr], 0, 0, 0, 0);
+    ret = zimg_filter_graph_process(s->graph[job_nr], &src_buf, &dst_buf,
+                                    (uint8_t *)FFALIGN((uintptr_t)s->tmp[job_nr], ZIMG_ALIGNMENT),
+                                    0, 0, 0, 0);
     if (ret)
         return print_zimg_error(ctx);
 
@@ -765,7 +770,9 @@ static int filter_slice(AVFilterContext *ctx, void *data, int job_nr, int n_jobs
 
         if (!s->alpha_graph[job_nr])
             return AVERROR(EINVAL);
-        ret = zimg_filter_graph_process(s->alpha_graph[job_nr], &src_buf, &dst_buf, s->tmp[job_nr], 0, 0, 0, 0);
+        ret = zimg_filter_graph_process(s->alpha_graph[job_nr], &src_buf, &dst_buf,
+                                        (uint8_t *)FFALIGN((uintptr_t)s->tmp[job_nr], ZIMG_ALIGNMENT),
+                                        0, 0, 0, 0);
         if (ret)
             return print_zimg_error(ctx);
     }
