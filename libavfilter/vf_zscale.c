@@ -666,7 +666,7 @@ static int realign_frame(const AVPixFmtDescriptor *desc, AVFrame **frame, int ne
     int ret = 0, plane, planes;
 
     /* Realign any unaligned input frame. */
-    planes = av_pix_fmt_count_planes(desc->nb_components);
+    planes = av_pix_fmt_count_planes((*frame)->format);
     for (plane = 0; plane < planes; plane++) {
         int p = desc->comp[plane].plane;
         if ((uintptr_t)(*frame)->data[p] % ZIMG_ALIGNMENT || (*frame)->linesize[p] % ZIMG_ALIGNMENT) {
