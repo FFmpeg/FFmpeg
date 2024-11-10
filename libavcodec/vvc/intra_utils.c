@@ -184,13 +184,13 @@ int ff_vvc_intra_pred_angle_derive(const int pred_mode)
     return intra_pred_angle;
 }
 
-#define ROUND(f) (int)(f < 0 ? -(-f + 0.5) : (f + 0.5))
 int ff_vvc_intra_inv_angle_derive(const int intra_pred_angle)
 {
-    float inv_angle;
-    av_assert0(intra_pred_angle);
-    inv_angle = 32 * 512.0 / intra_pred_angle;
-    return ROUND(inv_angle);
+    av_assert2(intra_pred_angle != 0);
+    if (intra_pred_angle > 0)
+        return ROUNDED_DIV(32*512, intra_pred_angle);
+    else
+        return -ROUNDED_DIV(32*512, -intra_pred_angle);
 }
 
 //8.4.5.2.7 Wide angle intra prediction mode mapping proces
