@@ -94,7 +94,7 @@ FATE_FFMPEG-$(call FILTERDEMDEC, AMIX ARESAMPLE SINE, RAWVIDEO, \
                            MPEG4_ENCODER AC3_FIXED_ENCODER) \
                            += fate-shortest
 fate-shortest: tests/data/vsynth1.yuv
-fate-shortest: CMD = framecrc -auto_conversion_filters -f lavfi -i "sine=3000.00000013969838619232:d=10" -f lavfi -i "sine=1000.00000346917659044266:d=1" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -f rawvideo -s 352x288 -pix_fmt yuv420p -i $(TARGET_PATH)/tests/data/vsynth1.yuv -filter_complex "[0:a:0][1:a:0]amix=inputs=2[audio]" -map 2:v:0 -map "[audio]" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -dct fastint -qscale 10 -threads 1 -c:v mpeg4 -c:a ac3_fixed -shortest
+fate-shortest: CMD = framecrc -auto_conversion_filters -f lavfi -i "sine=3000:d=10" -f lavfi -i "sine=1000:d=1" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -f rawvideo -s 352x288 -pix_fmt yuv420p -i $(TARGET_PATH)/tests/data/vsynth1.yuv -filter_complex "[0:a:0][1:a:0]amix=inputs=2[audio]" -map 2:v:0 -map "[audio]" -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -dct fastint -qscale 10 -threads 1 -c:v mpeg4 -c:a ac3_fixed -shortest
 
 # test interleaving video with a sparse subtitle stream
 FATE_SAMPLES_FFMPEG-$(call ALLYES, COLOR_FILTER, VOBSUB_DEMUXER, MATROSKA_DEMUXER,, \
@@ -179,7 +179,7 @@ tests/data/audio_shorter_than_video.nut: tests/data/vsynth_lena.yuv
 tests/data/audio_shorter_than_video.nut: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
         -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -f rawvideo -s 352x288 -pix_fmt yuv420p -i $(TARGET_PATH)/tests/data/vsynth_lena.yuv \
-        -f lavfi -i "sine=1000.00000346917659044266:d=1" \
+        -f lavfi -i "sine=1000:d=1" \
         -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -idct simple -dct fastint -qscale 10 -c:v mpeg4 -threads 1 -c:a pcm_s16le -bitexact \
         -y $(TARGET_PATH)/tests/data/audio_shorter_than_video.nut 2>/dev/null
 
@@ -190,8 +190,8 @@ FATE_STREAMCOPY-$(call FRAMEMD5, NUT, RAWVIDEO PCM_S16LE MPEG4,  \
                                  NUT_MUXER AC3_FIXED_ENCODER)    \
                                += fate-copy-shortest1 fate-copy-shortest2
 fate-copy-shortest1 fate-copy-shortest2: tests/data/audio_shorter_than_video.nut
-fate-copy-shortest1: CMD = framemd5 -auto_conversion_filters -fflags +bitexact -flags +bitexact -f lavfi -i "sine=3000.00000013969838619232:d=10" -f lavfi -i "sine=1000.00000346917659044266:d=1" -i $(TARGET_PATH)/tests/data/audio_shorter_than_video.nut -filter_complex "[0:a:0][1:a:0]amix=inputs=2[audio]" -map 2:v:0 -map "[audio]" -fflags +bitexact -flags +bitexact -c:v copy -c:a ac3_fixed -shortest
-fate-copy-shortest2: CMD = framemd5 -auto_conversion_filters -fflags +bitexact -flags +bitexact -f lavfi -i "sine=3000.00000013969838619232:d=10" -i $(TARGET_PATH)/tests/data/audio_shorter_than_video.nut -filter_complex "[0:a:0][1:a:0]amix=inputs=2[audio]" -map 1:v:0 -map "[audio]" -fflags +bitexact -flags +bitexact -c:v copy -c:a ac3_fixed -shortest
+fate-copy-shortest1: CMD = framemd5 -auto_conversion_filters -fflags +bitexact -flags +bitexact -f lavfi -i "sine=3000:d=10" -f lavfi -i "sine=1000:d=1" -i $(TARGET_PATH)/tests/data/audio_shorter_than_video.nut -filter_complex "[0:a:0][1:a:0]amix=inputs=2[audio]" -map 2:v:0 -map "[audio]" -fflags +bitexact -flags +bitexact -c:v copy -c:a ac3_fixed -shortest
+fate-copy-shortest2: CMD = framemd5 -auto_conversion_filters -fflags +bitexact -flags +bitexact -f lavfi -i "sine=3000:d=10" -i $(TARGET_PATH)/tests/data/audio_shorter_than_video.nut -filter_complex "[0:a:0][1:a:0]amix=inputs=2[audio]" -map 1:v:0 -map "[audio]" -fflags +bitexact -flags +bitexact -c:v copy -c:a ac3_fixed -shortest
 
 fate-streamcopy: $(FATE_STREAMCOPY-yes)
 FATE_SAMPLES_FFMPEG-yes += $(FATE_STREAMCOPY-yes)
