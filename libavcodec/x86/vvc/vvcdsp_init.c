@@ -102,19 +102,29 @@ DMVR_PROTOTYPES( 8, avx2)
 DMVR_PROTOTYPES(10, avx2)
 DMVR_PROTOTYPES(12, avx2)
 
+#define OF_PROTOTYPES(bd, opt)                                                                      \
+void ff_vvc_apply_bdof_##bd##_##opt(uint8_t *dst, ptrdiff_t dst_stride,                             \
+    const int16_t *src0, const int16_t *src1, int w, int h);                                        \
+
+OF_PROTOTYPES( 8, avx2)
+OF_PROTOTYPES(10, avx2)
+OF_PROTOTYPES(12, avx2)
+
+#if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
 void ff_vvc_apply_bdof_avx2(uint8_t *dst, ptrdiff_t dst_stride,                                     \
     const int16_t *src0, const int16_t *src1, int w, int h, int pixel_max);                         \
 
-#define OF_PROTOTYPES(bd, opt)                                                                      \
-static void ff_vvc_apply_bdof_##bd##_##opt(uint8_t *dst, ptrdiff_t dst_stride,                      \
+#define OF_FUNC(bd, opt)                                                                            \
+void ff_vvc_apply_bdof_##bd##_##opt(uint8_t *dst, ptrdiff_t dst_stride,                             \
     const int16_t *src0, const int16_t *src1, int w, int h)                                         \
 {                                                                                                   \
     ff_vvc_apply_bdof##_##opt(dst, dst_stride, src0, src1, w, h, (1 << bd)  - 1);                   \
 }                                                                                                   \
 
-OF_PROTOTYPES( 8, avx2)
-OF_PROTOTYPES(10, avx2)
-OF_PROTOTYPES(12, avx2)
+OF_FUNC( 8, avx2)
+OF_FUNC(10, avx2)
+OF_FUNC(12, avx2)
+#endif
 
 #define ALF_BPC_PROTOTYPES(bpc, opt)                                                                                     \
 void BF(ff_vvc_alf_filter_luma, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                            \
