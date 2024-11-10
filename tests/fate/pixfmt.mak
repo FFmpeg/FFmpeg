@@ -26,8 +26,9 @@ PIXFMT_8_LIST =         bgr24           \
                         uyvy422         \
                         vyu444          \
 
-FATE_PIXFMT := $(PIXFMT_8_LIST:%=fate-pixfmt-%)
+FATE_PIXFMT-$(CONFIG_SCALE_FILTER) := $(PIXFMT_8_LIST:%=fate-pixfmt-%)
 
+FATE_PIXFMT := $(FATE_PIXFMT-yes)
 $(FATE_PIXFMT): CMD = pixfmt_conversion
 $(FATE_PIXFMT): REF = $(SRC_PATH)/tests/ref/pixfmt/$(@:fate-pixfmt-%=%)
 $(FATE_PIXFMT): $(VREF)
