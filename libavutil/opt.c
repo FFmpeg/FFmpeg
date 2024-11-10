@@ -231,6 +231,14 @@ static int opt_set_init(void *obj, const char *name, int search_flags,
     return 0;
 }
 
+static AVRational double_to_rational(double d)
+{
+     AVRational r = av_d2q(d, 1 << 24);
+     if ((!r.num || !r.den) && d)
+         r = av_d2q(d, INT_MAX);
+     return r;
+}
+
 static int read_number(const AVOption *o, const void *dst, double *num, int *den, int64_t *intnum)
 {
     switch (TYPE_BASE(o->type)) {
@@ -339,7 +347,7 @@ static int write_number(void *obj, const AVOption *o, void *dst, double num, int
         if ((int) num == num)
             *(AVRational *)dst = (AVRational) { num *intnum, den };
         else
-            *(AVRational *)dst = av_d2q(num * intnum / den, 1 << 24);
+            *(AVRational *)dst = double_to_rational(num * intnum / den);
         break;
     default:
         return AVERROR(EINVAL);
@@ -1301,7 +1309,7 @@ int av_opt_get_q(void *obj, const char *name, int search_flags, AVRational *out_
     if (num == 1.0 && (int)intnum == intnum)
         *out_val = (AVRational){intnum, den};
     else
-        *out_val = av_d2q(num*intnum/den, 1<<24);
+        *out_val = double_to_rational(num*intnum/den);
     return 0;
 }
 
@@ -2257,7 +2265,7 @@ int av_opt_get_array(void *obj, const char *name, int search_flags,
             case AV_OPT_TYPE_RATIONAL:
                 *(AVRational*)dst = (num == 1.0 && (int)intnum == intnum) ?
                                     (AVRational){ intnum, den }           :
-                                    av_d2q(num * intnum / den, 1<<24);
+                                    double_to_rational(num * intnum / den);
                 break;
             default: av_assert0(0);
             }
