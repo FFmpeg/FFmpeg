@@ -33,6 +33,9 @@
 typedef struct SamplingContext {
     uint32_t phi;  ///< current phase of the sine (2pi = 1<<32)
     uint32_t dphi; ///< phase increment between two samples
+    int phi_rem;   ///< current fractional phase in 1/dphi_den subfractions
+    int dphi_rem;
+    int dphi_den;
 } SamplingContext;
 
 typedef struct SineContext {
@@ -148,12 +151,31 @@ enum {
 
 static void sampling_init(SamplingContext *c, double frequency, int sample_rate)
 {
-    c->dphi = ldexp(frequency, 32) / sample_rate + 0.5;
+    AVRational r;
+    int r_den, max_r_den;
+
+    max_r_den   = INT_MAX / sample_rate;
+    frequency   = fmod(frequency, sample_rate);
+    r           = av_d2q(fmod(frequency, 1.0), max_r_den);
+    r_den       = FFMIN(r.den, max_r_den);
+    c->dphi     = ldexp(frequency, 32) / sample_rate;
+    c->dphi_den = r_den * sample_rate;
+    c->dphi_rem = round((ldexp(frequency, 32) / sample_rate - c->dphi) * c->dphi_den);
+    if (c->dphi_rem >= c->dphi_den) {
+        c->dphi++;
+        c->dphi_rem = 0;
+    }
+    c->phi_rem  = (-c->dphi_den - 1) / 2;
 }
 
 static av_always_inline void sampling_advance(SamplingContext *c)
 {
     c->phi += c->dphi;
+    c->phi_rem += c->dphi_rem;
+    if (c->phi_rem >= 0) {
+        c->phi_rem -= c->dphi_den;
+        c->phi++;
+    }
 }
 
 static av_cold int init(AVFilterContext *ctx)
