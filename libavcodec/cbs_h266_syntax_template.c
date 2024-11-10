@@ -1162,7 +1162,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
             for (i = 1; i <= current->sps_num_subpics_minus1; i++) {
                 if (!current->sps_subpic_same_size_flag) {
                     if (current->sps_pic_width_max_in_luma_samples > ctb_size_y) {
-                        const unsigned int win_right_edge =
+                        const int win_right_edge =
                             current->sps_pic_width_max_in_luma_samples
                           - current->sps_conf_win_right_offset * sub_width_c;
                         us(wlen, sps_subpic_ctu_top_left_x[i], 0,
@@ -1172,7 +1172,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
                         infer(sps_subpic_ctu_top_left_x[i], 0);
                     if (current->sps_pic_height_max_in_luma_samples >
                         ctb_size_y) {
-                        const unsigned int win_bottom_edge =
+                        const int win_bottom_edge =
                             current->sps_pic_height_max_in_luma_samples
                           - current->sps_conf_win_bottom_offset * sub_height_c;
                         us(hlen, sps_subpic_ctu_top_left_y[i], 0,
@@ -1183,9 +1183,9 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
                     if (i < current->sps_num_subpics_minus1 &&
                         current->sps_pic_width_max_in_luma_samples >
                         ctb_size_y) {
-                        const unsigned int win_left_edge =
+                        const int win_left_edge =
                             current->sps_conf_win_left_offset * sub_width_c;
-                        const unsigned int win_left_edge_ctus =
+                        const int win_left_edge_ctus =
                             AV_CEIL_RSHIFT(win_left_edge, ctb_log2_size_y);
                         us(wlen, sps_subpic_width_minus1[i],
                            win_left_edge_ctus > current->sps_subpic_ctu_top_left_x[i]
@@ -1200,9 +1200,9 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
                     if (i < current->sps_num_subpics_minus1 &&
                         current->sps_pic_height_max_in_luma_samples >
                         ctb_size_y) {
-                        const unsigned int win_top_edge =
+                        const int win_top_edge =
                             current->sps_conf_win_top_offset * sub_height_c;
-                        const unsigned int win_top_edge_ctus =
+                        const int win_top_edge_ctus =
                             AV_CEIL_RSHIFT(win_top_edge, ctb_log2_size_y);
                         us(hlen, sps_subpic_height_minus1[i],
                            win_top_edge_ctus > current->sps_subpic_ctu_top_left_y[i]
