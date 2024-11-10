@@ -36,12 +36,14 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
+#include "copy_block.h"
 #include "decode.h"
 #include "eaidct.h"
 #include "get_bits.h"
 
 typedef struct TgqContext {
     AVCodecContext *avctx;
+    AVFrame *last_frame;
     int width, height;
     int qtable[64];
     DECLARE_ALIGNED(16, int16_t, block)[6][64];
@@ -53,6 +55,9 @@ static av_cold int tgq_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     avctx->framerate = (AVRational){ 15, 1 };
     avctx->pix_fmt   = AV_PIX_FMT_YUV420P;
+    s->last_frame = av_frame_alloc();
+    if (!s->last_frame)
+        return AVERROR(ENOMEM);
     return 0;
 }
 
@@ -173,7 +178,33 @@ static int tgq_decode_mb(TgqContext *s, GetByteContext *gbyte,
         tgq_idct_put_mb(s, s->block, frame, mb_x, mb_y);
         bytestream2_skip(gbyte, mode);
     } else {
-        if (mode == 3) {
+        if (mode == 1) {
+            int x, y;
+            int mv = bytestream2_get_byte(gbyte);
+            int mv_x = mv >> 4;
+            int mv_y = mv & 0x0F;
+            if (!s->last_frame->data[0]) {
+                av_log(s->avctx, AV_LOG_ERROR, "missing reference frame\n");
+                return -1;
+            }
+            if (mv_x >= 8) mv_x -= 16;
+            if (mv_y >= 8) mv_y -= 16;
+            x = mb_x * 16 - mv_x;
+            y = mb_y * 16 - mv_y;
+            if (x < 0 || x + 16 > s->width || y < 0 || y + 16 > s->height) {
+                av_log(s->avctx, AV_LOG_ERROR, "invalid motion vector\n");
+                return -1;
+            }
+            copy_block16(frame->data[0] + (mb_y * 16 * frame->linesize[0]) + mb_x * 16,
+                         s->last_frame->data[0] + y * s->last_frame->linesize[0] + x,
+                         frame->linesize[0], s->last_frame->linesize[0], 16);
+            for (int p = 1; p < 3; p++)
+                copy_block8(frame->data[p] + (mb_y * 8 * frame->linesize[p]) + mb_x * 8,
+                            s->last_frame->data[p] + (y >> 1) * s->last_frame->linesize[p] + (x >> 1),
+                            frame->linesize[p], s->last_frame->linesize[p], 8);
+            frame->flags &= ~AV_FRAME_FLAG_KEY;
+            return 0;
+        } else if (mode == 3) {
             memset(dc, bytestream2_get_byte(gbyte), 4);
             dc[4] = bytestream2_get_byte(gbyte);
             dc[5] = bytestream2_get_byte(gbyte);
@@ -228,9 +259,12 @@ static int tgq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         s->height = bytestream2_get_le16u(&gbyte);
     }
 
-    ret = ff_set_dimensions(s->avctx, s->width, s->height);
-    if (ret < 0)
-        return ret;
+    if (s->avctx->width != s->width || s->avctx->height != s->height) {
+        av_frame_unref(s->last_frame);
+        ret = ff_set_dimensions(s->avctx, s->width, s->height);
+        if (ret < 0)
+            return ret;
+    }
 
     tgq_calculate_qtable(s, bytestream2_get_byteu(&gbyte));
     bytestream2_skipu(&gbyte, 3);
@@ -238,14 +272,25 @@ static int tgq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
+    frame->flags |= AV_FRAME_FLAG_KEY;
     for (y = 0; y < FFALIGN(avctx->height, 16) >> 4; y++)
         for (x = 0; x < FFALIGN(avctx->width, 16) >> 4; x++)
             if (tgq_decode_mb(s, &gbyte, frame, y, x) < 0)
                 return AVERROR_INVALIDDATA;
 
+    if ((ret = av_frame_replace(s->last_frame, frame)) < 0)
+        return ret;
+
     *got_frame = 1;
 
     return avpkt->size;
+}
+
+static av_cold int tgq_decode_close(AVCodecContext *avctx)
+{
+    TgqContext *s = avctx->priv_data;
+    av_frame_free(&s->last_frame);
+    return 0;
 }
 
 const FFCodec ff_eatgq_decoder = {
@@ -255,6 +300,7 @@ const FFCodec ff_eatgq_decoder = {
     .p.id           = AV_CODEC_ID_TGQ,
     .priv_data_size = sizeof(TgqContext),
     .init           = tgq_decode_init,
+    .close          = tgq_decode_close,
     FF_CODEC_DECODE_CB(tgq_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
 };
