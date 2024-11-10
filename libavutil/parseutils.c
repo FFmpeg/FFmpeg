@@ -193,6 +193,9 @@ int av_parse_video_rate(AVRational *rate, const char *arg)
     /* Then, we try to parse it as fraction */
     if ((ret = av_parse_ratio_quiet(rate, arg, 1001000)) < 0)
         return ret;
+    if (!rate->num || !rate->den)
+        if ((ret = av_parse_ratio_quiet(rate, arg, INT_MAX)) < 0)
+            return ret;
     if (rate->num <= 0 || rate->den <= 0)
         return AVERROR(EINVAL);
     return 0;
