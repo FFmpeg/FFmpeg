@@ -118,8 +118,6 @@ AVRational av_d2q(double d, int max)
     // (int64_t)rint() and llrint() do not work with gcc on ia64 and sparc64,
     // see Ticket2713 for affected gcc/glibc versions
     av_reduce(&a.num, &a.den, floor(d * den + 0.5), den, max);
-    if ((!a.num || !a.den) && d && max>0 && max<INT_MAX)
-        av_reduce(&a.num, &a.den, floor(d * den + 0.5), den, INT_MAX);
 
     return a;
 }
