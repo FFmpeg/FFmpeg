@@ -556,6 +556,9 @@ int ff_h2645_sei_ctx_replace(H2645SEI *dst, const H2645SEI *src)
     }
     dst->aom_film_grain.enable = src->aom_film_grain.enable;
 
+    dst->mastering_display     = src->mastering_display;
+    dst->content_light         = src->content_light;
+
     ff_refstruct_replace(&dst->film_grain_characteristics,
                           src->film_grain_characteristics);
 

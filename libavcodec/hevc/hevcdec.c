@@ -4003,8 +4003,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->sei.common.frame_packing        = s0->sei.common.frame_packing;
     s->sei.common.display_orientation  = s0->sei.common.display_orientation;
     s->sei.common.alternative_transfer = s0->sei.common.alternative_transfer;
-    s->sei.common.mastering_display    = s0->sei.common.mastering_display;
-    s->sei.common.content_light        = s0->sei.common.content_light;
     s->sei.tdrdi                       = s0->sei.tdrdi;
 
     return 0;
