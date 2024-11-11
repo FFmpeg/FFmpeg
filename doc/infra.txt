@@ -1,7 +1,15 @@
 FFmpeg Infrastructure:
 ======================
 
+Trademark:
+~~~~~~~~~~
+ffmpeg trademark registered in france by ffmpeg creator.
 
+
+Domain + NS:
+~~~~~~~~~~~~
+ffmpeg.org domain name
+avcodec.org domain name server
 
 
 Servers:
@@ -87,8 +95,27 @@ You need a VM, docker container for FFmpeg? contact root at ffmpeg.org
 
 
 
+Multimedia Wiki:
+~~~~~~~~~~~~~~~~
+The Multimedia Wiki http://wiki.multimedia.cx is ran by Mike Melanson.
+While not directly part of FFmpeg infrastructure, technical codec and format
+information written by FFmpeg developers can be found within.
+It is our unofficial official tech wiki. For access contact Mike.
+
+
+
 IRC:
 ~~~~
 irc channels are at https://libera.chat/
 irc channel archives are at https://libera.irclog.whitequark.org
 
+#ffmpeg and #ffmpeg-devel founder/admins: BtbN, Michael, Compn
+#ffmpeg-meeting founder/admins: BtbN, Michael
+
+
+Twitter aka X:
+~~~~~~~~~~~~~~
+https://twitter.com/FFmpeg or https://x.com/FFmpeg
+
+If you would like to post to twitter please contact twitter MAINTAINERS
+for access. We want more developers posting to twitter!
