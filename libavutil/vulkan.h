@@ -358,6 +358,11 @@ const char *ff_vk_ret2str(VkResult res);
 int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt);
 
 /**
+ * Get the aspect flag for a plane from an image.
+ */
+VkImageAspectFlags ff_vk_aspect_flag(AVFrame *f, int p);
+
+/**
  * Returns the format to use for images in shaders.
  */
 enum FFVkShaderRepFormat {

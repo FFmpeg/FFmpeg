@@ -1273,6 +1273,23 @@ int ff_vk_init_sampler(FFVulkanContext *s, VkSampler *sampler,
     return 0;
 }
 
+VkImageAspectFlags ff_vk_aspect_flag(AVFrame *f, int p)
+{
+    AVVkFrame *vkf = (AVVkFrame *)f->data[0];
+    AVHWFramesContext *hwfc = (AVHWFramesContext *)f->hw_frames_ctx->data;
+    int nb_images = ff_vk_count_images(vkf);
+    int nb_planes = av_pix_fmt_count_planes(hwfc->sw_format);
+
+    static const VkImageAspectFlags plane_aspect[] = { VK_IMAGE_ASPECT_PLANE_0_BIT,
+                                                       VK_IMAGE_ASPECT_PLANE_1_BIT,
+                                                       VK_IMAGE_ASPECT_PLANE_2_BIT, };
+
+    if (ff_vk_mt_is_np_rgb(hwfc->sw_format) || (nb_planes == nb_images))
+        return VK_IMAGE_ASPECT_COLOR_BIT;
+
+    return plane_aspect[p];
+}
+
 int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt)
 {
     if (pix_fmt == AV_PIX_FMT_ABGR   || pix_fmt == AV_PIX_FMT_BGRA   ||
@@ -1281,6 +1298,8 @@ int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt)
         pix_fmt == AV_PIX_FMT_RGBA64 || pix_fmt == AV_PIX_FMT_RGB565 ||
         pix_fmt == AV_PIX_FMT_BGR565 || pix_fmt == AV_PIX_FMT_BGR0   ||
         pix_fmt == AV_PIX_FMT_0BGR   || pix_fmt == AV_PIX_FMT_RGB0   ||
+        pix_fmt == AV_PIX_FMT_GBRAP   || pix_fmt == AV_PIX_FMT_GBRAP16 ||
+        pix_fmt == AV_PIX_FMT_GBRPF32 || pix_fmt == AV_PIX_FMT_GBRAPF32 ||
         pix_fmt == AV_PIX_FMT_X2RGB10 || pix_fmt == AV_PIX_FMT_X2BGR10 ||
         pix_fmt == AV_PIX_FMT_RGBAF32 || pix_fmt == AV_PIX_FMT_RGBF32 ||
         pix_fmt == AV_PIX_FMT_RGBA128 || pix_fmt == AV_PIX_FMT_RGB96)
@@ -1567,11 +1586,6 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
         return AVERROR(ENOMEM);
 
     for (int i = 0; i < nb_planes; i++) {
-        VkImageAspectFlags plane_aspect[] = { VK_IMAGE_ASPECT_COLOR_BIT,
-                                              VK_IMAGE_ASPECT_PLANE_0_BIT,
-                                              VK_IMAGE_ASPECT_PLANE_1_BIT,
-                                              VK_IMAGE_ASPECT_PLANE_2_BIT, };
-
         VkImageViewUsageCreateInfo view_usage_info = {
             .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
             .usage = vkfc->usage &
@@ -1586,8 +1600,7 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
             .format     = map_fmt_to_rep(rep_fmts[i], rep_fmt),
             .components = ff_comp_identity_map,
             .subresourceRange = {
-                .aspectMask = plane_aspect[(nb_planes != nb_images) +
-                                           i*(nb_planes != nb_images)],
+                .aspectMask = ff_vk_aspect_flag(f, i),
                 .levelCount = 1,
                 .layerCount = 1,
             },

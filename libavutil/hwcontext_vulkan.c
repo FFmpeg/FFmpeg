@@ -326,10 +326,10 @@ static const struct FFVkFormatEntry {
     { VK_FORMAT_R32G32B32A32_UINT,        AV_PIX_FMT_RGBA128, VK_IMAGE_ASPECT_COLOR_BIT, 1, 1, 1, { VK_FORMAT_R32G32B32A32_UINT        } },
 
     /* Planar RGB */
-    { VK_FORMAT_R8_UNORM,   AV_PIX_FMT_GBRAP,    VK_IMAGE_ASPECT_COLOR_BIT, 1, 4, 4, { VK_FORMAT_R8_UNORM,   VK_FORMAT_R8_UNORM,   VK_FORMAT_R8_UNORM,   VK_FORMAT_R8_UNORM   } },
-    { VK_FORMAT_R16_UNORM,  AV_PIX_FMT_GBRAP16,  VK_IMAGE_ASPECT_COLOR_BIT, 1, 4, 4, { VK_FORMAT_R16_UNORM,  VK_FORMAT_R16_UNORM,  VK_FORMAT_R16_UNORM,  VK_FORMAT_R16_UNORM  } },
-    { VK_FORMAT_R32_SFLOAT, AV_PIX_FMT_GBRPF32,  VK_IMAGE_ASPECT_COLOR_BIT, 1, 3, 3, { VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32_SFLOAT                       } },
-    { VK_FORMAT_R32_SFLOAT, AV_PIX_FMT_GBRAPF32, VK_IMAGE_ASPECT_COLOR_BIT, 1, 4, 4, { VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32_SFLOAT } },
+    { VK_FORMAT_R8_UNORM,   AV_PIX_FMT_GBRAP,    VK_IMAGE_ASPECT_COLOR_BIT, 4, 4, 4, { VK_FORMAT_R8_UNORM,   VK_FORMAT_R8_UNORM,   VK_FORMAT_R8_UNORM,   VK_FORMAT_R8_UNORM   } },
+    { VK_FORMAT_R16_UNORM,  AV_PIX_FMT_GBRAP16,  VK_IMAGE_ASPECT_COLOR_BIT, 4, 4, 4, { VK_FORMAT_R16_UNORM,  VK_FORMAT_R16_UNORM,  VK_FORMAT_R16_UNORM,  VK_FORMAT_R16_UNORM  } },
+    { VK_FORMAT_R32_SFLOAT, AV_PIX_FMT_GBRPF32,  VK_IMAGE_ASPECT_COLOR_BIT, 3, 3, 3, { VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32_SFLOAT                       } },
+    { VK_FORMAT_R32_SFLOAT, AV_PIX_FMT_GBRAPF32, VK_IMAGE_ASPECT_COLOR_BIT, 4, 4, 4, { VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32_SFLOAT } },
 
     /* Two-plane 420 YUV at 8, 10, 12 and 16 bits */
     { VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,                  AV_PIX_FMT_NV12, ASPECT_2PLANE, 2, 1, 2, { VK_FORMAT_R8_UNORM,  VK_FORMAT_R8G8_UNORM   } },
@@ -482,8 +482,14 @@ static int vkfmt_from_pixfmt2(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
             if (basics_primary &&
                 !(disable_multiplane && vk_formats_list[i].vk_planes > 1) &&
                 (!need_storage || (need_storage && (storage_primary | storage_secondary)))) {
-                if (fmts)
-                    fmts[0] = vk_formats_list[i].vkf;
+                if (fmts) {
+                    if (vk_formats_list[i].nb_images > 1) {
+                        for (int j = 0; j < vk_formats_list[i].nb_images_fallback; j++)
+                            fmts[j] = vk_formats_list[i].fallback[j];
+                    } else {
+                        fmts[0] = vk_formats_list[i].vkf;
+                    }
+                }
                 if (nb_images)
                     *nb_images = 1;
                 if (aspect)
@@ -4096,10 +4102,6 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
     const int planes = av_pix_fmt_count_planes(swf->format);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(swf->format);
     const int nb_images = ff_vk_count_images(hwf_vk);
-    static const VkImageAspectFlags plane_aspect[] = { VK_IMAGE_ASPECT_COLOR_BIT,
-                                                       VK_IMAGE_ASPECT_PLANE_0_BIT,
-                                                       VK_IMAGE_ASPECT_PLANE_1_BIT,
-                                                       VK_IMAGE_ASPECT_PLANE_2_BIT, };
 
     VkImageMemoryBarrier2 img_bar[AV_NUM_DATA_POINTERS];
     int nb_img_bar = 0;
@@ -4182,8 +4184,7 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
 
         uint32_t orig_stride = region[i].bufferRowLength;
         region[i].bufferRowLength /= desc->comp[i].step;
-        region[i].imageSubresource.aspectMask = plane_aspect[(planes != nb_images) +
-                                                             i*(planes != nb_images)];
+        region[i].imageSubresource.aspectMask = ff_vk_aspect_flag(hwf, i);
 
         if (upload)
             vk->CmdCopyBufferToImage(cmd_buf, vkbuf->buf,
