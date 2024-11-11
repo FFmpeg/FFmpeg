@@ -129,12 +129,6 @@ struct H264ParamSets;
 int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
                        const struct H264ParamSets *ps, void *logctx);
 
-static inline int ff_h264_sei_ctx_replace(H264SEIContext *dst,
-                                   const H264SEIContext *src)
-{
-    return ff_h2645_sei_ctx_replace(&dst->common, &src->common);
-}
-
 /**
  * Reset SEI values at the beginning of the frame.
  */

@@ -437,7 +437,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     h->frame_recovered       = h1->frame_recovered;
 
-    ret = ff_h264_sei_ctx_replace(&h->sei, &h1->sei);
+    ret = ff_h2645_sei_ctx_replace(&h->sei.common, &h1->sei.common);
     if (ret < 0)
         return ret;
 
