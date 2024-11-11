@@ -1233,6 +1233,7 @@ following image formats are supported:
 @item ADPCM IMA Duck DK4     @tab     @tab  X
     @tab Used in some Sega Saturn console games.
 @item ADPCM IMA Radical      @tab     @tab  X
+@item ADPCM IMA Xbox         @tab     @tab  X
 @item ADPCM Microsoft        @tab  X  @tab  X
 @item ADPCM MS IMA           @tab  X  @tab  X
 @item ADPCM Nintendo Gamecube AFC  @tab     @tab  X
