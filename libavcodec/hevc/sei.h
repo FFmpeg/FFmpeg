@@ -109,11 +109,6 @@ struct HEVCParamSets;
 int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
                            const struct HEVCParamSets *ps, enum HEVCNALUnitType type);
 
-static inline int ff_hevc_sei_ctx_replace(HEVCSEI *dst, const HEVCSEI *src)
-{
-    return ff_h2645_sei_ctx_replace(&dst->common, &src->common);
-}
-
 /**
  * Reset SEI values that are stored on the Context.
  * e.g. Caption data that was extracted during NAL
