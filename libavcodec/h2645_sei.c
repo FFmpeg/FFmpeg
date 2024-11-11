@@ -243,7 +243,7 @@ static int decode_registered_user_data(H2645SEI *h, GetByteContext *gb,
         if (bytestream2_get_bytes_left(gb) < 2)
             return AVERROR_INVALIDDATA;
 
-        provider_oriented_code = bytestream2_get_byteu(gb);
+        provider_oriented_code = bytestream2_get_be16u(gb);
         if (provider_oriented_code == aom_grain_provider_oriented_code) {
             return ff_aom_parse_film_grain_sets(&h->aom_film_grain,
                                                 gb->buffer,
