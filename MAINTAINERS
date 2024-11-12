@@ -50,8 +50,8 @@ Miscellaneous Areas
 ===================
 
 documentation                           Stefano Sabatini, Mike Melanson, Timothy Gu, Gyan Doshi
-project server day to day operations    (L: root@ffmpeg.org) Árpád Gereöffy, Michael Niedermayer, Reimar Doeffinger, Alexander Strasser, Nikolay Aleksandrov, Timo Rothenpieler
-project server emergencies              (L: root@ffmpeg.org) Árpád Gereöffy, Reimar Doeffinger, Alexander Strasser, Nikolay Aleksandrov, Timo Rothenpieler
+project server day to day operations    (L: root@ffmpeg.org) Michael Niedermayer, Reimar Doeffinger, Alexander Strasser, Nikolay Aleksandrov, Timo Rothenpieler
+project server emergencies              (L: root@ffmpeg.org) Reimar Doeffinger, Alexander Strasser, Nikolay Aleksandrov, Timo Rothenpieler
 presets                             [0]
 metadata subsystem                      Aurelien Jacobs
 release management                      Michael Niedermayer
