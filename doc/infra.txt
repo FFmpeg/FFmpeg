@@ -119,3 +119,23 @@ https://twitter.com/FFmpeg or https://x.com/FFmpeg
 
 If you would like to post to twitter please contact twitter MAINTAINERS
 for access. We want more developers posting to twitter!
+
+
+
+Reddit:
+~~~~~~~
+https://www.reddit.com/r/ffmpeg/
+moderated by Gyan
+
+
+
+Facebook:
+~~~~~~~~~
+https://www.facebook.com/ffmpeg
+???
+
+
+
+Wikipedia entry:
+~~~~~~~~~~~~~~~~
+https://en.wikipedia.org/wiki/FFmpeg
