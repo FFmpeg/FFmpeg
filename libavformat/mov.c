@@ -197,7 +197,7 @@ static HEIFItem *heif_cur_item(MOVContext *c)
     HEIFItem *item = NULL;
 
     for (int i = 0; i < c->nb_heif_item; i++) {
-        if (c->heif_item[i]->item_id != c->cur_item_id)
+        if (!c->heif_item[i] || c->heif_item[i]->item_id != c->cur_item_id)
             continue;
 
         item = c->heif_item[i];
@@ -8690,6 +8690,7 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (item_count > c->nb_heif_item)
         memset(&c->heif_item[c->nb_heif_item], 0,
                sizeof(*c->heif_item) * (item_count - c->nb_heif_item));
+    c->nb_heif_item = FFMAX(c->nb_heif_item, item_count);
 
     av_log(c->fc, AV_LOG_TRACE, "iloc: item_count %d\n", item_count);
     for (int i = 0; i < item_count; i++) {
@@ -8733,8 +8734,6 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_log(c->fc, AV_LOG_TRACE, "iloc: item_idx %d, offset_type %d, "
                                     "extent_offset %"PRId64", extent_length %"PRId64"\n",
                i, offset_type, item->extent_offset, item->extent_length);
-
-        c->nb_heif_item = FFMAX(c->nb_heif_item, i + 1);
     }
 
     c->found_iloc = 1;
@@ -8828,6 +8827,7 @@ static int mov_read_iinf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (entry_count > c->nb_heif_item)
         memset(&c->heif_item[c->nb_heif_item], 0,
                sizeof(*c->heif_item) * (entry_count - c->nb_heif_item));
+    c->nb_heif_item = FFMAX(c->nb_heif_item, entry_count);
 
     for (i = 0; i < entry_count; i++) {
         MOVAtom infe;
@@ -8843,7 +8843,6 @@ static int mov_read_iinf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             goto fail;
         if (!ret)
             got_stream = 1;
-        c->nb_heif_item = FFMAX(c->nb_heif_item, i + 1);
     }
 
     c->found_iinf = got_stream;
@@ -8881,7 +8880,7 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
         }
     }
     for (int i = 0; i < c->nb_heif_item; i++) {
-        if (c->heif_item[i]->item_id != from_item_id)
+        if (!c->heif_item[i] || c->heif_item[i]->item_id != from_item_id)
             continue;
         item = c->heif_item[i];
 
@@ -9799,6 +9798,8 @@ static int mov_read_close(AVFormatContext *s)
     av_freep(&mov->aes_decrypt);
     av_freep(&mov->chapter_tracks);
     for (i = 0; i < mov->nb_heif_item; i++) {
+        if (!mov->heif_item[i])
+            continue;
         av_freep(&mov->heif_item[i]->name);
         av_freep(&mov->heif_item[i]->icc_profile);
         av_freep(&mov->heif_item[i]);
@@ -10188,7 +10189,7 @@ static int mov_parse_tiles(AVFormatContext *s)
                 HEIFItem *item = mov->heif_item[k];
                 AVStream *st = item->st;
 
-                if (item->item_id != tile_id)
+                if (!item || item->item_id != tile_id)
                     continue;
                 if (!st) {
                     av_log(s, AV_LOG_WARNING, "HEIF item id %d from grid id %d doesn't "
@@ -10259,6 +10260,8 @@ static int mov_parse_heif_items(AVFormatContext *s)
         AVStream *st;
         int64_t offset = 0;
 
+        if (!item)
+            continue;
         if (!item->st) {
             if (item->item_id == mov->thmb_item_id) {
                 av_log(s, AV_LOG_ERROR, "HEIF thumbnail doesn't reference a stream\n");
