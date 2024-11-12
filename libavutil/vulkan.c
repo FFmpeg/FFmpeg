@@ -2135,7 +2135,7 @@ print:
     /* Write shader info */
     for (int i = 0; i < nb; i++) {
         const struct descriptor_props *prop = &descriptor_props[desc[i].type];
-        GLSLA("layout (set = %i, binding = %i", shd->nb_descriptor_sets - 1, i);
+        GLSLA("layout (set = %i, binding = %i", FFMAX(shd->nb_descriptor_sets - 1, 0), i);
 
         if (desc[i].mem_layout)
             GLSLA(", %s", desc[i].mem_layout);
