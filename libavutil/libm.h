@@ -365,7 +365,7 @@ static av_always_inline av_const int avpriv_isfinite(double x)
 #if !HAVE_HYPOT
 static inline av_const double hypot(double x, double y)
 {
-    double ret, temp;
+    double  temp;
     x = fabs(x);
     y = fabs(y);
 
