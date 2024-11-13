@@ -73,6 +73,9 @@ Github mirrors are redundantly synced by multiple people
 
 You need a new git repository related to FFmpeg ? contact root at ffmpeg.org
 
+git repositories are managed by gitolite, every change to permissions is
+logged, including when, what and by whom
+
 
 Fate:
 ~~~~~
