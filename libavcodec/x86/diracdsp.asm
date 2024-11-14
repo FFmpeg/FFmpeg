@@ -216,7 +216,7 @@ cglobal add_rect_clamped_%1, 7,9,3, dst, src, stride, idwt, idwt_stride, w, h
 
 %macro ADD_OBMC 2
 ; void add_obmc(uint16_t *dst, uint8_t *src, int stride, uint8_t *obmc_weight, int yblen)
-cglobal add_dirac_obmc%1_%2, 6,6,5, dst, src, stride, obmc, yblen
+cglobal add_dirac_obmc%1_%2, 5,5,5, dst, src, stride, obmc, yblen
     pxor        m4, m4
 .loop:
 %assign i 0
