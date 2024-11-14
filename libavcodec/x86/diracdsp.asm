@@ -228,7 +228,7 @@ cglobal add_dirac_obmc%1_%2, 5,5,5, dst, src, stride, obmc, yblen
     punpckhbw   m1, m4
     mova        m2, [obmcq+i]
     mova        m3, m2
-   punpcklbw   m2, m4
+    punpcklbw   m2, m4
     punpckhbw   m3, m4
     pmullw      m0, m2
     pmullw      m1, m3
@@ -248,9 +248,6 @@ cglobal add_dirac_obmc%1_%2, 5,5,5, dst, src, stride, obmc, yblen
     RET
 %endm
 
-INIT_MMX
-ADD_OBMC 8, mmx
-
 INIT_XMM
 PUT_RECT sse2
 ADD_RECT sse2
@@ -258,6 +255,25 @@ ADD_RECT sse2
 HPEL_FILTER sse2
 ADD_OBMC 32, sse2
 ADD_OBMC 16, sse2
+
+cglobal add_dirac_obmc8_sse2, 5,5,4, dst, src, stride, obmc, yblen
+    pxor        m3, m3
+    movsxdifnidn strideq, strided
+.loop:
+    movh        m0, [srcq]
+    punpcklbw   m0, m3
+    movh        m1, [obmcq]
+    punpcklbw   m1, m3
+    pmullw      m0, m1
+    movu        m1, [dstq]
+    paddw       m0, m1
+    movu        [dstq], m0
+    lea         srcq, [srcq+strideq]
+    lea         dstq, [dstq+2*strideq]
+    add         obmcq, 32
+    sub         yblend, 1
+    jg          .loop
+    RET
 
 INIT_XMM sse4
 
