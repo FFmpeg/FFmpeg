@@ -1473,6 +1473,7 @@ static int write_extra_headers(AVCodecContext *avctx,
         if (err < 0)
             goto fail;
     } else {
+        err = 0;
         *data_len = 0;
     }
 
