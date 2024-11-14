@@ -847,6 +847,7 @@ static const StreamType SCTE_types[] = {
 /* ATSC ? */
 static const StreamType MISC_types[] = {
     { 0x81, AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_AC3 },
+    { 0x87, AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_EAC3 },
     { 0x8a, AVMEDIA_TYPE_AUDIO, AV_CODEC_ID_DTS },
     { 0 },
 };
