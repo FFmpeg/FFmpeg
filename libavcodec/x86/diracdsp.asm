@@ -218,6 +218,7 @@ cglobal add_rect_clamped_%1, 7,9,3, dst, src, stride, idwt, idwt_stride, w, h
 ; void add_obmc(uint16_t *dst, uint8_t *src, int stride, uint8_t *obmc_weight, int yblen)
 cglobal add_dirac_obmc%1_%2, 5,5,5, dst, src, stride, obmc, yblen
     pxor        m4, m4
+    movsxdifnidn strideq, strided
 .loop:
 %assign i 0
 %rep %1 / mmsize
