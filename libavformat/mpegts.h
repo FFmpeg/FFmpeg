@@ -165,6 +165,17 @@
 #define METADATA_DESCRIPTOR          0x26
 #define METADATA_STD_DESCRIPTOR      0x27
 
+/* DVB descriptor tag values [0x40, 0x7F] from
+   ETSI EN 300 468 Table 12: Possible locations of descriptors */
+#define SERVICE_DESCRIPTOR           0x48
+#define STREAM_IDENTIFIER_DESCRIPTOR 0x52
+#define TELETEXT_DESCRIPTOR          0x56
+#define SUBTITLING_DESCRIPTOR        0x59
+#define AC3_DESCRIPTOR               0x6a /* AC-3_descriptor */
+#define ENHANCED_AC3_DESCRIPTOR      0x7a /* enhanced_AC-3_descriptor */
+#define DTS_DESCRIPTOR               0x7b
+#define EXTENSION_DESCRIPTOR         0x7f
+
 typedef struct MpegTSContext MpegTSContext;
 
 MpegTSContext *avpriv_mpegts_parse_open(AVFormatContext *s);
