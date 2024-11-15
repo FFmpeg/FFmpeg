@@ -146,7 +146,7 @@ enum cavs_mv_loc {
   MV_BWD_X3
 };
 
-DECLARE_ALIGNED(8, typedef, struct) {
+typedef struct cavs_vector {
     int16_t x;
     int16_t y;
     int16_t dist;
@@ -207,7 +207,7 @@ typedef struct AVSContext {
        D is the macroblock to the top-left (0)
 
        the same is repeated for backward motion vectors */
-    cavs_vector mv[2*4*3];
+    DECLARE_ALIGNED(8, cavs_vector, mv)[2*4*3];
     cavs_vector *top_mv[2];
     cavs_vector *col_mv;
 
