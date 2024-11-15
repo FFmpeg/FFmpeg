@@ -24,6 +24,7 @@
 #include "config.h"
 
 #include <stdint.h>
+#include <stdalign.h>
 
 #include "attributes.h"
 #include "macros.h"
@@ -73,26 +74,14 @@
  * @param v Name of the variable
  */
 
-#if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1110 || defined(__SUNPRO_C)
-    #define DECLARE_ALIGNED_T(n,t,v)    t __attribute__ ((aligned (n))) v
-    #define DECLARE_ASM_ALIGNED(n,t,v)  t __attribute__ ((aligned (n))) v
-    #define DECLARE_ASM_CONST(n,t,v)    const t __attribute__ ((aligned (n))) v
-#elif defined(__DJGPP__)
-    #define DECLARE_ALIGNED_T(n,t,v)    t __attribute__ ((aligned (FFMIN(n, 16)))) v
-    #define DECLARE_ASM_ALIGNED(n,t,v)  t av_used __attribute__ ((aligned (FFMIN(n, 16)))) v
-    #define DECLARE_ASM_CONST(n,t,v)    static const t av_used __attribute__ ((aligned (FFMIN(n, 16)))) v
-#elif defined(__GNUC__) || defined(__clang__)
-    #define DECLARE_ALIGNED_T(n,t,v)    t __attribute__ ((aligned (n))) v
-    #define DECLARE_ASM_ALIGNED(n,t,v)  t av_used __attribute__ ((aligned (n))) v
-    #define DECLARE_ASM_CONST(n,t,v)    static const t av_used __attribute__ ((aligned (n))) v
-#elif defined(_MSC_VER)
-    #define DECLARE_ALIGNED_T(n,t,v)    __declspec(align(n)) t v
-    #define DECLARE_ASM_ALIGNED(n,t,v)  __declspec(align(n)) t v
-    #define DECLARE_ASM_CONST(n,t,v)    __declspec(align(n)) static const t v
+#if defined(__DJGPP__)
+    #define DECLARE_ALIGNED_T(n,t,v)    alignas(FFMIN(n, 16)) t v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  alignas(FFMIN(n, 16)) t av_used v
+    #define DECLARE_ASM_CONST(n,t,v)    alignas(FFMIN(n, 16)) static const t av_used v
 #else
-    #define DECLARE_ALIGNED_T(n,t,v)    t v
-    #define DECLARE_ASM_ALIGNED(n,t,v)  t v
-    #define DECLARE_ASM_CONST(n,t,v)    static const t v
+    #define DECLARE_ALIGNED_T(n,t,v)    alignas(n) t v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  alignas(n) t av_used v
+    #define DECLARE_ASM_CONST(n,t,v)    alignas(n) static const t av_used v
 #endif
 
 #if HAVE_SIMD_ALIGN_64
