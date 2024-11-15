@@ -26,5 +26,6 @@
 #include "avcodec.h"
 
 av_cold int ff_ffv1_encode_init(AVCodecContext *avctx);
+av_cold int ff_ffv1_write_extradata(AVCodecContext *avctx);
 
 #endif /* AVCODEC_FFV1ENC_H */

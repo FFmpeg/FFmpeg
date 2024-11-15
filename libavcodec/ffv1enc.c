@@ -392,8 +392,10 @@ static void write_header(FFV1Context *f)
     }
 }
 
-static int write_extradata(FFV1Context *f)
+av_cold int ff_ffv1_write_extradata(AVCodecContext *avctx)
 {
+    FFV1Context *f = avctx->priv_data;
+
     RangeCoder c;
     uint8_t state[CONTEXT_SIZE];
     int i, j, k;
@@ -740,7 +742,7 @@ av_cold int ff_ffv1_encode_init(AVCodecContext *avctx)
         if ((ret = encode_determine_slices(avctx)) < 0)
             return ret;
 
-        if ((ret = write_extradata(s)) < 0)
+        if ((ret = ff_ffv1_write_extradata(avctx)) < 0)
             return ret;
     }
 
