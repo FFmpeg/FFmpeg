@@ -176,7 +176,7 @@ endfunc
 
         .global ff_h264_weight_funcs_8_rvv
         .hidden ff_h264_weight_funcs_8_rvv
-const ff_h264_weight_funcs_8_rvv
+const ff_h264_weight_funcs_8_rvv, relocate=1
         .irp    w, 16, 8, 4, 2
 #if __riscv_xlen == 32
         .word   ff_h264_weight_pixels\w\()_8_rvv
