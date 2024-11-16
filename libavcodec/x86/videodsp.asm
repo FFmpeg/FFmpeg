@@ -123,54 +123,43 @@ hvar_fn
 ;         - if (%2 & 8)  fills 8 bytes into xmm$next
 ;         - if (%2 & 4)  fills 4 bytes into xmm$next
 ;         - if (%2 & 3)  fills 1, 2 or 4 bytes in eax
-; on mmx, - fills mm0-7 for consecutive sets of 8 pixels
-;         - if (%2 & 4)  fills 4 bytes into mm$next
-;         - if (%2 & 3)  fills 1, 2 or 4 bytes in eax
 ; writing data out is in the same way
 %macro READ_NUM_BYTES 2
 %assign %%off 0     ; offset in source buffer
-%assign %%mmx_idx 0 ; mmx register index
 %assign %%xmm_idx 0 ; xmm register index
 
 %rep %2/mmsize
-%if mmsize == 16
     movu   xmm %+ %%xmm_idx, [srcq+%%off]
 %assign %%xmm_idx %%xmm_idx+1
-%else ; mmx
-    movu    mm %+ %%mmx_idx, [srcq+%%off]
-%assign %%mmx_idx %%mmx_idx+1
-%endif
 %assign %%off %%off+mmsize
 %endrep ; %2/mmsize
 
-%if mmsize == 16
 %if (%2-%%off) >= 8
 %if %2 > 16 && (%2-%%off) > 8
     movu   xmm %+ %%xmm_idx, [srcq+%2-16]
 %assign %%xmm_idx %%xmm_idx+1
 %assign %%off %2
 %else
-    movq    mm %+ %%mmx_idx, [srcq+%%off]
-%assign %%mmx_idx %%mmx_idx+1
+    movq   xmm %+ %%xmm_idx, [srcq+%%off]
+%assign %%xmm_idx %%xmm_idx+1
 %assign %%off %%off+8
 %endif
 %endif ; (%2-%%off) >= 8
-%endif
 
 %if (%2-%%off) >= 4
 %if %2 > 8 && (%2-%%off) > 4
-    movq    mm %+ %%mmx_idx, [srcq+%2-8]
+    movq   xmm %+ %%xmm_idx, [srcq+%2-8]
 %assign %%off %2
 %else
-    movd    mm %+ %%mmx_idx, [srcq+%%off]
+    movd   xmm %+ %%xmm_idx, [srcq+%%off]
 %assign %%off %%off+4
 %endif
-%assign %%mmx_idx %%mmx_idx+1
+%assign %%xmm_idx %%xmm_idx+1
 %endif ; (%2-%%off) >= 4
 
 %if (%2-%%off) >= 1
 %if %2 >= 4
-    movd mm %+ %%mmx_idx, [srcq+%2-4]
+    movd xmm %+ %%xmm_idx, [srcq+%2-4]
 %elif (%2-%%off) == 1
     mov            valb, [srcq+%2-1]
 %elif (%2-%%off) == 2
@@ -185,48 +174,40 @@ hvar_fn
 
 %macro WRITE_NUM_BYTES 2
 %assign %%off 0     ; offset in destination buffer
-%assign %%mmx_idx 0 ; mmx register index
 %assign %%xmm_idx 0 ; xmm register index
 
 %rep %2/mmsize
-%if mmsize == 16
     movu   [dstq+%%off], xmm %+ %%xmm_idx
 %assign %%xmm_idx %%xmm_idx+1
-%else ; mmx
-    movu   [dstq+%%off], mm %+ %%mmx_idx
-%assign %%mmx_idx %%mmx_idx+1
-%endif
 %assign %%off %%off+mmsize
 %endrep ; %2/mmsize
 
-%if mmsize == 16
 %if (%2-%%off) >= 8
 %if %2 > 16 && (%2-%%off) > 8
     movu   [dstq+%2-16], xmm %+ %%xmm_idx
 %assign %%xmm_idx %%xmm_idx+1
 %assign %%off %2
 %else
-    movq   [dstq+%%off], mm %+ %%mmx_idx
-%assign %%mmx_idx %%mmx_idx+1
+    movq   [dstq+%%off], xmm %+ %%xmm_idx
+%assign %%xmm_idx %%xmm_idx+1
 %assign %%off %%off+8
 %endif
 %endif ; (%2-%%off) >= 8
-%endif
 
 %if (%2-%%off) >= 4
 %if %2 > 8 && (%2-%%off) > 4
-    movq    [dstq+%2-8], mm %+ %%mmx_idx
+    movq    [dstq+%2-8], xmm %+ %%xmm_idx
 %assign %%off %2
 %else
-    movd   [dstq+%%off], mm %+ %%mmx_idx
+    movd   [dstq+%%off], xmm %+ %%xmm_idx
 %assign %%off %%off+4
 %endif
-%assign %%mmx_idx %%mmx_idx+1
+%assign %%xmm_idx %%xmm_idx+1
 %endif ; (%2-%%off) >= 4
 
 %if (%2-%%off) >= 1
 %if %2 >= 4
-    movd    [dstq+%2-4], mm %+ %%mmx_idx
+    movd    [dstq+%2-4], xmm %+ %%xmm_idx
 %elif (%2-%%off) == 1
     mov     [dstq+%2-1], valb
 %elif (%2-%%off) == 2
@@ -318,11 +299,8 @@ cglobal emu_edge_vfix %+ %%n, 1, 5, 1, dst, src, start_y, end_y, bh
 %endrep ; 1+%2-%1
 %endmacro ; VERTICAL_EXTEND
 
-INIT_MMX mmx
-VERTICAL_EXTEND 1, 15
-
-INIT_XMM sse
-VERTICAL_EXTEND 16, 22
+INIT_XMM sse2
+VERTICAL_EXTEND 1, 22
 
 ; left/right (horizontal) fast extend functions
 ; these are essentially identical to the vertical extend ones above,
@@ -337,11 +315,7 @@ VERTICAL_EXTEND 16, 22
     imul           vald, 0x01010101
 %if %1 >= 8
     movd             m0, vald
-%if mmsize == 16
     pshufd           m0, m0, q0000
-%else
-    punpckldq        m0, m0
-%endif ; mmsize == 16
 %endif ; %1 > 16
 %endif ; avx2
 %endmacro ; READ_V_PIXEL
@@ -356,7 +330,6 @@ VERTICAL_EXTEND 16, 22
 %assign %%off %%off+mmsize
 %endrep ; %1/mmsize
 
-%if mmsize == 16
 %if %1-%%off >= 8
 %if %1 > 16 && %1-%%off > 8
     movu     [%2+%1-16], m0
@@ -366,7 +339,6 @@ VERTICAL_EXTEND 16, 22
 %assign %%off %%off+8
 %endif
 %endif ; %1-%%off >= 8
-%endif ; mmsize == 16
 
 %if %1-%%off >= 4
 %if %1 > 8 && %1-%%off > 4
@@ -415,11 +387,8 @@ cglobal emu_edge_hfix %+ %%n, 4, 5, 1, dst, dst_stride, start_x, bh, val
 %endrep ; 1+(%2-%1)/2
 %endmacro ; H_EXTEND
 
-INIT_MMX mmx
-H_EXTEND 2, 14
-
 INIT_XMM sse2
-H_EXTEND 16, 22
+H_EXTEND 2, 22
 
 %if HAVE_AVX2_EXTERNAL
 INIT_XMM avx2
