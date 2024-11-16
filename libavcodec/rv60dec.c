@@ -881,12 +881,12 @@ static void fill_mv_skip_cand(RV60Context * s, const CUContext * cu, unique_list
         if (mvinfo_valid(mv))
             unique_list_mvinfo_add(skip_cand, *mv);
     }
-    if (has_top_right_block(s, cu->xpos, cu->ypos, 0, 0, size)) {
+    if (cu->ypos > 0 && cu->xpos + size < s->awidth) {
         const MVInfo * mv = &s->blk_info[cu->blk_pos - s->blk_stride + mv_size].mv;
         if (mvinfo_valid(mv))
             unique_list_mvinfo_add(skip_cand, *mv);
     }
-    if (has_left_down_block(s, cu->xpos, cu->ypos, 0, 0, size)) {
+    if (cu->xpos > 0 && cu->ypos + size < s->aheight) {
         const MVInfo * mv = &s->blk_info[cu->blk_pos + s->blk_stride * mv_size - 1].mv;
         if (mvinfo_valid(mv))
             unique_list_mvinfo_add(skip_cand, *mv);
