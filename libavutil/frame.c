@@ -174,7 +174,7 @@ static int get_video_buffer(AVFrame *frame, int align)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
     int ret, padded_height;
-    int plane_padding = FFMAX(16 + 16/*STRIDE_ALIGN*/, align);
+    int plane_padding;
     ptrdiff_t linesizes[4];
     size_t total_size, sizes[4];
 
@@ -184,10 +184,11 @@ static int get_video_buffer(AVFrame *frame, int align)
     if ((ret = av_image_check_size(frame->width, frame->height, 0, NULL)) < 0)
         return ret;
 
-    if (!frame->linesize[0]) {
-        if (align <= 0)
-            align = ALIGN;
+    if (align <= 0)
+        align = ALIGN;
+    plane_padding = FFMAX(ALIGN, align);
 
+    if (!frame->linesize[0]) {
         for (int i = 1; i <= align; i += i) {
             ret = av_image_fill_linesizes(frame->linesize, frame->format,
                                           FFALIGN(frame->width, i));
