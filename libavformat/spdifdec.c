@@ -236,6 +236,8 @@ int ff_spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
         st->codecpar->codec_id = codec_id;
         if (codec_id == AV_CODEC_ID_EAC3)
             ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL;
+        else
+            ffstream(st)->need_parsing = AVSTREAM_PARSE_HEADERS;
     } else if (codec_id != s->streams[0]->codecpar->codec_id) {
         avpriv_report_missing_feature(s, "Codec change in IEC 61937");
         return AVERROR_PATCHWELCOME;
