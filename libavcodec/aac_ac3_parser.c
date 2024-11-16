@@ -40,6 +40,8 @@ int ff_aac_ac3_parse(AVCodecParserContext *s1,
     int new_frame_start;
     int got_frame = 0;
 
+    s1->key_frame = -1;
+
     if (s1->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         i = buf_size;
         got_frame = 1;
@@ -145,10 +147,15 @@ get_next:
         } else {
 #if CONFIG_AAC_PARSER
             AACADTSHeaderInfo hdr;
+            GetBitContext gb;
+            int profile;
+            init_get_bits8(&gb, buf, buf_size);
             if (buf_size < AV_AAC_ADTS_HEADER_SIZE ||
-                ff_adts_header_parse_buf(buf, &hdr) < 0)
+                ff_adts_header_parse(&gb, &hdr) < 0)
                 return i;
 
+            avctx->profile = hdr.object_type - 1;
+            s1->key_frame = (avctx->profile == AV_PROFILE_AAC_USAC) ? get_bits1(&gb) : 1;
             bit_rate = hdr.bit_rate;
 #endif
         }
