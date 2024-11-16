@@ -4224,7 +4224,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
         } else {
             res = matroska_parse_frame(matroska, track, st, buf, out_data,
                                        out_size, timecode, lace_duration,
-                                       pos, !n ? is_keyframe : 0,
+                                       pos, is_keyframe,
                                        blockmore, nb_blockmore,
                                        discard_padding);
             if (res)
