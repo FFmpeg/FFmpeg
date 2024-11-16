@@ -862,50 +862,30 @@ static int get_skip_mv_index(enum MVRefEnum mvref)
     }
 }
 
-static int mvinfo_valid(const MVInfo * mvi)
+static void add_if_valid(unique_list_mvinfo * skip_cand, const MVInfo * mvi)
 {
-    return mvi->mvref != MVREF_NONE;
+    if (mvi->mvref != MVREF_NONE)
+        unique_list_mvinfo_add(skip_cand, *mvi);
 }
 
 static void fill_mv_skip_cand(RV60Context * s, const CUContext * cu, unique_list_mvinfo * skip_cand, int size)
 {
     int mv_size = size >> 2;
 
-    if (cu->xpos > 0) {
-        const MVInfo * mv = &s->blk_info[cu->blk_pos - 1].mv;
-        if (mvinfo_valid(mv))
-            unique_list_mvinfo_add(skip_cand, *mv);
-    }
-    if (cu->ypos > 0) {
-        const MVInfo * mv = &s->blk_info[cu->blk_pos - s->blk_stride].mv;
-        if (mvinfo_valid(mv))
-            unique_list_mvinfo_add(skip_cand, *mv);
-    }
-    if (cu->ypos > 0 && cu->xpos + size < s->awidth) {
-        const MVInfo * mv = &s->blk_info[cu->blk_pos - s->blk_stride + mv_size].mv;
-        if (mvinfo_valid(mv))
-            unique_list_mvinfo_add(skip_cand, *mv);
-    }
-    if (cu->xpos > 0 && cu->ypos + size < s->aheight) {
-        const MVInfo * mv = &s->blk_info[cu->blk_pos + s->blk_stride * mv_size - 1].mv;
-        if (mvinfo_valid(mv))
-            unique_list_mvinfo_add(skip_cand, *mv);
-    }
-    if (has_left_block(s, cu->xpos, cu->ypos, 0, 0, size)) {
-        const MVInfo * mv = &s->blk_info[cu->blk_pos + s->blk_stride * (mv_size - 1) - 1].mv;
-        if (mvinfo_valid(mv))
-            unique_list_mvinfo_add(skip_cand, *mv);
-    }
-    if (has_top_block(s, cu->xpos, cu->ypos, 0, 0, size)) {
-        const MVInfo * mv = &s->blk_info[cu->blk_pos - s->blk_stride + mv_size - 1].mv;
-        if (mvinfo_valid(mv))
-            unique_list_mvinfo_add(skip_cand, *mv);
-    }
-    if (cu->xpos > 0 && cu->ypos > 0) {
-        const MVInfo * mv = &s->blk_info[cu->blk_pos - s->blk_stride - 1].mv;
-        if (mvinfo_valid(mv))
-            unique_list_mvinfo_add(skip_cand, *mv);
-    }
+    if (cu->xpos)
+        add_if_valid(skip_cand, &s->blk_info[cu->blk_pos - 1].mv);
+    if (cu->ypos)
+        add_if_valid(skip_cand, &s->blk_info[cu->blk_pos - s->blk_stride].mv);
+    if (cu->ypos && cu->xpos + size < s->awidth)
+        add_if_valid(skip_cand, &s->blk_info[cu->blk_pos - s->blk_stride + mv_size].mv);
+    if (cu->xpos && cu->ypos + size < s->aheight)
+        add_if_valid(skip_cand, &s->blk_info[cu->blk_pos + s->blk_stride * mv_size - 1].mv);
+    if (cu->xpos)
+        add_if_valid(skip_cand, &s->blk_info[cu->blk_pos + s->blk_stride * (mv_size - 1) - 1].mv);
+    if (cu->ypos)
+        add_if_valid(skip_cand, &s->blk_info[cu->blk_pos - s->blk_stride + mv_size - 1].mv);
+    if (cu->xpos && cu->ypos)
+        add_if_valid(skip_cand, &s->blk_info[cu->blk_pos - s->blk_stride - 1].mv);
 
     for (int i = skip_cand->size; i < 4; i++)
         skip_cand->list[i] = (MVInfo){.mvref=MVREF_REF0,.f_mv={0,0},.b_mv={0,0}};
