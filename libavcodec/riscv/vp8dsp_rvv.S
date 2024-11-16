@@ -365,7 +365,7 @@ func ff_put_vp8_bilin\len\()_hv_rvv, zve32x
 endfunc
 .endr
 
-const subpel_filters
+const subpel_filters, align=0
         .byte 0,  -6, 123,  12,  -1, 0
         .byte 2, -11, 108,  36,  -8, 1
         .byte 0,  -9,  93,  50,  -6, 0
