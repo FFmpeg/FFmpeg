@@ -110,7 +110,7 @@ func ff_range_chr_from_jpeg_16_rvv, zve32x, zba
         vnsra.wi v4, v16, 11
         vse16.v  v0, (a0)
         sh1add   a0, t0, a0
-        vse16.v  v0, (a1)
+        vse16.v  v4, (a1)
         sh1add   a1, t0, a1
         bnez     a2, 1b
 
