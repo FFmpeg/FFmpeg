@@ -1177,6 +1177,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
                        &avpkt->duration);
 
+    avpkt->flags |= AV_PKT_FLAG_KEY;
+
     *got_packet_ptr = 1;
     return 0;
 }
