@@ -887,9 +887,10 @@ void av_frame_move_ref(AVFrame *dst, AVFrame *src);
  *           cases.
  *
  * @param frame frame in which to store the new buffers.
- * @param align Required buffer size alignment. If equal to 0, alignment will be
- *              chosen automatically for the current CPU. It is highly
- *              recommended to pass 0 here unless you know what you are doing.
+ * @param align Required buffer size and data pointer alignment. If equal to 0,
+ *              alignment will be chosen automatically for the current CPU.
+ *              It is highly recommended to pass 0 here unless you know what
+ *              you are doing.
  *
  * @return 0 on success, a negative AVERROR on error.
  */

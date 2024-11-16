@@ -210,7 +210,7 @@ static int get_video_buffer(AVFrame *frame, int align)
                                          padded_height, linesizes)) < 0)
         return ret;
 
-    total_size = 4*plane_padding;
+    total_size = 4 * plane_padding + 4 * align;
     for (int i = 0; i < 4; i++) {
         if (sizes[i] > SIZE_MAX - total_size)
             return AVERROR(EINVAL);
@@ -230,6 +230,7 @@ static int get_video_buffer(AVFrame *frame, int align)
     for (int i = 1; i < 4; i++) {
         if (frame->data[i])
             frame->data[i] += i * plane_padding;
+        frame->data[i] = (uint8_t *)FFALIGN((uintptr_t)frame->data[i], align);
     }
 
     frame->extended_data = frame->data;
@@ -244,6 +245,7 @@ static int get_audio_buffer(AVFrame *frame, int align)
 {
     int planar   = av_sample_fmt_is_planar(frame->format);
     int channels, planes;
+    size_t size;
     int ret;
 
     channels = frame->ch_layout.nb_channels;
@@ -255,6 +257,9 @@ static int get_audio_buffer(AVFrame *frame, int align)
         if (ret < 0)
             return ret;
     }
+
+    if (align <= 0)
+        align = ALIGN;
 
     if (planes > AV_NUM_DATA_POINTERS) {
         frame->extended_data = av_calloc(planes,
@@ -270,21 +275,27 @@ static int get_audio_buffer(AVFrame *frame, int align)
     } else
         frame->extended_data = frame->data;
 
+    if (frame->linesize[0] > SIZE_MAX - align)
+        return AVERROR(EINVAL);
+    size = frame->linesize[0] + (size_t)align;
+
     for (int i = 0; i < FFMIN(planes, AV_NUM_DATA_POINTERS); i++) {
-        frame->buf[i] = av_buffer_alloc(frame->linesize[0]);
+        frame->buf[i] = av_buffer_alloc(size);
         if (!frame->buf[i]) {
             av_frame_unref(frame);
             return AVERROR(ENOMEM);
         }
-        frame->extended_data[i] = frame->data[i] = frame->buf[i]->data;
+        frame->extended_data[i] = frame->data[i] =
+            (uint8_t *)FFALIGN((uintptr_t)frame->buf[i]->data, align);
     }
     for (int i = 0; i < planes - AV_NUM_DATA_POINTERS; i++) {
-        frame->extended_buf[i] = av_buffer_alloc(frame->linesize[0]);
+        frame->extended_buf[i] = av_buffer_alloc(size);
         if (!frame->extended_buf[i]) {
             av_frame_unref(frame);
             return AVERROR(ENOMEM);
         }
-        frame->extended_data[i + AV_NUM_DATA_POINTERS] = frame->extended_buf[i]->data;
+        frame->extended_data[i + AV_NUM_DATA_POINTERS] =
+            (uint8_t *)FFALIGN((uintptr_t)frame->extended_buf[i]->data, align);
     }
     return 0;
 
