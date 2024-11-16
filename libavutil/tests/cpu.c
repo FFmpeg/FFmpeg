@@ -25,6 +25,8 @@
 
 #if ARCH_AARCH64
 #include "libavutil/aarch64/cpu.h"
+#elif ARCH_RISCV
+#include "libavutil/riscv/cpu.h"
 #endif
 
 #if HAVE_UNISTD_H
@@ -170,6 +172,12 @@ int main(int argc, char **argv)
 #if ARCH_AARCH64 && HAVE_SVE
     if (cpu_flags_raw & AV_CPU_FLAG_SVE)
         printf("sve_vector_length = %d\n", 8 * ff_aarch64_sve_length());
+#elif ARCH_RISCV && HAVE_RVV
+    if (cpu_flags_raw & AV_CPU_FLAG_RVV_I32) {
+        size_t bytes = ff_get_rv_vlenb();
+
+        printf("rv_vlenb = %zu (%zu bits)\n", bytes, 8 * bytes);
+    }
 #endif
 
     return 0;
