@@ -270,6 +270,7 @@ static void mux_frames(int n, int c)
             pkt->dts = pkt->pts = audio_dts;
             pkt->stream_index = 1;
             pkt->duration = audio_duration;
+            pkt->flags |= AV_PKT_FLAG_KEY;
             audio_dts += audio_duration;
         } else {
             if (frames == end_frames)
