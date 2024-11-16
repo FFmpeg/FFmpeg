@@ -542,7 +542,7 @@ func ff_h264_idct8_dc_add_\depth\()_rvv, zve64x
 endfunc
 .endr
 
-const ff_h264_scan8
+const ff_h264_scan8, align=0
         .byte    014,  015,  024,  025,  016,  017,  026,  027
         .byte    034,  035,  044,  045,  036,  037,  046,  047
         .byte    064,  065,  074,  075,  066,  067,  076,  077
