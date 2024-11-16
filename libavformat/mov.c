@@ -6003,10 +6003,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             pts = AV_NOPTS_VALUE;
         }
 
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
-            keyframe = 1;
-        else
-            keyframe =
+        keyframe =
                 !(sample_flags & (MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC |
                                   MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES));
         if (keyframe) {
