@@ -927,6 +927,25 @@ In case you need finer control over how valgrind is invoked, use the
 @code{--target-exec='valgrind <your_custom_valgrind_options>} option in
 your configure line instead.
 
+@anchor{Maintenance}
+@chapter Maintenance process
+
+@anchor{MAINTAINERS}
+@section MAINTAINERS
+
+The developers maintaining each part of the codebase are listed in @file{MAINTAINERS}.
+Being listed in @file{MAINTAINERS}, gives one the right to have git write access to
+the specific repository.
+
+@anchor{Becoming a maintainer}
+@section Becoming a maintainer
+
+People add themselves to @file{MAINTAINERS} by sending a patch like any other code
+change. These get reviewed by the community like any other patch. It is expected
+that, if someone has an objection to a new maintainer, she is willing to object
+in public with her full name and is willing to take over maintainership for the area.
+
+
 @anchor{Release process}
 @chapter Release process
 
