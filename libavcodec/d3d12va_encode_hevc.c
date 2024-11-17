@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "cbs.h"
 #include "cbs_h265.h"
+#include "hw_base_encode_h265.h"
 #include "h2645data.h"
 #include "h265_profile_level.h"
 #include "codec_internal.h"
@@ -44,13 +45,11 @@ typedef struct D3D12VAEncodeHEVCContext {
     // User options.
     int qp;
     int profile;
-    int tier;
     int level;
 
     // Writer structures.
-    H265RawVPS   raw_vps;
-    H265RawSPS   raw_sps;
-    H265RawPPS   raw_pps;
+    FFHWBaseEncodeH265 units;
+    FFHWBaseEncodeH265Opts unit_opts;
 
     CodedBitstreamContext *cbc;
     CodedBitstreamFragment current_access_unit;
@@ -212,15 +211,15 @@ static int d3d12va_encode_hevc_write_sequence_header(AVCodecContext *avctx,
     CodedBitstreamFragment   *au   = &priv->current_access_unit;
     int err;
 
-    err = d3d12va_encode_hevc_add_nal(avctx, au, &priv->raw_vps);
+    err = d3d12va_encode_hevc_add_nal(avctx, au, &priv->units.raw_vps);
     if (err < 0)
         goto fail;
 
-    err = d3d12va_encode_hevc_add_nal(avctx, au, &priv->raw_sps);
+    err = d3d12va_encode_hevc_add_nal(avctx, au, &priv->units.raw_sps);
     if (err < 0)
         goto fail;
 
-    err = d3d12va_encode_hevc_add_nal(avctx, au, &priv->raw_pps);
+    err = d3d12va_encode_hevc_add_nal(avctx, au, &priv->units.raw_pps);
     if (err < 0)
         goto fail;
 
@@ -237,18 +236,15 @@ static int d3d12va_encode_hevc_init_sequence_params(AVCodecContext *avctx)
     D3D12VAEncodeContext      *ctx  = avctx->priv_data;
     D3D12VAEncodeHEVCContext  *priv = avctx->priv_data;
     AVD3D12VAFramesContext   *hwctx = base_ctx->input_frames->hwctx;
-    H265RawVPS                *vps  = &priv->raw_vps;
-    H265RawSPS                *sps  = &priv->raw_sps;
-    H265RawPPS                *pps  = &priv->raw_pps;
-    H265RawProfileTierLevel   *ptl  = &vps->profile_tier_level;
+    H265RawSPS                *sps  = &priv->units.raw_sps;
+    H265RawPPS                *pps  = &priv->units.raw_pps;
     H265RawVUI                *vui  = &sps->vui;
     D3D12_VIDEO_ENCODER_PROFILE_HEVC profile = D3D12_VIDEO_ENCODER_PROFILE_HEVC_MAIN;
     D3D12_VIDEO_ENCODER_LEVEL_TIER_CONSTRAINTS_HEVC level = { 0 };
     const AVPixFmtDescriptor *desc;
     uint8_t min_cu_size, max_cu_size, min_tu_size, max_tu_size;
-    int chroma_format, bit_depth;
     HRESULT hr;
-    int i;
+    int err;
 
     D3D12_FEATURE_DATA_VIDEO_ENCODER_SUPPORT support = {
         .NodeIndex                        = 0,
@@ -289,137 +285,24 @@ static int d3d12va_encode_hevc_init_sequence_params(AVCodecContext *avctx)
         return AVERROR_PATCHWELCOME;
     }
 
-    memset(vps, 0, sizeof(*vps));
-    memset(sps, 0, sizeof(*sps));
-    memset(pps, 0, sizeof(*pps));
-
     desc = av_pix_fmt_desc_get(base_ctx->input_frames->sw_format);
     av_assert0(desc);
-    if (desc->nb_components == 1) {
-        chroma_format = 0;
-    } else {
-        if (desc->log2_chroma_w == 1 && desc->log2_chroma_h == 1) {
-            chroma_format = 1;
-        } else if (desc->log2_chroma_w == 1 && desc->log2_chroma_h == 0) {
-            chroma_format = 2;
-        } else if (desc->log2_chroma_w == 0 && desc->log2_chroma_h == 0) {
-            chroma_format = 3;
-        } else {
-            av_log(avctx, AV_LOG_ERROR, "Chroma format of input pixel format "
-                   "%s is not supported.\n", desc->name);
-            return AVERROR(EINVAL);
-        }
-    }
-    bit_depth = desc->comp[0].depth;
 
     min_cu_size = d3d12va_encode_hevc_map_cusize(ctx->codec_conf.pHEVCConfig->MinLumaCodingUnitSize);
     max_cu_size = d3d12va_encode_hevc_map_cusize(ctx->codec_conf.pHEVCConfig->MaxLumaCodingUnitSize);
     min_tu_size = d3d12va_encode_hevc_map_tusize(ctx->codec_conf.pHEVCConfig->MinLumaTransformUnitSize);
     max_tu_size = d3d12va_encode_hevc_map_tusize(ctx->codec_conf.pHEVCConfig->MaxLumaTransformUnitSize);
 
-    // VPS
+    // cu_qp_delta always required to be 1 in https://github.com/microsoft/DirectX-Specs/blob/master/d3d/D3D12VideoEncoding.md
+    priv->unit_opts.cu_qp_delta_enabled_flag = 1;
+    priv->unit_opts.nb_slices = 1;
 
-    vps->nal_unit_header = (H265RawNALUnitHeader) {
-        .nal_unit_type         = HEVC_NAL_VPS,
-        .nuh_layer_id          = 0,
-        .nuh_temporal_id_plus1 = 1,
-    };
+    err = ff_hw_base_encode_init_params_h265(base_ctx, avctx,
+                                             &priv->units, &priv->unit_opts);
+    if (err < 0)
+        return err;
 
-    vps->vps_video_parameter_set_id = 0;
-
-    vps->vps_base_layer_internal_flag  = 1;
-    vps->vps_base_layer_available_flag = 1;
-    vps->vps_max_layers_minus1         = 0;
-    vps->vps_max_sub_layers_minus1     = 0;
-    vps->vps_temporal_id_nesting_flag  = 1;
-
-    ptl->general_profile_space = 0;
-    ptl->general_profile_idc   = avctx->profile;
-    ptl->general_tier_flag     = priv->tier;
-
-    ptl->general_profile_compatibility_flag[ptl->general_profile_idc] = 1;
-
-    ptl->general_progressive_source_flag    = 1;
-    ptl->general_interlaced_source_flag     = 0;
-    ptl->general_non_packed_constraint_flag = 1;
-    ptl->general_frame_only_constraint_flag = 1;
-
-    ptl->general_max_14bit_constraint_flag = bit_depth <= 14;
-    ptl->general_max_12bit_constraint_flag = bit_depth <= 12;
-    ptl->general_max_10bit_constraint_flag = bit_depth <= 10;
-    ptl->general_max_8bit_constraint_flag  = bit_depth ==  8;
-
-    ptl->general_max_422chroma_constraint_flag  = chroma_format <= 2;
-    ptl->general_max_420chroma_constraint_flag  = chroma_format <= 1;
-    ptl->general_max_monochrome_constraint_flag = chroma_format == 0;
-
-    ptl->general_intra_constraint_flag = base_ctx->gop_size == 1;
-    ptl->general_one_picture_only_constraint_flag = 0;
-
-    ptl->general_lower_bit_rate_constraint_flag = 1;
-
-    if (avctx->level != FF_LEVEL_UNKNOWN) {
-        ptl->general_level_idc = avctx->level;
-    } else {
-        const H265LevelDescriptor *level;
-
-        level = ff_h265_guess_level(ptl, avctx->bit_rate,
-                                    base_ctx->surface_width, base_ctx->surface_height,
-                                    1, 1, 1, (base_ctx->b_per_p > 0) + 1);
-        if (level) {
-            av_log(avctx, AV_LOG_VERBOSE, "Using level %s.\n", level->name);
-            ptl->general_level_idc = level->level_idc;
-        } else {
-            av_log(avctx, AV_LOG_VERBOSE, "Stream will not conform to "
-                   "any normal level; using level 8.5.\n");
-            ptl->general_level_idc = 255;
-            // The tier flag must be set in level 8.5.
-            ptl->general_tier_flag = 1;
-        }
-        avctx->level = ptl->general_level_idc;
-    }
-
-    vps->vps_sub_layer_ordering_info_present_flag = 0;
-    vps->vps_max_dec_pic_buffering_minus1[0]      = base_ctx->max_b_depth + 1;
-    vps->vps_max_num_reorder_pics[0]              = base_ctx->max_b_depth;
-    vps->vps_max_latency_increase_plus1[0]        = 0;
-
-    vps->vps_max_layer_id             = 0;
-    vps->vps_num_layer_sets_minus1    = 0;
-    vps->layer_id_included_flag[0][0] = 1;
-
-    vps->vps_timing_info_present_flag = 1;
-    if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
-        vps->vps_num_units_in_tick  = avctx->framerate.den;
-        vps->vps_time_scale         = avctx->framerate.num;
-        vps->vps_poc_proportional_to_timing_flag = 1;
-        vps->vps_num_ticks_poc_diff_one_minus1   = 0;
-    } else {
-        vps->vps_num_units_in_tick  = avctx->time_base.num;
-        vps->vps_time_scale         = avctx->time_base.den;
-        vps->vps_poc_proportional_to_timing_flag = 0;
-    }
-    vps->vps_num_hrd_parameters = 0;
-
-    // SPS
-
-    sps->nal_unit_header = (H265RawNALUnitHeader) {
-        .nal_unit_type         = HEVC_NAL_SPS,
-        .nuh_layer_id          = 0,
-        .nuh_temporal_id_plus1 = 1,
-    };
-
-    sps->sps_video_parameter_set_id = vps->vps_video_parameter_set_id;
-
-    sps->sps_max_sub_layers_minus1    = vps->vps_max_sub_layers_minus1;
-    sps->sps_temporal_id_nesting_flag = vps->vps_temporal_id_nesting_flag;
-
-    sps->profile_tier_level = vps->profile_tier_level;
-
-    sps->sps_seq_parameter_set_id = 0;
-
-    sps->chroma_format_idc          = chroma_format;
-    sps->separate_colour_plane_flag = 0;
+    avctx->level = priv->units.raw_vps.profile_tier_level.general_level_idc;
 
     av_assert0(ctx->res_limits.SubregionBlockPixelsSize % min_cu_size == 0);
 
@@ -441,21 +324,7 @@ static int d3d12va_encode_hevc_init_sequence_params(AVCodecContext *avctx)
         sps->conformance_window_flag = 0;
     }
 
-    sps->bit_depth_luma_minus8   = bit_depth - 8;
-    sps->bit_depth_chroma_minus8 = bit_depth - 8;
-
     sps->log2_max_pic_order_cnt_lsb_minus4 = ctx->gop.pHEVCGroupOfPictures->log2_max_pic_order_cnt_lsb_minus4;
-
-    sps->sps_sub_layer_ordering_info_present_flag =
-        vps->vps_sub_layer_ordering_info_present_flag;
-    for (i = 0; i <= sps->sps_max_sub_layers_minus1; i++) {
-        sps->sps_max_dec_pic_buffering_minus1[i] =
-            vps->vps_max_dec_pic_buffering_minus1[i];
-        sps->sps_max_num_reorder_pics[i] =
-            vps->vps_max_num_reorder_pics[i];
-        sps->sps_max_latency_increase_plus1[i] =
-            vps->vps_max_latency_increase_plus1[i];
-    }
 
     sps->log2_min_luma_coding_block_size_minus3      = (uint8_t)(av_log2(min_cu_size) - 3);
     sps->log2_diff_max_min_luma_coding_block_size    = (uint8_t)(av_log2(max_cu_size) - av_log2(min_cu_size));
@@ -469,93 +338,13 @@ static int d3d12va_encode_hevc_init_sequence_params(AVCodecContext *avctx)
                                D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_HEVC_FLAG_USE_ASYMETRIC_MOTION_PARTITION);
     sps->sample_adaptive_offset_enabled_flag = !!(ctx->codec_conf.pHEVCConfig->ConfigurationFlags &
                                                   D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_HEVC_FLAG_ENABLE_SAO_FILTER);
-    sps->sps_temporal_mvp_enabled_flag = 0;
-    sps->pcm_enabled_flag = 0;
-
-    sps->vui_parameters_present_flag = 1;
-
-    if (avctx->sample_aspect_ratio.num != 0 &&
-        avctx->sample_aspect_ratio.den != 0) {
-        int num, den, i;
-        av_reduce(&num, &den, avctx->sample_aspect_ratio.num,
-                  avctx->sample_aspect_ratio.den, 65535);
-        for (i = 0; i < FF_ARRAY_ELEMS(ff_h2645_pixel_aspect); i++) {
-            if (num == ff_h2645_pixel_aspect[i].num &&
-                den == ff_h2645_pixel_aspect[i].den) {
-                vui->aspect_ratio_idc = i;
-                break;
-            }
-        }
-        if (i >= FF_ARRAY_ELEMS(ff_h2645_pixel_aspect)) {
-            vui->aspect_ratio_idc = 255;
-            vui->sar_width  = num;
-            vui->sar_height = den;
-        }
-        vui->aspect_ratio_info_present_flag = 1;
-    }
-
-    // Unspecified video format, from table E-2.
-    vui->video_format             = 5;
-    vui->video_full_range_flag    =
-        avctx->color_range == AVCOL_RANGE_JPEG;
-    vui->colour_primaries         = avctx->color_primaries;
-    vui->transfer_characteristics = avctx->color_trc;
-    vui->matrix_coefficients      = avctx->colorspace;
-    if (avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
-        avctx->color_trc       != AVCOL_TRC_UNSPECIFIED ||
-        avctx->colorspace      != AVCOL_SPC_UNSPECIFIED)
-        vui->colour_description_present_flag = 1;
-    if (avctx->color_range     != AVCOL_RANGE_UNSPECIFIED ||
-        vui->colour_description_present_flag)
-        vui->video_signal_type_present_flag = 1;
-
-    if (avctx->chroma_sample_location != AVCHROMA_LOC_UNSPECIFIED) {
-        vui->chroma_loc_info_present_flag = 1;
-        vui->chroma_sample_loc_type_top_field    =
-        vui->chroma_sample_loc_type_bottom_field =
-            avctx->chroma_sample_location - 1;
-    }
-
-    vui->vui_timing_info_present_flag        = 1;
-    vui->vui_num_units_in_tick               = vps->vps_num_units_in_tick;
-    vui->vui_time_scale                      = vps->vps_time_scale;
-    vui->vui_poc_proportional_to_timing_flag = vps->vps_poc_proportional_to_timing_flag;
-    vui->vui_num_ticks_poc_diff_one_minus1   = vps->vps_num_ticks_poc_diff_one_minus1;
-    vui->vui_hrd_parameters_present_flag     = 0;
-
-    vui->bitstream_restriction_flag    = 1;
-    vui->motion_vectors_over_pic_boundaries_flag = 1;
-    vui->restricted_ref_pic_lists_flag = 1;
-    vui->max_bytes_per_pic_denom       = 0;
-    vui->max_bits_per_min_cu_denom     = 0;
-    vui->log2_max_mv_length_horizontal = 15;
-    vui->log2_max_mv_length_vertical   = 15;
-
-    // PPS
-
-    pps->nal_unit_header = (H265RawNALUnitHeader) {
-        .nal_unit_type         = HEVC_NAL_PPS,
-        .nuh_layer_id          = 0,
-        .nuh_temporal_id_plus1 = 1,
-    };
-
-    pps->pps_pic_parameter_set_id = 0;
-    pps->pps_seq_parameter_set_id = sps->sps_seq_parameter_set_id;
 
     pps->cabac_init_present_flag = 1;
-
-    pps->num_ref_idx_l0_default_active_minus1 = 0;
-    pps->num_ref_idx_l1_default_active_minus1 = 0;
 
     pps->init_qp_minus26 = 0;
 
     pps->transform_skip_enabled_flag = !!(ctx->codec_conf.pHEVCConfig->ConfigurationFlags &
                                           D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_HEVC_FLAG_ENABLE_TRANSFORM_SKIPPING);
-
-    // cu_qp_delta always required to be 1 in https://github.com/microsoft/DirectX-Specs/blob/master/d3d/D3D12VideoEncoding.md
-    pps->cu_qp_delta_enabled_flag = 1;
-
-    pps->diff_cu_qp_delta_depth   = 0;
 
     pps->pps_slice_chroma_qp_offsets_present_flag = 1;
 
@@ -563,6 +352,7 @@ static int d3d12va_encode_hevc_init_sequence_params(AVCodecContext *avctx)
 
     pps->pps_loop_filter_across_slices_enabled_flag = !(ctx->codec_conf.pHEVCConfig->ConfigurationFlags &
                                                         D3D12_VIDEO_ENCODER_CODEC_CONFIGURATION_HEVC_FLAG_DISABLE_LOOP_FILTER_ACROSS_SLICES);
+
     pps->deblocking_filter_control_present_flag = 1;
 
     return 0;
@@ -729,7 +519,7 @@ static int d3d12va_encode_hevc_set_level(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    ctx->level.pHEVCLevelSetting->Tier = priv->raw_vps.profile_tier_level.general_tier_flag == 0 ?
+    ctx->level.pHEVCLevelSetting->Tier = priv->units.raw_vps.profile_tier_level.general_tier_flag == 0 ?
                                          D3D12_VIDEO_ENCODER_TIER_HEVC_MAIN :
                                          D3D12_VIDEO_ENCODER_TIER_HEVC_HIGH;
 
@@ -932,7 +722,7 @@ static const AVOption d3d12va_encode_hevc_options[] = {
 #undef PROFILE
 
     { "tier", "Set tier (general_tier_flag)",
-      OFFSET(tier), AV_OPT_TYPE_INT,
+      OFFSET(unit_opts.tier), AV_OPT_TYPE_INT,
       { .i64 = 0 }, 0, 1, FLAGS, "tier" },
     { "main", NULL, 0, AV_OPT_TYPE_CONST,
       { .i64 = 0 }, 0, 0, FLAGS, "tier" },
