@@ -52,7 +52,6 @@ func ff_h264_weight_pixels_simple_8_rvv, zve32x, b
         vse8.v      v8, (a0)
         vse8.v      v9, (t0)
         sh1add  a0, a1, a0
-        add     a0, a0, a1
         bnez    a2, 1b
 
         ret
