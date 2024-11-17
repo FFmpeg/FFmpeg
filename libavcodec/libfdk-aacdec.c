@@ -111,7 +111,7 @@ static const AVClass fdk_aac_dec_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static int get_stream_info(AVCodecContext *avctx)
+static int get_stream_info(AVCodecContext *avctx, AVFrame *frame)
 {
     FDKAACDecContext *s   = avctx->priv_data;
     CStreamInfo *info     = aacDecoder_GetStreamInfo(s->handle);
@@ -130,6 +130,9 @@ static int get_stream_info(AVCodecContext *avctx)
     }
     avctx->sample_rate = info->sampleRate;
     avctx->frame_size  = info->frameSize;
+    avctx->profile     = info->aot - 1;
+
+    frame->flags |= AV_FRAME_FLAG_KEY * !!(info->flags & AC_INDEP);
 #if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
     if (!s->output_delay_set && info->outputDelay) {
         // Set this only once.
@@ -413,7 +416,7 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         goto end;
     }
 
-    if ((ret = get_stream_info(avctx)) < 0)
+    if ((ret = get_stream_info(avctx, frame)) < 0)
         goto end;
     frame->nb_samples = avctx->frame_size;
 
