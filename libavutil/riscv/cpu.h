@@ -56,7 +56,6 @@ static inline size_t ff_get_rv_vlenb(void)
         ".option pop\n" : "=r" (vlenb));
     return vlenb;
 }
-#endif
 
 /**
  * Checks that the vector bit-size is at least the given value.
@@ -78,3 +77,4 @@ static inline bool ff_rv_vlen_least(unsigned int bits)
     return bits <= (8 * ff_get_rv_vlenb());
 }
 #endif
+#endif /* HAVE_RVV */
