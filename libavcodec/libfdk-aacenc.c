@@ -549,6 +549,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     avpkt->size     = out_args.numOutBytes;
+    avpkt->flags   |= AV_PKT_FLAG_KEY;
     *got_packet_ptr = 1;
     return 0;
 }
