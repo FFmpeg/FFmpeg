@@ -4154,8 +4154,18 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
     if (err < 0)
         goto end;
 
-    /* No need to declare buf deps for synchronous transfers */
+    /* No need to declare buf deps for synchronous transfers (downloads) */
     if (upload) {
+        /* Add the software frame backing the buffers if we're host mapping */
+        if (host_mapped) {
+            err = ff_vk_exec_add_dep_sw_frame(&p->vkctx, exec, swf);
+            if (err < 0) {
+                ff_vk_exec_discard_deps(&p->vkctx, exec);
+                goto end;
+            }
+        }
+
+        /* Add the buffers as a dependency */
         err = ff_vk_exec_add_dep_buf(&p->vkctx, exec, bufs, nb_bufs, 1);
         if (err < 0) {
             ff_vk_exec_discard_deps(&p->vkctx, exec);
