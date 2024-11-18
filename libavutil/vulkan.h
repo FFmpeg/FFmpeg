@@ -134,6 +134,11 @@ typedef struct FFVkExecContext {
     unsigned int frame_deps_alloc_size;
     int nb_frame_deps;
 
+    /* Software frame dependencies */
+    AVFrame **sw_frame_deps;
+    unsigned int sw_frame_deps_alloc_size;
+    int nb_sw_frame_deps;
+
     VkSemaphoreSubmitInfo *sem_wait;
     unsigned int sem_wait_alloc;
     int sem_wait_cnt;
@@ -441,6 +446,8 @@ int ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
 int ff_vk_exec_add_dep_frame(FFVulkanContext *s, FFVkExecContext *e, AVFrame *f,
                              VkPipelineStageFlagBits2 wait_stage,
                              VkPipelineStageFlagBits2 signal_stage);
+int ff_vk_exec_add_dep_sw_frame(FFVulkanContext *s, FFVkExecContext *e,
+                                AVFrame *f);
 void ff_vk_exec_update_frame(FFVulkanContext *s, FFVkExecContext *e, AVFrame *f,
                              VkImageMemoryBarrier2 *bar, uint32_t *nb_img_bar);
 int ff_vk_exec_mirror_sem_value(FFVulkanContext *s, FFVkExecContext *e,

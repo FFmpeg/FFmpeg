@@ -255,6 +255,7 @@ void ff_vk_exec_pool_free(FFVulkanContext *s, FFVkExecPool *pool)
         ff_vk_exec_discard_deps(s, e);
 
         av_free(e->frame_deps);
+        av_free(e->sw_frame_deps);
         av_free(e->buf_deps);
         av_free(e->queue_family_dst);
         av_free(e->layout_dst);
@@ -551,6 +552,10 @@ void ff_vk_exec_discard_deps(FFVulkanContext *s, FFVkExecContext *e)
         av_buffer_unref(&e->buf_deps[j]);
     e->nb_buf_deps = 0;
 
+    for (int j = 0; j < e->nb_sw_frame_deps; j++)
+        av_frame_free(&e->sw_frame_deps[j]);
+    e->nb_sw_frame_deps = 0;
+
     for (int j = 0; j < e->nb_frame_deps; j++) {
         AVFrame *f = e->frame_deps[j];
         if (e->frame_locked[j]) {
@@ -590,6 +595,27 @@ int ff_vk_exec_add_dep_buf(FFVulkanContext *s, FFVkExecContext *e,
             return AVERROR(ENOMEM);
         }
         e->nb_buf_deps++;
+    }
+
+    return 0;
+}
+
+int ff_vk_exec_add_dep_sw_frame(FFVulkanContext *s, FFVkExecContext *e,
+                                AVFrame *f)
+{
+    AVFrame **dst = av_fast_realloc(e->sw_frame_deps, &e->sw_frame_deps_alloc_size,
+                                    (e->nb_sw_frame_deps + 1) * sizeof(*dst));
+    if (!dst) {
+        ff_vk_exec_discard_deps(s, e);
+        return AVERROR(ENOMEM);
+    }
+
+    e->sw_frame_deps = dst;
+
+    e->sw_frame_deps[e->nb_sw_frame_deps] = av_frame_clone(f);
+    if (!e->sw_frame_deps[e->nb_sw_frame_deps]) {
+        ff_vk_exec_discard_deps(s, e);
+        return AVERROR(ENOMEM);
     }
 
     return 0;
