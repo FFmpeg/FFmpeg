@@ -504,9 +504,11 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
         /* Reset type in case it contains a stale value from a previously parsed NAL */
         nal->type = 0;
 
-        if (codec_id == AV_CODEC_ID_HEVC)
+        if (codec_id == AV_CODEC_ID_HEVC) {
             ret = hevc_parse_nal_header(nal, logctx);
-        else
+            if (nal->nuh_layer_id == 63)
+                continue;
+        } else
             ret = h264_parse_nal_header(nal, logctx);
         if (ret < 0) {
             av_log(logctx, AV_LOG_WARNING, "Invalid NAL unit %d, skipping.\n",
