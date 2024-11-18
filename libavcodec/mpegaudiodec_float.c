@@ -103,6 +103,24 @@ const FFCodec ff_mp2float_decoder = {
     CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_FLT),
 };
 #endif
+#if CONFIG_AHX_DECODER
+const FFCodec ff_ahx_decoder = {
+    .p.name         = "ahx",
+    CODEC_LONG_NAME("CRI AHX"),
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_AHX,
+    .priv_data_size = sizeof(MPADecodeContext),
+    .init           = decode_init,
+    FF_CODEC_DECODE_CB(decode_frame),
+    .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
+                      AV_CODEC_CAP_DR1,
+    .flush          = flush,
+    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
+                                                      AV_SAMPLE_FMT_FLT,
+                                                      AV_SAMPLE_FMT_NONE },
+    .bsfs           = "ahx_to_mp2",
+};
+#endif
 #if CONFIG_MP3FLOAT_DECODER
 const FFCodec ff_mp3float_decoder = {
     .p.name         = "mp3float",

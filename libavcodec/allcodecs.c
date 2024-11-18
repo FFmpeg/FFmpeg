@@ -434,6 +434,7 @@ extern const FFCodec ff_ac3_decoder;
 extern const FFCodec ff_ac3_fixed_encoder;
 extern const FFCodec ff_ac3_fixed_decoder;
 extern const FFCodec ff_acelp_kelvin_decoder;
+extern const FFCodec ff_ahx_decoder;
 extern const FFCodec ff_alac_encoder;
 extern const FFCodec ff_alac_decoder;
 extern const FFCodec ff_als_decoder;

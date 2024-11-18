@@ -1608,7 +1608,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if (ret >= 0) {
         s->frame->nb_samples = avctx->frame_size;
         *got_frame_ptr       = 1;
-        avctx->sample_rate   = s->sample_rate;
+        if (avctx->codec_id != AV_CODEC_ID_AHX)
+            avctx->sample_rate = s->sample_rate;
         //FIXME maybe move the other codec info stuff from above here too
     } else {
         av_log(avctx, AV_LOG_ERROR, "Error while decoding MPEG audio frame.\n");

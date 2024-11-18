@@ -556,6 +556,7 @@ enum AVCodecID {
     AV_CODEC_ID_QOA,
     AV_CODEC_ID_LC3,
     AV_CODEC_ID_G728,
+    AV_CODEC_ID_AHX,
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
