@@ -918,11 +918,13 @@ static int encode_init_internal(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    if ((ret = encode_determine_slices(avctx)) < 0)
-        return ret;
+    if (s->version > 1) {
+        if ((ret = encode_determine_slices(avctx)) < 0)
+            return ret;
 
-    if ((ret = ff_ffv1_write_extradata(avctx)) < 0)
-        return ret;
+        if ((ret = ff_ffv1_write_extradata(avctx)) < 0)
+            return ret;
+    }
 
     if ((ret = ff_ffv1_init_slice_contexts(s)) < 0)
         return ret;
