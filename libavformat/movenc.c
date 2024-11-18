@@ -737,6 +737,9 @@ static struct mpeg4_bit_rate_values calculate_mpeg4_bit_rates(MOVTrack *track)
 
     // utilize values from properties if we have them available
     if (props) {
+        // no avg_bitrate signals that the track is VBR
+        if (!props->avg_bitrate)
+            bit_rates.avg_bit_rate = props->avg_bitrate;
         bit_rates.max_bit_rate = FFMAX(bit_rates.max_bit_rate,
                                        props->max_bitrate);
         bit_rates.buffer_size = props->buffer_size / 8;
