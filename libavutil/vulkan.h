@@ -267,6 +267,7 @@ typedef struct FFVulkanContext {
     FFVulkanFunctions     vkfn;
     FFVulkanExtensions    extensions;
     VkPhysicalDeviceProperties2 props;
+    VkPhysicalDeviceVulkan11Properties props_11;
     VkPhysicalDeviceDriverProperties driver_props;
     VkPhysicalDeviceMemoryProperties mprops;
     VkPhysicalDeviceExternalMemoryHostPropertiesEXT hprops;

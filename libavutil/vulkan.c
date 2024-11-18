@@ -130,9 +130,13 @@ int ff_vk_load_props(FFVulkanContext *s)
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES,
         .pNext = &s->desc_buf_props,
     };
+    s->props_11 = (VkPhysicalDeviceVulkan11Properties) {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES,
+        .pNext = &s->driver_props,
+    };
     s->props = (VkPhysicalDeviceProperties2) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-        .pNext = &s->driver_props,
+        .pNext = &s->props_11,
     };
 
     s->atomic_float_feats = (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT) {
