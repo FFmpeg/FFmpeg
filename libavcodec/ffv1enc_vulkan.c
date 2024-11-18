@@ -1433,7 +1433,7 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     }
 
     err = ff_vk_exec_pool_init(&fv->s, &fv->qf, &fv->exec_pool,
-                               fv->qf.nb_queues*4,
+                               1, /* Single-threaded for now */
                                0, 0, 0, NULL);
     if (err < 0)
         return err;
