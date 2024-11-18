@@ -468,6 +468,10 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         if (s->avctx->height <= 0)
             return AVERROR_INVALIDDATA;
     }
+    if (s->bayer && s->progressive) {
+        avpriv_request_sample(s->avctx, "progressively coded bayer picture");
+        return AVERROR_INVALIDDATA;
+    }
 
     if (s->got_picture && s->interlaced && (s->bottom_field == !s->interlace_polarity)) {
         if (s->progressive) {
