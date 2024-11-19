@@ -1661,8 +1661,10 @@ static void vaapi_device_free(AVHWDeviceContext *ctx)
         XCloseDisplay(priv->x11_display);
 #endif
 
+#if HAVE_VAAPI_DRM
     if (priv->drm_fd >= 0)
         close(priv->drm_fd);
+#endif
 
     av_freep(&priv);
 }
