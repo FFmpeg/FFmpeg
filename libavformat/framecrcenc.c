@@ -78,5 +78,5 @@ const FFOutputFormat ff_framecrc_muxer = {
     .write_header      = framecrc_write_header,
     .write_packet      = framecrc_write_packet,
     .p.flags           = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
-                         AVFMT_TS_NEGATIVE,
+                         AVFMT_TS_NEGATIVE | AVFMT_NODIMENSIONS,
 };
