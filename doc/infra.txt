@@ -33,6 +33,8 @@ Web, mail, and public facing git, also website git
 fftrac VM:
 ----------
 trac.ffmpeg.org         Issue tracking
+gpg encrypted backups of the trac repositories are created once a day
+and can be downloaded by any of the admins.
 
 
 ffaux VM:
