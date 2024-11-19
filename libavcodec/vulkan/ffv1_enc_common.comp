@@ -97,5 +97,5 @@ void finalize_slice(inout SliceContext sc, const uint slice_idx)
     }
 
     slice_results[slice_idx*2 + 0] = enc_len;
-    slice_results[slice_idx*2 + 1] = uint32_t(uint64_t(bs) - uint64_t(out_data));
+    slice_results[slice_idx*2 + 1] = uint64_t(bs) - uint64_t(out_data);
 }

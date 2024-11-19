@@ -114,11 +114,11 @@ typedef struct FFv1VkParameters {
     VkDeviceAddress slice_state;
     VkDeviceAddress scratch_data;
     VkDeviceAddress out_data;
+    uint64_t slice_size_max;
 
     int32_t sar[2];
     uint32_t chroma_shift[2];
 
-    uint32_t slice_size_max;
     uint32_t plane_state_size;
     uint32_t context_count;
     uint32_t crcref;
@@ -146,11 +146,11 @@ static void add_push_data(FFVulkanShader *shd)
     GLSLC(1,    u8buf slice_state;                                            );
     GLSLC(1,    u8buf scratch_data;                                           );
     GLSLC(1,    u8buf out_data;                                               );
+    GLSLC(1,    uint64_t slice_size_max;                                      );
     GLSLC(0,                                                                  );
     GLSLC(1,    ivec2 sar;                                                    );
     GLSLC(1,    uvec2 chroma_shift;                                           );
     GLSLC(0,                                                                  );
-    GLSLC(1,    uint slice_size_max;                                          );
     GLSLC(1,    uint plane_state_size;                                        );
     GLSLC(1,    uint context_count;                                           );
     GLSLC(1,    uint32_t crcref;                                              );
@@ -303,7 +303,7 @@ static int vulkan_encode_ffv1_frame(AVCodecContext *avctx, AVPacket *pkt,
     /* Results data */
     AVBufferRef *results_data_ref;
     FFVkBuffer *results_data_buf;
-    uint32_t *sc;
+    uint64_t *sc;
 
     int has_inter = avctx->gop_size > 1;
     uint32_t context_count = f->context_count[f->context_model];
@@ -389,7 +389,7 @@ static int vulkan_encode_ffv1_frame(AVCodecContext *avctx, AVPacket *pkt,
                                   &results_data_ref,
                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                  NULL, 2*f->slice_count*sizeof(uint32_t),
+                                  NULL, 2*f->slice_count*sizeof(uint64_t),
                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     if (err < 0)
@@ -410,12 +410,6 @@ static int vulkan_encode_ffv1_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
     maxsize >>= 3;
     maxsize += FF_INPUT_BUFFER_MIN_SIZE;
-
-    if (maxsize > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE - 32) {
-        av_log(avctx, AV_LOG_WARNING, "Cannot allocate worst case packet size, "
-                                      "the encoding could fail\n");
-        maxsize = INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE - 32;
-    }
 
     /* Allocate output buffer */
     err = ff_vk_get_pooled_buffer(&fv->s, &fv->out_data_pool,
@@ -679,25 +673,26 @@ static int vulkan_encode_ffv1_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     /* First slice is in-place */
     buf_p = pkt->data;
-    sc = &((uint32_t *)results_data_buf->mapped_mem)[0];
-    av_log(avctx, AV_LOG_VERBOSE, "Slice size = %u (max %i), src offset = %u\n",
+    sc = &((uint64_t *)results_data_buf->mapped_mem)[0];
+    av_log(avctx, AV_LOG_DEBUG, "Slice size = %"PRIu64" (max %i), src offset = %"PRIu64"\n",
            sc[0], pkt->size / f->slice_count, sc[1]);
-    av_assert0(sc[0] < pkt->size / f->slice_count);
+    av_assert0(sc[0] < pd.slice_size_max);
     av_assert0(sc[0] < (1 << 24));
     buf_p += sc[0];
 
     /* We have to copy the rest */
     for (int i = 1; i < f->slice_count; i++) {
-        uint32_t bytes;
+        uint64_t bytes;
         uint8_t *bs_start;
 
-        sc = &((uint32_t *)results_data_buf->mapped_mem)[i*2];
+        sc = &((uint64_t *)results_data_buf->mapped_mem)[i*2];
         bytes = sc[0];
         bs_start = pkt->data + sc[1];
 
-        av_log(avctx, AV_LOG_VERBOSE, "Slice size = %u (max %i), src offset = %u\n",
-               bytes, pkt->size / f->slice_count, sc[1]);
-        av_assert0(bytes < pkt->size / f->slice_count);
+        av_log(avctx, AV_LOG_DEBUG, "Slice %i size = %"PRIu64" (max %"PRIu64"), "
+                                    "src offset = %"PRIu64"\n",
+               i, bytes, pd.slice_size_max, sc[1]);
+        av_assert0(bytes < pd.slice_size_max);
         av_assert0(bytes < (1 << 24));
 
         memmove(buf_p, bs_start, bytes);
@@ -1175,7 +1170,7 @@ static int init_encode_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
             .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
             .mem_quali   = "writeonly",
-            .buf_content = "uint32_t slice_results[2048];",
+            .buf_content = "uint64_t slice_results[2048];",
         },
     };
     RET(ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set, 3, 0, 0));
