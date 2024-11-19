@@ -958,10 +958,12 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc,
     /*
      * We need at least one of each: VPS, SPS and PPS.
      */
-    if ((!numNalus[VPS_INDEX] || numNalus[VPS_INDEX] > HEVC_MAX_VPS_COUNT) && !is_lhvc)
+    if ((flags & FLAG_ARRAY_COMPLETENESS) &&
+        (!numNalus[VPS_INDEX] || numNalus[VPS_INDEX] > HEVC_MAX_VPS_COUNT) && !is_lhvc)
         return AVERROR_INVALIDDATA;
-    if (!numNalus[SPS_INDEX] || numNalus[SPS_INDEX] > HEVC_MAX_SPS_COUNT ||
-        !numNalus[PPS_INDEX] || numNalus[PPS_INDEX] > HEVC_MAX_PPS_COUNT)
+    if ((flags & FLAG_ARRAY_COMPLETENESS) &&
+        (!numNalus[SPS_INDEX] || numNalus[SPS_INDEX] > HEVC_MAX_SPS_COUNT ||
+         !numNalus[PPS_INDEX] || numNalus[PPS_INDEX] > HEVC_MAX_PPS_COUNT))
         return AVERROR_INVALIDDATA;
 
     /* unsigned int(8) configurationVersion = 1; */
