@@ -50,10 +50,10 @@
 
 static void check_add_obmc(size_t func_index, int xblen)
 {
-    LOCAL_ALIGNED_8(uint8_t, src, [XBLEN_MAX * YBLEN_MAX]);
+    LOCAL_ALIGNED_16(uint8_t, src, [XBLEN_MAX * YBLEN_MAX]);
     LOCAL_ALIGNED_16(uint16_t, _dst0, [XBLEN_MAX * YBLEN_MAX + 4]);
     LOCAL_ALIGNED_16(uint16_t, _dst1, [XBLEN_MAX * YBLEN_MAX + 4]);
-    LOCAL_ALIGNED_8(uint8_t, obmc_weight, [XBLEN_MAX * YBLEN_MAX]);
+    LOCAL_ALIGNED_16(uint8_t, obmc_weight, [XBLEN_MAX * YBLEN_MAX]);
 
     // Ensure that they accept unaligned buffer.
     // Not using LOCAL_ALIGNED_8 because it might make 16 byte aligned buffer.
