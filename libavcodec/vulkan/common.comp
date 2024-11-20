@@ -68,7 +68,7 @@ uint64_t align64(uint64_t src, uint64_t a)
 }
 
 #define reverse4(src) \
-    (pack32(unpack8(uint32_t(src)).wzxy))
+    (pack32(unpack8(uint32_t(src)).wzyx))
 
 uint64_t reverse8(uint64_t src)
 {
