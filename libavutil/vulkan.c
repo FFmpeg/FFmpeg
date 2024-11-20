@@ -618,6 +618,8 @@ int ff_vk_exec_add_dep_sw_frame(FFVulkanContext *s, FFVkExecContext *e,
         return AVERROR(ENOMEM);
     }
 
+    e->nb_sw_frame_deps++;
+
     return 0;
 }
 
