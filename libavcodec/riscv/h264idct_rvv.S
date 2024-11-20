@@ -629,6 +629,7 @@ endfunc
 .endm
 
 .macro idct4_add8 type, depth
+#if (__riscv_xlen == 64)
 func ff_h264_idct4_add\type\()_\depth\()_rvv, zve32x
 .if \depth == 8
         lpad    0
@@ -682,6 +683,7 @@ func ff_h264_idct4_add\type\()_\depth\()_rvv, zve32x
         vsetivli    zero, 4, e8, m1, ta, ma
         j       .Lidct4_add4_\depth\()_rvv
 endfunc
+#endif
 .endm
 
 .irp    depth, 8, 16
