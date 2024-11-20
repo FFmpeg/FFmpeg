@@ -26,7 +26,7 @@ struct RangeCoder {
 
     uint low;
     uint16_t range;
-    uint8_t outstanding_count;
+    uint16_t outstanding_count;
     uint8_t outstanding_byte;
 };
 
@@ -39,17 +39,17 @@ void renorm_encoder_full(inout RangeCoder c)
         c.outstanding_byte = uint8_t(c.low >> 8);
     } else if (c.low <= 0xFF00) {
         c.bytestream[bs_cnt++].v = c.outstanding_byte;
-        uint8_t cnt = c.outstanding_count;
+        uint16_t cnt = c.outstanding_count;
         for (; cnt > 0; cnt--)
             c.bytestream[bs_cnt++].v = uint8_t(0xFF);
-        c.outstanding_count = uint8_t(0);
+        c.outstanding_count = uint16_t(0);
         c.outstanding_byte = uint8_t(c.low >> 8);
     } else if (c.low >= 0x10000) {
         c.bytestream[bs_cnt++].v = c.outstanding_byte + uint8_t(1);
-        uint8_t cnt = c.outstanding_count;
+        uint16_t cnt = c.outstanding_count;
         for (; cnt > 0; cnt--)
             c.bytestream[bs_cnt++].v = uint8_t(0x00);
-        c.outstanding_count = uint8_t(0);
+        c.outstanding_count = uint16_t(0);
         c.outstanding_byte = uint8_t(bitfieldExtract(c.low, 8, 8));
     } else {
         c.outstanding_count++;
@@ -63,7 +63,7 @@ void renorm_encoder_full(inout RangeCoder c)
 /* Cannot deal with outstanding_byte == -1 in the name of speed */
 void renorm_encoder(inout RangeCoder c)
 {
-    uint8_t oc = c.outstanding_count + uint8_t(1);
+    uint16_t oc = c.outstanding_count + uint16_t(1);
     uint low = c.low;
 
     c.range <<= 8;
@@ -78,7 +78,7 @@ void renorm_encoder(inout RangeCoder c)
     uint8_t outstanding_byte = c.outstanding_byte;
 
     c.bytestream        = OFFBUF(u8buf, bs, oc);
-    c.outstanding_count = uint8_t(0);
+    c.outstanding_count = uint16_t(0);
     c.outstanding_byte  = uint8_t(low >> 8);
 
     uint8_t obs = uint8_t(low > 0xFF00);
@@ -185,6 +185,6 @@ void rac_init(out RangeCoder r, u8buf data, uint64_t buf_size)
     r.bytestream = data;
     r.low = 0;
     r.range = uint16_t(0xFF00);
-    r.outstanding_count = uint8_t(0);
+    r.outstanding_count = uint16_t(0);
     r.outstanding_byte = uint8_t(0xFF);
 }
