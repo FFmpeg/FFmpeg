@@ -61,7 +61,7 @@ typedef struct MOVStts {
 
 typedef struct MOVCtts {
     unsigned int count;
-    int duration;
+    int offset;
 } MOVCtts;
 
 typedef struct MOVStsc {

@@ -3977,7 +3977,7 @@ static int find_prev_closest_index(AVStream *st,
             // Find a "key frame" with PTS <= timestamp_pts (So that we can decode B-frames correctly).
             // No need to add dts_shift to the timestamp here becase timestamp_pts has already been
             // compensated by dts_shift above.
-            if ((e_old[*index].timestamp + ctts_data[*ctts_index].duration) <= timestamp_pts &&
+            if ((e_old[*index].timestamp + ctts_data[*ctts_index].offset) <= timestamp_pts &&
                 (e_old[*index].flags & AVINDEX_KEYFRAME)) {
                 break;
             }
@@ -4068,7 +4068,7 @@ static void fix_index_entry_timestamps(AVStream* st, int end_index, int64_t end_
  * Returns the new ctts_count if successful, else returns -1.
  */
 static int64_t add_ctts_entry(MOVCtts** ctts_data, unsigned int* ctts_count, unsigned int* allocated_size,
-                              int count, int duration)
+                              int count, int offset)
 {
     MOVCtts *ctts_buf_new;
     const size_t min_size_needed = (*ctts_count + 1) * sizeof(MOVCtts);
@@ -4088,7 +4088,7 @@ static int64_t add_ctts_entry(MOVCtts** ctts_data, unsigned int* ctts_count, uns
     *ctts_data = ctts_buf_new;
 
     ctts_buf_new[*ctts_count].count = count;
-    ctts_buf_new[*ctts_count].duration = duration;
+    ctts_buf_new[*ctts_count].offset = offset;
 
     *ctts_count = (*ctts_count) + 1;
     return *ctts_count;
@@ -4118,7 +4118,7 @@ static void mov_estimate_video_delay(MOVContext *c, AVStream* st)
             if (buf_start == MAX_REORDER_DELAY + 1)
                 buf_start = 0;
 
-            pts_buf[j] = sti->index_entries[ind].timestamp + msc->ctts_data[ctts_ind].duration;
+            pts_buf[j] = sti->index_entries[ind].timestamp + msc->ctts_data[ctts_ind].offset;
 
             // The timestamps that are already in the sorted buffer, and are greater than the
             // current pts, are exactly the timestamps that need to be buffered to output PTS
@@ -4347,7 +4347,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             curr_ctts = 0;
 
             if (ctts_data_old && ctts_index_old < ctts_count_old) {
-                curr_ctts = ctts_data_old[ctts_index_old].duration;
+                curr_ctts = ctts_data_old[ctts_index_old].offset;
                 av_log(mov->fc, AV_LOG_TRACE, "stts: %"PRId64" ctts: %"PRId64", ctts_index: %"PRId64", ctts_count: %"PRId64"\n",
                        curr_cts, curr_ctts, ctts_index_old, ctts_count_old);
                 curr_cts += curr_ctts;
@@ -4356,11 +4356,11 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                     if (add_ctts_entry(&msc->ctts_data, &msc->ctts_count,
                                        &msc->ctts_allocated_size,
                                        ctts_data_old[ctts_index_old].count - edit_list_start_ctts_sample,
-                                       ctts_data_old[ctts_index_old].duration) == -1) {
+                                       ctts_data_old[ctts_index_old].offset) == -1) {
                         av_log(mov->fc, AV_LOG_ERROR, "Cannot add CTTS entry %"PRId64" - {%"PRId64", %d}\n",
                                ctts_index_old,
                                ctts_data_old[ctts_index_old].count - edit_list_start_ctts_sample,
-                               ctts_data_old[ctts_index_old].duration);
+                               ctts_data_old[ctts_index_old].offset);
                         break;
                     }
                     ctts_index_old++;
@@ -4463,10 +4463,10 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                         if (add_ctts_entry(&msc->ctts_data, &msc->ctts_count,
                                            &msc->ctts_allocated_size,
                                            ctts_sample_old - edit_list_start_ctts_sample,
-                                           ctts_data_old[ctts_index_old].duration) == -1) {
+                                           ctts_data_old[ctts_index_old].offset) == -1) {
                             av_log(mov->fc, AV_LOG_ERROR, "Cannot add CTTS entry %"PRId64" - {%"PRId64", %d}\n",
                                    ctts_index_old, ctts_sample_old - edit_list_start_ctts_sample,
-                                   ctts_data_old[ctts_index_old].duration);
+                                   ctts_data_old[ctts_index_old].offset);
                             break;
                         }
                     }
@@ -4540,7 +4540,7 @@ static int build_open_gop_key_points(AVStream *st)
     k = 0;
     for (uint32_t i = 0; i < sc->ctts_count; i++)
         for (int j = 0; j < sc->ctts_data[i].count; j++)
-             sc->sample_offsets[k++] = sc->ctts_data[i].duration;
+             sc->sample_offsets[k++] = sc->ctts_data[i].offset;
 
     /* The following HEVC NAL type reveal the use of open GOP sync points
      * (TODO: BLA types may also be concerned) */
@@ -4693,7 +4693,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                             sc->ctts_count < sc->sample_count; j++)
                     add_ctts_entry(&sc->ctts_data, &sc->ctts_count,
                                    &sc->ctts_allocated_size, 1,
-                                   ctts_data_old[i].duration);
+                                   ctts_data_old[i].offset);
             av_free(ctts_data_old);
         }
 
@@ -4900,7 +4900,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     if (st->start_time == AV_NOPTS_VALUE && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && sti->nb_index_entries > 0) {
         st->start_time = sti->index_entries[0].timestamp + sc->dts_shift;
         if (sc->ctts_data) {
-            st->start_time += sc->ctts_data[0].duration;
+            st->start_time += sc->ctts_data[0].offset;
         }
     }
 
@@ -5910,7 +5910,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sti->index_entries[index_entry_pos].flags = index_entry_flags;
 
         sc->ctts_data[index_entry_pos].count = 1;
-        sc->ctts_data[index_entry_pos].duration = ctts_duration;
+        sc->ctts_data[index_entry_pos].offset = ctts_duration;
         index_entry_pos++;
 
         av_log(c->fc, AV_LOG_TRACE, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
@@ -10721,7 +10721,8 @@ static int mov_finalize_packet(AVFormatContext *s, AVStream *st, AVIndexEntry *s
         pkt->flags |= AV_PKT_FLAG_DISCARD;
     }
     if (sc->ctts_data && sc->ctts_index < sc->ctts_count) {
-        pkt->pts = av_sat_add64(pkt->dts, av_sat_add64(sc->dts_shift, sc->ctts_data[sc->ctts_index].duration));
+        pkt->pts = av_sat_add64(pkt->dts, av_sat_add64(sc->dts_shift, sc->ctts_data[sc->ctts_index].offset));
+
         /* update ctts context */
         sc->ctts_sample++;
         if (sc->ctts_index < sc->ctts_count &&
