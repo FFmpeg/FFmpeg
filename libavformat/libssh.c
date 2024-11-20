@@ -190,13 +190,13 @@ static av_cold int libssh_close(URLContext *h)
 static av_cold int libssh_connect(URLContext *h, const char *url, char *path, size_t path_size)
 {
     LIBSSHContext *libssh = h->priv_data;
-    char proto[10], hostname[1024], credencials[1024];
+    char proto[10], hostname[1024], credentials[1024];
     int port = 22, ret;
     const char *user = NULL, *pass = NULL;
     char *end = NULL;
 
     av_url_split(proto, sizeof(proto),
-                 credencials, sizeof(credencials),
+                 credentials, sizeof(credentials),
                  hostname, sizeof(hostname),
                  &port,
                  path, path_size,
@@ -212,7 +212,7 @@ static av_cold int libssh_connect(URLContext *h, const char *url, char *path, si
     if ((ret = libssh_create_ssh_session(libssh, hostname, port)) < 0)
         return ret;
 
-    user = av_strtok(credencials, ":", &end);
+    user = av_strtok(credentials, ":", &end);
     pass = av_strtok(end, ":", &end);
 
     if ((ret = libssh_authentication(libssh, user, pass)) < 0)
