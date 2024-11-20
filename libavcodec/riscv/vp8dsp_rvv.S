@@ -97,7 +97,6 @@ func ff_vp8_luma_dc_wht_rvv, zve64x
         vsse16.v    v3, (t3), t0
         ret
 endfunc
-#endif
 
 func ff_vp8_idct_add_rvv, zve32x
         lpad    0
@@ -158,6 +157,7 @@ func ff_vp8_idct_add_rvv, zve32x
         vsub.vv    v3, v4, v7
         jr         t0
 endfunc
+#endif
 
 func ff_vp8_idct_dc_add_rvv, zve32x
         lpad    0
