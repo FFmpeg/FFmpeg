@@ -66,12 +66,23 @@ typedef struct { CONTEXT c; int status; } checkasm_context;
 #define checkasm_save_context() 0
 #define checkasm_load_context() do {} while (0)
 #endif
-#else
+#else  // _WIN32
+
+#ifdef _WASI_EMULATED_SIGNAL
+
+#define checkasm_context void*
+#define checkasm_save_context() 0
+#define checkasm_load_context() do {} while (0)
+
+#else  // _WASI_EMULATED_SIGNAL
+
 #include <setjmp.h>
 typedef sigjmp_buf checkasm_context;
 #define checkasm_save_context() checkasm_handle_signal(sigsetjmp(checkasm_context_buf, 1))
 #define checkasm_load_context(s) siglongjmp(checkasm_context_buf, s)
-#endif
+#endif  // _WASI_EMULATED_SIGNAL
+
+#endif  // _WIN32
 
 void checkasm_check_aacencdsp(void);
 void checkasm_check_aacpsdsp(void);
