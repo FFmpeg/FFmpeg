@@ -21,5 +21,7 @@ OBJS-$(HAVE_RV)      += $(RV-OBJS)      $(RV-OBJS-yes)
 OBJS-$(HAVE_RVV)     += $(RVV-OBJS)     $(RVV-OBJS-yes)
 OBJS-$(HAVE_RV_ZVBB) += $(RVVB-OBJS)    $(RVVB-OBJS-yes)
 
+OBJS-$(HAVE_SIMD128) += $(SIMD128-OBJS) $(SIMD128-OBJS-yes)
+
 OBJS-$(HAVE_MMX)     += $(MMX-OBJS)     $(MMX-OBJS-yes)
 OBJS-$(HAVE_X86ASM)  += $(X86ASM-OBJS)  $(X86ASM-OBJS-yes)

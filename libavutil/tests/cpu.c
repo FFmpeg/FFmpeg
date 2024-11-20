@@ -104,6 +104,8 @@ static const struct {
     { AV_CPU_FLAG_RVV_F64,   "zve64d"     },
     { AV_CPU_FLAG_RV_ZVBB,   "zvbb"       },
     { AV_CPU_FLAG_RV_MISALIGNED, "misaligned" },
+#elif ARCH_WASM
+    { AV_CPU_FLAG_SIMD128,   "simd128"    },
 #endif
     { 0 }
 };

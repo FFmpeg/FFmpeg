@@ -480,6 +480,7 @@ Optimization options (experts only):
   --disable-lasx           disable Loongson LASX optimizations
   --disable-rvv            disable RISC-V Vector optimizations
   --disable-fast-unaligned consider unaligned accesses slow
+  --disable-simd128        disable WebAssembly simd128 optimizations
 
 Developer options (useful when working on FFmpeg itself):
   --disable-debug          disable debugging symbols
@@ -2149,6 +2150,7 @@ ARCH_LIST="
     sparc64
     tilegx
     tilepro
+    wasm
     x86
     x86_32
     x86_64
@@ -2187,6 +2189,10 @@ ARCH_EXT_LIST_LOONGSON="
     mmi
     lsx
     lasx
+"
+
+ARCH_EXT_LIST_WASM="
+    simd128
 "
 
 ARCH_EXT_LIST_X86_SIMD="
@@ -2235,6 +2241,7 @@ ARCH_EXT_LIST="
     $ARCH_EXT_LIST_ARM
     $ARCH_EXT_LIST_PPC
     $ARCH_EXT_LIST_RISCV
+    $ARCH_EXT_LIST_WASM
     $ARCH_EXT_LIST_X86
     $ARCH_EXT_LIST_MIPS
     $ARCH_EXT_LIST_LOONGSON
@@ -2790,6 +2797,8 @@ mipsfpu_deps="mips"
 mipsdsp_deps="mips"
 mipsdspr2_deps="mips"
 msa_deps="mipsfpu"
+
+simd128_deps="wasm"
 
 x86_64_select="i686"
 x86_64_suggest="fast_cmov"
@@ -5293,6 +5302,9 @@ case "$arch" in
     tilegx|tile-gx)
         arch="tilegx"
     ;;
+    wasm*)
+        arch="wasm"
+    ;;
     i[3-6]86*|i86pc|BePC|x86pc|x86_64|x86_32|amd64)
         arch="x86"
     ;;
@@ -6402,6 +6414,10 @@ elif enabled riscv; then
     enabled rvv && check_inline_asm rvv '".option arch, +v\nvsetivli zero, 0, e8, m1, ta, ma"'
     enabled rv_zicbop && check_inline_asm rv_zicbop '".option arch, +zicbop\nprefetch.r 64(a0)"'
     enabled rv_zvbb && check_inline_asm rv_zvbb '".option arch, +zvbb\nvclz.v v0, v8"'
+
+elif enabled wasm; then
+
+    enabled simd128 && check_cc simd128 wasm_simd128.h  "v128_t v = wasm_v128_load(0);"
 
 elif enabled x86; then
 

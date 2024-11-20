@@ -101,6 +101,9 @@
 #define AV_CPU_FLAG_RV_MISALIGNED (1 <<10) ///< Fast misaligned accesses
 #define AV_CPU_FLAG_RVB          (1 <<11) ///< B (bit manipulations)
 
+// WASM extensions
+#define AV_CPU_FLAG_SIMD128      (1 << 0)
+
 /**
  * Return the flags which specify extensions supported by the CPU.
  * The returned value is affected by av_force_cpu_flags() if that was used

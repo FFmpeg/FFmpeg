@@ -1,0 +1,1 @@
+OBJS += wasm/cpu.o
