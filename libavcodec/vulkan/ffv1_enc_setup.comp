@@ -22,7 +22,7 @@
 
 uint8_t state[CONTEXT_SIZE];
 
-void init_slice(out SliceContext sc, const uint slice_idx)
+void init_slice(inout SliceContext sc, const uint slice_idx)
 {
     /* Set coordinates */
     uvec2 img_size = imageSize(src[0]);
@@ -37,10 +37,12 @@ void init_slice(out SliceContext sc, const uint slice_idx)
 
     sc.slice_pos = ivec2(sxs, sys);
     sc.slice_dim = ivec2(sxe - sxs, sye - sys);
-    sc.slice_rct_coef = ivec2(1, 1);
     sc.slice_coding_mode = int(force_pcm == 1);
     sc.slice_reset_contexts = sc.slice_coding_mode == 1;
     sc.quant_table_idx = u8vec3(context_model);
+
+    if ((rct_search == 0) || (sc.slice_coding_mode == 1))
+        sc.slice_rct_coef = ivec2(1, 1);
 
     rac_init(sc.c,
              OFFBUF(u8buf, out_data, slice_idx * slice_size_max),

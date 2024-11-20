@@ -1,0 +1,139 @@
+/*
+ * FFv1 codec
+ *
+ * Copyright (c) 2024 Lynne <dev@lynne.ee>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+ivec3 load_components(ivec2 pos)
+{
+    ivec3 pix = ivec3(imageLoad(src[0], pos));
+    if (planar_rgb != 0) {
+        for (int i = 1; i < 3; i++)
+            pix[i] = int(imageLoad(src[i], pos)[0]);
+    }
+
+    return ivec3(pix[fmt_lut[0]], pix[fmt_lut[1]], pix[fmt_lut[2]]);
+}
+
+#define NUM_CHECKS 15
+const ivec2 rct_y_coeff[NUM_CHECKS] = {
+    ivec2(0, 0), //      4G
+
+    ivec2(0, 1), //      3G +  B
+    ivec2(1, 0), //  R + 3G
+    ivec2(1, 1), //  R + 2G + B
+
+    ivec2(0, 2), //      2G + 2B
+    ivec2(2, 0), // 2R + 2G
+    ivec2(2, 2), // 2R      + 2B
+
+    ivec2(0, 3), //      1G + 3B
+    ivec2(3, 0), // 3R + 1G
+
+    ivec2(0, 4), //           4B
+    ivec2(4, 0), // 4R
+
+    ivec2(1, 2), //  R +  G + 2B
+    ivec2(2, 1), // 2R +  G +  B
+
+    ivec2(3, 1), // 3R      +  B
+    ivec2(1, 3), //  R      + 3B
+};
+
+shared ivec3 pix_buf[gl_WorkGroupSize.x + 1][gl_WorkGroupSize.y + 1] = { };
+
+ivec3 transform_sample(ivec3 pix, ivec2 rct_coef)
+{
+    pix.b -= pix.g;
+    pix.r -= pix.g;
+    pix.g += (pix.r*rct_coef.x + pix.b*rct_coef.y) >> 2;
+    pix.b += rct_offset;
+    pix.r += rct_offset;
+    return pix;
+}
+
+uint get_dist(ivec3 cur)
+{
+    ivec3 LL = pix_buf[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 1];
+    ivec3 TL = pix_buf[gl_LocalInvocationID.x + 0][gl_LocalInvocationID.y + 0];
+    ivec3 TT = pix_buf[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 0];
+
+    ivec3 pred = ivec3(predict(LL.r, ivec2(TL.r, TT.r)),
+                       predict(LL.g, ivec2(TL.g, TT.g)),
+                       predict(LL.b, ivec2(TL.b, TT.b)));
+
+    uvec3 c = abs(pred - cur);
+    return mid_pred(c.r, c.g, c.b);
+}
+
+shared uint score_cols[gl_WorkGroupSize.y] = { };
+shared uint score_mode[16] = { };
+
+void process(ivec2 pos)
+{
+    ivec3 pix = load_components(pos);
+
+    for (int i = 0; i < NUM_CHECKS; i++) {
+        ivec3 tx_pix = transform_sample(pix, rct_y_coeff[i]);
+        pix_buf[gl_LocalInvocationID.x + 1][gl_LocalInvocationID.y + 1] = tx_pix;
+        memoryBarrierShared();
+
+        uint dist = get_dist(tx_pix);
+        atomicAdd(score_mode[i], dist);
+    }
+}
+
+void coeff_search(inout SliceContext sc)
+{
+    uvec2 img_size = imageSize(src[0]);
+    uint sxs = slice_coord(img_size.x, gl_WorkGroupID.x + 0,
+                           gl_NumWorkGroups.x, 0);
+    uint sxe = slice_coord(img_size.x, gl_WorkGroupID.x + 1,
+                           gl_NumWorkGroups.x, 0);
+    uint sys = slice_coord(img_size.y, gl_WorkGroupID.y + 0,
+                           gl_NumWorkGroups.y, 0);
+    uint sye = slice_coord(img_size.y, gl_WorkGroupID.y + 1,
+                           gl_NumWorkGroups.y, 0);
+
+    for (uint y = sys + gl_LocalInvocationID.y; y < sye; y += gl_WorkGroupSize.y) {
+        for (uint x = sxs + gl_LocalInvocationID.x; x < sxe; x += gl_WorkGroupSize.x) {
+            process(ivec2(x, y));
+        }
+    }
+
+    if (gl_LocalInvocationID.x == 0 && gl_LocalInvocationID.y == 0) {
+        uint min_score = 0xFFFFFFFF;
+        uint min_idx = 3;
+        for (int i = 0; i < NUM_CHECKS; i++) {
+            if (score_mode[i] < min_score) {
+                min_score = score_mode[i];
+                min_idx = i;
+            }
+        }
+        sc.slice_rct_coef = rct_y_coeff[min_idx];
+    }
+}
+
+void main(void)
+{
+    if (force_pcm == 1)
+        return;
+    const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
+    coeff_search(slice_ctx[slice_idx]);
+}
