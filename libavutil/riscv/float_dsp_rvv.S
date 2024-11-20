@@ -227,7 +227,15 @@ endfunc
 // (a0) += (a1) * fa0 [0..a2-1]
 func ff_vector_dmac_scalar_rvv, zve64d, zba
         lpad    0
+#if __riscv_xlen >= 64
 NOHWD   fmv.d.x   fa0, a2
+#else
+NOHWD   addi    sp, sp, -16
+NOHWD   sw      a0, 0(sp)
+NOHWD   sw      a1, 4(sp)
+NOHWD   fld     fa0, (sp)
+NOHWD   addi    sp, sp, 16
+#endif
 NOHWD   mv        a2, a3
 1:
         vsetvli   t0, a2, e64, m8, ta, ma
@@ -246,7 +254,15 @@ endfunc
 // (a0) = (a1) * fa0 [0..a2-1]
 func ff_vector_dmul_scalar_rvv, zve64d, zba
         lpad    0
+#if __riscv_xlen >= 64
 NOHWD   fmv.d.x  fa0, a2
+#else
+NOHWD   addi    sp, sp, -16
+NOHWD   sw      a0, 0(sp)
+NOHWD   sw      a1, 4(sp)
+NOHWD   fld     fa0, (sp)
+NOHWD   addi    sp, sp, 16
+#endif
 NOHWD   mv       a2, a3
 1:
         vsetvli  t0, a2, e64, m8, ta, ma
