@@ -71,6 +71,7 @@ include $(SRC_PATH)/libavcodec/hevc/Makefile
 include $(SRC_PATH)/libavcodec/opus/Makefile
 include $(SRC_PATH)/libavcodec/vvc/Makefile
 include $(SRC_PATH)/libavcodec/vulkan/Makefile
+-include $(SRC_PATH)/libavcodec/$(ARCH)/hevc/Makefile
 -include $(SRC_PATH)/libavcodec/$(ARCH)/vvc/Makefile
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
 OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o ac3.o ac3tab.o
