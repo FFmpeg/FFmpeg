@@ -190,6 +190,7 @@ static int read_packet(AVFormatContext *s,
 
         default :
             av_log(s, AV_LOG_INFO, "unknown chunk type 0x%x\n", type);
+            /* fallthrough */
         case MM_TYPE_AUDIO2 :
             avio_skip(pb, length);
         }
