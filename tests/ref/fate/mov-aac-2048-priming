@@ -214,4 +214,4 @@ packet|codec_type=audio|stream_index=0|pts=215040|pts_time=4.876190|dts=215040|d
 packet|codec_type=audio|stream_index=0|pts=216064|pts_time=4.899410|dts=216064|dts_time=4.899410|duration=1024|duration_time=0.023220|size=203|pos=42900|flags=K__
 packet|codec_type=audio|stream_index=0|pts=217088|pts_time=4.922630|dts=217088|dts_time=4.922630|duration=1024|duration_time=0.023220|size=198|pos=43103|flags=K__
 packet|codec_type=audio|stream_index=0|pts=218112|pts_time=4.945850|dts=218112|dts_time=4.945850|duration=1024|duration_time=0.023220|size=284|pos=43301|flags=K__
-packet|codec_type=audio|stream_index=0|pts=219136|pts_time=4.969070|dts=219136|dts_time=4.969070|duration=1364|duration_time=0.030930|size=5|pos=43585|flags=K__
+packet|codec_type=audio|stream_index=0|pts=219136|pts_time=4.969070|dts=219136|dts_time=4.969070|duration=340|duration_time=0.007710|size=5|pos=43585|flags=K__

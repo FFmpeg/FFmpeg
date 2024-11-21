@@ -174,6 +174,7 @@ typedef struct MOVStreamContext {
     unsigned int chunk_count;
     int64_t *chunk_offsets;
     unsigned int stts_count;
+    unsigned int stts_allocated_size;
     MOVStts *stts_data;
     unsigned int sdtp_count;
     uint8_t *sdtp_data;
@@ -188,6 +189,8 @@ typedef struct MOVStreamContext {
     unsigned *stps_data;  ///< partial sync sample for mpeg-2 open gop
     MOVElst *elst_data;
     unsigned int elst_count;
+    int stts_index;
+    int stts_sample;
     int ctts_index;
     int ctts_sample;
     unsigned int sample_size; ///< may contain value calculated from stsd or value from stsz atom

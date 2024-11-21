@@ -22,7 +22,7 @@ packet|pts=98304|dts=98304|duration=1024|flags=K__
 packet|pts=99328|dts=99328|duration=1024|flags=K__
 packet|pts=100352|dts=100352|duration=1024|flags=K__
 packet|pts=101376|dts=101376|duration=1024|flags=K__
-packet|pts=102400|dts=102400|duration=926|flags=K__
+packet|pts=102400|dts=102400|duration=960|flags=K__
 stream|nb_read_packets=102
 frame|pts=0|pkt_dts=0|best_effort_timestamp=0|nb_samples=1024
 frame|pts=1024|pkt_dts=1024|best_effort_timestamp=1024|nb_samples=1024

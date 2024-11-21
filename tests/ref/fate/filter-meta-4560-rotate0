@@ -1,5 +1,5 @@
-dc213aee944a55af2f41950921fd62d7 *tests/data/fate/filter-meta-4560-rotate0.mov
-347433 tests/data/fate/filter-meta-4560-rotate0.mov
+6cd6b45a88881e85dfe7ad9582ffbeff *tests/data/fate/filter-meta-4560-rotate0.mov
+347425 tests/data/fate/filter-meta-4560-rotate0.mov
 #tb 0: 1/30
 #media_type 0: video
 #codec_id 0: rawvideo
