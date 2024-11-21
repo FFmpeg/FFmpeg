@@ -26,6 +26,7 @@
 
 #include "config.h"
 #include "swscale.h"
+#include "graph.h"
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
@@ -47,6 +48,8 @@
 #define YUVRGB_TABLE_LUMA_HEADROOM 512
 
 #define MAX_FILTER_SIZE SWS_MAX_FILTER_SIZE
+
+#define SWS_MAX_THREADS 8192 /* sanity clamp */
 
 #if HAVE_BIGENDIAN
 #define ALT32_CORR (-1)
@@ -322,6 +325,9 @@ struct SwsInternal {
     SwsContext        **slice_ctx;
     int                *slice_err;
     int              nb_slice_ctx;
+
+    /* Scaling graph, reinitialized dynamically as needed. */
+    SwsGraph *graph[2]; /* top, bottom fields */
 
     // values passed to current sws_receive_slice() call
     int dst_slice_start;
@@ -663,6 +669,7 @@ struct SwsInternal {
     unsigned int dst_slice_align;
     atomic_int   stride_unaligned_warned;
     atomic_int   data_unaligned_warned;
+    int          color_conversion_warned;
 
     Half2FloatTables *h2f_tables;
 };
@@ -674,7 +681,7 @@ static_assert(offsetof(SwsInternal, redDither) + DITHER32_INT == offsetof(SwsInt
 #if ARCH_X86_64
 /* x86 yuv2gbrp uses the SwsInternal for yuv coefficients
    if struct offsets change the asm needs to be updated too */
-static_assert(offsetof(SwsInternal, yuv2rgb_y_offset) == 40316,
+static_assert(offsetof(SwsInternal, yuv2rgb_y_offset) == 40332,
               "yuv2rgb_y_offset must be updated in x86 asm");
 #endif
 

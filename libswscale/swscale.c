@@ -1219,21 +1219,205 @@ int sws_receive_slice(SwsContext *sws, unsigned int slice_start,
                           dst, c->frame_dst->linesize, slice_start, slice_height);
 }
 
+static void get_frame_pointers(const AVFrame *frame, uint8_t *data[4],
+                               int linesize[4], int field)
+{
+    for (int i = 0; i < 4; i++) {
+        data[i]     = frame->data[i];
+        linesize[i] = frame->linesize[i];
+    }
+
+    if (!(frame->flags & AV_FRAME_FLAG_INTERLACED)) {
+        av_assert1(!field);
+        return;
+    }
+
+    if (field == FIELD_BOTTOM) {
+        /* Odd rows, offset by one line */
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+        for (int i = 0; i < 4; i++) {
+            data[i] += linesize[i];
+            if (desc->flags & AV_PIX_FMT_FLAG_PAL)
+                break;
+        }
+    }
+
+    /* Take only every second line */
+    for (int i = 0; i < 4; i++)
+        linesize[i] <<= 1;
+}
+
+/* Subset of av_frame_ref() that only references (video) data buffers */
+static int frame_ref(AVFrame *dst, const AVFrame *src)
+{
+    /* ref the buffers */
+    for (int i = 0; i < FF_ARRAY_ELEMS(src->buf); i++) {
+        if (!src->buf[i])
+            continue;
+        dst->buf[i] = av_buffer_ref(src->buf[i]);
+        if (!dst->buf[i])
+            return AVERROR(ENOMEM);
+    }
+
+    memcpy(dst->data,     src->data,     sizeof(src->data));
+    memcpy(dst->linesize, src->linesize, sizeof(src->linesize));
+    return 0;
+}
+
 int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
 {
     int ret;
+    SwsInternal *c = sws_internal(sws);
+    if (!src || !dst)
+        return AVERROR(EINVAL);
 
-    ret = sws_frame_start(sws, dst, src);
+    if (c->frame_src) {
+        /* Context has been initialized with explicit values, fall back to
+         * legacy API */
+        ret = sws_frame_start(sws, dst, src);
+        if (ret < 0)
+            return ret;
+
+        ret = sws_send_slice(sws, 0, src->height);
+        if (ret >= 0)
+            ret = sws_receive_slice(sws, 0, dst->height);
+
+        sws_frame_end(sws);
+
+        return ret;
+    }
+
+    ret = sws_frame_setup(sws, dst, src);
     if (ret < 0)
         return ret;
 
-    ret = sws_send_slice(sws, 0, src->height);
-    if (ret >= 0)
-        ret = sws_receive_slice(sws, 0, dst->height);
+    if (!src->data[0])
+        return 0;
 
-    sws_frame_end(sws);
+    if (c->graph[FIELD_TOP]->noop &&
+        (!c->graph[FIELD_BOTTOM] || c->graph[FIELD_BOTTOM]->noop) &&
+        src->buf[0] && !dst->buf[0] && !dst->data[0])
+    {
+        /* Lightweight refcopy */
+        ret = frame_ref(dst, src);
+        if (ret < 0)
+            return ret;
+    } else {
+        if (!dst->data[0]) {
+            ret = av_frame_get_buffer(dst, 0);
+            if (ret < 0)
+                return ret;
+        }
 
-    return ret;
+        for (int field = 0; field < 2; field++) {
+            SwsGraph *graph = c->graph[field];
+            uint8_t *dst_data[4], *src_data[4];
+            int dst_linesize[4], src_linesize[4];
+            get_frame_pointers(dst, dst_data, dst_linesize, field);
+            get_frame_pointers(src, src_data, src_linesize, field);
+            sws_graph_run(graph, dst_data, dst_linesize,
+                          (const uint8_t **) src_data, src_linesize);
+            if (!graph->dst.interlaced)
+                break;
+        }
+    }
+
+    return 0;
+}
+
+static int validate_params(SwsContext *ctx)
+{
+#define VALIDATE(field, min, max) \
+    if (ctx->field < min || ctx->field > max) { \
+        av_log(ctx, AV_LOG_ERROR, "'%s' (%d) out of range [%d, %d]\n", \
+               #field, (int) ctx->field, min, max); \
+        return AVERROR(EINVAL); \
+    }
+
+    VALIDATE(threads,       0, SWS_MAX_THREADS);
+    VALIDATE(dither,        0, SWS_DITHER_NB - 1)
+    VALIDATE(alpha_blend,   0, SWS_ALPHA_BLEND_NB - 1)
+    return 0;
+}
+
+int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
+{
+    SwsInternal *s = sws_internal(ctx);
+    const char *err_msg;
+    int ret;
+
+    if (!src || !dst)
+        return AVERROR(EINVAL);
+    if ((ret = validate_params(ctx)) < 0)
+        return ret;
+
+    for (int field = 0; field < 2; field++) {
+        SwsFormat src_fmt = ff_fmt_from_frame(src, field);
+        SwsFormat dst_fmt = ff_fmt_from_frame(dst, field);
+
+        if ((src->flags ^ dst->flags) & AV_FRAME_FLAG_INTERLACED) {
+            err_msg = "Cannot convert interlaced to progressive frames or vice versa.\n";
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
+        /* TODO: remove once implemented */
+        if ((dst_fmt.prim != src_fmt.prim || dst_fmt.trc != src_fmt.trc) &&
+            !s->color_conversion_warned)
+        {
+            av_log(ctx, AV_LOG_WARNING, "Conversions between different primaries / "
+                   "transfer functions are not currently implemented, expect "
+                   "wrong results.\n");
+            s->color_conversion_warned = 1;
+        }
+
+        if (!ff_test_fmt(&src_fmt, 0)) {
+            err_msg = "Unsupported input";
+            ret = AVERROR(ENOTSUP);
+            goto fail;
+        }
+
+        if (!ff_test_fmt(&dst_fmt, 1)) {
+            err_msg = "Unsupported output";
+            ret = AVERROR(ENOTSUP);
+            goto fail;
+        }
+
+        ret = sws_graph_reinit(ctx, &dst_fmt, &src_fmt, field, &s->graph[field]);
+        if (ret < 0) {
+            err_msg = "Failed initializing scaling graph";
+            goto fail;
+        }
+
+        if (s->graph[field]->incomplete && ctx->flags & SWS_STRICT) {
+            err_msg = "Incomplete scaling graph";
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
+        if (!src_fmt.interlaced) {
+            sws_graph_free(&s->graph[FIELD_BOTTOM]);
+            break;
+        }
+
+        continue;
+
+    fail:
+        av_log(ctx, AV_LOG_ERROR, "%s (%s): fmt:%s csp:%s prim:%s trc:%s ->"
+                                          " fmt:%s csp:%s prim:%s trc:%s\n",
+               err_msg, av_err2str(ret),
+               av_get_pix_fmt_name(src_fmt.format), av_color_space_name(src_fmt.csp),
+               av_color_primaries_name(src_fmt.prim), av_color_transfer_name(src_fmt.trc),
+               av_get_pix_fmt_name(dst_fmt.format), av_color_space_name(dst_fmt.csp),
+               av_color_primaries_name(dst_fmt.prim), av_color_transfer_name(dst_fmt.trc));
+
+        for (int i = 0; i < FF_ARRAY_ELEMS(s->graph); i++)
+            sws_graph_free(&s->graph[i]);
+
+        return ret;
+    }
+
+    return 0;
 }
 
 /**

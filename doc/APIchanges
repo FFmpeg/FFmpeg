@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-11-25 - xxxxxxxxxx - lsws 8.12.100 - swscale.h
+  Allow using sws_frame_scale() dynamically, without first initializing the
+  SwsContext. Deprecate sws_init_context(). Add sws_frame_setup() instead.
+
 2024-11-25 - xxxxxxxxxx - lsws 8.11.100 - swscale.h
   Replace #define-based SWS_* flags by enum SwsFlags.
 

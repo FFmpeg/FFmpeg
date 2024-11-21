@@ -61,6 +61,7 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 #include "utils.h"
+#include "graph.h"
 
 typedef struct FormatEntry {
     uint8_t is_supported_in         :1;
@@ -2449,6 +2450,9 @@ void sws_freeContext(SwsContext *sws)
     int i;
     if (!c)
         return;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(c->graph); i++)
+        sws_graph_free(&c->graph[i]);
 
     for (i = 0; i < c->nb_slice_ctx; i++)
         sws_freeContext(c->slice_ctx[i]);

@@ -108,6 +108,12 @@ typedef enum SwsFlags {
     SWS_SPLINE        = 1 << 10, ///< cubic Keys spline
 
     /**
+     * Return an error on underspecified conversions. Without this flag,
+     * unspecified fields are defaulted to sensible values.
+     */
+    SWS_STRICT        = 1 << 11,
+
+    /**
      * Emit verbose log of scaling parameters.
      */
     SWS_PRINT_INFO    = 1 << 12,
@@ -204,7 +210,10 @@ typedef struct SwsContext {
     int gamma_flag;
 
     /**
-     * Frame property overrides.
+     * Deprecated frame property overrides, for the legacy API only.
+     *
+     * Ignored by sws_scale_frame() when used in dynamic mode, in which
+     * case all properties are instead taken from the frame directly.
      */
     int src_w, src_h;  ///< Width and height of the source frame
     int dst_w, dst_h;  ///< Width and height of the destination frame
@@ -216,6 +225,8 @@ typedef struct SwsContext {
     int src_h_chr_pos; ///< Source horizontal chroma position
     int dst_v_chr_pos; ///< Destination vertical chroma position
     int dst_h_chr_pos; ///< Destination horizontal chroma position
+
+    /* Remember to add new fields to graph.c:opts_equal() */
 } SwsContext;
 
 /**
@@ -285,10 +296,55 @@ int sws_test_transfer(enum AVColorTransferCharacteristic trc, int output);
 int sws_test_frame(const AVFrame *frame, int output);
 
 /**
+ * Like `sws_scale_frame`, but without actually scaling. It will instead
+ * merely initialize internal state that *would* be required to perform the
+ * operation, as well as returning the correct error code for unsupported
+ * frame combinations.
+ *
+ * @param ctx   The scaling context.
+ * @param dst   The destination frame to consider.
+ * @param src   The source frame to consider.
+ * @return 0 on success, a negative AVERROR code on failure.
+ */
+int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src);
+
+/********************
+ * Main scaling API *
+ ********************/
+
+/**
  * Check if a given conversion is a noop. Returns a positive integer if
  * no operation needs to be performed, 0 otherwise.
  */
 int sws_is_noop(const AVFrame *dst, const AVFrame *src);
+
+/**
+ * Scale source data from `src` and write the output to `dst`.
+ *
+ * This function can be used directly on an allocated context, without setting
+ * up any frame properties or calling `sws_init_context()`. Such usage is fully
+ * dynamic and does not require reallocation if the frame properties change.
+ *
+ * Alternatively, this function can be called on a context that has been
+ * explicitly initialized. However, this is provided only for backwards
+ * compatibility. In this usage mode, all frame properties must be correctly
+ * set at init time, and may no longer change after initialization.
+ *
+ * @param ctx   The scaling context.
+ * @param dst   The destination frame. The data buffers may either be already
+ *              allocated by the caller or left clear, in which case they will
+ *              be allocated by the scaler. The latter may have performance
+ *              advantages - e.g. in certain cases some (or all) output planes
+ *              may be references to input planes, rather than copies.
+ * @param src   The source frame. If the data buffers are set to NULL, then
+ *              this function behaves identically to `sws_frame_setup`.
+ * @return 0 on success, a negative AVERROR code on failure.
+ */
+int sws_scale_frame(SwsContext *c, AVFrame *dst, const AVFrame *src);
+
+/*************************
+ * Legacy (stateful) API *
+ *************************/
 
 #define SWS_SRC_V_CHR_DROP_MASK     0x30000
 #define SWS_SRC_V_CHR_DROP_SHIFT    16
@@ -352,6 +408,11 @@ int sws_isSupportedEndiannessConversion(enum AVPixelFormat pix_fmt);
 /**
  * Initialize the swscaler context sws_context.
  *
+ * This function is considered deprecated, and provided only for backwards
+ * compatibility with sws_scale() and sws_start_frame(). The preferred way to
+ * use libswscale is to set all frame properties correctly and call
+ * sws_scale_frame() directly, without explicitly initializing the context.
+ *
  * @return zero or positive value on success, a negative value on
  * error
  */
@@ -393,7 +454,8 @@ SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
 /**
  * Scale the image slice in srcSlice and put the resulting scaled
  * slice in the image in dst. A slice is a sequence of consecutive
- * rows in an image.
+ * rows in an image. Requires a context that has been previously
+ * been initialized with sws_init_context().
  *
  * Slices have to be provided in sequential order, either in
  * top-bottom or bottom-top order. If slices are provided in
@@ -421,26 +483,10 @@ int sws_scale(SwsContext *c, const uint8_t *const srcSlice[],
               uint8_t *const dst[], const int dstStride[]);
 
 /**
- * Scale source data from src and write the output to dst.
- *
- * This is merely a convenience wrapper around
- * - sws_frame_start()
- * - sws_send_slice(0, src->height)
- * - sws_receive_slice(0, dst->height)
- * - sws_frame_end()
- *
- * @param c   The scaling context
- * @param dst The destination frame. See documentation for sws_frame_start() for
- *            more details.
- * @param src The source frame.
- *
- * @return 0 on success, a negative AVERROR code on failure
- */
-int sws_scale_frame(SwsContext *c, AVFrame *dst, const AVFrame *src);
-
-/**
  * Initialize the scaling process for a given pair of source/destination frames.
  * Must be called before any calls to sws_send_slice() and sws_receive_slice().
+ * Requires a context that has been previously been initialized with
+ * sws_init_context().
  *
  * This function will retain references to src and dst, so they must both use
  * refcounted buffers (if allocated by the caller, in case of dst).
@@ -511,7 +557,8 @@ int sws_receive_slice(SwsContext *c, unsigned int slice_start,
                       unsigned int slice_height);
 
 /**
- * Get the alignment required for slices
+ * Get the alignment required for slices. Requires a context that has been
+ * previously been initialized with sws_init_context().
  *
  * @param c   The scaling context
  * @return alignment required for output slices requested with sws_receive_slice().
