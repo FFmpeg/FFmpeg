@@ -1388,13 +1388,24 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
         f->num_h_slices = fv->num_h_slices;
         f->num_v_slices = fv->num_v_slices;
 
-        if (f->num_h_slices <= 0)
+        if (f->num_h_slices <= 0 && f->num_v_slices <= 0) {
             f->num_h_slices = 32;
-        if (f->num_v_slices <= 0)
             f->num_v_slices = 32;
+        } else if (f->num_h_slices && f->num_v_slices <= 0) {
+            f->num_v_slices = 1024 / f->num_h_slices;
+        } else if (f->num_v_slices && f->num_h_slices <= 0) {
+            f->num_h_slices = 1024 / f->num_v_slices;
+        }
 
         f->num_h_slices = FFMIN(f->num_h_slices, avctx->width);
         f->num_v_slices = FFMIN(f->num_v_slices, avctx->height);
+
+        if (f->num_h_slices * f->num_v_slices > 1024) {
+            av_log(avctx, AV_LOG_ERROR, "Too many slices (%i), maximum supported "
+                                        "by the standard is 1024\n",
+                   f->num_h_slices * f->num_v_slices);
+            return AVERROR_PATCHWELCOME;
+        }
     }
 
     if ((err = ff_ffv1_write_extradata(avctx)) < 0)
@@ -1549,9 +1560,9 @@ static const AVOption vulkan_encode_ffv1_options[] = {
             { .i64 = -1 }, -1, 2, VE },
 
     { "slices_h", "Number of horizontal slices", OFFSET(num_h_slices), AV_OPT_TYPE_INT,
-            { .i64 = -1 }, -1, 32, VE },
+            { .i64 = -1 }, -1, 1024, VE },
     { "slices_v", "Number of vertical slices", OFFSET(num_v_slices), AV_OPT_TYPE_INT,
-            { .i64 = -1 }, -1, 32, VE },
+            { .i64 = -1 }, -1, 1024, VE },
 
     { "force_pcm", "Code all slices with no prediction", OFFSET(force_pcm), AV_OPT_TYPE_BOOL,
             { .i64 = 0 }, 0, 1, VE },
