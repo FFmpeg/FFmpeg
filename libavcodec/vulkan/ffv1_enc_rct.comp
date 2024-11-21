@@ -30,9 +30,9 @@ ivec4 load_components(ivec2 pos)
         pix[i] = int(imageLoad(src[i], pos)[0]);
 
     /* Swizzle out the difference */
-    if (transparency > 0)
-        return pix.brga;
-    return pix.bgra;
+    if (bits > 8 && bits < 16)
+        return pix.bgra;
+    return pix.brga;
 }
 
 void bypass_sample(ivec2 pos)

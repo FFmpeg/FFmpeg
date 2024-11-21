@@ -96,9 +96,10 @@ extern const char *ff_source_ffv1_enc_rgb_comp;
 
 typedef struct FFv1VkRCTParameters {
     int offset;
+    uint8_t bits;
     uint8_t planar_rgb;
     uint8_t transparency;
-    uint8_t padding[2];
+    uint8_t padding[1];
 } FFv1VkRCTParameters;
 
 typedef struct FFv1VkResetParameters {
@@ -247,6 +248,7 @@ static int run_rct(AVCodecContext *avctx, FFVkExecContext *exec,
     ff_vk_exec_bind_shader(&fv->s, exec, &fv->rct);
     pd = (FFv1VkRCTParameters) {
         .offset = 1 << f->bits_per_raw_sample,
+        .bits = f->bits_per_raw_sample,
         .planar_rgb = ff_vk_mt_is_np_rgb(src_hwfc->sw_format) &&
                       (ff_vk_count_images((AVVkFrame *)enc_in->data[0]) > 1),
         .transparency = f->transparency,
@@ -1070,9 +1072,10 @@ static int init_rct_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
 
     GLSLC(0, layout(push_constant, scalar) uniform pushConstants {             );
     GLSLC(1,    int offset;                                                    );
+    GLSLC(1,    uint8_t bits;                                                  );
     GLSLC(1,    uint8_t planar_rgb;                                            );
     GLSLC(1,    uint8_t transparency;                                          );
-    GLSLC(1,    uint8_t padding[2];                                            );
+    GLSLC(1,    uint8_t padding[1];                                            );
     GLSLC(0, };                                                                );
     ff_vk_shader_add_push_const(shd, 0, sizeof(FFv1VkRCTParameters),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
