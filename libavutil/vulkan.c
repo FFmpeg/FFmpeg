@@ -1422,6 +1422,9 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
         };
         return rep_tab[rep_fmt];
     };
+    case AV_PIX_FMT_GRAY10:
+    case AV_PIX_FMT_GRAY12:
+    case AV_PIX_FMT_GRAY14:
     case AV_PIX_FMT_GRAY16:
     case AV_PIX_FMT_GBRAP16:
     case AV_PIX_FMT_GBRP10:
