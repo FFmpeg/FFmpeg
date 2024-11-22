@@ -82,6 +82,7 @@ Other:
   aes_ctr.c, aes_ctr.h                  Eran Kornblau
   bprint                                Nicolas George
   bswap.h
+  csp.c, csp.h                          Leo Izen, Ronald S. Bultje
   des                                   Reimar Doeffinger
   dynarray.h                            Nicolas George
   eval.c, eval.h                    [2] Michael Niedermayer
