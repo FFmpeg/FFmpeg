@@ -649,6 +649,12 @@ static int decode_ps(VVCParamSets *ps, const CodedBitstreamH266Context *h266, vo
     if (ret < 0)
         return ret;
 
+    if (rsps->sps_log2_ctu_size_minus5 > 2) {
+        // CTU > 128 are reserved in vvc spec v3
+        av_log(log_ctx, AV_LOG_ERROR, "CTU size > 128. \n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     ret = decode_pps(ps, rpps);
     if (ret < 0)
         return ret;
