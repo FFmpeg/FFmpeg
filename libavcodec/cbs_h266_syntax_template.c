@@ -1147,11 +1147,11 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
             infer(sps_subpic_ctu_top_left_x[0], 0);
             infer(sps_subpic_ctu_top_left_y[0], 0);
             if (current->sps_pic_width_max_in_luma_samples > ctb_size_y)
-                ubs(wlen, sps_subpic_width_minus1[0], 1, 0);
+                us(wlen, sps_subpic_width_minus1[0], 0, max_width_minus1, 1, 0);
             else
                 infer(sps_subpic_width_minus1[0], max_width_minus1);
             if (current->sps_pic_height_max_in_luma_samples > ctb_size_y)
-                ubs(hlen, sps_subpic_height_minus1[0], 1, 0);
+                us(hlen, sps_subpic_height_minus1[0], 0, max_width_minus1, 1, 0);
             else
                 infer(sps_subpic_height_minus1[0], max_height_minus1);
             if (!current->sps_independent_subpics_flag) {
@@ -1201,14 +1201,14 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
 
                     if (i < current->sps_num_subpics_minus1 &&
                         current->sps_pic_width_max_in_luma_samples > ctb_size_y) {
-                        us(wlen, sps_subpic_width_minus1[i], min_width, MAX_UINT_BITS(wlen), 1, i);
+                        us(wlen, sps_subpic_width_minus1[i], min_width, max_width_minus1, 1, i);
                     } else {
                         infer(sps_subpic_width_minus1[i], max_width_minus1);
                     }
 
                     if (i < current->sps_num_subpics_minus1 &&
                         current->sps_pic_height_max_in_luma_samples > ctb_size_y) {
-                        us(hlen, sps_subpic_height_minus1[i], min_height, MAX_UINT_BITS(hlen), 1, i);
+                        us(hlen, sps_subpic_height_minus1[i], min_height, max_height_minus1, 1, i);
                     } else {
                         infer(sps_subpic_height_minus1[i], max_height_minus1);
                     }
