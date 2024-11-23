@@ -27,6 +27,7 @@ my @extra_members = (
 
 # list of names of people who asked to be excluded from GA emails
 my %excluded_members = (
+    'Derek Buitenhuis' => 0,
 );
 
 sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
