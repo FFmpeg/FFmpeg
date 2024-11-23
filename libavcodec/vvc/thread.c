@@ -656,9 +656,9 @@ static void task_run_stage(VVCTask *t, VVCContext *s, VVCLocalContext *lc)
                 "frame %5d, %s(%3d, %3d) failed with %d\r\n",
                 (int)fc->decode_order, task_name[stage], t->rx, t->ry, ret);
         }
+        if (!ret)
+            task_stage_done(t, s);
     }
-
-    task_stage_done(t, s);
     return;
 }
 
