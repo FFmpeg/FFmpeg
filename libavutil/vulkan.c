@@ -494,7 +494,8 @@ FFVkExecContext *ff_vk_exec_get(FFVulkanContext *s, FFVkExecPool *pool)
 
     /* Check if last submission has already finished.
      * If so, don't waste resources and reuse the same buffer. */
-    if (vk->GetFenceStatus(s->hwctx->act_dev, e->fence) == VK_SUCCESS)
+    if (e->had_submission &&
+        vk->GetFenceStatus(s->hwctx->act_dev, e->fence) == VK_SUCCESS)
         return e;
 
     pool->idx = (pool->idx + 1) % pool->pool_size;
