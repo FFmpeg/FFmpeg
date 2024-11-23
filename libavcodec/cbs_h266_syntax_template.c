@@ -1966,7 +1966,7 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
             infer(pps_single_slice_per_subpic_flag, 1);
         if (current->pps_rect_slice_flag &&
             !current->pps_single_slice_per_subpic_flag) {
-            int j;
+            int j, num_slices = 0;
             uint16_t tile_idx = 0, tile_x, tile_y, ctu_x, ctu_y;
             uint16_t slice_top_left_ctu_x[VVC_MAX_SLICES];
             uint16_t slice_top_left_ctu_y[VVC_MAX_SLICES];
@@ -2155,7 +2155,10 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
                         current->num_slices_in_subpic[i]++;
                     }
                 }
+                num_slices += current->num_slices_in_subpic[i];
             }
+            if (current->pps_num_slices_in_pic_minus1 + 1 != num_slices)
+                return AVERROR_INVALIDDATA;
         } else {
             if (current->pps_no_pic_partition_flag)
                 infer(pps_num_slices_in_pic_minus1, 0);
