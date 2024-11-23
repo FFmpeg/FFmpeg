@@ -1217,6 +1217,7 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
 
         ctx->priv = old;
         uninit(ctx);
+        av_opt_free(old);
         av_freep(&old);
 
         ctx->priv = new;
