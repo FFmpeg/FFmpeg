@@ -121,6 +121,9 @@ typedef struct FFVkExecContext {
     /* Fence for the command buffer */
     VkFence fence;
 
+    /* Opaque data, untouched, free to use by users */
+    void *opaque;
+
     void *query_data;
     int query_idx;
 
