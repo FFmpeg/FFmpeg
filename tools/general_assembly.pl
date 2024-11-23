@@ -25,6 +25,10 @@ my @extra_members = (
     ['Shiyou Yin',          'yinshiyou-hf@loongson.cn',     DateTime->new(year => 2023, month => 11, day => 28)],
 );
 
+# list of names of people who asked to be excluded from GA emails
+my %excluded_members = (
+);
+
 sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
 
 sub print_help {
@@ -103,6 +107,11 @@ foreach my $line (@shortlog) {
     }
 
     $name = trim $name;
+
+    if (exists $excluded_members{$name}) {
+        next;
+    }
+
     if ($count < 50) {
         my $true = 0;
         my @commits = split /(^|\n)commit [a-z0-9]{40}(\n|$)/,
