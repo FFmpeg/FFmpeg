@@ -199,7 +199,6 @@ static void ac3_downmix(AVCodecContext *avctx)
         av_channel_layout_uninit(&avctx->ch_layout);
         avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     }
-    s->downmixed = 1;
 }
 
 /**
@@ -241,6 +240,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
         avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     ac3_downmix(avctx);
+    s->downmixed = 1;
 
     for (i = 0; i < AC3_MAX_CHANNELS; i++) {
         s->xcfptr[i] = s->transform_coeffs[i];
