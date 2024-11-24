@@ -542,6 +542,8 @@ static int ffat_decode(AVCodecContext *avctx, AVFrame *frame,
 
     frame->nb_samples = avctx->frame_size;
 
+    frame->flags |= AV_FRAME_FLAG_KEY;
+
     out_buffers.mBuffers[0].mData = at->decoded_data;
 
     ret = AudioConverterFillComplexBuffer(at->converter, ffat_decode_callback, avctx,
