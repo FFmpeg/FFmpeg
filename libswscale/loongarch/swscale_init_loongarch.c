@@ -42,7 +42,7 @@ av_cold void ff_sws_init_range_convert_loongarch(SwsInternal *c)
 #if HAVE_LASX
     if (have_lasx(cpu_flags)) {
         if (c->dstBpc <= 14) {
-            if (c->opts,src_range) {
+            if (c->opts.src_range) {
                 c->lumConvertRange = lumRangeFromJpeg_lasx;
                 c->chrConvertRange = chrRangeFromJpeg_lasx;
             } else {
