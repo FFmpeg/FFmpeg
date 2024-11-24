@@ -68,6 +68,7 @@ typedef struct VulkanEncodeFFv1Context {
     VulkanEncodeFFv1FrameData *exec_ctx_info;
     int in_flight;
     int async_depth;
+    size_t max_heap_size;
 
     FFVulkanShader setup;
     FFVulkanShader reset;
@@ -414,6 +415,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
 
     /* Output buffer size */
     maxsize = ff_ffv1_encode_buffer_size(avctx);
+    maxsize = FFMIN(maxsize, fv->s.props_11.maxMemoryAllocationSize);
 
     /* Allocate output buffer */
     RET(ff_vk_get_pooled_buffer(&fv->s, &fv->out_data_pool,
@@ -422,7 +424,8 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                 NULL, maxsize,
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+                                maxsize < fv->max_heap_size ?
+                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0x0));
     out_data_buf = (FFVkBuffer *)fd->out_data_ref->data;
     ff_vk_exec_add_dep_buf(&fv->s, exec, &fd->out_data_ref, 1, 1);
 
@@ -1460,6 +1463,7 @@ fail:
 static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
 {
     int err;
+    size_t maxsize, max_heap_size, max_host_size;
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
     FFV1Context *f = &fv->ctx;
     FFVkSPIRVCompiler *spv;
@@ -1588,11 +1592,51 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
         return err;
     }
 
-    if (!fv->async_depth)
-        fv->async_depth = fv->qf.nb_queues;
+    /* Try to measure VRAM size */
+    max_heap_size = 0;
+    max_host_size = 0;
+    for (int i = 0; i < fv->s.mprops.memoryHeapCount; i++) {
+        if (fv->s.mprops.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+            max_heap_size = FFMAX(fv->max_heap_size,
+                                  fv->s.mprops.memoryHeaps[i].size);
+        if (!(fv->s.mprops.memoryHeaps[i].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT))
+            max_host_size = FFMAX(max_host_size,
+                                  fv->s.mprops.memoryHeaps[i].size);
+    }
+    fv->max_heap_size = max_heap_size;
+
+    maxsize = ff_ffv1_encode_buffer_size(avctx);
+    if (maxsize > fv->s.props_11.maxMemoryAllocationSize) {
+        av_log(avctx, AV_LOG_WARNING, "Encoding buffer size (%zu) larger "
+                                      "than maximum device allocation (%zu), clipping\n",
+               maxsize, fv->s.props_11.maxMemoryAllocationSize);
+        maxsize = fv->s.props_11.maxMemoryAllocationSize;
+    }
+
+    if (max_heap_size < maxsize) {
+        av_log(avctx, AV_LOG_WARNING, "Encoding buffer (%zu) larger than VRAM (%zu), "
+                                      "using host memory (slower)\n",
+               maxsize, fv->max_heap_size);
+
+        /* Keep 1/2th of RAM as headroom */
+        max_heap_size = max_host_size - (max_host_size >> 1);
+    } else {
+        /* Keep 1/8th of VRAM as headroom */
+        max_heap_size = max_heap_size - (max_heap_size >> 3);
+    }
+
+    if (!fv->async_depth) {
+        fv->async_depth = FFMIN(fv->qf.nb_queues, FFMAX(max_heap_size / maxsize, 1));
+        fv->async_depth = FFMAX(fv->async_depth, 1);
+    }
+
+    av_log(avctx, AV_LOG_INFO, "Async buffers: %zuMiB per context, %zuMiB total, depth: %i\n",
+           maxsize / (1024*1024),
+           (fv->async_depth * maxsize) / (1024*1024),
+           fv->async_depth);
 
     err = ff_vk_exec_pool_init(&fv->s, &fv->qf, &fv->exec_pool,
-                               FFMIN(fv->qf.nb_queues, fv->async_depth),
+                               fv->async_depth,
                                0, 0, 0, NULL);
     if (err < 0)
         return err;
