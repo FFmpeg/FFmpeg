@@ -1213,6 +1213,8 @@ int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVBufferPool **buf_pool,
     AVBufferRef *ref;
     FFVkBuffer *data;
 
+    *buf = NULL;
+
     if (!(*buf_pool)) {
         *buf_pool = av_buffer_pool_init2(sizeof(FFVkBuffer), ctx,
                                          alloc_data_buf, NULL);
@@ -1239,6 +1241,7 @@ int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVBufferPool **buf_pool,
                            mem_props);
     if (err < 0) {
         av_buffer_unref(&ref);
+        *buf = NULL;
         return err;
     }
 
@@ -1246,6 +1249,7 @@ int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVBufferPool **buf_pool,
         err = ff_vk_map_buffer(ctx, data, &data->mapped_mem, 0);
         if (err < 0) {
             av_buffer_unref(&ref);
+            *buf = NULL;
             return err;
         }
     }
