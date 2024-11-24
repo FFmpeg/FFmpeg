@@ -30,4 +30,6 @@ av_cold int ff_ffv1_write_extradata(AVCodecContext *avctx);
 av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
                                             enum AVPixelFormat pix_fmt);
 
+size_t ff_ffv1_encode_buffer_size(AVCodecContext *avctx);
+
 #endif /* AVCODEC_FFV1ENC_H */

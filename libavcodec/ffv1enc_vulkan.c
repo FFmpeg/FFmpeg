@@ -413,19 +413,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     ff_vk_exec_add_dep_buf(&fv->s, exec, &fd->results_data_ref, 1, 1);
 
     /* Output buffer size */
-    maxsize = avctx->width*avctx->height*(1 + f->transparency);
-    if (f->chroma_planes)
-        maxsize += AV_CEIL_RSHIFT(avctx->width, f->chroma_h_shift) *
-                   AV_CEIL_RSHIFT(f->height, f->chroma_v_shift)*2;
-    maxsize += f->slice_count * 800;
-    if (f->version > 3) {
-        maxsize *= f->bits_per_raw_sample + 1;
-    } else {
-        maxsize += f->slice_count * 2 * (avctx->width + avctx->height);
-        maxsize *= 8*(2*f->bits_per_raw_sample + 5);
-    }
-    maxsize >>= 3;
-    maxsize += FF_INPUT_BUFFER_MIN_SIZE;
+    maxsize = ff_ffv1_encode_buffer_size(avctx);
 
     /* Allocate output buffer */
     RET(ff_vk_get_pooled_buffer(&fv->s, &fv->out_data_pool,

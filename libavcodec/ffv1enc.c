@@ -1172,6 +1172,26 @@ retry:
     return 0;
 }
 
+size_t ff_ffv1_encode_buffer_size(AVCodecContext *avctx)
+{
+    FFV1Context *f = avctx->priv_data;
+
+    size_t maxsize = avctx->width*avctx->height * (1 + f->transparency);
+    if (f->chroma_planes)
+        maxsize += AV_CEIL_RSHIFT(avctx->width, f->chroma_h_shift) * AV_CEIL_RSHIFT(f->height, f->chroma_v_shift) * 2;
+    maxsize += f->slice_count * 800; //for slice header
+    if (f->version > 3) {
+        maxsize *= f->bits_per_raw_sample + 1;
+    } else {
+        maxsize += f->slice_count * 2 * (avctx->width + avctx->height); //for bug with slices that code some pixels more than once
+        maxsize *= 8*(2*f->bits_per_raw_sample + 5);
+    }
+    maxsize >>= 3;
+    maxsize += FF_INPUT_BUFFER_MIN_SIZE;
+
+    return maxsize;
+}
+
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
@@ -1228,18 +1248,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return 0;
     }
 
-    maxsize = avctx->width*avctx->height * (1 + f->transparency);
-    if (f->chroma_planes)
-        maxsize += AV_CEIL_RSHIFT(avctx->width, f->chroma_h_shift) * AV_CEIL_RSHIFT(f->height, f->chroma_v_shift) * 2;
-    maxsize += f->slice_count * 800; //for slice header
-    if (f->version > 3) {
-        maxsize *= f->bits_per_raw_sample + 1;
-    } else {
-        maxsize += f->slice_count * 2 * (avctx->width + avctx->height); //for bug with slices that code some pixels more than once
-        maxsize *= 8*(2*f->bits_per_raw_sample + 5);
-    }
-    maxsize >>= 3;
-    maxsize += FF_INPUT_BUFFER_MIN_SIZE;
+    /* Maximum packet size */
+    maxsize = ff_ffv1_encode_buffer_size(avctx);
 
     if (maxsize > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE - 32) {
         av_log(avctx, AV_LOG_WARNING, "Cannot allocate worst case packet size, the encoding could fail\n");
