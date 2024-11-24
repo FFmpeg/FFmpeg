@@ -512,6 +512,7 @@ Operating systems / CPU architectures
 Alpha                               [0]
 MIPS                                    Manojkumar Bhosale, Shiyou Yin
 LoongArch                           [2] Shiyou Yin
+Darwin (macOS, iOS)                 [2] Marvin Scholz
 Mac OS X / PowerPC                  [0]
 Amiga / PowerPC                         Colin Ward
 Linux / PowerPC                         Lauri Kasanen
