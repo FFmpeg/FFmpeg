@@ -416,6 +416,7 @@ static int mediacodec_wrap_sw_audio_buffer(AVCodecContext *avctx,
         frame->pts = info->presentationTimeUs;
     }
     frame->pkt_dts = AV_NOPTS_VALUE;
+    frame->flags |= AV_FRAME_FLAG_KEY;
 
     av_log(avctx, AV_LOG_TRACE,
            "Frame: format=%d channels=%d sample_rate=%d nb_samples=%d",
