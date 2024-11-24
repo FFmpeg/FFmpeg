@@ -247,7 +247,8 @@ void ff_vk_exec_pool_free(FFVulkanContext *s, FFVkExecPool *pool)
         FFVkExecContext *e = &pool->contexts[i];
 
         if (e->fence) {
-            vk->WaitForFences(s->hwctx->act_dev, 1, &e->fence, VK_TRUE, UINT64_MAX);
+            if (e->had_submission)
+                vk->WaitForFences(s->hwctx->act_dev, 1, &e->fence, VK_TRUE, UINT64_MAX);
             vk->DestroyFence(s->hwctx->act_dev, e->fence, s->hwctx->alloc);
         }
         pthread_mutex_destroy(&e->lock);
