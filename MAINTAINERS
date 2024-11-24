@@ -511,7 +511,7 @@ Operating systems / CPU architectures
 Alpha                               [0]
 MIPS                                    Manojkumar Bhosale, Shiyou Yin
 LoongArch                           [2] Shiyou Yin
-Mac OS X / PowerPC                      Romain Dolbeau, Guillaume Poirier
+Mac OS X / PowerPC                  [0]
 Amiga / PowerPC                         Colin Ward
 Linux / PowerPC                         Lauri Kasanen
 RISC-V                              [2] Rémi Denis-Courmont
