@@ -4690,7 +4690,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     unsigned int stps_index = 0;
     unsigned int i, j;
     uint64_t stream_size = 0;
+    MOVStts *stts_data_old = sc->stts_data;
     MOVCtts *ctts_data_old = sc->ctts_data;
+    unsigned int stts_count_old = sc->stts_count;
     unsigned int ctts_count_old = sc->ctts_count;
 
     int ret = build_open_gop_key_points(st);
@@ -4794,6 +4796,30 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                                    &sc->ctts_allocated_size, 1,
                                    ctts_data_old[i].offset);
             av_free(ctts_data_old);
+        }
+        if (stts_data_old) {
+            // Expand stts entries such that we have a 1-1 mapping with samples
+            if (sc->sample_count >= UINT_MAX / sizeof(*sc->stts_data))
+                return;
+            sc->stts_count = 0;
+            sc->stts_allocated_size = 0;
+            sc->stts_data = av_fast_realloc(NULL, &sc->stts_allocated_size,
+                                    sc->sample_count * sizeof(*sc->stts_data));
+            if (!sc->stts_data) {
+                av_free(stts_data_old);
+                return;
+            }
+
+            memset((uint8_t*)(sc->stts_data), 0, sc->stts_allocated_size);
+
+            for (i = 0; i < stts_count_old &&
+                        sc->stts_count < sc->sample_count; i++)
+                for (j = 0; j < stts_data_old[i].count &&
+                            sc->stts_count < sc->sample_count; j++)
+                    add_stts_entry(&sc->stts_data, &sc->stts_count,
+                                   &sc->stts_allocated_size, 1,
+                                   stts_data_old[i].duration);
+            av_free(stts_data_old);
         }
 
         for (i = 0; i < sc->chunk_count; i++) {
@@ -5260,6 +5286,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        int stts_constant = !!sc->stts_count;
         if (sc->h_spacing && sc->v_spacing)
             av_reduce(&st->sample_aspect_ratio.num, &st->sample_aspect_ratio.den,
                       sc->h_spacing, sc->v_spacing, INT_MAX);
@@ -5272,7 +5299,12 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         }
 
 #if FF_API_R_FRAME_RATE
-        if (sc->stts_count == 1 || (sc->stts_count == 2 && sc->stts_data[1].count == 1))
+        for (int i = 1; sc->stts_count && i < sc->stts_count - 1; i++) {
+            if (sc->stts_data[i].duration == sc->stts_data[0].duration)
+                continue;
+            stts_constant = 0;
+        }
+        if (stts_constant)
             av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den,
                       sc->time_scale, sc->stts_data[0].duration, INT_MAX);
 #endif
@@ -5303,9 +5335,14 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     // If the duration of the mp3 packets is not constant, then they could need a parser
     if (st->codecpar->codec_id == AV_CODEC_ID_MP3
-        && sc->stts_count > 3
-        && sc->stts_count*10 > st->nb_frames
         && sc->time_scale == st->codecpar->sample_rate) {
+        int stts_constant = 1;
+        for (int i = 1; i < sc->stts_count; i++) {
+            if (sc->stts_data[i].duration == sc->stts_data[0].duration)
+                continue;
+            stts_constant = 0;
+        }
+        if (!stts_constant)
             ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL;
     }
     /* Do not need those anymore. */
