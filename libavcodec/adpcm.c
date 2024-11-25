@@ -261,6 +261,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
 
     switch(avctx->codec->id) {
     case AV_CODEC_ID_ADPCM_IMA_AMV:
+    case AV_CODEC_ID_ADPCM_N64:
         max_channels = 1;
         break;
     case AV_CODEC_ID_ADPCM_SANYO:
@@ -352,6 +353,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     case AV_CODEC_ID_ADPCM_MTAF:
     case AV_CODEC_ID_ADPCM_ARGO:
     case AV_CODEC_ID_ADPCM_IMA_MOFLEX:
+    case AV_CODEC_ID_ADPCM_N64:
         avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
         break;
     case AV_CODEC_ID_ADPCM_IMA_WS:
@@ -1094,6 +1096,9 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         if (buf_size < 34 * ch)
             return 0;
         nb_samples = 64;
+        break;
+    case AV_CODEC_ID_ADPCM_N64:
+        nb_samples = (buf_size / 9) * 16;
         break;
     /* simple 4-bit adpcm */
     case AV_CODEC_ID_ADPCM_CT:
@@ -2493,6 +2498,89 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 bytestream2_seek(&gb, 0, SEEK_SET);
         }
         ) /* End of CASE */
+    CASE(ADPCM_N64,
+        ADPCMChannelStatus *cs = &c->status[0];
+        int coefs[8*2*8] = { 0 };
+
+        if (avctx->extradata) {
+            int version, order, entries;
+            GetByteContext cb;
+
+            bytestream2_init(&cb, avctx->extradata, avctx->extradata_size);
+
+            version = bytestream2_get_be16(&cb);
+            order = bytestream2_get_be16(&cb);
+            entries = bytestream2_get_be16(&cb);
+            if (version != 1 || order != 2 || entries > 8)
+                return AVERROR_INVALIDDATA;
+
+            for (int n = 0; n < order * entries * 8; n++)
+                coefs[n] = sign_extend(bytestream2_get_be16(&cb), 16);
+        }
+
+        for (int block = 0; block < avpkt->size / 9; block++) {
+            int scale, index, codes[16];
+            int16_t hist[8] = { 0 };
+            const int order = 2;
+            int16_t out[16];
+
+            hist[6] = cs->sample2;
+            hist[7] = cs->sample1;
+
+            samples = samples_p[0] + block * 16;
+
+            scale = (buf[0] >> 4) & 0xF;
+            index = (buf[0] >> 0) & 0xF;
+            scale = 1 << scale;
+            index = FFMIN(index, 8);
+
+            for (int i = 0, j = 0; i < 16; i += 2, j++) {
+                int n0 = (buf[j+1] >> 4) & 0xF;
+                int n1 = (buf[j+1] >> 0) & 0xF;
+
+                if (n0 & 8)
+                    n0 = n0 - 16;
+                if (n1 & 8)
+                    n1 = n1 - 16;
+
+                codes[i+0] = n0 * scale;
+                codes[i+1] = n1 * scale;
+            }
+
+            for (int j = 0; j < 2; j++) {
+                int *sf_codes = &codes[j*8];
+                int16_t *sf_out = &out[j*8];
+
+                for (int i = 0; i < 8; i++) {
+                    int sample, delta = 0;
+
+                    for (int o = 0; o < order; o++)
+                        delta += coefs[o*8 + i] * hist[(8 - order) + o];
+
+                    for (int k = i-1; k > -1; k--) {
+                        for (int o = 1; o < order; o++)
+                            delta += sf_codes[(i-1) - k] * coefs[(o*8) + k];
+                    }
+
+                    sample = sf_codes[i] * 2048;
+                    sample = (sample + delta) / 2048;
+                    sample = av_clip_int16(sample);
+                    sf_out[i] = sample;
+                }
+
+                for (int i = 8 - order; i < 8; i++)
+                    hist[i] = sf_out[i];
+            }
+
+            memcpy(samples, out, sizeof(out));
+
+            cs->sample2 = hist[6];
+            cs->sample1 = hist[7];
+
+            buf += 9;
+        }
+        bytestream2_seek(&gb, 0, SEEK_END);
+        ) /* End of CASE */
     CASE(ADPCM_PSX,
         for (int block = 0; block < avpkt->size / FFMAX(avctx->block_align, 16 * channels); block++) {
             int nb_samples_per_block = 28 * FFMAX(avctx->block_align, 16 * channels) / (16 * channels);
@@ -2741,6 +2829,7 @@ ADPCM_DECODER(ADPCM_IMA_WS,      sample_fmts_both, adpcm_ima_ws,      "ADPCM IMA
 ADPCM_DECODER(ADPCM_IMA_XBOX,    sample_fmts_s16p, adpcm_ima_xbox,    "ADPCM IMA Xbox")
 ADPCM_DECODER(ADPCM_MS,          sample_fmts_both, adpcm_ms,          "ADPCM Microsoft")
 ADPCM_DECODER(ADPCM_MTAF,        sample_fmts_s16p, adpcm_mtaf,        "ADPCM MTAF")
+ADPCM_DECODER(ADPCM_N64,         sample_fmts_s16p, adpcm_n64,         "ADPCM Silicon Graphics N64")
 ADPCM_DECODER(ADPCM_PSX,         sample_fmts_s16p, adpcm_psx,         "ADPCM Playstation")
 ADPCM_DECODER(ADPCM_SANYO,       sample_fmts_s16p, adpcm_sanyo,       "ADPCM Sanyo")
 ADPCM_DECODER(ADPCM_SBPRO_2,     sample_fmts_s16,  adpcm_sbpro_2,     "ADPCM Sound Blaster Pro 2-bit")
