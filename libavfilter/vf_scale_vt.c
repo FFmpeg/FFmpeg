@@ -109,6 +109,8 @@ static av_cold int scale_vt_init(AVFilterContext *avctx)
         VTSessionSetProperty(s->transfer, kVTPixelTransferPropertyKey_DestinationYCbCrMatrix, value);
     }
 
+    VTSessionSetProperty(s->transfer, kVTPixelTransferPropertyKey_ScalingMode, kVTScalingMode_CropSourceToCleanAperture);
+
     return 0;
 }
 
@@ -132,6 +134,18 @@ static int scale_vt_filter_frame(AVFilterLink *link, AVFrame *in)
     CVPixelBufferRef src;
     CVPixelBufferRef dst;
 
+    int left;
+    int top;
+    int width;
+    int height;
+    CFNumberRef crop_width_num;
+    CFNumberRef crop_height_num;
+    CFNumberRef crop_offset_left_num;
+    CFNumberRef crop_offset_top_num;
+    const void *clean_aperture_keys[4];
+    const void *source_clean_aperture_values[4];
+    CFDictionaryRef source_clean_aperture;
+
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         ret = AVERROR(ENOMEM);
@@ -141,6 +155,11 @@ static int scale_vt_filter_frame(AVFilterLink *link, AVFrame *in)
     ret = av_frame_copy_props(out, in);
     if (ret < 0)
         goto fail;
+
+    out->crop_left = 0;
+    out->crop_top = 0;
+    out->crop_right = 0;
+    out->crop_bottom = 0;
 
     av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
               (int64_t)in->sample_aspect_ratio.num * outlink->h * link->w,
@@ -153,9 +172,45 @@ static int scale_vt_filter_frame(AVFilterLink *link, AVFrame *in)
     if (s->colour_matrix != AVCOL_SPC_UNSPECIFIED)
         out->colorspace = s->colour_matrix;
 
+    width = (in->width - in->crop_right) - in->crop_left;
+    height = (in->height - in->crop_bottom) - in->crop_top;
+    // The crop offsets are relative to the center of the frame.
+    // the crop width and crop height are relative to the center of the crop rect, not top left as normal.
+    left = in->crop_left - in->width / 2 + width / 2;
+    top = in->crop_top - in->height / 2 + height / 2;
+    crop_width_num = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &width);
+    crop_height_num = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &height);
+    crop_offset_left_num = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &left);
+    crop_offset_top_num = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &top);
+
+    clean_aperture_keys[0] = kCVImageBufferCleanApertureWidthKey;
+    clean_aperture_keys[1] = kCVImageBufferCleanApertureHeightKey;
+    clean_aperture_keys[2] = kCVImageBufferCleanApertureHorizontalOffsetKey;
+    clean_aperture_keys[3] = kCVImageBufferCleanApertureVerticalOffsetKey;
+
+    source_clean_aperture_values[0] = crop_width_num;
+    source_clean_aperture_values[1] = crop_height_num;
+    source_clean_aperture_values[2] = crop_offset_left_num;
+    source_clean_aperture_values[3] = crop_offset_top_num;
+
+    source_clean_aperture = CFDictionaryCreate(kCFAllocatorDefault,
+                                                    clean_aperture_keys,
+                                                    source_clean_aperture_values,
+                                                    4,
+                                                    &kCFTypeDictionaryKeyCallBacks,
+                                                    &kCFTypeDictionaryValueCallBacks);
+
+    CFRelease(crop_width_num);
+    CFRelease(crop_height_num);
+    CFRelease(crop_offset_left_num);
+    CFRelease(crop_offset_top_num);
+
     src = (CVPixelBufferRef)in->data[3];
     dst = (CVPixelBufferRef)out->data[3];
+    CVBufferSetAttachment(src, kCVImageBufferCleanApertureKey,
+                           source_clean_aperture, kCVAttachmentMode_ShouldPropagate);
     ret = VTPixelTransferSessionTransferImage(s->transfer, src, dst);
+    CFRelease(source_clean_aperture);
     if (ret != noErr) {
         av_log(ctx, AV_LOG_ERROR, "transfer image failed, %d\n", ret);
         ret = AVERROR_EXTERNAL;
