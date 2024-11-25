@@ -581,7 +581,7 @@ static void decode_adpcm_ima_hvqm4(AVCodecContext *avctx, int16_t *outbuf, int s
         samples_to_do--;
     }
 
-    for (int i = 0; i < samples_to_do; i++) {
+    for (int i = 0; i < samples_to_do; i += 1+(!st)) {
         uint8_t nibble = bytestream2_get_byte(gb);
 
         *outbuf++ = ff_adpcm_ima_qt_expand_nibble(&c->status[st], nibble & 0xF);
