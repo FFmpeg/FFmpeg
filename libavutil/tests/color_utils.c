@@ -18,7 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <math.h>
 #include <stdio.h>
+
 #include "libavutil/csp.h"
 #include "libavutil/macros.h"
 #include "libavutil/pixdesc.h"
@@ -34,14 +36,21 @@ int main(int argc, char *argv[])
 
     for (enum AVColorTransferCharacteristic trc = 0; trc < AVCOL_TRC_NB; trc++) {
         av_csp_trc_function func = av_csp_trc_func_from_id(trc);
+        av_csp_trc_function func_inv = av_csp_trc_func_inv_from_id(trc);
         const char *name = av_color_transfer_name(trc);
         if (!func)
             continue;
 
         for (int i = 0; i < FF_ARRAY_ELEMS(test_data); i++) {
             double result = func(test_data[i]);
-            printf("trc=%s calling func(%f) expected=%f\n",
-                    name, test_data[i], result);
+            double roundtrip = func_inv(result);
+            printf("trc=%s calling func(%f) expected=%f roundtrip=%f\n",
+                    name, test_data[i], result, roundtrip);
+
+            if (result > 0.0 && fabs(roundtrip - test_data[i]) > 1e-8) {
+                printf("  FAIL\n");
+                return 1;
+            }
         }
     }
 }

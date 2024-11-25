@@ -148,6 +148,11 @@ double av_csp_approximate_trc_gamma(enum AVColorTransferCharacteristic trc);
 av_csp_trc_function av_csp_trc_func_from_id(enum AVColorTransferCharacteristic trc);
 
 /**
+ * Returns the mathematical inverse of the corresponding TRC function.
+ */
+av_csp_trc_function av_csp_trc_func_inv_from_id(enum AVColorTransferCharacteristic trc);
+
+/**
  * @}
  */
 

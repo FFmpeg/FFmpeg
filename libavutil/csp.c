@@ -170,14 +170,34 @@ static double trc_bt709(double Lc)
          :              a * pow(Lc, 0.45) - (a - 1.0);
 }
 
+static double trc_bt709_inv(double E)
+{
+    const double a = BT709_alpha;
+    const double b = 4.500 * BT709_beta;
+
+    return (0.0 > E) ? 0.0
+         : (  b > E) ? E / 4.500
+         :             pow((E + (a - 1.0)) / a, 1.0 / 0.45);
+}
+
 static double trc_gamma22(double Lc)
 {
     return (0.0 > Lc) ? 0.0 : pow(Lc, 1.0/ 2.2);
 }
 
+static double trc_gamma22_inv(double E)
+{
+    return (0.0 > E) ? 0.0 : pow(E, 2.2);
+}
+
 static double trc_gamma28(double Lc)
 {
     return (0.0 > Lc) ? 0.0 : pow(Lc, 1.0/ 2.8);
+}
+
+static double trc_gamma28_inv(double E)
+{
+    return (0.0 > E) ? 0.0 : pow(E, 2.8);
 }
 
 static double trc_smpte240M(double Lc)
@@ -190,6 +210,16 @@ static double trc_smpte240M(double Lc)
          :              a * pow(Lc, 0.45) - (a - 1.0);
 }
 
+static double trc_smpte240M_inv(double E)
+{
+    const double a = 1.1115;
+    const double b = 4.000 * 0.0228;
+
+    return (0.0 > E) ? 0.0
+         : (  b > E) ? E / 4.000
+         :             pow((E + (a - 1.0)) / a, 1.0 / 0.45);
+}
+
 static double trc_linear(double Lc)
 {
     return Lc;
@@ -200,10 +230,20 @@ static double trc_log(double Lc)
     return (0.01 > Lc) ? 0.0 : 1.0 + log10(Lc) / 2.0;
 }
 
+static double trc_log_inv(double E)
+{
+    return (0.0 > E) ? 0.01 : pow(10.0, 2.0 * (E - 1.0));
+}
+
 static double trc_log_sqrt(double Lc)
 {
     // sqrt(10) / 1000
     return (0.00316227766 > Lc) ? 0.0 : 1.0 + log10(Lc) / 2.5;
+}
+
+static double trc_log_sqrt_inv(double E)
+{
+    return (0.0 > E) ? 0.00316227766 : pow(10.0, 2.5 * (E - 1.0));
 }
 
 static double trc_iec61966_2_4(double Lc)
@@ -216,6 +256,16 @@ static double trc_iec61966_2_4(double Lc)
          :               a * pow( Lc, 0.45) - (a - 1.0);
 }
 
+static double trc_iec61966_2_4_inv(double E)
+{
+    const double a = BT709_alpha;
+    const double b = 4.500 * BT709_beta;
+
+    return (-b >= E) ? -pow((-E + (a - 1.0)) / a, 1.0 / 0.45)
+         : ( b >  E) ? E / 4.500
+         :              pow(( E + (a - 1.0)) / a, 1.0 / 0.45);
+}
+
 static double trc_bt1361(double Lc)
 {
     const double a = BT709_alpha;
@@ -224,6 +274,16 @@ static double trc_bt1361(double Lc)
     return (-0.0045 >= Lc) ? -(a * pow(-4.0 * Lc, 0.45) + (a - 1.0)) / 4.0
          : ( b >  Lc) ? 4.500 * Lc
          :               a * pow( Lc, 0.45) - (a - 1.0);
+}
+
+static double trc_bt1361_inv(double E)
+{
+    const double a = BT709_alpha;
+    const double b = 4.500 * BT709_beta;
+
+    return (-0.02025 >= E) ? -pow((-4.0 * E - (a - 1.0)) / a, 1.0 / 0.45) / 4.0
+         : ( b       >  E) ? E / 4.500
+         :                    pow(( E + (a - 1.0)) / a, 1.0 / 0.45);
 }
 
 static double trc_iec61966_2_1(double Lc)
@@ -236,13 +296,30 @@ static double trc_iec61966_2_1(double Lc)
          :              a * pow(Lc, 1.0  / 2.4) - (a - 1.0);
 }
 
+static double trc_iec61966_2_1_inv(double E)
+{
+    const double a = 1.055;
+    const double b = 12.92 * 0.0031308;
+
+    return (0.0 > E) ? 0.0
+         : (  b > E) ? E / 12.92
+                     : pow((E + (a - 1.0)) / a, 2.4);
+    return E;
+}
+
+#define PQ_c1 (        3424.0 / 4096.0) /* c3-c2 + 1 */
+#define PQ_c2 ( 32.0 * 2413.0 / 4096.0)
+#define PQ_c3 ( 32.0 * 2392.0 / 4096.0)
+#define PQ_m  (128.0 * 2523.0 / 4096.0)
+#define PQ_n  ( 0.25 * 2610.0 / 4096.0)
+
 static double trc_smpte_st2084(double Lc)
 {
-    const double c1 =         3424.0 / 4096.0; // c3-c2 + 1
-    const double c2 =  32.0 * 2413.0 / 4096.0;
-    const double c3 =  32.0 * 2392.0 / 4096.0;
-    const double m  = 128.0 * 2523.0 / 4096.0;
-    const double n  =  0.25 * 2610.0 / 4096.0;
+    const double c1 = PQ_c1;
+    const double c2 = PQ_c2;
+    const double c3 = PQ_c3;
+    const double m  = PQ_m;
+    const double n  = PQ_n;
     const double L  = Lc / 10000.0;
     const double Ln = pow(L, n);
 
@@ -251,22 +328,54 @@ static double trc_smpte_st2084(double Lc)
 
 }
 
-static double trc_smpte_st428_1(double Lc)
+static double trc_smpte_st2084_inv(double E)
 {
-    return (0.0 > Lc) ? 0.0
-         :              pow(48.0 * Lc / 52.37, 1.0 / 2.6);
+    const double c1 = PQ_c1;
+    const double c2 = PQ_c2;
+    const double c3 = PQ_c3;
+    const double m  = PQ_m;
+    const double n  = PQ_n;
+    const double Em = pow(E, 1.0 / m);
+
+    return (c1 > Em) ? 0.0
+                     : 10000.0 * pow((Em - c1) / (c2 - c3 * Em), 1.0 / n);
 }
 
+#define DCI_L 48.00
+#define DCI_P 52.37
+
+static double trc_smpte_st428_1(double Lc)
+{
+    return (0.0 > Lc) ? 0.0 : pow(DCI_L / DCI_P * Lc, 1.0 / 2.6);
+}
+
+static double trc_smpte_st428_1_inv(double E)
+{
+    return (0.0 > E) ? 0.0 : DCI_P / DCI_L * pow(E, 2.6);
+}
+
+#define HLG_a 0.17883277
+#define HLG_b 0.28466892
+#define HLG_c 0.55991073
 
 static double trc_arib_std_b67(double Lc) {
     // The function uses the definition from HEVC, which assumes that the peak
     // white is input level = 1. (this is equivalent to scaling E = Lc * 12 and
     // using the definition from the ARIB STD-B67 spec)
-    const double a = 0.17883277;
-    const double b = 0.28466892;
-    const double c = 0.55991073;
+    const double a = HLG_a;
+    const double b = HLG_b;
+    const double c = HLG_c;
     return (0.0 > Lc) ? 0.0 :
         (Lc <= 1.0 / 12.0 ? sqrt(3.0 * Lc) : a * log(12.0 * Lc - b) + c);
+}
+
+static double trc_arib_std_b67_inv(double E)
+{
+    const double a = HLG_a;
+    const double b = HLG_b;
+    const double c = HLG_c;
+    return (0.0 > E) ? 0.0 :
+        (E <= 0.5 ? E * E / 3.0 : (exp((E - c) / a) + b) / 12.0);
 }
 
 static const av_csp_trc_function trc_funcs[AVCOL_TRC_NB] = {
@@ -293,4 +402,30 @@ av_csp_trc_function av_csp_trc_func_from_id(enum AVColorTransferCharacteristic t
     if (trc >= AVCOL_TRC_NB)
         return NULL;
     return trc_funcs[trc];
+}
+
+static const av_csp_trc_function trc_inv_funcs[AVCOL_TRC_NB] = {
+    [AVCOL_TRC_BT709] = trc_bt709_inv,
+    [AVCOL_TRC_GAMMA22] = trc_gamma22_inv,
+    [AVCOL_TRC_GAMMA28] = trc_gamma28_inv,
+    [AVCOL_TRC_SMPTE170M] = trc_bt709_inv,
+    [AVCOL_TRC_SMPTE240M] = trc_smpte240M_inv,
+    [AVCOL_TRC_LINEAR] = trc_linear,
+    [AVCOL_TRC_LOG] = trc_log_inv,
+    [AVCOL_TRC_LOG_SQRT] = trc_log_sqrt_inv,
+    [AVCOL_TRC_IEC61966_2_4] = trc_iec61966_2_4_inv,
+    [AVCOL_TRC_BT1361_ECG] = trc_bt1361_inv,
+    [AVCOL_TRC_IEC61966_2_1] = trc_iec61966_2_1_inv,
+    [AVCOL_TRC_BT2020_10] = trc_bt709_inv,
+    [AVCOL_TRC_BT2020_12] = trc_bt709_inv,
+    [AVCOL_TRC_SMPTE2084] = trc_smpte_st2084_inv,
+    [AVCOL_TRC_SMPTE428] = trc_smpte_st428_1_inv,
+    [AVCOL_TRC_ARIB_STD_B67] = trc_arib_std_b67_inv,
+};
+
+av_csp_trc_function av_csp_trc_func_inv_from_id(enum AVColorTransferCharacteristic trc)
+{
+    if (trc >= AVCOL_TRC_NB)
+        return NULL;
+    return trc_inv_funcs[trc];
 }
