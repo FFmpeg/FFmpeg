@@ -290,11 +290,7 @@ static const av_csp_trc_function trc_funcs[AVCOL_TRC_NB] = {
 
 av_csp_trc_function av_csp_trc_func_from_id(enum AVColorTransferCharacteristic trc)
 {
-    av_csp_trc_function func;
     if (trc >= AVCOL_TRC_NB)
         return NULL;
-    func = trc_funcs[trc];
-    if (!func)
-        return NULL;
-    return func;
+    return trc_funcs[trc];
 }
