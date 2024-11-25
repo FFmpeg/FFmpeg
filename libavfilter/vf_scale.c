@@ -482,7 +482,7 @@ static int query_formats(const AVFilterContext *ctx,
     formats = ff_all_color_spaces();
     for (int i = 0; i < formats->nb_formats; i++) {
         if (!sws_test_colorspace(formats->formats[i], 0)) {
-            for (int j = i--; j < formats->nb_formats; j++)
+            for (int j = i--; j + 1 < formats->nb_formats; j++)
                 formats->formats[j] = formats->formats[j + 1];
             formats->nb_formats--;
         }
@@ -501,7 +501,7 @@ static int query_formats(const AVFilterContext *ctx,
         formats = ff_all_color_spaces();
         for (int i = 0; i < formats->nb_formats; i++) {
             if (!sws_test_colorspace(formats->formats[i], 1)) {
-                for (int j = i--; j < formats->nb_formats; j++)
+                for (int j = i--; j + 1 < formats->nb_formats; j++)
                     formats->formats[j] = formats->formats[j + 1];
                 formats->nb_formats--;
             }
