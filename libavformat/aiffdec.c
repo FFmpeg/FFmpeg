@@ -177,6 +177,9 @@ static int get_aiff_header(AVFormatContext *s, int64_t size,
         case AV_CODEC_ID_G728:
             par->block_align = 5;
             break;
+        case AV_CODEC_ID_ADPCM_N64:
+            par->block_align = 9;
+            break;
         default:
             aiff->block_duration = 1;
             break;
@@ -352,6 +355,31 @@ static int aiff_read_header(AVFormatContext *s)
             st->codecpar->block_align = avio_rb32(pb);
 
             goto got_sound;
+            break;
+        case MKTAG('A','P','P','L'):
+            if (size > 4) {
+                uint32_t chunk = avio_rl32(pb);
+
+                size -= 4;
+                if (chunk == MKTAG('s','t','o','c')) {
+                    int len = avio_r8(pb);
+
+                    size--;
+                    if (len == 11 && size > 11) {
+                        uint8_t chunk[11];
+
+                        ret = avio_read(pb, chunk, 11);
+                        if (ret > 0)
+                            size -= ret;
+                        if (!memcmp(chunk, "VADPCMCODES", sizeof(chunk))) {
+                            if ((ret = ff_get_extradata(s, st->codecpar, pb, size)) < 0)
+                                return ret;
+                            size -= ret;
+                        }
+                    }
+                }
+            }
+            avio_skip(pb, size);
             break;
         case 0:
             if (offset > 0 && st->codecpar->block_align) // COMM && SSND
