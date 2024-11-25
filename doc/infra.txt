@@ -24,6 +24,26 @@ Our Main server is hosted at telepoint.bg
 for more details see: https://www.ffmpeg.org/#thanks_sponsor_0001
 Nothing runs on our main server directly, instead several VMs run on it.
 
+Main server security:
+---------------------
+Telepoint is one of the largest Bulgarian DC providers with multiple sibling companies offering
+Internet, SDH, DWDM, peering exchange and hosting. They have multiple DC buildings in Sofia and
+FFmpeg is hosted in XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. The building is locked down and accessible
+only with personal key cards that are registered. People who are granted access to a rack have
+to go through the access center with their ID to get logged and receive a one-time access card
+that can open the service elevator and only the hall where the destination rack is. All racks are
+locked, once access is granted to someone they will get a key for the rack for the duration of
+their visit. There are security cameras everywhere and personnel in the access center 24/7. As for
+software security, our BIOS and IPMI are protected by password and encrypted connection, and
+the machines can be accessed only by root administrators with their SSH keys. They're using
+a Ubuntu LTS release and get regular security updates as they are released. We also get
+notified by email for various security related events (e.g. failed sudo).
+
+Side note - Telepoint provides the rack and physical infrastructure, their sibling company called
+            Telehouse which is an ISP provides the connectivity, they are directly connected with
+            over 15 tier-1 service providers and have over 100 PoPs (points of presence)
+            in various cities. You can see more on www.telehouse.bg
+
 
 ffmpeg.org VM:
 --------------
