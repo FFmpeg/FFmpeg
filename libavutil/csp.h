@@ -81,8 +81,12 @@ typedef struct AVColorPrimariesDesc {
 } AVColorPrimariesDesc;
 
 /**
- * Function pointer representing a double -> double transfer function that performs
- * an EOTF transfer inversion. This function outputs linear light.
+ * Function pointer representing a double -> double transfer function that
+ * performs either an OETF transfer function, or alternatively an inverse EOTF
+ * function (in particular, for SMPTE ST 2084 / PQ). This function inputs
+ * linear light, and outputs gamma encoded light.
+ *
+ * See ITU-T H.273 for more information.
  */
 typedef double (*av_csp_trc_function)(double);
 
