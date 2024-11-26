@@ -46,6 +46,10 @@ typedef struct ScaleVulkanContext {
     /* Push constants / options */
     struct {
         float yuv_matrix[4][4];
+        int crop_x;
+        int crop_y;
+        int crop_w;
+        int crop_h;
     } opts;
 
     char *out_format_string;
@@ -121,10 +125,6 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     FFVkSPIRVCompiler *spv;
     FFVulkanDescriptorSetBinding *desc;
 
-    int crop_x = in->crop_left;
-    int crop_y = in->crop_top;
-    int crop_w = in->width - (in->crop_left + in->crop_right);
-    int crop_h = in->height - (in->crop_top + in->crop_bottom);
     int in_planes = av_pix_fmt_count_planes(s->vkctx.input_format);
 
     switch (s->scaler) {
@@ -159,6 +159,10 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
     GLSLC(0, layout(push_constant, std430) uniform pushConstants {        );
     GLSLC(1,    mat4 yuv_matrix;                                          );
+    GLSLC(1,    int crop_x;                                               );
+    GLSLC(1,    int crop_y;                                               );
+    GLSLC(1,    int crop_w;                                               );
+    GLSLC(1,    int crop_h;                                               );
     GLSLC(0, };                                                           );
     GLSLC(0,                                                              );
 
@@ -205,8 +209,8 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     GLSLC(1,     ivec2 size;                                                 );
     GLSLC(1,     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);                );
     GLSLF(1,     vec2 in_d = vec2(%i, %i);             ,in->width, in->height);
-    GLSLF(1,     vec2 c_r = vec2(%i, %i) / in_d;              ,crop_w, crop_h);
-    GLSLF(1,     vec2 c_o = vec2(%i, %i) / in_d;               ,crop_x,crop_y);
+    GLSLC(1,     vec2 c_r = vec2(crop_w, crop_h) / in_d;                     );
+    GLSLC(1,     vec2 c_o = vec2(crop_x, crop_y) / in_d;                     );
     GLSLC(0,                                                                 );
 
     if (s->vkctx.output_format == s->vkctx.input_format) {
@@ -286,6 +290,11 @@ static int scale_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     if (!s->initialized)
         RET(init_filter(ctx, in));
 
+    s->opts.crop_x = in->crop_left;
+    s->opts.crop_y = in->crop_top;
+    s->opts.crop_w = in->width - (in->crop_left + in->crop_right);
+    s->opts.crop_h = in->height - (in->crop_top + in->crop_bottom);
+
     RET(ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd, out, in,
                                     s->sampler, &s->opts, sizeof(s->opts)));
 
@@ -326,6 +335,11 @@ static int scale_vulkan_config_output(AVFilterLink *outlink)
                                    &vkctx->output_height);
     if (err < 0)
         return err;
+
+    ff_scale_adjust_dimensions(inlink, &vkctx->output_width, &vkctx->output_height, 0, 1);
+
+    outlink->w = vkctx->output_width;
+    outlink->h = vkctx->output_height;
 
     if (s->out_format_string) {
         s->vkctx.output_format = av_get_pix_fmt(s->out_format_string);
