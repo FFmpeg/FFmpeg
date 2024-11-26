@@ -9,9 +9,9 @@ ffmpeg trademark registered in france by ffmpeg creator.
 Domain + NS:
 ~~~~~~~~~~~~
 ffmpeg.org domain name
-ns1.avcodec.org Primary Name server (bulgaria)
-ns2.avcodec.org Replica Name server (hungary)
-ns3.avcodec.org Replica Name server (italy)
+ns1.avcodec.org Primary Name server (provided by Telepoint, hosted at Telepoint in bulgaria)
+ns2.avcodec.org Replica Name server (provided by an ffmpeg developer, hosted at Hetzner in germany)
+ns3.avcodec.org Replica Name server (provided by an ffmpeg developer, hosted at Prometeus Cdlan in italy)
 
 
 Servers:
