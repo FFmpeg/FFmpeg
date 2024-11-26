@@ -54,6 +54,12 @@ struct AVAESCTR;
  * Here we just use what is needed to read the chunks
  */
 
+typedef struct MOVTimeToSample {
+    unsigned int count;
+    unsigned int duration;
+    int offset;
+} MOVTimeToSample;
+
 typedef struct MOVStts {
     unsigned int count;
     unsigned int duration;
@@ -173,6 +179,9 @@ typedef struct MOVStreamContext {
     int next_chunk;
     unsigned int chunk_count;
     int64_t *chunk_offsets;
+    unsigned int tts_count;
+    unsigned int tts_allocated_size;
+    MOVTimeToSample *tts_data;
     unsigned int stts_count;
     unsigned int stts_allocated_size;
     MOVStts *stts_data;
@@ -189,10 +198,8 @@ typedef struct MOVStreamContext {
     unsigned *stps_data;  ///< partial sync sample for mpeg-2 open gop
     MOVElst *elst_data;
     unsigned int elst_count;
-    int stts_index;
-    int stts_sample;
-    int ctts_index;
-    int ctts_sample;
+    int tts_index;
+    int tts_sample;
     unsigned int sample_size; ///< may contain value calculated from stsd or value from stsz atom
     unsigned int stsz_sample_size; ///< always contains sample size from stsz atom
     unsigned int sample_count;
