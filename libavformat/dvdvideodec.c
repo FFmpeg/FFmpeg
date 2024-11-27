@@ -874,7 +874,7 @@ static int dvdvideo_chapters_setup_simple(AVFormatContext *s)
     int64_t total_duration = 0;
 
     int chapter_start = c->opt_chapter_start;
-    int chapter_end = c->opt_chapter_end > 0 ? c->opt_chapter_end : c->play_state.pgc_nb_pg_est - 1;
+    int chapter_end = c->opt_chapter_end > 0 ? c->opt_chapter_end : c->play_state.pgc_nb_pg_est;
 
     /* dvdnav_describe_title_chapters() describes PGs rather than PTTs, so validate our range */
     if (c->play_state.pgc_nb_pg_est == 1            ||
