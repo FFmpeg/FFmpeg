@@ -1159,7 +1159,7 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     /* Create decode exec context for this specific main thread.
      * 2 async contexts per thread was experimentally determined to be optimal
      * for a majority of streams. */
-    err = ff_vk_exec_pool_init(s, &ctx->qf, &dec->exec_pool, 2,
+    err = ff_vk_exec_pool_init(s, &ctx->qf, &dec->exec_pool, 2*ctx->qf.nb_queues,
                                nb_q, VK_QUERY_TYPE_RESULT_STATUS_ONLY_KHR, 0,
                                profile);
     if (err < 0)
