@@ -141,12 +141,12 @@ uint32_t flush_put_bits(inout PutBitContext pb)
         pb.bit_buf <<= pb.bit_left;
 
     if (pb.bit_left < BUF_BITS) {
-        uint to_write = ((BUF_BITS - pb.bit_left) >> 3) + 1;
+        uint to_write = ((BUF_BITS - pb.bit_left - 1) >> 3) + 1;
 
         u8buf bs = u8buf(pb.buf);
         for (int i = 0; i < to_write; i++)
             bs[i].v = BYTE_EXTRACT(pb.bit_buf, BUF_BYTES - uint8_t(1) - i);
-        pb.buf = uint64_t(bs) + BUF_BYTES;
+        pb.buf = uint64_t(bs) + to_write;
     }
 
     pb.bit_left = BUF_BITS;
