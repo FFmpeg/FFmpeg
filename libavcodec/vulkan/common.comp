@@ -30,6 +30,10 @@ layout(buffer_reference, buffer_reference_align = 4) buffer u32buf {
     uint32_t v;
 };
 
+layout(buffer_reference, buffer_reference_align = 4) buffer u32vec2buf {
+    u32vec2 v;
+};
+
 layout(buffer_reference, buffer_reference_align = 8) buffer u64buf {
     uint64_t v;
 };
@@ -70,12 +74,12 @@ uint64_t align64(uint64_t src, uint64_t a)
 #define reverse4(src) \
     (pack32(unpack8(uint32_t(src)).wzyx))
 
-uint64_t reverse8(uint64_t src)
+u32vec2 reverse8(uint64_t src)
 {
     u32vec2 tmp = unpack32(src);
     tmp.x = reverse4(tmp.x);
     tmp.y = reverse4(tmp.y);
-    return pack64(tmp.yx);
+    return tmp.yx;
 }
 
 #ifdef PB_32
@@ -88,7 +92,7 @@ uint64_t reverse8(uint64_t src)
     (uint8_t(bitfieldExtract((src), ((byte_off) << 3), 8)))
 #else
 #define BIT_BUF_TYPE uint64_t
-#define BUF_TYPE u64buf
+#define BUF_TYPE u32vec2buf
 #define BUF_REVERSE(src) reverse8(src)
 #define BUF_BITS uint8_t(64)
 #define BUF_BYTES uint8_t(8)
