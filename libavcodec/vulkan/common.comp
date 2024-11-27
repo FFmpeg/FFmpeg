@@ -172,3 +172,9 @@ uint64_t put_bits_count(in PutBitContext pb)
 {
     return (pb.buf - pb.buf_start)*8 + BUF_BITS - pb.bit_left;
 }
+
+uint32_t put_bytes_count(in PutBitContext pb)
+{
+    uint64_t num_bytes = (pb.buf - pb.buf_start) + ((BUF_BITS - pb.bit_left) >> 3);
+    return uint32_t(num_bytes);
+}
