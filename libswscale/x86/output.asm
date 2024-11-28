@@ -582,7 +582,7 @@ yuv2nv12cX_fn yuv2nv21
 
 %if ARCH_X86_64
 struc SwsInternal
-    .padding:           resb 40332 ; offsetof(SwsInternal, yuv2rgb_y_offset)
+    .padding:           resb 40348 ; offsetof(SwsInternal, yuv2rgb_y_offset)
     .yuv2rgb_y_offset:  resd 1
     .yuv2rgb_y_coeff:   resd 1
     .yuv2rgb_v2r_coeff: resd 1

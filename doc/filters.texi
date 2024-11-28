@@ -21071,7 +21071,38 @@ Set libswscale input parameters for scaling algorithms that need them. See
 complete documentation. If not explicitly specified the filter applies
 empty parameters.
 
+@item intent
+Set the ICC rendering intent to use when transforming between different color
+spaces. It accepts the following values:
 
+@table @samp
+@item perceptual
+Use a perceptually guided tone and gamut mapping curve. The exact details of
+the mapping used may change at any time and should not be relied on as stable.
+This intent is recommended for final viewing of image/video content in typical
+viewing settings.
+
+@item relative_colorimetric
+Statically clip out-of-gamut colors using a colorimetric clipping curve which
+attempts to find the colorimetrically least dissimilar in-gamut color. This
+intent performs white point adaptation and black point adaptation. This is
+the default. This intent is recommended wherever faithful color reproduction
+is of the utmost importance, even at the cost of clipping.
+
+@item absolute_colorimetric
+Hard clip out-of-gamut colors with no attempt at white or black point
+reproduction. This intent will reproduce in-gamut colors 1:1 on the output
+display as they would appear on the reference display, assuming the output
+display is appropriately calibrated.
+
+@item saturation
+Performs saturation mapping - that is, stretches the input color volume
+directly onto the output color volume, in non-linear fashion that preserves the
+original signal appearance as much as possible. This intent is recommended for
+signal content evaluation, as it will not lead to any clipping. It is roughly
+analogous to not performing any color mapping, although it still takes into
+account the mastering display primaries and any differences in encoding TRC.
+@end table
 
 @item size, s
 Set the video size. For the syntax of this option, check the

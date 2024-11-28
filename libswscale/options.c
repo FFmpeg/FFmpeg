@@ -84,6 +84,12 @@ static const AVOption swscale_options[] = {
     { "threads",         "number of threads",             OFFSET(threads),   AV_OPT_TYPE_INT,   {.i64 = 1 }, .flags = VE, .unit = "threads", .max = INT_MAX },
         { "auto",        "automatic selection",           0,                 AV_OPT_TYPE_CONST, {.i64 = 0 }, .flags = VE, .unit = "threads" },
 
+    { "intent",          "color mapping intent",        OFFSET(intent), AV_OPT_TYPE_INT,    { .i64 = SWS_INTENT_RELATIVE_COLORIMETRIC }, .flags = VE, .unit = "intent", .max = SWS_INTENT_NB - 1 },
+        { "perceptual",            "perceptual tone mapping",        0, AV_OPT_TYPE_CONST,  { .i64 = SWS_INTENT_PERCEPTUAL            }, .flags = VE, .unit = "intent" },
+        { "relative_colorimetric", "relative colorimetric clipping", 0, AV_OPT_TYPE_CONST,  { .i64 = SWS_INTENT_RELATIVE_COLORIMETRIC }, .flags = VE, .unit = "intent" },
+        { "saturation",            "saturation mapping",             0, AV_OPT_TYPE_CONST,  { .i64 = SWS_INTENT_SATURATION            }, .flags = VE, .unit = "intent" },
+        { "absolute_colorimetric", "absolute colorimetric clipping", 0, AV_OPT_TYPE_CONST,  { .i64 = SWS_INTENT_ABSOLUTE_COLORIMETRIC }, .flags = VE, .unit = "intent" },
+
     { NULL }
 };
 

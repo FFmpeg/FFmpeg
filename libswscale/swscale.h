@@ -162,6 +162,14 @@ typedef enum SwsFlags {
     SWS_ERROR_DIFFUSION = 1 << 23, ///< Set `SwsContext.dither` instead
 } SwsFlags;
 
+typedef enum SwsIntent {
+    SWS_INTENT_PERCEPTUAL = 0,            ///< Perceptual tone mapping
+    SWS_INTENT_RELATIVE_COLORIMETRIC = 1, ///< Relative colorimetric clipping
+    SWS_INTENT_SATURATION = 2,            ///< Saturation mapping
+    SWS_INTENT_ABSOLUTE_COLORIMETRIC = 3, ///< Absolute colorimetric clipping
+    SWS_INTENT_NB, ///< not part of the ABI
+} SwsIntent;
+
 /***********************************
  * Context creation and management *
  ***********************************/
@@ -225,6 +233,11 @@ typedef struct SwsContext {
     int src_h_chr_pos; ///< Source horizontal chroma position
     int dst_v_chr_pos; ///< Destination vertical chroma position
     int dst_h_chr_pos; ///< Destination horizontal chroma position
+
+    /**
+     * Desired ICC intent for color space conversions.
+     */
+    int intent;
 
     /* Remember to add new fields to graph.c:opts_equal() */
 } SwsContext;

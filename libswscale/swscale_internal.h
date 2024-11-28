@@ -699,7 +699,7 @@ static_assert(offsetof(SwsInternal, redDither) + DITHER32_INT == offsetof(SwsInt
 #if ARCH_X86_64
 /* x86 yuv2gbrp uses the SwsInternal for yuv coefficients
    if struct offsets change the asm needs to be updated too */
-static_assert(offsetof(SwsInternal, yuv2rgb_y_offset) == 40332,
+static_assert(offsetof(SwsInternal, yuv2rgb_y_offset) == 40348,
               "yuv2rgb_y_offset must be updated in x86 asm");
 #endif
 
