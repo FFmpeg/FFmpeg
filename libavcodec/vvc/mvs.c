@@ -1627,12 +1627,12 @@ static int ibc_spatial_candidates(const VVCLocalContext *lc, const int merge_idx
 
     init_neighbour_context(&nctx, lc);
 
-    if (check_available(a1, lc, 1)) {
+    if (check_available(a1, lc, 0)) {
         cand_list[num_cands++] = TAB_MVF(a1->x, a1->y).mv[L0];
         if (num_cands > merge_idx)
             return 1;
     }
-    if (check_available(b1, lc, 1)) {
+    if (check_available(b1, lc, 0)) {
         const MvField *mvf = &TAB_MVF(b1->x, b1->y);
         if (!num_cands || !IS_SAME_MV(&cand_list[0], mvf->mv)) {
             cand_list[num_cands++] = mvf->mv[L0];
