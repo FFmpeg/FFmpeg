@@ -60,6 +60,7 @@
 #include "internal.h"
 #include "avio_internal.h"
 #include "demux.h"
+#include "dvdclut.h"
 #include "iamf_parse.h"
 #include "iamf_reader.h"
 #include "dovi_isom.h"
@@ -2840,54 +2841,6 @@ static void mov_parse_stsd_subtitle(MOVContext *c, AVIOContext *pb,
         mov_read_glbl(c, pb, fake_atom);
     st->codecpar->width  = sc->width;
     st->codecpar->height = sc->height;
-}
-
-static uint32_t yuv_to_rgba(uint32_t ycbcr)
-{
-    uint8_t r, g, b;
-    int y, cb, cr;
-
-    y  = (ycbcr >> 16) & 0xFF;
-    cr = (ycbcr >> 8)  & 0xFF;
-    cb =  ycbcr        & 0xFF;
-
-    b = av_clip_uint8((1164 * (y - 16)                     + 2018 * (cb - 128)) / 1000);
-    g = av_clip_uint8((1164 * (y - 16) -  813 * (cr - 128) -  391 * (cb - 128)) / 1000);
-    r = av_clip_uint8((1164 * (y - 16) + 1596 * (cr - 128)                    ) / 1000);
-
-    return (r << 16) | (g << 8) | b;
-}
-
-static int mov_rewrite_dvd_sub_extradata(AVStream *st)
-{
-    char buf[256] = {0};
-    uint8_t *src = st->codecpar->extradata;
-    int i, ret;
-
-    if (st->codecpar->extradata_size != 64)
-        return 0;
-
-    if (st->codecpar->width > 0 &&  st->codecpar->height > 0)
-        snprintf(buf, sizeof(buf), "size: %dx%d\n",
-                 st->codecpar->width, st->codecpar->height);
-    av_strlcat(buf, "palette: ", sizeof(buf));
-
-    for (i = 0; i < 16; i++) {
-        uint32_t yuv = AV_RB32(src + i * 4);
-        uint32_t rgba = yuv_to_rgba(yuv);
-
-        av_strlcatf(buf, sizeof(buf), "%06"PRIx32"%s", rgba, i != 15 ? ", " : "");
-    }
-
-    if (av_strlcat(buf, "\n", sizeof(buf)) >= sizeof(buf))
-        return 0;
-
-    ret = ff_alloc_extradata(st->codecpar, strlen(buf));
-    if (ret < 0)
-        return ret;
-    memcpy(st->codecpar->extradata, buf, st->codecpar->extradata_size);
-
-    return 0;
 }
 
 static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
@@ -10625,6 +10578,7 @@ static int mov_read_header(AVFormatContext *s)
         AVStream *st = s->streams[i];
         FFStream *const sti = ffstream(st);
         MOVStreamContext *sc = st->priv_data;
+        uint32_t dvdsub_clut[FF_DVDCLUT_CLUT_LEN] = {0};
         fix_timescale(mov, sc);
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
             st->codecpar->codec_id   == AV_CODEC_ID_AAC) {
@@ -10638,8 +10592,23 @@ static int mov_read_header(AVFormatContext *s)
                 st->codecpar->width  = sc->width;
                 st->codecpar->height = sc->height;
             }
-            if (st->codecpar->codec_id == AV_CODEC_ID_DVD_SUBTITLE) {
-                if ((err = mov_rewrite_dvd_sub_extradata(st)) < 0)
+            if (st->codecpar->codec_id == AV_CODEC_ID_DVD_SUBTITLE &&
+                st->codecpar->extradata_size == FF_DVDCLUT_CLUT_SIZE) {
+
+                for (j = 0; j < FF_DVDCLUT_CLUT_LEN; j++)
+                    dvdsub_clut[j] = AV_RB32(st->codecpar->extradata + j * 4);
+
+                err = ff_dvdclut_yuv_to_rgb(dvdsub_clut, FF_DVDCLUT_CLUT_SIZE);
+                if (err < 0)
+                    return err;
+
+                err = ff_alloc_extradata(st->codecpar, FF_DVDCLUT_EXTRADATA_SIZE);
+                if (err < 0)
+                    return err;
+
+                err = ff_dvdclut_palette_extradata_cat(dvdsub_clut, FF_DVDCLUT_CLUT_SIZE,
+                                                       st->codecpar);
+                if (err < 0)
                     return err;
             }
         }
