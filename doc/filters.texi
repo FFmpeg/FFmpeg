@@ -21189,6 +21189,62 @@ is used by default. Possible values:
 @item bottom
 @end table
 
+@item in_primaries
+@item out_primaries
+Set in/output RGB primaries.
+
+This allows the autodetected value to be overridden as well as allows forcing
+a specific value used for the output and encoder. Possible values:
+
+@table @samp
+@item auto
+Choose automatically. This is the default.
+
+@item bt709
+@item bt470m
+@item bt470bg
+@item smpte170m
+@item smpte240m
+@item film
+@item bt2020
+@item smpte428
+@item smpte431
+@item smpte432
+@item jedec-p22
+@item ebu3213
+@end table
+
+@item in_transfer
+@item out_transfer
+Set in/output transfer response curve (TRC).
+
+This allows the autodetected value to be overridden as well as allows forcing
+a specific value used for the output and encoder. Possible values:
+
+@table @samp
+@item auto
+Choose automatically. This is the default.
+
+@item bt709
+@item bt470m
+@item gamma22
+@item bt470bg
+@item gamma28
+@item smpte170m
+@item smpte240m
+@item linear
+@item iec61966-2-1
+@item srgb
+@item iec61966-2-4
+@item xvycc
+@item bt1361e
+@item bt2020-10
+@item bt2020-12
+@item smpte2084
+@item smpte428
+@item arib-std-b67
+@end table
+
 @item force_original_aspect_ratio
 Enable decreasing or increasing output video width or height if necessary to
 keep the original aspect ratio. Possible values:

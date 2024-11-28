@@ -160,7 +160,10 @@ typedef struct ScaleContext {
 
     int in_color_matrix;
     int out_color_matrix;
-
+    int in_primaries;
+    int out_primaries;
+    int in_transfer;
+    int out_transfer;
     int in_range;
     int out_range;
 
@@ -386,6 +389,30 @@ static av_cold int init(AVFilterContext *ctx)
     ret = scale_parse_expr(ctx, NULL, &scale->h_pexpr, "height", scale->h_expr);
     if (ret < 0)
         return ret;
+
+    if (scale->in_primaries != -1 && !sws_test_primaries(scale->in_primaries, 0)) {
+        av_log(ctx, AV_LOG_ERROR, "Unsupported input primaries '%s'\n",
+               av_color_primaries_name(scale->in_primaries));
+        return AVERROR(EINVAL);
+    }
+
+    if (scale->out_primaries != -1 && !sws_test_primaries(scale->out_primaries, 1)) {
+        av_log(ctx, AV_LOG_ERROR, "Unsupported output primaries '%s'\n",
+               av_color_primaries_name(scale->out_primaries));
+        return AVERROR(EINVAL);
+    }
+
+    if (scale->in_transfer != -1 && !sws_test_transfer(scale->in_transfer, 0)) {
+        av_log(ctx, AV_LOG_ERROR, "Unsupported input transfer '%s'\n",
+               av_color_transfer_name(scale->in_transfer));
+        return AVERROR(EINVAL);
+    }
+
+    if (scale->out_transfer != -1 && !sws_test_transfer(scale->out_transfer, 1)) {
+        av_log(ctx, AV_LOG_ERROR, "Unsupported output transfer '%s'\n",
+               av_color_transfer_name(scale->out_transfer));
+        return AVERROR(EINVAL);
+    }
 
     if (scale->in_color_matrix != -1 && !sws_test_colorspace(scale->in_color_matrix, 0)) {
         av_log(ctx, AV_LOG_ERROR, "Unsupported input color matrix '%s'\n",
@@ -815,6 +842,10 @@ scale:
 
     if (scale->in_color_matrix != -1)
         in->colorspace = scale->in_color_matrix;
+    if (scale->in_primaries != -1)
+        in->color_primaries = scale->in_primaries;
+    if (scale->in_transfer != -1)
+        in->color_trc = scale->in_transfer;
     if (scale->in_range != AVCOL_RANGE_UNSPECIFIED)
         in->color_range = scale->in_range;
     in->chroma_location = scale->in_chroma_loc;
@@ -832,6 +863,10 @@ scale:
     out->colorspace = outlink->colorspace;
     if (scale->out_chroma_loc != AVCHROMA_LOC_UNSPECIFIED)
         out->chroma_location = scale->out_chroma_loc;
+    if (scale->out_primaries != -1)
+        out->color_primaries = scale->out_primaries;
+    if (scale->out_transfer != -1)
+        out->color_trc = scale->out_transfer;
 
     av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
               (int64_t)in->sample_aspect_ratio.num * outlink->h * link->w,
@@ -1084,6 +1119,42 @@ static const AVOption scale_options[] = {
         {"top",           NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_TOP},         0, 0, FLAGS, .unit = "chroma_loc"},
         {"bottomleft",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_BOTTOMLEFT},  0, 0, FLAGS, .unit = "chroma_loc"},
         {"bottom",        NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_BOTTOM},      0, 0, FLAGS, .unit = "chroma_loc"},
+    {  "in_primaries", "set input primaries",   OFFSET(in_primaries),  AV_OPT_TYPE_INT, { .i64 = -1 }, -1, AVCOL_PRI_NB-1, .flags = FLAGS, .unit = "primaries" },
+    { "out_primaries", "set output primaries",  OFFSET(out_primaries), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, AVCOL_PRI_NB-1, .flags = FLAGS, .unit = "primaries"},
+        {"auto",         NULL,  0, AV_OPT_TYPE_CONST, {.i64=-1},                      0, 0, FLAGS, .unit = "primaries"},
+        {"bt709",        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT709},         0, 0, FLAGS, .unit = "primaries"},
+        {"bt470m",       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT470M},        0, 0, FLAGS, .unit = "primaries"},
+        {"bt470bg",      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT470BG},       0, 0, FLAGS, .unit = "primaries"},
+        {"smpte170m",    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE170M},     0, 0, FLAGS, .unit = "primaries"},
+        {"smpte240m",    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE240M},     0, 0, FLAGS, .unit = "primaries"},
+        {"film",         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_FILM},          0, 0, FLAGS, .unit = "primaries"},
+        {"bt2020",       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT2020},        0, 0, FLAGS, .unit = "primaries"},
+        {"smpte428",     NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE428},      0, 0, FLAGS, .unit = "primaries"},
+        {"smpte431",     NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE431},      0, 0, FLAGS, .unit = "primaries"},
+        {"smpte432",     NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE432},      0, 0, FLAGS, .unit = "primaries"},
+        {"jedec-p22",    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_JEDEC_P22},     0, 0, FLAGS, .unit = "primaries"},
+        {"ebu3213",      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_EBU3213},       0, 0, FLAGS, .unit = "primaries"},
+    { "in_transfer", "set output color transfer", OFFSET(in_transfer),  AV_OPT_TYPE_INT, { .i64 = -1 }, -1, AVCOL_TRC_NB-1, .flags = FLAGS, .unit = "transfer"},
+    {"out_transfer", "set output color transfer", OFFSET(out_transfer), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, AVCOL_TRC_NB-1, .flags = FLAGS, .unit = "transfer"},
+        {"auto",         NULL,  0, AV_OPT_TYPE_CONST, {.i64=-1},                      0, 0, FLAGS, .unit = "transfer"},
+        {"bt709",        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT709},         0, 0, FLAGS, .unit = "transfer"},
+        {"bt470m",       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA22},       0, 0, FLAGS, .unit = "transfer"},
+        {"gamma22",      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA22},       0, 0, FLAGS, .unit = "transfer"},
+        {"bt470bg",      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA28},       0, 0, FLAGS, .unit = "transfer"},
+        {"gamma28",      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA28},       0, 0, FLAGS, .unit = "transfer"},
+        {"smpte170m",    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE170M},     0, 0, FLAGS, .unit = "transfer"},
+        {"smpte240m",    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE240M},     0, 0, FLAGS, .unit = "transfer"},
+        {"linear",       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_LINEAR},        0, 0, FLAGS, .unit = "transfer"},
+        {"iec61966-2-1", NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_IEC61966_2_1},  0, 0, FLAGS, .unit = "transfer"},
+        {"srgb",         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_IEC61966_2_1},  0, 0, FLAGS, .unit = "transfer"},
+        {"iec61966-2-4", NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_IEC61966_2_4},  0, 0, FLAGS, .unit = "transfer"},
+        {"xvycc",        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_IEC61966_2_4},  0, 0, FLAGS, .unit = "transfer"},
+        {"bt1361e",      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT1361_ECG},    0, 0, FLAGS, .unit = "transfer"},
+        {"bt2020-10",    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT2020_10},     0, 0, FLAGS, .unit = "transfer"},
+        {"bt2020-12",    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT2020_12},     0, 0, FLAGS, .unit = "transfer"},
+        {"smpte2084",    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE2084},     0, 0, FLAGS, .unit = "transfer"},
+        {"smpte428",     NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE428},      0, 0, FLAGS, .unit = "transfer"},
+        {"arib-std-b67", NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_ARIB_STD_B67},  0, 0, FLAGS, .unit = "transfer"},
     { "in_v_chr_pos",   "input vertical chroma position in luma grid/256"  ,   OFFSET(in_v_chr_pos),  AV_OPT_TYPE_INT, { .i64 = -513}, -513, 512, FLAGS },
     { "in_h_chr_pos",   "input horizontal chroma position in luma grid/256",   OFFSET(in_h_chr_pos),  AV_OPT_TYPE_INT, { .i64 = -513}, -513, 512, FLAGS },
     { "out_v_chr_pos",   "output vertical chroma position in luma grid/256"  , OFFSET(out_v_chr_pos), AV_OPT_TYPE_INT, { .i64 = -513}, -513, 512, FLAGS },
