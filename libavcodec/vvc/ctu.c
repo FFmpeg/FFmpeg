@@ -975,8 +975,8 @@ static void intra_luma_pred_modes(VVCLocalContext *lc)
             for (int y = 0; y < (cb_height>>log2_min_cb_size); y++) {
                 int width = cb_width>>log2_min_cb_size;
                 memset(&fc->tab.imf[x],  cu->intra_mip_flag, width);
-                fc->tab.imtf[x] = intra_mip_transposed_flag;
-                fc->tab.imm[x]  = intra_mip_mode;
+                memset(&fc->tab.imtf[x], intra_mip_transposed_flag, width);
+                memset(&fc->tab.imm[x], intra_mip_mode, width);
                 x += pps->min_cb_width;
             }
             cu->intra_pred_mode_y = intra_mip_mode;
