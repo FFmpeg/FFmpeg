@@ -2810,7 +2810,7 @@ static int FUNC(picture_header) (CodedBitstreamContext *ctx, RWContext *rw,
                    0, 2 * (ctb_log2_size_y - min_cb_log2_size_y));
                 if (current->ph_max_mtt_hierarchy_depth_intra_slice_chroma != 0) {
                     unsigned int min_qt_log2_size_intra_c =
-                        sps->sps_log2_diff_min_qt_min_cb_intra_slice_chroma +
+                        current->ph_log2_diff_min_qt_min_cb_intra_slice_chroma +
                         min_cb_log2_size_y;
                     ue(ph_log2_diff_max_bt_min_qt_intra_slice_chroma,
                        0, FFMIN(6, ctb_log2_size_y) - min_qt_log2_size_intra_c);
