@@ -558,6 +558,13 @@ av_cold SwsFunc ff_yuv2rgb_init_ppc(SwsInternal *c)
         if ((c->opts.src_h & 0x1) != 0)
             return NULL;
 
+/*
+ * The below accelerations for YUV2RGB are known broken.
+ * See: 'fate-checkasm-sw_yuv2rgb' with --enable-altivec
+ * They are disabled for the moment, until such time as
+ * they can be repaired.
+ */
+#if 0
         switch (c->opts.dst_format) {
         case AV_PIX_FMT_RGB24:
             av_log(c, AV_LOG_WARNING, "ALTIVEC: Color Space RGB24\n");
@@ -579,6 +586,7 @@ av_cold SwsFunc ff_yuv2rgb_init_ppc(SwsInternal *c)
             return altivec_yuv2_bgra;
         default: return NULL;
         }
+#endif /* disabled YUV2RGB acceleration */
         break;
 
     case AV_PIX_FMT_UYVY422:
