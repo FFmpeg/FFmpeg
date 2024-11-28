@@ -2805,6 +2805,72 @@ skip_hdr10:
     return fmt;
 }
 
+static int infer_prim_ref(SwsColor *csp, const SwsColor *ref)
+{
+    if (csp->prim != AVCOL_PRI_UNSPECIFIED)
+        return 0;
+
+    /* Re-use the reference gamut only for "safe", similar primaries */
+    switch (ref->prim) {
+    case AVCOL_PRI_BT709:
+    case AVCOL_PRI_BT470M:
+    case AVCOL_PRI_BT470BG:
+    case AVCOL_PRI_SMPTE170M:
+    case AVCOL_PRI_SMPTE240M:
+        csp->prim  = ref->prim;
+        csp->gamut = ref->gamut;
+        break;
+    default:
+        csp->prim  = AVCOL_PRI_BT709;
+        csp->gamut = av_csp_primaries_desc_from_id(csp->prim)->prim;
+        break;
+    }
+
+    return 1;
+}
+
+static int infer_trc_ref(SwsColor *csp, const SwsColor *ref)
+{
+    if (csp->trc != AVCOL_TRC_UNSPECIFIED)
+        return 0;
+
+    /* Pick a suitable SDR transfer function, to try and minimize conversions */
+    switch (ref->trc) {
+    case AVCOL_TRC_UNSPECIFIED:
+    /* HDR curves, never default to these */
+    case AVCOL_TRC_SMPTE2084:
+    case AVCOL_TRC_ARIB_STD_B67:
+        csp->trc = AVCOL_TRC_BT709;
+        csp->min_luma = av_make_q(0, 1);
+        csp->max_luma = av_make_q(203, 1);
+        break;
+    default:
+        csp->trc = ref->trc;
+        csp->min_luma = ref->min_luma;
+        csp->max_luma = ref->max_luma;
+        break;
+    }
+
+    return 1;
+}
+
+int ff_infer_colors(SwsColor *src, SwsColor *dst)
+{
+    int incomplete = 0;
+
+    incomplete |= infer_prim_ref(dst, src);
+    incomplete |= infer_prim_ref(src, dst);
+    av_assert0(src->prim != AVCOL_PRI_UNSPECIFIED);
+    av_assert0(dst->prim != AVCOL_PRI_UNSPECIFIED);
+
+    incomplete |= infer_trc_ref(dst, src);
+    incomplete |= infer_trc_ref(src, dst);
+    av_assert0(src->trc != AVCOL_TRC_UNSPECIFIED);
+    av_assert0(dst->trc != AVCOL_TRC_UNSPECIFIED);
+
+    return incomplete;
+}
+
 int sws_test_format(enum AVPixelFormat format, int output)
 {
     return output ? sws_isSupportedOutput(format) : sws_isSupportedInput(format);

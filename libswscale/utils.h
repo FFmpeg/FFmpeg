@@ -117,4 +117,7 @@ static inline int ff_fmt_align(enum AVPixelFormat fmt)
 
 int ff_test_fmt(const SwsFormat *fmt, int output);
 
+/* Returns 1 if the formats are incomplete, 0 otherwise */
+int ff_infer_colors(SwsColor *src, SwsColor *dst);
+
 #endif /* SWSCALE_UTILS_H */
