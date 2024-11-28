@@ -1442,7 +1442,8 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
         }
 
         /* TODO: remove once implemented */
-        if ((dst_fmt.prim != src_fmt.prim || dst_fmt.trc != src_fmt.trc) &&
+        if ((dst_fmt.color.prim != src_fmt.color.prim ||
+             dst_fmt.color.trc  != src_fmt.color.trc) &&
             !s->color_conversion_warned)
         {
             av_log(ctx, AV_LOG_WARNING, "Conversions between different primaries / "
@@ -1487,9 +1488,9 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
                                           " fmt:%s csp:%s prim:%s trc:%s\n",
                err_msg, av_err2str(ret),
                av_get_pix_fmt_name(src_fmt.format), av_color_space_name(src_fmt.csp),
-               av_color_primaries_name(src_fmt.prim), av_color_transfer_name(src_fmt.trc),
+               av_color_primaries_name(src_fmt.color.prim), av_color_transfer_name(src_fmt.color.trc),
                av_get_pix_fmt_name(dst_fmt.format), av_color_space_name(dst_fmt.csp),
-               av_color_primaries_name(dst_fmt.prim), av_color_transfer_name(dst_fmt.trc));
+               av_color_primaries_name(dst_fmt.color.prim), av_color_transfer_name(dst_fmt.color.trc));
 
         for (int i = 0; i < FF_ARRAY_ELEMS(s->graph); i++)
             sws_graph_free(&s->graph[i]);

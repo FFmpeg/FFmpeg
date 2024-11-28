@@ -2659,11 +2659,13 @@ SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
         .height = frame->height,
         .format = frame->format,
         .range  = frame->color_range,
-        .prim   = frame->color_primaries,
-        .trc    = frame->color_trc,
         .csp    = frame->colorspace,
         .loc    = frame->chroma_location,
         .desc   = desc,
+        .color = {
+            .prim = frame->color_primaries,
+            .trc  = frame->color_trc,
+        },
     };
 
     av_assert1(fmt.width > 0);
@@ -2676,12 +2678,14 @@ SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
         fmt.range = AVCOL_RANGE_JPEG;
     } else if (desc->flags & AV_PIX_FMT_FLAG_XYZ) {
         fmt.csp   = AVCOL_SPC_UNSPECIFIED;
-        fmt.prim  = AVCOL_PRI_SMPTE428;
-        fmt.trc   = AVCOL_TRC_SMPTE428;
+        fmt.color = (SwsColor) {
+            .prim = AVCOL_PRI_SMPTE428,
+            .trc  = AVCOL_TRC_SMPTE428,
+        };
     } else if (desc->nb_components < 3) {
         /* Grayscale formats */
-        fmt.prim  = AVCOL_PRI_UNSPECIFIED;
-        fmt.csp   = AVCOL_SPC_UNSPECIFIED;
+        fmt.color.prim = AVCOL_PRI_UNSPECIFIED;
+        fmt.csp        = AVCOL_SPC_UNSPECIFIED;
         if (desc->flags & AV_PIX_FMT_FLAG_FLOAT)
             fmt.range = AVCOL_RANGE_UNSPECIFIED;
         else
@@ -2756,12 +2760,12 @@ static int test_loc(enum AVChromaLocation loc)
 
 int ff_test_fmt(const SwsFormat *fmt, int output)
 {
-    return fmt->width > 0 && fmt->height > 0        &&
-           sws_test_format    (fmt->format, output) &&
-           sws_test_colorspace(fmt->csp,    output) &&
-           sws_test_primaries (fmt->prim,   output) &&
-           sws_test_transfer  (fmt->trc,    output) &&
-           test_range         (fmt->range)          &&
+    return fmt->width > 0 && fmt->height > 0            &&
+           sws_test_format    (fmt->format,     output) &&
+           sws_test_colorspace(fmt->csp,        output) &&
+           sws_test_primaries (fmt->color.prim, output) &&
+           sws_test_transfer  (fmt->color.trc,  output) &&
+           test_range         (fmt->range)              &&
            test_loc           (fmt->loc);
 }
 
