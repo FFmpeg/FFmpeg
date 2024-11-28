@@ -6,6 +6,7 @@ HEADERS = swscale.h                                                     \
           version_major.h                                               \
 
 OBJS = alphablend.o                                     \
+       csputils.o                                       \
        hscale.o                                         \
        hscale_fast_bilinear.o                           \
        gamma.o                                          \
