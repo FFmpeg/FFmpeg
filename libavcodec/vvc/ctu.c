@@ -1493,7 +1493,7 @@ static int hls_merge_data(VVCLocalContext *lc)
 
 static void hls_mvd_coding(VVCLocalContext *lc, Mv* mvd)
 {
-    int16_t mv[2];
+    int32_t mv[2];
 
     for (int i = 0; i < 2; i++) {
         mv[i] = ff_vvc_abs_mvd_greater0_flag(lc);
