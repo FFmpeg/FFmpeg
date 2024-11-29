@@ -41,6 +41,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/cpu.h"
+#include "libavutil/csp.h"
 #include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
@@ -2738,8 +2739,9 @@ int sws_test_primaries(enum AVColorPrimaries prim, int output)
 
 int sws_test_transfer(enum AVColorTransferCharacteristic trc, int output)
 {
-    return trc > AVCOL_TRC_RESERVED0 && trc < AVCOL_TRC_NB &&
-           trc != AVCOL_TRC_RESERVED;
+    av_csp_eotf_function eotf = output ? av_csp_itu_eotf_inv(trc)
+                                       : av_csp_itu_eotf(trc);
+    return trc == AVCOL_TRC_UNSPECIFIED || eotf != NULL;
 }
 
 static int test_range(enum AVColorRange range)
