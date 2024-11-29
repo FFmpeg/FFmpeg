@@ -413,7 +413,7 @@ static int ambisonics_config(void *s, AVIOContext *pb,
 
     ambisonics_mode = ffio_read_leb(pb);
     if (ambisonics_mode > 1)
-        return 0;
+        return AVERROR_INVALIDDATA;
 
     output_channel_count = avio_r8(pb);  // C
     substream_count = avio_r8(pb);  // N
