@@ -14,6 +14,7 @@ OBJS = alphablend.o                                     \
        graph.o                                          \
        half2float.o                                     \
        input.o                                          \
+       lut3d.o                                          \
        options.o                                        \
        output.o                                         \
        rgb2rgb.o                                        \
