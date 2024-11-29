@@ -30,6 +30,8 @@
 #include "libswscale/swscale.h"
 #include "libswscale/utils.h"
 
+#include "cms.h"
+#include "lut3d.h"
 #include "swscale_internal.h"
 #include "graph.h"
 
@@ -463,6 +465,89 @@ static int add_legacy_sws_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
     return 0;
 }
 
+/**************************
+ * Gamut and tone mapping *
+ **************************/
+
+static void free_lut3d(void *priv)
+{
+    SwsLut3D *lut = priv;
+    sws_lut3d_free(&lut);
+}
+
+static void run_lut3d(const SwsImg *out_base, const SwsImg *in_base,
+                      int y, int h, const SwsPass *pass)
+{
+    SwsLut3D *lut = pass->priv;
+    const SwsImg in  = shift_img(in_base,  y);
+    const SwsImg out = shift_img(out_base, y);
+
+    sws_lut3d_apply(lut, in.data[0], in.linesize[0], out.data[0],
+                    out.linesize[0], pass->width, h);
+}
+
+static int adapt_colors(SwsGraph *graph, SwsFormat src, SwsFormat dst,
+                        SwsPass *input, SwsPass **output)
+{
+    enum AVPixelFormat fmt_in, fmt_out;
+    SwsColorMap map = {0};
+    SwsLut3D *lut;
+    SwsPass *pass;
+    int ret;
+
+    /**
+     * Grayspace does not really have primaries, so just force the use of
+     * the equivalent other primary set to avoid a conversion. Technically,
+     * this does affect the weights used for the Grayscale conversion, but
+     * in practise, that should give the expected results more often than not.
+     */
+    if (isGray(dst.format)) {
+        dst.color = src.color;
+    } else if (isGray(src.format)) {
+        src.color = dst.color;
+    }
+
+    /* Fully infer color spaces before color mapping logic */
+    graph->incomplete |= ff_infer_colors(&src.color, &dst.color);
+
+    map.intent = graph->ctx->intent;
+    map.src    = src.color;
+    map.dst    = dst.color;
+
+    if (sws_color_map_noop(&map))
+        return 0;
+
+    lut = sws_lut3d_alloc();
+    if (!lut)
+        return AVERROR(ENOMEM);
+
+    fmt_in  = sws_lut3d_pick_pixfmt(src, 0);
+    fmt_out = sws_lut3d_pick_pixfmt(dst, 1);
+    if (fmt_in != src.format) {
+        SwsFormat tmp = src;
+        tmp.format = fmt_in;
+        ret = add_legacy_sws_pass(graph, src, tmp, input, &input);
+        if (ret < 0)
+            return ret;
+    }
+
+    ret = sws_lut3d_generate(lut, fmt_in, fmt_out, &map);
+    if (ret < 0) {
+        sws_lut3d_free(&lut);
+        return ret;
+    }
+
+    pass = pass_add(graph, lut, fmt_out, src.width, src.height,
+                    input, 1, run_lut3d);
+    if (!pass) {
+        sws_lut3d_free(&lut);
+        return AVERROR(ENOMEM);
+    }
+    pass->free = free_lut3d;
+
+    *output = pass;
+    return 0;
+}
 
 /***************************************
  * Main filter graph construction code *
@@ -470,10 +555,16 @@ static int add_legacy_sws_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
 
 static int init_passes(SwsGraph *graph)
 {
-    const SwsFormat src = graph->src;
-    const SwsFormat dst = graph->dst;
+    SwsFormat src = graph->src;
+    SwsFormat dst = graph->dst;
     SwsPass *pass = NULL; /* read from main input image */
     int ret;
+
+    ret = adapt_colors(graph, src, dst, pass, &pass);
+    if (ret < 0)
+        return ret;
+    src.format = pass ? pass->format : src.format;
+    src.color  = dst.color;
 
     if (!ff_fmt_equal(&src, &dst)) {
         ret = add_legacy_sws_pass(graph, src, dst, pass, &pass);
