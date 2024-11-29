@@ -1346,7 +1346,13 @@ static const AVOption options[] = {
     { "context", "Context model", OFFSET(context_model), AV_OPT_TYPE_INT,
             { .i64 = 0 }, 0, 1, VE },
     { "qtable", "Quantization table", OFFSET(qtable), AV_OPT_TYPE_INT,
-            { .i64 = -1 }, -1, 2, VE },
+            { .i64 = -1 }, -1, 2, VE , .unit = "qtable"},
+        { "default", NULL, 0, AV_OPT_TYPE_CONST,
+            { .i64 = QTABLE_DEFAULT }, INT_MIN, INT_MAX, VE, .unit = "qtable" },
+        { "8bit", NULL, 0, AV_OPT_TYPE_CONST,
+            { .i64 = QTABLE_8BIT }, INT_MIN, INT_MAX, VE, .unit = "qtable" },
+        { "greater8bit", NULL, 0, AV_OPT_TYPE_CONST,
+            { .i64 = QTABLE_GT8BIT }, INT_MIN, INT_MAX, VE, .unit = "qtable" },
 
     { NULL }
 };
