@@ -2654,6 +2654,8 @@ int ff_range_add(RangeList *rl, unsigned int start, unsigned int len)
 SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+    const AVColorPrimariesDesc *primaries;
+
     SwsFormat fmt = {
         .width  = frame->width,
         .height = frame->height,
@@ -2709,6 +2711,21 @@ SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
         fmt.height = (fmt.height + (field == FIELD_TOP)) >> 1;
         fmt.interlaced = 1;
     }
+
+    /* Set luminance and gamut information */
+    fmt.color.min_luma = av_make_q(0, 1);
+    switch (fmt.color.trc) {
+    case AVCOL_TRC_SMPTE2084:
+        fmt.color.max_luma = av_make_q(10000, 1); break;
+    case AVCOL_TRC_ARIB_STD_B67:
+        fmt.color.max_luma = av_make_q( 1000, 1); break; /* HLG reference display */
+    default:
+        fmt.color.max_luma = av_make_q(  203, 1); break; /* SDR reference brightness */
+    }
+
+    primaries = av_csp_primaries_desc_from_id(fmt.color.prim);
+    if (primaries)
+        fmt.color.gamut = primaries->prim;
 
     return fmt;
 }
