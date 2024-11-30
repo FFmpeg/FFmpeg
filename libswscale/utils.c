@@ -46,6 +46,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/libm.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -2655,6 +2656,7 @@ SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
     const AVColorPrimariesDesc *primaries;
+    AVFrameSideData *sd;
 
     SwsFormat fmt = {
         .width  = frame->width,
@@ -2726,6 +2728,29 @@ SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
     primaries = av_csp_primaries_desc_from_id(fmt.color.prim);
     if (primaries)
         fmt.color.gamut = primaries->prim;
+
+    if ((sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA))) {
+        const AVMasteringDisplayMetadata *mdm = (const AVMasteringDisplayMetadata *) sd->data;
+        if (mdm->has_luminance) {
+            fmt.color.min_luma = mdm->min_luminance;
+            fmt.color.max_luma = mdm->max_luminance;
+        }
+
+        if (mdm->has_primaries) {
+            /* Ignore mastering display white point as it has no bearance on
+             * the underlying content */
+            fmt.color.gamut.r.x = mdm->display_primaries[0][0];
+            fmt.color.gamut.r.y = mdm->display_primaries[0][1];
+            fmt.color.gamut.g.x = mdm->display_primaries[1][0];
+            fmt.color.gamut.g.y = mdm->display_primaries[1][1];
+            fmt.color.gamut.b.x = mdm->display_primaries[2][0];
+            fmt.color.gamut.b.y = mdm->display_primaries[2][1];
+        }
+    }
+
+    /* PQ is always scaled down to absolute zero, so ignore mastering metadata */
+    if (fmt.color.trc == AVCOL_TRC_SMPTE2084)
+        fmt.color.min_luma = av_make_q(0, 1);
 
     return fmt;
 }
