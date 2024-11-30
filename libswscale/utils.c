@@ -43,6 +43,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/csp.h"
 #include "libavutil/emms.h"
+#include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/libm.h"
@@ -2747,6 +2748,55 @@ SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
             fmt.color.gamut.b.y = mdm->display_primaries[2][1];
         }
     }
+
+    if ((sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DYNAMIC_HDR_PLUS))) {
+        const AVDynamicHDRPlus *dhp = (const AVDynamicHDRPlus *) sd->data;
+        const AVHDRPlusColorTransformParams *pars = &dhp->params[0];
+        const AVRational nits = av_make_q(10000, 1);
+        AVRational maxrgb = pars->maxscl[0];
+
+        if (!dhp->num_windows || dhp->application_version > 1)
+            goto skip_hdr10;
+
+        /* Maximum of MaxSCL components */
+        if (av_cmp_q(pars->maxscl[1], maxrgb) > 0)
+            maxrgb = pars->maxscl[1];
+        if (av_cmp_q(pars->maxscl[2], maxrgb) > 0)
+            maxrgb = pars->maxscl[2];
+
+        if (maxrgb.num > 0) {
+            /* Estimate true luminance from MaxSCL */
+            const AVLumaCoefficients *luma = av_csp_luma_coeffs_from_avcsp(fmt.csp);
+            if (!luma)
+                goto skip_hdr10;
+            fmt.color.frame_peak = av_add_q(av_mul_q(luma->cr, pars->maxscl[0]),
+                                   av_add_q(av_mul_q(luma->cg, pars->maxscl[1]),
+                                            av_mul_q(luma->cb, pars->maxscl[2])));
+            /* Scale the scene average brightness by the ratio between the
+             * maximum luminance and the MaxRGB values */
+            fmt.color.frame_avg = av_mul_q(pars->average_maxrgb,
+                                           av_div_q(fmt.color.frame_peak, maxrgb));
+        } else {
+            /**
+             * Calculate largest value from histogram to use as fallback for
+             * clips with missing MaxSCL information. Note that this may end
+             * up picking the "reserved" value at the 5% percentile, which in
+             * practice appears to track the brightest pixel in the scene.
+             */
+            for (int i = 0; i < pars->num_distribution_maxrgb_percentiles; i++) {
+                const AVRational pct = pars->distribution_maxrgb[i].percentile;
+                if (av_cmp_q(pct, maxrgb) > 0)
+                    maxrgb = pct;
+                fmt.color.frame_peak = maxrgb;
+                fmt.color.frame_avg  = pars->average_maxrgb;
+            }
+        }
+
+        /* Rescale to nits */
+        fmt.color.frame_peak = av_mul_q(nits, fmt.color.frame_peak);
+        fmt.color.frame_avg  = av_mul_q(nits, fmt.color.frame_avg);
+    }
+skip_hdr10:
 
     /* PQ is always scaled down to absolute zero, so ignore mastering metadata */
     if (fmt.color.trc == AVCOL_TRC_SMPTE2084)
