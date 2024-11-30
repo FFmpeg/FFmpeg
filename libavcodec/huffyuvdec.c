@@ -783,6 +783,8 @@ static void decode_gray_bitstream(HYuvDecContext *s, int count)
         for (i = 0; i < count && BITS_LEFT(re, &s->gb) > 0; i++) {
             READ_2PIX(s->temp[0][2 * i], s->temp[0][2 * i + 1], 0);
         }
+        for (; i < count; i++)
+            s->temp[0][2 * i] = s->temp[0][2 * i + 1] = 0;
     } else {
         for (i = 0; i < count; i++) {
             READ_2PIX(s->temp[0][2 * i], s->temp[0][2 * i + 1], 0);
