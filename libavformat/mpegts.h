@@ -33,6 +33,10 @@
 #define USUAL_SECTION_SIZE 1024 /* except EIT which is limited to 4096 */
 #define MAX_SECTION_SIZE 4096
 
+#define SYNC_BYTE 0x47
+#define STUFFING_BYTE 0xFF
+#define SYSTEM_CLOCK_FREQUENCY_DIVISOR 300 /* convert 27 MHz to 90 kHz */
+
 /* pids */
 #define PAT_PID         0x0000 /* Program Association Table */
 #define CAT_PID         0x0001 /* Conditional Access Table */
@@ -116,6 +120,7 @@
 /* TID from 0x80 to 0xFE are user defined */
 /* TID 0xFF is reserved */
 
+/* ISO/IEC 13818-1 Table 2-34 - Stream type assignments */
 #define STREAM_TYPE_VIDEO_MPEG1     0x01
 #define STREAM_TYPE_VIDEO_MPEG2     0x02
 #define STREAM_TYPE_AUDIO_MPEG1     0x03
@@ -125,8 +130,19 @@
 #define STREAM_TYPE_AUDIO_AAC       0x0f
 #define STREAM_TYPE_AUDIO_AAC_LATM  0x11
 #define STREAM_TYPE_VIDEO_MPEG4     0x10
+/** ISO/IEC 14496-1 (MPEG-4 Systems) SL-packetized stream or FlexMux stream
+    carried in PES packets */
+#define STREAM_TYPE_ISO_IEC_14496_PES     0x12
+/** ISO/IEC 14496-1 (MPEG-4 Systems) SL-packetized stream or FlexMux stream
+    carried in ISO_IEC_14496_section()s */
+#define STREAM_TYPE_ISO_IEC_14496_SECTION 0x13
 #define STREAM_TYPE_METADATA        0x15
 #define STREAM_TYPE_VIDEO_H264      0x1b
+/** ISO/IEC 14496-3 Audio, without using any additional transport syntax,
+    such as DST, ALS and SLS */
+#define STREAM_TYPE_AUDIO_MPEG4     0x1c
+#define STREAM_TYPE_VIDEO_MVC       0x20
+#define STREAM_TYPE_VIDEO_JPEG2000  0x21
 #define STREAM_TYPE_VIDEO_HEVC      0x24
 #define STREAM_TYPE_VIDEO_VVC       0x33
 #define STREAM_TYPE_VIDEO_CAVS      0x42
@@ -135,10 +151,32 @@
 #define STREAM_TYPE_VIDEO_VC1       0xea
 #define STREAM_TYPE_VIDEO_DIRAC     0xd1
 
-#define STREAM_TYPE_AUDIO_AC3       0x81
-#define STREAM_TYPE_AUDIO_DTS       0x82
-#define STREAM_TYPE_AUDIO_TRUEHD    0x83
-#define STREAM_TYPE_AUDIO_EAC3      0x87
+/* stream_type values [0x80, 0xff] are User Private */
+#define STREAM_TYPE_BLURAY_AUDIO_PCM_BLURAY             0x80
+#define STREAM_TYPE_BLURAY_AUDIO_AC3                    0x81
+#define STREAM_TYPE_BLURAY_AUDIO_DTS                    0x82
+#define STREAM_TYPE_BLURAY_AUDIO_TRUEHD                 0x83
+#define STREAM_TYPE_BLURAY_AUDIO_EAC3                   0x84
+#define STREAM_TYPE_BLURAY_AUDIO_DTS_HD                 0x85
+#define STREAM_TYPE_BLURAY_AUDIO_DTS_HD_MASTER          0x86
+#define STREAM_TYPE_BLURAY_AUDIO_EAC3_SECONDARY         0xa1
+#define STREAM_TYPE_BLURAY_AUDIO_DTS_EXPRESS_SECONDARY  0xa2
+#define STREAM_TYPE_BLURAY_SUBTITLE_PGS                 0x90
+#define STREAM_TYPE_BLURAY_SUBTITLE_TEXT                0x92
+
+#define STREAM_TYPE_SCTE_DATA_SCTE_35 0x86 /* ANSI/SCTE 35 */
+
+#define STREAM_TYPE_ATSC_AUDIO_AC3  0x81 /* ATSC A/52 */
+#define STREAM_TYPE_ATSC_AUDIO_EAC3 0x87 /* ATSC A/52 */
+
+/* HTTP Live Streaming (HLS) Sample Encryption
+   see "MPEG-2 Stream Encryption Format for HTTP Live Streaming",
+https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/HLS_Sample_Encryption/ */
+#define STREAM_TYPE_HLS_SE_VIDEO_H264 0xdb
+#define STREAM_TYPE_HLS_SE_AUDIO_AAC  0xcf
+#define STREAM_TYPE_HLS_SE_AUDIO_AC3  0xc1
+#define STREAM_TYPE_HLS_SE_AUDIO_EAC3 0xc2
+
 
 /* ISO/IEC 13818-1 Table 2-22 */
 #define STREAM_ID_PROGRAM_STREAM_MAP        0xbc
@@ -164,9 +202,12 @@
 #define FMC_DESCRIPTOR               0x1f
 #define METADATA_DESCRIPTOR          0x26
 #define METADATA_STD_DESCRIPTOR      0x27
+/* descriptor_tag values [0x40, 0xff] are User Private */
 
 /* DVB descriptor tag values [0x40, 0x7F] from
    ETSI EN 300 468 Table 12: Possible locations of descriptors */
+#define NETWORK_NAME_DESCRIPTOR      0x40
+#define SERVICE_LIST_DESCRIPTOR      0x41
 #define SERVICE_DESCRIPTOR           0x48
 #define STREAM_IDENTIFIER_DESCRIPTOR 0x52
 #define TELETEXT_DESCRIPTOR          0x56
@@ -175,6 +216,16 @@
 #define ENHANCED_AC3_DESCRIPTOR      0x7a /* enhanced_AC-3_descriptor */
 #define DTS_DESCRIPTOR               0x7b
 #define EXTENSION_DESCRIPTOR         0x7f
+
+/* DVB descriptor_tag_extension values from
+   ETSI EN 300 468 Table 109: Possible locations of extended descriptors */
+#define SUPPLEMENTARY_AUDIO_DESCRIPTOR 0x06
+
+/** see "Dolby Vision Streams Within the MPEG-2 Transport Stream Format"
+https://professional.dolby.com/siteassets/content-creation/dolby-vision-for-content-creators/dolby-vision-bitstreams-in-mpeg-2-transport-stream-multiplex-v1.2.pdf */
+#define DOVI_VIDEO_STREAM_DESCRIPTOR 0xb0
+
+#define DATA_COMPONENT_DESCRIPTOR 0xfd /* ARIB STD-B10 */
 
 typedef struct MpegTSContext MpegTSContext;
 
