@@ -1928,6 +1928,8 @@ static int mxf_edit_unit_absolute_offset(MXFContext *mxf, MXFIndexTable *index_t
     // clamp to actual range of index
     index_end = av_sat_add64(last_segment->index_start_position, last_segment->index_duration);
     edit_unit = FFMAX(FFMIN(edit_unit, index_end), first_segment->index_start_position);
+    if (edit_unit < 0)
+        return AVERROR_PATCHWELCOME;
 
     // guess which table segment this edit unit is in
     // saturation is fine since it's just a guess
