@@ -796,6 +796,7 @@ av_cold int ff_vc1_decode_end(AVCodecContext *avctx)
     for (i = 0; i < 4; i++)
         av_freep(&v->sr_rows[i >> 1][i & 1]);
     ff_mpv_common_end(&v->s);
+    memset(v->s.block_index, 0, sizeof(v->s.block_index));
     av_freep(&v->mv_type_mb_plane);
     av_freep(&v->direct_mb_plane);
     av_freep(&v->forward_mb_plane);
