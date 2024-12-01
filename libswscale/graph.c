@@ -475,6 +475,14 @@ static void free_lut3d(void *priv)
     sws_lut3d_free(&lut);
 }
 
+static void setup_lut3d(const SwsImg *out, const SwsImg *in, const SwsPass *pass)
+{
+    SwsLut3D *lut = pass->priv;
+
+    /* Update dynamic frame metadata from the original source frame */
+    sws_lut3d_update(lut, &pass->graph->src.color);
+}
+
 static void run_lut3d(const SwsImg *out_base, const SwsImg *in_base,
                       int y, int h, const SwsPass *pass)
 {
@@ -543,6 +551,7 @@ static int adapt_colors(SwsGraph *graph, SwsFormat src, SwsFormat dst,
         sws_lut3d_free(&lut);
         return AVERROR(ENOMEM);
     }
+    pass->setup = setup_lut3d;
     pass->free = free_lut3d;
 
     *output = pass;
@@ -678,16 +687,26 @@ static int opts_equal(const SwsContext *c1, const SwsContext *c2)
 int sws_graph_reinit(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *src,
                      int field, SwsGraph **out_graph)
 {
-    const SwsGraph *graph = *out_graph;
+    SwsGraph *graph = *out_graph;
     if (graph && ff_fmt_equal(&graph->src, src) &&
                  ff_fmt_equal(&graph->dst, dst) &&
                  opts_equal(ctx, &graph->opts_copy))
+    {
+        sws_graph_update_metadata(graph, &src->color);
         return 0;
+    }
 
     sws_graph_free(out_graph);
     return sws_graph_create(ctx, dst, src, field, out_graph);
 }
 
+void sws_graph_update_metadata(SwsGraph *graph, const SwsColor *color)
+{
+    if (!color)
+        return;
+
+    ff_color_update_dynamic(&graph->src.color, color);
+}
 
 void sws_graph_run(SwsGraph *graph, uint8_t *const out_data[4],
                    const int out_linesize[4],

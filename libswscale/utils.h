@@ -65,6 +65,12 @@ typedef struct SwsColor {
     AVRational frame_avg;        /* per-frame/scene average luminance, or 0 */
 } SwsColor;
 
+static inline void ff_color_update_dynamic(SwsColor *dst, const SwsColor *src)
+{
+    dst->frame_peak = src->frame_peak;
+    dst->frame_avg  = src->frame_avg;
+}
+
 /* Subset of AVFrame parameters that uniquely determine pixel representation */
 typedef struct SwsFormat {
     int width, height;

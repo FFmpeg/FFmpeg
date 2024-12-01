@@ -134,9 +134,15 @@ int sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *src
 void sws_graph_free(SwsGraph **graph);
 
 /**
- * Wrapper around sws_graph_create that does nothing if the format is
- * unchanged. Must be called after changing any of the fields in `ctx`, or else
- * they will have no effect.
+ * Update dynamic per-frame HDR metadata without requiring a full reinit.
+ */
+void sws_graph_update_metadata(SwsGraph *graph, const SwsColor *color);
+
+/**
+ * Wrapper around sws_graph_create() that reuses the existing graph if the
+ * format is compatible. This will also update dynamic per-frame metadata.
+ * Must be called after changing any of the fields in `ctx`, or else they will
+ * have no effect.
  */
 int sws_graph_reinit(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *src,
                      int field, SwsGraph **graph);
