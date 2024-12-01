@@ -445,7 +445,7 @@ static int encode_headers(AVCodecContext *avctx, const AVFrame *pict)
         AVContentLightMetadata *clli = (AVContentLightMetadata *) side_data->data;
         AV_WB32(s->buf, clli->MaxCLL * 10000);
         AV_WB32(s->buf + 4, clli->MaxFALL * 10000);
-        png_write_chunk(&s->bytestream, MKTAG('c', 'L', 'L', 'i'), s->buf, 8);
+        png_write_chunk(&s->bytestream, MKTAG('c', 'L', 'L', 'I'), s->buf, 8);
     }
 
     side_data = av_frame_get_side_data(pict, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
@@ -460,7 +460,7 @@ static int encode_headers(AVCodecContext *avctx, const AVFrame *pict)
             AV_WB16(s->buf + 14, PNG_Q2D(mdcv->white_point[1], 50000));
             AV_WB32(s->buf + 16, PNG_Q2D(mdcv->max_luminance, 10000));
             AV_WB32(s->buf + 20, PNG_Q2D(mdcv->min_luminance, 10000));
-            png_write_chunk(&s->bytestream, MKTAG('m', 'D', 'C', 'v'), s->buf, 24);
+            png_write_chunk(&s->bytestream, MKTAG('m', 'D', 'C', 'V'), s->buf, 24);
         }
     }
 

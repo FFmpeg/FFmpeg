@@ -757,7 +757,7 @@ static int populate_avctx_color_fields(AVCodecContext *avctx, AVFrame *frame)
         if (clli) {
             /*
              * 0.0001 divisor value
-             * see: https://www.w3.org/TR/png-3/#cLLi-chunk
+             * see: https://www.w3.org/TR/png-3/#cLLI-chunk
              */
             clli->MaxCLL = s->clli_max / 10000;
             clli->MaxFALL = s->clli_avg / 10000;
@@ -1566,18 +1566,20 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
 
             break;
         }
-        case MKTAG('c', 'L', 'L', 'i'):
+        case MKTAG('c', 'L', 'L', 'i'): /* legacy spelling, for backwards compat */
+        case MKTAG('c', 'L', 'L', 'I'):
             if (bytestream2_get_bytes_left(&gb_chunk) != 8) {
-                av_log(avctx, AV_LOG_WARNING, "Invalid cLLi chunk size: %d\n", bytestream2_get_bytes_left(&gb_chunk));
+                av_log(avctx, AV_LOG_WARNING, "Invalid cLLI chunk size: %d\n", bytestream2_get_bytes_left(&gb_chunk));
                 break;
             }
             s->have_clli = 1;
             s->clli_max = bytestream2_get_be32u(&gb_chunk);
             s->clli_avg = bytestream2_get_be32u(&gb_chunk);
             break;
-        case MKTAG('m', 'D', 'C', 'v'):
+        case MKTAG('m', 'D', 'C', 'v'): /* legacy spelling, for backward compat */
+        case MKTAG('m', 'D', 'C', 'V'):
             if (bytestream2_get_bytes_left(&gb_chunk) != 24) {
-                av_log(avctx, AV_LOG_WARNING, "Invalid mDCv chunk size: %d\n", bytestream2_get_bytes_left(&gb_chunk));
+                av_log(avctx, AV_LOG_WARNING, "Invalid mDCV chunk size: %d\n", bytestream2_get_bytes_left(&gb_chunk));
                 break;
             }
             s->have_mdcv = 1;
