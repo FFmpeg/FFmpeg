@@ -599,6 +599,7 @@ static int sbr_make_f_derived(AACDecContext *ac, SpectralBandReplication *sbr)
 
     if (sbr->n_q > 5) {
         av_log(ac->avctx, AV_LOG_ERROR, "Too many noise floor scale factors: %d\n", sbr->n_q);
+        sbr->n_q = 1;
         return -1;
     }
 
