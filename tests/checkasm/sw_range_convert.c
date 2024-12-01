@@ -65,6 +65,8 @@ static void check_lumConvertRange(int from)
 
     LOCAL_ALIGNED_32(int16_t, dst0, [LARGEST_INPUT_SIZE * 2]);
     LOCAL_ALIGNED_32(int16_t, dst1, [LARGEST_INPUT_SIZE * 2]);
+    int32_t *dst0_32 = (int32_t *) dst0;
+    int32_t *dst1_32 = (int32_t *) dst1;
 
     declare_func(void, int16_t *dst, int width);
 
@@ -89,6 +91,11 @@ static void check_lumConvertRange(int from)
             int width = input_sizes[dstWi];
             if (check_func(c->lumConvertRange, "%s%d_%d", func_str, bit_depth, width)) {
                 randomize_buffers(dst0, dst1, bit_depth, width);
+                if (bit_depth == 16) {
+                    dst1_32[2] = dst0_32[2] = -1;
+                } else {
+                    dst1[2] = dst0[2] = -1;
+                }
                 call_ref(dst0, width);
                 call_new(dst1, width);
                 if (memcmp(dst0, dst1, width * sample_size))
@@ -115,6 +122,8 @@ static void check_chrConvertRange(int from)
     LOCAL_ALIGNED_32(int16_t, dstV0, [LARGEST_INPUT_SIZE * 2]);
     LOCAL_ALIGNED_32(int16_t, dstU1, [LARGEST_INPUT_SIZE * 2]);
     LOCAL_ALIGNED_32(int16_t, dstV1, [LARGEST_INPUT_SIZE * 2]);
+    int32_t *dstU0_32 = (int32_t *) dstU0;
+    int32_t *dstU1_32 = (int32_t *) dstU1;
 
     declare_func(void, int16_t *dstU, int16_t *dstV, int width);
 
@@ -140,6 +149,11 @@ static void check_chrConvertRange(int from)
             if (check_func(c->chrConvertRange, "%s%d_%d", func_str, bit_depth, width)) {
                 randomize_buffers(dstU0, dstU1, bit_depth, width);
                 randomize_buffers(dstV0, dstV1, bit_depth, width);
+                if (bit_depth == 16) {
+                    dstU1_32[2] = dstU0_32[2] = -1;
+                } else {
+                    dstU1[2] = dstU0[2] = -1;
+                }
                 call_ref(dstU0, dstV0, width);
                 call_new(dstU1, dstV1, width);
                 if (memcmp(dstU0, dstU1, width * sample_size) ||
