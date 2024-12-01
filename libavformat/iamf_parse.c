@@ -422,7 +422,7 @@ static int ambisonics_config(void *s, AVIOContext *pb,
 
     output_channel_count = avio_r8(pb);  // C
     substream_count = avio_r8(pb);  // N
-    if (audio_element->nb_substreams != substream_count)
+    if (audio_element->nb_substreams != substream_count || output_channel_count == 0)
         return AVERROR_INVALIDDATA;
 
     order = floor(sqrt(output_channel_count - 1));
