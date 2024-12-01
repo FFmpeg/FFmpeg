@@ -2316,8 +2316,18 @@ static int parse_stream_identifier_desc(const uint8_t *p, const uint8_t *p_end)
 
 static int is_pes_stream(int stream_type, uint32_t prog_reg_desc)
 {
-    return !(stream_type == STREAM_TYPE_ISO_IEC_14496_SECTION ||
-             (stream_type == STREAM_TYPE_SCTE_DATA_SCTE_35 && prog_reg_desc == AV_RL32("CUEI")) );
+    switch (stream_type) {
+    case STREAM_TYPE_PRIVATE_SECTION:
+    case STREAM_TYPE_ISO_IEC_14496_SECTION:
+        return 0;
+    case STREAM_TYPE_SCTE_DATA_SCTE_35:
+        /* This User Private stream_type value is used by multiple organizations
+           for different things.  ANSI/SCTE 35 splice_info_section() is a
+           private_section() not a PES_packet(). */
+        return !(prog_reg_desc == AV_RL32("CUEI"));
+    default:
+        return 1;
+    }
 }
 
 static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
