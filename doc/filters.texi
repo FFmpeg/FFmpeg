@@ -16372,6 +16372,11 @@ ffmpeg -i input.mov -vf lensfun=make=Canon:model="Canon EOS 100D":lens_model="Ca
 
 @end itemize
 
+@section lcevc
+
+Low Complexity Enhancement Video Codec filter based on liblcevc_dec
+(@url{https://github.com/v-novaltd/LCEVCdec}).
+
 @section libplacebo
 
 Flexible GPU-accelerated processing filter based on libplacebo
