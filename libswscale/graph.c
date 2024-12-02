@@ -292,7 +292,7 @@ static void legacy_chr_pos(SwsGraph *graph, int *chr_pos, int override, int *war
     *chr_pos = override;
 }
 
-static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws, int cascaded,
+static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
                                SwsPass *input, SwsPass **output)
 {
     SwsInternal *c = sws_internal(sws);
@@ -308,11 +308,14 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws, int cascaded,
         for (int i = 0; i < num_cascaded; i++) {
             SwsContext *sub = c->cascaded_context[i];
             const int is_last = i + 1 == num_cascaded;
-            ret = init_legacy_subpass(graph, sub, 1, input, is_last ? output : &input);
+            ret = init_legacy_subpass(graph, sub, input, is_last ? output : &input);
             if (ret < 0)
                 return ret;
+            /* Steal cascaded context, so we can free the parent */
+            c->cascaded_context[i] = NULL;
         }
 
+        sws_free_context(&sws);
         return 0;
     }
 
@@ -336,8 +339,7 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws, int cascaded,
     if (!pass)
         return AVERROR(ENOMEM);
     pass->setup = setup_legacy_swscale;
-    if (!cascaded) /* parent context frees this automatically */
-        pass->free = free_legacy_swscale;
+    pass->free = free_legacy_swscale;
 
     /**
      * For slice threading, we need to create sub contexts, similar to how
@@ -452,7 +454,7 @@ static int add_legacy_sws_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
                                 brightness, contrast, saturation);
     }
 
-    ret = init_legacy_subpass(graph, sws, 0, input, output);
+    ret = init_legacy_subpass(graph, sws, input, output);
     if (ret < 0) {
         sws_free_context(&sws);
         return ret;
