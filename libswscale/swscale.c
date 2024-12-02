@@ -1441,17 +1441,6 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
             goto fail;
         }
 
-        /* TODO: remove once implemented */
-        if ((dst_fmt.color.prim != src_fmt.color.prim ||
-             dst_fmt.color.trc  != src_fmt.color.trc) &&
-            !s->color_conversion_warned)
-        {
-            av_log(ctx, AV_LOG_WARNING, "Conversions between different primaries / "
-                   "transfer functions are not currently implemented, expect "
-                   "wrong results.\n");
-            s->color_conversion_warned = 1;
-        }
-
         if (!ff_test_fmt(&src_fmt, 0)) {
             err_msg = "Unsupported input";
             ret = AVERROR(ENOTSUP);
