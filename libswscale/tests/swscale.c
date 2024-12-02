@@ -309,7 +309,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, struct options opts)
                      src_fmt_str, &sw, &sh, dst_fmt_str, &dw, &dh,
                      &mode.flags, &mode.dither,
                      &mse[0], &mse[1], &mse[2], &mse[3]);
-        if (ret != 13) {
+        if (ret != 12) {
             printf("%s", buf);
             continue;
         }
