@@ -664,6 +664,8 @@ for codecs that support it. At present, those are H.264 and VP9.
 @item film_grain
 Export film grain parameters through frame side data (see @code{AV_FRAME_DATA_FILM_GRAIN_PARAMS}).
 Supported at present by AV1 decoders.
+@item enhancements
+Export picture enhancement metadata through frame side data, e.g. LCEVC (see @code{AV_FRAME_DATA_LCEVC}).
 @end table
 
 @item threads @var{integer} (@emph{decoding/encoding,video})
