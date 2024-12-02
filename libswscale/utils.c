@@ -1535,7 +1535,7 @@ av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
 
     /* drop every other pixel for chroma calculation unless user
      * wants full chroma */
-    if (isAnyRGB(srcFormat) && !(flags & SWS_FULL_CHR_H_INP)   &&
+    if (isAnyRGB(srcFormat) && !(srcW & 1) && !(flags & SWS_FULL_CHR_H_INP) &&
         srcFormat != AV_PIX_FMT_RGB8 && srcFormat != AV_PIX_FMT_BGR8 &&
         srcFormat != AV_PIX_FMT_RGB4 && srcFormat != AV_PIX_FMT_BGR4 &&
         srcFormat != AV_PIX_FMT_RGB4_BYTE && srcFormat != AV_PIX_FMT_BGR4_BYTE &&
