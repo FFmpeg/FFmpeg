@@ -21,6 +21,8 @@
 #include "libavutil/aarch64/asm.S"
 
 #define VVC_MAX_PB_SIZE 128
+#define BDOF_BLOCK_SIZE 16
+#define BDOF_MIN_BLOCK_SIZE 4
 
 .macro vvc_avg type, bit_depth
 
@@ -612,4 +614,401 @@ function ff_vvc_dmvr_hv_10_neon, export=1
 .unreq width
 .unreq tmp0
 .unreq tmp1
+endfunc
+
+function ff_vvc_prof_grad_filter_8x_neon, export=1
+        gh              .req x0
+        gv              .req x1
+        gstride         .req x2
+        src             .req x3
+        src_stride      .req x4
+        width           .req w5
+        height          .req w6
+
+        lsl             src_stride, src_stride, #1
+        neg             x7, src_stride
+1:
+        mov             x10, src
+        mov             w11, width
+        mov             x12, gh
+        mov             x13, gv
+2:
+        ldur            q0, [x10, #2]
+        ldur            q1, [x10, #-2]
+        subs            w11, w11, #8
+        ldr             q2, [x10, src_stride]
+        ldr             q3, [x10, x7]
+        sshr            v0.8h, v0.8h, #6
+        sshr            v1.8h, v1.8h, #6
+        sshr            v2.8h, v2.8h, #6
+        sshr            v3.8h, v3.8h, #6
+        sub             v0.8h, v0.8h, v1.8h
+        sub             v2.8h, v2.8h, v3.8h
+        st1             {v0.8h}, [x12], #16
+        st1             {v2.8h}, [x13], #16
+        add             x10, x10, #16
+        b.ne            2b
+
+        subs            height, height, #1
+        add             gh, gh, gstride, lsl #1
+        add             gv, gv, gstride, lsl #1
+        add             src, src, src_stride
+        b.ne            1b
+        ret
+
+.unreq gh
+.unreq gv
+.unreq gstride
+.unreq src
+.unreq src_stride
+.unreq width
+.unreq height
+endfunc
+
+.macro vvc_apply_bdof_block bit_depth
+        dst             .req x0
+        dst_stride      .req x1
+        src0            .req x2
+        src1            .req x3
+        gh              .req x4
+        gv              .req x5
+        vx              .req x6
+        vy              .req x7
+
+        ld1r            {v0.8h}, [vx], #2
+        ld1r            {v1.8h}, [vy], #2
+        ld1r            {v2.8h}, [vx]
+        ld1r            {v3.8h}, [vy]
+        ins             v0.d[1], v2.d[1]
+        ins             v1.d[1], v3.d[1]
+
+        movi            v7.4s, #(1 << (14 - \bit_depth))
+        ldp             x8, x9, [gh]
+        ldp             x10, x11, [gv]
+        mov             x12, #(BDOF_BLOCK_SIZE * 2)
+        mov             w13, #(BDOF_MIN_BLOCK_SIZE)
+        mov             x14, #(VVC_MAX_PB_SIZE * 2)
+.if \bit_depth >= 10
+        // clip pixel
+        mov             w15, #((1 << \bit_depth) - 1)
+        movi            v18.8h, #0
+        lsl             dst_stride, dst_stride, #1
+        dup             v19.8h, w15
+.endif
+1:
+        ld1             {v2.8h}, [x8], x12
+        ld1             {v3.8h}, [x9], x12
+        ld1             {v4.8h}, [x10], x12
+        ld1             {v5.8h}, [x11], x12
+        sub             v2.8h, v2.8h, v3.8h
+        sub             v4.8h, v4.8h, v5.8h
+        smull           v3.4s, v0.4h, v2.4h
+        smull2          v16.4s, v0.8h, v2.8h
+        smlal           v3.4s, v1.4h, v4.4h
+        smlal2          v16.4s, v1.8h, v4.8h
+
+        ld1             {v5.8h}, [src0], x14
+        ld1             {v6.8h}, [src1], x14
+        saddl           v2.4s, v5.4h, v6.4h
+        add             v2.4s, v2.4s, v7.4s
+        add             v2.4s, v2.4s, v3.4s
+        saddl2          v4.4s, v5.8h, v6.8h
+        add             v4.4s, v4.4s, v7.4s
+        add             v4.4s, v4.4s, v16.4s
+
+        sqshrn          v5.4h, v2.4s, #(15 - \bit_depth)
+        sqshrn2         v5.8h, v4.4s, #(15 - \bit_depth)
+        subs            w13, w13, #1
+.if \bit_depth == 8
+        sqxtun          v5.8b, v5.8h
+        str             d5, [dst]
+        add             dst, dst, dst_stride
+.else
+        smin            v5.8h, v5.8h, v19.8h
+        smax            v5.8h, v5.8h, v18.8h
+        st1             {v5.8h}, [dst], dst_stride
+.endif
+        b.ne            1b
+        ret
+
+.unreq dst
+.unreq dst_stride
+.unreq src0
+.unreq src1
+.unreq gh
+.unreq gv
+.unreq vx
+.unreq vy
+.endm
+
+function ff_vvc_apply_bdof_block_8_neon, export=1
+        vvc_apply_bdof_block 8
+endfunc
+
+function ff_vvc_apply_bdof_block_10_neon, export=1
+        vvc_apply_bdof_block 10
+endfunc
+
+function ff_vvc_apply_bdof_block_12_neon, export=1
+        vvc_apply_bdof_block 12
+endfunc
+
+function ff_vvc_derive_bdof_vx_vy_neon, export=1
+        src0            .req x0
+        src1            .req x1
+        pad_mask        .req w2
+        gh              .req x3
+        gv              .req x4
+        vx              .req x5
+        vy              .req x6
+
+        gh0             .req x7
+        gh1             .req x8
+        gv0             .req x9
+        gv1             .req x10
+        y               .req x12
+
+        sgx2            .req w7
+        sgy2            .req w8
+        sgxgy           .req w9
+        sgxdi           .req w10
+        sgydi           .req w11
+
+        sgx2_v          .req v22
+        sgy2_v          .req v23
+        sgxgy_v         .req v24
+        sgxdi_v         .req v25
+        sgydi_v         .req v26
+
+        sgx2_v2         .req v27
+        sgy2_v2         .req v28
+        sgxgy_v2        .req v29
+        sgxdi_v2        .req v30
+        sgydi_v2        .req v31
+
+        ldp             gh0, gh1, [gh]
+        ldp             gv0, gv1, [gv]
+        movi            sgx2_v.4s, #0
+        movi            sgy2_v.4s, #0
+        movi            sgxgy_v.4s, #0
+        movi            sgxdi_v.4s, #0
+        movi            sgydi_v.4s, #0
+        movi            sgx2_v2.4s, #0
+        movi            sgy2_v2.4s, #0
+        movi            sgxgy_v2.4s, #0
+        movi            sgxdi_v2.4s, #0
+        movi            sgydi_v2.4s, #0
+        mov             x13, #-1                    // dy
+        movi            v6.4s, #0
+        mov             y, #-1
+        tbz             pad_mask, #1, 1f            // check pad top
+        mov             x13, #0                     // dy: pad top
+1:
+        mov             x16, #-2                    // dx
+        add             x14, src0, x13, lsl #8      // local src0
+        add             x15, src1, x13, lsl #8      // local src1
+        add             x17, x16, x13, lsl #5
+        ldr             q0, [x14, x16]
+        ldr             q1, [x15, x16]
+        ldr             q2, [gh0, x17]
+        ldr             q3, [gh1, x17]
+        ldr             q4, [gv0, x17]
+        ldr             q5, [gv1, x17]
+        add             x16, x16, #8
+        add             x17, x17, #8
+        ins             v0.s[3], v6.s[3]
+        ins             v1.s[3], v6.s[3]
+        ins             v2.s[3], v6.s[3]
+        ins             v3.s[3], v6.s[3]
+        ins             v4.s[3], v6.s[3]
+        ins             v5.s[3], v6.s[3]
+
+        ldr             q16, [x14, x16]
+        ldr             q17, [x15, x16]
+        ldr             q18, [gh0, x17]
+        ldr             q19, [gh1, x17]
+        ldr             q20, [gv0, x17]
+        ldr             q21, [gv1, x17]
+        ins             v16.s[3], v6.s[3]
+        ins             v17.s[3], v6.s[3]
+        ins             v18.s[3], v6.s[3]
+        ins             v19.s[3], v6.s[3]
+        ins             v20.s[3], v6.s[3]
+        ins             v21.s[3], v6.s[3]
+
+        tbz             pad_mask, #0, 20f
+        // pad left
+        ins             v0.h[0], v0.h[1]
+        ins             v1.h[0], v1.h[1]
+        ins             v2.h[0], v2.h[1]
+        ins             v3.h[0], v3.h[1]
+        ins             v4.h[0], v4.h[1]
+        ins             v5.h[0], v5.h[1]
+20:
+        tbz             pad_mask, #2, 21f
+        // pad right
+        ins             v16.h[5], v16.h[4]
+        ins             v17.h[5], v17.h[4]
+        ins             v18.h[5], v18.h[4]
+        ins             v19.h[5], v19.h[4]
+        ins             v20.h[5], v20.h[4]
+        ins             v21.h[5], v21.h[4]
+21:
+        sshr            v0.8h, v0.8h, #4
+        sshr            v1.8h, v1.8h, #4
+        add             v2.8h, v2.8h, v3.8h
+        add             v4.8h, v4.8h, v5.8h
+        sub             v0.8h, v0.8h, v1.8h         // diff
+        sshr            v2.8h, v2.8h, #1            // temph
+        sshr            v4.8h, v4.8h, #1            // tempv
+
+        sshr            v16.8h, v16.8h, #4
+        sshr            v17.8h, v17.8h, #4
+        add             v18.8h, v18.8h, v19.8h
+        add             v20.8h, v20.8h, v21.8h
+        sub             v16.8h, v16.8h, v17.8h      // diff
+        sshr            v18.8h, v18.8h, #1          // temph
+        sshr            v20.8h, v20.8h, #1          // tempv
+
+        abs             v3.8h, v2.8h
+        abs             v5.8h, v4.8h
+        uxtl            v19.4s, v3.4h
+        uxtl            v21.4s, v5.4h
+        uxtl2           v3.4s, v3.8h
+        uxtl2           v5.4s, v5.8h
+        add             v3.4s, v3.4s, v19.4s
+        add             v5.4s, v5.4s, v21.4s
+        add             sgx2_v.4s, sgx2_v.4s, v3.4s
+        add             sgy2_v.4s, sgy2_v.4s, v5.4s
+
+        abs             v3.8h, v18.8h
+        abs             v5.8h, v20.8h
+        uxtl            v19.4s, v3.4h
+        uxtl            v21.4s, v5.4h
+        uxtl2           v3.4s, v3.8h
+        uxtl2           v5.4s, v5.8h
+        add             v3.4s, v3.4s, v19.4s
+        add             v5.4s, v5.4s, v21.4s
+        add             sgx2_v2.4s, sgx2_v2.4s, v3.4s
+        add             sgy2_v2.4s, sgy2_v2.4s, v5.4s
+
+        cmgt            v17.8h, v4.8h, #0
+        cmlt            v7.8h, v4.8h, #0
+        cmgt            v19.8h, v20.8h, #0
+        cmlt            v21.8h, v20.8h, #0
+        sub             v17.8h, v7.8h, v17.8h       // VVC_SIGN(tempv)
+        sub             v19.8h, v21.8h, v19.8h      // VVC_SIGN(tempv)
+
+        smlal           sgxgy_v.4s, v17.4h, v2.4h
+        smlal2          sgxgy_v.4s, v17.8h, v2.8h
+        smlsl           sgydi_v.4s, v17.4h, v0.4h
+        smlsl2          sgydi_v.4s, v17.8h, v0.8h
+
+        cmgt            v3.8h, v2.8h, #0
+        cmlt            v5.8h, v2.8h, #0
+        cmgt            v17.8h, v18.8h, #0
+        cmlt            v21.8h, v18.8h, #0
+        sub             v3.8h, v5.8h, v3.8h         // VVC_SIGN(temph)
+        sub             v17.8h, v21.8h, v17.8h      // VVC_SIGN(temph)
+
+        smlal           sgxgy_v2.4s, v19.4h, v18.4h
+        smlal2          sgxgy_v2.4s, v19.8h, v18.8h
+        smlsl           sgydi_v2.4s, v19.4h, v16.4h
+        smlsl2          sgydi_v2.4s, v19.8h, v16.8h
+
+        smlsl           sgxdi_v.4s, v3.4h, v0.4h
+        smlsl2          sgxdi_v.4s, v3.8h, v0.8h
+        smlsl           sgxdi_v2.4s, v17.4h, v16.4h
+        smlsl2          sgxdi_v2.4s, v17.8h, v16.8h
+3:
+        add             y, y, #1
+        cmp             y, #(BDOF_MIN_BLOCK_SIZE)
+        mov             x13, y
+        b.gt            4f
+        b.lt            1b
+        tbz             pad_mask, #3, 1b
+        sub             x13, x13, #1                // pad bottom
+        b               1b
+4:
+        addv            s22, sgx2_v.4s
+        addv            s23, sgy2_v.4s
+        addv            s24, sgxgy_v.4s
+        addv            s25, sgxdi_v.4s
+        addv            s26, sgydi_v.4s
+
+        mov             w3, #31
+        mov             w16, #-15
+        mov             w17, #15
+40:
+        mov             w14, #0
+
+        mov             sgx2, v22.s[0]
+        mov             sgy2, v23.s[0]
+        mov             sgxgy, v24.s[0]
+        mov             sgxdi, v25.s[0]
+        mov             sgydi, v26.s[0]
+
+        cbz             sgx2, 5f
+        clz             w12, sgx2
+        lsl             sgxdi, sgxdi, #2
+        sub             w13, w3, w12                // log2(sgx2)
+        asr             sgxdi, sgxdi, w13
+        cmp             sgxdi, w16
+        csel            w14, w16, sgxdi, lt         // clip to -15
+        b.le            5f
+        cmp             sgxdi, w17
+        csel            w14, w17, sgxdi, gt         // clip to 15
+5:
+        strh            w14, [vx], #2
+
+        mov             w15, #0
+        cbz             sgy2, 6f
+        lsl             sgydi, sgydi, #2
+        smull           x14, w14, sgxgy
+        asr             w14, w14, #1
+        sub             sgydi, sgydi, w14
+        clz             w12, sgy2
+        sub             w13, w3, w12                // log2(sgy2)
+        asr             sgydi, sgydi, w13
+        cmp             sgydi, w16
+        csel            w15, w16, sgydi, lt         // clip to -15
+        b.le            6f
+        cmp             sgydi, w17
+        csel            w15, w17, sgydi, gt         // clip to 15
+6:
+        strh            w15, [vy], #2
+        cbz             x0, 7f
+        addv            s22, sgx2_v2.4s
+        addv            s23, sgy2_v2.4s
+        addv            s24, sgxgy_v2.4s
+        addv            s25, sgxdi_v2.4s
+        addv            s26, sgydi_v2.4s
+        mov             x0, #0
+        b               40b
+7:
+        ret
+
+.unreq src0
+.unreq src1
+.unreq pad_mask
+.unreq gh
+.unreq gv
+.unreq vx
+.unreq vy
+.unreq sgx2
+.unreq sgy2
+.unreq sgxgy
+.unreq sgxdi
+.unreq sgydi
+.unreq sgx2_v
+.unreq sgy2_v
+.unreq sgxgy_v
+.unreq sgxdi_v
+.unreq sgydi_v
+.unreq sgx2_v2
+.unreq sgy2_v2
+.unreq sgxgy_v2
+.unreq sgxdi_v2
+.unreq sgydi_v2
+.unreq y
 endfunc
