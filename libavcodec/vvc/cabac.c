@@ -1257,11 +1257,19 @@ int ff_vvc_pred_mode_ibc_flag(VVCLocalContext *lc, const int is_chroma)
     return GET_CABAC(PRED_MODE_IBC_FLAG + inc);
 }
 
+static av_always_inline
+uint8_t get_mip_inc(VVCLocalContext *lc, const uint8_t *ctx)
+{
+    uint8_t left = 0, top = 0;
+    get_left_top(lc, &left, &top, lc->cu->x0, lc->cu->y0, ctx, ctx);
+    return (left & 1) + (top & 1);
+}
+
 int ff_vvc_intra_mip_flag(VVCLocalContext *lc, const uint8_t *intra_mip_flag)
 {
     const int w   = lc->cu->cb_width;
     const int h   = lc->cu->cb_height;
-    const int inc =  (w > h * 2 || h > w * 2) ? 3 : get_inc(lc, intra_mip_flag);
+    const int inc =  (w > h * 2 || h > w * 2) ? 3 : get_mip_inc(lc, intra_mip_flag);
     return GET_CABAC(INTRA_MIP_FLAG + inc);
 }
 

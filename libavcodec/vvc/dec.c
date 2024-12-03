@@ -128,7 +128,6 @@ static void min_cb_tl_init(TabList *l, VVCFrameContext *fc)
     tl_init(l, 1, changed);
 
     TL_ADD(imf,  pic_size_in_min_cb);
-    TL_ADD(imm,  pic_size_in_min_cb);
 
     for (int i = LUMA; i <= CHROMA; i++)
         TL_ADD(cb_width[i],  pic_size_in_min_cb);   //is_a0_available requires this
@@ -143,7 +142,6 @@ static void min_cb_nz_tl_init(TabList *l, VVCFrameContext *fc)
     tl_init(l, 0, changed);
 
     TL_ADD(skip, pic_size_in_min_cb);
-    TL_ADD(imtf, pic_size_in_min_cb);
     TL_ADD(ipm,  pic_size_in_min_cb);
 
     for (int i = LUMA; i <= CHROMA; i++) {

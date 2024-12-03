@@ -946,6 +946,12 @@ static void derive_chroma_intra_pred_mode(VVCLocalContext *lc,
     }
 }
 
+static av_always_inline uint8_t pack_mip_info(int intra_mip_flag,
+    int intra_mip_transposed_flag, int intra_mip_mode)
+{
+    return (intra_mip_mode << 2) | (intra_mip_transposed_flag << 1) | intra_mip_flag;
+}
+
 static void intra_luma_pred_modes(VVCLocalContext *lc)
 {
     VVCFrameContext *fc             = lc->fc;
@@ -974,9 +980,9 @@ static void intra_luma_pred_modes(VVCLocalContext *lc)
             int x = y_cb * pps->min_cb_width + x_cb;
             for (int y = 0; y < (cb_height>>log2_min_cb_size); y++) {
                 int width = cb_width>>log2_min_cb_size;
-                memset(&fc->tab.imf[x],  cu->intra_mip_flag, width);
-                memset(&fc->tab.imtf[x], intra_mip_transposed_flag, width);
-                memset(&fc->tab.imm[x], intra_mip_mode, width);
+                const uint8_t mip_info = pack_mip_info(cu->intra_mip_flag,
+                        intra_mip_transposed_flag, intra_mip_mode);
+                memset(&fc->tab.imf[x], mip_info, width);
                 x += pps->min_cb_width;
             }
             cu->intra_pred_mode_y = intra_mip_mode;

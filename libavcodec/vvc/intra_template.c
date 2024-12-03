@@ -627,8 +627,9 @@ static void FUNC(intra_pred)(const VVCLocalContext *lc, int x0, int y0,
     FUNC(prepare_intra_edge_params)(lc, &edge, src, stride, x, y, w, h, c_idx, is_intra_mip, mode, ref_idx, need_pdpc);
 
     if (is_intra_mip) {
-        int intra_mip_transposed_flag = SAMPLE_CTB(fc->tab.imtf, x_cb, y_cb);
-        int intra_mip_mode = SAMPLE_CTB(fc->tab.imm, x_cb, y_cb);
+        int intra_mip_transposed_flag;
+        int intra_mip_mode;
+        unpack_mip_info(&intra_mip_transposed_flag, &intra_mip_mode, intra_mip_flag);
 
         fc->vvcdsp.intra.pred_mip((uint8_t *)src, edge.top, edge.left,
                         w, h, stride, intra_mip_mode, intra_mip_transposed_flag);
