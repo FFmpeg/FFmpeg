@@ -83,25 +83,6 @@ int ff_vk_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     FFVulkanDecodeContext *src_ctx = src->internal->hwaccel_priv_data;
     FFVulkanDecodeContext *dst_ctx = dst->internal->hwaccel_priv_data;
 
-    if (!dst_ctx->exec_pool.cmd_bufs) {
-        FFVulkanDecodeShared *ctx = src_ctx->shared_ctx;
-
-        const VkVideoProfileInfoKHR *profile = get_video_profile(ctx, dst->codec_id);
-        if (!profile) {
-            av_log(dst, AV_LOG_ERROR, "Video profile missing from frames context!\n");
-            return AVERROR(EINVAL);
-        }
-
-        err = ff_vk_exec_pool_init(&ctx->s, &ctx->qf,
-                                   &dst_ctx->exec_pool,
-                                   src_ctx->exec_pool.pool_size,
-                                   src_ctx->exec_pool.nb_queries,
-                                   VK_QUERY_TYPE_RESULT_STATUS_ONLY_KHR, 0,
-                                   profile);
-        if (err < 0)
-            return err;
-    }
-
     av_refstruct_replace(&dst_ctx->shared_ctx, src_ctx->shared_ctx);
 
     if (src_ctx->session_params) {
@@ -293,8 +274,11 @@ void ff_vk_decode_flush(AVCodecContext *avctx)
     };
 
     VkCommandBuffer cmd_buf;
-    FFVkExecContext *exec = ff_vk_exec_get(&ctx->s, &dec->exec_pool);
-    int had_submission = exec->had_submission;
+    FFVkExecContext *exec;
+    int had_submission;
+
+    exec = ff_vk_exec_get(&ctx->s, &ctx->exec_pool);
+    had_submission = exec->had_submission;
     ff_vk_exec_start(&ctx->s, exec);
     cmd_buf = exec->buf;
 
@@ -345,7 +329,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
     size_t data_size = FFALIGN(vp->slices_size,
                                ctx->caps.minBitstreamBufferSizeAlignment);
 
-    FFVkExecContext *exec = ff_vk_exec_get(&ctx->s, &dec->exec_pool);
+    FFVkExecContext *exec = ff_vk_exec_get(&ctx->s, &ctx->exec_pool);
 
     /* The current decoding reference has to be bound as an inactive reference */
     VkVideoReferenceSlotInfoKHR *cur_vk_ref;
@@ -354,7 +338,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
     cur_vk_ref[0].slotIndex = -1;
     decode_start.referenceSlotCount++;
 
-    if (dec->exec_pool.nb_queries && exec->had_submission) {
+    if (ctx->exec_pool.nb_queries && exec->had_submission) {
         uint32_t *result;
         ret = ff_vk_exec_get_query(&ctx->s, exec, (void **)&result,
                                    VK_QUERY_RESULT_WAIT_BIT);
@@ -525,14 +509,14 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
     vk->CmdBeginVideoCodingKHR(cmd_buf, &decode_start);
 
     /* Start status query */
-    if (dec->exec_pool.nb_queries)
-        vk->CmdBeginQuery(cmd_buf, dec->exec_pool.query_pool, exec->query_idx + 0, 0);
+    if (ctx->exec_pool.nb_queries)
+        vk->CmdBeginQuery(cmd_buf, ctx->exec_pool.query_pool, exec->query_idx + 0, 0);
 
     vk->CmdDecodeVideoKHR(cmd_buf, &vp->decode_info);
 
     /* End status query */
-    if (dec->exec_pool.nb_queries)
-        vk->CmdEndQuery(cmd_buf, dec->exec_pool.query_pool, exec->query_idx + 0);
+    if (ctx->exec_pool.nb_queries)
+        vk->CmdEndQuery(cmd_buf, ctx->exec_pool.query_pool, exec->query_idx + 0);
 
     vk->CmdEndVideoCodingKHR(cmd_buf, &decode_end);
 
@@ -576,6 +560,9 @@ static void free_common(AVRefStructOpaque unused, void *obj)
     FFVulkanDecodeShared *ctx = obj;
     FFVulkanContext *s = &ctx->s;
     FFVulkanFunctions *vk = &ctx->s.vkfn;
+
+    /* Wait on and free execution pool */
+    ff_vk_exec_pool_free(&ctx->s, &ctx->exec_pool);
 
     /* This also frees all references from this pool */
     av_frame_free(&ctx->common.layered_frame);
@@ -1066,10 +1053,6 @@ int ff_vk_decode_create_params(AVBufferRef **par_ref, void *logctx, FFVulkanDeco
 int ff_vk_decode_uninit(AVCodecContext *avctx)
 {
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
-    FFVulkanDecodeShared *ctx = dec->shared_ctx;
-
-    /* Wait on and free execution pool */
-    ff_vk_exec_pool_free(&ctx->s, &dec->exec_pool);
 
     av_freep(&dec->hevc_headers);
     av_buffer_unref(&dec->session_params);
@@ -1159,7 +1142,7 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     /* Create decode exec context for this specific main thread.
      * 2 async contexts per thread was experimentally determined to be optimal
      * for a majority of streams. */
-    err = ff_vk_exec_pool_init(s, &ctx->qf, &dec->exec_pool,
+    err = ff_vk_exec_pool_init(s, &ctx->qf, &ctx->exec_pool,
                                FFMAX(2*ctx->qf.nb_queues, avctx->thread_count),
                                nb_q, VK_QUERY_TYPE_RESULT_STATUS_ONLY_KHR, 0,
                                profile);
