@@ -26,6 +26,7 @@
 const FFVulkanDecodeDescriptor ff_vk_dec_av1_desc = {
     .codec_id         = AV_CODEC_ID_AV1,
     .decode_extension = FF_VK_EXT_VIDEO_DECODE_AV1,
+    .queue_flags      = VK_QUEUE_VIDEO_DECODE_BIT_KHR,
     .decode_op        = VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR,
     .ext_props = {
         .extensionName = VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME,

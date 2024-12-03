@@ -1116,7 +1116,7 @@ int ff_vk_decode_init(AVCodecContext *avctx)
 
     /* Create queue context */
     vk_desc = get_codecdesc(avctx->codec_id);
-    ctx->qf = ff_vk_qf_find(s, VK_QUEUE_VIDEO_DECODE_BIT_KHR, vk_desc->decode_op);
+    ctx->qf = ff_vk_qf_find(s, vk_desc->queue_flags, vk_desc->decode_op);
     if (!ctx->qf) {
         av_log(avctx, AV_LOG_ERROR, "Decoding of %s is not supported by this device\n",
                avcodec_get_name(avctx->codec_id));

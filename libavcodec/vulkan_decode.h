@@ -29,6 +29,7 @@
 typedef struct FFVulkanDecodeDescriptor {
     enum AVCodecID                   codec_id;
     FFVulkanExtensions               decode_extension;
+    VkQueueFlagBits                  queue_flags;
     VkVideoCodecOperationFlagBitsKHR decode_op;
 
     VkExtensionProperties ext_props;
