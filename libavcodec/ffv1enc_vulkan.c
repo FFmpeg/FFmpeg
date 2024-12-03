@@ -58,10 +58,10 @@ typedef struct VulkanEncodeFFv1Context {
     AVFrame *frame;
 
     FFVulkanContext s;
-    FFVkQueueFamilyCtx qf;
+    AVVulkanDeviceQueueFamily *qf;
     FFVkExecPool exec_pool;
 
-    FFVkQueueFamilyCtx transfer_qf;
+    AVVulkanDeviceQueueFamily *transfer_qf;
     FFVkExecPool transfer_exec_pool;
 
     VkBufferCopy *buf_regions;
@@ -1586,8 +1586,8 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     if (err < 0)
         return err;
 
-    err = ff_vk_qf_init(&fv->s, &fv->qf, VK_QUEUE_COMPUTE_BIT);
-    if (err < 0) {
+    fv->qf = ff_vk_qf_find(&fv->s, VK_QUEUE_COMPUTE_BIT, 0);
+    if (!fv->qf) {
         av_log(avctx, AV_LOG_ERROR, "Device has no compute queues!\n");
         return err;
     }
@@ -1626,7 +1626,7 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     }
 
     if (!fv->async_depth) {
-        fv->async_depth = FFMIN(fv->qf.nb_queues, FFMAX(max_heap_size / maxsize, 1));
+        fv->async_depth = FFMIN(fv->qf->num, FFMAX(max_heap_size / maxsize, 1));
         fv->async_depth = FFMAX(fv->async_depth, 1);
     }
 
@@ -1635,19 +1635,19 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
            (fv->async_depth * maxsize) / (1024*1024),
            fv->async_depth);
 
-    err = ff_vk_exec_pool_init(&fv->s, &fv->qf, &fv->exec_pool,
+    err = ff_vk_exec_pool_init(&fv->s, fv->qf, &fv->exec_pool,
                                fv->async_depth,
                                0, 0, 0, NULL);
     if (err < 0)
         return err;
 
-    err = ff_vk_qf_init(&fv->s, &fv->transfer_qf, VK_QUEUE_TRANSFER_BIT);
-    if (err < 0) {
+    fv->transfer_qf = ff_vk_qf_find(&fv->s, VK_QUEUE_TRANSFER_BIT, 0);
+    if (!fv->transfer_qf) {
         av_log(avctx, AV_LOG_ERROR, "Device has no transfer queues!\n");
         return err;
     }
 
-    err = ff_vk_exec_pool_init(&fv->s, &fv->transfer_qf, &fv->transfer_exec_pool,
+    err = ff_vk_exec_pool_init(&fv->s, fv->transfer_qf, &fv->transfer_exec_pool,
                                1,
                                0, 0, 0, NULL);
     if (err < 0)

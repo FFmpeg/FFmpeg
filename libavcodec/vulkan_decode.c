@@ -1116,21 +1116,19 @@ int ff_vk_decode_init(AVCodecContext *avctx)
 
     /* Create queue context */
     vk_desc = get_codecdesc(avctx->codec_id);
-    err = ff_vk_video_qf_init(s, &ctx->qf,
-                              VK_QUEUE_VIDEO_DECODE_BIT_KHR,
-                              vk_desc->decode_op);
-    if (err < 0) {
+    ctx->qf = ff_vk_qf_find(s, VK_QUEUE_VIDEO_DECODE_BIT_KHR, vk_desc->decode_op);
+    if (!ctx->qf) {
         av_log(avctx, AV_LOG_ERROR, "Decoding of %s is not supported by this device\n",
                avcodec_get_name(avctx->codec_id));
         return err;
     }
 
-    /* Enable queries if supported */
-    if (s->query_props[ctx->qf.queue_family].queryResultStatusSupport)
+    /* Enable queries if supported and usable */
+    if (s->query_props[ctx->qf->idx].queryResultStatusSupport)
         nb_q = 1;
 
     session_create.flags = 0x0;
-    session_create.queueFamilyIndex = ctx->qf.queue_family;
+    session_create.queueFamilyIndex = ctx->qf->idx;
     session_create.maxCodedExtent = ctx->caps.maxCodedExtent;
     session_create.maxDpbSlots = ctx->caps.maxDpbSlots;
     session_create.maxActiveReferencePictures = ctx->caps.maxActiveReferencePictures;
@@ -1142,8 +1140,8 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     /* Create decode exec context for this specific main thread.
      * 2 async contexts per thread was experimentally determined to be optimal
      * for a majority of streams. */
-    err = ff_vk_exec_pool_init(s, &ctx->qf, &ctx->exec_pool,
-                               FFMAX(2*ctx->qf.nb_queues, avctx->thread_count),
+    err = ff_vk_exec_pool_init(s, ctx->qf, &ctx->exec_pool,
+                               FFMAX(2*ctx->qf->num, avctx->thread_count),
                                nb_q, VK_QUERY_TYPE_RESULT_STATUS_ONLY_KHR, 0,
                                profile);
     if (err < 0)

@@ -104,8 +104,8 @@ typedef struct VulkanDevicePriv {
     void *libvulkan;
 
     FFVulkanContext    vkctx;
-    FFVkQueueFamilyCtx compute_qf;
-    FFVkQueueFamilyCtx transfer_qf;
+    AVVulkanDeviceQueueFamily *compute_qf;
+    AVVulkanDeviceQueueFamily *transfer_qf;
 
     /* Properties */
     VkPhysicalDeviceProperties2 props;
@@ -1904,8 +1904,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     p->vkctx.hwctx = hwctx;
 
     ff_vk_load_props(&p->vkctx);
-    ff_vk_qf_init(&p->vkctx, &p->compute_qf, VK_QUEUE_COMPUTE_BIT);
-    ff_vk_qf_init(&p->vkctx, &p->transfer_qf, VK_QUEUE_TRANSFER_BIT);
+    p->compute_qf = ff_vk_qf_find(&p->vkctx, VK_QUEUE_COMPUTE_BIT, 0);
+    p->transfer_qf = ff_vk_qf_find(&p->vkctx, VK_QUEUE_TRANSFER_BIT, 0);
 
 end:
     av_free(qf_vid);
@@ -2789,18 +2789,18 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
     if (!hwctx->unlock_frame)
         hwctx->unlock_frame = unlock_frame;
 
-    err = ff_vk_exec_pool_init(&p->vkctx, &p->compute_qf, &fp->compute_exec,
-                               p->compute_qf.nb_queues, 0, 0, 0, NULL);
+    err = ff_vk_exec_pool_init(&p->vkctx, p->compute_qf, &fp->compute_exec,
+                               p->compute_qf->num, 0, 0, 0, NULL);
     if (err)
         return err;
 
-    err = ff_vk_exec_pool_init(&p->vkctx, &p->transfer_qf, &fp->upload_exec,
-                               p->transfer_qf.nb_queues*2, 0, 0, 0, NULL);
+    err = ff_vk_exec_pool_init(&p->vkctx, p->transfer_qf, &fp->upload_exec,
+                               p->transfer_qf->num*2, 0, 0, 0, NULL);
     if (err)
         return err;
 
-    err = ff_vk_exec_pool_init(&p->vkctx, &p->transfer_qf, &fp->download_exec,
-                               p->transfer_qf.nb_queues, 0, 0, 0, NULL);
+    err = ff_vk_exec_pool_init(&p->vkctx, p->transfer_qf, &fp->download_exec,
+                               p->transfer_qf->num, 0, 0, 0, NULL);
     if (err)
         return err;
 

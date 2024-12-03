@@ -769,10 +769,8 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
         return err;
 
     /* Create queue context */
-    err = ff_vk_video_qf_init(s, &ctx->qf_enc,
-                              VK_QUEUE_VIDEO_ENCODE_BIT_KHR,
-                              vk_desc->encode_op);
-    if (err < 0) {
+    ctx->qf_enc = ff_vk_qf_find(s, VK_QUEUE_VIDEO_ENCODE_BIT_KHR, vk_desc->encode_op);
+    if (!ctx->qf_enc) {
         av_log(avctx, AV_LOG_ERROR, "Encoding of %s is not supported by this device\n",
                avcodec_get_name(avctx->codec_id));
         return err;
@@ -846,7 +844,7 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
         .encodeFeedbackFlags = ctx->enc_caps.supportedEncodeFeedbackFlags &
                                (~VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_HAS_OVERRIDES_BIT_KHR),
     };
-    err = ff_vk_exec_pool_init(s, &ctx->qf_enc, &ctx->enc_pool, base_ctx->async_depth,
+    err = ff_vk_exec_pool_init(s, ctx->qf_enc, &ctx->enc_pool, base_ctx->async_depth,
                                1, VK_QUERY_TYPE_VIDEO_ENCODE_FEEDBACK_KHR, 0,
                                &query_create);
     if (err < 0)
@@ -994,7 +992,7 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
     /* Create session */
     session_create.pVideoProfile = &ctx->profile;
     session_create.flags = 0x0;
-    session_create.queueFamilyIndex = ctx->qf_enc.queue_family;
+    session_create.queueFamilyIndex = ctx->qf_enc->idx;
     session_create.maxCodedExtent = ctx->caps.maxCodedExtent;
     session_create.maxDpbSlots = ctx->caps.maxDpbSlots;
     session_create.maxActiveReferencePictures = ctx->caps.maxActiveReferencePictures;

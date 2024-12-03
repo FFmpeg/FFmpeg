@@ -268,20 +268,6 @@ int ff_vk_h265_profile_to_av(StdVideoH264ProfileIdc profile)
     }
 }
 
-int ff_vk_video_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
-                        VkQueueFlagBits family, VkVideoCodecOperationFlagBitsKHR caps)
-{
-    for (int i = 0; i < s->hwctx->nb_qf; i++) {
-        if ((s->hwctx->qf[i].flags & family) &&
-            (s->hwctx->qf[i].video_caps & caps)) {
-            qf->queue_family = s->hwctx->qf[i].idx;
-            qf->nb_queues = s->hwctx->qf[i].num;
-            return 0;
-        }
-    }
-    return AVERROR(ENOTSUP);
-}
-
 int ff_vk_create_view(FFVulkanContext *s, FFVkVideoCommon *common,
                       VkImageView *view, VkImageAspectFlags *aspect,
                       AVVkFrame *src, VkFormat vkf, int is_dpb)

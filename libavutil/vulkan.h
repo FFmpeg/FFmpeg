@@ -99,11 +99,6 @@ typedef struct FFVkBuffer {
     uint8_t *mapped_mem;
 } FFVkBuffer;
 
-typedef struct FFVkQueueFamilyCtx {
-    int queue_family;
-    int nb_queues;
-} FFVkQueueFamilyCtx;
-
 typedef struct FFVkExecContext {
     uint32_t idx;
     const struct FFVkExecPool *parent;
@@ -393,10 +388,11 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
 int ff_vk_load_props(FFVulkanContext *s);
 
 /**
- * Chooses a QF and loads it into a context.
+ * Chooses an appropriate QF.
  */
-int ff_vk_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
-                  VkQueueFlagBits dev_family);
+AVVulkanDeviceQueueFamily *ff_vk_qf_find(FFVulkanContext *s,
+                                         VkQueueFlagBits dev_family,
+                                         VkVideoCodecOperationFlagBitsKHR vid_ops);
 
 /**
  * Allocates/frees an execution pool.
@@ -405,7 +401,7 @@ int ff_vk_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
  * ff_vk_exec_pool_init_desc() MUST be called if ff_vk_exec_descriptor_set_add()
  * has been called.
  */
-int ff_vk_exec_pool_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
+int ff_vk_exec_pool_init(FFVulkanContext *s, AVVulkanDeviceQueueFamily *qf,
                          FFVkExecPool *pool, int nb_contexts,
                          int nb_queries, VkQueryType query_type, int query_64bit,
                          const void *query_create_pnext);

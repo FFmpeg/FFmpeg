@@ -64,12 +64,6 @@ VkVideoChromaSubsamplingFlagBitsKHR ff_vk_subsampling_from_av_desc(const AVPixFm
 VkVideoComponentBitDepthFlagBitsKHR ff_vk_depth_from_av_depth(int depth);
 
 /**
- * Chooses a QF and loads it into a context.
- */
-int ff_vk_video_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
-                        VkQueueFlagBits family, VkVideoCodecOperationFlagBitsKHR caps);
-
-/**
  * Convert level from Vulkan to AV.
  */
 int ff_vk_h264_level_to_av(StdVideoH264LevelIdc level);

@@ -46,7 +46,7 @@ typedef struct FFVulkanDecodeProfileData {
 typedef struct FFVulkanDecodeShared {
     FFVulkanContext s;
     FFVkVideoCommon common;
-    FFVkQueueFamilyCtx qf;
+    AVVulkanDeviceQueueFamily *qf;
     FFVkExecPool exec_pool;
 
     AVBufferPool *buf_pool;
