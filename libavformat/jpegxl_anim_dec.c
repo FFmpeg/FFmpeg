@@ -136,7 +136,7 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codecpar->codec_id   = AV_CODEC_ID_JPEGXL;
+    st->codecpar->codec_id   = AV_CODEC_ID_JPEGXL_ANIM;
     avpriv_set_pts_info(st, 1, meta.timebase.num, meta.timebase.den);
     ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL;
 
