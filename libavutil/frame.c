@@ -961,6 +961,22 @@ void av_frame_side_data_remove(AVFrameSideData ***sd, int *nb_sd,
     remove_side_data(sd, nb_sd, type);
 }
 
+void av_frame_side_data_remove_by_props(AVFrameSideData ***sd, int *nb_sd,
+                                        int props)
+{
+    for (int i = *nb_sd - 1; i >= 0; i--) {
+        AVFrameSideData *entry = ((*sd)[i]);
+        const AVSideDataDescriptor *desc = av_frame_side_data_desc(entry->type);
+        if (!desc || !(desc->props & props))
+            continue;
+
+        free_side_data(&entry);
+
+        ((*sd)[i]) = ((*sd)[*nb_sd - 1]);
+        (*nb_sd)--;
+    }
+}
+
 AVFrameSideData *av_frame_get_side_data(const AVFrame *frame,
                                         enum AVFrameSideDataType type)
 {

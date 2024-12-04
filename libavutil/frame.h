@@ -1183,6 +1183,14 @@ const AVFrameSideData *av_frame_side_data_get(AVFrameSideData * const *sd,
  */
 void av_frame_side_data_remove(AVFrameSideData ***sd, int *nb_sd,
                                enum AVFrameSideDataType type);
+
+/**
+ * Remove and free all side data instances that match any of the given
+ * side data properties. (See enum AVSideDataProps)
+ */
+void av_frame_side_data_remove_by_props(AVFrameSideData ***sd, int *nb_sd,
+                                        int props);
+
 /**
  * @}
  */
