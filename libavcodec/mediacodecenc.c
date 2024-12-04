@@ -56,6 +56,11 @@ enum BitrateMode {
     BITRATE_MODE_CBR_FD = 3,
 };
 
+typedef struct MediaCodecAsyncOutput {
+    int32_t index;
+    FFAMediaCodecBufferInfo buf_info;
+} MediaCodecAsyncOutput;
+
 typedef struct MediaCodecEncContext {
     AVClass *avclass;
     FFAMediaCodec *codec;
@@ -89,8 +94,7 @@ typedef struct MediaCodecEncContext {
     AVMutex output_mutex;
     AVCond output_cond;
     int encode_status;
-    AVFifo *output_index;
-    AVFifo *output_buf_info;
+    AVFifo *async_output;
 } MediaCodecEncContext;
 
 enum {
@@ -235,41 +239,6 @@ static void copy_frame_to_buffer(AVCodecContext *avctx, const AVFrame *frame,
                    avctx->pix_fmt, avctx->width, avctx->height);
 }
 
-static void on_input_available(FFAMediaCodec *codec, void *userdata,
-                               int32_t index)
-{
-    AVCodecContext *avctx = userdata;
-    MediaCodecEncContext *s = avctx->priv_data;
-
-    ff_mutex_lock(&s->input_mutex);
-
-    av_fifo_write(s->input_index, &index, 1);
-
-    ff_mutex_unlock(&s->input_mutex);
-    ff_cond_signal(&s->input_cond);
-}
-
-static void on_output_available(FFAMediaCodec *codec, void *userdata,
-                               int32_t index,
-                               FFAMediaCodecBufferInfo *out_info)
-{
-    AVCodecContext *avctx = userdata;
-    MediaCodecEncContext *s = avctx->priv_data;
-
-    ff_mutex_lock(&s->output_mutex);
-
-    av_fifo_write(s->output_index, &index, 1);
-    av_fifo_write(s->output_buf_info, out_info, 1);
-
-    ff_mutex_unlock(&s->output_mutex);
-    ff_cond_signal(&s->output_cond);
-}
-
-static void on_format_changed(FFAMediaCodec *codec, void *userdata,
-                              FFAMediaFormat *format)
-{
-    mediacodec_dump_format(userdata, format);
-}
 
 static void on_error(FFAMediaCodec *codec, void *userdata, int error,
                      const char *detail)
@@ -292,6 +261,51 @@ static void on_error(FFAMediaCodec *codec, void *userdata, int error,
     ff_cond_signal(&s->input_cond);
 }
 
+static void on_input_available(FFAMediaCodec *codec, void *userdata,
+                               int32_t index)
+{
+    AVCodecContext *avctx = userdata;
+    MediaCodecEncContext *s = avctx->priv_data;
+    int ret;
+
+    ff_mutex_lock(&s->input_mutex);
+    ret = av_fifo_write(s->input_index, &index, 1);
+    if (ret >= 0)
+        ff_cond_signal(&s->input_cond);
+    ff_mutex_unlock(&s->input_mutex);
+
+    if (ret < 0)
+        on_error(codec, userdata, ret, "av_fifo_write failed");
+}
+
+static void on_output_available(FFAMediaCodec *codec, void *userdata,
+                               int32_t index,
+                               FFAMediaCodecBufferInfo *out_info)
+{
+    AVCodecContext *avctx = userdata;
+    MediaCodecEncContext *s = avctx->priv_data;
+    MediaCodecAsyncOutput output = {
+        .index = index,
+        .buf_info = *out_info,
+    };
+    int ret;
+
+    ff_mutex_lock(&s->output_mutex);
+    ret = av_fifo_write(s->async_output, &output, 1);
+    if (ret >= 0)
+        ff_cond_signal(&s->output_cond);
+    ff_mutex_unlock(&s->output_mutex);
+
+    if (ret < 0)
+        on_error(codec, userdata, ret, "av_fifo_write failed");
+}
+
+static void on_format_changed(FFAMediaCodec *codec, void *userdata,
+                              FFAMediaFormat *format)
+{
+    mediacodec_dump_format(userdata, format);
+}
+
 static int mediacodec_init_async_state(AVCodecContext *avctx)
 {
     MediaCodecEncContext *s = avctx->priv_data;
@@ -307,10 +321,10 @@ static int mediacodec_init_async_state(AVCodecContext *avctx)
     ff_cond_init(&s->output_cond, NULL);
 
     s->input_index = av_fifo_alloc2(fifo_size, sizeof(int32_t), AV_FIFO_FLAG_AUTO_GROW);
-    s->output_index = av_fifo_alloc2(fifo_size, sizeof(int32_t), AV_FIFO_FLAG_AUTO_GROW);
-    s->output_buf_info = av_fifo_alloc2(fifo_size, sizeof(FFAMediaCodecBufferInfo), AV_FIFO_FLAG_AUTO_GROW);
+    s->async_output = av_fifo_alloc2(fifo_size, sizeof(MediaCodecAsyncOutput),
+                                     AV_FIFO_FLAG_AUTO_GROW);
 
-    if (!s->input_index || !s->output_index || !s->output_buf_info)
+    if (!s->input_index || !s->async_output)
         return AVERROR(ENOMEM);
 
     return 0;
@@ -330,8 +344,7 @@ static void mediacodec_uninit_async_state(AVCodecContext *avctx)
     ff_cond_destroy(&s->output_cond);
 
     av_fifo_freep2(&s->input_index);
-    av_fifo_freep2(&s->output_index);
-    av_fifo_freep2(&s->output_buf_info);
+    av_fifo_freep2(&s->async_output);
 
     s->async_mode = 0;
 }
@@ -575,7 +588,7 @@ static int mediacodec_get_output_index(AVCodecContext *avctx, ssize_t *index,
     MediaCodecEncContext *s = avctx->priv_data;
     FFAMediaCodec *codec = s->codec;
     int64_t timeout_us = s->eof_sent ? OUTPUT_DEQUEUE_TIMEOUT_US : 0;
-    int n;
+    MediaCodecAsyncOutput output = { .index = -1 };
     int ret;
 
     if (!s->async_mode) {
@@ -585,28 +598,26 @@ static int mediacodec_get_output_index(AVCodecContext *avctx, ssize_t *index,
 
     ff_mutex_lock(&s->output_mutex);
 
-    n = -1;
-    while (n < 0 && !s->encode_status) {
-        if (av_fifo_can_read(s->output_index)) {
-            av_fifo_read(s->output_index, &n, 1);
-            av_fifo_read(s->output_buf_info, out_info, 1);
+    while (!s->encode_status) {
+        if (av_fifo_read(s->async_output, &output, 1) >= 0)
             break;
-        }
 
         // Only wait after signalEndOfInputStream
-        if (n < 0 && s->eof_sent && !s->encode_status)
+        if (s->eof_sent && !s->encode_status)
             ff_cond_wait(&s->output_cond, &s->output_mutex);
         else
             break;
     }
 
     ret = s->encode_status;
-    *index = n;
     ff_mutex_unlock(&s->output_mutex);
 
     // Get output index success
-    if (*index >= 0)
+    if (output.index >= 0) {
+        *index = output.index;
+        *out_info = output.buf_info;
         return 0;
+    }
 
     return ret ? ret : AVERROR(EAGAIN);
 }
