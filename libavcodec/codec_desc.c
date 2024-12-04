@@ -1977,6 +1977,14 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("RealVideo 6.0"),
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_REORDER,
     },
+    {
+        .id        = AV_CODEC_ID_JPEGXL_ANIM,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "jpegxl_anim",
+        .long_name = NULL_IF_CONFIG_SMALL("JPEG XL animated"),
+        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
+        .mime_types= MT("image/jxl"),
+    },
 
     /* various PCM "codecs" */
     {

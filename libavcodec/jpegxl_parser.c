@@ -1534,7 +1534,7 @@ flush:
 }
 
 const AVCodecParser ff_jpegxl_parser = {
-    .codec_ids      = { AV_CODEC_ID_JPEGXL },
+    .codec_ids      = { AV_CODEC_ID_JPEGXL, AV_CODEC_ID_JPEGXL_ANIM },
     .priv_data_size = sizeof(JXLParseContext),
     .parser_parse   = jpegxl_parse,
     .parser_close   = ff_parse_close,

@@ -778,6 +778,8 @@ extern const FFCodec ff_libgsm_ms_encoder;
 extern const FFCodec ff_libgsm_ms_decoder;
 extern const FFCodec ff_libilbc_encoder;
 extern const FFCodec ff_libilbc_decoder;
+extern const FFCodec ff_libjxl_anim_decoder;
+extern const FFCodec ff_libjxl_anim_encoder;
 extern const FFCodec ff_libjxl_decoder;
 extern const FFCodec ff_libjxl_encoder;
 extern const FFCodec ff_liblc3_encoder;

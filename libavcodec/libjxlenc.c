@@ -56,6 +56,12 @@ typedef struct LibJxlEncodeContext {
     int xyb;
     uint8_t *buffer;
     size_t buffer_size;
+    JxlPixelFormat jxl_fmt;
+
+    /* animation stuff */
+    AVFrame *frame;
+    AVFrame *prev;
+    int64_t duration;
 } LibJxlEncodeContext;
 
 /**
@@ -87,9 +93,9 @@ static float quality_to_distance(float quality)
 }
 
 /**
- * Initalize the encoder on a per-frame basis. All of these need to be set
- * once each time the encoder is reset, which it must be each frame to make
- * the image2 muxer work.
+ * Initalize the encoder on a per-file basis. All of these need to be set
+ * once each time the encoder is reset, which is each frame for still
+ * images, to make the image2 muxer work. For animation this is run once.
  *
  * @return       0 upon success, negative on failure.
  */
@@ -100,12 +106,6 @@ static int libjxl_init_jxl_encoder(AVCodecContext *avctx)
     /* reset the encoder every frame for image2 muxer */
     JxlEncoderReset(ctx->encoder);
 
-    ctx->options = JxlEncoderFrameSettingsCreate(ctx->encoder, NULL);
-    if (!ctx->options) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create JxlEncoderOptions\n");
-        return AVERROR_EXTERNAL;
-    }
-
     /* This needs to be set each time the encoder is reset */
     if (JxlEncoderSetParallelRunner(ctx->encoder, JxlThreadParallelRunner, ctx->runner)
             != JXL_ENC_SUCCESS) {
@@ -113,42 +113,9 @@ static int libjxl_init_jxl_encoder(AVCodecContext *avctx)
         return AVERROR_EXTERNAL;
     }
 
-    /* these shouldn't fail, libjxl bug notwithstanding */
-    if (JxlEncoderFrameSettingsSetOption(ctx->options, JXL_ENC_FRAME_SETTING_EFFORT, ctx->effort)
-            != JXL_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to set effort to: %d\n", ctx->effort);
-        return AVERROR_EXTERNAL;
-    }
-
-    /* check for negative, our default */
-    if (ctx->distance < 0.0) {
-        /* use ffmpeg.c -q option if passed */
-        if (avctx->flags & AV_CODEC_FLAG_QSCALE)
-            ctx->distance = quality_to_distance((float)avctx->global_quality / FF_QP2LAMBDA);
-        else
-            /* default 1.0 matches cjxl */
-            ctx->distance = 1.0;
-    }
-
-    /*
-     * 0.01 is the minimum distance accepted for lossy
-     * interpreting any positive value less than this as minimum
-     */
-    if (ctx->distance > 0.0 && ctx->distance < 0.01)
-        ctx->distance = 0.01;
-    if (JxlEncoderSetFrameDistance(ctx->options, ctx->distance) != JXL_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to set distance: %f\n", ctx->distance);
-        return AVERROR_EXTERNAL;
-    }
-
-    /*
-     * In theory the library should automatically enable modular if necessary,
-     * but it appears it won't at the moment due to a bug. This will still
-     * work even if that is patched.
-     */
-    if (JxlEncoderFrameSettingsSetOption(ctx->options, JXL_ENC_FRAME_SETTING_MODULAR,
-            ctx->modular || ctx->distance <= 0.0 ? 1 : -1) != JXL_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to set modular\n");
+    ctx->options = JxlEncoderFrameSettingsCreate(ctx->encoder, NULL);
+    if (!ctx->options) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to create JxlEncoderOptions\n");
         return AVERROR_EXTERNAL;
     }
 
@@ -184,6 +151,47 @@ static av_cold int libjxl_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Could not allocate encoding buffer\n");
         return AVERROR(ENOMEM);
     }
+
+    /* check for negative, our default */
+    if (ctx->distance < 0.0) {
+        /* use ffmpeg.c -q option if passed */
+        if (avctx->flags & AV_CODEC_FLAG_QSCALE)
+            ctx->distance = quality_to_distance((float)avctx->global_quality / FF_QP2LAMBDA);
+        else
+            /* default 1.0 matches cjxl */
+            ctx->distance = 1.0;
+    }
+    /*
+     * 0.01 is the minimum distance accepted for lossy
+     * interpreting any positive value less than this as minimum
+     */
+    if (ctx->distance > 0.0 && ctx->distance < 0.01)
+        ctx->distance = 0.01;
+
+    return 0;
+}
+
+/**
+ * Initializer for the animation encoder. This calls the other initializers
+ * to prevent code duplication and also allocates the prev-frame used in the
+ * encoder.
+ */
+static av_cold int libjxl_anim_encode_init(AVCodecContext *avctx)
+{
+    int ret;
+    LibJxlEncodeContext *ctx = avctx->priv_data;
+
+    ret = libjxl_encode_init(avctx);
+    if (ret < 0)
+        return ret;
+
+    ret = libjxl_init_jxl_encoder(avctx);
+    if (ret < 0)
+        return ret;
+
+    ctx->frame = av_frame_alloc();
+    if (!ctx->frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -240,54 +248,42 @@ static int libjxl_populate_primaries(void *avctx, JxlColorEncoding *jxl_color, e
 }
 
 /**
- * Encode an entire frame. Currently animation, is not supported by
- * this encoder, so this will always reinitialize a new still image
- * and encode a one-frame image (for image2 and image2pipe).
+ * Sends metadata to libjxl based on the first frame of the stream, such as pixel format,
+ * orientation, bit depth, and that sort of thing.
  */
-static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFrame *frame, int *got_packet)
+static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame, int animated)
 {
     LibJxlEncodeContext *ctx = avctx->priv_data;
+    int ret;
     AVFrameSideData *sd;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(frame->format);
     JxlBasicInfo info;
     JxlColorEncoding jxl_color;
-    JxlPixelFormat jxl_fmt;
+    JxlPixelFormat *jxl_fmt = &ctx->jxl_fmt;
     int bits_per_sample;
 #if JPEGXL_NUMERIC_VERSION >= JPEGXL_COMPUTE_NUMERIC_VERSION(0, 8, 0)
     JxlBitDepth jxl_bit_depth;
 #endif
-    JxlEncoderStatus jret;
-    int ret;
-    size_t available = ctx->buffer_size;
-    size_t bytes_written = 0;
-    uint8_t *next_out = ctx->buffer;
-    const uint8_t *data;
-
-    ret = libjxl_init_jxl_encoder(avctx);
-    if (ret) {
-        av_log(avctx, AV_LOG_ERROR, "Error frame-initializing JxlEncoder\n");
-        return ret;
-    }
 
     /* populate the basic info settings */
     JxlEncoderInitBasicInfo(&info);
-    jxl_fmt.num_channels = pix_desc->nb_components;
+    jxl_fmt->num_channels = pix_desc->nb_components;
     info.xsize = frame->width;
     info.ysize = frame->height;
-    info.num_extra_channels = (jxl_fmt.num_channels + 1) % 2;
-    info.num_color_channels = jxl_fmt.num_channels - info.num_extra_channels;
-    bits_per_sample = av_get_bits_per_pixel(pix_desc) / jxl_fmt.num_channels;
+    info.num_extra_channels = (jxl_fmt->num_channels + 1) & 0x1;
+    info.num_color_channels = jxl_fmt->num_channels - info.num_extra_channels;
+    bits_per_sample = av_get_bits_per_pixel(pix_desc) / jxl_fmt->num_channels;
     info.bits_per_sample = avctx->bits_per_raw_sample > 0 && !(pix_desc->flags & AV_PIX_FMT_FLAG_FLOAT)
                            ? avctx->bits_per_raw_sample : bits_per_sample;
     info.alpha_bits = (info.num_extra_channels > 0) * info.bits_per_sample;
     if (pix_desc->flags & AV_PIX_FMT_FLAG_FLOAT) {
         info.exponent_bits_per_sample = info.bits_per_sample > 16 ? 8 : 5;
         info.alpha_exponent_bits = info.alpha_bits ? info.exponent_bits_per_sample : 0;
-        jxl_fmt.data_type = info.bits_per_sample > 16 ? JXL_TYPE_FLOAT : JXL_TYPE_FLOAT16;
+        jxl_fmt->data_type = info.bits_per_sample > 16 ? JXL_TYPE_FLOAT : JXL_TYPE_FLOAT16;
     } else {
         info.exponent_bits_per_sample = 0;
         info.alpha_exponent_bits = 0;
-        jxl_fmt.data_type = info.bits_per_sample <= 8 ? JXL_TYPE_UINT8 : JXL_TYPE_UINT16;
+        jxl_fmt->data_type = info.bits_per_sample <= 8 ? JXL_TYPE_UINT8 : JXL_TYPE_UINT16;
     }
 
 #if JPEGXL_NUMERIC_VERSION >= JPEGXL_COMPUTE_NUMERIC_VERSION(0, 8, 0)
@@ -306,7 +302,18 @@ static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFra
 
     /* bitexact lossless requires there to be no XYB transform */
     info.uses_original_profile = ctx->distance == 0.0 || !ctx->xyb;
+
+    /* libjxl doesn't support negative linesizes so we use orientation to work around this */
     info.orientation = frame->linesize[0] >= 0 ? JXL_ORIENT_IDENTITY : JXL_ORIENT_FLIP_VERTICAL;
+
+    if (animated) {
+        info.have_animation = 1;
+        info.animation.have_timecodes = 0;
+        info.animation.num_loops = 0;
+        /* avctx->timebase is in seconds per tick, so we take the reciprocol */
+        info.animation.tps_numerator = avctx->time_base.den;
+        info.animation.tps_denominator = avctx->time_base.num;
+    }
 
     if (JxlEncoderSetBasicInfo(ctx->encoder, &info) != JXL_ENC_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to set JxlBasicInfo\n");
@@ -386,25 +393,70 @@ static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFra
             av_log(avctx, AV_LOG_WARNING, "Could not increase codestream level\n");
     }
 
-    jxl_fmt.endianness = JXL_NATIVE_ENDIAN;
-    if (frame->linesize[0] >= 0) {
-        jxl_fmt.align = frame->linesize[0];
-        data = frame->data[0];
-    } else {
-        jxl_fmt.align = -frame->linesize[0];
-        data = frame->data[0] + frame->linesize[0] * (info.ysize - 1);
+    return 0;
+}
+
+/**
+ * Sends frame information to libjxl on a per-frame basis. If this is a still image,
+ * this is evaluated once per output file. If this is an animated JPEG XL encode, it
+ * is called once per frame.
+ *
+ * This returns a buffer to the data that should be passed to libjxl (via the
+ * argument **data). If the linesize is nonnegative, this will be frame->data[0],
+ * although if the linesize is negative, it will be the start of the buffer
+ * instead. *data is just a pointer to a location in frame->data so it should not be
+ * freed directly.
+ */
+static int libjxl_preprocess_frame(AVCodecContext *avctx, const AVFrame *frame, const uint8_t **data)
+{
+    LibJxlEncodeContext *ctx = avctx->priv_data;
+    JxlPixelFormat *jxl_fmt = &ctx->jxl_fmt;
+
+    /* these shouldn't fail, libjxl bug notwithstanding */
+    if (JxlEncoderFrameSettingsSetOption(ctx->options, JXL_ENC_FRAME_SETTING_EFFORT, ctx->effort)
+            != JXL_ENC_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to set effort to: %d\n", ctx->effort);
+        return AVERROR_EXTERNAL;
     }
 
-    if (JxlEncoderAddImageFrame(ctx->options, &jxl_fmt, data, jxl_fmt.align * info.ysize) != JXL_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to add Image Frame\n");
+    if (JxlEncoderSetFrameDistance(ctx->options, ctx->distance) != JXL_ENC_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to set distance: %f\n", ctx->distance);
         return AVERROR_EXTERNAL;
     }
 
     /*
-     * Run this after the last frame in the image has been passed.
-     * TODO support animation
+     * In theory the library should automatically enable modular if necessary,
+     * but it appears it won't at the moment due to a bug. This will still
+     * work even if that is patched.
      */
-    JxlEncoderCloseInput(ctx->encoder);
+    if (JxlEncoderFrameSettingsSetOption(ctx->options, JXL_ENC_FRAME_SETTING_MODULAR,
+            ctx->modular || ctx->distance <= 0.0 ? 1 : -1) != JXL_ENC_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to set modular\n");
+        return AVERROR_EXTERNAL;
+    }
+
+    jxl_fmt->endianness = JXL_NATIVE_ENDIAN;
+    if (frame->linesize[0] >= 0) {
+        jxl_fmt->align = frame->linesize[0];
+        *data = frame->data[0];
+    } else {
+        jxl_fmt->align = -frame->linesize[0];
+        *data = frame->data[0] + frame->linesize[0] * (frame->height - 1);
+    }
+
+    return 0;
+}
+
+/**
+ * Run libjxl's output processing loop, reallocating the packet as necessary
+ * if libjxl needs more space to work with.
+ */
+static int libjxl_process_output(AVCodecContext *avctx, size_t *bytes_written)
+{
+    LibJxlEncodeContext *ctx = avctx->priv_data;
+    JxlEncoderStatus jret;
+    size_t available = ctx->buffer_size;
+    uint8_t *next_out = ctx->buffer;
 
     while (1) {
         jret = JxlEncoderProcessOutput(ctx->encoder, &next_out, &available);
@@ -412,7 +464,7 @@ static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFra
             av_log(avctx, AV_LOG_ERROR, "Unspecified libjxl error occurred\n");
             return AVERROR_EXTERNAL;
         }
-        bytes_written = ctx->buffer_size - available;
+        *bytes_written = ctx->buffer_size - available;
         /* all data passed has been encoded */
         if (jret == JXL_ENC_SUCCESS)
             break;
@@ -429,13 +481,57 @@ static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFra
                 return AVERROR(ENOMEM);
             ctx->buffer = temp;
             ctx->buffer_size = new_size;
-            next_out = ctx->buffer + bytes_written;
-            available = new_size - bytes_written;
+            next_out = ctx->buffer + *bytes_written;
+            available = new_size - *bytes_written;
             continue;
         }
         av_log(avctx, AV_LOG_ERROR, "Bad libjxl event: %d\n", jret);
         return AVERROR_EXTERNAL;
     }
+
+    return 0;
+}
+
+/**
+ * Encode an entire frame. This will always reinitialize a new still image
+ * and encode a one-frame image (for image2 and image2pipe).
+ */
+static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFrame *frame, int *got_packet)
+{
+
+    LibJxlEncodeContext *ctx = avctx->priv_data;
+    int ret;
+    size_t bytes_written = 0;
+    const uint8_t *data;
+
+    ret = libjxl_init_jxl_encoder(avctx);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error frame-initializing JxlEncoder\n");
+        return ret;
+    }
+
+    ret = libjxl_preprocess_stream(avctx, frame, 0);
+    if (ret < 0)
+        return ret;
+
+    ret = libjxl_preprocess_frame(avctx, frame, &data);
+    if (ret < 0)
+        return ret;
+
+    if (JxlEncoderAddImageFrame(ctx->options, &ctx->jxl_fmt, data, ctx->jxl_fmt.align * frame->height)
+            != JXL_ENC_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to add Image Frame\n");
+        return AVERROR_EXTERNAL;
+    }
+
+    /*
+     * Run this after the last frame in the image has been passed.
+     */
+    JxlEncoderCloseInput(ctx->encoder);
+
+    ret = libjxl_process_output(avctx, &bytes_written);
+    if (ret < 0)
+        return ret;
 
     ret = ff_get_encode_buffer(avctx, pkt, bytes_written, 0);
     if (ret < 0)
@@ -445,6 +541,94 @@ static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFra
     *got_packet = 1;
 
     return 0;
+}
+
+/**
+ * Encode one frame of the animation. libjxl requires us to set duration of the frame
+ * but we're only promised the PTS, not the duration. As a result we have to buffer
+ * a frame and subtract the PTS from the last PTS. The last frame uses the previous
+ * frame's calculated duration as a fallback if its duration field is unset.
+ *
+ * We also need to tell libjxl if our frame is the last one, which we won't know upon
+ * receiving a single frame, so we have to buffer a frame as well and send the "last frame"
+ * upon receiving the special EOF frame.
+ */
+static int libjxl_anim_encode_frame(AVCodecContext *avctx, AVPacket *pkt)
+{
+    LibJxlEncodeContext *ctx = avctx->priv_data;
+    int ret = 0;
+    JxlFrameHeader frame_header;
+    size_t bytes_written = 0;
+    const uint8_t *data;
+
+    if (!ctx->prev) {
+        ctx->prev = av_frame_alloc();
+        if (!ctx->prev)
+            return AVERROR(ENOMEM);
+        ret = ff_encode_get_frame(avctx, ctx->prev);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+            return ret;
+        ret = libjxl_preprocess_stream(avctx, ctx->prev, 1);
+        if (ret < 0)
+            return ret;
+    }
+
+    ret = ff_encode_get_frame(avctx, ctx->frame);
+    if (ret == AVERROR_EOF) {
+        av_frame_free(&ctx->frame);
+        ret = 0;
+    }
+    if (ret == AVERROR(EAGAIN))
+        return ret;
+
+    JxlEncoderInitFrameHeader(&frame_header);
+
+    ctx->duration = ctx->prev->duration ? ctx->prev->duration :
+                    ctx->frame ? ctx->frame->pts - ctx->prev->pts :
+                    ctx->duration ? ctx->duration :
+                    1;
+
+    frame_header.duration = ctx->duration;
+    pkt->duration = ctx->duration;
+    pkt->pts = ctx->prev->pts;
+    pkt->dts = pkt->pts;
+
+    if (JxlEncoderSetFrameHeader(ctx->options, &frame_header) != JXL_ENC_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to set JxlFrameHeader\n");
+        return AVERROR_EXTERNAL;
+    }
+
+    ret = libjxl_preprocess_frame(avctx, ctx->prev, &data);
+    if (ret < 0)
+        return ret;
+
+    if (JxlEncoderAddImageFrame(ctx->options, &ctx->jxl_fmt, data, ctx->jxl_fmt.align * ctx->prev->height)
+            != JXL_ENC_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to add Image Frame\n");
+        return AVERROR_EXTERNAL;
+    }
+
+    if (!ctx->frame)
+        JxlEncoderCloseInput(ctx->encoder);
+
+    ret = libjxl_process_output(avctx, &bytes_written);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_get_encode_buffer(avctx, pkt, bytes_written, 0);
+    if (ret < 0)
+        return ret;
+
+    memcpy(pkt->data, ctx->buffer, bytes_written);
+
+    if (ctx->frame) {
+        av_frame_unref(ctx->prev);
+        av_frame_move_ref(ctx->prev, ctx->frame);
+    } else {
+        av_frame_free(&ctx->prev);
+    }
+
+    return ret;
 }
 
 static av_cold int libjxl_encode_close(AVCodecContext *avctx)
@@ -464,6 +648,8 @@ static av_cold int libjxl_encode_close(AVCodecContext *avctx)
     ctx->encoder = NULL;
 
     av_freep(&ctx->buffer);
+    av_frame_free(&ctx->prev);
+    av_frame_free(&ctx->frame);
 
     return 0;
 }
@@ -488,6 +674,16 @@ static const AVClass libjxl_encode_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static const enum AVPixelFormat libjxl_supported_pixfmts[] = {
+    AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
+    AV_PIX_FMT_RGB48, AV_PIX_FMT_RGBA64,
+    AV_PIX_FMT_RGBF32, AV_PIX_FMT_RGBAF32,
+    AV_PIX_FMT_GRAY8, AV_PIX_FMT_YA8,
+    AV_PIX_FMT_GRAY16, AV_PIX_FMT_YA16,
+    AV_PIX_FMT_GRAYF32,
+    AV_PIX_FMT_NONE,
+};
+
 const FFCodec ff_libjxl_encoder = {
     .p.name           = "libjxl",
     CODEC_LONG_NAME("libjxl JPEG XL"),
@@ -503,15 +699,27 @@ const FFCodec ff_libjxl_encoder = {
     .caps_internal    = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                         FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_INIT_CLEANUP |
                         FF_CODEC_CAP_ICC_PROFILES,
-    .p.pix_fmts       = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
-        AV_PIX_FMT_RGB48, AV_PIX_FMT_RGBA64,
-        AV_PIX_FMT_RGBF32, AV_PIX_FMT_RGBAF32,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_YA8,
-        AV_PIX_FMT_GRAY16, AV_PIX_FMT_YA16,
-        AV_PIX_FMT_GRAYF32,
-        AV_PIX_FMT_NONE
-    },
+    .p.pix_fmts       = libjxl_supported_pixfmts,
+    .p.priv_class     = &libjxl_encode_class,
+    .p.wrapper_name   = "libjxl",
+};
+
+const FFCodec ff_libjxl_anim_encoder = {
+    .p.name           = "libjxl_anim",
+    CODEC_LONG_NAME("libjxl JPEG XL animated"),
+    .p.type           = AVMEDIA_TYPE_VIDEO,
+    .p.id             = AV_CODEC_ID_JPEGXL_ANIM,
+    .priv_data_size   = sizeof(LibJxlEncodeContext),
+    .init             = libjxl_anim_encode_init,
+    FF_CODEC_RECEIVE_PACKET_CB(libjxl_anim_encode_frame),
+    .close            = libjxl_encode_close,
+    .p.capabilities   = AV_CODEC_CAP_OTHER_THREADS |
+                        AV_CODEC_CAP_DR1 |
+                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
+    .caps_internal    = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
+                        FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_INIT_CLEANUP |
+                        FF_CODEC_CAP_ICC_PROFILES,
+    .p.pix_fmts       = libjxl_supported_pixfmts,
     .p.priv_class     = &libjxl_encode_class,
     .p.wrapper_name   = "libjxl",
 };

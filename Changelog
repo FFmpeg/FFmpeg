@@ -9,6 +9,7 @@ version <next>:
 - libx265 alpha layer encoding
 - ADPCM IMA Xbox decoder
 - Enhanced FLV v2: Multitrack audio/video, modern codec support
+- Animated JPEG XL encoding (via libjxl)
 
 version 7.1:
 - Raw Captions with Time (RCWT) closed caption demuxer
