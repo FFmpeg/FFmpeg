@@ -20,15 +20,30 @@
 
 #include "libavutil/riscv/asm.S"
 
-.macro manual_avg dst src1 src2
-        vadd.vv         \dst, \src1, \src2
-        vadd.vi         \dst, \dst, 1
-        vsrl.vi         \dst, \dst, 1
-.endm
+const rv40_bias
+    .byte  0, 16, 32, 16
+    .byte 32, 28, 32, 28
+    .byte  0, 32, 16, 32
+    .byte 32, 28, 32, 28
+endconst
 
 .macro  do_chroma_mc type unroll
-        csrwi           vxrm, 2
+        csrwi           vxrm, 0
+        addi            sp, sp, -16
+#if __riscv_xlen == 32
+        sw              s2, (sp)
+#elif __riscv_xlen == 64
+        sd              s2, (sp)
+#else
+        sq              s2, (sp)
+#endif
+        lla             t4, rv40_bias
+        srli            t5, a5, 1
+        sh2add          t4, t5, t4
+        srli            t5, a4, 1
+        add             t5, t4, t5
         slli            t2, a5, 3
+        lb              s2, (t5)
         mul             t1, a5, a4
         sh3add          a5, a4, t2
         slli            a4, a4, 3
@@ -80,17 +95,19 @@
         vwmulu.vx       v12, v14, a6
         vwmaccu.vx      v10, t1, v15
         vwmaccu.vx      v12, a7, v15
-        vnclipu.wi      v15, v8, 6
+        vwaddu.wx       v20, v8, s2
+        vnsrl.wi        v15, v20, 6
   .ifc \type,avg
         vle8.v          v9, (a0)
-        manual_avg      v15, v15, v9
+        vaaddu.vv       v15, v15, v9
   .endif
         vse8.v          v15, (a0)
         add             a0, a0, a2
-        vnclipu.wi      v8, v10, 6
+        vwaddu.wx       v20, v10, s2
+        vnsrl.wi        v8, v20, 6
   .ifc \type,avg
         vle8.v          v9, (a0)
-        manual_avg      v8, v8, v9
+        vaaddu.vv       v8, v8, v9
   .endif
         add             t4, t4, t3
         vse8.v          v8, (a0)
@@ -115,17 +132,19 @@
         vslide1down.vx  v14, v14, t5
         vsetvli         zero, t6, e8, m1, ta, ma
         vwmaccu.vx      v16, t1, v14
-        vnclipu.wi      v8, v12, 6
+        vwaddu.wx       v20, v12, s2
+        vnsrl.wi        v8, v20, 6
   .ifc \type,avg
         vle8.v          v9, (a0)
-        manual_avg      v8, v8, v9
+        vaaddu.vv       v8, v8, v9
   .endif
         vse8.v          v8, (a0)
         add             a0, a0, a2
-        vnclipu.wi      v8, v16, 6
+        vwaddu.wx       v20, v16, s2
+        vnsrl.wi        v8, v20, 6
   .ifc \type,avg
         vle8.v          v9, (a0)
-        manual_avg      v8, v8, v9
+        vaaddu.vv       v8, v8, v9
   .endif
         vse8.v          v8, (a0)
         add             a0, a0, a2
@@ -159,18 +178,20 @@
         vwmaccu.vx      v10, t0, v8
         add             a4, a4, a7
         vwmaccu.vx      v12, t0, v9
-        vnclipu.wi      v15, v10, 6
+        vwaddu.wx       v20, v10, s2
+        vnsrl.wi        v15, v20, 6
         vwmulu.vx       v10, v9, a6
-        vnclipu.wi      v9, v12, 6
+        vwaddu.wx       v20, v12, s2
+        vnsrl.wi        v9, v20, 6
   .ifc \type,avg
         vle8.v          v16, (a0)
-        manual_avg      v15, v15, v16
+        vaaddu.vv       v15, v15, v16
   .endif
         vse8.v          v15, (a0)
         add             a0, a0, a2
   .ifc \type,avg
         vle8.v          v16, (a0)
-        manual_avg      v9, v9, v16
+        vaaddu.vv       v9, v9, v16
   .endif
         vse8.v          v9, (a0)
         add             a0, a0, a2
@@ -179,18 +200,20 @@
         vle8.v          v14, (a5)
         vwmaccu.vx      v10, t0, v8
         vwmulu.vx       v12, v8, a6
-        vnclipu.wi      v8, v10, 6
+        vwaddu.wx       v20, v10, s2
+        vnsrl.wi        v8, v20, 6
         vwmaccu.vx      v12, t0, v14
   .ifc \type,avg
         vle8.v          v16, (a0)
-        manual_avg      v8, v8, v16
+        vaaddu.vv       v8, v8, v16
   .endif
         vse8.v          v8, (a0)
         add             a0, a0, a2
-        vnclipu.wi      v8, v12, 6
+        vwaddu.wx       v20, v12, s2
+        vnsrl.wi        v8, v20, 6
   .ifc \type,avg
         vle8.v          v16, (a0)
-        manual_avg      v8, v8, v16
+        vaaddu.vv       v8, v8, v16
   .endif
         vse8.v          v8, (a0)
         add             a0, a0, a2
@@ -226,17 +249,19 @@
         vsetvli         zero, t6, e8, m1, ta, ma
         vwmulu.vx       v12, v8, a6
         vwmaccu.vx      v12, a7, v9
-        vnclipu.wi      v16, v10, 6
+        vwaddu.wx       v20, v10, s2
+        vnsrl.wi        v16, v20, 6
   .ifc \type,avg
         vle8.v          v18, (a0)
-        manual_avg      v16, v16, v18
+        vaaddu.vv       v16, v16, v18
   .endif
         vse8.v          v16, (a0)
         add             a0, a0, a2
-        vnclipu.wi      v10, v12, 6
+        vwaddu.wx       v20, v12, s2
+        vnsrl.wi        v10, v20, 6
   .ifc \type,avg
         vle8.v          v18, (a0)
-        manual_avg      v10, v10, v18
+        vaaddu.vv       v10, v10, v18
   .endif
         add             a4, a4, t1
         vse8.v          v10, (a0)
@@ -254,18 +279,20 @@
         vslide1down.vx  v9, v8, t5
         vsetvli         zero, t6, e8, m1, ta, ma
         vwmulu.vx       v12, v8, a6
-        vnclipu.wi      v8, v14, 6
+        vwaddu.wx       v20, v14, s2
+        vnsrl.wi        v8, v20, 6
         vwmaccu.vx      v12, a7, v9
   .ifc \type,avg
         vle8.v          v18, (a0)
-        manual_avg      v8, v8, v18
+        vaaddu.vv       v8, v8, v18
   .endif
         vse8.v          v8, (a0)
         add             a0, a0, a2
-        vnclipu.wi      v8, v12, 6
+        vwaddu.wx       v20, v12, s2
+        vnsrl.wi        v8, v20, 6
   .ifc \type,avg
         vle8.v          v18, (a0)
-        manual_avg      v8, v8, v18
+        vaaddu.vv       v8, v8, v18
   .endif
         vse8.v          v8, (a0)
         add             a0, a0, a2
@@ -293,18 +320,20 @@
         vwmulu.vx       v10, v8, a6
         vle8.v          v8, (t0)
         add             t0, t1, a2
-        vnclipu.wi      v13, v10, 6
+        vwaddu.wx       v20, v10, s2
+        vnsrl.wi        v13, v20, 6
         vwmulu.vx       v10, v8, a6
   .ifc \type,avg
         vle8.v          v18, (a5)
-        manual_avg      v13, v13, v18
+        vaaddu.vv       v13, v13, v18
   .endif
         vse8.v          v13, (a5)
         add             a5, a5, a2
-        vnclipu.wi      v8, v10, 6
+        vwaddu.wx       v20, v10, s2
+        vnsrl.wi        v8, v20, 6
   .ifc \type,avg
         vle8.v          v18, (a5)
-        manual_avg      v8, v8, v18
+        vaaddu.vv       v8, v8, v18
   .endif
         vse8.v          v8, (a5)
         add             a5, a5, a2
@@ -312,23 +341,34 @@
         vle8.v          v9, (t1)
         vle8.v          v12, (t0)
         vwmulu.vx       v10, v9, a6
-        vnclipu.wi      v8, v10, 6
+        vwaddu.wx       v20, v10, s2
+        vnsrl.wi        v8, v20, 6
         vwmulu.vx       v10, v12, a6
   .ifc \type,avg
         vle8.v          v18, (a5)
-        manual_avg      v8, v8, v18
+        vaaddu.vv       v8, v8, v18
   .endif
         vse8.v          v8, (a5)
         add             a5, a5, a2
-        vnclipu.wi      v8, v10, 6
+        vwaddu.wx       v20, v10, s2
+        vnsrl.wi        v8, v20, 6
   .ifc \type,avg
         vle8.v          v18, (a5)
-        manual_avg      v8, v8, v18
+        vaaddu.vv       v8, v8, v18
   .endif
         vse8.v          v8, (a5)
   .endif
         blt             t2, a3, 7b
 8:
+#if __riscv_xlen == 32
+        lw              s2, (sp)
+#elif __riscv_xlen == 64
+        ld              s2, (sp)
+#else
+        lq              s2, (sp)
+#endif
+        addi            sp, sp, 16
+
         ret
 .endm
 
