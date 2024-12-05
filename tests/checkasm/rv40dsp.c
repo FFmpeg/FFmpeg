@@ -27,7 +27,7 @@
 #define randomize_buffers()                  \
     do {                                     \
         for (int i = 0; i < 16*18*2; i++)    \
-            src[i] = rnd() & 0x3;            \
+            src[i] = rnd() & 0xff;           \
     } while (0)
 
 static void check_chroma_mc(void)
@@ -47,12 +47,12 @@ static void check_chroma_mc(void)
 #define CHECK_CHROMA_MC(name)                                                                     \
         do {                                                                                      \
             if (check_func(h.name## _pixels_tab[size], #name "_mc%d", 1 << (3 - size))) {         \
-                for (int x = 0; x < 2; x++) {                                                     \
-                    for (int y = 0; y < 2; y++) {                                                 \
+                for (int x = 0, mx = 0; x < 2; x++, mx = 1 + (rnd() % 7)) {                       \
+                    for (int y = 0, my = 0; y < 2; y++, my = 1 + (rnd() % 7)) {                   \
                         memcpy(dst0, src, 16 * 18);                                               \
                         memcpy(dst1, src, 16 * 18);                                               \
-                        call_ref(dst0, src, 16, 16, x, y);                                        \
-                        call_new(dst1, src, 16, 16, x, y);                                        \
+                        call_ref(dst0, src, 16, 16, mx, my);                                      \
+                        call_new(dst1, src, 16, 16, mx, my);                                      \
                         if (memcmp(dst0, dst1, 16 * 16)) {                                        \
                             fprintf(stderr, #name ": x:%i, y:%i\n", x, y);                        \
                             fail();                                                               \
