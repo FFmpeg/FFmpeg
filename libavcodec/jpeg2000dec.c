@@ -1886,10 +1886,10 @@ static void decode_sigpass(Jpeg2000T1Context *t1, int width, int height,
                     if (ff_mqc_decode(&t1->mqc, t1->mqc.cx_states + ff_jpeg2000_getsigctxno(t1->flags[(y+1) * t1->stride + x+1] & flags_mask, bandno))) {
                         int xorbit, ctxno = ff_jpeg2000_getsgnctxno(t1->flags[(y+1) * t1->stride + x+1] & flags_mask, &xorbit);
                         if (t1->mqc.raw) {
-                            t1->data[(y) * t1->stride + x] |= ff_mqc_decode(&t1->mqc, t1->mqc.cx_states + ctxno) << 31;
+                            t1->data[(y) * t1->stride + x] |= (uint32_t)(ff_mqc_decode(&t1->mqc, t1->mqc.cx_states + ctxno)) << 31;
                             t1->data[(y) * t1->stride + x] |= mask;
                         } else {
-                            t1->data[(y) * t1->stride + x] |= (ff_mqc_decode(&t1->mqc, t1->mqc.cx_states + ctxno) ^ xorbit) << 31;
+                            t1->data[(y) * t1->stride + x] |= (uint32_t)(ff_mqc_decode(&t1->mqc, t1->mqc.cx_states + ctxno) ^ xorbit) << 31;
                             t1->data[(y) * t1->stride + x] |= mask;
                         }
                         ff_jpeg2000_set_significance(t1, x, y,
@@ -1969,7 +1969,7 @@ static void decode_clnpass(const Jpeg2000DecoderContext *s, Jpeg2000T1Context *t
                     int xorbit;
                     int ctxno = ff_jpeg2000_getsgnctxno(t1->flags[(y + 1) * t1->stride + x + 1] & flags_mask,
                                                         &xorbit);
-                    t1->data[(y) * t1->stride + x] |= (ff_mqc_decode(&t1->mqc, t1->mqc.cx_states + ctxno) ^ xorbit) << 31;
+                    t1->data[(y) * t1->stride + x] |= (uint32_t)(ff_mqc_decode(&t1->mqc, t1->mqc.cx_states + ctxno) ^ xorbit) << 31;
                     t1->data[(y) * t1->stride + x] |= mask;
                     ff_jpeg2000_set_significance(t1, x, y, t1->data[(y) * t1->stride + x] & INT32_MIN);
                 }

@@ -1070,7 +1070,7 @@ static void jpeg2000_process_stripes_block(StateVars *sig_prop, int i_s, int j_s
             uint8_t *state_p = block_states + (i + 1) * stride + (j + 1);
             if ((state_p[0] >> HT_SHIFT_REF) & 1) {
                 bit = jpeg2000_peek_bit(sig_prop, magref_segment, magref_length);
-                *sp |= (int32_t)bit << 31;
+                *sp |= (uint32_t)bit << 31;
             }
         }
     }
@@ -1160,7 +1160,7 @@ jpeg2000_decode_magref_segment( uint16_t width, uint16_t block_height, const int
                     jpeg2000_modify_state(i, j, stride, 1 << HT_SHIFT_REF_IND, block_states);
                     bit = jpeg2000_import_magref_bit(&mag_ref, magref_segment, magref_length);
                     tmp = 0xFFFFFFFE | (uint32_t)bit;
-                    tmp <<= pLSB;
+                    tmp = (uint32_t)tmp << pLSB;
                     sp[0] &= tmp;
                     sp[0] |= 1 << (pLSB - 1); // Add 0.5 (reconstruction parameter = 1/2)
                 }
@@ -1176,7 +1176,7 @@ jpeg2000_decode_magref_segment( uint16_t width, uint16_t block_height, const int
                 jpeg2000_modify_state(i, j, stride, 1 << HT_SHIFT_REF_IND, block_states);
                 bit = jpeg2000_import_magref_bit(&mag_ref, magref_segment, magref_length);
                 tmp = 0xFFFFFFFE | (uint32_t)bit;
-                tmp <<= pLSB;
+                tmp = (uint32_t)tmp << pLSB;
                 sp[0] &= tmp;
                 sp[0] |= 1 << (pLSB - 1); // Add 0.5 (reconstruction parameter = 1/2)
             }
