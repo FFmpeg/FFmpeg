@@ -6544,15 +6544,15 @@ static int check_pkt(AVFormatContext *s, MOVTrack *trk, AVPacket *pkt)
 
     duration = pkt->dts - ref;
     if (pkt->dts < ref || duration >= INT_MAX) {
-        av_log(s, AV_LOG_WARNING, "Packet duration: %"PRId64" / dts: %"PRId64" is out of range\n",
-               duration, pkt->dts);
+        av_log(s, AV_LOG_WARNING, "Packet duration: %"PRId64" / dts: %"PRId64" in stream %d is out of range\n",
+               duration, pkt->dts, pkt->stream_index);
 
         pkt->dts = ref + 1;
         pkt->pts = AV_NOPTS_VALUE;
     }
 
     if (pkt->duration < 0 || pkt->duration > INT_MAX) {
-        av_log(s, AV_LOG_ERROR, "Application provided duration: %"PRId64" is invalid\n", pkt->duration);
+        av_log(s, AV_LOG_ERROR, "Application provided duration: %"PRId64" in stream %d is invalid\n", pkt->duration, pkt->stream_index);
         return AVERROR(EINVAL);
     }
     return 0;
