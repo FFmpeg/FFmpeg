@@ -120,7 +120,7 @@ static void print_peak(AVFilterContext *ctx, const char *str, uint32_t peak)
     if (!peak)
         av_log(ctx, AV_LOG_INFO, "unknown");
     else
-        av_log(ctx, AV_LOG_INFO, "%f", (float)peak / UINT32_MAX);
+        av_log(ctx, AV_LOG_INFO, "%f", peak / 100000.0f);
     av_log(ctx, AV_LOG_INFO, ", ");
 }
 
