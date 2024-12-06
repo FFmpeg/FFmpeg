@@ -2684,7 +2684,7 @@ SwsFormat ff_fmt_from_frame(const AVFrame *frame, int field)
     } else if (desc->flags & AV_PIX_FMT_FLAG_XYZ) {
         fmt.csp   = AVCOL_SPC_UNSPECIFIED;
         fmt.color = (SwsColor) {
-            .prim = AVCOL_PRI_SMPTE428,
+            .prim = AVCOL_PRI_BT709, /* swscale currently hard-codes this XYZ matrix */
             .trc  = AVCOL_TRC_SMPTE428,
         };
     } else if (desc->nb_components < 3) {
