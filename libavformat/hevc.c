@@ -82,6 +82,8 @@ typedef struct HEVCDecoderConfigurationRecord {
     uint8_t  lengthSizeMinusOne;
     uint8_t  numOfArrays;
     HVCCNALUnitArray arrays[NB_ARRAYS];
+
+    uint8_t alpha_layer_nuh_id;
 } HEVCDecoderConfigurationRecord;
 
 typedef struct HVCCProfileTierLevel {
@@ -149,6 +151,7 @@ static void hvcc_update_ptl(HEVCDecoderConfigurationRecord *hvcc,
 
 static void hvcc_parse_ptl(GetBitContext *gb,
                            HEVCDecoderConfigurationRecord *hvcc,
+                           int profile_present_flag,
                            unsigned int max_sub_layers_minus1)
 {
     unsigned int i;
@@ -156,13 +159,16 @@ static void hvcc_parse_ptl(GetBitContext *gb,
     uint8_t sub_layer_profile_present_flag[HEVC_MAX_SUB_LAYERS];
     uint8_t sub_layer_level_present_flag[HEVC_MAX_SUB_LAYERS];
 
-    general_ptl.profile_space               = get_bits(gb, 2);
-    general_ptl.tier_flag                   = get_bits1(gb);
-    general_ptl.profile_idc                 = get_bits(gb, 5);
-    general_ptl.profile_compatibility_flags = get_bits_long(gb, 32);
-    general_ptl.constraint_indicator_flags  = get_bits64(gb, 48);
-    general_ptl.level_idc                   = get_bits(gb, 8);
-    hvcc_update_ptl(hvcc, &general_ptl);
+    if (profile_present_flag) {
+        general_ptl.profile_space               = get_bits(gb, 2);
+        general_ptl.tier_flag                   = get_bits1(gb);
+        general_ptl.profile_idc                 = get_bits(gb, 5);
+        general_ptl.profile_compatibility_flags = get_bits_long(gb, 32);
+        general_ptl.constraint_indicator_flags  = get_bits64(gb, 48);
+        general_ptl.level_idc                   = get_bits(gb, 8);
+        hvcc_update_ptl(hvcc, &general_ptl);
+    } else
+        skip_bits(gb, 8); // general_level_idc
 
     for (i = 0; i < max_sub_layers_minus1; i++) {
         sub_layer_profile_present_flag[i] = get_bits1(gb);
@@ -384,15 +390,86 @@ static void skip_sub_layer_ordering_info(GetBitContext *gb)
     get_ue_golomb_long(gb); // max_latency_increase_plus1
 }
 
+static int hvcc_parse_vps_extension(GetBitContext *gb, HVCCNALUnit *nal,
+                                    HEVCDecoderConfigurationRecord *hvcc,
+                                    uint8_t vps_max_layers_minus1,
+                                    uint8_t vps_base_layer_internal_flag)
+{
+    uint8_t num_scalability_types = 0;
+    uint8_t max_layers_minus_1 = FFMIN(62, vps_max_layers_minus1);
+    uint8_t splitting_flag, vps_nuh_layer_id_present_flag;
+    uint8_t scalability_mask_flag[16] = { 0 };
+    uint8_t dimension_id_len[16] = { 0 };
+    uint8_t layer_id_in_nuh[64] = { 0 };
+    int i, j;
+
+    if (vps_max_layers_minus1 > 0 && vps_base_layer_internal_flag)
+        hvcc_parse_ptl(gb, hvcc, 0, nal->vps_max_sub_layers_minus1);
+
+    splitting_flag = get_bits(gb, 1);
+
+    for (i = 0; i < 16; i++)
+        if (get_bits(gb, 1))
+            scalability_mask_flag[num_scalability_types++] = i;
+
+    for (j = 0; j < (num_scalability_types - splitting_flag); j++)
+        dimension_id_len[j] = get_bits(gb, 3) + 1;
+
+    vps_nuh_layer_id_present_flag = get_bits(gb, 1);
+
+    for (i = 1; i <= max_layers_minus_1; i++) {
+        if (vps_nuh_layer_id_present_flag)
+            layer_id_in_nuh[i] = get_bits(gb, 6);
+        else
+            layer_id_in_nuh[i] = i;
+
+        if (!splitting_flag) {
+            for (j = 0; j < num_scalability_types; j++) {
+                int dimension_id = get_bits(gb, dimension_id_len[j]);
+
+                if (dimension_id == 1 /* AUX_ALPHA */ && scalability_mask_flag[j] == 3 /* AuxId */)
+                    hvcc->alpha_layer_nuh_id = layer_id_in_nuh[i];
+            }
+        }
+    }
+
+    if (splitting_flag) {
+        uint8_t dim_bit_offset[17] = { 0 };
+
+        dim_bit_offset[0] = 0;
+        for (j = 1; j < num_scalability_types; j++)
+            dim_bit_offset[j] = dim_bit_offset[j-1] + dimension_id_len[j-1];
+        dim_bit_offset[num_scalability_types] = 6;
+
+        if (num_scalability_types > 0 && dim_bit_offset[num_scalability_types - 1] >= 6)
+            return -1; // invalid bitstream
+
+        for (i = 1; i <= max_layers_minus_1; i++) {
+            for (j = 0; j < num_scalability_types; j++) {
+                int dimension_id = (layer_id_in_nuh[i] & ((1 << dim_bit_offset[j+1]) - 1)) >> dim_bit_offset[j];
+
+                if (dimension_id == 1 /* AUX_ALPHA */ && scalability_mask_flag[j] == 3 /* AuxId */)
+                    hvcc->alpha_layer_nuh_id = layer_id_in_nuh[i];
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int hvcc_parse_vps(GetBitContext *gb, HVCCNALUnit *nal,
                           HEVCDecoderConfigurationRecord *hvcc)
 {
+    uint8_t vps_base_layer_internal_flag, vps_max_layers_minus1;
+    uint8_t vps_sub_layer_ordering_info_present_flag, vps_max_layer_id;
+    int vps_num_layer_sets_minus1;
+    int i;
+
     nal->parameter_set_id = get_bits(gb, 4);
-    /*
-     * vps_reserved_three_2bits   u(2)
-     * vps_max_layers_minus1      u(6)
-     */
-    skip_bits(gb, 8);
+
+    vps_base_layer_internal_flag = get_bits(gb, 1);
+    skip_bits(gb, 1); // vps_base_layer_available_flag
+    vps_max_layers_minus1 = get_bits(gb, 6);
 
     nal->vps_max_sub_layers_minus1 = get_bits(gb, 3);
 
@@ -413,7 +490,50 @@ static int hvcc_parse_vps(GetBitContext *gb, HVCCNALUnit *nal,
      */
     skip_bits(gb, 17);
 
-    hvcc_parse_ptl(gb, hvcc, nal->vps_max_sub_layers_minus1);
+    hvcc_parse_ptl(gb, hvcc, 1, nal->vps_max_sub_layers_minus1);
+
+    vps_sub_layer_ordering_info_present_flag = get_bits(gb, 1);
+    for (i = (vps_sub_layer_ordering_info_present_flag ? 0 : nal->vps_max_sub_layers_minus1);
+         i <= nal->vps_max_sub_layers_minus1; i++) {
+        get_ue_golomb(gb); // vps_max_dec_pic_buffering_minus1
+        get_ue_golomb(gb); // vps_max_num_reorder_pics
+        get_ue_golomb(gb); // vps_max_latency_increase_plus1
+    }
+
+    vps_max_layer_id = get_bits(gb, 6);
+    vps_num_layer_sets_minus1 = get_ue_golomb(gb);
+    skip_bits_long(gb, (vps_max_layer_id + 1) * vps_num_layer_sets_minus1); // layer_id_included_flag[i][j]
+
+    if (get_bits(gb, 1)) { // vps_timing_info_present_flag
+        int vps_num_hrd_parameters;
+
+        skip_bits_long(gb, 64); // vps_num_units_in_tick, vps_time_scale
+
+        if (get_bits(gb, 1)) // vps_poc_proportional_to_timing_flag
+            get_ue_golomb(gb); // vps_num_ticks_poc_diff_one_minus1
+
+        vps_num_hrd_parameters = get_ue_golomb(gb); // vps_num_hrd_parameters
+
+        for (i = 0; i < vps_num_hrd_parameters; i++) {
+            int cprms_present_flag;
+
+            get_ue_golomb(gb); // hrd_layer_set_idx[i]
+            if (i > 0)
+                cprms_present_flag = get_bits(gb, 1);
+            else
+                cprms_present_flag = 1;
+
+            skip_hrd_parameters(gb, cprms_present_flag, nal->vps_max_sub_layers_minus1);
+        }
+    }
+
+    if (get_bits(gb, 1)) { // vps_extension_flag
+        align_get_bits(gb);
+        if (hvcc_parse_vps_extension(gb, nal, hvcc,
+                                     vps_max_layers_minus1,
+                                     vps_base_layer_internal_flag) < 0)
+            return 0;
+    }
 
     /* nothing useful for hvcC past this point */
     return 0;
@@ -551,7 +671,7 @@ static int hvcc_parse_sps(GetBitContext *gb, HVCCNALUnit *nal,
 
     if (!multi_layer_ext_sps_flag) {
         hvcc->temporalIdNested = get_bits1(gb);
-        hvcc_parse_ptl(gb, hvcc, sps_max_sub_layers_minus1);
+        hvcc_parse_ptl(gb, hvcc, 1, sps_max_sub_layers_minus1);
     }
 
     nal->parameter_set_id = get_ue_golomb_long(gb);
@@ -762,7 +882,7 @@ static int hvcc_add_nal_unit(const uint8_t *nal_buf, uint32_t nal_size,
         goto end;
 
     nal_unit_parse_header(&gbc, &nal_type, &nuh_layer_id);
-    if (!is_lhvc && nuh_layer_id > 0)
+    if (!is_lhvc && nuh_layer_id > 0 && nuh_layer_id != hvcc->alpha_layer_nuh_id)
         goto end;
 
     /*
