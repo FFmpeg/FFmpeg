@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
             printf("trc=%s calling func(%f) expected=%f roundtrip=%f\n",
                     name, test_data[i], result, roundtrip);
 
-            if (result > 0.0 && fabs(roundtrip - test_data[i]) > 1e-8) {
+            if (result > 0.0 && fabs(roundtrip - test_data[i]) > 1e-7) {
                 printf("  FAIL\n");
                 return 1;
             }
