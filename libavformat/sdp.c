@@ -236,7 +236,8 @@ fail_in_loop:
     return 0;
 }
 
-static int extradata2psets_hevc(const AVCodecParameters *par, char **out)
+static int extradata2psets_hevc(AVFormatContext *fmt, const AVCodecParameters *par,
+                                char **out)
 {
     char *psets;
     uint8_t *extradata = par->extradata;
@@ -260,7 +261,7 @@ static int extradata2psets_hevc(const AVCodecParameters *par, char **out)
         if (ret < 0)
             return ret;
 
-        ret = ff_isom_write_hvcc(pb, par->extradata, par->extradata_size, 0);
+        ret = ff_isom_write_hvcc(pb, par->extradata, par->extradata_size, 0, fmt);
         if (ret < 0) {
             avio_close_dyn_buf(pb, &tmpbuf);
             goto err;
@@ -571,7 +572,7 @@ static int sdp_write_media_attributes(char *buff, int size, const AVStream *st,
         break;
     case AV_CODEC_ID_HEVC:
         if (p->extradata_size) {
-            ret = extradata2psets_hevc(p, &config);
+            ret = extradata2psets_hevc(fmt, p, &config);
             if (ret < 0)
                 return ret;
         }

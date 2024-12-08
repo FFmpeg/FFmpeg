@@ -838,8 +838,8 @@ static void hvcc_close(HEVCDecoderConfigurationRecord *hvcc)
     }
 }
 
-static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc,
-                      int flags)
+static int hvcc_write(void *logctx, AVIOContext *pb,
+                      HEVCDecoderConfigurationRecord *hvcc, int flags)
 {
     uint16_t numNalus[NB_ARRAYS] = { 0 };
     int is_lhvc = !!(flags & FLAG_IS_LHVC);
@@ -891,46 +891,46 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc,
         numOfArrays += (numNalus[i] > 0);
     }
 
-    av_log(NULL, AV_LOG_TRACE,  "%s\n", is_lhvc ? "lhvC" : "hvcC");
-    av_log(NULL, AV_LOG_TRACE,  "configurationVersion:                %"PRIu8"\n",
+    av_log(logctx, AV_LOG_TRACE,  "%s\n", is_lhvc ? "lhvC" : "hvcC");
+    av_log(logctx, AV_LOG_TRACE,  "configurationVersion:              %"PRIu8"\n",
             hvcc->configurationVersion);
     if (!is_lhvc) {
-        av_log(NULL, AV_LOG_TRACE,  "general_profile_space:               %"PRIu8"\n",
+        av_log(logctx, AV_LOG_TRACE,  "general_profile_space:             %"PRIu8"\n",
                 hvcc->general_profile_space);
-        av_log(NULL, AV_LOG_TRACE,  "general_tier_flag:                   %"PRIu8"\n",
+        av_log(logctx, AV_LOG_TRACE,  "general_tier_flag:                 %"PRIu8"\n",
                 hvcc->general_tier_flag);
-        av_log(NULL, AV_LOG_TRACE,  "general_profile_idc:                 %"PRIu8"\n",
+        av_log(logctx, AV_LOG_TRACE,  "general_profile_idc:               %"PRIu8"\n",
                 hvcc->general_profile_idc);
-        av_log(NULL, AV_LOG_TRACE, "general_profile_compatibility_flags: 0x%08"PRIx32"\n",
+        av_log(logctx, AV_LOG_TRACE, "general_profile_compatibility_flags: 0x%08"PRIx32"\n",
                 hvcc->general_profile_compatibility_flags);
-        av_log(NULL, AV_LOG_TRACE, "general_constraint_indicator_flags:  0x%012"PRIx64"\n",
+        av_log(logctx, AV_LOG_TRACE, "general_constraint_indicator_flags:  0x%012"PRIx64"\n",
                 hvcc->general_constraint_indicator_flags);
-        av_log(NULL, AV_LOG_TRACE,  "general_level_idc:                   %"PRIu8"\n",
+        av_log(logctx, AV_LOG_TRACE,  "general_level_idc:                 %"PRIu8"\n",
                 hvcc->general_level_idc);
     }
-    av_log(NULL, AV_LOG_TRACE,  "min_spatial_segmentation_idc:        %"PRIu16"\n",
+    av_log(logctx, AV_LOG_TRACE,  "min_spatial_segmentation_idc:      %"PRIu16"\n",
             hvcc->min_spatial_segmentation_idc);
-    av_log(NULL, AV_LOG_TRACE,  "parallelismType:                     %"PRIu8"\n",
+    av_log(logctx, AV_LOG_TRACE,  "parallelismType:                   %"PRIu8"\n",
             hvcc->parallelismType);
     if (!is_lhvc) {
-        av_log(NULL, AV_LOG_TRACE,  "chromaFormat:                        %"PRIu8"\n",
+        av_log(logctx, AV_LOG_TRACE,  "chromaFormat:                      %"PRIu8"\n",
                 hvcc->chromaFormat);
-        av_log(NULL, AV_LOG_TRACE,  "bitDepthLumaMinus8:                  %"PRIu8"\n",
+        av_log(logctx, AV_LOG_TRACE,  "bitDepthLumaMinus8:                %"PRIu8"\n",
                 hvcc->bitDepthLumaMinus8);
-        av_log(NULL, AV_LOG_TRACE,  "bitDepthChromaMinus8:                %"PRIu8"\n",
+        av_log(logctx, AV_LOG_TRACE,  "bitDepthChromaMinus8:              %"PRIu8"\n",
                 hvcc->bitDepthChromaMinus8);
-        av_log(NULL, AV_LOG_TRACE,  "avgFrameRate:                        %"PRIu16"\n",
+        av_log(logctx, AV_LOG_TRACE,  "avgFrameRate:                      %"PRIu16"\n",
                 hvcc->avgFrameRate);
-        av_log(NULL, AV_LOG_TRACE,  "constantFrameRate:                   %"PRIu8"\n",
+        av_log(logctx, AV_LOG_TRACE,  "constantFrameRate:                 %"PRIu8"\n",
                 hvcc->constantFrameRate);
     }
-    av_log(NULL, AV_LOG_TRACE,  "numTemporalLayers:                   %"PRIu8"\n",
+    av_log(logctx, AV_LOG_TRACE,  "numTemporalLayers:                 %"PRIu8"\n",
             hvcc->numTemporalLayers);
-    av_log(NULL, AV_LOG_TRACE,  "temporalIdNested:                    %"PRIu8"\n",
+    av_log(logctx, AV_LOG_TRACE,  "temporalIdNested:                  %"PRIu8"\n",
             hvcc->temporalIdNested);
-    av_log(NULL, AV_LOG_TRACE,  "lengthSizeMinusOne:                  %"PRIu8"\n",
+    av_log(logctx, AV_LOG_TRACE,  "lengthSizeMinusOne:                %"PRIu8"\n",
             hvcc->lengthSizeMinusOne);
-    av_log(NULL, AV_LOG_TRACE,  "numOfArrays:                         %"PRIu8"\n",
+    av_log(logctx, AV_LOG_TRACE,  "numOfArrays:                       %"PRIu8"\n",
             numOfArrays);
     for (unsigned i = 0, j = 0; i < FF_ARRAY_ELEMS(hvcc->arrays); i++) {
         const HVCCNALUnitArray *const array = &hvcc->arrays[i];
@@ -938,17 +938,17 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc,
         if (numNalus[i] == 0)
             continue;
 
-        av_log(NULL, AV_LOG_TRACE, "array_completeness[%u]:               %"PRIu8"\n",
+        av_log(logctx, AV_LOG_TRACE, "array_completeness[%u]:             %"PRIu8"\n",
                j, array->array_completeness);
-        av_log(NULL, AV_LOG_TRACE, "NAL_unit_type[%u]:                    %"PRIu8"\n",
+        av_log(logctx, AV_LOG_TRACE, "NAL_unit_type[%u]:                  %"PRIu8"\n",
                j, array->NAL_unit_type);
-        av_log(NULL, AV_LOG_TRACE, "numNalus[%u]:                         %"PRIu16"\n",
+        av_log(logctx, AV_LOG_TRACE, "numNalus[%u]:                       %"PRIu16"\n",
                j, numNalus[i]);
         for (unsigned k = 0; k < array->numNalus; k++) {
             if (is_lhvc && array->nal[k].nuh_layer_id == 0)
                 continue;
 
-            av_log(NULL, AV_LOG_TRACE,
+            av_log(logctx, AV_LOG_TRACE,
                     "nalUnitLength[%u][%u]:                 %"PRIu16"\n",
                    j, k, array->nal[k].nalUnitLength);
         }
@@ -1164,7 +1164,7 @@ static int hvcc_parse_nal_unit(const uint8_t *buf, uint32_t len, int type,
     return 0;
 }
 
-static int write_configuration_record(AVIOContext *pb, const uint8_t *data,
+static int write_configuration_record(void *logctx, AVIOContext *pb, const uint8_t *data,
                                       int size, int flags)
 {
     HEVCDecoderConfigurationRecord hvcc;
@@ -1235,7 +1235,7 @@ static int write_configuration_record(AVIOContext *pb, const uint8_t *data,
             }
         }
 
-        ret = hvcc_write(pb, &hvcc, flags);
+        ret = hvcc_write(logctx, pb, &hvcc, flags);
         goto end;
     } else if (!(AV_RB24(data) == 1 || AV_RB32(data) == 1)) {
         /* Not a valid Annex B start code prefix */
@@ -1264,7 +1264,7 @@ static int write_configuration_record(AVIOContext *pb, const uint8_t *data,
         buf += len;
     }
 
-    ret = hvcc_write(pb, &hvcc, flags);
+    ret = hvcc_write(logctx, pb, &hvcc, flags);
 
 end:
     hvcc_close(&hvcc);
@@ -1273,15 +1273,15 @@ end:
 }
 
 int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
-                       int size, int ps_array_completeness)
+                       int size, int ps_array_completeness, void *logctx)
 {
-    return write_configuration_record(pb, data, size,
+    return write_configuration_record(logctx, pb, data, size,
                                       !!ps_array_completeness * FLAG_ARRAY_COMPLETENESS);
 }
 
 int ff_isom_write_lhvc(AVIOContext *pb, const uint8_t *data,
-                       int size, int ps_array_completeness)
+                       int size, int ps_array_completeness, void *logctx)
 {
-    return write_configuration_record(pb, data, size,
+    return write_configuration_record(logctx, pb, data, size,
                                       (!!ps_array_completeness * FLAG_ARRAY_COMPLETENESS) | FLAG_IS_LHVC);
 }

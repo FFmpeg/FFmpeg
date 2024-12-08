@@ -91,11 +91,12 @@ int ff_hevc_annexb2mp4_buf(const uint8_t *buf_in, uint8_t **buf_out,
  * @param size size (in bytes) of the data buffer
  * @param ps_array_completeness whether all parameter sets are in the hvcC (1)
  *        or there may be additional parameter sets in the bitstream (0)
+ * @param logctx opaque struct starting with an AVClass element, used for logging
  * @return >=0 in case of success, a negative value corresponding to an AVERROR
  *         code in case of failure
  */
 int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
-                       int size, int ps_array_completeness);
+                       int size, int ps_array_completeness, void *logctx);
 
 /**
  * Writes L-HEVC extradata (parameter sets with nuh_layer_id > 0, as a
@@ -109,9 +110,10 @@ int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
  * @param size size (in bytes) of the data buffer
  * @param ps_array_completeness whether all parameter sets are in the lhvC (1)
  *        or there may be additional parameter sets in the bitstream (0)
+ * @param logctx opaque struct starting with an AVClass element, used for logging
  * @return >=0 in case of success, a negative value corresponding to an AVERROR
  *         code in case of failure
  */
 int ff_isom_write_lhvc(AVIOContext *pb, const uint8_t *data,
-                       int size, int ps_array_completeness);
+                       int size, int ps_array_completeness, void *logctx);
 #endif /* AVFORMAT_HEVC_H */

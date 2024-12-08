@@ -1550,20 +1550,20 @@ static int mov_write_vpcc_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
     return update_size(pb, pos);
 }
 
-static int mov_write_hvcc_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_hvcc_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
 
     avio_wb32(pb, 0);
     ffio_wfourcc(pb, "hvcC");
     if (track->tag == MKTAG('h','v','c','1'))
-        ff_isom_write_hvcc(pb, track->vos_data, track->vos_len, 1);
+        ff_isom_write_hvcc(pb, track->vos_data, track->vos_len, 1, s);
     else
-        ff_isom_write_hvcc(pb, track->vos_data, track->vos_len, 0);
+        ff_isom_write_hvcc(pb, track->vos_data, track->vos_len, 0, s);
     return update_size(pb, pos);
 }
 
-static int mov_write_lhvc_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_lhvc_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
     int ret;
@@ -1571,9 +1571,9 @@ static int mov_write_lhvc_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, 0);
     ffio_wfourcc(pb, "lhvC");
     if (track->tag == MKTAG('h','v','c','1'))
-        ret = ff_isom_write_lhvc(pb, track->vos_data, track->vos_len, 1);
+        ret = ff_isom_write_lhvc(pb, track->vos_data, track->vos_len, 1, s);
     else
-        ret = ff_isom_write_lhvc(pb, track->vos_data, track->vos_len, 0);
+        ret = ff_isom_write_lhvc(pb, track->vos_data, track->vos_len, 0, s);
 
     if (ret < 0) {
         avio_seek(pb, pos, SEEK_SET);
@@ -2710,9 +2710,9 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         mov_write_avid_tag(pb, track);
         avid = 1;
     } else if (track->par->codec_id == AV_CODEC_ID_HEVC) {
-        mov_write_hvcc_tag(pb, track);
+        mov_write_hvcc_tag(mov->fc, pb, track);
         if (track->st->disposition & AV_DISPOSITION_MULTILAYER) {
-            ret = mov_write_lhvc_tag(pb, track);
+            ret = mov_write_lhvc_tag(mov->fc, pb, track);
             if (ret < 0)
                 av_log(mov->fc, AV_LOG_WARNING, "Not writing 'lhvC' atom for multilayer stream.\n");
         }

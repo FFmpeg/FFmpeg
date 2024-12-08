@@ -695,7 +695,7 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, i
             }
 
             if (par->codec_id == AV_CODEC_ID_HEVC)
-                ff_isom_write_hvcc(pb, par->extradata, par->extradata_size, 0);
+                ff_isom_write_hvcc(pb, par->extradata, par->extradata_size, 0, s);
             else if (par->codec_id == AV_CODEC_ID_AV1)
                 ff_isom_write_av1c(pb, par->extradata, par->extradata_size, 1);
             else if (par->codec_id == AV_CODEC_ID_VP9)
