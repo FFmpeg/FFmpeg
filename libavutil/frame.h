@@ -666,6 +666,10 @@ typedef struct AVFrame {
  */
 #define AV_FRAME_FLAG_TOP_FIELD_FIRST (1 << 4)
 /**
+ * A flag to mark frames which were encoded losslessly from the input.
+ */
+#define AV_FRAME_FLAG_LOSSLESS        (1 << 5)
+/**
  * @}
  */
 
