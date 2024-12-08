@@ -949,6 +949,12 @@ static int hvcc_write(void *logctx, AVIOContext *pb,
                 continue;
 
             av_log(logctx, AV_LOG_TRACE,
+                    "nuh_layer_id[%u][%u]:                  %"PRIu8"\n",
+                   j, k, array->nal[k].nuh_layer_id);
+            av_log(logctx, AV_LOG_TRACE,
+                    "parameter_set_id[%u][%u]:              %"PRIu8"\n",
+                   j, k, array->nal[k].parameter_set_id);
+            av_log(logctx, AV_LOG_TRACE,
                     "nalUnitLength[%u][%u]:                 %"PRIu16"\n",
                    j, k, array->nal[k].nalUnitLength);
         }
