@@ -104,6 +104,7 @@ typedef struct InputFile {
 const char program_name[] = "ffprobe";
 const int program_birth_year = 2007;
 
+static int do_analyze_frames = 0;
 static int do_bitexact = 0;
 static int do_count_frames = 0;
 static int do_count_packets = 0;
@@ -385,6 +386,8 @@ static int nb_streams;
 static uint64_t *nb_streams_packets;
 static uint64_t *nb_streams_frames;
 static int *selected_streams;
+static int *streams_with_closed_captions;
+static int *streams_with_film_grain;
 
 #if HAVE_THREADS
 pthread_mutex_t log_mutex;
@@ -3072,6 +3075,16 @@ static av_always_inline int process_frame(WriterContext *w,
                 show_subtitle(w, &sub, ifile->streams[pkt->stream_index].st, fmt_ctx);
             else
                 show_frame(w, frame, ifile->streams[pkt->stream_index].st, fmt_ctx);
+
+        if (!is_sub && do_analyze_frames) {
+            for (int i = 0; i < frame->nb_side_data; i++) {
+                if (frame->side_data[i]->type == AV_FRAME_DATA_A53_CC)
+                    streams_with_closed_captions[pkt->stream_index] = 1;
+                else if (frame->side_data[i]->type == AV_FRAME_DATA_FILM_GRAIN_PARAMS)
+                    streams_with_film_grain[pkt->stream_index] = 1;
+            }
+        }
+
         if (is_sub)
             avsubtitle_free(&sub);
     }
@@ -3154,6 +3167,8 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
             REALLOCZ_ARRAY_STREAM(nb_streams_frames,  nb_streams, fmt_ctx->nb_streams);
             REALLOCZ_ARRAY_STREAM(nb_streams_packets, nb_streams, fmt_ctx->nb_streams);
             REALLOCZ_ARRAY_STREAM(selected_streams,   nb_streams, fmt_ctx->nb_streams);
+            REALLOCZ_ARRAY_STREAM(streams_with_closed_captions,   nb_streams, fmt_ctx->nb_streams);
+            REALLOCZ_ARRAY_STREAM(streams_with_film_grain,        nb_streams, fmt_ctx->nb_streams);
             nb_streams = fmt_ctx->nb_streams;
         }
         if (selected_streams[pkt->stream_index]) {
@@ -3337,8 +3352,11 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         if (dec_ctx) {
             print_int("coded_width",  dec_ctx->coded_width);
             print_int("coded_height", dec_ctx->coded_height);
-            print_int("closed_captions", !!(dec_ctx->properties & FF_CODEC_PROPERTY_CLOSED_CAPTIONS));
-            print_int("film_grain", !!(dec_ctx->properties & FF_CODEC_PROPERTY_FILM_GRAIN));
+
+            if (do_analyze_frames) {
+                print_int("closed_captions", streams_with_closed_captions[stream->index]);
+                print_int("film_grain",      streams_with_film_grain[stream->index]);
+            }
         }
         print_int("has_b_frames", par->video_delay);
         sar = av_guess_sample_aspect_ratio(fmt_ctx, stream, NULL);
@@ -4005,7 +4023,8 @@ static int probe_file(WriterContext *wctx, const char *filename,
     int ret, i;
     int section_id;
 
-    do_read_frames = do_show_frames || do_count_frames;
+    do_analyze_frames = do_analyze_frames && do_show_streams;
+    do_read_frames = do_show_frames || do_count_frames || do_analyze_frames;
     do_read_packets = do_show_packets || do_count_packets;
 
     ret = open_input_file(&ifile, filename, print_filename);
@@ -4018,6 +4037,8 @@ static int probe_file(WriterContext *wctx, const char *filename,
     REALLOCZ_ARRAY_STREAM(nb_streams_frames,0,ifile.fmt_ctx->nb_streams);
     REALLOCZ_ARRAY_STREAM(nb_streams_packets,0,ifile.fmt_ctx->nb_streams);
     REALLOCZ_ARRAY_STREAM(selected_streams,0,ifile.fmt_ctx->nb_streams);
+    REALLOCZ_ARRAY_STREAM(streams_with_closed_captions,0,ifile.fmt_ctx->nb_streams);
+    REALLOCZ_ARRAY_STREAM(streams_with_film_grain,0,ifile.fmt_ctx->nb_streams);
 
     for (i = 0; i < ifile.fmt_ctx->nb_streams; i++) {
         if (stream_specifier) {
@@ -4080,6 +4101,8 @@ end:
     av_freep(&nb_streams_frames);
     av_freep(&nb_streams_packets);
     av_freep(&selected_streams);
+    av_freep(&streams_with_closed_captions);
+    av_freep(&streams_with_film_grain);
 
     return ret;
 }
@@ -4602,6 +4625,7 @@ static const OptionDef real_options[] = {
     { "show_optional_fields",  OPT_TYPE_FUNC, OPT_FUNC_ARG, { .func_arg = &opt_show_optional_fields }, "show optional fields" },
     { "show_private_data",     OPT_TYPE_BOOL,        0, { &show_private_data }, "show private data" },
     { "private",               OPT_TYPE_BOOL,        0, { &show_private_data }, "same as show_private_data" },
+    { "analyze_frames",        OPT_TYPE_BOOL,        0, { &do_analyze_frames }, "analyze frames to provide additional stream-level information" },
     { "bitexact",              OPT_TYPE_BOOL,        0, {&do_bitexact}, "force bitexact output" },
     { "read_intervals",        OPT_TYPE_FUNC, OPT_FUNC_ARG, {.func_arg = opt_read_intervals}, "set read intervals", "read_intervals" },
     { "i",                     OPT_TYPE_FUNC, OPT_FUNC_ARG, {.func_arg = opt_input_file_i}, "read specified file", "input_file"},

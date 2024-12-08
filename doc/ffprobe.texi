@@ -351,6 +351,19 @@ while other writers always print them. This option enables one to control this b
 Valid values are @code{always}/@code{1}, @code{never}/@code{0} and @code{auto}/@code{-1}.
 Default is @var{auto}.
 
+@item -analyze_frames
+Analyze frames and/or their side data up to the provided read interval,
+providing additional information that may be useful at a stream level.
+Must be paired with the @option{-show_streams} option or it will have no effect.
+
+Currently, the additional fields provided by this option when enabled are the
+@code{closed_captions} and @code{film_grain} fields.
+
+For example, to analyze the first 20 seconds and populate these fields:
+@example
+ffprobe -show_streams -analyze_frames -read_intervals "%+20" INPUT
+@end example
+
 @item -bitexact
 Force bitexact output, useful to produce output which is not dependent
 on the specific build.
