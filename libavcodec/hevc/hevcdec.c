@@ -403,8 +403,12 @@ static int export_stream_params_from_sei(HEVCContext *s)
 {
     AVCodecContext *avctx = s->avctx;
 
+#if FF_API_CODEC_PROPS
+FF_DISABLE_DEPRECATION_WARNINGS
     if (s->sei.common.a53_caption.buf_ref)
         s->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (s->sei.common.alternative_transfer.present &&
         av_color_transfer_name(s->sei.common.alternative_transfer.preferred_transfer_characteristics) &&
@@ -412,9 +416,13 @@ static int export_stream_params_from_sei(HEVCContext *s)
         avctx->color_trc = s->sei.common.alternative_transfer.preferred_transfer_characteristics;
     }
 
+#if FF_API_CODEC_PROPS
+FF_DISABLE_DEPRECATION_WARNINGS
     if ((s->sei.common.film_grain_characteristics && s->sei.common.film_grain_characteristics->present) ||
         s->sei.common.aom_film_grain.enable)
         avctx->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     return 0;
 }

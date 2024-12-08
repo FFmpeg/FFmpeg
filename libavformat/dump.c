@@ -620,7 +620,11 @@ static void dump_stream_format(const AVFormatContext *ic, int i,
 
     // Fields which are missing from AVCodecParameters need to be taken from the AVCodecContext
     if (sti->avctx) {
+#if FF_API_CODEC_PROPS
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->properties   = sti->avctx->properties;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         avctx->codec        = sti->avctx->codec;
         avctx->qmin         = sti->avctx->qmin;
         avctx->qmax         = sti->avctx->qmax;

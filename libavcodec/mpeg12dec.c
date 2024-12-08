@@ -1919,7 +1919,11 @@ static void mpeg_set_cc_format(AVCodecContext *avctx, enum Mpeg2ClosedCaptionsFo
         av_log(avctx, AV_LOG_DEBUG, "CC: first seen substream is %s format\n", label);
     }
 
+#if FF_API_CODEC_PROPS
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 }
 
 static int mpeg_decode_a53_cc(AVCodecContext *avctx,

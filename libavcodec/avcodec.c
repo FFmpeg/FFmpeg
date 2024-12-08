@@ -647,12 +647,16 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         if (encode) {
             av_bprintf(&bprint, ", q=%d-%d", enc->qmin, enc->qmax);
         } else {
+#if FF_API_CODEC_PROPS
+FF_DISABLE_DEPRECATION_WARNINGS
             if (enc->properties & FF_CODEC_PROPERTY_CLOSED_CAPTIONS)
                 av_bprintf(&bprint, ", Closed Captions");
             if (enc->properties & FF_CODEC_PROPERTY_FILM_GRAIN)
                 av_bprintf(&bprint, ", Film Grain");
             if (enc->properties & FF_CODEC_PROPERTY_LOSSLESS)
                 av_bprintf(&bprint, ", lossless");
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         }
         break;
     case AVMEDIA_TYPE_AUDIO:

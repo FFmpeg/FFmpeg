@@ -682,8 +682,12 @@ static int decode_frame_header(AVCodecContext *avctx,
     s->s.h.uvac_qdelta = get_bits1(&s->gb) ? get_sbits_inv(&s->gb, 4) : 0;
     s->s.h.lossless    = s->s.h.yac_qi == 0 && s->s.h.ydc_qdelta == 0 &&
                        s->s.h.uvdc_qdelta == 0 && s->s.h.uvac_qdelta == 0;
+#if FF_API_CODEC_PROPS
+FF_DISABLE_DEPRECATION_WARNINGS
     if (s->s.h.lossless)
         avctx->properties |= FF_CODEC_PROPERTY_LOSSLESS;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     /* segmentation header info */
     if ((s->s.h.segmentation.enabled = get_bits1(&s->gb))) {

@@ -1806,15 +1806,18 @@ typedef struct AVCodecContext {
 #define FF_LEVEL_UNKNOWN -99
 #endif
 
+#if FF_API_CODEC_PROPS
     /**
      * Properties of the stream that gets decoded
      * - encoding: unused
      * - decoding: set by libavcodec
      */
+    attribute_deprecated
     unsigned properties;
 #define FF_CODEC_PROPERTY_LOSSLESS        0x00000001
 #define FF_CODEC_PROPERTY_CLOSED_CAPTIONS 0x00000002
 #define FF_CODEC_PROPERTY_FILM_GRAIN      0x00000004
+#endif
 
     /**
      * Skip loop filtering for selected frames.

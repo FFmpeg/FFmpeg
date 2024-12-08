@@ -807,7 +807,11 @@ int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
         if (!sd)
             av_buffer_unref(&a53->buf_ref);
         a53->buf_ref = NULL;
+#if FF_API_CODEC_PROPS
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
     ret = h2645_sei_to_side_data(avctx, sei, &frame->side_data, &frame->nb_side_data);
@@ -900,7 +904,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
         else
             fgc->present = fgc->persistence_flag;
 
+#if FF_API_CODEC_PROPS
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
 #if CONFIG_HEVC_SEI

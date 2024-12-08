@@ -788,10 +788,14 @@ static int set_context_with_sequence(AVCodecContext *avctx,
         break;
     }
 
+#if FF_API_CODEC_PROPS
+FF_DISABLE_DEPRECATION_WARNINGS
     if (seq->film_grain_params_present)
         avctx->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
     else
         avctx->properties &= ~FF_CODEC_PROPERTY_FILM_GRAIN;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     if (avctx->width != width || avctx->height != height) {
         int ret = ff_set_dimensions(avctx, width, height);
@@ -983,7 +987,11 @@ static int export_itut_t35(AVCodecContext *avctx, AVFrame *frame,
             if (ret < 0)
                 return ret;
 
+#if FF_API_CODEC_PROPS
+FF_DISABLE_DEPRECATION_WARNINGS
             avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             break;
         }
         default: // ignore unsupported identifiers
