@@ -61,7 +61,7 @@ enum IntraMode {
 };
 
 enum MVRefEnum {
-    MVREF_NONE,
+    MVREF_NONE = 0,
     MVREF_REF0,
     MVREF_REF1,
     MVREF_BREF,
@@ -1745,15 +1745,24 @@ static int decode_cu_r(RV60Context * s, AVFrame * frame, ThreadContext * thread,
             bx = mv_x << 2;
             by = mv_y << 2;
 
+            if (!(mv.mvref & 2)) {
+                if (!s->last_frame[LAST_PIC]->data[0]) {
+                    av_log(s->avctx, AV_LOG_ERROR, "missing reference frame\n");
+                    return AVERROR_INVALIDDATA;
+                }
+            }
+            if (mv.mvref & 6) {
+                if (!s->last_frame[NEXT_PIC]->data[0]) {
+                    av_log(s->avctx, AV_LOG_ERROR, "missing reference frame\n");
+                    return AVERROR_INVALIDDATA;
+                }
+            }
+
             switch (mv.mvref) {
             case MVREF_REF0:
                 mc(s, frame->data, frame->linesize, s->last_frame[LAST_PIC], bx, by, bw, bh, mv.f_mv, 0);
                 break;
             case MVREF_REF1:
-                if (!s->last_frame[NEXT_PIC]->data[0]) {
-                    av_log(s->avctx, AV_LOG_ERROR, "missing reference frame\n");
-                    return AVERROR_INVALIDDATA;
-                }
                 mc(s, frame->data, frame->linesize, s->last_frame[NEXT_PIC], bx, by, bw, bh, mv.f_mv, 0);
                 break;
             case MVREF_BREF:
