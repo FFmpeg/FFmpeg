@@ -395,10 +395,13 @@ static int read_slice_sizes(RV60Context *s, GetBitContext *gb)
     for (int i = 0; i < s->cu_height; i++)
         s->slice[i].sign = get_bits1(gb);
 
-    s->slice[0].size = last_size = sum = get_bits(gb, nbits);
+    s->slice[0].size = last_size = sum = get_bits_long(gb, nbits);
+
+    if (sum < 0)
+        return AVERROR_INVALIDDATA;
 
     for (int i = 1; i < s->cu_height; i++) {
-        int diff = get_bits(gb, nbits);
+        int diff = get_bits_long(gb, nbits);
         if (s->slice[i].sign)
             last_size += diff;
         else
