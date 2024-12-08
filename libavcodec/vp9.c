@@ -1592,6 +1592,10 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         f->flags |= AV_FRAME_FLAG_KEY;
     else
         f->flags &= ~AV_FRAME_FLAG_KEY;
+    if (s->s.h.lossless)
+        f->flags |= AV_FRAME_FLAG_LOSSLESS;
+    else
+        f->flags &= ~AV_FRAME_FLAG_LOSSLESS;
     f->pict_type = (s->s.h.keyframe || s->s.h.intraonly) ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
     // Non-existent frames have the implicit dimension 0x0 != CUR_FRAME

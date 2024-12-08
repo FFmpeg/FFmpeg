@@ -2891,6 +2891,10 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, AVFrame *picture,
         }
     }
 
+    for (int x = 0; x < s->ncomponents && s->codsty[x].transform == FF_DWT53;)
+        if (++x == s->ncomponents)
+            picture->flags |= AV_FRAME_FLAG_LOSSLESS;
+
     avctx->execute2(avctx, jpeg2000_decode_tile, picture, NULL, s->numXtiles * s->numYtiles);
 
     jpeg2000_dec_cleanup(s);
