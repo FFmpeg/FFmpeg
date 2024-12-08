@@ -10921,6 +10921,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         // Discard current fragment index
         if (mov->frag_index.allocated_size > 0) {
+            for(int i = 0; i < mov->frag_index.nb_items; i++) {
+                av_freep(&mov->frag_index.item[i].stream_info);
+            }
             av_freep(&mov->frag_index.item);
             mov->frag_index.nb_items = 0;
             mov->frag_index.allocated_size = 0;
