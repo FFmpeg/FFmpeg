@@ -23,6 +23,7 @@ sample_aspect_ratio=1:1
 pict_type=I
 interlaced_frame=1
 top_field_first=0
+lossless=0
 repeat_pict=0
 color_range=pc
 color_space=gbr

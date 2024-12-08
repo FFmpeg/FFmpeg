@@ -129,6 +129,7 @@
     <xsd:attribute name="pict_type"              type="xsd:string"/>
     <xsd:attribute name="interlaced_frame"       type="xsd:int"   />
     <xsd:attribute name="top_field_first"        type="xsd:int"   />
+    <xsd:attribute name="lossless"               type="xsd:int"   />
     <xsd:attribute name="repeat_pict"            type="xsd:int"   />
     <xsd:attribute name="color_range"            type="xsd:string"/>
     <xsd:attribute name="color_space"            type="xsd:string"/>

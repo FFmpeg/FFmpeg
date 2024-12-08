@@ -2983,6 +2983,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
         print_fmt("pict_type",              "%c", av_get_picture_type_char(frame->pict_type));
         print_int("interlaced_frame",       !!(frame->flags & AV_FRAME_FLAG_INTERLACED));
         print_int("top_field_first",        !!(frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST));
+        print_int("lossless",               !!(frame->flags & AV_FRAME_FLAG_LOSSLESS));
         print_int("repeat_pict",            frame->repeat_pict);
 
         print_color_range(w, frame->color_range);

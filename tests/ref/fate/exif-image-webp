@@ -23,6 +23,7 @@ sample_aspect_ratio=N/A
 pict_type=I
 interlaced_frame=0
 top_field_first=0
+lossless=0
 repeat_pict=0
 color_range=tv
 color_space=bt470bg
