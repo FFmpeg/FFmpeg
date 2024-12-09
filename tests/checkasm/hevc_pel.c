@@ -36,15 +36,6 @@ static const int offsets[] = {0, 255, -1 };
 #define SIZEOF_PIXEL ((bit_depth + 7) / 8)
 #define BUF_SIZE (2 * MAX_PB_SIZE * (2 * 4 + MAX_PB_SIZE))
 
-#define checkasm_check_pixel(buf1, stride1, buf2, stride2, ...) \
-    ((bit_depth > 8) ?                                          \
-     checkasm_check(uint16_t, (const uint16_t*)buf1, stride1,   \
-                              (const uint16_t*)buf2, stride2,   \
-                              __VA_ARGS__) :                    \
-     checkasm_check(uint8_t,  (const uint8_t*) buf1, stride1,   \
-                              (const uint8_t*) buf2, stride2,   \
-                              __VA_ARGS__))
-
 #define randomize_buffers()                          \
     do {                                             \
         uint32_t mask = pixel_mask[bit_depth - 8];   \

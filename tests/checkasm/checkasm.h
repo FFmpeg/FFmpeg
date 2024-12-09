@@ -392,4 +392,16 @@ DECL_CHECKASM_CHECK_FUNC(int32_t);
 
 #define checkasm_check(prefix, ...) CONCAT(checkasm_check_, prefix)(__FILE__, __LINE__, __VA_ARGS__)
 
+/* This assumes that there is a local variable named "bit_depth".
+ * For tests that don't have that and only operate on a single
+ * bitdepth, just call checkasm_check(uint8_t, ...) directly. */
+#define checkasm_check_pixel(buf1, stride1, buf2, stride2, ...) \
+    ((bit_depth > 8) ?                                          \
+     checkasm_check(uint16_t, (const uint16_t*)buf1, stride1,   \
+                              (const uint16_t*)buf2, stride2,   \
+                              __VA_ARGS__) :                    \
+     checkasm_check(uint8_t,  (const uint8_t*) buf1, stride1,   \
+                              (const uint8_t*) buf2, stride2,   \
+                              __VA_ARGS__))
+
 #endif /* TESTS_CHECKASM_CHECKASM_H */

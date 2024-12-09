@@ -108,10 +108,7 @@ static void check_alf_filter(VVCDSPContext *c, const int bit_depth)
                     memset(dst1, 0, DST_BUF_SIZE);
                     call_ref(dst0, dst_stride, src0 + offset, src_stride, w, h, filter, clip, vb_pos);
                     call_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
-                    for (int i = 0; i < (h + 1); i++) {
-                        if (memcmp(dst0 + i * dst_stride, dst1 + i * dst_stride, (w + 1) * SIZEOF_PIXEL))
-                            fail();
-                    }
+                    checkasm_check_pixel(dst0, dst_stride, dst1, dst_stride, w + 1, h + 1, "dst");
                     // Bench only square sizes, and ones with dimensions being a power of two.
                     if (w == h && (w & (w - 1)) == 0)
                         bench_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
@@ -125,10 +122,7 @@ static void check_alf_filter(VVCDSPContext *c, const int bit_depth)
                     memset(dst1, 0, DST_BUF_SIZE);
                     call_ref(dst0, dst_stride, src0 + offset, src_stride, w, h, filter, clip, vb_pos);
                     call_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
-                    for (int i = 0; i < (h + 1); i++) {
-                        if (memcmp(dst0 + i * dst_stride, dst1 + i * dst_stride, (w + 1) * SIZEOF_PIXEL))
-                            fail();
-                    }
+                    checkasm_check_pixel(dst0, dst_stride, dst1, dst_stride, w + 1, h + 1, "dst");
                     if (w == h && (w & (w - 1)) == 0)
                         bench_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
                 }
