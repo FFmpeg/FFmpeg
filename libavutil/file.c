@@ -112,7 +112,7 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
             return -1;
         }
 
-        ptr = MapViewOfFile(mh, FILE_MAP_READ, 0, 0, *size);
+        ptr = MapViewOfFile(mh, FILE_MAP_COPY, 0, 0, *size);
         CloseHandle(mh);
         if (!ptr) {
             av_log(&file_log_ctx, AV_LOG_ERROR, "Error occurred in MapViewOfFile()\n");
