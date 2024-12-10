@@ -45,7 +45,66 @@ const AVChannelLayout ff_iamf_scalable_ch_layouts[10] = {
     AV_CHANNEL_LAYOUT_BINAURAL,
 };
 
-const struct IAMFSoundSystemMap ff_iamf_sound_system_map[13] = {
+const AVChannelLayout ff_iamf_expanded_scalable_ch_layouts[13] = {
+    {
+        .nb_channels = 1,
+        .order       = AV_CHANNEL_ORDER_NATIVE,
+        .u.mask      = AV_CH_LOW_FREQUENCY,
+    },
+    {
+        .nb_channels = 2,
+        .order       = AV_CHANNEL_ORDER_NATIVE,
+        .u.mask      = AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT,
+    },
+    {
+        .nb_channels = 2,
+        .order       = AV_CHANNEL_ORDER_NATIVE,
+        .u.mask      = AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT,
+    },
+    {
+        .nb_channels = 2,
+        .order       = AV_CHANNEL_ORDER_NATIVE,
+        .u.mask      = AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT,
+    },
+    {
+        .nb_channels = 2,
+        .order       = AV_CHANNEL_ORDER_NATIVE,
+        .u.mask      = AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT,
+    },
+    {
+        .nb_channels = 2,
+        .order       = AV_CHANNEL_ORDER_NATIVE,
+        .u.mask      = AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT,
+    },
+    {
+        .nb_channels = 4,
+        .order       = AV_CHANNEL_ORDER_NATIVE,
+        .u.mask      = AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT |
+                       AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT,
+    },
+    AV_CHANNEL_LAYOUT_SURROUND,
+    AV_CHANNEL_LAYOUT_9POINT1POINT6,
+    AV_CHANNEL_LAYOUT_STEREO,
+    {
+        .nb_channels = 2,
+        .order       = AV_CHANNEL_ORDER_NATIVE,
+        .u.mask      = AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT,
+    },
+    {
+        .nb_channels = 2,
+        .order       = AV_CHANNEL_ORDER_NATIVE,
+        .u.mask      = AV_CH_TOP_SIDE_LEFT | AV_CH_TOP_SIDE_RIGHT,
+    },
+    {
+        .nb_channels = 6,
+        .order       = AV_CHANNEL_ORDER_NATIVE,
+        .u.mask      = AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT |
+                       AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT |
+                       AV_CH_TOP_SIDE_LEFT | AV_CH_TOP_SIDE_RIGHT,
+    },
+};
+
+const struct IAMFSoundSystemMap ff_iamf_sound_system_map[14] = {
     { SOUND_SYSTEM_A_0_2_0, AV_CHANNEL_LAYOUT_STEREO },
     { SOUND_SYSTEM_B_0_5_0, AV_CHANNEL_LAYOUT_5POINT1_BACK },
     { SOUND_SYSTEM_C_2_5_0, AV_CHANNEL_LAYOUT_5POINT1POINT2_BACK },
@@ -65,6 +124,7 @@ const struct IAMFSoundSystemMap ff_iamf_sound_system_map[13] = {
     { SOUND_SYSTEM_10_2_7_0, AV_CHANNEL_LAYOUT_7POINT1POINT2 },
     { SOUND_SYSTEM_11_2_3_0, AV_CHANNEL_LAYOUT_3POINT1POINT2 },
     { SOUND_SYSTEM_12_0_1_0, AV_CHANNEL_LAYOUT_MONO },
+    { SOUND_SYSTEM_13_9_1_6, AV_CHANNEL_LAYOUT_9POINT1POINT6 },
 };
 
 void ff_iamf_free_audio_element(IAMFAudioElement **paudio_element)

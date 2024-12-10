@@ -156,6 +156,7 @@ enum IAMF_Sound_System {
     SOUND_SYSTEM_10_2_7_0 = 10, // "Loudspeaker configuration for Sound System I" + Ltf + Rtf
     SOUND_SYSTEM_11_2_3_0 = 11, // Front subset of "Loudspeaker configuration for Sound System J"
     SOUND_SYSTEM_12_0_1_0 = 12, // Mono
+    SOUND_SYSTEM_13_9_1_6 = 13, // Subset of "Loudspeaker configuration for Sound System H"
 };
 
 struct IAMFSoundSystemMap {
@@ -165,7 +166,8 @@ struct IAMFSoundSystemMap {
 
 FF_VISIBILITY_PUSH_HIDDEN
 extern const AVChannelLayout ff_iamf_scalable_ch_layouts[10];
-extern const struct IAMFSoundSystemMap ff_iamf_sound_system_map[13];
+extern const AVChannelLayout ff_iamf_expanded_scalable_ch_layouts[13];
+extern const struct IAMFSoundSystemMap ff_iamf_sound_system_map[14];
 
 static inline IAMFCodecConfig *ff_iamf_get_codec_config(const IAMFContext *c,
                                                         unsigned int codec_config_id)

@@ -356,6 +356,7 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
         AVIAMFLayer *layer;
         int loudspeaker_layout, output_gain_is_present_flag;
         int substream_count, coupled_substream_count;
+        int expanded_loudspeaker_layout = -1;
         int ret, byte = avio_r8(pb);
 
         layer = av_iamf_audio_element_add_layer(audio_element->element);
@@ -379,7 +380,11 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
             layer->output_gain = av_make_q(sign_extend(avio_rb16(pb), 16), 1 << 8);
         }
 
-        if (loudspeaker_layout < 10)
+        if (!i && loudspeaker_layout == 15)
+            expanded_loudspeaker_layout = avio_r8(pb);
+        if (expanded_loudspeaker_layout > 0 && expanded_loudspeaker_layout < 13)
+            av_channel_layout_copy(&layer->ch_layout, &ff_iamf_expanded_scalable_ch_layouts[expanded_loudspeaker_layout]);
+        else if (loudspeaker_layout < 10)
             av_channel_layout_copy(&layer->ch_layout, &ff_iamf_scalable_ch_layouts[loudspeaker_layout]);
         else
             layer->ch_layout = (AVChannelLayout){ .order = AV_CHANNEL_ORDER_UNSPEC,
