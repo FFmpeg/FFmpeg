@@ -6,7 +6,7 @@
 #sar 0: 0/1
 #tb 1: 16/11025
 #media_type 1: audio
-#codec_id 1: adpcm_ima_wav
+#codec_id 1: adpcm_ima_xbox
 #sample_rate 1: 44100
 #channel_layout_name 1: stereo
 0,          0,          0,        0,     1508, 0xefceba48
