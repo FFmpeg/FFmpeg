@@ -36,13 +36,13 @@
 .ifc \type, avg
         saddl           v4.4s, v0.4h, v2.4h
         add             v4.4s, v4.4s, v16.4s
-        sqshrn          v4.4h, v4.4s, #(15 - \bit_depth)
+        sqshrun         v4.4h, v4.4s, #(15 - \bit_depth)
 .else
         mov             v4.16b, v16.16b
         smlal           v4.4s, v0.4h, v19.4h
         smlal           v4.4s, v2.4h, v20.4h
         sqshl           v4.4s, v4.4s, v22.4s
-        sqxtn           v4.4h, v4.4s
+        sqxtun          v4.4h, v4.4s
 .endif
 
 .if \bit_depth == 8
@@ -54,8 +54,7 @@
 .endif
 
 .else   // bit_depth > 8
-        smin            v4.4h, v4.4h, v17.4h
-        smax            v4.4h, v4.4h, v18.4h
+        umin            v4.4h, v4.4h, v17.4h
 .if \tap == 2
         str             s4, [dst]
 .else
@@ -95,7 +94,6 @@ function ff_vvc_\type\()_\bit_depth\()_neon, export=1
  .if \bit_depth >= 10
         // clip pixel
         mov             w6, #((1 << \bit_depth) - 1)
-        movi            v18.8h, #0
         dup             v17.8h, w6
 .endif
 
@@ -121,8 +119,8 @@ function ff_vvc_\type\()_\bit_depth\()_neon, export=1
         saddl2          v5.4s, v0.8h, v2.8h
         add             v4.4s, v4.4s, v16.4s
         add             v5.4s, v5.4s, v16.4s
-        sqshrn          v4.4h, v4.4s, #(15 - \bit_depth)
-        sqshrn2         v4.8h, v5.4s, #(15 - \bit_depth)
+        sqshrun         v4.4h, v4.4s, #(15 - \bit_depth)
+        sqshrun2        v4.8h, v5.4s, #(15 - \bit_depth)
 .else
         mov             v4.16b, v16.16b
         mov             v5.16b, v16.16b
@@ -132,16 +130,15 @@ function ff_vvc_\type\()_\bit_depth\()_neon, export=1
         smlal2          v5.4s, v2.8h, v20.8h
         sqshl           v4.4s, v4.4s, v22.4s
         sqshl           v5.4s, v5.4s, v22.4s
-        sqxtn           v4.4h, v4.4s
-        sqxtn2          v4.8h, v5.4s
+        sqxtun          v4.4h, v4.4s
+        sqxtun2         v4.8h, v5.4s
 .endif
         subs            height, height, #1
 .if \bit_depth == 8
         sqxtun          v4.8b, v4.8h
         st1             {v4.8b}, [dst], dst_stride
 .else
-        smin            v4.8h, v4.8h, v17.8h
-        smax            v4.8h, v4.8h, v18.8h
+        umin            v4.8h, v4.8h, v17.8h
         st1             {v4.8h}, [dst], dst_stride
 .endif
         b.ne            8b
@@ -163,10 +160,10 @@ function ff_vvc_\type\()_\bit_depth\()_neon, export=1
         add             v5.4s, v5.4s, v16.4s
         add             v6.4s, v6.4s, v16.4s
         add             v7.4s, v7.4s, v16.4s
-        sqshrn          v4.4h, v4.4s, #(15 - \bit_depth)
-        sqshrn2         v4.8h, v5.4s, #(15 - \bit_depth)
-        sqshrn          v6.4h, v6.4s, #(15 - \bit_depth)
-        sqshrn2         v6.8h, v7.4s, #(15 - \bit_depth)
+        sqshrun         v4.4h, v4.4s, #(15 - \bit_depth)
+        sqshrun2        v4.8h, v5.4s, #(15 - \bit_depth)
+        sqshrun         v6.4h, v6.4s, #(15 - \bit_depth)
+        sqshrun2        v6.8h, v7.4s, #(15 - \bit_depth)
 .else   // avg
         mov             v4.16b, v16.16b
         mov             v5.16b, v16.16b
@@ -184,10 +181,10 @@ function ff_vvc_\type\()_\bit_depth\()_neon, export=1
         sqshl           v5.4s, v5.4s, v22.4s
         sqshl           v6.4s, v6.4s, v22.4s
         sqshl           v7.4s, v7.4s, v22.4s
-        sqxtn           v4.4h, v4.4s
-        sqxtn           v6.4h, v6.4s
-        sqxtn2          v4.8h, v5.4s
-        sqxtn2          v6.8h, v7.4s
+        sqxtun          v4.4h, v4.4s
+        sqxtun          v6.4h, v6.4s
+        sqxtun2         v4.8h, v5.4s
+        sqxtun2         v6.8h, v7.4s
 .endif  // w_avg
         subs            w6, w6, #16
 .if \bit_depth == 8
@@ -195,10 +192,8 @@ function ff_vvc_\type\()_\bit_depth\()_neon, export=1
         sqxtun2         v4.16b, v6.8h
         str             q4, [x9], #16
 .else
-        smin            v4.8h, v4.8h, v17.8h
-        smin            v6.8h, v6.8h, v17.8h
-        smax            v4.8h, v4.8h, v18.8h
-        smax            v6.8h, v6.8h, v18.8h
+        umin            v4.8h, v4.8h, v17.8h
+        umin            v6.8h, v6.8h, v17.8h
         stp             q4, q6, [x9], #32
 .endif
         b.ne            17b
