@@ -1,0 +1,730 @@
+bf3dd0294cbf9b842d09f388da706554 *tests/data/fate/iamf-9_1_6.iamf
+142594 tests/data/fate/iamf-9_1_6.iamf
+#extradata 0:       34, 0xafa70d5e
+#extradata 1:       34, 0xafa70d5e
+#extradata 2:       34, 0xafa70d5e
+#extradata 3:       34, 0xafa70d5e
+#extradata 4:       34, 0xafa70d5e
+#extradata 5:       34, 0xafa70d5e
+#extradata 6:       34, 0xafa70d5e
+#extradata 7:       34, 0xaf7b0d5c
+#extradata 8:       34, 0xaf7b0d5c
+#extradata 9:       34, 0xafa70d5e
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: flac
+#sample_rate 0: 44100
+#channel_layout_name 0: stereo
+#tb 1: 1/44100
+#media_type 1: audio
+#codec_id 1: flac
+#sample_rate 1: 44100
+#channel_layout_name 1: stereo
+#tb 2: 1/44100
+#media_type 2: audio
+#codec_id 2: flac
+#sample_rate 2: 44100
+#channel_layout_name 2: stereo
+#tb 3: 1/44100
+#media_type 3: audio
+#codec_id 3: flac
+#sample_rate 3: 44100
+#channel_layout_name 3: stereo
+#tb 4: 1/44100
+#media_type 4: audio
+#codec_id 4: flac
+#sample_rate 4: 44100
+#channel_layout_name 4: stereo
+#tb 5: 1/44100
+#media_type 5: audio
+#codec_id 5: flac
+#sample_rate 5: 44100
+#channel_layout_name 5: stereo
+#tb 6: 1/44100
+#media_type 6: audio
+#codec_id 6: flac
+#sample_rate 6: 44100
+#channel_layout_name 6: stereo
+#tb 7: 1/44100
+#media_type 7: audio
+#codec_id 7: flac
+#sample_rate 7: 44100
+#channel_layout_name 7: mono
+#tb 8: 1/44100
+#media_type 8: audio
+#codec_id 8: flac
+#sample_rate 8: 44100
+#channel_layout_name 8: mono
+#tb 9: 1/44100
+#media_type 9: audio
+#codec_id 9: flac
+#sample_rate 9: 44100
+#channel_layout_name 9: stereo
+0,          0,          0,     4608,     1399, 0x6e89566e
+1,          0,          0,     4608,     1399, 0x6e89566e
+2,          0,          0,     4608,     1396, 0x0dcb5677
+3,          0,          0,     4608,     1396, 0x0dcb5677
+4,          0,          0,     4608,     1399, 0x6e89566e
+5,          0,          0,     4608,     1399, 0x6e89566e
+6,          0,          0,     4608,     1399, 0x6e89566e
+7,          0,          0,     4608,     1399, 0x6e89566e
+8,          0,          0,     4608,     1399, 0x6e89566e
+9,          0,          0,     4608,     1399, 0x6e89566e
+0,       4608,       4608,     4608,     1442, 0x6c3c5b13
+1,       4608,       4608,     4608,     1442, 0x6c3c5b13
+2,       4608,       4608,     4608,     1439, 0xc46b5ac5
+3,       4608,       4608,     4608,     1439, 0xc46b5ac5
+4,       4608,       4608,     4608,     1442, 0x6c3c5b13
+5,       4608,       4608,     4608,     1442, 0x6c3c5b13
+6,       4608,       4608,     4608,     1442, 0x6c3c5b13
+7,       4608,       4608,     4608,     1442, 0x6c3c5b13
+8,       4608,       4608,     4608,     1442, 0x6c3c5b13
+9,       4608,       4608,     4608,     1442, 0x6c3c5b13
+0,       9216,       9216,     4608,     1380, 0xc497571b
+1,       9216,       9216,     4608,     1380, 0xc497571b
+2,       9216,       9216,     4608,     1377, 0x5b2a55fe
+3,       9216,       9216,     4608,     1377, 0x5b2a55fe
+4,       9216,       9216,     4608,     1380, 0xc497571b
+5,       9216,       9216,     4608,     1380, 0xc497571b
+6,       9216,       9216,     4608,     1380, 0xc497571b
+7,       9216,       9216,     4608,     1380, 0xc497571b
+8,       9216,       9216,     4608,     1380, 0xc497571b
+9,       9216,       9216,     4608,     1380, 0xc497571b
+0,      13824,      13824,     4608,     1383, 0x48e9510f
+1,      13824,      13824,     4608,     1383, 0x48e9510f
+2,      13824,      13824,     4608,     1380, 0x045550d3
+3,      13824,      13824,     4608,     1380, 0x045550d3
+4,      13824,      13824,     4608,     1383, 0x48e9510f
+5,      13824,      13824,     4608,     1383, 0x48e9510f
+6,      13824,      13824,     4608,     1383, 0x48e9510f
+7,      13824,      13824,     4608,     1383, 0x48e9510f
+8,      13824,      13824,     4608,     1383, 0x48e9510f
+9,      13824,      13824,     4608,     1383, 0x48e9510f
+0,      18432,      18432,     4608,     1572, 0x9a514719
+1,      18432,      18432,     4608,     1572, 0x9a514719
+2,      18432,      18432,     4608,     1568, 0xa2bc45f4
+3,      18432,      18432,     4608,     1568, 0xa2bc45f4
+4,      18432,      18432,     4608,     1572, 0x9a514719
+5,      18432,      18432,     4608,     1572, 0x9a514719
+6,      18432,      18432,     4608,     1572, 0x9a514719
+7,      18432,      18432,     4608,     1572, 0x9a514719
+8,      18432,      18432,     4608,     1572, 0x9a514719
+9,      18432,      18432,     4608,     1572, 0x9a514719
+0,      23040,      23040,     4608,     1391, 0x74ac5014
+1,      23040,      23040,     4608,     1391, 0x74ac5014
+2,      23040,      23040,     4608,     1388, 0x96c85007
+3,      23040,      23040,     4608,     1388, 0x96c85007
+4,      23040,      23040,     4608,     1391, 0x74ac5014
+5,      23040,      23040,     4608,     1391, 0x74ac5014
+6,      23040,      23040,     4608,     1391, 0x74ac5014
+7,      23040,      23040,     4608,     1391, 0x74ac5014
+8,      23040,      23040,     4608,     1391, 0x74ac5014
+9,      23040,      23040,     4608,     1391, 0x74ac5014
+0,      27648,      27648,     4608,     1422, 0x2f9d47c5
+1,      27648,      27648,     4608,     1422, 0x2f9d47c5
+2,      27648,      27648,     4608,     1419, 0x4d4d466a
+3,      27648,      27648,     4608,     1419, 0x4d4d466a
+4,      27648,      27648,     4608,     1422, 0x2f9d47c5
+5,      27648,      27648,     4608,     1422, 0x2f9d47c5
+6,      27648,      27648,     4608,     1422, 0x2f9d47c5
+7,      27648,      27648,     4608,     1422, 0x2f9d47c5
+8,      27648,      27648,     4608,     1422, 0x2f9d47c5
+9,      27648,      27648,     4608,     1422, 0x2f9d47c5
+0,      32256,      32256,     4608,     1768, 0x2a044b99
+1,      32256,      32256,     4608,     1768, 0x2a044b99
+2,      32256,      32256,     4608,     1765, 0xacb84b24
+3,      32256,      32256,     4608,     1765, 0xacb84b24
+4,      32256,      32256,     4608,     1768, 0x2a044b99
+5,      32256,      32256,     4608,     1768, 0x2a044b99
+6,      32256,      32256,     4608,     1768, 0x2a044b99
+7,      32256,      32256,     4608,     1768, 0x2a044b99
+8,      32256,      32256,     4608,     1768, 0x2a044b99
+9,      32256,      32256,     4608,     1768, 0x2a044b99
+0,      36864,      36864,     4608,     1534, 0xb0b35a3f
+1,      36864,      36864,     4608,     1534, 0xb0b35a3f
+2,      36864,      36864,     4608,     1531, 0x996458aa
+3,      36864,      36864,     4608,     1531, 0x996458aa
+4,      36864,      36864,     4608,     1534, 0xb0b35a3f
+5,      36864,      36864,     4608,     1534, 0xb0b35a3f
+6,      36864,      36864,     4608,     1534, 0xb0b35a3f
+7,      36864,      36864,     4608,     1534, 0xb0b35a3f
+8,      36864,      36864,     4608,     1534, 0xb0b35a3f
+9,      36864,      36864,     4608,     1534, 0xb0b35a3f
+0,      41472,      41472,     4608,      926, 0xc26a5eae
+1,      41472,      41472,     4608,      926, 0xc26a5eae
+2,      41472,      41472,     4608,      923, 0xa7225edf
+3,      41472,      41472,     4608,      923, 0xa7225edf
+4,      41472,      41472,     4608,      926, 0xc26a5eae
+5,      41472,      41472,     4608,      926, 0xc26a5eae
+6,      41472,      41472,     4608,      926, 0xc26a5eae
+7,      41472,      41472,     4608,      926, 0xc26a5eae
+8,      41472,      41472,     4608,      926, 0xc26a5eae
+9,      41472,      41472,     4608,      926, 0xc26a5eae
+[STREAM_GROUP]
+index=0
+id=0x1
+nb_streams=9
+type=IAMF Audio Element
+[COMPONENT]
+nb_layers=1
+audio_element_type=0
+default_w=0
+[SUBCOMPONENT]
+channel_layout=9.1.6
+output_gain_flags=0
+output_gain=0/1
+[/SUBCOMPONENT]
+[/COMPONENT]
+[STREAM]
+index=0
+id=0x0
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=1
+id=0x1
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=2
+id=0x2
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=3
+id=0x3
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=4
+id=0x4
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=5
+id=0x5
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=6
+id=0x6
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=7
+id=0x7
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=8
+id=0x8
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[/STREAM_GROUP]
+[STREAM_GROUP]
+index=1
+id=0x2
+nb_streams=1
+type=IAMF Audio Element
+[COMPONENT]
+nb_layers=1
+audio_element_type=0
+default_w=0
+[SUBCOMPONENT]
+channel_layout=stereo
+output_gain_flags=0
+output_gain=0/1
+[/SUBCOMPONENT]
+[/COMPONENT]
+[STREAM]
+index=9
+id=0x9
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=0
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[/STREAM_GROUP]
+[STREAM_GROUP]
+index=2
+id=0x3
+nb_streams=10
+type=IAMF Mix Presentation
+[COMPONENT]
+nb_submixes=1
+[SUBCOMPONENT]
+en-us=Mix_Presentation
+[/SUBCOMPONENT]
+[SUBCOMPONENT]
+nb_elements=2
+nb_layouts=2
+default_mix_gain=256/256
+[PIECE]
+stream_id=1
+default_mix_gain=0/256
+headphones_rendering_mode=0
+[SUBPIECE]
+en-us=9.1.6_Submix
+[/SUBPIECE]
+[SUBPIECE]
+name=element_mix_config
+nb_subblocks=0
+type=0
+parameter_id=100
+parameter_rate=48000
+duration=0
+constant_subblock_duration=0
+[/SUBPIECE]
+[/PIECE]
+[PIECE]
+stream_id=2
+default_mix_gain=0/256
+headphones_rendering_mode=0
+[SUBPIECE]
+en-us=Stereo_Submix
+[/SUBPIECE]
+[SUBPIECE]
+name=element_mix_config
+nb_subblocks=0
+type=0
+parameter_id=100
+parameter_rate=48000
+duration=0
+constant_subblock_duration=0
+[/SUBPIECE]
+[/PIECE]
+[PIECE]
+name=output_mix_config
+nb_subblocks=0
+type=0
+parameter_id=100
+parameter_rate=48000
+duration=0
+constant_subblock_duration=0
+[/PIECE]
+[PIECE]
+sound_system=stereo
+integrated_loudness=256/256
+digital_peak=0/256
+true_peak=0/1
+dialogue_anchored_loudness=0/1
+album_anchored_loudness=0/1
+[/PIECE]
+[PIECE]
+sound_system=9.1.6
+integrated_loudness=0/256
+digital_peak=0/256
+true_peak=0/1
+dialogue_anchored_loudness=0/1
+album_anchored_loudness=0/1
+[/PIECE]
+[/SUBCOMPONENT]
+[/COMPONENT]
+[STREAM]
+index=0
+id=0x0
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=1
+id=0x1
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=2
+id=0x2
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=3
+id=0x3
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=4
+id=0x4
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=5
+id=0x5
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=6
+id=0x6
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=7
+id=0x7
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=8
+id=0x8
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[STREAM]
+index=9
+id=0x9
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=0
+DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
+[/STREAM]
+[/STREAM_GROUP]
