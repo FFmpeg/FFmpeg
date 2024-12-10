@@ -51,6 +51,7 @@
 typedef struct BinkAudioContext {
     GetBitContext gb;
     int version_b;          ///< Bink version 'b'
+    int version_2;          ///< Bink Audio 2
     int first;
     int channels;
     int ch_offset;
@@ -95,6 +96,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     av_channel_layout_default(&avctx->ch_layout, channels);
 
     s->version_b = avctx->extradata_size >= 4 && avctx->extradata[3] == 'b';
+    s->version_2 = avctx->extradata_size >= 1 && avctx->extradata[0] == '2';
 
     if (avctx->codec->id == AV_CODEC_ID_BINKAUDIO_RDFT) {
         // audio is already interleaved for the RDFT format variant
@@ -177,6 +179,7 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct,
     int ch, i, j, k;
     float q, quant[25];
     int width, coeff;
+    int quant_idx_size = s->version_2 ? 7 : 8;
     GetBitContext *gb = &s->gb;
     LOCAL_ALIGNED_32(float, coeffs, [4098]);
 
@@ -196,10 +199,10 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct,
             coeffs[1] = get_float(gb) * s->root;
         }
 
-        if (get_bits_left(gb) < s->num_bands * 8)
+        if (get_bits_left(gb) < s->num_bands * quant_idx_size)
             return AVERROR_INVALIDDATA;
         for (i = 0; i < s->num_bands; i++) {
-            int value = get_bits(gb, 8);
+            int value = get_bits(gb, quant_idx_size);
             quant[i]  = s->quant_table[FFMIN(value, 95)];
         }
 
@@ -230,6 +233,21 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct,
                 while (s->bands[k] < i)
                     q = quant[k++];
             } else {
+                if (s->version_2) {
+                    for (int m = i; m < j; m++)
+                        coeffs[m] = get_bits(gb, width);
+                    while (i < j) {
+                        if (s->bands[k] == i)
+                            q = quant[k++];
+                        if (coeffs[i] > 0) {
+                            if (get_bits1(gb))
+                                coeffs[i] *= -q;
+                            else
+                                coeffs[i] *= q;
+                        }
+                        i++;
+                    }
+                } else {
                 while (i < j) {
                     if (s->bands[k] == i)
                         q = quant[k++];
@@ -245,6 +263,7 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct,
                         coeffs[i] = 0.0f;
                     }
                     i++;
+                }
                 }
             }
         }
