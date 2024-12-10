@@ -240,8 +240,13 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
                     break;
 
             if (j >= FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts)) {
-                av_log(log_ctx, AV_LOG_ERROR, "Unsupported channel layout in stream group #%d\n", i);
-                return AVERROR(EINVAL);
+                for (j = 0; j < FF_ARRAY_ELEMS(ff_iamf_expanded_scalable_ch_layouts); j++)
+                    if (!av_channel_layout_compare(&layer->ch_layout, &ff_iamf_expanded_scalable_ch_layouts[j]))
+                        break;
+                if (j >= FF_ARRAY_ELEMS(ff_iamf_expanded_scalable_ch_layouts)) {
+                    av_log(log_ctx, AV_LOG_ERROR, "Unsupported channel layout in stream group #%d\n", i);
+                    return AVERROR(EINVAL);
+                }
             }
         }
 
@@ -539,13 +544,19 @@ static int scalable_channel_layout_config(const IAMFAudioElement *audio_element,
     avio_write(dyn_bc, header, put_bytes_count(&pb, 1));
     for (int i = 0; i < element->nb_layers; i++) {
         const AVIAMFLayer *layer = element->layers[i];
-        int layout;
+        int layout, expanded_layout = -1;
         for (layout = 0; layout < FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts); layout++) {
             if (!av_channel_layout_compare(&layer->ch_layout, &ff_iamf_scalable_ch_layouts[layout]))
                 break;
         }
+        if (layout >= FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts))
+            for (expanded_layout = 0; expanded_layout < FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts); expanded_layout++) {
+                if (!av_channel_layout_compare(&layer->ch_layout, &ff_iamf_expanded_scalable_ch_layouts[expanded_layout]))
+                    break;
+            }
+        av_assert0(expanded_layout > 0 || layout < FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts));
         init_put_bits(&pb, header, sizeof(header));
-        put_bits(&pb, 4, layout);
+        put_bits(&pb, 4, expanded_layout >= 0 ? 15 : layout);
         put_bits(&pb, 1, !!layer->output_gain_flags);
         put_bits(&pb, 1, !!(layer->flags & AV_IAMF_LAYER_FLAG_RECON_GAIN));
         put_bits(&pb, 2, 0); // reserved
@@ -556,6 +567,8 @@ static int scalable_channel_layout_config(const IAMFAudioElement *audio_element,
             put_bits(&pb, 2, 0);
             put_bits(&pb, 16, rescale_rational(layer->output_gain, 1 << 8));
         }
+        if (expanded_layout >= 0)
+            put_bits(&pb, 8, expanded_layout);
         flush_put_bits(&pb);
         avio_write(dyn_bc, header, put_bytes_count(&pb, 1));
     }
