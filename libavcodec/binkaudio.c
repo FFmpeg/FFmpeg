@@ -253,9 +253,7 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct,
                             q = quant[k++];
                         coeff = get_bits(gb, width);
                         if (coeff) {
-                            int v;
-                            v = get_bits1(gb);
-                            if (v)
+                            if (get_bits1(gb))
                                 coeffs[i] = -q * coeff;
                             else
                                 coeffs[i] =  q * coeff;
