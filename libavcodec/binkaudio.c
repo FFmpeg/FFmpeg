@@ -248,22 +248,22 @@ static int decode_block(BinkAudioContext *s, float **out, int use_dct,
                         i++;
                     }
                 } else {
-                while (i < j) {
-                    if (s->bands[k] == i)
-                        q = quant[k++];
-                    coeff = get_bits(gb, width);
-                    if (coeff) {
-                        int v;
-                        v = get_bits1(gb);
-                        if (v)
-                            coeffs[i] = -q * coeff;
-                        else
-                            coeffs[i] =  q * coeff;
-                    } else {
-                        coeffs[i] = 0.0f;
+                    while (i < j) {
+                        if (s->bands[k] == i)
+                            q = quant[k++];
+                        coeff = get_bits(gb, width);
+                        if (coeff) {
+                            int v;
+                            v = get_bits1(gb);
+                            if (v)
+                                coeffs[i] = -q * coeff;
+                            else
+                                coeffs[i] =  q * coeff;
+                        } else {
+                            coeffs[i] = 0.0f;
+                        }
+                        i++;
                     }
-                    i++;
-                }
                 }
             }
         }
