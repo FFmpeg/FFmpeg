@@ -1724,7 +1724,7 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
                 case AV_CODEC_ID_ADPCM_IMA_WAV:
                     if (bps < 2 || bps > 5)
                         return 0;
-                    tmp = blocks * (1LL + (ba - 4 * ch) / (bps * ch) * 8);
+                    tmp = blocks * (1LL + (ba - 4 * ch) / (bps * ch) * 8LL);
                     break;
                 case AV_CODEC_ID_ADPCM_IMA_DK3:
                     tmp = blocks * (((ba - 16LL) * 2 / 3 * 4) / ch);
