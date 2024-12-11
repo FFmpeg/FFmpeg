@@ -346,6 +346,7 @@ static void check_hscale(void)
                 memcpy(filterAvx2, filter, sizeof(uint16_t) * (SRC_PIXELS * MAX_FILTER_WIDTH + MAX_FILTER_WIDTH));
                 ff_shuffle_filter_coefficients(c, filterPosAvx, width, filterAvx2, sws->dst_w);
 
+                av_assert0(c->hyScale == c->hcScale);
                 if (check_func(c->hcScale, "hscale_%d_to_%d__fs_%d_dstW_%d", c->srcBpc, c->dstBpc + 1, width, sws->dst_w)) {
                     memset(dst0, 0, SRC_PIXELS * sizeof(dst0[0]));
                     memset(dst1, 0, SRC_PIXELS * sizeof(dst1[0]));
