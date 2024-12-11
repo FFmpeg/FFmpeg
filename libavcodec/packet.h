@@ -881,6 +881,13 @@ int av_packet_make_writable(AVPacket *pkt);
 void av_packet_rescale_ts(AVPacket *pkt, AVRational tb_src, AVRational tb_dst);
 
 /**
+ * Allocate an AVContainerFifo instance for AVPacket.
+ *
+ * @param flags currently unused
+ */
+struct AVContainerFifo *av_container_fifo_alloc_avpacket(unsigned flags);
+
+/**
  * @}
  */
 
