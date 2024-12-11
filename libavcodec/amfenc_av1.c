@@ -103,6 +103,10 @@ static const AVOption options[] = {
     { "enforce_hrd",            "Enforce HRD",          OFFSET(enforce_hrd),    AV_OPT_TYPE_BOOL, {.i64 = -1  }, -1, 1, VE},
     { "filler_data",            "Filler Data Enable",   OFFSET(filler_data),    AV_OPT_TYPE_BOOL, {.i64 = -1  }, -1, 1, VE},
 
+    /// B-Frames
+    { "max_b_frames",   "Maximum number of consecutive B Pictures", OFFSET(max_consecutive_b_frames), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 3, VE },
+    { "bf",             "B Picture Pattern",                        OFFSET(max_b_frames),             AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 3, VE },
+
     { "high_motion_quality_boost_enable",   "Enable High motion quality boost mode",  OFFSET(hw_high_motion_quality_boost), AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
 
     // min_qp_i -> min_qp_intra, min_qp_p -> min_qp_inter
@@ -172,6 +176,9 @@ static const AVOption options[] = {
     { "pa_high_motion_quality_boost_mode",      "Sets the PA high motion quality boost mode",                   OFFSET(pa_high_motion_quality_boost_mode),      AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_AUTO, VE , .unit = "high_motion_quality_boost_mode" },
     { "none",                                   "no high motion quality boost",     0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_NONE   }, 0, 0, VE, .unit = "high_motion_quality_boost_mode" },
     { "auto",                                   "auto high motion quality boost",   0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE_AUTO   }, 0, 0, VE, .unit = "high_motion_quality_boost_mode" },
+
+    { "pa_adaptive_mini_gop",                   "Enable Adaptive B-frame",                                      OFFSET(pa_adaptive_mini_gop),                      AV_OPT_TYPE_BOOL,   { .i64 = -1 }, -1, 1, VE },
+
     { NULL }
 
 };
@@ -456,6 +463,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (ctx->pa_taq_mode != -1) {
             AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_TAQ_MODE, ctx->pa_taq_mode);
         }
+        if (ctx->pa_adaptive_mini_gop != -1) {
+            AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_ADAPTIVE_MINIGOP, ((ctx->pa_adaptive_mini_gop == 0) ? false : true));
+        }
         if (ctx->pa_ltr != -1) {
             AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_PA_LTR_ENABLE, ((ctx->pa_ltr == 0) ? false : true));
         }
@@ -464,6 +474,62 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
         if (ctx->pa_high_motion_quality_boost_mode != -1) {
             AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_HIGH_MOTION_QUALITY_BOOST_MODE, ctx->pa_high_motion_quality_boost_mode);
+        }
+    }
+
+    // B-Frames
+    AMFVariantStruct    is_adaptive_b_frames = { 0 };
+    res = ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_AV1_ADAPTIVE_MINIGOP, &is_adaptive_b_frames);
+    if (ctx->max_consecutive_b_frames != -1 || ctx->max_b_frames != -1 || is_adaptive_b_frames.boolValue == true) {
+
+        //Get the capability of encoder
+        AMFCaps *encoder_caps = NULL;
+        ctx->encoder->pVtbl->GetCaps(ctx->encoder, &encoder_caps);
+        if (encoder_caps != NULL)
+        {
+            res = encoder_caps->pVtbl->GetProperty(encoder_caps, AMF_VIDEO_ENCODER_AV1_CAP_BFRAMES, &var);
+            if (res == AMF_OK) {
+
+                //encoder supports AV1 B-frame
+                if(var.boolValue == true){
+                    //adaptive b-frames is higher priority than max_b_frames
+                    if (is_adaptive_b_frames.boolValue == true)
+                    {
+                        //force AMF_VIDEO_ENCODER_AV1_MAX_CONSECUTIVE_BPICTURES to 3
+                        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_MAX_CONSECUTIVE_BPICTURES, 3);
+
+                        if(ctx->pa_lookahead_buffer_depth < 1)
+                        {
+                            //force AMF_PA_LOOKAHEAD_BUFFER_DEPTH to 1 if not set or smaller than 1
+                            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_LOOKAHEAD_BUFFER_DEPTH, 1);
+                        }
+                    }
+                    else {
+                        if (ctx->max_b_frames != -1) {
+                            //in case user sets B-frames
+                            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_B_PIC_PATTERN, ctx->max_b_frames);
+                            if (res != AMF_OK) {
+                                res = ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_AV1_B_PIC_PATTERN, &var);
+                                av_log(ctx, AV_LOG_WARNING, "B-frames=%d is not supported by this GPU, switched to %d\n", ctx->max_b_frames, (int)var.int64Value);
+                                ctx->max_b_frames = (int)var.int64Value;
+                            }
+                            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_MAX_CONSECUTIVE_BPICTURES, ctx->max_b_frames);
+                        }
+                    }
+
+                }
+                //encoder doesn't support AV1 B-frame
+                else {
+                    av_log(ctx, AV_LOG_WARNING, "The current GPU in use does not support AV1 B-frame encoding, there will be no B-frame in bitstream.\n");
+                }
+            } else {
+                //Can't get the capability of encoder
+                av_log(ctx, AV_LOG_WARNING, "Unable to get AV1 B-frame capability.\n");
+                av_log(ctx, AV_LOG_WARNING, "There will be no B-frame in bitstream.\n");
+            }
+
+            encoder_caps->pVtbl->Release(encoder_caps);
+            encoder_caps = NULL;
         }
     }
 
