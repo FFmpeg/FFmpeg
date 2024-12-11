@@ -10602,9 +10602,8 @@ static int mov_read_header(AVFormatContext *s)
                 if (err < 0)
                     return err;
 
-                err = ff_alloc_extradata(st->codecpar, FF_DVDCLUT_EXTRADATA_SIZE);
-                if (err < 0)
-                    return err;
+                av_freep(&st->codecpar->extradata);
+                st->codecpar->extradata_size = 0;
 
                 err = ff_dvdclut_palette_extradata_cat(dvdsub_clut, FF_DVDCLUT_CLUT_SIZE,
                                                        st->codecpar);
