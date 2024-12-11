@@ -44,14 +44,4 @@ static inline int err_merge(int err0, int err1)
     return (err0 < 0) ? err0 : FFMIN(err1, 0);
 }
 
-static inline void pkt_move(void *dst, void *src)
-{
-    av_packet_move_ref(dst, src);
-}
-
-static inline void frame_move(void *dst, void *src)
-{
-    av_frame_move_ref(dst, src);
-}
-
 #endif // FFTOOLS_FFMPEG_UTILS_H
