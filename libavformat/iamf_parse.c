@@ -539,7 +539,8 @@ static int param_parse(void *s, IAMFContext *c, AVIOContext *pb,
         if (constant_subblock_duration == 0) {
             subblock_duration = ffio_read_leb(pb);
             total_duration += subblock_duration;
-        }
+        } else if (i == nb_subblocks - 1)
+            subblock_duration = duration - i * constant_subblock_duration;
 
         switch (type) {
         case AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN: {
