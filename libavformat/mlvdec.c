@@ -261,6 +261,10 @@ static int scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int f
             read_uint32(avctx, pb, "colortone", "%"PRIi32);
             read_string(avctx, pb, "picStyleName", 16);
             size -= 36;
+        } else if (type == MKTAG('V','E','R','S') && size >= 4) {
+            unsigned int length = avio_rl32(pb);
+            read_string(avctx, pb, "version", length);
+            size -= length + 4;
         } else if (type == MKTAG('M','A','R','K')) {
         } else if (type == MKTAG('N','U','L','L')) {
         } else if (type == MKTAG('M','L','V','I')) { /* occurs when MLV and Mnn files are concatenated */
