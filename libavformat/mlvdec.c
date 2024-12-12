@@ -265,9 +265,12 @@ static int scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int f
             unsigned int length = avio_rl32(pb);
             read_string(avctx, pb, "version", length);
             size -= length + 4;
+        } else if (type == MKTAG('D','A','R','K')) {
+        } else if (type == MKTAG('D','I','S','O')) {
         } else if (type == MKTAG('M','A','R','K')) {
         } else if (type == MKTAG('N','U','L','L')) {
         } else if (type == MKTAG('M','L','V','I')) { /* occurs when MLV and Mnn files are concatenated */
+        } else if (type == MKTAG('R','A','W','C')) {
         } else {
             av_log(avctx, AV_LOG_INFO, "unsupported tag %s, size %u\n",
                    av_fourcc2str(type), size);
