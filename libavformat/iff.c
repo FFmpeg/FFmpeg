@@ -692,13 +692,15 @@ static int iff_read_header(AVFormatContext *s)
         /* DSD tags */
 
         case MKTAG('F','V','E','R'):
-            if (data_size < 4)
-                return AVERROR_INVALIDDATA;
-            version = avio_rb32(pb);
-            av_log(s, AV_LOG_DEBUG, "DSIFF v%d.%d.%d.%d\n",version >> 24, (version >> 16) & 0xFF, (version >> 8) & 0xFF, version & 0xFF);
-            if (!new_stream(s, &sta, &iff->audio_stream_index, AVMEDIA_TYPE_AUDIO))
-                return AVERROR(ENOMEM);
-            sta->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+            if (iff->form_tag == ID_DSD || iff->form_tag == ID_DST) {
+                if (data_size < 4)
+                    return AVERROR_INVALIDDATA;
+                version = avio_rb32(pb);
+                av_log(s, AV_LOG_DEBUG, "DSIFF v%d.%d.%d.%d\n",version >> 24, (version >> 16) & 0xFF, (version >> 8) & 0xFF, version & 0xFF);
+                if (!new_stream(s, &sta, &iff->audio_stream_index, AVMEDIA_TYPE_AUDIO))
+                    return AVERROR(ENOMEM);
+                sta->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+            }
             break;
 
         case MKTAG('D','I','I','N'):
