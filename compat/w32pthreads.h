@@ -50,7 +50,7 @@ typedef struct pthread_t {
     void *(*func)(void* arg);
     void *arg;
     void *ret;
-} pthread_t;
+} *pthread_t;
 
 /* use light weight mutex/condition variable API for Windows Vista and later */
 typedef SRWLOCK pthread_mutex_t;
@@ -74,7 +74,7 @@ typedef CONDITION_VARIABLE pthread_cond_t;
 static av_unused THREADFUNC_RETTYPE
 __stdcall attribute_align_arg win32thread_worker(void *arg)
 {
-    pthread_t *h = (pthread_t*)arg;
+    pthread_t h = (pthread_t)arg;
     h->ret = h->func(h->arg);
     return 0;
 }
@@ -82,21 +82,35 @@ __stdcall attribute_align_arg win32thread_worker(void *arg)
 static av_unused int pthread_create(pthread_t *thread, const void *unused_attr,
                                     void *(*start_routine)(void*), void *arg)
 {
-    thread->func   = start_routine;
-    thread->arg    = arg;
+    pthread_t ret;
+
+    ret = av_mallocz(sizeof(*ret));
+    if (!ret)
+        return EAGAIN;
+
+    ret->func   = start_routine;
+    ret->arg    = arg;
 #if HAVE_WINRT
-    thread->handle = (void*)CreateThread(NULL, 0, win32thread_worker, thread,
-                                           0, NULL);
+    ret->handle = (void*)CreateThread(NULL, 0, win32thread_worker, ret,
+                                      0, NULL);
 #else
-    thread->handle = (void*)_beginthreadex(NULL, 0, win32thread_worker, thread,
-                                           0, NULL);
+    ret->handle = (void*)_beginthreadex(NULL, 0, win32thread_worker, ret,
+                                        0, NULL);
 #endif
-    return !thread->handle;
+
+    if (!ret->handle) {
+        av_free(ret);
+        return EAGAIN;
+    }
+
+    *thread = ret;
+
+    return 0;
 }
 
 static av_unused int pthread_join(pthread_t thread, void **value_ptr)
 {
-    DWORD ret = WaitForSingleObject(thread.handle, INFINITE);
+    DWORD ret = WaitForSingleObject(thread->handle, INFINITE);
     if (ret != WAIT_OBJECT_0) {
         if (ret == WAIT_ABANDONED)
             return EINVAL;
@@ -104,8 +118,9 @@ static av_unused int pthread_join(pthread_t thread, void **value_ptr)
             return EDEADLK;
     }
     if (value_ptr)
-        *value_ptr = thread.ret;
-    CloseHandle(thread.handle);
+        *value_ptr = thread->ret;
+    CloseHandle(thread->handle);
+    av_free(thread);
     return 0;
 }
 
