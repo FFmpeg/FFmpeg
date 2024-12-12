@@ -109,6 +109,7 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
     AVIOContext *pb;
     uint8_t *buf;
     unsigned int duration, constant_subblock_duration;
+    unsigned int total_duration = 0;
     unsigned int nb_subblocks;
     unsigned int parameter_id;
     size_t out_param_size;
@@ -147,8 +148,10 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
         constant_subblock_duration = ffio_read_leb(pb);
         if (constant_subblock_duration == 0)
             nb_subblocks = ffio_read_leb(pb);
-        else
+        else {
             nb_subblocks = duration / constant_subblock_duration;
+            total_duration = duration;
+        }
     } else {
         duration = param->duration;
         constant_subblock_duration = param->constant_subblock_duration;
@@ -172,8 +175,10 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
         void *subblock = av_iamf_param_definition_get_subblock(out_param, i);
         unsigned int subblock_duration = constant_subblock_duration;
 
-        if (!param_definition->mode && !constant_subblock_duration)
+        if (!param_definition->mode && !constant_subblock_duration) {
             subblock_duration = ffio_read_leb(pb);
+            total_duration += subblock_duration;
+        }
 
         switch (param->type) {
         case AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN: {
@@ -233,6 +238,12 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
     if (len) {
        int level = (s->error_recognition & AV_EF_EXPLODE) ? AV_LOG_ERROR : AV_LOG_WARNING;
        av_log(s, level, "Underread in parameter_block_obu. %d bytes left at the end\n", len);
+    }
+
+    if (!param_definition->mode && !constant_subblock_duration && total_duration != duration) {
+        av_log(s, AV_LOG_ERROR, "Invalid duration in parameter block\n");
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
 
     switch (param->type) {

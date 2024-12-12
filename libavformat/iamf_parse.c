@@ -501,6 +501,7 @@ static int param_parse(void *s, IAMFContext *c, AVIOContext *pb,
     AVIAMFParamDefinition *param;
     unsigned int parameter_id, parameter_rate, mode;
     unsigned int duration = 0, constant_subblock_duration = 0, nb_subblocks = 0;
+    unsigned int total_duration = 0;
     size_t param_size;
 
     parameter_id = ffio_read_leb(pb);
@@ -521,8 +522,10 @@ static int param_parse(void *s, IAMFContext *c, AVIOContext *pb,
         constant_subblock_duration = ffio_read_leb(pb);
         if (constant_subblock_duration == 0)
             nb_subblocks = ffio_read_leb(pb);
-        else
+        else {
             nb_subblocks = duration / constant_subblock_duration;
+            total_duration = duration;
+        }
     }
 
     param = av_iamf_param_definition_alloc(type, nb_subblocks, &param_size);
@@ -533,8 +536,10 @@ static int param_parse(void *s, IAMFContext *c, AVIOContext *pb,
         void *subblock = av_iamf_param_definition_get_subblock(param, i);
         unsigned int subblock_duration = constant_subblock_duration;
 
-        if (constant_subblock_duration == 0)
+        if (constant_subblock_duration == 0) {
             subblock_duration = ffio_read_leb(pb);
+            total_duration += subblock_duration;
+        }
 
         switch (type) {
         case AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN: {
@@ -560,6 +565,11 @@ static int param_parse(void *s, IAMFContext *c, AVIOContext *pb,
             av_free(param);
             return AVERROR_INVALIDDATA;
         }
+    }
+
+    if (!mode && !constant_subblock_duration && total_duration != duration) {
+        av_log(s, AV_LOG_ERROR, "Invalid subblock durations in parameter_id %u\n", parameter_id);
+        return AVERROR_INVALIDDATA;
     }
 
     param->parameter_id = parameter_id;
