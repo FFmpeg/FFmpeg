@@ -2004,7 +2004,7 @@ static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
         pp = spkt.data;
         ff_amf_write_string(&pp, "onFCPublish");
     } else if (!strcmp(command, "publish")) {
-        char statusmsg[128];
+        char statusmsg[sizeof(filename) + 32];
         snprintf(statusmsg, sizeof(statusmsg), "%s is now published", filename);
         ret = write_begin(s);
         if (ret < 0)
