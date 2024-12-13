@@ -502,28 +502,27 @@ function ff_pred16x16_plane_neon_10, export=1
         add             v7.4h,  v7.4h,  v0.4h
         shl             v2.4h,  v7.4h,  #4
         ssubl           v2.4s,  v2.4h,  v3.4h
-        shl             v3.4h,  v4.4h,  #4
         ext             v0.16b, v0.16b, v0.16b, #14
-        ssubl           v6.4s,  v5.4h,  v3.4h
+        sxtl            v6.4s,  v5.4h          // c
 
         mov             v0.h[0],  wzr
         mul             v0.8h,  v0.8h,  v4.h[0]
         dup             v16.4s, v2.s[0]
         dup             v17.4s, v2.s[0]
-        dup             v2.8h,  v4.h[0]
-        dup             v3.4s,  v6.s[0]
-        shl             v2.8h,  v2.8h,  #3
+        dup             v2.8h,  v4.h[0]        // b
+        dup             v3.4s,  v6.s[0]        // c
+        sshll           v2.4s,  v2.4h,  #3     // b * 8
         saddw           v16.4s, v16.4s, v0.4h
         saddw2          v17.4s, v17.4s, v0.8h
-        saddw           v3.4s,  v3.4s,  v2.4h
+        sub             v3.4s,  v3.4s,  v2.4s
 
         mov             w3,      #16
         mvni            v4.8h,   #0xFC, lsl #8 // 1023 for clipping
 1:
         sqshrun         v0.4h,  v16.4s, #5
         sqshrun2        v0.8h,  v17.4s, #5
-        saddw           v16.4s, v16.4s, v2.4h
-        saddw           v17.4s, v17.4s, v2.4h
+        add             v16.4s, v16.4s, v2.4s
+        add             v17.4s, v17.4s, v2.4s
         sqshrun         v1.4h,  v16.4s, #5
         sqshrun2        v1.8h,  v17.4s, #5
         add             v16.4s, v16.4s, v3.4s
