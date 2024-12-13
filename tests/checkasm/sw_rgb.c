@@ -453,6 +453,50 @@ static void check_rgb_to_uv(SwsContext *sws)
     }
 }
 
+static void check_rgba_to_a(SwsContext *sws)
+{
+    SwsInternal *ctx = sws_internal(sws);
+
+    LOCAL_ALIGNED_16(uint8_t, src,  [MAX_LINE_SIZE * 4]);
+    LOCAL_ALIGNED_32(uint8_t, dst0_y, [MAX_LINE_SIZE * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst1_y, [MAX_LINE_SIZE * 2]);
+
+    declare_func(void, uint8_t *dst, const uint8_t *src1,
+                 const uint8_t *src2, const uint8_t *src3, int width,
+                 uint32_t *rgb2yuv, void *opq);
+
+    randomize_buffers(src, MAX_LINE_SIZE * 4);
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(rgb_formats); i++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(rgb_formats[i]);
+        if (desc->nb_components < 4)
+            continue;
+
+        sws->src_format = rgb_formats[i];
+        ff_sws_init_scale(ctx);
+
+        for (int j = 0; j < FF_ARRAY_ELEMS(input_sizes); j++) {
+            int w = input_sizes[j];
+
+            if (check_func(ctx->alpToYV12, "%s_to_y_%d", desc->name, w)) {
+                memset(dst0_y, 0xFA, MAX_LINE_SIZE * 2);
+                memset(dst1_y, 0xFA, MAX_LINE_SIZE * 2);
+
+                call_ref(dst0_y, NULL, NULL, src, w, ctx->input_rgb2yuv_table, NULL);
+                call_new(dst1_y, NULL, NULL, src, w, ctx->input_rgb2yuv_table, NULL);
+
+                if (memcmp(dst0_y, dst1_y, w * 2))
+                    fail();
+
+                // only bench native endian formats
+                if (sws->src_format == AV_PIX_FMT_RGB32 || sws->src_format == AV_PIX_FMT_RGB32_1)
+                    bench_new(dst1_y, NULL, NULL, src, w, ctx->input_rgb2yuv_table, NULL);
+            }
+        }
+    }
+}
+
+
 static const int packed_rgb_fmts[] = {
     AV_PIX_FMT_RGB24,
     AV_PIX_FMT_BGR24,
@@ -793,6 +837,9 @@ void checkasm_check_sw_rgb(void)
 
     check_rgb_to_uv(sws);
     report("rgb_to_uv");
+
+    check_rgba_to_a(sws);
+    report("rgba_to_a");
 
     check_rgb24toyv12(sws);
     report("rgb24toyv12");
