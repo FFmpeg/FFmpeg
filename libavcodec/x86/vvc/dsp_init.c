@@ -215,6 +215,44 @@ ALF_FUNCS(16, 12, avx2)
 
 #endif
 
+#define SAO_FILTER_FUNC(wd, bitd, opt)                                                                                               \
+void ff_vvc_sao_band_filter_##wd##_##bitd##_##opt(uint8_t *_dst, const uint8_t *_src, ptrdiff_t _stride_dst, ptrdiff_t _stride_src,  \
+    const int16_t *sao_offset_val, int sao_left_class, int width, int height);                                                       \
+void ff_vvc_sao_edge_filter_##wd##_##bitd##_##opt(uint8_t *_dst, const uint8_t *_src, ptrdiff_t stride_dst,                          \
+        const int16_t *sao_offset_val, int eo, int width, int height);                                                               \
+
+#define SAO_FILTER_FUNCS(bitd, opt)     \
+    SAO_FILTER_FUNC(8,   bitd, opt)     \
+    SAO_FILTER_FUNC(16,  bitd, opt)     \
+    SAO_FILTER_FUNC(32,  bitd, opt)     \
+    SAO_FILTER_FUNC(48,  bitd, opt)     \
+    SAO_FILTER_FUNC(64,  bitd, opt)     \
+    SAO_FILTER_FUNC(80,  bitd, opt)     \
+    SAO_FILTER_FUNC(96,  bitd, opt)     \
+    SAO_FILTER_FUNC(112, bitd, opt)     \
+    SAO_FILTER_FUNC(128, bitd, opt)     \
+
+SAO_FILTER_FUNCS(8,  avx2)
+SAO_FILTER_FUNCS(10, avx2)
+SAO_FILTER_FUNCS(12, avx2)
+
+#define SAO_FILTER_INIT(type, bitd, opt) do {                                   \
+    c->sao.type##_filter[0] = ff_vvc_sao_##type##_filter_8_##bitd##_##opt;    \
+    c->sao.type##_filter[1] = ff_vvc_sao_##type##_filter_16_##bitd##_##opt;   \
+    c->sao.type##_filter[2] = ff_vvc_sao_##type##_filter_32_##bitd##_##opt;   \
+    c->sao.type##_filter[3] = ff_vvc_sao_##type##_filter_48_##bitd##_##opt;   \
+    c->sao.type##_filter[4] = ff_vvc_sao_##type##_filter_64_##bitd##_##opt;   \
+    c->sao.type##_filter[5] = ff_vvc_sao_##type##_filter_80_##bitd##_##opt;   \
+    c->sao.type##_filter[6] = ff_vvc_sao_##type##_filter_96_##bitd##_##opt;   \
+    c->sao.type##_filter[7] = ff_vvc_sao_##type##_filter_112_##bitd##_##opt;  \
+    c->sao.type##_filter[8] = ff_vvc_sao_##type##_filter_128_##bitd##_##opt;  \
+} while (0)
+
+#define SAO_INIT(bitd, opt) do {                                     \
+    SAO_FILTER_INIT(band, bitd, opt);                                \
+    SAO_FILTER_INIT(edge, bitd, opt);                                \
+} while (0)
+
 #define AVG_INIT(bd, opt) do {                                       \
     c->inter.avg    = bf(vvc_avg, bd, opt);                          \
     c->inter.w_avg  = bf(vvc_w_avg, bd, opt);                        \
@@ -329,6 +367,7 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
 
             // filter
             ALF_INIT(8);
+            SAO_INIT(8, avx2);
         }
 #endif
         break;
@@ -350,6 +389,7 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
 
             // filter
             ALF_INIT(10);
+            SAO_INIT(10, avx2);
         }
 #endif
         break;
@@ -371,6 +411,7 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
 
             // filter
             ALF_INIT(12);
+            SAO_INIT(12, avx2);
         }
 #endif
         break;

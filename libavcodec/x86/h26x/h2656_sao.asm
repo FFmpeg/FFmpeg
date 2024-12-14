@@ -147,7 +147,7 @@ align 16
 %assign i i+mmsize
 %endrep
 
-%if %2 == 48
+%if %2 == 48 || %2 == 80 || %2 == 112
 INIT_XMM cpuname
 
     mova             m13, [srcq + i]
@@ -160,7 +160,7 @@ INIT_XMM cpuname
 %if cpuflag(avx2)
 INIT_YMM cpuname
 %endif
-%endif ; %2 == 48
+%endif ; %2 == 48 || %2 == 80 || %2 == 112
 
     add             dstq, dststrideq             ; dst += dststride
     add             srcq, srcstrideq             ; src += srcstride
@@ -280,7 +280,7 @@ align 16
 %assign i i+mmsize
 %endrep
 
-%if %2 == 48
+%if %2 == 48 || %2 == 80 || %2 == 112
 INIT_XMM cpuname
 
     mova              m1, [srcq + i]
@@ -291,7 +291,7 @@ INIT_XMM cpuname
 %if cpuflag(avx2)
 INIT_YMM cpuname
 %endif
-%endif
+%endif ; %2 == 48 || %2 == 80 || %2 == 112
 
     add             dstq, dststrideq
     add             srcq, EDGE_SRCSTRIDE
