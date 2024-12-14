@@ -1975,9 +1975,9 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
             ret = av_buffer_realloc(&s1->a53_buf_ref, new_size);
             if (ret >= 0) {
                 uint8_t field, cc1, cc2;
-                uint8_t *cap = s1->a53_buf_ref->data;
+                uint8_t *cap = s1->a53_buf_ref->data + old_size;
 
-                memset(s1->a53_buf_ref->data + old_size, 0, cc_count * 3);
+                memset(cap, 0, cc_count * 3);
                 for (i = 0; i < cc_count && get_bits_left(&gb) >= 26; i++) {
                     skip_bits(&gb, 2); // priority
                     field = get_bits(&gb, 2);
@@ -2047,7 +2047,7 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
             ret = av_buffer_realloc(&s1->a53_buf_ref, new_size);
             if (ret >= 0) {
                 uint8_t field1 = !!(p[4] & 0x80);
-                uint8_t *cap = s1->a53_buf_ref->data;
+                uint8_t *cap = s1->a53_buf_ref->data + old_size;
                 p += 5;
                 for (i = 0; i < cc_count; i++) {
                     cap[0] = (p[0] == 0xff && field1) ? 0xfc : 0xfd;
@@ -2113,13 +2113,14 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
 
             ret = av_buffer_realloc(&s1->a53_buf_ref, new_size);
             if (ret >= 0) {
-                s1->a53_buf_ref->data[0] = cc_header;
-                s1->a53_buf_ref->data[1] = cc_data[0];
-                s1->a53_buf_ref->data[2] = cc_data[1];
+                uint8_t *cap = s1->a53_buf_ref->data + old_size;
+                cap[0] = cc_header;
+                cap[1] = cc_data[0];
+                cap[2] = cc_data[1];
                 if (cc_count == 2) {
-                    s1->a53_buf_ref->data[3] = cc_header;
-                    s1->a53_buf_ref->data[4] = cc_data[2];
-                    s1->a53_buf_ref->data[5] = cc_data[3];
+                    cap[3] = cc_header;
+                    cap[4] = cc_data[2];
+                    cap[5] = cc_data[3];
                 }
             }
 
