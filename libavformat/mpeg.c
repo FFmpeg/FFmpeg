@@ -620,6 +620,9 @@ redo:
     } else if (startcode >= 0xfd55 && startcode <= 0xfd5f) {
         type     = AVMEDIA_TYPE_VIDEO;
         codec_id = AV_CODEC_ID_VC1;
+    } else if (startcode == 0x69 || startcode == 0x49) {
+        type     = AVMEDIA_TYPE_SUBTITLE;
+        codec_id = AV_CODEC_ID_IVTV_VBI;
     } else {
 skip:
         /* skip packet */
