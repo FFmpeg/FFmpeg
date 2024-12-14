@@ -3649,6 +3649,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("ARIB STD-B24 caption"),
         .profiles  = NULL_IF_CONFIG_SMALL(ff_arib_caption_profiles),
     },
+    {
+        .id        = AV_CODEC_ID_IVTV_VBI,
+        .type      = AVMEDIA_TYPE_SUBTITLE,
+        .name      = "ivtv_vbi",
+        .long_name = NULL_IF_CONFIG_SMALL("ivtv VBI captions"),
+    },
 
     /* other kind of codecs and pseudo-codecs */
     {

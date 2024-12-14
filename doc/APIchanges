@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2025-02-09 - xxxxxxxxxx - lavc 61.32.100 - codec_id.h
+  Add AV_CODEC_ID_IVTV_VBI.
+
 2025-01-25 - xxxxxxxxxx - lavu 59.56.100 - frame.h
   Add AV_SIDE_DATA_PROP_CHANNEL_DEPENDENT.
 

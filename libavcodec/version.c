@@ -36,7 +36,7 @@ unsigned avcodec_version(void)
                   AV_CODEC_ID_ADPCM_XMD    == 69683 &&
                   AV_CODEC_ID_CBD2_DPCM    == 81928 &&
                   AV_CODEC_ID_QOA          == 86121 &&
-                  AV_CODEC_ID_ARIB_CAPTION == 94233 &&
+                  AV_CODEC_ID_IVTV_VBI     == 94234 &&
                   AV_CODEC_ID_SMPTE_2038   == 98315,
                   "Don't insert new codec ids in the middle of a list");
     static_assert(LIBAVCODEC_VERSION_MICRO >= 100, "micro version starts at 100");
