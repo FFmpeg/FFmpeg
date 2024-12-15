@@ -37,6 +37,26 @@ void bf(ff_vvc_w_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,              
 AVG_PROTOTYPES(8, rvv_128)
 AVG_PROTOTYPES(8, rvv_256)
 
+#define DMVR_PROTOTYPES(bd, opt)                                                                    \
+void ff_vvc_dmvr_##bd##_##opt(int16_t *dst, const uint8_t *src, ptrdiff_t src_stride,               \
+     int height, intptr_t mx, intptr_t my, int width);                                              \
+void ff_vvc_dmvr_h_##bd##_##opt(int16_t *dst, const uint8_t *src, ptrdiff_t src_stride,             \
+     int height, intptr_t mx, intptr_t my, int width);                                              \
+void ff_vvc_dmvr_v_##bd##_##opt(int16_t *dst, const uint8_t *src, ptrdiff_t src_stride,             \
+     int height, intptr_t mx, intptr_t my, int width);                                              \
+void ff_vvc_dmvr_hv_##bd##_##opt(int16_t *dst, const uint8_t *src, ptrdiff_t src_stride,            \
+     int height, intptr_t mx, intptr_t my, int width);                                              \
+
+DMVR_PROTOTYPES(8, rvv_128)
+DMVR_PROTOTYPES(8, rvv_256)
+
+#define DMVR_INIT(bd, opt) do {                                    \
+    c->inter.dmvr[0][0]   = ff_vvc_dmvr_##bd##_##opt;              \
+    c->inter.dmvr[0][1]   = ff_vvc_dmvr_h_##bd##_##opt;            \
+    c->inter.dmvr[1][0]   = ff_vvc_dmvr_v_##bd##_##opt;            \
+    c->inter.dmvr[1][1]   = ff_vvc_dmvr_hv_##bd##_##opt;           \
+} while (0)
+
 void ff_vvc_dsp_init_riscv(VVCDSPContext *const c, const int bd)
 {
 #if HAVE_RVV
@@ -54,6 +74,7 @@ void ff_vvc_dsp_init_riscv(VVCDSPContext *const c, const int bd)
 # if (__riscv_xlen == 64)
                 c->inter.w_avg    = ff_vvc_w_avg_8_rvv_256;
 # endif
+                DMVR_INIT(8, rvv_256);
                 break;
             default:
                 break;
@@ -65,6 +86,7 @@ void ff_vvc_dsp_init_riscv(VVCDSPContext *const c, const int bd)
 # if (__riscv_xlen == 64)
                 c->inter.w_avg    = ff_vvc_w_avg_8_rvv_128;
 # endif
+                DMVR_INIT(8, rvv_128);
                 break;
             default:
                 break;
