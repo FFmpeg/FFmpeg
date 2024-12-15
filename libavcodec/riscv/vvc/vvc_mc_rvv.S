@@ -23,25 +23,25 @@
 .macro vsetvlstatic8 w, vlen
         .if \w == 2 && \vlen == 128
                 vsetivli        zero, \w, e8, mf8, ta, ma
-        .elseif \w == 4 && \vlen == 128
+        .elseif \w <= 4 && \vlen == 128
                 vsetivli        zero, \w, e8, mf4, ta, ma
-        .elseif \w == 8 && \vlen == 128
+        .elseif \w <= 8 && \vlen == 128
                 vsetivli        zero, \w, e8, mf2, ta, ma
-        .elseif \w == 16 && \vlen == 128
+        .elseif \w <= 16 && \vlen == 128
                 vsetivli        zero, \w, e8, m1, ta, ma
-        .elseif \w == 32 && \vlen == 128
+        .elseif \w <= 32 && \vlen == 128
                 li              t0, \w
                 vsetvli         zero, t0, e8, m2, ta, ma
         .elseif \w <= 4 && \vlen == 256
                 vsetivli        zero, \w, e8, mf8, ta, ma
-        .elseif \w == 8 && \vlen == 256
+        .elseif \w <= 8 && \vlen == 256
                 vsetivli        zero, \w, e8, mf4, ta, ma
-        .elseif \w == 16 && \vlen == 256
+        .elseif \w <= 16 && \vlen == 256
                 vsetivli        zero, \w, e8, mf2, ta, ma
-        .elseif \w == 32 && \vlen == 256
+        .elseif \w <= 32 && \vlen == 256
                 li              t0, \w
                 vsetvli         zero, t0, e8, m1, ta, ma
-        .elseif \w == 64 && \vlen == 256
+        .elseif \w <= 64 && \vlen == 256
                 li              t0, \w
                 vsetvli         zero, t0, e8, m2, ta, ma
         .else
@@ -53,25 +53,25 @@
 .macro vsetvlstatic16 w, vlen
         .if \w == 2 && \vlen == 128
                 vsetivli        zero, \w, e16, mf4, ta, ma
-        .elseif \w == 4 && \vlen == 128
+        .elseif \w <= 4 && \vlen == 128
                 vsetivli        zero, \w, e16, mf2, ta, ma
-        .elseif \w == 8 && \vlen == 128
+        .elseif \w <= 8 && \vlen == 128
                 vsetivli        zero, \w, e16, m1, ta, ma
-        .elseif \w == 16 && \vlen == 128
+        .elseif \w <= 16 && \vlen == 128
                 vsetivli        zero, \w, e16, m2, ta, ma
-        .elseif \w == 32 && \vlen == 128
+        .elseif \w <= 32 && \vlen == 128
                 li              t0, \w
                 vsetvli         zero, t0, e16, m4, ta, ma
         .elseif \w <= 4 && \vlen == 256
                 vsetivli        zero, \w, e16, mf4, ta, ma
-        .elseif \w == 8 && \vlen == 256
+        .elseif \w <= 8 && \vlen == 256
                 vsetivli        zero, \w, e16, mf2, ta, ma
-        .elseif \w == 16 && \vlen == 256
+        .elseif \w <= 16 && \vlen == 256
                 vsetivli        zero, \w, e16, m1, ta, ma
-        .elseif \w == 32 && \vlen == 256
+        .elseif \w <= 32 && \vlen == 256
                 li              t0, \w
                 vsetvli         zero, t0, e16, m2, ta, ma
-        .elseif \w == 64 && \vlen == 256
+        .elseif \w <= 64 && \vlen == 256
                 li              t0, \w
                 vsetvli         zero, t0, e16, m4, ta, ma
         .else
@@ -83,19 +83,19 @@
 .macro vsetvlstatic32 w, vlen
         .if \w == 2
                 vsetivli        zero, \w, e32, mf2, ta, ma
-        .elseif \w == 4 && \vlen == 128
+        .elseif \w <= 4 && \vlen == 128
                 vsetivli        zero, \w, e32, m1, ta, ma
-        .elseif \w == 8 && \vlen == 128
+        .elseif \w <= 8 && \vlen == 128
                 vsetivli        zero, \w, e32, m2, ta, ma
-        .elseif \w == 16 && \vlen == 128
+        .elseif \w <= 16 && \vlen == 128
                 vsetivli        zero, \w, e32, m4, ta, ma
-        .elseif \w == 4 && \vlen == 256
+        .elseif \w <= 4 && \vlen == 256
                 vsetivli        zero, \w, e32, mf2, ta, ma
-        .elseif \w == 8 && \vlen == 256
+        .elseif \w <= 8 && \vlen == 256
                 vsetivli        zero, \w, e32, m1, ta, ma
-        .elseif \w == 16 && \vlen == 256
+        .elseif \w <= 16 && \vlen == 256
                 vsetivli        zero, \w, e32, m2, ta, ma
-        .elseif \w == 32 && \vlen == 256
+        .elseif \w <= 32 && \vlen == 256
                 li              t0, \w
                 vsetvli         zero, t0, e32, m4, ta, ma
         .else
