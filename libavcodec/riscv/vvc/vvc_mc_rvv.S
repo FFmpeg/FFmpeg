@@ -18,91 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/riscv/asm.S"
-
-.macro vsetvlstatic8 w, vlen
-        .if \w == 2 && \vlen == 128
-                vsetivli        zero, \w, e8, mf8, ta, ma
-        .elseif \w <= 4 && \vlen == 128
-                vsetivli        zero, \w, e8, mf4, ta, ma
-        .elseif \w <= 8 && \vlen == 128
-                vsetivli        zero, \w, e8, mf2, ta, ma
-        .elseif \w <= 16 && \vlen == 128
-                vsetivli        zero, \w, e8, m1, ta, ma
-        .elseif \w <= 32 && \vlen == 128
-                li              t0, \w
-                vsetvli         zero, t0, e8, m2, ta, ma
-        .elseif \w <= 4 && \vlen == 256
-                vsetivli        zero, \w, e8, mf8, ta, ma
-        .elseif \w <= 8 && \vlen == 256
-                vsetivli        zero, \w, e8, mf4, ta, ma
-        .elseif \w <= 16 && \vlen == 256
-                vsetivli        zero, \w, e8, mf2, ta, ma
-        .elseif \w <= 32 && \vlen == 256
-                li              t0, \w
-                vsetvli         zero, t0, e8, m1, ta, ma
-        .elseif \w <= 64 && \vlen == 256
-                li              t0, \w
-                vsetvli         zero, t0, e8, m2, ta, ma
-        .else
-                li              t0, \w
-                vsetvli         zero, t0, e8, m4, ta, ma
-        .endif
-.endm
-
-.macro vsetvlstatic16 w, vlen
-        .if \w == 2 && \vlen == 128
-                vsetivli        zero, \w, e16, mf4, ta, ma
-        .elseif \w <= 4 && \vlen == 128
-                vsetivli        zero, \w, e16, mf2, ta, ma
-        .elseif \w <= 8 && \vlen == 128
-                vsetivli        zero, \w, e16, m1, ta, ma
-        .elseif \w <= 16 && \vlen == 128
-                vsetivli        zero, \w, e16, m2, ta, ma
-        .elseif \w <= 32 && \vlen == 128
-                li              t0, \w
-                vsetvli         zero, t0, e16, m4, ta, ma
-        .elseif \w <= 4 && \vlen == 256
-                vsetivli        zero, \w, e16, mf4, ta, ma
-        .elseif \w <= 8 && \vlen == 256
-                vsetivli        zero, \w, e16, mf2, ta, ma
-        .elseif \w <= 16 && \vlen == 256
-                vsetivli        zero, \w, e16, m1, ta, ma
-        .elseif \w <= 32 && \vlen == 256
-                li              t0, \w
-                vsetvli         zero, t0, e16, m2, ta, ma
-        .elseif \w <= 64 && \vlen == 256
-                li              t0, \w
-                vsetvli         zero, t0, e16, m4, ta, ma
-        .else
-                li              t0, \w
-                vsetvli         zero, t0, e16, m8, ta, ma
-        .endif
-.endm
-
-.macro vsetvlstatic32 w, vlen
-        .if \w == 2
-                vsetivli        zero, \w, e32, mf2, ta, ma
-        .elseif \w <= 4 && \vlen == 128
-                vsetivli        zero, \w, e32, m1, ta, ma
-        .elseif \w <= 8 && \vlen == 128
-                vsetivli        zero, \w, e32, m2, ta, ma
-        .elseif \w <= 16 && \vlen == 128
-                vsetivli        zero, \w, e32, m4, ta, ma
-        .elseif \w <= 4 && \vlen == 256
-                vsetivli        zero, \w, e32, mf2, ta, ma
-        .elseif \w <= 8 && \vlen == 256
-                vsetivli        zero, \w, e32, m1, ta, ma
-        .elseif \w <= 16 && \vlen == 256
-                vsetivli        zero, \w, e32, m2, ta, ma
-        .elseif \w <= 32 && \vlen == 256
-                li              t0, \w
-                vsetvli         zero, t0, e32, m4, ta, ma
-        .else
-                li              t0, \w
-                vsetvli         zero, t0, e32, m8, ta, ma
-        .endif
-.endm
+#include "libavcodec/riscv/h26x/asm.S"
 
 .macro avg w, vlen, id
 \id\w\vlen:
@@ -157,35 +73,12 @@
         ret
 .endm
 
-
-.macro AVG_JMP_TABLE id, vlen
-const jmp_table_\id\vlen
-        .4byte \id\()2\vlen\()f - jmp_table_\id\vlen
-        .4byte \id\()4\vlen\()f - jmp_table_\id\vlen
-        .4byte \id\()8\vlen\()f - jmp_table_\id\vlen
-        .4byte \id\()16\vlen\()f - jmp_table_\id\vlen
-        .4byte \id\()32\vlen\()f - jmp_table_\id\vlen
-        .4byte \id\()64\vlen\()f - jmp_table_\id\vlen
-        .4byte \id\()128\vlen\()f - jmp_table_\id\vlen
-endconst
-.endm
-
-.macro AVG_J vlen, id
-        clz               t1, a4
-        neg               t1, t1
-        lla               t5, jmp_table_\id\vlen
-        sh2add            t1, t1, t5
-        lw                t1, ((__riscv_xlen-2)<<2)(t1)
-        add               t1, t1, t5
-        jr                t1
-.endm
-
 .macro func_avg vlen
 func ff_vvc_avg_8_rvv_\vlen\(), zve32x, zbb, zba
         lpad    0
-        AVG_JMP_TABLE     1, \vlen
+        POW2_JMP_TABLE    1, \vlen
         csrwi             vxrm, 0
-        AVG_J             \vlen, 1
+        POW2_J            \vlen, 1, a4
         .irp w,2,4,8,16,32,64,128
         avg               \w, \vlen, 1
         .endr
@@ -265,7 +158,7 @@ func_avg 256
 .macro func_w_avg vlen
 func ff_vvc_w_avg_8_rvv_\vlen\(), zve32x, zbb, zba
         lpad    0
-        AVG_JMP_TABLE     2, \vlen
+        POW2_JMP_TABLE    2, \vlen
         csrwi             vxrm, 0
         addi              t6, a6, 7
         ld                t3, (sp)
@@ -275,7 +168,7 @@ func ff_vvc_w_avg_8_rvv_\vlen\(), zve32x, zbb, zba
         add               t4, t4, t5
         addi              t5, t6, -1      // shift - 1
         sll               t4, t4, t5
-        AVG_J             \vlen, 2
+        POW2_J            \vlen, 2, a4
         .irp w,2,4,8,16,32,64,128
         w_avg             \w, \vlen, 2
         .endr
