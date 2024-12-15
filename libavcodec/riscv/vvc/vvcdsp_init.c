@@ -59,6 +59,9 @@ DMVR_PROTOTYPES(8, rvv_256)
     c->inter.dmvr[1][1]   = ff_vvc_dmvr_hv_##bd##_##opt;           \
 } while (0)
 
+int ff_vvc_sad_rvv_128(const int16_t *src0, const int16_t *src1, int dx, int dy, int block_w, int block_h);
+int ff_vvc_sad_rvv_256(const int16_t *src0, const int16_t *src1, int dx, int dy, int block_w, int block_h);
+
 #define PUT_PIXELS_PROTOTYPES2(bd, opt)                                          \
 void bf(ff_vvc_put_pixels, bd, opt)(int16_t *dst,                                \
     const uint8_t *_src, const ptrdiff_t _src_stride,                            \
@@ -97,6 +100,8 @@ void ff_vvc_dsp_init_riscv(VVCDSPContext *const c, const int bd)
                 FUNCS(LUMA, rvv_256);
                 FUNCS(CHROMA, rvv_256);
                 break;
+            case 10:
+                c->inter.sad      = ff_vvc_sad_rvv_256;
             default:
                 break;
         }
@@ -111,6 +116,8 @@ void ff_vvc_dsp_init_riscv(VVCDSPContext *const c, const int bd)
                 FUNCS(LUMA, rvv_128);
                 FUNCS(CHROMA, rvv_128);
                 break;
+            case 10:
+                c->inter.sad      = ff_vvc_sad_rvv_128;
             default:
                 break;
         }
