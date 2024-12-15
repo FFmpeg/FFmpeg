@@ -125,3 +125,45 @@ endconst
         add               t1, t1, t5
         jr                t1
 .endm
+
+.macro put_pixels w, vlen, id, MAX_PB_SIZE
+\id\w\vlen:
+        vsetvlstatic8     \w, \vlen
+        li                t2, 1<<6
+.if \w == 128 && \vlen == 128
+1:
+        addi              t0, a1, 64
+        addi              t1, a0, 64*2
+        vle8.v            v0, (a1)
+        vle8.v            v16, (t0)
+        vwmulu.vx         v8, v0, t2
+        vwmulu.vx         v24, v16, t2
+        vse16.v           v8, (a0)
+        vse16.v           v24, (t1)
+        add               a1, a1, a2
+        addi              a3, a3, -1
+        addi              a0, a0, 128*2
+        bnez              a3, 1b
+.else
+1:
+        vle8.v            v0, (a1)
+        vwmulu.vx         v8, v0, t2
+        vse16.v           v8, (a0)
+        add               a1, a1, a2
+        addi              a3, a3, -1
+        addi              a0, a0, \MAX_PB_SIZE<<1
+        bnez              a3, 1b
+.endif
+        ret
+.endm
+
+.macro func_put_pixels vlen, MAX_PB_SIZE, name
+func ff_\name\()_put_pixels_8_rvv_\vlen\(), zve32x, zbb, zba
+        lpad    0
+        POW2_JMP_TABLE    3, \vlen
+        POW2_J            \vlen, 3, a6
+        .irp w,2,4,8,16,32,64,128
+        put_pixels        \w, \vlen, 3, \MAX_PB_SIZE
+        .endr
+endfunc
+.endm

@@ -300,3 +300,6 @@ func_dmvr \vlen, dmvr_h
 func_dmvr \vlen, dmvr_v
 func_dmvr \vlen, dmvr_hv
 .endr
+
+func_put_pixels 256, 128, vvc
+func_put_pixels 128, 128, vvc
