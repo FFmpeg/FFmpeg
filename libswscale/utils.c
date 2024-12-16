@@ -2548,14 +2548,14 @@ SwsContext *sws_getCachedContext(SwsContext *prev, int srcW,
     if (!param)
         param = default_param;
 
-    if (prev && (prev->src_w            == srcW      ||
-                 prev->src_h            == srcH      ||
-                 prev->src_format       == srcFormat ||
-                 prev->dst_w            == dstW      ||
-                 prev->dst_h            == dstH      ||
-                 prev->dst_format       == dstFormat ||
-                 prev->flags            == flags     ||
-                 prev->scaler_params[0] == param[0]  ||
+    if (prev && (prev->src_w            == srcW      &&
+                 prev->src_h            == srcH      &&
+                 prev->src_format       == srcFormat &&
+                 prev->dst_w            == dstW      &&
+                 prev->dst_h            == dstH      &&
+                 prev->dst_format       == dstFormat &&
+                 prev->flags            == flags     &&
+                 prev->scaler_params[0] == param[0]  &&
                  prev->scaler_params[1] == param[1])) {
         return prev;
     }
