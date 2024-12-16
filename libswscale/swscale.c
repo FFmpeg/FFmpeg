@@ -773,10 +773,10 @@ void ff_xyz12Torgb48(const SwsInternal *c, uint8_t *dst, int dst_stride,
                 c->xyz2rgb_matrix[2][1] * y +
                 c->xyz2rgb_matrix[2][2] * z >> 12;
 
-            // limit values to 12-bit depth
-            r = av_clip_uintp2(r, 12);
-            g = av_clip_uintp2(g, 12);
-            b = av_clip_uintp2(b, 12);
+            // limit values to 16-bit depth
+            r = av_clip_uint16(r);
+            g = av_clip_uint16(g);
+            b = av_clip_uint16(b);
 
             // convert from sRGBlinear to RGB and scale from 12bit to 16bit
             if (desc->flags & AV_PIX_FMT_FLAG_BE) {
@@ -832,10 +832,10 @@ void ff_rgb48Toxyz12(const SwsInternal *c, uint8_t *dst, int dst_stride,
                 c->rgb2xyz_matrix[2][1] * g +
                 c->rgb2xyz_matrix[2][2] * b >> 12;
 
-            // limit values to 12-bit depth
-            x = av_clip_uintp2(x, 12);
-            y = av_clip_uintp2(y, 12);
-            z = av_clip_uintp2(z, 12);
+            // limit values to 16-bit depth
+            x = av_clip_uint16(x);
+            y = av_clip_uint16(y);
+            z = av_clip_uint16(z);
 
             // convert from XYZlinear to X'Y'Z' and scale from 12bit to 16bit
             if (desc->flags & AV_PIX_FMT_FLAG_BE) {

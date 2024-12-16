@@ -547,10 +547,10 @@ struct SwsInternal {
 /* pre defined color-spaces gamma */
 #define XYZ_GAMMA (2.6f)
 #define RGB_GAMMA (2.2f)
-    int16_t *xyzgamma;
-    int16_t *rgbgamma;
-    int16_t *xyzgammainv;
-    int16_t *rgbgammainv;
+    uint16_t *xyzgamma;
+    uint16_t *rgbgamma;
+    uint16_t *xyzgammainv;
+    uint16_t *rgbgammainv;
     int16_t xyz2rgb_matrix[3][4];
     int16_t rgb2xyz_matrix[3][4];
 
