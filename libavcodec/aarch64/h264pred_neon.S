@@ -595,12 +595,11 @@ function ff_pred8x8_plane_neon_10, export=1
         ssubl           v2.4s,  v2.4h,  v3.4h
         ext             v0.16b, v0.16b, v0.16b, #14
         mov             v0.h[0],  wzr
-        mul             v0.8h,  v0.8h,  v5.h[0]
         dup             v1.4s,  v2.s[0]
         dup             v2.4s,  v2.s[0]
         dup             v3.8h,  v5.h[1]
-        saddw           v1.4s,  v1.4s,  v0.4h
-        saddw2          v2.4s,  v2.4s,  v0.8h
+        smlal           v1.4s,  v0.4h,  v5.h[0]
+        smlal2          v2.4s,  v0.8h,  v5.h[0]
         mov             w3,  #8
         mvni            v4.8h,  #0xFC,  lsl #8 // 1023 for clipping
 1:
