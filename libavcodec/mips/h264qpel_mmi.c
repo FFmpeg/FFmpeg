@@ -1258,7 +1258,6 @@ static void avg_h264_qpel16_v_lowpass_mmi(uint8_t *dst, const uint8_t *src,
 static void put_h264_qpel4_hv_lowpass_mmi(uint8_t *dst, const uint8_t *src,
         int dstStride, int srcStride)
 {
-    INIT_CLIP
     int i;
     int16_t _tmp[36];
     int16_t *tmp = _tmp;
@@ -1822,7 +1821,6 @@ static void put_pixels16_l2_shift5_mmi(uint8_t *dst, int16_t *src16,
 static void avg_h264_qpel4_hv_lowpass_mmi(uint8_t *dst, const uint8_t *src,
         int dstStride, int srcStride)
 {
-    INIT_CLIP
     int i;
     int16_t _tmp[36];
     int16_t *tmp = _tmp;
