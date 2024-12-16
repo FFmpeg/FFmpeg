@@ -54,6 +54,11 @@ enum { kCVPixelFormatType_420YpCbCr10BiPlanarFullRange = 'xf20' };
 enum { kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange = 'x420' };
 #endif
 
+#if !HAVE_KVTQPMODULATIONLEVEL_DEFAULT
+enum { kVTQPModulationLevel_Default = -1 };
+enum { kVTQPModulationLevel_Disable = 0 };
+#endif
+
 #ifndef TARGET_CPU_ARM64
 #   define TARGET_CPU_ARM64 0
 #endif
@@ -121,6 +126,7 @@ static struct{
     CFStringRef kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality;
     CFStringRef kVTCompressionPropertyKey_ConstantBitRate;
     CFStringRef kVTCompressionPropertyKey_EncoderID;
+    CFStringRef kVTCompressionPropertyKey_SpatialAdaptiveQPLevel;
 
     CFStringRef kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder;
     CFStringRef kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder;
@@ -208,6 +214,7 @@ static void loadVTEncSymbols(void){
             "ReferenceBufferCount");
     GET_SYM(kVTCompressionPropertyKey_MaxAllowedFrameQP, "MaxAllowedFrameQP");
     GET_SYM(kVTCompressionPropertyKey_MinAllowedFrameQP, "MinAllowedFrameQP");
+    GET_SYM(kVTCompressionPropertyKey_SpatialAdaptiveQPLevel, "SpatialAdaptiveQPLevel");
 }
 
 #define H264_PROFILE_CONSTRAINED_HIGH (AV_PROFILE_H264_HIGH | AV_PROFILE_H264_CONSTRAINED)
@@ -279,6 +286,7 @@ typedef struct VTEncContext {
     int max_slice_bytes;
     int power_efficient;
     int max_ref_frames;
+    int spatialaq;
 } VTEncContext;
 
 static void vtenc_free_buf_node(BufNode *info)
@@ -1599,6 +1607,13 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
         }
     }
 
+    if (vtctx->spatialaq >= 0) {
+        set_encoder_int_property_or_log(avctx,
+                                        compat_keys.kVTCompressionPropertyKey_SpatialAdaptiveQPLevel,
+                                        "spatialaq",
+                                        vtctx->spatialaq ? kVTQPModulationLevel_Default : kVTQPModulationLevel_Disable);
+    }
+
     status = VTCompressionSessionPrepareToEncodeFrames(vtctx->session);
     if (status) {
         av_log(avctx, AV_LOG_ERROR, "Error: cannot prepare encoder: %d\n", status);
@@ -2891,6 +2906,8 @@ static const enum AVPixelFormat prores_pix_fmts[] = {
         { .i64 = -1 }, -1, 1, VE }, \
     { "power_efficient", "Set to 1 to enable more power-efficient encoding if supported.", \
         OFFSET(power_efficient), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE }, \
+    { "spatial_aq", "Set to 1 to enable spatial AQ if supported.", \
+        OFFSET(spatialaq), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE }, \
     { "max_ref_frames", \
         "Sets the maximum number of reference frames. This only has an effect when the value is less than the maximum allowed by the profile/level.", \
         OFFSET(max_ref_frames), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
