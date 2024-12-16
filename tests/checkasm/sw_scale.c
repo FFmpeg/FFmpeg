@@ -256,6 +256,77 @@ static void check_yuv2yuvX(int accurate)
 #undef FILTER_SIZES
 }
 
+static void check_yuv2nv12cX(int accurate)
+{
+    SwsContext *sws;
+    SwsInternal *c;
+#define LARGEST_FILTER 16
+    const int filter_sizes[] = {2, 4, 8, 16};
+#define LARGEST_INPUT_SIZE 512
+    static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
+    const char *accurate_str = (accurate) ? "accurate" : "approximate";
+
+    declare_func_emms(AV_CPU_FLAG_MMX, void, enum AVPixelFormat dstFormat,
+                      const uint8_t *chrDither, const int16_t *chrFilter,
+                      int chrFilterSize, const int16_t **chrUSrc,
+                      const int16_t **chrVSrc, uint8_t *dest, int dstW);
+
+    const int16_t *srcU[LARGEST_FILTER], *srcV[LARGEST_FILTER];
+    LOCAL_ALIGNED_16(int16_t, srcU_pixels, [LARGEST_FILTER * LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_16(int16_t, srcV_pixels, [LARGEST_FILTER * LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_16(int16_t, filter_coeff, [LARGEST_FILTER]);
+    LOCAL_ALIGNED_16(uint8_t, dst0, [LARGEST_INPUT_SIZE * 2]);
+    LOCAL_ALIGNED_16(uint8_t, dst1, [LARGEST_INPUT_SIZE * 2]);
+    LOCAL_ALIGNED_16(uint8_t, dither, [LARGEST_INPUT_SIZE]);
+    uint8_t d_val = rnd();
+    memset(dither, d_val, LARGEST_INPUT_SIZE);
+    randomize_buffers((uint8_t*)srcU_pixels, LARGEST_FILTER * LARGEST_INPUT_SIZE * sizeof(int16_t));
+    randomize_buffers((uint8_t*)srcV_pixels, LARGEST_FILTER * LARGEST_INPUT_SIZE * sizeof(int16_t));
+    for (int i = 0; i < LARGEST_FILTER; i++) {
+        srcU[i] = &srcU_pixels[i * LARGEST_INPUT_SIZE];
+        srcV[i] = &srcV_pixels[i * LARGEST_INPUT_SIZE];
+    }
+
+    sws = sws_alloc_context();
+    sws->dst_format = AV_PIX_FMT_NV12;
+    if (accurate)
+        sws->flags |= SWS_ACCURATE_RND;
+    if (sws_init_context(sws, NULL, NULL) < 0)
+        fail();
+
+    c = sws_internal(sws);
+    ff_sws_init_scale(c);
+    for (int isi = 0; isi < FF_ARRAY_ELEMS(input_sizes); isi++){
+        const int dstW = input_sizes[isi];
+        for (int fsi = 0; fsi < FF_ARRAY_ELEMS(filter_sizes); fsi++) {
+            const int filter_size = filter_sizes[fsi];
+            for (int i = 0; i < filter_size; i++)
+                filter_coeff[i] = -((1 << 12) / (filter_size - 1));
+            filter_coeff[rnd() % filter_size] = (1 << 13) - 1;
+
+            if (check_func(c->yuv2nv12cX, "yuv2nv12cX_%d_%d_%s", filter_size, dstW, accurate_str)){
+                memset(dst0, 0, LARGEST_INPUT_SIZE * sizeof(dst0[0]));
+                memset(dst1, 0, LARGEST_INPUT_SIZE * sizeof(dst1[0]));
+
+                call_ref(sws->dst_format, dither, &filter_coeff[0], filter_size, srcU, srcV, dst0, dstW);
+                call_new(sws->dst_format, dither, &filter_coeff[0], filter_size, srcU, srcV, dst1, dstW);
+
+                if (cmp_off_by_n(dst0, dst1, dstW * 2 * sizeof(dst0[0]), accurate ? 0 : 2)) {
+                    fail();
+                    printf("failed: yuv2nv12wX_%d_%d_%s\n", filter_size, dstW, accurate_str);
+                    show_differences(dst0, dst1, dstW * 2 * sizeof(dst0[0]));
+                }
+                if (dstW == LARGEST_INPUT_SIZE)
+                    bench_new(sws->dst_format, dither, &filter_coeff[0], filter_size, srcU, srcV, dst1, dstW);
+
+            }
+        }
+    }
+    sws_freeContext(sws);
+}
+#undef LARGEST_FILTER
+#undef LARGEST_INPUT_SIZE
+
 #undef SRC_PIXELS
 #define SRC_PIXELS 512
 
@@ -373,4 +444,7 @@ void checkasm_check_sw_scale(void)
     check_yuv2yuvX(0);
     check_yuv2yuvX(1);
     report("yuv2yuvX");
+    check_yuv2nv12cX(0);
+    check_yuv2nv12cX(1);
+    report("yuv2nv12cX");
 }
