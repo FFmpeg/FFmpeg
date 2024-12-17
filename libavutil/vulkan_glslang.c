@@ -192,7 +192,7 @@ static int glslc_shader_compile(FFVulkanContext *s, FFVkSPIRVCompiler *ctx,
         .optimize_size = 0,
         .disassemble = 0,
         .validate = 1,
-        .compile_only = 0,
+        /* .compile_only = 0, */
     };
 #endif
 
