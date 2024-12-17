@@ -1206,7 +1206,7 @@ yuv2rgba64_1_c_template(SwsInternal *c, const int32_t *buf0,
     int i;
     int A1 = 0xffff<<14, A2= 0xffff<<14;
 
-    if (uvalpha < 2048) {
+    if (uvalpha == 0) {
         for (i = 0; i < ((dstW + 1) >> 1); i++) {
             SUINT Y1 = (buf0[i * 2]    ) >> 2;
             SUINT Y2 = (buf0[i * 2 + 1]) >> 2;
@@ -1253,11 +1253,14 @@ yuv2rgba64_1_c_template(SwsInternal *c, const int32_t *buf0,
     } else {
         const int32_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
         int A1 = 0xffff<<14, A2 = 0xffff<<14;
+        int uvalpha1 = 4096 - uvalpha;
+        av_assert2(uvalpha <= 4096U);
+
         for (i = 0; i < ((dstW + 1) >> 1); i++) {
             SUINT Y1 = (buf0[i * 2]    ) >> 2;
             SUINT Y2 = (buf0[i * 2 + 1]) >> 2;
-            int U  = (ubuf0[i] + ubuf1[i] - (128 << 12)) >> 3;
-            int V  = (vbuf0[i] + vbuf1[i] - (128 << 12)) >> 3;
+            int U = (ubuf0[i] * uvalpha1 + ubuf1[i] * uvalpha - (128 << 23)) >> 14;
+            int V = (vbuf0[i] * uvalpha1 + vbuf1[i] * uvalpha - (128 << 23)) >> 14;
             int R, G, B;
 
             Y1 -= c->yuv2rgb_y_offset;
@@ -1428,7 +1431,7 @@ yuv2rgba64_full_1_c_template(SwsInternal *c, const int32_t *buf0,
     int i;
     int A = 0xffff<<14;
 
-    if (uvalpha < 2048) {
+    if (uvalpha == 0) {
         for (i = 0; i < dstW; i++) {
             SUINT Y  = (buf0[i]) >> 2;
             int U  = (ubuf0[i] - (128 << 11)) >> 2;
@@ -1461,11 +1464,14 @@ yuv2rgba64_full_1_c_template(SwsInternal *c, const int32_t *buf0,
         }
     } else {
         const int32_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
+        int uvalpha1 = 4096 - uvalpha;
         int A = 0xffff<<14;
+        av_assert2(uvalpha <= 4096U);
+
         for (i = 0; i < dstW; i++) {
             SUINT Y  = (buf0[i]    ) >> 2;
-            int U  = (ubuf0[i] + ubuf1[i] - (128 << 12)) >> 3;
-            int V  = (vbuf0[i] + vbuf1[i] - (128 << 12)) >> 3;
+            int U = (ubuf0[i] * uvalpha1 + ubuf1[i] * uvalpha - (128 << 23)) >> 14;
+            int V = (vbuf0[i] * uvalpha1 + vbuf1[i] * uvalpha - (128 << 23)) >> 14;
             int R, G, B;
 
             Y -= c->yuv2rgb_y_offset;
@@ -1813,7 +1819,7 @@ yuv2rgb_1_c_template(SwsInternal *c, const int16_t *buf0,
     const int16_t *ubuf0 = ubuf[0], *vbuf0 = vbuf[0];
     int i;
 
-    if (uvalpha < 2048) {
+    if (uvalpha == 0) {
         for (i = 0; i < ((dstW + 1) >> 1); i++) {
             int Y1 = (buf0[i * 2    ] + 64) >> 7;
             int Y2 = (buf0[i * 2 + 1] + 64) >> 7;
@@ -1836,11 +1842,14 @@ yuv2rgb_1_c_template(SwsInternal *c, const int16_t *buf0,
         }
     } else {
         const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
+        int uvalpha1 = 4096 - uvalpha;
+        av_assert2(uvalpha <= 4096U);
+
         for (i = 0; i < ((dstW + 1) >> 1); i++) {
             int Y1 = (buf0[i * 2    ]     +  64) >> 7;
             int Y2 = (buf0[i * 2 + 1]     +  64) >> 7;
-            int U  = (ubuf0[i] + ubuf1[i] + 128) >> 8;
-            int V  = (vbuf0[i] + vbuf1[i] + 128) >> 8;
+            int U  = (ubuf0[i] * uvalpha1 + ubuf1[i] * uvalpha + (128 << 11)) >> 19;
+            int V  = (vbuf0[i] * uvalpha1 + vbuf1[i] * uvalpha + (128 << 11)) >> 19;
             int A1, A2;
             const void *r =  c->table_rV[V + YUVRGB_TABLE_HEADROOM],
                        *g = (c->table_gU[U + YUVRGB_TABLE_HEADROOM] + c->table_gV[V + YUVRGB_TABLE_HEADROOM]),
@@ -2189,7 +2198,7 @@ yuv2rgb_full_1_c_template(SwsInternal *c, const int16_t *buf0,
        || target == AV_PIX_FMT_BGR8      || target == AV_PIX_FMT_RGB8)
         step = 1;
 
-    if (uvalpha < 2048) {
+    if (uvalpha == 0) {
         int A = 0; //init to silence warning
         for (i = 0; i < dstW; i++) {
             int Y = buf0[i] * 4;
@@ -2208,10 +2217,13 @@ yuv2rgb_full_1_c_template(SwsInternal *c, const int16_t *buf0,
     } else {
         const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
         int A = 0; //init to silence warning
+        int uvalpha1 = 4096 - uvalpha;
+        av_assert2(uvalpha <= 4096U);
+
         for (i = 0; i < dstW; i++) {
             int Y = buf0[i] * 4;
-            int U = (ubuf0[i] + ubuf1[i] - (128<<8)) * 2;
-            int V = (vbuf0[i] + vbuf1[i] - (128<<8)) * 2;
+            int U = (ubuf0[i] * uvalpha1 + ubuf1[i] * uvalpha - (128 << 19)) >> 10;
+            int V = (vbuf0[i] * uvalpha1 + vbuf1[i] * uvalpha - (128 << 19)) >> 10;
 
             if (hasAlpha) {
                 A = (abuf0[i] + 64) >> 7;
