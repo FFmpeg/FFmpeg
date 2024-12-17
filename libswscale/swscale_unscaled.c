@@ -2075,20 +2075,21 @@ static int packedCopyWrapper(SwsInternal *c, const uint8_t *const src[],
 
 #define DITHER_COPY(dst, dstStride, src, srcStride, bswap, dbswap)\
     unsigned shift= src_depth-dst_depth, tmp;\
+    unsigned bias = 1 << (shift - 1);\
     if (c->opts.dither == SWS_DITHER_NONE) {\
         for (i = 0; i < height; i++) {\
             for (j = 0; j < length-7; j+=8) {\
-                dst[j+0] = dbswap(bswap(src[j+0])>>shift);\
-                dst[j+1] = dbswap(bswap(src[j+1])>>shift);\
-                dst[j+2] = dbswap(bswap(src[j+2])>>shift);\
-                dst[j+3] = dbswap(bswap(src[j+3])>>shift);\
-                dst[j+4] = dbswap(bswap(src[j+4])>>shift);\
-                dst[j+5] = dbswap(bswap(src[j+5])>>shift);\
-                dst[j+6] = dbswap(bswap(src[j+6])>>shift);\
-                dst[j+7] = dbswap(bswap(src[j+7])>>shift);\
+                tmp = (bswap(src[j+0]) + bias)>>shift; dst[j+0] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+1]) + bias)>>shift; dst[j+1] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+2]) + bias)>>shift; dst[j+2] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+3]) + bias)>>shift; dst[j+3] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+4]) + bias)>>shift; dst[j+4] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+5]) + bias)>>shift; dst[j+5] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+6]) + bias)>>shift; dst[j+6] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+7]) + bias)>>shift; dst[j+7] = dbswap(tmp - (tmp>>dst_depth));\
             }\
             for (; j < length; j++) {\
-                dst[j] = dbswap(bswap(src[j])>>shift);\
+                tmp = (bswap(src[j]) + bias)>>shift; dst[j] = dbswap(tmp - (tmp>>dst_depth));\
             }\
             dst += dstStride;\
             src += srcStride;\
@@ -2169,6 +2170,7 @@ static int planarCopyWrapper(SwsInternal *c, const uint8_t *const src[],
                 uint16_t *dstPtr2 = (uint16_t*)dstPtr;
 
                 if (dst_depth == 8) {
+                    av_assert1(src_depth > 8);
                     if(isBE(c->opts.src_format) == HAVE_BIGENDIAN){
                         DITHER_COPY(dstPtr, dstStride[plane], srcPtr2, srcStride[plane]/2, , )
                     } else {
@@ -2248,7 +2250,7 @@ static int planarCopyWrapper(SwsInternal *c, const uint8_t *const src[],
                         dstPtr2 += dstStride[plane]/2;
                         srcPtr2 += srcStride[plane]/2;
                     }
-                } else {
+                } else { /* src_depth > dst_depth */
                     if(isBE(c->opts.src_format) == HAVE_BIGENDIAN){
                         if(isBE(c->opts.dst_format) == HAVE_BIGENDIAN){
                             DITHER_COPY(dstPtr2, dstStride[plane]/2, srcPtr2, srcStride[plane]/2, , )
