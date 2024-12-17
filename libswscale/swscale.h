@@ -338,7 +338,7 @@ int sws_is_noop(const AVFrame *dst, const AVFrame *src);
  *              may be references to input planes, rather than copies.
  * @param src   The source frame. If the data buffers are set to NULL, then
  *              this function behaves identically to `sws_frame_setup`.
- * @return 0 on success, a negative AVERROR code on failure.
+ * @return >= 0 on success, a negative AVERROR code on failure.
  */
 int sws_scale_frame(SwsContext *c, AVFrame *dst, const AVFrame *src);
 
