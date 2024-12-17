@@ -411,7 +411,7 @@ function ff_vvc_dmvr_hv_8_neon, export=1
         ushr            v16.8h, v16.8h, #4
         str             q16, [x14], #16
 3:
-        ldr             s5, [src, #1]
+        ldur            s5, [src, #1]
         ldr             s4, [src], #4
         uxtl            v7.8h, v5.8b
         uxtl            v6.8h, v4.8b
@@ -572,7 +572,7 @@ function ff_vvc_dmvr_hv_10_neon, export=1
         uqxtn2          v16.8h, v18.4s
         str             q16, [x14], #16
 3:
-        ldr             d7, [src, #2]
+        ldur            d7, [src, #2]
         ldr             d6, [src], #8
         umull           v4.4s, v7.4h, v1.4h
         umlal           v4.4s, v6.4h, v0.4h
