@@ -24,7 +24,9 @@
 #include "config.h"
 
 #include <stdint.h>
+#ifndef _MSC_VER
 #include <stdalign.h>
+#endif
 
 #include "attributes.h"
 #include "macros.h"
