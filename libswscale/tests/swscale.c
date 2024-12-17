@@ -135,7 +135,7 @@ static int scale_legacy(AVFrame *dst, const AVFrame *src, struct mode mode,
     if ((ret = sws_init_context(sws_legacy, NULL, NULL)) < 0)
         goto error;
 
-    for (int i = 0; !ret && i < opts.iters; i++)
+    for (int i = 0; ret >= 0 && i < opts.iters; i++)
         ret = sws_scale_frame(sws_legacy, dst, src);
 
 error:
