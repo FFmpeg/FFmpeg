@@ -363,6 +363,7 @@ External library support:
   --disable-vdpau          disable Nvidia Video Decode and Presentation API for Unix code [autodetect]
   --disable-videotoolbox   disable VideoToolbox code [autodetect]
   --disable-vulkan         disable Vulkan code [autodetect]
+  --enable-vulkan-static   statically link to libvulkan [no]
 
 Toolchain options:
   --arch=ARCH              select architecture [$arch]
@@ -1987,6 +1988,7 @@ EXTERNAL_LIBRARY_LIST="
     openssl
     pocketsphinx
     vapoursynth
+    vulkan_static
 "
 
 HWACCEL_AUTODETECT_LIBRARY_LIST="
@@ -7379,7 +7381,10 @@ enabled vdpau &&
 enabled vdpau &&
     check_lib vdpau_x11 "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau -lX11
 
-if enabled vulkan; then
+if enabled_all vulkan vulkan_static; then
+    check_pkg_config vulkan "vulkan >= 1.3.277" "vulkan/vulkan.h" "defined VK_VERSION_1_3" ||
+        check_lib vulkan "vulkan/vulkan.h" vkGetInstanceProcAddr -lvulkan
+elif enabled vulkan; then
     check_pkg_config_header_only vulkan "vulkan >= 1.3.277" "vulkan/vulkan.h" "defined VK_VERSION_1_3" ||
         check_cpp_condition vulkan "vulkan/vulkan.h" "defined(VK_VERSION_1_4) || (defined(VK_VERSION_1_3) && VK_HEADER_VERSION >= 277)"
 fi
