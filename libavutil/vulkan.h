@@ -400,6 +400,8 @@ int ff_vk_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
 
 /**
  * Allocates/frees an execution pool.
+ * If used in a multi-threaded context, there must be at least as many contexts
+ * as there are threads.
  * ff_vk_exec_pool_init_desc() MUST be called if ff_vk_exec_descriptor_set_add()
  * has been called.
  */
