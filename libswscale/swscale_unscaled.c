@@ -509,6 +509,34 @@ static void gray8aToPacked24(const uint8_t *src, uint8_t *dst, int num_pixels,
     }
 }
 
+static void gray8aToPlanar8(const uint8_t *src, uint8_t *dst0, uint8_t *dst1,
+                            uint8_t *dst2, uint8_t *dstA, int num_pixels,
+                            const uint8_t *palette)
+{
+    for (int i = 0; i < num_pixels; i++) {
+        const uint8_t *rgb = &palette[src[i << 1] * 4];
+        dst0[i] = rgb[0];
+        dst1[i] = rgb[1];
+        dst2[i] = rgb[2];
+        if (dstA)
+            dstA[i] = src[(i << 1) + 1];
+    }
+}
+
+static void pal8ToPlanar8(const uint8_t *src, uint8_t *dst0, uint8_t *dst1,
+                          uint8_t *dst2, uint8_t *dstA, int num_pixels,
+                          const uint8_t *palette)
+{
+    for (int i = 0; i < num_pixels; i++) {
+        const uint8_t *rgba = &palette[src[i] * 4];
+        dst0[i] = rgba[0];
+        dst1[i] = rgba[1];
+        dst2[i] = rgba[2];
+        if (dstA)
+            dstA[i] = rgba[3];
+    }
+}
+
 static int bswap_16bpc(SwsInternal *c, const uint8_t *const src[],
                               const int srcStride[], int srcSliceY, int srcSliceH,
                               uint8_t *const dst[], const int dstStride[])
@@ -605,6 +633,45 @@ static int palToRgbWrapper(SwsInternal *c, const uint8_t *const src[], const int
             srcPtr += srcStride[0];
             dstPtr += dstStride[0];
         }
+    }
+
+    return srcSliceH;
+}
+
+static int palToGbrpWrapper(SwsInternal *c, const uint8_t *const src[],
+                            const int srcStride[], int srcSliceY, int srcSliceH,
+                            uint8_t *const dst[], const int dstStride[])
+{
+    const enum AVPixelFormat srcFormat = c->opts.src_format;
+    const enum AVPixelFormat dstFormat = c->opts.dst_format;
+    void (*conv)(const uint8_t *src, uint8_t *dstG, uint8_t *dstB, uint8_t *dstR,
+                 uint8_t *dstA, int num_pixels, const uint8_t *palette) = NULL;
+
+    const int num_planes = isALPHA(dstFormat) ? 4 : 3;
+    const uint8_t *srcPtr = src[0];
+    uint8_t *dstPtr[4] = {0};
+    for (int i = 0; i < num_planes; i++)
+        dstPtr[i] = dst[i] + dstStride[i] * srcSliceY;
+
+    if (srcFormat == AV_PIX_FMT_YA8) {
+        switch (dstFormat) {
+        case AV_PIX_FMT_GBRP:  conv = gray8aToPlanar8; break;
+        case AV_PIX_FMT_GBRAP: conv = gray8aToPlanar8; break;
+        }
+    } else if (usePal(srcFormat)) {
+        switch (dstFormat) {
+        case AV_PIX_FMT_GBRP:  conv = pal8ToPlanar8; break;
+        case AV_PIX_FMT_GBRAP: conv = pal8ToPlanar8; break;
+        }
+    }
+
+    av_assert1(conv);
+    for (int y = 0; y < srcSliceH; y++) {
+        conv(srcPtr, dstPtr[0], dstPtr[1], dstPtr[2], dstPtr[3], c->opts.src_w,
+            (uint8_t *) c->pal_rgb);
+        srcPtr += srcStride[0];
+        for (int i = 0; i < num_planes; i++)
+            dstPtr[i] += dstStride[i];
     }
 
     return srcSliceH;
@@ -2533,8 +2600,18 @@ void ff_get_unscaled_swscale(SwsInternal *c)
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_GBRAPF32))
         c->convert_unscaled = bswap_32bpc;
 
-    if (usePal(srcFormat) && isByteRGB(dstFormat))
-        c->convert_unscaled = palToRgbWrapper;
+    if (usePal(srcFormat)) {
+        switch (dstFormat) {
+        case AV_PIX_FMT_GBRP:
+        case AV_PIX_FMT_GBRAP:
+            c->convert_unscaled = palToGbrpWrapper;
+            break;
+        default:
+            if (isByteRGB(dstFormat))
+                c->convert_unscaled = palToRgbWrapper;
+            break;
+        }
+    }
 
     if (srcFormat == AV_PIX_FMT_YUV422P) {
         if (dstFormat == AV_PIX_FMT_YUYV422)

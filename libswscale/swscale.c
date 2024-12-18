@@ -919,6 +919,14 @@ void ff_update_palette(SwsInternal *c, const uint32_t *pal)
 #endif
             c->pal_rgb[i]= a + (b<<8) + (g<<16) + ((unsigned)r<<24);
             break;
+        case AV_PIX_FMT_GBRP:
+        case AV_PIX_FMT_GBRAP:
+#if HAVE_BIGENDIAN
+            c->pal_rgb[i]= a + (r<<8) + (b<<16) + ((unsigned)g<<24);
+#else
+            c->pal_rgb[i]= g + (b<<8) + (r<<16) + ((unsigned)a<<24);
+#endif
+            break;
         case AV_PIX_FMT_RGB32:
 #if !HAVE_BIGENDIAN
         case AV_PIX_FMT_BGR24:
