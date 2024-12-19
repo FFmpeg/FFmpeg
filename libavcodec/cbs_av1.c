@@ -728,16 +728,16 @@ static int cbs_av1_split_fragment(CodedBitstreamContext *ctx,
     }
 
     while (size > 0) {
-        AV1RawOBUHeader header;
+        AV1RawOBUHeader obu_header;
         uint64_t obu_size;
 
         init_get_bits(&gbc, data, 8 * size);
 
-        err = cbs_av1_read_obu_header(ctx, &gbc, &header);
+        err = cbs_av1_read_obu_header(ctx, &gbc, &obu_header);
         if (err < 0)
             goto fail;
 
-        if (header.obu_has_size_field) {
+        if (obu_header.obu_has_size_field) {
             if (get_bits_left(&gbc) < 8) {
                 av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid OBU: fragment "
                        "too short (%"SIZE_SPECIFIER" bytes).\n", size);
@@ -748,7 +748,7 @@ static int cbs_av1_split_fragment(CodedBitstreamContext *ctx,
             if (err < 0)
                 goto fail;
         } else
-            obu_size = size - 1 - header.obu_extension_flag;
+            obu_size = size - 1 - obu_header.obu_extension_flag;
 
         pos = get_bits_count(&gbc);
         av_assert0(pos % 8 == 0 && pos / 8 <= size);
@@ -763,7 +763,7 @@ static int cbs_av1_split_fragment(CodedBitstreamContext *ctx,
             goto fail;
         }
 
-        err = ff_cbs_append_unit_data(frag, header.obu_type,
+        err = ff_cbs_append_unit_data(frag, obu_header.obu_type,
                                       data, obu_length, frag->data_ref);
         if (err < 0)
             goto fail;
