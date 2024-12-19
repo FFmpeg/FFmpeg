@@ -638,6 +638,7 @@ library:
 @item raw E-AC-3                @tab X @tab X
 @item raw EVC                   @tab X @tab X
 @item raw FLAC                  @tab X @tab X
+@item raw G.728                 @tab   @tab X
 @item raw GSM                   @tab   @tab X
 @item raw H.261                 @tab X @tab X
 @item raw H.263                 @tab X @tab X
