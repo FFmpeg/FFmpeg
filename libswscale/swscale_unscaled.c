@@ -2588,7 +2588,7 @@ void ff_get_unscaled_swscale(SwsInternal *c)
         (isPlanarYUV(srcFormat) && isPlanarYUV(dstFormat) &&
          c->chrDstHSubSample == c->chrSrcHSubSample &&
          c->chrDstVSubSample == c->chrSrcVSubSample &&
-         !isSemiPlanarYUV(srcFormat) && !isSemiPlanarYUV(dstFormat))))
+         isSemiPlanarYUV(srcFormat) == isSemiPlanarYUV(dstFormat))))
     {
         if (isPacked(c->opts.src_format))
             c->convert_unscaled = packedCopyWrapper;
