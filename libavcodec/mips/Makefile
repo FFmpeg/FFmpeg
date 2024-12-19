@@ -17,6 +17,7 @@ MIPSFPU-OBJS-$(CONFIG_G723_1_DECODER)     += mips/celp_filters_mips.o      \
                                              mips/acelp_vectors_mips.o
 MIPSFPU-OBJS-$(CONFIG_G723_1_ENCODER)     += mips/celp_filters_mips.o      \
                                              mips/acelp_vectors_mips.o
+MIPSFPU-OBJS-$(CONFIG_G728_DECODER)       += mips/celp_filters_mips.o
 MIPSFPU-OBJS-$(CONFIG_G729_DECODER)       += mips/acelp_filters_mips.o     \
                                              mips/celp_filters_mips.o      \
                                              mips/acelp_vectors_mips.o
