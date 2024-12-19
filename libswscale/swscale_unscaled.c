@@ -2148,10 +2148,12 @@ static int planarCopyWrapper(SwsInternal *c, const uint8_t *const src[],
         const uint8_t *srcPtr = src[plane];
         uint8_t *dstPtr = dst[plane] + dstStride[plane] * y;
         int shiftonly = plane == 1 || plane == 2 || (!c->opts.src_range && plane == 0);
+        if (plane == 1 && isSemiPlanarYUV(c->opts.dst_format))
+            length *= 2;
 
         // ignore palette for GRAY8
-        if (plane == 1 && !dst[2]) continue;
-        if (!src[plane] || (plane == 1 && !src[2])) {
+        if (plane == 1 && desc_dst->nb_components < 3) continue;
+        if (!src[plane] || (plane == 1 && desc_src->nb_components < 3)) {
             if (is16BPS(c->opts.dst_format) || isNBPS(c->opts.dst_format)) {
                 fillPlane16(dst[plane], dstStride[plane], length, height, y,
                         plane == 3, desc_dst->comp[plane].depth,
