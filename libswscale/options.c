@@ -71,6 +71,7 @@ static const AVOption swscale_options[] = {
 
     { "sws_dither",      "set dithering algorithm",       OFFSET(dither),    AV_OPT_TYPE_INT,    { .i64  = SWS_DITHER_AUTO     }, .flags = VE, .unit = "sws_dither", .max = SWS_DITHER_NB - 1 },
         { "auto",        "automatic selection",           0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_DITHER_AUTO     }, .flags = VE, .unit = "sws_dither" },
+        { "none",        "no dithering",                  0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_DITHER_NONE     }, .flags = VE, .unit = "sws_dither" },
         { "bayer",       "ordered matrix dither",         0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_DITHER_BAYER    }, .flags = VE, .unit = "sws_dither" },
         { "ed",          "full error diffusion",          0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_DITHER_ED       }, .flags = VE, .unit = "sws_dither" },
         { "a_dither",    "arithmetic addition dither",    0,                 AV_OPT_TYPE_CONST,  { .i64  = SWS_DITHER_A_DITHER }, .flags = VE, .unit = "sws_dither" },
