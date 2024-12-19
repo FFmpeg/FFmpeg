@@ -92,6 +92,7 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
     avio_wl32(pb, par->sample_rate);
     if (par->codec_id == AV_CODEC_ID_ATRAC3 ||
         par->codec_id == AV_CODEC_ID_G723_1 ||
+        par->codec_id == AV_CODEC_ID_G728   ||
         par->codec_id == AV_CODEC_ID_MP2    ||
         par->codec_id == AV_CODEC_ID_MP3    ||
         par->codec_id == AV_CODEC_ID_GSM_MS) {

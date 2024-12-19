@@ -555,6 +555,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_ADPCM_G726,      0x0045 },
     { AV_CODEC_ID_ADPCM_G726,      0x0014 },  /* g723 Antex */
     { AV_CODEC_ID_ADPCM_G726,      0x0040 },  /* g721 Antex */
+    { AV_CODEC_ID_G728,            0x0041 },
     { AV_CODEC_ID_MP2,             0x0050 },
     { AV_CODEC_ID_MP3,             0x0055 },
     { AV_CODEC_ID_AMR_NB,          0x0057 },
@@ -611,6 +612,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_G723_1,          0xA100 }, /* Comverse Infosys Ltd. G723 1 */
     { AV_CODEC_ID_AAC,             0xA106 },
     { AV_CODEC_ID_SPEEX,           0xA109 },
+    { AV_CODEC_ID_G728,            0xCD02 },
     { AV_CODEC_ID_FLAC,            0xF1AC },
     /* DFPWM does not have an assigned format tag; it uses a GUID in WAVEFORMATEX instead */
     { AV_CODEC_ID_DFPWM,           0xFFFE },
