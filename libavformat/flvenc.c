@@ -970,6 +970,15 @@ static int flv_init(struct AVFormatContext *s)
 
         switch (par->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
+            if (video_ctr &&
+                par->codec_id != AV_CODEC_ID_VP8 &&
+                par->codec_id != AV_CODEC_ID_VP9 &&
+                par->codec_id != AV_CODEC_ID_AV1 &&
+                par->codec_id != AV_CODEC_ID_H264 &&
+                par->codec_id != AV_CODEC_ID_HEVC) {
+                av_log(s, AV_LOG_ERROR, "Unsupported multi-track video codec.\n");
+                return AVERROR(EINVAL);
+            }
             if (s->streams[i]->avg_frame_rate.den &&
                 s->streams[i]->avg_frame_rate.num) {
                 flv->framerate = av_q2d(s->streams[i]->avg_frame_rate);
@@ -1012,7 +1021,7 @@ static int flv_init(struct AVFormatContext *s)
                 par->codec_id != AV_CODEC_ID_FLAC &&
                 par->codec_id != AV_CODEC_ID_AC3 &&
                 par->codec_id != AV_CODEC_ID_EAC3) {
-                av_log(s, AV_LOG_ERROR, "Unsupported multi-track codec.\n");
+                av_log(s, AV_LOG_ERROR, "Unsupported multi-track audio codec.\n");
                 return AVERROR(EINVAL);
             }
             flv->track_idx_map[i] = audio_ctr++;
@@ -1390,6 +1399,10 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
             write_codec_fourcc(pb, par->codec_id);
             if (track_idx)
                 avio_w8(pb, track_idx);
+        } else if (track_idx) {
+            av_log(s, AV_LOG_ERROR, "Attempted to write legacy codec into extended flv track.\n");
+            ret = AVERROR(EINVAL);
+            goto fail;
         } else {
             av_assert1(flags >= 0);
             avio_w8(pb, flags);
