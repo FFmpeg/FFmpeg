@@ -42,6 +42,12 @@ fate-dsf-dst: CMD = pcm -i $(TARGET_SAMPLES)/dst/dst-64fs44-2ch.dff
 fate-dsf-dst: CMP = oneoff
 fate-dsf-dst: REF = $(SAMPLES)/dst/dst-64fs44-2ch.pcm
 
+FATE_SAMPLES_AUDIO-$(call PCM, G728, G728, ARESAMPLE_FILTER) += fate-g728
+fate-g728: CMD = pcm -i $(TARGET_SAMPLES)/g728/CW3.g728
+fate-g728: REF = $(SAMPLES)/g728/OUTA3.BIN
+fate-g728: CMP = oneoff
+fate-g728: FUZZ = 5
+
 FATE_SAMPLES_AUDIO-$(call PCM, AVI, IMC, ARESAMPLE_FILTER) += fate-imc
 fate-imc: CMD = pcm -i $(TARGET_SAMPLES)/imc/imc.avi
 fate-imc: CMP = oneoff
