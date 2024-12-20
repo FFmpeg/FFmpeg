@@ -42,7 +42,7 @@ typedef struct IAMFDemuxContext {
 } IAMFDemuxContext;
 
 int ff_iamf_read_packet(AVFormatContext *s, IAMFDemuxContext *c,
-                        AVIOContext *pb, int max_size, AVPacket *pkt);
+                        AVIOContext *pb, int max_size, int stream_id_offset, AVPacket *pkt);
 
 void ff_iamf_read_deinit(IAMFDemuxContext *c);
 
