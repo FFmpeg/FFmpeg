@@ -1836,7 +1836,7 @@ static int mux_queue_packet(SchMux *mux, SchMuxStream *ms, AVPacket *pkt)
         if (new_size <= packets) {
             av_log(mux, AV_LOG_ERROR,
                    "Too many packets buffered for output stream.\n");
-            return AVERROR(ENOSPC);
+            return AVERROR_BUFFER_TOO_SMALL;
         }
         ret = av_fifo_grow2(q->fifo, new_size - packets);
         if (ret < 0)
