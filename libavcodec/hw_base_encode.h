@@ -193,6 +193,10 @@ typedef struct FFHWBaseEncodeContext {
     int end_of_stream;
     int p_to_gpb;
 
+    // The number of L0/L1 references supported by the driver.
+    int             ref_l0;
+    int             ref_l1;
+
     // Whether the driver supports ROI at all.
     int             roi_allowed;
 
