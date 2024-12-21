@@ -39,7 +39,7 @@ static void convolve(float *tgt, const float *src, int len, int n)
  */
 static void do_hybrid_window(void (*vector_fmul)(float *dst, const float *src0, const float *src1, int len),
                              int order, int n, int non_rec, float *out,
-                             float *hist, float *out2, const float *window)
+                             const float *hist, float *out2, const float *window)
 {
     int i;
     float buffer1[MAX_BACKWARD_FILTER_ORDER + 1];
