@@ -37,6 +37,8 @@
 #define MAX_BACKWARD_FILTER_ORDER  36
 #define MAX_BACKWARD_FILTER_LEN    40
 #define MAX_BACKWARD_FILTER_NONREC 35
+#define ATTEN 0.5625
+#include "g728_template.c"
 
 #define RA288_BLOCK_SIZE        5
 #define RA288_BLOCKS_PER_FRAME 32
@@ -87,13 +89,6 @@ static av_cold int ra288_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void convolve(float *tgt, const float *src, int len, int n)
-{
-    for (; n >= 0; n--)
-        tgt[n] = ff_scalarproduct_float_c(src, src - n, len);
-
-}
-
 static void decode(RA288Context *ractx, float gain, int cb_coef)
 {
     int i;
@@ -132,45 +127,6 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
 }
 
 /**
- * Hybrid window filtering, see blocks 36 and 49 of the G.728 specification.
- *
- * @param order   filter order
- * @param n       input length
- * @param non_rec number of non-recursive samples
- * @param out     filter output
- * @param hist    pointer to the input history of the filter
- * @param out     pointer to the non-recursive part of the output
- * @param out2    pointer to the recursive part of the output
- * @param window  pointer to the windowing function table
- */
-static void do_hybrid_window(RA288Context *ractx,
-                             int order, int n, int non_rec, float *out,
-                             float *hist, float *out2, const float *window)
-{
-    int i;
-    float buffer1[MAX_BACKWARD_FILTER_ORDER + 1];
-    float buffer2[MAX_BACKWARD_FILTER_ORDER + 1];
-    LOCAL_ALIGNED(32, float, work, [FFALIGN(MAX_BACKWARD_FILTER_ORDER +
-                                            MAX_BACKWARD_FILTER_LEN   +
-                                            MAX_BACKWARD_FILTER_NONREC, 16)]);
-
-    av_assert2(order>=0);
-
-    ractx->vector_fmul(work, window, hist, FFALIGN(order + n + non_rec, 16));
-
-    convolve(buffer1, work + order    , n      , order);
-    convolve(buffer2, work + order + n, non_rec, order);
-
-    for (i=0; i <= order; i++) {
-        out2[i] = out2[i] * 0.5625 + buffer1[i];
-        out [i] = out2[i]          + buffer2[i];
-    }
-
-    /* Multiply by the white noise correcting factor (WNCF). */
-    *out *= 257.0 / 256.0;
-}
-
-/**
  * Backward synthesis filter, find the LPC coefficients from past speech data.
  */
 static void backward_filter(RA288Context *ractx,
@@ -180,7 +136,7 @@ static void backward_filter(RA288Context *ractx,
 {
     float temp[MAX_BACKWARD_FILTER_ORDER+1];
 
-    do_hybrid_window(ractx, order, n, non_rec, temp, hist, rec, window);
+    do_hybrid_window(ractx->vector_fmul, order, n, non_rec, temp, hist, rec, window);
 
     if (!compute_lpc_coefs(temp, order, lpc, 0, 1, 1))
         ractx->vector_fmul(lpc, lpc, tab, FFALIGN(order, 16));
