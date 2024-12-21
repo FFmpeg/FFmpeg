@@ -61,8 +61,8 @@ uint32_t av_timecode_get_smpte_from_framenum(const AVTimecode *tc, int framenum)
         framenum = av_timecode_adjust_ntsc_framenum2(framenum, tc->fps);
     ff = framenum % fps;
     ss = framenum / fps      % 60;
-    mm = framenum / (fps*60) % 60;
-    hh = framenum / (fps*3600) % 24;
+    mm = framenum / (fps*60LL) % 60;
+    hh = framenum / (fps*3600LL) % 24;
     return av_timecode_get_smpte(tc->rate, drop, hh, mm, ss, ff);
 }
 
