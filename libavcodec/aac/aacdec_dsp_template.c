@@ -185,7 +185,7 @@ static void AAC_RENAME(apply_tns)(void *_coef_param, TemporalNoiseShaping *tns,
                 continue;
 
             // tns_decode_coef
-            compute_lpc_coefs(tns->AAC_RENAME(coef)[w][filt], order, lpc, 0, 0, 0);
+            compute_lpc_coefs(tns->AAC_RENAME(coef)[w][filt], 0, order, lpc, 0, 0, 0, NULL);
 
             start = ics->swb_offset[FFMIN(bottom, mmm)];
             end   = ics->swb_offset[FFMIN(   top, mmm)];

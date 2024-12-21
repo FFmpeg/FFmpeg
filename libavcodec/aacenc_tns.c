@@ -117,7 +117,7 @@ void ff_aac_apply_tns(AACEncContext *s, SingleChannelElement *sce)
                 continue;
 
             // tns_decode_coef
-            compute_lpc_coefs(tns->coef[w][filt], order, lpc, 0, 0, 0);
+            compute_lpc_coefs(tns->coef[w][filt], 0, order, lpc, 0, 0, 0, NULL);
 
             start = ics->swb_offset[FFMIN(bottom, mmm)];
             end   = ics->swb_offset[FFMIN(   top, mmm)];

@@ -138,7 +138,7 @@ static void backward_filter(RA288Context *ractx,
 
     do_hybrid_window(ractx->vector_fmul, order, n, non_rec, temp, hist, rec, window);
 
-    if (!compute_lpc_coefs(temp, order, lpc, 0, 1, 1))
+    if (!compute_lpc_coefs(temp, 0, order, lpc, 0, 1, 1, NULL))
         ractx->vector_fmul(lpc, lpc, tab, FFALIGN(order, 16));
 
     memmove(hist, hist + n, move_size*sizeof(*hist));

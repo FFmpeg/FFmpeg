@@ -51,22 +51,27 @@ typedef float LPC_TYPE_U;
  * Levinson-Durbin recursion.
  * Produce LPC coefficients from autocorrelation data.
  */
-static inline int compute_lpc_coefs(const LPC_TYPE *autoc, int max_order,
+static inline int compute_lpc_coefs(const LPC_TYPE *autoc, int i, int max_order,
                                     LPC_TYPE *lpc, int lpc_stride, int fail,
-                                    int normalize)
+                                    int normalize, LPC_TYPE *err_ptr)
 {
     LPC_TYPE err = 0;
     LPC_TYPE *lpc_last = lpc;
 
     av_assert2(normalize || !fail);
 
-    if (normalize)
-        err = *autoc++;
+    if (normalize) {
+        if (i == 0)
+            err = *autoc++;
+        else {
+            err = *err_ptr;
+        }
+    }
 
     if (fail && (autoc[max_order - 1] == 0 || err <= 0))
         return -1;
 
-    for(int i = 0; i < max_order; i++) {
+    for( ; i < max_order; i++) {
         LPC_TYPE r = LPC_SRA_R(-autoc[i], 5);
 
         if (normalize) {
@@ -93,6 +98,9 @@ static inline int compute_lpc_coefs(const LPC_TYPE *autoc, int max_order,
         lpc_last = lpc;
         lpc += lpc_stride;
     }
+
+    if (err_ptr)
+        *err_ptr = err;
 
     return 0;
 }
