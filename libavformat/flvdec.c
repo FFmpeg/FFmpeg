@@ -1721,20 +1721,22 @@ retry_duration:
             ret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
                                           flv->new_extradata[stream_type],
                                           flv->new_extradata_size[stream_type]);
-            if (ret >= 0) {
-                flv->new_extradata[stream_type]      = NULL;
-                flv->new_extradata_size[stream_type] = 0;
-            }
+            if (ret < 0)
+                return ret;
+
+            flv->new_extradata[stream_type]      = NULL;
+            flv->new_extradata_size[stream_type] = 0;
         } else if (multitrack &&
                    flv->mt_extradata_cnt > track_idx &&
                    flv->mt_extradata[track_idx]) {
             ret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
                                           flv->mt_extradata[track_idx],
                                           flv->mt_extradata_sz[track_idx]);
-            if (ret >= 0) {
-                flv->mt_extradata[track_idx]      = NULL;
-                flv->mt_extradata_sz[track_idx] = 0;
-            }
+            if (ret < 0)
+                return ret;
+
+            flv->mt_extradata[track_idx]      = NULL;
+            flv->mt_extradata_sz[track_idx] = 0;
         }
         if (stream_type == FLV_STREAM_TYPE_AUDIO && !enhanced_flv &&
                         (sample_rate != flv->last_sample_rate ||
