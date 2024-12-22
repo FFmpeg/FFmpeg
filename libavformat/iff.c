@@ -1007,8 +1007,6 @@ static int iff_read_packet(AVFormatContext *s,
         av_assert0(0);
     }
 
-    if (ret < 0)
-        return ret;
     return ret;
 }
 
