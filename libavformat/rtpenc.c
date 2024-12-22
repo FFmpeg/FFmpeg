@@ -89,6 +89,7 @@ static int is_supported(enum AVCodecID id)
     case AV_CODEC_ID_OPUS:
     case AV_CODEC_ID_RAWVIDEO:
     case AV_CODEC_ID_BITPACKED:
+    case AV_CODEC_ID_G728:
         return 1;
     default:
         return 0;
