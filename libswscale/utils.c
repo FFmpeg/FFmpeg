@@ -951,29 +951,42 @@ static int fill_xyztables(SwsInternal *c)
         {1689, 1464,  739},
         { 871, 2929,  296},
         {  79,  488, 3891} };
+#if !CONFIG_SMALL
     static uint16_t xyzgamma_tab[4096],  rgbgammainv_tab[4096];
     static uint16_t rgbgamma_tab[65536], xyzgammainv_tab[65536];
+#endif
+    if (c->xyzgamma)
+        return 0;
 
     memcpy(c->xyz2rgb_matrix, xyz2rgb_matrix, sizeof(c->xyz2rgb_matrix));
     memcpy(c->rgb2xyz_matrix, rgb2xyz_matrix, sizeof(c->rgb2xyz_matrix));
+
+#if CONFIG_SMALL
+    c->xyzgamma = av_malloc(sizeof(uint16_t) * 2 * (4096 + 65536));
+    if (!c->xyzgamma)
+        return AVERROR(ENOMEM);
+    c->rgbgammainv = c->xyzgamma + 4096;
+    c->rgbgamma = c->rgbgammainv + 4096;
+    c->xyzgammainv = c->rgbgamma + 65536;
+#else
     c->xyzgamma = xyzgamma_tab;
     c->rgbgamma = rgbgamma_tab;
     c->xyzgammainv = xyzgammainv_tab;
     c->rgbgammainv = rgbgammainv_tab;
-
     if (xyzgamma_tab[4095])
         return 0;
+#endif
 
     /* set input gamma vectors */
     for (i = 0; i < 4096; i++) {
-        xyzgamma_tab[i] = lrint(pow(i / 4095.0, xyzgamma) * 65535.0);
-        rgbgammainv_tab[i] = lrint(pow(i / 4095.0, rgbgammainv) * 65535.0);
+        c->xyzgamma[i]    = lrint(pow(i / 4095.0, xyzgamma) * 65535.0);
+        c->rgbgammainv[i] = lrint(pow(i / 4095.0, rgbgammainv) * 65535.0);
     }
 
     /* set output gamma vectors */
     for (i = 0; i < 65536; i++) {
-        rgbgamma_tab[i] = lrint(pow(i / 65535.0, rgbgamma) * 4095.0);
-        xyzgammainv_tab[i] = lrint(pow(i / 65535.0, xyzgammainv) * 4095.0);
+        c->rgbgamma[i]    = lrint(pow(i / 65535.0, rgbgamma) * 4095.0);
+        c->xyzgammainv[i] = lrint(pow(i / 65535.0, xyzgammainv) * 4095.0);
     }
     return 0;
 }
@@ -2529,6 +2542,9 @@ void sws_freeContext(SwsContext *sws)
 
     av_freep(&c->gamma);
     av_freep(&c->inv_gamma);
+#if CONFIG_SMALL
+    av_freep(&c->xyzgamma);
+#endif
 
     av_freep(&c->rgb0_scratch);
     av_freep(&c->xyz_scratch);
