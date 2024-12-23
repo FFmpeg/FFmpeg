@@ -20,46 +20,46 @@
 
 #include "libavutil/riscv/asm.S"
 
-.macro vsetvlstatic w, vlen, en, mn1, mn2, mn3, mn4, mn5, mn6
+.macro vsetvlstatic w, vlen, en, mn1, mn2, mn3, mn4, mn5, mn6, vta=ta
         .if \w == 2 && \vlen == 128
-                vsetivli        zero, \w, \en, \mn1, ta, ma
+                vsetivli        zero, \w, \en, \mn1, \vta, ma
         .elseif \w <= 4 && \vlen == 128
-                vsetivli        zero, \w, \en, \mn2, ta, ma
+                vsetivli        zero, \w, \en, \mn2, \vta, ma
         .elseif \w <= 8 && \vlen == 128
-                vsetivli        zero, \w, \en, \mn3, ta, ma
+                vsetivli        zero, \w, \en, \mn3, \vta, ma
         .elseif \w <= 16 && \vlen == 128
-                vsetivli        zero, \w, \en, \mn4, ta, ma
+                vsetivli        zero, \w, \en, \mn4, \vta, ma
         .elseif \w <= 32 && \vlen == 128
                 li              t0, \w
-                vsetvli         zero, t0, \en, \mn5, ta, ma
+                vsetvli         zero, t0, \en, \mn5, \vta, ma
         .elseif \w <= 4 && \vlen == 256
-                vsetivli        zero, \w, \en, \mn1, ta, ma
+                vsetivli        zero, \w, \en, \mn1, \vta, ma
         .elseif \w <= 8 && \vlen == 256
-                vsetivli        zero, \w, \en, \mn2, ta, ma
+                vsetivli        zero, \w, \en, \mn2, \vta, ma
         .elseif \w <= 16 && \vlen == 256
-                vsetivli        zero, \w, \en, \mn3, ta, ma
+                vsetivli        zero, \w, \en, \mn3, \vta, ma
         .elseif \w <= 32 && \vlen == 256
                 li              t0, \w
-                vsetvli         zero, t0, \en, \mn4, ta, ma
+                vsetvli         zero, t0, \en, \mn4, \vta, ma
         .elseif \w <= 64 && \vlen == 256
                 li              t0, \w
-                vsetvli         zero, t0, \en, \mn5, ta, ma
+                vsetvli         zero, t0, \en, \mn5, \vta, ma
         .else
                 li              t0, \w
-                vsetvli         zero, t0, \en, \mn6, ta, ma
+                vsetvli         zero, t0, \en, \mn6, \vta, ma
         .endif
 .endm
 
-.macro vsetvlstatic8 w, vlen
-        vsetvlstatic \w, \vlen, e8, mf8, mf4, mf2, m1, m2, m4
+.macro vsetvlstatic8 w, vlen, vta
+        vsetvlstatic \w, \vlen, e8, mf8, mf4, mf2, m1, m2, m4, \vta
 .endm
 
-.macro vsetvlstatic16 w, vlen
-        vsetvlstatic \w, \vlen, e16, mf4, mf2, m1, m2, m4, m8
+.macro vsetvlstatic16 w, vlen, vta
+        vsetvlstatic \w, \vlen, e16, mf4, mf2, m1, m2, m4, m8, \vta
 .endm
 
-.macro vsetvlstatic32 w, vlen
-        vsetvlstatic \w, \vlen, e32, mf2, m1, m2, m4, m8, m8
+.macro vsetvlstatic32 w, vlen, vta
+        vsetvlstatic \w, \vlen, e32, mf2, m1, m2, m4, m8, m8, \vta
 .endm
 
 .macro POW2_JMP_TABLE id, vlen
