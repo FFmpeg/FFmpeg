@@ -936,7 +936,7 @@ static void fill_rgb2yuv_table(SwsInternal *c, const int table[4], int dstRange)
         AV_WL16(p + 16*4 + 2*i, map[i] >= 0 ? c->input_rgb2yuv_table[map[i]] : 0);
 }
 
-static void fill_xyztables(SwsInternal *c)
+static int fill_xyztables(SwsInternal *c)
 {
     int i;
     double xyzgamma = XYZ_GAMMA;
@@ -962,7 +962,7 @@ static void fill_xyztables(SwsInternal *c)
     c->rgbgammainv = rgbgammainv_tab;
 
     if (xyzgamma_tab[4095])
-        return;
+        return 0;
 
     /* set input gamma vectors */
     for (i = 0; i < 4096; i++) {
@@ -975,6 +975,7 @@ static void fill_xyztables(SwsInternal *c)
         rgbgamma_tab[i] = lrint(pow(i / 65535.0, rgbgamma) * 4095.0);
         xyzgammainv_tab[i] = lrint(pow(i / 65535.0, xyzgammainv) * 4095.0);
     }
+    return 0;
 }
 
 static int handle_jpeg(enum AVPixelFormat *format)
@@ -1035,7 +1036,7 @@ static int handle_xyz(enum AVPixelFormat *format)
     }
 }
 
-static void handle_formats(SwsContext *sws)
+static int handle_formats(SwsContext *sws)
 {
     SwsInternal *c = sws_internal(sws);
     c->src0Alpha |= handle_0alpha(&sws->src_format);
@@ -1043,7 +1044,9 @@ static void handle_formats(SwsContext *sws)
     c->srcXYZ    |= handle_xyz(&sws->src_format);
     c->dstXYZ    |= handle_xyz(&sws->dst_format);
     if (c->srcXYZ || c->dstXYZ)
-        fill_xyztables(c);
+        return fill_xyztables(c);
+    else
+        return 0;
 }
 
 static int range_override_needed(enum AVPixelFormat format)
@@ -1058,7 +1061,7 @@ int sws_setColorspaceDetails(SwsContext *sws, const int inv_table[4],
     SwsInternal *c = sws_internal(sws);
     const AVPixFmtDescriptor *desc_dst;
     const AVPixFmtDescriptor *desc_src;
-    int need_reinit = 0;
+    int ret, need_reinit = 0;
 
     if (c->nb_slice_ctx) {
         int parent_ret = 0;
@@ -1073,7 +1076,9 @@ int sws_setColorspaceDetails(SwsContext *sws, const int inv_table[4],
         return parent_ret;
     }
 
-    handle_formats(sws);
+    ret = handle_formats(sws);
+    if (ret < 0)
+        return ret;
     desc_dst = av_pix_fmt_desc_get(sws->dst_format);
     desc_src = av_pix_fmt_desc_get(sws->src_format);
 
@@ -1353,7 +1358,9 @@ av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
                                  ff_yuv2rgb_coeffs[SWS_CS_DEFAULT],
                                  sws->dst_range, 0, 1 << 16, 1 << 16);
 
-    handle_formats(sws);
+    ret = handle_formats(sws);
+    if (ret < 0)
+        return ret;
     srcFormat = sws->src_format;
     dstFormat = sws->dst_format;
     desc_src = av_pix_fmt_desc_get(srcFormat);
