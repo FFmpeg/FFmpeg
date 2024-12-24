@@ -1611,6 +1611,20 @@ dependent_frame:
         s->loro_surround_mix_level = gain_levels[s->surround_mix_level];
         s->ltrt_center_mix_level   = gain_levels[s->  center_mix_level_ltrt];
         s->ltrt_surround_mix_level = gain_levels[s->surround_mix_level_ltrt];
+        switch (s->preferred_downmix) {
+        case AC3_DMIXMOD_LTRT:
+            s->preferred_stereo_downmix = AV_DOWNMIX_TYPE_LTRT;
+            break;
+        case AC3_DMIXMOD_LORO:
+            s->preferred_stereo_downmix = AV_DOWNMIX_TYPE_LORO;
+            break;
+        case AC3_DMIXMOD_DPLII:
+            s->preferred_stereo_downmix = AV_DOWNMIX_TYPE_DPLII;
+            break;
+        default:
+            s->preferred_stereo_downmix = AV_DOWNMIX_TYPE_UNKNOWN;
+            break;
+        }
         /* set downmixing coefficients if needed */
         if (s->channels != s->out_channels && !((s->output_mode & AC3_OUTPUT_LFEON) &&
                 s->fbw_channels == s->out_channels)) {
