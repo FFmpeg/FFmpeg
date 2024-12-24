@@ -1104,6 +1104,8 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
     for (int i = 0; i < 2; i++) {
         OutputConfiguration *oc = &ac->oc[i];
+        av_channel_layout_uninit(&ac->oc[i].ch_layout);
+
         AACUSACConfig *usac = &oc->usac;
         for (int j = 0; j < usac->nb_elems; j++) {
             AACUsacElemConfig *ec = &usac->elems[j];
