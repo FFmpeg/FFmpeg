@@ -2686,7 +2686,7 @@ const FFCodec ff_mpeg1video_decoder = {
 static const AVOption mpeg2video_options[] = {
     { "cc_format", "extract a specific Closed Captions format",
        M2V_OFFSET(cc_format), AV_OPT_TYPE_INT, { .i64 = CC_FORMAT_AUTO },
-        CC_FORMAT_AUTO, CC_FORMAT_DVD, M2V_PARAM, .unit = "cc_format" },
+        CC_FORMAT_AUTO, CC_FORMAT_DVB_0502, M2V_PARAM, .unit = "cc_format" },
 
        { "auto",   "pick first seen CC substream",  0, AV_OPT_TYPE_CONST,
         { .i64 =   CC_FORMAT_AUTO },                .flags = M2V_PARAM, .unit = "cc_format" },
