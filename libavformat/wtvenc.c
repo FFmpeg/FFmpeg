@@ -450,7 +450,7 @@ static void write_timestamp(AVFormatContext *s, AVPacket *pkt)
     write_pad(pb, 8);
     avio_wl64(pb, pkt->pts == AV_NOPTS_VALUE ? -1 : pkt->pts);
     avio_wl64(pb, pkt->pts == AV_NOPTS_VALUE ? -1 : pkt->pts);
-    avio_wl64(pb, pkt->pts == AV_NOPTS_VALUE ? -1 : pkt->pts);
+    avio_wl64(pb, pkt->pts == AV_NOPTS_VALUE ? 0 : pkt->pts);
     avio_wl64(pb, 0);
     avio_wl64(pb, par->codec_type == AVMEDIA_TYPE_VIDEO && (pkt->flags & AV_PKT_FLAG_KEY) ? 1 : 0);
     avio_wl64(pb, 0);
