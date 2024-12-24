@@ -1609,8 +1609,8 @@ dependent_frame:
 
         s->loro_center_mix_level   = gain_levels[s->  center_mix_level];
         s->loro_surround_mix_level = gain_levels[s->surround_mix_level];
-        s->ltrt_center_mix_level   = LEVEL_MINUS_3DB;
-        s->ltrt_surround_mix_level = LEVEL_MINUS_3DB;
+        s->ltrt_center_mix_level   = gain_levels[s->  center_mix_level_ltrt];
+        s->ltrt_surround_mix_level = gain_levels[s->surround_mix_level_ltrt];
         /* set downmixing coefficients if needed */
         if (s->channels != s->out_channels && !((s->output_mode & AC3_OUTPUT_LFEON) &&
                 s->fbw_channels == s->out_channels)) {
