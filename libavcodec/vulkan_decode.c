@@ -275,10 +275,8 @@ void ff_vk_decode_flush(AVCodecContext *avctx)
 
     VkCommandBuffer cmd_buf;
     FFVkExecContext *exec;
-    int had_submission;
 
     exec = ff_vk_exec_get(&ctx->s, &ctx->exec_pool);
-    had_submission = exec->had_submission;
     ff_vk_exec_start(&ctx->s, exec);
     cmd_buf = exec->buf;
 
@@ -286,11 +284,6 @@ void ff_vk_decode_flush(AVCodecContext *avctx)
     vk->CmdControlVideoCodingKHR(cmd_buf, &decode_ctrl);
     vk->CmdEndVideoCodingKHR(cmd_buf, &decode_end);
     ff_vk_exec_submit(&ctx->s, exec);
-
-    /* If this is the very first time this context is used, then remove the
-     * had_submission flag to indicate that no query result is available,
-     * as no decode command was issued. */
-    exec->had_submission = had_submission;
 }
 
 int ff_vk_decode_frame(AVCodecContext *avctx,
@@ -337,22 +330,6 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
     cur_vk_ref[0] = vp->ref_slot;
     cur_vk_ref[0].slotIndex = -1;
     decode_start.referenceSlotCount++;
-
-    if (ctx->exec_pool.nb_queries && exec->had_submission) {
-        uint32_t *result;
-        ret = ff_vk_exec_get_query(&ctx->s, exec, (void **)&result,
-                                   VK_QUERY_RESULT_WAIT_BIT);
-        if (ret != VK_NOT_READY && ret != VK_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Unable to perform query: %s!\n",
-                   ff_vk_ret2str(ret));
-            return AVERROR_EXTERNAL;
-        }
-
-        av_log(avctx,
-               result[0] != VK_QUERY_RESULT_STATUS_COMPLETE_KHR ?
-                   AV_LOG_ERROR : AV_LOG_DEBUG,
-               "Result of previous frame decoding: %u\n", result[0]);
-    }
 
     sd_buf = (FFVkBuffer *)vp->slices_buf->data;
 
@@ -507,17 +484,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
 
     /* Start, use parameters, decode and end decoding */
     vk->CmdBeginVideoCodingKHR(cmd_buf, &decode_start);
-
-    /* Start status query */
-    if (ctx->exec_pool.nb_queries)
-        vk->CmdBeginQuery(cmd_buf, ctx->exec_pool.query_pool, exec->query_idx + 0, 0);
-
     vk->CmdDecodeVideoKHR(cmd_buf, &vp->decode_info);
-
-    /* End status query */
-    if (ctx->exec_pool.nb_queries)
-        vk->CmdEndQuery(cmd_buf, ctx->exec_pool.query_pool, exec->query_idx + 0);
-
     vk->CmdEndVideoCodingKHR(cmd_buf, &decode_end);
 
     /* End recording and submit for execution */
@@ -1063,7 +1030,7 @@ int ff_vk_decode_uninit(AVCodecContext *avctx)
 
 int ff_vk_decode_init(AVCodecContext *avctx)
 {
-    int err, nb_q = 0;
+    int err;
     VkResult ret;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     FFVulkanDecodeShared *ctx;
@@ -1123,10 +1090,6 @@ int ff_vk_decode_init(AVCodecContext *avctx)
         return err;
     }
 
-    /* Enable queries if supported and usable */
-    if (s->query_props[ctx->qf->idx].queryResultStatusSupport)
-        nb_q = 1;
-
     session_create.flags = 0x0;
     session_create.queueFamilyIndex = ctx->qf->idx;
     session_create.maxCodedExtent = ctx->caps.maxCodedExtent;
@@ -1142,8 +1105,7 @@ int ff_vk_decode_init(AVCodecContext *avctx)
      * for a majority of streams. */
     err = ff_vk_exec_pool_init(s, ctx->qf, &ctx->exec_pool,
                                FFMAX(2*ctx->qf->num, avctx->thread_count),
-                               nb_q, VK_QUERY_TYPE_RESULT_STATUS_ONLY_KHR, 0,
-                               profile);
+                               0, 0, 0, profile);
     if (err < 0)
         goto fail;
 
