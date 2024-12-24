@@ -22,17 +22,18 @@
 
 struct SliceContext {
     RangeCoder c;
-
-#ifdef GOLOMB
     PutBitContext pb; /* 8*8 bytes */
-#endif
 
     ivec2 slice_dim;
     ivec2 slice_pos;
     ivec2 slice_rct_coef;
+    u8vec4 quant_table_idx;
+    uint context_count;
 
     uint hdr_len; // only used for golomb
-    int slice_coding_mode;
+
+    uint slice_coding_mode;
+    bool slice_reset_contexts;
 };
 
 /* -1, { -1, 0 } */
@@ -72,3 +73,18 @@ const uint32_t log2_run[41] = {
     16, 17, 18, 19, 20, 21, 22, 23,
     24,
 };
+
+uint slice_coord(uint width, uint sx, uint num_h_slices, uint chroma_shift)
+{
+    uint mpw = 1 << chroma_shift;
+    uint awidth = align(width, mpw);
+
+    if ((version < 4) || ((version == 4) && (micro_version < 3)))
+        return width * sx / num_h_slices;
+
+    sx = (2 * awidth * sx + num_h_slices * mpw) / (2 * num_h_slices * mpw) * mpw;
+    if (sx == awidth)
+        sx = width;
+
+    return sx;
+}

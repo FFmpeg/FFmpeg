@@ -24,7 +24,8 @@ void main(void)
 {
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
 
-    if (slice_ctx[slice_idx].slice_coding_mode == 0 && key_frame == 0)
+    if (key_frame == 0 &&
+        slice_ctx[slice_idx].slice_reset_contexts == false)
         return;
 
     uint64_t slice_state_off = uint64_t(slice_state) +

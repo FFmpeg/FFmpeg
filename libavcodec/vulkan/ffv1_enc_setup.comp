@@ -20,21 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-uint slice_coord(uint width, uint sx, uint num_h_slices, uint chroma_shift)
-{
-    uint mpw = 1 << chroma_shift;
-    uint awidth = align(width, mpw);
-
-    if ((version < 4) || ((version == 4) && (micro_version < 3)))
-        return width * sx / num_h_slices;
-
-    sx = (2 * awidth * sx + num_h_slices * mpw) / (2 * num_h_slices * mpw) * mpw;
-    if (sx == awidth)
-        sx = width;
-
-    return sx;
-}
-
 void init_slice(out SliceContext sc, const uint slice_idx)
 {
     /* Set coordinates */
@@ -52,6 +37,7 @@ void init_slice(out SliceContext sc, const uint slice_idx)
     sc.slice_dim = ivec2(sxe - sxs, sye - sys);
     sc.slice_rct_coef = ivec2(1, 1);
     sc.slice_coding_mode = int(force_pcm == 1);
+    sc.slice_reset_contexts = sc.slice_coding_mode == 1;
 
     rac_init(sc.c,
              OFFBUF(u8buf, out_data, slice_idx * slice_size_max),
@@ -105,7 +91,7 @@ void write_slice_header(inout SliceContext sc, uint64_t state)
     put_symbol_unsigned(sc.c, state, sar.y);
 
     if (version >= 4) {
-        put_rac_full(sc.c, state, sc.slice_coding_mode == 1);
+        put_rac_full(sc.c, state, sc.slice_reset_contexts);
         put_symbol_unsigned(sc.c, state, sc.slice_coding_mode);
         if (sc.slice_coding_mode != 1 && colorspace == 1) {
             put_symbol_unsigned(sc.c, state, sc.slice_rct_coef.y);

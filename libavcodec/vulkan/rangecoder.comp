@@ -21,8 +21,9 @@
  */
 
 struct RangeCoder {
-    u8buf bytestream_start;
-    u8buf bytestream;
+    uint64_t bytestream_start;
+    uint64_t bytestream;
+    uint64_t bytestream_end;
 
     uint low;
     uint16_t range;
@@ -34,28 +35,29 @@ struct RangeCoder {
 void renorm_encoder_full(inout RangeCoder c)
 {
     int bs_cnt = 0;
+    u8buf bytestream = u8buf(c.bytestream);
 
     if (c.outstanding_byte == 0xFF) {
         c.outstanding_byte = uint8_t(c.low >> 8);
     } else if (c.low <= 0xFF00) {
-        c.bytestream[bs_cnt++].v = c.outstanding_byte;
+        bytestream[bs_cnt++].v = c.outstanding_byte;
         uint16_t cnt = c.outstanding_count;
         for (; cnt > 0; cnt--)
-            c.bytestream[bs_cnt++].v = uint8_t(0xFF);
+            bytestream[bs_cnt++].v = uint8_t(0xFF);
         c.outstanding_count = uint16_t(0);
         c.outstanding_byte = uint8_t(c.low >> 8);
     } else if (c.low >= 0x10000) {
-        c.bytestream[bs_cnt++].v = c.outstanding_byte + uint8_t(1);
+        bytestream[bs_cnt++].v = c.outstanding_byte + uint8_t(1);
         uint16_t cnt = c.outstanding_count;
         for (; cnt > 0; cnt--)
-            c.bytestream[bs_cnt++].v = uint8_t(0x00);
+            bytestream[bs_cnt++].v = uint8_t(0x00);
         c.outstanding_count = uint16_t(0);
         c.outstanding_byte = uint8_t(bitfieldExtract(c.low, 8, 8));
     } else {
         c.outstanding_count++;
     }
 
-    c.bytestream = OFFBUF(u8buf, c.bytestream, bs_cnt);
+    c.bytestream += bs_cnt;
     c.range <<= 8;
     c.low = bitfieldInsert(0, c.low, 8, 8);
 }
@@ -74,10 +76,10 @@ void renorm_encoder(inout RangeCoder c)
         return;
     }
 
-    u8buf bs = c.bytestream;
+    u8buf bs = u8buf(c.bytestream);
     uint8_t outstanding_byte = c.outstanding_byte;
 
-    c.bytestream        = OFFBUF(u8buf, bs, oc);
+    c.bytestream        = uint64_t(bs) + oc;
     c.outstanding_count = uint16_t(0);
     c.outstanding_byte  = uint8_t(low >> 8);
 
@@ -179,10 +181,11 @@ uint32_t rac_terminate(inout RangeCoder c)
     return uint32_t(uint64_t(c.bytestream) - uint64_t(c.bytestream_start));
 }
 
-void rac_init(out RangeCoder r, u8buf data, uint64_t buf_size)
+void rac_init(out RangeCoder r, u8buf data, uint buf_size)
 {
-    r.bytestream_start = data;
-    r.bytestream = data;
+    r.bytestream_start = uint64_t(data);
+    r.bytestream = uint64_t(data);
+    r.bytestream_end = uint64_t(data) + buf_size;
     r.low = 0;
     r.range = uint16_t(0xFF00);
     r.outstanding_count = uint16_t(0);
