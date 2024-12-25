@@ -1540,8 +1540,14 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
         f->num_v_slices = fv->num_v_slices;
 
         if (f->num_h_slices <= 0 && f->num_v_slices <= 0) {
-            f->num_h_slices = 32;
-            f->num_v_slices = 32;
+            if (avctx->slices) {
+                err = ff_ffv1_encode_determine_slices(avctx);
+                if (err < 0)
+                    return err;
+            } else {
+                f->num_h_slices = 32;
+                f->num_v_slices = 32;
+            }
         } else if (f->num_h_slices && f->num_v_slices <= 0) {
             f->num_v_slices = 1024 / f->num_h_slices;
         } else if (f->num_v_slices && f->num_h_slices <= 0) {

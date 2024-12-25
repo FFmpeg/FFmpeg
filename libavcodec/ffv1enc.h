@@ -32,6 +32,7 @@ enum {
 };
 
 av_cold int ff_ffv1_encode_init(AVCodecContext *avctx);
+av_cold int ff_ffv1_encode_determine_slices(AVCodecContext *avctx);
 av_cold int ff_ffv1_write_extradata(AVCodecContext *avctx);
 av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
                                             enum AVPixelFormat pix_fmt);
