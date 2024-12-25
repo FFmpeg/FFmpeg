@@ -354,7 +354,7 @@ static void correct_input_start_times(void)
             if (copy_ts && start_at_zero)
                 ifile->ts_offset = -new_start_time;
             else if (!copy_ts) {
-                abs_start_seek = is->start_time + (ifile->start_time != AV_NOPTS_VALUE) ? ifile->start_time : 0;
+                abs_start_seek = is->start_time + ((ifile->start_time != AV_NOPTS_VALUE) ? ifile->start_time : 0);
                 ifile->ts_offset = abs_start_seek > new_start_time ? -abs_start_seek : -new_start_time;
             } else if (copy_ts)
                 ifile->ts_offset = 0;
