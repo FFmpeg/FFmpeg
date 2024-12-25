@@ -496,6 +496,9 @@ static int klv_read_packet(MXFContext *mxf, KLVPacket *klv, AVIOContext *pb)
     if (length < 0)
         return length;
     klv->length = length;
+    if (klv->offset > INT64_MAX - 16 - llen)
+        return AVERROR_INVALIDDATA;
+
     pos = klv->offset + 16 + llen;
     if (pos > INT64_MAX - length)
         return AVERROR_INVALIDDATA;
