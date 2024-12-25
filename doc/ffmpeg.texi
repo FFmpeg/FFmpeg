@@ -116,11 +116,11 @@ A schematic representation of a demuxer looks like this:
 @verbatim
 ┌──────────┬───────────────────────┐
 │ demuxer  │                       │ packets for stream 0
-╞══════════╡ elementary stream 0   ├──────────────────────⮞
+╞══════════╡ elementary stream 0   ├──────────────────────►
 │          │                       │
 │  global  ├───────────────────────┤
 │properties│                       │ packets for stream 1
-│   and    │ elementary stream 1   ├──────────────────────⮞
+│   and    │ elementary stream 1   ├──────────────────────►
 │ metadata │                       │
 │          ├───────────────────────┤
 │          │                       │
@@ -128,10 +128,10 @@ A schematic representation of a demuxer looks like this:
 │          │                       │
 │          ├───────────────────────┤
 │          │                       │ packets for stream N
-│          │ elementary stream N   ├──────────────────────⮞
+│          │ elementary stream N   ├──────────────────────►
 │          │                       │
 └──────────┴───────────────────────┘
-     ⯅
+     ▲
      │
      │ read from file, network stream,
      │     grabbing device, etc.
@@ -149,7 +149,7 @@ A schematic representation of a decoder looks like this:
 @verbatim
           ┌─────────┐
  packets  │         │ raw frames
-─────────⮞│ decoder ├────────────⮞
+─────────►│ decoder ├────────────►
           │         │
           └─────────┘
 @end verbatim
@@ -174,7 +174,7 @@ this:
              │  simple filtergraph    │
  frames from ╞════════════════════════╡ frames for
  a decoder   │  ┌───────┐  ┌───────┐  │ an encoder
-────────────⮞├─⮞│ yadif ├─⮞│ scale ├─⮞│────────────⮞
+────────────►├─►│ yadif ├─►│ scale ├─►│────────────►
              │  └───────┘  └───────┘  │
              └────────────────────────┘
 @end verbatim
@@ -192,13 +192,13 @@ The following example diagram represents a complex filtergraph with 3 inputs and
           │               complex filtergraph               │
           ╞═════════════════════════════════════════════════╡
  frames   ├───────┐  ┌─────────┐      ┌─────────┐  ┌────────┤ frames
-─────────⮞│input 0├─⮞│ overlay ├─────⮞│ overlay ├─⮞│output 0├────────⮞
+─────────►│input 0├─►│ overlay ├─────►│ overlay ├─►│output 0├────────►
           ├───────┘  │         │      │         │  └────────┤
- frames   ├───────┐╭⮞│         │    ╭⮞│         │           │
-─────────⮞│input 1├╯ └─────────┘    │ └─────────┘           │
+ frames   ├───────┐╭►│         │    ╭►│         │           │
+─────────►│input 1├╯ └─────────┘    │ └─────────┘           │
           ├───────┘                 │                       │
  frames   ├───────┐ ┌─────┐ ┌─────┬─╯              ┌────────┤ frames
-─────────⮞│input 2├⮞│scale├⮞│split├───────────────⮞│output 1├────────⮞
+─────────►│input 2├►│scale├►│split├───────────────►│output 1├────────►
           ├───────┘ └─────┘ └─────┘                └────────┤
           └─────────────────────────────────────────────────┘
 @end verbatim
@@ -222,7 +222,7 @@ A schematic representation of an encoder looks like this:
 @verbatim
              ┌─────────┐
  raw frames  │         │ packets
-────────────⮞│ encoder ├─────────⮞
+────────────►│ encoder ├─────────►
              │         │
              └─────────┘
 @end verbatim
@@ -238,11 +238,11 @@ A schematic representation of a muxer looks like this:
 @verbatim
                        ┌──────────────────────┬───────────┐
  packets for stream 0  │                      │   muxer   │
-──────────────────────⮞│  elementary stream 0 ╞═══════════╡
+──────────────────────►│  elementary stream 0 ╞═══════════╡
                        │                      │           │
                        ├──────────────────────┤  global   │
  packets for stream 1  │                      │properties │
-──────────────────────⮞│  elementary stream 1 │   and     │
+──────────────────────►│  elementary stream 1 │   and     │
                        │                      │ metadata  │
                        ├──────────────────────┤           │
                        │                      │           │
@@ -250,7 +250,7 @@ A schematic representation of a muxer looks like this:
                        │                      │           │
                        ├──────────────────────┤           │
  packets for stream N  │                      │           │
-──────────────────────⮞│  elementary stream N │           │
+──────────────────────►│  elementary stream N │           │
                        │                      │           │
                        └──────────────────────┴─────┬─────┘
                                                     │
@@ -276,7 +276,7 @@ such a pipeline looks like this:
 │          │                     │
 │INPUT.mkv ├─────────────────────┤          ┌──────────────────────┬───────────┐
 │          │                     │ packets  │                      │   muxer   │
-│          │ elementary stream 1 ├─────────⮞│  elementary stream 0 ╞═══════════╡
+│          │ elementary stream 1 ├─────────►│  elementary stream 0 ╞═══════════╡
 │          │                     │          │                      │OUTPUT.mp4 │
 │          ├─────────────────────┤          └──────────────────────┴───────────┘
 │          │                     │ unused
@@ -329,12 +329,12 @@ from two input files into a single output:
 @verbatim
 ┌──────────┬────────────────────┐         ┌────────────────────┬───────────┐
 │ demuxer 0│                    │ packets │                    │   muxer   │
-╞══════════╡elementary stream 0 ├────────⮞│elementary stream 0 ╞═══════════╡
+╞══════════╡elementary stream 0 ├────────►│elementary stream 0 ╞═══════════╡
 │INPUT0.mkv│                    │         │                    │OUTPUT.mp4 │
 └──────────┴────────────────────┘         ├────────────────────┤           │
 ┌──────────┬────────────────────┐         │                    │           │
 │ demuxer 1│                    │ packets │elementary stream 1 │           │
-╞══════════╡elementary stream 0 ├────────⮞│                    │           │
+╞══════════╡elementary stream 0 ├────────►│                    │           │
 │INPUT1.aac│                    │         └────────────────────┴───────────┘
 └──────────┴────────────────────┘
 @end verbatim
@@ -355,11 +355,11 @@ multiple outputs:
 @verbatim
 ┌──────────┬─────────────────────┐          ┌───────────────────┬───────────┐
 │ demuxer  │                     │ packets  │                   │ muxer 0   │
-╞══════════╡ elementary stream 0 ├─────────⮞│elementary stream 0╞═══════════╡
+╞══════════╡ elementary stream 0 ├─────────►│elementary stream 0╞═══════════╡
 │          │                     │          │                   │OUTPUT0.mp4│
 │INPUT.mkv ├─────────────────────┤          └───────────────────┴───────────┘
 │          │                     │ packets  ┌───────────────────┬───────────┐
-│          │ elementary stream 1 ├─────────⮞│                   │ muxer 1   │
+│          │ elementary stream 1 ├─────────►│                   │ muxer 1   │
 │          │                     │          │elementary stream 0╞═══════════╡
 └──────────┴─────────────────────┘          │                   │OUTPUT1.mp4│
                                             └───────────────────┴───────────┘
@@ -404,18 +404,18 @@ file. This can be schematically represented as follows
 │          │                     │                                     │
 │INPUT.mkv ├─────────────────────┤ video    ┌─────────┐     raw        │
 │          │                     │ packets  │  video  │ video frames   │
-│          │ stream 1 (video)    ├─────────⮞│ decoder ├──────────────╮ │
+│          │ stream 1 (video)    ├─────────►│ decoder ├──────────────╮ │
 │          │                     │          │         │              │ │
 └──────────┴─────────────────────┘          └─────────┘              │ │
                                                                      ▼ ▼
                                                                      │ │
 ┌──────────┬─────────────────────┐ video    ┌─────────┐              │ │
 │ muxer    │                     │ packets  │  video  │              │ │
-╞══════════╡ stream 0 (video)    │⮜─────────┤ encoder ├──────────────╯ │
+╞══════════╡ stream 0 (video)    │◄─────────┤ encoder ├──────────────╯ │
 │          │                     │          │(libx264)│                │
 │OUTPUT.mp4├─────────────────────┤          └─────────┘                │
 │          │                     │                                     │
-│          │ stream 1 (audio)    │⮜────────────────────────────────────╯
+│          │ stream 1 (audio)    │◄────────────────────────────────────╯
 │          │                     │
 └──────────┴─────────────────────┘
 @end verbatim
@@ -449,22 +449,22 @@ for clarity) makes it look like this:
 ┌──────────┬───────────────┐
 │ demuxer  │               │          ┌─────────┐
 ╞══════════╡ video stream  │ packets  │  video  │ frames
-│INPUT.mkv │               ├─────────⮞│ decoder ├─────⮞───╮
+│INPUT.mkv │               ├─────────►│ decoder ├─────►───╮
 │          │               │          └─────────┘         │
 └──────────┴───────────────┘                              │
-                                  ╭───────────⮜───────────╯
+                                  ╭───────────◄───────────╯
                                   │   ┌────────────────────────┐
                                   │   │  simple filtergraph    │
                                   │   ╞════════════════════════╡
                                   │   │  ┌───────┐  ┌───────┐  │
-                                  ╰──⮞├─⮞│ yadif ├─⮞│ scale ├─⮞├╮
+                                  ╰──►├─►│ yadif ├─►│ scale ├─►├╮
                                       │  └───────┘  └───────┘  ││
                                       └────────────────────────┘│
                                                                 │
                                                                 │
 ┌──────────┬───────────────┐ video    ┌─────────┐               │
 │ muxer    │               │ packets  │  video  │               │
-╞══════════╡ video stream  │⮜─────────┤ encoder ├───────⮜───────╯
+╞══════════╡ video stream  │◄─────────┤ encoder ├───────◄───────╯
 │OUTPUT.mp4│               │          │         │
 │          │               │          └─────────┘
 └──────────┴───────────────┘
@@ -531,12 +531,12 @@ Such a transcoding pipeline can be represented with the following diagram:
 ┌──────────┬───────────────┐
 │ demuxer  │               │   ┌─────────┐            ┌─────────┐    ┌────────────────────┐
 ╞══════════╡ video stream  │   │  video  │            │  video  │    │ null muxer         │
-│   INPUT  │               ├──⮞│ decoder ├──┬────────⮞│ encoder ├─┬─⮞│(discards its input)│
+│   INPUT  │               ├──►│ decoder ├──┬────────►│ encoder ├─┬─►│(discards its input)│
 │          │               │   └─────────┘  │         │(libx264)│ │  └────────────────────┘
 └──────────┴───────────────┘                │         └─────────┘ │
-                                 ╭───────⮜──╯   ┌─────────┐       │
+                                 ╭───────◄──╯   ┌─────────┐       │
                                  │              │loopback │       │
-                                 │ ╭─────⮜──────┤ decoder ├────⮜──╯
+                                 │ ╭─────◄──────┤ decoder ├────◄──╯
                                  │ │            └─────────┘
                                  │ │
                                  │ │
@@ -544,14 +544,14 @@ Such a transcoding pipeline can be represented with the following diagram:
                                  │ │  │complex filtergraph│
                                  │ │  ╞═══════════════════╡
                                  │ │  │  ┌─────────────┐  │
-                                 ╰─╫─⮞├─⮞│   hstack    ├─⮞├╮
-                                   ╰─⮞├─⮞│             │  ││
+                                 ╰─╫─►├─►│   hstack    ├─►├╮
+                                   ╰─►├─►│             │  ││
                                       │  └─────────────┘  ││
                                       └───────────────────┘│
                                                            │
 ┌──────────┬───────────────┐  ┌─────────┐                  │
 │ muxer    │               │  │  video  │                  │
-╞══════════╡ video stream  │⮜─┤ encoder ├───────⮜──────────╯
+╞══════════╡ video stream  │◄─┤ encoder ├───────◄──────────╯
 │  OUTPUT  │               │  │ (ffv1)  │
 │          │               │  └─────────┘
 └──────────┴───────────────┘
