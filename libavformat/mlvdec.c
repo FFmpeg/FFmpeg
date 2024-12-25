@@ -82,13 +82,15 @@ static int check_file_header(AVIOContext *pb, uint64_t guid)
 static void read_string(AVFormatContext *avctx, AVIOContext *pb, const char *tag, unsigned size)
 {
     char * value = av_malloc(size + 1);
+    int ret;
+
     if (!value) {
         avio_skip(pb, size);
         return;
     }
 
-    avio_read(pb, value, size);
-    if (!value[0]) {
+    ret = avio_read(pb, value, size);
+    if (ret != size || !value[0]) {
         av_free(value);
         return;
     }
