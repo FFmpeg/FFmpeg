@@ -833,7 +833,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
             int stream_index = ff_find_stream_index(s, sid);
             if (stream_index >= 0) {
                 AVStream *st = s->streams[stream_index];
-                uint8_t buf[258];
+                uint8_t buf[258] = {0};
                 const uint8_t *pbuf = buf;
                 int buf_size;
 
