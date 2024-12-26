@@ -282,7 +282,7 @@ int ff_iamf_read_packet(AVFormatContext *s, IAMFDemuxContext *c,
     int read = 0;
 
     while (1) {
-        uint8_t header[MAX_IAMF_OBU_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
+        uint8_t header[MAX_IAMF_OBU_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE] = {0};
         enum IAMF_OBU_Type type;
         unsigned obu_size;
         unsigned skip_samples, discard_padding;
@@ -294,6 +294,8 @@ int ff_iamf_read_packet(AVFormatContext *s, IAMFDemuxContext *c,
         size = avio_read(pb, header, FFMIN(MAX_IAMF_OBU_HEADER_SIZE, max_size));
         if (size < 0)
             return size;
+        if (size != FFMIN(MAX_IAMF_OBU_HEADER_SIZE, max_size))
+            return AVERROR_INVALIDDATA;
 
         len = ff_iamf_parse_obu_header(header, size, &obu_size, &start_pos, &type,
                                        &skip_samples, &discard_padding);
