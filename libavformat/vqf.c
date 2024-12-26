@@ -61,7 +61,8 @@ static void add_metadata(AVFormatContext *s, uint32_t tag,
     buf = av_malloc(len+1);
     if (!buf)
         return;
-    avio_read(s->pb, buf, len);
+    if (len != avio_read(s->pb, buf, len))
+        return;
     buf[len] = 0;
     AV_WL32(key, tag);
     av_dict_set(&s->metadata, key, buf, AV_DICT_DONT_STRDUP_VAL);
