@@ -505,8 +505,22 @@ FF_ENABLE_DEPRECATION_WARNINGS
     {
         const AVDictionaryEntry *en = NULL;
         while ((en = av_dict_iterate(ctx->x265_opts, en))) {
-            int parse_ret = ctx->api->param_parse(ctx->params, en->key, en->value);
+            int parse_ret;
 
+            // ignore forced alpha option. The pixel format is all we need.
+            if (!strncmp(en->key, "alpha", 5)) {
+                if (desc->nb_components == 4) {
+                    av_log(avctx, AV_LOG_WARNING,
+                           "Ignoring redundant \"alpha\" option.\n");
+                    continue;
+                }
+                av_log(avctx, AV_LOG_ERROR,
+                       "Alpha encoding was requested through an unsupported "
+                       "option when no alpha plane is present\n");
+                return AVERROR(EINVAL);
+            }
+
+            parse_ret = ctx->api->param_parse(ctx->params, en->key, en->value);
             switch (parse_ret) {
             case X265_PARAM_BAD_NAME:
                 av_log(avctx, AV_LOG_WARNING,
