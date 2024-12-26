@@ -614,7 +614,8 @@ static int ipmovie_read_header(AVFormatContext *s)
 
     ipmovie->avf = s;
 
-    avio_read(pb, signature_buffer, sizeof(signature_buffer));
+    if (avio_read(pb, signature_buffer, sizeof(signature_buffer)) != sizeof(signature_buffer))
+        return AVERROR_INVALIDDATA;
     while (memcmp(signature_buffer, signature, sizeof(signature))) {
         memmove(signature_buffer, signature_buffer + 1, sizeof(signature_buffer) - 1);
         signature_buffer[sizeof(signature_buffer) - 1] = avio_r8(pb);
