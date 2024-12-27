@@ -30,6 +30,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/downmix_info.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -149,6 +150,9 @@ typedef struct InputFilterPriv {
     int                 displaymatrix_present;
     int                 displaymatrix_applied;
     int32_t             displaymatrix[9];
+
+    int                 downmixinfo_present;
+    AVDownmixInfo       downmixinfo;
 
     struct {
         AVFrame *frame;
@@ -2119,6 +2123,19 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
         memcpy(ifp->displaymatrix, sd->data, sizeof(ifp->displaymatrix));
     ifp->displaymatrix_present = !!sd;
 
+    /* Copy downmix related side data to InputFilterPriv so it may be propagated
+     * to the filter chain even though it's not "global", as filters like aresample
+     * require this information during init and not when remixing a frame */
+    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DOWNMIX_INFO);
+    if (sd) {
+        ret = av_frame_side_data_clone(&ifp->side_data,
+                                       &ifp->nb_side_data, sd, 0);
+        if (ret < 0)
+            return ret;
+        memcpy(&ifp->downmixinfo, sd->data, sizeof(ifp->downmixinfo));
+    }
+    ifp->downmixinfo_present = !!sd;
+
     return 0;
 }
 
@@ -2832,7 +2849,8 @@ enum ReinitReason {
     VIDEO_CHANGED   = (1 << 0),
     AUDIO_CHANGED   = (1 << 1),
     MATRIX_CHANGED  = (1 << 2),
-    HWACCEL_CHANGED = (1 << 3)
+    DOWNMIX_CHANGED = (1 << 3),
+    HWACCEL_CHANGED = (1 << 4)
 };
 
 static const char *unknown_if_null(const char *str)
@@ -2872,6 +2890,13 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
             need_reinit |= MATRIX_CHANGED;
     } else if (ifp->displaymatrix_present)
         need_reinit |= MATRIX_CHANGED;
+
+    if (sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DOWNMIX_INFO)) {
+        if (!ifp->downmixinfo_present ||
+            memcmp(sd->data, &ifp->downmixinfo, sizeof(ifp->downmixinfo)))
+            need_reinit |= DOWNMIX_CHANGED;
+    } else if (ifp->downmixinfo_present)
+        need_reinit |= DOWNMIX_CHANGED;
 
     if (!(ifp->opts.flags & IFILTER_FLAG_REINIT) && fgt->graph)
         need_reinit = 0;
@@ -2927,6 +2952,8 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
             }
             if (need_reinit & MATRIX_CHANGED)
                 av_bprintf(&reason, "display matrix changed, ");
+            if (need_reinit & DOWNMIX_CHANGED)
+                av_bprintf(&reason, "downmix medatata changed, ");
             if (need_reinit & HWACCEL_CHANGED)
                 av_bprintf(&reason, "hwaccel changed, ");
             if (reason.len > 1)
