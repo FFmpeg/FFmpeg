@@ -217,6 +217,10 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
 
     if (stg->type != AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT)
         return AVERROR(EINVAL);
+    if (!stg->nb_streams) {
+        av_log(log_ctx, AV_LOG_ERROR, "Audio Element id %"PRId64" has no streams\n", stg->id);
+        return AVERROR(EINVAL);
+    }
 
     iamf_audio_element = stg->params.iamf_audio_element;
     if (iamf_audio_element->audio_element_type == AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE) {
@@ -386,6 +390,10 @@ int ff_iamf_add_mix_presentation(IAMFContext *iamf, const AVStreamGroup *stg, vo
 
     if (stg->type != AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION)
         return AVERROR(EINVAL);
+    if (!stg->nb_streams) {
+        av_log(log_ctx, AV_LOG_ERROR, "Mix Presentation id %"PRId64" has no streams\n", stg->id);
+        return AVERROR(EINVAL);
+    }
 
     for (int i = 0; i < iamf->nb_mix_presentations; i++) {
         if (stg->id == iamf->mix_presentations[i]->mix_presentation_id) {
