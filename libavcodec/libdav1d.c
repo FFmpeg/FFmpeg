@@ -372,9 +372,10 @@ static int libdav1d_receive_frame_internal(AVCodecContext *c, Dav1dPicture *p)
 
     res = dav1d_get_picture(dav1d->c, p);
     if (res < 0) {
-        if (res == AVERROR(EINVAL))
+        if (res == AVERROR(EINVAL)) {
+            dav1d_data_unref(data);
             res = AVERROR_INVALIDDATA;
-        else if (res == AVERROR(EAGAIN))
+        } else if (res == AVERROR(EAGAIN))
             res = c->internal->draining ? AVERROR_EOF : 1;
     }
 
