@@ -8,6 +8,7 @@ version <next>:
 - OpenMAX encoders deprecated
 - libx265 alpha layer encoding
 - ADPCM IMA Xbox decoder
+- Enhanced FLV v2: Multitrack audio/video, modern codec support
 
 version 7.1:
 - Raw Captions with Time (RCWT) closed caption demuxer
