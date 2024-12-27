@@ -26,6 +26,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/downmix_info.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/avassert.h"
@@ -123,6 +124,7 @@ static int query_formats(const AVFilterContext *ctx,
     return ff_channel_layouts_ref(out_layouts, &cfg_out[0]->channel_layouts);
 }
 
+#define SWR_CH_MAX 64
 
 static int config_output(AVFilterLink *outlink)
 {
@@ -132,6 +134,7 @@ static int config_output(AVFilterLink *outlink)
     AResampleContext *aresample = ctx->priv;
     AVChannelLayout out_layout = { 0 };
     int64_t out_rate;
+    const AVFrameSideData *sd;
     enum AVSampleFormat out_format;
     char inchl_buf[128], outchl_buf[128];
 
@@ -141,6 +144,44 @@ static int config_output(AVFilterLink *outlink)
                                          0, ctx);
     if (ret < 0)
         return ret;
+
+    sd = av_frame_side_data_get(inlink->side_data, inlink->nb_side_data,
+                                AV_FRAME_DATA_DOWNMIX_INFO);
+    if (sd) {
+        const AVDownmixInfo *di = (AVDownmixInfo *)sd->data;
+        enum AVMatrixEncoding matrix_encoding = AV_MATRIX_ENCODING_NONE;
+        double center_mix_level, surround_mix_level;
+
+        switch (di->preferred_downmix_type) {
+        case AV_DOWNMIX_TYPE_LTRT:
+            matrix_encoding    = AV_MATRIX_ENCODING_DOLBY;
+            center_mix_level   = di->center_mix_level_ltrt;
+            surround_mix_level = di->surround_mix_level_ltrt;
+            break;
+        case AV_DOWNMIX_TYPE_DPLII:
+            matrix_encoding    = AV_MATRIX_ENCODING_DPLII;
+            center_mix_level   = di->center_mix_level_ltrt;
+            surround_mix_level = di->surround_mix_level_ltrt;
+            break;
+        default:
+            center_mix_level   = di->center_mix_level;
+            surround_mix_level = di->surround_mix_level;
+            break;
+        }
+
+        av_log(ctx, AV_LOG_VERBOSE, "Mix levels: center %f - "
+               "surround %f - lfe %f.\n",
+               center_mix_level, surround_mix_level, di->lfe_mix_level);
+
+        av_opt_set_double(aresample->swr, "clev", center_mix_level, 0);
+        av_opt_set_double(aresample->swr, "slev", surround_mix_level, 0);
+        av_opt_set_double(aresample->swr, "lfe_mix_level", di->lfe_mix_level, 0);
+        av_opt_set_int(aresample->swr, "matrix_encoding", matrix_encoding, 0);
+
+        if (av_channel_layout_compare(&outlink->ch_layout, &out_layout))
+            av_frame_side_data_remove(&outlink->side_data, &outlink->nb_side_data,
+                                      AV_FRAME_DATA_DOWNMIX_INFO);
+    }
 
     ret = swr_init(aresample->swr);
     if (ret < 0)
@@ -199,6 +240,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
         return ret;
     }
     outsamplesref->sample_rate           = outlink->sample_rate;
+
+    if (av_channel_layout_compare(&outsamplesref->ch_layout, &insamplesref->ch_layout))
+        av_frame_side_data_remove_by_props(&outsamplesref->side_data, &outsamplesref->nb_side_data,
+                                           AV_SIDE_DATA_PROP_CHANNEL_DEPENDENT);
 
     if(insamplesref->pts != AV_NOPTS_VALUE) {
         int64_t inpts = av_rescale(insamplesref->pts, inlink->time_base.num * (int64_t)outlink->sample_rate * inlink->sample_rate, inlink->time_base.den);
