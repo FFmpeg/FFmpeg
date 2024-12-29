@@ -297,6 +297,13 @@ enum AVSideDataProps {
      * adapting to a different set of primaries or transfer characteristics.
      */
     AV_SIDE_DATA_PROP_COLOR_DEPENDENT = (1 << 3),
+
+    /**
+     * Side data depends on the channel layout. Side data with this property
+     * loses its meaning when downmixing or upmixing, unless either recomputed
+     * or adjusted to the new layout.
+     */
+    AV_SIDE_DATA_PROP_CHANNEL_DEPENDENT = (1 << 4),
 };
 
 /**
