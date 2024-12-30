@@ -81,7 +81,10 @@ static int iamf_read_header(AVFormatContext *s)
 
     for (int i = 0; i < iamf->nb_audio_elements; i++) {
         IAMFAudioElement *audio_element = iamf->audio_elements[i];
+        const AVIAMFLayer *layer = audio_element->element->layers[audio_element->nb_layers - 1];
         AVStreamGroup *stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT, NULL);
+        int coupled_substream_count = audio_element->layers[audio_element->nb_layers - 1].coupled_substream_count;
+        int side_substream_id = -1, back_substream_id = -1;
 
         if (!stg)
             return AVERROR(ENOMEM);
@@ -92,7 +95,7 @@ static int iamf_read_header(AVFormatContext *s)
         stg->params.iamf_audio_element = audio_element->element;
         audio_element->element = NULL;
 
-        for (int j = 0; j < audio_element->nb_substreams; j++) {
+        for (int j = 0, k = 0; j < audio_element->nb_substreams; j++) {
             IAMFSubStream *substream = &audio_element->substreams[j];
             AVStream *st = avformat_new_stream(s, NULL);
 
@@ -111,8 +114,27 @@ static int iamf_read_header(AVFormatContext *s)
                 st->disposition |= AV_DISPOSITION_DEFAULT;
             else if (audio_element->nb_layers > 1 || audio_element->layers[0].substream_count > 1)
                 st->disposition |= AV_DISPOSITION_DEPENDENT;
+            if (k == av_channel_layout_index_from_channel(&layer->ch_layout, AV_CHAN_BACK_LEFT))
+                back_substream_id = j;
+            else if (k == av_channel_layout_index_from_channel(&layer->ch_layout, AV_CHAN_SIDE_LEFT))
+                side_substream_id = j;
             st->id = substream->audio_substream_id;
             avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
+
+            k += 1 + (coupled_substream_count-- > 0);
+        }
+
+        // Swap back and side stream ids as our native channel layout ordering doen't match the
+        // order from ITU-R - BS.2051-3 for Systems I and J (where side channels come before back ones).
+        if (back_substream_id >= 0 && av_channel_layout_compare(&layer->ch_layout,
+                                                                &(AVChannelLayout)AV_CHANNEL_LAYOUT_9POINT1POINT6)) {
+            const IAMFSubStream *back_substream = &audio_element->substreams[back_substream_id];
+            const IAMFSubStream *side_substream = &audio_element->substreams[side_substream_id];
+            AVStream *back_st = stg->streams[back_substream_id];
+            AVStream *side_st = stg->streams[side_substream_id];
+
+            back_st->id = side_substream->audio_substream_id;
+            side_st->id = back_substream->audio_substream_id;
         }
     }
 
