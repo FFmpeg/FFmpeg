@@ -382,6 +382,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_channel_layout_describe(&s->ch_layout, buf, sizeof(buf));
     }
 
+    if (s->sample_rate <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Sample rate not set\n");
+        return AVERROR(EINVAL);
+    }
+
     if (!s->time_base.num)
         s->time_base = (AVRational){1, s->sample_rate};
 
