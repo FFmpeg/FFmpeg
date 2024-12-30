@@ -28,9 +28,9 @@ const AVChannelLayout ff_iamf_scalable_ch_layouts[10] = {
     AV_CHANNEL_LAYOUT_MONO,
     AV_CHANNEL_LAYOUT_STEREO,
     // "Loudspeaker configuration for Sound System B"
-    AV_CHANNEL_LAYOUT_5POINT1_BACK,
+    AV_CHANNEL_LAYOUT_5POINT1,
     // "Loudspeaker configuration for Sound System C"
-    AV_CHANNEL_LAYOUT_5POINT1POINT2_BACK,
+    AV_CHANNEL_LAYOUT_5POINT1POINT2,
     // "Loudspeaker configuration for Sound System D"
     AV_CHANNEL_LAYOUT_5POINT1POINT4_BACK,
     // "Loudspeaker configuration for Sound System I"
@@ -106,8 +106,8 @@ const AVChannelLayout ff_iamf_expanded_scalable_ch_layouts[13] = {
 
 const struct IAMFSoundSystemMap ff_iamf_sound_system_map[14] = {
     { SOUND_SYSTEM_A_0_2_0, AV_CHANNEL_LAYOUT_STEREO },
-    { SOUND_SYSTEM_B_0_5_0, AV_CHANNEL_LAYOUT_5POINT1_BACK },
-    { SOUND_SYSTEM_C_2_5_0, AV_CHANNEL_LAYOUT_5POINT1POINT2_BACK },
+    { SOUND_SYSTEM_B_0_5_0, AV_CHANNEL_LAYOUT_5POINT1 },
+    { SOUND_SYSTEM_C_2_5_0, AV_CHANNEL_LAYOUT_5POINT1POINT2 },
     { SOUND_SYSTEM_D_4_5_0, AV_CHANNEL_LAYOUT_5POINT1POINT4_BACK },
     { SOUND_SYSTEM_E_4_5_1,
         {
