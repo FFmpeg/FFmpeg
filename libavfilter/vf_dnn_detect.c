@@ -695,8 +695,12 @@ static av_cold int dnn_detect_init(AVFilterContext *context)
     ff_dnn_set_detect_post_proc(&ctx->dnnctx, dnn_detect_post_proc);
 
     if (ctx->labels_filename) {
-        return read_detect_label_file(context);
+        ret = read_detect_label_file(context);
+        if (ret) {
+          return ret;
+        }
     }
+
     if (ctx->anchors_str) {
         ret = dnn_detect_parse_anchors(ctx->anchors_str, &ctx->anchors);
         if (!ctx->anchors) {
@@ -705,6 +709,7 @@ static av_cold int dnn_detect_init(AVFilterContext *context)
         }
         ctx->nb_anchor = ret;
     }
+
     return 0;
 }
 
