@@ -25,7 +25,8 @@ hexagonal      FL+FR+FC+BL+BR+BC
 7.1            FL+FR+FC+LFE+BL+BR+SL+SR
 7.1(wide)      FL+FR+FC+LFE+BL+BR+FLC+FRC
 7.1(wide-side) FL+FR+FC+LFE+FLC+FRC+SL+SR
-5.1.2          FL+FR+FC+LFE+BL+BR+TFL+TFR
+5.1.2          FL+FR+FC+LFE+SL+SR+TFL+TFR
+5.1.2(back)    FL+FR+FC+LFE+BL+BR+TFL+TFR
 octagonal      FL+FR+FC+BL+BR+BC+SL+SR
 cube           FL+FR+BL+BR+TFL+TFR+TBL+TBR
 5.1.4          FL+FR+FC+LFE+BL+BR+TFL+TFR+TBL+TBR
