@@ -46,55 +46,68 @@ const AVChannelLayout ff_iamf_scalable_ch_layouts[10] = {
 };
 
 const AVChannelLayout ff_iamf_expanded_scalable_ch_layouts[13] = {
+    // The low-frequency effects subset (LFE) of "Loudspeaker configuration for Sound System J"
     {
         .nb_channels = 1,
         .order       = AV_CHANNEL_ORDER_NATIVE,
         .u.mask      = AV_CH_LOW_FREQUENCY,
     },
+    // The surround subset (Ls/Rs) of "Loudspeaker configuration for Sound System I"
     {
         .nb_channels = 2,
         .order       = AV_CHANNEL_ORDER_NATIVE,
         .u.mask      = AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT,
     },
+    // The side surround subset (Lss/Rss) of "Loudspeaker configuration for Sound System J"
     {
         .nb_channels = 2,
         .order       = AV_CHANNEL_ORDER_NATIVE,
         .u.mask      = AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT,
     },
+    // The rear surround subset (Lrs/Rrs) of "Loudspeaker configuration for Sound System J"
     {
         .nb_channels = 2,
         .order       = AV_CHANNEL_ORDER_NATIVE,
         .u.mask      = AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT,
     },
+    // The top front subset (Ltf/Rtf) of "Loudspeaker configuration for Sound System J"
     {
         .nb_channels = 2,
         .order       = AV_CHANNEL_ORDER_NATIVE,
         .u.mask      = AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT,
     },
+    // The top back subset (Ltb/Rtb) of "Loudspeaker configuration for Sound System J"
     {
         .nb_channels = 2,
         .order       = AV_CHANNEL_ORDER_NATIVE,
         .u.mask      = AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT,
     },
+    // The top 4 channels (Ltf/Rtf/Ltb/Rtb) of "Loudspeaker configuration for Sound System J"
     {
         .nb_channels = 4,
         .order       = AV_CHANNEL_ORDER_NATIVE,
         .u.mask      = AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT |
                        AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT,
     },
+    // The front 3 channels (L/C/R)  of "Loudspeaker configuration for Sound System J"
     AV_CHANNEL_LAYOUT_SURROUND,
+    // Subset of "Loudspeaker configuration for Sound System H"
     AV_CHANNEL_LAYOUT_9POINT1POINT6,
+    // Front subset of "Loudspeaker configuration for Sound System H"
     AV_CHANNEL_LAYOUT_STEREO,
+    // The side subset (SiL/SiR) of "Loudspeaker configuration for Sound System H"
     {
         .nb_channels = 2,
         .order       = AV_CHANNEL_ORDER_NATIVE,
         .u.mask      = AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT,
     },
+    // The top side subset (TpSiL/TpSiR) of "Loudspeaker configuration for Sound System H"
     {
         .nb_channels = 2,
         .order       = AV_CHANNEL_ORDER_NATIVE,
         .u.mask      = AV_CH_TOP_SIDE_LEFT | AV_CH_TOP_SIDE_RIGHT,
     },
+    // The top 6 channels (TpFL/TpFR/TpSiL/TpSiR/TpBL/TpBR) of "Loudspeaker configuration for Sound System H"
     {
         .nb_channels = 6,
         .order       = AV_CHANNEL_ORDER_NATIVE,
