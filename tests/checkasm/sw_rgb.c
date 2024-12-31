@@ -571,8 +571,6 @@ static void check_yuv2packed1(void)
         src_a[i] &= 0x3FFF3FFF;
         src_u[i] &= 0x3FFF3FFF;
         src_v[i] &= 0x3FFF3FFF;
-        src_u[i + INPUT_SIZE] &= 0x3FFF3FFF;
-        src_v[i + INPUT_SIZE] &= 0x3FFF3FFF;
     }
 
     luma  = (int16_t *)src_y;
