@@ -375,7 +375,7 @@ static int cbs_vp9_split_fragment(CodedBitstreamContext *ctx,
     superframe_header = frag->data[frag->data_size - 1];
 
     if ((superframe_header & 0xe0) == 0xc0) {
-        VP9RawSuperframeIndex sfi;
+        VP9RawSuperframeIndex sfi = {0};
         GetBitContext gbc;
         size_t index_size, pos;
         int i;
