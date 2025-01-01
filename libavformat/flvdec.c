@@ -354,6 +354,7 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream,
         return;
     case MKBETAG('O', 'p', 'u', 's'):
         apar->codec_id = AV_CODEC_ID_OPUS;
+        apar->sample_rate = 48000;
         return;
     case MKBETAG('.', 'm', 'p', '3'):
         apar->codec_id = AV_CODEC_ID_MP3;
