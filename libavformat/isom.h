@@ -299,6 +299,7 @@ typedef struct HEIFGrid {
     HEIFItem *item;
     HEIFItem **tile_item_list;
     int16_t *tile_id_list;
+    unsigned *tile_idx_list;
     int nb_tiles;
 } HEIFGrid;
 
