@@ -205,8 +205,9 @@ static av_cold int common_init(AVFilterContext *ctx)
                 if (!tmp)
                     return AVERROR(ENOMEM);
 
+                buf->channel_layouts = tmp;
                 memset(&buf->channel_layouts[buf->nb_channel_layouts], 0,
-                       sizeof(*buf->channel_layouts));
+                       sizeof(*buf->channel_layouts) * 2);
                 buf->nb_channel_layouts++;
 
                 ret = av_channel_layout_from_string(&buf->channel_layouts[buf->nb_channel_layouts - 1], cur);
