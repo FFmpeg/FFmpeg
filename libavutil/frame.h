@@ -1082,6 +1082,11 @@ void av_frame_side_data_free(AVFrameSideData ***sd, int *nb_sd);
  * Applies only for side data types without the AV_SIDE_DATA_PROP_MULTI prop.
  */
 #define AV_FRAME_SIDE_DATA_FLAG_REPLACE (1 << 1)
+/**
+ * Create a new reference to the passed in buffer instead of taking ownership
+ * of it.
+ */
+#define AV_FRAME_SIDE_DATA_FLAG_NEW_REF (1 << 2)
 
 /**
  * Add new side data entry to an array.
