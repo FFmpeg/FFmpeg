@@ -1521,6 +1521,7 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                 }
             }
             av_freep(&cblk->lengthinc);
+            cblk->nb_lengthinc = 0;
         }
     }
     // Save state of stream
