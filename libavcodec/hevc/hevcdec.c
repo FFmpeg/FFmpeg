@@ -3095,14 +3095,11 @@ static int set_side_data(HEVCContext *s)
         return ret;
 
     if (s->sei.common.dynamic_hdr_vivid.info) {
-        AVBufferRef *info_ref = av_buffer_ref(s->sei.common.dynamic_hdr_vivid.info);
-        if (!info_ref)
+        if (!av_frame_side_data_add(&out->side_data, &out->nb_side_data,
+                                    AV_FRAME_DATA_DYNAMIC_HDR_VIVID,
+                                    &s->sei.common.dynamic_hdr_vivid.info,
+                                    AV_FRAME_SIDE_DATA_FLAG_NEW_REF))
             return AVERROR(ENOMEM);
-
-        if (!av_frame_new_side_data_from_buf(out, AV_FRAME_DATA_DYNAMIC_HDR_VIVID, info_ref)) {
-            av_buffer_unref(&info_ref);
-            return AVERROR(ENOMEM);
-        }
     }
 
     return 0;
