@@ -362,17 +362,13 @@ int ff_aom_attach_film_grain_sets(const AVFilmGrainAFGS1Params *s, AVFrame *fram
         return 0;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->sets); i++) {
-        AVBufferRef *buf;
-
         if (!s->sets[i])
             continue;
 
-        buf = av_buffer_ref(s->sets[i]);
-        if (!buf || !av_frame_new_side_data_from_buf(frame,
-                                                     AV_FRAME_DATA_FILM_GRAIN_PARAMS, buf)) {
-            av_buffer_unref(&buf);
+        if (!av_frame_side_data_add(&frame->side_data, &frame->nb_side_data,
+                                    AV_FRAME_DATA_FILM_GRAIN_PARAMS, &s->sets[i],
+                                    AV_FRAME_SIDE_DATA_FLAG_NEW_REF))
             return AVERROR(ENOMEM);
-        }
     }
 
     return 0;
