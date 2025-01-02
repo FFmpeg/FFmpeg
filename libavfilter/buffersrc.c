@@ -60,7 +60,6 @@ typedef struct BufferSourceContext {
     int sample_rate;
     enum AVSampleFormat sample_fmt;
     int channels;
-    char    *channel_layout_str;
     AVChannelLayout ch_layout;
 
     int eof;
@@ -370,7 +369,7 @@ static const AVOption abuffer_options[] = {
     { "time_base",      NULL, OFFSET(time_base),           AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, INT_MAX, A },
     { "sample_rate",    NULL, OFFSET(sample_rate),         AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, A },
     { "sample_fmt",     NULL, OFFSET(sample_fmt),          AV_OPT_TYPE_SAMPLE_FMT, { .i64 = AV_SAMPLE_FMT_NONE }, .min = AV_SAMPLE_FMT_NONE, .max = INT_MAX, .flags = A },
-    { "channel_layout", NULL, OFFSET(channel_layout_str),  AV_OPT_TYPE_STRING,             .flags = A },
+    { "channel_layout", NULL, OFFSET(ch_layout),           AV_OPT_TYPE_CHLAYOUT,           .flags = A },
     { "channels",       NULL, OFFSET(channels),            AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, A },
     { NULL },
 };
@@ -388,17 +387,8 @@ static av_cold int init_audio(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    if (s->channel_layout_str || s->ch_layout.nb_channels) {
+    if (av_channel_layout_check(&s->ch_layout)) {
         int n;
-
-        if (!s->ch_layout.nb_channels) {
-            ret = av_channel_layout_from_string(&s->ch_layout, s->channel_layout_str);
-            if (ret < 0) {
-                av_log(ctx, AV_LOG_ERROR, "Invalid channel layout %s.\n",
-                       s->channel_layout_str);
-                return AVERROR(EINVAL);
-            }
-        }
 
         n = s->ch_layout.nb_channels;
         av_channel_layout_describe(&s->ch_layout, buf, sizeof(buf));
