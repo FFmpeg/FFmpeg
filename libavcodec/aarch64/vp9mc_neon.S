@@ -230,6 +230,9 @@ function \type\()_8tap_\size\()h_\idx1\idx2
         // reduced dst stride
 .if \size >= 16
         sub             x1,  x1,  x5
+.elseif \size == 4
+        add             x12, x2,  #8
+        add             x13, x7,  #8
 .endif
         // size >= 16 loads two qwords and increments x2,
         // for size 4/8 it's enough with one qword and no
@@ -248,9 +251,14 @@ function \type\()_8tap_\size\()h_\idx1\idx2
 .if \size >= 16
         ld1             {v4.8b,  v5.8b,  v6.8b},  [x2], #24
         ld1             {v16.8b, v17.8b, v18.8b}, [x7], #24
-.else
+.elseif \size == 8
         ld1             {v4.8b,  v5.8b},  [x2]
         ld1             {v16.8b, v17.8b}, [x7]
+.else // \size == 4
+        ld1             {v4.8b},  [x2]
+        ld1             {v16.8b}, [x7]
+        ld1             {v5.s}[0],  [x12], x3
+        ld1             {v17.s}[0], [x13], x3
 .endif
         uxtl            v4.8h,  v4.8b
         uxtl            v5.8h,  v5.8b
