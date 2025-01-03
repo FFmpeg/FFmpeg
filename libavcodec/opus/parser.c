@@ -179,18 +179,18 @@ static int opus_parse(AVCodecParserContext *ctx, AVCodecContext *avctx,
     else {
         next = opus_find_frame_end(ctx, avctx, buf, buf_size, &header_len);
 
-    if (s->ts_framing && next != AVERROR_INVALIDDATA &&
-        ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
-        *poutbuf      = NULL;
-        *poutbuf_size = 0;
-        return buf_size;
-    }
+        if (s->ts_framing && next != AVERROR_INVALIDDATA &&
+            ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
+            *poutbuf      = NULL;
+            *poutbuf_size = 0;
+            return buf_size;
+        }
 
-    if (next == AVERROR_INVALIDDATA){
-        *poutbuf      = NULL;
-        *poutbuf_size = 0;
-        return buf_size;
-    }
+        if (next == AVERROR_INVALIDDATA){
+            *poutbuf      = NULL;
+            *poutbuf_size = 0;
+            return buf_size;
+        }
     }
 
     *poutbuf      = buf + header_len;
