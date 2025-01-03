@@ -179,9 +179,7 @@ static int opus_parse(AVCodecParserContext *ctx, AVCodecContext *avctx,
     if (avctx->extradata && !s->extradata_parsed) {
         if (ff_opus_parse_extradata(avctx, &s->ctx) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error parsing Ogg extradata.\n");
-            *poutbuf      = NULL;
-            *poutbuf_size = 0;
-            return buf_size;
+            goto fail;
         }
         av_freep(&s->ctx.channel_maps);
         s->extradata_parsed = 1;
@@ -190,31 +188,29 @@ static int opus_parse(AVCodecParserContext *ctx, AVCodecContext *avctx,
     if (ctx->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         next = buf_size;
 
-        if (set_frame_duration(ctx, avctx, buf, buf_size) < 0) {
-            *poutbuf      = NULL;
-            *poutbuf_size = 0;
-            return buf_size;
-        }
+        if (set_frame_duration(ctx, avctx, buf, buf_size) < 0)
+            goto fail;
     } else {
         next = opus_find_frame_end(ctx, avctx, buf, buf_size, &header_len);
 
         if (s->ts_framing && next != AVERROR_INVALIDDATA &&
             ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
-            *poutbuf      = NULL;
-            *poutbuf_size = 0;
-            return buf_size;
+            goto fail;
         }
 
         if (next == AVERROR_INVALIDDATA){
-            *poutbuf      = NULL;
-            *poutbuf_size = 0;
-            return buf_size;
+            goto fail;
         }
     }
 
     *poutbuf      = buf + header_len;
     *poutbuf_size = buf_size - header_len;
     return next;
+
+fail:
+    *poutbuf      = NULL;
+    *poutbuf_size = 0;
+    return buf_size;
 }
 
 const AVCodecParser ff_opus_parser = {
