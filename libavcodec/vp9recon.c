@@ -318,7 +318,11 @@ static av_always_inline void mc_luma_unscaled(VP9TileData *td, vp9_mc_func (*mc)
     // The arm/aarch64 _hv filters read one more row than what actually is
     // needed, so switch to emulated edge one pixel sooner vertically
     // (!!my * 5) than horizontally (!!mx * 4).
+    // The arm/aarch64 _h filters read one more pixel than what actually is
+    // needed, so switch to emulated edge if that would read beyond the bottom
+    // right block.
     if (x < !!mx * 3 || y < !!my * 3 ||
+        ((ARCH_AARCH64 || ARCH_ARM) && (x + !!mx * 5 > w - bw) && (y + !!my * 5 + 1 > h - bh)) ||
         x + !!mx * 4 > w - bw || y + !!my * 5 > h - bh) {
         s->vdsp.emulated_edge_mc(td->edge_emu_buffer,
                                  ref - !!my * 3 * ref_stride - !!mx * 3 * bytesperpixel,
@@ -357,7 +361,11 @@ static av_always_inline void mc_chroma_unscaled(VP9TileData *td, vp9_mc_func (*m
     // The arm/aarch64 _hv filters read one more row than what actually is
     // needed, so switch to emulated edge one pixel sooner vertically
     // (!!my * 5) than horizontally (!!mx * 4).
+    // The arm/aarch64 _h filters read one more pixel than what actually is
+    // needed, so switch to emulated edge if that would read beyond the bottom
+    // right block.
     if (x < !!mx * 3 || y < !!my * 3 ||
+        ((ARCH_AARCH64 || ARCH_ARM) && (x + !!mx * 5 > w - bw) && (y + !!my * 5 + 1 > h - bh)) ||
         x + !!mx * 4 > w - bw || y + !!my * 5 > h - bh) {
         s->vdsp.emulated_edge_mc(td->edge_emu_buffer,
                                  ref_u - !!my * 3 * src_stride_u - !!mx * 3 * bytesperpixel,
