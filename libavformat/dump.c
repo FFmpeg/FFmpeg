@@ -788,10 +788,14 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
         dump_sidedata(NULL, tile_grid->coded_side_data, tile_grid->nb_coded_side_data,
                       tile_grid->width, tile_grid->height, (AVRational) {0,1},
                       "    ", AV_LOG_INFO);
-        for (int i = 0; i < stg->nb_streams; i++) {
-            const AVStream *st = stg->streams[i];
-            dump_stream_format(ic, st->index, i, index, is_output, AV_LOG_VERBOSE);
-            printed[st->index] = 1;
+        for (int i = 0; i < tile_grid->nb_tiles; i++) {
+            const AVStream *st = NULL;
+            if (tile_grid->offsets[i].idx < stg->nb_streams)
+                st = stg->streams[tile_grid->offsets[i].idx];
+            if (st && !printed[st->index]) {
+                dump_stream_format(ic, st->index, i, index, is_output, AV_LOG_VERBOSE);
+                printed[st->index] = 1;
+            }
         }
         for (int i = 0; i < stg->nb_streams; i++) {
             const AVStream *st = stg->streams[i];
