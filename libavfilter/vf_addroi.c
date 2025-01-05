@@ -39,6 +39,7 @@ enum {
 static const char *const addroi_var_names[] = {
     "iw",
     "ih",
+    NULL,
 };
 
 typedef struct AddROIContext {
