@@ -227,6 +227,7 @@ static int open_stream(AVFilterContext *ctx, MovieStream *st, int dec_threads)
     ret = avcodec_parameters_to_context(st->codec_ctx, st->st->codecpar);
     if (ret < 0)
         return ret;
+    st->codec_ctx->pkt_timebase = st->st->time_base;
 
     if (!dec_threads)
         dec_threads = ff_filter_get_nb_threads(ctx);
