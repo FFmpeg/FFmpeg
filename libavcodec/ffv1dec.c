@@ -944,54 +944,16 @@ static int decode_header(AVCodecContext *avctx, RangeCoder *c,
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
-                        int *got_frame, AVPacket *avpkt)
+static int decode_slices(AVCodecContext *avctx, RangeCoder c,
+                         AVPacket *avpkt)
 {
-    uint8_t *buf        = avpkt->data;
-    int buf_size        = avpkt->size;
-    FFV1Context *f      = avctx->priv_data;
-    int ret;
-    uint8_t *buf_end;
-    AVFrame *p;
+    FFV1Context *f = avctx->priv_data;
+    AVFrame *p = f->picture.f;
 
-    /* This is copied onto the first slice's range coder context */
-    RangeCoder c;
+    uint8_t *buf = avpkt->data;
+    size_t buf_size = avpkt->size;
+    uint8_t *buf_end = buf + buf_size;
 
-    ff_progress_frame_unref(&f->last_picture);
-    FFSWAP(ProgressFrame, f->picture, f->last_picture);
-
-
-    f->avctx = avctx;
-    f->frame_damaged = 0;
-
-    ret = decode_header(avctx, &c, avpkt->data, avpkt->size);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_progress_frame_get_buffer(avctx, &f->picture,
-                                       AV_GET_BUFFER_FLAG_REF);
-    if (ret < 0)
-        return ret;
-
-    p = f->picture.f;
-
-    p->pict_type = AV_PICTURE_TYPE_I; //FIXME I vs. P
-    p->flags     = (p->flags & ~AV_FRAME_FLAG_KEY) | f->key_frame;
-
-    if (f->version < 3 && avctx->field_order > AV_FIELD_PROGRESSIVE) {
-        /* we have interlaced material flagged in container */
-        p->flags |= AV_FRAME_FLAG_INTERLACED;
-        if (avctx->field_order == AV_FIELD_TT || avctx->field_order == AV_FIELD_TB)
-            p->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
-    }
-
-    if (avctx->debug & FF_DEBUG_PICT_INFO)
-        av_log(avctx, AV_LOG_DEBUG, "ver:%d keyframe:%d coder:%d ec:%d slices:%d bps:%d\n",
-               f->version, !!(p->flags & AV_FRAME_FLAG_KEY), f->ac, f->ec, f->slice_count, f->avctx->bits_per_raw_sample);
-
-    ff_thread_finish_setup(avctx);
-
-    buf_end = buf + buf_size;
     for (int i = f->slice_count - 1; i >= 0; i--) {
         FFV1SliceContext *sc = &f->slices[i];
 
@@ -1068,6 +1030,58 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             f->slice_damaged[i] = 1;
         }
     }
+
+    return 0;
+}
+
+static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
+                        int *got_frame, AVPacket *avpkt)
+{
+    FFV1Context *f      = avctx->priv_data;
+    int ret;
+    AVFrame *p;
+
+    /* This is copied onto the first slice's range coder context */
+    RangeCoder c;
+
+    ff_progress_frame_unref(&f->last_picture);
+    FFSWAP(ProgressFrame, f->picture, f->last_picture);
+
+
+    f->avctx = avctx;
+    f->frame_damaged = 0;
+
+    ret = decode_header(avctx, &c, avpkt->data, avpkt->size);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_progress_frame_get_buffer(avctx, &f->picture,
+                                       AV_GET_BUFFER_FLAG_REF);
+    if (ret < 0)
+        return ret;
+
+    p = f->picture.f;
+
+    p->pict_type = AV_PICTURE_TYPE_I; //FIXME I vs. P
+    p->flags     = (p->flags & ~AV_FRAME_FLAG_KEY) | f->key_frame;
+
+    if (f->version < 3 && avctx->field_order > AV_FIELD_PROGRESSIVE) {
+        /* we have interlaced material flagged in container */
+        p->flags |= AV_FRAME_FLAG_INTERLACED;
+        if (avctx->field_order == AV_FIELD_TT || avctx->field_order == AV_FIELD_TB)
+            p->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
+    }
+
+    if (avctx->debug & FF_DEBUG_PICT_INFO)
+        av_log(avctx, AV_LOG_DEBUG, "ver:%d keyframe:%d coder:%d ec:%d slices:%d bps:%d\n",
+               f->version, !!(p->flags & AV_FRAME_FLAG_KEY), f->ac, f->ec, f->slice_count, f->avctx->bits_per_raw_sample);
+
+    ff_thread_finish_setup(avctx);
+
+    ret = decode_slices(avctx, c, avpkt);
+    if (ret < 0)
+        return ret;
+
     ff_progress_frame_report(&f->picture, INT_MAX);
 
     ff_progress_frame_unref(&f->last_picture);
@@ -1076,7 +1090,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     *got_frame = 1;
 
-    return buf_size;
+    return avpkt->size;
 }
 
 #if HAVE_THREADS
