@@ -40,6 +40,7 @@
 #include "progressframe.h"
 #include "libavutil/refstruct.h"
 #include "thread.h"
+#include "decode.h"
 
 static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
                                                int is_signed)
@@ -268,7 +269,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     FFV1Context *f    = c->priv_data;
     FFV1SliceContext *sc = arg;
     int width, height, x, y, ret;
-    const int ps      = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step;
+    const int ps      = av_pix_fmt_desc_get(f->pix_fmt)->comp[0].step;
     AVFrame * const p = f->picture.f;
     const int      si = sc - f->slices;
     GetBitContext gb;
@@ -537,6 +538,16 @@ static int read_extra_header(FFV1Context *f)
     return 0;
 }
 
+static enum AVPixelFormat get_pixel_format(FFV1Context *f)
+{
+    enum AVPixelFormat pix_fmts[] = {
+        f->pix_fmt,
+        AV_PIX_FMT_NONE,
+    };
+
+    return ff_get_format(f->avctx, pix_fmts);
+}
+
 static int read_header(FFV1Context *f)
 {
     uint8_t state[CONTEXT_SIZE];
@@ -606,109 +617,109 @@ static int read_header(FFV1Context *f)
     if (f->colorspace == 0) {
         if (!f->transparency && !f->chroma_planes) {
             if (f->avctx->bits_per_raw_sample <= 8)
-                f->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+                f->pix_fmt = AV_PIX_FMT_GRAY8;
             else if (f->avctx->bits_per_raw_sample == 9) {
                 f->packed_at_lsb = 1;
-                f->avctx->pix_fmt = AV_PIX_FMT_GRAY9;
+                f->pix_fmt = AV_PIX_FMT_GRAY9;
             } else if (f->avctx->bits_per_raw_sample == 10) {
                 f->packed_at_lsb = 1;
-                f->avctx->pix_fmt = AV_PIX_FMT_GRAY10;
+                f->pix_fmt = AV_PIX_FMT_GRAY10;
             } else if (f->avctx->bits_per_raw_sample == 12) {
                 f->packed_at_lsb = 1;
-                f->avctx->pix_fmt = AV_PIX_FMT_GRAY12;
+                f->pix_fmt = AV_PIX_FMT_GRAY12;
             } else if (f->avctx->bits_per_raw_sample == 14) {
                 f->packed_at_lsb = 1;
-                f->avctx->pix_fmt = AV_PIX_FMT_GRAY14;
+                f->pix_fmt = AV_PIX_FMT_GRAY14;
             } else if (f->avctx->bits_per_raw_sample == 16) {
                 f->packed_at_lsb = 1;
-                f->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
+                f->pix_fmt = AV_PIX_FMT_GRAY16;
             } else if (f->avctx->bits_per_raw_sample < 16) {
-                f->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
+                f->pix_fmt = AV_PIX_FMT_GRAY16;
             } else
                 return AVERROR(ENOSYS);
         } else if (f->transparency && !f->chroma_planes) {
             if (f->avctx->bits_per_raw_sample <= 8)
-                f->avctx->pix_fmt = AV_PIX_FMT_YA8;
+                f->pix_fmt = AV_PIX_FMT_YA8;
             else
                 return AVERROR(ENOSYS);
         } else if (f->avctx->bits_per_raw_sample<=8 && !f->transparency) {
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
-            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P; break;
-            case 0x01: f->avctx->pix_fmt = AV_PIX_FMT_YUV440P; break;
-            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P; break;
-            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P; break;
-            case 0x20: f->avctx->pix_fmt = AV_PIX_FMT_YUV411P; break;
-            case 0x22: f->avctx->pix_fmt = AV_PIX_FMT_YUV410P; break;
+            case 0x00: f->pix_fmt = AV_PIX_FMT_YUV444P; break;
+            case 0x01: f->pix_fmt = AV_PIX_FMT_YUV440P; break;
+            case 0x10: f->pix_fmt = AV_PIX_FMT_YUV422P; break;
+            case 0x11: f->pix_fmt = AV_PIX_FMT_YUV420P; break;
+            case 0x20: f->pix_fmt = AV_PIX_FMT_YUV411P; break;
+            case 0x22: f->pix_fmt = AV_PIX_FMT_YUV410P; break;
             }
         } else if (f->avctx->bits_per_raw_sample <= 8 && f->transparency) {
             switch(16*f->chroma_h_shift + f->chroma_v_shift) {
-            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUVA444P; break;
-            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUVA422P; break;
-            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUVA420P; break;
+            case 0x00: f->pix_fmt = AV_PIX_FMT_YUVA444P; break;
+            case 0x10: f->pix_fmt = AV_PIX_FMT_YUVA422P; break;
+            case 0x11: f->pix_fmt = AV_PIX_FMT_YUVA420P; break;
             }
         } else if (f->avctx->bits_per_raw_sample == 9 && !f->transparency) {
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
-            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P9; break;
-            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P9; break;
-            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P9; break;
+            case 0x00: f->pix_fmt = AV_PIX_FMT_YUV444P9; break;
+            case 0x10: f->pix_fmt = AV_PIX_FMT_YUV422P9; break;
+            case 0x11: f->pix_fmt = AV_PIX_FMT_YUV420P9; break;
             }
         } else if (f->avctx->bits_per_raw_sample == 9 && f->transparency) {
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
-            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUVA444P9; break;
-            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUVA422P9; break;
-            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUVA420P9; break;
+            case 0x00: f->pix_fmt = AV_PIX_FMT_YUVA444P9; break;
+            case 0x10: f->pix_fmt = AV_PIX_FMT_YUVA422P9; break;
+            case 0x11: f->pix_fmt = AV_PIX_FMT_YUVA420P9; break;
             }
         } else if (f->avctx->bits_per_raw_sample == 10 && !f->transparency) {
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
-            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P10; break;
-            case 0x01: f->avctx->pix_fmt = AV_PIX_FMT_YUV440P10; break;
-            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P10; break;
-            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P10; break;
+            case 0x00: f->pix_fmt = AV_PIX_FMT_YUV444P10; break;
+            case 0x01: f->pix_fmt = AV_PIX_FMT_YUV440P10; break;
+            case 0x10: f->pix_fmt = AV_PIX_FMT_YUV422P10; break;
+            case 0x11: f->pix_fmt = AV_PIX_FMT_YUV420P10; break;
             }
         } else if (f->avctx->bits_per_raw_sample == 10 && f->transparency) {
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
-            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUVA444P10; break;
-            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUVA422P10; break;
-            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUVA420P10; break;
+            case 0x00: f->pix_fmt = AV_PIX_FMT_YUVA444P10; break;
+            case 0x10: f->pix_fmt = AV_PIX_FMT_YUVA422P10; break;
+            case 0x11: f->pix_fmt = AV_PIX_FMT_YUVA420P10; break;
             }
         } else if (f->avctx->bits_per_raw_sample == 12 && !f->transparency) {
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
-            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P12; break;
-            case 0x01: f->avctx->pix_fmt = AV_PIX_FMT_YUV440P12; break;
-            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P12; break;
-            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P12; break;
+            case 0x00: f->pix_fmt = AV_PIX_FMT_YUV444P12; break;
+            case 0x01: f->pix_fmt = AV_PIX_FMT_YUV440P12; break;
+            case 0x10: f->pix_fmt = AV_PIX_FMT_YUV422P12; break;
+            case 0x11: f->pix_fmt = AV_PIX_FMT_YUV420P12; break;
             }
         } else if (f->avctx->bits_per_raw_sample == 12 && f->transparency) {
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
-            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUVA444P12; break;
-            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUVA422P12; break;
+            case 0x00: f->pix_fmt = AV_PIX_FMT_YUVA444P12; break;
+            case 0x10: f->pix_fmt = AV_PIX_FMT_YUVA422P12; break;
             }
         } else if (f->avctx->bits_per_raw_sample == 14 && !f->transparency) {
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
-            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P14; break;
-            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P14; break;
-            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P14; break;
+            case 0x00: f->pix_fmt = AV_PIX_FMT_YUV444P14; break;
+            case 0x10: f->pix_fmt = AV_PIX_FMT_YUV422P14; break;
+            case 0x11: f->pix_fmt = AV_PIX_FMT_YUV420P14; break;
             }
         } else if (f->avctx->bits_per_raw_sample == 16 && !f->transparency){
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
-            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P16; break;
-            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P16; break;
-            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P16; break;
+            case 0x00: f->pix_fmt = AV_PIX_FMT_YUV444P16; break;
+            case 0x10: f->pix_fmt = AV_PIX_FMT_YUV422P16; break;
+            case 0x11: f->pix_fmt = AV_PIX_FMT_YUV420P16; break;
             }
         } else if (f->avctx->bits_per_raw_sample == 16 && f->transparency){
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
-            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUVA444P16; break;
-            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUVA422P16; break;
-            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUVA420P16; break;
+            case 0x00: f->pix_fmt = AV_PIX_FMT_YUVA444P16; break;
+            case 0x10: f->pix_fmt = AV_PIX_FMT_YUVA422P16; break;
+            case 0x11: f->pix_fmt = AV_PIX_FMT_YUVA420P16; break;
             }
         }
     } else if (f->colorspace == 1) {
@@ -718,42 +729,45 @@ static int read_header(FFV1Context *f)
             return AVERROR(ENOSYS);
         }
         if (     f->avctx->bits_per_raw_sample <=  8 && !f->transparency)
-            f->avctx->pix_fmt = AV_PIX_FMT_0RGB32;
+            f->pix_fmt = AV_PIX_FMT_0RGB32;
         else if (f->avctx->bits_per_raw_sample <=  8 && f->transparency)
-            f->avctx->pix_fmt = AV_PIX_FMT_RGB32;
+            f->pix_fmt = AV_PIX_FMT_RGB32;
         else if (f->avctx->bits_per_raw_sample ==  9 && !f->transparency)
-            f->avctx->pix_fmt = AV_PIX_FMT_GBRP9;
+            f->pix_fmt = AV_PIX_FMT_GBRP9;
         else if (f->avctx->bits_per_raw_sample == 10 && !f->transparency)
-            f->avctx->pix_fmt = AV_PIX_FMT_GBRP10;
+            f->pix_fmt = AV_PIX_FMT_GBRP10;
         else if (f->avctx->bits_per_raw_sample == 10 && f->transparency)
-            f->avctx->pix_fmt = AV_PIX_FMT_GBRAP10;
+            f->pix_fmt = AV_PIX_FMT_GBRAP10;
         else if (f->avctx->bits_per_raw_sample == 12 && !f->transparency)
-            f->avctx->pix_fmt = AV_PIX_FMT_GBRP12;
+            f->pix_fmt = AV_PIX_FMT_GBRP12;
         else if (f->avctx->bits_per_raw_sample == 12 && f->transparency)
-            f->avctx->pix_fmt = AV_PIX_FMT_GBRAP12;
+            f->pix_fmt = AV_PIX_FMT_GBRAP12;
         else if (f->avctx->bits_per_raw_sample == 14 && !f->transparency)
-            f->avctx->pix_fmt = AV_PIX_FMT_GBRP14;
+            f->pix_fmt = AV_PIX_FMT_GBRP14;
         else if (f->avctx->bits_per_raw_sample == 14 && f->transparency)
-            f->avctx->pix_fmt = AV_PIX_FMT_GBRAP14;
+            f->pix_fmt = AV_PIX_FMT_GBRAP14;
         else if (f->avctx->bits_per_raw_sample == 16 && !f->transparency) {
-            f->avctx->pix_fmt = AV_PIX_FMT_GBRP16;
+            f->pix_fmt = AV_PIX_FMT_GBRP16;
             f->use32bit = 1;
-        }
-        else if (f->avctx->bits_per_raw_sample == 16 && f->transparency) {
-            f->avctx->pix_fmt = AV_PIX_FMT_GBRAP16;
+        } else if (f->avctx->bits_per_raw_sample == 16 && f->transparency) {
+            f->pix_fmt = AV_PIX_FMT_GBRAP16;
             f->use32bit = 1;
         }
     } else {
         av_log(f->avctx, AV_LOG_ERROR, "colorspace not supported\n");
         return AVERROR(ENOSYS);
     }
-    if (f->avctx->pix_fmt == AV_PIX_FMT_NONE) {
+    if (f->pix_fmt == AV_PIX_FMT_NONE) {
         av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
         return AVERROR(ENOSYS);
     }
 
+    f->avctx->pix_fmt = get_pixel_format(f);
+    if (f->avctx->pix_fmt < 0)
+        return AVERROR(EINVAL);
+
     ff_dlog(f->avctx, "%d %d %d\n",
-            f->chroma_h_shift, f->chroma_v_shift, f->avctx->pix_fmt);
+            f->chroma_h_shift, f->chroma_v_shift, f->pix_fmt);
     if (f->version < 2) {
         context_count = read_quant_tables(c, f->quant_tables[0]);
         if (context_count < 0) {
@@ -986,7 +1000,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     for (int i = f->slice_count - 1; i >= 0; i--) {
         FFV1SliceContext *sc = &f->slices[i];
         if (sc->slice_damaged && f->last_picture.f) {
-            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(f->pix_fmt);
             const uint8_t *src[4];
             uint8_t *dst[4];
             ff_progress_frame_await(&f->last_picture, INT_MAX);
@@ -1003,7 +1017,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
             av_image_copy(dst, p->linesize, src,
                           f->last_picture.f->linesize,
-                          avctx->pix_fmt,
+                          f->pix_fmt,
                           sc->slice_width,
                           sc->slice_height);
 

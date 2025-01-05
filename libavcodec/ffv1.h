@@ -122,6 +122,7 @@ typedef struct FFV1Context {
     int key_frame;
     ProgressFrame picture, last_picture;
     uint32_t crcref;
+    enum AVPixelFormat pix_fmt;
 
     const AVFrame *cur_enc_frame;
     int plane_count;
