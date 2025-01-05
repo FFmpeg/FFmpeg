@@ -41,6 +41,9 @@
 #include "libavutil/refstruct.h"
 #include "thread.h"
 #include "decode.h"
+#include "hwconfig.h"
+#include "hwaccel_internal.h"
+#include "config_components.h"
 
 static inline int get_vlc_symbol(GetBitContext *gb, VlcState *const state,
                                  int bits)
@@ -403,9 +406,12 @@ static int read_header(FFV1Context *f, RangeCoder *c)
     if (ret < 0)
         return ret;
 
-    f->avctx->pix_fmt = get_pixel_format(f);
-    if (f->avctx->pix_fmt < 0)
-        return AVERROR(EINVAL);
+    if (f->configured_pix_fmt != f->pix_fmt) {
+        f->avctx->pix_fmt = get_pixel_format(f);
+        if (f->avctx->pix_fmt < 0)
+            return AVERROR(EINVAL);
+        f->configured_pix_fmt = f->pix_fmt;
+    }
 
     ff_dlog(f->avctx, "%d %d %d\n",
             f->chroma_h_shift, f->chroma_v_shift, f->pix_fmt);
@@ -497,6 +503,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     FFV1Context *f = avctx->priv_data;
     int ret;
+
+    f->pix_fmt = AV_PIX_FMT_NONE;
+    f->configured_pix_fmt = AV_PIX_FMT_NONE;
 
     if ((ret = ff_ffv1_common_init(avctx, f)) < 0)
         return ret;
@@ -682,13 +691,16 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     FFV1Context *f      = avctx->priv_data;
     int ret;
     AVFrame *p;
+    const FFHWAccel *hwaccel = NULL;
 
     /* This is copied onto the first slice's range coder context */
     RangeCoder c;
 
     ff_progress_frame_unref(&f->last_picture);
-    FFSWAP(ProgressFrame, f->picture, f->last_picture);
+    av_refstruct_unref(&f->hwaccel_last_picture_private);
 
+    FFSWAP(ProgressFrame, f->picture, f->last_picture);
+    FFSWAP(void *, f->hwaccel_picture_private, f->hwaccel_last_picture_private);
 
     f->avctx = avctx;
     f->frame_damaged = 0;
@@ -704,8 +716,15 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     if (avctx->skip_frame >= AVDISCARD_ALL)
         return avpkt->size;
 
+    if (avctx->hwaccel)
+        hwaccel = ffhwaccel(avctx->hwaccel);
+
     ret = ff_progress_frame_get_buffer(avctx, &f->picture,
                                        AV_GET_BUFFER_FLAG_REF);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_hwaccel_frame_priv_alloc(avctx, &f->hwaccel_picture_private);
     if (ret < 0)
         return ret;
 
@@ -721,15 +740,53 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             p->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
     }
 
+    /* Start */
+    if (hwaccel) {
+        ret = hwaccel->start_frame(avctx, avpkt->data, avpkt->size);
+        if (ret < 0)
+            return ret;
+    }
+
     ff_thread_finish_setup(avctx);
 
-    ret = decode_slices(avctx, c, avpkt);
-    if (ret < 0)
-        return ret;
+    /* Decode slices */
+    if (hwaccel) {
+        uint8_t *buf_end = avpkt->data + avpkt->size;
+
+        if (!(p->flags & AV_FRAME_FLAG_KEY) && f->last_picture.f)
+            ff_progress_frame_await(&f->last_picture, f->slice_count - 1);
+
+        for (int i = f->slice_count - 1; i >= 0; i--) {
+            uint8_t *pos;
+            uint32_t len;
+            ret = find_next_slice(avctx, avpkt->data, buf_end, i,
+                                  &pos, &len);
+            if (ret < 0)
+                return ret;
+
+            buf_end -= len;
+
+            ret = hwaccel->decode_slice(avctx, pos, len);
+            if (ret < 0)
+                return ret;
+        }
+    } else {
+        ret = decode_slices(avctx, c, avpkt);
+        if (ret < 0)
+            return ret;
+    }
+
+    /* Finalize */
+    if (hwaccel) {
+        ret = hwaccel->end_frame(avctx);
+        if (ret < 0)
+            return ret;
+    }
 
     ff_progress_frame_report(&f->picture, INT_MAX);
 
     ff_progress_frame_unref(&f->last_picture);
+    av_refstruct_unref(&f->hwaccel_last_picture_private);
     if ((ret = av_frame_ref(rframe, f->picture.f)) < 0)
         return ret;
 
@@ -758,6 +815,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     fdst->ac                  = fsrc->ac;
     fdst->colorspace          = fsrc->colorspace;
     fdst->pix_fmt             = fsrc->pix_fmt;
+    fdst->configured_pix_fmt  = fsrc->configured_pix_fmt;
 
     fdst->ec                  = fsrc->ec;
     fdst->intra               = fsrc->intra;
@@ -793,6 +851,8 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     av_assert1(fdst->max_slice_count == fsrc->max_slice_count);
 
     ff_progress_frame_replace(&fdst->picture, &fsrc->picture);
+    av_refstruct_replace(&fdst->hwaccel_picture_private,
+                         fsrc->hwaccel_picture_private);
 
     return 0;
 }
@@ -803,8 +863,10 @@ static av_cold int ffv1_decode_close(AVCodecContext *avctx)
     FFV1Context *const s = avctx->priv_data;
 
     ff_progress_frame_unref(&s->picture);
+    av_refstruct_unref(&s->hwaccel_picture_private);
+
     ff_progress_frame_unref(&s->last_picture);
-    av_freep(&avctx->stats_out);
+    av_refstruct_unref(&s->hwaccel_last_picture_private);
 
     ff_ffv1_close(s);
 
@@ -826,4 +888,7 @@ const FFCodec ff_ffv1_decoder = {
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
                       FF_CODEC_CAP_USES_PROGRESSFRAMES,
+    .hw_configs     = (const AVCodecHWConfigInternal *const []) {
+        NULL
+    },
 };
