@@ -869,6 +869,38 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static int find_next_slice(AVCodecContext *avctx,
+                           uint8_t *buf, uint8_t *buf_end, int idx,
+                           uint8_t **pos, uint32_t *len)
+{
+    FFV1Context *f = avctx->priv_data;
+
+    /* Length field */
+    uint32_t v = buf_end - buf;
+    if (idx || f->version > 2) {
+        /* Three bytes of length, plus flush bit + CRC */
+        uint32_t trailer = 3 + 5*!!f->ec;
+        if (trailer > buf_end - buf)
+            v = INT_MAX;
+        else
+            v = AV_RB24(buf_end - trailer) + trailer;
+    }
+
+    if (buf_end - buf < v) {
+        av_log(avctx, AV_LOG_ERROR, "Slice pointer chain broken\n");
+        ff_progress_frame_report(&f->picture, INT_MAX);
+        return AVERROR_INVALIDDATA;
+    }
+
+    *len = v;
+    if (idx)
+        *pos = buf_end - v;
+    else
+        *pos = buf;
+
+    return 0;
+}
+
 static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                         int *got_frame, AVPacket *avpkt)
 {
@@ -878,7 +910,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     RangeCoder *const c = &f->slices[0].c;
     int ret, key_frame;
     uint8_t keystate = 128;
-    uint8_t *buf_p;
+    uint8_t *buf_end;
     AVFrame *p;
 
     ff_progress_frame_unref(&f->last_picture);
@@ -944,27 +976,23 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     ff_thread_finish_setup(avctx);
 
-    buf_p = buf + buf_size;
+    buf_end = buf + buf_size;
     for (int i = f->slice_count - 1; i >= 0; i--) {
         FFV1SliceContext *sc = &f->slices[i];
-        int trailer = 3 + 5*!!f->ec;
-        int v;
+
+        uint8_t *pos;
+        uint32_t len;
+        int err = find_next_slice(avctx, buf, buf_end, i,
+                                  &pos, &len);
+        if (err < 0)
+            return err;
+
+        buf_end -= len;
 
         sc->slice_damaged = 0;
 
-        if (i || f->version > 2) {
-            if (trailer > buf_p - buf) v = INT_MAX;
-            else                       v = AV_RB24(buf_p-trailer) + trailer;
-        } else                         v = buf_p - c->bytestream_start;
-        if (buf_p - c->bytestream_start < v) {
-            av_log(avctx, AV_LOG_ERROR, "Slice pointer chain broken\n");
-            ff_progress_frame_report(&f->picture, INT_MAX);
-            return AVERROR_INVALIDDATA;
-        }
-        buf_p -= v;
-
         if (f->ec) {
-            unsigned crc = av_crc(av_crc_get_table(AV_CRC_32_IEEE), f->crcref, buf_p, v);
+            unsigned crc = av_crc(av_crc_get_table(AV_CRC_32_IEEE), f->crcref, pos, len);
             if (crc != f->crcref) {
                 int64_t ts = avpkt->pts != AV_NOPTS_VALUE ? avpkt->pts : avpkt->dts;
                 av_log(f->avctx, AV_LOG_ERROR, "slice CRC mismatch %X!", crc);
@@ -978,15 +1006,15 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                 slice_set_damaged(f, sc);
             }
             if (avctx->debug & FF_DEBUG_PICT_INFO) {
-                av_log(avctx, AV_LOG_DEBUG, "slice %d, CRC: 0x%08"PRIX32"\n", i, AV_RB32(buf_p + v - 4));
+                av_log(avctx, AV_LOG_DEBUG, "slice %d, CRC: 0x%08"PRIX32"\n", i, AV_RB32(pos + len - 4));
             }
         }
 
         if (i) {
-            ff_init_range_decoder(&sc->c, buf_p, v);
+            ff_init_range_decoder(&sc->c, pos, len);
             ff_build_rac_states(&sc->c, 0.05 * (1LL << 32), 256 - 8);
         } else
-            sc->c.bytestream_end = buf_p + v;
+            sc->c.bytestream_end = pos + len;
 
     }
 
