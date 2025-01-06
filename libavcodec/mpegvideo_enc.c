@@ -133,11 +133,11 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
             for (i = 0; i < 64; i++) {
                 const int j = s->idsp.idct_permutation[i];
                 int64_t den = (int64_t) qscale2 * quant_matrix[j];
-                /* 16 <= qscale * quant_matrix[i] <= 7905
-                 * Assume x = ff_aanscales[i] * qscale * quant_matrix[i]
-                 *             19952 <=              x  <= 249205026
-                 * (1 << 36) / 19952 >= (1 << 36) / (x) >= (1 << 36) / 249205026
-                 *           3444240 >= (1 << 36) / (x) >= 275 */
+                /* 1 * 1 <= qscale2 * quant_matrix[j] <= 112 * 255
+                 * Assume x = qscale2 * quant_matrix[j]
+                 *                 1 <=              x  <= 28560
+                 *     (1 << 22) / 1 >= (1 << 22) / (x) >= (1 << 22) / 28560
+                 *           4194304 >= (1 << 22) / (x) >= 146 */
 
                 qmat[qscale][i] = (int)((UINT64_C(2) << QMAT_SHIFT) / den);
             }
@@ -145,11 +145,11 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
             for (i = 0; i < 64; i++) {
                 const int j = s->idsp.idct_permutation[i];
                 int64_t den = ff_aanscales[i] * (int64_t) qscale2 * quant_matrix[j];
-                /* 16 <= qscale * quant_matrix[i] <= 7905
-                 * Assume x = ff_aanscales[i] * qscale * quant_matrix[i]
-                 *             19952 <=              x  <= 249205026
-                 * (1 << 36) / 19952 >= (1 << 36) / (x) >= (1 << 36) / 249205026
-                 *           3444240 >= (1 << 36) / (x) >= 275 */
+                /* 1247 * 1 * 1 <= ff_aanscales[i] * qscale2 * quant_matrix[j] <= 31521 * 112 * 255
+                 * Assume x = ff_aanscales[i] * qscale2 * quant_matrix[j]
+                 *              1247 <=              x  <= 900239760
+                 *  (1 << 36) / 1247 >= (1 << 36) / (x) >= (1 << 36) / 900239760
+                 *          55107840 >= (1 << 36) / (x) >= 76 */
 
                 qmat[qscale][i] = (int)((UINT64_C(2) << (QMAT_SHIFT + 14)) / den);
             }
@@ -157,14 +157,17 @@ void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64],
             for (i = 0; i < 64; i++) {
                 const int j = s->idsp.idct_permutation[i];
                 int64_t den = (int64_t) qscale2 * quant_matrix[j];
-                /* We can safely suppose that 16 <= quant_matrix[i] <= 255
-                 * Assume x = qscale * quant_matrix[i]
-                 * So             16 <=              x  <= 7905
-                 * so (1 << 19) / 16 >= (1 << 19) / (x) >= (1 << 19) / 7905
-                 * so          32768 >= (1 << 19) / (x) >= 67 */
+                /* 1 * 1 <= qscale2 * quant_matrix[j] <= 112 * 255
+                 * Assume x = qscale2 * quant_matrix[j]
+                 *                 1 <=              x  <= 28560
+                 *     (1 << 22) / 1 >= (1 << 22) / (x) >= (1 << 22) / 28560
+                 *           4194304 >= (1 << 22) / (x) >= 146
+                 *
+                 *                 1 <=              x  <= 28560
+                 *     (1 << 17) / 1 >= (1 << 17) / (x) >= (1 << 17) / 28560
+                 *            131072 >= (1 << 17) / (x) >= 4 */
+
                 qmat[qscale][i] = (int)((UINT64_C(2) << QMAT_SHIFT) / den);
-                //qmat  [qscale][i] = (1 << QMAT_SHIFT_MMX) /
-                //                    (qscale * quant_matrix[i]);
                 qmat16[qscale][0][i] = (2 << QMAT_SHIFT_MMX) / den;
 
                 if (qmat16[qscale][0][i] == 0 ||
