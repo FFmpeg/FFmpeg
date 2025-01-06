@@ -3998,9 +3998,9 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
     for(i=63; i>=start_i; i--) {
         const int j = scantable[i];
-        int level = block[j] * qmat[j];
+        int64_t level = (int64_t)block[j] * qmat[j];
 
-        if(((unsigned)(level+threshold1))>threshold2){
+        if(((uint64_t)(level+threshold1))>threshold2){
             last_non_zero = i;
             break;
         }
@@ -4008,11 +4008,11 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
     for(i=start_i; i<=last_non_zero; i++) {
         const int j = scantable[i];
-        int level = block[j] * qmat[j];
+        int64_t level = (int64_t)block[j] * qmat[j];
 
 //        if(   bias+level >= (1<<(QMAT_SHIFT - 3))
 //           || bias-level >= (1<<(QMAT_SHIFT - 3))){
-        if(((unsigned)(level+threshold1))>threshold2){
+        if(((uint64_t)(level+threshold1))>threshold2){
             if(level>0){
                 level= (bias + level)>>QMAT_SHIFT;
                 coeff[0][i]= level;
@@ -4601,7 +4601,7 @@ static int dct_quantize_c(MpegEncContext *s,
                           int16_t *block, int n,
                           int qscale, int *overflow)
 {
-    int i, j, level, last_non_zero, q, start_i;
+    int i, last_non_zero, q, start_i;
     const int *qmat;
     const uint8_t *scantable;
     int bias;
@@ -4641,10 +4641,10 @@ static int dct_quantize_c(MpegEncContext *s,
     threshold1= (1<<QMAT_SHIFT) - bias - 1;
     threshold2= (threshold1<<1);
     for(i=63;i>=start_i;i--) {
-        j = scantable[i];
-        level = block[j] * qmat[j];
+        const int j = scantable[i];
+        int64_t level = (int64_t)block[j] * qmat[j];
 
-        if(((unsigned)(level+threshold1))>threshold2){
+        if(((uint64_t)(level+threshold1))>threshold2){
             last_non_zero = i;
             break;
         }else{
@@ -4652,12 +4652,12 @@ static int dct_quantize_c(MpegEncContext *s,
         }
     }
     for(i=start_i; i<=last_non_zero; i++) {
-        j = scantable[i];
-        level = block[j] * qmat[j];
+        const int j = scantable[i];
+        int64_t level = (int64_t)block[j] * qmat[j];
 
 //        if(   bias+level >= (1<<QMAT_SHIFT)
 //           || bias-level >= (1<<QMAT_SHIFT)){
-        if(((unsigned)(level+threshold1))>threshold2){
+        if(((uint64_t)(level+threshold1))>threshold2){
             if(level>0){
                 level= (bias + level)>>QMAT_SHIFT;
                 block[j]= level;
