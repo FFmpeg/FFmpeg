@@ -266,10 +266,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     /* input and output transfer will be linear */
     if (in->color_trc == AVCOL_TRC_UNSPECIFIED) {
-        av_log(s, AV_LOG_WARNING, "Untagged transfer, assuming linear light.\n");
+        av_log(ctx, AV_LOG_WARNING, "Untagged transfer, assuming linear light.\n");
         out->color_trc = AVCOL_TRC_LINEAR;
     } else if (in->color_trc != AVCOL_TRC_LINEAR) {
-        av_log(s, AV_LOG_WARNING, "Gray world color correction works on linear light only.\n");
+        av_log(ctx, AV_LOG_WARNING, "Gray world color correction works on linear light only.\n");
     }
 
     td.in = in;
