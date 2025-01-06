@@ -936,3 +936,22 @@ AVCPBProperties *ff_encode_add_cpb_side_data(AVCodecContext *avctx)
 
     return props;
 }
+
+int ff_check_codec_matrices(AVCodecContext *avctx, unsigned types, uint16_t min, uint16_t max)
+{
+    uint16_t  *matrices[] = {avctx->intra_matrix, avctx->inter_matrix, avctx->chroma_intra_matrix};
+    const char   *names[] = {"Intra", "Inter", "Chroma Intra"};
+    static_assert(FF_ARRAY_ELEMS(matrices) == FF_ARRAY_ELEMS(names), "matrix count mismatch");
+    for (int m = 0; m < FF_ARRAY_ELEMS(matrices); m++) {
+        uint16_t *matrix = matrices[m];
+        if (matrix && (types & (1U << m))) {
+            for (int i = 0; i < 64; i++) {
+                if (matrix[i] < min || matrix[i] > max) {
+                    av_log(avctx, AV_LOG_ERROR, "%s matrix[%d] is %d which is out of the allowed range [%"PRIu16"-%"PRIu16"].\n", names[m], i, matrix[i], min, max);
+                    return AVERROR(EINVAL);
+                }
+            }
+        }
+    }
+    return 0;
+}

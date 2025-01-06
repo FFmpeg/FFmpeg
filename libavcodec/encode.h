@@ -96,4 +96,13 @@ static av_always_inline int64_t ff_samples_to_time_base(const AVCodecContext *av
                         avctx->time_base);
 }
 
+/**
+ * Check if the elements of codec context matrices (intra_matrix, inter_matrix or
+ * chroma_intra_matrix) are within the specified range.
+ */
+#define FF_MATRIX_TYPE_INTRA        (1U << 0)
+#define FF_MATRIX_TYPE_INTER        (1U << 1)
+#define FF_MATRIX_TYPE_CHROMA_INTRA (1U << 2)
+int ff_check_codec_matrices(AVCodecContext *avctx, unsigned types, uint16_t min, uint16_t max);
+
 #endif /* AVCODEC_ENCODE_H */

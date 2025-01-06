@@ -993,6 +993,10 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     /* precompute matrix */
     /* for mjpeg, we do include qscale in the matrix */
     if (s->out_format != FMT_MJPEG) {
+        ret = ff_check_codec_matrices(avctx, FF_MATRIX_TYPE_INTRA | FF_MATRIX_TYPE_INTER, 1, 255);
+        if (ret < 0)
+            return ret;
+
         ff_convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16,
                           s->intra_matrix, s->intra_quant_bias, avctx->qmin,
                           31, 1);
@@ -3759,6 +3763,10 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
     if (s->out_format == FMT_MJPEG) {
         const uint16_t *  luma_matrix = ff_mpeg1_default_intra_matrix;
         const uint16_t *chroma_matrix = ff_mpeg1_default_intra_matrix;
+
+        ret = ff_check_codec_matrices(s->avctx, FF_MATRIX_TYPE_INTRA | FF_MATRIX_TYPE_CHROMA_INTRA, (7 + s->qscale) / s->qscale, 65535);
+        if (ret < 0)
+            return ret;
 
         if (s->avctx->intra_matrix) {
             chroma_matrix =
