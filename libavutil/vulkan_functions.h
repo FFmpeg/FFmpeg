@@ -35,10 +35,8 @@ typedef uint64_t FFVulkanExtensions;
 #define FF_VK_EXT_EXTERNAL_HOST_MEMORY   (1ULL <<  4) /* VK_EXT_external_memory_host */
 #define FF_VK_EXT_DEBUG_UTILS            (1ULL <<  5) /* VK_EXT_debug_utils */
 
-#ifdef _WIN32
 #define FF_VK_EXT_EXTERNAL_WIN32_MEMORY  (1ULL <<  6) /* VK_KHR_external_memory_win32 */
 #define FF_VK_EXT_EXTERNAL_WIN32_SEM     (1ULL <<  7) /* VK_KHR_external_semaphore_win32 */
-#endif
 
 #define FF_VK_EXT_DESCRIPTOR_BUFFER      (1ULL <<  8) /* VK_EXT_descriptor_buffer */
 #define FF_VK_EXT_DEVICE_DRM             (1ULL <<  9) /* VK_EXT_physical_device_drm */
@@ -82,6 +80,7 @@ typedef uint64_t FFVulkanExtensions;
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              CreateDevice)                            \
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              GetPhysicalDeviceFeatures2)              \
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              GetPhysicalDeviceProperties)             \
+    MACRO(1, 0, FF_VK_EXT_NO_FLAG,              GetPhysicalDeviceExternalSemaphoreProperties)          \
     MACRO(1, 0, FF_VK_EXT_VIDEO_QUEUE,          GetPhysicalDeviceVideoCapabilitiesKHR)     \
     MACRO(1, 0, FF_VK_EXT_VIDEO_QUEUE,          GetPhysicalDeviceVideoFormatPropertiesKHR) \
     MACRO(1, 0, FF_VK_EXT_NO_FLAG,              DeviceWaitIdle)                          \
