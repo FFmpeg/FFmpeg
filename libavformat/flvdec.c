@@ -1586,6 +1586,7 @@ retry_duration:
                     for (i = 0; i < channels; i++) {
                         uint8_t id = avio_r8(s->pb);
                         size--;
+                        track_size--;
 
                         if (id < 18)
                             st->codecpar->ch_layout.u.map[i].id = id;
