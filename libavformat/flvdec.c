@@ -1280,7 +1280,7 @@ static int flv_update_video_color_info(AVFormatContext *s, AVStream *st)
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     FLVContext *flv = s->priv_data;
-    int ret = 0, i, size, flags;
+    int ret = AVERROR_BUG, i, size, flags;
     int res = 0;
     enum FlvTagType type;
     int stream_type = -1;
@@ -1795,6 +1795,7 @@ next_track:
         }
     }
 
+    ret = 0;
 leave:
     last = avio_rb32(s->pb);
     if (!flv->trust_datasize) {
