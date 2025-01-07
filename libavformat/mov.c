@@ -10332,7 +10332,8 @@ static int mov_parse_heif_items(AVFormatContext *s)
         st->codecpar->width  = item->width;
         st->codecpar->height = item->height;
 
-        if (sc->sample_count != 1 || sc->chunk_count != 1)
+        err = sanity_checks(s, sc, item->item_id);
+        if (err)
             return AVERROR_INVALIDDATA;
 
         sc->sample_sizes[0]  = item->extent_length;
