@@ -975,18 +975,22 @@ static int flv_queue_extradata(FLVContext *flv, AVIOContext *pb, int stream,
         int new_count = stream + 1;
 
         if (flv->mt_extradata_cnt < new_count) {
-            flv->mt_extradata = av_realloc(flv->mt_extradata,
-                                           sizeof(*flv->mt_extradata) *
-                                           new_count);
-            flv->mt_extradata_sz = av_realloc(flv->mt_extradata_sz,
-                                              sizeof(*flv->mt_extradata_sz) *
-                                              new_count);
-            if (!flv->mt_extradata || !flv->mt_extradata_sz)
+            void *tmp = av_realloc_array(flv->mt_extradata, new_count,
+                                         sizeof(*flv->mt_extradata));
+            if (!tmp)
                 return AVERROR(ENOMEM);
+            flv->mt_extradata = tmp;
+
+            tmp = av_realloc_array(flv->mt_extradata_sz, new_count,
+                                   sizeof(*flv->mt_extradata_sz));
+            if (!tmp)
+                return AVERROR(ENOMEM);
+            flv->mt_extradata_sz = tmp;
+
             // Set newly allocated pointers/sizes to 0
             for (int i = flv->mt_extradata_cnt; i < new_count; i++) {
-                    flv->mt_extradata[i] = NULL;
-                    flv->mt_extradata_sz[i] = 0;
+                flv->mt_extradata[i] = NULL;
+                flv->mt_extradata_sz[i] = 0;
             }
             flv->mt_extradata_cnt = new_count;
         }
