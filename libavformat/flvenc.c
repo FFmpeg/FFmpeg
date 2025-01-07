@@ -881,8 +881,12 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, i
                 ff_isom_write_av1c(pb, par->extradata, par->extradata_size, 1);
             else if (par->codec_id == AV_CODEC_ID_VP9)
                 ff_isom_write_vpcc(s, pb, par->extradata, par->extradata_size, par);
-            else
+            else if (par->codec_id == AV_CODEC_ID_H264)
                 ff_isom_write_avcc(pb, par->extradata, par->extradata_size);
+            else if (par->codec_id == AV_CODEC_ID_MPEG4)
+                avio_write(pb, par->extradata, par->extradata_size);
+            else
+                av_assert0(0);
         }
         data_size = avio_tell(pb) - pos;
         avio_seek(pb, -data_size - 10, SEEK_CUR);
