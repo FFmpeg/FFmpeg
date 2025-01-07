@@ -742,8 +742,10 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                    nal->type, nal->size_bits);
         }
 
-        if (err < 0) {
+        if (err < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE)) {
             av_log(h->avctx, AV_LOG_ERROR, "decode_slice_header error\n");
+            ret = err;
+            goto end;
         }
     }
 
