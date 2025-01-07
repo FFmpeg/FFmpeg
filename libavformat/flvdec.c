@@ -1278,12 +1278,12 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret = 0, i, size, flags;
     int res = 0;
     enum FlvTagType type;
-    int stream_type=-1;
+    int stream_type = -1;
     int64_t next, pos, meta_pos;
     int64_t dts, pts = AV_NOPTS_VALUE;
     int av_uninit(channels);
     int av_uninit(sample_rate);
-    AVStream *st    = NULL;
+    AVStream *st = NULL;
     int last = -1;
     int orig_size;
     int enhanced_flv = 0;
