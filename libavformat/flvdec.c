@@ -937,6 +937,7 @@ static int flv_read_close(AVFormatContext *s)
         av_freep(&flv->new_extradata[i]);
     for (i = 0; i < flv->mt_extradata_cnt; i++)
         av_freep(&flv->mt_extradata[i]);
+    av_freep(&flv->mt_extradata);
     av_freep(&flv->mt_extradata_sz);
     av_freep(&flv->keyframe_times);
     av_freep(&flv->keyframe_filepositions);
