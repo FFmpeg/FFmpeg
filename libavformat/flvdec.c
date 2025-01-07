@@ -1275,7 +1275,7 @@ static int flv_update_video_color_info(AVFormatContext *s, AVStream *st)
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     FLVContext *flv = s->priv_data;
-    int ret, i, size, flags;
+    int ret = 0, i, size, flags;
     int res = 0;
     enum FlvTagType type;
     int stream_type=-1;
@@ -1613,7 +1613,7 @@ retry_duration:
 
                 av_log(s, AV_LOG_DEBUG, "Set channel data from MultiChannel info.\n");
 
-                goto leave;
+                goto next_track;
             }
         } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
             int sret = flv_set_video_codec(s, st, codec_id, 1);
@@ -1759,6 +1759,7 @@ retry_duration:
             return ret;
         res = FFERROR_REDO;
 
+next_track:
         if (track_size) {
             av_log(s, AV_LOG_WARNING, "Track size mismatch: %d!\n", track_size);
             avio_skip(s->pb, track_size);
@@ -1768,7 +1769,6 @@ retry_duration:
         if (!size)
             break;
 
-next_track:
         if (multitrack_type == MultitrackTypeOneTrack) {
             av_log(s, AV_LOG_ERROR, "Attempted to read next track in single-track mode.\n");
             ret = FFERROR_REDO;
