@@ -93,6 +93,12 @@ typedef void ID3D11Device;
 #define NVENC_HAVE_UNIDIR_B
 #endif
 
+// SDK 13.0 compile time feature checks
+#if NVENCAPI_CHECK_VERSION(13, 0)
+#define NVENC_HAVE_H264_10BIT_SUPPORT
+#define NVENC_HAVE_422_SUPPORT
+#endif
+
 typedef struct NvencSurface
 {
     NV_ENC_INPUT_PTR input_surface;
@@ -151,6 +157,12 @@ enum {
     NV_ENC_H264_PROFILE_BASELINE,
     NV_ENC_H264_PROFILE_MAIN,
     NV_ENC_H264_PROFILE_HIGH,
+#ifdef NVENC_HAVE_H264_10BIT_SUPPORT
+    NV_ENC_H264_PROFILE_HIGH_10,
+#endif
+#ifdef NVENC_HAVE_422_SUPPORT
+    NV_ENC_H264_PROFILE_HIGH_422,
+#endif
     NV_ENC_H264_PROFILE_HIGH_444P,
 };
 

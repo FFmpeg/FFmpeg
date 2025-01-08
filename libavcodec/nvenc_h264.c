@@ -61,6 +61,12 @@ static const AVOption options[] = {
     { "baseline",     "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_H264_PROFILE_BASELINE },  0, 0, VE, .unit = "profile" },
     { "main",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_H264_PROFILE_MAIN },      0, 0, VE, .unit = "profile" },
     { "high",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_H264_PROFILE_HIGH },      0, 0, VE, .unit = "profile" },
+#ifdef NVENC_HAVE_H264_10BIT_SUPPORT
+    { "high10",       "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_H264_PROFILE_HIGH_10 },   0, 0, VE, .unit = "profile" },
+#endif
+#ifdef NVENC_HAVE_422_SUPPORT
+    { "high422",      "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_H264_PROFILE_HIGH_422 },  0, 0, VE, .unit = "profile" },
+#endif
     { "high444p",     "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_H264_PROFILE_HIGH_444P }, 0, 0, VE, .unit = "profile" },
 #ifdef NVENC_HAVE_H264_LVL6
     { "level",        "Set the encoding level restriction", OFFSET(level),        AV_OPT_TYPE_INT,   { .i64 = NV_ENC_LEVEL_AUTOSELECT }, NV_ENC_LEVEL_AUTOSELECT, NV_ENC_LEVEL_H264_62, VE, .unit = "level" },
@@ -198,6 +204,9 @@ static const AVOption options[] = {
                                                             0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TWO_PASS_QUARTER_RESOLUTION }, 0,                          0,                               VE, .unit = "multipass" },
     { "fullres",      "Two Pass encoding is enabled where first Pass is full resolution",
                                                             0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TWO_PASS_FULL_RESOLUTION },    0,                          0,                               VE, .unit = "multipass" },
+#endif
+#ifdef NVENC_HAVE_H264_10BIT_SUPPORT
+    { "highbitdepth", "Enable 10 bit encode for 8 bit input",OFFSET(highbitdepth),AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
 #endif
 #ifdef NVENC_HAVE_LDKFS
     { "ldkfs",        "Low delay key frame scale; Specifies the Scene Change frame size increase allowed in case of single frame VBV and CBR",
