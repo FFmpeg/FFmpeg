@@ -375,13 +375,27 @@ int ff_nvdec_decode_init(AVCodecContext *avctx)
 
     switch (sw_desc->comp[0].depth) {
     case 8:
-        output_format = chroma_444 ? cudaVideoSurfaceFormat_YUV444 :
-                                     cudaVideoSurfaceFormat_NV12;
+        if (chroma_444) {
+            output_format = cudaVideoSurfaceFormat_YUV444;
+#ifdef NVDEC_HAVE_422_SUPPORT
+        } else if (cuvid_chroma_format == cudaVideoChromaFormat_422) {
+            output_format = cudaVideoSurfaceFormat_NV16;
+#endif
+        } else {
+            output_format = cudaVideoSurfaceFormat_NV12;
+        }
         break;
     case 10:
     case 12:
-        output_format = chroma_444 ? cudaVideoSurfaceFormat_YUV444_16Bit :
-                                     cudaVideoSurfaceFormat_P016;
+        if (chroma_444) {
+            output_format = cudaVideoSurfaceFormat_YUV444_16Bit;
+#ifdef NVDEC_HAVE_422_SUPPORT
+        } else if (cuvid_chroma_format == cudaVideoChromaFormat_422) {
+            output_format = cudaVideoSurfaceFormat_P216;
+#endif
+        } else {
+            output_format = cudaVideoSurfaceFormat_P016;
+        }
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth\n");
@@ -729,13 +743,27 @@ int ff_nvdec_frame_params(AVCodecContext *avctx,
 
     switch (sw_desc->comp[0].depth) {
     case 8:
-        frames_ctx->sw_format = chroma_444 ? AV_PIX_FMT_YUV444P : AV_PIX_FMT_NV12;
+        if (chroma_444) {
+            frames_ctx->sw_format = AV_PIX_FMT_YUV444P;
+#ifdef NVDEC_HAVE_422_SUPPORT
+        } else if (cuvid_chroma_format == cudaVideoChromaFormat_422) {
+            frames_ctx->sw_format = AV_PIX_FMT_NV16;
+#endif
+        } else {
+            frames_ctx->sw_format = AV_PIX_FMT_NV12;
+        }
         break;
     case 10:
-        frames_ctx->sw_format = chroma_444 ? AV_PIX_FMT_YUV444P16 : AV_PIX_FMT_P010;
-        break;
     case 12:
-        frames_ctx->sw_format = chroma_444 ? AV_PIX_FMT_YUV444P16 : AV_PIX_FMT_P016;
+        if (chroma_444) {
+            frames_ctx->sw_format = AV_PIX_FMT_YUV444P16;
+#ifdef NVDEC_HAVE_422_SUPPORT
+        } else if (cuvid_chroma_format == cudaVideoChromaFormat_422) {
+            frames_ctx->sw_format = AV_PIX_FMT_P216LE;
+#endif
+        } else {
+            frames_ctx->sw_format = AV_PIX_FMT_P016LE;
+        }
         break;
     default:
         return AVERROR(EINVAL);
