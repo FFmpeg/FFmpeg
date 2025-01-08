@@ -601,8 +601,6 @@ static int run_alf(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
     return 0;
 }
 
-#define VVC_THREAD_DEBUG
-#ifdef VVC_THREAD_DEBUG
 const static char* task_name[] = {
     "INIT",
     "P",
@@ -615,7 +613,6 @@ const static char* task_name[] = {
     "S",
     "A"
 };
-#endif
 
 typedef int (*run_func)(VVCContext *s, VVCLocalContext *lc, VVCTask *t);
 
@@ -638,9 +635,7 @@ static void task_run_stage(VVCTask *t, VVCContext *s, VVCLocalContext *lc)
         run_alf,
     };
 
-#ifdef VVC_THREAD_DEBUG
-    av_log(s->avctx, AV_LOG_DEBUG, "frame %5d, %s(%3d, %3d)\r\n", (int)t->fc->decode_order, task_name[stage], t->rx, t->ry);
-#endif
+    ff_dlog(s->avctx, "frame %5d, %s(%3d, %3d)\r\n", (int)t->fc->decode_order, task_name[stage], t->rx, t->ry);
 
     lc->sc = t->sc;
 
@@ -846,8 +841,6 @@ int ff_vvc_frame_wait(VVCContext *s, VVCFrameContext *fc)
     ff_mutex_unlock(&ft->lock);
     ff_vvc_report_frame_finished(fc->ref);
 
-#ifdef VVC_THREAD_DEBUG
-    av_log(s->avctx, AV_LOG_DEBUG, "frame %5d done\r\n", (int)fc->decode_order);
-#endif
+    ff_dlog(s->avctx, "frame %5d done\r\n", (int)fc->decode_order);
     return ft->ret;
 }
