@@ -97,6 +97,7 @@ typedef void ID3D11Device;
 #if NVENCAPI_CHECK_VERSION(13, 0)
 #define NVENC_HAVE_H264_10BIT_SUPPORT
 #define NVENC_HAVE_422_SUPPORT
+#define NVENC_HAVE_AV1_UHQ_TUNING
 #endif
 
 typedef struct NvencSurface
