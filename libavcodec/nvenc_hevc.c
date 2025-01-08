@@ -60,10 +60,13 @@ static const AVOption options[] = {
     { "ull",         "Ultra low latency",                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY },        0, 0, VE, .unit = "tune" },
     { "lossless",    "Lossless",                            0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TUNING_INFO_LOSSLESS },                 0, 0, VE, .unit = "tune" },
 #endif
-    { "profile",      "Set the encoding profile",           OFFSET(profile),      AV_OPT_TYPE_INT,   { .i64 = NV_ENC_HEVC_PROFILE_MAIN }, NV_ENC_HEVC_PROFILE_MAIN, AV_PROFILE_HEVC_REXT, VE, .unit = "profile" },
+    { "profile",      "Set the encoding profile",           OFFSET(profile),      AV_OPT_TYPE_INT,   { .i64 = NV_ENC_HEVC_PROFILE_MAIN }, NV_ENC_HEVC_PROFILE_MAIN, NV_ENC_HEVC_PROFILE_COUNT - 1, VE, .unit = "profile" },
     { "main",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_HEVC_PROFILE_MAIN },    0, 0, VE, .unit = "profile" },
     { "main10",       "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_HEVC_PROFILE_MAIN_10 }, 0, 0, VE, .unit = "profile" },
     { "rext",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_HEVC_PROFILE_REXT },    0, 0, VE, .unit = "profile" },
+#ifdef NVENC_HAVE_MVHEVC
+    { "mv",           "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_HEVC_PROFILE_MULTIVIEW_MAIN }, 0, 0, VE, .unit = "profile" },
+#endif
     { "level",        "Set the encoding level restriction", OFFSET(level),        AV_OPT_TYPE_INT,   { .i64 = NV_ENC_LEVEL_AUTOSELECT }, NV_ENC_LEVEL_AUTOSELECT, NV_ENC_LEVEL_HEVC_62, VE, .unit = "level" },
     { "auto",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LEVEL_AUTOSELECT },  0, 0, VE,  .unit = "level" },
     { "1",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LEVEL_HEVC_1 },      0, 0, VE,  .unit = "level" },
