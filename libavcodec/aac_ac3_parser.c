@@ -148,7 +148,7 @@ get_next:
 #if CONFIG_AAC_PARSER
             AACADTSHeaderInfo hdr;
             GetBitContext gb;
-            int profile;
+
             init_get_bits8(&gb, buf, buf_size);
             if (buf_size < AV_AAC_ADTS_HEADER_SIZE ||
                 ff_adts_header_parse(&gb, &hdr) < 0)
