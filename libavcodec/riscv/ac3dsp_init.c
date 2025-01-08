@@ -65,8 +65,8 @@ av_cold void ff_ac3dsp_init_riscv(AC3DSPContext *c)
                 c->sum_square_butterfly_int32 =
                     ff_sum_square_butterfly_int32_rvv;
 #  endif
-# endif
         }
     }
+# endif
 #endif
 }
