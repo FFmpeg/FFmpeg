@@ -2320,7 +2320,7 @@ redo:
                 }
                 // Make real NTP start time available in AVFormatContext
                 if (s->start_time_realtime == AV_NOPTS_VALUE) {
-                    s->start_time_realtime = av_rescale (rtpctx->first_rtcp_ntp_time, 1000000, 1LL << 32) - NTP_OFFSET_US;
+                    s->start_time_realtime = ff_parse_ntp_time(rtpctx->first_rtcp_ntp_time) - NTP_OFFSET_US;
                     if (rtpctx->st) {
                         s->start_time_realtime -=
                             av_rescale_q (rtpctx->rtcp_ts_offset, rtpctx->st->time_base, AV_TIME_BASE_Q);
