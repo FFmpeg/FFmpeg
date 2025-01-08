@@ -1104,13 +1104,13 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
     for (int i = 0; i < 2; i++) {
         OutputConfiguration *oc = &ac->oc[i];
-        av_channel_layout_uninit(&ac->oc[i].ch_layout);
-
         AACUSACConfig *usac = &oc->usac;
         for (int j = 0; j < usac->nb_elems; j++) {
             AACUsacElemConfig *ec = &usac->elems[j];
             av_freep(&ec->ext.pl_data);
         }
+
+        av_channel_layout_uninit(&ac->oc[i].ch_layout);
     }
 
     for (int type = 0; type < FF_ARRAY_ELEMS(ac->che); type++) {
