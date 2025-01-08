@@ -271,6 +271,8 @@ typedef struct NvencContext
     float quality;
     int aud;
     int bluray_compat;
+    int qmin;
+    int qmax;
     int init_qp_p;
     int init_qp_b;
     int init_qp_i;

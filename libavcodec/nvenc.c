@@ -884,8 +884,8 @@ static av_cold void set_constqp(AVCodecContext *avctx)
             rc->constQP.qpIntra = av_clip(ctx->cqp * fabs(avctx->i_quant_factor) + avctx->i_quant_offset + 0.5, 0, qmax);
     }
 
-    avctx->qmin = -1;
-    avctx->qmax = -1;
+    avctx->qmin = ctx->qmin = -1;
+    avctx->qmax = ctx->qmax = -1;
 }
 
 static av_cold void set_vbr(AVCodecContext *avctx)
@@ -899,27 +899,37 @@ static av_cold void set_vbr(AVCodecContext *avctx)
     int qmax = 51;
 #endif
 
-    if (avctx->qmin >= 0 && avctx->qmax >= 0) {
+    if (avctx->qmin >= 0 || avctx->qmax >= 0)
+        av_log(avctx, AV_LOG_WARNING, "Passing qmin/qmax via global AVCodecContext options. Use encoder options instead.\n");
+
+    if (avctx->qmin >= 0 && ctx->qmin < 0)
+        ctx->qmin = avctx->qmin;
+    if (avctx->qmax >= 0 && ctx->qmax < 0)
+        ctx->qmax = avctx->qmax;
+    avctx->qmin = ctx->qmin;
+    avctx->qmax = ctx->qmax;
+
+    if (ctx->qmin >= 0 && ctx->qmax >= 0) {
         rc->enableMinQP = 1;
         rc->enableMaxQP = 1;
 
-        rc->minQP.qpInterB = avctx->qmin;
-        rc->minQP.qpInterP = avctx->qmin;
-        rc->minQP.qpIntra  = avctx->qmin;
+        rc->minQP.qpInterB = ctx->qmin;
+        rc->minQP.qpInterP = ctx->qmin;
+        rc->minQP.qpIntra  = ctx->qmin;
 
-        rc->maxQP.qpInterB = avctx->qmax;
-        rc->maxQP.qpInterP = avctx->qmax;
-        rc->maxQP.qpIntra = avctx->qmax;
+        rc->maxQP.qpInterB = ctx->qmax;
+        rc->maxQP.qpInterP = ctx->qmax;
+        rc->maxQP.qpIntra = ctx->qmax;
 
-        qp_inter_p = (avctx->qmax + 3 * avctx->qmin) / 4; // biased towards Qmin
-    } else if (avctx->qmin >= 0) {
+        qp_inter_p = (ctx->qmax + 3 * ctx->qmin) / 4; // biased towards Qmin
+    } else if (ctx->qmin >= 0) {
         rc->enableMinQP = 1;
 
-        rc->minQP.qpInterB = avctx->qmin;
-        rc->minQP.qpInterP = avctx->qmin;
-        rc->minQP.qpIntra = avctx->qmin;
+        rc->minQP.qpInterB = ctx->qmin;
+        rc->minQP.qpInterP = ctx->qmin;
+        rc->minQP.qpIntra = ctx->qmin;
 
-        qp_inter_p = avctx->qmin;
+        qp_inter_p = ctx->qmin;
     } else {
         qp_inter_p = 26; // default to 26
     }
@@ -965,8 +975,8 @@ static av_cold void set_lossless(AVCodecContext *avctx)
     rc->constQP.qpInterP = 0;
     rc->constQP.qpIntra  = 0;
 
-    avctx->qmin = -1;
-    avctx->qmax = -1;
+    avctx->qmin = ctx->qmin = -1;
+    avctx->qmax = ctx->qmax = -1;
 }
 
 static void nvenc_override_rate_control(AVCodecContext *avctx)
@@ -980,7 +990,7 @@ static void nvenc_override_rate_control(AVCodecContext *avctx)
         return;
 #ifndef NVENC_NO_DEPRECATED_RC
     case NV_ENC_PARAMS_RC_VBR_MINQP:
-        if (avctx->qmin < 0) {
+        if (avctx->qmin < 0 && ctx->qmin < 0) {
             av_log(avctx, AV_LOG_WARNING,
                    "The variable bitrate rate-control requires "
                    "the 'qmin' option set.\n");
@@ -1103,7 +1113,8 @@ static av_cold int nvenc_setup_rate_control(AVCodecContext *avctx)
             ctx->rc = NV_ENC_PARAMS_RC_CONSTQP;
         } else if (ctx->twopass) {
             ctx->rc = NV_ENC_PARAMS_RC_VBR_HQ;
-        } else if (avctx->qmin >= 0 && avctx->qmax >= 0) {
+        } else if ((avctx->qmin >= 0 && avctx->qmax >= 0) ||
+                   (ctx->qmin >= 0 && ctx->qmax >= 0)) {
             ctx->rc = NV_ENC_PARAMS_RC_VBR_MINQP;
         }
     }
