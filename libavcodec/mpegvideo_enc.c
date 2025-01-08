@@ -567,6 +567,12 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "H.263 does not support resolutions above 2048x1152\n");
         return AVERROR(EINVAL);
     }
+    if (s->codec_id == AV_CODEC_ID_FLV1 &&
+        (avctx->width  > 65535 ||
+         avctx->height > 65535 )) {
+        av_log(avctx, AV_LOG_ERROR, "FLV does not support resolutions above 16bit\n");
+        return AVERROR(EINVAL);
+    }
     if ((s->codec_id == AV_CODEC_ID_H263  ||
          s->codec_id == AV_CODEC_ID_H263P ||
          s->codec_id == AV_CODEC_ID_RV20) &&
