@@ -67,7 +67,7 @@ typedef struct SwsColorMap {
  * Returns true if the given color map is a semantic no-op - that is,
  * the overall RGB end to end transform would an identity mapping.
  */
-bool sws_color_map_noop(const SwsColorMap *map);
+bool ff_sws_color_map_noop(const SwsColorMap *map);
 
 /**
  * Generates a single end-to-end color mapping 3DLUT embedding a static tone
@@ -75,19 +75,19 @@ bool sws_color_map_noop(const SwsColorMap *map);
  *
  * Returns 0 on success, or a negative error code on failure.
  */
-int sws_color_map_generate_static(v3u16_t *lut, int size, const SwsColorMap *map);
+int ff_sws_color_map_generate_static(v3u16_t *lut, int size, const SwsColorMap *map);
 
 /**
  * Generates a split pair of 3DLUTS, going to IPT and back, allowing an
  * arbitrary dynamic EETF to be nestled in between these two operations.
  *
- * See sws_tone_map_generate().
+ * See ff_sws_tone_map_generate().
  *
  * Returns 0 on success, or a negative error code on failure.
  */
-int sws_color_map_generate_dynamic(v3u16_t *input, v3u16_t *output,
-                                   int size_input, int size_I, int size_PT,
-                                   const SwsColorMap *map);
+int ff_sws_color_map_generate_dynamic(v3u16_t *input, v3u16_t *output,
+                                      int size_input, int size_I, int size_PT,
+                                      const SwsColorMap *map);
 
 /**
  * Generate a 1D LUT of size `size` adapting intensity (I) levels from the
@@ -100,6 +100,6 @@ int sws_color_map_generate_dynamic(v3u16_t *input, v3u16_t *output,
  *
  * Returns 0 on success, or a negative error code on failure.
  */
-void sws_tone_map_generate(v2u16_t *lut, int size, const SwsColorMap *map);
+void ff_sws_tone_map_generate(v2u16_t *lut, int size, const SwsColorMap *map);
 
 #endif // SWSCALE_GAMUT_MAPPING_H

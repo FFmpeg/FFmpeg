@@ -59,40 +59,40 @@ typedef struct SwsLut3D {
     v2u16_t tone_map[TONE_LUT_SIZE]; /* new luma, desaturation */
 } SwsLut3D;
 
-SwsLut3D *sws_lut3d_alloc(void);
-void sws_lut3d_free(SwsLut3D **lut3d);
+SwsLut3D *ff_sws_lut3d_alloc(void);
+void ff_sws_lut3d_free(SwsLut3D **lut3d);
 
 /**
  * Test to see if a given format is supported by the 3DLUT input/output code.
  */
-bool sws_lut3d_test_fmt(enum AVPixelFormat fmt, int output);
+bool ff_sws_lut3d_test_fmt(enum AVPixelFormat fmt, int output);
 
 /**
  * Pick the best compatible pixfmt for a given SwsFormat.
  */
-enum AVPixelFormat sws_lut3d_pick_pixfmt(SwsFormat fmt, int output);
+enum AVPixelFormat ff_sws_lut3d_pick_pixfmt(SwsFormat fmt, int output);
 
 /**
  * Recalculate the (static) 3DLUT state with new settings. This will recompute
  * everything. To only update per-frame tone mapping state, instead call
- * sws_lut3d_update().
+ * ff_sws_lut3d_update().
  *
  * Returns 0 or a negative error code.
  */
-int sws_lut3d_generate(SwsLut3D *lut3d, enum AVPixelFormat fmt_in,
-                       enum AVPixelFormat fmt_out, const SwsColorMap *map);
+int ff_sws_lut3d_generate(SwsLut3D *lut3d, enum AVPixelFormat fmt_in,
+                          enum AVPixelFormat fmt_out, const SwsColorMap *map);
 
 /**
  * Update the tone mapping state. This will only use per-frame metadata. The
  * static metadata is ignored.
  */
-void sws_lut3d_update(SwsLut3D *lut3d, const SwsColor *new_src);
+void ff_sws_lut3d_update(SwsLut3D *lut3d, const SwsColor *new_src);
 
 /**
  * Applies a color transformation to a plane. The format must match the format
- * provided during sws_lut3d_update().
+ * provided during ff_sws_lut3d_update().
  */
-void sws_lut3d_apply(const SwsLut3D *lut3d, const uint8_t *in, int in_stride,
-                     uint8_t *out, int out_stride, int w, int h);
+void ff_sws_lut3d_apply(const SwsLut3D *lut3d, const uint8_t *in, int in_stride,
+                        uint8_t *out, int out_stride, int w, int h);
 
 #endif /* SWSCALE_LUT3D_H */

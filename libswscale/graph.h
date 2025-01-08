@@ -114,7 +114,7 @@ typedef struct SwsGraph {
     SwsFormat src, dst;
     int field;
 
-    /** Temporary execution state inside sws_graph_run */
+    /** Temporary execution state inside ff_sws_graph_run */
     struct {
         const SwsPass *pass; /* current filter pass */
         SwsImg input;
@@ -125,34 +125,34 @@ typedef struct SwsGraph {
 /**
  * Allocate and initialize the filter graph. Returns 0 or a negative error.
  */
-int sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *src,
-                     int field, SwsGraph **out_graph);
+int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *src,
+                        int field, SwsGraph **out_graph);
 
 /**
  * Uninitialize any state associate with this filter graph and free it.
  */
-void sws_graph_free(SwsGraph **graph);
+void ff_sws_graph_free(SwsGraph **graph);
 
 /**
  * Update dynamic per-frame HDR metadata without requiring a full reinit.
  */
-void sws_graph_update_metadata(SwsGraph *graph, const SwsColor *color);
+void ff_sws_graph_update_metadata(SwsGraph *graph, const SwsColor *color);
 
 /**
- * Wrapper around sws_graph_create() that reuses the existing graph if the
+ * Wrapper around ff_sws_graph_create() that reuses the existing graph if the
  * format is compatible. This will also update dynamic per-frame metadata.
  * Must be called after changing any of the fields in `ctx`, or else they will
  * have no effect.
  */
-int sws_graph_reinit(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *src,
-                     int field, SwsGraph **graph);
+int ff_sws_graph_reinit(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *src,
+                        int field, SwsGraph **graph);
 
 /**
  * Dispatch the filter graph on a single field. Internally threaded.
  */
-void sws_graph_run(SwsGraph *graph, uint8_t *const out_data[4],
-                   const int out_linesize[4],
-                   const uint8_t *const in_data[4],
-                   const int in_linesize[4]);
+void ff_sws_graph_run(SwsGraph *graph, uint8_t *const out_data[4],
+                      const int out_linesize[4],
+                      const uint8_t *const in_data[4],
+                      const int in_linesize[4]);
 
 #endif /* SWSCALE_GRAPH_H */

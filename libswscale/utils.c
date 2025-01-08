@@ -2480,7 +2480,7 @@ void sws_freeContext(SwsContext *sws)
         return;
 
     for (i = 0; i < FF_ARRAY_ELEMS(c->graph); i++)
-        sws_graph_free(&c->graph[i]);
+        ff_sws_graph_free(&c->graph[i]);
 
     for (i = 0; i < c->nb_slice_ctx; i++)
         sws_freeContext(c->slice_ctx[i]);

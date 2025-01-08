@@ -1403,7 +1403,7 @@ int sws_scale_frame(SwsContext *sws, AVFrame *dst, const AVFrame *src)
             int dst_linesize[4], src_linesize[4];
             get_frame_pointers(dst, dst_data, dst_linesize, field);
             get_frame_pointers(src, src_data, src_linesize, field);
-            sws_graph_run(graph, dst_data, dst_linesize,
+            ff_sws_graph_run(graph, dst_data, dst_linesize,
                           (const uint8_t **) src_data, src_linesize);
             if (!graph->dst.interlaced)
                 break;
@@ -1461,7 +1461,7 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
             goto fail;
         }
 
-        ret = sws_graph_reinit(ctx, &dst_fmt, &src_fmt, field, &s->graph[field]);
+        ret = ff_sws_graph_reinit(ctx, &dst_fmt, &src_fmt, field, &s->graph[field]);
         if (ret < 0) {
             err_msg = "Failed initializing scaling graph";
             goto fail;
@@ -1474,7 +1474,7 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
         }
 
         if (!src_fmt.interlaced) {
-            sws_graph_free(&s->graph[FIELD_BOTTOM]);
+            ff_sws_graph_free(&s->graph[FIELD_BOTTOM]);
             break;
         }
 
@@ -1490,7 +1490,7 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
                av_color_primaries_name(dst_fmt.color.prim), av_color_transfer_name(dst_fmt.color.trc));
 
         for (int i = 0; i < FF_ARRAY_ELEMS(s->graph); i++)
-            sws_graph_free(&s->graph[i]);
+            ff_sws_graph_free(&s->graph[i]);
 
         return ret;
     }
