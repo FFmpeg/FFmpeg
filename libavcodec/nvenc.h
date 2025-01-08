@@ -98,6 +98,7 @@ typedef void ID3D11Device;
 #define NVENC_HAVE_H264_10BIT_SUPPORT
 #define NVENC_HAVE_422_SUPPORT
 #define NVENC_HAVE_AV1_UHQ_TUNING
+#define NVENC_HAVE_H264_AND_AV1_TEMPORAL_FILTER
 #endif
 
 typedef struct NvencSurface
