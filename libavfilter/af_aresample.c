@@ -361,14 +361,14 @@ static const AVFilterPad aresample_outputs[] = {
     },
 };
 
-const AVFilter ff_af_aresample = {
-    .name          = "aresample",
-    .description   = NULL_IF_CONFIG_SMALL("Resample audio data."),
+const FFFilter ff_af_aresample = {
+    .p.name        = "aresample",
+    .p.description = NULL_IF_CONFIG_SMALL("Resample audio data."),
+    .p.priv_class  = &aresample_class,
     .preinit       = preinit,
     .activate      = activate,
     .uninit        = uninit,
     .priv_size     = sizeof(AResampleContext),
-    .priv_class    = &aresample_class,
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(aresample_outputs),
     FILTER_QUERY_FUNC2(query_formats),

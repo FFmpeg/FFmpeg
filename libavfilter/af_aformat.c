@@ -132,13 +132,13 @@ static int query_formats(const AVFilterContext *ctx,
     return 0;
 }
 
-const AVFilter ff_af_aformat = {
-    .name          = "aformat",
-    .description   = NULL_IF_CONFIG_SMALL("Convert the input audio to one of the specified formats."),
+const FFFilter ff_af_aformat = {
+    .p.name        = "aformat",
+    .p.description = NULL_IF_CONFIG_SMALL("Convert the input audio to one of the specified formats."),
+    .p.priv_class  = &aformat_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .init          = init,
     .priv_size     = sizeof(AFormatContext),
-    .priv_class    = &aformat_class,
-    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),

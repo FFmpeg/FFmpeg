@@ -380,14 +380,14 @@ static const AVOption colortemperature_options[] = {
 
 AVFILTER_DEFINE_CLASS(colortemperature);
 
-const AVFilter ff_vf_colortemperature = {
-    .name          = "colortemperature",
-    .description   = NULL_IF_CONFIG_SMALL("Adjust color temperature of video."),
+const FFFilter ff_vf_colortemperature = {
+    .p.name        = "colortemperature",
+    .p.description = NULL_IF_CONFIG_SMALL("Adjust color temperature of video."),
+    .p.priv_class  = &colortemperature_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ColorTemperatureContext),
-    .priv_class    = &colortemperature_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

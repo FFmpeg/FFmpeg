@@ -185,9 +185,10 @@ static const AVFilterPad sr_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_sr = {
-    .name          = "sr",
-    .description   = NULL_IF_CONFIG_SMALL("Apply DNN-based image super resolution to the input."),
+const FFFilter ff_vf_sr = {
+    .p.name        = "sr",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply DNN-based image super resolution to the input."),
+    .p.priv_class  = &sr_class,
     .priv_size     = sizeof(SRContext),
     .preinit       = ff_dnn_filter_init_child_class,
     .init          = init,
@@ -195,5 +196,4 @@ const AVFilter ff_vf_sr = {
     FILTER_INPUTS(sr_inputs),
     FILTER_OUTPUTS(sr_outputs),
     FILTER_PIXFMTS_ARRAY(pixel_formats),
-    .priv_class    = &sr_class,
 };

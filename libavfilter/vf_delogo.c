@@ -381,15 +381,15 @@ static const AVFilterPad avfilter_vf_delogo_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_delogo = {
-    .name          = "delogo",
-    .description   = NULL_IF_CONFIG_SMALL("Remove logo from input video."),
+const FFFilter ff_vf_delogo = {
+    .p.name        = "delogo",
+    .p.description = NULL_IF_CONFIG_SMALL("Remove logo from input video."),
+    .p.priv_class  = &delogo_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(DelogoContext),
-    .priv_class    = &delogo_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_vf_delogo_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

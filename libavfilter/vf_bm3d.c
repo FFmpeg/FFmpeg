@@ -1042,18 +1042,18 @@ static const AVFilterPad bm3d_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_bm3d = {
-    .name          = "bm3d",
-    .description   = NULL_IF_CONFIG_SMALL("Block-Matching 3D denoiser."),
+const FFFilter ff_vf_bm3d = {
+    .p.name        = "bm3d",
+    .p.description = NULL_IF_CONFIG_SMALL("Block-Matching 3D denoiser."),
+    .p.inputs      = NULL,
+    .p.priv_class  = &bm3d_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_DYNAMIC_INPUTS |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(BM3DContext),
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(bm3d_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &bm3d_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_DYNAMIC_INPUTS |
-                     AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -172,15 +172,15 @@ static const AVFilterPad avfilter_vf_settb_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_settb = {
-    .name        = "settb",
-    .description = NULL_IF_CONFIG_SMALL("Set timebase for the video output link."),
+const FFFilter ff_vf_settb = {
+    .p.name        = "settb",
+    .p.description = NULL_IF_CONFIG_SMALL("Set timebase for the video output link."),
+    .p.priv_class  = &settb_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(SetTBContext),
-    .priv_class  = &settb_class,
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(avfilter_vf_settb_outputs),
     .activate    = activate,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif /* CONFIG_SETTB_FILTER */
 
@@ -197,14 +197,14 @@ static const AVFilterPad avfilter_af_asettb_outputs[] = {
     },
 };
 
-const AVFilter ff_af_asettb = {
-    .name        = "asettb",
-    .description = NULL_IF_CONFIG_SMALL("Set timebase for the audio output link."),
+const FFFilter ff_af_asettb = {
+    .p.name        = "asettb",
+    .p.description = NULL_IF_CONFIG_SMALL("Set timebase for the audio output link."),
+    .p.priv_class  = &asettb_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(SetTBContext),
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(avfilter_af_asettb_outputs),
-    .priv_class  = &asettb_class,
     .activate    = activate,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif /* CONFIG_ASETTB_FILTER */

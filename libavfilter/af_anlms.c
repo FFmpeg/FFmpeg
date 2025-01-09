@@ -251,34 +251,34 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-const AVFilter ff_af_anlms = {
-    .name           = "anlms",
-    .description    = NULL_IF_CONFIG_SMALL("Apply Normalized Least-Mean-Squares algorithm to first audio stream."),
+const FFFilter ff_af_anlms = {
+    .p.name         = "anlms",
+    .p.description  = NULL_IF_CONFIG_SMALL("Apply Normalized Least-Mean-Squares algorithm to first audio stream."),
+    .p.priv_class   = &anlms_class,
+    .p.flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                      AVFILTER_FLAG_SLICE_THREADS,
     .priv_size      = sizeof(AudioNLMSContext),
-    .priv_class     = &anlms_class,
     .init           = init,
     .uninit         = uninit,
     .activate       = activate,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_FLTP),
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                      AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
 
-const AVFilter ff_af_anlmf = {
-    .name           = "anlmf",
-    .description    = NULL_IF_CONFIG_SMALL("Apply Normalized Least-Mean-Fourth algorithm to first audio stream."),
+const FFFilter ff_af_anlmf = {
+    .p.name         = "anlmf",
+    .p.description  = NULL_IF_CONFIG_SMALL("Apply Normalized Least-Mean-Fourth algorithm to first audio stream."),
+    .p.priv_class   = &anlms_class,
+    .p.flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                      AVFILTER_FLAG_SLICE_THREADS,
     .priv_size      = sizeof(AudioNLMSContext),
-    .priv_class     = &anlms_class,
     .init           = init,
     .uninit         = uninit,
     .activate       = activate,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                      AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

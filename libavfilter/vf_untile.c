@@ -176,9 +176,10 @@ static const AVFilterPad untile_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_untile = {
-    .name          = "untile",
-    .description   = NULL_IF_CONFIG_SMALL("Untile a frame into a sequence of frames."),
+const FFFilter ff_vf_untile = {
+    .p.name        = "untile",
+    .p.description = NULL_IF_CONFIG_SMALL("Untile a frame into a sequence of frames."),
+    .p.priv_class  = &untile_class,
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
@@ -186,5 +187,4 @@ const AVFilter ff_vf_untile = {
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(untile_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &untile_class,
 };

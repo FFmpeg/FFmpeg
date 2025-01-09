@@ -273,16 +273,16 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_adynamicequalizer = {
-    .name            = "adynamicequalizer",
-    .description     = NULL_IF_CONFIG_SMALL("Apply Dynamic Equalization of input audio."),
+const FFFilter ff_af_adynamicequalizer = {
+    .p.name          = "adynamicequalizer",
+    .p.description   = NULL_IF_CONFIG_SMALL("Apply Dynamic Equalization of input audio."),
+    .p.priv_class    = &adynamicequalizer_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                       AVFILTER_FLAG_SLICE_THREADS,
     .priv_size       = sizeof(AudioDynamicEqualizerContext),
-    .priv_class      = &adynamicequalizer_class,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                       AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

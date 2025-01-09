@@ -824,40 +824,38 @@ static const AVFilterPad premultiply_outputs[] = {
 
 #if CONFIG_PREMULTIPLY_FILTER
 
-const AVFilter ff_vf_premultiply = {
-    .name          = "premultiply",
-    .description   = NULL_IF_CONFIG_SMALL("PreMultiply first stream with first plane of second stream."),
+const FFFilter ff_vf_premultiply = {
+    .p.name        = "premultiply",
+    .p.description = NULL_IF_CONFIG_SMALL("PreMultiply first stream with first plane of second stream."),
+    .p.priv_class  = &premultiply_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_DYNAMIC_INPUTS |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(PreMultiplyContext),
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(premultiply_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &premultiply_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_DYNAMIC_INPUTS |
-                     AVFILTER_FLAG_SLICE_THREADS,
 };
 
 #endif /* CONFIG_PREMULTIPLY_FILTER */
 
 #if CONFIG_UNPREMULTIPLY_FILTER
 
-const AVFilter ff_vf_unpremultiply = {
-    .name          = "unpremultiply",
-    .description   = NULL_IF_CONFIG_SMALL("UnPreMultiply first stream with first plane of second stream."),
-    .priv_class    = &premultiply_class,
+const FFFilter ff_vf_unpremultiply = {
+    .p.name        = "unpremultiply",
+    .p.description = NULL_IF_CONFIG_SMALL("UnPreMultiply first stream with first plane of second stream."),
+    .p.priv_class  = &premultiply_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_DYNAMIC_INPUTS |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(PreMultiplyContext),
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(premultiply_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_DYNAMIC_INPUTS |
-                     AVFILTER_FLAG_SLICE_THREADS,
 };
 
 #endif /* CONFIG_UNPREMULTIPLY_FILTER */

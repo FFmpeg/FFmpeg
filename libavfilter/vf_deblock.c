@@ -411,14 +411,14 @@ static const AVFilterPad outputs[] = {
 
 AVFILTER_DEFINE_CLASS(deblock);
 
-const AVFilter ff_vf_deblock = {
-    .name          = "deblock",
-    .description   = NULL_IF_CONFIG_SMALL("Deblock video."),
+const FFFilter ff_vf_deblock = {
+    .p.name        = "deblock",
+    .p.description = NULL_IF_CONFIG_SMALL("Deblock video."),
+    .p.priv_class  = &deblock_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(DeblockContext),
-    .priv_class    = &deblock_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = process_command,
 };

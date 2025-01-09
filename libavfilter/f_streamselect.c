@@ -296,26 +296,26 @@ static av_cold void uninit(AVFilterContext *ctx)
     ff_framesync_uninit(&s->fs);
 }
 
-const AVFilter ff_vf_streamselect = {
-    .name            = "streamselect",
-    .description     = NULL_IF_CONFIG_SMALL("Select video streams"),
+const FFFilter ff_vf_streamselect = {
+    .p.name          = "streamselect",
+    .p.description   = NULL_IF_CONFIG_SMALL("Select video streams"),
+    .p.priv_class    = &streamselect_class,
+    .p.flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_DYNAMIC_OUTPUTS,
     .init            = init,
     .process_command = process_command,
     .uninit          = uninit,
     .activate        = activate,
     .priv_size       = sizeof(StreamSelectContext),
-    .priv_class      = &streamselect_class,
-    .flags           = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
 
-const AVFilter ff_af_astreamselect = {
-    .name            = "astreamselect",
-    .description     = NULL_IF_CONFIG_SMALL("Select audio streams"),
-    .priv_class      = &streamselect_class,
+const FFFilter ff_af_astreamselect = {
+    .p.name          = "astreamselect",
+    .p.description   = NULL_IF_CONFIG_SMALL("Select audio streams"),
+    .p.priv_class    = &streamselect_class,
+    .p.flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_DYNAMIC_OUTPUTS,
     .init            = init,
     .process_command = process_command,
     .uninit          = uninit,
     .activate        = activate,
     .priv_size       = sizeof(StreamSelectContext),
-    .flags           = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };

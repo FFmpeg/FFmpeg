@@ -810,16 +810,15 @@ static const AVFilterPad ladspa_outputs[] = {
     },
 };
 
-const AVFilter ff_af_ladspa = {
-    .name          = "ladspa",
-    .description   = NULL_IF_CONFIG_SMALL("Apply LADSPA effect."),
+const FFFilter ff_af_ladspa = {
+    .p.name        = "ladspa",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply LADSPA effect."),
+    .p.priv_class  = &ladspa_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_INPUTS,
     .priv_size     = sizeof(LADSPAContext),
-    .priv_class    = &ladspa_class,
     .init          = init,
     .uninit        = uninit,
     .process_command = process_command,
-    .inputs        = 0,
     FILTER_OUTPUTS(ladspa_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

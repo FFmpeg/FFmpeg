@@ -217,15 +217,15 @@ static const AVFilterPad zmq_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_zmq = {
-    .name        = "zmq",
-    .description = NULL_IF_CONFIG_SMALL("Receive commands through ZMQ and broker them to filters."),
+const FFFilter ff_vf_zmq = {
+    .p.name        = "zmq",
+    .p.description = NULL_IF_CONFIG_SMALL("Receive commands through ZMQ and broker them to filters."),
+    .p.priv_class  = &zmq_class,
     .init        = init,
     .uninit      = uninit,
     .priv_size   = sizeof(ZMQContext),
     FILTER_INPUTS(zmq_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    .priv_class  = &zmq_class,
 };
 
 #endif
@@ -240,10 +240,10 @@ static const AVFilterPad azmq_inputs[] = {
     },
 };
 
-const AVFilter ff_af_azmq = {
-    .name        = "azmq",
-    .description = NULL_IF_CONFIG_SMALL("Receive commands through ZMQ and broker them to filters."),
-    .priv_class  = &zmq_class,
+const FFFilter ff_af_azmq = {
+    .p.name        = "azmq",
+    .p.description = NULL_IF_CONFIG_SMALL("Receive commands through ZMQ and broker them to filters."),
+    .p.priv_class  = &zmq_class,
     .init        = init,
     .uninit      = uninit,
     .priv_size   = sizeof(ZMQContext),

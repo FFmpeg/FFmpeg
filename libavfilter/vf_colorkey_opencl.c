@@ -226,16 +226,16 @@ static const AVOption colorkey_opencl_options[] = {
 
 AVFILTER_DEFINE_CLASS(colorkey_opencl);
 
-const AVFilter ff_vf_colorkey_opencl = {
-    .name           = "colorkey_opencl",
-    .description    = NULL_IF_CONFIG_SMALL("Turns a certain color into transparency. Operates on RGB colors."),
+const FFFilter ff_vf_colorkey_opencl = {
+    .p.name         = "colorkey_opencl",
+    .p.description  = NULL_IF_CONFIG_SMALL("Turns a certain color into transparency. Operates on RGB colors."),
+    .p.priv_class   = &colorkey_opencl_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(ColorkeyOpenCLContext),
-    .priv_class     = &colorkey_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &colorkey_opencl_uninit,
     FILTER_INPUTS(colorkey_opencl_inputs),
     FILTER_OUTPUTS(colorkey_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

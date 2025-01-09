@@ -493,15 +493,15 @@ static const AVFilterPad colorchannelmixer_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_colorchannelmixer = {
-    .name          = "colorchannelmixer",
-    .description   = NULL_IF_CONFIG_SMALL("Adjust colors by mixing color channels."),
+const FFFilter ff_vf_colorchannelmixer = {
+    .p.name        = "colorchannelmixer",
+    .p.description = NULL_IF_CONFIG_SMALL("Adjust colors by mixing color channels."),
+    .p.priv_class  = &colorchannelmixer_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ColorChannelMixerContext),
-    .priv_class    = &colorchannelmixer_class,
     .uninit        = uninit,
     FILTER_INPUTS(colorchannelmixer_inputs),
     FILTER_OUTPUTS(colorchannelmixer_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

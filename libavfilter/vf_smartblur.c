@@ -301,15 +301,15 @@ static const AVFilterPad smartblur_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_smartblur = {
-    .name          = "smartblur",
-    .description   = NULL_IF_CONFIG_SMALL("Blur the input video without impacting the outlines."),
+const FFFilter ff_vf_smartblur = {
+    .p.name        = "smartblur",
+    .p.description = NULL_IF_CONFIG_SMALL("Blur the input video without impacting the outlines."),
+    .p.priv_class  = &smartblur_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(SmartblurContext),
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(smartblur_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &smartblur_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

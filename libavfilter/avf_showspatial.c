@@ -321,15 +321,15 @@ static const AVFilterPad showspatial_outputs[] = {
     },
 };
 
-const AVFilter ff_avf_showspatial = {
-    .name          = "showspatial",
-    .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a spatial video output."),
+const FFFilter ff_avf_showspatial = {
+    .p.name        = "showspatial",
+    .p.description = NULL_IF_CONFIG_SMALL("Convert input audio to a spatial video output."),
+    .p.priv_class  = &showspatial_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
     .uninit        = uninit,
     .priv_size     = sizeof(ShowSpatialContext),
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(showspatial_outputs),
     FILTER_QUERY_FUNC2(query_formats),
     .activate      = spatial_activate,
-    .priv_class    = &showspatial_class,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

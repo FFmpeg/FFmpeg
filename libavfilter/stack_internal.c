@@ -342,16 +342,16 @@ static const AVFilterPad stack_outputs[] = {
         .option     = category##_##api##_options,                       \
         .version    = LIBAVUTIL_VERSION_INT,                            \
     };                                                                  \
-    const AVFilter ff_vf_##category##_##api = {                         \
-        .name           = #category "_" #api,                           \
-        .description    = NULL_IF_CONFIG_SMALL(#capi " " #category),    \
+    const FFFilter ff_vf_##category##_##api = {                         \
+        .p.name         = #category "_" #api,                           \
+        .p.description  = NULL_IF_CONFIG_SMALL(#capi " " #category),    \
+        .p.flags        = AVFILTER_FLAG_DYNAMIC_INPUTS | filter_flags,  \
+        .p.priv_class   = &category##_##api##_class,                    \
         .priv_size      = sizeof(StackHWContext),                       \
-        .priv_class     = &category##_##api##_class,                    \
         .init           = api##_stack_init,                             \
         .uninit         = api##_stack_uninit,                           \
         .activate       = stack_activate,                               \
         FILTER_PIXFMTS_ARRAY(api ## _stack_pix_fmts),                   \
         FILTER_OUTPUTS(stack_outputs),                                  \
         .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,                 \
-        .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS | filter_flags,  \
     }

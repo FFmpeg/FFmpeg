@@ -1243,16 +1243,16 @@ static const AVFilterPad ddagrab_outputs[] = {
     },
 };
 
-const AVFilter ff_vsrc_ddagrab = {
-    .name          = "ddagrab",
-    .description   = NULL_IF_CONFIG_SMALL("Grab Windows Desktop images using Desktop Duplication API"),
+const FFFilter ff_vsrc_ddagrab = {
+    .p.name        = "ddagrab",
+    .p.description = NULL_IF_CONFIG_SMALL("Grab Windows Desktop images using Desktop Duplication API"),
+    .p.priv_class  = &ddagrab_class,
+    .p.inputs      = NULL,
+    .p.flags       = AVFILTER_FLAG_HWDEVICE,
     .priv_size     = sizeof(DdagrabContext),
-    .priv_class    = &ddagrab_class,
     .init          = ddagrab_init,
     .uninit        = ddagrab_uninit,
-    .inputs        = NULL,
     FILTER_OUTPUTS(ddagrab_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_D3D11),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

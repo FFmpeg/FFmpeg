@@ -349,15 +349,15 @@ static const AVFilterPad lenscorrection_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_lenscorrection = {
-    .name          = "lenscorrection",
-    .description   = NULL_IF_CONFIG_SMALL("Rectify the image by correcting for lens distortion."),
+const FFFilter ff_vf_lenscorrection = {
+    .p.name        = "lenscorrection",
+    .p.description = NULL_IF_CONFIG_SMALL("Rectify the image by correcting for lens distortion."),
+    .p.priv_class  = &lenscorrection_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(LenscorrectionCtx),
     FILTER_INPUTS(lenscorrection_inputs),
     FILTER_OUTPUTS(lenscorrection_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &lenscorrection_class,
     .uninit        = uninit,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

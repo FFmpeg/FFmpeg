@@ -327,15 +327,15 @@ static const AVFilterPad vignette_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_vignette = {
-    .name          = "vignette",
-    .description   = NULL_IF_CONFIG_SMALL("Make or reverse a vignette effect."),
+const FFFilter ff_vf_vignette = {
+    .p.name        = "vignette",
+    .p.description = NULL_IF_CONFIG_SMALL("Make or reverse a vignette effect."),
+    .p.priv_class  = &vignette_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(VignetteContext),
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(vignette_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &vignette_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

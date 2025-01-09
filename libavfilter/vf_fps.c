@@ -386,15 +386,15 @@ static const AVFilterPad avfilter_vf_fps_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_fps = {
-    .name        = "fps",
-    .description = NULL_IF_CONFIG_SMALL("Force constant framerate."),
+const FFFilter ff_vf_fps = {
+    .p.name        = "fps",
+    .p.description = NULL_IF_CONFIG_SMALL("Force constant framerate."),
+    .p.priv_class  = &fps_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .init        = init,
     .uninit      = uninit,
     .priv_size   = sizeof(FPSContext),
-    .priv_class  = &fps_class,
     .activate    = activate,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(avfilter_vf_fps_outputs),
 };

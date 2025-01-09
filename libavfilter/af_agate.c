@@ -228,16 +228,16 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_agate = {
-    .name           = "agate",
-    .description    = NULL_IF_CONFIG_SMALL("Audio gate."),
-    .priv_class     = &agate_sidechaingate_class,
+const FFFilter ff_af_agate = {
+    .p.name         = "agate",
+    .p.description  = NULL_IF_CONFIG_SMALL("Audio gate."),
+    .p.priv_class   = &agate_sidechaingate_class,
+    .p.flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size      = sizeof(AudioGateContext),
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBL),
     .process_command = ff_filter_process_command,
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
 
 #endif /* CONFIG_AGATE_FILTER */
@@ -378,10 +378,11 @@ static const AVFilterPad sidechaingate_outputs[] = {
     },
 };
 
-const AVFilter ff_af_sidechaingate = {
-    .name           = "sidechaingate",
-    .description    = NULL_IF_CONFIG_SMALL("Audio sidechain gate."),
-    .priv_class     = &agate_sidechaingate_class,
+const FFFilter ff_af_sidechaingate = {
+    .p.name         = "sidechaingate",
+    .p.description  = NULL_IF_CONFIG_SMALL("Audio sidechain gate."),
+    .p.priv_class   = &agate_sidechaingate_class,
+    .p.flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size      = sizeof(AudioGateContext),
     .activate       = activate,
     .uninit         = uninit,
@@ -389,6 +390,5 @@ const AVFilter ff_af_sidechaingate = {
     FILTER_OUTPUTS(sidechaingate_outputs),
     FILTER_QUERY_FUNC2(scquery_formats),
     .process_command = ff_filter_process_command,
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
 #endif  /* CONFIG_SIDECHAINGATE_FILTER */

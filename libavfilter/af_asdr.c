@@ -266,45 +266,45 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-const AVFilter ff_af_asdr = {
-    .name           = "asdr",
-    .description    = NULL_IF_CONFIG_SMALL("Measure Audio Signal-to-Distortion Ratio."),
+const FFFilter ff_af_asdr = {
+    .p.name         = "asdr",
+    .p.description  = NULL_IF_CONFIG_SMALL("Measure Audio Signal-to-Distortion Ratio."),
+    .p.flags        = AVFILTER_FLAG_METADATA_ONLY |
+                      AVFILTER_FLAG_SLICE_THREADS |
+                      AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size      = sizeof(AudioSDRContext),
     .activate       = activate,
     .uninit         = uninit,
-    .flags          = AVFILTER_FLAG_METADATA_ONLY |
-                      AVFILTER_FLAG_SLICE_THREADS |
-                      AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP,
                       AV_SAMPLE_FMT_DBLP),
 };
 
-const AVFilter ff_af_apsnr = {
-    .name           = "apsnr",
-    .description    = NULL_IF_CONFIG_SMALL("Measure Audio Peak Signal-to-Noise Ratio."),
+const FFFilter ff_af_apsnr = {
+    .p.name         = "apsnr",
+    .p.description  = NULL_IF_CONFIG_SMALL("Measure Audio Peak Signal-to-Noise Ratio."),
+    .p.flags        = AVFILTER_FLAG_METADATA_ONLY |
+                      AVFILTER_FLAG_SLICE_THREADS |
+                      AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size      = sizeof(AudioSDRContext),
     .activate       = activate,
     .uninit         = uninit,
-    .flags          = AVFILTER_FLAG_METADATA_ONLY |
-                      AVFILTER_FLAG_SLICE_THREADS |
-                      AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP,
                       AV_SAMPLE_FMT_DBLP),
 };
 
-const AVFilter ff_af_asisdr = {
-    .name           = "asisdr",
-    .description    = NULL_IF_CONFIG_SMALL("Measure Audio Scale-Invariant Signal-to-Distortion Ratio."),
+const FFFilter ff_af_asisdr = {
+    .p.name         = "asisdr",
+    .p.description  = NULL_IF_CONFIG_SMALL("Measure Audio Scale-Invariant Signal-to-Distortion Ratio."),
+    .p.flags        = AVFILTER_FLAG_METADATA_ONLY |
+                      AVFILTER_FLAG_SLICE_THREADS |
+                      AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size      = sizeof(AudioSDRContext),
     .activate       = activate,
     .uninit         = uninit,
-    .flags          = AVFILTER_FLAG_METADATA_ONLY |
-                      AVFILTER_FLAG_SLICE_THREADS |
-                      AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP,

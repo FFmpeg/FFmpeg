@@ -480,15 +480,16 @@ static const AVFilterPad cudachromakey_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_chromakey_cuda = {
-    .name = "chromakey_cuda",
-    .description = NULL_IF_CONFIG_SMALL("GPU accelerated chromakey filter"),
+const FFFilter ff_vf_chromakey_cuda = {
+    .p.name        = "chromakey_cuda",
+    .p.description = NULL_IF_CONFIG_SMALL("GPU accelerated chromakey filter"),
+
+    .p.priv_class  = &cudachromakey_class,
 
     .init = cudachromakey_init,
     .uninit = cudachromakey_uninit,
 
     .priv_size = sizeof(ChromakeyCUDAContext),
-    .priv_class = &cudachromakey_class,
 
     FILTER_INPUTS(cudachromakey_inputs),
     FILTER_OUTPUTS(cudachromakey_outputs),

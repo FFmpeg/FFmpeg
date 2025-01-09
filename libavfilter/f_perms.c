@@ -125,16 +125,16 @@ static const AVFilterPad aperms_inputs[] = {
     },
 };
 
-const AVFilter ff_af_aperms = {
-    .name        = "aperms",
-    .description = NULL_IF_CONFIG_SMALL("Set permissions for the output audio frame."),
-    .priv_class  = &perms_class,
+const FFFilter ff_af_aperms = {
+    .p.name      = "aperms",
+    .p.description= NULL_IF_CONFIG_SMALL("Set permissions for the output audio frame."),
+    .p.priv_class= &perms_class,
+    .p.flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                   AVFILTER_FLAG_METADATA_ONLY,
     .init        = init,
     .priv_size   = sizeof(PermsContext),
     FILTER_INPUTS(aperms_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
-    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
-                   AVFILTER_FLAG_METADATA_ONLY,
     .process_command = ff_filter_process_command,
 };
 #endif /* CONFIG_APERMS_FILTER */
@@ -149,16 +149,16 @@ static const AVFilterPad perms_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_perms = {
-    .name        = "perms",
-    .description = NULL_IF_CONFIG_SMALL("Set permissions for the output video frame."),
+const FFFilter ff_vf_perms = {
+    .p.name        = "perms",
+    .p.description = NULL_IF_CONFIG_SMALL("Set permissions for the output video frame."),
+    .p.priv_class  = &perms_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                     AVFILTER_FLAG_METADATA_ONLY,
     .init        = init,
     .priv_size   = sizeof(PermsContext),
     FILTER_INPUTS(perms_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    .priv_class  = &perms_class,
-    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
-                   AVFILTER_FLAG_METADATA_ONLY,
     .process_command = ff_filter_process_command,
 };
 #endif /* CONFIG_PERMS_FILTER */

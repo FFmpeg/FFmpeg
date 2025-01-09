@@ -465,15 +465,15 @@ static const AVFilterPad idet_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_idet = {
-    .name          = "idet",
-    .description   = NULL_IF_CONFIG_SMALL("Interlace detect Filter."),
+const FFFilter ff_vf_idet = {
+    .p.name        = "idet",
+    .p.description = NULL_IF_CONFIG_SMALL("Interlace detect Filter."),
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
+    .p.priv_class  = &idet_class,
     .priv_size     = sizeof(IDETContext),
     .init          = init,
     .uninit        = uninit,
-    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(idet_inputs),
     FILTER_OUTPUTS(idet_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &idet_class,
 };

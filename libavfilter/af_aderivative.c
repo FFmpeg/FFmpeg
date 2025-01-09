@@ -160,27 +160,27 @@ static const AVOption aderivative_options[] = {
 
 AVFILTER_DEFINE_CLASS_EXT(aderivative, "aderivative/aintegral", aderivative_options);
 
-const AVFilter ff_af_aderivative = {
-    .name          = "aderivative",
-    .description   = NULL_IF_CONFIG_SMALL("Compute derivative of input audio."),
+const FFFilter ff_af_aderivative = {
+    .p.name        = "aderivative",
+    .p.description = NULL_IF_CONFIG_SMALL("Compute derivative of input audio."),
+    .p.priv_class  = &aderivative_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size     = sizeof(ADerivativeContext),
-    .priv_class    = &aderivative_class,
     .uninit        = uninit,
     FILTER_INPUTS(aderivative_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_FLTP,
                       AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_DBLP),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
 
-const AVFilter ff_af_aintegral = {
-    .name          = "aintegral",
-    .description   = NULL_IF_CONFIG_SMALL("Compute integral of input audio."),
+const FFFilter ff_af_aintegral = {
+    .p.name        = "aintegral",
+    .p.description = NULL_IF_CONFIG_SMALL("Compute integral of input audio."),
+    .p.priv_class  = &aderivative_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size     = sizeof(ADerivativeContext),
-    .priv_class    = &aderivative_class,
     .uninit        = uninit,
     FILTER_INPUTS(aderivative_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

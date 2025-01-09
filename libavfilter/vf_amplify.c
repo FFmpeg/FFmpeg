@@ -271,16 +271,16 @@ static const AVFilterPad outputs[] = {
 
 AVFILTER_DEFINE_CLASS(amplify);
 
-const AVFilter ff_vf_amplify = {
-    .name          = "amplify",
-    .description   = NULL_IF_CONFIG_SMALL("Amplify changes between successive video frames."),
+const FFFilter ff_vf_amplify = {
+    .p.name        = "amplify",
+    .p.description = NULL_IF_CONFIG_SMALL("Amplify changes between successive video frames."),
+    .p.priv_class  = &amplify_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(AmplifyContext),
-    .priv_class    = &amplify_class,
     FILTER_OUTPUTS(outputs),
     FILTER_INPUTS(inputs),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .init          = init,
     .uninit        = uninit,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

@@ -387,9 +387,11 @@ static const AVFilterPad blend_vulkan_outputs[] = {
     }
 };
 
-const AVFilter ff_vf_blend_vulkan = {
-    .name            = "blend_vulkan",
-    .description     = NULL_IF_CONFIG_SMALL("Blend two video frames in Vulkan"),
+const FFFilter ff_vf_blend_vulkan = {
+    .p.name          = "blend_vulkan",
+    .p.description   = NULL_IF_CONFIG_SMALL("Blend two video frames in Vulkan"),
+    .p.priv_class    = &blend_vulkan_class,
+    .p.flags         = AVFILTER_FLAG_HWDEVICE,
     .priv_size       = sizeof(BlendVulkanContext),
     .init            = &init,
     .uninit          = &uninit,
@@ -397,8 +399,6 @@ const AVFilter ff_vf_blend_vulkan = {
     FILTER_INPUTS(blend_vulkan_inputs),
     FILTER_OUTPUTS(blend_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
-    .priv_class      = &blend_vulkan_class,
     .flags_internal  = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
     .process_command = &process_command,
 };

@@ -100,10 +100,10 @@ static const AVOption options[] = {
 AVFILTER_DEFINE_CLASS_EXT(cue_acue, "(a)cue", options);
 
 #if CONFIG_CUE_FILTER
-const AVFilter ff_vf_cue = {
-    .name        = "cue",
-    .description = NULL_IF_CONFIG_SMALL("Delay filtering to match a cue."),
-    .priv_class  = &cue_acue_class,
+const FFFilter ff_vf_cue = {
+    .p.name        = "cue",
+    .p.description = NULL_IF_CONFIG_SMALL("Delay filtering to match a cue."),
+    .p.priv_class  = &cue_acue_class,
     .priv_size   = sizeof(CueContext),
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(ff_video_default_filterpad),
@@ -112,12 +112,12 @@ const AVFilter ff_vf_cue = {
 #endif /* CONFIG_CUE_FILTER */
 
 #if CONFIG_ACUE_FILTER
-const AVFilter ff_af_acue = {
-    .name        = "acue",
-    .description = NULL_IF_CONFIG_SMALL("Delay filtering to match a cue."),
-    .priv_class  = &cue_acue_class,
+const FFFilter ff_af_acue = {
+    .p.name        = "acue",
+    .p.description = NULL_IF_CONFIG_SMALL("Delay filtering to match a cue."),
+    .p.priv_class  = &cue_acue_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(CueContext),
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     .activate    = activate,

@@ -246,15 +246,15 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_vf_swaprect = {
-    .name          = "swaprect",
-    .description   = NULL_IF_CONFIG_SMALL("Swap 2 rectangular objects in video."),
+const FFFilter ff_vf_swaprect = {
+    .p.name        = "swaprect",
+    .p.description = NULL_IF_CONFIG_SMALL("Swap 2 rectangular objects in video."),
+    .p.priv_class  = &swaprect_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(SwapRectContext),
-    .priv_class    = &swaprect_class,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = ff_filter_process_command,
 };

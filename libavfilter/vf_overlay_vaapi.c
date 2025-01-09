@@ -414,11 +414,11 @@ static const AVFilterPad overlay_vaapi_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_overlay_vaapi = {
-    .name            = "overlay_vaapi",
-    .description     = NULL_IF_CONFIG_SMALL("Overlay one video on top of another"),
+const FFFilter ff_vf_overlay_vaapi = {
+    .p.name          = "overlay_vaapi",
+    .p.description   = NULL_IF_CONFIG_SMALL("Overlay one video on top of another"),
+    .p.priv_class    = &overlay_vaapi_class,
     .priv_size       = sizeof(OverlayVAAPIContext),
-    .priv_class      = &overlay_vaapi_class,
     .init            = &overlay_vaapi_init,
     .uninit          = &overlay_vaapi_uninit,
     .activate        = &overlay_vaapi_activate,

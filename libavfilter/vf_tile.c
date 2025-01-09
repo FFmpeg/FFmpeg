@@ -287,14 +287,14 @@ static const AVFilterPad tile_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_tile = {
-    .name          = "tile",
-    .description   = NULL_IF_CONFIG_SMALL("Tile several successive frames together."),
+const FFFilter ff_vf_tile = {
+    .p.name        = "tile",
+    .p.description = NULL_IF_CONFIG_SMALL("Tile several successive frames together."),
+    .p.priv_class  = &tile_class,
     .init          = init,
     .uninit        = uninit,
     .priv_size     = sizeof(TileContext),
     FILTER_INPUTS(tile_inputs),
     FILTER_OUTPUTS(tile_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &tile_class,
 };

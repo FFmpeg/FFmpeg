@@ -459,18 +459,18 @@ static const AVFilterPad outputs[] = {
 #if CONFIG_MIX_FILTER
 AVFILTER_DEFINE_CLASS(mix);
 
-const AVFilter ff_vf_mix = {
-    .name          = "mix",
-    .description   = NULL_IF_CONFIG_SMALL("Mix video inputs."),
+const FFFilter ff_vf_mix = {
+    .p.name        = "mix",
+    .p.description = NULL_IF_CONFIG_SMALL("Mix video inputs."),
+    .p.priv_class  = &mix_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS |
+                     AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size     = sizeof(MixContext),
-    .priv_class    = &mix_class,
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC2(query_formats),
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS |
-                     AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = process_command,
 };
 
@@ -543,17 +543,17 @@ static const AVFilterPad inputs[] = {
 
 AVFILTER_DEFINE_CLASS(tmix);
 
-const AVFilter ff_vf_tmix = {
-    .name          = "tmix",
-    .description   = NULL_IF_CONFIG_SMALL("Mix successive video frames."),
+const FFFilter ff_vf_tmix = {
+    .p.name        = "tmix",
+    .p.description = NULL_IF_CONFIG_SMALL("Mix successive video frames."),
+    .p.priv_class  = &tmix_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(MixContext),
-    .priv_class    = &tmix_class,
     FILTER_OUTPUTS(outputs),
     FILTER_INPUTS(inputs),
     FILTER_QUERY_FUNC2(query_formats),
     .init          = init,
     .uninit        = uninit,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
 

@@ -325,17 +325,17 @@ static const AVFilterPad bwdif_vulkan_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_bwdif_vulkan = {
-    .name           = "bwdif_vulkan",
-    .description    = NULL_IF_CONFIG_SMALL("Deinterlace Vulkan frames via bwdif"),
+const FFFilter ff_vf_bwdif_vulkan = {
+    .p.name         = "bwdif_vulkan",
+    .p.description  = NULL_IF_CONFIG_SMALL("Deinterlace Vulkan frames via bwdif"),
+    .p.priv_class   = &bwdif_vulkan_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE |
+                      AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size      = sizeof(BWDIFVulkanContext),
     .init           = &ff_vk_filter_init,
     .uninit         = &bwdif_vulkan_uninit,
     FILTER_INPUTS(bwdif_vulkan_inputs),
     FILTER_OUTPUTS(bwdif_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
-    .priv_class     = &bwdif_vulkan_class,
-    .flags          = AVFILTER_FLAG_HWDEVICE |
-                      AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

@@ -643,12 +643,12 @@ static const AVOption replaygain_options[] = {
 
 AVFILTER_DEFINE_CLASS(replaygain);
 
-const AVFilter ff_af_replaygain = {
-    .name          = "replaygain",
-    .description   = NULL_IF_CONFIG_SMALL("ReplayGain scanner."),
+const FFFilter ff_af_replaygain = {
+    .p.name        = "replaygain",
+    .p.description = NULL_IF_CONFIG_SMALL("ReplayGain scanner."),
+    .p.priv_class  = &replaygain_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(ReplayGainContext),
-    .priv_class    = &replaygain_class,
-    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(replaygain_inputs),
     FILTER_OUTPUTS(replaygain_outputs),
     FILTER_QUERY_FUNC2(query_formats),

@@ -426,16 +426,16 @@ static const AVFilterPad scale_vulkan_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_scale_vulkan = {
-    .name           = "scale_vulkan",
-    .description    = NULL_IF_CONFIG_SMALL("Scale Vulkan frames"),
+const FFFilter ff_vf_scale_vulkan = {
+    .p.name         = "scale_vulkan",
+    .p.description  = NULL_IF_CONFIG_SMALL("Scale Vulkan frames"),
+    .p.priv_class   = &scale_vulkan_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(ScaleVulkanContext),
     .init           = &ff_vk_filter_init,
     .uninit         = &scale_vulkan_uninit,
     FILTER_INPUTS(scale_vulkan_inputs),
     FILTER_OUTPUTS(scale_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
-    .priv_class     = &scale_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

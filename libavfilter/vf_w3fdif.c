@@ -616,15 +616,15 @@ static const AVFilterPad w3fdif_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_w3fdif = {
-    .name          = "w3fdif",
-    .description   = NULL_IF_CONFIG_SMALL("Apply Martin Weston three field deinterlace."),
+const FFFilter ff_vf_w3fdif = {
+    .p.name        = "w3fdif",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply Martin Weston three field deinterlace."),
+    .p.priv_class  = &w3fdif_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(W3FDIFContext),
-    .priv_class    = &w3fdif_class,
     .uninit        = uninit,
     FILTER_INPUTS(w3fdif_inputs),
     FILTER_OUTPUTS(w3fdif_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

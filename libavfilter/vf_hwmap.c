@@ -422,15 +422,15 @@ static const AVFilterPad hwmap_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_hwmap = {
-    .name           = "hwmap",
-    .description    = NULL_IF_CONFIG_SMALL("Map hardware frames"),
+const FFFilter ff_vf_hwmap = {
+    .p.name         = "hwmap",
+    .p.description  = NULL_IF_CONFIG_SMALL("Map hardware frames"),
+    .p.priv_class   = &hwmap_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .uninit         = hwmap_uninit,
     .priv_size      = sizeof(HWMapContext),
-    .priv_class     = &hwmap_class,
     FILTER_INPUTS(hwmap_inputs),
     FILTER_OUTPUTS(hwmap_outputs),
     FILTER_QUERY_FUNC2(hwmap_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

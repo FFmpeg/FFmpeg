@@ -706,14 +706,14 @@ static const AVFilterPad fillborders_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_fillborders = {
-    .name          = "fillborders",
-    .description   = NULL_IF_CONFIG_SMALL("Fill borders of the input video."),
+const FFFilter ff_vf_fillborders = {
+    .p.name        = "fillborders",
+    .p.description = NULL_IF_CONFIG_SMALL("Fill borders of the input video."),
+    .p.priv_class  = &fillborders_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(FillBordersContext),
-    .priv_class    = &fillborders_class,
     FILTER_INPUTS(fillborders_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = process_command,
 };

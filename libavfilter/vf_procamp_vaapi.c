@@ -239,15 +239,15 @@ static const AVFilterPad procamp_vaapi_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_procamp_vaapi = {
-    .name          = "procamp_vaapi",
-    .description   = NULL_IF_CONFIG_SMALL("ProcAmp (color balance) adjustments for hue, saturation, brightness, contrast"),
+const FFFilter ff_vf_procamp_vaapi = {
+    .p.name        = "procamp_vaapi",
+    .p.description = NULL_IF_CONFIG_SMALL("ProcAmp (color balance) adjustments for hue, saturation, brightness, contrast"),
+    .p.priv_class  = &procamp_vaapi_class,
     .priv_size     = sizeof(ProcampVAAPIContext),
     .init          = &procamp_vaapi_init,
     .uninit        = &ff_vaapi_vpp_ctx_uninit,
     FILTER_INPUTS(procamp_vaapi_inputs),
     FILTER_OUTPUTS(procamp_vaapi_outputs),
     FILTER_QUERY_FUNC2(&ff_vaapi_vpp_query_formats),
-    .priv_class    = &procamp_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

@@ -241,16 +241,15 @@ static int activate(AVFilterContext *ctx)
     return FFERROR_NOT_READY;
 }
 
-const AVFilter ff_af_channelsplit = {
-    .name           = "channelsplit",
-    .description    = NULL_IF_CONFIG_SMALL("Split audio into per-channel streams."),
+const FFFilter ff_af_channelsplit = {
+    .p.name         = "channelsplit",
+    .p.description  = NULL_IF_CONFIG_SMALL("Split audio into per-channel streams."),
+    .p.priv_class   = &channelsplit_class,
+    .p.flags        = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
     .priv_size      = sizeof(ChannelSplitContext),
-    .priv_class     = &channelsplit_class,
     .init           = init,
     .activate       = activate,
     .uninit         = uninit,
     FILTER_INPUTS(ff_audio_default_filterpad),
-    .outputs        = NULL,
     FILTER_QUERY_FUNC2(query_formats),
-    .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };

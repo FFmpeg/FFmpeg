@@ -140,13 +140,12 @@ static const AVOption afdelaysrc_options[] = {
 
 AVFILTER_DEFINE_CLASS(afdelaysrc);
 
-const AVFilter ff_asrc_afdelaysrc = {
-    .name          = "afdelaysrc",
-    .description   = NULL_IF_CONFIG_SMALL("Generate a Fractional delay FIR coefficients."),
+const FFFilter ff_asrc_afdelaysrc = {
+    .p.name        = "afdelaysrc",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate a Fractional delay FIR coefficients."),
+    .p.priv_class  = &afdelaysrc_class,
     .priv_size     = sizeof(AFDelaySrcContext),
-    .priv_class    = &afdelaysrc_class,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(afdelaysrc_outputs),
     FILTER_QUERY_FUNC2(query_formats),
 };

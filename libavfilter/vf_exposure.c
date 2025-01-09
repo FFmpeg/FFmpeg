@@ -142,14 +142,14 @@ static const AVOption exposure_options[] = {
 
 AVFILTER_DEFINE_CLASS(exposure);
 
-const AVFilter ff_vf_exposure = {
-    .name          = "exposure",
-    .description   = NULL_IF_CONFIG_SMALL("Adjust exposure of the video stream."),
+const FFFilter ff_vf_exposure = {
+    .p.name        = "exposure",
+    .p.description = NULL_IF_CONFIG_SMALL("Adjust exposure of the video stream."),
+    .p.priv_class  = &exposure_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ExposureContext),
-    .priv_class    = &exposure_class,
     FILTER_INPUTS(exposure_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS(AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

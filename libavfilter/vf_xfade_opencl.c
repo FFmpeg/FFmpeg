@@ -430,11 +430,12 @@ static const AVFilterPad xfade_opencl_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_xfade_opencl = {
-    .name            = "xfade_opencl",
-    .description     = NULL_IF_CONFIG_SMALL("Cross fade one video with another video."),
+const FFFilter ff_vf_xfade_opencl = {
+    .p.name          = "xfade_opencl",
+    .p.description   = NULL_IF_CONFIG_SMALL("Cross fade one video with another video."),
+    .p.priv_class    = &xfade_opencl_class,
+    .p.flags         = AVFILTER_FLAG_HWDEVICE,
     .priv_size       = sizeof(XFadeOpenCLContext),
-    .priv_class      = &xfade_opencl_class,
     .init            = &ff_opencl_filter_init,
     .uninit          = &xfade_opencl_uninit,
     .activate        = &xfade_opencl_activate,
@@ -442,5 +443,4 @@ const AVFilter ff_vf_xfade_opencl = {
     FILTER_OUTPUTS(xfade_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal  = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

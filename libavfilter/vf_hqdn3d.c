@@ -384,16 +384,16 @@ static const AVFilterPad avfilter_vf_hqdn3d_inputs[] = {
 };
 
 
-const AVFilter ff_vf_hqdn3d = {
-    .name          = "hqdn3d",
-    .description   = NULL_IF_CONFIG_SMALL("Apply a High Quality 3D Denoiser."),
+const FFFilter ff_vf_hqdn3d = {
+    .p.name        = "hqdn3d",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply a High Quality 3D Denoiser."),
+    .p.priv_class  = &hqdn3d_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(HQDN3DContext),
-    .priv_class    = &hqdn3d_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_vf_hqdn3d_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

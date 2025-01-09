@@ -246,16 +246,16 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_atilt = {
-    .name            = "atilt",
-    .description     = NULL_IF_CONFIG_SMALL("Apply spectral tilt to audio."),
+const FFFilter ff_af_atilt = {
+    .p.name          = "atilt",
+    .p.description   = NULL_IF_CONFIG_SMALL("Apply spectral tilt to audio."),
+    .p.priv_class    = &atilt_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                       AVFILTER_FLAG_SLICE_THREADS,
     .priv_size       = sizeof(ATiltContext),
-    .priv_class      = &atilt_class,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP),
     .process_command = process_command,
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
-                       AVFILTER_FLAG_SLICE_THREADS,
 };

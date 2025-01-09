@@ -354,18 +354,18 @@ static const AVFilterPad limitdiff_outputs[] = {
 
 AVFILTER_DEFINE_CLASS(limitdiff);
 
-const AVFilter ff_vf_limitdiff = {
-    .name          = "limitdiff",
-    .description   = NULL_IF_CONFIG_SMALL("Apply filtering with limiting difference."),
-    .priv_class    = &limitdiff_class,
+const FFFilter ff_vf_limitdiff = {
+    .p.name        = "limitdiff",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply filtering with limiting difference."),
+    .p.priv_class  = &limitdiff_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS |
+                     AVFILTER_FLAG_DYNAMIC_INPUTS,
     .priv_size     = sizeof(LimitDiffContext),
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
     FILTER_OUTPUTS(limitdiff_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_SLICE_THREADS |
-                     AVFILTER_FLAG_DYNAMIC_INPUTS,
     .process_command = ff_filter_process_command,
 };

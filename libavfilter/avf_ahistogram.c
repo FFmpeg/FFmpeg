@@ -494,14 +494,14 @@ static const AVFilterPad ahistogram_outputs[] = {
     },
 };
 
-const AVFilter ff_avf_ahistogram = {
-    .name          = "ahistogram",
-    .description   = NULL_IF_CONFIG_SMALL("Convert input audio to histogram video output."),
+const FFFilter ff_avf_ahistogram = {
+    .p.name        = "ahistogram",
+    .p.description = NULL_IF_CONFIG_SMALL("Convert input audio to histogram video output."),
+    .p.priv_class  = &ahistogram_class,
     .uninit        = uninit,
     .priv_size     = sizeof(AudioHistogramContext),
     .activate      = activate,
     FILTER_INPUTS(ahistogram_inputs),
     FILTER_OUTPUTS(ahistogram_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &ahistogram_class,
 };

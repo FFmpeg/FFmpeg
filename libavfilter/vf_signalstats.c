@@ -827,15 +827,15 @@ static const AVFilterPad signalstats_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_signalstats = {
-    .name          = "signalstats",
-    .description   = "Generate statistics from video analysis.",
+const FFFilter ff_vf_signalstats = {
+    .p.name        = "signalstats",
+    .p.description = "Generate statistics from video analysis.",
+    .p.priv_class  = &signalstats_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
     .init          = init,
     .uninit        = uninit,
     .priv_size     = sizeof(SignalstatsContext),
     FILTER_INPUTS(signalstats_inputs),
     FILTER_OUTPUTS(signalstats_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &signalstats_class,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

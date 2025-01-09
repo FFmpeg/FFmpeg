@@ -590,16 +590,15 @@ static const AVFilterPad lv2_outputs[] = {
     },
 };
 
-const AVFilter ff_af_lv2 = {
-    .name          = "lv2",
-    .description   = NULL_IF_CONFIG_SMALL("Apply LV2 effect."),
+const FFFilter ff_af_lv2 = {
+    .p.name        = "lv2",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply LV2 effect."),
+    .p.priv_class  = &lv2_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_INPUTS,
     .priv_size     = sizeof(LV2Context),
-    .priv_class    = &lv2_class,
     .init          = init,
     .uninit        = uninit,
     .process_command = process_command,
-    .inputs        = 0,
     FILTER_OUTPUTS(lv2_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

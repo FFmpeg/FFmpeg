@@ -417,19 +417,19 @@ static const AVOption options[] = {
 #define corr_options options
 FRAMESYNC_DEFINE_CLASS(corr, CorrContext, fs);
 
-const AVFilter ff_vf_corr = {
-    .name          = "corr",
-    .description   = NULL_IF_CONFIG_SMALL("Calculate the correlation between two video streams."),
+const FFFilter ff_vf_corr = {
+    .p.name        = "corr",
+    .p.description = NULL_IF_CONFIG_SMALL("Calculate the correlation between two video streams."),
+    .p.priv_class  = &corr_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS             |
+                     AVFILTER_FLAG_METADATA_ONLY,
     .preinit       = corr_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
     .priv_size     = sizeof(CorrContext),
-    .priv_class    = &corr_class,
     FILTER_INPUTS(corr_inputs),
     FILTER_OUTPUTS(corr_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_SLICE_THREADS             |
-                     AVFILTER_FLAG_METADATA_ONLY,
 };

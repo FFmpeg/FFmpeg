@@ -1453,10 +1453,12 @@ static av_cold int name_##_init(AVFilterContext *ctx)                   \
     return 0;                                                           \
 }                                                                       \
                                                          \
-const AVFilter ff_af_##name_ = {                         \
-    .name          = #name_,                             \
-    .description   = NULL_IF_CONFIG_SMALL(description_), \
-    .priv_class    = &priv_class_##_class,               \
+const FFFilter ff_af_##name_ = {                         \
+    .p.name        = #name_,                             \
+    .p.description = NULL_IF_CONFIG_SMALL(description_), \
+    .p.priv_class  = &priv_class_##_class,               \
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS |       \
+                     AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL, \
     .priv_size     = sizeof(BiquadsContext),             \
     .init          = name_##_init,                       \
     .activate      = activate,                           \
@@ -1465,7 +1467,6 @@ const AVFilter ff_af_##name_ = {                         \
     FILTER_OUTPUTS(outputs),                             \
     FILTER_QUERY_FUNC2(query_formats),                   \
     .process_command = process_command,                  \
-    .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL, \
 }
 
 #define DEFINE_BIQUAD_FILTER(name, description)                         \

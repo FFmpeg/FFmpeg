@@ -1025,7 +1025,7 @@ int ff_set_common_formats_from_list2(const AVFilterContext *ctx,
 
 int ff_default_query_formats(AVFilterContext *ctx)
 {
-    const AVFilter *const f = ctx->filter;
+    const FFFilter *const f = fffilter(ctx->filter);
     AVFilterFormats *formats;
     enum AVMediaType type;
     int ret;

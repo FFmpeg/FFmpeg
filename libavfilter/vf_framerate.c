@@ -432,16 +432,16 @@ static const AVFilterPad framerate_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_framerate = {
-    .name          = "framerate",
-    .description   = NULL_IF_CONFIG_SMALL("Upsamples or downsamples progressive source between specified frame rates."),
+const FFFilter ff_vf_framerate = {
+    .p.name        = "framerate",
+    .p.description = NULL_IF_CONFIG_SMALL("Upsamples or downsamples progressive source between specified frame rates."),
+    .p.priv_class  = &framerate_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(FrameRateContext),
-    .priv_class    = &framerate_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(framerate_inputs),
     FILTER_OUTPUTS(framerate_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
     .activate      = activate,
 };

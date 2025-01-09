@@ -173,7 +173,8 @@ typedef struct NPPScaleContext {
     int eval_mode;
 } NPPScaleContext;
 
-const AVFilter ff_vf_scale2ref_npp;
+const FFFilter ff_vf_scale2ref_npp;
+#define IS_SCALE2REF(ctx) ((ctx)->filter == &ff_vf_scale2ref_npp.p)
 
 static int config_props(AVFilterLink *outlink);
 
@@ -205,7 +206,7 @@ static int check_exprs(AVFilterContext* ctx)
         av_log(ctx, AV_LOG_WARNING, "Circular references detected for width '%s' and height '%s' - possibly invalid.\n", scale->w_expr, scale->h_expr);
     }
 
-    if (ctx->filter != &ff_vf_scale2ref_npp &&
+    if (!IS_SCALE2REF(ctx) &&
         (vars_w[VAR_S2R_MAIN_W]   || vars_h[VAR_S2R_MAIN_W]   ||
          vars_w[VAR_S2R_MAIN_H]   || vars_h[VAR_S2R_MAIN_H]   ||
          vars_w[VAR_S2R_MAIN_A]   || vars_h[VAR_S2R_MAIN_A]   ||
@@ -375,7 +376,7 @@ static av_cold int nppscale_init(AVFilterContext* ctx)
 static int nppscale_eval_dimensions(AVFilterContext* ctx)
 {
     NPPScaleContext* scale = ctx->priv;
-    const char scale2ref = ctx->filter == &ff_vf_scale2ref_npp;
+    const char scale2ref = IS_SCALE2REF(ctx);
     const AVFilterLink* inlink = ctx->inputs[scale2ref ? 1 : 0];
     char* expr;
     int eval_w, eval_h;
@@ -645,7 +646,7 @@ static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink0 = outlink->src->inputs[0];
-    AVFilterLink *inlink  = ctx->filter == &ff_vf_scale2ref_npp ?
+    AVFilterLink *inlink  = IS_SCALE2REF(ctx) ?
                             outlink->src->inputs[1] :
                             outlink->src->inputs[0];
     NPPScaleContext *s = ctx->priv;
@@ -811,7 +812,7 @@ static int nppscale_scale(AVFilterLink *link, AVFrame *out, AVFrame *in)
         av_expr_count_vars(s->w_pexpr, vars_w, VARS_NB);
         av_expr_count_vars(s->h_pexpr, vars_h, VARS_NB);
 
-        if (s->eval_mode == EVAL_MODE_FRAME && !frame_changed && ctx->filter != &ff_vf_scale2ref_npp &&
+        if (s->eval_mode == EVAL_MODE_FRAME && !frame_changed && !IS_SCALE2REF(ctx) &&
             !(vars_w[VAR_N] || vars_w[VAR_T]
 #if FF_API_FRAME_PKT
               || vars_w[VAR_POS]
@@ -839,7 +840,7 @@ static int nppscale_scale(AVFilterLink *link, AVFrame *out, AVFrame *in)
                 return ret;
         }
 
-        if (ctx->filter == &ff_vf_scale2ref_npp) {
+        if (IS_SCALE2REF(ctx)) {
             s->var_values[VAR_S2R_MAIN_N] = inl->frame_count_out;
             s->var_values[VAR_S2R_MAIN_T] = TS2T(in->pts, link->time_base);
 #if FF_API_FRAME_PKT
@@ -1048,16 +1049,16 @@ static const AVFilterPad nppscale_outputs[] = {
     }
 };
 
-const AVFilter ff_vf_scale_npp = {
-    .name      = "scale_npp",
-    .description = NULL_IF_CONFIG_SMALL("NVIDIA Performance Primitives video "
-                                        "scaling and format conversion"),
+const FFFilter ff_vf_scale_npp = {
+    .p.name        = "scale_npp",
+    .p.description = NULL_IF_CONFIG_SMALL("NVIDIA Performance Primitives video "
+                                          "scaling and format conversion"),
+    .p.priv_class  = &nppscale_class,
 
     .init          = nppscale_init,
     .uninit        = nppscale_uninit,
 
     .priv_size = sizeof(NPPScaleContext),
-    .priv_class = &nppscale_class,
 
     FILTER_INPUTS(nppscale_inputs),
     FILTER_OUTPUTS(nppscale_outputs),
@@ -1095,17 +1096,17 @@ static const AVFilterPad nppscale2ref_outputs[] = {
     }
 };
 
-const AVFilter ff_vf_scale2ref_npp = {
-    .name          = "scale2ref_npp",
-    .description   = NULL_IF_CONFIG_SMALL("NVIDIA Performance Primitives video "
+const FFFilter ff_vf_scale2ref_npp = {
+    .p.name        = "scale2ref_npp",
+    .p.description = NULL_IF_CONFIG_SMALL("NVIDIA Performance Primitives video "
                                           "scaling and format conversion to the "
                                           "given reference."),
+    .p.priv_class  = &nppscale_class,
 
     .init          = nppscale_init,
     .uninit        = nppscale_uninit,
 
     .priv_size = sizeof(NPPScaleContext),
-    .priv_class = &nppscale_class,
 
     FILTER_INPUTS(nppscale2ref_inputs),
     FILTER_OUTPUTS(nppscale2ref_outputs),

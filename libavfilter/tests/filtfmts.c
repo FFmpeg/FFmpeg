@@ -78,6 +78,7 @@ static void print_formats(AVFilterContext *filter_ctx)
 int main(int argc, char **argv)
 {
     const AVFilter *filter;
+    const FFFilter *fi;
     AVFilterContext *filter_ctx;
     AVFilterGraph *graph_ctx;
     const char *filter_name;
@@ -106,6 +107,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Unrecognized filter with name '%s'\n", filter_name);
         return 1;
     }
+    fi = fffilter(filter);
 
     /* open filter and add it to the graph */
     if (!(filter_ctx = avfilter_graph_alloc_filter(graph_ctx, filter, filter_name))) {
@@ -141,9 +143,9 @@ int main(int argc, char **argv)
         filter_ctx->outputs[i] = link;
     }
 
-    if (filter->formats_state == FF_FILTER_FORMATS_QUERY_FUNC)
-        ret = filter->formats.query_func(filter_ctx);
-    else if (filter->formats_state == FF_FILTER_FORMATS_QUERY_FUNC2) {
+    if (fi->formats_state == FF_FILTER_FORMATS_QUERY_FUNC)
+        ret = fi->formats.query_func(filter_ctx);
+    else if (fi->formats_state == FF_FILTER_FORMATS_QUERY_FUNC2) {
         AVFilterFormatsConfig **cfg_in = NULL, **cfg_out = NULL;
 
         if (filter_ctx->nb_inputs) {
@@ -157,7 +159,7 @@ int main(int argc, char **argv)
                 cfg_out[i] = &filter_ctx->outputs[i]->incfg;
         }
 
-        ret = filter->formats.query_func2(filter_ctx, cfg_in, cfg_out);
+        ret = fi->formats.query_func2(filter_ctx, cfg_in, cfg_out);
         av_freep(&cfg_in);
         av_freep(&cfg_out);
     } else

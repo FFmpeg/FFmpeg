@@ -297,14 +297,14 @@ static const AVFilterPad avfilter_vf_boxblur_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_boxblur = {
-    .name          = "boxblur",
-    .description   = NULL_IF_CONFIG_SMALL("Blur the input."),
+const FFFilter ff_vf_boxblur = {
+    .p.name        = "boxblur",
+    .p.description = NULL_IF_CONFIG_SMALL("Blur the input."),
+    .p.priv_class  = &boxblur_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(BoxBlurContext),
-    .priv_class    = &boxblur_class,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_vf_boxblur_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

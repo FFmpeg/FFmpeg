@@ -585,19 +585,19 @@ static const AVFilterPad ssim_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_ssim = {
-    .name          = "ssim",
-    .description   = NULL_IF_CONFIG_SMALL("Calculate the SSIM between two video streams."),
+const FFFilter ff_vf_ssim = {
+    .p.name        = "ssim",
+    .p.description = NULL_IF_CONFIG_SMALL("Calculate the SSIM between two video streams."),
+    .p.priv_class  = &ssim_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS             |
+                     AVFILTER_FLAG_METADATA_ONLY,
     .preinit       = ssim_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
     .priv_size     = sizeof(SSIMContext),
-    .priv_class    = &ssim_class,
     FILTER_INPUTS(ssim_inputs),
     FILTER_OUTPUTS(ssim_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_SLICE_THREADS             |
-                     AVFILTER_FLAG_METADATA_ONLY,
 };

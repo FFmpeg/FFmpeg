@@ -328,14 +328,14 @@ static const AVFilterPad avfilter_vf_siti_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_siti = {
-    .name          = "siti",
-    .description   = NULL_IF_CONFIG_SMALL("Calculate spatial information (SI) and temporal information (TI)."),
+const FFFilter ff_vf_siti = {
+    .p.name        = "siti",
+    .p.description = NULL_IF_CONFIG_SMALL("Calculate spatial information (SI) and temporal information (TI)."),
+    .p.priv_class  = &siti_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(SiTiContext),
-    .priv_class    = &siti_class,
     .init          = init,
     .uninit        = uninit,
-    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     FILTER_INPUTS(avfilter_vf_siti_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),

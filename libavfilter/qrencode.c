@@ -700,14 +700,14 @@ static const AVFilterPad qrencodesrc_outputs[] = {
     }
 };
 
-const AVFilter ff_vsrc_qrencodesrc = {
-    .name          = "qrencodesrc",
-    .description   = NULL_IF_CONFIG_SMALL("Generate a QR code."),
+const FFFilter ff_vsrc_qrencodesrc = {
+    .p.name        = "qrencodesrc",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate a QR code."),
+    .p.priv_class  = &qrencodesrc_class,
+    .p.inputs      = NULL,
     .priv_size     = sizeof(QREncodeContext),
-    .priv_class    = &qrencodesrc_class,
     .init          = init,
     .uninit        = uninit,
-    .inputs        = NULL,
     FILTER_OUTPUTS(qrencodesrc_outputs),
     FILTER_QUERY_FUNC2(qrencodesrc_query_formats),
 };
@@ -813,17 +813,17 @@ static const AVFilterPad avfilter_vf_qrencode_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_qrencode = {
-    .name          = "qrencode",
-    .description   = NULL_IF_CONFIG_SMALL("Draw a QR code on top of video frames."),
+const FFFilter ff_vf_qrencode = {
+    .p.name        = "qrencode",
+    .p.description = NULL_IF_CONFIG_SMALL("Draw a QR code on top of video frames."),
+    .p.priv_class  = &qrencode_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(QREncodeContext),
-    .priv_class    = &qrencode_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_vf_qrencode_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(qrencode_query_formats),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
 
 #endif // CONFIG_QRENCODE_FILTER

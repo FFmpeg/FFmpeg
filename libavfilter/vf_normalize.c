@@ -510,15 +510,15 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_vf_normalize = {
-    .name          = "normalize",
-    .description   = NULL_IF_CONFIG_SMALL("Normalize RGB video."),
+const FFFilter ff_vf_normalize = {
+    .p.name        = "normalize",
+    .p.description = NULL_IF_CONFIG_SMALL("Normalize RGB video."),
+    .p.priv_class  = &normalize_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size     = sizeof(NormalizeContext),
-    .priv_class    = &normalize_class,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };

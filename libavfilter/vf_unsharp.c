@@ -394,15 +394,15 @@ static const AVFilterPad avfilter_vf_unsharp_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_unsharp = {
-    .name          = "unsharp",
-    .description   = NULL_IF_CONFIG_SMALL("Sharpen or blur the input video."),
+const FFFilter ff_vf_unsharp = {
+    .p.name        = "unsharp",
+    .p.description = NULL_IF_CONFIG_SMALL("Sharpen or blur the input video."),
+    .p.priv_class  = &unsharp_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(UnsharpContext),
-    .priv_class    = &unsharp_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_vf_unsharp_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -22,7 +22,7 @@
 #define AVFILTER_FILTERS_H
 
 /**
- * Filters implementation helper functions
+ * Filters implementation helper functions and internal structures
  */
 
 #include "avfilter.h"
@@ -257,10 +257,213 @@ enum FilterFormatsState {
         .formats_state      = FF_FILTER_FORMATS_SINGLE_SAMPLEFMT
 
 #define FILTER_INOUTPADS(inout, array) \
-       .inout        = array, \
+       .p.inout      = array, \
        .nb_ ## inout = FF_ARRAY_ELEMS(array)
 #define FILTER_INPUTS(array) FILTER_INOUTPADS(inputs, (array))
 #define FILTER_OUTPUTS(array) FILTER_INOUTPADS(outputs, (array))
+
+typedef struct FFFilter {
+    /**
+     * The public AVFilter. See avfilter.h for it.
+     */
+    AVFilter p;
+
+    /**
+     * The number of entries in the list of inputs.
+     */
+    uint8_t nb_inputs;
+
+    /**
+     * The number of entries in the list of outputs.
+     */
+    uint8_t nb_outputs;
+
+    /**
+     * This field determines the state of the formats union.
+     * It is an enum FilterFormatsState value.
+     */
+    uint8_t formats_state;
+
+    /**
+     * Filter pre-initialization function
+     *
+     * This callback will be called immediately after the filter context is
+     * allocated, to allow allocating and initing sub-objects.
+     *
+     * If this callback is not NULL, the uninit callback will be called on
+     * allocation failure.
+     *
+     * @return 0 on success,
+     *         AVERROR code on failure (but the code will be
+     *           dropped and treated as ENOMEM by the calling code)
+     */
+    int (*preinit)(AVFilterContext *ctx);
+
+    /**
+     * Filter initialization function.
+     *
+     * This callback will be called only once during the filter lifetime, after
+     * all the options have been set, but before links between filters are
+     * established and format negotiation is done.
+     *
+     * Basic filter initialization should be done here. Filters with dynamic
+     * inputs and/or outputs should create those inputs/outputs here based on
+     * provided options. No more changes to this filter's inputs/outputs can be
+     * done after this callback.
+     *
+     * This callback must not assume that the filter links exist or frame
+     * parameters are known.
+     *
+     * @ref AVFilter.uninit "uninit" is guaranteed to be called even if
+     * initialization fails, so this callback does not have to clean up on
+     * failure.
+     *
+     * @return 0 on success, a negative AVERROR on failure
+     */
+    int (*init)(AVFilterContext *ctx);
+
+    /**
+     * Filter uninitialization function.
+     *
+     * Called only once right before the filter is freed. Should deallocate any
+     * memory held by the filter, release any buffer references, etc. It does
+     * not need to deallocate the AVFilterContext.priv memory itself.
+     *
+     * This callback may be called even if @ref AVFilter.init "init" was not
+     * called or failed, so it must be prepared to handle such a situation.
+     */
+    void (*uninit)(AVFilterContext *ctx);
+
+    /**
+     * The state of the following union is determined by formats_state.
+     * See the documentation of enum FilterFormatsState in internal.h.
+     */
+    union {
+        /**
+         * Query formats supported by the filter on its inputs and outputs.
+         *
+         * This callback is called after the filter is initialized (so the inputs
+         * and outputs are fixed), shortly before the format negotiation. This
+         * callback may be called more than once.
+         *
+         * This callback must set ::AVFilterLink's
+         * @ref AVFilterFormatsConfig.formats "outcfg.formats"
+         * on every input link and
+         * @ref AVFilterFormatsConfig.formats "incfg.formats"
+         * on every output link to a list of pixel/sample formats that the filter
+         * supports on that link.
+         * For video links, this filter may also set
+         * @ref AVFilterFormatsConfig.color_spaces "incfg.color_spaces"
+         *  /
+         * @ref AVFilterFormatsConfig.color_spaces "outcfg.color_spaces"
+         * and @ref AVFilterFormatsConfig.color_ranges "incfg.color_ranges"
+         *  /
+         * @ref AVFilterFormatsConfig.color_ranges "outcfg.color_ranges"
+         * analogously.
+         * For audio links, this filter must also set
+         * @ref AVFilterFormatsConfig.samplerates "incfg.samplerates"
+         *  /
+         * @ref AVFilterFormatsConfig.samplerates "outcfg.samplerates"
+         * and @ref AVFilterFormatsConfig.channel_layouts "incfg.channel_layouts"
+         *  /
+         * @ref AVFilterFormatsConfig.channel_layouts "outcfg.channel_layouts"
+         * analogously.
+         *
+         * This callback must never be NULL if the union is in this state.
+         *
+         * @return zero on success, a negative value corresponding to an
+         * AVERROR code otherwise
+         */
+        int (*query_func)(AVFilterContext *);
+
+        /**
+         * Same as query_func(), except this function writes the results into
+         * provided arrays.
+         *
+         * @param cfg_in  array of input format configurations with as many
+         *                members as the filters has inputs (NULL when there are
+         *                no inputs);
+         * @param cfg_out array of output format configurations with as many
+         *                members as the filters has outputs (NULL when there
+         *                are no outputs);
+         */
+        int (*query_func2)(const AVFilterContext *,
+                           struct AVFilterFormatsConfig **cfg_in,
+                           struct AVFilterFormatsConfig **cfg_out);
+        /**
+         * A pointer to an array of admissible pixel formats delimited
+         * by AV_PIX_FMT_NONE. The generic code will use this list
+         * to indicate that this filter supports each of these pixel formats,
+         * provided that all inputs and outputs use the same pixel format.
+         *
+         * In addition to that the generic code will mark all inputs
+         * and all outputs as supporting all color spaces and ranges, as
+         * long as all inputs and outputs use the same color space/range.
+         *
+         * This list must never be NULL if the union is in this state.
+         * The type of all inputs and outputs of filters using this must
+         * be AVMEDIA_TYPE_VIDEO.
+         */
+        const enum AVPixelFormat *pixels_list;
+        /**
+         * Analogous to pixels, but delimited by AV_SAMPLE_FMT_NONE
+         * and restricted to filters that only have AVMEDIA_TYPE_AUDIO
+         * inputs and outputs.
+         *
+         * In addition to that the generic code will mark all inputs
+         * and all outputs as supporting all sample rates and every
+         * channel count and channel layout, as long as all inputs
+         * and outputs use the same sample rate and channel count/layout.
+         */
+        const enum AVSampleFormat *samples_list;
+        /**
+         * Equivalent to { pix_fmt, AV_PIX_FMT_NONE } as pixels_list.
+         */
+        enum AVPixelFormat  pix_fmt;
+        /**
+         * Equivalent to { sample_fmt, AV_SAMPLE_FMT_NONE } as samples_list.
+         */
+        enum AVSampleFormat sample_fmt;
+    } formats;
+
+    int priv_size;      ///< size of private data to allocate for the filter
+
+    int flags_internal; ///< Additional flags for avfilter internal use only.
+
+    /**
+     * Make the filter instance process a command.
+     *
+     * @param cmd    the command to process, for handling simplicity all commands must be alphanumeric only
+     * @param arg    the argument for the command
+     * @param res    a buffer with size res_size where the filter(s) can return a response. This must not change when the command is not supported.
+     * @param flags  if AVFILTER_CMD_FLAG_FAST is set and the command would be
+     *               time consuming then a filter should treat it like an unsupported command
+     *
+     * @returns >=0 on success otherwise an error code.
+     *          AVERROR(ENOSYS) on unsupported commands
+     */
+    int (*process_command)(AVFilterContext *, const char *cmd, const char *arg, char *res, int res_len, int flags);
+
+    /**
+     * Filter activation function.
+     *
+     * Called when any processing is needed from the filter, instead of any
+     * filter_frame and request_frame on pads.
+     *
+     * The function must examine inlinks and outlinks and perform a single
+     * step of processing. If there is nothing to do, the function must do
+     * nothing and not return an error. If more steps are or may be
+     * possible, it must use ff_filter_set_ready() to schedule another
+     * activation.
+     */
+    int (*activate)(AVFilterContext *ctx);
+} FFFilter;
+
+static inline const FFFilter *fffilter(const AVFilter *f)
+{
+    return (const FFFilter*)f;
+}
+
 
 #define AVFILTER_DEFINE_CLASS_EXT(name, desc, options) \
     static const AVClass name##_class = {       \

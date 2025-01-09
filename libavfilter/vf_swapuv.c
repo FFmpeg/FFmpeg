@@ -92,11 +92,11 @@ static const AVFilterPad swapuv_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_swapuv = {
-    .name          = "swapuv",
-    .description   = NULL_IF_CONFIG_SMALL("Swap U and V components."),
+const FFFilter ff_vf_swapuv = {
+    .p.name        = "swapuv",
+    .p.description = NULL_IF_CONFIG_SMALL("Swap U and V components."),
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     FILTER_INPUTS(swapuv_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

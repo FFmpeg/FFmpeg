@@ -559,15 +559,15 @@ static const AVFilterPad tonemap_vaapi_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_tonemap_vaapi = {
-    .name           = "tonemap_vaapi",
-    .description    = NULL_IF_CONFIG_SMALL("VAAPI VPP for tone-mapping"),
+const FFFilter ff_vf_tonemap_vaapi = {
+    .p.name         = "tonemap_vaapi",
+    .p.description  = NULL_IF_CONFIG_SMALL("VAAPI VPP for tone-mapping"),
+    .p.priv_class   = &tonemap_vaapi_class,
     .priv_size      = sizeof(HDRVAAPIContext),
     .init           = &tonemap_vaapi_init,
     .uninit         = &ff_vaapi_vpp_ctx_uninit,
     FILTER_INPUTS(tonemap_vaapi_inputs),
     FILTER_OUTPUTS(tonemap_vaapi_outputs),
     FILTER_QUERY_FUNC2(&ff_vaapi_vpp_query_formats),
-    .priv_class     = &tonemap_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

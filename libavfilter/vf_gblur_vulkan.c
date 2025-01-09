@@ -375,16 +375,16 @@ static const AVFilterPad gblur_vulkan_outputs[] = {
     }
 };
 
-const AVFilter ff_vf_gblur_vulkan = {
-    .name           = "gblur_vulkan",
-    .description    = NULL_IF_CONFIG_SMALL("Gaussian Blur in Vulkan"),
+const FFFilter ff_vf_gblur_vulkan = {
+    .p.name         = "gblur_vulkan",
+    .p.description  = NULL_IF_CONFIG_SMALL("Gaussian Blur in Vulkan"),
+    .p.priv_class   = &gblur_vulkan_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(GBlurVulkanContext),
     .init           = &ff_vk_filter_init,
     .uninit         = &gblur_vulkan_uninit,
     FILTER_INPUTS(gblur_vulkan_inputs),
     FILTER_OUTPUTS(gblur_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
-    .priv_class     = &gblur_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

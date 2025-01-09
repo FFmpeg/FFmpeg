@@ -241,15 +241,15 @@ static const enum AVPixelFormat backgroundkey_fmts[] = {
 
 AVFILTER_DEFINE_CLASS(backgroundkey);
 
-const AVFilter ff_vf_backgroundkey = {
-    .name            = "backgroundkey",
-    .description     = NULL_IF_CONFIG_SMALL("Turns a static background into transparency."),
+const FFFilter ff_vf_backgroundkey = {
+    .p.name          = "backgroundkey",
+    .p.description   = NULL_IF_CONFIG_SMALL("Turns a static background into transparency."),
+    .p.priv_class    = &backgroundkey_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size       = sizeof(BackgroundkeyContext),
-    .priv_class      = &backgroundkey_class,
     .uninit          = uninit,
     FILTER_INPUTS(backgroundkey_inputs),
     FILTER_OUTPUTS(backgroundkey_outputs),
     FILTER_PIXFMTS_ARRAY(backgroundkey_fmts),
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

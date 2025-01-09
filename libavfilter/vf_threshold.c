@@ -279,16 +279,16 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-const AVFilter ff_vf_threshold = {
-    .name          = "threshold",
-    .description   = NULL_IF_CONFIG_SMALL("Threshold first video stream using other video streams."),
+const FFFilter ff_vf_threshold = {
+    .p.name        = "threshold",
+    .p.description = NULL_IF_CONFIG_SMALL("Threshold first video stream using other video streams."),
+    .p.priv_class  = &threshold_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ThresholdContext),
-    .priv_class    = &threshold_class,
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

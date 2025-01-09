@@ -235,11 +235,11 @@ static const AVFilterPad tpad_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_tpad = {
-    .name          = "tpad",
-    .description   = NULL_IF_CONFIG_SMALL("Temporarily pad video frames."),
+const FFFilter ff_vf_tpad = {
+    .p.name        = "tpad",
+    .p.description = NULL_IF_CONFIG_SMALL("Temporarily pad video frames."),
+    .p.priv_class  = &tpad_class,
     .priv_size     = sizeof(TPadContext),
-    .priv_class    = &tpad_class,
     .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(tpad_inputs),

@@ -363,10 +363,10 @@ static const AVFilterPad sidechaincompress_outputs[] = {
     },
 };
 
-const AVFilter ff_af_sidechaincompress = {
-    .name           = "sidechaincompress",
-    .description    = NULL_IF_CONFIG_SMALL("Sidechain compressor."),
-    .priv_class     = &sidechaincompress_acompressor_class,
+const FFFilter ff_af_sidechaincompress = {
+    .p.name         = "sidechaincompress",
+    .p.description  = NULL_IF_CONFIG_SMALL("Sidechain compressor."),
+    .p.priv_class   = &sidechaincompress_acompressor_class,
     .priv_size      = sizeof(SidechainCompressContext),
     .activate       = activate,
     .uninit         = uninit,
@@ -424,10 +424,10 @@ static const AVFilterPad acompressor_outputs[] = {
     },
 };
 
-const AVFilter ff_af_acompressor = {
-    .name           = "acompressor",
-    .description    = NULL_IF_CONFIG_SMALL("Audio compressor."),
-    .priv_class     = &sidechaincompress_acompressor_class,
+const FFFilter ff_af_acompressor = {
+    .p.name         = "acompressor",
+    .p.description  = NULL_IF_CONFIG_SMALL("Audio compressor."),
+    .p.priv_class   = &sidechaincompress_acompressor_class,
     .priv_size      = sizeof(SidechainCompressContext),
     FILTER_INPUTS(acompressor_inputs),
     FILTER_OUTPUTS(acompressor_outputs),

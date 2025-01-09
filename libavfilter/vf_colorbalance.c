@@ -430,14 +430,14 @@ static const AVFilterPad colorbalance_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_colorbalance = {
-    .name          = "colorbalance",
-    .description   = NULL_IF_CONFIG_SMALL("Adjust the color balance."),
+const FFFilter ff_vf_colorbalance = {
+    .p.name        = "colorbalance",
+    .p.description = NULL_IF_CONFIG_SMALL("Adjust the color balance."),
+    .p.priv_class  = &colorbalance_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ColorBalanceContext),
-    .priv_class    = &colorbalance_class,
     FILTER_INPUTS(colorbalance_inputs),
     FILTER_OUTPUTS(colorbalance_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

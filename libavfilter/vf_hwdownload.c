@@ -192,12 +192,12 @@ static const AVFilterPad hwdownload_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_hwdownload = {
-    .name          = "hwdownload",
-    .description   = NULL_IF_CONFIG_SMALL("Download a hardware frame to a normal frame"),
+const FFFilter ff_vf_hwdownload = {
+    .p.name        = "hwdownload",
+    .p.description = NULL_IF_CONFIG_SMALL("Download a hardware frame to a normal frame"),
+    .p.priv_class  = &hwdownload_class,
     .uninit        = hwdownload_uninit,
     .priv_size     = sizeof(HWDownloadContext),
-    .priv_class    = &hwdownload_class,
     FILTER_INPUTS(hwdownload_inputs),
     FILTER_OUTPUTS(hwdownload_outputs),
     FILTER_QUERY_FUNC2(hwdownload_query_formats),

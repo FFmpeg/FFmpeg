@@ -743,15 +743,15 @@ static const AVFilterPad signature_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_signature = {
-    .name          = "signature",
-    .description   = NULL_IF_CONFIG_SMALL("Calculate the MPEG-7 video signature"),
+const FFFilter ff_vf_signature = {
+    .p.name        = "signature",
+    .p.description = NULL_IF_CONFIG_SMALL("Calculate the MPEG-7 video signature"),
+    .p.priv_class  = &signature_class,
+    .p.inputs      = NULL,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_INPUTS,
     .priv_size     = sizeof(SignatureContext),
-    .priv_class    = &signature_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_OUTPUTS(signature_outputs),
-    .inputs        = NULL,
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

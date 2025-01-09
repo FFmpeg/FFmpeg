@@ -102,14 +102,14 @@ static int activate(AVFilterContext *ctx)
     return FFERROR_NOT_READY;
 }
 
-const AVFilter ff_af_asetnsamples = {
-    .name        = "asetnsamples",
-    .description = NULL_IF_CONFIG_SMALL("Set the number of samples for each output audio frames."),
+const FFFilter ff_af_asetnsamples = {
+    .p.name        = "asetnsamples",
+    .p.description = NULL_IF_CONFIG_SMALL("Set the number of samples for each output audio frames."),
+    .p.priv_class  = &asetnsamples_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size   = sizeof(ASNSContext),
-    .priv_class  = &asetnsamples_class,
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     .activate    = activate,
-    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };

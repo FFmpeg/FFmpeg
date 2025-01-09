@@ -1001,19 +1001,19 @@ static const AVFilterPad avfilter_vf_overlay_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_overlay = {
-    .name          = "overlay",
-    .description   = NULL_IF_CONFIG_SMALL("Overlay a video source on top of the input."),
+const FFFilter ff_vf_overlay = {
+    .p.name        = "overlay",
+    .p.description = NULL_IF_CONFIG_SMALL("Overlay a video source on top of the input."),
+    .p.priv_class  = &overlay_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .preinit       = overlay_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
     .priv_size     = sizeof(OverlayContext),
-    .priv_class    = &overlay_class,
     .activate      = activate,
     .process_command = process_command,
     FILTER_INPUTS(avfilter_vf_overlay_inputs),
     FILTER_OUTPUTS(avfilter_vf_overlay_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_SLICE_THREADS,
 };

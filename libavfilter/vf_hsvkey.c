@@ -297,15 +297,15 @@ static const AVOption hsvkey_options[] = {
 
 AVFILTER_DEFINE_CLASS(hsvkey);
 
-const AVFilter ff_vf_hsvkey = {
-    .name          = "hsvkey",
-    .description   = NULL_IF_CONFIG_SMALL("Turns a certain HSV range into transparency. Operates on YUV colors."),
+const FFFilter ff_vf_hsvkey = {
+    .p.name        = "hsvkey",
+    .p.description = NULL_IF_CONFIG_SMALL("Turns a certain HSV range into transparency. Operates on YUV colors."),
+    .p.priv_class  = &hsvkey_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(HSVKeyContext),
-    .priv_class    = &hsvkey_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS_ARRAY(key_pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
 
@@ -339,14 +339,14 @@ static const AVOption hsvhold_options[] = {
 
 AVFILTER_DEFINE_CLASS(hsvhold);
 
-const AVFilter ff_vf_hsvhold = {
-    .name          = "hsvhold",
-    .description   = NULL_IF_CONFIG_SMALL("Turns a certain HSV range into gray."),
+const FFFilter ff_vf_hsvhold = {
+    .p.name        = "hsvhold",
+    .p.description = NULL_IF_CONFIG_SMALL("Turns a certain HSV range into gray."),
+    .p.priv_class  = &hsvhold_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(HSVKeyContext),
-    .priv_class    = &hsvhold_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS_ARRAY(hold_pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

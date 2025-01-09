@@ -501,15 +501,15 @@ static const AVFilterPad avfilter_af_aselect_inputs[] = {
     },
 };
 
-const AVFilter ff_af_aselect = {
-    .name        = "aselect",
-    .description = NULL_IF_CONFIG_SMALL("Select audio frames to pass in output."),
+const FFFilter ff_af_aselect = {
+    .p.name        = "aselect",
+    .p.description = NULL_IF_CONFIG_SMALL("Select audio frames to pass in output."),
+    .p.priv_class  = &aselect_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
     .init        = aselect_init,
     .uninit      = uninit,
     .priv_size   = sizeof(SelectContext),
     FILTER_INPUTS(avfilter_af_aselect_inputs),
-    .priv_class  = &aselect_class,
-    .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
 #endif /* CONFIG_ASELECT_FILTER */
 
@@ -557,15 +557,15 @@ static const AVFilterPad avfilter_vf_select_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_select = {
-    .name          = "select",
-    .description   = NULL_IF_CONFIG_SMALL("Select video frames to pass in output."),
+const FFFilter ff_vf_select = {
+    .p.name        = "select",
+    .p.description = NULL_IF_CONFIG_SMALL("Select video frames to pass in output."),
+    .p.priv_class  = &select_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS | AVFILTER_FLAG_METADATA_ONLY,
     .init          = select_init,
     .uninit        = uninit,
     .priv_size     = sizeof(SelectContext),
-    .priv_class    = &select_class,
     FILTER_INPUTS(avfilter_vf_select_inputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS | AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif /* CONFIG_SELECT_FILTER */

@@ -333,15 +333,15 @@ static const AVFilterPad noise_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_noise = {
-    .name          = "noise",
-    .description   = NULL_IF_CONFIG_SMALL("Add noise."),
+const FFFilter ff_vf_noise = {
+    .p.name        = "noise",
+    .p.description = NULL_IF_CONFIG_SMALL("Add noise."),
+    .p.priv_class  = &noise_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(NoiseContext),
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(noise_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &noise_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

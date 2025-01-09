@@ -579,11 +579,11 @@ static const AVFilterPad overlay_cuda_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_overlay_cuda = {
-    .name            = "overlay_cuda",
-    .description     = NULL_IF_CONFIG_SMALL("Overlay one video on top of another using CUDA"),
+const FFFilter ff_vf_overlay_cuda = {
+    .p.name          = "overlay_cuda",
+    .p.description   = NULL_IF_CONFIG_SMALL("Overlay one video on top of another using CUDA"),
+    .p.priv_class    = &overlay_cuda_class,
     .priv_size       = sizeof(OverlayCUDAContext),
-    .priv_class      = &overlay_cuda_class,
     .init            = &overlay_cuda_init,
     .uninit          = &overlay_cuda_uninit,
     .activate        = &overlay_cuda_activate,

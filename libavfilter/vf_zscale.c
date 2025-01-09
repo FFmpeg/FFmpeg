@@ -1130,16 +1130,16 @@ static const AVFilterPad avfilter_vf_zscale_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_zscale = {
-    .name            = "zscale",
-    .description     = NULL_IF_CONFIG_SMALL("Apply resizing, colorspace and bit depth conversion."),
+const FFFilter ff_vf_zscale = {
+    .p.name          = "zscale",
+    .p.description   = NULL_IF_CONFIG_SMALL("Apply resizing, colorspace and bit depth conversion."),
+    .p.priv_class    = &zscale_class,
+    .p.flags         = AVFILTER_FLAG_SLICE_THREADS,
     .init            = init,
     .priv_size       = sizeof(ZScaleContext),
-    .priv_class      = &zscale_class,
     .uninit          = uninit,
     FILTER_INPUTS(avfilter_vf_zscale_inputs),
     FILTER_OUTPUTS(avfilter_vf_zscale_outputs),
     FILTER_QUERY_FUNC2(query_formats),
     .process_command = process_command,
-    .flags           = AVFILTER_FLAG_SLICE_THREADS,
 };

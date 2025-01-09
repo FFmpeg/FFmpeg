@@ -253,9 +253,11 @@ static const AVFilterPad silencedetect_inputs[] = {
     },
 };
 
-const AVFilter ff_af_silencedetect = {
-    .name          = "silencedetect",
-    .description   = NULL_IF_CONFIG_SMALL("Detect silence."),
+const FFFilter ff_af_silencedetect = {
+    .p.name        = "silencedetect",
+    .p.description = NULL_IF_CONFIG_SMALL("Detect silence."),
+    .p.priv_class  = &silencedetect_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(SilenceDetectContext),
     .uninit        = uninit,
     FILTER_INPUTS(silencedetect_inputs),
@@ -264,6 +266,4 @@ const AVFilter ff_af_silencedetect = {
                       AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
                       AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S32P,
                       AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P),
-    .priv_class    = &silencedetect_class,
-    .flags         = AVFILTER_FLAG_METADATA_ONLY,
 };

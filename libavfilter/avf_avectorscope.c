@@ -486,16 +486,16 @@ static const AVFilterPad audiovectorscope_outputs[] = {
     },
 };
 
-const AVFilter ff_avf_avectorscope = {
-    .name          = "avectorscope",
-    .description   = NULL_IF_CONFIG_SMALL("Convert input audio to vectorscope video output."),
+const FFFilter ff_avf_avectorscope = {
+    .p.name        = "avectorscope",
+    .p.description = NULL_IF_CONFIG_SMALL("Convert input audio to vectorscope video output."),
+    .p.priv_class  = &avectorscope_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
     .uninit        = uninit,
     .priv_size     = sizeof(AudioVectorScopeContext),
     .activate      = activate,
     FILTER_INPUTS(audiovectorscope_inputs),
     FILTER_OUTPUTS(audiovectorscope_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &avectorscope_class,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

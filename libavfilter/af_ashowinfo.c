@@ -241,12 +241,12 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_ashowinfo = {
-    .name        = "ashowinfo",
-    .description = NULL_IF_CONFIG_SMALL("Show textual information for each audio frame."),
+const FFFilter ff_af_ashowinfo = {
+    .p.name        = "ashowinfo",
+    .p.description = NULL_IF_CONFIG_SMALL("Show textual information for each audio frame."),
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(AShowInfoContext),
     .uninit      = uninit,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
 };

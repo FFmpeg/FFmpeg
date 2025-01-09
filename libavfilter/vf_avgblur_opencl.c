@@ -340,11 +340,11 @@ static const AVOption avgblur_opencl_options[] = {
 AVFILTER_DEFINE_CLASS(avgblur_opencl);
 
 
-const AVFilter ff_vf_avgblur_opencl = {
-    .name           = "avgblur_opencl",
-    .description    = NULL_IF_CONFIG_SMALL("Apply average blur filter"),
+const FFFilter ff_vf_avgblur_opencl = {
+    .p.name         = "avgblur_opencl",
+    .p.description  = NULL_IF_CONFIG_SMALL("Apply average blur filter"),
+    .p.priv_class   = &avgblur_opencl_class,
     .priv_size      = sizeof(AverageBlurOpenCLContext),
-    .priv_class     = &avgblur_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &avgblur_opencl_uninit,
     FILTER_INPUTS(avgblur_opencl_inputs),
@@ -379,18 +379,18 @@ static const AVOption boxblur_opencl_options[] = {
 
 AVFILTER_DEFINE_CLASS(boxblur_opencl);
 
-const AVFilter ff_vf_boxblur_opencl = {
-    .name           = "boxblur_opencl",
-    .description    = NULL_IF_CONFIG_SMALL("Apply boxblur filter to input video"),
+const FFFilter ff_vf_boxblur_opencl = {
+    .p.name         = "boxblur_opencl",
+    .p.description  = NULL_IF_CONFIG_SMALL("Apply boxblur filter to input video"),
+    .p.priv_class   = &boxblur_opencl_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(AverageBlurOpenCLContext),
-    .priv_class     = &boxblur_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &avgblur_opencl_uninit,
     FILTER_INPUTS(avgblur_opencl_inputs),
     FILTER_OUTPUTS(avgblur_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };
 
 #endif /* CONFIG_BOXBLUR_OPENCL_FILTER */

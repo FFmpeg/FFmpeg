@@ -531,15 +531,15 @@ static const AVOption colorcorrect_options[] = {
 
 AVFILTER_DEFINE_CLASS(colorcorrect);
 
-const AVFilter ff_vf_colorcorrect = {
-    .name          = "colorcorrect",
-    .description   = NULL_IF_CONFIG_SMALL("Adjust color white balance selectively for blacks and whites."),
+const FFFilter ff_vf_colorcorrect = {
+    .p.name        = "colorcorrect",
+    .p.description = NULL_IF_CONFIG_SMALL("Adjust color white balance selectively for blacks and whites."),
+    .p.priv_class  = &colorcorrect_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ColorCorrectContext),
-    .priv_class    = &colorcorrect_class,
     .uninit        = uninit,
     FILTER_INPUTS(colorcorrect_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

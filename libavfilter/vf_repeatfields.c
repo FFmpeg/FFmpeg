@@ -184,9 +184,9 @@ static const AVFilterPad repeatfields_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_repeatfields = {
-    .name          = "repeatfields",
-    .description   = NULL_IF_CONFIG_SMALL("Hard repeat fields based on MPEG repeat field flag."),
+const FFFilter ff_vf_repeatfields = {
+    .p.name        = "repeatfields",
+    .p.description = NULL_IF_CONFIG_SMALL("Hard repeat fields based on MPEG repeat field flag."),
     .priv_size     = sizeof(RepeatFieldsContext),
     .uninit        = uninit,
     FILTER_INPUTS(repeatfields_inputs),

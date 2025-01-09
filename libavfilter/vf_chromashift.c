@@ -395,15 +395,15 @@ static const enum AVPixelFormat yuv_pix_fmts[] = {
 
 AVFILTER_DEFINE_CLASS(chromashift);
 
-const AVFilter ff_vf_chromashift = {
-    .name          = "chromashift",
-    .description   = NULL_IF_CONFIG_SMALL("Shift chroma."),
+const FFFilter ff_vf_chromashift = {
+    .p.name        = "chromashift",
+    .p.description = NULL_IF_CONFIG_SMALL("Shift chroma."),
+    .p.priv_class  = &chromashift_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ChromaShiftContext),
-    .priv_class    = &chromashift_class,
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_INPUTS(inputs),
     FILTER_PIXFMTS_ARRAY(yuv_pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
 
@@ -432,14 +432,14 @@ static const AVOption rgbashift_options[] = {
 
 AVFILTER_DEFINE_CLASS(rgbashift);
 
-const AVFilter ff_vf_rgbashift = {
-    .name          = "rgbashift",
-    .description   = NULL_IF_CONFIG_SMALL("Shift RGBA."),
+const FFFilter ff_vf_rgbashift = {
+    .p.name        = "rgbashift",
+    .p.description = NULL_IF_CONFIG_SMALL("Shift RGBA."),
+    .p.priv_class  = &rgbashift_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ChromaShiftContext),
-    .priv_class    = &rgbashift_class,
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_INPUTS(inputs),
     FILTER_PIXFMTS_ARRAY(rgb_pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

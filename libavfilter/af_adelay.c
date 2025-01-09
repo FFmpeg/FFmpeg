@@ -465,17 +465,17 @@ static const AVFilterPad adelay_inputs[] = {
     },
 };
 
-const AVFilter ff_af_adelay = {
-    .name          = "adelay",
-    .description   = NULL_IF_CONFIG_SMALL("Delay one or more audio channels."),
+const FFFilter ff_af_adelay = {
+    .p.name        = "adelay",
+    .p.description = NULL_IF_CONFIG_SMALL("Delay one or more audio channels."),
+    .p.priv_class  = &adelay_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size     = sizeof(AudioDelayContext),
-    .priv_class    = &adelay_class,
     .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(adelay_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_U8P, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P,
                       AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = process_command,
 };

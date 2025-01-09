@@ -1758,11 +1758,11 @@ static const AVFilterPad avfilter_af_hdcd_inputs[] = {
     },
 };
 
-const AVFilter ff_af_hdcd = {
-    .name          = "hdcd",
-    .description   = NULL_IF_CONFIG_SMALL("Apply High Definition Compatible Digital (HDCD) decoding."),
+const FFFilter ff_af_hdcd = {
+    .p.name        = "hdcd",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply High Definition Compatible Digital (HDCD) decoding."),
+    .p.priv_class  = &hdcd_class,
     .priv_size     = sizeof(HDCDContext),
-    .priv_class    = &hdcd_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_af_hdcd_inputs),

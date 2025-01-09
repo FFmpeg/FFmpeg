@@ -375,17 +375,17 @@ static const AVFilterPad ainputs[] = {
     },
 };
 
-const AVFilter ff_af_ametadata = {
-    .name          = "ametadata",
-    .description   = NULL_IF_CONFIG_SMALL("Manipulate audio frame metadata."),
+const FFFilter ff_af_ametadata = {
+    .p.name        = "ametadata",
+    .p.description = NULL_IF_CONFIG_SMALL("Manipulate audio frame metadata."),
+    .p.priv_class  = &ametadata_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                     AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(MetadataContext),
-    .priv_class    = &ametadata_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(ainputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
-                     AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif /* CONFIG_AMETADATA_FILTER */
 
@@ -402,16 +402,16 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_vf_metadata = {
-    .name        = "metadata",
-    .description = NULL_IF_CONFIG_SMALL("Manipulate video frame metadata."),
+const FFFilter ff_vf_metadata = {
+    .p.name        = "metadata",
+    .p.description = NULL_IF_CONFIG_SMALL("Manipulate video frame metadata."),
+    .p.priv_class  = &metadata_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                     AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(MetadataContext),
-    .priv_class  = &metadata_class,
     .init        = init,
     .uninit      = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
-                   AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif /* CONFIG_METADATA_FILTER */

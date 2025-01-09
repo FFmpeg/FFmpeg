@@ -444,13 +444,13 @@ static const AVFilterPad avfilter_af_channelmap_inputs[] = {
     },
 };
 
-const AVFilter ff_af_channelmap = {
-    .name          = "channelmap",
-    .description   = NULL_IF_CONFIG_SMALL("Remap audio channels."),
+const FFFilter ff_af_channelmap = {
+    .p.name        = "channelmap",
+    .p.description = NULL_IF_CONFIG_SMALL("Remap audio channels."),
+    .p.priv_class  = &channelmap_class,
     .init          = channelmap_init,
     .uninit        = channelmap_uninit,
     .priv_size     = sizeof(ChannelMapContext),
-    .priv_class    = &channelmap_class,
     FILTER_INPUTS(avfilter_af_channelmap_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC2(channelmap_query_formats),

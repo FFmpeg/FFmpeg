@@ -747,16 +747,16 @@ static const AVFilterPad fftdnoiz_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_fftdnoiz = {
-    .name          = "fftdnoiz",
-    .description   = NULL_IF_CONFIG_SMALL("Denoise frames using 3D FFT."),
+const FFFilter ff_vf_fftdnoiz = {
+    .p.name        = "fftdnoiz",
+    .p.description = NULL_IF_CONFIG_SMALL("Denoise frames using 3D FFT."),
+    .p.priv_class  = &fftdnoiz_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(FFTdnoizContext),
     .uninit        = uninit,
     FILTER_INPUTS(fftdnoiz_inputs),
     FILTER_OUTPUTS(fftdnoiz_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &fftdnoiz_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

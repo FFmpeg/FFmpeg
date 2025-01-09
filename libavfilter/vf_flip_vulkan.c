@@ -233,16 +233,16 @@ static const AVFilterPad hflip_vulkan_inputs[] = {
     }
 };
 
-const AVFilter ff_vf_hflip_vulkan = {
-    .name           = "hflip_vulkan",
-    .description    = NULL_IF_CONFIG_SMALL("Horizontally flip the input video in Vulkan"),
+const FFFilter ff_vf_hflip_vulkan = {
+    .p.name         = "hflip_vulkan",
+    .p.description  = NULL_IF_CONFIG_SMALL("Horizontally flip the input video in Vulkan"),
+    .p.priv_class   = &hflip_vulkan_class,
     .priv_size      = sizeof(FlipVulkanContext),
     .init           = &ff_vk_filter_init,
     .uninit         = &flip_vulkan_uninit,
     FILTER_INPUTS(hflip_vulkan_inputs),
     FILTER_OUTPUTS(flip_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
-    .priv_class     = &hflip_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -261,16 +261,16 @@ static const AVFilterPad vflip_vulkan_inputs[] = {
     }
 };
 
-const AVFilter ff_vf_vflip_vulkan = {
-    .name           = "vflip_vulkan",
-    .description    = NULL_IF_CONFIG_SMALL("Vertically flip the input video in Vulkan"),
+const FFFilter ff_vf_vflip_vulkan = {
+    .p.name         = "vflip_vulkan",
+    .p.description  = NULL_IF_CONFIG_SMALL("Vertically flip the input video in Vulkan"),
+    .p.priv_class   = &vflip_vulkan_class,
     .priv_size      = sizeof(FlipVulkanContext),
     .init           = &ff_vk_filter_init,
     .uninit         = &flip_vulkan_uninit,
     FILTER_INPUTS(vflip_vulkan_inputs),
     FILTER_OUTPUTS(flip_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
-    .priv_class     = &vflip_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
@@ -289,16 +289,16 @@ static const AVFilterPad flip_vulkan_inputs[] = {
     }
 };
 
-const AVFilter ff_vf_flip_vulkan = {
-    .name           = "flip_vulkan",
-    .description    = NULL_IF_CONFIG_SMALL("Flip both horizontally and vertically"),
+const FFFilter ff_vf_flip_vulkan = {
+    .p.name         = "flip_vulkan",
+    .p.description  = NULL_IF_CONFIG_SMALL("Flip both horizontally and vertically"),
+    .p.priv_class   = &flip_vulkan_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(FlipVulkanContext),
     .init           = &ff_vk_filter_init,
     .uninit         = &flip_vulkan_uninit,
     FILTER_INPUTS(flip_vulkan_inputs),
     FILTER_OUTPUTS(flip_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
-    .priv_class     = &flip_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

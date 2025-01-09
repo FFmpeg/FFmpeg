@@ -306,11 +306,11 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_vf_photosensitivity = {
-    .name          = "photosensitivity",
-    .description   = NULL_IF_CONFIG_SMALL("Filter out photosensitive epilepsy seizure-inducing flashes."),
+const FFFilter ff_vf_photosensitivity = {
+    .p.name        = "photosensitivity",
+    .p.description = NULL_IF_CONFIG_SMALL("Filter out photosensitive epilepsy seizure-inducing flashes."),
+    .p.priv_class  = &photosensitivity_class,
     .priv_size     = sizeof(PhotosensitivityContext),
-    .priv_class    = &photosensitivity_class,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),

@@ -573,14 +573,14 @@ static const AVFilterPad palettegen_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_palettegen = {
-    .name          = "palettegen",
-    .description   = NULL_IF_CONFIG_SMALL("Find the optimal palette for a given stream."),
+const FFFilter ff_vf_palettegen = {
+    .p.name        = "palettegen",
+    .p.description = NULL_IF_CONFIG_SMALL("Find the optimal palette for a given stream."),
+    .p.priv_class  = &palettegen_class,
     .priv_size     = sizeof(PaletteGenContext),
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(palettegen_inputs),
     FILTER_OUTPUTS(palettegen_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &palettegen_class,
 };

@@ -205,11 +205,11 @@ static const AVFilterPad rubberband_inputs[] = {
     },
 };
 
-const AVFilter ff_af_rubberband = {
-    .name          = "rubberband",
-    .description   = NULL_IF_CONFIG_SMALL("Apply time-stretching and pitch-shifting."),
+const FFFilter ff_af_rubberband = {
+    .p.name        = "rubberband",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply time-stretching and pitch-shifting."),
+    .p.priv_class  = &rubberband_class,
     .priv_size     = sizeof(RubberBandContext),
-    .priv_class    = &rubberband_class,
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(rubberband_inputs),

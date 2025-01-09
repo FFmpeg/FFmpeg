@@ -432,14 +432,14 @@ static const AVOption vibrance_options[] = {
 
 AVFILTER_DEFINE_CLASS(vibrance);
 
-const AVFilter ff_vf_vibrance = {
-    .name          = "vibrance",
-    .description   = NULL_IF_CONFIG_SMALL("Boost or alter saturation."),
+const FFFilter ff_vf_vibrance = {
+    .p.name        = "vibrance",
+    .p.description = NULL_IF_CONFIG_SMALL("Boost or alter saturation."),
+    .p.priv_class  = &vibrance_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(VibranceContext),
-    .priv_class    = &vibrance_class,
     FILTER_INPUTS(vibrance_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

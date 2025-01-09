@@ -232,14 +232,14 @@ static const AVFilterPad cover_rect_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_cover_rect = {
-    .name            = "cover_rect",
-    .description     = NULL_IF_CONFIG_SMALL("Find and cover a user specified object."),
+const FFFilter ff_vf_cover_rect = {
+    .p.name          = "cover_rect",
+    .p.description   = NULL_IF_CONFIG_SMALL("Find and cover a user specified object."),
+    .p.priv_class    = &cover_rect_class,
     .priv_size       = sizeof(CoverContext),
     .init            = init,
     .uninit          = uninit,
     FILTER_INPUTS(cover_rect_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS(AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P),
-    .priv_class      = &cover_rect_class,
 };

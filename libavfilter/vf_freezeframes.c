@@ -155,11 +155,11 @@ static const AVFilterPad freezeframes_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_freezeframes = {
-    .name          = "freezeframes",
-    .description   = NULL_IF_CONFIG_SMALL("Freeze video frames."),
+const FFFilter ff_vf_freezeframes = {
+    .p.name        = "freezeframes",
+    .p.description = NULL_IF_CONFIG_SMALL("Freeze video frames."),
+    .p.priv_class  = &freezeframes_class,
     .priv_size     = sizeof(FreezeFramesContext),
-    .priv_class    = &freezeframes_class,
     FILTER_INPUTS(freezeframes_inputs),
     FILTER_OUTPUTS(freezeframes_outputs),
     .activate      = activate,

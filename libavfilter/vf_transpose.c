@@ -407,13 +407,13 @@ static const AVFilterPad avfilter_vf_transpose_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_transpose = {
-    .name          = "transpose",
-    .description   = NULL_IF_CONFIG_SMALL("Transpose input video."),
+const FFFilter ff_vf_transpose = {
+    .p.name        = "transpose",
+    .p.description = NULL_IF_CONFIG_SMALL("Transpose input video."),
+    .p.priv_class  = &transpose_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(TransContext),
-    .priv_class    = &transpose_class,
     FILTER_INPUTS(avfilter_vf_transpose_inputs),
     FILTER_OUTPUTS(avfilter_vf_transpose_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

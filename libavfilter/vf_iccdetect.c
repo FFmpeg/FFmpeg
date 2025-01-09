@@ -126,12 +126,12 @@ static const AVFilterPad iccdetect_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_iccdetect = {
-    .name        = "iccdetect",
-    .description = NULL_IF_CONFIG_SMALL("Detect and parse ICC profiles."),
+const FFFilter ff_vf_iccdetect = {
+    .p.name        = "iccdetect",
+    .p.description = NULL_IF_CONFIG_SMALL("Detect and parse ICC profiles."),
+    .p.priv_class  = &iccdetect_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(IccDetectContext),
-    .priv_class  = &iccdetect_class,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     .init        = &iccdetect_init,
     .uninit      = &iccdetect_uninit,
     FILTER_INPUTS(iccdetect_inputs),

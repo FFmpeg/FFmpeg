@@ -122,14 +122,14 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_extrastereo = {
-    .name           = "extrastereo",
-    .description    = NULL_IF_CONFIG_SMALL("Increase difference between stereo audio channels."),
+const FFFilter ff_af_extrastereo = {
+    .p.name         = "extrastereo",
+    .p.description  = NULL_IF_CONFIG_SMALL("Increase difference between stereo audio channels."),
+    .p.priv_class   = &extrastereo_class,
+    .p.flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size      = sizeof(ExtraStereoContext),
-    .priv_class     = &extrastereo_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .process_command = ff_filter_process_command,
 };

@@ -143,16 +143,16 @@ static const AVFilterPad ainputs[] = {
     },
 };
 
-const AVFilter ff_af_asidedata = {
-    .name          = "asidedata",
-    .description   = NULL_IF_CONFIG_SMALL("Manipulate audio frame side data."),
+const FFFilter ff_af_asidedata = {
+    .p.name        = "asidedata",
+    .p.description = NULL_IF_CONFIG_SMALL("Manipulate audio frame side data."),
+    .p.priv_class  = &asidedata_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                     AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(SideDataContext),
-    .priv_class    = &asidedata_class,
     .init          = init,
     FILTER_INPUTS(ainputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
-                     AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif /* CONFIG_ASIDEDATA_FILTER */
 
@@ -169,15 +169,15 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_vf_sidedata = {
-    .name        = "sidedata",
-    .description = NULL_IF_CONFIG_SMALL("Manipulate video frame side data."),
+const FFFilter ff_vf_sidedata = {
+    .p.name        = "sidedata",
+    .p.description = NULL_IF_CONFIG_SMALL("Manipulate video frame side data."),
+    .p.priv_class  = &sidedata_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                     AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(SideDataContext),
-    .priv_class  = &sidedata_class,
     .init        = init,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
-                   AVFILTER_FLAG_METADATA_ONLY,
 };
 #endif /* CONFIG_SIDEDATA_FILTER */

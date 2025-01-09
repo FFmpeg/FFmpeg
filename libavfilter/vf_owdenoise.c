@@ -356,14 +356,14 @@ static const AVFilterPad owdenoise_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_owdenoise = {
-    .name          = "owdenoise",
-    .description   = NULL_IF_CONFIG_SMALL("Denoise using wavelets."),
+const FFFilter ff_vf_owdenoise = {
+    .p.name        = "owdenoise",
+    .p.description = NULL_IF_CONFIG_SMALL("Denoise using wavelets."),
+    .p.priv_class  = &owdenoise_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(OWDenoiseContext),
     .uninit        = uninit,
     FILTER_INPUTS(owdenoise_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &owdenoise_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

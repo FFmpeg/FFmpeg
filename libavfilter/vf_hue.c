@@ -502,9 +502,11 @@ static const AVFilterPad hue_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_hue = {
-    .name            = "hue",
-    .description     = NULL_IF_CONFIG_SMALL("Adjust the hue and saturation of the input video."),
+const FFFilter ff_vf_hue = {
+    .p.name          = "hue",
+    .p.description   = NULL_IF_CONFIG_SMALL("Adjust the hue and saturation of the input video."),
+    .p.priv_class    = &hue_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size       = sizeof(HueContext),
     .init            = init,
     .uninit          = uninit,
@@ -512,6 +514,4 @@ const AVFilter ff_vf_hue = {
     FILTER_INPUTS(hue_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class      = &hue_class,
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

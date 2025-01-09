@@ -335,15 +335,15 @@ static const AVFilterPad audio3dscope_outputs[] = {
     },
 };
 
-const AVFilter ff_avf_a3dscope = {
-    .name          = "a3dscope",
-    .description   = NULL_IF_CONFIG_SMALL("Convert input audio to 3d scope video output."),
+const FFFilter ff_avf_a3dscope = {
+    .p.name        = "a3dscope",
+    .p.description = NULL_IF_CONFIG_SMALL("Convert input audio to 3d scope video output."),
+    .p.priv_class  = &a3dscope_class,
     .uninit        = uninit,
     .priv_size     = sizeof(Audio3dScopeContext),
     .activate      = activate,
     FILTER_INPUTS(audio3dscope_inputs),
     FILTER_OUTPUTS(audio3dscope_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &a3dscope_class,
     .process_command = ff_filter_process_command,
 };

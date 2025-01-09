@@ -495,16 +495,16 @@ static const AVFilterPad avfilter_vf_cropdetect_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_cropdetect = {
-    .name          = "cropdetect",
-    .description   = NULL_IF_CONFIG_SMALL("Auto-detect crop size."),
+const FFFilter ff_vf_cropdetect = {
+    .p.name        = "cropdetect",
+    .p.description = NULL_IF_CONFIG_SMALL("Auto-detect crop size."),
+    .p.priv_class  = &cropdetect_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(CropDetectContext),
-    .priv_class    = &cropdetect_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_vf_cropdetect_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_METADATA_ONLY,
     .process_command = process_command,
 };

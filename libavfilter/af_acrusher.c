@@ -326,15 +326,15 @@ static const AVFilterPad avfilter_af_acrusher_inputs[] = {
     },
 };
 
-const AVFilter ff_af_acrusher = {
-    .name          = "acrusher",
-    .description   = NULL_IF_CONFIG_SMALL("Reduce audio bit resolution."),
+const FFFilter ff_af_acrusher = {
+    .p.name        = "acrusher",
+    .p.description = NULL_IF_CONFIG_SMALL("Reduce audio bit resolution."),
+    .p.priv_class  = &acrusher_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size     = sizeof(ACrusherContext),
-    .priv_class    = &acrusher_class,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_af_acrusher_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBL),
     .process_command = process_command,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

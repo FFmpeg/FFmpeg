@@ -194,14 +194,14 @@ static const AVFilterPad apad_outputs[] = {
     },
 };
 
-const AVFilter ff_af_apad = {
-    .name          = "apad",
-    .description   = NULL_IF_CONFIG_SMALL("Pad audio with silence."),
+const FFFilter ff_af_apad = {
+    .p.name        = "apad",
+    .p.description = NULL_IF_CONFIG_SMALL("Pad audio with silence."),
+    .p.priv_class  = &apad_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .init          = init,
     .activate      = activate,
     .priv_size     = sizeof(APadContext),
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(apad_outputs),
-    .priv_class    = &apad_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

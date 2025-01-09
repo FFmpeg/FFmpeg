@@ -538,17 +538,17 @@ static const AVFilterPad readeia608_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_readeia608 = {
-    .name          = "readeia608",
-    .description   = NULL_IF_CONFIG_SMALL("Read EIA-608 Closed Caption codes from input video and write them to frame metadata."),
+const FFFilter ff_vf_readeia608 = {
+    .p.name        = "readeia608",
+    .p.description = NULL_IF_CONFIG_SMALL("Read EIA-608 Closed Caption codes from input video and write them to frame metadata."),
+    .p.priv_class  = &readeia608_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                     AVFILTER_FLAG_SLICE_THREADS            |
+                     AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(ReadEIA608Context),
-    .priv_class    = &readeia608_class,
     FILTER_INPUTS(readeia608_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .uninit        = uninit,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
-                     AVFILTER_FLAG_SLICE_THREADS            |
-                     AVFILTER_FLAG_METADATA_ONLY,
     .process_command = process_command,
 };

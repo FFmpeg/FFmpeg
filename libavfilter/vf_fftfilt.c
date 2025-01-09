@@ -592,15 +592,15 @@ static const AVFilterPad fftfilt_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_fftfilt = {
-    .name            = "fftfilt",
-    .description     = NULL_IF_CONFIG_SMALL("Apply arbitrary expressions to pixels in frequency domain."),
+const FFFilter ff_vf_fftfilt = {
+    .p.name          = "fftfilt",
+    .p.description   = NULL_IF_CONFIG_SMALL("Apply arbitrary expressions to pixels in frequency domain."),
+    .p.priv_class    = &fftfilt_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size       = sizeof(FFTFILTContext),
-    .priv_class      = &fftfilt_class,
     FILTER_INPUTS(fftfilt_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts_fftfilt),
     .init            = initialize,
     .uninit          = uninit,
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

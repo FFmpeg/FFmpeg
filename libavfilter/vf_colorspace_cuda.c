@@ -418,15 +418,16 @@ static const AVFilterPad cudacolorspace_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_colorspace_cuda = {
-    .name = "colorspace_cuda",
-    .description = NULL_IF_CONFIG_SMALL("CUDA accelerated video color converter"),
+const FFFilter ff_vf_colorspace_cuda = {
+    .p.name        = "colorspace_cuda",
+    .p.description = NULL_IF_CONFIG_SMALL("CUDA accelerated video color converter"),
+
+    .p.priv_class  = &cudacolorspace_class,
 
     .init = cudacolorspace_init,
     .uninit = cudacolorspace_uninit,
 
     .priv_size = sizeof(CUDAColorspaceContext),
-    .priv_class = &cudacolorspace_class,
 
     FILTER_INPUTS(cudacolorspace_inputs),
     FILTER_OUTPUTS(cudacolorspace_outputs),

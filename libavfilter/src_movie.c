@@ -681,19 +681,17 @@ AVFILTER_DEFINE_CLASS_EXT(movie, "(a)movie", movie_options);
 
 #if CONFIG_MOVIE_FILTER
 
-const AVFilter ff_avsrc_movie = {
-    .name          = "movie",
-    .description   = NULL_IF_CONFIG_SMALL("Read from a movie source."),
+const FFFilter ff_avsrc_movie = {
+    .p.name        = "movie",
+    .p.description = NULL_IF_CONFIG_SMALL("Read from a movie source."),
+    .p.priv_class  = &movie_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
     .priv_size     = sizeof(MovieContext),
-    .priv_class    = &movie_class,
     .init          = movie_common_init,
     .activate      = activate,
     .uninit        = movie_uninit,
     FILTER_QUERY_FUNC2(movie_query_formats),
 
-    .inputs    = NULL,
-    .outputs   = NULL,
-    .flags     = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
     .process_command = process_command
 };
 
@@ -701,19 +699,17 @@ const AVFilter ff_avsrc_movie = {
 
 #if CONFIG_AMOVIE_FILTER
 
-const AVFilter ff_avsrc_amovie = {
-    .name          = "amovie",
-    .description   = NULL_IF_CONFIG_SMALL("Read audio from a movie source."),
-    .priv_class    = &movie_class,
+const FFFilter ff_avsrc_amovie = {
+    .p.name        = "amovie",
+    .p.description = NULL_IF_CONFIG_SMALL("Read audio from a movie source."),
+    .p.priv_class  = &movie_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
     .priv_size     = sizeof(MovieContext),
     .init          = movie_common_init,
     .activate      = activate,
     .uninit        = movie_uninit,
     FILTER_QUERY_FUNC2(movie_query_formats),
 
-    .inputs     = NULL,
-    .outputs    = NULL,
-    .flags      = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
     .process_command = process_command,
 };
 

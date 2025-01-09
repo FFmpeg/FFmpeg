@@ -549,14 +549,14 @@ static const AVFilterPad showfreqs_outputs[] = {
     },
 };
 
-const AVFilter ff_avf_showfreqs = {
-    .name          = "showfreqs",
-    .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a frequencies video output."),
+const FFFilter ff_avf_showfreqs = {
+    .p.name        = "showfreqs",
+    .p.description = NULL_IF_CONFIG_SMALL("Convert input audio to a frequencies video output."),
+    .p.priv_class  = &showfreqs_class,
     .uninit        = uninit,
     .priv_size     = sizeof(ShowFreqsContext),
     .activate      = activate,
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(showfreqs_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &showfreqs_class,
 };

@@ -777,18 +777,18 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-const AVFilter ff_af_afir = {
-    .name          = "afir",
-    .description   = NULL_IF_CONFIG_SMALL("Apply Finite Impulse Response filter with supplied coefficients in additional stream(s)."),
+const FFFilter ff_af_afir = {
+    .p.name        = "afir",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply Finite Impulse Response filter with supplied coefficients in additional stream(s)."),
+    .p.priv_class  = &afir_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_INPUTS  |
+                     AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(AudioFIRContext),
-    .priv_class    = &afir_class,
     FILTER_QUERY_FUNC2(query_formats),
     FILTER_OUTPUTS(outputs),
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
     .process_command = process_command,
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS  |
-                     AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_SLICE_THREADS,
 };

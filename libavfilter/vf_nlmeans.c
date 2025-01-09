@@ -472,15 +472,15 @@ static const AVFilterPad nlmeans_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_nlmeans = {
-    .name          = "nlmeans",
-    .description   = NULL_IF_CONFIG_SMALL("Non-local means denoiser."),
+const FFFilter ff_vf_nlmeans = {
+    .p.name        = "nlmeans",
+    .p.description = NULL_IF_CONFIG_SMALL("Non-local means denoiser."),
+    .p.priv_class  = &nlmeans_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(NLMeansContext),
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(nlmeans_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &nlmeans_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

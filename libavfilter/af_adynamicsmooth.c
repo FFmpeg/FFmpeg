@@ -121,15 +121,15 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_adynamicsmooth = {
-    .name            = "adynamicsmooth",
-    .description     = NULL_IF_CONFIG_SMALL("Apply Dynamic Smoothing of input audio."),
+const FFFilter ff_af_adynamicsmooth = {
+    .p.name          = "adynamicsmooth",
+    .p.description   = NULL_IF_CONFIG_SMALL("Apply Dynamic Smoothing of input audio."),
+    .p.priv_class    = &adynamicsmooth_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size       = sizeof(AudioDynamicSmoothContext),
-    .priv_class      = &adynamicsmooth_class,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };

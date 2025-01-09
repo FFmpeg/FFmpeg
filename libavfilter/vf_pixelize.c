@@ -338,14 +338,14 @@ static const AVFilterPad pixelize_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_pixelize = {
-    .name          = "pixelize",
-    .description   = NULL_IF_CONFIG_SMALL("Pixelize video."),
+const FFFilter ff_vf_pixelize = {
+    .p.name        = "pixelize",
+    .p.description = NULL_IF_CONFIG_SMALL("Pixelize video."),
+    .p.priv_class  = &pixelize_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(PixelizeContext),
-    .priv_class    = &pixelize_class,
     FILTER_INPUTS(pixelize_inputs),
     FILTER_OUTPUTS(pixelize_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

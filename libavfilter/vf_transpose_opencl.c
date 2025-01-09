@@ -272,16 +272,16 @@ static const AVFilterPad transpose_opencl_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_transpose_opencl = {
-    .name           = "transpose_opencl",
-    .description    = NULL_IF_CONFIG_SMALL("Transpose input video"),
+const FFFilter ff_vf_transpose_opencl = {
+    .p.name         = "transpose_opencl",
+    .p.description  = NULL_IF_CONFIG_SMALL("Transpose input video"),
+    .p.priv_class   = &transpose_opencl_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(TransposeOpenCLContext),
-    .priv_class     = &transpose_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &transpose_opencl_uninit,
     FILTER_INPUTS(transpose_opencl_inputs),
     FILTER_OUTPUTS(transpose_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

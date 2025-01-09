@@ -173,14 +173,14 @@ static const AVFilterPad asr_inputs[] = {
     },
 };
 
-const AVFilter ff_af_asr = {
-    .name          = "asr",
-    .description   = NULL_IF_CONFIG_SMALL("Automatic Speech Recognition."),
+const FFFilter ff_af_asr = {
+    .p.name        = "asr",
+    .p.description = NULL_IF_CONFIG_SMALL("Automatic Speech Recognition."),
+    .p.priv_class  = &asr_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(ASRContext),
-    .priv_class    = &asr_class,
     .init          = asr_init,
     .uninit        = asr_uninit,
-    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(asr_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),

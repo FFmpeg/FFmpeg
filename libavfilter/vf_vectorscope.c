@@ -1587,11 +1587,11 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-const AVFilter ff_vf_vectorscope = {
-    .name          = "vectorscope",
-    .description   = NULL_IF_CONFIG_SMALL("Video vectorscope."),
+const FFFilter ff_vf_vectorscope = {
+    .p.name        = "vectorscope",
+    .p.description = NULL_IF_CONFIG_SMALL("Video vectorscope."),
+    .p.priv_class  = &vectorscope_class,
     .priv_size     = sizeof(VectorscopeContext),
-    .priv_class    = &vectorscope_class,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),

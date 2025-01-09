@@ -2151,11 +2151,12 @@ static const AVOption deshake_opencl_options[] = {
 
 AVFILTER_DEFINE_CLASS(deshake_opencl);
 
-const AVFilter ff_vf_deshake_opencl = {
-    .name           = "deshake_opencl",
-    .description    = NULL_IF_CONFIG_SMALL("Feature-point based video stabilization filter"),
+const FFFilter ff_vf_deshake_opencl = {
+    .p.name         = "deshake_opencl",
+    .p.description  = NULL_IF_CONFIG_SMALL("Feature-point based video stabilization filter"),
+    .p.priv_class   = &deshake_opencl_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(DeshakeOpenCLContext),
-    .priv_class     = &deshake_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &deshake_opencl_uninit,
     .activate       = activate,
@@ -2163,5 +2164,4 @@ const AVFilter ff_vf_deshake_opencl = {
     FILTER_OUTPUTS(deshake_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

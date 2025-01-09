@@ -356,14 +356,14 @@ static const AVFilterPad trim_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_trim = {
-    .name        = "trim",
-    .description = NULL_IF_CONFIG_SMALL("Pick one continuous section from the input, drop the rest."),
+const FFFilter ff_vf_trim = {
+    .p.name        = "trim",
+    .p.description = NULL_IF_CONFIG_SMALL("Pick one continuous section from the input, drop the rest."),
+    .p.priv_class  = &trim_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .init        = init,
     .activate    = activate,
     .priv_size   = sizeof(TrimContext),
-    .priv_class  = &trim_class,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(trim_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
 };
@@ -392,14 +392,14 @@ static const AVFilterPad atrim_inputs[] = {
     },
 };
 
-const AVFilter ff_af_atrim = {
-    .name        = "atrim",
-    .description = NULL_IF_CONFIG_SMALL("Pick one continuous section from the input, drop the rest."),
+const FFFilter ff_af_atrim = {
+    .p.name        = "atrim",
+    .p.description = NULL_IF_CONFIG_SMALL("Pick one continuous section from the input, drop the rest."),
+    .p.priv_class  = &atrim_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .init        = init,
     .activate    = activate,
     .priv_size   = sizeof(TrimContext),
-    .priv_class  = &atrim_class,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(atrim_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
 };

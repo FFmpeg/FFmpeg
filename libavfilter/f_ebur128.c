@@ -1109,16 +1109,16 @@ static const AVFilterPad ebur128_inputs[] = {
     },
 };
 
-const AVFilter ff_af_ebur128 = {
-    .name          = "ebur128",
-    .description   = NULL_IF_CONFIG_SMALL("EBU R128 scanner."),
+const FFFilter ff_af_ebur128 = {
+    .p.name        = "ebur128",
+    .p.description = NULL_IF_CONFIG_SMALL("EBU R128 scanner."),
+    .p.outputs     = NULL,
+    .p.priv_class  = &ebur128_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
     .priv_size     = sizeof(EBUR128Context),
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(ebur128_inputs),
-    .outputs       = NULL,
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &ebur128_class,
-    .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };

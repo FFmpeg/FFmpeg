@@ -222,15 +222,15 @@ static const AVOption colorkey_options[] = {
 
 AVFILTER_DEFINE_CLASS(colorkey);
 
-const AVFilter ff_vf_colorkey = {
-    .name          = "colorkey",
-    .description   = NULL_IF_CONFIG_SMALL("Turns a certain color into transparency. Operates on RGB colors."),
+const FFFilter ff_vf_colorkey = {
+    .p.name        = "colorkey",
+    .p.description = NULL_IF_CONFIG_SMALL("Turns a certain color into transparency. Operates on RGB colors."),
+    .p.priv_class  = &colorkey_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ColorkeyContext),
-    .priv_class    = &colorkey_class,
     FILTER_INPUTS(colorkey_inputs),
     FILTER_OUTPUTS(colorkey_outputs),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
 
@@ -246,15 +246,15 @@ static const AVOption colorhold_options[] = {
 
 AVFILTER_DEFINE_CLASS(colorhold);
 
-const AVFilter ff_vf_colorhold = {
-    .name          = "colorhold",
-    .description   = NULL_IF_CONFIG_SMALL("Turns a certain color range into gray. Operates on RGB colors."),
+const FFFilter ff_vf_colorhold = {
+    .p.name        = "colorhold",
+    .p.description = NULL_IF_CONFIG_SMALL("Turns a certain color range into gray. Operates on RGB colors."),
+    .p.priv_class  = &colorhold_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ColorkeyContext),
-    .priv_class    = &colorhold_class,
     FILTER_INPUTS(colorkey_inputs),
     FILTER_OUTPUTS(colorkey_outputs),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
 

@@ -1914,16 +1914,16 @@ static const AVFilterPad avfilter_vf_drawtext_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_drawtext = {
-    .name          = "drawtext",
-    .description   = NULL_IF_CONFIG_SMALL("Draw text on top of video frames using libfreetype library."),
+const FFFilter ff_vf_drawtext = {
+    .p.name        = "drawtext",
+    .p.description = NULL_IF_CONFIG_SMALL("Draw text on top of video frames using libfreetype library."),
+    .p.priv_class  = &drawtext_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(DrawTextContext),
-    .priv_class    = &drawtext_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_vf_drawtext_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
     .process_command = command,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

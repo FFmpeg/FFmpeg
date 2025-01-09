@@ -382,15 +382,15 @@ static const AVFilterPad outputs[] = {
 
 AVFILTER_DEFINE_CLASS(dedot);
 
-const AVFilter ff_vf_dedot = {
-    .name          = "dedot",
-    .description   = NULL_IF_CONFIG_SMALL("Reduce cross-luminance and cross-color."),
+const FFFilter ff_vf_dedot = {
+    .p.name        = "dedot",
+    .p.description = NULL_IF_CONFIG_SMALL("Reduce cross-luminance and cross-color."),
+    .p.priv_class  = &dedot_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(DedotContext),
-    .priv_class    = &dedot_class,
     .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -210,12 +210,12 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_vf_setparams = {
-    .name        = "setparams",
-    .description = NULL_IF_CONFIG_SMALL("Force field, or color property for the output video frame."),
+const FFFilter ff_vf_setparams = {
+    .p.name        = "setparams",
+    .p.description = NULL_IF_CONFIG_SMALL("Force field, or color property for the output video frame."),
+    .p.priv_class  = &setparams_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(SetParamsContext),
-    .priv_class  = &setparams_class,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
@@ -250,13 +250,13 @@ static av_cold int init_setrange(AVFilterContext *ctx)
     return 0;
 }
 
-const AVFilter ff_vf_setrange = {
-    .name        = "setrange",
-    .description = NULL_IF_CONFIG_SMALL("Force color range for the output video frame."),
+const FFFilter ff_vf_setrange = {
+    .p.name        = "setrange",
+    .p.description = NULL_IF_CONFIG_SMALL("Force color range for the output video frame."),
+    .p.priv_class  = &setrange_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(SetParamsContext),
     .init        = init_setrange,
-    .priv_class  = &setrange_class,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
@@ -286,13 +286,13 @@ static av_cold int init_setfield(AVFilterContext *ctx)
     return 0;
 }
 
-const AVFilter ff_vf_setfield = {
-    .name        = "setfield",
-    .description = NULL_IF_CONFIG_SMALL("Force field for the output video frame."),
+const FFFilter ff_vf_setfield = {
+    .p.name        = "setfield",
+    .p.description = NULL_IF_CONFIG_SMALL("Force field for the output video frame."),
+    .p.priv_class  = &setfield_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(SetParamsContext),
     .init        = init_setfield,
-    .priv_class  = &setfield_class,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
 };

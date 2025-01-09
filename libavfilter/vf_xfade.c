@@ -2390,15 +2390,15 @@ static const AVFilterPad xfade_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_xfade = {
-    .name          = "xfade",
-    .description   = NULL_IF_CONFIG_SMALL("Cross fade one video with another video."),
+const FFFilter ff_vf_xfade = {
+    .p.name        = "xfade",
+    .p.description = NULL_IF_CONFIG_SMALL("Cross fade one video with another video."),
+    .p.priv_class  = &xfade_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(XFadeContext),
-    .priv_class    = &xfade_class,
     .activate      = xfade_activate,
     .uninit        = uninit,
     FILTER_INPUTS(xfade_inputs),
     FILTER_OUTPUTS(xfade_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

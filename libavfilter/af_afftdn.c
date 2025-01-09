@@ -1363,17 +1363,17 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_afftdn = {
-    .name            = "afftdn",
-    .description     = NULL_IF_CONFIG_SMALL("Denoise audio samples using FFT."),
+const FFFilter ff_af_afftdn = {
+    .p.name          = "afftdn",
+    .p.description   = NULL_IF_CONFIG_SMALL("Denoise audio samples using FFT."),
+    .p.priv_class    = &afftdn_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                       AVFILTER_FLAG_SLICE_THREADS,
     .priv_size       = sizeof(AudioFFTDeNoiseContext),
-    .priv_class      = &afftdn_class,
     .activate        = activate,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP),
     .process_command = process_command,
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                       AVFILTER_FLAG_SLICE_THREADS,
 };

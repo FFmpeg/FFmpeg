@@ -356,11 +356,11 @@ static const AVFilterPad tiltandshift_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_tiltandshift = {
-    .name          = "tiltandshift",
-    .description   = NULL_IF_CONFIG_SMALL("Generate a tilt-and-shift'd video."),
+const FFFilter ff_vf_tiltandshift = {
+    .p.name        = "tiltandshift",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate a tilt-and-shift'd video."),
+    .p.priv_class  = &tiltandshift_class,
     .priv_size     = sizeof(TiltandshiftContext),
-    .priv_class    = &tiltandshift_class,
     .uninit        = uninit,
     FILTER_INPUTS(tiltandshift_inputs),
     FILTER_OUTPUTS(tiltandshift_outputs),

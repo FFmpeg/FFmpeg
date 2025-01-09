@@ -315,7 +315,7 @@ void av_buffersink_set_frame_size(AVFilterContext *ctx, unsigned frame_size)
 
 #define MAKE_AVFILTERLINK_ACCESSOR(type, field) \
 type av_buffersink_get_##field(const AVFilterContext *ctx) { \
-    av_assert0(ctx->filter->activate == activate); \
+    av_assert0(fffilter(ctx->filter)->activate == activate); \
     return ctx->inputs[0]->field; \
 }
 
@@ -334,20 +334,20 @@ MAKE_AVFILTERLINK_ACCESSOR(int              , sample_rate        )
 AVRational av_buffersink_get_frame_rate(const AVFilterContext *ctx)
 {
     FilterLink *l = ff_filter_link(ctx->inputs[0]);
-    av_assert0(ctx->filter->activate == activate);
+    av_assert0(fffilter(ctx->filter)->activate == activate);
     return l->frame_rate;
 }
 
 AVBufferRef* av_buffersink_get_hw_frames_ctx(const AVFilterContext *ctx)
 {
     FilterLink *l = ff_filter_link(ctx->inputs[0]);
-    av_assert0(ctx->filter->activate == activate);
+    av_assert0(fffilter(ctx->filter)->activate == activate);
     return l->hw_frames_ctx;
 }
 
 int av_buffersink_get_channels(const AVFilterContext *ctx)
 {
-    av_assert0(ctx->filter->activate == activate);
+    av_assert0(fffilter(ctx->filter)->activate == activate);
     return ctx->inputs[0]->ch_layout.nb_channels;
 }
 
@@ -356,7 +356,7 @@ int av_buffersink_get_ch_layout(const AVFilterContext *ctx, AVChannelLayout *out
     AVChannelLayout ch_layout = { 0 };
     int ret;
 
-    av_assert0(ctx->filter->activate == activate);
+    av_assert0(fffilter(ctx->filter)->activate == activate);
     ret = av_channel_layout_copy(&ch_layout, &ctx->inputs[0]->ch_layout);
     if (ret < 0)
         return ret;
@@ -528,16 +528,16 @@ static const AVOption abuffersink_options[] = {
 AVFILTER_DEFINE_CLASS(buffersink);
 AVFILTER_DEFINE_CLASS(abuffersink);
 
-const AVFilter ff_vsink_buffer = {
-    .name          = "buffersink",
-    .description   = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
+const FFFilter ff_vsink_buffer = {
+    .p.name        = "buffersink",
+    .p.description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
+    .p.priv_class  = &buffersink_class,
+    .p.outputs     = NULL,
     .priv_size     = sizeof(BufferSinkContext),
-    .priv_class    = &buffersink_class,
     .init          = init_video,
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(ff_video_default_filterpad),
-    .outputs       = NULL,
     FILTER_QUERY_FUNC2(vsink_query_formats),
 };
 
@@ -549,15 +549,15 @@ static const AVFilterPad inputs_audio[] = {
     },
 };
 
-const AVFilter ff_asink_abuffer = {
-    .name          = "abuffersink",
-    .description   = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
-    .priv_class    = &abuffersink_class,
+const FFFilter ff_asink_abuffer = {
+    .p.name        = "abuffersink",
+    .p.description = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
+    .p.priv_class  = &abuffersink_class,
+    .p.outputs     = NULL,
     .priv_size     = sizeof(BufferSinkContext),
     .init          = init_audio,
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(inputs_audio),
-    .outputs       = NULL,
     FILTER_QUERY_FUNC2(asink_query_formats),
 };

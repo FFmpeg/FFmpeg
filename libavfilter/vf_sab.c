@@ -308,15 +308,15 @@ static const AVFilterPad sab_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_sab = {
-    .name          = "sab",
-    .description   = NULL_IF_CONFIG_SMALL("Apply shape adaptive blur."),
+const FFFilter ff_vf_sab = {
+    .p.name        = "sab",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply shape adaptive blur."),
+    .p.priv_class  = &sab_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(SabContext),
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(sab_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &sab_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

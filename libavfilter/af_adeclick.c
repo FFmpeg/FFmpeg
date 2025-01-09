@@ -778,18 +778,18 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_adeclick = {
-    .name          = "adeclick",
-    .description   = NULL_IF_CONFIG_SMALL("Remove impulsive noise from input audio."),
+const FFFilter ff_af_adeclick = {
+    .p.name        = "adeclick",
+    .p.description = NULL_IF_CONFIG_SMALL("Remove impulsive noise from input audio."),
+    .p.priv_class  = &adeclick_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size     = sizeof(AudioDeclickContext),
-    .priv_class    = &adeclick_class,
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
-    .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
 
 static const AVOption adeclip_options[] = {
@@ -814,16 +814,16 @@ static const AVOption adeclip_options[] = {
 
 AVFILTER_DEFINE_CLASS(adeclip);
 
-const AVFilter ff_af_adeclip = {
-    .name          = "adeclip",
-    .description   = NULL_IF_CONFIG_SMALL("Remove clipping from input audio."),
+const FFFilter ff_af_adeclip = {
+    .p.name        = "adeclip",
+    .p.description = NULL_IF_CONFIG_SMALL("Remove clipping from input audio."),
+    .p.priv_class  = &adeclip_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size     = sizeof(AudioDeclickContext),
-    .priv_class    = &adeclip_class,
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
-    .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

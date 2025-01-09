@@ -1553,11 +1553,11 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-const AVFilter ff_vf_ciescope = {
-    .name          = "ciescope",
-    .description   = NULL_IF_CONFIG_SMALL("Video CIE scope."),
+const FFFilter ff_vf_ciescope = {
+    .p.name        = "ciescope",
+    .p.description = NULL_IF_CONFIG_SMALL("Video CIE scope."),
+    .p.priv_class  = &ciescope_class,
     .priv_size     = sizeof(CiescopeContext),
-    .priv_class    = &ciescope_class,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),

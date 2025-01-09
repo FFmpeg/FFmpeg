@@ -224,14 +224,14 @@ static const AVFilterPad avfilter_vf_bwdif_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_bwdif = {
-    .name          = "bwdif",
-    .description   = NULL_IF_CONFIG_SMALL("Deinterlace the input image."),
+const FFFilter ff_vf_bwdif = {
+    .p.name        = "bwdif",
+    .p.description = NULL_IF_CONFIG_SMALL("Deinterlace the input image."),
+    .p.priv_class  = &bwdif_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(BWDIFContext),
-    .priv_class    = &bwdif_class,
     .uninit        = ff_yadif_uninit,
     FILTER_INPUTS(avfilter_vf_bwdif_inputs),
     FILTER_OUTPUTS(avfilter_vf_bwdif_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

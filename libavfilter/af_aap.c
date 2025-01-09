@@ -315,18 +315,18 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-const AVFilter ff_af_aap = {
-    .name           = "aap",
-    .description    = NULL_IF_CONFIG_SMALL("Apply Affine Projection algorithm to first audio stream."),
+const FFFilter ff_af_aap = {
+    .p.name         = "aap",
+    .p.description  = NULL_IF_CONFIG_SMALL("Apply Affine Projection algorithm to first audio stream."),
+    .p.priv_class   = &aap_class,
+    .p.flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                      AVFILTER_FLAG_SLICE_THREADS,
     .priv_size      = sizeof(AudioAPContext),
-    .priv_class     = &aap_class,
     .init           = init,
     .uninit         = uninit,
     .activate       = activate,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                      AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

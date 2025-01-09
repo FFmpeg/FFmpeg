@@ -379,15 +379,15 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_stereotools = {
-    .name           = "stereotools",
-    .description    = NULL_IF_CONFIG_SMALL("Apply various stereo tools."),
+const FFFilter ff_af_stereotools = {
+    .p.name         = "stereotools",
+    .p.description  = NULL_IF_CONFIG_SMALL("Apply various stereo tools."),
+    .p.priv_class   = &stereotools_class,
+    .p.flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size      = sizeof(StereoToolsContext),
-    .priv_class     = &stereotools_class,
     .uninit         = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
     .process_command = process_command,
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

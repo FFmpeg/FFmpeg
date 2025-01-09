@@ -169,11 +169,11 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_acontrast = {
-    .name           = "acontrast",
-    .description    = NULL_IF_CONFIG_SMALL("Simple audio dynamic range compression/expansion filter."),
+const FFFilter ff_af_acontrast = {
+    .p.name         = "acontrast",
+    .p.description  = NULL_IF_CONFIG_SMALL("Simple audio dynamic range compression/expansion filter."),
+    .p.priv_class   = &acontrast_class,
     .priv_size      = sizeof(AudioContrastContext),
-    .priv_class     = &acontrast_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,

@@ -314,15 +314,15 @@ static const AVFilterPad gblur_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_gblur = {
-    .name          = "gblur",
-    .description   = NULL_IF_CONFIG_SMALL("Apply Gaussian Blur filter."),
+const FFFilter ff_vf_gblur = {
+    .p.name        = "gblur",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply Gaussian Blur filter."),
+    .p.priv_class  = &gblur_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(GBlurContext),
-    .priv_class    = &gblur_class,
     .uninit        = uninit,
     FILTER_INPUTS(gblur_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

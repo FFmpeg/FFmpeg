@@ -397,18 +397,18 @@ static const AVFilterPad varblur_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_varblur = {
-    .name          = "varblur",
-    .description   = NULL_IF_CONFIG_SMALL("Apply Variable Blur filter."),
+const FFFilter ff_vf_varblur = {
+    .p.name        = "varblur",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply Variable Blur filter."),
+    .p.priv_class  = &varblur_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(VarBlurContext),
-    .priv_class    = &varblur_class,
     .activate      = activate,
     .preinit       = varblur_framesync_preinit,
     .uninit        = uninit,
     FILTER_INPUTS(varblur_inputs),
     FILTER_OUTPUTS(varblur_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

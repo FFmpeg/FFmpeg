@@ -156,14 +156,14 @@ static const AVOption despill_options[] = {
 
 AVFILTER_DEFINE_CLASS(despill);
 
-const AVFilter ff_vf_despill = {
-    .name          = "despill",
-    .description   = NULL_IF_CONFIG_SMALL("Despill video."),
+const FFFilter ff_vf_despill = {
+    .p.name        = "despill",
+    .p.description = NULL_IF_CONFIG_SMALL("Despill video."),
+    .p.priv_class  = &despill_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(DespillContext),
-    .priv_class    = &despill_class,
     FILTER_INPUTS(despill_inputs),
     FILTER_OUTPUTS(despill_outputs),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .process_command = ff_filter_process_command,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -1020,9 +1020,12 @@ static const AVFilterPad avfilter_af_dynaudnorm_inputs[] = {
     },
 };
 
-const AVFilter ff_af_dynaudnorm = {
-    .name          = "dynaudnorm",
-    .description   = NULL_IF_CONFIG_SMALL("Dynamic Audio Normalizer."),
+const FFFilter ff_af_dynaudnorm = {
+    .p.name        = "dynaudnorm",
+    .p.description = NULL_IF_CONFIG_SMALL("Dynamic Audio Normalizer."),
+    .p.priv_class  = &dynaudnorm_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(DynamicAudioNormalizerContext),
     .init          = init,
     .uninit        = uninit,
@@ -1030,8 +1033,5 @@ const AVFilter ff_af_dynaudnorm = {
     FILTER_INPUTS(avfilter_af_dynaudnorm_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
-    .priv_class    = &dynaudnorm_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

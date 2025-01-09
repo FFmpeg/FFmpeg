@@ -360,15 +360,15 @@ static const AVFilterPad blurdetect_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_blurdetect = {
-    .name          = "blurdetect",
-    .description   = NULL_IF_CONFIG_SMALL("Blurdetect filter."),
+const FFFilter ff_vf_blurdetect = {
+    .p.name        = "blurdetect",
+    .p.description = NULL_IF_CONFIG_SMALL("Blurdetect filter."),
+    .p.priv_class  = &blurdetect_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(BLRContext),
     .init          = blurdetect_init,
     .uninit        = blurdetect_uninit,
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     FILTER_INPUTS(blurdetect_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    .priv_class    = &blurdetect_class,
-    .flags         = AVFILTER_FLAG_METADATA_ONLY,
 };

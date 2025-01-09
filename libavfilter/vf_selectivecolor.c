@@ -473,13 +473,13 @@ static const AVFilterPad selectivecolor_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_selectivecolor = {
-    .name          = "selectivecolor",
-    .description   = NULL_IF_CONFIG_SMALL("Apply CMYK adjustments to specific color ranges."),
+const FFFilter ff_vf_selectivecolor = {
+    .p.name        = "selectivecolor",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply CMYK adjustments to specific color ranges."),
+    .p.priv_class  = &selectivecolor_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(SelectiveColorContext),
     FILTER_INPUTS(selectivecolor_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &selectivecolor_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

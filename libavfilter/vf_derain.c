@@ -106,9 +106,11 @@ static const AVFilterPad derain_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_derain = {
-    .name          = "derain",
-    .description   = NULL_IF_CONFIG_SMALL("Apply derain filter to the input."),
+const FFFilter ff_vf_derain = {
+    .p.name        = "derain",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply derain filter to the input."),
+    .p.priv_class  = &derain_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(DRContext),
     .preinit       = ff_dnn_filter_init_child_class,
     .init          = init,
@@ -116,6 +118,4 @@ const AVFilter ff_vf_derain = {
     FILTER_INPUTS(derain_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_RGB24),
-    .priv_class    = &derain_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

@@ -288,16 +288,16 @@ static const AVFilterPad fsync_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_fsync = {
-    .name          = "fsync",
-    .description   = NULL_IF_CONFIG_SMALL("Synchronize video frames from external source."),
+const FFFilter ff_vf_fsync = {
+    .p.name        = "fsync",
+    .p.description = NULL_IF_CONFIG_SMALL("Synchronize video frames from external source."),
+    .p.priv_class  = &fsync_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .init          = fsync_init,
     .uninit        = fsync_uninit,
     .priv_size     = sizeof(FsyncContext),
-    .priv_class    = &fsync_class,
     .activate      = activate,
     .formats_state = FF_FILTER_FORMATS_PASSTHROUGH,
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(fsync_outputs),
-    .flags         = AVFILTER_FLAG_METADATA_ONLY,
 };

@@ -410,17 +410,17 @@ static const AVFilterPad displace_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_displace = {
-    .name          = "displace",
-    .description   = NULL_IF_CONFIG_SMALL("Displace pixels."),
+const FFFilter ff_vf_displace = {
+    .p.name        = "displace",
+    .p.description = NULL_IF_CONFIG_SMALL("Displace pixels."),
+    .p.priv_class  = &displace_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(DisplaceContext),
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(displace_inputs),
     FILTER_OUTPUTS(displace_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &displace_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

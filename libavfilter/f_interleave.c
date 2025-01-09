@@ -230,15 +230,15 @@ static const AVFilterPad interleave_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_interleave = {
-    .name        = "interleave",
-    .description = NULL_IF_CONFIG_SMALL("Temporally interleave video inputs."),
+const FFFilter ff_vf_interleave = {
+    .p.name        = "interleave",
+    .p.description = NULL_IF_CONFIG_SMALL("Temporally interleave video inputs."),
+    .p.priv_class  = &interleave_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_INPUTS,
     .priv_size   = sizeof(InterleaveContext),
     .init        = init,
     .activate    = activate,
     FILTER_OUTPUTS(interleave_outputs),
-    .priv_class  = &interleave_class,
-    .flags       = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
 
 #endif
@@ -256,15 +256,15 @@ static const AVFilterPad ainterleave_outputs[] = {
     },
 };
 
-const AVFilter ff_af_ainterleave = {
-    .name        = "ainterleave",
-    .description = NULL_IF_CONFIG_SMALL("Temporally interleave audio inputs."),
+const FFFilter ff_af_ainterleave = {
+    .p.name        = "ainterleave",
+    .p.description = NULL_IF_CONFIG_SMALL("Temporally interleave audio inputs."),
+    .p.priv_class  = &ainterleave_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_INPUTS,
     .priv_size   = sizeof(InterleaveContext),
     .init        = init,
     .activate    = activate,
     FILTER_OUTPUTS(ainterleave_outputs),
-    .priv_class  = &ainterleave_class,
-    .flags       = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
 
 #endif

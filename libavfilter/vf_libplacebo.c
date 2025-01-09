@@ -1446,9 +1446,11 @@ static const AVFilterPad libplacebo_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_libplacebo = {
-    .name           = "libplacebo",
-    .description    = NULL_IF_CONFIG_SMALL("Apply various GPU filters from libplacebo"),
+const FFFilter ff_vf_libplacebo = {
+    .p.name         = "libplacebo",
+    .p.description  = NULL_IF_CONFIG_SMALL("Apply various GPU filters from libplacebo"),
+    .p.priv_class   = &libplacebo_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE | AVFILTER_FLAG_DYNAMIC_INPUTS,
     .priv_size      = sizeof(LibplaceboContext),
     .init           = &libplacebo_init,
     .uninit         = &libplacebo_uninit,
@@ -1456,7 +1458,5 @@ const AVFilter ff_vf_libplacebo = {
     .process_command = &libplacebo_process_command,
     FILTER_OUTPUTS(libplacebo_outputs),
     FILTER_QUERY_FUNC2(libplacebo_query_format),
-    .priv_class     = &libplacebo_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE | AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

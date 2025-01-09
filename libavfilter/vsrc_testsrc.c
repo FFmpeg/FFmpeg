@@ -298,15 +298,14 @@ static const AVFilterPad color_outputs[] = {
     },
 };
 
-const AVFilter ff_vsrc_color = {
-    .name            = "color",
-    .description     = NULL_IF_CONFIG_SMALL("Provide an uniformly colored input."),
-    .priv_class      = &color_class,
+const FFFilter ff_vsrc_color = {
+    .p.name          = "color",
+    .p.description   = NULL_IF_CONFIG_SMALL("Provide an uniformly colored input."),
+    .p.priv_class    = &color_class,
     .priv_size       = sizeof(TestSourceContext),
     .init            = color_init,
     .uninit          = uninit,
     .activate        = activate,
-    .inputs          = NULL,
     FILTER_OUTPUTS(color_outputs),
     FILTER_QUERY_FUNC2(color_query_formats),
     .process_command = color_process_command,
@@ -443,15 +442,14 @@ static const AVFilterPad haldclutsrc_outputs[] = {
     },
 };
 
-const AVFilter ff_vsrc_haldclutsrc = {
-    .name          = "haldclutsrc",
-    .description   = NULL_IF_CONFIG_SMALL("Provide an identity Hald CLUT."),
-    .priv_class    = &haldclutsrc_class,
+const FFFilter ff_vsrc_haldclutsrc = {
+    .p.name        = "haldclutsrc",
+    .p.description = NULL_IF_CONFIG_SMALL("Provide an identity Hald CLUT."),
+    .p.priv_class  = &haldclutsrc_class,
     .priv_size     = sizeof(TestSourceContext),
     .init          = haldclutsrc_init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(haldclutsrc_outputs),
     FILTER_PIXFMTS_ARRAY(haldclutsrc_pix_fmts),
 };
@@ -471,15 +469,14 @@ static av_cold int nullsrc_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-const AVFilter ff_vsrc_nullsrc = {
-    .name        = "nullsrc",
-    .description = NULL_IF_CONFIG_SMALL("Null video source, return unprocessed video frames."),
-    .priv_class  = &nullsrc_yuvtestsrc_class,
+const FFFilter ff_vsrc_nullsrc = {
+    .p.name      = "nullsrc",
+    .p.description= NULL_IF_CONFIG_SMALL("Null video source, return unprocessed video frames."),
+    .p.priv_class= &nullsrc_yuvtestsrc_class,
     .init        = nullsrc_init,
     .uninit      = uninit,
     .activate    = activate,
     .priv_size   = sizeof(TestSourceContext),
-    .inputs      = NULL,
     FILTER_OUTPUTS(outputs),
 };
 
@@ -686,15 +683,14 @@ static av_cold int test_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-const AVFilter ff_vsrc_testsrc = {
-    .name          = "testsrc",
-    .description   = NULL_IF_CONFIG_SMALL("Generate test pattern."),
+const FFFilter ff_vsrc_testsrc = {
+    .p.name        = "testsrc",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate test pattern."),
+    .p.priv_class  = &testsrc_class,
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &testsrc_class,
     .init          = test_init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_RGB24),
 };
@@ -961,15 +957,14 @@ static const AVFilterPad avfilter_vsrc_testsrc2_outputs[] = {
     },
 };
 
-const AVFilter ff_vsrc_testsrc2 = {
-    .name          = "testsrc2",
-    .description   = NULL_IF_CONFIG_SMALL("Generate another test pattern."),
+const FFFilter ff_vsrc_testsrc2 = {
+    .p.name        = "testsrc2",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate another test pattern."),
+    .p.priv_class  = &testsrc2_class,
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &testsrc2_class,
     .init          = test2_init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_testsrc2_outputs),
     FILTER_QUERY_FUNC2(test2_query_formats),
 };
@@ -1158,15 +1153,14 @@ static const AVFilterPad avfilter_vsrc_rgbtestsrc_outputs[] = {
     },
 };
 
-const AVFilter ff_vsrc_rgbtestsrc = {
-    .name          = "rgbtestsrc",
-    .description   = NULL_IF_CONFIG_SMALL("Generate RGB test pattern."),
+const FFFilter ff_vsrc_rgbtestsrc = {
+    .p.name        = "rgbtestsrc",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate RGB test pattern."),
+    .p.priv_class  = &rgbtestsrc_class,
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &rgbtestsrc_class,
     .init          = rgbtest_init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_rgbtestsrc_outputs),
     FILTER_PIXFMTS_ARRAY(rgbtest_pix_fmts),
 };
@@ -1297,15 +1291,14 @@ static const AVFilterPad avfilter_vsrc_yuvtestsrc_outputs[] = {
     },
 };
 
-const AVFilter ff_vsrc_yuvtestsrc = {
-    .name          = "yuvtestsrc",
-    .description   = NULL_IF_CONFIG_SMALL("Generate YUV test pattern."),
+const FFFilter ff_vsrc_yuvtestsrc = {
+    .p.name        = "yuvtestsrc",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate YUV test pattern."),
+    .p.priv_class  = &nullsrc_yuvtestsrc_class,
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &nullsrc_yuvtestsrc_class,
     .init          = yuvtest_init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_yuvtestsrc_outputs),
     FILTER_PIXFMTS_ARRAY(yuvtest_pix_fmts),
 };
@@ -1480,15 +1473,14 @@ static av_cold int pal75bars_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-const AVFilter ff_vsrc_pal75bars = {
-    .name          = "pal75bars",
-    .description   = NULL_IF_CONFIG_SMALL("Generate PAL 75% color bars."),
-    .priv_class    = &palbars_class,
+const FFFilter ff_vsrc_pal75bars = {
+    .p.name        = "pal75bars",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate PAL 75% color bars."),
+    .p.priv_class  = &palbars_class,
     .priv_size     = sizeof(TestSourceContext),
     .init          = pal75bars_init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC2(smptebars_query_formats),
 };
@@ -1521,15 +1513,14 @@ static av_cold int pal100bars_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-const AVFilter ff_vsrc_pal100bars = {
-    .name          = "pal100bars",
-    .description   = NULL_IF_CONFIG_SMALL("Generate PAL 100% color bars."),
-    .priv_class    = &palbars_class,
+const FFFilter ff_vsrc_pal100bars = {
+    .p.name        = "pal100bars",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate PAL 100% color bars."),
+    .p.priv_class  = &palbars_class,
     .priv_size     = sizeof(TestSourceContext),
     .init          = pal100bars_init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC2(smptebars_query_formats),
 };
@@ -1586,15 +1577,14 @@ static av_cold int smptebars_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-const AVFilter ff_vsrc_smptebars = {
-    .name          = "smptebars",
-    .description   = NULL_IF_CONFIG_SMALL("Generate SMPTE color bars."),
+const FFFilter ff_vsrc_smptebars = {
+    .p.name        = "smptebars",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate SMPTE color bars."),
+    .p.priv_class  = &smptebars_class,
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &smptebars_class,
     .init          = smptebars_init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC2(smptebars_query_formats),
 };
@@ -1687,15 +1677,14 @@ static av_cold int smptehdbars_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-const AVFilter ff_vsrc_smptehdbars = {
-    .name          = "smptehdbars",
-    .description   = NULL_IF_CONFIG_SMALL("Generate SMPTE HD color bars."),
-    .priv_class    = &smptebars_class,
+const FFFilter ff_vsrc_smptehdbars = {
+    .p.name        = "smptehdbars",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate SMPTE HD color bars."),
+    .p.priv_class  = &smptebars_class,
     .priv_size     = sizeof(TestSourceContext),
     .init          = smptehdbars_init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC2(smptebars_query_formats),
 };
@@ -1743,15 +1732,14 @@ static av_cold int allyuv_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-const AVFilter ff_vsrc_allyuv = {
-    .name          = "allyuv",
-    .description   = NULL_IF_CONFIG_SMALL("Generate all yuv colors."),
+const FFFilter ff_vsrc_allyuv = {
+    .p.name        = "allyuv",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate all yuv colors."),
+    .p.priv_class  = &allyuv_allrgb_class,
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &allyuv_allrgb_class,
     .init          = allyuv_init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS(AV_PIX_FMT_YUV444P, AV_PIX_FMT_GBRP),
 };
@@ -1804,15 +1792,14 @@ static const AVFilterPad avfilter_vsrc_allrgb_outputs[] = {
     },
 };
 
-const AVFilter ff_vsrc_allrgb = {
-    .name          = "allrgb",
-    .description   = NULL_IF_CONFIG_SMALL("Generate all RGB colors."),
+const FFFilter ff_vsrc_allrgb = {
+    .p.name        = "allrgb",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate all RGB colors."),
+    .p.priv_class  = &allyuv_allrgb_class,
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &allyuv_allrgb_class,
     .init          = allrgb_init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_allrgb_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_RGB24),
 };
@@ -1885,15 +1872,14 @@ static av_cold int colorspectrum_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-const AVFilter ff_vsrc_colorspectrum = {
-    .name          = "colorspectrum",
-    .description   = NULL_IF_CONFIG_SMALL("Generate colors spectrum."),
+const FFFilter ff_vsrc_colorspectrum = {
+    .p.name        = "colorspectrum",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate colors spectrum."),
+    .p.priv_class  = &colorspectrum_class,
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &colorspectrum_class,
     .init          = colorspectrum_init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_GBRPF32),
 };
@@ -2038,15 +2024,14 @@ static const AVFilterPad avfilter_vsrc_colorchart_outputs[] = {
     },
 };
 
-const AVFilter ff_vsrc_colorchart = {
-    .name          = "colorchart",
-    .description   = NULL_IF_CONFIG_SMALL("Generate color checker chart."),
+const FFFilter ff_vsrc_colorchart = {
+    .p.name        = "colorchart",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate color checker chart."),
+    .p.priv_class  = &colorchart_class,
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &colorchart_class,
     .init          = colorchart_init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_colorchart_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_GBRP),
 };
@@ -2234,18 +2219,17 @@ static const AVFilterPad avfilter_vsrc_zoneplate_outputs[] = {
     },
 };
 
-const AVFilter ff_vsrc_zoneplate = {
-    .name          = "zoneplate",
-    .description   = NULL_IF_CONFIG_SMALL("Generate zone-plate."),
+const FFFilter ff_vsrc_zoneplate = {
+    .p.name        = "zoneplate",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate zone-plate."),
+    .p.priv_class  = &zoneplate_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(TestSourceContext),
-    .priv_class    = &zoneplate_class,
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_zoneplate_outputs),
     FILTER_QUERY_FUNC2(zoneplate_query_formats),
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
 

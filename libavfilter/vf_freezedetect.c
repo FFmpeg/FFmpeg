@@ -205,13 +205,13 @@ static const AVFilterPad freezedetect_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_freezedetect = {
-    .name          = "freezedetect",
-    .description   = NULL_IF_CONFIG_SMALL("Detects frozen video input."),
+const FFFilter ff_vf_freezedetect = {
+    .p.name        = "freezedetect",
+    .p.description = NULL_IF_CONFIG_SMALL("Detects frozen video input."),
+    .p.priv_class  = &freezedetect_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(FreezeDetectContext),
-    .priv_class    = &freezedetect_class,
     .uninit        = uninit,
-    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(freezedetect_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),

@@ -1596,18 +1596,18 @@ static const AVOption arnndn_options[] = {
 
 AVFILTER_DEFINE_CLASS(arnndn);
 
-const AVFilter ff_af_arnndn = {
-    .name          = "arnndn",
-    .description   = NULL_IF_CONFIG_SMALL("Reduce noise from speech using Recurrent Neural Networks."),
+const FFFilter ff_af_arnndn = {
+    .p.name        = "arnndn",
+    .p.description = NULL_IF_CONFIG_SMALL("Reduce noise from speech using Recurrent Neural Networks."),
+    .p.priv_class  = &arnndn_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(AudioRNNContext),
-    .priv_class    = &arnndn_class,
     .activate      = activate,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

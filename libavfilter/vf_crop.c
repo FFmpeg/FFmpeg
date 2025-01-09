@@ -400,11 +400,11 @@ static const AVFilterPad avfilter_vf_crop_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_crop = {
-    .name            = "crop",
-    .description     = NULL_IF_CONFIG_SMALL("Crop the input video."),
+const FFFilter ff_vf_crop = {
+    .p.name          = "crop",
+    .p.description   = NULL_IF_CONFIG_SMALL("Crop the input video."),
+    .p.priv_class    = &crop_class,
     .priv_size       = sizeof(CropContext),
-    .priv_class      = &crop_class,
     .uninit          = uninit,
     FILTER_INPUTS(avfilter_vf_crop_inputs),
     FILTER_OUTPUTS(avfilter_vf_crop_outputs),

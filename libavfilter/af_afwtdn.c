@@ -1301,17 +1301,17 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-const AVFilter ff_af_afwtdn = {
-    .name            = "afwtdn",
-    .description     = NULL_IF_CONFIG_SMALL("Denoise audio stream using Wavelets."),
+const FFFilter ff_af_afwtdn = {
+    .p.name          = "afwtdn",
+    .p.description   = NULL_IF_CONFIG_SMALL("Denoise audio stream using Wavelets."),
+    .p.priv_class    = &afwtdn_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                       AVFILTER_FLAG_SLICE_THREADS,
     .priv_size       = sizeof(AudioFWTDNContext),
-    .priv_class      = &afwtdn_class,
     .activate        = activate,
     .uninit          = uninit,
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(outputs),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBLP),
     .process_command = process_command,
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                       AVFILTER_FLAG_SLICE_THREADS,
 };

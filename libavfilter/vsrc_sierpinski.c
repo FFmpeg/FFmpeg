@@ -211,13 +211,13 @@ static const AVFilterPad sierpinski_outputs[] = {
     },
 };
 
-const AVFilter ff_vsrc_sierpinski = {
-    .name          = "sierpinski",
-    .description   = NULL_IF_CONFIG_SMALL("Render a Sierpinski fractal."),
+const FFFilter ff_vsrc_sierpinski = {
+    .p.name        = "sierpinski",
+    .p.description = NULL_IF_CONFIG_SMALL("Render a Sierpinski fractal."),
+    .p.priv_class  = &sierpinski_class,
+    .p.inputs      = NULL,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(SierpinskiContext),
-    .priv_class    = &sierpinski_class,
-    .inputs        = NULL,
     FILTER_OUTPUTS(sierpinski_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_0BGR32),
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

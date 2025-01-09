@@ -343,15 +343,15 @@ static const AVFilterPad deint_cuda_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_yadif_cuda = {
-    .name           = "yadif_cuda",
-    .description    = NULL_IF_CONFIG_SMALL("Deinterlace CUDA frames"),
+const FFFilter ff_vf_yadif_cuda = {
+    .p.name         = "yadif_cuda",
+    .p.description  = NULL_IF_CONFIG_SMALL("Deinterlace CUDA frames"),
+    .p.priv_class   = &yadif_cuda_class,
+    .p.flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size      = sizeof(DeintCUDAContext),
-    .priv_class     = &yadif_cuda_class,
     .uninit         = deint_cuda_uninit,
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_CUDA),
     FILTER_INPUTS(deint_cuda_inputs),
     FILTER_OUTPUTS(deint_cuda_outputs),
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

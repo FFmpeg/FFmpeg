@@ -776,16 +776,15 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-const AVFilter ff_af_headphone = {
-    .name          = "headphone",
-    .description   = NULL_IF_CONFIG_SMALL("Apply headphone binaural spatialization with HRTFs in additional streams."),
+const FFFilter ff_af_headphone = {
+    .p.name        = "headphone",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply headphone binaural spatialization with HRTFs in additional streams."),
+    .p.priv_class  = &headphone_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_DYNAMIC_INPUTS,
     .priv_size     = sizeof(HeadphoneContext),
-    .priv_class    = &headphone_class,
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

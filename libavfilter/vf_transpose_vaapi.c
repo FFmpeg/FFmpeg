@@ -272,15 +272,15 @@ static const AVFilterPad transpose_vaapi_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_transpose_vaapi = {
-    .name           = "transpose_vaapi",
-    .description    = NULL_IF_CONFIG_SMALL("VAAPI VPP for transpose"),
+const FFFilter ff_vf_transpose_vaapi = {
+    .p.name         = "transpose_vaapi",
+    .p.description  = NULL_IF_CONFIG_SMALL("VAAPI VPP for transpose"),
+    .p.priv_class   = &transpose_vaapi_class,
     .priv_size      = sizeof(TransposeVAAPIContext),
     .init           = &transpose_vaapi_init,
     .uninit         = &ff_vaapi_vpp_ctx_uninit,
     FILTER_INPUTS(transpose_vaapi_inputs),
     FILTER_OUTPUTS(transpose_vaapi_outputs),
     FILTER_QUERY_FUNC2(&ff_vaapi_vpp_query_formats),
-    .priv_class     = &transpose_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

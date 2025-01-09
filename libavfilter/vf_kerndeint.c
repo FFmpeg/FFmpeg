@@ -296,11 +296,11 @@ static const AVFilterPad kerndeint_inputs[] = {
 };
 
 
-const AVFilter ff_vf_kerndeint = {
-    .name          = "kerndeint",
-    .description   = NULL_IF_CONFIG_SMALL("Apply kernel deinterlacing to the input."),
+const FFFilter ff_vf_kerndeint = {
+    .p.name        = "kerndeint",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply kernel deinterlacing to the input."),
+    .p.priv_class  = &kerndeint_class,
     .priv_size     = sizeof(KerndeintContext),
-    .priv_class    = &kerndeint_class,
     .uninit        = uninit,
     FILTER_INPUTS(kerndeint_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),

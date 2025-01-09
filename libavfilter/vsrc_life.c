@@ -444,14 +444,14 @@ static const AVFilterPad life_outputs[] = {
     },
 };
 
-const AVFilter ff_vsrc_life = {
-    .name          = "life",
-    .description   = NULL_IF_CONFIG_SMALL("Create life."),
+const FFFilter ff_vsrc_life = {
+    .p.name        = "life",
+    .p.description = NULL_IF_CONFIG_SMALL("Create life."),
+    .p.priv_class  = &life_class,
+    .p.inputs      = NULL,
     .priv_size     = sizeof(LifeContext),
-    .priv_class    = &life_class,
     .init          = init,
     .uninit        = uninit,
-    .inputs        = NULL,
     FILTER_OUTPUTS(life_outputs),
     FILTER_QUERY_FUNC2(query_formats),
 };

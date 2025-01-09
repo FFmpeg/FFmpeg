@@ -919,12 +919,12 @@ static const AVFilterPad avfilter_vf_showinfo_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_showinfo = {
-    .name        = "showinfo",
-    .description = NULL_IF_CONFIG_SMALL("Show textual information for each video frame."),
+const FFFilter ff_vf_showinfo = {
+    .p.name        = "showinfo",
+    .p.description = NULL_IF_CONFIG_SMALL("Show textual information for each video frame."),
+    .p.priv_class  = &showinfo_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(avfilter_vf_showinfo_inputs),
     FILTER_OUTPUTS(avfilter_vf_showinfo_outputs),
     .priv_size   = sizeof(ShowInfoContext),
-    .priv_class  = &showinfo_class,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
 };

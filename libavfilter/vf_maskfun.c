@@ -316,15 +316,15 @@ static const AVFilterPad maskfun_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_maskfun = {
-    .name          = "maskfun",
-    .description   = NULL_IF_CONFIG_SMALL("Create Mask."),
+const FFFilter ff_vf_maskfun = {
+    .p.name        = "maskfun",
+    .p.description = NULL_IF_CONFIG_SMALL("Create Mask."),
+    .p.priv_class  = &maskfun_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(MaskFunContext),
     .uninit        = uninit,
     FILTER_INPUTS(maskfun_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &maskfun_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

@@ -305,14 +305,14 @@ static const AVFilterPad tonemap_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_tonemap = {
-    .name            = "tonemap",
-    .description     = NULL_IF_CONFIG_SMALL("Conversion to/from different dynamic ranges."),
+const FFFilter ff_vf_tonemap = {
+    .p.name          = "tonemap",
+    .p.description   = NULL_IF_CONFIG_SMALL("Conversion to/from different dynamic ranges."),
+    .p.priv_class    = &tonemap_class,
+    .p.flags         = AVFILTER_FLAG_SLICE_THREADS,
     .init            = init,
     .priv_size       = sizeof(TonemapContext),
-    .priv_class      = &tonemap_class,
     FILTER_INPUTS(tonemap_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS(AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32),
-    .flags           = AVFILTER_FLAG_SLICE_THREADS,
 };

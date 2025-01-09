@@ -403,14 +403,14 @@ static const AVOption floodfill_options[] = {
 
 AVFILTER_DEFINE_CLASS(floodfill);
 
-const AVFilter ff_vf_floodfill = {
-    .name          = "floodfill",
-    .description   = NULL_IF_CONFIG_SMALL("Fill area with same color with another color."),
+const FFFilter ff_vf_floodfill = {
+    .p.name        = "floodfill",
+    .p.description = NULL_IF_CONFIG_SMALL("Fill area with same color with another color."),
+    .p.priv_class  = &floodfill_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(FloodfillContext),
-    .priv_class    = &floodfill_class,
     .uninit        = uninit,
     FILTER_INPUTS(floodfill_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

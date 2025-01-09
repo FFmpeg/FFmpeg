@@ -249,16 +249,16 @@ static const AVFilterPad chromaber_vulkan_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_chromaber_vulkan = {
-    .name           = "chromaber_vulkan",
-    .description    = NULL_IF_CONFIG_SMALL("Offset chroma of input video (chromatic aberration)"),
+const FFFilter ff_vf_chromaber_vulkan = {
+    .p.name         = "chromaber_vulkan",
+    .p.description  = NULL_IF_CONFIG_SMALL("Offset chroma of input video (chromatic aberration)"),
+    .p.priv_class   = &chromaber_vulkan_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(ChromaticAberrationVulkanContext),
     .init           = &ff_vk_filter_init,
     .uninit         = &chromaber_vulkan_uninit,
     FILTER_INPUTS(chromaber_vulkan_inputs),
     FILTER_OUTPUTS(chromaber_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
-    .priv_class     = &chromaber_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

@@ -421,14 +421,13 @@ static const AVOption sinc_options[] = {
 
 AVFILTER_DEFINE_CLASS(sinc);
 
-const AVFilter ff_asrc_sinc = {
-    .name          = "sinc",
-    .description   = NULL_IF_CONFIG_SMALL("Generate a sinc kaiser-windowed low-pass, high-pass, band-pass, or band-reject FIR coefficients."),
+const FFFilter ff_asrc_sinc = {
+    .p.name        = "sinc",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate a sinc kaiser-windowed low-pass, high-pass, band-pass, or band-reject FIR coefficients."),
+    .p.priv_class  = &sinc_class,
     .priv_size     = sizeof(SincContext),
-    .priv_class    = &sinc_class,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(sinc_outputs),
     FILTER_QUERY_FUNC2(query_formats),
 };

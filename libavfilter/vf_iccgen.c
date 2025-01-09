@@ -162,12 +162,12 @@ static const AVFilterPad iccgen_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_iccgen = {
-    .name        = "iccgen",
-    .description = NULL_IF_CONFIG_SMALL("Generate and attach ICC profiles."),
+const FFFilter ff_vf_iccgen = {
+    .p.name        = "iccgen",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate and attach ICC profiles."),
+    .p.priv_class  = &iccgen_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(IccGenContext),
-    .priv_class  = &iccgen_class,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     .init        = &iccgen_init,
     .uninit      = &iccgen_uninit,
     FILTER_INPUTS(iccgen_inputs),

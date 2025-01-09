@@ -249,11 +249,11 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_apulsator = {
-    .name          = "apulsator",
-    .description   = NULL_IF_CONFIG_SMALL("Audio pulsator."),
+const FFFilter ff_af_apulsator = {
+    .p.name        = "apulsator",
+    .p.description = NULL_IF_CONFIG_SMALL("Audio pulsator."),
+    .p.priv_class  = &apulsator_class,
     .priv_size     = sizeof(AudioPulsatorContext),
-    .priv_class    = &apulsator_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),

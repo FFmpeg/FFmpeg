@@ -956,11 +956,12 @@ static const AVFilterPad astats_outputs[] = {
     },
 };
 
-const AVFilter ff_af_astats = {
-    .name          = "astats",
-    .description   = NULL_IF_CONFIG_SMALL("Show time domain statistics about audio frames."),
+const FFFilter ff_af_astats = {
+    .p.name        = "astats",
+    .p.description = NULL_IF_CONFIG_SMALL("Show time domain statistics about audio frames."),
+    .p.priv_class  = &astats_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(AudioStatsContext),
-    .priv_class    = &astats_class,
     .uninit        = uninit,
     FILTER_INPUTS(astats_inputs),
     FILTER_OUTPUTS(astats_outputs),
@@ -969,5 +970,4 @@ const AVFilter ff_af_astats = {
                       AV_SAMPLE_FMT_S64, AV_SAMPLE_FMT_S64P,
                       AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
                       AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP),
-    .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_METADATA_ONLY,
 };

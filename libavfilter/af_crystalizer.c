@@ -233,17 +233,17 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_crystalizer = {
-    .name           = "crystalizer",
-    .description    = NULL_IF_CONFIG_SMALL("Simple audio noise sharpening filter."),
+const FFFilter ff_af_crystalizer = {
+    .p.name         = "crystalizer",
+    .p.description  = NULL_IF_CONFIG_SMALL("Simple audio noise sharpening filter."),
+    .p.priv_class   = &crystalizer_class,
+    .p.flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                      AVFILTER_FLAG_SLICE_THREADS,
     .priv_size      = sizeof(CrystalizerContext),
-    .priv_class     = &crystalizer_class,
     .uninit         = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
                       AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP),
     .process_command = ff_filter_process_command,
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                      AVFILTER_FLAG_SLICE_THREADS,
 };

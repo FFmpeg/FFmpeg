@@ -276,16 +276,16 @@ static const AVFilterPad transpose_vt_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_transpose_vt = {
-    .name           = "transpose_vt",
-    .description    = NULL_IF_CONFIG_SMALL("Transpose Videotoolbox frames"),
+const FFFilter ff_vf_transpose_vt = {
+    .p.name         = "transpose_vt",
+    .p.description  = NULL_IF_CONFIG_SMALL("Transpose Videotoolbox frames"),
+    .p.priv_class   = &transpose_vt_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(TransposeVtContext),
     .init           = transpose_vt_init,
     .uninit         = transpose_vt_uninit,
     FILTER_INPUTS(transpose_vt_inputs),
     FILTER_OUTPUTS(transpose_vt_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VIDEOTOOLBOX),
-    .priv_class     = &transpose_vt_class,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

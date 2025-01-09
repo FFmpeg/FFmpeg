@@ -436,15 +436,15 @@ static const AVFilterPad thumbnail_cuda_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_thumbnail_cuda = {
-    .name          = "thumbnail_cuda",
-    .description   = NULL_IF_CONFIG_SMALL("Select the most representative frame in a given sequence of consecutive frames."),
+const FFFilter ff_vf_thumbnail_cuda = {
+    .p.name        = "thumbnail_cuda",
+    .p.description = NULL_IF_CONFIG_SMALL("Select the most representative frame in a given sequence of consecutive frames."),
+    .p.priv_class  = &thumbnail_cuda_class,
     .priv_size     = sizeof(ThumbnailCudaContext),
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(thumbnail_cuda_inputs),
     FILTER_OUTPUTS(thumbnail_cuda_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_CUDA),
-    .priv_class    = &thumbnail_cuda_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

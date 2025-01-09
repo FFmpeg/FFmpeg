@@ -257,11 +257,11 @@ static const AVFilterPad elbg_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_elbg = {
-    .name          = "elbg",
-    .description   = NULL_IF_CONFIG_SMALL("Apply posterize effect, using the ELBG algorithm."),
+const FFFilter ff_vf_elbg = {
+    .p.name        = "elbg",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply posterize effect, using the ELBG algorithm."),
+    .p.priv_class  = &elbg_class,
     .priv_size     = sizeof(ELBGFilterContext),
-    .priv_class    = &elbg_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(elbg_inputs),

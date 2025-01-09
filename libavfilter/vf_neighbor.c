@@ -344,16 +344,16 @@ static const AVFilterPad neighbor_inputs[] = {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 #define DEFINE_NEIGHBOR_FILTER(name_, description_, priv_class_) \
-const AVFilter ff_vf_##name_ = {                                   \
-    .name          = #name_,                                 \
-    .description   = NULL_IF_CONFIG_SMALL(description_),     \
-    .priv_class    = &priv_class_##_class,                   \
+const FFFilter ff_vf_##name_ = {                             \
+    .p.name        = #name_,                                 \
+    .p.description = NULL_IF_CONFIG_SMALL(description_),     \
+    .p.priv_class  = &priv_class_##_class,                   \
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC| \
+                     AVFILTER_FLAG_SLICE_THREADS,            \
     .priv_size     = sizeof(NContext),                       \
     FILTER_INPUTS(neighbor_inputs),                          \
     FILTER_OUTPUTS(ff_video_default_filterpad),              \
     FILTER_PIXFMTS_ARRAY(pix_fmts),                          \
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC| \
-                     AVFILTER_FLAG_SLICE_THREADS,            \
     .process_command = ff_filter_process_command,            \
 }
 

@@ -498,16 +498,16 @@ static const AVFilterPad bilateral_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_bilateral = {
-    .name          = "bilateral",
-    .description   = NULL_IF_CONFIG_SMALL("Apply Bilateral filter."),
+const FFFilter ff_vf_bilateral = {
+    .p.name        = "bilateral",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply Bilateral filter."),
+    .p.priv_class  = &bilateral_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(BilateralContext),
-    .priv_class    = &bilateral_class,
     .uninit        = uninit,
     FILTER_INPUTS(bilateral_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
-                     AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

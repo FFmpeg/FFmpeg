@@ -473,16 +473,16 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_asoftclip = {
-    .name           = "asoftclip",
-    .description    = NULL_IF_CONFIG_SMALL("Audio Soft Clipper."),
+const FFFilter ff_af_asoftclip = {
+    .p.name         = "asoftclip",
+    .p.description  = NULL_IF_CONFIG_SMALL("Audio Soft Clipper."),
+    .p.priv_class   = &asoftclip_class,
+    .p.flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                      AVFILTER_FLAG_SLICE_THREADS,
     .priv_size      = sizeof(ASoftClipContext),
-    .priv_class     = &asoftclip_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP),
     .uninit         = uninit,
     .process_command = ff_filter_process_command,
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
-                      AVFILTER_FLAG_SLICE_THREADS,
 };

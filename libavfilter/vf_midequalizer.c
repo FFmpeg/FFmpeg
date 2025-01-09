@@ -365,15 +365,15 @@ static const AVFilterPad midequalizer_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_midequalizer = {
-    .name          = "midequalizer",
-    .description   = NULL_IF_CONFIG_SMALL("Apply Midway Equalization."),
+const FFFilter ff_vf_midequalizer = {
+    .p.name        = "midequalizer",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply Midway Equalization."),
+    .p.priv_class  = &midequalizer_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size     = sizeof(MidEqualizerContext),
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(midequalizer_inputs),
     FILTER_OUTPUTS(midequalizer_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &midequalizer_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

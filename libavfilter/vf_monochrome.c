@@ -280,14 +280,14 @@ static const AVOption monochrome_options[] = {
 
 AVFILTER_DEFINE_CLASS(monochrome);
 
-const AVFilter ff_vf_monochrome = {
-    .name          = "monochrome",
-    .description   = NULL_IF_CONFIG_SMALL("Convert video to gray using custom color filter."),
+const FFFilter ff_vf_monochrome = {
+    .p.name        = "monochrome",
+    .p.description = NULL_IF_CONFIG_SMALL("Convert video to gray using custom color filter."),
+    .p.priv_class  = &monochrome_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(MonochromeContext),
-    .priv_class    = &monochrome_class,
     FILTER_INPUTS(monochrome_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

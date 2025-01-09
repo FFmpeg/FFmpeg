@@ -257,16 +257,16 @@ static const AVFilterPad hwupload_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_hwupload = {
-    .name          = "hwupload",
-    .description   = NULL_IF_CONFIG_SMALL("Upload a normal frame to a hardware frame"),
+const FFFilter ff_vf_hwupload = {
+    .p.name        = "hwupload",
+    .p.description = NULL_IF_CONFIG_SMALL("Upload a normal frame to a hardware frame"),
+    .p.priv_class  = &hwupload_class,
+    .p.flags       = AVFILTER_FLAG_HWDEVICE,
     .init          = hwupload_init,
     .uninit        = hwupload_uninit,
     .priv_size     = sizeof(HWUploadContext),
-    .priv_class    = &hwupload_class,
     FILTER_INPUTS(hwupload_inputs),
     FILTER_OUTPUTS(hwupload_outputs),
     FILTER_QUERY_FUNC2(hwupload_query_formats),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

@@ -333,15 +333,15 @@ static const AVFilterPad codecview_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_codecview = {
-    .name          = "codecview",
-    .description   = NULL_IF_CONFIG_SMALL("Visualize information about some codecs."),
+const FFFilter ff_vf_codecview = {
+    .p.name        = "codecview",
+    .p.description = NULL_IF_CONFIG_SMALL("Visualize information about some codecs."),
+    .p.priv_class  = &codecview_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(CodecViewContext),
     FILTER_INPUTS(codecview_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     // TODO: we can probably add way more pixel formats without any other
     // changes; anything with 8-bit luma in first plane should be working
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_YUV420P),
-    .priv_class    = &codecview_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

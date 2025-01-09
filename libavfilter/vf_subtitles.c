@@ -286,16 +286,16 @@ static av_cold int init_ass(AVFilterContext *ctx)
     return 0;
 }
 
-const AVFilter ff_vf_ass = {
-    .name          = "ass",
-    .description   = NULL_IF_CONFIG_SMALL("Render ASS subtitles onto input video using the libass library."),
+const FFFilter ff_vf_ass = {
+    .p.name        = "ass",
+    .p.description = NULL_IF_CONFIG_SMALL("Render ASS subtitles onto input video using the libass library."),
+    .p.priv_class  = &ass_class,
     .priv_size     = sizeof(AssContext),
     .init          = init_ass,
     .uninit        = uninit,
     FILTER_INPUTS(ass_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &ass_class,
 };
 #endif
 
@@ -541,15 +541,15 @@ end:
     return ret;
 }
 
-const AVFilter ff_vf_subtitles = {
-    .name          = "subtitles",
-    .description   = NULL_IF_CONFIG_SMALL("Render text subtitles onto input video using the libass library."),
+const FFFilter ff_vf_subtitles = {
+    .p.name        = "subtitles",
+    .p.description = NULL_IF_CONFIG_SMALL("Render text subtitles onto input video using the libass library."),
+    .p.priv_class  = &subtitles_class,
     .priv_size     = sizeof(AssContext),
     .init          = init_subtitles,
     .uninit        = uninit,
     FILTER_INPUTS(ass_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &subtitles_class,
 };
 #endif

@@ -244,14 +244,14 @@ static const AVFilterPad blackdetect_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_blackdetect = {
-    .name          = "blackdetect",
-    .description   = NULL_IF_CONFIG_SMALL("Detect video intervals that are (almost) black."),
+const FFFilter ff_vf_blackdetect = {
+    .p.name        = "blackdetect",
+    .p.description = NULL_IF_CONFIG_SMALL("Detect video intervals that are (almost) black."),
+    .p.priv_class  = &blackdetect_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(BlackDetectContext),
     FILTER_INPUTS(blackdetect_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .uninit        = uninit,
-    .priv_class    = &blackdetect_class,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_METADATA_ONLY,
 };

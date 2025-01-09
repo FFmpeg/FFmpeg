@@ -4995,16 +4995,16 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-const AVFilter ff_vf_v360 = {
-    .name          = "v360",
-    .description   = NULL_IF_CONFIG_SMALL("Convert 360 projection of video."),
+const FFFilter ff_vf_v360 = {
+    .p.name        = "v360",
+    .p.description = NULL_IF_CONFIG_SMALL("Convert 360 projection of video."),
+    .p.priv_class  = &v360_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(V360Context),
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &v360_class,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

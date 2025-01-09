@@ -410,14 +410,14 @@ static const AVFilterPad mandelbrot_outputs[] = {
     },
 };
 
-const AVFilter ff_vsrc_mandelbrot = {
-    .name          = "mandelbrot",
-    .description   = NULL_IF_CONFIG_SMALL("Render a Mandelbrot fractal."),
+const FFFilter ff_vsrc_mandelbrot = {
+    .p.name        = "mandelbrot",
+    .p.description = NULL_IF_CONFIG_SMALL("Render a Mandelbrot fractal."),
+    .p.priv_class  = &mandelbrot_class,
+    .p.inputs      = NULL,
     .priv_size     = sizeof(MBContext),
-    .priv_class    = &mandelbrot_class,
     .init          = init,
     .uninit        = uninit,
-    .inputs        = NULL,
     FILTER_OUTPUTS(mandelbrot_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_0BGR32),
 };

@@ -248,16 +248,16 @@ static const AVFilterPad addroi_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_addroi = {
-    .name        = "addroi",
-    .description = NULL_IF_CONFIG_SMALL("Add region of interest to frame."),
+const FFFilter ff_vf_addroi = {
+    .p.name        = "addroi",
+    .p.description = NULL_IF_CONFIG_SMALL("Add region of interest to frame."),
+    .p.priv_class  = &addroi_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
+
     .init        = addroi_init,
     .uninit      = addroi_uninit,
 
     .priv_size   = sizeof(AddROIContext),
-    .priv_class  = &addroi_class,
-
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
 
     FILTER_INPUTS(addroi_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),

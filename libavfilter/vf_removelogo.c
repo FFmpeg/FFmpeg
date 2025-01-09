@@ -555,15 +555,15 @@ static const AVFilterPad removelogo_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_removelogo = {
-    .name          = "removelogo",
-    .description   = NULL_IF_CONFIG_SMALL("Remove a TV logo based on a mask image."),
+const FFFilter ff_vf_removelogo = {
+    .p.name        = "removelogo",
+    .p.description = NULL_IF_CONFIG_SMALL("Remove a TV logo based on a mask image."),
+    .p.priv_class  = &removelogo_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(RemovelogoContext),
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(removelogo_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_YUV420P),
-    .priv_class    = &removelogo_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

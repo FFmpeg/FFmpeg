@@ -184,17 +184,17 @@ static const AVFilterPad inputs[] = {
 };
 
 #if CONFIG_FORMAT_FILTER
-const AVFilter ff_vf_format = {
-    .name          = "format",
-    .description   = NULL_IF_CONFIG_SMALL("Convert the input video to one of the specified pixel formats."),
+const FFFilter ff_vf_format = {
+    .p.name        = "format",
+    .p.description = NULL_IF_CONFIG_SMALL("Convert the input video to one of the specified pixel formats."),
+    .p.priv_class  = &format_class,
+
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
 
     .init          = init,
     .uninit        = uninit,
 
     .priv_size     = sizeof(FormatContext),
-    .priv_class    = &format_class,
-
-    .flags         = AVFILTER_FLAG_METADATA_ONLY,
 
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
@@ -204,17 +204,17 @@ const AVFilter ff_vf_format = {
 #endif /* CONFIG_FORMAT_FILTER */
 
 #if CONFIG_NOFORMAT_FILTER
-const AVFilter ff_vf_noformat = {
-    .name          = "noformat",
-    .description   = NULL_IF_CONFIG_SMALL("Force libavfilter not to use any of the specified pixel formats for the input to the next filter."),
-    .priv_class    = &format_class,
+const FFFilter ff_vf_noformat = {
+    .p.name        = "noformat",
+    .p.description = NULL_IF_CONFIG_SMALL("Force libavfilter not to use any of the specified pixel formats for the input to the next filter."),
+    .p.priv_class  = &format_class,
+
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
 
     .init          = init,
     .uninit        = uninit,
 
     .priv_size     = sizeof(FormatContext),
-
-    .flags         = AVFILTER_FLAG_METADATA_ONLY,
 
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),

@@ -366,18 +366,18 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_afreqshift = {
-    .name            = "afreqshift",
-    .description     = NULL_IF_CONFIG_SMALL("Apply frequency shifting to input audio."),
+const FFFilter ff_af_afreqshift = {
+    .p.name          = "afreqshift",
+    .p.description   = NULL_IF_CONFIG_SMALL("Apply frequency shifting to input audio."),
+    .p.priv_class    = &afreqshift_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                       AVFILTER_FLAG_SLICE_THREADS,
     .priv_size       = sizeof(AFreqShift),
-    .priv_class      = &afreqshift_class,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS_ARRAY(sample_fmts),
     .process_command = ff_filter_process_command,
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
-                       AVFILTER_FLAG_SLICE_THREADS,
 };
 
 static const AVOption aphaseshift_options[] = {
@@ -389,16 +389,16 @@ static const AVOption aphaseshift_options[] = {
 
 AVFILTER_DEFINE_CLASS(aphaseshift);
 
-const AVFilter ff_af_aphaseshift = {
-    .name            = "aphaseshift",
-    .description     = NULL_IF_CONFIG_SMALL("Apply phase shifting to input audio."),
+const FFFilter ff_af_aphaseshift = {
+    .p.name          = "aphaseshift",
+    .p.description   = NULL_IF_CONFIG_SMALL("Apply phase shifting to input audio."),
+    .p.priv_class    = &aphaseshift_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                       AVFILTER_FLAG_SLICE_THREADS,
     .priv_size       = sizeof(AFreqShift),
-    .priv_class      = &aphaseshift_class,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SAMPLEFMTS_ARRAY(sample_fmts),
     .process_command = ff_filter_process_command,
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
-                       AVFILTER_FLAG_SLICE_THREADS,
 };

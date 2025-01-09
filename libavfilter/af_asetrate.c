@@ -111,14 +111,14 @@ static const AVFilterPad asetrate_outputs[] = {
     },
 };
 
-const AVFilter ff_af_asetrate = {
-    .name          = "asetrate",
-    .description   = NULL_IF_CONFIG_SMALL("Change the sample rate without "
+const FFFilter ff_af_asetrate = {
+    .p.name        = "asetrate",
+    .p.description = NULL_IF_CONFIG_SMALL("Change the sample rate without "
                                           "altering the data."),
+    .p.priv_class  = &asetrate_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(ASetRateContext),
     FILTER_INPUTS(asetrate_inputs),
     FILTER_OUTPUTS(asetrate_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &asetrate_class,
-    .flags         = AVFILTER_FLAG_METADATA_ONLY,
 };

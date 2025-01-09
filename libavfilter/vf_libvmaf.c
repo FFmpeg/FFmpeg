@@ -617,15 +617,15 @@ static const AVFilterPad libvmaf_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_libvmaf = {
-    .name          = "libvmaf",
-    .description   = NULL_IF_CONFIG_SMALL("Calculate the VMAF between two video streams."),
+const FFFilter ff_vf_libvmaf = {
+    .p.name        = "libvmaf",
+    .p.description = NULL_IF_CONFIG_SMALL("Calculate the VMAF between two video streams."),
+    .p.priv_class  = &libvmaf_class,
     .preinit       = libvmaf_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
     .priv_size     = sizeof(LIBVMAFContext),
-    .priv_class    = &libvmaf_class,
     FILTER_INPUTS(libvmaf_inputs),
     FILTER_OUTPUTS(libvmaf_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
@@ -811,15 +811,15 @@ static const AVFilterPad libvmaf_outputs_cuda[] = {
     },
 };
 
-const AVFilter ff_vf_libvmaf_cuda = {
-    .name           = "libvmaf_cuda",
-    .description    = NULL_IF_CONFIG_SMALL("Calculate the VMAF between two video streams."),
+const FFFilter ff_vf_libvmaf_cuda = {
+    .p.name         = "libvmaf_cuda",
+    .p.description  = NULL_IF_CONFIG_SMALL("Calculate the VMAF between two video streams."),
+    .p.priv_class   = &libvmaf_class,
     .preinit        = libvmaf_framesync_preinit,
     .init           = init_cuda,
     .uninit         = uninit,
     .activate       = activate,
     .priv_size      = sizeof(LIBVMAFContext),
-    .priv_class     = &libvmaf_class,
     FILTER_INPUTS(libvmaf_inputs),
     FILTER_OUTPUTS(libvmaf_outputs_cuda),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_CUDA),

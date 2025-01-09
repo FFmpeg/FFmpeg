@@ -26,10 +26,10 @@
 #include "filters.h"
 #include "video.h"
 
-const AVFilter ff_vf_null = {
-    .name        = "null",
-    .description = NULL_IF_CONFIG_SMALL("Pass the source unchanged to the output."),
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
+const FFFilter ff_vf_null = {
+    .p.name        = "null",
+    .p.description = NULL_IF_CONFIG_SMALL("Pass the source unchanged to the output."),
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(ff_video_default_filterpad),
 };

@@ -636,14 +636,14 @@ static const AVFilterPad outputs[] = {
 
 #if CONFIG_HISTOGRAM_FILTER
 
-const AVFilter ff_vf_histogram = {
-    .name          = "histogram",
-    .description   = NULL_IF_CONFIG_SMALL("Compute and draw a histogram."),
+const FFFilter ff_vf_histogram = {
+    .p.name        = "histogram",
+    .p.description = NULL_IF_CONFIG_SMALL("Compute and draw a histogram."),
+    .p.priv_class  = &histogram_class,
     .priv_size     = sizeof(HistogramContext),
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC(query_formats),
-    .priv_class    = &histogram_class,
 };
 
 #endif /* CONFIG_HISTOGRAM_FILTER */
@@ -678,15 +678,15 @@ static const AVOption thistogram_options[] = {
 
 AVFILTER_DEFINE_CLASS(thistogram);
 
-const AVFilter ff_vf_thistogram = {
-    .name          = "thistogram",
-    .description   = NULL_IF_CONFIG_SMALL("Compute and draw a temporal histogram."),
+const FFFilter ff_vf_thistogram = {
+    .p.name        = "thistogram",
+    .p.description = NULL_IF_CONFIG_SMALL("Compute and draw a temporal histogram."),
+    .p.priv_class  = &thistogram_class,
     .priv_size     = sizeof(HistogramContext),
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC(query_formats),
     .uninit        = uninit,
-    .priv_class    = &thistogram_class,
 };
 
 #endif /* CONFIG_THISTOGRAM_FILTER */

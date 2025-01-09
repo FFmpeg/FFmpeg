@@ -435,19 +435,19 @@ static const AVFilterPad psnr_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_psnr = {
-    .name          = "psnr",
-    .description   = NULL_IF_CONFIG_SMALL("Calculate the PSNR between two video streams."),
+const FFFilter ff_vf_psnr = {
+    .p.name        = "psnr",
+    .p.description = NULL_IF_CONFIG_SMALL("Calculate the PSNR between two video streams."),
+    .p.priv_class  = &psnr_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS             |
+                     AVFILTER_FLAG_METADATA_ONLY,
     .preinit       = psnr_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
     .priv_size     = sizeof(PSNRContext),
-    .priv_class    = &psnr_class,
     FILTER_INPUTS(psnr_inputs),
     FILTER_OUTPUTS(psnr_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_SLICE_THREADS             |
-                     AVFILTER_FLAG_METADATA_ONLY,
 };

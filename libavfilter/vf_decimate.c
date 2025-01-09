@@ -450,15 +450,15 @@ static const AVFilterPad decimate_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_decimate = {
-    .name          = "decimate",
-    .description   = NULL_IF_CONFIG_SMALL("Decimate frames (post field matching filter)."),
+const FFFilter ff_vf_decimate = {
+    .p.name        = "decimate",
+    .p.description = NULL_IF_CONFIG_SMALL("Decimate frames (post field matching filter)."),
+    .p.priv_class  = &decimate_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_INPUTS,
     .init          = decimate_init,
     .activate      = activate,
     .uninit        = decimate_uninit,
     .priv_size     = sizeof(DecimateContext),
     FILTER_OUTPUTS(decimate_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &decimate_class,
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

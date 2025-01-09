@@ -241,28 +241,28 @@ static const AVFilterPad misc_vaapi_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_denoise_vaapi = {
-    .name          = "denoise_vaapi",
-    .description   = NULL_IF_CONFIG_SMALL("VAAPI VPP for de-noise"),
+const FFFilter ff_vf_denoise_vaapi = {
+    .p.name        = "denoise_vaapi",
+    .p.description = NULL_IF_CONFIG_SMALL("VAAPI VPP for de-noise"),
+    .p.priv_class  = &denoise_vaapi_class,
     .priv_size     = sizeof(DenoiseVAAPIContext),
     .init          = &denoise_vaapi_init,
     .uninit        = &ff_vaapi_vpp_ctx_uninit,
     FILTER_INPUTS(misc_vaapi_inputs),
     FILTER_OUTPUTS(misc_vaapi_outputs),
     FILTER_QUERY_FUNC2(&ff_vaapi_vpp_query_formats),
-    .priv_class    = &denoise_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
 
-const AVFilter ff_vf_sharpness_vaapi = {
-    .name          = "sharpness_vaapi",
-    .description   = NULL_IF_CONFIG_SMALL("VAAPI VPP for sharpness"),
+const FFFilter ff_vf_sharpness_vaapi = {
+    .p.name        = "sharpness_vaapi",
+    .p.description = NULL_IF_CONFIG_SMALL("VAAPI VPP for sharpness"),
+    .p.priv_class  = &sharpness_vaapi_class,
     .priv_size     = sizeof(SharpnessVAAPIContext),
     .init          = &sharpness_vaapi_init,
     .uninit        = &ff_vaapi_vpp_ctx_uninit,
     FILTER_INPUTS(misc_vaapi_inputs),
     FILTER_OUTPUTS(misc_vaapi_outputs),
     FILTER_QUERY_FUNC2(&ff_vaapi_vpp_query_formats),
-    .priv_class    = &sharpness_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

@@ -112,12 +112,12 @@ static const AVFilterPad showpalette_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_showpalette = {
-    .name          = "showpalette",
-    .description   = NULL_IF_CONFIG_SMALL("Display frame palette."),
+const FFFilter ff_vf_showpalette = {
+    .p.name        = "showpalette",
+    .p.description = NULL_IF_CONFIG_SMALL("Display frame palette."),
+    .p.priv_class  = &showpalette_class,
     .priv_size     = sizeof(ShowPaletteContext),
     FILTER_INPUTS(showpalette_inputs),
     FILTER_OUTPUTS(showpalette_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &showpalette_class,
 };

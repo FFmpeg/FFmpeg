@@ -417,9 +417,9 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-const AVFilter ff_vf_lcevc = {
-    .name          = "lcevc",
-    .description   = NULL_IF_CONFIG_SMALL("LCEVC"),
+const FFFilter ff_vf_lcevc = {
+    .p.name        = "lcevc",
+    .p.description = NULL_IF_CONFIG_SMALL("LCEVC"),
     .activate      = activate,
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(lcevc_outputs),

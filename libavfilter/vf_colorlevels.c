@@ -557,11 +557,12 @@ static const AVFilterPad colorlevels_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_colorlevels = {
-    .name          = "colorlevels",
-    .description   = NULL_IF_CONFIG_SMALL("Adjust the color levels."),
+const FFFilter ff_vf_colorlevels = {
+    .p.name        = "colorlevels",
+    .p.description = NULL_IF_CONFIG_SMALL("Adjust the color levels."),
+    .p.priv_class  = &colorlevels_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ColorLevelsContext),
-    .priv_class    = &colorlevels_class,
     FILTER_INPUTS(colorlevels_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS(AV_PIX_FMT_0RGB,   AV_PIX_FMT_0BGR,
@@ -578,6 +579,5 @@ const AVFilter ff_vf_colorlevels = {
                    AV_PIX_FMT_GBRP14,
                    AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16,
                    AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

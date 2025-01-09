@@ -326,15 +326,15 @@ static const AVOption yaepblur_options[] = {
 
 AVFILTER_DEFINE_CLASS(yaepblur);
 
-const AVFilter ff_vf_yaepblur = {
-    .name            = "yaepblur",
-    .description     = NULL_IF_CONFIG_SMALL("Yet another edge preserving blur filter."),
+const FFFilter ff_vf_yaepblur = {
+    .p.name          = "yaepblur",
+    .p.description   = NULL_IF_CONFIG_SMALL("Yet another edge preserving blur filter."),
+    .p.priv_class    = &yaepblur_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size       = sizeof(YAEPContext),
-    .priv_class      = &yaepblur_class,
     .uninit          = uninit,
     FILTER_INPUTS(yaep_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

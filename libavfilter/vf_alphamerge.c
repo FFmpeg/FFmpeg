@@ -198,18 +198,18 @@ static const AVOption alphamerge_options[] = {
 
 FRAMESYNC_DEFINE_CLASS(alphamerge, AlphaMergeContext, fs);
 
-const AVFilter ff_vf_alphamerge = {
-    .name           = "alphamerge",
-    .description    = NULL_IF_CONFIG_SMALL("Copy the luma value of the second "
+const FFFilter ff_vf_alphamerge = {
+    .p.name         = "alphamerge",
+    .p.description  = NULL_IF_CONFIG_SMALL("Copy the luma value of the second "
                       "input into the alpha channel of the first input."),
+    .p.priv_class   = &alphamerge_class,
+    .p.flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .preinit        = alphamerge_framesync_preinit,
     .priv_size      = sizeof(AlphaMergeContext),
-    .priv_class     = &alphamerge_class,
     .init           = init,
     FILTER_INPUTS(alphamerge_inputs),
     FILTER_OUTPUTS(alphamerge_outputs),
     FILTER_QUERY_FUNC2(query_formats),
     .uninit         = uninit,
     .activate       = activate,
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

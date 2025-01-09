@@ -306,16 +306,17 @@ static const AVFilterPad maskedclamp_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_maskedclamp = {
-    .name          = "maskedclamp",
-    .description   = NULL_IF_CONFIG_SMALL("Clamp first stream with second stream and third stream."),
+const FFFilter ff_vf_maskedclamp = {
+    .p.name        = "maskedclamp",
+    .p.description = NULL_IF_CONFIG_SMALL("Clamp first stream with second stream and third stream."),
+    .p.priv_class  = &maskedclamp_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(MaskedClampContext),
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(maskedclamp_inputs),
     FILTER_OUTPUTS(maskedclamp_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &maskedclamp_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

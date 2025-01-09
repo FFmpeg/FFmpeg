@@ -1037,15 +1037,15 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-const AVFilter ff_vf_colorspace = {
-    .name            = "colorspace",
-    .description     = NULL_IF_CONFIG_SMALL("Convert between colorspaces."),
+const FFFilter ff_vf_colorspace = {
+    .p.name          = "colorspace",
+    .p.description   = NULL_IF_CONFIG_SMALL("Convert between colorspaces."),
+    .p.priv_class    = &colorspace_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .init            = init,
     .uninit          = uninit,
     .priv_size       = sizeof(ColorSpaceContext),
-    .priv_class      = &colorspace_class,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

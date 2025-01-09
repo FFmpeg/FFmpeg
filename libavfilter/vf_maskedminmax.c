@@ -306,10 +306,12 @@ static const AVFilterPad maskedminmax_outputs[] = {
 
 AVFILTER_DEFINE_CLASS_EXT(maskedminmax, "masked(min|max)", maskedminmax_options);
 
-const AVFilter ff_vf_maskedmin = {
-    .name          = "maskedmin",
-    .description   = NULL_IF_CONFIG_SMALL("Apply filtering with minimum difference of two streams."),
-    .priv_class    = &maskedminmax_class,
+const FFFilter ff_vf_maskedmin = {
+    .p.name        = "maskedmin",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply filtering with minimum difference of two streams."),
+    .p.priv_class  = &maskedminmax_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(MaskedMinMaxContext),
     .init          = maskedmin_init,
     .uninit        = uninit,
@@ -317,20 +319,20 @@ const AVFilter ff_vf_maskedmin = {
     FILTER_INPUTS(maskedminmax_inputs),
     FILTER_OUTPUTS(maskedminmax_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
 
-const AVFilter ff_vf_maskedmax = {
-    .name          = "maskedmax",
-    .description   = NULL_IF_CONFIG_SMALL("Apply filtering with maximum difference of two streams."),
-    .priv_class    = &maskedminmax_class,
+const FFFilter ff_vf_maskedmax = {
+    .p.name        = "maskedmax",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply filtering with maximum difference of two streams."),
+    .p.priv_class  = &maskedminmax_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(MaskedMinMaxContext),
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(maskedminmax_inputs),
     FILTER_OUTPUTS(maskedminmax_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

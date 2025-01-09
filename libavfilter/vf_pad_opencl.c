@@ -380,16 +380,16 @@ static const AVOption pad_opencl_options[] = {
 
 AVFILTER_DEFINE_CLASS(pad_opencl);
 
-const AVFilter ff_vf_pad_opencl = {
-    .name           = "pad_opencl",
-    .description    = NULL_IF_CONFIG_SMALL("Pad the input video."),
+const FFFilter ff_vf_pad_opencl = {
+    .p.name         = "pad_opencl",
+    .p.description  = NULL_IF_CONFIG_SMALL("Pad the input video."),
+    .p.priv_class   = &pad_opencl_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(PadOpenCLContext),
-    .priv_class     = &pad_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &pad_opencl_uninit,
     FILTER_INPUTS(pad_opencl_inputs),
     FILTER_OUTPUTS(pad_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

@@ -1560,15 +1560,15 @@ static const AVOption aiir_options[] = {
 
 AVFILTER_DEFINE_CLASS(aiir);
 
-const AVFilter ff_af_aiir = {
-    .name          = "aiir",
-    .description   = NULL_IF_CONFIG_SMALL("Apply Infinite Impulse Response filter with supplied coefficients."),
+const FFFilter ff_af_aiir = {
+    .p.name        = "aiir",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply Infinite Impulse Response filter with supplied coefficients."),
+    .p.priv_class  = &aiir_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(AudioIIRContext),
-    .priv_class    = &aiir_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS |
-                     AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -1113,16 +1113,16 @@ static const AVFilterPad nlmeans_vulkan_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_nlmeans_vulkan = {
-    .name           = "nlmeans_vulkan",
-    .description    = NULL_IF_CONFIG_SMALL("Non-local means denoiser (Vulkan)"),
+const FFFilter ff_vf_nlmeans_vulkan = {
+    .p.name         = "nlmeans_vulkan",
+    .p.description  = NULL_IF_CONFIG_SMALL("Non-local means denoiser (Vulkan)"),
+    .p.priv_class   = &nlmeans_vulkan_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(NLMeansVulkanContext),
     .init           = &ff_vk_filter_init,
     .uninit         = &nlmeans_vulkan_uninit,
     FILTER_INPUTS(nlmeans_vulkan_inputs),
     FILTER_OUTPUTS(nlmeans_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
-    .priv_class     = &nlmeans_vulkan_class,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

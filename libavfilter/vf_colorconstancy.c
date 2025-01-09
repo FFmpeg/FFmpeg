@@ -725,16 +725,16 @@ static const AVOption greyedge_options[] = {
 
 AVFILTER_DEFINE_CLASS(greyedge);
 
-const AVFilter ff_vf_greyedge = {
-    .name          = GREY_EDGE,
-    .description   = NULL_IF_CONFIG_SMALL("Estimates scene illumination by grey edge assumption."),
+const FFFilter ff_vf_greyedge = {
+    .p.name        = GREY_EDGE,
+    .p.description = NULL_IF_CONFIG_SMALL("Estimates scene illumination by grey edge assumption."),
+    .p.priv_class  = &greyedge_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ColorConstancyContext),
-    .priv_class    = &greyedge_class,
     .uninit        = uninit,
     FILTER_INPUTS(colorconstancy_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     // TODO: support more formats
     // FIXME: error when saving to .jpg
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_GBRP),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -265,15 +265,15 @@ static const AVFilterPad avfilter_af_aexciter_inputs[] = {
     },
 };
 
-const AVFilter ff_af_aexciter = {
-    .name          = "aexciter",
-    .description   = NULL_IF_CONFIG_SMALL("Enhance high frequency part of audio."),
+const FFFilter ff_af_aexciter = {
+    .p.name        = "aexciter",
+    .p.description = NULL_IF_CONFIG_SMALL("Enhance high frequency part of audio."),
+    .p.priv_class  = &aexciter_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size     = sizeof(AExciterContext),
-    .priv_class    = &aexciter_class,
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_af_aexciter_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_DBL),
     .process_command = process_command,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

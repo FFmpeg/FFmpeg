@@ -218,15 +218,15 @@ static const AVFilterPad outputs[] = {
 
 AVFILTER_DEFINE_CLASS(lagfun);
 
-const AVFilter ff_vf_lagfun = {
-    .name          = "lagfun",
-    .description   = NULL_IF_CONFIG_SMALL("Slowly update darker pixels."),
+const FFFilter ff_vf_lagfun = {
+    .p.name        = "lagfun",
+    .p.description = NULL_IF_CONFIG_SMALL("Slowly update darker pixels."),
+    .p.priv_class  = &lagfun_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size     = sizeof(LagfunContext),
-    .priv_class    = &lagfun_class,
     .uninit        = uninit,
     FILTER_OUTPUTS(outputs),
     FILTER_INPUTS(inputs),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };

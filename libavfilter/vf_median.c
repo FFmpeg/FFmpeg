@@ -270,15 +270,15 @@ static const AVFilterPad median_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_median = {
-    .name          = "median",
-    .description   = NULL_IF_CONFIG_SMALL("Apply Median filter."),
+const FFFilter ff_vf_median = {
+    .p.name        = "median",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply Median filter."),
+    .p.priv_class  = &median_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(MedianContext),
-    .priv_class    = &median_class,
     .uninit        = uninit,
     FILTER_INPUTS(median_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

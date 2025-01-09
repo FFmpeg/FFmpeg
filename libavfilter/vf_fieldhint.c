@@ -323,11 +323,11 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-const AVFilter ff_vf_fieldhint = {
-    .name          = "fieldhint",
-    .description   = NULL_IF_CONFIG_SMALL("Field matching using hints."),
+const FFFilter ff_vf_fieldhint = {
+    .p.name        = "fieldhint",
+    .p.description = NULL_IF_CONFIG_SMALL("Field matching using hints."),
+    .p.priv_class  = &fieldhint_class,
     .priv_size     = sizeof(FieldHintContext),
-    .priv_class    = &fieldhint_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),

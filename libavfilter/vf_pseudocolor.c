@@ -1055,15 +1055,15 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 AVFILTER_DEFINE_CLASS(pseudocolor);
 
-const AVFilter ff_vf_pseudocolor = {
-    .name          = "pseudocolor",
-    .description   = NULL_IF_CONFIG_SMALL("Make pseudocolored video frames."),
+const FFFilter ff_vf_pseudocolor = {
+    .p.name        = "pseudocolor",
+    .p.description = NULL_IF_CONFIG_SMALL("Make pseudocolored video frames."),
+    .p.priv_class  = &pseudocolor_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(PseudoColorContext),
-    .priv_class    = &pseudocolor_class,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

@@ -641,15 +641,16 @@ static const AVFilterPad cudascale_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_scale_cuda = {
-    .name      = "scale_cuda",
-    .description = NULL_IF_CONFIG_SMALL("GPU accelerated video resizer"),
+const FFFilter ff_vf_scale_cuda = {
+    .p.name        = "scale_cuda",
+    .p.description = NULL_IF_CONFIG_SMALL("GPU accelerated video resizer"),
+
+    .p.priv_class  = &cudascale_class,
 
     .init          = cudascale_init,
     .uninit        = cudascale_uninit,
 
     .priv_size = sizeof(CUDAScaleContext),
-    .priv_class = &cudascale_class,
 
     FILTER_INPUTS(cudascale_inputs),
     FILTER_OUTPUTS(cudascale_outputs),

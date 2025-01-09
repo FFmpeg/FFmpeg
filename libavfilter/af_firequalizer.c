@@ -955,14 +955,14 @@ static const AVFilterPad firequalizer_outputs[] = {
     },
 };
 
-const AVFilter ff_af_firequalizer = {
-    .name               = "firequalizer",
-    .description        = NULL_IF_CONFIG_SMALL("Finite Impulse Response Equalizer."),
+const FFFilter ff_af_firequalizer = {
+    .p.name             = "firequalizer",
+    .p.description      = NULL_IF_CONFIG_SMALL("Finite Impulse Response Equalizer."),
+    .p.priv_class       = &firequalizer_class,
     .uninit             = uninit,
     .process_command    = process_command,
     .priv_size          = sizeof(FIREqualizerContext),
     FILTER_INPUTS(firequalizer_inputs),
     FILTER_OUTPUTS(firequalizer_outputs),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_FLTP),
-    .priv_class         = &firequalizer_class,
 };

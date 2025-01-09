@@ -90,12 +90,12 @@ static const AVFilterPad framestep_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_framestep = {
-    .name        = "framestep",
-    .description = NULL_IF_CONFIG_SMALL("Select one frame every N frames."),
+const FFFilter ff_vf_framestep = {
+    .p.name        = "framestep",
+    .p.description = NULL_IF_CONFIG_SMALL("Select one frame every N frames."),
+    .p.priv_class  = &framestep_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(FrameStepContext),
-    .priv_class  = &framestep_class,
     FILTER_INPUTS(framestep_inputs),
     FILTER_OUTPUTS(framestep_outputs),
-    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_METADATA_ONLY,
 };

@@ -272,14 +272,14 @@ static const AVOption colorize_options[] = {
 
 AVFILTER_DEFINE_CLASS(colorize);
 
-const AVFilter ff_vf_colorize = {
-    .name          = "colorize",
-    .description   = NULL_IF_CONFIG_SMALL("Overlay a solid color on the video stream."),
+const FFFilter ff_vf_colorize = {
+    .p.name        = "colorize",
+    .p.description = NULL_IF_CONFIG_SMALL("Overlay a solid color on the video stream."),
+    .p.priv_class  = &colorize_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ColorizeContext),
-    .priv_class    = &colorize_class,
     FILTER_INPUTS(colorize_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

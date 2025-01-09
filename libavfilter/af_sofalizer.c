@@ -1088,16 +1088,16 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_sofalizer = {
-    .name          = "sofalizer",
-    .description   = NULL_IF_CONFIG_SMALL("SOFAlizer (Spatially Oriented Format for Acoustics)."),
+const FFFilter ff_af_sofalizer = {
+    .p.name        = "sofalizer",
+    .p.description = NULL_IF_CONFIG_SMALL("SOFAlizer (Spatially Oriented Format for Acoustics)."),
+    .p.priv_class  = &sofalizer_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(SOFAlizerContext),
-    .priv_class    = &sofalizer_class,
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

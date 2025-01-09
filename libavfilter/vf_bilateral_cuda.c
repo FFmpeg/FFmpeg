@@ -462,15 +462,16 @@ static const AVFilterPad cuda_bilateral_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_bilateral_cuda = {
-    .name        = "bilateral_cuda",
-    .description = NULL_IF_CONFIG_SMALL("GPU accelerated bilateral filter"),
+const FFFilter ff_vf_bilateral_cuda = {
+    .p.name        = "bilateral_cuda",
+    .p.description = NULL_IF_CONFIG_SMALL("GPU accelerated bilateral filter"),
+
+    .p.priv_class  = &cuda_bilateral_class,
 
     .init          = cudabilateral_init,
     .uninit        = cudabilateral_uninit,
 
     .priv_size = sizeof(CUDABilateralContext),
-    .priv_class = &cuda_bilateral_class,
 
     FILTER_INPUTS(cuda_bilateral_inputs),
     FILTER_OUTPUTS(cuda_bilateral_outputs),

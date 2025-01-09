@@ -440,14 +440,14 @@ static const AVFilterPad shufflepixels_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_shufflepixels = {
-    .name          = "shufflepixels",
-    .description   = NULL_IF_CONFIG_SMALL("Shuffle video pixels."),
+const FFFilter ff_vf_shufflepixels = {
+    .p.name        = "shufflepixels",
+    .p.description = NULL_IF_CONFIG_SMALL("Shuffle video pixels."),
+    .p.priv_class  = &shufflepixels_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ShufflePixelsContext),
-    .priv_class    = &shufflepixels_class,
     .uninit        = uninit,
     FILTER_INPUTS(shufflepixels_inputs),
     FILTER_OUTPUTS(shufflepixels_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

@@ -608,15 +608,15 @@ static const AVFilterPad aspectralstats_outputs[] = {
     },
 };
 
-const AVFilter ff_af_aspectralstats = {
-    .name          = "aspectralstats",
-    .description   = NULL_IF_CONFIG_SMALL("Show frequency domain statistics about audio frames."),
+const FFFilter ff_af_aspectralstats = {
+    .p.name        = "aspectralstats",
+    .p.description = NULL_IF_CONFIG_SMALL("Show frequency domain statistics about audio frames."),
+    .p.priv_class  = &aspectralstats_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(AudioSpectralStatsContext),
-    .priv_class    = &aspectralstats_class,
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(aspectralstats_outputs),
     FILTER_SINGLE_SAMPLEFMT(AV_SAMPLE_FMT_FLTP),
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

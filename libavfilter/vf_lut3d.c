@@ -1306,17 +1306,18 @@ static const AVFilterPad lut3d_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_lut3d = {
-    .name          = "lut3d",
-    .description   = NULL_IF_CONFIG_SMALL("Adjust colors using a 3D LUT."),
+const FFFilter ff_vf_lut3d = {
+    .p.name        = "lut3d",
+    .p.description = NULL_IF_CONFIG_SMALL("Adjust colors using a 3D LUT."),
+    .p.priv_class  = &lut3d_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(LUT3DContext),
     .init          = lut3d_init,
     .uninit        = lut3d_uninit,
     FILTER_INPUTS(lut3d_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &lut3d_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
 #endif
@@ -1571,9 +1572,12 @@ static const AVFilterPad haldclut_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_haldclut = {
-    .name          = "haldclut",
-    .description   = NULL_IF_CONFIG_SMALL("Adjust colors using a Hald CLUT."),
+const FFFilter ff_vf_haldclut = {
+    .p.name        = "haldclut",
+    .p.description = NULL_IF_CONFIG_SMALL("Adjust colors using a Hald CLUT."),
+    .p.priv_class  = &haldclut_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(LUT3DContext),
     .preinit       = haldclut_framesync_preinit,
     .init          = haldclut_init,
@@ -1582,8 +1586,6 @@ const AVFilter ff_vf_haldclut = {
     FILTER_INPUTS(haldclut_inputs),
     FILTER_OUTPUTS(haldclut_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &haldclut_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
 #endif
@@ -2232,16 +2234,17 @@ static const AVFilterPad lut1d_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_lut1d = {
-    .name          = "lut1d",
-    .description   = NULL_IF_CONFIG_SMALL("Adjust colors using a 1D LUT."),
+const FFFilter ff_vf_lut1d = {
+    .p.name        = "lut1d",
+    .p.description = NULL_IF_CONFIG_SMALL("Adjust colors using a 1D LUT."),
+    .p.priv_class  = &lut1d_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(LUT1DContext),
     .init          = lut1d_init,
     FILTER_INPUTS(lut1d_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &lut1d_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = lut1d_process_command,
 };
 #endif

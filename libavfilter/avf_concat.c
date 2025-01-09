@@ -451,17 +451,17 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return ret;
 }
 
-const AVFilter ff_avf_concat = {
-    .name          = "concat",
-    .description   = NULL_IF_CONFIG_SMALL("Concatenate audio and video streams."),
+const FFFilter ff_avf_concat = {
+    .p.name        = "concat",
+    .p.description = NULL_IF_CONFIG_SMALL("Concatenate audio and video streams."),
+    .p.inputs      = NULL,
+    .p.outputs     = NULL,
+    .p.priv_class  = &concat_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_DYNAMIC_OUTPUTS,
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
     .priv_size     = sizeof(ConcatContext),
-    .inputs        = NULL,
-    .outputs       = NULL,
-    .priv_class    = &concat_class,
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_DYNAMIC_OUTPUTS,
     FILTER_QUERY_FUNC2(query_formats),
     .process_command = process_command,
 };

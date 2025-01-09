@@ -310,16 +310,16 @@ static const AVFilterPad mergeplanes_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_mergeplanes = {
-    .name          = "mergeplanes",
-    .description   = NULL_IF_CONFIG_SMALL("Merge planes."),
+const FFFilter ff_vf_mergeplanes = {
+    .p.name        = "mergeplanes",
+    .p.description = NULL_IF_CONFIG_SMALL("Merge planes."),
+    .p.priv_class  = &mergeplanes_class,
+    .p.inputs      = NULL,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_INPUTS,
     .priv_size     = sizeof(MergePlanesContext),
-    .priv_class    = &mergeplanes_class,
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .inputs        = NULL,
     FILTER_OUTPUTS(mergeplanes_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

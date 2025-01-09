@@ -396,12 +396,11 @@ static const AVFilterPad avsynctest_outputs[] = {
     },
 };
 
-const AVFilter ff_avsrc_avsynctest = {
-    .name          = "avsynctest",
-    .description   = NULL_IF_CONFIG_SMALL("Generate an Audio Video Sync Test."),
+const FFFilter ff_avsrc_avsynctest = {
+    .p.name        = "avsynctest",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate an Audio Video Sync Test."),
+    .p.priv_class  = &avsynctest_class,
     .priv_size     = sizeof(AVSyncTestContext),
-    .priv_class    = &avsynctest_class,
-    .inputs        = NULL,
     .activate      = activate,
     FILTER_OUTPUTS(avsynctest_outputs),
     FILTER_QUERY_FUNC2(query_formats),

@@ -248,16 +248,16 @@ static const AVFilterPad avgblur_vulkan_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_avgblur_vulkan = {
-    .name           = "avgblur_vulkan",
-    .description    = NULL_IF_CONFIG_SMALL("Apply avgblur mask to input video"),
+const FFFilter ff_vf_avgblur_vulkan = {
+    .p.name         = "avgblur_vulkan",
+    .p.description  = NULL_IF_CONFIG_SMALL("Apply avgblur mask to input video"),
+    .p.priv_class   = &avgblur_vulkan_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(AvgBlurVulkanContext),
     .init           = &ff_vk_filter_init,
     .uninit         = &avgblur_vulkan_uninit,
     FILTER_INPUTS(avgblur_vulkan_inputs),
     FILTER_OUTPUTS(avgblur_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
-    .priv_class     = &avgblur_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

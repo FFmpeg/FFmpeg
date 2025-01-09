@@ -750,11 +750,11 @@ static const AVFilterPad pullup_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_pullup = {
-    .name          = "pullup",
-    .description   = NULL_IF_CONFIG_SMALL("Pullup from field sequence to frames."),
+const FFFilter ff_vf_pullup = {
+    .p.name        = "pullup",
+    .p.description = NULL_IF_CONFIG_SMALL("Pullup from field sequence to frames."),
+    .p.priv_class  = &pullup_class,
     .priv_size     = sizeof(PullupContext),
-    .priv_class    = &pullup_class,
     .uninit        = uninit,
     FILTER_INPUTS(pullup_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),

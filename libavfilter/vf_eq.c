@@ -345,16 +345,16 @@ static const AVOption eq_options[] = {
 
 AVFILTER_DEFINE_CLASS(eq);
 
-const AVFilter ff_vf_eq = {
-    .name            = "eq",
-    .description     = NULL_IF_CONFIG_SMALL("Adjust brightness, contrast, gamma, and saturation."),
+const FFFilter ff_vf_eq = {
+    .p.name          = "eq",
+    .p.description   = NULL_IF_CONFIG_SMALL("Adjust brightness, contrast, gamma, and saturation."),
+    .p.priv_class    = &eq_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size       = sizeof(EQContext),
-    .priv_class      = &eq_class,
     FILTER_INPUTS(eq_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts_eq),
     .process_command = process_command,
     .init            = initialize,
     .uninit          = uninit,
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

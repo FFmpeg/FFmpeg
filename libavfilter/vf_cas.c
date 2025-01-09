@@ -265,14 +265,14 @@ static const AVOption cas_options[] = {
 
 AVFILTER_DEFINE_CLASS(cas);
 
-const AVFilter ff_vf_cas = {
-    .name          = "cas",
-    .description   = NULL_IF_CONFIG_SMALL("Contrast Adaptive Sharpen."),
+const FFFilter ff_vf_cas = {
+    .p.name        = "cas",
+    .p.description = NULL_IF_CONFIG_SMALL("Contrast Adaptive Sharpen."),
+    .p.priv_class  = &cas_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(CASContext),
-    .priv_class    = &cas_class,
     FILTER_INPUTS(cas_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

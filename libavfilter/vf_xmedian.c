@@ -376,19 +376,19 @@ static const AVOption xmedian_options[] = {
 
 FRAMESYNC_DEFINE_CLASS(xmedian, XMedianContext, fs);
 
-const AVFilter ff_vf_xmedian = {
-    .name          = "xmedian",
-    .description   = NULL_IF_CONFIG_SMALL("Pick median pixels from several video inputs."),
+const FFFilter ff_vf_xmedian = {
+    .p.name        = "xmedian",
+    .p.description = NULL_IF_CONFIG_SMALL("Pick median pixels from several video inputs."),
+    .p.priv_class  = &xmedian_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS |
+                     AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size     = sizeof(XMedianContext),
-    .priv_class    = &xmedian_class,
     FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .preinit       = xmedian_framesync_preinit,
     .init          = xmedian_init,
     .uninit        = uninit,
     .activate      = activate,
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS |
-                     AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .process_command = ff_filter_process_command,
 };
 
@@ -453,17 +453,17 @@ static const AVFilterPad tmedian_inputs[] = {
 
 AVFILTER_DEFINE_CLASS(tmedian);
 
-const AVFilter ff_vf_tmedian = {
-    .name          = "tmedian",
-    .description   = NULL_IF_CONFIG_SMALL("Pick median pixels from successive frames."),
+const FFFilter ff_vf_tmedian = {
+    .p.name        = "tmedian",
+    .p.description = NULL_IF_CONFIG_SMALL("Pick median pixels from successive frames."),
+    .p.priv_class  = &tmedian_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(XMedianContext),
-    .priv_class    = &tmedian_class,
     FILTER_INPUTS(tmedian_inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
     .init          = init,
     .uninit        = uninit,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
 

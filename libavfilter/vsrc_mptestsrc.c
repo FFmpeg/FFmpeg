@@ -345,13 +345,13 @@ static const AVFilterPad mptestsrc_outputs[] = {
     },
 };
 
-const AVFilter ff_vsrc_mptestsrc = {
-    .name          = "mptestsrc",
-    .description   = NULL_IF_CONFIG_SMALL("Generate various test pattern."),
+const FFFilter ff_vsrc_mptestsrc = {
+    .p.name        = "mptestsrc",
+    .p.description = NULL_IF_CONFIG_SMALL("Generate various test pattern."),
+    .p.priv_class  = &mptestsrc_class,
+    .p.inputs      = NULL,
     .priv_size     = sizeof(MPTestContext),
-    .priv_class    = &mptestsrc_class,
     .init          = init,
-    .inputs        = NULL,
     FILTER_OUTPUTS(mptestsrc_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_YUV420P),
 };

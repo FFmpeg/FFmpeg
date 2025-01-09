@@ -539,14 +539,14 @@ static const AVFilterPad spectrumsynth_outputs[] = {
     },
 };
 
-const AVFilter ff_vaf_spectrumsynth = {
-    .name          = "spectrumsynth",
-    .description   = NULL_IF_CONFIG_SMALL("Convert input spectrum videos to audio output."),
+const FFFilter ff_vaf_spectrumsynth = {
+    .p.name        = "spectrumsynth",
+    .p.description = NULL_IF_CONFIG_SMALL("Convert input spectrum videos to audio output."),
+    .p.priv_class  = &spectrumsynth_class,
     .uninit        = uninit,
     .activate      = activate,
     .priv_size     = sizeof(SpectrumSynthContext),
     FILTER_INPUTS(spectrumsynth_inputs),
     FILTER_OUTPUTS(spectrumsynth_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &spectrumsynth_class,
 };

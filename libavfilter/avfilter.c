@@ -418,7 +418,7 @@ int ff_filter_config_links(AVFilterContext *filter)
             }
 
             if (link->src->nb_inputs &&
-                !(link->src->filter->flags_internal & FF_FILTER_FLAG_HWFRAME_AWARE)) {
+                !(fffilter(link->src->filter)->flags_internal & FF_FILTER_FLAG_HWFRAME_AWARE)) {
                 FilterLink *l0 = ff_filter_link(link->src->inputs[0]);
 
                 av_assert0(!li->l.hw_frames_ctx &&
@@ -478,7 +478,7 @@ int ff_request_frame(AVFilterLink *link)
 
     FF_TPRINTF_START(NULL, request_frame); ff_tlog_link(NULL, link, 1);
 
-    av_assert1(!link->dst->filter->activate);
+    av_assert1(!fffilter(link->dst->filter)->activate);
     if (li->status_out)
         return li->status_out;
     if (li->status_in) {
@@ -620,15 +620,15 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
         return 0;
     }else if(!strcmp(cmd, "enable")) {
         return set_enable_expr(fffilterctx(filter), arg);
-    }else if(filter->filter->process_command) {
-        return filter->filter->process_command(filter, cmd, arg, res, res_len, flags);
+    }else if (fffilter(filter->filter)->process_command) {
+        return fffilter(filter->filter)->process_command(filter, cmd, arg, res, res_len, flags);
     }
     return AVERROR(ENOSYS);
 }
 
 unsigned avfilter_filter_pad_count(const AVFilter *filter, int is_output)
 {
-    return is_output ? filter->nb_outputs : filter->nb_inputs;
+    return is_output ? fffilter(filter)->nb_outputs : fffilter(filter)->nb_inputs;
 }
 
 static const char *default_filter_name(void *filter_ctx)
@@ -700,6 +700,7 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
 {
     FFFilterContext *ctx;
     AVFilterContext *ret;
+    const FFFilter *const fi = fffilter(filter);
     int preinited = 0;
 
     if (!filter)
@@ -713,13 +714,13 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
     ret->av_class = &avfilter_class;
     ret->filter   = filter;
     ret->name     = inst_name ? av_strdup(inst_name) : NULL;
-    if (filter->priv_size) {
-        ret->priv     = av_mallocz(filter->priv_size);
+    if (fi->priv_size) {
+        ret->priv     = av_mallocz(fi->priv_size);
         if (!ret->priv)
             goto err;
     }
-    if (filter->preinit) {
-        if (filter->preinit(ret) < 0)
+    if (fi->preinit) {
+        if (fi->preinit(ret) < 0)
             goto err;
         preinited = 1;
     }
@@ -732,7 +733,7 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
 
     ctx->execute = default_execute;
 
-    ret->nb_inputs  = filter->nb_inputs;
+    ret->nb_inputs  = fi->nb_inputs;
     if (ret->nb_inputs ) {
         ret->input_pads   = av_memdup(filter->inputs,  ret->nb_inputs  * sizeof(*filter->inputs));
         if (!ret->input_pads)
@@ -742,7 +743,7 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
             goto err;
     }
 
-    ret->nb_outputs = filter->nb_outputs;
+    ret->nb_outputs = fi->nb_outputs;
     if (ret->nb_outputs) {
         ret->output_pads  = av_memdup(filter->outputs, ret->nb_outputs * sizeof(*filter->outputs));
         if (!ret->output_pads)
@@ -756,7 +757,7 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
 
 err:
     if (preinited)
-        filter->uninit(ret);
+        fi->uninit(ret);
     av_freep(&ret->inputs);
     av_freep(&ret->input_pads);
     ret->nb_inputs = 0;
@@ -803,8 +804,8 @@ void avfilter_free(AVFilterContext *filter)
     if (filter->graph)
         ff_filter_graph_remove_filter(filter->graph, filter);
 
-    if (filter->filter->uninit)
-        filter->filter->uninit(filter);
+    if (fffilter(filter->filter)->uninit)
+        fffilter(filter->filter)->uninit(filter);
 
     for (i = 0; i < filter->nb_inputs; i++) {
         free_link(filter->inputs[i]);
@@ -935,8 +936,8 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
         ctx->thread_type = 0;
     }
 
-    if (ctx->filter->init)
-        ret = ctx->filter->init(ctx);
+    if (fffilter(ctx->filter)->init)
+        ret = fffilter(ctx->filter)->init(ctx);
     if (ret < 0)
         return ret;
 
@@ -1421,14 +1422,14 @@ static int filter_activate_default(AVFilterContext *filter)
 int ff_filter_activate(AVFilterContext *filter)
 {
     FFFilterContext *ctxi = fffilterctx(filter);
+    const FFFilter *const fi = fffilter(filter->filter);
     int ret;
 
     /* Generic timeline support is not yet implemented but should be easy */
-    av_assert1(!(filter->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC &&
-                 filter->filter->activate));
+    av_assert1(!(fi->p.flags & AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC &&
+                 fi->activate));
     ctxi->ready = 0;
-    ret = filter->filter->activate ? filter->filter->activate(filter) :
-          filter_activate_default(filter);
+    ret = fi->activate ? fi->activate(filter) : filter_activate_default(filter);
     if (ret == FFERROR_NOT_READY)
         ret = 0;
     return ret;

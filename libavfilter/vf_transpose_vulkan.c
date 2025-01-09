@@ -266,16 +266,16 @@ static const AVFilterPad transpose_vulkan_outputs[] = {
     }
 };
 
-const AVFilter ff_vf_transpose_vulkan = {
-    .name           = "transpose_vulkan",
-    .description    = NULL_IF_CONFIG_SMALL("Transpose Vulkan Filter"),
+const FFFilter ff_vf_transpose_vulkan = {
+    .p.name         = "transpose_vulkan",
+    .p.description  = NULL_IF_CONFIG_SMALL("Transpose Vulkan Filter"),
+    .p.priv_class   = &transpose_vulkan_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(TransposeVulkanContext),
     .init           = &ff_vk_filter_init,
     .uninit         = &transpose_vulkan_uninit,
     FILTER_INPUTS(transpose_vulkan_inputs),
     FILTER_OUTPUTS(transpose_vulkan_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_VULKAN),
-    .priv_class     = &transpose_vulkan_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

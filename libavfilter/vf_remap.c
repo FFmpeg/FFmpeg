@@ -397,15 +397,15 @@ static const AVFilterPad remap_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_remap = {
-    .name          = "remap",
-    .description   = NULL_IF_CONFIG_SMALL("Remap pixels."),
+const FFFilter ff_vf_remap = {
+    .p.name        = "remap",
+    .p.description = NULL_IF_CONFIG_SMALL("Remap pixels."),
+    .p.priv_class  = &remap_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(RemapContext),
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(remap_inputs),
     FILTER_OUTPUTS(remap_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &remap_class,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

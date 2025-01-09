@@ -832,20 +832,20 @@ static const AVClass x##_class = { \
     .option     = x##_options, \
     .version    = LIBAVUTIL_VERSION_INT, \
 }; \
-const AVFilter ff_vf_##sn##_qsv = { \
-    .name           = #sn "_qsv", \
-    .description    = NULL_IF_CONFIG_SMALL("Quick Sync Video " #ln), \
+const FFFilter ff_vf_##sn##_qsv = { \
+    .p.name         = #sn "_qsv", \
+    .p.description  = NULL_IF_CONFIG_SMALL("Quick Sync Video " #ln), \
+    .p.priv_class   = &x##_class, \
+    .p.flags        = AVFILTER_FLAG_HWDEVICE, \
     .preinit        = x##_preinit, \
     .init           = vpp_init, \
     .uninit         = vpp_uninit, \
     .priv_size      = sizeof(VPPContext), \
-    .priv_class     = &x##_class, \
     FILTER_INPUTS(vpp_inputs), \
     FILTER_OUTPUTS(vpp_outputs), \
     fmts, \
     .activate       = activate, \
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE, \
-    .flags          = AVFILTER_FLAG_HWDEVICE,       \
 };
 
 #if CONFIG_VPP_QSV_FILTER

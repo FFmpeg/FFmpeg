@@ -253,14 +253,14 @@ static const AVFilterPad histeq_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_histeq = {
-    .name          = "histeq",
-    .description   = NULL_IF_CONFIG_SMALL("Apply global color histogram equalization."),
+const FFFilter ff_vf_histeq = {
+    .p.name        = "histeq",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply global color histogram equalization."),
+    .p.priv_class  = &histeq_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(HisteqContext),
     .init          = init,
     FILTER_INPUTS(histeq_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &histeq_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

@@ -339,9 +339,11 @@ static const AVFilterPad remap_opencl_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_remap_opencl = {
-    .name          = "remap_opencl",
-    .description   = NULL_IF_CONFIG_SMALL("Remap pixels using OpenCL."),
+const FFFilter ff_vf_remap_opencl = {
+    .p.name        = "remap_opencl",
+    .p.description = NULL_IF_CONFIG_SMALL("Remap pixels using OpenCL."),
+    .p.priv_class  = &remap_opencl_class,
+    .p.flags       = AVFILTER_FLAG_HWDEVICE,
     .priv_size     = sizeof(RemapOpenCLContext),
     .init          = remap_opencl_init,
     .uninit        = remap_opencl_uninit,
@@ -349,7 +351,5 @@ const AVFilter ff_vf_remap_opencl = {
     FILTER_INPUTS(remap_opencl_inputs),
     FILTER_OUTPUTS(remap_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
-    .priv_class    = &remap_opencl_class,
     .flags_internal  = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

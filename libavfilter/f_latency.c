@@ -100,15 +100,15 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 #if CONFIG_LATENCY_FILTER
 
-const AVFilter ff_vf_latency = {
-    .name          = "latency",
-    .description   = NULL_IF_CONFIG_SMALL("Report video filtering latency."),
+const FFFilter ff_vf_latency = {
+    .p.name        = "latency",
+    .p.description = NULL_IF_CONFIG_SMALL("Report video filtering latency."),
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(LatencyContext),
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(ff_video_default_filterpad),
     FILTER_OUTPUTS(ff_video_default_filterpad),
 };
@@ -117,14 +117,14 @@ const AVFilter ff_vf_latency = {
 
 #if CONFIG_ALATENCY_FILTER
 
-const AVFilter ff_af_alatency = {
-    .name          = "alatency",
-    .description   = NULL_IF_CONFIG_SMALL("Report audio filtering latency."),
+const FFFilter ff_af_alatency = {
+    .p.name        = "alatency",
+    .p.description = NULL_IF_CONFIG_SMALL("Report audio filtering latency."),
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size     = sizeof(LatencyContext),
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
 };

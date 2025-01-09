@@ -1008,9 +1008,11 @@ static const AVFilterPad curves_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_curves = {
-    .name          = "curves",
-    .description   = NULL_IF_CONFIG_SMALL("Adjust components curves."),
+const FFFilter ff_vf_curves = {
+    .p.name        = "curves",
+    .p.description = NULL_IF_CONFIG_SMALL("Adjust components curves."),
+    .p.priv_class  = &curves_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(CurvesContext),
     .init          = curves_init,
     .uninit        = curves_uninit,
@@ -1029,7 +1031,5 @@ const AVFilter ff_vf_curves = {
                    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
                    AV_PIX_FMT_GBRP14,
                    AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16),
-    .priv_class    = &curves_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

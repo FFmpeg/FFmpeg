@@ -239,16 +239,16 @@ static const AVFilterPad multiply_outputs[] = {
 
 AVFILTER_DEFINE_CLASS(multiply);
 
-const AVFilter ff_vf_multiply = {
-    .name          = "multiply",
-    .description   = NULL_IF_CONFIG_SMALL("Multiply first video stream with second video stream."),
-    .priv_class    = &multiply_class,
+const FFFilter ff_vf_multiply = {
+    .p.name        = "multiply",
+    .p.description = NULL_IF_CONFIG_SMALL("Multiply first video stream with second video stream."),
+    .p.priv_class  = &multiply_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(MultiplyContext),
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(multiply_inputs),
     FILTER_OUTPUTS(multiply_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

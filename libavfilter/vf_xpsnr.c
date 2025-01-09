@@ -727,17 +727,17 @@ static const AVFilterPad xpsnr_outputs[] = {
     }
 };
 
-const AVFilter ff_vf_xpsnr = {
-    .name         = "xpsnr",
-    .description  = NULL_IF_CONFIG_SMALL("Calculate the extended perceptually weighted peak signal-to-noise ratio (XPSNR) between two video streams."),
+const FFFilter ff_vf_xpsnr = {
+    .p.name       = "xpsnr",
+    .p.description = NULL_IF_CONFIG_SMALL("Calculate the extended perceptually weighted peak signal-to-noise ratio (XPSNR) between two video streams."),
+    .p.priv_class = &xpsnr_class,
+    .p.flags      = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_METADATA_ONLY,
     .preinit      = xpsnr_framesync_preinit,
     .init         = init,
     .uninit       = uninit,
     .activate     = activate,
     .priv_size    = sizeof(XPSNRContext),
-    .priv_class   = &xpsnr_class,
     FILTER_INPUTS (xpsnr_inputs),
     FILTER_OUTPUTS(xpsnr_outputs),
     FILTER_PIXFMTS_ARRAY(xpsnr_formats),
-    .flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_METADATA_ONLY
 };

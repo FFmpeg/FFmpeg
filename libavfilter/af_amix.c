@@ -616,18 +616,18 @@ static const AVFilterPad avfilter_af_amix_outputs[] = {
     },
 };
 
-const AVFilter ff_af_amix = {
-    .name           = "amix",
-    .description    = NULL_IF_CONFIG_SMALL("Audio mixing."),
+const FFFilter ff_af_amix = {
+    .p.name         = "amix",
+    .p.description  = NULL_IF_CONFIG_SMALL("Audio mixing."),
+    .p.priv_class   = &amix_class,
+    .p.inputs       = NULL,
+    .p.flags        = AVFILTER_FLAG_DYNAMIC_INPUTS,
     .priv_size      = sizeof(MixContext),
-    .priv_class     = &amix_class,
     .init           = init,
     .uninit         = uninit,
     .activate       = activate,
-    .inputs         = NULL,
     FILTER_OUTPUTS(avfilter_af_amix_outputs),
     FILTER_SAMPLEFMTS(AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
                       AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP),
     .process_command = process_command,
-    .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

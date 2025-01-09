@@ -229,12 +229,12 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_vf_readvitc = {
-    .name          = "readvitc",
-    .description   = NULL_IF_CONFIG_SMALL("Read vertical interval timecode and write it to frame metadata."),
+const FFFilter ff_vf_readvitc = {
+    .p.name        = "readvitc",
+    .p.description = NULL_IF_CONFIG_SMALL("Read vertical interval timecode and write it to frame metadata."),
+    .p.priv_class  = &readvitc_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size     = sizeof(ReadVitcContext),
-    .priv_class    = &readvitc_class,
-    .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),

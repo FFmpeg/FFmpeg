@@ -1510,17 +1510,17 @@ static const AVFilterPad outputs[] = {
     },
 };
 
-const AVFilter ff_af_surround = {
-    .name           = "surround",
-    .description    = NULL_IF_CONFIG_SMALL("Apply audio surround upmix filter."),
+const FFFilter ff_af_surround = {
+    .p.name         = "surround",
+    .p.description  = NULL_IF_CONFIG_SMALL("Apply audio surround upmix filter."),
+    .p.priv_class   = &surround_class,
+    .p.flags        = AVFILTER_FLAG_SLICE_THREADS,
     .priv_size      = sizeof(AudioSurroundContext),
-    .priv_class     = &surround_class,
     .init           = init,
     .uninit         = uninit,
     .activate       = activate,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags          = AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

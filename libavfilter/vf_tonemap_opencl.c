@@ -536,16 +536,16 @@ static const AVFilterPad tonemap_opencl_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_tonemap_opencl = {
-    .name           = "tonemap_opencl",
-    .description    = NULL_IF_CONFIG_SMALL("Perform HDR to SDR conversion with tonemapping."),
+const FFFilter ff_vf_tonemap_opencl = {
+    .p.name         = "tonemap_opencl",
+    .p.description  = NULL_IF_CONFIG_SMALL("Perform HDR to SDR conversion with tonemapping."),
+    .p.priv_class   = &tonemap_opencl_class,
+    .p.flags        = AVFILTER_FLAG_HWDEVICE,
     .priv_size      = sizeof(TonemapOpenCLContext),
-    .priv_class     = &tonemap_opencl_class,
     .init           = &ff_opencl_filter_init,
     .uninit         = &tonemap_opencl_uninit,
     FILTER_INPUTS(tonemap_opencl_inputs),
     FILTER_OUTPUTS(tonemap_opencl_outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_OPENCL),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
-    .flags          = AVFILTER_FLAG_HWDEVICE,
 };

@@ -184,14 +184,15 @@ static const AVOption lumakey_options[] = {
 
 AVFILTER_DEFINE_CLASS(lumakey);
 
-const AVFilter ff_vf_lumakey = {
-    .name          = "lumakey",
-    .description   = NULL_IF_CONFIG_SMALL("Turns a certain luma into transparency."),
+const FFFilter ff_vf_lumakey = {
+    .p.name        = "lumakey",
+    .p.description = NULL_IF_CONFIG_SMALL("Turns a certain luma into transparency."),
+    .p.priv_class  = &lumakey_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
+                     AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(LumakeyContext),
-    .priv_class    = &lumakey_class,
     FILTER_INPUTS(lumakey_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pixel_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };

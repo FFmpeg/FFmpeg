@@ -497,15 +497,15 @@ static const AVFilterPad perspective_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_perspective = {
-    .name          = "perspective",
-    .description   = NULL_IF_CONFIG_SMALL("Correct the perspective of video."),
+const FFFilter ff_vf_perspective = {
+    .p.name        = "perspective",
+    .p.description = NULL_IF_CONFIG_SMALL("Correct the perspective of video."),
+    .p.priv_class  = &perspective_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(PerspectiveContext),
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(perspective_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .priv_class    = &perspective_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

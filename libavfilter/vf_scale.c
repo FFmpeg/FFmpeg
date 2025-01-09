@@ -181,7 +181,8 @@ typedef struct ScaleContext {
 
 } ScaleContext;
 
-const AVFilter ff_vf_scale2ref;
+const FFFilter ff_vf_scale2ref;
+#define IS_SCALE2REF(ctx) ((ctx)->filter == &ff_vf_scale2ref.p)
 
 static int config_props(AVFilterLink *outlink);
 
@@ -229,7 +230,7 @@ static int check_exprs(AVFilterContext *ctx)
         scale->uses_ref = 1;
     }
 
-    if (ctx->filter != &ff_vf_scale2ref &&
+    if (!IS_SCALE2REF(ctx) &&
         (vars_w[VAR_S2R_MAIN_W]    || vars_h[VAR_S2R_MAIN_W]    ||
          vars_w[VAR_S2R_MAIN_H]    || vars_h[VAR_S2R_MAIN_H]    ||
          vars_w[VAR_S2R_MAIN_A]    || vars_h[VAR_S2R_MAIN_A]    ||
@@ -245,7 +246,7 @@ static int check_exprs(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    if (ctx->filter != &ff_vf_scale2ref &&
+    if (!IS_SCALE2REF(ctx) &&
         (vars_w[VAR_S2R_MAIN_W]    || vars_h[VAR_S2R_MAIN_W]    ||
          vars_w[VAR_S2R_MAIN_H]    || vars_h[VAR_S2R_MAIN_H]    ||
          vars_w[VAR_S2R_MAIN_A]    || vars_h[VAR_S2R_MAIN_A]    ||
@@ -353,7 +354,7 @@ static av_cold int init(AVFilterContext *ctx)
     ScaleContext *scale = ctx->priv;
     int ret;
 
-    if (ctx->filter == &ff_vf_scale2ref)
+    if (IS_SCALE2REF(ctx))
         av_log(ctx, AV_LOG_WARNING, "scale2ref is deprecated, use scale=rw:rh instead\n");
 
     if (scale->size_str && (scale->w_expr || scale->h_expr)) {
@@ -448,7 +449,7 @@ static av_cold int init(AVFilterContext *ctx)
     if (!scale->sws->threads)
         scale->sws->threads = ff_filter_get_nb_threads(ctx);
 
-    if (ctx->filter != &ff_vf_scale2ref && scale->uses_ref) {
+    if (!IS_SCALE2REF(ctx) && scale->uses_ref) {
         AVFilterPad pad = {
             .name = "ref",
             .type = AVMEDIA_TYPE_VIDEO,
@@ -549,7 +550,7 @@ static int query_formats(const AVFilterContext *ctx,
 static int scale_eval_dimensions(AVFilterContext *ctx)
 {
     ScaleContext *scale = ctx->priv;
-    const char scale2ref = ctx->filter == &ff_vf_scale2ref;
+    const char scale2ref = IS_SCALE2REF(ctx);
     const AVFilterLink *inlink = scale2ref ? ctx->inputs[1] : ctx->inputs[0];
     const AVFilterLink *outlink = ctx->outputs[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
@@ -639,7 +640,7 @@ static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink0 = outlink->src->inputs[0];
-    AVFilterLink *inlink  = ctx->filter == &ff_vf_scale2ref ?
+    AVFilterLink *inlink  = IS_SCALE2REF(ctx) ?
                             outlink->src->inputs[1] :
                             outlink->src->inputs[0];
     ScaleContext *scale = ctx->priv;
@@ -683,7 +684,7 @@ static int config_props(AVFilterLink *outlink)
            flags_val);
     av_freep(&flags_val);
 
-    if (ctx->filter != &ff_vf_scale2ref) {
+    if (!IS_SCALE2REF(ctx)) {
         ff_framesync_uninit(&scale->fs);
         ret = ff_framesync_init(&scale->fs, ctx, ctx->nb_inputs);
         if (ret < 0)
@@ -770,7 +771,7 @@ static int scale_frame(AVFilterLink *link, AVFrame **frame_in,
 
         if (scale->eval_mode == EVAL_MODE_FRAME &&
             !frame_changed &&
-            ctx->filter != &ff_vf_scale2ref &&
+            !IS_SCALE2REF(ctx) &&
             !(vars_w[VAR_N] || vars_w[VAR_T]
 #if FF_API_FRAME_PKT
               || vars_w[VAR_POS]
@@ -799,7 +800,7 @@ static int scale_frame(AVFilterLink *link, AVFrame **frame_in,
                 goto err;
         }
 
-        if (ctx->filter == &ff_vf_scale2ref) {
+        if (IS_SCALE2REF(ctx)) {
             scale->var_values[VAR_S2R_MAIN_N] = inl->frame_count_out;
             scale->var_values[VAR_S2R_MAIN_T] = TS2T(in->pts, link->time_base);
 #if FF_API_FRAME_PKT
@@ -1207,20 +1208,20 @@ static const AVFilterPad avfilter_vf_scale_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_scale = {
-    .name            = "scale",
-    .description     = NULL_IF_CONFIG_SMALL("Scale the input video size and/or convert the image format."),
+const FFFilter ff_vf_scale = {
+    .p.name          = "scale",
+    .p.description   = NULL_IF_CONFIG_SMALL("Scale the input video size and/or convert the image format."),
+    .p.priv_class    = &scale_class,
+    .p.flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
     .preinit         = preinit,
     .init            = init,
     .uninit          = uninit,
     .priv_size       = sizeof(ScaleContext),
-    .priv_class      = &scale_class,
     FILTER_INPUTS(avfilter_vf_scale_inputs),
     FILTER_OUTPUTS(avfilter_vf_scale_outputs),
     FILTER_QUERY_FUNC2(query_formats),
     .activate        = activate,
     .process_command = process_command,
-    .flags           = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
 
 static const AVClass *scale2ref_child_class_iterate(void **iter)
@@ -1276,14 +1277,14 @@ static const AVFilterPad avfilter_vf_scale2ref_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_scale2ref = {
-    .name            = "scale2ref",
-    .description     = NULL_IF_CONFIG_SMALL("Scale the input video size and/or convert the image format to the given reference."),
+const FFFilter ff_vf_scale2ref = {
+    .p.name          = "scale2ref",
+    .p.description   = NULL_IF_CONFIG_SMALL("Scale the input video size and/or convert the image format to the given reference."),
+    .p.priv_class    = &scale2ref_class,
     .preinit         = preinit,
     .init            = init,
     .uninit          = uninit,
     .priv_size       = sizeof(ScaleContext),
-    .priv_class      = &scale2ref_class,
     FILTER_INPUTS(avfilter_vf_scale2ref_inputs),
     FILTER_OUTPUTS(avfilter_vf_scale2ref_outputs),
     FILTER_QUERY_FUNC2(query_formats),

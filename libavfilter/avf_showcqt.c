@@ -1598,9 +1598,10 @@ static const AVFilterPad showcqt_outputs[] = {
     },
 };
 
-const AVFilter ff_avf_showcqt = {
-    .name          = "showcqt",
-    .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a CQT (Constant/Clamped Q Transform) spectrum video output."),
+const FFFilter ff_avf_showcqt = {
+    .p.name        = "showcqt",
+    .p.description = NULL_IF_CONFIG_SMALL("Convert input audio to a CQT (Constant/Clamped Q Transform) spectrum video output."),
+    .p.priv_class  = &showcqt_class,
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
@@ -1608,5 +1609,4 @@ const AVFilter ff_avf_showcqt = {
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(showcqt_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &showcqt_class,
 };

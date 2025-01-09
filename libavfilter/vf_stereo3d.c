@@ -1111,14 +1111,14 @@ static const AVFilterPad stereo3d_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_stereo3d = {
-    .name          = "stereo3d",
-    .description   = NULL_IF_CONFIG_SMALL("Convert video stereoscopic 3D view."),
+const FFFilter ff_vf_stereo3d = {
+    .p.name        = "stereo3d",
+    .p.description = NULL_IF_CONFIG_SMALL("Convert video stereoscopic 3D view."),
+    .p.priv_class  = &stereo3d_class,
+    .p.flags       = AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(Stereo3DContext),
     .uninit        = uninit,
     FILTER_INPUTS(stereo3d_inputs),
     FILTER_OUTPUTS(stereo3d_outputs),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &stereo3d_class,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

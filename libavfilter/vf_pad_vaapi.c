@@ -269,11 +269,11 @@ static const AVFilterPad pad_vaapi_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_pad_vaapi = {
-    .name           = "pad_vaapi",
-    .description    = NULL_IF_CONFIG_SMALL("Pad the input video."),
+const FFFilter ff_vf_pad_vaapi = {
+    .p.name         = "pad_vaapi",
+    .p.description  = NULL_IF_CONFIG_SMALL("Pad the input video."),
+    .p.priv_class   = &pad_vaapi_class,
     .priv_size      = sizeof(PadVAAPIContext),
-    .priv_class     = &pad_vaapi_class,
     .init           = &pad_vaapi_init,
     .uninit         = &ff_vaapi_vpp_ctx_uninit,
     FILTER_INPUTS(pad_vaapi_inputs),

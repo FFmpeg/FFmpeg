@@ -217,16 +217,16 @@ static const AVFilterPad inputs[] = {
     },
 };
 
-const AVFilter ff_af_dialoguenhance = {
-    .name            = "dialoguenhance",
-    .description     = NULL_IF_CONFIG_SMALL("Audio Dialogue Enhancement."),
+const FFFilter ff_af_dialoguenhance = {
+    .p.name          = "dialoguenhance",
+    .p.description   = NULL_IF_CONFIG_SMALL("Audio Dialogue Enhancement."),
+    .p.priv_class    = &dialoguenhance_class,
+    .p.flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .priv_size       = sizeof(AudioDialogueEnhanceContext),
-    .priv_class      = &dialoguenhance_class,
     .uninit          = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
     .activate        = activate,
     .process_command = ff_filter_process_command,
 };

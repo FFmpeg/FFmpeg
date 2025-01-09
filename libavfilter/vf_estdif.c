@@ -580,15 +580,15 @@ static const AVFilterPad estdif_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_estdif = {
-    .name          = "estdif",
-    .description   = NULL_IF_CONFIG_SMALL("Apply Edge Slope Tracing deinterlace."),
+const FFFilter ff_vf_estdif = {
+    .p.name        = "estdif",
+    .p.description = NULL_IF_CONFIG_SMALL("Apply Edge Slope Tracing deinterlace."),
+    .p.priv_class  = &estdif_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .priv_size     = sizeof(ESTDIFContext),
-    .priv_class    = &estdif_class,
     .uninit        = uninit,
     FILTER_INPUTS(estdif_inputs),
     FILTER_OUTPUTS(estdif_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };

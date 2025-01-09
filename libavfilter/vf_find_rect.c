@@ -284,15 +284,15 @@ static const AVFilterPad foc_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_find_rect = {
-    .name            = "find_rect",
-    .description     = NULL_IF_CONFIG_SMALL("Find a user specified object."),
+const FFFilter ff_vf_find_rect = {
+    .p.name          = "find_rect",
+    .p.description   = NULL_IF_CONFIG_SMALL("Find a user specified object."),
+    .p.flags         = AVFILTER_FLAG_METADATA_ONLY,
+    .p.priv_class    = &find_rect_class,
     .priv_size       = sizeof(FOCContext),
     .init            = init,
     .uninit          = uninit,
-    .flags           = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(foc_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS(AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P),
-    .priv_class      = &find_rect_class,
 };

@@ -187,12 +187,12 @@ static const AVFilterPad avfilter_vf_setdar_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_setdar = {
-    .name        = "setdar",
-    .description = NULL_IF_CONFIG_SMALL("Set the frame display aspect ratio."),
+const FFFilter ff_vf_setdar = {
+    .p.name        = "setdar",
+    .p.description = NULL_IF_CONFIG_SMALL("Set the frame display aspect ratio."),
+    .p.priv_class  = &setdar_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(AspectContext),
-    .priv_class  = &setdar_class,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(aspect_inputs),
     FILTER_OUTPUTS(avfilter_vf_setdar_outputs),
 };
@@ -242,12 +242,12 @@ static const AVFilterPad avfilter_vf_setsar_outputs[] = {
     },
 };
 
-const AVFilter ff_vf_setsar = {
-    .name        = "setsar",
-    .description = NULL_IF_CONFIG_SMALL("Set the pixel sample aspect ratio."),
+const FFFilter ff_vf_setsar = {
+    .p.name        = "setsar",
+    .p.description = NULL_IF_CONFIG_SMALL("Set the pixel sample aspect ratio."),
+    .p.priv_class  = &setsar_class,
+    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
     .priv_size   = sizeof(AspectContext),
-    .priv_class  = &setsar_class,
-    .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(aspect_inputs),
     FILTER_OUTPUTS(avfilter_vf_setsar_outputs),
 };

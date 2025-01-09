@@ -252,15 +252,15 @@ static const AVFilterPad edgedetect_inputs[] = {
     },
 };
 
-const AVFilter ff_vf_edgedetect = {
-    .name          = "edgedetect",
-    .description   = NULL_IF_CONFIG_SMALL("Detect and draw edge."),
+const FFFilter ff_vf_edgedetect = {
+    .p.name        = "edgedetect",
+    .p.description = NULL_IF_CONFIG_SMALL("Detect and draw edge."),
+    .p.priv_class  = &edgedetect_class,
+    .p.flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
     .priv_size     = sizeof(EdgeDetectContext),
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(edgedetect_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_QUERY_FUNC2(query_formats),
-    .priv_class    = &edgedetect_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

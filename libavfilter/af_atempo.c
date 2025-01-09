@@ -1176,14 +1176,14 @@ static const AVFilterPad atempo_outputs[] = {
     },
 };
 
-const AVFilter ff_af_atempo = {
-    .name            = "atempo",
-    .description     = NULL_IF_CONFIG_SMALL("Adjust audio tempo."),
+const FFFilter ff_af_atempo = {
+    .p.name          = "atempo",
+    .p.description   = NULL_IF_CONFIG_SMALL("Adjust audio tempo."),
+    .p.priv_class    = &atempo_class,
     .init            = init,
     .uninit          = uninit,
     .process_command = process_command,
     .priv_size       = sizeof(ATempoContext),
-    .priv_class      = &atempo_class,
     FILTER_INPUTS(atempo_inputs),
     FILTER_OUTPUTS(atempo_outputs),
     FILTER_SAMPLEFMTS_ARRAY(sample_fmts),
