@@ -734,87 +734,47 @@ static int old_codec37(SANMVideoContext *ctx, int top,
         break;
     case 3:
     case 4:
-        if (flags & 4) {
-            for (j = 0; j < height; j += 4) {
-                for (i = 0; i < width; i += 4) {
-                    int code;
-                    if (skip_run) {
-                        skip_run--;
-                        copy_block4(dst + i, prev + i, stride, stride, 4);
-                        continue;
-                    }
+        for (j = 0; j < height; j += 4) {
+            for (i = 0; i < width; i += 4) {
+                int code;
+                if (skip_run) {
+                    skip_run--;
+                    copy_block4(dst + i, prev + i, stride, stride, 4);
+                    continue;
+                }
+                if (bytestream2_get_bytes_left(&ctx->gb) < 1)
+                    return AVERROR_INVALIDDATA;
+                code = bytestream2_get_byteu(&ctx->gb);
+                if (code == 0xFF) {
+                    if (bytestream2_get_bytes_left(&ctx->gb) < 16)
+                        return AVERROR_INVALIDDATA;
+                    for (k = 0; k < 4; k++)
+                        bytestream2_get_bufferu(&ctx->gb, dst + i + k * stride, 4);
+                } else if ((flags & 4) && (code == 0xFE)) {
+                    if (bytestream2_get_bytes_left(&ctx->gb) < 4)
+                       return AVERROR_INVALIDDATA;
+                   for (k = 0; k < 4; k++)
+                       memset(dst + i + k * stride, bytestream2_get_byteu(&ctx->gb), 4);
+                } else if ((flags & 4) && (code == 0xFD)) {
                     if (bytestream2_get_bytes_left(&ctx->gb) < 1)
                         return AVERROR_INVALIDDATA;
-                    code = bytestream2_get_byteu(&ctx->gb);
-                    switch (code) {
-                    case 0xFF:
-                        if (bytestream2_get_bytes_left(&ctx->gb) < 16)
-                            return AVERROR_INVALIDDATA;
-                        for (k = 0; k < 4; k++)
-                            bytestream2_get_bufferu(&ctx->gb, dst + i + k * stride, 4);
-                        break;
-                    case 0xFE:
-                        if (bytestream2_get_bytes_left(&ctx->gb) < 4)
-                            return AVERROR_INVALIDDATA;
-                        for (k = 0; k < 4; k++)
-                            memset(dst + i + k * stride, bytestream2_get_byteu(&ctx->gb), 4);
-                        break;
-                    case 0xFD:
-                        if (bytestream2_get_bytes_left(&ctx->gb) < 1)
-                            return AVERROR_INVALIDDATA;
-                        t = bytestream2_get_byteu(&ctx->gb);
-                        for (k = 0; k < 4; k++)
-                            memset(dst + i + k * stride, t, 4);
-                        break;
-                    default:
-                        if (compr == 4 && !code) {
-                            if (bytestream2_get_bytes_left(&ctx->gb) < 1)
-                                return AVERROR_INVALIDDATA;
-                            skip_run = bytestream2_get_byteu(&ctx->gb) + 1;
-                            i -= 4;
-                        } else {
-                            mx = c37_mv[(mvoff * 255 + code) * 2];
-                            my = c37_mv[(mvoff * 255 + code) * 2 + 1];
-                            codec37_mv(dst + i, prev + i + mx + my * stride,
-                                       ctx->height, stride, i + mx, j + my);
-                        }
-                    }
+                    t = bytestream2_get_byteu(&ctx->gb);
+                    for (k = 0; k < 4; k++)
+                        memset(dst + i + k * stride, t, 4);
+               } else if ((compr == 4) && (code == 0)) {
+                    if (bytestream2_get_bytes_left(&ctx->gb) < 1)
+                        return AVERROR_INVALIDDATA;
+                    skip_run = bytestream2_get_byteu(&ctx->gb) + 1;
+                    i -= 4;
+               } else {
+                    mx = c37_mv[(mvoff * 255 + code) * 2];
+                    my = c37_mv[(mvoff * 255 + code) * 2 + 1];
+                    codec37_mv(dst + i, prev + i + mx + my * stride,
+                               ctx->height, stride, i + mx, j + my);
                 }
-                dst  += stride * 4;
-                prev += stride * 4;
             }
-        } else {
-            for (j = 0; j < height; j += 4) {
-                for (i = 0; i < width; i += 4) {
-                    int code;
-                    if (skip_run) {
-                        skip_run--;
-                        copy_block4(dst + i, prev + i, stride, stride, 4);
-                        continue;
-                    }
-                    code = bytestream2_get_byte(&ctx->gb);
-                    if (code == 0xFF) {
-                        if (bytestream2_get_bytes_left(&ctx->gb) < 16)
-                            return AVERROR_INVALIDDATA;
-                        for (k = 0; k < 4; k++)
-                            bytestream2_get_bufferu(&ctx->gb, dst + i + k * stride, 4);
-                    } else if (compr == 4 && !code) {
-                        if (bytestream2_get_bytes_left(&ctx->gb) < 1)
-                            return AVERROR_INVALIDDATA;
-                        skip_run = bytestream2_get_byteu(&ctx->gb) + 1;
-                        i -= 4;
-                    } else {
-                        int mx, my;
-
-                        mx = c37_mv[(mvoff * 255 + code) * 2];
-                        my = c37_mv[(mvoff * 255 + code) * 2 + 1];
-                        codec37_mv(dst + i, prev + i + mx + my * stride,
-                                   ctx->height, stride, i + mx, j + my);
-                    }
-                }
-                dst  += stride * 4;
-                prev += stride * 4;
-            }
+            dst  += stride * 4;
+            prev += stride * 4;
         }
         break;
     default:
