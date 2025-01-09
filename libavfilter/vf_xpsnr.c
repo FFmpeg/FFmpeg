@@ -60,9 +60,9 @@ typedef struct XPSNRContext {
     /* XPSNR specific variables */
     double          *sse_luma;
     double          *weights;
+    int16_t         *buf_org_m1;
+    int16_t         *buf_org_m2;
     int16_t         *buf_org   [3];
-    int16_t         *buf_org_m1[3];
-    int16_t         *buf_org_m2[3];
     int16_t         *buf_rec   [3];
     uint64_t        max_error_64;
     double          sum_wdist [3];
@@ -266,8 +266,8 @@ static inline double get_avg_xpsnr (const double sqrt_wsse_val,  const double su
     return sum_xpsnr_val / (double) num_frames_64; /* older log-domain average */
 }
 
-static int get_wsse(AVFilterContext *ctx, int16_t **org, int16_t **org_m1, int16_t **org_m2, int16_t **rec,
-                    uint64_t *const wsse64)
+static int get_wsse(AVFilterContext *ctx, int16_t **org, int16_t *org_m1,
+                    int16_t *org_m2, int16_t **rec, uint64_t *const wsse64)
 {
     XPSNRContext *const  s = ctx->priv;
     const uint32_t       w = s->plane_width [0]; /* luma image width in pixels */
@@ -299,8 +299,6 @@ static int get_wsse(AVFilterContext *ctx, int16_t **org, int16_t **org_m1, int16
         const uint32_t s_org = stride_org[0] / s->bpp;
         const int16_t *p_rec = rec[0];
         const uint32_t s_rec = s->plane_width[0];
-        int16_t    *p_org_m1 = org_m1[0]; /* pixel  */
-        int16_t    *p_org_m2 = org_m2[0]; /* memory */
         double     wsse_luma = 0.0;
 
         for (y = 0; y < h; y += b) { /* calculate block SSE and perceptual weights */
@@ -311,7 +309,8 @@ static int get_wsse(AVFilterContext *ctx, int16_t **org, int16_t **org_m1, int16
                 double ms_act = 1.0, ms_act_prev = 0.0;
 
                 sse_luma[idx_blk] = calc_squared_error_and_weight(s, p_org, s_org,
-                                                                  p_org_m1, p_org_m2,
+                                                                  org_m1 /* pixel  */,
+                                                                  org_m2 /* memory */,
                                                                   p_rec, s_rec,
                                                                   x, y,
                                                                   block_width, block_height,
@@ -405,12 +404,10 @@ static int do_xpsnr(FFFrameSync *fs)
     const uint32_t  h_blk = (h + b - 1) / b; /* luma height in units of blocks */
     AVFrame *master, *ref = NULL;
     int16_t *porg   [3];
-    int16_t *porg_m1[3];
-    int16_t *porg_m2[3];
     int16_t *prec   [3];
     uint64_t wsse64 [3] = {0, 0, 0};
     double cur_xpsnr[3] = {INFINITY, INFINITY, INFINITY};
-    int c, ret_value;
+    int c, ret_value, stride_org_bpp;
     AVDictionary **metadata;
 
     if ((ret_value = ff_framesync_dualinput_get(fs, &master, &ref)) < 0)
@@ -425,21 +422,15 @@ static int do_xpsnr(FFFrameSync *fs)
     if (!s->weights)
         s->weights  = av_malloc_array(w_blk * h_blk, sizeof(double));
 
-    for (c = 0; c < s->num_comps; c++) {  /* create temporal org buffer memory */
+    for (c = 0; c < s->num_comps; c++)  /* create temporal org buffer memory */
         s->line_sizes[c] = master->linesize[c];
 
-        if (c == 0) { /* luma ch. */
-            const int stride_org_bpp = (s->bpp == 1 ? s->plane_width[c] : s->line_sizes[c] / s->bpp);
+    stride_org_bpp = (s->bpp == 1 ? s->plane_width[0] : s->line_sizes[0] / s->bpp);
 
-            if (!s->buf_org_m1[c])
-                s->buf_org_m1[c] = av_calloc(s->plane_height[c], stride_org_bpp * sizeof(int16_t));
-            if (!s->buf_org_m2[c])
-                s->buf_org_m2[c] = av_calloc(s->plane_height[c], stride_org_bpp * sizeof(int16_t));
-
-            porg_m1[c] = s->buf_org_m1[c];
-            porg_m2[c] = s->buf_org_m2[c];
-        }
-    }
+    if (!s->buf_org_m1)
+        s->buf_org_m1 = av_calloc(s->plane_height[0], stride_org_bpp * sizeof(int16_t));
+    if (!s->buf_org_m2)
+        s->buf_org_m2 = av_calloc(s->plane_height[0], stride_org_bpp * sizeof(int16_t));
 
     if (s->bpp == 1) { /* 8 bit */
         for (c = 0; c < s->num_comps; c++) { /* allocate org/rec buffer memory */
@@ -470,8 +461,7 @@ static int do_xpsnr(FFFrameSync *fs)
     }
 
     /* extended perceptually weighted peak signal-to-noise ratio (XPSNR) value */
-    ret_value = get_wsse(ctx, (int16_t **) &porg, (int16_t **) &porg_m1, (int16_t **) &porg_m2,
-                         (int16_t **) &prec, wsse64);
+    ret_value = get_wsse(ctx, porg, s->buf_org_m1, s->buf_org_m2, prec, wsse64);
     if ( ret_value < 0 )
         return ret_value; /* an error here means something went wrong earlier! */
 
@@ -530,8 +520,6 @@ static av_cold int init(AVFilterContext *ctx)
 
     for (c = 0; c < 3; c++) { /* initialize XPSNR data of each color component */
         s->buf_org   [c] = NULL;
-        s->buf_org_m1[c] = NULL;
-        s->buf_org_m2[c] = NULL;
         s->buf_rec   [c] = NULL;
         s->sum_wdist [c] = 0.0;
         s->sum_xpsnr [c] = 0.0;
@@ -692,9 +680,10 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->sse_luma);
     av_freep(&s->weights );
 
+    av_freep(&s->buf_org_m1);
+    av_freep(&s->buf_org_m2);
+
     for (c = 0; c < s->num_comps; c++) {
-        av_freep(&s->buf_org_m1[c]);
-        av_freep(&s->buf_org_m2[c]);
         av_freep(&s->buf_org[c]);
         av_freep(&s->buf_rec[c]);
     }
