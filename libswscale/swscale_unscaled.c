@@ -2655,11 +2655,12 @@ void ff_get_unscaled_swscale(SwsInternal *c)
         c->convert_unscaled = nv24ToYuv420Wrapper;
 
 #define isPlanarGray(x) (isGray(x) && (x) != AV_PIX_FMT_YA8 && (x) != AV_PIX_FMT_YA16LE && (x) != AV_PIX_FMT_YA16BE)
+
     /* simple copy */
     if ( srcFormat == dstFormat ||
         (srcFormat == AV_PIX_FMT_YUVA420P && dstFormat == AV_PIX_FMT_YUV420P) ||
         (srcFormat == AV_PIX_FMT_YUV420P && dstFormat == AV_PIX_FMT_YUVA420P) ||
-        (isFloat(srcFormat) == isFloat(dstFormat)) && ((isPlanarYUV(srcFormat) && isPlanarGray(dstFormat)) ||
+        (isFloat(srcFormat) == isFloat(dstFormat) && isFloat16(srcFormat) == isFloat16(dstFormat)) && ((isPlanarYUV(srcFormat) && isPlanarGray(dstFormat)) ||
         (isPlanarYUV(dstFormat) && isPlanarGray(srcFormat)) ||
         (isPlanarGray(dstFormat) && isPlanarGray(srcFormat)) ||
         (isPlanarYUV(srcFormat) && isPlanarYUV(dstFormat) &&

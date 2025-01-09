@@ -219,6 +219,10 @@ static const FormatEntry format_entries[] = {
     [AV_PIX_FMT_GBRPF32BE]   = { 1, 1 },
     [AV_PIX_FMT_GBRAPF32LE]  = { 1, 1 },
     [AV_PIX_FMT_GBRAPF32BE]  = { 1, 1 },
+    [AV_PIX_FMT_GBRPF16LE]   = { 1, 0 },
+    [AV_PIX_FMT_GBRPF16BE]   = { 1, 0 },
+    [AV_PIX_FMT_GBRAPF16LE]  = { 1, 0 },
+    [AV_PIX_FMT_GBRAPF16BE]  = { 1, 0 },
     [AV_PIX_FMT_GBRAP]       = { 1, 1 },
     [AV_PIX_FMT_GBRAP16LE]   = { 1, 1 },
     [AV_PIX_FMT_GBRAP16BE]   = { 1, 1 },
@@ -246,6 +250,8 @@ static const FormatEntry format_entries[] = {
     [AV_PIX_FMT_P016BE]      = { 1, 1 },
     [AV_PIX_FMT_GRAYF32LE]   = { 1, 1 },
     [AV_PIX_FMT_GRAYF32BE]   = { 1, 1 },
+    [AV_PIX_FMT_GRAYF16LE]   = { 1, 0 },
+    [AV_PIX_FMT_GRAYF16BE]   = { 1, 0 },
     [AV_PIX_FMT_YUVA422P12BE] = { 1, 1 },
     [AV_PIX_FMT_YUVA422P12LE] = { 1, 1 },
     [AV_PIX_FMT_YUVA444P12BE] = { 1, 1 },
@@ -1578,6 +1584,8 @@ av_cold int ff_sws_init_single_context(SwsContext *sws, SwsFilter *srcFilter,
         srcFormat != AV_PIX_FMT_GBRAP16BE  && srcFormat != AV_PIX_FMT_GBRAP16LE &&
         srcFormat != AV_PIX_FMT_GBRPF32BE  && srcFormat != AV_PIX_FMT_GBRPF32LE &&
         srcFormat != AV_PIX_FMT_GBRAPF32BE && srcFormat != AV_PIX_FMT_GBRAPF32LE &&
+        srcFormat != AV_PIX_FMT_GBRPF16BE  && srcFormat != AV_PIX_FMT_GBRPF16LE &&
+        srcFormat != AV_PIX_FMT_GBRAPF16BE && srcFormat != AV_PIX_FMT_GBRAPF16LE &&
         ((dstW >> c->chrDstHSubSample) <= (srcW >> 1) ||
          (flags & SWS_FAST_BILINEAR)))
         c->chrSrcHSubSample = 1;
