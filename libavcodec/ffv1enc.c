@@ -199,7 +199,7 @@ static av_always_inline av_flatten void put_symbol_inline(RangeCoder *c,
     } while (0)
 
     if (v) {
-        const int a = FFABS(v);
+        const unsigned a = is_signed ? FFABS(v) : v;
         const int e = av_log2(a);
         put_rac(c, state + 0, 0);
         if (e <= 9) {
