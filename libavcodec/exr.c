@@ -1185,7 +1185,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     int line, col = 0;
     uint64_t tile_x, tile_y, tile_level_x, tile_level_y;
     const uint8_t *src;
-    int step = s->desc->flags & AV_PIX_FMT_FLAG_FLOAT ? 4 : 2 * s->desc->nb_components;
+    int step = s->desc->comp[0].step;
     int bxmin = 0, axmax = 0, window_xoffset = 0;
     int window_xmin, window_xmax, window_ymin, window_ymax;
     int data_xoffset, data_yoffset, data_window_offset, xsize, ysize;
@@ -1365,7 +1365,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
      if (s->channel_offsets[3] >= 0)
         channel_buffer[3] = src + (td->xsize * s->channel_offsets[3]) + data_window_offset;
 
-    if (s->desc->flags & AV_PIX_FMT_FLAG_FLOAT) {
+    if (s->desc->flags & AV_PIX_FMT_FLAG_PLANAR || s->desc->nb_components == 1 ) {
         /* todo: change this when a floating point pixel format with luma with alpha is implemented */
         int channel_count = s->channel_offsets[3] >= 0 ? 4 : rgb_channel_count;
         if (s->is_luma) {
@@ -1379,19 +1379,20 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
             for (i = 0; i < ysize; i++, ptr += p->linesize[plane]) {
                 const uint8_t *src;
-                union av_intfloat32 *ptr_x;
-
-                src = channel_buffer[c];
-                ptr_x = (union av_intfloat32 *)ptr;
-
-                // Zero out the start if xmin is not 0
-                memset(ptr_x, 0, bxmin);
-                ptr_x += window_xoffset;
 
                 if (s->pixel_type == EXR_FLOAT ||
                     s->compression == EXR_DWAA ||
                     s->compression == EXR_DWAB) {
                     // 32-bit
+                    union av_intfloat32 *ptr_x;
+
+                    src = channel_buffer[c];
+                    ptr_x = (union av_intfloat32 *)ptr;
+
+                    // Zero out the start if xmin is not 0
+                    memset(ptr_x, 0, bxmin);
+                    ptr_x += window_xoffset;
+
                     union av_intfloat32 t;
                     if (trc_func && c < 3) {
                         for (x = 0; x < xsize; x++) {
@@ -1412,22 +1413,22 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                             *ptr_x++ = t;
                         }
                     }
+                    memset(ptr_x, 0, axmax);
                 } else if (s->pixel_type == EXR_HALF) {
+                    src = channel_buffer[c];
+
+                    // Zero out the start if xmin is not 0
+                    memset(ptr, 0, bxmin);
+
                     // 16-bit
-                    if (c < 3 || !trc_func) {
-                        for (x = 0; x < xsize; x++) {
-                            *ptr_x++ = s->gamma_table[bytestream_get_le16(&src)];
-                        }
-                    } else {
-                        for (x = 0; x < xsize; x++) {
-                            ptr_x[0].i = half2float(bytestream_get_le16(&src), &s->h2f_tables);
-                            ptr_x++;
-                        }
+                    for (x = window_xoffset; x < xsize + window_xoffset; x++) {
+                        int v = bytestream_get_le16(&src);
+                        AV_WN16(ptr + x * sizeof(uint16_t), v);
                     }
+                    memset(ptr + x * sizeof(uint16_t), 0, axmax);
                 }
 
                 // Zero out the end if xmax+1 is not w
-                memset(ptr_x, 0, axmax);
                 channel_buffer[c] += td->channel_line_size;
             }
         }
@@ -2053,8 +2054,25 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
     }
 
     switch (s->pixel_type) {
-    case EXR_FLOAT:
     case EXR_HALF:
+        if (!(s->compression == EXR_DWAA || s->compression == EXR_DWAB)) {
+            if (s->channel_offsets[3] >= 0) {
+                if (!s->is_luma) {
+                    avctx->pix_fmt = AV_PIX_FMT_GBRAPF16;
+                } else {
+                    /* todo: change this when a floating point pixel format with luma with alpha is implemented */
+                    avctx->pix_fmt = AV_PIX_FMT_GBRAPF16;
+                }
+            } else {
+                if (!s->is_luma) {
+                    avctx->pix_fmt = AV_PIX_FMT_GBRPF16;
+                } else {
+                    avctx->pix_fmt = AV_PIX_FMT_GRAYF16;
+                }
+            }
+            break;
+        }
+    case EXR_FLOAT:
         if (s->channel_offsets[3] >= 0) {
             if (!s->is_luma) {
                 avctx->pix_fmt = AV_PIX_FMT_GBRAPF32;
@@ -2139,13 +2157,12 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
     if (!s->desc)
         return AVERROR_INVALIDDATA;
 
-    if (s->desc->flags & AV_PIX_FMT_FLAG_FLOAT) {
+    if (s->desc->flags & AV_PIX_FMT_FLAG_PLANAR) {
         planes           = s->desc->nb_components;
-        out_line_size    = avctx->width * 4;
     } else {
         planes           = 1;
-        out_line_size    = avctx->width * 2 * s->desc->nb_components;
     }
+    out_line_size    = avctx->width * s->desc->comp[0].step;
 
     if (s->is_tile) {
         nb_blocks = ((s->xdelta + s->tile_attr.xSize - 1) / s->tile_attr.xSize) *
