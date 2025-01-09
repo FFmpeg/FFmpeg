@@ -60,10 +60,10 @@ typedef struct XPSNRContext {
     /* XPSNR specific variables */
     double          *sse_luma;
     double          *weights;
-    AVBufferRef     *buf_org   [3];
-    AVBufferRef     *buf_org_m1[3];
-    AVBufferRef     *buf_org_m2[3];
-    AVBufferRef     *buf_rec   [3];
+    int16_t         *buf_org   [3];
+    int16_t         *buf_org_m1[3];
+    int16_t         *buf_org_m2[3];
+    int16_t         *buf_rec   [3];
     uint64_t        max_error_64;
     double          sum_wdist [3];
     double          sum_xpsnr [3];
@@ -432,12 +432,12 @@ static int do_xpsnr(FFFrameSync *fs)
             const int stride_org_bpp = (s->bpp == 1 ? s->plane_width[c] : s->line_sizes[c] / s->bpp);
 
             if (!s->buf_org_m1[c])
-                s->buf_org_m1[c] = av_buffer_allocz(stride_org_bpp * s->plane_height[c] * sizeof(int16_t));
+                s->buf_org_m1[c] = av_calloc(s->plane_height[c], stride_org_bpp * sizeof(int16_t));
             if (!s->buf_org_m2[c])
-                s->buf_org_m2[c] = av_buffer_allocz(stride_org_bpp * s->plane_height[c] * sizeof(int16_t));
+                s->buf_org_m2[c] = av_calloc(s->plane_height[c], stride_org_bpp * sizeof(int16_t));
 
-            porg_m1[c] = (int16_t *) s->buf_org_m1[c]->data;
-            porg_m2[c] = (int16_t *) s->buf_org_m2[c]->data;
+            porg_m1[c] = s->buf_org_m1[c];
+            porg_m2[c] = s->buf_org_m2[c];
         }
     }
 
@@ -448,12 +448,12 @@ static int do_xpsnr(FFFrameSync *fs)
             const int o = s->plane_width[c]; /* XPSNR stride */
 
             if (!s->buf_org[c])
-                s->buf_org[c] = av_buffer_allocz(s->plane_width[c] * s->plane_height[c] * sizeof(int16_t));
+                s->buf_org[c] = av_calloc(s->plane_width[c], s->plane_height[c] * sizeof(int16_t));
             if (!s->buf_rec[c])
-                s->buf_rec[c] = av_buffer_allocz(s->plane_width[c] * s->plane_height[c] * sizeof(int16_t));
+                s->buf_rec[c] = av_calloc(s->plane_width[c], s->plane_height[c] * sizeof(int16_t));
 
-            porg[c] = (int16_t *) s->buf_org[c]->data;
-            prec[c] = (int16_t *) s->buf_rec[c]->data;
+            porg[c] = s->buf_org[c];
+            prec[c] = s->buf_rec[c];
 
             for (int y = 0; y < s->plane_height[c]; y++) {
                 for (int x = 0; x < s->plane_width[c]; x++) {
@@ -692,19 +692,11 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->sse_luma);
     av_freep(&s->weights );
 
-    for (c = 0; c < s->num_comps; c++) { /* free extra temporal org buf memory */
-        if(s->buf_org_m1[c])
-            av_freep(s->buf_org_m1[c]);
-        if(s->buf_org_m2[c])
-            av_freep(s->buf_org_m2[c]);
-    }
-    if (s->bpp == 1) { /* 8 bit */
-        for (c = 0; c < s->num_comps; c++) { /* and org/rec picture buf memory */
-            if(s->buf_org_m2[c])
-                av_freep(s->buf_org[c]);
-            if(s->buf_rec[c])
-                av_freep(s->buf_rec[c]);
-        }
+    for (c = 0; c < s->num_comps; c++) {
+        av_freep(&s->buf_org_m1[c]);
+        av_freep(&s->buf_org_m2[c]);
+        av_freep(&s->buf_org[c]);
+        av_freep(&s->buf_rec[c]);
     }
 }
 
