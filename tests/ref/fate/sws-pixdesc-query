@@ -7,10 +7,16 @@ is16BPS:
   bgra64le
   gbrap16be
   gbrap16le
+  gbrapf16be
+  gbrapf16le
   gbrp16be
   gbrp16le
+  gbrpf16be
+  gbrpf16le
   gray16be
   gray16le
+  grayf16be
+  grayf16le
   p016be
   p016le
   p216be
@@ -157,18 +163,21 @@ isBE:
   gbrap12be
   gbrap14be
   gbrap16be
+  gbrapf16be
   gbrapf32be
   gbrp10be
   gbrp12be
   gbrp14be
   gbrp16be
   gbrp9be
+  gbrpf16be
   gbrpf32be
   gray10be
   gray12be
   gray14be
   gray16be
   gray9be
+  grayf16be
   grayf32be
   nv20be
   p010be
@@ -523,6 +532,8 @@ isRGB:
   gbrap14le
   gbrap16be
   gbrap16le
+  gbrapf16be
+  gbrapf16le
   gbrapf32be
   gbrapf32le
   gbrp
@@ -536,6 +547,8 @@ isRGB:
   gbrp16le
   gbrp9be
   gbrp9le
+  gbrpf16be
+  gbrpf16le
   gbrpf32be
   gbrpf32le
   rgb0
@@ -584,6 +597,8 @@ Gray:
   gray16le
   gray9be
   gray9le
+  grayf16be
+  grayf16le
   grayf32be
   grayf32le
   ya16be
@@ -685,6 +700,8 @@ AnyRGB:
   gbrap14le
   gbrap16be
   gbrap16le
+  gbrapf16be
+  gbrapf16le
   gbrapf32be
   gbrapf32le
   gbrp
@@ -698,6 +715,8 @@ AnyRGB:
   gbrp16le
   gbrp9be
   gbrp9le
+  gbrpf16be
+  gbrpf16le
   gbrpf32be
   gbrpf32le
   monob
@@ -753,6 +772,8 @@ ALPHA:
   gbrap14le
   gbrap16be
   gbrap16le
+  gbrapf16be
+  gbrapf16le
   gbrapf32be
   gbrapf32le
   pal8
@@ -906,6 +927,8 @@ Planar:
   gbrap14le
   gbrap16be
   gbrap16le
+  gbrapf16be
+  gbrapf16le
   gbrapf32be
   gbrapf32le
   gbrp
@@ -919,6 +942,8 @@ Planar:
   gbrp16le
   gbrp9be
   gbrp9le
+  gbrpf16be
+  gbrpf16le
   gbrpf32be
   gbrpf32le
   nv12
@@ -1093,6 +1118,8 @@ PlanarRGB:
   gbrap14le
   gbrap16be
   gbrap16le
+  gbrapf16be
+  gbrapf16le
   gbrapf32be
   gbrapf32le
   gbrp
@@ -1106,6 +1133,8 @@ PlanarRGB:
   gbrp16le
   gbrp9be
   gbrp9le
+  gbrpf16be
+  gbrpf16le
   gbrpf32be
   gbrpf32le
 
