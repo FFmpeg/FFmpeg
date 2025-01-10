@@ -117,6 +117,9 @@ enum {
     FLV_CODECID_H264    = 7,
     FLV_CODECID_REALH263= 8,
     FLV_CODECID_MPEG4   = 9,
+
+    // non-standard protocol extension that is in use in the wild
+    FLV_CODECID_X_HEVC  = 12,
 };
 
 enum {

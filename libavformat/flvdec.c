@@ -381,6 +381,7 @@ static int flv_same_video_codec(AVCodecParameters *vpar, uint32_t flv_codecid)
         return 1;
 
     switch (flv_codecid) {
+    case FLV_CODECID_X_HEVC:
     case MKBETAG('h', 'v', 'c', '1'):
         return vpar->codec_id == AV_CODEC_ID_HEVC;
     case MKBETAG('a', 'v', '0', '1'):
@@ -414,6 +415,7 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
     enum AVCodecID old_codec_id = vstream->codecpar->codec_id;
 
     switch (flv_codecid) {
+    case FLV_CODECID_X_HEVC:
     case MKBETAG('h', 'v', 'c', '1'):
         par->codec_id = AV_CODEC_ID_HEVC;
         vstreami->need_parsing = AVSTREAM_PARSE_HEADERS;
@@ -1660,8 +1662,8 @@ retry_duration:
             }
 
             if (st->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
-                (st->codecpar->codec_id == AV_CODEC_ID_H264 && (!enhanced_flv || type == PacketTypeCodedFrames)) ||
-                (st->codecpar->codec_id == AV_CODEC_ID_HEVC && type == PacketTypeCodedFrames)) {
+                ((st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_HEVC) &&
+                 (!enhanced_flv || type == PacketTypeCodedFrames))) {
                 // sign extension
                 int32_t cts = (avio_rb24(s->pb) + 0xff800000) ^ 0xff800000;
                 pts = av_sat_add64(dts, cts);
