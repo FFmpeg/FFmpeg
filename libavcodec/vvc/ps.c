@@ -20,6 +20,7 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+#include <stdbool.h>
 
 #include "libavcodec/cbs_h266.h"
 #include "libavutil/mem.h"
@@ -460,7 +461,7 @@ static int pps_one_tile_slices(VVCPPS *pps, const int tile_idx, int i, int *off)
     return i;
 }
 
-static void pps_multi_tiles_slice(VVCPPS *pps, const int tile_idx, const int i, int *off)
+static int pps_multi_tiles_slice(VVCPPS *pps, const int tile_idx, const int i, int *off, bool *tile_in_slice)
 {
     const H266RawPPS *r = pps->r;
     int rx, ry, tile_x, tile_y;
@@ -470,32 +471,51 @@ static void pps_multi_tiles_slice(VVCPPS *pps, const int tile_idx, const int i, 
     pps->num_ctus_in_slice[i] = 0;
     for (int ty = tile_y; ty <= tile_y + r->pps_slice_height_in_tiles_minus1[i]; ty++) {
         for (int tx = tile_x; tx <= tile_x + r->pps_slice_width_in_tiles_minus1[i]; tx++) {
+            const int idx = ty * r->num_tile_columns + tx;
+            if (tile_in_slice[idx])
+                return AVERROR_INVALIDDATA;
+            tile_in_slice[idx] = true;
             ctu_xy(&rx, &ry, tx, ty, pps);
             pps->num_ctus_in_slice[i] += pps_add_ctus(pps, off, rx, ry,
                 r->col_width_val[tx], r->row_height_val[ty]);
         }
     }
+
+    return 0;
 }
 
-static void pps_rect_slice(VVCPPS *pps, const VVCSPS *sps)
+static int pps_rect_slice(VVCPPS *pps, const VVCSPS *sps)
 {
     const H266RawPPS *r = pps->r;
+    bool tile_in_slice[VVC_MAX_TILES_PER_AU] = {false};
     int tile_idx = 0, off = 0;
 
     if (r->pps_single_slice_per_subpic_flag) {
         pps_single_slice_per_subpic(pps, sps, &off);
-        return;
+        return 0;
     }
 
     for (int i = 0; i < r->pps_num_slices_in_pic_minus1 + 1; i++) {
         if (!r->pps_slice_width_in_tiles_minus1[i] &&
             !r->pps_slice_height_in_tiles_minus1[i]) {
+            if (tile_in_slice[tile_idx])
+                return AVERROR_INVALIDDATA;
+            tile_in_slice[tile_idx] = true;
             i = pps_one_tile_slices(pps, tile_idx, i, &off);
         } else {
-            pps_multi_tiles_slice(pps, tile_idx, i, &off);
+            const int ret = pps_multi_tiles_slice(pps, tile_idx, i, &off, tile_in_slice);
+            if (ret < 0)
+                return ret;
         }
         tile_idx = next_tile_idx(tile_idx, i, r);
     }
+
+    for (int i = 0; i < r->num_tiles_in_pic; i++) {
+        if (!tile_in_slice[i])
+            return AVERROR_INVALIDDATA;
+    }
+
+    return 0;
 }
 
 static void pps_no_rect_slice(VVCPPS* pps)
@@ -518,9 +538,9 @@ static int pps_slice_map(VVCPPS *pps, const VVCSPS *sps)
         return AVERROR(ENOMEM);
 
     if (pps->r->pps_rect_slice_flag)
-        pps_rect_slice(pps, sps);
-    else
-        pps_no_rect_slice(pps);
+        return pps_rect_slice(pps, sps);
+
+    pps_no_rect_slice(pps);
 
     return 0;
 }
