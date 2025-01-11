@@ -402,8 +402,8 @@ lavf_container_fate()
     cleanfiles="$cleanfiles $file"
     input="${target_samples}/$1"
     do_avconv $file -auto_conversion_filters $DEC_OPTS $2 -i "$input" \
-              "$ENC_OPTS -metadata title=lavftest" -vcodec copy -acodec copy || return
-    do_avconv_crc $file -auto_conversion_filters $DEC_OPTS -i $target_path/$file $3
+              "$ENC_OPTS -metadata title=lavftest" $3 -vcodec copy -acodec copy || return
+    do_avconv_crc $file -auto_conversion_filters $DEC_OPTS -i $target_path/$file $4
 }
 
 lavf_image(){

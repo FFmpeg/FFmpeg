@@ -10,6 +10,7 @@ version <next>:
 - ADPCM IMA Xbox decoder
 - Enhanced FLV v2: Multitrack audio/video, modern codec support
 - Animated JPEG XL encoding (via libjxl)
+- VVC in Matroska
 
 version 7.1:
 - Raw Captions with Time (RCWT) closed caption demuxer
