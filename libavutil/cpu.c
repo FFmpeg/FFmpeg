@@ -298,6 +298,7 @@ size_t av_cpu_max_align(void)
     return 8;
 }
 
+#if !ARCH_X86
 unsigned long ff_getauxval(unsigned long type)
 {
 #if HAVE_GETAUXVAL
@@ -314,3 +315,4 @@ unsigned long ff_getauxval(unsigned long type)
     return 0;
 #endif
 }
+#endif
