@@ -541,8 +541,8 @@ static void RENAME(yuv2rgb555_X)(SwsInternal *c, const int16_t *lumFilter,
 
 #define WRITEBGR24MMXEXT(dst, dstw, index) \
     /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
-    "movq "MANGLE(ff_M24A)", %%mm0 \n\t"\
-    "movq "MANGLE(ff_M24C)", %%mm7 \n\t"\
+    "movq "MANGLE(M24A)", %%mm0 \n\t"\
+    "movq "MANGLE(M24C)", %%mm7 \n\t"\
     "pshufw $0x50, %%mm2, %%mm1 \n\t" /* B3 B2 B3 B2  B1 B0 B1 B0 */\
     "pshufw $0x50, %%mm4, %%mm3 \n\t" /* G3 G2 G3 G2  G1 G0 G1 G0 */\
     "pshufw $0x00, %%mm5, %%mm6 \n\t" /* R1 R0 R1 R0  R1 R0 R1 R0 */\
@@ -561,7 +561,7 @@ static void RENAME(yuv2rgb555_X)(SwsInternal *c, const int16_t *lumFilter,
     "pshufw $0x55, %%mm4, %%mm3 \n\t" /* G4 G3 G4 G3  G4 G3 G4 G3 */\
     "pshufw $0xA5, %%mm5, %%mm6 \n\t" /* R5 R4 R5 R4  R3 R2 R3 R2 */\
 \
-    "pand "MANGLE(ff_M24B)", %%mm1 \n\t" /* B5       B4        B3    */\
+    "pand "MANGLE(M24B)", %%mm1 \n\t" /* B5       B4        B3    */\
     "pand   %%mm7, %%mm3        \n\t" /*       G4        G3       */\
     "pand   %%mm0, %%mm6        \n\t" /*    R4        R3       R2 */\
 \
@@ -575,7 +575,7 @@ static void RENAME(yuv2rgb555_X)(SwsInternal *c, const int16_t *lumFilter,
 \
     "pand   %%mm7, %%mm1        \n\t" /*       B7        B6       */\
     "pand   %%mm0, %%mm3        \n\t" /*    G7        G6       G5 */\
-    "pand "MANGLE(ff_M24B)", %%mm6 \n\t" /* R7       R6        R5    */\
+    "pand "MANGLE(M24B)", %%mm6 \n\t" /* R7       R6        R5    */\
 \
     "por    %%mm1, %%mm3        \n\t"\
     "por    %%mm3, %%mm6        \n\t"\
@@ -611,7 +611,7 @@ static void RENAME(yuv2bgr24_X_ar)(SwsInternal *c, const int16_t *lumFilter,
     :: "r" (&c->redDither),
        "m" (dummy), "m" (dummy), "m" (dummy),
        "r" (dest), "m" (dstW_reg), "m"(uv_off)
-       NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
+       NAMED_CONSTRAINTS_ADD(M24A,M24C,M24B)
     : "%"FF_REG_a, "%"FF_REG_c, "%"FF_REG_d, "%"FF_REG_S
     );
 }
@@ -636,7 +636,7 @@ static void RENAME(yuv2bgr24_X)(SwsInternal *c, const int16_t *lumFilter,
     :: "r" (&c->redDither),
        "m" (dummy), "m" (dummy), "m" (dummy),
        "r" (dest),  "m" (dstW_reg), "m"(uv_off)
-       NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
+       NAMED_CONSTRAINTS_ADD(M24A,M24C,M24B)
     : "%"FF_REG_a, "%"FF_REG_c, "%"FF_REG_d, "%"FF_REG_S
     );
 }
@@ -864,7 +864,7 @@ static void RENAME(yuv2bgr24_2)(SwsInternal *c, const int16_t *buf[2],
         "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
            "a" (&c->redDither)
-           NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
+           NAMED_CONSTRAINTS_ADD(M24A,M24C,M24B)
     );
 }
 
@@ -1191,7 +1191,7 @@ static void RENAME(yuv2bgr24_1)(SwsInternal *c, const int16_t *buf0,
             "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
-               NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
+               NAMED_CONSTRAINTS_ADD(M24A,M24C,M24B)
         );
     } else {
         const int16_t *ubuf1 = ubuf[1];
@@ -1206,7 +1206,7 @@ static void RENAME(yuv2bgr24_1)(SwsInternal *c, const int16_t *buf0,
             "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
-               NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
+               NAMED_CONSTRAINTS_ADD(M24A,M24C,M24B)
         );
     }
 }
