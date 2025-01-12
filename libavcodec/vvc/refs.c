@@ -21,6 +21,7 @@
  */
 
 #include <stdatomic.h>
+#include <stdbool.h>
 
 #include "libavutil/mem.h"
 #include "libavutil/thread.h"
@@ -168,6 +169,36 @@ fail:
     return NULL;
 }
 
+static void set_pict_type(AVFrame *frame, const VVCContext *s, const VVCFrameContext *fc)
+{
+    bool has_b = false, has_inter = false;
+
+    if (IS_IRAP(s)) {
+        frame->pict_type = AV_PICTURE_TYPE_I;
+        frame->flags |= AV_FRAME_FLAG_KEY;
+        return;
+    }
+
+    if (fc->ps.ph.r->ph_inter_slice_allowed_flag) {
+        // At this point, fc->slices is not fully initialized; we need to inspect the CBS directly.
+        const CodedBitstreamFragment *current = &s->current_frame;
+        for (int i = 0; i < current->nb_units && !has_b; i++) {
+            const CodedBitstreamUnit *unit = current->units + i;
+            if (unit->type <= VVC_RSV_IRAP_11) {
+                const H266RawSliceHeader *rsh = unit->content_ref;
+                has_inter |= !IS_I(rsh);
+                has_b     |= IS_B(rsh);
+            }
+        }
+    }
+    if (!has_inter)
+        frame->pict_type = AV_PICTURE_TYPE_I;
+    else if (has_b)
+        frame->pict_type = AV_PICTURE_TYPE_B;
+    else
+        frame->pict_type = AV_PICTURE_TYPE_P;
+}
+
 int ff_vvc_set_new_ref(VVCContext *s, VVCFrameContext *fc, AVFrame **frame)
 {
     const VVCPH *ph= &fc->ps.ph;
@@ -189,6 +220,7 @@ int ff_vvc_set_new_ref(VVCContext *s, VVCFrameContext *fc, AVFrame **frame)
     if (!ref)
         return AVERROR(ENOMEM);
 
+    set_pict_type(ref->frame, s, fc);
     *frame = ref->frame;
     fc->ref = ref;
 
