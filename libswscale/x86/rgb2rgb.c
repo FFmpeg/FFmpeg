@@ -70,10 +70,6 @@ DECLARE_ASM_CONST(8, uint64_t, mul15_mid)    = 0x4200420042004200ULL;
 DECLARE_ASM_CONST(8, uint64_t, mul15_hi)     = 0x0210021002100210ULL;
 DECLARE_ASM_CONST(8, uint64_t, mul16_mid)    = 0x2080208020802080ULL;
 
-DECLARE_ALIGNED(8, extern const uint64_t, ff_bgr2YOffset);
-DECLARE_ALIGNED(8, extern const uint64_t, ff_w1111);
-DECLARE_ALIGNED(8, extern const uint64_t, ff_bgr2UVOffset);
-
 #define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
 #define BV ((int)(-0.071*(1<<RGB2YUV_SHIFT)+0.5))
 #define BU ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
@@ -1481,6 +1477,10 @@ static inline void planar2x_mmxext(const uint8_t *src, uint8_t *dst, int srcWidt
  * FIXME: Write HQ version.
  */
 #if ARCH_X86_32 && HAVE_7REGS
+DECLARE_ASM_CONST(8, uint64_t, bgr2YOffset)  = 0x1010101010101010ULL;
+DECLARE_ASM_CONST(8, uint64_t, bgr2UVOffset) = 0x8080808080808080ULL;
+DECLARE_ASM_CONST(8, uint64_t, w1111)        = 0x0001000100010001ULL;
+
 static inline void rgb24toyv12_mmxext(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                                        int width, int height,
                                        int lumStride, int chromStride, int srcStride,
@@ -1506,7 +1506,7 @@ static inline void rgb24toyv12_mmxext(const uint8_t *src, uint8_t *ydst, uint8_t
             __asm__ volatile(
                 "mov                        %2, %%"FF_REG_a"\n\t"
                 "movq          "BGR2Y_IDX"(%3), %%mm6       \n\t"
-                "movq       "MANGLE(ff_w1111)", %%mm5       \n\t"
+                "movq          "MANGLE(w1111)", %%mm5       \n\t"
                 "pxor                    %%mm7, %%mm7       \n\t"
                 "lea (%%"FF_REG_a", %%"FF_REG_a", 2), %%"FF_REG_d" \n\t"
                 ".p2align                    4              \n\t"
@@ -1560,13 +1560,13 @@ static inline void rgb24toyv12_mmxext(const uint8_t *src, uint8_t *ydst, uint8_t
                 "psraw                      $7, %%mm4       \n\t"
 
                 "packuswb                %%mm4, %%mm0       \n\t"
-                "paddusb "MANGLE(ff_bgr2YOffset)", %%mm0    \n\t"
+                "paddusb "MANGLE(bgr2YOffset)", %%mm0       \n\t"
 
                 MOVNTQ"                  %%mm0, (%1, %%"FF_REG_a") \n\t"
                 "add                        $8,      %%"FF_REG_a"  \n\t"
                 " js                        1b                     \n\t"
                 : : "r" (src+width*3), "r" (ydst+width), "g" ((x86_reg)-width), "r"(rgb2yuv)
-                  NAMED_CONSTRAINTS_ADD(ff_w1111,ff_bgr2YOffset)
+                  NAMED_CONSTRAINTS_ADD(w1111,bgr2YOffset)
                 : "%"FF_REG_a, "%"FF_REG_d
             );
             ydst += lumStride;
@@ -1575,7 +1575,7 @@ static inline void rgb24toyv12_mmxext(const uint8_t *src, uint8_t *ydst, uint8_t
         src -= srcStride*2;
         __asm__ volatile(
             "mov                        %4, %%"FF_REG_a"\n\t"
-            "movq       "MANGLE(ff_w1111)", %%mm5       \n\t"
+            "movq          "MANGLE(w1111)", %%mm5       \n\t"
             "movq          "BGR2U_IDX"(%5), %%mm6       \n\t"
             "pxor                    %%mm7, %%mm7       \n\t"
             "lea (%%"FF_REG_a", %%"FF_REG_a", 2), %%"FF_REG_d" \n\t"
@@ -1653,14 +1653,14 @@ static inline void rgb24toyv12_mmxext(const uint8_t *src, uint8_t *ydst, uint8_t
             "punpckldq               %%mm4, %%mm0           \n\t"
             "punpckhdq               %%mm4, %%mm1           \n\t"
             "packsswb                %%mm1, %%mm0           \n\t"
-            "paddb "MANGLE(ff_bgr2UVOffset)", %%mm0         \n\t"
+            "paddb  "MANGLE(bgr2UVOffset)", %%mm0           \n\t"
             "movd                    %%mm0, (%2, %%"FF_REG_a") \n\t"
             "punpckhdq               %%mm0, %%mm0              \n\t"
             "movd                    %%mm0, (%3, %%"FF_REG_a") \n\t"
             "add                        $4, %%"FF_REG_a"       \n\t"
             " js                        1b              \n\t"
             : : "r" (src+chromWidth*6), "r" (src+srcStride+chromWidth*6), "r" (udst+chromWidth), "r" (vdst+chromWidth), "g" (-chromWidth), "r"(rgb2yuv)
-              NAMED_CONSTRAINTS_ADD(ff_w1111,ff_bgr2UVOffset)
+              NAMED_CONSTRAINTS_ADD(w1111,bgr2UVOffset)
             : "%"FF_REG_a, "%"FF_REG_d
         );
 
