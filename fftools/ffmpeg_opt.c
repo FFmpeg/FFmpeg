@@ -52,7 +52,6 @@ HWDevice *filter_hw_device;
 
 char *vstats_filename;
 
-float audio_drift_threshold = 0.1;
 float dts_delta_threshold   = 10;
 float dts_error_threshold   = 3600*30;
 
