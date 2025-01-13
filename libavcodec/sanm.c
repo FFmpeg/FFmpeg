@@ -645,10 +645,11 @@ static int old_codec37(SANMVideoContext *ctx, int top,
 
     ctx->rotate_code = 0;
 
-    if (((seq & 1) || !(flags & 1)) && (compr && compr != 2))
-        rotate_bufs(ctx, 1);
+    if (((seq & 1) || !(flags & 1)) && (compr && compr != 2)) {
+        FFSWAP(uint16_t*, ctx->frm1, ctx->frm2);
+    }
 
-    dst  = ((uint8_t*)ctx->frm0) + left + top * stride;
+    dst  = ((uint8_t*)ctx->frm1) + left + top * stride;
     prev = ((uint8_t*)ctx->frm2) + left + top * stride;
 
     if (mvoff > 2) {
@@ -662,7 +663,6 @@ static int old_codec37(SANMVideoContext *ctx, int top,
             bytestream2_get_buffer(&ctx->gb, dst, width);
             dst += stride;
         }
-        memset(ctx->frm1, 0, ctx->height * stride);
         memset(ctx->frm2, 0, ctx->height * stride);
         break;
     case 1:
@@ -729,7 +729,6 @@ static int old_codec37(SANMVideoContext *ctx, int top,
     case 2:
         if (rle_decode(ctx, dst, decoded_size))
             return AVERROR_INVALIDDATA;
-        memset(ctx->frm1, 0, ctx->frm1_size);
         memset(ctx->frm2, 0, ctx->frm2_size);
         break;
     case 3:
@@ -783,6 +782,7 @@ static int old_codec37(SANMVideoContext *ctx, int top,
         return AVERROR_PATCHWELCOME;
     }
 
+    memcpy(ctx->frm0, ctx->frm1, ctx->buf_size);
     return 0;
 }
 
