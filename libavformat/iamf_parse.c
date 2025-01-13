@@ -570,6 +570,7 @@ static int param_parse(void *s, IAMFContext *c, AVIOContext *pb,
 
     if (!mode && !constant_subblock_duration && total_duration != duration) {
         av_log(s, AV_LOG_ERROR, "Invalid subblock durations in parameter_id %u\n", parameter_id);
+        av_free(param);
         return AVERROR_INVALIDDATA;
     }
 
