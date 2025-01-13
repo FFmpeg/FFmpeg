@@ -5191,7 +5191,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         }
 
 #if FF_API_R_FRAME_RATE
-        for (int i = 1; sc->stts_count && i < sc->tts_count - 1; i++) {
+        for (unsigned int i = 1; sc->stts_count && i + 1 < sc->tts_count; i++) {
             if (sc->tts_data[i].duration == sc->tts_data[0].duration)
                 continue;
             stts_constant = 0;
