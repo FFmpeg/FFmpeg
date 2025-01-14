@@ -164,6 +164,10 @@ static int lead_decode_frame(AVCodecContext *avctx, AVFrame * frame,
     case 0x1000:
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         break;
+    case 0x1006:
+        fields = 2;
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+        break;
     case 0x2000:
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         break;
@@ -237,7 +241,8 @@ static int lead_decode_frame(AVCodecContext *avctx, AVFrame * frame,
                         return ret;
                 }
     } else if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
-        for (int mb_y = 0; mb_y < (avctx->height + 15) / 16; mb_y++)
+        for (int f = 0; f < fields; f++)
+        for (int mb_y = 0; mb_y < (avctx->height + 15) / 16 / fields; mb_y++)
             for (int mb_x = 0; mb_x < (avctx->width + 15) / 16; mb_x++)
                 for (int b = 0; b < (yuv20p_half ? 4 : 6); b++) {
                     int luma_block = yuv20p_half ? 2 : 4;
@@ -258,8 +263,8 @@ static int lead_decode_frame(AVCodecContext *avctx, AVFrame * frame,
 
                     ret = decode_block(s, &gb, dc_vlc, dc_bits, ac_vlc, ac_bits,
                         dc_pred + plane, dequant[!(b < 4)],
-                        frame->data[plane] + y*frame->linesize[plane] + x,
-                        (yuv20p_half && b < 2 ? 2 : 1) * frame->linesize[plane]);
+                        frame->data[plane] + (f + y*fields)*frame->linesize[plane] + x,
+                        (yuv20p_half && b < 2 ? 2 : 1) * fields * frame->linesize[plane]);
                     if (ret < 0)
                         return ret;
 
