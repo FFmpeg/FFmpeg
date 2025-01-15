@@ -1444,6 +1444,10 @@ retry:
                 goto leave;
         }
 
+        if (enhanced_flv && pkt_type != PacketTypeMetadata &&
+            (flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD)
+            goto skip;
+
         if (pkt_type == PacketTypeMultitrack) {
             uint8_t types = avio_r8(s->pb);
             multitrack_type = types & 0xF0;
