@@ -354,6 +354,12 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int (*parse)(MOVContext*, AVIOContext*, unsigned, const char*) = NULL;
     int raw = 0;
     int num = 0;
+    AVDictionary **metadata;
+
+    if (c->trak_index >= 0 && c->trak_index < c->fc->nb_streams)
+        metadata = &c->fc->streams[c->trak_index]->metadata;
+    else
+        metadata = &c->fc->metadata;
 
     switch (atom.type) {
     case MKTAG( '@','P','R','M'): key = "premiere_version"; raw = 1; break;
@@ -572,10 +578,10 @@ retry:
             str[str_size] = 0;
         }
         c->fc->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
-        av_dict_set(&c->fc->metadata, key, str, 0);
+        av_dict_set(metadata, key, str, 0);
         if (*language && strcmp(language, "und")) {
             snprintf(key2, sizeof(key2), "%s-%s", key, language);
-            av_dict_set(&c->fc->metadata, key2, str, 0);
+            av_dict_set(metadata, key2, str, 0);
         }
         if (!strcmp(key, "encoder")) {
             int major, minor, micro;
