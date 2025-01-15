@@ -130,6 +130,7 @@ enum {
     PacketTypeMetadata              = 4,
     PacketTypeMPEG2TSSequenceStart  = 5,
     PacketTypeMultitrack            = 6,
+    PacketTypeModEx                 = 7,
 };
 
 enum {
@@ -137,6 +138,10 @@ enum {
     AudioPacketTypeCodedFrames        = 1,
     AudioPacketTypeMultichannelConfig = 4,
     AudioPacketTypeMultitrack         = 5,
+};
+
+enum {
+    PacketModExTypeTimestampOffsetNano = 0,
 };
 
 enum {

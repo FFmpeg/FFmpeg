@@ -1279,6 +1279,62 @@ static int flv_update_video_color_info(AVFormatContext *s, AVStream *st)
     return 0;
 }
 
+static int flv_parse_mod_ex_data(AVFormatContext *s, int *pkt_type, int *size, int64_t *dts)
+{
+    int ex_type, ret;
+    uint8_t *ex_data;
+
+    int ex_size = (uint8_t)avio_r8(s->pb) + 1;
+    *size -= 1;
+
+    if (ex_size == 256) {
+        ex_size = (uint16_t)avio_rb16(s->pb) + 1;
+        *size -= 2;
+    }
+
+    if (ex_size >= *size) {
+        av_log(s, AV_LOG_WARNING, "ModEx size larger than remaining data!\n");
+        return AVERROR(EINVAL);
+    }
+
+    ex_data = av_malloc(ex_size);
+    if (!ex_data)
+        return AVERROR(ENOMEM);
+
+    ret = avio_read(s->pb, ex_data, ex_size);
+    if (ret < 0) {
+        av_free(ex_data);
+        return ret;
+    }
+    *size -= ex_size;
+
+    ex_type = (uint8_t)avio_r8(s->pb);
+    *size -= 1;
+
+    *pkt_type = ex_type & 0x0f;
+    ex_type &= 0xf0;
+
+    if (ex_type == PacketModExTypeTimestampOffsetNano) {
+        uint32_t nano_offset;
+
+        if (ex_size != 3) {
+            av_log(s, AV_LOG_WARNING, "Invalid ModEx size for Type TimestampOffsetNano!\n");
+            nano_offset = 0;
+        } else {
+            nano_offset = (ex_data[0] << 16) | (ex_data[1] << 8) | ex_data[2];
+        }
+
+        // this is not likely to ever add anything, but right now timestamps are with ms precision
+        *dts += nano_offset / 1000000;
+    } else {
+        av_log(s, AV_LOG_INFO, "Unknown ModEx type: %d", ex_type);
+    }
+
+    av_free(ex_data);
+
+    return 0;
+}
+
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     FLVContext *flv = s->priv_data;
@@ -1347,6 +1403,12 @@ retry:
             enhanced_flv = 1;
             pkt_type = flags & ~FLV_AUDIO_CODECID_MASK;
 
+            while (pkt_type == PacketTypeModEx) {
+                ret = flv_parse_mod_ex_data(s, &pkt_type, &size, &dts);
+                if (ret < 0)
+                    goto leave;
+            }
+
             if (pkt_type == AudioPacketTypeMultitrack) {
                 uint8_t types = avio_r8(s->pb);
                 multitrack_type = types & 0xF0;
@@ -1375,6 +1437,12 @@ retry:
         enhanced_flv = (flags >> 7) & 1;
         pkt_type = enhanced_flv ? codec_id : 0;
         size--;
+
+        while (pkt_type == PacketTypeModEx) {
+            ret = flv_parse_mod_ex_data(s, &pkt_type, &size, &dts);
+            if (ret < 0)
+                goto leave;
+        }
 
         if (pkt_type == PacketTypeMultitrack) {
             uint8_t types = avio_r8(s->pb);
