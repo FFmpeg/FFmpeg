@@ -345,9 +345,11 @@ static int parse_frame_header(AC3DecodeContext *s)
     s->frame_size                   = hdr.frame_size;
     s->superframe_size             += hdr.frame_size;
     s->preferred_downmix            = AC3_DMIXMOD_NOTINDICATED;
-    s->center_mix_level             = hdr.center_mix_level;
+    if (hdr.bitstream_id <= 10) {
+        s->center_mix_level         = hdr.center_mix_level;
+        s->surround_mix_level       = hdr.surround_mix_level;
+    }
     s->center_mix_level_ltrt        = 4; // -3.0dB
-    s->surround_mix_level           = hdr.surround_mix_level;
     s->surround_mix_level_ltrt      = 4; // -3.0dB
     s->lfe_mix_level_exists         = 0;
     s->num_blocks                   = hdr.num_blocks;
