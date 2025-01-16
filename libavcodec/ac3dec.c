@@ -1500,7 +1500,6 @@ static int ac3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     uint8_t extended_channel_map[EAC3_MAX_CHANNELS];
     const SHORTFLOAT *output[AC3_MAX_CHANNELS];
     enum AVMatrixEncoding matrix_encoding;
-    AVDownmixInfo *downmix_info;
     uint64_t mask;
 
     s->superframe_size = 0;
@@ -1827,11 +1826,16 @@ skip:
             break;
         }
     }
-    if ((ret = ff_side_data_update_matrix_encoding(frame, matrix_encoding)) < 0)
+    if (matrix_encoding != AV_MATRIX_ENCODING_NONE &&
+        (ret = ff_side_data_update_matrix_encoding(frame, matrix_encoding)) < 0)
         return ret;
 
     /* AVDownmixInfo */
-    if ((downmix_info = av_downmix_info_update_side_data(frame))) {
+    if ( (s->channel_mode                     > AC3_CHMODE_STEREO) &&
+        ((s->output_mode & ~AC3_OUTPUT_LFEON) > AC3_CHMODE_STEREO)) {
+        AVDownmixInfo *downmix_info = av_downmix_info_update_side_data(frame);
+        if (!downmix_info)
+            return AVERROR(ENOMEM);
         switch (s->preferred_downmix) {
         case AC3_DMIXMOD_LTRT:
             downmix_info->preferred_downmix_type = AV_DOWNMIX_TYPE_LTRT;
@@ -1854,8 +1858,7 @@ skip:
             downmix_info->lfe_mix_level       = gain_levels_lfe[s->lfe_mix_level];
         else
             downmix_info->lfe_mix_level       = 0.0; // -inf dB
-    } else
-        return AVERROR(ENOMEM);
+    }
 
     *got_frame_ptr = 1;
 
