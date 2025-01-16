@@ -223,6 +223,7 @@ typedef struct HLSContext {
     AVDictionary *avio_opts;
     AVDictionary *seg_format_opts;
     char *allowed_extensions;
+    int extension_picky;
     int max_reload;
     int http_persistent;
     int http_multiple;
@@ -731,6 +732,40 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     return ret;
 }
 
+static int test_segment(AVFormatContext *s, const AVInputFormat *in_fmt, struct playlist *pls, struct segment *seg)
+{
+    HLSContext *c = s->priv_data;
+    int matchA = 3;
+    int matchF = 0;
+
+    if (!c->extension_picky)
+        return 0;
+
+    if (strcmp(c->allowed_extensions, "ALL"))
+        matchA =      av_match_ext    (seg->url, c->allowed_extensions)
+                 + 2*(ff_match_url_ext(seg->url, c->allowed_extensions) > 0);
+
+    if (!matchA) {
+        av_log(s, AV_LOG_ERROR, "URL %s is not in allowed_extensions\n", seg->url);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (in_fmt) {
+        if (in_fmt->extensions) {
+            matchF =      av_match_ext(    seg->url, in_fmt->extensions)
+                     + 2*(ff_match_url_ext(seg->url, in_fmt->extensions) > 0);
+        } else if (!strcmp(in_fmt->name, "mpegts"))
+            matchF = 3;
+
+        if (!(matchA & matchF)) {
+            av_log(s, AV_LOG_ERROR, "detected format extension %s mismatches allowed extensions in url %s\n", in_fmt->extensions ? in_fmt->extensions : "none", seg->url);
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
+    return 0;
+}
+
 static int parse_playlist(HLSContext *c, const char *url,
                           struct playlist *pls, AVIOContext *in)
 {
@@ -986,6 +1021,14 @@ static int parse_playlist(HLSContext *c, const char *url,
                     av_free(seg->key);
                     av_free(seg);
                     ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
+
+                ret = test_segment(c->ctx, pls->ctx ? pls->ctx->iformat : NULL, pls, seg);
+                if (ret < 0) {
+                    av_free(seg->url);
+                    av_free(seg->key);
+                    av_free(seg);
                     goto fail;
                 }
 
@@ -2114,6 +2157,11 @@ static int hls_read_header(AVFormatContext *s)
             pls->ctx->interrupt_callback = s->interrupt_callback;
             url = av_strdup(pls->segments[0]->url);
             ret = av_probe_input_buffer(&pls->pb.pub, &in_fmt, url, NULL, 0, 0);
+
+            for (int n = 0; n < pls->n_segments; n++)
+                if (ret >= 0)
+                    ret = test_segment(s, in_fmt, pls, pls->segments[n]);
+
             if (ret < 0) {
                 /* Free the ctx - it isn't initialized properly at this point,
                 * so avformat_close_input shouldn't be called. If
@@ -2576,6 +2624,8 @@ static const AVOption hls_options[] = {
         OFFSET(allowed_extensions), AV_OPT_TYPE_STRING,
         {.str = "3gp,aac,avi,ac3,eac3,flac,mkv,m3u8,m4a,m4s,m4v,mpg,mov,mp2,mp3,mp4,mpeg,mpegts,ogg,ogv,oga,ts,vob,wav"},
         INT_MIN, INT_MAX, FLAGS},
+    {"extension_picky", "Be picky with all extensions matching",
+        OFFSET(extension_picky), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS},
     {"max_reload", "Maximum number of times a insufficient list is attempted to be reloaded",
         OFFSET(max_reload), AV_OPT_TYPE_INT, {.i64 = 3}, 0, INT_MAX, FLAGS},
     {"m3u8_hold_counters", "The maximum number of times to load m3u8 when it refreshes without new segments",
