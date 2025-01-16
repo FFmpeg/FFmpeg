@@ -564,6 +564,13 @@ prefer to use #EXT-X-START if it's in playlist instead of live_start_index.
 @item allowed_extensions
 ',' separated list of file extensions that hls is allowed to access.
 
+@item extension_picky
+This blocks disallowed extensions from probing
+It also requires all available segments to have matching extensions to the format
+except mpegts, which is always allowed.
+It is recommended to set the whitelists correctly instead of depending on extensions
+Enabled by default.
+
 @item max_reload
 Maximum number of times a insufficient list is attempted to be reloaded.
 Default value is 1000.
