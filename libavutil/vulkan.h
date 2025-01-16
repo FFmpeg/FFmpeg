@@ -458,6 +458,13 @@ int ff_vk_exec_mirror_sem_value(FFVulkanContext *s, FFVkExecContext *e,
 void ff_vk_exec_discard_deps(FFVulkanContext *s, FFVkExecContext *e);
 
 /**
+ * Create a single imageview for a given plane.
+ */
+int ff_vk_create_imageview(FFVulkanContext *s,
+                           VkImageView *img_view, VkImageAspectFlags *aspect,
+                           AVFrame *f, int plane, enum FFVkShaderRepFormat rep_fmt);
+
+/**
  * Create an imageview and add it as a dependency to an execution.
  */
 int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
