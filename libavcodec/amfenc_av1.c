@@ -372,7 +372,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_PEAK_BITRATE, avctx->rc_max_rate);
     }
     else if (ctx->rate_control_mode == AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR) {
-        av_log(ctx, AV_LOG_WARNING, "rate control mode is PEAK_CONSTRAINED_VBR but rc_max_rate is not set\n");
+        av_log(ctx, AV_LOG_DEBUG, "rate control mode is vbr_peak but max_rate is not set, default max_rate will be applied.\n");
     }
     if (avctx->bit_rate > 0) {
         ctx->rate_control_mode = AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_CBR;
