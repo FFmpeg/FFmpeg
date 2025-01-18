@@ -84,6 +84,7 @@ typedef struct FFV1SliceContext {
     int slice_coding_mode;
     int slice_rct_by_coef;
     int slice_rct_ry_coef;
+    int remap;
 
     // RefStruct reference, array of MAX_PLANES elements
     PlaneContext *plane;

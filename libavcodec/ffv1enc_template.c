@@ -148,7 +148,7 @@ static int RENAME(encode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
     memset(RENAME(sc->sample_buffer), 0, ring_size * MAX_PLANES *
            (w + 6) * sizeof(*RENAME(sc->sample_buffer)));
 
-    if (f->flt) {
+    if (sc->remap) {
         memset(sc->fltmap, 0, sizeof(sc->fltmap));
 
         for (y = 0; y < h; y++) {
@@ -221,7 +221,7 @@ static int RENAME(encode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
                 r = *((const uint16_t *)(src[2] + x*2 + stride[2]*y));
             }
 
-            if (f->flt) {
+            if (sc->remap) {
                 r = sc->fltmap[0][r];
                 g = sc->fltmap[1][g];
                 b = sc->fltmap[2][b];

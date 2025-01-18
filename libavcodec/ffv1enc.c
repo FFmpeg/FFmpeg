@@ -946,6 +946,8 @@ static int encode_init_internal(AVCodecContext *avctx)
         }
 
         ff_build_rac_states(&s->slices[j].c, 0.05 * (1LL << 32), 256 - 8);
+
+        s->slices[j].remap = s->flt;
     }
 
     if ((ret = ff_ffv1_init_slices_state(s)) < 0)
@@ -1000,6 +1002,7 @@ static void encode_slice_header(FFV1Context *f, FFV1SliceContext *sc)
             put_symbol(c, state, sc->slice_rct_by_coef, 0);
             put_symbol(c, state, sc->slice_rct_ry_coef, 0);
         }
+        put_symbol(c, state, sc->remap, 0);
     }
 }
 

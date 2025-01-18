@@ -220,6 +220,14 @@ static int decode_slice_header(const FFV1Context *f,
                 return AVERROR_INVALIDDATA;
             }
         }
+        if (f->combined_version >= 0x40004) {
+            sc->remap = ff_ffv1_get_symbol(c, state, 0);
+            if (sc->remap > 1U ||
+                sc->remap == 1 && !f->flt) {
+                av_log(f->avctx, AV_LOG_ERROR, "unsupported remap %d\n", sc->remap);
+                return AVERROR_INVALIDDATA;
+            }
+        }
     }
 
     return 0;

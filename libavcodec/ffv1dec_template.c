@@ -155,7 +155,7 @@ static int RENAME(decode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
 
     memset(RENAME(sc->sample_buffer), 0, 8 * (w + 6) * sizeof(*RENAME(sc->sample_buffer)));
 
-    if (f->flt) {
+    if (sc->remap) {
         for (int p= 0; p<3 + transparency; p++) {
             int j = 0;
             int lu = 0;
@@ -199,7 +199,7 @@ static int RENAME(decode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
                 b += g;
                 r += g;
             }
-            if (f->flt) {
+            if (sc->remap) {
                 r = sc->fltmap[0][r & 0xFFFF];
                 g = sc->fltmap[1][g & 0xFFFF];
                 b = sc->fltmap[2][b & 0xFFFF];
