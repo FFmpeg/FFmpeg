@@ -414,11 +414,13 @@ av_cold int ff_ffv1_write_extradata(AVCodecContext *avctx)
     ff_build_rac_states(&c, 0.05 * (1LL << 32), 256 - 8);
 
     put_symbol(&c, state, f->version, 0);
+    f->combined_version = f->version << 16;
     if (f->version > 2) {
         if (f->version == 3) {
             f->micro_version = 4;
         } else if (f->version == 4)
             f->micro_version = 3;
+        f->combined_version += f->micro_version;
         put_symbol(&c, state, f->micro_version, 0);
     }
 

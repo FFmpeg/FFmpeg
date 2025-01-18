@@ -113,6 +113,7 @@ typedef struct FFV1Context {
     uint64_t (*rc_stat2[MAX_QUANT_TABLES])[32][2];
     int version;
     int micro_version;
+    int combined_version;
     int width, height;
     int chroma_planes;
     int chroma_h_shift, chroma_v_shift;

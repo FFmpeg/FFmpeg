@@ -307,7 +307,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     y      = sc->slice_y;
 
     if (ac == AC_GOLOMB_RICE) {
-        if (f->version == 3 && f->micro_version > 1 || f->version > 3)
+        if (f->combined_version >= 0x30002)
             get_rac(&sc->c, (uint8_t[]) { 129 });
         sc->ac_byte_count = f->version > 2 || (!x && !y) ? sc->c.bytestream - sc->c.bytestream_start - 1 : 0;
         init_get_bits(&gb,
@@ -433,11 +433,13 @@ static int read_extra_header(FFV1Context *f)
             f->version);
         return AVERROR_PATCHWELCOME;
     }
+    f->combined_version = f->version << 16;
     if (f->version > 2) {
         c.bytestream_end -= 4;
         f->micro_version = get_symbol(&c, state, 0);
-        if (f->micro_version < 0)
+        if (f->micro_version < 0 || f->micro_version > 65535)
             return AVERROR_INVALIDDATA;
+        f->combined_version += f->micro_version;
     }
     f->ac = get_symbol(&c, state, 0);
 
@@ -505,7 +507,7 @@ static int read_extra_header(FFV1Context *f)
         f->ec = get_symbol(&c, state, 0);
         if (f->ec >= 2)
             f->crcref = 0x7a8c4079;
-        if (f->micro_version > 2)
+        if (f->combined_version >= 0x30003)
             f->intra = get_symbol(&c, state, 0);
     }
 
@@ -1104,6 +1106,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 
     fdst->version             = fsrc->version;
     fdst->micro_version       = fsrc->micro_version;
+    fdst->combined_version    = fsrc->combined_version;
     fdst->chroma_planes       = fsrc->chroma_planes;
     fdst->chroma_h_shift      = fsrc->chroma_h_shift;
     fdst->chroma_v_shift      = fsrc->chroma_v_shift;

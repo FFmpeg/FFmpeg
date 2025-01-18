@@ -130,7 +130,7 @@ int ff_slice_coord(const FFV1Context *f, int width, int sx, int num_h_slices, in
     int mpw = 1<<chroma_shift;
     int awidth = FFALIGN(width, mpw);
 
-    if (f->version < 4 || f->version == 4 && f->micro_version < 3)
+    if (f->combined_version <= 0x40002)
         return width * sx / num_h_slices;
 
     sx = (2LL * awidth * sx + num_h_slices * mpw) / (2 * num_h_slices * mpw) * mpw;
