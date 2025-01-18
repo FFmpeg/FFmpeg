@@ -172,6 +172,8 @@ int ff_ffv1_read_extra_header(FFV1Context *f)
             f->crcref = 0x7a8c4079;
         if (f->combined_version >= 0x30003)
             f->intra = ff_ffv1_get_symbol(&c, state, 0);
+        if (f->combined_version >= 0x40004)
+            f->flt = ff_ffv1_get_symbol(&c, state, 0);
     }
 
     if (f->version > 2) {
@@ -401,10 +403,16 @@ int ff_ffv1_parse_header(FFV1Context *f, RangeCoder *c, uint8_t *state)
         else if (f->avctx->bits_per_raw_sample == 14 && f->transparency)
             f->pix_fmt = AV_PIX_FMT_GBRAP14;
         else if (f->avctx->bits_per_raw_sample == 16 && !f->transparency) {
-            f->pix_fmt = AV_PIX_FMT_GBRP16;
+            if (f->flt) {
+                f->pix_fmt = AV_PIX_FMT_GBRPF16;
+            } else
+                f->pix_fmt = AV_PIX_FMT_GBRP16;
             f->use32bit = 1;
         } else if (f->avctx->bits_per_raw_sample == 16 && f->transparency) {
-            f->pix_fmt = AV_PIX_FMT_GBRAP16;
+            if (f->flt) {
+                f->pix_fmt = AV_PIX_FMT_GBRAPF16;
+            } else
+                f->pix_fmt = AV_PIX_FMT_GBRAP16;
             f->use32bit = 1;
         }
     } else {

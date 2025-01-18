@@ -134,6 +134,8 @@ typedef struct FFV1Context {
     uint8_t state_transition[256];
     uint8_t (*initial_states[MAX_QUANT_TABLES])[32];
     int colorspace;
+    int flt;
+
 
     int use32bit;
 
