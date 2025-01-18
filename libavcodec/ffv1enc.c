@@ -914,7 +914,6 @@ static int encode_init_internal(AVCodecContext *avctx)
         }
     }
 
-    s->version = 0;
 
     ret = ff_ffv1_encode_init(avctx);
     if (ret < 0)
