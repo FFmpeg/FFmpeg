@@ -148,6 +148,47 @@ static int RENAME(encode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
     memset(RENAME(sc->sample_buffer), 0, ring_size * MAX_PLANES *
            (w + 6) * sizeof(*RENAME(sc->sample_buffer)));
 
+    if (f->flt) {
+        memset(sc->fltmap, 0, sizeof(sc->fltmap));
+
+        for (y = 0; y < h; y++) {
+            for (x = 0; x < w; x++) {
+                int b, g, r, av_uninit(a);
+
+                if (sizeof(TYPE) == 4 || transparency) {
+                    g = *((const uint16_t *)(src[0] + x*2 + stride[0]*y));
+                    b = *((const uint16_t *)(src[1] + x*2 + stride[1]*y));
+                    r = *((const uint16_t *)(src[2] + x*2 + stride[2]*y));
+                    if (transparency)
+                        a = *((const uint16_t *)(src[3] + x*2 + stride[3]*y));
+                } else {
+                    b = *((const uint16_t *)(src[0] + x*2 + stride[0]*y));
+                    g = *((const uint16_t *)(src[1] + x*2 + stride[1]*y));
+                    r = *((const uint16_t *)(src[2] + x*2 + stride[2]*y));
+                }
+
+                sc->fltmap[0][r] = 1;
+                sc->fltmap[1][g] = 1;
+                sc->fltmap[2][b] = 1;
+                if (transparency)
+                    sc->fltmap[3][a] = 1;
+            }
+        }
+        for (int p= 0; p<3 + transparency; p++) {
+            int j = 0;
+            int lu = 0;
+            uint8_t state[2] = {128, 128};
+            for (int i= 0; i<65536; i++) {
+                int ri = i ^ ((i&0x8000) ? 0 : 0x7FFF);
+                int u = sc->fltmap[p][ri];
+                sc->fltmap[p][ri] = j;
+                j+= u;
+                put_rac(&sc->c, state + lu, u);
+                lu = u;
+            }
+        }
+    }
+
     for (y = 0; y < h; y++) {
         for (i = 0; i < ring_size; i++)
             for (p = 0; p < MAX_PLANES; p++)
@@ -178,6 +219,14 @@ static int RENAME(encode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
                 b = *((const uint16_t *)(src[0] + x*2 + stride[0]*y));
                 g = *((const uint16_t *)(src[1] + x*2 + stride[1]*y));
                 r = *((const uint16_t *)(src[2] + x*2 + stride[2]*y));
+            }
+
+            if (f->flt) {
+                r = sc->fltmap[0][r];
+                g = sc->fltmap[1][g];
+                b = sc->fltmap[2][b];
+                if (transparency)
+                    a = sc->fltmap[3][a];
             }
 
             if (sc->slice_coding_mode != 1) {

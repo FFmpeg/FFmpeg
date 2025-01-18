@@ -155,6 +155,20 @@ static int RENAME(decode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
 
     memset(RENAME(sc->sample_buffer), 0, 8 * (w + 6) * sizeof(*RENAME(sc->sample_buffer)));
 
+    if (f->flt) {
+        for (int p= 0; p<3 + transparency; p++) {
+            int j = 0;
+            int lu = 0;
+            uint8_t state[2] = {128, 128};
+            for (int i= 0; i<65536; i++) {
+                int u = get_rac(&sc->c, state + lu);
+                sc->fltmap[p][j] = i ^ ((i&0x8000) ? 0 : 0x7FFF);
+                j+= u;
+                lu = u;
+            }
+        }
+    }
+
     for (y = 0; y < h; y++) {
         for (p = 0; p < 3 + transparency; p++) {
             int ret;
@@ -184,6 +198,13 @@ static int RENAME(decode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
                 g -= (b * sc->slice_rct_by_coef + r * sc->slice_rct_ry_coef) >> 2;
                 b += g;
                 r += g;
+            }
+            if (f->flt) {
+                r = sc->fltmap[0][r & 0xFFFF];
+                g = sc->fltmap[1][g & 0xFFFF];
+                b = sc->fltmap[2][b & 0xFFFF];
+                if (transparency)
+                    a = sc->fltmap[3][a & 0xFFFF];
             }
 
             if (lbd)
