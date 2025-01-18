@@ -48,6 +48,8 @@ void ff_vvc_unref_frame(VVCFrameContext *fc, VVCFrame *frame, int flags)
         return;
 
     frame->flags &= ~flags;
+    if (!(frame->flags & ~VVC_FRAME_FLAG_CORRUPT))
+        frame->flags = 0;
     if (!frame->flags) {
         av_frame_unref(frame->frame);
         av_refstruct_unref(&frame->sps);
@@ -280,6 +282,9 @@ int ff_vvc_output_frame(VVCContext *s, VVCFrameContext *fc, AVFrame *out, const 
         if (nb_output) {
             VVCFrame *frame = &fc->DPB[min_idx];
 
+            if (frame->flags & VVC_FRAME_FLAG_CORRUPT)
+                frame->frame->flags |= AV_FRAME_FLAG_CORRUPT;
+
             ret = av_frame_ref(out, frame->frame);
             if (frame->flags & VVC_FRAME_FLAG_BUMPING)
                 ff_vvc_unref_frame(fc, frame, VVC_FRAME_FLAG_OUTPUT | VVC_FRAME_FLAG_BUMPING);
@@ -389,7 +394,7 @@ static VVCFrame *generate_missing_ref(VVCContext *s, VVCFrameContext *fc, int po
 
     frame->poc      = poc;
     frame->sequence = s->seq_decode;
-    frame->flags    = 0;
+    frame->flags    = VVC_FRAME_FLAG_CORRUPT;
 
     ff_vvc_report_frame_finished(frame);
 
@@ -423,6 +428,19 @@ static int add_candidate_ref(VVCContext *s, VVCFrameContext *fc, RefPicList *lis
 
     if (ref == fc->ref || list->nb_refs >= VVC_MAX_REF_ENTRIES)
         return AVERROR_INVALIDDATA;
+
+    if (!IS_CVSS(s)) {
+        const bool ref_corrupt = !ref || (ref->flags & VVC_FRAME_FLAG_CORRUPT);
+        const bool recovering  = s->no_output_before_recovery_flag && !GDR_IS_RECOVERED(s);
+
+        if (ref_corrupt && !recovering) {
+            if (!(s->avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) &&
+                !(s->avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL))
+                return AVERROR_INVALIDDATA;
+
+            fc->ref->flags |= VVC_FRAME_FLAG_CORRUPT;
+        }
+    }
 
     if (!ref) {
         ref = generate_missing_ref(s, fc, poc);

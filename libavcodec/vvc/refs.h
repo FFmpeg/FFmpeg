@@ -29,6 +29,7 @@
 #define VVC_FRAME_FLAG_SHORT_REF (1 << 1)
 #define VVC_FRAME_FLAG_LONG_REF  (1 << 2)
 #define VVC_FRAME_FLAG_BUMPING   (1 << 3)
+#define VVC_FRAME_FLAG_CORRUPT   (1 << 4)
 
 int ff_vvc_output_frame(VVCContext *s, VVCFrameContext *fc, struct AVFrame *out, int no_output_of_prior_pics_flag, int flush);
 void ff_vvc_bump_frame(VVCContext *s, VVCFrameContext *fc);
