@@ -1046,6 +1046,10 @@ static void choose_rct_params(const FFV1Context *f, FFV1SliceContext *sc,
                 r = p[0];
                 g = p[1];
                 b = p[2];
+            } else if (f->use32bit || transparency) {
+                g = *((const uint16_t *)(src[0] + x*2 + stride[0]*y));
+                b = *((const uint16_t *)(src[1] + x*2 + stride[1]*y));
+                r = *((const uint16_t *)(src[2] + x*2 + stride[2]*y));
             } else {
                 b = *((const uint16_t*)(src[0] + x*2 + stride[0]*y));
                 g = *((const uint16_t*)(src[1] + x*2 + stride[1]*y));
