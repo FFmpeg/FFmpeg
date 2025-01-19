@@ -1581,7 +1581,7 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
         if (f->version < 4) {
             av_log(avctx, AV_LOG_ERROR, "PCM coding only supported by version 4 (-level 4)\n");
             return AVERROR_INVALIDDATA;
-        } else if (f->ac != AC_RANGE_CUSTOM_TAB) {
+        } else if (f->ac == AC_GOLOMB_RICE) {
             av_log(avctx, AV_LOG_ERROR, "PCM coding requires range coding\n");
             return AVERROR_INVALIDDATA;
         }
@@ -1798,6 +1798,8 @@ static const AVOption vulkan_encode_ffv1_options[] = {
             { .i64 = AC_RANGE_CUSTOM_TAB }, -2, 2, VE, .unit = "coder" },
         { "rice", "Golomb rice", 0, AV_OPT_TYPE_CONST,
             { .i64 = AC_GOLOMB_RICE }, INT_MIN, INT_MAX, VE, .unit = "coder" },
+        { "range_def", "Range with default table", 0, AV_OPT_TYPE_CONST,
+            { .i64 = AC_RANGE_DEFAULT_TAB_FORCE }, INT_MIN, INT_MAX, VE, .unit = "coder" },
         { "range_tab", "Range with custom table", 0, AV_OPT_TYPE_CONST,
             { .i64 = AC_RANGE_CUSTOM_TAB }, INT_MIN, INT_MAX, VE, .unit = "coder" },
     { "qtable", "Quantization table", OFFSET(ctx.qtable), AV_OPT_TYPE_INT,
