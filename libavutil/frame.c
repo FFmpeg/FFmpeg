@@ -1095,6 +1095,7 @@ int av_frame_apply_cropping(AVFrame *frame, int flags)
 {
     const AVPixFmtDescriptor *desc;
     size_t offsets[4];
+    int ret;
 
     if (!(frame->width > 0 && frame->height > 0))
         return AVERROR(EINVAL);
@@ -1122,7 +1123,9 @@ int av_frame_apply_cropping(AVFrame *frame, int flags)
     }
 
     /* calculate the offsets for each plane */
-    calc_cropping_offsets(offsets, frame, desc);
+    ret = calc_cropping_offsets(offsets, frame, desc);
+    if (ret < 0)
+        return ret;
 
     /* adjust the offsets to avoid breaking alignment */
     if (!(flags & AV_FRAME_CROP_UNALIGNED)) {
@@ -1141,7 +1144,9 @@ int av_frame_apply_cropping(AVFrame *frame, int flags)
 
         if (min_log2_align < 5 && log2_crop_align != INT_MAX) {
             frame->crop_left &= ~((1 << (5 + log2_crop_align - min_log2_align)) - 1);
-            calc_cropping_offsets(offsets, frame, desc);
+            ret = calc_cropping_offsets(offsets, frame, desc);
+            if (ret < 0)
+                return ret;
         }
     }
 
