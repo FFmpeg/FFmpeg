@@ -797,6 +797,27 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .alias = "y16le",
     },
+    [AV_PIX_FMT_GRAY32BE] = {
+        .name = "gray32be",
+        .nb_components = 1,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 4, 0, 0, 32 },       /* Y */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE,
+        .alias = "y32be",
+    },
+    [AV_PIX_FMT_GRAY32LE] = {
+        .name = "gray32le",
+        .nb_components = 1,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 4, 0, 0, 32 },       /* Y */
+        },
+        .alias = "y32le",
+    },
     [AV_PIX_FMT_YUV440P] = {
         .name = "yuv440p",
         .nb_components = 3,
