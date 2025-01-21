@@ -2188,10 +2188,18 @@ print:
 
         GLSLA(" %s", desc[i].name);
 
-        if (prop->buf_content)
-            GLSLA(" {\n    %s\n}", desc[i].buf_content);
-        else if (desc[i].elems > 0)
+        if (prop->buf_content) {
+            GLSLA(" {\n    ");
+            if (desc[i].elems) {
+                GLSLA("%s", desc[i].buf_content);
+                GLSLA("[%i];", desc[i].elems);
+            } else {
+                GLSLA("%s", desc[i].buf_content);
+            }
+            GLSLA("\n}");
+        } else if (desc[i].elems > 0) {
             GLSLA("[%i]", desc[i].elems);
+        }
 
         GLSLA(";");
         GLSLA("\n");
