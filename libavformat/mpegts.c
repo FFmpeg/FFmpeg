@@ -3459,7 +3459,6 @@ void avpriv_mpegts_parse_close(MpegTSContext *ts)
 const FFInputFormat ff_mpegts_demuxer = {
     .p.name         = "mpegts",
     .p.long_name    = NULL_IF_CONFIG_SMALL("MPEG-TS (MPEG-2 Transport Stream)"),
-    .p.extensions   = "ts,m4s",
     .p.flags        = AVFMT_SHOW_IDS | AVFMT_TS_DISCONT,
     .p.priv_class   = &mpegts_class,
     .priv_data_size = sizeof(MpegTSContext),
