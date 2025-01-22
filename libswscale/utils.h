@@ -98,17 +98,23 @@ static inline int ff_color_equal(const SwsColor *c1, const SwsColor *c2)
             ff_prim_equal(&c1->gamut, &c2->gamut);
 }
 
-/* Tests only the static components of a colorspace, ignoring per-frame data */
-static inline int ff_fmt_equal(const SwsFormat *fmt1, const SwsFormat *fmt2)
+/* Tests only the static components of a colorspace, ignoring dimensions and per-frame data */
+static inline int ff_props_equal(const SwsFormat *fmt1, const SwsFormat *fmt2)
 {
-    return fmt1->width      == fmt2->width      &&
-           fmt1->height     == fmt2->height     &&
-           fmt1->interlaced == fmt2->interlaced &&
+    return fmt1->interlaced == fmt2->interlaced &&
            fmt1->format     == fmt2->format     &&
            fmt1->range      == fmt2->range      &&
            fmt1->csp        == fmt2->csp        &&
            fmt1->loc        == fmt2->loc        &&
            ff_color_equal(&fmt1->color, &fmt2->color);
+}
+
+/* Tests only the static components of a colorspace, ignoring per-frame data */
+static inline int ff_fmt_equal(const SwsFormat *fmt1, const SwsFormat *fmt2)
+{
+    return fmt1->width      == fmt2->width      &&
+           fmt1->height     == fmt2->height     &&
+           ff_props_equal(fmt1, fmt2);
 }
 
 static inline int ff_fmt_align(enum AVPixelFormat fmt)
