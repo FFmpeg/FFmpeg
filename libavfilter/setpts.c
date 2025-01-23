@@ -98,6 +98,7 @@ typedef struct SetPTSContext {
     const AVClass *class;
     char *expr_str;
     AVExpr *expr;
+    int strip_fps;
     double var_values[VAR_VARS_NB];
     enum AVMediaType type;
 } SetPTSContext;
@@ -153,8 +154,10 @@ static int config_input(AVFilterLink *inlink)
 static int config_output_video(AVFilterLink *outlink)
 {
     FilterLink *l = ff_filter_link(outlink);
+    SetPTSContext *s = outlink->src->priv;
 
-    l->frame_rate = (AVRational){ 1, 0 };
+    if (s->strip_fps)
+        l->frame_rate = (AVRational){ 1, 0 };
 
     return 0;
 }
@@ -320,6 +323,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 #if CONFIG_SETPTS_FILTER
 static const AVOption setpts_options[] = {
     { "expr", "Expression determining the frame timestamp", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "PTS" }, .flags = V|F|R },
+    { "strip_fps",  "Unset framerate metadata", OFFSET(strip_fps), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, .flags = V|F },
     { NULL }
 };
 AVFILTER_DEFINE_CLASS(setpts);

@@ -1,2 +1,2 @@
 settb=1/1000,
-setpts=1/(35*TB) * (N + 0.05 * sin(N*2*PI/25))
+setpts=1/(35*TB) * (N + 0.05 * sin(N*2*PI/25)):strip_fps=1
