@@ -1,6 +1,192 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 7.1.1:
+ avformat/mxfdec: Check avio_read() success in mxf_decrypt_triplet()
+ avcodec/huffyuvdec: Initialize whole output for decode_gray_bitstream()
+ avformat/iamf_reader: Initialize padding and check read in ff_iamf_read_packet()
+ avformat/ipmovie: Check signature_buffer read
+ avformat/wtvdec: Initialize buf
+ avcodec/cbs_vp9: Initialize VP9RawSuperframeIndex
+ avformat/vqf: Propagate errors from add_metadata()
+ avformat/vqf: Check avio_read() in add_metadata()
+ avcodec/ffv1enc: Fix RCT for GBR colorspace
+ avformat/dashdec: Check whitelist
+ avutil/avstring: dont mess with NULL pointers in av_match_list()
+ avfilter/vf_v360: Fix NULL pointer use
+ avcodec/mpegvideo_enc: Check FLV1 resolution limits
+ avcodec/ffv1enc: Fix handling of 32bit unsigned symbols
+ avformat/mov: perform sanity checks for heif before index building
+ avformat/mov: Factorize sanity check out
+ avcodec/vc1dec: Clear block_index in vc1_decode_reset()
+ avcodec/aacsbr_template: Clear n_q on error
+ avformat/iamf_parse: Check output_channel_count
+ avcodec/osq: Fixes several undefined overflows in do_decode()
+ swscale/output: Fix undefined overflow in yuv2rgba64_full_X_c_template()
+ avfilter/af_pan: Fix sscanf() use
+ avfilter/vf_grayworld: Use the correct pointer for av_log()
+ avfilter/vf_addroi: Add missing NULL termination to addroi_var_names[]()
+ avcodec/get_buffer: Use av_buffer_mallocz() for audio same as its done for video
+ avformat/jpegxl_anim_dec: clear buffer padding
+ avformat/rmdec: check that buf if completely filled
+ avcodec/cfhdenc: Clear dwt_tmp
+ avcodec/hapdec: Clear tex buffer
+ avformat/mxfdec: Check that key was read sucessfull
+ avformat/hevc: fix writing hvcC when no arrays are provided in hvcC-formatted input
+ avformat/rtpdec: int overflow in start_time_realtime
+ avcodec/decode: Fix incorrect enum type used in side_data_map()
+ avformat/mov: fix crash when trying to get a fragment time for a non-existing fragment
+ avformat/libssh: fix credential variables typo
+ avformat/hlsenc: check return value of avcodec_parameters_copy()
+ avformat/dashdec: format open_demux_for_component()
+ avformat/dashdec: check return code of avcodec_parameters_copy()
+ avformat/dashdec: return ret directly in open_demux_for_component()
+ avformat/smoothstreamingenc: check return value of avcodec_parameters_copy()
+ avcodec/cbs_av1: fix variable shadowing in cbs_av1_split_fragment()
+ doc/demuxers/dvdvideo: seeking is supported, remove outdated statement
+ avformat/dvdvideodec: check return code of ff_dvdclut_yuv_to_rgb()
+ avformat/dvdvideodec: fix missing last chapter marker due to off-by-one
+ avformat/dvdvideodec: don't allow seeking beyond dvdnav reported duration
+ avformat/dvdvideodec: discard duplicate or partial AC3 samples
+ avformat/dvdvideodec: drop packets with unset PTS or DTS
+ avformat/dvdvideodec: remove unnecessary need_parsing argument
+ avformat/dvdvideodec: open subdemuxer after initializing IFO headers
+ avformat/dvdvideodec: remove auto value for menu_lu option
+ avformat/dvdvideodec: default menu_vts option to 1 and clarify description
+ avformat/dvdvideodec: check the length of a NAV packet when reading titles
+ avformat/dvdvideodec: reset the subdemuxer on discontinuity instead of flushing
+ avformat/dvdvideodec: simplify dvdvideo_read_packet()
+ avformat/dvdvideodec: enable chapter calculation for menus
+ avformat/dvdvideodec: standardize the NAV packet event signal
+ avformat/dvdvideodec: move memcpy below missed NAV packet warning
+ avformat/dvdvideodec: remove "auto" value for -pg option, default to 1
+ avformat/dvdvideodec: measure duration of the current menu VOBU in state
+ avformat/dvdvideodec: fix menu PGC number off-by-one in state
+ avformat/dvdvideodec: remove unused headers
+ lavc/aarch64: Fix ff_pred16x16_plane_neon_10
+ lavc/aarch64: Fix ff_pred8x8_plane_neon_10
+ aarch64/vvc: Fix clip in alf
+ vp9: recon: Use emulated edge to prevent buffer overflows
+ arm: vp9mc: Load only 12 pixels in the 4 pixel wide horizontal filter
+ aarch64: vp9mc: Load only 12 pixels in the 4 pixel wide horizontal filter
+ avformat/rpl: Fix check for negative values
+ avformat/mlvdec: Check avio_read()
+ avcodec/aac/aacdec: Free channel layout
+ avformat/mov: dereference pointer after null check
+ avcodec/utils: Fix block align overflow for ADPCM_IMA_WAV
+ avformat/matroskadec: Check pre_ns for overflow
+ tools/target_dec_fuzzer: Adjust threshold for EACMV
+ tools/target_dec_fuzzer: Adjust threshold for MVC1
+ tools/target_dec_fuzzer: Adjust Threshold for indeo5
+ avutil/timecode: Avoid fps overflow in av_timecode_get_smpte_from_framenum()
+ avcodec/aac/aacdec_usac: Dont leave type at a invalid value
+ avcodec/aac/aacdec_usac: Clean ics2->max_sfb when first SCE fails
+ avcodec/webp: Check ref_x/y
+ avcodec/ilbcdec: Initialize tempbuff2
+ swscale/swscale_unscaled: Fix odd height with nv24_to_yuv420p_chroma()
+ avcodec/hevc/hevcdec: initialize qp_y_tab
+ avformat/qcp: Check for read failure in header
+ avcodec/eatgq: Check bytestream2_get_buffer() for failure
+ avformat/dxa: check bpc
+ swscale/slice: clear allocated memory in alloc_lines()
+ avcodec/h2645_parse: Ignore NAL with nuh_layer_id == 63
+ MAINTAINERS: Lauri is still available but is really low on time nowadays
+ MAINTAINERS: Remove Guillaume Poirier and Romain Dolbeau
+ avcodec/mjpegdec: Disallow progressive bayer images
+ avformat/icodec: fix integer overflow with nb_pal
+ doc/developer: Document relationship between git accounts and MAINTAINERS
+ doc/infra: Document trac backup system
+ doc/infra: Document gitolite
+ avformat/vividas: Check avio_read() for failure
+ avformat/ilbc: Check avio_read() for failure
+ avformat/nistspheredec: Clear buffer
+ avformat/mccdec: Initialize and check rate.den
+ avformat/rpl: check channels
+ INSTALL: explain the circular dependency issue and solution
+ avformat/mpegts: Initialize predefined_SLConfigDescriptor_seen
+ avformat/mxfdec: Fix overflow in midpoint computation
+ swscale/output: used unsigned for bit accumulation
+ swscale/rgb2rgb_template: Fix ff_rgb24toyv12_c() with odd height
+ avcodec/rangecoder: only perform renorm check/loop for callers that need it
+ avcodec/ffv1: add a named constant for the quant table size
+ avcodec/ffv1: RCT is only possible with RGB
+ avcodec/ffv1enc: Fix RCT with RGB64
+ avcodec/ffv1dec: Fix end computation with ec=2
+ avcodec/ffv1enc: Move slice termination into threads
+ avcodec/ffv1enc: Prevent generation of files with broken slices
+ avformat/matroskadec: Check desc_bytes so bits fit in 64bit
+ avformat/mov: Avoid overflow in dts
+ avcodec/ffv1enc: Correct error message about unsupported version
+ avcodec/ffv1: Store and reuse sx/sy
+ avcodec/ffv1enc: Slice combination is unsupported
+ avcodec/ffv1enc: 2Pass mode is not possible with golomb coding
+ avfilter/buffersrc: check for valid sample rate
+ avcodec/libdav1d: clear the buffered Dav1dData on decoding failure
+ avformat/iamf_writer: ensure the stream groups are not empty
+ avformat/iamf_writer: fix setting num_samples_per_frame for OPUS
+ avformat/iamf_parse: fix setting duration for the last subblock in a parameter definition
+ avformat/iamf_parse: add checks to parameter definition durations
+ avformat/iamf_parse: reject ambisonics mode > 1
+ checkasm: Print benchmarks of C-only functions
+ avcodec/ac3dec: fix downmix logic for eac3
+ avcodec/codec_desc: remove Intra Only prop for AAC
+ avcodec/mediacodecdec: set set keyframe flag in output frames
+ avcodec/libfdk-aacenc: set keyframe in output packets
+ avcodec/libfdk-aacdec: set keyframe flag and profile in output frames
+ avcodec/audiotoolboxnec: set set keyframe flag in output packets
+ avcodec/audiotoolboxdec: set set keyframe flag in output frames
+ avcodec/aacenc: set keyframe flag in output packets
+ avcodec/aac/aacdec: set keyframe flag in output frames
+ avcodec/aac_parser: set key_frame and profile
+ avformat/mov: don't unconditionally set all audio packets in fragments as key frames
+ avformat/matroskadec: set all frames in a keyframe simple box as keyframes
+ avformat/test/movenc: set audio packets as key frames
+ avformat/movenc: write stss boxes for xHE-AAC
+ avformat/spdifdec: parse headers for audio codecs
+ avformat/movenc: don't disable edit lists when writing CMAF output
+ avcodec/libfdk-aacenc: export CPB properties
+ avformat/movenc: don't write a calculated avgBitrate when the provided one is unset
+ libavutil/riscv: Make use of elf_aux_info() on FreeBSD / OpenBSD riscv
+ libavutil/ppc: defines involving bit shifts should be unsigned
+ libavutil/ppc: Include the hardware feature flags like the other archs
+ lavu/riscv: fix compilation without Vector support
+ avfilter/f_loop: fix aloop activate logic
+ avfilter/f_loop: fix length of aloop leftover buffer
+ avfilter/vf_zscale: align the frame buffers
+ lavfi/vf_zscale: fix call to av_pix_fmt_count_planes
+ lavfi/vf_zscale: fix tmp buffer ptr alignment for zimg_filter_graph_process
+ avfilter/framepool: align the frame buffers
+ avcodec/h2645_sei: use the RefStruct API for film_grain_characteristics
+ avcodec/aom_film_grain: allocate film grain metadata dynamically
+ avformat/mov: use an array of pointers for heif_item
+ avformat/mov: split off heif item initialization to its own function
+ avformat/mov: factorize getting the current item
+ lavc/h264idct: fix RISC-V group multiplier
+ lavc/h264dsp: move RISC-V fn pointers to .data.rel.ro
+ avcodec/jpegxl_parser: fix reading lz77-pair as initial entropy symbol
+ avcodec/jpegxl_parser: check entropy_decoder_read_symbol return value
+ avcodec/cbs_h266: Fix regression in DVB clip introduced by 93281630a71c06642adfebebb0d4b105a4e02e91
+ avcodec/x86/vvc: add prototypes for OF functions
+ Document stream specifier syntax change from 46cbe4ab5c
+ fftools/ffplay: fix crash when vk renderer is null
+ avutil/wchar_filename: re-introduce explicit cast of void* to char*
+ fate/ffmpeg: add samples dependency to fate-ffmpeg-spec-disposition
+ fftools/ffmpeg_filter: treat apad filter as a source
+ lavc/avcodec: fix global/private option precendence
+ avfilter/framesync: fix forward EOF pts
+ avcodec/vaapi_encode: fix compilation without CONFIG_VAAPI_1
+ libavcodec: x86: Remove an explicit include of config.asm
+ checkasm: lls: Use relative tolerances rather than absolute ones
+ arm: Consistently use proper interworking function returns
+ avcodec/libx265: unbreak build for X265_BUILD >= 213
+ fftools: log unconnected filter output label
+ fftools: do not access out of bounds filtergraph
+ avcodec/mediacodecenc: Fix access of uninitialized value
+ avformat/img2enc: Fix integer truncation when frame_pts is enabled
+ avformat/internal: Add ff_get_frame_filename
+ avformat/mov: don't return the latest stream when an item stream is expected
+
+
 version 7.1:
 - Raw Captions with Time (RCWT) closed caption demuxer
 - LC3/LC3plus decoding/encoding using external library liblc3
