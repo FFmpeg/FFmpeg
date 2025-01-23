@@ -172,6 +172,7 @@ OBJS = adler32.o                                                        \
        rc4.o                                                            \
        ripemd.o                                                         \
        samplefmt.o                                                      \
+       side_data.o                                                      \
        sha.o                                                            \
        sha512.o                                                         \
        slicethread.o                                                    \
