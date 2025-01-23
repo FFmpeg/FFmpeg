@@ -79,6 +79,20 @@ static int decode_nal_sei_pic_timing(HEVCSEI *s, GetBitContext *gb,
     return 0;
 }
 
+static int decode_nal_sei_recovery_point(HEVCSEI *s, GetBitContext *gb)
+{
+    HEVCSEIRecoveryPoint *rec = &s->recovery_point;
+    int recovery_poc_cnt = get_se_golomb(gb);
+
+    if (recovery_poc_cnt > INT16_MAX || recovery_poc_cnt < INT16_MIN)
+        return AVERROR_INVALIDDATA;
+    rec->recovery_poc_cnt = recovery_poc_cnt;
+    rec->exact_match_flag = get_bits1(gb);
+    rec->broken_link_flag = get_bits1(gb);
+
+    return 0;
+}
+
 static int decode_nal_sei_active_parameter_sets(HEVCSEI *s, GetBitContext *gb, void *logctx)
 {
     int num_sps_ids_minus1;
@@ -212,6 +226,8 @@ static int decode_nal_sei_prefix(GetBitContext *gb, GetByteContext *gbyte,
         return decode_nal_sei_decoded_picture_hash(&s->picture_hash, gbyte);
     case SEI_TYPE_PIC_TIMING:
         return decode_nal_sei_pic_timing(s, gb, ps, logctx);
+    case SEI_TYPE_RECOVERY_POINT:
+        return decode_nal_sei_recovery_point(s, gb);
     case SEI_TYPE_ACTIVE_PARAMETER_SETS:
         return decode_nal_sei_active_parameter_sets(s, gb, logctx);
     case SEI_TYPE_TIME_CODE:
