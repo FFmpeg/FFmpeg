@@ -7209,7 +7209,7 @@ enabled makeinfo \
 disabled makeinfo_html && texi2html --help 2> /dev/null | grep -q 'init-file' && enable texi2html || disable texi2html
 perl -v            > /dev/null 2>&1 && enable perl      || disable perl
 pod2man --help     > /dev/null 2>&1 && enable pod2man   || disable pod2man
-rsync --help 2> /dev/null | grep -q 'contimeout' && enable rsync_contimeout || disable rsync_contimeout
+rsync --help 2> /dev/null | grep -q 'contimeout=' && enable rsync_contimeout || disable rsync_contimeout
 xmllint --version  > /dev/null 2>&1 && enable xmllint   || disable xmllint
 
 check_headers linux/fb.h
