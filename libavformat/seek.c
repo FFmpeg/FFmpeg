@@ -697,10 +697,6 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
         return ret;
     }
 
-    if (ffifmt(s->iformat)->read_timestamp) {
-        // try to seek via read_timestamp()
-    }
-
     // Fall back on old API if new is not implemented but old is.
     // Note the old API has somewhat different semantics.
     if (ffifmt(s->iformat)->read_seek || 1) {
