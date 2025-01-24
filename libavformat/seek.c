@@ -664,6 +664,9 @@ int av_seek_frame(AVFormatContext *s, int stream_index,
 int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
                        int64_t ts, int64_t max_ts, int flags)
 {
+    int dir;
+    int ret;
+
     if (min_ts > ts || max_ts < ts)
         return -1;
     if (stream_index < -1 || stream_index >= (int)s->nb_streams)
@@ -699,19 +702,14 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
 
     // Fall back on old API if new is not implemented but old is.
     // Note the old API has somewhat different semantics.
-    if (ffifmt(s->iformat)->read_seek || 1) {
-        int dir = (ts - (uint64_t)min_ts > (uint64_t)max_ts - ts ? AVSEEK_FLAG_BACKWARD : 0);
-        int ret = av_seek_frame(s, stream_index, ts, flags | dir);
-        if (ret < 0 && ts != min_ts && max_ts != ts) {
-            ret = av_seek_frame(s, stream_index, dir ? max_ts : min_ts, flags | dir);
-            if (ret >= 0)
-                ret = av_seek_frame(s, stream_index, ts, flags | (dir^AVSEEK_FLAG_BACKWARD));
-        }
-        return ret;
+    dir = (ts - (uint64_t)min_ts > (uint64_t)max_ts - ts ? AVSEEK_FLAG_BACKWARD : 0);
+    ret = av_seek_frame(s, stream_index, ts, flags | dir);
+    if (ret < 0 && ts != min_ts && max_ts != ts) {
+        ret = av_seek_frame(s, stream_index, dir ? max_ts : min_ts, flags | dir);
+        if (ret >= 0)
+            ret = av_seek_frame(s, stream_index, ts, flags | (dir^AVSEEK_FLAG_BACKWARD));
     }
-
-    // try some generic seek like seek_frame_generic() but with new ts semantics
-    return -1; //unreachable
+    return ret;
 }
 
 /** Flush the frame reader. */
