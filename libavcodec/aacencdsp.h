@@ -34,6 +34,7 @@ typedef struct AACEncDSPContext {
 
 void ff_aacenc_dsp_init_riscv(AACEncDSPContext *s);
 void ff_aacenc_dsp_init_x86(AACEncDSPContext *s);
+void ff_aacenc_dsp_init_aarch64(AACEncDSPContext *s);
 
 static inline void abs_pow34_v(float *out, const float *in, const int size)
 {
@@ -66,6 +67,8 @@ static inline void ff_aacenc_dsp_init(AACEncDSPContext *s)
     ff_aacenc_dsp_init_riscv(s);
 #elif ARCH_X86
     ff_aacenc_dsp_init_x86(s);
+#elif ARCH_AARCH64
+    ff_aacenc_dsp_init_aarch64(s);
 #endif
 }
 

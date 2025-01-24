@@ -19,6 +19,7 @@ OBJS-$(CONFIG_VP8DSP)                   += aarch64/vp8dsp_init_aarch64.o
 # decoders/encoders
 OBJS-$(CONFIG_AAC_DECODER)              += aarch64/aacpsdsp_init_aarch64.o \
                                            aarch64/sbrdsp_init_aarch64.o
+OBJS-$(CONFIG_AAC_ENCODER)              += aarch64/aacencdsp_init.o
 OBJS-$(CONFIG_DCA_DECODER)              += aarch64/synth_filter_init.o
 OBJS-$(CONFIG_OPUS_DECODER)             += aarch64/opusdsp_init.o
 OBJS-$(CONFIG_RV40_DECODER)             += aarch64/rv40dsp_init_aarch64.o
@@ -38,6 +39,7 @@ ARMV8-OBJS-$(CONFIG_VIDEODSP)           += aarch64/videodsp.o
 
 # subsystems
 NEON-OBJS-$(CONFIG_AAC_DECODER)         += aarch64/sbrdsp_neon.o
+NEON-OBJS-$(CONFIG_AAC_ENCODER)         += aarch64/aacencdsp_neon.o
 NEON-OBJS-$(CONFIG_AC3DSP)              += aarch64/ac3dsp_neon.o
 NEON-OBJS-$(CONFIG_FDCTDSP)             += aarch64/fdctdsp_neon.o
 NEON-OBJS-$(CONFIG_FMTCONVERT)          += aarch64/fmtconvert_neon.o
