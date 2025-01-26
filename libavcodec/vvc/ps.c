@@ -1232,7 +1232,7 @@ static int sh_alf_aps(const VVCSH *sh, const VVCFrameParamSets *fps)
     return 0;
 }
 
-static void sh_slice_address(VVCSH *sh, const H266RawSPS *sps, const VVCPPS *pps)
+static int sh_slice_address(VVCSH *sh, const H266RawSPS *sps, const VVCPPS *pps)
 {
     const int slice_address     = sh->r->sh_slice_address;
 
@@ -1256,6 +1256,11 @@ static void sh_slice_address(VVCSH *sh, const H266RawSPS *sps, const VVCPPS *pps
             sh->num_ctus_in_curr_slice += pps->r->row_height_val[tile_y] * pps->r->col_width_val[tile_x];
         }
     }
+
+    if (!sh->num_ctus_in_curr_slice)
+        return  AVERROR_INVALIDDATA;
+
+    return 0;
 }
 
 static void sh_qp_y(VVCSH *sh, const H266RawPPS *pps, const H266RawPictureHeader *ph)
@@ -1352,7 +1357,9 @@ static int sh_derive(VVCSH *sh, const VVCFrameParamSets *fps)
     const H266RawPictureHeader *ph  = fps->ph.r;
     int ret;
 
-    sh_slice_address(sh, sps, fps->pps);
+    ret = sh_slice_address(sh, sps, fps->pps);
+    if (ret < 0)
+        return ret;
     ret = sh_alf_aps(sh, fps);
     if (ret < 0)
         return ret;
