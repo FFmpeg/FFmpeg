@@ -14,7 +14,7 @@ API changes, most recent first:
 2025-01-25 - xxxxxxxxxx - lavfi 10.7.100 - avfilter.h
   Add AVFilterLink.side_data and AVFilterLink.nb_side_data
 
-2025-01-05 - xxxxxxxxxx - lavc 59.55.100 - frame.h
+2025-01-05 - xxxxxxxxxx - lavu 59.55.100 - frame.h
   Add AV_FRAME_SIDE_DATA_FLAG_NEW_REF.
 
 2025-01-05 - xxxxxxxxxx - lavc 61.31.100 - avcodec.h
