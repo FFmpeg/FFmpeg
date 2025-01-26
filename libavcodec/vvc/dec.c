@@ -961,19 +961,6 @@ fail:
     return ret;
 }
 
-static int set_output_format(const VVCContext *s, const AVFrame *output)
-{
-    AVCodecContext *c = s->avctx;
-    int ret;
-
-    if (output->width != c->width || output->height != c->height) {
-        if ((ret = ff_set_dimensions(c, output->width, output->height)) < 0)
-            return ret;
-    }
-    c->pix_fmt = output->format;
-    return 0;
-}
-
 static int wait_delayed_frame(VVCContext *s, AVFrame *output, int *got_output)
 {
     VVCFrameContext *delayed = get_frame_context(s, s->fcs, s->nb_frames - s->nb_delayed);
@@ -981,9 +968,7 @@ static int wait_delayed_frame(VVCContext *s, AVFrame *output, int *got_output)
 
     if (!ret && delayed->output_frame->buf[0] && output) {
         av_frame_move_ref(output, delayed->output_frame);
-        ret = set_output_format(s, output);
-        if (!ret)
-            *got_output = 1;
+        *got_output = 1;
     }
     s->nb_delayed--;
 
@@ -1034,11 +1019,7 @@ static int get_decoded_frame(VVCContext *s, AVFrame *output, int *got_output)
         ret = ff_vvc_output_frame(s, last, output, 0, 1);
         if (ret < 0)
             return ret;
-        if (ret) {
-            *got_output = ret;
-            if ((ret = set_output_format(s, output)) < 0)
-                return ret;
-        }
+        *got_output = ret;
     }
     return 0;
 }
