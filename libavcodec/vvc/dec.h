@@ -241,8 +241,6 @@ typedef struct VVCContext {
 
     uint64_t nb_frames;     ///< processed frames
     int nb_delayed;         ///< delayed frames
-
-    enum AVPixelFormat pix_fmt; ///< pix format of current frame
 }  VVCContext ;
 
 #endif /* AVCODEC_VVC_DEC_H */
