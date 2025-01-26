@@ -1920,7 +1920,7 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
     FilterGraphPriv *fgp = fgp_from_fg(fg);
     AVBufferRef *hw_device;
     AVFilterInOut *inputs, *outputs, *cur;
-    int ret, i, simple = filtergraph_is_simple(fg);
+    int ret = AVERROR_BUG, i, simple = filtergraph_is_simple(fg);
     int have_input_eof = 0;
     const char *graph_desc = fgp->graph_desc;
 
@@ -2029,8 +2029,8 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
         sd = av_buffersink_get_side_data(sink, &nb_sd);
         if (nb_sd)
             for (int j = 0; j < nb_sd; j++) {
-                int ret = av_frame_side_data_clone(&ofp->side_data, &ofp->nb_side_data,
-                                                   sd[j], 0);
+                ret = av_frame_side_data_clone(&ofp->side_data, &ofp->nb_side_data,
+                                               sd[j], 0);
                 if (ret < 0) {
                     av_frame_side_data_free(&ofp->side_data, &ofp->nb_side_data);
                     goto fail;
