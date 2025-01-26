@@ -66,10 +66,10 @@ static int add_metadata(AVFormatContext *s, uint32_t tag,
         return AVERROR(ENOMEM);
 
     ret = avio_read(s->pb, buf, len);
-    if (ret < 0)
-        return ret;
-    if (len != ret)
-        return AVERROR_INVALIDDATA;
+    if (ret < 0 || ret != len) {
+        av_free(buf);
+        return ret < 0 ? ret : AVERROR_INVALIDDATA;
+    }
     buf[len] = 0;
     AV_WL32(key, tag);
     return av_dict_set(&s->metadata, key, buf, AV_DICT_DONT_STRDUP_VAL);
