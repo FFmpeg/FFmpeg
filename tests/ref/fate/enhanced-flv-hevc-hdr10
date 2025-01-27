@@ -4,7 +4,7 @@
 #codec_id 0: hevc
 #dimensions 0: 1280x720
 #sar 0: 0/1
-0,          0,          0,       40,    77718, 0xb59c83a5
+0,          0,          0,        0,    77718, 0xb59c83a5
 [FRAME]
 media_type=video
 stream_index=0
@@ -17,7 +17,7 @@ best_effort_timestamp=0
 best_effort_timestamp_time=0.000000
 duration=N/A
 duration_time=N/A
-pkt_pos=459
+pkt_pos=439
 pkt_size=77718
 width=1280
 height=720

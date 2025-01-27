@@ -83,9 +83,9 @@ int ff_raw_video_read_header(AVFormatContext *s)
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id = ffifmt(s->iformat)->raw_codec_id;
+    st->codecpar->framerate = s1->framerate;
     sti->need_parsing = AVSTREAM_PARSE_FULL_RAW;
 
-    st->avg_frame_rate = s1->framerate;
     avpriv_set_pts_info(st, 64, 1, 1200000);
 
 fail:
