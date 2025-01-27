@@ -552,6 +552,7 @@ static int config_input_ref(AVFilterLink *inlink)
     AVFilterContext  *ctx = inlink->dst;
     XPSNRContext *const s = ctx->priv;
     FilterLink *il = ff_filter_link(inlink);
+    FilterLink *ml = ff_filter_link(ctx->inputs[0]);
 
     if ((ctx->inputs[0]->w != ctx->inputs[1]->w) ||
         (ctx->inputs[0]->h != ctx->inputs[1]->h)) {
@@ -568,7 +569,9 @@ static int config_input_ref(AVFilterLink *inlink)
     s->max_error_64 = (1 << s->depth) - 1; /* conventional limit */
     s->max_error_64 *= s->max_error_64;
 
-    s->frame_rate = il->frame_rate.num / il->frame_rate.den;
+    // Avoid division by zero
+    s->frame_rate = il->frame_rate.den ? (il->frame_rate.num / il->frame_rate.den) :
+                    ml->frame_rate.den ? (ml->frame_rate.num / ml->frame_rate.den) : 0;
 
     s->num_comps = (desc->nb_components > 3 ? 3 : desc->nb_components);
 
