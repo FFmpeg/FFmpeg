@@ -549,21 +549,21 @@ static void check_yuv2packed1(void)
     const int16_t *chrv[2];
     const int16_t *alpha;
 
-    LOCAL_ALIGNED_8(int32_t, src_y, [INPUT_SIZE]);
-    LOCAL_ALIGNED_8(int32_t, src_u, [INPUT_SIZE]);
-    LOCAL_ALIGNED_8(int32_t, src_v, [INPUT_SIZE]);
-    LOCAL_ALIGNED_8(int32_t, src_a, [INPUT_SIZE]);
+    LOCAL_ALIGNED_8(int32_t, src_y, [2 * INPUT_SIZE]);
+    LOCAL_ALIGNED_8(int32_t, src_u, [2 * INPUT_SIZE]);
+    LOCAL_ALIGNED_8(int32_t, src_v, [2 * INPUT_SIZE]);
+    LOCAL_ALIGNED_8(int32_t, src_a, [2 * INPUT_SIZE]);
 
     LOCAL_ALIGNED_8(uint8_t, dst0, [INPUT_SIZE * sizeof(int32_t[4])]);
     LOCAL_ALIGNED_8(uint8_t, dst1, [INPUT_SIZE * sizeof(int32_t[4])]);
 
-    randomize_buffers((uint8_t*)src_y, INPUT_SIZE * sizeof(int32_t));
-    randomize_buffers((uint8_t*)src_u, INPUT_SIZE * sizeof(int32_t));
-    randomize_buffers((uint8_t*)src_v, INPUT_SIZE * sizeof(int32_t));
-    randomize_buffers((uint8_t*)src_a, INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)src_y, 2 * INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)src_u, 2 * INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)src_v, 2 * INPUT_SIZE * sizeof(int32_t));
+    randomize_buffers((uint8_t*)src_a, 2 * INPUT_SIZE * sizeof(int32_t));
 
     /* Limit to 14 bit input range */
-    for (int i = 0; i < INPUT_SIZE; i++) {
+    for (int i = 0; i < 2 * INPUT_SIZE; i++) {
         src_y[i] &= 0x3FFF3FFF;
         src_a[i] &= 0x3FFF3FFF;
         src_u[i] &= 0x3FFF3FFF;
