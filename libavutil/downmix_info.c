@@ -30,7 +30,8 @@ AVDownmixInfo *av_downmix_info_update_side_data(AVFrame *frame)
     if (!side_data) {
         side_data = av_frame_new_side_data(frame, AV_FRAME_DATA_DOWNMIX_INFO,
                                            sizeof(AVDownmixInfo));
-        memset(side_data->data, 0, sizeof(AVDownmixInfo));
+        if (side_data)
+            memset(side_data->data, 0, sizeof(AVDownmixInfo));
     }
 
     if (!side_data)
