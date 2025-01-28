@@ -538,7 +538,6 @@ static int config_props(AVFilterLink *link)
     }
 
     for (int i = 0; i < c->nb_side_data; i++) {
-        const AVSideDataDescriptor *desc = av_frame_side_data_desc(c->side_data[i]->type);
         int ret;
 
         ret = av_frame_side_data_clone(&link->side_data, &link->nb_side_data,
