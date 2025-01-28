@@ -752,8 +752,10 @@ static int test_segment(AVFormatContext *s, const AVInputFormat *in_fmt, struct 
                 matchF |=      av_match_ext(    seg->url, "ts")
                           + 2*(ff_match_url_ext(seg->url, "ts") > 0);
             }
-        } else if (!strcmp(in_fmt->name, "mpegts"))
-            matchF = 3;
+        } else if (!strcmp(in_fmt->name, "mpegts")) {
+            matchF =      av_match_ext(    seg->url, "ts,m2t,m2ts,mts,mpg,m4s,mpeg,mpegts")
+                     + 2*(ff_match_url_ext(seg->url, "ts,m2t,m2ts,mts,mpg,m4s,mpeg,mpegts") > 0);
+        }
 
         if (!(matchA & matchF)) {
             av_log(s, AV_LOG_ERROR, "detected format %s extension %s mismatches allowed extensions in url %s\n", in_fmt->name, in_fmt->extensions ? in_fmt->extensions : "none", seg->url);
