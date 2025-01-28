@@ -752,7 +752,7 @@ static int test_segment(AVFormatContext *s, const AVInputFormat *in_fmt, struct 
             matchF = 3;
 
         if (!(matchA & matchF)) {
-            av_log(s, AV_LOG_ERROR, "detected format extension %s mismatches allowed extensions in url %s\n", in_fmt->extensions ? in_fmt->extensions : "none", seg->url);
+            av_log(s, AV_LOG_ERROR, "detected format %s extension %s mismatches allowed extensions in url %s\n", in_fmt->name, in_fmt->extensions ? in_fmt->extensions : "none", seg->url);
             return AVERROR_INVALIDDATA;
         }
     }
