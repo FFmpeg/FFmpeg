@@ -822,6 +822,18 @@ void checkasm_check_sw_rgb(void)
     check_shuffle_bytes(shuffle_bytes_3210, "shuffle_bytes_3210");
     report("shuffle_bytes_3210");
 
+    check_shuffle_bytes(shuffle_bytes_3102, "shuffle_bytes_3102");
+    report("shuffle_bytes_3102");
+
+    check_shuffle_bytes(shuffle_bytes_2013, "shuffle_bytes_2013");
+    report("shuffle_bytes_2013");
+
+    check_shuffle_bytes(shuffle_bytes_1203, "shuffle_bytes_1203");
+    report("shuffle_bytes_1203");
+
+    check_shuffle_bytes(shuffle_bytes_2130, "shuffle_bytes_2130");
+    report("shuffle_bytes_2130");
+
     check_uyvy_to_422p();
     report("uyvytoyuv422");
 

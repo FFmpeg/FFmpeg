@@ -57,6 +57,15 @@ void ff_interleave_bytes_neon(const uint8_t *src1, const uint8_t *src2,
 void ff_deinterleave_bytes_neon(const uint8_t *src, uint8_t *dst1, uint8_t *dst2,
                                 int width, int height, int srcStride,
                                 int dst1Stride, int dst2Stride);
+void ff_shuffle_bytes_0321_neon(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_2103_neon(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_1230_neon(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_3012_neon(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_3210_neon(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_3102_neon(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_2013_neon(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_2130_neon(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_1203_neon(const uint8_t *src, uint8_t *dst, int src_size);
 
 av_cold void rgb2rgb_init_aarch64(void)
 {
@@ -66,5 +75,14 @@ av_cold void rgb2rgb_init_aarch64(void)
         ff_rgb24toyv12  = rgb24toyv12;
         interleaveBytes = ff_interleave_bytes_neon;
         deinterleaveBytes = ff_deinterleave_bytes_neon;
+        shuffle_bytes_0321 = ff_shuffle_bytes_0321_neon;
+        shuffle_bytes_1230 = ff_shuffle_bytes_1230_neon;
+        shuffle_bytes_2103 = ff_shuffle_bytes_2103_neon;
+        shuffle_bytes_3012 = ff_shuffle_bytes_3012_neon;
+        shuffle_bytes_3210 = ff_shuffle_bytes_3210_neon;
+        shuffle_bytes_3102 = ff_shuffle_bytes_3102_neon;
+        shuffle_bytes_2013 = ff_shuffle_bytes_2013_neon;
+        shuffle_bytes_2130 = ff_shuffle_bytes_2130_neon;
+        shuffle_bytes_1203 = ff_shuffle_bytes_1203_neon;
     }
 }

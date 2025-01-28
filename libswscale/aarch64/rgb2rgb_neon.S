@@ -34,6 +34,69 @@
 #define Y_OFFSET  v22
 #define UV_OFFSET v23
 
+const shuf_0321_tbl, align=4
+        .byte  0,  3,  2,  1
+        .byte  4,  7,  6,  5
+        .byte  8,  11, 10, 9
+        .byte  12, 15, 14, 13
+endconst
+
+const shuf_1230_tbl, align=4
+        .byte  1,  2,  3,  0
+        .byte  5,  6,  7,  4
+        .byte  9,  10, 11, 8
+        .byte  13, 14, 15, 12
+endconst
+
+const shuf_2103_tbl, align=4
+        .byte  2,  1,  0,  3
+        .byte  6,  5,  4,  7
+        .byte  10, 9,  8,  11
+        .byte  14, 13, 12, 15
+endconst
+
+const shuf_3012_tbl, align=4
+        .byte  3,  0,  1,  2
+        .byte  7,  4,  5,  6
+        .byte  11, 8,  9,  10
+        .byte  15, 12, 13, 14
+endconst
+
+const shuf_3210_tbl, align=4
+        .byte  3,  2,  1,  0
+        .byte  7,  6,  5,  4
+        .byte  11, 10, 9,  8
+        .byte  15, 14, 13, 12
+endconst
+
+const shuf_3102_tbl, align=4
+        .byte  3,  1,  0,  2
+        .byte  7,  5,  4,  6
+        .byte  11, 9,  8,  10
+        .byte  15, 13, 12, 14
+endconst
+
+const shuf_2013_tbl, align=4
+        .byte  2,  0,  1,  3
+        .byte  6,  4,  5,  7
+        .byte  10, 8,  9,  11
+        .byte  14, 12, 13, 15
+endconst
+
+const shuf_1203_tbl, align=4
+        .byte  1,  2,  0,  3
+        .byte  5,  6,  4,  7
+        .byte  9,  10, 8,  11
+        .byte  13, 14, 12, 15
+endconst
+
+const shuf_2130_tbl, align=4
+        .byte  2,  1,  3,  0
+        .byte  6,  5,  7,  4
+        .byte  10, 9,  11, 8
+        .byte  14, 13, 15, 12
+endconst
+
 // convert rgb to 16-bit y, u, or v
 // uses v3 and v4
 .macro rgbconv16 dst, b, g, r, bc, gc, rc
@@ -296,3 +359,71 @@ function ff_deinterleave_bytes_neon, export=1
 0:
         ret
 endfunc
+
+.macro neon_shuf shuf
+function ff_shuffle_bytes_\shuf\()_neon, export=1
+        movrel          x9, shuf_\shuf\()_tbl
+        ld1             {v1.16b}, [x9]
+        and             w5, w2, #~15
+        and             w3, w2, #8
+        and             w4, w2, #4
+        cbz             w5, 2f
+1:
+        ld1             {v0.16b}, [x0], #16
+        subs            w5, w5, #16
+        tbl             v0.16b, {v0.16b}, v1.16b
+        st1             {v0.16b}, [x1], #16
+        b.gt            1b
+2:
+        cbz             w3, 3f
+        ld1             {v0.8b}, [x0], #8
+        tbl             v0.8b, {v0.16b}, v1.8b
+        st1             {v0.8b}, [x1], #8
+3:
+        cbz             w4, 4f
+.if \shuf == 0321
+        ldr             w5, [x0]
+        rev             w5, w5
+        ror             w5, w5, #24
+        str             w5, [x1]
+.endif
+.if \shuf == 1230
+        ldr             w5, [x0]
+        ror             w5, w5, #8
+        str             w5, [x1]
+.endif
+.if \shuf == 2103
+        ldr             w5, [x0]
+        rev             w5, w5
+        ror             w5, w5, #8
+        str             w5, [x1]
+.endif
+.if \shuf == 3012
+        ldr             w5, [x0]
+        ror             w5, w5, #24
+        str             w5, [x1]
+.endif
+.if \shuf == 3210
+        ldr             w5, [x0]
+        rev             w5, w5
+        str             w5, [x1]
+.endif
+.if \shuf == 3102 || \shuf == 2013 || \shuf == 1203 || \shuf == 2130
+        ld1             {v0.s}[0], [x0]
+        tbl             v0.8b, {v0.16b}, v1.8b
+        st1             {v0.s}[0], [x1]
+.endif
+4:
+        ret
+endfunc
+.endm
+
+neon_shuf 0321
+neon_shuf 1230
+neon_shuf 2103
+neon_shuf 3012
+neon_shuf 3102
+neon_shuf 2013
+neon_shuf 1203
+neon_shuf 2130
+neon_shuf 3210
