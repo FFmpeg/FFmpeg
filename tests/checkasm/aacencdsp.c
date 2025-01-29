@@ -67,7 +67,7 @@ static void test_abs_pow34(AACEncDSPContext *s)
 static void test_quant_bands(AACEncDSPContext *s)
 {
     int maxval = randomize_elem(aac_cb_maxval);
-    float q34 = randomize_elem(ff_aac_pow34sf_tab);
+    float q34 = (float)rnd() / (UINT_MAX / 1024);
     float rounding = (rnd() & 1) ? ROUND_TO_ZERO : ROUND_STANDARD;
     LOCAL_ALIGNED_16(float, in, [BUF_SIZE]);
     LOCAL_ALIGNED_16(float, scaled, [BUF_SIZE]);
