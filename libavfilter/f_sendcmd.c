@@ -257,6 +257,7 @@ static int parse_commands(Command **cmds, int *nb_cmds, int interval_count,
             if (!*cmds) {
                 av_log(log_ctx, AV_LOG_ERROR,
                        "Could not (re)allocate command array\n");
+                clear_command(&cmd);
                 return AVERROR(ENOMEM);
             }
         }
