@@ -3541,7 +3541,7 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         current_dts += sc->stts_data[i].duration * (uint64_t)sample_count;
 
         if (current_dts > corrected_dts) {
-            int64_t drift = (current_dts - corrected_dts)/FFMAX(sample_count, 1);
+            int64_t drift = av_sat_sub64(current_dts, corrected_dts) / FFMAX(sample_count, 1);
             uint32_t correction = (sc->stts_data[i].duration > drift) ? drift : sc->stts_data[i].duration - 1;
             current_dts -= correction * (uint64_t)sample_count;
             sc->stts_data[i].duration -= correction;
