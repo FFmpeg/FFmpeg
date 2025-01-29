@@ -138,6 +138,18 @@ static void skip_comments(const char **buf)
 
 #define COMMAND_DELIMS " \f\t\n\r,;"
 
+/**
+ * Clears fields and frees the buffers used by @p cmd
+ */
+static void clear_command(Command *cmd)
+{
+    cmd->flags = 0;
+    cmd->index = 0;
+    av_freep(&cmd->target);
+    av_freep(&cmd->command);
+    av_freep(&cmd->arg);
+}
+
 static int parse_command(Command *cmd, int cmd_count, int interval_count,
                          const char **buf, void *log_ctx)
 {
@@ -217,9 +229,7 @@ static int parse_command(Command *cmd, int cmd_count, int interval_count,
     return 1;
 
 fail:
-    av_freep(&cmd->target);
-    av_freep(&cmd->command);
-    av_freep(&cmd->arg);
+    clear_command(cmd);
     return ret;
 }
 
@@ -471,9 +481,7 @@ static av_cold void uninit(AVFilterContext *ctx)
         Interval *interval = &s->intervals[i];
         for (j = 0; j < interval->nb_commands; j++) {
             Command *cmd = &interval->commands[j];
-            av_freep(&cmd->target);
-            av_freep(&cmd->command);
-            av_freep(&cmd->arg);
+            clear_command(cmd);
         }
         av_freep(&interval->commands);
     }
