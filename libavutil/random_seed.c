@@ -83,6 +83,7 @@ static uint32_t get_generic_seed(void)
     static uint32_t buffer[512] = { 0 };
     unsigned char digest[20];
     uint64_t last_i = i;
+    int repeats[3] = { 0 };
 
     av_assert0(sizeof(tmp) >= av_sha_size);
 
@@ -101,7 +102,22 @@ static uint32_t get_generic_seed(void)
         int incremented_i = 0;
         int cur_td = t - last_t;
         if (last_t + 2*last_td + (CLOCKS_PER_SEC > 1000) < t) {
+            // If the timer incremented by more than 2*last_td at once,
+            // we may e.g. have had a context switch. If the timer resolution
+            // is high (CLOCKS_PER_SEC > 1000), require that the timer
+            // incremented by more than 1. If the timer resolution is low,
+            // it is enough that the timer incremented at all.
             buffer[++i & 511] += cur_td % 3294638521U;
+            incremented_i = 1;
+        } else if (t != last_t && repeats[0] > 0 && repeats[1] > 0 &&
+                   repeats[2] > 0 && repeats[0] != repeats[1] &&
+                   repeats[0] != repeats[2]) {
+            // If the timer resolution is high, and we get the same timer
+            // value multiple times, use variances in the number of repeats
+            // of each timer value as entropy. If we get a different number of
+            // repeats than the last two unique cases, count that as entropy
+            // and proceed to the next index.
+            buffer[++i & 511] += (repeats[0] + repeats[1] + repeats[2]) % 3294638521U;
             incremented_i = 1;
         } else {
             buffer[i & 511] = 1664525*buffer[i & 511] + 1013904223 + (cur_td % 3294638521U);
@@ -109,6 +125,16 @@ static uint32_t get_generic_seed(void)
         if (incremented_i && (t - init_t) >= CLOCKS_PER_SEC>>5) {
             if (last_i && i - last_i > 4 || i - last_i > 64 || TEST && i - last_i > 8)
                 break;
+        }
+        if (t == last_t) {
+            repeats[0]++;
+        } else {
+            // If we got a new unique number of repeats, update the history.
+            if (repeats[0] != repeats[1]) {
+                repeats[2] = repeats[1];
+                repeats[1] = repeats[0];
+            }
+            repeats[0] = 0;
         }
         last_t = t;
         last_td = cur_td;
