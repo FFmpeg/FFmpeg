@@ -450,7 +450,8 @@ int ff_jpegxl_collect_codestream_header(const uint8_t *input_buffer, int input_l
                                         uint8_t *buffer, int buflen, int *copied)
 {
     GetByteContext gb;
-    int pos = 0, last_box = 0;
+    int64_t pos = 0;
+    int last_box = 0;
     bytestream2_init(&gb, input_buffer, input_len);
 
     while (1) {
@@ -516,5 +517,5 @@ int ff_jpegxl_collect_codestream_header(const uint8_t *input_buffer, int input_l
             break;
     }
 
-    return pos;
+    return FFMIN(pos, INT_MAX);
 }
