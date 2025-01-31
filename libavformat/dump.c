@@ -37,6 +37,7 @@
 #include "libavutil/replaygain.h"
 #include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
+#include "libavutil/tdrdi.h"
 #include "libavutil/timecode.h"
 
 #include "libavcodec/avcodec.h"
@@ -461,6 +462,14 @@ static void dump_cropping(void *ctx, const AVPacketSideData *sd)
     av_log(ctx, AV_LOG_INFO, "%d/%d/%d/%d", left, right, top, bottom);
 }
 
+static void dump_tdrdi(void *ctx, const AVPacketSideData *sd)
+{
+    const AV3DReferenceDisplaysInfo *tdrdi =
+        (const AV3DReferenceDisplaysInfo *)sd->data;
+
+    av_log(ctx, AV_LOG_INFO, "number of reference displays: %u", tdrdi->num_ref_displays);
+}
+
 static void dump_sidedata(void *ctx, const AVPacketSideData *side_data, int nb_side_data,
                           int w, int h, AVRational avg_frame_rate,
                           const char *indent, int log_level)
@@ -539,6 +548,10 @@ static void dump_sidedata(void *ctx, const AVPacketSideData *side_data, int nb_s
         case AV_PKT_DATA_FRAME_CROPPING:
             av_log(ctx, AV_LOG_INFO, "Frame cropping: ");
             dump_cropping(ctx, sd);
+            break;
+        case AV_PKT_DATA_3D_REFERENCE_DISPLAYS:
+            av_log(ctx, log_level, "3D Reference Displays Information: ");
+            dump_tdrdi(ctx, sd);
             break;
         default:
             av_log(ctx, log_level, "unknown side data type %d "
