@@ -214,21 +214,15 @@ function ff_yuv2plane1_8_neon, export=1
         and             w4, w4, #7
         cbz             w4, 1f                          // check if offsetting present
         ext             v0.8b, v0.8b, v0.8b, #3         // honor offsetting which can be 0 or 3 only
-1:      uxtl            v0.8h, v0.8b                    // extend dither to 32-bit
-        uxtl            v1.4s, v0.4h
-        uxtl2           v2.4s, v0.8h
+1:
+        uxtl            v0.8h, v0.8b                    // extend dither to 32-bit
 2:
         ld1             {v3.8h}, [x0], #16              // read 8x16-bit @ src[j  ][i + {0..7}]: A,B,C,D,E,F,G,H
-        sxtl            v4.4s, v3.4h
-        sxtl2           v5.4s, v3.8h
-        add             v4.4s, v4.4s, v1.4s
-        add             v5.4s, v5.4s, v2.4s
-        sqshrun         v4.4h, v4.4s, #6
-        sqshrun2        v4.8h, v5.4s, #6
-
-        uqshrn          v3.8b, v4.8h, #1                // clip8(val>>7)
         subs            w2, w2, #8                      // dstW -= 8
-        st1             {v3.8b}, [x1], #8               // write to destination
+        shadd           v1.8h, v0.8h, v3.8h             // v1 = (v0 + v3) >> 1
+        sqshrun         v2.8b, v1.8h, #6                // clip_uint8(v1 >> 6)
+
+        st1             {v2.8b}, [x1], #8               // write to destination
         b.gt            2b                              // loop until width consumed
         ret
 endfunc
