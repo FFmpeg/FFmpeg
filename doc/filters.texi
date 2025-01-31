@@ -14330,7 +14330,7 @@ A '|'-separated list of color space names, such as
 
 @item color_ranges
 A '|'-separated list of color range names, such as
-"color_spaces=tv|pc".
+"color_ranges=tv|pc".
 
 @end table
 
