@@ -248,7 +248,7 @@ static int scale_vt_config_output(AVFilterLink *outlink)
     if (err < 0)
         return err;
 
-    ff_scale_adjust_dimensions(inlink, &s->output_width, &s->output_height, 0, 1);
+    ff_scale_adjust_dimensions(inlink, &s->output_width, &s->output_height, 0, 1, 1.f);
 
     outlink->w = s->output_width;
     outlink->h = s->output_height;

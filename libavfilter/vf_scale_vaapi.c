@@ -39,6 +39,7 @@ typedef struct ScaleVAAPIContext {
 
     int force_original_aspect_ratio;
     int force_divisible_by;
+    int reset_sar;
 
     char *colour_primaries_string;
     char *colour_transfer_string;
@@ -73,6 +74,7 @@ static int scale_vaapi_config_output(AVFilterLink *outlink)
     AVFilterContext *avctx   = outlink->src;
     VAAPIVPPContext *vpp_ctx = avctx->priv;
     ScaleVAAPIContext *ctx   = avctx->priv;
+    double w_adj = 1.0;
     int err;
 
     if ((err = ff_scale_eval_dimensions(ctx,
@@ -81,8 +83,12 @@ static int scale_vaapi_config_output(AVFilterLink *outlink)
                                         &vpp_ctx->output_width, &vpp_ctx->output_height)) < 0)
         return err;
 
+    if (ctx->reset_sar)
+        w_adj = inlink->sample_aspect_ratio.num ?
+        (double)inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
+
     ff_scale_adjust_dimensions(inlink, &vpp_ctx->output_width, &vpp_ctx->output_height,
-                               ctx->force_original_aspect_ratio, ctx->force_divisible_by);
+                               ctx->force_original_aspect_ratio, ctx->force_divisible_by, w_adj);
 
     if (inlink->w == vpp_ctx->output_width && inlink->h == vpp_ctx->output_height &&
         (vpp_ctx->input_frames->sw_format == vpp_ctx->output_format ||
@@ -98,7 +104,9 @@ static int scale_vaapi_config_output(AVFilterLink *outlink)
     if (err < 0)
         return err;
 
-    if (inlink->sample_aspect_ratio.num)
+    if (ctx->reset_sar)
+        outlink->sample_aspect_ratio = (AVRational){1, 1};
+    else if (inlink->sample_aspect_ratio.num)
         outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink->w, outlink->w * inlink->h}, inlink->sample_aspect_ratio);
     else
         outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
@@ -274,6 +282,7 @@ static const AVOption scale_vaapi_options[] = {
     { "decrease", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1 }, 0, 0, FLAGS, .unit = "force_oar" },
     { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 2 }, 0, 0, FLAGS, .unit = "force_oar" },
     { "force_divisible_by", "enforce that the output resolution is divisible by a defined integer when force_original_aspect_ratio is used", OFFSET(force_divisible_by), AV_OPT_TYPE_INT, { .i64 = 1}, 1, 256, FLAGS },
+    { "reset_sar", "reset SAR to 1 and scale to square pixels if scaling proportionally", OFFSET(reset_sar), AV_OPT_TYPE_BOOL, { .i64 = 0}, 0, 1, FLAGS },
 
     { NULL },
 };

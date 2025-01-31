@@ -40,10 +40,13 @@ int ff_scale_eval_dimensions(void *ctx,
  * or both of the evaluated values are of the form '-n' or if
  * force_original_aspect_ratio is set. force_divisible_by is used only when
  * force_original_aspect_ratio is set and must be at least 1.
+ * w_adj is the input SAR when the output dimensions are intended to be square
+ * pixels, else should be 1.
  *
  * Returns negative error code on error or non negative on success
  */
 int ff_scale_adjust_dimensions(AVFilterLink *inlink,
     int *ret_w, int *ret_h,
-    int force_original_aspect_ratio, int force_divisible_by);
+    int force_original_aspect_ratio, int force_divisible_by,
+    double w_adj);
 #endif

@@ -21285,6 +21285,14 @@ This option can be handy if you need to have a video fit within or exceed
 a defined resolution using @option{force_original_aspect_ratio} but also have
 encoder restrictions on width or height divisibility.
 
+@item reset_sar
+Enabling this option leads to the output SAR being reset to 1.
+Additionally, if the user requests proportional scaling either
+through the width or height expressions, e.g. @code{w=-4:h=360} or @code{w=iw/2:h=-1}
+or by enabling @code{force_original_aspect_ratio}, then the input DAR is taken into
+account and the output is scaled to produce square pixels.
+Default is false.
+
 @end table
 
 The values of the @option{w} and @option{h} options are expressions
@@ -21445,10 +21453,28 @@ scale='trunc(ih*dar):ih',setsar=1/1
 @end example
 
 @item
-Make pixels square by combining scale and setsar,
+Make pixels square using reset_sar,
 making sure the resulting resolution is even (required by some codecs):
 @example
-scale='trunc(ih*dar/2)*2:trunc(ih/2)*2',setsar=1/1
+scale='-2:ih-mod(ih,2):reset_sar=1'
+@end example
+
+@item
+Scale to target exactly, however reset SAR to 1:
+@example
+scale='400:300:reset_sar=1'
+@end example
+
+@item
+Scale to even dimensions that fit within 400x300, preserving input SAR:
+@example
+scale='400:300:force_original_aspect_ratio=decrease:force_divisible_by=2'
+@end example
+
+@item
+Scale to produce square pixels with even dimensions that fit within 400x300:
+@example
+scale='400:300:force_original_aspect_ratio=decrease:force_divisible_by=2:reset_sar=1'
 @end example
 
 @item
@@ -21537,6 +21563,9 @@ Affects the curves of the bicubic algorithm.
 @item force_original_aspect_ratio
 @item force_divisible_by
 Work the same as the identical @ref{scale} filter options.
+
+@item reset_sar
+Works the same as the identical @ref{scale} filter option.
 
 @end table
 
@@ -21640,6 +21669,9 @@ may be slightly modified.
 This option can be handy if you need to have a video fit within or exceed
 a defined resolution using @option{force_original_aspect_ratio} but also have
 encoder restrictions on width or height divisibility.
+
+@item reset_sar
+Works the same as the identical @ref{scale} filter option.
 
 @item eval
 Specify when to evaluate @var{width} and @var{height} expression. It accepts the following values:

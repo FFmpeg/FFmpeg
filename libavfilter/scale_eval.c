@@ -112,7 +112,8 @@ fail:
 
 int ff_scale_adjust_dimensions(AVFilterLink *inlink,
     int *ret_w, int *ret_h,
-    int force_original_aspect_ratio, int force_divisible_by)
+    int force_original_aspect_ratio, int force_divisible_by,
+    double w_adj)
 {
     int64_t w, h;
     int factor_w, factor_h;
@@ -132,7 +133,7 @@ int ff_scale_adjust_dimensions(AVFilterLink *inlink,
     }
 
     if (w < 0 && h < 0) {
-        w = inlink->w;
+        w = inlink->w * w_adj;
         h = inlink->h;
     }
 
@@ -140,18 +141,18 @@ int ff_scale_adjust_dimensions(AVFilterLink *inlink,
      * earlier. If no factor was set, nothing will happen as the default
      * factor is 1 */
     if (w < 0)
-        w = av_rescale(h, inlink->w, inlink->h * factor_w) * factor_w;
+        w = av_rescale(h, inlink->w * w_adj, inlink->h * factor_w) * factor_w;
     if (h < 0)
-        h = av_rescale(w, inlink->h, inlink->w * factor_h) * factor_h;
+        h = av_rescale(w, inlink->h, inlink->w * w_adj * factor_h) * factor_h;
 
     /* Note that force_original_aspect_ratio may overwrite the previous set
      * dimensions so that it is not divisible by the set factors anymore
      * unless force_divisible_by is defined as well */
     if (force_original_aspect_ratio) {
         // Including force_divisible_by here rounds to the nearest multiple of it.
-        int64_t tmp_w = av_rescale(h, inlink->w, inlink->h * (int64_t)force_divisible_by)
+        int64_t tmp_w = av_rescale(h, inlink->w * w_adj, inlink->h * (int64_t)force_divisible_by)
                     * force_divisible_by;
-        int64_t tmp_h = av_rescale(w, inlink->h, inlink->w * (int64_t)force_divisible_by)
+        int64_t tmp_h = av_rescale(w, inlink->h, inlink->w * w_adj * (int64_t)force_divisible_by)
                     * force_divisible_by;
 
         if (force_original_aspect_ratio == 1) {

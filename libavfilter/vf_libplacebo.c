@@ -1201,7 +1201,7 @@ static int libplacebo_config_output(AVFilterLink *outlink)
 
     ff_scale_adjust_dimensions(inlink, &outlink->w, &outlink->h,
                                s->force_original_aspect_ratio,
-                               s->force_divisible_by);
+                               s->force_divisible_by, 1.f);
 
     if (s->normalize_sar || s->nb_inputs > 1) {
         /* SAR is normalized, or we have multiple inputs, set out to 1:1 */

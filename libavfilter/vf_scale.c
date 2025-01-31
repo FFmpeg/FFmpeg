@@ -176,6 +176,7 @@ typedef struct ScaleContext {
 
     int force_original_aspect_ratio;
     int force_divisible_by;
+    int reset_sar;
 
     int eval_mode;              ///< expression evaluation mode
 
@@ -645,6 +646,7 @@ static int config_props(AVFilterLink *outlink)
                             outlink->src->inputs[0];
     ScaleContext *scale = ctx->priv;
     uint8_t *flags_val = NULL;
+    double w_adj = 1.0;
     int ret;
 
     if ((ret = scale_eval_dimensions(ctx)) < 0)
@@ -653,9 +655,13 @@ static int config_props(AVFilterLink *outlink)
     outlink->w = scale->w;
     outlink->h = scale->h;
 
+    if (scale->reset_sar)
+        w_adj = IS_SCALE2REF(ctx) ? scale->var_values[VAR_S2R_MAIN_SAR] :
+                                    scale->var_values[VAR_SAR];
+
     ret = ff_scale_adjust_dimensions(inlink, &outlink->w, &outlink->h,
                                scale->force_original_aspect_ratio,
-                               scale->force_divisible_by);
+                               scale->force_divisible_by, w_adj);
 
     if (ret < 0)
         goto fail;
@@ -668,7 +674,9 @@ static int config_props(AVFilterLink *outlink)
 
     /* TODO: make algorithm configurable */
 
-    if (inlink0->sample_aspect_ratio.num){
+    if (scale->reset_sar)
+        outlink->sample_aspect_ratio = (AVRational){1, 1};
+    else if (inlink0->sample_aspect_ratio.num){
         outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink0->w, outlink->w * inlink0->h}, inlink0->sample_aspect_ratio);
     } else
         outlink->sample_aspect_ratio = inlink0->sample_aspect_ratio;
@@ -1185,6 +1193,7 @@ static const AVOption scale_options[] = {
     { "decrease", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1 }, 0, 0, FLAGS, .unit = "force_oar" },
     { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 2 }, 0, 0, FLAGS, .unit = "force_oar" },
     { "force_divisible_by", "enforce that the output resolution is divisible by a defined integer when force_original_aspect_ratio is used", OFFSET(force_divisible_by), AV_OPT_TYPE_INT, { .i64 = 1}, 1, 256, FLAGS },
+    { "reset_sar", "reset SAR to 1 and scale to square pixels if scaling proportionally", OFFSET(reset_sar), AV_OPT_TYPE_BOOL, { .i64 = 0}, 0, 1, FLAGS },
     { "param0", "Scaler param 0",             OFFSET(param[0]),  AV_OPT_TYPE_DOUBLE, { .dbl = DBL_MAX  }, -DBL_MAX, DBL_MAX, FLAGS },
     { "param1", "Scaler param 1",             OFFSET(param[1]),  AV_OPT_TYPE_DOUBLE, { .dbl = DBL_MAX  }, -DBL_MAX, DBL_MAX, FLAGS },
     { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, .unit = "eval" },
