@@ -110,6 +110,7 @@ typedef struct DVDVideoPlaybackState {
     int                         in_vts;             /* if our navigator is in the VTS */
     int                         is_seeking;         /* relax navigation path while seeking */
     int64_t                     nav_pts;            /* PTS according to IFO, not frame-accurate */
+    int                         nb_vobu_skip;       /* number of VOBUs we should skip */
     uint64_t                    pgc_duration_est;   /* estimated duration as reported by IFO */
     uint64_t                    pgc_elapsed;        /* the elapsed time of the PGC, cell-relative */
     int                         pgc_nb_pg_est;      /* number of PGs as reported by IFOs */
@@ -164,6 +165,7 @@ typedef struct DVDVideoDemuxContext {
 
     /* playback control */
     int64_t                     first_pts;          /* the PTS of the first video keyframe */
+    int                         nb_angles;          /* number of angles in the current title */
     int                         play_started;       /* signal that playback has started */
     DVDVideoPlaybackState       play_state;         /* the active playback state */
     int64_t                     *prev_pts;          /* track the previous PTS emitted per stream */
@@ -296,6 +298,8 @@ static int dvdvideo_ifo_open(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Title %d has invalid headers in VTS\n", c->opt_title);
         return AVERROR_INVALIDDATA;
     }
+
+    c->nb_angles = title_info.nr_of_angles;
 
     return 0;
 }
@@ -756,6 +760,13 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
 
                     av_log(s, AV_LOG_ERROR, "Invalid NAV packet\n");
                     return AVERROR_INVALIDDATA;
+                }
+
+                if (state->nb_vobu_skip > 0) {
+                    av_log(s, AV_LOG_VERBOSE, "Skipping VOBU at SCR %d\n",
+                                              e_dsi->dsi_gi.nv_pck_scr);
+                    state->nb_vobu_skip -= 1;
+                    continue;
                 }
 
                 state->vobu_duration = e_pci->pci_gi.vobu_e_ptm - e_pci->pci_gi.vobu_s_ptm;
@@ -1734,6 +1745,7 @@ static int dvdvideo_read_seek(AVFormatContext *s, int stream_index, int64_t time
     int64_t new_nav_pts;
     pci_t*  new_nav_pci;
     dsi_t*  new_nav_dsi;
+    int     seek_failed = 0;
 
     if (c->opt_menu || c->opt_chapter_start > 1) {
         av_log(s, AV_LOG_ERROR, "Seeking is not compatible with menus or chapter extraction\n");
@@ -1753,9 +1765,30 @@ static int dvdvideo_read_seek(AVFormatContext *s, int stream_index, int64_t time
         c->seek_warned = 1;
     }
 
+    /* dvdnav loses NAV packets when seeking on multi-angle discs, so enforce angle 1 then revert */
+    if (c->nb_angles > 1) {
+        if (dvdnav_angle_change(c->play_state.dvdnav, 1) != DVDNAV_STATUS_OK) {
+            av_log(s, AV_LOG_ERROR, "Unable to open angle 1 for seeking\n");
+
+            return AVERROR_EXTERNAL;
+        }
+    }
+
     /* XXX(PATCHWELCOME): use dvdnav_jump_to_sector_by_time(c->play_state.dvdnav, timestamp, 0)
      * when it is available in a released version of libdvdnav; it is more accurate */
     if (dvdnav_time_search(c->play_state.dvdnav, timestamp) != DVDNAV_STATUS_OK) {
+        seek_failed = 1;
+    }
+
+    if (c->nb_angles > 1) {
+        if (dvdnav_angle_change(c->play_state.dvdnav, c->opt_angle) != DVDNAV_STATUS_OK) {
+            av_log(s, AV_LOG_ERROR, "Unable to revert to angle %d after seeking\n", c->opt_angle);
+
+            return AVERROR_EXTERNAL;
+        }
+    }
+
+    if (seek_failed) {
         av_log(s, AV_LOG_ERROR, "libdvdnav: seeking to %" PRId64 " failed\n", timestamp);
 
         return AVERROR_EXTERNAL;
@@ -1778,6 +1811,9 @@ static int dvdvideo_read_seek(AVFormatContext *s, int stream_index, int64_t time
     c->play_state.ptm_offset  = timestamp;
     c->play_state.ptm_discont = 0;
     c->play_state.vobu_e_ptm  = new_nav_pci->pci_gi.vobu_s_ptm;
+
+    /* if there are multiple angles, skip the next 3 VOBUs as dvdnav will be at the wrong angle */
+    c->play_state.nb_vobu_skip = c->nb_angles > 1 ? 3 : 0;
 
     c->first_pts              = 0;
     c->play_started           = 0;
