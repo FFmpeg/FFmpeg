@@ -51,6 +51,7 @@ version 7.1:
   and av1_nvenc encoders
 - libswresample now accepts custom order channel layouts as input, with some
   constrains
+- FFV1 parser
 
 
 version 7.0:
