@@ -146,10 +146,10 @@ static VVCFrame *alloc_frame(VVCContext *s, VVCFrameContext *fc)
         for (int j = 0; j < frame->ctb_count; j++)
             frame->rpl_tab[j] = frame->rpl;
 
-        win->left_offset   = pps->r->pps_scaling_win_left_offset   << sps->hshift[CHROMA];
-        win->right_offset  = pps->r->pps_scaling_win_right_offset  << sps->hshift[CHROMA];
-        win->top_offset    = pps->r->pps_scaling_win_top_offset    << sps->vshift[CHROMA];
-        win->bottom_offset = pps->r->pps_scaling_win_bottom_offset << sps->vshift[CHROMA];
+        win->left_offset   = pps->r->pps_scaling_win_left_offset   * (1 << sps->hshift[CHROMA]);
+        win->right_offset  = pps->r->pps_scaling_win_right_offset  * (1 << sps->hshift[CHROMA]);
+        win->top_offset    = pps->r->pps_scaling_win_top_offset    * (1 << sps->vshift[CHROMA]);
+        win->bottom_offset = pps->r->pps_scaling_win_bottom_offset * (1 << sps->vshift[CHROMA]);
         frame->ref_width   = pps->r->pps_pic_width_in_luma_samples  - win->left_offset   - win->right_offset;
         frame->ref_height  = pps->r->pps_pic_height_in_luma_samples - win->bottom_offset - win->top_offset;
 
