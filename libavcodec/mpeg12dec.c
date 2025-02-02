@@ -67,7 +67,7 @@ enum Mpeg2ClosedCaptionsFormat {
     CC_FORMAT_A53_PART4,
     CC_FORMAT_SCTE20,
     CC_FORMAT_DVD,
-    CC_FORMAT_DVB_0502
+    CC_FORMAT_DISH
 };
 
 typedef struct Mpeg1Context {
@@ -2064,39 +2064,39 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
             mpeg_set_cc_format(avctx, CC_FORMAT_DVD, "DVD");
         }
         return 1;
-    } else if ((!s1->cc_format || s1->cc_format == CC_FORMAT_DVB_0502) &&
+    } else if ((!s1->cc_format || s1->cc_format == CC_FORMAT_DISH) &&
                buf_size >= 12 &&
                p[0] == 0x05 && p[1] == 0x02) {
-        /* extract DVB 0502 CC data */
+        /* extract Dish Network CC data */
         const uint8_t cc_header = 0xf8 | 0x04 /* valid */ | 0x00 /* line 21 field 1 */;
         uint8_t cc_data[4] = {0};
         int cc_count = 0;
-        uint8_t dvb_cc_type = p[7];
+        uint8_t cc_type = p[7];
         p += 8;
         buf_size -= 8;
 
-        if (dvb_cc_type == 0x05 && buf_size >= 7) {
-            dvb_cc_type = p[6];
+        if (cc_type == 0x05 && buf_size >= 7) {
+            cc_type = p[6];
             p += 7;
             buf_size -= 7;
         }
 
-        if (dvb_cc_type == 0x02 && buf_size >= 4) { /* 2-byte caption, can be repeated */
+        if (cc_type == 0x02 && buf_size >= 4) { /* 2-byte caption, can be repeated */
             cc_count = 1;
             cc_data[0] = p[1];
             cc_data[1] = p[2];
-            dvb_cc_type = p[3];
+            cc_type = p[3];
 
             /* Only repeat characters when the next type flag
              * is 0x04 and the characters are repeatable (i.e., less than
              * 32 with the parity stripped).
              */
-            if (dvb_cc_type == 0x04 && (cc_data[0] & 0x7f) < 32) {
+            if (cc_type == 0x04 && (cc_data[0] & 0x7f) < 32) {
                 cc_count = 2;
                 cc_data[2] = cc_data[0];
                 cc_data[3] = cc_data[1];
             }
-        } else if (dvb_cc_type == 0x04 && buf_size >= 5) { /* 4-byte caption, not repeated */
+        } else if (cc_type == 0x04 && buf_size >= 5) { /* 4-byte caption, not repeated */
             cc_count = 2;
             cc_data[0] = p[1];
             cc_data[1] = p[2];
@@ -2124,7 +2124,7 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
                 }
             }
 
-            mpeg_set_cc_format(avctx, CC_FORMAT_DVB_0502, "DVB 0502");
+            mpeg_set_cc_format(avctx, CC_FORMAT_DISH, "Dish Network");
         }
         return 1;
     }
@@ -2687,7 +2687,7 @@ const FFCodec ff_mpeg1video_decoder = {
 static const AVOption mpeg2video_options[] = {
     { "cc_format", "extract a specific Closed Captions format",
        M2V_OFFSET(cc_format), AV_OPT_TYPE_INT, { .i64 = CC_FORMAT_AUTO },
-        CC_FORMAT_AUTO, CC_FORMAT_DVB_0502, M2V_PARAM, .unit = "cc_format" },
+        CC_FORMAT_AUTO, CC_FORMAT_DISH, M2V_PARAM, .unit = "cc_format" },
 
        { "auto",   "pick first seen CC substream",  0, AV_OPT_TYPE_CONST,
         { .i64 =   CC_FORMAT_AUTO },                .flags = M2V_PARAM, .unit = "cc_format" },
@@ -2697,8 +2697,8 @@ static const AVOption mpeg2video_options[] = {
         { .i64 =   CC_FORMAT_SCTE20 },              .flags = M2V_PARAM, .unit = "cc_format" },
        { "dvd",    "pick DVD CC substream",         0, AV_OPT_TYPE_CONST,
         { .i64 =   CC_FORMAT_DVD },                 .flags = M2V_PARAM, .unit = "cc_format" },
-       { "dvb_0502", "pick DVB 0502 CC substream",  0, AV_OPT_TYPE_CONST,
-        { .i64 =   CC_FORMAT_DVB_0502 },            .flags = M2V_PARAM, .unit = "cc_format" },
+       { "dish",   "pick Dish Network CC substream", 0, AV_OPT_TYPE_CONST,
+        { .i64 =   CC_FORMAT_DISH },                .flags = M2V_PARAM, .unit = "cc_format" },
     { NULL }
 };
 
