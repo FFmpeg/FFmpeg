@@ -104,7 +104,14 @@ static int clean_layout(AVChannelLayout *out, const AVChannelLayout *in, void *s
 }
 
 static int sane_layout(AVChannelLayout *ch_layout) {
-    if (ch_layout->order != AV_CHANNEL_ORDER_NATIVE)
+    if(ch_layout->nb_channels >= SWR_CH_MAX)
+        return 0;
+    if(ch_layout->order == AV_CHANNEL_ORDER_CUSTOM)
+        for (int i = 0; i < ch_layout->nb_channels; i++) {
+            if (ch_layout->u.map[i].id >= 64)
+                return 0;
+        }
+    else if (ch_layout->order != AV_CHANNEL_ORDER_NATIVE)
         return 0;
     if(!av_channel_layout_subset(ch_layout, AV_CH_LAYOUT_SURROUND)) // at least 1 front speaker
         return 0;
@@ -118,8 +125,6 @@ static int sane_layout(AVChannelLayout *ch_layout) {
         return 0;
     if(!even(av_channel_layout_subset(ch_layout, (AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT))))
         return 0;
-    if(ch_layout->nb_channels >= SWR_CH_MAX)
-        return 0;
 
     return 1;
 }
@@ -130,9 +135,10 @@ static void build_matrix(const AVChannelLayout *in_ch_layout, const AVChannelLay
                          ptrdiff_t stride, enum AVMatrixEncoding matrix_encoding)
 {
     double matrix[NUM_NAMED_CHANNELS][NUM_NAMED_CHANNELS]={{0}};
-    uint64_t unaccounted = in_ch_layout->u.mask & ~out_ch_layout->u.mask;
+    uint64_t unaccounted =  av_channel_layout_subset(in_ch_layout,  UINT64_MAX) &
+                           ~av_channel_layout_subset(out_ch_layout, UINT64_MAX);
     double maxcoef=0;
-    int i, j, out_i;
+    int i, j;
 
     for(i=0; i<FF_ARRAY_ELEMS(matrix); i++){
         if(   av_channel_layout_index_from_channel(in_ch_layout, i) >= 0
@@ -305,14 +311,15 @@ static void build_matrix(const AVChannelLayout *in_ch_layout, const AVChannelLay
     }
 
 
-    for(out_i=i=0; i<64; i++){
+    for (i = 0; i < 64; i++) {
         double sum=0;
-        int in_i=0;
-        if (av_channel_layout_index_from_channel(out_ch_layout, i) < 0)
+        int out_i = av_channel_layout_index_from_channel(out_ch_layout, i);
+        if (out_i < 0)
             continue;
         for(j=0; j<64; j++){
-            if (av_channel_layout_index_from_channel(in_ch_layout, j) < 0)
-               continue;
+            int in_i = av_channel_layout_index_from_channel(in_ch_layout, j);
+            if (in_i < 0)
+                continue;
             if (i < FF_ARRAY_ELEMS(matrix) && j < FF_ARRAY_ELEMS(matrix[0]))
                 matrix_param[stride*out_i + in_i] = matrix[i][j];
             else
@@ -320,10 +327,8 @@ static void build_matrix(const AVChannelLayout *in_ch_layout, const AVChannelLay
                 (   av_channel_layout_index_from_channel(in_ch_layout, i) >= 0
                  && av_channel_layout_index_from_channel(out_ch_layout, i) >= 0);
             sum += fabs(matrix_param[stride*out_i + in_i]);
-            in_i++;
         }
         maxcoef= FFMAX(maxcoef, sum);
-        out_i++;
     }
     if(rematrix_volume  < 0)
         maxcoef = -rematrix_volume;

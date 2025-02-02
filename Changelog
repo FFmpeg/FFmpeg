@@ -49,6 +49,8 @@ version 7.1:
       error, as such a specifier makes no sense
 - Mastering Display and Content Light Level metadata support in hevc_nvenc
   and av1_nvenc encoders
+- libswresample now accepts custom order channel layouts as input, with some
+  constrains
 
 
 version 7.0:
