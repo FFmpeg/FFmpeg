@@ -382,9 +382,9 @@ int ff_filter_config_links(AVFilterContext *filter)
             /* Copy side data before link->srcpad->config_props() is called, so the filter
              * may remove it for the next filter in the chain */
             if (inlink && inlink->nb_side_data && !link->nb_side_data) {
-                for (i = 0; i < inlink->nb_side_data; i++) {
+                for (int j = 0; j < inlink->nb_side_data; j++) {
                     ret = av_frame_side_data_clone(&link->side_data, &link->nb_side_data,
-                                                   inlink->side_data[i], 0);
+                                                   inlink->side_data[j], 0);
                     if (ret < 0) {
                         av_frame_side_data_free(&link->side_data, &link->nb_side_data);
                         return ret;
