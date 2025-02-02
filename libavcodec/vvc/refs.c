@@ -186,7 +186,7 @@ static void set_pict_type(AVFrame *frame, const VVCContext *s, const VVCFrameCon
         const CodedBitstreamFragment *current = &s->current_frame;
         for (int i = 0; i < current->nb_units && !has_b; i++) {
             const CodedBitstreamUnit *unit = current->units + i;
-            if (unit->type <= VVC_RSV_IRAP_11) {
+            if (unit->content_ref && unit->type <= VVC_RSV_IRAP_11) {
                 const H266RawSliceHeader *rsh = unit->content_ref;
                 has_inter |= !IS_I(rsh);
                 has_b     |= IS_B(rsh);
