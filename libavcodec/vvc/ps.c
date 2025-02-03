@@ -23,6 +23,7 @@
 #include <stdbool.h>
 
 #include "libavcodec/cbs_h266.h"
+#include "libavcodec/decode.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/refstruct.h"
@@ -180,12 +181,19 @@ static void sps_ladf(VVCSPS* sps)
     }
 }
 
-static int sps_derive(VVCSPS *sps, void *log_ctx)
+static void sps_export_stream_params(AVCodecContext *c, const VVCSPS *sps)
+{
+    const H266RawSPS *r = sps->r;
+
+    c->has_b_frames = !!r->sps_dpb_params.dpb_max_num_reorder_pics[r->sps_max_sublayers_minus1];
+}
+
+static int sps_derive(VVCSPS *sps, AVCodecContext *c)
 {
     int ret;
     const H266RawSPS *r = sps->r;
 
-    ret = sps_bit_depth(sps, log_ctx);
+    ret = sps_bit_depth(sps, c);
     if (ret < 0)
         return ret;
     sps_poc(sps);
@@ -197,6 +205,7 @@ static int sps_derive(VVCSPS *sps, void *log_ctx)
         if (ret < 0)
             return ret;
     }
+    sps_export_stream_params(c, sps);
 
     return 0;
 }
@@ -207,7 +216,7 @@ static void sps_free(AVRefStructOpaque opaque, void *obj)
     av_refstruct_unref(&sps->r);
 }
 
-static const VVCSPS *sps_alloc(const H266RawSPS *rsps, void *log_ctx)
+static const VVCSPS *sps_alloc(const H266RawSPS *rsps, AVCodecContext *c)
 {
     int ret;
     VVCSPS *sps = av_refstruct_alloc_ext(sizeof(*sps), 0, NULL, sps_free);
@@ -217,7 +226,7 @@ static const VVCSPS *sps_alloc(const H266RawSPS *rsps, void *log_ctx)
 
     av_refstruct_replace(&sps->r, rsps);
 
-    ret = sps_derive(sps, log_ctx);
+    ret = sps_derive(sps, c);
     if (ret < 0)
         goto fail;
 
@@ -228,7 +237,7 @@ fail:
     return NULL;
 }
 
-static int decode_sps(VVCParamSets *ps, const H266RawSPS *rsps, void *log_ctx, int is_clvss)
+static int decode_sps(VVCParamSets *ps, AVCodecContext *c, const H266RawSPS *rsps, int is_clvss)
 {
     const int sps_id        = rsps->sps_seq_parameter_set_id;
     const VVCSPS *old_sps   = ps->sps_list[sps_id];
@@ -245,7 +254,7 @@ static int decode_sps(VVCParamSets *ps, const H266RawSPS *rsps, void *log_ctx, i
             return AVERROR_INVALIDDATA;
     }
 
-    sps = sps_alloc(rsps, log_ctx);
+    sps = sps_alloc(rsps, c);
     if (!sps)
         return AVERROR(ENOMEM);
 
@@ -647,7 +656,7 @@ static int decode_pps(VVCParamSets *ps, const H266RawPPS *rpps)
     return ret;
 }
 
-static int decode_ps(VVCParamSets *ps, const CodedBitstreamH266Context *h266, void *log_ctx, int is_clvss)
+static int decode_ps(VVCParamSets *ps, AVCodecContext *c, const CodedBitstreamH266Context *h266, int is_clvss)
 {
     const H266RawPictureHeader *ph = h266->ph;
     const H266RawPPS *rpps;
@@ -665,13 +674,13 @@ static int decode_ps(VVCParamSets *ps, const CodedBitstreamH266Context *h266, vo
     if (!rsps)
         return AVERROR_INVALIDDATA;
 
-    ret = decode_sps(ps, rsps, log_ctx, is_clvss);
+    ret = decode_sps(ps, c, rsps, is_clvss);
     if (ret < 0)
         return ret;
 
     if (rsps->sps_log2_ctu_size_minus5 > 2) {
         // CTU > 128 are reserved in vvc spec v3
-        av_log(log_ctx, AV_LOG_ERROR, "CTU size > 128. \n");
+        av_log(c, AV_LOG_ERROR, "CTU size > 128. \n");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -960,7 +969,7 @@ int ff_vvc_decode_frame_ps(VVCFrameParamSets *fps, struct VVCContext *s)
     decode_recovery_flag(s);
     is_clvss = IS_CLVSS(s);
 
-    ret = decode_ps(ps, h266, s->avctx, is_clvss);
+    ret = decode_ps(ps, s->avctx, h266, is_clvss);
     if (ret < 0)
         return ret;
 
