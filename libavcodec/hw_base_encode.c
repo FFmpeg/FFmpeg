@@ -18,6 +18,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/error.h"
 #include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
@@ -603,7 +604,7 @@ start:
                     av_fifo_can_read(ctx->encode_fifo);
                 err = ctx->op->issue(avctx, pic);
                 if (err < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "Encode failed: %d.\n", err);
+                    av_log(avctx, AV_LOG_ERROR, "Encode failed: %s.\n", av_err2str(err));
                     return err;
                 }
                 pic->encode_issued = 1;
@@ -630,7 +631,7 @@ start:
 
         err = ctx->op->issue(avctx, pic);
         if (err < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Encode failed: %d.\n", err);
+            av_log(avctx, AV_LOG_ERROR, "Encode failed: %s.\n", av_err2str(err));
             return err;
         }
 
