@@ -5620,7 +5620,7 @@ elif enabled ppc; then
             cpuflags="-mcpu=$cpu"
             disable vsx
         ;;
-        power[7-8]*)
+        power[7-9]*|power10)
             cpuflags="-mcpu=$cpu"
         ;;
         cell)
