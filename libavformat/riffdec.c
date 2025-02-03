@@ -92,14 +92,14 @@ static void parse_waveformatex(void *logctx, AVIOContext *pb, AVCodecParameters 
 }
 
 /* "big_endian" values are needed for RIFX file format */
-int ff_get_wav_header(void *logctx, AVIOContext *pb,
+int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
                       AVCodecParameters *par, int size, int big_endian)
 {
     int id, channels = 0, ret;
     uint64_t bitrate = 0;
 
     if (size < 14) {
-        avpriv_request_sample(logctx, "wav header size < 14");
+        avpriv_request_sample(s, "wav header size < 14");
         return AVERROR_INVALIDDATA;
     }
 
@@ -140,18 +140,18 @@ int ff_get_wav_header(void *logctx, AVIOContext *pb,
     if (size >= 18 && id != 0x0165) {  /* We're obviously dealing with WAVEFORMATEX */
         int cbSize = avio_rl16(pb); /* cbSize */
         if (big_endian) {
-            avpriv_report_missing_feature(logctx, "WAVEFORMATEX support for RIFX files");
+            avpriv_report_missing_feature(s, "WAVEFORMATEX support for RIFX files");
             return AVERROR_PATCHWELCOME;
         }
         size  -= 18;
         cbSize = FFMIN(size, cbSize);
         if (cbSize >= 22 && id == 0xfffe) { /* WAVEFORMATEXTENSIBLE */
-            parse_waveformatex(logctx, pb, par);
+            parse_waveformatex(s, pb, par);
             cbSize -= 22;
             size   -= 22;
         }
         if (cbSize > 0) {
-            ret = ff_get_extradata(logctx, par, pb, cbSize);
+            ret = ff_get_extradata(s, par, pb, cbSize);
             if (ret < 0)
                 return ret;
             size -= cbSize;
@@ -164,7 +164,7 @@ int ff_get_wav_header(void *logctx, AVIOContext *pb,
         int nb_streams, i;
 
         size -= 4;
-        ret = ff_get_extradata(logctx, par, pb, size);
+        ret = ff_get_extradata(s, par, pb, size);
         if (ret < 0)
             return ret;
         nb_streams         = AV_RL16(par->extradata + 4);
@@ -180,7 +180,7 @@ int ff_get_wav_header(void *logctx, AVIOContext *pb,
     par->bit_rate = bitrate;
 
     if (par->sample_rate <= 0) {
-        av_log(logctx, AV_LOG_ERROR,
+        av_log(s, AV_LOG_ERROR,
                "Invalid sample rate: %d\n", par->sample_rate);
         return AVERROR_INVALIDDATA;
     }
