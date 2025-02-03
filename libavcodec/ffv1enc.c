@@ -894,7 +894,7 @@ static int encode_init_internal(AVCodecContext *avctx)
     int ret;
     FFV1Context *s = avctx->priv_data;
 
-    if ((ret = ff_ffv1_common_init(avctx)) < 0)
+    if ((ret = ff_ffv1_common_init(avctx, s)) < 0)
         return ret;
 
     if (s->ac == 1) // Compatbility with common command line usage
@@ -1334,6 +1334,16 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
+static av_cold int encode_close(AVCodecContext *avctx)
+{
+    FFV1Context *const s = avctx->priv_data;
+
+    av_freep(&avctx->stats_out);
+    ff_ffv1_close(s);
+
+    return 0;
+}
+
 #define OFFSET(x) offsetof(FFV1Context, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -1380,7 +1390,7 @@ const FFCodec ff_ffv1_encoder = {
     .priv_data_size = sizeof(FFV1Context),
     .init           = encode_init_internal,
     FF_CODEC_ENCODE_CB(encode_frame),
-    .close          = ff_ffv1_close,
+    .close          = encode_close,
     .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,   AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,  AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUVA444P,  AV_PIX_FMT_YUV440P,   AV_PIX_FMT_YUV422P,   AV_PIX_FMT_YUV411P,

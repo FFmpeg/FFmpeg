@@ -28,6 +28,7 @@
  * FF Video Codec 1 (a lossless codec)
  */
 
+#include "libavutil/attributes.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "mathops.h"
@@ -169,15 +170,20 @@ typedef struct FFV1Context {
     uint8_t           frame_damaged;
 } FFV1Context;
 
-int ff_ffv1_common_init(AVCodecContext *avctx);
+int ff_ffv1_common_init(AVCodecContext *avctx, FFV1Context *s);
 int ff_ffv1_init_slice_state(const FFV1Context *f, FFV1SliceContext *sc);
 int ff_ffv1_init_slices_state(FFV1Context *f);
 int ff_ffv1_init_slice_contexts(FFV1Context *f);
 PlaneContext *ff_ffv1_planes_alloc(void);
 int ff_ffv1_allocate_initial_states(FFV1Context *f);
 void ff_ffv1_clear_slice_state(const FFV1Context *f, FFV1SliceContext *sc);
-int ff_ffv1_close(AVCodecContext *avctx);
+void ff_ffv1_close(FFV1Context *s);
 int ff_need_new_slices(int width, int num_h_slices, int chroma_shift);
+int ff_ffv1_parse_header(FFV1Context *f, RangeCoder *c, uint8_t *state);
+int ff_ffv1_read_extra_header(FFV1Context *f);
+int ff_ffv1_read_quant_tables(RangeCoder *c,
+                              int16_t quant_table[MAX_CONTEXT_INPUTS][256]);
+int ff_ffv1_get_symbol(RangeCoder *c, uint8_t *state, int is_signed);
 
 /**
  * This is intended for both width and height
@@ -221,6 +227,31 @@ static inline void update_vlc_state(VlcState *const state, const int v)
 
     state->drift = drift;
     state->count = count;
+}
+
+
+static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
+                                               int is_signed)
+{
+    if (get_rac(c, state + 0))
+        return 0;
+    else {
+        int e;
+        unsigned a;
+        e = 0;
+        while (get_rac(c, state + 1 + FFMIN(e, 9))) { // 1..10
+            e++;
+            if (e > 31)
+                return AVERROR_INVALIDDATA;
+        }
+
+        a = 1;
+        for (int i = e - 1; i >= 0; i--)
+            a += a + get_rac(c, state + 22 + FFMIN(i, 9));  // 22..31
+
+        e = -(is_signed && get_rac(c, state + 11 + FFMIN(e, 10))); // 11..21
+        return (a ^ e) - e;
+    }
 }
 
 #endif /* AVCODEC_FFV1_H */

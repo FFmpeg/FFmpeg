@@ -33,10 +33,8 @@
 #include "ffv1.h"
 #include "libavutil/refstruct.h"
 
-av_cold int ff_ffv1_common_init(AVCodecContext *avctx)
+av_cold int ff_ffv1_common_init(AVCodecContext *avctx, FFV1Context *s)
 {
-    FFV1Context *s = avctx->priv_data;
-
     if (!avctx->width || !avctx->height)
         return AVERROR_INVALIDDATA;
 
@@ -221,10 +219,13 @@ void ff_ffv1_clear_slice_state(const FFV1Context *f, FFV1SliceContext *sc)
     }
 }
 
-
-av_cold int ff_ffv1_close(AVCodecContext *avctx)
+int ff_ffv1_get_symbol(RangeCoder *c, uint8_t *state, int is_signed)
 {
-    FFV1Context *s = avctx->priv_data;
+    return get_symbol_inline(c, state, is_signed);
+}
+
+av_cold void ff_ffv1_close(FFV1Context *s)
+{
     int i, j;
 
     for (j = 0; j < s->max_slice_count; j++) {
@@ -238,7 +239,6 @@ av_cold int ff_ffv1_close(AVCodecContext *avctx)
 
     av_refstruct_unref(&s->slice_damaged);
 
-    av_freep(&avctx->stats_out);
     for (j = 0; j < s->quant_table_count; j++) {
         av_freep(&s->initial_states[j]);
         for (i = 0; i < s->max_slice_count; i++) {
@@ -249,6 +249,4 @@ av_cold int ff_ffv1_close(AVCodecContext *avctx)
     }
 
     av_freep(&s->slices);
-
-    return 0;
 }
