@@ -2084,7 +2084,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 
     case AVMEDIA_TYPE_SUBTITLE:
         if (!native_id) {
-            av_log(s, AV_LOG_ERROR, "Subtitle codec %d is not supported.\n", par->codec_id);
+            av_log(s, AV_LOG_ERROR, "Subtitle codec %s (%d) is not supported.\n",
+                    avcodec_get_name(par->codec_id), par->codec_id);
             return AVERROR(ENOSYS);
         }
         if (!IS_WEBM(mkv) && st->disposition & AV_DISPOSITION_DESCRIPTIONS)
