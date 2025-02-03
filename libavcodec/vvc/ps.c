@@ -24,6 +24,7 @@
 
 #include "libavcodec/cbs_h266.h"
 #include "libavcodec/decode.h"
+#include "libavcodec/h2645data.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/refstruct.h"
@@ -181,11 +182,50 @@ static void sps_ladf(VVCSPS* sps)
     }
 }
 
+#define EXTENDED_SAR       255
+static void sps_vui(AVCodecContext *c, const H266RawVUI *vui)
+{
+    AVRational sar = (AVRational){ 0, 1 };
+    if (vui->vui_aspect_ratio_info_present_flag) {
+        if (vui->vui_aspect_ratio_idc < FF_ARRAY_ELEMS(ff_h2645_pixel_aspect))
+            sar = ff_h2645_pixel_aspect[vui->vui_aspect_ratio_idc];
+        else if (vui->vui_aspect_ratio_idc == EXTENDED_SAR) {
+            sar = (AVRational){ vui->vui_sar_width, vui->vui_sar_height };
+        } else {
+            av_log(c, AV_LOG_WARNING, "Unknown SAR index: %u.\n", vui->vui_aspect_ratio_idc);
+        }
+    }
+    ff_set_sar(c, sar);
+
+    if (vui->vui_colour_description_present_flag) {
+        c->color_primaries = vui->vui_colour_primaries;
+        c->color_trc       = vui->vui_transfer_characteristics;
+        c->colorspace      = vui->vui_matrix_coeffs;
+        c->color_range     = vui->vui_full_range_flag ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+
+        // Set invalid values to "unspecified"
+        if (!av_color_primaries_name(c->color_primaries))
+            c->color_primaries = AVCOL_PRI_UNSPECIFIED;
+        if (!av_color_transfer_name(c->color_trc))
+            c->color_trc = AVCOL_TRC_UNSPECIFIED;
+        if (!av_color_space_name(c->colorspace))
+            c->colorspace = AVCOL_SPC_UNSPECIFIED;
+    } else {
+        c->color_primaries = AVCOL_PRI_UNSPECIFIED;
+        c->color_trc       = AVCOL_TRC_UNSPECIFIED;
+        c->colorspace      = AVCOL_SPC_UNSPECIFIED;
+        c->color_range     = AVCOL_RANGE_MPEG;
+    }
+}
+
+
 static void sps_export_stream_params(AVCodecContext *c, const VVCSPS *sps)
 {
     const H266RawSPS *r = sps->r;
 
     c->has_b_frames = !!r->sps_dpb_params.dpb_max_num_reorder_pics[r->sps_max_sublayers_minus1];
+    if (r->sps_vui_parameters_present_flag)
+        sps_vui(c, &r->vui);
 }
 
 static int sps_derive(VVCSPS *sps, AVCodecContext *c)
