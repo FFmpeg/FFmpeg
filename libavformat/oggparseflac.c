@@ -85,6 +85,8 @@ flac_packet (AVFormatContext * s, int idx)
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
+    AVStream *st = s->streams[idx];
+    int ret;
 
     if (os->psize > OGG_FLAC_MAGIC_SIZE &&
         !memcmp(
@@ -95,6 +97,11 @@ flac_packet (AVFormatContext * s, int idx)
 
     if (os->psize > 0 &&
         ((os->buf[os->pstart] & 0x7F) == FLAC_METADATA_TYPE_VORBIS_COMMENT)) {
+        ret = ff_vorbis_update_metadata(s, st, os->buf + os->pstart + 4,
+                                        os->psize - 4);
+        if (ret < 0)
+            return ret;
+
         return 1;
     }
 
