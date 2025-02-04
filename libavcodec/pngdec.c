@@ -1073,6 +1073,7 @@ static int decode_sbit_chunk(AVCodecContext *avctx, PNGDecContext *s,
 {
     int bits = 0;
     int channels;
+    int remainder = bytestream2_get_bytes_left(gb);
 
     if (!(s->hdr_state & PNG_IHDR)) {
         av_log(avctx, AV_LOG_ERROR, "sBIT before IHDR\n");
@@ -1080,16 +1081,17 @@ static int decode_sbit_chunk(AVCodecContext *avctx, PNGDecContext *s,
     }
 
     if (s->pic_state & PNG_IDAT) {
-        av_log(avctx, AV_LOG_ERROR, "sBIT after IDAT\n");
-        return AVERROR_INVALIDDATA;
+        av_log(avctx, AV_LOG_WARNING, "Ignoring illegal sBIT chunk after IDAT\n");
+        return 0;
     }
 
     channels = s->color_type & PNG_COLOR_MASK_PALETTE ? 3 : ff_png_get_nb_channels(s->color_type);
 
-    if (bytestream2_get_bytes_left(gb) != channels) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid sBIT size: %d, expected: %d\n",
-            bytestream2_get_bytes_left(gb), channels);
-        return AVERROR_INVALIDDATA;
+    if (remainder != channels) {
+        av_log(avctx, AV_LOG_WARNING, "Invalid sBIT size: %d, expected: %d\n", remainder, channels);
+        /* not enough space left in chunk to read info */
+        if (remainder < channels)
+            return 0;
     }
 
     for (int i = 0; i < channels; i++) {
@@ -1098,8 +1100,8 @@ static int decode_sbit_chunk(AVCodecContext *avctx, PNGDecContext *s,
     }
 
     if (bits <= 0 || bits > (s->color_type & PNG_COLOR_MASK_PALETTE ? 8 : s->bit_depth)) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid significant bits: %d\n", bits);
-        return AVERROR_INVALIDDATA;
+        av_log(avctx, AV_LOG_WARNING, "Invalid significant bits: %d\n", bits);
+        return 0;
     }
     s->significant_bits = bits;
 
