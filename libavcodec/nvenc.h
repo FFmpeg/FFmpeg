@@ -104,6 +104,7 @@ typedef void ID3D11Device;
 #define NVENC_HAVE_422_SUPPORT
 #define NVENC_HAVE_AV1_UHQ_TUNING
 #define NVENC_HAVE_H264_AND_AV1_TEMPORAL_FILTER
+#define NVENC_HAVE_HEVC_AND_AV1_MASTERING_METADATA
 #endif
 
 typedef struct NvencSurface
@@ -306,6 +307,7 @@ typedef struct NvencContext
     int lookahead_level;
     int unidir_b;
     int split_encode_mode;
+    int mdm, cll;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);
