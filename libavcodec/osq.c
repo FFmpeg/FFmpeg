@@ -190,7 +190,7 @@ static uint32_t get_urice(GetBitContext *gb, int k)
 
 static int32_t get_srice(GetBitContext *gb, int x)
 {
-    int32_t y = get_urice(gb, x);
+    uint32_t y = get_urice(gb, x);
     return get_bits1(gb) ? -y : y;
 }
 
