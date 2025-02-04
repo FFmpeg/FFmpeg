@@ -1462,7 +1462,9 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
         hevc->intraRefreshPeriod = cc->gopLength;
         hevc->intraRefreshCnt = cc->gopLength - 1;
         cc->gopLength = NVENC_INFINITE_GOPLENGTH;
+#ifdef NVENC_HAVE_HEVC_OUTPUT_RECOVERY_POINT_SEI
         hevc->outputRecoveryPointSEI = 1;
+#endif
 #ifdef NVENC_HAVE_SINGLE_SLICE_INTRA_REFRESH
         hevc->singleSliceIntraRefresh = ctx->single_slice_intra_refresh;
 #endif

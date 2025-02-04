@@ -78,6 +78,11 @@ typedef void ID3D11Device;
 #define NVENC_HAVE_SINGLE_SLICE_INTRA_REFRESH
 #endif
 
+// SDK 12.0 compile time feature checks
+#if NVENCAPI_CHECK_VERSION(12, 0)
+#define NVENC_HAVE_HEVC_OUTPUT_RECOVERY_POINT_SEI
+#endif
+
 // SDK 12.1 compile time feature checks
 #if NVENCAPI_CHECK_VERSION(12, 1)
 #define NVENC_NO_DEPRECATED_RC
