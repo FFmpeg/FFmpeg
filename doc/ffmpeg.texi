@@ -1196,9 +1196,9 @@ ffmpeg -i front.wav -i back.wav -i center.wav -i lfe.wav
 demixing=parameter_id=998,
 recon_gain=parameter_id=101,
 layer=ch_layout=stereo,
-layer=ch_layout=5.1,
+layer=ch_layout=5.1(side),
 -stream_group type=iamf_mix_presentation:id=2:stg=0:annotations=en-us=Mix_Presentation,
-submix=parameter_id=100:parameter_rate=48000|element=stg=0:parameter_id=100:annotations=en-us=Scalable_Submix|layout=sound_system=stereo|layout=sound_system=5.1
+submix=parameter_id=100:parameter_rate=48000|element=stg=0:parameter_id=100:annotations=en-us=Scalable_Submix|layout=sound_system=stereo|layout=sound_system=5.1(side)
 -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 output.iamf
 @end example
 
