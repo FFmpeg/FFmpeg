@@ -227,7 +227,7 @@ SKIPHEADERS-$(CONFIG_D3D11VA)          += hwcontext_d3d11va.h
 SKIPHEADERS-$(CONFIG_D3D12VA)          += hwcontext_d3d12va.h
 SKIPHEADERS-$(CONFIG_DXVA2)            += hwcontext_dxva2.h
 SKIPHEADERS-$(CONFIG_AMF)              += hwcontext_amf.h               \
-                                          hwcontext_amf_internal
+                                          hwcontext_amf_internal.h
 SKIPHEADERS-$(CONFIG_QSV)              += hwcontext_qsv.h
 SKIPHEADERS-$(CONFIG_OPENCL)           += hwcontext_opencl.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += hwcontext_vaapi.h
