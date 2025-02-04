@@ -623,7 +623,7 @@ av_cold void ff_sws_init_range_convert(SwsInternal *c)
 {
     c->lumConvertRange = NULL;
     c->chrConvertRange = NULL;
-    if (c->opts.src_range != c->opts.dst_range && !isAnyRGB(c->opts.dst_format)) {
+    if (c->opts.src_range != c->opts.dst_range && !isAnyRGB(c->opts.dst_format) && c->dstBpc < 32) {
         init_range_convert_constants(c);
         if (c->dstBpc <= 14) {
             if (c->opts.src_range) {
