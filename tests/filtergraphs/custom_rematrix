@@ -1,0 +1,1 @@
+[0:a]aresample,channelmap=0|1|2|3|6|7|4|5:8 channels (FL+FR+FC+LFE+SL+SR+BL+BR),aresample,aformat=cl=stereo[OUT];

@@ -1097,5 +1097,13 @@ fate-swr-audioconvert: CMP = stddev
 fate-swr-audioconvert: FUZZ = 0
 
 FATE_SWR += $(FATE_SWR_AUDIOCONVERT-yes)
+
+FATE_SWR_CUSTOM_REMATRIX-$(call FILTERDEMDECENCMUX, ARESAMPLE CHANNELMAP AFORMAT, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE) += fate-swr-custom-rematrix
+fate-swr-custom-rematrix: tests/data/asynth-44100-8.wav tests/data/filtergraphs/custom_rematrix
+fate-swr-custom-rematrix: CMD = md5 -i $(TARGET_PATH)/tests/data/asynth-44100-8.wav -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/custom_rematrix -map [OUT] -f s16le
+fate-swr-custom-rematrix: CMP = oneline
+fate-swr-custom-rematrix: REF = 2a14a44deb4ae26e3b474ddbfbc048f8
+
+FATE_SWR += $(FATE_SWR_CUSTOM_REMATRIX-yes)
 FATE_FFMPEG += $(FATE_SWR)
 fate-swr: $(FATE_SWR)
