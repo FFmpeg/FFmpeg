@@ -98,17 +98,20 @@ static uint32_t get_generic_seed(void)
 
     for (;;) {
         clock_t t = clock();
-        if (last_t + 2*last_td + (CLOCKS_PER_SEC > 1000) >= t) {
-            last_td = t - last_t;
-            buffer[i & 511] = 1664525*buffer[i & 511] + 1013904223 + (last_td % 3294638521U);
+        int incremented_i = 0;
+        int cur_td = t - last_t;
+        if (last_t + 2*last_td + (CLOCKS_PER_SEC > 1000) < t) {
+            buffer[++i & 511] += cur_td % 3294638521U;
+            incremented_i = 1;
         } else {
-            last_td = t - last_t;
-            buffer[++i & 511] += last_td % 3294638521U;
-            if ((t - init_t) >= CLOCKS_PER_SEC>>5)
-                if (last_i && i - last_i > 4 || i - last_i > 64 || TEST && i - last_i > 8)
-                    break;
+            buffer[i & 511] = 1664525*buffer[i & 511] + 1013904223 + (cur_td % 3294638521U);
+        }
+        if (incremented_i && (t - init_t) >= CLOCKS_PER_SEC>>5) {
+            if (last_i && i - last_i > 4 || i - last_i > 64 || TEST && i - last_i > 8)
+                break;
         }
         last_t = t;
+        last_td = cur_td;
         if (!init_t)
             init_t = t;
     }
