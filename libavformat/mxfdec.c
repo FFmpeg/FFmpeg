@@ -3956,7 +3956,7 @@ static int64_t mxf_set_current_edit_unit(MXFContext *mxf, AVStream *st, int64_t 
     int64_t new_edit_unit;
     MXFIndexTable *t = mxf_find_index_table(mxf, track->index_sid);
 
-    if (!t || track->wrapping == UnknownWrapped)
+    if (!t || track->wrapping == UnknownWrapped || edit_unit > INT64_MAX - track->edit_units_per_packet)
         return -1;
 
     if (mxf_edit_unit_absolute_offset(mxf, t, edit_unit + track->edit_units_per_packet, track->edit_rate, NULL, &next_ofs, NULL, 0) < 0 &&
