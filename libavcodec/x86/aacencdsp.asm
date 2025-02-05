@@ -96,7 +96,7 @@ cglobal aac_quantize_bands, 5, 5, 6, out, in, scaled, size, is_signed, maxval, Q
     addps     m2, m1
     minps     m2, m3
     andps     m5, m4, [inq+sizeq]
-    orps      m2, m5
+    xorps     m2, m5
     cvttps2dq m2, m2
     mova      [outq+sizeq], m2
     add       sizeq, mmsize
