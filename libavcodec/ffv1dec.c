@@ -1114,6 +1114,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     fdst->plane_count         = fsrc->plane_count;
     fdst->ac                  = fsrc->ac;
     fdst->colorspace          = fsrc->colorspace;
+    fdst->pix_fmt             = fsrc->pix_fmt;
 
     fdst->ec                  = fsrc->ec;
     fdst->intra               = fsrc->intra;
