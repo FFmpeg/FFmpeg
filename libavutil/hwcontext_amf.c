@@ -339,7 +339,7 @@ static int amf_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
 static void amf_device_uninit(AVHWDeviceContext *device_ctx)
 {
     AVAMFDeviceContext      *amf_ctx = device_ctx->hwctx;
-    AMF_RESULT          res;
+    AMF_RESULT          res = AMF_NOT_INITIALIZED;
     AMFTrace           *trace;
 
     if (amf_ctx->context) {
@@ -348,7 +348,9 @@ static void amf_device_uninit(AVHWDeviceContext *device_ctx)
         amf_ctx->context = NULL;
     }
 
-    res = amf_ctx->factory->pVtbl->GetTrace(amf_ctx->factory, &trace);
+    if (amf_ctx->factory)
+        res = amf_ctx->factory->pVtbl->GetTrace(amf_ctx->factory, &trace);
+
     if (res == AMF_OK) {
         trace->pVtbl->UnregisterWriter(trace, FFMPEG_AMF_WRITER_ID);
     }
