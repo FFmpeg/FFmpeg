@@ -12,6 +12,7 @@ version <next>:
 - Animated JPEG XL encoding (via libjxl)
 - VVC in Matroska
 - CENC AV1 support in MP4 muxer
+- pngenc: set default prediction method to PAETH
 
 version 7.1:
 - Raw Captions with Time (RCWT) closed caption demuxer

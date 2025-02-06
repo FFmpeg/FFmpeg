@@ -3402,6 +3402,8 @@ Sets the compression level, from 0 to 9(default)
 Set physical density of pixels, in dots per inch, unset by default
 @item dpm @var{integer}
 Set physical density of pixels, in dots per meter, unset by default
+@item pred @var{method}
+Set prediction method (none, sub, up, avg, paeth, mixed), default is paeth
 @end table
 
 @section ProRes
