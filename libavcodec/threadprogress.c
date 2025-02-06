@@ -55,9 +55,8 @@ void ff_thread_progress_report(ThreadProgress *pro, int n)
     if (atomic_load_explicit(&pro->progress, memory_order_relaxed) >= n)
         return;
 
-    atomic_store_explicit(&pro->progress, n, memory_order_release);
-
     ff_mutex_lock(&pro->progress_mutex);
+    atomic_store_explicit(&pro->progress, n, memory_order_release);
     ff_cond_broadcast(&pro->progress_cond);
     ff_mutex_unlock(&pro->progress_mutex);
 }
