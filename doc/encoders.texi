@@ -3388,6 +3388,13 @@ Default is 1 (on).
 
 PNG image encoder.
 
+@subsection Options
+
+@table @option
+@item compression_level
+Sets the compression level, from 0 to 9(default)
+@end table
+
 @subsection Private options
 
 @table @option
