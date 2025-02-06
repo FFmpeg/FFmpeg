@@ -1468,7 +1468,7 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     FFV1Context *f = &fv->ctx;
     FFVkSPIRVCompiler *spv;
 
-    if ((err = ff_ffv1_common_init(avctx)) < 0)
+    if ((err = ff_ffv1_common_init(avctx, f)) < 0)
         return err;
 
     if (f->ac == 1)
