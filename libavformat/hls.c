@@ -747,8 +747,8 @@ static int test_segment(AVFormatContext *s, const AVInputFormat *in_fmt, struct 
             matchF =      av_match_ext(    seg->url, in_fmt->extensions)
                      + 2*(ff_match_url_ext(seg->url, in_fmt->extensions) > 0);
             if(av_match_name("mp4", in_fmt->name)) {
-                matchF |=      av_match_ext(    seg->url, "ts")
-                          + 2*(ff_match_url_ext(seg->url, "ts") > 0);
+                matchF |=      av_match_ext(    seg->url, "ts,m2t,m2ts,mts,mpg,m4s,mpeg,mpegts")
+                          + 2*(ff_match_url_ext(seg->url, "ts,m2t,m2ts,mts,mpg,m4s,mpeg,mpegts") > 0);
             }
         } else if (!strcmp(in_fmt->name, "mpegts")) {
             matchF =      av_match_ext(    seg->url, "ts,m2t,m2ts,mts,mpg,m4s,mpeg,mpegts")
