@@ -1,5 +1,5 @@
-6defc5081a59ab12c8a5f9e263b25068 *tests/data/fate/cover-art-flac-remux.flac
-1098537 tests/data/fate/cover-art-flac-remux.flac
+2535b1a3c759250e7f470ece217971a4 *tests/data/fate/cover-art-flac-remux.flac
+964234 tests/data/fate/cover-art-flac-remux.flac
 #extradata 0:       34, 0x8d830abd
 #tb 0: 1/44100
 #media_type 0: audio
@@ -38,7 +38,7 @@
 #channel_layout_name 6: 2 channels (FL+FC)
 0,          0,          0,     4608,       14, 0x242b036d
 1,          0,          0,        0,    66888, 0x1fd72743
-2,          0,          0,        0,   438706, 0x8bcb753b
+2,          0,          0,        0,   304403, 0xaf7c7667
 3,          0,          0,        0,    21671, 0x7d1c6030
 4,          0,          0,        0,   522758, 0x7a63572f
 5,          0,          0,        0,    21671, 0x7d1c6030

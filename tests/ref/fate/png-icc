@@ -1,5 +1,5 @@
-c460cd06a88ace94d7c76a6309aa8fb8 *tests/data/fate/png-icc.image2
-49441 tests/data/fate/png-icc.image2
+f440d78534808744d4ce727cda3d3309 *tests/data/fate/png-icc.image2
+38328 tests/data/fate/png-icc.image2
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo
@@ -19,7 +19,7 @@ best_effort_timestamp_time=0.000000
 duration=1
 duration_time=0.040000
 pkt_pos=0
-pkt_size=49441
+pkt_size=38328
 width=128
 height=128
 crop_top=0
