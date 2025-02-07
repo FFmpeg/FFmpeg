@@ -226,6 +226,10 @@ and the "Last message repeated n times" line will be omitted.
 Indicates that log output should add a @code{[level]} prefix to each message
 line. This can be used as an alternative to log coloring, e.g. when dumping the
 log to file.
+@item time
+Indicates that log lines should be prefixed with time information.
+@item datetime
+Indicates that log lines should be prefixed with date and time information.
 @end table
 Flags can also be used alone by adding a '+'/'-' prefix to set/reset a single
 flag without affecting other @var{flags} or changing @var{loglevel}. When
