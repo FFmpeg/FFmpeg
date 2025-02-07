@@ -1747,6 +1747,7 @@ int ff_aac_decode_ics(AACDecContext *ac, SingleChannelElement *sce,
 
     return 0;
 fail:
+    memset(sce->sfo, 0, sizeof(sce->sfo));
     tns->present = 0;
     return ret;
 }
