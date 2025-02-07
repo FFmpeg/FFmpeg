@@ -42,6 +42,8 @@
 #include "internal.h"
 #include "log.h"
 #include "thread.h"
+#include "time.h"
+#include "time_internal.h"
 
 static AVMutex mutex = AV_MUTEX_INITIALIZER;
 
@@ -296,14 +298,32 @@ static const char *item_name(void *obj, const AVClass *cls)
     return (cls->item_name ? cls->item_name : av_default_item_name)(obj);
 }
 
+static void format_date_now(AVBPrint* bp_time, int include_date)
+{
+    struct tm *ptm, tmbuf;
+    const int64_t time_us = av_gettime();
+    const int64_t time_ms = time_us / 1000;
+    const time_t time_s   = time_ms / 1000;
+    const int millisec    = time_ms - (time_s * 1000);
+    ptm                   = localtime_r(&time_s, &tmbuf);
+    if (ptm) {
+        if (include_date)
+            av_bprint_strftime(bp_time, "%Y-%m-%d ", ptm);
+
+        av_bprint_strftime(bp_time, "%H:%M:%S", ptm);
+        av_bprintf(bp_time, ".%03d ", millisec);
+    }
+}
+
 static void format_line(void *avcl, int level, const char *fmt, va_list vl,
-                        AVBPrint part[4], int *print_prefix, int type[2])
+                        AVBPrint part[5], int *print_prefix, int type[2])
 {
     AVClass* avc = avcl ? *(AVClass **) avcl : NULL;
     av_bprint_init(part+0, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprint_init(part+1, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprint_init(part+2, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprint_init(part+3, 0, 65536);
+    av_bprint_init(part+4, 0, AV_BPRINT_SIZE_AUTOMATIC);
 
     if(type) type[0] = type[1] = AV_CLASS_CATEGORY_NA + 16;
     if (*print_prefix && avc) {
@@ -320,6 +340,9 @@ static void format_line(void *avcl, int level, const char *fmt, va_list vl,
                    item_name(avcl, avc), avcl);
         if(type) type[1] = get_category(avcl);
     }
+
+    if (*print_prefix && (level > AV_LOG_QUIET) && (flags & (AV_LOG_PRINT_TIME | AV_LOG_PRINT_DATETIME)))
+        format_date_now(&part[4], flags & AV_LOG_PRINT_DATETIME);
 
     if (*print_prefix && (level > AV_LOG_QUIET) && (flags & AV_LOG_PRINT_LEVEL))
         av_bprintf(part+2, "[%s] ", get_level_str(level));
@@ -341,7 +364,7 @@ void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
 int av_log_format_line2(void *ptr, int level, const char *fmt, va_list vl,
                         char *line, int line_size, int *print_prefix)
 {
-    AVBPrint part[4];
+    AVBPrint part[5];
     int ret;
 
     format_line(ptr, level, fmt, vl, part, print_prefix, NULL);
@@ -355,7 +378,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     static int print_prefix = 1;
     static int count;
     static char prev[LINE_SZ];
-    AVBPrint part[4];
+    AVBPrint part[5];
     char line[LINE_SZ];
     static int is_atty;
     int type[2];
@@ -390,6 +413,9 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
         count = 0;
     }
     strcpy(prev, line);
+
+    sanitize(part[4].str);
+    colored_fputs(7, 0, part[4].str);
     sanitize(part[0].str);
     colored_fputs(type[0], 0, part[0].str);
     sanitize(part[1].str);

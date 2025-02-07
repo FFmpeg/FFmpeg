@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2025-02-xx - xxxxxxxxxx - lavu 59.57.100 - log.h
+  Add flags AV_LOG_PRINT_TIME and AV_LOG_PRINT_DATETIME.
+
 2025-02-09 - xxxxxxxxxx - lavc 61.32.100 - codec_id.h
   Add AV_CODEC_ID_IVTV_VBI.
 
