@@ -912,10 +912,10 @@ static int w64_read_header(AVFormatContext *s)
             if (st->codecpar->block_align &&
                 st->codecpar->ch_layout.nb_channels < FF_SANE_NB_CHANNELS &&
                 st->codecpar->bits_per_coded_sample < 128) {
-                int block_align = st->codecpar->block_align;
+                int64_t block_align = st->codecpar->block_align;
 
                 block_align = FFMAX(block_align,
-                                    ((st->codecpar->bits_per_coded_sample + 7) / 8) *
+                                    ((st->codecpar->bits_per_coded_sample + 7LL) / 8) *
                                     st->codecpar->ch_layout.nb_channels);
                 if (block_align > st->codecpar->block_align) {
                     av_log(s, AV_LOG_WARNING, "invalid block_align: %d, broken file.\n",
