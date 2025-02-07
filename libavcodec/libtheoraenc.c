@@ -234,7 +234,7 @@ static av_cold int encode_init(AVCodecContext* avc_context)
         return AVERROR_EXTERNAL;
     }
 
-    h->keyframe_mask = (1 << t_info.keyframe_granule_shift) - 1;
+    h->keyframe_mask = (1 << av_ceil_log2(avc_context->gop_size)) - 1;
     /* Clear up theora_info struct */
     th_info_clear(&t_info);
 
