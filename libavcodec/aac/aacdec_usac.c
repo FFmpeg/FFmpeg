@@ -567,15 +567,8 @@ static int decode_usac_scale_factors(AACDecContext *ac,
     int offset_sf = global_gain;
     for (int g = 0; g < ics->num_window_groups; g++) {
         for (int sfb = 0; sfb < ics->max_sfb; sfb++) {
-            /* First coefficient is just the global gain */
-            if (!g && !sfb) {
-                /* The cannonical representation of quantized scalefactors
-                 * in the spec is with 100 subtracted. */
-                sce->sfo[0] = offset_sf - 100;
-                continue;
-            }
-
-            offset_sf += get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - SCALE_DIFF_ZERO;
+            if (g || sfb)
+                offset_sf += get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - SCALE_DIFF_ZERO;
             if (offset_sf > 255U) {
                 av_log(ac->avctx, AV_LOG_ERROR,
                        "Scalefactor (%d) out of range.\n", offset_sf);
