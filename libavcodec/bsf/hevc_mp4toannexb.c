@@ -126,6 +126,7 @@ static int hevc_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
     GetByteContext gb;
 
     int got_irap = 0;
+    int got_ps = 0, seen_irap_ps = 0;
     int i, ret = 0;
 
     ret = ff_bsf_get_packet(ctx, &in);
@@ -140,10 +141,37 @@ static int hevc_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
 
     bytestream2_init(&gb, in->data, in->size);
 
+    while (!got_irap && bytestream2_get_bytes_left(&gb)) {
+        uint32_t nalu_size = 0;
+        int      nalu_type;
+
+        if (bytestream2_get_bytes_left(&gb) < s->length_size) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+        for (i = 0; i < s->length_size; i++)
+            nalu_size = (nalu_size << 8) | bytestream2_get_byte(&gb);
+
+        if (nalu_size < 2 || nalu_size > bytestream2_get_bytes_left(&gb)) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+
+        nalu_type = (bytestream2_peek_byte(&gb) >> 1) & 0x3f;
+        bytestream2_skip(&gb, nalu_size);
+        got_irap |= nalu_type >= HEVC_NAL_BLA_W_LP &&
+                    nalu_type <= HEVC_NAL_RSV_IRAP_VCL23;
+        got_ps   |= nalu_type >= HEVC_NAL_VPS && nalu_type <= HEVC_NAL_PPS;
+    }
+    seen_irap_ps = got_irap && got_ps;
+    got_irap = got_ps = 0;
+
+    bytestream2_init(&gb, in->data, in->size);
+
     while (bytestream2_get_bytes_left(&gb)) {
         uint32_t nalu_size = 0;
         int      nalu_type;
-        int is_irap, add_extradata, extra_size, prev_size;
+        int is_irap, is_ps, add_extradata, extra_size, prev_size;
 
         if (bytestream2_get_bytes_left(&gb) < s->length_size) {
             ret = AVERROR_INVALIDDATA;
@@ -162,9 +190,11 @@ static int hevc_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
         /* prepend extradata to IRAP frames */
         is_irap = nalu_type >= HEVC_NAL_BLA_W_LP &&
                   nalu_type <= HEVC_NAL_RSV_IRAP_VCL23;
-        add_extradata = is_irap && !got_irap;
+        is_ps   = nalu_type >= HEVC_NAL_VPS && nalu_type <= HEVC_NAL_PPS && seen_irap_ps;
+        add_extradata = (is_ps || is_irap) && !got_ps && !got_irap;
         extra_size    = add_extradata * ctx->par_out->extradata_size;
         got_irap     |= is_irap;
+        got_ps       |= is_ps;
 
         if (FFMIN(INT_MAX, SIZE_MAX) < 4ULL + nalu_size + extra_size) {
             ret = AVERROR_INVALIDDATA;
