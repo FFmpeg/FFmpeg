@@ -471,6 +471,9 @@ static int get_packet_lj92(AVFormatContext *avctx, AVStream *st, AVIOContext *pb
     uint8_t *stripofs, *matrixofs;
 
 #define MAX_HEADER_SIZE 2048
+    if ((uint64_t)size > INT32_MAX - MAX_HEADER_SIZE)
+        return AVERROR_PATCHWELCOME;
+
     if ((ret = av_new_packet(pkt, size + MAX_HEADER_SIZE)) < 0)
         return ret;
 
@@ -562,10 +565,14 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     avio_skip(pb, 12); //timestamp, frameNumber
     size -= 12;
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (size < 8)
+            return AVERROR_INVALIDDATA;
         avio_skip(pb, 8); // cropPosX, cropPosY, panPosX, panPosY
         size -= 8;
     }
     space = avio_rl32(pb);
+    if (size < space + 4LL)
+        return AVERROR_INVALIDDATA;
     avio_skip(pb, space);
     size -= space;
 
@@ -577,9 +584,7 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
         else
             ret = av_get_packet(pb, pkt, (st->codecpar->width * st->codecpar->height * st->codecpar->bits_per_coded_sample + 7) >> 3);
     } else { // AVMEDIA_TYPE_AUDIO
-        if (space > UINT_MAX - 24 || size < (24 + space))
-            return AVERROR_INVALIDDATA;
-        ret = av_get_packet(pb, pkt, size - (24 + space));
+        ret = av_get_packet(pb, pkt, size - 4);
     }
 
     if (ret < 0)
