@@ -62,7 +62,7 @@ static void parse_qn(GetBitContext *gb, int *qn, int nk_mode, int no_qn)
 {
     if (nk_mode == 1) {
         for (int k = 0; k < no_qn; k++) {
-            qn[k] = get_unary(gb, 0, INT32_MAX); // TODO: find proper ranges
+            qn[k] = get_unary(gb, 0, 68); // TODO: find proper ranges
             if (qn[k])
                 qn[k]++;
         }
@@ -75,7 +75,7 @@ static void parse_qn(GetBitContext *gb, int *qn, int nk_mode, int no_qn)
     if (nk_mode == 2) {
         for (int k = 0; k < no_qn; k++) {
             if (qn[k] > 4) {
-                qn[k] = get_unary(gb, 0, INT32_MAX);;
+                qn[k] = get_unary(gb, 0, 65);
                 if (qn[k])
                     qn[k] += 4;
             }
@@ -85,7 +85,7 @@ static void parse_qn(GetBitContext *gb, int *qn, int nk_mode, int no_qn)
 
     for (int k = 0; k < no_qn; k++) {
         if (qn[k] > 4) {
-            int qn_ext = get_unary(gb, 0, INT32_MAX);;
+            int qn_ext = get_unary(gb, 0, 65);
             switch (qn_ext) {
             case 0: qn[k] = 5; break;
             case 1: qn[k] = 6; break;
@@ -113,6 +113,9 @@ static int parse_codebook_idx(GetBitContext *gb, uint32_t *kv,
             n = qn[k];
         }
     }
+
+    if (nk > 25)
+        return AVERROR_PATCHWELCOME;
 
     skip_bits(gb, 4*n);
 
