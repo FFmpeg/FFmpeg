@@ -42,7 +42,6 @@
 #define CLIP_AVOIDANCE_FACTOR 0.95f
 
 typedef enum AACCoder {
-    AAC_CODER_ANMR = 0,
     AAC_CODER_TWOLOOP,
     AAC_CODER_FAST,
 
