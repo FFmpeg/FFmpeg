@@ -671,8 +671,6 @@ static int frame_context_setup(VVCFrameContext *fc, VVCContext *s)
 {
     int ret;
 
-    fc->ref = NULL;
-
     // copy refs from the last frame
     if (s->nb_frames && s->nb_fcs > 1) {
         VVCFrameContext *prev = get_frame_context(s, fc, -1);
@@ -927,6 +925,7 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
     int ret = 0;
     s->last_eos = s->eos;
     s->eos = 0;
+    fc->ref = NULL;
 
     ff_cbs_fragment_reset(frame);
     ret = ff_cbs_read_packet(s->cbc, frame, avpkt);
