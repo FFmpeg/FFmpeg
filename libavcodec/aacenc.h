@@ -69,7 +69,6 @@ typedef struct AACEncOptions {
     int tns;
     int ltp;
     int pce;
-    int pred;
     int mid_side;
     int intensity_stereo;
 } AACEncOptions;
@@ -99,11 +98,6 @@ typedef struct IndividualChannelStream {
     int num_swb;                ///< number of scalefactor window bands
     int num_windows;
     int tns_max_bands;
-    int predictor_present;
-    int predictor_initialized;
-    int predictor_reset_group;
-    int predictor_reset_count[31];  ///< used to count prediction resets
-    uint8_t prediction_used[41];
     uint8_t window_clipping[8]; ///< set if a certain window is near clipping
     float clip_avoidance_factor; ///< set if any window is near clipping to the necessary atennuation factor to avoid it
 } IndividualChannelStream;
@@ -140,7 +134,6 @@ typedef struct SingleChannelElement {
     DECLARE_ALIGNED(32, float, ret_buf)[2048];      ///< PCM output buffer
     DECLARE_ALIGNED(16, float, ltp_state)[3072];    ///< time signal for LTP
     DECLARE_ALIGNED(32, float, lcoeffs)[1024];      ///< MDCT of LTP coefficients
-    DECLARE_ALIGNED(32, float, prcoeffs)[1024];     ///< Main prediction coefs
     PredictorState predictor_state[MAX_PREDICTORS];
 } SingleChannelElement;
 
@@ -169,10 +162,7 @@ typedef struct AACCoefficientsEncoder {
                                      int scale_idx, int cb, const float lambda, int rtz);
     void (*encode_tns_info)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*encode_ltp_info)(struct AACEncContext *s, SingleChannelElement *sce, int common_window);
-    void (*encode_main_pred)(struct AACEncContext *s, SingleChannelElement *sce);
-    void (*adjust_common_pred)(struct AACEncContext *s, ChannelElement *cpe);
     void (*adjust_common_ltp)(struct AACEncContext *s, ChannelElement *cpe);
-    void (*apply_main_pred)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*apply_tns_filt)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*update_ltp)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*ltp_insert_new_frame)(struct AACEncContext *s);
@@ -183,7 +173,6 @@ typedef struct AACCoefficientsEncoder {
     void (*search_for_ltp)(struct AACEncContext *s, SingleChannelElement *sce, int common_window);
     void (*search_for_ms)(struct AACEncContext *s, ChannelElement *cpe);
     void (*search_for_is)(struct AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe);
-    void (*search_for_pred)(struct AACEncContext *s, SingleChannelElement *sce);
 } AACCoefficientsEncoder;
 
 extern const AACCoefficientsEncoder ff_aac_coders[];

@@ -502,7 +502,7 @@ static void put_ics_info(AACEncContext *s, IndividualChannelStream *info)
     put_bits(&s->pb, 1, info->use_kb_window[0]);
     if (info->window_sequence[0] != EIGHT_SHORT_SEQUENCE) {
         put_bits(&s->pb, 6, info->max_sfb);
-        put_bits(&s->pb, 1, !!info->predictor_present);
+        put_bits(&s->pb, 1, 0); /* No predictor present */
     } else {
         put_bits(&s->pb, 4, info->max_sfb);
         for (w = 1; w < 8; w++)
@@ -764,8 +764,6 @@ static int encode_individual_channel(AVCodecContext *avctx, AACEncContext *s,
     put_bits(&s->pb, 8, sce->sf_idx[0]);
     if (!common_window) {
         put_ics_info(s, &sce->ics);
-        if (s->coder->encode_main_pred)
-            s->coder->encode_main_pred(s, sce);
         if (s->coder->encode_ltp_info)
             s->coder->encode_ltp_info(s, sce, 0);
     }
@@ -976,10 +974,8 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             for (ch = 0; ch < chans; ch++) {
                 sce = &cpe->ch[ch];
                 coeffs[ch] = sce->coeffs;
-                sce->ics.predictor_present = 0;
                 sce->ics.ltp.present = 0;
                 memset(sce->ics.ltp.used, 0, sizeof(sce->ics.ltp.used));
-                memset(sce->ics.prediction_used, 0, sizeof(sce->ics.prediction_used));
                 memset(&sce->tns, 0, sizeof(TemporalNoiseShaping));
                 for (w = 0; w < 128; w++)
                     if (sce->band_type[w] > RESERVED_BT)
@@ -1032,24 +1028,6 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 if (cpe->is_mode) is_mode = 1;
                 apply_intensity_stereo(cpe);
             }
-            if (s->options.pred) { /* Prediction */
-                for (ch = 0; ch < chans; ch++) {
-                    sce = &cpe->ch[ch];
-                    s->cur_channel = start_ch + ch;
-                    if (s->options.pred && s->coder->search_for_pred)
-                        s->coder->search_for_pred(s, sce);
-                    if (cpe->ch[ch].ics.predictor_present) pred_mode = 1;
-                }
-                if (s->coder->adjust_common_pred)
-                    s->coder->adjust_common_pred(s, cpe);
-                for (ch = 0; ch < chans; ch++) {
-                    sce = &cpe->ch[ch];
-                    s->cur_channel = start_ch + ch;
-                    if (s->options.pred && s->coder->apply_main_pred)
-                        s->coder->apply_main_pred(s, sce);
-                }
-                s->cur_channel = start_ch;
-            }
             if (s->options.mid_side) { /* Mid/Side stereo */
                 if (s->options.mid_side == -1 && s->coder->search_for_ms)
                     s->coder->search_for_ms(s, cpe);
@@ -1074,8 +1052,6 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 put_bits(&s->pb, 1, cpe->common_window);
                 if (cpe->common_window) {
                     put_ics_info(s, &cpe->ch[0].ics);
-                    if (s->coder->encode_main_pred)
-                        s->coder->encode_main_pred(s, &cpe->ch[0]);
                     if (s->coder->encode_ltp_info)
                         s->coder->encode_ltp_info(s, &cpe->ch[0], 1);
                     encode_ms_info(&s->pb, cpe);
@@ -1310,10 +1286,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     for (i = 0; i < FF_ARRAY_ELEMS(aacenc_profiles); i++)
         if (avctx->profile == aacenc_profiles[i])
             break;
+    ERROR_IF(i == FF_ARRAY_ELEMS(aacenc_profiles), "Profile not supported!\n");
     if (avctx->profile == AV_PROFILE_MPEG2_AAC_LOW) {
         avctx->profile = AV_PROFILE_AAC_LOW;
-        ERROR_IF(s->options.pred,
-                 "Main prediction unavailable in the \"mpeg2_aac_low\" profile\n");
         ERROR_IF(s->options.ltp,
                  "LTP prediction unavailable in the \"mpeg2_aac_low\" profile\n");
         WARN_IF(s->options.pns,
@@ -1321,24 +1296,10 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         s->options.pns = 0;
     } else if (avctx->profile == AV_PROFILE_AAC_LTP) {
         s->options.ltp = 1;
-        ERROR_IF(s->options.pred,
-                 "Main prediction unavailable in the \"aac_ltp\" profile\n");
-    } else if (avctx->profile == AV_PROFILE_AAC_MAIN) {
-        s->options.pred = 1;
-        ERROR_IF(s->options.ltp,
-                 "LTP prediction unavailable in the \"aac_main\" profile\n");
     } else if (s->options.ltp) {
         avctx->profile = AV_PROFILE_AAC_LTP;
         WARN_IF(1,
                 "Chainging profile to \"aac_ltp\"\n");
-        ERROR_IF(s->options.pred,
-                 "Main prediction unavailable in the \"aac_ltp\" profile\n");
-    } else if (s->options.pred) {
-        avctx->profile = AV_PROFILE_AAC_MAIN;
-        WARN_IF(1,
-                "Chainging profile to \"aac_main\"\n");
-        ERROR_IF(s->options.ltp,
-                 "LTP prediction unavailable in the \"aac_main\" profile\n");
     }
     s->profile = avctx->profile;
 
@@ -1400,7 +1361,6 @@ static const AVOption aacenc_options[] = {
     {"aac_pns", "Perceptual noise substitution", offsetof(AACEncContext, options.pns), AV_OPT_TYPE_BOOL, {.i64 = 1}, -1, 1, AACENC_FLAGS},
     {"aac_tns", "Temporal noise shaping", offsetof(AACEncContext, options.tns), AV_OPT_TYPE_BOOL, {.i64 = 1}, -1, 1, AACENC_FLAGS},
     {"aac_ltp", "Long term prediction", offsetof(AACEncContext, options.ltp), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
-    {"aac_pred", "AAC-Main prediction", offsetof(AACEncContext, options.pred), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
     {"aac_pce", "Forces the use of PCEs", offsetof(AACEncContext, options.pce), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, AACENC_FLAGS},
     FF_AAC_PROFILE_OPTS
     {NULL}
