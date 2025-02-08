@@ -173,6 +173,7 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
                       sce->ics.window_sequence[0] == LONG_START_SEQUENCE ? 0 : 2;
     const int sfb_len = sfb_end - sfb_start;
     const int coef_len = sce->ics.swb_offset[sfb_end] - sce->ics.swb_offset[sfb_start];
+    const int n_filt = is8 ? 1 : order != TNS_MAX_ORDER ? 2 : 3;
 
     if (coef_len <= 0 || sfb_len <= 0) {
         sce->tns.present = 0;
@@ -180,16 +181,30 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
     }
 
     for (w = 0; w < sce->ics.num_windows; w++) {
-        float en[2] = {0.0f, 0.0f};
+        float en[4] = {0.0f, 0.0f, 0.0f, 0.0f};
         int oc_start = 0;
         int coef_start = sce->ics.swb_offset[sfb_start];
 
-        for (g = sfb_start; g < sce->ics.num_swb && g <= sfb_end; g++) {
-            FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[w*16+g];
-            if (g > sfb_start + (sfb_len/2))
-                en[1] += band->energy;
-            else
-                en[0] += band->energy;
+        if (n_filt == 2) {
+            for (g = sfb_start; g < sce->ics.num_swb && g <= sfb_end; g++) {
+                FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[w*16+g];
+                    if (g > sfb_start + (sfb_len/2))
+                        en[1] += band->energy; /* End */
+                    else
+                        en[0] += band->energy; /* Start */
+            }
+            en[2] = en[0];
+        } else {
+            for (g = sfb_start; g < sce->ics.num_swb && g <= sfb_end; g++) {
+                FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[w*16+g];
+                    if (g > sfb_start + (sfb_len/2) + (sfb_len/4))
+                        en[2] += band->energy; /* End */
+                    else if (g > sfb_start + (sfb_len/2) - (sfb_len/4))
+                        en[1] += band->energy; /* Middle */
+                    else
+                        en[0] += band->energy; /* Start */
+            }
+            en[3] = en[0];
         }
 
         /* LPC */
@@ -199,9 +214,9 @@ void ff_aac_search_for_tns(AACEncContext *s, SingleChannelElement *sce)
         if (!order || !isfinite(gain) || gain < TNS_GAIN_THRESHOLD_LOW || gain > TNS_GAIN_THRESHOLD_HIGH)
             continue;
 
-        tns->n_filt[w] = is8 ? 1 : order != TNS_MAX_ORDER ? 2 : 3;
+        tns->n_filt[w] = n_filt;
         for (g = 0; g < tns->n_filt[w]; g++) {
-            tns->direction[w][g] = slant != 2 ? slant : en[g] < en[!g];
+            tns->direction[w][g] = slant != 2 ? slant : en[g] < en[g + 1];
             tns->order[w][g] = order/tns->n_filt[w];
             tns->length[w][g] = sfb_len/tns->n_filt[w];
             quantize_coefs(&coefs[oc_start], tns->coef_idx[w][g], tns->coef[w][g],
