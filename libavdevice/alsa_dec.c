@@ -80,7 +80,7 @@ static av_cold int audio_read_header(AVFormatContext *s1)
     }
 #endif
 
-    ret = ff_alsa_open(s1, SND_PCM_STREAM_CAPTURE, &s->sample_rate, s->ch_layout.nb_channels,
+    ret = ff_alsa_open(s1, SND_PCM_STREAM_CAPTURE, &s->sample_rate, &s->ch_layout,
         &codec_id);
     if (ret < 0) {
         return AVERROR(EIO);

@@ -72,7 +72,7 @@ typedef struct AlsaData {
  * @param mode either SND_PCM_STREAM_CAPTURE or SND_PCM_STREAM_PLAYBACK
  * @param sample_rate in: requested sample rate;
  *                    out: actually selected sample rate
- * @param channels number of channels
+ * @param layout channel layout
  * @param codec_id in: requested AVCodecID or AV_CODEC_ID_NONE;
  *                 out: actually selected AVCodecID, changed only if
  *                 AV_CODEC_ID_NONE was requested
@@ -82,7 +82,7 @@ typedef struct AlsaData {
 av_warn_unused_result
 int ff_alsa_open(AVFormatContext *s, snd_pcm_stream_t mode,
                  unsigned int *sample_rate,
-                 int channels, enum AVCodecID *codec_id);
+                 const AVChannelLayout *layout, enum AVCodecID *codec_id);
 
 /**
  * Close the ALSA PCM.

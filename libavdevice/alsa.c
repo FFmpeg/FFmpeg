@@ -127,7 +127,8 @@ switch(format) {\
     case FORMAT_F32: s->reorder_func = alsa_reorder_f32_out_ ##layout;   break;\
 }
 
-static av_cold int find_reorder_func(AlsaData *s, int codec_id, AVChannelLayout *layout, int out)
+static av_cold int find_reorder_func(AlsaData *s, int codec_id,
+                                     const AVChannelLayout *layout, int out)
 {
     int format;
 
@@ -172,10 +173,9 @@ static av_cold int find_reorder_func(AlsaData *s, int codec_id, AVChannelLayout 
 
 av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
                          unsigned int *sample_rate,
-                         int channels, enum AVCodecID *codec_id)
+                         const AVChannelLayout *layout, enum AVCodecID *codec_id)
 {
     AlsaData *s = ctx->priv_data;
-    AVChannelLayout *layout = &ctx->streams[0]->codecpar->ch_layout;
     const char *audio_device;
     int res, flags = 0;
     snd_pcm_format_t format;
@@ -193,7 +193,7 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
         av_log(ctx, AV_LOG_ERROR, "sample format 0x%04x is not supported\n", *codec_id);
         return AVERROR(ENOSYS);
     }
-    s->frame_size = av_get_bits_per_sample(*codec_id) / 8 * channels;
+    s->frame_size = av_get_bits_per_sample(*codec_id) / 8 * layout->nb_channels;
 
     if (ctx->flags & AVFMT_FLAG_NONBLOCK) {
         flags = SND_PCM_NONBLOCK;
@@ -240,10 +240,10 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
         goto fail;
     }
 
-    res = snd_pcm_hw_params_set_channels(h, hw_params, channels);
+    res = snd_pcm_hw_params_set_channels(h, hw_params, layout->nb_channels);
     if (res < 0) {
         av_log(ctx, AV_LOG_ERROR, "cannot set channel count to %d (%s)\n",
-               channels, snd_strerror(res));
+               layout->nb_channels, snd_strerror(res));
         goto fail;
     }
 
@@ -277,7 +277,7 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
 
     snd_pcm_hw_params_free(hw_params);
 
-    if (channels > 2 && layout->order != AV_CHANNEL_ORDER_UNSPEC) {
+    if (layout->nb_channels > 2 && layout->order != AV_CHANNEL_ORDER_UNSPEC) {
         if (find_reorder_func(s, *codec_id, layout, mode == SND_PCM_STREAM_PLAYBACK) < 0) {
             char name[128];
             av_channel_layout_describe(layout, name, sizeof(name));
