@@ -5186,7 +5186,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        int stts_constant = !!sc->stts_count;
+        int stts_constant = sc->stts_count && sc->tts_count;
         if (sc->h_spacing && sc->v_spacing)
             av_reduce(&st->sample_aspect_ratio.num, &st->sample_aspect_ratio.den,
                       sc->h_spacing, sc->v_spacing, INT_MAX);
