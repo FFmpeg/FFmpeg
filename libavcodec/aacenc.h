@@ -67,22 +67,10 @@ typedef struct AACEncOptions {
     int coder;
     int pns;
     int tns;
-    int ltp;
     int pce;
     int mid_side;
     int intensity_stereo;
 } AACEncOptions;
-
-/**
- * Long Term Prediction
- */
-typedef struct LongTermPrediction {
-    int8_t present;
-    int16_t lag;
-    int coef_idx;
-    float coef;
-    int8_t used[MAX_LTP_LONG_SFB];
-} LongTermPrediction;
 
 /**
  * Individual Channel Stream
@@ -92,7 +80,6 @@ typedef struct IndividualChannelStream {
     enum WindowSequence window_sequence[2];
     uint8_t use_kb_window[2];   ///< If set, use Kaiser-Bessel window, otherwise use a sine window.
     uint8_t group_len[8];
-    LongTermPrediction ltp;
     const uint16_t *swb_offset; ///< table of offsets to the lowest spectral coefficient of a scalefactor band, sfb, for a particular window
     const uint8_t *swb_sizes;   ///< table of scalefactor band sizes for a particular window
     int num_swb;                ///< number of scalefactor window bands
@@ -132,8 +119,6 @@ typedef struct SingleChannelElement {
     DECLARE_ALIGNED(32, float, pcoeffs)[1024];      ///< coefficients for IMDCT, pristine
     DECLARE_ALIGNED(32, float, coeffs)[1024];       ///< coefficients for IMDCT, maybe processed
     DECLARE_ALIGNED(32, float, ret_buf)[2048];      ///< PCM output buffer
-    DECLARE_ALIGNED(16, float, ltp_state)[3072];    ///< time signal for LTP
-    DECLARE_ALIGNED(32, float, lcoeffs)[1024];      ///< MDCT of LTP coefficients
     PredictorState predictor_state[MAX_PREDICTORS];
 } SingleChannelElement;
 
@@ -161,16 +146,11 @@ typedef struct AACCoefficientsEncoder {
     void (*quantize_and_encode_band)(struct AACEncContext *s, PutBitContext *pb, const float *in, float *out, int size,
                                      int scale_idx, int cb, const float lambda, int rtz);
     void (*encode_tns_info)(struct AACEncContext *s, SingleChannelElement *sce);
-    void (*encode_ltp_info)(struct AACEncContext *s, SingleChannelElement *sce, int common_window);
-    void (*adjust_common_ltp)(struct AACEncContext *s, ChannelElement *cpe);
     void (*apply_tns_filt)(struct AACEncContext *s, SingleChannelElement *sce);
-    void (*update_ltp)(struct AACEncContext *s, SingleChannelElement *sce);
-    void (*ltp_insert_new_frame)(struct AACEncContext *s);
     void (*set_special_band_scalefactors)(struct AACEncContext *s, SingleChannelElement *sce);
     void (*search_for_pns)(struct AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce);
     void (*mark_pns)(struct AACEncContext *s, AVCodecContext *avctx, SingleChannelElement *sce);
     void (*search_for_tns)(struct AACEncContext *s, SingleChannelElement *sce);
-    void (*search_for_ltp)(struct AACEncContext *s, SingleChannelElement *sce, int common_window);
     void (*search_for_ms)(struct AACEncContext *s, ChannelElement *cpe);
     void (*search_for_is)(struct AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe);
 } AACCoefficientsEncoder;

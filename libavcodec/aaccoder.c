@@ -47,7 +47,6 @@
 
 #include "aacenc_is.h"
 #include "aacenc_tns.h"
-#include "aacenc_ltp.h"
 
 #include "libavcodec/aaccoder_twoloop.h"
 
@@ -1121,16 +1120,11 @@ const AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         encode_window_bands_info,
         quantize_and_encode_band,
         ff_aac_encode_tns_info,
-        ff_aac_encode_ltp_info,
-        ff_aac_adjust_common_ltp,
         ff_aac_apply_tns,
-        ff_aac_update_ltp,
-        ff_aac_ltp_insert_new_frame,
         set_special_band_scalefactors,
         search_for_pns,
         mark_pns,
         ff_aac_search_for_tns,
-        ff_aac_search_for_ltp,
         search_for_ms,
         ff_aac_search_for_is,
     },
@@ -1139,16 +1133,11 @@ const AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         codebook_trellis_rate,
         quantize_and_encode_band,
         ff_aac_encode_tns_info,
-        ff_aac_encode_ltp_info,
-        ff_aac_adjust_common_ltp,
         ff_aac_apply_tns,
-        ff_aac_update_ltp,
-        ff_aac_ltp_insert_new_frame,
         set_special_band_scalefactors,
         search_for_pns,
         mark_pns,
         ff_aac_search_for_tns,
-        ff_aac_search_for_ltp,
         search_for_ms,
         ff_aac_search_for_is,
     },
@@ -1157,16 +1146,11 @@ const AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
         codebook_trellis_rate,
         quantize_and_encode_band,
         ff_aac_encode_tns_info,
-        ff_aac_encode_ltp_info,
-        ff_aac_adjust_common_ltp,
         ff_aac_apply_tns,
-        ff_aac_update_ltp,
-        ff_aac_ltp_insert_new_frame,
         set_special_band_scalefactors,
         search_for_pns,
         mark_pns,
         ff_aac_search_for_tns,
-        ff_aac_search_for_ltp,
         search_for_ms,
         ff_aac_search_for_is,
     },

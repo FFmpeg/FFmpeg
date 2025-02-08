@@ -198,7 +198,6 @@ OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacenctab.o    \
                                           aacpsy.o aactab.o      \
                                           aacenc_is.o \
                                           aacenc_tns.o \
-                                          aacenc_ltp.o \
                                           psymodel.o kbdwin.o \
                                           mpeg4audio_sample_rates.o
 OBJS-$(CONFIG_AAC_MEDIACODEC_DECODER)  += mediacodecdec.o
