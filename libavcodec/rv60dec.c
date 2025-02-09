@@ -2257,7 +2257,7 @@ static int decode_slice(AVCodecContext *avctx, void *tdata, int cu_y, int thread
     thread.avg_linesize[1] = 32;
     thread.avg_linesize[2] = 32;
 
-    if ((ret = init_get_bits8(&gb, s->slice[cu_y].data, s->slice[cu_y].size)) < 0)
+    if ((ret = init_get_bits8(&gb, s->slice[cu_y].data, s->slice[cu_y].data_size)) < 0)
         return ret;
 
     for (int cu_x = 0; cu_x < s->cu_width; cu_x++) {
