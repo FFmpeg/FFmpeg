@@ -360,6 +360,9 @@ static int read_dst_frame(AVFormatContext *s, AVPacket *pkt)
     uint64_t chunk_pos, data_pos, data_size;
     int ret = AVERROR_EOF;
 
+    if (s->nb_streams < 1)
+        return AVERROR_INVALIDDATA;
+
     while (!avio_feof(pb)) {
         chunk_pos = avio_tell(pb);
         if (chunk_pos >= iff->body_end)
