@@ -3,6 +3,7 @@
 /bisect.need
 /crypto_bench
 /cws2fws
+/enc_recon_frame_test
 /enum_options
 /fourcc2pixfmt
 /ffescape
@@ -15,6 +16,15 @@
 /qt-faststart
 /scale_slice_test
 /sidxindex
+/sofa2wavs
+/target_dec_*_fuzzer
+/target_enc_*_fuzzer
+/target_bsf_*_fuzzer
+/target_dem_*_fuzzer
+/target_dem_fuzzer
+/target_io_dem_fuzzer
+/target_sws_fuzzer
+/target_swr_fuzzer
 /trasher
 /seek_print
 /uncoded_frame
