@@ -154,6 +154,11 @@ static int opus_packet(AVFormatContext *avf, int idx)
     }
 
     if (os->psize > 8 && !memcmp(packet, "OpusTags", 8)) {
+        ret = ff_vorbis_update_metadata(avf, st, os->buf + os->pstart + 8,
+                                        os->psize - 8);
+        if (ret < 0)
+            return ret;
+
         priv->need_comments = 0;
         return 1;
     }
