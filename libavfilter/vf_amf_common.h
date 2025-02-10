@@ -48,6 +48,7 @@ typedef struct AMFFilterContext {
     char *format_str;
     int force_original_aspect_ratio;
     int force_divisible_by;
+    int reset_sar;
 
     AMFComponent        *component;
     AVBufferRef         *amf_device_ref;

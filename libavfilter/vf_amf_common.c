@@ -158,11 +158,6 @@ int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in)
         goto fail;
     }
 
-    if (inlink->sample_aspect_ratio.num) {
-        outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink->w, outlink->w * inlink->h}, inlink->sample_aspect_ratio);
-    } else
-        outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
-
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 fail:
@@ -274,6 +269,7 @@ int amf_init_filter_config(AVFilterLink *outlink, enum AVPixelFormat *in_format)
     enum AVPixelFormat out_sw_format = ctx->format;
     FilterLink        *inl = ff_filter_link(inlink);
     FilterLink        *outl = ff_filter_link(outlink);
+    double w_adj = 1.0;
 
     if ((err = ff_scale_eval_dimensions(avctx,
                                         ctx->w_expr, ctx->h_expr,
@@ -281,8 +277,11 @@ int amf_init_filter_config(AVFilterLink *outlink, enum AVPixelFormat *in_format)
                                         &ctx->width, &ctx->height)) < 0)
         return err;
 
+    if (ctx->reset_sar && inlink->sample_aspect_ratio.num)
+        w_adj = (double) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den;
+
     ff_scale_adjust_dimensions(inlink, &ctx->width, &ctx->height,
-                               ctx->force_original_aspect_ratio, ctx->force_divisible_by, 1.0);
+                               ctx->force_original_aspect_ratio, ctx->force_divisible_by, w_adj);
 
     av_buffer_unref(&ctx->amf_device_ref);
     av_buffer_unref(&ctx->hwframes_in_ref);
@@ -342,6 +341,13 @@ int amf_init_filter_config(AVFilterLink *outlink, enum AVPixelFormat *in_format)
     }
     outlink->w = ctx->width;
     outlink->h = ctx->height;
+
+    if (ctx->reset_sar)
+        outlink->sample_aspect_ratio = (AVRational){1, 1};
+    else if (inlink->sample_aspect_ratio.num) {
+        outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink->w, outlink->w * inlink->h}, inlink->sample_aspect_ratio);
+    } else
+        outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
 
     hwframes_out->width = outlink->w;
     hwframes_out->height = outlink->h;

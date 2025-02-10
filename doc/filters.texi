@@ -25796,6 +25796,9 @@ pixel format is used.
 @item force_divisible_by
 Work the same as the identical @ref{scale} filter options.
 
+@item reset_sar
+Works the same as the identical @ref{scale} filter option.
+
 @anchor{color_profile}
 @item color_profile
 Specify all color properties at once.
