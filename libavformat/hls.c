@@ -2137,7 +2137,7 @@ static int hls_read_header(AVFormatContext *s)
         return ret;
 
     /* XXX: Some HLS servers don't like being sent the range header,
-       in this case, need to  setting http_seekable = 0 to disable
+       in this case, we need to set http_seekable = 0 to disable
        the range header */
     av_dict_set_int(&c->avio_opts, "seekable", c->http_seekable, 0);
 
