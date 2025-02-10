@@ -282,7 +282,7 @@ int amf_init_filter_config(AVFilterLink *outlink, enum AVPixelFormat *in_format)
         return err;
 
     ff_scale_adjust_dimensions(inlink, &ctx->width, &ctx->height,
-                               ctx->force_original_aspect_ratio, ctx->force_divisible_by);
+                               ctx->force_original_aspect_ratio, ctx->force_divisible_by, 1.0);
 
     av_buffer_unref(&ctx->amf_device_ref);
     av_buffer_unref(&ctx->hwframes_in_ref);
