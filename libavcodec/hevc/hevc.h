@@ -170,4 +170,9 @@ enum HEVCScalabilityMask {
     HEVC_SCALABILITY_MASK_MAX   = 0xFFFF,
 };
 
+enum HEVCAuxId {
+    HEVC_AUX_ALPHA = 1,
+    HEVC_AUX_DEPTH = 2,
+};
+
 #endif /* AVCODEC_HEVC_HEVC_H */

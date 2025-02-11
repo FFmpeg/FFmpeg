@@ -237,6 +237,7 @@ typedef struct HEVCVPS {
 
     // NumDirectRefLayers[layer_idx]
     uint8_t num_direct_ref_layers[HEVC_VPS_MAX_LAYERS];
+    uint8_t num_add_layer_sets;
 
     RepFormat rep_format;
 
