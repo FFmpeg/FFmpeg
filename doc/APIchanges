@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2026-06-23.
 
 API changes, most recent first:
 
+2026-08-13 - xxxxxxxxxx - lavc 63.8.100 - avcodec.h codec.h
+  Add avcodec_encode_reconfigure.
+  Add AV_CODEC_CAP_RECONF.
+
 2026-08-xx - xxxxxxxxxx - lavf 63.6.100 - avformat.h
   Add AVFMT_FLAG_LEGACY_ID3V2_COMM_KEYS. The deprecated export of id3v2 COMM
   descriptors as bare metadata tag names is now opt-in through this flag,

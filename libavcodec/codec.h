@@ -47,6 +47,12 @@
  * avcodec_default_get_buffer2 or avcodec_default_get_encode_buffer.
  */
 #define AV_CODEC_CAP_DR1                 (1 <<  1)
+
+/**
+ * Encoder can be reconfigured by passing new initialization parameters.
+ */
+#define AV_CODEC_CAP_RECONF              (1 <<  2)
+
 /**
  * Encoder or decoder requires flushing with NULL input at the end in order to
  * give the complete and correct output.

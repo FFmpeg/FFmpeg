@@ -25,6 +25,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/samplefmt.h"
 
@@ -591,6 +592,103 @@ int attribute_align_arg avcodec_receive_packet(AVCodecContext *avctx, AVPacket *
         if (ret < 0)
             return ret;
     }
+
+    return 0;
+}
+
+av_cold int ff_encode_reconf_parse_dict(AVCodecContext *avctx, AVDictionary **dict)
+{
+    const AVCodec *codec = avctx->codec;
+    const FFCodec *codec2 = ffcodec(codec);
+    const AVDictionaryEntry *t = NULL;
+    AVDictionary *copy = NULL;
+    int ret;
+
+    av_assert0(av_codec_is_encoder(codec) && (codec->capabilities & AV_CODEC_CAP_RECONF));
+
+    ret = av_dict_copy(&copy, *dict, 0);
+    if (ret < 0)
+        goto end;
+
+    // Remove the dictionary entries that would be applied to the private codec context
+    if (codec->priv_class) {
+        while ((t = av_dict_iterate(*dict, t))) {
+            if (av_opt_find(avctx->priv_data, t->key, NULL,
+                            AV_OPT_FLAG_RUNTIME_PARAM, 0))
+                av_dict_set(dict, t->key, NULL, 0);
+        }
+    }
+
+    // Ditto for global options
+    if (codec2->defaults) {
+        const FFCodecDefault *d = codec2->defaults;
+        while (d->key) {
+            if (d->flags & AV_OPT_FLAG_RUNTIME_PARAM)
+                av_dict_set(dict, d->key, NULL, 0);
+            d++;
+        }
+    }
+
+    // If any entry remains, then the requested option/s don't exist or are not settable.
+    if (av_dict_count(*dict)) {
+        ret = AVERROR_OPTION_NOT_FOUND;
+        goto end;
+    }
+
+    ret = av_dict_copy(dict, copy, 0);
+    if (ret < 0)
+        goto end;
+
+    // Do a dry run of applying the options, to ensure the encoder is unchanged in case
+    // one of them has an invalid value.
+    // This is done twice, once for avctx and once for the AVCodec, because using the
+    // search children flag in combination with the fake obj flag will iterate through
+    // the options from all compiled in codecs if you pass the avctx class.
+    if (codec->priv_class) {
+        ret = av_opt_set_dict2((void *)&codec->priv_class, &copy, AV_OPT_SEARCH_FAKE_OBJ);
+        if (ret < 0)
+            goto end;
+    }
+    ret = av_opt_set_dict2((void *)&avctx->av_class, &copy, AV_OPT_SEARCH_FAKE_OBJ);
+    if (ret < 0)
+        goto end;
+
+    // The dictionary should be empty.
+    av_assert0(!av_dict_count(copy));
+
+    ret = av_opt_set_dict2(avctx, dict, AV_OPT_SEARCH_CHILDREN);
+    if (ret < 0)
+        goto end;
+
+    // The dictionary should be empty.
+    av_assert0(!av_dict_count(*dict));
+
+    ret = 0;
+end:
+    av_dict_free(&copy);
+
+    return ret;
+}
+
+av_cold int avcodec_encode_reconfigure(AVCodecContext *avctx, AVDictionary **dict)
+{
+    const FFCodec *codec = ffcodec(avctx->codec);
+    int ret = AVERROR_BUG;
+
+    if (!dict || !*dict || !avcodec_is_open(avctx) || !av_codec_is_encoder(avctx->codec))
+        return AVERROR(EINVAL);
+
+    if (!(avctx->codec->capabilities & AV_CODEC_CAP_RECONF)) {
+        av_log(avctx, AV_LOG_ERROR, "This encoder does not support reconfiguration\n");
+        return AVERROR(ENOSYS);
+    }
+
+    if (codec->reconf)
+        ret = codec->reconf(avctx, dict);
+    else
+        ret = ff_encode_reconf_parse_dict(avctx, dict);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }

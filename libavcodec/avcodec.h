@@ -2234,6 +2234,32 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
 int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
 
 /**
+ * Try to reconfigure the encoder with the provided dictionary. May only be used
+ * if a codec with AV_CODEC_CAP_RECONF has been opened.
+ *
+ * Not all options can be changed, and it depends on the encoder. If any of the
+ * options can't be applied (Either because the option can't be changed, because
+ * invalid values for them were passed, or other errors), it is not guaranteed that
+ * the state of the encoder is the same as prior to calling this function, but in
+ * most cases it should.
+ * Unapplied options will remain in *dict, and owned by the caller.
+ *
+ * @param avctx   The context to reconfigure.
+ * @param options A dictionary filled with AVCodecContext and codec-private
+ *                options, which are set on top of the options already set in
+ *                avctx. Can't be NULL.
+ *
+ * @retval 0                         success
+ * @retval AVERROR_OPTION_NOT_FOUND  an entry with an invalid key was passed. The
+ *                                   context is untouched.
+ * @retval AVERROR(EINVAL)           an entry with an invalid value or an invalid
+ *                                   argument was passed.
+ * @retval AVERROR(ENOSYS)           unsupported encoder. The context is untouched.
+ * @retval "another negative error code" other errors.
+ */
+int avcodec_encode_reconfigure(AVCodecContext *avctx, AVDictionary **options);
+
+/**
  * Free all allocated data in the given subtitle struct.
  *
  * @param sub AVSubtitle to free.
