@@ -607,6 +607,11 @@ typedef struct Encoder {
 
     AVCodecContext         *enc_ctx;
 
+    uint32_t                codec_tag;
+    int                     flags;
+    int                     flags2;
+    int                     global_quality;
+
     // number of frames/samples sent to the encoder
     uint64_t                frames_encoded;
     uint64_t                samples_encoded;

@@ -1435,13 +1435,13 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         ost->st->codecpar->codec_tag = tag;
         ms->par_in->codec_tag = tag;
         if (ost->enc)
-            ost->enc->enc_ctx->codec_tag = tag;
+            ost->enc->codec_tag = tag;
     }
 
     opt_match_per_stream_dbl(ost, &o->qscale, oc, st, &qscale);
     if (ost->enc && qscale >= 0) {
-        ost->enc->enc_ctx->flags |= AV_CODEC_FLAG_QSCALE;
-        ost->enc->enc_ctx->global_quality = FF_QP2LAMBDA * qscale;
+        ost->enc->flags          |= AV_CODEC_FLAG_QSCALE;
+        ost->enc->global_quality  = FF_QP2LAMBDA * qscale;
     }
 
     if (ms->sch_idx >= 0) {
@@ -1464,9 +1464,9 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
                              oc, st, &ost->fix_sub_duration_heartbeat);
 
     if (oc->oformat->flags & AVFMT_GLOBALHEADER && ost->enc)
-        ost->enc->enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        ost->enc->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     if (oc->oformat->flags & AVFMT_FIXED_FRAMESIZE && ost->enc)
-        ost->enc->enc_ctx->flags2 |= AV_CODEC_FLAG2_FIXED_FRAME_SIZE;
+        ost->enc->flags2 |= AV_CODEC_FLAG2_FIXED_FRAME_SIZE;
 
     opt_match_per_stream_int(ost, &o->copy_initial_nonkeyframes,
                              oc, st, &ms->copy_initial_nonkeyframes);
@@ -2064,7 +2064,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc,
         nb_av_enc      += IS_AV_ENC(ost, type);
         nb_audio_fs    += (ost->enc && type == AVMEDIA_TYPE_AUDIO &&
                            (!(ost->enc->enc_ctx->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE) ||
-                            (ost->enc->enc_ctx->flags2 & AV_CODEC_FLAG2_FIXED_FRAME_SIZE)));
+                            (ost->enc->flags2 & AV_CODEC_FLAG2_FIXED_FRAME_SIZE)));
 
         limit_frames        |=  ms->max_frames < INT64_MAX;
         limit_frames_av_enc |= (ms->max_frames < INT64_MAX) && IS_AV_ENC(ost, type);
@@ -2596,7 +2596,7 @@ static int of_parse_group_token(Muxer *mux, const char *token, char *ptr)
         OutputStream *ost = mux->of.streams[idx];
         if (ost->enc && (type == AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT ||
                          type == AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION))
-            ost->enc->enc_ctx->flags2 |= AV_CODEC_FLAG2_FIXED_FRAME_SIZE;
+            ost->enc->flags2 |= AV_CODEC_FLAG2_FIXED_FRAME_SIZE;
     }
     while (e = av_dict_get(dict, "stg", e, 0)) {
         char *endptr;

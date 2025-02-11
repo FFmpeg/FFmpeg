@@ -209,6 +209,12 @@ static int enc_reopen(void *opaque, const AVFrame *frame)
     if (ist)
         dec = ist->decoder;
 
+    if (ost->enc->codec_tag)
+        enc_ctx->codec_tag  = e->codec_tag;
+    enc_ctx->flags         |= e->flags;
+    enc_ctx->flags2        |= e->flags2;
+    enc_ctx->global_quality = e->global_quality;
+
     // the timebase is chosen by filtering code
     if (ost->type == AVMEDIA_TYPE_AUDIO || ost->type == AVMEDIA_TYPE_VIDEO) {
         enc_ctx->time_base      = frame->time_base;
