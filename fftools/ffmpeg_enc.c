@@ -181,7 +181,7 @@ static int hw_device_setup_for_encode(Encoder *e, AVCodecContext *enc_ctx,
     return 0;
 }
 
-int enc_open(void *opaque, const AVFrame *frame)
+static int enc_reopen(void *opaque, const AVFrame *frame)
 {
     OutputStream *ost = opaque;
     InputStream *ist = ost->ist;
@@ -190,13 +190,8 @@ int enc_open(void *opaque, const AVFrame *frame)
     AVCodecContext *enc_ctx = e->enc_ctx;
     Decoder            *dec = NULL;
     const AVCodec      *enc = enc_ctx->codec;
-    OutputFile          *of = ost->file;
     FrameData *fd;
-    int frame_samples = 0;
     int ret;
-
-    if (ep->opened)
-        return 0;
 
     // frame is always non-NULL for audio and video
     av_assert0(frame || (enc->type != AVMEDIA_TYPE_VIDEO && enc->type != AVMEDIA_TYPE_AUDIO));
@@ -344,13 +339,33 @@ int enc_open(void *opaque, const AVFrame *frame)
 
     ep->opened = 1;
 
-    if (enc_ctx->frame_size)
-        frame_samples = enc_ctx->frame_size;
-
     if (enc_ctx->bit_rate && enc_ctx->bit_rate < 1000 &&
         enc_ctx->codec_id != AV_CODEC_ID_CODEC2 /* don't complain about 700 bit/s modes */)
         av_log(e, AV_LOG_WARNING, "The bitrate parameter is set too low."
                                     " It takes bits/s as argument, not kbits/s\n");
+
+    return 0;
+}
+
+int enc_open(void *opaque, const AVFrame *frame)
+{
+    OutputStream *ost = opaque;
+    Encoder              *e = ost->enc;
+    EncoderPriv         *ep = ep_from_enc(e);
+    AVCodecContext *enc_ctx = e->enc_ctx;
+    OutputFile          *of = ost->file;
+    int frame_samples = 0;
+    int ret;
+
+    if (ep->opened)
+        return 0;
+
+    ret = enc_reopen(opaque, frame);
+    if (ret < 0)
+        return ret;
+
+    if (enc_ctx->frame_size)
+        frame_samples = enc_ctx->frame_size;
 
     ret = of_stream_init(of, ost, enc_ctx);
     if (ret < 0)
