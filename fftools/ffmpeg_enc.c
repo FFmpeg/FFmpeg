@@ -859,6 +859,19 @@ fail:
     return AVERROR(ENOMEM);
 }
 
+static int flush_encoder(OutputStream *ost, EncoderThread *et)
+{
+    Encoder *e = ost->enc;
+    int ret;
+
+    ret = frame_encode(ost, NULL, et->pkt);
+    if (ret < 0 && ret != AVERROR_EOF)
+        av_log(e, AV_LOG_ERROR, "Error flushing encoder: %s\n",
+            av_err2str(ret));
+
+    return ret;
+}
+
 int encoder_thread(void *arg)
 {
     OutputStream *ost = arg;
@@ -924,12 +937,8 @@ int encoder_thread(void *arg)
     }
 
     // flush the encoder
-    if (ret == 0 || ret == AVERROR_EOF) {
-        ret = frame_encode(ost, NULL, et.pkt);
-        if (ret < 0 && ret != AVERROR_EOF)
-            av_log(e, AV_LOG_ERROR, "Error flushing encoder: %s\n",
-                   av_err2str(ret));
-    }
+    if (ret == 0 || ret == AVERROR_EOF)
+        ret = flush_encoder(ost, &et);
 
     // EOF is normal thread termination
     if (ret == AVERROR_EOF)
