@@ -205,6 +205,8 @@ typedef struct HEVCVPS {
      */
     int nb_layers;
 
+    uint16_t scalability_mask_flag;
+
     // LayerIdxInVps[nuh_layer_id], i.e. a mapping of nuh_layer_id to VPS layer
     // indices. Valid values are between 0 and HEVC_VPS_MAX_LAYERS. Entries for
     // unmapped values of nuh_layer_id are set to -1.

@@ -162,5 +162,12 @@ enum {
     HEVC_MAX_PALETTE_PREDICTOR_SIZE = 128,
 };
 
+enum HEVCScalabilityMask {
+    HEVC_SCALABILITY_DEPTH      = 1 << (15 - 0),
+    HEVC_SCALABILITY_MULTIVIEW  = 1 << (15 - 1),
+    HEVC_SCALABILITY_SPATIAL    = 1 << (15 - 2),
+    HEVC_SCALABILITY_AUXILIARY  = 1 << (15 - 3),
+    HEVC_SCALABILITY_MASK_MAX   = 0xFFFF,
+};
 
 #endif /* AVCODEC_HEVC_HEVC_H */

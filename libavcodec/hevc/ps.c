@@ -450,14 +450,6 @@ static void hevc_vps_free(AVRefStructOpaque opaque, void *obj)
     av_freep(&vps->data);
 }
 
-enum ScalabilityMask {
-    HEVC_SCALABILITY_DEPTH      = 0,
-    HEVC_SCALABILITY_MULTIVIEW  = 1,
-    HEVC_SCALABILITY_SPATIAL    = 2,
-    HEVC_SCALABILITY_AUXILIARY  = 3,
-    HEVC_SCALABILITY_MASK_MAX   = 15,
-};
-
 enum DependencyType {
     HEVC_DEP_TYPE_SAMPLE = 0,
     HEVC_DEP_TYPE_MV     = 1,
@@ -532,17 +524,22 @@ static int decode_vps_ext(GetBitContext *gb, AVCodecContext *avctx, HEVCVPS *vps
         return AVERROR_INVALIDDATA;
 
     splitting_flag = get_bits1(gb);
-    num_scalability_types = 0;
-    for (int i = 0; i <= HEVC_SCALABILITY_MASK_MAX; i++) {
-        int scalability_mask_flag = get_bits1(gb);
-        if (scalability_mask_flag && (i != HEVC_SCALABILITY_MULTIVIEW)) {
-            av_log(avctx, AV_LOG_ERROR, "Scalability type %d not supported\n", i);
-            return AVERROR_PATCHWELCOME;
-        }
-        num_scalability_types += scalability_mask_flag;
-    }
-    if (num_scalability_types != 1)
+    vps->scalability_mask_flag = get_bits(gb, 16);
+    num_scalability_types = av_popcount(vps->scalability_mask_flag);
+    if (!num_scalability_types) {
+        av_log(avctx, AV_LOG_ERROR, "Missing scalability mask\n");
         return AVERROR_INVALIDDATA;
+    } else if (num_scalability_types > 1) {
+        av_log(avctx, AV_LOG_ERROR, "Scalability number %d not supported\n",
+               num_scalability_types);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    if (!(vps->scalability_mask_flag & HEVC_SCALABILITY_MULTIVIEW)) {
+        av_log(avctx, AV_LOG_ERROR, "Scalability type %d not supported\n",
+               15 - ff_ctz(vps->scalability_mask_flag));
+        return AVERROR_PATCHWELCOME;
+    }
 
     if (!splitting_flag)
         dimension_id_len = get_bits(gb, 3) + 1;
