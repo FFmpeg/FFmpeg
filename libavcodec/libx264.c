@@ -767,6 +767,19 @@ static void X264_flush(AVCodecContext *avctx)
         x4->sei_size = -x4->sei_size;
 }
 
+static av_cold int X264_reconf(AVCodecContext *avctx, AVDictionary **dict)
+{
+    int ret;
+
+    ret = ff_encode_reconf_parse_dict(avctx, dict);
+    if (ret < 0)
+        return ret;
+
+    reconfig_encoder(avctx);
+
+    return 0;
+}
+
 static av_cold int X264_close(AVCodecContext *avctx)
 {
     X264Context *x4 = avctx->priv_data;
@@ -1502,6 +1515,7 @@ static const enum AVPixelFormat pix_fmts_8bit_rgb[] = {
 
 #define OFFSET(x) offsetof(X264Context, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+#define VER VE | AV_OPT_FLAG_RUNTIME_PARAM
 static const AVOption options[] = {
     { "preset",        "Set the encoding preset (cf. x264 --fullhelp)",   OFFSET(preset),        AV_OPT_TYPE_STRING, { .str = "medium" }, 0, 0, VE},
     { "tune",          "Tune the encoding params (cf. x264 --fullhelp)",  OFFSET(tune),          AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
@@ -1512,9 +1526,9 @@ static const AVOption options[] = {
     {"wpredp", "Weighted prediction for P-frames", OFFSET(wpredp), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
     {"a53cc",          "Use A53 Closed Captions (if available)",          OFFSET(a53_cc),        AV_OPT_TYPE_BOOL,   {.i64 = 1}, 0, 1, VE},
     {"x264opts", "x264 options", OFFSET(x264opts), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
-    { "crf",           "Select the quality for constant quality mode",    OFFSET(crf),           AV_OPT_TYPE_FLOAT,  {.dbl = -1 }, -1, FLT_MAX, VE },
-    { "crf_max",       "In CRF mode, prevents VBV from lowering quality beyond this point.",OFFSET(crf_max), AV_OPT_TYPE_FLOAT, {.dbl = -1 }, -1, FLT_MAX, VE },
-    { "qp",            "Constant quantization parameter rate control method",OFFSET(cqp),        AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, INT_MAX, VE },
+    { "crf",           "Select the quality for constant quality mode",    OFFSET(crf),           AV_OPT_TYPE_FLOAT,  {.dbl = -1 }, -1, FLT_MAX, VER },
+    { "crf_max",       "In CRF mode, prevents VBV from lowering quality beyond this point.",OFFSET(crf_max), AV_OPT_TYPE_FLOAT, {.dbl = -1 }, -1, FLT_MAX, VER },
+    { "qp",            "Constant quantization parameter rate control method",OFFSET(cqp),        AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, INT_MAX, VER },
     { "aq-mode",       "AQ method",                                       OFFSET(aq_mode),       AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, INT_MAX, VE, .unit = "aq_mode"},
     { "none",          NULL,                              0, AV_OPT_TYPE_CONST, {.i64 = X264_AQ_NONE},         INT_MIN, INT_MAX, VE, .unit = "aq_mode" },
     { "variance",      "Variance AQ (complexity mask)",   0, AV_OPT_TYPE_CONST, {.i64 = X264_AQ_VARIANCE},     INT_MIN, INT_MAX, VE, .unit = "aq_mode" },
@@ -1584,7 +1598,10 @@ static const AVOption options[] = {
 };
 
 static const FFCodecDefault x264_defaults[] = {
-    { "b",                "0" },
+    { "sar",              "0", AV_OPT_FLAG_RUNTIME_PARAM },
+    { "b",                "0", AV_OPT_FLAG_RUNTIME_PARAM },
+    { "bufsize",          "0", AV_OPT_FLAG_RUNTIME_PARAM },
+    { "maxrate",          "0", AV_OPT_FLAG_RUNTIME_PARAM },
     { "bf",               "-1" },
     { "flags2",           "0" },
     { "g",                "-1" },
@@ -1626,6 +1643,7 @@ const FFCodec ff_libx264_encoder = {
                         AV_CODEC_CAP_OTHER_THREADS |
                         AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE |
                         AV_CODEC_CAP_ENCODER_FLUSH |
+                        AV_CODEC_CAP_RECONF |
                         AV_CODEC_CAP_ENCODER_RECON_FRAME,
     .p.priv_class     = &x264_class,
     .p.wrapper_name   = "libx264",
@@ -1633,6 +1651,7 @@ const FFCodec ff_libx264_encoder = {
     .init             = X264_init,
     FF_CODEC_ENCODE_CB(X264_frame),
     .flush            = X264_flush,
+    .reconf           = X264_reconf,
     .close            = X264_close,
     .defaults         = x264_defaults,
     CODEC_PIXFMTS_ARRAY(pix_fmts_all),
