@@ -730,7 +730,7 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
 
 AVBufferRef *av_frame_get_plane_buffer(const AVFrame *frame, int plane)
 {
-    uint8_t *data;
+    uintptr_t data;
     int planes;
 
     if (frame->nb_samples) {
@@ -743,16 +743,20 @@ AVBufferRef *av_frame_get_plane_buffer(const AVFrame *frame, int plane)
 
     if (plane < 0 || plane >= planes || !frame->extended_data[plane])
         return NULL;
-    data = frame->extended_data[plane];
+    data = (uintptr_t)frame->extended_data[plane];
 
     for (int i = 0; i < FF_ARRAY_ELEMS(frame->buf) && frame->buf[i]; i++) {
         AVBufferRef *buf = frame->buf[i];
-        if (data >= buf->data && data < buf->data + buf->size)
+        uintptr_t buf_begin = (uintptr_t)buf->data;
+
+        if (data >= buf_begin && data < buf_begin + buf->size)
             return buf;
     }
     for (int i = 0; i < frame->nb_extended_buf; i++) {
         AVBufferRef *buf = frame->extended_buf[i];
-        if (data >= buf->data && data < buf->data + buf->size)
+        uintptr_t buf_begin = (uintptr_t)buf->data;
+
+        if (data >= buf_begin && data < buf_begin + buf->size)
             return buf;
     }
     return NULL;
