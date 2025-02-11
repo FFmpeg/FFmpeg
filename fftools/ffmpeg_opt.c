@@ -1831,6 +1831,11 @@ const OptionDef options[] = {
         { .off = OFFSET(mux_stats_fmt)      },
         "format of the stats written with -stats_mux_pre" },
 
+    { "reinit_opts",        OPT_TYPE_STRING, OPT_PERSTREAM | OPT_EXPERT | OPT_OUTPUT,
+        { .off = OFFSET(enc_reinit_opts) },
+        "List of encoder options to use to reinitialize the encoder at given timestamps",
+        "pts1|video_size=size:g=12,pts2|video_size=size..." },
+
     /* video options */
     { "vframes",                    OPT_TYPE_FUNC,   OPT_VIDEO | OPT_FUNC_ARG | OPT_PERFILE | OPT_OUTPUT | OPT_EXPERT | OPT_HAS_CANON,
         { .func_arg = opt_video_frames },

@@ -236,6 +236,7 @@ typedef struct OptionsContext {
     SpecifierOptList enc_time_bases;
     SpecifierOptList autoscale;
     SpecifierOptList bits_per_raw_sample;
+    SpecifierOptList enc_reinit_opts;
     SpecifierOptList enc_stats_pre;
     SpecifierOptList enc_stats_post;
     SpecifierOptList mux_stats;
@@ -346,6 +347,8 @@ typedef struct OutputFilterOptions {
 
     AVFrameSideData   **side_data;
     int                 nb_side_data;
+
+    const char *reinit_opts;
 
     // for simple filtergraphs only, view specifier passed
     // along to the decoder
@@ -607,6 +610,11 @@ typedef struct Encoder {
 
     AVCodecContext         *enc_ctx;
 
+    // initial encoder options
+    AVDictionary           *encoder_opts;
+    // pts|key=value list of options to reinitialize encoder
+    char                   *reinit_opts;
+
     uint32_t                codec_tag;
     int                     flags;
     int                     flags2;
@@ -716,6 +724,8 @@ typedef struct FrameData {
 
     AVFrameSideData   **side_data;
     int                 nb_side_data;
+
+    AVDictionary *reinit_opts;
 } FrameData;
 
 extern InputFile   **input_files;

@@ -31,6 +31,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
 #include "libavutil/time.h"
@@ -49,6 +50,7 @@ typedef struct EncoderPriv {
 
     // number of packets received from the encoder
     uint64_t packets_encoded;
+    int got_first_packet;
 
     int opened;
     int attach_par;
@@ -78,6 +80,7 @@ void enc_free(Encoder **penc)
     if (enc->enc_ctx)
         av_freep(&enc->enc_ctx->stats_in);
     avcodec_free_context(&enc->enc_ctx);
+    av_dict_free(&enc->encoder_opts);
 
     av_freep(penc);
 }
@@ -95,6 +98,29 @@ static const AVClass enc_class = {
     .parent_log_context_offset = offsetof(EncoderPriv, log_parent),
     .item_name                 = enc_item_name,
 };
+
+static int enc_realloc(Encoder *enc, const AVCodec *codec)
+{
+    EncoderPriv *ep = ep_from_enc(enc);
+    char *stats_in = NULL;
+
+    if (enc->enc_ctx)
+        stats_in = enc->enc_ctx->stats_in;
+    avcodec_free_context(&enc->enc_ctx);
+
+    ep->opened = 0;
+    ep->got_first_packet = 0;
+
+    enc->enc_ctx = avcodec_alloc_context3(codec);
+    if (!enc->enc_ctx) {
+        av_freep(&stats_in);
+        return AVERROR(ENOMEM);
+    }
+
+    enc->enc_ctx->stats_in = stats_in;
+
+    return 0;
+}
 
 int enc_alloc(Encoder **penc, const AVCodec *codec,
               Scheduler *sch, unsigned sch_idx, void *log_parent)
@@ -181,7 +207,26 @@ static int hw_device_setup_for_encode(Encoder *e, AVCodecContext *enc_ctx,
     return 0;
 }
 
-static int enc_reopen(void *opaque, const AVFrame *frame)
+static int apply_enc_options(Encoder *e, AVDictionary **opts)
+{
+    AVCodecContext *enc_ctx = e->enc_ctx;
+
+    int ret = av_opt_set_dict2(enc_ctx, opts, AV_OPT_SEARCH_CHILDREN);
+    if (ret < 0) {
+        av_log(e, AV_LOG_ERROR, "Error applying encoder options: %s\n",
+               av_err2str(ret));
+        return ret;
+    }
+
+    ret = check_avoptions(*opts);
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
+static int enc_reopen(void *opaque, const AVFrame *frame,
+                      AVDictionary **extra_encoder_opts)
 {
     OutputStream *ost = opaque;
     InputStream *ist = ost->ist;
@@ -190,8 +235,31 @@ static int enc_reopen(void *opaque, const AVFrame *frame)
     AVCodecContext *enc_ctx = e->enc_ctx;
     Decoder            *dec = NULL;
     const AVCodec      *enc = enc_ctx->codec;
+    AVDictionary       *encoder_opts = NULL;
     FrameData *fd;
+    int threads_manual;
     int ret;
+
+    ret = av_dict_copy(&encoder_opts, ost->enc->encoder_opts, 0);
+    if (ret < 0)
+        return ret;
+
+    threads_manual = !!av_dict_get(encoder_opts, "threads", NULL, 0);
+    ret = apply_enc_options(e, &encoder_opts);
+    av_dict_free(&encoder_opts);
+    if (ret < 0)
+        return ret;
+
+    if (extra_encoder_opts) {
+        threads_manual |= !!av_dict_get(*extra_encoder_opts, "threads", NULL, 0);
+        ret = apply_enc_options(e, extra_encoder_opts);
+        if (ret < 0)
+            return ret;
+    }
+
+    // default to automatic thread count
+    if (!threads_manual)
+        enc_ctx->thread_count = 0;
 
     // frame is always non-NULL for audio and video
     av_assert0(frame || (enc->type != AVMEDIA_TYPE_VIDEO && enc->type != AVMEDIA_TYPE_AUDIO));
@@ -366,7 +434,7 @@ int enc_open(void *opaque, const AVFrame *frame)
     if (ep->opened)
         return 0;
 
-    ret = enc_reopen(opaque, frame);
+    ret = enc_reopen(opaque, frame, NULL);
     if (ret < 0)
         return ret;
 
@@ -698,9 +766,19 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame,
             return AVERROR(ENOMEM);
         fd->wallclock[LATENCY_PROBE_ENC_POST] = av_gettime_relative();
 
+        // attach extradata to first packet if the encoder was reinitialized
+        if (!ep->got_first_packet && ep->packets_encoded && enc->extradata_size) {
+            uint8_t *extradata = av_packet_new_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                                         enc->extradata_size);
+            if (!extradata)
+                return AVERROR(ENOMEM);
+            memcpy(extradata, enc->extradata, enc->extradata_size);
+            ep->got_first_packet = 1;
+        }
         // attach stream parameters to first packet if requested
         avcodec_parameters_free(&fd->par_enc);
-        if (ep->attach_par && !ep->packets_encoded) {
+        if (!ep->packets_encoded) {
+            if (ep->attach_par) {
             fd->par_enc = avcodec_parameters_alloc();
             if (!fd->par_enc)
                 return AVERROR(ENOMEM);
@@ -708,6 +786,8 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame,
             ret = avcodec_parameters_from_context(fd->par_enc, enc);
             if (ret < 0)
                 return ret;
+            }
+            ep->got_first_packet = 1;
         }
 
         pkt->flags |= AV_PKT_FLAG_TRUSTED;
@@ -878,12 +958,61 @@ static int flush_encoder(OutputStream *ost, EncoderThread *et)
     return ret;
 }
 
+static int reinit_encoder(OutputStream *ost, EncoderThread *et)
+{
+    Encoder     *e = ost->enc;
+    AVDictionary *copy = NULL;
+    const FrameData *fd = frame_data_c(et->frame);
+    int force_reinit, ret = AVERROR_BUG;
+
+    ret = av_dict_copy(&copy, fd->reinit_opts, 0);
+    if (ret < 0)
+        return ret;
+
+    force_reinit = !!av_dict_get(copy, "force_reinit", NULL, 0);
+    if (force_reinit)
+        av_dict_set(&copy, "force_reinit", NULL, 0);
+    // Lets try a graceful reconfiguration first
+    else if (e->enc_ctx->codec->capabilities & AV_CODEC_CAP_RECONF) {
+        ret = avcodec_encode_reconfigure(e->enc_ctx, &copy);
+        if (!ret)
+            goto end;
+
+        ret = av_dict_copy(&copy, fd->reinit_opts, AV_DICT_DONT_OVERWRITE);
+        if (ret < 0)
+            goto end;
+        av_dict_set(&copy, "force_reinit", NULL, 0);
+
+        av_log(e, AV_LOG_INFO, "Could not reconfigure the encoder."
+                               " Trying to restart it instead\n");
+    }
+
+    // Go ahead and do a full restart of the encoder
+    ret = flush_encoder(ost, et);
+    if (ret < 0 && ret != AVERROR_EOF)
+        goto end;
+
+    ret = enc_realloc(e, e->enc_ctx->codec);
+    if (ret < 0)
+        goto end;
+    av_log(e, AV_LOG_DEBUG, "Restarting encoder\n");
+    ret = enc_reopen(ost, et->frame, &copy);
+    if (ret < 0)
+        goto end;
+
+    ret = 0;
+end:
+    av_dict_free(&copy);
+    return ret;
+}
+
 int encoder_thread(void *arg)
 {
     OutputStream *ost = arg;
     Encoder        *e = ost->enc;
     EncoderPriv   *ep = ep_from_enc(e);
     EncoderThread et;
+    const FrameData *fd;
     int ret = 0, input_status = 0;
     int name_set = 0;
 
@@ -925,6 +1054,16 @@ int encoder_thread(void *arg)
         if (!name_set) {
             enc_thread_set_name(ost);
             name_set = 1;
+        }
+
+        fd = frame_data_c(et.frame);
+        if (fd && fd->reinit_opts) {
+            ret = reinit_encoder(ost, &et);
+            if (ret < 0) {
+                av_log(e, AV_LOG_ERROR, "Error reconfiguring or restarting encoder: %s\n",
+                       av_err2str(ret));
+                goto finish;
+            }
         }
 
         ret = frame_encode(ost, et.frame, et.pkt);

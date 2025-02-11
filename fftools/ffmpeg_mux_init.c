@@ -896,6 +896,7 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
                             0 : mux->of.start_time,
         .vs               = vs,
         .nb_threads       = -1,
+        .reinit_opts      = ost->enc->reinit_opts,
 
         .flags = OFILTER_FLAG_DISABLE_CONVERT * !!keep_pix_fmt |
                  OFILTER_FLAG_AUTOSCALE       * !!autoscale    |
@@ -1255,7 +1256,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         AVIOContext *s = NULL;
         char *buf = NULL, *arg = NULL;
         const char *enc_stats_pre = NULL, *enc_stats_post = NULL, *mux_stats = NULL;
-        const char *enc_time_base = NULL, *preset = NULL;
+        const char *enc_time_base = NULL, *enc_reinit_opts = NULL, *preset = NULL;
 
         ret = filter_codec_opts(o->g->codec_opts, enc->id,
                                 oc, st, enc, &encoder_opts,
@@ -1293,6 +1294,16 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             av_log(ost, AV_LOG_FATAL,
                    "Preset %s specified, but could not be opened.\n", preset);
             goto fail;
+        }
+
+        opt_match_per_stream_str(ost, &o->enc_reinit_opts, oc, st, &enc_reinit_opts);
+        if (enc_reinit_opts &&
+            (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
+            ost->enc->reinit_opts = av_strdup(enc_reinit_opts);
+            if (!ost->enc->reinit_opts) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
         }
 
         opt_match_per_stream_str(ost, &o->enc_stats_pre, oc, st, &enc_stats_pre);
@@ -1356,6 +1367,9 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 
         threads_manual = !!av_dict_get(encoder_opts, "threads", NULL, 0);
 
+        ret = av_dict_copy(&ost->enc->encoder_opts, encoder_opts, 0);
+        if (ret < 0)
+            goto fail;
         ret = av_opt_set_dict2(ost->enc->enc_ctx, &encoder_opts, AV_OPT_SEARCH_CHILDREN);
         if (ret < 0) {
             av_log(ost, AV_LOG_ERROR, "Error applying encoder options: %s\n",
