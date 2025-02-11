@@ -647,10 +647,22 @@ static const char *ofilter_item_name(void *obj)
     return ofp->log_name;
 }
 
+static const AVOption ofilter_options[] = {
+    {"video_size", "set video size", offsetof(OutputFilterPriv, width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, INT_MAX },
+    {"pixel_format", "set pixel format", offsetof(OutputFilterPriv, format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_NONE}, -1, INT_MAX },
+    {"colorspace", "color space", offsetof(OutputFilterPriv, color_space), AV_OPT_TYPE_INT, {.i64 = AVCOL_SPC_UNSPECIFIED }, 0, INT_MAX },
+    {"color_range", "color range", offsetof(OutputFilterPriv, color_range), AV_OPT_TYPE_INT, {.i64 = AVCOL_RANGE_UNSPECIFIED }, 0, INT_MAX },
+    {"alpha_mode", "color range", offsetof(OutputFilterPriv, alpha_mode), AV_OPT_TYPE_INT, {.i64 = AVALPHA_MODE_UNSPECIFIED }, 0, INT_MAX },
+    {"ar", "set audio sampling rate (in Hz)", offsetof(OutputFilterPriv, sample_rate), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX },
+    {"ch_layout", NULL, offsetof(OutputFilterPriv, ch_layout), AV_OPT_TYPE_CHLAYOUT, {.str = NULL }, 0, 0 },
+    { NULL },
+};
+
 static const AVClass ofilter_class = {
     .class_name                = "OutputFilter",
     .version                   = LIBAVUTIL_VERSION_INT,
     .item_name                 = ofilter_item_name,
+    .option                    = ofilter_options,
     .parent_log_context_offset = offsetof(OutputFilterPriv, log_parent),
     .category                  = AV_CLASS_CATEGORY_FILTER,
 };
@@ -669,10 +681,7 @@ static OutputFilter *ofilter_alloc(FilterGraph *fg, enum AVMediaType type)
     ofp->log_parent   = fg;
     ofilter->graph    = fg;
     ofilter->type     = type;
-    ofp->format       = -1;
-    ofp->color_space  = AVCOL_SPC_UNSPECIFIED;
-    ofp->color_range  = AVCOL_RANGE_UNSPECIFIED;
-    ofp->alpha_mode   = AVALPHA_MODE_UNSPECIFIED;
+    av_opt_set_defaults(ofp);
     ofilter->index    = fg->nb_outputs - 1;
 
     snprintf(ofp->log_name, sizeof(ofp->log_name), "%co%d",
