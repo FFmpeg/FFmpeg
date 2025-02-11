@@ -99,15 +99,16 @@ endconst
 
 // convert rgb to 16-bit y, u, or v
 // uses v3 and v4
-.macro rgbconv16 dst, b, g, r, bc, gc, rc
+
+.macro rgbconv16 dst, b, g, r, bc, gc, rc, shr_bits
         smull           v3.4s, \b\().4h, \bc
         smlal           v3.4s, \g\().4h, \gc
         smlal           v3.4s, \r\().4h, \rc
         smull2          v4.4s, \b\().8h, \bc
         smlal2          v4.4s, \g\().8h, \gc
         smlal2          v4.4s, \r\().8h, \rc        // v3:v4 = b * bc + g * gc + r * rc (32-bit)
-        shrn            \dst\().4h, v3.4s, #7
-        shrn2           \dst\().8h, v4.4s, #7       // dst = b * bc + g * gc + r * rc (16-bit)
+        shrn            \dst\().4h, v3.4s, \shr_bits
+        shrn2           \dst\().8h, v4.4s, \shr_bits       // dst = b * bc + g * gc + r * rc (16-bit)
 .endm
 
 // void ff_rgb24toyv12_neon(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
@@ -171,8 +172,8 @@ function ff_rgb24toyv12_neon, export=1
         uxtl2           v21.8h, v28.16b             // v21 = R12
 
         // calculate Y values for first line
-        rgbconv16       v24, v16, v17, v18, BY, GY, RY // v24 = Y11
-        rgbconv16       v25, v19, v20, v21, BY, GY, RY // v25 = Y12
+        rgbconv16       v24, v16, v17, v18, BY, GY, RY, #7 // v24 = Y11
+        rgbconv16       v25, v19, v20, v21, BY, GY, RY, #7 // v25 = Y12
 
         // load second line
         ld3             {v26.16b, v27.16b, v28.16b}, [x10], #48
@@ -191,25 +192,22 @@ function ff_rgb24toyv12_neon, export=1
         uxtl2           v21.8h, v28.16b             // v21 = R22
 
         // calculate Y values for second line
-        rgbconv16       v26, v16, v17, v18, BY, GY, RY // v26 = Y21
-        rgbconv16       v27, v19, v20, v21, BY, GY, RY // v27 = Y22
+        rgbconv16       v26, v16, v17, v18, BY, GY, RY, #7 // v26 = Y21
+        rgbconv16       v27, v19, v20, v21, BY, GY, RY, #7 // v27 = Y22
 
         // pairwise add rgb values to calculate average
         addp            v16.8h, v16.8h, v19.8h
         addp            v17.8h, v17.8h, v20.8h
         addp            v18.8h, v18.8h, v21.8h
 
-        // calculate average
+        // calculate sum of r, g, b components in 2x2 blocks
         add             v16.8h, v16.8h, v5.8h
         add             v17.8h, v17.8h, v6.8h
         add             v18.8h, v18.8h, v7.8h
-        ushr            v16.8h, v16.8h, #2
-        ushr            v17.8h, v17.8h, #2
-        ushr            v18.8h, v18.8h, #2
 
         // calculate U and V values
-        rgbconv16       v28, v16, v17, v18, BU, GU, RU // v28 = U
-        rgbconv16       v29, v16, v17, v18, BV, GV, RV // v29 = V
+        rgbconv16       v28, v16, v17, v18, BU, GU, RU, #9 // v28 = U
+        rgbconv16       v29, v16, v17, v18, BV, GV, RV, #9 // v29 = V
 
         // add offsets and narrow all values
         addhn           v24.8b, v24.8h, Y_OFFSET.8h
