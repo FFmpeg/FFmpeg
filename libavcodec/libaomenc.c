@@ -74,7 +74,10 @@ typedef struct AOMEncoderContext {
     AVBSFContext *bsf;
     DOVIContext dovi;
     struct aom_codec_ctx encoder;
+    struct aom_codec_enc_cfg enccfg;
     struct aom_image rawimg;
+    aom_codec_flags_t flags;
+    aom_img_fmt_t img_fmt;
     struct aom_fixed_buf twopass_stats;
     unsigned twopass_stats_size;
     struct FrameListData *coded_frame_list;
@@ -755,7 +758,6 @@ static int choose_tiling(AVCodecContext *avctx,
     return 0;
 }
 
-
 static const struct {
     int aom_enum;
     unsigned offset;
@@ -795,28 +797,22 @@ static const struct {
     { AV1E_SET_ENABLE_SMOOTH_INTERINTRA,  OFFSET(enable_smooth_interintra) },
 };
 
-static av_cold int aom_init(AVCodecContext *avctx,
-                            const struct aom_codec_iface *iface)
+static av_cold int aom_config(AVCodecContext *avctx,
+                              const struct aom_codec_iface *iface)
 {
     AOMContext *ctx = avctx->priv_data;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
-    struct aom_codec_enc_cfg enccfg = { 0 };
-    aom_codec_flags_t flags =
-        (avctx->flags & AV_CODEC_FLAG_PSNR) ? AOM_CODEC_USE_PSNR : 0;
     int res;
-    aom_img_fmt_t img_fmt;
     aom_codec_caps_t codec_caps = aom_codec_get_caps(iface);
 
-    av_log(avctx, AV_LOG_INFO, "%s\n", aom_codec_version_str());
-    av_log(avctx, AV_LOG_VERBOSE, "%s\n", aom_codec_build_config());
+    ctx->flags = (avctx->flags & AV_CODEC_FLAG_PSNR) ? AOM_CODEC_USE_PSNR : 0;
 
-    if ((res = aom_codec_enc_config_default(iface, &enccfg, ctx->usage)) != AOM_CODEC_OK) {
+    if ((res = aom_codec_enc_config_default(iface, &ctx->enccfg, ctx->usage)) != AOM_CODEC_OK) {
         av_log(avctx, AV_LOG_ERROR, "Failed to get config: %s\n",
                aom_codec_err_to_string(res));
         return AVERROR(EINVAL);
     }
 
-    if (set_pix_fmt(avctx, codec_caps, &enccfg, &flags, &img_fmt))
+    if (set_pix_fmt(avctx, codec_caps, &ctx->enccfg, &ctx->flags, &ctx->img_fmt))
         return AVERROR(EINVAL);
 
     if(!avctx->bit_rate)
@@ -825,39 +821,30 @@ static av_cold int aom_init(AVCodecContext *avctx,
             return AVERROR(EINVAL);
         }
 
-    dump_enc_cfg(avctx, &enccfg, AV_LOG_DEBUG);
-
-    enccfg.g_w            = avctx->width;
-    enccfg.g_h            = avctx->height;
-    enccfg.g_timebase.num = avctx->time_base.num;
-    enccfg.g_timebase.den = avctx->time_base.den;
-    enccfg.g_threads      =
+    ctx->enccfg.g_w            = avctx->width;
+    ctx->enccfg.g_h            = avctx->height;
+    ctx->enccfg.g_timebase.num = avctx->time_base.num;
+    ctx->enccfg.g_timebase.den = avctx->time_base.den;
+    ctx->enccfg.g_threads      =
         FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 64);
 
     if (ctx->lag_in_frames >= 0)
-        enccfg.g_lag_in_frames = ctx->lag_in_frames;
-
-    if (avctx->flags & AV_CODEC_FLAG_PASS1)
-        enccfg.g_pass = AOM_RC_FIRST_PASS;
-    else if (avctx->flags & AV_CODEC_FLAG_PASS2)
-        enccfg.g_pass = AOM_RC_LAST_PASS;
-    else
-        enccfg.g_pass = AOM_RC_ONE_PASS;
+        ctx->enccfg.g_lag_in_frames = ctx->lag_in_frames;
 
     if (avctx->rc_min_rate == avctx->rc_max_rate &&
         avctx->rc_min_rate == avctx->bit_rate && avctx->bit_rate) {
-        enccfg.rc_end_usage = AOM_CBR;
+        ctx->enccfg.rc_end_usage = AOM_CBR;
     } else if (ctx->crf >= 0) {
-        enccfg.rc_end_usage = AOM_CQ;
+        ctx->enccfg.rc_end_usage = AOM_CQ;
         if (!avctx->bit_rate)
-            enccfg.rc_end_usage = AOM_Q;
+            ctx->enccfg.rc_end_usage = AOM_Q;
     }
 
     if (avctx->bit_rate) {
-        enccfg.rc_target_bitrate = av_rescale_rnd(avctx->bit_rate, 1, 1000,
+        ctx->enccfg.rc_target_bitrate = av_rescale_rnd(avctx->bit_rate, 1, 1000,
                                                   AV_ROUND_NEAR_INF);
-    } else if (enccfg.rc_end_usage != AOM_Q) {
-        enccfg.rc_end_usage = AOM_Q;
+    } else if (ctx->enccfg.rc_end_usage != AOM_Q) {
+        ctx->enccfg.rc_end_usage = AOM_Q;
         ctx->crf = 32;
         av_log(avctx, AV_LOG_WARNING,
                "Neither bitrate nor constrained quality specified, using default CRF of %d\n",
@@ -865,95 +852,65 @@ static av_cold int aom_init(AVCodecContext *avctx,
     }
 
     if (avctx->qmin >= 0)
-        enccfg.rc_min_quantizer = avctx->qmin;
+        ctx->enccfg.rc_min_quantizer = avctx->qmin;
     if (avctx->qmax >= 0) {
-        enccfg.rc_max_quantizer = avctx->qmax;
+        ctx->enccfg.rc_max_quantizer = avctx->qmax;
     } else if (!ctx->crf) {
-        enccfg.rc_max_quantizer = 0;
+        ctx->enccfg.rc_max_quantizer = 0;
     }
 
-    if (enccfg.rc_end_usage == AOM_CQ || enccfg.rc_end_usage == AOM_Q) {
-        if (ctx->crf < enccfg.rc_min_quantizer || ctx->crf > enccfg.rc_max_quantizer) {
+    if (ctx->enccfg.rc_end_usage == AOM_CQ || ctx->enccfg.rc_end_usage == AOM_Q) {
+        if (ctx->crf < ctx->enccfg.rc_min_quantizer || ctx->crf > ctx->enccfg.rc_max_quantizer) {
             av_log(avctx, AV_LOG_ERROR,
                    "CQ level %d must be between minimum and maximum quantizer value (%d-%d)\n",
-                   ctx->crf, enccfg.rc_min_quantizer, enccfg.rc_max_quantizer);
+                   ctx->crf, ctx->enccfg.rc_min_quantizer, ctx->enccfg.rc_max_quantizer);
             return AVERROR(EINVAL);
         }
     }
 
-    enccfg.rc_dropframe_thresh = ctx->drop_threshold;
+    ctx->enccfg.rc_dropframe_thresh = ctx->drop_threshold;
 
     // 0-100 (0 => CBR, 100 => VBR)
-    enccfg.rc_2pass_vbr_bias_pct       = round(avctx->qcompress * 100);
+    ctx->enccfg.rc_2pass_vbr_bias_pct       = round(avctx->qcompress * 100);
     if (ctx->minsection_pct >= 0)
-        enccfg.rc_2pass_vbr_minsection_pct = ctx->minsection_pct;
+        ctx->enccfg.rc_2pass_vbr_minsection_pct = ctx->minsection_pct;
     else if (avctx->bit_rate)
-        enccfg.rc_2pass_vbr_minsection_pct =
+        ctx->enccfg.rc_2pass_vbr_minsection_pct =
             avctx->rc_min_rate * 100LL / avctx->bit_rate;
     if (ctx->maxsection_pct >= 0)
-        enccfg.rc_2pass_vbr_maxsection_pct = ctx->maxsection_pct;
+        ctx->enccfg.rc_2pass_vbr_maxsection_pct = ctx->maxsection_pct;
     else if (avctx->rc_max_rate)
-        enccfg.rc_2pass_vbr_maxsection_pct =
+        ctx->enccfg.rc_2pass_vbr_maxsection_pct =
             avctx->rc_max_rate * 100LL / avctx->bit_rate;
 
     if (avctx->rc_buffer_size)
-        enccfg.rc_buf_sz =
+        ctx->enccfg.rc_buf_sz =
             avctx->rc_buffer_size * 1000LL / avctx->bit_rate;
     if (avctx->rc_initial_buffer_occupancy)
-        enccfg.rc_buf_initial_sz =
+        ctx->enccfg.rc_buf_initial_sz =
             avctx->rc_initial_buffer_occupancy * 1000LL / avctx->bit_rate;
-    enccfg.rc_buf_optimal_sz = enccfg.rc_buf_sz * 5 / 6;
+    ctx->enccfg.rc_buf_optimal_sz = ctx->enccfg.rc_buf_sz * 5 / 6;
 
     if (ctx->rc_undershoot_pct >= 0)
-        enccfg.rc_undershoot_pct = ctx->rc_undershoot_pct;
+        ctx->enccfg.rc_undershoot_pct = ctx->rc_undershoot_pct;
     if (ctx->rc_overshoot_pct >= 0)
-        enccfg.rc_overshoot_pct = ctx->rc_overshoot_pct;
+        ctx->enccfg.rc_overshoot_pct = ctx->rc_overshoot_pct;
 
     // _enc_init() will balk if kf_min_dist differs from max w/AOM_KF_AUTO
     if (avctx->keyint_min >= 0 && avctx->keyint_min == avctx->gop_size)
-        enccfg.kf_min_dist = avctx->keyint_min;
+        ctx->enccfg.kf_min_dist = avctx->keyint_min;
     if (avctx->gop_size >= 0)
-        enccfg.kf_max_dist = avctx->gop_size;
-
-    if (enccfg.g_pass == AOM_RC_FIRST_PASS)
-        enccfg.g_lag_in_frames = 0;
-    else if (enccfg.g_pass == AOM_RC_LAST_PASS) {
-        int decode_size, ret;
-
-        if (!avctx->stats_in) {
-            av_log(avctx, AV_LOG_ERROR, "No stats file for second pass\n");
-            return AVERROR_INVALIDDATA;
-        }
-
-        ctx->twopass_stats.sz = strlen(avctx->stats_in) * 3 / 4;
-        ret                   = av_reallocp(&ctx->twopass_stats.buf, ctx->twopass_stats.sz);
-        if (ret < 0) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Stat buffer alloc (%zu bytes) failed\n",
-                   ctx->twopass_stats.sz);
-            ctx->twopass_stats.sz = 0;
-            return ret;
-        }
-        decode_size = av_base64_decode(ctx->twopass_stats.buf, avctx->stats_in,
-                                       ctx->twopass_stats.sz);
-        if (decode_size < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Stat buffer decode failed\n");
-            return AVERROR_INVALIDDATA;
-        }
-
-        ctx->twopass_stats.sz      = decode_size;
-        enccfg.rc_twopass_stats_in = ctx->twopass_stats;
-    }
+        ctx->enccfg.kf_max_dist = avctx->gop_size;
 
     /* 0-3: For non-zero values the encoder increasingly optimizes for reduced
      * complexity playback on low powered devices at the expense of encode
      * quality. */
     if (avctx->profile != AV_PROFILE_UNKNOWN)
-        enccfg.g_profile = avctx->profile;
+        ctx->enccfg.g_profile = avctx->profile;
 
-    enccfg.g_error_resilient = ctx->error_resilient;
+    ctx->enccfg.g_error_resilient = ctx->error_resilient;
 
-    res = choose_tiling(avctx, &enccfg);
+    res = choose_tiling(avctx, &ctx->enccfg);
     if (res < 0)
         return res;
 
@@ -961,22 +918,22 @@ static av_cold int aom_init(AVCodecContext *avctx,
         // Set the maximum number of frames to 1. This will let libaom set
         // still_picture and reduced_still_picture_header to 1 in the Sequence
         // Header as required by AVIF still images.
-        enccfg.g_limit = 1;
+        ctx->enccfg.g_limit = 1;
         // Reduce memory usage for still images.
-        enccfg.g_lag_in_frames = 0;
+        ctx->enccfg.g_lag_in_frames = 0;
         // All frames will be key frames.
-        enccfg.kf_max_dist = 0;
-        enccfg.kf_mode = AOM_KF_DISABLED;
+        ctx->enccfg.kf_max_dist = 0;
+        ctx->enccfg.kf_mode = AOM_KF_DISABLED;
     }
 
-    /* Construct Encoder Context */
-    res = aom_codec_enc_init(&ctx->encoder, iface, &enccfg, flags);
-    if (res != AOM_CODEC_OK) {
-        dump_enc_cfg(avctx, &enccfg, AV_LOG_WARNING);
-        log_encoder_error(avctx, "Failed to initialize encoder");
-        return AVERROR(EINVAL);
-    }
-    dump_enc_cfg(avctx, &enccfg, AV_LOG_DEBUG);
+    return 0;
+}
+
+static av_cold int aom_codecctl(AVCodecContext *avctx)
+{
+    AOMContext *ctx = avctx->priv_data;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+    aom_codec_caps_t codec_caps = aom_codec_get_caps(ctx->encoder.iface);
 
     // codec control failures are currently treated only as warnings
     av_log(avctx, AV_LOG_DEBUG, "aom_codec_control\n");
@@ -1043,11 +1000,77 @@ static av_cold int aom_init(AVCodecContext *avctx,
 #endif
 
     // provide dummy value to initialize wrapper, values will be updated each _encode()
-    aom_img_wrap(&ctx->rawimg, img_fmt, avctx->width, avctx->height, 1,
+    aom_img_wrap(&ctx->rawimg, ctx->img_fmt, avctx->width, avctx->height, 1,
                  (unsigned char*)1);
 
     if (codec_caps & AOM_CODEC_CAP_HIGHBITDEPTH)
-        ctx->rawimg.bit_depth = enccfg.g_bit_depth;
+        ctx->rawimg.bit_depth = ctx->enccfg.g_bit_depth;
+
+    return 0;
+}
+
+static av_cold int aom_init(AVCodecContext *avctx,
+                            const struct aom_codec_iface *iface)
+{
+    AOMContext *ctx = avctx->priv_data;
+    int res;
+
+    av_log(avctx, AV_LOG_INFO, "%s\n", aom_codec_version_str());
+    av_log(avctx, AV_LOG_VERBOSE, "%s\n", aom_codec_build_config());
+
+    res = aom_config(avctx, iface);
+    if (res < 0)
+        return res;
+
+    if (avctx->flags & AV_CODEC_FLAG_PASS1)
+        ctx->enccfg.g_pass = AOM_RC_FIRST_PASS;
+    else if (avctx->flags & AV_CODEC_FLAG_PASS2)
+        ctx->enccfg.g_pass = AOM_RC_LAST_PASS;
+    else
+        ctx->enccfg.g_pass = AOM_RC_ONE_PASS;
+
+    if (ctx->enccfg.g_pass == AOM_RC_FIRST_PASS)
+        ctx->enccfg.g_lag_in_frames = 0;
+    else if (ctx->enccfg.g_pass == AOM_RC_LAST_PASS) {
+        int decode_size, ret;
+
+        if (!avctx->stats_in) {
+            av_log(avctx, AV_LOG_ERROR, "No stats file for second pass\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        ctx->twopass_stats.sz = strlen(avctx->stats_in) * 3 / 4;
+        ret                   = av_reallocp(&ctx->twopass_stats.buf, ctx->twopass_stats.sz);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Stat buffer alloc (%zu bytes) failed\n",
+                   ctx->twopass_stats.sz);
+            ctx->twopass_stats.sz = 0;
+            return ret;
+        }
+        decode_size = av_base64_decode(ctx->twopass_stats.buf, avctx->stats_in,
+                                       ctx->twopass_stats.sz);
+        if (decode_size < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Stat buffer decode failed\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        ctx->twopass_stats.sz      = decode_size;
+        ctx->enccfg.rc_twopass_stats_in = ctx->twopass_stats;
+    }
+
+    /* Construct Encoder Context */
+    res = aom_codec_enc_init(&ctx->encoder, iface, &ctx->enccfg, ctx->flags);
+    if (res != AOM_CODEC_OK) {
+        dump_enc_cfg(avctx, &ctx->enccfg, AV_LOG_WARNING);
+        log_encoder_error(avctx, "Failed to initialize encoder");
+        return AVERROR(EINVAL);
+    }
+    dump_enc_cfg(avctx, &ctx->enccfg, AV_LOG_DEBUG);
+
+    res = aom_codecctl(avctx);
+    if (res < 0)
+        return res;
 
     ctx->dovi.logctx = avctx;
     if ((res = ff_dovi_configure(&ctx->dovi, avctx)) < 0)
@@ -1079,8 +1102,8 @@ static av_cold int aom_init(AVCodecContext *avctx,
     if (!cpb_props)
         return AVERROR(ENOMEM);
 
-    if (enccfg.rc_end_usage == AOM_CBR ||
-        enccfg.g_pass != AOM_RC_ONE_PASS) {
+    if (ctx->enccfg.rc_end_usage == AOM_CBR ||
+        ctx->enccfg.g_pass != AOM_RC_ONE_PASS) {
         cpb_props->max_bitrate = avctx->rc_max_rate;
         cpb_props->min_bitrate = avctx->rc_min_rate;
         cpb_props->avg_bitrate = avctx->bit_rate;
