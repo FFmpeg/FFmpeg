@@ -181,6 +181,7 @@ const FFCodec ff_ac3_fixed_decoder = {
     .p.priv_class   = &ac3_decoder_class,
     .priv_data_size = sizeof (AC3DecodeContext),
     .init           = ac3_decode_init,
+    .flush          = ac3_decode_flush,
     .close          = ac3_decode_end,
     FF_CODEC_DECODE_CB(ac3_decode_frame),
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |

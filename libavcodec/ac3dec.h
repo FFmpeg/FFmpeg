@@ -96,6 +96,7 @@ typedef struct AC3DecodeContext {
     SHORTFLOAT *downmix_coeffs[2];              ///< stereo downmix coefficients
 
 // Start of flushable fields.
+// frame_type must be the flushable field, or the offset changed in ac3_decode_flush().
 
 ///@name Bit stream information
 ///@{

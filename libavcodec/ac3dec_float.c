@@ -70,6 +70,7 @@ const FFCodec ff_ac3_decoder = {
     .p.id           = AV_CODEC_ID_AC3,
     .priv_data_size = sizeof (AC3DecodeContext),
     .init           = ac3_decode_init,
+    .flush          = ac3_decode_flush,
     .close          = ac3_decode_end,
     FF_CODEC_DECODE_CB(ac3_decode_frame),
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
@@ -88,6 +89,7 @@ const FFCodec ff_eac3_decoder = {
     .p.id           = AV_CODEC_ID_EAC3,
     .priv_data_size = sizeof (AC3DecodeContext),
     .init           = ac3_decode_init,
+    .flush          = ac3_decode_flush,
     .close          = ac3_decode_end,
     FF_CODEC_DECODE_CB(ac3_decode_frame),
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |

@@ -252,6 +252,16 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold void ac3_decode_flush(AVCodecContext *avctx)
+{
+    AC3DecodeContext *s = avctx->priv_data;
+
+    memset(&s->frame_type, 0, sizeof(*s) - offsetof(AC3DecodeContext, frame_type));
+
+    AC3_RENAME(ff_kbd_window_init)(s->window, 5.0, 256);
+    av_lfg_init(&s->dith_state, 0);
+}
+
 /**
  * Parse the 'sync info' and 'bit stream info' from the AC-3 bitstream.
  * GetBitContext within AC3DecodeContext must point to
