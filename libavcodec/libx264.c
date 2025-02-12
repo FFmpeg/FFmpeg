@@ -192,54 +192,64 @@ static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
     return 1;
 }
 
-static void reconfig_encoder(AVCodecContext *ctx, const AVFrame *frame)
+static void reconfig_encoder(AVCodecContext *ctx)
+{
+    X264Context *x4 = ctx->priv_data;
+
+    if (x4->avcintra_class >= 0)
+        return;
+
+    if (x4->params.vui.i_sar_height*ctx->sample_aspect_ratio.num != ctx->sample_aspect_ratio.den * x4->params.vui.i_sar_width) {
+        x4->params.vui.i_sar_height = ctx->sample_aspect_ratio.den;
+        x4->params.vui.i_sar_width  = ctx->sample_aspect_ratio.num;
+        x264_encoder_reconfig(x4->enc, &x4->params);
+    }
+
+    if (x4->params.rc.i_vbv_buffer_size != ctx->rc_buffer_size / 1000 ||
+        x4->params.rc.i_vbv_max_bitrate != ctx->rc_max_rate    / 1000) {
+        x4->params.rc.i_vbv_buffer_size = ctx->rc_buffer_size / 1000;
+        x4->params.rc.i_vbv_max_bitrate = ctx->rc_max_rate    / 1000;
+        x264_encoder_reconfig(x4->enc, &x4->params);
+    }
+
+    if (x4->params.rc.i_rc_method == X264_RC_ABR &&
+        x4->params.rc.i_bitrate != ctx->bit_rate / 1000) {
+        x4->params.rc.i_bitrate = ctx->bit_rate / 1000;
+        x264_encoder_reconfig(x4->enc, &x4->params);
+    }
+
+    if (x4->crf >= 0 &&
+        x4->params.rc.i_rc_method == X264_RC_CRF &&
+        x4->params.rc.f_rf_constant != x4->crf) {
+        x4->params.rc.f_rf_constant = x4->crf;
+        x264_encoder_reconfig(x4->enc, &x4->params);
+    }
+
+    if (x4->params.rc.i_rc_method == X264_RC_CQP &&
+        x4->cqp >= 0 &&
+        x4->params.rc.i_qp_constant != x4->cqp) {
+        x4->params.rc.i_qp_constant = x4->cqp;
+        x264_encoder_reconfig(x4->enc, &x4->params);
+    }
+
+    if (x4->crf_max >= 0 &&
+        x4->params.rc.f_rf_constant_max != x4->crf_max) {
+        x4->params.rc.f_rf_constant_max = x4->crf_max;
+        x264_encoder_reconfig(x4->enc, &x4->params);
+    }
+}
+
+static void reconfig_encoder_from_frame(AVCodecContext *ctx, const AVFrame *frame)
 {
     X264Context *x4 = ctx->priv_data;
     AVFrameSideData *side_data;
 
+    reconfig_encoder(ctx);
 
     if (x4->avcintra_class < 0) {
         if (x4->params.b_interlaced && x4->params.b_tff != !!(frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST)) {
 
             x4->params.b_tff = !!(frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST);
-            x264_encoder_reconfig(x4->enc, &x4->params);
-        }
-        if (x4->params.vui.i_sar_height*ctx->sample_aspect_ratio.num != ctx->sample_aspect_ratio.den * x4->params.vui.i_sar_width) {
-            x4->params.vui.i_sar_height = ctx->sample_aspect_ratio.den;
-            x4->params.vui.i_sar_width  = ctx->sample_aspect_ratio.num;
-            x264_encoder_reconfig(x4->enc, &x4->params);
-        }
-
-        if (x4->params.rc.i_vbv_buffer_size != ctx->rc_buffer_size / 1000 ||
-            x4->params.rc.i_vbv_max_bitrate != ctx->rc_max_rate    / 1000) {
-            x4->params.rc.i_vbv_buffer_size = ctx->rc_buffer_size / 1000;
-            x4->params.rc.i_vbv_max_bitrate = ctx->rc_max_rate    / 1000;
-            x264_encoder_reconfig(x4->enc, &x4->params);
-        }
-
-        if (x4->params.rc.i_rc_method == X264_RC_ABR &&
-            x4->params.rc.i_bitrate != ctx->bit_rate / 1000) {
-            x4->params.rc.i_bitrate = ctx->bit_rate / 1000;
-            x264_encoder_reconfig(x4->enc, &x4->params);
-        }
-
-        if (x4->crf >= 0 &&
-            x4->params.rc.i_rc_method == X264_RC_CRF &&
-            x4->params.rc.f_rf_constant != x4->crf) {
-            x4->params.rc.f_rf_constant = x4->crf;
-            x264_encoder_reconfig(x4->enc, &x4->params);
-        }
-
-        if (x4->params.rc.i_rc_method == X264_RC_CQP &&
-            x4->cqp >= 0 &&
-            x4->params.rc.i_qp_constant != x4->cqp) {
-            x4->params.rc.i_qp_constant = x4->cqp;
-            x264_encoder_reconfig(x4->enc, &x4->params);
-        }
-
-        if (x4->crf_max >= 0 &&
-            x4->params.rc.f_rf_constant_max != x4->crf_max) {
-            x4->params.rc.f_rf_constant_max = x4->crf_max;
             x264_encoder_reconfig(x4->enc, &x4->params);
         }
     }
@@ -526,7 +536,7 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
         pic->i_type = X264_TYPE_AUTO;
         break;
     }
-    reconfig_encoder(ctx, frame);
+    reconfig_encoder_from_frame(ctx, frame);
 
     if (x4->a53_cc) {
         void *sei_data;
