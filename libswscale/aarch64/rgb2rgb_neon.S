@@ -425,3 +425,265 @@ neon_shuf 2013
 neon_shuf 1203
 neon_shuf 2130
 neon_shuf 3210
+
+/*
+v0-v7 - two consecutive lines
+x0 - upper Y destination
+x1 - U destination
+x2 - V destination
+x3 - upper src line
+w5 - width/iteration counter - count of line pairs for yuv420, of single lines for 422
+x6 - lum padding
+x7 - chrom padding
+x8 - src padding
+w9 - number of bytes remaining in the tail
+x10 - lower Y destination
+w12 - tmp
+x13 - lower src line
+w14 - tmp
+w17 - set to 1 if last line has to be handled separately (odd height)
+*/
+
+// one fast path iteration processes 16 uyvy tuples
+// is_line_tail is set to 1 when final 16 tuples are being processed
+// skip_storing_chroma is set to 1 when final line is processed and the height is odd
+.macro fastpath_iteration src_fmt, dst_fmt, is_line_tail, skip_storing_chroma
+        ld4             {v0.16b - v3.16b}, [x3], #64
+.if ! \is_line_tail
+        subs            w14, w14, #32
+.endif
+
+.if ! \skip_storing_chroma
+.ifc \dst_fmt, yuv420
+        ld4             {v4.16b - v7.16b}, [x13], #64
+.endif
+
+.ifc \dst_fmt, yuv420                                    // store UV
+.ifc \src_fmt, uyvy
+        uhadd           v0.16b, v4.16b, v0.16b            // halving sum of U
+        uhadd           v2.16b, v6.16b, v2.16b            // halving sum of V
+.else
+        uhadd           v1.16b, v5.16b, v1.16b            // halving sum of U
+        uhadd           v3.16b, v7.16b, v3.16b            // halving sum of V
+.endif
+.endif
+
+.ifc \src_fmt, uyvy
+        st1             {v2.16b}, [x2], #16
+        st1             {v0.16b}, [x1], #16
+.else
+        st1             {v3.16b}, [x2], #16
+        st1             {v1.16b}, [x1], #16
+.endif
+
+.ifc \dst_fmt, yuv420                                    // store_y
+.ifc \src_fmt, uyvy
+        mov             v6.16b, v5.16b
+        st2             {v6.16b,v7.16b}, [x10], #32
+.else
+        mov             v5.16b, v4.16b
+        st2             {v5.16b,v6.16b}, [x10], #32
+.endif
+.endif
+
+.endif // ! \skip_storing_chroma
+
+.ifc \src_fmt, uyvy
+        mov             v2.16b, v1.16b
+        st2             {v2.16b,v3.16b}, [x0], #32
+.else
+        mov             v1.16b, v0.16b
+        st2             {v1.16b,v2.16b}, [x0], #32
+.endif
+.endm
+
+// shift pointers back to width - 32 to process the tail of the line
+// if the height is odd, processing the final line is simplified
+.macro fastpath_shift_back_pointers src_fmt, dst_fmt, is_final_odd_line
+        add             x3, x3, w9, sxtw #1
+        sub             x3, x3, #64
+.if ! \is_final_odd_line
+.ifc \dst_fmt, yuv420
+        add             x13, x13, w9, sxtw #1
+        sub             x13, x13, #64
+        add             x10, x10, w9, sxtw
+        sub             x10, x10, #32
+.endif
+.endif
+        add             x0, x0, w9, sxtw
+        sub             x0, x0, #32
+.if ! \is_final_odd_line
+        asr             w14, w9, #1
+        add             x1, x1, w14, sxtw
+        sub             x1, x1, #16
+        add             x2, x2, w14, sxtw
+        sub             x2, x2, #16
+.endif
+.endm
+
+.macro slowpath_iteration src_fmt, dst_fmt, skip_storing_chroma
+.ifc \dst_fmt, yuv422
+.ifc \src_fmt, uyvy
+        ldrb            w12, [x3], #1
+        ldrb            w14, [x3], #1
+        strb            w12, [x1], #1
+        strb            w14, [x0], #1
+        ldrb            w12, [x3], #1
+        ldrb            w14, [x3], #1
+        strb            w12, [x2], #1
+        strb            w14, [x0], #1
+.else
+        ldrb            w12, [x3], #1
+        ldrb            w14, [x3], #1
+        strb            w12, [x0], #1
+        strb            w14, [x1], #1
+        ldrb            w12, [x3], #1
+        ldrb            w14, [x3], #1
+        strb            w12, [x0], #1
+        strb            w14, [x2], #1
+.endif
+.endif
+.ifc \dst_fmt, yuv420
+.ifc \src_fmt, uyvy
+.if \skip_storing_chroma
+        ldrb            w12, [x3], #2
+        ldrb            w14, [x3], #2
+        strb            w12, [x0], #1
+        strb            w14, [x0], #1
+.else
+        ldrb            w12, [x3], #1
+        ldrb            w14, [x13], #1
+        add             w12, w12, w14
+        lsr             w12, w12, #1
+        strb            w12, [x1], #1
+        ldrb            w14, [x3], #1
+        ldrb            w12, [x13], #1
+        strb            w14, [x0], #1
+        strb            w12, [x10], #1
+        ldrb            w14, [x13], #1
+        ldrb            w12, [x3], #1
+        add             w12, w12, w14
+        lsr             w12, w12, #1
+        strb            w12, [x2], #1
+        ldrb            w14, [x3], #1
+        ldrb            w12, [x13], #1
+        strb            w14, [x0], #1
+        strb            w12, [x10], #1
+.endif
+.else
+.if \skip_storing_chroma
+        ldrb            w12, [x3], #2
+        ldrb            w14, [x3], #2
+        strb            w12, [x0], #1
+        strb            w14, [x0], #1
+.else
+        ldrb            w12, [x3], #1
+        ldrb            w14, [x13], #1
+        strb            w12, [x0], #1
+        strb            w14, [x10], #1
+        ldrb            w12, [x3], #1
+        ldrb            w14, [x13], #1
+        add             w12, w12, w14
+        lsr             w12, w12, #1
+        strb            w12, [x1], #1
+        ldrb            w14, [x3], #1
+        ldrb            w12, [x13], #1
+        strb            w14, [x0], #1
+        strb            w12, [x10], #1
+        ldrb            w14, [x13], #1
+        ldrb            w12, [x3], #1
+        add             w12, w12, w14
+        lsr             w12, w12, #1
+        strb            w12, [x2], #1
+.endif
+.endif
+.endif
+.endm
+
+.macro move_pointers_to_next_line src_fmt, dst_fmt, is_final_odd_line
+        add             x3, x3, x8
+        add             x0, x0, x6
+.ifc \dst_fmt, yuv420
+        add             x13, x13, x8
+        add             x10, x10, x6
+.endif
+        add             x1, x1, x7
+        add             x2, x2, x7
+.endm
+
+.macro interleaved_yuv_to_planar src_fmt, dst_fmt
+function ff_\src_fmt\()to\dst_fmt\()_neon, export=1
+        sxtw            x6, w6
+        sxtw            x7, w7
+        ldrsw           x8, [sp]
+        ands            w11, w4, #~31                     // choose between fast and slow path
+
+.ifc \dst_fmt, yuv420
+        add             x10, x0, x6
+        add             x13, x3, x8
+        add             x8, x8, x8
+        add             x6, x6, x6
+        and             w17, w5, #1
+        asr             w5, w5, #1
+.endif
+        asr             w9, w4, #1
+        sub             x8, x8, w4, sxtw #1               // src offset
+        sub             x6, x6, w4, sxtw                  // lum offset
+        sub             x7, x7, x9                        // chr offset
+
+        b.eq            6f
+
+1:                                                        // fast path - the width is at least 32
+        and             w14, w4, #~31                     // w14 is the main loop counter
+        and             w9, w4, #31                       // w9 holds the remaining width, 0 to 31
+2:
+        fastpath_iteration \src_fmt, \dst_fmt, 0, 0
+        b.ne            2b
+        fastpath_shift_back_pointers \src_fmt, \dst_fmt, 0
+        fastpath_iteration \src_fmt, \dst_fmt, 0, 0
+        subs            w5, w5, #1
+        move_pointers_to_next_line \src_fmt, \dst_fmt
+        b.ne            1b
+
+.ifc \dst_fmt, yuv420                                    // handle the last line in case the height is odd
+        cbz             w17, 3f
+        and             w14, w4, #~31
+4:
+        fastpath_iteration \src_fmt, \dst_fmt, 0, 1
+        b.ne            4b
+        fastpath_shift_back_pointers \src_fmt, \dst_fmt, 1
+        fastpath_iteration \src_fmt, \dst_fmt, 1, 1
+3:
+.endif
+        ret
+
+6:                                                        // slow path - width is at most 31
+        and             w9, w4, #31
+7:
+        subs            w9, w9, #2
+        slowpath_iteration \src_fmt, \dst_fmt, 0
+        b.ne            7b
+        subs            w5, w5, #1
+        move_pointers_to_next_line \src_fmt, \dst_fmt
+        b.ne            6b
+
+.ifc \dst_fmt, yuv420
+        cbz             w17, 8f
+        and             w9, w4, #31
+.ifc \src_fmt, uyvy
+        add             x3, x3, #1
+.endif
+5:
+        subs            w9, w9, #2
+        slowpath_iteration \src_fmt, \dst_fmt, 1
+        b.ne            5b
+8:
+.endif
+        ret
+endfunc
+.endm
+
+interleaved_yuv_to_planar uyvy, yuv422
+interleaved_yuv_to_planar uyvy, yuv420
+interleaved_yuv_to_planar yuyv, yuv422
+interleaved_yuv_to_planar yuyv, yuv420

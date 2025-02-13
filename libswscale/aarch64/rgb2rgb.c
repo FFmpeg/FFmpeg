@@ -67,6 +67,18 @@ void ff_shuffle_bytes_2013_neon(const uint8_t *src, uint8_t *dst, int src_size);
 void ff_shuffle_bytes_2130_neon(const uint8_t *src, uint8_t *dst, int src_size);
 void ff_shuffle_bytes_1203_neon(const uint8_t *src, uint8_t *dst, int src_size);
 
+void ff_uyvytoyuv422_neon(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+                          const uint8_t *src, int width, int height,
+                          int lumStride, int chromStride, int srcStride);
+void ff_uyvytoyuv420_neon(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+                          const uint8_t *src, int width, int height,
+                          int lumStride, int chromStride, int srcStride);
+void ff_yuyvtoyuv420_neon(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+                          const uint8_t *src, int width, int height,
+                          int lumStride, int chromStride, int srcStride);
+void ff_yuyvtoyuv422_neon(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+                          const uint8_t *src, int width, int height,
+                          int lumStride, int chromStride, int srcStride);
 av_cold void rgb2rgb_init_aarch64(void)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -84,5 +96,9 @@ av_cold void rgb2rgb_init_aarch64(void)
         shuffle_bytes_2013 = ff_shuffle_bytes_2013_neon;
         shuffle_bytes_2130 = ff_shuffle_bytes_2130_neon;
         shuffle_bytes_1203 = ff_shuffle_bytes_1203_neon;
+        uyvytoyuv422       = ff_uyvytoyuv422_neon;
+        uyvytoyuv420       = ff_uyvytoyuv420_neon;
+        yuyvtoyuv422       = ff_yuyvtoyuv422_neon;
+        yuyvtoyuv420       = ff_yuyvtoyuv420_neon;
     }
 }
