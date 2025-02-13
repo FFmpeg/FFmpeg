@@ -241,7 +241,8 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
 
         len = FFMIN(size, segments*255);
         page->segments[page->segments_count++] = len - (segments-1)*255;
-        memcpy(page->data+page->size, p, len);
+        if (len)
+            memcpy(page->data+page->size, p, len);
         p += len;
         size -= len;
         i += segments;
@@ -690,7 +691,7 @@ static int ogg_write_packet(AVFormatContext *s, AVPacket *pkt)
     int i;
 
     if (pkt)
-        return pkt->size ? ogg_write_packet_internal(s, pkt) : 0;
+        return pkt->size || !pkt->side_data_elems ? ogg_write_packet_internal(s, pkt) : 0;
 
     for (i = 0; i < s->nb_streams; i++) {
         OGGStreamContext *oggstream = s->streams[i]->priv_data;
@@ -710,7 +711,7 @@ static int ogg_write_trailer(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         OGGStreamContext *oggstream = s->streams[i]->priv_data;
 
-        if (oggstream->page.size > 0)
+        if (oggstream->page.segments_count)
             ogg_buffer_page(s, oggstream);
     }
 
