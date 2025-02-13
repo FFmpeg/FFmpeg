@@ -1115,6 +1115,8 @@ int ff_iamf_write_audio_frame(const IAMFContext *iamf, AVIOContext *pb,
 {
     uint8_t header[MAX_IAMF_OBU_HEADER_SIZE];
     PutBitContext pbc;
+    const IAMFAudioElement *audio_element;
+    IAMFCodecConfig *codec_config;
     AVIOContext *dyn_bc;
     const uint8_t *side_data;
     uint8_t *dyn_buf = NULL;
@@ -1124,9 +1126,14 @@ int ff_iamf_write_audio_frame(const IAMFContext *iamf, AVIOContext *pb,
                          audio_substream_id + IAMF_OBU_IA_AUDIO_FRAME_ID0 : IAMF_OBU_IA_AUDIO_FRAME;
     int ret;
 
+    audio_element = get_audio_element(iamf, audio_substream_id);
+    if (!audio_element)
+        return AVERROR(EINVAL);
+    codec_config = ff_iamf_get_codec_config(iamf, audio_element->codec_config_id);
+    if (!codec_config)
+        return AVERROR(EINVAL);
+
     if (!pkt->size) {
-        const IAMFAudioElement *audio_element;
-        IAMFCodecConfig *codec_config;
         size_t new_extradata_size;
         const uint8_t *new_extradata = av_packet_get_side_data(pkt,
                                                                AV_PKT_DATA_NEW_EXTRADATA,
@@ -1134,12 +1141,6 @@ int ff_iamf_write_audio_frame(const IAMFContext *iamf, AVIOContext *pb,
 
         if (!new_extradata)
             return AVERROR_INVALIDDATA;
-        audio_element = get_audio_element(iamf, audio_substream_id);
-        if (!audio_element)
-            return AVERROR(EINVAL);
-        codec_config = ff_iamf_get_codec_config(iamf, audio_element->codec_config_id);
-        if (!codec_config)
-            return AVERROR(EINVAL);
 
         av_free(codec_config->extradata);
         codec_config->extradata = av_memdup(new_extradata, new_extradata_size);
@@ -1158,6 +1159,14 @@ int ff_iamf_write_audio_frame(const IAMFContext *iamf, AVIOContext *pb,
     if (side_data && side_data_size >= 10) {
         skip_samples = AV_RL32(side_data);
         discard_padding = AV_RL32(side_data + 4);
+    }
+
+    if (codec_config->codec_id == AV_CODEC_ID_OPUS) {
+        // IAMF's num_samples_to_trim_at_start is the same as Opus's pre-skip.
+        skip_samples = pkt->dts < 0
+            ? av_rescale(-pkt->dts, 48000, pkt->time_base.den)
+            : 0;
+        discard_padding = av_rescale(discard_padding, 48000, pkt->time_base.den);
     }
 
     ret = avio_open_dyn_buf(&dyn_bc);
