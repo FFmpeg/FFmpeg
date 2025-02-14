@@ -1173,7 +1173,15 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt,
 
     if (!size && !flush && sti->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         // preserve 0-size sync packets
-        compute_pkt_fields(s, st, sti->parser, pkt, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
+        compute_pkt_fields(s, st, sti->parser, pkt, pkt->dts, pkt->pts);
+
+        // Theora has valid 0-sized packets that need to be output
+        if (st->codecpar->codec_id == AV_CODEC_ID_THEORA) {
+            ret = avpriv_packet_list_put(&fci->parse_queue,
+                                         pkt, NULL, 0);
+            if (ret < 0)
+                goto fail;
+        }
     }
 
     while (size > 0 || (flush && got_output)) {
