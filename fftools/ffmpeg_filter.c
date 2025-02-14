@@ -60,7 +60,7 @@ typedef struct FilterGraphPriv {
 
     const char      *graph_desc;
 
-    char            *nb_threads;
+    int              nb_threads;
 
     // frame for temporarily holding output from the filtergraph
     AVFrame         *frame;
@@ -1042,7 +1042,6 @@ void fg_free(FilterGraph **pfg)
     }
     av_freep(&fg->outputs);
     av_freep(&fgp->graph_desc);
-    av_freep(&fgp->nb_threads);
 
     av_frame_free(&fgp->frame);
     av_frame_free(&fgp->frame_enc);
@@ -1097,6 +1096,7 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
     fg->class       = &fg_class;
     fgp->graph_desc = graph_desc;
     fgp->disable_conversions = !auto_conversion_filters;
+    fgp->nb_threads          = -1;
     fgp->sch                 = sch;
 
     snprintf(fgp->log_name, sizeof(fgp->log_name), "fc#%d", fg->index);
@@ -1247,12 +1247,8 @@ int fg_create_simple(FilterGraph **pfg,
     if (ret < 0)
         return ret;
 
-    if (opts->nb_threads) {
-        av_freep(&fgp->nb_threads);
-        fgp->nb_threads = av_strdup(opts->nb_threads);
-        if (!fgp->nb_threads)
-            return AVERROR(ENOMEM);
-    }
+    if (opts->nb_threads >= 0)
+        fgp->nb_threads = opts->nb_threads;
 
     return 0;
 }
@@ -1936,8 +1932,8 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
             ret = av_opt_set(fgt->graph, "threads", filter_nbthreads, 0);
             if (ret < 0)
                 goto fail;
-        } else if (fgp->nb_threads) {
-            ret = av_opt_set(fgt->graph, "threads", fgp->nb_threads, 0);
+        } else if (fgp->nb_threads >= 0) {
+            ret = av_opt_set_int(fgt->graph, "threads", fgp->nb_threads, 0);
             if (ret < 0)
                 return ret;
         }

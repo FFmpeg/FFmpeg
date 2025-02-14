@@ -930,6 +930,7 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
         .ts_offset        = mux->of.start_time == AV_NOPTS_VALUE ?
                             0 : mux->of.start_time,
         .vs               = vs,
+        .nb_threads       = -1,
 
         .flags = OFILTER_FLAG_DISABLE_CONVERT * !!keep_pix_fmt |
                  OFILTER_FLAG_AUTOSCALE       * !!autoscale    |
@@ -982,7 +983,7 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
     }
 
     if (threads_manual) {
-        ret = av_opt_get(enc_ctx, "threads", 0, (uint8_t**)&opts.nb_threads);
+        ret = av_opt_get_int(enc_ctx, "threads", 0, &opts.nb_threads);
         if (ret < 0)
             return ret;
     }
@@ -1002,7 +1003,6 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
             ost->filter = ost->fg_simple->outputs[0];
 
     }
-    av_freep(&opts.nb_threads);
     if (ret < 0)
         return ret;
 

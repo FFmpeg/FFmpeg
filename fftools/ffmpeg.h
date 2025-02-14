@@ -316,7 +316,7 @@ typedef struct OutputFilterOptions {
     AVDictionary       *sws_opts;
     AVDictionary       *swr_opts;
 
-    const char         *nb_threads;
+    int64_t             nb_threads;
 
     // A combination of OFilterFlags.
     unsigned            flags;
