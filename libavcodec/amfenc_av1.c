@@ -38,6 +38,10 @@ static const AVOption options[] = {
     { "high_quality",           "high quality trancoding",                  0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_USAGE_HIGH_QUALITY              }, 0, 0, VE, .unit = "usage" },
     { "lowlatency_high_quality","low latency yet high quality trancoding",  0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_USAGE_LOW_LATENCY_HIGH_QUALITY  }, 0, 0, VE, .unit = "usage" },
 
+    { "bitdepth",                "Set color bit deph",                      OFFSET(bit_depth),   AV_OPT_TYPE_INT,   {.i64 = AMF_COLOR_BIT_DEPTH_UNDEFINED }, AMF_COLOR_BIT_DEPTH_UNDEFINED, AMF_COLOR_BIT_DEPTH_10, VE, .unit = "bitdepth" },
+    { "8",                       "8 bit",                                     0, AV_OPT_TYPE_CONST, {.i64 = AMF_COLOR_BIT_DEPTH_8  }, 0, 0, VE, .unit = "bitdepth" },
+    { "10",                      "10 bit",                                    0, AV_OPT_TYPE_CONST, {.i64 = AMF_COLOR_BIT_DEPTH_10 }, 0, 0, VE, .unit = "bitdepth" },
+
     { "profile",                "Set the profile", OFFSET(profile),  AV_OPT_TYPE_INT,{.i64 = -1 }, -1, AMF_VIDEO_ENCODER_AV1_PROFILE_MAIN, VE, .unit = "profile" },
     { "main",                   "", 0, AV_OPT_TYPE_CONST,{.i64 = AMF_VIDEO_ENCODER_AV1_PROFILE_MAIN }, 0, 0, VE, .unit = "profile" },
 
@@ -103,7 +107,7 @@ static const AVOption options[] = {
     { "enforce_hrd",            "Enforce HRD",          OFFSET(enforce_hrd),    AV_OPT_TYPE_BOOL, {.i64 = -1  }, -1, 1, VE},
     { "filler_data",            "Filler Data Enable",   OFFSET(filler_data),    AV_OPT_TYPE_BOOL, {.i64 = -1  }, -1, 1, VE},
 
-    /// B-Frames
+    // B-Frames
     { "max_b_frames",   "Maximum number of consecutive B Pictures", OFFSET(max_consecutive_b_frames), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 3, VE },
     { "bf",             "B Picture Pattern",                        OFFSET(max_b_frames),             AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 3, VE },
 
@@ -193,7 +197,7 @@ static av_cold int amf_encode_init_av1(AVCodecContext* avctx)
     AMFGuid             guid;
     AMFRate             framerate;
     AMFSize             framesize = AMFConstructSize(avctx->width, avctx->height);
-    amf_int64           color_depth;
+    amf_int64           bit_depth;
     amf_int64           color_profile;
     enum                AVPixelFormat pix_fmt;
 
@@ -245,25 +249,37 @@ FF_ENABLE_DEPRECATION_WARNINGS
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_PROFILE, profile);
     }
 
-    /// Color profile
+    // Color bit depth
+    pix_fmt = avctx->hw_frames_ctx ? ((AVHWFramesContext*)avctx->hw_frames_ctx->data)->sw_format
+                                : avctx->pix_fmt;
+    bit_depth = ctx->bit_depth;
+    if(bit_depth == AMF_COLOR_BIT_DEPTH_UNDEFINED){
+        bit_depth = pix_fmt == AV_PIX_FMT_P010 ? AMF_COLOR_BIT_DEPTH_10 : AMF_COLOR_BIT_DEPTH_8;
+    }
+    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_COLOR_BIT_DEPTH, bit_depth);
+
+    // Color profile
     color_profile = ff_amf_get_color_profile(avctx);
     AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_OUTPUT_COLOR_PROFILE, color_profile);
 
-    /// Color Depth
-    pix_fmt = avctx->hw_frames_ctx ? ((AVHWFramesContext*)avctx->hw_frames_ctx->data)->sw_format
-                                : avctx->pix_fmt;
-    color_depth = AMF_COLOR_BIT_DEPTH_8;
-    if (pix_fmt == AV_PIX_FMT_P010) {
-        color_depth = AMF_COLOR_BIT_DEPTH_10;
+    // Color Range
+    // TODO
+
+    // Color Transfer Characteristics (AMF matches ISO/IEC)
+    if(avctx->color_primaries != AVCOL_PRI_UNSPECIFIED && (pix_fmt == AV_PIX_FMT_NV12 || pix_fmt == AV_PIX_FMT_P010)){
+        // if input is YUV, color_primaries are for VUI only
+        // AMF VCN color coversion supports only specifc output primaries BT2020 for 10-bit and BT709 for 8-bit
+        // vpp_amf supports more
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_OUTPUT_TRANSFER_CHARACTERISTIC, avctx->color_trc);
     }
 
-    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_COLOR_BIT_DEPTH, color_depth);
-    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_OUTPUT_COLOR_PROFILE, color_profile);
-    /// Color Transfer Characteristics (AMF matches ISO/IEC)
-    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_OUTPUT_TRANSFER_CHARACTERISTIC, avctx->color_trc);
-    /// Color Primaries (AMF matches ISO/IEC)
-    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_OUTPUT_COLOR_PRIMARIES, avctx->color_primaries);
-
+    // Color Primaries (AMF matches ISO/IEC)
+    if(avctx->color_primaries != AVCOL_PRI_UNSPECIFIED || pix_fmt == AV_PIX_FMT_NV12 || pix_fmt == AV_PIX_FMT_P010 )
+    {
+        // AMF VCN color coversion supports only specifc primaries BT2020 for 10-bit and BT709 for 8-bit
+        // vpp_amf supports more
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_OUTPUT_COLOR_PRIMARIES, avctx->color_primaries);
+    }
     profile_level = avctx->level;
     if (profile_level == AV_LEVEL_UNKNOWN) {
         profile_level = ctx->level;

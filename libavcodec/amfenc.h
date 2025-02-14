@@ -71,6 +71,7 @@ typedef struct AMFEncoderContext {
     int                 quality;
     int                 b_frame_delta_qp;
     int                 ref_b_frame_delta_qp;
+    int                 bit_depth;
 
     // Dynamic options, can be set after Init() call
 
