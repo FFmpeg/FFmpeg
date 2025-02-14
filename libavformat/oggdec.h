@@ -164,7 +164,7 @@ int ff_vorbis_stream_comment(AVFormatContext *as, AVStream *st,
  * Parse Vorbis comments, add metadata to an AVStream
  *
  * This function also attaches the metadata to the next decoded
- * packet as AV_PKT_DATA_METADATA_UPDATE
+ * packet as AV_PKT_DATA_STRINGS_METADATA
  *
  * @note  The buffer will be temporarily modified by this function,
  *        so it needs to be writable. Furthermore it must be padded
