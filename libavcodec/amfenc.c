@@ -117,6 +117,13 @@ const enum AVPixelFormat ff_amf_pix_fmts[] = {
 #endif
     AV_PIX_FMT_P010,
     AV_PIX_FMT_AMF_SURFACE,
+    AV_PIX_FMT_BGR0,
+    AV_PIX_FMT_RGB0,
+    AV_PIX_FMT_BGRA,
+    AV_PIX_FMT_ARGB,
+    AV_PIX_FMT_RGBA,
+    AV_PIX_FMT_X2BGR10,
+    AV_PIX_FMT_RGBAF16,
     AV_PIX_FMT_NONE
 };
 
