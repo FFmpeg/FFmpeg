@@ -94,6 +94,12 @@ typedef struct DemuxStream {
     uint64_t                 nb_packets;
     // combined size of all the packets read
     uint64_t                 data_size;
+    // latest wallclock time at which packet reading resumed after a stall - used for readrate
+    int64_t                  resume_wc;
+    // timestamp of first packet sent after the latest stall - used for readrate
+    int64_t                  resume_pts;
+    // measure of how far behind packet reading is against spceified readrate
+    int64_t                  lag;
 } DemuxStream;
 
 typedef struct Demuxer {
@@ -127,6 +133,7 @@ typedef struct Demuxer {
 
     float                 readrate;
     double                readrate_initial_burst;
+    float                 readrate_catchup;
 
     Scheduler            *sch;
 
@@ -495,16 +502,42 @@ static void readrate_sleep(Demuxer *d)
                           (f->start_time_effective != AV_NOPTS_VALUE ? f->start_time_effective * !start_at_zero : 0) +
                           (f->start_time != AV_NOPTS_VALUE ? f->start_time : 0)
                          );
-    int64_t burst_until = AV_TIME_BASE * d->readrate_initial_burst;
+    int64_t initial_burst = AV_TIME_BASE * d->readrate_initial_burst;
+    int resume_warn;
+
     for (int i = 0; i < f->nb_streams; i++) {
         InputStream *ist = f->streams[i];
         DemuxStream  *ds = ds_from_ist(ist);
-        int64_t stream_ts_offset, pts, now;
+        int64_t stream_ts_offset, pts, now, wc_elapsed, elapsed, lag, max_pts, limit_pts;
+
+        if (ds->discard) continue;
+
         stream_ts_offset = FFMAX(ds->first_dts != AV_NOPTS_VALUE ? ds->first_dts : 0, file_start);
         pts = av_rescale(ds->dts, 1000000, AV_TIME_BASE);
-        now = (av_gettime_relative() - d->wallclock_start) * d->readrate + stream_ts_offset;
-        if (pts - burst_until > now)
-            av_usleep(pts - burst_until - now);
+        now = av_gettime_relative();
+        wc_elapsed = now - d->wallclock_start;
+        max_pts = stream_ts_offset + initial_burst + wc_elapsed * d->readrate;
+        lag = FFMAX(max_pts - pts, 0);
+        if ( (!ds->lag && lag > 0.3 * AV_TIME_BASE) || ( lag > ds->lag + 0.3 * AV_TIME_BASE) ) {
+            ds->lag = lag;
+            ds->resume_wc = now;
+            ds->resume_pts = pts;
+            av_log_once(ds, AV_LOG_WARNING, AV_LOG_DEBUG, &resume_warn,
+                        "Resumed reading at pts %0.3f with rate %0.3f after a lag of %0.3fs\n",
+                        (float)pts/AV_TIME_BASE, d->readrate_catchup, (float)lag/AV_TIME_BASE);
+        }
+        if (ds->lag && !lag)
+            ds->lag = ds->resume_wc = ds->resume_pts = 0;
+        if (ds->resume_wc) {
+            elapsed = now - ds->resume_wc;
+            limit_pts = ds->resume_pts + elapsed * d->readrate_catchup;
+        } else {
+            elapsed = wc_elapsed;
+            limit_pts = max_pts;
+        }
+
+        if (pts > limit_pts)
+            av_usleep(pts - limit_pts);
     }
 }
 
@@ -1859,9 +1892,22 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
                    d->readrate_initial_burst);
             return AVERROR(EINVAL);
         }
-    } else if (o->readrate_initial_burst) {
-        av_log(d, AV_LOG_WARNING, "Option -readrate_initial_burst ignored "
-               "since neither -readrate nor -re were given\n");
+        d->readrate_catchup = o->readrate_catchup ? o->readrate_catchup : d->readrate;
+        if (d->readrate_catchup < d->readrate) {
+            av_log(d, AV_LOG_ERROR,
+                   "Option -readrate_catchup is %0.3f; it must be at least equal to %0.3f.\n",
+                   d->readrate_catchup, d->readrate);
+            return AVERROR(EINVAL);
+        }
+    } else {
+        if (o->readrate_initial_burst) {
+            av_log(d, AV_LOG_WARNING, "Option -readrate_initial_burst ignored "
+                   "since neither -readrate nor -re were given\n");
+        }
+        if (o->readrate_catchup) {
+            av_log(d, AV_LOG_WARNING, "Option -readrate_catchup ignored "
+                   "since neither -readrate nor -re were given\n");
+        }
     }
 
     /* Add all the streams from the given input file to the demuxer */

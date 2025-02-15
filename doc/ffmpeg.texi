@@ -2325,6 +2325,11 @@ Read input at native frame rate. This is equivalent to setting @code{-readrate 1
 @item -readrate_initial_burst @var{seconds}
 Set an initial read burst time, in seconds, after which @option{-re/-readrate}
 will be enforced.
+@item -readrate_catchup @var{speed} (@emph{input})
+If either the input or output is blocked leading to actual read speed falling behind the
+specified readrate, then this rate takes effect till the input catches up with the
+specified readrate. Must not be lower than the primary readrate.
+
 @item -vsync @var{parameter} (@emph{global})
 @itemx -fps_mode[:@var{stream_specifier}] @var{parameter} (@emph{output,per-stream})
 Set video sync method / framerate mode. vsync is applied to all output video streams

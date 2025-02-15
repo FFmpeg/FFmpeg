@@ -163,6 +163,7 @@ typedef struct OptionsContext {
     int loop;
     int rate_emu;
     float readrate;
+    float readrate_catchup;
     double readrate_initial_burst;
     int accurate_seek;
     int thread_queue_size;

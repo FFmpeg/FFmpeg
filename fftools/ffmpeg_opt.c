@@ -1639,6 +1639,9 @@ const OptionDef options[] = {
     { "readrate_initial_burst", OPT_TYPE_DOUBLE, OPT_OFFSET | OPT_EXPERT | OPT_INPUT,
         { .off = OFFSET(readrate_initial_burst) },
         "The initial amount of input to burst read before imposing any readrate", "seconds" },
+    { "readrate_catchup",       OPT_TYPE_FLOAT, OPT_OFFSET | OPT_EXPERT | OPT_INPUT,
+        { .off = OFFSET(readrate_catchup) },
+        "Temporary readrate used to catch up if an input lags behind the specified readrate", "speed" },
     { "target",                 OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_PERFILE | OPT_EXPERT | OPT_OUTPUT,
         { .func_arg = opt_target },
         "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\" or \"dv50\" "
