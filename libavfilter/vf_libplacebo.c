@@ -856,6 +856,8 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     out->color_range = outlink->color_range;
     if (s->fps.num)
         out->duration = 1;
+    if (s->deinterlace)
+        out->flags &= ~(AV_FRAME_FLAG_INTERLACED | AV_FRAME_FLAG_TOP_FIELD_FIRST);
 
     if (s->apply_dovi && av_frame_get_side_data(ref, AV_FRAME_DATA_DOVI_METADATA)) {
         /* Output of dovi reshaping is always BT.2020+PQ, so infer the correct
