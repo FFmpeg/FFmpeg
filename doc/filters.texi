@@ -16632,6 +16632,11 @@ Yet another deinterlacing filter. See the @ref{yadif} filter for more details.
 
 @item skip_spatial_check
 Skip the spatial deinterlacing check when using @code{yadif} deinterlacing.
+
+@item send_fields
+Output a frame for each field, rather than for each frame. Note that this will
+always double the tagged output frame rate, even if the input does not contain
+any interlaced frames. Disabled by default.
 @end table
 
 @subsubsection Debanding
