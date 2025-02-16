@@ -969,7 +969,7 @@ static int handle_input(AVFilterContext *ctx, LibplaceboInput *input)
         pl_queue_push(input->queue, &(struct pl_source_frame) {
             .pts         = in->pts * av_q2d(inlink->time_base),
             .duration    = in->duration * av_q2d(inlink->time_base),
-            .first_field = pl_field_from_avframe(in),
+            .first_field = s->deinterlace ? pl_field_from_avframe(in) : PL_FIELD_NONE,
             .frame_data  = in,
             .map         = map_frame,
             .unmap       = unmap_frame,
