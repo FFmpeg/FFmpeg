@@ -16615,6 +16615,25 @@ Enable sigmoidal compression during upscaling. Reduces ringing slightly.
 Enabled by default.
 @end table
 
+@subsubsection Deinterlacing
+Deinterlacing is automatically supported when frames are tagged as interlaced,
+however frames are not deinterlaced unless a deinterlacing algorithm is chosen.
+@table @option
+@item deinterlace
+The the deinterlacing algorithm to use.
+@table @samp
+@item weave
+No deinterlacing, weave fields together into a single frame. This is the default.
+@item bob
+Naive bob deinterlacing, simply repeat each field line twice.
+@item yadif
+Yet another deinterlacing filter. See the @ref{yadif} filter for more details.
+@end table
+
+@item skip_spatial_check
+Skip the spatial deinterlacing check when using @code{yadif} deinterlacing.
+@end table
+
 @subsubsection Debanding
 Libplacebo comes with a built-in debanding filter that is good at counteracting
 many common sources of banding and blocking. Turning this on is highly
