@@ -127,6 +127,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     GLSLC(0, void main()                                                  );
     GLSLC(0, {                                                            );
     GLSLC(1,     ivec2 size;                                              );
+    GLSLC(1,     vec4 res;                                                );
     GLSLC(1,     const ivec2 pos = ivec2(gl_GlobalInvocationID.xy);       );
     for (int i = 0; i < planes; i++) {
         GLSLC(0,                                                          );
@@ -136,7 +137,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         if (s->planes & (1 << i)) {
             GLSLF(1, distort(pos, %i);                                  ,i);
         } else {
-            GLSLF(1, vec4 res = imageLoad(input_img[%i], pos);          ,i);
+            GLSLF(1, res = imageLoad(input_img[%i], pos);               ,i);
             GLSLF(1, imageStore(output_img[%i], pos, res);              ,i);
         }
     }
