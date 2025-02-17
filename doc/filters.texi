@@ -16458,7 +16458,7 @@ approaches.
 Set the color used to fill the output area not covered by the output image, for
 example as a result of @option{normalize_sar}. For the general syntax of this
 option, check the @ref{color syntax,,"Color" section in the ffmpeg-utils
-manual,ffmpeg-utils}. Defaults to @code{black}.
+manual,ffmpeg-utils}. Defaults to @code{black@@0}.
 
 @item corner_rounding
 Render frames with rounded corners. The value, given as a float ranging from

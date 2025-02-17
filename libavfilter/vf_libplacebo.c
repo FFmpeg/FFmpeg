@@ -1288,7 +1288,7 @@ static const AVOption libplacebo_options[] = {
     { "force_divisible_by", "enforce that the output resolution is divisible by a defined integer when force_original_aspect_ratio is used", OFFSET(force_divisible_by), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, 256, STATIC },
     { "normalize_sar", "force SAR normalization to 1:1 by adjusting pos_x/y/w/h", OFFSET(normalize_sar), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, STATIC },
     { "pad_crop_ratio", "ratio between padding and cropping when normalizing SAR (0=pad, 1=crop)", OFFSET(pad_crop_ratio), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, 1.0, DYNAMIC },
-    { "fillcolor", "Background fill color", OFFSET(fillcolor), AV_OPT_TYPE_STRING, {.str = "black"}, .flags = DYNAMIC },
+    { "fillcolor", "Background fill color", OFFSET(fillcolor), AV_OPT_TYPE_STRING, {.str = "black@0"}, .flags = DYNAMIC },
     { "corner_rounding", "Corner rounding radius", OFFSET(corner_rounding), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 1.0, .flags = DYNAMIC },
     { "extra_opts", "Pass extra libplacebo-specific options using a :-separated list of key=value pairs", OFFSET(extra_opts), AV_OPT_TYPE_DICT, .flags = DYNAMIC },
 
