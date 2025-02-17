@@ -49,7 +49,6 @@ typedef struct BlendVulkanContext {
     FFVkExecPool e;
     AVVulkanDeviceQueueFamily *qf;
     FFVulkanShader shd;
-    VkSampler sampler;
 
     FilterParamsVulkan params[4];
     double all_opacity;
@@ -149,7 +148,6 @@ static av_cold int init_filter(AVFilterContext *avctx)
     }
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*4, 0, 0, 0, NULL));
-    RET(ff_vk_init_sampler(vkctx, &s->sampler, 1, VK_FILTER_NEAREST));
     RET(ff_vk_shader_init(vkctx, &s->shd, "blend",
                           VK_SHADER_STAGE_COMPUTE_BIT,
                           NULL, 0,
@@ -159,19 +157,21 @@ static av_cold int init_filter(AVFilterContext *avctx)
     desc = (FFVulkanDescriptorSetBinding []) {
         {
             .name       = "top_images",
-            .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.input_format, FF_VK_REP_FLOAT),
+            .mem_quali  = "readonly",
             .dimensions = 2,
             .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-            .samplers   = DUP_SAMPLER(s->sampler),
         },
         {
             .name       = "bottom_images",
-            .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.input_format, FF_VK_REP_FLOAT),
+            .mem_quali  = "readonly",
             .dimensions = 2,
             .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-            .samplers   = DUP_SAMPLER(s->sampler),
         },
         {
             .name       = "output_images",
@@ -204,8 +204,8 @@ static av_cold int init_filter(AVFilterContext *avctx)
         GLSLC(0,                                                            );
         GLSLF(1, size = imageSize(output_images[%i]);                     ,i);
         GLSLC(1, if (IS_WITHIN(pos, size)) {                                );
-        GLSLF(2,     const vec4 top = texture(top_images[%i], pos);       ,i);
-        GLSLF(2,     const vec4 bottom = texture(bottom_images[%i], pos); ,i);
+        GLSLF(2,     const vec4 top = imageLoad(top_images[%i], pos);       ,i);
+        GLSLF(2,     const vec4 bottom = imageLoad(bottom_images[%i], pos); ,i);
         GLSLF(2,     const float opacity = %f;                            ,s->params[i].opacity);
         GLSLF(2,     vec4 dst = %s(top, bottom, opacity);                 ,s->params[i].blend);
         GLSLC(0,                                                            );
@@ -264,7 +264,7 @@ static int blend_frame(FFFrameSync *fs)
 
     RET(ff_vk_filter_process_Nin(&s->vkctx, &s->e, &s->shd,
                                  out, (AVFrame *[]){ top, bottom }, 2,
-                                 s->sampler, NULL, 0));
+                                 VK_NULL_HANDLE, NULL, 0));
 
     return ff_filter_frame(outlink, out);
 
@@ -286,14 +286,9 @@ static av_cold void uninit(AVFilterContext *avctx)
 {
     BlendVulkanContext *s = avctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
-    FFVulkanFunctions *vk = &vkctx->vkfn;
 
     ff_vk_exec_pool_free(vkctx, &s->e);
     ff_vk_shader_free(vkctx, &s->shd);
-
-    if (s->sampler)
-        vk->DestroySampler(vkctx->hwctx->act_dev, s->sampler,
-                           vkctx->hwctx->alloc);
 
     ff_vk_uninit(&s->vkctx);
     ff_framesync_uninit(&s->fs);
