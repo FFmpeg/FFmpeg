@@ -752,11 +752,19 @@ static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
         type = ffio_read_leb(pbc);
         if (type == AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN)
             ret = AVERROR_INVALIDDATA;
-        else if (type == AV_IAMF_PARAMETER_DEFINITION_DEMIXING)
+        else if (type == AV_IAMF_PARAMETER_DEFINITION_DEMIXING) {
+            if (element->demixing_info) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             ret = param_parse(s, c, pbc, type, audio_element, &element->demixing_info);
-        else if (type == AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN)
+        } else if (type == AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN) {
+            if (element->recon_gain_info) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             ret = param_parse(s, c, pbc, type, audio_element, &element->recon_gain_info);
-        else {
+        } else {
             unsigned param_definition_size = ffio_read_leb(pbc);
             avio_skip(pbc, param_definition_size);
         }
