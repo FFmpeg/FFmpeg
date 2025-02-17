@@ -30,10 +30,10 @@ vec4 process_intra(vec4 cur[4])
 void process_plane_intra(int idx, ivec2 pos)
 {
     vec4 dcur[4];
-    dcur[0] = texture(cur[idx], pos - ivec2(0, 3));
-    dcur[1] = texture(cur[idx], pos - ivec2(0, 1));
-    dcur[2] = texture(cur[idx], pos + ivec2(0, 1));
-    dcur[3] = texture(cur[idx], pos + ivec2(0, 3));
+    dcur[0] = imageLoad(cur[idx], pos - ivec2(0, 3));
+    dcur[1] = imageLoad(cur[idx], pos - ivec2(0, 1));
+    dcur[2] = imageLoad(cur[idx], pos + ivec2(0, 1));
+    dcur[3] = imageLoad(cur[idx], pos + ivec2(0, 3));
     imageStore(dst[idx], pos, process_intra(dcur));
 }
 
@@ -81,41 +81,41 @@ void process_plane(int idx, const ivec2 pos, bool filter_field,
     vec4 prev2[5];
     vec4 next2[5];
 
-    dcur[0] = texture(cur[idx], pos - ivec2(0, 3));
-    dcur[1] = texture(cur[idx], pos - ivec2(0, 1));
-    dcur[2] = texture(cur[idx], pos + ivec2(0, 1));
-    dcur[3] = texture(cur[idx], pos + ivec2(0, 3));
+    dcur[0] = imageLoad(cur[idx], pos - ivec2(0, 3));
+    dcur[1] = imageLoad(cur[idx], pos - ivec2(0, 1));
+    dcur[2] = imageLoad(cur[idx], pos + ivec2(0, 1));
+    dcur[3] = imageLoad(cur[idx], pos + ivec2(0, 3));
 
-    prev1[0] = texture(prev[idx], pos - ivec2(0, 1));
-    prev1[1] = texture(prev[idx], pos + ivec2(0, 1));
+    prev1[0] = imageLoad(prev[idx], pos - ivec2(0, 1));
+    prev1[1] = imageLoad(prev[idx], pos + ivec2(0, 1));
 
-    next1[0] = texture(next[idx], pos - ivec2(0, 1));
-    next1[1] = texture(next[idx], pos + ivec2(0, 1));
+    next1[0] = imageLoad(next[idx], pos - ivec2(0, 1));
+    next1[1] = imageLoad(next[idx], pos + ivec2(0, 1));
 
     if (field_parity) {
-        prev2[0] = texture(prev[idx], pos - ivec2(0, 4));
-        prev2[1] = texture(prev[idx], pos - ivec2(0, 2));
-        prev2[2] = texture(prev[idx], pos);
-        prev2[3] = texture(prev[idx], pos + ivec2(0, 2));
-        prev2[4] = texture(prev[idx], pos + ivec2(0, 4));
+        prev2[0] = imageLoad(prev[idx], pos - ivec2(0, 4));
+        prev2[1] = imageLoad(prev[idx], pos - ivec2(0, 2));
+        prev2[2] = imageLoad(prev[idx], pos);
+        prev2[3] = imageLoad(prev[idx], pos + ivec2(0, 2));
+        prev2[4] = imageLoad(prev[idx], pos + ivec2(0, 4));
 
-        next2[0] = texture(cur[idx], pos - ivec2(0, 4));
-        next2[1] = texture(cur[idx], pos - ivec2(0, 2));
-        next2[2] = texture(cur[idx], pos);
-        next2[3] = texture(cur[idx], pos + ivec2(0, 2));
-        next2[4] = texture(cur[idx], pos + ivec2(0, 4));
+        next2[0] = imageLoad(cur[idx], pos - ivec2(0, 4));
+        next2[1] = imageLoad(cur[idx], pos - ivec2(0, 2));
+        next2[2] = imageLoad(cur[idx], pos);
+        next2[3] = imageLoad(cur[idx], pos + ivec2(0, 2));
+        next2[4] = imageLoad(cur[idx], pos + ivec2(0, 4));
     } else {
-        prev2[0] = texture(cur[idx], pos - ivec2(0, 4));
-        prev2[1] = texture(cur[idx], pos - ivec2(0, 2));
-        prev2[2] = texture(cur[idx], pos);
-        prev2[3] = texture(cur[idx], pos + ivec2(0, 2));
-        prev2[4] = texture(cur[idx], pos + ivec2(0, 4));
+        prev2[0] = imageLoad(cur[idx], pos - ivec2(0, 4));
+        prev2[1] = imageLoad(cur[idx], pos - ivec2(0, 2));
+        prev2[2] = imageLoad(cur[idx], pos);
+        prev2[3] = imageLoad(cur[idx], pos + ivec2(0, 2));
+        prev2[4] = imageLoad(cur[idx], pos + ivec2(0, 4));
 
-        next2[0] = texture(next[idx], pos - ivec2(0, 4));
-        next2[1] = texture(next[idx], pos - ivec2(0, 2));
-        next2[2] = texture(next[idx], pos);
-        next2[3] = texture(next[idx], pos + ivec2(0, 2));
-        next2[4] = texture(next[idx], pos + ivec2(0, 4));
+        next2[0] = imageLoad(next[idx], pos - ivec2(0, 4));
+        next2[1] = imageLoad(next[idx], pos - ivec2(0, 2));
+        next2[2] = imageLoad(next[idx], pos);
+        next2[3] = imageLoad(next[idx], pos + ivec2(0, 2));
+        next2[4] = imageLoad(next[idx], pos + ivec2(0, 4));
     }
 
     imageStore(dst[idx], pos, process_line(prev2, prev1, dcur, next1, next2));
