@@ -249,6 +249,9 @@ int ff_vk_filter_process_simple(FFVulkanContext *vkctx, FFVkExecPool *e,
     VkImageView out_views[AV_NUM_DATA_POINTERS];
     VkImageMemoryBarrier2 img_bar[37];
     int nb_img_bar = 0;
+    VkImageLayout in_layout = sampler != VK_NULL_HANDLE ?
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL :
+                              VK_IMAGE_LAYOUT_GENERAL;
 
     /* Update descriptors and init the exec context */
     FFVkExecContext *exec = ff_vk_exec_get(vkctx, e);
@@ -267,8 +270,8 @@ int ff_vk_filter_process_simple(FFVulkanContext *vkctx, FFVkExecPool *e,
                                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT));
         RET(ff_vk_create_imageviews(vkctx, exec, in_views,  in_f, FF_VK_REP_FLOAT));
         ff_vk_shader_update_img_array(vkctx, exec, shd,  in_f,  in_views, 0, 0,
-                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                          sampler);
+                                      in_layout,
+                                      sampler);
     }
 
     /* Bind pipeline, update push data */
@@ -289,7 +292,7 @@ int ff_vk_filter_process_simple(FFVulkanContext *vkctx, FFVkExecPool *e,
                             VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                             VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                             VK_ACCESS_SHADER_READ_BIT,
-                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                            in_layout,
                             VK_QUEUE_FAMILY_IGNORED);
 
     vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
@@ -321,6 +324,9 @@ int ff_vk_filter_process_2pass(FFVulkanContext *vkctx, FFVkExecPool *e,
     VkImageView out_views[AV_NUM_DATA_POINTERS];
     VkImageMemoryBarrier2 img_bar[37];
     int nb_img_bar = 0;
+    VkImageLayout in_layout = sampler != VK_NULL_HANDLE ?
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL :
+                              VK_IMAGE_LAYOUT_GENERAL;
 
     /* Update descriptors and init the exec context */
     FFVkExecContext *exec = ff_vk_exec_get(vkctx, e);
@@ -344,7 +350,7 @@ int ff_vk_filter_process_2pass(FFVulkanContext *vkctx, FFVkExecPool *e,
                         VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                         VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                         VK_ACCESS_SHADER_READ_BIT,
-                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                        in_layout,
                         VK_QUEUE_FAMILY_IGNORED);
     ff_vk_frame_barrier(vkctx, exec, tmp, img_bar, &nb_img_bar,
                         VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
@@ -373,7 +379,7 @@ int ff_vk_filter_process_2pass(FFVulkanContext *vkctx, FFVkExecPool *e,
         VkImageView *dst_views = !i ? tmp_views : out_views;
 
         ff_vk_shader_update_img_array(vkctx, exec, shd, src_f, src_views, 0, 0,
-                                      !i ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL :
+                                      !i ? in_layout :
                                            VK_IMAGE_LAYOUT_GENERAL,
                                       sampler);
         ff_vk_shader_update_img_array(vkctx, exec, shd, dst_f, dst_views, 0, 1,
@@ -409,6 +415,9 @@ int ff_vk_filter_process_Nin(FFVulkanContext *vkctx, FFVkExecPool *e,
     VkImageView out_views[AV_NUM_DATA_POINTERS];
     VkImageMemoryBarrier2 img_bar[128];
     int nb_img_bar = 0;
+    VkImageLayout in_layout = sampler != VK_NULL_HANDLE ?
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL :
+                              VK_IMAGE_LAYOUT_GENERAL;
 
     /* Update descriptors and init the exec context */
     FFVkExecContext *exec = ff_vk_exec_get(vkctx, e);
@@ -432,7 +441,7 @@ int ff_vk_filter_process_Nin(FFVulkanContext *vkctx, FFVkExecPool *e,
                                   VK_NULL_HANDLE);
     for (int i = 0; i < nb_in; i++)
         ff_vk_shader_update_img_array(vkctx, exec, shd, in[i], in_views[i], 0, i,
-                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                      in_layout,
                                       sampler);
 
     /* Bind pipeline, update push data */
@@ -453,7 +462,7 @@ int ff_vk_filter_process_Nin(FFVulkanContext *vkctx, FFVkExecPool *e,
                             VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                             VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                             VK_ACCESS_SHADER_READ_BIT,
-                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                            in_layout,
                             VK_QUEUE_FAMILY_IGNORED);
 
     vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
