@@ -333,6 +333,7 @@ extern const FFFilter ff_vf_idet;
 extern const FFFilter ff_vf_il;
 extern const FFFilter ff_vf_inflate;
 extern const FFFilter ff_vf_interlace;
+extern const FFFilter ff_vf_interlace_vulkan;
 extern const FFFilter ff_vf_interleave;
 extern const FFFilter ff_vf_kerndeint;
 extern const FFFilter ff_vf_kirsch;

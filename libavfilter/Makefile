@@ -358,6 +358,7 @@ OBJS-$(CONFIG_IDET_FILTER)                   += vf_idet.o
 OBJS-$(CONFIG_IL_FILTER)                     += vf_il.o
 OBJS-$(CONFIG_INFLATE_FILTER)                += vf_neighbor.o
 OBJS-$(CONFIG_INTERLACE_FILTER)              += vf_tinterlace.o
+OBJS-$(CONFIG_INTERLACE_VULKAN_FILTER)       += vf_interlace_vulkan.o vulkan.o vulkan_filter.o
 OBJS-$(CONFIG_INTERLEAVE_FILTER)             += f_interleave.o
 OBJS-$(CONFIG_KERNDEINT_FILTER)              += vf_kerndeint.o
 OBJS-$(CONFIG_KIRSCH_FILTER)                 += vf_convolution.o

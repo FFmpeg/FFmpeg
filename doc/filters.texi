@@ -16041,7 +16041,7 @@ If 0, plane will remain unchanged.
 
 This filter supports the all above options as @ref{commands}.
 
-@section interlace
+@section interlace, interlace_vulkan
 
 Simple interlacing filter from progressive contents. This interleaves upper (or
 lower) lines from odd frames with lower (or upper) lines from even frames,
