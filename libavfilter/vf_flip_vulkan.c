@@ -40,7 +40,6 @@ typedef struct FlipVulkanContext {
     FFVkExecPool e;
     AVVulkanDeviceQueueFamily *qf;
     FFVulkanShader shd;
-    VkSampler sampler;
 } FlipVulkanContext;
 
 static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in, enum FlipType type)
@@ -70,7 +69,6 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in, enum FlipType 
     }
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*4, 0, 0, 0, NULL));
-    RET(ff_vk_init_sampler(vkctx, &s->sampler, 1, VK_FILTER_LINEAR));
     RET(ff_vk_shader_init(vkctx, &s->shd, "flip",
                           VK_SHADER_STAGE_COMPUTE_BIT,
                           NULL, 0,
@@ -80,11 +78,12 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in, enum FlipType 
     desc = (FFVulkanDescriptorSetBinding []) {
         {
             .name       = "input_image",
-            .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.input_format, FF_VK_REP_FLOAT),
+            .mem_quali  = "readonly",
             .dimensions = 2,
             .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-            .samplers   = DUP_SAMPLER(s->sampler),
         },
         {
             .name       = "output_image",
@@ -110,16 +109,16 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in, enum FlipType 
         switch (type)
         {
         case FLIP_HORIZONTAL:
-            GLSLF(2, vec4 res = texture(input_image[%i], ivec2(size.x - pos.x, pos.y));   ,i);
+            GLSLF(2, vec4 res = imageLoad(input_image[%i], ivec2(size.x - pos.x, pos.y)); ,i);
             break;
         case FLIP_VERTICAL:
-            GLSLF(2, vec4 res = texture(input_image[%i], ivec2(pos.x, size.y - pos.y));   ,i);
+            GLSLF(2, vec4 res = imageLoad(input_image[%i], ivec2(pos.x, size.y - pos.y)); ,i);
             break;
         case FLIP_BOTH:
-            GLSLF(2, vec4 res = texture(input_image[%i], ivec2(size.xy - pos.xy));,         i);
+            GLSLF(2, vec4 res = imageLoad(input_image[%i], ivec2(size.xy - pos.xy));,      i);
             break;
         default:
-            GLSLF(2, vec4 res = texture(input_image[%i], pos);                            ,i);
+            GLSLF(2, vec4 res = imageLoad(input_image[%i], pos);                          ,i);
             break;
         }
         GLSLF(2,     imageStore(output_image[%i], pos, res);                              ,i);
@@ -147,16 +146,10 @@ fail:
 static av_cold void flip_vulkan_uninit(AVFilterContext *avctx)
 {
     FlipVulkanContext *s = avctx->priv;
-
     FFVulkanContext *vkctx = &s->vkctx;
-    FFVulkanFunctions *vk = &vkctx->vkfn;
 
     ff_vk_exec_pool_free(vkctx, &s->e);
     ff_vk_shader_free(vkctx, &s->shd);
-
-    if (s->sampler)
-        vk->DestroySampler(vkctx->hwctx->act_dev, s->sampler,
-                           vkctx->hwctx->alloc);
 
     ff_vk_uninit(&s->vkctx);
 
@@ -181,7 +174,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in, enum FlipType type)
         RET(init_filter(ctx, in, type));
 
     RET(ff_vk_filter_process_simple(&s->vkctx, &s->e, &s->shd, out, in,
-                                    s->sampler, NULL, 0));
+                                    VK_NULL_HANDLE, NULL, 0));
 
     RET(av_frame_copy_props(out, in));
 
