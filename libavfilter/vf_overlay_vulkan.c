@@ -35,7 +35,6 @@ typedef struct OverlayVulkanContext {
     FFVkExecPool e;
     AVVulkanDeviceQueueFamily *qf;
     FFVulkanShader shd;
-    VkSampler sampler;
 
     /* Push constants / options */
     struct {
@@ -55,10 +54,10 @@ static const char overlay_noalpha[] = {
     C(1,     if ((o_offset[i].x <= pos.x) && (o_offset[i].y <= pos.y) &&
                  (pos.x < (o_offset[i].x + o_size[i].x)) &&
                  (pos.y < (o_offset[i].y + o_size[i].y))) {                    )
-    C(2,         vec4 res = texture(overlay_img[i], pos - o_offset[i]);        )
+    C(2,         vec4 res = imageLoad(overlay_img[i], pos - o_offset[i]);      )
     C(2,         imageStore(output_img[i], pos, res);                          )
     C(1,     } else {                                                          )
-    C(2,         vec4 res = texture(main_img[i], pos);                         )
+    C(2,         vec4 res = imageLoad(main_img[i], pos);                       )
     C(2,         imageStore(output_img[i], pos, res);                          )
     C(1,     }                                                                 )
     C(0, }                                                                     )
@@ -67,11 +66,11 @@ static const char overlay_noalpha[] = {
 static const char overlay_alpha[] = {
     C(0, void overlay_alpha_opaque(int i, ivec2 pos)                           )
     C(0, {                                                                     )
-    C(1,     vec4 res = texture(main_img[i], pos);                             )
+    C(1,     vec4 res = imageLoad(main_img[i], pos);                           )
     C(1,     if ((o_offset[i].x <= pos.x) && (o_offset[i].y <= pos.y) &&
                  (pos.x < (o_offset[i].x + o_size[i].x)) &&
                  (pos.y < (o_offset[i].y + o_size[i].y))) {                    )
-    C(2,         vec4 ovr = texture(overlay_img[i], pos - o_offset[i]);        )
+    C(2,         vec4 ovr = imageLoad(overlay_img[i], pos - o_offset[i]);      )
     C(2,         res = ovr * ovr.a + res * (1.0f - ovr.a);                     )
     C(2,         res.a = 1.0f;                                                 )
     C(2,         imageStore(output_img[i], pos, res);                          )
@@ -109,7 +108,6 @@ static av_cold int init_filter(AVFilterContext *ctx)
     }
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*4, 0, 0, 0, NULL));
-    RET(ff_vk_init_sampler(vkctx, &s->sampler, 1, VK_FILTER_NEAREST));
     RET(ff_vk_shader_init(vkctx, &s->shd, "overlay",
                           VK_SHADER_STAGE_COMPUTE_BIT,
                           NULL, 0,
@@ -128,19 +126,21 @@ static av_cold int init_filter(AVFilterContext *ctx)
     desc = (FFVulkanDescriptorSetBinding []) {
         {
             .name       = "main_img",
-            .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.input_format, FF_VK_REP_FLOAT),
+            .mem_quali  = "readonly",
             .dimensions = 2,
             .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-            .samplers   = DUP_SAMPLER(s->sampler),
         },
         {
             .name       = "overlay_img",
-            .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.input_format, FF_VK_REP_FLOAT),
+            .mem_quali  = "readonly",
             .dimensions = 2,
             .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-            .samplers   = DUP_SAMPLER(s->sampler),
         },
         {
             .name       = "output_img",
@@ -240,7 +240,7 @@ static int overlay_vulkan_blend(FFFrameSync *fs)
 
     RET(ff_vk_filter_process_Nin(&s->vkctx, &s->e, &s->shd,
                                  out, (AVFrame *[]){ input_main, input_overlay }, 2,
-                                 s->sampler, &s->opts, sizeof(s->opts)));
+                                 VK_NULL_HANDLE, &s->opts, sizeof(s->opts)));
 
     err = av_frame_copy_props(out, input_main);
     if (err < 0)
@@ -294,10 +294,6 @@ static void overlay_vulkan_uninit(AVFilterContext *avctx)
 
     ff_vk_exec_pool_free(vkctx, &s->e);
     ff_vk_shader_free(vkctx, &s->shd);
-
-    if (s->sampler)
-        vk->DestroySampler(vkctx->hwctx->act_dev, s->sampler,
-                           vkctx->hwctx->alloc);
 
     ff_vk_uninit(&s->vkctx);
     ff_framesync_uninit(&s->fs);
