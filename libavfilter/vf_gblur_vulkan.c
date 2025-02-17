@@ -51,17 +51,17 @@ typedef struct GBlurVulkanContext {
 } GBlurVulkanContext;
 
 static const char gblur_func[] = {
-    C(0, void gblur(const ivec2 pos, const int index)                           )
-    C(0, {                                                                      )
-    C(1,     vec4 sum = texture(input_images[index], pos) * kernel[0];          )
-    C(0,                                                                        )
-    C(1,     for(int i = 1; i < kernel.length(); i++) {                         )
-    C(2,         sum += texture(input_images[index], pos + OFFSET) * kernel[i]; )
-    C(2,         sum += texture(input_images[index], pos - OFFSET) * kernel[i]; )
-    C(1,     }                                                                  )
-    C(0,                                                                        )
-    C(1,     imageStore(output_images[index], pos, sum);                        )
-    C(0, }                                                                      )
+    C(0, void gblur(const ivec2 pos, const int index)                             )
+    C(0, {                                                                        )
+    C(1,     vec4 sum = imageLoad(input_images[index], pos) * kernel[0];          )
+    C(0,                                                                          )
+    C(1,     for(int i = 1; i < kernel.length(); i++) {                           )
+    C(2,         sum += imageLoad(input_images[index], pos + OFFSET) * kernel[i]; )
+    C(2,         sum += imageLoad(input_images[index], pos - OFFSET) * kernel[i]; )
+    C(1,     }                                                                    )
+    C(0,                                                                          )
+    C(1,     imageStore(output_images[index], pos, sum);                          )
+    C(0, }                                                                        )
 };
 
 static inline float gaussian(float sigma, float x)
@@ -163,7 +163,7 @@ static int init_gblur_pipeline(GBlurVulkanContext *s,
         if (s->planes & (1 << i)) {
             GLSLF(1,      gblur(pos, %i);                           ,i);
         } else {
-            GLSLF(1, vec4 res = texture(input_images[%i], pos);     ,i);
+            GLSLF(1, vec4 res = imageLoad(input_images[%i], pos);   ,i);
             GLSLF(1, imageStore(output_images[%i], pos, res);       ,i);
         }
     }
@@ -220,16 +220,16 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     }
 
     RET(ff_vk_exec_pool_init(vkctx, s->qf, &s->e, s->qf->num*4, 0, 0, 0, NULL));
-    RET(ff_vk_init_sampler(vkctx, &s->sampler, 1, VK_FILTER_LINEAR));
 
     desc = (FFVulkanDescriptorSetBinding []) {
         {
             .name       = "input_images",
-            .type       = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .mem_layout = ff_vk_shader_rep_fmt(s->vkctx.input_format, FF_VK_REP_FLOAT),
+            .mem_quali  = "readonly",
             .dimensions = 2,
             .elems      = planes,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-            .samplers   = DUP_SAMPLER(s->sampler),
         },
         {
             .name       = "output_images",
@@ -254,7 +254,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
         RET(ff_vk_shader_add_descriptor_set(vkctx, shd, desc, 2, 0, 0));
 
-        GLSLC(0, #define OFFSET (vec2(i, 0.0)));
+        GLSLC(0, #define OFFSET (ivec2(i, 0.0)));
         RET(init_gblur_pipeline(s, shd, &s->params_hor, s->size, s->sigma, spv));
     }
 
@@ -268,7 +268,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
 
         RET(ff_vk_shader_add_descriptor_set(vkctx, shd, desc, 2, 0, 0));
 
-        GLSLC(0, #define OFFSET (vec2(0.0, i)));
+        GLSLC(0, #define OFFSET (ivec2(0.0, i)));
         RET(init_gblur_pipeline(s, shd, &s->params_ver, s->sizeV, s->sigmaV, spv));
     }
 
@@ -285,17 +285,12 @@ static av_cold void gblur_vulkan_uninit(AVFilterContext *avctx)
 {
     GBlurVulkanContext *s = avctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
-    FFVulkanFunctions *vk = &vkctx->vkfn;
 
     ff_vk_exec_pool_free(vkctx, &s->e);
     ff_vk_shader_free(vkctx, &s->shd_hor);
     ff_vk_shader_free(vkctx, &s->shd_ver);
     ff_vk_free_buf(vkctx, &s->params_hor);
     ff_vk_free_buf(vkctx, &s->params_ver);
-
-    if (s->sampler)
-        vk->DestroySampler(vkctx->hwctx->act_dev, s->sampler,
-                           vkctx->hwctx->alloc);
 
     ff_vk_uninit(&s->vkctx);
 
@@ -327,7 +322,7 @@ static int gblur_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
 
     RET(ff_vk_filter_process_2pass(&s->vkctx, &s->e,
                                    (FFVulkanShader *[2]){ &s->shd_hor, &s->shd_ver },
-                                   out, tmp, in, s->sampler, NULL, 0));
+                                   out, tmp, in, VK_NULL_HANDLE, NULL, 0));
 
     err = av_frame_copy_props(out, in);
     if (err < 0)
