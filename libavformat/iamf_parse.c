@@ -733,6 +733,12 @@ static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
     }
 
     num_parameters = ffio_read_leb(pbc);
+    if (num_parameters > 2 && audio_element_type == 0) {
+        av_log(s, AV_LOG_ERROR, "Audio Element parameter count %u is invalid"
+                                " for Channel representations\n", num_parameters);
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
     if (num_parameters && audio_element_type != 0) {
         av_log(s, AV_LOG_ERROR, "Audio Element parameter count %u is invalid"
                                 " for Scene representations\n", num_parameters);
