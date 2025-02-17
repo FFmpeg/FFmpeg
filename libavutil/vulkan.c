@@ -2595,10 +2595,12 @@ void ff_vk_shader_free(FFVulkanContext *s, FFVulkanShader *shd)
         av_free(set->binding_offset);
     }
 
-    for (int i = 0; i < shd->nb_descriptor_sets; i++)
-        if (shd->desc_layout[i])
-            vk->DestroyDescriptorSetLayout(s->hwctx->act_dev, shd->desc_layout[i],
-                                           s->hwctx->alloc);
+    if (shd->desc_layout) {
+        for (int i = 0; i < shd->nb_descriptor_sets; i++)
+            if (shd->desc_layout[i])
+                vk->DestroyDescriptorSetLayout(s->hwctx->act_dev, shd->desc_layout[i],
+                                               s->hwctx->alloc);
+    }
 
     av_freep(&shd->desc_pool_size);
     av_freep(&shd->desc_layout);
