@@ -192,6 +192,7 @@ extern const FFFilter ff_vf_bilateral;
 extern const FFFilter ff_vf_bilateral_cuda;
 extern const FFFilter ff_vf_bitplanenoise;
 extern const FFFilter ff_vf_blackdetect;
+extern const FFFilter ff_vf_blackdetect_vulkan;
 extern const FFFilter ff_vf_blackframe;
 extern const FFFilter ff_vf_blend;
 extern const FFFilter ff_vf_blend_vulkan;

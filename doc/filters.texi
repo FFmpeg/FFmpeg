@@ -8634,7 +8634,7 @@ Filter out noisy pixels from @code{bitplane} set above.
 Default is disabled.
 @end table
 
-@section blackdetect
+@section blackdetect, blackdetect_vulkan
 
 Detect video intervals that are (almost) completely black. Can be
 useful to detect chapter transitions, commercials, or invalid
