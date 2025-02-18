@@ -22,7 +22,6 @@
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
-#include "avcodec.h"
 #include "codec.h"
 #include "config.h"
 
@@ -102,6 +101,7 @@ typedef struct FFCodecDefault {
 struct AVCodecContext;
 struct AVSubtitle;
 struct AVPacket;
+enum AVCodecConfig;
 
 enum FFCodecType {
     /* The codec is a decoder using the decode callback;
@@ -268,7 +268,7 @@ typedef struct FFCodec {
      * ff_default_get_supported_config() will be used. `out_num_configs` will
      * always be set to a valid pointer.
      */
-    int (*get_supported_config)(const AVCodecContext *avctx,
+    int (*get_supported_config)(const struct AVCodecContext *avctx,
                                 const AVCodec *codec,
                                 enum AVCodecConfig config,
                                 unsigned flags,
@@ -283,7 +283,7 @@ typedef struct FFCodec {
  * For AVCODEC_CONFIG_COLOR_RANGE, the output will depend on the bitmask in
  * FFCodec.color_ranges, with a value of 0 returning NULL.
  */
-int ff_default_get_supported_config(const AVCodecContext *avctx,
+int ff_default_get_supported_config(const struct AVCodecContext *avctx,
                                     const AVCodec *codec,
                                     enum AVCodecConfig config,
                                     unsigned flags,

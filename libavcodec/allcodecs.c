@@ -29,6 +29,7 @@
 
 #include "config.h"
 #include "libavutil/thread.h"
+#include "avcodec.h"
 #include "codec.h"
 #include "codec_id.h"
 #include "codec_internal.h"
