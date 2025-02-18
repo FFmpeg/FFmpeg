@@ -1540,6 +1540,38 @@ static int mov_write_avcc_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+/* AVS3 Intelligent Media Coding
+ * Information Technology - Intelligent Media Coding
+ * Part 6: Intelligent Media Format
+ */
+static int mov_write_av3c(AVIOContext *pb, const uint8_t *data, int len)
+{
+    if (len < 4)
+        return AVERROR_INVALIDDATA;
+
+    if (data[0] == 1) {
+        // In Avs3DecoderConfigurationRecord format
+        avio_write(pb, data, len);
+        return 0;
+    }
+
+    avio_w8(pb, 1);             // version
+    avio_wb16(pb, len);         // sequence_header_length
+    avio_write(pb, data, len);  // sequence_header
+    avio_w8(pb, 0xFC);          // Only support library_dependency_idc = 0
+
+    return 0;
+}
+
+static int mov_write_av3c_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    avio_wb32(pb, 0);
+    ffio_wfourcc(pb, "av3c");
+    mov_write_av3c(pb, track->vos_data, track->vos_len);
+    return update_size(pb, pos);
+}
+
 static int mov_write_vpcc_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -2738,6 +2770,8 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     } else if (track->par->codec_id == AV_CODEC_ID_R10K) {
         if (track->par->codec_tag == MKTAG('R','1','0','k'))
             mov_write_dpxe_tag(pb, track);
+    } else if (track->par->codec_id == AV_CODEC_ID_AVS3) {
+        mov_write_av3c_tag(pb, track);
     } else if (track->vos_len > 0)
         mov_write_glbl_tag(pb, track);
 
@@ -8645,6 +8679,8 @@ static const AVCodecTag codec_mp4_tags[] = {
     { AV_CODEC_ID_PCM_F32LE,       MOV_MP4_FPCM_TAG          },
     { AV_CODEC_ID_PCM_F64BE,       MOV_MP4_FPCM_TAG          },
     { AV_CODEC_ID_PCM_F64LE,       MOV_MP4_FPCM_TAG          },
+
+    { AV_CODEC_ID_AVS3,            MKTAG('a', 'v', 's', '3') },
 
     { AV_CODEC_ID_NONE,               0 },
 };
