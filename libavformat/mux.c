@@ -1025,44 +1025,6 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
         }
     }
 
-#if FF_API_LAVF_SHORTEST
-    if (si->packet_buffer.head &&
-        eof &&
-        (s->flags & AVFMT_FLAG_SHORTEST) &&
-        fci->shortest_end == AV_NOPTS_VALUE) {
-        AVPacket *const top_pkt = &si->packet_buffer.head->pkt;
-
-        fci->shortest_end = av_rescale_q(top_pkt->dts,
-                                         s->streams[top_pkt->stream_index]->time_base,
-                                         AV_TIME_BASE_Q);
-    }
-
-    if (fci->shortest_end != AV_NOPTS_VALUE) {
-        while (si->packet_buffer.head) {
-            PacketListEntry *pktl = si->packet_buffer.head;
-            AVPacket *const top_pkt = &pktl->pkt;
-            AVStream *const st = s->streams[top_pkt->stream_index];
-            FFStream *const sti = ffstream(st);
-            int64_t top_dts = av_rescale_q(top_pkt->dts, st->time_base,
-                                        AV_TIME_BASE_Q);
-
-            if (fci->shortest_end + 1 >= top_dts)
-                break;
-
-            si->packet_buffer.head = pktl->next;
-            if (!si->packet_buffer.head)
-                si->packet_buffer.tail = NULL;
-
-            if (sti->last_in_packet_buffer == pktl)
-                sti->last_in_packet_buffer = NULL;
-
-            av_packet_unref(&pktl->pkt);
-            av_freep(&pktl);
-            flush = 0;
-        }
-    }
-#endif
-
     if (stream_count && flush) {
         PacketListEntry *pktl = si->packet_buffer.head;
         AVStream *const st = s->streams[pktl->pkt.stream_index];

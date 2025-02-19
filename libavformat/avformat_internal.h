@@ -95,13 +95,6 @@ typedef struct FormatContextInternal {
             int chapter_ids_monotonic;
         };
     };
-
-#if FF_API_LAVF_SHORTEST
-    /**
-     * Timestamp of the end of the shortest stream.
-     */
-    int64_t shortest_end;
-#endif
 } FormatContextInternal;
 
 static av_always_inline FormatContextInternal *ff_fc_internal(AVFormatContext *s)
