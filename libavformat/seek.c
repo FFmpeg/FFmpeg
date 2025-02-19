@@ -715,8 +715,6 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts,
 /** Flush the frame reader. */
 void ff_read_frame_flush(AVFormatContext *s)
 {
-    FFFormatContext *const si = ffformatcontext(s);
-
     ff_flush_packet_queue(s);
 
     /* Reset read state for each stream. */
@@ -740,11 +738,6 @@ void ff_read_frame_flush(AVFormatContext *s)
 
         for (int j = 0; j < MAX_REORDER_DELAY + 1; j++)
             sti->pts_buffer[j] = AV_NOPTS_VALUE;
-
-#if FF_API_AVSTREAM_SIDE_DATA
-        if (si->inject_global_side_data)
-            sti->inject_global_side_data = 1;
-#endif
 
         sti->skip_samples = 0;
     }

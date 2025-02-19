@@ -1496,27 +1496,6 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             }
             sti->skip_samples = 0;
         }
-
-#if FF_API_AVSTREAM_SIDE_DATA
-        if (sti->inject_global_side_data) {
-            for (int i = 0; i < st->codecpar->nb_coded_side_data; i++) {
-                const AVPacketSideData *const src_sd = &st->codecpar->coded_side_data[i];
-                uint8_t *dst_data;
-
-                if (av_packet_get_side_data(pkt, src_sd->type, NULL))
-                    continue;
-
-                dst_data = av_packet_new_side_data(pkt, src_sd->type, src_sd->size);
-                if (!dst_data) {
-                    av_log(s, AV_LOG_WARNING, "Could not inject global side data\n");
-                    continue;
-                }
-
-                memcpy(dst_data, src_sd->data, src_sd->size);
-            }
-            sti->inject_global_side_data = 0;
-        }
-#endif
     }
 
     if (!fci->metafree) {
@@ -3075,31 +3054,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         }
 
         sti->avctx_inited = 0;
-#if FF_API_AVSTREAM_SIDE_DATA
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (st->codecpar->nb_coded_side_data > 0) {
-            av_assert0(!st->side_data && !st->nb_side_data);
-            st->side_data = av_calloc(st->codecpar->nb_coded_side_data, sizeof(*st->side_data));
-            if (!st->side_data) {
-                ret = AVERROR(ENOMEM);
-                goto find_stream_info_err;
-            }
-
-            for (int j = 0; j < st->codecpar->nb_coded_side_data; j++) {
-                uint8_t *data = av_memdup(st->codecpar->coded_side_data[j].data,
-                                          st->codecpar->coded_side_data[j].size);
-                if (!data) {
-                    ret = AVERROR(ENOMEM);
-                    goto find_stream_info_err;
-                }
-                st->side_data[j].type = st->codecpar->coded_side_data[j].type;
-                st->side_data[j].size = st->codecpar->coded_side_data[j].size;
-                st->side_data[j].data = data;
-                st->nb_side_data++;
-            }
-        }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
 
 find_stream_info_err:

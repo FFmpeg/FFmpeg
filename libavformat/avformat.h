@@ -844,38 +844,6 @@ typedef struct AVStream {
      */
     AVPacket attached_pic;
 
-#if FF_API_AVSTREAM_SIDE_DATA
-    /**
-     * An array of side data that applies to the whole stream (i.e. the
-     * container does not allow it to change between packets).
-     *
-     * There may be no overlap between the side data in this array and side data
-     * in the packets. I.e. a given side data is either exported by the muxer
-     * (demuxing) / set by the caller (muxing) in this array, then it never
-     * appears in the packets, or the side data is exported / sent through
-     * the packets (always in the first packet where the value becomes known or
-     * changes), then it does not appear in this array.
-     *
-     * - demuxing: Set by libavformat when the stream is created.
-     * - muxing: May be set by the caller before avformat_write_header().
-     *
-     * Freed by libavformat in avformat_free_context().
-     *
-     * @deprecated use AVStream's @ref AVCodecParameters.coded_side_data
-     *             "codecpar side data".
-     */
-    attribute_deprecated
-    AVPacketSideData *side_data;
-    /**
-     * The number of elements in the AVStream.side_data array.
-     *
-     * @deprecated use AVStream's @ref AVCodecParameters.nb_coded_side_data
-     *             "codecpar side data".
-     */
-    attribute_deprecated
-    int            nb_side_data;
-#endif
-
     /**
      * Flags indicating events happening on the stream, a combination of
      * AVSTREAM_EVENT_FLAG_*.
@@ -1923,26 +1891,6 @@ typedef struct AVFormatContext {
     int64_t duration_probesize;
 } AVFormatContext;
 
-#if FF_API_AVSTREAM_SIDE_DATA
-/**
- * This function will cause global side data to be injected in the next packet
- * of each stream as well as after any subsequent seek.
- *
- * @note global side data is always available in every AVStream's
- *       @ref AVCodecParameters.coded_side_data "codecpar side data" array, and
- *       in a @ref AVCodecContext.coded_side_data "decoder's side data" array if
- *       initialized with said stream's codecpar.
- * @see av_packet_side_data_get()
- *
- * @deprecated this function should never be needed, as global side data is now
- *             exported in AVCodecParameters and should
- *             be propagated from demuxers to decoders via
- *             ::avcodec_parameters_to_context()
- */
-attribute_deprecated
-void av_format_inject_global_side_data(AVFormatContext *s);
-#endif
-
 #if FF_API_GET_DUR_ESTIMATE_METHOD
 /**
  * Returns the method used to set ctx->duration.
@@ -2130,57 +2078,6 @@ AVStream *avformat_new_stream(AVFormatContext *s, const struct AVCodec *c);
  * @see avformat_new_stream, avformat_stream_group_create.
  */
 int avformat_stream_group_add_stream(AVStreamGroup *stg, AVStream *st);
-
-#if FF_API_AVSTREAM_SIDE_DATA
-/**
- * Wrap an existing array as stream side data.
- *
- * @param st   stream
- * @param type side information type
- * @param data the side data array. It must be allocated with the av_malloc()
- *             family of functions. The ownership of the data is transferred to
- *             st.
- * @param size side information size
- *
- * @return zero on success, a negative AVERROR code on failure. On failure,
- *         the stream is unchanged and the data remains owned by the caller.
- * @deprecated use av_packet_side_data_add() with the stream's
- *             @ref AVCodecParameters.coded_side_data "codecpar side data"
- */
-attribute_deprecated
-int av_stream_add_side_data(AVStream *st, enum AVPacketSideDataType type,
-                            uint8_t *data, size_t size);
-
-/**
- * Allocate new information from stream.
- *
- * @param stream stream
- * @param type   desired side information type
- * @param size   side information size
- *
- * @return pointer to fresh allocated data or NULL otherwise
- * @deprecated use av_packet_side_data_new() with the stream's
- *             @ref AVCodecParameters.coded_side_data "codecpar side data"
- */
-attribute_deprecated
-uint8_t *av_stream_new_side_data(AVStream *stream,
-                                 enum AVPacketSideDataType type, size_t size);
-/**
- * Get side information from stream.
- *
- * @param stream stream
- * @param type   desired side information type
- * @param size   If supplied, *size will be set to the size of the side data
- *               or to zero if the desired side data is not present.
- *
- * @return pointer to data if present or NULL otherwise
- * @deprecated use av_packet_side_data_get() with the stream's
- *             @ref AVCodecParameters.coded_side_data "codecpar side data"
- */
-attribute_deprecated
-uint8_t *av_stream_get_side_data(const AVStream *stream,
-                                 enum AVPacketSideDataType type, size_t *size);
-#endif
 
 AVProgram *av_new_program(AVFormatContext *s, int id);
 
