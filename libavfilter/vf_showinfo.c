@@ -887,6 +887,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     dump_color_property(ctx, frame);
 
+    if (desc->flags & AV_PIX_FMT_FLAG_ALPHA) {
+        const char *alpha_mode_str = av_alpha_mode_name(frame->alpha_mode);
+        if (!alpha_mode_str || frame->alpha_mode == AVALPHA_MODE_UNSPECIFIED)
+            av_log(ctx, AV_LOG_INFO, "alpha_mode:unspecified\n");
+        else
+            av_log(ctx, AV_LOG_INFO, "alpha_mode:%s\n", alpha_mode_str);
+    }
+
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
