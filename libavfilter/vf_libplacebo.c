@@ -1159,8 +1159,16 @@ static int libplacebo_query_format(const AVFilterContext *ctx,
         goto fail;
     }
 
-    for (int i = 0; i < s->nb_inputs; i++)
+    for (int i = 0; i < s->nb_inputs; i++) {
+        if (i > 0) {
+            /* Duplicate the format list for each subsequent input */
+            infmts = NULL;
+            for (int n = 0; n < cfg_in[0]->formats->nb_formats; n++)
+                RET(ff_add_format(&infmts, cfg_in[0]->formats->formats[n]));
+        }
         RET(ff_formats_ref(infmts, &cfg_in[i]->formats));
+    }
+
     RET(ff_formats_ref(outfmts, &cfg_out[0]->formats));
 
     /* Set colorspace properties */
