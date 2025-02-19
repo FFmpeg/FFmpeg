@@ -128,20 +128,7 @@ static void vvenc_set_framerate(AVCodecContext *avctx, vvenc_config *params)
         params->m_FrameScale = avctx->time_base.num;
     }
 
-FF_DISABLE_DEPRECATION_WARNINGS
-
-#if FF_API_TICKS_PER_FRAME
-    if (avctx->ticks_per_frame == 1) {
-#endif
-        params->m_TicksPerSecond = -1;   /* auto mode for ticks per frame = 1 */
-#if FF_API_TICKS_PER_FRAME
-    } else {
-        params->m_TicksPerSecond =
-            ceil((avctx->time_base.den / (double) avctx->time_base.num) *
-                 (double) avctx->ticks_per_frame);
-    }
-#endif
-FF_ENABLE_DEPRECATION_WARNINGS
+    params->m_TicksPerSecond = -1;   /* auto mode for ticks per frame = 1 */
 }
 
 static int vvenc_parse_vvenc_params(AVCodecContext *avctx, vvenc_config *params)

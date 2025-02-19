@@ -272,9 +272,6 @@ static const AVOption avcodec_options[] = {
 {"ch_layout", NULL, OFFSET(ch_layout), AV_OPT_TYPE_CHLAYOUT, {.str = NULL }, 0, 0, A|E|D, .unit = "ch_layout"},
 {"rc_max_vbv_use", NULL, OFFSET(rc_max_available_vbv_use), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, 0.0, FLT_MAX, V|E},
 {"rc_min_vbv_use", NULL, OFFSET(rc_min_vbv_overflow_use),  AV_OPT_TYPE_FLOAT, {.dbl = 3 },     0.0, FLT_MAX, V|E},
-#if FF_API_TICKS_PER_FRAME
-{"ticks_per_frame", NULL, OFFSET(ticks_per_frame), AV_OPT_TYPE_INT, {.i64 = 1 }, 1, INT_MAX, A|V|E|D},
-#endif
 {"color_primaries", "color primaries", OFFSET(color_primaries), AV_OPT_TYPE_INT, {.i64 = AVCOL_PRI_UNSPECIFIED }, 1, INT_MAX, V|E|D, .unit = "color_primaries_type"},
 {"bt709",       "BT.709",         0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_BT709 },        INT_MIN, INT_MAX, V|E|D, .unit = "color_primaries_type"},
 {"unknown",     "Unspecified",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_UNSPECIFIED },  INT_MIN, INT_MAX, V|E|D, .unit = "color_primaries_type"},

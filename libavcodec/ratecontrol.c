@@ -62,13 +62,7 @@ static AVRational get_fpsQ(AVCodecContext *avctx)
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
         return avctx->framerate;
 
-FF_DISABLE_DEPRECATION_WARNINGS
-#if FF_API_TICKS_PER_FRAME
-    return av_div_q((AVRational){1, FFMAX(avctx->ticks_per_frame, 1)}, avctx->time_base);
-#else
     return av_inv_q(avctx->time_base);
-#endif
-FF_ENABLE_DEPRECATION_WARNINGS
 }
 
 static double get_fps(AVCodecContext *avctx)

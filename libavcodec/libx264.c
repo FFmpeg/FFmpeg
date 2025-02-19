@@ -1317,13 +1317,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.i_fps_den = avctx->framerate.den;
     } else {
         x4->params.i_fps_num = avctx->time_base.den;
-FF_DISABLE_DEPRECATION_WARNINGS
-        x4->params.i_fps_den = avctx->time_base.num
-#if FF_API_TICKS_PER_FRAME
-            * avctx->ticks_per_frame
-#endif
-            ;
-FF_ENABLE_DEPRECATION_WARNINGS
+        x4->params.i_fps_den = avctx->time_base.num;
     }
 
     x4->params.analyse.b_psnr = avctx->flags & AV_CODEC_FLAG_PSNR;

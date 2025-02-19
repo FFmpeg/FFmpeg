@@ -970,12 +970,6 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
             // MPEG-1 fps
             avctx->framerate = ff_mpeg12_frame_rate_tab[s1->frame_rate_index];
-#if FF_API_TICKS_PER_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-            avctx->ticks_per_frame     = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
             avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
         } else { // MPEG-2
             // MPEG-2 fps
@@ -984,11 +978,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                       ff_mpeg12_frame_rate_tab[s1->frame_rate_index].num * s1->frame_rate_ext.num,
                       ff_mpeg12_frame_rate_tab[s1->frame_rate_index].den * s1->frame_rate_ext.den,
                       1 << 30);
-#if FF_API_TICKS_PER_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-            avctx->ticks_per_frame = 2;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
             switch (s->chroma_format) {
             case CHROMA_420: avctx->chroma_sample_location = AVCHROMA_LOC_LEFT; break;

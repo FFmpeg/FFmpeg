@@ -786,7 +786,7 @@ static int optimum_block_height(FlashSV2Context * s)
 static int optimum_use15_7(FlashSV2Context * s)
 {
 #ifndef FLASHSV2_DUMB
-    double ideal = ((double)(s->avctx->bit_rate * s->avctx->time_base.den * s->avctx->ticks_per_frame)) /
+    double ideal = ((double)(s->avctx->bit_rate * s->avctx->time_base.den)) /
         ((double) s->avctx->time_base.num) * s->avctx->frame_num;
     if (ideal + use15_7_threshold < s->total_bits) {
         return 1;
@@ -802,8 +802,7 @@ static int optimum_dist(FlashSV2Context * s)
 {
 #ifndef FLASHSV2_DUMB
     double ideal =
-        s->avctx->bit_rate * s->avctx->time_base.den *
-        s->avctx->ticks_per_frame;
+        s->avctx->bit_rate * s->avctx->time_base.den;
     int dist = pow((s->total_bits / ideal) * color15_7_factor, 3);
     av_log(s->avctx, AV_LOG_DEBUG, "dist: %d\n", dist);
     return dist;

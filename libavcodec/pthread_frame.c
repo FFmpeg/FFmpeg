@@ -378,11 +378,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         dst->level   = src->level;
 
         dst->bits_per_raw_sample = src->bits_per_raw_sample;
-#if FF_API_TICKS_PER_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        dst->ticks_per_frame     = src->ticks_per_frame;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         dst->color_primaries     = src->color_primaries;
 
         dst->color_trc   = src->color_trc;

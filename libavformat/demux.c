@@ -1317,12 +1317,6 @@ static int codec_close(FFStream *sti)
 
     avctx_new->pkt_timebase = sti->avctx->pkt_timebase;
 
-#if FF_API_TICKS_PER_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx_new->ticks_per_frame = sti->avctx->ticks_per_frame;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     avcodec_free_context(&sti->avctx);
     sti->avctx = avctx_new;
 

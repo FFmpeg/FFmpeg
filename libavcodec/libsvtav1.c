@@ -311,13 +311,7 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
         param->frame_rate_denominator = avctx->framerate.den;
     } else {
         param->frame_rate_numerator   = avctx->time_base.den;
-FF_DISABLE_DEPRECATION_WARNINGS
-        param->frame_rate_denominator = avctx->time_base.num
-#if FF_API_TICKS_PER_FRAME
-            * avctx->ticks_per_frame
-#endif
-            ;
-FF_ENABLE_DEPRECATION_WARNINGS
+        param->frame_rate_denominator = avctx->time_base.num;
     }
 
     /* 2 = IDR, closed GOP, 1 = CRA, open GOP */

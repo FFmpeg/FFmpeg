@@ -1800,13 +1800,7 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
         ctx->init_encode_params.frameRateDen = avctx->framerate.den;
     } else {
         ctx->init_encode_params.frameRateNum = avctx->time_base.den;
-FF_DISABLE_DEPRECATION_WARNINGS
-        ctx->init_encode_params.frameRateDen = avctx->time_base.num
-#if FF_API_TICKS_PER_FRAME
-            * avctx->ticks_per_frame
-#endif
-            ;
-FF_ENABLE_DEPRECATION_WARNINGS
+        ctx->init_encode_params.frameRateDen = avctx->time_base.num;
     }
 
 #ifdef NVENC_HAVE_UNIDIR_B
