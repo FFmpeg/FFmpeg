@@ -30,6 +30,7 @@ color_space=gbr
 color_primaries=bt709
 color_transfer=unknown
 chroma_location=unspecified
+alpha_mode=unspecified
 [SIDE_DATA]
 side_data_type=ICC profile
 name=Photoshop ICC profile

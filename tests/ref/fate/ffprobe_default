@@ -75,6 +75,7 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=unspecified
+alpha_mode=unspecified
 [/FRAME]
 [PACKET]
 codec_type=video
@@ -121,6 +122,7 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=unspecified
+alpha_mode=unspecified
 [/FRAME]
 [PACKET]
 codec_type=audio
@@ -199,6 +201,7 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=unspecified
+alpha_mode=unspecified
 [/FRAME]
 [PACKET]
 codec_type=video
@@ -245,6 +248,7 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=unspecified
+alpha_mode=unspecified
 [/FRAME]
 [PACKET]
 codec_type=audio
@@ -355,6 +359,7 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=unspecified
+alpha_mode=unspecified
 [/FRAME]
 [PACKET]
 codec_type=video
@@ -401,6 +406,7 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=unspecified
+alpha_mode=unspecified
 [/FRAME]
 [PACKET]
 codec_type=audio
@@ -511,6 +517,7 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=unspecified
+alpha_mode=unspecified
 [/FRAME]
 [PACKET]
 codec_type=video
@@ -557,6 +564,7 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=unspecified
+alpha_mode=unspecified
 [/FRAME]
 [STREAM]
 index=0

@@ -38,6 +38,7 @@ color_space=bt470bg
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=center
+alpha_mode=unspecified
 [SIDE_DATA]
 side_data_type=ICC profile
 size=3144

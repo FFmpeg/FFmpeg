@@ -30,6 +30,7 @@ color_space=bt470bg
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=center
+alpha_mode=unspecified
 TAG:ImageDescription=                               
 TAG:Make=Canon
 TAG:Model=Canon PowerShot SX200 IS

@@ -30,6 +30,7 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=unspecified
+alpha_mode=unspecified
 TAG:document_name=image_small.tiff
 TAG:page_number=    0 /     1
 TAG:0x0129=      0,       1

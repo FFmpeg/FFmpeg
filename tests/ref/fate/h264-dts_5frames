@@ -30,6 +30,7 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=left
+alpha_mode=unspecified
 [/FRAME]
 [FRAME]
 media_type=video
@@ -63,6 +64,7 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=left
+alpha_mode=unspecified
 [/FRAME]
 [FRAME]
 media_type=video
@@ -96,6 +98,7 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=left
+alpha_mode=unspecified
 [/FRAME]
 [FRAME]
 media_type=video
@@ -129,6 +132,7 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=left
+alpha_mode=unspecified
 [/FRAME]
 [FRAME]
 media_type=video
@@ -162,4 +166,5 @@ color_space=unknown
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=left
+alpha_mode=unspecified
 [/FRAME]

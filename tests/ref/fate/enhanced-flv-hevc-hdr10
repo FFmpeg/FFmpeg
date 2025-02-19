@@ -37,6 +37,7 @@ color_space=bt2020nc
 color_primaries=bt2020
 color_transfer=smpte2084
 chroma_location=left
+alpha_mode=unspecified
 [SIDE_DATA]
 side_data_type=Mastering display metadata
 red_x=13250/50000
