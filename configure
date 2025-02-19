@@ -2297,7 +2297,6 @@ HEADERS_LIST="
     linux_perf_event_h
     malloc_h
     opencv2_core_core_c_h
-    OpenGL_gl3_h
     poll_h
     pthread_np_h
     sys_hwprobe_h
@@ -3766,8 +3765,6 @@ lavfi_indev_deps="avfilter"
 libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
 openal_indev_deps="openal"
-opengl_outdev_deps="opengl"
-opengl_outdev_suggest="sdl2"
 oss_indev_deps_any="sys_soundcard_h"
 oss_outdev_deps_any="sys_soundcard_h"
 pulse_indev_deps="libpulse"
@@ -7884,7 +7881,7 @@ enabled zoompan_filter      && prepend avfilter_deps "swscale"
 enabled lavfi_indev         && prepend avdevice_deps "avfilter"
 
 #FIXME
-enabled_any sdl2_outdev opengl_outdev && enabled sdl2 &&
+enabled_any sdl2_outdev && enabled sdl2 &&
     add_cflags $(filter_out '-Dmain=SDL_main' $sdl2_cflags)
 
 enabled opus_decoder    && prepend avcodec_deps "swresample"

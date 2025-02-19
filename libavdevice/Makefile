@@ -34,7 +34,6 @@ OBJS-$(CONFIG_JACK_INDEV)                += jack.o timefilter.o
 OBJS-$(CONFIG_KMSGRAB_INDEV)             += kmsgrab.o
 OBJS-$(CONFIG_LAVFI_INDEV)               += lavfi.o
 OBJS-$(CONFIG_OPENAL_INDEV)              += openal-dec.o
-OBJS-$(CONFIG_OPENGL_OUTDEV)             += opengl_enc.o
 OBJS-$(CONFIG_OSS_INDEV)                 += oss_dec.o oss.o
 OBJS-$(CONFIG_OSS_OUTDEV)                += oss_enc.o oss.o
 OBJS-$(CONFIG_PULSE_INDEV)               += pulse_audio_dec.o \
