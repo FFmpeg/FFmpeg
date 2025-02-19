@@ -447,20 +447,6 @@ struct AVFilterLink {
 int avfilter_link(AVFilterContext *src, unsigned srcpad,
                   AVFilterContext *dst, unsigned dstpad);
 
-#if FF_API_LINK_PUBLIC
-/**
- * @deprecated this function should never be called by users
- */
-attribute_deprecated
-void avfilter_link_free(AVFilterLink **link);
-
-/**
- * @deprecated this function should never be called by users
- */
-attribute_deprecated
-int avfilter_config_links(AVFilterContext *filter);
-#endif
-
 #define AVFILTER_CMD_FLAG_ONE   1 ///< Stop once a filter understood the command (for target=all for example), fast filters are favored automatically
 #define AVFILTER_CMD_FLAG_FAST  2 ///< Only execute command when its fast (like a video out that supports contrast adjustment in hw)
 

@@ -213,17 +213,6 @@ static void link_free(AVFilterLink **link)
     av_freep(link);
 }
 
-#if FF_API_LINK_PUBLIC
-void avfilter_link_free(AVFilterLink **link)
-{
-    link_free(link);
-}
-int avfilter_config_links(AVFilterContext *filter)
-{
-    return ff_filter_config_links(filter);
-}
-#endif
-
 static void update_link_current_pts(FilterLinkInternal *li, int64_t pts)
 {
     AVFilterLink *const link = &li->l.pub;
