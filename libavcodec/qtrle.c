@@ -537,15 +537,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     }
 
     if(has_palette) {
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-        s->frame->palette_has_changed =
-#endif
         ff_copy_palette(s->pal, avpkt, avctx);
-#if FF_API_PALETTE_HAS_CHANGED
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
         /* make the palette available on the way out */
         memcpy(s->frame->data[1], s->pal, AVPALETTE_SIZE);
     }

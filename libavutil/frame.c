@@ -230,11 +230,6 @@ static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
     dst->pts                    = src->pts;
     dst->duration               = src->duration;
     dst->repeat_pict            = src->repeat_pict;
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-    dst->palette_has_changed    = src->palette_has_changed;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     dst->sample_rate            = src->sample_rate;
     dst->opaque                 = src->opaque;
     dst->pkt_dts                = src->pkt_dts;

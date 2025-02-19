@@ -567,14 +567,6 @@ typedef struct AVFrame {
      */
     int repeat_pict;
 
-#if FF_API_PALETTE_HAS_CHANGED
-    /**
-     * Tell user application that palette has changed from previous frame.
-     */
-    attribute_deprecated
-    int palette_has_changed;
-#endif
-
     /**
      * Sample rate of the audio data.
      */

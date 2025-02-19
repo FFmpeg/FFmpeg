@@ -121,13 +121,13 @@ static void arith_init(ArithCoder *c, GetBitContext *gb)
     c->get_number    = arith_get_number;
 }
 
-static int decode_pal(MSS12Context *ctx, ArithCoder *acoder)
+static void decode_pal(MSS12Context *ctx, ArithCoder *acoder)
 {
     int i, ncol, r, g, b;
     uint32_t *pal = ctx->pal + 256 - ctx->free_colours;
 
     if (!ctx->free_colours)
-        return 0;
+        return;
 
     ncol = arith_get_number(acoder, ctx->free_colours + 1);
     for (i = 0; i < ncol; i++) {
@@ -136,8 +136,6 @@ static int decode_pal(MSS12Context *ctx, ArithCoder *acoder)
         b = arith_get_bits(acoder, 8);
         *pal++ = (0xFFU << 24) | (r << 16) | (g << 8) | b;
     }
-
-    return !!ncol;
 }
 
 static int mss1_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
@@ -147,7 +145,6 @@ static int mss1_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     MSS12Context *c = &ctx->ctx;
     GetBitContext gb;
     ArithCoder acoder;
-    int pal_changed = 0;
     int ret;
 
     if ((ret = init_get_bits8(&gb, avpkt->data, avpkt->size)) < 0)
@@ -164,7 +161,7 @@ static int mss1_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     if (c->keyframe) {
         c->corrupted = 0;
         ff_mss12_slicecontext_reset(&ctx->sc);
-        pal_changed        = decode_pal(c, &acoder);
+        decode_pal(c, &acoder);
         ctx->pic->flags |= AV_FRAME_FLAG_KEY;
         ctx->pic->pict_type = AV_PICTURE_TYPE_I;
     } else {
@@ -178,11 +175,6 @@ static int mss1_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     if (c->corrupted)
         return AVERROR_INVALIDDATA;
     memcpy(ctx->pic->data[1], c->pal, AVPALETTE_SIZE);
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-    ctx->pic->palette_has_changed = pal_changed;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     if ((ret = av_frame_ref(rframe, ctx->pic)) < 0)
         return ret;

@@ -437,14 +437,7 @@ static int smc_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
         return ret;
 
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-    s->frame->palette_has_changed =
-#endif
     ff_copy_palette(s->pal, avpkt, avctx);
-#if FF_API_PALETTE_HAS_CHANGED
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     bytestream2_init(&gb, buf, buf_size);
     ret = smc_decode_stream(s, &gb);

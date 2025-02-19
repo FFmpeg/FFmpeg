@@ -653,11 +653,6 @@ static int dds_decode(AVCodecContext *avctx, AVFrame *frame,
                     ((unsigned)frame->data[1][3+i*4]<<24)
             );
         }
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->palette_has_changed = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
         if (bytestream2_get_bytes_left(gbc) < frame->height * frame->width / 2) {
             av_log(avctx, AV_LOG_ERROR, "Buffer is too small (%d < %d).\n",
@@ -687,12 +682,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                         (frame->data[1][0+i*4]<<16)+
                         ((unsigned)frame->data[1][3+i*4]<<24)
                 );
-
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-            frame->palette_has_changed = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         }
 
         if (bytestream2_get_bytes_left(gbc) < frame->height * linesize) {

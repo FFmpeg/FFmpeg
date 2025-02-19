@@ -184,11 +184,6 @@ inflate_error:
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &size);
 
         if (pal && size == AVPALETTE_SIZE) {
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-            frame->palette_has_changed = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             for (j = 0; j < 256; j++)
                 s->pal[j] = 0xFF000000 | AV_RL32(pal + j * 4);
         } else if (pal) {

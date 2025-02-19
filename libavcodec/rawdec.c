@@ -368,24 +368,13 @@ static int raw_decode(AVCodecContext *avctx, AVFrame *frame,
             return ret;
         }
 
-        if (ff_copy_palette(context->palette->data, avpkt, avctx)) {
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-            frame->palette_has_changed = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-        } else if (context->is_nut_pal8) {
+        if (!ff_copy_palette(context->palette->data, avpkt, avctx) && context->is_nut_pal8) {
             int vid_size = avctx->width * avctx->height;
             int pal_size = avpkt->size - vid_size;
 
             if (avpkt->size > vid_size && pal_size <= AVPALETTE_SIZE) {
                 const uint8_t *pal = avpkt->data + vid_size;
                 memcpy(context->palette->data, pal, pal_size);
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-                frame->palette_has_changed = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             }
         }
     }

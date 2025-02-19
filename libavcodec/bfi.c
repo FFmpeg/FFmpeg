@@ -83,19 +83,9 @@ static int bfi_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             pal++;
         }
         memcpy(bfi->pal, frame->data[1], sizeof(bfi->pal));
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->palette_has_changed = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     } else {
         frame->pict_type = AV_PICTURE_TYPE_P;
         frame->flags &= ~AV_FRAME_FLAG_KEY;
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->palette_has_changed = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         memcpy(frame->data[1], bfi->pal, sizeof(bfi->pal));
     }
 

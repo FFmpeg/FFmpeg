@@ -114,14 +114,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 
     if (avctx->bits_per_coded_sample <= 8) {
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->palette_has_changed =
-#endif
         ff_copy_palette(c->pal, avpkt, avctx);
-#if FF_API_PALETTE_HAS_CHANGED
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
         memcpy(frame->data[1], c->pal, AVPALETTE_SIZE);
     }

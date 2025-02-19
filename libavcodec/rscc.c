@@ -347,14 +347,7 @@ static int rscc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     /* Palette handling */
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->palette_has_changed =
-#endif
         ff_copy_palette(ctx->palette, avpkt, avctx);
-#if FF_API_PALETTE_HAS_CHANGED
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         memcpy(frame->data[1], ctx->palette, AVPALETTE_SIZE);
     }
     // We only return a picture when enough of it is undamaged, this avoids copying nearly broken frames around

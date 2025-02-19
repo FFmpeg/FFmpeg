@@ -245,12 +245,6 @@ static int pix_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             *pal_out++ = (0xFFU << 24) | bytestream2_get_be32u(&gb);
         bytestream2_skip(&gb, 8);
 
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->palette_has_changed = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
         chunk_type = bytestream2_get_be32(&gb);
     } else if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         /* no palette supplied, use the default one */
@@ -260,12 +254,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_WARNING,
                "Using default palette, colors might be off.\n");
         memcpy(pal_out, std_pal_table, sizeof(uint32_t) * 256);
-
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->palette_has_changed = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
 
     data_len = bytestream2_get_be32(&gb);

@@ -58,19 +58,9 @@ static int imx_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         return ret;
 
     if (ff_copy_palette(imx->pal, avpkt, avctx)) {
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->palette_has_changed = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         frame->flags |= AV_FRAME_FLAG_KEY;
     } else {
         frame->flags &= ~AV_FRAME_FLAG_KEY;
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->palette_has_changed = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);

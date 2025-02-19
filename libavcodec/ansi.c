@@ -262,11 +262,6 @@ static int execute_code(AVCodecContext * avctx, int c)
                                      AV_GET_BUFFER_FLAG_REF)) < 0)
                 return ret;
             s->frame->pict_type           = AV_PICTURE_TYPE_I;
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-            s->frame->palette_has_changed = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             set_palette((uint32_t *)s->frame->data[1]);
             erase_screen(avctx);
         } else if (c == 'l') {
@@ -375,11 +370,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     }
 
     s->frame->pict_type           = AV_PICTURE_TYPE_I;
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-    s->frame->palette_has_changed = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     set_palette((uint32_t *)s->frame->data[1]);
     if (!s->first_frame) {
         erase_screen(avctx);

@@ -384,11 +384,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
             ret = parse_palette(avctx, &gbc, (uint32_t *)p->data[1], colors, flags & 0x8000);
             if (ret < 0)
                 return ret;
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-            p->palette_has_changed = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
             /* jump to image data */
             bytestream2_skip(&gbc, 18);

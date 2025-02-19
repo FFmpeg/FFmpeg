@@ -249,11 +249,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
                 }
                 break;
             }
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-            p->palette_has_changed = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         }
     }
 

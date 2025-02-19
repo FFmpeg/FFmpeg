@@ -1315,14 +1315,7 @@ static int ipvideo_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return ret;
 
     if (!s->is_16bpp) {
-#if FF_API_PALETTE_HAS_CHANGED
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->palette_has_changed =
-#endif
         ff_copy_palette(s->pal, avpkt, avctx);
-#if FF_API_PALETTE_HAS_CHANGED
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
 
     switch (frame_format) {
