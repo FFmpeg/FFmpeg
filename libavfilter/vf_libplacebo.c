@@ -821,7 +821,7 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
 /* Construct and emit an output frame for a given timestamp */
 static int output_frame(AVFilterContext *ctx, int64_t pts)
 {
-    int err = 0, ok, changed;
+    int err = 0, ok, changed = 0;
     LibplaceboContext *s = ctx->priv;
     pl_options opts = s->opts;
     AVFilterLink *outlink = ctx->outputs[0];
