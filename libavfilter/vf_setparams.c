@@ -42,6 +42,7 @@ typedef struct SetParamsContext {
     int color_trc;
     int colorspace;
     int chroma_location;
+    int alpha_mode;
 } SetParamsContext;
 
 #define OFFSET(x) offsetof(SetParamsContext, x)
@@ -131,6 +132,13 @@ static const AVOption setparams_options[] = {
     {"top",                              NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_TOP},         0, 0, FLAGS, .unit = "chroma_location"},
     {"bottomleft",                       NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_BOTTOMLEFT},  0, 0, FLAGS, .unit = "chroma_location"},
     {"bottom",                           NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_BOTTOM},      0, 0, FLAGS, .unit = "chroma_location"},
+
+    {"alpha_mode", "select alpha moda", OFFSET(alpha_mode), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVALPHA_MODE_NB-1, FLAGS, .unit = "alpha_mode"},
+    {"auto", "keep the same alpha mode",  0, AV_OPT_TYPE_CONST, {.i64=-1},                              0, 0, FLAGS, .unit = "alpha_mode"},
+    {"unspecified",                      NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_UNSPECIFIED},   0, 0, FLAGS, .unit = "alpha_mode"},
+    {"unknown",                          NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_UNSPECIFIED},   0, 0, FLAGS, .unit = "alpha_mode"},
+    {"premultiplied",                    NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_PREMULTIPLIED}, 0, 0, FLAGS, .unit = "alpha_mode"},
+    {"straight",                         NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_STRAIGHT},      0, 0, FLAGS, .unit = "alpha_mode"},
     {NULL}
 };
 
@@ -153,6 +161,13 @@ static int query_formats(const AVFilterContext *ctx,
     if (s->color_range >= 0) {
         ret = ff_formats_ref(ff_make_formats_list_singleton(s->color_range),
                              &cfg_out[0]->color_ranges);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (s->alpha_mode >= 0) {
+        ret = ff_formats_ref(ff_make_formats_list_singleton(s->alpha_mode),
+                             &cfg_out[0]->alpha_modes);
         if (ret < 0)
             return ret;
     }
@@ -187,6 +202,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         frame->colorspace = s->colorspace;
     if (s->chroma_location >= 0)
         frame->chroma_location = s->chroma_location;
+    if (s->alpha_mode >= 0)
+        frame->alpha_mode = s->alpha_mode;
 
     return ff_filter_frame(ctx->outputs[0], frame);
 }
@@ -237,6 +254,7 @@ static av_cold int init_setrange(AVFilterContext *ctx)
     s->color_trc       = -1;
     s->colorspace      = -1;
     s->chroma_location = -1;
+    s->alpha_mode      = -1;
     return 0;
 }
 
@@ -274,6 +292,7 @@ static av_cold int init_setfield(AVFilterContext *ctx)
     s->color_trc       = -1;
     s->colorspace      = -1;
     s->chroma_location = -1;
+    s->alpha_mode      = -1;
     return 0;
 }
 
