@@ -568,6 +568,8 @@ static int fill_frame_props(const AVCodecContext *avctx, AVFrame *frame)
         frame->color_range = avctx->color_range;
     if (frame->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
         frame->chroma_location = avctx->chroma_sample_location;
+    if (frame->alpha_mode == AVALPHA_MODE_UNSPECIFIED)
+        frame->alpha_mode = avctx->alpha_mode;
 
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (!frame->sample_aspect_ratio.num)  frame->sample_aspect_ratio = avctx->sample_aspect_ratio;

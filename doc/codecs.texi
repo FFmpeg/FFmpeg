@@ -913,6 +913,14 @@ Possible values:
 
 @end table
 
+@item alpha_mode @var{integer} (@emph{decoding/encoding,video})
+Possible values:
+@table @samp
+@item premultiplied
+@item straight
+@end table
+
+
 @item log_level_offset @var{integer}
 Set the log level offset.
 

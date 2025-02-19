@@ -153,6 +153,11 @@ typedef struct FFCodec {
      */
     unsigned cb_type:3;
 
+    /**
+     * This field determines the alpha modes supported by an encoder.
+     */
+    const enum AVAlphaMode *alpha_modes;
+
     int priv_data_size;
     /**
      * @name Frame-level threading support functions

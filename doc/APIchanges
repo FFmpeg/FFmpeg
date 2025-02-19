@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
+2025-09-xx - xxxxxxxxxx - lavc 62.15.100 - avcodec.h codec_par.h
+  Add AVCodecContext.alpha_mode, AVCodecParameters.alpha_mode, and
+  AV_CODEC_CONFIG_ALPHA_MODE.
+
 2025-09-xx - xxxxxxxxxx - lavfi 11.6.100 - avfilter.h
   Add AVFilterLink.alpha_mode.
 
