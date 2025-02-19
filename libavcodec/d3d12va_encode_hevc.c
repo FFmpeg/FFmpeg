@@ -673,10 +673,10 @@ static int d3d12va_encode_hevc_init(AVCodecContext *avctx)
 
     if (avctx->profile == AV_PROFILE_UNKNOWN)
         avctx->profile = priv->profile;
-    if (avctx->level == FF_LEVEL_UNKNOWN)
+    if (avctx->level == AV_LEVEL_UNKNOWN)
         avctx->level = priv->level;
 
-    if (avctx->level != FF_LEVEL_UNKNOWN && avctx->level & ~0xff) {
+    if (avctx->level != AV_LEVEL_UNKNOWN && avctx->level & ~0xff) {
         av_log(avctx, AV_LOG_ERROR, "Invalid level %d: must fit "
                "in 8-bit unsigned integer.\n", avctx->level);
         return AVERROR(EINVAL);
@@ -731,7 +731,7 @@ static const AVOption d3d12va_encode_hevc_options[] = {
 
     { "level", "Set level (general_level_idc)",
       OFFSET(level), AV_OPT_TYPE_INT,
-      { .i64 = FF_LEVEL_UNKNOWN }, FF_LEVEL_UNKNOWN, 0xff, FLAGS, "level" },
+      { .i64 = AV_LEVEL_UNKNOWN }, AV_LEVEL_UNKNOWN, 0xff, FLAGS, "level" },
 
 #define LEVEL(name, value) name, NULL, 0, AV_OPT_TYPE_CONST, \
       { .i64 = value }, 0, 0, FLAGS, "level"
