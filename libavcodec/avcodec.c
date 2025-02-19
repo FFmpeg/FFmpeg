@@ -493,14 +493,6 @@ av_cold void ff_codec_close(AVCodecContext *avctx)
     avctx->active_thread_type = 0;
 }
 
-#if FF_API_AVCODEC_CLOSE
-int avcodec_close(AVCodecContext *avctx)
-{
-    ff_codec_close(avctx);
-    return 0;
-}
-#endif
-
 static const char *unknown_if_null(const char *str)
 {
     return str ? str : "unknown";

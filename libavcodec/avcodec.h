@@ -2234,24 +2234,6 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
  */
 int avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
 
-#if FF_API_AVCODEC_CLOSE
-/**
- * Close a given AVCodecContext and free all the data associated with it
- * (but not the AVCodecContext itself).
- *
- * Calling this function on an AVCodecContext that hasn't been opened will free
- * the codec-specific data allocated in avcodec_alloc_context3() with a non-NULL
- * codec. Subsequent calls will do nothing.
- *
- * @deprecated Do not use this function. Use avcodec_free_context() to destroy a
- * codec context (either open or closed). Opening and closing a codec context
- * multiple times is not supported anymore -- use multiple codec contexts
- * instead.
- */
-attribute_deprecated
-int avcodec_close(AVCodecContext *avctx);
-#endif
-
 /**
  * Free all allocated data in the given subtitle struct.
  *
