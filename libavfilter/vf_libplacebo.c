@@ -1167,13 +1167,11 @@ static int libplacebo_query_format(const AVFilterContext *ctx,
                 RET(ff_add_format(&infmts, cfg_in[0]->formats->formats[n]));
         }
         RET(ff_formats_ref(infmts, &cfg_in[i]->formats));
+        RET(ff_formats_ref(ff_all_color_spaces(), &cfg_in[i]->color_spaces));
+        RET(ff_formats_ref(ff_all_color_ranges(), &cfg_in[i]->color_ranges));
     }
 
     RET(ff_formats_ref(outfmts, &cfg_out[0]->formats));
-
-    /* Set colorspace properties */
-    RET(ff_formats_ref(ff_all_color_spaces(), &cfg_in[0]->color_spaces));
-    RET(ff_formats_ref(ff_all_color_ranges(), &cfg_in[0]->color_ranges));
 
     outfmts = s->colorspace > 0 ? ff_make_formats_list_singleton(s->colorspace)
                                 : ff_all_color_spaces();
