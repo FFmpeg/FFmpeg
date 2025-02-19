@@ -68,6 +68,8 @@ static int query_formats(const AVFilterContext *ctx,
                          AVFilterFormatsConfig **cfg_out)
 {
     const PreMultiplyContext *s = ctx->priv;
+    AVFilterFormats *formats = NULL;
+    int ret;
 
     static const enum AVPixelFormat no_alpha_pix_fmts[] = {
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
@@ -88,8 +90,23 @@ static int query_formats(const AVFilterContext *ctx,
         AV_PIX_FMT_NONE
     };
 
-    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out,
-                                            s->inplace ? alpha_pix_fmts : no_alpha_pix_fmts);
+    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out,
+                                           s->inplace ? alpha_pix_fmts : no_alpha_pix_fmts);
+    if (ret < 0)
+        return ret;
+
+    /* Configure alpha mode corresponding to the chosen direction */
+    if (s->inplace) {
+        formats = ff_make_formats_list_singleton(s->inverse ? AVALPHA_MODE_PREMULTIPLIED
+                                                            : AVALPHA_MODE_STRAIGHT);
+        ret = ff_formats_ref(formats, &cfg_in[0]->alpha_modes);
+        if (ret < 0)
+            return ret;
+    }
+
+    formats = ff_make_formats_list_singleton(s->inverse ? AVALPHA_MODE_STRAIGHT
+                                                        : AVALPHA_MODE_PREMULTIPLIED);
+    return ff_formats_ref(formats, &cfg_out[0]->alpha_modes);
 }
 
 static void premultiply8(const uint8_t *msrc, const uint8_t *asrc,
@@ -525,6 +542,7 @@ static int filter_frame(AVFilterContext *ctx,
         if (!*out)
             return AVERROR(ENOMEM);
         av_frame_copy_props(*out, base);
+        (*out)->alpha_mode = outlink->alpha_mode;
 
         full = base->color_range == AVCOL_RANGE_JPEG;
         limited = base->color_range == AVCOL_RANGE_MPEG;
