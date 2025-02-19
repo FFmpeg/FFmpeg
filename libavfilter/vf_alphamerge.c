@@ -49,6 +49,7 @@ typedef struct AlphaMergeContext {
 static int do_alphamerge(FFFrameSync *fs)
 {
     AVFilterContext *ctx = fs->parent;
+    AVFilterLink *outlink = ctx->outputs[0];
     AlphaMergeContext *s = ctx->priv;
     AVFrame *main_buf, *alpha_buf;
     int ret;
@@ -56,6 +57,7 @@ static int do_alphamerge(FFFrameSync *fs)
     ret = ff_framesync_dualinput_get_writable(fs, &main_buf, &alpha_buf);
     if (ret < 0)
         return ret;
+    main_buf->alpha_mode = outlink->alpha_mode;
     if (!alpha_buf)
         return ff_filter_frame(ctx->outputs[0], main_buf);
 
@@ -115,6 +117,11 @@ static int query_formats(const AVFilterContext *ctx,
         return ret;
 
     ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, main_fmts);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_formats_ref(ff_make_formats_list_singleton(AVALPHA_MODE_STRAIGHT),
+                         &cfg_out[0]->alpha_modes);
     if (ret < 0)
         return ret;
 
