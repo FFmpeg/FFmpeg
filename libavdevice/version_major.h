@@ -33,8 +33,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-// reminder to remove the bktr device on next major bump
-#define FF_API_BKTR_DEVICE (LIBAVDEVICE_VERSION_MAJOR < 62)
 // reminder to remove the opengl device on next major bump
 #define FF_API_OPENGL_DEVICE (LIBAVDEVICE_VERSION_MAJOR < 62)
 // reminder to remove the sdl2 device on next major bump
