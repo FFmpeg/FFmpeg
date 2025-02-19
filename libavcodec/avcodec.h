@@ -234,15 +234,6 @@ typedef struct RcOverride{
  * Use qpel MC.
  */
 #define AV_CODEC_FLAG_QPEL            (1 <<  4)
-#if FF_API_DROPCHANGED
-/**
- * Don't output frames whose parameters differ from first
- * decoded frame in stream.
- *
- * @deprecated callers should implement this functionality in their own code
- */
-#define AV_CODEC_FLAG_DROPCHANGED     (1 <<  5)
-#endif
 /**
  * Request the encoder to output reconstructed frames, i.e.\ frames that would
  * be produced by decoding the encoded bistream. These frames may be retrieved

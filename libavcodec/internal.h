@@ -145,15 +145,6 @@ typedef struct AVCodecInternal {
     AVFrame *buffer_frame;
     int draining_done;
 
-#if FF_API_DROPCHANGED
-    /* used when avctx flag AV_CODEC_FLAG_DROPCHANGED is set */
-    int changed_frames_dropped;
-    int initial_format;
-    int initial_width, initial_height;
-    int initial_sample_rate;
-    AVChannelLayout initial_ch_layout;
-#endif
-
 #if CONFIG_LCMS2
     FFIccContext icc; /* used to read and write embedded ICC profiles */
 #endif

@@ -837,53 +837,6 @@ int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
     avctx->frame_num++;
 
-#if FF_API_DROPCHANGED
-    if (avctx->flags & AV_CODEC_FLAG_DROPCHANGED) {
-
-        if (avctx->frame_num == 1) {
-            avci->initial_format = frame->format;
-            switch(avctx->codec_type) {
-            case AVMEDIA_TYPE_VIDEO:
-                avci->initial_width  = frame->width;
-                avci->initial_height = frame->height;
-                break;
-            case AVMEDIA_TYPE_AUDIO:
-                avci->initial_sample_rate = frame->sample_rate ? frame->sample_rate :
-                                                                 avctx->sample_rate;
-                ret = av_channel_layout_copy(&avci->initial_ch_layout, &frame->ch_layout);
-                if (ret < 0)
-                    goto fail;
-                break;
-            }
-        }
-
-        if (avctx->frame_num > 1) {
-            int changed = avci->initial_format != frame->format;
-
-            switch(avctx->codec_type) {
-            case AVMEDIA_TYPE_VIDEO:
-                changed |= avci->initial_width  != frame->width ||
-                           avci->initial_height != frame->height;
-                break;
-            case AVMEDIA_TYPE_AUDIO:
-                changed |= avci->initial_sample_rate    != frame->sample_rate ||
-                           avci->initial_sample_rate    != avctx->sample_rate ||
-                           av_channel_layout_compare(&avci->initial_ch_layout, &frame->ch_layout);
-                break;
-            }
-
-            if (changed) {
-                avci->changed_frames_dropped++;
-                av_log(avctx, AV_LOG_INFO, "dropped changed frame #%"PRId64" pts %"PRId64
-                                            " drop count: %d \n",
-                                            avctx->frame_num, frame->pts,
-                                            avci->changed_frames_dropped);
-                ret = AVERROR_INPUT_CHANGED;
-                goto fail;
-            }
-        }
-    }
-#endif
     return 0;
 fail:
     av_frame_unref(frame);
@@ -2070,11 +2023,6 @@ int ff_decode_preinit(AVCodecContext *avctx)
         if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
             return ret;
     }
-
-#if FF_API_DROPCHANGED
-    if (avctx->flags & AV_CODEC_FLAG_DROPCHANGED)
-        av_log(avctx, AV_LOG_WARNING, "The dropchanged flag is deprecated.\n");
-#endif
 
     return 0;
 }
