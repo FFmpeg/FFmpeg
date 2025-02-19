@@ -1891,17 +1891,6 @@ typedef struct AVFormatContext {
     int64_t duration_probesize;
 } AVFormatContext;
 
-#if FF_API_GET_DUR_ESTIMATE_METHOD
-/**
- * Returns the method used to set ctx->duration.
- *
- * @return AVFMT_DURATION_FROM_PTS, AVFMT_DURATION_FROM_STREAM, or AVFMT_DURATION_FROM_BITRATE.
- * @deprecated duration_estimation_method is public and can be read directly.
- */
-attribute_deprecated
-enum AVDurationEstimationMethod av_fmt_ctx_get_duration_estimation_method(const AVFormatContext* ctx);
-#endif
-
 /**
  * @defgroup lavf_core Core functions
  * @ingroup libavf
