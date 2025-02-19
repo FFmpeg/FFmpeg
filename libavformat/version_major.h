@@ -41,9 +41,9 @@
  * at once through the bump. This improves the git bisect-ability of the change.
  *
  */
-#define FF_API_COMPUTE_PKT_FIELDS2      (LIBAVFORMAT_VERSION_MAJOR < 62)
+#define FF_API_COMPUTE_PKT_FIELDS2      (LIBAVFORMAT_VERSION_MAJOR < 63)
 
-#define FF_API_INTERNAL_TIMING          (LIBAVFORMAT_VERSION_MAJOR < 62)
+#define FF_API_INTERNAL_TIMING          (LIBAVFORMAT_VERSION_MAJOR < 63)
 
 #define FF_API_R_FRAME_RATE            1
 
