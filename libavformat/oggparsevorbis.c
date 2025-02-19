@@ -273,20 +273,16 @@ static void vorbis_cleanup(AVFormatContext *s, int idx)
     }
 }
 
-static int vorbis_update_metadata(AVFormatContext *s, int idx)
+int ff_vorbis_update_metadata(AVFormatContext *s, AVStream *st,
+                              const uint8_t *buf, int size)
 {
     struct ogg *ogg = s->priv_data;
-    struct ogg_stream *os = ogg->streams + idx;
-    AVStream *st = s->streams[idx];
+    struct ogg_stream *os = ogg->streams + st->index;
     int ret;
-
-    if (os->psize <= 8)
-        return 0;
 
     /* New metadata packet; release old data. */
     av_dict_free(&st->metadata);
-    ret = ff_vorbis_stream_comment(s, st, os->buf + os->pstart + 7,
-                                   os->psize - 8);
+    ret = ff_vorbis_stream_comment(s, st, buf, size);
     if (ret < 0)
         return ret;
 
@@ -357,6 +353,19 @@ static int vorbis_parse_header(AVFormatContext *s, AVStream *st,
     }
 
     return 1;
+}
+
+static int vorbis_update_metadata(AVFormatContext *s, int idx)
+{
+    struct ogg *ogg = s->priv_data;
+    struct ogg_stream *os = ogg->streams + idx;
+    AVStream *st = s->streams[idx];
+
+    if (os->psize <= 8)
+        return 0;
+
+    return ff_vorbis_update_metadata(s, st, os->buf + os->pstart + 7,
+                                     os->psize - 8);
 }
 
 static int vorbis_header(AVFormatContext *s, int idx)

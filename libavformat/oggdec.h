@@ -160,6 +160,20 @@ int ff_vorbis_comment(AVFormatContext *ms, AVDictionary **m,
 int ff_vorbis_stream_comment(AVFormatContext *as, AVStream *st,
                              const uint8_t *buf, int size);
 
+/**
+ * Parse Vorbis comments, add metadata to an AVStream
+ *
+ * This function also attaches the metadata to the next decoded
+ * packet as AV_PKT_DATA_METADATA_UPDATE
+ *
+ * @note  The buffer will be temporarily modified by this function,
+ *        so it needs to be writable. Furthermore it must be padded
+ *        by a single byte (not counted in size).
+ *        All changes will have been reverted upon return.
+ */
+int ff_vorbis_update_metadata(AVFormatContext *s, AVStream *st,
+                              const uint8_t *buf, int size);
+
 static inline int
 ogg_find_stream (struct ogg * ogg, int serial)
 {
