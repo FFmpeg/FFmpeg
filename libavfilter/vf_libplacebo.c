@@ -168,7 +168,7 @@ typedef struct LibplaceboContext {
     /* settings */
     char *out_format_string;
     enum AVPixelFormat out_format;
-    char *fillcolor;
+    uint8_t fillcolor[4];
     double var_values[VAR_VARS_NB];
     char *w_expr;
     char *h_expr;
@@ -368,9 +368,6 @@ static int update_settings(AVFilterContext *ctx)
     AVDictionaryEntry *e = NULL;
     pl_options opts = s->opts;
     int gamut_mode = s->gamut_mode;
-    uint8_t color_rgba[4];
-
-    RET(av_parse_color(color_rgba, s->fillcolor, -1, s));
 
     opts->deband_params = *pl_deband_params(
         .iterations = s->deband_iterations,
@@ -426,11 +423,11 @@ static int update_settings(AVFilterContext *ctx)
     opts->params = *pl_render_params(
         .lut_entries = s->lut_entries,
         .antiringing_strength = s->antiringing,
-        .background_transparency = 1.0f - (float) color_rgba[3] / UINT8_MAX,
+        .background_transparency = 1.0f - (float) s->fillcolor[3] / UINT8_MAX,
         .background_color = {
-            (float) color_rgba[0] / UINT8_MAX,
-            (float) color_rgba[1] / UINT8_MAX,
-            (float) color_rgba[2] / UINT8_MAX,
+            (float) s->fillcolor[0] / UINT8_MAX,
+            (float) s->fillcolor[1] / UINT8_MAX,
+            (float) s->fillcolor[2] / UINT8_MAX,
         },
 #if PL_API_VER >= 277
         .corner_rounding = s->corner_rounding,
@@ -1288,7 +1285,7 @@ static const AVOption libplacebo_options[] = {
     { "force_divisible_by", "enforce that the output resolution is divisible by a defined integer when force_original_aspect_ratio is used", OFFSET(force_divisible_by), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, 256, STATIC },
     { "normalize_sar", "force SAR normalization to 1:1 by adjusting pos_x/y/w/h", OFFSET(normalize_sar), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, STATIC },
     { "pad_crop_ratio", "ratio between padding and cropping when normalizing SAR (0=pad, 1=crop)", OFFSET(pad_crop_ratio), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, 1.0, DYNAMIC },
-    { "fillcolor", "Background fill color", OFFSET(fillcolor), AV_OPT_TYPE_STRING, {.str = "black@0"}, .flags = DYNAMIC },
+    { "fillcolor", "Background fill color", OFFSET(fillcolor), AV_OPT_TYPE_COLOR, {.str = "black@0"}, .flags = DYNAMIC },
     { "corner_rounding", "Corner rounding radius", OFFSET(corner_rounding), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 1.0, .flags = DYNAMIC },
     { "extra_opts", "Pass extra libplacebo-specific options using a :-separated list of key=value pairs", OFFSET(extra_opts), AV_OPT_TYPE_DICT, .flags = DYNAMIC },
 
