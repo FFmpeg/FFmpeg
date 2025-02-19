@@ -304,11 +304,6 @@ static int deint_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
                 output_frame->pts = input_frame->pts +
                     ctx->frame_queue[current_frame_index + 1]->pts;
         }
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        output_frame->interlaced_frame = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         output_frame->flags &= ~AV_FRAME_FLAG_INTERLACED;
 
         av_log(avctx, AV_LOG_DEBUG, "Filter output: %s, %ux%u (%"PRId64").\n",

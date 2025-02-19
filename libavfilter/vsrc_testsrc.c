@@ -205,11 +205,6 @@ static int activate(AVFilterContext *ctx)
     frame->pts                 = test->pts;
     frame->duration            = 1;
     frame->flags              |= AV_FRAME_FLAG_KEY;
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    frame->interlaced_frame    = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     frame->flags              &= ~AV_FRAME_FLAG_INTERLACED;
     frame->pict_type           = AV_PICTURE_TYPE_I;
     frame->sample_aspect_ratio = test->sar;

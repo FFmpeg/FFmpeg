@@ -167,19 +167,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     /* set field */
     if (s->field_mode == MODE_PROG) {
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->interlaced_frame = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         frame->flags &= ~AV_FRAME_FLAG_INTERLACED;
     } else if (s->field_mode != MODE_AUTO) {
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->interlaced_frame = 1;
-        frame->top_field_first = s->field_mode;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         frame->flags |= AV_FRAME_FLAG_INTERLACED;
         if (s->field_mode)
             frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;

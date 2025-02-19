@@ -252,15 +252,6 @@ int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFra
             return AVERROR(ENOMEM);
     }
 
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (copy->interlaced_frame)
-        copy->flags |= AV_FRAME_FLAG_INTERLACED;
-    if (copy->top_field_first)
-        copy->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
 #if FF_API_FRAME_KEY
 FF_DISABLE_DEPRECATION_WARNINGS
     if (copy->key_frame)

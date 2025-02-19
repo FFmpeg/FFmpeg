@@ -675,12 +675,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
         frame->key_frame = !!(frame->flags & AV_FRAME_FLAG_KEY);
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->interlaced_frame = !!(frame->flags & AV_FRAME_FLAG_INTERLACED);
-        frame->top_field_first =  !!(frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         frame->best_effort_timestamp = guess_correct_pts(dc,
                                                          frame->pts,
                                                          frame->pkt_dts);

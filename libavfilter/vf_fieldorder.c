@@ -142,11 +142,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             }
         }
     }
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    out->top_field_first = s->dst_tff;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if (s->dst_tff)
         out->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
     else

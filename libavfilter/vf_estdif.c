@@ -440,11 +440,6 @@ static int filter(AVFilterContext *ctx, AVFrame *in, int64_t pts, int64_t durati
     if (!out)
         return AVERROR(ENOMEM);
     av_frame_copy_props(out, in);
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    out->interlaced_frame = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     out->flags &= ~AV_FRAME_FLAG_INTERLACED;
     out->pts = pts;
     out->duration = duration;

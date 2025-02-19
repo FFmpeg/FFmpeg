@@ -72,11 +72,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     int ret;
 
     inpicref->height = outlink->h;
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    inpicref->interlaced_frame = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     inpicref->flags &= ~AV_FRAME_FLAG_INTERLACED;
 
     if (!s->second) {

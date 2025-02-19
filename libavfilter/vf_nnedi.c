@@ -668,11 +668,6 @@ static int get_frame(AVFilterContext *ctx, int is_second)
     if (!dst)
         return AVERROR(ENOMEM);
     av_frame_copy_props(dst, s->prev);
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    dst->interlaced_frame = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     dst->flags &= ~AV_FRAME_FLAG_INTERLACED;
     dst->pts = s->pts;
 

@@ -161,12 +161,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                       FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
 
     out->pts = s->double_weave ? s->prev->pts : in->pts / 2;
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    out->interlaced_frame = 1;
-    out->top_field_first = !s->first_field;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     out->flags |= AV_FRAME_FLAG_INTERLACED;
     if (s->first_field)
         out->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;

@@ -536,11 +536,6 @@ static QSVFrame *query_frame(QSVVPPContext *s, AVFilterLink *outlink, const AVFr
         mfxExtBuffer *extbuf = s->vpp_param.ExtParam[i];
 
         if (extbuf->BufferId == MFX_EXTBUFF_VPP_DEINTERLACING) {
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-            out_frame->frame->interlaced_frame = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             out_frame->frame->flags &= ~AV_FRAME_FLAG_INTERLACED;
             break;
         }

@@ -220,14 +220,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
         frame->flags |= AV_FRAME_FLAG_KEY;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (frame->interlaced_frame)
-        frame->flags |= AV_FRAME_FLAG_INTERLACED;
-    if (frame->top_field_first)
-        frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     return 0;
 }

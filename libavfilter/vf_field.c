@@ -73,11 +73,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     int i;
 
     inpicref->height = outlink->h;
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    inpicref->interlaced_frame = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     inpicref->flags &= ~AV_FRAME_FLAG_INTERLACED;
 
     for (i = 0; i < field->nb_planes; i++) {

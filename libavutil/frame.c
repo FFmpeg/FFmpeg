@@ -235,12 +235,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     dst->pts                    = src->pts;
     dst->duration               = src->duration;
     dst->repeat_pict            = src->repeat_pict;
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    dst->interlaced_frame       = src->interlaced_frame;
-    dst->top_field_first        = src->top_field_first;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 #if FF_API_PALETTE_HAS_CHANGED
 FF_DISABLE_DEPRECATION_WARNINGS
     dst->palette_has_changed    = src->palette_has_changed;

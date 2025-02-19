@@ -223,19 +223,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     switch (hint) {
     case '+':
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        out->interlaced_frame = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         out->flags |= AV_FRAME_FLAG_INTERLACED;
         break;
     case '-':
-#if FF_API_INTERLACED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-        out->interlaced_frame = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         out->flags &= ~AV_FRAME_FLAG_INTERLACED;
         break;
     case '=':
