@@ -252,13 +252,6 @@ int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFra
             return AVERROR(ENOMEM);
     }
 
-#if FF_API_FRAME_KEY
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (copy->key_frame)
-        copy->flags |= AV_FRAME_FLAG_KEY;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (copy->colorspace == AVCOL_SPC_UNSPECIFIED)
         copy->colorspace = ctx->outputs[0]->colorspace;
     if (copy->color_range == AVCOL_RANGE_UNSPECIFIED)

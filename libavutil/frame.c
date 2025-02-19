@@ -221,11 +221,6 @@ static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
 {
     int ret;
 
-#if FF_API_FRAME_KEY
-FF_DISABLE_DEPRECATION_WARNINGS
-    dst->key_frame              = src->key_frame;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     dst->pict_type              = src->pict_type;
     dst->sample_aspect_ratio    = src->sample_aspect_ratio;
     dst->crop_top               = src->crop_top;
