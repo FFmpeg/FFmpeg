@@ -908,6 +908,9 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         opts->params.skip_caching_single_frame = high_fps;
         update_crops(ctx, in, &target, out->pts * av_q2d(outlink->time_base));
         pl_render_image_mix(in->renderer, &in->mix, &target, &opts->params);
+
+        /* Force straight output and set correct blend mode */
+        target.repr.alpha = PL_ALPHA_INDEPENDENT;
         opts->params.blend_params = &pl_alpha_overlay;
 #if PL_API_VER >= 346
         opts->params.background = opts->params.border = PL_CLEAR_SKIP;
