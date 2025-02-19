@@ -91,6 +91,10 @@ void ff_hevc_idct_4x4_dc_10_neon(int16_t *coeffs);
 void ff_hevc_idct_8x8_dc_10_neon(int16_t *coeffs);
 void ff_hevc_idct_16x16_dc_10_neon(int16_t *coeffs);
 void ff_hevc_idct_32x32_dc_10_neon(int16_t *coeffs);
+void ff_hevc_idct_4x4_dc_12_neon(int16_t *coeffs);
+void ff_hevc_idct_8x8_dc_12_neon(int16_t *coeffs);
+void ff_hevc_idct_16x16_dc_12_neon(int16_t *coeffs);
+void ff_hevc_idct_32x32_dc_12_neon(int16_t *coeffs);
 void ff_hevc_transform_luma_4x4_neon_8(int16_t *coeffs);
 
 #define NEON8_FNASSIGN(member, v, h, fn, ext) \
@@ -267,5 +271,9 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         c->add_residual[1]             = ff_hevc_add_residual_8x8_12_neon;
         c->add_residual[2]             = ff_hevc_add_residual_16x16_12_neon;
         c->add_residual[3]             = ff_hevc_add_residual_32x32_12_neon;
+        c->idct_dc[0]                  = ff_hevc_idct_4x4_dc_12_neon;
+        c->idct_dc[1]                  = ff_hevc_idct_8x8_dc_12_neon;
+        c->idct_dc[2]                  = ff_hevc_idct_16x16_dc_12_neon;
+        c->idct_dc[3]                  = ff_hevc_idct_32x32_dc_12_neon;
     }
 }

@@ -901,15 +901,33 @@ endfunc
 .endm
 
 // void ff_hevc_idct_NxN_dc_DEPTH_neon(int16_t *coeffs)
-.macro idct_dc size, bitdepth
-function ff_hevc_idct_\size\()x\size\()_dc_\bitdepth\()_neon, export=1
+.macro idct_dc size
+function ff_hevc_idct_\size\()x\size\()_dc_10_neon, export=1
         ldrsh           w1, [x0]
         add             w1, w1, #1
         asr             w1, w1, #1
-        add             w1, w1, #(1 << (13 - \bitdepth))
-        asr             w1, w1, #(14 - \bitdepth)
-        dup             v0.8h, w1
+        add             w1, w1, #(1 << (13 - 10))
+        asr             w1, w1, #(14 - 10)
+        b               2f
+endfunc
 
+function ff_hevc_idct_\size\()x\size\()_dc_12_neon, export=1
+        ldrsh           w1, [x0]
+        add             w1, w1, #1
+        asr             w1, w1, #1
+        add             w1, w1, #(1 << (13 - 12))
+        asr             w1, w1, #(14 - 12)
+        b               2f
+endfunc
+
+function ff_hevc_idct_\size\()x\size\()_dc_8_neon, export=1
+        ldrsh           w1, [x0]
+        add             w1, w1, #1
+        asr             w1, w1, #1
+        add             w1, w1, #(1 << (13 - 8))
+        asr             w1, w1, #(14 - 8)
+2:
+        dup             v0.8h, w1
 .if \size < 8
         stp             q0, q0, [x0]
 .elseif \size < 16
@@ -928,14 +946,7 @@ function ff_hevc_idct_\size\()x\size\()_dc_\bitdepth\()_neon, export=1
 endfunc
 .endm
 
-idct_dc 4, 8
-idct_dc 4, 10
-
-idct_dc 8, 8
-idct_dc 8, 10
-
-idct_dc 16, 8
-idct_dc 16, 10
-
-idct_dc 32, 8
-idct_dc 32, 10
+idct_dc 4
+idct_dc 8
+idct_dc 16
+idct_dc 32
