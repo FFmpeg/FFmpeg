@@ -817,9 +817,6 @@ const FFCodec ff_shorten_decoder = {
     FF_CODEC_DECODE_CB(shorten_decode_frame),
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DELAY |
-#if FF_API_SUBFRAMES
-                      AV_CODEC_CAP_SUBFRAMES |
-#endif
                       AV_CODEC_CAP_DR1,
     CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_U8P),
 };

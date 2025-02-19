@@ -1759,11 +1759,7 @@ const FFCodec ff_ape_decoder = {
     .init           = ape_decode_init,
     .close          = ape_decode_close,
     FF_CODEC_DECODE_CB(ape_decode_frame),
-    .p.capabilities =
-#if FF_API_SUBFRAMES
-                      AV_CODEC_CAP_SUBFRAMES |
-#endif
-                      AV_CODEC_CAP_DELAY |
+    .p.capabilities = AV_CODEC_CAP_DELAY |
                       AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .flush          = ape_flush,
