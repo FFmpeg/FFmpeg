@@ -875,17 +875,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         h274->blending_mode_id  = fgc->blending_mode_id;
         h274->log2_scale_factor = fgc->log2_scale_factor;
 
-#if FF_API_H274_FILM_GRAIN_VCS
-FF_DISABLE_DEPRECATION_WARNINGS
-        h274->bit_depth_luma   = fgp->bit_depth_luma;
-        h274->bit_depth_chroma = fgp->bit_depth_chroma;
-        h274->color_range      = fgp->color_range;
-        h274->color_primaries  = fgp->color_primaries;
-        h274->color_trc        = fgp->color_trc;
-        h274->color_space      = fgp->color_space;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
         memcpy(&h274->component_model_present, &fgc->comp_model_present_flag,
                sizeof(h274->component_model_present));
         memcpy(&h274->num_intensity_intervals, &fgc->num_intensity_intervals,
