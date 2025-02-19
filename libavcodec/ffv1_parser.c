@@ -70,7 +70,7 @@ static int parse(AVCodecParserContext *s,
     return buf_size;
 }
 
-static void close(AVCodecParserContext *s)
+static void ffv1_close(AVCodecParserContext *s)
 {
     FFV1ParseContext *p = s->priv_data;
 
@@ -82,5 +82,5 @@ const AVCodecParser ff_ffv1_parser = {
     .codec_ids    = { AV_CODEC_ID_FFV1 },
     .priv_data_size = sizeof(FFV1ParseContext),
     .parser_parse = parse,
-    .parser_close = close,
+    .parser_close = ffv1_close,
 };
