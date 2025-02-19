@@ -587,6 +587,33 @@ static int encode_preinit_video(AVCodecContext *avctx)
             avctx->color_range = AVCOL_RANGE_JPEG;
     }
 
+    if (pixdesc->flags & AV_PIX_FMT_FLAG_ALPHA) {
+        const enum AVAlphaMode *alpha_modes;
+        int num_alpha_modes;
+        ret = avcodec_get_supported_config(avctx, NULL, AV_CODEC_CONFIG_ALPHA_MODE,
+                                           0, (const void **) &alpha_modes, &num_alpha_modes);
+        if (ret < 0)
+            return ret;
+
+        if (avctx->alpha_mode != AVALPHA_MODE_UNSPECIFIED && alpha_modes) {
+            for (i = 0; i < num_alpha_modes; i++) {
+                if (avctx->alpha_mode == alpha_modes[i])
+                    break;
+            }
+            if (i == num_alpha_modes) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Specified alpha mode '%s' is not supported by the %s encoder.\n",
+                       av_alpha_mode_name(avctx->alpha_mode), c->name);
+                av_log(avctx, AV_LOG_ERROR, "Supported alpha modes:\n");
+                for (int p = 0; alpha_modes[p] != AVALPHA_MODE_UNSPECIFIED; p++) {
+                    av_log(avctx, AV_LOG_ERROR, "  %s\n",
+                           av_alpha_mode_name(alpha_modes[p]));
+                }
+                return AVERROR(EINVAL);
+            }
+        }
+    }
+
     if (    avctx->bits_per_raw_sample < 0
         || (avctx->bits_per_raw_sample > 8 && pixdesc->comp[0].depth <= 8)) {
         av_log(avctx, AV_LOG_WARNING, "Specified bit depth %d not possible with the specified pixel formats depth %d\n",
