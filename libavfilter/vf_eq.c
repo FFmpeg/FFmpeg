@@ -238,14 +238,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     desc = av_pix_fmt_desc_get(inlink->format);
 
     eq->var_values[VAR_N]   = inl->frame_count_out;
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-    {
-        int64_t pos = in->pkt_pos;
-        eq->var_values[VAR_POS] = pos == -1 ? NAN : pos;
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     eq->var_values[VAR_T]   = TS2T(in->pts, inlink->time_base);
 
     if (eq->eval_mode == EVAL_MODE_FRAME) {

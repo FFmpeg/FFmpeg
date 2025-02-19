@@ -44,9 +44,6 @@ static const char *const var_names[] = {
     "N",           ///< frame / sample number (starting at zero)
     "NB_CONSUMED_SAMPLES", ///< number of samples consumed by the filter (only audio)
     "NB_SAMPLES",  ///< number of samples in the current frame (only audio)
-#if FF_API_FRAME_PKT
-    "POS",         ///< original position in the file of the frame
-#endif
     "PREV_INPTS",  ///< previous  input PTS
     "PREV_INT",    ///< previous  input time in seconds
     "PREV_OUTPTS", ///< previous output PTS
@@ -72,9 +69,6 @@ enum var_name {
     VAR_N,
     VAR_NB_CONSUMED_SAMPLES,
     VAR_NB_SAMPLES,
-#if FF_API_FRAME_PKT
-    VAR_POS,
-#endif
     VAR_PREV_INPTS,
     VAR_PREV_INT,
     VAR_PREV_OUTPTS,
@@ -182,11 +176,6 @@ static double eval_pts(SetPTSContext *setpts, AVFilterLink *inlink, AVFrame *fra
     }
     V(PTS       ) = TS2D(pts);
     V(T         ) = TS2T(pts, inlink->time_base);
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-    V(POS       ) = !frame || frame->pkt_pos == -1 ? NAN : frame->pkt_pos;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     V(RTCTIME   ) = av_gettime();
 
     if (frame) {

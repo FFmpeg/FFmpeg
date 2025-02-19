@@ -47,9 +47,6 @@ enum VolumeVarName {
     VAR_NB_CHANNELS,
     VAR_NB_CONSUMED_SAMPLES,
     VAR_NB_SAMPLES,
-#if FF_API_FRAME_PKT
-    VAR_POS,
-#endif
     VAR_PTS,
     VAR_SAMPLE_RATE,
     VAR_STARTPTS,

@@ -353,11 +353,6 @@ static int create_subcc_packet(AVFormatContext *avctx, AVFrame *frame,
     memcpy(lavfi->subcc_packet.data, sd->data, sd->size);
     lavfi->subcc_packet.stream_index = stream_idx;
     lavfi->subcc_packet.pts = frame->pts;
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-    lavfi->subcc_packet.pos = frame->pkt_pos;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     return 0;
 }
 
@@ -466,11 +461,6 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 
     pkt->stream_index = stream_idx;
     pkt->pts = frame->pts;
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-    pkt->pos = frame->pkt_pos;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     av_frame_free(&frame_to_free);
 

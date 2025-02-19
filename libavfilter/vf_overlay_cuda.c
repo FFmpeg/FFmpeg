@@ -67,9 +67,6 @@ enum var_name {
     VAR_X,
     VAR_Y,
     VAR_N,
-#if FF_API_FRAME_PKT
-    VAR_POS,
-#endif
     VAR_T,
     VAR_VARS_NB
 };
@@ -88,9 +85,6 @@ static const char *const var_names[] = {
     "x",
     "y",
     "n",            ///< number of frame
-#if FF_API_FRAME_PKT
-    "pos",          ///< position in the file
-#endif
     "t",            ///< timestamp expressed in seconds
     NULL
 };
@@ -274,15 +268,6 @@ static int overlay_cuda_blend(FFFrameSync *fs)
         ctx->var_values[VAR_T] = input_main->pts == AV_NOPTS_VALUE ?
             NAN : input_main->pts * av_q2d(inlink->time_base);
 
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-        {
-            int64_t pos = input_main->pkt_pos;
-            ctx->var_values[VAR_POS] = pos == -1 ? NAN : pos;
-        }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
         ctx->var_values[VAR_OVERLAY_W] = ctx->var_values[VAR_OW] = input_overlay->width;
         ctx->var_values[VAR_OVERLAY_H] = ctx->var_values[VAR_OH] = input_overlay->height;
         ctx->var_values[VAR_MAIN_W   ] = ctx->var_values[VAR_MW] = input_main->width;
@@ -365,9 +350,6 @@ static int config_input_overlay(AVFilterLink *inlink)
     s->var_values[VAR_Y]   = NAN;
     s->var_values[VAR_N]   = 0;
     s->var_values[VAR_T]   = NAN;
-#if FF_API_FRAME_PKT
-    s->var_values[VAR_POS] = NAN;
-#endif
 
     if ((ret = set_expr(&s->x_pexpr, s->x_expr, "x", ctx)) < 0 ||
         (ret = set_expr(&s->y_pexpr, s->y_expr, "y", ctx)) < 0)

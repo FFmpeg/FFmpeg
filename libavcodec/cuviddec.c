@@ -697,12 +697,6 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
          * So set pkt_pts and clear all the other pkt_ fields.
          */
         frame->duration = 0;
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->pkt_pos = -1;
-        frame->pkt_size = -1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
         if (!parsed_frame.is_deinterlacing && !parsed_frame.dispinfo.progressive_frame)
             frame->flags |= AV_FRAME_FLAG_INTERLACED;

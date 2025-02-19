@@ -85,9 +85,6 @@ static const char *const var_names[] = {
     "dar",
     "n",
     "t",
-#if FF_API_FRAME_PKT
-    "pos",
-#endif
     "main_w",
     "main_h",
     "main_a",
@@ -95,9 +92,6 @@ static const char *const var_names[] = {
     "main_dar", "mdar",
     "main_n",
     "main_t",
-#if FF_API_FRAME_PKT
-    "main_pos",
-#endif
     NULL
 };
 
@@ -111,9 +105,6 @@ enum var_name {
     VAR_DAR,
     VAR_N,
     VAR_T,
-#if FF_API_FRAME_PKT
-    VAR_POS,
-#endif
     VAR_S2R_MAIN_W,
     VAR_S2R_MAIN_H,
     VAR_S2R_MAIN_A,
@@ -121,9 +112,6 @@ enum var_name {
     VAR_S2R_MAIN_DAR, VAR_S2R_MDAR,
     VAR_S2R_MAIN_N,
     VAR_S2R_MAIN_T,
-#if FF_API_FRAME_PKT
-    VAR_S2R_MAIN_POS,
-#endif
     VARS_NB
 };
 
@@ -215,11 +203,7 @@ static int check_exprs(AVFilterContext* ctx)
          vars_w[VAR_S2R_MAIN_DAR] || vars_h[VAR_S2R_MAIN_DAR] ||
          vars_w[VAR_S2R_MDAR]     || vars_h[VAR_S2R_MDAR]     ||
          vars_w[VAR_S2R_MAIN_N]   || vars_h[VAR_S2R_MAIN_N]   ||
-         vars_w[VAR_S2R_MAIN_T]   || vars_h[VAR_S2R_MAIN_T]
-#if FF_API_FRAME_PKT
-         || vars_w[VAR_S2R_MAIN_POS] || vars_h[VAR_S2R_MAIN_POS]
-#endif
-         )) {
+         vars_w[VAR_S2R_MAIN_T]   || vars_h[VAR_S2R_MAIN_T])) {
         av_log(ctx, AV_LOG_ERROR, "Expressions with scale2ref_npp variables are not valid in scale_npp filter.\n");
         return AVERROR(EINVAL);
     }
@@ -227,15 +211,8 @@ static int check_exprs(AVFilterContext* ctx)
     if (scale->eval_mode == EVAL_MODE_INIT &&
         (vars_w[VAR_N]            || vars_h[VAR_N]           ||
          vars_w[VAR_T]            || vars_h[VAR_T]           ||
-#if FF_API_FRAME_PKT
-         vars_w[VAR_POS]          || vars_h[VAR_POS]         ||
-#endif
          vars_w[VAR_S2R_MAIN_N]   || vars_h[VAR_S2R_MAIN_N]  ||
-         vars_w[VAR_S2R_MAIN_T]   || vars_h[VAR_S2R_MAIN_T]
-#if FF_API_FRAME_PKT
-         || vars_w[VAR_S2R_MAIN_POS] || vars_h[VAR_S2R_MAIN_POS]
-#endif
-         ) ) {
+         vars_w[VAR_S2R_MAIN_T]   || vars_h[VAR_S2R_MAIN_T])) {
         av_log(ctx, AV_LOG_ERROR, "Expressions with frame variables 'n', 't', are not valid in init eval_mode.\n");
         return AVERROR(EINVAL);
     }
@@ -821,16 +798,8 @@ static int nppscale_scale(AVFilterLink *link, AVFrame *out, AVFrame *in)
         av_expr_count_vars(s->h_pexpr, vars_h, VARS_NB);
 
         if (s->eval_mode == EVAL_MODE_FRAME && !frame_changed && !IS_SCALE2REF(ctx) &&
-            !(vars_w[VAR_N] || vars_w[VAR_T]
-#if FF_API_FRAME_PKT
-              || vars_w[VAR_POS]
-#endif
-              ) &&
-            !(vars_h[VAR_N] || vars_h[VAR_T]
-#if FF_API_FRAME_PKT
-              || vars_h[VAR_POS]
-#endif
-              ) && s->w && s->h)
+            !(vars_w[VAR_N] || vars_w[VAR_T]) &&
+            !(vars_h[VAR_N] || vars_h[VAR_T]) && s->w && s->h)
             goto scale;
 
         if (s->eval_mode == EVAL_MODE_INIT) {
@@ -851,19 +820,9 @@ static int nppscale_scale(AVFilterLink *link, AVFrame *out, AVFrame *in)
         if (IS_SCALE2REF(ctx)) {
             s->var_values[VAR_S2R_MAIN_N] = inl->frame_count_out;
             s->var_values[VAR_S2R_MAIN_T] = TS2T(in->pts, link->time_base);
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-            s->var_values[VAR_S2R_MAIN_POS] = in->pkt_pos == -1 ? NAN : in->pkt_pos;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         } else {
             s->var_values[VAR_N] = inl->frame_count_out;
             s->var_values[VAR_T] = TS2T(in->pts, link->time_base);
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-            s->var_values[VAR_POS] = in->pkt_pos == -1 ? NAN : in->pkt_pos;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         }
 
         link->format = in->format;
@@ -985,11 +944,6 @@ static int nppscale_filter_frame_ref(AVFilterLink *link, AVFrame *in)
     if (scale->eval_mode == EVAL_MODE_FRAME) {
         scale->var_values[VAR_N] = inl->frame_count_out;
         scale->var_values[VAR_T] = TS2T(in->pts, link->time_base);
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-        scale->var_values[VAR_POS] = in->pkt_pos == -1 ? NAN : in->pkt_pos;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
 
     return ff_filter_frame(outlink, in);

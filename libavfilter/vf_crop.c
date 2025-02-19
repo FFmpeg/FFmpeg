@@ -50,9 +50,6 @@ static const char *const var_names[] = {
     "x",
     "y",
     "n",            ///< number of frame
-#if FF_API_FRAME_PKT
-    "pos",          ///< position in the file
-#endif
     "t",            ///< timestamp expressed in seconds
     NULL
 };
@@ -70,9 +67,6 @@ enum var_name {
     VAR_X,
     VAR_Y,
     VAR_N,
-#if FF_API_FRAME_PKT
-    VAR_POS,
-#endif
     VAR_T,
     VAR_VARS_NB
 };
@@ -152,9 +146,6 @@ static int config_input(AVFilterLink *link)
     s->var_values[VAR_OUT_H] = s->var_values[VAR_OH] = NAN;
     s->var_values[VAR_N]     = 0;
     s->var_values[VAR_T]     = NAN;
-#if FF_API_FRAME_PKT
-    s->var_values[VAR_POS]   = NAN;
-#endif
 
     av_image_fill_max_pixsteps(s->max_step, NULL, pix_desc);
 
@@ -267,12 +258,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     s->var_values[VAR_N] = l->frame_count_out;
     s->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
         NAN : frame->pts * av_q2d(link->time_base);
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-    s->var_values[VAR_POS] = frame->pkt_pos == -1 ?
-        NAN : frame->pkt_pos;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, NULL);
     s->var_values[VAR_Y] = av_expr_eval(s->y_pexpr, s->var_values, NULL);
     /* It is necessary if x is expressed from y  */

@@ -37,12 +37,6 @@ static void get_frame_defaults(AVFrame *frame)
     frame->pkt_dts               = AV_NOPTS_VALUE;
     frame->best_effort_timestamp = AV_NOPTS_VALUE;
     frame->duration            = 0;
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-    frame->pkt_pos             = -1;
-    frame->pkt_size            = -1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     frame->time_base           = (AVRational){ 0, 1 };
     frame->sample_aspect_ratio = (AVRational){ 0, 1 };
     frame->format              = -1; /* unknown */
@@ -255,12 +249,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     dst->sample_rate            = src->sample_rate;
     dst->opaque                 = src->opaque;
     dst->pkt_dts                = src->pkt_dts;
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-    dst->pkt_pos                = src->pkt_pos;
-    dst->pkt_size               = src->pkt_size;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     dst->time_base              = src->time_base;
     dst->quality                = src->quality;
     dst->best_effort_timestamp  = src->best_effort_timestamp;
