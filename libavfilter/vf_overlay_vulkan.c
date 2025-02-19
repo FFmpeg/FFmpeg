@@ -290,7 +290,6 @@ static void overlay_vulkan_uninit(AVFilterContext *avctx)
 {
     OverlayVulkanContext *s = avctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
-    FFVulkanFunctions *vk = &vkctx->vkfn;
 
     ff_vk_exec_pool_free(vkctx, &s->e);
     ff_vk_shader_free(vkctx, &s->shd);
