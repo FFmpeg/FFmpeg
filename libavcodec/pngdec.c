@@ -998,6 +998,11 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
             s->bpp += byte_depth;
         }
 
+        /* PNG spec mandates independent alpha channel */
+        if (s->color_type == PNG_COLOR_TYPE_RGB_ALPHA ||
+            s->color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+            avctx->alpha_mode = AVALPHA_MODE_STRAIGHT;
+
         ff_progress_frame_unref(&s->picture);
         if (s->dispose_op == APNG_DISPOSE_OP_PREVIOUS) {
             /* We only need a buffer for the current picture. */
