@@ -3601,11 +3601,7 @@ const FFOutputFormat ff_matroska_muxer = {
     .write_packet      = mkv_write_flush_packet,
     .write_trailer     = mkv_write_trailer,
     .p.flags           = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
-#if FF_API_ALLOW_FLUSH
-                         AVFMT_TS_NONSTRICT | AVFMT_ALLOW_FLUSH,
-#else
                          AVFMT_TS_NONSTRICT,
-#endif
     .p.codec_tag       = (const AVCodecTag* const []){
          ff_codec_bmp_tags, ff_codec_wav_tags,
          additional_audio_tags, additional_subtitle_tags, 0
@@ -3645,11 +3641,7 @@ const FFOutputFormat ff_webm_muxer = {
     .query_codec       = webm_query_codec,
     .check_bitstream   = mkv_check_bitstream,
     .p.flags           = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
-#if FF_API_ALLOW_FLUSH
-                         AVFMT_TS_NONSTRICT | AVFMT_ALLOW_FLUSH,
-#else
                          AVFMT_TS_NONSTRICT,
-#endif
     .p.priv_class      = &matroska_webm_class,
     .flags_internal    = FF_OFMT_FLAG_ALLOW_FLUSH,
 };
@@ -3671,12 +3663,7 @@ const FFOutputFormat ff_matroska_audio_muxer = {
     .write_packet      = mkv_write_flush_packet,
     .write_trailer     = mkv_write_trailer,
     .check_bitstream   = mkv_check_bitstream,
-#if FF_API_ALLOW_FLUSH
-    .p.flags           = AVFMT_GLOBALHEADER | AVFMT_TS_NONSTRICT |
-                         AVFMT_ALLOW_FLUSH,
-#else
     .p.flags           = AVFMT_GLOBALHEADER | AVFMT_TS_NONSTRICT,
-#endif
     .p.codec_tag       = (const AVCodecTag* const []){
         ff_codec_wav_tags, additional_audio_tags, 0
     },

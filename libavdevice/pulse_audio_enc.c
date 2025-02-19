@@ -796,11 +796,7 @@ const FFOutputFormat ff_pulse_muxer = {
     .get_output_timestamp = pulse_get_output_timestamp,
     .get_device_list      = pulse_get_device_list,
     .control_message      = pulse_control_message,
-#if FF_API_ALLOW_FLUSH
-    .p.flags              = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
-#else
     .p.flags              = AVFMT_NOFILE,
-#endif
     .p.priv_class         = &pulse_muxer_class,
     .flags_internal       = FF_OFMT_FLAG_ALLOW_FLUSH,
 };

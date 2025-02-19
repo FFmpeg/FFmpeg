@@ -773,11 +773,7 @@ const FFOutputFormat ff_ogg_muxer = {
     .write_packet      = ogg_write_packet,
     .write_trailer     = ogg_write_trailer,
     .deinit            = ogg_free,
-#if FF_API_ALLOW_FLUSH
-    .p.flags           = AVFMT_TS_NEGATIVE | AVFMT_TS_NONSTRICT | AVFMT_ALLOW_FLUSH,
-#else
     .p.flags           = AVFMT_TS_NEGATIVE | AVFMT_TS_NONSTRICT,
-#endif
     .p.priv_class      = &ogg_muxer_class,
     .flags_internal    = FF_OFMT_FLAG_ALLOW_FLUSH,
 };
@@ -796,11 +792,7 @@ const FFOutputFormat ff_oga_muxer = {
     .write_packet      = ogg_write_packet,
     .write_trailer     = ogg_write_trailer,
     .deinit            = ogg_free,
-#if FF_API_ALLOW_FLUSH
-    .p.flags           = AVFMT_TS_NEGATIVE | AVFMT_ALLOW_FLUSH,
-#else
     .p.flags           = AVFMT_TS_NEGATIVE,
-#endif
     .p.priv_class      = &ogg_muxer_class,
     .flags_internal    = FF_OFMT_FLAG_ALLOW_FLUSH,
 };
@@ -822,11 +814,7 @@ const FFOutputFormat ff_ogv_muxer = {
     .write_packet      = ogg_write_packet,
     .write_trailer     = ogg_write_trailer,
     .deinit            = ogg_free,
-#if FF_API_ALLOW_FLUSH
-    .p.flags           = AVFMT_TS_NEGATIVE | AVFMT_TS_NONSTRICT | AVFMT_ALLOW_FLUSH,
-#else
     .p.flags           = AVFMT_TS_NEGATIVE | AVFMT_TS_NONSTRICT,
-#endif
     .p.priv_class      = &ogg_muxer_class,
     .flags_internal    = FF_OFMT_FLAG_ALLOW_FLUSH,
 };
@@ -845,11 +833,7 @@ const FFOutputFormat ff_spx_muxer = {
     .write_packet      = ogg_write_packet,
     .write_trailer     = ogg_write_trailer,
     .deinit            = ogg_free,
-#if FF_API_ALLOW_FLUSH
-    .p.flags           = AVFMT_TS_NEGATIVE | AVFMT_ALLOW_FLUSH,
-#else
     .p.flags           = AVFMT_TS_NEGATIVE,
-#endif
     .p.priv_class      = &ogg_muxer_class,
     .flags_internal    = FF_OFMT_FLAG_ALLOW_FLUSH,
 };
@@ -868,11 +852,7 @@ const FFOutputFormat ff_opus_muxer = {
     .write_packet      = ogg_write_packet,
     .write_trailer     = ogg_write_trailer,
     .deinit            = ogg_free,
-#if FF_API_ALLOW_FLUSH
-    .p.flags           = AVFMT_TS_NEGATIVE | AVFMT_ALLOW_FLUSH,
-#else
     .p.flags           = AVFMT_TS_NEGATIVE,
-#endif
     .p.priv_class      = &ogg_muxer_class,
     .flags_internal    = FF_OFMT_FLAG_ALLOW_FLUSH,
 };

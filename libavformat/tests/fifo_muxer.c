@@ -154,11 +154,7 @@ const FFOutputFormat ff_fifo_test_muxer = {
     .write_trailer  = fifo_test_trailer,
     .deinit         = failing_deinit,
     .p.priv_class   = &failing_muxer_class,
-#if FF_API_ALLOW_FLUSH
-    .p.flags        = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
-#else
     .p.flags        = AVFMT_NOFILE,
-#endif
     .flags_internal = FF_OFMT_FLAG_ALLOW_FLUSH,
 };
 
