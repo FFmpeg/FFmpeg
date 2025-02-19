@@ -16521,6 +16521,10 @@ leading to no change. For any other value, conversion will be performed.
 
 See the @ref{setparams} filter for a list of possible values.
 
+@item alpha_mode
+Choose the desired output alpha mode, when the output format has an alpha
+channel. See the @ref{setparams} filter for a list of possible values.
+
 @item apply_filmgrain
 Apply film grain (e.g. AV1 or H.274) if present in source frames, and strip
 it from the output. Enabled by default.

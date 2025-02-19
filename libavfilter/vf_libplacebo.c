@@ -203,6 +203,7 @@ typedef struct LibplaceboContext {
     int color_primaries;
     int color_trc;
     int rotation;
+    int alpha_mode;
     AVDictionary *extra_opts;
 
 #if PL_API_VER >= 351
@@ -962,6 +963,7 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     out->height = outlink->h;
     out->colorspace = outlink->colorspace;
     out->color_range = outlink->color_range;
+    out->alpha_mode = outlink->alpha_mode;
     if (s->deinterlace)
         out->flags &= ~(AV_FRAME_FLAG_INTERLACED | AV_FRAME_FLAG_TOP_FIELD_FIRST);
 
@@ -1339,6 +1341,7 @@ static int libplacebo_query_format(const AVFilterContext *ctx,
         RET(ff_formats_ref(infmts, &cfg_in[i]->formats));
         RET(ff_formats_ref(ff_all_color_spaces(), &cfg_in[i]->color_spaces));
         RET(ff_formats_ref(ff_all_color_ranges(), &cfg_in[i]->color_ranges));
+        RET(ff_formats_ref(ff_all_alpha_modes(), &cfg_in[i]->alpha_modes));
     }
 
     RET(ff_formats_ref(outfmts, &cfg_out[0]->formats));
@@ -1350,6 +1353,10 @@ static int libplacebo_query_format(const AVFilterContext *ctx,
     outfmts = s->color_range > 0 ? ff_make_formats_list_singleton(s->color_range)
                                  : ff_all_color_ranges();
     RET(ff_formats_ref(outfmts, &cfg_out[0]->color_ranges));
+
+    outfmts = s->alpha_mode > 0 ? ff_make_formats_list_singleton(s->alpha_mode)
+                                 : ff_all_alpha_modes();
+    RET(ff_formats_ref(outfmts, &cfg_out[0]->alpha_modes));
     return 0;
 
 fail:
@@ -1610,6 +1617,13 @@ static const AVOption libplacebo_options[] = {
     {"180",                            NULL,  0, AV_OPT_TYPE_CONST, {.i64=PL_ROTATION_180}, .flags = STATIC, .unit = "rotation"},
     {"270",                            NULL,  0, AV_OPT_TYPE_CONST, {.i64=PL_ROTATION_270}, .flags = STATIC, .unit = "rotation"},
     {"360",                            NULL,  0, AV_OPT_TYPE_CONST, {.i64=PL_ROTATION_360}, .flags = STATIC, .unit = "rotation"},
+
+    {"alpha_mode", "select alpha moda", OFFSET(alpha_mode), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVALPHA_MODE_NB-1, DYNAMIC, .unit = "alpha_mode"},
+    {"auto", "keep the same alpha mode",  0, AV_OPT_TYPE_CONST, {.i64=-1},                              0, 0, DYNAMIC, .unit = "alpha_mode"},
+    {"unspecified",                      NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_UNSPECIFIED},   0, 0, DYNAMIC, .unit = "alpha_mode"},
+    {"unknown",                          NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_UNSPECIFIED},   0, 0, DYNAMIC, .unit = "alpha_mode"},
+    {"premultiplied",                    NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_PREMULTIPLIED}, 0, 0, DYNAMIC, .unit = "alpha_mode"},
+    {"straight",                         NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_STRAIGHT},      0, 0, DYNAMIC, .unit = "alpha_mode"},
 
     { "upscaler", "Upscaler function", OFFSET(upscaler), AV_OPT_TYPE_STRING, {.str = "spline36"}, .flags = DYNAMIC },
     { "downscaler", "Downscaler function", OFFSET(downscaler), AV_OPT_TYPE_STRING, {.str = "mitchell"}, .flags = DYNAMIC },
