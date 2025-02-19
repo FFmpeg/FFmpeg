@@ -25,7 +25,7 @@
  * Libavcodec version macros.
  */
 
-#define LIBAVCODEC_VERSION_MAJOR  61
+#define LIBAVCODEC_VERSION_MAJOR  62
 
 /**
  * FF_API_* defines may be placed below to indicate public API that will be
