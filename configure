@@ -3769,7 +3769,6 @@ oss_indev_deps_any="sys_soundcard_h"
 oss_outdev_deps_any="sys_soundcard_h"
 pulse_indev_deps="libpulse"
 pulse_outdev_deps="libpulse"
-sdl2_outdev_deps="sdl2"
 sndio_indev_deps="sndio"
 sndio_outdev_deps="sndio"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
@@ -7879,10 +7878,6 @@ enabled uspp_filter         && prepend avfilter_deps "avcodec"
 enabled zoompan_filter      && prepend avfilter_deps "swscale"
 
 enabled lavfi_indev         && prepend avdevice_deps "avfilter"
-
-#FIXME
-enabled_any sdl2_outdev && enabled sdl2 &&
-    add_cflags $(filter_out '-Dmain=SDL_main' $sdl2_cflags)
 
 enabled opus_decoder    && prepend avcodec_deps "swresample"
 
