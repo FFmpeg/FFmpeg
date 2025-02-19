@@ -16600,11 +16600,6 @@ Linear blend/fade between frames. Especially useful for constructing e.g.
 slideshows.
 @end table
 
-@item lut_entries
-Configures the size of scaler LUTs, ranging from @code{1} to @code{256}. The
-default of @code{0} will pick libplacebo's internal default, typically
-@code{64}.
-
 @item antiringing
 Enables anti-ringing (for non-EWA filters). The value (between @code{0.0} and
 @code{1.0}) configures the strength of the anti-ringing algorithm. May increase
@@ -16725,10 +16720,6 @@ process. Enabled by default.
 Peak detection smoothing period, between @code{0.0} and @code{1000.0}. Higher
 values result in peak detection becoming less responsive to changes in the
 input. Defaults to @code{100.0}.
-
-@item minimum_peak
-Lower bound on the detected peak (relative to SDR white), between @code{0.0}
-and @code{100.0}. Defaults to @code{1.0}.
 
 @item scene_threshold_low
 @item scene_threshold_high
@@ -16933,10 +16924,6 @@ attempting to squeeze the maximum performance at the cost of quality.
 @table @option
 @item skip_aa
 Disable anti-aliasing when downscaling.
-
-@item polar_cutoff
-Truncate polar (EWA) scaler kernels below this absolute magnitude, between
-@code{0.0} and @code{1.0}.
 
 @item disable_linear
 Disable linear light scaling.
