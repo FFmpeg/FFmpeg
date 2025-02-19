@@ -292,6 +292,16 @@ int av_chroma_location_enum_to_pos(int *xpos, int *ypos, enum AVChromaLocation p
 enum AVChromaLocation av_chroma_location_pos_to_enum(int xpos, int ypos);
 
 /**
+ * @return the name for provided alpha mode or NULL if unknown.
+ */
+const char *av_alpha_mode_name(enum AVAlphaMode mode);
+
+/**
+ * @return the AVAlphaMode value for name or an AVError if not found.
+ */
+enum AVAlphaMode av_alpha_mode_from_name(const char *name);
+
+/**
  * Return the pixel format corresponding to name.
  *
  * If there is no pixel format with name name, then looks for a

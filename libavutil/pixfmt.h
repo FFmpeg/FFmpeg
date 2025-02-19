@@ -794,4 +794,14 @@ enum AVChromaLocation {
     AVCHROMA_LOC_NB               ///< Not part of ABI
 };
 
+/**
+ * Correlation between the alpha channel and color values.
+ */
+enum AVAlphaMode {
+    AVALPHA_MODE_UNSPECIFIED   = 0, ///< Unknown alpha handling, or no alpha channel
+    AVALPHA_MODE_PREMULTIPLIED = 1, ///< Alpha channel is multiplied into color values
+    AVALPHA_MODE_STRAIGHT      = 2, ///< Alpha channel is independent of color values
+    AVALPHA_MODE_NB                 ///< Not part of ABI
+};
+
 #endif /* AVUTIL_PIXFMT_H */

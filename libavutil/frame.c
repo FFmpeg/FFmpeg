@@ -45,6 +45,7 @@ static void get_frame_defaults(AVFrame *frame)
     frame->colorspace          = AVCOL_SPC_UNSPECIFIED;
     frame->color_range         = AVCOL_RANGE_UNSPECIFIED;
     frame->chroma_location     = AVCHROMA_LOC_UNSPECIFIED;
+    frame->alpha_mode          = AVALPHA_MODE_UNSPECIFIED;
     frame->flags               = 0;
 }
 
@@ -240,6 +241,7 @@ static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
     dst->colorspace             = src->colorspace;
     dst->color_range            = src->color_range;
     dst->chroma_location        = src->chroma_location;
+    dst->alpha_mode             = src->alpha_mode;
 
     av_dict_copy(&dst->metadata, src->metadata, 0);
 
