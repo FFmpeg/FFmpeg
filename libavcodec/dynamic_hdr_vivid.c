@@ -116,17 +116,6 @@ int ff_parse_itu_t_t35_to_dynamic_hdr_vivid(AVDynamicHDRVivid *s, const uint8_t 
                             three_spline->th_delta2 = (AVRational){get_bits(gb, 10),  1023};
                             three_spline->enable_strength = (AVRational){get_bits(gb,  8),  255};
                         }
-#if FF_API_HDR_VIVID_THREE_SPLINE
-                        three_spline = &tm_params->three_spline[0];
-FF_DISABLE_DEPRECATION_WARNINGS
-                        tm_params->three_Spline_TH_mode = three_spline->th_mode;
-                        tm_params->three_Spline_TH_enable_MB = three_spline->th_enable_mb;
-                        tm_params->three_Spline_TH_enable = three_spline->th_enable;
-                        tm_params->three_Spline_TH_Delta1 = three_spline->th_delta1;
-                        tm_params->three_Spline_TH_Delta2 = three_spline->th_delta2;
-                        tm_params->three_Spline_enable_Strength = three_spline->enable_strength;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
                     }
                 }
             }

@@ -168,60 +168,6 @@ typedef struct AVHDRVividColorToneMappingParams {
      */
     int three_Spline_num;
 
-#if FF_API_HDR_VIVID_THREE_SPLINE
-    /**
-     * The mode of three Spline. the value shall be in the range
-     * of 0 to 3, inclusive.
-     * @deprecated Use three_spline instead
-     */
-    attribute_deprecated
-    int three_Spline_TH_mode;
-
-    /**
-     * three_Spline_TH_enable_MB is in the range of 0.0 to 1.0, inclusive
-     * and in multiples of 1.0/255.
-     * @deprecated Use three_spline instead
-     */
-    attribute_deprecated
-    AVRational three_Spline_TH_enable_MB;
-
-    /**
-     * 3Spline_TH_enable of three Spline.
-     * The value shall be in the range of 0.0 to 1.0, inclusive.
-     * and in multiples of 1.0/4095.
-     * @deprecated Use three_spline instead
-     */
-    attribute_deprecated
-    AVRational three_Spline_TH_enable;
-
-    /**
-     * 3Spline_TH_Delta1 of three Spline.
-     * The value shall be in the range of 0.0 to 0.25, inclusive,
-     * and in multiples of 0.25/1023.
-     * @deprecated Use three_spline instead
-     */
-    attribute_deprecated
-    AVRational three_Spline_TH_Delta1;
-
-    /**
-     * 3Spline_TH_Delta2 of three Spline.
-     * The value shall be in the range of 0.0 to 0.25, inclusive,
-     * and in multiples of 0.25/1023.
-     * @deprecated Use three_spline instead
-     */
-    attribute_deprecated
-    AVRational three_Spline_TH_Delta2;
-
-    /**
-     * 3Spline_enable_Strength of three Spline.
-     * The value shall be in the range of 0.0 to 1.0, inclusive,
-     * and in multiples of 1.0/255.
-     * @deprecated Use three_spline instead
-     */
-    attribute_deprecated
-    AVRational three_Spline_enable_Strength;
-#endif
-
     AVHDRVivid3SplineParams three_spline[2];
 } AVHDRVividColorToneMappingParams;
 
