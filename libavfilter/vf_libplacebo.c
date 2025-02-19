@@ -892,8 +892,12 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     }
 
     /* Draw first frame opaque, others with blending */
-    opts->params.skip_target_clearing = false;
     opts->params.blend_params = NULL;
+#if PL_API_VER >= 346
+    opts->params.background = opts->params.border = PL_CLEAR_COLOR;
+#else
+    opts->params.skip_target_clearing = false;
+#endif
     for (int i = 0; i < s->nb_inputs; i++) {
         LibplaceboInput *in = &s->inputs[i];
         FilterLink *il = ff_filter_link(ctx->inputs[in->idx]);
@@ -904,8 +908,12 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         opts->params.skip_caching_single_frame = high_fps;
         update_crops(ctx, in, &target, out->pts * av_q2d(outlink->time_base));
         pl_render_image_mix(in->renderer, &in->mix, &target, &opts->params);
-        opts->params.skip_target_clearing = true;
         opts->params.blend_params = &pl_alpha_overlay;
+#if PL_API_VER >= 346
+        opts->params.background = opts->params.border = PL_CLEAR_SKIP;
+#else
+        opts->params.skip_target_clearing = true;
+#endif
     }
 
     if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
