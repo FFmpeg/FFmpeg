@@ -96,8 +96,17 @@ typedef struct FFVkBuffer {
     VkPipelineStageFlags2 stage;
     VkAccessFlags2 access;
 
-    /* Only valid when allocated via ff_vk_get_pooled_buffer with HOST_VISIBLE */
+    /* Only valid when allocated via ff_vk_get_pooled_buffer with HOST_VISIBLE or
+     * via ff_vk_host_map_buffer */
     uint8_t *mapped_mem;
+
+    /* Set by ff_vk_host_map_buffer. This is the offset at which the buffer data
+     * actually begins at.
+     * The address and mapped_mem fields will be offset by this amount. */
+    size_t virtual_offset;
+
+    /* If host mapping, reference to the backing host memory buffer */
+    AVBufferRef *host_ref;
 } FFVkBuffer;
 
 typedef struct FFVkExecContext {
@@ -519,6 +528,13 @@ int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVBufferPool **buf_pool,
                             AVBufferRef **buf, VkBufferUsageFlags usage,
                             void *create_pNext, size_t size,
                             VkMemoryPropertyFlagBits mem_props);
+
+/** Maps a system RAM buffer into a Vulkan buffer.
+ * References the source buffer.
+ */
+int ff_vk_host_map_buffer(FFVulkanContext *s, AVBufferRef **dst,
+                          uint8_t *src_data, const AVBufferRef *src_buf,
+                          VkBufferUsageFlags usage);
 
 /**
  * Create a sampler.

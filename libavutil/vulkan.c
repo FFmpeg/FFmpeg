@@ -1088,6 +1088,8 @@ int ff_vk_unmap_buffers(FFVulkanContext *s, FFVkBuffer **buf, int nb_buffers,
                 .memory = buf[i]->mem,
                 .size   = VK_WHOLE_SIZE,
             };
+
+            av_assert0(!buf[i]->host_ref);
             if (buf[i]->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
                 continue;
             flush_list[flush_count++] = flush_buf;
@@ -1119,12 +1121,18 @@ void ff_vk_free_buf(FFVulkanContext *s, FFVkBuffer *buf)
     if (!buf || !s->hwctx)
         return;
 
-    if (buf->mapped_mem)
+    if (buf->mapped_mem && !buf->host_ref)
         ff_vk_unmap_buffer(s, buf, 0);
     if (buf->buf != VK_NULL_HANDLE)
         vk->DestroyBuffer(s->hwctx->act_dev, buf->buf, s->hwctx->alloc);
     if (buf->mem != VK_NULL_HANDLE)
         vk->FreeMemory(s->hwctx->act_dev, buf->mem, s->hwctx->alloc);
+    if (buf->host_ref)
+        av_buffer_unref(&buf->host_ref);
+
+    buf->buf = VK_NULL_HANDLE;
+    buf->mem = VK_NULL_HANDLE;
+    buf->mapped_mem = NULL;
 }
 
 static void free_data_buf(void *opaque, uint8_t *data)
@@ -1196,6 +1204,157 @@ int ff_vk_get_pooled_buffer(FFVulkanContext *ctx, AVBufferPool **buf_pool,
             *buf = NULL;
             return err;
         }
+    }
+
+    return 0;
+}
+
+static int create_mapped_buffer(FFVulkanContext *s,
+                                FFVkBuffer *vkb, VkBufferUsageFlags usage,
+                                size_t size,
+                                VkExternalMemoryBufferCreateInfo *create_desc,
+                                VkImportMemoryHostPointerInfoEXT *import_desc,
+                                VkMemoryHostPointerPropertiesEXT props)
+{
+    int err;
+    VkResult ret;
+    FFVulkanFunctions *vk = &s->vkfn;
+
+    VkBufferCreateInfo buf_spawn = {
+        .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .pNext       = create_desc,
+        .usage       = usage,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .size        = size,
+    };
+    VkMemoryRequirements req = {
+        .size           = size,
+        .alignment      = s->hprops.minImportedHostPointerAlignment,
+        .memoryTypeBits = props.memoryTypeBits,
+    };
+
+    err = ff_vk_alloc_mem(s, &req,
+                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                          import_desc, &vkb->flags, &vkb->mem);
+    if (err < 0)
+        return err;
+
+    ret = vk->CreateBuffer(s->hwctx->act_dev, &buf_spawn, s->hwctx->alloc, &vkb->buf);
+    if (ret != VK_SUCCESS) {
+        vk->FreeMemory(s->hwctx->act_dev, vkb->mem, s->hwctx->alloc);
+        return AVERROR_EXTERNAL;
+    }
+
+    ret = vk->BindBufferMemory(s->hwctx->act_dev, vkb->buf, vkb->mem, 0);
+    if (ret != VK_SUCCESS) {
+        vk->FreeMemory(s->hwctx->act_dev, vkb->mem, s->hwctx->alloc);
+        vk->DestroyBuffer(s->hwctx->act_dev, vkb->buf, s->hwctx->alloc);
+        return AVERROR_EXTERNAL;
+    }
+
+    return 0;
+}
+
+static void destroy_avvkbuf(void *opaque, uint8_t *data)
+{
+    FFVulkanContext *s = opaque;
+    FFVkBuffer *buf = (FFVkBuffer *)data;
+    ff_vk_free_buf(s, buf);
+    av_free(buf);
+}
+
+int ff_vk_host_map_buffer(FFVulkanContext *s, AVBufferRef **dst,
+                          uint8_t *src_data, const AVBufferRef *src_buf,
+                          VkBufferUsageFlags usage)
+{
+    int err;
+    VkResult ret;
+    FFVulkanFunctions *vk = &s->vkfn;
+
+    VkExternalMemoryBufferCreateInfo create_desc = {
+        .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+        .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
+    };
+    VkMemoryAllocateFlagsInfo alloc_flags = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+        .flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+    };
+    VkImportMemoryHostPointerInfoEXT import_desc = {
+        .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
+        .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
+        .pNext = usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT ? &alloc_flags : NULL,
+    };
+    VkMemoryHostPointerPropertiesEXT props;
+
+    AVBufferRef *ref;
+    FFVkBuffer *vkb;
+    size_t offs;
+    size_t buffer_size;
+
+    *dst = NULL;
+
+    /* Get the previous point at which mapping was possible and use it */
+    offs = (uintptr_t)src_data % s->hprops.minImportedHostPointerAlignment;
+    import_desc.pHostPointer = src_data - offs;
+
+    props = (VkMemoryHostPointerPropertiesEXT) {
+        VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT,
+    };
+    ret = vk->GetMemoryHostPointerPropertiesEXT(s->hwctx->act_dev,
+                                                import_desc.handleType,
+                                                import_desc.pHostPointer,
+                                                &props);
+    if (!(ret == VK_SUCCESS && props.memoryTypeBits))
+        return AVERROR(EINVAL);
+
+    /* Ref the source buffer */
+    ref = av_buffer_ref(src_buf);
+    if (!ref)
+        return AVERROR(ENOMEM);
+
+    /* Add the offset at the start, which gets ignored */
+    buffer_size = offs + src_buf->size;
+    buffer_size = FFALIGN(buffer_size, s->props.properties.limits.minMemoryMapAlignment);
+    buffer_size = FFALIGN(buffer_size, s->hprops.minImportedHostPointerAlignment);
+
+    /* Create a buffer struct */
+    vkb = av_mallocz(sizeof(*vkb));
+    if (!vkb) {
+        av_buffer_unref(&ref);
+        return AVERROR(ENOMEM);
+    }
+
+    err = create_mapped_buffer(s, vkb, usage,
+                               buffer_size, &create_desc, &import_desc,
+                               props);
+    if (err < 0) {
+        av_buffer_unref(&ref);
+        av_free(vkb);
+        return err;
+    }
+
+    if (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+        VkBufferDeviceAddressInfo address_info = {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+            .buffer = vkb->buf,
+        };
+        vkb->address = vk->GetBufferDeviceAddress(s->hwctx->act_dev, &address_info);
+    }
+
+    vkb->host_ref       = ref;
+    vkb->virtual_offset = offs;
+    vkb->address       += offs;
+    vkb->mapped_mem     = src_data;
+    vkb->size           = buffer_size - offs;
+    vkb->flags         |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    /* Create a ref */
+    *dst = av_buffer_create((uint8_t *)vkb, sizeof(*vkb),
+                            destroy_avvkbuf, s, 0);
+    if (!(*dst)) {
+        destroy_avvkbuf(s, (uint8_t *)vkb);
+        *dst = NULL;
+        return AVERROR(ENOMEM);
     }
 
     return 0;
@@ -2533,7 +2692,7 @@ int ff_vk_shader_update_desc_buffer(FFVulkanContext *s, FFVkExecContext *e,
     } else {
         VkDescriptorBufferInfo desc_pool_write_info_buf = {
             .buffer = buf->buf,
-            .offset = offset,
+            .offset = buf->virtual_offset + offset,
             .range = len,
         };
         VkWriteDescriptorSet desc_pool_write_info = {
