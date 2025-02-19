@@ -888,38 +888,41 @@ function ff_hevc_transform_luma_4x4_neon_8, export=1
         ret
 endfunc
 
+.macro idct_8x8_dc_store offset
+.irp    i, 0x0, 0x20, 0x40, 0x60
+        stp             q0, q0, [x0, #(\offset + \i)]
+.endr
+.endm
+
+.macro idct_16x16_dc_store
+.irp    index, 0x0, 0x80, 0x100, 0x180
+        idct_8x8_dc_store offset=\index
+.endr
+.endm
+
 // void ff_hevc_idct_NxN_dc_DEPTH_neon(int16_t *coeffs)
 .macro idct_dc size, bitdepth
 function ff_hevc_idct_\size\()x\size\()_dc_\bitdepth\()_neon, export=1
-        ld1r            {v4.8h}, [x0]
-        srshr           v4.8h,  v4.8h,  #1
-        srshr           v0.8h,  v4.8h,  #(14 - \bitdepth)
-        srshr           v1.8h,  v4.8h,  #(14 - \bitdepth)
-.if \size > 4
-        srshr           v2.8h,  v4.8h,  #(14 - \bitdepth)
-        srshr           v3.8h,  v4.8h,  #(14 - \bitdepth)
-.if \size > 16 /* dc 32x32 */
-        mov             x2,  #4
+        ldrsh           w1, [x0]
+        add             w1, w1, #1
+        asr             w1, w1, #1
+        add             w1, w1, #(1 << (13 - \bitdepth))
+        asr             w1, w1, #(14 - \bitdepth)
+        dup             v0.8h, w1
+
+.if \size < 8
+        stp             q0, q0, [x0]
+.elseif \size < 16
+        idct_8x8_dc_store 0x0
+.elseif \size < 32
+        idct_16x16_dc_store
+.else
+        add             x2, x0, #(32 * 32 * 2)
 1:
-        subs            x2,  x2, #1
-.endif
-        add             x12,  x0, #64
-        mov             x13,  #128
-.if \size > 8 /* dc 16x16 */
-        st1             {v0.8h-v3.8h},  [x0], x13
-        st1             {v0.8h-v3.8h}, [x12], x13
-        st1             {v0.8h-v3.8h},  [x0], x13
-        st1             {v0.8h-v3.8h}, [x12], x13
-        st1             {v0.8h-v3.8h},  [x0], x13
-        st1             {v0.8h-v3.8h}, [x12], x13
-.endif /* dc 8x8 */
-        st1             {v0.8h-v3.8h},  [x0], x13
-        st1             {v0.8h-v3.8h}, [x12], x13
-.if \size > 16 /* dc 32x32 */
-        bne             1b
-.endif
-.else /* dc 4x4 */
-        st1             {v0.8h-v1.8h},  [x0]
+        idct_16x16_dc_store
+        add             x0, x0, #(16 * 16 * 2)
+        cmp             x0, x2
+        b.lt            1b
 .endif
         ret
 endfunc
