@@ -93,28 +93,6 @@ typedef struct AVVDPAUContext {
     AVVDPAU_Render2 render2;
 } AVVDPAUContext;
 
-#if FF_API_VDPAU_ALLOC_GET_SET
-/**
- * @brief allocation function for AVVDPAUContext
- *
- * Allows extending the struct without breaking API/ABI
- * @deprecated use av_vdpau_bind_context() instead
- */
-attribute_deprecated
-AVVDPAUContext *av_alloc_vdpaucontext(void);
-
-/**
- * @deprecated render2 is public and can be accessed directly
- */
-attribute_deprecated
-AVVDPAU_Render2 av_vdpau_hwaccel_get_render2(const AVVDPAUContext *);
-/**
- * @deprecated render2 is public and can be accessed directly
- */
-attribute_deprecated
-void av_vdpau_hwaccel_set_render2(AVVDPAUContext *, AVVDPAU_Render2);
-#endif
-
 /**
  * Associate a VDPAU device with a codec context for hardware acceleration.
  * This function is meant to be called from the get_format() codec callback,
@@ -154,17 +132,6 @@ int av_vdpau_bind_context(AVCodecContext *avctx, VdpDevice device,
  */
 int av_vdpau_get_surface_parameters(AVCodecContext *avctx, VdpChromaType *type,
                                     uint32_t *width, uint32_t *height);
-
-#if FF_API_VDPAU_ALLOC_GET_SET
-/**
- * Allocate an AVVDPAUContext.
- *
- * @return Newly-allocated AVVDPAUContext or NULL on failure.
- * @deprecated use av_vdpau_bind_context() instead
- */
-attribute_deprecated
-AVVDPAUContext *av_vdpau_alloc_context(void);
-#endif
 
 /** @} */
 
