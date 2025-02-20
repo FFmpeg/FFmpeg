@@ -3092,6 +3092,10 @@ static int mov_write_stts_tag(AVIOContext *pb, MOVTrack *track)
         }
         for (i = 0; i < track->entry; i++) {
             int duration = get_cluster_duration(track, i);
+#if CONFIG_IAMFENC
+            if (track->iamf && track->par->codec_id == AV_CODEC_ID_OPUS)
+                duration = av_rescale(duration, 48000, track->par->sample_rate);
+#endif
             if (i && duration == stts_entries[entries].duration) {
                 stts_entries[entries].count++; /* compress */
             } else {
@@ -4022,6 +4026,11 @@ static int mov_write_edts_tag(AVIOContext *pb, MOVMuxContext *mov,
          * rounded to 0 when represented in movie timescale units. */
         av_assert0(av_rescale_rnd(start_dts, mov->movie_timescale, track->timescale, AV_ROUND_DOWN) <= 0);
         start_ct  = -FFMIN(start_dts, 0);
+
+#if CONFIG_IAMFENC
+        if (track->iamf && track->par->codec_id == AV_CODEC_ID_OPUS)
+            start_ct = av_rescale(start_ct, 48000, track->par->sample_rate);
+#endif
         /* Note, this delay is calculated from the pts of the first sample,
          * ensuring that we don't reduce the duration for cases with
          * dts<0 pts=0. */
