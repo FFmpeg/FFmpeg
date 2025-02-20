@@ -103,6 +103,9 @@ fate-nsv-demux: CMD = framecrc -i $(TARGET_SAMPLES)/nsv/witchblade-51kbps.nsv -t
 FATE_FFPROBE_DEMUX-$(call ALLYES, OGG_DEMUXER ARESAMPLE_FILTER) += fate-oggopus-demux
 fate-oggopus-demux: CMD = ffprobe_demux $(TARGET_SAMPLES)/ogg/intro-partial.opus
 
+FATE_SAMPLES_DEMUX-$(CONFIG_OGG_DEMUXER) += fate-oggtheora-demux
+fate-oggtheora-demux: CMD = framecrc -i $(TARGET_SAMPLES)/ogg/empty_theora_packets.ogv -c:v copy
+
 FATE_SAMPLES_DEMUX-$(CONFIG_OGG_DEMUXER) += fate-oggvp8-demux
 fate-oggvp8-demux: CMD = framecrc -i $(TARGET_SAMPLES)/ogg/videotest.ogv -c:v copy
 
