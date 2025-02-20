@@ -3306,9 +3306,19 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l,
     s->first_nal_type    = s->nal_unit_type;
     s->poc               = s->sh.poc;
 
-    if (IS_IRAP(s))
+    if (IS_IRAP(s)) {
         s->no_rasl_output_flag = IS_IDR(s) || IS_BLA(s) ||
                                  (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos);
+        s->recovery_poc = HEVC_RECOVERY_END;
+    }
+
+    if (s->recovery_poc != HEVC_RECOVERY_END &&
+        s->sei.recovery_point.has_recovery_poc) {
+        if (s->recovery_poc == HEVC_RECOVERY_UNSPECIFIED)
+            s->recovery_poc = s->poc + s->sei.recovery_point.recovery_poc_cnt;
+        else if (s->poc >= s->recovery_poc)
+            s->recovery_poc = HEVC_RECOVERY_END;
+    }
 
     /* 8.3.1 */
     if (s->temporal_id == 0 &&
@@ -3684,6 +3694,12 @@ fail:
     return ret;
 }
 
+static void decode_reset_recovery_point(HEVCContext *s)
+{
+    s->recovery_poc = HEVC_RECOVERY_UNSPECIFIED;
+    s->sei.recovery_point.has_recovery_poc = 0;
+}
+
 static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 {
     int i, ret = 0;
@@ -3694,6 +3710,8 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     s->last_eos = s->eos;
     s->eos = 0;
     s->slice_initialized = 0;
+    if (s->last_eos)
+        decode_reset_recovery_point(s);
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->layers); i++) {
         HEVCLayerContext *l = &s->layers[i];
@@ -3715,6 +3733,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             s->pkt.nals[i].type == HEVC_NAL_EOS_NUT) {
             if (eos_at_start) {
                 s->last_eos = 1;
+                decode_reset_recovery_point(s);
             } else {
                 s->eos = 1;
             }
@@ -4088,6 +4107,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->sei.common.alternative_transfer = s0->sei.common.alternative_transfer;
     s->sei.tdrdi                       = s0->sei.tdrdi;
     s->sei.recovery_point              = s0->sei.recovery_point;
+    s->recovery_poc                    = s0->recovery_poc;
 
     return 0;
 }

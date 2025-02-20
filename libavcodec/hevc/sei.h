@@ -99,6 +99,7 @@ typedef struct HEVCSEIRecoveryPoint {
     int16_t recovery_poc_cnt;
     uint8_t exact_match_flag;
     uint8_t broken_link_flag;
+    uint8_t has_recovery_poc;
 } HEVCSEIRecoveryPoint;
 
 typedef struct HEVCSEI {

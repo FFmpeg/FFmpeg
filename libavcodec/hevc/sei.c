@@ -89,6 +89,7 @@ static int decode_nal_sei_recovery_point(HEVCSEI *s, GetBitContext *gb)
     rec->recovery_poc_cnt = recovery_poc_cnt;
     rec->exact_match_flag = get_bits1(gb);
     rec->broken_link_flag = get_bits1(gb);
+    rec->has_recovery_poc = 1;
 
     return 0;
 }

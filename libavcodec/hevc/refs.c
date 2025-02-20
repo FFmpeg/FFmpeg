@@ -34,6 +34,8 @@
 void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
 {
     frame->flags &= ~flags;
+    if (!(frame->flags & ~HEVC_FRAME_FLAG_CORRUPT))
+        frame->flags = 0;
     if (!frame->flags) {
         ff_progress_frame_unref(&frame->tf);
         av_frame_unref(frame->frame_grain);
@@ -208,6 +210,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, HEVCLayerContext *l, int poc)
 {
     HEVCFrame *ref;
     int i;
+    int no_output;
 
     /* check that this POC doesn't already exist */
     for (i = 0; i < FF_ARRAY_ELEMS(l->DPB); i++) {
@@ -231,7 +234,10 @@ int ff_hevc_set_new_ref(HEVCContext *s, HEVCLayerContext *l, int poc)
     ref->base_layer_frame = (l != &s->layers[0] && s->layers[0].cur_frame) ?
                             s->layers[0].cur_frame - s->layers[0].DPB : -1;
 
-    if (s->sh.pic_output_flag)
+    no_output = !IS_IRAP(s) && (s->poc < s->recovery_poc) &&
+                !(s->avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) &&
+                !(s->avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL);
+    if (s->sh.pic_output_flag && !no_output)
         ref->flags = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
     else
         ref->flags = HEVC_FRAME_FLAG_SHORT_REF;
@@ -298,6 +304,8 @@ int ff_hevc_output_frames(HEVCContext *s,
             int output = !discard && (layers_active_output & (1 << min_layer));
 
             if (output) {
+                if (frame->flags & HEVC_FRAME_FLAG_CORRUPT)
+                    f->flags |= AV_FRAME_FLAG_CORRUPT;
                 f->pkt_dts = s->pkt_dts;
                 ret = av_container_fifo_write(s->output_fifo, f, AV_CONTAINER_FIFO_FLAG_REF);
             }
@@ -493,6 +501,20 @@ static int add_candidate_ref(HEVCContext *s, HEVCLayerContext *l,
 
     if (ref == s->cur_frame || list->nb_refs >= HEVC_MAX_REFS)
         return AVERROR_INVALIDDATA;
+
+    if (!IS_IRAP(s)) {
+        int ref_corrupt = !ref || ref->flags & (HEVC_FRAME_FLAG_CORRUPT |
+                                                HEVC_FRAME_FLAG_UNAVAILABLE);
+        int recovering = HEVC_IS_RECOVERING(s);
+
+        if (ref_corrupt && !recovering) {
+            if (!(s->avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) &&
+                !(s->avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL))
+                return AVERROR_INVALIDDATA;
+
+            s->cur_frame->flags |= HEVC_FRAME_FLAG_CORRUPT;
+        }
+    }
 
     if (!ref) {
         ref = generate_missing_ref(s, l, poc);
