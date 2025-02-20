@@ -1330,6 +1330,11 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg)
                "Possible levels are numbers or:\n", arg);
         for (i = 0; i < FF_ARRAY_ELEMS(log_levels); i++)
             av_log(NULL, AV_LOG_FATAL, "\"%s\"\n", log_levels[i].name);
+        av_log(NULL, AV_LOG_FATAL, "Possible flags are:\n");
+        av_log(NULL, AV_LOG_FATAL, "\"repeat\"\n");
+        av_log(NULL, AV_LOG_FATAL, "\"level\"\n");
+        av_log(NULL, AV_LOG_FATAL, "\"time\"\n");
+        av_log(NULL, AV_LOG_FATAL, "\"datetime\"\n");
         return AVERROR(EINVAL);
     }
 
