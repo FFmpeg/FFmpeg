@@ -49,18 +49,21 @@ shuf_perm2b: db  1,  3,   5,   7,   9,  11,  13,  15,  17,  19,  21,  23,  25,  
                 97, 99, 101, 103, 105, 107, 109, 111, 113, 115, 117, 119, 121, 123, 125, 127
 %endif
 
+%if HAVE_AVX2_EXTERNAL
+; shuffle vector to rearrange packuswb result to be linear
+shuf_packus_avx2: db  0, 0, 0, 0, 4, 0, 0, 0, 1, 0, 0, 0, 5, 0, 0, 0,\
+                      2, 0, 0, 0, 6, 0, 0, 0, 3, 0, 0, 0, 7, 0, 0, 0,
+%endif
+
 SECTION .text
 
-%macro RSHIFT_COPY 5
+%macro RSHIFT_COPY 3
 ; %1 dst ; %2 src ; %3 shift
-%if mmsize == 32
-    vperm2i128 %1, %2, %3, %5
-    RSHIFT         %1, %4
-%elif cpuflag(avx)
-    psrldq  %1, %2, %4
+%if cpuflag(avx) || cpuflag(avx2) || cpuflag(avx512icl)
+    psrldq  %1, %2, %3
 %else
     mova           %1, %2
-    RSHIFT         %1, %4
+    RSHIFT         %1, %3
 %endif
 %endmacro
 
@@ -170,18 +173,16 @@ SHUFFLE_BYTES 1, 2, 0, 3
 ;              int lumStride, int chromStride, int srcStride)
 ;-----------------------------------------------------------------------------------------------
 %macro UYVY_TO_YUV422 0
-%if mmsize == 64
-; need two more registers to store shuffle vectors for AVX512ICL
-cglobal uyvytoyuv422, 9, 14, 10, ydst, udst, vdst, src, w, h, lum_stride, chrom_stride, src_stride, wtwo, whalf, tmp, x, back_w
-%else
-cglobal uyvytoyuv422, 9, 14, 8, ydst, udst, vdst, src, w, h, lum_stride, chrom_stride, src_stride, wtwo, whalf, tmp, x, back_w
-%endif
+cglobal uyvytoyuv422, 9, 14, 8 + cpuflag(avx2) + cpuflag(avx512icl), ydst, udst, vdst, src, w, h, lum_stride, chrom_stride, src_stride, wtwo, whalf, tmp, x, back_w
     pxor         m0, m0
 %if mmsize == 64
     vpternlogd   m1, m1, m1, 0xff  ; m1 = _mm512_set1_epi8(0xff)
     movu         m8, [shuf_packus]
     movu         m9, [shuf_perm2b]
 %else
+    %if cpuflag(avx2)
+        movu     m8, [shuf_packus_avx2]
+    %endif
     pcmpeqw      m1, m1
 %endif
     psrlw        m1, 8
@@ -295,21 +296,10 @@ cglobal uyvytoyuv422, 9, 14, 8, ydst, udst, vdst, src, w, h, lum_stride, chrom_s
     jge .end_line
 
     .loop_simd:
-%if mmsize == 32
-        movu   xm2, [srcq + wtwoq         ]
-        movu   xm3, [srcq + wtwoq + 16    ]
-        movu   xm4, [srcq + wtwoq + 16 * 2]
-        movu   xm5, [srcq + wtwoq + 16 * 3]
-        vinserti128 m2, m2, [srcq + wtwoq + 16 * 4], 1
-        vinserti128 m3, m3, [srcq + wtwoq + 16 * 5], 1
-        vinserti128 m4, m4, [srcq + wtwoq + 16 * 6], 1
-        vinserti128 m5, m5, [srcq + wtwoq + 16 * 7], 1
-%else
         movu    m2, [srcq + wtwoq             ]
         movu    m3, [srcq + wtwoq + mmsize    ]
         movu    m4, [srcq + wtwoq + mmsize * 2]
         movu    m5, [srcq + wtwoq + mmsize * 3]
-%endif
 
 %if mmsize == 64
         ; extract y part 1
@@ -323,23 +313,29 @@ cglobal uyvytoyuv422, 9, 14, 8, ydst, udst, vdst, src, w, h, lum_stride, chrom_s
         movu [ydstq + wq + mmsize], m7
 %else
         ; extract y part 1
-        RSHIFT_COPY    m6, m2, m4, 1, 0x20 ; UYVY UYVY -> YVYU YVY...
-        pand           m6, m1; YxYx YxYx...
+        RSHIFT_COPY    m6, m2, 1 ; UYVY UYVY -> YVYU YVY...
+        pand           m6, m1    ; YxYx YxYx...
 
-        RSHIFT_COPY    m7, m3, m5, 1, 0x20 ; UYVY UYVY -> YVYU YVY...
-        pand           m7, m1 ; YxYx YxYx...
+        RSHIFT_COPY    m7, m3, 1 ; UYVY UYVY -> YVYU YVY...
+        pand           m7, m1    ; YxYx YxYx...
 
-        packuswb       m6, m7 ; YYYY YYYY...
+        packuswb       m6, m7    ; YYYY YYYY...
+%if mmsize == 32
+        vpermq         m6, m6, 0xd8
+%endif
         movu [ydstq + wq], m6
 
         ; extract y part 2
-        RSHIFT_COPY    m6, m4, m2, 1, 0x13 ; UYVY UYVY -> YVYU YVY...
-        pand           m6, m1; YxYx YxYx...
+        RSHIFT_COPY    m6, m4, 1 ; UYVY UYVY -> YVYU YVY...
+        pand           m6, m1    ; YxYx YxYx...
 
-        RSHIFT_COPY    m7, m5, m3, 1, 0x13 ; UYVY UYVY -> YVYU YVY...
-        pand           m7, m1 ; YxYx YxYx...
+        RSHIFT_COPY    m7, m5, 1 ; UYVY UYVY -> YVYU YVY...
+        pand           m7, m1    ; YxYx YxYx...
 
-        packuswb                m6, m7 ; YYYY YYYY...
+        packuswb       m6, m7    ; YYYY YYYY...
+%if mmsize == 32
+        vpermq         m6, m6, 0xd8
+%endif
         movu [ydstq + wq + mmsize], m6
 %endif
 
@@ -359,6 +355,8 @@ cglobal uyvytoyuv422, 9, 14, 8, ydst, udst, vdst, src, w, h, lum_stride, chrom_s
         packuswb m6, m7 ; UUUU
 %if mmsize == 64
         vpermb   m6, m8, m6
+%elif mmsize == 32
+        vpermd   m6, m8, m6
 %endif
         movu   [udstq + whalfq], m6
 
@@ -369,6 +367,8 @@ cglobal uyvytoyuv422, 9, 14, 8, ydst, udst, vdst, src, w, h, lum_stride, chrom_s
         packuswb   m2, m4 ; VVVV
 %if mmsize == 64
         vpermb     m2, m8, m2
+%elif mmsize == 32
+        vpermd     m2, m8, m2
 %endif
         movu   [vdstq + whalfq], m2
 
