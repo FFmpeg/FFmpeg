@@ -128,6 +128,24 @@ typedef struct SwsGraph {
 int ff_sws_graph_create(SwsContext *ctx, const SwsFormat *dst, const SwsFormat *src,
                         int field, SwsGraph **out_graph);
 
+
+/**
+ * Allocate and add a new pass to the filter graph.
+ *
+ * @param graph  Filter graph to add the pass to.
+ * @param fmt    Pixel format of the output image.
+ * @param w      Width of the output image.
+ * @param h      Height of the output image.
+ * @param input  Previous pass to read from, or NULL for the input image.
+ * @param align  Minimum slice alignment for this pass, or 0 for no threading.
+ * @param priv   Private state for the filter run function.
+ * @param run    Filter function to run.
+ * @return The newly created pass, or NULL on error.
+ */
+SwsPass *ff_sws_graph_add_pass(SwsGraph *graph, enum AVPixelFormat fmt,
+                               int width, int height, SwsPass *input,
+                               int align, void *priv, sws_filter_run_t run);
+
 /**
  * Uninitialize any state associate with this filter graph and free it.
  */
