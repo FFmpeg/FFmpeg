@@ -130,9 +130,11 @@ static void init_frame(FFVulkanDecodeContext *dec, FFVulkanDecodePicture *vkpic)
     FFVulkanFunctions *vk = &ctx->s.vkfn;
 
     vkpic->dpb_frame     = NULL;
-    vkpic->img_view_ref  = VK_NULL_HANDLE;
-    vkpic->img_view_out  = VK_NULL_HANDLE;
-    vkpic->img_view_dest = VK_NULL_HANDLE;
+    for (int i = 0; i < AV_NUM_DATA_POINTERS; i++) {
+        vkpic->view.ref[i]  = VK_NULL_HANDLE;
+        vkpic->view.out[i]  = VK_NULL_HANDLE;
+        vkpic->view.dst[i]  = VK_NULL_HANDLE;
+    }
 
     vkpic->destroy_image_view = vk->DestroyImageView;
     vkpic->wait_semaphores = vk->WaitSemaphores;
@@ -149,14 +151,14 @@ int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,
 
     /* If the decoder made a blank frame to make up for a missing ref, or the
      * frame is the current frame so it's missing one, create a re-representation */
-    if (vkpic->img_view_ref)
+    if (vkpic->view.ref[0])
         return 0;
 
     init_frame(dec, vkpic);
 
     if (ctx->common.layered_dpb && alloc_dpb) {
-        vkpic->img_view_ref = ctx->common.layered_view;
-        vkpic->img_aspect_ref = ctx->common.layered_aspect;
+        vkpic->view.ref[0] = ctx->common.layered_view;
+        vkpic->view.aspect_ref[0] = ctx->common.layered_aspect;
     } else if (alloc_dpb) {
         AVHWFramesContext *dpb_frames = (AVHWFramesContext *)ctx->common.dpb_hwfc_ref->data;
         AVVulkanFramesContext *dpb_hwfc = dpb_frames->hwctx;
@@ -166,13 +168,13 @@ int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,
             return AVERROR(ENOMEM);
 
         err = ff_vk_create_view(&ctx->s, &ctx->common,
-                                &vkpic->img_view_ref, &vkpic->img_aspect_ref,
+                                &vkpic->view.ref[0], &vkpic->view.aspect_ref[0],
                                 (AVVkFrame *)vkpic->dpb_frame->data[0],
                                 dpb_hwfc->format[0], !is_current);
         if (err < 0)
             return err;
 
-        vkpic->img_view_dest = vkpic->img_view_ref;
+        vkpic->view.dst[0] = vkpic->view.ref[0];
     }
 
     if (!alloc_dpb || is_current) {
@@ -180,15 +182,15 @@ int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,
         AVVulkanFramesContext *hwfc = frames->hwctx;
 
         err = ff_vk_create_view(&ctx->s, &ctx->common,
-                                &vkpic->img_view_out, &vkpic->img_aspect,
+                                &vkpic->view.out[0], &vkpic->view.aspect[0],
                                 (AVVkFrame *)pic->data[0],
                                 hwfc->format[0], !is_current);
         if (err < 0)
             return err;
 
         if (!alloc_dpb) {
-            vkpic->img_view_ref = vkpic->img_view_out;
-            vkpic->img_aspect_ref = vkpic->img_aspect;
+            vkpic->view.ref[0] = vkpic->view.out[0];
+            vkpic->view.aspect_ref[0] = vkpic->view.aspect[0];
         }
     }
 
@@ -201,41 +203,41 @@ int ff_vk_decode_prepare_frame_sdr(FFVulkanDecodeContext *dec, AVFrame *pic,
 {
     int err;
     FFVulkanDecodeShared *ctx = dec->shared_ctx;
+    AVHWFramesContext *frames = (AVHWFramesContext *)pic->hw_frames_ctx->data;
 
     vkpic->slices_size = 0;
 
-    if (vkpic->img_view_ref)
+    if (vkpic->view.ref[0])
         return 0;
 
     init_frame(dec, vkpic);
 
-    if (ctx->common.layered_dpb && alloc_dpb) {
-        vkpic->img_view_ref = ctx->common.layered_view;
-        vkpic->img_aspect_ref = ctx->common.layered_aspect;
-    } else if (alloc_dpb) {
-        vkpic->dpb_frame = vk_get_dpb_pool(ctx);
-        if (!vkpic->dpb_frame)
-            return AVERROR(ENOMEM);
+    for (int i = 0; i < av_pix_fmt_count_planes(frames->sw_format); i++) {
+        if (alloc_dpb) {
+            vkpic->dpb_frame = vk_get_dpb_pool(ctx);
+            if (!vkpic->dpb_frame)
+                return AVERROR(ENOMEM);
 
-        err = ff_vk_create_imageview(&ctx->s,
-                                     &vkpic->img_view_ref, &vkpic->img_aspect_ref,
-                                     vkpic->dpb_frame, 0, rep_fmt);
-        if (err < 0)
-            return err;
+            err = ff_vk_create_imageview(&ctx->s,
+                                         &vkpic->view.ref[i], &vkpic->view.aspect_ref[i],
+                                         vkpic->dpb_frame, i, rep_fmt);
+            if (err < 0)
+                return err;
 
-        vkpic->img_view_dest = vkpic->img_view_ref;
-    }
+            vkpic->view.dst[i] = vkpic->view.ref[i];
+        }
 
-    if (!alloc_dpb || is_current) {
-        err = ff_vk_create_imageview(&ctx->s,
-                                     &vkpic->img_view_out, &vkpic->img_aspect,
-                                     pic, 0, rep_fmt);
-        if (err < 0)
-            return err;
+        if (!alloc_dpb || is_current) {
+            err = ff_vk_create_imageview(&ctx->s,
+                                         &vkpic->view.out[i], &vkpic->view.aspect[i],
+                                         pic, i, rep_fmt);
+            if (err < 0)
+                return err;
 
-        if (!alloc_dpb) {
-            vkpic->img_view_ref = vkpic->img_view_out;
-            vkpic->img_aspect_ref = vkpic->img_aspect;
+            if (!alloc_dpb) {
+                vkpic->view.ref[i] = vkpic->view.out[i];
+                vkpic->view.aspect_ref[i] = vkpic->view.aspect[i];
+            }
         }
     }
 
@@ -467,7 +469,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .image = vkf->img[0],
         .subresourceRange = (VkImageSubresourceRange) {
-            .aspectMask = vp->img_aspect,
+            .aspectMask = vp->view.aspect[0],
             .layerCount = 1,
             .levelCount = 1,
         },
@@ -523,7 +525,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .image = rvkf->img[0],
                     .subresourceRange = (VkImageSubresourceRange) {
-                        .aspectMask = rvp->img_aspect_ref,
+                        .aspectMask = rvp->view.aspect_ref[0],
                         .layerCount = 1,
                         .levelCount = 1,
                     },
@@ -533,7 +535,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
             }
         }
     } else if (vp->decode_info.referenceSlotCount ||
-               vp->img_view_out != vp->img_view_ref) {
+               vp->view.out[0] != vp->view.ref[0]) {
         /* Single barrier for a single layered ref */
         err = ff_vk_exec_add_dep_frame(&ctx->s, exec, ctx->common.layered_frame,
                                        VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR,
@@ -580,12 +582,14 @@ void ff_vk_decode_free_frame(AVHWDeviceContext *dev_ctx, FFVulkanDecodePicture *
     av_buffer_unref(&vp->slices_buf);
 
     /* Destroy image view (out) */
-    if (vp->img_view_out && vp->img_view_out != vp->img_view_dest)
-        vp->destroy_image_view(hwctx->act_dev, vp->img_view_out, hwctx->alloc);
+    for (int i = 0; i < AV_NUM_DATA_POINTERS; i++) {
+        if (vp->view.out[i] && vp->view.out[i] != vp->view.dst[i])
+            vp->destroy_image_view(hwctx->act_dev, vp->view.out[i], hwctx->alloc);
 
-    /* Destroy image view (ref, unlayered) */
-    if (vp->img_view_dest)
-        vp->destroy_image_view(hwctx->act_dev, vp->img_view_dest, hwctx->alloc);
+        /* Destroy image view (ref, unlayered) */
+        if (vp->view.dst[i])
+            vp->destroy_image_view(hwctx->act_dev, vp->view.dst[i], hwctx->alloc);
+    }
 
     av_frame_free(&vp->dpb_frame);
 }

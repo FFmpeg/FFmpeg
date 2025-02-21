@@ -164,7 +164,7 @@ static int vk_hevc_fill_pict(AVCodecContext *avctx, HEVCFrame **ref_src,
         .codedOffset = (VkOffset2D){ 0, 0 },
         .codedExtent = (VkExtent2D){ pic->f->width, pic->f->height },
         .baseArrayLayer = ctx->common.layered_dpb ? pic_id : 0,
-        .imageViewBinding = vkpic->img_view_ref,
+        .imageViewBinding = vkpic->view.ref[0],
     };
 
     *ref_slot = (VkVideoReferenceSlotInfoKHR) {
@@ -823,7 +823,7 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
             .codedOffset = (VkOffset2D){ 0, 0 },
             .codedExtent = (VkExtent2D){ pic->f->width, pic->f->height },
             .baseArrayLayer = 0,
-            .imageViewBinding = vp->img_view_out,
+            .imageViewBinding = vp->view.out[0],
         },
     };
 

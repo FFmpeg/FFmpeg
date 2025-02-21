@@ -123,7 +123,7 @@ static int vk_av1_fill_pict(AVCodecContext *avctx, const AV1Frame **ref_src,
         .codedExtent = (VkExtent2D){ pic->f->width, pic->f->height },
         .baseArrayLayer = ((has_grain || dec->dedicated_dpb) && ctx->common.layered_dpb) ?
                           hp->frame_id : 0,
-        .imageViewBinding = vkpic->img_view_ref,
+        .imageViewBinding = vkpic->view.ref[0],
     };
 
     *ref_slot = (VkVideoReferenceSlotInfoKHR) {
@@ -346,7 +346,7 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
             .codedOffset = (VkOffset2D){ 0, 0 },
             .codedExtent = (VkExtent2D){ pic->f->width, pic->f->height },
             .baseArrayLayer = 0,
-            .imageViewBinding = vp->img_view_out,
+            .imageViewBinding = vp->view.out[0],
         },
     };
 
