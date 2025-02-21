@@ -2190,9 +2190,9 @@ print:
 
         if (prop->buf_content) {
             GLSLA(" {\n    ");
-            if (desc[i].elems) {
+            if (desc[i].buf_elems) {
                 GLSLA("%s", desc[i].buf_content);
-                GLSLA("[%i];", desc[i].elems);
+                GLSLA("[%i];", desc[i].buf_elems);
             } else {
                 GLSLA("%s", desc[i].buf_content);
             }
