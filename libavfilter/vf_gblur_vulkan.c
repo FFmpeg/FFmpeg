@@ -139,14 +139,9 @@ static int init_gblur_pipeline(GBlurVulkanContext *s,
         .mem_quali   = "readonly",
         .mem_layout  = "std430",
         .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-        .buf_content = NULL,
+        .buf_content = "float kernel",
+        .buf_elems   = ksize,
     };
-
-    char *kernel_def = av_asprintf("float kernel[%i];", ksize);
-    if (!kernel_def)
-        return AVERROR(ENOMEM);
-
-    buf_desc.buf_content = kernel_def;
 
     RET(ff_vk_shader_add_descriptor_set(&s->vkctx, shd, &buf_desc, 1, 1, 0));
 
@@ -189,7 +184,6 @@ static int init_gblur_pipeline(GBlurVulkanContext *s,
                                         VK_FORMAT_UNDEFINED));
 
 fail:
-    av_free(kernel_def);
     if (spv_opaque)
         spv->free_shader(spv, &spv_opaque);
     return err;
