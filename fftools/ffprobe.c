@@ -71,17 +71,6 @@
 
 #include "libavutil/thread.h"
 
-#if !HAVE_THREADS
-#  ifdef pthread_mutex_lock
-#    undef pthread_mutex_lock
-#  endif
-#  define pthread_mutex_lock(a) do{}while(0)
-#  ifdef pthread_mutex_unlock
-#    undef pthread_mutex_unlock
-#  endif
-#  define pthread_mutex_unlock(a) do{}while(0)
-#endif
-
 // attached as opaque_ref to packets/frames
 typedef struct FrameData {
     int64_t pkt_pos;
@@ -389,9 +378,8 @@ static int *selected_streams;
 static int *streams_with_closed_captions;
 static int *streams_with_film_grain;
 
-#if HAVE_THREADS
-pthread_mutex_t log_mutex;
-#endif
+static AVMutex log_mutex = AV_MUTEX_INITIALIZER;
+
 typedef struct LogBuffer {
     char *context_name;
     int log_level;
@@ -418,7 +406,7 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
     va_end(vl2);
 
 #if HAVE_THREADS
-    pthread_mutex_lock(&log_mutex);
+    ff_mutex_lock(&log_mutex);
 
     new_log_buffer = av_realloc_array(log_buffer, log_buffer_size + 1, sizeof(*log_buffer));
     if (new_log_buffer) {
@@ -449,7 +437,7 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
         log_buffer_size ++;
     }
 
-    pthread_mutex_unlock(&log_mutex);
+    ff_mutex_unlock(&log_mutex);
 #endif
 }
 
@@ -2718,7 +2706,7 @@ static void clear_log(int need_lock)
     int i;
 
     if (need_lock)
-        pthread_mutex_lock(&log_mutex);
+        ff_mutex_lock(&log_mutex);
     for (i=0; i<log_buffer_size; i++) {
         av_freep(&log_buffer[i].context_name);
         av_freep(&log_buffer[i].parent_name);
@@ -2726,15 +2714,15 @@ static void clear_log(int need_lock)
     }
     log_buffer_size = 0;
     if(need_lock)
-        pthread_mutex_unlock(&log_mutex);
+        ff_mutex_unlock(&log_mutex);
 }
 
 static int show_log(WriterContext *w, int section_ids, int section_id, int log_level)
 {
     int i;
-    pthread_mutex_lock(&log_mutex);
+    ff_mutex_lock(&log_mutex);
     if (!log_buffer_size) {
-        pthread_mutex_unlock(&log_mutex);
+        ff_mutex_unlock(&log_mutex);
         return 0;
     }
     writer_print_section_header(w, NULL, section_ids);
@@ -2757,7 +2745,7 @@ static int show_log(WriterContext *w, int section_ids, int section_id, int log_l
         }
     }
     clear_log(0);
-    pthread_mutex_unlock(&log_mutex);
+    ff_mutex_unlock(&log_mutex);
 
     writer_print_section_footer(w);
 
@@ -4663,12 +4651,6 @@ int main(int argc, char **argv)
 
     init_dynload();
 
-#if HAVE_THREADS
-    ret = pthread_mutex_init(&log_mutex, NULL);
-    if (ret != 0) {
-        goto end;
-    }
-#endif
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
 
     options = real_options;
@@ -4815,10 +4797,6 @@ end:
         av_dict_free(&(sections[i].entries_to_show));
 
     avformat_network_deinit();
-
-#if HAVE_THREADS
-    pthread_mutex_destroy(&log_mutex);
-#endif
 
     return ret < 0;
 }
