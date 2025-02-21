@@ -206,9 +206,14 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     FilterLink *l = ff_filter_link(inlink);
     TPadContext *s = ctx->priv;
+    int ret;
 
     if (needs_drawing(s)) {
-        ff_draw_init2(&s->draw, inlink->format, inlink->colorspace, inlink->color_range, 0);
+        ret = ff_draw_init2(&s->draw, inlink->format, inlink->colorspace, inlink->color_range, 0);
+        if (ret < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
+            return ret;
+        }
         ff_draw_color(&s->draw, &s->color, s->rgba_color);
     }
 

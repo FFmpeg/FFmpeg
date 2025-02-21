@@ -182,12 +182,18 @@ static int query_formats(const AVFilterContext *ctx,
 
 static int config_input(AVFilterLink *inlink)
 {
-    AssContext *ass = inlink->dst->priv;
+    AVFilterContext *ctx = inlink->dst;
+    AssContext *ass = ctx->priv;
+    int ret;
 
-    ff_draw_init2(&ass->draw, inlink->format,
-                  ass_get_color_space(ass->track->YCbCrMatrix, inlink->colorspace),
-                  ass_get_color_range(ass->track->YCbCrMatrix, inlink->color_range),
-                  ass->alpha ? FF_DRAW_PROCESS_ALPHA : 0);
+    ret = ff_draw_init2(&ass->draw, inlink->format,
+                        ass_get_color_space(ass->track->YCbCrMatrix, inlink->colorspace),
+                        ass_get_color_range(ass->track->YCbCrMatrix, inlink->color_range),
+                        ass->alpha ? FF_DRAW_PROCESS_ALPHA : 0);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
+        return ret;
+    }
 
     ass_set_frame_size  (ass->renderer, inlink->w, inlink->h);
     if (ass->original_w && ass->original_h) {

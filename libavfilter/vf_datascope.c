@@ -382,11 +382,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 static int config_input(AVFilterLink *inlink)
 {
-    DatascopeContext *s = inlink->dst->priv;
+    AVFilterContext *ctx = inlink->dst;
+    DatascopeContext *s = ctx->priv;
+
     uint8_t alpha = s->opacity * 255;
+    int ret;
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
-    ff_draw_init2(&s->draw, inlink->format, inlink->colorspace, inlink->color_range, 0);
+    ret = ff_draw_init2(&s->draw, inlink->format, inlink->colorspace, inlink->color_range, 0);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
+        return ret;
+    }
     ff_draw_color(&s->draw, &s->white,  (uint8_t[]){ 255, 255, 255, 255} );
     ff_draw_color(&s->draw, &s->black,  (uint8_t[]){ 0, 0, 0, alpha} );
     ff_draw_color(&s->draw, &s->yellow, (uint8_t[]){ 255, 255, 0, 255} );
@@ -509,10 +516,16 @@ AVFILTER_DEFINE_CLASS(pixscope);
 
 static int pixscope_config_input(AVFilterLink *inlink)
 {
-    PixscopeContext *s = inlink->dst->priv;
+    AVFilterContext *ctx = inlink->dst;
+    PixscopeContext *s = ctx->priv;
+    int ret;
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
-    ff_draw_init(&s->draw, inlink->format, 0);
+    ret = ff_draw_init(&s->draw, inlink->format, 0);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
+        return ret;
+    }
     ff_draw_color(&s->draw, &s->dark,  (uint8_t[]){ 0, 0, 0, s->o * 255} );
     ff_draw_color(&s->draw, &s->black, (uint8_t[]){ 0, 0, 0, 255} );
     ff_draw_color(&s->draw, &s->white, (uint8_t[]){ 255, 255, 255, 255} );
@@ -927,11 +940,17 @@ static void update_oscilloscope(AVFilterContext *ctx)
 
 static int oscilloscope_config_input(AVFilterLink *inlink)
 {
-    OscilloscopeContext *s = inlink->dst->priv;
+    AVFilterContext *ctx = inlink->dst;
+    OscilloscopeContext *s = ctx->priv;
     int size;
+    int ret;
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
-    ff_draw_init(&s->draw, inlink->format, 0);
+    ret = ff_draw_init(&s->draw, inlink->format, 0);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
+        return ret;
+    }
     ff_draw_color(&s->draw, &s->black,   (uint8_t[]){   0,   0,   0, 255} );
     ff_draw_color(&s->draw, &s->white,   (uint8_t[]){ 255, 255, 255, 255} );
     ff_draw_color(&s->draw, &s->green,   (uint8_t[]){   0, 255,   0, 255} );

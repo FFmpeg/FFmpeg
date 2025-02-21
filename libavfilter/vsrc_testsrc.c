@@ -262,8 +262,13 @@ static int color_config_props(AVFilterLink *inlink)
     TestSourceContext *test = ctx->priv;
     int ret;
 
-    ff_draw_init2(&test->draw, inlink->format, inlink->colorspace,
-                  inlink->color_range, 0);
+    ret = ff_draw_init2(&test->draw, inlink->format, inlink->colorspace,
+                        inlink->color_range, 0);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
+        return ret;
+    }
+
     ff_draw_color(&test->draw, &test->color, test->color_rgba);
 
     if (av_image_check_size(test->w, test->h, 0, ctx) < 0)

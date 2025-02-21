@@ -128,6 +128,7 @@ static int config_props(AVFilterLink *outlink)
     FilterLink *ol = ff_filter_link(outlink);
     const unsigned total_margin_w = (tile->w - 1) * tile->padding + 2*tile->margin;
     const unsigned total_margin_h = (tile->h - 1) * tile->padding + 2*tile->margin;
+    int ret;
 
     if (inlink->w > (INT_MAX - total_margin_w) / tile->w) {
         av_log(ctx, AV_LOG_ERROR, "Total width %ux%u is too much.\n",
@@ -143,7 +144,11 @@ static int config_props(AVFilterLink *outlink)
     outlink->h = tile->h * inlink->h + total_margin_h;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     ol->frame_rate = av_mul_q(il->frame_rate, av_make_q(1, tile->nb_frames - tile->overlap));
-    ff_draw_init2(&tile->draw, inlink->format, inlink->colorspace, inlink->color_range, 0);
+    ret = ff_draw_init2(&tile->draw, inlink->format, inlink->colorspace, inlink->color_range, 0);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
+        return ret;
+    }
     ff_draw_color(&tile->draw, &tile->blank, tile->rgba_color);
 
     return 0;
