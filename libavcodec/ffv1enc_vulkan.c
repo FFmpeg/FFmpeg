@@ -1631,11 +1631,6 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
         max_heap_size = max_heap_size - (max_heap_size >> 3);
     }
 
-    if (!fv->async_depth) {
-        fv->async_depth = FFMIN(fv->qf->num, FFMAX(max_heap_size / maxsize, 1));
-        fv->async_depth = FFMAX(fv->async_depth, 1);
-    }
-
     av_log(avctx, AV_LOG_INFO, "Async buffers: %zuMiB per context, %zuMiB total, depth: %i\n",
            maxsize / (1024*1024),
            (fv->async_depth * maxsize) / (1024*1024),
@@ -1820,7 +1815,7 @@ static const AVOption vulkan_encode_ffv1_options[] = {
             { .i64 = 0 }, 0, 1, VE },
 
     { "async_depth", "Internal parallelization depth", OFFSET(async_depth), AV_OPT_TYPE_INT,
-            { .i64 = 0 }, 0, INT_MAX, VE },
+            { .i64 = 1 }, 1, INT_MAX, VE },
 
     { NULL }
 };
