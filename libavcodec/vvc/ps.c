@@ -450,25 +450,50 @@ static void subpic_tiles(int *tile_x, int *tile_y, int *tile_x_end, int *tile_y_
         (*tile_y_end)++;
 }
 
-static void pps_subpic_less_than_one_tile_slice(VVCPPS *pps, const VVCSPS *sps, const int i, const int tx, const int ty, int *off)
+static bool mark_tile_as_used(bool *tile_in_subpic, const int tx, const int ty, const int tile_columns)
 {
+    const size_t tile_idx = ty * tile_columns + tx;
+    if (tile_in_subpic[tile_idx]) {
+        /* the tile is covered by other subpictures */
+        return false;
+    }
+    tile_in_subpic[tile_idx] = true;
+    return true;
+}
+
+static int pps_subpic_less_than_one_tile_slice(VVCPPS *pps, const VVCSPS *sps, const int i, const int tx, const int ty, int *off, bool *tile_in_subpic)
+{
+    const int subpic_bottom = sps->r->sps_subpic_ctu_top_left_y[i] + sps->r->sps_subpic_height_minus1[i];
+    const int tile_bottom = pps->row_bd[ty] + pps->r->row_height_val[ty] - 1;
+    const bool is_final_subpic_in_tile = subpic_bottom == tile_bottom;
+
+    if (is_final_subpic_in_tile && !mark_tile_as_used(tile_in_subpic, tx, ty, pps->r->num_tile_columns))
+        return AVERROR_INVALIDDATA;
+
     pps->num_ctus_in_slice[i] = pps_add_ctus(pps, off,
         sps->r->sps_subpic_ctu_top_left_x[i], sps->r->sps_subpic_ctu_top_left_y[i],
         sps->r->sps_subpic_width_minus1[i] + 1, sps->r->sps_subpic_height_minus1[i] + 1);
+
+    return 0;
 }
 
-static void pps_subpic_one_or_more_tiles_slice(VVCPPS *pps, const int tile_x, const int tile_y, const int x_end, const int y_end, const int i, int *off)
+static int pps_subpic_one_or_more_tiles_slice(VVCPPS *pps, const int tile_x, const int tile_y, const int x_end, const int y_end,
+    const int i, int *off, bool *tile_in_subpic)
 {
     for (int ty = tile_y; ty < y_end; ty++) {
         for (int tx = tile_x; tx < x_end; tx++) {
+            if (!mark_tile_as_used(tile_in_subpic, tx, ty, pps->r->num_tile_columns))
+                return AVERROR_INVALIDDATA;
+
             pps->num_ctus_in_slice[i] += pps_add_ctus(pps, off,
                 pps->col_bd[tx], pps->row_bd[ty],
                 pps->r->col_width_val[tx], pps->r->row_height_val[ty]);
         }
     }
+    return 0;
 }
 
-static void pps_subpic_slice(VVCPPS *pps, const VVCSPS *sps, const int i, int *off)
+static int pps_subpic_slice(VVCPPS *pps, const VVCSPS *sps, const int i, int *off, bool *tile_in_subpic)
 {
     int tx, ty, x_end, y_end;
 
@@ -477,19 +502,30 @@ static void pps_subpic_slice(VVCPPS *pps, const VVCSPS *sps, const int i, int *o
 
     subpic_tiles(&tx, &ty, &x_end, &y_end, sps, pps, i);
     if (ty + 1 == y_end && sps->r->sps_subpic_height_minus1[i] + 1 < pps->r->row_height_val[ty])
-        pps_subpic_less_than_one_tile_slice(pps, sps, i, tx, ty, off);
+        return pps_subpic_less_than_one_tile_slice(pps, sps, i, tx, ty, off, tile_in_subpic);
     else
-        pps_subpic_one_or_more_tiles_slice(pps, tx, ty, x_end, y_end, i, off);
+        return pps_subpic_one_or_more_tiles_slice(pps, tx, ty, x_end, y_end, i, off, tile_in_subpic);
 }
 
-static void pps_single_slice_per_subpic(VVCPPS *pps, const VVCSPS *sps, int *off)
+static int pps_single_slice_per_subpic(VVCPPS *pps, const VVCSPS *sps, int *off)
 {
     if (!sps->r->sps_subpic_info_present_flag) {
         pps_single_slice_picture(pps, off);
     } else {
-        for (int i = 0; i < pps->r->pps_num_slices_in_pic_minus1 + 1; i++)
-            pps_subpic_slice(pps, sps, i, off);
+        bool tile_in_subpic[VVC_MAX_TILES_PER_AU] = {0};
+        for (int i = 0; i < pps->r->pps_num_slices_in_pic_minus1 + 1; i++) {
+            const int ret = pps_subpic_slice(pps, sps, i, off, tile_in_subpic);
+            if (ret < 0)
+                return ret;
+        }
+
+        // We only use tile_in_subpic to check that the subpictures don't overlap
+        // here; we don't use tile_in_subpic to check that the subpictures cover
+        // every tile.  It is possible to avoid doing this work here because the
+        // covering property of subpictures is already guaranteed by the mechanisms
+        // which check every CTU belongs to a slice.
     }
+    return 0;
 }
 
 static int pps_one_tile_slices(VVCPPS *pps, const int tile_idx, int i, int *off)
@@ -540,8 +576,7 @@ static int pps_rect_slice(VVCPPS *pps, const VVCSPS *sps)
     int tile_idx = 0, off = 0;
 
     if (r->pps_single_slice_per_subpic_flag) {
-        pps_single_slice_per_subpic(pps, sps, &off);
-        return 0;
+        return pps_single_slice_per_subpic(pps, sps, &off);
     }
 
     for (int i = 0; i < r->pps_num_slices_in_pic_minus1 + 1; i++) {
