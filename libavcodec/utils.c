@@ -33,6 +33,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixfmt.h"
+#include "libavutil/timecode_internal.h"
 #include "avcodec.h"
 #include "codec.h"
 #include "codec_desc.h"
@@ -968,15 +969,6 @@ AVCPBProperties *av_cpb_properties_alloc(size_t *size)
     return props;
 }
 
-static unsigned bcd2uint(uint8_t bcd)
-{
-    unsigned low  = bcd & 0xf;
-    unsigned high = bcd >> 4;
-    if (low > 9 || high > 9)
-        return 0;
-    return low + 10*high;
-}
-
 int ff_alloc_timecode_sei(const AVFrame *frame, AVRational rate, size_t prefix_len,
                      void **data, size_t *sei_size)
 {
@@ -1006,23 +998,8 @@ int ff_alloc_timecode_sei(const AVFrame *frame, AVRational rate, size_t prefix_l
     put_bits(&pb, 2, m); // num_clock_ts
 
     for (int j = 1; j <= m; j++) {
-        uint32_t tcsmpte = tc[j];
-        unsigned hh   = bcd2uint(tcsmpte     & 0x3f);    // 6-bit hours
-        unsigned mm   = bcd2uint(tcsmpte>>8  & 0x7f);    // 7-bit minutes
-        unsigned ss   = bcd2uint(tcsmpte>>16 & 0x7f);    // 7-bit seconds
-        unsigned ff   = bcd2uint(tcsmpte>>24 & 0x3f);    // 6-bit frames
-        unsigned drop = tcsmpte & 1<<30 && !0;  // 1-bit drop if not arbitrary bit
-
-        /* Calculate frame number of HEVC by SMPTE ST 12-1:2014 Sec 12.2 if rate > 30FPS */
-        if (av_cmp_q(rate, (AVRational) {30, 1}) == 1) {
-            unsigned pc;
-            ff *= 2;
-            if (av_cmp_q(rate, (AVRational) {50, 1}) == 0)
-                pc = !!(tcsmpte & 1 << 7);
-            else
-                pc = !!(tcsmpte & 1 << 23);
-            ff = (ff + pc) & 0x7f;
-        }
+        unsigned hh, mm, ss, ff, drop;
+        ff_timecode_set_smpte(&drop, &hh, &mm, &ss, &ff, rate, tc[j], 0, 0);
 
         put_bits(&pb, 1, 1); // clock_timestamp_flag
         put_bits(&pb, 1, 1); // units_field_based_flag
