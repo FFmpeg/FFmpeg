@@ -435,7 +435,11 @@ static av_cold int eb_enc_init(AVCodecContext *avctx)
 
     svt_enc->eos_flag = EOS_NOT_REACHED;
 
+#if SVT_AV1_CHECK_VERSION(3, 0, 0)
+    svt_ret = svt_av1_enc_init_handle(&svt_enc->svt_handle, &svt_enc->enc_params);
+#else
     svt_ret = svt_av1_enc_init_handle(&svt_enc->svt_handle, svt_enc, &svt_enc->enc_params);
+#endif
     if (svt_ret != EB_ErrorNone) {
         return svt_print_error(avctx, svt_ret, "Error initializing encoder handle");
     }
