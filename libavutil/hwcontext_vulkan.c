@@ -244,6 +244,8 @@ static void device_features_copy_needed(VulkanDeviceFeatures *dst, VulkanDeviceF
     COPY_VAL(device.features.shaderInt64);
     COPY_VAL(device.features.shaderInt16);
     COPY_VAL(device.features.shaderFloat64);
+    COPY_VAL(device.features.shaderStorageImageReadWithoutFormat);
+    COPY_VAL(device.features.shaderStorageImageWriteWithoutFormat);
 
     COPY_VAL(vulkan_1_1.samplerYcbcrConversion);
     COPY_VAL(vulkan_1_1.storagePushConstant16);
