@@ -453,8 +453,8 @@ static void subpic_tiles(int *tile_x, int *tile_y, int *tile_x_end, int *tile_y_
 static void pps_subpic_less_than_one_tile_slice(VVCPPS *pps, const VVCSPS *sps, const int i, const int tx, const int ty, int *off)
 {
     pps->num_ctus_in_slice[i] = pps_add_ctus(pps, off,
-        pps->col_bd[tx], pps->row_bd[ty],
-        pps->r->col_width_val[tx], sps->r->sps_subpic_height_minus1[i] + 1);
+        sps->r->sps_subpic_ctu_top_left_x[i], sps->r->sps_subpic_ctu_top_left_y[i],
+        sps->r->sps_subpic_width_minus1[i] + 1, sps->r->sps_subpic_height_minus1[i] + 1);
 }
 
 static void pps_subpic_one_or_more_tiles_slice(VVCPPS *pps, const int tile_x, const int tile_y, const int x_end, const int y_end, const int i, int *off)
