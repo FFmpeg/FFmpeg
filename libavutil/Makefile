@@ -180,6 +180,7 @@ OBJS = adler32.o                                                        \
        threadmessage.o                                                  \
        time.o                                                           \
        timecode.o                                                       \
+       timecode_internal.o                                              \
        timestamp.o                                                      \
        tree.o                                                           \
        twofish.o                                                        \

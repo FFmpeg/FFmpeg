@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include "common.h"
 #include "timecode.h"
+#include "timecode_internal.h"
 #include "log.h"
 #include "error.h"
 
@@ -127,32 +128,10 @@ char *av_timecode_make_string(const AVTimecode *tc, char *buf, int framenum_arg)
     return buf;
 }
 
-static unsigned bcd2uint(uint8_t bcd)
-{
-   unsigned low  = bcd & 0xf;
-   unsigned high = bcd >> 4;
-   if (low > 9 || high > 9)
-       return 0;
-   return low + 10*high;
-}
-
 char *av_timecode_make_smpte_tc_string2(char *buf, AVRational rate, uint32_t tcsmpte, int prevent_df, int skip_field)
 {
-    unsigned hh   = bcd2uint(tcsmpte     & 0x3f);    // 6-bit hours
-    unsigned mm   = bcd2uint(tcsmpte>>8  & 0x7f);    // 7-bit minutes
-    unsigned ss   = bcd2uint(tcsmpte>>16 & 0x7f);    // 7-bit seconds
-    unsigned ff   = bcd2uint(tcsmpte>>24 & 0x3f);    // 6-bit frames
-    unsigned drop = tcsmpte & 1<<30 && !prevent_df;  // 1-bit drop if not arbitrary bit
-
-    if (av_cmp_q(rate, (AVRational) {30, 1}) == 1) {
-        ff <<= 1;
-        if (!skip_field) {
-            if (av_cmp_q(rate, (AVRational) {50, 1}) == 0)
-                ff += !!(tcsmpte & 1 << 7);
-            else
-                ff += !!(tcsmpte & 1 << 23);
-        }
-    }
+    unsigned hh, mm, ss, ff, drop;
+    ff_timecode_set_smpte(&drop, &hh, &mm, &ss, &ff, rate, tcsmpte, prevent_df, skip_field);
 
     snprintf(buf, AV_TIMECODE_STR_SIZE, "%02u:%02u:%02u%c%02u",
              hh, mm, ss, drop ? ';' : ':', ff);
