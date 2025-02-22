@@ -1719,6 +1719,29 @@ static VkFormat map_fmt_to_rep(VkFormat fmt, enum FFVkShaderRepFormat rep_fmt)
     return VK_FORMAT_UNDEFINED;
 }
 
+static void bgr_workaround(AVVulkanFramesContext *vkfc,
+                           VkImageViewCreateInfo *ci)
+{
+    if (!(vkfc->usage & VK_IMAGE_USAGE_STORAGE_BIT))
+        return;
+    switch (ci->format) {
+#define REMAP(src, dst)   \
+    case src:             \
+        ci->format = dst; \
+        return;
+    REMAP(VK_FORMAT_B8G8R8A8_UNORM,           VK_FORMAT_R8G8B8A8_UNORM)
+    REMAP(VK_FORMAT_B8G8R8A8_SINT,            VK_FORMAT_R8G8B8A8_SINT)
+    REMAP(VK_FORMAT_B8G8R8A8_UINT,            VK_FORMAT_R8G8B8A8_UINT)
+    REMAP(VK_FORMAT_B8G8R8_UNORM,             VK_FORMAT_R8G8B8_UNORM)
+    REMAP(VK_FORMAT_B8G8R8_SINT,              VK_FORMAT_R8G8B8_SINT)
+    REMAP(VK_FORMAT_B8G8R8_UINT,              VK_FORMAT_R8G8B8_UINT)
+    REMAP(VK_FORMAT_A2B10G10R10_UNORM_PACK32, VK_FORMAT_A2R10G10B10_UNORM_PACK32)
+#undef REMAP
+    default:
+        return;
+    }
+}
+
 int ff_vk_create_imageview(FFVulkanContext *s,
                            VkImageView *img_view, VkImageAspectFlags *aspect,
                            AVFrame *f, int plane, enum FFVkShaderRepFormat rep_fmt)
@@ -1750,6 +1773,7 @@ int ff_vk_create_imageview(FFVulkanContext *s,
             .layerCount = 1,
         },
     };
+    bgr_workaround(vkfc, &view_create_info);
     if (view_create_info.format == VK_FORMAT_UNDEFINED) {
         av_log(s, AV_LOG_ERROR, "Unable to find a compatible representation "
                                 "of format %i and mode %i\n",
@@ -1811,6 +1835,7 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
                 .layerCount = 1,
             },
         };
+        bgr_workaround(vkfc, &view_create_info);
         if (view_create_info.format == VK_FORMAT_UNDEFINED) {
             av_log(s, AV_LOG_ERROR, "Unable to find a compatible representation "
                                     "of format %i and mode %i\n",
