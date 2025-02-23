@@ -417,9 +417,10 @@ static int pps_add_ctus(VVCPPS *pps, int *off, const int rx, const int ry,
 
 static void pps_single_slice_picture(VVCPPS *pps, int *off)
 {
+    pps->num_ctus_in_slice[0] = 0;
     for (int j = 0; j < pps->r->num_tile_rows; j++) {
         for (int i = 0; i < pps->r->num_tile_columns; i++) {
-            pps->num_ctus_in_slice[0] = pps_add_ctus(pps, off,
+            pps->num_ctus_in_slice[0] += pps_add_ctus(pps, off,
                 pps->col_bd[i], pps->row_bd[j],
                 pps->r->col_width_val[i], pps->r->row_height_val[j]);
         }
