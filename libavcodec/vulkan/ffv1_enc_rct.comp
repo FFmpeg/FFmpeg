@@ -22,17 +22,14 @@
 
 ivec4 load_components(ivec2 pos)
 {
-    if (planar_rgb == 0)
-        return ivec4(imageLoad(src[0], pos));
+    ivec4 pix = ivec4(imageLoad(src[0], pos));
+    if (planar_rgb != 0) {
+        for (int i = 1; i < (3 + transparency); i++)
+            pix[i] = int(imageLoad(src[i], pos)[0]);
+    }
 
-    ivec4 pix;
-    for (int i = 0; i < (3 + transparency); i++)
-        pix[i] = int(imageLoad(src[i], pos)[0]);
-
-    /* Swizzle out the difference */
-    if (bits > 8 && bits < 16 && transparency == 0)
-        return pix.bgra;
-    return pix.brga;
+    return ivec4(pix[fmt_lut[0]], pix[fmt_lut[1]],
+                 pix[fmt_lut[2]], pix[fmt_lut[3]]);
 }
 
 void bypass_sample(ivec2 pos)

@@ -1451,6 +1451,52 @@ int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt)
     return 0;
 }
 
+void ff_vk_set_perm(enum AVPixelFormat pix_fmt, int lut[4], int inv)
+{
+    switch (pix_fmt) {
+    case AV_PIX_FMT_BGRA:
+    case AV_PIX_FMT_BGR0:
+    case AV_PIX_FMT_BGR565:
+    case AV_PIX_FMT_X2BGR10:
+        lut[0] = 2;
+        lut[1] = 1;
+        lut[2] = 0;
+        lut[3] = 3;
+        break;
+    case AV_PIX_FMT_GBRAP:
+    case AV_PIX_FMT_GBRP:
+    case AV_PIX_FMT_GBRAP10:
+    case AV_PIX_FMT_GBRAP12:
+    case AV_PIX_FMT_GBRAP14:
+    case AV_PIX_FMT_GBRAP16:
+    case AV_PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRP14:
+    case AV_PIX_FMT_GBRP16:
+    case AV_PIX_FMT_GBRPF32:
+    case AV_PIX_FMT_GBRAPF32:
+        lut[0] = 1;
+        lut[1] = 2;
+        lut[2] = 0;
+        lut[3] = 3;
+        break;
+    default:
+        lut[0] = 0;
+        lut[1] = 1;
+        lut[2] = 2;
+        lut[3] = 3;
+        break;
+    }
+
+    if (inv) {
+        int lut_tmp[4] = { lut[0], lut[1], lut[2], lut[3] };
+        for (int i = 0; i < 4; i++)
+            lut[lut_tmp[i]] = i;
+    }
+
+    return;
+}
+
 const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
                                  enum FFVkShaderRepFormat rep_fmt)
 {

@@ -37,6 +37,7 @@ int ff_ffv1_vk_init_crc_table_data(FFVulkanContext *s,
                                    FFVkBuffer *vkb, FFV1Context *f);
 
 typedef struct FFv1VkRCTParameters {
+    int fmt_lut[4];
     int offset;
     uint8_t bits;
     uint8_t planar_rgb;

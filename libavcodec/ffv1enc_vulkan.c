@@ -264,6 +264,15 @@ static int run_rct(AVCodecContext *avctx, FFVkExecContext *exec,
                       (ff_vk_count_images((AVVkFrame *)enc_in->data[0]) > 1),
         .transparency = f->transparency,
     };
+
+    /* For some reason the C FFv1 encoder/decoder treats these differently */
+    if (src_hwfc->sw_format == AV_PIX_FMT_GBRP10 ||
+        src_hwfc->sw_format == AV_PIX_FMT_GBRP12 ||
+        src_hwfc->sw_format == AV_PIX_FMT_GBRP14)
+        memcpy(pd.fmt_lut, (int [4]) { 2, 1, 0, 3 }, 4*sizeof(int));
+    else
+        ff_vk_set_perm(src_hwfc->sw_format, pd.fmt_lut, 1);
+
     ff_vk_shader_update_push_const(&fv->s, exec, &fv->rct,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
                                    0, sizeof(pd), &pd);
@@ -1157,6 +1166,7 @@ static int init_rct_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
     GLSLD(ff_source_common_comp);
 
     GLSLC(0, layout(push_constant, scalar) uniform pushConstants {             );
+    GLSLC(1,    ivec4 fmt_lut;                                                 );
     GLSLC(1,    int offset;                                                    );
     GLSLC(1,    uint8_t bits;                                                  );
     GLSLC(1,    uint8_t planar_rgb;                                            );

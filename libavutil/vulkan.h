@@ -372,6 +372,12 @@ const char *ff_vk_ret2str(VkResult res);
 int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt);
 
 /**
+ * Since storage images may not be swizzled, we have to do this in the
+ * shader itself. This fills in a lookup table to do it.
+ */
+void ff_vk_set_perm(enum AVPixelFormat pix_fmt, int lut[4], int inv);
+
+/**
  * Get the aspect flag for a plane from an image.
  */
 VkImageAspectFlags ff_vk_aspect_flag(AVFrame *f, int p);
