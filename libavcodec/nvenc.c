@@ -2960,6 +2960,78 @@ static void reconfig_encoder(AVCodecContext *avctx, const AVFrame *frame)
     }
 }
 
+#ifdef NVENC_HAVE_HEVC_AND_AV1_MASTERING_METADATA
+static int nvenc_set_mastering_display_data(AVCodecContext *avctx, const AVFrame *frame, NV_ENC_PIC_PARAMS *pic_params,
+                                            MASTERING_DISPLAY_INFO *mastering_disp_info, CONTENT_LIGHT_LEVEL *content_light_level)
+{
+    NvencContext *ctx = avctx->priv_data;
+
+    if (ctx->mdm || ctx->cll) {
+        const AVFrameSideData *sd_mdm = av_frame_get_side_data(frame, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+        const AVFrameSideData *sd_cll = av_frame_get_side_data(frame, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+        const int chroma_den   = (avctx->codec->id == AV_CODEC_ID_AV1) ? 1 << 16 : 50000;
+        const int max_luma_den = (avctx->codec->id == AV_CODEC_ID_AV1) ? 1 << 8  : 10000;
+        const int min_luma_den = (avctx->codec->id == AV_CODEC_ID_AV1) ? 1 << 14 : 10000;
+
+        if (!sd_mdm)
+            sd_mdm = av_frame_side_data_get(avctx->decoded_side_data,
+                                            avctx->nb_decoded_side_data,
+                                            AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+        if (!sd_cll)
+            sd_cll = av_frame_side_data_get(avctx->decoded_side_data,
+                                            avctx->nb_decoded_side_data,
+                                            AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+
+        if (sd_mdm) {
+            const AVMasteringDisplayMetadata *mdm = (AVMasteringDisplayMetadata *)sd_mdm->data;
+
+            mastering_disp_info->r.x = av_rescale(mdm->display_primaries[0][0].num, chroma_den,
+                                                  mdm->display_primaries[0][0].den);
+            mastering_disp_info->r.y = av_rescale(mdm->display_primaries[0][1].num, chroma_den,
+                                                  mdm->display_primaries[0][1].den);
+            mastering_disp_info->g.x = av_rescale(mdm->display_primaries[1][0].num, chroma_den,
+                                                  mdm->display_primaries[1][0].den);
+            mastering_disp_info->g.y = av_rescale(mdm->display_primaries[1][1].num, chroma_den,
+                                                  mdm->display_primaries[1][1].den);
+            mastering_disp_info->b.x = av_rescale(mdm->display_primaries[2][0].num, chroma_den,
+                                                  mdm->display_primaries[2][0].den);
+            mastering_disp_info->b.y = av_rescale(mdm->display_primaries[2][1].num, chroma_den,
+                                                  mdm->display_primaries[2][1].den);
+            mastering_disp_info->whitePoint.x = av_rescale(mdm->white_point[0].num, chroma_den,
+                                                           mdm->white_point[0].den);
+            mastering_disp_info->whitePoint.y = av_rescale(mdm->white_point[1].num, chroma_den,
+                                                           mdm->white_point[1].den);
+            mastering_disp_info->maxLuma       = av_rescale(mdm->max_luminance.num, max_luma_den,
+                                                            mdm->max_luminance.den);
+            mastering_disp_info->minLuma       = av_rescale(mdm->min_luminance.num, min_luma_den,
+                                                            mdm->min_luminance.den);
+
+            if (avctx->codec->id == AV_CODEC_ID_HEVC)
+                pic_params->codecPicParams.hevcPicParams.pMasteringDisplay = mastering_disp_info;
+            else if (avctx->codec->id == AV_CODEC_ID_AV1)
+                pic_params->codecPicParams.av1PicParams.pMasteringDisplay  = mastering_disp_info;
+            else
+                return AVERROR_BUG;
+        }
+        if (sd_cll) {
+            const AVContentLightMetadata *cll = (AVContentLightMetadata *)sd_cll->data;
+
+            content_light_level->maxContentLightLevel    = cll->MaxCLL;
+            content_light_level->maxPicAverageLightLevel = cll->MaxFALL;
+
+            if (avctx->codec->id == AV_CODEC_ID_HEVC)
+                pic_params->codecPicParams.hevcPicParams.pMaxCll = content_light_level;
+            else if (avctx->codec->id == AV_CODEC_ID_AV1)
+                pic_params->codecPicParams.av1PicParams.pMaxCll  = content_light_level;
+            else
+                return AVERROR_BUG;
+        }
+    }
+
+    return 0;
+}
+#endif
+
 static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 {
     NVENCSTATUS nv_status;
@@ -3036,68 +3108,11 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         }
 
 #ifdef NVENC_HAVE_HEVC_AND_AV1_MASTERING_METADATA
-        if (ctx->mdm || ctx->cll) {
-            const AVFrameSideData *sd_mdm = av_frame_get_side_data(frame, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
-            const AVFrameSideData *sd_cll = av_frame_get_side_data(frame, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
-            const int chroma_den   = (avctx->codec->id == AV_CODEC_ID_AV1) ? 1 << 16 : 50000;
-            const int max_luma_den = (avctx->codec->id == AV_CODEC_ID_AV1) ? 1 << 8  : 10000;
-            const int min_luma_den = (avctx->codec->id == AV_CODEC_ID_AV1) ? 1 << 14 : 10000;
-
-            if (!sd_mdm)
-                sd_mdm = av_frame_side_data_get(avctx->decoded_side_data,
-                                                avctx->nb_decoded_side_data,
-                                                AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
-            if (!sd_cll)
-                sd_cll = av_frame_side_data_get(avctx->decoded_side_data,
-                                                avctx->nb_decoded_side_data,
-                                                AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
-
-            if (sd_mdm) {
-                const AVMasteringDisplayMetadata *mdm = (AVMasteringDisplayMetadata *)sd_mdm->data;
-
-                mastering_disp_info.r.x = av_rescale(mdm->display_primaries[0][0].num, chroma_den,
-                                                     mdm->display_primaries[0][0].den);
-                mastering_disp_info.r.y = av_rescale(mdm->display_primaries[0][1].num, chroma_den,
-                                                     mdm->display_primaries[0][1].den);
-                mastering_disp_info.g.x = av_rescale(mdm->display_primaries[1][0].num, chroma_den,
-                                                     mdm->display_primaries[1][0].den);
-                mastering_disp_info.g.y = av_rescale(mdm->display_primaries[1][1].num, chroma_den,
-                                                     mdm->display_primaries[1][1].den);
-                mastering_disp_info.b.x = av_rescale(mdm->display_primaries[2][0].num, chroma_den,
-                                                     mdm->display_primaries[2][0].den);
-                mastering_disp_info.b.y = av_rescale(mdm->display_primaries[2][1].num, chroma_den,
-                                                     mdm->display_primaries[2][1].den);
-                mastering_disp_info.whitePoint.x = av_rescale(mdm->white_point[0].num, chroma_den,
-                                                              mdm->white_point[0].den);
-                mastering_disp_info.whitePoint.y = av_rescale(mdm->white_point[1].num, chroma_den,
-                                                              mdm->white_point[1].den);
-                mastering_disp_info.maxLuma       = av_rescale(mdm->max_luminance.num, max_luma_den,
-                                                               mdm->max_luminance.den);
-                mastering_disp_info.minLuma       = av_rescale(mdm->min_luminance.num, min_luma_den,
-                                                               mdm->min_luminance.den);
-
-                if (avctx->codec->id == AV_CODEC_ID_HEVC)
-                    pic_params.codecPicParams.hevcPicParams.pMasteringDisplay = &mastering_disp_info;
-                else if (avctx->codec->id == AV_CODEC_ID_AV1)
-                    pic_params.codecPicParams.av1PicParams.pMasteringDisplay  = &mastering_disp_info;
-                else
-                    return AVERROR_BUG;
-            }
-            if (sd_cll) {
-                const AVContentLightMetadata *cll = (AVContentLightMetadata *)sd_cll->data;
-
-                content_light_level.maxContentLightLevel    = cll->MaxCLL;
-                content_light_level.maxPicAverageLightLevel = cll->MaxFALL;
-
-                if (avctx->codec->id == AV_CODEC_ID_HEVC)
-                    pic_params.codecPicParams.hevcPicParams.pMaxCll = &content_light_level;
-                else if (avctx->codec->id == AV_CODEC_ID_AV1)
-                    pic_params.codecPicParams.av1PicParams.pMaxCll  = &content_light_level;
-                else
-                    return AVERROR_BUG;
-            }
-        }
+        res = nvenc_set_mastering_display_data(avctx, frame, &pic_params, &mastering_disp_info, &content_light_level);
+        if (res < 0)
+            return res;
 #endif
+
         res = nvenc_store_frame_data(avctx, &pic_params, frame);
         if (res < 0)
             return res;
