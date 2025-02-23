@@ -26,8 +26,6 @@
 
 //#define DEBUG
 
-#define LONG_BITSTREAM_READER
-
 #include "config_components.h"
 
 #include "libavutil/internal.h"
@@ -428,7 +426,7 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
         unsigned int rice_order, exp_order, switch_bits;                \
         unsigned int q, buf, bits;                                      \
                                                                         \
-        UPDATE_CACHE(re, gb);                                           \
+        UPDATE_CACHE_32(re, gb); /* We really need 32 bits */           \
         buf = GET_CACHE(re, gb);                                        \
                                                                         \
         /* number of bits to switch between rice and exp golomb */      \
@@ -440,7 +438,7 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
                                                                         \
         if (q > switch_bits) { /* exp golomb */                         \
             bits = exp_order - switch_bits + (q<<1);                    \
-            if (bits > FFMIN(MIN_CACHE_BITS, 31))                       \
+            if (bits > 31)                                              \
                 return AVERROR_INVALIDDATA;                             \
             val = SHOW_UBITS(re, gb, bits) - (1 << exp_order) +         \
                 ((switch_bits + 1) << rice_order);                      \
@@ -502,7 +500,7 @@ static av_always_inline int decode_ac_coeffs(AVCodecContext *avctx, GetBitContex
     int log2_block_count = av_log2(blocks_per_slice);
 
     OPEN_READER(re, gb);
-    UPDATE_CACHE(re, gb);                                           \
+    UPDATE_CACHE_32(re, gb);
     run   = 4;
     level = 2;
 
