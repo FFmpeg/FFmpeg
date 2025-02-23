@@ -34,6 +34,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/timecode_internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "atsc_a53.h"
@@ -1417,6 +1418,11 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
     }
 #endif
 
+#ifdef NVENC_HAVE_TIME_CODE
+    if (ctx->s12m_tc)
+        h264->enableTimeCode = 1;
+#endif
+
     return 0;
 }
 
@@ -2420,7 +2426,52 @@ static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
     }
 }
 
-static void nvenc_codec_specific_pic_params(AVCodecContext *avctx,
+#ifdef NVENC_HAVE_TIME_CODE
+static void nvenc_fill_time_code(AVCodecContext *avctx, const AVFrame *frame, NV_ENC_TIME_CODE *time_code)
+{
+    AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_S12M_TIMECODE);
+
+    if (sd) {
+        uint32_t *tc = (uint32_t*)sd->data;
+        int cnt = FFMIN(tc[0], FF_ARRAY_ELEMS(time_code->clockTimestamp));
+
+        switch (cnt) {
+            case 0:
+                time_code->displayPicStruct = NV_ENC_PIC_STRUCT_DISPLAY_FRAME;
+                time_code->skipClockTimestampInsertion = 1;
+                break;
+            case 2:
+                time_code->displayPicStruct = NV_ENC_PIC_STRUCT_DISPLAY_FRAME_DOUBLING;
+                break;
+            case 3:
+                time_code->displayPicStruct = NV_ENC_PIC_STRUCT_DISPLAY_FRAME_TRIPLING;
+                break;
+            default:
+                time_code->displayPicStruct = NV_ENC_PIC_STRUCT_DISPLAY_FRAME;
+                break;
+        }
+
+        for (int i = 0; i < cnt; i++) {
+            unsigned hh, mm, ss, ff, drop;
+            ff_timecode_set_smpte(&drop, &hh, &mm, &ss, &ff, avctx->framerate, tc[i + 1], 0, 0);
+
+            time_code->clockTimestamp[i].countingType = 0;
+            time_code->clockTimestamp[i].discontinuityFlag = 0;
+            time_code->clockTimestamp[i].cntDroppedFrames = drop;
+            time_code->clockTimestamp[i].nFrames = ff;
+            time_code->clockTimestamp[i].secondsValue = ss;
+            time_code->clockTimestamp[i].minutesValue = mm;
+            time_code->clockTimestamp[i].hoursValue = hh;
+            time_code->clockTimestamp[i].timeOffset = 0;
+        }
+    } else {
+        time_code->displayPicStruct = NV_ENC_PIC_STRUCT_DISPLAY_FRAME;
+        time_code->skipClockTimestampInsertion = 1;
+    }
+}
+#endif
+
+static void nvenc_codec_specific_pic_params(AVCodecContext *avctx, const AVFrame *frame,
                                             NV_ENC_PIC_PARAMS *params,
                                             NV_ENC_SEI_PAYLOAD *sei_data,
                                             int sei_count)
@@ -2437,6 +2488,11 @@ static void nvenc_codec_specific_pic_params(AVCodecContext *avctx,
             params->codecPicParams.h264PicParams.seiPayloadArray = sei_data;
             params->codecPicParams.h264PicParams.seiPayloadArrayCnt = sei_count;
         }
+
+#ifdef NVENC_HAVE_TIME_CODE
+        if (ctx->s12m_tc)
+            nvenc_fill_time_code(avctx, frame, &params->codecPicParams.h264PicParams.timeCode);
+#endif
 
       break;
     case AV_CODEC_ID_HEVC:
@@ -2739,7 +2795,7 @@ static int prepare_sei_data_array(AVCodecContext *avctx, const AVFrame *frame)
         }
     }
 
-    if (ctx->s12m_tc && av_frame_get_side_data(frame, AV_FRAME_DATA_S12M_TIMECODE)) {
+    if (ctx->s12m_tc && avctx->codec->id != AV_CODEC_ID_H264 && av_frame_get_side_data(frame, AV_FRAME_DATA_S12M_TIMECODE)) {
         void *tc_data = NULL;
         size_t tc_size = 0;
 
@@ -3046,7 +3102,7 @@ static int nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         if (res < 0)
             return res;
 
-        nvenc_codec_specific_pic_params(avctx, &pic_params, ctx->sei_data, sei_count);
+        nvenc_codec_specific_pic_params(avctx, frame, &pic_params, ctx->sei_data, sei_count);
     } else {
         pic_params.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
     }
