@@ -62,11 +62,12 @@
         note:   1|2 - mb_x==mb_y==0 - first block, use 0x80 value for all areas;
                 4   - mb_x>= (mb_width-1) last block in the row, interpolate area #5;
 -*/
-static void x8_setup_spatial_compensation(uint8_t *src, uint8_t *dst,
+static void x8_setup_spatial_compensation(const uint8_t *restrict src,
+                                                uint8_t *restrict dst,
                                           ptrdiff_t stride, int *range,
                                           int *psum, int edges)
 {
-    uint8_t *ptr;
+    const uint8_t *ptr;
     int sum;
     int i;
     int min_pix, max_pix;
@@ -160,7 +161,7 @@ static const uint16_t zero_prediction_weights[64 * 2] = {
     317,  846, 366,  731, 458,  611, 499, 499,
 };
 
-static void spatial_compensation_0(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
+static void spatial_compensation_0(const uint8_t *restrict src, uint8_t *restrict dst, ptrdiff_t stride)
 {
     int i, j;
     int x, y;
@@ -212,7 +213,7 @@ static void spatial_compensation_0(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
     }
 }
 
-static void spatial_compensation_1(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
+static void spatial_compensation_1(const uint8_t *restrict src, uint8_t *restrict dst, ptrdiff_t stride)
 {
     int x, y;
 
@@ -223,7 +224,7 @@ static void spatial_compensation_1(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
     }
 }
 
-static void spatial_compensation_2(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
+static void spatial_compensation_2(const uint8_t *restrict src, uint8_t *restrict dst, ptrdiff_t stride)
 {
     int x, y;
 
@@ -234,7 +235,7 @@ static void spatial_compensation_2(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
     }
 }
 
-static void spatial_compensation_3(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
+static void spatial_compensation_3(const uint8_t *restrict src, uint8_t *restrict dst, ptrdiff_t stride)
 {
     int x, y;
 
@@ -245,7 +246,7 @@ static void spatial_compensation_3(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
     }
 }
 
-static void spatial_compensation_4(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
+static void spatial_compensation_4(const uint8_t *restrict src, uint8_t *restrict dst, ptrdiff_t stride)
 {
     int x, y;
 
@@ -256,7 +257,7 @@ static void spatial_compensation_4(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
     }
 }
 
-static void spatial_compensation_5(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
+static void spatial_compensation_5(const uint8_t *restrict src, uint8_t *restrict dst, ptrdiff_t stride)
 {
     int x, y;
 
@@ -271,7 +272,7 @@ static void spatial_compensation_5(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
     }
 }
 
-static void spatial_compensation_6(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
+static void spatial_compensation_6(const uint8_t *restrict src, uint8_t *restrict dst, ptrdiff_t stride)
 {
     int x, y;
 
@@ -282,7 +283,7 @@ static void spatial_compensation_6(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
     }
 }
 
-static void spatial_compensation_7(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
+static void spatial_compensation_7(const uint8_t *restrict src, uint8_t *restrict dst, ptrdiff_t stride)
 {
     int x, y;
 
@@ -297,7 +298,7 @@ static void spatial_compensation_7(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
     }
 }
 
-static void spatial_compensation_8(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
+static void spatial_compensation_8(const uint8_t *restrict src, uint8_t *restrict dst, ptrdiff_t stride)
 {
     int x, y;
 
@@ -308,7 +309,7 @@ static void spatial_compensation_8(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
     }
 }
 
-static void spatial_compensation_9(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
+static void spatial_compensation_9(const uint8_t *restrict src, uint8_t *restrict dst, ptrdiff_t stride)
 {
     int x, y;
 
@@ -319,7 +320,7 @@ static void spatial_compensation_9(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
     }
 }
 
-static void spatial_compensation_10(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
+static void spatial_compensation_10(const uint8_t *restrict src, uint8_t *restrict dst, ptrdiff_t stride)
 {
     int x, y;
 
@@ -330,7 +331,7 @@ static void spatial_compensation_10(uint8_t *src, uint8_t *dst, ptrdiff_t stride
     }
 }
 
-static void spatial_compensation_11(uint8_t *src, uint8_t *dst, ptrdiff_t stride)
+static void spatial_compensation_11(const uint8_t *restrict src, uint8_t *restrict dst, ptrdiff_t stride)
 {
     int x, y;
 
