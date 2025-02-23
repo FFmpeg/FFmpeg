@@ -164,11 +164,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_WARNING, "Unknown prores profile %d\n", avctx->codec_tag);
     }
 
-    if (avctx->bits_per_raw_sample == 10) {
-        av_log(avctx, AV_LOG_DEBUG, "Auto bitdepth precision. Use 10b decoding based on codec tag.\n");
-    } else { /* 12b */
-        av_log(avctx, AV_LOG_DEBUG, "Auto bitdepth precision. Use 12b decoding based on codec tag.\n");
-    }
+    av_log(avctx, AV_LOG_DEBUG,
+           "Auto bitdepth precision. Use %db decoding based on codec tag.\n",
+           avctx->bits_per_raw_sample);
 
     ff_blockdsp_init(&ctx->bdsp);
     ret = ff_proresdsp_init(&ctx->prodsp, avctx->bits_per_raw_sample);
