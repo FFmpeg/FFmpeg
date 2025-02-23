@@ -10,6 +10,7 @@ OBJS = alphablend.o                                     \
        csputils.o                                       \
        hscale.o                                         \
        hscale_fast_bilinear.o                           \
+       format.o                                         \
        gamma.o                                          \
        graph.o                                          \
        half2float.o                                     \

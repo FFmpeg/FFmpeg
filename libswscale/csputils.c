@@ -21,7 +21,7 @@
 #include "libavutil/csp.h"
 
 #include "csputils.h"
-#include "utils.h"
+#include "format.h"
 
 void ff_sws_matrix3x3_mul(SwsMatrix3x3 *a, const SwsMatrix3x3 *b)
 {

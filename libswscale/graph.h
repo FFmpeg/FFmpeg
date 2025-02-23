@@ -23,7 +23,7 @@
 
 #include "libavutil/slicethread.h"
 #include "swscale.h"
-#include "utils.h"
+#include "format.h"
 
 /**
  * Represents a view into a single field of frame data.

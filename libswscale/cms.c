@@ -29,7 +29,7 @@
 #include "cms.h"
 #include "csputils.h"
 #include "libswscale/swscale.h"
-#include "utils.h"
+#include "format.h"
 
 bool ff_sws_color_map_noop(const SwsColorMap *map)
 {

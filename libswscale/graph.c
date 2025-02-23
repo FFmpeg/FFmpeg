@@ -28,7 +28,7 @@
 #include "libavutil/slicethread.h"
 
 #include "libswscale/swscale.h"
-#include "libswscale/utils.h"
+#include "libswscale/format.h"
 
 #include "cms.h"
 #include "lut3d.h"

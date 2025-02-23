@@ -28,7 +28,7 @@
 
 #include "cms.h"
 #include "csputils.h"
-#include "utils.h"
+#include "format.h"
 
 enum {
     /* Input LUT size. This is only calculated once. */

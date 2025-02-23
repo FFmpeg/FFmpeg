@@ -27,7 +27,7 @@
 
 #include "csputils.h"
 #include "swscale.h"
-#include "utils.h"
+#include "format.h"
 
 /* Minimum, maximum, and default knee point for perceptual tone mapping [0,1] */
 #define PERCEPTUAL_KNEE_MIN 0.10f
