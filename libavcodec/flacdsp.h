@@ -35,10 +35,6 @@ typedef struct FLACDSPContext {
     void (*wasted32)(int32_t *decoded, int wasted, int len);
     void (*wasted33)(int64_t *decoded, const int32_t *residual,
                      int wasted, int len);
-    void (*lpc16_encode)(int32_t *res, const int32_t *smp, int len, int order,
-                         const int32_t coefs[32], int shift);
-    void (*lpc32_encode)(int32_t *res, const int32_t *smp, int len, int order,
-                         const int32_t coefs[32], int shift);
 } FLACDSPContext;
 
 void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt, int channels);
