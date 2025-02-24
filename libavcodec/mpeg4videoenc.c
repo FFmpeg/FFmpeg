@@ -968,13 +968,9 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
 
     put_bits(&s->pb, 1, 0);             /* random access vol */
     put_bits(&s->pb, 8, vo_type);       /* video obj type indication */
-    if (s->workaround_bugs & FF_BUG_MS) {
-        put_bits(&s->pb, 1, 0);         /* is obj layer id= no */
-    } else {
-        put_bits(&s->pb, 1, 1);         /* is obj layer id= yes */
-        put_bits(&s->pb, 4, vo_ver_id); /* is obj layer ver id */
-        put_bits(&s->pb, 3, 1);         /* is obj layer priority */
-    }
+    put_bits(&s->pb, 1, 1);             /* is obj layer id= yes */
+    put_bits(&s->pb, 4, vo_ver_id);     /* is obj layer ver id */
+    put_bits(&s->pb, 3, 1);             /* is obj layer priority */
 
     aspect_ratio_info = ff_h263_aspect_to_info(s->avctx->sample_aspect_ratio);
 
@@ -986,14 +982,10 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
         put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.den);
     }
 
-    if (s->workaround_bugs & FF_BUG_MS) {
-        put_bits(&s->pb, 1, 0);         /* vol control parameters= no @@@ */
-    } else {
-        put_bits(&s->pb, 1, 1);         /* vol control parameters= yes */
-        put_bits(&s->pb, 2, 1);         /* chroma format YUV 420/YV12 */
-        put_bits(&s->pb, 1, s->low_delay);
-        put_bits(&s->pb, 1, 0);         /* vbv parameters= no */
-    }
+    put_bits(&s->pb, 1, 1);             /* vol control parameters= yes */
+    put_bits(&s->pb, 2, 1);             /* chroma format YUV 420/YV12 */
+    put_bits(&s->pb, 1, s->low_delay);
+    put_bits(&s->pb, 1, 0);             /* vbv parameters= no */
 
     put_bits(&s->pb, 2, RECT_SHAPE);    /* vol shape= rectangle */
     put_bits(&s->pb, 1, 1);             /* marker bit */
@@ -1059,8 +1051,7 @@ int ff_mpeg4_encode_picture_header(MpegEncContext *s)
             if (s->avctx->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT || s->picture_number == 0)  // HACK, the reference sw is buggy
                 mpeg4_encode_vol_header(s, 0, 0);
         }
-        if (!(s->workaround_bugs & FF_BUG_MS))
-            mpeg4_encode_gop_header(s);
+        mpeg4_encode_gop_header(s);
     }
 
     s->partitioned_frame = s->data_partitioning && s->pict_type != AV_PICTURE_TYPE_B;
@@ -1300,8 +1291,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
         init_put_bits(&s->pb, s->avctx->extradata, 1024);
 
-        if (!(s->workaround_bugs & FF_BUG_MS))
-            mpeg4_encode_visual_object_header(s);
+        mpeg4_encode_visual_object_header(s);
         mpeg4_encode_vol_header(s, 0, 0);
 
 //            ff_mpeg4_stuffing(&s->pb); ?
