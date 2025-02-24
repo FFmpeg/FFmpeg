@@ -254,6 +254,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
 
     if (pix_fmt != ctx->pix_fmt) {
 #define HWACCEL_MAX (CONFIG_PRORES_VIDEOTOOLBOX_HWACCEL)
+#if HWACCEL_MAX
         enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
         int ret;
 
@@ -269,6 +270,9 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
             return ret;
 
         avctx->pix_fmt = ret;
+#else
+        avctx->pix_fmt = ctx->pix_fmt = pix_fmt;
+#endif
     }
 
     ctx->frame->color_primaries = buf[14];
@@ -789,7 +793,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return ret;
     ff_thread_finish_setup(avctx);
 
-    if (avctx->hwaccel) {
+    if (HWACCEL_MAX && avctx->hwaccel) {
         const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
         ret = hwaccel->start_frame(avctx, NULL, 0);
         if (ret < 0)
@@ -862,10 +866,12 @@ const FFCodec ff_prores_decoder = {
     UPDATE_THREAD_CONTEXT(update_thread_context),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
+#if HWACCEL_MAX
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_PRORES_VIDEOTOOLBOX_HWACCEL
         HWACCEL_VIDEOTOOLBOX(prores),
 #endif
         NULL
     },
+#endif
 };
