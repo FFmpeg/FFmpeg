@@ -446,26 +446,8 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     }
 
 retry:
-    if (s->divx_packed && s->bitstream_buffer_size) {
-        int i;
-        for(i=0; i < buf_size-3; i++) {
-            if (buf[i]==0 && buf[i+1]==0 && buf[i+2]==1) {
-                if (buf[i+3]==0xB0) {
-                    av_log(s->avctx, AV_LOG_WARNING, "Discarding excessive bitstream in packed xvid\n");
-                    s->bitstream_buffer_size = 0;
-                }
-                break;
-            }
-        }
-    }
-
-    if (s->bitstream_buffer_size && (s->divx_packed || buf_size <= MAX_NVOP_SIZE)) // divx 5.01+/xvid frame reorder
-        ret = init_get_bits8(&s->gb, s->bitstream_buffer,
-                             s->bitstream_buffer_size);
-    else
-        ret = init_get_bits8(&s->gb, buf, buf_size);
-
-    s->bitstream_buffer_size = 0;
+    // s->gb might be overridden in ff_mpeg4_decode_picture_header() below.
+    ret = init_get_bits8(&s->gb, buf, buf_size);
     if (ret < 0)
         return ret;
 
@@ -480,7 +462,7 @@ retry:
         ret = ff_msmpeg4_decode_picture_header(s);
 #endif
     } else if (CONFIG_MPEG4_DECODER && avctx->codec_id == AV_CODEC_ID_MPEG4) {
-        ret = ff_mpeg4_decode_picture_header(avctx->priv_data, &s->gb, 0, 0);
+        ret = ff_mpeg4_decode_picture_header(s);
         s->skipped_last_frame = (ret == FRAME_SKIPPED);
     } else if (CONFIG_H263I_DECODER && s->codec_id == AV_CODEC_ID_H263I) {
         ret = ff_intel_h263_decode_picture_header(s);
@@ -631,7 +613,6 @@ retry:
             ff_msmpeg4_decode_ext_header(s, buf_size) < 0)
             s->er.error_status_table[s->mb_num - 1] = ER_MB_ERROR;
 
-    av_assert1(s->bitstream_buffer_size == 0);
 frame_end:
     if (!s->studio_profile)
         ff_er_frame_end(&s->er, NULL);

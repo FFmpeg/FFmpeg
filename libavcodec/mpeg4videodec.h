@@ -70,6 +70,9 @@ typedef struct Mpeg4DecContext {
     int divx_build;
     int xvid_build;
     int lavc_build;
+    uint8_t *bitstream_buffer; //Divx 5.01 puts several frames in a single one, this is used to reorder them
+    int bitstream_buffer_size;
+    unsigned int allocated_bitstream_buffer_size;
 
     int vo_type;
 
@@ -92,8 +95,9 @@ typedef struct Mpeg4DecContext {
     int16_t dpcm_macroblock[3][256];
 } Mpeg4DecContext;
 
-int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb,
-                                   int header, int parse_only);
+int ff_mpeg4_decode_picture_header(MpegEncContext *s);
+int ff_mpeg4_parse_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb,
+                                  int header, int parse_only);
 void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb,
                             uint8_t *dest_cr, int block_size, int uvlinesize,
                             int dct_linesize, int dct_offset);

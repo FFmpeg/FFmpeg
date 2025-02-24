@@ -660,8 +660,6 @@ static void clear_context(MpegEncContext *s)
     memset(&s->sc, 0, sizeof(s->sc));
 
 
-    s->bitstream_buffer = NULL;
-    s->allocated_bitstream_buffer_size = 0;
     s->p_field_mv_table_base = NULL;
     for (int i = 0; i < 2; i++)
         for (int j = 0; j < 2; j++)
@@ -776,9 +774,6 @@ void ff_mpv_common_end(MpegEncContext *s)
     ff_mpv_free_context_frame(s);
     if (s->slice_context_count > 1)
         s->slice_context_count = 1;
-
-    av_freep(&s->bitstream_buffer);
-    s->allocated_bitstream_buffer_size = 0;
 
     ff_mpv_unref_picture(&s->last_pic);
     ff_mpv_unref_picture(&s->cur_pic);

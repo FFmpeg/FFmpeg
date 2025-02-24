@@ -97,8 +97,6 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
         s->context_reinit        = 0;
         s->avctx                 = dst;
         s->private_ctx           = private_ctx;
-        s->bitstream_buffer      = NULL;
-        s->bitstream_buffer_size = s->allocated_bitstream_buffer_size = 0;
 
         if (s1->context_initialized) {
             if ((err = ff_mpv_common_init(s)) < 0)
@@ -439,7 +437,6 @@ void ff_mpeg_flush(AVCodecContext *avctx)
 
     s->mb_x = s->mb_y = 0;
 
-    s->bitstream_buffer_size = 0;
     s->pp_time = 0;
 }
 
