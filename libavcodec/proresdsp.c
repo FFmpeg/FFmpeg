@@ -40,16 +40,14 @@
  */
 
 static inline void put_pixel(uint16_t *dst, ptrdiff_t linesize, const int16_t *in, int bits_per_raw_sample) {
-    int x, y, src_offset, dst_offset;
-
-    for (y = 0, dst_offset = 0; y < 8; y++, dst_offset += linesize) {
-        for (x = 0; x < 8; x++) {
-            src_offset = (y << 3) + x;
+    for (int y = 0; y < 8; y++, dst += linesize) {
+        for (int x = 0; x < 8; x++) {
+            int src_offset = (y << 3) + x;
 
             if (bits_per_raw_sample == 10) {
-                dst[dst_offset + x] = CLIP_10(in[src_offset]);
+                dst[x] = CLIP_10(in[src_offset]);
             } else {//12b
-                dst[dst_offset + x] = CLIP_12(in[src_offset]);
+                dst[x] = CLIP_12(in[src_offset]);
             }
         }
     }
