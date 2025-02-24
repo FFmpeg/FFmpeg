@@ -133,7 +133,6 @@ static void unpack_alpha_12(GetBitContext *gb, uint16_t *dst, int num_coeffs,
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     ProresContext *ctx = avctx->priv_data;
-    uint8_t idct_permutation[64];
 
     avctx->bits_per_raw_sample = 10;
 
@@ -173,11 +172,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_blockdsp_init(&ctx->bdsp);
     ff_proresdsp_init(&ctx->prodsp, avctx->bits_per_raw_sample);
 
-    ff_init_scantable_permutation(idct_permutation,
-                                  ctx->prodsp.idct_permutation_type);
-
-    ff_permute_scantable(ctx->progressive_scan, ff_prores_progressive_scan, idct_permutation);
-    ff_permute_scantable(ctx->interlaced_scan, ff_prores_interlaced_scan, idct_permutation);
+    ff_permute_scantable(ctx->progressive_scan, ff_prores_progressive_scan,
+                         ctx->prodsp.idct_permutation);
+    ff_permute_scantable(ctx->interlaced_scan,  ff_prores_interlaced_scan,
+                         ctx->prodsp.idct_permutation);
 
     ctx->pix_fmt = AV_PIX_FMT_NONE;
 
