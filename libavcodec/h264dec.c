@@ -827,19 +827,6 @@ end:
     return (ret < 0) ? ret : buf_size;
 }
 
-/**
- * Return the number of bytes consumed for building the current frame.
- */
-static int get_consumed_bytes(int pos, int buf_size)
-{
-    if (pos == 0)
-        pos = 1;        // avoid infinite loops (I doubt that is needed but...)
-    if (pos + 10 > buf_size)
-        pos = buf_size; // oops ;)
-
-    return pos;
-}
-
 static int h264_export_enc_params(AVFrame *f, const H264Picture *p)
 {
     AVVideoEncParams *par;
@@ -1100,7 +1087,7 @@ static int h264_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
     ff_h264_unref_picture(&h->last_pic_for_ec);
 
-    return get_consumed_bytes(buf_index, buf_size);
+    return buf_size;
 }
 
 #define OFFSET(x) offsetof(H264Context, x)

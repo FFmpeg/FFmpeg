@@ -536,20 +536,6 @@ static int h261_decode_gob(H261DecContext *h)
     return -1;
 }
 
-/**
- * returns the number of bytes consumed for building the current frame
- */
-static int get_consumed_bytes(MpegEncContext *s, int buf_size)
-{
-    int pos = get_bits_count(&s->gb) >> 3;
-    if (pos == 0)
-        pos = 1;      // avoid infinite loops (i doubt that is needed but ...)
-    if (pos + 10 > buf_size)
-        pos = buf_size;               // oops ;)
-
-    return pos;
-}
-
 static int h261_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                              int *got_frame, AVPacket *avpkt)
 {
@@ -615,7 +601,7 @@ static int h261_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
     *got_frame = 1;
 
-    return get_consumed_bytes(s, buf_size);
+    return buf_size;
 }
 
 const FFCodec ff_h261_decoder = {

@@ -170,29 +170,6 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-/**
- * Return the number of bytes consumed for building the current frame.
- */
-static int get_consumed_bytes(MpegEncContext *s, int buf_size)
-{
-    int pos = (get_bits_count(&s->gb) + 7) >> 3;
-
-    if (s->divx_packed || s->avctx->hwaccel) {
-        /* We would have to scan through the whole buf to handle the weird
-         * reordering ... */
-        return buf_size;
-    } else {
-        // avoid infinite loops (maybe not needed...)
-        if (pos == 0)
-            pos = 1;
-        // oops ;)
-        if (pos + 10 > buf_size)
-            pos = buf_size;
-
-        return pos;
-    }
-}
-
 static int decode_slice(MpegEncContext *s)
 {
     const int part_mask = s->partitioned_frame
@@ -523,7 +500,7 @@ retry:
         }
     }
     if (ret == FRAME_SKIPPED)
-        return get_consumed_bytes(s, buf_size);
+        return buf_size;
 
     /* skip if the header was thrashed */
     if (ret < 0) {
@@ -587,13 +564,13 @@ retry:
     /* skip B-frames if we don't have reference frames */
     if (!s->last_pic.ptr &&
         (s->pict_type == AV_PICTURE_TYPE_B || s->droppable))
-        return get_consumed_bytes(s, buf_size);
+        return buf_size;
     if ((avctx->skip_frame >= AVDISCARD_NONREF &&
          s->pict_type == AV_PICTURE_TYPE_B)    ||
         (avctx->skip_frame >= AVDISCARD_NONKEY &&
          s->pict_type != AV_PICTURE_TYPE_I)    ||
         avctx->skip_frame >= AVDISCARD_ALL)
-        return get_consumed_bytes(s, buf_size);
+        return buf_size;
 
     if ((ret = ff_mpv_frame_start(s, avctx)) < 0)
         return ret;
@@ -702,7 +679,7 @@ frame_end:
     if (slice_ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
         return slice_ret;
     else
-        return get_consumed_bytes(s, buf_size);
+        return buf_size;
 }
 
 static const AVCodecHWConfigInternal *const h263_hw_config_list[] = {
