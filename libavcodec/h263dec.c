@@ -575,7 +575,7 @@ retry:
     if ((ret = ff_mpv_frame_start(s, avctx)) < 0)
         return ret;
 
-    if (!s->divx_packed && !avctx->hwaccel)
+    if (!s->divx_packed)
         ff_thread_finish_setup(avctx);
 
     if (avctx->hwaccel) {
@@ -646,9 +646,6 @@ frame_end:
 
     if (CONFIG_MPEG4_DECODER && avctx->codec_id == AV_CODEC_ID_MPEG4)
         ff_mpeg4_frame_end(avctx, buf, buf_size);
-
-    if (!s->divx_packed && avctx->hwaccel)
-        ff_thread_finish_setup(avctx);
 
     av_assert1(s->pict_type == s->cur_pic.ptr->f->pict_type);
     if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
