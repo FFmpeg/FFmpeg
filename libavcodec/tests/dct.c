@@ -52,6 +52,7 @@
 #include "libavcodec/faandct.h"
 #include "libavcodec/faanidct.h"
 #include "libavcodec/dctref.h"
+#include "libavcodec/proresdsp.c"
 
 struct algo {
     const char *name;
@@ -77,7 +78,7 @@ static void ff_prores_idct_wrap(int16_t *dst){
     for(i=0; i<64; i++){
         qmat[i]=4;
     }
-    ff_prores_idct_10(dst, qmat);
+    prores_idct_10(dst, qmat);
     for(i=0; i<64; i++) {
          dst[i] -= 512;
     }

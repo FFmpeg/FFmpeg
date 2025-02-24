@@ -28,8 +28,6 @@
 /* Based upon some commented-out C code from mpeg2dec (idct_mmx.c
  * written by Aaron Holtzman <aholtzma@ess.engr.uvic.ca>). */
 
-#include "simple_idct.h"
-
 #include "bit_depth_template.c"
 
 #undef W1
@@ -278,6 +276,7 @@ static inline void FUNC6(idctSparseCol)(idctin *col)
     col[56] = ((int)(a0 - b0) >> COL_SHIFT);
 }
 
+#ifndef PRORES_ONLY
 #ifndef EXTRA_SHIFT
 static inline void FUNC6(idctSparseColPut)(pixel *dest, ptrdiff_t line_size,
                                           idctin *col)
@@ -369,3 +368,4 @@ void FUNC6(ff_simple_idct)(int16_t *block)
 }
 #endif
 #endif
+#endif /* PRORES_ONLY */
