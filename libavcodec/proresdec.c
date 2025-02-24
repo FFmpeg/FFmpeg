@@ -132,7 +132,6 @@ static void unpack_alpha_12(GetBitContext *gb, uint16_t *dst, int num_coeffs,
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    int ret = 0;
     ProresContext *ctx = avctx->priv_data;
     uint8_t idct_permutation[64];
 
@@ -164,16 +163,15 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_WARNING, "Unknown prores profile %d\n", avctx->codec_tag);
     }
 
+    ctx->unpack_alpha = avctx->bits_per_raw_sample == 10 ?
+                            unpack_alpha_10 : unpack_alpha_12;
+
     av_log(avctx, AV_LOG_DEBUG,
            "Auto bitdepth precision. Use %db decoding based on codec tag.\n",
            avctx->bits_per_raw_sample);
 
     ff_blockdsp_init(&ctx->bdsp);
-    ret = ff_proresdsp_init(&ctx->prodsp, avctx->bits_per_raw_sample);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Fail to init proresdsp for bits per raw sample %d\n", avctx->bits_per_raw_sample);
-        return ret;
-    }
+    ff_proresdsp_init(&ctx->prodsp, avctx->bits_per_raw_sample);
 
     ff_init_scantable_permutation(idct_permutation,
                                   ctx->prodsp.idct_permutation_type);
@@ -183,15 +181,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     ctx->pix_fmt = AV_PIX_FMT_NONE;
 
-    if (avctx->bits_per_raw_sample == 10){
-        ctx->unpack_alpha = unpack_alpha_10;
-    } else if (avctx->bits_per_raw_sample == 12){
-        ctx->unpack_alpha = unpack_alpha_12;
-    } else {
-        av_log(avctx, AV_LOG_ERROR, "Fail to set unpack_alpha for bits per raw sample %d\n", avctx->bits_per_raw_sample);
-        return AVERROR_BUG;
-    }
-    return ret;
+    return 0;
 }
 
 static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,

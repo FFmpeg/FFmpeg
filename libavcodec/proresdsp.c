@@ -22,6 +22,7 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "idctdsp.h"
 #include "proresdsp.h"
@@ -76,16 +77,15 @@ static void prores_idct_put_12_c(uint16_t *out, ptrdiff_t linesize, int16_t *blo
     put_pixels_12(out, linesize >> 1, block);
 }
 
-av_cold int ff_proresdsp_init(ProresDSPContext *dsp, int bits_per_raw_sample)
+av_cold void ff_proresdsp_init(ProresDSPContext *dsp, int bits_per_raw_sample)
 {
     if (bits_per_raw_sample == 10) {
         dsp->idct_put = prores_idct_put_10_c;
         dsp->idct_permutation_type = FF_IDCT_PERM_NONE;
-    } else if (bits_per_raw_sample == 12) {
+    } else {
+        av_assert1(bits_per_raw_sample == 12);
         dsp->idct_put = prores_idct_put_12_c;
         dsp->idct_permutation_type = FF_IDCT_PERM_NONE;
-    } else {
-        return AVERROR_BUG;
     }
 
 #if ARCH_X86
@@ -94,5 +94,4 @@ av_cold int ff_proresdsp_init(ProresDSPContext *dsp, int bits_per_raw_sample)
 
     ff_init_scantable_permutation(dsp->idct_permutation,
                                   dsp->idct_permutation_type);
-    return 0;
 }

@@ -32,7 +32,7 @@ typedef struct ProresDSPContext {
     void (*idct_put)(uint16_t *out, ptrdiff_t linesize, int16_t *block, const int16_t *qmat);
 } ProresDSPContext;
 
-int ff_proresdsp_init(ProresDSPContext *dsp, int bits_per_raw_sample);
+void ff_proresdsp_init(ProresDSPContext *dsp, int bits_per_raw_sample);
 
 void ff_proresdsp_init_x86(ProresDSPContext *dsp, int bits_per_raw_sample);
 
