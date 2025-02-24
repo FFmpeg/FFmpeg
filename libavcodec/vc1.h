@@ -222,6 +222,7 @@ typedef struct VC1Context{
     int dquant;           ///< How qscale varies with MBs, 2 bits (not in Simple)
     int vstransform;      ///< variable-size [48]x[48] transform type + info
     int overlap;          ///< overlapped transforms in use
+    int max_b_frames;     ///< max number of B-frames
     int quantizer_mode;   ///< 2 bits, quantizer mode used for sequence, see QUANT_*
     int finterpflag;      ///< INTERPFRM present
     //@}

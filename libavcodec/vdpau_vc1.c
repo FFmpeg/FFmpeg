@@ -92,7 +92,7 @@ static int vdpau_vc1_start_frame(AVCodecContext *avctx,
     info->multires          = v->multires;
     info->syncmarker        = v->resync_marker;
     info->rangered          = v->rangered | (v->rangeredfrm << 1);
-    info->maxbframes        = v->s.max_b_frames;
+    info->maxbframes        = v->max_b_frames;
     info->deblockEnable     = v->postprocflag & 1;
     info->pquant            = v->pq;
 

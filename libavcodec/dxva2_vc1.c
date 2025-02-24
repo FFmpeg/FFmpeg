@@ -117,7 +117,7 @@ void ff_dxva2_vc1_fill_picture_parameters(AVCodecContext *avctx,
                                   (v->multires       << 5) |
                                   (v->resync_marker  << 4) |
                                   (v->rangered       << 3) |
-                                  (s->max_b_frames       );
+                                  (v->max_b_frames       );
     pp->bPicExtrapolation       = (!v->interlace || v->fcm == PROGRESSIVE) ? 1 : 2;
     pp->bPicDeblocked           = ((!pp->bPicBackwardPrediction && v->overlap)        << 6) |
                                   ((v->profile != PROFILE_ADVANCED && v->rangeredfrm) << 5) |

@@ -84,7 +84,7 @@ static int nvdec_vc1_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
             .multires          = v->multires,
             .syncmarker        = v->resync_marker,
             .rangered          = v->rangered,
-            .maxbframes        = s->max_b_frames,
+            .maxbframes        = v->max_b_frames,
 
             .panscan_flag      = v->panscanflag,
             .refdist_flag      = v->refdist_flag,

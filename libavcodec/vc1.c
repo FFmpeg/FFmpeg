@@ -343,7 +343,7 @@ int ff_vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitCo
                "RANGERED should be set to 0 in Simple Profile\n");
     }
 
-    v->s.max_b_frames = avctx->max_b_frames = get_bits(gb, 3); //common
+    v->max_b_frames = avctx->max_b_frames = get_bits(gb, 3); //common
     v->quantizer_mode = get_bits(gb, 2); //common
 
     v->finterpflag = get_bits1(gb); //common
@@ -431,7 +431,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(v->s.avctx, AV_LOG_ERROR, "Progressive Segmented Frame mode: not supported (yet)\n");
         return -1;
     }
-    v->s.max_b_frames = v->s.avctx->max_b_frames = 7;
+    v->max_b_frames = v->s.avctx->max_b_frames = 7;
     if (get_bits1(gb)) { //Display Info - decoding is not affected by it
         int w, h, ar = 0;
         av_log(v->s.avctx, AV_LOG_DEBUG, "Display extended info:\n");
