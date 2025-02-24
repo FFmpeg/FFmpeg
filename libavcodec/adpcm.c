@@ -292,6 +292,11 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
             avctx->block_align % (16 * avctx->ch_layout.nb_channels))
             return AVERROR_INVALIDDATA;
         break;
+    case AV_CODEC_ID_ADPCM_PSXC:
+        max_channels = 8;
+        if (avctx->ch_layout.nb_channels <= 0)
+            return AVERROR_INVALIDDATA;
+        break;
     case AV_CODEC_ID_ADPCM_IMA_DAT4:
     case AV_CODEC_ID_ADPCM_THP:
     case AV_CODEC_ID_ADPCM_THP_LE:
@@ -349,6 +354,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     case AV_CODEC_ID_ADPCM_AFC:
     case AV_CODEC_ID_ADPCM_DTK:
     case AV_CODEC_ID_ADPCM_PSX:
+    case AV_CODEC_ID_ADPCM_PSXC:
     case AV_CODEC_ID_ADPCM_SANYO:
     case AV_CODEC_ID_ADPCM_MTAF:
     case AV_CODEC_ID_ADPCM_ARGO:
@@ -1352,6 +1358,9 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
     case AV_CODEC_ID_ADPCM_DTK:
     case AV_CODEC_ID_ADPCM_PSX:
         nb_samples = buf_size / (16 * ch) * 28;
+        break;
+    case AV_CODEC_ID_ADPCM_PSXC:
+        nb_samples = ((buf_size - 1) / ch) * 2;
         break;
     case AV_CODEC_ID_ADPCM_ARGO:
         nb_samples = buf_size / avctx->block_align * 32;
@@ -2693,6 +2702,40 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             }
         }
         ) /* End of CASE */
+    CASE(ADPCM_PSXC,
+        for (int block = 0; block < avpkt->size / avctx->block_align; block++) {
+            int nb_samples_per_block = ((avctx->block_align - 1) / channels) * 2;
+            for (int channel = 0; channel < channels; channel++) {
+                int filter, shift, byte;
+
+                samples = samples_p[channel] + block * nb_samples_per_block;
+                av_assert0((block + 1) * nb_samples_per_block <= nb_samples);
+
+                filter = bytestream2_get_byteu(&gb);
+                shift  = filter & 0xf;
+                filter = filter >> 4;
+                if (filter >= FF_ARRAY_ELEMS(xa_adpcm_table))
+                    return AVERROR_INVALIDDATA;
+
+                for (int n = 0; n < nb_samples_per_block; n++) {
+                    int sample = 0, scale;
+
+                    if (n & 1) {
+                        scale = sign_extend(byte >> 4, 4);
+                    } else {
+                        byte  = bytestream2_get_byteu(&gb);
+                        scale = sign_extend(byte & 0xF, 4);
+                    }
+
+                    scale  = scale * (1 << 12);
+                    sample = (int)((scale >> shift) + (c->status[channel].sample1 * xa_adpcm_table[filter][0] + c->status[channel].sample2 * xa_adpcm_table[filter][1]) / 64);
+                    *samples++ = av_clip_int16(sample);
+                    c->status[channel].sample2 = c->status[channel].sample1;
+                    c->status[channel].sample1 = sample;
+                }
+            }
+        }
+        ) /* End of CASE */
     CASE(ADPCM_SANYO,
         int (*expand)(ADPCMChannelStatus *c, int bits);
         GetBitContext g;
@@ -2904,6 +2947,7 @@ ADPCM_DECODER(ADPCM_MS,          sample_fmts_both, adpcm_ms,          "ADPCM Mic
 ADPCM_DECODER(ADPCM_MTAF,        sample_fmts_s16p, adpcm_mtaf,        "ADPCM MTAF")
 ADPCM_DECODER(ADPCM_N64,         sample_fmts_s16p, adpcm_n64,         "ADPCM Silicon Graphics N64")
 ADPCM_DECODER(ADPCM_PSX,         sample_fmts_s16p, adpcm_psx,         "ADPCM Playstation")
+ADPCM_DECODER(ADPCM_PSXC,        sample_fmts_s16p, adpcm_psxc,        "ADPCM Playstation C")
 ADPCM_DECODER(ADPCM_SANYO,       sample_fmts_s16p, adpcm_sanyo,       "ADPCM Sanyo")
 ADPCM_DECODER(ADPCM_SBPRO_2,     sample_fmts_s16,  adpcm_sbpro_2,     "ADPCM Sound Blaster Pro 2-bit")
 ADPCM_DECODER(ADPCM_SBPRO_3,     sample_fmts_s16,  adpcm_sbpro_3,     "ADPCM Sound Blaster Pro 2.6-bit")

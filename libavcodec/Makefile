@@ -1010,6 +1010,7 @@ OBJS-$(CONFIG_ADPCM_MS_ENCODER)           += adpcmenc.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_MTAF_DECODER)         += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_N64_DECODER)          += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_PSX_DECODER)          += adpcm.o adpcm_data.o
+OBJS-$(CONFIG_ADPCM_PSXC_DECODER)         += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_SANYO_DECODER)        += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_SBPRO_2_DECODER)      += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_SBPRO_3_DECODER)      += adpcm.o adpcm_data.o

@@ -701,6 +701,7 @@ extern const FFCodec ff_adpcm_ms_decoder;
 extern const FFCodec ff_adpcm_mtaf_decoder;
 extern const FFCodec ff_adpcm_n64_decoder;
 extern const FFCodec ff_adpcm_psx_decoder;
+extern const FFCodec ff_adpcm_psxc_decoder;
 extern const FFCodec ff_adpcm_sanyo_decoder;
 extern const FFCodec ff_adpcm_sbpro_2_decoder;
 extern const FFCodec ff_adpcm_sbpro_3_decoder;
