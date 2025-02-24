@@ -136,22 +136,6 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
     // B-frame info
     s->low_delay    = s1->low_delay;
 
-    // DivX handling (doesn't work)
-    s->divx_packed  = s1->divx_packed;
-
-    if (s1->bitstream_buffer) {
-        av_fast_padded_malloc(&s->bitstream_buffer,
-                              &s->allocated_bitstream_buffer_size,
-                              s1->bitstream_buffer_size);
-        if (!s->bitstream_buffer) {
-            s->bitstream_buffer_size = 0;
-            return AVERROR(ENOMEM);
-        }
-        s->bitstream_buffer_size = s1->bitstream_buffer_size;
-        memcpy(s->bitstream_buffer, s1->bitstream_buffer,
-               s1->bitstream_buffer_size);
-    }
-
     // MPEG-2/interlacing info
     memcpy(&s->progressive_sequence, &s1->progressive_sequence,
            (char *) &s1->rtp_mode - (char *) &s1->progressive_sequence);

@@ -3699,6 +3699,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     s->enhancement_type          = s1->enhancement_type;
     s->scalability               = s1->scalability;
     s->intra_dc_threshold        = s1->intra_dc_threshold;
+    s->m.divx_packed             = s1->m.divx_packed;
     s->divx_version              = s1->divx_version;
     s->divx_build                = s1->divx_build;
     s->xvid_build                = s1->xvid_build;
@@ -3713,6 +3714,19 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
 
     memcpy(s->sprite_shift, s1->sprite_shift, sizeof(s1->sprite_shift));
     memcpy(s->sprite_traj,  s1->sprite_traj,  sizeof(s1->sprite_traj));
+
+    if (s1->m.bitstream_buffer) {
+        av_fast_padded_malloc(&s->m.bitstream_buffer,
+                              &s->m.allocated_bitstream_buffer_size,
+                              s1->m.bitstream_buffer_size);
+        if (!s->m.bitstream_buffer) {
+            s->m.bitstream_buffer_size = 0;
+            return AVERROR(ENOMEM);
+        }
+        s->m.bitstream_buffer_size = s1->m.bitstream_buffer_size;
+        memcpy(s->m.bitstream_buffer, s1->m.bitstream_buffer,
+               s1->m.bitstream_buffer_size);
+    }
 
     if (!init && s1->xvid_build >= 0)
         ff_xvid_idct_init(&s->m.idsp, dst);
