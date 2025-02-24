@@ -134,7 +134,6 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
            (char *) &s1->last_time_base);
 
     // B-frame info
-    s->max_b_frames = s1->max_b_frames;
     s->low_delay    = s1->low_delay;
 
     // DivX handling (doesn't work)
