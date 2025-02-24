@@ -297,6 +297,8 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
 
     { AV_CODEC_ID_LCEVC, MKTAG('l', 'v', 'c', '1') }, /* LCEVC raw payload */
 
+    { AV_CODEC_ID_AVS3, MKTAG('a', 'v', 's', '3') },
+
     { AV_CODEC_ID_NONE, 0 },
 };
 
