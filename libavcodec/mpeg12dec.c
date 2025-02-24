@@ -1228,10 +1228,10 @@ static int mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
     s->chroma_420_type            = get_bits1(&s->gb);
     s->progressive_frame          = get_bits1(&s->gb);
 
-    // We only initialize intra_scantable, as both scantables always coincide
-    // and all code therefore only uses the intra one.
-    ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,
-                      s->alternate_scan ? ff_alternate_vertical_scan : ff_zigzag_direct);
+    // We only initialize intra_scantable.permutated, as this is all we use.
+    ff_permute_scantable(s->intra_scantable.permutated,
+                         s->alternate_scan ? ff_alternate_vertical_scan : ff_zigzag_direct,
+                         s->idsp.idct_permutation);
 
     /* composite display not parsed */
     ff_dlog(s->avctx, "intra_dc_precision=%d\n", s->intra_dc_precision);
@@ -2803,8 +2803,9 @@ static int ipu_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     m->intra_vlc_format = !!(s->flags & 0x20);
     m->alternate_scan = !!(s->flags & 0x10);
 
-    ff_init_scantable(m->idsp.idct_permutation, &m->intra_scantable,
-                      s->flags & 0x10 ? ff_alternate_vertical_scan : ff_zigzag_direct);
+    ff_permute_scantable(m->intra_scantable.permutated,
+                         s->flags & 0x10 ? ff_alternate_vertical_scan : ff_zigzag_direct,
+                         m->idsp.idct_permutation);
 
     m->last_dc[0] = m->last_dc[1] = m->last_dc[2] = 1 << (7 + (s->flags & 3));
     m->qscale = 1;
