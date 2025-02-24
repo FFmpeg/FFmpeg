@@ -50,7 +50,7 @@ static int rgbx_to_nv12_neon_32_wrapper(SwsInternal *context, const uint8_t *con
 
 static int rgbx_to_nv12_neon_16_wrapper(SwsInternal *context, const uint8_t *const src[],
                         const int srcStride[], int srcSliceY, int srcSliceH,
-                        uint8_t *const dst[], int dstStride[]) {
+                        uint8_t *const dst[], const int dstStride[]) {
 
     rgbx_to_nv12_neon_16(src[0] + srcSliceY * srcStride[0],
             dst[0] + srcSliceY * dstStride[0],
