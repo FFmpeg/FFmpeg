@@ -626,7 +626,7 @@ frame_end:
     ff_mpv_frame_end(s);
 
     if (CONFIG_MPEG4_DECODER && avctx->codec_id == AV_CODEC_ID_MPEG4)
-        ff_mpeg4_frame_end(avctx, buf, buf_size);
+        ff_mpeg4_frame_end(avctx, avpkt);
 
     av_assert1(s->pict_type == s->cur_pic.ptr->f->pict_type);
     if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {

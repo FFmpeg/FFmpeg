@@ -25,7 +25,6 @@
 #include "config_components.h"
 
 #include "libavutil/internal.h"
-#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "codec_internal.h"
@@ -3626,9 +3625,9 @@ int ff_mpeg4_decode_picture_header(MpegEncContext *s)
 {
     Mpeg4DecContext *const ctx = (Mpeg4DecContext*)s;
 
-    if (ctx->bitstream_buffer_size) {
+    if (ctx->bitstream_buffer) {
         int buf_size = get_bits_left(&s->gb) / 8U;
-        int bitstream_buffer_size = ctx->bitstream_buffer_size;
+        int bitstream_buffer_size = ctx->bitstream_buffer->size;
         const uint8_t *buf = s->gb.buffer;
 
         if (s->divx_packed) {
@@ -3642,31 +3641,33 @@ int ff_mpeg4_decode_picture_header(MpegEncContext *s)
                 }
             }
         }
-        ctx->bitstream_buffer_size = 0;
+        ctx->bitstream_buffer->size = 0;
         if (bitstream_buffer_size && (s->divx_packed || buf_size <= MAX_NVOP_SIZE)) {// divx 5.01+/xvid frame reorder
-            int ret = init_get_bits8(&s->gb, ctx->bitstream_buffer,
+            int ret = init_get_bits8(&s->gb, ctx->bitstream_buffer->data,
                                      bitstream_buffer_size);
             if (ret < 0)
                 return ret;
-        }
+        } else
+            av_buffer_unref(&ctx->bitstream_buffer);
     }
 
     return ff_mpeg4_parse_picture_header(ctx, &s->gb, 0, 0);
 }
 
-int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
+int ff_mpeg4_frame_end(AVCodecContext *avctx, const AVPacket *pkt)
 {
     Mpeg4DecContext *ctx = avctx->priv_data;
     MpegEncContext    *s = &ctx->m;
+    int ret;
 
-    av_assert1(ctx->bitstream_buffer_size == 0);
+    av_assert1(!ctx->bitstream_buffer || !ctx->bitstream_buffer->size);
 
     /* divx 5.01+ bitstream reorder stuff */
-    /* Since this clobbers the input buffer and hwaccel codecs still need the
-     * data during hwaccel->end_frame we should not do this any earlier */
     if (s->divx_packed) {
-        int current_pos     = s->gb.buffer == ctx->bitstream_buffer ? 0 : (get_bits_count(&s->gb) >> 3);
+        int current_pos     = ctx->bitstream_buffer && s->gb.buffer == ctx->bitstream_buffer->data ? 0 : (get_bits_count(&s->gb) >> 3);
         int startcode_found = 0;
+        uint8_t *buf = pkt->data;
+        int buf_size = pkt->size;
 
         if (buf_size - current_pos > 7) {
 
@@ -3689,16 +3690,12 @@ int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
                        "Consider using the mpeg4_unpack_bframes bitstream filter without encoding but stream copy to fix it.\n");
                 ctx->showed_packed_warning = 1;
             }
-            av_fast_padded_malloc(&ctx->bitstream_buffer,
-                           &ctx->allocated_bitstream_buffer_size,
-                           buf_size - current_pos);
-            if (!ctx->bitstream_buffer) {
-                ctx->bitstream_buffer_size = 0;
-                return AVERROR(ENOMEM);
-            }
-            memcpy(ctx->bitstream_buffer, buf + current_pos,
-                   buf_size - current_pos);
-            ctx->bitstream_buffer_size = buf_size - current_pos;
+            ret = av_buffer_replace(&ctx->bitstream_buffer, pkt->buf);
+            if (ret < 0)
+                return ret;
+
+            ctx->bitstream_buffer->data = buf + current_pos;
+            ctx->bitstream_buffer->size = buf_size - current_pos;
         }
     }
 
@@ -3750,18 +3747,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     memcpy(s->sprite_shift, s1->sprite_shift, sizeof(s1->sprite_shift));
     memcpy(s->sprite_traj,  s1->sprite_traj,  sizeof(s1->sprite_traj));
 
-    if (s1->bitstream_buffer) {
-        av_fast_padded_malloc(&s->bitstream_buffer,
-                              &s->allocated_bitstream_buffer_size,
-                              s1->bitstream_buffer_size);
-        if (!s->bitstream_buffer) {
-            s->bitstream_buffer_size = 0;
-            return AVERROR(ENOMEM);
-        }
-        s->bitstream_buffer_size = s1->bitstream_buffer_size;
-        memcpy(s->bitstream_buffer, s1->bitstream_buffer,
-               s1->bitstream_buffer_size);
-    }
+    ret = av_buffer_replace(&s->bitstream_buffer, s1->bitstream_buffer);
 
     if (!init && s1->xvid_build >= 0)
         ff_xvid_idct_init(&s->m.idsp, dst);
@@ -3870,7 +3856,7 @@ static av_cold void mpeg4_flush(AVCodecContext *avctx)
 {
     Mpeg4DecContext *const ctx = avctx->priv_data;
 
-    ctx->bitstream_buffer_size = 0;
+    av_buffer_unref(&ctx->bitstream_buffer);
     ff_mpeg_flush(avctx);
 }
 
@@ -3878,8 +3864,7 @@ static av_cold int mpeg4_close(AVCodecContext *avctx)
 {
     Mpeg4DecContext *const ctx = avctx->priv_data;
 
-    ctx->bitstream_buffer_size = 0;
-    av_freep(&ctx->bitstream_buffer);
+    av_buffer_unref(&ctx->bitstream_buffer);
 
     return ff_mpv_decode_close(avctx);
 }
