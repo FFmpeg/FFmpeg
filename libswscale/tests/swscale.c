@@ -251,7 +251,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
            mode.flags, mode.dither,
            ssim[0], ssim[1], ssim[2], ssim[3]);
 
-    if (!ssim_ref) {
+    if (!ssim_ref && sws_isSupportedInput(src->format) && sws_isSupportedOutput(dst->format)) {
         /* Compare against the legacy swscale API as a reference */
         time_ref = av_gettime_relative();
         if (scale_legacy(dst, src, mode, opts) < 0) {
