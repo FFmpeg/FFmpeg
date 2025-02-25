@@ -24,6 +24,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <stdarg.h>
+#include <signal.h>
 
 #undef HAVE_AV_CONFIG_H
 #include "libavutil/cpu.h"
@@ -70,6 +71,33 @@ const SwsFlags flags[] = {
 
 static FFSFC64 prng_state;
 static SwsContext *sws[3]; /* reused between tests for efficiency */
+
+static double speedup_logavg;
+static double speedup_min = 1e10;
+static double speedup_max = 0;
+static int speedup_count;
+
+static const char *speedup_color(double ratio)
+{
+    return ratio > 1.10 ? "\033[1;32m" : /* bold green */
+           ratio > 1.02 ? "\033[32m"   : /* green */
+           ratio > 0.98 ? ""           : /* default */
+           ratio > 0.95 ? "\033[33m"   : /* yellow */
+           ratio > 0.90 ? "\033[31m"   : /* red */
+            "\033[1;31m";  /* bold red */
+}
+
+static void exit_handler(int sig)
+{
+    if (speedup_count) {
+        double ratio = exp(speedup_logavg / speedup_count);
+        printf("Overall speedup=%.3fx %s%s\033[0m, min=%.3fx max=%.3fx\n", ratio,
+               speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower",
+               speedup_min, speedup_max);
+    }
+
+    exit(sig);
+}
 
 static int fmt_comps(enum AVPixelFormat fmt)
 {
@@ -261,16 +289,16 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
 
     if (opts.bench && time_ref) {
         double ratio = (double) time_ref / time;
-        const char *color = ratio > 1.10 ? "\033[1;32m" : /* bold green */
-                            ratio > 1.02 ? "\033[32m"   : /* green */
-                            ratio > 0.98 ? ""           : /* default */
-                            ratio > 0.95 ? "\033[33m"   : /* yellow */
-                            ratio > 0.90 ? "\033[31m"   : /* red */
-                                           "\033[1;31m";  /* bold red */
+        if (FFMIN(time, time_ref) > 100 /* don't pollute stats with low precision */) {
+            speedup_min = FFMIN(speedup_min, ratio);
+            speedup_max = FFMAX(speedup_max, ratio);
+            speedup_logavg += log(ratio);
+            speedup_count++;
+        }
 
         printf("  time=%"PRId64" us, ref=%"PRId64" us, speedup=%.3fx %s%s\033[0m\n",
-               time / opts.iters, time_ref / opts.iters, ratio, color,
-               ratio >= 1.0 ? "faster" : "slower");
+               time / opts.iters, time_ref / opts.iters, ratio,
+               speedup_color(ratio), ratio >= 1.0 ? "faster" : "slower");
     } else if (opts.bench) {
         printf("  time=%"PRId64" us\n", time / opts.iters);
     }
@@ -492,6 +520,7 @@ bad_option:
 
     ff_sfc64_init(&prng_state, 0, 0, 0, 12);
     av_lfg_init(&rand, 1);
+    signal(SIGINT, exit_handler);
 
     for (int i = 0; i < 3; i++) {
         sws[i] = sws_alloc_context();
@@ -537,5 +566,5 @@ error:
     av_frame_free(&ref);
     if (fp)
         fclose(fp);
-    return ret;
+    exit_handler(ret);
 }
