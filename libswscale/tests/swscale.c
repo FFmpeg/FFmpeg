@@ -82,7 +82,7 @@ static int fmt_comps(enum AVPixelFormat fmt)
 
 static void get_mse(int mse[4], const AVFrame *a, const AVFrame *b, int comps)
 {
-    av_assert1(a->format == AV_PIX_FMT_YUVA420P);
+    av_assert1(a->format == AV_PIX_FMT_YUVA444P);
     av_assert1(b->format == a->format);
     av_assert1(b->width == a->width && b->height == a->height);
 
@@ -90,8 +90,8 @@ static void get_mse(int mse[4], const AVFrame *a, const AVFrame *b, int comps)
         const int is_chroma = p == 1 || p == 2;
         const int stride_a = a->linesize[p];
         const int stride_b = b->linesize[p];
-        const int w = (a->width + is_chroma) >> is_chroma;
-        const int h = (a->height + is_chroma) >> is_chroma;
+        const int w = a->width;
+        const int h = a->height;
         uint64_t sum = 0;
 
         if (comps & (1 << p)) {
@@ -499,7 +499,7 @@ bad_option:
         goto error;
     ref->width  = opts.w;
     ref->height = opts.h;
-    ref->format = AV_PIX_FMT_YUVA420P;
+    ref->format = AV_PIX_FMT_YUVA444P;
 
     if (sws_scale_frame(sws[0], ref, rgb) < 0)
         goto error;
