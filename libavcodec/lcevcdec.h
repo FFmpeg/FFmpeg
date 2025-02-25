@@ -19,7 +19,7 @@
 #ifndef AVCODEC_LCEVCDEC_H
 #define AVCODEC_LCEVCDEC_H
 
-#include "config_components.h"
+#include "config.h"
 
 #include <stdint.h>
 #if CONFIG_LIBLCEVC_DEC
