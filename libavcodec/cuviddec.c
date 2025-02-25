@@ -131,7 +131,7 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
     CUVIDDECODECREATEINFO cuinfo;
     int surface_fmt;
     int chroma_444;
-    int fifo_size_inc;
+    int old_nb_surfaces, fifo_size_inc, fifo_size_mul = 1;
 
     int old_width = avctx->width;
     int old_height = avctx->height;
@@ -349,20 +349,24 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
         return 0;
     }
 
-    fifo_size_inc = ctx->nb_surfaces;
-    ctx->nb_surfaces = FFMAX(ctx->nb_surfaces, format->min_num_decode_surfaces + 3);
+    if (ctx->deint_mode_current != cudaVideoDeinterlaceMode_Weave && !ctx->drop_second_field) {
+        avctx->framerate = av_mul_q(avctx->framerate, (AVRational){2, 1});
+        fifo_size_mul = 2;
+    }
 
+    old_nb_surfaces = ctx->nb_surfaces;
+    ctx->nb_surfaces = FFMAX(ctx->nb_surfaces, format->min_num_decode_surfaces + 3);
     if (avctx->extra_hw_frames > 0)
         ctx->nb_surfaces += avctx->extra_hw_frames;
 
-    fifo_size_inc = ctx->nb_surfaces - fifo_size_inc;
+    fifo_size_inc = ctx->nb_surfaces * fifo_size_mul - av_fifo_can_read(ctx->frame_queue) - av_fifo_can_write(ctx->frame_queue);
     if (fifo_size_inc > 0 && av_fifo_grow2(ctx->frame_queue, fifo_size_inc) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to grow frame queue on video sequence callback\n");
         ctx->internal_error = AVERROR(ENOMEM);
         return 0;
     }
 
-    if (fifo_size_inc > 0 && av_reallocp_array(&ctx->key_frame, ctx->nb_surfaces, sizeof(int)) < 0) {
+    if (ctx->nb_surfaces > old_nb_surfaces && av_reallocp_array(&ctx->key_frame, ctx->nb_surfaces, sizeof(int)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to grow key frame array on video sequence callback\n");
         ctx->internal_error = AVERROR(ENOMEM);
         return 0;
@@ -373,9 +377,6 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
     cuinfo.ulCreationFlags = cudaVideoCreate_PreferCUVID;
     cuinfo.bitDepthMinus8 = format->bit_depth_luma_minus8;
     cuinfo.DeinterlaceMode = ctx->deint_mode_current;
-
-    if (ctx->deint_mode_current != cudaVideoDeinterlaceMode_Weave && !ctx->drop_second_field)
-        avctx->framerate = av_mul_q(avctx->framerate, (AVRational){2, 1});
 
     ctx->internal_error = CHECK_CU(ctx->cvdl->cuvidCreateDecoder(&ctx->cudecoder, &cuinfo));
     if (ctx->internal_error < 0)
@@ -448,11 +449,12 @@ static int cuvid_is_buffer_full(AVCodecContext *avctx)
 {
     CuvidContext *ctx = avctx->priv_data;
 
-    int delay = ctx->cuparseinfo.ulMaxDisplayDelay;
+    int shift = 0;
     if (ctx->deint_mode != cudaVideoDeinterlaceMode_Weave && !ctx->drop_second_field)
-        delay *= 2;
+        shift = 1;
 
-    return av_fifo_can_read(ctx->frame_queue) + delay >= ctx->nb_surfaces;
+    // shift/divide frame count to ensure the buffer is still signalled full if one half-frame has already been returned when deinterlacing.
+    return ((av_fifo_can_read(ctx->frame_queue) + shift) >> shift) + ctx->cuparseinfo.ulMaxDisplayDelay >= ctx->nb_surfaces;
 }
 
 static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
