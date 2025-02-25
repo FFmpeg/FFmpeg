@@ -3832,32 +3832,32 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
         s->qscale= 3; //reduce clipping problems
 
     if (s->out_format == FMT_MJPEG) {
-        const uint16_t *  luma_matrix = ff_mpeg1_default_intra_matrix;
-        const uint16_t *chroma_matrix = ff_mpeg1_default_intra_matrix;
-
         ret = ff_check_codec_matrices(s->avctx, FF_MATRIX_TYPE_INTRA | FF_MATRIX_TYPE_CHROMA_INTRA, (7 + s->qscale) / s->qscale, 65535);
         if (ret < 0)
             return ret;
 
         if (s->codec_id != AV_CODEC_ID_AMV) {
-        if (s->avctx->intra_matrix) {
-            chroma_matrix =
-            luma_matrix = s->avctx->intra_matrix;
-        }
-        if (s->avctx->chroma_intra_matrix)
-            chroma_matrix = s->avctx->chroma_intra_matrix;
+            const uint16_t *  luma_matrix = ff_mpeg1_default_intra_matrix;
+            const uint16_t *chroma_matrix = ff_mpeg1_default_intra_matrix;
 
-        /* for mjpeg, we do include qscale in the matrix */
-        for(i=1;i<64;i++){
-            int j = s->idsp.idct_permutation[i];
+            if (s->avctx->intra_matrix) {
+                chroma_matrix =
+                luma_matrix = s->avctx->intra_matrix;
+            }
+            if (s->avctx->chroma_intra_matrix)
+                chroma_matrix = s->avctx->chroma_intra_matrix;
 
-            s->chroma_intra_matrix[j] = av_clip_uint8((chroma_matrix[i] * s->qscale) >> 3);
-            s->       intra_matrix[j] = av_clip_uint8((  luma_matrix[i] * s->qscale) >> 3);
-        }
-        s->y_dc_scale_table=
-        s->c_dc_scale_table = ff_mpeg12_dc_scale_table[s->intra_dc_precision];
-        s->chroma_intra_matrix[0] =
-        s->intra_matrix[0]  = ff_mpeg12_dc_scale_table[s->intra_dc_precision][8];
+            /* for mjpeg, we do include qscale in the matrix */
+            for (int i = 1; i < 64; i++) {
+                int j = s->idsp.idct_permutation[i];
+
+                s->chroma_intra_matrix[j] = av_clip_uint8((chroma_matrix[i] * s->qscale) >> 3);
+                s->       intra_matrix[j] = av_clip_uint8((  luma_matrix[i] * s->qscale) >> 3);
+            }
+            s->y_dc_scale_table =
+            s->c_dc_scale_table = ff_mpeg12_dc_scale_table[s->intra_dc_precision];
+            s->chroma_intra_matrix[0] =
+            s->intra_matrix[0]  = ff_mpeg12_dc_scale_table[s->intra_dc_precision][8];
         } else {
             static const uint8_t y[32] = {13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13};
             static const uint8_t c[32] = {14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14};
@@ -3872,11 +3872,11 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
             s->intra_matrix[0] = 13;
             s->chroma_intra_matrix[0] = 14;
         }
-            ff_convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16,
-                              s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
-            ff_convert_matrix(s, s->q_chroma_intra_matrix, s->q_chroma_intra_matrix16,
-                              s->chroma_intra_matrix, s->intra_quant_bias, 8, 8, 1);
-            s->qscale = 8;
+        ff_convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16,
+                          s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
+        ff_convert_matrix(s, s->q_chroma_intra_matrix, s->q_chroma_intra_matrix16,
+                          s->chroma_intra_matrix, s->intra_quant_bias, 8, 8, 1);
+        s->qscale = 8;
     }
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {
