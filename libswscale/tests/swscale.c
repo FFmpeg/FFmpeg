@@ -80,38 +80,51 @@ static int fmt_comps(enum AVPixelFormat fmt)
     return comps;
 }
 
-static void get_mse(int mse[4], const AVFrame *a, const AVFrame *b, int comps)
+static void get_ssim(float ssim[4], const AVFrame *out, const AVFrame *ref, int comps)
 {
-    av_assert1(a->format == AV_PIX_FMT_YUVA444P);
-    av_assert1(b->format == a->format);
-    av_assert1(b->width == a->width && b->height == a->height);
+    av_assert1(out->format == AV_PIX_FMT_YUVA444P);
+    av_assert1(ref->format == out->format);
+    av_assert1(ref->width == out->width && ref->height == out->height);
 
     for (int p = 0; p < 4; p++) {
-        const int is_chroma = p == 1 || p == 2;
-        const int stride_a = a->linesize[p];
-        const int stride_b = b->linesize[p];
-        const int w = a->width;
-        const int h = a->height;
-        uint64_t sum = 0;
+        const int stride_a = out->linesize[p];
+        const int stride_b = ref->linesize[p];
+        const int w = out->width;
+        const int h = out->height;
 
-        if (comps & (1 << p)) {
-            for (int y = 0; y < h; y++) {
-                for (int x = 0; x < w; x++) {
-                    int d = a->data[p][y * stride_a + x] - b->data[p][y * stride_b + x];
-                    sum += d * d;
+        const int is_chroma = p == 1 || p == 2;
+        const uint8_t def = is_chroma ? 128 : 0xFF;
+        const int has_ref = comps & (1 << p);
+        double sum = 0;
+        int count = 0;
+
+        /* 4x4 SSIM */
+        for (int y = 0; y < (h & ~3); y += 4) {
+            for (int x = 0; x < (w & ~3); x += 4) {
+                const float c1 = .01 * .01 * 255 * 255 * 64;
+                const float c2 = .03 * .03 * 255 * 255 * 64 * 63;
+                int s1 = 0, s2 = 0, ss = 0, s12 = 0, var, covar;
+
+                for (int yy = 0; yy < 4; yy++) {
+                    for (int xx = 0; xx < 4; xx++) {
+                        int a = out->data[p][(y + yy) * stride_a + x + xx];
+                        int b = has_ref ? ref->data[p][(y + yy) * stride_b + x + xx] : def;
+                        s1  += a;
+                        s2  += b;
+                        ss  += a * a + b * b;
+                        s12 += a * b;
+                    }
                 }
-            }
-        } else {
-            const int ref = is_chroma ? 128 : 0xFF;
-            for (int y = 0; y < h; y++) {
-                for (int x = 0; x < w; x++) {
-                    int d = a->data[p][y * stride_a + x] - ref;
-                    sum += d * d;
-                }
+
+                var = ss * 64 - s1 * s1 - s2 * s2;
+                covar = s12 * 64 - s1 * s2;
+                sum += (2 * s1 * s2 + c1) * (2 * covar + c2) /
+                       ((s1 * s1 + s2 * s2 + c1) * (var + c2));
+                count++;
             }
         }
 
-        mse[p] = sum / (w * h);
+        ssim[p] = count ? sum / count : 0.0;
     }
 }
 
@@ -149,12 +162,13 @@ error:
 /* Runs a series of ref -> src -> dst -> out, and compares out vs ref */
 static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
                     int dst_w, int dst_h, struct mode mode, struct options opts,
-                    const AVFrame *ref, const int mse_ref[4])
+                    const AVFrame *ref, const float ssim_ref[4])
 {
     AVFrame *src = NULL, *dst = NULL, *out = NULL;
-    int mse[4], mse_sws[4], ret = -1;
+    float ssim[4], ssim_sws[4];
     const int comps = fmt_comps(src_fmt) & fmt_comps(dst_fmt);
     int64_t time, time_ref = 0;
+    int ret = -1;
 
     src = av_frame_alloc();
     dst = av_frame_alloc();
@@ -201,15 +215,15 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
         goto error;
     }
 
-    get_mse(mse, out, ref, comps);
+    get_ssim(ssim, out, ref, comps);
     printf("%s %dx%d -> %s %3dx%3d, flags=0x%x dither=%u, "
-           "MSE={%5d %5d %5d %5d}\n",
+           "SSIM {Y=%f U=%f V=%f A=%f}\n",
            av_get_pix_fmt_name(src->format), src->width, src->height,
            av_get_pix_fmt_name(dst->format), dst->width, dst->height,
            mode.flags, mode.dither,
-           mse[0], mse[1], mse[2], mse[3]);
+           ssim[0], ssim[1], ssim[2], ssim[3]);
 
-    if (!mse_ref) {
+    if (!ssim_ref) {
         /* Compare against the legacy swscale API as a reference */
         time_ref = av_gettime_relative();
         if (scale_legacy(dst, src, mode, opts) < 0) {
@@ -222,19 +236,26 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
         if (sws_scale_frame(sws[2], out, dst) < 0)
             goto error;
 
-        get_mse(mse_sws, out, ref, comps);
-        mse_ref = mse_sws;
+        get_ssim(ssim_sws, out, ref, comps);
+        ssim_ref = ssim_sws;
     }
 
-    for (int i = 0; i < 4; i++) {
-        if (mse[i] > mse_ref[i]) {
-            int bad = mse[i] > mse_ref[i] * 1.02 + 1;
-            printf("\033[1;31m  %s, ref MSE={%5d %5d %5d %5d}\033[0m\n",
-                   bad ? "WORSE" : "worse",
-                   mse_ref[0], mse_ref[1], mse_ref[2], mse_ref[3]);
+    if (ssim_ref) {
+        const float weights[4] = { 0.8, 0.1, 0.1, 1.0 }; /* tuned for Y'CrCr */
+        float err, sum = 0, sum_ref = 0;
+        for (int i = 0; i < 4; i++) {
+            sum     += weights[i] * ssim[i];
+            sum_ref += weights[i] * ssim_ref[i];
+        }
+
+        err = sum_ref / sum - 1.0; /* relative error */
+        if (err > 1e-4 /* 0.01% headroom for dither noise etc */) {
+            int bad = err > 1e-2; /* 1% */
+            printf("\033[1;31m  %s by %f%%, ref SSIM {Y=%f U=%f V=%f A=%f}\033[0m\n",
+                   bad ? "WORSE" : "worse", 100.0 * err,
+                   ssim_ref[0], ssim_ref[1], ssim_ref[2], ssim_ref[3]);
             if (bad)
                 goto error;
-            break;
         }
     }
 
@@ -334,15 +355,16 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, struct options opts)
         char src_fmt_str[21], dst_fmt_str[21];
         enum AVPixelFormat src_fmt;
         enum AVPixelFormat dst_fmt;
-        int sw, sh, dw, dh, mse[4];
+        int sw, sh, dw, dh;
+        float ssim[4];
         struct mode mode;
 
         ret = sscanf(buf,
                      " %20s %dx%d -> %20s %dx%d, flags=0x%x dither=%u, "
-                     "MSE={%d %d %d %d}\n",
+                     "SSIM {Y=%f U=%f V=%f A=%f}\n",
                      src_fmt_str, &sw, &sh, dst_fmt_str, &dw, &dh,
                      &mode.flags, &mode.dither,
-                     &mse[0], &mse[1], &mse[2], &mse[3]);
+                     &ssim[0], &ssim[1], &ssim[2], &ssim[3]);
         if (ret != 12) {
             printf("%s", buf);
             continue;
@@ -361,7 +383,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, struct options opts)
             opts.dst_fmt != AV_PIX_FMT_NONE && dst_fmt != opts.dst_fmt)
             continue;
 
-        if (run_test(src_fmt, dst_fmt, dw, dh, mode, opts, ref, mse) < 0)
+        if (run_test(src_fmt, dst_fmt, dw, dh, mode, opts, ref, ssim) < 0)
             return -1;
     }
 
