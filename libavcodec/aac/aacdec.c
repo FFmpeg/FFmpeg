@@ -2391,7 +2391,8 @@ static int aac_decode_frame_int(AVCodecContext *avctx, AVFrame *frame,
     ac->frame = frame;
     *got_frame_ptr = 0;
 
-    if (show_bits(gb, 12) == 0xfff) {
+    // USAC can't be packed into ADTS due to field size limitations.
+    if (show_bits(gb, 12) == 0xfff && ac->oc[1].m4ac.object_type != AOT_USAC) {
         if ((err = parse_adts_frame_header(ac, gb)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error decoding AAC frame header.\n");
             goto fail;
