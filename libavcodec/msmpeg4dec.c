@@ -802,9 +802,6 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
     if (s->mb_intra) {
  not_coded:
         ff_mpeg4_pred_ac(s, block, n, dc_pred_dir);
-        if (s->ac_pred) {
-            i = 63; /* XXX: not optimal */
-        }
     }
     s->block_last_index[n] = i;
 
