@@ -3839,6 +3839,7 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
         if (ret < 0)
             return ret;
 
+        if (s->codec_id != AV_CODEC_ID_AMV) {
         if (s->avctx->intra_matrix) {
             chroma_matrix =
             luma_matrix = s->avctx->intra_matrix;
@@ -3857,13 +3858,7 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
         s->c_dc_scale_table = ff_mpeg12_dc_scale_table[s->intra_dc_precision];
         s->chroma_intra_matrix[0] =
         s->intra_matrix[0]  = ff_mpeg12_dc_scale_table[s->intra_dc_precision][8];
-        ff_convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16,
-                       s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
-        ff_convert_matrix(s, s->q_chroma_intra_matrix, s->q_chroma_intra_matrix16,
-                       s->chroma_intra_matrix, s->intra_quant_bias, 8, 8, 1);
-        s->qscale= 8;
-
-        if (s->codec_id == AV_CODEC_ID_AMV) {
+        } else {
             static const uint8_t y[32] = {13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13};
             static const uint8_t c[32] = {14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14};
             for (int i = 1; i < 64; i++) {
@@ -3876,12 +3871,12 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
             s->c_dc_scale_table = c;
             s->intra_matrix[0] = 13;
             s->chroma_intra_matrix[0] = 14;
+        }
             ff_convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16,
                               s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
             ff_convert_matrix(s, s->q_chroma_intra_matrix, s->q_chroma_intra_matrix16,
                               s->chroma_intra_matrix, s->intra_quant_bias, 8, 8, 1);
             s->qscale = 8;
-        }
     }
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {
