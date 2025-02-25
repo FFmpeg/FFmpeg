@@ -388,7 +388,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, struct options opts)
         struct mode mode;
 
         ret = sscanf(buf,
-                     " %20s %dx%d -> %20s %dx%d, flags=0x%x dither=%u, "
+                     "%20s %dx%d -> %20s %dx%d, flags=0x%x dither=%u, "
                      "SSIM {Y=%f U=%f V=%f A=%f}\n",
                      src_fmt_str, &sw, &sh, dst_fmt_str, &dw, &dh,
                      &mode.flags, &mode.dither,
