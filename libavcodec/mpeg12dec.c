@@ -1001,7 +1001,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if ((ret = ff_mpv_common_init(s)) < 0)
             return ret;
         if (!s->avctx->lowres)
-            ff_mpv_framesize_disable(&s->sc);
+            for (int i = 0; i < s->slice_context_count; i++)
+                ff_mpv_framesize_disable(&s->thread_context[i]->sc);
     }
     return 0;
 }
@@ -1874,7 +1875,8 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     if ((ret = ff_mpv_common_init(s)) < 0)
         return ret;
     if (!s->avctx->lowres)
-        ff_mpv_framesize_disable(&s->sc);
+        for (int i = 0; i < s->slice_context_count; i++)
+            ff_mpv_framesize_disable(&s->thread_context[i]->sc);
 
     for (i = 0; i < 64; i++) {
         int j = s->idsp.idct_permutation[i];
