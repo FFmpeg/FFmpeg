@@ -676,11 +676,11 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 
         /* the only case where decode data is not set should be decoders
          * that do not call ff_get_buffer() */
-        av_assert0((frame->private_ref && frame->private_ref->size == sizeof(FrameDecodeData)) ||
+        av_assert0(frame->private_ref ||
                    !(avctx->codec->capabilities & AV_CODEC_CAP_DR1));
 
         if (frame->private_ref) {
-            FrameDecodeData *fdd = (FrameDecodeData*)frame->private_ref->data;
+            FrameDecodeData *fdd = frame->private_ref;
 
             if (fdd->post_process) {
                 ret = fdd->post_process(avctx, frame);
@@ -693,7 +693,7 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
     }
 
     /* free the per-frame decode data */
-    av_buffer_unref(&frame->private_ref);
+    av_refstruct_unref(&frame->private_ref);
 
     return ret;
 }
@@ -1544,39 +1544,29 @@ static void validate_avframe_allocation(AVCodecContext *avctx, AVFrame *frame)
     }
 }
 
-static void decode_data_free(void *opaque, uint8_t *data)
+static void decode_data_free(AVRefStructOpaque unused, void *obj)
 {
-    FrameDecodeData *fdd = (FrameDecodeData*)data;
+    FrameDecodeData *fdd = obj;
 
     if (fdd->post_process_opaque_free)
         fdd->post_process_opaque_free(fdd->post_process_opaque);
 
     if (fdd->hwaccel_priv_free)
         fdd->hwaccel_priv_free(fdd->hwaccel_priv);
-
-    av_freep(&fdd);
 }
 
 int ff_attach_decode_data(AVFrame *frame)
 {
-    AVBufferRef *fdd_buf;
     FrameDecodeData *fdd;
 
     av_assert1(!frame->private_ref);
-    av_buffer_unref(&frame->private_ref);
+    av_refstruct_unref(&frame->private_ref);
 
-    fdd = av_mallocz(sizeof(*fdd));
+    fdd = av_refstruct_alloc_ext(sizeof(*fdd), 0, NULL, decode_data_free);
     if (!fdd)
         return AVERROR(ENOMEM);
 
-    fdd_buf = av_buffer_create((uint8_t*)fdd, sizeof(*fdd), decode_data_free,
-                               NULL, AV_BUFFER_FLAG_READONLY);
-    if (!fdd_buf) {
-        av_freep(&fdd);
-        return AVERROR(ENOMEM);
-    }
-
-    frame->private_ref = fdd_buf;
+    frame->private_ref = fdd;
 
     return 0;
 }
@@ -1603,7 +1593,7 @@ static void attach_post_process_data(AVCodecContext *avctx, AVFrame *frame)
     DecodeContext        *dc = decode_ctx(avci);
 
     if (dc->lcevc_frame) {
-        FrameDecodeData *fdd = (FrameDecodeData*)frame->private_ref->data;
+        FrameDecodeData *fdd = frame->private_ref;
 
         fdd->post_process_opaque = av_refstruct_ref(dc->lcevc);
         fdd->post_process_opaque_free = ff_lcevc_unref;

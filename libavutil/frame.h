@@ -739,17 +739,13 @@ typedef struct AVFrame {
      */
 
     /**
-     * AVBufferRef for internal use by a single libav* library.
+     * RefStruct reference for internal use by a single libav* library.
      * Must not be used to transfer data between libraries.
      * Has to be NULL when ownership of the frame leaves the respective library.
      *
-     * Code outside the FFmpeg libs should never check or change the contents of the buffer ref.
-     *
-     * FFmpeg calls av_buffer_unref() on it when the frame is unreferenced.
-     * av_frame_copy_props() calls create a new reference with av_buffer_ref()
-     * for the target frame's private_ref field.
+     * Code outside the FFmpeg libs must never check or change private_ref.
      */
-    AVBufferRef *private_ref;
+    void *private_ref;
 
     /**
      * Channel layout of the audio data.

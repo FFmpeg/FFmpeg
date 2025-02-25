@@ -278,7 +278,7 @@ static int lcevc_init(FFLCEVCContext *lcevc, void *logctx)
 
 int ff_lcevc_process(void *logctx, AVFrame *frame)
 {
-    FrameDecodeData  *fdd = (FrameDecodeData*)frame->private_ref->data;
+    FrameDecodeData  *fdd = frame->private_ref;
     FFLCEVCContext *lcevc = fdd->post_process_opaque;
     int ret;
 

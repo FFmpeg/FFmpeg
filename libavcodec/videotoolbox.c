@@ -167,7 +167,7 @@ int ff_videotoolbox_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
     }
     frame->buf[0] = buf;
 
-    fdd = (FrameDecodeData*)frame->private_ref->data;
+    fdd = frame->private_ref;
     fdd->post_process = videotoolbox_postproc_frame;
 
     frame->width  = avctx->width;

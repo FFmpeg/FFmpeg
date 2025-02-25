@@ -19,12 +19,11 @@
 #include "channel_layout.h"
 #include "avassert.h"
 #include "buffer.h"
-#include "common.h"
-#include "cpu.h"
 #include "dict.h"
 #include "frame.h"
 #include "imgutils.h"
 #include "mem.h"
+#include "refstruct.h"
 #include "samplefmt.h"
 #include "side_data.h"
 #include "hwcontext.h"
@@ -219,8 +218,6 @@ int av_frame_get_buffer(AVFrame *frame, int align)
 
 static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
 {
-    int ret;
-
     dst->pict_type              = src->pict_type;
     dst->sample_aspect_ratio    = src->sample_aspect_ratio;
     dst->crop_top               = src->crop_top;
@@ -272,9 +269,8 @@ static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
         av_dict_copy(&sd_dst->metadata, sd_src->metadata, 0);
     }
 
-    ret = av_buffer_replace(&dst->opaque_ref, src->opaque_ref);
-    ret |= av_buffer_replace(&dst->private_ref, src->private_ref);
-    return ret;
+    av_refstruct_replace(&dst->private_ref, src->private_ref);
+    return av_buffer_replace(&dst->opaque_ref, src->opaque_ref);
 }
 
 int av_frame_ref(AVFrame *dst, const AVFrame *src)
@@ -516,7 +512,7 @@ void av_frame_unref(AVFrame *frame)
     av_buffer_unref(&frame->hw_frames_ctx);
 
     av_buffer_unref(&frame->opaque_ref);
-    av_buffer_unref(&frame->private_ref);
+    av_refstruct_unref(&frame->private_ref);
 
     if (frame->extended_data != frame->data)
         av_freep(&frame->extended_data);

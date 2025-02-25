@@ -494,7 +494,7 @@ finish:
 
 static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
 {
-    FrameDecodeData  *fdd = (FrameDecodeData*)frame->private_ref->data;
+    FrameDecodeData  *fdd = frame->private_ref;
     NVDECFrame        *cf = (NVDECFrame*)fdd->hwaccel_priv;
     NVDECDecoder *decoder = cf->decoder;
 
@@ -575,7 +575,7 @@ finish:
 int ff_nvdec_start_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
-    FrameDecodeData *fdd = (FrameDecodeData*)frame->private_ref->data;
+    FrameDecodeData *fdd = frame->private_ref;
     NVDECFrame *cf = NULL;
     int ret;
 
@@ -613,7 +613,7 @@ fail:
 int ff_nvdec_start_frame_sep_ref(AVCodecContext *avctx, AVFrame *frame, int has_sep_ref)
 {
     NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
-    FrameDecodeData *fdd = (FrameDecodeData*)frame->private_ref->data;
+    FrameDecodeData *fdd = frame->private_ref;
     NVDECFrame *cf;
     int ret;
 
@@ -780,7 +780,7 @@ int ff_nvdec_get_ref_idx(AVFrame *frame)
     if (!frame || !frame->private_ref)
         return -1;
 
-    fdd = (FrameDecodeData*)frame->private_ref->data;
+    fdd = frame->private_ref;
     cf  = (NVDECFrame*)fdd->hwaccel_priv;
     if (!cf)
         return -1;

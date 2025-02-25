@@ -34,7 +34,7 @@
 static void dpb_add(const H264Context *h, CUVIDH264DPBENTRY *dst, const H264Picture *src,
                     int frame_idx)
 {
-    FrameDecodeData *fdd = (FrameDecodeData*)src->f->private_ref->data;
+    FrameDecodeData *fdd = src->f->private_ref;
     const NVDECFrame *cf = fdd->hwaccel_priv;
 
     dst->PicIdx             = cf ? cf->idx : -1;
@@ -66,7 +66,7 @@ static int nvdec_h264_start_frame(AVCodecContext *avctx,
     if (ret < 0)
         return ret;
 
-    fdd = (FrameDecodeData*)h->cur_pic_ptr->f->private_ref->data;
+    fdd = h->cur_pic_ptr->f->private_ref;
     cf  = (NVDECFrame*)fdd->hwaccel_priv;
 
     *pp = (CUVIDPICPARAMS) {
