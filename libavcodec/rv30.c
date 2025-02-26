@@ -38,7 +38,6 @@
 static int rv30_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceInfo *si)
 {
     AVCodecContext *avctx = r->s.avctx;
-    int mb_bits;
     int w = r->s.width, h = r->s.height;
     int mb_size;
     int rpr;
@@ -76,8 +75,7 @@ static int rv30_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
     si->width  = w;
     si->height = h;
     mb_size = ((w + 15) >> 4) * ((h + 15) >> 4);
-    mb_bits = ff_rv34_get_start_offset(gb, mb_size);
-    si->start = get_bits(gb, mb_bits);
+    si->start = ff_rv34_get_start_offset(gb, mb_size);
     skip_bits1(gb);
     return 0;
 }
