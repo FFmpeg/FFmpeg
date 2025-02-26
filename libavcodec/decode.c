@@ -1570,6 +1570,15 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
     if (ret < 0)
         return ret;
 
+    for (int i = 0; i < avctx->nb_decoded_side_data; i++) {
+        const AVFrameSideData *src = avctx->decoded_side_data[i];
+        if (av_frame_get_side_data(frame, src->type))
+            continue;
+        ret = av_frame_side_data_clone(&frame->side_data, &frame->nb_side_data, src, 0);
+        if (ret < 0)
+            return ret;
+    }
+
     if (!(ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
         const AVPacket *pkt = avctx->internal->last_pkt_props;
 
