@@ -31,6 +31,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/detection_bbox.h"
 #include "libavutil/fifo.h"
+#include <float.h>
 
 typedef enum {
     DDMT_SSD,
@@ -53,10 +54,11 @@ typedef struct DnnDetectContext {
     AVFifo *bboxes_fifo;
     int scale_width;
     int scale_height;
-    char *anchors_str;
     float *anchors;
     int nb_anchor;
 } DnnDetectContext;
+
+static const AVOptionArrayDef anchor_array_def = { .sep = '&' };
 
 #define OFFSET(x) offsetof(DnnDetectContext, dnnctx.x)
 #define OFFSET2(x) offsetof(DnnDetectContext, x)
@@ -79,7 +81,7 @@ static const AVOption dnn_detect_options[] = {
     { "cell_w",      "cell width",                 OFFSET2(cell_w),          AV_OPT_TYPE_INT,       { .i64 = 0 },    0, INTMAX_MAX, FLAGS },
     { "cell_h",      "cell height",                OFFSET2(cell_h),          AV_OPT_TYPE_INT,       { .i64 = 0 },    0, INTMAX_MAX, FLAGS },
     { "nb_classes",  "The number of class",        OFFSET2(nb_classes),      AV_OPT_TYPE_INT,       { .i64 = 0 },    0, INTMAX_MAX, FLAGS },
-    { "anchors",     "anchors, splited by '&'",    OFFSET2(anchors_str),         AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
+    { "anchors",     "anchors, splited by '&'",    OFFSET2(anchors),         AV_OPT_TYPE_FLOAT | AV_OPT_TYPE_FLAG_ARRAY,    { .arr = &anchor_array_def }, FLT_MIN, FLT_MAX, FLAGS },
     { NULL }
 };
 
@@ -104,34 +106,6 @@ static int dnn_detect_get_label_id(int nb_classes, int cell_size, float *label_d
         }
     }
     return label_id;
-}
-
-static int dnn_detect_parse_anchors(char *anchors_str, float **anchors)
-{
-    char *saveptr = NULL, *token;
-    float *anchors_buf;
-    int nb_anchor = 0, i = 0;
-    while(anchors_str[i] != '\0') {
-        if(anchors_str[i] == '&')
-            nb_anchor++;
-        i++;
-    }
-    nb_anchor++;
-    anchors_buf = av_mallocz(nb_anchor * sizeof(**anchors));
-    if (!anchors_buf) {
-        return 0;
-    }
-    for (int i = 0; i < nb_anchor; i++) {
-        token = av_strtok(anchors_str, "&", &saveptr);
-        if (!token) {
-            av_freep(&anchors_buf);
-            return 0;
-        }
-        anchors_buf[i] = strtof(token, NULL);
-        anchors_str = NULL;
-    }
-    *anchors = anchors_buf;
-    return nb_anchor;
 }
 
 /* Calculate Intersection Over Union */
@@ -699,15 +673,6 @@ static av_cold int dnn_detect_init(AVFilterContext *context)
         if (ret) {
           return ret;
         }
-    }
-
-    if (ctx->anchors_str) {
-        ret = dnn_detect_parse_anchors(ctx->anchors_str, &ctx->anchors);
-        if (!ctx->anchors) {
-            av_log(context, AV_LOG_ERROR, "failed to parse anchors_str\n");
-            return AVERROR(EINVAL);
-        }
-        ctx->nb_anchor = ret;
     }
 
     return 0;
