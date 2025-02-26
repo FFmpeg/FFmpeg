@@ -2,6 +2,35 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 7.1.1:
+ avformat/iff: Check that we have a stream in read_dst_frame()
+ avcodec/aac/aacdec_lpd: Limit get_unary()
+ avcodec/aac/aacdec_usac: Simplify decode_usac_scale_factors()
+ avcodec/aac/aacdec: Clear SFO on error
+ avformat/mlvdec: fix size checks
+ avformat/wavdec: Fix overflow of intermediate in block_align check
+ avformat/mxfdec: Check edit unit for overflow in mxf_set_current_edit_unit()
+ avformat/hls: Fix twitter
+ avcodec/vvc/refs: fix negative pps_scaling_win offsets
+ libavformat/hls: Be more restrictive on mpegts extensions
+ avformat/hls: .ts is always ok even if its a mov/mp4
+ avcodec/h263dec: Check against previous dimensions instead of coded
+ avformat/hls: Print input format in error message
+ avformat/hls: Be more picky on extensions
+ avformat/iamf_parse: ensure there's at most one of each parameter types in audio elements
+ avformat/iamf_parse: add missing constrains for num_parameters in audio_element_oub()
+ avformat/iamf_parse: add missing av_free() call on failure path
+ lavc/hevcdec: unbreak WPP/progress2 code
+ fate: Add a dependency on ffprobe for fate-flcl1905
+ checkasm: aacencdsp: Actually test nonzero values in quant_bands
+ x86: aacencdsp: Fix negating signed values in aac_quantize_bands
+ rtmpproto: Avoid rare crashes in the fail: codepath in rtmp_open
+ configure: Improve the check for the rsync --contimeout option
+ avutil/downmix_info: add missing semicolon
+ doc/t2h: Support texinfo 7.1 and 7.2 pretest
+ avfilter/drawtext: fix memory leak when using "reinit" runtime command
+ avutil/downmix_info: zero the allocated buffer
+ avformat/mov: fix overflow in drift timestamp calculation
+ Changelog: update
  avformat/mxfdec: Check avio_read() success in mxf_decrypt_triplet()
  avcodec/huffyuvdec: Initialize whole output for decode_gray_bitstream()
  avformat/iamf_reader: Initialize padding and check read in ff_iamf_read_packet()
