@@ -173,11 +173,6 @@ static int dnn_detect_parse_yolo_output(AVFrame *frame, DNNData *output, int out
         return AVERROR(EINVAL);
     }
 
-    if (!anchors) {
-        av_log(filter_ctx, AV_LOG_ERROR, "anchors is not set\n");
-        return AVERROR(EINVAL);
-    }
-
     if (output[output_index].dims[1] * output[output_index].dims[2] *
             output[output_index].dims[3] % (box_size * cell_w * cell_h)) {
         av_log(filter_ctx, AV_LOG_ERROR, "wrong cell_w, cell_h or nb_classes\n");
@@ -656,6 +651,14 @@ static av_cold int dnn_detect_init(AVFilterContext *context)
     DnnDetectContext *ctx = context->priv;
     DnnContext *dnn_ctx = &ctx->dnnctx;
     int ret;
+    int using_yolo = (ctx->model_type == DDMT_YOLOV3 ||
+                      ctx->model_type == DDMT_YOLOV4 ||
+                      ctx->model_type == DDMT_YOLOV1V2);
+
+    if (using_yolo && !ctx->anchors) {
+        av_log(ctx, AV_LOG_ERROR, "anchors is not set while being required for YOLO models\n");
+        return AVERROR(EINVAL);
+    }
 
     ret = ff_dnn_init(&ctx->dnnctx, DFT_ANALYTICS_DETECT, context);
     if (ret < 0)
