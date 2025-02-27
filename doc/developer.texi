@@ -179,18 +179,17 @@ int fields = ilace ? 2 : 1;
 @end example
 
 @item
-No braces around single-line blocks:
+Don't wrap single-line blocks in braces. Use braces only if there is an accompanying else statement. This keeps future code changes easier to keep track of.
 
 @example c, good
 // Good
-if (bits_pixel == 24)
+if (bits_pixel == 24) @{
     avctx->pix_fmt = AV_PIX_FMT_BGR24;
-else if (bits_pixel == 8)
+@} else if (bits_pixel == 8) @{
     avctx->pix_fmt = AV_PIX_FMT_GRAY8;
-else @{
-    av_log(avctx, AV_LOG_ERROR, "Invalid pixel format.\n");
+@} else
     return AVERROR_INVALIDDATA;
-@}
+
 @end example
 
 @item
