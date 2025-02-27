@@ -348,17 +348,26 @@ static av_cold int me_cmp_init(MpegEncContext *s, AVCodecContext *avctx)
     return 0;
 }
 
+#define ALLOCZ_ARRAYS(p, mult, numb) ((p) = av_calloc(numb, mult * sizeof(*(p))))
 static av_cold int init_matrices(MpegEncContext *s, AVCodecContext *avctx)
 {
+    const int nb_matrices = 1 + (s->out_format == FMT_MJPEG) + !s->intra_only;
     const uint16_t *intra_matrix, *inter_matrix;
 
+    if (!ALLOCZ_ARRAYS(s->q_intra_matrix,   32, nb_matrices) ||
+        !ALLOCZ_ARRAYS(s->q_intra_matrix16, 32, nb_matrices))
+        return AVERROR(ENOMEM);
+
     if (s->out_format == FMT_MJPEG) {
-        if (!FF_ALLOCZ_TYPED_ARRAY(s->q_chroma_intra_matrix,   32) ||
-            !FF_ALLOCZ_TYPED_ARRAY(s->q_chroma_intra_matrix16, 32))
-            return AVERROR(ENOMEM);
+        s->q_chroma_intra_matrix   = s->q_intra_matrix   + 32;
+        s->q_chroma_intra_matrix16 = s->q_intra_matrix16 + 32;
     } else {
         s->q_chroma_intra_matrix   = s->q_intra_matrix;
         s->q_chroma_intra_matrix16 = s->q_intra_matrix16;
+    }
+    if (!s->intra_only) {
+        s->q_inter_matrix   = s->q_intra_matrix   + 32;
+        s->q_inter_matrix16 = s->q_intra_matrix16 + 32;
     }
 
     if (CONFIG_MPEG4_ENCODER && s->codec_id == AV_CODEC_ID_MPEG4 &&
@@ -906,10 +915,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         return ret;
 
     if (!(avctx->stats_out = av_mallocz(256))               ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->q_intra_matrix,          32) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->q_inter_matrix,          32) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->q_intra_matrix16,        32) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->q_inter_matrix16,        32) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->input_picture,           MAX_B_FRAMES + 1) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->reordered_input_picture, MAX_B_FRAMES + 1) ||
         !(s->new_pic = av_frame_alloc()) ||
@@ -948,7 +953,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         !(s->mb_mean = av_mallocz(mb_array_size)))
         return AVERROR(ENOMEM);
 
-#define ALLOCZ_ARRAYS(p, mult, numb) ((p) = av_calloc(numb, mult * sizeof(*(p))))
     if (s->codec_id == AV_CODEC_ID_MPEG4 ||
         (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
         int16_t (*tmp1)[2];
@@ -1019,6 +1023,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         ff_convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16,
                           s->intra_matrix, s->intra_quant_bias, avctx->qmin,
                           31, 1);
+        if (s->q_inter_matrix)
         ff_convert_matrix(s, s->q_inter_matrix, s->q_inter_matrix16,
                           s->inter_matrix, s->inter_quant_bias, avctx->qmin,
                           31, 0);
@@ -1093,14 +1098,8 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     av_freep(&s->cplx_tab);
     av_freep(&s->bits_tab);
 
-    if(s->q_chroma_intra_matrix   != s->q_intra_matrix  ) av_freep(&s->q_chroma_intra_matrix);
-    if(s->q_chroma_intra_matrix16 != s->q_intra_matrix16) av_freep(&s->q_chroma_intra_matrix16);
-    s->q_chroma_intra_matrix=   NULL;
-    s->q_chroma_intra_matrix16= NULL;
     av_freep(&s->q_intra_matrix);
-    av_freep(&s->q_inter_matrix);
     av_freep(&s->q_intra_matrix16);
-    av_freep(&s->q_inter_matrix16);
     av_freep(&s->input_picture);
     av_freep(&s->reordered_input_picture);
     av_freep(&s->dct_offset);
