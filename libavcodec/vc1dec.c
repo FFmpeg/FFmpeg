@@ -471,8 +471,6 @@ av_cold int ff_vc1_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    s->y_dc_scale_table = ff_wmv3_dc_scale_table;
-
     ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,
                       ff_wmv1_scantable[1]);
 

@@ -417,7 +417,7 @@ static inline int ff_vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
 
     /* scale predictors if needed */
     q1 = FFABS(s->cur_pic.qscale_table[mb_pos]);
-    dqscale_index = s->y_dc_scale_table[q1] - 1;
+    dqscale_index = ff_wmv3_dc_scale_table[q1] - 1;
     if (dqscale_index < 0)
         return 0;
 
@@ -434,12 +434,12 @@ static inline int ff_vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
     if (c_avail && (n != 1 && n != 3)) {
         q2 = FFABS(s->cur_pic.qscale_table[mb_pos - 1]);
         if (q2 && q2 != q1)
-            c = (int)((unsigned)c * s->y_dc_scale_table[q2] * ff_vc1_dqscale[dqscale_index] + 0x20000) >> 18;
+            c = (int)((unsigned)c * ff_wmv3_dc_scale_table[q2] * ff_vc1_dqscale[dqscale_index] + 0x20000) >> 18;
     }
     if (a_avail && (n != 2 && n != 3)) {
         q2 = FFABS(s->cur_pic.qscale_table[mb_pos - s->mb_stride]);
         if (q2 && q2 != q1)
-            a = (int)((unsigned)a * s->y_dc_scale_table[q2] * ff_vc1_dqscale[dqscale_index] + 0x20000) >> 18;
+            a = (int)((unsigned)a * ff_wmv3_dc_scale_table[q2] * ff_vc1_dqscale[dqscale_index] + 0x20000) >> 18;
     }
     if (a_avail && c_avail && (n != 3)) {
         int off = mb_pos;
@@ -449,7 +449,7 @@ static inline int ff_vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
             off -= s->mb_stride;
         q2 = FFABS(s->cur_pic.qscale_table[off]);
         if (q2 && q2 != q1)
-            b = (int)((unsigned)b * s->y_dc_scale_table[q2] * ff_vc1_dqscale[dqscale_index] + 0x20000) >> 18;
+            b = (int)((unsigned)b * ff_wmv3_dc_scale_table[q2] * ff_vc1_dqscale[dqscale_index] + 0x20000) >> 18;
     }
 
     if (c_avail && (!a_avail || abs(a - b) <= abs(b - c))) {
@@ -917,7 +917,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     quant = av_clip_uintp2(quant, 5);
 
     /* Set DC scale - y and c use the same so we only set y */
-    s->y_dc_scale = s->y_dc_scale_table[quant];
+    s->y_dc_scale = ff_wmv3_dc_scale_table[quant];
 
     /* Get DC differential */
     dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_vlc[s->dc_table_index][n >= 4],
@@ -1579,7 +1579,7 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
             GET_MQUANT();
             s->cur_pic.qscale_table[mb_pos] = mquant;
             /* Set DC scale - y and c use the same so we only set y */
-            s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
+            s->y_dc_scale = ff_wmv3_dc_scale_table[FFABS(mquant)];
             dst_idx = 0;
             for (i = 0; i < 6; i++) {
                 v->a_avail = v->c_avail          = 0;
@@ -1741,7 +1741,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
         GET_MQUANT();
         s->cur_pic.qscale_table[mb_pos] = mquant;
         /* Set DC scale - y and c use the same so we only set y */
-        s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
+        s->y_dc_scale = ff_wmv3_dc_scale_table[FFABS(mquant)];
         v->s.ac_pred  = v->acpred_plane[mb_pos] = get_bits1(gb);
         mb_has_coeffs = idx_mbmode & 1;
         if (mb_has_coeffs)
@@ -2028,7 +2028,7 @@ static int vc1_decode_b_mb_intfi(VC1Context *v)
         GET_MQUANT();
         s->cur_pic.qscale_table[mb_pos] = mquant;
         /* Set DC scale - y and c use the same so we only set y */
-        s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
+        s->y_dc_scale = ff_wmv3_dc_scale_table[FFABS(mquant)];
         v->s.ac_pred  = v->acpred_plane[mb_pos] = get_bits1(gb);
         mb_has_coeffs = idx_mbmode & 1;
         if (mb_has_coeffs)
@@ -2228,7 +2228,7 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
         GET_MQUANT();
         s->cur_pic.qscale_table[mb_pos] = mquant;
         /* Set DC scale - y and c use the same so we only set y */
-        s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
+        s->y_dc_scale = ff_wmv3_dc_scale_table[FFABS(mquant)];
         dst_idx = 0;
         for (i = 0; i < 6; i++) {
             v->a_avail = v->c_avail          = 0;
@@ -2550,7 +2550,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
     }
 
     /* Set DC scale - y and c use the same so we only set y */
-    s->y_dc_scale = s->y_dc_scale_table[v->pq];
+    s->y_dc_scale = ff_wmv3_dc_scale_table[v->pq];
 
     //do frame decode
     s->mb_x = s->mb_y = 0;
@@ -2719,7 +2719,7 @@ static int vc1_decode_i_blocks_adv(VC1Context *v)
 
             s->cur_pic.qscale_table[mb_pos] = mquant;
             /* Set DC scale - y and c use the same so we only set y */
-            s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
+            s->y_dc_scale = ff_wmv3_dc_scale_table[FFABS(mquant)];
 
             for (k = 0; k < 6; k++) {
                 v->mb_type[0][s->block_index[k]] = 1;
