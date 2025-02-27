@@ -1611,7 +1611,10 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
     case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV422P:
-    case AV_PIX_FMT_YUV444P: {
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUVA420P:
+    case AV_PIX_FMT_YUVA422P:
+    case AV_PIX_FMT_YUVA444P: {
         const char *rep_tab[] = {
             [FF_VK_REP_NATIVE] = "r8ui",
             [FF_VK_REP_FLOAT] = "r8",
@@ -1640,7 +1643,15 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
     case AV_PIX_FMT_YUV422P16:
     case AV_PIX_FMT_YUV444P10:
     case AV_PIX_FMT_YUV444P12:
-    case AV_PIX_FMT_YUV444P16: {
+    case AV_PIX_FMT_YUV444P16:
+    case AV_PIX_FMT_YUVA420P10:
+    case AV_PIX_FMT_YUVA420P16:
+    case AV_PIX_FMT_YUVA422P10:
+    case AV_PIX_FMT_YUVA422P12:
+    case AV_PIX_FMT_YUVA422P16:
+    case AV_PIX_FMT_YUVA444P10:
+    case AV_PIX_FMT_YUVA444P12:
+    case AV_PIX_FMT_YUVA444P16: {
         const char *rep_tab[] = {
             [FF_VK_REP_NATIVE] = "r16ui",
             [FF_VK_REP_FLOAT] = "r16f",
