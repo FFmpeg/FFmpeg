@@ -31,6 +31,7 @@
 #include "libavutil/timestamp.h"
 #include "avfilter.h"
 #include "filters.h"
+#include "formats.h"
 #include "video.h"
 
 typedef struct BlackDetectContext {
@@ -45,6 +46,7 @@ typedef struct BlackDetectContext {
     double       picture_black_ratio_th;
     double       pixel_black_th;
     unsigned int pixel_black_th_i;
+    int          alpha;
 
     unsigned int nb_black_pixels;   ///< number of black pixels counted so far
     AVRational   time_base;
@@ -63,6 +65,7 @@ static const AVOption blackdetect_options[] = {
     { "pic_th",                 "set the picture black ratio threshold", OFFSET(picture_black_ratio_th), AV_OPT_TYPE_DOUBLE, {.dbl=.98}, 0, 1, FLAGS },
     { "pixel_black_th", "set the pixel black threshold", OFFSET(pixel_black_th), AV_OPT_TYPE_DOUBLE, {.dbl=.10}, 0, 1, FLAGS },
     { "pix_th",         "set the pixel black threshold", OFFSET(pixel_black_th), AV_OPT_TYPE_DOUBLE, {.dbl=.10}, 0, 1, FLAGS },
+    { "alpha",          "check alpha instead of luma", OFFSET(alpha), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -71,11 +74,21 @@ AVFILTER_DEFINE_CLASS(blackdetect);
 #define YUVJ_FORMATS \
     AV_PIX_FMT_YUVJ411P, AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P
 
+#define YUVA_FORMATS \
+    AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,   AV_PIX_FMT_YUVA444P, \
+    AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA444P16, \
+    AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA422P16, \
+    AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA420P16
+
 static const enum AVPixelFormat yuvj_formats[] = {
     YUVJ_FORMATS, AV_PIX_FMT_NONE
 };
 
-static const enum AVPixelFormat pix_fmts[] = {
+static const enum AVPixelFormat yuva_formats[] = {
+    YUVA_FORMATS, AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat yuv_formats[] = {
     AV_PIX_FMT_GRAY8,
     AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
     AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
@@ -91,12 +104,22 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_YUV440P12,
     AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV420P14,
     AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
-    AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,   AV_PIX_FMT_YUVA444P,
-    AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA444P16,
-    AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA422P12, AV_PIX_FMT_YUVA422P16,
-    AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA420P16,
-    AV_PIX_FMT_NONE
+    YUVA_FORMATS, AV_PIX_FMT_NONE
 };
+
+static int query_format(const AVFilterContext *ctx,
+                        AVFilterFormatsConfig **cfg_in,
+                        AVFilterFormatsConfig **cfg_out)
+{
+    const BlackDetectContext *s = ctx->priv;
+    AVFilterFormats *formats;
+    if (s->alpha)
+        formats = ff_make_format_list(yuva_formats);
+    else
+        formats = ff_make_format_list(yuv_formats);
+
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out, formats);
+}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -114,9 +137,9 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     av_log(s, AV_LOG_VERBOSE,
-           "black_min_duration:%s pixel_black_th:%f picture_black_ratio_th:%f\n",
+           "black_min_duration:%s pixel_black_th:%f picture_black_ratio_th:%f alpha:%d\n",
            av_ts2timestr(s->black_min_duration, &s->time_base),
-           s->pixel_black_th, s->picture_black_ratio_th);
+           s->pixel_black_th, s->picture_black_ratio_th, s->alpha);
     return 0;
 }
 
@@ -140,7 +163,8 @@ static int black_counter(AVFilterContext *ctx, void *arg,
     const unsigned int threshold = s->pixel_black_th_i;
     unsigned int *counterp = &s->counter[jobnr];
     AVFrame *in = arg;
-    const int linesize = in->linesize[0];
+    const int plane = s->alpha ? 3 : 0;
+    const int linesize = in->linesize[plane];
     const int w = in->width;
     const int h = in->height;
     const int start = (h * jobnr) / nb_jobs;
@@ -149,7 +173,7 @@ static int black_counter(AVFilterContext *ctx, void *arg,
     unsigned int counter = 0;
 
     if (s->depth == 8) {
-        const uint8_t *p = in->data[0] + start * linesize;
+        const uint8_t *p = in->data[plane] + start * linesize;
 
         for (int i = 0; i < size; i++) {
             for (int x = 0; x < w; x++)
@@ -157,7 +181,7 @@ static int black_counter(AVFilterContext *ctx, void *arg,
             p += linesize;
         }
     } else {
-        const uint16_t *p = (const uint16_t *)(in->data[0] + start * linesize);
+        const uint16_t *p = (const uint16_t *)(in->data[plane] + start * linesize);
 
         for (int i = 0; i < size; i++) {
             for (int x = 0; x < w; x++)
@@ -180,7 +204,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
     const int max = (1 << s->depth) - 1;
     const int factor = (1 << (s->depth - 8));
     const int full = picref->color_range == AVCOL_RANGE_JPEG ||
-                     ff_fmt_is_in(picref->format, yuvj_formats);
+                     ff_fmt_is_in(picref->format, yuvj_formats) ||
+                     s->alpha;
 
     s->pixel_black_th_i = full ? s->pixel_black_th * max :
         // luminance_minimum_value + pixel_black_th * luminance_range_size
@@ -252,6 +277,6 @@ const FFFilter ff_vf_blackdetect = {
     .priv_size     = sizeof(BlackDetectContext),
     FILTER_INPUTS(blackdetect_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
-    FILTER_PIXFMTS_ARRAY(pix_fmts),
+    FILTER_QUERY_FUNC2(query_format),
     .uninit        = uninit,
 };

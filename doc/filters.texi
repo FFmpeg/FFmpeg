@@ -8687,6 +8687,12 @@ the input video format, the range is [0-255] for YUV full-range
 formats and [16-235] for YUV non full-range formats.
 
 Default value is 0.10.
+
+@item alpha
+If true, check the alpha channel instead of the luma channel. Detects frames
+which are (almost) transparent, instead of frames which are almost black.
+
+Default value is disabled.
 @end table
 
 The following example sets the maximum pixel threshold to the minimum
