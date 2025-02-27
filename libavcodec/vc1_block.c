@@ -354,8 +354,7 @@ static inline int vc1_i_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
     };
 
     /* find prediction - wmv3_dc_scale always used here in fact */
-    if (n < 4) scale = s->y_dc_scale;
-    else       scale = s->c_dc_scale;
+    scale = s->y_dc_scale;
 
     wrap   = s->block_wrap[n];
     dc_val = s->dc_val[0] + s->block_index[n];
@@ -611,11 +610,7 @@ static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
     *dc_val = dcdiff;
 
     /* Store the quantized DC coeff, used for prediction */
-    if (n < 4)
-        scale = s->y_dc_scale;
-    else
-        scale = s->c_dc_scale;
-    block[0] = dcdiff * scale;
+    block[0] = dcdiff * s->y_dc_scale;
 
     ac_val  = s->ac_val[0][s->block_index[n]];
     ac_val2 = ac_val;
@@ -752,11 +747,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
     *dc_val = dcdiff;
 
     /* Store the quantized DC coeff, used for prediction */
-    if (n < 4)
-        scale = s->y_dc_scale;
-    else
-        scale = s->c_dc_scale;
-    block[0] = dcdiff * scale;
+    block[0] = dcdiff * s->y_dc_scale;
 
     /* check if AC is needed at all */
     if (!a_avail && !c_avail)
@@ -925,9 +916,8 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     /* XXX: Guard against dumb values of mquant */
     quant = av_clip_uintp2(quant, 5);
 
-    /* Set DC scale - y and c use the same */
+    /* Set DC scale - y and c use the same so we only set y */
     s->y_dc_scale = s->y_dc_scale_table[quant];
-    s->c_dc_scale = s->c_dc_scale_table[quant];
 
     /* Get DC differential */
     dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_vlc[s->dc_table_index][n >= 4],
@@ -949,12 +939,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     *dc_val = dcdiff;
 
     /* Store the quantized DC coeff, used for prediction */
-
-    if (n < 4) {
-        block[0] = dcdiff * s->y_dc_scale;
-    } else {
-        block[0] = dcdiff * s->c_dc_scale;
-    }
+    block[0] = dcdiff * s->y_dc_scale;
 
     //AC Decoding
     i = 1;
@@ -1593,9 +1578,8 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
             v->s.ac_pred = v->acpred_plane[mb_pos] = get_bits1(gb);
             GET_MQUANT();
             s->cur_pic.qscale_table[mb_pos] = mquant;
-            /* Set DC scale - y and c use the same (not sure if necessary here) */
+            /* Set DC scale - y and c use the same so we only set y */
             s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
-            s->c_dc_scale = s->c_dc_scale_table[FFABS(mquant)];
             dst_idx = 0;
             for (i = 0; i < 6; i++) {
                 v->a_avail = v->c_avail          = 0;
@@ -1756,9 +1740,8 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
         s->cur_pic.mb_type[mb_pos + v->mb_off] = MB_TYPE_INTRA;
         GET_MQUANT();
         s->cur_pic.qscale_table[mb_pos] = mquant;
-        /* Set DC scale - y and c use the same (not sure if necessary here) */
+        /* Set DC scale - y and c use the same so we only set y */
         s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
-        s->c_dc_scale = s->c_dc_scale_table[FFABS(mquant)];
         v->s.ac_pred  = v->acpred_plane[mb_pos] = get_bits1(gb);
         mb_has_coeffs = idx_mbmode & 1;
         if (mb_has_coeffs)
@@ -2044,9 +2027,8 @@ static int vc1_decode_b_mb_intfi(VC1Context *v)
         s->cur_pic.mb_type[mb_pos + v->mb_off]         = MB_TYPE_INTRA;
         GET_MQUANT();
         s->cur_pic.qscale_table[mb_pos] = mquant;
-        /* Set DC scale - y and c use the same (not sure if necessary here) */
+        /* Set DC scale - y and c use the same so we only set y */
         s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
-        s->c_dc_scale = s->c_dc_scale_table[FFABS(mquant)];
         v->s.ac_pred  = v->acpred_plane[mb_pos] = get_bits1(gb);
         mb_has_coeffs = idx_mbmode & 1;
         if (mb_has_coeffs)
@@ -2245,9 +2227,8 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
         v->s.ac_pred = v->acpred_plane[mb_pos] = get_bits1(gb);
         GET_MQUANT();
         s->cur_pic.qscale_table[mb_pos] = mquant;
-        /* Set DC scale - y and c use the same (not sure if necessary here) */
+        /* Set DC scale - y and c use the same so we only set y */
         s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
-        s->c_dc_scale = s->c_dc_scale_table[FFABS(mquant)];
         dst_idx = 0;
         for (i = 0; i < 6; i++) {
             v->a_avail = v->c_avail          = 0;
@@ -2568,9 +2549,8 @@ static void vc1_decode_i_blocks(VC1Context *v)
         break;
     }
 
-    /* Set DC scale - y and c use the same */
+    /* Set DC scale - y and c use the same so we only set y */
     s->y_dc_scale = s->y_dc_scale_table[v->pq];
-    s->c_dc_scale = s->c_dc_scale_table[v->pq];
 
     //do frame decode
     s->mb_x = s->mb_y = 0;
@@ -2738,9 +2718,8 @@ static int vc1_decode_i_blocks_adv(VC1Context *v)
             GET_MQUANT();
 
             s->cur_pic.qscale_table[mb_pos] = mquant;
-            /* Set DC scale - y and c use the same */
+            /* Set DC scale - y and c use the same so we only set y */
             s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
-            s->c_dc_scale = s->c_dc_scale_table[FFABS(mquant)];
 
             for (k = 0; k < 6; k++) {
                 v->mb_type[0][s->block_index[k]] = 1;
