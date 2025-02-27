@@ -361,6 +361,10 @@ static av_cold int init_matrices(MpegEncContext *s, AVCodecContext *avctx)
     if (s->out_format == FMT_MJPEG) {
         s->q_chroma_intra_matrix   = s->q_intra_matrix   + 32;
         s->q_chroma_intra_matrix16 = s->q_intra_matrix16 + 32;
+        // No need to set q_inter_matrix
+        av_assert1(s->intra_only);
+        // intra_matrix, chroma_intra_matrix will be set later for MJPEG.
+        return 0;
     } else {
         s->q_chroma_intra_matrix   = s->q_intra_matrix;
         s->q_chroma_intra_matrix16 = s->q_intra_matrix16;
