@@ -353,6 +353,7 @@ static av_cold int init_matrices(MpegEncContext *s, AVCodecContext *avctx)
 {
     const int nb_matrices = 1 + (s->out_format == FMT_MJPEG) + !s->intra_only;
     const uint16_t *intra_matrix, *inter_matrix;
+    int ret;
 
     if (!ALLOCZ_ARRAYS(s->q_intra_matrix,   32, nb_matrices) ||
         !ALLOCZ_ARRAYS(s->q_intra_matrix16, 32, nb_matrices))
@@ -398,6 +399,19 @@ static av_cold int init_matrices(MpegEncContext *s, AVCodecContext *avctx)
         s->intra_matrix[j] = s->chroma_intra_matrix[j] = intra_matrix[i];
         s->inter_matrix[j] = inter_matrix[i];
     }
+
+    /* precompute matrix */
+    ret = ff_check_codec_matrices(avctx, FF_MATRIX_TYPE_INTRA | FF_MATRIX_TYPE_INTER, 1, 255);
+    if (ret < 0)
+        return ret;
+
+    ff_convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16,
+                      s->intra_matrix, s->intra_quant_bias, avctx->qmin,
+                      31, 1);
+    if (s->q_inter_matrix)
+        ff_convert_matrix(s, s->q_inter_matrix, s->q_inter_matrix16,
+                          s->inter_matrix, s->inter_quant_bias, avctx->qmin,
+                          31, 0);
 
     return 0;
 }
@@ -1015,22 +1029,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         if (s->msmpeg4_version != MSMP4_UNUSED)
             ff_msmpeg4_encode_init(s);
 #endif
-    }
-
-    /* precompute matrix */
-    /* for mjpeg, we do include qscale in the matrix */
-    if (s->out_format != FMT_MJPEG) {
-        ret = ff_check_codec_matrices(avctx, FF_MATRIX_TYPE_INTRA | FF_MATRIX_TYPE_INTER, 1, 255);
-        if (ret < 0)
-            return ret;
-
-        ff_convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16,
-                          s->intra_matrix, s->intra_quant_bias, avctx->qmin,
-                          31, 1);
-        if (s->q_inter_matrix)
-        ff_convert_matrix(s, s->q_inter_matrix, s->q_inter_matrix16,
-                          s->inter_matrix, s->inter_quant_bias, avctx->qmin,
-                          31, 0);
     }
 
     if ((ret = ff_rate_control_init(s)) < 0)
