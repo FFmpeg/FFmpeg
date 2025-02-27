@@ -705,14 +705,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         }
     }
 
-    if (s->q_scale_type == 1) {
-        if (avctx->qmax > 28) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "non linear quant only supports qmax <= 28 currently\n");
-            return AVERROR_PATCHWELCOME;
-        }
-    }
-
     if (avctx->slices > 1 &&
         !(avctx->codec->capabilities & AV_CODEC_CAP_SLICE_THREADS)) {
         av_log(avctx, AV_LOG_ERROR, "Multiple slices are not supported by this codec\n");

@@ -201,6 +201,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
+    if (mpeg12->mpeg.q_scale_type == 1) {
+        if (avctx->qmax > 28) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "non linear quant only supports qmax <= 28 currently\n");
+            return AVERROR_PATCHWELCOME;
+        }
+    }
+
     if (avctx->profile == AV_PROFILE_UNKNOWN) {
         if (avctx->level != AV_LEVEL_UNKNOWN) {
             av_log(avctx, AV_LOG_ERROR, "Set profile and level\n");
