@@ -588,17 +588,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
             avctx->bit_rate_tolerance = INT_MAX;
     }
 
-    if (avctx->rc_max_rate &&
-        avctx->rc_min_rate == avctx->rc_max_rate &&
-        (s->codec_id == AV_CODEC_ID_MPEG1VIDEO ||
-         s->codec_id == AV_CODEC_ID_MPEG2VIDEO) &&
-        90000LL * (avctx->rc_buffer_size - 1) >
-            avctx->rc_max_rate * 0xFFFFLL) {
-        av_log(avctx, AV_LOG_INFO,
-               "Warning vbv_delay will be set to 0xFFFF (=VBR) as the "
-               "specified vbv buffer is too large for the given bitrate!\n");
-    }
-
     if ((avctx->flags & AV_CODEC_FLAG_4MV) && s->codec_id != AV_CODEC_ID_MPEG4 &&
         s->codec_id != AV_CODEC_ID_H263 && s->codec_id != AV_CODEC_ID_H263P &&
         s->codec_id != AV_CODEC_ID_FLV1) {

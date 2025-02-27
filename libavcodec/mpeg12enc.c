@@ -255,6 +255,15 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
+    if (avctx->rc_max_rate &&
+        avctx->rc_min_rate == avctx->rc_max_rate &&
+        90000LL * (avctx->rc_buffer_size - 1) >
+            avctx->rc_max_rate * 0xFFFFLL) {
+        av_log(avctx, AV_LOG_INFO,
+               "Warning vbv_delay will be set to 0xFFFF (=VBR) as the "
+               "specified vbv buffer is too large for the given bitrate!\n");
+    }
+
     if (mpeg12->drop_frame_timecode)
         mpeg12->tc.flags |= AV_TIMECODE_FLAG_DROPFRAME;
     if (mpeg12->drop_frame_timecode && mpeg12->frame_rate_index != 4) {
