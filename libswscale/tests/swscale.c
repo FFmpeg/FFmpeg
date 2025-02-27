@@ -526,6 +526,8 @@ int main(int argc, char **argv)
                     "       Use the specified number of threads\n"
                     "   -cpuflags <cpuflags>\n"
                     "       Uses the specified cpuflags in the tests\n"
+                    "   -v <level>\n"
+                    "       Enable log verbosity at given level\n"
             );
             return 0;
         }
@@ -573,6 +575,8 @@ int main(int argc, char **argv)
             opts.threads = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-p")) {
             opts.prob = atof(argv[i + 1]);
+        } else if (!strcmp(argv[i], "-v")) {
+            av_log_set_level(atoi(argv[i + 1]));
         } else {
 bad_option:
             fprintf(stderr, "bad option or argument missing (%s) see -help\n", argv[i]);
