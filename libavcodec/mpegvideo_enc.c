@@ -350,6 +350,8 @@ static av_cold int me_cmp_init(MpegEncContext *s, AVCodecContext *avctx)
 
 static av_cold int init_matrices(MpegEncContext *s, AVCodecContext *avctx)
 {
+    const uint16_t *intra_matrix, *inter_matrix;
+
     if (s->out_format == FMT_MJPEG) {
         if (!FF_ALLOCZ_TYPED_ARRAY(s->q_chroma_intra_matrix,   32) ||
             !FF_ALLOCZ_TYPED_ARRAY(s->q_chroma_intra_matrix16, 32))
@@ -357,6 +359,31 @@ static av_cold int init_matrices(MpegEncContext *s, AVCodecContext *avctx)
     } else {
         s->q_chroma_intra_matrix   = s->q_intra_matrix;
         s->q_chroma_intra_matrix16 = s->q_intra_matrix16;
+    }
+
+    if (CONFIG_MPEG4_ENCODER && s->codec_id == AV_CODEC_ID_MPEG4 &&
+        s->mpeg_quant) {
+        intra_matrix = ff_mpeg4_default_intra_matrix;
+        inter_matrix = ff_mpeg4_default_non_intra_matrix;
+    } else if (s->out_format == FMT_H263 || s->out_format == FMT_H261) {
+        intra_matrix =
+        inter_matrix = ff_mpeg1_default_non_intra_matrix;
+    } else {
+        /* MPEG-1/2, SpeedHQ */
+        intra_matrix = ff_mpeg1_default_intra_matrix;
+        inter_matrix = ff_mpeg1_default_non_intra_matrix;
+    }
+    if (avctx->intra_matrix)
+        intra_matrix = avctx->intra_matrix;
+    if (avctx->inter_matrix)
+        inter_matrix = avctx->inter_matrix;
+
+    /* init q matrix */
+    for (int i = 0; i < 64; i++) {
+        int j = s->idsp.idct_permutation[i];
+
+        s->intra_matrix[j] = s->chroma_intra_matrix[j] = intra_matrix[i];
+        s->inter_matrix[j] = inter_matrix[i];
     }
 
     return 0;
@@ -980,28 +1007,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         if (s->msmpeg4_version != MSMP4_UNUSED)
             ff_msmpeg4_encode_init(s);
 #endif
-    }
-
-    /* init q matrix */
-    for (i = 0; i < 64; i++) {
-        int j = s->idsp.idct_permutation[i];
-        if (CONFIG_MPEG4_ENCODER && s->codec_id == AV_CODEC_ID_MPEG4 &&
-            s->mpeg_quant) {
-            s->intra_matrix[j] = ff_mpeg4_default_intra_matrix[i];
-            s->inter_matrix[j] = ff_mpeg4_default_non_intra_matrix[i];
-        } else if (s->out_format == FMT_H263 || s->out_format == FMT_H261) {
-            s->intra_matrix[j] =
-            s->inter_matrix[j] = ff_mpeg1_default_non_intra_matrix[i];
-        } else {
-            /* MPEG-1/2, SpeedHQ */
-            s->chroma_intra_matrix[j] =
-            s->intra_matrix[j] = ff_mpeg1_default_intra_matrix[i];
-            s->inter_matrix[j] = ff_mpeg1_default_non_intra_matrix[i];
-        }
-        if (avctx->intra_matrix)
-            s->intra_matrix[j] = avctx->intra_matrix[i];
-        if (avctx->inter_matrix)
-            s->inter_matrix[j] = avctx->inter_matrix[i];
     }
 
     /* precompute matrix */
