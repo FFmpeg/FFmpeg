@@ -348,6 +348,20 @@ static av_cold int me_cmp_init(MpegEncContext *s, AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold int init_matrices(MpegEncContext *s, AVCodecContext *avctx)
+{
+    if (s->out_format == FMT_MJPEG) {
+        if (!FF_ALLOCZ_TYPED_ARRAY(s->q_chroma_intra_matrix,   32) ||
+            !FF_ALLOCZ_TYPED_ARRAY(s->q_chroma_intra_matrix16, 32))
+            return AVERROR(ENOMEM);
+    } else {
+        s->q_chroma_intra_matrix   = s->q_intra_matrix;
+        s->q_chroma_intra_matrix16 = s->q_intra_matrix16;
+    }
+
+    return 0;
+}
+
 /* init video encoder */
 av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 {
@@ -866,16 +880,18 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     if (!(avctx->stats_out = av_mallocz(256))               ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_intra_matrix,          32) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->q_chroma_intra_matrix,   32) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_inter_matrix,          32) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_intra_matrix16,        32) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->q_chroma_intra_matrix16, 32) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_inter_matrix16,        32) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->input_picture,           MAX_B_FRAMES + 1) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->reordered_input_picture, MAX_B_FRAMES + 1) ||
         !(s->new_pic = av_frame_alloc()) ||
         !(s->picture_pool = ff_mpv_alloc_pic_pool(0)))
         return AVERROR(ENOMEM);
+
+    ret = init_matrices(s, avctx);
+    if (ret < 0)
+        return ret;
 
     /* Allocate MV tables; the MV and MB tables will be copied
      * to slice contexts by ff_update_duplicate_context().  */
@@ -3698,13 +3714,6 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
         else
             s->lambda= s->last_lambda_for[s->last_non_b_pict_type];
         update_qscale(s);
-    }
-
-    if (s->out_format != FMT_MJPEG) {
-        if(s->q_chroma_intra_matrix   != s->q_intra_matrix  ) av_freep(&s->q_chroma_intra_matrix);
-        if(s->q_chroma_intra_matrix16 != s->q_intra_matrix16) av_freep(&s->q_chroma_intra_matrix16);
-        s->q_chroma_intra_matrix   = s->q_intra_matrix;
-        s->q_chroma_intra_matrix16 = s->q_intra_matrix16;
     }
 
     ff_me_init_pic(s);
