@@ -22,12 +22,12 @@
 #ifndef AVCODEC_MSMPEG4ENC_H
 #define AVCODEC_MSMPEG4ENC_H
 
-#include "mpegvideo.h"
+#include "mpegvideoenc.h"
 #include "put_bits.h"
 #include "rl.h"
 
 typedef struct MSMPEG4EncContext {
-    MpegEncContext s;
+    MPVMainEncContext m;
 
     /** [mb_intra][isChroma][level][run][last] */
     unsigned ac_stats[2][2][MAX_LEVEL + 1][MAX_RUN + 1][2];

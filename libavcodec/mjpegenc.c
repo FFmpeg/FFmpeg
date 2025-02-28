@@ -64,7 +64,7 @@ typedef struct MJpegHuffmanCode {
  * MpegEncContext is followed by a MjpegContext; the other threads
  * can access this shared context via MpegEncContext.mjpeg. */
 typedef struct MJPEGEncContext {
-    MpegEncContext mpeg;
+    MPVMainEncContext mpeg;
     MJpegContext   mjpeg;
 } MJPEGEncContext;
 

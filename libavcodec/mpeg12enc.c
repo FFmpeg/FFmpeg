@@ -72,7 +72,7 @@ static uint32_t mpeg1_lum_dc_uni[512];
 static uint32_t mpeg1_chr_dc_uni[512];
 
 typedef struct MPEG12EncContext {
-    MpegEncContext mpeg;
+    MPVMainEncContext mpeg;
     AVRational frame_rate_ext;
     unsigned frame_rate_index;
 
@@ -201,7 +201,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
-    if (mpeg12->mpeg.q_scale_type == 1) {
+    if (mpeg12->mpeg.s.q_scale_type == 1) {
         if (avctx->qmax > 28) {
             av_log(avctx, AV_LOG_ERROR,
                    "non linear quant only supports qmax <= 28 currently\n");

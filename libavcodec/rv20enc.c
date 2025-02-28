@@ -69,7 +69,7 @@ const FFCodec ff_rv20_encoder = {
     .p.id           = AV_CODEC_ID_RV20,
     .p.priv_class   = &ff_mpv_enc_class,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
-    .priv_data_size = sizeof(MpegEncContext),
+    .priv_data_size = sizeof(MPVMainEncContext),
     .init           = ff_mpv_encode_init,
     FF_CODEC_ENCODE_CB(ff_mpv_encode_picture),
     .close          = ff_mpv_encode_end,

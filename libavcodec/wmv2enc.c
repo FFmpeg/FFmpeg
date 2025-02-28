@@ -49,7 +49,7 @@ typedef struct WMV2EncContext {
 
 static int encode_ext_header(WMV2EncContext *w)
 {
-    MpegEncContext *const s = &w->msmpeg4.s;
+    MpegEncContext *const s = &w->msmpeg4.m.s;
     PutBitContext pb;
     int code;
 
@@ -76,7 +76,7 @@ static int encode_ext_header(WMV2EncContext *w)
 static av_cold int wmv2_encode_init(AVCodecContext *avctx)
 {
     WMV2EncContext *const w = avctx->priv_data;
-    MpegEncContext *const s = &w->msmpeg4.s;
+    MpegEncContext *const s = &w->msmpeg4.m.s;
 
     s->private_ctx = &w->common;
     if (ff_mpv_encode_init(avctx) < 0)

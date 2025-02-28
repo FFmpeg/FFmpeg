@@ -59,7 +59,7 @@ static uint32_t speedhq_chr_dc_uni[512];
 static uint8_t uni_speedhq_ac_vlc_len[64 * 64 * 2];
 
 typedef struct SpeedHQEncContext {
-    MpegEncContext m;
+    MPVMainEncContext m;
 
     int slice_start;
 } SpeedHQEncContext;

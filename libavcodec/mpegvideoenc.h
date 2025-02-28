@@ -33,6 +33,10 @@
 #include "libavutil/opt.h"
 #include "mpegvideo.h"
 
+typedef struct MPVMainEncContext {
+    MpegEncContext s;  ///< The main slicecontext
+} MPVMainEncContext;
+
 #define MAX_FCODE        7
 #define UNI_AC_ENC_INDEX(run,level) ((run)*128 + (level))
 #define INPLACE_OFFSET 16

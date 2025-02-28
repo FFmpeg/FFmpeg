@@ -55,7 +55,7 @@ static uint8_t uni_h261_rl_len_last[64 * 128];
 static uint8_t h261_mv_codes[64][2];
 
 typedef struct H261EncContext {
-    MpegEncContext s;
+    MPVMainEncContext s;
 
     H261Context common;
 
@@ -167,7 +167,7 @@ static inline int get_cbp(MpegEncContext *s, int16_t block[6][64])
  */
 static void h261_encode_block(H261EncContext *h, int16_t *block, int n)
 {
-    MpegEncContext *const s = &h->s;
+    MpegEncContext *const s = &h->s.s;
     int level, run, i, j, last_index, last_non_zero;
 
     if (s->mb_intra) {
