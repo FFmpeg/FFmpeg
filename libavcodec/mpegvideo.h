@@ -511,9 +511,6 @@ typedef struct MpegEncContext {
     int lmin, lmax;
     int vbv_ignore_qmax;
 
-    /* temp buffers for rate control */
-    float *cplx_tab, *bits_tab;
-
     /* flag to indicate a reinitialization is required, e.g. after
      * a frame size change */
     int context_reinit;

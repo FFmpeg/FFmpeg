@@ -89,6 +89,8 @@ typedef struct RateControlContext{
 
     char *rc_eq;
     struct AVExpr *rc_eq_eval;
+
+    float *cplx_tab, *bits_tab;
 }RateControlContext;
 
 struct MpegEncContext;

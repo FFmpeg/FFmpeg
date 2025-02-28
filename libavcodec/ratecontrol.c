@@ -694,6 +694,15 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
         }
     }
 
+    if (s->adaptive_quant) {
+        unsigned mb_array_size = s->mb_stride * s->mb_height;
+
+        rcc->cplx_tab = av_malloc_array(mb_array_size, 2 * sizeof(rcc->cplx_tab));
+        if (!rcc->cplx_tab)
+            return AVERROR(ENOMEM);
+        rcc->bits_tab = rcc->cplx_tab + mb_array_size;
+    }
+
     return 0;
 }
 
@@ -705,6 +714,7 @@ av_cold void ff_rate_control_uninit(RateControlContext *rcc)
     av_expr_free(rcc->rc_eq_eval);
     rcc->rc_eq_eval = NULL;
     av_freep(&rcc->entry);
+    av_freep(&rcc->cplx_tab);
 }
 
 int ff_vbv_update(MpegEncContext *s, int frame_size)
@@ -766,7 +776,8 @@ static void update_predictor(Predictor *p, double q, double var, double size)
     p->coeff += new_coeff;
 }
 
-static void adaptive_quantization(MpegEncContext *s, double q)
+static void adaptive_quantization(RateControlContext *const rcc,
+                                  MpegEncContext *const s, double q)
 {
     int i;
     const float lumi_masking         = s->avctx->lumi_masking / (128.0 * 128.0);
@@ -777,8 +788,8 @@ static void adaptive_quantization(MpegEncContext *s, double q)
     const float border_masking       = s->border_masking;
     float bits_sum                   = 0.0;
     float cplx_sum                   = 0.0;
-    float *cplx_tab                  = s->cplx_tab;
-    float *bits_tab                  = s->bits_tab;
+    float *cplx_tab                  = rcc->cplx_tab;
+    float *bits_tab                  = rcc->bits_tab;
     const int qmin                   = s->avctx->mb_lmin;
     const int qmax                   = s->avctx->mb_lmax;
     const int mb_width               = s->mb_width;
@@ -1048,7 +1059,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
         q = qmax;
 
     if (s->adaptive_quant)
-        adaptive_quantization(s, q);
+        adaptive_quantization(rcc, s, q);
     else
         q = (int)(q + 0.5);
 

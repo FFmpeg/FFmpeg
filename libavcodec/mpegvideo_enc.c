@@ -945,8 +945,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     mb_array_size = s->mb_stride * s->mb_height;
     if (!FF_ALLOCZ_TYPED_ARRAY(s->mb_type,      mb_array_size) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->lambda_table, mb_array_size) ||
-        !FF_ALLOC_TYPED_ARRAY (s->cplx_tab,     mb_array_size) ||
-        !FF_ALLOC_TYPED_ARRAY (s->bits_tab,     mb_array_size) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->mc_mb_var,    mb_array_size) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->mb_var, mb_array_size) ||
         !(s->mb_mean = av_mallocz(mb_array_size)))
@@ -1074,9 +1072,6 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
 
     av_freep(&s->mb_type);
     av_freep(&s->lambda_table);
-
-    av_freep(&s->cplx_tab);
-    av_freep(&s->bits_tab);
 
     av_freep(&s->q_intra_matrix);
     av_freep(&s->q_intra_matrix16);
