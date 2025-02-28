@@ -30,7 +30,7 @@ function ff_resample_common_apply_filter_x4_float_neon, export=1
         faddp           v0.4s, v0.4s, v0.4s                            // pair adding of the 4x32-bit accumulated values
         faddp           v0.4s, v0.4s, v0.4s                            // pair adding of the 4x32-bit accumulated values
         st1             {v0.s}[0], [x0], #4                            // write accumulator
-    ret
+        ret
 endfunc
 
 function ff_resample_common_apply_filter_x8_float_neon, export=1
@@ -46,7 +46,7 @@ function ff_resample_common_apply_filter_x8_float_neon, export=1
         faddp           v0.4s, v0.4s, v0.4s                            // pair adding of the 4x32-bit accumulated values
         faddp           v0.4s, v0.4s, v0.4s                            // pair adding of the 4x32-bit accumulated values
         st1             {v0.s}[0], [x0], #4                            // write accumulator
-    ret
+        ret
 endfunc
 
 function ff_resample_common_apply_filter_x4_s16_neon, export=1
@@ -59,7 +59,7 @@ function ff_resample_common_apply_filter_x4_s16_neon, export=1
         addp            v0.4s, v0.4s, v0.4s                            // pair adding of the 4x32-bit accumulated values
         addp            v0.4s, v0.4s, v0.4s                            // pair adding of the 4x32-bit accumulated values
         st1             {v0.s}[0], [x0], #4                            // write accumulator
-    ret
+        ret
 endfunc
 
 function ff_resample_common_apply_filter_x8_s16_neon, export=1
@@ -73,5 +73,5 @@ function ff_resample_common_apply_filter_x8_s16_neon, export=1
         addp            v0.4s, v0.4s, v0.4s                            // pair adding of the 4x32-bit accumulated values
         addp            v0.4s, v0.4s, v0.4s                            // pair adding of the 4x32-bit accumulated values
         st1             {v0.s}[0], [x0], #4                            // write accumulator
-    ret
+        ret
 endfunc
