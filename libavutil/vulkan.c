@@ -2381,10 +2381,10 @@ static inline void update_set_pool_write(FFVulkanContext *s, FFVkExecContext *e,
     }
 }
 
-static int vk_set_descriptor_image(FFVulkanContext *s, FFVulkanShader *shd,
-                                   FFVkExecContext *e, int set, int bind, int offs,
-                                   VkImageView view, VkImageLayout layout,
-                                   VkSampler sampler)
+int ff_vk_set_descriptor_image(FFVulkanContext *s, FFVulkanShader *shd,
+                               FFVkExecContext *e, int set, int bind, int offs,
+                               VkImageView view, VkImageLayout layout,
+                               VkSampler sampler)
 {
     FFVulkanDescriptorSet *desc_set = &shd->desc_set[set];
 
@@ -2521,8 +2521,8 @@ void ff_vk_shader_update_img_array(FFVulkanContext *s, FFVkExecContext *e,
     const int nb_planes = av_pix_fmt_count_planes(hwfc->sw_format);
 
     for (int i = 0; i < nb_planes; i++)
-        vk_set_descriptor_image(s, shd, e, set, binding, i,
-                                views[i], layout, sampler);
+        ff_vk_set_descriptor_image(s, shd, e, set, binding, i,
+                                   views[i], layout, sampler);
 }
 
 void ff_vk_shader_update_push_const(FFVulkanContext *s, FFVkExecContext *e,

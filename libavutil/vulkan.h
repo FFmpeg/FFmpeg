@@ -591,6 +591,14 @@ int ff_vk_shader_update_desc_buffer(FFVulkanContext *s, FFVkExecContext *e,
                                     VkFormat fmt);
 
 /**
+ * Sets an image descriptor for specified shader and binding.
+ */
+int ff_vk_set_descriptor_image(FFVulkanContext *s, FFVulkanShader *shd,
+                               FFVkExecContext *e, int set, int bind, int offs,
+                               VkImageView view, VkImageLayout layout,
+                               VkSampler sampler);
+
+/**
  * Update a descriptor in a buffer with an image array..
  * Must be called before binding the shader.
  */
