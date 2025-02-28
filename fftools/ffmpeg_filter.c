@@ -2041,6 +2041,10 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
             if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE) {
                 sub2video_frame(&ifp->ifilter, tmp, !fgt->graph);
             } else {
+                if (ifp->type_src == AVMEDIA_TYPE_VIDEO) {
+                    if (ifp->displaymatrix_applied)
+                        av_frame_remove_side_data(tmp, AV_FRAME_DATA_DISPLAYMATRIX);
+                }
                 ret = av_buffersrc_add_frame(ifp->filter, tmp);
             }
             av_frame_free(&tmp);
