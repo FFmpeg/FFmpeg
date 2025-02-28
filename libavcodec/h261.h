@@ -29,7 +29,6 @@
 #define AVCODEC_H261_H
 
 #include "mpegutils.h"
-#include "mpegvideo.h"
 #include "rl.h"
 
 /**
@@ -54,6 +53,7 @@ extern const uint16_t ff_h261_tcoeff_vlc[65][2];
 extern const int8_t ff_h261_tcoeff_level[64];
 extern const int8_t ff_h261_tcoeff_run[64];
 
-void ff_h261_loop_filter(MpegEncContext *s);
+struct MpegEncContext;
+void ff_h261_loop_filter(struct MpegEncContext *s);
 
 #endif /* AVCODEC_H261_H */
