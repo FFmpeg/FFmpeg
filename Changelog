@@ -2,6 +2,15 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 7.0.3:
+ doc/t2h: Support texinfo 7.1 and 7.2 pretest
+ avformat/iamf_parse: ensure there's at most one of each parameter types in audio elements
+ avformat/iamf_parse: add missing constrains for num_parameters in audio_element_oub()
+ avformat/iamf_parse: add missing av_free() call on failure path
+ avformat/iamf_writer: ensure the stream groups are not empty
+ avformat/iamf_writer: fix setting num_samples_per_frame for OPUS
+ avformat/iamf_parse: fix setting duration for the last subblock in a parameter definition
+ avformat/iamf_parse: add checks to parameter definition durations
+ avformat/iamfdec: don't set individual streams as dependent
  avformat/iff: Check that we have a stream in read_dst_frame()
  avformat/mlvdec: fix size checks
  avformat/wavdec: Fix overflow of intermediate in block_align check
