@@ -2118,7 +2118,7 @@ static const AVOption options[] = {
      "defined in the section 'Expression Evaluation', the following functions are available: "
      "bits2qp(bits), qp2bits(qp). Also the following constants are available: iTex pTex tex mv "
      "fCode iCount mcVar var isI isP isB avgQP qComp avgIITex avgPITex avgPPTex avgBPTex avgTex.",
-                                                                                  OFFSET(m.rc_eq), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
+                                                                                  OFFSET(m.rc_context.rc_eq), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VE },
     { NULL },
 };
 
