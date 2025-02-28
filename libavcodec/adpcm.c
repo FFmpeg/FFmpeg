@@ -740,6 +740,27 @@ static inline int16_t adpcm_mtaf_expand_nibble(ADPCMChannelStatus *c, uint8_t ni
     return c->predictor;
 }
 
+static inline int16_t adpcm_circus_expand_nibble(ADPCMChannelStatus *c, uint8_t nibble)
+{
+    int32_t sample = c->predictor;
+    int32_t scale = c->step;
+    int32_t code = sign_extend(nibble, 8);
+
+    sample += code * (1 << scale);
+    if (code == 0) {
+        scale--;
+    } else if (code == 127 || code == -128) {
+        scale++;
+    }
+    scale = av_clip(scale, 0, 8);
+    sample = av_clip_int16(sample);
+
+    c->predictor = sample;
+    c->step = scale;
+
+    return sample;
+}
+
 static inline int16_t adpcm_zork_expand_nibble(ADPCMChannelStatus *c, uint8_t nibble)
 {
     int16_t index = c->step_index;
@@ -1365,6 +1386,7 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
     case AV_CODEC_ID_ADPCM_ARGO:
         nb_samples = buf_size / avctx->block_align * 32;
         break;
+    case AV_CODEC_ID_ADPCM_CIRCUS:
     case AV_CODEC_ID_ADPCM_ZORK:
         nb_samples = buf_size / ch;
         break;
@@ -2796,6 +2818,14 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             }
         }
         ) /* End of CASE */
+    CASE(ADPCM_CIRCUS,
+        for (int n = 0; n < nb_samples; n++) {
+            for (int ch = 0; ch < channels; ch++) {
+                int v = bytestream2_get_byteu(&gb);
+                *samples++ = adpcm_circus_expand_nibble(&c->status[ch], v);
+            }
+        }
+        ) /* End of CASE */
     CASE(ADPCM_ZORK,
         for (int n = 0; n < nb_samples * channels; n++) {
             int v = bytestream2_get_byteu(&gb);
@@ -2909,6 +2939,7 @@ ADPCM_DECODER(ADPCM_AFC,         sample_fmts_s16p, adpcm_afc,         "ADPCM Nin
 ADPCM_DECODER(ADPCM_AGM,         sample_fmts_s16,  adpcm_agm,         "ADPCM AmuseGraphics Movie")
 ADPCM_DECODER(ADPCM_AICA,        sample_fmts_s16p, adpcm_aica,        "ADPCM Yamaha AICA")
 ADPCM_DECODER(ADPCM_ARGO,        sample_fmts_s16p, adpcm_argo,        "ADPCM Argonaut Games")
+ADPCM_DECODER(ADPCM_CIRCUS,      sample_fmts_s16,  adpcm_circus,      "ADPCM Circus")
 ADPCM_DECODER(ADPCM_CT,          sample_fmts_s16,  adpcm_ct,          "ADPCM Creative Technology")
 ADPCM_DECODER(ADPCM_DTK,         sample_fmts_s16p, adpcm_dtk,         "ADPCM Nintendo Gamecube DTK")
 ADPCM_DECODER(ADPCM_EA,          sample_fmts_s16,  adpcm_ea,          "ADPCM Electronic Arts")

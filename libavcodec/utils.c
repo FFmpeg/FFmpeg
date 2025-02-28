@@ -488,6 +488,7 @@ int av_get_exact_bits_per_sample(enum AVCodecID codec_id)
     case AV_CODEC_ID_CBD2_DPCM:
     case AV_CODEC_ID_DERF_DPCM:
     case AV_CODEC_ID_WADY_DPCM:
+    case AV_CODEC_ID_ADPCM_CIRCUS:
         return 8;
     case AV_CODEC_ID_PCM_S16BE:
     case AV_CODEC_ID_PCM_S16BE_PLANAR:
