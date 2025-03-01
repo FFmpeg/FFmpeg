@@ -29,6 +29,7 @@
 
 #define UNCHECKED_BITSTREAM_READER 1
 #include <inttypes.h>
+#include <stdatomic.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/emms.h"
@@ -46,7 +47,6 @@
 #include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "idctdsp.h"
-#include "internal.h"
 #include "mpeg_er.h"
 #include "mpeg12.h"
 #include "mpeg12codecs.h"
@@ -2252,6 +2252,7 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                 if (HAVE_THREADS &&
                     (avctx->active_thread_type & FF_THREAD_SLICE) &&
                     !avctx->hwaccel) {
+                    int error_count = 0;
                     int i;
                     av_assert0(avctx->thread_count > 1);
 
@@ -2259,7 +2260,10 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                                    &s2->thread_context[0], NULL,
                                    s->slice_count, sizeof(void *));
                     for (i = 0; i < s->slice_count; i++)
-                        s2->er.error_count += s2->thread_context[i]->er.error_count;
+                        error_count += atomic_load_explicit(&s2->thread_context[i]->er.error_count,
+                                                            memory_order_relaxed);
+                    atomic_store_explicit(&s2->er.error_count, error_count,
+                                          memory_order_relaxed);
                 }
 
                 ret = slice_end(avctx, picture, got_output);
@@ -2321,13 +2325,17 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
             }
             if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) &&
                 !avctx->hwaccel && s->slice_count) {
+                int error_count = 0;
                 int i;
 
                 avctx->execute(avctx, slice_decode_thread,
                                s2->thread_context, NULL,
                                s->slice_count, sizeof(void *));
                 for (i = 0; i < s->slice_count; i++)
-                    s2->er.error_count += s2->thread_context[i]->er.error_count;
+                    error_count += atomic_load_explicit(&s2->thread_context[i]->er.error_count,
+                                                        memory_order_relaxed);
+                atomic_store_explicit(&s2->er.error_count, error_count,
+                                      memory_order_relaxed);
                 s->slice_count = 0;
             }
             if (last_code == 0 || last_code == SLICE_MIN_START_CODE) {
