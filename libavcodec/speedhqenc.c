@@ -112,6 +112,20 @@ static av_cold int speedhq_encode_init(AVCodecContext *avctx)
         return AVERROR_PATCHWELCOME;
     }
 
+    switch (avctx->pix_fmt) {
+    case AV_PIX_FMT_YUV420P:
+        avctx->codec_tag = MKTAG('S','H','Q','0');
+        break;
+    case AV_PIX_FMT_YUV422P:
+        avctx->codec_tag = MKTAG('S','H','Q','2');
+        break;
+    case AV_PIX_FMT_YUV444P:
+        avctx->codec_tag = MKTAG('S','H','Q','4');
+        break;
+    default:
+        av_assert0(0);
+    }
+
     s->min_qcoeff = -2048;
     s->max_qcoeff = 2047;
 
@@ -128,20 +142,6 @@ static av_cold int speedhq_encode_init(AVCodecContext *avctx)
         return ret;
 
     ff_thread_once(&init_static_once, speedhq_init_static_data);
-
-    switch (s->avctx->pix_fmt) {
-    case AV_PIX_FMT_YUV420P:
-        s->avctx->codec_tag = MKTAG('S','H','Q','0');
-        break;
-    case AV_PIX_FMT_YUV422P:
-        s->avctx->codec_tag = MKTAG('S','H','Q','2');
-        break;
-    case AV_PIX_FMT_YUV444P:
-        s->avctx->codec_tag = MKTAG('S','H','Q','4');
-        break;
-    default:
-        av_assert0(0);
-    }
 
     return 0;
 }
