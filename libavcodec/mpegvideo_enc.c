@@ -897,6 +897,18 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
                                                 AV_CODEC_FLAG_INTERLACED_ME) ||
                                 s->alternate_scan);
 
+    if (avctx->flags & AV_CODEC_FLAG_PSNR || avctx->mb_decision == FF_MB_DECISION_RD ||
+        s->frame_skip_threshold || s->frame_skip_factor) {
+        s->frame_reconstruction_bitfield = (1 << AV_PICTURE_TYPE_I) |
+                                           (1 << AV_PICTURE_TYPE_P) |
+                                           (1 << AV_PICTURE_TYPE_B);
+    } else if (!s->intra_only) {
+        s->frame_reconstruction_bitfield = (1 << AV_PICTURE_TYPE_I) |
+                                           (1 << AV_PICTURE_TYPE_P);
+    } else {
+        s->frame_reconstruction_bitfield = 0;
+    }
+
     if (s->lmin > s->lmax) {
         av_log(avctx, AV_LOG_WARNING, "Clipping lmin value to %d\n", s->lmax);
         s->lmin = s->lmax;
@@ -1122,9 +1134,7 @@ static void mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
        }
     }
 
-    if ((s->avctx->flags & AV_CODEC_FLAG_PSNR) || s->frame_skip_threshold || s->frame_skip_factor ||
-        !((s->intra_only || s->pict_type == AV_PICTURE_TYPE_B) &&
-          s->avctx->mb_decision != FF_MB_DECISION_RD)) { // FIXME precalc
+    if ((1 << s->pict_type) & s->frame_reconstruction_bitfield) {
         uint8_t *dest_y = s->dest[0], *dest_cb = s->dest[1], *dest_cr = s->dest[2];
         int dct_linesize, dct_offset;
         const int linesize   = s->cur_pic.linesize[0];

@@ -499,6 +499,9 @@ typedef struct MpegEncContext {
     int lmin, lmax;
     int vbv_ignore_qmax;
 
+    /// Bitfield containing information which frames to reconstruct.
+    int frame_reconstruction_bitfield;
+
     /* flag to indicate a reinitialization is required, e.g. after
      * a frame size change */
     int context_reinit;
