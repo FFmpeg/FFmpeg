@@ -994,9 +994,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->dct_unquantize_inter = s->dct_unquantize_mpeg1_inter;
     }
 
-    if ((CONFIG_H263P_ENCODER || CONFIG_RV20_ENCODER) && s->modified_quant)
-        s->chroma_qscale_table = ff_h263_chroma_qscale_table;
-
     if (s->slice_context_count > 1) {
         s->rtp_mode = 1;
 

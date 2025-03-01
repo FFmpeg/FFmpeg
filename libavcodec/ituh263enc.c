@@ -834,6 +834,9 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
     }
     s->ac_esc_length= 7+1+6+8;
 
+    if (s->modified_quant)
+        s->chroma_qscale_table = ff_h263_chroma_qscale_table;
+
     // use fcodes >1 only for MPEG-4 & H.263 & H.263+ FIXME
     switch(s->codec_id){
     case AV_CODEC_ID_MPEG4:
