@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2025-01-09 - xxxxxxxxxx - lavu 59.55.100 - pixfmt.h
+  Add AV_PIX_FMT_GBRPF16BE, AV_PIX_FMT_GBRPF16LE, AV_PIX_FMT_GBRAPF16BE,
+  AV_PIX_FMT_GBRAPF16LE, AV_PIX_FMT_GRAYF16BE, and AV_PIX_FMT_GRAYF16LE.
+
 2025-02-xx - xxxxxxxxxx - lavu 59.57.100 - log.h
   Add flags AV_LOG_PRINT_TIME and AV_LOG_PRINT_DATETIME.
 
