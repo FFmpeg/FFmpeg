@@ -774,10 +774,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_SPEEDHQ:
         s->out_format = FMT_SPEEDHQ;
         s->intra_only = 1; /* force intra only for SHQ */
-        if (!CONFIG_SPEEDHQ_ENCODER)
-            return AVERROR_ENCODER_NOT_FOUND;
-        if ((ret = ff_speedhq_encode_init(s)) < 0)
-            return ret;
         avctx->delay = 0;
         s->low_delay = 1;
         break;
