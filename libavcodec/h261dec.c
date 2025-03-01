@@ -155,6 +155,7 @@ static int h261_decode_gob_header(H261DecContext *h)
         av_log(s->avctx, AV_LOG_ERROR, "qscale has forbidden 0 value\n");
         if (s->avctx->err_recognition & (AV_EF_BITSTREAM | AV_EF_COMPLIANT))
             return -1;
+        s->qscale = 1;
     }
 
     /* For the first transmitted macroblock in a GOB, MBA is the absolute
@@ -380,8 +381,11 @@ static int h261_decode_mb(H261DecContext *h)
     }
 
     // Read mquant
-    if (IS_QUANT(com->mtype))
-        ff_set_qscale(s, get_bits(&s->gb, 5));
+    if (IS_QUANT(com->mtype)) {
+        s->qscale = get_bits(&s->gb, 5);
+        if (!s->qscale)
+            s->qscale = 1;
+    }
 
     s->mb_intra = IS_INTRA4x4(com->mtype);
 
@@ -510,8 +514,6 @@ static int h261_decode_picture_header(H261DecContext *h)
 static int h261_decode_gob(H261DecContext *h)
 {
     MpegEncContext *const s = &h->s;
-
-    ff_set_qscale(s, s->qscale);
 
     /* decode mb's */
     while (h->current_mba <= MBA_STUFFING) {
