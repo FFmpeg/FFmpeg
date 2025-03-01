@@ -307,8 +307,9 @@ av_cold void ff_dct_encode_init(MpegEncContext *s)
         s->dct_quantize  = dct_quantize_trellis_c;
 }
 
-static av_cold int me_cmp_init(MpegEncContext *s, AVCodecContext *avctx)
+static av_cold int me_cmp_init(MPVMainEncContext *const m, AVCodecContext *avctx)
 {
+    MpegEncContext *const s = &m->s;
     MECmpContext mecc;
     me_cmp_func me_cmp[6];
     int ret;
@@ -317,10 +318,10 @@ static av_cold int me_cmp_init(MpegEncContext *s, AVCodecContext *avctx)
     ret = ff_me_init(&s->me, avctx, &mecc, 1);
     if (ret < 0)
         return ret;
-    ret = ff_set_cmp(&mecc, me_cmp, s->frame_skip_cmp, 1);
+    ret = ff_set_cmp(&mecc, me_cmp, m->frame_skip_cmp, 1);
     if (ret < 0)
         return ret;
-    s->frame_skip_cmp_fn = me_cmp[1];
+    m->frame_skip_cmp_fn = me_cmp[1];
     if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
         ret = ff_set_cmp(&mecc, me_cmp, avctx->ildct_cmp, 1);
         if (ret < 0)
@@ -898,7 +899,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
                                 s->alternate_scan);
 
     if (avctx->flags & AV_CODEC_FLAG_PSNR || avctx->mb_decision == FF_MB_DECISION_RD ||
-        s->frame_skip_threshold || s->frame_skip_factor) {
+        m->frame_skip_threshold || m->frame_skip_factor) {
         s->frame_reconstruction_bitfield = (1 << AV_PICTURE_TYPE_I) |
                                            (1 << AV_PICTURE_TYPE_P) |
                                            (1 << AV_PICTURE_TYPE_B);
@@ -922,7 +923,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     ff_fdctdsp_init(&s->fdsp, avctx);
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
     ff_pixblockdsp_init(&s->pdsp, avctx);
-    ret = me_cmp_init(s, avctx);
+    ret = me_cmp_init(m, avctx);
     if (ret < 0)
         return ret;
 
@@ -1402,8 +1403,10 @@ fail:
     return ret;
 }
 
-static int skip_check(MpegEncContext *s, const MPVPicture *p, const MPVPicture *ref)
+static int skip_check(MPVMainEncContext *const m,
+                      const MPVPicture *p, const MPVPicture *ref)
 {
+    MpegEncContext *const s = &m->s;
     int x, y, plane;
     int score = 0;
     int64_t score64 = 0;
@@ -1416,9 +1419,9 @@ static int skip_check(MpegEncContext *s, const MPVPicture *p, const MPVPicture *
                 int off = p->shared ? 0 : 16;
                 const uint8_t *dptr = p->f->data[plane] + 8 * (x + y * stride) + off;
                 const uint8_t *rptr = ref->f->data[plane] + 8 * (x + y * stride);
-                int v = s->frame_skip_cmp_fn(s, dptr, rptr, stride, 8);
+                int v = m->frame_skip_cmp_fn(s, dptr, rptr, stride, 8);
 
-                switch (FFABS(s->frame_skip_exp)) {
+                switch (FFABS(m->frame_skip_exp)) {
                 case 0: score    =  FFMAX(score, v);          break;
                 case 1: score   += FFABS(v);                  break;
                 case 2: score64 += v * (int64_t)v;                       break;
@@ -1432,13 +1435,13 @@ static int skip_check(MpegEncContext *s, const MPVPicture *p, const MPVPicture *
 
     if (score)
         score64 = score;
-    if (s->frame_skip_exp < 0)
+    if (m->frame_skip_exp < 0)
         score64 = pow(score64 / (double)(s->mb_width * s->mb_height),
-                      -1.0/s->frame_skip_exp);
+                      -1.0/m->frame_skip_exp);
 
-    if (score64 < s->frame_skip_threshold)
+    if (score64 < m->frame_skip_threshold)
         return 1;
-    if (score64 < ((s->frame_skip_factor * (int64_t) s->lambda) >> 8))
+    if (score64 < ((m->frame_skip_factor * (int64_t) s->lambda) >> 8))
         return 1;
     return 0;
 }
@@ -1626,10 +1629,10 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
         return 0;
 
     /* set next picture type & ordering */
-    if (s->frame_skip_threshold || s->frame_skip_factor) {
+    if (m->frame_skip_threshold || m->frame_skip_factor) {
         if (s->picture_in_gop_number < s->gop_size &&
             s->next_pic.ptr &&
-            skip_check(s, s->input_picture[0], s->next_pic.ptr)) {
+            skip_check(m, s->input_picture[0], s->next_pic.ptr)) {
             // FIXME check that the gop check above is +-1 correct
             av_refstruct_unref(&s->input_picture[0]);
 

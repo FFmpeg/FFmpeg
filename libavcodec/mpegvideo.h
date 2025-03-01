@@ -510,13 +510,6 @@ typedef struct MpegEncContext {
 
     int error_rate;
 
-    /* frame skip options for encoding */
-    int frame_skip_threshold;
-    int frame_skip_factor;
-    int frame_skip_exp;
-    int frame_skip_cmp;
-    me_cmp_func frame_skip_cmp_fn;
-
     int scenechange_threshold;
     int noise_reduction;
 
