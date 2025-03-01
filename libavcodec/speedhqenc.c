@@ -100,13 +100,13 @@ av_cold int ff_speedhq_encode_init(MpegEncContext *s)
     static AVOnce init_static_once = AV_ONCE_INIT;
 
     if (s->width > 65500 || s->height > 65500) {
-        av_log(s, AV_LOG_ERROR, "SpeedHQ does not support resolutions above 65500x65500\n");
+        av_log(s->avctx, AV_LOG_ERROR, "SpeedHQ does not support resolutions above 65500x65500\n");
         return AVERROR(EINVAL);
     }
 
     // border is not implemented correctly at the moment, see ticket #10078
     if (s->width % 16) {
-        av_log(s, AV_LOG_ERROR, "width must be a multiple of 16\n");
+        av_log(s->avctx, AV_LOG_ERROR, "width must be a multiple of 16\n");
         return AVERROR_PATCHWELCOME;
     }
 
