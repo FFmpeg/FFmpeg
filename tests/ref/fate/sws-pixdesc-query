@@ -176,6 +176,7 @@ isBE:
   gray12be
   gray14be
   gray16be
+  gray32be
   gray9be
   grayf16be
   grayf32be
@@ -595,6 +596,8 @@ Gray:
   gray14le
   gray16be
   gray16le
+  gray32be
+  gray32le
   gray9be
   gray9le
   grayf16be
