@@ -778,11 +778,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->low_delay = 1;
         break;
     case AV_CODEC_ID_H261:
-        if (!CONFIG_H261_ENCODER)
-            return AVERROR_ENCODER_NOT_FOUND;
-        ret = ff_h261_encode_init(s);
-        if (ret < 0)
-            return ret;
         s->out_format = FMT_H261;
         avctx->delay  = 0;
         s->low_delay  = 1;
