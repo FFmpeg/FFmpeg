@@ -541,6 +541,8 @@ static int h263_decode_block(MpegEncContext * s, int16_t * block,
 
     scan_table = s->intra_scantable.permutated;
     if (s->h263_aic && s->mb_intra) {
+        if (!coded)
+            goto not_coded;
         rl = &ff_rl_intra_aic;
         i = 0;
         if (s->ac_pred) {
@@ -587,8 +589,6 @@ static int h263_decode_block(MpegEncContext * s, int16_t * block,
         i = 0;
     }
     if (!coded) {
-        if (s->mb_intra && s->h263_aic)
-            goto not_coded;
         s->block_last_index[n] = i - 1;
         return 0;
     }
@@ -669,8 +669,8 @@ retry:
         block[j] = level;
     }
     }
-not_coded:
     if (s->mb_intra && s->h263_aic) {
+not_coded:
         h263_pred_acdc(s, block, n);
         i = 63;
     }
