@@ -3250,6 +3250,12 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
         } else
             s->alternate_scan = 0;
     }
+    /* Skip at this point when only parsing since the remaining
+     * data is not useful for a parser and requires the
+     * sprite_trajectory VLC to be initialized. */
+    if (parse_only)
+        goto end;
+
     if (s->alternate_scan) {
         ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,   ff_alternate_vertical_scan);
         ff_permute_scantable(s->permutated_intra_h_scantable, ff_alternate_vertical_scan,
@@ -3261,12 +3267,6 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
     }
     ff_permute_scantable(s->permutated_intra_v_scantable, ff_alternate_vertical_scan,
                          s->idsp.idct_permutation);
-
-    /* Skip at this point when only parsing since the remaining
-     * data is not useful for a parser and requires the
-     * sprite_trajectory VLC to be initialized. */
-    if (parse_only)
-        goto end;
 
     if (s->pict_type == AV_PICTURE_TYPE_S) {
         if((ctx->vol_sprite_usage == STATIC_SPRITE ||
