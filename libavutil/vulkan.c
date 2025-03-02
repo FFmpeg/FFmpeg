@@ -2355,10 +2355,10 @@ static inline void update_set_pool_write(FFVulkanContext *s, FFVkExecContext *e,
     }
 }
 
-int ff_vk_set_descriptor_image(FFVulkanContext *s, FFVulkanShader *shd,
-                               FFVkExecContext *e, int set, int bind, int offs,
-                               VkImageView view, VkImageLayout layout,
-                               VkSampler sampler)
+int ff_vk_shader_update_img(FFVulkanContext *s, FFVkExecContext *e,
+                            FFVulkanShader *shd, int set, int bind, int offs,
+                            VkImageView view, VkImageLayout layout,
+                            VkSampler sampler)
 {
     FFVulkanDescriptorSet *desc_set = &shd->desc_set[set];
 
@@ -2418,6 +2418,19 @@ int ff_vk_set_descriptor_image(FFVulkanContext *s, FFVulkanShader *shd,
     }
 
     return 0;
+}
+
+void ff_vk_shader_update_img_array(FFVulkanContext *s, FFVkExecContext *e,
+                                   FFVulkanShader *shd, AVFrame *f,
+                                   VkImageView *views, int set, int binding,
+                                   VkImageLayout layout, VkSampler sampler)
+{
+    AVHWFramesContext *hwfc = (AVHWFramesContext *)f->hw_frames_ctx->data;
+    const int nb_planes = av_pix_fmt_count_planes(hwfc->sw_format);
+
+    for (int i = 0; i < nb_planes; i++)
+        ff_vk_shader_update_img(s, e, shd, set, binding, i,
+                                views[i], layout, sampler);
 }
 
 int ff_vk_shader_update_desc_buffer(FFVulkanContext *s, FFVkExecContext *e,
@@ -2484,19 +2497,6 @@ int ff_vk_shader_update_desc_buffer(FFVulkanContext *s, FFVkExecContext *e,
     }
 
     return 0;
-}
-
-void ff_vk_shader_update_img_array(FFVulkanContext *s, FFVkExecContext *e,
-                                   FFVulkanShader *shd, AVFrame *f,
-                                   VkImageView *views, int set, int binding,
-                                   VkImageLayout layout, VkSampler sampler)
-{
-    AVHWFramesContext *hwfc = (AVHWFramesContext *)f->hw_frames_ctx->data;
-    const int nb_planes = av_pix_fmt_count_planes(hwfc->sw_format);
-
-    for (int i = 0; i < nb_planes; i++)
-        ff_vk_set_descriptor_image(s, shd, e, set, binding, i,
-                                   views[i], layout, sampler);
 }
 
 void ff_vk_shader_update_push_const(FFVulkanContext *s, FFVkExecContext *e,
