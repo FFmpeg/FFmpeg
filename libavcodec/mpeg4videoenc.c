@@ -1305,6 +1305,15 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     ff_thread_once(&init_static_once, mpeg4_encode_init_static);
 
+    if (avctx->time_base.den > (1 << 16) - 1) {
+        av_log(avctx, AV_LOG_ERROR,
+               "timebase %d/%d not supported by MPEG 4 standard, "
+               "the maximum admitted value for the timebase denominator "
+               "is %d\n", avctx->time_base.num, avctx->time_base.den,
+               (1 << 16) - 1);
+        return AVERROR(EINVAL);
+    }
+
     m4->time_increment_bits     = av_log2(avctx->time_base.den - 1) + 1;
 
     s->fcode_tab                = fcode_tab + MAX_MV;

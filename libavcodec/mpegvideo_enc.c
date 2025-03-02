@@ -737,16 +737,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     av_log(avctx, AV_LOG_DEBUG, "intra_quant_bias = %d inter_quant_bias = %d\n",s->intra_quant_bias,s->inter_quant_bias);
 
-    if (avctx->codec_id == AV_CODEC_ID_MPEG4 &&
-        avctx->time_base.den > (1 << 16) - 1) {
-        av_log(avctx, AV_LOG_ERROR,
-               "timebase %d/%d not supported by MPEG 4 standard, "
-               "the maximum admitted value for the timebase denominator "
-               "is %d\n", avctx->time_base.num, avctx->time_base.den,
-               (1 << 16) - 1);
-        return AVERROR(EINVAL);
-    }
-
     switch (avctx->codec->id) {
 #if CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER
     case AV_CODEC_ID_MPEG2VIDEO:
