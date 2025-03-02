@@ -2,6 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 7.1.1:
+ avformat/hls: Partially revert "reduce default max reload to 3"
+ avformat/mov: (v4) fix get_eia608_packet
  avformat/iff: Check that we have a stream in read_dst_frame()
  avcodec/aac/aacdec_lpd: Limit get_unary()
  avcodec/aac/aacdec_usac: Simplify decode_usac_scale_factors()
