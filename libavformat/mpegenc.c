@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/attributes_internal.h"
 #include "libavutil/fifo.h"
 #include "libavutil/log.h"
 #include "libavutil/mathematics.h"
@@ -88,10 +89,10 @@ typedef struct MpegMuxContext {
     int preload;
 } MpegMuxContext;
 
-extern const FFOutputFormat ff_mpeg1vcd_muxer;
-extern const FFOutputFormat ff_mpeg2dvd_muxer;
-extern const FFOutputFormat ff_mpeg2svcd_muxer;
-extern const FFOutputFormat ff_mpeg2vob_muxer;
+EXTERN const FFOutputFormat ff_mpeg1vcd_muxer;
+EXTERN const FFOutputFormat ff_mpeg2dvd_muxer;
+EXTERN const FFOutputFormat ff_mpeg2svcd_muxer;
+EXTERN const FFOutputFormat ff_mpeg2vob_muxer;
 
 static int put_pack_header(AVFormatContext *ctx, uint8_t *buf,
                            int64_t timestamp)

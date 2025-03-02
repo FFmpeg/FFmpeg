@@ -40,6 +40,7 @@
 #include <inttypes.h>
 #include <time.h>
 
+#include "libavutil/attributes_internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
@@ -66,8 +67,8 @@
 #include "config.h"
 #include "version.h"
 
-extern const FFOutputFormat ff_mxf_d10_muxer;
-extern const FFOutputFormat ff_mxf_opatom_muxer;
+EXTERN const FFOutputFormat ff_mxf_d10_muxer;
+EXTERN const FFOutputFormat ff_mxf_opatom_muxer;
 
 #define IS_D10(s)    ((s)->oformat == &ff_mxf_d10_muxer.p)
 #define IS_OPATOM(s) ((s)->oformat == &ff_mxf_opatom_muxer.p)
