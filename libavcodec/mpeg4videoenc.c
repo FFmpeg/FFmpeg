@@ -806,8 +806,14 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
         const uint8_t *scan_table[6];
         int i;
 
-        for (i = 0; i < 6; i++)
-            dc_diff[i] = ff_mpeg4_pred_dc(s, i, block[i][0], &dir[i], 1);
+        for (int i = 0; i < 6; i++) {
+            int pred  = ff_mpeg4_pred_dc(s, i, &dir[i]);
+            int scale = i < 4 ? s->y_dc_scale : s->c_dc_scale;
+
+            pred = FASTDIV((pred + (scale >> 1)), scale);
+            dc_diff[i] = block[i][0] - pred;
+            s->dc_val[0][s->block_index[i]] = av_clip_uintp2(block[i][0] * scale, 11);
+        }
 
         if (s->avctx->flags & AV_CODEC_FLAG_AC_PRED) {
             s->ac_pred = decide_ac_pred(s, block, dir, scan_table, zigzag_last_index);

@@ -880,6 +880,43 @@ static inline int get_amv(Mpeg4DecContext *ctx, int n)
     return sum;
 }
 
+static inline int mpeg4_get_level_dc(MpegEncContext *s, int n, int pred, int level)
+{
+    int scale = n < 4 ? s->y_dc_scale : s->c_dc_scale;
+    int ret;
+
+    if (IS_3IV1)
+        scale = 8;
+
+    /* we assume pred is positive */
+    pred = FASTDIV((pred + (scale >> 1)), scale);
+
+    level += pred;
+    ret    = level;
+    level *= scale;
+    if (level & (~2047)) {
+        if (s->avctx->err_recognition & (AV_EF_BITSTREAM | AV_EF_AGGRESSIVE)) {
+            if (level < 0) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "dc<0 at %dx%d\n", s->mb_x, s->mb_y);
+                return AVERROR_INVALIDDATA;
+            }
+            if (level > 2048 + scale) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "dc overflow at %dx%d\n", s->mb_x, s->mb_y);
+                return AVERROR_INVALIDDATA;
+            }
+        }
+        if (level < 0)
+            level = 0;
+        else if (!(s->workaround_bugs & FF_BUG_DC_CLIP))
+            level = 2047;
+    }
+    s->dc_val[0][s->block_index[n]] = level;
+
+    return ret;
+}
+
 /**
  * Decode the dc value.
  * @param n block index (0-3 are luma, 4-5 are chroma)
@@ -888,7 +925,7 @@ static inline int get_amv(Mpeg4DecContext *ctx, int n)
  */
 static inline int mpeg4_decode_dc(MpegEncContext *s, int n, int *dir_ptr)
 {
-    int level, code;
+    int level, code, pred;
 
     if (n < 4)
         code = get_vlc2(&s->gb, dc_lum, DC_VLC_BITS, 1);
@@ -926,7 +963,8 @@ static inline int mpeg4_decode_dc(MpegEncContext *s, int n, int *dir_ptr)
         }
     }
 
-    return ff_mpeg4_pred_dc(s, n, level, dir_ptr, 0);
+    pred = ff_mpeg4_pred_dc(s, n, dir_ptr);
+    return mpeg4_get_level_dc(s, n, pred, level);
 }
 
 /**
@@ -1290,7 +1328,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
                                      int use_intra_dc_vlc, int rvlc)
 {
     MpegEncContext *s = &ctx->m;
-    int level, i, last, run, qmul, qadd;
+    int level, i, last, run, qmul, qadd, pred;
     int av_uninit(dc_pred_dir);
     const RLTable *rl;
     const RL_VLC_ELEM *rl_vlc;
@@ -1317,7 +1355,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
             i        = 0;
         } else {
             i = -1;
-            ff_mpeg4_pred_dc(s, n, 0, &dc_pred_dir, 0);
+            pred = ff_mpeg4_pred_dc(s, n, &dc_pred_dir);
         }
         if (!coded)
             goto not_coded;
@@ -1540,7 +1578,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
 not_coded:
     if (intra) {
         if (!use_intra_dc_vlc) {
-            block[0] = ff_mpeg4_pred_dc(s, n, block[0], &dc_pred_dir, 0);
+            block[0] = mpeg4_get_level_dc(s, n, pred, block[0]);
 
             i -= i >> 31;  // if (i == -1) i = 0;
         }

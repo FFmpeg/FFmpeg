@@ -44,24 +44,15 @@ int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);
 
 /**
  * Predict the dc.
- * encoding quantized level -> quantized diff
- * decoding quantized diff -> quantized level
  * @param n block index (0-3 are luma, 4-5 are chroma)
  * @param dir_ptr pointer to an integer where the prediction direction will be stored
  */
-static inline int ff_mpeg4_pred_dc(MpegEncContext *s, int n, int level,
-                                   int *dir_ptr, int encoding)
+static inline int ff_mpeg4_pred_dc(MpegEncContext *s, int n, int *dir_ptr)
 {
-    int a, b, c, wrap, pred, scale, ret;
-    int16_t *dc_val;
+    int a, b, c, wrap, pred;
+    const int16_t *dc_val;
 
     /* find prediction */
-    if (n < 4)
-        scale = s->y_dc_scale;
-    else
-        scale = s->c_dc_scale;
-    if (IS_3IV1)
-        scale = 8;
 
     wrap   = s->block_wrap[n];
     dc_val = s->dc_val[0] + s->block_index[n];
@@ -93,37 +84,7 @@ static inline int ff_mpeg4_pred_dc(MpegEncContext *s, int n, int level,
         pred     = a;
         *dir_ptr = 0; /* left */
     }
-    /* we assume pred is positive */
-    pred = FASTDIV((pred + (scale >> 1)), scale);
-
-    if (encoding) {
-        ret = level - pred;
-    } else {
-        level += pred;
-        ret    = level;
-    }
-    level *= scale;
-    if (level & (~2047)) {
-        if (!s->encoding && (s->avctx->err_recognition & (AV_EF_BITSTREAM | AV_EF_AGGRESSIVE))) {
-            if (level < 0) {
-                av_log(s->avctx, AV_LOG_ERROR,
-                       "dc<0 at %dx%d\n", s->mb_x, s->mb_y);
-                return AVERROR_INVALIDDATA;
-            }
-            if (level > 2048 + scale) {
-                av_log(s->avctx, AV_LOG_ERROR,
-                       "dc overflow at %dx%d\n", s->mb_x, s->mb_y);
-                return AVERROR_INVALIDDATA;
-            }
-        }
-        if (level < 0)
-            level = 0;
-        else if (!(s->workaround_bugs & FF_BUG_DC_CLIP))
-            level = 2047;
-    }
-    dc_val[0] = level;
-
-    return ret;
+    return pred;
 }
 
 #endif /* AVCODEC_MPEG4VIDEO_H */
