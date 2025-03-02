@@ -746,7 +746,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
                (1 << 16) - 1);
         return AVERROR(EINVAL);
     }
-    s->time_increment_bits = av_log2(avctx->time_base.den - 1) + 1;
 
     switch (avctx->codec->id) {
 #if CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER
@@ -3919,7 +3918,7 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
             ff_msmpeg4_encode_picture_header(s);
 #endif
         else if (CONFIG_MPEG4_ENCODER && s->h263_pred) {
-            ret = ff_mpeg4_encode_picture_header(s);
+            ret = ff_mpeg4_encode_picture_header(m);
             if (ret < 0)
                 return ret;
         } else if (CONFIG_RV10_ENCODER && s->codec_id == AV_CODEC_ID_RV10) {

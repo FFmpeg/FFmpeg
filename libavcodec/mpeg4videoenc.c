@@ -71,6 +71,17 @@ static uint8_t  uni_mpeg4_inter_rl_len[64 * 64 * 2 * 2];
  * max run: 29/41
  */
 
+typedef struct Mpeg4EncContext {
+    MPVMainEncContext m;
+    /// number of bits to represent the fractional part of time
+    int time_increment_bits;
+} Mpeg4EncContext;
+
+static inline Mpeg4EncContext *mainctx_to_mpeg4(MPVMainEncContext *m)
+{
+    return (Mpeg4EncContext*)m;
+}
+
 /**
  * Return the number of bits that encoding the 8x8 block in block would need.
  * @param[in]  block_last_index last index in scantable order that refers to a non zero element in block.
@@ -960,10 +971,11 @@ static void mpeg4_encode_visual_object_header(MpegEncContext *s)
     ff_mpeg4_stuffing(&s->pb);
 }
 
-static void mpeg4_encode_vol_header(MpegEncContext *s,
+static void mpeg4_encode_vol_header(Mpeg4EncContext *const m4,
                                     int vo_number,
                                     int vol_number)
 {
+    MpegEncContext *const s = &m4->m.s;
     int vo_ver_id, vo_type, aspect_ratio_info;
 
     if (s->max_b_frames || s->quarter_sample) {
@@ -1002,8 +1014,8 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
     put_bits(&s->pb, 1, 1);             /* marker bit */
 
     put_bits(&s->pb, 16, s->avctx->time_base.den);
-    if (s->time_increment_bits < 1)
-        s->time_increment_bits = 1;
+    if (m4->time_increment_bits < 1)
+        m4->time_increment_bits = 1;
     put_bits(&s->pb, 1, 1);             /* marker bit */
     put_bits(&s->pb, 1, 0);             /* fixed vop rate=no */
     put_bits(&s->pb, 1, 1);             /* marker bit */
@@ -1050,8 +1062,10 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
 }
 
 /* write MPEG-4 VOP header */
-int ff_mpeg4_encode_picture_header(MpegEncContext *s)
+int ff_mpeg4_encode_picture_header(MPVMainEncContext *const m)
 {
+    Mpeg4EncContext *const m4 = mainctx_to_mpeg4(m);
+    MpegEncContext *const s = &m->s;
     uint64_t time_incr;
     int64_t time_div, time_mod;
 
@@ -1060,7 +1074,7 @@ int ff_mpeg4_encode_picture_header(MpegEncContext *s)
             if (s->avctx->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT)  // HACK, the reference sw is buggy
                 mpeg4_encode_visual_object_header(s);
             if (s->avctx->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT || s->picture_number == 0)  // HACK, the reference sw is buggy
-                mpeg4_encode_vol_header(s, 0, 0);
+                mpeg4_encode_vol_header(m4, 0, 0);
         }
         mpeg4_encode_gop_header(s);
     }
@@ -1085,7 +1099,7 @@ int ff_mpeg4_encode_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 1, 0);
 
     put_bits(&s->pb, 1, 1);                             /* marker */
-    put_bits(&s->pb, s->time_increment_bits, time_mod); /* time increment */
+    put_bits(&s->pb, m4->time_increment_bits, time_mod); /* time increment */
     put_bits(&s->pb, 1, 1);                             /* marker */
     put_bits(&s->pb, 1, 1);                             /* vop coded */
     if (s->pict_type == AV_PICTURE_TYPE_P) {
@@ -1276,7 +1290,8 @@ static av_cold void mpeg4_encode_init_static(void)
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
-    MpegEncContext *s = avctx->priv_data;
+    Mpeg4EncContext *const m4 = avctx->priv_data;
+    MpegEncContext  *const  s = &m4->m.s;
     int ret;
 
     if (avctx->width >= (1<<13) || avctx->height >= (1<<13)) {
@@ -1290,7 +1305,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     ff_thread_once(&init_static_once, mpeg4_encode_init_static);
 
+    m4->time_increment_bits     = av_log2(avctx->time_base.den - 1) + 1;
+
     s->fcode_tab                = fcode_tab + MAX_MV;
+
     s->min_qcoeff               = -2048;
     s->max_qcoeff               = 2047;
     s->intra_ac_vlc_length      = uni_mpeg4_intra_rl_len;
@@ -1309,7 +1327,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         init_put_bits(&s->pb, s->avctx->extradata, 1024);
 
         mpeg4_encode_visual_object_header(s);
-        mpeg4_encode_vol_header(s, 0, 0);
+        mpeg4_encode_vol_header(m4, 0, 0);
 
 //            ff_mpeg4_stuffing(&s->pb); ?
         flush_put_bits(&s->pb);
@@ -1395,7 +1413,7 @@ const FFCodec ff_mpeg4_encoder = {
     CODEC_LONG_NAME("MPEG-4 part 2"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MPEG4,
-    .priv_data_size = sizeof(MPVMainEncContext),
+    .priv_data_size = sizeof(Mpeg4EncContext),
     .init           = encode_init,
     FF_CODEC_ENCODE_CB(ff_mpv_encode_picture),
     .close          = ff_mpv_encode_end,
