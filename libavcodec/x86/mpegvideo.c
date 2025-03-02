@@ -26,6 +26,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/mpegvideo.h"
 #include "libavcodec/mpegvideodata.h"
+#include "libavcodec/mpegvideo_unquantize.h"
 
 #if HAVE_MMX_INLINE
 

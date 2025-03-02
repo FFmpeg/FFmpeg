@@ -362,11 +362,6 @@ typedef struct MpegEncContext {
 void ff_mpv_common_defaults(MpegEncContext *s);
 
 int ff_mpv_common_init(MpegEncContext *s);
-void ff_mpv_common_init_arm(MpegEncContext *s);
-void ff_mpv_common_init_neon(MpegEncContext *s);
-void ff_mpv_common_init_ppc(MpegEncContext *s);
-void ff_mpv_common_init_x86(MpegEncContext *s);
-void ff_mpv_common_init_mips(MpegEncContext *s);
 /**
  * Initialize an MpegEncContext's thread contexts. Presumes that
  * slice_context_count is already set and that all the fields

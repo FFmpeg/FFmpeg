@@ -32,6 +32,7 @@
 #endif
 
 #include "libavcodec/mpegvideo.h"
+#include "libavcodec/mpegvideo_unquantize.h"
 
 static void inline ff_dct_unquantize_h263_neon(int qscale, int qadd, int nCoeffs,
                                                int16_t *block)

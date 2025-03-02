@@ -20,6 +20,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/mips/cpu.h"
+#include "libavcodec/mpegvideo_unquantize.h"
 #include "h263dsp_mips.h"
 #include "mpegvideo_mips.h"
 
