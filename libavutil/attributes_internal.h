@@ -31,4 +31,6 @@
 #    define FF_VISIBILITY_POP_HIDDEN
 #endif
 
+#define EXTERN extern attribute_visibility_hidden
+
 #endif /* AVUTIL_ATTRIBUTES_INTERNAL_H */

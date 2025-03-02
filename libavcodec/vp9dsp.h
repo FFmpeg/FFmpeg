@@ -121,7 +121,7 @@ typedef struct VP9DSPContext {
     vp9_scaled_mc_func smc[5][N_FILTERS][2];
 } VP9DSPContext;
 
-extern const int16_t attribute_visibility_hidden ff_vp9_subpel_filters[3][16][8];
+EXTERN const int16_t ff_vp9_subpel_filters[3][16][8];
 
 void ff_vp9dsp_init(VP9DSPContext *dsp, int bpp, int bitexact);
 

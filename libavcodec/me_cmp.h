@@ -25,7 +25,7 @@
 
 #include "avcodec.h"
 
-extern const uint32_t attribute_visibility_hidden ff_square_tab[512];
+EXTERN const uint32_t ff_square_tab[512];
 
 
 /* minimum alignment rules ;)
