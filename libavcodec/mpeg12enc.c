@@ -144,9 +144,9 @@ static void put_header(MpegEncContext *s, uint32_t header)
 }
 
 /* put sequence header if needed */
-static void mpeg1_encode_sequence_header(MpegEncContext *s)
+static void mpeg1_encode_sequence_header(MPEG12EncContext *mpeg12)
 {
-    MPEG12EncContext *const mpeg12 = (MPEG12EncContext*)s;
+    MpegEncContext *const s = &mpeg12->mpeg.s;
     unsigned int vbv_buffer_size, fps, v;
     int constraint_parameter_flag;
     AVRational framerate = ff_mpeg12_frame_rate_tab[mpeg12->frame_rate_index];
@@ -299,7 +299,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     put_bits(&s->pb, 6, (uint32_t)((time_code / fps) % 60));
     put_bits(&s->pb, 6, (uint32_t)((time_code % fps)));
     put_bits(&s->pb, 1, !!(s->avctx->flags & AV_CODEC_FLAG_CLOSED_GOP) ||
-                        s->intra_only || !mpeg12->gop_picture_number);
+                        mpeg12->mpeg.intra_only || !mpeg12->gop_picture_number);
     put_bits(&s->pb, 1, 0);                     // broken link
 }
 
@@ -333,11 +333,13 @@ void ff_mpeg1_encode_slice_header(MpegEncContext *s)
     put_bits(&s->pb, 1, 0);
 }
 
-void ff_mpeg1_encode_picture_header(MpegEncContext *s)
+void ff_mpeg1_encode_picture_header(MPVMainEncContext *const m)
 {
-    MPEG12EncContext *const mpeg12 = (MPEG12EncContext*)s;
+    MPEG12EncContext *const mpeg12 = (MPEG12EncContext*)m;
+    MpegEncContext *const s = &m->s;
     const AVFrameSideData *side_data;
-    mpeg1_encode_sequence_header(s);
+
+    mpeg1_encode_sequence_header(mpeg12);
 
     /* MPEG-1 picture header */
     put_header(s, PICTURE_START_CODE);

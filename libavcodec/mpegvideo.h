@@ -91,8 +91,6 @@ typedef struct MpegEncContext {
     void *private_ctx;
     /* the following parameters must be initialized before encoding */
     int width, height;///< picture size. must be a multiple of 16
-    int gop_size;
-    int intra_only;   ///< if true, only intra pictures are generated
     int64_t bit_rate; ///< wanted bit rate
     enum OutputFormat out_format; ///< output format
     int h263_pred;    ///< use MPEG-4/H.263 ac/dc predictions
@@ -114,10 +112,7 @@ typedef struct MpegEncContext {
 
     /* sequence parameters */
     int context_initialized;
-    int input_picture_number;  ///< used to set pic->display_picture_number, should not be used for/by anything else
-    int coded_picture_number;  ///< used to set pic->coded_picture_number, should not be used for/by anything else
     int picture_number;       //FIXME remove, unclear definition
-    int picture_in_gop_number; ///< 0-> first pic in gop, ...
     int mb_width, mb_height;   ///< number of MBs horizontally & vertically
     int mb_stride;             ///< mb_width+1 used for some arrays to allow simple addressing of left & top MBs without sig11
     int b8_stride;             ///< 2*mb_width+1 used for some 8x8 block arrays to allow simple addressing
@@ -130,16 +125,6 @@ typedef struct MpegEncContext {
     MPVPicture **reordered_input_picture; ///< pointer to the next pictures in coded order for encoding
 
     BufferPoolContext buffer_pools;
-
-    int64_t user_specified_pts; ///< last non-zero pts from AVFrame which was passed into avcodec_send_frame()
-    /**
-     * pts difference between the first and second input frame, used for
-     * calculating dts of the first frame when there's a delay */
-    int64_t dts_delta;
-    /**
-     * reordered pts to be used as dts for the next output frame when there's
-     * a delay */
-    int64_t reordered_pts;
 
     /** bit output */
     PutBitContext pb;

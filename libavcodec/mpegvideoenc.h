@@ -39,6 +39,22 @@
 typedef struct MPVMainEncContext {
     MpegEncContext s;  ///< The main slicecontext
 
+    int intra_only;                ///< if true, only intra pictures are generated
+    int gop_size;
+    int picture_in_gop_number;     ///< 0-> first pic in gop, ...
+    int input_picture_number;      ///< used to set pic->display_picture_number
+    int coded_picture_number;      ///< used to set pic->coded_picture_number
+
+    int64_t user_specified_pts;    ///< last non-zero pts from user-supplied AVFrame
+    /**
+     * pts difference between the first and second input frame, used for
+     * calculating dts of the first frame when there's a delay */
+    int64_t dts_delta;
+    /**
+     * reordered pts to be used as dts for the next output frame when there's
+     * a delay */
+    int64_t reordered_pts;
+
     /// temporary frames used by b_frame_strategy = 2
     AVFrame *tmp_frames[MPVENC_MAX_B_FRAMES + 2];
     int b_frame_strategy;

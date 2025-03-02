@@ -660,7 +660,7 @@ av_cold int ff_rate_control_init(MPVMainEncContext *const m)
                 double bits = rcc->initial_cplx * (i / 10000.0 + 1.0) * s->mb_num;
                 RateControlEntry rce;
 
-                if (i % ((s->gop_size + 3) / 4) == 0)
+                if (i % ((m->gop_size + 3) / 4) == 0)
                     rce.pict_type = AV_PICTURE_TYPE_I;
                 else if (i % (s->max_b_frames + 1))
                     rce.pict_type = AV_PICTURE_TYPE_B;
@@ -1033,7 +1033,7 @@ float ff_rate_estimate_qscale(MPVMainEncContext *const m, int dry_run)
         av_assert0(q > 0.0);
 
         // FIXME type dependent blur like in 2-pass
-        if (pict_type == AV_PICTURE_TYPE_P || s->intra_only) {
+        if (pict_type == AV_PICTURE_TYPE_P || m->intra_only) {
             rcc->short_term_qsum   *= a->qblur;
             rcc->short_term_qcount *= a->qblur;
 

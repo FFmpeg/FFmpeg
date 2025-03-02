@@ -24,10 +24,10 @@
 
 #include <stdint.h>
 
-#include "mpegvideo.h"
+#include "mpegvideoenc.h"
 #include "mpegvideodata.h"
 
-void ff_mpeg1_encode_picture_header(MpegEncContext *s);
+void ff_mpeg1_encode_picture_header(MPVMainEncContext *m);
 void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],
                         int motion_x, int motion_y);
 void ff_mpeg1_encode_slice_header(MpegEncContext *s);
