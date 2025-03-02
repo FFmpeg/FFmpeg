@@ -98,8 +98,6 @@ void ff_idctdsp_init(IDCTDSPContext *c, struct AVCodecContext *avctx);
 
 void ff_idctdsp_init_aarch64(IDCTDSPContext *c, struct AVCodecContext *avctx,
                              unsigned high_bit_depth);
-void ff_idctdsp_init_alpha(IDCTDSPContext *c, struct AVCodecContext *avctx,
-                           unsigned high_bit_depth);
 void ff_idctdsp_init_arm(IDCTDSPContext *c, struct AVCodecContext *avctx,
                          unsigned high_bit_depth);
 void ff_idctdsp_init_ppc(IDCTDSPContext *c, struct AVCodecContext *avctx,
