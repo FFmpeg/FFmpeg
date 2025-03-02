@@ -142,10 +142,11 @@ static double get_diff_limited_q(MPVMainEncContext *m, const RateControlEntry *r
 /**
  * Get the qmin & qmax for pict_type.
  */
-static void get_qminmax(int *qmin_ret, int *qmax_ret, MpegEncContext *s, int pict_type)
+static void get_qminmax(int *qmin_ret, int *qmax_ret, MPVMainEncContext *const m, int pict_type)
 {
-    int qmin = s->lmin;
-    int qmax = s->lmax;
+    MpegEncContext *const s = &m->s;
+    int qmin = m->lmin;
+    int qmax = m->lmax;
 
     av_assert0(qmin <= qmax);
 
@@ -182,7 +183,7 @@ static double modify_qscale(MPVMainEncContext *const m, const RateControlEntry *
     const int pict_type      = rce->new_pict_type;
     int qmin, qmax;
 
-    get_qminmax(&qmin, &qmax, s, pict_type);
+    get_qminmax(&qmin, &qmax, m, pict_type);
 
     /* modulation */
     if (rcc->qmod_freq &&
@@ -784,15 +785,16 @@ static void update_predictor(Predictor *p, double q, double var, double size)
 }
 
 static void adaptive_quantization(RateControlContext *const rcc,
-                                  MpegEncContext *const s, double q)
+                                  MPVMainEncContext *const m, double q)
 {
+    MpegEncContext *const s = &m->s;
     int i;
     const float lumi_masking         = s->avctx->lumi_masking / (128.0 * 128.0);
     const float dark_masking         = s->avctx->dark_masking / (128.0 * 128.0);
     const float temp_cplx_masking    = s->avctx->temporal_cplx_masking;
     const float spatial_cplx_masking = s->avctx->spatial_cplx_masking;
     const float p_masking            = s->avctx->p_masking;
-    const float border_masking       = s->border_masking;
+    const float border_masking       = m->border_masking;
     float bits_sum                   = 0.0;
     float cplx_sum                   = 0.0;
     float *cplx_tab                  = rcc->cplx_tab;
@@ -932,7 +934,7 @@ float ff_rate_estimate_qscale(MPVMainEncContext *const m, int dry_run)
     const int pict_type = s->pict_type;
     emms_c();
 
-    get_qminmax(&qmin, &qmax, s, pict_type);
+    get_qminmax(&qmin, &qmax, m, pict_type);
 
     fps = get_fps(s->avctx);
     /* update predictors */
@@ -1068,7 +1070,7 @@ float ff_rate_estimate_qscale(MPVMainEncContext *const m, int dry_run)
         q = qmax;
 
     if (s->adaptive_quant)
-        adaptive_quantization(rcc, s, q);
+        adaptive_quantization(rcc, m, q);
     else
         q = (int)(q + 0.5);
 

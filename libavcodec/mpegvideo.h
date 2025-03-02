@@ -101,7 +101,6 @@ typedef struct MpegEncContext {
     int h263_flv;     ///< use flv H.263 header
 
     enum AVCodecID codec_id;     /* see AV_CODEC_ID_xxx */
-    int fixed_qscale; ///< fixed qscale if non zero
     int encoding;     ///< true if we are encoding (vs decoding)
     int max_b_frames; ///< max number of B-frames for encoding
     int luma_elim_threshold;
@@ -478,10 +477,6 @@ typedef struct MpegEncContext {
     me_cmp_func sse_cmp[2];
     int (*sum_abs_dctelem)(const int16_t *block);
 
-    float border_masking;
-    int lmin, lmax;
-    int vbv_ignore_qmax;
-
     /// Bitfield containing information which frames to reconstruct.
     int frame_reconstruction_bitfield;
 
@@ -493,7 +488,6 @@ typedef struct MpegEncContext {
 
     int error_rate;
 
-    int scenechange_threshold;
     int noise_reduction;
 
     int intra_penalty;

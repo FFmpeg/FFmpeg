@@ -228,8 +228,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     mpv->avctx   = avctx;
     mpv->bit_rate= avctx->bit_rate;
-    mpv->lmin    = avctx->mb_lmin;
-    mpv->lmax    = avctx->mb_lmax;
+    enc->m.lmin  = avctx->mb_lmin;
+    enc->m.lmax  = avctx->mb_lmax;
     mpv->mb_num  = (avctx->width * avctx->height + 255) / 256; // For ratecontrol
 
     mpv->me.temp      =
