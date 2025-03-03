@@ -318,7 +318,7 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
         return ret;
 
     if (s->width > 65500 || s->height > 65500) {
-        av_log(s, AV_LOG_ERROR, "JPEG does not support resolutions above 65500x65500\n");
+        av_log(s->avctx, AV_LOG_ERROR, "JPEG does not support resolutions above 65500x65500\n");
         return AVERROR(EINVAL);
     }
 
