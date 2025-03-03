@@ -594,10 +594,8 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s)
 
         if (fpa_type != 0) {
             put_header(s, USER_START_CODE);
-            put_bits(&s->pb, 8, 'J');   // S3D_video_format_signaling_identifier
-            put_bits(&s->pb, 8, 'P');
-            put_bits(&s->pb, 8, '3');
-            put_bits(&s->pb, 8, 'D');
+            // S3D_video_format_signaling_identifier
+            put_bits32(&s->pb, MKBETAG('J','P','3','D'));
             put_bits(&s->pb, 8, 0x03);  // S3D_video_format_length
 
             put_bits(&s->pb, 1, 1);     // reserved_bit
@@ -612,21 +610,15 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s)
             AV_FRAME_DATA_A53_CC);
         if (side_data) {
             if (side_data->size <= A53_MAX_CC_COUNT * 3 && side_data->size % 3 == 0) {
-                int i = 0;
-
                 put_header (s, USER_START_CODE);
 
-                put_bits(&s->pb, 8, 'G');                   // user_identifier
-                put_bits(&s->pb, 8, 'A');
-                put_bits(&s->pb, 8, '9');
-                put_bits(&s->pb, 8, '4');
+                put_bits32(&s->pb, MKBETAG('G','A','9','4')); // user_identifier
                 put_bits(&s->pb, 8, 3);                     // user_data_type_code
                 put_bits(&s->pb, 8,
                     (side_data->size / 3 & A53_MAX_CC_COUNT) | 0x40); // flags, cc_count
                 put_bits(&s->pb, 8, 0xff);                  // em_data
 
-                for (i = 0; i < side_data->size; i++)
-                    put_bits(&s->pb, 8, side_data->data[i]);
+                ff_copy_bits(&s->pb, side_data->data, side_data->size);
 
                 put_bits(&s->pb, 8, 0xff);                  // marker_bits
             } else {
