@@ -24,9 +24,9 @@
 #define BDOF_BLOCK_SIZE 16
 #define BDOF_MIN_BLOCK_SIZE 4
 
-.macro vvc_avg type, bit_depth
+.macro vvc_w_avg bit_depth
 
-.macro vvc_\type\()_\bit_depth\()_2_4 tap
+.macro vvc_w_avg_\bit_depth\()_2_4 tap
 .if \tap == 2
         ldr             s0, [src0]
         ldr             s2, [src1]
@@ -34,18 +34,11 @@
         ldr             d0, [src0]
         ldr             d2, [src1]
 .endif
-
-.ifc \type, avg
-        saddl           v4.4s, v0.4h, v2.4h
-        add             v4.4s, v4.4s, v16.4s
-        sqshrun         v4.4h, v4.4s, #(15 - \bit_depth)
-.else
         mov             v4.16b, v16.16b
         smlal           v4.4s, v0.4h, v19.4h
         smlal           v4.4s, v2.4h, v20.4h
         sqshl           v4.4s, v4.4s, v22.4s
         sqxtun          v4.4h, v4.4s
-.endif
 
 .if \bit_depth == 8
         sqxtun          v4.8b, v4.8h
@@ -68,7 +61,7 @@
         add             dst, dst, dst_stride
 .endm
 
-function ff_vvc_\type\()_\bit_depth\()_neon, export=1
+function ff_vvc_w_avg_\bit_depth\()_neon, export=1
         dst             .req x0
         dst_stride      .req x1
         src0            .req x2
@@ -78,9 +71,6 @@ function ff_vvc_\type\()_\bit_depth\()_neon, export=1
 
         mov             x10, #(VVC_MAX_PB_SIZE * 2)
         cmp             width, #8
-.ifc \type, avg
-        movi            v16.4s, #(1 << (14 - \bit_depth))
-.else
         lsr             x11, x6, #32        // weight0
         mov             w12, w6             // weight1
         lsr             x13, x7, #32        // offset
@@ -91,9 +81,8 @@ function ff_vvc_\type\()_\bit_depth\()_neon, export=1
         dup             v20.8h, w12
         dup             v16.4s, w13
         dup             v22.4s, w14
-.endif // avg
 
- .if \bit_depth >= 10
+.if \bit_depth >= 10
         // clip pixel
         mov             w6, #((1 << \bit_depth) - 1)
         dup             v17.8h, w6
@@ -105,25 +94,17 @@ function ff_vvc_\type\()_\bit_depth\()_neon, export=1
         b.eq            4f
 2:      // width == 2
         subs            height, height, #1
-        vvc_\type\()_\bit_depth\()_2_4 2
+        vvc_w_avg_\bit_depth\()_2_4 2
         b.ne            2b
         b               32f
 4:      // width == 4
         subs            height, height, #1
-        vvc_\type\()_\bit_depth\()_2_4 4
+        vvc_w_avg_\bit_depth\()_2_4 4
         b.ne            4b
         b               32f
 8:      // width == 8
         ld1             {v0.8h}, [src0], x10
         ld1             {v2.8h}, [src1], x10
-.ifc \type, avg
-        saddl           v4.4s, v0.4h, v2.4h
-        saddl2          v5.4s, v0.8h, v2.8h
-        add             v4.4s, v4.4s, v16.4s
-        add             v5.4s, v5.4s, v16.4s
-        sqshrun         v4.4h, v4.4s, #(15 - \bit_depth)
-        sqshrun2        v4.8h, v5.4s, #(15 - \bit_depth)
-.else
         mov             v4.16b, v16.16b
         mov             v5.16b, v16.16b
         smlal           v4.4s, v0.4h, v19.4h
@@ -134,7 +115,6 @@ function ff_vvc_\type\()_\bit_depth\()_neon, export=1
         sqshl           v5.4s, v5.4s, v22.4s
         sqxtun          v4.4h, v4.4s
         sqxtun2         v4.8h, v5.4s
-.endif
         subs            height, height, #1
 .if \bit_depth == 8
         sqxtun          v4.8b, v4.8h
@@ -153,20 +133,6 @@ function ff_vvc_\type\()_\bit_depth\()_neon, export=1
 17:
         ldp             q0, q1, [x7], #32
         ldp             q2, q3, [x8], #32
-.ifc \type, avg
-        saddl           v4.4s, v0.4h, v2.4h
-        saddl2          v5.4s, v0.8h, v2.8h
-        saddl           v6.4s, v1.4h, v3.4h
-        saddl2          v7.4s, v1.8h, v3.8h
-        add             v4.4s, v4.4s, v16.4s
-        add             v5.4s, v5.4s, v16.4s
-        add             v6.4s, v6.4s, v16.4s
-        add             v7.4s, v7.4s, v16.4s
-        sqshrun         v4.4h, v4.4s, #(15 - \bit_depth)
-        sqshrun2        v4.8h, v5.4s, #(15 - \bit_depth)
-        sqshrun         v6.4h, v6.4s, #(15 - \bit_depth)
-        sqshrun2        v6.8h, v7.4s, #(15 - \bit_depth)
-.else   // avg
         mov             v4.16b, v16.16b
         mov             v5.16b, v16.16b
         mov             v6.16b, v16.16b
@@ -187,7 +153,6 @@ function ff_vvc_\type\()_\bit_depth\()_neon, export=1
         sqxtun          v6.4h, v6.4s
         sqxtun2         v4.8h, v5.4s
         sqxtun2         v6.8h, v7.4s
-.endif  // w_avg
         subs            w6, w6, #16
 .if \bit_depth == 8
         sqxtun          v4.8b, v4.8h
@@ -217,12 +182,130 @@ function ff_vvc_\type\()_\bit_depth\()_neon, export=1
 endfunc
 .endm
 
-vvc_avg avg, 8
-vvc_avg avg, 10
-vvc_avg avg, 12
-vvc_avg w_avg, 8
-vvc_avg w_avg, 10
-vvc_avg w_avg, 12
+vvc_w_avg 8
+vvc_w_avg 10
+vvc_w_avg 12
+
+.macro vvc_avg bit_depth
+function ff_vvc_avg_\bit_depth\()_neon, export=1
+        mov             x10, #(VVC_MAX_PB_SIZE * 2)
+        movi            v16.8h, #0
+        movi            v17.16b, #255
+        ushr            v17.8h, v17.8h, #(16 - \bit_depth)
+
+        cmp             w4, #8
+        b.gt            16f
+        b.eq            8f
+        cmp             w4, #4
+        b.eq            4f
+
+2: // width == 2
+        ldr             s0, [x2]
+        subs            w5, w5, #1
+        ldr             s1, [x3]
+.if \bit_depth == 8
+        shadd           v0.4h, v0.4h, v1.4h
+        sqrshrun        v0.8b, v0.8h, #(15 - 1 - \bit_depth)
+        str             h0, [x0]
+.else
+        shadd           v0.4h, v0.4h, v1.4h
+        srshr           v0.4h, v0.4h, #(15 - 1 - \bit_depth)
+        smax            v0.4h, v0.4h, v16.4h
+        smin            v0.4h, v0.4h, v17.4h
+        str             s0, [x0]
+.endif
+        add             x2, x2, #(VVC_MAX_PB_SIZE * 2)
+        add             x3, x3, #(VVC_MAX_PB_SIZE * 2)
+        add             x0, x0, x1
+        b.ne            2b
+        ret
+
+4: // width == 4
+        ldr             d0, [x2]
+        subs            w5, w5, #1
+        ldr             d1, [x3]
+.if \bit_depth == 8
+        shadd           v0.4h, v0.4h, v1.4h
+        sqrshrun        v0.8b, v0.8h, #(15 - 1 - \bit_depth)
+        str             s0, [x0]
+.else
+        shadd           v0.4h, v0.4h, v1.4h
+        srshr           v0.4h, v0.4h, #(15 - 1 - \bit_depth)
+        smax            v0.4h, v0.4h, v16.4h
+        smin            v0.4h, v0.4h, v17.4h
+        str             d0, [x0]
+.endif
+        add             x2, x2, #(VVC_MAX_PB_SIZE * 2)
+        add             x3, x3, #(VVC_MAX_PB_SIZE * 2)
+        add             x0, x0, x1
+        b.ne            4b
+        ret
+
+8: // width == 8
+        ldr             q0, [x2]
+        subs            w5, w5, #1
+        ldr             q1, [x3]
+.if \bit_depth == 8
+        shadd           v0.8h, v0.8h, v1.8h
+        sqrshrun        v0.8b, v0.8h, #(15 - 1 - \bit_depth)
+        str             d0, [x0]
+.else
+        shadd           v0.8h, v0.8h, v1.8h
+        srshr           v0.8h, v0.8h, #(15 - 1 - \bit_depth)
+        smax            v0.8h, v0.8h, v16.8h
+        smin            v0.8h, v0.8h, v17.8h
+        str             q0, [x0]
+.endif
+        add             x2, x2, #(VVC_MAX_PB_SIZE * 2)
+        add             x3, x3, #(VVC_MAX_PB_SIZE * 2)
+        add             x0, x0, x1
+        b.ne            8b
+        ret
+
+16: // width >= 16
+.if \bit_depth == 8
+        sub             x1, x1, w4, sxtw
+.else
+        sub             x1, x1, w4, sxtw #1
+.endif
+        sub             x10, x10, w4, sxtw #1
+3:
+        mov             w6, w4 // width
+1:
+        ldp             q0, q1, [x2], #32
+        subs            w6, w6, #16
+        ldp             q2, q3, [x3], #32
+.if \bit_depth == 8
+        shadd           v4.8h, v0.8h, v2.8h
+        shadd           v5.8h, v1.8h, v3.8h
+        sqrshrun        v0.8b, v4.8h, #6
+        sqrshrun2       v0.16b, v5.8h, #6
+        st1             {v0.16b}, [x0], #16
+.else
+        shadd           v4.8h, v0.8h, v2.8h
+        shadd           v5.8h, v1.8h, v3.8h
+        srshr           v0.8h, v4.8h, #(15 - 1 - \bit_depth)
+        srshr           v1.8h, v5.8h, #(15 - 1 - \bit_depth)
+        smax            v0.8h, v0.8h, v16.8h
+        smax            v1.8h, v1.8h, v16.8h
+        smin            v0.8h, v0.8h, v17.8h
+        smin            v1.8h, v1.8h, v17.8h
+        stp             q0, q1, [x0], #32
+.endif
+        b.ne            1b
+
+        subs            w5, w5, #1
+        add             x2, x2, x10
+        add             x3, x3, x10
+        add             x0, x0, x1
+        b.ne            3b
+        ret
+endfunc
+.endm
+
+vvc_avg 8
+vvc_avg 10
+vvc_avg 12
 
 /* x0: int16_t *dst
  * x1: const uint8_t *_src
