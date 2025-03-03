@@ -40,6 +40,20 @@ void ff_speedhq_encode_mb(MpegEncContext *s, int16_t block[12][64]);
 void ff_speedhq_encode_picture_header(MpegEncContext *s);
 void ff_speedhq_end_slice(MpegEncContext *s);
 
-int ff_speedhq_mb_y_order_to_mb(int mb_y_order, int mb_height, int *first_in_slice);
+static inline int ff_speedhq_mb_rows_in_slice(int slice_num, int mb_height)
+{
+    return mb_height / 4 + (slice_num < (mb_height % 4));
+}
+
+static inline int ff_speedhq_mb_y_order_to_mb(int mb_y_order, int mb_height, int *first_in_slice)
+{
+    int slice_num = 0;
+    while (mb_y_order >= ff_speedhq_mb_rows_in_slice(slice_num, mb_height)) {
+         mb_y_order -= ff_speedhq_mb_rows_in_slice(slice_num, mb_height);
+         slice_num++;
+    }
+    *first_in_slice = (mb_y_order == 0);
+    return mb_y_order * 4 + slice_num;
+}
 
 #endif /* AVCODEC_SPEEDHQENC_H */
