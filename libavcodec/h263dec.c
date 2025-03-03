@@ -41,8 +41,8 @@
 #include "mpeg_er.h"
 #include "mpeg4video.h"
 #include "mpeg4videodec.h"
-#include "mpeg4videodefs.h"
 #include "mpegvideo.h"
+#include "mpegvideodata.h"
 #include "mpegvideodec.h"
 #include "msmpeg4dec.h"
 #include "thread.h"
@@ -101,6 +101,9 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
 
     s->decode_mb       = ff_h263_decode_mb;
     s->low_delay       = 1;
+
+    s->y_dc_scale_table =
+    s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
 
     // dct_unquantize defaults for H.263;
     // they might change on a per-frame basis for MPEG-4.
