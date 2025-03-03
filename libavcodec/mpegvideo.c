@@ -480,7 +480,7 @@ int ff_update_duplicate_context(MpegEncContext *dst, const MpegEncContext *src)
  * The changed fields will not depend upon the
  * prior state of the MpegEncContext.
  */
-void ff_mpv_common_defaults(MpegEncContext *s)
+av_cold void ff_mpv_common_defaults(MpegEncContext *s)
 {
     s->y_dc_scale_table      =
     s->c_dc_scale_table      = ff_mpeg1_dc_scale_table;
