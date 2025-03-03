@@ -36,7 +36,6 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "mpegvideo.h"
-#include "mpegvideodata.h"
 #include "flvenc.h"
 #include "mpegvideoenc.h"
 #include "h263.h"
@@ -862,9 +861,6 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
     if(s->h263_aic){
          s->y_dc_scale_table=
          s->c_dc_scale_table= ff_aic_dc_scale_table;
-    }else{
-        s->y_dc_scale_table=
-        s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }
 
 #if CONFIG_H263_ENCODER // Snow and SVQ1 call this
