@@ -33,6 +33,7 @@
 #include "libavutil/opt.h"
 #include "mpegvideo.h"
 
+#define MAX_FCODE        7
 #define UNI_AC_ENC_INDEX(run,level) ((run)*128 + (level))
 #define INPLACE_OFFSET 16
 

@@ -33,7 +33,6 @@
 #define PICT_FRAME         3
 
 #define MAX_MB_BYTES    (30 * 16 * 16 * 3 / 8 + 120)
-#define MAX_FCODE        7
 
 /* MB types */
 #define MB_TYPE_INTRA4x4   (1 <<  0)
