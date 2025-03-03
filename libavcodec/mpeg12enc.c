@@ -46,7 +46,6 @@
 #include "mpeg12vlc.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
-#include "mpegvideodata.h"
 #include "mpegvideoenc.h"
 #include "profiles.h"
 #include "rl.h"
@@ -1000,36 +999,6 @@ static av_cold void mpeg12_encode_init_static(void)
             fcode_tab[mv + MAX_MV] = f_code;
 }
 
-av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
-{
-    static AVOnce init_static_once = AV_ONCE_INIT;
-
-    s->y_dc_scale_table =
-    s->c_dc_scale_table = ff_mpeg12_dc_scale_table[s->intra_dc_precision];
-
-    s->me.mv_penalty = mv_penalty;
-    s->fcode_tab     = fcode_tab + MAX_MV;
-    if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
-        s->min_qcoeff = -255;
-        s->max_qcoeff = 255;
-    } else {
-        s->min_qcoeff = -2047;
-        s->max_qcoeff = 2047;
-        s->mpeg_quant = 1;
-    }
-    if (s->intra_vlc_format) {
-        s->intra_ac_vlc_length      =
-        s->intra_ac_vlc_last_length = uni_mpeg2_ac_vlc_len;
-    } else {
-        s->intra_ac_vlc_length      =
-        s->intra_ac_vlc_last_length = uni_mpeg1_ac_vlc_len;
-    }
-    s->inter_ac_vlc_length      =
-    s->inter_ac_vlc_last_length = uni_mpeg1_ac_vlc_len;
-
-    ff_thread_once(&init_static_once, mpeg12_encode_init_static);
-}
-
 static av_cold int find_frame_rate_index(AVCodecContext *avctx, MPEG12EncContext *mpeg12)
 {
     AVRational bestq = (AVRational) {0, 0};
@@ -1070,7 +1039,10 @@ static av_cold int find_frame_rate_index(AVCodecContext *avctx, MPEG12EncContext
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     MPEG12EncContext *const mpeg12 = avctx->priv_data;
+    MPVMainEncContext *const m = &mpeg12->mpeg;
+    MpegEncContext    *const s = &m->s;
     int ret;
     int max_size = avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO ? 16383 : 4095;
 
@@ -1093,7 +1065,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
-    if (mpeg12->mpeg.s.q_scale_type == 1) {
+    if (s->q_scale_type == 1) {
         if (avctx->qmax > 28) {
             av_log(avctx, AV_LOG_ERROR,
                    "non linear quant only supports qmax <= 28 currently\n");
@@ -1131,6 +1103,26 @@ static av_cold int encode_init(AVCodecContext *avctx)
                 avctx->level = 4;                   /* High */
         }
     }
+
+    s->me.mv_penalty = mv_penalty;
+    s->fcode_tab     = fcode_tab + MAX_MV;
+    if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
+        s->min_qcoeff = -255;
+        s->max_qcoeff = 255;
+    } else {
+        s->min_qcoeff = -2047;
+        s->max_qcoeff = 2047;
+        s->mpeg_quant = 1;
+    }
+    if (s->intra_vlc_format) {
+        s->intra_ac_vlc_length      =
+        s->intra_ac_vlc_last_length = uni_mpeg2_ac_vlc_len;
+    } else {
+        s->intra_ac_vlc_length      =
+        s->intra_ac_vlc_last_length = uni_mpeg1_ac_vlc_len;
+    }
+    s->inter_ac_vlc_length      =
+    s->inter_ac_vlc_last_length = uni_mpeg1_ac_vlc_len;
 
     ret = ff_mpv_encode_init(avctx);
     if (ret < 0)
@@ -1175,6 +1167,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     } else {
         mpeg12->timecode_frame_start = 0; // default is -1
     }
+
+    ff_thread_once(&init_static_once, mpeg12_encode_init_static);
 
     return 0;
 }
