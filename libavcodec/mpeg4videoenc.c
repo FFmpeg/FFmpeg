@@ -37,6 +37,11 @@
 #include "profiles.h"
 #include "version.h"
 
+/**
+ * Minimal fcode that a motion vector component would need.
+ */
+static uint8_t fcode_tab[MAX_MV*2+1];
+
 /* The uni_DCtab_* tables below contain unified bits+length tables to encode DC
  * differences in MPEG-4. Unified in the sense that the specification specifies
  * this encoding in several steps. */
@@ -1255,6 +1260,11 @@ static av_cold void mpeg4_encode_init_static(void)
 
     init_uni_mpeg4_rl_tab(&ff_mpeg4_rl_intra, uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
     init_uni_mpeg4_rl_tab(&ff_h263_rl_inter,  uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
+
+    for (int f_code = MAX_FCODE; f_code > 0; f_code--) {
+        for (int mv = -(16 << f_code); mv < (16 << f_code); mv++)
+            fcode_tab[mv + MAX_MV] = f_code;
+    }
 }
 
 static av_cold int encode_init(AVCodecContext *avctx)
@@ -1274,6 +1284,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     ff_thread_once(&init_static_once, mpeg4_encode_init_static);
 
+    s->fcode_tab                = fcode_tab;
     s->min_qcoeff               = -2048;
     s->max_qcoeff               = 2047;
     s->intra_ac_vlc_length      = uni_mpeg4_intra_rl_len;

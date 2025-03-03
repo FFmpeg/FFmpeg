@@ -53,11 +53,6 @@
 static uint8_t mv_penalty[MAX_FCODE+1][MAX_DMV*2+1];
 
 /**
- * Minimal fcode that a motion vector component would need.
- */
-static uint8_t fcode_tab[MAX_MV*2+1];
-
-/**
  * Minimal fcode that a motion vector component would need in umv.
  * All entries in this table are 1.
  */
@@ -762,12 +757,6 @@ static av_cold void init_mv_penalty_and_fcode(void)
         }
     }
 
-    for(f_code=MAX_FCODE; f_code>0; f_code--){
-        for(mv=-(16<<f_code); mv<(16<<f_code); mv++){
-            fcode_tab[mv+MAX_MV]= f_code;
-        }
-    }
-
     for(mv=0; mv<MAX_MV*2+1; mv++){
         umv_fcode_tab[mv]= 1;
     }
@@ -844,7 +833,6 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
     // use fcodes >1 only for MPEG-4 & H.263 & H.263+ FIXME
     switch(s->codec_id){
     case AV_CODEC_ID_MPEG4:
-        s->fcode_tab= fcode_tab;
         break;
     case AV_CODEC_ID_H263P:
         if(s->umvplus)
