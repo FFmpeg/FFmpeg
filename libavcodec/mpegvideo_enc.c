@@ -283,10 +283,10 @@ static av_cold void mpv_encode_defaults(MpegEncContext *s)
 
     ff_mpv_common_defaults(s);
 
-    ff_thread_once(&init_static_once, mpv_encode_init_static);
-
-    s->fcode_tab     = default_fcode_tab + MAX_MV;
-
+    if (!s->fcode_tab) {
+        s->fcode_tab = default_fcode_tab + MAX_MV;
+        ff_thread_once(&init_static_once, mpv_encode_init_static);
+    }
     if (!s->y_dc_scale_table) {
         s->y_dc_scale_table =
         s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
