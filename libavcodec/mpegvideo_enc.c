@@ -93,7 +93,6 @@ static int dct_quantize_c(MpegEncContext *s,
                           int qscale, int *overflow);
 static int dct_quantize_trellis_c(MpegEncContext *s, int16_t *block, int n, int qscale, int *overflow);
 
-static uint8_t default_mv_penalty[MAX_FCODE + 1][MAX_DMV * 2 + 1];
 static uint8_t default_fcode_tab[MAX_MV * 2 + 1];
 
 static const AVOption mpv_generic_options[] = {
@@ -287,7 +286,6 @@ static void mpv_encode_defaults(MpegEncContext *s)
 
     ff_thread_once(&init_static_once, mpv_encode_init_static);
 
-    s->me.mv_penalty = default_mv_penalty;
     s->fcode_tab     = default_fcode_tab;
 
     s->input_picture_number  = 0;
