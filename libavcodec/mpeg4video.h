@@ -36,12 +36,6 @@ void ff_mpeg4_init_direct_mv(MpegEncContext *s);
  */
 int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);
 
-#if 0 //3IV1 is quite rare and it slows things down a tiny bit
-#define IS_3IV1 s->codec_tag == AV_RL32("3IV1")
-#else
-#define IS_3IV1 0
-#endif
-
 /**
  * Predict the dc.
  * @param n block index (0-3 are luma, 4-5 are chroma)

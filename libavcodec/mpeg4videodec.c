@@ -49,6 +49,12 @@
 #include "xvididct.h"
 #include "unary.h"
 
+#if 0 //3IV1 is quite rare and it slows things down a tiny bit
+#define IS_3IV1 (s->codec_tag == AV_RL32("3IV1"))
+#else
+#define IS_3IV1 0
+#endif
+
 /* The defines below define the number of bits that are read at once for
  * reading vlc values. Changing these may improve speed and data cache needs
  * be aware though that decreasing them may need the number of stages that is
