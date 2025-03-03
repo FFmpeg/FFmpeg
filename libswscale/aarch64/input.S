@@ -313,3 +313,91 @@ rgbToUV_neon bgr24, rgb24, element=3
 rgbToUV_neon bgra32, rgba32, element=4
 
 rgbToUV_neon abgr32, argb32, element=4, alpha_first=1
+
+#if HAVE_DOTPROD
+ENABLE_DOTPROD
+
+function ff_bgra32ToY_neon_dotprod, export=1
+        cmp             w4, #0                  // check width > 0
+        ldp             w12, w11, [x5]          // w12: ry, w11: gy
+        ldr             w10, [x5, #8]           // w10: by
+        b.gt            4f
+        ret
+endfunc
+
+function ff_rgba32ToY_neon_dotprod, export=1
+        cmp             w4, #0                  // check width > 0
+        ldp             w10, w11, [x5]          // w10: ry, w11: gy
+        ldr             w12, [x5, #8]           // w12: by
+        b.le            3f
+4:
+        mov             w9, #256                // w9 = 1 << (RGB2YUV_SHIFT - 7)
+        movk            w9, #8, lsl #16         // w9 += 32 << (RGB2YUV_SHIFT - 1)
+        dup             v6.4s, w9               // w9: const_offset
+
+        cmp             w4, #16
+        mov             w7, w10
+        bfi             w7, w11, 8, 8           // the bfi instructions are used to assemble
+        bfi             w7, w12, 16, 8          // 4 byte r,g,b,0 mask to be then used by udot.
+        dup             v0.4s, w7               // v0 holds the lower byte of each coefficient
+
+        lsr             w6, w10, #8
+        lsr             w7, w11, #8
+        lsr             w8, w12, #8
+
+        bfi             w6, w7, 8, 8
+        bfi             w6, w8, 16, 8
+        dup             v1.4s, w6               // v1 holds the upper byte of each coefficient
+        b.lt            2f
+1:
+        ld1             { v16.16b, v17.16b, v18.16b, v19.16b }, [x1], #64
+        sub             w4, w4, #16             // width -= 16
+
+        mov             v2.16b, v6.16b
+        mov             v3.16b, v6.16b
+        mov             v4.16b, v6.16b
+        mov             v5.16b, v6.16b
+        cmp             w4, #16                 // width >= 16 ?
+
+        udot            v2.4s, v16.16b, v0.16b
+        udot            v3.4s, v17.16b, v0.16b
+        udot            v4.4s, v18.16b, v0.16b
+        udot            v5.4s, v19.16b, v0.16b
+
+        ushr            v2.4s, v2.4s, #8
+        ushr            v3.4s, v3.4s, #8
+        ushr            v4.4s, v4.4s, #8
+        ushr            v5.4s, v5.4s, #8
+
+        udot            v2.4s, v16.16b, v1.16b
+        udot            v3.4s, v17.16b, v1.16b
+        udot            v4.4s, v18.16b, v1.16b
+        udot            v5.4s, v19.16b, v1.16b
+
+        sqshrn          v16.4h, v2.4s, #1
+        sqshrn2         v16.8h, v3.4s, #1
+        sqshrn          v17.4h, v4.4s, #1
+        sqshrn2         v17.8h, v5.4s, #1
+
+        stp             q16, q17, [x0], #32     // store to dst
+        b.ge            1b
+        cbz             x4, 3f
+2:
+        ldrb            w13, [x1]               // w13: r
+        ldrb            w14, [x1, #1]           // w14: g
+        ldrb            w15, [x1, #2]           // w15: b
+
+        smaddl          x13, w13, w10, x9       // x13 = ry * r + const_offset
+        smaddl          x13, w14, w11, x13      // x13 += gy * g
+        smaddl          x13, w15, w12, x13      // x13 += by * b
+        asr             w13, w13, #9            // x13 >>= 9
+        sub             w4, w4, #1              // width--
+        add             x1, x1, #4
+        strh            w13, [x0], #2           // store to dst
+        cbnz            w4, 2b
+3:
+        ret
+endfunc
+
+DISABLE_DOTPROD
+#endif
