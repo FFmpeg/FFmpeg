@@ -137,155 +137,6 @@ av_cold void ff_mpeg1_init_uni_ac_vlc(const int8_t max_level[],
 }
 
 #if CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER
-static int find_frame_rate_index(AVCodecContext *avctx, MPEG12EncContext *mpeg12)
-{
-    int i;
-    AVRational bestq = (AVRational) {0, 0};
-    AVRational ext;
-    AVRational target = av_inv_q(avctx->time_base);
-
-    for (i = 1; i < 14; i++) {
-        if (avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL &&
-            i >= 9)
-            break;
-
-        for (ext.num=1; ext.num <= 4; ext.num++) {
-            for (ext.den=1; ext.den <= 32; ext.den++) {
-                AVRational q = av_mul_q(ext, ff_mpeg12_frame_rate_tab[i]);
-
-                if (avctx->codec_id != AV_CODEC_ID_MPEG2VIDEO && (ext.den!=1 || ext.num!=1))
-                    continue;
-                if (av_gcd(ext.den, ext.num) != 1)
-                    continue;
-
-                if (    bestq.num==0
-                    || av_nearer_q(target, bestq, q) < 0
-                    || ext.num==1 && ext.den==1 && av_nearer_q(target, bestq, q) == 0) {
-                    bestq               = q;
-                    mpeg12->frame_rate_index   = i;
-                    mpeg12->frame_rate_ext.num = ext.num;
-                    mpeg12->frame_rate_ext.den = ext.den;
-                }
-            }
-        }
-    }
-
-    if (av_cmp_q(target, bestq))
-        return -1;
-    else
-        return 0;
-}
-
-static av_cold int encode_init(AVCodecContext *avctx)
-{
-    MPEG12EncContext *const mpeg12 = avctx->priv_data;
-    int ret;
-    int max_size = avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO ? 16383 : 4095;
-
-    if (avctx->width > max_size || avctx->height > max_size) {
-        av_log(avctx, AV_LOG_ERROR, "%s does not support resolutions above %dx%d\n",
-               CONFIG_SMALL ? avctx->codec->name : avctx->codec->long_name,
-               max_size, max_size);
-        return AVERROR(EINVAL);
-    }
-    if ((avctx->width & 0xFFF) == 0 && (avctx->height & 0xFFF) == 1) {
-        av_log(avctx, AV_LOG_ERROR, "Width / Height is invalid for MPEG2\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
-        if ((avctx->width & 0xFFF) == 0 || (avctx->height & 0xFFF) == 0) {
-            av_log(avctx, AV_LOG_ERROR, "Width or Height are not allowed to be multiples of 4096\n"
-                                        "add '-strict %d' if you want to use them anyway.\n", FF_COMPLIANCE_UNOFFICIAL);
-            return AVERROR(EINVAL);
-        }
-    }
-
-    if (mpeg12->mpeg.s.q_scale_type == 1) {
-        if (avctx->qmax > 28) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "non linear quant only supports qmax <= 28 currently\n");
-            return AVERROR_PATCHWELCOME;
-        }
-    }
-
-    if (avctx->profile == AV_PROFILE_UNKNOWN) {
-        if (avctx->level != AV_LEVEL_UNKNOWN) {
-            av_log(avctx, AV_LOG_ERROR, "Set profile and level\n");
-            return AVERROR(EINVAL);
-        }
-        /* Main or 4:2:2 */
-        avctx->profile = avctx->pix_fmt == AV_PIX_FMT_YUV420P ? AV_PROFILE_MPEG2_MAIN
-                                                              : AV_PROFILE_MPEG2_422;
-    }
-    if (avctx->level == AV_LEVEL_UNKNOWN) {
-        if (avctx->profile == AV_PROFILE_MPEG2_422) {   /* 4:2:2 */
-            if (avctx->width <= 720 && avctx->height <= 608)
-                avctx->level = 5;                   /* Main */
-            else
-                avctx->level = 2;                   /* High */
-        } else {
-            if (avctx->profile != AV_PROFILE_MPEG2_HIGH &&
-                avctx->pix_fmt != AV_PIX_FMT_YUV420P) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Only High(1) and 4:2:2(0) profiles support 4:2:2 color sampling\n");
-                return AVERROR(EINVAL);
-            }
-            if (avctx->width <= 720 && avctx->height <= 576)
-                avctx->level = 8;                   /* Main */
-            else if (avctx->width <= 1440)
-                avctx->level = 6;                   /* High 1440 */
-            else
-                avctx->level = 4;                   /* High */
-        }
-    }
-
-    if ((ret = ff_mpv_encode_init(avctx)) < 0)
-        return ret;
-
-    if (find_frame_rate_index(avctx, mpeg12) < 0) {
-        if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
-            av_log(avctx, AV_LOG_ERROR, "MPEG-1/2 does not support %d/%d fps\n",
-                   avctx->time_base.den, avctx->time_base.num);
-            return AVERROR(EINVAL);
-        } else {
-            av_log(avctx, AV_LOG_INFO,
-                   "MPEG-1/2 does not support %d/%d fps, there may be AV sync issues\n",
-                   avctx->time_base.den, avctx->time_base.num);
-        }
-    }
-
-    if (avctx->rc_max_rate &&
-        avctx->rc_min_rate == avctx->rc_max_rate &&
-        90000LL * (avctx->rc_buffer_size - 1) >
-            avctx->rc_max_rate * 0xFFFFLL) {
-        av_log(avctx, AV_LOG_INFO,
-               "Warning vbv_delay will be set to 0xFFFF (=VBR) as the "
-               "specified vbv buffer is too large for the given bitrate!\n");
-    }
-
-    if (mpeg12->drop_frame_timecode)
-        mpeg12->tc.flags |= AV_TIMECODE_FLAG_DROPFRAME;
-    if (mpeg12->drop_frame_timecode && mpeg12->frame_rate_index != 4) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Drop frame time code only allowed with 1001/30000 fps\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (mpeg12->tc_opt_str) {
-        AVRational rate = ff_mpeg12_frame_rate_tab[mpeg12->frame_rate_index];
-        int ret = av_timecode_init_from_string(&mpeg12->tc, rate, mpeg12->tc_opt_str, avctx);
-        if (ret < 0)
-            return ret;
-        mpeg12->drop_frame_timecode  = !!(mpeg12->tc.flags & AV_TIMECODE_FLAG_DROPFRAME);
-        mpeg12->timecode_frame_start = mpeg12->tc.start;
-    } else {
-        mpeg12->timecode_frame_start = 0; // default is -1
-    }
-
-    return 0;
-}
-
 static void put_header(MpegEncContext *s, uint32_t header)
 {
     align_put_bits(&s->pb);
@@ -1177,6 +1028,155 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
     s->inter_ac_vlc_last_length = uni_mpeg1_ac_vlc_len;
 
     ff_thread_once(&init_static_once, mpeg12_encode_init_static);
+}
+
+static av_cold int find_frame_rate_index(AVCodecContext *avctx, MPEG12EncContext *mpeg12)
+{
+    AVRational bestq = (AVRational) {0, 0};
+    AVRational ext;
+    AVRational target = av_inv_q(avctx->time_base);
+
+    for (int i = 1; i < 14; i++) {
+        if (avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL &&
+            i >= 9)
+            break;
+
+        for (ext.num = 1; ext.num <= 4; ext.num++) {
+            for (ext.den = 1; ext.den <= 32; ext.den++) {
+                AVRational q = av_mul_q(ext, ff_mpeg12_frame_rate_tab[i]);
+
+                if (avctx->codec_id != AV_CODEC_ID_MPEG2VIDEO && (ext.den!=1 || ext.num!=1))
+                    continue;
+                if (av_gcd(ext.den, ext.num) != 1)
+                    continue;
+
+                if (    bestq.num==0
+                    || av_nearer_q(target, bestq, q) < 0
+                    || ext.num==1 && ext.den==1 && av_nearer_q(target, bestq, q) == 0) {
+                    bestq               = q;
+                    mpeg12->frame_rate_index   = i;
+                    mpeg12->frame_rate_ext.num = ext.num;
+                    mpeg12->frame_rate_ext.den = ext.den;
+                }
+            }
+        }
+    }
+
+    if (av_cmp_q(target, bestq))
+        return -1;
+    else
+        return 0;
+}
+
+static av_cold int encode_init(AVCodecContext *avctx)
+{
+    MPEG12EncContext *const mpeg12 = avctx->priv_data;
+    int ret;
+    int max_size = avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO ? 16383 : 4095;
+
+    if (avctx->width > max_size || avctx->height > max_size) {
+        av_log(avctx, AV_LOG_ERROR, "%s does not support resolutions above %dx%d\n",
+               CONFIG_SMALL ? avctx->codec->name : avctx->codec->long_name,
+               max_size, max_size);
+        return AVERROR(EINVAL);
+    }
+    if ((avctx->width & 0xFFF) == 0 && (avctx->height & 0xFFF) == 1) {
+        av_log(avctx, AV_LOG_ERROR, "Width / Height is invalid for MPEG2\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
+        if ((avctx->width & 0xFFF) == 0 || (avctx->height & 0xFFF) == 0) {
+            av_log(avctx, AV_LOG_ERROR, "Width or Height are not allowed to be multiples of 4096\n"
+                                        "add '-strict %d' if you want to use them anyway.\n", FF_COMPLIANCE_UNOFFICIAL);
+            return AVERROR(EINVAL);
+        }
+    }
+
+    if (mpeg12->mpeg.s.q_scale_type == 1) {
+        if (avctx->qmax > 28) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "non linear quant only supports qmax <= 28 currently\n");
+            return AVERROR_PATCHWELCOME;
+        }
+    }
+
+    if (avctx->profile == AV_PROFILE_UNKNOWN) {
+        if (avctx->level != AV_LEVEL_UNKNOWN) {
+            av_log(avctx, AV_LOG_ERROR, "Set profile and level\n");
+            return AVERROR(EINVAL);
+        }
+        /* Main or 4:2:2 */
+        avctx->profile = avctx->pix_fmt == AV_PIX_FMT_YUV420P ? AV_PROFILE_MPEG2_MAIN
+                                                              : AV_PROFILE_MPEG2_422;
+    }
+    if (avctx->level == AV_LEVEL_UNKNOWN) {
+        if (avctx->profile == AV_PROFILE_MPEG2_422) {   /* 4:2:2 */
+            if (avctx->width <= 720 && avctx->height <= 608)
+                avctx->level = 5;                   /* Main */
+            else
+                avctx->level = 2;                   /* High */
+        } else {
+            if (avctx->profile != AV_PROFILE_MPEG2_HIGH &&
+                avctx->pix_fmt != AV_PIX_FMT_YUV420P) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Only High(1) and 4:2:2(0) profiles support 4:2:2 color sampling\n");
+                return AVERROR(EINVAL);
+            }
+            if (avctx->width <= 720 && avctx->height <= 576)
+                avctx->level = 8;                   /* Main */
+            else if (avctx->width <= 1440)
+                avctx->level = 6;                   /* High 1440 */
+            else
+                avctx->level = 4;                   /* High */
+        }
+    }
+
+    ret = ff_mpv_encode_init(avctx);
+    if (ret < 0)
+        return ret;
+
+    if (find_frame_rate_index(avctx, mpeg12) < 0) {
+        if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+            av_log(avctx, AV_LOG_ERROR, "MPEG-1/2 does not support %d/%d fps\n",
+                   avctx->time_base.den, avctx->time_base.num);
+            return AVERROR(EINVAL);
+        } else {
+            av_log(avctx, AV_LOG_INFO,
+                   "MPEG-1/2 does not support %d/%d fps, there may be AV sync issues\n",
+                   avctx->time_base.den, avctx->time_base.num);
+        }
+    }
+
+    if (avctx->rc_max_rate &&
+        avctx->rc_min_rate == avctx->rc_max_rate &&
+        90000LL * (avctx->rc_buffer_size - 1) >
+            avctx->rc_max_rate * 0xFFFFLL) {
+        av_log(avctx, AV_LOG_INFO,
+               "Warning vbv_delay will be set to 0xFFFF (=VBR) as the "
+               "specified vbv buffer is too large for the given bitrate!\n");
+    }
+
+    if (mpeg12->drop_frame_timecode)
+        mpeg12->tc.flags |= AV_TIMECODE_FLAG_DROPFRAME;
+    if (mpeg12->drop_frame_timecode && mpeg12->frame_rate_index != 4) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Drop frame time code only allowed with 1001/30000 fps\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (mpeg12->tc_opt_str) {
+        AVRational rate = ff_mpeg12_frame_rate_tab[mpeg12->frame_rate_index];
+        int ret = av_timecode_init_from_string(&mpeg12->tc, rate, mpeg12->tc_opt_str, avctx);
+        if (ret < 0)
+            return ret;
+        mpeg12->drop_frame_timecode  = !!(mpeg12->tc.flags & AV_TIMECODE_FLAG_DROPFRAME);
+        mpeg12->timecode_frame_start = mpeg12->tc.start;
+    } else {
+        mpeg12->timecode_frame_start = 0; // default is -1
+    }
+
+    return 0;
 }
 
 #define OFFSET(x) offsetof(MPEG12EncContext, x)
