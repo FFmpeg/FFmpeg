@@ -2641,7 +2641,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx, AVFrame *picture,
     return ret;
 }
 
-static void flush(AVCodecContext *avctx)
+static av_cold void flush(AVCodecContext *avctx)
 {
     Mpeg1Context *s = avctx->priv_data;
 
