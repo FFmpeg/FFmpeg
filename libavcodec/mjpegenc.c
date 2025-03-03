@@ -283,10 +283,6 @@ static int alloc_huffman(MpegEncContext *s)
     size_t num_mbs, num_blocks, num_codes;
     int blocks_per_mb;
 
-    // We need to init this here as the mjpeg init is called before the common init,
-    s->mb_width  = (s->width  + 15) / 16;
-    s->mb_height = (s->height + 15) / 16;
-
     switch (s->chroma_format) {
     case CHROMA_420: blocks_per_mb =  6; break;
     case CHROMA_422: blocks_per_mb =  8; break;
@@ -305,34 +301,30 @@ static int alloc_huffman(MpegEncContext *s)
     return 0;
 }
 
-av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
+static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
 {
-    MJpegContext *const m = &((MJPEGEncContext*)s)->mjpeg;
-    int ret, use_slices;
+    MJPEGEncContext *const m2 = avctx->priv_data;
+    MJpegContext    *const m  = &m2->mjpeg;
+    MpegEncContext  *const s  = &m2->mpeg.s;
+    int ret;
 
     s->mjpeg_ctx = m;
-    use_slices = s->avctx->slices > 0 ? s->avctx->slices > 1 :
-                 (s->avctx->active_thread_type & FF_THREAD_SLICE) &&
-                 s->avctx->thread_count > 1;
-
-    if (use_slices)
-        m->huffman = HUFFMAN_TABLE_DEFAULT;
 
     if (s->mpv_flags & FF_MPV_FLAG_QP_RD) {
         // Used to produce garbage with MJPEG.
-        av_log(s->avctx, AV_LOG_ERROR,
+        av_log(avctx, AV_LOG_ERROR,
                "QP RD is no longer compatible with MJPEG or AMV\n");
         return AVERROR(EINVAL);
     }
 
     /* The following check is automatically true for AMV,
      * but it doesn't hurt either. */
-    ret = ff_mjpeg_encode_check_pix_fmt(s->avctx);
+    ret = ff_mjpeg_encode_check_pix_fmt(avctx);
     if (ret < 0)
         return ret;
 
-    if (s->width > 65500 || s->height > 65500) {
-        av_log(s->avctx, AV_LOG_ERROR, "JPEG does not support resolutions above 65500x65500\n");
+    if (avctx->width > 65500 || avctx->height > 65500) {
+        av_log(avctx, AV_LOG_ERROR, "JPEG does not support resolutions above 65500x65500\n");
         return AVERROR(EINVAL);
     }
 
@@ -366,8 +358,15 @@ av_cold int ff_mjpeg_encode_init(MpegEncContext *s)
     s->intra_chroma_ac_vlc_length      =
     s->intra_chroma_ac_vlc_last_length = m->uni_chroma_ac_vlc_len;
 
+    ret = ff_mpv_encode_init(avctx);
+    if (ret < 0)
+        return ret;
+
     // Buffers start out empty.
     m->huff_ncode = 0;
+
+    if (s->slice_context_count > 1)
+        m->huffman = HUFFMAN_TABLE_DEFAULT;
 
     if (m->huffman == HUFFMAN_TABLE_OPTIMAL)
         return alloc_huffman(s);
@@ -681,7 +680,7 @@ const FFCodec ff_mjpeg_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MJPEGEncContext),
-    .init           = ff_mpv_encode_init,
+    .init           = mjpeg_encode_init,
     FF_CODEC_ENCODE_CB(ff_mpv_encode_picture),
     .close          = mjpeg_encode_close,
     .p.capabilities = AV_CODEC_CAP_DR1 |
@@ -711,7 +710,7 @@ const FFCodec ff_amv_encoder = {
     .p.id           = AV_CODEC_ID_AMV,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(MJPEGEncContext),
-    .init           = ff_mpv_encode_init,
+    .init           = mjpeg_encode_init,
     FF_CODEC_ENCODE_CB(amv_encode_picture),
     .close          = mjpeg_encode_close,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,

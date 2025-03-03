@@ -765,8 +765,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_AMV:
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
-        if ((ret = ff_mjpeg_encode_init(s)) < 0)
-            return ret;
         avctx->delay = 0;
         s->low_delay = 1;
         break;
