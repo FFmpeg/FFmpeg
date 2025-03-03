@@ -73,27 +73,6 @@ static int encode_ext_header(WMV2EncContext *w)
     return 0;
 }
 
-static av_cold int wmv2_encode_init(AVCodecContext *avctx)
-{
-    WMV2EncContext *const w = avctx->priv_data;
-    MpegEncContext *const s = &w->msmpeg4.m.s;
-
-    s->private_ctx = &w->common;
-    if (ff_mpv_encode_init(avctx) < 0)
-        return -1;
-
-    ff_wmv2_common_init(s);
-
-    avctx->extradata_size = WMV2_EXTRADATA_SIZE;
-    avctx->extradata      = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!avctx->extradata)
-        return AVERROR(ENOMEM);
-
-    encode_ext_header(w);
-
-    return 0;
-}
-
 int ff_wmv2_encode_picture_header(MpegEncContext *s)
 {
     WMV2EncContext *const w = (WMV2EncContext *) s;
@@ -235,6 +214,29 @@ void ff_wmv2_encode_mb(MpegEncContext *s, int16_t block[6][64],
         s->i_tex_bits += get_bits_diff(s);
     else
         s->p_tex_bits += get_bits_diff(s);
+}
+
+static av_cold int wmv2_encode_init(AVCodecContext *avctx)
+{
+    WMV2EncContext *const w = avctx->priv_data;
+    MpegEncContext *const s = &w->msmpeg4.m.s;
+    int ret;
+
+    s->private_ctx = &w->common;
+    ret = ff_mpv_encode_init(avctx);
+    if (ret < 0)
+        return ret;
+
+    ff_wmv2_common_init(s);
+
+    avctx->extradata_size = WMV2_EXTRADATA_SIZE;
+    avctx->extradata      = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!avctx->extradata)
+        return AVERROR(ENOMEM);
+
+    encode_ext_header(w);
+
+    return 0;
 }
 
 const FFCodec ff_wmv2_encoder = {
