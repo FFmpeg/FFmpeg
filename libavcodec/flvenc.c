@@ -20,9 +20,7 @@
 
 #include "codec_internal.h"
 #include "flvenc.h"
-#include "h263data.h"
 #include "mpegvideo.h"
-#include "mpegvideodata.h"
 #include "mpegvideoenc.h"
 
 void ff_flv_encode_picture_header(MpegEncContext *s)
@@ -63,14 +61,6 @@ void ff_flv_encode_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 1, 1);   /* DeblockingFlag: on */
     put_bits(&s->pb, 5, s->qscale);   /* Quantizer */
     put_bits(&s->pb, 1, 0);   /* ExtraInformation */
-
-    if (s->h263_aic) {
-        s->y_dc_scale_table =
-        s->c_dc_scale_table = ff_aic_dc_scale_table;
-    } else {
-        s->y_dc_scale_table =
-        s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
-    }
 }
 
 void ff_flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level,
