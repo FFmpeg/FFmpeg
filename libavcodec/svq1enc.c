@@ -631,7 +631,7 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
 
     ff_svq1enc_init(&s->svq1encdsp);
 
-    ff_h263_encode_init(&s->m); // mv_penalty
+    s->m.me.mv_penalty = ff_h263_get_mv_penalty();
 
     return write_ident(avctx, s->avctx->flags & AV_CODEC_FLAG_BITEXACT ? "Lavc" : LIBAVCODEC_IDENT);
 }

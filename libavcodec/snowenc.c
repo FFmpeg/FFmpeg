@@ -240,7 +240,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     mpv->me.score_map = mpv->me.map + ME_MAP_SIZE;
 
-    ff_h263_encode_init(mpv); //mv_penalty
+    mpv->me.mv_penalty = ff_h263_get_mv_penalty();
 
     s->max_ref_frames = av_clip(avctx->refs, 1, MAX_REF_FRAMES);
 
