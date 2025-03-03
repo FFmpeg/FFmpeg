@@ -277,25 +277,21 @@ fail:
     return ret;
 }
 
-static int alloc_huffman(MpegEncContext *s)
+static int alloc_huffman(MJPEGEncContext *const m2)
 {
-    MJpegContext *m = s->mjpeg_ctx;
-    size_t num_mbs, num_blocks, num_codes;
-    int blocks_per_mb;
-
-    switch (s->chroma_format) {
-    case CHROMA_420: blocks_per_mb =  6; break;
-    case CHROMA_422: blocks_per_mb =  8; break;
-    case CHROMA_444: blocks_per_mb = 12; break;
-    default: av_assert0(0);
+    MJpegContext   *const m = &m2->mjpeg;
+    MpegEncContext *const s = &m2->mpeg.s;
+    static const char blocks_per_mb[] = {
+        [CHROMA_420] = 6, [CHROMA_422] = 8, [CHROMA_444] = 12
     };
+    size_t num_blocks, num_codes;
 
     // Make sure we have enough space to hold this frame.
-    num_mbs = s->mb_width * s->mb_height;
-    num_blocks = num_mbs * blocks_per_mb;
+    num_blocks = s->mb_num * blocks_per_mb[s->chroma_format];
     num_codes = num_blocks * 64;
 
-    m->huff_buffer = av_malloc_array(num_codes, sizeof(MJpegHuffmanCode));
+    m->huff_buffer = av_malloc_array(num_codes,
+                                     64 /* codes per MB */ * sizeof(MJpegHuffmanCode));
     if (!m->huff_buffer)
         return AVERROR(ENOMEM);
     return 0;
@@ -369,7 +365,7 @@ static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
         m->huffman = HUFFMAN_TABLE_DEFAULT;
 
     if (m->huffman == HUFFMAN_TABLE_OPTIMAL)
-        return alloc_huffman(s);
+        return alloc_huffman(m2);
 
     return 0;
 }
