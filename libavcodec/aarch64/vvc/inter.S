@@ -251,22 +251,18 @@ function ff_vvc_dmvr_8_neon, export=1
 1:
         cbz             w15, 2f
         ldr             q0, [src], #16
-        uxtl            v1.8h, v0.8b
-        uxtl2           v2.8h, v0.16b
-        ushl            v1.8h, v1.8h, v16.8h
-        ushl            v2.8h, v2.8h, v16.8h
+        ushll           v1.8h, v0.8b, #2
+        ushll2          v2.8h, v0.16b, #2
         stp             q1, q2, [dst], #32
         b               3f
 2:
         ldr             d0, [src], #8
-        uxtl            v1.8h, v0.8b
-        ushl            v1.8h, v1.8h, v16.8h
+        ushll           v1.8h, v0.8b, #2
         str             q1, [dst], #16
 3:
         subs            height, height, #1
         ldr             s3, [src], #4
-        uxtl            v4.8h, v3.8b
-        ushl            v4.4h, v4.4h, v16.4h
+        ushll           v4.8h, v3.8b, #2
         st1             {v4.4h}, [dst], x7
 
         add             src, src, src_stride
@@ -281,42 +277,24 @@ function ff_vvc_dmvr_12_neon, export=1
         cmp             width, #16
         sub             src_stride, src_stride, x6, lsl #1
         cset            w15, gt                     // width > 16
-        movi            v16.8h, #2                  // offset4
         sub             x7, x7, x6, lsl #1
 1:
         cbz             w15, 2f
         ldp             q0, q1, [src], #32
-        uaddl           v2.4s, v0.4h, v16.4h
-        uaddl2          v3.4s, v0.8h, v16.8h
-        uaddl           v4.4s, v1.4h, v16.4h
-        uaddl2          v5.4s, v1.8h, v16.8h
-        ushr            v2.4s, v2.4s, #2
-        ushr            v3.4s, v3.4s, #2
-        ushr            v4.4s, v4.4s, #2
-        ushr            v5.4s, v5.4s, #2
-        uqxtn           v2.4h, v2.4s
-        uqxtn2          v2.8h, v3.4s
-        uqxtn           v4.4h, v4.4s
-        uqxtn2          v4.8h, v5.4s
+        urshr           v0.8h, v0.8h, #2
+        urshr           v1.8h, v1.8h, #2
 
-        stp             q2, q4, [dst], #32
+        stp             q0, q1, [dst], #32
         b               3f
 2:
         ldr             q0, [src], #16
-        uaddl           v2.4s, v0.4h, v16.4h
-        uaddl2          v3.4s, v0.8h, v16.8h
-        ushr            v2.4s, v2.4s, #2
-        ushr            v3.4s, v3.4s, #2
-        uqxtn           v2.4h, v2.4s
-        uqxtn2          v2.8h, v3.4s
-        str             q2, [dst], #16
+        urshr           v0.8h, v0.8h, #2
+        str             q0, [dst], #16
 3:
         subs            height, height, #1
         ldr             d0, [src], #8
-        uaddl           v3.4s, v0.4h, v16.4h
-        ushr            v3.4s, v3.4s, #2
-        uqxtn           v3.4h, v3.4s
-        st1             {v3.4h}, [dst], x7
+        urshr           v0.4h, v0.4h, #2
+        st1             {v0.4h}, [dst], x7
 
         add             src, src, src_stride
         b.ne            1b
@@ -344,8 +322,6 @@ function ff_vvc_dmvr_hv_8_neon, export=1
         ldrb            w10, [x12]
         ldrb            w11, [x12, #1]
         sxtw            x6, w6
-        movi            v30.8h, #(1 << (8 - 7))     // offset1
-        movi            v31.8h, #8                  // offset2
         dup             v2.8h, w10                  // filter_y[0]
         dup             v3.8h, w11                  // filter_y[1]
 
@@ -373,10 +349,8 @@ function ff_vvc_dmvr_hv_8_neon, export=1
         mul             v16.8h, v16.8h, v0.8h
         mla             v6.8h, v7.8h, v1.8h
         mla             v16.8h, v17.8h, v1.8h
-        add             v6.8h, v6.8h, v30.8h
-        add             v16.8h, v16.8h, v30.8h
-        ushr            v6.8h, v6.8h, #(8 - 6)
-        ushr            v7.8h, v16.8h, #(8 - 6)
+        urshr           v6.8h, v6.8h, #(8 - 6)
+        urshr           v7.8h, v16.8h, #(8 - 6)
         stp             q6, q7, [x13], #32
 
         cbz             w10, 3f
@@ -386,10 +360,8 @@ function ff_vvc_dmvr_hv_8_neon, export=1
         mul             v17.8h, v17.8h, v2.8h
         mla             v16.8h, v6.8h, v3.8h
         mla             v17.8h, v7.8h, v3.8h
-        add             v16.8h, v16.8h, v31.8h
-        add             v17.8h, v17.8h, v31.8h
-        ushr            v16.8h, v16.8h, #4
-        ushr            v17.8h, v17.8h, #4
+        urshr           v16.8h, v16.8h, #4
+        urshr           v17.8h, v17.8h, #4
         stp             q16, q17, [x14], #32
         b               3f
 2:
@@ -400,8 +372,7 @@ function ff_vvc_dmvr_hv_8_neon, export=1
         uxtl            v6.8h, v4.8b
         mul             v6.8h, v6.8h, v0.8h
         mla             v6.8h, v7.8h, v1.8h
-        add             v6.8h, v6.8h, v30.8h
-        ushr            v6.8h, v6.8h, #(8 - 6)
+        urshr           v6.8h, v6.8h, #(8 - 6)
         str             q6, [x13], #16
 
         cbz             w10, 3f
@@ -409,8 +380,7 @@ function ff_vvc_dmvr_hv_8_neon, export=1
         ldr             q16, [x12], #16
         mul             v16.8h, v16.8h, v2.8h
         mla             v16.8h, v6.8h, v3.8h
-        add             v16.8h, v16.8h, v31.8h
-        ushr            v16.8h, v16.8h, #4
+        urshr           v16.8h, v16.8h, #4
         str             q16, [x14], #16
 3:
         ldur            s5, [src, #1]
@@ -419,8 +389,7 @@ function ff_vvc_dmvr_hv_8_neon, export=1
         uxtl            v6.8h, v4.8b
         mul             v6.4h, v6.4h, v0.4h
         mla             v6.4h, v7.4h, v1.4h
-        add             v6.4h, v6.4h, v30.4h
-        ushr            v6.4h, v6.4h, #(8 - 6)
+        urshr           v6.4h, v6.4h, #(8 - 6)
         str             d6, [x13], #8
 
         cbz             w10, 4f
@@ -428,8 +397,7 @@ function ff_vvc_dmvr_hv_8_neon, export=1
         ldr             d16, [x12], #8
         mul             v16.4h, v16.4h, v2.4h
         mla             v16.4h, v6.4h, v3.4h
-        add             v16.4h, v16.4h, v31.4h
-        ushr            v16.4h, v16.4h, #4
+        urshr           v16.4h, v16.4h, #4
         str             d16, [x14], #8
 4:
         subs            height, height, #1
