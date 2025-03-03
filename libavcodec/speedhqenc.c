@@ -95,9 +95,10 @@ static av_cold void speedhq_init_static_data(void)
                              ff_speedhq_vlc_table, uni_speedhq_ac_vlc_len);
 }
 
-void ff_speedhq_encode_picture_header(MpegEncContext *s)
+static int speedhq_encode_picture_header(MPVMainEncContext *const m)
 {
-    SpeedHQEncContext *ctx = (SpeedHQEncContext*)s;
+    SpeedHQEncContext *const ctx = (SpeedHQEncContext*)m;
+    MpegEncContext *const s = &m->s;
 
     put_bits_le(&s->pb, 8, 100 - s->qscale * 2);  /* FIXME why doubled */
     put_bits_le(&s->pb, 24, 4);  /* no second field */
@@ -105,6 +106,8 @@ void ff_speedhq_encode_picture_header(MpegEncContext *s)
     ctx->slice_start = 4;
     /* length of first slice, will be filled out later */
     put_bits_le(&s->pb, 24, 0);
+
+    return 0;
 }
 
 void ff_speedhq_end_slice(MpegEncContext *s)
@@ -230,7 +233,8 @@ void ff_speedhq_encode_mb(MpegEncContext *s, int16_t block[12][64])
 static av_cold int speedhq_encode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
-    MpegEncContext *const s = avctx->priv_data;
+    MPVMainEncContext *const m = avctx->priv_data;
+    MpegEncContext *const s = &m->s;
     int ret;
 
     if (avctx->width > 65500 || avctx->height > 65500) {
@@ -257,6 +261,8 @@ static av_cold int speedhq_encode_init(AVCodecContext *avctx)
     default:
         av_assert0(0);
     }
+
+    m->encode_picture_header = speedhq_encode_picture_header;
 
     s->min_qcoeff = -2048;
     s->max_qcoeff = 2047;

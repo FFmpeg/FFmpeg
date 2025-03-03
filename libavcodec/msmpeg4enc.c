@@ -135,20 +135,6 @@ static av_cold void msmpeg4_encode_init_static(void)
     }
 }
 
-av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
-{
-    static AVOnce init_static_once = AV_ONCE_INIT;
-
-    ff_msmpeg4_common_init(s);
-    if (s->msmpeg4_version >= MSMP4_WMV1) {
-        s->min_qcoeff = -255;
-        s->max_qcoeff =  255;
-    }
-
-    /* init various encoding tables */
-    ff_thread_once(&init_static_once, msmpeg4_encode_init_static);
-}
-
 static void find_best_tables(MSMPEG4EncContext *ms)
 {
     MpegEncContext *const s = &ms->m.s;
@@ -215,9 +201,10 @@ static void find_best_tables(MSMPEG4EncContext *ms)
 }
 
 /* write MSMPEG4 compatible frame header */
-void ff_msmpeg4_encode_picture_header(MpegEncContext * s)
+static int msmpeg4_encode_picture_header(MPVMainEncContext *const m)
 {
-    MSMPEG4EncContext *const ms = (MSMPEG4EncContext*)s;
+    MSMPEG4EncContext *const ms = (MSMPEG4EncContext*)m;
+    MpegEncContext *const s = &m->s;
 
     find_best_tables(ms);
 
@@ -275,6 +262,8 @@ void ff_msmpeg4_encode_picture_header(MpegEncContext * s)
 
     s->esc3_level_length= 0;
     s->esc3_run_length= 0;
+
+    return 0;
 }
 
 void ff_msmpeg4_encode_ext_header(MpegEncContext * s)
@@ -672,6 +661,25 @@ void ff_msmpeg4_encode_block(MpegEncContext * s, int16_t * block, int n)
             last_non_zero = i;
         }
     }
+}
+
+av_cold void ff_msmpeg4_encode_init(MPVMainEncContext *const m)
+{
+    MpegEncContext *const s = &m->s;
+    static AVOnce init_static_once = AV_ONCE_INIT;
+
+    ff_msmpeg4_common_init(s);
+
+    if (s->msmpeg4_version <= MSMP4_WMV1)
+        m->encode_picture_header = msmpeg4_encode_picture_header;
+
+    if (s->msmpeg4_version >= MSMP4_WMV1) {
+        s->min_qcoeff = -255;
+        s->max_qcoeff =  255;
+    }
+
+    /* init various encoding tables */
+    ff_thread_once(&init_static_once, msmpeg4_encode_init_static);
 }
 
 const FFCodec ff_msmpeg4v2_encoder = {

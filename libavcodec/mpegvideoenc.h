@@ -74,6 +74,8 @@ typedef struct MPVMainEncContext {
     int frame_skip_cmp;
     me_cmp_func frame_skip_cmp_fn;
 
+    int (*encode_picture_header)(struct MPVMainEncContext *m);
+
     /* bit rate control */
     int64_t total_bits;
     int frame_bits;                ///< bits used for the current frame

@@ -23,8 +23,9 @@
 #include "mpegvideo.h"
 #include "mpegvideoenc.h"
 
-void ff_flv_encode_picture_header(MpegEncContext *s)
+int ff_flv_encode_picture_header(MPVMainEncContext *const m)
 {
+    MpegEncContext *const s = &m->s;
     int format;
 
     align_put_bits(&s->pb);
@@ -61,6 +62,8 @@ void ff_flv_encode_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 1, 1);   /* DeblockingFlag: on */
     put_bits(&s->pb, 5, s->qscale);   /* Quantizer */
     put_bits(&s->pb, 1, 0);   /* ExtraInformation */
+
+    return 0;
 }
 
 void ff_flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level,

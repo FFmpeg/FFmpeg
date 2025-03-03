@@ -104,13 +104,16 @@ static void mjpeg_encode_picture_header(MpegEncContext *s)
         s->thread_context[i]->esc_pos = 0;
 }
 
-void ff_mjpeg_amv_encode_picture_header(MpegEncContext *s)
+static int mjpeg_amv_encode_picture_header(MPVMainEncContext *const m)
 {
-    MJPEGEncContext *const m = (MJPEGEncContext*)s;
-    av_assert2(s->mjpeg_ctx == &m->mjpeg);
+    MJPEGEncContext *const m2 = (MJPEGEncContext*)m;
+    MpegEncContext *const s = &m->s;
+    av_assert2(s->mjpeg_ctx == &m2->mjpeg);
     /* s->huffman == HUFFMAN_TABLE_OPTIMAL can only be true for MJPEG. */
-    if (!CONFIG_MJPEG_ENCODER || m->mjpeg.huffman != HUFFMAN_TABLE_OPTIMAL)
+    if (!CONFIG_MJPEG_ENCODER || m2->mjpeg.huffman != HUFFMAN_TABLE_OPTIMAL)
         mjpeg_encode_picture_header(s);
+
+    return 0;
 }
 
 #if CONFIG_MJPEG_ENCODER
@@ -309,6 +312,7 @@ static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
     int ret;
 
     s->mjpeg_ctx = m;
+    m2->mpeg.encode_picture_header = mjpeg_amv_encode_picture_header;
 
     if (s->mpv_flags & FF_MPV_FLAG_QP_RD) {
         // Used to produce garbage with MJPEG.

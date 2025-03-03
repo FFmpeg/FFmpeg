@@ -34,7 +34,10 @@
 #include "put_bits.h"
 #include "rv10enc.h"
 
-void ff_rv20_encode_picture_header(MpegEncContext *s) {
+int ff_rv20_encode_picture_header(MPVMainEncContext *const m)
+{
+    MpegEncContext *const s = &m->s;
+
     put_bits(&s->pb, 2, s->pict_type); //I 0 vs. 1 ?
     put_bits(&s->pb, 1, 0);     /* unknown bit */
     put_bits(&s->pb, 5, s->qscale);
@@ -60,6 +63,7 @@ void ff_rv20_encode_picture_header(MpegEncContext *s) {
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }
+    return 0;
 }
 
 const FFCodec ff_rv20_encoder = {

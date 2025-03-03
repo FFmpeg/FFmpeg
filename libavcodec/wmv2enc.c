@@ -73,9 +73,10 @@ static int encode_ext_header(WMV2EncContext *w)
     return 0;
 }
 
-int ff_wmv2_encode_picture_header(MpegEncContext *s)
+static int wmv2_encode_picture_header(MPVMainEncContext *const m)
 {
-    WMV2EncContext *const w = (WMV2EncContext *) s;
+    WMV2EncContext *const w = (WMV2EncContext *) m;
+    MpegEncContext *const s = &m->s;
 
     put_bits(&s->pb, 1, s->pict_type - 1);
     if (s->pict_type == AV_PICTURE_TYPE_I)
@@ -222,6 +223,7 @@ static av_cold int wmv2_encode_init(AVCodecContext *avctx)
     MpegEncContext *const s = &w->msmpeg4.m.s;
     int ret;
 
+    w->msmpeg4.m.encode_picture_header = wmv2_encode_picture_header;
     s->private_ctx = &w->common;
     ret = ff_mpv_encode_init(avctx);
     if (ret < 0)

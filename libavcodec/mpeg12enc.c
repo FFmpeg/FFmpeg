@@ -333,7 +333,7 @@ void ff_mpeg1_encode_slice_header(MpegEncContext *s)
     put_bits(&s->pb, 1, 0);
 }
 
-void ff_mpeg1_encode_picture_header(MPVMainEncContext *const m)
+static int mpeg1_encode_picture_header(MPVMainEncContext *const m)
 {
     MPEG12EncContext *const mpeg12 = (MPEG12EncContext*)m;
     MpegEncContext *const s = &m->s;
@@ -485,6 +485,8 @@ void ff_mpeg1_encode_picture_header(MPVMainEncContext *const m)
 
     s->mb_y = 0;
     ff_mpeg1_encode_slice_header(s);
+
+    return 0;
 }
 
 static inline void put_mb_modes(MpegEncContext *s, int n, int bits,
@@ -1107,6 +1109,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
                 avctx->level = 4;                   /* High */
         }
     }
+
+    m->encode_picture_header = mpeg1_encode_picture_header;
 
     s->me.mv_penalty = mv_penalty;
     s->fcode_tab     = fcode_tab + MAX_MV;

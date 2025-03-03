@@ -66,9 +66,10 @@ typedef struct H261EncContext {
     } format;
 } H261EncContext;
 
-void ff_h261_encode_picture_header(MpegEncContext *s)
+static int h261_encode_picture_header(MPVMainEncContext *const m)
 {
-    H261EncContext *const h = (H261EncContext *)s;
+    H261EncContext *const h = (H261EncContext *)m;
+    MpegEncContext *const s = &h->s.s;
     int temp_ref;
 
     align_put_bits(&s->pb);
@@ -94,6 +95,8 @@ void ff_h261_encode_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 1, 0); /* no PEI */
     h->gob_number = h->format - 1;
     s->mb_skip_run = 0;
+
+    return 0;
 }
 
 /**
@@ -370,6 +373,7 @@ static av_cold int h261_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
     s->private_ctx = &h->common;
+    h->s.encode_picture_header = h261_encode_picture_header;
 
     s->min_qcoeff       = -127;
     s->max_qcoeff       = 127;

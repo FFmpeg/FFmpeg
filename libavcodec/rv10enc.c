@@ -31,8 +31,9 @@
 #include "put_bits.h"
 #include "rv10enc.h"
 
-int ff_rv10_encode_picture_header(MpegEncContext *s)
+int ff_rv10_encode_picture_header(MPVMainEncContext *const m)
 {
+    MpegEncContext *const s = &m->s;
     int full_frame= 0;
 
     align_put_bits(&s->pb);

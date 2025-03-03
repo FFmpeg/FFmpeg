@@ -221,8 +221,9 @@ av_const int ff_h263_aspect_to_info(AVRational aspect){
     return FF_ASPECT_EXTENDED;
 }
 
-void ff_h263_encode_picture_header(MpegEncContext * s)
+static int h263_encode_picture_header(MPVMainEncContext *const m)
 {
+    MpegEncContext *const s = &m->s;
     int format, coded_frame_rate, coded_frame_rate_base, i, temp_ref;
     int best_clock_code=1;
     int best_divisor=60;
@@ -354,6 +355,8 @@ void ff_h263_encode_picture_header(MpegEncContext * s)
 
         put_bits(&s->pb, 1, 1);
     }
+
+    return 0;
 }
 
 /**
@@ -819,8 +822,10 @@ void ff_h263_update_mb(MpegEncContext *s)
     ff_h263_update_motion_val(s);
 }
 
-av_cold void ff_h263_encode_init(MpegEncContext *s)
+av_cold void ff_h263_encode_init(MPVMainEncContext *const m)
 {
+    MpegEncContext *const s = &m->s;
+
     s->me.mv_penalty = ff_h263_get_mv_penalty(); // FIXME exact table for MSMPEG4 & H.263+
 
     s->intra_ac_vlc_length     =s->inter_ac_vlc_length     = uni_h263_inter_rl_len;
@@ -854,6 +859,7 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
         break;
         // Note for MPEG-4 & H.263 the dc-scale table will be set per frame as needed later
     case AV_CODEC_ID_FLV1:
+        m->encode_picture_header = ff_flv_encode_picture_header;
         if (s->h263_flv > 1) {
             s->min_qcoeff= -1023;
             s->max_qcoeff=  1023;
@@ -866,6 +872,9 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
         s->min_qcoeff= -127;
         s->max_qcoeff=  127;
     }
+    // H.263, H.263+; will be overwritten for MSMPEG-4 later
+    if (!m->encode_picture_header)
+        m->encode_picture_header = h263_encode_picture_header;
 
     ff_h263dsp_init(&s->h263dsp);
 }

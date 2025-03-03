@@ -66,7 +66,6 @@
 #include "qpeldsp.h"
 #include "faandct.h"
 #include "aandcttab.h"
-#include "flvenc.h"
 #include "mpeg4video.h"
 #include "mpeg4videodata.h"
 #include "mpeg4videoenc.h"
@@ -809,12 +808,17 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         avctx->delay = 0;
         s->low_delay = 1;
         break;
+#if CONFIG_RV10_ENCODER
     case AV_CODEC_ID_RV10:
+        m->encode_picture_header = ff_rv10_encode_picture_header;
         s->out_format = FMT_H263;
         avctx->delay  = 0;
         s->low_delay  = 1;
         break;
+#endif
+#if CONFIG_RV20_ENCODER
     case AV_CODEC_ID_RV20:
+        m->encode_picture_header = ff_rv20_encode_picture_header;
         s->out_format      = FMT_H263;
         avctx->delay       = 0;
         s->low_delay       = 1;
@@ -824,6 +828,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->loop_filter     = 1;
         s->unrestricted_mv = 0;
         break;
+#endif
     case AV_CODEC_ID_MPEG4:
         s->out_format      = FMT_H263;
         s->h263_pred       = 1;
@@ -996,10 +1001,10 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     }
 
     if (CONFIG_H263_ENCODER && s->out_format == FMT_H263) {
-        ff_h263_encode_init(s);
+        ff_h263_encode_init(m);
 #if CONFIG_MSMPEG4ENC
         if (s->msmpeg4_version != MSMP4_UNUSED)
-            ff_msmpeg4_encode_init(s);
+            ff_msmpeg4_encode_init(m);
 #endif
     }
 
@@ -3888,50 +3893,9 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
 
     s->mb_x = s->mb_y = 0;
     s->last_bits= put_bits_count(&s->pb);
-    switch(s->out_format) {
-#if CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER
-    case FMT_MJPEG:
-        ff_mjpeg_amv_encode_picture_header(s);
-        break;
-#endif
-    case FMT_SPEEDHQ:
-        if (CONFIG_SPEEDHQ_ENCODER)
-            ff_speedhq_encode_picture_header(s);
-        break;
-    case FMT_H261:
-        if (CONFIG_H261_ENCODER)
-            ff_h261_encode_picture_header(s);
-        break;
-    case FMT_H263:
-        if (CONFIG_WMV2_ENCODER && s->codec_id == AV_CODEC_ID_WMV2)
-            ff_wmv2_encode_picture_header(s);
-#if CONFIG_MSMPEG4ENC
-        else if (s->msmpeg4_version != MSMP4_UNUSED)
-            ff_msmpeg4_encode_picture_header(s);
-#endif
-        else if (CONFIG_MPEG4_ENCODER && s->h263_pred) {
-            ret = ff_mpeg4_encode_picture_header(m);
-            if (ret < 0)
-                return ret;
-        } else if (CONFIG_RV10_ENCODER && s->codec_id == AV_CODEC_ID_RV10) {
-            ret = ff_rv10_encode_picture_header(s);
-            if (ret < 0)
-                return ret;
-        }
-        else if (CONFIG_RV20_ENCODER && s->codec_id == AV_CODEC_ID_RV20)
-            ff_rv20_encode_picture_header(s);
-        else if (CONFIG_FLV_ENCODER && s->codec_id == AV_CODEC_ID_FLV1)
-            ff_flv_encode_picture_header(s);
-        else if (CONFIG_H263_ENCODER)
-            ff_h263_encode_picture_header(s);
-        break;
-    case FMT_MPEG1:
-        if (CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
-            ff_mpeg1_encode_picture_header(m);
-        break;
-    default:
-        av_assert0(0);
-    }
+    ret = m->encode_picture_header(m);
+    if (ret < 0)
+        return ret;
     bits= put_bits_count(&s->pb);
     m->header_bits = bits - s->last_bits;
 

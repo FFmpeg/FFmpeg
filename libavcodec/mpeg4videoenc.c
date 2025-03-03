@@ -1062,7 +1062,7 @@ static void mpeg4_encode_vol_header(Mpeg4EncContext *const m4,
 }
 
 /* write MPEG-4 VOP header */
-int ff_mpeg4_encode_picture_header(MPVMainEncContext *const m)
+static int mpeg4_encode_picture_header(MPVMainEncContext *const m)
 {
     Mpeg4EncContext *const m4 = mainctx_to_mpeg4(m);
     MpegEncContext *const s = &m->s;
@@ -1291,13 +1291,16 @@ static av_cold int encode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
     Mpeg4EncContext *const m4 = avctx->priv_data;
-    MpegEncContext  *const  s = &m4->m.s;
+    MPVMainEncContext *const m = &m4->m;
+    MpegEncContext  *const  s = &m->s;
     int ret;
 
     if (avctx->width >= (1<<13) || avctx->height >= (1<<13)) {
         av_log(avctx, AV_LOG_ERROR, "dimensions too large for MPEG-4\n");
         return AVERROR(EINVAL);
     }
+
+    m->encode_picture_header = mpeg4_encode_picture_header;
 
     ff_qpeldsp_init(&s->qdsp);
     if ((ret = ff_mpv_encode_init(avctx)) < 0)
