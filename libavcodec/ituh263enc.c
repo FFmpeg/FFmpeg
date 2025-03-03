@@ -826,6 +826,9 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
     if(s->h263_aic){
         s->intra_ac_vlc_length     = uni_h263_intra_aic_rl_len;
         s->intra_ac_vlc_last_length= uni_h263_intra_aic_rl_len + 128*64;
+
+        s->y_dc_scale_table =
+        s->c_dc_scale_table = ff_aic_dc_scale_table;
     }
     s->ac_esc_length= 7+1+6+8;
 
@@ -857,10 +860,6 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
     default: //nothing needed - default table already set in mpegvideo.c
         s->min_qcoeff= -127;
         s->max_qcoeff=  127;
-    }
-    if(s->h263_aic){
-         s->y_dc_scale_table=
-         s->c_dc_scale_table= ff_aic_dc_scale_table;
     }
 
 #if CONFIG_H263_ENCODER // Snow and SVQ1 call this
