@@ -30,6 +30,7 @@
 #include "config_components.h"
 
 #include <limits.h>
+#include <string.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/thread.h"
@@ -93,8 +94,7 @@ static av_cold void init_mv_penalty_and_fcode(void)
         }
     }
 
-    for (int mv = 0; mv < MAX_MV * 2 + 1; mv++)
-        umv_fcode_tab[mv]= 1;
+    memset(umv_fcode_tab, 1, sizeof(umv_fcode_tab));
 }
 
 static av_cold void init_uni_h263_rl_tab(const RLTable *rl, uint8_t *len_tab)
