@@ -239,10 +239,17 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     }
 
     if (opts.bench && time_ref) {
-        printf("  time=%"PRId64" us, ref=%"PRId64" us, speedup=%.3fx %s\n",
-                time / opts.iters, time_ref / opts.iters,
-                (double) time_ref / time,
-                time <= time_ref ? "faster" : "\033[1;33mslower\033[0m");
+        double ratio = (double) time_ref / time;
+        const char *color = ratio > 1.10 ? "\033[1;32m" : /* bold green */
+                            ratio > 1.02 ? "\033[32m"   : /* green */
+                            ratio > 0.98 ? ""           : /* default */
+                            ratio > 0.95 ? "\033[33m"   : /* yellow */
+                            ratio > 0.90 ? "\033[31m"   : /* red */
+                                           "\033[1;31m";  /* bold red */
+
+        printf("  time=%"PRId64" us, ref=%"PRId64" us, speedup=%.3fx %s%s\033[0m\n",
+               time / opts.iters, time_ref / opts.iters, ratio, color,
+               ratio >= 1.0 ? "faster" : "slower");
     } else if (opts.bench) {
         printf("  time=%"PRId64" us\n", time / opts.iters);
     }
