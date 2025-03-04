@@ -229,6 +229,8 @@ static inline int ff_thread_setname(const char *name)
 #endif
 #elif HAVE_PTHREAD_SET_NAME_NP
     pthread_set_name_np(pthread_self(), name);
+#elif HAVE_W32THREADS
+    ret = win32_thread_setname(name);
 #else
     ret = AVERROR(ENOSYS);
 #endif

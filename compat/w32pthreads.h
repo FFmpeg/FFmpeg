@@ -44,6 +44,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/time.h"
+#include "libavutil/wchar_filename.h"
 
 typedef struct pthread_t {
     void *handle;
@@ -207,6 +208,40 @@ static inline int pthread_cond_signal(pthread_cond_t *cond)
 static inline int pthread_setcancelstate(int state, int *oldstate)
 {
     return 0;
+}
+
+static inline int win32_thread_setname(const char *name)
+{
+#if !HAVE_UWP
+    typedef HRESULT (WINAPI *SetThreadDescriptionFn)(HANDLE, PCWSTR);
+
+    // Although SetThreadDescription lives in kernel32.dll, on Windows Server 2016,
+    // Windows 10 LTSB 2016 and Windows 10 version 1607, it was only available in
+    // kernelbase.dll. So, load it from there for maximum coverage.
+    HMODULE kernelbase = GetModuleHandleW(L"kernelbase.dll");
+    if (!kernelbase)
+        return AVERROR(ENOSYS);
+
+    SetThreadDescriptionFn pSetThreadDescription =
+        (SetThreadDescriptionFn)GetProcAddress(kernelbase, "SetThreadDescription");
+    if (!pSetThreadDescription)
+        return AVERROR(ENOSYS);
+
+    wchar_t *wname;
+    if (utf8towchar(name, &wname) < 0)
+        return AVERROR(ENOMEM);
+
+    HRESULT hr = pSetThreadDescription(GetCurrentThread(), wname);
+    av_free(wname);
+    return SUCCEEDED(hr) ? 0 : AVERROR(EINVAL);
+#else
+    // UWP is not supported because we cannot use LoadLibrary/GetProcAddress to
+    // detect the availability of the SetThreadDescription API. There is a small
+    // gap in Windows builds 1507-1607 where it was not available. UWP allows
+    // querying the availability of APIs with QueryOptionalDelayLoadedAPI, but it
+    // requires /DELAYLOAD:kernel32.dll during linking, and we cannot enforce that.
+    return AVERROR(ENOSYS);
+#endif
 }
 
 #endif /* COMPAT_W32PTHREADS_H */
