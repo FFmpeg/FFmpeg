@@ -780,7 +780,7 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
 
     ff_mpeg12_init_vlcs();
 
-    s2->chroma_format              = 1;
+    s2->chroma_format  = CHROMA_420;
     avctx->color_range             = AVCOL_RANGE_MPEG;
     return 0;
 }
@@ -864,11 +864,11 @@ static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
     if (CONFIG_GRAY && (avctx->flags & AV_CODEC_FLAG_GRAY))
         return AV_PIX_FMT_GRAY8;
 
-    if (s->chroma_format < 2)
+    if (s->chroma_format < CHROMA_422)
         pix_fmts = avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO ?
                                 mpeg1_hwaccel_pixfmt_list_420 :
                                 mpeg2_hwaccel_pixfmt_list_420;
-    else if (s->chroma_format == 2)
+    else if (s->chroma_format == CHROMA_422)
         pix_fmts = mpeg12_pixfmt_list_422;
     else
         pix_fmts = mpeg12_pixfmt_list_444;
@@ -990,9 +990,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
             switch (s->chroma_format) {
-            case 1: avctx->chroma_sample_location = AVCHROMA_LOC_LEFT; break;
-            case 2:
-            case 3: avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT; break;
+            case CHROMA_420: avctx->chroma_sample_location = AVCHROMA_LOC_LEFT; break;
+            case CHROMA_422:
+            case CHROMA_444: avctx->chroma_sample_location = AVCHROMA_LOC_TOPLEFT; break;
             default: av_assert0(0);
             }
         } // MPEG-2
@@ -1066,7 +1066,7 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
     s->chroma_format        = get_bits(&s->gb, 2); /* chroma_format 1=420, 2=422, 3=444 */
 
     if (!s->chroma_format) {
-        s->chroma_format = 1;
+        s->chroma_format = CHROMA_420;
         av_log(s->avctx, AV_LOG_WARNING, "Chroma format invalid\n");
     }
 
@@ -1545,7 +1545,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
 
             if (s->mb_y >= s->mb_height) {
                 int left   = get_bits_left(&s->gb);
-                int is_d10 = s->chroma_format == 2 &&
+                int is_d10 = s->chroma_format == CHROMA_422 &&
                              s->pict_type == AV_PICTURE_TYPE_I &&
                              avctx->profile == 0 && avctx->level == 5 &&
                              s->intra_dc_precision == 2 &&
@@ -1843,7 +1843,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     s->picture_structure    = PICT_FRAME;
     s->first_field          = 0;
     s->frame_pred_frame_dct = 1;
-    s->chroma_format        = 1;
+    s->chroma_format        = CHROMA_420;
     s->codec_id             =
     s->avctx->codec_id      = AV_CODEC_ID_MPEG1VIDEO;
     if (s->avctx->flags & AV_CODEC_FLAG_LOW_DELAY)
@@ -1895,7 +1895,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     s->picture_structure     = PICT_FRAME;
     s->first_field           = 0;
     s->frame_pred_frame_dct  = 1;
-    s->chroma_format         = 1;
+    s->chroma_format         = CHROMA_420;
     if (s->codec_tag == AV_RL32("BW10")) {
         s->codec_id              = s->avctx->codec_id = AV_CODEC_ID_MPEG1VIDEO;
     } else {
