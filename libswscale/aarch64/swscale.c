@@ -300,13 +300,12 @@ av_cold void ff_sws_init_swscale_aarch64(SwsInternal *c)
                 c->chrToYV12 = ff_bgr24ToUV_neon;
             break;
         case AV_PIX_FMT_BGRA:
+            c->lumToYV12 = ff_bgra32ToY_neon;
 #if HAVE_DOTPROD
             if (have_dotprod(cpu_flags)) {
                 c->lumToYV12 = ff_bgra32ToY_neon_dotprod;
             }
-            else
 #endif
-            c->lumToYV12 = ff_bgra32ToY_neon;
             if (c->chrSrcHSubSample)
                 c->chrToYV12 = ff_bgra32ToUV_half_neon;
             else
@@ -320,13 +319,12 @@ av_cold void ff_sws_init_swscale_aarch64(SwsInternal *c)
                 c->chrToYV12 = ff_rgb24ToUV_neon;
             break;
         case AV_PIX_FMT_RGBA:
+            c->lumToYV12 = ff_rgba32ToY_neon;
 #if HAVE_DOTPROD
             if (have_dotprod(cpu_flags)) {
                 c->lumToYV12 = ff_rgba32ToY_neon_dotprod;
             }
-            else
 #endif
-            c->lumToYV12 = ff_rgba32ToY_neon;
             if (c->chrSrcHSubSample)
                 c->chrToYV12 = ff_rgba32ToUV_half_neon;
             else
