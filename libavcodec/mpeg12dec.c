@@ -1655,11 +1655,11 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
     }
 eos: // end of slice
     if (get_bits_left(&s->gb) < 0) {
-        av_log(s, AV_LOG_ERROR, "overread %d\n", -get_bits_left(&s->gb));
+        av_log(s->avctx, AV_LOG_ERROR, "overread %d\n", -get_bits_left(&s->gb));
         return AVERROR_INVALIDDATA;
     }
     *buf += (get_bits_count(&s->gb) - 1) / 8;
-    ff_dlog(s, "Slice start:%d %d  end:%d %d\n", s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y);
+    ff_dlog(s->avctx, "Slice start:%d %d  end:%d %d\n", s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y);
     return 0;
 }
 
