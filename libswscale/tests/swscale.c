@@ -321,6 +321,18 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
             goto error;
 
         get_ssim(ssim_sws, out, ref, comps);
+
+        /* Legacy swscale does not perform bit accurate upconversions of low
+         * bit depth RGB. This artificially improves the SSIM score because the
+         * resulting error deletes some of the input dither noise. This gives
+         * it an unfair advantage when compared against a bit exact reference.
+         * Work around this by ensuring that the reference SSIM score is not
+         * higher than it theoretically "should" be. */
+        if (src_var > dst_var) {
+            const float src_loss = (2 * ref_var + c1) / (2 * ref_var + src_var + c1);
+            ssim_sws[0] = FFMIN(ssim_sws[0], src_loss);
+        }
+
         ssim_ref = ssim_sws;
     }
 
