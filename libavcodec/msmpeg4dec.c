@@ -77,7 +77,7 @@ static int msmpeg4v2_decode_motion(MpegEncContext * s, int pred, int f_code)
     int code, val, sign, shift;
 
     code = get_vlc2(&s->gb, ff_h263_mv_vlc, H263_MV_VLC_BITS, 2);
-    ff_dlog(s, "MV code %d at %d %d pred: %d\n", code, s->mb_x,s->mb_y, pred);
+    ff_dlog(s->avctx, "MV code %d at %d %d pred: %d\n", code, s->mb_x,s->mb_y, pred);
     if (code < 0)
         return 0xffff;
 
@@ -267,14 +267,14 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, int16_t block[6][64])
         s->mv[0][0][1] = my;
         *mb_type_ptr = MB_TYPE_FORWARD_MV | MB_TYPE_16x16;
     } else {
-        ff_dlog(s, "I at %d %d %d %06X\n", s->mb_x, s->mb_y,
+        ff_dlog(s->avctx, "I at %d %d %d %06X\n", s->mb_x, s->mb_y,
                 ((cbp & 3) ? 1 : 0) +((cbp & 0x3C)? 2 : 0),
                 show_bits(&s->gb, 24));
         s->ac_pred = get_bits1(&s->gb);
         *mb_type_ptr = MB_TYPE_INTRA;
         if(s->inter_intra_pred){
             s->h263_aic_dir= get_vlc2(&s->gb, ff_inter_intra_vlc, INTER_INTRA_VLC_BITS, 1);
-            ff_dlog(s, "%d%d %d %d/",
+            ff_dlog(s->avctx, "%d%d %d %d/",
                     s->ac_pred, s->h263_aic_dir, s->mb_x, s->mb_y);
         }
         if(s->per_mb_rl_table && cbp){

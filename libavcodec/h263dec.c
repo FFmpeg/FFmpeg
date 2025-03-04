@@ -242,7 +242,7 @@ static int decode_slice(MpegEncContext *s)
 
             s->mv_dir  = MV_DIR_FORWARD;
             s->mv_type = MV_TYPE_16X16;
-            ff_dlog(s, "%d %06X\n",
+            ff_dlog(s->avctx, "%d %06X\n",
                     get_bits_count(&s->gb), show_bits(&s->gb, 24));
 
             ff_tlog(NULL, "Decoding MB at %dx%d\n", s->mb_x, s->mb_y);

@@ -1264,7 +1264,7 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
                 s->avctx->framerate.den  = 1000 + get_bits1(&s->gb);
                 s->avctx->framerate.den *= get_bits(&s->gb, 7);
                 if(s->avctx->framerate.den == 0){
-                    av_log(s, AV_LOG_ERROR, "zero framerate\n");
+                    av_log(s->avctx, AV_LOG_ERROR, "zero framerate\n");
                     return -1;
                 }
                 gcd= av_gcd(s->avctx->framerate.den, s->avctx->framerate.num);
