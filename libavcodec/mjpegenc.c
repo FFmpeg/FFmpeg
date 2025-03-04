@@ -304,80 +304,6 @@ static int alloc_huffman(MJPEGEncContext *const m2)
     return 0;
 }
 
-static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
-{
-    MJPEGEncContext *const m2 = avctx->priv_data;
-    MJpegContext    *const m  = &m2->mjpeg;
-    MpegEncContext  *const s  = &m2->mpeg.s;
-    int ret;
-
-    s->mjpeg_ctx = m;
-    m2->mpeg.encode_picture_header = mjpeg_amv_encode_picture_header;
-
-    if (s->mpv_flags & FF_MPV_FLAG_QP_RD) {
-        // Used to produce garbage with MJPEG.
-        av_log(avctx, AV_LOG_ERROR,
-               "QP RD is no longer compatible with MJPEG or AMV\n");
-        return AVERROR(EINVAL);
-    }
-
-    /* The following check is automatically true for AMV,
-     * but it doesn't hurt either. */
-    ret = ff_mjpeg_encode_check_pix_fmt(avctx);
-    if (ret < 0)
-        return ret;
-
-    if (avctx->width > 65500 || avctx->height > 65500) {
-        av_log(avctx, AV_LOG_ERROR, "JPEG does not support resolutions above 65500x65500\n");
-        return AVERROR(EINVAL);
-    }
-
-    s->min_qcoeff=-1023;
-    s->max_qcoeff= 1023;
-
-    // Build default Huffman tables.
-    // These may be overwritten later with more optimal Huffman tables, but
-    // they are needed at least right now for some processes like trellis.
-    ff_mjpeg_build_huffman_codes(m->huff_size_dc_luminance,
-                                 m->huff_code_dc_luminance,
-                                 ff_mjpeg_bits_dc_luminance,
-                                 ff_mjpeg_val_dc);
-    ff_mjpeg_build_huffman_codes(m->huff_size_dc_chrominance,
-                                 m->huff_code_dc_chrominance,
-                                 ff_mjpeg_bits_dc_chrominance,
-                                 ff_mjpeg_val_dc);
-    ff_mjpeg_build_huffman_codes(m->huff_size_ac_luminance,
-                                 m->huff_code_ac_luminance,
-                                 ff_mjpeg_bits_ac_luminance,
-                                 ff_mjpeg_val_ac_luminance);
-    ff_mjpeg_build_huffman_codes(m->huff_size_ac_chrominance,
-                                 m->huff_code_ac_chrominance,
-                                 ff_mjpeg_bits_ac_chrominance,
-                                 ff_mjpeg_val_ac_chrominance);
-
-    init_uni_ac_vlc(m->huff_size_ac_luminance,   m->uni_ac_vlc_len);
-    init_uni_ac_vlc(m->huff_size_ac_chrominance, m->uni_chroma_ac_vlc_len);
-    s->intra_ac_vlc_length      =
-    s->intra_ac_vlc_last_length = m->uni_ac_vlc_len;
-    s->intra_chroma_ac_vlc_length      =
-    s->intra_chroma_ac_vlc_last_length = m->uni_chroma_ac_vlc_len;
-
-    ret = ff_mpv_encode_init(avctx);
-    if (ret < 0)
-        return ret;
-
-    // Buffers start out empty.
-    m->huff_ncode = 0;
-
-    if (s->slice_context_count > 1)
-        m->huffman = HUFFMAN_TABLE_DEFAULT;
-
-    if (m->huffman == HUFFMAN_TABLE_OPTIMAL)
-        return alloc_huffman(m2);
-
-    return 0;
-}
-
 static av_cold int mjpeg_encode_close(AVCodecContext *avctx)
 {
     MJPEGEncContext *const mjpeg = avctx->priv_data;
@@ -601,6 +527,81 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
 
         s->i_tex_bits += get_bits_diff(s);
     }
+}
+
+static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
+{
+    MJPEGEncContext *const m2 = avctx->priv_data;
+    MJpegContext    *const m  = &m2->mjpeg;
+    MpegEncContext  *const s  = &m2->mpeg.s;
+    int ret;
+
+    s->mjpeg_ctx = m;
+    m2->mpeg.encode_picture_header = mjpeg_amv_encode_picture_header;
+
+    if (s->mpv_flags & FF_MPV_FLAG_QP_RD) {
+        // Used to produce garbage with MJPEG.
+        av_log(avctx, AV_LOG_ERROR,
+               "QP RD is no longer compatible with MJPEG or AMV\n");
+        return AVERROR(EINVAL);
+    }
+
+    /* The following check is automatically true for AMV,
+     * but it doesn't hurt either. */
+    ret = ff_mjpeg_encode_check_pix_fmt(avctx);
+    if (ret < 0)
+        return ret;
+
+    if (avctx->width > 65500 || avctx->height > 65500) {
+        av_log(avctx, AV_LOG_ERROR, "JPEG does not support resolutions above 65500x65500\n");
+        return AVERROR(EINVAL);
+    }
+
+    // Build default Huffman tables.
+    // These may be overwritten later with more optimal Huffman tables, but
+    // they are needed at least right now for some processes like trellis.
+    ff_mjpeg_build_huffman_codes(m->huff_size_dc_luminance,
+                                 m->huff_code_dc_luminance,
+                                 ff_mjpeg_bits_dc_luminance,
+                                 ff_mjpeg_val_dc);
+    ff_mjpeg_build_huffman_codes(m->huff_size_dc_chrominance,
+                                 m->huff_code_dc_chrominance,
+                                 ff_mjpeg_bits_dc_chrominance,
+                                 ff_mjpeg_val_dc);
+    ff_mjpeg_build_huffman_codes(m->huff_size_ac_luminance,
+                                 m->huff_code_ac_luminance,
+                                 ff_mjpeg_bits_ac_luminance,
+                                 ff_mjpeg_val_ac_luminance);
+    ff_mjpeg_build_huffman_codes(m->huff_size_ac_chrominance,
+                                 m->huff_code_ac_chrominance,
+                                 ff_mjpeg_bits_ac_chrominance,
+                                 ff_mjpeg_val_ac_chrominance);
+
+    init_uni_ac_vlc(m->huff_size_ac_luminance,   m->uni_ac_vlc_len);
+    init_uni_ac_vlc(m->huff_size_ac_chrominance, m->uni_chroma_ac_vlc_len);
+
+    s->min_qcoeff = -1023;
+    s->max_qcoeff =  1023;
+
+    s->intra_ac_vlc_length      =
+    s->intra_ac_vlc_last_length = m->uni_ac_vlc_len;
+    s->intra_chroma_ac_vlc_length      =
+    s->intra_chroma_ac_vlc_last_length = m->uni_chroma_ac_vlc_len;
+
+    ret = ff_mpv_encode_init(avctx);
+    if (ret < 0)
+        return ret;
+
+    // Buffers start out empty.
+    m->huff_ncode = 0;
+
+    if (s->slice_context_count > 1)
+        m->huffman = HUFFMAN_TABLE_DEFAULT;
+
+    if (m->huffman == HUFFMAN_TABLE_OPTIMAL)
+        return alloc_huffman(m2);
+
+    return 0;
 }
 
 #if CONFIG_AMV_ENCODER
