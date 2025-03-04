@@ -480,9 +480,9 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
 {
     int mant, nbits, code, i, j;
     int component, dc, run, last_index, val;
-    MJpegContext *m = s->mjpeg_ctx;
-    uint8_t *huff_size_ac;
-    uint16_t *huff_code_ac;
+    const MJpegContext *const m = s->mjpeg_ctx;
+    const uint16_t *huff_code_ac;
+    const uint8_t  *huff_size_ac;
 
     /* DC coef */
     component = (n <= 3 ? 0 : (n&1) + 1);
