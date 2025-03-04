@@ -1229,6 +1229,23 @@ static void yuvtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
         AV_WN16(&dstp[1][i*2 + j*dst_linesizep[1]], u);
         AV_WN16(&dstp[2][i*2 + j*dst_linesizep[2]], v);
         break;
+    case AV_PIX_FMT_NV24:
+        dstp[0][i   + j*dst_linesizep[0] + 0] = y;
+        dstp[1][i*2 + j*dst_linesizep[1] + 0] = u;
+        dstp[1][i*2 + j*dst_linesizep[1] + 1] = v;
+        break;
+    case AV_PIX_FMT_NV42:
+        dstp[0][i   + j*dst_linesizep[0] + 0] = y;
+        dstp[1][i*2 + j*dst_linesizep[1] + 1] = u;
+        dstp[1][i*2 + j*dst_linesizep[1] + 0] = v;
+        break;
+    case AV_PIX_FMT_P410:
+    case AV_PIX_FMT_P412:
+    case AV_PIX_FMT_P416:
+        AV_WN16(&dstp[0][i*2 + j*dst_linesizep[0] + 0], y << (16 - desc->comp[0].depth));
+        AV_WN16(&dstp[1][i*4 + j*dst_linesizep[1] + 0], u << (16 - desc->comp[1].depth));
+        AV_WN16(&dstp[1][i*4 + j*dst_linesizep[1] + 2], v << (16 - desc->comp[1].depth));
+        break;
     }
 }
 
@@ -1272,6 +1289,8 @@ static const enum AVPixelFormat yuvtest_pix_fmts[] = {
     AV_PIX_FMT_AYUV, AV_PIX_FMT_UYVA, AV_PIX_FMT_AYUV64,
     AV_PIX_FMT_VUYA, AV_PIX_FMT_VUYX, AV_PIX_FMT_XV48,
     AV_PIX_FMT_XV30LE, AV_PIX_FMT_V30XLE, AV_PIX_FMT_XV36,
+    AV_PIX_FMT_NV24, AV_PIX_FMT_NV42,
+    AV_PIX_FMT_P410, AV_PIX_FMT_P412, AV_PIX_FMT_P416,
     AV_PIX_FMT_NONE
 };
 

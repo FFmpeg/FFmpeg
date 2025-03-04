@@ -39,6 +39,8 @@ static int fill_map(const AVPixFmtDescriptor *desc, uint8_t *map)
         return AVERROR(EINVAL);
     av_assert0(desc->nb_components == 3 + !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA));
     if (desc->flags & AV_PIX_FMT_FLAG_PLANAR) {
+        if (desc->nb_components != av_pix_fmt_count_planes(av_pix_fmt_desc_get_id(desc)))
+            return AVERROR(EINVAL);
         map[RED]   = desc->comp[0].plane;
         map[GREEN] = desc->comp[1].plane;
         map[BLUE]  = desc->comp[2].plane;
