@@ -1274,7 +1274,8 @@ static int process_frame_obj(SANMVideoContext *ctx)
         return old_codec48(ctx, w, h);
     default:
         avpriv_request_sample(ctx->avctx, "Subcodec %d", codec);
-        return AVERROR_PATCHWELCOME;
+        ctx->frame->flags |= AV_FRAME_FLAG_CORRUPT;
+        return 0;
     }
 }
 
