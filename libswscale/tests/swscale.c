@@ -47,6 +47,8 @@ struct options {
     int threads;
     int iters;
     int bench;
+    int flags;
+    int dither;
 };
 
 struct mode {
@@ -54,15 +56,15 @@ struct mode {
     SwsDither dither;
 };
 
-const struct mode modes[] = {
-    { SWS_FAST_BILINEAR },
-    { SWS_BILINEAR },
-    { SWS_BICUBIC },
-    { SWS_X | SWS_BITEXACT },
-    { SWS_POINT },
-    { SWS_AREA | SWS_ACCURATE_RND },
-    { SWS_BICUBIC | SWS_FULL_CHR_H_INT | SWS_FULL_CHR_H_INP },
-    {0}, // test defaults
+const SwsFlags flags[] = {
+    SWS_FAST_BILINEAR,
+    SWS_BILINEAR,
+    SWS_BICUBIC,
+    SWS_X | SWS_BITEXACT,
+    SWS_POINT,
+    SWS_AREA | SWS_ACCURATE_RND,
+    SWS_BICUBIC | SWS_FULL_CHR_H_INT | SWS_FULL_CHR_H_INP,
+    0, // test defaults
 };
 
 static FFSFC64 prng_state;
@@ -277,13 +279,21 @@ static int run_self_tests(const AVFrame *ref, struct options opts)
                 continue;
             for (int h = 0; h < FF_ARRAY_ELEMS(dst_h); h++)
                 for (int w = 0; w < FF_ARRAY_ELEMS(dst_w); w++)
-                    for (int m = 0; m < FF_ARRAY_ELEMS(modes); m++) {
+                    for (int f = 0; f < FF_ARRAY_ELEMS(flags); f++) {
+                        struct mode mode = {
+                            .flags  = opts.flags  >= 0 ? opts.flags  : flags[f],
+                            .dither = opts.dither >= 0 ? opts.dither : SWS_DITHER_AUTO,
+                        };
+
                         if (ff_sfc64_get(&prng_state) > UINT64_MAX * opts.prob)
                             continue;
 
                         if (run_test(src_fmt, dst_fmt, dst_w[w], dst_h[h],
-                                     modes[m], opts, ref, NULL) < 0)
+                                     mode, opts, ref, NULL) < 0)
                             return -1;
+
+                        if (opts.flags >= 0)
+                            break;
                     }
         }
     }
@@ -344,6 +354,8 @@ int main(int argc, char **argv)
         .threads = 1,
         .iters   = 1,
         .prob    = 1.0,
+        .flags   = -1,
+        .dither  = -1,
     };
 
     AVFrame *rgb = NULL, *ref = NULL;
@@ -368,6 +380,10 @@ int main(int argc, char **argv)
                     "       Only test the specified source pixel format\n"
                     "   -bench <iters>\n"
                     "       Run benchmarks with the specified number of iterations. This mode also increases the size of the test images\n"
+                    "   -flags <flags>\n"
+                    "       Test with a specific combination of flags\n"
+                    "   -dither <mode>\n"
+                    "       Test with a specific dither mode\n"
                     "   -threads <threads>\n"
                     "       Use the specified number of threads\n"
                     "   -cpuflags <cpuflags>\n"
@@ -409,6 +425,10 @@ int main(int argc, char **argv)
             opts.iters = FFMAX(opts.iters, 1);
             opts.w = 1920;
             opts.h = 1080;
+        } else if (!strcmp(argv[i], "-flags")) {
+            opts.flags = strtol(argv[i + 1], NULL, 0);
+        } else if (!strcmp(argv[i], "-dither")) {
+            opts.dither = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-threads")) {
             opts.threads = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-p")) {
