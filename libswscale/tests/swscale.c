@@ -99,6 +99,29 @@ static void exit_handler(int sig)
     exit(sig);
 }
 
+/* Estimate luma variance assuming uniform dither noise distribution */
+static float estimate_quantization_noise(enum AVPixelFormat fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+    float variance = 1.0 / 12;
+    if (desc->comp[0].depth < 8) {
+        /* Extra headroom for very low bit depth output */
+        variance *= (8 - desc->comp[0].depth);
+    }
+
+    if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) {
+        return 0.0;
+    } else if (desc->flags & AV_PIX_FMT_FLAG_RGB) {
+        const float r = 0.299 / (1 << desc->comp[0].depth);
+        const float g = 0.587 / (1 << desc->comp[1].depth);
+        const float b = 0.114 / (1 << desc->comp[2].depth);
+        return (r * r + g * g + b * b) * variance;
+    } else {
+        const float y = 1.0 / (1 << desc->comp[0].depth);
+        return y * y * variance;
+    }
+}
+
 static int fmt_comps(enum AVPixelFormat fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
@@ -156,6 +179,18 @@ static void get_ssim(float ssim[4], const AVFrame *out, const AVFrame *ref, int 
     }
 }
 
+static float get_loss(const float ssim[4])
+{
+    const float weights[3] = { 0.8, 0.1, 0.1 }; /* tuned for Y'CrCr */
+
+    float sum = 0;
+    for (int i = 0; i < 3; i++)
+        sum += weights[i] * ssim[i];
+    sum *= ssim[3]; /* ensure alpha errors get caught */
+
+    return 1.0 - sum;
+}
+
 static int scale_legacy(AVFrame *dst, const AVFrame *src, struct mode mode,
                         struct options opts)
 {
@@ -197,6 +232,18 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     const int comps = fmt_comps(src_fmt) & fmt_comps(dst_fmt);
     int64_t time, time_ref = 0;
     int ret = -1;
+
+    /* Estimate the expected amount of loss from bit depth reduction */
+    const float c1 = 0.01 * 0.01; /* stabilization constant */
+    const float ref_var = 1.0 / 12.0; /* uniformly distributed signal */
+    const float src_var = estimate_quantization_noise(src_fmt);
+    const float dst_var = estimate_quantization_noise(dst_fmt);
+    const float out_var = estimate_quantization_noise(ref->format);
+    const float total_var = src_var + dst_var + out_var;
+    const float ssim_luma = (2 * ref_var + c1) / (2 * ref_var + total_var + c1);
+    const float ssim_expected[4] = { ssim_luma, 1, 1, 1 }; /* for simplicity */
+    const float expected_loss = get_loss(ssim_expected);
+    float loss;
 
     src = av_frame_alloc();
     dst = av_frame_alloc();
@@ -251,6 +298,15 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
            mode.flags, mode.dither,
            ssim[0], ssim[1], ssim[2], ssim[3]);
 
+    loss = get_loss(ssim);
+    if (loss - expected_loss > 1e-4 && dst_w >= ref->width && dst_h >= ref->height) {
+        int bad = loss - expected_loss > 1e-2;
+        printf("\033[1;31m  loss %g is %s by %g, expected loss %g\033[0m\n",
+               loss, bad ? "WORSE" : "worse", loss - expected_loss, expected_loss);
+        if (bad)
+            goto error;
+    }
+
     if (!ssim_ref && sws_isSupportedInput(src->format) && sws_isSupportedOutput(dst->format)) {
         /* Compare against the legacy swscale API as a reference */
         time_ref = av_gettime_relative();
@@ -269,18 +325,12 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     }
 
     if (ssim_ref) {
-        const float weights[4] = { 0.8, 0.1, 0.1, 1.0 }; /* tuned for Y'CrCr */
-        float err, sum = 0, sum_ref = 0;
-        for (int i = 0; i < 4; i++) {
-            sum     += weights[i] * ssim[i];
-            sum_ref += weights[i] * ssim_ref[i];
-        }
-
-        err = sum_ref / sum - 1.0; /* relative error */
-        if (err > 1e-4 /* 0.01% headroom for dither noise etc */) {
-            int bad = err > 1e-2; /* 1% */
-            printf("\033[1;31m  %s by %f%%, ref SSIM {Y=%f U=%f V=%f A=%f}\033[0m\n",
-                   bad ? "WORSE" : "worse", 100.0 * err,
+        const float loss_ref = get_loss(ssim_ref);
+        if (loss - loss_ref > 1e-4) {
+            int bad = loss - loss_ref > 1e-2;
+            printf("\033[1;31m  loss %g is %s by %g, ref loss %g, "
+                   "SSIM {Y=%f U=%f V=%f A=%f}\033[0m\n",
+                   loss, bad ? "WORSE" : "worse", loss - loss_ref, loss_ref,
                    ssim_ref[0], ssim_ref[1], ssim_ref[2], ssim_ref[3]);
             if (bad)
                 goto error;
