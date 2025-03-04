@@ -31,21 +31,21 @@ struct MJpegContext;
 int ff_mjpeg_add_icc_profile_size(AVCodecContext *avctx, const AVFrame *frame,
                                   size_t *max_pkt_size);
 void ff_mjpeg_encode_picture_header(AVCodecContext *avctx, PutBitContext *pb,
-                                    const AVFrame *frame, struct MJpegContext *m,
+                                    const AVFrame *frame, const struct MJpegContext *m,
                                     const uint8_t intra_matrix_permutation[64],
                                     int pred,
-                                    uint16_t luma_intra_matrix[64],
-                                    uint16_t chroma_intra_matrix[64],
+                                    const uint16_t luma_intra_matrix[64],
+                                    const uint16_t chroma_intra_matrix[64],
                                     int use_slices);
 void ff_mjpeg_encode_picture_trailer(PutBitContext *pb, int header_bits);
 void ff_mjpeg_escape_FF(PutBitContext *pb, int start);
 void ff_mjpeg_build_huffman_codes(uint8_t *huff_size, uint16_t *huff_code,
                                   const uint8_t *bits_table,
                                   const uint8_t *val_table);
-void ff_mjpeg_init_hvsample(AVCodecContext *avctx, int hsample[4], int vsample[4]);
+void ff_mjpeg_init_hvsample(const AVCodecContext *avctx, int hsample[4], int vsample[4]);
 
 void ff_mjpeg_encode_dc(PutBitContext *pb, int val,
-                        uint8_t *huff_size, uint16_t *huff_code);
+                        const uint8_t huff_size[], const uint16_t huff_code[]);
 
 int ff_mjpeg_encode_check_pix_fmt(AVCodecContext *avctx);
 
