@@ -45,6 +45,20 @@
 #include "mpegvideoenc.h"
 #include "profiles.h"
 
+/**
+ * Buffer of JPEG frame data.
+ *
+ * Optimal Huffman table generation requires the frame data to be loaded into
+ * a buffer so that the tables can be computed.
+ * There are at most mb_width*mb_height*12*64 of these per frame.
+ */
+typedef struct MJpegHuffmanCode {
+    // 0=DC lum, 1=DC chrom, 2=AC lum, 3=AC chrom
+    uint8_t table_id; ///< The Huffman table id associated with the data.
+    uint8_t code;     ///< The exponent.
+    uint16_t mant;    ///< The mantissa.
+} MJpegHuffmanCode;
+
 /* The following is the private context of MJPEG/AMV decoder.
  * Note that when using slice threading only the main thread's
  * MpegEncContext is followed by a MjpegContext; the other threads

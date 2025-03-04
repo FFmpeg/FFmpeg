@@ -36,22 +36,7 @@
 #include <stdint.h>
 
 #include "mjpeg.h"
-#include "mpegvideo.h"
 #include "put_bits.h"
-
-/**
- * Buffer of JPEG frame data.
- *
- * Optimal Huffman table generation requires the frame data to be loaded into
- * a buffer so that the tables can be computed.
- * There are at most mb_width*mb_height*12*64 of these per frame.
- */
-typedef struct MJpegHuffmanCode {
-    // 0=DC lum, 1=DC chrom, 2=AC lum, 3=AC chrom
-    uint8_t table_id; ///< The Huffman table id associated with the data.
-    uint8_t code;     ///< The exponent.
-    uint16_t mant;    ///< The mantissa.
-} MJpegHuffmanCode;
 
 /**
  * Holds JPEG frame data and Huffman table data.
@@ -89,7 +74,7 @@ typedef struct MJpegContext {
     uint8_t val_ac_chrominance[256]; ///< AC chrominance Huffman values.
 
     size_t huff_ncode;               ///< Number of current entries in the buffer.
-    MJpegHuffmanCode *huff_buffer;   ///< Buffer for Huffman code values.
+    struct MJpegHuffmanCode *huff_buffer; ///< Buffer for Huffman code values.
 } MJpegContext;
 
 /**
@@ -106,6 +91,8 @@ static inline void put_marker(PutBitContext *p, enum JpegMarker code)
     put_bits(p, 8, 0xff);
     put_bits(p, 8, code);
 }
+
+typedef struct MpegEncContext MpegEncContext;
 
 int  ff_mjpeg_encode_init(MpegEncContext *s);
 void ff_mjpeg_amv_encode_picture_header(MpegEncContext *s);
