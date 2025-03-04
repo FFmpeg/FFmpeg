@@ -228,8 +228,8 @@ static void h261_encode_block(H261EncContext *h, int16_t *block, int n)
         put_bits(&s->pb, 2, 0x2); // EOB
 }
 
-void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
-                       int motion_x, int motion_y)
+static void h261_encode_mb(MpegEncContext *const s, int16_t block[6][64],
+                           int motion_x, int motion_y)
 {
     /* The following is only allowed because this encoder
      * does not use slice threading. */
@@ -374,6 +374,7 @@ static av_cold int h261_encode_init(AVCodecContext *avctx)
     }
     s->private_ctx = &h->common;
     h->s.encode_picture_header = h261_encode_picture_header;
+    s->encode_mb               = h261_encode_mb;
 
     s->min_qcoeff       = -127;
     s->max_qcoeff       = 127;

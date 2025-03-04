@@ -71,7 +71,6 @@
 #include "mpeg4videoenc.h"
 #include "internal.h"
 #include "bytestream.h"
-#include "wmv2enc.h"
 #include "rv10enc.h"
 #include "packet_internal.h"
 #include "libavutil/refstruct.h"
@@ -2562,52 +2561,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         }
     }
 
-    /* huffman encode */
-    switch(s->codec_id){ //FIXME funct ptr could be slightly faster
-    case AV_CODEC_ID_MPEG1VIDEO:
-    case AV_CODEC_ID_MPEG2VIDEO:
-        if (CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
-            ff_mpeg1_encode_mb(s, s->block, motion_x, motion_y);
-        break;
-    case AV_CODEC_ID_MPEG4:
-        if (CONFIG_MPEG4_ENCODER)
-            ff_mpeg4_encode_mb(s, s->block, motion_x, motion_y);
-        break;
-    case AV_CODEC_ID_MSMPEG4V2:
-    case AV_CODEC_ID_MSMPEG4V3:
-    case AV_CODEC_ID_WMV1:
-        if (CONFIG_MSMPEG4ENC)
-            ff_msmpeg4_encode_mb(s, s->block, motion_x, motion_y);
-        break;
-    case AV_CODEC_ID_WMV2:
-        if (CONFIG_WMV2_ENCODER)
-            ff_wmv2_encode_mb(s, s->block, motion_x, motion_y);
-        break;
-    case AV_CODEC_ID_H261:
-        if (CONFIG_H261_ENCODER)
-            ff_h261_encode_mb(s, s->block, motion_x, motion_y);
-        break;
-    case AV_CODEC_ID_H263:
-    case AV_CODEC_ID_H263P:
-    case AV_CODEC_ID_FLV1:
-    case AV_CODEC_ID_RV10:
-    case AV_CODEC_ID_RV20:
-        if (CONFIG_H263_ENCODER)
-            ff_h263_encode_mb(s, s->block, motion_x, motion_y);
-        break;
-#if CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER
-    case AV_CODEC_ID_MJPEG:
-    case AV_CODEC_ID_AMV:
-        ff_mjpeg_encode_mb(s, s->block);
-        break;
-#endif
-    case AV_CODEC_ID_SPEEDHQ:
-        if (CONFIG_SPEEDHQ_ENCODER)
-            ff_speedhq_encode_mb(s, s->block);
-        break;
-    default:
-        av_assert1(0);
-    }
+    s->encode_mb(s, s->block, motion_x, motion_y);
 }
 
 static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)

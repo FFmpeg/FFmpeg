@@ -27,8 +27,6 @@
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
 
-void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],
-                        int motion_x, int motion_y);
 void ff_mpeg1_encode_slice_header(MpegEncContext *s);
 
 // Must not be called before intra_dc_precision has been sanitized in ff_mpv_encode_init()

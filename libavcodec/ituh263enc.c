@@ -608,9 +608,9 @@ static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr)
     return pred_dc;
 }
 
-void ff_h263_encode_mb(MpegEncContext * s,
-                       int16_t block[6][64],
-                       int motion_x, int motion_y)
+static void h263_encode_mb(MpegEncContext *const s,
+                           int16_t block[][64],
+                           int motion_x, int motion_y)
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y;
     int16_t pred_dc;
@@ -875,6 +875,8 @@ av_cold void ff_h263_encode_init(MPVMainEncContext *const m)
     // H.263, H.263+; will be overwritten for MSMPEG-4 later
     if (!m->encode_picture_header)
         m->encode_picture_header = h263_encode_picture_header;
+    if (!s->encode_mb)
+        s->encode_mb = h263_encode_mb;
 
     ff_h263dsp_init(&s->h263dsp);
 }

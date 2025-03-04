@@ -29,7 +29,6 @@
 #include "msmpeg4data.h"
 #include "msmpeg4_vc1_data.h"
 #include "wmv2.h"
-#include "wmv2enc.h"
 
 #define WMV2_EXTRADATA_SIZE 4
 
@@ -147,8 +146,8 @@ static int wmv2_encode_picture_header(MPVMainEncContext *const m)
 /* Nearly identical to wmv1 but that is just because we do not use the
  * useless M$ crap features. It is duplicated here in case someone wants
  * to add support for these crap features. */
-void ff_wmv2_encode_mb(MpegEncContext *s, int16_t block[6][64],
-                       int motion_x, int motion_y)
+static void wmv2_encode_mb(MpegEncContext *const s, int16_t block[][64],
+                           int motion_x, int motion_y)
 {
     WMV2EncContext *const w = (WMV2EncContext *) s;
     int cbp, coded_cbp, i;
@@ -224,6 +223,7 @@ static av_cold int wmv2_encode_init(AVCodecContext *avctx)
     int ret;
 
     w->msmpeg4.m.encode_picture_header = wmv2_encode_picture_header;
+    s->encode_mb                       = wmv2_encode_mb;
     s->private_ctx = &w->common;
     ret = ff_mpv_encode_init(avctx);
     if (ret < 0)

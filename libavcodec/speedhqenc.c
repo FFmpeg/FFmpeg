@@ -207,7 +207,8 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
     put_bits_le(&s->pb, 4, 6);
 }
 
-void ff_speedhq_encode_mb(MpegEncContext *s, int16_t block[12][64])
+static void speedhq_encode_mb(MpegEncContext *const s, int16_t block[12][64],
+                              int unused_x, int unused_y)
 {
     int i;
     for(i=0;i<6;i++) {
@@ -263,6 +264,7 @@ static av_cold int speedhq_encode_init(AVCodecContext *avctx)
     }
 
     m->encode_picture_header = speedhq_encode_picture_header;
+    s->encode_mb             = speedhq_encode_mb;
 
     s->min_qcoeff = -2048;
     s->max_qcoeff = 2047;

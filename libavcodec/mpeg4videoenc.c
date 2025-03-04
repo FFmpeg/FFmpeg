@@ -499,8 +499,8 @@ static inline int get_b_cbp(MpegEncContext *s, int16_t block[6][64],
 // FIXME this is duplicated to h263.c
 static const int dquant_code[5] = { 1, 0, 9, 2, 3 };
 
-void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
-                        int motion_x, int motion_y)
+static void mpeg4_encode_mb(MpegEncContext *const s, int16_t block[][64],
+                            int motion_x, int motion_y)
 {
     int cbpc, cbpy, pred_x, pred_y;
     PutBitContext *const pb2    = s->data_partitioning ? &s->pb2 : &s->pb;
@@ -1301,6 +1301,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     m->encode_picture_header = mpeg4_encode_picture_header;
+    s->encode_mb             = mpeg4_encode_mb;
 
     ff_qpeldsp_init(&s->qdsp);
     if ((ret = ff_mpv_encode_init(avctx)) < 0)

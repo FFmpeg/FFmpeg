@@ -370,9 +370,9 @@ static void msmpeg4v2_encode_motion(MpegEncContext * s, int val)
     }
 }
 
-void ff_msmpeg4_encode_mb(MpegEncContext * s,
-                          int16_t block[6][64],
-                          int motion_x, int motion_y)
+static void msmpeg4_encode_mb(MpegEncContext *const s,
+                              int16_t block[][64],
+                              int motion_x, int motion_y)
 {
     int cbp, coded_cbp, i;
     int pred_x, pred_y;
@@ -670,8 +670,10 @@ av_cold void ff_msmpeg4_encode_init(MPVMainEncContext *const m)
 
     ff_msmpeg4_common_init(s);
 
-    if (s->msmpeg4_version <= MSMP4_WMV1)
+    if (s->msmpeg4_version <= MSMP4_WMV1) {
         m->encode_picture_header = msmpeg4_encode_picture_header;
+        s->encode_mb             = msmpeg4_encode_mb;
+    }
 
     if (s->msmpeg4_version >= MSMP4_WMV1) {
         s->min_qcoeff = -255;

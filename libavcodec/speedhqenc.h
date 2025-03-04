@@ -33,8 +33,6 @@
 
 #include "mpegvideo.h"
 
-void ff_speedhq_encode_mb(MpegEncContext *s, int16_t block[12][64]);
-
 void ff_speedhq_end_slice(MpegEncContext *s);
 
 static inline int ff_speedhq_mb_rows_in_slice(int slice_num, int mb_height)

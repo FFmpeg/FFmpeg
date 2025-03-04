@@ -463,10 +463,10 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
         put_bits(&s->pb, huff_size_ac[0], huff_code_ac[0]);
 }
 
-void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
+static void mjpeg_record_mb(MpegEncContext *const s, int16_t block[][64],
+                            int unused_x, int unused_y)
 {
     int i;
-    if (s->mjpeg_ctx->huffman == HUFFMAN_TABLE_OPTIMAL) {
         if (s->chroma_format == CHROMA_444) {
             record_block(s, block[0], 0);
             record_block(s, block[2], 2);
@@ -495,7 +495,12 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
                 record_block(s, block[7], 7);
             }
         }
-    } else {
+}
+
+static void mjpeg_encode_mb(MpegEncContext *const s, int16_t block[][64],
+                            int unused_x, int unused_y)
+{
+    int i;
         if (s->chroma_format == CHROMA_444) {
             encode_block(s, block[0], 0);
             encode_block(s, block[2], 2);
@@ -526,7 +531,6 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
         }
 
         s->i_tex_bits += get_bits_diff(s);
-    }
 }
 
 static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
@@ -538,6 +542,8 @@ static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
 
     s->mjpeg_ctx = m;
     m2->mpeg.encode_picture_header = mjpeg_amv_encode_picture_header;
+    // May be overridden below
+    s->encode_mb                   = mjpeg_encode_mb;
 
     if (s->mpv_flags & FF_MPV_FLAG_QP_RD) {
         // Used to produce garbage with MJPEG.
@@ -598,8 +604,11 @@ static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
     if (s->slice_context_count > 1)
         m->huffman = HUFFMAN_TABLE_DEFAULT;
 
-    if (m->huffman == HUFFMAN_TABLE_OPTIMAL)
+    if (m->huffman == HUFFMAN_TABLE_OPTIMAL) {
+        // If we are here, we have only one slice_context. So no loop necessary.
+        s->encode_mb = mjpeg_record_mb;
         return alloc_huffman(m2);
+    }
 
     return 0;
 }

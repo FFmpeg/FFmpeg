@@ -929,8 +929,8 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
     }
 }
 
-void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],
-                        int motion_x, int motion_y)
+static void mpeg12_encode_mb(MpegEncContext *s, int16_t block[][64],
+                             int motion_x, int motion_y)
 {
     if (!s->mb_intra)
         s->last_dc[0] = s->last_dc[1] = s->last_dc[2] = 128 << s->intra_dc_precision;
@@ -1111,6 +1111,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     m->encode_picture_header = mpeg1_encode_picture_header;
+    s->encode_mb             = mpeg12_encode_mb;
 
     s->me.mv_penalty = mv_penalty;
     m->fcode_tab     = fcode_tab + MAX_MV;
