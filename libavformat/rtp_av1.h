@@ -29,6 +29,10 @@
 #ifndef AVFORMAT_RTP_AV1_H
 #define AVFORMAT_RTP_AV1_H
 
+#include <stdint.h>
+
+#include "libavutil/log.h"
+
 // define a couple of flags and bit fields
 #define AV1B_OBU_FORBIDDEN      7
 #define AV1F_OBU_FORBIDDEN      (1u << AV1B_OBU_FORBIDDEN)
@@ -88,7 +92,7 @@ static inline void write_leb_n(uint8_t *lebptr, uint32_t length, unsigned int nu
 }
 
 /// securely parse LEB bytes and return the resulting encoded length
-static inline unsigned int parse_leb(AVFormatContext *ctx, const uint8_t *buf_ptr,
+static inline unsigned int parse_leb(void *logctx, const uint8_t *buf_ptr,
                                      uint32_t buffer_size, uint32_t *obu_size) {
     uint8_t leb128;
     unsigned int num_lebs = 0;
@@ -96,7 +100,7 @@ static inline unsigned int parse_leb(AVFormatContext *ctx, const uint8_t *buf_pt
     do {
         uint32_t leb7;
         if (!buffer_size) {
-            av_log(ctx, AV_LOG_ERROR, "AV1: Out of data in OBU size field AV1 RTP packet\n");
+            av_log(logctx, AV_LOG_ERROR, "AV1: Out of data in OBU size field AV1 RTP packet\n");
             return 0;
         }
         leb128 = *buf_ptr++;
@@ -107,13 +111,13 @@ static inline unsigned int parse_leb(AVFormatContext *ctx, const uint8_t *buf_pt
          * of violation here. It is legal, though, to have the most significant
          * bytes with all zero bits (in the lower 7 bits). */
         if (((num_lebs == 4) && (leb7 >= 0x10)) || ((num_lebs > 4) && leb7)) {
-            av_log(ctx, AV_LOG_ERROR, "AV1: OBU size field exceeds 32 bit in AV1 RTP packet\n");
+            av_log(logctx, AV_LOG_ERROR, "AV1: OBU size field exceeds 32 bit in AV1 RTP packet\n");
             return 0;
         }
         if ((num_lebs == 7) && (leb128 >= 0x80)) {
             /* leb128 is defined to be up to 8 bytes (why???), 8th byte MUST NOT
              * indicate continuation */
-            av_log(ctx, AV_LOG_ERROR, "AV1: OBU size field consists of too many bytes in AV1 RTP packet\n");
+            av_log(logctx, AV_LOG_ERROR, "AV1: OBU size field consists of too many bytes in AV1 RTP packet\n");
             return 0;
         }
         // shifts >= 32 are undefined in C!
