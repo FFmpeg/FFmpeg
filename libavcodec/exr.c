@@ -1375,7 +1375,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
         for (c = 0; c < channel_count; c++) {
             int plane = s->desc->comp[c].plane;
-            ptr = p->data[plane] + window_ymin * p->linesize[plane] + (window_xmin * 4);
+            ptr = p->data[plane] + window_ymin * p->linesize[plane] + (window_xmin * step);
 
             for (i = 0; i < ysize; i++, ptr += p->linesize[plane]) {
                 const uint8_t *src;
