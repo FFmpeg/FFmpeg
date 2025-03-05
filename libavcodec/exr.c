@@ -1383,34 +1383,29 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                     s->compression == EXR_DWAA ||
                     s->compression == EXR_DWAB) {
                     // 32-bit
-                    union av_intfloat32 *ptr_x;
+                    uint8_t *ptr_x = ptr;
 
                     src = channel_buffer[c];
-                    ptr_x = (union av_intfloat32 *)ptr;
 
                     // Zero out the start if xmin is not 0
                     memset(ptr_x, 0, bxmin);
-                    ptr_x += window_xoffset;
+                    ptr_x += 4 * window_xoffset;
 
-                    union av_intfloat32 t;
                     if (trc_func && c < 3) {
-                        for (x = 0; x < xsize; x++) {
-                            t.i = bytestream_get_le32(&src);
-                            t.f = trc_func(t.f);
-                            *ptr_x++ = t;
+                        for (int x = 0; x < xsize; x++, ptr_x += 4) {
+                            float f = av_int2float(bytestream_get_le32(&src));
+                            AV_WN32A(ptr_x, av_float2int(trc_func(f)));
                         }
                     } else if (one_gamma != 1.f) {
-                        for (x = 0; x < xsize; x++) {
-                            t.i = bytestream_get_le32(&src);
-                            if (t.f > 0.0f && c < 3)  /* avoid negative values */
-                                t.f = powf(t.f, one_gamma);
-                            *ptr_x++ = t;
+                        for (int x = 0; x < xsize; x++, ptr_x += 4) {
+                            float f = av_int2float(bytestream_get_le32(&src));
+                            if (f > 0.0f && c < 3)  /* avoid negative values */
+                                f = powf(f, one_gamma);
+                            AV_WN32A(ptr_x, av_float2int(f));
                         }
                     } else {
-                        for (x = 0; x < xsize; x++) {
-                            t.i = bytestream_get_le32(&src);
-                            *ptr_x++ = t;
-                        }
+                        for (int x = 0; x < xsize; x++, ptr_x += 4)
+                            AV_WN32A(ptr_x, bytestream_get_le32(&src));
                     }
                     memset(ptr_x, 0, axmax);
                 } else if (s->pixel_type == EXR_HALF) {
