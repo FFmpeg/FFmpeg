@@ -3440,13 +3440,50 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
             for (i = 0; i < current->curr_subpic_idx; i++) {
                 slice_idx += pps->num_slices_in_subpic[i];
             }
-            width_in_tiles =
-                pps->pps_slice_width_in_tiles_minus1[slice_idx] + 1;
 
-            if (entropy_sync)
-                height = pps->slice_height_in_ctus[slice_idx];
-            else
-                height = pps->pps_slice_height_in_tiles_minus1[slice_idx] + 1;
+            if (pps->pps_single_slice_per_subpic_flag) {
+                const int width_in_ctus = sps->sps_subpic_width_minus1[slice_idx] + 1;
+                const int subpic_l = sps->sps_subpic_ctu_top_left_x[slice_idx];
+                const int subpic_r = subpic_l + width_in_ctus;
+
+                int ctb_x = 0, tile_x = 0;
+                for (; ctb_x < subpic_l && tile_x < pps->num_tile_columns; tile_x++)
+                    ctb_x += pps->col_width_val[tile_x];
+
+                width_in_tiles = 0;
+                for (; ctb_x < subpic_r && tile_x < pps->num_tile_columns; tile_x++) {
+                    ctb_x += pps->col_width_val[tile_x];
+                    width_in_tiles++;
+                }
+
+                if (entropy_sync) {
+                    height = sps->sps_subpic_height_minus1[slice_idx] + 1;
+                } else {
+                    const int height_in_ctus = sps->sps_subpic_height_minus1[slice_idx] + 1;
+                    const int subpic_t = sps->sps_subpic_ctu_top_left_y[slice_idx];
+                    const int subpic_b = subpic_t + height_in_ctus;
+
+                    int ctb_y = 0, tile_y = 0, height_in_tiles;
+                    for (; ctb_y < subpic_t && tile_y < pps->num_tile_rows; tile_y++)
+                        ctb_y += pps->row_height_val[tile_y];
+
+                    height_in_tiles = 0;
+                    for (; ctb_y < subpic_b && tile_y < pps->num_tile_rows; tile_y++) {
+                        ctb_y += pps->row_height_val[tile_y];
+                        height_in_tiles++;
+                    }
+
+                    height = height_in_tiles;
+                }
+            } else {
+                width_in_tiles =
+                    pps->pps_slice_width_in_tiles_minus1[slice_idx] + 1;
+
+                if (entropy_sync)
+                    height = pps->slice_height_in_ctus[slice_idx];
+                else
+                    height = pps->pps_slice_height_in_tiles_minus1[slice_idx] + 1;
+            }
 
             current->num_entry_points = width_in_tiles * height;
         } else {
