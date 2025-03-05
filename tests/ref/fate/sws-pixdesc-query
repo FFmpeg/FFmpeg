@@ -37,6 +37,8 @@ is16BPS:
   y216le
   ya16be
   ya16le
+  yaf16be
+  yaf16le
   yuv420p16be
   yuv420p16le
   yuv422p16be
@@ -212,6 +214,8 @@ isBE:
   y212be
   y216be
   ya16be
+  yaf16be
+  yaf32be
   yuv420p10be
   yuv420p12be
   yuv420p14be
@@ -295,6 +299,10 @@ isYUV:
   ya16be
   ya16le
   ya8
+  yaf16be
+  yaf16le
+  yaf32be
+  yaf32le
   yuv410p
   yuv411p
   yuv420p
@@ -607,6 +615,10 @@ Gray:
   ya16be
   ya16le
   ya8
+  yaf16be
+  yaf16le
+  yaf32be
+  yaf32le
 
 RGBinInt:
   monob
@@ -795,6 +807,10 @@ ALPHA:
   ya16be
   ya16le
   ya8
+  yaf16be
+  yaf16le
+  yaf32be
+  yaf32le
   yuva420p
   yuva420p10be
   yuva420p10le
@@ -917,6 +933,10 @@ Packed:
   ya16be
   ya16le
   ya8
+  yaf16be
+  yaf16le
+  yaf32be
+  yaf32le
   yuyv422
   yvyu422
 
