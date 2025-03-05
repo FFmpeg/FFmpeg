@@ -3750,7 +3750,7 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
             s->mb_type[i]= CANDIDATE_MB_TYPE_INTRA;
         if (s->msmpeg4_version >= MSMP4_V3)
             s->no_rounding=1;
-        ff_dlog(s, "Scene change detected, encoding as I Frame %"PRId64" %"PRId64"\n",
+        ff_dlog(s->avctx, "Scene change detected, encoding as I Frame %"PRId64" %"PRId64"\n",
                 s->mb_var_sum, s->mc_mb_var_sum);
     }
 

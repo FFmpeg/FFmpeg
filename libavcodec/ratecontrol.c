@@ -232,7 +232,7 @@ static double modify_qscale(MpegEncContext *s, const RateControlEntry *rce,
             }
         }
     }
-    ff_dlog(s, "q:%f max:%f min:%f size:%f index:%f agr:%f\n",
+    ff_dlog(s->avctx, "q:%f max:%f min:%f size:%f index:%f agr:%f\n",
             q, max_rate, min_rate, buffer_size, rcc->buffer_index,
             rcc->buffer_aggressivity);
     if (rcc->qsquish == 0.0 || qmin == qmax) {
@@ -461,7 +461,7 @@ static int init_pass2(MpegEncContext *s)
     /* check bitrate calculations and print info */
     qscale_sum = 0.0;
     for (i = 0; i < rcc->num_entries; i++) {
-        ff_dlog(s, "[lavc rc] entry[%d].new_qscale = %.3f  qp = %.3f\n",
+        ff_dlog(s->avctx, "[lavc rc] entry[%d].new_qscale = %.3f  qp = %.3f\n",
                 i,
                 rcc->entry[i].new_qscale,
                 rcc->entry[i].new_qscale / FF_QP2LAMBDA);
@@ -725,7 +725,7 @@ int ff_vbv_update(MpegEncContext *s, int frame_size)
     const double min_rate   = s->avctx->rc_min_rate / fps;
     const double max_rate   = s->avctx->rc_max_rate / fps;
 
-    ff_dlog(s, "%d %f %d %f %f\n",
+    ff_dlog(s->avctx, "%d %f %d %f %f\n",
             buffer_size, rcc->buffer_index, frame_size, min_rate, max_rate);
 
     if (buffer_size) {
@@ -941,7 +941,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     if (s->avctx->flags & AV_CODEC_FLAG_PASS2) {
         av_assert0(picture_number >= 0);
         if (picture_number >= rcc->num_entries) {
-            av_log(s, AV_LOG_ERROR, "Input is longer than 2-pass log file\n");
+            av_log(s->avctx, AV_LOG_ERROR, "Input is longer than 2-pass log file\n");
             return -1;
         }
         rce         = &rcc->entry[picture_number];
@@ -964,7 +964,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
         else
             wanted_bits_double = s->bit_rate * (double)dts_pic->f->pts / fps;
         if (wanted_bits_double > INT64_MAX) {
-            av_log(s, AV_LOG_WARNING, "Bits exceed 64bit range\n");
+            av_log(s->avctx, AV_LOG_WARNING, "Bits exceed 64bit range\n");
             wanted_bits = INT64_MAX;
         } else
             wanted_bits = (int64_t)wanted_bits_double;
@@ -983,7 +983,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
             av_assert0(pict_type == rce->new_pict_type);
 
         q = rce->new_qscale / br_compensation;
-        ff_dlog(s, "%f %f %f last:%d var:%"PRId64" type:%d//\n", q, rce->new_qscale,
+        ff_dlog(s->avctx, "%f %f %f last:%d var:%"PRId64" type:%d//\n", q, rce->new_qscale,
                 br_compensation, s->frame_bits, var, pict_type);
     } else {
         rce->pict_type     =

@@ -1726,7 +1726,7 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
     s->avctx = avctx;
     av_log(s->avctx, AV_LOG_DEBUG, "init\n");
     if (parse_layer_rates(s)) {
-        av_log(s, AV_LOG_WARNING, "Layer rates invalid. Encoding with 1 layer based on quality metric.\n");
+        av_log(avctx, AV_LOG_WARNING, "Layer rates invalid. Encoding with 1 layer based on quality metric.\n");
         s->nlayers = 1;
         s->layer_rates[0] = 0;
         s->compression_rate_enc = 0;

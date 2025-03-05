@@ -253,6 +253,7 @@ struct Screen {
 
 typedef struct CCaptionSubContext {
     AVClass *class;
+    void *logctx;
     int real_time;
     int real_time_latency_msec;
     int data_field;
@@ -279,6 +280,8 @@ typedef struct CCaptionSubContext {
 static av_cold int init_decoder(AVCodecContext *avctx)
 {
     CCaptionSubContext *ctx = avctx->priv_data;
+
+    ctx->logctx = avctx;
 
     av_bprint_init(&ctx->buffer[0], 0, AV_BPRINT_SIZE_UNLIMITED);
     av_bprint_init(&ctx->buffer[1], 0, AV_BPRINT_SIZE_UNLIMITED);
@@ -359,7 +362,7 @@ static void write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
         return;
     }
     else {
-        av_log(ctx, AV_LOG_WARNING, "Data ignored due to columns exceeding screen width\n");
+        av_log(ctx->logctx, AV_LOG_WARNING, "Data ignored due to columns exceeding screen width\n");
         return;
     }
 }
@@ -649,7 +652,7 @@ static void handle_pac(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
     int indent, i;
 
     if (row_map[index] <= 0) {
-        av_log(ctx, AV_LOG_DEBUG, "Invalid pac index encountered\n");
+        av_log(ctx->logctx, AV_LOG_DEBUG, "Invalid pac index encountered\n");
         return;
     }
 
@@ -749,9 +752,9 @@ static void handle_char(CCaptionSubContext *ctx, char hi, char lo)
         ctx->screen_touched = 1;
 
     if (lo)
-       ff_dlog(ctx, "(%c,%c)\n", hi, lo);
+       ff_dlog(ctx->logctx, "(%c,%c)\n", hi, lo);
     else
-       ff_dlog(ctx, "(%c)\n", hi);
+       ff_dlog(ctx->logctx, "(%c)\n", hi);
 }
 
 static int process_cc608(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
@@ -803,7 +806,7 @@ static int process_cc608(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
             break;
         case 0x2d:
             /* carriage return */
-            ff_dlog(ctx, "carriage return\n");
+            ff_dlog(ctx->logctx, "carriage return\n");
             if (!ctx->real_time)
                 ret = capture_screen(ctx);
             roll_up(ctx);
@@ -820,11 +823,11 @@ static int process_cc608(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
             break;
         case 0x2f:
             /* end of caption */
-            ff_dlog(ctx, "handle_eoc\n");
+            ff_dlog(ctx->logctx, "handle_eoc\n");
             ret = handle_eoc(ctx);
             break;
         default:
-            ff_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", hi, lo);
+            ff_dlog(ctx->logctx, "Unknown command 0x%hhx 0x%hhx\n", hi, lo);
             break;
         }
     } else if (hi >= 0x11 && hi <= 0x13) {
@@ -842,7 +845,7 @@ static int process_cc608(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
         }
     } else {
         /* Ignoring all other non data code */
-        ff_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", hi, lo);
+        ff_dlog(ctx->logctx, "Unknown command 0x%hhx 0x%hhx\n", hi, lo);
     }
 
     return ret;
@@ -888,7 +891,7 @@ static int decode(AVCodecContext *avctx, AVSubtitle *sub,
         update_time(ctx, in_time);
 
         if (ctx->buffer[bidx].str[0] || ctx->real_time) {
-            ff_dlog(ctx, "cdp writing data (%s)\n", ctx->buffer[bidx].str);
+            ff_dlog(avctx, "cdp writing data (%s)\n", ctx->buffer[bidx].str);
             start_time = ctx->buffer_time[0];
             sub->pts = start_time;
             end_time = ctx->buffer_time[1];

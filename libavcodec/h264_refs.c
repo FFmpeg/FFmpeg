@@ -409,7 +409,7 @@ int ff_h264_build_ref_list(H264Context *h, H264SliceContext *sl)
                     if (h->default_ref[list2].parent && !h->default_ref[list2].parent->gray
                         && !(!FIELD_PICTURE(h) && (h->default_ref[list2].reference&3) != 3)) {
                         sl->ref_list[list][index] = h->default_ref[list2];
-                        av_log(h, AV_LOG_DEBUG, "replacement of gray gap frame\n");
+                        av_log(h->avctx, AV_LOG_DEBUG, "replacement of gray gap frame\n");
                         break;
                     }
                 }

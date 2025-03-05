@@ -401,7 +401,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         block[0x3D] = temp_block[0x2F]; block[0x3E] = temp_block[0x37];
         block[0x37] = temp_block[0x3E]; block[0x3F] = temp_block[0x3F];
     } else {
-        av_log(s, AV_LOG_DEBUG, "s->idsp.perm_type: %d\n",
+        av_log(s->avctx, AV_LOG_DEBUG, "s->idsp.perm_type: %d\n",
                 (int)s->idsp.perm_type);
         av_assert0(s->idsp.perm_type == FF_IDCT_PERM_NONE ||
                 s->idsp.perm_type == FF_IDCT_PERM_LIBMPEG2 ||
