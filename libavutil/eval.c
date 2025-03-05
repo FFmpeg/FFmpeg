@@ -791,12 +791,14 @@ int av_expr_count_func(AVExpr *e, unsigned *counter, int size, int arg)
 
 double av_expr_eval(AVExpr *e, const double *const_values, void *opaque)
 {
-    Parser p = { 0 };
-    p.var= e->var;
-    p.prng_state= e->prng_state;
+    Parser p = {
+        .class        = &eval_class,
+        .const_values = const_values,
+        .opaque       = opaque,
+        .var          = e->var,
+        .prng_state   = e->prng_state,
+    };
 
-    p.const_values = const_values;
-    p.opaque     = opaque;
     return eval_expr(&p, e);
 }
 
