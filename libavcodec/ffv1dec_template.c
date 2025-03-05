@@ -159,12 +159,25 @@ static int RENAME(decode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
         for (int p= 0; p<3 + transparency; p++) {
             int j = 0;
             int lu = 0;
-            uint8_t state[2] = {128, 128};
+            uint8_t state[2][32];
+            memset(state, 128, sizeof(state));
+
             for (int i= 0; i<65536; i++) {
-                int u = get_rac(&sc->c, state + lu);
-                sc->fltmap[p][j] = i ^ ((i&0x8000) ? 0 : 0x7FFF);
-                j+= u;
-                lu = u;
+                int run = get_symbol_inline(&sc->c, state[lu], 0);
+                if (run > 65536U - i)
+                    return AVERROR_INVALIDDATA;
+                if (lu) {
+                    lu ^= !run;
+                    while (run--) {
+                        sc->fltmap[p][j++] = i ^ ((i&0x8000) ? 0 : 0x7FFF);
+                        i++;
+                    }
+                } else {
+                    i += run;
+                    if (i != 65536)
+                        sc->fltmap[p][j++] = i ^ ((i&0x8000) ? 0 : 0x7FFF);
+                    lu ^= !run;
+                }
             }
         }
     }
