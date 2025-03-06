@@ -116,7 +116,7 @@ static int vdpau_vc1_decode_slice(AVCodecContext *avctx,
     return 0;
 }
 
-static int vdpau_vc1_init(AVCodecContext *avctx)
+static av_cold int vdpau_vc1_init(AVCodecContext *avctx)
 {
     VdpDecoderProfile profile;
 

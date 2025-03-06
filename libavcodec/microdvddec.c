@@ -319,7 +319,7 @@ static int microdvd_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
     return avpkt->size;
 }
 
-static int microdvd_init(AVCodecContext *avctx)
+static av_cold int microdvd_init(AVCodecContext *avctx)
 {
     int i, sidx;
     AVBPrint font_buf;

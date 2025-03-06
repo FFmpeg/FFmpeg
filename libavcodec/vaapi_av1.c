@@ -74,7 +74,7 @@ static int8_t vaapi_av1_get_bit_depth_idx(AVCodecContext *avctx)
     return bit_depth == 8 ? 0 : bit_depth == 10 ? 1 : 2;
 }
 
-static int vaapi_av1_decode_init(AVCodecContext *avctx)
+static av_cold int vaapi_av1_decode_init(AVCodecContext *avctx)
 {
     VAAPIAV1DecContext *ctx = avctx->internal->hwaccel_priv_data;
 
@@ -92,7 +92,7 @@ static int vaapi_av1_decode_init(AVCodecContext *avctx)
     return ff_vaapi_decode_init(avctx);
 }
 
-static int vaapi_av1_decode_uninit(AVCodecContext *avctx)
+static av_cold int vaapi_av1_decode_uninit(AVCodecContext *avctx)
 {
     VAAPIAV1DecContext *ctx = avctx->internal->hwaccel_priv_data;
 

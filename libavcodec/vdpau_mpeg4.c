@@ -90,7 +90,7 @@ static int vdpau_mpeg4_decode_slice(av_unused AVCodecContext *avctx,
      return 0;
 }
 
-static int vdpau_mpeg4_init(AVCodecContext *avctx)
+static av_cold int vdpau_mpeg4_init(AVCodecContext *avctx)
 {
     VdpDecoderProfile profile;
 

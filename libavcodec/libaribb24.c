@@ -144,7 +144,7 @@ static int libaribb24_generate_ass_header(AVCodecContext *avctx)
     return 0;
 }
 
-static int libaribb24_init(AVCodecContext *avctx)
+static av_cold int libaribb24_init(AVCodecContext *avctx)
 {
     Libaribb24Context *b24 = avctx->priv_data;
     void(* arib_dec_init)(arib_decoder_t* decoder) = NULL;
@@ -197,7 +197,7 @@ static int libaribb24_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int libaribb24_close(AVCodecContext *avctx)
+static av_cold int libaribb24_close(AVCodecContext *avctx)
 {
     Libaribb24Context *b24 = avctx->priv_data;
 

@@ -909,7 +909,7 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
     return av_pix_fmt_get_chroma_sub_sample(pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
 }
 
-static int encode_init_internal(AVCodecContext *avctx)
+static av_cold int encode_init_internal(AVCodecContext *avctx)
 {
     int ret;
     FFV1Context *s = avctx->priv_data;

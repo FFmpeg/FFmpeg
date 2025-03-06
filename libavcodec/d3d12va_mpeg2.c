@@ -150,7 +150,7 @@ static int d3d12va_mpeg2_end_frame(AVCodecContext *avctx)
     return ret;
 }
 
-static int d3d12va_mpeg2_decode_init(AVCodecContext *avctx)
+static av_cold int d3d12va_mpeg2_decode_init(AVCodecContext *avctx)
 {
     D3D12VADecodeContext      *ctx     = D3D12VA_DECODE_CONTEXT(avctx);
 

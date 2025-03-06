@@ -450,7 +450,7 @@ static int dxva2_av1_end_frame(AVCodecContext *avctx)
     return ret;
 }
 
-static int dxva2_av1_uninit(AVCodecContext *avctx)
+static av_cold int dxva2_av1_uninit(AVCodecContext *avctx)
 {
     struct AV1DXVAContext *ctx = avctx->internal->hwaccel_priv_data;
 

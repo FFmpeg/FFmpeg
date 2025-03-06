@@ -939,7 +939,7 @@ static void aribcaption_flush(AVCodecContext *avctx)
         ctx->readorder = 0;
 }
 
-static int aribcaption_close(AVCodecContext *avctx)
+static av_cold int aribcaption_close(AVCodecContext *avctx)
 {
     ARIBCaptionContext *ctx = avctx->priv_data;
 
@@ -954,7 +954,7 @@ static int aribcaption_close(AVCodecContext *avctx)
     return 0;
 }
 
-static int aribcaption_init(AVCodecContext *avctx)
+static av_cold int aribcaption_init(AVCodecContext *avctx)
 {
     ARIBCaptionContext *ctx = avctx->priv_data;
     aribcc_profile_t profile;

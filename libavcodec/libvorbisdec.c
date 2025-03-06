@@ -35,7 +35,8 @@ typedef struct OggVorbisDecContext {
 
 static int oggvorbis_decode_close(AVCodecContext *avccontext);
 
-static int oggvorbis_decode_init(AVCodecContext *avccontext) {
+static av_cold int oggvorbis_decode_init(AVCodecContext *avccontext)
+{
     OggVorbisDecContext *context = avccontext->priv_data ;
     uint8_t *p= avccontext->extradata;
     int i, hsizes[3], ret;
@@ -198,7 +199,8 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext, AVFrame *frame,
 }
 
 
-static int oggvorbis_decode_close(AVCodecContext *avccontext) {
+static av_cold int oggvorbis_decode_close(AVCodecContext *avccontext)
+{
     OggVorbisDecContext *context = avccontext->priv_data ;
 
     vorbis_block_clear(&context->vb);

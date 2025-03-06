@@ -160,7 +160,7 @@ static int d3d12va_hevc_end_frame(AVCodecContext *avctx)
                scale ? &ctx_pic->qm : NULL, scale ? sizeof(ctx_pic->qm) : 0, update_input_arguments);
 }
 
-static int d3d12va_hevc_decode_init(AVCodecContext *avctx)
+static av_cold int d3d12va_hevc_decode_init(AVCodecContext *avctx)
 {
     D3D12VADecodeContext *ctx = D3D12VA_DECODE_CONTEXT(avctx);
     DXVA_PicParams_HEVC pp;

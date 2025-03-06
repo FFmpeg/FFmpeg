@@ -213,7 +213,7 @@ static int decode_frame_lscr(AVCodecContext *avctx, AVFrame *rframe,
     return avpkt->size;
 }
 
-static int lscr_decode_close(AVCodecContext *avctx)
+static av_cold int lscr_decode_close(AVCodecContext *avctx)
 {
     LSCRContext *s = avctx->priv_data;
 
@@ -225,7 +225,7 @@ static int lscr_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static int lscr_decode_init(AVCodecContext *avctx)
+static av_cold int lscr_decode_init(AVCodecContext *avctx)
 {
     LSCRContext *s = avctx->priv_data;
 
@@ -242,7 +242,7 @@ static int lscr_decode_init(AVCodecContext *avctx)
     return ff_inflate_init(&s->zstream, avctx);
 }
 
-static void lscr_decode_flush(AVCodecContext *avctx)
+static av_cold void lscr_decode_flush(AVCodecContext *avctx)
 {
     LSCRContext *s = avctx->priv_data;
     av_frame_unref(s->last_picture);

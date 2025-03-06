@@ -515,7 +515,7 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
     }
 }
 
-static int smc_encode_init(AVCodecContext *avctx)
+static av_cold int smc_encode_init(AVCodecContext *avctx)
 {
     SMCContext *s = avctx->priv_data;
 
@@ -580,7 +580,7 @@ static int smc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static int smc_encode_end(AVCodecContext *avctx)
+static av_cold int smc_encode_end(AVCodecContext *avctx)
 {
     SMCContext *s = avctx->priv_data;
 

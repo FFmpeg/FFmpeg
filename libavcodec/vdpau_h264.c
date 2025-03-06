@@ -214,7 +214,7 @@ static int vdpau_h264_end_frame(AVCodecContext *avctx)
     return 0;
 }
 
-static int vdpau_h264_init(AVCodecContext *avctx)
+static av_cold int vdpau_h264_init(AVCodecContext *avctx)
 {
     VdpDecoderProfile profile;
     uint32_t level = avctx->level;

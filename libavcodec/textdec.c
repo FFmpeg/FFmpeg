@@ -95,7 +95,7 @@ const FFCodec ff_text_decoder = {
 
 #if CONFIG_VPLAYER_DECODER || CONFIG_PJS_DECODER || CONFIG_SUBVIEWER1_DECODER || CONFIG_STL_DECODER
 
-static int linebreak_init(AVCodecContext *avctx)
+static av_cold int linebreak_init(AVCodecContext *avctx)
 {
     TextContext *text = avctx->priv_data;
     text->linebreaks = "|";

@@ -199,7 +199,7 @@ static av_cold void dcaenc_init_static_tables(void)
         create_enc_table(&bitalloc_12_table[i][1], 12, &src_table);
 }
 
-static int encode_init(AVCodecContext *avctx)
+static av_cold int encode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
     DCAEncContext *c = avctx->priv_data;

@@ -779,7 +779,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static void decode_flush(AVCodecContext *avctx)
+static av_cold void decode_flush(AVCodecContext *avctx)
 {
     RASCContext *s = avctx->priv_data;
 

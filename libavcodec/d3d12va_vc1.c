@@ -162,7 +162,7 @@ static int d3d12va_vc1_end_frame(AVCodecContext *avctx)
                                        update_input_arguments);
 }
 
-static int d3d12va_vc1_decode_init(AVCodecContext *avctx)
+static av_cold int d3d12va_vc1_decode_init(AVCodecContext *avctx)
 {
     int ret;
     D3D12VADecodeContext *ctx = D3D12VA_DECODE_CONTEXT(avctx);

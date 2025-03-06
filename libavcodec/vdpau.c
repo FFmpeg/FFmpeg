@@ -139,8 +139,8 @@ int ff_vdpau_common_frame_params(AVCodecContext *avctx,
     return 0;
 }
 
-int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
-                         int level)
+av_cold int ff_vdpau_common_init(AVCodecContext *avctx,
+                                 VdpDecoderProfile profile, int level)
 {
     VDPAUHWContext *hwctx = avctx->hwaccel_context;
     VDPAUContext *vdctx = avctx->internal->hwaccel_priv_data;
@@ -290,7 +290,7 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
     return vdpau_error(status);
 }
 
-int ff_vdpau_common_uninit(AVCodecContext *avctx)
+av_cold int ff_vdpau_common_uninit(AVCodecContext *avctx)
 {
     VDPAUContext *vdctx = avctx->internal->hwaccel_priv_data;
     VdpDecoderDestroy *destroy;

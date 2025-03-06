@@ -321,7 +321,7 @@ static void sbc_synthesize_audio(struct sbc_decoder_state *state,
     }
 }
 
-static int sbc_decode_init(AVCodecContext *avctx)
+static av_cold int sbc_decode_init(AVCodecContext *avctx)
 {
     SBCDecContext *sbc = avctx->priv_data;
     int i, ch;

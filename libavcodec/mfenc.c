@@ -1226,7 +1226,7 @@ static int mf_close(AVCodecContext *avctx)
     return 0;
 }
 
-static int mf_init(AVCodecContext *avctx)
+static av_cold int mf_init(AVCodecContext *avctx)
 {
     int ret;
     if ((ret = mf_load_library(avctx)) == 0) {

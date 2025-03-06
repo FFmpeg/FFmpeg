@@ -442,7 +442,7 @@ static int bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf)
     return 0;
 }
 
-static int dvdsub_init(AVCodecContext *avctx)
+static av_cold int dvdsub_init(AVCodecContext *avctx)
 {
     DVDSubtitleContext *dvdc = avctx->priv_data;
     static const uint32_t default_palette[16] = {

@@ -151,7 +151,7 @@ static int d3d12va_av1_end_frame(AVCodecContext *avctx)
     return ret;
 }
 
-static int d3d12va_av1_decode_init(AVCodecContext *avctx)
+static av_cold int d3d12va_av1_decode_init(AVCodecContext *avctx)
 {
     D3D12VADecodeContext    *ctx     = D3D12VA_DECODE_CONTEXT(avctx);
     D3D12AV1DecodeContext   *av1_ctx = D3D12_AV1_DECODE_CONTEXT(avctx);
@@ -179,7 +179,7 @@ static int d3d12va_av1_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int d3d12va_av1_decode_uninit(AVCodecContext *avctx)
+static av_cold int d3d12va_av1_decode_uninit(AVCodecContext *avctx)
 {
     D3D12AV1DecodeContext   *ctx     = D3D12_AV1_DECODE_CONTEXT(avctx);
 
