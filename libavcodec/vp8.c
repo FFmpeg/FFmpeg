@@ -2727,7 +2727,7 @@ int vp78_decode_frame(AVCodecContext *avctx, AVFrame *rframe, int *got_frame,
     if (!is_vp7 && !s->actually_webp)
         ff_thread_finish_setup(avctx);
 
-    if (avctx->hwaccel) {
+    if (!is_vp7 && avctx->hwaccel) {
         const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
         ret = hwaccel->start_frame(avctx, avpkt->data, avpkt->size);
         if (ret < 0)
