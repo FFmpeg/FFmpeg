@@ -34,6 +34,7 @@
 #include "lut3d.h"
 #include "swscale_internal.h"
 #include "graph.h"
+#include "ops.h"
 
 static int pass_alloc_output(SwsPass *pass)
 {
@@ -458,6 +459,85 @@ static int add_legacy_sws_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
     return init_legacy_subpass(graph, sws, input, output);
 }
 
+/*********************
+ * Format conversion *
+ *********************/
+
+static int add_convert_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
+                            SwsPass *input, SwsPass **output)
+{
+    const SwsPixelType type = SWS_PIXEL_F32;
+
+    SwsContext *ctx = graph->ctx;
+    SwsOpList *ops = NULL;
+    int ret = AVERROR(ENOTSUP);
+
+    /* Mark the entire new ops infrastructure as experimental for now */
+    if (!(ctx->flags & SWS_UNSTABLE))
+        goto fail;
+
+    /* The new format conversion layer cannot scale for now */
+    if (src.width != dst.width || src.height != dst.height ||
+        src.desc->log2_chroma_h || src.desc->log2_chroma_w ||
+        dst.desc->log2_chroma_h || dst.desc->log2_chroma_w)
+        goto fail;
+
+    /* The new code does not yet support alpha blending */
+    if (src.desc->flags & AV_PIX_FMT_FLAG_ALPHA &&
+        ctx->alpha_blend != SWS_ALPHA_BLEND_NONE)
+        goto fail;
+
+    ops = ff_sws_op_list_alloc();
+    if (!ops)
+        return AVERROR(ENOMEM);
+    ops->src = src;
+    ops->dst = dst;
+
+    ret = ff_sws_decode_pixfmt(ops, src.format);
+    if (ret < 0)
+        goto fail;
+    ret = ff_sws_decode_colors(ctx, type, ops, src, &graph->incomplete);
+    if (ret < 0)
+        goto fail;
+    ret = ff_sws_encode_colors(ctx, type, ops, dst, &graph->incomplete);
+    if (ret < 0)
+        goto fail;
+    ret = ff_sws_encode_pixfmt(ops, dst.format);
+    if (ret < 0)
+        goto fail;
+
+    av_log(ctx, AV_LOG_VERBOSE, "Conversion pass for %s -> %s:\n",
+           av_get_pix_fmt_name(src.format), av_get_pix_fmt_name(dst.format));
+
+    av_log(ctx, AV_LOG_DEBUG, "Unoptimized operation list:\n");
+    ff_sws_op_list_print(ctx, AV_LOG_DEBUG, ops);
+    av_log(ctx, AV_LOG_DEBUG, "Optimized operation list:\n");
+
+    ff_sws_op_list_optimize(ops);
+    if (ops->num_ops == 0) {
+        av_log(ctx, AV_LOG_VERBOSE, "  optimized into memcpy\n");
+        ff_sws_op_list_free(&ops);
+        *output = input;
+        return 0;
+    }
+
+    ff_sws_op_list_print(ctx, AV_LOG_VERBOSE, ops);
+
+    ret = ff_sws_compile_pass(graph, ops, 0, dst, input, output);
+    if (ret < 0)
+        goto fail;
+
+    ret = 0;
+    /* fall through */
+
+fail:
+    ff_sws_op_list_free(&ops);
+    if (ret == AVERROR(ENOTSUP))
+        return add_legacy_sws_pass(graph, src, dst, input, output);
+    return ret;
+}
+
+
 /**************************
  * Gamut and tone mapping *
  **************************/
@@ -527,7 +607,7 @@ static int adapt_colors(SwsGraph *graph, SwsFormat src, SwsFormat dst,
     if (fmt_in != src.format) {
         SwsFormat tmp = src;
         tmp.format = fmt_in;
-        ret = add_legacy_sws_pass(graph, src, tmp, input, &input);
+        ret = add_convert_pass(graph, src, tmp, input, &input);
         if (ret < 0)
             return ret;
     }
@@ -569,7 +649,7 @@ static int init_passes(SwsGraph *graph)
     src.color  = dst.color;
 
     if (!ff_fmt_equal(&src, &dst)) {
-        ret = add_legacy_sws_pass(graph, src, dst, pass, &pass);
+        ret = add_convert_pass(graph, src, dst, pass, &pass);
         if (ret < 0)
             return ret;
     }
