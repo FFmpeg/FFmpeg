@@ -30,7 +30,7 @@ color_space=bt470bg
 color_primaries=unknown
 color_transfer=unknown
 chroma_location=center
-TAG:UserComment=AppleMark
+TAG:ExifIFD/UserComment=AppleMark
 
 [/FRAME]
 [FRAME]

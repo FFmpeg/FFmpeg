@@ -38,6 +38,7 @@ version 8.0:
 - ProRes RAW decoder
 - ProRes RAW Vulkan hwaccel
 - ffprobe -codec option
+- EXIF Metadata Parsing
 
 
 version 7.1:

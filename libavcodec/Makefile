@@ -15,6 +15,7 @@ HEADERS = ac3_parser.h                                                  \
           dirac.h                                                       \
           dv_profile.h                                                  \
           dxva2.h                                                       \
+          exif.h                                                        \
           jni.h                                                         \
           mediacodec.h                                                  \
           packet.h                                                      \

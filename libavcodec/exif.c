@@ -1,6 +1,7 @@
 /*
  * EXIF metadata parser
  * Copyright (c) 2013 Thilo Borgmann <thilo.borgmann _at_ mail.de>
+ * Copyright (c) 2024-2025 Leo Izen <leo.izen@gmail.com>
  *
  * This file is part of FFmpeg.
  *
@@ -23,16 +24,33 @@
  * @file
  * EXIF metadata parser
  * @author Thilo Borgmann <thilo.borgmann _at_ mail.de>
+ * @author Leo Izen <leo.izen@gmail.com>
  */
 
-#include "exif.h"
+#include <inttypes.h>
+
+#include "libavutil/bprint.h"
+#include "libavutil/display.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
+
+#include "bytestream.h"
+#include "exif_internal.h"
 #include "tiff_common.h"
 
+#define EXIF_II_LONG           0x49492a00
+#define EXIF_MM_LONG           0x4d4d002a
+
+#define BASE_TAG_SIZE          12
+#define IFD_EXTRA_SIZE         6
+
 #define EXIF_TAG_NAME_LENGTH   32
+#define MAKERNOTE_TAG          0x927c
+#define ORIENTATION_TAG        0x112
 
 struct exif_tag {
-    char      name[EXIF_TAG_NAME_LENGTH];
-    uint16_t  id;
+    const char name[EXIF_TAG_NAME_LENGTH];
+    uint16_t id;
 };
 
 static const struct exif_tag tag_list[] = { // JEITA CP-3451 EXIF specification:
@@ -152,15 +170,45 @@ static const struct exif_tag tag_list[] = { // JEITA CP-3451 EXIF specification:
     {"Saturation",                 0xA409},
     {"Sharpness",                  0xA40A},
     {"DeviceSettingDescription",   0xA40B},
-    {"SubjectDistanceRange",       0xA40C}
-//    {"InteroperabilityIndex",      0x1}, // <- Table 13 Interoperability IFD Attribute Information
+    {"SubjectDistanceRange",       0xA40C},
+
+    /* InteropIFD tags */
+    {"RelatedImageFileFormat",     0x1000},
+    {"RelatedImageWidth",          0x1001},
+    {"RelatedImageLength",         0x1002},
+
+    /* private EXIF tags */
+    {"PrintImageMatching",         0xC4A5}, // <- undocumented meaning
+
+    /* IFD tags */
+    {"ExifIFD",                    0x8769}, // <- An IFD pointing to standard Exif metadata
+    {"GPSInfo",                    0x8825}, // <- An IFD pointing to GPS Exif Metadata
+    {"InteropIFD",                 0xA005}, // <- Table 13 Interoperability IFD Attribute Information
+    {"GlobalParametersIFD",        0x0190},
+    {"ProfileIFD",                 0xc6f5},
 };
 
-static const char *exif_get_tag_name(uint16_t id)
-{
-    int i;
+/* same as type_sizes but with string == 1 */
+static const size_t exif_sizes[] = {
+    [0] = 0,
+    [AV_TIFF_BYTE] = 1,
+    [AV_TIFF_STRING] = 1,
+    [AV_TIFF_SHORT] = 2,
+    [AV_TIFF_LONG] = 4,
+    [AV_TIFF_RATIONAL] = 8,
+    [AV_TIFF_SBYTE] = 1,
+    [AV_TIFF_UNDEFINED] = 1,
+    [AV_TIFF_SSHORT] = 2,
+    [AV_TIFF_SLONG] = 4,
+    [AV_TIFF_SRATIONAL] = 8,
+    [AV_TIFF_FLOAT] = 4,
+    [AV_TIFF_DOUBLE] = 8,
+    [AV_TIFF_IFD] = 4,
+};
 
-    for (i = 0; i < FF_ARRAY_ELEMS(tag_list); i++) {
+const char *av_exif_get_tag_name(uint16_t id)
+{
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(tag_list); i++) {
         if (tag_list[i].id == id)
             return tag_list[i].name;
     }
@@ -168,106 +216,994 @@ static const char *exif_get_tag_name(uint16_t id)
     return NULL;
 }
 
-
-static int exif_add_metadata(void *logctx, int count, int type,
-                             const char *name, const char *sep,
-                             GetByteContext *gb, int le,
-                             AVDictionary **metadata)
+int32_t av_exif_get_tag_id(const char *name)
 {
-    switch(type) {
-    case 0:
-        av_log(logctx, AV_LOG_WARNING,
-               "Invalid TIFF tag type 0 found for %s with size %d\n",
-               name, count);
-        return 0;
-    case AV_TIFF_DOUBLE   : return ff_tadd_doubles_metadata(count, name, sep, gb, le, metadata);
-    case AV_TIFF_SSHORT   : return ff_tadd_shorts_metadata(count, name, sep, gb, le, 1, metadata);
-    case AV_TIFF_SHORT    : return ff_tadd_shorts_metadata(count, name, sep, gb, le, 0, metadata);
-    case AV_TIFF_SBYTE    : return ff_tadd_bytes_metadata(count, name, sep, gb, le, 1, metadata);
-    case AV_TIFF_BYTE     :
-    case AV_TIFF_UNDEFINED: return ff_tadd_bytes_metadata(count, name, sep, gb, le, 0, metadata);
-    case AV_TIFF_STRING   : return ff_tadd_string_metadata(count, name, gb, le, metadata);
-    case AV_TIFF_SRATIONAL:
-    case AV_TIFF_RATIONAL : return ff_tadd_rational_metadata(count, name, sep, gb, le, metadata);
-    case AV_TIFF_SLONG    :
-    case AV_TIFF_LONG     : return ff_tadd_long_metadata(count, name, sep, gb, le, metadata);
-    default:
-        avpriv_request_sample(logctx, "TIFF tag type (%u)", type);
-        return 0;
-    };
+    if (!name)
+        return -1;
+
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(tag_list); i++) {
+        if (!strcmp(tag_list[i].name, name))
+            return tag_list[i].id;
+    }
+
+    return -1;
 }
 
-
-static int exif_decode_tag(void *logctx, GetByteContext *gbytes, int le,
-                           int depth, AVDictionary **metadata)
+static inline void tput16(PutByteContext *pb, const int le, const uint16_t value)
 {
-    int ret, cur_pos;
-    unsigned id, count;
+    le ? bytestream2_put_le16(pb, value) : bytestream2_put_be16(pb, value);
+}
+
+static inline void tput32(PutByteContext *pb, const int le, const uint32_t value)
+{
+    le ? bytestream2_put_le32(pb, value) : bytestream2_put_be32(pb, value);
+}
+
+static inline void tput64(PutByteContext *pb, const int le, const uint64_t value)
+{
+    le ? bytestream2_put_le64(pb, value) : bytestream2_put_be64(pb, value);
+}
+
+static int exif_read_values(void *logctx, GetByteContext *gb, int le, AVExifEntry *entry)
+{
+    switch (entry->type) {
+        case AV_TIFF_SHORT:
+        case AV_TIFF_LONG:
+            entry->value.uint = av_calloc(entry->count, sizeof(*entry->value.uint));
+            break;
+        case AV_TIFF_SSHORT:
+        case AV_TIFF_SLONG:
+            entry->value.sint = av_calloc(entry->count, sizeof(*entry->value.sint));
+            break;
+        case AV_TIFF_DOUBLE:
+        case AV_TIFF_FLOAT:
+            entry->value.dbl = av_calloc(entry->count, sizeof(*entry->value.dbl));
+            break;
+        case AV_TIFF_RATIONAL:
+        case AV_TIFF_SRATIONAL:
+            entry->value.rat = av_calloc(entry->count, sizeof(*entry->value.rat));
+            break;
+        case AV_TIFF_UNDEFINED:
+        case AV_TIFF_BYTE:
+            entry->value.ubytes = av_mallocz(entry->count);
+            break;
+        case AV_TIFF_SBYTE:
+            entry->value.sbytes = av_mallocz(entry->count);
+            break;
+        case AV_TIFF_STRING:
+            entry->value.str = av_mallocz(entry->count + 1);
+            break;
+        case AV_TIFF_IFD:
+            av_log(logctx, AV_LOG_WARNING, "Bad IFD type for non-IFD tag\n");
+            return AVERROR_INVALIDDATA;
+    }
+    if (!entry->value.ptr)
+        return AVERROR(ENOMEM);
+    switch (entry->type) {
+        case AV_TIFF_SHORT:
+            for (size_t i = 0; i < entry->count; i++)
+                entry->value.uint[i] = ff_tget_short(gb, le);
+            break;
+        case AV_TIFF_LONG:
+            for (size_t i = 0; i < entry->count; i++)
+                entry->value.uint[i] = ff_tget_long(gb, le);
+            break;
+        case AV_TIFF_SSHORT:
+            for (size_t i = 0; i < entry->count; i++)
+                entry->value.sint[i] = (int16_t) ff_tget_short(gb, le);
+            break;
+        case AV_TIFF_SLONG:
+            for (size_t i = 0; i < entry->count; i++)
+                entry->value.sint[i] = (int32_t) ff_tget_long(gb, le);
+            break;
+        case AV_TIFF_DOUBLE:
+            for (size_t i = 0; i < entry->count; i++)
+                entry->value.dbl[i] = ff_tget_double(gb, le);
+            break;
+        case AV_TIFF_FLOAT:
+            for (size_t i = 0; i < entry->count; i++) {
+                av_alias32 alias = { .u32 = ff_tget_long(gb, le) };
+                entry->value.dbl[i] = alias.f32;
+            }
+            break;
+        case AV_TIFF_RATIONAL:
+        case AV_TIFF_SRATIONAL:
+            for (size_t i = 0; i < entry->count; i++) {
+                int32_t num = ff_tget_long(gb, le);
+                int32_t den = ff_tget_long(gb, le);
+                entry->value.rat[i] = av_make_q(num, den);
+            }
+            break;
+        case AV_TIFF_UNDEFINED:
+        case AV_TIFF_BYTE:
+            bytestream2_get_buffer(gb, entry->value.ubytes, entry->count);
+            break;
+        case AV_TIFF_SBYTE:
+            bytestream2_get_buffer(gb, entry->value.sbytes, entry->count);
+            break;
+        case AV_TIFF_STRING:
+            bytestream2_get_buffer(gb, entry->value.str, entry->count);
+            break;
+    }
+
+    return 0;
+}
+
+static void exif_write_values(PutByteContext *pb, int le, const AVExifEntry *entry)
+{
+    switch (entry->type) {
+        case AV_TIFF_SHORT:
+            for (size_t i = 0; i < entry->count; i++)
+                tput16(pb, le, entry->value.uint[i]);
+            break;
+        case AV_TIFF_LONG:
+            for (size_t i = 0; i < entry->count; i++)
+                tput32(pb, le, entry->value.uint[i]);
+            break;
+        case AV_TIFF_SSHORT:
+            for (size_t i = 0; i < entry->count; i++)
+                tput16(pb, le, entry->value.sint[i]);
+            break;
+        case AV_TIFF_SLONG:
+            for (size_t i = 0; i < entry->count; i++)
+                tput32(pb, le, entry->value.sint[i]);
+            break;
+        case AV_TIFF_DOUBLE:
+            for (size_t i = 0; i < entry->count; i++) {
+                const av_alias64 a = { .f64 = entry->value.dbl[i] };
+                tput64(pb, le, a.u64);
+            }
+            break;
+        case AV_TIFF_FLOAT:
+            for (size_t i = 0; i < entry->count; i++) {
+                const av_alias32 a = { .f32 = entry->value.dbl[i] };
+                tput32(pb, le, a.u32);
+            }
+            break;
+        case AV_TIFF_RATIONAL:
+        case AV_TIFF_SRATIONAL:
+            for (size_t i = 0; i < entry->count; i++) {
+                tput32(pb, le, entry->value.rat[i].num);
+                tput32(pb, le, entry->value.rat[i].den);
+            }
+            break;
+        case AV_TIFF_UNDEFINED:
+        case AV_TIFF_BYTE:
+            bytestream2_put_buffer(pb, entry->value.ubytes, entry->count);
+            break;
+        case AV_TIFF_SBYTE:
+            bytestream2_put_buffer(pb, entry->value.sbytes, entry->count);
+            break;
+        case AV_TIFF_STRING:
+            bytestream2_put_buffer(pb, entry->value.str, entry->count);
+            break;
+    }
+}
+
+static const uint8_t aoc_header[] = { 'A', 'O', 'C', 0, };
+static const uint8_t casio_header[] = { 'Q', 'V', 'C', 0, 0, 0, };
+static const uint8_t foveon_header[] = { 'F', 'O', 'V', 'E', 'O', 'N', 0, 0, };
+static const uint8_t fuji_header[] = { 'F', 'U', 'J', 'I', };
+static const uint8_t nikon_header[] = { 'N', 'i', 'k', 'o', 'n', 0, };
+static const uint8_t olympus1_header[] = { 'O', 'L', 'Y', 'M', 'P', 0, };
+static const uint8_t olympus2_header[] = { 'O', 'L', 'Y', 'M', 'P', 'U', 'S', 0, 'I', 'I', };
+static const uint8_t panasonic_header[] = { 'P', 'a', 'n', 'a', 's', 'o', 'n', 'i', 'c', 0, 0, 0, };
+static const uint8_t sigma_header[] = { 'S', 'I', 'G', 'M', 'A', 0, 0, 0, };
+static const uint8_t sony_header[] = { 'S', 'O', 'N', 'Y', ' ', 'D', 'S', 'C', ' ', 0, 0, 0, };
+
+struct exif_makernote_data {
+    const uint8_t *header;
+    size_t header_size;
+    int result;
+};
+
+#define MAKERNOTE_STRUCT(h, r) { \
+    .header = (h),               \
+    .header_size = sizeof((h)),  \
+    .result = (r),               \
+}
+
+static const struct exif_makernote_data makernote_data[] = {
+    MAKERNOTE_STRUCT(aoc_header, 6),
+    MAKERNOTE_STRUCT(casio_header, -1),
+    MAKERNOTE_STRUCT(foveon_header, 10),
+    MAKERNOTE_STRUCT(fuji_header, -1),
+    MAKERNOTE_STRUCT(olympus1_header, 8),
+    MAKERNOTE_STRUCT(olympus2_header, -1),
+    MAKERNOTE_STRUCT(panasonic_header, 12),
+    MAKERNOTE_STRUCT(sigma_header, 10),
+    MAKERNOTE_STRUCT(sony_header, 12),
+};
+
+/*
+ * derived from Exiv2 MakerNote's article
+ * https://exiv2.org/makernote.html or archived at
+ * https://web.archive.org/web/20250311155857/https://exiv2.org/makernote.html
+ */
+static int exif_get_makernote_offset(GetByteContext *gb)
+{
+    if (bytestream2_get_bytes_left(gb) < BASE_TAG_SIZE)
+        return -1;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(makernote_data); i++) {
+        if (!memcmp(gb->buffer, makernote_data[i].header, makernote_data[i].header_size))
+            return makernote_data[i].result;
+    }
+
+    if (!memcmp(gb->buffer, nikon_header, sizeof(nikon_header))) {
+        if (bytestream2_get_bytes_left(gb) < 14)
+            return -1;
+        else if (AV_RB32(gb->buffer + 10) == EXIF_MM_LONG || AV_RB32(gb->buffer + 10) == EXIF_II_LONG)
+            return -1;
+        return 8;
+    }
+
+    return 0;
+}
+
+static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
+                               int depth, AVExifMetadata *ifd);
+
+static int exif_decode_tag(void *logctx, GetByteContext *gb, int le,
+                           int depth, AVExifEntry *entry)
+{
+    int ret = 0, makernote_offset = -1, tell, is_ifd, count;
     enum AVTiffDataType type;
+    uint32_t payload;
 
-    if (depth > 2) {
-        return 0;
+    /* safety check to prevent infinite recursion on malicious IFDs */
+    if (depth > 3)
+        return AVERROR_INVALIDDATA;
+
+    tell = bytestream2_tell(gb);
+
+    entry->id = ff_tget_short(gb, le);
+    type = ff_tget_short(gb, le);
+    count = ff_tget_long(gb, le);
+    payload = ff_tget_long(gb, le);
+
+    av_log(logctx, AV_LOG_DEBUG, "TIFF Tag: id: 0x%04x, type: %d, count: %u, offset: %d, "
+                                 "payload: %" PRIu32 "\n", entry->id, type, count, tell, payload);
+
+    is_ifd = type == AV_TIFF_IFD || ff_tis_ifd(entry->id) || entry->id == MAKERNOTE_TAG;
+
+    if (is_ifd) {
+        if (!payload)
+            goto end;
+        bytestream2_seek(gb, payload, SEEK_SET);
     }
 
-    ff_tread_tag(gbytes, le, &id, &type, &count, &cur_pos);
-
-    if (!bytestream2_tell(gbytes)) {
-        bytestream2_seek(gbytes, cur_pos, SEEK_SET);
-        return 0;
+    if (entry->id == MAKERNOTE_TAG) {
+        makernote_offset = exif_get_makernote_offset(gb);
+        if (makernote_offset < 0)
+            is_ifd = 0;
     }
 
-    // read count values and add it metadata
-    // store metadata or proceed with next IFD
-    ret = ff_tis_ifd(id);
-    if (ret) {
-        ret = ff_exif_decode_ifd(logctx, gbytes, le, depth + 1, metadata);
-    } else {
-        const char *name = exif_get_tag_name(id);
-        char buf[7];
-
-        if (!name) {
-            name = buf;
-            snprintf(buf, sizeof(buf), "0x%04X", id);
+    if (is_ifd) {
+        entry->type = AV_TIFF_IFD;
+        entry->count = 1;
+        entry->ifd_offset = makernote_offset > 0 ? makernote_offset : 0;
+        if (entry->ifd_offset) {
+            entry->ifd_lead = av_malloc(entry->ifd_offset);
+            if (!entry->ifd_lead)
+                return AVERROR(ENOMEM);
+            bytestream2_get_buffer(gb, entry->ifd_lead, entry->ifd_offset);
         }
-
-        ret = exif_add_metadata(logctx, count, type, name, NULL,
-                                gbytes, le, metadata);
+        ret = exif_parse_ifd_list(logctx, gb, le, depth + 1, &entry->value.ifd);
+        if (ret < 0 && entry->id == MAKERNOTE_TAG) {
+            /*
+             * we guessed that MakerNote was an IFD
+             * but we were probably incorrect at this
+             * point so we try again as a binary blob
+             */
+            av_exif_free(&entry->value.ifd);
+            av_log(logctx, AV_LOG_DEBUG, "unrecognized MakerNote IFD, retrying as blob\n");
+            is_ifd = 0;
+        }
     }
 
-    bytestream2_seek(gbytes, cur_pos, SEEK_SET);
+    /* inverted condition instead of else so we can fall through from above */
+    if (!is_ifd) {
+        entry->type = type == AV_TIFF_IFD ? AV_TIFF_UNDEFINED : type;
+        entry->count = count;
+        bytestream2_seek(gb, count * exif_sizes[type] > 4 ? payload : tell + 8, SEEK_SET);
+        ret = exif_read_values(logctx, gb, le, entry);
+    }
+
+end:
+    bytestream2_seek(gb, tell + BASE_TAG_SIZE, SEEK_SET);
 
     return ret;
 }
 
-
-int ff_exif_decode_ifd(void *logctx, GetByteContext *gbytes,
-                       int le, int depth, AVDictionary **metadata)
+static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
+                               int depth, AVExifMetadata *ifd)
 {
-    int i, ret;
-    int entries;
+    uint32_t entries;
+    size_t required_size;
+    void *temp;
 
-    entries = ff_tget_short(gbytes, le);
+    av_log(logctx, AV_LOG_DEBUG, "parsing IFD list at offset: %d\n", bytestream2_tell(gb));
 
-    if (bytestream2_get_bytes_left(gbytes) < entries * 12) {
+    if (bytestream2_get_bytes_left(gb) < 2) {
+        av_log(logctx, AV_LOG_ERROR, "not enough bytes remaining in EXIF buffer: 2 required\n");
         return AVERROR_INVALIDDATA;
     }
 
-    for (i = 0; i < entries; i++) {
-        if ((ret = exif_decode_tag(logctx, gbytes, le, depth, metadata)) < 0) {
+    entries = ff_tget_short(gb, le);
+    if (bytestream2_get_bytes_left(gb) < entries * BASE_TAG_SIZE) {
+        av_log(logctx, AV_LOG_ERROR, "not enough bytes remaining in EXIF buffer. entries: %" PRIu32 "\n", entries);
+        return AVERROR_INVALIDDATA;
+    }
+
+    ifd->count = entries;
+    av_log(logctx, AV_LOG_DEBUG, "entry count for IFD: %u\n", ifd->count);
+
+    if (av_size_mult(ifd->count, sizeof(*ifd->entries), &required_size) < 0)
+        return AVERROR(ENOMEM);
+    temp = av_fast_realloc(ifd->entries, &ifd->size, required_size);
+    if (!temp) {
+        av_freep(&ifd->entries);
+        return AVERROR(ENOMEM);
+    }
+    ifd->entries = temp;
+
+    /* entries have pointers in them which can cause issues if */
+    /* they are freed or realloc'd when garbage */
+    memset(ifd->entries, 0, required_size);
+
+    for (uint32_t i = 0; i < entries; i++) {
+        int ret = exif_decode_tag(logctx, gb, le, depth, &ifd->entries[i]);
+        if (ret < 0)
             return ret;
+    }
+
+    /*
+     * at the end of an IFD is an pointer to the next IFD
+     * or zero if there are no more IFDs, which is usually the case
+     */
+    return ff_tget_long(gb, le);
+}
+
+/*
+ * note that this function does not free the entry pointer itself
+ * because it's probably part of a larger array that should be freed
+ * all at once
+ */
+static void exif_free_entry(AVExifEntry *entry)
+{
+    if (!entry)
+        return;
+    if (entry->type == AV_TIFF_IFD)
+        av_exif_free(&entry->value.ifd);
+    else
+        av_freep(&entry->value.ptr);
+    av_freep(&entry->ifd_lead);
+}
+
+void av_exif_free(AVExifMetadata *ifd)
+{
+    if (!ifd)
+        return;
+    if (!ifd->entries) {
+        ifd->count = 0;
+        ifd->size = 0;
+        return;
+    }
+    for (size_t i = 0; i < ifd->count; i++) {
+        AVExifEntry *entry = &ifd->entries[i];
+        exif_free_entry(entry);
+    }
+    av_freep(&ifd->entries);
+    ifd->count = 0;
+    ifd->size = 0;
+}
+
+static size_t exif_get_ifd_size(const AVExifMetadata *ifd)
+{
+    /* 6 == 4 + 2; 2-byte entry-count at the beginning */
+    /* plus 4-byte next-IFD pointer at the end */
+    size_t total_size = IFD_EXTRA_SIZE;
+    for (size_t i = 0; i < ifd->count; i++) {
+        const AVExifEntry *entry = &ifd->entries[i];
+        if (entry->type == AV_TIFF_IFD) {
+            total_size += BASE_TAG_SIZE + exif_get_ifd_size(&entry->value.ifd) + entry->ifd_offset;
+        } else {
+            size_t payload_size = entry->count * exif_sizes[entry->type];
+            total_size += BASE_TAG_SIZE + (payload_size > 4 ? payload_size : 0);
+        }
+    }
+    return total_size;
+}
+
+static int exif_write_ifd(void *logctx, PutByteContext *pb, int le, const AVExifMetadata *ifd)
+{
+    int offset, ret, tell;
+    tell = bytestream2_get_bytes_left_p(pb);
+    tput16(pb, le, ifd->count);
+    offset = tell + IFD_EXTRA_SIZE + BASE_TAG_SIZE * (uint32_t) ifd->count;
+    av_log(logctx, AV_LOG_DEBUG, "writing IFD with %u entries and initial offset %d\n", ifd->count, offset);
+    for (size_t i = 0; i < ifd->count; i++) {
+        const AVExifEntry *entry = &ifd->entries[i];
+        tput16(pb, le, entry->id);
+        if (entry->id == MAKERNOTE_TAG && entry->type == AV_TIFF_IFD) {
+            size_t ifd_size = exif_get_ifd_size(&entry->value.ifd);
+            tput16(pb, le, AV_TIFF_UNDEFINED);
+            tput32(pb, le, ifd_size);
+        } else {
+            tput16(pb, le, entry->type);
+            tput32(pb, le, entry->count);
+        }
+        if (entry->type == AV_TIFF_IFD) {
+            int tell = bytestream2_tell_p(pb);
+            tput32(pb, le, offset);
+            bytestream2_seek_p(pb, offset, SEEK_SET);
+            if (entry->ifd_offset)
+                bytestream2_put_buffer(pb, entry->ifd_lead, entry->ifd_offset);
+            ret = exif_write_ifd(logctx, pb, le, &entry->value.ifd);
+            if (ret < 0)
+                return ret;
+            offset += ret + entry->ifd_offset;
+            bytestream2_seek_p(pb, tell + 4, SEEK_SET);
+        } else {
+            size_t payload_size = entry->count * exif_sizes[entry->type];
+            if (payload_size > 4) {
+                int tell = bytestream2_tell_p(pb);
+                tput32(pb, le, offset);
+                bytestream2_seek_p(pb, offset, SEEK_SET);
+                exif_write_values(pb, le, entry);
+                offset += payload_size;
+                bytestream2_seek_p(pb, tell + 4, SEEK_SET);
+            } else {
+                /* zero uninitialized excess payload values */
+                AV_WN32(pb->buffer, 0);
+                exif_write_values(pb, le, entry);
+            }
         }
     }
 
-    // return next IDF offset or 0x000000000 or a value < 0 for failure
-    return ff_tget_long(gbytes, le);
+    /*
+     * we write 0 if this is the top-level exif IFD
+     * indicating that there are no more IFD pointers
+     */
+    tput32(pb, le, 0);
+    return offset - tell;
+}
+
+int av_exif_write(void *logctx, const AVExifMetadata *ifd, AVBufferRef **buffer, enum AVExifHeaderMode header_mode)
+{
+    AVBufferRef *buf = NULL;
+    size_t size, headsize = 8;
+    PutByteContext pb;
+    int ret, off = 0;
+
+#if AV_HAVE_BIGENDIAN
+    int le = 0;
+#else
+    int le = 1;
+#endif
+
+    if (*buffer)
+        return AVERROR(EINVAL);
+
+    size = exif_get_ifd_size(ifd);
+    switch (header_mode) {
+        case AV_EXIF_EXIF00:
+            off = 6;
+            break;
+        case AV_EXIF_T_OFF:
+            off = 4;
+            break;
+        case AV_EXIF_ASSUME_BE:
+            le = 0;
+            headsize = 0;
+            break;
+        case AV_EXIF_ASSUME_LE:
+            le = 1;
+            headsize = 0;
+            break;
+    }
+    buf = av_buffer_alloc(size + off + headsize);
+    if (!buf)
+        return AVERROR(ENOMEM);
+
+    if (header_mode == AV_EXIF_EXIF00) {
+        AV_WL32(buf->data, MKTAG('E','x','i','f'));
+        AV_WN16(buf->data + 4, 0);
+    } else if (header_mode == AV_EXIF_T_OFF) {
+        AV_WN32(buf->data, 0);
+    }
+
+    bytestream2_init_writer(&pb, buf->data + off, buf->size - off);
+
+    if (header_mode != AV_EXIF_ASSUME_BE && header_mode != AV_EXIF_ASSUME_LE) {
+        /* these constants are be32 in both cases */
+        bytestream2_put_be32(&pb, le ? EXIF_II_LONG : EXIF_MM_LONG);
+        tput32(&pb, le, 8);
+    }
+
+    ret = exif_write_ifd(logctx, &pb, le, ifd);
+    if (ret < 0) {
+        av_buffer_unref(&buf);
+        av_log(logctx, AV_LOG_ERROR, "error writing EXIF data: %s\n", av_err2str(ret));
+        return ret;
+    }
+
+    *buffer = buf;
+
+    return 0;
+}
+
+int av_exif_parse_buffer(void *logctx, const uint8_t *buf, size_t size,
+                         AVExifMetadata *ifd, enum AVExifHeaderMode header_mode)
+{
+    int ret, le;
+    GetByteContext gbytes;
+    if (size > INT_MAX)
+        return AVERROR(EINVAL);
+    size_t off = 0;
+    switch (header_mode) {
+        case AV_EXIF_EXIF00:
+            if (size < 6)
+                return AVERROR_INVALIDDATA;
+            off = 6;
+            /* fallthrough */
+        case AV_EXIF_T_OFF:
+            if (size < 4)
+                return AVERROR_INVALIDDATA;
+            if (!off)
+                off = AV_RB32(buf) + 4;
+            /* fallthrough */
+        case AV_EXIF_TIFF_HEADER: {
+            int ifd_offset;
+            if (size <= off)
+                return AVERROR_INVALIDDATA;
+            bytestream2_init(&gbytes, buf + off, size - off);
+            // read TIFF header
+            ret = ff_tdecode_header(&gbytes, &le, &ifd_offset);
+            if (ret < 0) {
+                av_log(logctx, AV_LOG_ERROR, "invalid TIFF header in EXIF data: %s\n", av_err2str(ret));
+                return ret;
+            }
+            bytestream2_seek(&gbytes, ifd_offset, SEEK_SET);
+            break;
+        }
+        case AV_EXIF_ASSUME_LE:
+            le = 1;
+            bytestream2_init(&gbytes, buf, size);
+            break;
+        case AV_EXIF_ASSUME_BE:
+            le = 0;
+            bytestream2_init(&gbytes, buf, size);
+            break;
+        default:
+            return AVERROR(EINVAL);
+    }
+
+    /*
+     * parse IFD0 here. If the return value is positive that tells us
+     * there is subimage metadata, but we don't parse that IFD here
+     */
+    ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, ifd);
+    if (ret < 0) {
+        av_exif_free(ifd);
+        av_log(logctx, AV_LOG_ERROR, "error decoding EXIF data: %s\n", av_err2str(ret));
+        return ret;
+    }
+
+    return bytestream2_tell(&gbytes);
+}
+
+static int attach_displaymatrix(void *logctx, AVFrame *frame, int orientation)
+{
+    AVFrameSideData *sd;
+    int32_t *matrix;
+    /* invalid orientation */
+    if (orientation < 2 || orientation > 8)
+        return 0;
+    sd = av_frame_new_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX, sizeof(int32_t) * 9);
+    if (!sd) {
+        av_log(logctx, AV_LOG_ERROR, "Could not allocate frame side data\n");
+        return AVERROR(ENOMEM);
+    }
+    matrix = (int32_t *) sd->data;
+
+    switch (orientation) {
+    case 2:
+        av_display_rotation_set(matrix, 0.0);
+        av_display_matrix_flip(matrix, 1, 0);
+        break;
+    case 3:
+        av_display_rotation_set(matrix, 180.0);
+        break;
+    case 4:
+        av_display_rotation_set(matrix, 180.0);
+        av_display_matrix_flip(matrix, 1, 0);
+        break;
+    case 5:
+        av_display_rotation_set(matrix, 90.0);
+        av_display_matrix_flip(matrix, 1, 0);
+        break;
+    case 6:
+        av_display_rotation_set(matrix, 90.0);
+        break;
+    case 7:
+        av_display_rotation_set(matrix, -90.0);
+        av_display_matrix_flip(matrix, 1, 0);
+        break;
+    case 8:
+        av_display_rotation_set(matrix, -90.0);
+        break;
+    default:
+        av_assert0(0);
+    }
+
+    return 0;
+}
+
+#define COLUMN_SEP(i, c) ((i) ? ((i) % (c) ? ", " : "\n") : "")
+
+static int exif_ifd_to_dict(void *logctx, const char *prefix, const AVExifMetadata *ifd, AVDictionary **metadata)
+{
+    AVBPrint bp;
+    int ret = 0;
+    char *key = NULL;
+    char *value = NULL;
+
+    if (!prefix)
+        prefix = "";
+
+    for (uint16_t i = 0; i < ifd->count; i++) {
+        const AVExifEntry *entry = &ifd->entries[i];
+        const char *name = av_exif_get_tag_name(entry->id);
+        av_bprint_init(&bp, entry->count * 10, AV_BPRINT_SIZE_UNLIMITED);
+        if (*prefix)
+            av_bprintf(&bp, "%s/", prefix);
+        if (name)
+            av_bprintf(&bp, "%s", name);
+        else
+            av_bprintf(&bp, "0x%04X", entry->id);
+        ret = av_bprint_finalize(&bp, &key);
+        if (ret < 0)
+            goto end;
+        av_bprint_init(&bp, entry->count * 10, AV_BPRINT_SIZE_UNLIMITED);
+        switch (entry->type) {
+            case AV_TIFF_IFD:
+                ret = exif_ifd_to_dict(logctx, key, &entry->value.ifd, metadata);
+                if (ret < 0)
+                    goto end;
+                break;
+            case AV_TIFF_SHORT:
+            case AV_TIFF_LONG:
+                for (uint32_t j = 0; j < entry->count; j++)
+                    av_bprintf(&bp, "%s%7" PRIu32, COLUMN_SEP(j, 8), (uint32_t)entry->value.uint[j]);
+                break;
+            case AV_TIFF_SSHORT:
+            case AV_TIFF_SLONG:
+                for (uint32_t j = 0; j < entry->count; j++)
+                    av_bprintf(&bp, "%s%7" PRId32, COLUMN_SEP(j, 8), (int32_t)entry->value.sint[j]);
+                break;
+            case AV_TIFF_RATIONAL:
+            case AV_TIFF_SRATIONAL:
+                for (uint32_t j = 0; j < entry->count; j++)
+                    av_bprintf(&bp, "%s%7i:%-7i", COLUMN_SEP(j, 4), entry->value.rat[j].num, entry->value.rat[j].den);
+                break;
+            case AV_TIFF_DOUBLE:
+            case AV_TIFF_FLOAT:
+                for (uint32_t j = 0; j < entry->count; j++)
+                    av_bprintf(&bp, "%s%.15g", COLUMN_SEP(j, 4), entry->value.dbl[j]);
+                break;
+            case AV_TIFF_STRING:
+                av_bprintf(&bp, "%s", entry->value.str);
+                break;
+            case AV_TIFF_UNDEFINED:
+            case AV_TIFF_BYTE:
+                for (uint32_t j = 0; j < entry->count; j++)
+                    av_bprintf(&bp, "%s%3i", COLUMN_SEP(j, 16), entry->value.ubytes[j]);
+                break;
+            case AV_TIFF_SBYTE:
+                for (uint32_t j = 0; j < entry->count; j++)
+                    av_bprintf(&bp, "%s%3i", COLUMN_SEP(j, 16), entry->value.sbytes[j]);
+                break;
+        }
+        if (entry->type != AV_TIFF_IFD) {
+            if (!av_bprint_is_complete(&bp)) {
+                av_bprint_finalize(&bp, NULL);
+                ret = AVERROR(ENOMEM);
+                goto end;
+            }
+            ret = av_bprint_finalize(&bp, &value);
+            if (ret < 0)
+                goto end;
+            ret = av_dict_set(metadata, key, value, AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
+            if (ret < 0)
+                goto end;
+            key = NULL;
+            value = NULL;
+        } else {
+            av_freep(&key);
+        }
+    }
+
+end:
+    av_freep(&key);
+    av_freep(&value);
+    return ret;
+}
+
+int av_exif_ifd_to_dict(void *logctx, const AVExifMetadata *ifd, AVDictionary **metadata)
+{
+    return exif_ifd_to_dict(logctx, "", ifd, metadata);
+}
+
+int ff_exif_decode_ifd(void *logctx, GetByteContext *gb, int le, int depth, AVDictionary **metadata)
+{
+    AVExifMetadata ifd = { 0 };
+    int ret = exif_parse_ifd_list(logctx, gb, le, depth, &ifd);
+    if (ret < 0)
+        return ret;
+
+    ret = av_exif_ifd_to_dict(logctx, &ifd, metadata);
+    av_exif_free(&ifd);
+
+    return ret;
 }
 
 int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
                            int le, int depth, AVDictionary **metadata)
 {
     GetByteContext gb;
-
     bytestream2_init(&gb, buf, size);
-
     return ff_exif_decode_ifd(logctx, &gb, le, depth, metadata);
+}
+
+static int exif_attach_ifd(void *logctx, AVFrame *frame, const AVExifMetadata *ifd, AVBufferRef *og)
+{
+    const AVExifEntry *orient = NULL;
+    AVFrameSideData *sd;
+    AVExifMetadata *cloned = NULL;
+    AVBufferRef *written = NULL;
+    int ret;
+
+    for (size_t i = 0; i < ifd->count; i++) {
+        const AVExifEntry *entry = &ifd->entries[i];
+        if (entry->id == ORIENTATION_TAG && entry->count > 0 && entry->type == AV_TIFF_SHORT) {
+            orient = entry;
+            break;
+        }
+    }
+
+    if (orient && orient->value.uint[0] > 1) {
+        av_log(logctx, AV_LOG_DEBUG, "found nontrivial EXIF orientation: %" PRIu64 "\n", orient->value.uint[0]);
+        ret = attach_displaymatrix(logctx, frame, orient->value.uint[0]);
+        if (ret < 0) {
+            av_log(logctx, AV_LOG_WARNING, "unable to attach displaymatrix from EXIF\n");
+        } else {
+            const AVExifEntry *cloned_orient;
+            cloned = av_exif_clone_ifd(ifd);
+            if (!cloned) {
+                ret = AVERROR(ENOMEM);
+                goto end;
+            }
+            // will have the same offset in the clone as in the original
+            cloned_orient = &cloned->entries[orient - ifd->entries];
+            cloned_orient->value.uint[0] = 1;
+        }
+    }
+
+    ret = av_exif_ifd_to_dict(logctx, cloned ? cloned : ifd, &frame->metadata);
+    if (ret < 0)
+        return ret;
+
+    if (cloned || !og) {
+        ret = av_exif_write(logctx, cloned ? cloned : ifd, &written, AV_EXIF_TIFF_HEADER);
+        if (ret < 0)
+            goto end;
+    }
+
+    sd = av_frame_new_side_data_from_buf(frame, AV_FRAME_DATA_EXIF, written ? written : og);
+    if (!sd) {
+        if (written)
+            av_buffer_unref(&written);
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    ret = 0;
+
+end:
+    if (og && written && ret >= 0)
+        av_buffer_unref(&og); // as though we called new_side_data on og;
+    av_exif_free(cloned);
+    av_free(cloned);
+    return ret;
+}
+
+#define EXIF_COPY(fname, srcname) do { \
+    size_t sz; \
+    if (av_size_mult(src->count, sizeof(*(fname)), &sz) < 0) { \
+        ret = AVERROR(ENOMEM); \
+        goto end; \
+    } \
+    (fname) = av_memdup((srcname), sz); \
+    if (!(fname)) { \
+        ret = AVERROR(ENOMEM); \
+        goto end; \
+    } \
+} while (0)
+
+static int exif_clone_entry(AVExifEntry *dst, const AVExifEntry *src)
+{
+    int ret = 0;
+
+    dst->count = src->count;
+    dst->id = src->id;
+    dst->type = src->type;
+
+    dst->ifd_offset = src->ifd_offset;
+    if (src->ifd_lead) {
+        dst->ifd_lead = av_memdup(src->ifd_lead, src->ifd_offset);
+        if (!dst->ifd_lead) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
+    } else {
+        dst->ifd_lead = NULL;
+    }
+
+    switch(src->type) {
+        case AV_TIFF_IFD: {
+            AVExifMetadata *cloned = av_exif_clone_ifd(&src->value.ifd);
+            if (!cloned) {
+                ret = AVERROR(ENOMEM);
+                goto end;
+            }
+            dst->value.ifd = *cloned;
+            av_freep(&cloned);
+            break;
+        }
+        case AV_TIFF_SHORT:
+        case AV_TIFF_LONG:
+            EXIF_COPY(dst->value.uint, src->value.uint);
+            break;
+        case AV_TIFF_SLONG:
+        case AV_TIFF_SSHORT:
+            EXIF_COPY(dst->value.sint, src->value.sint);
+            break;
+        case AV_TIFF_RATIONAL:
+        case AV_TIFF_SRATIONAL:
+            EXIF_COPY(dst->value.rat, src->value.rat);
+            break;
+        case AV_TIFF_DOUBLE:
+        case AV_TIFF_FLOAT:
+            EXIF_COPY(dst->value.dbl, src->value.dbl);
+            break;
+        case AV_TIFF_BYTE:
+        case AV_TIFF_UNDEFINED:
+            EXIF_COPY(dst->value.ubytes, src->value.ubytes);
+            break;
+        case AV_TIFF_SBYTE:
+            EXIF_COPY(dst->value.sbytes, src->value.sbytes);
+            break;
+        case AV_TIFF_STRING:
+            EXIF_COPY(dst->value.str, src->value.str);
+            break;
+    }
+
+    return 0;
+
+end:
+    av_freep(&dst->ifd_lead);
+    if (src->type == AV_TIFF_IFD)
+        av_exif_free(&dst->value.ifd);
+    else
+        av_freep(&dst->value.ptr);
+    memset(dst, 0, sizeof(*dst));
+
+    return ret;
+}
+
+int av_exif_set_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, enum AVTiffDataType type,
+    uint32_t count, const uint8_t *ifd_lead, uint32_t ifd_offset, const void *value)
+{
+    void *temp;
+    int ret = 0;
+    AVExifEntry *entry = NULL;
+    AVExifEntry src = { 0 };
+
+    if (!ifd || ifd->entries && !ifd->count || ifd->count && !ifd->entries
+             || ifd_lead && !ifd_offset || !ifd_lead && ifd_offset
+             || !value || ifd->count == 0xFFFFu)
+        return AVERROR(EINVAL);
+
+    for (size_t i = 0; i < ifd->count; i++) {
+        if (ifd->entries[i].id == id) {
+            entry = &ifd->entries[i];
+            break;
+        }
+    }
+
+    if (entry) {
+        exif_free_entry(entry);
+    } else {
+        size_t required_size;
+        ret = av_size_mult(ifd->count + 1, sizeof(*ifd->entries), &required_size);
+        if (ret < 0)
+            return AVERROR(ENOMEM);
+        temp = av_fast_realloc(ifd->entries, &ifd->size, required_size);
+        if (!temp)
+            return AVERROR(ENOMEM);
+        ifd->entries = temp;
+        entry = &ifd->entries[ifd->count++];
+    }
+
+    src.count = count;
+    src.id = id;
+    src.type = type;
+    src.ifd_lead = (uint8_t *) ifd_lead;
+    src.ifd_offset = ifd_offset;
+    if (type == AV_TIFF_IFD)
+        src.value.ifd = * (const AVExifMetadata *) value;
+    else
+        src.value.ptr = (void *) value;
+
+    ret = exif_clone_entry(entry, &src);
+
+    if (ret < 0)
+        ifd->count--;
+
+    return ret;
+}
+
+AVExifMetadata *av_exif_clone_ifd(const AVExifMetadata *ifd)
+{
+    AVExifMetadata *ret = av_mallocz(sizeof(*ret));
+    if (!ret)
+        return NULL;
+
+    ret->count = ifd->count;
+    if (ret->count) {
+        size_t required_size;
+        if (av_size_mult(ret->count, sizeof(*ret->entries), &required_size) < 0)
+            goto fail;
+        ret->entries = av_fast_realloc(NULL, &ret->size, required_size);
+        if (!ret->entries)
+            goto fail;
+    }
+
+    for (size_t i = 0; i < ret->count; i++) {
+        const AVExifEntry *entry = &ifd->entries[i];
+        AVExifEntry *ret_entry = &ret->entries[i];
+        int status = exif_clone_entry(ret_entry, entry);
+        if (status < 0)
+            goto fail;
+    }
+
+    return ret;
+
+fail:
+    av_exif_free(ret);
+    av_free(ret);
+    return NULL;
+}
+
+int ff_exif_attach_ifd(void *logctx, AVFrame *frame, const AVExifMetadata *ifd)
+{
+    return exif_attach_ifd(logctx, frame, ifd, NULL);
+}
+
+int ff_exif_attach_buffer(void *logctx, AVFrame *frame, AVBufferRef *data, enum AVExifHeaderMode header_mode)
+{
+    int ret;
+    AVExifMetadata ifd = { 0 };
+
+    ret = av_exif_parse_buffer(logctx, data->data, data->size, &ifd, header_mode);
+    if (ret < 0)
+        goto end;
+
+    ret = exif_attach_ifd(logctx, frame, &ifd, data);
+
+end:
+    av_exif_free(&ifd);
+    return ret;
 }

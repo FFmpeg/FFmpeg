@@ -48,7 +48,7 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "exif.h"
+#include "exif_internal.h"
 #include "get_bits.h"
 #include "thread.h"
 #include "tiff_common.h"
