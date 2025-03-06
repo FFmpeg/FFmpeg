@@ -194,7 +194,7 @@ static size_t sbc_pack_frame(AVPacket *avpkt, struct sbc_frame *frame,
     return put_bytes_output(&pb);
 }
 
-static int sbc_encode_init(AVCodecContext *avctx)
+static av_cold int sbc_encode_init(AVCodecContext *avctx)
 {
     SBCEncContext *sbc = avctx->priv_data;
     struct sbc_frame *frame = &sbc->frame;
