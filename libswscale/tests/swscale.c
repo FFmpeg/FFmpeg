@@ -49,6 +49,7 @@ struct options {
     int bench;
     int flags;
     int dither;
+    int unscaled;
 };
 
 struct mode {
@@ -57,6 +58,7 @@ struct mode {
 };
 
 const SwsFlags flags[] = {
+    0, // test defaults
     SWS_FAST_BILINEAR,
     SWS_BILINEAR,
     SWS_BICUBIC,
@@ -64,7 +66,6 @@ const SwsFlags flags[] = {
     SWS_POINT,
     SWS_AREA | SWS_ACCURATE_RND,
     SWS_BICUBIC | SWS_FULL_CHR_H_INT | SWS_FULL_CHR_H_INP,
-    0, // test defaults
 };
 
 static FFSFC64 prng_state;
@@ -255,6 +256,12 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     return ret;
 }
 
+static inline int fmt_is_subsampled(enum AVPixelFormat fmt)
+{
+    return av_pix_fmt_desc_get(fmt)->log2_chroma_w != 0 ||
+           av_pix_fmt_desc_get(fmt)->log2_chroma_h != 0;
+}
+
 static int run_self_tests(const AVFrame *ref, struct options opts)
 {
     const int dst_w[] = { opts.w, opts.w - opts.w / 3, opts.w + opts.w / 3 };
@@ -272,13 +279,17 @@ static int run_self_tests(const AVFrame *ref, struct options opts)
         dst_fmt_min = dst_fmt_max = opts.dst_fmt;
 
     for (src_fmt = src_fmt_min; src_fmt <= src_fmt_max; src_fmt++) {
+        if (opts.unscaled && fmt_is_subsampled(src_fmt))
+            continue;
         if (!sws_test_format(src_fmt, 0) || !sws_test_format(src_fmt, 1))
             continue;
         for (dst_fmt = dst_fmt_min; dst_fmt <= dst_fmt_max; dst_fmt++) {
+            if (opts.unscaled && fmt_is_subsampled(dst_fmt))
+                continue;
             if (!sws_test_format(dst_fmt, 0) || !sws_test_format(dst_fmt, 1))
                 continue;
-            for (int h = 0; h < FF_ARRAY_ELEMS(dst_h); h++)
-                for (int w = 0; w < FF_ARRAY_ELEMS(dst_w); w++)
+            for (int h = 0; h < FF_ARRAY_ELEMS(dst_h); h++) {
+                for (int w = 0; w < FF_ARRAY_ELEMS(dst_w); w++) {
                     for (int f = 0; f < FF_ARRAY_ELEMS(flags); f++) {
                         struct mode mode = {
                             .flags  = opts.flags  >= 0 ? opts.flags  : flags[f],
@@ -292,9 +303,15 @@ static int run_self_tests(const AVFrame *ref, struct options opts)
                                      mode, opts, ref, NULL) < 0)
                             return -1;
 
-                        if (opts.flags >= 0)
+                        if (opts.flags >= 0 || opts.unscaled)
                             break;
                     }
+                    if (opts.unscaled)
+                        break;
+                }
+                if (opts.unscaled)
+                    break;
+            }
         }
     }
 
@@ -384,6 +401,8 @@ int main(int argc, char **argv)
                     "       Test with a specific combination of flags\n"
                     "   -dither <mode>\n"
                     "       Test with a specific dither mode\n"
+                    "   -unscaled <1 or 0>\n"
+                    "       If 1, test only conversions that do not involve scaling\n"
                     "   -threads <threads>\n"
                     "       Use the specified number of threads\n"
                     "   -cpuflags <cpuflags>\n"
@@ -429,6 +448,8 @@ int main(int argc, char **argv)
             opts.flags = strtol(argv[i + 1], NULL, 0);
         } else if (!strcmp(argv[i], "-dither")) {
             opts.dither = atoi(argv[i + 1]);
+        } else if (!strcmp(argv[i], "-unscaled")) {
+            opts.unscaled = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-threads")) {
             opts.threads = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-p")) {
