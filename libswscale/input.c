@@ -904,6 +904,23 @@ static void uyvyToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, con
     av_assert1(src1 == src2);
 }
 
+static void uyyvyyToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,
+                        int width, uint32_t *unused, void *opq)
+{
+    for (int i = 0; i < width; i++)
+        dst[i]  = src[3 * (i >> 1) + 1 + (i & 1)];
+}
+
+static void uyyvyyToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+                         const uint8_t *src2, int width, uint32_t *unused, void *opq)
+{
+    for (int i = 0; i < width; i++) {
+        dstU[i] = src1[6 * i + 0];
+        dstV[i] = src1[6 * i + 3];
+    }
+    av_assert1(src1 == src2);
+}
+
 static av_always_inline void nvXXtoUV_c(uint8_t *dst1, uint8_t *dst2,
                                         const uint8_t *src, int width)
 {
@@ -1714,6 +1731,9 @@ av_cold void ff_sws_init_input_funcs(SwsInternal *c,
     case AV_PIX_FMT_UYVY422:
         *chrToYV12 = uyvyToUV_c;
         break;
+    case AV_PIX_FMT_UYYVYY411:
+        *chrToYV12 = uyyvyyToUV_c;
+        break;
     case AV_PIX_FMT_VYU444:
         *chrToYV12 = vyuToUV_c;
         break;
@@ -2350,6 +2370,9 @@ av_cold void ff_sws_init_input_funcs(SwsInternal *c,
         break;
     case AV_PIX_FMT_UYVY422:
         *lumToYV12 = uyvyToY_c;
+        break;
+    case AV_PIX_FMT_UYYVYY411:
+        *lumToYV12 = uyyvyyToY_c;
         break;
     case AV_PIX_FMT_VYU444:
         *lumToYV12 = vyuToY_c;
