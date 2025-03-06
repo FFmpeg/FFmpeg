@@ -250,9 +250,9 @@ static void copy_rectangle(AVSubtitleRect *dst, AVSubtitleRect *src, int cmap[])
     }
 }
 
-static int encode_dvd_subtitles(AVCodecContext *avctx,
-                                uint8_t *outbuf, int outbuf_size,
-                                const AVSubtitle *h)
+static int dvdsub_encode(AVCodecContext *avctx,
+                         uint8_t *outbuf, int outbuf_size,
+                         const AVSubtitle *h)
 {
     DVDSubtitleContext *dvdc = avctx->priv_data;
     uint8_t *q, *qq;
@@ -474,17 +474,6 @@ static int dvdsub_init(AVCodecContext *avctx)
         return ret;
 
     return 0;
-}
-
-static int dvdsub_encode(AVCodecContext *avctx,
-                         unsigned char *buf, int buf_size,
-                         const AVSubtitle *sub)
-{
-    //DVDSubtitleContext *s = avctx->priv_data;
-    int ret;
-
-    ret = encode_dvd_subtitles(avctx, buf, buf_size, sub);
-    return ret;
 }
 
 #define OFFSET(x) offsetof(DVDSubtitleContext, x)
