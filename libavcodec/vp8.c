@@ -2512,18 +2512,6 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
     return 0;
 }
 
-static int vp7_decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
-                                        int jobnr, int threadnr)
-{
-    return decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr, 1);
-}
-
-static int vp8_decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
-                                        int jobnr, int threadnr)
-{
-    return decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr, 0);
-}
-
 static av_always_inline void filter_mb_row(AVCodecContext *avctx, void *tdata,
                               int jobnr, int threadnr, int is_vp7)
 {
@@ -2581,18 +2569,6 @@ static av_always_inline void filter_mb_row(AVCodecContext *avctx, void *tdata,
 
         update_pos(td, mb_y, (s->mb_width + 3) + mb_x);
     }
-}
-
-static void vp7_filter_mb_row(AVCodecContext *avctx, void *tdata,
-                              int jobnr, int threadnr)
-{
-    filter_mb_row(avctx, tdata, jobnr, threadnr, 1);
-}
-
-static void vp8_filter_mb_row(AVCodecContext *avctx, void *tdata,
-                              int jobnr, int threadnr)
-{
-    filter_mb_row(avctx, tdata, jobnr, threadnr, 0);
 }
 
 static av_always_inline
@@ -2837,20 +2813,6 @@ err:
     return ret;
 }
 
-int ff_vp8_decode_frame(AVCodecContext *avctx, AVFrame *frame,
-                        int *got_frame, AVPacket *avpkt)
-{
-    return vp78_decode_frame(avctx, frame, got_frame, avpkt, IS_VP8);
-}
-
-#if CONFIG_VP7_DECODER
-static int vp7_decode_frame(AVCodecContext *avctx, AVFrame *frame,
-                            int *got_frame, AVPacket *avpkt)
-{
-    return vp78_decode_frame(avctx, frame, got_frame, avpkt, IS_VP7);
-}
-#endif /* CONFIG_VP7_DECODER */
-
 av_cold int ff_vp8_decode_free(AVCodecContext *avctx)
 {
     vp8_decode_flush_impl(avctx, 1);
@@ -2875,6 +2837,24 @@ static av_cold void vp78_decode_init(AVCodecContext *avctx)
 }
 
 #if CONFIG_VP8_DECODER
+static int vp8_decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
+                                        int jobnr, int threadnr)
+{
+    return decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr, 0);
+}
+
+static void vp8_filter_mb_row(AVCodecContext *avctx, void *tdata,
+                              int jobnr, int threadnr)
+{
+    filter_mb_row(avctx, tdata, jobnr, threadnr, 0);
+}
+
+int ff_vp8_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                        int *got_frame, AVPacket *avpkt)
+{
+    return vp78_decode_frame(avctx, frame, got_frame, avpkt, IS_VP8);
+}
+
 av_cold int ff_vp8_decode_init(AVCodecContext *avctx)
 {
     VP8Context *s = avctx->priv_data;
@@ -2931,6 +2911,24 @@ static int vp8_decode_update_thread_context(AVCodecContext *dst,
 #endif /* CONFIG_VP8_DECODER */
 
 #if CONFIG_VP7_DECODER
+static int vp7_decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
+                                        int jobnr, int threadnr)
+{
+    return decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr, 1);
+}
+
+static void vp7_filter_mb_row(AVCodecContext *avctx, void *tdata,
+                              int jobnr, int threadnr)
+{
+    filter_mb_row(avctx, tdata, jobnr, threadnr, 1);
+}
+
+static int vp7_decode_frame(AVCodecContext *avctx, AVFrame *frame,
+                            int *got_frame, AVPacket *avpkt)
+{
+    return vp78_decode_frame(avctx, frame, got_frame, avpkt, IS_VP7);
+}
+
 av_cold static int vp7_decode_init(AVCodecContext *avctx)
 {
     VP8Context *s = avctx->priv_data;
