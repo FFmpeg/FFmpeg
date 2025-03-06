@@ -15,6 +15,7 @@ OBJS = alphablend.o                                     \
        graph.o                                          \
        input.o                                          \
        lut3d.o                                          \
+       ops.o                                            \
        options.o                                        \
        output.o                                         \
        rgb2rgb.o                                        \
