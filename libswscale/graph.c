@@ -94,29 +94,14 @@ static int pass_append(SwsGraph *graph, enum AVPixelFormat fmt, int w, int h,
     return 0;
 }
 
-static int vshift(enum AVPixelFormat fmt, int plane)
-{
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-    return (plane == 1 || plane == 2) ? desc->log2_chroma_h : 0;
-}
-
-/* Shift an image vertically by y lines */
-static SwsImg shift_img(const SwsImg *img_base, int y)
-{
-    SwsImg img = *img_base;
-    for (int i = 0; i < 4 && img.data[i]; i++)
-        img.data[i] += (y >> vshift(img.fmt, i)) * img.linesize[i];
-    return img;
-}
-
 static void run_copy(const SwsImg *out_base, const SwsImg *in_base,
                      int y, int h, const SwsPass *pass)
 {
-    SwsImg in  = shift_img(in_base,  y);
-    SwsImg out = shift_img(out_base, y);
+    SwsImg in  = ff_sws_img_shift(in_base,  y);
+    SwsImg out = ff_sws_img_shift(out_base, y);
 
     for (int i = 0; i < FF_ARRAY_ELEMS(out.data) && out.data[i]; i++) {
-        const int lines = h >> vshift(in.fmt, i);
+        const int lines = h >> ff_fmt_vshift(in.fmt, i);
         av_assert1(in.data[i]);
 
         if (in.linesize[i] == out.linesize[i]) {
@@ -219,7 +204,7 @@ static void run_legacy_unscaled(const SwsImg *out, const SwsImg *in_base,
 {
     SwsContext *sws = slice_ctx(pass, y);
     SwsInternal *c = sws_internal(sws);
-    const SwsImg in = shift_img(in_base, y);
+    const SwsImg in = ff_sws_img_shift(in_base, y);
 
     c->convert_unscaled(c, (const uint8_t *const *) in.data, in.linesize, y, h,
                         out->data, out->linesize);
@@ -230,7 +215,7 @@ static void run_legacy_swscale(const SwsImg *out_base, const SwsImg *in,
 {
     SwsContext *sws = slice_ctx(pass, y);
     SwsInternal *c = sws_internal(sws);
-    const SwsImg out = shift_img(out_base, y);
+    const SwsImg out = ff_sws_img_shift(out_base, y);
 
     ff_swscale(c, (const uint8_t *const *) in->data, in->linesize, 0,
                sws->src_h, out.data, out.linesize, y, h);
@@ -490,8 +475,8 @@ static void run_lut3d(const SwsImg *out_base, const SwsImg *in_base,
                       int y, int h, const SwsPass *pass)
 {
     SwsLut3D *lut = pass->priv;
-    const SwsImg in  = shift_img(in_base,  y);
-    const SwsImg out = shift_img(out_base, y);
+    const SwsImg in  = ff_sws_img_shift(in_base,  y);
+    const SwsImg out = ff_sws_img_shift(out_base, y);
 
     ff_sws_lut3d_apply(lut, in.data[0], in.linesize[0], out.data[0],
                        out.linesize[0], pass->width, h);
