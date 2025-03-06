@@ -148,4 +148,27 @@ int ff_test_fmt(const SwsFormat *fmt, int output);
 /* Returns true if the formats are incomplete, false otherwise */
 bool ff_infer_colors(SwsColor *src, SwsColor *dst);
 
+typedef struct SwsOpList SwsOpList;
+typedef enum SwsPixelType SwsPixelType;
+
+/**
+ * Append a set of operations for decoding/encoding raw pixels. This will
+ * handle input read/write, swizzling, shifting and byte swapping.
+ *
+ * Returns 0 on success, or a negative error code on failure.
+ */
+int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt);
+int ff_sws_encode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt);
+
+/**
+ * Append a set of operations for transforming decoded pixel values to/from
+ * normalized RGB in the specified gamut and pixel type.
+ *
+ * Returns 0 on success, or a negative error code on failure.
+ */
+int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
+                         const SwsFormat fmt, bool *incomplete);
+int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type, SwsOpList *ops,
+                         const SwsFormat fmt, bool *incomplete);
+
 #endif /* SWSCALE_FORMAT_H */
