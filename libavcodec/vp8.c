@@ -2858,8 +2858,7 @@ av_cold int ff_vp8_decode_free(AVCodecContext *avctx)
     return 0;
 }
 
-static av_always_inline
-int vp78_decode_init(AVCodecContext *avctx, int is_vp7)
+static av_cold void vp78_decode_init(AVCodecContext *avctx)
 {
     VP8Context *s = avctx->priv_data;
 
@@ -2870,37 +2869,25 @@ int vp78_decode_init(AVCodecContext *avctx, int is_vp7)
     ff_videodsp_init(&s->vdsp, 8);
 
     ff_vp78dsp_init(&s->vp8dsp);
-    if (CONFIG_VP7_DECODER && is_vp7) {
-        ff_h264_pred_init(&s->hpc, AV_CODEC_ID_VP7, 8, 1);
-        ff_vp7dsp_init(&s->vp8dsp);
-        s->decode_mb_row_no_filter = vp7_decode_mb_row_no_filter;
-        s->filter_mb_row           = vp7_filter_mb_row;
-    } else if (CONFIG_VP8_DECODER && !is_vp7) {
-        ff_h264_pred_init(&s->hpc, AV_CODEC_ID_VP8, 8, 1);
-        ff_vp8dsp_init(&s->vp8dsp);
-        s->decode_mb_row_no_filter = vp8_decode_mb_row_no_filter;
-        s->filter_mb_row           = vp8_filter_mb_row;
-    }
 
     /* does not change for VP8 */
     memcpy(s->prob[0].scan, ff_zigzag_scan, sizeof(s->prob[0].scan));
+}
+
+#if CONFIG_VP8_DECODER
+av_cold int ff_vp8_decode_init(AVCodecContext *avctx)
+{
+    VP8Context *s = avctx->priv_data;
+
+    vp78_decode_init(avctx);
+    ff_h264_pred_init(&s->hpc, AV_CODEC_ID_VP8, 8, 1);
+    ff_vp8dsp_init(&s->vp8dsp);
+    s->decode_mb_row_no_filter = vp8_decode_mb_row_no_filter;
+    s->filter_mb_row           = vp8_filter_mb_row;
 
     return 0;
 }
 
-#if CONFIG_VP7_DECODER
-static int vp7_decode_init(AVCodecContext *avctx)
-{
-    return vp78_decode_init(avctx, IS_VP7);
-}
-#endif /* CONFIG_VP7_DECODER */
-
-av_cold int ff_vp8_decode_init(AVCodecContext *avctx)
-{
-    return vp78_decode_init(avctx, IS_VP8);
-}
-
-#if CONFIG_VP8_DECODER
 #if HAVE_THREADS
 static void vp8_replace_frame(VP8Frame *dst, const VP8Frame *src)
 {
@@ -2944,6 +2931,19 @@ static int vp8_decode_update_thread_context(AVCodecContext *dst,
 #endif /* CONFIG_VP8_DECODER */
 
 #if CONFIG_VP7_DECODER
+av_cold static int vp7_decode_init(AVCodecContext *avctx)
+{
+    VP8Context *s = avctx->priv_data;
+
+    vp78_decode_init(avctx);
+    ff_h264_pred_init(&s->hpc, AV_CODEC_ID_VP7, 8, 1);
+    ff_vp7dsp_init(&s->vp8dsp);
+    s->decode_mb_row_no_filter = vp7_decode_mb_row_no_filter;
+    s->filter_mb_row           = vp7_filter_mb_row;
+
+    return 0;
+}
+
 const FFCodec ff_vp7_decoder = {
     .p.name                = "vp7",
     CODEC_LONG_NAME("On2 VP7"),
