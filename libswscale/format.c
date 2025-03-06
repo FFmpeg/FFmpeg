@@ -483,7 +483,7 @@ static int infer_trc_ref(SwsColor *csp, const SwsColor *ref)
     return 1;
 }
 
-int ff_infer_colors(SwsColor *src, SwsColor *dst)
+bool ff_infer_colors(SwsColor *src, SwsColor *dst)
 {
     int incomplete = 0;
 

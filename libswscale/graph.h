@@ -21,6 +21,8 @@
 #ifndef SWSCALE_GRAPH_H
 #define SWSCALE_GRAPH_H
 
+#include <stdbool.h>
+
 #include "libavutil/slicethread.h"
 #include "swscale.h"
 #include "format.h"
@@ -109,8 +111,8 @@ typedef struct SwsGraph {
     SwsContext *ctx;
     AVSliceThread *slicethread;
     int num_threads; /* resolved at init() time */
-    int incomplete;  /* set during init() if formats had to be inferred */
-    int noop;        /* set during init() if the graph is a no-op */
+    bool incomplete; /* set during init() if formats had to be inferred */
+    bool noop;       /* set during init() if the graph is a no-op */
 
     /** Sorted sequence of filter passes to apply */
     SwsPass **passes;

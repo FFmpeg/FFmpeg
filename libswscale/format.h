@@ -21,6 +21,8 @@
 #ifndef SWSCALE_FORMAT_H
 #define SWSCALE_FORMAT_H
 
+#include <stdbool.h>
+
 #include "libavutil/csp.h"
 #include "libavutil/pixdesc.h"
 
@@ -129,7 +131,7 @@ static inline int ff_fmt_align(enum AVPixelFormat fmt)
 
 int ff_test_fmt(const SwsFormat *fmt, int output);
 
-/* Returns 1 if the formats are incomplete, 0 otherwise */
-int ff_infer_colors(SwsColor *src, SwsColor *dst);
+/* Returns true if the formats are incomplete, false otherwise */
+bool ff_infer_colors(SwsColor *src, SwsColor *dst);
 
 #endif /* SWSCALE_FORMAT_H */
