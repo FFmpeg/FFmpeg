@@ -115,8 +115,10 @@ static void run_copy(const SwsImg *out_base, const SwsImg *in_base,
     SwsImg in  = shift_img(in_base,  y);
     SwsImg out = shift_img(out_base, y);
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(in.data) && in.data[i]; i++) {
+    for (int i = 0; i < FF_ARRAY_ELEMS(out.data) && out.data[i]; i++) {
         const int lines = h >> vshift(in.fmt, i);
+        av_assert1(in.data[i]);
+
         if (in.linesize[i] == out.linesize[i]) {
             memcpy(out.data[i], in.data[i], lines * out.linesize[i]);
         } else {
