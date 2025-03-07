@@ -1,0 +1,344 @@
+New swscale design to change everything (tm)
+============================================
+
+SwsGraph
+--------
+
+The entry point to the new architecture, SwsGraph is what coordinates
+multiple "passes". These can include cascaded scaling passes, error diffusion
+dithering, and so on. Or we could have separate passes for the vertical and
+horizontal scaling. In between each SwsPass lies a fully allocated image buffer.
+Graph passes may have different levels of threading, e.g. we can have a single
+threaded error diffusion pass following a multi-threaded scaling pass.
+
+SwsGraph is internally recreated whenever the image format, dimensions or
+settings change in any way. sws_scale_frame() is itself just a light-weight
+wrapper that runs ff_sws_graph_create() whenever the format changes, splits
+interlaced images into separate fields, and calls ff_sws_graph_run() on each.
+
+From the point of view of SwsGraph itself, all inputs are progressive.
+
+SwsOp / SwsOpList
+-----------------
+
+This is the newly introduced abstraction layer between the high-level format
+handling logic and the low-level backing implementation. Each SwsOp is designed
+to be as small and atomic as possible, with the possible exception of the
+read / write operations due to their numerous variants.
+
+The basic idea is to split logic between three major components:
+
+1. The high-level format "business logic", which generates in a very
+   naive way a sequence of operations guaranteed to get you from point A
+   to point B. This logic is written with correctness in mind only, and
+   ignoring any performance concerns or low-level implementation decisions.
+   Semantically, everything is always decoded from the input format to
+   normalized (real valued) RGB, and then encoded back to output format.
+
+   This code lives in libswscale/format.c
+
+2. The optimizer. This is where the "magic" happens, so to speak. The
+   optimizer's job is to take the abstract sequence of operations
+   produced by the high-level format analysis code and incrementally
+   optimize it. Each optimization step is designed to be minute and provably
+   lossless, or otherwise guarded behind the BITEXACT flag. This ensures that
+   the resulting output is always identical, no matter how many layers of
+   optimization we add.
+
+   This code lives in libswscale/ops.c
+
+3. The compiler. Once we have a sequence of operations as output by the
+   optimizer, we "compile" this down to a callable function. This is then
+   applied by the dispatch wrapper by striping it over the input image.
+
+   See libswscale/ops_backend.c for the reference backend, or
+   libswscale/x86/ops.c for a more complex SIMD example.
+
+This overall approach has a considerable number of benefits:
+
+1. It allows us to verify correctness of logic and spot semantic errors at a
+   very high level, by simply looking at the sequence of operations (available
+   by default at debug / verbose log level), without having to dig through the
+   multiple levels of complicated, interwoven format handling code that is
+   legacy swscale.
+
+2. Because most of the brains lives inside the the powerful optimizer, we get
+   fast paths "for free" for any suitable format conversion, rather than having
+   to enumerate them one by one. SIMD code itself can be written in a very
+   general way and does need to be tied to specific pixel formats - subsequent
+   low-level implementations can be strung together without much overhead.
+
+3. We can in the future, with relative ease, compile these operations
+   down to SPIR-V (or even LLVM IR) and generate efficient GPU or
+   target-machine specific implementations. This also opens the window for
+   adding hardware frame support to libswscale, and even transparently using
+   GPU acceleration for CPU frames.
+
+4. Platform-specific SIMD can be reduced down to a comparatively small set of
+   optimized routines, while still providing 100% coverage for all possible
+   pixel formats and operations. (As of writing, the x86 example backend has
+   about 60 unique implementations, of which 20 are trivial swizzles, 10 are
+   read/write ops, 10 are pixel type conversions and the remaining 20 are the
+   various logic/arithmetic ops).
+
+5. Backends hide behind a layer of abstraction offering them a considerable
+   deal of flexibility in how they want to implement their operations. For
+   example, the x86 backend has a dedicated function for compiling compatible
+   operations down to a single in-place pshufb instruction.
+
+   Platform specific low level data is self-contained within its own setup()
+   function and private data structure, eliminating all reads into SwsContext
+   or the possibility of conflicts between platforms.
+
+6. We can compute an exact reference result for each operation with fixed
+   precision (ff_sws_op_apply_q), and use that to e.g. measure the amount of
+   error introduced by dithering, or even catch bugs in the reference C
+   implementation. (In theory - currently checkasm just compares against C)
+
+Examples of SwsOp in action
+---------------------------
+
+For illustration, here is the sequence of operations currently generated by
+my prototype, for a conversion from RGB24 to YUV444P:
+
+Unoptimized operation list:
+  [ u8 .... -> ....] SWS_OP_READ         : 3 elem(s) packed >> 0
+  [ u8 .... -> ....] SWS_OP_SWIZZLE      : 0123
+  [ u8 .... -> ....] SWS_OP_RSHIFT       : >> 0
+  [ u8 .... -> ....] SWS_OP_CLEAR        : {_ _ _ 0}
+  [ u8 .... -> ....] SWS_OP_CONVERT      : u8 -> f32
+  [f32 .... -> ....] SWS_OP_LINEAR       : diag3+alpha [[1/255 0 0 0 0] [0 1/255 0 0 0] [0 0 1/255 0 0] [0 0 0 1 1]]
+  [f32 .... -> ....] SWS_OP_LINEAR       : matrix3 [[0.299000 0.587000 0.114000 0 0] [-0.168736 -0.331264 1/2 0 0] [1/2 -0.418688 -57/701 0 0] [0 0 0 1 0]]
+  [f32 .... -> ....] SWS_OP_LINEAR       : diag3+off3 [[219 0 0 0 16] [0 224 0 0 128] [0 0 224 0 128] [0 0 0 1 0]]
+  [f32 .... -> ....] SWS_OP_DITHER       : 16x16 matrix
+  [f32 .... -> ....] SWS_OP_MAX          : {0 0 0 0} <= x
+  [f32 .... -> ....] SWS_OP_MIN          : x <= {255 255 255 _}
+  [f32 .... -> ....] SWS_OP_CONVERT      : f32 -> u8
+  [ u8 .... -> ....] SWS_OP_LSHIFT       : << 0
+  [ u8 .... -> ....] SWS_OP_SWIZZLE      : 0123
+  [ u8 .... -> ....] SWS_OP_WRITE        : 3 elem(s) planar >> 0
+
+This is optimized into the following sequence:
+
+Optimized operation list:
+  [ u8 XXXX -> +++X] SWS_OP_READ         : 3 elem(s) packed >> 0
+  [ u8 ...X -> +++X] SWS_OP_CONVERT      : u8 -> f32
+  [f32 ...X -> ...X] SWS_OP_LINEAR       : matrix3+off3 [[0.256788 0.504129 0.097906 0 16] [-0.148223 -0.290993 112/255 0 128] [112/255 -0.367788 -0.071427 0 128] [0 0 0 1 0]]
+  [f32 ...X -> ...X] SWS_OP_DITHER       : 16x16 matrix
+  [f32 ...X -> +++X] SWS_OP_CONVERT      : f32 -> u8
+  [ u8 ...X -> +++X] SWS_OP_WRITE        : 3 elem(s) planar >> 0
+    (X = unused, + = exact, 0 = zero)
+
+The extra metadata on the left of the operation list is just a dump of the
+internal state used by the optimizer during optimization. It keeps track of
+knowledge about the pixel values, such as their value range, whether or not
+they're exact integers, and so on.
+
+In this example, you can see that the input values are exact (except for
+the alpha channel, which is undefined), until the first SWS_OP_LINEAR
+multiplies them by a noninteger constant. They regain their exact integer
+status only after the (truncating) conversion to U8 in the output step.
+
+Example of more aggressive optimization
+---------------------------------------
+
+Conversion pass for gray -> rgb48:
+Unoptimized operation list:
+  [ u8 .... -> ....] SWS_OP_READ         : 1 elem(s) planar >> 0
+  [ u8 .... -> ....] SWS_OP_SWIZZLE      : 0123
+  [ u8 .... -> ....] SWS_OP_RSHIFT       : >> 0
+  [ u8 .... -> ....] SWS_OP_CLEAR        : {_ 0 0 0}
+  [ u8 .... -> ....] SWS_OP_CONVERT      : u8 -> f32
+  [f32 .... -> ....] SWS_OP_LINEAR       : luma+alpha [[1/255 0 0 0 0] [0 1 0 0 0] [0 0 1 0 0] [0 0 0 1 1]]
+  [f32 .... -> ....] SWS_OP_LINEAR       : matrix3 [[1 0 701/500 0 0] [1 -0.344136 -0.714136 0 0] [1 443/250 0 0 0] [0 0 0 1 0]]
+  [f32 .... -> ....] SWS_OP_LINEAR       : diag3 [[65535 0 0 0 0] [0 65535 0 0 0] [0 0 65535 0 0] [0 0 0 1 0]]
+  [f32 .... -> ....] SWS_OP_MAX          : {0 0 0 0} <= x
+  [f32 .... -> ....] SWS_OP_MIN          : x <= {65535 65535 65535 _}
+  [f32 .... -> ....] SWS_OP_CONVERT      : f32 -> u16
+  [u16 .... -> ....] SWS_OP_LSHIFT       : << 0
+  [u16 .... -> ....] SWS_OP_SWIZZLE      : 0123
+  [u16 .... -> ....] SWS_OP_WRITE        : 3 elem(s) packed >> 0
+
+Optimized operation list:
+  [ u8 XXXX -> +XXX] SWS_OP_READ         : 1 elem(s) planar >> 0
+  [ u8 .XXX -> +XXX] SWS_OP_CONVERT      : u8 -> u16 (expand)
+  [u16 .XXX -> +++X] SWS_OP_SWIZZLE      : 0003
+  [u16 ...X -> +++X] SWS_OP_WRITE        : 3 elem(s) packed >> 0
+    (X = unused, + = exact, 0 = zero)
+
+Here, the optimizer has managed to eliminate all of the unnecessary linear
+operations on previously zero'd values, turn the resulting column matrix into
+a swizzle operation, avoid the unnecessary dither (and round trip via float)
+because the pixel values are guaranteed to be bit exact, and finally, turns
+the multiplication by 65535 / 255 = 257 into a simple integer expand operation.
+
+As a final bonus, the x86 backend further optimizes this into a 12-byte shuffle:
+  pshufb = {0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1}
+
+time=208 us, ref=4212 us, speedup=20.236x faster (single thread)
+time=57 us, ref=472 us, speedup=8.160x faster (multi thread)
+
+Compiler and underlying implementation layer (SwsOpChain)
+---------------------------------------------------------
+
+While the backend API is flexible enough to permit more exotic implementations
+(e.g. using JIT code generation), we establish a common set of helpers for use
+in "traditional" SIMD implementations.
+
+The basic idea is to have one "kernel" (or implementation) per operation,
+and then just chain a list of these kernels together as separate function
+calls. For best performance, we want to keep data in vector registers in
+between function calls using a custom calling convention, thus avoiding any
+unnecessary memory accesses. Additionally, we want the per-kernel overhead to
+be as low as possible, with each kernel ideally just jumping directly into
+the next kernel.
+
+As a result, we arrive at a design where we first divide the image into small
+chunks, or "blocks", and then dispatch the "chain" of kernels on each chunk in
+sequence. Each kernel processes a fixed number of pixels, with the overall
+entry point taking care of looping. Remaining pixels (the "tail") are handled
+generically by the backend-invariant dispatch code (located in ops.c), using a
+partial memcpy into a suitably sized temporary buffer.
+
+To minimize the per-kernel function call overhead, we use a "continuation
+passing style" for chaining kernels. Each operation computes its result and
+then directly calls the next operation in the sequence, with the appropriate
+internal function signature.
+
+The C reference backend reads data into the stack and then passes the array
+pointers to the next continuation as regular function arguments:
+
+  void process(GlobalContext *ctx, OpContext *op,
+               block_t x, block_t y, block_t z, block_t w)
+  {
+      for (int i = 0; i < SWS_BLOCK_SIZE; i++)
+          // do something with x[i], y[i], z[i], w[i]
+
+      op->next(ctx, &op[1], x, y, z, w);
+  }
+
+With type conversions pushing the new data onto the stack as well:
+
+  void convert8to16(GlobalContext *ctx, OpContext *op,
+                    block_t x, block_t y, block_t z, block_t w)
+  {
+        /* Pseudo-code */
+        u16block_t x16 = (u16block_t) x;
+        u16block_t y16 = (u16block_t) y;
+        u16block_t z16 = (u16block_t) z;
+        u16block_t w16 = (u16block_t) w;
+
+        op->next(ctx, &op[1], x16, y16, z16, w16);
+  }
+
+By contrast, the x86 backend always keeps the X/Y/Z/W values pinned in specific
+vector registers (ymm0-ymm3 for the lower half, and ymm4-ymm7 for the second
+half).
+
+Each kernel additionally has access to a 32 byte per-op context storing the
+pointer to the next kernel plus 16 bytes of arbitrary private data. This is
+used during construction of the function chain to place things like small
+constants.
+
+In assembly, the per-kernel overhead looks like this:
+
+  load $tmp, $arg1
+  ...
+  add $arg1, 32
+  jump $tmp
+
+This design gives vastly better performance than the alternative of returning
+out to a central loop or "trampoline". This is partly because the order of
+kernels within a chain is always the same, so the branch predictor can easily
+remember the target address of each "jump" instruction.
+
+The only way to realistically improve on this design would be to directly
+stitch the kernel body together using runtime code generation.
+
+Future considerations and limitations
+-------------------------------------
+
+My current prototype has a number of severe limitations and opportunities
+for improvements:
+
+1. It does not handle scaling at all. I am not yet entirely sure on how I want
+   to handle scaling; this includes handling of subsampled content. I have a
+   number of vague ideas in my head, but nothing where I can say with certainty
+   that it will work out well.
+
+   It's possible that we won't come up with a perfect solution here, and will
+   need to decide on which set of compromises we are comfortable accepting:
+
+   1. Do we need the ability to scale YUV -> YUV by handling luma and chroma
+      independently? When downscaling 100x100 4:2:0 to 50x50 4:4:4, should we
+      support the option of reusing the chroma plane directly (even though
+      this would introduce a subpixel shift for typical chroma siting)?
+
+   Looking towards zimg, I am also thinking that we probably also want to do
+   scaling on floating point values, since this is best for both performance
+   and accuracy, especially given that we need to go up to 32-bit intermediates
+   during scaling anyway.
+
+   So far, the most promising approach seems to be to handle subsampled
+   input/output as a dedicated read/write operation type; perhaps even with a
+   fixed/static subsampling kernel. To avoid compromising on performance when
+   chroma resampling is not necessary, the optimizer could then relax the
+   pipeline to use non-interpolating read/writes when all intermediate
+   operations are component-independent.
+
+2. Since each operation is conceptually defined on 4-component pixels, we end
+   up defining a lot of variants of each implementation for each possible
+   *subset*. For example, we have four different implementations for
+   SWS_OP_SCALE in my current templates:
+    - op_scale_1000
+    - op_scale_1001
+    - op_scale_1110
+    - op_scale_1111
+
+   This reflects the four different arangements of pixel components that are
+   typically present (or absent). While best for performance, it does turn into
+   a bit of a chore when implementing these kernels.
+
+   The only real alternative would be to either branch inside the kernel (bad),
+   or to use separate kernels for each individual component and chain them all
+   together. I have not yet tested whether the latter approach would be faster
+   after the latest round of refactors to the kernel glue code.
+
+3. I do not yet have any support for LUTs. But when I add them, something we
+   could do is have the optimized pass automatically "promote" a sequence of
+   operations to LUTs. For example, any sequence that looks like:
+
+   1. [u8] SWS_OP_CONVERT -> X
+   2. [X] ... // only per-component operations
+   4. [X] SWS_OP_CONVERT -> Y
+   3. [Y] SWS_OP_WRITE
+
+   could be replaced by a LUT with 256 entries. This is especially important
+   for anything involving packed 8-bit input (e.g. rgb8, rgb4_byte).
+
+   We also definitely want to hook this up to the existing CMS code for
+   transformations between different primaries.
+
+4. Because we rely on AVRational math to generate the coefficients for
+   operations, we need to be able to represent all pixel values as an
+   AVRational. However, this presents a challenge for 32-bit formats (e.g.
+   GRAY32, RGBA128), because their size exceeds INT_MAX, which is the maximum
+   value representable by an AVRational.
+
+   It's possible we may want to introduce an AVRational64 for this, or
+   perhaps more flexibly, extend AVRational to an AVFloating type which is
+   represented as { AVRational n; int exp; }, representing n/d * 2^exp. This
+   would preserve our ability to represent all pixel values exactly, while
+   opening up the range arbitrarily.
+
+5. Is there ever a situation where the use of floats introduces the risk of
+   non bit-exact output? For this reason, and possible performance advantages,
+   we may want to explore the use of a fixed-point 16 bit path as an alternative
+   to the floating point math.
+
+   So far, I have managed to avoid any bit exactness issues inside the x86
+   backend by ensuring that the order of linear operations is identical
+   between the C backend and the x86 backend, but this may not be practical
+   to guarantee on all backends. The x86 float code is also dramatically
+   faster than the old fixed point code, so I'm tentatively optimistic about
+   the lack of a need for a fixed point path.
