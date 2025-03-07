@@ -102,7 +102,8 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
                 /* escape */
                 run = SHOW_UBITS(re, &a->gb, 6) + 1;
                 SKIP_BITS(re, &a->gb, 6);
-                level = SHOW_SBITS(re, &a->gb, 10); SKIP_BITS(re, &a->gb, 10);
+                level = SHOW_SBITS(re, &a->gb, 10);
+                LAST_SKIP_BITS(re, &a->gb, 10);
                 i += run;
                 if (i > 63) {
                     av_log(a->avctx, AV_LOG_ERROR,
