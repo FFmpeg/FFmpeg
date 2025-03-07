@@ -575,8 +575,7 @@ static av_cold int wmv2_decode_init(AVCodecContext *avctx)
 
     decode_ext_header(w);
 
-    return ff_intrax8_common_init(avctx, &w->x8,
-                                  w->s.block, w->s.block_last_index,
+    return ff_intrax8_common_init(avctx, &w->x8, w->s.block,
                                   w->s.mb_width, w->s.mb_height);
 }
 
