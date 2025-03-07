@@ -28,7 +28,6 @@
 #define UNCHECKED_BITSTREAM_READER 1
 
 #include "libavutil/attributes.h"
-#include "libavutil/avassert.h"
 #include "libavutil/thread.h"
 
 #include "mpegvideo.h"
@@ -90,15 +89,13 @@ av_cold void ff_init_2d_vlc_rl(const uint16_t table_vlc[][2], RL_VLC_ELEM rl_vlc
                                const int8_t table_run[], const uint8_t table_level[],
                                int n, unsigned static_size, int flags)
 {
-    int i;
-    VLCElem table[680] = { 0 };
-    VLC vlc = { .table = table, .table_allocated = static_size };
-    av_assert0(static_size <= FF_ARRAY_ELEMS(table));
-    vlc_init(&vlc, TEX_VLC_BITS, n + 2, &table_vlc[0][1], 4, 2, &table_vlc[0][0], 4, 2, VLC_INIT_USE_STATIC | flags);
+    ff_vlc_init_table_sparse(rl_vlc, static_size, TEX_VLC_BITS, n + 2,
+                             &table_vlc[0][1], 4, 2, &table_vlc[0][0], 4, 2,
+                             NULL, 0, 0, flags);
 
-    for (i = 0; i < vlc.table_size; i++) {
-        int code = vlc.table[i].sym;
-        int len  = vlc.table[i].len;
+    for (unsigned i = 0; i < static_size; i++) {
+        int idx = rl_vlc[i].sym;
+        int len = rl_vlc[i].len;
         int level, run;
 
         if (len == 0) { // illegal code
@@ -106,17 +103,17 @@ av_cold void ff_init_2d_vlc_rl(const uint16_t table_vlc[][2], RL_VLC_ELEM rl_vlc
             level = MAX_LEVEL;
         } else if (len<0) { //more bits needed
             run   = 0;
-            level = code;
+            level = idx;
         } else {
-            if (code == n) { //esc
+            if (idx == n) { //esc
                 run   = 65;
                 level = 0;
-            } else if (code == n + 1) { //eob
+            } else if (idx == n + 1) { //eob
                 run   = 0;
                 level = 127;
             } else {
-                run   = table_run  [code] + 1;
-                level = table_level[code];
+                run   = table_run  [idx] + 1;
+                level = table_level[idx];
             }
         }
         rl_vlc[i].len8  = len;
