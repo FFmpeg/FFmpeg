@@ -160,10 +160,8 @@ static inline int decode_block_intra(MadContext *s, int16_t * block)
                 LAST_SKIP_BITS(re, &s->gb, 1);
             } else {
                 /* escape */
-                UPDATE_CACHE(re, &s->gb);
                 level = SHOW_SBITS(re, &s->gb, 10); SKIP_BITS(re, &s->gb, 10);
 
-                UPDATE_CACHE(re, &s->gb);
                 run = SHOW_UBITS(re, &s->gb, 6)+1; LAST_SKIP_BITS(re, &s->gb, 6);
 
                 i += run;
