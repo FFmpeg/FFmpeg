@@ -20,7 +20,6 @@
 #include <string.h>
 
 #include "libavutil/attributes.h"
-#include "libavutil/avassert.h"
 
 #include "rl.h"
 
@@ -78,28 +77,30 @@ av_cold void ff_rl_init(RLTable *rl,
 
 av_cold void ff_rl_init_vlc(RLTable *rl, unsigned static_size)
 {
-    int i, q;
-    VLCElem table[1500] = { 0 };
-    VLC vlc = { .table = table, .table_allocated = static_size };
-    av_assert0(static_size <= FF_ARRAY_ELEMS(table));
-    vlc_init(&vlc, 9, rl->n + 1,
-             &rl->table_vlc[0][1], 4, 2,
-             &rl->table_vlc[0][0], 4, 2, VLC_INIT_USE_STATIC);
+    VLCElem *vlc;
 
-    for (q = 0; q < 32; q++) {
+    ff_vlc_init_table_sparse(rl->rl_vlc[0], static_size, 9, rl->n + 1,
+                             &rl->table_vlc[0][1], 4, 2,
+                             &rl->table_vlc[0][0], 4, 2,
+                             NULL, 0, 0, 0);
+
+    vlc = rl->rl_vlc[0];
+
+    // We count down to avoid trashing the first RL-VLC
+    for (int q = 32; --q >= 0;) {
         int qmul = q * 2;
         int qadd = (q - 1) | 1;
 
         if (!rl->rl_vlc[q])
-            return;
+            continue;
 
         if (q == 0) {
             qmul = 1;
             qadd = 0;
         }
-        for (i = 0; i < vlc.table_size; i++) {
-            int code = vlc.table[i].sym;
-            int len  = vlc.table[i].len;
+        for (unsigned i = 0; i < static_size; i++) {
+            int idx  = vlc[i].sym;
+            int len  = vlc[i].len;
             int level, run;
 
             if (len == 0) { // illegal code
@@ -107,15 +108,15 @@ av_cold void ff_rl_init_vlc(RLTable *rl, unsigned static_size)
                 level = MAX_LEVEL;
             } else if (len < 0) { // more bits needed
                 run   = 0;
-                level = code;
+                level = idx;
             } else {
-                if (code == rl->n) { // esc
+                if (idx == rl->n) { // esc
                     run   = 66;
                     level =  0;
                 } else {
-                    run   = rl->table_run[code] + 1;
-                    level = rl->table_level[code] * qmul + qadd;
-                    if (code >= rl->last) run += 192;
+                    run   = rl->table_run[idx] + 1;
+                    level = rl->table_level[idx] * qmul + qadd;
+                    if (idx >= rl->last) run += 192;
                 }
             }
             rl->rl_vlc[q][i].len8  = len;
