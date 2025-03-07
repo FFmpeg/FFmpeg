@@ -580,15 +580,13 @@ const FFCodec ff_tiff_encoder = {
     .init           = encode_init,
     .close          = encode_close,
     FF_CODEC_ENCODE_CB(encode_frame),
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
+    CODEC_PIXFMTS(
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB48LE, AV_PIX_FMT_PAL8,
         AV_PIX_FMT_RGBA, AV_PIX_FMT_RGBA64LE,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A, AV_PIX_FMT_GRAY16LE, AV_PIX_FMT_YA16LE,
         AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_MONOWHITE,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
-        AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
-        AV_PIX_FMT_NONE
-    },
+        AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &tiffenc_class,
 };

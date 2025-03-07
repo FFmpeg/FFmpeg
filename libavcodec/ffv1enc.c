@@ -1400,7 +1400,7 @@ const FFCodec ff_ffv1_encoder = {
     .init           = encode_init_internal,
     FF_CODEC_ENCODE_CB(encode_frame),
     .close          = encode_close,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
+    CODEC_PIXFMTS(
         AV_PIX_FMT_YUV420P,   AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,  AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUVA444P,  AV_PIX_FMT_YUV440P,   AV_PIX_FMT_YUV422P,   AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV410P,   AV_PIX_FMT_0RGB32,    AV_PIX_FMT_RGB32,     AV_PIX_FMT_YUV420P16,
@@ -1421,10 +1421,7 @@ const FFCodec ff_ffv1_encoder = {
         AV_PIX_FMT_GRAY9,
         AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
         AV_PIX_FMT_YUV440P10, AV_PIX_FMT_YUV440P12,
-        AV_PIX_FMT_GBRPF16,
-        AV_PIX_FMT_NONE
-
-    },
+        AV_PIX_FMT_GBRPF16),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &ffv1_class,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_EOF_FLUSH,

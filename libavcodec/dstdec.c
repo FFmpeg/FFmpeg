@@ -392,6 +392,5 @@ const FFCodec ff_dst_decoder = {
     .init           = decode_init,
     FF_CODEC_DECODE_CB(decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLT,
-                                                      AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLT),
 };

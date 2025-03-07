@@ -951,7 +951,7 @@ const FFCodec ff_mpeg4_omx_encoder = {
     .init             = omx_encode_init,
     FF_CODEC_ENCODE_CB(omx_encode_frame),
     .close            = omx_encode_end,
-    .p.pix_fmts       = omx_encoder_pix_fmts,
+    CODEC_PIXFMTS_ARRAY(omx_encoder_pix_fmts),
     .color_ranges     = AVCOL_RANGE_MPEG,
     .p.capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
@@ -973,7 +973,7 @@ const FFCodec ff_h264_omx_encoder = {
     .init             = omx_encode_init,
     FF_CODEC_ENCODE_CB(omx_encode_frame),
     .close            = omx_encode_end,
-    .p.pix_fmts       = omx_encoder_pix_fmts,
+    CODEC_PIXFMTS_ARRAY(omx_encoder_pix_fmts),
     .color_ranges     = AVCOL_RANGE_MPEG, /* FIXME: implement tagging */
     .p.capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,

@@ -1785,10 +1785,7 @@ const FFCodec ff_hevc_vulkan_encoder = {
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .defaults       = vulkan_encode_h265_defaults,
-    .p.pix_fmts = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_VULKAN,
-        AV_PIX_FMT_NONE,
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_VULKAN),
     .hw_configs     = ff_vulkan_encode_hw_configs,
     .p.wrapper_name = "vulkan",
 };

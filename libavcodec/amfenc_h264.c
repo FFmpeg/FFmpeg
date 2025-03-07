@@ -609,7 +609,7 @@ const FFCodec ff_h264_amf_encoder = {
                       AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
-    .p.pix_fmts     = ff_amf_pix_fmts,
+    CODEC_PIXFMTS_ARRAY(ff_amf_pix_fmts),
     .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .p.wrapper_name = "amf",
     .hw_configs     = ff_amfenc_hw_configs,

@@ -546,8 +546,7 @@ const FFCodec ff_ra_144_encoder = {
     .init           = ra144_encode_init,
     FF_CODEC_ENCODE_CB(ra144_encode_frame),
     .close          = ra144_encode_close,
-    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
-                                                     AV_SAMPLE_FMT_NONE },
-    .p.supported_samplerates = (const int[]){ 8000, 0 },
-    .p.ch_layouts   = (const AVChannelLayout[]){ AV_CHANNEL_LAYOUT_MONO, { 0 } },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16),
+    CODEC_SAMPLERATES(8000),
+    CODEC_CH_LAYOUTS(AV_CHANNEL_LAYOUT_MONO),
 };

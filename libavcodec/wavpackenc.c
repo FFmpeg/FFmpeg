@@ -2980,9 +2980,6 @@ const FFCodec ff_wavpack_encoder = {
     .init           = wavpack_encode_init,
     FF_CODEC_ENCODE_CB(wavpack_encode_frame),
     .close          = wavpack_encode_close,
-    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_U8P,
-                                                     AV_SAMPLE_FMT_S16P,
-                                                     AV_SAMPLE_FMT_S32P,
-                                                     AV_SAMPLE_FMT_FLTP,
-                                                     AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_U8P,  AV_SAMPLE_FMT_S16P,
+                     AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_FLTP),
 };

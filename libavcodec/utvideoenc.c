@@ -671,10 +671,8 @@ const FFCodec ff_utvideo_encoder = {
     .init           = utvideo_encode_init,
     FF_CODEC_ENCODE_CB(utvideo_encode_frame),
     .close          = utvideo_encode_close,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-                          AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP, AV_PIX_FMT_YUV422P,
-                          AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
-                      },
+    CODEC_PIXFMTS(AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
+                  AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

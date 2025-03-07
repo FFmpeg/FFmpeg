@@ -231,9 +231,7 @@ const FFCodec ff_pgm_encoder = {
     .p.id           = AV_CODEC_ID_PGM,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     FF_CODEC_ENCODE_CB(pnm_encode_frame),
-    .p.pix_fmts     = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16BE),
 };
 #endif
 
@@ -245,9 +243,7 @@ const FFCodec ff_pgmyuv_encoder = {
     .p.id           = AV_CODEC_ID_PGMYUV,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     FF_CODEC_ENCODE_CB(pnm_encode_frame),
-    .p.pix_fmts     = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV420P16BE, AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV420P16BE),
 };
 #endif
 
@@ -259,9 +255,7 @@ const FFCodec ff_ppm_encoder = {
     .p.id           = AV_CODEC_ID_PPM,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     FF_CODEC_ENCODE_CB(pnm_encode_frame),
-    .p.pix_fmts     = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB48BE, AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB48BE),
 };
 #endif
 
@@ -273,8 +267,7 @@ const FFCodec ff_pbm_encoder = {
     .p.id           = AV_CODEC_ID_PBM,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     FF_CODEC_ENCODE_CB(pnm_encode_frame),
-    .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_MONOWHITE,
-                                                  AV_PIX_FMT_NONE },
+    CODEC_PIXFMTS(AV_PIX_FMT_MONOWHITE),
 };
 #endif
 
@@ -286,11 +279,8 @@ const FFCodec ff_pfm_encoder = {
     .p.id           = AV_CODEC_ID_PFM,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     FF_CODEC_ENCODE_CB(pnm_encode_frame),
-    .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_GBRPF32LE,
-                                                    AV_PIX_FMT_GRAYF32LE,
-                                                    AV_PIX_FMT_GBRPF32BE,
-                                                    AV_PIX_FMT_GRAYF32BE,
-                                                    AV_PIX_FMT_NONE },
+    CODEC_PIXFMTS(AV_PIX_FMT_GBRPF32LE, AV_PIX_FMT_GRAYF32LE,
+                  AV_PIX_FMT_GBRPF32BE, AV_PIX_FMT_GRAYF32BE),
 };
 #endif
 
@@ -313,8 +303,6 @@ const FFCodec ff_phm_encoder = {
     .priv_data_size = sizeof(PHMEncContext),
     .init           = phm_enc_init,
     FF_CODEC_ENCODE_CB(pnm_encode_frame),
-    .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_GBRPF32,
-                                                    AV_PIX_FMT_GRAYF32,
-                                                    AV_PIX_FMT_NONE },
+    CODEC_PIXFMTS(AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GRAYF32),
 };
 #endif

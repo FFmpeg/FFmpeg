@@ -446,8 +446,7 @@ const FFCodec ff_wmav1_encoder = {
     .init           = encode_init,
     FF_CODEC_ENCODE_CB(encode_superframe),
     .close          = ff_wma_end,
-    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                      AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
@@ -462,8 +461,7 @@ const FFCodec ff_wmav2_encoder = {
     .init           = encode_init,
     FF_CODEC_ENCODE_CB(encode_superframe),
     .close          = ff_wma_end,
-    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                      AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif

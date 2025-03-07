@@ -83,8 +83,5 @@ const FFCodec ff_wbmp_encoder = {
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     FF_CODEC_ENCODE_CB(wbmp_encode_frame),
-    .p.pix_fmts     = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_MONOBLACK,
-        AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_MONOBLACK),
 };

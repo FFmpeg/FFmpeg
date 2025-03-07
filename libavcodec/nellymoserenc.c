@@ -427,8 +427,7 @@ const FFCodec ff_nellymoser_encoder = {
     .init           = encode_init,
     FF_CODEC_ENCODE_CB(encode_frame),
     .close          = encode_end,
-    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
-                                                     AV_SAMPLE_FMT_NONE },
-    .p.ch_layouts   = (const AVChannelLayout[]){ AV_CHANNEL_LAYOUT_MONO, { 0 } },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLT),
+    CODEC_CH_LAYOUTS(AV_CHANNEL_LAYOUT_MONO),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

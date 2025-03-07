@@ -33,13 +33,8 @@ const FFCodec ff_mp2_encoder = {
     .priv_data_size        = sizeof(MpegAudioContext),
     .init                  = MPA_encode_init,
     FF_CODEC_ENCODE_CB(MPA_encode_frame),
-    .p.sample_fmts         = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
-                                                            AV_SAMPLE_FMT_NONE },
-    .p.supported_samplerates = (const int[]){
-        44100, 48000,  32000, 22050, 24000, 16000, 0
-    },
-    .p.ch_layouts          = (const AVChannelLayout[]){ AV_CHANNEL_LAYOUT_MONO,
-                                                        AV_CHANNEL_LAYOUT_STEREO,
-                                                        { 0 } },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16),
+    CODEC_SAMPLERATES(44100, 48000, 32000, 22050, 24000, 16000),
+    CODEC_CH_LAYOUTS(AV_CHANNEL_LAYOUT_MONO, AV_CHANNEL_LAYOUT_STEREO),
     .defaults              = mp2_defaults,
 };

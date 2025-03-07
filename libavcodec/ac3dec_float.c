@@ -76,8 +76,7 @@ const FFCodec ff_ac3_decoder = {
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
     CODEC_LONG_NAME("ATSC A/52A (AC-3)"),
-    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                      AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .p.priv_class   = &ac3_eac3_decoder_class,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
@@ -95,8 +94,7 @@ const FFCodec ff_eac3_decoder = {
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
     CODEC_LONG_NAME("ATSC A/52B (AC-3, E-AC-3)"),
-    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                      AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .p.priv_class   = &ac3_eac3_decoder_class,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_eac3_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,

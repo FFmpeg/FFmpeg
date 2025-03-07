@@ -371,10 +371,7 @@ const FFCodec ff_sbc_decoder = {
     .init                  = sbc_decode_init,
     FF_CODEC_DECODE_CB(sbc_decode_frame),
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .p.ch_layouts          = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO,
-                                                         AV_CHANNEL_LAYOUT_STEREO,
-                                                         { 0 } },
-    .p.sample_fmts         = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
-                                                             AV_SAMPLE_FMT_NONE },
-    .p.supported_samplerates = (const int[]) { 16000, 32000, 44100, 48000, 0 },
+    CODEC_CH_LAYOUTS(AV_CHANNEL_LAYOUT_MONO, AV_CHANNEL_LAYOUT_STEREO),
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16P),
+    CODEC_SAMPLERATES(16000, 32000, 44100, 48000),
 };

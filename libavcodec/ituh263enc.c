@@ -903,7 +903,7 @@ const FFCodec ff_h263_encoder = {
     CODEC_LONG_NAME("H.263 / H.263-1996"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_H263,
-    .p.pix_fmts = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE},
+    CODEC_PIXFMTS(AV_PIX_FMT_YUV420P),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &h263_class,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
@@ -935,7 +935,7 @@ const FFCodec ff_h263p_encoder = {
     CODEC_LONG_NAME("H.263+ / H.263-1998 / H.263 version 2"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_H263P,
-    .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
+    CODEC_PIXFMTS(AV_PIX_FMT_YUV420P),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &h263p_class,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS |

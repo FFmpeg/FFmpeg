@@ -1002,11 +1002,11 @@ const FFCodec ff_ ## name_ ## _encoder = {                                 \
     CODEC_LONG_NAME(long_name_),                                           \
     .p.type         = AVMEDIA_TYPE_AUDIO,                                  \
     .p.id           = id_,                                                 \
-    .p.sample_fmts  = sample_fmts_,                                        \
-    .p.ch_layouts   = ch_layouts,                                          \
     .p.capabilities = capabilities_ | AV_CODEC_CAP_DR1 |                   \
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,               \
     .p.priv_class   = &adpcm_encoder_class,                                \
+    CODEC_CH_LAYOUTS_ARRAY(ch_layouts),                                    \
+    CODEC_SAMPLEFMTS_ARRAY(sample_fmts_),                                  \
     .priv_data_size = sizeof(ADPCMEncodeContext),                          \
     .init           = adpcm_encode_init,                                   \
     FF_CODEC_ENCODE_CB(adpcm_encode_frame),                                \

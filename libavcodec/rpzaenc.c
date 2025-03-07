@@ -884,6 +884,5 @@ const FFCodec ff_rpza_encoder = {
     .init           = rpza_encode_init,
     FF_CODEC_ENCODE_CB(rpza_encode_frame),
     .close          = rpza_encode_end,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB555,
-                                                     AV_PIX_FMT_NONE},
+    CODEC_PIXFMTS(AV_PIX_FMT_RGB555),
 };

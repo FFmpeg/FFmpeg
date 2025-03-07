@@ -885,7 +885,5 @@ const FFCodec ff_wavarc_decoder = {
                         AV_CODEC_CAP_SUBFRAMES |
 #endif
                         AV_CODEC_CAP_DELAY,
-    .p.sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
-                                                        AV_SAMPLE_FMT_S16P,
-                                                        AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_U8P, AV_SAMPLE_FMT_S16P),
 };

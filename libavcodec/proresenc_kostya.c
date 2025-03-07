@@ -1381,10 +1381,7 @@ const FFCodec ff_prores_ks_encoder = {
     FF_CODEC_ENCODE_CB(encode_frame),
     .p.capabilities = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-                          AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
-                          AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_NONE
-                      },
+    CODEC_PIXFMTS(AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUVA444P10),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &proresenc_class,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_prores_profiles),

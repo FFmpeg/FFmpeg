@@ -1223,7 +1223,7 @@ const FFCodec ff_cinepak_encoder = {
     .init           = cinepak_encode_init,
     FF_CODEC_ENCODE_CB(cinepak_encode_frame),
     .close          = cinepak_encode_end,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB24, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE },
+    CODEC_PIXFMTS(AV_PIX_FMT_RGB24, AV_PIX_FMT_GRAY8),
     .p.priv_class   = &cinepak_class,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

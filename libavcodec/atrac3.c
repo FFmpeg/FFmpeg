@@ -1032,8 +1032,7 @@ const FFCodec ff_atrac3_decoder = {
                         AV_CODEC_CAP_SUBFRAMES |
 #endif
                         AV_CODEC_CAP_DR1,
-    .p.sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                        AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
 };
 
@@ -1051,7 +1050,6 @@ const FFCodec ff_atrac3al_decoder = {
                         AV_CODEC_CAP_SUBFRAMES |
 #endif
                         AV_CODEC_CAP_DR1,
-    .p.sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                        AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
 };

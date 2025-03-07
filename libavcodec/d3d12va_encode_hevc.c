@@ -788,10 +788,7 @@ const FFCodec ff_hevc_d3d12va_encoder = {
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
     .defaults       = d3d12va_encode_hevc_defaults,
-    .p.pix_fmts = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_D3D12,
-        AV_PIX_FMT_NONE,
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_D3D12),
     .hw_configs     = ff_d3d12va_encode_hw_configs,
     .p.wrapper_name = "d3d12va",
 };

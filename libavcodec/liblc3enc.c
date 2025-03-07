@@ -201,12 +201,10 @@ const FFCodec ff_liblc3_encoder = {
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_LC3,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
-    .p.supported_samplerates = (const int [])
-        { 96000, 48000, 32000, 24000, 16000, 8000, 0 },
-    .p.sample_fmts = (const enum AVSampleFormat[])
-        { AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE },
     .p.priv_class   = &class,
     .p.wrapper_name = "liblc3",
+    CODEC_SAMPLERATES(96000, 48000, 32000, 24000, 16000, 8000),
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .priv_data_size = sizeof(LibLC3EncContext),
     .init           = liblc3_encode_init,
     .close          = liblc3_encode_close,

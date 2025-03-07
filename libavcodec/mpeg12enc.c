@@ -1249,9 +1249,8 @@ const FFCodec ff_mpeg1video_encoder = {
     .init                 = encode_init,
     FF_CODEC_ENCODE_CB(ff_mpv_encode_picture),
     .close                = ff_mpv_encode_end,
-    .p.supported_framerates = ff_mpeg12_frame_rate_tab + 1,
-    .p.pix_fmts           = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
-                                                           AV_PIX_FMT_NONE },
+    CODEC_FRAMERATES_ARRAY(ff_mpeg12_frame_rate_tab + 1),
+    CODEC_PIXFMTS(AV_PIX_FMT_YUV420P),
     .color_ranges         = AVCOL_RANGE_MPEG,
     .p.capabilities       = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                             AV_CODEC_CAP_SLICE_THREADS |
@@ -1269,10 +1268,8 @@ const FFCodec ff_mpeg2video_encoder = {
     .init                 = encode_init,
     FF_CODEC_ENCODE_CB(ff_mpv_encode_picture),
     .close                = ff_mpv_encode_end,
-    .p.supported_framerates = ff_mpeg2_frame_rate_tab,
-    .p.pix_fmts           = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
-                                                           AV_PIX_FMT_YUV422P,
-                                                           AV_PIX_FMT_NONE },
+    CODEC_FRAMERATES_ARRAY(ff_mpeg2_frame_rate_tab),
+    CODEC_PIXFMTS(AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P),
     .color_ranges         = AVCOL_RANGE_MPEG,
     .p.capabilities       = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                             AV_CODEC_CAP_SLICE_THREADS |

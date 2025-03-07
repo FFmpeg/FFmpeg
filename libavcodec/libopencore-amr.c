@@ -302,8 +302,7 @@ const FFCodec ff_libopencore_amrnb_encoder = {
     .init           = amr_nb_encode_init,
     FF_CODEC_ENCODE_CB(amr_nb_encode_frame),
     .close          = amr_nb_encode_close,
-    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
-                                                     AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16),
     .p.priv_class   = &amrnb_class,
 };
 #endif /* CONFIG_LIBOPENCORE_AMRNB_ENCODER */

@@ -181,8 +181,6 @@ const FFCodec ff_s302m_encoder = {
     .priv_data_size        = sizeof(S302MEncContext),
     .init                  = s302m_encode_init,
     FF_CODEC_ENCODE_CB(s302m_encode2_frame),
-    .p.sample_fmts         = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
-                                                            AV_SAMPLE_FMT_S16,
-                                                            AV_SAMPLE_FMT_NONE },
-    .p.supported_samplerates = (const int[]) { 48000, 0 },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S16),
+    CODEC_SAMPLERATES(48000),
 };

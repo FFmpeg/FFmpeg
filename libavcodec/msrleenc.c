@@ -293,8 +293,6 @@ const FFCodec ff_msrle_encoder = {
     .init           = msrle_encode_init,
     FF_CODEC_ENCODE_CB(msrle_encode_frame),
     .close          = msrle_encode_close,
-    .p.pix_fmts     = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_PAL8, AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_PAL8),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

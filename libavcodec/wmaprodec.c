@@ -2106,8 +2106,7 @@ const FFCodec ff_wmapro_decoder = {
 #endif
                       AV_CODEC_CAP_DR1,
     .flush          = wmapro_flush,
-    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                      AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 
@@ -2126,8 +2125,7 @@ const FFCodec ff_xma1_decoder = {
                       AV_CODEC_CAP_SUBFRAMES |
 #endif
                       AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
-    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                      AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 
@@ -2146,7 +2144,6 @@ const FFCodec ff_xma2_decoder = {
                       AV_CODEC_CAP_SUBFRAMES |
 #endif
                       AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
-    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                      AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

@@ -646,8 +646,6 @@ const FFCodec ff_alac_encoder = {
     .init           = alac_encode_init,
     FF_CODEC_ENCODE_CB(alac_encode_frame),
     .close          = alac_encode_close,
-    .p.ch_layouts   = ff_alac_ch_layouts,
-    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32P,
-                                                     AV_SAMPLE_FMT_S16P,
-                                                     AV_SAMPLE_FMT_NONE },
+    CODEC_CH_LAYOUTS_ARRAY(ff_alac_ch_layouts),
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_S16P),
 };

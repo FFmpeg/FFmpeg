@@ -135,11 +135,9 @@ const FFCodec ff_pam_encoder = {
     .p.id           = AV_CODEC_ID_PAM,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     FF_CODEC_ENCODE_CB(pam_encode_frame),
-    .p.pix_fmts     = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
-        AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,
-        AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_YA16BE,
-        AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
+                  AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,
+                  AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,
+                  AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_YA16BE,
+                  AV_PIX_FMT_MONOBLACK),
 };

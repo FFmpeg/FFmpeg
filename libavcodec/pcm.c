@@ -557,8 +557,7 @@ const FFCodec ff_ ## name_ ## _encoder = {                                  \
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,                \
     .init         = pcm_encode_init,                                        \
     FF_CODEC_ENCODE_CB(pcm_encode_frame),                                   \
-    .p.sample_fmts = (const enum AVSampleFormat[]){ sample_fmt_,             \
-                                                   AV_SAMPLE_FMT_NONE },    \
+    CODEC_SAMPLEFMTS(sample_fmt_),                                          \
 }
 
 #define PCM_ENCODER_2(cf, id, sample_fmt, name, long_name)                  \
@@ -579,8 +578,7 @@ const FFCodec ff_ ## name_ ## _decoder = {                                  \
     .init           = pcm_decode_init,                                      \
     FF_CODEC_DECODE_CB(pcm_decode_frame),                                    \
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_PARAM_CHANGE,         \
-    .p.sample_fmts  = (const enum AVSampleFormat[]){ sample_fmt_,           \
-                                                     AV_SAMPLE_FMT_NONE },  \
+    CODEC_SAMPLEFMTS(sample_fmt_),                                          \
 }
 
 #define PCM_DECODER_2(cf, id, sample_fmt, name, long_name)                  \

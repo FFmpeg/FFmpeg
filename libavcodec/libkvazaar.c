@@ -333,7 +333,7 @@ const FFCodec ff_libkvazaar_encoder = {
     .p.id             = AV_CODEC_ID_HEVC,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                         AV_CODEC_CAP_OTHER_THREADS,
-    .p.pix_fmts       = pix_fmts,
+    CODEC_PIXFMTS_ARRAY(pix_fmts),
     .color_ranges     = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
 
     .p.priv_class     = &class,

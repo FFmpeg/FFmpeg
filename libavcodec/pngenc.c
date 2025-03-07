@@ -1233,14 +1233,12 @@ const FFCodec ff_png_encoder = {
     .init           = png_enc_init,
     .close          = png_enc_close,
     FF_CODEC_ENCODE_CB(encode_png),
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
-        AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,
-        AV_PIX_FMT_PAL8,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,
-        AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_YA16BE,
-        AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
+                  AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,
+                  AV_PIX_FMT_PAL8,
+                  AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,
+                  AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_YA16BE,
+                  AV_PIX_FMT_MONOBLACK),
     .p.priv_class   = &pngenc_class,
     .caps_internal  = FF_CODEC_CAP_ICC_PROFILES,
 };
@@ -1256,14 +1254,11 @@ const FFCodec ff_apng_encoder = {
     .init           = png_enc_init,
     .close          = png_enc_close,
     FF_CODEC_ENCODE_CB(encode_apng),
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
-        AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,
-        AV_PIX_FMT_PAL8,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,
-        AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_YA16BE,
-        AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
+                  AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,
+                  AV_PIX_FMT_PAL8,
+                  AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,
+                  AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_YA16BE),
     .p.priv_class   = &pngenc_class,
     .caps_internal  = FF_CODEC_CAP_ICC_PROFILES,
 };

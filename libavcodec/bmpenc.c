@@ -164,11 +164,9 @@ const FFCodec ff_bmp_encoder = {
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .init           = bmp_encode_init,
     FF_CODEC_ENCODE_CB(bmp_encode_frame),
-    .p.pix_fmts     = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_BGRA, AV_PIX_FMT_BGR24,
-        AV_PIX_FMT_RGB565, AV_PIX_FMT_RGB555, AV_PIX_FMT_RGB444,
-        AV_PIX_FMT_RGB8, AV_PIX_FMT_BGR8, AV_PIX_FMT_RGB4_BYTE, AV_PIX_FMT_BGR4_BYTE, AV_PIX_FMT_GRAY8, AV_PIX_FMT_PAL8,
-        AV_PIX_FMT_MONOBLACK,
-        AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_BGRA, AV_PIX_FMT_BGR24,
+                  AV_PIX_FMT_RGB565, AV_PIX_FMT_RGB555, AV_PIX_FMT_RGB444,
+                  AV_PIX_FMT_RGB8, AV_PIX_FMT_BGR8, AV_PIX_FMT_RGB4_BYTE,
+                  AV_PIX_FMT_BGR4_BYTE, AV_PIX_FMT_GRAY8, AV_PIX_FMT_PAL8,
+                  AV_PIX_FMT_MONOBLACK),
 };

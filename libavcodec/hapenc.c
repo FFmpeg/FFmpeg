@@ -361,8 +361,6 @@ const FFCodec ff_hap_encoder = {
     .init           = hap_init,
     FF_CODEC_ENCODE_CB(hap_encode),
     .close          = hap_close,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_RGBA, AV_PIX_FMT_NONE,
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_RGBA),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

@@ -765,7 +765,7 @@ const FFCodec ff_libopenjpeg_encoder = {
     FF_CODEC_ENCODE_CB(libopenjpeg_encode_frame),
     .p.capabilities = AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
+    CODEC_PIXFMTS(
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB48,
         AV_PIX_FMT_RGBA64, AV_PIX_FMT_GBR24P,
         AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
@@ -782,9 +782,7 @@ const FFCodec ff_libopenjpeg_encoder = {
         AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
-        AV_PIX_FMT_XYZ12,
-        AV_PIX_FMT_NONE
-    },
+        AV_PIX_FMT_XYZ12),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &openjpeg_class,
     .p.wrapper_name = "libopenjpeg",

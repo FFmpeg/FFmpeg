@@ -2974,7 +2974,7 @@ const FFCodec ff_h264_videotoolbox_encoder = {
     .p.id             = AV_CODEC_ID_H264,
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .priv_data_size   = sizeof(VTEncContext),
-    .p.pix_fmts       = avc_pix_fmts,
+    CODEC_PIXFMTS_ARRAY(avc_pix_fmts),
     .defaults         = vt_defaults,
     .init             = vtenc_init,
     FF_CODEC_ENCODE_CB(vtenc_frame),
@@ -3012,7 +3012,7 @@ const FFCodec ff_hevc_videotoolbox_encoder = {
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                         AV_CODEC_CAP_HARDWARE,
     .priv_data_size   = sizeof(VTEncContext),
-    .p.pix_fmts       = hevc_pix_fmts,
+    CODEC_PIXFMTS_ARRAY(hevc_pix_fmts),
     .defaults         = vt_defaults,
     .color_ranges     = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .init             = vtenc_init,
@@ -3053,7 +3053,7 @@ const FFCodec ff_prores_videotoolbox_encoder = {
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                         AV_CODEC_CAP_HARDWARE,
     .priv_data_size   = sizeof(VTEncContext),
-    .p.pix_fmts       = prores_pix_fmts,
+    CODEC_PIXFMTS_ARRAY(prores_pix_fmts),
     .defaults         = vt_defaults,
     .color_ranges     = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .init             = vtenc_init,

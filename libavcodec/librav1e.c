@@ -667,7 +667,7 @@ const FFCodec ff_librav1e_encoder = {
     .priv_data_size = sizeof(librav1eContext),
     .p.priv_class   = &class,
     .defaults       = librav1e_defaults,
-    .p.pix_fmts     = librav1e_pix_fmts,
+    CODEC_PIXFMTS_ARRAY(librav1e_pix_fmts),
     .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS |
                       AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_RECON_FRAME |

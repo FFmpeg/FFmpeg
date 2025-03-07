@@ -327,6 +327,34 @@ int ff_default_get_supported_config(const struct AVCodecContext *avctx,
     .cb_type           = FF_CODEC_CB_TYPE_RECEIVE_PACKET, \
     .cb.receive_packet = (func)
 
+#ifdef __clang__
+#define DISABLE_DEPRECATION_WARNINGS FF_DISABLE_DEPRECATION_WARNINGS
+#define ENABLE_DEPRECATION_WARNINGS  FF_ENABLE_DEPRECATION_WARNINGS
+#else
+#define DISABLE_DEPRECATION_WARNINGS
+#define ENABLE_DEPRECATION_WARNINGS
+#endif
+
+#define CODEC_CH_LAYOUTS(...) CODEC_CH_LAYOUTS_ARRAY(((const AVChannelLayout[]) { __VA_ARGS__, { 0 } }))
+#define CODEC_CH_LAYOUTS_ARRAY(array) CODEC_ARRAY(ch_layouts, (array))
+
+#define CODEC_SAMPLERATES(...) CODEC_SAMPLERATES_ARRAY(((const int[]) { __VA_ARGS__, 0 }))
+#define CODEC_SAMPLERATES_ARRAY(array) CODEC_ARRAY(supported_samplerates, (array))
+
+#define CODEC_SAMPLEFMTS(...) CODEC_SAMPLEFMTS_ARRAY(((const enum AVSampleFormat[]) { __VA_ARGS__, AV_SAMPLE_FMT_NONE }))
+#define CODEC_SAMPLEFMTS_ARRAY(array) CODEC_ARRAY(sample_fmts, (array))
+
+#define CODEC_FRAMERATES(...) CODEC_FRAMERATES_ARRAY(((const AVRational[]) { __VA_ARGS__, { 0, 0 } }))
+#define CODEC_FRAMERATES_ARRAY(array) CODEC_ARRAY(supported_framerates, (array))
+
+#define CODEC_PIXFMTS(...) CODEC_PIXFMTS_ARRAY(((const enum AVPixelFormat[]) { __VA_ARGS__, AV_PIX_FMT_NONE }))
+#define CODEC_PIXFMTS_ARRAY(array) CODEC_ARRAY(pix_fmts, (array))
+
+#define CODEC_ARRAY(field, array) \
+    DISABLE_DEPRECATION_WARNINGS  \
+    .p.field = (array)            \
+    ENABLE_DEPRECATION_WARNINGS
+
 static av_always_inline const FFCodec *ffcodec(const AVCodec *codec)
 {
     return (const FFCodec*)codec;

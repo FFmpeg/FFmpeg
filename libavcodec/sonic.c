@@ -1102,7 +1102,7 @@ const FFCodec ff_sonic_encoder = {
     .priv_data_size = sizeof(SonicContext),
     .init           = sonic_encode_init,
     FF_CODEC_ENCODE_CB(sonic_encode_frame),
-    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .close          = sonic_encode_close,
 };
@@ -1119,7 +1119,7 @@ const FFCodec ff_sonic_ls_encoder = {
     .priv_data_size = sizeof(SonicContext),
     .init           = sonic_encode_init,
     FF_CODEC_ENCODE_CB(sonic_encode_frame),
-    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .close          = sonic_encode_close,
 };

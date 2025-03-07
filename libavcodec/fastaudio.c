@@ -195,6 +195,5 @@ const FFCodec ff_fastaudio_decoder = {
     FF_CODEC_DECODE_CB(fastaudio_decode),
     .close          = fastaudio_close,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
-                                                      AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
 };

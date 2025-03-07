@@ -559,10 +559,8 @@ const FFCodec ff_gif_encoder = {
     .init           = gif_encode_init,
     FF_CODEC_ENCODE_CB(gif_encode_frame),
     .close          = gif_encode_close,
-    .p.pix_fmts     = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_RGB8, AV_PIX_FMT_BGR8, AV_PIX_FMT_RGB4_BYTE, AV_PIX_FMT_BGR4_BYTE,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_PAL8, AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_RGB8, AV_PIX_FMT_BGR8, AV_PIX_FMT_RGB4_BYTE,
+                  AV_PIX_FMT_BGR4_BYTE, AV_PIX_FMT_GRAY8, AV_PIX_FMT_PAL8),
     .p.priv_class   = &gif_class,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

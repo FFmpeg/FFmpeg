@@ -482,7 +482,7 @@ const FFCodec ff_libvvenc_encoder = {
     .p.priv_class   = &class,
     .p.wrapper_name = "libvvenc",
     .priv_data_size = sizeof(VVenCContext),
-    .p.pix_fmts     = pix_fmts_vvenc,
+    CODEC_PIXFMTS_ARRAY(pix_fmts_vvenc),
     .init           = vvenc_init,
     FF_CODEC_ENCODE_CB(vvenc_frame),
     .close          = vvenc_close,

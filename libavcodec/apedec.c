@@ -1767,9 +1767,6 @@ const FFCodec ff_ape_decoder = {
                       AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .flush          = ape_flush,
-    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
-                                                      AV_SAMPLE_FMT_S16P,
-                                                      AV_SAMPLE_FMT_S32P,
-                                                      AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_U8P, AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P),
     .p.priv_class   = &ape_decoder_class,
 };

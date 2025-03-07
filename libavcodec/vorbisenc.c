@@ -1312,7 +1312,6 @@ const FFCodec ff_vorbis_encoder = {
     .init           = vorbis_encode_init,
     FF_CODEC_ENCODE_CB(vorbis_encode_frame),
     .close          = vorbis_encode_close,
-    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
-                                                     AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

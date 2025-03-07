@@ -2044,7 +2044,7 @@ const FFCodec ff_libvpx_vp8_encoder = {
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_AUTO_THREADS,
-    .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE },
+    CODEC_PIXFMTS(AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P),
     .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .p.priv_class   = &class_vp8,
     .defaults       = defaults,

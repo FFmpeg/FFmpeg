@@ -1104,6 +1104,5 @@ const FFCodec ff_amrnb_decoder = {
     .init           = amrnb_decode_init,
     FF_CODEC_DECODE_CB(amrnb_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
-                                                     AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
 };

@@ -393,6 +393,5 @@ const FFCodec ff_mpc8_decoder = {
     FF_CODEC_DECODE_CB(mpc8_decode_frame),
     .flush          = mpc8_decode_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
-                                                      AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16P),
 };

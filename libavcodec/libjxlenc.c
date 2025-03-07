@@ -699,7 +699,7 @@ const FFCodec ff_libjxl_encoder = {
     .caps_internal    = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                         FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_INIT_CLEANUP |
                         FF_CODEC_CAP_ICC_PROFILES,
-    .p.pix_fmts       = libjxl_supported_pixfmts,
+    CODEC_PIXFMTS_ARRAY(libjxl_supported_pixfmts),
     .p.priv_class     = &libjxl_encode_class,
     .p.wrapper_name   = "libjxl",
 };
@@ -719,7 +719,7 @@ const FFCodec ff_libjxl_anim_encoder = {
     .caps_internal    = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                         FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_INIT_CLEANUP |
                         FF_CODEC_CAP_ICC_PROFILES,
-    .p.pix_fmts       = libjxl_supported_pixfmts,
+    CODEC_PIXFMTS_ARRAY(libjxl_supported_pixfmts),
     .p.priv_class     = &libjxl_encode_class,
     .p.wrapper_name   = "libjxl",
 };

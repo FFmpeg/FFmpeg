@@ -955,7 +955,7 @@ const FFCodec ff_prores_aw_encoder = {
     .p.id           = AV_CODEC_ID_PRORES,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
-    .p.pix_fmts     = pix_fmts,
+    CODEC_PIXFMTS_ARRAY(pix_fmts),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .priv_data_size = sizeof(ProresContext),
     .init           = prores_encode_init,
@@ -973,7 +973,7 @@ const FFCodec ff_prores_encoder = {
     .p.id           = AV_CODEC_ID_PRORES,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
-    .p.pix_fmts     = pix_fmts,
+    CODEC_PIXFMTS_ARRAY(pix_fmts),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .priv_data_size = sizeof(ProresContext),
     .init           = prores_encode_init,

@@ -1209,10 +1209,7 @@ const FFCodec ff_hevc_vaapi_encoder = {
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
     .defaults       = vaapi_encode_h265_defaults,
-    .p.pix_fmts = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_VAAPI,
-        AV_PIX_FMT_NONE,
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_VAAPI),
     .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .hw_configs     = ff_vaapi_encode_hw_configs,
     .p.wrapper_name = "vaapi",

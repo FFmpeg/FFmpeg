@@ -713,7 +713,7 @@ const FFCodec ff_av1_amf_encoder = {
     .p.capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
                       AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    .p.pix_fmts       = ff_amf_pix_fmts,
+    CODEC_PIXFMTS_ARRAY(ff_amf_pix_fmts),
     .color_ranges   = AVCOL_RANGE_MPEG, /* FIXME: implement tagging */
     .p.wrapper_name   = "amf",
     .hw_configs     = ff_amfenc_hw_configs,

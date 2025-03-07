@@ -1360,13 +1360,8 @@ const FFCodec ff_dnxhd_encoder = {
     .init           = dnxhd_encode_init,
     FF_CODEC_ENCODE_CB(dnxhd_encode_picture),
     .close          = dnxhd_encode_end,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_YUV422P10,
-        AV_PIX_FMT_YUV444P10,
-        AV_PIX_FMT_GBRP10,
-        AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV422P10,
+                  AV_PIX_FMT_YUV444P10, AV_PIX_FMT_GBRP10),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &dnxhd_class,
     .defaults       = dnxhd_defaults,

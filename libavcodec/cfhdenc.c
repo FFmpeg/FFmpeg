@@ -864,12 +864,7 @@ const FFCodec ff_cfhd_encoder = {
     .init             = cfhd_encode_init,
     .close            = cfhd_encode_close,
     FF_CODEC_ENCODE_CB(cfhd_encode_frame),
-    .p.pix_fmts       = (const enum AVPixelFormat[]) {
-                          AV_PIX_FMT_YUV422P10,
-                          AV_PIX_FMT_GBRP12,
-                          AV_PIX_FMT_GBRAP12,
-                          AV_PIX_FMT_NONE
-                        },
+    CODEC_PIXFMTS(AV_PIX_FMT_YUV422P10, AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12),
     .color_ranges     = AVCOL_RANGE_MPEG,
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
 };

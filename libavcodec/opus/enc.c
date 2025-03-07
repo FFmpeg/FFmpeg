@@ -746,9 +746,7 @@ const FFCodec ff_opus_encoder = {
     FF_CODEC_ENCODE_CB(opus_encode_frame),
     .close          = opus_encode_end,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    .p.supported_samplerates = (const int []){ 48000, 0 },
-    .p.ch_layouts    = (const AVChannelLayout []){ AV_CHANNEL_LAYOUT_MONO,
-                                                   AV_CHANNEL_LAYOUT_STEREO, { 0 } },
-    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
-                                                     AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLERATES(48000),
+    CODEC_CH_LAYOUTS(AV_CHANNEL_LAYOUT_MONO, AV_CHANNEL_LAYOUT_STEREO),
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
 };

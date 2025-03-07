@@ -81,15 +81,12 @@ const FFCodec ff_anull_encoder = {
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_ANULL,
     .p.capabilities = AV_CODEC_CAP_VARIABLE_FRAME_SIZE,
-    .p.sample_fmts  = (const enum AVSampleFormat[]){
-        AV_SAMPLE_FMT_U8,  AV_SAMPLE_FMT_U8P,
-        AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
-        AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S32P,
-        AV_SAMPLE_FMT_S64, AV_SAMPLE_FMT_S64P,
-        AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
-        AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP,
-        AV_SAMPLE_FMT_NONE,
-    },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_U8,  AV_SAMPLE_FMT_U8P,
+                     AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S16P,
+                     AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_S32P,
+                     AV_SAMPLE_FMT_S64, AV_SAMPLE_FMT_S64P,
+                     AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
+                     AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBLP),
     FF_CODEC_ENCODE_CB(null_encode),
 };
 #endif

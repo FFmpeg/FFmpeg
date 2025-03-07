@@ -267,7 +267,7 @@ const FFCodec ff_hevc_nvenc_encoder = {
     .priv_data_size = sizeof(NvencContext),
     .p.priv_class   = &hevc_nvenc_class,
     .defaults       = defaults,
-    .p.pix_fmts     = ff_nvenc_pix_fmts,
+    CODEC_PIXFMTS_ARRAY(ff_nvenc_pix_fmts),
     .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
                       AV_CODEC_CAP_ENCODER_FLUSH | AV_CODEC_CAP_DR1 |

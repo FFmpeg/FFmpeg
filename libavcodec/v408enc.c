@@ -79,5 +79,5 @@ const FFCodec ff_v408_encoder = {
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .init         = v408_encode_init,
     FF_CODEC_ENCODE_CB(v408_encode_frame),
-    .p.pix_fmts   = pix_fmt,
+    CODEC_PIXFMTS_ARRAY(pix_fmt),
 };

@@ -2308,9 +2308,9 @@ const FFCodec ff_mlp_encoder = {
     FF_CODEC_ENCODE_CB(mlp_encode_frame),
     .close                  = mlp_encode_close,
     .p.priv_class           = &mlp_class,
-    .p.sample_fmts          = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_NONE},
-    .p.supported_samplerates = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
-    .p.ch_layouts           = ff_mlp_ch_layouts,
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P),
+    CODEC_SAMPLERATES(44100, 48000, 88200, 96000, 176400, 192000),
+    CODEC_CH_LAYOUTS_ARRAY(ff_mlp_ch_layouts),
     .caps_internal          = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif
@@ -2328,20 +2328,13 @@ const FFCodec ff_truehd_encoder = {
     FF_CODEC_ENCODE_CB(mlp_encode_frame),
     .close                  = mlp_encode_close,
     .p.priv_class           = &mlp_class,
-    .p.sample_fmts          = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_NONE},
-    .p.supported_samplerates = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
-    .p.ch_layouts           = (const AVChannelLayout[]) {
-                                  AV_CHANNEL_LAYOUT_MONO,
-                                  AV_CHANNEL_LAYOUT_STEREO,
-                                  AV_CHANNEL_LAYOUT_2POINT1,
-                                  AV_CHANNEL_LAYOUT_SURROUND,
-                                  AV_CHANNEL_LAYOUT_3POINT1,
-                                  AV_CHANNEL_LAYOUT_4POINT0,
-                                  AV_CHANNEL_LAYOUT_4POINT1,
-                                  AV_CHANNEL_LAYOUT_5POINT0,
-                                  AV_CHANNEL_LAYOUT_5POINT1,
-                                  { 0 }
-                              },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P),
+    CODEC_SAMPLERATES(44100, 48000, 88200, 96000, 176400, 192000),
+    CODEC_CH_LAYOUTS(AV_CHANNEL_LAYOUT_MONO,    AV_CHANNEL_LAYOUT_STEREO,
+                     AV_CHANNEL_LAYOUT_2POINT1, AV_CHANNEL_LAYOUT_SURROUND,
+                     AV_CHANNEL_LAYOUT_3POINT1, AV_CHANNEL_LAYOUT_4POINT0,
+                     AV_CHANNEL_LAYOUT_4POINT1, AV_CHANNEL_LAYOUT_5POINT0,
+                     AV_CHANNEL_LAYOUT_5POINT1),
     .caps_internal          = FF_CODEC_CAP_INIT_CLEANUP,
 };
 #endif

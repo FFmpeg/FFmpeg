@@ -1310,6 +1310,6 @@ const FFCodec ff_dolby_e_decoder = {
     .close          = dolby_e_close,
     .flush          = dolby_e_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
-    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

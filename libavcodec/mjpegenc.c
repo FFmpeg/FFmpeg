@@ -688,11 +688,8 @@ FFCodec ff_mjpeg_encoder = {
                       AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS |
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_ICC_PROFILES,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P,
-        AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV444P,
-        AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P,
+                  AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV444P),
     .p.priv_class   = &mjpeg_class,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_mjpeg_profiles),
     .get_supported_config = mjpeg_get_supported_config,
@@ -718,9 +715,7 @@ const FFCodec ff_amv_encoder = {
     FF_CODEC_ENCODE_CB(amv_encode_picture),
     .close          = mjpeg_encode_close,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_YUVJ420P),
     .color_ranges   = AVCOL_RANGE_JPEG,
     .p.priv_class   = &amv_class,
 };

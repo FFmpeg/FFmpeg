@@ -1247,10 +1247,7 @@ const FFCodec ff_dvvideo_encoder = {
     .priv_data_size = sizeof(DVEncContext),
     .init           = dvvideo_encode_init,
     FF_CODEC_ENCODE_CB(dvvideo_encode_frame),
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &dvvideo_encode_class,
 };

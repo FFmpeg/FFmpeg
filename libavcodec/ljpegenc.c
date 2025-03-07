@@ -323,10 +323,8 @@ const FFCodec ff_ljpeg_encoder = {
     .init           = ljpeg_encode_init,
     FF_CODEC_ENCODE_CB(ljpeg_encode_frame),
     .close          = ljpeg_encode_close,
-    .p.pix_fmts     = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_BGR24   , AV_PIX_FMT_BGRA    , AV_PIX_FMT_BGR0,
-        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P,
-        AV_PIX_FMT_YUV420P , AV_PIX_FMT_YUV444P , AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_NONE},
+    CODEC_PIXFMTS(AV_PIX_FMT_BGR24,    AV_PIX_FMT_BGRA,     AV_PIX_FMT_BGR0,
+                  AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P,
+                  AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P),
     .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
 };

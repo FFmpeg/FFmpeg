@@ -1344,9 +1344,8 @@ const FFCodec ff_aac_encoder = {
     FF_CODEC_ENCODE_CB(aac_encode_frame),
     .close          = aac_encode_end,
     .defaults       = aac_encode_defaults,
-    .p.supported_samplerates = ff_mpeg4audio_sample_rates,
+    CODEC_SAMPLERATES_ARRAY(ff_mpeg4audio_sample_rates),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
-                                                     AV_SAMPLE_FMT_NONE },
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
     .p.priv_class   = &aacenc_class,
 };

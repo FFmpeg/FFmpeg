@@ -1845,7 +1845,7 @@ const FFCodec ff_jpeg2000_encoder = {
     .init           = j2kenc_init,
     FF_CODEC_ENCODE_CB(encode_frame),
     .close          = j2kenc_destroy,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
+    CODEC_PIXFMTS(
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB48,
         AV_PIX_FMT_GBR24P,AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
@@ -1862,9 +1862,7 @@ const FFCodec ff_jpeg2000_encoder = {
         AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA422P16,
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P16,
 
-        AV_PIX_FMT_PAL8,
-        AV_PIX_FMT_NONE
-    },
+        AV_PIX_FMT_PAL8),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &j2k_class,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,

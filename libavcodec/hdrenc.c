@@ -182,9 +182,6 @@ const FFCodec ff_hdr_encoder = {
     .init           = hdr_encode_init,
     FF_CODEC_ENCODE_CB(hdr_encode_frame),
     .close          = hdr_encode_close,
-    .p.pix_fmts     = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_GBRPF32,
-        AV_PIX_FMT_NONE
-    },
+    CODEC_PIXFMTS(AV_PIX_FMT_GBRPF32),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

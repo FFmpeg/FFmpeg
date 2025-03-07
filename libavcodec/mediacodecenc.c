@@ -1094,7 +1094,7 @@ const FFCodec ff_ ## short_name ## _mediacodec_encoder = {              \
                         AV_CODEC_CAP_HARDWARE |                         \
                         AV_CODEC_CAP_ENCODER_FLUSH,                     \
     .priv_data_size   = sizeof(MediaCodecEncContext),                   \
-    .p.pix_fmts       = avc_pix_fmts,                                   \
+    CODEC_PIXFMTS_ARRAY(avc_pix_fmts),                                  \
     .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,              \
     .defaults         = mediacodec_defaults,                            \
     .init             = mediacodec_init,                                \
