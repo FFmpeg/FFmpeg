@@ -354,9 +354,8 @@ static void msmpeg4v2_encode_motion(MpegEncContext * s, int val)
     int range, bit_size, sign, code, bits;
 
     if (val == 0) {
-        /* zero vector */
-        code = 0;
-        put_bits(&s->pb, ff_mvtab[code][1], ff_mvtab[code][0]);
+        /* zero vector; corresponds to ff_mvtab[0] */
+        put_bits(&s->pb, 1, 0x1);
     } else {
         bit_size = s->f_code - 1;
         range = 1 << bit_size;
