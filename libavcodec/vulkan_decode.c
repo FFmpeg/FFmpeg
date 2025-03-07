@@ -1122,6 +1122,7 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     FFVulkanDecodeShared *ctx;
     FFVulkanContext *s;
     FFVulkanFunctions *vk;
+    int async_depth;
     const VkVideoProfileInfoKHR *profile;
     const FFVulkanDecodeDescriptor *vk_desc;
     const VkPhysicalDeviceDriverProperties *driver_props;
@@ -1191,9 +1192,14 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     /* Create decode exec context for this specific main thread.
      * 2 async contexts per thread was experimentally determined to be optimal
      * for a majority of streams. */
+    async_depth = 2*ctx->qf->num;
+    /* We don't need more than 2 per thread context */
+    async_depth = FFMIN(async_depth, 2*avctx->thread_count);
+    /* Make sure there are enough async contexts for each thread */
+    async_depth = FFMAX(async_depth, avctx->thread_count);
+
     err = ff_vk_exec_pool_init(s, ctx->qf, &ctx->exec_pool,
-                               FFMAX(2*ctx->qf->num, avctx->thread_count),
-                               0, 0, 0, profile);
+                               async_depth, 0, 0, 0, profile);
     if (err < 0)
         goto fail;
 
