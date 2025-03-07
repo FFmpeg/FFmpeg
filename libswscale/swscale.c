@@ -586,7 +586,7 @@ static void solve_range_convert(uint16_t src_min, uint16_t src_max,
 
 static void init_range_convert_constants(SwsInternal *c)
 {
-    const int bit_depth = c->dstBpc ? c->dstBpc : 8;
+    const int bit_depth = c->dstBpc ? FFMIN(c->dstBpc, 16) : 8;
     const int src_bits = bit_depth <= 14 ? 15 : 19;
     const int src_shift = src_bits - bit_depth;
     const int mult_shift = bit_depth <= 14 ? 14 : 18;
