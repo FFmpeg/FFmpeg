@@ -118,7 +118,7 @@ av_cold void ff_rl_init_vlc(RLTable *rl, unsigned static_size)
                     if (code >= rl->last) run += 192;
                 }
             }
-            rl->rl_vlc[q][i].len   = len;
+            rl->rl_vlc[q][i].len8  = len;
             rl->rl_vlc[q][i].level = level;
             rl->rl_vlc[q][i].run   = run;
         }

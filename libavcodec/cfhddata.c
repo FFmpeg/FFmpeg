@@ -136,22 +136,22 @@ static av_cold int cfhd_init_vlc(CFHD_RL_VLC_ELEM out[], unsigned out_size,
     /** Similar to dv.c, generate signed VLC tables **/
 
     for (unsigned i = j = 0; i < table_size; i++, j++) {
-        tmp[j].len   = table_vlc[i].len;
+        tmp[j].len8  = table_vlc[i].len;
         tmp[j].run   = table_vlc[i].run;
         tmp[j].level = table_vlc[i].level;
 
         /* Don't include the zero level nor escape bits */
         if (table_vlc[i].level && table_vlc[i].run) {
-            tmp[j].len++;
+            tmp[j].len8++;
             j++;
-            tmp[j].len   =  table_vlc[i].len + 1;
+            tmp[j].len8  =  table_vlc[i].len + 1;
             tmp[j].run   =  table_vlc[i].run;
             tmp[j].level = -table_vlc[i].level;
         }
     }
 
     ret = ff_vlc_init_from_lengths(&vlc, VLC_BITS, j,
-                                   &tmp[0].len, sizeof(tmp[0]),
+                                   &tmp[0].len8, sizeof(tmp[0]),
                                    NULL, 0, 0, 0, 0, logctx);
     if (ret < 0)
         return ret;
@@ -169,7 +169,7 @@ static av_cold int cfhd_init_vlc(CFHD_RL_VLC_ELEM out[], unsigned out_size,
             run   = tmp[code].run;
             level = tmp[code].level;
         }
-        out[i].len   = len;
+        out[i].len8  = len;
         out[i].level = level;
         out[i].run   = run;
     }

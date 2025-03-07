@@ -594,7 +594,7 @@ static inline const uint8_t *align_get_bits(GetBitContext *s)
                                                                 \
         index = SHOW_UBITS(name, gb, bits);                     \
         level = table[index].level;                             \
-        n     = table[index].len;                               \
+        n     = table[index].len8;                              \
                                                                 \
         if (max_depth > 1 && n < 0) {                           \
             SKIP_BITS(name, gb, bits);                          \
@@ -606,7 +606,7 @@ static inline const uint8_t *align_get_bits(GetBitContext *s)
                                                                 \
             index = SHOW_UBITS(name, gb, nb_bits) + level;      \
             level = table[index].level;                         \
-            n     = table[index].len;                           \
+            n     = table[index].len8;                          \
             if (max_depth > 2 && n < 0) {                       \
                 LAST_SKIP_BITS(name, gb, nb_bits);              \
                 if (need_update) {                              \
@@ -616,7 +616,7 @@ static inline const uint8_t *align_get_bits(GetBitContext *s)
                                                                 \
                 index = SHOW_UBITS(name, gb, nb_bits) + level;  \
                 level = table[index].level;                     \
-                n     = table[index].len;                       \
+                n     = table[index].len8;                      \
             }                                                   \
         }                                                       \
         run = table[index].run;                                 \

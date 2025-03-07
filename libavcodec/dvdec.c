@@ -159,15 +159,15 @@ static av_cold void dv_init_static(void)
 
     /* it's faster to include sign bit in a generic VLC parsing scheme */
     for (i = 0, j = 0; i < NB_DV_VLC; i++, j++) {
-        tmp[j].len   = ff_dv_vlc_len[i];
+        tmp[j].len8  = ff_dv_vlc_len[i];
         tmp[j].run   = ff_dv_vlc_run[i];
         tmp[j].level = ff_dv_vlc_level[i];
 
         if (ff_dv_vlc_level[i]) {
-            tmp[j].len++;
+            tmp[j].len8++;
 
             j++;
-            tmp[j].len   =  ff_dv_vlc_len[i] + 1;
+            tmp[j].len8  =  ff_dv_vlc_len[i] + 1;
             tmp[j].run   =  ff_dv_vlc_run[i];
             tmp[j].level = -ff_dv_vlc_level[i];
         }
@@ -176,7 +176,7 @@ static av_cold void dv_init_static(void)
     /* NOTE: as a trick, we use the fact the no codes are unused
      * to accelerate the parsing of partial codes */
     ff_vlc_init_from_lengths(&dv_vlc, TEX_VLC_BITS, j,
-                             &tmp[0].len, sizeof(tmp[0]),
+                             &tmp[0].len8, sizeof(tmp[0]),
                              NULL, 0, 0, 0, VLC_INIT_USE_STATIC, NULL);
     av_assert1(dv_vlc.table_size == 1664);
 
@@ -193,7 +193,7 @@ static av_cold void dv_init_static(void)
             run   = tmp[code].run + 1;
             level = tmp[code].level;
         }
-        dv_rl_vlc[i].len   = len;
+        dv_rl_vlc[i].len8  = len;
         dv_rl_vlc[i].level = level;
         dv_rl_vlc[i].run   = run;
     }
@@ -301,7 +301,7 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, int16_t *block)
                 pos, SHOW_UBITS(re, gb, 16), re_index);
         /* our own optimized GET_RL_VLC */
         index   = NEG_USR32(re_cache, TEX_VLC_BITS);
-        vlc_len = dv_rl_vlc[index].len;
+        vlc_len = dv_rl_vlc[index].len8;
         if (vlc_len < 0) {
             index = NEG_USR32((unsigned) re_cache << TEX_VLC_BITS, -vlc_len) +
                     dv_rl_vlc[index].level;

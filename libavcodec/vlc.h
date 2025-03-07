@@ -30,8 +30,22 @@
 typedef int16_t VLCBaseType;
 
 typedef struct VLCElem {
-    VLCBaseType sym, len;
+    union {
+        /// The struct is for use as ordinary VLC (with get_vlc2())
+        struct {
+            VLCBaseType sym;
+            VLCBaseType len;
+        };
+        /// This struct is for use as run-length VLC (with GET_RL_VLC)
+        struct {
+            int16_t level;
+            int8_t   len8;
+            uint8_t   run;
+        };
+    };
 } VLCElem;
+
+typedef VLCElem RL_VLC_ELEM;
 
 typedef struct VLC {
     int bits;
@@ -52,12 +66,6 @@ typedef struct VLC_MULTI {
     VLC_MULTI_ELEM *table;
     int table_size, table_allocated;
 } VLC_MULTI;
-
-typedef struct RL_VLC_ELEM {
-    int16_t level;
-    int8_t len;
-    uint8_t run;
-} RL_VLC_ELEM;
 
 #define vlc_init(vlc, nb_bits, nb_codes,                \
                  bits, bits_wrap, bits_size,            \

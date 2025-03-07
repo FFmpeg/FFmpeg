@@ -98,7 +98,7 @@ enum CFHDParam {
 
 typedef struct CFHD_RL_VLC_ELEM {
     int16_t level;
-    int8_t len;
+    int8_t len8;
     uint16_t run;
 } CFHD_RL_VLC_ELEM;
 

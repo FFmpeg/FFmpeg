@@ -119,7 +119,7 @@ av_cold void ff_init_2d_vlc_rl(const uint16_t table_vlc[][2], RL_VLC_ELEM rl_vlc
                 level = table_level[code];
             }
         }
-        rl_vlc[i].len   = len;
+        rl_vlc[i].len8  = len;
         rl_vlc[i].level = level;
         rl_vlc[i].run   = run;
     }
