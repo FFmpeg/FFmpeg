@@ -250,7 +250,7 @@ static int rpl_read_header(AVFormatContext *s)
                     // are all unsigned.
                     ast->codecpar->codec_id = AV_CODEC_ID_PCM_U8;
                 } else if (ast->codecpar->bits_per_coded_sample == 4) {
-                    ast->codecpar->codec_id = AV_CODEC_ID_ADPCM_IMA_EA_SEAD;
+                    ast->codecpar->codec_id = AV_CODEC_ID_ADPCM_IMA_ESCAPE;
                 }
                 break;
         }
