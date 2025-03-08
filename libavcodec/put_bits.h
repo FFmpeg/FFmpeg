@@ -39,13 +39,13 @@
 typedef uint64_t BitBuf;
 #define AV_WBBUF AV_WB64
 #define AV_WLBUF AV_WL64
+#define BUF_BITS 64
 #else
 typedef uint32_t BitBuf;
 #define AV_WBBUF AV_WB32
 #define AV_WLBUF AV_WL32
+#define BUF_BITS 32
 #endif
-
-static const int BUF_BITS = 8 * sizeof(BitBuf);
 
 typedef struct PutBitContext {
     BitBuf bit_buf;
@@ -329,12 +329,15 @@ static void av_unused put_bits32(PutBitContext *s, uint32_t value)
 }
 
 /**
- * Write up to 64 bits into a bitstream.
+ * Write up to 63 bits into a bitstream.
  */
-static inline void put_bits64(PutBitContext *s, int n, uint64_t value)
+static inline void put_bits63(PutBitContext *s, int n, uint64_t value)
 {
-    av_assert2((n == 64) || (n < 64 && value < (UINT64_C(1) << n)));
+    av_assert2(n < 64U && value < (UINT64_C(1) << n));
 
+#if BUF_BITS >= 64
+    put_bits_no_assert(s, n, value);
+#else
     if (n < 32)
         put_bits(s, n, value);
     else if (n == 32)
@@ -349,6 +352,19 @@ static inline void put_bits64(PutBitContext *s, int n, uint64_t value)
         put_bits(s, n - 32, hi);
         put_bits32(s, lo);
 #endif
+    }
+#endif
+}
+
+/**
+ * Write up to 64 bits into a bitstream.
+ */
+static inline void put_bits64(PutBitContext *s, int n, uint64_t value)
+{
+    av_assert2((n == 64) || (n < 64 && value < (UINT64_C(1) << n)));
+
+    if (n < 64) {
+        put_bits63(s, n, value);
     } else {
         uint32_t lo = value & 0xffffffff;
         uint32_t hi = value >> 32;
@@ -359,7 +375,6 @@ static inline void put_bits64(PutBitContext *s, int n, uint64_t value)
         put_bits32(s, hi);
         put_bits32(s, lo);
 #endif
-
     }
 }
 
@@ -367,7 +382,7 @@ static inline void put_sbits63(PutBitContext *pb, int n, int64_t value)
 {
     av_assert2(n >= 0 && n < 64);
 
-    put_bits64(pb, n, (uint64_t)(value) & (~(UINT64_MAX << n)));
+    put_bits63(pb, n, (uint64_t)(value) & (~(UINT64_MAX << n)));
 }
 
 /**

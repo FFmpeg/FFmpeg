@@ -319,7 +319,7 @@ static int update_extradata(AVCodecParameters *codecpar)
             return ret;
 
         put_bits32(&pb, get_bits_long(&gb, 32)); // min/max blocksize
-        put_bits64(&pb, 48, get_bits64(&gb, 48)); // min/max framesize
+        put_bits63(&pb, 48, get_bits64(&gb, 48)); // min/max framesize
         put_bits(&pb, 20, get_bits(&gb, 20)); // samplerate
         skip_bits(&gb, 3);
         put_bits(&pb, 3, codecpar->ch_layout.nb_channels - 1);

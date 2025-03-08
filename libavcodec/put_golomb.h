@@ -62,7 +62,7 @@ static inline void set_ue_golomb_long(PutBitContext *pb, uint32_t i)
         put_bits(pb, ff_ue_golomb_len[i], i + 1);
     else {
         int e = av_log2(i + 1);
-        put_bits64(pb, 2 * e + 1, i + 1);
+        put_bits63(pb, 2 * e + 1, i + 1);
     }
 }
 

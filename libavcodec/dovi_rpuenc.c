@@ -334,12 +334,12 @@ static inline void put_ue_coef(PutBitContext *pb, const AVDOVIRpuDataHeader *hdr
     switch (hdr->coef_data_type) {
     case RPU_COEFF_FIXED:
         set_ue_golomb(pb, coef >> hdr->coef_log2_denom);
-        put_bits64(pb, hdr->coef_log2_denom,
+        put_bits63(pb, hdr->coef_log2_denom,
                    coef & ((1LL << hdr->coef_log2_denom) - 1));
         break;
     case RPU_COEFF_FLOAT:
         fpart.f32 = coef / (float) (1LL << hdr->coef_log2_denom);
-        put_bits64(pb, hdr->coef_log2_denom, fpart.u32);
+        put_bits63(pb, hdr->coef_log2_denom, fpart.u32);
         break;
     }
 }
@@ -352,12 +352,12 @@ static inline void put_se_coef(PutBitContext *pb, const AVDOVIRpuDataHeader *hdr
     switch (hdr->coef_data_type) {
     case RPU_COEFF_FIXED:
         set_se_golomb(pb, coef >> hdr->coef_log2_denom);
-        put_bits64(pb, hdr->coef_log2_denom,
+        put_bits63(pb, hdr->coef_log2_denom,
                    coef & ((1LL << hdr->coef_log2_denom) - 1));
         break;
     case RPU_COEFF_FLOAT:
         fpart.f32 = coef / (float) (1LL << hdr->coef_log2_denom);
-        put_bits64(pb, hdr->coef_log2_denom, fpart.u32);
+        put_bits63(pb, hdr->coef_log2_denom, fpart.u32);
         break;
     }
 }

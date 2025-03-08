@@ -201,7 +201,7 @@ static av_always_inline void put_vc2_ue_uint(PutBitContext *pb, uint32_t val)
             pbits |= 0x1;
     }
 
-    put_bits64(pb, bits*2 + 1, (pbits << 1) | 1);
+    put_bits63(pb, 2 * bits + 1, (pbits << 1) | 1);
 }
 
 static av_always_inline int count_vc2_ue_uint(uint32_t val)
