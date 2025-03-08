@@ -189,22 +189,9 @@ typedef struct VC2EncContext {
 static av_always_inline void put_vc2_ue_uint(PutBitContext *pb, uint32_t val)
 {
     int i;
-    int bits = 0;
-    unsigned topbit = 1, maxval = 1;
+    int bits = av_log2(++val);
+    unsigned topbit = 1 << bits;
     uint64_t pbits = 0;
-
-    if (!val++) {
-        put_bits(pb, 1, 1);
-        return;
-    }
-
-    while (val > maxval) {
-        topbit <<= 1;
-        maxval <<= 1;
-        maxval |=  1;
-    }
-
-    bits = ff_log2(topbit);
 
     for (i = 0; i < bits; i++) {
         topbit >>= 1;
@@ -219,18 +206,7 @@ static av_always_inline void put_vc2_ue_uint(PutBitContext *pb, uint32_t val)
 
 static av_always_inline int count_vc2_ue_uint(uint32_t val)
 {
-    int topbit = 1, maxval = 1;
-
-    if (!val++)
-        return 1;
-
-    while (val > maxval) {
-        topbit <<= 1;
-        maxval <<= 1;
-        maxval |=  1;
-    }
-
-    return ff_log2(topbit)*2 + 1;
+    return 2 * av_log2(val + 1) + 1;
 }
 
 /* VC-2 10.4 - parse_info() */
