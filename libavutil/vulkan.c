@@ -1025,41 +1025,6 @@ int ff_vk_create_buf(FFVulkanContext *s, FFVkBuffer *buf, size_t size,
     return 0;
 }
 
-static void destroy_avvkbuf(void *opaque, uint8_t *data)
-{
-    FFVulkanContext *s = opaque;
-    FFVkBuffer *buf = (FFVkBuffer *)data;
-    ff_vk_free_buf(s, buf);
-    av_free(buf);
-}
-
-int ff_vk_create_avbuf(FFVulkanContext *s, AVBufferRef **ref, size_t size,
-                       void *pNext, void *alloc_pNext,
-                       VkBufferUsageFlags usage, VkMemoryPropertyFlagBits flags)
-{
-    int err;
-    AVBufferRef *buf;
-    FFVkBuffer *vkb = av_mallocz(sizeof(*vkb));
-    if (!vkb)
-        return AVERROR(ENOMEM);
-
-    err = ff_vk_create_buf(s, vkb, size, pNext, alloc_pNext, usage, flags);
-    if (err < 0) {
-        av_free(vkb);
-        return err;
-    }
-
-    buf = av_buffer_create((uint8_t *)vkb, sizeof(*vkb), destroy_avvkbuf, s, 0);
-    if (!buf) {
-        destroy_avvkbuf(s, (uint8_t *)vkb);
-        return AVERROR(ENOMEM);
-    }
-
-    *ref = buf;
-
-    return 0;
-}
-
 int ff_vk_map_buffers(FFVulkanContext *s, FFVkBuffer **buf, uint8_t *mem[],
                       int nb_buffers, int invalidate)
 {
