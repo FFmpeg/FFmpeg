@@ -37,12 +37,12 @@ RENAME(encode_line)(FFV1Context *f, FFV1SliceContext *sc,
 
     if (ac != AC_GOLOMB_RICE) {
         if (c->bytestream_end - c->bytestream < w * 35) {
-            av_log(logctx, AV_LOG_ERROR, "encoded frame too large\n");
+            av_log(logctx, AV_LOG_ERROR, "encoded Range Coder frame too large\n");
             return AVERROR_INVALIDDATA;
         }
     } else {
         if (put_bytes_left(&sc->pb, 0) < w * 4) {
-            av_log(logctx, AV_LOG_ERROR, "encoded frame too large\n");
+            av_log(logctx, AV_LOG_ERROR, "encoded Golomb Rice frame too large\n");
             return AVERROR_INVALIDDATA;
         }
     }
