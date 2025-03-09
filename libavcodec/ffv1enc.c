@@ -1249,6 +1249,8 @@ size_t ff_ffv1_encode_buffer_size(AVCodecContext *avctx)
     maxsize += f->slice_count * 800; //for slice header
     if (f->version > 3) {
         maxsize *= f->bits_per_raw_sample + 1;
+        if (f->flt) //remap table
+            maxsize += f->slice_count * 70000 * (1 + 2*f->chroma_planes + f->transparency);
     } else {
         maxsize += f->slice_count * 2 * (avctx->width + avctx->height); //for bug with slices that code some pixels more than once
         maxsize *= 8*(2*f->bits_per_raw_sample + 5);
