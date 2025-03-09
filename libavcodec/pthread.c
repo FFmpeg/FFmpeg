@@ -29,13 +29,13 @@
  * @see doc/multithreading.txt
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/thread.h"
 
 #include "avcodec.h"
 #include "avcodec_internal.h"
 #include "codec_internal.h"
 #include "pthread_internal.h"
-#include "thread.h"
 
 /**
  * Set the threading algorithms used.
@@ -46,7 +46,7 @@
  *
  * @param avctx The context.
  */
-static void validate_thread_parameters(AVCodecContext *avctx)
+static av_cold void validate_thread_parameters(AVCodecContext *avctx)
 {
     int frame_threading_supported = (avctx->codec->capabilities & AV_CODEC_CAP_FRAME_THREADS)
                                 && !(avctx->flags  & AV_CODEC_FLAG_LOW_DELAY)
@@ -69,7 +69,7 @@ static void validate_thread_parameters(AVCodecContext *avctx)
                avctx->thread_count, MAX_AUTO_THREADS);
 }
 
-int ff_thread_init(AVCodecContext *avctx)
+av_cold int ff_thread_init(AVCodecContext *avctx)
 {
     validate_thread_parameters(avctx);
 
@@ -81,7 +81,7 @@ int ff_thread_init(AVCodecContext *avctx)
     return 0;
 }
 
-void ff_thread_free(AVCodecContext *avctx)
+av_cold void ff_thread_free(AVCodecContext *avctx)
 {
     if (avctx->active_thread_type&FF_THREAD_FRAME)
         ff_frame_thread_free(avctx, avctx->thread_count);

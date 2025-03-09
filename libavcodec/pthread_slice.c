@@ -22,19 +22,16 @@
  * @see doc/multithreading.txt
  */
 
-#include "config.h"
-
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "internal.h"
 #include "pthread_internal.h"
 #include "thread.h"
 
-#include "libavutil/avassert.h"
-#include "libavutil/common.h"
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
+#include "libavutil/macros.h"
 #include "libavutil/mem.h"
-#include "libavutil/thread.h"
 #include "libavutil/slicethread.h"
 
 typedef int (action_func)(AVCodecContext *c, void *arg);
@@ -69,7 +66,7 @@ static void worker_func(void *priv, int jobnr, int threadnr, int nb_jobs, int nb
         c->rets[jobnr] = ret;
 }
 
-void ff_slice_thread_free(AVCodecContext *avctx)
+av_cold void ff_slice_thread_free(AVCodecContext *avctx)
 {
     SliceThreadContext *c = avctx->internal->thread_ctx;
 
@@ -112,7 +109,7 @@ int ff_slice_thread_execute_with_mainfunc(AVCodecContext *avctx, action_func2* f
     return thread_execute(avctx, NULL, arg, ret, job_count, 0);
 }
 
-int ff_slice_thread_init(AVCodecContext *avctx)
+av_cold int ff_slice_thread_init(AVCodecContext *avctx)
 {
     SliceThreadContext *c;
     int thread_count = avctx->thread_count;
