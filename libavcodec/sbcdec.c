@@ -229,10 +229,10 @@ static inline void sbc_synthesize_four(struct sbc_decoder_state *state,
 
         /* Distribute the new matrix value to the shifted position */
         v[offset[i]] =
-            (int)( (unsigned)ff_synmatrix4[i][0] * frame->sb_sample[blk][ch][0] +
-                   (unsigned)ff_synmatrix4[i][1] * frame->sb_sample[blk][ch][1] +
-                   (unsigned)ff_synmatrix4[i][2] * frame->sb_sample[blk][ch][2] +
-                   (unsigned)ff_synmatrix4[i][3] * frame->sb_sample[blk][ch][3] ) >> 15;
+            (int)( (unsigned)synmatrix4[i][0] * frame->sb_sample[blk][ch][0] +
+                   (unsigned)synmatrix4[i][1] * frame->sb_sample[blk][ch][1] +
+                   (unsigned)synmatrix4[i][2] * frame->sb_sample[blk][ch][2] +
+                   (unsigned)synmatrix4[i][3] * frame->sb_sample[blk][ch][3] ) >> 15;
     }
 
     /* Compute the samples */
@@ -241,16 +241,16 @@ static inline void sbc_synthesize_four(struct sbc_decoder_state *state,
 
         /* Store in output, Q0 */
         AV_WN16A(&output_frame->data[ch][blk * 8 + i * 2], av_clip_int16(
-         (int)( (unsigned)v[offset[i] + 0] * ff_sbc_proto_4_40m0[idx + 0] +
-                (unsigned)v[offset[k] + 1] * ff_sbc_proto_4_40m1[idx + 0] +
-                (unsigned)v[offset[i] + 2] * ff_sbc_proto_4_40m0[idx + 1] +
-                (unsigned)v[offset[k] + 3] * ff_sbc_proto_4_40m1[idx + 1] +
-                (unsigned)v[offset[i] + 4] * ff_sbc_proto_4_40m0[idx + 2] +
-                (unsigned)v[offset[k] + 5] * ff_sbc_proto_4_40m1[idx + 2] +
-                (unsigned)v[offset[i] + 6] * ff_sbc_proto_4_40m0[idx + 3] +
-                (unsigned)v[offset[k] + 7] * ff_sbc_proto_4_40m1[idx + 3] +
-                (unsigned)v[offset[i] + 8] * ff_sbc_proto_4_40m0[idx + 4] +
-                (unsigned)v[offset[k] + 9] * ff_sbc_proto_4_40m1[idx + 4] ) >> 15));
+         (int)( (unsigned)v[offset[i] + 0] * sbc_proto_4_40m0[idx + 0] +
+                (unsigned)v[offset[k] + 1] * sbc_proto_4_40m1[idx + 0] +
+                (unsigned)v[offset[i] + 2] * sbc_proto_4_40m0[idx + 1] +
+                (unsigned)v[offset[k] + 3] * sbc_proto_4_40m1[idx + 1] +
+                (unsigned)v[offset[i] + 4] * sbc_proto_4_40m0[idx + 2] +
+                (unsigned)v[offset[k] + 5] * sbc_proto_4_40m1[idx + 2] +
+                (unsigned)v[offset[i] + 6] * sbc_proto_4_40m0[idx + 3] +
+                (unsigned)v[offset[k] + 7] * sbc_proto_4_40m1[idx + 3] +
+                (unsigned)v[offset[i] + 8] * sbc_proto_4_40m0[idx + 4] +
+                (unsigned)v[offset[k] + 9] * sbc_proto_4_40m1[idx + 4] ) >> 15));
     }
 }
 
@@ -272,14 +272,14 @@ static inline void sbc_synthesize_eight(struct sbc_decoder_state *state,
 
         /* Distribute the new matrix value to the shifted position */
         v[offset[i]] =
-             (int)( (unsigned)ff_synmatrix8[i][0] * frame->sb_sample[blk][ch][0] +
-                    (unsigned)ff_synmatrix8[i][1] * frame->sb_sample[blk][ch][1] +
-                    (unsigned)ff_synmatrix8[i][2] * frame->sb_sample[blk][ch][2] +
-                    (unsigned)ff_synmatrix8[i][3] * frame->sb_sample[blk][ch][3] +
-                    (unsigned)ff_synmatrix8[i][4] * frame->sb_sample[blk][ch][4] +
-                    (unsigned)ff_synmatrix8[i][5] * frame->sb_sample[blk][ch][5] +
-                    (unsigned)ff_synmatrix8[i][6] * frame->sb_sample[blk][ch][6] +
-                    (unsigned)ff_synmatrix8[i][7] * frame->sb_sample[blk][ch][7] ) >> 15;
+             (int)( (unsigned)synmatrix8[i][0] * frame->sb_sample[blk][ch][0] +
+                    (unsigned)synmatrix8[i][1] * frame->sb_sample[blk][ch][1] +
+                    (unsigned)synmatrix8[i][2] * frame->sb_sample[blk][ch][2] +
+                    (unsigned)synmatrix8[i][3] * frame->sb_sample[blk][ch][3] +
+                    (unsigned)synmatrix8[i][4] * frame->sb_sample[blk][ch][4] +
+                    (unsigned)synmatrix8[i][5] * frame->sb_sample[blk][ch][5] +
+                    (unsigned)synmatrix8[i][6] * frame->sb_sample[blk][ch][6] +
+                    (unsigned)synmatrix8[i][7] * frame->sb_sample[blk][ch][7] ) >> 15;
     }
 
     /* Compute the samples */
@@ -288,16 +288,16 @@ static inline void sbc_synthesize_eight(struct sbc_decoder_state *state,
 
         /* Store in output, Q0 */
         AV_WN16A(&output_frame->data[ch][blk * 16 + i * 2], av_clip_int16(
-         (int)( (unsigned)v[offset[i] + 0] * ff_sbc_proto_8_80m0[idx + 0] +
-                (unsigned)v[offset[k] + 1] * ff_sbc_proto_8_80m1[idx + 0] +
-                (unsigned)v[offset[i] + 2] * ff_sbc_proto_8_80m0[idx + 1] +
-                (unsigned)v[offset[k] + 3] * ff_sbc_proto_8_80m1[idx + 1] +
-                (unsigned)v[offset[i] + 4] * ff_sbc_proto_8_80m0[idx + 2] +
-                (unsigned)v[offset[k] + 5] * ff_sbc_proto_8_80m1[idx + 2] +
-                (unsigned)v[offset[i] + 6] * ff_sbc_proto_8_80m0[idx + 3] +
-                (unsigned)v[offset[k] + 7] * ff_sbc_proto_8_80m1[idx + 3] +
-                (unsigned)v[offset[i] + 8] * ff_sbc_proto_8_80m0[idx + 4] +
-                (unsigned)v[offset[k] + 9] * ff_sbc_proto_8_80m1[idx + 4] ) >> 15));
+         (int)( (unsigned)v[offset[i] + 0] * sbc_proto_8_80m0[idx + 0] +
+                (unsigned)v[offset[k] + 1] * sbc_proto_8_80m1[idx + 0] +
+                (unsigned)v[offset[i] + 2] * sbc_proto_8_80m0[idx + 1] +
+                (unsigned)v[offset[k] + 3] * sbc_proto_8_80m1[idx + 1] +
+                (unsigned)v[offset[i] + 4] * sbc_proto_8_80m0[idx + 2] +
+                (unsigned)v[offset[k] + 5] * sbc_proto_8_80m1[idx + 2] +
+                (unsigned)v[offset[i] + 6] * sbc_proto_8_80m0[idx + 3] +
+                (unsigned)v[offset[k] + 7] * sbc_proto_8_80m1[idx + 3] +
+                (unsigned)v[offset[i] + 8] * sbc_proto_8_80m0[idx + 4] +
+                (unsigned)v[offset[k] + 9] * sbc_proto_8_80m1[idx + 4] ) >> 15));
     }
 }
 
