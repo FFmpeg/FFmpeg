@@ -2039,7 +2039,7 @@ redo_frame:
 
     update_last_header_values(s);
 
-    ff_snow_release_buffer(avctx);
+    av_frame_unref(s->last_picture[s->max_ref_frames - 1]);
 
     s->current_picture->pict_type = pic->pict_type;
     s->current_picture->quality = pic->quality;

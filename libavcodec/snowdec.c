@@ -781,7 +781,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
 
     emms_c();
 
-    ff_snow_release_buffer(avctx);
+    av_frame_unref(s->last_picture[s->max_ref_frames - 1]);
 
     if(!(s->avctx->debug&2048))
         res = av_frame_ref(picture, s->current_picture);

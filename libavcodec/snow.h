@@ -181,7 +181,6 @@ extern int ff_scale_mv_ref[MAX_REF_FRAMES][MAX_REF_FRAMES];
 int ff_snow_common_init(AVCodecContext *avctx);
 int ff_snow_common_init_after_header(AVCodecContext *avctx);
 void ff_snow_common_end(SnowContext *s);
-void ff_snow_release_buffer(AVCodecContext *avctx);
 void ff_snow_reset_contexts(SnowContext *s);
 int ff_snow_alloc_blocks(SnowContext *s);
 int ff_snow_frames_prepare(SnowContext *s);

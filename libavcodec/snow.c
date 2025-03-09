@@ -511,26 +511,17 @@ int ff_snow_common_init_after_header(AVCodecContext *avctx) {
     return 0;
 }
 
-void ff_snow_release_buffer(AVCodecContext *avctx)
-{
-    SnowContext *s = avctx->priv_data;
-
-    if(s->last_picture[s->max_ref_frames-1]->data[0]){
-        av_frame_unref(s->last_picture[s->max_ref_frames-1]);
-    }
-}
-
 int ff_snow_frames_prepare(SnowContext *s)
 {
    AVFrame *tmp;
-
-    ff_snow_release_buffer(s->avctx);
 
     tmp= s->last_picture[s->max_ref_frames-1];
     for (int i = s->max_ref_frames - 1; i > 0; i--)
         s->last_picture[i] = s->last_picture[i-1];
     s->last_picture[0] = s->current_picture;
     s->current_picture = tmp;
+
+    av_frame_unref(s->current_picture);
 
     if(s->keyframe){
         s->ref_frames= 0;
