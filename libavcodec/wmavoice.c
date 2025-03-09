@@ -199,7 +199,7 @@ typedef struct WMAVoiceContext {
                                   ///< to #wmavoice_decode_packet() (since
                                   ///< they're part of the previous superframe)
 
-    uint8_t sframe_cache[SFRAME_CACHE_MAXSIZE + AV_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t sframe_cache[SFRAME_CACHE_MAXSIZE + AV_INPUT_BUFFER_PADDING_SIZE]; ///<
                                   ///< cache for superframe data split over
                                   ///< multiple packets
     int sframe_cache_size;        ///< set to >0 if we have data from an
@@ -249,10 +249,9 @@ typedef struct WMAVoiceContext {
                                   ///< only used for comfort noise in #pRNG()
     int nb_superframes;           ///< number of superframes in current packet
     float gain_pred_err[6];       ///< cache for gain prediction
-    float excitation_history[MAX_SIGNAL_HISTORY];
-                                  ///< cache of the signal of previous
-                                  ///< superframes, used as a history for
-                                  ///< signal generation
+    float excitation_history[MAX_SIGNAL_HISTORY]; ///< cache of the signal of
+                                  ///< previous superframes, used as a history
+                                  ///< for signal generation
     float synth_history[MAX_LSPS]; ///< see #excitation_history
     /**
      * @}
@@ -272,18 +271,16 @@ typedef struct WMAVoiceContext {
     float postfilter_agc;         ///< gain control memory, used in
                                   ///< #adaptive_gain_control()
     float dcf_mem[2];             ///< DC filter history
+    /// zero filter output (i.e. excitation) by postfilter
     float zero_exc_pf[MAX_SIGNAL_HISTORY + MAX_SFRAMESIZE];
-                                  ///< zero filter output (i.e. excitation)
-                                  ///< by postfilter
     float denoise_filter_cache[MAX_FRAMESIZE];
     int   denoise_filter_cache_size; ///< samples in #denoise_filter_cache
+    /// aligned buffer for LPC tilting
     DECLARE_ALIGNED(32, float, tilted_lpcs_pf)[0x82];
-                                  ///< aligned buffer for LPC tilting
+    /// aligned buffer for denoise coefficients
     DECLARE_ALIGNED(32, float, denoise_coeffs_pf)[0x82];
-                                  ///< aligned buffer for denoise coefficients
+    /// aligned buffer for postfilter speech synthesis
     DECLARE_ALIGNED(32, float, synth_filter_out_buf)[0x80 + MAX_LSPS_ALIGN16];
-                                  ///< aligned buffer for postfilter speech
-                                  ///< synthesis
     /**
      * @}
      */

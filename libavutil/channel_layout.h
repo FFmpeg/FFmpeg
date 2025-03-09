@@ -45,7 +45,7 @@
  */
 
 enum AVChannel {
-    ///< Invalid channel index
+    /// Invalid channel index
     AV_CHAN_NONE = -1,
     AV_CHAN_FRONT_LEFT,
     AV_CHAN_FRONT_RIGHT,

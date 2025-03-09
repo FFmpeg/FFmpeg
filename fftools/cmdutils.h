@@ -319,7 +319,7 @@ typedef struct Option {
 } Option;
 
 typedef struct OptionGroupDef {
-    /**< group name */
+    /** group name */
     const char *name;
     /**
      * Option to be used as group separator. Can be NULL for groups which

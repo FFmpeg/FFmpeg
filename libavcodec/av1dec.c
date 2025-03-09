@@ -41,7 +41,7 @@
 #include "progressframe.h"
 #include "libavutil/refstruct.h"
 
-/**< same with Div_Lut defined in spec 7.11.3.7 */
+/** same with Div_Lut defined in spec 7.11.3.7 */
 static const uint16_t div_lut[AV1_DIV_LUT_NUM] = {
   16384, 16320, 16257, 16194, 16132, 16070, 16009, 15948, 15888, 15828, 15768,
   15709, 15650, 15592, 15534, 15477, 15420, 15364, 15308, 15252, 15197, 15142,

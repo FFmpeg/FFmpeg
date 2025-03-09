@@ -293,7 +293,7 @@ ff_rdt_parse_header(const uint8_t *buf, int len,
     return consumed + (get_bits_count(&gb) >> 3);
 }
 
-/**< return 0 on packet, no more left, 1 on packet, 1 on partial packet... */
+/** return 0 on packet, no more left, 1 on packet, 1 on partial packet... */
 static int
 rdt_parse_packet (AVFormatContext *ctx, PayloadContext *rdt, AVStream *st,
                   AVPacket *pkt, uint32_t *timestamp,

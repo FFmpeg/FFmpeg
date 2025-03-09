@@ -25,7 +25,7 @@
 #include "avcodec.h"
 #include "me_cmp.h"
 
-///< current MB is the first after a resync marker
+/// current MB is the first after a resync marker
 #define VP_START               1
 #define ER_AC_ERROR            2
 #define ER_DC_ERROR            4

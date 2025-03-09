@@ -207,9 +207,9 @@ typedef struct RefPicListTab {
 typedef struct SliceHeader {
     unsigned int pps_id;
 
-    ///< address (in raster order) of the first block in the current slice segment
+    /// address (in raster order) of the first block in the current slice segment
     unsigned int   slice_segment_addr;
-    ///< address (in raster order) of the first block in the current slice
+    /// address (in raster order) of the first block in the current slice
     unsigned int   slice_addr;
 
     enum HEVCSliceType slice_type;
@@ -223,7 +223,7 @@ typedef struct SliceHeader {
     uint8_t colour_plane_id;
     uint8_t inter_layer_pred;
 
-    ///< RPS coded in the slice header itself is stored here
+    /// RPS coded in the slice header itself is stored here
     int short_term_ref_pic_set_sps_flag;
     int short_term_ref_pic_set_size;
     ShortTermRPS slice_rps;
@@ -513,7 +513,7 @@ typedef struct HEVCContext {
     HEVCSEI sei;
     struct AVMD5 *md5_ctx;
 
-    ///< candidate references for the current frame
+    /// candidate references for the current frame
     RefPicList rps[NB_RPS_TYPE];
 
     const HEVCVPS *vps; ///< RefStruct reference

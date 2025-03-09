@@ -160,7 +160,7 @@ typedef struct InputFilterPriv {
         int64_t last_pts;
         int64_t end_pts;
 
-        ///< marks if sub2video_update should force an initialization
+        /// marks if sub2video_update should force an initialization
         unsigned int initialize;
     } sub2video;
 } InputFilterPriv;

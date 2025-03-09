@@ -346,7 +346,7 @@ typedef struct HEVCSPS {
     int sps_palette_predictor_initializer[3][HEVC_MAX_PALETTE_PREDICTOR_SIZE];
     int motion_vector_resolution_control_idc;
 
-    ///< coded frame dimension in various units
+    /// coded frame dimension in various units
     int width;
     int height;
     int ctb_width;

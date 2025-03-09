@@ -110,9 +110,9 @@ typedef struct FFFilterContext {
      */
     unsigned ready;
 
-    ///< parsed expression
+    /// parsed expression
     struct AVExpr *enable;
-    ///< variable values for the enable expression
+    /// variable values for the enable expression
     double *var_values;
 
     struct AVFilterCommand *command_queue;

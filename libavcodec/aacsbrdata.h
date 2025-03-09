@@ -41,7 +41,7 @@ static const int8_t sbr_offset[6][16] = {
     {-2, -1,  0,  1,  2,  3,  4,  5,  6,  7,  9, 11, 13, 16, 20, 24}, // 64000 Hz <  fs_sbr
 };
 
-///< window coefficients for analysis/synthesis QMF banks
+/// window coefficients for analysis/synthesis QMF banks
 static const DECLARE_ALIGNED(32, INTFLOAT, sbr_qmf_window_ds)[320] = {
      Q31( 0.0000000000f), Q31(-0.0005617692f),
      Q31(-0.0004875227f), Q31(-0.0005040714f),
