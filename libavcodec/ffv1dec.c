@@ -95,7 +95,7 @@ static int is_input_end(RangeCoder *c, GetBitContext *gb, int ac)
 static int decode_plane(FFV1Context *f, FFV1SliceContext *sc,
                         GetBitContext *gb,
                         uint8_t *src, int w, int h, int stride, int plane_index,
-                        int pixel_stride, int ac)
+                        int remap_index, int pixel_stride, int ac)
 {
     int x, y;
     int16_t *sample[2];
@@ -119,12 +119,18 @@ static int decode_plane(FFV1Context *f, FFV1SliceContext *sc,
             int ret = decode_line(f, sc, gb, w, sample, plane_index, 8, ac);
             if (ret < 0)
                 return ret;
+            if (sc->remap)
+                for (x = 0; x < w; x++)
+                    sample[1][x] = sc->fltmap[remap_index][sample[1][x]];
             for (x = 0; x < w; x++)
                 src[x*pixel_stride + stride * y] = sample[1][x];
         } else {
             int ret = decode_line(f, sc, gb, w, sample, plane_index, f->avctx->bits_per_raw_sample, ac);
             if (ret < 0)
                 return ret;
+            if (sc->remap)
+                for (x = 0; x < w; x++)
+                    sample[1][x] = sc->fltmap[remap_index][sample[1][x]];
             if (f->packed_at_lsb) {
                 for (x = 0; x < w; x++) {
                     ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x];
@@ -341,17 +347,17 @@ static int decode_slice(AVCodecContext *c, void *arg)
         const int chroma_height = AV_CEIL_RSHIFT(height, f->chroma_v_shift);
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
-        decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1, ac);
+        decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 0, 1, ac);
 
         if (f->chroma_planes) {
-            decode_plane(f, sc, &gb, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1, ac);
-            decode_plane(f, sc, &gb, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1, ac);
+            decode_plane(f, sc, &gb, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1, 1, ac);
+            decode_plane(f, sc, &gb, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 2, 1, ac);
         }
         if (f->transparency)
-            decode_plane(f, sc, &gb, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], (f->version >= 4 && !f->chroma_planes) ? 1 : 2, 1, ac);
+            decode_plane(f, sc, &gb, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], (f->version >= 4 && !f->chroma_planes) ? 1 : 2, 2, 1, ac);
     } else if (f->colorspace == 0) {
-         decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0]    , width, height, p->linesize[0], 0, 2, ac);
-         decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0] + 1, width, height, p->linesize[0], 1, 2, ac);
+         decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0]    , width, height, p->linesize[0], 0, 0, 2, ac);
+         decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0] + 1, width, height, p->linesize[0], 1, 1, 2, ac);
     } else if (f->use32bit) {
         uint8_t *planes[4] = { p->data[0] + ps * x + y * p->linesize[0],
                                p->data[1] + ps * x + y * p->linesize[1],

@@ -272,7 +272,7 @@ static inline void put_vlc_symbol(PutBitContext *pb, VlcState *const state,
 
 static int encode_plane(FFV1Context *f, FFV1SliceContext *sc,
                         const uint8_t *src, int w, int h,
-                         int stride, int plane_index, int pixel_stride, int ac)
+                        int stride, int plane_index, int remap_index, int pixel_stride, int ac)
 {
     int x, y, i, ret;
     const int pass1 = !!(f->avctx->flags & AV_CODEC_FLAG_PASS1);
@@ -288,9 +288,14 @@ static int encode_plane(FFV1Context *f, FFV1SliceContext *sc,
 
         sample[0][-1]= sample[1][0  ];
         sample[1][ w]= sample[1][w-1];
+
         if (f->bits_per_raw_sample <= 8) {
             for (x = 0; x < w; x++)
                 sample[0][x] = src[x * pixel_stride + stride * y];
+            if (sc->remap)
+                for (x = 0; x < w; x++)
+                    sample[0][x] = sc->fltmap[remap_index][ sample[0][x] ];
+
             if((ret = encode_line(f, sc, f->avctx, w, sample, plane_index, 8, ac, pass1)) < 0)
                 return ret;
         } else {
@@ -303,11 +308,39 @@ static int encode_plane(FFV1Context *f, FFV1SliceContext *sc,
                     sample[0][x] = ((uint16_t*)(src + stride*y))[x] >> (16 - f->bits_per_raw_sample);
                 }
             }
+            if (sc->remap)
+                for (x = 0; x < w; x++)
+                    sample[0][x] = sc->fltmap[remap_index][ (uint16_t)sample[0][x] ];
+
             if((ret = encode_line(f, sc, f->avctx, w, sample, plane_index, f->bits_per_raw_sample, ac, pass1)) < 0)
                 return ret;
         }
     }
     return 0;
+}
+
+static void load_plane(FFV1Context *f, FFV1SliceContext *sc,
+                      const uint8_t *src, int w, int h,
+                      int stride, int remap_index, int pixel_stride)
+{
+    int x, y;
+
+    memset(sc->fltmap[remap_index], 0, sizeof(sc->fltmap[remap_index]));
+
+    for (y = 0; y < h; y++) {
+        if (f->bits_per_raw_sample <= 8) {
+            for (x = 0; x < w; x++)
+                sc->fltmap[remap_index][ src[x * pixel_stride + stride * y] ] = 1;
+        } else {
+            if (f->packed_at_lsb) {
+                for (x = 0; x < w; x++)
+                    sc->fltmap[remap_index][ ((uint16_t*)(src + stride*y))[x] ] = 1;
+            } else {
+                for (x = 0; x < w; x++)
+                    sc->fltmap[remap_index][ ((uint16_t*)(src + stride*y))[x] >> (16 - f->bits_per_raw_sample) ] = 1;
+            }
+        }
+    }
 }
 
 static void write_quant_table(RangeCoder *c, int16_t *quant_table)
@@ -1158,6 +1191,8 @@ static int encode_slice(AVCodecContext *c, void *arg)
     const int ps     = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step;
     int ret;
     RangeCoder c_bak = sc->c;
+    const int chroma_width  = AV_CEIL_RSHIFT(width,  f->chroma_h_shift);
+    const int chroma_height = AV_CEIL_RSHIFT(height, f->chroma_v_shift);
     const uint8_t *planes[4] = {p->data[0] + ps*x + y*p->linesize[0],
                                 p->data[1] ? p->data[1] + ps*x + y*p->linesize[1] : NULL,
                                 p->data[2] ? p->data[2] + ps*x + y*p->linesize[2] : NULL,
@@ -1180,8 +1215,24 @@ retry:
     }
 
     if (sc->remap) {
-        if (f->colorspace == 0) {
-            av_assert0(0);
+        if (f->colorspace == 0 && c->pix_fmt != AV_PIX_FMT_YA8) {
+            const int cx            = x >> f->chroma_h_shift;
+            const int cy            = y >> f->chroma_v_shift;
+
+            //TODO decide on the order for the encoded remaps and loads. with golomb rice it
+            // easier to have all range coded ones together, otherwise it may be nicer to handle each plane as a whole?
+
+            load_plane(f, sc, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1);
+
+            if (f->chroma_planes) {
+                load_plane(f, sc, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
+                load_plane(f, sc, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 2, 1);
+            }
+            if (f->transparency)
+                load_plane(f, sc, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 3, 1);
+        } else if (c->pix_fmt == AV_PIX_FMT_YA8) {
+            load_plane(f, sc, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2);
+            load_plane(f, sc, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 2);
         } else if (f->use32bit) {
             load_rgb_frame32(f, sc, planes, width, height, p->linesize);
         } else
@@ -1198,22 +1249,20 @@ retry:
     }
 
     if (f->colorspace == 0 && c->pix_fmt != AV_PIX_FMT_YA8) {
-        const int chroma_width  = AV_CEIL_RSHIFT(width,  f->chroma_h_shift);
-        const int chroma_height = AV_CEIL_RSHIFT(height, f->chroma_v_shift);
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
 
-        ret = encode_plane(f, sc, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1, ac);
+        ret = encode_plane(f, sc, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 0, 1, ac);
 
         if (f->chroma_planes) {
-            ret |= encode_plane(f, sc, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1, ac);
-            ret |= encode_plane(f, sc, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1, ac);
+            ret |= encode_plane(f, sc, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1, 1, ac);
+            ret |= encode_plane(f, sc, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 2, 1, ac);
         }
         if (f->transparency)
-            ret |= encode_plane(f, sc, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2, 1, ac);
+            ret |= encode_plane(f, sc, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2, 3, 1, ac);
     } else if (c->pix_fmt == AV_PIX_FMT_YA8) {
-        ret  = encode_plane(f, sc, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2, ac);
-        ret |= encode_plane(f, sc, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 2, ac);
+        ret  = encode_plane(f, sc, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 0, 2, ac);
+        ret |= encode_plane(f, sc, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 1, 2, ac);
     } else if (f->use32bit) {
         ret = encode_rgb_frame32(f, sc, planes, width, height, p->linesize, ac);
     } else {
