@@ -243,6 +243,37 @@ static void slice_set_damaged(FFV1Context *f, FFV1SliceContext *sc)
         f->frame_damaged = 1;
 }
 
+static int decode_remap(FFV1Context *f, FFV1SliceContext *sc)
+{
+    int transparency = f->transparency;
+
+    for (int p= 0; p<3 + transparency; p++) {
+        int j = 0;
+        int lu = 0;
+        uint8_t state[2][32];
+        memset(state, 128, sizeof(state));
+
+        for (int i= 0; i<65536; i++) {
+            int run = get_symbol_inline(&sc->c, state[lu], 0);
+            if (run > 65536U - i)
+                return AVERROR_INVALIDDATA;
+            if (lu) {
+                lu ^= !run;
+                while (run--) {
+                    sc->fltmap[p][j++] = i ^ ((i&0x8000) ? 0 : 0x7FFF);
+                    i++;
+                }
+            } else {
+                i += run;
+                if (i != 65536)
+                    sc->fltmap[p][j++] = i ^ ((i&0x8000) ? 0 : 0x7FFF);
+                lu ^= !run;
+            }
+        }
+    }
+    return 0;
+}
+
 static int decode_slice(AVCodecContext *c, void *arg)
 {
     FFV1Context *f    = c->priv_data;
@@ -284,6 +315,12 @@ static int decode_slice(AVCodecContext *c, void *arg)
     height = sc->slice_height;
     x      = sc->slice_x;
     y      = sc->slice_y;
+
+    if (sc->remap) {
+        ret = decode_remap(f, sc);
+        if (ret < 0)
+            return ret;
+    }
 
     if (ac == AC_GOLOMB_RICE) {
         if (f->combined_version >= 0x30002)

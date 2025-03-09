@@ -1101,6 +1101,36 @@ static void choose_rct_params(const FFV1Context *f, FFV1SliceContext *sc,
     sc->slice_rct_ry_coef = rct_y_coeff[best][0];
 }
 
+static void encode_remap(FFV1Context *f, FFV1SliceContext *sc)
+{
+    int transparency = f->transparency;
+
+    for (int p= 0; p<3 + transparency; p++) {
+        int j = 0;
+        int lu = 0;
+        uint8_t state[2][32];
+        int run = 0;
+        memset(state, 128, sizeof(state));
+        for (int i= 0; i<65536; i++) {
+            int ri = i ^ ((i&0x8000) ? 0 : 0x7FFF);
+            int u = sc->fltmap[p][ri];
+            sc->fltmap[p][ri] = j;
+            j+= u;
+
+            if (lu == u) {
+                run ++;
+            } else {
+                put_symbol_inline(&sc->c, state[lu], run, 0, NULL, NULL);
+                if (run == 0)
+                    lu = u;
+                run = 0;
+            }
+        }
+        if (run)
+            put_symbol(&sc->c, state[lu], run, 0);
+    }
+}
+
 static int encode_slice(AVCodecContext *c, void *arg)
 {
     FFV1SliceContext *sc = arg;
@@ -1133,6 +1163,18 @@ retry:
     if (f->version > 2) {
         encode_slice_header(f, sc);
     }
+
+    if (sc->remap) {
+        if (f->colorspace == 0) {
+            av_assert0(0);
+        } else if (f->use32bit) {
+            load_rgb_frame32(f, sc, planes, width, height, p->linesize);
+        } else
+            load_rgb_frame  (f, sc, planes, width, height, p->linesize);
+
+        encode_remap(f, sc);
+    }
+
     if (ac == AC_GOLOMB_RICE) {
         sc->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate(&sc->c, f->version > 2) : 0;
         init_put_bits(&sc->pb,
