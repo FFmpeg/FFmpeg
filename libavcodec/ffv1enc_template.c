@@ -129,12 +129,11 @@ RENAME(encode_line)(FFV1Context *f, FFV1SliceContext *sc,
 
 static int RENAME(encode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
                                     const uint8_t *src[4],
-                                    int w, int h, const int stride[4])
+                                    int w, int h, const int stride[4], int ac)
 {
     int x, y, p, i;
     const int ring_size = f->context_model ? 3 : 2;
     TYPE *sample[4][3];
-    const int ac = f->ac;
     const int pass1 = !!(f->avctx->flags & AV_CODEC_FLAG_PASS1);
     int lbd    = f->bits_per_raw_sample <= 8;
     int packed = !src[1];

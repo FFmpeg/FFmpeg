@@ -419,7 +419,7 @@ av_cold int ff_ffv1_write_extradata(AVCodecContext *avctx)
         if (f->version == 3) {
             f->micro_version = 4;
         } else if (f->version == 4)
-            f->micro_version = 4;
+            f->micro_version = 5;
         f->combined_version += f->micro_version;
         put_symbol(&c, state, f->micro_version, 0);
     }
@@ -1158,9 +1158,9 @@ retry:
         ret  = encode_plane(f, sc, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2, ac);
         ret |= encode_plane(f, sc, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 2, ac);
     } else if (f->use32bit) {
-        ret = encode_rgb_frame32(f, sc, planes, width, height, p->linesize);
+        ret = encode_rgb_frame32(f, sc, planes, width, height, p->linesize, ac);
     } else {
-        ret = encode_rgb_frame(f, sc, planes, width, height, p->linesize);
+        ret = encode_rgb_frame(f, sc, planes, width, height, p->linesize, ac);
     }
 
     if (ac != AC_GOLOMB_RICE) {
