@@ -133,7 +133,12 @@ typedef struct FFCodec {
     /**
      * Internal codec capabilities FF_CODEC_CAP_*.
      */
-    unsigned caps_internal:27;
+    unsigned caps_internal:26;
+
+    /**
+     * Is this a decoder?
+     */
+    unsigned is_decoder:1;
 
     /**
      * This field determines the video color ranges supported by an encoder.
@@ -309,21 +314,27 @@ int ff_default_get_supported_config(const struct AVCodecContext *avctx,
 #endif
 
 #define FF_CODEC_DECODE_CB(func)                          \
+    .is_decoder        = 1,                               \
     .cb_type           = FF_CODEC_CB_TYPE_DECODE,         \
     .cb.decode         = (func)
 #define FF_CODEC_DECODE_SUB_CB(func)                      \
+    .is_decoder        = 1,                               \
     .cb_type           = FF_CODEC_CB_TYPE_DECODE_SUB,     \
     .cb.decode_sub     = (func)
 #define FF_CODEC_RECEIVE_FRAME_CB(func)                   \
+    .is_decoder        = 1,                               \
     .cb_type           = FF_CODEC_CB_TYPE_RECEIVE_FRAME,  \
     .cb.receive_frame  = (func)
 #define FF_CODEC_ENCODE_CB(func)                          \
+    .is_decoder        = 0,                               \
     .cb_type           = FF_CODEC_CB_TYPE_ENCODE,         \
     .cb.encode         = (func)
 #define FF_CODEC_ENCODE_SUB_CB(func)                      \
+    .is_decoder        = 0,                               \
     .cb_type           = FF_CODEC_CB_TYPE_ENCODE_SUB,     \
     .cb.encode_sub     = (func)
 #define FF_CODEC_RECEIVE_PACKET_CB(func)                  \
+    .is_decoder        = 0,                               \
     .cb_type           = FF_CODEC_CB_TYPE_RECEIVE_PACKET, \
     .cb.receive_packet = (func)
 

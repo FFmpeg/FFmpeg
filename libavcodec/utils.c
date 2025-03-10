@@ -79,17 +79,13 @@ void av_fast_padded_mallocz(void *ptr, unsigned int *size, size_t min_size)
 int av_codec_is_encoder(const AVCodec *avcodec)
 {
     const FFCodec *const codec = ffcodec(avcodec);
-    return codec && (codec->cb_type == FF_CODEC_CB_TYPE_ENCODE     ||
-                     codec->cb_type == FF_CODEC_CB_TYPE_ENCODE_SUB ||
-                     codec->cb_type == FF_CODEC_CB_TYPE_RECEIVE_PACKET);
+    return codec && !codec->is_decoder;
 }
 
 int av_codec_is_decoder(const AVCodec *avcodec)
 {
     const FFCodec *const codec = ffcodec(avcodec);
-    return codec && (codec->cb_type == FF_CODEC_CB_TYPE_DECODE     ||
-                     codec->cb_type == FF_CODEC_CB_TYPE_DECODE_SUB ||
-                     codec->cb_type == FF_CODEC_CB_TYPE_RECEIVE_FRAME);
+    return codec && codec->is_decoder;
 }
 
 int ff_set_dimensions(AVCodecContext *s, int width, int height)
