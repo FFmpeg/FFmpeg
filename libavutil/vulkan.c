@@ -620,6 +620,23 @@ static void destroy_tmp_semaphores(void *opaque, uint8_t *data)
     av_free(ts);
 }
 
+int ff_vk_exec_add_dep_wait_sem(FFVulkanContext *s, FFVkExecContext *e,
+                                VkSemaphore sem, uint64_t val,
+                                VkPipelineStageFlagBits2 stage)
+{
+    VkSemaphoreSubmitInfo *sem_wait;
+    ARR_REALLOC(e, sem_wait, &e->sem_wait_alloc, e->sem_wait_cnt);
+
+    e->sem_wait[e->sem_wait_cnt++] = (VkSemaphoreSubmitInfo) {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+        .semaphore = sem,
+        .value = val,
+        .stageMask = stage,
+    };
+
+    return 0;
+}
+
 int ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
                                 VkSemaphore *sem, int nb,
                                 VkPipelineStageFlagBits2 stage,
@@ -672,14 +689,9 @@ int ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
     }
 
     for (int i = 0; i < nb; i++) {
-        VkSemaphoreSubmitInfo *sem_wait;
-        ARR_REALLOC(e, sem_wait, &e->sem_wait_alloc, e->sem_wait_cnt);
-
-        e->sem_wait[e->sem_wait_cnt++] = (VkSemaphoreSubmitInfo) {
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .semaphore = sem[i],
-            .stageMask = stage,
-        };
+        err = ff_vk_exec_add_dep_wait_sem(s, e, sem[i], 0, stage);
+        if (err < 0)
+            return err;
     }
 
     return 0;
