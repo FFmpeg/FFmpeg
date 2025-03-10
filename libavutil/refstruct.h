@@ -74,7 +74,7 @@ typedef union {
  * the returned object is initially zeroed.
  *
  * @param size    Desired usable size of the returned object.
- * @param flags   A bitwise combination of av_refstruct_FLAG_* flags.
+ * @param flags   A bitwise combination of AV_REFSTRUCT_FLAG_* flags.
  * @param opaque  A pointer that will be passed to the free_cb callback.
  * @param free_cb A callback for freeing this object's content
  *                when its reference count reaches zero;
@@ -205,7 +205,7 @@ typedef struct AVRefStructPool AVRefStructPool;
  * provided, then free_cb will be called if init_cb fails.
  *
  * It will be called after reset_cb in case reset_cb and the
- * av_refstruct_POOL_FLAG_RESET_ON_INIT_ERROR flag are also set.
+ * AV_REFSTRUCT_POOL_FLAG_RESET_ON_INIT_ERROR flag are also set.
  *
  * The object passed to free_cb will be in the state left by
  * the callbacks applied earlier (init_cb potentially followed by reset_cb).
@@ -215,7 +215,7 @@ typedef struct AVRefStructPool AVRefStructPool;
  * If this flag is set, the entries will be zeroed before
  * being returned to the user (after the init or reset callbacks
  * have been called (if provided)). Furthermore, to avoid zeroing twice
- * it also makes the pool behave as if the av_refstruct_POOL_FLAG_NO_ZEROING
+ * it also makes the pool behave as if the AV_REFSTRUCT_POOL_FLAG_NO_ZEROING
  * flag had been provided.
  */
 #define AV_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME                       (1 << 18)
@@ -229,11 +229,11 @@ AVRefStructPool *av_refstruct_pool_alloc(size_t size, unsigned flags);
  * Allocate an AVRefStructPool, potentially using complex callbacks.
  *
  * @param size size of the entries of the pool
- * @param flags a bitwise combination of av_refstruct_POOL_FLAG_* flags
+ * @param flags a bitwise combination of AV_REFSTRUCT_POOL_FLAG_* flags
  * @param opaque A pointer that will be passed to the callbacks below.
  * @param init  A callback that will be called directly after a new entry
  *              has been allocated. obj has already been zeroed unless
- *              the av_refstruct_POOL_FLAG_NO_ZEROING flag is in use.
+ *              the AV_REFSTRUCT_POOL_FLAG_NO_ZEROING flag is in use.
  * @param reset A callback that will be called after an entry has been
  *              returned to the pool and before it is reused.
  * @param free_entry A callback that will be called when an entry is freed
