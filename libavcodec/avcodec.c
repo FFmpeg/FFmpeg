@@ -718,6 +718,9 @@ int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *fr
 {
     av_frame_unref(frame);
 
+    if (!avcodec_is_open(avctx))
+        return AVERROR(EINVAL);
+
     if (av_codec_is_decoder(avctx->codec))
         return ff_decode_receive_frame(avctx, frame);
     return ff_encode_receive_frame(avctx, frame);
