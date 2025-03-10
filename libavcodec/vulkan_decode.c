@@ -36,6 +36,9 @@ extern const FFVulkanDecodeDescriptor ff_vk_dec_hevc_desc;
 #if CONFIG_AV1_VULKAN_HWACCEL
 extern const FFVulkanDecodeDescriptor ff_vk_dec_av1_desc;
 #endif
+#if CONFIG_FFV1_VULKAN_HWACCEL
+extern const FFVulkanDecodeDescriptor ff_vk_dec_ffv1_desc;
+#endif
 
 static const FFVulkanDecodeDescriptor *dec_descs[] = {
 #if CONFIG_H264_VULKAN_HWACCEL
@@ -46,6 +49,9 @@ static const FFVulkanDecodeDescriptor *dec_descs[] = {
 #endif
 #if CONFIG_AV1_VULKAN_HWACCEL
     &ff_vk_dec_av1_desc,
+#endif
+#if CONFIG_FFV1_VULKAN_HWACCEL
+    &ff_vk_dec_ffv1_desc,
 #endif
 };
 
@@ -1035,6 +1041,23 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
         frames_ctx->free        = free_profile_data;
 
         hwfc->create_pnext = &prof->profile_list;
+    } else {
+        switch (frames_ctx->sw_format) {
+        case AV_PIX_FMT_GBRAP16:
+            /* This should be more efficient for downloading and using */
+            frames_ctx->sw_format = AV_PIX_FMT_RGBA64;
+            break;
+        case AV_PIX_FMT_GBRP10:
+            /* This saves memory bandwidth when downloading */
+            frames_ctx->sw_format = AV_PIX_FMT_X2BGR10;
+            break;
+        case AV_PIX_FMT_BGR0:
+            /* mpv has issues with bgr0 mapping, so just remap it */
+            frames_ctx->sw_format = AV_PIX_FMT_RGB0;
+            break;
+        default:
+            break;
+        }
     }
 
     frames_ctx->width  = avctx->coded_width;

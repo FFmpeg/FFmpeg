@@ -1,0 +1,90 @@
+/*
+ * FFv1 codec
+ *
+ * Copyright (c) 2024 Lynne <dev@lynne.ee>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+ivec4 load_components(ivec2 pos)
+{
+    ivec4 pix = ivec4(imageLoad(src[0], pos));
+    if (planar_rgb != 0) {
+        for (int i = 1; i < (3 + transparency); i++)
+            pix[i] = int(imageLoad(src[i], pos)[0]);
+    }
+
+    return ivec4(pix[fmt_lut[0]], pix[fmt_lut[1]],
+                 pix[fmt_lut[2]], pix[fmt_lut[3]]);
+}
+
+void bypass_sample(ivec2 pos)
+{
+    imageStore(dst[0], pos, load_components(pos));
+}
+
+void bypass_block(in SliceContext sc)
+{
+    ivec2 start = ivec2(gl_LocalInvocationID) + sc.slice_pos;
+    ivec2 end = sc.slice_pos + sc.slice_dim;
+    for (uint y = start.y; y < end.y; y += gl_WorkGroupSize.y)
+        for (uint x = start.x; x < end.x; x += gl_WorkGroupSize.x)
+            bypass_sample(ivec2(x, y));
+}
+
+void transform_sample(ivec2 pos, ivec2 rct_coef)
+{
+    ivec4 pix = load_components(pos);
+    pix.b -= offset;
+    pix.r -= offset;
+    pix.g -= (pix.r*rct_coef.x + pix.b*rct_coef.y) >> 2;
+    pix.b += pix.g;
+    pix.r += pix.g;
+    imageStore(dst[0], pos, pix);
+}
+
+void transform_sample(ivec2 pos, ivec2 rct_coef)
+{
+    ivec4 pix = load_components(pos);
+    pix.b -= pix.g;
+    pix.r -= pix.g;
+    pix.g += (pix.r*rct_coef.x + pix.b*rct_coef.y) >> 2;
+    pix.b += offset;
+    pix.r += offset;
+    imageStore(dst[0], pos, pix);
+}
+
+void transform_block(in SliceContext sc)
+{
+    const ivec2 rct_coef = sc.slice_rct_coef;
+    const ivec2 start = ivec2(gl_LocalInvocationID) + sc.slice_pos;
+    const ivec2 end = sc.slice_pos + sc.slice_dim;
+
+    for (uint y = start.y; y < end.y; y += gl_WorkGroupSize.y)
+        for (uint x = start.x; x < end.x; x += gl_WorkGroupSize.x)
+            transform_sample(ivec2(x, y), rct_coef);
+}
+
+void main()
+{
+    const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
+
+    if (slice_ctx[slice_idx].slice_coding_mode == 1)
+        bypass_block(slice_ctx[slice_idx]);
+    else
+        transform_block(slice_ctx[slice_idx]);
+}

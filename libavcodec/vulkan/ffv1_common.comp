@@ -22,7 +22,12 @@
 
 struct SliceContext {
     RangeCoder c;
+
+#if !defined(DECODE)
     PutBitContext pb; /* 8*8 bytes */
+#else
+    GetBitContext gb;
+#endif
 
     ivec2 slice_dim;
     ivec2 slice_pos;

@@ -120,3 +120,40 @@ Symbol get_vlc_symbol(inout VlcState state, int v, int bits)
 
     return set_sr_golomb(code, k, 12, bits);
 }
+
+uint get_ur_golomb(inout GetBitContext gb, uint k, int limit, int esc_len)
+{
+    for (uint i = 0; i < 12; i++)
+        if (get_bit(gb))
+            return get_bits(gb, k) + (i << k);
+
+    return get_bits(gb, esc_len) + 11;
+}
+
+int get_sr_golomb(inout GetBitContext gb, uint k, int limit, int esc_len)
+{
+    int v = int(get_ur_golomb(gb, k, limit, esc_len));
+    return (v >> 1) ^ -(v & 1);
+}
+
+int read_vlc_symbol(inout GetBitContext gb, inout VlcState state, int bits)
+{
+    int k, i, v, ret;
+
+    i = state.count;
+    k = 0;
+    while (i < state.error_sum) { // FIXME: optimize
+        k++;
+        i += i;
+    }
+
+    v = get_sr_golomb(gb, k, 12, bits);
+
+    v ^= ((2 * state.drift + state.count) >> 31);
+
+    ret = fold(v + state.bias, bits);
+
+    update_vlc_state(state, v);
+
+    return ret;
+}

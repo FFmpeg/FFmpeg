@@ -387,6 +387,9 @@ static int decode_slice(AVCodecContext *c, void *arg)
 static enum AVPixelFormat get_pixel_format(FFV1Context *f)
 {
     enum AVPixelFormat pix_fmts[] = {
+#if CONFIG_FFV1_VULKAN_HWACCEL
+        AV_PIX_FMT_VULKAN,
+#endif
         f->pix_fmt,
         AV_PIX_FMT_NONE,
     };
@@ -889,6 +892,9 @@ const FFCodec ff_ffv1_decoder = {
                       FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
                       FF_CODEC_CAP_USES_PROGRESSFRAMES,
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
+#if CONFIG_FFV1_VULKAN_HWACCEL
+        HWACCEL_VULKAN(ffv1),
+#endif
         NULL
     },
 };
