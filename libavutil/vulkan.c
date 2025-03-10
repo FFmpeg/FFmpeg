@@ -1454,7 +1454,7 @@ int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt)
         pix_fmt == AV_PIX_FMT_GBRP14  || pix_fmt == AV_PIX_FMT_GBRP16 ||
         pix_fmt == AV_PIX_FMT_GBRAP   || pix_fmt == AV_PIX_FMT_GBRAP10 ||
         pix_fmt == AV_PIX_FMT_GBRAP12 || pix_fmt == AV_PIX_FMT_GBRAP14 ||
-        pix_fmt == AV_PIX_FMT_GBRAP16 ||
+        pix_fmt == AV_PIX_FMT_GBRAP16 || pix_fmt == AV_PIX_FMT_GBRAP32 ||
         pix_fmt == AV_PIX_FMT_GBRPF32 || pix_fmt == AV_PIX_FMT_GBRAPF32 ||
         pix_fmt == AV_PIX_FMT_X2RGB10 || pix_fmt == AV_PIX_FMT_X2BGR10 ||
         pix_fmt == AV_PIX_FMT_RGBAF32 || pix_fmt == AV_PIX_FMT_RGBF32 ||
@@ -1486,6 +1486,7 @@ void ff_vk_set_perm(enum AVPixelFormat pix_fmt, int lut[4], int inv)
     case AV_PIX_FMT_GBRP14:
     case AV_PIX_FMT_GBRP16:
     case AV_PIX_FMT_GBRPF32:
+    case AV_PIX_FMT_GBRAP32:
     case AV_PIX_FMT_GBRAPF32:
         lut[0] = 1;
         lut[1] = 2;
@@ -1627,6 +1628,15 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
         const char *rep_tab[] = {
             [FF_VK_REP_NATIVE] = "r32f",
             [FF_VK_REP_FLOAT] = "r32f",
+            [FF_VK_REP_INT] = "r32i",
+            [FF_VK_REP_UINT] = "r32ui",
+        };
+        return rep_tab[rep_fmt];
+    };
+    case AV_PIX_FMT_GBRAP32: {
+        const char *rep_tab[] = {
+            [FF_VK_REP_NATIVE] = "r32ui",
+            [FF_VK_REP_FLOAT] = NULL,
             [FF_VK_REP_INT] = "r32i",
             [FF_VK_REP_UINT] = "r32ui",
         };
