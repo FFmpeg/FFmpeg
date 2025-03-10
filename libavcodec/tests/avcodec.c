@@ -77,17 +77,21 @@ int main(void){
             ERR_EXT("Codec %s has unsupported type %s\n",
                     get_type_string(codec->type));
         if (codec->type != AVMEDIA_TYPE_AUDIO) {
+FF_DISABLE_DEPRECATION_WARNINGS
             if (codec->ch_layouts || codec->sample_fmts ||
                 codec->supported_samplerates)
                 ERR("Non-audio codec %s has audio-only fields set\n");
+FF_ENABLE_DEPRECATION_WARNINGS
             if (codec->capabilities & (AV_CODEC_CAP_SMALL_LAST_FRAME |
                                        AV_CODEC_CAP_CHANNEL_CONF     |
                                        AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
                 ERR("Non-audio codec %s has audio-only capabilities set\n");
         }
         if (codec->type != AVMEDIA_TYPE_VIDEO) {
+FF_DISABLE_DEPRECATION_WARNINGS
             if (codec->pix_fmts || codec->supported_framerates)
                 ERR("Non-video codec %s has video-only fields set\n");
+FF_ENABLE_DEPRECATION_WARNINGS
             if (codec2->caps_internal & FF_CODEC_CAP_EXPORTS_CROPPING)
                 ERR("Non-video codec %s exports cropping\n");
         }
@@ -136,10 +140,12 @@ int main(void){
             if (codec2->update_thread_context || codec2->update_thread_context_for_user || codec2->bsfs)
                 ERR("Encoder %s has decoder-only thread functions or bsf.\n");
             if (codec->type == AVMEDIA_TYPE_AUDIO) {
+FF_DISABLE_DEPRECATION_WARNINGS
                 if (!codec->sample_fmts) {
                     av_log(NULL, AV_LOG_FATAL, "Encoder %s is missing the sample_fmts field\n", codec->name);
                     ret = 1;
                 }
+FF_ENABLE_DEPRECATION_WARNINGS
             }
             if (codec2->caps_internal & (FF_CODEC_CAP_USES_PROGRESSFRAMES |
                                         FF_CODEC_CAP_SETS_PKT_DTS |
