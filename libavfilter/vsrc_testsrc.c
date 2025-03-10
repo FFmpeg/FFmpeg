@@ -1040,7 +1040,7 @@ static void rgbtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
     case AV_PIX_FMT_ABGR:
         v = (r << (rgba_map[R]*8)) + (g << (rgba_map[G]*8)) + (b << (rgba_map[B]*8)) + (255U << (rgba_map[A]*8));
         p = dst + 4*x + y*dst_linesize;
-        AV_WL32(p, v);
+        AV_WL32A(p, v);
         break;
     case AV_PIX_FMT_X2RGB10LE:
     case AV_PIX_FMT_X2BGR10LE:
@@ -1049,7 +1049,7 @@ static void rgbtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
             (b  << ((desc->comp[2].offset*8) + desc->comp[2].shift)) +
             (3U << ((desc->comp[3].offset*8) + desc->comp[3].shift));
         p = dst + 4*x + y*dst_linesize;
-        AV_WL32(p, v);
+        AV_WL32A(p, v);
         break;
     case AV_PIX_FMT_GBRP:
         p = dstp[0] + x + y * dst_linesize;
@@ -1202,22 +1202,22 @@ static void yuvtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
             (u << ((desc->comp[1].offset*8) + desc->comp[1].shift)) +
             (v << ((desc->comp[2].offset*8) + desc->comp[2].shift)) +
             (3U << ((desc->comp[3].offset*8) + desc->comp[3].shift));
-        AV_WL32(&dstp[0][i*4 + j*dst_linesizep[0]], n);
+        AV_WL32A(&dstp[0][i*4 + j*dst_linesizep[0]], n);
         break;
     case AV_PIX_FMT_XV36:
     case AV_PIX_FMT_XV48:
     case AV_PIX_FMT_AYUV64:
-        AV_WN16(&dstp[0][i*8 + ayuv_map[Y]*2 + j*dst_linesizep[0]], y << desc->comp[0].shift);
-        AV_WN16(&dstp[0][i*8 + ayuv_map[U]*2 + j*dst_linesizep[0]], u << desc->comp[1].shift);
-        AV_WN16(&dstp[0][i*8 + ayuv_map[V]*2 + j*dst_linesizep[0]], v << desc->comp[2].shift);
-        AV_WN16(&dstp[0][i*8 + ayuv_map[A]*2 + j*dst_linesizep[0]], UINT16_MAX << desc->comp[3].shift);
+        AV_WN16A(&dstp[0][i*8 + ayuv_map[Y]*2 + j*dst_linesizep[0]], y << desc->comp[0].shift);
+        AV_WN16A(&dstp[0][i*8 + ayuv_map[U]*2 + j*dst_linesizep[0]], u << desc->comp[1].shift);
+        AV_WN16A(&dstp[0][i*8 + ayuv_map[V]*2 + j*dst_linesizep[0]], v << desc->comp[2].shift);
+        AV_WN16A(&dstp[0][i*8 + ayuv_map[A]*2 + j*dst_linesizep[0]], UINT16_MAX << desc->comp[3].shift);
         break;
     case AV_PIX_FMT_UYVA:
     case AV_PIX_FMT_VUYA:
     case AV_PIX_FMT_VUYX:
     case AV_PIX_FMT_AYUV:
         n = (y << (ayuv_map[Y]*8)) + (u << (ayuv_map[U]*8)) + (v << (ayuv_map[V]*8)) + (255U << (ayuv_map[A]*8));
-        AV_WL32(&dstp[0][i*4 + j*dst_linesizep[0]], n);
+        AV_WL32A(&dstp[0][i*4 + j*dst_linesizep[0]], n);
         break;
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_YUVJ444P:
@@ -1230,9 +1230,9 @@ static void yuvtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
     case AV_PIX_FMT_YUV444P12:
     case AV_PIX_FMT_YUV444P14:
     case AV_PIX_FMT_YUV444P16:
-        AV_WN16(&dstp[0][i*2 + j*dst_linesizep[0]], y);
-        AV_WN16(&dstp[1][i*2 + j*dst_linesizep[1]], u);
-        AV_WN16(&dstp[2][i*2 + j*dst_linesizep[2]], v);
+        AV_WN16A(&dstp[0][i*2 + j*dst_linesizep[0]], y);
+        AV_WN16A(&dstp[1][i*2 + j*dst_linesizep[1]], u);
+        AV_WN16A(&dstp[2][i*2 + j*dst_linesizep[2]], v);
         break;
     case AV_PIX_FMT_NV24:
         dstp[0][i   + j*dst_linesizep[0] + 0] = y;
@@ -1247,9 +1247,9 @@ static void yuvtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
     case AV_PIX_FMT_P410:
     case AV_PIX_FMT_P412:
     case AV_PIX_FMT_P416:
-        AV_WN16(&dstp[0][i*2 + j*dst_linesizep[0] + 0], y << (16 - desc->comp[0].depth));
-        AV_WN16(&dstp[1][i*4 + j*dst_linesizep[1] + 0], u << (16 - desc->comp[1].depth));
-        AV_WN16(&dstp[1][i*4 + j*dst_linesizep[1] + 2], v << (16 - desc->comp[1].depth));
+        AV_WN16A(&dstp[0][i*2 + j*dst_linesizep[0] + 0], y << (16 - desc->comp[0].depth));
+        AV_WN16A(&dstp[1][i*4 + j*dst_linesizep[1] + 0], u << (16 - desc->comp[1].depth));
+        AV_WN16A(&dstp[1][i*4 + j*dst_linesizep[1] + 2], v << (16 - desc->comp[1].depth));
         break;
     }
 }
