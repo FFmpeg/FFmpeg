@@ -937,10 +937,11 @@ static void av_codec_init_static(void)
 FF_DISABLE_DEPRECATION_WARNINGS
         switch (codec->p.type) {
         case AVMEDIA_TYPE_VIDEO:
-            codec->get_supported_config(NULL, &codec->p,
-                                        AV_CODEC_CONFIG_PIX_FORMAT, 0,
-                                        (const void **) &codec->p.pix_fmts,
-                                        &dummy);
+            if (!codec->p.pix_fmts)
+                codec->get_supported_config(NULL, &codec->p,
+                                            AV_CODEC_CONFIG_PIX_FORMAT, 0,
+                                            (const void **) &codec->p.pix_fmts,
+                                            &dummy);
             break;
         case AVMEDIA_TYPE_AUDIO:
             codec->get_supported_config(NULL, &codec->p,

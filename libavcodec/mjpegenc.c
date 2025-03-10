@@ -675,7 +675,7 @@ static int mjpeg_get_supported_config(const AVCodecContext *avctx,
     return ff_default_get_supported_config(avctx, codec, config, flags, out, out_num);
 }
 
-FFCodec ff_mjpeg_encoder = {
+const FFCodec ff_mjpeg_encoder = {
     .p.name         = "mjpeg",
     CODEC_LONG_NAME("MJPEG (Motion JPEG)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
