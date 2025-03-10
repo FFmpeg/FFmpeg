@@ -941,10 +941,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
                                         AV_CODEC_CONFIG_PIX_FORMAT, 0,
                                         (const void **) &codec->p.pix_fmts,
                                         &dummy);
-            codec->get_supported_config(NULL, &codec->p,
-                                        AV_CODEC_CONFIG_FRAME_RATE, 0,
-                                        (const void **) &codec->p.supported_framerates,
-                                        &dummy);
             break;
         case AVMEDIA_TYPE_AUDIO:
             codec->get_supported_config(NULL, &codec->p,
