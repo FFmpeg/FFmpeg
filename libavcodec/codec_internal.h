@@ -281,6 +281,31 @@ typedef struct FFCodec {
                                 int *out_num_configs);
 } FFCodec;
 
+static av_always_inline const FFCodec *ffcodec(const AVCodec *codec)
+{
+    return (const FFCodec*)codec;
+}
+
+/**
+ * Internal version of av_codec_is_encoder(). Must not be called with
+ * a NULL AVCodec*.
+ */
+static inline int ff_codec_is_encoder(const AVCodec *avcodec)
+{
+    const FFCodec *const codec = ffcodec(avcodec);
+    return !codec->is_decoder;
+}
+
+/**
+ * Internal version of av_codec_is_decoder(). Must not be called with
+ * a NULL AVCodec*.
+ */
+static inline int ff_codec_is_decoder(const AVCodec *avcodec)
+{
+    const FFCodec *const codec = ffcodec(avcodec);
+    return codec->is_decoder;
+}
+
 /**
  * Default implementation for avcodec_get_supported_config(). Will return the
  * relevant fields from AVCodec if present, or NULL otherwise.
@@ -365,10 +390,5 @@ int ff_default_get_supported_config(const struct AVCodecContext *avctx,
     DISABLE_DEPRECATION_WARNINGS  \
     .p.field = (array)            \
     ENABLE_DEPRECATION_WARNINGS
-
-static av_always_inline const FFCodec *ffcodec(const AVCodec *codec)
-{
-    return (const FFCodec*)codec;
-}
 
 #endif /* AVCODEC_CODEC_INTERNAL_H */
