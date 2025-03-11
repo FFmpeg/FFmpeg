@@ -621,8 +621,7 @@ static inline void codec37_mv(uint8_t *dst, const uint8_t *src,
     }
 }
 
-static int old_codec37(SANMVideoContext *ctx, int top,
-                       int left, int width, int height)
+static int old_codec37(SANMVideoContext *ctx, int width, int height)
 {
     int i, j, k, l, t, run, len, code, skip, mx, my;
     ptrdiff_t stride = ctx->pitch;
@@ -638,8 +637,8 @@ static int old_codec37(SANMVideoContext *ctx, int top,
     flags = bytestream2_get_byte(&ctx->gb);
     bytestream2_skip(&ctx->gb, 3);
 
-    if (decoded_size > ctx->height * stride - left - top * stride) {
-        decoded_size = ctx->height * stride - left - top * stride;
+    if (decoded_size > ctx->height * stride) {
+        decoded_size = ctx->height * stride;
         av_log(ctx->avctx, AV_LOG_WARNING, "Decoded size is too large.\n");
     }
 
@@ -649,8 +648,8 @@ static int old_codec37(SANMVideoContext *ctx, int top,
         FFSWAP(uint16_t*, ctx->frm1, ctx->frm2);
     }
 
-    dst  = ((uint8_t*)ctx->frm1) + left + top * stride;
-    prev = ((uint8_t*)ctx->frm2) + left + top * stride;
+    dst  = ((uint8_t*)ctx->frm1);
+    prev = ((uint8_t*)ctx->frm2);
 
     if (mvoff > 2) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Invalid motion base value %d.\n", mvoff);
@@ -925,15 +924,14 @@ static void codec47_comp1(SANMVideoContext *ctx, uint8_t *dst_in, int width,
     }
 }
 
-static int old_codec47(SANMVideoContext *ctx, int top,
-                       int left, int width, int height)
+static int old_codec47(SANMVideoContext *ctx, int width, int height)
 {
     uint32_t decoded_size;
     int i, j;
     ptrdiff_t stride = ctx->pitch;
-    uint8_t *dst   = (uint8_t *)ctx->frm0 + left + top * stride;
-    uint8_t *prev1 = (uint8_t *)ctx->frm1 + left + top * stride;
-    uint8_t *prev2 = (uint8_t *)ctx->frm2 + left + top * stride;
+    uint8_t *dst   = (uint8_t *)ctx->frm0;
+    uint8_t *prev1 = (uint8_t *)ctx->frm1;
+    uint8_t *prev2 = (uint8_t *)ctx->frm2;
     uint8_t auxcol[2];
     int tbl_pos = bytestream2_tell(&ctx->gb);
     int seq     = bytestream2_get_le16(&ctx->gb);
@@ -947,8 +945,8 @@ static int old_codec47(SANMVideoContext *ctx, int top,
     decoded_size = bytestream2_get_le32(&ctx->gb);
     bytestream2_skip(&ctx->gb, 8);
 
-    if (decoded_size > ctx->height * stride - left - top * stride) {
-        decoded_size = ctx->height * stride - left - top * stride;
+    if (decoded_size > ctx->height * stride) {
+        decoded_size = ctx->height * stride;
         av_log(ctx->avctx, AV_LOG_WARNING, "Decoded size is too large.\n");
     }
 
@@ -959,8 +957,8 @@ static int old_codec47(SANMVideoContext *ctx, int top,
     }
     if (!seq) {
         ctx->prev_seq = -1;
-        memset(prev1, auxcol[0], (ctx->height - top) * stride);
-        memset(prev2, auxcol[1], (ctx->height - top) * stride);
+        memset(prev1, auxcol[0], ctx->height * stride);
+        memset(prev2, auxcol[1], ctx->height * stride);
     }
 
     switch (compr) {
@@ -1267,9 +1265,9 @@ static int process_frame_obj(SANMVideoContext *ctx)
     case 3:
         return old_codec1(ctx, top, left, w, h);
     case 37:
-        return old_codec37(ctx, top, left, w, h);
+        return old_codec37(ctx, w, h);
     case 47:
-        return old_codec47(ctx, top, left, w, h);
+        return old_codec47(ctx, w, h);
     case 48:
         return old_codec48(ctx, w, h);
     default:
