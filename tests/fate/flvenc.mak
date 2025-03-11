@@ -13,6 +13,10 @@ FATE_ENHANCED_FLVENC_FFMPEG-$(call REMUX, FLV IVF, FLV_DEMUXER AV1_DECODER AV1_P
 fate-enhanced-flv-av1: CMD = stream_remux ivf $(TARGET_SAMPLES)/av1/seq_hdr_op_param_info.ivf "-c:v av1" \
 		flv "-c copy" "-c:v av1" "-c copy"
 
+FATE_ENHANCED_FLVENC_FFMPEG_FFPROBE-$(call REMUX, FLV HEVC, FLV_DEMUXER HEVC_DECODER HEVC_PARSER) += fate-enhanced-flv-hevc-hdr10
+fate-enhanced-flv-hevc-hdr10: CMD = stream_remux hevc $(TARGET_SAMPLES)/hevc/hdr10_plus_h265_sample.hevc "-c:v hevc" \
+        flv "-c copy" "-c:v hevc" "-c copy" "-show_frames"
+
 FATE_ENHANCED_FLVENC_FFMPEG_FFPROBE-$(call REMUX, FLV, FLV_DEMUXER AAC_PARSER AC3_PARSER OPUS_PARSER FLAC_PARSER VP9_PARSER AV1_PARSER HEVC_PARSER H264_PARSER) += fate-enhanced-flv-multitrack
 fate-enhanced-flv-multitrack: CMD = stream_remux flv $(TARGET_SAMPLES)/flv/multitrack.flv "" flv "-map 0" "" "-c copy -map 0" \
 		"-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_stream=index"
