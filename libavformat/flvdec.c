@@ -1194,13 +1194,18 @@ static int flv_parse_video_color_info(AVFormatContext *s, AVStream *st, int64_t 
 
     // first object needs to be "colorInfo" string
     type = avio_r8(ioc);
-    if (type != AMF_DATA_TYPE_STRING ||
-        amf_get_string(ioc, buffer, sizeof(buffer)) < 0)
-        return TYPE_UNKNOWN;
+    if (type != AMF_DATA_TYPE_STRING) {
+        av_log(s, AV_LOG_WARNING, "Ignore invalid colorInfo\n");
+        return 0;
+    }
 
-    if (strcmp(buffer, "colorInfo")) {
-        av_log(s, AV_LOG_DEBUG, "Unknown type %s\n", buffer);
-        return TYPE_UNKNOWN;
+    ret = amf_get_string(ioc, buffer, sizeof(buffer));
+    if (ret < 0)
+        return ret;
+
+    if (strcmp(buffer, "colorInfo") != 0) {
+        av_log(s, AV_LOG_WARNING, "Ignore invalid colorInfo type %s\n", buffer);
+        return 0;
     }
 
     flv->meta_color_info_flag = FLV_COLOR_INFO_FLAG_PARSING;
@@ -1481,8 +1486,9 @@ retry:
 
         if (enhanced_flv && (flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD) {
             if (pkt_type == PacketTypeMetadata) {
-                int sret = flv_parse_video_color_info(s, st, next);
-                av_log(s, AV_LOG_DEBUG, "enhanced flv parse metadata ret %d and skip\n", sret);
+                ret = flv_parse_video_color_info(s, st, next);
+                if (ret < 0)
+                    goto leave;
             }
             goto skip;
         } else if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD) {
