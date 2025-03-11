@@ -68,6 +68,12 @@ typedef struct FLVMetaVideoColor {
     FLVMasteringMeta mastering_meta;
 } FLVMetaVideoColor;
 
+enum FLVMetaColorInfoFlag {
+    FLV_COLOR_INFO_FLAG_NONE = 0,
+    FLV_COLOR_INFO_FLAG_GOT = 1,
+    FLV_COLOR_INFO_FLAG_PARSING = 2,
+};
+
 typedef struct FLVContext {
     const AVClass *class; ///< Class for private options.
     int trust_metadata;   ///< configure streams according onMetaData
@@ -102,8 +108,8 @@ typedef struct FLVContext {
     int64_t time_offset;
     int64_t time_pos;
 
-    FLVMetaVideoColor *metaVideoColor;
-    int meta_color_info_flag;
+    FLVMetaVideoColor meta_color_info;
+    enum FLVMetaColorInfoFlag meta_color_info_flag;
 
     uint8_t **mt_extradata;
     int *mt_extradata_sz;
@@ -600,7 +606,6 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
     FLVContext *flv = s->priv_data;
     AVIOContext *ioc;
     AMFDataType amf_type;
-    FLVMetaVideoColor *meta_video_color = flv->metaVideoColor;
     char str_val[1024];
     double num_val;
     amf_date date;
@@ -749,7 +754,9 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             }
         }
 
-        if (meta_video_color) {
+        if (flv->meta_color_info_flag == FLV_COLOR_INFO_FLAG_PARSING) {
+            FLVMetaVideoColor *meta_video_color = &flv->meta_color_info;
+
             if (amf_type == AMF_DATA_TYPE_NUMBER ||
                 amf_type == AMF_DATA_TYPE_BOOL) {
                 if (!strcmp(key, "colorPrimaries")) {
@@ -943,7 +950,6 @@ static int flv_read_close(AVFormatContext *s)
     av_freep(&flv->mt_extradata_sz);
     av_freep(&flv->keyframe_times);
     av_freep(&flv->keyframe_filepositions);
-    av_freep(&flv->metaVideoColor);
     return 0;
 }
 
@@ -1183,6 +1189,7 @@ static int resync(AVFormatContext *s)
 
 static int flv_parse_video_color_info(AVFormatContext *s, AVStream *st, int64_t next_pos)
 {
+    int ret;
     FLVContext *flv = s->priv_data;
     AMFDataType type;
     AVIOContext *ioc;
@@ -1200,19 +1207,22 @@ static int flv_parse_video_color_info(AVFormatContext *s, AVStream *st, int64_t 
         return TYPE_UNKNOWN;
     }
 
-    av_free(flv->metaVideoColor);
-    if (!(flv->metaVideoColor = av_mallocz(sizeof(FLVMetaVideoColor)))) {
-        return AVERROR(ENOMEM);
+    flv->meta_color_info_flag = FLV_COLOR_INFO_FLAG_PARSING;
+    ret = amf_parse_object(s, NULL, NULL, buffer, next_pos, 0); // parse metadata
+    if (ret < 0) {
+        flv->meta_color_info_flag = FLV_COLOR_INFO_FLAG_NONE;
+        return ret;
     }
-    flv->meta_color_info_flag = 1;
-    amf_parse_object(s, NULL, NULL, buffer, next_pos, 0); // parse metadata
+
+    flv->meta_color_info_flag = FLV_COLOR_INFO_FLAG_GOT;
+
     return 0;
 }
 
 static int flv_update_video_color_info(AVFormatContext *s, AVStream *st)
 {
     FLVContext *flv = s->priv_data;
-    const FLVMetaVideoColor* meta_video_color = flv->metaVideoColor;
+    const FLVMetaVideoColor* meta_video_color = &flv->meta_color_info;
     const FLVMasteringMeta *mastering_meta = &meta_video_color->mastering_meta;
 
     int has_mastering_primaries, has_mastering_luminance;
@@ -1735,9 +1745,10 @@ retry_duration:
                 goto leave;
             }
 
-            if (enhanced_flv && stream_type == FLV_STREAM_TYPE_VIDEO && flv->meta_color_info_flag) {
+            if (enhanced_flv && stream_type == FLV_STREAM_TYPE_VIDEO &&
+                flv->meta_color_info_flag == FLV_COLOR_INFO_FLAG_GOT) {
                 flv_update_video_color_info(s, st); // update av packet side data
-                flv->meta_color_info_flag = 0;
+                flv->meta_color_info_flag = FLV_COLOR_INFO_FLAG_NONE;
             }
 
             if (st->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
