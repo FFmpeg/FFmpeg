@@ -489,7 +489,7 @@ static int amf_get_string(AVIOContext *ioc, char *buffer, int buffsize)
     int length = avio_rb16(ioc);
     if (length >= buffsize) {
         avio_skip(ioc, length);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ret = avio_read(ioc, buffer, length);
