@@ -51,6 +51,9 @@ static void cavs_idct8_add_sse2(uint8_t *dst, int16_t *block, ptrdiff_t stride)
 
 #if HAVE_MMXEXT_INLINE
 
+DECLARE_ASM_CONST(8, uint64_t, pw_42) = 0x002A002A002A002AULL;
+DECLARE_ASM_CONST(8, uint64_t, pw_96) = 0x0060006000600060ULL;
+
 /*****************************************************************************
  *
  * motion compensation
@@ -233,17 +236,17 @@ static void OPNAME ## cavs_qpel8_h_ ## MMX(uint8_t *dst, const uint8_t *src, ptr
 \
 static inline void OPNAME ## cavs_qpel8or16_v1_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride, int h)\
 {                                                                       \
-  QPEL_CAVSVNUM(QPEL_CAVSV1,OP,ff_pw_64,ff_pw_96,ff_pw_42)      \
+  QPEL_CAVSVNUM(QPEL_CAVSV1,OP,ff_pw_64,pw_96,pw_42)      \
 }\
 \
 static inline void OPNAME ## cavs_qpel8or16_v2_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride, int h)\
 {                                                                       \
-  QPEL_CAVSVNUM(QPEL_CAVSV2,OP,ff_pw_4,ff_pw_5,ff_pw_42)        \
+  QPEL_CAVSVNUM(QPEL_CAVSV2,OP,ff_pw_4,ff_pw_5,pw_42)        \
 }\
 \
 static inline void OPNAME ## cavs_qpel8or16_v3_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride, int h)\
 {                                                                       \
-  QPEL_CAVSVNUM(QPEL_CAVSV3,OP,ff_pw_64,ff_pw_96,ff_pw_42)      \
+  QPEL_CAVSVNUM(QPEL_CAVSV3,OP,ff_pw_64,pw_96,pw_42)      \
 }\
 \
 static void OPNAME ## cavs_qpel8_v1_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride)\
