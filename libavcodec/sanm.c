@@ -264,7 +264,7 @@ typedef struct SANMVideoContext {
     AVCodecContext *avctx;
     GetByteContext gb;
 
-    int version, subversion, have_dimensions;
+    int version, subversion, have_dimensions, first_fob;
     uint32_t pal[PALETTE_SIZE];
     int16_t delta_pal[PALETTE_DELTA];
 
@@ -515,6 +515,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         ctx->subversion = AV_RL16(avctx->extradata);
         for (i = 0; i < PALETTE_SIZE; i++)
             ctx->pal[i] = 0xFFU << 24 | AV_RL32(avctx->extradata + 2 + i * 4);
+        if (ctx->subversion < 2)
+            ctx->pal[0] = 0xFFU << 24;
     }
 
     return 0;
@@ -1298,6 +1300,15 @@ static int process_frame_obj(SANMVideoContext *ctx)
     }
     bytestream2_skip(&ctx->gb, 4);
 
+    /* on first FOBJ, when the codec is not one of the
+     * full-buffer codecs (37/47/48), frm0 needs to be cleared.
+     */
+    if (ctx->first_fob) {
+        ctx->first_fob = 0;
+        if (codec < 37)
+            memset(ctx->frm0, 0, ctx->frm0_size);
+    }
+
     switch (codec) {
     case 1:
     case 3:
@@ -1349,6 +1360,8 @@ static int process_xpal(SANMVideoContext *ctx, int size)
         if (size >= PALETTE_DELTA * 2 + 4 + PALETTE_SIZE * 3) {
             for (i = 0; i < PALETTE_SIZE; i++)
                 ctx->pal[i] = 0xFFU << 24 | bytestream2_get_be24u(&ctx->gb);
+            if (ctx->subversion < 2)
+                ctx->pal[0] = 0xFFU << 24;
         }
     }
     return 0;
@@ -1762,7 +1775,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     bytestream2_init(&ctx->gb, pkt->data, pkt->size);
 
     if (!ctx->version) {
-        int to_store = 0;
+        int to_store = 0, have_img = 0;
+
+        ctx->first_fob = 1;
 
         while (bytestream2_get_bytes_left(&ctx->gb) >= 8) {
             uint32_t sig, size;
@@ -1785,12 +1800,15 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 }
                 for (i = 0; i < PALETTE_SIZE; i++)
                     ctx->pal[i] = 0xFFU << 24 | bytestream2_get_be24u(&ctx->gb);
+                if (ctx->subversion < 2)
+                    ctx->pal[0] = 0xFFU << 24;
                 break;
             case MKBETAG('F', 'O', 'B', 'J'):
                 if (size < 16)
                     return AVERROR_INVALIDDATA;
                 if (ret = process_frame_obj(ctx))
                     return ret;
+                have_img = 1;
                 break;
             case MKBETAG('X', 'P', 'A', 'L'):
                 if (ret = process_xpal(ctx, size))
@@ -1801,6 +1819,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 break;
             case MKBETAG('F', 'T', 'C', 'H'):
                 memcpy(ctx->frm0, ctx->stored_frame, ctx->buf_size);
+                have_img = 1;
                 break;
             default:
                 bytestream2_skip(&ctx->gb, size);
@@ -1809,15 +1828,26 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 break;
             }
 
+            /* the sizes of chunks are usually a multiple of 2. However
+             * there are a few unaligned FOBJs in RA1 L2PLAY.ANM only (looks
+             * like a game bug) and IACT audio chunks which have odd sizes
+             * but are padded with a zero byte.
+             */
             bytestream2_seek(&ctx->gb, pos + size, SEEK_SET);
-            if (size & 1)
-                bytestream2_skip(&ctx->gb, 1);
+            if ((pos + size) & 1) {
+                if (0 != bytestream2_get_byteu(&ctx->gb))
+                    bytestream2_seek(&ctx->gb, pos + size, SEEK_SET);
+            }
         }
         if (to_store)
             memcpy(ctx->stored_frame, ctx->frm0, ctx->buf_size);
-        if ((ret = copy_output(ctx, NULL)))
-            return ret;
-        memcpy(ctx->frame->data[1], ctx->pal, 1024);
+
+        if (have_img) {
+            if ((ret = copy_output(ctx, NULL)))
+                return ret;
+            memcpy(ctx->frame->data[1], ctx->pal, 1024);
+            *got_frame_ptr = 1;
+        }
     } else {
         SANMFrameHeader header;
 
@@ -1848,11 +1878,12 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
         if ((ret = copy_output(ctx, &header)))
             return ret;
+
+        *got_frame_ptr = 1;
+
     }
     if (ctx->rotate_code)
         rotate_bufs(ctx, ctx->rotate_code);
-
-    *got_frame_ptr = 1;
 
     return pkt->size;
 }
