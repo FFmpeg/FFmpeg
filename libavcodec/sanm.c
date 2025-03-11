@@ -292,6 +292,7 @@ typedef struct SANMVideoContext {
     int8_t p4x4glyphs[NGLYPHS][16];
     int8_t p8x8glyphs[NGLYPHS][64];
     uint8_t c47itbl[0x10000];
+    uint8_t c23lut[256];
 } SANMVideoContext;
 
 typedef struct SANMFrameHeader {
@@ -554,6 +555,62 @@ static int rle_decode(SANMVideoContext *ctx, uint8_t *dst, const int out_size)
         left -= run_len;
     }
 
+    return 0;
+}
+
+static int old_codec23(SANMVideoContext *ctx, int top, int left, int width,
+                       int height, uint8_t param, uint16_t param2)
+{
+    const uint32_t maxpxo = ctx->height * ctx->pitch;
+    uint8_t *dst, lut[256], c;
+    int i, j, k, pc, sk;
+    int32_t pxoff;
+
+    if (ctx->subversion < 2) {
+        /* Rebel Assault 1: constant offset + 0xd0 */
+        for (i = 0; i < 256; i++)
+            lut[i] = (i + param + 0xd0) & 0xff;
+    } else if (param2 == 256) {
+        if (bytestream2_get_bytes_left(&ctx->gb) < 256)
+            return AVERROR_INVALIDDATA;
+        bytestream2_get_bufferu(&ctx->gb, ctx->c23lut, 256);
+    } else if (param2 < 256) {
+        for (i = 0; i < 256; i++)
+            lut[i] = (i + param2) & 0xff;
+    } else {
+        memcpy(lut, ctx->c23lut, 256);
+    }
+    if (bytestream2_get_bytes_left(&ctx->gb) < 1)
+        return 0;  /* some c23 frames just set up the LUT */
+
+    dst = (uint8_t *)ctx->frm0;
+    for (i = 0; i < height; i++) {
+        if (bytestream2_get_bytes_left(&ctx->gb) < 2)
+            return 0;
+        pxoff = left + ((top + i) * ctx->pitch);
+        k = bytestream2_get_le16u(&ctx->gb);
+        sk = 1;
+        pc = 0;
+        while (k > 0 && pc <= width) {
+            if (bytestream2_get_bytes_left(&ctx->gb) < 1)
+                return AVERROR_INVALIDDATA;
+            j = bytestream2_get_byteu(&ctx->gb);
+            if (sk) {
+                pxoff += j;
+                pc += j;
+            } else {
+                while (j--) {
+                    if (pxoff >=0 && pxoff < maxpxo) {
+                        c = *(dst + pxoff);
+                        *(dst + pxoff) = lut[c];
+                    }
+                    pxoff++;
+                    pc++;
+                }
+            }
+            sk ^= 1;
+        }
+    }
     return 0;
 }
 
@@ -1258,11 +1315,15 @@ static int old_codec48(SANMVideoContext *ctx, int width, int height)
 
 static int process_frame_obj(SANMVideoContext *ctx)
 {
-    uint16_t codec = bytestream2_get_le16u(&ctx->gb);
+    uint16_t parm2;
+    uint8_t  codec = bytestream2_get_byteu(&ctx->gb);
+    uint8_t  param = bytestream2_get_byteu(&ctx->gb);
     int16_t  left  = bytestream2_get_le16u(&ctx->gb);
     int16_t  top   = bytestream2_get_le16u(&ctx->gb);
     uint16_t w     = bytestream2_get_le16u(&ctx->gb);
     uint16_t h     = bytestream2_get_le16u(&ctx->gb);
+    bytestream2_skip(&ctx->gb, 2);
+    parm2 = bytestream2_get_le16u(&ctx->gb);
 
     if (w < 1 || h < 1 || w > 800 || h > 600 || left > 800 || top > 600) {
         av_log(ctx->avctx, AV_LOG_WARNING,
@@ -1316,7 +1377,6 @@ static int process_frame_obj(SANMVideoContext *ctx)
             h = ctx->height;
         }
     }
-    bytestream2_skip(&ctx->gb, 4);
 
     /* on first FOBJ, when the codec is not one of the
      * full-buffer codecs (37/47/48), frm0 needs to be cleared.
@@ -1333,6 +1393,8 @@ static int process_frame_obj(SANMVideoContext *ctx)
         return old_codec1(ctx, top, left, w, h, codec == 3);
     case 2:
         return old_codec2(ctx, top, left, w, h);
+    case 23:
+        return old_codec23(ctx, top, left, w, h, param, parm2);
     case 37:
         return old_codec37(ctx, w, h);
     case 47:
