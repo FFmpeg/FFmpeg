@@ -392,6 +392,22 @@ static void write_header(FFV1Context *f)
     }
 }
 
+static void set_micro_version(FFV1Context *f)
+{
+    f->combined_version = f->version << 16;
+    if (f->version > 2) {
+        if (f->version == 3) {
+            f->micro_version = 4;
+        } else if (f->version == 4) {
+            f->micro_version = 5;
+        } else
+            av_assert0(0);
+
+        f->combined_version += f->micro_version;
+    } else
+        av_assert0(f->micro_version == 0);
+}
+
 av_cold int ff_ffv1_write_extradata(AVCodecContext *avctx)
 {
     FFV1Context *f = avctx->priv_data;
@@ -414,15 +430,8 @@ av_cold int ff_ffv1_write_extradata(AVCodecContext *avctx)
     ff_build_rac_states(&c, 0.05 * (1LL << 32), 256 - 8);
 
     put_symbol(&c, state, f->version, 0);
-    f->combined_version = f->version << 16;
-    if (f->version > 2) {
-        if (f->version == 3) {
-            f->micro_version = 4;
-        } else if (f->version == 4)
-            f->micro_version = 5;
-        f->combined_version += f->micro_version;
+    if (f->version > 2)
         put_symbol(&c, state, f->micro_version, 0);
-    }
 
     put_symbol(&c, state, f->ac, 0);
     if (f->ac == AC_RANGE_CUSTOM_TAB)
@@ -741,6 +750,8 @@ av_cold int ff_ffv1_encode_init(AVCodecContext *avctx)
         s->num_h_slices = 1;
         s->num_v_slices = 1;
     }
+
+    set_micro_version(s);
 
     return 0;
 }
