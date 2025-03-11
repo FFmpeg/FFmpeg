@@ -1106,16 +1106,17 @@ static int old_codec37(SANMVideoContext *ctx, int width, int height)
                     t = bytestream2_get_byteu(&ctx->gb);
                     for (k = 0; k < 4; k++)
                         memset(dst + i + k * stride, t, 4);
-               } else if ((compr == 4) && (code == 0)) {
-                    if (bytestream2_get_bytes_left(&ctx->gb) < 1)
-                        return AVERROR_INVALIDDATA;
-                    skip_run = bytestream2_get_byteu(&ctx->gb) + 1;
-                    i -= 4;
                } else {
                     mx = c37_mv[(mvoff * 255 + code) * 2];
                     my = c37_mv[(mvoff * 255 + code) * 2 + 1];
                     codec37_mv(dst + i, prev + i + mx + my * stride,
                                ctx->height, stride, i + mx, j + my);
+
+                    if ((compr == 4) && (code == 0)) {
+                        if (bytestream2_get_bytes_left(&ctx->gb) < 1)
+                            return AVERROR_INVALIDDATA;
+                        skip_run = bytestream2_get_byteu(&ctx->gb);
+                    }
                 }
             }
             dst  += stride * 4;
