@@ -754,42 +754,38 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             }
         }
 
-        if (flv->meta_color_info_flag == FLV_COLOR_INFO_FLAG_PARSING) {
+        if (amf_type == AMF_DATA_TYPE_NUMBER && flv->meta_color_info_flag == FLV_COLOR_INFO_FLAG_PARSING) {
             FLVMetaVideoColor *meta_video_color = &flv->meta_color_info;
-
-            if (amf_type == AMF_DATA_TYPE_NUMBER ||
-                amf_type == AMF_DATA_TYPE_BOOL) {
-                if (!strcmp(key, "colorPrimaries")) {
-                    meta_video_color->primaries = num_val;
-                } else if (!strcmp(key, "transferCharacteristics")) {
-                    meta_video_color->transfer_characteristics = num_val;
-                } else if (!strcmp(key, "matrixCoefficients")) {
-                    meta_video_color->matrix_coefficients = num_val;
-                } else if (!strcmp(key, "maxFall")) {
-                    meta_video_color->max_fall = num_val;
-                } else if (!strcmp(key, "maxCLL")) {
-                    meta_video_color->max_cll = num_val;
-                } else if (!strcmp(key, "redX")) {
-                    meta_video_color->mastering_meta.r_x = num_val;
-                } else if (!strcmp(key, "redY")) {
-                    meta_video_color->mastering_meta.r_y = num_val;
-                } else if (!strcmp(key, "greenX")) {
-                    meta_video_color->mastering_meta.g_x = num_val;
-                } else if (!strcmp(key, "greenY")) {
-                    meta_video_color->mastering_meta.g_y = num_val;
-                } else if (!strcmp(key, "blueX")) {
-                    meta_video_color->mastering_meta.b_x = num_val;
-                } else if (!strcmp(key, "blueY")) {
-                    meta_video_color->mastering_meta.b_y = num_val;
-                } else if (!strcmp(key, "whitePointX")) {
-                    meta_video_color->mastering_meta.white_x = num_val;
-                } else if (!strcmp(key, "whitePointY")) {
-                    meta_video_color->mastering_meta.white_y = num_val;
-                } else if (!strcmp(key, "maxLuminance")) {
-                    meta_video_color->mastering_meta.max_luminance = num_val;
-                } else if (!strcmp(key, "minLuminance")) {
-                    meta_video_color->mastering_meta.min_luminance = num_val;
-                }
+            if (!strcmp(key, "colorPrimaries")) {
+                meta_video_color->primaries = num_val;
+            } else if (!strcmp(key, "transferCharacteristics")) {
+                meta_video_color->transfer_characteristics = num_val;
+            } else if (!strcmp(key, "matrixCoefficients")) {
+                meta_video_color->matrix_coefficients = num_val;
+            } else if (!strcmp(key, "maxFall")) {
+                meta_video_color->max_fall = num_val;
+            } else if (!strcmp(key, "maxCLL")) {
+                meta_video_color->max_cll = num_val;
+            } else if (!strcmp(key, "redX")) {
+                meta_video_color->mastering_meta.r_x = num_val;
+            } else if (!strcmp(key, "redY")) {
+                meta_video_color->mastering_meta.r_y = num_val;
+            } else if (!strcmp(key, "greenX")) {
+                meta_video_color->mastering_meta.g_x = num_val;
+            } else if (!strcmp(key, "greenY")) {
+                meta_video_color->mastering_meta.g_y = num_val;
+            } else if (!strcmp(key, "blueX")) {
+                meta_video_color->mastering_meta.b_x = num_val;
+            } else if (!strcmp(key, "blueY")) {
+                meta_video_color->mastering_meta.b_y = num_val;
+            } else if (!strcmp(key, "whitePointX")) {
+                meta_video_color->mastering_meta.white_x = num_val;
+            } else if (!strcmp(key, "whitePointY")) {
+                meta_video_color->mastering_meta.white_y = num_val;
+            } else if (!strcmp(key, "maxLuminance")) {
+                meta_video_color->mastering_meta.max_luminance = num_val;
+            } else if (!strcmp(key, "minLuminance")) {
+                meta_video_color->mastering_meta.min_luminance = num_val;
             }
         }
 
