@@ -1342,8 +1342,10 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
         }
     }
 
-    if (vtctx->codec_id == AV_CODEC_ID_HEVC) {
-        if (avctx->pix_fmt == AV_PIX_FMT_BGRA && vtctx->alpha_quality > 0.0) {
+    if (vtctx->codec_id == AV_CODEC_ID_HEVC && vtctx->alpha_quality > 0.0) {
+        const AVPixFmtDescriptor *descriptor = av_pix_fmt_desc_get(avctx->pix_fmt);
+
+        if (descriptor->flags & AV_PIX_FMT_FLAG_ALPHA) {
             CFNumberRef alpha_quality_num = CFNumberCreate(kCFAllocatorDefault,
                                                            kCFNumberDoubleType,
                                                            &vtctx->alpha_quality);
@@ -2860,6 +2862,7 @@ static const enum AVPixelFormat hevc_pix_fmts[] = {
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_BGRA,
+    AV_PIX_FMT_AYUV,
     AV_PIX_FMT_P010LE,
     AV_PIX_FMT_P210,
     AV_PIX_FMT_NONE
