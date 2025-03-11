@@ -47,16 +47,16 @@
 #define MAX_DEPTH 16      ///< arbitrary limit to prevent unbounded recursion
 
 typedef struct FLVMasteringMeta {
-    double r_x;
-    double r_y;
-    double g_x;
-    double g_y;
-    double b_x;
-    double b_y;
-    double white_x;
-    double white_y;
-    double max_luminance;
-    double min_luminance;
+    float r_x;
+    float r_y;
+    float g_x;
+    float g_y;
+    float b_x;
+    float b_y;
+    float white_x;
+    float white_y;
+    float max_luminance;
+    float min_luminance;
 } FLVMasteringMeta;
 
 typedef struct FLVMetaVideoColor {
