@@ -558,7 +558,7 @@ static int rle_decode(SANMVideoContext *ctx, uint8_t *dst, const int out_size)
 }
 
 static int old_codec1(SANMVideoContext *ctx, int top,
-                      int left, int width, int height)
+                      int left, int width, int height, int opaque)
 {
     int i, j, len, flag, code, val, end, pxoff;
     const int maxpxo = ctx->height * ctx->pitch;
@@ -581,7 +581,7 @@ static int old_codec1(SANMVideoContext *ctx, int top,
             code = (code >> 1) + 1;
             if (flag) {
                 val = bytestream2_get_byteu(&ctx->gb);
-                if (val) {
+                if (val || opaque) {
                     for (j = 0; j < code; j++) {
                         if (pxoff >= 0 && pxoff < maxpxo)
                             *(dst + pxoff) = val;
@@ -595,7 +595,7 @@ static int old_codec1(SANMVideoContext *ctx, int top,
                     return AVERROR_INVALIDDATA;
                 for (j = 0; j < code; j++) {
                     val = bytestream2_get_byteu(&ctx->gb);
-                    if ((pxoff >= 0) && (pxoff < maxpxo) && val)
+                    if ((pxoff >= 0) && (pxoff < maxpxo) && (val || opaque))
                         *(dst + pxoff) = val;
                     pxoff++;
                 }
@@ -1312,7 +1312,7 @@ static int process_frame_obj(SANMVideoContext *ctx)
     switch (codec) {
     case 1:
     case 3:
-        return old_codec1(ctx, top, left, w, h);
+        return old_codec1(ctx, top, left, w, h, codec == 3);
     case 37:
         return old_codec37(ctx, w, h);
     case 47:
