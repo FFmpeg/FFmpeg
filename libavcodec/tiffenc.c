@@ -105,7 +105,7 @@ static inline int check_size(TiffEncoderContext *s, uint64_t need)
  * @param type type of values
  * @param flip = 0 - normal copy, >0 - flip
  */
-static void tnput(uint8_t **p, int n, const uint8_t *val, enum TiffTypes type,
+static void tnput(uint8_t **p, int n, const uint8_t *val, enum AVTiffDataType type,
                   int flip)
 {
     int i;
@@ -126,7 +126,7 @@ static void tnput(uint8_t **p, int n, const uint8_t *val, enum TiffTypes type,
  * @param ptr_val pointer to values
  */
 static int add_entry(TiffEncoderContext *s, enum TiffTags tag,
-                     enum TiffTypes type, int count, const void *ptr_val)
+                     enum AVTiffDataType type, int count, const void *ptr_val)
 {
     uint8_t *entries_ptr = s->entries + 12 * s->num_entries;
 
@@ -150,12 +150,12 @@ static int add_entry(TiffEncoderContext *s, enum TiffTags tag,
 }
 
 static int add_entry1(TiffEncoderContext *s,
-                      enum TiffTags tag, enum TiffTypes type, int val)
+                      enum TiffTags tag, enum AVTiffDataType type, int val)
 {
     uint16_t w  = val;
     uint32_t dw = val;
     return add_entry(s, tag, type, 1,
-                     type == TIFF_SHORT ? (void *)&w : (void *)&dw);
+                     type == AV_TIFF_SHORT ? (void *)&w : (void *)&dw);
 }
 
 /**
@@ -453,23 +453,23 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     s->num_entries = 0;
 
-    ADD_ENTRY1(s, TIFF_SUBFILE, TIFF_LONG, 0);
-    ADD_ENTRY1(s, TIFF_WIDTH,   TIFF_LONG, s->width);
-    ADD_ENTRY1(s, TIFF_HEIGHT,  TIFF_LONG, s->height);
+    ADD_ENTRY1(s, TIFF_SUBFILE, AV_TIFF_LONG, 0);
+    ADD_ENTRY1(s, TIFF_WIDTH,   AV_TIFF_LONG, s->width);
+    ADD_ENTRY1(s, TIFF_HEIGHT,  AV_TIFF_LONG, s->height);
 
     if (s->bpp_tab_size)
-        ADD_ENTRY(s, TIFF_BPP, TIFF_SHORT, s->bpp_tab_size, bpp_tab);
+        ADD_ENTRY(s, TIFF_BPP, AV_TIFF_SHORT, s->bpp_tab_size, bpp_tab);
 
-    ADD_ENTRY1(s, TIFF_COMPR,       TIFF_SHORT, s->compr);
-    ADD_ENTRY1(s, TIFF_PHOTOMETRIC, TIFF_SHORT, s->photometric_interpretation);
-    ADD_ENTRY(s,  TIFF_STRIP_OFFS,  TIFF_LONG,  strips, s->strip_offsets);
+    ADD_ENTRY1(s, TIFF_COMPR,       AV_TIFF_SHORT, s->compr);
+    ADD_ENTRY1(s, TIFF_PHOTOMETRIC, AV_TIFF_SHORT, s->photometric_interpretation);
+    ADD_ENTRY(s,  TIFF_STRIP_OFFS,  AV_TIFF_LONG,  strips, s->strip_offsets);
 
     if (s->bpp_tab_size)
-        ADD_ENTRY1(s, TIFF_SAMPLES_PER_PIXEL, TIFF_SHORT, s->bpp_tab_size);
+        ADD_ENTRY1(s, TIFF_SAMPLES_PER_PIXEL, AV_TIFF_SHORT, s->bpp_tab_size);
 
-    ADD_ENTRY1(s, TIFF_ROWSPERSTRIP, TIFF_LONG,     s->rps);
-    ADD_ENTRY(s,  TIFF_STRIP_SIZE,   TIFF_LONG,     strips, s->strip_sizes);
-    ADD_ENTRY(s,  TIFF_XRES,         TIFF_RATIONAL, 1,      res);
+    ADD_ENTRY1(s, TIFF_ROWSPERSTRIP, AV_TIFF_LONG,     s->rps);
+    ADD_ENTRY(s,  TIFF_STRIP_SIZE,   AV_TIFF_LONG,     strips, s->strip_sizes);
+    ADD_ENTRY(s,  TIFF_XRES,         AV_TIFF_RATIONAL, 1,      res);
     if (avctx->sample_aspect_ratio.num > 0 &&
         avctx->sample_aspect_ratio.den > 0) {
         AVRational y = av_mul_q(av_make_q(s->dpi, 1),
@@ -477,11 +477,11 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         res[0] = y.num;
         res[1] = y.den;
     }
-    ADD_ENTRY(s,  TIFF_YRES,         TIFF_RATIONAL, 1,      res);
-    ADD_ENTRY1(s, TIFF_RES_UNIT,     TIFF_SHORT,    2);
+    ADD_ENTRY(s,  TIFF_YRES,         AV_TIFF_RATIONAL, 1,      res);
+    ADD_ENTRY1(s, TIFF_RES_UNIT,     AV_TIFF_SHORT,    2);
 
     if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT))
-        ADD_ENTRY(s, TIFF_SOFTWARE_NAME, TIFF_STRING,
+        ADD_ENTRY(s, TIFF_SOFTWARE_NAME, AV_TIFF_STRING,
                   strlen(LIBAVCODEC_IDENT) + 1, LIBAVCODEC_IDENT);
 
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
@@ -492,17 +492,17 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             pal[i + 256] = ((rgb >>  8) & 0xff) * 257;
             pal[i + 512] =  (rgb        & 0xff) * 257;
         }
-        ADD_ENTRY(s, TIFF_PAL, TIFF_SHORT, 256 * 3, pal);
+        ADD_ENTRY(s, TIFF_PAL, AV_TIFF_SHORT, 256 * 3, pal);
     }
     if (alpha)
-        ADD_ENTRY1(s,TIFF_EXTRASAMPLES,      TIFF_SHORT,            2);
+        ADD_ENTRY1(s,TIFF_EXTRASAMPLES,      AV_TIFF_SHORT,            2);
     if (is_yuv) {
         /** according to CCIR Recommendation 601.1 */
         uint32_t refbw[12] = { 15, 1, 235, 1, 128, 1, 240, 1, 128, 1, 240, 1 };
-        ADD_ENTRY(s, TIFF_YCBCR_SUBSAMPLING, TIFF_SHORT,    2, s->subsampling);
+        ADD_ENTRY(s, TIFF_YCBCR_SUBSAMPLING, AV_TIFF_SHORT,    2, s->subsampling);
         if (avctx->chroma_sample_location == AVCHROMA_LOC_TOPLEFT)
-            ADD_ENTRY1(s, TIFF_YCBCR_POSITIONING, TIFF_SHORT, 2);
-        ADD_ENTRY(s, TIFF_REFERENCE_BW,      TIFF_RATIONAL, 6, refbw);
+            ADD_ENTRY1(s, TIFF_YCBCR_POSITIONING, AV_TIFF_SHORT, 2);
+        ADD_ENTRY(s, TIFF_REFERENCE_BW,      AV_TIFF_RATIONAL, 6, refbw);
     }
     // write offset to dir
     bytestream_put_le32(&offset, ptr - pkt->data);

@@ -32,6 +32,23 @@
 #include "libavutil/dict.h"
 #include "bytestream.h"
 
+/** Data type identifiers for TIFF tags */
+enum AVTiffDataType {
+    AV_TIFF_BYTE = 1,
+    AV_TIFF_STRING,
+    AV_TIFF_SHORT,
+    AV_TIFF_LONG,
+    AV_TIFF_RATIONAL,
+    AV_TIFF_SBYTE,
+    AV_TIFF_UNDEFINED,
+    AV_TIFF_SSHORT,
+    AV_TIFF_SLONG,
+    AV_TIFF_SRATIONAL,
+    AV_TIFF_FLOAT,
+    AV_TIFF_DOUBLE,
+    AV_TIFF_IFD,
+};
+
 /** Recursively decodes all IFD's and
  *  adds included TAGS into the metadata dictionary. */
 int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,

@@ -429,7 +429,7 @@ static int read_header(AVFormatContext *avctx)
 static void write_tiff_short(PutByteContext *pb, int tag, int value)
 {
     bytestream2_put_le16(pb, tag);
-    bytestream2_put_le16(pb, TIFF_SHORT);
+    bytestream2_put_le16(pb, AV_TIFF_SHORT);
     bytestream2_put_le32(pb, 1);
     bytestream2_put_le16(pb, value);
     bytestream2_put_le16(pb, 0);
@@ -438,7 +438,7 @@ static void write_tiff_short(PutByteContext *pb, int tag, int value)
 static void write_tiff_short2(PutByteContext *pb, int tag, int v1, int v2)
 {
     bytestream2_put_le16(pb, tag);
-    bytestream2_put_le16(pb, TIFF_SHORT);
+    bytestream2_put_le16(pb, AV_TIFF_SHORT);
     bytestream2_put_le32(pb, 2);
     bytestream2_put_le16(pb, v1);
     bytestream2_put_le16(pb, v2);
@@ -447,7 +447,7 @@ static void write_tiff_short2(PutByteContext *pb, int tag, int v1, int v2)
 static void write_tiff_long(PutByteContext *pb, int tag, int value)
 {
     bytestream2_put_le16(pb, tag);
-    bytestream2_put_le16(pb, TIFF_LONG);
+    bytestream2_put_le16(pb, AV_TIFF_LONG);
     bytestream2_put_le32(pb, 1);
     bytestream2_put_le32(pb, value);
 }
@@ -455,7 +455,7 @@ static void write_tiff_long(PutByteContext *pb, int tag, int value)
 static void write_tiff_byte4(PutByteContext *pb, int tag, int v1, int v2, int v3, int v4)
 {
     bytestream2_put_le16(pb, tag);
-    bytestream2_put_le16(pb, TIFF_BYTE);
+    bytestream2_put_le16(pb, AV_TIFF_BYTE);
     bytestream2_put_le32(pb, 4);
     bytestream2_put_byte(pb, v1);
     bytestream2_put_byte(pb, v2);
@@ -506,7 +506,7 @@ static int get_packet_lj92(AVFormatContext *avctx, AVStream *st, AVIOContext *pb
     write_tiff_long(pb, DNG_WHITE_LEVEL, mlv->white_level);
 
     bytestream2_put_le16(pb, DNG_COLOR_MATRIX1);
-    bytestream2_put_le16(pb, TIFF_SRATIONAL);
+    bytestream2_put_le16(pb, AV_TIFF_SRATIONAL);
     bytestream2_put_le32(pb, 9);
     bytestream2_put_le32(pb, 0); /* matrixofs */
     matrixofs = pb->buffer - 4;

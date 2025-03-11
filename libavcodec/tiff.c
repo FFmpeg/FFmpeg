@@ -273,9 +273,9 @@ static int add_metadata(int count, int type,
                         const char *name, const char *sep, TiffContext *s, AVFrame *frame)
 {
     switch(type) {
-    case TIFF_DOUBLE: return ff_tadd_doubles_metadata(count, name, sep, &s->gb, s->le, &frame->metadata);
-    case TIFF_SHORT : return ff_tadd_shorts_metadata(count, name, sep, &s->gb, s->le, 0, &frame->metadata);
-    case TIFF_STRING: return ff_tadd_string_metadata(count, name, &s->gb, s->le, &frame->metadata);
+    case AV_TIFF_DOUBLE: return ff_tadd_doubles_metadata(count, name, sep, &s->gb, s->le, &frame->metadata);
+    case AV_TIFF_SHORT : return ff_tadd_shorts_metadata(count, name, sep, &s->gb, s->le, 0, &frame->metadata);
+    case AV_TIFF_STRING: return ff_tadd_string_metadata(count, name, &s->gb, s->le, &frame->metadata);
     default         : return AVERROR_INVALIDDATA;
     };
 }
@@ -1271,12 +1271,12 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     off = bytestream2_tell(&s->gb);
     if (count == 1) {
         switch (type) {
-        case TIFF_BYTE:
-        case TIFF_SHORT:
-        case TIFF_LONG:
+        case AV_TIFF_BYTE:
+        case AV_TIFF_SHORT:
+        case AV_TIFF_LONG:
             value = ff_tget(&s->gb, type, s->le);
             break;
-        case TIFF_RATIONAL:
+        case AV_TIFF_RATIONAL:
             value  = ff_tget_long(&s->gb, s->le);
             value2 = ff_tget_long(&s->gb, s->le);
             if (!value2) {
@@ -1285,7 +1285,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             }
 
             break;
-        case TIFF_STRING:
+        case AV_TIFF_STRING:
             if (count <= 4) {
                 break;
             }
@@ -1320,9 +1320,9 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             s->bpp = value;
         else {
             switch (type) {
-            case TIFF_BYTE:
-            case TIFF_SHORT:
-            case TIFF_LONG:
+            case AV_TIFF_BYTE:
+            case AV_TIFF_SHORT:
+            case AV_TIFF_LONG:
                 s->bpp = 0;
                 if (bytestream2_get_bytes_left(&s->gb) < type_sizes[type] * count)
                     return AVERROR_INVALIDDATA;
@@ -1389,7 +1389,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         }
         break;
     case TIFF_ROWSPERSTRIP:
-        if (!value || (type == TIFF_LONG && value == UINT_MAX))
+        if (!value || (type == AV_TIFF_LONG && value == UINT_MAX))
             value = s->height;
         s->rps = FFMIN(value, s->height);
         break;
@@ -1470,7 +1470,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             return AVERROR_INVALIDDATA;
         s->black_level[0] = value / (float)value2;
         for (int i = 0; i < count && count > 1; i++) {
-            if (type == TIFF_RATIONAL) {
+            if (type == AV_TIFF_RATIONAL) {
                 value  = ff_tget_long(&s->gb, s->le);
                 value2 = ff_tget_long(&s->gb, s->le);
                 if (!value2) {
@@ -1479,7 +1479,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
                 }
 
                 s->black_level[i] = value / (float)value2;
-            } else if (type == TIFF_SRATIONAL) {
+            } else if (type == AV_TIFF_SRATIONAL) {
                 int value  = ff_tget_long(&s->gb, s->le);
                 int value2 = ff_tget_long(&s->gb, s->le);
                 if (!value2) {
@@ -1786,7 +1786,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         }
         break;
     case DNG_ANALOG_BALANCE:
-        if (type != TIFF_RATIONAL)
+        if (type != AV_TIFF_RATIONAL)
             break;
 
         for (int i = 0; i < 3; i++) {
@@ -1801,7 +1801,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         }
         break;
     case DNG_AS_SHOT_NEUTRAL:
-        if (type != TIFF_RATIONAL)
+        if (type != AV_TIFF_RATIONAL)
             break;
 
         for (int i = 0; i < 3; i++) {
@@ -1816,7 +1816,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         }
         break;
     case DNG_AS_SHOT_WHITE_XY:
-        if (type != TIFF_RATIONAL)
+        if (type != AV_TIFF_RATIONAL)
             break;
 
         for (int i = 0; i < 2; i++) {

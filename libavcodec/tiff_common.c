@@ -64,9 +64,9 @@ double ff_tget_double(GetByteContext *gb, int le)
 unsigned ff_tget(GetByteContext *gb, int type, int le)
 {
     switch (type) {
-    case TIFF_BYTE:  return bytestream2_get_byte(gb);
-    case TIFF_SHORT: return ff_tget_short(gb, le);
-    case TIFF_LONG:  return ff_tget_long(gb, le);
+    case AV_TIFF_BYTE:  return bytestream2_get_byte(gb);
+    case AV_TIFF_SHORT: return ff_tget_short(gb, le);
+    case AV_TIFF_LONG:  return ff_tget_long(gb, le);
     default:         return UINT_MAX;
     }
 }
@@ -273,7 +273,7 @@ int ff_tread_tag(GetByteContext *gb, int le, unsigned *tag, unsigned *type,
 
     // seek to offset if this is an IFD-tag or
     // if count values do not fit into the offset value
-    if (ifd_tag || (*count > 4 || !(type_sizes[*type] * (*count) <= 4 || *type == TIFF_STRING))) {
+    if (ifd_tag || (*count > 4 || !(type_sizes[*type] * (*count) <= 4 || *type == AV_TIFF_STRING))) {
         bytestream2_seek(gb, ff_tget_long (gb, le), SEEK_SET);
     }
 

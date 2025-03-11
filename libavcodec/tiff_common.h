@@ -31,23 +31,7 @@
 #include <stdint.h>
 #include "libavutil/dict.h"
 #include "bytestream.h"
-
-/** data type identifiers for TIFF tags */
-enum TiffTypes {
-    TIFF_BYTE = 1,
-    TIFF_STRING,
-    TIFF_SHORT,
-    TIFF_LONG,
-    TIFF_RATIONAL,
-    TIFF_SBYTE,
-    TIFF_UNDEFINED,
-    TIFF_SSHORT,
-    TIFF_SLONG,
-    TIFF_SRATIONAL,
-    TIFF_FLOAT,
-    TIFF_DOUBLE,
-    TIFF_IFD
-};
+#include "exif.h"
 
 /** sizes of various TIFF field types (string size = 100)*/
 static const uint8_t type_sizes[14] = {
