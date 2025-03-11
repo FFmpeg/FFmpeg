@@ -133,6 +133,8 @@ static const AVOption options[] = {
     { "1080p",                  "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_64X16_1080P_CODED_1082   }, 0, 0, VE, .unit = "align" },
     { "none",                   "", 0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_NO_RESTRICTIONS          }, 0, 0, VE, .unit = "align" },
 
+    { "smart_access_video",     "Enable Smart Access Video to enhance  performance by utilizing both APU and dGPU memory access",                OFFSET(smart_access_video),             AV_OPT_TYPE_BOOL, {.i64 = -1  }, -1, 1, VE},
+
     //Pre Analysis options
     { "preanalysis",                            "Enable preanalysis",                                           OFFSET(preanalysis),                            AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
 
@@ -324,6 +326,21 @@ FF_ENABLE_DEPRECATION_WARNINGS
         else {
             ctx->rate_control_mode = AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR;
             av_log(ctx, AV_LOG_DEBUG, "Rate control turned to Peak VBR\n");
+        }
+    }
+    if (ctx->smart_access_video != -1) {
+        AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_ENABLE_SMART_ACCESS_VIDEO, ctx->smart_access_video != 0);
+        if (res != AMF_OK) {
+            av_log(avctx, AV_LOG_ERROR, "The Smart Access Video is not supported by AMF.\n");
+            if (ctx->smart_access_video != 0)
+                return AVERROR(ENOSYS);
+        } else {
+            av_log(avctx, AV_LOG_INFO, "The Smart Access Video (%d) is set.\n", ctx->smart_access_video);
+            // Set low latency mode if Smart Access Video is enabled
+            if (ctx->smart_access_video != 0) {
+                AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE, AMF_VIDEO_ENCODER_AV1_ENCODING_LATENCY_MODE_LOWEST_LATENCY);
+                av_log(avctx, AV_LOG_INFO, "The Smart Access Video set low latency mode.\n");
+            }
         }
     }
 
