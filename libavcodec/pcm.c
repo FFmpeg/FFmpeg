@@ -244,32 +244,11 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
 typedef struct PCMDecode {
     int sample_size;
-    void (*vector_fmul_scalar)(float *dst, const float *src, float mul,
-                               int len);
-    float   scale;
 } PCMDecode;
 
 static av_cold av_unused int pcm_decode_init(AVCodecContext *avctx)
 {
     PCMDecode *s = avctx->priv_data;
-    AVFloatDSPContext *fdsp;
-
-    switch (avctx->codec_id) {
-    case AV_CODEC_ID_PCM_F16LE:
-    case AV_CODEC_ID_PCM_F24LE:
-        if (avctx->bits_per_coded_sample < 1 || avctx->bits_per_coded_sample > 24)
-            return AVERROR_INVALIDDATA;
-
-        s->scale = 1. / (1 << (avctx->bits_per_coded_sample - 1));
-        fdsp = avpriv_float_dsp_alloc(0);
-        if (!fdsp)
-            return AVERROR(ENOMEM);
-        s->vector_fmul_scalar = fdsp->vector_fmul_scalar;
-        av_free(fdsp);
-        break;
-    default:
-        break;
-    }
 
     avctx->sample_fmt = avctx->codec->sample_fmts[0];
 
@@ -281,6 +260,35 @@ static av_cold av_unused int pcm_decode_init(AVCodecContext *avctx)
     } else {
         s->sample_size = 5;
     }
+
+    return 0;
+}
+
+typedef struct PCMScaleDecode {
+    PCMDecode base;
+    void (*vector_fmul_scalar)(float *dst, const float *src, float mul,
+                               int len);
+    float   scale;
+} PCMScaleDecode;
+
+static av_cold av_unused int pcm_scale_decode_init(AVCodecContext *avctx)
+{
+    PCMScaleDecode *s = avctx->priv_data;
+    AVFloatDSPContext *fdsp;
+
+    avctx->sample_fmt   = AV_SAMPLE_FMT_FLT;
+    s->base.sample_size = 4;
+
+        if (avctx->bits_per_coded_sample < 1 || avctx->bits_per_coded_sample > 24)
+            return AVERROR_INVALIDDATA;
+
+        s->scale = 1. / (1 << (avctx->bits_per_coded_sample - 1));
+        fdsp = avpriv_float_dsp_alloc(0);
+        if (!fdsp)
+            return AVERROR(ENOMEM);
+        s->vector_fmul_scalar = fdsp->vector_fmul_scalar;
+        av_free(fdsp);
+
 
     return 0;
 }
@@ -553,9 +561,10 @@ static int pcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     if (avctx->codec_id == AV_CODEC_ID_PCM_F16LE ||
         avctx->codec_id == AV_CODEC_ID_PCM_F24LE) {
-        s->vector_fmul_scalar((float *)frame->extended_data[0],
-                              (const float *)frame->extended_data[0],
-                              s->scale, FFALIGN(frame->nb_samples * avctx->ch_layout.nb_channels, 4));
+        PCMScaleDecode *s2 = avctx->priv_data;
+        s2->vector_fmul_scalar((float *)frame->extended_data[0],
+                               (const float *)frame->extended_data[0],
+                               s2->scale, FFALIGN(frame->nb_samples * avctx->ch_layout.nb_channels, 4));
     }
 
     *got_frame_ptr = 1;
@@ -586,7 +595,7 @@ const FFCodec ff_ ## name_ ## _encoder = {                                  \
                   AV_SAMPLE_FMT_ ## sample_fmt, pcm_ ## name, long_name)
 
 #define PCM_DECODER_0(id, sample_fmt, name, long_name, Context, init_func)
-#define PCM_DECODER_1(id_, sample_fmt, name_, long_name, Context, init_func) \
+#define PCM_DECODER_1(id_, sample_fmt, name_, long_name, Context, init_func)\
 const FFCodec ff_ ## name_ ## _decoder = {                                  \
     .p.name         = #name_,                                               \
     CODEC_LONG_NAME(long_name),                                             \
@@ -623,8 +632,8 @@ const FFCodec ff_ ## name_ ## _decoder = {                                  \
 //            AV_CODEC_ID_*      pcm_* name
 //                          AV_SAMPLE_FMT_*    long name                                DecodeContext   decode init func
 PCM_CODEC_EXT(ALAW,         S16, alaw,         "PCM A-law / G.711 A-law",               PCMLUTDecode,   pcm_lut_decode_init);
-PCM_DECODER  (F16LE,        FLT, f16le,        "PCM 16.8 floating point little-endian");
-PCM_DECODER  (F24LE,        FLT, f24le,        "PCM 24.0 floating point little-endian");
+PCM_DEC_EXT  (F16LE,        FLT, f16le,        "PCM 16.8 floating point little-endian", PCMScaleDecode, pcm_scale_decode_init);
+PCM_DEC_EXT  (F24LE,        FLT, f24le,        "PCM 24.0 floating point little-endian", PCMScaleDecode, pcm_scale_decode_init);
 PCM_CODEC    (F32BE,        FLT, f32be,        "PCM 32-bit floating point big-endian");
 PCM_CODEC    (F32LE,        FLT, f32le,        "PCM 32-bit floating point little-endian");
 PCM_CODEC    (F64BE,        DBL, f64be,        "PCM 64-bit floating point big-endian");
