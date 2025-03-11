@@ -264,7 +264,7 @@ typedef struct SANMVideoContext {
     AVCodecContext *avctx;
     GetByteContext gb;
 
-    int version, subversion;
+    int version, subversion, have_dimensions;
     uint32_t pal[PALETTE_SIZE];
     int16_t delta_pal[PALETTE_DELTA];
 
@@ -1244,21 +1244,56 @@ static int process_frame_obj(SANMVideoContext *ctx)
     uint16_t w     = bytestream2_get_le16u(&ctx->gb);
     uint16_t h     = bytestream2_get_le16u(&ctx->gb);
 
-    if (!w || !h) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "Dimensions are invalid.\n");
-        return AVERROR_INVALIDDATA;
+    if (w < 1 || h < 1 || w > 800 || h > 600 || left > 800 || top > 600) {
+        av_log(ctx->avctx, AV_LOG_WARNING,
+               "ignoring invalid fobj dimensions: c%d %d %d @ %d %d\n",
+               codec, w, h, left, top);
+        return 0;
     }
 
-    if (ctx->width < left + w || ctx->height < top + h) {
-        int ret = ff_set_dimensions(ctx->avctx, FFMAX(left + w, ctx->width),
-                                    FFMAX(top + h, ctx->height));
-        if (ret < 0)
-            return ret;
-        init_sizes(ctx, FFMAX(left + w, ctx->width),
-                   FFMAX(top + h, ctx->height));
-        if (init_buffers(ctx)) {
-            av_log(ctx->avctx, AV_LOG_ERROR, "Error resizing buffers.\n");
-            return AVERROR(ENOMEM);
+    if (!ctx->have_dimensions) {
+        int xres, yres;
+        if (ctx->subversion < 2) {
+            /* Rebel Assault 1: 384x242 internal size */
+            xres = 384;
+            yres = 242;
+            ctx->have_dimensions = 1;
+        } else if (codec == 37 || codec == 47 || codec == 48) {
+            /* these codecs work on full frames, trust their dimensions */
+            xres = w;
+            yres = h;
+            ctx->have_dimensions = 1;
+        } else {
+            /* Rebel Assault 2: 424x260 internal size */
+            if (((left + w) == 424) && ((top + h) == 260))
+                ctx->have_dimensions = 1;
+
+            xres = FFMAX(left + w, ctx->width);
+            yres = FFMAX(top + h, ctx->height);
+        }
+
+        if (ctx->width < xres || ctx->height < yres) {
+            int ret = ff_set_dimensions(ctx->avctx, xres, yres);
+            if (ret < 0)
+                return ret;
+            init_sizes(ctx, xres, yres);
+            if (init_buffers(ctx)) {
+                av_log(ctx->avctx, AV_LOG_ERROR, "Error resizing buffers.\n");
+                return AVERROR(ENOMEM);
+            }
+        }
+    } else {
+        if (((left + w > ctx->width) || (top + h > ctx->height))
+            && (codec >= 37)) {
+            /* correct unexpected overly large frames: this happens
+             * for instance with The Dig's sq1.san video: it has a few
+             * (all black) 640x480 frames halfway in, while the rest is
+             * 320x200.
+             */
+            av_log(ctx->avctx, AV_LOG_WARNING,
+                   "resizing too large fobj: c%d  %d %d @ %d %d\n", codec, w, h, left, top);
+            w = ctx->width;
+            h = ctx->height;
         }
     }
     bytestream2_skip(&ctx->gb, 4);
