@@ -222,8 +222,8 @@ static int decode_slice_header(const FFV1Context *f,
         }
         if (f->combined_version >= 0x40004) {
             sc->remap = ff_ffv1_get_symbol(c, state, 0);
-            if (sc->remap > 1U ||
-                sc->remap == 1 && !f->flt) {
+            if (sc->remap > 2U ||
+                sc->remap && !f->flt) {
                 av_log(f->avctx, AV_LOG_ERROR, "unsupported remap %d\n", sc->remap);
                 return AVERROR_INVALIDDATA;
             }
@@ -246,6 +246,7 @@ static void slice_set_damaged(FFV1Context *f, FFV1SliceContext *sc)
 static int decode_remap(FFV1Context *f, FFV1SliceContext *sc)
 {
     int transparency = f->transparency;
+    int flip = sc->remap == 2 ? 0x7FFF : 0;
 
     for (int p= 0; p<3 + transparency; p++) {
         int j = 0;
@@ -260,13 +261,13 @@ static int decode_remap(FFV1Context *f, FFV1SliceContext *sc)
             if (lu) {
                 lu ^= !run;
                 while (run--) {
-                    sc->fltmap[p][j++] = i ^ ((i&0x8000) ? 0 : 0x7FFF);
+                    sc->fltmap[p][j++] = i ^ ((i&0x8000) ? 0 : flip);
                     i++;
                 }
             } else {
                 i += run;
                 if (i != 65536)
-                    sc->fltmap[p][j++] = i ^ ((i&0x8000) ? 0 : 0x7FFF);
+                    sc->fltmap[p][j++] = i ^ ((i&0x8000) ? 0 : flip);
                 lu ^= !run;
             }
         }

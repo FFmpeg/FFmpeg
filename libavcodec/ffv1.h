@@ -137,6 +137,7 @@ typedef struct FFV1Context {
     uint8_t (*initial_states[MAX_QUANT_TABLES])[32];
     int colorspace;
     int flt;
+    int remap_mode;
 
 
     int use32bit;
