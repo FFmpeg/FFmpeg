@@ -279,16 +279,15 @@ static av_cold av_unused int pcm_scale_decode_init(AVCodecContext *avctx)
     avctx->sample_fmt   = AV_SAMPLE_FMT_FLT;
     s->base.sample_size = 4;
 
-        if (avctx->bits_per_coded_sample < 1 || avctx->bits_per_coded_sample > 24)
-            return AVERROR_INVALIDDATA;
+    if (avctx->bits_per_coded_sample < 1 || avctx->bits_per_coded_sample > 24)
+        return AVERROR_INVALIDDATA;
 
-        s->scale = 1. / (1 << (avctx->bits_per_coded_sample - 1));
-        fdsp = avpriv_float_dsp_alloc(0);
-        if (!fdsp)
-            return AVERROR(ENOMEM);
-        s->vector_fmul_scalar = fdsp->vector_fmul_scalar;
-        av_free(fdsp);
-
+    s->scale = 1. / (1 << (avctx->bits_per_coded_sample - 1));
+    fdsp = avpriv_float_dsp_alloc(0);
+    if (!fdsp)
+        return AVERROR(ENOMEM);
+    s->vector_fmul_scalar = fdsp->vector_fmul_scalar;
+    av_free(fdsp);
 
     return 0;
 }
