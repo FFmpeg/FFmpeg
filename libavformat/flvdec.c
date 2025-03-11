@@ -60,11 +60,11 @@ typedef struct FLVMasteringMeta {
 } FLVMasteringMeta;
 
 typedef struct FLVMetaVideoColor {
-    uint64_t matrix_coefficients;
-    uint64_t transfer_characteristics;
-    uint64_t primaries;
-    uint64_t max_cll;
-    uint64_t max_fall;
+    enum AVColorSpace matrix_coefficients;
+    enum AVColorTransferCharacteristic trc;
+    enum AVColorPrimaries primaries;
+    uint16_t max_cll;
+    uint16_t max_fall;
     FLVMasteringMeta mastering_meta;
 } FLVMetaVideoColor;
 
@@ -759,7 +759,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             if (!strcmp(key, "colorPrimaries")) {
                 meta_video_color->primaries = num_val;
             } else if (!strcmp(key, "transferCharacteristics")) {
-                meta_video_color->transfer_characteristics = num_val;
+                meta_video_color->trc = num_val;
             } else if (!strcmp(key, "matrixCoefficients")) {
                 meta_video_color->matrix_coefficients = num_val;
             } else if (!strcmp(key, "maxFall")) {
@@ -1235,9 +1235,9 @@ static int flv_update_video_color_info(AVFormatContext *s, AVStream *st)
     if (meta_video_color->primaries != AVCOL_PRI_RESERVED &&
         meta_video_color->primaries != AVCOL_PRI_RESERVED0)
         st->codecpar->color_primaries = meta_video_color->primaries;
-    if (meta_video_color->transfer_characteristics != AVCOL_TRC_RESERVED &&
-        meta_video_color->transfer_characteristics != AVCOL_TRC_RESERVED0)
-        st->codecpar->color_trc = meta_video_color->transfer_characteristics;
+    if (meta_video_color->trc != AVCOL_TRC_RESERVED &&
+        meta_video_color->trc != AVCOL_TRC_RESERVED0)
+        st->codecpar->color_trc = meta_video_color->trc;
 
     if (meta_video_color->max_cll && meta_video_color->max_fall) {
         size_t size = 0;
