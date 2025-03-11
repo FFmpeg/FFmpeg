@@ -1248,15 +1248,22 @@ static int flv_update_video_color_info(AVFormatContext *s, AVStream *st)
     }
 
     if (has_mastering_primaries || has_mastering_luminance) {
-        AVMasteringDisplayMetadata *metadata;
-        AVPacketSideData *sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
+        size_t size = 0;
+        AVMasteringDisplayMetadata *metadata = av_mastering_display_metadata_alloc_size(&size);
+        AVPacketSideData *sd;
+
+        if (!metadata)
+            return AVERROR(ENOMEM);
+
+        sd = av_packet_side_data_add(&st->codecpar->coded_side_data,
                                                         &st->codecpar->nb_coded_side_data,
                                                         AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
-                                                        sizeof(AVMasteringDisplayMetadata), 0);
-        if (!sd)
+                                                        metadata, size, 0);
+        if (!sd) {
+            av_freep(&metadata);
             return AVERROR(ENOMEM);
-        metadata = (AVMasteringDisplayMetadata*)sd->data;
-        memset(metadata, 0, sizeof(AVMasteringDisplayMetadata));
+        }
+
         // hdrCll
         if (has_mastering_luminance) {
             metadata->max_luminance = av_d2q(mastering_meta->max_luminance, INT_MAX);
