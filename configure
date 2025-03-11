@@ -6423,7 +6423,7 @@ elif enabled ppc; then
         check_cpp_condition power8 "altivec.h" "defined(_ARCH_PWR8)"
     fi
 
-    if enabled altivec && disabled vsx; then
+    if enabled altivec; then
         check_cc vec_xl altivec.h "const unsigned char *y1i = { 0 };
                                    vector unsigned char y0 = vec_xl(0, y1i);"
     fi
