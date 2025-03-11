@@ -607,6 +607,24 @@ static int old_codec1(SANMVideoContext *ctx, int top,
     return 0;
 }
 
+static int old_codec2(SANMVideoContext *ctx, int top,
+                      int left, int width, int height)
+{
+    uint8_t *dst = (uint8_t *)ctx->frm0, col;
+    int16_t xpos = left, ypos = top;
+
+    while (bytestream2_get_bytes_left(&ctx->gb) > 3) {
+        xpos += bytestream2_get_le16u(&ctx->gb);
+        ypos += bytestream2_get_byteu(&ctx->gb);
+        col = bytestream2_get_byteu(&ctx->gb);
+        if (xpos >= 0 && ypos >= 0 &&
+            xpos < ctx->width && ypos < ctx->height) {
+                *(dst + xpos + ypos * ctx->pitch) = col;
+        }
+    }
+    return 0;
+}
+
 static inline void codec37_mv(uint8_t *dst, const uint8_t *src,
                               int height, int stride, int x, int y)
 {
@@ -1313,6 +1331,8 @@ static int process_frame_obj(SANMVideoContext *ctx)
     case 1:
     case 3:
         return old_codec1(ctx, top, left, w, h, codec == 3);
+    case 2:
+        return old_codec2(ctx, top, left, w, h);
     case 37:
         return old_codec37(ctx, w, h);
     case 47:
