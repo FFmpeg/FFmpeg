@@ -334,17 +334,11 @@ static int pcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     sample_size = av_get_bits_per_sample(avctx->codec_id) / 8;
 
-    /* av_get_bits_per_sample returns 0 for AV_CODEC_ID_PCM_DVD */
     samples_per_block = 1;
     if (avctx->codec_id == AV_CODEC_ID_PCM_LXF) {
         /* we process 40-bit blocks per channel for LXF */
         samples_per_block = 2;
         sample_size       = 5;
-    }
-
-    if (sample_size == 0) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid sample_size\n");
-        return AVERROR(EINVAL);
     }
 
     if (channels == 0) {
