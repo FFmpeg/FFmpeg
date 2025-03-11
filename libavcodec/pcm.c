@@ -243,6 +243,7 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 }
 
 typedef struct PCMDecode {
+    int sample_size;
     short   table[256];
     void (*vector_fmul_scalar)(float *dst, const float *src, float mul,
                                int len);
@@ -286,8 +287,14 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = avctx->codec->sample_fmts[0];
 
-    if (avctx->sample_fmt == AV_SAMPLE_FMT_S32)
-        avctx->bits_per_raw_sample = av_get_bits_per_sample(avctx->codec_id);
+    if (avctx->codec_id != AV_CODEC_ID_PCM_LXF) {
+        int bits_per_sample = av_get_exact_bits_per_sample(avctx->codec_id);
+        if (avctx->sample_fmt == AV_SAMPLE_FMT_S32)
+            avctx->bits_per_raw_sample = bits_per_sample;
+        s->sample_size = bits_per_sample / 8;
+    } else {
+        s->sample_size = 5;
+    }
 
     return 0;
 }
@@ -328,17 +335,15 @@ static int pcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     int buf_size       = avpkt->size;
     PCMDecode *s       = avctx->priv_data;
     int channels       = avctx->ch_layout.nb_channels;
-    int sample_size, c, n, ret, samples_per_block;
+    int sample_size    = s->sample_size;
+    int c, n, ret, samples_per_block;
     uint8_t *samples;
     int32_t *dst_int32_t;
-
-    sample_size = av_get_bits_per_sample(avctx->codec_id) / 8;
 
     samples_per_block = 1;
     if (avctx->codec_id == AV_CODEC_ID_PCM_LXF) {
         /* we process 40-bit blocks per channel for LXF */
         samples_per_block = 2;
-        sample_size       = 5;
     }
 
     if (channels == 0) {
