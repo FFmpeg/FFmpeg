@@ -614,6 +614,49 @@ static int old_codec23(SANMVideoContext *ctx, int top, int left, int width,
     return 0;
 }
 
+static int old_codec21(SANMVideoContext *ctx, int top, int left, int width,
+                       int height)
+{
+    const uint32_t maxpxo = ctx->height * ctx->pitch;
+    uint8_t *dst = (uint8_t *)ctx->frm0, c;
+    int i, j, k, pc, sk, pxoff;
+
+    dst = (uint8_t *)ctx->frm0;
+    for (i = 0; i < height; i++) {
+        if (bytestream2_get_bytes_left(&ctx->gb) < 2)
+            return 0;
+        pxoff = left + ((top + i) * ctx->pitch);
+        k = bytestream2_get_le16u(&ctx->gb);
+        sk = 1;
+        pc = 0;
+        while (k > 0 && pc <= width) {
+            if (bytestream2_get_bytes_left(&ctx->gb) < 2)
+                return AVERROR_INVALIDDATA;
+            j = bytestream2_get_le16u(&ctx->gb);
+            k -= 2;
+            if (sk) {
+                pxoff += j;
+                pc += j;
+            } else {
+                if (bytestream2_get_bytes_left(&ctx->gb) < (j + 1))
+                    return AVERROR_INVALIDDATA;
+                do {
+                    c = bytestream2_get_byteu(&ctx->gb);
+                    if (pxoff >=0 && pxoff < maxpxo) {
+                        *(dst + pxoff) = c;
+                    }
+                    pxoff++;
+                    pc++;
+                    j--;
+                    k--;
+                } while (j > -1);
+            }
+            sk ^= 1;
+        }
+    }
+    return 0;
+}
+
 static int old_codec1(SANMVideoContext *ctx, int top,
                       int left, int width, int height, int opaque)
 {
@@ -1393,6 +1436,8 @@ static int process_frame_obj(SANMVideoContext *ctx)
         return old_codec1(ctx, top, left, w, h, codec == 3);
     case 2:
         return old_codec2(ctx, top, left, w, h);
+    case 21:
+        return old_codec21(ctx, top, left, w, h);
     case 23:
         return old_codec23(ctx, top, left, w, h, param, parm2);
     case 37:
