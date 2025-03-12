@@ -22,6 +22,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
+#include "libavutil/thread.h"
 #include "libavutil/version.h"
 #include "codec_internal.h"
 #include "dirac.h"
@@ -186,22 +187,39 @@ typedef struct VC2EncContext {
     enum DiracParseCodes last_parse_code;
 } VC2EncContext;
 
+/// x_k x_{k-1} ... x_0 -> 0 x_k 0 x_{k - 1} ... 0 x_0
+static uint16_t interleaved_ue_golomb_tab[256];
+/// 1 x_{k-1} ... x_0 -> 0 0 0 x_{k - 1} ... 0 x_0
+static uint16_t top_interleaved_ue_golomb_tab[256];
+/// 1 x_{k-1} ... x_0 -> 2 * k
+static uint8_t golomb_len_tab[256];
+
+static av_cold void vc2_init_static_data(void)
+{
+    interleaved_ue_golomb_tab[1] = 1;
+    for (unsigned i = 2; i < 256; ++i) {
+        golomb_len_tab[i] = golomb_len_tab[i >> 1] + 2;
+        interleaved_ue_golomb_tab[i] = (interleaved_ue_golomb_tab[i >> 1] << 2) | (i & 1);
+        top_interleaved_ue_golomb_tab[i] = interleaved_ue_golomb_tab[i] ^ (1 << golomb_len_tab[i]);
+    }
+}
+
 static av_always_inline void put_vc2_ue_uint(PutBitContext *pb, uint32_t val)
 {
-    int i;
-    int bits = av_log2(++val);
-    unsigned topbit = 1 << bits;
-    uint64_t pbits = 0;
+    uint64_t pbits = 1;
+    int bits = 1;
 
-    for (i = 0; i < bits; i++) {
-        topbit >>= 1;
-        av_assert2(pbits <= UINT64_MAX>>3);
-        pbits <<= 2;
-        if (val & topbit)
-            pbits |= 0x1;
+    ++val;
+
+    while (val >> 8) {
+        pbits |= (uint64_t)interleaved_ue_golomb_tab[val & 0xff] << bits;
+        val  >>= 8;
+        bits  += 16;
     }
+    pbits |= (uint64_t)top_interleaved_ue_golomb_tab[val] << bits;
+    bits  += golomb_len_tab[val];
 
-    put_bits63(pb, 2 * bits + 1, (pbits << 1) | 1);
+    put_bits63(pb, bits, pbits);
 }
 
 static av_always_inline int count_vc2_ue_uint(uint32_t val)
@@ -1003,6 +1021,7 @@ static av_cold int vc2_encode_end(AVCodecContext *avctx)
 
 static av_cold int vc2_encode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     Plane *p;
     SubBand *b;
     int i, level, o, shift;
@@ -1164,6 +1183,8 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
             s->qmagic_lut[i][1] = t;
         }
     }
+
+    ff_thread_once(&init_static_once, vc2_init_static_data);
 
     return 0;
 }
