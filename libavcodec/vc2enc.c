@@ -204,7 +204,7 @@ static av_cold void vc2_init_static_data(void)
     }
 }
 
-static av_always_inline void put_vc2_ue_uint(PutBitContext *pb, uint32_t val)
+static av_always_inline void put_vc2_ue_uint_inline(PutBitContext *pb, uint32_t val)
 {
     uint64_t pbits = 1;
     int bits = 1;
@@ -220,6 +220,11 @@ static av_always_inline void put_vc2_ue_uint(PutBitContext *pb, uint32_t val)
     bits  += golomb_len_tab[val];
 
     put_bits63(pb, bits, pbits);
+}
+
+static av_noinline void put_vc2_ue_uint(PutBitContext *pb, uint32_t val)
+{
+    put_vc2_ue_uint_inline(pb, val);
 }
 
 static av_always_inline int count_vc2_ue_uint(uint32_t val)
@@ -545,7 +550,7 @@ static void encode_subband(const VC2EncContext *s, PutBitContext *pb,
     for (y = top; y < bottom; y++) {
         for (x = left; x < right; x++) {
             uint32_t c_abs = QUANT(FFABS(coeff[x]), q_m, q_a, q_s);
-            put_vc2_ue_uint(pb, c_abs);
+            put_vc2_ue_uint_inline(pb, c_abs);
             if (c_abs)
                 put_bits(pb, 1, coeff[x] < 0);
         }
