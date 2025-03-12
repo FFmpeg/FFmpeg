@@ -31,10 +31,8 @@
 #define AVCODEC_EXIF_INTERNAL_H
 
 #include "libavutil/buffer.h"
-#include "libavutil/dict.h"
 #include "libavutil/frame.h"
 
-#include "bytestream.h"
 #include "exif.h"
 
 /**
@@ -60,9 +58,5 @@ int ff_exif_attach_buffer(void *logctx, AVFrame *frame, AVBufferRef *data, enum 
  * addition to the AV_FRAME_DATA_EXIF side data.
  */
 int ff_exif_attach_ifd(void *logctx, AVFrame *frame, const AVExifMetadata *ifd);
-
-/* Used by mjpeg decoder */
-int ff_exif_decode_ifd(void *logctx, GetByteContext *gb,
-                       int le, int depth, AVDictionary **metadata);
 
 #endif /* AVCODEC_EXIF_INTERNAL_H */

@@ -936,26 +936,20 @@ int av_exif_ifd_to_dict(void *logctx, const AVExifMetadata *ifd, AVDictionary **
     return exif_ifd_to_dict(logctx, "", ifd, metadata);
 }
 
-int ff_exif_decode_ifd(void *logctx, GetByteContext *gb, int le, int depth, AVDictionary **metadata)
-{
-    AVExifMetadata ifd = { 0 };
-    int ret = exif_parse_ifd_list(logctx, gb, le, depth, &ifd);
-    if (ret < 0)
-        return ret;
-
-    ret = av_exif_ifd_to_dict(logctx, &ifd, metadata);
-    av_exif_free(&ifd);
-
-    return ret;
-}
-
 #if FF_API_OLD_EXIF
 int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
                            int le, int depth, AVDictionary **metadata)
 {
+    AVExifMetadata ifd = { 0 };
     GetByteContext gb;
+    int ret;
     bytestream2_init(&gb, buf, size);
-    return ff_exif_decode_ifd(logctx, &gb, le, depth, metadata);
+    ret = exif_parse_ifd_list(logctx, &gb, le, depth, &ifd);
+    if (ret < 0)
+        return ret;
+    ret = av_exif_ifd_to_dict(logctx, &ifd, metadata);
+    av_exif_free(&ifd);
+    return ret;
 }
 #endif /* FF_API_OLD_EXIF */
 
