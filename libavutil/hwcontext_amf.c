@@ -277,6 +277,9 @@ static int amf_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
     int w = FFMIN(dst->width,  src->width);
     int h = FFMIN(dst->height, src->height);
 
+    if (dst->hw_frames_ctx->data != (uint8_t *)ctx || src->format != ctx->sw_format)
+        return AVERROR(EINVAL);
+
     if (!surface) {
         AVHWDeviceContext   *hwdev_ctx = ctx->device_ctx;
         AVAMFDeviceContext  *amf_device_ctx = (AVAMFDeviceContext *)hwdev_ctx->hwctx;
@@ -318,6 +321,9 @@ static int amf_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
     int w = FFMIN(dst->width,  src->width);
     int h = FFMIN(dst->height, src->height);
     int ret;
+
+    if (src->hw_frames_ctx->data != (uint8_t *)ctx || dst->format != ctx->sw_format)
+        return AVERROR(EINVAL);
 
     ret = surface->pVtbl->Convert(surface, AMF_MEMORY_HOST);
     AMF_RETURN_IF_FALSE(ctx, ret == AMF_OK, AVERROR_UNKNOWN, "Convert(amf::AMF_MEMORY_HOST) failed with error %d\n", AVERROR_UNKNOWN);
