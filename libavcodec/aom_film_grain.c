@@ -366,7 +366,8 @@ int ff_aom_attach_film_grain_sets(const AVFilmGrainAFGS1Params *s, AVFrame *fram
             continue;
 
         if (!av_frame_side_data_add(&frame->side_data, &frame->nb_side_data,
-                                    AV_FRAME_DATA_FILM_GRAIN_PARAMS, &s->sets[i],
+                                    AV_FRAME_DATA_FILM_GRAIN_PARAMS,
+                                    (AVBufferRef**)&s->sets[i],
                                     AV_FRAME_SIDE_DATA_FLAG_NEW_REF))
             return AVERROR(ENOMEM);
     }
