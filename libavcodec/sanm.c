@@ -293,6 +293,8 @@ typedef struct SANMVideoContext {
     int8_t p8x8glyphs[NGLYPHS][64];
     uint8_t c47itbl[0x10000];
     uint8_t c23lut[256];
+    uint8_t c4tbl[2][256][16];
+    uint16_t c4param;
 } SANMVideoContext;
 
 typedef struct SANMFrameHeader {
@@ -480,6 +482,142 @@ static av_cold int init_buffers(SANMVideoContext *ctx)
     return 0;
 }
 
+static void codec33_gen_tiles(SANMVideoContext *ctx, int8_t param1)
+{
+    uint8_t *dst = &(ctx->c4tbl[0][0][0]);
+    int i, j, k, l, m, n, o, p;
+
+    for (i = 0; i < 8; i++) {
+        for (k = 0; k < 8; k++) {
+            j = i + param1;
+            l = k + param1;
+            p = (j + k) / 2;
+            j = (j + p) / 2;
+            m = l / 2;
+            n = (i + param1);
+            o = (k + param1);
+
+            *dst++ = p; *dst++ = p; *dst++ = j; *dst++ = n;
+            *dst++ = p; *dst++ = p; *dst++ = j; *dst++ = i;
+            *dst++ = m; *dst++ = m; *dst++ = p; *dst++ = j;
+            *dst++ = l; *dst++ = l; *dst++ = m; *dst++ = p;
+        }
+    }
+
+    for (i = 0; i < 8; i++) {
+        for (k = 0; k < 8; k++) {
+            j = i + param1;
+            l = k + param1;
+            n = ((j + l) / 2);
+            m = ((l + n) / 2);
+
+            *dst++ = j; *dst++ = j; *dst++ = j; *dst++ = j;
+            *dst++ = n; *dst++ = n; *dst++ = n; *dst++ = n;
+            *dst++ = m; *dst++ = m; *dst++ = m; *dst++ = m;
+            *dst++ = l; *dst++ = l; *dst++ = l; *dst++ = l;
+        }
+    }
+
+    for (i = 0; i < 8; i++) {
+        for (k = 0; k < 8; k++) {
+            j = i + param1;
+            l = k + param1;
+            m = (j + l) / 2;
+            n = (j + m) / 2;
+            o = m / 2;
+            p = j & 0xff;
+
+            *dst++ = p; *dst++ = p; *dst++ = n; *dst++ = m;
+            *dst++ = p; *dst++ = p; *dst++ = n; *dst++ = m;
+            *dst++ = n; *dst++ = n; *dst++ = m; *dst++ = o;
+            *dst++ = m; *dst++ = m; *dst++ = o; *dst++ = l;
+        }
+    }
+
+    for (i = 0; i < 8; i++) {
+        for (k = 0; k < 8; k++) {
+            j = i + param1;
+            l = k + param1;
+            m = (j + l) / 2;
+            n = m / 2;
+
+            *dst++ = j; *dst++ = m; *dst++ = n; *dst++ = l;
+            *dst++ = j; *dst++ = m; *dst++ = n; *dst++ = l;
+            *dst++ = j; *dst++ = m; *dst++ = n; *dst++ = l;
+            *dst++ = j; *dst++ = m; *dst++ = n; *dst++ = l;
+        }
+    }
+}
+
+static void codec4_gen_tiles(SANMVideoContext *ctx, uint16_t param1)
+{
+    uint8_t *dst = &(ctx->c4tbl[0][0][0]);
+    int i, j, k, l, m, n, o;
+
+    for (i = 1; i < 16; i += 2) {
+        for (k = 0; k < 16; k++) {
+            j = i + param1;
+            l = k + param1;
+            m = (j + l) / 2;
+            n = (j + m) / 2;
+            o = (l + m) / 2;
+            if (j == m || l == m) {
+                *dst++ = l; *dst++ = j; *dst++ = l; *dst++ = j;
+                *dst++ = j; *dst++ = l; *dst++ = j; *dst++ = j;
+                *dst++ = l; *dst++ = j; *dst++ = l; *dst++ = j;
+                *dst++ = l; *dst++ = l; *dst++ = j; *dst++ = l;
+            } else {
+                *dst++ = m; *dst++ = m; *dst++ = n; *dst++ = j;
+                *dst++ = m; *dst++ = m; *dst++ = n; *dst++ = j;
+                *dst++ = o; *dst++ = o; *dst++ = m; *dst++ = n;
+                *dst++ = l; *dst++ = l; *dst++ = o; *dst++ = m;
+            }
+        }
+    }
+
+    for (i = 0; i < 16; i += 2) {
+        for (k = 0; k < 16; k++) {
+            j = i + param1;
+            l = k + param1;
+            m = (j + l) / 2;
+            n = (j + m) / 2;
+            o = (l + m) / 2;
+            if (m == j || m == l) {
+                *dst++ = j; *dst++ = j; *dst++ = l; *dst++ = j;
+                *dst++ = j; *dst++ = j; *dst++ = j; *dst++ = l;
+                *dst++ = l; *dst++ = j; *dst++ = l; *dst++ = l;
+                *dst++ = j; *dst++ = l; *dst++ = j; *dst++ = l;
+            } else {
+                *dst++ = j; *dst++ = j; *dst++ = n; *dst++ = m;
+                *dst++ = j; *dst++ = j; *dst++ = n; *dst++ = m;
+                *dst++ = n; *dst++ = n; *dst++ = m; *dst++ = o;
+                *dst++ = m; *dst++ = m; *dst++ = o; *dst++ = l;
+            }
+        }
+    }
+}
+
+
+static int codec4_load_tiles(SANMVideoContext *ctx, uint16_t param2, uint8_t clr)
+{
+    uint8_t c, *dst = (uint8_t *)&(ctx->c4tbl[1][0][0]);
+    uint32_t loop = param2 * 8;
+
+    if (param2 > 256)
+        return AVERROR_INVALIDDATA;
+
+    if (bytestream2_get_bytes_left(&ctx->gb) < loop)
+        return AVERROR_INVALIDDATA;
+
+    while (loop--) {
+        c = bytestream2_get_byteu(&ctx->gb);
+        *dst++ = (c >> 4) + clr;
+        *dst++ = (c & 0xf) + clr;
+    }
+
+    return 0;
+}
+
 static void rotate_bufs(SANMVideoContext *ctx, int rotate_code)
 {
     if (rotate_code == 2)
@@ -519,6 +657,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         if (ctx->subversion < 2)
             ctx->pal[0] = 0xFFU << 24;
     }
+    ctx->c4param = 0xffff;
 
     return 0;
 }
@@ -529,6 +668,91 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
     destroy_buffers(ctx);
 
+    return 0;
+}
+
+static int old_codec4(SANMVideoContext *ctx, int top, int left, int w, int h,
+                      uint8_t param, uint16_t param2, int codec)
+{
+    const uint16_t p = ctx->pitch;
+    const uint32_t maxpxo = ctx->height * p;
+    uint8_t mask, bits, idx, *gs, *dst = (uint8_t *)ctx->frm0;
+    int i, j, k, l, bit, ret;
+    int32_t pxoff, pxo2;
+
+    if (ctx->c4param != param) {
+        if (codec > 32)
+            codec33_gen_tiles(ctx, param);
+        else
+            codec4_gen_tiles(ctx, param);
+        ctx->c4param = param;
+    }
+    if (param2 > 0) {
+        ret = codec4_load_tiles(ctx, param2, param);
+        if (ret)
+            return ret;
+    }
+
+    if (codec > 32)
+        codec -= 29;
+
+    for (j = 0; j < w; j += 4) {
+        mask = bits = 0;
+        for (i = 0; i < h; i += 4) {
+            pxoff = j + left + ((top + i) * p);
+            if (param2 > 0) {
+                if (bits == 0) {
+                    if (bytestream2_get_bytes_left(&ctx->gb) < 1)
+                        return AVERROR_INVALIDDATA;
+                    mask = bytestream2_get_byteu(&ctx->gb);
+                    bits = 8;
+                }
+                bit = !!(mask & 0x80);
+                mask <<= 1;
+                bits--;
+            } else {
+                bit = 0;
+            }
+
+            if (bytestream2_get_bytes_left(&ctx->gb) < 1)
+                return AVERROR_INVALIDDATA;
+            idx = bytestream2_get_byteu(&ctx->gb);
+            if ((bit == 0) && (idx == 0x80) && (codec != 5))
+                continue;
+
+            gs = &(ctx->c4tbl[bit][idx][0]);
+            pxo2 = pxoff;
+            for (k = 0; k < 4; k++) {
+                for (l = 0; l < 4; l++) {
+                    if (pxo2 >= 0 && pxo2 < maxpxo) {
+                        *(dst + pxo2) = *gs;
+                    }
+                    gs++;
+                    pxo2++;
+                }
+                pxo2 = pxo2 - 4 + p;
+            }
+
+            /* smooth top and left block borders with neighbours */
+            if (((pxoff - p + k) < 0) || ((pxoff - p + k) >= maxpxo)
+                || ((pxoff + 3 * p) < 0) || ((pxoff + 3 * p) >= maxpxo)
+                || (i == 0) || (j == 0))
+                continue;
+            if (param & 0x80) {
+                for (k = 0; k < 4; k++)
+                    *(dst + pxoff + k) = ((*(dst + pxoff + k) + *(dst + pxoff - p + k)) >> 1) | 0x80;
+                *(dst + pxoff + 1 * p) = (*(dst + pxoff + 1 * p) + *(dst + pxoff + 1 * p - 1)) >> 1 | 0x80;
+                *(dst + pxoff + 2 * p) = (*(dst + pxoff + 2 * p) + *(dst + pxoff + 2 * p - 1)) >> 1 | 0x80;
+                *(dst + pxoff + 3 * p) = (*(dst + pxoff + 3 * p) + *(dst + pxoff + 3 * p - 1)) >> 1 | 0x80;
+            } else {
+                for (k = 0; k < 4; k++)
+                    *(dst + pxoff + k) = ((*(dst + pxoff + k) + *(dst + pxoff - p + k)) >> 1) & 0x7f;
+                *(dst + pxoff + 1 * p) = (*(dst + pxoff + 1 * p) + *(dst + pxoff + 1 * p - 1)) >> 1;
+                *(dst + pxoff + 2 * p) = (*(dst + pxoff + 2 * p) + *(dst + pxoff + 2 * p - 1)) >> 1;
+                *(dst + pxoff + 3 * p) = (*(dst + pxoff + 3 * p) + *(dst + pxoff + 3 * p - 1)) >> 1;
+            }
+        }
+    }
     return 0;
 }
 
@@ -1436,6 +1660,11 @@ static int process_frame_obj(SANMVideoContext *ctx)
         return old_codec1(ctx, top, left, w, h, codec == 3);
     case 2:
         return old_codec2(ctx, top, left, w, h);
+    case 4:
+    case 5:
+    case 33:
+    case 34:
+        return old_codec4(ctx, top, left, w, h, param, parm2, codec);
     case 21:
         return old_codec21(ctx, top, left, w, h);
     case 23:
