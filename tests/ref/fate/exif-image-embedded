@@ -32,6 +32,9 @@ color_transfer=unknown
 chroma_location=center
 TAG:ExifIFD/UserComment=AppleMark
 
+[SIDE_DATA]
+side_data_type=EXIF metadata
+[/SIDE_DATA]
 [/FRAME]
 [FRAME]
 media_type=audio
