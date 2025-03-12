@@ -197,4 +197,7 @@ TAG:ExifIFD/ExposureMode=      0
 TAG:ExifIFD/WhiteBalance=      0
 TAG:ExifIFD/DigitalZoomRatio=   4000:4000   
 TAG:ExifIFD/SceneCaptureType=      0
+[SIDE_DATA]
+side_data_type=EXIF metadata
+[/SIDE_DATA]
 [/FRAME]

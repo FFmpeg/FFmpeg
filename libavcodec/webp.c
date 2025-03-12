@@ -1456,38 +1456,34 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         }
         case MKTAG('E', 'X', 'I', 'F'): {
-            int le, ifd_offset, exif_offset = bytestream2_tell(&gb);
-            AVDictionary *exif_metadata = NULL;
-            GetByteContext exif_gb;
+            AVBufferRef *exif_buf = NULL;
 
             if (s->has_exif) {
                 av_log(avctx, AV_LOG_VERBOSE, "Ignoring extra EXIF chunk\n");
                 goto exif_end;
             }
+
             if (!(vp8x_flags & VP8X_FLAG_EXIF_METADATA))
                 av_log(avctx, AV_LOG_WARNING,
                        "EXIF chunk present, but Exif bit not set in the "
                        "VP8X header\n");
 
+            exif_buf = av_buffer_alloc(chunk_size);
+            if (!exif_buf) {
+                av_log(avctx, AV_LOG_WARNING, "unable to allocate EXIF buffer\n");
+                goto exif_end;
+            }
             s->has_exif = 1;
-            bytestream2_init(&exif_gb, avpkt->data + exif_offset,
-                             avpkt->size - exif_offset);
-            if (ff_tdecode_header(&exif_gb, &le, &ifd_offset) < 0) {
-                av_log(avctx, AV_LOG_ERROR, "invalid TIFF header "
-                       "in Exif data\n");
-                goto exif_end;
-            }
+            memcpy(exif_buf->data, gb.buffer, chunk_size);
 
-            bytestream2_seek(&exif_gb, ifd_offset, SEEK_SET);
-            if (ff_exif_decode_ifd(avctx, &exif_gb, le, 0, &exif_metadata) < 0) {
-                av_log(avctx, AV_LOG_ERROR, "error decoding Exif data\n");
-                goto exif_end;
+            /* if this succeeds then exif_buf is either freed or transferred to the AVFrame */
+            ret = ff_exif_attach_buffer(avctx, p, exif_buf, AV_EXIF_TIFF_HEADER);
+            if (ret < 0) {
+                av_log(avctx, AV_LOG_WARNING, "unable to attach EXIF buffer\n");
+                av_buffer_unref(&exif_buf);
             }
-
-            av_dict_copy(&p->metadata, exif_metadata, 0);
 
 exif_end:
-            av_dict_free(&exif_metadata);
             bytestream2_skip(&gb, chunk_size);
             break;
         }
