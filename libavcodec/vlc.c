@@ -155,7 +155,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
         int         n = codes[i].bits;
         uint32_t code = codes[i].code;
         int    symbol = codes[i].symbol;
-        ff_dlog(NULL, "i=%d n=%d code=0x%"PRIx32"\n", i, n, code);
+        ff_tlog(NULL, "i=%d n=%d code=0x%"PRIx32"\n", i, n, code);
         if (n <= table_nb_bits) {
             /* no need to add another table */
             int   j = code >> (32 - table_nb_bits);
@@ -169,7 +169,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
             for (int k = 0; k < nb; k++) {
                 int   bits = table[j].len;
                 int oldsym = table[j].sym;
-                ff_dlog(NULL, "%4x: code=%d n=%d\n", j, i, n);
+                ff_tlog(NULL, "%4x: code=%d n=%d\n", j, i, n);
                 if ((bits || oldsym) && (bits != n || oldsym != symbol)) {
                     av_log(NULL, AV_LOG_ERROR, "incorrect codes\n");
                     return AVERROR_INVALIDDATA;
