@@ -117,10 +117,8 @@ static inline int dequant_and_decompand(CFHDContext *s, int level, int quantisat
 
 static inline void difference_coding(int16_t *band, int width, int height)
 {
-
-    int i,j;
-    for (i = 0; i < height; i++) {
-        for (j = 1; j < width; j++) {
+    for (int i = 0; i < height; i++) {
+        for (int j = 1; j < width; j++) {
           band[j] += band[j-1];
         }
         band += width;
@@ -129,17 +127,15 @@ static inline void difference_coding(int16_t *band, int width, int height)
 
 static inline void peak_table(int16_t *band, Peak *peak, int length)
 {
-    int i;
-    for (i = 0; i < length; i++)
+    for (int i = 0; i < length; i++)
         if (abs(band[i]) > peak->level)
             band[i] = bytestream2_get_le16(&peak->base);
 }
 
 static inline void process_alpha(int16_t *alpha, int width)
 {
-    int i, channel;
-    for (i = 0; i < width; i++) {
-        channel   = alpha[i];
+    for (int i = 0; i < width; i++) {
+        int channel   = alpha[i];
         channel  -= ALPHA_COMPAND_DC_OFFSET;
         channel <<= 3;
         channel  *= ALPHA_COMPAND_GAIN;
@@ -196,11 +192,9 @@ static inline void process_bayer(AVFrame *frame, int bpc)
 static inline void interlaced_vertical_filter(int16_t *output, int16_t *low, int16_t *high,
                          int width, int linesize, int plane)
 {
-    int i;
-    int16_t even, odd;
-    for (i = 0; i < width; i++) {
-        even = (low[i] - high[i])/2;
-        odd  = (low[i] + high[i])/2;
+    for (int i = 0; i < width; i++) {
+        int16_t even = (low[i] - high[i])/2;
+        int16_t odd  = (low[i] + high[i])/2;
         output[i]            = av_clip_uintp2(even, 10);
         output[i + linesize] = av_clip_uintp2(odd, 10);
     }
@@ -219,21 +213,19 @@ static inline void inverse_temporal_filter(int16_t *low, int16_t *high, int widt
 
 static void free_buffers(CFHDContext *s)
 {
-    int i, j;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(s->plane); i++) {
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(s->plane); i++) {
         Plane *p = &s->plane[i];
         av_freep(&s->plane[i].idwt_buf);
         av_freep(&s->plane[i].idwt_tmp);
         s->plane[i].idwt_size = 0;
 
-        for (j = 0; j < SUBBAND_COUNT_3D; j++)
+        for (int j = 0; j < SUBBAND_COUNT_3D; j++)
             s->plane[i].subband[j] = NULL;
 
-        for (j = 0; j < 10; j++)
+        for (int j = 0; j < 10; j++)
             s->plane[i].l_h[j] = NULL;
 
-        for (j = 0; j < DWT_LEVELS_3D; j++)
+        for (int j = 0; j < DWT_LEVELS_3D; j++)
             p->band[j][0].read_ok =
             p->band[j][1].read_ok =
             p->band[j][2].read_ok =
@@ -247,9 +239,8 @@ static void free_buffers(CFHDContext *s)
 static int alloc_buffers(AVCodecContext *avctx)
 {
     CFHDContext *s = avctx->priv_data;
-    int i, j, ret, planes, bayer = 0;
+    int ret, planes, bayer = 0;
     int chroma_x_shift, chroma_y_shift;
-    unsigned k;
 
     if ((ret = ff_set_dimensions(avctx, s->coded_width, s->coded_height)) < 0)
         return ret;
@@ -269,7 +260,7 @@ static int alloc_buffers(AVCodecContext *avctx)
         bayer = 1;
     }
 
-    for (i = 0; i < planes; i++) {
+    for (int i = 0; i < planes; i++) {
         int w8, h8, w4, h4, w2, h2;
         int width  = (i || bayer) ? s->coded_width  >> chroma_x_shift : s->coded_width;
         int height = (i || bayer) ? s->coded_height >> chroma_y_shift : s->coded_height;
@@ -331,17 +322,17 @@ static int alloc_buffers(AVCodecContext *avctx)
         }
 
         if (s->transform_type == 0) {
-            for (j = 0; j < DWT_LEVELS; j++) {
-                for (k = 0; k < FF_ARRAY_ELEMS(s->plane[i].band[j]); k++) {
+            for (int j = 0; j < DWT_LEVELS; j++) {
+                for (unsigned k = 0; k < FF_ARRAY_ELEMS(s->plane[i].band[j]); k++) {
                     s->plane[i].band[j][k].a_width  = w8 << j;
                     s->plane[i].band[j][k].a_height = h8 << j;
                 }
             }
         } else {
-            for (j = 0; j < DWT_LEVELS_3D; j++) {
+            for (int j = 0; j < DWT_LEVELS_3D; j++) {
                 int t = j < 1 ? 0 : (j < 3 ? 1 : 2);
 
-                for (k = 0; k < FF_ARRAY_ELEMS(s->plane[i].band[j]); k++) {
+                for (unsigned k = 0; k < FF_ARRAY_ELEMS(s->plane[i].band[j]); k++) {
                     s->plane[i].band[j][k].a_width  = w8 << t;
                     s->plane[i].band[j][k].a_height = h8 << t;
                 }
@@ -379,8 +370,7 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
     CFHDContext *s = avctx->priv_data;
     CFHDDSPContext *dsp = &s->dsp;
     GetByteContext gb;
-    int ret = 0, i, j, plane, got_buffer = 0;
-    int16_t *coeff_data;
+    int ret = 0, got_buffer = 0;
 
     init_frame_defaults(s);
     s->planes = av_pix_fmt_count_planes(s->coded_format);
@@ -395,6 +385,8 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
         uint16_t abstag = abs(tag);
         int8_t abs_tag8 = abs(tag8);
         uint16_t data   = bytestream2_get_be16(&gb);
+        int16_t *coeff_data;
+
         if (abs_tag8 >= 0x60 && abs_tag8 <= 0x6f) {
             av_log(avctx, AV_LOG_DEBUG, "large len %x\n", ((tagu & 0xff) << 16) | data);
         } else if (tag == SampleFlags) {
@@ -477,7 +469,7 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
             s->quantisation = data;
             av_log(avctx, AV_LOG_DEBUG, "Quantisation: %"PRIu16"\n", data);
         } else if (tag == PrescaleTable) {
-            for (i = 0; i < 8; i++)
+            for (int i = 0; i < 8; i++)
                 s->prescale_table[i] = (data >> (14 - i * 2)) & 0x3;
             av_log(avctx, AV_LOG_DEBUG, "Prescale table: %x\n", data);
         } else if (tag == BandEncoding) {
@@ -529,7 +521,7 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
                 ret = AVERROR_INVALIDDATA;
                 goto end;
             }
-            for (i = 0; i < data; i++) {
+            for (int i = 0; i < data; i++) {
                 uint32_t offset = bytestream2_get_be32(&gb);
                 av_log(avctx, AV_LOG_DEBUG, "Offset = %"PRIu32"\n", offset);
             }
@@ -746,8 +738,8 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
             }
 
             av_log(avctx, AV_LOG_DEBUG, "Start of lowpass coeffs component %d height:%d, width:%d\n", s->channel_num, lowpass_height, lowpass_width);
-            for (i = 0; i < lowpass_height; i++) {
-                for (j = 0; j < lowpass_width; j++)
+            for (int i = 0; i < lowpass_height; i++) {
+                for (int j = 0; j < lowpass_width; j++)
                     coeff_data[j] = bytestream2_get_be16u(&gb);
 
                 coeff_data += lowpass_width;
@@ -773,7 +765,6 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
             int highpass_height, highpass_width, highpass_a_width, highpass_a_height, highpass_stride, a_expected;
             int expected;
             GetBitContext gbit;
-            int level, run, coeff;
             int count = 0, bytes;
 
             if (!s->a_width || !s->a_height) {
@@ -815,6 +806,8 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
                     s->codebook = 1;
                 if (!s->codebook) {
                     while (1) {
+                        int level, run, coeff;
+
                         UPDATE_CACHE(re, &gbit);
                         GET_RL_VLC(level, run, re, &gbit, s->table_9_rl_vlc,
                                    VLC_BITS, 3, 1);
@@ -835,17 +828,19 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
                         if (tag == BandSecondPass) {
                             const uint16_t q = s->quantisation;
 
-                            for (i = 0; i < run; i++) {
+                            for (int i = 0; i < run; i++) {
                                 *coeff_data |= coeff * 256U;
                                 *coeff_data++ *= q;
                             }
                         } else {
-                            for (i = 0; i < run; i++)
+                            for (int i = 0; i < run; i++)
                                 *coeff_data++ = coeff;
                         }
                     }
                 } else {
                     while (1) {
+                        int level, run, coeff;
+
                         UPDATE_CACHE(re, &gbit);
                         GET_RL_VLC(level, run, re, &gbit, s->table_18_rl_vlc,
                                    VLC_BITS, 3, 1);
@@ -866,12 +861,12 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
                         if (tag == BandSecondPass) {
                             const uint16_t q = s->quantisation;
 
-                            for (i = 0; i < run; i++) {
+                            for (int i = 0; i < run; i++) {
                                 *coeff_data |= coeff * 256U;
                                 *coeff_data++ *= q;
                             }
                         } else {
-                            for (i = 0; i < run; i++)
+                            for (int i = 0; i < run; i++)
                                 *coeff_data++ = coeff;
                         }
                     }
@@ -927,14 +922,12 @@ finish:
         goto end;
     }
 
-    for (plane = 0; plane < s->planes; plane++) {
-        int o, level;
-
-        for (level = 0; level < (s->transform_type == 0 ? DWT_LEVELS : DWT_LEVELS_3D) ; level++) {
+    for (int plane = 0; plane < s->planes; plane++) {
+        for (int level = 0; level < (s->transform_type == 0 ? DWT_LEVELS : DWT_LEVELS_3D) ; level++) {
             if (s->transform_type == 2)
                 if (level == 2 || level == 5)
                     continue;
-            for (o = !!level; o < 4 ; o++) {
+            for (int o = !!level; o < 4 ; o++) {
                 if (!s->plane[plane].band[level][o].read_ok) {
                     ret = AVERROR_INVALIDDATA;
                     goto end;
@@ -944,7 +937,7 @@ finish:
     }
 
     if (s->transform_type == 0 && s->sample_type != 1) {
-        for (plane = 0; plane < s->planes && !ret; plane++) {
+        for (int plane = 0; plane < s->planes && !ret; plane++) {
             /* level 1 */
             int lowpass_height  = s->plane[plane].band[0][0].height;
             int output_stride   = s->plane[plane].band[0][0].a_width;
@@ -988,8 +981,8 @@ finish:
             dsp->horiz_filter(output, output_stride, low, output_stride, high, output_stride, lowpass_width, lowpass_height * 2);
             if (s->bpc == 12) {
                 output = s->plane[plane].subband[0];
-                for (i = 0; i < lowpass_height * 2; i++) {
-                    for (j = 0; j < lowpass_width * 2; j++)
+                for (int i = 0; i < lowpass_height * 2; i++) {
+                    for (int j = 0; j < lowpass_width * 2; j++)
                         output[j] *= 4;
 
                     output += output_stride * 2;
@@ -1028,8 +1021,8 @@ finish:
             dsp->horiz_filter(output, output_stride, low, output_stride, high, output_stride, lowpass_width, lowpass_height * 2);
 
             output = s->plane[plane].subband[0];
-            for (i = 0; i < lowpass_height * 2; i++) {
-                for (j = 0; j < lowpass_width * 2; j++)
+            for (int i = 0; i < lowpass_height * 2; i++) {
+                for (int j = 0; j < lowpass_width * 2; j++)
                     output[j] *= 4;
 
                 output += output_stride * 2;
@@ -1079,7 +1072,7 @@ finish:
                     goto end;
                 }
 
-                for (i = 0; i < s->plane[act_plane].height; i++) {
+                for (int i = 0; i < s->plane[act_plane].height; i++) {
                     dsp->horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
                     if (avctx->pix_fmt == AV_PIX_FMT_GBRAP12 && act_plane == 3)
                         process_alpha(dst, lowpass_width * 2);
@@ -1103,7 +1096,7 @@ finish:
                 dst  = (int16_t *)pic->data[act_plane];
                 low  = s->plane[plane].l_h[6];
                 high = s->plane[plane].l_h[7];
-                for (i = 0; i < s->plane[act_plane].height / 2; i++) {
+                for (int i = 0; i < s->plane[act_plane].height / 2; i++) {
                     interlaced_vertical_filter(dst, low, high, lowpass_width * 2,  pic->linesize[act_plane]/2, act_plane);
                     low  += output_stride * 2;
                     high += output_stride * 2;
@@ -1112,7 +1105,7 @@ finish:
             }
         }
     } else if (s->transform_type == 2 && (avctx->internal->is_copy || s->frame_index == 1 || s->sample_type != 1)) {
-        for (plane = 0; plane < s->planes && !ret; plane++) {
+        for (int plane = 0; plane < s->planes && !ret; plane++) {
             int lowpass_height  = s->plane[plane].band[0][0].height;
             int output_stride   = s->plane[plane].band[0][0].a_width;
             int lowpass_width   = s->plane[plane].band[0][0].width;
@@ -1154,8 +1147,8 @@ finish:
             dsp->horiz_filter(output, output_stride, low, output_stride, high, output_stride, lowpass_width, lowpass_height * 2);
             if (s->bpc == 12) {
                 output = s->plane[plane].l_h[7];
-                for (i = 0; i < lowpass_height * 2; i++) {
-                    for (j = 0; j < lowpass_width * 2; j++)
+                for (int i = 0; i < lowpass_height * 2; i++) {
+                    for (int j = 0; j < lowpass_width * 2; j++)
                         output[j] *= 4;
 
                     output += output_stride * 2;
@@ -1193,8 +1186,8 @@ finish:
             dsp->horiz_filter(output, output_stride, low, output_stride, high, output_stride, lowpass_width, lowpass_height * 2);
 
             output = s->plane[plane].l_h[7];
-            for (i = 0; i < lowpass_height * 2; i++) {
-                for (j = 0; j < lowpass_width * 2; j++)
+            for (int i = 0; i < lowpass_height * 2; i++) {
+                for (int j = 0; j < lowpass_width * 2; j++)
                     output[j] *= 4;
                 output += output_stride * 2;
             }
@@ -1231,7 +1224,7 @@ finish:
             low    = s->plane[plane].l_h[7];
             high   = s->plane[plane].l_h[9];
             output = s->plane[plane].l_h[7];
-            for (i = 0; i < lowpass_height; i++) {
+            for (int i = 0; i < lowpass_height; i++) {
                 inverse_temporal_filter(low, high, lowpass_width);
                 low    += output_stride;
                 high   += output_stride;
@@ -1278,7 +1271,7 @@ finish:
 
                 low  = s->plane[plane].l_h[6];
                 high = s->plane[plane].l_h[7];
-                for (i = 0; i < s->plane[act_plane].height; i++) {
+                for (int i = 0; i < s->plane[act_plane].height; i++) {
                     dsp->horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
                     low  += output_stride;
                     high += output_stride;
@@ -1312,7 +1305,7 @@ finish:
                 dst  = (int16_t *)pic->data[act_plane];
                 low  = s->plane[plane].l_h[6];
                 high = s->plane[plane].l_h[7];
-                for (i = 0; i < s->plane[act_plane].height / 2; i++) {
+                for (int i = 0; i < s->plane[act_plane].height / 2; i++) {
                     interlaced_vertical_filter(dst, low, high, lowpass_width * 2,  pic->linesize[act_plane]/2, act_plane);
                     low  += output_stride * 2;
                     high += output_stride * 2;
@@ -1327,7 +1320,7 @@ finish:
         int output_stride, lowpass_height, lowpass_width;
         ptrdiff_t dst_linesize;
 
-        for (plane = 0; plane < s->planes; plane++) {
+        for (int plane = 0; plane < s->planes; plane++) {
             int act_plane = plane == 1 ? 2 : plane == 2 ? 1 : plane;
 
             if (avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16) {
@@ -1369,7 +1362,7 @@ finish:
                     goto end;
                 }
 
-                for (i = 0; i < s->plane[act_plane].height; i++) {
+                for (int i = 0; i < s->plane[act_plane].height; i++) {
                     dsp->horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
                     low  += output_stride;
                     high += output_stride;
@@ -1379,7 +1372,7 @@ finish:
                 dst  = (int16_t *)pic->data[act_plane];
                 low  = s->plane[plane].l_h[8];
                 high = s->plane[plane].l_h[9];
-                for (i = 0; i < s->plane[act_plane].height / 2; i++) {
+                for (int i = 0; i < s->plane[act_plane].height / 2; i++) {
                     interlaced_vertical_filter(dst, low, high, lowpass_width * 2,  pic->linesize[act_plane]/2, act_plane);
                     low  += output_stride * 2;
                     high += output_stride * 2;
