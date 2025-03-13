@@ -1426,7 +1426,7 @@ static int parse_speex_extradata(AVCodecContext *avctx,
     if (s->frame_size < NB_FRAME_SIZE << (s->mode > 1) ||
         s->frame_size >     INT32_MAX >> (s->mode > 1))
         return AVERROR_INVALIDDATA;
-    s->frame_size <<= (s->mode > 1);
+    s->frame_size = FFMIN(s->frame_size << (s->mode > 1), NB_FRAME_SIZE << s->mode);
     s->vbr = bytestream_get_le32(&buf);
     s->frames_per_packet = bytestream_get_le32(&buf);
     if (s->frames_per_packet <= 0 ||
