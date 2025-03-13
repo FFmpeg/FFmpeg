@@ -1529,7 +1529,7 @@ static const uint8_t hqx_ac_lens[] = {
 
 static const uint16_t hqx_ac_nb_elems[] = { 815, 907, 512, 354, 257, 194 };
 
-static RL_VLC_ELEM hqx_ac_rl_vlc[15630];
+static VLCElem cbp_vlc[(1 << HQX_CBP_VLC_BITS) + 15630 /* RL_VLC_ELEMS for hqx_ac */];
 
 #define INIT_DC_TABLE(idx, name)                                              \
     do {                                                                      \
@@ -1543,9 +1543,12 @@ static RL_VLC_ELEM hqx_ac_rl_vlc[15630];
 
 static av_cold av_unused void hqx_init_static(void)
 {
-    VLCInitState state = VLC_INIT_STATE(hqx_ac_rl_vlc);
+    VLCInitState state = VLC_INIT_STATE(cbp_vlc);
     const uint8_t *lens = hqx_ac_lens;
     const int16_t *run_level = hqx_ac_run_level;
+
+    ff_vlc_init_tables(&state, HQX_CBP_VLC_BITS, FF_ARRAY_ELEMS(cbp_vlc_lens),
+                       cbp_vlc_lens, 1, 1, cbp_vlc_bits, 1, 1, 0);
 
     for (int i = 0; i < NUM_HQX_AC; ++i) {
         RL_VLC_ELEM *lut = state.table;

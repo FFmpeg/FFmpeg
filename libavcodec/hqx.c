@@ -68,7 +68,6 @@ typedef struct HQXContext {
     unsigned int data_size;
     uint32_t slice_off[17];
 
-    VLC cbp_vlc;
     VLC dc_vlc[3];
 } HQXContext;
 
@@ -224,12 +223,12 @@ static int hqx_decode_422a(HQXContext *ctx, int slice_no, int x, int y)
     int i, ret;
     int cbp;
 
-    cbp = get_vlc2(gb, ctx->cbp_vlc.table, HQX_CBP_VLC_BITS, 1);
-
     for (i = 0; i < 12; i++)
         memset(slice->block[i], 0, sizeof(**slice->block) * 64);
     for (i = 0; i < 12; i++)
         slice->block[i][0] = -0x800;
+
+    cbp = get_vlc2(gb, cbp_vlc, HQX_CBP_VLC_BITS, 1);
     if (cbp) {
         if (ctx->interlaced)
             flag = get_bits1(gb);
@@ -310,12 +309,12 @@ static int hqx_decode_444a(HQXContext *ctx, int slice_no, int x, int y)
     int i, ret;
     int cbp;
 
-    cbp = get_vlc2(gb, ctx->cbp_vlc.table, HQX_CBP_VLC_BITS, 1);
-
     for (i = 0; i < 16; i++)
         memset(slice->block[i], 0, sizeof(**slice->block) * 64);
     for (i = 0; i < 16; i++)
         slice->block[i][0] = -0x800;
+
+    cbp = get_vlc2(gb, cbp_vlc, HQX_CBP_VLC_BITS, 1);
     if (cbp) {
         if (ctx->interlaced)
             flag = get_bits1(gb);
@@ -543,7 +542,6 @@ static av_cold int hqx_decode_close(AVCodecContext *avctx)
     int i;
     HQXContext *ctx = avctx->priv_data;
 
-    ff_vlc_free(&ctx->cbp_vlc);
     for (i = 0; i < 3; i++) {
         ff_vlc_free(&ctx->dc_vlc[i]);
     }
@@ -555,10 +553,7 @@ static av_cold int hqx_decode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
     HQXContext *ctx = avctx->priv_data;
-    int ret = vlc_init(&ctx->cbp_vlc, HQX_CBP_VLC_BITS, FF_ARRAY_ELEMS(cbp_vlc_lens),
-                       cbp_vlc_lens, 1, 1, cbp_vlc_bits, 1, 1, 0);
-    if (ret < 0)
-        return ret;
+    int ret;
 
     INIT_DC_TABLE(0, dc9);
     INIT_DC_TABLE(1, dc10);
