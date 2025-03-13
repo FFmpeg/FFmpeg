@@ -551,7 +551,7 @@ const FFCodec ff_ ## name_ ## _encoder = {                                  \
     .p.name       = #name_,                                                 \
     CODEC_LONG_NAME(long_name_),                                            \
     .p.type       = AVMEDIA_TYPE_AUDIO,                                     \
-    .p.id         = AV_CODEC_ID_ ## id_,                                    \
+    .p.id         = id_,                                                    \
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE | \
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,                \
     .init         = pcm_encode_init,                                        \
@@ -564,7 +564,8 @@ const FFCodec ff_ ## name_ ## _encoder = {                                  \
 #define PCM_ENCODER_3(cf, id, sample_fmt, name, long_name)                  \
     PCM_ENCODER_2(cf, id, sample_fmt, name, long_name)
 #define PCM_ENCODER(id, sample_fmt, name, long_name)                        \
-    PCM_ENCODER_3(CONFIG_ ## id ## _ENCODER, id, sample_fmt, name, long_name)
+    PCM_ENCODER_3(CONFIG_PCM_ ## id ## _ENCODER, AV_CODEC_ID_PCM_ ## id,    \
+                  AV_SAMPLE_FMT_ ## sample_fmt, pcm_ ## name, long_name)
 
 #define PCM_DECODER_0(id, sample_fmt, name, long_name)
 #define PCM_DECODER_1(id_, sample_fmt_, name_, long_name_)                  \
@@ -572,7 +573,7 @@ const FFCodec ff_ ## name_ ## _decoder = {                                  \
     .p.name         = #name_,                                               \
     CODEC_LONG_NAME(long_name_),                                            \
     .p.type         = AVMEDIA_TYPE_AUDIO,                                   \
-    .p.id           = AV_CODEC_ID_ ## id_,                                  \
+    .p.id           = id_,                                                  \
     .priv_data_size = sizeof(PCMDecode),                                    \
     .init           = pcm_decode_init,                                      \
     FF_CODEC_DECODE_CB(pcm_decode_frame),                                    \
@@ -585,43 +586,46 @@ const FFCodec ff_ ## name_ ## _decoder = {                                  \
 #define PCM_DECODER_3(cf, id, sample_fmt, name, long_name)                  \
     PCM_DECODER_2(cf, id, sample_fmt, name, long_name)
 #define PCM_DECODER(id, sample_fmt, name, long_name)                        \
-    PCM_DECODER_3(CONFIG_ ## id ## _DECODER, id, sample_fmt, name, long_name)
+    PCM_DECODER_3(CONFIG_PCM_ ## id ## _DECODER, AV_CODEC_ID_PCM_ ## id,    \
+                  AV_SAMPLE_FMT_ ## sample_fmt, pcm_ ## name, long_name)
 
 #define PCM_CODEC(id, sample_fmt_, name, long_name_)                    \
     PCM_ENCODER(id, sample_fmt_, name, long_name_);                     \
     PCM_DECODER(id, sample_fmt_, name, long_name_)
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
-PCM_CODEC  (PCM_ALAW,         AV_SAMPLE_FMT_S16, pcm_alaw,         "PCM A-law / G.711 A-law");
-PCM_DECODER(PCM_F16LE,        AV_SAMPLE_FMT_FLT, pcm_f16le,        "PCM 16.8 floating point little-endian");
-PCM_DECODER(PCM_F24LE,        AV_SAMPLE_FMT_FLT, pcm_f24le,        "PCM 24.0 floating point little-endian");
-PCM_CODEC  (PCM_F32BE,        AV_SAMPLE_FMT_FLT, pcm_f32be,        "PCM 32-bit floating point big-endian");
-PCM_CODEC  (PCM_F32LE,        AV_SAMPLE_FMT_FLT, pcm_f32le,        "PCM 32-bit floating point little-endian");
-PCM_CODEC  (PCM_F64BE,        AV_SAMPLE_FMT_DBL, pcm_f64be,        "PCM 64-bit floating point big-endian");
-PCM_CODEC  (PCM_F64LE,        AV_SAMPLE_FMT_DBL, pcm_f64le,        "PCM 64-bit floating point little-endian");
-PCM_DECODER(PCM_LXF,          AV_SAMPLE_FMT_S32P,pcm_lxf,          "PCM signed 20-bit little-endian planar");
-PCM_CODEC  (PCM_MULAW,        AV_SAMPLE_FMT_S16, pcm_mulaw,        "PCM mu-law / G.711 mu-law");
-PCM_CODEC  (PCM_S8,           AV_SAMPLE_FMT_U8,  pcm_s8,           "PCM signed 8-bit");
-PCM_CODEC  (PCM_S8_PLANAR,    AV_SAMPLE_FMT_U8P, pcm_s8_planar,    "PCM signed 8-bit planar");
-PCM_CODEC  (PCM_S16BE,        AV_SAMPLE_FMT_S16, pcm_s16be,        "PCM signed 16-bit big-endian");
-PCM_CODEC  (PCM_S16BE_PLANAR, AV_SAMPLE_FMT_S16P,pcm_s16be_planar, "PCM signed 16-bit big-endian planar");
-PCM_CODEC  (PCM_S16LE,        AV_SAMPLE_FMT_S16, pcm_s16le,        "PCM signed 16-bit little-endian");
-PCM_CODEC  (PCM_S16LE_PLANAR, AV_SAMPLE_FMT_S16P,pcm_s16le_planar, "PCM signed 16-bit little-endian planar");
-PCM_CODEC  (PCM_S24BE,        AV_SAMPLE_FMT_S32, pcm_s24be,        "PCM signed 24-bit big-endian");
-PCM_CODEC  (PCM_S24DAUD,      AV_SAMPLE_FMT_S16, pcm_s24daud,      "PCM D-Cinema audio signed 24-bit");
-PCM_CODEC  (PCM_S24LE,        AV_SAMPLE_FMT_S32, pcm_s24le,        "PCM signed 24-bit little-endian");
-PCM_CODEC  (PCM_S24LE_PLANAR, AV_SAMPLE_FMT_S32P,pcm_s24le_planar, "PCM signed 24-bit little-endian planar");
-PCM_CODEC  (PCM_S32BE,        AV_SAMPLE_FMT_S32, pcm_s32be,        "PCM signed 32-bit big-endian");
-PCM_CODEC  (PCM_S32LE,        AV_SAMPLE_FMT_S32, pcm_s32le,        "PCM signed 32-bit little-endian");
-PCM_CODEC  (PCM_S32LE_PLANAR, AV_SAMPLE_FMT_S32P,pcm_s32le_planar, "PCM signed 32-bit little-endian planar");
-PCM_CODEC  (PCM_U8,           AV_SAMPLE_FMT_U8,  pcm_u8,           "PCM unsigned 8-bit");
-PCM_CODEC  (PCM_U16BE,        AV_SAMPLE_FMT_S16, pcm_u16be,        "PCM unsigned 16-bit big-endian");
-PCM_CODEC  (PCM_U16LE,        AV_SAMPLE_FMT_S16, pcm_u16le,        "PCM unsigned 16-bit little-endian");
-PCM_CODEC  (PCM_U24BE,        AV_SAMPLE_FMT_S32, pcm_u24be,        "PCM unsigned 24-bit big-endian");
-PCM_CODEC  (PCM_U24LE,        AV_SAMPLE_FMT_S32, pcm_u24le,        "PCM unsigned 24-bit little-endian");
-PCM_CODEC  (PCM_U32BE,        AV_SAMPLE_FMT_S32, pcm_u32be,        "PCM unsigned 32-bit big-endian");
-PCM_CODEC  (PCM_U32LE,        AV_SAMPLE_FMT_S32, pcm_u32le,        "PCM unsigned 32-bit little-endian");
-PCM_CODEC  (PCM_S64BE,        AV_SAMPLE_FMT_S64, pcm_s64be,        "PCM signed 64-bit big-endian");
-PCM_CODEC  (PCM_S64LE,        AV_SAMPLE_FMT_S64, pcm_s64le,        "PCM signed 64-bit little-endian");
-PCM_CODEC  (PCM_VIDC,         AV_SAMPLE_FMT_S16, pcm_vidc,         "PCM Archimedes VIDC");
-PCM_DECODER(PCM_SGA,          AV_SAMPLE_FMT_U8,  pcm_sga,          "PCM SGA");
+//            AV_CODEC_ID_*      pcm_* name
+//                          AV_SAMPLE_FMT_*    long name
+PCM_CODEC    (ALAW,         S16, alaw,         "PCM A-law / G.711 A-law");
+PCM_DECODER  (F16LE,        FLT, f16le,        "PCM 16.8 floating point little-endian");
+PCM_DECODER  (F24LE,        FLT, f24le,        "PCM 24.0 floating point little-endian");
+PCM_CODEC    (F32BE,        FLT, f32be,        "PCM 32-bit floating point big-endian");
+PCM_CODEC    (F32LE,        FLT, f32le,        "PCM 32-bit floating point little-endian");
+PCM_CODEC    (F64BE,        DBL, f64be,        "PCM 64-bit floating point big-endian");
+PCM_CODEC    (F64LE,        DBL, f64le,        "PCM 64-bit floating point little-endian");
+PCM_DECODER  (LXF,          S32P,lxf,          "PCM signed 20-bit little-endian planar");
+PCM_CODEC    (MULAW,        S16, mulaw,        "PCM mu-law / G.711 mu-law");
+PCM_CODEC    (S8,           U8,  s8,           "PCM signed 8-bit");
+PCM_CODEC    (S8_PLANAR,    U8P, s8_planar,    "PCM signed 8-bit planar");
+PCM_CODEC    (S16BE,        S16, s16be,        "PCM signed 16-bit big-endian");
+PCM_CODEC    (S16BE_PLANAR, S16P,s16be_planar, "PCM signed 16-bit big-endian planar");
+PCM_CODEC    (S16LE,        S16, s16le,        "PCM signed 16-bit little-endian");
+PCM_CODEC    (S16LE_PLANAR, S16P,s16le_planar, "PCM signed 16-bit little-endian planar");
+PCM_CODEC    (S24BE,        S32, s24be,        "PCM signed 24-bit big-endian");
+PCM_CODEC    (S24DAUD,      S16, s24daud,      "PCM D-Cinema audio signed 24-bit");
+PCM_CODEC    (S24LE,        S32, s24le,        "PCM signed 24-bit little-endian");
+PCM_CODEC    (S24LE_PLANAR, S32P,s24le_planar, "PCM signed 24-bit little-endian planar");
+PCM_CODEC    (S32BE,        S32, s32be,        "PCM signed 32-bit big-endian");
+PCM_CODEC    (S32LE,        S32, s32le,        "PCM signed 32-bit little-endian");
+PCM_CODEC    (S32LE_PLANAR, S32P,s32le_planar, "PCM signed 32-bit little-endian planar");
+PCM_CODEC    (U8,           U8,  u8,           "PCM unsigned 8-bit");
+PCM_CODEC    (U16BE,        S16, u16be,        "PCM unsigned 16-bit big-endian");
+PCM_CODEC    (U16LE,        S16, u16le,        "PCM unsigned 16-bit little-endian");
+PCM_CODEC    (U24BE,        S32, u24be,        "PCM unsigned 24-bit big-endian");
+PCM_CODEC    (U24LE,        S32, u24le,        "PCM unsigned 24-bit little-endian");
+PCM_CODEC    (U32BE,        S32, u32be,        "PCM unsigned 32-bit big-endian");
+PCM_CODEC    (U32LE,        S32, u32le,        "PCM unsigned 32-bit little-endian");
+PCM_CODEC    (S64BE,        S64, s64be,        "PCM signed 64-bit big-endian");
+PCM_CODEC    (S64LE,        S64, s64le,        "PCM signed 64-bit little-endian");
+PCM_CODEC    (VIDC,         S16, vidc,         "PCM Archimedes VIDC");
+PCM_DECODER  (SGA,          U8,  sga,          "PCM SGA");
