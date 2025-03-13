@@ -18,8 +18,33 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "hqx.h"
-#include "libavutil/thread.h"
+#ifndef AVCODEC_HQXVLC_H
+#define AVCODEC_HQXVLC_H
+
+#include <stdint.h>
+
+#include "vlc.h"
+
+#include "libavutil/attributes.h"
+#include "libavutil/macros.h"
+
+#define HQX_CBP_VLC_BITS 5
+#define HQX_DC_VLC_BITS 9
+
+enum HQXACMode {
+    HQX_AC_Q0 = 0,
+    HQX_AC_Q8,
+    HQX_AC_Q16,
+    HQX_AC_Q32,
+    HQX_AC_Q64,
+    HQX_AC_Q128,
+    NUM_HQX_AC
+};
+
+typedef struct HQXAC {
+    int bits;
+    const RL_VLC_ELEM *lut;
+} HQXAC;
 
 static const uint8_t cbp_vlc_bits[16] = {
     0x04, 0x1C, 0x1D, 0x09, 0x1E, 0x0B, 0x1B, 0x08,
@@ -721,7 +746,7 @@ static const uint8_t dc11_vlc_lens[2048] = {
 };
 
 
-HQXAC ff_hqx_ac[NUM_HQX_AC] = {
+static HQXAC hqx_ac[NUM_HQX_AC] = {
     { 10 }, { 11 }, { 11 }, { 11 }, { 12 }, { 11 },
 };
 
@@ -1516,7 +1541,7 @@ static RL_VLC_ELEM hqx_ac_rl_vlc[15630];
             return ret;                                                       \
     } while (0)
 
-static av_cold void hqx_init_static(void)
+static av_cold av_unused void hqx_init_static(void)
 {
     VLCInitState state = VLC_INIT_STATE(hqx_ac_rl_vlc);
     const uint8_t *lens = hqx_ac_lens;
@@ -1526,8 +1551,8 @@ static av_cold void hqx_init_static(void)
         RL_VLC_ELEM *lut = state.table;
         unsigned nb_codes = state.size;
 
-        ff_hqx_ac[i].lut =
-            ff_vlc_init_tables_from_lengths(&state, ff_hqx_ac[i].bits,
+        hqx_ac[i].lut =
+            ff_vlc_init_tables_from_lengths(&state, hqx_ac[i].bits,
                                             hqx_ac_nb_elems[i], lens, 1,
                                             run_level, 2, 2, 0, 0);
 
@@ -1554,19 +1579,4 @@ static av_cold void hqx_init_static(void)
     }
 }
 
-av_cold int ff_hqx_init_vlcs(HQXContext *ctx)
-{
-    static AVOnce init_static_once = AV_ONCE_INIT;
-    int ret = vlc_init(&ctx->cbp_vlc, HQX_CBP_VLC_BITS, FF_ARRAY_ELEMS(cbp_vlc_lens),
-                       cbp_vlc_lens, 1, 1, cbp_vlc_bits, 1, 1, 0);
-    if (ret < 0)
-        return ret;
-
-    INIT_DC_TABLE(0, dc9);
-    INIT_DC_TABLE(1, dc10);
-    INIT_DC_TABLE(2, dc11);
-
-    ff_thread_once(&init_static_once, hqx_init_static);
-
-    return 0;
-}
+#endif /* AVCODEC_HQXVLC_H*/

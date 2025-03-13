@@ -20,17 +20,21 @@
 
 #include <inttypes.h>
 
+#include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/thread.h"
 
 #include "avcodec.h"
 #include "canopus.h"
 #include "codec_internal.h"
 #include "get_bits.h"
 #include "thread.h"
+#include "vlc.h"
 
-#include "hqx.h"
 #include "hqxdsp.h"
+#include "hqxvlc.h"
 
 /* HQX has four modes - 422, 444, 422alpha and 444alpha - all 12-bit */
 enum HQXFormat {
@@ -39,6 +43,34 @@ enum HQXFormat {
     HQX_422A,
     HQX_444A,
 };
+
+struct HQXContext;
+
+typedef int (*mb_decode_func)(struct HQXContext *ctx,
+                              int slice_no, int x, int y);
+
+typedef struct HQXSlice {
+    GetBitContext gb;
+    DECLARE_ALIGNED(16, int16_t, block)[16][64];
+} HQXSlice;
+
+typedef struct HQXContext {
+    HQXDSPContext hqxdsp;
+    HQXSlice slice[16];
+
+    AVFrame *pic;
+    mb_decode_func decode_func;
+
+    int format, dcb, width, height;
+    int interlaced;
+
+    const uint8_t *src;
+    unsigned int data_size;
+    uint32_t slice_off[17];
+
+    VLC cbp_vlc;
+    VLC dc_vlc[3];
+} HQXContext;
 
 #define HQX_HEADER_SIZE 59
 
@@ -138,7 +170,7 @@ static int decode_block(GetBitContext *gb, VLC *vlc,
         ac_idx = HQX_AC_Q0;
 
     do {
-        hqx_get_ac(gb, &ff_hqx_ac[ac_idx], &run, &lev);
+        hqx_get_ac(gb, &hqx_ac[ac_idx], &run, &lev);
         pos += run;
         if (pos > 63)
             break;
@@ -521,11 +553,22 @@ static av_cold int hqx_decode_close(AVCodecContext *avctx)
 
 static av_cold int hqx_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     HQXContext *ctx = avctx->priv_data;
+    int ret = vlc_init(&ctx->cbp_vlc, HQX_CBP_VLC_BITS, FF_ARRAY_ELEMS(cbp_vlc_lens),
+                       cbp_vlc_lens, 1, 1, cbp_vlc_bits, 1, 1, 0);
+    if (ret < 0)
+        return ret;
+
+    INIT_DC_TABLE(0, dc9);
+    INIT_DC_TABLE(1, dc10);
+    INIT_DC_TABLE(2, dc11);
 
     ff_hqxdsp_init(&ctx->hqxdsp);
 
-    return ff_hqx_init_vlcs(ctx);
+    ff_thread_once(&init_static_once, hqx_init_static);
+
+    return 0;
 }
 
 const FFCodec ff_hqx_decoder = {
