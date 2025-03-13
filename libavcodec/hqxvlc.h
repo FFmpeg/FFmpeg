@@ -1533,7 +1533,7 @@ static VLCElem cbp_vlc[(1 << HQX_CBP_VLC_BITS) + 15630 /* RL_VLC_ELEMS for hqx_a
 
 #define INIT_DC_TABLE(idx, name)                                              \
     do {                                                                      \
-        ret = vlc_init(&ctx->dc_vlc[idx], HQX_DC_VLC_BITS,                    \
+        ret = vlc_init(&ctx->dc_vlcs[idx], HQX_DC_VLC_BITS,                   \
                        FF_ARRAY_ELEMS(name ## _vlc_lens),                     \
                        name ## _vlc_lens, 1, 1,                               \
                        name ## _vlc_bits, 2, 2, 0);                           \

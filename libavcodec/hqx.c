@@ -68,7 +68,9 @@ typedef struct HQXContext {
     unsigned int data_size;
     uint32_t slice_off[17];
 
-    VLC dc_vlc[3];
+    const VLCElem *dc_vlc;
+
+    VLC dc_vlcs[3];
 } HQXContext;
 
 #define HQX_HEADER_SIZE 59
@@ -140,7 +142,7 @@ static inline void hqx_get_ac(GetBitContext *gb, const HQXAC *ac,
     *lev  = level;
 }
 
-static int decode_block(GetBitContext *gb, VLC *vlc,
+static int decode_block(GetBitContext *gb, const VLCElem vlc[],
                         const int *quants, int dcb,
                         int16_t block[64], int *last_dc)
 {
@@ -149,7 +151,7 @@ static int decode_block(GetBitContext *gb, VLC *vlc,
     int run, lev, pos = 0;
 
     memset(block, 0, 64 * sizeof(*block));
-    dc = get_vlc2(gb, vlc->table, HQX_DC_VLC_BITS, 2);
+    dc = get_vlc2(gb, vlc, HQX_DC_VLC_BITS, 2);
     *last_dc += dc;
 
     block[0] = sign_extend(*last_dc << (12 - dcb), 12);
@@ -196,10 +198,9 @@ static int hqx_decode_422(HQXContext *ctx, int slice_no, int x, int y)
     quants = hqx_quants[get_bits(gb, 4)];
 
     for (i = 0; i < 8; i++) {
-        int vlc_index = ctx->dcb - 9;
         if (i == 0 || i == 4 || i == 6)
             last_dc = 0;
-        ret = decode_block(gb, &ctx->dc_vlc[vlc_index], quants,
+        ret = decode_block(gb, ctx->dc_vlc, quants,
                            ctx->dcb, slice->block[i], &last_dc);
         if (ret < 0)
             return ret;
@@ -244,8 +245,7 @@ static int hqx_decode_422a(HQXContext *ctx, int slice_no, int x, int y)
             if (i == 0 || i == 4 || i == 8 || i == 10)
                 last_dc = 0;
             if (cbp & (1 << i)) {
-                int vlc_index = ctx->dcb - 9;
-                ret = decode_block(gb, &ctx->dc_vlc[vlc_index], quants,
+                ret = decode_block(gb, ctx->dc_vlc, quants,
                                    ctx->dcb, slice->block[i], &last_dc);
                 if (ret < 0)
                     return ret;
@@ -280,10 +280,9 @@ static int hqx_decode_444(HQXContext *ctx, int slice_no, int x, int y)
     quants = hqx_quants[get_bits(gb, 4)];
 
     for (i = 0; i < 12; i++) {
-        int vlc_index = ctx->dcb - 9;
         if (i == 0 || i == 4 || i == 8)
             last_dc = 0;
-        ret = decode_block(gb, &ctx->dc_vlc[vlc_index], quants,
+        ret = decode_block(gb, ctx->dc_vlc, quants,
                            ctx->dcb, slice->block[i], &last_dc);
         if (ret < 0)
             return ret;
@@ -327,8 +326,7 @@ static int hqx_decode_444a(HQXContext *ctx, int slice_no, int x, int y)
             if (i == 0 || i == 4 || i == 8 || i == 12)
                 last_dc = 0;
             if (cbp & (1 << i)) {
-                int vlc_index = ctx->dcb - 9;
-                ret = decode_block(gb, &ctx->dc_vlc[vlc_index], quants,
+                ret = decode_block(gb, ctx->dc_vlc, quants,
                                    ctx->dcb, slice->block[i], &last_dc);
                 if (ret < 0)
                     return ret;
@@ -434,7 +432,7 @@ static int hqx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     HQXContext *ctx = avctx->priv_data;
     const uint8_t *src = avpkt->data;
     uint32_t info_tag;
-    int data_start;
+    int data_start, dcb_code;
     int i, ret;
 
     if (avpkt->size < 4 + 4) {
@@ -473,16 +471,18 @@ static int hqx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
     ctx->interlaced = !(src[2] & 0x80);
     ctx->format     = src[2] & 7;
-    ctx->dcb        = (src[3] & 3) + 8;
+    dcb_code        = src[3] & 3;
     ctx->width      = AV_RB16(src + 4);
     ctx->height     = AV_RB16(src + 6);
     for (i = 0; i < 17; i++)
         ctx->slice_off[i] = AV_RB24(src + 8 + i * 3);
 
-    if (ctx->dcb == 8) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid DC precision %d.\n", ctx->dcb);
+    if (dcb_code == 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid DC precision 8.\n");
         return AVERROR_INVALIDDATA;
     }
+    ctx->dc_vlc = ctx->dc_vlcs[dcb_code - 1].table;
+    ctx->dcb    = dcb_code + 8;
     ret = av_image_check_size(ctx->width, ctx->height, 0, avctx);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid stored dimensions %dx%d.\n",
@@ -543,7 +543,7 @@ static av_cold int hqx_decode_close(AVCodecContext *avctx)
     HQXContext *ctx = avctx->priv_data;
 
     for (i = 0; i < 3; i++) {
-        ff_vlc_free(&ctx->dc_vlc[i]);
+        ff_vlc_free(&ctx->dc_vlcs[i]);
     }
 
     return 0;
