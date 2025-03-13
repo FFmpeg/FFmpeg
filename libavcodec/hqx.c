@@ -150,7 +150,6 @@ static int decode_block(GetBitContext *gb, const VLCElem vlc[],
     int ac_idx;
     int run, lev, pos = 0;
 
-    memset(block, 0, 64 * sizeof(*block));
     dc = get_vlc2(gb, vlc, HQX_DC_VLC_BITS, 2);
     *last_dc += dc;
 
@@ -189,6 +188,8 @@ static int hqx_decode_422(HQXContext *ctx, int slice_no, int x, int y)
     int flag;
     int last_dc;
     int i, ret;
+
+    memset(slice->block, 0, sizeof(*slice->block) * 8);
 
     if (ctx->interlaced)
         flag = get_bits1(gb);
@@ -270,6 +271,8 @@ static int hqx_decode_444(HQXContext *ctx, int slice_no, int x, int y)
     int flag;
     int last_dc;
     int i, ret;
+
+    memset(slice->block, 0, sizeof(*slice->block) * 12);
 
     if (ctx->interlaced)
         flag = get_bits1(gb);
