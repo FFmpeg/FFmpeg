@@ -772,6 +772,7 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
         if (tag == BandHeader || tag == BandSecondPass) {
             int highpass_height, highpass_width, highpass_a_width, highpass_a_height, highpass_stride, a_expected;
             int expected;
+            GetBitContext gbit;
             int level, run, coeff;
             int count = 0, bytes;
 
@@ -802,11 +803,11 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
 
             av_log(avctx, AV_LOG_DEBUG, "Start subband coeffs plane %i level %i codebook %i expected %i\n", s->channel_num, s->level, s->codebook, expected);
 
-            ret = init_get_bits8(&s->gb, gb.buffer, bytestream2_get_bytes_left(&gb));
+            ret = init_get_bits8(&gbit, gb.buffer, bytestream2_get_bytes_left(&gb));
             if (ret < 0)
                 goto end;
             {
-                OPEN_READER(re, &s->gb);
+                OPEN_READER(re, &gbit);
 
                 const int lossless = s->band_encoding == 5;
 
@@ -814,8 +815,8 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
                     s->codebook = 1;
                 if (!s->codebook) {
                     while (1) {
-                        UPDATE_CACHE(re, &s->gb);
-                        GET_RL_VLC(level, run, re, &s->gb, s->table_9_rl_vlc,
+                        UPDATE_CACHE(re, &gbit);
+                        GET_RL_VLC(level, run, re, &gbit, s->table_9_rl_vlc,
                                    VLC_BITS, 3, 1);
 
                         /* escape */
@@ -845,8 +846,8 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
                     }
                 } else {
                     while (1) {
-                        UPDATE_CACHE(re, &s->gb);
-                        GET_RL_VLC(level, run, re, &s->gb, s->table_18_rl_vlc,
+                        UPDATE_CACHE(re, &gbit);
+                        GET_RL_VLC(level, run, re, &gbit, s->table_18_rl_vlc,
                                    VLC_BITS, 3, 1);
 
                         /* escape */
@@ -875,7 +876,7 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
                         }
                     }
                 }
-                CLOSE_READER(re, &s->gb);
+                CLOSE_READER(re, &gbit);
             }
 
             if (count > expected) {
@@ -888,7 +889,7 @@ static int cfhd_decode(AVCodecContext *avctx, AVFrame *pic,
             if (s->difference_coding)
                 difference_coding(s->plane[s->channel_num].subband[s->subband_num_actual], highpass_width, highpass_height);
 
-            bytes = FFALIGN(AV_CEIL_RSHIFT(get_bits_count(&s->gb), 3), 4);
+            bytes = FFALIGN(AV_CEIL_RSHIFT(get_bits_count(&gbit), 3), 4);
             if (bytes > bytestream2_get_bytes_left(&gb)) {
                 av_log(avctx, AV_LOG_ERROR, "Bitstream overread error\n");
                 ret = AVERROR(EINVAL);
