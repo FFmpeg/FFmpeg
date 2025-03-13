@@ -16,6 +16,7 @@ OBJS = alphablend.o                                     \
        input.o                                          \
        lut3d.o                                          \
        ops.o                                            \
+       ops_backend.o                                    \
        ops_chain.o                                      \
        ops_optimizer.o                                  \
        options.o                                        \
