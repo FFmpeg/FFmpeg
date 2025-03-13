@@ -224,8 +224,7 @@ static int hqx_decode_422a(HQXContext *ctx, int slice_no, int x, int y)
     int i, ret;
     int cbp;
 
-    for (i = 0; i < 12; i++)
-        memset(slice->block[i], 0, sizeof(**slice->block) * 64);
+    memset(slice->block, 0, sizeof(*slice->block) * 12);
     for (i = 0; i < 12; i++)
         slice->block[i][0] = -0x800;
 
@@ -308,8 +307,7 @@ static int hqx_decode_444a(HQXContext *ctx, int slice_no, int x, int y)
     int i, ret;
     int cbp;
 
-    for (i = 0; i < 16; i++)
-        memset(slice->block[i], 0, sizeof(**slice->block) * 64);
+    memset(slice->block, 0, sizeof(*slice->block) * 16);
     for (i = 0; i < 16; i++)
         slice->block[i][0] = -0x800;
 
