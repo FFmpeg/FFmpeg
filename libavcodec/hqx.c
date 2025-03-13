@@ -282,7 +282,7 @@ static int hqx_decode_444(HQXContext *ctx, int slice_no, int x, int y)
     quants = hqx_quants[get_bits(gb, 4)];
 
     for (i = 0; i < 12; i++) {
-        if (i == 0 || i == 4 || i == 8)
+        if (!(i & 3))
             last_dc = 0;
         ret = decode_block(gb, ctx->dc_vlc, quants,
                            ctx->dcb, slice->block[i], &last_dc);
@@ -324,7 +324,7 @@ static int hqx_decode_444a(HQXContext *ctx, int slice_no, int x, int y)
         cbp |= cbp << 4; // alpha CBP
         cbp |= cbp << 8; // chroma CBP
         for (i = 0; i < 16; i++) {
-            if (i == 0 || i == 4 || i == 8 || i == 12)
+            if (!(i & 3))
                 last_dc = 0;
             if (cbp & (1 << i)) {
                 ret = decode_block(gb, ctx->dc_vlc, quants,
