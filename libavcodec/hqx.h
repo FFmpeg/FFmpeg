@@ -39,15 +39,9 @@ enum HQXACMode {
     NUM_HQX_AC
 };
 
-typedef struct HQXLUT {
-    int16_t lev;
-    uint8_t run;
-    int8_t  bits;
-} HQXLUT;
-
 typedef struct HQXAC {
-    int lut_bits, extra_bits;
-    const HQXLUT *lut;
+    int bits;
+    const RL_VLC_ELEM *lut;
 } HQXAC;
 
 struct HQXContext;
@@ -81,7 +75,7 @@ typedef struct HQXContext {
 #define HQX_CBP_VLC_BITS 5
 #define HQX_DC_VLC_BITS 9
 
-extern const HQXAC ff_hqx_ac[NUM_HQX_AC];
+extern HQXAC ff_hqx_ac[NUM_HQX_AC];
 
 int ff_hqx_init_vlcs(HQXContext *ctx);
 

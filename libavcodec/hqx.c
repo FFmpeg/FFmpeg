@@ -97,19 +97,16 @@ static inline void put_blocks(HQXContext *ctx, int plane,
 }
 
 static inline void hqx_get_ac(GetBitContext *gb, const HQXAC *ac,
-                              int *run, int *lev)
+                              int *runp, int *lev)
 {
-    int val;
+    int level, run;
+    OPEN_READER(re, gb);
 
-    val = show_bits(gb, ac->lut_bits);
-    if (ac->lut[val].bits == -1) {
-        GetBitContext gb2 = *gb;
-        skip_bits(&gb2, ac->lut_bits);
-        val = ac->lut[val].lev + show_bits(&gb2, ac->extra_bits);
-    }
-    *run = ac->lut[val].run;
-    *lev = ac->lut[val].lev;
-    skip_bits(gb, ac->lut[val].bits);
+    UPDATE_CACHE(re, gb);
+    GET_RL_VLC(level, run, re, gb, ac->lut, ac->bits, 2, 0);
+    CLOSE_READER(re, gb);
+    *runp = run;
+    *lev  = level;
 }
 
 static int decode_block(GetBitContext *gb, VLC *vlc,
