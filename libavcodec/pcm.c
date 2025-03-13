@@ -249,16 +249,41 @@ typedef struct PCMDecode {
 static av_cold av_unused int pcm_decode_init(AVCodecContext *avctx)
 {
     PCMDecode *s = avctx->priv_data;
+    static const struct {
+        enum AVCodecID codec_id;
+        int8_t sample_fmt;
+        uint8_t sample_size;
+        uint8_t bits_per_sample;
+    } codec_id_to_samplefmt[] = {
+    #define ENTRY(CODEC_ID, SAMPLE_FMT, BITS_PER_SAMPLE) \
+        { AV_CODEC_ID_PCM_ ## CODEC_ID, AV_SAMPLE_FMT_ ## SAMPLE_FMT, \
+        BITS_PER_SAMPLE / 8, BITS_PER_SAMPLE }
+        ENTRY(S8, U8, 8),        ENTRY(S8_PLANAR, U8P, 8),
+        ENTRY(S16BE, S16, 16),   ENTRY(S16BE_PLANAR, S16P, 16),
+        ENTRY(S16LE, S16, 16),   ENTRY(S16LE_PLANAR, S16P, 16),
+        ENTRY(S24DAUD, S16, 24), ENTRY(S24BE, S32, 24),
+        ENTRY(S24LE, S32, 24),   ENTRY(S24LE_PLANAR, S32P, 24),
+        ENTRY(S32BE, S32, 32),   ENTRY(S32LE, S32, 32),
+        ENTRY(S32LE_PLANAR, S32P, 32),
+        ENTRY(S64BE, S64, 64),   ENTRY(S64LE, S64, 64),
+        ENTRY(SGA, U8, 8),       ENTRY(U8, U8, 8),
+        ENTRY(U16BE, S16, 16),   ENTRY(U16LE, S16, 16),
+        ENTRY(U24BE, S32, 24),   ENTRY(U24LE, S32, 24),
+        ENTRY(U32BE, S32, 32),   ENTRY(U32LE, S32, 32),
+        ENTRY(F32BE, FLT, 32),   ENTRY(F32LE, FLT, 32),
+        ENTRY(F64BE, DBL, 64),   ENTRY(F64LE, DBL, 64),
+        { .codec_id = AV_CODEC_ID_PCM_LXF, .sample_fmt = AV_SAMPLE_FMT_S32P, .sample_size = 5 },
+    };
 
-    avctx->sample_fmt = avctx->codec->sample_fmts[0];
-
-    if (avctx->codec_id != AV_CODEC_ID_PCM_LXF) {
-        int bits_per_sample = av_get_exact_bits_per_sample(avctx->codec_id);
-        if (avctx->sample_fmt == AV_SAMPLE_FMT_S32)
-            avctx->bits_per_raw_sample = bits_per_sample;
-        s->sample_size = bits_per_sample / 8;
-    } else {
-        s->sample_size = 5;
+    for (unsigned i = 0; i < FF_ARRAY_ELEMS(codec_id_to_samplefmt); ++i) {
+        if (codec_id_to_samplefmt[i].codec_id == avctx->codec_id) {
+            s->sample_size    = codec_id_to_samplefmt[i].sample_size;
+            avctx->sample_fmt = codec_id_to_samplefmt[i].sample_fmt;
+            if (avctx->sample_fmt == AV_SAMPLE_FMT_S32)
+                avctx->bits_per_raw_sample = codec_id_to_samplefmt[i].bits_per_sample;
+            break;
+        }
+        av_assert1(i + 1 < FF_ARRAY_ELEMS(codec_id_to_samplefmt));
     }
 
     return 0;
@@ -604,7 +629,6 @@ const FFCodec ff_ ## name_ ## _decoder = {                                  \
     .init           = init_func,                                            \
     FF_CODEC_DECODE_CB(pcm_decode_frame),                                    \
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_PARAM_CHANGE,         \
-    CODEC_SAMPLEFMTS(sample_fmt),                                           \
 }
 
 #define PCM_DECODER_2(cf, id, sample_fmt, name, long_name, Context, init_func) \
@@ -627,7 +651,8 @@ const FFCodec ff_ ## name_ ## _decoder = {                                  \
     PCM_DEC_EXT(id, sample_fmt, name, long_name, DecContext, dec_init_func);      \
     PCM_ENCODER(id, sample_fmt, name, long_name)
 
-/* Note: Do not forget to add new entries to the Makefile as well. */
+/* Note: Do not forget to add new entries to the Makefile and
+ *       to the table in pcm_decode_init() as well. */
 //            AV_CODEC_ID_*      pcm_* name
 //                          AV_SAMPLE_FMT_*    long name                                DecodeContext   decode init func
 PCM_CODEC_EXT(ALAW,         S16, alaw,         "PCM A-law / G.711 A-law",               PCMLUTDecode,   pcm_lut_decode_init);
