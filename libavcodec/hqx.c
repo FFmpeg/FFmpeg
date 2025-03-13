@@ -75,21 +75,27 @@ typedef struct HQXContext {
 
 #define HQX_HEADER_SIZE 59
 
+#define AC_IDX(q) ((q) >= 128 ? HQX_AC_Q128 : (q) >= 64 ? HQX_AC_Q64 : \
+                   (q) >=  32 ? HQX_AC_Q32  : (q) >= 16 ? HQX_AC_Q16 : \
+                   (q) >=   8 ? HQX_AC_Q8   : HQX_AC_Q0)
+
 /* macroblock selects a group of 4 possible quants and
  * a block can use any of those four quantisers
  * one column is powers of 2, the other one is powers of 2 * 3,
- * then there is the special one, powers of 2 * 5 */
-static const int hqx_quants[16][4] = {
-    {  0x1,   0x2,   0x4,   0x8 }, {  0x1,  0x3,   0x6,   0xC },
-    {  0x2,   0x4,   0x8,  0x10 }, {  0x3,  0x6,   0xC,  0x18 },
-    {  0x4,   0x8,  0x10,  0x20 }, {  0x6,  0xC,  0x18,  0x30 },
-    {  0x8,  0x10,  0x20,  0x40 },
-                      { 0xA, 0x14, 0x28, 0x50 },
-                                   {  0xC, 0x18,  0x30,  0x60 },
-    { 0x10,  0x20,  0x40,  0x80 }, { 0x18, 0x30,  0x60,  0xC0 },
-    { 0x20,  0x40,  0x80, 0x100 }, { 0x30, 0x60,  0xC0, 0x180 },
-    { 0x40,  0x80, 0x100, 0x200 }, { 0x60, 0xC0, 0x180, 0x300 },
-    { 0x80, 0x100, 0x200, 0x400 }
+ * then there is the special one, powers of 2 * 5.
+ * We also encode the corresponding AC index in these tables in bits 29-31. */
+static const unsigned hqx_quants[16][4] = {
+#define Q(q) ((unsigned)AC_IDX(q) << 29 | (q))
+    { Q( 0x1), Q(  0x2), Q(  0x4), Q(  0x8) }, { Q( 0x1), Q( 0x3), Q(  0x6), Q(  0xC) },
+    { Q( 0x2), Q(  0x4), Q(  0x8), Q( 0x10) }, { Q( 0x3), Q( 0x6), Q(  0xC), Q( 0x18) },
+    { Q( 0x4), Q(  0x8), Q( 0x10), Q( 0x20) }, { Q( 0x6), Q( 0xC), Q( 0x18), Q( 0x30) },
+    { Q( 0x8), Q( 0x10), Q( 0x20), Q( 0x40) },
+                            { Q(0xA), Q(0x14), Q(0x28), Q(0x50) },
+                                               { Q( 0xC), Q(0x18), Q( 0x30), Q( 0x60) },
+    { Q(0x10), Q( 0x20), Q( 0x40), Q( 0x80) }, { Q(0x18), Q(0x30), Q( 0x60), Q( 0xC0) },
+    { Q(0x20), Q( 0x40), Q( 0x80), Q(0x100) }, { Q(0x30), Q(0x60), Q( 0xC0), Q(0x180) },
+    { Q(0x40), Q( 0x80), Q(0x100), Q(0x200) }, { Q(0x60), Q(0xC0), Q(0x180), Q(0x300) },
+    { Q(0x80), Q(0x100), Q(0x200), Q(0x400) }
 };
 
 static const uint8_t hqx_quant_luma[64] = {
@@ -143,12 +149,12 @@ static inline void hqx_get_ac(GetBitContext *gb, const HQXAC *ac,
 }
 
 static int decode_block(GetBitContext *gb, const VLCElem vlc[],
-                        const int *quants, int dcb,
+                        const unsigned *quants, int dcb,
                         int16_t block[64], int *last_dc)
 {
-    int q, dc;
-    int ac_idx;
     int run, lev, pos = 0;
+    unsigned ac_idx, q;
+    int dc;
 
     dc = get_vlc2(gb, vlc, HQX_DC_VLC_BITS, 2);
     *last_dc += dc;
@@ -156,18 +162,9 @@ static int decode_block(GetBitContext *gb, const VLCElem vlc[],
     block[0] = sign_extend(*last_dc << (12 - dcb), 12);
 
     q = quants[get_bits(gb, 2)];
-    if (q >= 128)
-        ac_idx = HQX_AC_Q128;
-    else if (q >= 64)
-        ac_idx = HQX_AC_Q64;
-    else if (q >= 32)
-        ac_idx = HQX_AC_Q32;
-    else if (q >= 16)
-        ac_idx = HQX_AC_Q16;
-    else if (q >= 8)
-        ac_idx = HQX_AC_Q8;
-    else
-        ac_idx = HQX_AC_Q0;
+    // ac_idx is encoded in the high bits of quants;
+    // because block is 16 bit, we do not even need to clear said bits.
+    ac_idx = q >> 29;
 
     do {
         hqx_get_ac(gb, &hqx_ac[ac_idx], &run, &lev);
@@ -184,7 +181,7 @@ static int hqx_decode_422(HQXContext *ctx, int slice_no, int x, int y)
 {
     HQXSlice *slice = &ctx->slice[slice_no];
     GetBitContext *gb = &slice->gb;
-    const int *quants;
+    const unsigned *quants;
     int flag;
     int last_dc;
     int i, ret;
@@ -219,7 +216,6 @@ static int hqx_decode_422a(HQXContext *ctx, int slice_no, int x, int y)
 {
     HQXSlice *slice = &ctx->slice[slice_no];
     GetBitContext *gb = &slice->gb;
-    const int *quants;
     int flag = 0;
     int last_dc;
     int i, ret;
@@ -231,6 +227,8 @@ static int hqx_decode_422a(HQXContext *ctx, int slice_no, int x, int y)
 
     cbp = get_vlc2(gb, cbp_vlc, HQX_CBP_VLC_BITS, 1);
     if (cbp) {
+        const unsigned *quants;
+
         if (ctx->interlaced)
             flag = get_bits1(gb);
 
@@ -267,7 +265,7 @@ static int hqx_decode_444(HQXContext *ctx, int slice_no, int x, int y)
 {
     HQXSlice *slice = &ctx->slice[slice_no];
     GetBitContext *gb = &slice->gb;
-    const int *quants;
+    const unsigned *quants;
     int flag;
     int last_dc;
     int i, ret;
@@ -304,7 +302,6 @@ static int hqx_decode_444a(HQXContext *ctx, int slice_no, int x, int y)
 {
     HQXSlice *slice = &ctx->slice[slice_no];
     GetBitContext *gb = &slice->gb;
-    const int *quants;
     int flag = 0;
     int last_dc;
     int i, ret;
@@ -316,6 +313,8 @@ static int hqx_decode_444a(HQXContext *ctx, int slice_no, int x, int y)
 
     cbp = get_vlc2(gb, cbp_vlc, HQX_CBP_VLC_BITS, 1);
     if (cbp) {
+        const unsigned *quants;
+
         if (ctx->interlaced)
             flag = get_bits1(gb);
 
