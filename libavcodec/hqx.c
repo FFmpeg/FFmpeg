@@ -70,7 +70,7 @@ typedef struct HQXContext {
 
     const VLCElem *dc_vlc;
 
-    VLC dc_vlcs[3];
+    VLC dc11_vlc;
 } HQXContext;
 
 #define HQX_HEADER_SIZE 59
@@ -481,7 +481,7 @@ static int hqx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         av_log(avctx, AV_LOG_ERROR, "Invalid DC precision 8.\n");
         return AVERROR_INVALIDDATA;
     }
-    ctx->dc_vlc = ctx->dc_vlcs[dcb_code - 1].table;
+    ctx->dc_vlc = dcb_code == 3 ? ctx->dc11_vlc.table : dc_vlc[dcb_code - 1];
     ctx->dcb    = dcb_code + 8;
     ret = av_image_check_size(ctx->width, ctx->height, 0, avctx);
     if (ret < 0) {
@@ -539,12 +539,9 @@ static int hqx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 static av_cold int hqx_decode_close(AVCodecContext *avctx)
 {
-    int i;
     HQXContext *ctx = avctx->priv_data;
 
-    for (i = 0; i < 3; i++) {
-        ff_vlc_free(&ctx->dc_vlcs[i]);
-    }
+    ff_vlc_free(&ctx->dc11_vlc);
 
     return 0;
 }
@@ -553,11 +550,11 @@ static av_cold int hqx_decode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
     HQXContext *ctx = avctx->priv_data;
-    int ret;
+    int ret = vlc_init(&ctx->dc11_vlc, HQX_DC_VLC_BITS, FF_ARRAY_ELEMS(dc11_vlc_lens),
+                       dc11_vlc_lens, 1, 1, dc11_vlc_bits, 2, 2, 0);
 
-    INIT_DC_TABLE(0, dc9);
-    INIT_DC_TABLE(1, dc10);
-    INIT_DC_TABLE(2, dc11);
+    if (ret < 0)
+        return ret;
 
     ff_hqxdsp_init(&ctx->hqxdsp);
 
