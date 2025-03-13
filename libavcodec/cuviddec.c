@@ -768,11 +768,10 @@ static int cuvid_test_capabilities(AVCodecContext *avctx,
                                    const CUVIDPARSERPARAMS *cuparseinfo,
                                    int probed_width,
                                    int probed_height,
-                                   int bit_depth)
+                                   int bit_depth, int is_yuv422, int is_yuv444)
 {
     CuvidContext *ctx = avctx->priv_data;
     CUVIDDECODECAPS *caps;
-    cudaVideoChromaFormat chroma_format;
     int res8 = 0, res10 = 0, res12 = 0;
 
     if (!ctx->cvdl->cuvidGetDecoderCaps) {
@@ -792,28 +791,14 @@ static int cuvid_test_capabilities(AVCodecContext *avctx,
 
     ctx->caps8.eCodecType = ctx->caps10.eCodecType = ctx->caps12.eCodecType
         = cuparseinfo->CodecType;
-    switch (avctx->pix_fmt) {
-        case AV_PIX_FMT_YUV444P16:
-        case AV_PIX_FMT_YUV444P:
-            chroma_format = cudaVideoChromaFormat_444;
-            break;
-#ifdef NVDEC_HAVE_422_SUPPORT
-        case AV_PIX_FMT_P216:
-        case AV_PIX_FMT_P210:
-        case AV_PIX_FMT_NV16:
-            chroma_format = cudaVideoChromaFormat_422;
-            break;
-#endif
-        case AV_PIX_FMT_P016:
-        case AV_PIX_FMT_P010:
-        case AV_PIX_FMT_NV12:
-            chroma_format = cudaVideoChromaFormat_420;
-            break;
-        default:
-            chroma_format = cudaVideoChromaFormat_Monochrome;
-    }
+
     ctx->caps8.eChromaFormat = ctx->caps10.eChromaFormat = ctx->caps12.eChromaFormat
-        = chroma_format;
+        = is_yuv444 ? cudaVideoChromaFormat_444 :
+#ifdef NVDEC_HAVE_422_SUPPORT
+          (is_yuv422 ? cudaVideoChromaFormat_422 : cudaVideoChromaFormat_420);
+#else
+          cudaVideoChromaFormat_420;
+#endif
 
     ctx->caps8.nBitDepthMinus8 = 0;
     ctx->caps10.nBitDepthMinus8 = 2;
@@ -1122,7 +1107,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     ret = cuvid_test_capabilities(avctx, &ctx->cuparseinfo,
                                   probed_width,
                                   probed_height,
-                                  probed_bit_depth);
+                                  probed_bit_depth, is_yuv422, is_yuv444);
     if (ret < 0)
         goto error;
 
