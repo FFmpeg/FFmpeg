@@ -726,7 +726,8 @@ HQXAC ff_hqx_ac[NUM_HQX_AC] = {
 };
 
 // level is in -255..255 range, run 0..64, so it fits into 16 bits.
-#define E(level, run) ((level * 128) | run)
+// We offset run by 1 in order to include the implicit run of 1.
+#define E(level, run) ((level * 128) | (run + 1))
 
 static const int16_t hqx_ac_run_level[] = {
     // AC table Q0 - 815 elements

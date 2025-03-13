@@ -115,7 +115,7 @@ static int decode_block(GetBitContext *gb, VLC *vlc,
 {
     int q, dc;
     int ac_idx;
-    int run, lev, pos = 1;
+    int run, lev, pos = 0;
 
     memset(block, 0, 64 * sizeof(*block));
     dc = get_vlc2(gb, vlc->table, HQX_DC_VLC_BITS, 2);
@@ -140,10 +140,10 @@ static int decode_block(GetBitContext *gb, VLC *vlc,
     do {
         hqx_get_ac(gb, &ff_hqx_ac[ac_idx], &run, &lev);
         pos += run;
-        if (pos >= 64)
+        if (pos > 63)
             break;
-        block[ff_zigzag_direct[pos++]] = lev * q;
-    } while (pos < 64);
+        block[ff_zigzag_direct[pos]] = lev * q;
+    } while (pos < 63);
 
     return 0;
 }
