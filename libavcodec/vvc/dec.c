@@ -831,7 +831,8 @@ static int frame_setup(VVCFrameContext *fc, VVCContext *s)
     return 0;
 }
 
-static int decode_slice(VVCContext *s, VVCFrameContext *fc, const H2645NAL *nal, const CodedBitstreamUnit *unit)
+static int decode_slice(VVCContext *s, VVCFrameContext *fc, AVBufferRef *buf_ref,
+                        const H2645NAL *nal, const CodedBitstreamUnit *unit)
 {
     int ret;
     SliceContext *sc;
@@ -860,7 +861,7 @@ static int decode_slice(VVCContext *s, VVCFrameContext *fc, const H2645NAL *nal,
 
     if (s->avctx->hwaccel) {
         if (is_first_slice) {
-            ret = FF_HW_CALL(s->avctx, start_frame, NULL, 0);
+            ret = FF_HW_CALL(s->avctx, start_frame, buf_ref, NULL, 0);
             if (ret < 0)
                 return ret;
         }
@@ -876,7 +877,8 @@ static int decode_slice(VVCContext *s, VVCFrameContext *fc, const H2645NAL *nal,
     return 0;
 }
 
-static int decode_nal_unit(VVCContext *s, VVCFrameContext *fc, const H2645NAL *nal, const CodedBitstreamUnit *unit)
+static int decode_nal_unit(VVCContext *s, VVCFrameContext *fc, AVBufferRef *buf_ref,
+                           const H2645NAL *nal, const CodedBitstreamUnit *unit)
 {
     int  ret;
 
@@ -902,7 +904,7 @@ static int decode_nal_unit(VVCContext *s, VVCFrameContext *fc, const H2645NAL *n
     case VVC_IDR_N_LP:
     case VVC_CRA_NUT:
     case VVC_GDR_NUT:
-        ret = decode_slice(s, fc, nal, unit);
+        ret = decode_slice(s, fc, buf_ref, nal, unit);
         if (ret < 0)
             return ret;
         break;
@@ -940,7 +942,7 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
         if (unit->type == VVC_EOB_NUT || unit->type == VVC_EOS_NUT) {
             s->last_eos = 1;
         } else {
-            ret = decode_nal_unit(s, fc, nal, unit);
+            ret = decode_nal_unit(s, fc, avpkt->buf, nal, unit);
             if (ret < 0) {
                 av_log(s->avctx, AV_LOG_WARNING,
                         "Error parsing NAL unit #%d.\n", i);

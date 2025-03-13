@@ -30,7 +30,9 @@
 #include "nvdec.h"
 #include "decode.h"
 
-static int nvdec_mpeg12_start_frame(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
+static int nvdec_mpeg12_start_frame(AVCodecContext *avctx,
+                                    const AVBufferRef *buffer_ref,
+                                    const uint8_t *buffer, uint32_t size)
 {
     MpegEncContext *s = avctx->priv_data;
 

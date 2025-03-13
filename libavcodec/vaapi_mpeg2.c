@@ -39,7 +39,10 @@ static inline int mpeg2_get_is_frame_start(const MpegEncContext *s)
     return s->first_field || s->picture_structure == PICT_FRAME;
 }
 
-static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_t *buffer, av_unused uint32_t size)
+static int vaapi_mpeg2_start_frame(AVCodecContext *avctx,
+                                   av_unused const AVBufferRef *buffer_ref,
+                                   av_unused const uint8_t *buffer,
+                                   av_unused uint32_t size)
 {
     const MpegEncContext *s = avctx->priv_data;
     VAAPIDecodePicture *pic = s->cur_pic.ptr->hwaccel_picture_private;

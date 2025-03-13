@@ -1087,7 +1087,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         if (v->field_mode && buf_start_second_field) {
             // decode first field
             s->picture_structure = PICT_BOTTOM_FIELD - v->tff;
-            ret = hwaccel->start_frame(avctx, buf_start,
+            ret = hwaccel->start_frame(avctx, avpkt->buf, buf_start,
                                        buf_start_second_field - buf_start);
             if (ret < 0)
                 goto err;
@@ -1142,7 +1142,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             }
             v->s.cur_pic.ptr->f->pict_type = v->s.pict_type;
 
-            ret = hwaccel->start_frame(avctx, buf_start_second_field,
+            ret = hwaccel->start_frame(avctx, avpkt->buf, buf_start_second_field,
                                        (buf + buf_size) - buf_start_second_field);
             if (ret < 0)
                 goto err;
@@ -1185,7 +1185,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                 goto err;
         } else {
             s->picture_structure = PICT_FRAME;
-            ret = hwaccel->start_frame(avctx, buf_start,
+            ret = hwaccel->start_frame(avctx, avpkt->buf, buf_start,
                                        (buf + buf_size) - buf_start);
             if (ret < 0)
                 goto err;

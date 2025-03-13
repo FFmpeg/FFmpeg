@@ -27,7 +27,9 @@
 #include "decode.h"
 #include "hwaccel_internal.h"
 
-static int nvdec_mjpeg_start_frame(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
+static int nvdec_mjpeg_start_frame(AVCodecContext *avctx,
+                                   const AVBufferRef *buffer_ref,
+                                   const uint8_t *buffer, uint32_t size)
 {
     MJpegDecodeContext *s = avctx->priv_data;
 

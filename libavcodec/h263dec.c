@@ -561,7 +561,7 @@ retry:
         ff_thread_finish_setup(avctx);
 
     if (avctx->hwaccel) {
-        ret = FF_HW_CALL(avctx, start_frame,
+        ret = FF_HW_CALL(avctx, start_frame, NULL,
                          s->gb.buffer, s->gb.buffer_end - s->gb.buffer);
         if (ret < 0 )
             return ret;

@@ -32,6 +32,7 @@ static VASurfaceID vaapi_vp8_surface_id(VP8Frame *vf)
 }
 
 static int vaapi_vp8_start_frame(AVCodecContext          *avctx,
+                                 av_unused const AVBufferRef *buffer_ref,
                                  av_unused const uint8_t *buffer,
                                  av_unused uint32_t       size)
 {

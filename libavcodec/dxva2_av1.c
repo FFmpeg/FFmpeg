@@ -272,6 +272,7 @@ int ff_dxva2_av1_fill_picture_parameters(const AVCodecContext *avctx, AVDXVACont
 }
 
 static int dxva2_av1_start_frame(AVCodecContext *avctx,
+                                 av_unused const AVBufferRef *buffer_ref,
                                  av_unused const uint8_t *buffer,
                                  av_unused uint32_t size)
 {

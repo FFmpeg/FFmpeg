@@ -24,6 +24,7 @@
 #include "mjpegdec.h"
 
 static int vaapi_mjpeg_start_frame(AVCodecContext          *avctx,
+                                   av_unused const AVBufferRef *buffer_ref,
                                    av_unused const uint8_t *buffer,
                                    av_unused uint32_t       size)
 {

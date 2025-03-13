@@ -32,6 +32,7 @@
 
 
 static int vdpau_hevc_start_frame(AVCodecContext *avctx,
+                                  const AVBufferRef *buffer_ref,
                                   const uint8_t *buffer, uint32_t size)
 {
     HEVCContext *h = avctx->priv_data;

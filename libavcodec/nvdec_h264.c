@@ -47,6 +47,7 @@ static void dpb_add(const H264Context *h, CUVIDH264DPBENTRY *dst, const H264Pict
 }
 
 static int nvdec_h264_start_frame(AVCodecContext *avctx,
+                                  const AVBufferRef *buffer_ref,
                                   const uint8_t *buffer, uint32_t size)
 {
     const H264Context *h = avctx->priv_data;

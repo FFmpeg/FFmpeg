@@ -742,7 +742,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     /* Start */
     if (hwaccel) {
-        ret = hwaccel->start_frame(avctx, avpkt->data, avpkt->size);
+        ret = hwaccel->start_frame(avctx, avpkt->buf, avpkt->data, avpkt->size);
         if (ret < 0)
             return ret;
     }

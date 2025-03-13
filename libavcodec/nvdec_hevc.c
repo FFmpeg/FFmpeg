@@ -70,6 +70,7 @@ static void fill_scaling_lists(CUVIDHEVCPICPARAMS *ppc, const HEVCContext *s)
 }
 
 static int nvdec_hevc_start_frame(AVCodecContext *avctx,
+                                  const AVBufferRef *buffer_ref,
                                   const uint8_t *buffer, uint32_t size)
 {
     const HEVCContext *s = avctx->priv_data;

@@ -41,7 +41,10 @@ typedef struct D3D12DecodePictureContext {
     unsigned               bitstream_size;
 } D3D12DecodePictureContext;
 
-static int d3d12va_vc1_start_frame(AVCodecContext *avctx, av_unused const uint8_t *buffer,  av_unused uint32_t size)
+static int d3d12va_vc1_start_frame(AVCodecContext *avctx,
+                                   av_unused const AVBufferRef *buffer_ref,
+                                   av_unused const uint8_t *buffer,
+                                   av_unused uint32_t size)
 {
     const VC1Context          *v       = avctx->priv_data;
     D3D12VADecodeContext      *ctx     = D3D12VA_DECODE_CONTEXT(avctx);

@@ -118,6 +118,7 @@ static void vdpau_h264_set_reference_frames(AVCodecContext *avctx)
 }
 
 static int vdpau_h264_start_frame(AVCodecContext *avctx,
+                                  const AVBufferRef *buffer_ref,
                                   const uint8_t *buffer, uint32_t size)
 {
     H264Context * const h = avctx->priv_data;

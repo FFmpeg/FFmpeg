@@ -3401,7 +3401,10 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l,
         goto fail;
 
     if (s->avctx->hwaccel) {
-        ret = FF_HW_CALL(s->avctx, start_frame, NULL, 0);
+        AVCodecInternal *avci = s->avctx->internal;
+        AVPacket *avpkt = avci->in_pkt;
+        ret = FF_HW_CALL(s->avctx, start_frame,
+                         avpkt->buf, NULL, 0);
         if (ret < 0)
             goto fail;
     }

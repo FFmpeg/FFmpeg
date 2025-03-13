@@ -29,7 +29,8 @@
 #include "vdpau_internal.h"
 
 static int vdpau_vp9_start_frame(AVCodecContext *avctx,
-                                  const uint8_t *buffer, uint32_t size)
+                                 const AVBufferRef *buffer_ref,
+                                 const uint8_t *buffer, uint32_t size)
 {
     VP9Context *s = avctx->priv_data;
     VP9SharedContext *h = &(s->s);

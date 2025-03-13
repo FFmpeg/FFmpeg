@@ -1618,7 +1618,7 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     if (avctx->hwaccel) {
         const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
-        ret = hwaccel->start_frame(avctx, NULL, 0);
+        ret = hwaccel->start_frame(avctx, pkt->buf, pkt->data, pkt->size);
         if (ret < 0)
             return ret;
         ret = hwaccel->decode_slice(avctx, pkt->data, pkt->size);

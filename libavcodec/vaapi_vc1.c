@@ -249,7 +249,10 @@ static inline void vc1_pack_bitplanes(uint8_t *bitplane, int n, const uint8_t *f
     bitplane[bitplane_index] = (bitplane[bitplane_index] << 4) | v;
 }
 
-static int vaapi_vc1_start_frame(AVCodecContext *avctx, av_unused const uint8_t *buffer, av_unused uint32_t size)
+static int vaapi_vc1_start_frame(AVCodecContext *avctx,
+                                 av_unused const AVBufferRef *buffer_ref,
+                                 av_unused const uint8_t *buffer,
+                                 av_unused uint32_t size)
 {
     const VC1Context *v = avctx->priv_data;
     const MpegEncContext *s = &v->s;

@@ -30,6 +30,7 @@
 #include "vdpau_internal.h"
 
 static int vdpau_mpeg4_start_frame(AVCodecContext *avctx,
+                                   const AVBufferRef *buffer_ref,
                                    const uint8_t *buffer, uint32_t size)
 {
     Mpeg4DecContext *ctx = avctx->priv_data;

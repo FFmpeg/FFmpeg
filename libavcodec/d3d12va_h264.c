@@ -50,8 +50,9 @@ static void fill_slice_short(DXVA_Slice_H264_Short *slice,
 }
 
 static int d3d12va_h264_start_frame(AVCodecContext *avctx,
-                                  av_unused const uint8_t *buffer,
-                                  av_unused uint32_t size)
+                                    av_unused const AVBufferRef *buffer_ref,
+                                    av_unused const uint8_t *buffer,
+                                    av_unused uint32_t size)
 {
     const H264Context        *h       = avctx->priv_data;
     H264DecodePictureContext *ctx_pic = h->cur_pic_ptr->hwaccel_picture_private;

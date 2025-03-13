@@ -793,7 +793,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     if (HWACCEL_MAX && avctx->hwaccel) {
         const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
-        ret = hwaccel->start_frame(avctx, NULL, 0);
+        ret = hwaccel->start_frame(avctx, avpkt->buf, avpkt->data, avpkt->size);
         if (ret < 0)
             return ret;
         ret = hwaccel->decode_slice(avctx, avpkt->data, avpkt->size);

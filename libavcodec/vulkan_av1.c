@@ -245,6 +245,7 @@ static int vk_av1_create_params(AVCodecContext *avctx, AVBufferRef **buf,
 }
 
 static int vk_av1_start_frame(AVCodecContext          *avctx,
+                              av_unused const AVBufferRef *buffer_ref,
                               av_unused const uint8_t *buffer,
                               av_unused uint32_t       size)
 {

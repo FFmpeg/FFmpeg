@@ -587,7 +587,8 @@ static void debug_green_metadata(const H264SEIGreenMetaData *gm, void *logctx)
     }
 }
 
-static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
+static int decode_nal_units(H264Context *h, AVBufferRef *buf_ref,
+                            const uint8_t *buf, int buf_size)
 {
     AVCodecContext *const avctx = h->avctx;
     int nals_needed = 0; ///< number of NALs that need decoding before the next frame thread starts
@@ -668,7 +669,8 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                 }
 
                 if (h->avctx->hwaccel &&
-                    (ret = FF_HW_CALL(h->avctx, start_frame, buf, buf_size)) < 0)
+                    (ret = FF_HW_CALL(h->avctx, start_frame, buf_ref,
+                                      buf, buf_size)) < 0)
                     goto end;
             }
 
@@ -1053,7 +1055,7 @@ static int h264_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                                             avctx->err_recognition, avctx);
     }
 
-    buf_index = decode_nal_units(h, buf, buf_size);
+    buf_index = decode_nal_units(h, avpkt->buf, buf, buf_size);
     if (buf_index < 0)
         return AVERROR_INVALIDDATA;
 

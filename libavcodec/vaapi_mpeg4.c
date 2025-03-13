@@ -45,7 +45,10 @@ static int mpeg4_get_intra_dc_vlc_thr(Mpeg4DecContext *s)
     return 0;
 }
 
-static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_t *buffer, av_unused uint32_t size)
+static int vaapi_mpeg4_start_frame(AVCodecContext *avctx,
+                                   av_unused const AVBufferRef *buffer_ref,
+                                   av_unused const uint8_t *buffer,
+                                   av_unused uint32_t size)
 {
     Mpeg4DecContext *ctx = avctx->priv_data;
     MpegEncContext *s = &ctx->m;

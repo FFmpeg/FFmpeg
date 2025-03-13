@@ -29,7 +29,9 @@
 #include "internal.h"
 #include "vp9shared.h"
 
-static int nvdec_vp9_start_frame(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
+static int nvdec_vp9_start_frame(AVCodecContext *avctx,
+                                 const AVBufferRef *buffer_ref,
+                                 const uint8_t *buffer, uint32_t size)
 {
     VP9SharedContext *h = avctx->priv_data;
     const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(avctx->sw_pix_fmt);

@@ -808,7 +808,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         if (!s->hwaccel_picture_private)
             return AVERROR(ENOMEM);
 
-        ret = hwaccel->start_frame(s->avctx, s->raw_image_buffer,
+        ret = hwaccel->start_frame(s->avctx, NULL, s->raw_image_buffer,
                                    s->raw_image_buffer_size);
         if (ret < 0)
             return ret;

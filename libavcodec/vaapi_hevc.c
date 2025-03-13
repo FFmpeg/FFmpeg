@@ -122,6 +122,7 @@ static void fill_vaapi_reference_frames(const HEVCContext *h, const HEVCLayerCon
 }
 
 static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
+                                  av_unused const AVBufferRef *buffer_ref,
                                   av_unused const uint8_t *buffer,
                                   av_unused uint32_t       size)
 {

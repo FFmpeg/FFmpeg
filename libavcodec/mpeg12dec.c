@@ -1361,7 +1361,7 @@ static int mpeg_field_start(Mpeg1Context *s1, const uint8_t *buf, int buf_size)
     }
 
     if (avctx->hwaccel) {
-        if ((ret = FF_HW_CALL(avctx, start_frame, buf, buf_size)) < 0)
+        if ((ret = FF_HW_CALL(avctx, start_frame, NULL, buf, buf_size)) < 0)
             return ret;
     } else if (s->codec_tag == MKTAG('V', 'C', 'R', '2')) {
         // Exchange UV

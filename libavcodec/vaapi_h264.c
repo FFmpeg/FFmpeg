@@ -232,6 +232,7 @@ static void fill_vaapi_plain_pred_weight_table(const H264Context *h,
 
 /** Initialize and start decoding a frame with VA API. */
 static int vaapi_h264_start_frame(AVCodecContext          *avctx,
+                                  av_unused const AVBufferRef *buffer_ref,
                                   av_unused const uint8_t *buffer,
                                   av_unused uint32_t       size)
 {

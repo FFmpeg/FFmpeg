@@ -52,11 +52,13 @@ typedef struct FFHWAccel {
      * Otherwise, this means the whole frame is available at this point.
      *
      * @param avctx the codec context
+     * @param buf_ref the frame data buffer reference (optional)
      * @param buf the frame data buffer base
      * @param buf_size the size of the frame in bytes
      * @return zero if successful, a negative value otherwise
      */
-    int (*start_frame)(AVCodecContext *avctx, const uint8_t *buf, uint32_t buf_size);
+    int (*start_frame)(AVCodecContext *avctx, const AVBufferRef *buf_ref,
+                       const uint8_t *buf, uint32_t buf_size);
 
     /**
      * Callback for parameter data (SPS/PPS/VPS etc).

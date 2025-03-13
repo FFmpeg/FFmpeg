@@ -39,7 +39,9 @@ static int get_bit_depth_from_seq(const AV1RawSequenceHeader *seq)
         return 8;
 }
 
-static int nvdec_av1_start_frame(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
+static int nvdec_av1_start_frame(AVCodecContext *avctx,
+                                 const AVBufferRef *buffer_ref,
+                                 const uint8_t *buffer, uint32_t size)
 {
     const AV1DecContext *s = avctx->priv_data;
     const AV1RawSequenceHeader *seq = s->raw_seq;

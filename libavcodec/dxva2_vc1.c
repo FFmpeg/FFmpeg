@@ -315,6 +315,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
 }
 
 static int dxva2_vc1_start_frame(AVCodecContext *avctx,
+                                 av_unused const AVBufferRef *buffer_ref,
                                  av_unused const uint8_t *buffer,
                                  av_unused uint32_t size)
 {
