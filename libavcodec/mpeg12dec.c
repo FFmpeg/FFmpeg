@@ -2240,7 +2240,6 @@ static void mpeg12_execute_slice_threads(AVCodecContext *avctx,
         !avctx->hwaccel) {
         MpegEncContext *const s2 = &s->mpeg_enc_ctx;
         int error_count = 0;
-        av_assert0(avctx->thread_count > 1);
 
         avctx->execute(avctx, slice_decode_thread,
                        s2->thread_context, NULL,
@@ -2538,7 +2537,6 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                     int threshold = (s2->mb_height * s->slice_count +
                                      s2->slice_context_count / 2) /
                                     s2->slice_context_count;
-                    av_assert0(avctx->thread_count > 1);
                     if (threshold <= mb_y) {
                         MpegEncContext *thread_context = s2->thread_context[s->slice_count];
 
