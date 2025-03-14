@@ -1673,6 +1673,8 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
         return old_codec23(ctx, gb, top, left, w, h, param, parm2);
     case 37:
         return old_codec37(ctx, w, h);
+    case 45:
+        return 0;
     case 47:
         return old_codec47(ctx, w, h);
     case 48:
