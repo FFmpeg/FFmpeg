@@ -1329,6 +1329,15 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 
             s->pix_fmt = AV_PIX_FMT_NONE;
 
+            if (FF_HW_HAS_CB(avctx, decode_params)) {
+                ret = FF_HW_CALL(avctx, decode_params, AV1_OBU_SEQUENCE_HEADER,
+                                 s->seq_data_ref->data, s->seq_data_ref->size);
+                if (ret < 0) {
+                    av_log(avctx, AV_LOG_ERROR, "HW accel decode params fail.\n");
+                    return ret;
+                }
+            }
+
             break;
         case AV1_OBU_REDUNDANT_FRAME_HEADER:
             if (s->raw_frame_header)
