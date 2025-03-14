@@ -34,6 +34,7 @@
 #include <math.h>
 #include <stddef.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
@@ -199,9 +200,8 @@ static const int switchtable[23] = {
 
 static int qdm2_get_vlc(GetBitContext *gb, const VLC *vlc, int flag, int depth)
 {
-    int value;
-
-    value = get_vlc2(gb, vlc->table, vlc->bits, depth);
+    int value = get_vlc2(gb, vlc->table, vlc->bits,
+                         av_builtin_constant_p(depth) ? depth : 2);
 
     /* stage-2, 3 bits exponent escape sequence */
     if (value < 0)
