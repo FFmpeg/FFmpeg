@@ -121,7 +121,7 @@ typedef struct VulkanDevicePriv {
     /* Queues */
     pthread_mutex_t **qf_mutex;
     uint32_t nb_tot_qfs;
-    uint32_t img_qfs[5];
+    uint32_t img_qfs[64];
     uint32_t nb_img_qfs;
 
     /* Debug callback */
