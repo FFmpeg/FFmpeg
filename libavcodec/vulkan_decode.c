@@ -1114,18 +1114,12 @@ int ff_vk_decode_uninit(AVCodecContext *avctx)
     return 0;
 }
 
-int ff_vk_decode_init(AVCodecContext *avctx)
+static int create_empty_session_parameters(AVCodecContext *avctx,
+                                           FFVulkanDecodeShared *ctx)
 {
-    int err;
     VkResult ret;
-    FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
-    FFVulkanDecodeShared *ctx;
-    FFVulkanContext *s;
-    FFVulkanFunctions *vk;
-    int async_depth;
-    const VkVideoProfileInfoKHR *profile;
-    const FFVulkanDecodeDescriptor *vk_desc;
-    const VkPhysicalDeviceDriverProperties *driver_props;
+    FFVulkanContext *s = &ctx->s;
+    FFVulkanFunctions *vk = &s->vkfn;
 
     VkVideoDecodeH264SessionParametersCreateInfoKHR h264_params = {
         .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_KHR,
@@ -1144,7 +1138,31 @@ int ff_vk_decode_init(AVCodecContext *avctx)
                  avctx->codec_id == AV_CODEC_ID_HEVC ? (void *)&h265_params :
                  avctx->codec_id == AV_CODEC_ID_AV1  ? (void *)&av1_params  :
                  NULL,
+        .videoSession = ctx->common.session,
     };
+
+    ret = vk->CreateVideoSessionParametersKHR(s->hwctx->act_dev, &session_params_create,
+                                              s->hwctx->alloc, &ctx->empty_session_params);
+    if (ret != VK_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to create empty Vulkan video session parameters: %s!\n",
+               ff_vk_ret2str(ret));
+        return AVERROR_EXTERNAL;
+    }
+
+    return 0;
+}
+
+int ff_vk_decode_init(AVCodecContext *avctx)
+{
+    int err;
+    FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
+    FFVulkanDecodeShared *ctx;
+    FFVulkanContext *s;
+    int async_depth;
+    const VkVideoProfileInfoKHR *profile;
+    const FFVulkanDecodeDescriptor *vk_desc;
+    const VkPhysicalDeviceDriverProperties *driver_props;
+
     VkVideoSessionCreateInfoKHR session_create = {
         .sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_CREATE_INFO_KHR,
     };
@@ -1156,7 +1174,6 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     /* Initialize contexts */
     ctx = dec->shared_ctx;
     s = &ctx->s;
-    vk = &ctx->s.vkfn;
 
     err = ff_vk_init(s, avctx, NULL, avctx->hw_frames_ctx);
     if (err < 0)
@@ -1179,7 +1196,6 @@ int ff_vk_decode_init(AVCodecContext *avctx)
         return err;
     }
 
-    session_create.flags = 0x0;
     session_create.queueFamilyIndex = ctx->qf->idx;
     session_create.maxCodedExtent = ctx->caps.maxCodedExtent;
     session_create.maxDpbSlots = ctx->caps.maxDpbSlots;
@@ -1188,6 +1204,10 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     session_create.referencePictureFormat = session_create.pictureFormat;
     session_create.pStdHeaderVersion = &vk_desc->ext_props;
     session_create.pVideoProfile = profile;
+#ifdef VK_KHR_video_maintenance2
+    if (ctx->s.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_2)
+        session_create.flags = VK_VIDEO_SESSION_CREATE_INLINE_SESSION_PARAMETERS_BIT_KHR;
+#endif
 
     /* Create decode exec context for this specific main thread.
      * 2 async contexts per thread was experimentally determined to be optimal
@@ -1203,7 +1223,7 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     if (err < 0)
         goto fail;
 
-    if (profile) {
+    if (!DECODER_IS_SDR(avctx->codec_id)) {
         err = ff_vk_video_common_init(avctx, s, &ctx->common, &session_create);
         if (err < 0)
             goto fail;
@@ -1258,14 +1278,11 @@ int ff_vk_decode_init(AVCodecContext *avctx)
         }
     }
 
-    session_params_create.videoSession = ctx->common.session;
-    if (profile) {
-        ret = vk->CreateVideoSessionParametersKHR(s->hwctx->act_dev, &session_params_create,
-                                                  s->hwctx->alloc, &ctx->empty_session_params);
-        if (ret != VK_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Unable to create empty Vulkan video session parameters: %s!\n",
-                   ff_vk_ret2str(ret));
-            return AVERROR_EXTERNAL;
+    if (!DECODER_IS_SDR(avctx->codec_id)) {
+        if (!(ctx->s.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_2)) {
+            err = create_empty_session_parameters(avctx, ctx);
+            if (err < 0)
+                return err;
         }
     } else {
         /* For SDR decoders, this alignment value will be 0. Since this will make
