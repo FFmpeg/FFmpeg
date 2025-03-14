@@ -2233,6 +2233,36 @@ static int mpeg_decode_gop(AVCodecContext *avctx,
     return 0;
 }
 
+static void mpeg12_execute_slice_threads(AVCodecContext *avctx,
+                                         Mpeg1Context *const s)
+{
+    if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) &&
+        !avctx->hwaccel) {
+        MpegEncContext *const s2 = &s->mpeg_enc_ctx;
+        int error_count = 0;
+        av_assert0(avctx->thread_count > 1);
+
+        avctx->execute(avctx, slice_decode_thread,
+                       s2->thread_context, NULL,
+                       s->slice_count, sizeof(void *));
+
+        for (int i = 0; i < s->slice_count; i++) {
+            MpegEncContext *const slice = s2->thread_context[i];
+            int slice_err = atomic_load_explicit(&slice->er.error_count,
+                                                 memory_order_relaxed);
+            // error_count can get set to INT_MAX on serious errors.
+            // So use saturated addition.
+            if ((unsigned)slice_err > INT_MAX - error_count) {
+                error_count = INT_MAX;
+                break;
+            }
+            error_count += slice_err;
+        }
+        atomic_store_explicit(&s2->er.error_count, error_count,
+                              memory_order_relaxed);
+    }
+}
+
 static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                          int *got_output, const uint8_t *buf, int buf_size)
 {
@@ -2250,22 +2280,7 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
         buf_ptr = avpriv_find_start_code(buf_ptr, buf_end, &start_code);
         if (start_code > 0x1ff) {
             if (!skip_frame) {
-                if (HAVE_THREADS &&
-                    (avctx->active_thread_type & FF_THREAD_SLICE) &&
-                    !avctx->hwaccel) {
-                    int error_count = 0;
-                    int i;
-                    av_assert0(avctx->thread_count > 1);
-
-                    avctx->execute(avctx, slice_decode_thread,
-                                   &s2->thread_context[0], NULL,
-                                   s->slice_count, sizeof(void *));
-                    for (i = 0; i < s->slice_count; i++)
-                        error_count += atomic_load_explicit(&s2->thread_context[i]->er.error_count,
-                                                            memory_order_relaxed);
-                    atomic_store_explicit(&s2->er.error_count, error_count,
-                                          memory_order_relaxed);
-                }
+                mpeg12_execute_slice_threads(avctx, s);
 
                 ret = slice_end(avctx, picture, got_output);
                 if (ret < 0)
@@ -2324,19 +2339,8 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                 s2->intra_dc_precision= 3;
                 s2->intra_matrix[0]= 1;
             }
-            if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) &&
-                !avctx->hwaccel && s->slice_count) {
-                int error_count = 0;
-                int i;
-
-                avctx->execute(avctx, slice_decode_thread,
-                               s2->thread_context, NULL,
-                               s->slice_count, sizeof(void *));
-                for (i = 0; i < s->slice_count; i++)
-                    error_count += atomic_load_explicit(&s2->thread_context[i]->er.error_count,
-                                                        memory_order_relaxed);
-                atomic_store_explicit(&s2->er.error_count, error_count,
-                                      memory_order_relaxed);
+            if (s->slice_count) {
+                mpeg12_execute_slice_threads(avctx, s);
                 s->slice_count = 0;
             }
             if (last_code == 0 || last_code == SLICE_MIN_START_CODE) {
