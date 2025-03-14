@@ -81,6 +81,9 @@ typedef struct VulkanDeviceFeatures {
     VkPhysicalDeviceTimelineSemaphoreFeatures timeline_semaphore;
 
     VkPhysicalDeviceVideoMaintenance1FeaturesKHR video_maintenance_1;
+#ifdef VK_KHR_video_maintenance2
+    VkPhysicalDeviceVideoMaintenance2FeaturesKHR video_maintenance_2;
+#endif
 
     VkPhysicalDeviceShaderObjectFeaturesEXT shader_object;
     VkPhysicalDeviceCooperativeMatrixFeaturesKHR cooperative_matrix;
@@ -208,6 +211,10 @@ static void device_features_init(AVHWDeviceContext *ctx, VulkanDeviceFeatures *f
 
     OPT_CHAIN(&feats->video_maintenance_1, FF_VK_EXT_VIDEO_MAINTENANCE_1,
               VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR);
+#ifdef VK_KHR_video_maintenance2
+    OPT_CHAIN(&feats->video_maintenance_2, FF_VK_EXT_VIDEO_MAINTENANCE_2,
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_2_FEATURES_KHR);
+#endif
 
     OPT_CHAIN(&feats->shader_object, FF_VK_EXT_SHADER_OBJECT,
               VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT);
@@ -276,6 +283,9 @@ static void device_features_copy_needed(VulkanDeviceFeatures *dst, VulkanDeviceF
     COPY_VAL(timeline_semaphore.timelineSemaphore);
 
     COPY_VAL(video_maintenance_1.videoMaintenance1);
+#ifdef VK_KHR_video_maintenance2
+    COPY_VAL(video_maintenance_2.videoMaintenance2);
+#endif
 
     COPY_VAL(shader_object.shaderObject);
 
@@ -605,6 +615,9 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_NV_OPTICAL_FLOW_EXTENSION_NAME,                      FF_VK_EXT_OPTICAL_FLOW           },
     { VK_EXT_SHADER_OBJECT_EXTENSION_NAME,                    FF_VK_EXT_SHADER_OBJECT          },
     { VK_KHR_VIDEO_MAINTENANCE_1_EXTENSION_NAME,              FF_VK_EXT_VIDEO_MAINTENANCE_1    },
+#ifdef VK_KHR_video_maintenance2
+    { VK_KHR_VIDEO_MAINTENANCE_2_EXTENSION_NAME,              FF_VK_EXT_VIDEO_MAINTENANCE_2    },
+#endif
 
     /* Imports/exports */
     { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,               FF_VK_EXT_EXTERNAL_FD_MEMORY     },
