@@ -2,6 +2,10 @@ FATE_OGG_VORBIS += fate-ogg-vorbis-chained-meta
 fate-ogg-vorbis-chained-meta: REF = $(SRC_PATH)/tests/ref/fate/ogg-vorbis-chained-meta.txt
 fate-ogg-vorbis-chained-meta: CMD = run $(APITESTSDIR)/api-dump-stream-meta-test$(EXESUF) $(TARGET_SAMPLES)/ogg-vorbis/chained-meta.ogg
 
+FATE_OGG_VORBIS += fate-ogg-vorbis-copy-chained-meta
+fate-ogg-vorbis-copy-chained-meta: REF = $(SRC_PATH)/tests/ref/fate/ogg-vorbis-chained-meta.txt
+fate-ogg-vorbis-copy-chained-meta: CMD = run $(FFMPEG) -nostdin -hide_banner -loglevel quiet -i $(TARGET_SAMPLES)/ogg-vorbis/chained-meta.ogg -c copy -f ogg - | $(APITESTSDIR)/api-dump-stream-meta-test$(EXESUF) /dev/stdin
+
 FATE_OGG_VORBIS-$(call DEMDEC, OGG, VORBIS) += $(FATE_OGG_VORBIS)
 
 FATE_SAMPLES_DUMP_STREAM_META += $(FATE_OGG_VORBIS-yes)
