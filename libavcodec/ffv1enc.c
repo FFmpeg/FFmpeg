@@ -839,6 +839,7 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
     case AV_PIX_FMT_YUVA444P16:
     case AV_PIX_FMT_YUVA422P16:
     case AV_PIX_FMT_YUVA420P16:
+    case AV_PIX_FMT_GRAYF16:
     case AV_PIX_FMT_YAF16:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample) {
             s->bits_per_raw_sample = 16;
@@ -1539,6 +1540,7 @@ const FFCodec ff_ffv1_encoder = {
         AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
         AV_PIX_FMT_YUV440P10, AV_PIX_FMT_YUV440P12,
         AV_PIX_FMT_YAF16,
+        AV_PIX_FMT_GRAYF16,
         AV_PIX_FMT_GBRPF16),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &ffv1_class,

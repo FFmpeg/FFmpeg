@@ -128,16 +128,27 @@ static int decode_plane(FFV1Context *f, FFV1SliceContext *sc,
             int ret = decode_line(f, sc, gb, w, sample, plane_index, f->avctx->bits_per_raw_sample, ac);
             if (ret < 0)
                 return ret;
-            if (sc->remap)
-                for (x = 0; x < w; x++)
-                    sample[1][x] = sc->fltmap[remap_index][sample[1][x]];
-            if (f->packed_at_lsb) {
-                for (x = 0; x < w; x++) {
-                    ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x];
+
+            if (sc->remap) {
+                if (f->packed_at_lsb || f->avctx->bits_per_raw_sample == 16) {
+                    for (x = 0; x < w; x++) {
+                        ((uint16_t*)(src + stride*y))[x*pixel_stride] = sc->fltmap[remap_index][sample[1][x] & 0xFFFF];
+                    }
+                } else {
+                    for (x = 0; x < w; x++) {
+                        int v = sc->fltmap[remap_index][sample[1][x] & 0xFFFF];
+                        ((uint16_t*)(src + stride*y))[x*pixel_stride] = v << (16 - f->avctx->bits_per_raw_sample) | v >> (2 * f->avctx->bits_per_raw_sample - 16);
+                    }
                 }
             } else {
-                for (x = 0; x < w; x++) {
-                    ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x] << (16 - f->avctx->bits_per_raw_sample) | ((uint16_t **)sample)[1][x] >> (2 * f->avctx->bits_per_raw_sample - 16);
+                if (f->packed_at_lsb || f->avctx->bits_per_raw_sample == 16) {
+                    for (x = 0; x < w; x++) {
+                        ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x];
+                    }
+                } else {
+                    for (x = 0; x < w; x++) {
+                        ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x] << (16 - f->avctx->bits_per_raw_sample) | ((uint16_t **)sample)[1][x] >> (2 * f->avctx->bits_per_raw_sample - 16);
+                    }
                 }
             }
         }

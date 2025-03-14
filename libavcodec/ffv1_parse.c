@@ -288,7 +288,10 @@ int ff_ffv1_parse_header(FFV1Context *f, RangeCoder *c, uint8_t *state)
                 f->pix_fmt = AV_PIX_FMT_GRAY14;
             } else if (f->avctx->bits_per_raw_sample == 16) {
                 f->packed_at_lsb = 1;
-                f->pix_fmt = AV_PIX_FMT_GRAY16;
+                if (f->flt) {
+                    f->pix_fmt = AV_PIX_FMT_GRAYF16;
+                } else
+                    f->pix_fmt = AV_PIX_FMT_GRAY16;
             } else if (f->avctx->bits_per_raw_sample < 16) {
                 f->pix_fmt = AV_PIX_FMT_GRAY16;
             } else
