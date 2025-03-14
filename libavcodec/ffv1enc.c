@@ -301,11 +301,11 @@ static int encode_plane(FFV1Context *f, FFV1SliceContext *sc,
         } else {
             if (f->packed_at_lsb) {
                 for (x = 0; x < w; x++) {
-                    sample[0][x] = ((uint16_t*)(src + stride*y))[x];
+                    sample[0][x] = ((uint16_t*)(src + stride*y))[x * pixel_stride];
                 }
             } else {
                 for (x = 0; x < w; x++) {
-                    sample[0][x] = ((uint16_t*)(src + stride*y))[x] >> (16 - f->bits_per_raw_sample);
+                    sample[0][x] = ((uint16_t*)(src + stride*y))[x * pixel_stride] >> (16 - f->bits_per_raw_sample);
                 }
             }
             if (sc->remap)
@@ -334,10 +334,10 @@ static void load_plane(FFV1Context *f, FFV1SliceContext *sc,
         } else {
             if (f->packed_at_lsb) {
                 for (x = 0; x < w; x++)
-                    sc->fltmap[remap_index][ ((uint16_t*)(src + stride*y))[x] ] = 1;
+                    sc->fltmap[remap_index][ ((uint16_t*)(src + stride*y))[x * pixel_stride] ] = 1;
             } else {
                 for (x = 0; x < w; x++)
-                    sc->fltmap[remap_index][ ((uint16_t*)(src + stride*y))[x] >> (16 - f->bits_per_raw_sample) ] = 1;
+                    sc->fltmap[remap_index][ ((uint16_t*)(src + stride*y))[x * pixel_stride] >> (16 - f->bits_per_raw_sample) ] = 1;
             }
         }
     }
@@ -839,6 +839,7 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
     case AV_PIX_FMT_YUVA444P16:
     case AV_PIX_FMT_YUVA422P16:
     case AV_PIX_FMT_YUVA420P16:
+    case AV_PIX_FMT_YAF16:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample) {
             s->bits_per_raw_sample = 16;
         } else if (!s->bits_per_raw_sample) {
@@ -923,17 +924,16 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
         if (s->bits_per_raw_sample >= 16) {
             s->use32bit = 1;
         }
-        s->flt     = !!(desc->flags & AV_PIX_FMT_FLAG_FLOAT);
         s->version = FFMAX(s->version, 1);
-
-        if (s->flt)
-            s->version = FFMAX(s->version, 4);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "format %s not supported\n",
                av_get_pix_fmt_name(pix_fmt));
         return AVERROR(ENOSYS);
     }
+    s->flt = !!(desc->flags & AV_PIX_FMT_FLAG_FLOAT);
+    if (s->flt)
+        s->version = FFMAX(s->version, 4);
     av_assert0(s->bits_per_raw_sample >= 8);
 
     if (s->remap_mode < 0)
@@ -1214,7 +1214,7 @@ retry:
     }
 
     if (sc->remap) {
-        if (f->colorspace == 0 && c->pix_fmt != AV_PIX_FMT_YA8) {
+        if (f->colorspace == 0 && c->pix_fmt != AV_PIX_FMT_YA8 && c->pix_fmt != AV_PIX_FMT_YAF16) {
             const int cx            = x >> f->chroma_h_shift;
             const int cy            = y >> f->chroma_v_shift;
 
@@ -1229,9 +1229,9 @@ retry:
             }
             if (f->transparency)
                 load_plane(f, sc, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 3, 1);
-        } else if (c->pix_fmt == AV_PIX_FMT_YA8) {
-            load_plane(f, sc, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2);
-            load_plane(f, sc, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 2);
+        } else if (c->pix_fmt == AV_PIX_FMT_YA8 || c->pix_fmt == AV_PIX_FMT_YAF16) {
+            load_plane(f, sc, p->data[0] +           ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2);
+            load_plane(f, sc, p->data[0] + (ps>>1) + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 2);
         } else if (f->use32bit) {
             load_rgb_frame32(f, sc, planes, width, height, p->linesize);
         } else
@@ -1247,7 +1247,7 @@ retry:
                       sc->c.bytestream_end - sc->c.bytestream_start - sc->ac_byte_count);
     }
 
-    if (f->colorspace == 0 && c->pix_fmt != AV_PIX_FMT_YA8) {
+    if (f->colorspace == 0 && c->pix_fmt != AV_PIX_FMT_YA8 && c->pix_fmt != AV_PIX_FMT_YAF16) {
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
 
@@ -1259,9 +1259,9 @@ retry:
         }
         if (f->transparency)
             ret |= encode_plane(f, sc, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2, 3, 1, ac);
-    } else if (c->pix_fmt == AV_PIX_FMT_YA8) {
-        ret  = encode_plane(f, sc, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 0, 2, ac);
-        ret |= encode_plane(f, sc, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 1, 2, ac);
+    } else if (c->pix_fmt == AV_PIX_FMT_YA8 || c->pix_fmt == AV_PIX_FMT_YAF16) {
+        ret  = encode_plane(f, sc, p->data[0] +           ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 0, 2, ac);
+        ret |= encode_plane(f, sc, p->data[0] + (ps>>1) + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 1, 2, ac);
     } else if (f->use32bit) {
         ret = encode_rgb_frame32(f, sc, planes, width, height, p->linesize, ac);
     } else {
@@ -1538,6 +1538,7 @@ const FFCodec ff_ffv1_encoder = {
         AV_PIX_FMT_GRAY9,
         AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
         AV_PIX_FMT_YUV440P10, AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YAF16,
         AV_PIX_FMT_GBRPF16),
     .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &ffv1_class,

@@ -294,9 +294,11 @@ int ff_ffv1_parse_header(FFV1Context *f, RangeCoder *c, uint8_t *state)
             } else
                 return AVERROR(ENOSYS);
         } else if (f->transparency && !f->chroma_planes) {
-            if (f->avctx->bits_per_raw_sample <= 8)
+            if (f->avctx->bits_per_raw_sample <= 8 && !f->flt) {
                 f->pix_fmt = AV_PIX_FMT_YA8;
-            else
+            } else if (f->avctx->bits_per_raw_sample == 16 && f->flt) {
+                f->pix_fmt = AV_PIX_FMT_YAF16;
+            } else
                 return AVERROR(ENOSYS);
         } else if (f->avctx->bits_per_raw_sample<=8 && !f->transparency) {
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
