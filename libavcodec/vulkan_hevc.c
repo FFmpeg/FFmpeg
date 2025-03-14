@@ -715,15 +715,18 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
     int err;
     HEVCContext *h = avctx->priv_data;
     HEVCLayerContext *l = &h->layers[h->cur_layer];
-    HEVCFrame *pic = h->cur_frame;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
+    FFVulkanDecodeShared *ctx = dec->shared_ctx;
+
+    HEVCFrame *pic = h->cur_frame;
     HEVCVulkanDecodePicture *hp = pic->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &hp->vp;
     const HEVCPPS *pps = h->pps;
     const HEVCSPS *sps = pps->sps;
     int nb_refs = 0;
 
-    if (!dec->session_params) {
+    if (!dec->session_params &&
+        !(ctx->s.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_2)) {
         err = vk_hevc_create_params(avctx, &dec->session_params);
         if (err < 0)
             return err;
@@ -851,6 +854,8 @@ static int vk_hevc_end_frame(AVCodecContext *avctx)
 {
     const HEVCContext *h = avctx->priv_data;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
+    FFVulkanDecodeShared *ctx = dec->shared_ctx;
+
     HEVCFrame *pic = h->cur_frame;
     HEVCVulkanDecodePicture *hp = pic->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &hp->vp;
@@ -858,13 +863,45 @@ static int vk_hevc_end_frame(AVCodecContext *avctx)
     AVFrame *rav[HEVC_MAX_REFS] = { 0 };
     int err;
 
+    const HEVCPPS *pps = h->pps;
+    const HEVCSPS *sps = pps->sps;
+
+#ifdef VK_KHR_video_maintenance2
+    HEVCHeaderPPS vkpps_p;
+    StdVideoH265PictureParameterSet vkpps;
+    HEVCHeaderSPS vksps_p;
+    StdVideoH265SequenceParameterSet vksps;
+    HEVCHeaderVPSSet vkvps_ps[HEVC_MAX_SUB_LAYERS];
+    HEVCHeaderVPS vkvps_p;
+    StdVideoH265VideoParameterSet vkvps;
+    VkVideoDecodeH265InlineSessionParametersInfoKHR h265_params;
+
+    if (ctx->s.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_2) {
+        set_pps(pps, sps, &vkpps_p.scaling, &vkpps, &vkpps_p.pal);
+        set_sps(sps, pps->sps_id, &vksps_p.scaling, &vksps_p.vui_header,
+                &vksps_p.vui, &vksps, vksps_p.nal_hdr,
+                vksps_p.vcl_hdr, &vksps_p.ptl, &vksps_p.dpbm,
+                &vksps_p.pal, vksps_p.str, &vksps_p.ltr);
+
+        vkvps_p.sls = vkvps_ps;
+        set_vps(sps->vps, &vkvps, &vkvps_p.ptl, &vkvps_p.dpbm,
+                vkvps_p.hdr, vkvps_p.sls);
+
+        h265_params = (VkVideoDecodeH265InlineSessionParametersInfoKHR) {
+            .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_INLINE_SESSION_PARAMETERS_INFO_KHR,
+            .pStdSPS = &vksps,
+            .pStdPPS = &vkpps,
+            .pStdVPS = &vkvps,
+        };
+        hp->h265_pic_info.pNext = &h265_params;
+    }
+#endif
+
     if (!hp->h265_pic_info.sliceSegmentCount)
         return 0;
 
-    if (!dec->session_params) {
-        const HEVCPPS *pps = h->pps;
-        const HEVCSPS *sps = pps->sps;
-
+    if (!dec->session_params &&
+        !(ctx->s.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_2)) {
         if (!pps) {
             unsigned int pps_id = h->sh.pps_id;
             if (pps_id < HEVC_MAX_PPS_COUNT && h->ps.pps_list[pps_id] != NULL)
