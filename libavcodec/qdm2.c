@@ -1661,20 +1661,20 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     bytestream2_init(&gb, avctx->extradata, avctx->extradata_size);
 
     while (bytestream2_get_bytes_left(&gb) > 8) {
-        if (bytestream2_peek_be64(&gb) == (((uint64_t)MKBETAG('f','r','m','a') << 32) |
+        if (bytestream2_peek_be64u(&gb) == (((uint64_t)MKBETAG('f','r','m','a') << 32) |
                                             (uint64_t)MKBETAG('Q','D','M','2')))
             break;
-        bytestream2_skip(&gb, 1);
+        bytestream2_skipu(&gb, 1);
     }
 
-    if (bytestream2_get_bytes_left(&gb) < 12) {
+    if (bytestream2_get_bytes_left(&gb) < 44) {
         av_log(avctx, AV_LOG_ERROR, "not enough extradata (%i)\n",
                bytestream2_get_bytes_left(&gb));
         return AVERROR_INVALIDDATA;
     }
 
-    bytestream2_skip(&gb, 8);
-    size = bytestream2_get_be32(&gb);
+    bytestream2_skipu(&gb, 8);
+    size = bytestream2_get_be32u(&gb);
 
     if (size > bytestream2_get_bytes_left(&gb)) {
         av_log(avctx, AV_LOG_ERROR, "extradata size too small, %i < %i\n",
@@ -1683,14 +1683,14 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     }
 
     av_log(avctx, AV_LOG_DEBUG, "size: %d\n", size);
-    if (bytestream2_get_be32(&gb) != MKBETAG('Q','D','C','A')) {
+    if (bytestream2_get_be32u(&gb) != MKBETAG('Q','D','C','A')) {
         av_log(avctx, AV_LOG_ERROR, "invalid extradata, expecting QDCA\n");
         return AVERROR_INVALIDDATA;
     }
 
-    bytestream2_skip(&gb, 4);
+    bytestream2_skipu(&gb, 4);
 
-    s->nb_channels = s->channels = bytestream2_get_be32(&gb);
+    s->nb_channels = s->channels = bytestream2_get_be32u(&gb);
     if (s->channels <= 0 || s->channels > MPA_MAX_CHANNELS) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
         return AVERROR_INVALIDDATA;
@@ -1698,11 +1698,11 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     av_channel_layout_uninit(&avctx->ch_layout);
     av_channel_layout_default(&avctx->ch_layout, s->channels);
 
-    avctx->sample_rate = bytestream2_get_be32(&gb);
-    avctx->bit_rate = bytestream2_get_be32(&gb);
-    s->group_size = bytestream2_get_be32(&gb);
-    s->fft_size = bytestream2_get_be32(&gb);
-    s->checksum_size = bytestream2_get_be32(&gb);
+    avctx->sample_rate = bytestream2_get_be32u(&gb);
+    avctx->bit_rate    = bytestream2_get_be32u(&gb);
+    s->group_size      = bytestream2_get_be32u(&gb);
+    s->fft_size        = bytestream2_get_be32u(&gb);
+    s->checksum_size   = bytestream2_get_be32u(&gb);
     if (s->checksum_size >= 1U << 28 || s->checksum_size <= 1) {
         av_log(avctx, AV_LOG_ERROR, "data block size invalid (%u)\n", s->checksum_size);
         return AVERROR_INVALIDDATA;
