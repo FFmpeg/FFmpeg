@@ -364,7 +364,8 @@ static int decode_slice(AVCodecContext *c, void *arg)
             decode_plane(f, sc, &gb, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 2, 1, ac);
         }
         if (f->transparency)
-            decode_plane(f, sc, &gb, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], (f->version >= 4 && !f->chroma_planes) ? 1 : 2, 2, 1, ac);
+            decode_plane(f, sc, &gb, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], (f->version >= 4 && !f->chroma_planes) ? 1 : 2,
+                                                                                                          (f->version >= 4 && !f->chroma_planes) ? 1 : 3, 1, ac);
     } else if (f->colorspace == 0) {
          decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0]          , width, height, p->linesize[0], 0, 0, 2, ac);
          decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0] + (ps>>1), width, height, p->linesize[0], 1, 1, 2, ac);
