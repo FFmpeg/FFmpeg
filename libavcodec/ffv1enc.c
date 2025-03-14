@@ -1150,10 +1150,9 @@ static void choose_rct_params(const FFV1Context *f, FFV1SliceContext *sc,
 
 static void encode_remap(FFV1Context *f, FFV1SliceContext *sc)
 {
-    int transparency = f->transparency;
     int flip = sc->remap == 2 ? 0x7FFF : 0;
 
-    for (int p= 0; p<3 + transparency; p++) {
+    for (int p= 0; p < 1 + 2*f->chroma_planes + f->transparency; p++) {
         int j = 0;
         int lu = 0;
         uint8_t state[2][32];
