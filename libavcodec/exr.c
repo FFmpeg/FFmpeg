@@ -42,6 +42,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
+#include "libavutil/float2half.h"
 #include "libavutil/half2float.h"
 
 #include "avcodec.h"
@@ -193,7 +194,10 @@ typedef struct EXRContext {
 
     uint8_t *offset_table;
 
+    uint16_t gamma_table[65536];
+
     Half2FloatTables h2f_tables;
+    Float2HalfTables f2h_tables;
 } EXRContext;
 
 static int zip_uncompress(const EXRContext *s, const uint8_t *src, int compressed_size,
@@ -1401,8 +1405,13 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                     }
                 } else if (s->pixel_type == EXR_HALF) {
                     // 16-bit
-                    for (int x = 0; x < xsize; x++, ptr_x += step)
-                        AV_WN16A(ptr_x, bytestream_get_le16(&src));
+                    if (one_gamma != 1.f || (trc_func && (!c || (c < 3 && s->desc->flags & AV_PIX_FMT_FLAG_PLANAR)))) {
+                        for (int x = 0; x < xsize; x++, ptr_x += step)
+                            AV_WN16A(ptr_x, s->gamma_table[bytestream_get_le16(&src)]);
+                    } else {
+                        for (int x = 0; x < xsize; x++, ptr_x += step)
+                            AV_WN16A(ptr_x, bytestream_get_le16(&src));
+                    }
                 }
 
                 // Zero out the end if xmax+1 is not w
@@ -2212,8 +2221,13 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     EXRContext *s = avctx->priv_data;
+    uint32_t i;
+    union av_intfloat32 t;
+    float one_gamma = 1.0f / s->gamma;
+    av_csp_trc_function trc_func = NULL;
 
     ff_init_half2float_tables(&s->h2f_tables);
+    ff_init_float2half_tables(&s->f2h_tables);
 
     s->avctx              = avctx;
 
@@ -2222,6 +2236,26 @@ static av_cold int decode_init(AVCodecContext *avctx)
 #if HAVE_BIGENDIAN
     ff_bswapdsp_init(&s->bbdsp);
 #endif
+
+    trc_func = av_csp_trc_func_from_id(s->apply_trc_type);
+    if (trc_func) {
+        for (i = 0; i < 65536; ++i) {
+            t.i = half2float(i, &s->h2f_tables);
+            t.f = trc_func(t.f);
+            s->gamma_table[i] = float2half(av_float2int(t.f), &s->f2h_tables);
+        }
+    } else if (one_gamma != 1.0f) {
+        for (i = 0; i < 65536; ++i) {
+            t.i = half2float(i, &s->h2f_tables);
+            /* If negative value we reuse half value */
+            if (t.f <= 0.0f) {
+                s->gamma_table[i] = i;
+            } else {
+                t.f = powf(t.f, one_gamma);
+                s->gamma_table[i] = float2half(t.i, &s->f2h_tables);
+            }
+        }
+    }
 
     // allocate thread data, used for non EXR_RAW compression types
     s->thread_data = av_calloc(avctx->thread_count, sizeof(*s->thread_data));
