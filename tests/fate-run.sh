@@ -103,6 +103,16 @@ runecho(){
     $target_exec $target_path/"$@" >&3
 }
 
+run_with_temp(){
+    create_tmp=$1
+    process_tmp=$2
+    filext=$3
+    tmpfile=${outdir}/$test.$filext
+    cleanfiles="$cleanfiles $tmpfile"
+    run $create_tmp $tmpfile || return 1
+    run $process_tmp $tmpfile
+}
+
 probefmt(){
     run ffprobe${PROGSUF}${EXECSUF} -bitexact -threads $threads -show_entries format=format_name -print_format default=nw=1:nk=1 "$@"
 }

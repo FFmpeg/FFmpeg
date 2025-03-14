@@ -66,6 +66,7 @@ typedef struct OGGStreamContext {
     OGGPage page; ///< current page
     unsigned serial_num; ///< serial number
     int64_t last_granule; ///< last packet granule
+    int packet_seen; ///< true when packets have been submitted
 } OGGStreamContext;
 
 typedef struct OGGPageList {
@@ -81,10 +82,13 @@ typedef struct OGGContext {
 #endif
     int64_t pref_duration;      ///< preferred page duration (0 => fill all segments)
     int serial_offset;
+    int failed; // if true all packet submission will fail.
 } OGGContext;
 
 #define OFFSET(x) offsetof(OGGContext, x)
 #define PARAM AV_OPT_FLAG_ENCODING_PARAM
+
+static int ogg_write_trailer(AVFormatContext *s);
 
 static const AVOption options[] = {
     { "serial_offset", "serial number offset",
@@ -106,6 +110,20 @@ static const AVClass ogg_muxer_class = {
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
+
+static void ogg_cleanup_stream(AVStream *st)
+{
+    OGGStreamContext *oggstream = st->priv_data;
+
+    if (st->codecpar->codec_id == AV_CODEC_ID_FLAC ||
+        st->codecpar->codec_id == AV_CODEC_ID_SPEEX ||
+        st->codecpar->codec_id == AV_CODEC_ID_OPUS ||
+        st->codecpar->codec_id == AV_CODEC_ID_VP8) {
+        av_freep(&oggstream->header[0]);
+    }
+
+    av_freep(&oggstream->header[1]);
+}
 
 static void ogg_write_page(AVFormatContext *s, OGGPage *page, int extra_flags)
 {
@@ -482,6 +500,8 @@ static void ogg_write_pages(AVFormatContext *s, int flush)
     ogg->page_list = p;
 }
 
+// This function can be used on an initialized context to reinitialize the
+// streams.
 static int ogg_init(AVFormatContext *s)
 {
     OGGContext *ogg = s->priv_data;
@@ -515,9 +535,17 @@ static int ogg_init(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "No extradata present\n");
             return AVERROR_INVALIDDATA;
         }
-        oggstream = av_mallocz(sizeof(*oggstream));
-        if (!oggstream)
-            return AVERROR(ENOMEM);
+        oggstream = st->priv_data;
+
+        if (!oggstream) {
+            oggstream = av_mallocz(sizeof(*oggstream));
+            if (!oggstream)
+                return AVERROR(ENOMEM);
+            st->priv_data = oggstream;
+        } else {
+            ogg_cleanup_stream(st);
+            memset(oggstream, 0, sizeof(*oggstream));
+        }
 
         oggstream->page.stream_index = i;
 
@@ -534,7 +562,6 @@ static int ogg_init(AVFormatContext *s)
 
         av_dict_copy(&st->metadata, s->metadata, AV_DICT_DONT_OVERWRITE);
 
-        st->priv_data = oggstream;
         if (st->codecpar->codec_id == AV_CODEC_ID_FLAC) {
             int err = ogg_build_flac_headers(st->codecpar, oggstream,
                                              s->flags & AVFMT_FLAG_BITEXACT,
@@ -642,12 +669,68 @@ static int ogg_write_header(AVFormatContext *s)
     return 0;
 }
 
+static int ogg_check_new_metadata(AVFormatContext *s, AVPacket *pkt)
+{
+    int ret = 0;
+    size_t size;
+    OGGContext *oggcontext = s->priv_data;
+    AVStream *st = s->streams[pkt->stream_index];
+    OGGStreamContext *oggstream = st->priv_data;
+    const uint8_t *side_metadata = av_packet_get_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA, &size);
+
+    if (!side_metadata)
+        return 0;
+
+    // Don't restart on first packet.
+    if (!oggstream->packet_seen)
+        return 0;
+
+    if (s->nb_streams > 1) {
+        av_log(s, AV_LOG_WARNING, "Multiple streams present: cannot insert new metadata!\n");
+        return 0;
+    }
+
+    if (st->codecpar->codec_id != AV_CODEC_ID_VORBIS &&
+        st->codecpar->codec_id != AV_CODEC_ID_FLAC &&
+        st->codecpar->codec_id != AV_CODEC_ID_OPUS) {
+        av_log(s, AV_LOG_WARNING, "Inserting metadata is only supported for vorbis, flac and opus streams!\n");
+        return 0;
+    }
+
+    ret = ogg_write_trailer(s);
+    if (ret < 0)
+        goto end;
+
+    av_dict_free(&st->metadata);
+    ret = av_packet_unpack_dictionary(side_metadata, size, &st->metadata);
+    if (ret < 0)
+        goto end;
+
+    ret = ogg_init(s);
+    if (ret < 0)
+        goto end;
+
+    ret = ogg_write_header(s);
+
+end:
+    oggcontext->failed = ret < 0;
+    return ret;
+}
+
 static int ogg_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st = s->streams[pkt->stream_index];
+    OGGContext *oggcontext = s->priv_data;
     OGGStreamContext *oggstream = st->priv_data;
     int ret;
     int64_t granule;
+
+    if (oggcontext->failed)
+        return AVERROR_INVALIDDATA;
+
+    ret = ogg_check_new_metadata(s, pkt);
+    if (ret < 0)
+        return ret;
 
     if (st->codecpar->codec_id == AV_CODEC_ID_THEORA) {
         int64_t pts = oggstream->vrev < 1 ? pkt->pts : pkt->pts + pkt->duration;
@@ -690,6 +773,7 @@ static int ogg_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     ogg_write_pages(s, 0);
 
     oggstream->last_granule = granule;
+    oggstream->packet_seen = 1;
 
     return 0;
 }
@@ -736,16 +820,8 @@ static void ogg_free(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        OGGStreamContext *oggstream = st->priv_data;
-        if (!oggstream)
-            continue;
-        if (st->codecpar->codec_id == AV_CODEC_ID_FLAC ||
-            st->codecpar->codec_id == AV_CODEC_ID_SPEEX ||
-            st->codecpar->codec_id == AV_CODEC_ID_OPUS ||
-            st->codecpar->codec_id == AV_CODEC_ID_VP8) {
-            av_freep(&oggstream->header[0]);
-        }
-        av_freep(&oggstream->header[1]);
+        if (st->priv_data)
+            ogg_cleanup_stream(st);
     }
 
     while (p) {
