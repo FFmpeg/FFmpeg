@@ -1398,6 +1398,10 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
             return AVERROR_INVALIDDATA;
     }
 
+    /* We target version 4.3 */
+    if (f->version == 4 && f->micro_version > 4)
+        f->micro_version = 3;
+
     //if (fv->ctx.ac == AC_GOLOMB_RICE) {
     if (0) {
         int w_a = FFALIGN(avctx->width, LG_ALIGN_W);
