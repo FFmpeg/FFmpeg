@@ -46,6 +46,8 @@
 
 #define DEFAULT_INTER_INDEX 3
 
+static const VLCElem *mv_tables[2];
+
 static inline int msmpeg4v1_pred_dc(MpegEncContext * s, int n,
                                     int32_t **dc_val_ptr)
 {
@@ -300,7 +302,6 @@ static av_cold void msmpeg4_decode_init_static(void)
 {
     static VLCElem vlc_buf[3714 + 2694 + 1636 + 2648 + 1532 + 2488];
     VLCInitState state = VLC_INIT_STATE(vlc_buf);
-    MVTable *mv;
 
     INIT_FIRST_VLC_RL(ff_rl_table[0], 642);
     INIT_FIRST_VLC_RL(ff_rl_table[1], 1104);
@@ -326,18 +327,16 @@ static av_cold void msmpeg4_decode_init_static(void)
                           &ff_v2_mb_type[0][1], 2, 1,
                           &ff_v2_mb_type[0][0], 2, 1, 0);
 
-    mv = &ff_mv_tables[0];
-    mv->vlc = ff_vlc_init_tables_sparse(&state, MV_VLC_BITS,
-                                        MSMPEG4_MV_TABLES_NB_ELEMS + 1,
-                                        mv->table_mv_bits, 1, 1,
-                                        mv->table_mv_code, 2, 2,
-                                        NULL, 0, 0, 0);
-    mv = &ff_mv_tables[1];
-    mv->vlc = ff_vlc_init_tables_sparse(&state, MV_VLC_BITS,
-                                        MSMPEG4_MV_TABLES_NB_ELEMS + 1,
-                                        mv->table_mv_bits, 1, 1,
-                                        mv->table_mv_code, 2, 2,
-                                        NULL, 0, 0, 0);
+    mv_tables[0] = ff_vlc_init_tables_from_lengths(&state, MV_VLC_BITS,
+                                                   MSMPEG4_MV_TABLES_NB_ELEMS,
+                                                   ff_msmp4_mv_table0_lens, 1,
+                                                   ff_msmp4_mv_table0, 2, 2,
+                                                   0, 0);
+    mv_tables[1] = ff_vlc_init_tables_from_lengths(&state, MV_VLC_BITS,
+                                                   MSMPEG4_MV_TABLES_NB_ELEMS,
+                                                   ff_msmp4_mv_table1_lens, 1,
+                                                   ff_msmp4_mv_table1, 2, 2,
+                                                   0, 0);
 
     for (unsigned i = 0; i < 4; i++) {
         ff_mb_non_intra_vlc[i] =
@@ -817,18 +816,17 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
 
 void ff_msmpeg4_decode_motion(MpegEncContext *s, int *mx_ptr, int *my_ptr)
 {
-    const MVTable *mv;
-    int code, mx, my;
+    const VLCElem *const mv_vlc = mv_tables[s->mv_table_index];
+    int sym, mx, my;
 
-    mv = &ff_mv_tables[s->mv_table_index];
-
-    code = get_vlc2(&s->gb, mv->vlc, MV_VLC_BITS, 2);
-    if (code == MSMPEG4_MV_TABLES_NB_ELEMS) {
+    sym = get_vlc2(&s->gb, mv_vlc, MV_VLC_BITS, 2);
+    if (sym) {
+        mx = sym >> 8;
+        my = sym & 0xFF;
+    } else {
+        /* Escape */
         mx = get_bits(&s->gb, 6);
         my = get_bits(&s->gb, 6);
-    } else {
-        mx = mv->table_mvx[code];
-        my = mv->table_mvy[code];
     }
 
     mx += *mx_ptr - 32;

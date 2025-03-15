@@ -67,7 +67,7 @@ static av_cold void init_mv_table(const MVTable *tab, uint32_t mv_vector_table[4
         mv_vector_table[i] = (escape_code << 20) | (i << 8) | escape_length;
     }
 
-    for (i = 0; i < MSMPEG4_MV_TABLES_NB_ELEMS; i++) {
+    for (i = 0; i < MSMPEG4_MV_TABLES_NB_ELEMS - 1; i++) {
         x = tab->table_mvx[i];
         y = tab->table_mvy[i];
         mv_vector_table[(x << 6) | y] = (tab->table_mv_code[i] << 8) | tab->table_mv_bits[i];

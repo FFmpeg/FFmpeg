@@ -58,7 +58,12 @@ extern const uint8_t ff_wmv1_y_dc_scale_table[32];
 extern const uint8_t ff_wmv1_c_dc_scale_table[32];
 extern const uint8_t ff_old_ff_y_dc_scale_table[32];
 
-#define MSMPEG4_MV_TABLES_NB_ELEMS 1099
+#define MSMPEG4_MV_TABLES_NB_ELEMS 1100
+/// The entries are of the form (8 << mvx) | mvy. Escape value is zero.
+extern const uint16_t ff_msmp4_mv_table0[MSMPEG4_MV_TABLES_NB_ELEMS];
+extern const uint8_t  ff_msmp4_mv_table0_lens[MSMPEG4_MV_TABLES_NB_ELEMS];
+extern const uint16_t ff_msmp4_mv_table1[MSMPEG4_MV_TABLES_NB_ELEMS];
+extern const uint8_t  ff_msmp4_mv_table1_lens[MSMPEG4_MV_TABLES_NB_ELEMS];
 extern MVTable ff_mv_tables[2];
 
 extern const uint8_t ff_v2_mb_type[8][2];
