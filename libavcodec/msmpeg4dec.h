@@ -30,6 +30,7 @@
 
 typedef struct MSMP4DecContext {
     MpegEncContext m;
+    int bit_rate;
 } MSMP4DecContext;
 
 static inline MSMP4DecContext *mpv_to_msmpeg4(MpegEncContext *s)

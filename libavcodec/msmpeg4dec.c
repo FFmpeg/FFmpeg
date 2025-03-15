@@ -389,6 +389,7 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
 
 int ff_msmpeg4_decode_picture_header(MpegEncContext * s)
 {
+    MSMP4DecContext *const ms = mpv_to_msmpeg4(s);
     int code;
 
     // at minimum one bit per macroblock is required at least in a valid frame,
@@ -457,8 +458,10 @@ int ff_msmpeg4_decode_picture_header(MpegEncContext * s)
         case MSMP4_WMV1:
             ff_msmpeg4_decode_ext_header(s, (2+5+5+17+7)/8);
 
-            if(s->bit_rate > MBAC_BITRATE) s->per_mb_rl_table= get_bits1(&s->gb);
-            else                           s->per_mb_rl_table= 0;
+            if (ms->bit_rate > MBAC_BITRATE)
+                s->per_mb_rl_table = get_bits1(&s->gb);
+            else
+                s->per_mb_rl_table = 0;
 
             if(!s->per_mb_rl_table){
                 s->rl_chroma_table_index = decode012(&s->gb);
@@ -503,8 +506,10 @@ int ff_msmpeg4_decode_picture_header(MpegEncContext * s)
         case MSMP4_WMV1:
             s->use_skip_mb_code = get_bits1(&s->gb);
 
-            if(s->bit_rate > MBAC_BITRATE) s->per_mb_rl_table= get_bits1(&s->gb);
-            else                           s->per_mb_rl_table= 0;
+            if (ms->bit_rate > MBAC_BITRATE)
+                s->per_mb_rl_table = get_bits1(&s->gb);
+            else
+                s->per_mb_rl_table = 0;
 
             if(!s->per_mb_rl_table){
                 s->rl_table_index = decode012(&s->gb);
@@ -514,7 +519,8 @@ int ff_msmpeg4_decode_picture_header(MpegEncContext * s)
             s->dc_table_index = get_bits1(&s->gb);
 
             s->mv_table_index = get_bits1(&s->gb);
-            s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE);
+            s->inter_intra_pred = s->width*s->height < 320*240 &&
+                                  ms->bit_rate <= II_BITRATE;
             break;
         }
 
@@ -534,7 +540,7 @@ int ff_msmpeg4_decode_picture_header(MpegEncContext * s)
             s->no_rounding = 0;
         }
     }
-    ff_dlog(s->avctx, "%d %"PRId64" %d %d %d\n", s->pict_type, s->bit_rate,
+    ff_dlog(s->avctx, "%d %d %d %d %d\n", s->pict_type, ms->bit_rate,
             s->inter_intra_pred, s->width, s->height);
 
     s->esc3_level_length= 0;
@@ -545,13 +551,14 @@ int ff_msmpeg4_decode_picture_header(MpegEncContext * s)
 
 int ff_msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
 {
+    MSMP4DecContext *const ms = mpv_to_msmpeg4(s);
     int left= buf_size*8 - get_bits_count(&s->gb);
     int length = s->msmpeg4_version >= MSMP4_V3 ? 17 : 16;
     /* the alt_bitstream reader could read over the end so we need to check it */
     if(left>=length && left<length+8)
     {
         skip_bits(&s->gb, 5); /* fps */
-        s->bit_rate= get_bits(&s->gb, 11)*1024;
+        ms->bit_rate = get_bits(&s->gb, 11) * 1024;
         if (s->msmpeg4_version >= MSMP4_V3)
             s->flipflop_rounding= get_bits1(&s->gb);
         else

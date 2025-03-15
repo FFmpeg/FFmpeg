@@ -177,7 +177,7 @@ static int decode_ext_header(WMV2DecContext *w)
     init_get_bits(&gb, s->avctx->extradata, 32);
 
     fps                 = get_bits(&gb, 5);
-    s->bit_rate         = get_bits(&gb, 11) * 1024;
+    w->ms.bit_rate      = get_bits(&gb, 11) * 1024;
     w->mspel_bit        = get_bits1(&gb);
     s->loop_filter      = get_bits1(&gb);
     w->abt_flag         = get_bits1(&gb);
@@ -193,10 +193,10 @@ static int decode_ext_header(WMV2DecContext *w)
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_DEBUG,
-               "fps:%d, br:%"PRId64", qpbit:%d, abt_flag:%d, j_type_bit:%d, "
+               "fps:%d, br:%d, qpbit:%d, abt_flag:%d, j_type_bit:%d, "
                "tl_mv_flag:%d, mbrl_bit:%d, code:%d, loop_filter:%d, "
                "slices:%d\n",
-               fps, s->bit_rate, w->mspel_bit, w->abt_flag, w->j_type_bit,
+               fps, w->ms.bit_rate, w->mspel_bit, w->abt_flag, w->j_type_bit,
                w->top_left_mv_flag, w->per_mb_rl_bit, code, s->loop_filter,
                code);
     return 0;
@@ -313,7 +313,7 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext *s)
         s->dc_table_index   = get_bits1(&s->gb);
         s->mv_table_index   = get_bits1(&s->gb);
 
-        s->inter_intra_pred = 0; // (s->width * s->height < 320 * 240 && s->bit_rate <= II_BITRATE);
+        s->inter_intra_pred = 0; // (s->width * s->height < 320 * 240 && w->ms.bit_rate <= II_BITRATE);
         s->no_rounding     ^= 1;
 
         if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
