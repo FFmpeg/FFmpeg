@@ -244,6 +244,7 @@ Codecs:
   rpza.c                                Roberto Togni
   rtjpeg.c, rtjpeg.h                    Reimar Doeffinger
   rv10.c                                Michael Niedermayer
+  sanm.c                                Manuel Lauss
   smc.c                                 Mike Melanson
   snow*                                 Michael Niedermayer, Loren Merritt
   sonic.c                               Alex Beregszaszi
@@ -465,6 +466,7 @@ Muxers/Demuxers:
   sdp.c                                 Martin Storsjo
   segafilm.c                            Mike Melanson
   segment.c                             Stefano Sabatini
+  smush.c                               Manuel Lauss
   spdif*                                Anssi Hannula
   srtdec.c                              Aurelien Jacobs
   swf.c                                 Baptiste Coudurier
