@@ -215,7 +215,7 @@ typedef struct AVFloatDSPContext {
  *
  * @return sum of elementwise products
  */
-float avpriv_scalarproduct_float_c(const float *v1, const float *v2, int len);
+float ff_scalarproduct_float_c(const float *v1, const float *v2, int len);
 
 /**
  * Return the scalar product of two vectors of doubles.

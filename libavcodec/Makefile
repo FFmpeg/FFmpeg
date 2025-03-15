@@ -61,7 +61,8 @@ OBJS = ac3_parser.o                                                     \
        vorbis_parser.o                                                  \
        xiph.o                                                           \
 
-SHLIBOBJS = timecode_internal.o                                         \
+SHLIBOBJS = float_scalarproduct.o                                       \
+            timecode_internal.o                                         \
 
 # subsystems
 include $(SRC_PATH)/libavcodec/aac/Makefile

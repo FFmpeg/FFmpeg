@@ -90,7 +90,7 @@ static av_cold int ra288_decode_init(AVCodecContext *avctx)
 static void convolve(float *tgt, const float *src, int len, int n)
 {
     for (; n >= 0; n--)
-        tgt[n] = avpriv_scalarproduct_float_c(src, src - n, len);
+        tgt[n] = ff_scalarproduct_float_c(src, src - n, len);
 
 }
 
@@ -119,7 +119,7 @@ static void decode(RA288Context *ractx, float gain, int cb_coef)
     for (i=0; i < 5; i++)
         buffer[i] = codetable[cb_coef][i] * sumsum;
 
-    sum = avpriv_scalarproduct_float_c(buffer, buffer, 5);
+    sum = ff_scalarproduct_float_c(buffer, buffer, 5);
 
     sum = FFMAX(sum, 5.0 / (1<<24));
 

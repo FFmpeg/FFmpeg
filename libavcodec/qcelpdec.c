@@ -397,7 +397,7 @@ static void apply_gain_ctrl(float *v_out, const float *v_ref, const float *v_in)
     int i;
 
     for (i = 0; i < 160; i += 40) {
-        float res = avpriv_scalarproduct_float_c(v_ref + i, v_ref + i, 40);
+        float res = ff_scalarproduct_float_c(v_ref + i, v_ref + i, 40);
         ff_scale_vector_to_given_sum_of_squares(v_out + i, v_in + i, res, 40);
     }
 }
@@ -676,9 +676,9 @@ static void postfilter(QCELPContext *q, float *samples, float *lpc)
     ff_tilt_compensation(&q->postfilter_tilt_mem, 0.3, pole_out + 10, 160);
 
     ff_adaptive_gain_control(samples, pole_out + 10,
-                             avpriv_scalarproduct_float_c(q->formant_mem + 10,
-                                                          q->formant_mem + 10,
-                                                          160),
+                             ff_scalarproduct_float_c(q->formant_mem + 10,
+                                                      q->formant_mem + 10,
+                                                      160),
                              160, 0.9375, &q->postfilter_agc_mem);
 }
 

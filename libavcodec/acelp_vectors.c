@@ -193,7 +193,7 @@ void ff_adaptive_gain_control(float *out, const float *in, float speech_energ,
                               int size, float alpha, float *gain_mem)
 {
     int i;
-    float postfilter_energ = avpriv_scalarproduct_float_c(in, in, size);
+    float postfilter_energ = ff_scalarproduct_float_c(in, in, size);
     float gain_scale_factor = 1.0;
     float mem = *gain_mem;
 
@@ -214,7 +214,7 @@ void ff_scale_vector_to_given_sum_of_squares(float *out, const float *in,
                                              float sum_of_squares, const int n)
 {
     int i;
-    float scalefactor = avpriv_scalarproduct_float_c(in, in, n);
+    float scalefactor = ff_scalarproduct_float_c(in, in, n);
     if (scalefactor)
         scalefactor = sqrt(sum_of_squares / scalefactor);
     for (i = 0; i < n; i++)
