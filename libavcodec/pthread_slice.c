@@ -115,12 +115,6 @@ av_cold int ff_slice_thread_init(AVCodecContext *avctx)
     int thread_count = avctx->thread_count;
     void (*mainfunc)(void *);
 
-    // We cannot do this in the encoder init as the threads are created before
-    if (ff_codec_is_encoder(avctx->codec) &&
-        avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO &&
-        avctx->height > 2800)
-        thread_count = avctx->thread_count = 1;
-
     if (!thread_count) {
         int nb_cpus = av_cpu_count();
         if  (avctx->height)
