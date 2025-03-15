@@ -697,6 +697,13 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     if (ret < 0)
         return ret;
 
+    if (avctx->debug & FF_DEBUG_PICT_INFO)
+        av_log(avctx, AV_LOG_DEBUG, "ver:%d keyframe:%d coder:%d ec:%d slices:%d bps:%d\n",
+               f->version, !!f->key_frame, f->ac, f->ec, f->slice_count, f->avctx->bits_per_raw_sample);
+
+    if (avctx->skip_frame >= AVDISCARD_ALL)
+        return avpkt->size;
+
     ret = ff_progress_frame_get_buffer(avctx, &f->picture,
                                        AV_GET_BUFFER_FLAG_REF);
     if (ret < 0)
@@ -713,10 +720,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         if (avctx->field_order == AV_FIELD_TT || avctx->field_order == AV_FIELD_TB)
             p->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
     }
-
-    if (avctx->debug & FF_DEBUG_PICT_INFO)
-        av_log(avctx, AV_LOG_DEBUG, "ver:%d keyframe:%d coder:%d ec:%d slices:%d bps:%d\n",
-               f->version, !!(p->flags & AV_FRAME_FLAG_KEY), f->ac, f->ec, f->slice_count, f->avctx->bits_per_raw_sample);
 
     ff_thread_finish_setup(avctx);
 
@@ -821,5 +824,6 @@ const FFCodec ff_ffv1_decoder = {
     .p.capabilities = AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_SLICE_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
+                      FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
                       FF_CODEC_CAP_USES_PROGRESSFRAMES,
 };
