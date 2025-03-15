@@ -25,6 +25,7 @@
  * MPEG-1/2 encoder
  */
 
+#include <assert.h>
 #include <stdint.h>
 
 #include "config.h"
@@ -324,6 +325,7 @@ void ff_mpeg1_encode_slice_header(MpegEncContext *s)
         /* slice_vertical_position_extension */
         put_bits(&s->pb, 3, s->mb_y >> 7);
     } else {
+        av_assert1(s->mb_y <= SLICE_MAX_START_CODE - SLICE_MIN_START_CODE);
         put_header(s, SLICE_MIN_START_CODE + s->mb_y);
     }
     put_qscale(s);
@@ -1127,6 +1129,30 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ret = ff_mpv_encode_init(avctx);
     if (ret < 0)
         return ret;
+
+    if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO &&
+        s->thread_context[s->slice_context_count - 1]->start_mb_y >
+            SLICE_MAX_START_CODE - SLICE_MIN_START_CODE) {
+        // MPEG-1 slices must not start at a MB row number that would make
+        // their start code > SLICE_MAX_START_CODE. So make the last slice
+        // bigger if needed and evenly distribute the first 174 rows.
+        static_assert(MAX_THREADS <= 1 + SLICE_MAX_START_CODE - SLICE_MIN_START_CODE,
+                      "With more than 175 slice contexts, we have to handle "
+                      "the case in which there is no work to do for some "
+                      "slice contexts.");
+        const int mb_height = SLICE_MAX_START_CODE - SLICE_MIN_START_CODE;
+        const int nb_slices = s->slice_context_count - 1;
+
+        s->thread_context[nb_slices]->start_mb_y = mb_height;
+
+        av_assert1(nb_slices >= 1);
+        for (int i = 0; i < nb_slices; i++) {
+            s->thread_context[i]->start_mb_y =
+                (mb_height * (i    ) + nb_slices / 2) / nb_slices;
+            s->thread_context[i]->end_mb_y   =
+                (mb_height * (i + 1) + nb_slices / 2) / nb_slices;
+        }
+    }
 
     if (find_frame_rate_index(avctx, mpeg12) < 0) {
         if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
