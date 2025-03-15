@@ -28,6 +28,16 @@
 #define INTER_INTRA_VLC_BITS 3
 #define MB_NON_INTRA_VLC_BITS 9
 
+typedef struct MSMP4DecContext {
+    MpegEncContext m;
+} MSMP4DecContext;
+
+static inline MSMP4DecContext *mpv_to_msmpeg4(MpegEncContext *s)
+{
+    // Only legal because no MSMPEG-4 decoder uses slice-threading.
+    return (MSMP4DecContext*)s;
+}
+
 extern const VLCElem *ff_mb_non_intra_vlc[4];
 extern VLCElem ff_inter_intra_vlc[8];
 
