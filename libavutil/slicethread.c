@@ -224,13 +224,12 @@ void avpriv_slicethread_execute(AVSliceThread *ctx, int nb_jobs, int execute_mai
 
 void avpriv_slicethread_free(AVSliceThread **pctx)
 {
-    AVSliceThread *ctx;
+    AVSliceThread *ctx = *pctx;
     int nb_workers, i;
 
-    if (!pctx || !*pctx)
+    if (!ctx)
         return;
 
-    ctx = *pctx;
     nb_workers = ctx->nb_threads;
     if (!ctx->main_func)
         nb_workers--;
