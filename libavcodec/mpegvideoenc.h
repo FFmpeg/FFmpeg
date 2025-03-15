@@ -30,6 +30,7 @@
 
 #include <float.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "mpegvideo.h"
 #include "ratecontrol.h"
@@ -90,6 +91,17 @@ typedef struct MPVMainEncContext {
     int64_t mb_var_sum;            ///< sum of MB variance for current frame
     int64_t mc_mb_var_sum;         ///< motion compensated MB variance for current frame
 } MPVMainEncContext;
+
+static inline const MPVMainEncContext *slice_to_mainenc(const MpegEncContext *s)
+{
+#ifdef NO_SLICE_THREADING_HERE
+    av_assert2(s->slice_context_count <= 1 &&
+               !(s->avctx->codec->capabilities & AV_CODEC_CAP_SLICE_THREADS));
+    return (const MPVMainEncContext*)s;
+#else
+    return s->encparent;
+#endif
+}
 
 #define MAX_FCODE        7
 #define UNI_AC_ENC_INDEX(run,level) ((run)*128 + (level))
