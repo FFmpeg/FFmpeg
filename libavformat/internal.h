@@ -640,4 +640,15 @@ int ff_match_url_ext(const char *url, const char *extensions);
 int ff_get_frame_filename(char *buf, int buf_size, const char *path,
                           int64_t number, int flags);
 
+/**
+ * Set a dictionary value to an ISO-8601 compliant timestamp string.
+ *
+ * @param dict pointer to a pointer to a dictionary struct. If *dict is NULL
+ *             a dictionary struct is allocated and put in *dict.
+ * @param key metadata key
+ * @param timestamp unix timestamp in microseconds
+ * @return <0 on error
+ */
+int ff_dict_set_timestamp(AVDictionary **dict, const char *key, int64_t timestamp);
+
 #endif /* AVFORMAT_INTERNAL_H */

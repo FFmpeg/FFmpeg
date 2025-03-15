@@ -20,14 +20,17 @@
  */
 
 #include <stdint.h>
+#include <time.h>
 
 #include "config.h"
 
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
+#include "libavutil/dict.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/time.h"
+#include "libavutil/time_internal.h"
 
 #include "libavcodec/internal.h"
 
@@ -595,4 +598,20 @@ int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf
      * zeros. */
     par->extradata_size = buf->len;
     return 0;
+}
+
+int ff_dict_set_timestamp(AVDictionary **dict, const char *key, int64_t timestamp)
+{
+    time_t seconds = timestamp / 1000000;
+    struct tm *ptm, tmbuf;
+    ptm = gmtime_r(&seconds, &tmbuf);
+    if (ptm) {
+        char buf[32];
+        if (!strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", ptm))
+            return AVERROR_EXTERNAL;
+        av_strlcatf(buf, sizeof(buf), ".%06dZ", (int)(timestamp % 1000000));
+        return av_dict_set(dict, key, buf, 0);
+    } else {
+        return AVERROR_EXTERNAL;
+    }
 }

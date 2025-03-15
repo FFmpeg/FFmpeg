@@ -38,7 +38,6 @@
 #include "libavutil/base64.h"
 #include "libavutil/bprint.h"
 #include "libavutil/dict.h"
-#include "libavutil/dict_internal.h"
 #include "libavutil/display.h"
 #include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/intfloat.h"
@@ -2137,7 +2136,7 @@ static int matroska_aac_sri(int samplerate)
 static void matroska_metadata_creation_time(AVDictionary **metadata, int64_t date_utc)
 {
     /* Convert to seconds and adjust by number of seconds between 2001-01-01 and Epoch */
-    avpriv_dict_set_timestamp(metadata, "creation_time", date_utc / 1000 + 978307200000000LL);
+    ff_dict_set_timestamp(metadata, "creation_time", date_utc / 1000 + 978307200000000LL);
 }
 
 static int matroska_parse_flac(AVFormatContext *s,

@@ -21,7 +21,6 @@
  */
 
 #include "libavutil/channel_layout.h"
-#include "libavutil/dict_internal.h"
 #include "avformat.h"
 #include "demux.h"
 #include "internal.h"
@@ -96,7 +95,7 @@ static int parse_header(AVFormatContext *s)
     uint32_t vid_magic;
 
     avio_skip(s->pb, 0x34);
-    avpriv_dict_set_timestamp(&s->metadata, "creation_time", avio_rl32(s->pb) * 1000000LL);
+    ff_dict_set_timestamp(&s->metadata, "creation_time", avio_rl32(s->pb) * 1000000LL);
     avio_skip(s->pb, 0x24);
 
     ifv->width = avio_rl16(s->pb);

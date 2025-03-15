@@ -28,7 +28,6 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
-#include "libavutil/dict_internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/internal.h"
@@ -826,7 +825,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
                   ) {
             // timezone is ignored, since there is no easy way to offset the UTC
             // timestamp into the specified timezone
-            avpriv_dict_set_timestamp(&s->metadata, key, 1000 * (int64_t)date.milliseconds);
+            ff_dict_set_timestamp(&s->metadata, key, 1000 * (int64_t)date.milliseconds);
         }
     }
 

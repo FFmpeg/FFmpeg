@@ -32,7 +32,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
-#include "libavutil/dict_internal.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
@@ -1858,7 +1857,7 @@ static void mov_metadata_creation_time(MOVContext *c, AVIOContext *pb, AVDiction
             return;
         }
 
-        avpriv_dict_set_timestamp(metadata, "creation_time", time * 1000000);
+        ff_dict_set_timestamp(metadata, "creation_time", time * 1000000);
     }
 }
 
