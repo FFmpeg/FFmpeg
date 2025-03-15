@@ -232,6 +232,7 @@ typedef struct OptionsContext {
     SpecifierOptList filter_scripts;
 #endif
     SpecifierOptList reinit_filters;
+    SpecifierOptList drop_changed;
     SpecifierOptList fix_sub_duration;
     SpecifierOptList fix_sub_duration_heartbeat;
     SpecifierOptList canvas_sizes;
@@ -262,6 +263,7 @@ enum IFilterFlags {
     IFILTER_FLAG_REINIT         = (1 << 1),
     IFILTER_FLAG_CFR            = (1 << 2),
     IFILTER_FLAG_CROP           = (1 << 3),
+    IFILTER_FLAG_DROPCHANGED    = (1 << 4),
 };
 
 typedef struct InputFilterOptions {

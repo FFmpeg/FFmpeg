@@ -67,6 +67,7 @@ typedef struct DemuxStream {
     int                      reinit_filters;
     int                      autorotate;
     int                      apply_cropping;
+    int                      drop_changed;
 
 
     int                      wrap_correction_done;
@@ -1099,7 +1100,8 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
         return AVERROR(ENOMEM);
 
     opts->flags |= IFILTER_FLAG_AUTOROTATE * !!(ds->autorotate) |
-                   IFILTER_FLAG_REINIT     * !!(ds->reinit_filters);
+                   IFILTER_FLAG_REINIT     * !!(ds->reinit_filters) |
+                   IFILTER_FLAG_DROPCHANGED* !!(ds->drop_changed);
 
     return 0;
 }
@@ -1409,6 +1411,17 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
 
     ds->reinit_filters = -1;
     opt_match_per_stream_int(ist, &o->reinit_filters, ic, st, &ds->reinit_filters);
+
+    ds->drop_changed = 0;
+    opt_match_per_stream_int(ist, &o->drop_changed, ic, st, &ds->drop_changed);
+
+    if (ds->drop_changed && ds->reinit_filters) {
+        if (ds->reinit_filters > 0) {
+            av_log(ist, AV_LOG_ERROR, "drop_changed and reinit_filters both enabled. These are mutually exclusive.\n");
+            return AVERROR(EINVAL);
+        }
+        ds->reinit_filters = 0;
+    }
 
     ist->user_set_discard = AVDISCARD_NONE;
 

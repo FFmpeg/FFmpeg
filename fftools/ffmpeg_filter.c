@@ -126,6 +126,8 @@ typedef struct InputFilterPriv {
 
     int                 eof;
     int                 bound;
+    int                 drop_warned;
+    uint64_t            nb_dropped;
 
     // parameters configured for this input
     int                 format;
@@ -2898,6 +2900,13 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
     } else if (ifp->downmixinfo_present)
         need_reinit |= DOWNMIX_CHANGED;
 
+    if (need_reinit && (ifp->opts.flags & IFILTER_FLAG_DROPCHANGED)) {
+            ifp->nb_dropped++;
+            av_log_once(fg, AV_LOG_WARNING, AV_LOG_DEBUG, &ifp->drop_warned, "Avoiding reinit; dropping frame pts: %s bound for %s\n", av_ts2str(frame->pts), ifilter->name);
+            av_frame_unref(frame);
+            return 0;
+    }
+
     if (!(ifp->opts.flags & IFILTER_FLAG_REINIT) && fgt->graph)
         need_reinit = 0;
 
@@ -3140,6 +3149,8 @@ read_frames:
         ret = read_frames(fg, &fgt, fgt.frame);
         if (ret == AVERROR_EOF) {
             av_log(fg, AV_LOG_VERBOSE, "All consumers returned EOF\n");
+            if (ifp->opts.flags & IFILTER_FLAG_DROPCHANGED)
+                av_log(fg, AV_LOG_INFO, "Total changed input frames dropped : %"PRId64"\n", ifp->nb_dropped);
             break;
         } else if (ret < 0) {
             av_log(fg, AV_LOG_ERROR, "Error sending frames to consumers: %s\n",

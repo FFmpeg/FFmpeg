@@ -1373,6 +1373,12 @@ The properties where a change triggers reinitialization are,
 for video, frame resolution or pixel format;
 for audio, sample format, sample rate, channel count or channel layout.
 
+@item -drop_changed[:@var{stream_specifier}] @var{integer} (@emph{input,per-stream})
+This boolean option determines whether a frame with differing frame parameters mid-stream
+gets dropped instead of leading to filtergraph reinitialization, as that would lead to loss
+of filter state. Generally useful to avoid corrupted yet decodable packets in live streaming
+inputs. Default is false.
+
 @item -filter_threads @var{nb_threads} (@emph{global})
 Defines how many threads are used to process a filter pipeline. Each pipeline
 will produce a thread pool with this many threads available for parallel processing.
