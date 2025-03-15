@@ -91,6 +91,7 @@ typedef struct Mpeg1Context {
     int first_slice;
     int extradata_decoded;
     int vbv_delay;
+    int64_t bit_rate;
     int64_t timecode_frame_start;  /*< GOP timecode frame start number, in non drop frame format */
 } Mpeg1Context;
 
@@ -950,12 +951,12 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         if (ret < 0)
             return ret;
 
-        if (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO && s->bit_rate &&
-            (s->bit_rate != 0x3FFFF*400)) {
-            avctx->rc_max_rate = s->bit_rate;
-        } else if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO && s->bit_rate &&
-                   (s->bit_rate != 0x3FFFF*400 || s1->vbv_delay != 0xFFFF)) {
-            avctx->bit_rate = s->bit_rate;
+        if (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO && s1->bit_rate &&
+            (s1->bit_rate != 0x3FFFF*400)) {
+            avctx->rc_max_rate = s1->bit_rate;
+        } else if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO && s1->bit_rate &&
+                   (s1->bit_rate != 0x3FFFF*400 || s1->vbv_delay != 0xFFFF)) {
+            avctx->bit_rate = s1->bit_rate;
         }
         s1->save_aspect          = s->avctx->sample_aspect_ratio;
         s1->save_width           = s->width;
@@ -1075,7 +1076,7 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
     s->width  |= (horiz_size_ext << 12);
     s->height |= (vert_size_ext  << 12);
     bit_rate_ext = get_bits(&s->gb, 12);  /* XXX: handle it */
-    s->bit_rate += (bit_rate_ext << 18) * 400LL;
+    s1->bit_rate += (bit_rate_ext << 18) * 400LL;
     check_marker(s->avctx, &s->gb, "after bit rate extension");
     s->avctx->rc_buffer_size += get_bits(&s->gb, 8) * 1024 * 16 << 10;
 
@@ -1093,7 +1094,7 @@ static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
         av_log(s->avctx, AV_LOG_DEBUG,
                "profile: %d, level: %d ps: %d cf:%d vbv buffer: %d, bitrate:%"PRId64"\n",
                s->avctx->profile, s->avctx->level, s->progressive_sequence, s->chroma_format,
-               s->avctx->rc_buffer_size, s->bit_rate);
+               s->avctx->rc_buffer_size, s1->bit_rate);
 }
 
 static void mpeg_decode_sequence_display_extension(Mpeg1Context *s1)
@@ -1799,7 +1800,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
                "frame_rate_index %d is invalid\n", s1->frame_rate_index);
         s1->frame_rate_index = 1;
     }
-    s->bit_rate = get_bits(&s->gb, 18) * 400LL;
+    s1->bit_rate = get_bits(&s->gb, 18) * 400;
     if (check_marker(s->avctx, &s->gb, "in sequence header") == 0) {
         return AVERROR_INVALIDDATA;
     }
@@ -1851,7 +1852,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_DEBUG, "vbv buffer: %d, bitrate:%"PRId64", aspect_ratio_info: %d \n",
-               s->avctx->rc_buffer_size, s->bit_rate, s1->aspect_ratio_info);
+               s->avctx->rc_buffer_size, s1->bit_rate, s1->aspect_ratio_info);
 
     return 0;
 }
