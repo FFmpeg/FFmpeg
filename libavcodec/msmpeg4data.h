@@ -35,16 +35,6 @@
 #include "libavutil/attributes_internal.h"
 
 #include "rl.h"
-#include "vlc.h"
-
-/* motion vector table */
-typedef struct MVTable {
-    const uint16_t *table_mv_code;
-    const uint8_t *table_mv_bits;
-    const uint8_t *table_mvx;
-    const uint8_t *table_mvy;
-    const VLCElem *vlc;       /* decoding: vlc */
-} MVTable;
 
 FF_VISIBILITY_PUSH_HIDDEN
 #define NB_RL_TABLES  6
@@ -64,7 +54,6 @@ extern const uint16_t ff_msmp4_mv_table0[MSMPEG4_MV_TABLES_NB_ELEMS];
 extern const uint8_t  ff_msmp4_mv_table0_lens[MSMPEG4_MV_TABLES_NB_ELEMS];
 extern const uint16_t ff_msmp4_mv_table1[MSMPEG4_MV_TABLES_NB_ELEMS];
 extern const uint8_t  ff_msmp4_mv_table1_lens[MSMPEG4_MV_TABLES_NB_ELEMS];
-extern MVTable ff_mv_tables[2];
 
 extern const uint8_t ff_v2_mb_type[8][2];
 extern const uint8_t ff_v2_intra_cbpc[4][2];

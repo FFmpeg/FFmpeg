@@ -55,11 +55,10 @@ static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 static uint32_t mv_vector_tables[2][4096];
 
 /* build the table which associate a (x,y) motion vector to a vlc */
-static av_cold void init_mv_table(const MVTable *tab, uint32_t mv_vector_table[4096],
+static av_cold void init_mv_table(const uint16_t mv_table[], const uint8_t mv_table_lens[],
+                                  uint32_t mv_vector_table[4096],
                                   unsigned escape_code, int escape_length)
 {
-    int i, x, y;
-
     for (int i = 0; i < 4096; i++) {
         // Initialize to the table to "escaped". This code is equivalent to
         // the following double loop (with x and y ranging over 0..63):
@@ -67,11 +66,16 @@ static av_cold void init_mv_table(const MVTable *tab, uint32_t mv_vector_table[4
         mv_vector_table[i] = (escape_code << 20) | (i << 8) | escape_length;
     }
 
-    for (i = 0; i < MSMPEG4_MV_TABLES_NB_ELEMS - 1; i++) {
-        x = tab->table_mvx[i];
-        y = tab->table_mvy[i];
-        mv_vector_table[(x << 6) | y] = (tab->table_mv_code[i] << 8) | tab->table_mv_bits[i];
+    for (uint32_t i = 0, code = 0; i < MSMPEG4_MV_TABLES_NB_ELEMS; i++) {
+        int sym = mv_table[i];
+        int len = mv_table_lens[i];
+        int x = sym >> 8;
+        int y = sym & 0xFF;
+        // We ignore the escape value here and restore it after the loop.
+        mv_vector_table[(x << 6) | y] = (code >> (24 - len)) | len;
+        code += 1U << (32 - len);
     }
+    mv_vector_table[0] = (escape_code << 20) | escape_length;
 }
 
 void ff_msmpeg4_code012(PutBitContext *pb, int n)
@@ -128,8 +132,10 @@ static int get_size_of_code(const RLTable *rl, int last, int run,
 
 static av_cold void msmpeg4_encode_init_static(void)
 {
-    init_mv_table(&ff_mv_tables[0], mv_vector_tables[0], 0x0000, 8 + 12);
-    init_mv_table(&ff_mv_tables[1], mv_vector_tables[1], 0x000b, 4 + 12);
+    init_mv_table(ff_msmp4_mv_table0, ff_msmp4_mv_table0_lens,
+                  mv_vector_tables[0], 0x0000, 8 + 12);
+    init_mv_table(ff_msmp4_mv_table1, ff_msmp4_mv_table1_lens,
+                  mv_vector_tables[1], 0x000b, 4 + 12);
 
     for (int i = 0; i < NB_RL_TABLES; i++) {
         for (int level = 1; level <= MAX_LEVEL; level++) {
