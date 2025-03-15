@@ -132,14 +132,16 @@ av_cold int ff_slice_thread_init(AVCodecContext *avctx)
     }
 
     avctx->internal->thread_ctx = c = av_mallocz(sizeof(*c));
+    if (!c)
+        return AVERROR(ENOMEM);
     mainfunc = ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_SLICE_THREAD_HAS_MF ? &main_function : NULL;
-    if (!c || (thread_count = avpriv_slicethread_create(&c->thread, avctx, worker_func, mainfunc, thread_count)) <= 1) {
-        if (c)
-            avpriv_slicethread_free(&c->thread);
-        av_freep(&avctx->internal->thread_ctx);
+    thread_count = avpriv_slicethread_create(&c->thread, avctx, worker_func,
+                                             mainfunc, thread_count);
+    if (thread_count <= 1) {
+        ff_slice_thread_free(avctx);
         avctx->thread_count = 1;
         avctx->active_thread_type = 0;
-        return 0;
+        return thread_count < 0 ? thread_count : 0;
     }
     avctx->thread_count = thread_count;
 
