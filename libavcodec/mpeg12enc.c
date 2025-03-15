@@ -198,7 +198,7 @@ static void mpeg1_encode_sequence_header(MPEG12EncContext *mpeg12)
     else
         /* VBV calculation: Scaled so that a VCD has the proper
          * VBV size of 40 kilobytes */
-        vbv_buffer_size = av_rescale_rnd(s->bit_rate, 20, 1151929 / 2, AV_ROUND_ZERO) * 8 * 1024;
+        vbv_buffer_size = av_rescale_rnd(mpeg12->mpeg.bit_rate, 20, 1151929 / 2, AV_ROUND_ZERO) * 8 * 1024;
     vbv_buffer_size = (vbv_buffer_size + 16383) / 16384;
 
     put_sbits(&s->pb, 18, v);

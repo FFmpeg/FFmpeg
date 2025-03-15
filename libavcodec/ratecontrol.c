@@ -347,7 +347,7 @@ static int init_pass2(MPVMainEncContext *const m)
     double complexity[5]   = { 0 }; // approximate bits at quant=1
     uint64_t const_bits[5] = { 0 }; // quantizer independent bits
     uint64_t all_const_bits;
-    uint64_t all_available_bits = av_rescale_q(s->bit_rate,
+    uint64_t all_available_bits = av_rescale_q(m->bit_rate,
                                                (AVRational){rcc->num_entries,1},
                                                fps);
     double rate_factor          = 0;
@@ -477,8 +477,8 @@ static int init_pass2(MPVMainEncContext *const m)
     av_assert0(toobig <= 40);
     av_log(s->avctx, AV_LOG_DEBUG,
            "[lavc rc] requested bitrate: %"PRId64" bps  expected bitrate: %"PRId64" bps\n",
-           s->bit_rate,
-           (int64_t)(expected_bits / ((double)all_available_bits / s->bit_rate)));
+           m->bit_rate,
+           (int64_t)(expected_bits / ((double)all_available_bits / m->bit_rate)));
     av_log(s->avctx, AV_LOG_DEBUG,
            "[lavc rc] estimated target average qp: %.3f\n",
            (float)qscale_sum / rcc->num_entries);
@@ -696,7 +696,7 @@ av_cold int ff_rate_control_init(MPVMainEncContext *const m)
                 get_qscale(m, &rce, rcc->pass1_wanted_bits / rcc->pass1_rc_eq_output_sum, i);
 
                 // FIXME misbehaves a little for variable fps
-                rcc->pass1_wanted_bits += s->bit_rate / get_fps(s->avctx);
+                rcc->pass1_wanted_bits += m->bit_rate / get_fps(s->avctx);
             }
         }
     }
@@ -971,9 +971,9 @@ float ff_rate_estimate_qscale(MPVMainEncContext *const m, int dry_run)
             dts_pic = s->last_pic.ptr;
 
         if (!dts_pic || dts_pic->f->pts == AV_NOPTS_VALUE)
-            wanted_bits_double = s->bit_rate * (double)picture_number / fps;
+            wanted_bits_double = m->bit_rate * (double)picture_number / fps;
         else
-            wanted_bits_double = s->bit_rate * (double)dts_pic->f->pts / fps;
+            wanted_bits_double = m->bit_rate * (double)dts_pic->f->pts / fps;
         if (wanted_bits_double > INT64_MAX) {
             av_log(s->avctx, AV_LOG_WARNING, "Bits exceed 64bit range\n");
             wanted_bits = INT64_MAX;
@@ -1047,7 +1047,7 @@ float ff_rate_estimate_qscale(MPVMainEncContext *const m, int dry_run)
 
         q = modify_qscale(m, rce, q, picture_number);
 
-        rcc->pass1_wanted_bits += s->bit_rate / fps;
+        rcc->pass1_wanted_bits += m->bit_rate / fps;
 
         av_assert0(q > 0.0);
     }
@@ -1061,7 +1061,7 @@ float ff_rate_estimate_qscale(MPVMainEncContext *const m, int dry_run)
                wanted_bits / 1000, m->total_bits / 1000,
                br_compensation, short_term_q, m->frame_bits,
                m->mb_var_sum, m->mc_mb_var_sum,
-               s->bit_rate / 1000, (int)fps);
+               m->bit_rate / 1000, (int)fps);
     }
 
     if (q < qmin)

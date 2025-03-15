@@ -55,7 +55,7 @@ static int encode_ext_header(WMV2EncContext *w)
     init_put_bits(&pb, s->avctx->extradata, WMV2_EXTRADATA_SIZE);
 
     put_bits(&pb, 5, s->avctx->time_base.den / s->avctx->time_base.num); // yes 29.97 -> 29
-    put_bits(&pb, 11, FFMIN(s->bit_rate / 1024, 2047));
+    put_bits(&pb, 11, FFMIN(w->msmpeg4.m.bit_rate / 1024, 2047));
 
     put_bits(&pb, 1, w->mspel_bit        = 1);
     put_bits(&pb, 1, s->loop_filter);
@@ -135,7 +135,7 @@ static int wmv2_encode_picture_header(MPVMainEncContext *const m)
         put_bits(&s->pb, 1, s->dc_table_index);
         put_bits(&s->pb, 1, s->mv_table_index);
 
-        s->inter_intra_pred = 0; // (s->width * s->height < 320 * 240 && s->bit_rate <= II_BITRATE);
+        s->inter_intra_pred = 0; // (s->width * s->height < 320 * 240 && m->bit_rate <= II_BITRATE);
     }
     s->esc3_level_length = 0;
     s->esc3_run_length   = 0;

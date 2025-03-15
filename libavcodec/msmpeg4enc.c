@@ -30,6 +30,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#define NO_SLICE_THREADING_HERE
+
 #include "libavutil/attributes.h"
 #include "libavutil/avutil.h"
 #include "libavutil/thread.h"
@@ -222,8 +224,10 @@ static int msmpeg4_encode_picture_header(MPVMainEncContext *const m)
     s->use_skip_mb_code = 1; /* only if P-frame */
     s->per_mb_rl_table = 0;
     if (s->msmpeg4_version == MSMP4_WMV1)
-        s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE && s->pict_type==AV_PICTURE_TYPE_P);
-    ff_dlog(s->avctx, "%d %"PRId64" %d %d %d\n", s->pict_type, s->bit_rate,
+        s->inter_intra_pred = s->width * s->height < 320*240 &&
+                              m->bit_rate  <= II_BITRATE     &&
+                              s->pict_type == AV_PICTURE_TYPE_P;
+    ff_dlog(s->avctx, "%d %"PRId64" %d %d %d\n", s->pict_type, m->bit_rate,
             s->inter_intra_pred, s->width, s->height);
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {
@@ -232,7 +236,7 @@ static int msmpeg4_encode_picture_header(MPVMainEncContext *const m)
 
         if (s->msmpeg4_version == MSMP4_WMV1) {
             ff_msmpeg4_encode_ext_header(s);
-            if(s->bit_rate>MBAC_BITRATE)
+            if (m->bit_rate > MBAC_BITRATE)
                 put_bits(&s->pb, 1, s->per_mb_rl_table);
         }
 
@@ -247,7 +251,7 @@ static int msmpeg4_encode_picture_header(MPVMainEncContext *const m)
     } else {
         put_bits(&s->pb, 1, s->use_skip_mb_code);
 
-        if (s->msmpeg4_version == MSMP4_WMV1 && s->bit_rate > MBAC_BITRATE)
+        if (s->msmpeg4_version == MSMP4_WMV1 && m->bit_rate > MBAC_BITRATE)
             put_bits(&s->pb, 1, s->per_mb_rl_table);
 
         if (s->msmpeg4_version > MSMP4_V2) {
@@ -268,6 +272,7 @@ static int msmpeg4_encode_picture_header(MPVMainEncContext *const m)
 
 void ff_msmpeg4_encode_ext_header(MpegEncContext * s)
 {
+    const MPVMainEncContext *const m = slice_to_mainenc(s);
     unsigned fps;
 
     if (s->avctx->framerate.num > 0 && s->avctx->framerate.den > 0)
@@ -284,7 +289,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     put_bits(&s->pb, 5, FFMIN(fps, 31)); //yes 29.97 -> 29
 
-    put_bits(&s->pb, 11, FFMIN(s->bit_rate / 1024, 2047));
+    put_bits(&s->pb, 11, FFMIN(m->bit_rate / 1024, 2047));
 
     if (s->msmpeg4_version >= MSMP4_V3)
         put_bits(&s->pb, 1, s->flipflop_rounding);

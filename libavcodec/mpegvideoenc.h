@@ -87,6 +87,7 @@ typedef struct MPVMainEncContext {
     int (*encode_picture_header)(struct MPVMainEncContext *m);
 
     /* bit rate control */
+    int64_t bit_rate;
     int64_t total_bits;
     int frame_bits;                ///< bits used for the current frame
     int header_bits;
