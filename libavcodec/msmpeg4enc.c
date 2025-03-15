@@ -50,21 +50,27 @@
 
 static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 
+// The lowest 8 bits of each entry are length, the other bits are the code.
+// The index of the (mx, my) entry is (mx * 64) + my.
+static uint32_t mv_vector_tables[2][4096];
+
 /* build the table which associate a (x,y) motion vector to a vlc */
-static av_cold void init_mv_table(MVTable *tab, uint16_t table_mv_index[4096])
+static av_cold void init_mv_table(const MVTable *tab, uint32_t mv_vector_table[4096],
+                                  unsigned escape_code, int escape_length)
 {
     int i, x, y;
 
-    tab->table_mv_index = table_mv_index;
-
-    /* mark all entries as not used */
-    for(i=0;i<4096;i++)
-        tab->table_mv_index[i] = MSMPEG4_MV_TABLES_NB_ELEMS;
+    for (int i = 0; i < 4096; i++) {
+        // Initialize to the table to "escaped". This code is equivalent to
+        // the following double loop (with x and y ranging over 0..63):
+        // tab[x * 64 + y] = (esc_code << 20) | (x << 14) | (y << 8) | esc_length
+        mv_vector_table[i] = (escape_code << 20) | (i << 8) | escape_length;
+    }
 
     for (i = 0; i < MSMPEG4_MV_TABLES_NB_ELEMS; i++) {
         x = tab->table_mvx[i];
         y = tab->table_mvy[i];
-        tab->table_mv_index[(x << 6) | y] = i;
+        mv_vector_table[(x << 6) | y] = (tab->table_mv_code[i] << 8) | tab->table_mv_bits[i];
     }
 }
 
@@ -122,9 +128,8 @@ static int get_size_of_code(const RLTable *rl, int last, int run,
 
 static av_cold void msmpeg4_encode_init_static(void)
 {
-    static uint16_t mv_index_tables[2][4096];
-    init_mv_table(&ff_mv_tables[0], mv_index_tables[0]);
-    init_mv_table(&ff_mv_tables[1], mv_index_tables[1]);
+    init_mv_table(&ff_mv_tables[0], mv_vector_tables[0], 0x0000, 8 + 12);
+    init_mv_table(&ff_mv_tables[1], mv_vector_tables[1], 0x000b, 4 + 12);
 
     for (int i = 0; i < NB_RL_TABLES; i++) {
         for (int level = 1; level <= MAX_LEVEL; level++) {
@@ -300,8 +305,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 void ff_msmpeg4_encode_motion(MpegEncContext * s,
                                   int mx, int my)
 {
-    int code;
-    MVTable *mv;
+    const uint32_t *const mv_vector_table = mv_vector_tables[s->mv_table_index];
+    uint32_t code;
 
     /* modulo encoding */
     /* WARNING : you cannot reach all the MVs even with the modulo
@@ -317,17 +322,9 @@ void ff_msmpeg4_encode_motion(MpegEncContext * s,
 
     mx += 32;
     my += 32;
-    mv = &ff_mv_tables[s->mv_table_index];
 
-    code = mv->table_mv_index[(mx << 6) | my];
-    put_bits(&s->pb,
-             mv->table_mv_bits[code],
-             mv->table_mv_code[code]);
-    if (code == MSMPEG4_MV_TABLES_NB_ELEMS) {
-        /* escape : code literally */
-        put_bits(&s->pb, 6, mx);
-        put_bits(&s->pb, 6, my);
-    }
+    code = mv_vector_table[(mx << 6) | my];
+    put_bits(&s->pb, code & 0xff, code >> 8);
 }
 
 void ff_msmpeg4_handle_slices(MpegEncContext *s){
