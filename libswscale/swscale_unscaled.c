@@ -2267,42 +2267,34 @@ static int planarCopyWrapper(SwsInternal *c, const uint8_t *const src[],
                         srcPtr  += srcStride[plane];
                     }
                 } else if (src_depth <= dst_depth) {
+                    unsigned shift = dst_depth - src_depth;
                     for (i = 0; i < height; i++) {
                         j = 0;
                         if(isBE(c->opts.src_format) == HAVE_BIGENDIAN &&
                            isBE(c->opts.dst_format) == HAVE_BIGENDIAN &&
                            shiftonly) {
-                             unsigned shift = dst_depth - src_depth;
 #if HAVE_FAST_64BIT
-#define FAST_COPY_UP(shift) \
-    for (; j < length - 3; j += 4) { \
-        uint64_t v = AV_RN64A(srcPtr2 + j) >> src_shift; \
-        AV_WN64A(dstPtr2 + j, v << shift); \
-    }
+                            for (; j < length - 3; j += 4) {
+                                uint64_t v = AV_RN64A(srcPtr2 + j) >> src_shift;
+                                AV_WN64A(dstPtr2 + j, (v << shift) << dst_shift);
+                            }
 #else
-#define FAST_COPY_UP(shift) \
-    for (; j < length - 1; j += 2) { \
-        uint32_t v = AV_RN32A(srcPtr2 + j) >> src_shift; \
-        AV_WN32A(dstPtr2 + j, v << shift); \
-    }
+                            for (; j < length - 1; j += 2) {
+                                uint32_t v = AV_RN32A(srcPtr2 + j) >> src_shift;
+                                AV_WN32A(dstPtr2 + j, (v << shift) << dst_shift);
+                            }
 #endif
-                             switch (shift)
-                             {
-                             case 6: FAST_COPY_UP(6); break;
-                             case 7: FAST_COPY_UP(7); break;
-                             }
                         }
 #define COPY_UP(r,w) \
     if(shiftonly){\
         for (; j < length; j++){ \
             unsigned int v= r(&srcPtr2[j]) >> src_shift;\
-            w(&dstPtr2[j], (v << (dst_depth-src_depth)) << dst_shift);\
+            w(&dstPtr2[j], (v << shift) << dst_shift);\
         }\
     }else{\
         for (; j < length; j++){ \
             unsigned int v= r(&srcPtr2[j]) >> src_shift;\
-            w(&dstPtr2[j], ((v<<(dst_depth-src_depth)) | \
-                            (v>>(2*src_depth-dst_depth))) << dst_shift);\
+            w(&dstPtr2[j], ((v << shift) | (v>>(2*src_depth-dst_depth))) << dst_shift);\
         }\
     }
                         if(isBE(c->opts.src_format)){
