@@ -634,7 +634,7 @@ static int d3d12va_encode_get_coded_data(AVCodecContext *avctx,
         goto end;
 
     total_size += pic->header_size;
-    av_log(avctx, AV_LOG_DEBUG, "Output buffer size %"PRId64"\n", total_size);
+    av_log(avctx, AV_LOG_DEBUG, "Output buffer size %"SIZE_SPECIFIER"\n", total_size);
 
     hr = ID3D12Resource_Map(pic->output_buffer, 0, NULL, (void **)&mapped_data);
     if (FAILED(hr)) {
