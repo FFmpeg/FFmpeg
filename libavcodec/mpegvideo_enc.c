@@ -437,12 +437,14 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
     };
     static_assert(FFMAX(ME_MAP_ALLOC_SIZE, DCT_ERROR_SIZE) * MAX_THREADS + ALIGN - 1 <= SIZE_MAX,
                   "Need checks for potential overflow.");
-    unsigned nb_slices = s->slice_context_count, mv_table_size;
+    unsigned nb_slices = s->slice_context_count, mv_table_size, mb_array_size;
     char *dct_error = NULL, *me_map;
     int has_b_frames = !!m->max_b_frames, nb_mv_tables = 1 + 5 * has_b_frames;
     int16_t (*mv_table)[2];
 
     if (s->noise_reduction) {
+        if (!FF_ALLOCZ_TYPED_ARRAY(s->dct_offset, 2))
+            return AVERROR(ENOMEM);
         dct_error = av_mallocz(ALIGN - 1 + nb_slices * DCT_ERROR_SIZE);
         if (!dct_error)
             return AVERROR(ENOMEM);
@@ -454,6 +456,14 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
         return AVERROR(ENOMEM);
     m->me_map_base = me_map;
     me_map += FFALIGN((uintptr_t)me_map, ALIGN) - (uintptr_t)me_map;
+
+    /* Allocate MB type table */
+    mb_array_size = s->mb_stride * s->mb_height;
+    s->mb_type = av_calloc(mb_array_size, 3 * sizeof(*s->mb_type) + sizeof(*s->mb_mean));
+    if (!s->mb_type)
+        return AVERROR(ENOMEM);
+    if (!FF_ALLOCZ_TYPED_ARRAY(s->lambda_table, mb_array_size))
+        return AVERROR(ENOMEM);
 
     mv_table_size = (s->mb_height + 2) * s->mb_stride + 1;
     if (s->codec_id == AV_CODEC_ID_MPEG4 ||
@@ -474,9 +484,17 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
         int16_t (*tmp_mv_table)[2] = mv_table;
 
         if (dct_error) {
+            s2->dct_offset    = s->dct_offset;
             s2->dct_error_sum = (void*)dct_error;
             dct_error        += DCT_ERROR_SIZE;
         }
+
+        s2->mb_type      = s->mb_type;
+        s2->mc_mb_var    = s2->mb_type   + mb_array_size;
+        s2->mb_var       = s2->mc_mb_var + mb_array_size;
+        s2->mb_mean      = (uint8_t*)(s2->mb_var + mb_array_size);
+        s2->lambda_table = s->lambda_table;
+
         s2->me.map       = (uint32_t*)me_map;
         s2->me.score_map = s2->me.map + ME_MAP_SIZE;
         me_map          += ME_MAP_ALLOC_SIZE;
@@ -517,7 +535,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     MpegEncContext    *const s = &m->s;
     AVCPBProperties *cpb_props;
     int i, ret;
-    int mb_array_size;
 
     mpv_encode_defaults(m);
 
@@ -1017,20 +1034,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    /* Allocate MB type table */
-    mb_array_size = s->mb_stride * s->mb_height;
-    if (!FF_ALLOCZ_TYPED_ARRAY(s->mb_type,      mb_array_size) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->lambda_table, mb_array_size) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->mc_mb_var,    mb_array_size) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->mb_var, mb_array_size) ||
-        !(s->mb_mean = av_mallocz(mb_array_size)))
-        return AVERROR(ENOMEM);
-
-    if (s->noise_reduction) {
-        if (!FF_ALLOCZ_TYPED_ARRAY(s->dct_offset, 2))
-            return AVERROR(ENOMEM);
-    }
-
     ff_dct_encode_init(s);
 
     if (s->mpeg_quant || s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
@@ -1122,9 +1125,6 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     av_freep(&s->q_intra_matrix);
     av_freep(&s->q_intra_matrix16);
     av_freep(&s->dct_offset);
-    av_freep(&s->mb_var);
-    av_freep(&s->mc_mb_var);
-    av_freep(&s->mb_mean);
 
     return 0;
 }
