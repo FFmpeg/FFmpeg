@@ -249,8 +249,6 @@ static int h263_encode_picture_header(MPVMainEncContext *const m)
 
     align_put_bits(&s->pb);
 
-    /* Update the pointer to last GOB */
-    s->ptr_lastgob = put_bits_ptr(&s->pb);
     put_bits(&s->pb, 22, 0x20); /* PSC */
     temp_ref= s->picture_number * (int64_t)coded_frame_rate * s->avctx->time_base.num / //FIXME use timestamp
                          (coded_frame_rate_base * (int64_t)s->avctx->time_base.den);
