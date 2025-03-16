@@ -469,6 +469,9 @@ typedef struct MpegEncContext {
      * a frame size change */
     int context_reinit;
 
+    /// If set, ff_mpv_common_init() will allocate slice contexts of this size
+    unsigned slice_ctx_size;
+
     ERContext er;
 
     int error_rate;

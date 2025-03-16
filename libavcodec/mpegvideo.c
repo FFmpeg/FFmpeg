@@ -375,6 +375,7 @@ static av_cold int init_duplicate_context(MpegEncContext *s)
 av_cold int ff_mpv_init_duplicate_contexts(MpegEncContext *s)
 {
     int nb_slices = s->slice_context_count, ret;
+    size_t slice_size = s->slice_ctx_size ? s->slice_ctx_size : sizeof(*s);
 
     s->parent = s;
 
@@ -382,7 +383,7 @@ av_cold int ff_mpv_init_duplicate_contexts(MpegEncContext *s)
      * fields allocated in init_duplicate_context are NULL after
      * copying. This prevents double-frees upon allocation error. */
     for (int i = 1; i < nb_slices; i++) {
-        s->thread_context[i] = av_memdup(s, sizeof(MpegEncContext));
+        s->thread_context[i] = av_memdup(s, slice_size);
         if (!s->thread_context[i])
             return AVERROR(ENOMEM);
         if ((ret = init_duplicate_context(s->thread_context[i])) < 0)
