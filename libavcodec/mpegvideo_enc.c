@@ -439,7 +439,7 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
                   "Need checks for potential overflow.");
     unsigned nb_slices = s->slice_context_count, mv_table_size;
     char *dct_error = NULL, *me_map;
-    int nb_mv_tables = 6;
+    int has_b_frames = !!m->max_b_frames, nb_mv_tables = 1 + 5 * has_b_frames;
     int16_t (*mv_table)[2];
 
     if (s->noise_reduction) {
@@ -458,8 +458,8 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
     mv_table_size = (s->mb_height + 2) * s->mb_stride + 1;
     if (s->codec_id == AV_CODEC_ID_MPEG4 ||
         (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
-        nb_mv_tables += 8;
-        if (!ALLOCZ_ARRAYS(s->p_field_select_table[0], 2 * (2 + 4), mv_table_size))
+        nb_mv_tables += 8 * has_b_frames;
+        if (!ALLOCZ_ARRAYS(s->p_field_select_table[0], 2 * (2 + 4 * has_b_frames), mv_table_size))
             return AVERROR(ENOMEM);
     }
 
@@ -482,23 +482,27 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
         me_map          += ME_MAP_ALLOC_SIZE;
 
         s2->p_mv_table            = tmp_mv_table;
+        if (has_b_frames) {
         s2->b_forw_mv_table       = tmp_mv_table += mv_table_size;
         s2->b_back_mv_table       = tmp_mv_table += mv_table_size;
         s2->b_bidir_forw_mv_table = tmp_mv_table += mv_table_size;
         s2->b_bidir_back_mv_table = tmp_mv_table += mv_table_size;
         s2->b_direct_mv_table     = tmp_mv_table += mv_table_size;
+        }
 
         if (s->p_field_select_table[0]) { // MPEG-4 or INTERLACED_ME above
             uint8_t *field_select = s->p_field_select_table[0];
             s2->p_field_select_table[0] = field_select;
             s2->p_field_select_table[1] = field_select += 2 * mv_table_size;
 
+            if (has_b_frames) {
             for (int j = 0; j < 2; j++) {
                 for (int k = 0; k < 2; k++) {
                     for (int l = 0; l < 2; l++)
                         s2->b_field_mv_table[j][k][l] = tmp_mv_table += mv_table_size;
                     s2->b_field_select_table[j][k] = field_select += 2 * mv_table_size;
                 }
+            }
             }
         }
     }
