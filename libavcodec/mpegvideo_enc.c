@@ -268,7 +268,7 @@ static void update_duplicate_context_after_me(MpegEncContext *dst,
 #undef COPY
 }
 
-static void mpv_encode_init_static(void)
+static av_cold void mpv_encode_init_static(void)
 {
    for (int i = -16; i < 16; i++)
         default_fcode_tab[i + MAX_MV] = 1;
@@ -278,7 +278,7 @@ static void mpv_encode_init_static(void)
  * Set the given MpegEncContext to defaults for encoding.
  * the changed fields will not depend upon the prior state of the MpegEncContext.
  */
-static void mpv_encode_defaults(MpegEncContext *s)
+static av_cold void mpv_encode_defaults(MpegEncContext *s)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
 

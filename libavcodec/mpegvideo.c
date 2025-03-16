@@ -349,7 +349,7 @@ av_cold void ff_mpv_idct_init(MpegEncContext *s)
 #endif
 }
 
-static int init_duplicate_context(MpegEncContext *s)
+static av_cold int init_duplicate_context(MpegEncContext *s)
 {
     if (s->encoding) {
         s->me.map = av_mallocz(2 * ME_MAP_SIZE * sizeof(*s->me.map));
@@ -383,7 +383,7 @@ static int init_duplicate_context(MpegEncContext *s)
     return 0;
 }
 
-int ff_mpv_init_duplicate_contexts(MpegEncContext *s)
+av_cold int ff_mpv_init_duplicate_contexts(MpegEncContext *s)
 {
     int nb_slices = s->slice_context_count, ret;
 
@@ -407,7 +407,7 @@ int ff_mpv_init_duplicate_contexts(MpegEncContext *s)
     return init_duplicate_context(s);
 }
 
-static void free_duplicate_context(MpegEncContext *s)
+static av_cold void free_duplicate_context(MpegEncContext *s)
 {
     if (!s)
         return;
@@ -426,7 +426,7 @@ static void free_duplicate_context(MpegEncContext *s)
     s->block = NULL;
 }
 
-static void free_duplicate_contexts(MpegEncContext *s)
+static av_cold void free_duplicate_contexts(MpegEncContext *s)
 {
     for (int i = 1; i < s->slice_context_count; i++) {
         free_duplicate_context(s->thread_context[i]);
@@ -497,7 +497,7 @@ av_cold void ff_mpv_common_defaults(MpegEncContext *s)
     s->slice_context_count   = 1;
 }
 
-static void free_buffer_pools(BufferPoolContext *pools)
+static av_cold void free_buffer_pools(BufferPoolContext *pools)
 {
     av_refstruct_pool_uninit(&pools->mbskip_table_pool);
     av_refstruct_pool_uninit(&pools->qscale_table_pool);
@@ -507,7 +507,7 @@ static void free_buffer_pools(BufferPoolContext *pools)
     pools->alloc_mb_height = pools->alloc_mb_width = pools->alloc_mb_stride = 0;
 }
 
-int ff_mpv_init_context_frame(MpegEncContext *s)
+av_cold int ff_mpv_init_context_frame(MpegEncContext *s)
 {
     BufferPoolContext *const pools = &s->buffer_pools;
     int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y;
@@ -744,7 +744,7 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
     return ret;
 }
 
-void ff_mpv_free_context_frame(MpegEncContext *s)
+av_cold void ff_mpv_free_context_frame(MpegEncContext *s)
 {
     free_duplicate_contexts(s);
 
@@ -769,7 +769,7 @@ void ff_mpv_free_context_frame(MpegEncContext *s)
     s->linesize = s->uvlinesize = 0;
 }
 
-void ff_mpv_common_end(MpegEncContext *s)
+av_cold void ff_mpv_common_end(MpegEncContext *s)
 {
     ff_mpv_free_context_frame(s);
     if (s->slice_context_count > 1)
