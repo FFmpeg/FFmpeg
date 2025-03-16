@@ -945,8 +945,9 @@ static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
     nvXXtoUV_c(dstV, dstU, src1, width);
 }
 
-#define p01x_uv_wrapper(bits, shift) \
-    static void p0 ## bits ## LEToUV_c(uint8_t *dstU, uint8_t *dstV,     \
+#define p01x_uv_wrapper(fmt, shift) \
+    static void fmt ## LEToUV ## _c(uint8_t *dstU,                       \
+                                       uint8_t *dstV,                    \
                                        const uint8_t *unused0,           \
                                        const uint8_t *src1,              \
                                        const uint8_t *src2, int width,   \
@@ -959,7 +960,8 @@ static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
         }                                                                \
     }                                                                    \
                                                                          \
-    static void p0 ## bits ## BEToUV_c(uint8_t *dstU, uint8_t *dstV,     \
+    static void fmt ## BEToUV ## _c(uint8_t *dstU,                       \
+                                       uint8_t *dstV,                    \
                                        const uint8_t *unused0,           \
                                        const uint8_t *src1,              \
                                        const uint8_t *src2, int width,   \
@@ -972,8 +974,9 @@ static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
         }                                                                \
     }
 
-#define p01x_wrapper(bits, shift) \
-    static void p0 ## bits ## LEToY_c(uint8_t *dst, const uint8_t *src,  \
+#define p01x_wrapper(fmt, shift) \
+    static void fmt ## LEToY ## _c(uint8_t *dst,                         \
+                                      const uint8_t *src,                \
                                       const uint8_t *unused1,            \
                                       const uint8_t *unused2, int width, \
                                       uint32_t *unused, void *opq)       \
@@ -984,7 +987,8 @@ static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
         }                                                                \
     }                                                                    \
                                                                          \
-    static void p0 ## bits ## BEToY_c(uint8_t *dst, const uint8_t *src,  \
+    static void fmt ## BEToY ## _c(uint8_t *dst,                         \
+                                      const uint8_t *src,                \
                                       const uint8_t *unused1,            \
                                       const uint8_t *unused2, int width, \
                                       uint32_t *unused, void *opq)       \
@@ -994,11 +998,12 @@ static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
             AV_WN16(dst + i * 2, AV_RB16(src + i * 2) >> shift);         \
         }                                                                \
     }                                                                    \
-    p01x_uv_wrapper(bits, shift)
+    p01x_uv_wrapper(fmt, shift)
 
-p01x_wrapper(10, 6)
-p01x_wrapper(12, 4)
-p01x_uv_wrapper(16, 0)
+p01x_wrapper(nv20, 0)
+p01x_wrapper(p010, 6)
+p01x_wrapper(p012, 4)
+p01x_uv_wrapper(p016, 0)
 
 static void bgr24ToY_c(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,
                        int width, uint32_t *rgb2yuv, void *opq)
@@ -1910,10 +1915,16 @@ av_cold void ff_sws_init_input_funcs(SwsInternal *c,
     case AV_PIX_FMT_XV48BE:
         *chrToYV12 = read_xv48be_UV_c;
         break;
+    case AV_PIX_FMT_NV20LE:
+        *chrToYV12 = nv20LEToUV_c;
+        break;
     case AV_PIX_FMT_P010LE:
     case AV_PIX_FMT_P210LE:
     case AV_PIX_FMT_P410LE:
         *chrToYV12 = p010LEToUV_c;
+        break;
+    case AV_PIX_FMT_NV20BE:
+        *chrToYV12 = nv20BEToUV_c;
         break;
     case AV_PIX_FMT_P010BE:
     case AV_PIX_FMT_P210BE:
@@ -2468,10 +2479,16 @@ av_cold void ff_sws_init_input_funcs(SwsInternal *c,
     case AV_PIX_FMT_BGRA64LE:
         *lumToYV12 = bgr64LEToY_c;
         break;
+    case AV_PIX_FMT_NV20LE:
+        *lumToYV12 = nv20LEToY_c;
+        break;
     case AV_PIX_FMT_P010LE:
     case AV_PIX_FMT_P210LE:
     case AV_PIX_FMT_P410LE:
         *lumToYV12 = p010LEToY_c;
+        break;
+    case AV_PIX_FMT_NV20BE:
+        *lumToYV12 = nv20BEToY_c;
         break;
     case AV_PIX_FMT_P010BE:
     case AV_PIX_FMT_P210BE:
