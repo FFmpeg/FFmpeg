@@ -26,6 +26,7 @@ gray16le            4347c5ca559a06948c1e7e7c2f06657d
 gray9le             99f825e62d5786901dba9abc88878ffb
 nv12                381574979cb04be10c9168540310afad
 nv16                d3a50501d2ea8535489fd5ec49e7866d
+nv20le              59511282a2565ed060e4fb1fee8f6bcb
 nv21                0fdeb2cdd56cf5a7147dc273456fa217
 nv24                193b9eadcc06ad5081609f76249b3e47
 nv42                1738ad3c31c6c16e17679f5b09ce4677

@@ -58,6 +58,8 @@ gray9le             c45eb848ab86f63f30ceb7206fb41be9
 grayf32be           1aa7960131f880c54fe3c77f13448674
 grayf32le           4029ac9d197f255794c1b9e416520fc7
 nv16                085deb984ab986eb5cc961fe265e30c0
+nv20be              16998bc4aa2bfa3255d115a0a19ad80e
+nv20le              c8bd359ec00903dd2b5526b4d8ecb09f
 nv24                4fdbef26042c77f012df114e666efdb2
 nv42                59608290fece913e6b7d61edf581a529
 p210be              ca2ce2c25db43dcd14729b2a72a7c604
