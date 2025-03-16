@@ -442,7 +442,7 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
     int has_b_frames = !!m->max_b_frames, nb_mv_tables = 1 + 5 * has_b_frames;
     int16_t (*mv_table)[2];
 
-    if (s->noise_reduction) {
+    if (m->noise_reduction) {
         if (!FF_ALLOCZ_TYPED_ARRAY(s->dct_offset, 2))
             return AVERROR(ENOMEM);
         dct_error = av_mallocz(ALIGN - 1 + nb_slices * DCT_ERROR_SIZE);
@@ -1877,8 +1877,9 @@ static void frame_end(MPVMainEncContext *const m)
         s->last_non_b_pict_type = s->pict_type;
 }
 
-static void update_noise_reduction(MpegEncContext *s)
+static void update_noise_reduction(MPVMainEncContext *const m)
 {
+    MpegEncContext *const s = &m->s;
     int intra, i;
 
     for (intra = 0; intra < 2; intra++) {
@@ -1890,7 +1891,7 @@ static void update_noise_reduction(MpegEncContext *s)
         }
 
         for (i = 0; i < 64; i++) {
-            s->dct_offset[intra][i] = (s->noise_reduction *
+            s->dct_offset[intra][i] = (m->noise_reduction *
                                        s->dct_count[intra] +
                                        s->dct_error_sum[intra][i] / 2) /
                                       (s->dct_error_sum[intra][i] + 1);
@@ -1898,8 +1899,10 @@ static void update_noise_reduction(MpegEncContext *s)
     }
 }
 
-static void frame_start(MpegEncContext *s)
+static void frame_start(MPVMainEncContext *const m)
 {
+    MpegEncContext *const s = &m->s;
+
     s->cur_pic.ptr->f->pict_type = s->pict_type;
 
     if (s->pict_type != AV_PICTURE_TYPE_B) {
@@ -1907,9 +1910,9 @@ static void frame_start(MpegEncContext *s)
         ff_mpv_replace_picture(&s->next_pic, &s->cur_pic);
     }
 
+    av_assert2(!!m->noise_reduction == !!s->dct_error_sum);
     if (s->dct_error_sum) {
-        av_assert2(s->noise_reduction && s->encoding);
-        update_noise_reduction(s);
+        update_noise_reduction(m);
     }
 }
 
@@ -1959,7 +1962,7 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
         s->pict_type = s->new_pic->pict_type;
         //emms_c();
-        frame_start(s);
+        frame_start(m);
 vbv_retry:
         ret = encode_picture(m, pkt);
         if (growing_buffer) {
@@ -3598,7 +3601,7 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
     MERGE(encoding_error[1]);
     MERGE(encoding_error[2]);
 
-    if (dst->noise_reduction){
+    if (dst->dct_error_sum) {
         for(i=0; i<64; i++){
             MERGE(dct_error_sum[0][i]);
             MERGE(dct_error_sum[1][i]);

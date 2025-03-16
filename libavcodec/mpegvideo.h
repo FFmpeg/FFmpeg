@@ -473,8 +473,6 @@ typedef struct MpegEncContext {
 
     int error_rate;
 
-    int noise_reduction;
-
     int intra_penalty;
 } MpegEncContext;
 
