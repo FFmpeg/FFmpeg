@@ -483,11 +483,11 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
 
         s2->p_mv_table            = tmp_mv_table;
         if (has_b_frames) {
-        s2->b_forw_mv_table       = tmp_mv_table += mv_table_size;
-        s2->b_back_mv_table       = tmp_mv_table += mv_table_size;
-        s2->b_bidir_forw_mv_table = tmp_mv_table += mv_table_size;
-        s2->b_bidir_back_mv_table = tmp_mv_table += mv_table_size;
-        s2->b_direct_mv_table     = tmp_mv_table += mv_table_size;
+            s2->b_forw_mv_table       = tmp_mv_table += mv_table_size;
+            s2->b_back_mv_table       = tmp_mv_table += mv_table_size;
+            s2->b_bidir_forw_mv_table = tmp_mv_table += mv_table_size;
+            s2->b_bidir_back_mv_table = tmp_mv_table += mv_table_size;
+            s2->b_direct_mv_table     = tmp_mv_table += mv_table_size;
         }
 
         if (s->p_field_select_table[0]) { // MPEG-4 or INTERLACED_ME above
@@ -496,13 +496,13 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
             s2->p_field_select_table[1] = field_select += 2 * mv_table_size;
 
             if (has_b_frames) {
-            for (int j = 0; j < 2; j++) {
-                for (int k = 0; k < 2; k++) {
-                    for (int l = 0; l < 2; l++)
-                        s2->b_field_mv_table[j][k][l] = tmp_mv_table += mv_table_size;
-                    s2->b_field_select_table[j][k] = field_select += 2 * mv_table_size;
+                for (int j = 0; j < 2; j++) {
+                    for (int k = 0; k < 2; k++) {
+                        for (int l = 0; l < 2; l++)
+                            s2->b_field_mv_table[j][k][l] = tmp_mv_table += mv_table_size;
+                        s2->b_field_select_table[j][k] = field_select += 2 * mv_table_size;
+                    }
                 }
-            }
             }
         }
     }
