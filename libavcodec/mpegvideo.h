@@ -207,14 +207,7 @@ typedef struct MpegEncContext {
     H263DSPContext h263dsp;
     int f_code;                 ///< forward MV resolution
     int b_code;                 ///< backward MV resolution for B-frames (MPEG-4)
-    int16_t (*p_mv_table_base)[2];
-    int16_t (*b_forw_mv_table_base)[2];
-    int16_t (*b_back_mv_table_base)[2];
-    int16_t (*b_bidir_forw_mv_table_base)[2];
-    int16_t (*b_bidir_back_mv_table_base)[2];
-    int16_t (*b_direct_mv_table_base)[2];
     int16_t (*p_field_mv_table_base)[2];
-    int16_t (*b_field_mv_table_base)[2];
     int16_t (*p_mv_table)[2];            ///< MV table (1MV per MB) P-frame encoding
     int16_t (*b_forw_mv_table)[2];       ///< MV table (1MV per MB) forward mode B-frame encoding
     int16_t (*b_back_mv_table)[2];       ///< MV table (1MV per MB) backward mode B-frame encoding
@@ -224,7 +217,7 @@ typedef struct MpegEncContext {
     int16_t (*p_field_mv_table[2][2])[2];   ///< MV table (2MV per MB) interlaced P-frame encoding
     int16_t (*b_field_mv_table[2][2][2])[2];///< MV table (4MV per MB) interlaced B-frame encoding
     uint8_t (*p_field_select_table[2]);  ///< Only the first element is allocated
-    uint8_t (*b_field_select_table[2][2]); ///< Only the first element is allocated
+    uint8_t (*b_field_select_table[2][2]); ///< allocated jointly with p_field_select_table
 
     /* The following fields are encoder-only */
     uint16_t *mb_var;           ///< Table for MB variances

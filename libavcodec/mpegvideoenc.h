@@ -101,6 +101,7 @@ typedef struct MPVMainEncContext {
 
     char *me_map_base;             ///< backs MotionEstContext.(map|score_map)
     char *dct_error_sum_base;      ///< backs dct_error_sum
+    int16_t (*mv_table_base)[2];
 } MPVMainEncContext;
 
 static inline const MPVMainEncContext *slice_to_mainenc(const MpegEncContext *s)

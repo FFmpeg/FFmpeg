@@ -437,8 +437,10 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
     };
     static_assert(FFMAX(ME_MAP_ALLOC_SIZE, DCT_ERROR_SIZE) * MAX_THREADS + ALIGN - 1 <= SIZE_MAX,
                   "Need checks for potential overflow.");
-    unsigned nb_slices = s->slice_context_count;
+    unsigned nb_slices = s->slice_context_count, mv_table_size;
     char *dct_error = NULL, *me_map;
+    int nb_mv_tables = 6;
+    int16_t (*mv_table)[2];
 
     if (s->noise_reduction) {
         dct_error = av_mallocz(ALIGN - 1 + nb_slices * DCT_ERROR_SIZE);
@@ -453,8 +455,23 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
     m->me_map_base = me_map;
     me_map += FFALIGN((uintptr_t)me_map, ALIGN) - (uintptr_t)me_map;
 
+    mv_table_size = (s->mb_height + 2) * s->mb_stride + 1;
+    if (s->codec_id == AV_CODEC_ID_MPEG4 ||
+        (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
+        nb_mv_tables += 8;
+        if (!ALLOCZ_ARRAYS(s->p_field_select_table[0], 2 * (2 + 4), mv_table_size))
+            return AVERROR(ENOMEM);
+    }
+
+    mv_table = av_calloc(mv_table_size, nb_mv_tables * sizeof(*mv_table));
+    if (!mv_table)
+        return AVERROR(ENOMEM);
+    m->mv_table_base = mv_table;
+    mv_table += s->mb_stride + 1;
+
     for (unsigned i = 0; i < nb_slices; ++i) {
         MpegEncContext *const s2 = s->thread_context[i];
+        int16_t (*tmp_mv_table)[2] = mv_table;
 
         if (dct_error) {
             s2->dct_error_sum = (void*)dct_error;
@@ -463,6 +480,27 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
         s2->me.map       = (uint32_t*)me_map;
         s2->me.score_map = s2->me.map + ME_MAP_SIZE;
         me_map          += ME_MAP_ALLOC_SIZE;
+
+        s2->p_mv_table            = tmp_mv_table;
+        s2->b_forw_mv_table       = tmp_mv_table += mv_table_size;
+        s2->b_back_mv_table       = tmp_mv_table += mv_table_size;
+        s2->b_bidir_forw_mv_table = tmp_mv_table += mv_table_size;
+        s2->b_bidir_back_mv_table = tmp_mv_table += mv_table_size;
+        s2->b_direct_mv_table     = tmp_mv_table += mv_table_size;
+
+        if (s->p_field_select_table[0]) { // MPEG-4 or INTERLACED_ME above
+            uint8_t *field_select = s->p_field_select_table[0];
+            s2->p_field_select_table[0] = field_select;
+            s2->p_field_select_table[1] = field_select += 2 * mv_table_size;
+
+            for (int j = 0; j < 2; j++) {
+                for (int k = 0; k < 2; k++) {
+                    for (int l = 0; l < 2; l++)
+                        s2->b_field_mv_table[j][k][l] = tmp_mv_table += mv_table_size;
+                    s2->b_field_select_table[j][k] = field_select += 2 * mv_table_size;
+                }
+            }
+        }
     }
 
     return 0;
@@ -475,7 +513,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     MpegEncContext    *const s = &m->s;
     AVCPBProperties *cpb_props;
     int i, ret;
-    int mb_array_size, mv_table_size;
+    int mb_array_size;
 
     mpv_encode_defaults(m);
 
@@ -975,23 +1013,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    /* Allocate MV tables; the MV and MB tables will be copied
-     * to slice contexts by ff_update_duplicate_context().  */
-    mv_table_size = (s->mb_height + 2) * s->mb_stride + 1;
-    if (!FF_ALLOCZ_TYPED_ARRAY(s->p_mv_table_base,            mv_table_size) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->b_forw_mv_table_base,       mv_table_size) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->b_back_mv_table_base,       mv_table_size) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->b_bidir_forw_mv_table_base, mv_table_size) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->b_bidir_back_mv_table_base, mv_table_size) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->b_direct_mv_table_base,     mv_table_size))
-        return AVERROR(ENOMEM);
-    s->p_mv_table            = s->p_mv_table_base + s->mb_stride + 1;
-    s->b_forw_mv_table       = s->b_forw_mv_table_base + s->mb_stride + 1;
-    s->b_back_mv_table       = s->b_back_mv_table_base + s->mb_stride + 1;
-    s->b_bidir_forw_mv_table = s->b_bidir_forw_mv_table_base + s->mb_stride + 1;
-    s->b_bidir_back_mv_table = s->b_bidir_back_mv_table_base + s->mb_stride + 1;
-    s->b_direct_mv_table     = s->b_direct_mv_table_base + s->mb_stride + 1;
-
     /* Allocate MB type table */
     mb_array_size = s->mb_stride * s->mb_height;
     if (!FF_ALLOCZ_TYPED_ARRAY(s->mb_type,      mb_array_size) ||
@@ -1000,30 +1021,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         !FF_ALLOCZ_TYPED_ARRAY(s->mb_var, mb_array_size) ||
         !(s->mb_mean = av_mallocz(mb_array_size)))
         return AVERROR(ENOMEM);
-
-    if (s->codec_id == AV_CODEC_ID_MPEG4 ||
-        (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
-        int16_t (*tmp1)[2];
-        uint8_t *tmp2;
-        if (!(tmp1 = ALLOCZ_ARRAYS(s->b_field_mv_table_base, 8, mv_table_size)) ||
-            !(tmp2 = ALLOCZ_ARRAYS(s->b_field_select_table[0][0], 2 * 4, mv_table_size)) ||
-            !ALLOCZ_ARRAYS(s->p_field_select_table[0], 2 * 2, mv_table_size))
-            return AVERROR(ENOMEM);
-
-        s->p_field_select_table[1] = s->p_field_select_table[0] + 2 * mv_table_size;
-        tmp1 += s->mb_stride + 1;
-
-        for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < 2; j++) {
-                for (int k = 0; k < 2; k++) {
-                    s->b_field_mv_table[i][j][k] = tmp1;
-                    tmp1 += mv_table_size;
-                }
-                s->b_field_select_table[i][j] = tmp2;
-                tmp2 += 2 * mv_table_size;
-            }
-        }
-    }
 
     if (s->noise_reduction) {
         if (!FF_ALLOCZ_TYPED_ARRAY(s->dct_offset, 2))
@@ -1110,14 +1107,7 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
 
     av_freep(&avctx->stats_out);
 
-    av_freep(&s->p_mv_table_base);
-    av_freep(&s->b_forw_mv_table_base);
-    av_freep(&s->b_back_mv_table_base);
-    av_freep(&s->b_bidir_forw_mv_table_base);
-    av_freep(&s->b_bidir_back_mv_table_base);
-    av_freep(&s->b_direct_mv_table_base);
-    av_freep(&s->b_field_mv_table_base);
-    av_freep(&s->b_field_select_table[0][0]);
+    av_freep(&m->mv_table_base);
     av_freep(&s->p_field_select_table[0]);
     av_freep(&m->dct_error_sum_base);
     av_freep(&m->me_map_base);
