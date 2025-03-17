@@ -5230,6 +5230,12 @@ else
     ar_o='$@'
 fi
 
+if $ar 2>&1 | grep -qi  "@.*file"; then
+    ar_objs="true"
+else
+    ar_objs=""
+fi
+
 add_cflags $extra_cflags
 add_cxxflags $extra_cxxflags
 add_objcflags $extra_objcflags
@@ -8133,6 +8139,7 @@ DEPX86ASM=$x86asmexe
 DEPX86ASMFLAGS=\$(X86ASMFLAGS)
 AR=$ar
 ARFLAGS=$arflags
+AR_OBJS=$ar_objs
 AR_O=$ar_o
 AR_CMD=$ar
 NM_CMD=$nm

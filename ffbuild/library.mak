@@ -35,8 +35,12 @@ OBJS += $(SHLIBOBJS)
 endif
 $(SUBDIR)$(LIBNAME): $(OBJS) $(STLIBOBJS)
 	$(RM) $@
+ifeq ($(AR_OBJS),true)
 	$(Q)echo $^ > $@.objs
 	$(AR) $(ARFLAGS) $(AR_O) @$@.objs
+else
+	$(AR) $(ARFLAGS) $(AR_O) $^
+endif
 	$(RANLIB) $@
 	-$(RM) $@.objs
 
@@ -68,8 +72,12 @@ $(SUBDIR)$(SLIBNAME): $(SUBDIR)$(SLIBNAME_WITH_MAJOR)
 
 $(SUBDIR)$(SLIBNAME_WITH_MAJOR): $(OBJS) $(SHLIBOBJS) $(SLIBOBJS) $(SUBDIR)lib$(NAME).ver
 	$(SLIB_CREATE_DEF_CMD)
+ifeq ($(AR_OBJS),true)
 	$(Q)echo $$(filter %.o,$$^) > $$@.objs
 	$$(LD) $(SHFLAGS) $(LDFLAGS) $(LDSOFLAGS) $$(LD_O) @$$@.objs $(FFEXTRALIBS)
+else
+	$$(LD) $(SHFLAGS) $(LDFLAGS) $(LDSOFLAGS) $$(LD_O) $$(filter %.o,$$^) $(FFEXTRALIBS)
+endif
 	$(SLIB_EXTRA_CMD)
 	-$(RM) $$@.objs
 
