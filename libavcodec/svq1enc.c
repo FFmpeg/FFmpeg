@@ -444,8 +444,8 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                     put_bits(&s->reorder_pb[5], SVQ1_BLOCK_INTRA_LEN, SVQ1_BLOCK_INTRA_CODE);
                     score[0] = SVQ1_BLOCK_INTRA_LEN * lambda;
                 }
-                score[0] += encode_block(s, src + 16 * x, NULL, temp, stride,
-                                         5, 64, lambda, 1);
+                score[0] += encode_block(s, src + 16 * x, src + 16 * x /* unused */,
+                                         temp, stride, 5, 64, lambda, 1);
                 for (i = 0; i < 6; i++) {
                     count[0][i] = put_bits_count(&s->reorder_pb[i]);
                     flush_put_bits(&s->reorder_pb[i]);
