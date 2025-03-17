@@ -947,6 +947,24 @@ static int old_codec2(SANMVideoContext *ctx, GetByteContext *gb, int top,
     return 0;
 }
 
+static int old_codec20(SANMVideoContext *ctx, int w, int h)
+{
+    uint8_t *dst = (uint8_t *)ctx->frm0;
+
+    if (bytestream2_get_bytes_left(&ctx->gb) < w * h)
+        return AVERROR_INVALIDDATA;
+
+    if (w == ctx->pitch) {
+        bytestream2_get_bufferu(&ctx->gb, dst, w * h);
+    } else {
+        for (int i = 0; i < h; i++) {
+            bytestream2_get_bufferu(&ctx->gb, dst, w);
+            dst += ctx->pitch;
+        }
+    }
+    return 0;
+}
+
 static inline void codec37_mv(uint8_t *dst, const uint8_t *src,
                               int height, int stride, int x, int y)
 {
@@ -1667,6 +1685,8 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
     case 33:
     case 34:
         return old_codec4(ctx, gb, top, left, w, h, param, parm2, codec);
+    case 20:
+        return old_codec20(ctx, w, h);
     case 21:
         return old_codec21(ctx, gb, top, left, w, h);
     case 23:
