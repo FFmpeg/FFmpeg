@@ -272,7 +272,8 @@ static av_always_inline void add_yblock(SnowContext *s, int sliced, slice_buffer
 
     if(!sliced && offset_dst)
         dst += src_x + src_y*dst_stride;
-    dst8+= src_x + src_y*src_stride;
+    if (sliced || add)
+        dst8+= src_x + src_y*src_stride;
 //    src += src_x + src_y*src_stride;
 
     ptmp= tmp + 3*tmp_step;
