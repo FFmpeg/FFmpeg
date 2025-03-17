@@ -1073,7 +1073,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
             in->qstatus = pl_queue_update(in->queue, &in->mix, pl_queue_params(
                 .pts            = out_pts * av_q2d(outlink->time_base),
                 .radius         = pl_frame_mix_radius(&s->opts->params),
-                .vsync_duration = av_q2d(av_inv_q(l->frame_rate)),
+                .vsync_duration = l->frame_rate.num ? av_q2d(av_inv_q(l->frame_rate)) : 0,
             ));
 
             switch (in->qstatus) {
