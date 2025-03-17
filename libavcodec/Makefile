@@ -365,8 +365,8 @@ OBJS-$(CONFIG_EIGHTSVX_FIB_DECODER)    += 8svx.o
 OBJS-$(CONFIG_ESCAPE124_DECODER)       += escape124.o
 OBJS-$(CONFIG_ESCAPE130_DECODER)       += escape130.o
 OBJS-$(CONFIG_EVRC_DECODER)            += evrcdec.o acelp_vectors.o lsp.o
-OBJS-$(CONFIG_EXR_DECODER)             += exr.o exrdsp.o float2half.o half2float.o
-OBJS-$(CONFIG_EXR_ENCODER)             += exrenc.o float2half.o
+OBJS-$(CONFIG_EXR_DECODER)             += exr.o exrdsp.o
+OBJS-$(CONFIG_EXR_ENCODER)             += exrenc.o
 OBJS-$(CONFIG_FASTAUDIO_DECODER)       += fastaudio.o
 OBJS-$(CONFIG_FFV1_DECODER)            += ffv1dec.o ffv1_parse.o ffv1.o
 OBJS-$(CONFIG_FFV1_ENCODER)            += ffv1enc.o ffv1_parse.o ffv1.o
@@ -612,8 +612,8 @@ OBJS-$(CONFIG_PGMYUV_DECODER)          += pnmdec.o pnm.o
 OBJS-$(CONFIG_PGMYUV_ENCODER)          += pnmenc.o
 OBJS-$(CONFIG_PGSSUB_DECODER)          += pgssubdec.o
 OBJS-$(CONFIG_PGX_DECODER)             += pgxdec.o
-OBJS-$(CONFIG_PHM_DECODER)             += pnmdec.o pnm.o half2float.o
-OBJS-$(CONFIG_PHM_ENCODER)             += pnmenc.o float2half.o
+OBJS-$(CONFIG_PHM_DECODER)             += pnmdec.o pnm.o
+OBJS-$(CONFIG_PHM_ENCODER)             += pnmenc.o
 OBJS-$(CONFIG_PHOTOCD_DECODER)         += photocd.o
 OBJS-$(CONFIG_PICTOR_DECODER)          += pictordec.o cga_data.o
 OBJS-$(CONFIG_PIXLET_DECODER)          += pixlet.o
@@ -1075,6 +1075,11 @@ OBJS-$(CONFIG_VVC_VAAPI_HWACCEL)          += vaapi_vvc.o
 
 # Objects duplicated from other libraries for shared builds
 SHLIBOBJS                              += log2_tab.o reverse.o
+
+SHLIBOBJS-$(CONFIG_EXR_DECODER)        += half2float.o float2half.o
+SHLIBOBJS-$(CONFIG_EXR_ENCODER)        += float2half.o
+SHLIBOBJS-$(CONFIG_PHM_DECODER)        += half2float.o
+SHLIBOBJS-$(CONFIG_PHM_ENCODER)        += float2half.o
 
 # General libavformat dependencies
 OBJS-$(CONFIG_FITS_DEMUXER)            += fits.o

@@ -13,7 +13,6 @@ OBJS = alphablend.o                                     \
        format.o                                         \
        gamma.o                                          \
        graph.o                                          \
-       half2float.o                                     \
        input.o                                          \
        lut3d.o                                          \
        options.o                                        \
@@ -28,7 +27,7 @@ OBJS = alphablend.o                                     \
        vscale.o                                         \
 
 # Objects duplicated from other libraries for shared builds
-SHLIBOBJS                    += log2_tab.o
+SHLIBOBJS                    += log2_tab.o half2float.o
 
 # Windows resource file
 SHLIBOBJS-$(HAVE_GNU_WINDRES) += swscaleres.o

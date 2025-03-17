@@ -139,9 +139,11 @@ OBJS = adler32.o                                                        \
        file.o                                                           \
        file_open.o                                                      \
        float_dsp.o                                                      \
+       float2half.o                                                     \
        film_grain_params.o                                              \
        fixed_dsp.o                                                      \
        frame.o                                                          \
+       half2float.o                                                     \
        hash.o                                                           \
        hdr_dynamic_metadata.o                                           \
        hdr_dynamic_vivid_metadata.o                                     \
