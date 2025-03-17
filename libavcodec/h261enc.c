@@ -337,7 +337,7 @@ static av_cold void h261_encode_init_static(void)
         uni_h261_rl_len_last[UNI_AC_ENC_INDEX(run, 64 - level)] = len + 2;
     }
 
-    for (size_t i = 1;; i++) {
+    for (ptrdiff_t i = 1;; i++) {
         // sign-one MV codes; diff -16..-1, 16..31
         mv_codes[32 - i][0] = mv_codes[-i][0] = (ff_h261_mv_tab[i][0] << 1) | 1 /* sign */;
         mv_codes[32 - i][1] = mv_codes[-i][1] = ff_h261_mv_tab[i][1] + 1;
