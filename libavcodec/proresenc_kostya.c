@@ -1033,7 +1033,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         // slices
         if (!ctx->force_quant) {
-            ret = avctx->execute2(avctx, find_quant_thread, (void*)pic, NULL,
+            ret = avctx->execute2(avctx, find_quant_thread, NULL, NULL,
                                   ctx->mb_height);
             if (ret)
                 return ret;
