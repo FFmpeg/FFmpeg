@@ -72,6 +72,9 @@ typedef struct MPVMainEncContext {
     int lmin, lmax;
     int vbv_ignore_qmax;
 
+    /* MPEG-1/2 specific */
+    int vbv_delay_pos;             ///< offset of vbv_delay in the bitstream
+
     const uint8_t *fcode_tab;      ///< smallest fcode needed for each MV
 
     /* frame skip options */

@@ -2023,9 +2023,9 @@ vbv_retry:
             double inbits  = avctx->rc_max_rate *
                              av_q2d(avctx->time_base);
             int    minbits = m->frame_bits - 8 *
-                             (s->vbv_delay_pos - 1);
+                             (m->vbv_delay_pos - 1);
             double bits    = m->rc_context.buffer_index + minbits - inbits;
-            uint8_t *const vbv_delay_ptr = s->pb.buf + s->vbv_delay_pos;
+            uint8_t *const vbv_delay_ptr = s->pb.buf + m->vbv_delay_pos;
 
             if (bits < 0)
                 av_log(avctx, AV_LOG_ERROR,
