@@ -200,15 +200,15 @@ static void find_best_tables(MSMPEG4EncContext *ms)
 
     memset(ms->ac_stats, 0, sizeof(ms->ac_stats));
 
-    s->rl_table_index       =        best;
-    s->rl_chroma_table_index= chroma_best;
+    ms->rl_table_index        =        best;
+    ms->rl_chroma_table_index = chroma_best;
 
     if(s->pict_type != s->last_non_b_pict_type){
-        s->rl_table_index= 2;
+        ms->rl_table_index = 2;
         if(s->pict_type==AV_PICTURE_TYPE_I)
-            s->rl_chroma_table_index= 1;
+            ms->rl_chroma_table_index = 1;
         else
-            s->rl_chroma_table_index= 2;
+            ms->rl_chroma_table_index = 2;
     }
 
 }
@@ -226,14 +226,14 @@ static int msmpeg4_encode_picture_header(MPVMainEncContext *const m)
 
     put_bits(&s->pb, 5, s->qscale);
     if (s->msmpeg4_version <= MSMP4_V2) {
-        s->rl_table_index = 2;
-        s->rl_chroma_table_index = 2;
+        ms->rl_table_index = 2;
+        ms->rl_chroma_table_index = 2;
     }
 
-    s->dc_table_index = 1;
-    s->mv_table_index = 1; /* only if P-frame */
-    s->use_skip_mb_code = 1; /* only if P-frame */
-    s->per_mb_rl_table = 0;
+    ms->dc_table_index   = 1;
+    ms->mv_table_index   = 1; /* only if P-frame */
+    ms->use_skip_mb_code = 1; /* only if P-frame */
+    ms->per_mb_rl_table  = 0;
     if (s->msmpeg4_version == MSMP4_WMV1)
         s->inter_intra_pred = s->width * s->height < 320*240 &&
                               m->bit_rate  <= II_BITRATE     &&
@@ -248,35 +248,35 @@ static int msmpeg4_encode_picture_header(MPVMainEncContext *const m)
         if (s->msmpeg4_version == MSMP4_WMV1) {
             ff_msmpeg4_encode_ext_header(s);
             if (m->bit_rate > MBAC_BITRATE)
-                put_bits(&s->pb, 1, s->per_mb_rl_table);
+                put_bits(&s->pb, 1, ms->per_mb_rl_table);
         }
 
         if (s->msmpeg4_version > MSMP4_V2) {
-            if(!s->per_mb_rl_table){
-                ff_msmpeg4_code012(&s->pb, s->rl_chroma_table_index);
-                ff_msmpeg4_code012(&s->pb, s->rl_table_index);
+            if (!ms->per_mb_rl_table){
+                ff_msmpeg4_code012(&s->pb, ms->rl_chroma_table_index);
+                ff_msmpeg4_code012(&s->pb, ms->rl_table_index);
             }
 
-            put_bits(&s->pb, 1, s->dc_table_index);
+            put_bits(&s->pb, 1, ms->dc_table_index);
         }
     } else {
-        put_bits(&s->pb, 1, s->use_skip_mb_code);
+        put_bits(&s->pb, 1, ms->use_skip_mb_code);
 
         if (s->msmpeg4_version == MSMP4_WMV1 && m->bit_rate > MBAC_BITRATE)
-            put_bits(&s->pb, 1, s->per_mb_rl_table);
+            put_bits(&s->pb, 1, ms->per_mb_rl_table);
 
         if (s->msmpeg4_version > MSMP4_V2) {
-            if(!s->per_mb_rl_table)
-                ff_msmpeg4_code012(&s->pb, s->rl_table_index);
+            if (!ms->per_mb_rl_table)
+                ff_msmpeg4_code012(&s->pb, ms->rl_table_index);
 
-            put_bits(&s->pb, 1, s->dc_table_index);
+            put_bits(&s->pb, 1, ms->dc_table_index);
 
-            put_bits(&s->pb, 1, s->mv_table_index);
+            put_bits(&s->pb, 1, ms->mv_table_index);
         }
     }
 
-    s->esc3_level_length= 0;
-    s->esc3_run_length= 0;
+    s->esc3_level_length = 0;
+    ms->esc3_run_length  = 0;
 
     return 0;
 }
@@ -308,10 +308,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_assert0(!s->flipflop_rounding);
 }
 
-void ff_msmpeg4_encode_motion(MpegEncContext * s,
+void ff_msmpeg4_encode_motion(MSMPEG4EncContext *const ms,
                                   int mx, int my)
 {
-    const uint32_t *const mv_vector_table = mv_vector_tables[s->mv_table_index];
+    MpegEncContext *const s = &ms->m.s;
+    const uint32_t *const mv_vector_table = mv_vector_tables[ms->mv_table_index];
     uint32_t code;
 
     /* modulo encoding */
@@ -382,6 +383,7 @@ static void msmpeg4_encode_mb(MpegEncContext *const s,
                               int16_t block[][64],
                               int motion_x, int motion_y)
 {
+    MSMPEG4EncContext *const ms = mpv_to_msmpeg4(s);
     int cbp, coded_cbp, i;
     int pred_x, pred_y;
 
@@ -394,7 +396,7 @@ static void msmpeg4_encode_mb(MpegEncContext *const s,
             if (s->block_last_index[i] >= 0)
                 cbp |= 1 << (5 - i);
         }
-        if (s->use_skip_mb_code && (cbp | motion_x | motion_y) == 0) {
+        if (ms->use_skip_mb_code && (cbp | motion_x | motion_y) == 0) {
             /* skip macroblock */
             put_bits(&s->pb, 1, 1);
             s->last_bits++;
@@ -402,7 +404,7 @@ static void msmpeg4_encode_mb(MpegEncContext *const s,
 
             return;
         }
-        if (s->use_skip_mb_code)
+        if (ms->use_skip_mb_code)
             put_bits(&s->pb, 1, 0);     /* mb coded */
 
         if (s->msmpeg4_version <= MSMP4_V2) {
@@ -430,8 +432,8 @@ static void msmpeg4_encode_mb(MpegEncContext *const s,
 
             /* motion vector */
             ff_h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
-            ff_msmpeg4_encode_motion(s, motion_x - pred_x,
-                                  motion_y - pred_y);
+            ff_msmpeg4_encode_motion(ms, motion_x - pred_x,
+                                     motion_y - pred_y);
         }
 
         s->mv_bits += get_bits_diff(s);
@@ -452,7 +454,7 @@ static void msmpeg4_encode_mb(MpegEncContext *const s,
                 put_bits(&s->pb,
                          ff_v2_intra_cbpc[cbp&3][1], ff_v2_intra_cbpc[cbp&3][0]);
             } else {
-                if (s->use_skip_mb_code)
+                if (ms->use_skip_mb_code)
                     put_bits(&s->pb, 1, 0);     /* mb coded */
                 put_bits(&s->pb,
                          ff_v2_mb_type[(cbp&3) + 4][1],
@@ -479,7 +481,7 @@ static void msmpeg4_encode_mb(MpegEncContext *const s,
                 put_bits(&s->pb,
                          ff_msmp4_mb_i_table[coded_cbp][1], ff_msmp4_mb_i_table[coded_cbp][0]);
             } else {
-                if (s->use_skip_mb_code)
+                if (ms->use_skip_mb_code)
                     put_bits(&s->pb, 1, 0);     /* mb coded */
                 put_bits(&s->pb,
                          ff_table_mb_non_intra[cbp][1],
@@ -501,8 +503,9 @@ static void msmpeg4_encode_mb(MpegEncContext *const s,
     }
 }
 
-static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr)
+static void msmpeg4_encode_dc(MSMPEG4EncContext *const ms, int level, int n, int *dir_ptr)
 {
+    MpegEncContext *const s = &ms->m.s;
     int sign, code;
     int pred;
 
@@ -539,8 +542,8 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
         if (code > DC_MAX)
             code = DC_MAX;
 
-        put_bits(&s->pb, ff_msmp4_dc_tables[s->dc_table_index][n >= 4][code][1],
-                         ff_msmp4_dc_tables[s->dc_table_index][n >= 4][code][0]);
+        put_bits(&s->pb, ff_msmp4_dc_tables[ms->dc_table_index][n >= 4][code][1],
+                         ff_msmp4_dc_tables[ms->dc_table_index][n >= 4][code][0]);
 
         if (code == DC_MAX)
             put_bits(&s->pb, 8, level);
@@ -563,18 +566,18 @@ void ff_msmpeg4_encode_block(MpegEncContext * s, int16_t * block, int n)
     const uint8_t *scantable;
 
     if (s->mb_intra) {
-        msmpeg4_encode_dc(s, block[0], n, &dc_pred_dir);
+        msmpeg4_encode_dc(ms, block[0], n, &dc_pred_dir);
         i = 1;
         if (n < 4) {
-            rl = &ff_rl_table[s->rl_table_index];
+            rl = &ff_rl_table[ms->rl_table_index];
         } else {
-            rl = &ff_rl_table[3 + s->rl_chroma_table_index];
+            rl = &ff_rl_table[3 + ms->rl_chroma_table_index];
         }
         run_diff = s->msmpeg4_version >= MSMP4_WMV1;
         scantable= s->intra_scantable.permutated;
     } else {
         i = 0;
-        rl = &ff_rl_table[3 + s->rl_table_index];
+        rl = &ff_rl_table[3 + ms->rl_table_index];
         run_diff = s->msmpeg4_version > MSMP4_V2;
         scantable= s->inter_scantable.permutated;
     }
@@ -635,16 +638,16 @@ void ff_msmpeg4_encode_block(MpegEncContext * s, int16_t * block, int n)
                         put_bits(&s->pb, 1, 0);
                         put_bits(&s->pb, 1, last);
                         if (s->msmpeg4_version >= MSMP4_WMV1) {
-                            if(s->esc3_level_length==0){
-                                s->esc3_level_length=8;
-                                s->esc3_run_length= 6;
+                            if (s->esc3_level_length == 0) {
+                                s->esc3_level_length = 8;
+                                ms->esc3_run_length  = 6;
                                 //ESCLVLSZ + ESCRUNSZ
                                 if(s->qscale<8)
                                     put_bits(&s->pb, 6, 3);
                                 else
                                     put_bits(&s->pb, 8, 3);
                             }
-                            put_bits(&s->pb, s->esc3_run_length, run);
+                            put_bits(&s->pb, ms->esc3_run_length, run);
                             put_bits(&s->pb, 1, sign);
                             put_bits(&s->pb, s->esc3_level_length, level);
                         }else{

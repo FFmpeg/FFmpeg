@@ -75,6 +75,7 @@ static int encode_ext_header(WMV2EncContext *w)
 static int wmv2_encode_picture_header(MPVMainEncContext *const m)
 {
     WMV2EncContext *const w = (WMV2EncContext *) m;
+    MSMPEG4EncContext *const ms = &w->msmpeg4;
     MpegEncContext *const s = &m->s;
 
     put_bits(&s->pb, 1, s->pict_type - 1);
@@ -82,9 +83,9 @@ static int wmv2_encode_picture_header(MPVMainEncContext *const m)
         put_bits(&s->pb, 7, 0);
     put_bits(&s->pb, 5, s->qscale);
 
-    s->dc_table_index  = 1;
-    s->mv_table_index  = 1; /* only if P-frame */
-    s->per_mb_rl_table = 0;
+    ms->dc_table_index  = 1;
+    ms->mv_table_index  = 1; /* only if P-frame */
+    ms->per_mb_rl_table = 0;
     s->mspel           = 0;
     w->per_mb_abt      = 0;
     w->abt_type        = 0;
@@ -98,14 +99,14 @@ static int wmv2_encode_picture_header(MPVMainEncContext *const m)
             put_bits(&s->pb, 1, w->j_type);
 
         if (w->per_mb_rl_bit)
-            put_bits(&s->pb, 1, s->per_mb_rl_table);
+            put_bits(&s->pb, 1, ms->per_mb_rl_table);
 
-        if (!s->per_mb_rl_table) {
-            ff_msmpeg4_code012(&s->pb, s->rl_chroma_table_index);
-            ff_msmpeg4_code012(&s->pb, s->rl_table_index);
+        if (!ms->per_mb_rl_table) {
+            ff_msmpeg4_code012(&s->pb, ms->rl_chroma_table_index);
+            ff_msmpeg4_code012(&s->pb, ms->rl_table_index);
         }
 
-        put_bits(&s->pb, 1, s->dc_table_index);
+        put_bits(&s->pb, 1, ms->dc_table_index);
 
         s->inter_intra_pred = 0;
     } else {
@@ -126,19 +127,19 @@ static int wmv2_encode_picture_header(MPVMainEncContext *const m)
         }
 
         if (w->per_mb_rl_bit)
-            put_bits(&s->pb, 1, s->per_mb_rl_table);
+            put_bits(&s->pb, 1, ms->per_mb_rl_table);
 
-        if (!s->per_mb_rl_table) {
-            ff_msmpeg4_code012(&s->pb, s->rl_table_index);
-            s->rl_chroma_table_index = s->rl_table_index;
+        if (!ms->per_mb_rl_table) {
+            ff_msmpeg4_code012(&s->pb, ms->rl_table_index);
+            ms->rl_chroma_table_index = ms->rl_table_index;
         }
-        put_bits(&s->pb, 1, s->dc_table_index);
-        put_bits(&s->pb, 1, s->mv_table_index);
+        put_bits(&s->pb, 1, ms->dc_table_index);
+        put_bits(&s->pb, 1, ms->mv_table_index);
 
         s->inter_intra_pred = 0; // (s->width * s->height < 320 * 240 && m->bit_rate <= II_BITRATE);
     }
     s->esc3_level_length = 0;
-    s->esc3_run_length   = 0;
+    ms->esc3_run_length  = 0;
 
     return 0;
 }
@@ -170,7 +171,7 @@ static void wmv2_encode_mb(MpegEncContext *const s, int16_t block[][64],
         s->misc_bits += get_bits_diff(s);
         /* motion vector */
         ff_h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
-        ff_msmpeg4_encode_motion(s, motion_x - pred_x,
+        ff_msmpeg4_encode_motion(&w->msmpeg4, motion_x - pred_x,
                                  motion_y - pred_y);
         s->mv_bits += get_bits_diff(s);
     } else {

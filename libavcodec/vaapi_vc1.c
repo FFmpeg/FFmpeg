@@ -343,7 +343,7 @@ static int vaapi_vc1_start_frame(AVCodecContext *avctx,
         .mv_fields.bits = {
             .mv_mode                       = vc1_get_MVMODE(v),
             .mv_mode2                      = vc1_get_MVMODE2(v),
-            .mv_table                      = (v->fcm == PROGRESSIVE ? s->mv_table_index : v->imvtab),
+            .mv_table                      = (v->fcm == PROGRESSIVE ? v->mv_table_index : v->imvtab),
             .two_mv_block_pattern_table    = v->twomvbptab,
             .four_mv_switch                = v->fourmvswitch,
             .four_mv_block_pattern_table   = v->fourmvbptab,
@@ -371,7 +371,7 @@ static int vaapi_vc1_start_frame(AVCodecContext *avctx,
             .frame_level_transform_type    = vc1_get_TTFRM(v),
             .transform_ac_codingset_idx1   = v->c_ac_table_index,
             .transform_ac_codingset_idx2   = v->y_ac_table_index,
-            .intra_transform_dc_table      = v->s.dc_table_index,
+            .intra_transform_dc_table      = v->dc_table_index,
         },
     };
 

@@ -372,11 +372,6 @@ typedef struct MpegEncContext {
     int esc_pos;
 
     /* MSMPEG4 specific */
-    int mv_table_index;
-    int rl_table_index;
-    int rl_chroma_table_index;
-    int dc_table_index;
-    int use_skip_mb_code;
     int slice_height;      ///< in macroblocks
     int first_slice_line;  ///< used in MPEG-4 too to handle resync markers
     int flipflop_rounding;
@@ -389,9 +384,7 @@ typedef struct MpegEncContext {
         MSMP4_WMV2,
         MSMP4_VC1,        ///< for VC1 (image), WMV3 (image) and MSS2.
     } msmpeg4_version;
-    int per_mb_rl_table;
     int esc3_level_length;
-    int esc3_run_length;
     int inter_intra_pred;
     int mspel;
 

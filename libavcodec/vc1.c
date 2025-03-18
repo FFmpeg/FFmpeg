@@ -765,7 +765,7 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
             return AVERROR_INVALIDDATA;
 
         /* Hopefully this is correct for P-frames */
-        v->s.mv_table_index = get_bits(gb, 2); //but using ff_vc1_ tables
+        v->mv_table_index = get_bits(gb, 2); //but using ff_vc1_ tables
         v->cbptab = get_bits(gb, 2);
         v->cbpcy_vlc = ff_vc1_cbpcy_p_vlc[v->cbptab];
 
@@ -804,7 +804,7 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         av_log(v->s.avctx, AV_LOG_DEBUG, "MB Skip plane encoding: "
                "Imode: %i, Invert: %i\n", status>>1, status&1);
 
-        v->s.mv_table_index = get_bits(gb, 2);
+        v->mv_table_index   = get_bits(gb, 2);
         v->cbptab           = get_bits(gb, 2);
         v->cbpcy_vlc        = ff_vc1_cbpcy_p_vlc[v->cbptab];
 
@@ -833,7 +833,7 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
             v->y_ac_table_index = decode012(gb);
         }
         /* DC Syntax */
-        v->s.dc_table_index = get_bits1(gb);
+        v->dc_table_index = get_bits1(gb);
     }
 
     if (v->s.pict_type == AV_PICTURE_TYPE_BI) {
@@ -1158,7 +1158,7 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
                    "Imode: %i, Invert: %i\n", status>>1, status&1);
 
             /* Hopefully this is correct for P-frames */
-            v->s.mv_table_index = get_bits(gb, 2); //but using ff_vc1_ tables
+            v->mv_table_index   = get_bits(gb, 2); //but using ff_vc1_ tables
             v->cbptab           = get_bits(gb, 2);
             v->cbpcy_vlc        = ff_vc1_cbpcy_p_vlc[v->cbptab];
         } else if (v->fcm == ILACE_FRAME) { // frame interlaced
@@ -1295,7 +1295,7 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
                 return -1;
             av_log(v->s.avctx, AV_LOG_DEBUG, "MB Skip plane encoding: "
                    "Imode: %i, Invert: %i\n", status>>1, status&1);
-            v->s.mv_table_index = get_bits(gb, 2);
+            v->mv_table_index = get_bits(gb, 2);
             v->cbptab = get_bits(gb, 2);
             v->cbpcy_vlc = ff_vc1_cbpcy_p_vlc[v->cbptab];
         }
@@ -1330,7 +1330,7 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     }
 
     /* DC Syntax */
-    v->s.dc_table_index = get_bits1(gb);
+    v->dc_table_index = get_bits1(gb);
     if ((v->s.pict_type == AV_PICTURE_TYPE_I || v->s.pict_type == AV_PICTURE_TYPE_BI)
         && v->dquant) {
         av_log(v->s.avctx, AV_LOG_DEBUG, "VOP DQuant info\n");

@@ -31,6 +31,14 @@
 typedef struct MSMP4DecContext {
     MpegEncContext m;
     int bit_rate;
+    int mv_table_index;
+    int rl_table_index;
+    int rl_chroma_table_index;
+    int dc_table_index;
+    int use_skip_mb_code;
+    int per_mb_rl_table;
+    int esc3_level_length;
+    int esc3_run_length;
 } MSMP4DecContext;
 
 static inline MSMP4DecContext *mpv_to_msmpeg4(MpegEncContext *s)
@@ -45,8 +53,8 @@ extern VLCElem ff_inter_intra_vlc[8];
 int ff_msmpeg4_decode_init(AVCodecContext *avctx);
 int ff_msmpeg4_decode_picture_header(MpegEncContext *s);
 int ff_msmpeg4_decode_ext_header(MpegEncContext *s, int buf_size);
-void ff_msmpeg4_decode_motion(MpegEncContext * s, int *mx_ptr, int *my_ptr);
-int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
+void ff_msmpeg4_decode_motion(MSMP4DecContext *ms, int *mx_ptr, int *my_ptr);
+int ff_msmpeg4_decode_block(MSMP4DecContext *ms, int16_t * block,
                             int n, int coded, const uint8_t *scan_table);
 
 #endif

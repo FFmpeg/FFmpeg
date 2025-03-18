@@ -246,6 +246,7 @@ typedef struct VC1Context{
     uint8_t dqsbedge;
     uint8_t dqbilevel;
     //@}
+    int dc_table_index;
     /** AC coding set indexes
      * @see 8.1.1.10, p(1)10
      */
@@ -253,6 +254,8 @@ typedef struct VC1Context{
     int c_ac_table_index;    ///< Chroma index from ACFRM element
     int y_ac_table_index;    ///< Luma index from AC2FRM element
     //@}
+    int esc3_level_length;
+    int esc3_run_length;
     int ttfrm;               ///< Transform type info present at frame level
     uint8_t ttmbf;           ///< Transform type flag
     int *ttblk_base, *ttblk; ///< Transform type at the block level
@@ -282,6 +285,7 @@ typedef struct VC1Context{
     uint8_t pquantizer;             ///< Uniform (over sequence) quantizer in use
     const VLCElem *cbpcy_vlc;       ///< CBPCY VLC table
     int tt_index;                   ///< Index for Transform Type tables (to decode TTMB)
+    int mv_table_index;
     uint8_t* mv_type_mb_plane;      ///< bitplane for mv_type == (4MV)
     uint8_t* direct_mb_plane;       ///< bitplane for "direct" MBs
     uint8_t* forward_mb_plane;      ///< bitplane for "forward" MBs
