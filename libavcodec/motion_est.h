@@ -48,6 +48,7 @@ typedef struct MPVMainEncContext MPVMainEncContext;
  */
 typedef struct MotionEstContext {
     AVCodecContext *avctx;
+    int motion_est;                 ///< ME algorithm
     int skip;                       ///< set if ME is skipped for the current MB
     int co_located_mv[4][2];        ///< mv from last P-frame for direct mode ME
     int direct_basis_mv[4][2];

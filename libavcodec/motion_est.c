@@ -919,7 +919,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     s->mb_var [s->mb_stride * mb_y + mb_x] = (varc+128)>>8;
     c->mb_var_sum_temp += (varc+128)>>8;
 
-    if (s->motion_est != FF_ME_ZERO) {
+    if (c->motion_est != FF_ME_ZERO) {
         const int mot_stride = s->b8_stride;
         const int mot_xy = s->block_index[0];
 
@@ -1127,7 +1127,7 @@ static int estimate_motion_b(MpegEncContext *s, int mb_x, int mb_y,
 
     get_limits(s, 16*mb_x, 16*mb_y, 1);
 
-    if (s->motion_est != FF_ME_ZERO) {
+    if (c->motion_est != FF_ME_ZERO) {
         P_LEFT[0] = mv_table[mot_xy - 1][0];
         P_LEFT[1] = mv_table[mot_xy - 1][1];
 
@@ -1599,8 +1599,9 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
 int ff_get_best_fcode(MPVMainEncContext *const m, const int16_t (*mv_table)[2], int type)
 {
     MpegEncContext *const s = &m->s;
+    MotionEstContext *const c = &s->me;
 
-    if (s->motion_est != FF_ME_ZERO) {
+    if (c->motion_est != FF_ME_ZERO) {
         int score[8];
         int i, y, range= s->avctx->me_range ? s->avctx->me_range : (INT_MAX/2);
         const uint8_t * fcode_tab = m->fcode_tab;

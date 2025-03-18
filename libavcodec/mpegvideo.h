@@ -222,7 +222,6 @@ typedef struct MpegEncContext {
     uint8_t *mb_mean;           ///< Table for MB luminance
     uint64_t encoding_error[MPV_MAX_PLANES];
 
-    int motion_est;                      ///< ME algorithm
     int mv_dir;
 #define MV_DIR_FORWARD   1
 #define MV_DIR_BACKWARD  2
