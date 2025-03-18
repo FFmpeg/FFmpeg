@@ -1011,9 +1011,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     /* init */
     ff_mpv_idct_init(s);
-    if ((ret = ff_mpv_common_init(s)) < 0)
-        return ret;
-
     ff_fdctdsp_init(&s->fdsp, avctx);
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
     ff_pixblockdsp_init(&s->pdsp, avctx);
@@ -1030,10 +1027,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    ret = init_buffers(m, avctx);
-    if (ret < 0)
-        return ret;
-
     ff_dct_encode_init(s);
 
     if (s->mpeg_quant || s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
@@ -1047,13 +1040,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->dct_unquantize_inter = s->dct_unquantize_mpeg1_inter;
     }
 
-    if (s->slice_context_count > 1) {
-        s->rtp_mode = 1;
-
-        if (avctx->codec_id == AV_CODEC_ID_H263P)
-            s->h263_slice_structured = 1;
-    }
-
     if (CONFIG_H263_ENCODER && s->out_format == FMT_H263) {
         ff_h263_encode_init(m);
 #if CONFIG_MSMPEG4ENC
@@ -1061,6 +1047,23 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
             ff_msmpeg4_encode_init(m);
 #endif
     }
+
+    ret = ff_mpv_common_init(s);
+    if (ret < 0)
+        return ret;
+
+    if (s->slice_context_count > 1) {
+        for (int i = 0; i < s->slice_context_count; ++i) {
+            s->thread_context[i]->rtp_mode = 1;
+
+            if (avctx->codec_id == AV_CODEC_ID_H263P)
+                s->thread_context[i]->h263_slice_structured = 1;
+        }
+    }
+
+    ret = init_buffers(m, avctx);
+    if (ret < 0)
+        return ret;
 
     ret = ff_rate_control_init(m);
     if (ret < 0)
