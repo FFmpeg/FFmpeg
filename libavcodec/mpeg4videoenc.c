@@ -668,7 +668,7 @@ static void mpeg4_encode_mb(MpegEncContext *const s, int16_t block[][64],
                     for (int i = 0; i < m->max_b_frames; i++) {
                         const uint8_t *b_pic;
                         int diff;
-                        const MPVPicture *pic = s->reordered_input_picture[i + 1];
+                        const MPVPicture *pic = m->reordered_input_picture[i + 1];
 
                         if (!pic || pic->f->pict_type != AV_PICTURE_TYPE_B)
                             break;
@@ -900,16 +900,17 @@ void ff_set_mpeg4_time(MpegEncContext *s)
     }
 }
 
-static void mpeg4_encode_gop_header(MpegEncContext *s)
+static void mpeg4_encode_gop_header(MPVMainEncContext *const m)
 {
+    MpegEncContext *const s = &m->s;
     int64_t hours, minutes, seconds;
     int64_t time;
 
     put_bits32(&s->pb, GOP_STARTCODE);
 
     time = s->cur_pic.ptr->f->pts;
-    if (s->reordered_input_picture[1])
-        time = FFMIN(time, s->reordered_input_picture[1]->f->pts);
+    if (m->reordered_input_picture[1])
+        time = FFMIN(time, m->reordered_input_picture[1]->f->pts);
     time = time * s->avctx->time_base.num;
     s->last_time_base = FFUDIV(time, s->avctx->time_base.den);
 
@@ -1077,7 +1078,7 @@ static int mpeg4_encode_picture_header(MPVMainEncContext *const m)
             if (s->avctx->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT || s->picture_number == 0)  // HACK, the reference sw is buggy
                 mpeg4_encode_vol_header(m4, 0, 0);
         }
-        mpeg4_encode_gop_header(s);
+        mpeg4_encode_gop_header(m);
     }
 
     s->partitioned_frame = s->data_partitioning && s->pict_type != AV_PICTURE_TYPE_B;

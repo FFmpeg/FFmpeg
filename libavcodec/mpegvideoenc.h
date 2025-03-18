@@ -47,6 +47,9 @@ typedef struct MPVMainEncContext {
     int input_picture_number;      ///< used to set pic->display_picture_number
     int coded_picture_number;      ///< used to set pic->coded_picture_number
 
+    MPVPicture *input_picture[MPVENC_MAX_B_FRAMES + 1]; ///< next pictures in display order
+    MPVPicture *reordered_input_picture[MPVENC_MAX_B_FRAMES + 1]; ///< next pictures in coded order
+
     int64_t user_specified_pts;    ///< last non-zero pts from user-supplied AVFrame
     /**
      * pts difference between the first and second input frame, used for

@@ -123,8 +123,6 @@ typedef struct MpegEncContext {
     ptrdiff_t linesize;        ///< line size, in bytes, may be different from width
     ptrdiff_t uvlinesize;      ///< line size, for chroma in bytes, may be different from width
     struct AVRefStructPool *picture_pool; ///< Pool for MPVPictures
-    MPVPicture **input_picture;///< next pictures on display order for encoding
-    MPVPicture **reordered_input_picture; ///< pointer to the next pictures in coded order for encoding
 
     BufferPoolContext buffer_pools;
 

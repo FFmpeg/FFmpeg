@@ -915,8 +915,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         return ret;
 
     if (!(avctx->stats_out = av_mallocz(256))               ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->input_picture,           MPVENC_MAX_B_FRAMES + 1) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->reordered_input_picture, MPVENC_MAX_B_FRAMES + 1) ||
         !(s->new_pic = av_frame_alloc()) ||
         !(s->picture_pool = ff_mpv_alloc_pic_pool(0)))
         return AVERROR(ENOMEM);
@@ -1049,11 +1047,9 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     ff_mpv_common_end(s);
     av_refstruct_pool_uninit(&s->picture_pool);
 
-    if (s->input_picture && s->reordered_input_picture) {
-        for (int i = 0; i < MPVENC_MAX_B_FRAMES + 1; i++) {
-            av_refstruct_unref(&s->input_picture[i]);
-            av_refstruct_unref(&s->reordered_input_picture[i]);
-        }
+    for (int i = 0; i < MPVENC_MAX_B_FRAMES + 1; i++) {
+        av_refstruct_unref(&m->input_picture[i]);
+        av_refstruct_unref(&m->reordered_input_picture[i]);
     }
     for (int i = 0; i < FF_ARRAY_ELEMS(m->tmp_frames); i++)
         av_frame_free(&m->tmp_frames[i]);
@@ -1077,8 +1073,6 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
 
     av_freep(&s->q_intra_matrix);
     av_freep(&s->q_intra_matrix16);
-    av_freep(&s->input_picture);
-    av_freep(&s->reordered_input_picture);
     av_freep(&s->dct_offset);
     av_freep(&s->mb_var);
     av_freep(&s->mc_mb_var);
@@ -1260,7 +1254,7 @@ static int load_input_picture(MPVMainEncContext *const m, const AVFrame *pic_arg
     int flush_offset = 1;
     int direct = 1;
 
-    av_assert1(!s->input_picture[0]);
+    av_assert1(!m->input_picture[0]);
 
     if (pic_arg) {
         pts = pic_arg->pts;
@@ -1363,14 +1357,14 @@ static int load_input_picture(MPVMainEncContext *const m, const AVFrame *pic_arg
 
         pic->display_picture_number = display_picture_number;
         pic->f->pts = pts; // we set this here to avoid modifying pic_arg
-    } else if (!s->reordered_input_picture[1]) {
+    } else if (!m->reordered_input_picture[1]) {
         /* Flushing: When the above check is true, the encoder is about to run
          * out of frames to encode. Check if there are input_pictures left;
-         * if so, ensure s->input_picture[0] contains the first picture.
+         * if so, ensure m->input_picture[0] contains the first picture.
          * A flush_offset != 1 will only happen if we did not receive enough
          * input frames. */
         for (flush_offset = 0; flush_offset < encoding_delay + 1; flush_offset++)
-            if (s->input_picture[flush_offset])
+            if (m->input_picture[flush_offset])
                 break;
 
         encoding_delay -= flush_offset - 1;
@@ -1378,11 +1372,11 @@ static int load_input_picture(MPVMainEncContext *const m, const AVFrame *pic_arg
 
     /* shift buffer entries */
     for (int i = flush_offset; i <= MPVENC_MAX_B_FRAMES; i++)
-        s->input_picture[i - flush_offset] = s->input_picture[i];
+        m->input_picture[i - flush_offset] = m->input_picture[i];
     for (int i = MPVENC_MAX_B_FRAMES + 1 - flush_offset; i <= MPVENC_MAX_B_FRAMES; i++)
-        s->input_picture[i] = NULL;
+        m->input_picture[i] = NULL;
 
-    s->input_picture[encoding_delay] = pic;
+    m->input_picture[encoding_delay] = pic;
 
     return 0;
 fail:
@@ -1482,7 +1476,7 @@ static int estimate_best_b_count(MPVMainEncContext *const m)
                FF_LAMBDA_SHIFT;
 
     for (int i = 0; i < m->max_b_frames + 2; i++) {
-        const MPVPicture *pre_input_ptr = i ? s->input_picture[i - 1] :
+        const MPVPicture *pre_input_ptr = i ? m->input_picture[i - 1] :
                                            s->next_pic.ptr;
 
         if (pre_input_ptr) {
@@ -1517,7 +1511,7 @@ static int estimate_best_b_count(MPVMainEncContext *const m)
         AVCodecContext *c;
         int64_t rd = 0;
 
-        if (!s->input_picture[j])
+        if (!m->input_picture[j])
             break;
 
         c = avcodec_alloc_context3(NULL);
@@ -1612,16 +1606,16 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
     MpegEncContext *const s = &m->s;
 
     /* Either nothing to do or can't do anything */
-    if (s->reordered_input_picture[0] || !s->input_picture[0])
+    if (m->reordered_input_picture[0] || !m->input_picture[0])
         return 0;
 
     /* set next picture type & ordering */
     if (m->frame_skip_threshold || m->frame_skip_factor) {
         if (m->picture_in_gop_number < m->gop_size &&
             s->next_pic.ptr &&
-            skip_check(m, s->input_picture[0], s->next_pic.ptr)) {
+            skip_check(m, m->input_picture[0], s->next_pic.ptr)) {
             // FIXME check that the gop check above is +-1 correct
-            av_refstruct_unref(&s->input_picture[0]);
+            av_refstruct_unref(&m->input_picture[0]);
 
             ff_vbv_update(m, 0);
 
@@ -1631,48 +1625,48 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
 
     if (/* m->picture_in_gop_number >= m->gop_size || */
         !s->next_pic.ptr || m->intra_only) {
-        s->reordered_input_picture[0] = s->input_picture[0];
-        s->input_picture[0] = NULL;
-        s->reordered_input_picture[0]->f->pict_type = AV_PICTURE_TYPE_I;
-        s->reordered_input_picture[0]->coded_picture_number =
+        m->reordered_input_picture[0] = m->input_picture[0];
+        m->input_picture[0] = NULL;
+        m->reordered_input_picture[0]->f->pict_type = AV_PICTURE_TYPE_I;
+        m->reordered_input_picture[0]->coded_picture_number =
             m->coded_picture_number++;
     } else {
         int b_frames = 0;
 
         if (s->avctx->flags & AV_CODEC_FLAG_PASS2) {
             for (int i = 0; i < m->max_b_frames + 1; i++) {
-                int pict_num = s->input_picture[0]->display_picture_number + i;
+                int pict_num = m->input_picture[0]->display_picture_number + i;
 
                 if (pict_num >= m->rc_context.num_entries)
                     break;
-                if (!s->input_picture[i]) {
+                if (!m->input_picture[i]) {
                     m->rc_context.entry[pict_num - 1].new_pict_type = AV_PICTURE_TYPE_P;
                     break;
                 }
 
-                s->input_picture[i]->f->pict_type =
+                m->input_picture[i]->f->pict_type =
                     m->rc_context.entry[pict_num].new_pict_type;
             }
         }
 
         if (m->b_frame_strategy == 0) {
             b_frames = m->max_b_frames;
-            while (b_frames && !s->input_picture[b_frames])
+            while (b_frames && !m->input_picture[b_frames])
                 b_frames--;
         } else if (m->b_frame_strategy == 1) {
             for (int i = 1; i < m->max_b_frames + 1; i++) {
-                if (s->input_picture[i] &&
-                    s->input_picture[i]->b_frame_score == 0) {
-                    s->input_picture[i]->b_frame_score =
+                if (m->input_picture[i] &&
+                    m->input_picture[i]->b_frame_score == 0) {
+                    m->input_picture[i]->b_frame_score =
                         get_intra_count(s,
-                                        s->input_picture[i    ]->f->data[0],
-                                        s->input_picture[i - 1]->f->data[0],
+                                        m->input_picture[i    ]->f->data[0],
+                                        m->input_picture[i - 1]->f->data[0],
                                         s->linesize) + 1;
                 }
             }
             for (int i = 0; i < m->max_b_frames + 1; i++) {
-                if (!s->input_picture[i] ||
-                    s->input_picture[i]->b_frame_score - 1 >
+                if (!m->input_picture[i] ||
+                    m->input_picture[i]->b_frame_score - 1 >
                         s->mb_num / m->b_sensitivity) {
                     b_frames = FFMAX(0, i - 1);
                     break;
@@ -1681,11 +1675,11 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
 
             /* reset scores */
             for (int i = 0; i < b_frames + 1; i++)
-                s->input_picture[i]->b_frame_score = 0;
+                m->input_picture[i]->b_frame_score = 0;
         } else if (m->b_frame_strategy == 2) {
             b_frames = estimate_best_b_count(m);
             if (b_frames < 0) {
-                av_refstruct_unref(&s->input_picture[0]);
+                av_refstruct_unref(&m->input_picture[0]);
                 return b_frames;
             }
         }
@@ -1693,11 +1687,11 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
         emms_c();
 
         for (int i = b_frames - 1; i >= 0; i--) {
-            int type = s->input_picture[i]->f->pict_type;
+            int type = m->input_picture[i]->f->pict_type;
             if (type && type != AV_PICTURE_TYPE_B)
                 b_frames = i;
         }
-        if (s->input_picture[b_frames]->f->pict_type == AV_PICTURE_TYPE_B &&
+        if (m->input_picture[b_frames]->f->pict_type == AV_PICTURE_TYPE_B &&
             b_frames == m->max_b_frames) {
             av_log(s->avctx, AV_LOG_ERROR,
                     "warning, too many B-frames in a row\n");
@@ -1710,26 +1704,26 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
             } else {
                 if (s->avctx->flags & AV_CODEC_FLAG_CLOSED_GOP)
                     b_frames = 0;
-                s->input_picture[b_frames]->f->pict_type = AV_PICTURE_TYPE_I;
+                m->input_picture[b_frames]->f->pict_type = AV_PICTURE_TYPE_I;
             }
         }
 
         if ((s->avctx->flags & AV_CODEC_FLAG_CLOSED_GOP) && b_frames &&
-            s->input_picture[b_frames]->f->pict_type == AV_PICTURE_TYPE_I)
+            m->input_picture[b_frames]->f->pict_type == AV_PICTURE_TYPE_I)
             b_frames--;
 
-        s->reordered_input_picture[0] = s->input_picture[b_frames];
-        s->input_picture[b_frames]    = NULL;
-        if (s->reordered_input_picture[0]->f->pict_type != AV_PICTURE_TYPE_I)
-            s->reordered_input_picture[0]->f->pict_type = AV_PICTURE_TYPE_P;
-        s->reordered_input_picture[0]->coded_picture_number =
+        m->reordered_input_picture[0] = m->input_picture[b_frames];
+        m->input_picture[b_frames]    = NULL;
+        if (m->reordered_input_picture[0]->f->pict_type != AV_PICTURE_TYPE_I)
+            m->reordered_input_picture[0]->f->pict_type = AV_PICTURE_TYPE_P;
+        m->reordered_input_picture[0]->coded_picture_number =
             m->coded_picture_number++;
         for (int i = 0; i < b_frames; i++) {
-            s->reordered_input_picture[i + 1] = s->input_picture[i];
-            s->input_picture[i]               = NULL;
-            s->reordered_input_picture[i + 1]->f->pict_type =
+            m->reordered_input_picture[i + 1] = m->input_picture[i];
+            m->input_picture[i]               = NULL;
+            m->reordered_input_picture[i + 1]->f->pict_type =
                 AV_PICTURE_TYPE_B;
-            s->reordered_input_picture[i + 1]->coded_picture_number =
+            m->reordered_input_picture[i + 1]->coded_picture_number =
                 m->coded_picture_number++;
         }
     }
@@ -1742,34 +1736,34 @@ static int select_input_picture(MPVMainEncContext *const m)
     MpegEncContext *const s = &m->s;
     int ret;
 
-    av_assert1(!s->reordered_input_picture[0]);
+    av_assert1(!m->reordered_input_picture[0]);
 
     for (int i = 1; i <= MPVENC_MAX_B_FRAMES; i++)
-        s->reordered_input_picture[i - 1] = s->reordered_input_picture[i];
-    s->reordered_input_picture[MPVENC_MAX_B_FRAMES] = NULL;
+        m->reordered_input_picture[i - 1] = m->reordered_input_picture[i];
+    m->reordered_input_picture[MPVENC_MAX_B_FRAMES] = NULL;
 
     ret = set_bframe_chain_length(m);
-    av_assert1(!s->input_picture[0]);
+    av_assert1(!m->input_picture[0]);
     if (ret < 0)
         return ret;
 
     av_frame_unref(s->new_pic);
 
-    if (s->reordered_input_picture[0]) {
-        s->reordered_input_picture[0]->reference =
-           s->reordered_input_picture[0]->f->pict_type != AV_PICTURE_TYPE_B;
+    if (m->reordered_input_picture[0]) {
+        m->reordered_input_picture[0]->reference =
+           m->reordered_input_picture[0]->f->pict_type != AV_PICTURE_TYPE_B;
 
-        if (s->reordered_input_picture[0]->shared || s->avctx->rc_buffer_size) {
+        if (m->reordered_input_picture[0]->shared || s->avctx->rc_buffer_size) {
             // input is a shared pix, so we can't modify it -> allocate a new
             // one & ensure that the shared one is reuseable
-            av_frame_move_ref(s->new_pic, s->reordered_input_picture[0]->f);
+            av_frame_move_ref(s->new_pic, m->reordered_input_picture[0]->f);
 
-            ret = prepare_picture(s, s->reordered_input_picture[0]->f, s->new_pic);
+            ret = prepare_picture(s, m->reordered_input_picture[0]->f, s->new_pic);
             if (ret < 0)
                 goto fail;
         } else {
             // input is not a shared pix -> reuse buffer for current_pix
-            ret = av_frame_ref(s->new_pic, s->reordered_input_picture[0]->f);
+            ret = av_frame_ref(s->new_pic, m->reordered_input_picture[0]->f);
             if (ret < 0)
                 goto fail;
             for (int i = 0; i < MPV_MAX_PLANES; i++) {
@@ -1777,8 +1771,8 @@ static int select_input_picture(MPVMainEncContext *const m)
                     s->new_pic->data[i] += INPLACE_OFFSET;
             }
         }
-        s->cur_pic.ptr = s->reordered_input_picture[0];
-        s->reordered_input_picture[0] = NULL;
+        s->cur_pic.ptr = m->reordered_input_picture[0];
+        m->reordered_input_picture[0] = NULL;
         av_assert1(s->mb_width  == s->buffer_pools.alloc_mb_width);
         av_assert1(s->mb_height == s->buffer_pools.alloc_mb_height);
         av_assert1(s->mb_stride == s->buffer_pools.alloc_mb_stride);
@@ -1793,7 +1787,7 @@ static int select_input_picture(MPVMainEncContext *const m)
     }
     return 0;
 fail:
-    av_refstruct_unref(&s->reordered_input_picture[0]);
+    av_refstruct_unref(&m->reordered_input_picture[0]);
     return ret;
 }
 
