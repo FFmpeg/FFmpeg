@@ -119,6 +119,19 @@ typedef struct D3D12VADecodeContext {
      * Private to the FFmpeg AVHWAccel implementation
      */
     unsigned report_id;
+
+    /**
+     * The Reference-Only feature in DirectX 12 is a memory optimization
+     * technique designed for video decoding/encoding scenarios.
+     * This feature requires that reference resources must be allocated
+     * with the `D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY` resource flag.
+     * Reference textures must also be separated from output textures.
+     * reference_only_map used as a storage for reference only frames
+     * ref_only_resources used as a shadow for  ref_resources
+     */
+    void *reference_only_map;
+    ID3D12Resource **ref_only_resources;
+
 } D3D12VADecodeContext;
 
 /**

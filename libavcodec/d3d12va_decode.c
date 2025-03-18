@@ -41,6 +41,101 @@ typedef struct HelperObjects {
     uint64_t fence_value;
 } HelperObjects;
 
+typedef struct ReferenceFrame {
+    ID3D12Resource *resource;
+    int            used;
+    ID3D12Resource *output_resource;
+} ReferenceFrame;
+
+static ID3D12Resource *get_reference_only_resource(AVCodecContext *avctx, ID3D12Resource *output_resource)
+{
+    D3D12VADecodeContext   *ctx          = D3D12VA_DECODE_CONTEXT(avctx);
+    AVHWFramesContext      *frames_ctx   = D3D12VA_FRAMES_CONTEXT(avctx);
+    AVD3D12VADeviceContext *device_hwctx = ctx->device_ctx;
+    int i = 0;
+    ID3D12Resource *resource = NULL;
+    D3D12_HEAP_PROPERTIES props = { .Type = D3D12_HEAP_TYPE_DEFAULT };
+    D3D12_RESOURCE_DESC desc;
+    ReferenceFrame *reference_only_map = ctx->reference_only_map;
+    if (reference_only_map == NULL) {
+        av_log(avctx, AV_LOG_ERROR, "Reference frames are not allocated!\n");
+        return NULL;
+    }
+
+    // find unused resource
+    for (i = 0; i < ctx->max_num_ref; i++) {
+        if (!reference_only_map[i].used && reference_only_map[i].resource != NULL) {
+            reference_only_map[i].used = 1;
+            resource = reference_only_map[i].resource;
+            reference_only_map[i].output_resource = output_resource;
+            return resource;
+        }
+    }
+
+    // find space to allocate
+    for (i = 0; i < ctx->max_num_ref; i++) {
+        if (reference_only_map[i].resource == NULL)
+            break;
+    }
+
+    if (i == ctx->max_num_ref) {
+        av_log(avctx, AV_LOG_ERROR, "No space for new Reference frame!\n");
+        return NULL;
+    }
+
+    // allocate frame
+    output_resource->lpVtbl->GetDesc(output_resource, &desc);
+    desc.Flags = D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY | D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+
+    if (FAILED(ID3D12Device_CreateCommittedResource(device_hwctx->device, &props, D3D12_HEAP_FLAG_NONE, &desc,
+        D3D12_RESOURCE_STATE_COMMON, NULL, &IID_ID3D12Resource, (void **)&reference_only_map[i].resource))) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to create D3D12 Reference Resource!\n");
+        return NULL;
+    }
+
+    reference_only_map[i].used = 1;
+    resource = reference_only_map[i].resource;
+    reference_only_map[i].output_resource = output_resource;
+
+    return resource;
+}
+
+static void free_reference_only_resources(AVCodecContext *avctx)
+{
+    D3D12VADecodeContext *ctx = D3D12VA_DECODE_CONTEXT(avctx);
+    int i;
+    ReferenceFrame *reference_only_map = ctx->reference_only_map;
+    if (reference_only_map != NULL) {
+        for (i = 0; i < ctx->max_num_ref; i++) {
+            if (reference_only_map[i].resource != NULL) {
+                D3D12_OBJECT_RELEASE(reference_only_map[i].resource);
+            }
+        }
+        av_freep(&ctx->reference_only_map);
+        av_freep(&ctx->ref_only_resources);
+    }
+}
+
+static void prepare_reference_only_resources(AVCodecContext *avctx)
+{
+    D3D12VADecodeContext *ctx = D3D12VA_DECODE_CONTEXT(avctx);
+    int i, j;
+    ReferenceFrame *reference_only_map = ctx->reference_only_map;
+    if (reference_only_map == NULL)
+        return;
+    memset(ctx->ref_only_resources, 0, ctx->max_num_ref * sizeof(*(ctx->ref_only_resources)));
+    for (j = 0; j < ctx->max_num_ref; j++) {
+        for (i = 0; i < ctx->max_num_ref; i++) {
+            if (reference_only_map[j].used && reference_only_map[j].output_resource == ctx->ref_resources[i]) {
+                ctx->ref_only_resources[i] = reference_only_map[j].resource;
+                break;
+            }
+        }
+        if (i == ctx->max_num_ref)
+            reference_only_map[j].used = 0;
+    }
+}
+
 int ff_d3d12va_get_suitable_max_bitstream_size(AVCodecContext *avctx)
 {
     AVHWFramesContext *frames_ctx = D3D12VA_FRAMES_CONTEXT(avctx);
@@ -250,6 +345,18 @@ static int d3d12va_create_decoder(AVCodecContext *avctx)
         return AVERROR_PATCHWELCOME;
     }
 
+    ctx->reference_only_map = NULL;
+    ctx->ref_only_resources = NULL;
+    if (feature.ConfigurationFlags & D3D12_VIDEO_DECODE_CONFIGURATION_FLAG_REFERENCE_ONLY_ALLOCATIONS_REQUIRED) {
+        av_log(avctx, AV_LOG_VERBOSE, "Reference-Only Allocations are required for this D3D12 decoder configuration.\n");
+        ctx->reference_only_map = av_calloc(ctx->max_num_ref + 1, sizeof(ReferenceFrame));
+            if (!ctx->reference_only_map)
+                return AVERROR(ENOMEM);
+        ctx->ref_only_resources = av_calloc(ctx->max_num_ref, sizeof(*ctx->ref_only_resources));
+            if (!ctx->ref_only_resources)
+                return AVERROR(ENOMEM);
+    }
+
     desc = (D3D12_VIDEO_DECODER_DESC) {
         .NodeMask = 0,
         .Configuration = ctx->cfg,
@@ -394,6 +501,7 @@ av_cold int ff_d3d12va_decode_uninit(AVCodecContext *avctx)
 
         av_log(avctx, AV_LOG_VERBOSE, "Total number of command allocators reused: %d\n", num_allocator);
     }
+    free_reference_only_resources(avctx);
 
     av_fifo_freep2(&ctx->objects_queue);
 
@@ -412,14 +520,15 @@ static inline int d3d12va_update_reference_frames_state(AVCodecContext *avctx, D
                                                         ID3D12Resource *current_resource, int state_before, int state_end)
 {
     D3D12VADecodeContext *ctx = D3D12VA_DECODE_CONTEXT(avctx);
+    ID3D12Resource **ref_resources = ctx->ref_only_resources ? ctx->ref_only_resources : ctx->ref_resources;
 
     int num_barrier = 0;
     for (int i = 0; i < ctx->max_num_ref; i++) {
-        if (((ctx->used_mask >> i) & 0x1) && ctx->ref_resources[i] && ctx->ref_resources[i] != current_resource) {
+        if (((ctx->used_mask >> i) & 0x1) && ref_resources[i] && ref_resources[i] != current_resource) {
             barriers[num_barrier].Type  = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
             barriers[num_barrier].Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-            barriers[num_barrier].Transition = (D3D12_RESOURCE_TRANSITION_BARRIER){
-                .pResource   = ctx->ref_resources[i],
+            barriers[num_barrier].Transition = (D3D12_RESOURCE_TRANSITION_BARRIER) {
+                .pResource   = ref_resources[i],
                 .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
                 .StateBefore = state_before,
                 .StateAfter  = state_end,
@@ -440,8 +549,9 @@ int ff_d3d12va_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     D3D12VADecodeContext   *ctx               = D3D12VA_DECODE_CONTEXT(avctx);
     ID3D12Resource         *buffer            = NULL;
     ID3D12CommandAllocator *command_allocator = NULL;
-    AVD3D12VAFrame         *f                 = (AVD3D12VAFrame *)frame->data[0];
-    ID3D12Resource         *resource          = (ID3D12Resource *)f->texture;
+    AVD3D12VAFrame         *f                 = (AVD3D12VAFrame*)frame->data[0];
+    ID3D12Resource         *output_resource   = (ID3D12Resource*)f->texture;
+    ID3D12Resource         *ref_resource      = NULL;
 
     ID3D12VideoDecodeCommandList *cmd_list = ctx->command_list;
     D3D12_RESOURCE_BARRIER barriers[32] = { 0 };
@@ -466,25 +576,55 @@ int ff_d3d12va_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     D3D12_VIDEO_DECODE_OUTPUT_STREAM_ARGUMENTS output_args = {
         .ConversionArguments = { 0 },
         .OutputSubresource   = 0,
-        .pOutputTexture2D    = resource,
+        .pOutputTexture2D    = output_resource,
     };
+
+    memset(ctx->ref_subresources, 0, sizeof(UINT) * ctx->max_num_ref);
+    input_args.ReferenceFrames.NumTexture2Ds = ctx->max_num_ref;
+    input_args.ReferenceFrames.pSubresources = ctx->ref_subresources;
+
+    if (ctx->reference_only_map) {
+        ref_resource = get_reference_only_resource(avctx, output_resource);
+        if (ref_resource == NULL) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to get reference frame!\n");
+            goto fail;
+        }
+        prepare_reference_only_resources(avctx);
+
+        output_args.ConversionArguments.Enable               = 1;
+        input_args.ReferenceFrames.ppTexture2Ds  = ctx->ref_only_resources;
+        output_args.ConversionArguments.pReferenceTexture2D  = ref_resource;
+        output_args.ConversionArguments.ReferenceSubresource = 0;
+    } else {
+        ref_resource = output_resource;
+        input_args.ReferenceFrames.ppTexture2Ds  = ctx->ref_resources;
+    }
 
     UINT num_barrier = 1;
     barriers[0] = (D3D12_RESOURCE_BARRIER) {
         .Type  = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
         .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
         .Transition = {
-            .pResource   = resource,
+            .pResource   = output_resource,
             .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
             .StateBefore = D3D12_RESOURCE_STATE_COMMON,
             .StateAfter  = D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE,
         },
     };
 
-    memset(ctx->ref_subresources, 0, sizeof(UINT) * ctx->max_num_ref);
-    input_args.ReferenceFrames.NumTexture2Ds = ctx->max_num_ref;
-    input_args.ReferenceFrames.ppTexture2Ds  = ctx->ref_resources;
-    input_args.ReferenceFrames.pSubresources = ctx->ref_subresources;
+    if (ctx->reference_only_map) {
+        barriers[1] = (D3D12_RESOURCE_BARRIER) {
+            .Type  = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+            .Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE,
+            .Transition = {
+                .pResource   = ref_resource,
+                .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+                .StateBefore = D3D12_RESOURCE_STATE_COMMON,
+                .StateAfter  = D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE,
+            },
+        };
+        num_barrier++;
+    }
 
     ret = d3d12va_fence_completion(&f->sync_ctx);
     if (ret < 0)
@@ -505,7 +645,7 @@ int ff_d3d12va_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 
     DX_CHECK(ID3D12VideoDecodeCommandList_Reset(cmd_list, command_allocator));
 
-    num_barrier += d3d12va_update_reference_frames_state(avctx, &barriers[1], resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_VIDEO_DECODE_READ);
+    num_barrier += d3d12va_update_reference_frames_state(avctx, &barriers[num_barrier], ref_resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_VIDEO_DECODE_READ);
 
     ID3D12VideoDecodeCommandList_ResourceBarrier(cmd_list, num_barrier, barriers);
 
