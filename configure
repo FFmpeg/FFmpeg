@@ -5230,12 +5230,6 @@ else
     ar_o='$@'
 fi
 
-if $ar 2>&1 | grep -qi  "@.*file"; then
-    ar_objs="true"
-else
-    ar_objs=""
-fi
-
 add_cflags $extra_cflags
 add_cxxflags $extra_cxxflags
 add_objcflags $extra_objcflags
@@ -7758,6 +7752,13 @@ case $ld_type in
         check_ldflags -Qunused-arguments
     ;;
 esac
+
+{
+ar_out=${FFTMPDIR}/test$LIBSUF
+respfile="@/dev/null"
+out_arg="$(echo $ar_o | sed "s;\$@;$ar_out;g")"
+test_cmd $ar $arflags $out_arg $respfile && ar_objs="true" || ar_objs=""
+}
 
 enable frame_thread_encoder
 
