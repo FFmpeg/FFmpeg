@@ -21,7 +21,7 @@
 /**
  * @file
  * WebVTT subtitle decoder
- * @see http://dev.w3.org/html5/webvtt/
+ * @see https://www.w3.org/TR/webvtt1/
  * @todo need to support extended markups and cue settings
  */
 
