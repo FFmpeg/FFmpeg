@@ -826,6 +826,11 @@ av_cold void ff_h263_encode_init(MPVMainEncContext *const m)
 
     s->me.mv_penalty = ff_h263_get_mv_penalty(); // FIXME exact table for MSMPEG4 & H.263+
 
+    ff_h263dsp_init(&s->h263dsp);
+
+    if (s->codec_id == AV_CODEC_ID_MPEG4)
+        return;
+
     s->intra_ac_vlc_length     =s->inter_ac_vlc_length     = uni_h263_inter_rl_len;
     s->intra_ac_vlc_last_length=s->inter_ac_vlc_last_length= uni_h263_inter_rl_len + 128*64;
     if(s->h263_aic){
@@ -842,8 +847,6 @@ av_cold void ff_h263_encode_init(MPVMainEncContext *const m)
 
     // use fcodes >1 only for MPEG-4 & H.263 & H.263+ FIXME
     switch(s->codec_id){
-    case AV_CODEC_ID_MPEG4:
-        break;
     case AV_CODEC_ID_H263P:
         if(s->umvplus)
             m->fcode_tab = umv_fcode_tab + MAX_MV;
@@ -875,8 +878,6 @@ av_cold void ff_h263_encode_init(MPVMainEncContext *const m)
         m->encode_picture_header = h263_encode_picture_header;
     if (!s->encode_mb)
         s->encode_mb = h263_encode_mb;
-
-    ff_h263dsp_init(&s->h263dsp);
 }
 
 void ff_h263_encode_mba(MpegEncContext *s)

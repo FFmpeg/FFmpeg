@@ -1305,6 +1305,19 @@ static av_cold int encode_init(AVCodecContext *avctx)
     m->encode_picture_header = mpeg4_encode_picture_header;
     s->encode_mb             = mpeg4_encode_mb;
 
+    m->fcode_tab                = fcode_tab + MAX_MV;
+
+    s->min_qcoeff               = -2048;
+    s->max_qcoeff               = 2047;
+    s->intra_ac_vlc_length      = uni_mpeg4_intra_rl_len;
+    s->intra_ac_vlc_last_length = uni_mpeg4_intra_rl_len + 128 * 64;
+    s->inter_ac_vlc_length      = uni_mpeg4_inter_rl_len;
+    s->inter_ac_vlc_last_length = uni_mpeg4_inter_rl_len + 128 * 64;
+    s->luma_dc_vlc_length       = uni_DCtab_lum_len;
+    s->ac_esc_length            = 7 + 2 + 1 + 6 + 1 + 12 + 1;
+    s->y_dc_scale_table         = ff_mpeg4_y_dc_scale_table;
+    s->c_dc_scale_table         = ff_mpeg4_c_dc_scale_table;
+
     ff_qpeldsp_init(&s->qdsp);
     if ((ret = ff_mpv_encode_init(avctx)) < 0)
         return ret;
@@ -1321,19 +1334,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     m4->time_increment_bits     = av_log2(avctx->time_base.den - 1) + 1;
-
-    m->fcode_tab                = fcode_tab + MAX_MV;
-
-    s->min_qcoeff               = -2048;
-    s->max_qcoeff               = 2047;
-    s->intra_ac_vlc_length      = uni_mpeg4_intra_rl_len;
-    s->intra_ac_vlc_last_length = uni_mpeg4_intra_rl_len + 128 * 64;
-    s->inter_ac_vlc_length      = uni_mpeg4_inter_rl_len;
-    s->inter_ac_vlc_last_length = uni_mpeg4_inter_rl_len + 128 * 64;
-    s->luma_dc_vlc_length       = uni_DCtab_lum_len;
-    s->ac_esc_length            = 7 + 2 + 1 + 6 + 1 + 12 + 1;
-    s->y_dc_scale_table         = ff_mpeg4_y_dc_scale_table;
-    s->c_dc_scale_table         = ff_mpeg4_c_dc_scale_table;
 
     if (s->avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         s->avctx->extradata = av_malloc(1024);
