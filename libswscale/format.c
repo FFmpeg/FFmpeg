@@ -537,12 +537,12 @@ int sws_test_transfer(enum AVColorTransferCharacteristic trc, int output)
 
 static int test_range(enum AVColorRange range)
 {
-    return range >= 0 && range < AVCOL_RANGE_NB;
+    return (unsigned)range < AVCOL_RANGE_NB;
 }
 
 static int test_loc(enum AVChromaLocation loc)
 {
-    return loc >= 0 && loc < AVCHROMA_LOC_NB;
+    return (unsigned)loc < AVCHROMA_LOC_NB;
 }
 
 int ff_test_fmt(const SwsFormat *fmt, int output)

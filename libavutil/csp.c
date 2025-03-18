@@ -59,7 +59,7 @@ const struct AVLumaCoefficients *av_csp_luma_coeffs_from_avcsp(enum AVColorSpace
 {
     const AVLumaCoefficients *coeffs;
 
-    if (csp >= AVCOL_SPC_NB)
+    if ((unsigned)csp >= AVCOL_SPC_NB)
         return NULL;
     coeffs = &luma_coefficients[csp];
     if (!coeffs->cr.num)
@@ -91,7 +91,7 @@ const AVColorPrimariesDesc *av_csp_primaries_desc_from_id(enum AVColorPrimaries 
 {
     const AVColorPrimariesDesc *p;
 
-    if (prm >= AVCOL_PRI_NB)
+    if ((unsigned)prm >= AVCOL_PRI_NB)
         return NULL;
     p = &color_primaries[prm];
     if (!p->prim.r.x.num)
@@ -149,7 +149,7 @@ static const double approximate_gamma[AVCOL_TRC_NB] = {
 double av_csp_approximate_trc_gamma(enum AVColorTransferCharacteristic trc)
 {
     double gamma;
-    if (trc >= AVCOL_TRC_NB)
+    if ((unsigned)trc >= AVCOL_TRC_NB)
         return 0.0;
     gamma = approximate_gamma[trc];
     if (gamma > 0)
@@ -399,7 +399,7 @@ static const av_csp_trc_function trc_funcs[AVCOL_TRC_NB] = {
 
 av_csp_trc_function av_csp_trc_func_from_id(enum AVColorTransferCharacteristic trc)
 {
-    if (trc >= AVCOL_TRC_NB)
+    if ((unsigned)trc >= AVCOL_TRC_NB)
         return NULL;
     return trc_funcs[trc];
 }
@@ -425,7 +425,7 @@ static const av_csp_trc_function trc_inv_funcs[AVCOL_TRC_NB] = {
 
 av_csp_trc_function av_csp_trc_func_inv_from_id(enum AVColorTransferCharacteristic trc)
 {
-    if (trc >= AVCOL_TRC_NB)
+    if ((unsigned)trc >= AVCOL_TRC_NB)
         return NULL;
     return trc_inv_funcs[trc];
 }
@@ -604,7 +604,7 @@ static const av_csp_eotf_function eotf_funcs[AVCOL_TRC_NB] = {
 
 av_csp_eotf_function av_csp_itu_eotf(enum AVColorTransferCharacteristic trc)
 {
-    if (trc < 0 || trc >= AVCOL_TRC_NB)
+    if ((unsigned)trc >= AVCOL_TRC_NB)
         return NULL;
     return eotf_funcs[trc];
 }
@@ -630,7 +630,7 @@ static const av_csp_eotf_function eotf_inv_funcs[AVCOL_TRC_NB] = {
 
 av_csp_eotf_function av_csp_itu_eotf_inv(enum AVColorTransferCharacteristic trc)
 {
-    if (trc < 0 || trc >= AVCOL_TRC_NB)
+    if ((unsigned)trc >= AVCOL_TRC_NB)
         return NULL;
     return eotf_inv_funcs[trc];
 }
