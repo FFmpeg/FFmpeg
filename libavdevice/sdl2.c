@@ -23,6 +23,8 @@
  * libSDL2 output device
  */
 
+#include "config.h"
+
 #include <SDL.h>
 #include <SDL_thread.h>
 
