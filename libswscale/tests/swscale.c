@@ -297,7 +297,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, struct options opts)
     int ret;
 
     while (fgets(buf, sizeof(buf), fp)) {
-        char src_fmt_str[20], dst_fmt_str[20];
+        char src_fmt_str[21], dst_fmt_str[21];
         enum AVPixelFormat src_fmt;
         enum AVPixelFormat dst_fmt;
         int sw, sh, dw, dh, mse[4];
