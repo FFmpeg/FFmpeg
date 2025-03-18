@@ -226,7 +226,6 @@ FF_MPV_OPT_CMP_FUNC, \
 extern const AVClass ff_mpv_enc_class;
 
 int ff_mpv_encode_init(AVCodecContext *avctx);
-void ff_mpv_encode_init_x86(MpegEncContext *s);
 
 int ff_mpv_encode_end(AVCodecContext *avctx);
 int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
