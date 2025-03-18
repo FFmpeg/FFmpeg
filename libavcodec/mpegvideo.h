@@ -223,8 +223,6 @@ typedef struct MpegEncContext {
     uint64_t encoding_error[MPV_MAX_PLANES];
 
     int motion_est;                      ///< ME algorithm
-    int me_penalty_compensation;
-    int me_pre;                          ///< prepass for motion estimation
     int mv_dir;
 #define MV_DIR_FORWARD   1
 #define MV_DIR_BACKWARD  2

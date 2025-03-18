@@ -101,6 +101,9 @@ typedef struct MPVMainEncContext {
     int last_non_b_pict_type;      ///< used for MPEG-4 gmc B-frames & ratecontrol
     RateControlContext rc_context; ///< contains stuff only accessed in ratecontrol.c
 
+    int me_penalty_compensation;
+    int me_pre;                          ///< prepass for motion estimation
+
     int64_t mb_var_sum;            ///< sum of MB variance for current frame
     int64_t mc_mb_var_sum;         ///< motion compensated MB variance for current frame
 
@@ -218,8 +221,8 @@ FF_MPV_OPT_CMP_FUNC, \
 { "zero", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_ZERO }, 0, 0, FF_MPV_OPT_FLAGS, .unit = "motion_est" }, \
 { "epzs", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_EPZS }, 0, 0, FF_MPV_OPT_FLAGS, .unit = "motion_est" }, \
 { "xone", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_XONE }, 0, 0, FF_MPV_OPT_FLAGS, .unit = "motion_est" }, \
-{"mepc", "Motion estimation bitrate penalty compensation (1.0 = 256)", FF_MPV_OFFSET(me_penalty_compensation), AV_OPT_TYPE_INT, {.i64 = 256 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
-{"mepre", "pre motion estimation", FF_MPV_OFFSET(me_pre), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
+{"mepc", "Motion estimation bitrate penalty compensation (1.0 = 256)", FF_MPV_MAIN_OFFSET(me_penalty_compensation), AV_OPT_TYPE_INT, {.i64 = 256 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
+{"mepre", "pre motion estimation", FF_MPV_MAIN_OFFSET(me_pre), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
 {"intra_penalty", "Penalty for intra blocks in block decision", FF_MPV_OFFSET(intra_penalty), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX/2, FF_MPV_OPT_FLAGS }, \
 {"sc_threshold", "Scene change threshold",                          FF_MPV_MAIN_OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
 
