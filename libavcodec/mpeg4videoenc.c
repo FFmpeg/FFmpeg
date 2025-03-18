@@ -650,11 +650,11 @@ static void mpeg4_encode_mb(MpegEncContext *const s, int16_t block[][64],
 
             if ((cbp | motion_x | motion_y | s->dquant) == 0 &&
                 s->mv_type == MV_TYPE_16X16) {
+                const MPVMainEncContext *const m = slice_to_mainenc(s);
                 /* Check if the B-frames can skip it too, as we must skip it
                  * if we skip here why didn't they just compress
                  * the skip-mb bits instead of reusing them ?! */
-                if (s->max_b_frames > 0) {
-                    int i;
+                if (m->max_b_frames > 0) {
                     int x, y, offset;
                     const uint8_t *p_pic;
 
@@ -665,7 +665,7 @@ static void mpeg4_encode_mb(MpegEncContext *const s, int16_t block[][64],
                     p_pic  = s->new_pic->data[0] + offset;
 
                     s->mb_skipped = 1;
-                    for (i = 0; i < s->max_b_frames; i++) {
+                    for (int i = 0; i < m->max_b_frames; i++) {
                         const uint8_t *b_pic;
                         int diff;
                         const MPVPicture *pic = s->reordered_input_picture[i + 1];
@@ -929,14 +929,15 @@ static void mpeg4_encode_gop_header(MpegEncContext *s)
     ff_mpeg4_stuffing(&s->pb);
 }
 
-static void mpeg4_encode_visual_object_header(MpegEncContext *s)
+static void mpeg4_encode_visual_object_header(MPVMainEncContext *const m)
 {
+    MpegEncContext *const s = &m->s;
     int profile_and_level_indication;
     int vo_ver_id;
 
     if (s->avctx->profile != AV_PROFILE_UNKNOWN) {
         profile_and_level_indication = s->avctx->profile << 4;
-    } else if (s->max_b_frames || s->quarter_sample) {
+    } else if (m->max_b_frames || s->quarter_sample) {
         profile_and_level_indication = 0xF0;  // adv simple
     } else {
         profile_and_level_indication = 0x00;  // simple
@@ -978,7 +979,7 @@ static void mpeg4_encode_vol_header(Mpeg4EncContext *const m4,
     MpegEncContext *const s = &m4->m.s;
     int vo_ver_id, vo_type, aspect_ratio_info;
 
-    if (s->max_b_frames || s->quarter_sample) {
+    if (m4->m.max_b_frames || s->quarter_sample) {
         vo_ver_id  = 5;
         vo_type = ADV_SIMPLE_VO_TYPE;
     } else {
@@ -1072,7 +1073,7 @@ static int mpeg4_encode_picture_header(MPVMainEncContext *const m)
     if (s->pict_type == AV_PICTURE_TYPE_I) {
         if (!(s->avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)) {
             if (s->avctx->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT)  // HACK, the reference sw is buggy
-                mpeg4_encode_visual_object_header(s);
+                mpeg4_encode_visual_object_header(m);
             if (s->avctx->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT || s->picture_number == 0)  // HACK, the reference sw is buggy
                 mpeg4_encode_vol_header(m4, 0, 0);
         }
@@ -1339,7 +1340,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
         init_put_bits(&s->pb, s->avctx->extradata, 1024);
 
-        mpeg4_encode_visual_object_header(s);
+        mpeg4_encode_visual_object_header(m);
         mpeg4_encode_vol_header(m4, 0, 0);
 
 //            ff_mpeg4_stuffing(&s->pb); ?

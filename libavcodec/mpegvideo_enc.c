@@ -470,9 +470,9 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
                "max b frames must be 0 or positive for mpegvideo based encoders\n");
         return AVERROR(EINVAL);
     }
-    s->max_b_frames = avctx->max_b_frames;
+    m->max_b_frames = avctx->max_b_frames;
     s->codec_id     = avctx->codec->id;
-    if (s->max_b_frames && !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY)) {
+    if (m->max_b_frames && !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY)) {
         av_log(avctx, AV_LOG_ERROR, "B-frames not supported by codec\n");
         return AVERROR(EINVAL);
     }
@@ -692,7 +692,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
                    "set strict_std_compliance to 'unofficial' or lower in order to allow it\n");
             return AVERROR(EINVAL);
         }
-        if (s->max_b_frames != 0) {
+        if (m->max_b_frames != 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "B-frames cannot be used with low delay\n");
             return AVERROR(EINVAL);
@@ -744,7 +744,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_MPEG1VIDEO:
         s->out_format = FMT_MPEG1;
         s->low_delay  = !!(avctx->flags & AV_CODEC_FLAG_LOW_DELAY);
-        avctx->delay  = s->low_delay ? 0 : (s->max_b_frames + 1);
+        avctx->delay  = s->low_delay ? 0 : (m->max_b_frames + 1);
         ff_mpeg1_encode_init(s);
         break;
 #endif
@@ -834,8 +834,8 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->h263_pred       = 1;
         s->unrestricted_mv = 1;
         s->flipflop_rounding = 1;
-        s->low_delay       = s->max_b_frames ? 0 : 1;
-        avctx->delay       = s->low_delay ? 0 : (s->max_b_frames + 1);
+        s->low_delay       = m->max_b_frames ? 0 : 1;
+        avctx->delay       = s->low_delay ? 0 : (m->max_b_frames + 1);
         break;
     case AV_CODEC_ID_MSMPEG4V2:
         s->out_format      = FMT_H263;
@@ -1013,7 +1013,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         return ret;
 
     if (m->b_frame_strategy == 2) {
-        for (i = 0; i < s->max_b_frames + 2; i++) {
+        for (int i = 0; i < m->max_b_frames + 2; i++) {
             m->tmp_frames[i] = av_frame_alloc();
             if (!m->tmp_frames[i])
                 return AVERROR(ENOMEM);
@@ -1255,7 +1255,7 @@ static int load_input_picture(MPVMainEncContext *const m, const AVFrame *pic_arg
     MPVPicture *pic = NULL;
     int64_t pts;
     int display_picture_number = 0, ret;
-    int encoding_delay = s->max_b_frames ? s->max_b_frames
+    int encoding_delay = m->max_b_frames ? m->max_b_frames
                                          : (s->low_delay ? 0 : 1);
     int flush_offset = 1;
     int direct = 1;
@@ -1461,7 +1461,7 @@ static int estimate_best_b_count(MPVMainEncContext *const m)
     const int scale = m->brd_scale;
     int width  = s->width  >> scale;
     int height = s->height >> scale;
-    int i, j, out_size, p_lambda, b_lambda, lambda2;
+    int out_size, p_lambda, b_lambda, lambda2;
     int64_t best_rd  = INT64_MAX;
     int best_b_count = -1;
     int ret = 0;
@@ -1481,7 +1481,7 @@ static int estimate_best_b_count(MPVMainEncContext *const m)
     lambda2  = (b_lambda * b_lambda + (1 << FF_LAMBDA_SHIFT) / 2) >>
                FF_LAMBDA_SHIFT;
 
-    for (i = 0; i < s->max_b_frames + 2; i++) {
+    for (int i = 0; i < m->max_b_frames + 2; i++) {
         const MPVPicture *pre_input_ptr = i ? s->input_picture[i - 1] :
                                            s->next_pic.ptr;
 
@@ -1513,7 +1513,7 @@ static int estimate_best_b_count(MPVMainEncContext *const m)
         }
     }
 
-    for (j = 0; j < s->max_b_frames + 1; j++) {
+    for (int j = 0; j < m->max_b_frames + 1; j++) {
         AVCodecContext *c;
         int64_t rd = 0;
 
@@ -1536,7 +1536,7 @@ static int estimate_best_b_count(MPVMainEncContext *const m)
         c->me_sub_cmp   = s->avctx->me_sub_cmp;
         c->pix_fmt      = AV_PIX_FMT_YUV420P;
         c->time_base    = s->avctx->time_base;
-        c->max_b_frames = s->max_b_frames;
+        c->max_b_frames = m->max_b_frames;
 
         ret = avcodec_open2(c, s->avctx->codec, NULL);
         if (ret < 0)
@@ -1554,8 +1554,8 @@ static int estimate_best_b_count(MPVMainEncContext *const m)
 
         //rd += (out_size * lambda2) >> FF_LAMBDA_SHIFT;
 
-        for (i = 0; i < s->max_b_frames + 1; i++) {
-            int is_p = i % (j + 1) == j || i == s->max_b_frames;
+        for (int i = 0; i < m->max_b_frames + 1; i++) {
+            int is_p = i % (j + 1) == j || i == m->max_b_frames;
 
             m->tmp_frames[i + 1]->pict_type = is_p ?
                                      AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_B;
@@ -1640,7 +1640,7 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
         int b_frames = 0;
 
         if (s->avctx->flags & AV_CODEC_FLAG_PASS2) {
-            for (int i = 0; i < s->max_b_frames + 1; i++) {
+            for (int i = 0; i < m->max_b_frames + 1; i++) {
                 int pict_num = s->input_picture[0]->display_picture_number + i;
 
                 if (pict_num >= m->rc_context.num_entries)
@@ -1656,12 +1656,11 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
         }
 
         if (m->b_frame_strategy == 0) {
-            b_frames = s->max_b_frames;
+            b_frames = m->max_b_frames;
             while (b_frames && !s->input_picture[b_frames])
                 b_frames--;
         } else if (m->b_frame_strategy == 1) {
-            int i;
-            for (i = 1; i < s->max_b_frames + 1; i++) {
+            for (int i = 1; i < m->max_b_frames + 1; i++) {
                 if (s->input_picture[i] &&
                     s->input_picture[i]->b_frame_score == 0) {
                     s->input_picture[i]->b_frame_score =
@@ -1671,19 +1670,18 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
                                         s->linesize) + 1;
                 }
             }
-            for (i = 0; i < s->max_b_frames + 1; i++) {
+            for (int i = 0; i < m->max_b_frames + 1; i++) {
                 if (!s->input_picture[i] ||
                     s->input_picture[i]->b_frame_score - 1 >
-                        s->mb_num / m->b_sensitivity)
+                        s->mb_num / m->b_sensitivity) {
+                    b_frames = FFMAX(0, i - 1);
                     break;
+                }
             }
-
-            b_frames = FFMAX(0, i - 1);
 
             /* reset scores */
-            for (i = 0; i < b_frames + 1; i++) {
+            for (int i = 0; i < b_frames + 1; i++)
                 s->input_picture[i]->b_frame_score = 0;
-            }
         } else if (m->b_frame_strategy == 2) {
             b_frames = estimate_best_b_count(m);
             if (b_frames < 0) {
@@ -1700,7 +1698,7 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
                 b_frames = i;
         }
         if (s->input_picture[b_frames]->f->pict_type == AV_PICTURE_TYPE_B &&
-            b_frames == s->max_b_frames) {
+            b_frames == m->max_b_frames) {
             av_log(s->avctx, AV_LOG_ERROR,
                     "warning, too many B-frames in a row\n");
         }

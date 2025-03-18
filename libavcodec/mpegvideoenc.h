@@ -42,6 +42,7 @@ typedef struct MPVMainEncContext {
 
     int intra_only;                ///< if true, only intra pictures are generated
     int gop_size;
+    int max_b_frames;              ///< max number of B-frames
     int picture_in_gop_number;     ///< 0-> first pic in gop, ...
     int input_picture_number;      ///< used to set pic->display_picture_number
     int coded_picture_number;      ///< used to set pic->coded_picture_number

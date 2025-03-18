@@ -581,7 +581,7 @@ av_cold int ff_rate_control_init(MPVMainEncContext *const m)
         p = s->avctx->stats_in;
         for (i = -1; p; i++)
             p = strchr(p + 1, ';');
-        i += s->max_b_frames;
+        i += m->max_b_frames;
         if (i <= 0 || i >= INT_MAX / sizeof(RateControlEntry))
             return -1;
         rcc->entry       = av_mallocz(i * sizeof(RateControlEntry));
@@ -602,7 +602,7 @@ av_cold int ff_rate_control_init(MPVMainEncContext *const m)
 
         /* read stats */
         p = s->avctx->stats_in;
-        for (i = 0; i < rcc->num_entries - s->max_b_frames; i++) {
+        for (i = 0; i < rcc->num_entries - m->max_b_frames; i++) {
             RateControlEntry *rce;
             int picture_number;
             int e;
@@ -663,7 +663,7 @@ av_cold int ff_rate_control_init(MPVMainEncContext *const m)
 
                 if (i % ((m->gop_size + 3) / 4) == 0)
                     rce.pict_type = AV_PICTURE_TYPE_I;
-                else if (i % (s->max_b_frames + 1))
+                else if (i % (m->max_b_frames + 1))
                     rce.pict_type = AV_PICTURE_TYPE_B;
                 else
                     rce.pict_type = AV_PICTURE_TYPE_P;

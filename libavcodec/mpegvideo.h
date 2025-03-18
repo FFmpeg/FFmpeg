@@ -106,7 +106,6 @@ typedef struct MpegEncContext {
 
     enum AVCodecID codec_id;     /* see AV_CODEC_ID_xxx */
     int encoding;     ///< true if we are encoding (vs decoding)
-    int max_b_frames; ///< max number of B-frames for encoding
     int luma_elim_threshold;
     int chroma_elim_threshold;
     int workaround_bugs;       ///< workaround bugs in encoders which cannot be detected automatically
