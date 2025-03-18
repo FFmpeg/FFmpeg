@@ -4476,7 +4476,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 static uint32_t get_sgpd_sync_index(const MOVStreamContext *sc, int nal_unit_type)
 {
     for (uint32_t i = 0; i < sc->sgpd_sync_count; i++)
-        if (sc->sgpd_sync[i] == HEVC_NAL_CRA_NUT)
+        if (sc->sgpd_sync[i] == nal_unit_type)
             return i + 1;
     return 0;
 }
