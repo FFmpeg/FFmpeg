@@ -26,6 +26,7 @@
 #define AVUTIL_LOG_H
 #define av_log(a, ...) while(0)
 #define ff_dlog(a, ...) while(0)
+#define ff_tlog(a, ...) while(0)
 #define AVUTIL_MEM_H
 #define av_malloc(s) NULL
 #define av_malloc_array(a, b) NULL
