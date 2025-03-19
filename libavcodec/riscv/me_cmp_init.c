@@ -24,55 +24,55 @@
 #include "libavutil/cpu.h"
 #include "libavutil/riscv/cpu.h"
 #include "libavcodec/me_cmp.h"
-#include "libavcodec/mpegvideo.h"
+#include "libavcodec/mpegvideoenc.h"
 
-int ff_pix_abs16_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs16_rvv(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                               ptrdiff_t stride, int h);
-int ff_pix_abs8_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs8_rvv(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                              ptrdiff_t stride, int h);
-int ff_pix_abs16_x2_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs16_x2_rvv(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                          ptrdiff_t stride, int h);
-int ff_pix_abs8_x2_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs8_x2_rvv(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                          ptrdiff_t stride, int h);
-int ff_pix_abs16_y2_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs16_y2_rvv(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                           ptrdiff_t stride, int h);
-int ff_pix_abs8_y2_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs8_y2_rvv(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                           ptrdiff_t stride, int h);
 
-int ff_sse16_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_sse16_rvv(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                    ptrdiff_t stride, int h);
-int ff_sse8_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_sse8_rvv(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                    ptrdiff_t stride, int h);
-int ff_sse4_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_sse4_rvv(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                    ptrdiff_t stride, int h);
 
-int ff_vsse16_rvv(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride, int h);
-int ff_vsse8_rvv(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride, int h);
-int ff_vsse_intra16_rvv(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
-int ff_vsse_intra8_rvv(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
-int ff_vsad16_rvv(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride, int h);
-int ff_vsad8_rvv(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride, int h);
-int ff_vsad_intra16_rvv(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
-int ff_vsad_intra8_rvv(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
+int ff_vsse16_rvv(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride, int h);
+int ff_vsse8_rvv(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride, int h);
+int ff_vsse_intra16_rvv(MPVEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
+int ff_vsse_intra8_rvv(MPVEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
+int ff_vsad16_rvv(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride, int h);
+int ff_vsad8_rvv(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride, int h);
+int ff_vsad_intra16_rvv(MPVEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
+int ff_vsad_intra8_rvv(MPVEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
 int ff_nsse16_rvv(int multiplier, const uint8_t *s1, const uint8_t *s2,
                     ptrdiff_t stride, int h);
 int ff_nsse8_rvv(int multiplier, const uint8_t *s1, const uint8_t *s2,
                     ptrdiff_t stride, int h);
 
-static int nsse16_rvv_wrapper(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+static int nsse16_rvv_wrapper(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2,
                         ptrdiff_t stride, int h)
 {
     if (c)
-        return ff_nsse16_rvv(c->avctx->nsse_weight, s1, s2, stride, h);
+        return ff_nsse16_rvv(c->c.avctx->nsse_weight, s1, s2, stride, h);
     else
         return ff_nsse16_rvv(8, s1, s2, stride, h);
 }
 
-static int nsse8_rvv_wrapper(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+static int nsse8_rvv_wrapper(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2,
                         ptrdiff_t stride, int h)
 {
     if (c)
-        return ff_nsse8_rvv(c->avctx->nsse_weight, s1, s2, stride, h);
+        return ff_nsse8_rvv(c->c.avctx->nsse_weight, s1, s2, stride, h);
     else
         return ff_nsse8_rvv(8, s1, s2, stride, h);
 }

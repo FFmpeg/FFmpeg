@@ -70,8 +70,9 @@ DECLARE_ALIGNED(16, static const uint16_t, inv_zigzag_direct16)[64] = {
 
 #if HAVE_INLINE_ASM
 #if HAVE_SSE2_INLINE
-static void  denoise_dct_sse2(MpegEncContext *s, int16_t *block){
-    const int intra= s->mb_intra;
+static void denoise_dct_sse2(MPVEncContext *const s, int16_t block[])
+{
+    const int intra = s->c.mb_intra;
     int *sum= s->dct_error_sum[intra];
     uint16_t *offset= s->dct_offset[intra];
 
@@ -128,9 +129,9 @@ static void  denoise_dct_sse2(MpegEncContext *s, int16_t *block){
 #endif /* HAVE_SSE2_INLINE */
 #endif /* HAVE_INLINE_ASM */
 
-av_cold void ff_dct_encode_init_x86(MpegEncContext *s)
+av_cold void ff_dct_encode_init_x86(MPVEncContext *const s)
 {
-    const int dct_algo = s->avctx->dct_algo;
+    const int dct_algo = s->c.avctx->dct_algo;
 
     if (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX) {
 #if HAVE_MMX_INLINE

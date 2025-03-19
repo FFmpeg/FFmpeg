@@ -27,22 +27,22 @@
 const uint8_t (*ff_h263_get_mv_penalty(void))[MAX_DMV*2+1];
 
 void ff_h263_encode_init(MPVMainEncContext *m);
-void ff_h263_encode_gob_header(MpegEncContext * s, int mb_line);
-void ff_h263_encode_mba(MpegEncContext *s);
+void ff_h263_encode_gob_header(MPVEncContext *s, int mb_line);
+void ff_h263_encode_mba(MPVEncContext *s);
 
-void ff_clean_h263_qscales(MpegEncContext *s);
+void ff_clean_h263_qscales(MPVEncContext *s);
 
 void ff_h263_encode_motion(PutBitContext *pb, int val, int f_code);
-void ff_h263_update_mb(MpegEncContext *s);
+void ff_h263_update_mb(MPVEncContext *s);
 
-static inline void ff_h263_encode_motion_vector(MpegEncContext * s,
+static inline void ff_h263_encode_motion_vector(MPVEncContext *s,
                                                 int x, int y, int f_code)
 {
     ff_h263_encode_motion(&s->pb, x, f_code);
     ff_h263_encode_motion(&s->pb, y, f_code);
 }
 
-static inline int get_p_cbp(MpegEncContext * s,
+static inline int get_p_cbp(MPVEncContext *const s,
                       int16_t block[6][64],
                       int motion_x, int motion_y){
     int cbp;
@@ -51,8 +51,8 @@ static inline int get_p_cbp(MpegEncContext * s,
         int best_cbpy_score = INT_MAX;
         int best_cbpc_score = INT_MAX;
         int cbpc = (-1), cbpy = (-1);
-        const int offset = (s->mv_type == MV_TYPE_16X16 ? 0 : 16) + (s->dquant ? 8 : 0);
-        const int lambda = s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
+        const int offset = (s->c.mv_type == MV_TYPE_16X16 ? 0 : 16) + (s->dquant ? 8 : 0);
+        const int lambda = s->c.lambda2 >> (FF_LAMBDA_SHIFT - 6);
 
         for (int i = 0; i < 4; i++) {
             int score = ff_h263_inter_MCBPC_bits[i + offset] * lambda;
@@ -78,21 +78,21 @@ static inline int get_p_cbp(MpegEncContext * s,
             }
         }
         cbp = cbpc + 4 * cbpy;
-        if (!(motion_x | motion_y | s->dquant) && s->mv_type == MV_TYPE_16X16) {
+        if (!(motion_x | motion_y | s->dquant) && s->c.mv_type == MV_TYPE_16X16) {
             if (best_cbpy_score + best_cbpc_score + 2 * lambda >= 0)
                 cbp= 0;
         }
 
         for (int i = 0; i < 6; i++) {
-            if (s->block_last_index[i] >= 0 && !((cbp >> (5 - i)) & 1)) {
-                s->block_last_index[i] = -1;
-                s->bdsp.clear_block(s->block[i]);
+            if (s->c.block_last_index[i] >= 0 && !((cbp >> (5 - i)) & 1)) {
+                s->c.block_last_index[i] = -1;
+                s->c.bdsp.clear_block(s->c.block[i]);
             }
         }
     } else {
         cbp = 0;
         for (int i = 0; i < 6; i++) {
-            if (s->block_last_index[i] >= 0)
+            if (s->c.block_last_index[i] >= 0)
                 cbp |= 1 << (5 - i);
         }
     }

@@ -32,13 +32,141 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
+#include "fdctdsp.h"
 #include "mpegvideo.h"
+#include "mpegvideoencdsp.h"
+#include "pixblockdsp.h"
+#include "put_bits.h"
 #include "ratecontrol.h"
 
 #define MPVENC_MAX_B_FRAMES 16
 
+typedef struct MPVEncContext {
+    MpegEncContext c;           ///< the common base context
+
+    /** bit output */
+    PutBitContext pb;
+
+    int *lambda_table;
+    int adaptive_quant;         ///< use adaptive quantization
+    int dquant;                 ///< qscale difference to prev qscale
+    int skipdct;                ///< skip dct and code zero residual
+
+    int quantizer_noise_shaping;
+
+    int luma_elim_threshold;
+    int chroma_elim_threshold;
+
+    int mpv_flags;              ///< flags set by private options
+    /// Bitfield containing information which frames to reconstruct.
+    int frame_reconstruction_bitfield;
+
+    /**
+     * Reference to the source picture.
+     */
+    AVFrame *new_pic;
+
+    FDCTDSPContext fdsp;
+    MpegvideoEncDSPContext mpvencdsp;
+    PixblockDSPContext pdsp;
+
+    int16_t (*p_mv_table)[2];            ///< MV table (1MV per MB) P-frame
+    int16_t (*b_forw_mv_table)[2];       ///< MV table (1MV per MB) forward mode B-frame
+    int16_t (*b_back_mv_table)[2];       ///< MV table (1MV per MB) backward mode B-frame
+    int16_t (*b_bidir_forw_mv_table)[2]; ///< MV table (1MV per MB) bidir mode B-frame
+    int16_t (*b_bidir_back_mv_table)[2]; ///< MV table (1MV per MB) bidir mode B-frame
+    int16_t (*b_direct_mv_table)[2];     ///< MV table (1MV per MB) direct mode B-frame
+    int16_t (*b_field_mv_table[2][2][2])[2];///< MV table (4MV per MB) interlaced B-frame
+    uint8_t (*p_field_select_table[2]);  ///< Only the first element is allocated
+    uint8_t (*b_field_select_table[2][2]); ///< allocated jointly with p_field_select_table
+
+    uint16_t *mb_type;          ///< Table for candidate MB types
+    uint16_t *mb_var;           ///< Table for MB variances
+    uint16_t *mc_mb_var;        ///< Table for motion compensated MB variances
+    uint8_t  *mb_mean;          ///< Table for MB luminance
+    uint64_t encoding_error[MPV_MAX_PLANES];
+
+    int intra_quant_bias;    ///< bias for the quantizer
+    int inter_quant_bias;    ///< bias for the quantizer
+    int min_qcoeff;          ///< minimum encodable coefficient
+    int max_qcoeff;          ///< maximum encodable coefficient
+    int ac_esc_length;       ///< num of bits needed to encode the longest esc
+    uint8_t *intra_ac_vlc_length;
+    uint8_t *intra_ac_vlc_last_length;
+    uint8_t *intra_chroma_ac_vlc_length;
+    uint8_t *intra_chroma_ac_vlc_last_length;
+    uint8_t *inter_ac_vlc_length;
+    uint8_t *inter_ac_vlc_last_length;
+    uint8_t *luma_dc_vlc_length;
+
+    int coded_score[12];
+
+    /** precomputed matrix (combine qscale and DCT renorm) */
+    int (*q_intra_matrix)[64];
+    int (*q_chroma_intra_matrix)[64];
+    int (*q_inter_matrix)[64];
+    /** identical to the above but for MMX & these are not permutated, second 64 entries are bias*/
+    uint16_t (*q_intra_matrix16)[2][64];
+    uint16_t (*q_chroma_intra_matrix16)[2][64];
+    uint16_t (*q_inter_matrix16)[2][64];
+
+    /* noise reduction */
+    void (*denoise_dct)(struct MPVEncContext *s, int16_t *block);
+    int (*dct_error_sum)[64];
+    int dct_count[2];
+    uint16_t (*dct_offset)[64];
+
+    /* statistics, used for 2-pass encoding */
+    int mv_bits;
+    int i_tex_bits;
+    int p_tex_bits;
+    int i_count;
+    int misc_bits; ///< cbp, mb_type
+    int last_bits; ///< temp var used for calculating the above vars
+
+    /* H.263 specific */
+    int mb_info;                   ///< interval for outputting info about mb offsets as side data
+    int prev_mb_info, last_mb_info;
+    int mb_info_size;
+    uint8_t *mb_info_ptr;
+
+    /* MJPEG specific */
+    struct MJpegContext *mjpeg_ctx;
+    int esc_pos;
+
+    /* MPEG-1 specific */
+    int last_mv_dir;               ///< last mv_dir, used for B-frame encoding
+
+    /* MPEG-4 specific */
+    PutBitContext tex_pb;          ///< used for data partitioned VOPs
+    PutBitContext pb2;             ///< used for data partitioned VOPs
+
+    /* MSMPEG4 specific */
+    int esc3_level_length;
+
+    /* RTP specific */
+    int rtp_mode;
+    int rtp_payload_size;
+    int error_rate;
+
+    uint8_t *ptr_lastgob;
+
+    void (*encode_mb)(struct MPVEncContext *s, int16_t block[][64],
+                      int motion_x, int motion_y);
+
+    int (*dct_quantize)(struct MPVEncContext *s, int16_t *block/*align 16*/, int n, int qscale, int *overflow);
+
+    me_cmp_func ildct_cmp[2]; ///< 0 = intra, 1 = non-intra
+    me_cmp_func n_sse_cmp[2]; ///< either SSE or NSSE cmp func
+    me_cmp_func sad_cmp[2];
+    me_cmp_func sse_cmp[2];
+    int (*sum_abs_dctelem)(const int16_t *block);
+
+    int intra_penalty;
+} MPVEncContext;
+
 typedef struct MPVMainEncContext {
-    MpegEncContext s;  ///< The main slicecontext
+    MPVEncContext s;               ///< The main slicecontext
 
     int intra_only;                ///< if true, only intra pictures are generated
     int gop_size;
@@ -112,14 +240,14 @@ typedef struct MPVMainEncContext {
     int16_t (*mv_table_base)[2];
 } MPVMainEncContext;
 
-static inline const MPVMainEncContext *slice_to_mainenc(const MpegEncContext *s)
+static inline const MPVMainEncContext *slice_to_mainenc(const MPVEncContext *s)
 {
 #ifdef NO_SLICE_THREADING_HERE
-    av_assert2(s->slice_context_count <= 1 &&
-               !(s->avctx->codec->capabilities & AV_CODEC_CAP_SLICE_THREADS));
+    av_assert2(s->c.slice_context_count <= 1 &&
+               !(s->c.avctx->codec->capabilities & AV_CODEC_CAP_SLICE_THREADS));
     return (const MPVMainEncContext*)s;
 #else
-    return s->encparent;
+    return s->c.encparent;
 #endif
 }
 
@@ -170,7 +298,7 @@ static inline const MPVMainEncContext *slice_to_mainenc(const MpegEncContext *s)
 { "chroma", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_CHROMA }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, .unit = "cmp_func" }, \
 { "msad",   "Sum of absolute differences, median predicted", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_MEDIAN_SAD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, .unit = "cmp_func" }
 
-#define FF_MPV_OFFSET(x) offsetof(MpegEncContext, x)
+#define FF_MPV_OFFSET(x) offsetof(MPVEncContext, x)
 #define FF_MPV_MAIN_OFFSET(x) offsetof(MPVMainEncContext, x)
 #define FF_RC_OFFSET(x)  offsetof(MPVMainEncContext, rc_context.x)
 #define FF_MPV_OPT_FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
@@ -217,7 +345,7 @@ FF_MPV_OPT_CMP_FUNC, \
 
 #define FF_MPV_COMMON_MOTION_EST_OPTS \
 { "mv0",            "always try a mb with mv=<0,0>",                     0, AV_OPT_TYPE_CONST, { .i64 = FF_MPV_FLAG_MV0 },    0, 0, FF_MPV_OPT_FLAGS, .unit = "mpv_flags" },\
-{"motion_est", "motion estimation algorithm",                       FF_MPV_OFFSET(me.motion_est), AV_OPT_TYPE_INT, {.i64 = FF_ME_EPZS }, FF_ME_ZERO, FF_ME_XONE, FF_MPV_OPT_FLAGS, .unit = "motion_est" },   \
+{"motion_est", "motion estimation algorithm",                       FF_MPV_OFFSET(c.me.motion_est), AV_OPT_TYPE_INT, {.i64 = FF_ME_EPZS }, FF_ME_ZERO, FF_ME_XONE, FF_MPV_OPT_FLAGS, .unit = "motion_est" },   \
 { "zero", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_ZERO }, 0, 0, FF_MPV_OPT_FLAGS, .unit = "motion_est" }, \
 { "epzs", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_EPZS }, 0, 0, FF_MPV_OPT_FLAGS, .unit = "motion_est" }, \
 { "xone", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_XONE }, 0, 0, FF_MPV_OPT_FLAGS, .unit = "motion_est" }, \
@@ -233,21 +361,21 @@ int ff_mpv_encode_init(AVCodecContext *avctx);
 int ff_mpv_encode_end(AVCodecContext *avctx);
 int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
                           const AVFrame *frame, int *got_packet);
-int ff_mpv_reallocate_putbitbuffer(MpegEncContext *s, size_t threshold, size_t size_increase);
+int ff_mpv_reallocate_putbitbuffer(MPVEncContext *s, size_t threshold, size_t size_increase);
 
 void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix);
 
-void ff_dct_encode_init(MpegEncContext *s);
-void ff_mpvenc_dct_init_mips(MpegEncContext *s);
-void ff_dct_encode_init_x86(MpegEncContext *s);
+void ff_dct_encode_init(MPVEncContext *s);
+void ff_mpvenc_dct_init_mips(MPVEncContext *s);
+void ff_dct_encode_init_x86(MPVEncContext *s);
 
-void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16)[2][64],
+void ff_convert_matrix(MPVEncContext *s, int (*qmat)[64], uint16_t (*qmat16)[2][64],
                        const uint16_t *quant_matrix, int bias, int qmin, int qmax, int intra);
 
 void ff_block_permute(int16_t *block, const uint8_t *permutation,
                       const uint8_t *scantable, int last);
 
-static inline int get_bits_diff(MpegEncContext *s)
+static inline int get_bits_diff(MPVEncContext *s)
 {
     const int bits = put_bits_count(&s->pb);
     const int last = s->last_bits;

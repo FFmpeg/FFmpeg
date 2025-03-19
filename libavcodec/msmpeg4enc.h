@@ -41,16 +41,16 @@ typedef struct MSMPEG4EncContext {
     unsigned ac_stats[2][2][MAX_LEVEL + 1][MAX_RUN + 1][2];
 } MSMPEG4EncContext;
 
-static inline MSMPEG4EncContext *mpv_to_msmpeg4(MpegEncContext *s)
+static inline MSMPEG4EncContext *mpv_to_msmpeg4(MPVEncContext *s)
 {
     // Only legal because no MSMPEG-4 decoder uses slice-threading.
     return (MSMPEG4EncContext*)s;
 }
 
 void ff_msmpeg4_encode_init(MPVMainEncContext *m);
-void ff_msmpeg4_encode_ext_header(MpegEncContext *s);
-void ff_msmpeg4_encode_block(MpegEncContext * s, int16_t * block, int n);
-void ff_msmpeg4_handle_slices(MpegEncContext *s);
+void ff_msmpeg4_encode_ext_header(MPVEncContext *s);
+void ff_msmpeg4_encode_block(MPVEncContext * s, int16_t * block, int n);
+void ff_msmpeg4_handle_slices(MPVEncContext *s);
 void ff_msmpeg4_encode_motion(MSMPEG4EncContext *ms, int mx, int my);
 
 void ff_msmpeg4_code012(PutBitContext *pb, int n);

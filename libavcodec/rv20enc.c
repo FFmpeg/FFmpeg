@@ -36,32 +36,32 @@
 
 int ff_rv20_encode_picture_header(MPVMainEncContext *const m)
 {
-    MpegEncContext *const s = &m->s;
+    MPVEncContext *const s = &m->s;
 
-    put_bits(&s->pb, 2, s->pict_type); //I 0 vs. 1 ?
+    put_bits(&s->pb, 2, s->c.pict_type); //I 0 vs. 1 ?
     put_bits(&s->pb, 1, 0);     /* unknown bit */
-    put_bits(&s->pb, 5, s->qscale);
+    put_bits(&s->pb, 5, s->c.qscale);
 
-    put_sbits(&s->pb, 8, s->picture_number); //FIXME wrong, but correct is not known
-    s->mb_x= s->mb_y= 0;
+    put_sbits(&s->pb, 8, s->c.picture_number); //FIXME wrong, but correct is not known
+    s->c.mb_x = s->c.mb_y = 0;
     ff_h263_encode_mba(s);
 
-    put_bits(&s->pb, 1, s->no_rounding);
+    put_bits(&s->pb, 1, s->c.no_rounding);
 
-    av_assert0(s->f_code == 1);
-    av_assert0(s->unrestricted_mv == 0);
-    av_assert0(s->alt_inter_vlc == 0);
-    av_assert0(s->umvplus == 0);
-    av_assert0(s->modified_quant==1);
-    av_assert0(s->loop_filter==1);
+    av_assert0(s->c.f_code == 1);
+    av_assert0(!s->c.unrestricted_mv);
+    av_assert0(!s->c.alt_inter_vlc);
+    av_assert0(!s->c.umvplus);
+    av_assert0(s->c.modified_quant==1);
+    av_assert0(s->c.loop_filter==1);
 
-    s->h263_aic= s->pict_type == AV_PICTURE_TYPE_I;
-    if(s->h263_aic){
-        s->y_dc_scale_table=
-        s->c_dc_scale_table= ff_aic_dc_scale_table;
+    s->c.h263_aic = s->c.pict_type == AV_PICTURE_TYPE_I;
+    if (s->c.h263_aic) {
+        s->c.y_dc_scale_table =
+        s->c.c_dc_scale_table = ff_aic_dc_scale_table;
     }else{
-        s->y_dc_scale_table=
-        s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+        s->c.y_dc_scale_table =
+        s->c.c_dc_scale_table = ff_mpeg1_dc_scale_table;
     }
     return 0;
 }

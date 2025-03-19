@@ -61,8 +61,8 @@ typedef struct MJpegHuffmanCode {
 
 /* The following is the private context of MJPEG/AMV decoder.
  * Note that when using slice threading only the main thread's
- * MpegEncContext is followed by a MjpegContext; the other threads
- * can access this shared context via MpegEncContext.mjpeg. */
+ * MPVEncContext is followed by a MjpegContext; the other threads
+ * can access this shared context via MPVEncContext.mjpeg. */
 typedef struct MJPEGEncContext {
     MPVMainEncContext mpeg;
     MJpegContext   mjpeg;
@@ -92,22 +92,22 @@ static av_cold void init_uni_ac_vlc(const uint8_t huff_size_ac[256],
     }
 }
 
-static void mjpeg_encode_picture_header(MpegEncContext *s)
+static void mjpeg_encode_picture_header(MPVEncContext *const s)
 {
-    ff_mjpeg_encode_picture_header(s->avctx, &s->pb, s->cur_pic.ptr->f, s->mjpeg_ctx,
-                                   s->intra_scantable.permutated, 0,
-                                   s->intra_matrix, s->chroma_intra_matrix,
-                                   s->slice_context_count > 1);
+    ff_mjpeg_encode_picture_header(s->c.avctx, &s->pb, s->c.cur_pic.ptr->f, s->mjpeg_ctx,
+                                   s->c.intra_scantable.permutated, 0,
+                                   s->c.intra_matrix, s->c.chroma_intra_matrix,
+                                   s->c.slice_context_count > 1);
 
     s->esc_pos = put_bytes_count(&s->pb, 0);
-    for (int i = 1; i < s->slice_context_count; i++)
-        s->thread_context[i]->esc_pos = 0;
+    for (int i = 1; i < s->c.slice_context_count; i++)
+        s->c.enc_contexts[i]->esc_pos = 0;
 }
 
 static int mjpeg_amv_encode_picture_header(MPVMainEncContext *const m)
 {
     MJPEGEncContext *const m2 = (MJPEGEncContext*)m;
-    MpegEncContext *const s = &m->s;
+    MPVEncContext *const s = &m->s;
     av_assert2(s->mjpeg_ctx == &m2->mjpeg);
     /* s->huffman == HUFFMAN_TABLE_OPTIMAL can only be true for MJPEG. */
     if (!CONFIG_MJPEG_ENCODER || m2->mjpeg.huffman != HUFFMAN_TABLE_OPTIMAL)
@@ -120,11 +120,11 @@ static int mjpeg_amv_encode_picture_header(MPVMainEncContext *const m)
 /**
  * Encodes and outputs the entire frame in the JPEG format.
  *
- * @param s The MpegEncContext.
+ * @param main The MPVMainEncContext.
  */
 static void mjpeg_encode_picture_frame(MPVMainEncContext *const main)
 {
-    MpegEncContext *const s = &main->s;
+    MPVEncContext *const s = &main->s;
     int nbits, code, table_id;
     MJpegContext *m = s->mjpeg_ctx;
     uint8_t  *huff_size[4] = { m->huff_size_dc_luminance,
@@ -232,14 +232,14 @@ static void mjpeg_build_optimal_huffman(MJpegContext *m)
  *
  * Header + values + stuffing.
  *
- * @param s The MpegEncContext.
+ * @param s The MPVEncContext.
  * @return int Error code, 0 if successful.
  */
-int ff_mjpeg_encode_stuffing(MpegEncContext *s)
+int ff_mjpeg_encode_stuffing(MPVEncContext *const s)
 {
     MJpegContext *const m = s->mjpeg_ctx;
     PutBitContext *pbc = &s->pb;
-    int mb_y = s->mb_y - !s->mb_x;
+    int mb_y = s->c.mb_y - !s->c.mb_x;
     int ret;
 
 #if CONFIG_MJPEG_ENCODER
@@ -267,19 +267,19 @@ int ff_mjpeg_encode_stuffing(MpegEncContext *s)
     ret = ff_mpv_reallocate_putbitbuffer(s, put_bits_count(&s->pb) / 8 + 100,
                                             put_bits_count(&s->pb) / 4 + 1000);
     if (ret < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Buffer reallocation failed\n");
+        av_log(s->c.avctx, AV_LOG_ERROR, "Buffer reallocation failed\n");
         goto fail;
     }
 
     ff_mjpeg_escape_FF(pbc, s->esc_pos);
 
-    if (s->slice_context_count > 1 && mb_y < s->mb_height - 1)
+    if (s->c.slice_context_count > 1 && mb_y < s->c.mb_height - 1)
         put_marker(pbc, RST0 + (mb_y&7));
     s->esc_pos = put_bytes_count(pbc, 0);
 
 fail:
     for (int i = 0; i < 3; i++)
-        s->last_dc[i] = 128 << s->intra_dc_precision;
+        s->c.last_dc[i] = 128 << s->c.intra_dc_precision;
 
     return ret;
 }
@@ -287,14 +287,14 @@ fail:
 static int alloc_huffman(MJPEGEncContext *const m2)
 {
     MJpegContext   *const m = &m2->mjpeg;
-    MpegEncContext *const s = &m2->mpeg.s;
+    MPVEncContext *const s = &m2->mpeg.s;
     static const char blocks_per_mb[] = {
         [CHROMA_420] = 6, [CHROMA_422] = 8, [CHROMA_444] = 12
     };
     size_t num_blocks, num_codes;
 
     // Make sure we have enough space to hold this frame.
-    num_blocks = s->mb_num * blocks_per_mb[s->chroma_format];
+    num_blocks = s->c.mb_num * blocks_per_mb[s->c.chroma_format];
     num_codes = num_blocks * 64;
 
     m->huff_buffer = av_malloc_array(num_codes,
@@ -358,11 +358,11 @@ static void mjpeg_encode_coef(MJpegContext *s, uint8_t table_id, int val, int ru
 /**
  * Add the block's data into the JPEG buffer.
  *
- * @param s The MpegEncContext that contains the JPEG buffer.
+ * @param s The MPVEncContext that contains the JPEG buffer.
  * @param block The block.
  * @param n The block's index or number.
  */
-static void record_block(MpegEncContext *s, int16_t *block, int n)
+static void record_block(MPVEncContext *const s, int16_t block[], int n)
 {
     int i, j, table_id;
     int component, dc, last_index, val, run;
@@ -372,20 +372,20 @@ static void record_block(MpegEncContext *s, int16_t *block, int n)
     component = (n <= 3 ? 0 : (n&1) + 1);
     table_id = (n <= 3 ? 0 : 1);
     dc = block[0]; /* overflow is impossible */
-    val = dc - s->last_dc[component];
+    val = dc - s->c.last_dc[component];
 
     mjpeg_encode_coef(m, table_id, val, 0);
 
-    s->last_dc[component] = dc;
+    s->c.last_dc[component] = dc;
 
     /* AC coefs */
 
     run = 0;
-    last_index = s->block_last_index[n];
+    last_index = s->c.block_last_index[n];
     table_id |= 2;
 
     for(i=1;i<=last_index;i++) {
-        j = s->intra_scantable.permutated[i];
+        j = s->c.intra_scantable.permutated[i];
         val = block[j];
 
         if (val == 0) {
@@ -405,7 +405,7 @@ static void record_block(MpegEncContext *s, int16_t *block, int n)
         mjpeg_encode_code(m, table_id, 0);
 }
 
-static void encode_block(MpegEncContext *s, int16_t *block, int n)
+static void encode_block(MPVEncContext *const s, int16_t block[], int n)
 {
     int mant, nbits, code, i, j;
     int component, dc, run, last_index, val;
@@ -416,7 +416,7 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
     /* DC coef */
     component = (n <= 3 ? 0 : (n&1) + 1);
     dc = block[0]; /* overflow is impossible */
-    val = dc - s->last_dc[component];
+    val = dc - s->c.last_dc[component];
     if (n < 4) {
         ff_mjpeg_encode_dc(&s->pb, val, m->huff_size_dc_luminance, m->huff_code_dc_luminance);
         huff_size_ac = m->huff_size_ac_luminance;
@@ -426,14 +426,14 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
         huff_size_ac = m->huff_size_ac_chrominance;
         huff_code_ac = m->huff_code_ac_chrominance;
     }
-    s->last_dc[component] = dc;
+    s->c.last_dc[component] = dc;
 
     /* AC coefs */
 
     run = 0;
-    last_index = s->block_last_index[n];
+    last_index = s->c.block_last_index[n];
     for(i=1;i<=last_index;i++) {
-        j = s->intra_scantable.permutated[i];
+        j = s->c.intra_scantable.permutated[i];
         val = block[j];
         if (val == 0) {
             run++;
@@ -463,10 +463,10 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
         put_bits(&s->pb, huff_size_ac[0], huff_code_ac[0]);
 }
 
-static void mjpeg_record_mb(MpegEncContext *const s, int16_t block[][64],
+static void mjpeg_record_mb(MPVEncContext *const s, int16_t block[][64],
                             int unused_x, int unused_y)
 {
-    if (s->chroma_format == CHROMA_444) {
+    if (s->c.chroma_format == CHROMA_444) {
         record_block(s, block[0], 0);
         record_block(s, block[2], 2);
         record_block(s, block[4], 4);
@@ -474,7 +474,7 @@ static void mjpeg_record_mb(MpegEncContext *const s, int16_t block[][64],
         record_block(s, block[5], 5);
         record_block(s, block[9], 9);
 
-        if (16*s->mb_x+8 < s->width) {
+        if (16*s->c.mb_x+8 < s->c.width) {
             record_block(s, block[1],   1);
             record_block(s, block[3],   3);
             record_block(s, block[6],   6);
@@ -485,7 +485,7 @@ static void mjpeg_record_mb(MpegEncContext *const s, int16_t block[][64],
     } else {
         for (int i = 0; i < 5; i++)
             record_block(s, block[i], i);
-        if (s->chroma_format == CHROMA_420) {
+        if (s->c.chroma_format == CHROMA_420) {
             record_block(s, block[5], 5);
         } else {
             record_block(s, block[6], 6);
@@ -495,10 +495,10 @@ static void mjpeg_record_mb(MpegEncContext *const s, int16_t block[][64],
     }
 }
 
-static void mjpeg_encode_mb(MpegEncContext *const s, int16_t block[][64],
+static void mjpeg_encode_mb(MPVEncContext *const s, int16_t block[][64],
                             int unused_x, int unused_y)
 {
-    if (s->chroma_format == CHROMA_444) {
+    if (s->c.chroma_format == CHROMA_444) {
         encode_block(s, block[0], 0);
         encode_block(s, block[2], 2);
         encode_block(s, block[4], 4);
@@ -506,7 +506,7 @@ static void mjpeg_encode_mb(MpegEncContext *const s, int16_t block[][64],
         encode_block(s, block[5], 5);
         encode_block(s, block[9], 9);
 
-        if (16 * s->mb_x + 8 < s->width) {
+        if (16 * s->c.mb_x + 8 < s->c.width) {
             encode_block(s, block[1], 1);
             encode_block(s, block[3], 3);
             encode_block(s, block[6], 6);
@@ -517,7 +517,7 @@ static void mjpeg_encode_mb(MpegEncContext *const s, int16_t block[][64],
     } else {
         for (int i = 0; i < 5; i++)
             encode_block(s, block[i], i);
-        if (s->chroma_format == CHROMA_420) {
+        if (s->c.chroma_format == CHROMA_420) {
             encode_block(s, block[5], 5);
         } else {
             encode_block(s, block[6], 6);
@@ -533,7 +533,7 @@ static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
 {
     MJPEGEncContext *const m2 = avctx->priv_data;
     MJpegContext    *const m  = &m2->mjpeg;
-    MpegEncContext  *const s  = &m2->mpeg.s;
+    MPVEncContext  *const s  = &m2->mpeg.s;
     int ret;
 
     s->mjpeg_ctx = m;
@@ -597,7 +597,7 @@ static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
     // Buffers start out empty.
     m->huff_ncode = 0;
 
-    if (s->slice_context_count > 1)
+    if (s->c.slice_context_count > 1)
         m->huffman = HUFFMAN_TABLE_DEFAULT;
 
     if (m->huffman == HUFFMAN_TABLE_OPTIMAL) {
@@ -615,7 +615,7 @@ static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
 static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
                               const AVFrame *pic_arg, int *got_packet)
 {
-    MpegEncContext *s = avctx->priv_data;
+    MPVEncContext *const s = avctx->priv_data;
     AVFrame *pic;
     int i, ret;
     int chroma_v_shift = 1; /* AMV is 420-only */
@@ -635,7 +635,7 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     //picture should be flipped upside-down
     for(i=0; i < 3; i++) {
         int vsample = i ? 2 >> chroma_v_shift : 2;
-        pic->data[i] += pic->linesize[i] * (vsample * s->height / V_MAX - 1);
+        pic->data[i] += pic->linesize[i] * (vsample * s->c.height / V_MAX - 1);
         pic->linesize[i] *= -1;
     }
     ret = ff_mpv_encode_picture(avctx, pkt, pic, got_packet);

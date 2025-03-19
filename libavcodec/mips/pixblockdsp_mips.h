@@ -22,7 +22,8 @@
 #ifndef AVCODEC_MIPS_PIXBLOCKDSP_MIPS_H
 #define AVCODEC_MIPS_PIXBLOCKDSP_MIPS_H
 
-#include "../mpegvideo.h"
+#include <stdint.h>
+#include <stddef.h>
 
 void ff_diff_pixels_msa(int16_t *restrict block, const uint8_t *src1,
                         const uint8_t *src2, ptrdiff_t stride);

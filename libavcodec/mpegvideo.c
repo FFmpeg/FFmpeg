@@ -435,9 +435,6 @@ static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
     COPY(start_mb_y);
     COPY(end_mb_y);
     COPY(me.map_generation);
-    COPY(dct_error_sum);
-    COPY(dct_count[0]);
-    COPY(dct_count[1]);
     COPY(ac_val_base);
     COPY(ac_val[0]);
     COPY(ac_val[1]);

@@ -28,7 +28,7 @@
 #include "me_cmp.h"
 #include "qpeldsp.h"
 
-struct MpegEncContext;
+typedef struct MPVEncContext MPVEncContext;
 typedef struct MPVMainEncContext MPVMainEncContext;
 
 #if ARCH_IA64 // Limit static arrays to avoid gcc failing "short data segment overflowed"
@@ -100,7 +100,7 @@ typedef struct MotionEstContext {
     qpel_mc_func(*qpel_avg)[16];
     const uint8_t (*mv_penalty)[MAX_DMV * 2 + 1]; ///< bit amount needed to encode a MV
     const uint8_t *current_mv_penalty;
-    int (*sub_motion_search)(struct MpegEncContext *s,
+    int (*sub_motion_search)(MPVEncContext *s,
                              int *mx_ptr, int *my_ptr, int dmin,
                              int src_index, int ref_index,
                              int size, int h);
@@ -122,27 +122,27 @@ static inline int ff_h263_round_chroma(int x)
 int ff_me_init(MotionEstContext *c, struct AVCodecContext *avctx,
                const struct MECmpContext *mecc, int mpvenc);
 
-void ff_me_init_pic(struct MpegEncContext *s);
+void ff_me_init_pic(MPVEncContext *s);
 
-void ff_estimate_p_frame_motion(struct MpegEncContext *s, int mb_x, int mb_y);
-void ff_estimate_b_frame_motion(struct MpegEncContext *s, int mb_x, int mb_y);
+void ff_estimate_p_frame_motion(MPVEncContext *s, int mb_x, int mb_y);
+void ff_estimate_b_frame_motion(MPVEncContext *s, int mb_x, int mb_y);
 
-int ff_pre_estimate_p_frame_motion(struct MpegEncContext *s,
+int ff_pre_estimate_p_frame_motion(MPVEncContext *s,
                                    int mb_x, int mb_y);
 
-int ff_epzs_motion_search(struct MpegEncContext *s, int *mx_ptr, int *my_ptr,
+int ff_epzs_motion_search(MPVEncContext *s, int *mx_ptr, int *my_ptr,
                           int P[10][2], int src_index, int ref_index,
                           const int16_t (*last_mv)[2], int ref_mv_scale,
                           int size, int h);
 
-int ff_get_mb_score(struct MpegEncContext *s, int mx, int my, int src_index,
+int ff_get_mb_score(MPVEncContext *s, int mx, int my, int src_index,
                     int ref_index, int size, int h, int add_rate);
 
 int ff_get_best_fcode(MPVMainEncContext *m,
                       const int16_t (*mv_table)[2], int type);
 
-void ff_fix_long_p_mvs(struct MpegEncContext *s, int type);
-void ff_fix_long_mvs(struct MpegEncContext *s, uint8_t *field_select_table,
+void ff_fix_long_p_mvs(MPVEncContext *s, int type);
+void ff_fix_long_mvs(MPVEncContext *s, uint8_t *field_select_table,
                      int field_select, int16_t (*mv_table)[2], int f_code,
                      int type, int truncate);
 

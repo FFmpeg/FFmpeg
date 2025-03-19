@@ -25,42 +25,42 @@
 
 int ff_flv_encode_picture_header(MPVMainEncContext *const m)
 {
-    MpegEncContext *const s = &m->s;
+    MPVEncContext *const s = &m->s;
     int format;
 
     align_put_bits(&s->pb);
 
     put_bits(&s->pb, 17, 1);
     /* 0: H.263 escape codes 1: 11-bit escape codes */
-    put_bits(&s->pb, 5, (s->h263_flv - 1));
+    put_bits(&s->pb, 5, (s->c.h263_flv - 1));
     put_bits(&s->pb, 8,
-             (((int64_t) s->picture_number * 30 * s->avctx->time_base.num) /   // FIXME use timestamp
-              s->avctx->time_base.den) & 0xff);   /* TemporalReference */
-    if (s->width == 352 && s->height == 288)
+             (((int64_t) s->c.picture_number * 30 * s->c.avctx->time_base.num) /   // FIXME use timestamp
+              s->c.avctx->time_base.den) & 0xff);   /* TemporalReference */
+    if (s->c.width == 352 && s->c.height == 288)
         format = 2;
-    else if (s->width == 176 && s->height == 144)
+    else if (s->c.width == 176 && s->c.height == 144)
         format = 3;
-    else if (s->width == 128 && s->height == 96)
+    else if (s->c.width == 128 && s->c.height == 96)
         format = 4;
-    else if (s->width == 320 && s->height == 240)
+    else if (s->c.width == 320 && s->c.height == 240)
         format = 5;
-    else if (s->width == 160 && s->height == 120)
+    else if (s->c.width == 160 && s->c.height == 120)
         format = 6;
-    else if (s->width <= 255 && s->height <= 255)
+    else if (s->c.width <= 255 && s->c.height <= 255)
         format = 0;   /* use 1 byte width & height */
     else
         format = 1;   /* use 2 bytes width & height */
     put_bits(&s->pb, 3, format);   /* PictureSize */
     if (format == 0) {
-        put_bits(&s->pb, 8, s->width);
-        put_bits(&s->pb, 8, s->height);
+        put_bits(&s->pb, 8, s->c.width);
+        put_bits(&s->pb, 8, s->c.height);
     } else if (format == 1) {
-        put_bits(&s->pb, 16, s->width);
-        put_bits(&s->pb, 16, s->height);
+        put_bits(&s->pb, 16, s->c.width);
+        put_bits(&s->pb, 16, s->c.height);
     }
-    put_bits(&s->pb, 2, s->pict_type == AV_PICTURE_TYPE_P);   /* PictureType */
+    put_bits(&s->pb, 2, s->c.pict_type == AV_PICTURE_TYPE_P);   /* PictureType */
     put_bits(&s->pb, 1, 1);   /* DeblockingFlag: on */
-    put_bits(&s->pb, 5, s->qscale);   /* Quantizer */
+    put_bits(&s->pb, 5, s->c.qscale);   /* Quantizer */
     put_bits(&s->pb, 1, 0);   /* ExtraInformation */
 
     return 0;

@@ -21,66 +21,66 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/aarch64/cpu.h"
-#include "libavcodec/mpegvideo.h"
+#include "libavcodec/mpegvideoenc.h"
 
-int ff_pix_abs16_neon(MpegEncContext *s, const uint8_t *blk1, const uint8_t *blk2,
+int ff_pix_abs16_neon(MPVEncContext *s, const uint8_t *blk1, const uint8_t *blk2,
                       ptrdiff_t stride, int h);
-int ff_pix_abs16_xy2_neon(MpegEncContext *s, const uint8_t *blk1, const uint8_t *blk2,
+int ff_pix_abs16_xy2_neon(MPVEncContext *s, const uint8_t *blk1, const uint8_t *blk2,
                           ptrdiff_t stride, int h);
-int ff_pix_abs16_x2_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs16_x2_neon(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                          ptrdiff_t stride, int h);
-int ff_pix_abs16_y2_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs16_y2_neon(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                          ptrdiff_t stride, int h);
-int ff_pix_abs8_neon(MpegEncContext *s, const uint8_t *blk1, const uint8_t *blk2,
+int ff_pix_abs8_neon(MPVEncContext *s, const uint8_t *blk1, const uint8_t *blk2,
                      ptrdiff_t stride, int h);
 
-int sse16_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int sse16_neon(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                ptrdiff_t stride, int h);
-int sse8_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int sse8_neon(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
               ptrdiff_t stride, int h);
-int sse4_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int sse4_neon(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
               ptrdiff_t stride, int h);
 
-int vsad16_neon(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+int vsad16_neon(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2,
                 ptrdiff_t stride, int h);
-int vsad_intra16_neon(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy,
+int vsad_intra16_neon(MPVEncContext *c, const uint8_t *s, const uint8_t *dummy,
                       ptrdiff_t stride, int h) ;
-int vsad_intra8_neon(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy,
+int vsad_intra8_neon(MPVEncContext *c, const uint8_t *s, const uint8_t *dummy,
                      ptrdiff_t stride, int h) ;
-int vsse16_neon(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+int vsse16_neon(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2,
                 ptrdiff_t stride, int h);
-int vsse_intra16_neon(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy,
+int vsse_intra16_neon(MPVEncContext *c, const uint8_t *s, const uint8_t *dummy,
                       ptrdiff_t stride, int h);
 int nsse16_neon(int multiplier, const uint8_t *s, const uint8_t *s2,
                 ptrdiff_t stride, int h);
-int nsse16_neon_wrapper(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+int nsse16_neon_wrapper(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2,
                         ptrdiff_t stride, int h);
-int pix_median_abs16_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int pix_median_abs16_neon(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                           ptrdiff_t stride, int h);
-int pix_median_abs8_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int pix_median_abs8_neon(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                          ptrdiff_t stride, int h);
-int ff_pix_abs8_x2_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs8_x2_neon(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                         ptrdiff_t stride, int h);
-int ff_pix_abs8_y2_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs8_y2_neon(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                         ptrdiff_t stride, int h);
-int ff_pix_abs8_xy2_neon(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs8_xy2_neon(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                          ptrdiff_t stride, int h);
 
 int nsse8_neon(int multiplier, const uint8_t *s, const uint8_t *s2,
                ptrdiff_t stride, int h);
-int nsse8_neon_wrapper(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+int nsse8_neon_wrapper(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2,
                        ptrdiff_t stride, int h);
 
-int vsse8_neon(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+int vsse8_neon(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2,
                ptrdiff_t stride, int h);
 
-int vsse_intra8_neon(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy,
+int vsse_intra8_neon(MPVEncContext *c, const uint8_t *s, const uint8_t *dummy,
                      ptrdiff_t stride, int h);
 
 #if HAVE_DOTPROD
-int sse16_neon_dotprod(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int sse16_neon_dotprod(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                        ptrdiff_t stride, int h);
-int vsse_intra16_neon_dotprod(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+int vsse_intra16_neon_dotprod(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2,
                               ptrdiff_t stride, int h);
 #endif
 
@@ -129,20 +129,20 @@ av_cold void ff_me_cmp_init_aarch64(MECmpContext *c, AVCodecContext *avctx)
 #endif
 }
 
-int nsse16_neon_wrapper(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+int nsse16_neon_wrapper(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2,
                         ptrdiff_t stride, int h)
 {
     if (c)
-        return nsse16_neon(c->avctx->nsse_weight, s1, s2, stride, h);
+        return nsse16_neon(c->c.avctx->nsse_weight, s1, s2, stride, h);
     else
         return nsse16_neon(8, s1, s2, stride, h);
 }
 
-int nsse8_neon_wrapper(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+int nsse8_neon_wrapper(MPVEncContext *c, const uint8_t *s1, const uint8_t *s2,
                        ptrdiff_t stride, int h)
 {
     if (c)
-        return nsse8_neon(c->avctx->nsse_weight, s1, s2, stride, h);
+        return nsse8_neon(c->c.avctx->nsse_weight, s1, s2, stride, h);
     else
         return nsse8_neon(8, s1, s2, stride, h);
 }

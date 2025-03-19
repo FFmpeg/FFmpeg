@@ -27,14 +27,14 @@
 
 #include "put_bits.h"
 
-typedef struct MpegEncContext MpegEncContext;
+typedef struct MPVEncContext MPVEncContext;
 
-void ff_set_mpeg4_time(MpegEncContext *s);
+void ff_set_mpeg4_time(MPVEncContext *s);
 
-void ff_mpeg4_encode_video_packet_header(MpegEncContext *s);
+void ff_mpeg4_encode_video_packet_header(MPVEncContext *s);
 void ff_mpeg4_stuffing(PutBitContext *pbc);
-void ff_mpeg4_init_partitions(MpegEncContext *s);
-void ff_mpeg4_merge_partitions(MpegEncContext *s);
-void ff_clean_mpeg4_qscales(MpegEncContext *s);
+void ff_mpeg4_init_partitions(MPVEncContext *s);
+void ff_mpeg4_merge_partitions(MPVEncContext *s);
+void ff_clean_mpeg4_qscales(MPVEncContext *s);
 
 #endif

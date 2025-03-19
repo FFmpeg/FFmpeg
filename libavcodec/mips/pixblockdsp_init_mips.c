@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/mips/cpu.h"
+#include "libavcodec/pixblockdsp.h"
 #include "pixblockdsp_mips.h"
 
 void ff_pixblockdsp_init_mips(PixblockDSPContext *c, AVCodecContext *avctx,

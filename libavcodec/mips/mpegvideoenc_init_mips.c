@@ -23,7 +23,7 @@
 #include "libavcodec/mpegvideoenc.h"
 #include "mpegvideo_mips.h"
 
-av_cold void ff_mpvenc_dct_init_mips(MpegEncContext *s)
+av_cold void ff_mpvenc_dct_init_mips(MPVEncContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
 

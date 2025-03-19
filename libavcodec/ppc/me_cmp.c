@@ -51,7 +51,7 @@
     iv = vec_vsx_ld(1,  pix);\
 }
 #endif
-static int sad16_x2_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+static int sad16_x2_altivec(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                             ptrdiff_t stride, int h)
 {
     int i;
@@ -91,7 +91,7 @@ static int sad16_x2_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8_
     return s;
 }
 
-static int sad16_y2_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+static int sad16_y2_altivec(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                             ptrdiff_t stride, int h)
 {
     int i;
@@ -141,7 +141,7 @@ static int sad16_y2_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8_
     return s;
 }
 
-static int sad16_xy2_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+static int sad16_xy2_altivec(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                              ptrdiff_t stride, int h)
 {
     int i;
@@ -230,7 +230,7 @@ static int sad16_xy2_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8
     return s;
 }
 
-static int sad16_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+static int sad16_altivec(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                          ptrdiff_t stride, int h)
 {
     int i;
@@ -265,7 +265,7 @@ static int sad16_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8_t *
     return s;
 }
 
-static int sad8_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+static int sad8_altivec(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                         ptrdiff_t stride, int h)
 {
     int i;
@@ -309,7 +309,7 @@ static int sad8_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8_t *p
 
 /* Sum of Squared Errors for an 8x8 block, AltiVec-enhanced.
  * It's the sad8_altivec code above w/ squaring added. */
-static int sse8_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+static int sse8_altivec(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                         ptrdiff_t stride, int h)
 {
     int i;
@@ -354,7 +354,7 @@ static int sse8_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8_t *p
 
 /* Sum of Squared Errors for a 16x16 block, AltiVec-enhanced.
  * It's the sad16_altivec code above w/ squaring added. */
-static int sse16_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+static int sse16_altivec(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                          ptrdiff_t stride, int h)
 {
     int i;
@@ -392,7 +392,7 @@ static int sse16_altivec(MpegEncContext *v, const uint8_t *pix1, const uint8_t *
     return s;
 }
 
-static int hadamard8_diff8x8_altivec(MpegEncContext *s, const uint8_t *dst,
+static int hadamard8_diff8x8_altivec(MPVEncContext *s, const uint8_t *dst,
                                      const uint8_t *src, ptrdiff_t stride, int h)
 {
     int __attribute__((aligned(16))) sum;
@@ -518,7 +518,7 @@ static int hadamard8_diff8x8_altivec(MpegEncContext *s, const uint8_t *dst,
  * On the 970, the hand-made RA is still a win (around 690 vs. around 780),
  * but xlc goes to around 660 on the regular C code...
  */
-static int hadamard8_diff16x8_altivec(MpegEncContext *s, const uint8_t *dst,
+static int hadamard8_diff16x8_altivec(MPVEncContext *s, const uint8_t *dst,
                                       const uint8_t *src, ptrdiff_t stride, int h)
 {
     int __attribute__((aligned(16))) sum;
@@ -709,7 +709,7 @@ static int hadamard8_diff16x8_altivec(MpegEncContext *s, const uint8_t *dst,
     return sum;
 }
 
-static int hadamard8_diff16_altivec(MpegEncContext *s, const uint8_t *dst,
+static int hadamard8_diff16_altivec(MPVEncContext *s, const uint8_t *dst,
                                     const uint8_t *src, ptrdiff_t stride, int h)
 {
     int score = hadamard8_diff16x8_altivec(s, dst, src, stride, 8);

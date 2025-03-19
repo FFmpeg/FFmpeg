@@ -29,11 +29,9 @@
 #ifndef AVCODEC_SPEEDHQENC_H
 #define AVCODEC_SPEEDHQENC_H
 
-#include <stdint.h>
+typedef struct MPVEncContext MPVEncContext;
 
-#include "mpegvideo.h"
-
-void ff_speedhq_end_slice(MpegEncContext *s);
+void ff_speedhq_end_slice(MPVEncContext *s);
 
 static inline int ff_speedhq_mb_rows_in_slice(int slice_num, int mb_height)
 {

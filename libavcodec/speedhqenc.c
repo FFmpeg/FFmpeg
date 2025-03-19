@@ -98,9 +98,9 @@ static av_cold void speedhq_init_static_data(void)
 static int speedhq_encode_picture_header(MPVMainEncContext *const m)
 {
     SpeedHQEncContext *const ctx = (SpeedHQEncContext*)m;
-    MpegEncContext *const s = &m->s;
+    MPVEncContext *const s = &m->s;
 
-    put_bits_le(&s->pb, 8, 100 - s->qscale * 2);  /* FIXME why doubled */
+    put_bits_le(&s->pb, 8, 100 - s->c.qscale * 2);  /* FIXME why doubled */
     put_bits_le(&s->pb, 24, 4);  /* no second field */
 
     ctx->slice_start = 4;
@@ -110,7 +110,7 @@ static int speedhq_encode_picture_header(MPVMainEncContext *const m)
     return 0;
 }
 
-void ff_speedhq_end_slice(MpegEncContext *s)
+void ff_speedhq_end_slice(MPVEncContext *const s)
 {
     SpeedHQEncContext *ctx = (SpeedHQEncContext*)s;
     int slice_len;
@@ -158,7 +158,7 @@ static inline void encode_dc(PutBitContext *pb, int diff, int component)
     }
 }
 
-static void encode_block(MpegEncContext *s, int16_t *block, int n)
+static void encode_block(MPVEncContext *const s, const int16_t block[], int n)
 {
     int alevel, level, last_non_zero, dc, i, j, run, last_index, sign;
     int code;
@@ -167,16 +167,16 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
     /* DC coef */
     component = (n <= 3 ? 0 : (n&1) + 1);
     dc = block[0]; /* overflow is impossible */
-    val = s->last_dc[component] - dc;  /* opposite of most codecs */
+    val = s->c.last_dc[component] - dc;  /* opposite of most codecs */
     encode_dc(&s->pb, val, component);
-    s->last_dc[component] = dc;
+    s->c.last_dc[component] = dc;
 
     /* now quantify & encode AC coefs */
     last_non_zero = 0;
-    last_index = s->block_last_index[n];
+    last_index = s->c.block_last_index[n];
 
     for (i = 1; i <= last_index; i++) {
-        j     = s->intra_scantable.permutated[i];
+        j     = s->c.intra_scantable.permutated[i];
         level = block[j];
 
         /* encode using VLC */
@@ -207,14 +207,14 @@ static void encode_block(MpegEncContext *s, int16_t *block, int n)
     put_bits_le(&s->pb, 4, 6);
 }
 
-static void speedhq_encode_mb(MpegEncContext *const s, int16_t block[12][64],
+static void speedhq_encode_mb(MPVEncContext *const s, int16_t block[12][64],
                               int unused_x, int unused_y)
 {
     int i;
     for(i=0;i<6;i++) {
         encode_block(s, block[i], i);
     }
-    if (s->chroma_format == CHROMA_444) {
+    if (s->c.chroma_format == CHROMA_444) {
         encode_block(s, block[8], 8);
         encode_block(s, block[9], 9);
 
@@ -223,7 +223,7 @@ static void speedhq_encode_mb(MpegEncContext *const s, int16_t block[12][64],
 
         encode_block(s, block[10], 10);
         encode_block(s, block[11], 11);
-    } else if (s->chroma_format == CHROMA_422) {
+    } else if (s->c.chroma_format == CHROMA_422) {
         encode_block(s, block[6], 6);
         encode_block(s, block[7], 7);
     }
@@ -235,7 +235,7 @@ static av_cold int speedhq_encode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
     MPVMainEncContext *const m = avctx->priv_data;
-    MpegEncContext *const s = &m->s;
+    MPVEncContext *const s = &m->s;
     int ret;
 
     if (avctx->width > 65500 || avctx->height > 65500) {
@@ -274,8 +274,8 @@ static av_cold int speedhq_encode_init(AVCodecContext *avctx)
     s->intra_chroma_ac_vlc_length      =
     s->intra_chroma_ac_vlc_last_length = uni_speedhq_ac_vlc_len;
 
-    s->y_dc_scale_table =
-    s->c_dc_scale_table = ff_mpeg12_dc_scale_table[3];
+    s->c.y_dc_scale_table =
+    s->c.c_dc_scale_table = ff_mpeg12_dc_scale_table[3];
 
     ret = ff_mpv_encode_init(avctx);
     if (ret < 0)

@@ -21,38 +21,38 @@
 #ifndef AVCODEC_MIPS_ME_CMP_MIPS_H
 #define AVCODEC_MIPS_ME_CMP_MIPS_H
 
-#include "../mpegvideo.h"
+#include "../mpegvideoenc.h"
 #include "libavcodec/bit_depth_template.c"
 
-int ff_hadamard8_diff8x8_msa(MpegEncContext *s, const uint8_t *dst, const uint8_t *src,
+int ff_hadamard8_diff8x8_msa(MPVEncContext *s, const uint8_t *dst, const uint8_t *src,
                              ptrdiff_t stride, int h);
-int ff_hadamard8_intra8x8_msa(MpegEncContext *s, const uint8_t *dst, const uint8_t *src,
+int ff_hadamard8_intra8x8_msa(MPVEncContext *s, const uint8_t *dst, const uint8_t *src,
                               ptrdiff_t stride, int h);
-int ff_hadamard8_diff16_msa(MpegEncContext *s, const uint8_t *dst, const uint8_t *src,
+int ff_hadamard8_diff16_msa(MPVEncContext *s, const uint8_t *dst, const uint8_t *src,
                             ptrdiff_t stride, int h);
-int ff_hadamard8_intra16_msa(MpegEncContext *s, const uint8_t *dst, const uint8_t *src,
+int ff_hadamard8_intra16_msa(MPVEncContext *s, const uint8_t *dst, const uint8_t *src,
                              ptrdiff_t stride, int h);
-int ff_pix_abs16_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs16_msa(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                      ptrdiff_t stride, int h);
-int ff_pix_abs16_x2_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs16_x2_msa(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                         ptrdiff_t stride, int h);
-int ff_pix_abs16_y2_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs16_y2_msa(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                         ptrdiff_t stride, int h);
-int ff_pix_abs16_xy2_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs16_xy2_msa(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                          ptrdiff_t stride, int h);
-int ff_pix_abs8_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs8_msa(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                     ptrdiff_t stride, int h);
-int ff_pix_abs8_x2_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs8_x2_msa(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                        ptrdiff_t stride, int h);
-int ff_pix_abs8_y2_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs8_y2_msa(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                        ptrdiff_t stride, int h);
-int ff_pix_abs8_xy2_msa(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+int ff_pix_abs8_xy2_msa(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                         ptrdiff_t stride, int h);
-int ff_sse16_msa(MpegEncContext *v, const uint8_t *pu8Src, const uint8_t *pu8Ref,
+int ff_sse16_msa(MPVEncContext *v, const uint8_t *pu8Src, const uint8_t *pu8Ref,
                  ptrdiff_t stride, int i32Height);
-int ff_sse8_msa(MpegEncContext *v, const uint8_t *pu8Src, const uint8_t *pu8Ref,
+int ff_sse8_msa(MPVEncContext *v, const uint8_t *pu8Src, const uint8_t *pu8Ref,
                 ptrdiff_t stride, int i32Height);
-int ff_sse4_msa(MpegEncContext *v, const uint8_t *pu8Src, const uint8_t *pu8Ref,
+int ff_sse4_msa(MPVEncContext *v, const uint8_t *pu8Src, const uint8_t *pu8Ref,
                 ptrdiff_t stride, int i32Height);
 void ff_add_pixels8_msa(const uint8_t *restrict pixels, int16_t *block,
                         ptrdiff_t stride);

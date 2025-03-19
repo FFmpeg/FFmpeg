@@ -69,20 +69,20 @@ typedef struct H261EncContext {
 static int h261_encode_picture_header(MPVMainEncContext *const m)
 {
     H261EncContext *const h = (H261EncContext *)m;
-    MpegEncContext *const s = &h->s.s;
+    MPVEncContext *const s = &h->s.s;
     int temp_ref;
 
     align_put_bits(&s->pb);
 
     put_bits(&s->pb, 20, 0x10); /* PSC */
 
-    temp_ref = s->picture_number * 30000LL * s->avctx->time_base.num /
-               (1001LL * s->avctx->time_base.den);   // FIXME maybe this should use a timestamp
+    temp_ref = s->c.picture_number * 30000LL * s->c.avctx->time_base.num /
+               (1001LL * s->c.avctx->time_base.den);   // FIXME maybe this should use a timestamp
     put_sbits(&s->pb, 5, temp_ref); /* TemporalReference */
 
     put_bits(&s->pb, 1, 0); /* split screen off */
     put_bits(&s->pb, 1, 0); /* camera  off */
-    put_bits(&s->pb, 1, s->pict_type == AV_PICTURE_TYPE_I); /* freeze picture release on/off */
+    put_bits(&s->pb, 1, s->c.pict_type == AV_PICTURE_TYPE_I); /* freeze picture release on/off */
 
     put_bits(&s->pb, 1, h->format); /* 0 == QCIF, 1 == CIF */
 
@@ -91,7 +91,7 @@ static int h261_encode_picture_header(MPVMainEncContext *const m)
 
     put_bits(&s->pb, 1, 0); /* no PEI */
     h->gob_number = h->format - 1;
-    s->mb_skip_run = 0;
+    s->c.mb_skip_run = 0;
 
     return 0;
 }
@@ -99,7 +99,7 @@ static int h261_encode_picture_header(MPVMainEncContext *const m)
 /**
  * Encode a group of blocks header.
  */
-static void h261_encode_gob_header(MpegEncContext *s, int mb_line)
+static void h261_encode_gob_header(MPVEncContext *const s, int mb_line)
 {
     H261EncContext *const h = (H261EncContext *)s;
     if (h->format == H261_QCIF) {
@@ -109,38 +109,38 @@ static void h261_encode_gob_header(MpegEncContext *s, int mb_line)
     }
     put_bits(&s->pb, 16, 1);            /* GBSC */
     put_bits(&s->pb, 4, h->gob_number); /* GN */
-    put_bits(&s->pb, 5, s->qscale);     /* GQUANT */
+    put_bits(&s->pb, 5, s->c.qscale);     /* GQUANT */
     put_bits(&s->pb, 1, 0);             /* no GEI */
-    s->mb_skip_run = 0;
-    s->last_mv[0][0][0] = 0;
-    s->last_mv[0][0][1] = 0;
+    s->c.mb_skip_run = 0;
+    s->c.last_mv[0][0][0] = 0;
+    s->c.last_mv[0][0][1] = 0;
 }
 
-void ff_h261_reorder_mb_index(MpegEncContext *s)
+void ff_h261_reorder_mb_index(MPVEncContext *const s)
 {
     const H261EncContext *const h = (H261EncContext*)s;
-    int index = s->mb_x + s->mb_y * s->mb_width;
+    int index = s->c.mb_x + s->c.mb_y * s->c.mb_width;
 
     if (index % 11 == 0) {
         if (index % 33 == 0)
             h261_encode_gob_header(s, 0);
-        s->last_mv[0][0][0] = 0;
-        s->last_mv[0][0][1] = 0;
+        s->c.last_mv[0][0][0] = 0;
+        s->c.last_mv[0][0][1] = 0;
     }
 
     /* for CIF the GOB's are fragmented in the middle of a scanline
      * that's why we need to adjust the x and y index of the macroblocks */
     if (h->format == H261_CIF) {
-        s->mb_x  = index % 11;
+        s->c.mb_x  = index % 11;
         index   /= 11;
-        s->mb_y  = index % 3;
+        s->c.mb_y  = index % 3;
         index   /= 3;
-        s->mb_x += 11 * (index % 2);
+        s->c.mb_x += 11 * (index % 2);
         index   /= 2;
-        s->mb_y += 3 * index;
+        s->c.mb_y += 3 * index;
 
-        ff_init_block_index(s);
-        ff_update_block_index(s, 8, 0, 1);
+        ff_init_block_index(&s->c);
+        ff_update_block_index(&s->c, 8, 0, 1);
     }
 }
 
@@ -150,12 +150,12 @@ static void h261_encode_motion(PutBitContext *pb, int val)
                  h261_mv_codes[MV_TAB_OFFSET + val][0]);
 }
 
-static inline int get_cbp(MpegEncContext *s, int16_t block[6][64])
+static inline int get_cbp(const int block_last_index[6])
 {
     int i, cbp;
     cbp = 0;
     for (i = 0; i < 6; i++)
-        if (s->block_last_index[i] >= 0)
+        if (block_last_index[i] >= 0)
             cbp |= 1 << (5 - i);
     return cbp;
 }
@@ -167,10 +167,10 @@ static inline int get_cbp(MpegEncContext *s, int16_t block[6][64])
  */
 static void h261_encode_block(H261EncContext *h, int16_t *block, int n)
 {
-    MpegEncContext *const s = &h->s.s;
+    MPVEncContext *const s = &h->s.s;
     int level, run, i, j, last_index, last_non_zero;
 
-    if (s->mb_intra) {
+    if (s->c.mb_intra) {
         /* DC coef */
         level = block[0];
         /* 255 cannot be represented, so we clamp */
@@ -189,7 +189,7 @@ static void h261_encode_block(H261EncContext *h, int16_t *block, int n)
             put_bits(&s->pb, 8, level);
         i = 1;
     } else if ((block[0] == 1 || block[0] == -1) &&
-               (s->block_last_index[n] > -1)) {
+               (s->c.block_last_index[n] > -1)) {
         // special case
         put_bits(&s->pb, 2, block[0] > 0 ? 2 : 3);
         i = 1;
@@ -198,10 +198,10 @@ static void h261_encode_block(H261EncContext *h, int16_t *block, int n)
     }
 
     /* AC coefs */
-    last_index    = s->block_last_index[n];
+    last_index    = s->c.block_last_index[n];
     last_non_zero = i - 1;
     for (; i <= last_index; i++) {
-        j     = s->intra_scantable.permutated[i];
+        j     = s->c.intra_scantable.permutated[i];
         level = block[j];
         if (level) {
             run    = i - last_non_zero - 1;
@@ -225,7 +225,7 @@ static void h261_encode_block(H261EncContext *h, int16_t *block, int n)
         put_bits(&s->pb, 2, 0x2); // EOB
 }
 
-static void h261_encode_mb(MpegEncContext *const s, int16_t block[6][64],
+static void h261_encode_mb(MPVEncContext *const s, int16_t block[6][64],
                            int motion_x, int motion_y)
 {
     /* The following is only allowed because this encoder
@@ -238,36 +238,36 @@ static void h261_encode_mb(MpegEncContext *const s, int16_t block[6][64],
 
     com->mtype = 0;
 
-    if (!s->mb_intra) {
+    if (!s->c.mb_intra) {
         /* compute cbp */
-        cbp = get_cbp(s, block);
+        cbp = get_cbp(s->c.block_last_index);
 
         /* mvd indicates if this block is motion compensated */
         mvd = motion_x | motion_y;
 
         if ((cbp | mvd) == 0) {
             /* skip macroblock */
-            s->mb_skip_run++;
-            s->last_mv[0][0][0] = 0;
-            s->last_mv[0][0][1] = 0;
-            s->qscale -= s->dquant;
+            s->c.mb_skip_run++;
+            s->c.last_mv[0][0][0] = 0;
+            s->c.last_mv[0][0][1] = 0;
+            s->c.qscale -= s->dquant;
             return;
         }
     }
 
     /* MB is not skipped, encode MBA */
     put_bits(&s->pb,
-             ff_h261_mba_bits[s->mb_skip_run],
-             ff_h261_mba_code[s->mb_skip_run]);
-    s->mb_skip_run = 0;
+             ff_h261_mba_bits[s->c.mb_skip_run],
+             ff_h261_mba_code[s->c.mb_skip_run]);
+    s->c.mb_skip_run = 0;
 
     /* calculate MTYPE */
-    if (!s->mb_intra) {
+    if (!s->c.mb_intra) {
         com->mtype++;
 
-        if (mvd || s->loop_filter)
+        if (mvd || s->c.loop_filter)
             com->mtype += 3;
-        if (s->loop_filter)
+        if (s->c.loop_filter)
             com->mtype += 3;
         if (cbp)
             com->mtype++;
@@ -277,7 +277,7 @@ static void h261_encode_mb(MpegEncContext *const s, int16_t block[6][64],
     if (s->dquant && cbp) {
         com->mtype++;
     } else
-        s->qscale -= s->dquant;
+        s->c.qscale -= s->dquant;
 
     put_bits(&s->pb,
              ff_h261_mtype_bits[com->mtype],
@@ -286,15 +286,15 @@ static void h261_encode_mb(MpegEncContext *const s, int16_t block[6][64],
     com->mtype = ff_h261_mtype_map[com->mtype];
 
     if (IS_QUANT(com->mtype)) {
-        ff_set_qscale(s, s->qscale + s->dquant);
-        put_bits(&s->pb, 5, s->qscale);
+        ff_set_qscale(&s->c, s->c.qscale + s->dquant);
+        put_bits(&s->pb, 5, s->c.qscale);
     }
 
     if (IS_16X16(com->mtype)) {
-        mv_diff_x       = (motion_x >> 1) - s->last_mv[0][0][0];
-        mv_diff_y       = (motion_y >> 1) - s->last_mv[0][0][1];
-        s->last_mv[0][0][0] = (motion_x >> 1);
-        s->last_mv[0][0][1] = (motion_y >> 1);
+        mv_diff_x       = (motion_x >> 1) - s->c.last_mv[0][0][0];
+        mv_diff_y       = (motion_y >> 1) - s->c.last_mv[0][0][1];
+        s->c.last_mv[0][0][0] = (motion_x >> 1);
+        s->c.last_mv[0][0][1] = (motion_y >> 1);
         h261_encode_motion(&s->pb, mv_diff_x);
         h261_encode_motion(&s->pb, mv_diff_y);
     }
@@ -310,8 +310,8 @@ static void h261_encode_mb(MpegEncContext *const s, int16_t block[6][64],
         h261_encode_block(h, block[i], i);
 
     if (!IS_16X16(com->mtype)) {
-        s->last_mv[0][0][0] = 0;
-        s->last_mv[0][0][1] = 0;
+        s->c.last_mv[0][0][0] = 0;
+        s->c.last_mv[0][0][1] = 0;
     }
 }
 
@@ -356,7 +356,7 @@ static av_cold int h261_encode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
     H261EncContext *const h = avctx->priv_data;
-    MpegEncContext *const s = &h->s.s;
+    MPVEncContext *const s = &h->s.s;
 
     if (avctx->width == 176 && avctx->height == 144) {
         h->format = H261_QCIF;
@@ -369,7 +369,7 @@ static av_cold int h261_encode_init(AVCodecContext *avctx)
                avctx->width, avctx->height);
         return AVERROR(EINVAL);
     }
-    s->private_ctx = &h->common;
+    s->c.private_ctx = &h->common;
     h->s.encode_picture_header = h261_encode_picture_header;
     s->encode_mb               = h261_encode_mb;
 
@@ -377,7 +377,7 @@ static av_cold int h261_encode_init(AVCodecContext *avctx)
     s->max_qcoeff       = 127;
     s->ac_esc_length    = H261_ESC_LEN;
 
-    s->me.mv_penalty = mv_penalty;
+    s->c.me.mv_penalty = mv_penalty;
 
     s->intra_ac_vlc_length      = s->inter_ac_vlc_length      = uni_h261_rl_len;
     s->intra_ac_vlc_last_length = s->inter_ac_vlc_last_length = uni_h261_rl_len_last;

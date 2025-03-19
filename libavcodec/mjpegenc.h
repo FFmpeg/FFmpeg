@@ -56,9 +56,9 @@ typedef struct MJpegContext {
     uint8_t huff_size_ac_chrominance[256];  ///< AC chrominance Huffman table size.
     uint16_t huff_code_ac_chrominance[256]; ///< AC chrominance Huffman table codes.
 
-    /** Storage for AC luminance VLC (in MpegEncContext) */
+    /** Storage for AC luminance VLC */
     uint8_t uni_ac_vlc_len[64 * 64 * 2];
-    /** Storage for AC chrominance VLC (in MpegEncContext) */
+    /** Storage for AC chrominance VLC */
     uint8_t uni_chroma_ac_vlc_len[64 * 64 * 2];
 
     // Default DC tables have exactly 12 values
@@ -92,8 +92,8 @@ static inline void put_marker(PutBitContext *p, enum JpegMarker code)
     put_bits(p, 8, code);
 }
 
-typedef struct MpegEncContext MpegEncContext;
+typedef struct MPVEncContext MPVEncContext;
 
-int  ff_mjpeg_encode_stuffing(MpegEncContext *s);
+int ff_mjpeg_encode_stuffing(MPVEncContext *s);
 
 #endif /* AVCODEC_MJPEGENC_H */
