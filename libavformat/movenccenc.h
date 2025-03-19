@@ -25,10 +25,17 @@
 #include "libavutil/aes_ctr.h"
 #include "avformat.h"
 #include "avio.h"
+#include "cbs.h"
 
 #define CENC_KID_SIZE (16)
 
 struct MOVTrack;
+
+struct MOVMuxCencAV1TGInfo {
+    uint32_t encrypted_bytes;
+    uint32_t write_clear_bytes;
+    uint32_t aux_clear_bytes;
+};
 
 typedef struct {
     struct AVAESCTR* aes_ctr;
@@ -43,6 +50,14 @@ typedef struct {
     size_t auxiliary_info_subsample_start;
     uint8_t* auxiliary_info_sizes;
     size_t  auxiliary_info_sizes_alloc_size;
+
+    /* AV1 */
+    struct MOVMuxCencAV1TGInfo *tile_group_sizes;
+    uint32_t clear_bytes;
+    int tile_num;
+    /* CBS */
+    CodedBitstreamContext *cbc;
+    CodedBitstreamFragment temporal_unit;
 } MOVMuxCencContext;
 
 /**
@@ -50,7 +65,8 @@ typedef struct {
  * @param key encryption key, must have a length of AES_CTR_KEY_SIZE
  * @param use_subsamples when enabled parts of a packet can be encrypted, otherwise the whole packet is encrypted
  */
-int ff_mov_cenc_init(MOVMuxCencContext* ctx, uint8_t* encryption_key, int use_subsamples, int bitexact);
+int ff_mov_cenc_init(MOVMuxCencContext* ctx, uint8_t* encryption_key, int use_subsamples,
+                     enum AVCodecID codec_id, int bitexact);
 
 /**
  * Free a CENC context
@@ -73,6 +89,8 @@ int ff_mov_cenc_avc_parse_nal_units(MOVMuxCencContext* ctx, AVIOContext *pb, con
 int ff_mov_cenc_avc_write_nal_units(AVFormatContext *s, MOVMuxCencContext* ctx, int nal_length_size,
     AVIOContext *pb, const uint8_t *buf_in, int size);
 
+int ff_mov_cenc_av1_write_obus(AVFormatContext *s, MOVMuxCencContext* ctx,
+                               AVIOContext *pb, const AVPacket *pkt);
 /**
  * Write the cenc atoms that should reside inside stbl
  */

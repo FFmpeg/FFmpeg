@@ -11,6 +11,7 @@ version <next>:
 - Enhanced FLV v2: Multitrack audio/video, modern codec support
 - Animated JPEG XL encoding (via libjxl)
 - VVC in Matroska
+- CENC AV1 support in MP4 muxer
 
 version 7.1:
 - Raw Captions with Time (RCWT) closed caption demuxer
