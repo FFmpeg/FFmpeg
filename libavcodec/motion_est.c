@@ -110,7 +110,7 @@ static int get_flags(MotionEstContext *c, int direct, int chroma){
 static av_always_inline int cmp_direct_inline(MPVEncContext *const s, const int x, const int y, const int subx, const int suby,
                       const int size, const int h, int ref_index, int src_index,
                       me_cmp_func cmp_func, me_cmp_func chroma_cmp_func, int qpel){
-    MotionEstContext *const c = &s->c.me;
+    MotionEstContext *const c = &s->me;
     const int stride= c->stride;
     const int hx = subx + x * (1 << (1 + qpel));
     const int hy = suby + y * (1 << (1 + qpel));
@@ -182,7 +182,7 @@ static av_always_inline int cmp_direct_inline(MPVEncContext *const s, const int 
 static av_always_inline int cmp_inline(MPVEncContext *const s, const int x, const int y, const int subx, const int suby,
                       const int size, const int h, int ref_index, int src_index,
                       me_cmp_func cmp_func, me_cmp_func chroma_cmp_func, int qpel, int chroma){
-    MotionEstContext *const c = &s->c.me;
+    MotionEstContext *const c = &s->me;
     const int stride= c->stride;
     const int uvstride= c->uvstride;
     const int dxy= subx + (suby<<(1+qpel)); //FIXME log2_subpel?
@@ -370,7 +370,7 @@ av_cold int ff_me_init(MotionEstContext *c, AVCodecContext *avctx,
 
 void ff_me_init_pic(MPVEncContext *const s)
 {
-    MotionEstContext * const c= &s->c.me;
+    MotionEstContext *const c = &s->me;
 
 /*FIXME s->c.no_rounding b_type*/
     if (c->avctx->flags & AV_CODEC_FLAG_QPEL) {
@@ -411,7 +411,7 @@ static int sad_hpel_motion_search(MPVEncContext *const s,
                                   int src_index, int ref_index,
                                   int size, int h)
 {
-    MotionEstContext *const c = &s->c.me;
+    MotionEstContext *const c = &s->me;
     const int penalty_factor= c->sub_penalty_factor;
     int mx, my, dminh;
     const uint8_t *pix, *ptr;
@@ -540,7 +540,7 @@ static inline void set_p_mv_tables(MPVEncContext *const s, int mx, int my, int m
  */
 static inline void get_limits(MPVEncContext *const s, int x, int y, int bframe)
 {
-    MotionEstContext *const c = &s->c.me;
+    MotionEstContext *const c = &s->me;
     int range= c->avctx->me_range >> (1 + !!(c->flags&FLAG_QPEL));
     int max_range = MAX_MV >> (1 + !!(c->flags&FLAG_QPEL));
 /*
@@ -587,7 +587,7 @@ static inline void init_mv4_ref(MotionEstContext *c){
 
 static inline int h263_mv4_search(MPVEncContext *const s, int mx, int my, int shift)
 {
-    MotionEstContext *const c = &s->c.me;
+    MotionEstContext *const c = &s->me;
     const int size= 1;
     const int h=8;
     int block;
@@ -730,7 +730,7 @@ static inline int h263_mv4_search(MPVEncContext *const s, int mx, int my, int sh
 
 static inline void init_interlaced_ref(MPVEncContext *const s, int ref_index)
 {
-    MotionEstContext *const c = &s->c.me;
+    MotionEstContext *const c = &s->me;
 
     c->ref[1+ref_index][0] = c->ref[0+ref_index][0] + s->c.linesize;
     c->src[1][0] = c->src[0][0] + s->c.linesize;
@@ -745,7 +745,7 @@ static inline void init_interlaced_ref(MPVEncContext *const s, int ref_index)
 static int interlaced_search(MPVEncContext *const s, int ref_index,
                              int16_t (*mv_tables[2][2])[2], uint8_t *field_select_tables[2], int mx, int my, int user_field_select)
 {
-    MotionEstContext *const c = &s->c.me;
+    MotionEstContext *const c = &s->me;
     const int size=0;
     const int h=8;
     int block;
@@ -888,7 +888,7 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
 void ff_estimate_p_frame_motion(MPVEncContext *const s,
                                 int mb_x, int mb_y)
 {
-    MotionEstContext *const c = &s->c.me;
+    MotionEstContext *const c = &s->me;
     const uint8_t *pix, *ppix;
     int sum, mx = 0, my = 0, dmin = 0;
     int varc;            ///< the variance of the block (sum of squared (p[y][x]-average))
@@ -1063,7 +1063,7 @@ void ff_estimate_p_frame_motion(MPVEncContext *const s,
 int ff_pre_estimate_p_frame_motion(MPVEncContext *const s,
                                     int mb_x, int mb_y)
 {
-    MotionEstContext *const c = &s->c.me;
+    MotionEstContext *const c = &s->me;
     int mx, my, dmin;
     int P[10][2];
     const int shift = 1 + s->c.quarter_sample;
@@ -1116,7 +1116,7 @@ int ff_pre_estimate_p_frame_motion(MPVEncContext *const s,
 static int estimate_motion_b(MPVEncContext *const s, int mb_x, int mb_y,
                              int16_t (*mv_table)[2], int ref_index, int f_code)
 {
-    MotionEstContext * const c= &s->c.me;
+    MotionEstContext *const c = &s->me;
     int mx = 0, my = 0, dmin = 0;
     int P[10][2];
     const int shift= 1+s->c.quarter_sample;
@@ -1182,7 +1182,7 @@ static inline int check_bidir_mv(MPVEncContext *const s,
     //FIXME optimize?
     //FIXME better f_code prediction (max mv & distance)
     //FIXME pointers
-    MotionEstContext * const c= &s->c.me;
+    MotionEstContext *const c = &s->me;
     const uint8_t * const mv_penalty_f = c->mv_penalty[s->c.f_code] + MAX_DMV; // f_code of the prev frame
     const uint8_t * const mv_penalty_b = c->mv_penalty[s->c.b_code] + MAX_DMV; // f_code of the prev frame
     int stride= c->stride;
@@ -1239,7 +1239,7 @@ static inline int check_bidir_mv(MPVEncContext *const s,
 /* refine the bidir vectors in hq mode and return the score in both lq & hq mode*/
 static inline int bidir_refine(MPVEncContext *const s, int mb_x, int mb_y)
 {
-    MotionEstContext * const c= &s->c.me;
+    MotionEstContext *const c = &s->me;
     const int mot_stride = s->c.mb_stride;
     const int xy = mb_y *mot_stride + mb_x;
     int fbmin;
@@ -1386,7 +1386,7 @@ CHECK_BIDIR(-(a),-(b),-(c),-(d))
 
 static inline int direct_search(MPVEncContext *const s, int mb_x, int mb_y)
 {
-    MotionEstContext * const c= &s->c.me;
+    MotionEstContext *const c = &s->me;
     int P[10][2];
     const int mot_stride = s->c.mb_stride;
     const int mot_xy = mb_y*mot_stride + mb_x;
@@ -1489,7 +1489,7 @@ static inline int direct_search(MPVEncContext *const s, int mb_x, int mb_y)
 void ff_estimate_b_frame_motion(MPVEncContext *const s,
                              int mb_x, int mb_y)
 {
-    MotionEstContext * const c= &s->c.me;
+    MotionEstContext *const c = &s->me;
     int fmin, bmin, dmin, fbmin, bimin, fimin;
     int type=0;
     const int xy = mb_y*s->c.mb_stride + mb_x;
@@ -1601,7 +1601,7 @@ void ff_estimate_b_frame_motion(MPVEncContext *const s,
 int ff_get_best_fcode(MPVMainEncContext *const m, const int16_t (*mv_table)[2], int type)
 {
     MPVEncContext *const s = &m->s;
-    MotionEstContext *const c = &s->c.me;
+    MotionEstContext *const c = &s->me;
 
     if (c->motion_est != FF_ME_ZERO) {
         int score[8];
@@ -1656,7 +1656,7 @@ int ff_get_best_fcode(MPVMainEncContext *const m, const int16_t (*mv_table)[2], 
 
 void ff_fix_long_p_mvs(MPVEncContext *const s, int type)
 {
-    MotionEstContext * const c= &s->c.me;
+    MotionEstContext *const c = &s->me;
     const int f_code= s->c.f_code;
     int y, range;
     av_assert0(s->c.pict_type == AV_PICTURE_TYPE_P);
@@ -1706,7 +1706,7 @@ void ff_fix_long_p_mvs(MPVEncContext *const s, int type)
 void ff_fix_long_mvs(MPVEncContext *const s, uint8_t *field_select_table, int field_select,
                      int16_t (*mv_table)[2], int f_code, int type, int truncate)
 {
-    MotionEstContext * const c= &s->c.me;
+    MotionEstContext *const c = &s->me;
     int y, h_range, v_range;
 
     // RAL: 8 in MPEG-1, 16 in MPEG-4

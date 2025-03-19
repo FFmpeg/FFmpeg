@@ -1112,7 +1112,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     m->encode_picture_header = mpeg1_encode_picture_header;
     s->encode_mb             = mpeg12_encode_mb;
 
-    s->c.me.mv_penalty = mv_penalty;
+    s->me.mv_penalty = mv_penalty;
     m->fcode_tab     = fcode_tab + MAX_MV;
     if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
         s->min_qcoeff = -255;

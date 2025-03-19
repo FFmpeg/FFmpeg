@@ -339,7 +339,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s2->b8_stride                     = 2 * s2->mb_width + 1;
         s2->f_code                        = 1;
         s2->pict_type                     = s->pict_type;
-        s2->me.scene_change_score         = 0;
+        s->m.me.scene_change_score        = 0;
         // s2->out_format                    = FMT_H263;
         // s2->unrestricted_mv               = 1;
         s->m.lambda                       = s->quality;
@@ -374,7 +374,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                                              s2->mb_stride + 1;
         ff_me_init_pic(&s->m);
 
-        s2->me.dia_size      = s->avctx->dia_size;
+        s->m.me.dia_size     = s->avctx->dia_size;
         s2->first_slice_line = 1;
         for (y = 0; y < block_height; y++) {
             s->m.new_pic->data[0]  = src - y * 16 * stride; // ugly
@@ -539,8 +539,8 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
                s->rd_total / (double)(avctx->width * avctx->height *
                                       avctx->frame_num));
 
-    av_freep(&s->m.c.me.scratchpad);
-    av_freep(&s->m.c.me.map);
+    av_freep(&s->m.me.scratchpad);
+    av_freep(&s->m.me.map);
     av_freep(&s->mb_type);
     av_freep(&s->dummy);
     av_freep(&s->scratchbuf);
@@ -585,7 +585,7 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
 
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
     ff_me_cmp_init(&s->mecc, avctx);
-    ret = ff_me_init(&s->m.c.me, avctx, &s->mecc, 0);
+    ret = ff_me_init(&s->m.me, avctx, &s->mecc, 0);
     if (ret < 0)
         return ret;
     ff_mpegvideoencdsp_init(&s->m.mpvencdsp, avctx);
@@ -613,24 +613,24 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
         return ret;
 
     s->m.c.picture_structure = PICT_FRAME;
-    s->m.c.me.temp           =
-    s->m.c.me.scratchpad     = av_mallocz((avctx->width + 64) *
+    s->m.me.temp           =
+    s->m.me.scratchpad     = av_mallocz((avctx->width + 64) *
                                         2 * 16 * 2 * sizeof(uint8_t));
     s->mb_type             = av_mallocz((s->y_block_width + 1) *
                                         s->y_block_height * sizeof(int16_t));
     s->dummy               = av_mallocz((s->y_block_width + 1) *
                                         s->y_block_height * sizeof(int32_t));
-    s->m.c.me.map            = av_mallocz(2 * ME_MAP_SIZE * sizeof(*s->m.c.me.map));
+    s->m.me.map            = av_mallocz(2 * ME_MAP_SIZE * sizeof(*s->m.me.map));
     s->m.new_pic       = av_frame_alloc();
 
-    if (!s->m.c.me.scratchpad || !s->m.c.me.map ||
+    if (!s->m.me.scratchpad || !s->m.me.map ||
         !s->mb_type || !s->dummy || !s->m.new_pic)
         return AVERROR(ENOMEM);
-    s->m.c.me.score_map = s->m.c.me.map + ME_MAP_SIZE;
+    s->m.me.score_map = s->m.me.map + ME_MAP_SIZE;
 
     ff_svq1enc_init(&s->svq1encdsp);
 
-    s->m.c.me.mv_penalty = ff_h263_get_mv_penalty();
+    s->m.me.mv_penalty = ff_h263_get_mv_penalty();
 
     return write_ident(avctx, s->avctx->flags & AV_CODEC_FLAG_BITEXACT ? "Lavc" : LIBAVCODEC_IDENT);
 }
@@ -718,7 +718,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 #define OFFSET(x) offsetof(struct SVQ1EncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "motion-est", "Motion estimation algorithm", OFFSET(m.c.me.motion_est), AV_OPT_TYPE_INT, { .i64 = FF_ME_EPZS }, FF_ME_ZERO, FF_ME_XONE, VE, .unit = "motion-est"},
+    { "motion-est", "Motion estimation algorithm", OFFSET(m.me.motion_est), AV_OPT_TYPE_INT, { .i64 = FF_ME_EPZS }, FF_ME_ZERO, FF_ME_XONE, VE, .unit = "motion-est"},
         { "zero", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_ZERO }, 0, 0, FF_MPV_OPT_FLAGS, .unit = "motion-est" },
         { "epzs", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_EPZS }, 0, 0, FF_MPV_OPT_FLAGS, .unit = "motion-est" },
         { "xone", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_XONE }, 0, 0, FF_MPV_OPT_FLAGS, .unit = "motion-est" },

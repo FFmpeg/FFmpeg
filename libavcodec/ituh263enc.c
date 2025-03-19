@@ -820,7 +820,7 @@ av_cold void ff_h263_encode_init(MPVMainEncContext *const m)
 {
     MPVEncContext *const s = &m->s;
 
-    s->c.me.mv_penalty = ff_h263_get_mv_penalty(); // FIXME exact table for MSMPEG4 & H.263+
+    s->me.mv_penalty = ff_h263_get_mv_penalty(); // FIXME exact table for MSMPEG4 & H.263+
 
     ff_h263dsp_init(&s->c.h263dsp);
 

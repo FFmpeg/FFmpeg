@@ -317,7 +317,7 @@ static av_cold int me_cmp_init(MPVMainEncContext *const m, AVCodecContext *avctx
     int ret;
 
     ff_me_cmp_init(&mecc, avctx);
-    ret = ff_me_init(&s->c.me, avctx, &mecc, 1);
+    ret = ff_me_init(&s->me, avctx, &mecc, 1);
     if (ret < 0)
         return ret;
     ret = ff_set_cmp(&mecc, me_cmp, m->frame_skip_cmp, 1);
@@ -431,7 +431,7 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
 #else
         ALIGN = 128,
 #endif
-        ME_MAP_ALLOC_SIZE = FFALIGN(2 * ME_MAP_SIZE * sizeof(*s->c.me.map), ALIGN),
+        ME_MAP_ALLOC_SIZE = FFALIGN(2 * ME_MAP_SIZE * sizeof(*s->me.map), ALIGN),
         DCT_ERROR_SIZE    = FFALIGN(2 * sizeof(*s->dct_error_sum), ALIGN),
     };
     static_assert(FFMAX(ME_MAP_ALLOC_SIZE, DCT_ERROR_SIZE) * MAX_THREADS + ALIGN - 1 <= SIZE_MAX,
@@ -494,8 +494,8 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
         s2->mb_mean      = (uint8_t*)(s2->mb_var + mb_array_size);
         s2->lambda_table = s->lambda_table;
 
-        s2->c.me.map     = (uint32_t*)me_map;
-        s2->c.me.score_map = s2->c.me.map + ME_MAP_SIZE;
+        s2->me.map       = (uint32_t*)me_map;
+        s2->me.score_map = s2->me.map + ME_MAP_SIZE;
         me_map          += ME_MAP_ALLOC_SIZE;
 
         s2->p_mv_table            = tmp_mv_table;
@@ -2789,8 +2789,8 @@ static int pre_estimate_motion_thread(AVCodecContext *c, void *arg){
     MPVEncContext *const s = *(void**)arg;
 
 
-    s->c.me.pre_pass = 1;
-    s->c.me.dia_size = s->c.avctx->pre_dia_size;
+    s->me.pre_pass = 1;
+    s->me.dia_size = s->c.avctx->pre_dia_size;
     s->c.first_slice_line = 1;
     for (s->c.mb_y = s->c.end_mb_y - 1; s->c.mb_y >= s->c.start_mb_y; s->c.mb_y--) {
         for (s->c.mb_x = s->c.mb_width - 1; s->c.mb_x >=0 ; s->c.mb_x--)
@@ -2798,7 +2798,7 @@ static int pre_estimate_motion_thread(AVCodecContext *c, void *arg){
         s->c.first_slice_line = 0;
     }
 
-    s->c.me.pre_pass = 0;
+    s->me.pre_pass = 0;
 
     return 0;
 }
@@ -2806,7 +2806,7 @@ static int pre_estimate_motion_thread(AVCodecContext *c, void *arg){
 static int estimate_motion_thread(AVCodecContext *c, void *arg){
     MPVEncContext *const s = *(void**)arg;
 
-    s->c.me.dia_size = s->c.avctx->dia_size;
+    s->me.dia_size = s->c.avctx->dia_size;
     s->c.first_slice_line = 1;
     for (s->c.mb_y = s->c.start_mb_y; s->c.mb_y < s->c.end_mb_y; s->c.mb_y++) {
         s->c.mb_x = 0; //for block init below
@@ -2844,7 +2844,7 @@ static int mb_var_thread(AVCodecContext *c, void *arg){
 
             s->mb_var [s->c.mb_stride * mb_y + mb_x] = varc;
             s->mb_mean[s->c.mb_stride * mb_y + mb_x] = (sum+128)>>8;
-            s->c.me.mb_var_sum_temp    += varc;
+            s->me.mb_var_sum_temp    += varc;
         }
     }
     return 0;
@@ -3586,9 +3586,9 @@ static int encode_thread(AVCodecContext *c, void *arg){
 #define MERGE(field) dst->field += src->field; src->field=0
 static void merge_context_after_me(MPVEncContext *const dst, MPVEncContext *const src)
 {
-    MERGE(c.me.scene_change_score);
-    MERGE(c.me.mc_mb_var_sum_temp);
-    MERGE(c.me.mb_var_sum_temp);
+    MERGE(me.scene_change_score);
+    MERGE(me.mc_mb_var_sum_temp);
+    MERGE(me.mb_var_sum_temp);
 }
 
 static void merge_context_after_encode(MPVEncContext *const dst, MPVEncContext *const src)
@@ -3681,8 +3681,8 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
     int context_count = s->c.slice_context_count;
 
     /* Reset the average MB variance */
-    s->c.me.mb_var_sum_temp    =
-    s->c.me.mc_mb_var_sum_temp = 0;
+    s->me.mb_var_sum_temp    =
+    s->me.mc_mb_var_sum_temp = 0;
 
     /* we need to initialize some time vars before we can encode B-frames */
     // RAL: Condition added for MPEG1VIDEO
@@ -3691,7 +3691,7 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
     if (CONFIG_MPEG4_ENCODER && s->c.codec_id == AV_CODEC_ID_MPEG4)
         ff_set_mpeg4_time(s);
 
-    s->c.me.scene_change_score=0;
+    s->me.scene_change_score=0;
 
 //    s->lambda = s->c.cur_pic.ptr->quality; //FIXME qscale / ... stuff for ME rate distortion
 
@@ -3714,8 +3714,6 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
         update_qscale(m);
     }
 
-    ff_me_init_pic(s);
-
     s->c.mb_intra = 0; //for the rate distortion & bit compare functions
     for (int i = 0; i < context_count; i++) {
         MPVEncContext *const slice = s->c.enc_contexts[i];
@@ -3729,7 +3727,8 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
             slice->lambda  = s->lambda;
             slice->lambda2 = s->lambda2;
         }
-        slice->c.me.temp = slice->c.me.scratchpad = slice->c.sc.scratchpad_buf;
+        slice->me.temp = slice->me.scratchpad = slice->c.sc.scratchpad_buf;
+        ff_me_init_pic(slice);
 
         h     = s->c.mb_height;
         start = pkt->data + (size_t)(((int64_t) pkt->size) * slice->c.start_mb_y / h);
@@ -3767,11 +3766,11 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
     for(i=1; i<context_count; i++){
         merge_context_after_me(s, s->c.enc_contexts[i]);
     }
-    m->mc_mb_var_sum = s->c.me.mc_mb_var_sum_temp;
-    m->mb_var_sum    = s->c.me.   mb_var_sum_temp;
+    m->mc_mb_var_sum = s->me.mc_mb_var_sum_temp;
+    m->mb_var_sum    = s->me.   mb_var_sum_temp;
     emms_c();
 
-    if (s->c.me.scene_change_score > m->scenechange_threshold &&
+    if (s->me.scene_change_score > m->scenechange_threshold &&
         s->c.pict_type == AV_PICTURE_TYPE_P) {
         s->c.pict_type = AV_PICTURE_TYPE_I;
         for (int i = 0; i < s->c.mb_stride * s->c.mb_height; i++)

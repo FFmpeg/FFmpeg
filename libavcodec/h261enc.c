@@ -377,7 +377,7 @@ static av_cold int h261_encode_init(AVCodecContext *avctx)
     s->max_qcoeff       = 127;
     s->ac_esc_length    = H261_ESC_LEN;
 
-    s->c.me.mv_penalty = mv_penalty;
+    s->me.mv_penalty = mv_penalty;
 
     s->intra_ac_vlc_length      = s->inter_ac_vlc_length      = uni_h261_rl_len;
     s->intra_ac_vlc_last_length = s->inter_ac_vlc_last_length = uni_h261_rl_len_last;

@@ -217,7 +217,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     mcf(12,12)
 
     ff_me_cmp_init(&enc->mecc, avctx);
-    ret = ff_me_init(&mpv->c.me, avctx, &enc->mecc, 0);
+    ret = ff_me_init(&mpv->me, avctx, &enc->mecc, 0);
     if (ret < 0)
         return ret;
     ff_mpegvideoencdsp_init(&enc->mpvencdsp, avctx);
@@ -232,15 +232,15 @@ static av_cold int encode_init(AVCodecContext *avctx)
     enc->m.lmax  = avctx->mb_lmax;
     mpv->c.mb_num  = (avctx->width * avctx->height + 255) / 256; // For ratecontrol
 
-    mpv->c.me.temp      =
-    mpv->c.me.scratchpad = av_calloc(avctx->width + 64, 2*16*2*sizeof(uint8_t));
+    mpv->me.temp      =
+    mpv->me.scratchpad = av_calloc(avctx->width + 64, 2*16*2*sizeof(uint8_t));
     mpv->c.sc.obmc_scratchpad = av_mallocz(MB_SIZE*MB_SIZE*12*sizeof(uint32_t));
-    mpv->c.me.map       = av_mallocz(2 * ME_MAP_SIZE * sizeof(*mpv->c.me.map));
-    if (!mpv->c.me.scratchpad || !mpv->c.me.map || !mpv->c.sc.obmc_scratchpad)
+    mpv->me.map       = av_mallocz(2 * ME_MAP_SIZE * sizeof(*mpv->me.map));
+    if (!mpv->me.scratchpad || !mpv->me.map || !mpv->c.sc.obmc_scratchpad)
         return AVERROR(ENOMEM);
-    mpv->c.me.score_map = mpv->c.me.map + ME_MAP_SIZE;
+    mpv->me.score_map = mpv->me.map + ME_MAP_SIZE;
 
-    mpv->c.me.mv_penalty = ff_h263_get_mv_penalty();
+    mpv->me.mv_penalty = ff_h263_get_mv_penalty();
 
     s->max_ref_frames = av_clip(avctx->refs, 1, MAX_REF_FRAMES);
 
@@ -369,7 +369,7 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
 static int encode_q_branch(SnowEncContext *enc, int level, int x, int y)
 {
     SnowContext      *const s = &enc->com;
-    MotionEstContext *const c = &enc->m.s.c.me;
+    MotionEstContext *const c = &enc->m.s.me;
     uint8_t p_buffer[1024];
     uint8_t i_buffer[1024];
     uint8_t p_state[sizeof(s->block_state)];
@@ -840,12 +840,12 @@ static int get_block_rd(SnowEncContext *enc, int mb_x, int mb_y,
             distortion = 0;
             for(i=0; i<4; i++){
                 int off = sx+16*(i&1) + (sy+16*(i>>1))*ref_stride;
-                distortion += enc->m.s.c.me.me_cmp[0](&enc->m.s, src + off, dst + off, ref_stride, 16);
+                distortion += enc->m.s.me.me_cmp[0](&enc->m.s, src + off, dst + off, ref_stride, 16);
             }
         }
     }else{
         av_assert2(block_w==8);
-        distortion = enc->m.s.c.me.me_cmp[0](&enc->m.s, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, block_w*2);
+        distortion = enc->m.s.me.me_cmp[0](&enc->m.s, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, block_w*2);
     }
 
     if(plane_index==0){
@@ -911,7 +911,7 @@ static int get_4block_rd(SnowEncContext *enc, int mb_x, int mb_y, int plane_inde
         }
 
         av_assert1(block_w== 8 || block_w==16);
-        distortion += enc->m.s.c.me.me_cmp[block_w==8](&enc->m.s, src + x + y*ref_stride, dst + x + y*ref_stride, ref_stride, block_h);
+        distortion += enc->m.s.me.me_cmp[block_w==8](&enc->m.s, src + x + y*ref_stride, dst + x + y*ref_stride, ref_stride, block_h);
     }
 
     if(plane_index==0){
@@ -1866,9 +1866,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         mpv->c.b8_stride  = 2 * mpv->c.mb_width + 1;
         mpv->c.f_code     = 1;
         mpv->c.pict_type  = pic->pict_type;
-        mpv->c.me.motion_est = enc->motion_est;
-        mpv->c.me.scene_change_score = 0;
-        mpv->c.me.dia_size = avctx->dia_size;
+        mpv->me.motion_est = enc->motion_est;
+        mpv->me.scene_change_score = 0;
+        mpv->me.dia_size = avctx->dia_size;
         mpv->c.quarter_sample  = (s->avctx->flags & AV_CODEC_FLAG_QPEL)!=0;
         mpv->c.out_format      = FMT_H263;
         mpv->c.unrestricted_mv = 1;
@@ -1937,7 +1937,7 @@ redo_frame:
             if(   plane_index==0
                && pic->pict_type == AV_PICTURE_TYPE_P
                && !(avctx->flags&AV_CODEC_FLAG_PASS2)
-               && mpv->c.me.scene_change_score > enc->scenechange_threshold) {
+               && mpv->me.scene_change_score > enc->scenechange_threshold) {
                 ff_init_range_encoder(c, pkt->data, pkt->size);
                 ff_build_rac_states(c, (1LL<<32)/20, 256-8);
                 pic->pict_type= AV_PICTURE_TYPE_I;
@@ -2092,9 +2092,9 @@ static av_cold int encode_end(AVCodecContext *avctx)
         av_freep(&s->ref_scores[i]);
     }
 
-    enc->m.s.c.me.temp = NULL;
-    av_freep(&enc->m.s.c.me.scratchpad);
-    av_freep(&enc->m.s.c.me.map);
+    enc->m.s.me.temp = NULL;
+    av_freep(&enc->m.s.me.scratchpad);
+    av_freep(&enc->m.s.me.map);
     av_freep(&enc->m.s.c.sc.obmc_scratchpad);
 
     av_freep(&avctx->stats_out);

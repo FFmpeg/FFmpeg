@@ -35,7 +35,6 @@
 #include "h263dsp.h"
 #include "hpeldsp.h"
 #include "idctdsp.h"
-#include "motion_est.h"
 #include "mpegpicture.h"
 #include "qpeldsp.h"
 #include "videodsp.h"
@@ -204,8 +203,6 @@ typedef struct MpegEncContext {
     int field_select[2][2];
     int last_mv[2][2][2];             ///< last MV, used for MV prediction in MPEG-1 & B-frame MPEG-4
     int16_t direct_scale_mv[2][64];   ///< precomputed to avoid divisions in ff_mpeg4_set_direct_mv
-
-    MotionEstContext me;
 
     int no_rounding;  /**< apply no rounding to motion compensation (MPEG-4, msmpeg4, ...)
                         for B-frames rounding mode is always 0 */

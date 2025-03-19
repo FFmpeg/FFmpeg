@@ -406,7 +406,6 @@ static av_cold void free_duplicate_context(MpegEncContext *s)
 
     av_freep(&s->sc.edge_emu_buffer);
     av_freep(&s->sc.scratchpad_buf);
-    s->me.temp = s->me.scratchpad =
     s->sc.obmc_scratchpad = NULL;
     s->sc.linesize = 0;
 
@@ -428,13 +427,10 @@ static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
 {
 #define COPY(a) bak->a = src->a
     COPY(sc);
-    COPY(me.map);
-    COPY(me.score_map);
     COPY(blocks);
     COPY(block);
     COPY(start_mb_y);
     COPY(end_mb_y);
-    COPY(me.map_generation);
     COPY(ac_val_base);
     COPY(ac_val[0]);
     COPY(ac_val[1]);
@@ -636,8 +632,6 @@ static void clear_context(MpegEncContext *s)
     s->ac_val[0] =
     s->ac_val[1] =
     s->ac_val[2] =NULL;
-    s->me.scratchpad = NULL;
-    s->me.temp = NULL;
     memset(&s->sc, 0, sizeof(s->sc));
 
 
