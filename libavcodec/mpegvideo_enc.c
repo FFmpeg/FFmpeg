@@ -3717,8 +3717,11 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
     s->c.mb_intra = 0; //for the rate distortion & bit compare functions
     for (int i = 0; i < context_count; i++) {
         MPVEncContext *const slice = s->c.enc_contexts[i];
-        uint8_t *start, *end;
-        int h;
+        int h = s->c.mb_height;
+        uint8_t *start = pkt->data + (int64_t)pkt->size * slice->c.start_mb_y / h;
+        uint8_t *end   = pkt->data + (int64_t)pkt->size * slice->c.  end_mb_y / h;
+
+        init_put_bits(&slice->pb, start, end - start);
 
         if (i) {
             ret = ff_update_duplicate_context(&slice->c, &s->c);
@@ -3729,12 +3732,6 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
         }
         slice->me.temp = slice->me.scratchpad = slice->c.sc.scratchpad_buf;
         ff_me_init_pic(slice);
-
-        h     = s->c.mb_height;
-        start = pkt->data + (size_t)(((int64_t) pkt->size) * slice->c.start_mb_y / h);
-        end   = pkt->data + (size_t)(((int64_t) pkt->size) * slice->c.  end_mb_y / h);
-
-        init_put_bits(&s->c.enc_contexts[i]->pb, start, end - start);
     }
 
     /* Estimate motion for every MB */
