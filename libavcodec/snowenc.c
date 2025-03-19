@@ -1873,9 +1873,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         mpv->c.out_format      = FMT_H263;
         mpv->c.unrestricted_mv = 1;
 
-        mpv->c.lambda = enc->lambda;
-        mpv->c.qscale = (mpv->c.lambda*139 + FF_LAMBDA_SCALE*64) >> (FF_LAMBDA_SHIFT + 7);
-        enc->lambda2  = mpv->c.lambda2 = (mpv->c.lambda*mpv->c.lambda + FF_LAMBDA_SCALE/2) >> FF_LAMBDA_SHIFT;
+        mpv->lambda   = enc->lambda;
+        mpv->c.qscale = (mpv->lambda*139 + FF_LAMBDA_SCALE*64) >> (FF_LAMBDA_SHIFT + 7);
+        enc->lambda2  = mpv->lambda2 = (mpv->lambda*mpv->lambda + FF_LAMBDA_SCALE/2) >> FF_LAMBDA_SHIFT;
 
         mpv->c.qdsp = enc->qdsp; //move
         mpv->c.hdsp = s->hdsp;

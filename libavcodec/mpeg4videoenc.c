@@ -461,7 +461,7 @@ static inline int get_b_cbp(MPVEncContext *const s, int16_t block[6][64],
 
     if (s->mpv_flags & FF_MPV_FLAG_CBP_RD) {
         int score        = 0;
-        const int lambda = s->c.lambda2 >> (FF_LAMBDA_SHIFT - 6);
+        const int lambda = s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
 
         for (i = 0; i < 6; i++) {
             if (s->coded_score[i] < 0) {

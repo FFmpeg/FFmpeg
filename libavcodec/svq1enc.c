@@ -342,11 +342,11 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s2->me.scene_change_score         = 0;
         // s2->out_format                    = FMT_H263;
         // s2->unrestricted_mv               = 1;
-        s2->lambda                        = s->quality;
-        s2->qscale                        = s2->lambda * 139 +
+        s->m.lambda                       = s->quality;
+        s2->qscale                        = s->m.lambda * 139 +
                                              FF_LAMBDA_SCALE * 64 >>
                                              FF_LAMBDA_SHIFT + 7;
-        s2->lambda2                       = s2->lambda * s2->lambda +
+        s->m.lambda2                      = s->m.lambda * s->m.lambda +
                                              FF_LAMBDA_SCALE / 2 >>
                                              FF_LAMBDA_SHIFT;
 

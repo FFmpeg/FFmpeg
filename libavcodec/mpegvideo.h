@@ -166,8 +166,6 @@ typedef struct MpegEncContext {
 
     int qscale;                 ///< QP
     int chroma_qscale;          ///< chroma QP
-    unsigned int lambda;        ///< Lagrange multiplier used in rate distortion
-    unsigned int lambda2;       ///< (lambda*lambda) >> FF_LAMBDA_SHIFT
     int pict_type;              ///< AV_PICTURE_TYPE_I, AV_PICTURE_TYPE_P, AV_PICTURE_TYPE_B, ...
     int droppable;
 

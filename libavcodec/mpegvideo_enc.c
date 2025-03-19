@@ -204,7 +204,7 @@ static inline void update_qscale(MPVMainEncContext *const m)
         int best = 1;
 
         for (i = 0 ; i<FF_ARRAY_ELEMS(ff_mpeg2_non_linear_qscale); i++) {
-            int diff = FFABS((ff_mpeg2_non_linear_qscale[i]<<(FF_LAMBDA_SHIFT + 6)) - (int)s->c.lambda * 139);
+            int diff = FFABS((ff_mpeg2_non_linear_qscale[i]<<(FF_LAMBDA_SHIFT + 6)) - (int)s->lambda * 139);
             if (ff_mpeg2_non_linear_qscale[i] < s->c.avctx->qmin ||
                 (ff_mpeg2_non_linear_qscale[i] > s->c.avctx->qmax && !m->vbv_ignore_qmax))
                 continue;
@@ -215,12 +215,12 @@ static inline void update_qscale(MPVMainEncContext *const m)
         }
         s->c.qscale = best;
     } else {
-        s->c.qscale = (s->c.lambda * 139 + FF_LAMBDA_SCALE * 64) >>
+        s->c.qscale = (s->lambda * 139 + FF_LAMBDA_SCALE * 64) >>
                     (FF_LAMBDA_SHIFT + 7);
         s->c.qscale = av_clip(s->c.qscale, s->c.avctx->qmin, m->vbv_ignore_qmax ? 31 : s->c.avctx->qmax);
     }
 
-    s->c.lambda2 = (s->c.lambda * s->c.lambda + FF_LAMBDA_SCALE / 2) >>
+    s->lambda2 = (s->lambda * s->lambda + FF_LAMBDA_SCALE / 2) >>
                  FF_LAMBDA_SHIFT;
 }
 
@@ -260,8 +260,8 @@ static void update_duplicate_context_after_me(MPVEncContext *const dst,
     COPY(c.f_code);
     COPY(c.b_code);
     COPY(c.qscale);
-    COPY(c.lambda);
-    COPY(c.lambda2);
+    COPY(lambda);
+    COPY(lambda2);
     COPY(c.frame_pred_frame_dct); // FIXME don't set in encode_header
     COPY(c.progressive_frame);    // FIXME don't set in encode_header
     COPY(c.partitioned_frame);    // FIXME don't set in encode_header
@@ -1474,7 +1474,7 @@ static int skip_check(MPVMainEncContext *const m,
 
     if (score64 < m->frame_skip_threshold)
         return 1;
-    if (score64 < ((m->frame_skip_factor * (int64_t) s->c.lambda) >> 8))
+    if (score64 < ((m->frame_skip_factor * (int64_t) s->lambda) >> 8))
         return 1;
     return 0;
 }
@@ -1989,8 +1989,8 @@ vbv_retry:
             int min_step = hq ? 1 : (1<<(FF_LAMBDA_SHIFT + 7))/139;
 
             if (put_bits_count(&s->pb) > max_size &&
-                s->c.lambda < m->lmax) {
-                m->next_lambda = FFMAX(s->c.lambda + min_step, s->c.lambda *
+                s->lambda < m->lmax) {
+                m->next_lambda = FFMAX(s->lambda + min_step, s->lambda *
                                        (s->c.qscale + 1) / s->c.qscale);
                 if (s->adaptive_quant) {
                     for (int i = 0; i < s->c.mb_height * s->c.mb_stride; i++)
@@ -2295,8 +2295,8 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
         const int last_qp = s->c.qscale;
         const int mb_xy = mb_x + mb_y * s->c.mb_stride;
 
-        s->c.lambda = s->lambda_table[mb_xy];
-        s->c.lambda2 = (s->c.lambda * s->c.lambda + FF_LAMBDA_SCALE / 2) >>
+        s->lambda  = s->lambda_table[mb_xy];
+        s->lambda2 = (s->lambda * s->lambda + FF_LAMBDA_SCALE / 2) >>
                        FF_LAMBDA_SHIFT;
 
         if (!(s->mpv_flags & FF_MPV_FLAG_QP_RD)) {
@@ -2721,7 +2721,7 @@ static void encode_mb_hq(MPVEncContext *const s, MPVEncContext *const backup, MP
     if (s->c.avctx->mb_decision == FF_MB_DECISION_RD) {
         mpv_reconstruct_mb(s, s->c.block);
 
-        score *= s->c.lambda2;
+        score *= s->lambda2;
         score += sse_mb(s) << FF_LAMBDA_SHIFT;
     }
 
@@ -3648,10 +3648,10 @@ static int estimate_qp(MPVMainEncContext *const m, int dry_run)
             break;
         }
 
-        s->c.lambda= s->lambda_table[0];
+        s->lambda = s->lambda_table[0];
         //FIXME broken
     }else
-        s->c.lambda = s->c.cur_pic.ptr->f->quality;
+        s->lambda = s->c.cur_pic.ptr->f->quality;
     update_qscale(m);
     return 0;
 }
@@ -3692,7 +3692,7 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
 
     s->c.me.scene_change_score=0;
 
-//    s->c.lambda= s->c.cur_pic.ptr->quality; //FIXME qscale / ... stuff for ME rate distortion
+//    s->lambda = s->c.cur_pic.ptr->quality; //FIXME qscale / ... stuff for ME rate distortion
 
     if (s->c.pict_type == AV_PICTURE_TYPE_I) {
         s->c.no_rounding = s->c.msmpeg4_version >= MSMP4_V3;
@@ -3707,9 +3707,9 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
         ff_get_2pass_fcode(m);
     } else if (!(s->c.avctx->flags & AV_CODEC_FLAG_QSCALE)) {
         if (s->c.pict_type == AV_PICTURE_TYPE_B)
-            s->c.lambda = m->last_lambda_for[s->c.pict_type];
+            s->lambda = m->last_lambda_for[s->c.pict_type];
         else
-            s->c.lambda = m->last_lambda_for[m->last_non_b_pict_type];
+            s->lambda = m->last_lambda_for[m->last_non_b_pict_type];
         update_qscale(m);
     }
 
@@ -3725,6 +3725,8 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
             ret = ff_update_duplicate_context(&slice->c, &s->c);
             if (ret < 0)
                 return ret;
+            slice->lambda  = s->lambda;
+            slice->lambda2 = s->lambda2;
         }
         slice->c.me.temp = slice->c.me.scratchpad = slice->c.sc.scratchpad_buf;
 
@@ -3737,8 +3739,8 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
 
     /* Estimate motion for every MB */
     if (s->c.pict_type != AV_PICTURE_TYPE_I) {
-        s->c.lambda  = (s->c.lambda  * m->me_penalty_compensation + 128) >> 8;
-        s->c.lambda2 = (s->c.lambda2 * (int64_t) m->me_penalty_compensation + 128) >> 8;
+        s->lambda  = (s->lambda  * m->me_penalty_compensation + 128) >> 8;
+        s->lambda2 = (s->lambda2 * (int64_t) m->me_penalty_compensation + 128) >> 8;
         if (s->c.pict_type != AV_PICTURE_TYPE_B) {
             if ((m->me_pre && m->last_non_b_pict_type == AV_PICTURE_TYPE_I) ||
                 m->me_pre == 2) {
@@ -3970,7 +3972,7 @@ static int dct_quantize_trellis_c(MPVEncContext *const s,
     int qmul, qadd, start_i, last_non_zero, i, dc;
     const int esc_length= s->ac_esc_length;
     const uint8_t *length, *last_length;
-    const int lambda = s->c.lambda2 >> (FF_LAMBDA_SHIFT - 6);
+    const int lambda = s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
     int mpeg2_qscale;
 
     s->fdsp.fdct(block);
@@ -4360,7 +4362,7 @@ static int dct_quantize_refine(MPVEncContext *const s, //FIXME breaks denoise?
         av_assert2(w<(1<<6));
         sum += w*w;
     }
-    lambda = sum*(uint64_t)s->c.lambda2 >> (FF_LAMBDA_SHIFT - 6 + 6 + 6 + 6);
+    lambda = sum*(uint64_t)s->lambda2 >> (FF_LAMBDA_SHIFT - 6 + 6 + 6 + 6);
 
     run=0;
     rle_index=0;

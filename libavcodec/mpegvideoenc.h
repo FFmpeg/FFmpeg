@@ -47,6 +47,8 @@ typedef struct MPVEncContext {
     /** bit output */
     PutBitContext pb;
 
+    unsigned int lambda;        ///< Lagrange multiplier used in rate distortion
+    unsigned int lambda2;       ///< (lambda*lambda) >> FF_LAMBDA_SHIFT
     int *lambda_table;
     int adaptive_quant;         ///< use adaptive quantization
     int dquant;                 ///< qscale difference to prev qscale

@@ -902,9 +902,9 @@ void ff_estimate_p_frame_motion(MPVEncContext *const s,
     av_assert0(s->c.linesize == c->stride);
     av_assert0(s->c.uvlinesize == c->uvstride);
 
-    c->penalty_factor     = get_penalty_factor(s->c.lambda, s->c.lambda2, c->avctx->me_cmp);
-    c->sub_penalty_factor = get_penalty_factor(s->c.lambda, s->c.lambda2, c->avctx->me_sub_cmp);
-    c->mb_penalty_factor  = get_penalty_factor(s->c.lambda, s->c.lambda2, c->avctx->mb_cmp);
+    c->penalty_factor     = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_cmp);
+    c->sub_penalty_factor = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_sub_cmp);
+    c->mb_penalty_factor  = get_penalty_factor(s->lambda, s->lambda2, c->avctx->mb_cmp);
     c->current_mv_penalty = c->mv_penalty[s->c.f_code] + MAX_DMV;
 
     get_limits(s, 16*mb_x, 16*mb_y, 0);
@@ -968,14 +968,14 @@ void ff_estimate_p_frame_motion(MPVEncContext *const s,
     c->mc_mb_var_sum_temp += (vard+128)>>8;
 
     if (c->avctx->mb_decision > FF_MB_DECISION_SIMPLE) {
-        int p_score = FFMIN(vard, varc - 500 + (s->c.lambda2 >> FF_LAMBDA_SHIFT)*100);
-        int i_score = varc - 500 + (s->c.lambda2 >> FF_LAMBDA_SHIFT)*20;
+        int p_score = FFMIN(vard, varc - 500 + (s->lambda2 >> FF_LAMBDA_SHIFT)*100);
+        int i_score = varc - 500 + (s->lambda2 >> FF_LAMBDA_SHIFT)*20;
         c->scene_change_score+= ff_sqrt(p_score) - ff_sqrt(i_score);
 
         if (vard*2 + 200*256 > varc && !s->intra_penalty)
             mb_type|= CANDIDATE_MB_TYPE_INTRA;
         if (varc*2 + 200*256 > vard || s->c.qscale > 24){
-//        if (varc*2 + 200*256 + 50*(s->c.lambda2>>FF_LAMBDA_SHIFT) > vard){
+//        if (varc*2 + 200*256 + 50*(s->lambda2>>FF_LAMBDA_SHIFT) > vard){
             mb_type|= CANDIDATE_MB_TYPE_INTER;
             c->sub_motion_search(s, &mx, &my, dmin, 0, 0, 0, 16);
             if (s->mpv_flags & FF_MPV_FLAG_MV0)
@@ -1050,8 +1050,8 @@ void ff_estimate_p_frame_motion(MPVEncContext *const s,
             s->c.cur_pic.mb_type[mb_y*s->c.mb_stride + mb_x] = 0;
 
         {
-            int p_score = FFMIN(vard, varc-500+(s->c.lambda2>>FF_LAMBDA_SHIFT)*100);
-            int i_score = varc-500+(s->c.lambda2>>FF_LAMBDA_SHIFT)*20;
+            int p_score = FFMIN(vard, varc-500+(s->lambda2>>FF_LAMBDA_SHIFT)*100);
+            int i_score = varc-500+(s->lambda2>>FF_LAMBDA_SHIFT)*20;
             c->scene_change_score+= ff_sqrt(p_score) - ff_sqrt(i_score);
         }
     }
@@ -1071,7 +1071,7 @@ int ff_pre_estimate_p_frame_motion(MPVEncContext *const s,
 
     av_assert0(s->c.quarter_sample == 0 || s->c.quarter_sample == 1);
 
-    c->pre_penalty_factor = get_penalty_factor(s->c.lambda, s->c.lambda2, c->avctx->me_pre_cmp);
+    c->pre_penalty_factor = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_pre_cmp);
     c->current_mv_penalty = c->mv_penalty[s->c.f_code] + MAX_DMV;
 
     get_limits(s, 16*mb_x, 16*mb_y, 0);
@@ -1510,9 +1510,9 @@ void ff_estimate_b_frame_motion(MPVEncContext *const s,
         return;
     }
 
-    c->penalty_factor    = get_penalty_factor(s->c.lambda, s->c.lambda2, c->avctx->me_cmp);
-    c->sub_penalty_factor= get_penalty_factor(s->c.lambda, s->c.lambda2, c->avctx->me_sub_cmp);
-    c->mb_penalty_factor = get_penalty_factor(s->c.lambda, s->c.lambda2, c->avctx->mb_cmp);
+    c->penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_cmp);
+    c->sub_penalty_factor= get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_sub_cmp);
+    c->mb_penalty_factor = get_penalty_factor(s->lambda, s->lambda2, c->avctx->mb_cmp);
 
     if (s->c.codec_id == AV_CODEC_ID_MPEG4)
         dmin= direct_search(s, mb_x, mb_y);

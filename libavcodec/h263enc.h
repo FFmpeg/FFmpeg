@@ -52,7 +52,7 @@ static inline int get_p_cbp(MPVEncContext *const s,
         int best_cbpc_score = INT_MAX;
         int cbpc = (-1), cbpy = (-1);
         const int offset = (s->c.mv_type == MV_TYPE_16X16 ? 0 : 16) + (s->dquant ? 8 : 0);
-        const int lambda = s->c.lambda2 >> (FF_LAMBDA_SHIFT - 6);
+        const int lambda = s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
 
         for (int i = 0; i < 4; i++) {
             int score = ff_h263_inter_MCBPC_bits[i + offset] * lambda;
