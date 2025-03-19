@@ -295,6 +295,10 @@ typedef struct AV1RawTileData {
 } AV1RawTileData;
 
 typedef struct AV1RawTileGroup {
+    uint8_t     *data;
+    AVBufferRef *data_ref;
+    size_t       data_size;
+
     uint8_t  tile_start_and_end_present_flag;
     uint16_t tg_start;
     uint16_t tg_end;

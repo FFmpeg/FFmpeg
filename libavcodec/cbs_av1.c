@@ -782,7 +782,8 @@ fail:
 static int cbs_av1_ref_tile_data(CodedBitstreamContext *ctx,
                                  CodedBitstreamUnit *unit,
                                  GetBitContext *gbc,
-                                 AV1RawTileData *td)
+                                 AVBufferRef **data_ref,
+                                 uint8_t **data, size_t *data_size)
 {
     int pos;
 
@@ -795,12 +796,12 @@ static int cbs_av1_ref_tile_data(CodedBitstreamContext *ctx,
     // Must be byte-aligned at this point.
     av_assert0(pos % 8 == 0);
 
-    td->data_ref = av_buffer_ref(unit->data_ref);
-    if (!td->data_ref)
+    *data_ref = av_buffer_ref(unit->data_ref);
+    if (!*data_ref)
         return AVERROR(ENOMEM);
 
-    td->data      = unit->data      + pos / 8;
-    td->data_size = unit->data_size - pos / 8;
+    *data      = unit->data      + pos / 8;
+    *data_size = unit->data_size - pos / 8;
 
     return 0;
 }
@@ -901,28 +902,31 @@ static int cbs_av1_read_unit(CodedBitstreamContext *ctx,
                 return err;
         }
         break;
-    case AV1_OBU_TILE_GROUP:
-        {
-            err = cbs_av1_read_tile_group_obu(ctx, &gbc,
-                                              &obu->obu.tile_group);
-            if (err < 0)
-                return err;
-
-            err = cbs_av1_ref_tile_data(ctx, unit, &gbc,
-                                        &obu->obu.tile_group.tile_data);
-            if (err < 0)
-                return err;
-        }
-        break;
     case AV1_OBU_FRAME:
-        {
             err = cbs_av1_read_frame_obu(ctx, &gbc, &obu->obu.frame,
                                          unit->data_ref);
             if (err < 0)
                 return err;
+    // fall-through
+    case AV1_OBU_TILE_GROUP:
+        {
+            AV1RawTileGroup *tile_group = obu->header.obu_type == AV1_OBU_FRAME ? &obu->obu.frame.tile_group
+                                                                                : &obu->obu.tile_group;
+            err = cbs_av1_ref_tile_data(ctx, unit, &gbc,
+                                        &tile_group->data_ref,
+                                        &tile_group->data,
+                                        &tile_group->data_size);
+            if (err < 0)
+                return err;
+
+            err = cbs_av1_read_tile_group_obu(ctx, &gbc, tile_group);
+            if (err < 0)
+                return err;
 
             err = cbs_av1_ref_tile_data(ctx, unit, &gbc,
-                                        &obu->obu.frame.tile_group.tile_data);
+                                        &tile_group->tile_data.data_ref,
+                                        &tile_group->tile_data.data,
+                                        &tile_group->tile_data.data_size);
             if (err < 0)
                 return err;
         }
@@ -935,7 +939,9 @@ static int cbs_av1_read_unit(CodedBitstreamContext *ctx,
                 return err;
 
             err = cbs_av1_ref_tile_data(ctx, unit, &gbc,
-                                        &obu->obu.tile_list.tile_data);
+                                        &obu->obu.tile_list.tile_data.data_ref,
+                                        &obu->obu.tile_list.tile_data.data,
+                                        &obu->obu.tile_list.tile_data.data_size);
             if (err < 0)
                 return err;
         }
@@ -1065,23 +1071,20 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
                 goto error;
         }
         break;
-    case AV1_OBU_TILE_GROUP:
-        {
-            err = cbs_av1_write_tile_group_obu(ctx, pbc,
-                                               &obu->obu.tile_group);
-            if (err < 0)
-                goto error;
-
-            td = &obu->obu.tile_group.tile_data;
-        }
-        break;
     case AV1_OBU_FRAME:
-        {
             err = cbs_av1_write_frame_obu(ctx, pbc, &obu->obu.frame, NULL);
             if (err < 0)
                 goto error;
+    // fall-through
+    case AV1_OBU_TILE_GROUP:
+        {
+            AV1RawTileGroup *tile_group = obu->header.obu_type == AV1_OBU_FRAME ? &obu->obu.frame.tile_group
+                                                                                : &obu->obu.tile_group;
+            err = cbs_av1_write_tile_group_obu(ctx, pbc, tile_group);
+            if (err < 0)
+                goto error;
 
-            td = &obu->obu.frame.tile_group.tile_data;
+            td = &tile_group->tile_data;
         }
         break;
     case AV1_OBU_TILE_LIST:
@@ -1258,11 +1261,29 @@ static const CodedBitstreamUnitTypeDescriptor cbs_av1_unit_types[] = {
     CBS_UNIT_TYPE_POD(AV1_OBU_TEMPORAL_DELIMITER,     AV1RawOBU),
     CBS_UNIT_TYPE_POD(AV1_OBU_FRAME_HEADER,           AV1RawOBU),
     CBS_UNIT_TYPE_POD(AV1_OBU_REDUNDANT_FRAME_HEADER, AV1RawOBU),
+    {
+        .nb_unit_types     = 1,
+        .unit_type.list[0] = AV1_OBU_TILE_GROUP,
+        .content_type      = CBS_CONTENT_TYPE_INTERNAL_REFS,
+        .content_size      = sizeof(AV1RawOBU),
+        .type.ref          = {
+            .nb_offsets = 2,
+            .offsets    = { offsetof(AV1RawOBU, obu.tile_group.data),
+                            offsetof(AV1RawOBU, obu.tile_group.tile_data.data) }
+        },
+    },
 
-    CBS_UNIT_TYPE_INTERNAL_REF(AV1_OBU_TILE_GROUP, AV1RawOBU,
-                               obu.tile_group.tile_data.data),
-    CBS_UNIT_TYPE_INTERNAL_REF(AV1_OBU_FRAME,      AV1RawOBU,
-                               obu.frame.tile_group.tile_data.data),
+    {
+        .nb_unit_types     = 1,
+        .unit_type.list[0] = AV1_OBU_FRAME,
+        .content_type      = CBS_CONTENT_TYPE_INTERNAL_REFS,
+        .content_size      = sizeof(AV1RawOBU),
+        .type.ref          = {
+            .nb_offsets = 2,
+            .offsets    = { offsetof(AV1RawOBU, obu.frame.tile_group.data),
+                            offsetof(AV1RawOBU, obu.frame.tile_group.tile_data.data) }
+        },
+    },
     CBS_UNIT_TYPE_INTERNAL_REF(AV1_OBU_TILE_LIST,  AV1RawOBU,
                                obu.tile_list.tile_data.data),
     CBS_UNIT_TYPE_INTERNAL_REF(AV1_OBU_PADDING,    AV1RawOBU,

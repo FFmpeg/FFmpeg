@@ -1865,8 +1865,6 @@ static int FUNC(frame_obu)(CodedBitstreamContext *ctx, RWContext *rw,
 
     CHECK(FUNC(byte_alignment)(ctx, rw));
 
-    CHECK(FUNC(tile_group_obu)(ctx, rw, &current->tile_group));
-
     return 0;
 }
 
