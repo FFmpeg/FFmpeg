@@ -533,7 +533,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     MPVMainEncContext *const m = avctx->priv_data;
     MPVEncContext    *const s = &m->s;
     AVCPBProperties *cpb_props;
-    int i, ret;
+    int gcd, ret;
 
     mpv_encode_defaults(m);
 
@@ -817,11 +817,11 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         m->b_frame_strategy = 0;
     }
 
-    i = av_gcd(avctx->time_base.den, avctx->time_base.num);
-    if (i > 1) {
+    gcd = av_gcd(avctx->time_base.den, avctx->time_base.num);
+    if (gcd > 1) {
         av_log(avctx, AV_LOG_INFO, "removing common factors from framerate\n");
-        avctx->time_base.den /= i;
-        avctx->time_base.num /= i;
+        avctx->time_base.den /= gcd;
+        avctx->time_base.num /= gcd;
         //return -1;
     }
 
