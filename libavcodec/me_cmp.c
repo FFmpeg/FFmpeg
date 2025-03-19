@@ -758,7 +758,7 @@ static int rd8x8_c(MPVEncContext *const s, const uint8_t *src1, const uint8_t *s
     LOCAL_ALIGNED_16(uint8_t, lsrc2, [64]);
     int i, last, run, bits, level, distortion, start_i;
     const int esc_length = s->ac_esc_length;
-    uint8_t *length, *last_length;
+    const uint8_t *length, *last_length;
 
     copy_block8(lsrc1, src1, 8, stride, 8);
     copy_block8(lsrc2, src2, 8, stride, 8);
@@ -831,7 +831,7 @@ static int bit8x8_c(MPVEncContext *const s, const uint8_t *src1, const uint8_t *
     LOCAL_ALIGNED_16(int16_t, temp, [64]);
     int i, last, run, bits, level, start_i;
     const int esc_length = s->ac_esc_length;
-    uint8_t *length, *last_length;
+    const uint8_t *length, *last_length;
 
     s->pdsp.diff_pixels_unaligned(temp, src1, src2, stride);
 

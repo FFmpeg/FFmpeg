@@ -93,13 +93,13 @@ typedef struct MPVEncContext {
     int min_qcoeff;          ///< minimum encodable coefficient
     int max_qcoeff;          ///< maximum encodable coefficient
     int ac_esc_length;       ///< num of bits needed to encode the longest esc
-    uint8_t *intra_ac_vlc_length;
-    uint8_t *intra_ac_vlc_last_length;
-    uint8_t *intra_chroma_ac_vlc_length;
-    uint8_t *intra_chroma_ac_vlc_last_length;
-    uint8_t *inter_ac_vlc_length;
-    uint8_t *inter_ac_vlc_last_length;
-    uint8_t *luma_dc_vlc_length;
+    const uint8_t *intra_ac_vlc_length;
+    const uint8_t *intra_ac_vlc_last_length;
+    const uint8_t *intra_chroma_ac_vlc_length;
+    const uint8_t *intra_chroma_ac_vlc_last_length;
+    const uint8_t *inter_ac_vlc_length;
+    const uint8_t *inter_ac_vlc_last_length;
+    const uint8_t *luma_dc_vlc_length;
 
     int coded_score[12];
 
