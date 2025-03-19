@@ -3022,8 +3022,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
         ff_init_block_index(&s->c);
 
         for (int mb_x = 0; mb_x < s->c.mb_width; mb_x++) {
-            int xy = mb_y*s->c.mb_stride + mb_x; // removed const, H261 needs to adjust this
-            int mb_type= s->mb_type[xy];
+            int mb_type, xy;
 //            int d;
             int dmin= INT_MAX;
             int dir;
@@ -3047,11 +3046,10 @@ static int encode_thread(AVCodecContext *c, void *arg){
             s->c.mb_y = mb_y;  // moved into loop, can get changed by H.261
             ff_update_block_index(&s->c, 8, 0, s->c.chroma_x_shift);
 
-            if (CONFIG_H261_ENCODER && s->c.codec_id == AV_CODEC_ID_H261) {
+            if (CONFIG_H261_ENCODER && s->c.codec_id == AV_CODEC_ID_H261)
                 ff_h261_reorder_mb_index(s);
-                xy = s->c.mb_y*s->c.mb_stride + s->c.mb_x;
-                mb_type= s->mb_type[xy];
-            }
+            xy      = s->c.mb_y * s->c.mb_stride + s->c.mb_x;
+            mb_type = s->mb_type[xy];
 
             /* write gob / video packet header  */
             if(s->rtp_mode){
