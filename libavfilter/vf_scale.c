@@ -247,22 +247,6 @@ static int check_exprs(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    if (!IS_SCALE2REF(ctx) &&
-        (vars_w[VAR_S2R_MAIN_W]    || vars_h[VAR_S2R_MAIN_W]    ||
-         vars_w[VAR_S2R_MAIN_H]    || vars_h[VAR_S2R_MAIN_H]    ||
-         vars_w[VAR_S2R_MAIN_A]    || vars_h[VAR_S2R_MAIN_A]    ||
-         vars_w[VAR_S2R_MAIN_SAR]  || vars_h[VAR_S2R_MAIN_SAR]  ||
-         vars_w[VAR_S2R_MAIN_DAR]  || vars_h[VAR_S2R_MAIN_DAR]  ||
-         vars_w[VAR_S2R_MDAR]      || vars_h[VAR_S2R_MDAR]      ||
-         vars_w[VAR_S2R_MAIN_HSUB] || vars_h[VAR_S2R_MAIN_HSUB] ||
-         vars_w[VAR_S2R_MAIN_VSUB] || vars_h[VAR_S2R_MAIN_VSUB] ||
-         vars_w[VAR_S2R_MAIN_N]    || vars_h[VAR_S2R_MAIN_N]    ||
-         vars_w[VAR_S2R_MAIN_T]    || vars_h[VAR_S2R_MAIN_T]    ||
-         vars_w[VAR_S2R_MAIN_POS]  || vars_h[VAR_S2R_MAIN_POS]) ) {
-        av_log(ctx, AV_LOG_ERROR, "Expressions with scale2ref variables are not valid in scale filter.\n");
-        return AVERROR(EINVAL);
-    }
-
     if (scale->eval_mode == EVAL_MODE_INIT &&
         (vars_w[VAR_N]            || vars_h[VAR_N]           ||
          vars_w[VAR_T]            || vars_h[VAR_T]           ||
