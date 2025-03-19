@@ -3582,6 +3582,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
     return 0;
 }
 
+#define ADD(field)   dst->field += src->field;
 #define MERGE(field) dst->field += src->field; src->field=0
 static void merge_context_after_me(MPVEncContext *const dst, MPVEncContext *const src)
 {
@@ -3596,14 +3597,14 @@ static void merge_context_after_encode(MPVEncContext *const dst, MPVEncContext *
 
     MERGE(dct_count[0]); //note, the other dct vars are not part of the context
     MERGE(dct_count[1]);
-    MERGE(mv_bits);
-    MERGE(i_tex_bits);
-    MERGE(p_tex_bits);
-    MERGE(i_count);
-    MERGE(misc_bits);
-    MERGE(encoding_error[0]);
-    MERGE(encoding_error[1]);
-    MERGE(encoding_error[2]);
+    ADD(mv_bits);
+    ADD(i_tex_bits);
+    ADD(p_tex_bits);
+    ADD(i_count);
+    ADD(misc_bits);
+    ADD(encoding_error[0]);
+    ADD(encoding_error[1]);
+    ADD(encoding_error[2]);
 
     if (dst->dct_error_sum) {
         for(i=0; i<64; i++){
