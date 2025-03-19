@@ -106,16 +106,6 @@ typedef struct MotionEstContext {
                              int size, int h);
 } MotionEstContext;
 
-static inline int ff_h263_round_chroma(int x)
-{
-    //FIXME static or not?
-    static const uint8_t h263_chroma_roundtab[16] = {
-    //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
-        0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1,
-    };
-    return h263_chroma_roundtab[x & 0xf] + (x >> 3);
-}
-
 /**
  * Performs one-time initialization of the MotionEstContext.
  */

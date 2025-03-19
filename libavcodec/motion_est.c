@@ -32,6 +32,7 @@
 #include <limits.h>
 
 #include "avcodec.h"
+#include "h263.h"
 #include "mathops.h"
 #include "motion_est.h"
 #include "mpegutils.h"

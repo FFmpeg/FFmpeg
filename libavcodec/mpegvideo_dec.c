@@ -32,6 +32,7 @@
 
 #include "avcodec.h"
 #include "decode.h"
+#include "h263.h"
 #include "h264chroma.h"
 #include "internal.h"
 #include "mpegutils.h"
