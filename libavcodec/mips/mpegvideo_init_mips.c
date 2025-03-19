@@ -24,7 +24,8 @@
 #include "h263dsp_mips.h"
 #include "mpegvideo_mips.h"
 
-av_cold void ff_mpv_common_init_mips(MpegEncContext *s)
+av_cold void ff_mpv_unquantize_init_mips(MPVUnquantDSPContext *s,
+                                         int bitexact, int q_scale_type)
 {
     int cpu_flags = av_get_cpu_flags();
 
@@ -34,15 +35,15 @@ av_cold void ff_mpv_common_init_mips(MpegEncContext *s)
         s->dct_unquantize_mpeg1_intra = ff_dct_unquantize_mpeg1_intra_mmi;
         s->dct_unquantize_mpeg1_inter = ff_dct_unquantize_mpeg1_inter_mmi;
 
-        if (!(s->avctx->flags & AV_CODEC_FLAG_BITEXACT))
-            if (!s->q_scale_type)
+        if (!bitexact)
+            if (!q_scale_type)
                 s->dct_unquantize_mpeg2_intra = ff_dct_unquantize_mpeg2_intra_mmi;
     }
 
     if (have_msa(cpu_flags)) {
         s->dct_unquantize_h263_intra = ff_dct_unquantize_h263_intra_msa;
         s->dct_unquantize_h263_inter = ff_dct_unquantize_h263_inter_msa;
-        if (!s->q_scale_type)
+        if (!q_scale_type)
             s->dct_unquantize_mpeg2_inter = ff_dct_unquantize_mpeg2_inter_msa;
     }
 }

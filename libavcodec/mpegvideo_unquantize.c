@@ -246,28 +246,29 @@ static void dct_unquantize_h263_inter_c(MpegEncContext *s,
     }
 }
 
-av_cold void ff_mpv_unquantize_init(MpegEncContext *s)
+av_cold void ff_mpv_unquantize_init(MPVUnquantDSPContext *s,
+                                    int bitexact, int q_scale_type)
 {
     s->dct_unquantize_h263_intra  = dct_unquantize_h263_intra_c;
     s->dct_unquantize_h263_inter  = dct_unquantize_h263_inter_c;
     s->dct_unquantize_mpeg1_intra = dct_unquantize_mpeg1_intra_c;
     s->dct_unquantize_mpeg1_inter = dct_unquantize_mpeg1_inter_c;
     s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_c;
-    if (s->avctx->flags & AV_CODEC_FLAG_BITEXACT)
+    if (bitexact)
         s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_bitexact;
     s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_c;
 
 #if HAVE_INTRINSICS_NEON
-    ff_mpv_common_init_neon(s);
+    ff_mpv_unquantize_init_neon(s, bitexact);
 #endif
 
 #if ARCH_ARM
-    ff_mpv_common_init_arm(s);
+    ff_mpv_unquantize_init_arm(s, bitexact);
 #elif ARCH_PPC
-    ff_mpv_common_init_ppc(s);
+    ff_mpv_unquantize_init_ppc(s, bitexact);
 #elif ARCH_X86
-    ff_mpv_common_init_x86(s);
+    ff_mpv_unquantize_init_x86(s, bitexact);
 #elif ARCH_MIPS
-    ff_mpv_common_init_mips(s);
+    ff_mpv_unquantize_init_mips(s, bitexact, q_scale_type);
 #endif
 }

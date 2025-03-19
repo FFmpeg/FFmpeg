@@ -44,6 +44,7 @@
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
 #include "mpegvideodec.h"
+#include "mpegvideo_unquantize.h"
 #include "msmpeg4dec.h"
 #include "thread.h"
 #include "wmv2dec.h"
@@ -90,6 +91,7 @@ static enum AVPixelFormat h263_get_format(AVCodecContext *avctx)
 av_cold int ff_h263_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
+    MPVUnquantDSPContext unquant_dsp_ctx;
     int ret;
 
     s->out_format      = FMT_H263;
@@ -105,10 +107,12 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     s->y_dc_scale_table =
     s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
 
+    ff_mpv_unquantize_init(&unquant_dsp_ctx,
+                           avctx->flags & AV_CODEC_FLAG_BITEXACT, 0);
     // dct_unquantize defaults for H.263;
     // they might change on a per-frame basis for MPEG-4.
-    s->dct_unquantize_intra = s->dct_unquantize_h263_intra;
-    s->dct_unquantize_inter = s->dct_unquantize_h263_inter;
+    s->dct_unquantize_intra = unquant_dsp_ctx.dct_unquantize_h263_intra;
+    s->dct_unquantize_inter = unquant_dsp_ctx.dct_unquantize_h263_inter;
 
     /* select sub codec */
     switch (avctx->codec->id) {
@@ -117,9 +121,6 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
         break;
     case AV_CODEC_ID_MPEG4:
-        // dct_unquantize_inter is only used with MPEG-2 quantizers,
-        // so we can already set dct_unquantize_inter here once and for all.
-        s->dct_unquantize_inter = s->dct_unquantize_mpeg2_inter;
         break;
     case AV_CODEC_ID_MSMPEG4V1:
         s->h263_pred       = 1;
@@ -508,11 +509,6 @@ retry:
             goto retry;
         if (s->studio_profile != (s->idsp.idct == NULL))
             ff_mpv_idct_init(s);
-        if (s->mpeg_quant) {
-            s->dct_unquantize_intra = s->dct_unquantize_mpeg2_intra;
-        } else {
-            s->dct_unquantize_intra = s->dct_unquantize_h263_intra;
-        }
     }
 
     /* After H.263 & MPEG-4 header decode we have the height, width,

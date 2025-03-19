@@ -19,8 +19,8 @@
 #ifndef AVCODEC_ARM_MPEGVIDEO_ARM_H
 #define AVCODEC_ARM_MPEGVIDEO_ARM_H
 
-#include "libavcodec/mpegvideo.h"
+#include "libavcodec/mpegvideo_unquantize.h"
 
-void ff_mpv_common_init_armv5te(MpegEncContext *s);
+void ff_mpv_unquantize_init_armv5te(MPVUnquantDSPContext *s);
 
 #endif /* AVCODEC_ARM_MPEGVIDEO_ARM_H */

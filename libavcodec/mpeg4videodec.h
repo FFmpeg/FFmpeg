@@ -88,6 +88,11 @@ typedef struct Mpeg4DecContext {
 
     Mpeg4VideoDSPContext mdsp;
 
+    void (*dct_unquantize_mpeg2_intra)(MpegEncContext *s,
+                                       int16_t *block, int n, int qscale);
+    void (*dct_unquantize_h263_intra)(MpegEncContext *s,
+                                      int16_t *block, int n, int qscale);
+
     DECLARE_ALIGNED(8, int32_t, block32)[12][64];
     // 0 = DCT, 1 = DPCM top to bottom scan, -1 = DPCM bottom to top scan
     int dpcm_direction;

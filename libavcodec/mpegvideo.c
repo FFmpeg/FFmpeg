@@ -112,8 +112,6 @@ av_cold void ff_mpv_idct_init(MpegEncContext *s)
                          s->idsp.idct_permutation);
     ff_permute_scantable(s->permutated_intra_v_scantable, ff_alternate_vertical_scan,
                          s->idsp.idct_permutation);
-
-    ff_mpv_unquantize_init(s);
 }
 
 static av_cold int init_duplicate_context(MpegEncContext *s)

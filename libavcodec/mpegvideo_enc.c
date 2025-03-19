@@ -60,6 +60,7 @@
 #include "mjpegenc_common.h"
 #include "mathops.h"
 #include "mpegutils.h"
+#include "mpegvideo_unquantize.h"
 #include "mjpegenc.h"
 #include "speedhqenc.h"
 #include "msmpeg4enc.h"
@@ -307,6 +308,25 @@ av_cold void ff_dct_encode_init(MPVEncContext *const s)
 
     if (s->c.avctx->trellis)
         s->dct_quantize  = dct_quantize_trellis_c;
+}
+
+static av_cold void init_unquantize(MpegEncContext *const s, AVCodecContext *avctx)
+{
+    MPVUnquantDSPContext unquant_dsp_ctx;
+
+    ff_mpv_unquantize_init(&unquant_dsp_ctx,
+                           avctx->flags & AV_CODEC_FLAG_BITEXACT, s->q_scale_type);
+
+    if (s->mpeg_quant || s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+        s->dct_unquantize_intra = unquant_dsp_ctx.dct_unquantize_mpeg2_intra;
+        s->dct_unquantize_inter = unquant_dsp_ctx.dct_unquantize_mpeg2_inter;
+    } else if (s->out_format == FMT_H263 || s->out_format == FMT_H261) {
+        s->dct_unquantize_intra = unquant_dsp_ctx.dct_unquantize_h263_intra;
+        s->dct_unquantize_inter = unquant_dsp_ctx.dct_unquantize_h263_inter;
+    } else {
+        s->dct_unquantize_intra = unquant_dsp_ctx.dct_unquantize_mpeg1_intra;
+        s->dct_unquantize_inter = unquant_dsp_ctx.dct_unquantize_mpeg1_inter;
+    }
 }
 
 static av_cold int me_cmp_init(MPVMainEncContext *const m, AVCodecContext *avctx)
@@ -1012,6 +1032,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
      * to the slice contexts, so we initialize various fields of it
      * before calling ff_mpv_common_init(). */
     ff_mpv_idct_init(&s->c);
+    init_unquantize(&s->c, avctx);
     ff_fdctdsp_init(&s->fdsp, avctx);
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
     ff_pixblockdsp_init(&s->pdsp, avctx);
@@ -1029,17 +1050,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         return ret;
 
     ff_dct_encode_init(s);
-
-    if (s->c.mpeg_quant || s->c.codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-        s->c.dct_unquantize_intra = s->c.dct_unquantize_mpeg2_intra;
-        s->c.dct_unquantize_inter = s->c.dct_unquantize_mpeg2_inter;
-    } else if (s->c.out_format == FMT_H263 || s->c.out_format == FMT_H261) {
-        s->c.dct_unquantize_intra = s->c.dct_unquantize_h263_intra;
-        s->c.dct_unquantize_inter = s->c.dct_unquantize_h263_inter;
-    } else {
-        s->c.dct_unquantize_intra = s->c.dct_unquantize_mpeg1_intra;
-        s->c.dct_unquantize_inter = s->c.dct_unquantize_mpeg1_inter;
-    }
 
     if (CONFIG_H263_ENCODER && s->c.out_format == FMT_H263) {
         ff_h263_encode_init(m);

@@ -35,6 +35,7 @@
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
 #include "mpegvideodec.h"
+#include "mpegvideo_unquantize.h"
 #include "mpeg4video.h"
 #include "mpeg4videodata.h"
 #include "mpeg4videodec.h"
@@ -3390,6 +3391,9 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
         }
     }
 
+    s->dct_unquantize_intra = s->mpeg_quant ? ctx->dct_unquantize_mpeg2_intra
+                                            : ctx->dct_unquantize_h263_intra;
+
 end:
     /* detect buggy encoders which don't set the low_delay flag
      * (divx4/xvid/opendivx). Note we cannot detect divx5 without B-frames
@@ -3862,6 +3866,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     static AVOnce init_static_once = AV_ONCE_INIT;
     Mpeg4DecContext *ctx = avctx->priv_data;
     MpegEncContext *s = &ctx->m;
+    MPVUnquantDSPContext unquant_dsp_ctx;
     int ret;
 
     ctx->divx_version =
@@ -3871,6 +3876,15 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if ((ret = ff_h263_decode_init(avctx)) < 0)
         return ret;
+
+    ff_mpv_unquantize_init(&unquant_dsp_ctx,
+                           avctx->flags & AV_CODEC_FLAG_BITEXACT, 0);
+
+    ctx->dct_unquantize_h263_intra  = unquant_dsp_ctx.dct_unquantize_h263_intra;
+    ctx->dct_unquantize_mpeg2_intra = unquant_dsp_ctx.dct_unquantize_mpeg2_intra;
+    // dct_unquantize_inter is only used with MPEG-2 quantizers,
+    // so we can already set dct_unquantize_inter here once and for all.
+    s->dct_unquantize_inter = unquant_dsp_ctx.dct_unquantize_mpeg2_inter;
 
     s->h263_pred = 1;
     s->low_delay = 0; /* default, might be overridden in the vol header during header parsing */
