@@ -432,7 +432,7 @@ static void set_micro_version(FFV1Context *f)
         if (f->version == 3) {
             f->micro_version = 4;
         } else if (f->version == 4) {
-            f->micro_version = 5;
+            f->micro_version = 6;
         } else
             av_assert0(0);
 

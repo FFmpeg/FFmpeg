@@ -152,9 +152,9 @@ static void RENAME(load_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
                 r = *((const uint16_t *)(src[2] + x*2 + stride[2]*y));
             }
 
-            sc->fltmap[0][r] = 1;
-            sc->fltmap[1][g] = 1;
-            sc->fltmap[2][b] = 1;
+            sc->fltmap[0][g] = 1;
+            sc->fltmap[1][b] = 1;
+            sc->fltmap[2][r] = 1;
             if (transparency)
                 sc->fltmap[3][a] = 1;
         }
@@ -214,9 +214,9 @@ static int RENAME(encode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
             }
 
             if (sc->remap) {
-                r = sc->fltmap[0][r];
-                g = sc->fltmap[1][g];
-                b = sc->fltmap[2][b];
+                g = sc->fltmap[0][g];
+                b = sc->fltmap[1][b];
+                r = sc->fltmap[2][r];
                 if (transparency)
                     a = sc->fltmap[3][a];
             }
