@@ -628,12 +628,11 @@ next_coef:
                 put_bits(&s->pb, table_vlc[code][1] + 1,
                          (table_vlc[code][0] << 1) + sign);
             } else {
-                /* Escape seems to be pretty rare <5% so I do not optimize it;
-                 * the following value is the common escape value for both
-                 * possible tables (i.e. table_vlc[111]). */
-                put_bits(&s->pb, 6, 0x01);
+                /* Escape seems to be pretty rare <5% so I do not optimize it.
+                 * The following encodes run together with the common escape
+                 * value of both tables 000001b. */
+                put_bits(&s->pb, 6 + 6, 0x01 << 6 | run);
                 /* escape: only clip in this case */
-                put_bits(&s->pb, 6, run);
                 if (s->c.codec_id == AV_CODEC_ID_MPEG1VIDEO) {
                     if (alevel < 128) {
                         put_sbits(&s->pb, 8, level);

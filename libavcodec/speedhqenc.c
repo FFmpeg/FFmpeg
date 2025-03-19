@@ -194,11 +194,10 @@ static void encode_block(MPVEncContext *const s, const int16_t block[], int n)
                             ff_speedhq_vlc_table[code][0] | (sign << ff_speedhq_vlc_table[code][1]));
             } else {
                 /* escape seems to be pretty rare <5% so I do not optimize it;
-                 * the values correspond to ff_speedhq_vlc_table[121] */
-                put_bits_le(&s->pb, 6, 32);
-                /* escape: only clip in this case */
-                put_bits_le(&s->pb, 6, run);
-                put_bits_le(&s->pb, 12, level + 2048);
+                 * The following encodes the escape value 100000b together with
+                 * run and level. */
+                put_bits_le(&s->pb, 6 + 6 + 12, 0x20 | run << 6 |
+                                                (level + 2048) << 12);
             }
             last_non_zero = i;
         }
