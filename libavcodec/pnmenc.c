@@ -25,6 +25,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/float2half.h"
+#include "libavutil/intfloat.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"

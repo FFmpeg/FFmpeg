@@ -24,6 +24,7 @@
 #include "vp8dsp_mips.h"
 #include "constants.h"
 #include "libavutil/attributes.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/mips/mmiutils.h"
 #include "libavutil/mem_internal.h"
 

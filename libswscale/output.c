@@ -19,14 +19,15 @@
  */
 
 #include <math.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/avutil.h"
 #include "libavutil/avassert.h"
 #include "libavutil/bswap.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem_internal.h"

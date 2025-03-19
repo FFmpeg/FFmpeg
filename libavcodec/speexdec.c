@@ -54,6 +54,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/float_dsp.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
 #include "bytestream.h"

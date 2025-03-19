@@ -19,12 +19,13 @@
  */
 
 #include <math.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 
 #include "libavutil/bswap.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
+#include "libavutil/intfloat.h"
 #include "config.h"
 #include "swscale_internal.h"
 

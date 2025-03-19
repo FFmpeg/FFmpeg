@@ -27,6 +27,7 @@
 #include <zlib.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"

@@ -21,6 +21,7 @@
 #include "libavcodec/hevc/hevcdec.h"
 #include "libavcodec/bit_depth_template.c"
 #include "libavcodec/mips/hevcdsp_mips.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/mips/mmiutils.h"
 
 #define PUT_HEVC_QPEL_H(w, x_step, src_step, dst_step)                   \

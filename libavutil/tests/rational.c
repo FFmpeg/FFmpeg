@@ -21,6 +21,7 @@
 
 #include "libavutil/rational.c"
 #include "libavutil/integer.h"
+#include "libavutil/intfloat.h"
 
 int main(void)
 {
