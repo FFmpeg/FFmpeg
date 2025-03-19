@@ -66,13 +66,12 @@
     do {                                                        \
         LOCAL_ALIGNED_16(type, dst0, [64 * 64]);                \
         LOCAL_ALIGNED_16(type, dst1, [64 * 64]);                \
-        declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, \
-                          void, type *dst, const type *src,     \
-                          ptrdiff_t dst_linesize,               \
-                          ptrdiff_t src_linesize,               \
-                          int block_w, int block_h,             \
-                          int src_x, int src_y,                 \
-                          int src_w, int src_h);                \
+        declare_func(void, type *dst, const type *src,          \
+                     ptrdiff_t dst_linesize,                    \
+                     ptrdiff_t src_linesize,                    \
+                     int block_w, int block_h,                  \
+                     int src_x, int src_y,                      \
+                     int src_w, int src_h);                     \
         check_emu_edge_size(type, 16,  1, 64, 64);              \
         check_emu_edge_size(type, 16, 16, 64, 64);              \
         check_emu_edge_size(type, 64, 64, 64, 64);              \
