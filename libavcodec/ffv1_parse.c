@@ -419,6 +419,16 @@ int ff_ffv1_parse_header(FFV1Context *f, RangeCoder *c, uint8_t *state)
             } else
                 f->pix_fmt = AV_PIX_FMT_GBRAP16;
             f->use32bit = 1;
+        } else if (f->avctx->bits_per_raw_sample == 32 && !f->transparency) {
+            if (f->flt) {
+                f->pix_fmt = AV_PIX_FMT_GBRPF32;
+            }
+            f->use32bit = 1;
+        } else if (f->avctx->bits_per_raw_sample == 32 && f->transparency) {
+            if (f->flt) {
+                f->pix_fmt = AV_PIX_FMT_GBRAPF32;
+            }
+            f->use32bit = 1;
         }
     } else {
         av_log(f->avctx, AV_LOG_ERROR, "colorspace not supported\n");

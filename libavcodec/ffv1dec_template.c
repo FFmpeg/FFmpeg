@@ -138,7 +138,7 @@ static int RENAME(decode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
     int x, y, p;
     TYPE *sample[4][2];
     int lbd    = f->avctx->bits_per_raw_sample <= 8;
-    int bits   = f->avctx->bits_per_raw_sample > 0 ? f->avctx->bits_per_raw_sample : 8;
+    int bits   = f->avctx->bits_per_raw_sample > 0 ? FFMIN(f->avctx->bits_per_raw_sample, 16) : 8;
     int offset = 1 << bits;
     int transparency = f->transparency;
     int ac = f->ac;
@@ -186,16 +186,30 @@ static int RENAME(decode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
                 r += g;
             }
             if (sc->remap) {
-                g = sc->fltmap[0][g & 0xFFFF];
-                b = sc->fltmap[1][b & 0xFFFF];
-                r = sc->fltmap[2][r & 0xFFFF];
-                if (transparency)
-                    a = sc->fltmap[3][a & 0xFFFF];
+                if (f->avctx->bits_per_raw_sample == 32) {
+                    g = sc->fltmap32[0][g & 0xFFFF];
+                    b = sc->fltmap32[1][b & 0xFFFF];
+                    r = sc->fltmap32[2][r & 0xFFFF];
+                    if (transparency)
+                        a = sc->fltmap32[3][a & 0xFFFF];
+                } else {
+                    g = sc->fltmap[0][g & 0xFFFF];
+                    b = sc->fltmap[1][b & 0xFFFF];
+                    r = sc->fltmap[2][r & 0xFFFF];
+                    if (transparency)
+                        a = sc->fltmap[3][a & 0xFFFF];
+                }
             }
 
-            if (lbd)
+            if (lbd) {
                 *((uint32_t*)(src[0] + x*4 + stride[0]*y)) = b + ((unsigned)g<<8) + ((unsigned)r<<16) + ((unsigned)a<<24);
-            else if (sizeof(TYPE) == 4 || transparency) {
+            } else if (f->avctx->bits_per_raw_sample == 32) {
+                *((uint32_t*)(src[0] + x*4 + stride[0]*y)) = g;
+                *((uint32_t*)(src[1] + x*4 + stride[1]*y)) = b;
+                *((uint32_t*)(src[2] + x*4 + stride[2]*y)) = r;
+                if (transparency)
+                    *((uint32_t*)(src[3] + x*4 + stride[3]*y)) = a;
+            } else if (sizeof(TYPE) == 4 || transparency) {
                 *((uint16_t*)(src[0] + x*2 + stride[0]*y)) = g;
                 *((uint16_t*)(src[1] + x*2 + stride[1]*y)) = b;
                 *((uint16_t*)(src[2] + x*2 + stride[2]*y)) = r;

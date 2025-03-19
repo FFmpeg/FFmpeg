@@ -106,7 +106,11 @@ typedef struct FFV1SliceContext {
             uint64_t (*rc_stat2[MAX_QUANT_TABLES])[32][2];
         };
     };
-    uint16_t   fltmap[4][65536];
+    union {
+        uint16_t   bitmap  [4][65536]; //float encode
+        uint16_t   fltmap  [4][65536]; //halffloat encode & decode
+        uint32_t   fltmap32[4][65536]; //float decode
+    };
 } FFV1SliceContext;
 
 typedef struct FFV1Context {

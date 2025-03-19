@@ -249,6 +249,16 @@ static int decode_slice_header(const FFV1Context *f,
             }
         }
     }
+    if (f->avctx->bits_per_raw_sample == 32) {
+        if (!sc->remap) {
+            av_log(f->avctx, AV_LOG_ERROR, "unsupported remap\n");
+            return AVERROR_INVALIDDATA;
+        }
+        if (sc->slice_width * sc->slice_height > 65536) {
+            av_log(f->avctx, AV_LOG_ERROR, "32bit needs remap\n");
+            return AVERROR_INVALIDDATA;
+        }
+    }
 
     return 0;
 }
@@ -265,28 +275,38 @@ static void slice_set_damaged(FFV1Context *f, FFV1SliceContext *sc)
 
 static int decode_remap(FFV1Context *f, FFV1SliceContext *sc)
 {
-    int flip = sc->remap == 2 ? 0x7FFF : 0;
+    unsigned int end = f->avctx->bits_per_raw_sample == 32 ? 0xFFFFFFFF : 0xFFFF;
+    int flip = sc->remap == 2 ? (end>>1) : 0;
+    int sign = (end>>1)+1;
 
     for (int p= 0; p < 1 + 2*f->chroma_planes + f->transparency; p++) {
         int j = 0;
         int lu = 0;
         uint8_t state[2][32];
+        int64_t i;
         memset(state, 128, sizeof(state));
-
-        for (int i= 0; i<65536; i++) {
-            int run = get_symbol_inline(&sc->c, state[lu], 0);
-            if (run > 65536U - i)
+        for (i=0; i <= end ; i++) {
+            unsigned run = get_symbol_inline(&sc->c, state[lu], 0);
+            if (run > end - i + 1)
                 return AVERROR_INVALIDDATA;
             if (lu) {
                 lu ^= !run;
                 while (run--) {
-                    sc->fltmap[p][j++] = i ^ ((i&0x8000) ? 0 : flip);
+                    if (end == 0xFFFF) {
+                        sc->fltmap  [p][j++] = i ^ ((i&    0x8000) ? 0 : flip);
+                    } else
+                        sc->fltmap32[p][j++] = i ^ ((i&0x80000000) ? 0 : flip);
                     i++;
                 }
             } else {
                 i += run;
-                if (i != 65536)
-                    sc->fltmap[p][j++] = i ^ ((i&0x8000) ? 0 : flip);
+                if (i <= end) {
+                    if (end == 0xFFFF) {
+                        sc->fltmap  [p][j++] = i ^ ((i&    0x8000) ? 0 : flip);
+                    } else {
+                        sc->fltmap32[p][j++] = i ^ ((i&0x80000000) ? 0 : flip);
+                    }
+                }
                 lu ^= !run;
             }
         }
