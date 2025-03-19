@@ -1892,7 +1892,7 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
                    d->readrate_initial_burst);
             return AVERROR(EINVAL);
         }
-        d->readrate_catchup = o->readrate_catchup ? o->readrate_catchup : d->readrate;
+        d->readrate_catchup = o->readrate_catchup ? o->readrate_catchup : d->readrate * 1.05;
         if (d->readrate_catchup < d->readrate) {
             av_log(d, AV_LOG_ERROR,
                    "Option -readrate_catchup is %0.3f; it must be at least equal to %0.3f.\n",
