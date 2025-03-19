@@ -906,7 +906,7 @@ static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int 
         CHECK_CLIPPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
     }else{
-        if(dmin<((h*h*s->avctx->mv0_threshold)>>8)
+        if (dmin < ((h * h * c->avctx->mv0_threshold) >> 8)
                     && ( P_LEFT[0]    |P_LEFT[1]
                         |P_TOP[0]     |P_TOP[1]
                         |P_TOPRIGHT[0]|P_TOPRIGHT[1])==0){
