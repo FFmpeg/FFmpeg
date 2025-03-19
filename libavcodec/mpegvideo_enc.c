@@ -3586,9 +3586,9 @@ static int encode_thread(AVCodecContext *c, void *arg){
 #define MERGE(field) dst->field += src->field; src->field=0
 static void merge_context_after_me(MPVEncContext *const dst, MPVEncContext *const src)
 {
-    MERGE(me.scene_change_score);
-    MERGE(me.mc_mb_var_sum_temp);
-    MERGE(me.mb_var_sum_temp);
+    ADD(me.scene_change_score);
+    ADD(me.mc_mb_var_sum_temp);
+    ADD(me.mb_var_sum_temp);
 }
 
 static void merge_context_after_encode(MPVEncContext *const dst, MPVEncContext *const src)
@@ -3680,18 +3680,12 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
     int bits;
     int context_count = s->c.slice_context_count;
 
-    /* Reset the average MB variance */
-    s->me.mb_var_sum_temp    =
-    s->me.mc_mb_var_sum_temp = 0;
-
     /* we need to initialize some time vars before we can encode B-frames */
     // RAL: Condition added for MPEG1VIDEO
     if (s->c.out_format == FMT_MPEG1 || (s->c.h263_pred && s->c.msmpeg4_version == MSMP4_UNUSED))
         set_frame_distances(s);
     if (CONFIG_MPEG4_ENCODER && s->c.codec_id == AV_CODEC_ID_MPEG4)
         ff_set_mpeg4_time(s);
-
-    s->me.scene_change_score=0;
 
 //    s->lambda = s->c.cur_pic.ptr->quality; //FIXME qscale / ... stuff for ME rate distortion
 

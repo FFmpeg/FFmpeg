@@ -397,6 +397,10 @@ void ff_me_init_pic(MPVEncContext *const s)
         c->hpel_put[2][0]= c->hpel_put[2][1]=
         c->hpel_put[2][2]= c->hpel_put[2][3]= zero_hpel;
     }
+    /* Reset the average MB variance and scene change stats */
+    c->scene_change_score = 0;
+    c->mb_var_sum_temp    =
+    c->mc_mb_var_sum_temp = 0;
 }
 
 #define CHECK_SAD_HALF_MV(suffix, x, y) \
