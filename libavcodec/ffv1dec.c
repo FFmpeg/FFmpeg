@@ -277,7 +277,6 @@ static int decode_remap(FFV1Context *f, FFV1SliceContext *sc)
 {
     unsigned int end = f->avctx->bits_per_raw_sample == 32 ? 0xFFFFFFFF : 0xFFFF;
     int flip = sc->remap == 2 ? (end>>1) : 0;
-    int sign = (end>>1)+1;
 
     for (int p= 0; p < 1 + 2*f->chroma_planes + f->transparency; p++) {
         int j = 0;
