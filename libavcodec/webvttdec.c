@@ -34,20 +34,41 @@ static const struct {
     const char *from;
     const char *to;
 } webvtt_tag_replace[] = {
-    {"<i>", "{\\i1}"}, {"</i>", "{\\i0}"},
-    {"<b>", "{\\b1}"}, {"</b>", "{\\b0}"},
-    {"<u>", "{\\u1}"}, {"</u>", "{\\u0}"},
     {"{", "\\{{}"}, {"\\", "\\\xe2\x81\xa0"}, // escape to avoid ASS markup conflicts
     {"&gt;", ">"}, {"&lt;", "<"},
     {"&lrm;", "\xe2\x80\x8e"}, {"&rlm;", "\xe2\x80\x8f"},
     {"&amp;", "&"}, {"&nbsp;", "\\h"},
 };
+static const struct {
+    const char from[6];
+    const char to[6];
+} webvtt_valid_tags[] = {
+    {"i", "{\\i1}"}, {"/i", "{\\i0}"},
+    {"b", "{\\b1}"}, {"/b", "{\\b0}"},
+    {"u", "{\\u1}"}, {"/u", "{\\u0}"},
+};
 
 static int webvtt_event_to_ass(AVBPrint *buf, const char *p)
 {
-    int i, again = 0, skip = 0;
+    int i, again = 0;
 
     while (*p) {
+        if (*p == '<') {
+            const char *tag_end = strchr(p, '>');
+            ptrdiff_t len;
+            if (!tag_end)
+                break;
+            len = tag_end - p + 1;
+            for (i = 0; i < FF_ARRAY_ELEMS(webvtt_valid_tags); i++) {
+                const char *from = webvtt_valid_tags[i].from;
+                if(!strncmp(p + 1, from, strlen(from))) {
+                    av_bprintf(buf, "%s", webvtt_valid_tags[i].to);
+                    break;
+                }
+            }
+            p += len;
+            again = 1;
+        }
 
         for (i = 0; i < FF_ARRAY_ELEMS(webvtt_tag_replace); i++) {
             const char *from = webvtt_tag_replace[i].from;
@@ -59,21 +80,14 @@ static int webvtt_event_to_ass(AVBPrint *buf, const char *p)
                 break;
             }
         }
-        if (!*p)
-            break;
 
         if (again) {
             again = 0;
-            skip = 0;
             continue;
         }
-        if (*p == '<')
-            skip = 1;
-        else if (*p == '>')
-            skip = 0;
-        else if (p[0] == '\n' && p[1])
+        if (p[0] == '\n' && p[1])
             av_bprintf(buf, "\\N");
-        else if (!skip && *p != '\r')
+        else if (*p != '\r')
             av_bprint_chars(buf, *p, 1);
         p++;
     }
