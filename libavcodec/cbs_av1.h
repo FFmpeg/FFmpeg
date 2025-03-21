@@ -25,6 +25,15 @@
 #include "av1.h"
 #include "cbs.h"
 
+#ifndef CBS_AV1_OBU_METADATA
+#define CBS_AV1_OBU_METADATA 1
+#endif
+#ifndef CBS_AV1_OBU_TILE_LIST
+#define CBS_AV1_OBU_TILE_LIST 1
+#endif
+#ifndef CBS_AV1_OBU_PADDING
+#define CBS_AV1_OBU_PADDING 1
+#endif
 
 typedef struct AV1RawOBUHeader {
     uint8_t obu_forbidden_bit;
@@ -411,9 +420,15 @@ typedef struct AV1RawOBU {
         AV1RawFrameHeader    frame_header;
         AV1RawFrame          frame;
         AV1RawTileGroup      tile_group;
+#if CBS_AV1_OBU_TILE_LIST
         AV1RawTileList       tile_list;
+#endif
+#if CBS_AV1_OBU_METADATA
         AV1RawMetadata       metadata;
+#endif
+#if CBS_AV1_OBU_PADDING
         AV1RawPadding        padding;
+#endif
     } obu;
 } AV1RawOBU;
 
