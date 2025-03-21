@@ -375,11 +375,30 @@ typedef struct CheckasmPerf {
 #define PERF_STOP(t)   while(0)
 #endif
 
+#define BUF_RECT(type, name, w, h) \
+    LOCAL_ALIGNED_32(type, name##_buf, [((h)+32)*(FFALIGN(w,64)+64) + 64]); \
+    av_unused ptrdiff_t name##_stride = sizeof(type)*(FFALIGN(w,64)+64); \
+    av_unused int name##_buf_h = (h)+32; \
+    type *name = name##_buf + (FFALIGN(w,64)+64)*16 + 64
+
+#define PIXEL_RECT(name, w, h) \
+    LOCAL_ALIGNED_32(uint8_t, name##_buf, [sizeof(uint16_t) * (((h)+32)*(FFALIGN(w,64)+64) + 64)],); \
+    av_unused ptrdiff_t name##_stride = sizeof(uint16_t) * (FFALIGN(w,64)+64); \
+    av_unused int name##_buf_h = (h)+32; \
+    uint8_t *name = name##_buf + (FFALIGN(w,64)+64)*16 + 64
+
+#define CLEAR_BUF_RECT(name) \
+    memset(name##_buf, 0x99, name##_stride * name##_buf_h + 64)
+#define CLEAR_PIXEL_RECT(name) \
+    CLEAR_BUF_RECT(name)
+
 #define DECL_CHECKASM_CHECK_FUNC(type) \
 int checkasm_check_##type(const char *file, int line, \
                           const type *buf1, ptrdiff_t stride1, \
                           const type *buf2, ptrdiff_t stride2, \
-                          int w, int h, const char *name)
+                          int w, int h, const char *name, \
+                          int align_w, int align_h, \
+                          int padding)
 
 DECL_CHECKASM_CHECK_FUNC(uint8_t);
 DECL_CHECKASM_CHECK_FUNC(uint16_t);
@@ -390,18 +409,36 @@ DECL_CHECKASM_CHECK_FUNC(int32_t);
 #define PASTE(a,b) a ## b
 #define CONCAT(a,b) PASTE(a,b)
 
-#define checkasm_check(prefix, ...) CONCAT(checkasm_check_, prefix)(__FILE__, __LINE__, __VA_ARGS__)
+#define checkasm_check2(prefix, ...) CONCAT(checkasm_check_, prefix)(__FILE__, __LINE__, __VA_ARGS__)
+#define checkasm_check(prefix, ...) checkasm_check2(prefix, __VA_ARGS__, 0, 0, 0)
+/* Check a pointer from BUF_RECT, checking whether there have been
+ * writes outside of the designated area. */
+#define checkasm_check_padded(...) \
+    checkasm_check2(__VA_ARGS__, 1, 1, 8)
+/* Check a pointer from BUF_RECT, checking whether there have been
+ * writes outside of the designated area. Allow writing slightly past the
+ * end of the buffer, by aligning w/h to align_w/align_h, and checking
+ * for overwrites outside of that. */
+#define checkasm_check_padded_align(...) \
+    checkasm_check2(__VA_ARGS__, 8)
 
 /* This assumes that there is a local variable named "bit_depth".
  * For tests that don't have that and only operate on a single
  * bitdepth, just call checkasm_check(uint8_t, ...) directly. */
-#define checkasm_check_pixel(buf1, stride1, buf2, stride2, ...) \
+#define checkasm_check_pixel2(buf1, stride1, buf2, stride2, ...) \
     ((bit_depth > 8) ?                                          \
-     checkasm_check(uint16_t, (const uint16_t*)buf1, stride1,   \
-                              (const uint16_t*)buf2, stride2,   \
-                              __VA_ARGS__) :                    \
-     checkasm_check(uint8_t,  (const uint8_t*) buf1, stride1,   \
-                              (const uint8_t*) buf2, stride2,   \
-                              __VA_ARGS__))
+     checkasm_check2(uint16_t, (const uint16_t*)buf1, stride1,   \
+                               (const uint16_t*)buf2, stride2,   \
+                               __VA_ARGS__) :                    \
+     checkasm_check2(uint8_t,  (const uint8_t*) buf1, stride1,   \
+                               (const uint8_t*) buf2, stride2,   \
+                               __VA_ARGS__))
+#define checkasm_check_pixel(...) \
+    checkasm_check_pixel2(__VA_ARGS__, 0, 0, 0)
+#define checkasm_check_pixel_padded(...) \
+    checkasm_check_pixel2(__VA_ARGS__, 1, 1, 8)
+#define checkasm_check_pixel_padded_align(...) \
+    checkasm_check_pixel2(__VA_ARGS__, 8)
+
 
 #endif /* TESTS_CHECKASM_CHECKASM_H */

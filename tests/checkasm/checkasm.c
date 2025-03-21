@@ -1168,37 +1168,88 @@ void checkasm_report(const char *name, ...)
     }
 }
 
+static int check_err(const char *file, int line,
+                     const char *name, int w, int h,
+                     int *err)
+{
+    if (*err)
+        return 0;
+    if (!checkasm_fail_func("%s:%d", file, line))
+        return 1;
+    *err = 1;
+    fprintf(stderr, "%s (%dx%d):\n", name, w, h);
+    return 0;
+}
+
 #define DEF_CHECKASM_CHECK_FUNC(type, fmt) \
 int checkasm_check_##type(const char *file, int line, \
                           const type *buf1, ptrdiff_t stride1, \
                           const type *buf2, ptrdiff_t stride2, \
-                          int w, int h, const char *name) \
+                          int w, int h, const char *name, \
+                          int align_w, int align_h, \
+                          int padding) \
 { \
+    int aligned_w = (w + align_w - 1) & ~(align_w - 1); \
+    int aligned_h = (h + align_h - 1) & ~(align_h - 1); \
+    int err = 0; \
     int y = 0; \
     stride1 /= sizeof(*buf1); \
     stride2 /= sizeof(*buf2); \
     for (y = 0; y < h; y++) \
         if (memcmp(&buf1[y*stride1], &buf2[y*stride2], w*sizeof(*buf1))) \
             break; \
-    if (y == h) \
-        return 0; \
-    if (!checkasm_fail_func("%s:%d", file, line)) \
-        return 1; \
-    fprintf(stderr, "%s:\n", name); \
-    while (h--) { \
-        for (int x = 0; x < w; x++) \
-            fprintf(stderr, " " fmt, buf1[x]); \
-        fprintf(stderr, "    "); \
-        for (int x = 0; x < w; x++) \
-            fprintf(stderr, " " fmt, buf2[x]); \
-        fprintf(stderr, "    "); \
-        for (int x = 0; x < w; x++) \
-            fprintf(stderr, "%c", buf1[x] != buf2[x] ? 'x' : '.'); \
-        buf1 += stride1; \
-        buf2 += stride2; \
-        fprintf(stderr, "\n"); \
+    if (y != h) { \
+        if (check_err(file, line, name, w, h, &err)) \
+            return 1; \
+        for (y = 0; y < h; y++) { \
+            for (int x = 0; x < w; x++) \
+                fprintf(stderr, " " fmt, buf1[x]); \
+            fprintf(stderr, "    "); \
+            for (int x = 0; x < w; x++) \
+                fprintf(stderr, " " fmt, buf2[x]); \
+            fprintf(stderr, "    "); \
+            for (int x = 0; x < w; x++) \
+                fprintf(stderr, "%c", buf1[x] != buf2[x] ? 'x' : '.'); \
+            buf1 += stride1; \
+            buf2 += stride2; \
+            fprintf(stderr, "\n"); \
+        } \
+        buf1 -= h*stride1; \
+        buf2 -= h*stride2; \
     } \
-    return 1; \
+    for (y = -padding; y < 0; y++) \
+        if (memcmp(&buf1[y*stride1 - padding], &buf2[y*stride2 - padding], \
+                   (w + 2*padding)*sizeof(*buf1))) { \
+            if (check_err(file, line, name, w, h, &err)) \
+                return 1; \
+            fprintf(stderr, " overwrite above\n"); \
+            break; \
+        } \
+    for (y = aligned_h; y < aligned_h + padding; y++) \
+        if (memcmp(&buf1[y*stride1 - padding], &buf2[y*stride2 - padding], \
+                   (w + 2*padding)*sizeof(*buf1))) { \
+            if (check_err(file, line, name, w, h, &err)) \
+                return 1; \
+            fprintf(stderr, " overwrite below\n"); \
+            break; \
+        } \
+    for (y = 0; y < h; y++) \
+        if (memcmp(&buf1[y*stride1 - padding], &buf2[y*stride2 - padding], \
+                   padding*sizeof(*buf1))) { \
+            if (check_err(file, line, name, w, h, &err)) \
+                return 1; \
+            fprintf(stderr, " overwrite left\n"); \
+            break; \
+        } \
+    for (y = 0; y < h; y++) \
+        if (memcmp(&buf1[y*stride1 + aligned_w], &buf2[y*stride2 + aligned_w], \
+                   padding*sizeof(*buf1))) { \
+            if (check_err(file, line, name, w, h, &err)) \
+                return 1; \
+            fprintf(stderr, " overwrite right\n"); \
+            break; \
+        } \
+    return err; \
 }
 
 DEF_CHECKASM_CHECK_FUNC(uint8_t,  "%02x")
