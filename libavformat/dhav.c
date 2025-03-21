@@ -22,6 +22,7 @@
 
 #include <time.h>
 
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/parseutils.h"
 #include "avio_internal.h"
@@ -232,37 +233,60 @@ static void get_timeinfo(unsigned date, struct tm *timeinfo)
     timeinfo->tm_sec  = sec;
 }
 
+#define MAX_DURATION_BUFFER_SIZE (1024*1024)
+
 static int64_t get_duration(AVFormatContext *s)
 {
-    DHAVContext *dhav = s->priv_data;
     int64_t start_pos = avio_tell(s->pb);
+    int64_t end_pos = -1;
     int64_t start = 0, end = 0;
     struct tm timeinfo;
-    int max_interations = 100000;
+    uint8_t *end_buffer;
+    int64_t end_buffer_size;
+    int64_t end_buffer_pos;
+    int64_t offset;
+    unsigned date;
 
     if (!s->pb->seekable)
         return 0;
 
-    avio_seek(s->pb, avio_size(s->pb) - 8, SEEK_SET);
-    while (avio_tell(s->pb) > 12 && max_interations--) {
-        if (avio_rl32(s->pb) == MKTAG('d','h','a','v')) {
-            int64_t seek_back = avio_rl32(s->pb);
+    if (start_pos + 16 > avio_size(s->pb))
+        return 0;
 
-            avio_seek(s->pb, -seek_back, SEEK_CUR);
-            read_chunk(s);
-            get_timeinfo(dhav->date, &timeinfo);
-            end = av_timegm(&timeinfo) * 1000LL;
+    avio_skip(s->pb, 16);
+    date = avio_rl32(s->pb);
+    get_timeinfo(date, &timeinfo);
+    start = av_timegm(&timeinfo) * 1000LL;
+
+    end_buffer_size = FFMIN(MAX_DURATION_BUFFER_SIZE, avio_size(s->pb));
+    end_buffer = av_malloc(end_buffer_size);
+    if (!end_buffer) {
+        avio_seek(s->pb, start_pos, SEEK_SET);
+        return 0;
+    }
+    end_buffer_pos = avio_size(s->pb) - end_buffer_size;
+    avio_seek(s->pb, end_buffer_pos, SEEK_SET);
+    avio_read(s->pb, end_buffer, end_buffer_size);
+
+    offset = end_buffer_size - 8;
+    while (offset > 0) {
+        if (AV_RL32(end_buffer + offset) == MKTAG('d','h','a','v')) {
+            int64_t seek_back = AV_RL32(end_buffer + offset + 4);
+            end_pos = end_buffer_pos + offset - seek_back + 8;
             break;
         } else {
-            avio_seek(s->pb, -12, SEEK_CUR);
+            offset -= 9;
         }
     }
 
-    avio_seek(s->pb, start_pos, SEEK_SET);
+    if (end_pos < 0 || end_pos + 16 > end_buffer_pos + end_buffer_size) {
+        avio_seek(s->pb, start_pos, SEEK_SET);
+        return 0;
+    }
 
-    read_chunk(s);
-    get_timeinfo(dhav->date, &timeinfo);
-    start = av_timegm(&timeinfo) * 1000LL;
+    date = AV_RL32(end_buffer + (end_pos - end_buffer_pos) + 16);
+    get_timeinfo(date, &timeinfo);
+    end = av_timegm(&timeinfo) * 1000LL;
 
     avio_seek(s->pb, start_pos, SEEK_SET);
 
