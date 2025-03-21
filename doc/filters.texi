@@ -26917,6 +26917,34 @@ scale_cuda=passthrough=0
 @end example
 @end itemize
 
+@subsection thumbnail_cuda
+
+Select the most representative frame in a given sequence of consecutive frames using CUDA.
+
+The filter accepts the following options:
+
+@table @option
+@item n
+Set the frames batch size to analyze; in a set of @var{n} frames, the filter
+will pick one of them, and then handle the next batch of @var{n} frames until
+the end. Default is @code{100}.
+@end table
+
+Since the filter keeps track of the whole frames sequence, a bigger @var{n}
+value will result in a higher memory usage, so a high value is not recommended.
+
+@subsubsection Example
+
+@itemize
+
+@item
+Thumbnails are extracted from every @var{n}=150-frame batch, selecting one per batch. Chosen frames are then scaled with @ref{scale_cuda}.
+@example
+./ffmpeg  -hwaccel cuda -hwaccel_output_format cuda  -i ./input.mp4 -vf "thumbnail_cuda=150,scale_cuda=1920:1080,hwdownload,format=nv12" ./output/out%03d.png
+@end example
+
+@end itemize
+
 @subsection yadif_cuda
 
 Deinterlace the input video using the @ref{yadif} algorithm, but implemented
