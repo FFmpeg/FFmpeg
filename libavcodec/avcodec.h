@@ -2158,6 +2158,8 @@ const AVClass *avcodec_get_subtitle_rect_class(void);
  * of the corresponding fields in codec.
  *
  * @return >= 0 on success, a negative AVERROR code on failure
+ *
+ * @relates AVCodecParameters
  */
 int avcodec_parameters_from_context(struct AVCodecParameters *par,
                                     const AVCodecContext *codec);
@@ -2169,6 +2171,8 @@ int avcodec_parameters_from_context(struct AVCodecParameters *par,
  * Fields in codec that do not have a counterpart in par are not touched.
  *
  * @return >= 0 on success, a negative AVERROR code on failure.
+ *
+ * @relates AVCodecParameters
  */
 int avcodec_parameters_to_context(AVCodecContext *codec,
                                   const struct AVCodecParameters *par);
