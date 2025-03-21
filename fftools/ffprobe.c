@@ -2651,6 +2651,31 @@ static void print_private_data(WriterContext *w, void *priv_data)
     }
 }
 
+static void print_pixel_format(WriterContext *w, enum AVPixelFormat pix_fmt)
+{
+    const char *s = av_get_pix_fmt_name(pix_fmt);
+    enum AVPixelFormat swapped_pix_fmt;
+
+    if (!s) {
+        print_str_opt("pix_fmt", "unknown");
+    } else if (!do_bitexact ||
+               (swapped_pix_fmt = av_pix_fmt_swap_endianness(pix_fmt)) == AV_PIX_FMT_NONE) {
+        print_str    ("pix_fmt", s);
+    } else {
+        const char *s2 = av_get_pix_fmt_name(swapped_pix_fmt);
+        char buf[128];
+        size_t i = 0;
+
+        while (s[i] && s[i] == s2[i])
+            i++;
+
+        memcpy(buf, s, FFMIN(sizeof(buf) - 1, i));
+        buf[i] = '\0';
+
+        print_str    ("pix_fmt", buf);
+    }
+}
+
 static void print_color_range(WriterContext *w, enum AVColorRange color_range)
 {
     const char *val = av_color_range_name(color_range);
@@ -2959,9 +2984,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
         print_int("crop_bottom",            frame->crop_bottom);
         print_int("crop_left",              frame->crop_left);
         print_int("crop_right",             frame->crop_right);
-        s = av_get_pix_fmt_name(frame->format);
-        if (s) print_str    ("pix_fmt", s);
-        else   print_str_opt("pix_fmt", "unknown");
+        print_pixel_format(w, frame->format);
         sar = av_guess_sample_aspect_ratio(fmt_ctx, stream, frame);
         if (sar.num) {
             print_q("sample_aspect_ratio", sar, ':');
@@ -3360,9 +3383,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
             print_str_opt("sample_aspect_ratio", "N/A");
             print_str_opt("display_aspect_ratio", "N/A");
         }
-        s = av_get_pix_fmt_name(par->format);
-        if (s) print_str    ("pix_fmt", s);
-        else   print_str_opt("pix_fmt", "unknown");
+        print_pixel_format(w, par->format);
         print_int("level",   par->level);
 
         print_color_range(w, par->color_range);
