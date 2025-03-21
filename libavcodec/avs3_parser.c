@@ -97,7 +97,7 @@ static void parse_avs3_nal_units(AVCodecParserContext *s, const uint8_t *buf,
                 if (sample_precision == 1) {
                     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
                 } else if (sample_precision == 2) {
-                    avctx->pix_fmt = AV_PIX_FMT_YUV420P10LE;
+                    avctx->pix_fmt = AV_PIX_FMT_YUV420P10;
                 } else {
                     avctx->pix_fmt = AV_PIX_FMT_NONE;
                 }
