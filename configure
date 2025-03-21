@@ -427,6 +427,7 @@ Toolchain options:
   --enable-thumb           compile for Thumb instruction set
   --enable-lto[=arg]       use link-time optimization
   --env="ENV=override"     override the environment variables
+  --disable-response-files Don't pass the list of objects to linker in a file [autodetect]
 
 Advanced options (experts only):
   --malloc-prefix=PREFIX   prefix malloc and related names with PREFIX
@@ -2661,6 +2662,7 @@ CMDLINE_SELECT="
     extra_warnings
     logging
     optimizations
+    response_files
     rpath
     stripping
     version_tracking
@@ -4131,6 +4133,7 @@ objformat="elf32"
 x86asmexe_default="nasm"
 windres_default="windres"
 striptype="direct"
+response_files_default="auto"
 
 # OS
 target_os_default=$(tolower $(uname -s))
@@ -5176,7 +5179,7 @@ test -n "$cc_type" && enable $cc_type ||
 : ${dep_cc_default:=$cc}
 : ${ld_default:=$cc}
 : ${host_ld_default:=$host_cc}
-set_default ar as objcc dep_cc ld ln_s host_ld windres
+set_default ar as objcc dep_cc ld ln_s host_ld windres response_files
 
 probe_cc as "$as"
 asflags_filter=$_flags_filter
@@ -7736,12 +7739,18 @@ case $ld_type in
     ;;
 esac
 
-{
-ar_out=${FFTMPDIR}/test$LIBSUF
-respfile="@/dev/null"
-out_arg="$(echo $ar_o | sed "s;\$@;$ar_out;g")"
-test_cmd $ar $arflags $out_arg $respfile && ar_objs="true" || ar_objs=""
-}
+if [ "$response_files" != "no" ]; then
+    ar_out=${FFTMPDIR}/test$LIBSUF
+    respfile="@/dev/null"
+    out_arg="$(echo $ar_o | sed "s;\$@;$ar_out;g")"
+    if test_cmd $ar $arflags $out_arg $respfile; then
+        response_files="yes"
+    elif [ "$response_files" = "auto" ]; then
+        response_files="no"
+    else
+        die "Response files are not available with this toolchain. Exiting"
+    fi
+fi
 
 enable frame_thread_encoder
 
@@ -8119,7 +8128,7 @@ DEPX86ASM=$x86asmexe
 DEPX86ASMFLAGS=\$(X86ASMFLAGS)
 AR=$ar
 ARFLAGS=$arflags
-AR_OBJS=$ar_objs
+RESPONSE_FILES=$response_files
 AR_O=$ar_o
 AR_CMD=$ar
 NM_CMD=$nm
