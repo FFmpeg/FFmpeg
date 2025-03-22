@@ -57,7 +57,10 @@ static void dct_unquantize_h263_altivec(MpegEncContext *s,
         }else
             qadd = 0;
         i = 1;
-        nCoeffs= 63; //does not always use zigzag table
+        if (s->ac_pred)
+            nCoeffs = 63;
+        else
+            nCoeffs = s->intra_scantable.raster_end[s->block_last_index[n]];
     } else {
         i = 0;
         av_assert2(s->block_last_index[n]>=0);
