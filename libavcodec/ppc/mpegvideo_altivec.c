@@ -42,7 +42,7 @@
 static void dct_unquantize_h263_altivec(MpegEncContext *s,
                                  int16_t *block, int n, int qscale)
 {
-    int i, level, qmul, qadd;
+    int i, qmul, qadd;
     int nCoeffs;
 
     qadd = (qscale - 1) | 1;
@@ -74,7 +74,6 @@ static void dct_unquantize_h263_altivec(MpegEncContext *s,
         register vector signed short blockv, qmulv, qaddv, nqaddv, temp1;
         register vector bool short blockv_null, blockv_neg;
         register short backup_0 = block[0];
-        register int j = 0;
 
         qmulv = vec_splat((vec_s16)vec_lde(0, &qmul8), 0);
         qaddv = vec_splat((vec_s16)vec_lde(0, &qadd8), 0);
@@ -82,7 +81,7 @@ static void dct_unquantize_h263_altivec(MpegEncContext *s,
 
         // vectorize all the 16 bytes-aligned blocks
         // of 8 elements
-        for(; (j + 7) <= nCoeffs ; j+=8) {
+        for (register int j = 0; j <= nCoeffs ; j += 8) {
             blockv = vec_ld(j << 1, block);
             blockv_neg = vec_cmplt(blockv, vczero);
             blockv_null = vec_cmpeq(blockv, vczero);
@@ -93,22 +92,6 @@ static void dct_unquantize_h263_altivec(MpegEncContext *s,
             // put 0 where block[{i,i+7} used to have 0
             blockv = vec_sel(temp1, blockv, blockv_null);
             vec_st(blockv, j << 1, block);
-        }
-
-        // if nCoeffs isn't a multiple of 8, finish the job
-        // using good old scalar units.
-        // (we could do it using a truncated vector,
-        // but I'm not sure it's worth the hassle)
-        for(; j <= nCoeffs ; j++) {
-            level = block[j];
-            if (level) {
-                if (level < 0) {
-                    level = level * qmul - qadd;
-                } else {
-                    level = level * qmul + qadd;
-                }
-                block[j] = level;
-            }
         }
 
         if (i == 1) {
