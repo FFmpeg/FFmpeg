@@ -123,10 +123,7 @@ av_cold void ff_mpv_common_init_ppc(MpegEncContext *s)
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 
-    if ((s->avctx->dct_algo == FF_DCT_AUTO) ||
-        (s->avctx->dct_algo == FF_DCT_ALTIVEC)) {
-        s->dct_unquantize_h263_intra = dct_unquantize_h263_altivec;
-        s->dct_unquantize_h263_inter = dct_unquantize_h263_altivec;
-    }
+    s->dct_unquantize_h263_intra = dct_unquantize_h263_altivec;
+    s->dct_unquantize_h263_inter = dct_unquantize_h263_altivec;
 #endif /* HAVE_ALTIVEC */
 }
