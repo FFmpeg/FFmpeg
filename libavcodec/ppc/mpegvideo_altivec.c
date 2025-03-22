@@ -61,7 +61,7 @@ static void dct_unquantize_h263_altivec(MpegEncContext *s,
     } else {
         i = 0;
         av_assert2(s->block_last_index[n]>=0);
-        nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
+        nCoeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
     }
 
     {
