@@ -1328,21 +1328,19 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
 
         if (s.last_val != val) {
             int64_t delta = val - s.last_val;
+            int64_t step  = FFMAX(1, (delta + current_mul/2) / current_mul);
             av_assert2(s.last_val < val);
             av_assert2(current_mul > 0);
 
-            val = FFMAX(1, (delta + current_mul/2) / current_mul);
-
-            delta -= val*current_mul;
+            delta -= step*current_mul;
             av_assert2(delta <= current_mul/2);
             av_assert2(delta > -current_mul);
-            val += s.last_val;
 
-            av_assert2(s.last_val < val);
+            av_assert2(step > 0);
             if (s.lu) {
                 s.index_stack[s.run] = s.current_mul_index;
                 av_assert2(s.run < FF_ARRAY_ELEMS(s.delta_stack));
-                if (val - s.last_val == 1) {
+                if (step == 1) {
                     s.delta_stack[s.run] = delta;
                     s.run ++;
                     av_assert2(s.i == s.pixel_num || s.last_val + current_mul + delta == sc->unit[s.p][s.i].val);
@@ -1365,14 +1363,14 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
                 }
             } else {
                 av_assert2(s.run == 0);
-                put_symbol_inline(&s.rc, s.state[s.lu][0], val - s.last_val - 1, 0, NULL, NULL);
+                put_symbol_inline(&s.rc, s.state[s.lu][0], step - 1, 0, NULL, NULL);
 
                 if (current_mul > 1)
                     put_symbol_inline(&s.rc, s.state[s.lu][1], delta, 1, NULL, NULL);
-                if (val - s.last_val == 1)
+                if (step == 1)
                     s.lu ^= 1;
 
-                av_assert2(s.i == s.pixel_num || s.last_val + (val - s.last_val) * current_mul + delta == sc->unit[s.p][s.i].val);
+                av_assert2(s.i == s.pixel_num || s.last_val + step * current_mul + delta == sc->unit[s.p][s.i].val);
                 if (s.i < s.pixel_num)
                     s.last_val = sc->unit[s.p][s.i].val;
             }
