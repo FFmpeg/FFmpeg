@@ -1327,19 +1327,17 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
             val = sc->unit[s.p][s.i].val;
 
         if (s.last_val != val) {
-            int64_t delta = 0;
+            int64_t delta = val - s.last_val;
             av_assert2(s.last_val < val);
             av_assert2(current_mul > 0);
 
-            if (current_mul > 1) {
-                delta = val - s.last_val;
-                val = FFMAX(1, (delta + current_mul/2) / current_mul);
+            val = FFMAX(1, (delta + current_mul/2) / current_mul);
 
-                delta -= val*current_mul;
-                av_assert2(delta <= current_mul/2);
-                av_assert2(delta > -current_mul);
-                val += s.last_val;
-            }
+            delta -= val*current_mul;
+            av_assert2(delta <= current_mul/2);
+            av_assert2(delta > -current_mul);
+            val += s.last_val;
+
             av_assert2(s.last_val < val);
             if (s.lu) {
                 s.index_stack[s.run] = s.current_mul_index;
