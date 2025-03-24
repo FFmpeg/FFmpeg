@@ -178,6 +178,10 @@ const AVCodecTag ff_nut_video_tags[] = {
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(14,    0, '3', 'G') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '3',   0,  16) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(16,    0, '3', 'G') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '3',   0,  17) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG(17 ,  0 , '3', 'G') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '3',   0,  33) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG(33 ,  0 , '3', 'G') },
 
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '4',   0,   8) },
 
@@ -189,6 +193,10 @@ const AVCodecTag ff_nut_video_tags[] = {
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(14 , 00 , '4', 'G') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '4', 00 , 16 ) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(16 , 00 , '4', 'G') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '4',   0,  17) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG(17 ,  0 , '4', 'G') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '4',   0,  33) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG(33 ,  0 , '4', 'G') },
 
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('X', 'Y', 'Z' , 36 ) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(36 , 'Z' , 'Y', 'X') },
