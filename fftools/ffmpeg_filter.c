@@ -2900,7 +2900,7 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
     } else if (ifp->downmixinfo_present)
         need_reinit |= DOWNMIX_CHANGED;
 
-    if (need_reinit && (ifp->opts.flags & IFILTER_FLAG_DROPCHANGED)) {
+    if (need_reinit && fgt->graph && (ifp->opts.flags & IFILTER_FLAG_DROPCHANGED)) {
             ifp->nb_dropped++;
             av_log_once(fg, AV_LOG_WARNING, AV_LOG_DEBUG, &ifp->drop_warned, "Avoiding reinit; dropping frame pts: %s bound for %s\n", av_ts2str(frame->pts), ifilter->name);
             av_frame_unref(frame);
