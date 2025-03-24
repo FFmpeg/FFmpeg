@@ -1168,6 +1168,7 @@ static void choose_rct_params(const FFV1Context *f, FFV1SliceContext *sc,
 
 static void encode_histogram_remap(FFV1Context *f, FFV1SliceContext *sc)
 {
+    int len = 1 << f->bits_per_raw_sample;
     int flip = sc->remap == 2 ? 0x7FFF : 0;
 
     for (int p= 0; p < 1 + 2*f->chroma_planes + f->transparency; p++) {
@@ -1179,7 +1180,7 @@ static void encode_histogram_remap(FFV1Context *f, FFV1SliceContext *sc)
         memset(state, 128, sizeof(state));
         put_symbol(&sc->c, state[0], 0, 0);
         memset(state, 128, sizeof(state));
-        for (int i= 0; i<65536; i++) {
+        for (int i= 0; i<len; i++) {
             int ri = i ^ ((i&0x8000) ? 0 : flip);
             int u = sc->fltmap[p][ri];
             sc->fltmap[p][ri] = j;
