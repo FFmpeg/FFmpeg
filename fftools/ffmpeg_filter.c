@@ -3087,7 +3087,7 @@ static int filter_thread(void *arg)
 
     while (1) {
         InputFilter *ifilter;
-        InputFilterPriv *ifp;
+        InputFilterPriv *ifp = NULL;
         enum FrameOpaque o;
         unsigned input_idx = fgt.next_in;
 
@@ -3149,7 +3149,7 @@ read_frames:
         ret = read_frames(fg, &fgt, fgt.frame);
         if (ret == AVERROR_EOF) {
             av_log(fg, AV_LOG_VERBOSE, "All consumers returned EOF\n");
-            if (ifp->opts.flags & IFILTER_FLAG_DROPCHANGED)
+            if (ifp && ifp->opts.flags & IFILTER_FLAG_DROPCHANGED)
                 av_log(fg, AV_LOG_INFO, "Total changed input frames dropped : %"PRId64"\n", ifp->nb_dropped);
             break;
         } else if (ret < 0) {
