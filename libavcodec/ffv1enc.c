@@ -1403,17 +1403,30 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
         s.i = 0;
         s.p = p;
 
-        s.mul_count = 1;
-
+        for(int v = 0; v< 512; v++) {
+            if (v >= 0x378/8 && v <= 23 + 0x378/8) {
+                s.mul[v] = -(0x800080 >> (v - 0x378/8));
+            } else
+                s.mul[v] = -1;
+        }
         for (int i= 0; i<s.pixel_num; i++) {
             int64_t val = sc->unit[p][i].val;
             if (val != last_val) {
                 av_assert2(last_val < val);
                 for(int si= 0; si < FF_ARRAY_ELEMS(score_tab); si++) {
                     int64_t delta = val - last_val;
-                    int mul = last_val < 0 ? 1 : (1<<si);
-                    int64_t cost = FFMAX((delta + mul/2)  / mul, 1);
-                    score_tab[si] += log2(cost) + fabs(delta - cost*mul);
+                    int mul;
+                    int64_t cost;
+
+                    if (last_val < 0) {
+                        mul = 1;
+                    } else if (si + 1 == FF_ARRAY_ELEMS(score_tab)) {
+                        mul = -s.mul[ (last_val + 1) >> (32-9) ];
+                    } else
+                        mul = 1<<si;
+
+                    cost = FFMAX((delta + mul/2)  / mul, 1);
+                    score_tab[si] += log2(cost) + log2(fabs(delta - cost*mul)+1);
                 }
                 last_val = val;
             }
@@ -1422,7 +1435,12 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
             if (score_tab[si] < score_tab[ best_index ])
                 best_index = si;
         }
-        s.mul[0] = -1 << best_index;
+        if (best_index + 1 < FF_ARRAY_ELEMS(score_tab)) {
+            s.mul[0] = -1 << best_index;
+            s.mul_count = 1;
+        } else {
+            s.mul_count = 512;
+        }
         s.mul[s.mul_count] = 1;
 
         encode_float32_remap_segment(sc, &s, 1, 1);
