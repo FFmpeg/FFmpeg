@@ -1398,6 +1398,7 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
     for (int p= 0; p < 1 + 2*f->chroma_planes + f->transparency; p++) {
         float score_tab[16] = {0};
         int64_t last_val = -1;
+        int best_index = 0;
         s.rc = sc->c;
         s.i = 0;
         s.p = p;
@@ -1417,7 +1418,6 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
                 last_val = val;
             }
         }
-        int best_index = 0;
         for(int si= 1; si < FF_ARRAY_ELEMS(score_tab); si++) {
             if (score_tab[si] < score_tab[ best_index ])
                 best_index = si;
