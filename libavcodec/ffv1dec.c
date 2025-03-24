@@ -286,7 +286,7 @@ static int decode_current_mul(RangeCoder *rc, uint8_t state[32], int *mul, int m
 
 static int decode_remap(FFV1Context *f, FFV1SliceContext *sc)
 {
-    unsigned int end = f->avctx->bits_per_raw_sample == 32 ? 0xFFFFFFFF : 0xFFFF;
+    unsigned int end = (1LL<<f->avctx->bits_per_raw_sample) - 1;
     int flip = sc->remap == 2 ? (end>>1) : 0;
 
     for (int p= 0; p < 1 + 2*f->chroma_planes + f->transparency; p++) {
@@ -328,7 +328,7 @@ static int decode_remap(FFV1Context *f, FFV1SliceContext *sc)
                     break;
                 if (i - 1 > end || j > 65535)
                     return AVERROR_INVALIDDATA;
-                if (end == 0xFFFF) {
+                if (end <= 0xFFFF) {
                     sc->fltmap  [p][j++] = i ^ ((i&    0x8000) ? 0 : flip);
                 } else
                     sc->fltmap32[p][j++] = i ^ ((i&0x80000000) ? 0 : flip);
