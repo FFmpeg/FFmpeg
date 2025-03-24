@@ -326,7 +326,7 @@ static int decode_remap(FFV1Context *f, FFV1SliceContext *sc)
                 }
                 if (i == end)
                     break;
-                if (i - 1 > end || j > 65535)
+                if (i - 1 > end || j >= FF_ARRAY_ELEMS(sc->fltmap[p]))
                     return AVERROR_INVALIDDATA;
                 if (end <= 0xFFFF) {
                     sc->fltmap  [p][j++] = i ^ ((i&    0x8000) ? 0 : flip);
