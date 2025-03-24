@@ -1344,7 +1344,6 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
                     s.delta_stack[s.run] = delta;
                     s.run ++;
                     av_assert2(s.last_val + current_mul + delta == val);
-                    s.last_val = val;
                 } else {
                     put_symbol_inline(&s.rc, s.state[s.lu][0], s.run, 0, NULL, NULL);
 
@@ -1371,8 +1370,8 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
                     s.lu ^= 1;
 
                 av_assert2(s.last_val + step * current_mul + delta == val);
-                s.last_val = val;
             }
+            s.last_val = val;
             s.current_mul_index = ((s.last_val + 1) * s.mul_count) >> 32;
             if (!s.run)
                 encode_mul(&s, s.current_mul_index);
