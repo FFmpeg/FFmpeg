@@ -421,7 +421,9 @@ Advanced options (experts only):
   --enable-hardcoded-tables use hardcoded tables instead of runtime generation
   --disable-safe-bitstream-reader
                            disable buffer boundary checking in bitreaders
-                           (faster, but may crash)
+                           (This disables some security checks and can cause undefined behavior,
+                            crashes and arbitrary code execution, it may be faster, but
+                            should only be used with trusted input)
   --sws-max-filter-size=N  the max filter size swscale uses [$sws_max_filter_size_default]
 
 Optimization options (experts only):
