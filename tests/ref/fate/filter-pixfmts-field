@@ -29,8 +29,8 @@ gbrap14be           6c56b7c47dbc7707e09d93f06eb34624
 gbrap14le           e6077974ee36f906987319364b2a72a8
 gbrap16be           eaa0158f27ebc40cde9e3d6eef1e2ba1
 gbrap16le           6cf68992d4fcac2aa025d1014b669d24
-gbrapf32be          37c627796dee55ca6f4e7ca965460680
-gbrapf32le          3ff02eb8465b921c09182ec5cfda434a
+gbrapf32be          a7641fe98bf55b4ea7cb9e65ef6c6da5
+gbrapf32le          401239fe76ef69d945f1d2c8efd116e9
 gbrp                838025a3062f7f31e99196ce66961ad7
 gbrp10be            f63c2555ea19fc78b00fd5b3e2b48e8c
 gbrp10le            be64c374ab318235d912372e99a0516a
@@ -42,8 +42,8 @@ gbrp16be            020eff1626415ea726c55b23162ce59a
 gbrp16le            0ab77b498d4a39905515b6e1f0329ed2
 gbrp9be             170da3a8644cbea61c3caeadc45354c5
 gbrp9le             da5d80e6f12cabaa7081bb85d3b7fd30
-gbrpf32be           cd5b0edd510652a0bcfd7e36935e3cb0
-gbrpf32le           9d42fc5331376b5307268498a06613ce
+gbrpf32be           74d5ff86a9b3677d7cdcda64d9b94405
+gbrpf32le           64722b723252d359858136cb00079636
 gray                57fd8e6e00f6be8752726005974cce1b
 gray10be            083a7931fea847a4d8b23d38f989a836
 gray10le            1b08650e7c44f8517dd3f37044930729
