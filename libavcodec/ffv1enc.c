@@ -951,6 +951,11 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "32bit requires remap\n");
         return AVERROR(EINVAL);
     }
+    if (s->remap_mode == 2 &&
+        !((s->bits_per_raw_sample == 16 || s->bits_per_raw_sample == 32 || s->bits_per_raw_sample == 64) && s->flt)) {
+        av_log(avctx, AV_LOG_ERROR, "remap 2 is for float16/32/64 only\n");
+        return AVERROR(EINVAL);
+    }
 
     return av_pix_fmt_get_chroma_sub_sample(pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
 }
