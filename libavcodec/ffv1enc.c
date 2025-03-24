@@ -1194,15 +1194,9 @@ static void encode_histogram_remap(FFV1Context *f, FFV1SliceContext *sc)
     }
 }
 
-typedef struct Unit {
-    uint32_t val; //this is unneeded if you accept a dereference on each access
-    uint16_t ndx;
-} Unit;
-
 static void load_rgb_float32_frame(FFV1Context *f, FFV1SliceContext *sc,
                                    const uint8_t *src[4],
-                                   int w, int h, const int stride[4],
-                                   Unit unit[4][65536])
+                                   int w, int h, const int stride[4])
 {
     int x, y;
     int transparency = f->transparency;
@@ -1226,18 +1220,18 @@ static void load_rgb_float32_frame(FFV1Context *f, FFV1SliceContext *sc,
             }
             // We cannot build a histogram as we do for 16bit, we need a bit of magic here
             // Its possible to reduce the memory needed at the cost of more dereferencing
-            unit[0][i].val = g;
-            unit[0][i].ndx = x + y*w;
+            sc->unit[0][i].val = g;
+            sc->unit[0][i].ndx = x + y*w;
 
-            unit[1][i].val = b;
-            unit[1][i].ndx = x + y*w;
+            sc->unit[1][i].val = b;
+            sc->unit[1][i].ndx = x + y*w;
 
-            unit[2][i].val = r;
-            unit[2][i].ndx = x + y*w;
+            sc->unit[2][i].val = r;
+            sc->unit[2][i].ndx = x + y*w;
 
             if (transparency) {
-                unit[3][i].val = a;
-                unit[3][i].ndx = x + y*w;
+                sc->unit[3][i].val = a;
+                sc->unit[3][i].ndx = x + y*w;
             }
             i++;
         }
@@ -1245,11 +1239,11 @@ static void load_rgb_float32_frame(FFV1Context *f, FFV1SliceContext *sc,
 
     //TODO switch to radix sort
 #define CMP(A,B) ((A)->val - (int64_t)(B)->val)
-    AV_QSORT(unit[0], i, Unit, CMP);
-    AV_QSORT(unit[1], i, Unit, CMP);
-    AV_QSORT(unit[2], i, Unit, CMP);
+    AV_QSORT(sc->unit[0], i, struct Unit, CMP);
+    AV_QSORT(sc->unit[1], i, struct Unit, CMP);
+    AV_QSORT(sc->unit[2], i, struct Unit, CMP);
     if (transparency)
-        AV_QSORT(unit[3], i, Unit, CMP);
+        AV_QSORT(sc->unit[3], i, struct Unit, CMP);
 }
 
 typedef struct RemapEncoderState {
@@ -1296,7 +1290,7 @@ static inline void encode_mul(RemapEncoderState *s, int mul_index)
     }
 }
 
-static int encode_float32_remap_segment(FFV1SliceContext *sc, Unit unit[4][65536],
+static int encode_float32_remap_segment(FFV1SliceContext *sc,
                                         RemapEncoderState *state_arg, int update, int final)
 {
     RemapEncoderState s;
@@ -1324,7 +1318,7 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc, Unit unit[4][65536
                 val = 1LL<<32;
             }
         } else
-            val = unit[s.p][s.i].val;
+            val = sc->unit[s.p][s.i].val;
 
         if (s.last_val != val) {
             int64_t delta = 0;
@@ -1376,7 +1370,7 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc, Unit unit[4][65536
 
                 av_assert2(s.i == s.pixel_num || s.last_val + (val - s.last_val) * current_mul + delta == unit[s.p][s.i].val);
                 if (s.i < s.pixel_num)
-                    s.last_val = unit[s.p][s.i].val;
+                    s.last_val = sc->unit[s.p][s.i].val;
             }
             s.current_mul_index = ((s.last_val + 1) * s.mul_count) >> 32;
             if (!s.run)
@@ -1384,7 +1378,7 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc, Unit unit[4][65536
             s.compact_index ++;
         }
         if (final && s.i < s.pixel_num)
-            sc->bitmap[s.p][unit[s.p][s.i].ndx] = s.compact_index;
+            sc->bitmap[s.p][sc->unit[s.p][s.i].ndx] = s.compact_index;
     }
 
     if (update) {
@@ -1394,7 +1388,7 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc, Unit unit[4][65536
 }
 
 static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
-                                 const uint8_t *src[4], Unit unit[4][65536])
+                                 const uint8_t *src[4])
 {
     RemapEncoderState s;
     s.pixel_num = sc->slice_width * sc->slice_height;
@@ -1411,7 +1405,7 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
         s.mul_count = 1;
 
         for (int i= 0; i<s.pixel_num; i++) {
-            int64_t val = unit[p][i].val;
+            int64_t val = sc->unit[p][i].val;
             if (val != last_val) {
                 av_assert2(last_val < val);
                 for(int si= 0; si < FF_ARRAY_ELEMS(score_tab); si++) {
@@ -1431,7 +1425,7 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
         s.mul[0] = -1 << best_index;
         s.mul[s.mul_count] = 1;
 
-        encode_float32_remap_segment(sc, unit, &s, 1, 1);
+        encode_float32_remap_segment(sc, &s, 1, 1);
 
         sc->c = s.rc;
     }
@@ -1559,9 +1553,8 @@ retry:
 
         encode_histogram_remap(f, sc);
       } else {
-            Unit pairs[4][65536];
-            load_rgb_float32_frame(f, sc, planes, width, height, p->linesize, pairs);
-            encode_float32_remap(f, sc, planes, pairs);
+            load_rgb_float32_frame(f, sc, planes, width, height, p->linesize);
+            encode_float32_remap(f, sc, planes);
       }
     }
 
