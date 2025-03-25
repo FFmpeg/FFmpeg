@@ -307,6 +307,7 @@ static const struct {
     { "sw_scale", checkasm_check_sw_scale },
     { "sw_yuv2rgb", checkasm_check_sw_yuv2rgb },
     { "sw_yuv2yuv", checkasm_check_sw_yuv2yuv },
+    { "sw_ops", checkasm_check_sw_ops },
 #endif
 #if CONFIG_AVUTIL
         { "aes",       checkasm_check_aes },
