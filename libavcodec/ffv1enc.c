@@ -1268,6 +1268,7 @@ typedef struct RemapEncoderState {
     int run1final;
     int64_t run1start_i;
     int64_t run1start_last_val;
+    int run1start_mul_index;
 } RemapEncoderState;
 
 static inline void copy_state(RemapEncoderState *dst, const RemapEncoderState *src)
@@ -1287,6 +1288,7 @@ static inline void copy_state(RemapEncoderState *dst, const RemapEncoderState *s
     dst->run1final      = src->run1final;
     dst->run1start_i    = src->run1start_i;
     dst->run1start_last_val = src->run1start_last_val;
+    dst->run1start_mul_index = src->run1start_mul_index;
 }
 
 static int encode_float32_remap_segment(FFV1SliceContext *sc,
@@ -1337,6 +1339,7 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
                 if (!s.run) {
                     s.run1start_i        = s.i - 1;
                     s.run1start_last_val = s.last_val;
+                    s.run1start_mul_index= s.current_mul_index;
                 }
                 if (step == 1) {
                     if (s.run1final) {
@@ -1355,9 +1358,7 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
                         put_symbol_inline(&s.rc, s.state[s.lu][0], s.run, 0, NULL, NULL);
                         s.i                 = s.run1start_i;
                         s.last_val          = s.run1start_last_val; // we could compute this instead of storing
-                        av_assert2(s.last_val >= 0 && s.i >= 0); // first state is zero run so we cant have this in a one run and current_mul_index would be -1
-                        if (s.run)
-                            s.current_mul_index = ((s.last_val + 1) * s.mul_count) >> 32;
+                        s.current_mul_index = s.run1start_mul_index;
                     }
                     s.run1final ^= 1;
 
