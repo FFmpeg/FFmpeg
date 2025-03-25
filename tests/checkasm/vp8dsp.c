@@ -259,8 +259,8 @@ static void check_luma_dc_wht(VP8DSPContext *d, bool is_vp7)
 static void check_mc(VP8DSPContext *d)
 {
     LOCAL_ALIGNED_16(uint8_t, buf, [32 * 32]);
-    LOCAL_ALIGNED_16(uint8_t, dst0, [16 * 16]);
-    LOCAL_ALIGNED_16(uint8_t, dst1, [16 * 16]);
+    BUF_RECT(uint8_t, dst0, 16, 16);
+    BUF_RECT(uint8_t, dst1, 16, 16);
     int type, k, dx, dy;
     declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *, ptrdiff_t,
                       const uint8_t *, ptrdiff_t, int, int, int);
@@ -305,10 +305,11 @@ static void check_mc(VP8DSPContext *d)
                             src[i                 ] = val;
                             src[i * SRC_BUF_STRIDE] = val;
                         }
-                        call_ref(dst0, size, src, SRC_BUF_STRIDE, height, mx, my);
-                        call_new(dst1, size, src, SRC_BUF_STRIDE, height, mx, my);
-                        if (memcmp(dst0, dst1, size * height))
-                            fail();
+                        CLEAR_BUF_RECT(dst0);
+                        CLEAR_BUF_RECT(dst1);
+                        call_ref(dst0, dst0_stride, src, SRC_BUF_STRIDE, height, mx, my);
+                        call_new(dst1, dst1_stride, src, SRC_BUF_STRIDE, height, mx, my);
+                        checkasm_check_padded(uint8_t, dst0, dst0_stride, dst1, dst1_stride, size, height, "dst");
                         bench_new(dst1, size, src, SRC_BUF_STRIDE, height, mx, my);
                     }
                 }
