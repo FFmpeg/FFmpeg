@@ -2632,80 +2632,100 @@ static void encode_mb(MPVEncContext *const s, int motion_x, int motion_y)
         encode_mb_internal(s, motion_x, motion_y, 16, 16, 12, 0, 0, CHROMA_444);
 }
 
-static inline void copy_context_before_encode(MPVEncContext *const d,
-                                              const MPVEncContext *const s)
-{
-    int i;
+typedef struct MBBackup {
+    struct {
+        int mv[2][4][2];
+        int last_mv[2][2][2];
+        int mv_type, mv_dir;
+        int last_dc[3];
+        int mb_intra, mb_skipped, mb_skip_run;
+        int qscale;
+        int block_last_index[8];
+        int interlaced_dct;
+        int16_t (*block)[64];
+    } c;
+    int mv_bits, i_tex_bits, p_tex_bits, i_count, misc_bits, last_bits;
+    int dquant;
+    int esc3_level_length;
+    PutBitContext pb, pb2, tex_pb;
+} MBBackup;
 
-    memcpy(d->c.last_mv, s->c.last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster than a loop?
-
-    /* MPEG-1 */
-    d->c.mb_skip_run = s->c.mb_skip_run;
-    for(i=0; i<3; i++)
-        d->c.last_dc[i] = s->c.last_dc[i];
-
-    /* statistics */
-    d->mv_bits= s->mv_bits;
-    d->i_tex_bits= s->i_tex_bits;
-    d->p_tex_bits= s->p_tex_bits;
-    d->i_count= s->i_count;
-    d->misc_bits= s->misc_bits;
-    d->last_bits= 0;
-
-    d->c.mb_skipped = 0;
-    d->c.qscale = s->c.qscale;
-    d->dquant= s->dquant;
-
-    d->esc3_level_length= s->esc3_level_length;
+#define COPY_CONTEXT(BEFORE, AFTER, DST_TYPE, SRC_TYPE)                     \
+static inline void BEFORE ##_context_before_encode(DST_TYPE *const d,       \
+                                                   const SRC_TYPE *const s) \
+{                                                                           \
+    /* FIXME is memcpy faster than a loop? */                               \
+    memcpy(d->c.last_mv, s->c.last_mv, 2*2*2*sizeof(int));                  \
+                                                                            \
+    /* MPEG-1 */                                                            \
+    d->c.mb_skip_run = s->c.mb_skip_run;                                    \
+    for (int i = 0; i < 3; i++)                                             \
+        d->c.last_dc[i] = s->c.last_dc[i];                                  \
+                                                                            \
+    /* statistics */                                                        \
+    d->mv_bits    = s->mv_bits;                                             \
+    d->i_tex_bits = s->i_tex_bits;                                          \
+    d->p_tex_bits = s->p_tex_bits;                                          \
+    d->i_count    = s->i_count;                                             \
+    d->misc_bits  = s->misc_bits;                                           \
+    d->last_bits  = 0;                                                      \
+                                                                            \
+    d->c.mb_skipped = 0;                                                    \
+    d->c.qscale = s->c.qscale;                                              \
+    d->dquant   = s->dquant;                                                \
+                                                                            \
+    d->esc3_level_length = s->esc3_level_length;                            \
+}                                                                           \
+                                                                            \
+static inline void AFTER ## _context_after_encode(DST_TYPE *const d,        \
+                                                  const SRC_TYPE *const s,  \
+                                                  int data_partitioning)    \
+{                                                                           \
+    /* FIXME is memcpy faster than a loop? */                               \
+    memcpy(d->c.mv, s->c.mv, 2*4*2*sizeof(int));                            \
+    memcpy(d->c.last_mv, s->c.last_mv, 2*2*2*sizeof(int));                  \
+                                                                            \
+    /* MPEG-1 */                                                            \
+    d->c.mb_skip_run = s->c.mb_skip_run;                                    \
+    for (int i = 0; i < 3; i++)                                             \
+        d->c.last_dc[i] = s->c.last_dc[i];                                  \
+                                                                            \
+    /* statistics */                                                        \
+    d->mv_bits    = s->mv_bits;                                             \
+    d->i_tex_bits = s->i_tex_bits;                                          \
+    d->p_tex_bits = s->p_tex_bits;                                          \
+    d->i_count    = s->i_count;                                             \
+    d->misc_bits  = s->misc_bits;                                           \
+                                                                            \
+    d->c.mb_intra   = s->c.mb_intra;                                        \
+    d->c.mb_skipped = s->c.mb_skipped;                                      \
+    d->c.mv_type    = s->c.mv_type;                                         \
+    d->c.mv_dir     = s->c.mv_dir;                                          \
+    d->pb = s->pb;                                                          \
+    if (data_partitioning) {                                                \
+        d->pb2    = s->pb2;                                                 \
+        d->tex_pb = s->tex_pb;                                              \
+    }                                                                       \
+    d->c.block = s->c.block;                                                \
+    for (int i = 0; i < 8; i++)                                             \
+        d->c.block_last_index[i] = s->c.block_last_index[i];                \
+    d->c.interlaced_dct = s->c.interlaced_dct;                              \
+    d->c.qscale = s->c.qscale;                                              \
+                                                                            \
+    d->esc3_level_length = s->esc3_level_length;                            \
 }
 
-static inline void copy_context_after_encode(MPVEncContext *const d,
-                                             const MPVEncContext *const s,
-                                             int data_partitioning)
-{
-    int i;
+COPY_CONTEXT(backup, save, MBBackup, MPVEncContext)
+COPY_CONTEXT(reset, store, MPVEncContext, MBBackup)
 
-    memcpy(d->c.mv, s->c.mv, 2*4*2*sizeof(int));
-    memcpy(d->c.last_mv, s->c.last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster than a loop?
-
-    /* MPEG-1 */
-    d->c.mb_skip_run = s->c.mb_skip_run;
-    for(i=0; i<3; i++)
-        d->c.last_dc[i] = s->c.last_dc[i];
-
-    /* statistics */
-    d->mv_bits= s->mv_bits;
-    d->i_tex_bits= s->i_tex_bits;
-    d->p_tex_bits= s->p_tex_bits;
-    d->i_count= s->i_count;
-    d->misc_bits= s->misc_bits;
-
-    d->c.mb_intra   = s->c.mb_intra;
-    d->c.mb_skipped = s->c.mb_skipped;
-    d->c.mv_type    = s->c.mv_type;
-    d->c.mv_dir     = s->c.mv_dir;
-    d->pb= s->pb;
-    if (data_partitioning) {
-        d->pb2= s->pb2;
-        d->tex_pb= s->tex_pb;
-    }
-    d->c.block = s->c.block;
-    for(i=0; i<8; i++)
-        d->c.block_last_index[i] = s->c.block_last_index[i];
-    d->c.interlaced_dct = s->c.interlaced_dct;
-    d->c.qscale = s->c.qscale;
-
-    d->esc3_level_length= s->esc3_level_length;
-}
-
-static void encode_mb_hq(MPVEncContext *const s, MPVEncContext *const backup, MPVEncContext *const best,
+static void encode_mb_hq(MPVEncContext *const s, MBBackup *const backup, MBBackup *const best,
                          PutBitContext pb[2], PutBitContext pb2[2], PutBitContext tex_pb[2],
                          int *dmin, int *next_block, int motion_x, int motion_y)
 {
     int score;
     uint8_t *dest_backup[3];
 
-    copy_context_before_encode(s, backup);
+    reset_context_before_encode(s, backup);
 
     s->c.block = s->c.blocks[*next_block];
     s->pb      = pb[*next_block];
@@ -2745,7 +2765,7 @@ static void encode_mb_hq(MPVEncContext *const s, MPVEncContext *const backup, MP
         *dmin= score;
         *next_block^=1;
 
-        copy_context_after_encode(best, s, s->c.data_partitioning);
+        save_context_after_encode(best, s, s->c.data_partitioning);
     }
 }
 
@@ -2963,7 +2983,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
     MPVEncContext *const s = *(void**)arg;
     int chr_h = 16 >> s->c.chroma_y_shift;
     int i;
-    MPVEncContext best_s = { 0 }, backup_s;
+    MBBackup best_s = { 0 }, backup_s;
     uint8_t bit_buf[2][MAX_MB_BYTES];
     uint8_t bit_buf2[2][MAX_MB_BYTES];
     uint8_t bit_buf_tex[2][MAX_MB_BYTES];
@@ -3164,7 +3184,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 int next_block=0;
                 int pb_bits_count, pb2_bits_count, tex_pb_bits_count;
 
-                copy_context_before_encode(&backup_s, s);
+                backup_context_before_encode(&backup_s, s);
                 backup_s.pb= s->pb;
                 if (s->c.data_partitioning) {
                     backup_s.pb2= s->pb2;
@@ -3389,7 +3409,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     }
                 }
 
-                copy_context_after_encode(s, &best_s, s->c.data_partitioning);
+                store_context_after_encode(s, &best_s, s->c.data_partitioning);
 
                 pb_bits_count= put_bits_count(&s->pb);
                 flush_put_bits(&s->pb);
