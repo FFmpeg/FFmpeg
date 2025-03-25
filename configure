@@ -3741,7 +3741,7 @@ alsa_outdev_deps="alsa"
 avfoundation_indev_deps="avfoundation corevideo coremedia pthreads"
 avfoundation_indev_suggest="coregraphics applicationservices"
 avfoundation_indev_extralibs="-framework Foundation"
-audiotoolbox_outdev_deps="audiotoolbox pthreads"
+audiotoolbox_outdev_deps="audiotoolbox pthreads AudioObjectPropertyAddress"
 audiotoolbox_outdev_extralibs="-framework AudioToolbox -framework CoreAudio"
 caca_outdev_deps="libcaca"
 decklink_deps_any="libdl LoadLibrary"
@@ -6726,6 +6726,10 @@ check_apple_framework CoreFoundation
 check_apple_framework CoreMedia
 check_apple_framework CoreVideo
 check_apple_framework CoreAudio
+
+enabled audiotoolbox && {
+    check_type AudioToolbox/AudioToolbox.h AudioObjectPropertyAddress
+}
 
 enabled avfoundation && {
     disable coregraphics applicationservices
