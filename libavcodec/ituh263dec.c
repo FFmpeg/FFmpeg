@@ -554,25 +554,24 @@ static int h263_decode_block(MpegEncContext * s, int16_t * block,
     } else if (s->mb_intra) {
         /* DC coef */
         if (CONFIG_RV10_DECODER && s->codec_id == AV_CODEC_ID_RV10) {
-          if (s->rv10_version == 3 && s->pict_type == AV_PICTURE_TYPE_I) {
-            int component, diff;
-            component = (n <= 3 ? 0 : n - 4 + 1);
-            level = s->last_dc[component];
-            if (s->rv10_first_dc_coded[component]) {
-                diff = ff_rv_decode_dc(s, n);
-                if (diff < 0)
-                    return -1;
-                level += diff;
-                level = level & 0xff; /* handle wrap round */
-                s->last_dc[component] = level;
+            if (s->rv10_version == 3 && s->pict_type == AV_PICTURE_TYPE_I) {
+                int component = (n <= 3 ? 0 : n - 4 + 1);
+                level = s->last_dc[component];
+                if (s->rv10_first_dc_coded[component]) {
+                    int diff = ff_rv_decode_dc(s, n);
+                    if (diff < 0)
+                        return -1;
+                    level += diff;
+                    level = level & 0xff; /* handle wrap round */
+                    s->last_dc[component] = level;
+                } else {
+                    s->rv10_first_dc_coded[component] = 1;
+                }
             } else {
-                s->rv10_first_dc_coded[component] = 1;
-            }
-          } else {
                 level = get_bits(&s->gb, 8);
                 if (level == 255)
                     level = 128;
-          }
+            }
         }else{
             level = get_bits(&s->gb, 8);
             if((level&0x7F) == 0){
