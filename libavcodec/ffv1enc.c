@@ -1266,8 +1266,8 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
     int i = 0;
     int current_mul_index = -1;
     int run1final = 0;
-    int64_t run1start_i;
-    int64_t run1start_last_val;
+    int run1start_i;
+    int run1start_last_val;
     int run1start_mul_index;
 
     memcpy(mul, mul_tab, sizeof(*mul_tab)*(mul_count+1));
