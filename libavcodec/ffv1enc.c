@@ -1253,8 +1253,6 @@ static void load_rgb_float32_frame(FFV1Context *f, FFV1SliceContext *sc,
 }
 
 typedef struct RemapEncoderState {
-    int delta_stack[65536];     //We need to encode the run value before the adjustments, this stores the adjustments until we know the length of the run
-    int16_t index_stack[65537]; //only needed with multiple segments
     uint8_t state[2][3][32];
     int mul[4096+1];
     RangeCoder rc;
@@ -1267,14 +1265,15 @@ typedef struct RemapEncoderState {
     int pixel_num;
     int p;
     int current_mul_index;
+    int run1final;
+    int64_t run1start_i;
+    int64_t run1start_last_val;
 } RemapEncoderState;
 
 static inline void copy_state(RemapEncoderState *dst, const RemapEncoderState *src)
 {
     dst->rc = src->rc;
     memcpy(dst->mul, src->mul, (src->mul_count + 1) * sizeof(src->mul[0]));
-    memcpy(dst->delta_stack, src->delta_stack, src->run * sizeof(src->delta_stack[0]));
-    memcpy(dst->index_stack, src->index_stack, (src->run + 1) * sizeof(src->index_stack[0]));
     memcpy(dst->state, src->state, sizeof(dst->state));
     dst->lu             = src->lu;
     dst->run            = src->run;
@@ -1285,6 +1284,9 @@ static inline void copy_state(RemapEncoderState *dst, const RemapEncoderState *s
     dst->pixel_num      = src->pixel_num;
     dst->p              = src->p;
     dst->current_mul_index = src->current_mul_index;
+    dst->run1final      = src->run1final;
+    dst->run1start_i    = src->run1start_i;
+    dst->run1start_last_val = src->run1start_last_val;
 }
 
 static inline void encode_mul(RemapEncoderState *s, int mul_index)
@@ -1312,6 +1314,7 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
         s.lu = 0;
         s.run = 0;
         s.current_mul_index = -1;
+        s.run1final = 0;
     }
 
     for (; s.i < s.pixel_num+1; s.i++) {
@@ -1338,30 +1341,39 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
 
             av_assert2(step > 0);
             if (s.lu) {
-                s.index_stack[s.run] = s.current_mul_index;
-                av_assert2(s.run < FF_ARRAY_ELEMS(s.delta_stack));
+                if (!s.run) {
+                    s.run1start_i        = s.i - 1;
+                    s.run1start_last_val = s.last_val;
+                }
                 if (step == 1) {
-                    s.delta_stack[s.run] = delta;
+                    if (s.run1final) {
+                        if (current_mul>1)
+                            put_symbol_inline(&s.rc, s.state[s.lu][1], delta, 1, NULL, NULL);
+                    }
                     s.run ++;
                     av_assert2(s.last_val + current_mul + delta == val);
                 } else {
-                    put_symbol_inline(&s.rc, s.state[s.lu][0], s.run, 0, NULL, NULL);
-
-                    for(int k=0; k<s.run; k++) {
-                        int stack_mul = s.mul[ s.index_stack[k] ];
-                        if (stack_mul>1)
-                            put_symbol_inline(&s.rc, s.state[s.lu][1], s.delta_stack[k], 1, NULL, NULL);
-                        encode_mul(&s, s.index_stack[k+1]);
+                    if (s.run1final) {
+                        if (s.run == 0)
+                            s.lu ^= 1;
+                        s.i--; // we did not encode val so we need to backstep
+                        s.last_val += current_mul;
+                    } else {
+                        put_symbol_inline(&s.rc, s.state[s.lu][0], s.run, 0, NULL, NULL);
+                        s.i                 = s.run1start_i;
+                        s.last_val          = s.run1start_last_val; // we could compute this instead of storing
+                        av_assert2(s.last_val >= 0 && s.i > 0); // first state is zero run so we cant have this in a one run and current_mul_index would be -1
+                        if (s.run)
+                            s.current_mul_index = ((s.last_val + 1) * s.mul_count) >> 32;
                     }
-                    if (s.run == 0)
-                        s.lu ^= 1;
+                    s.run1final ^= 1;
+
                     s.run = 0;
-                    s.i--; // we did not encode val so we need to backstep
-                    s.last_val += current_mul;
                     continue;
                 }
             } else {
                 av_assert2(s.run == 0);
+                av_assert2(s.run1final == 0);
                 put_symbol_inline(&s.rc, s.state[s.lu][0], step - 1, 0, NULL, NULL);
 
                 if (current_mul > 1)
@@ -1373,12 +1385,14 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
             }
             s.last_val = val;
             s.current_mul_index = ((s.last_val + 1) * s.mul_count) >> 32;
-            if (!s.run)
+            if (!s.run || s.run1final) {
                 encode_mul(&s, s.current_mul_index);
-            s.compact_index ++;
+                s.compact_index ++;
+            }
         }
-        if (final && s.i < s.pixel_num)
-            sc->bitmap[s.p][sc->unit[s.p][s.i].ndx] = s.compact_index;
+        if (!s.run || s.run1final)
+            if (final && s.i < s.pixel_num)
+                sc->bitmap[s.p][sc->unit[s.p][s.i].ndx] = s.compact_index;
     }
 
     if (update) {
