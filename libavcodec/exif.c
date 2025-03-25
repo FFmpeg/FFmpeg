@@ -1132,6 +1132,46 @@ int av_exif_set_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, enum AVTif
     return ret;
 }
 
+static int exif_remove_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int depth)
+{
+    int32_t index = -1;
+    int ret = 0;
+
+    if (!ifd || ifd->entries && !ifd->count || ifd->count && !ifd->entries)
+        return AVERROR(EINVAL);
+
+    for (size_t i = 0; i < ifd->count; i++) {
+        if (ifd->entries[i].id == id) {
+            index = i;
+            break;
+        }
+        if (ifd->entries[i].type == AV_TIFF_IFD && depth < 3) {
+            ret = exif_remove_entry(logctx, &ifd->entries[i].value.ifd, id, depth + 1);
+            if (ret)
+                return ret;
+        }
+    }
+
+    if (index < 0)
+        return 0;
+    exif_free_entry(&ifd->entries[index]);
+
+    if (index == --ifd->count) {
+        if (!index)
+            av_freep(&ifd->entries);
+        return 1;
+    }
+
+    memmove(&ifd->entries[index], &ifd->entries[index + 1], (ifd->count - index) * sizeof(*ifd->entries));
+
+    return 1 + (ifd->count - index);
+}
+
+int av_exif_remove_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int recursive)
+{
+    return exif_remove_entry(logctx, ifd, id, recursive ? 0 : INT_MAX);
+}
+
 AVExifMetadata *av_exif_clone_ifd(const AVExifMetadata *ifd)
 {
     AVExifMetadata *ret = av_mallocz(sizeof(*ret));
