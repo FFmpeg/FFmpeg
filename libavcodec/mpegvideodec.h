@@ -62,6 +62,15 @@ void ff_mpv_frame_end(MpegEncContext *s);
 
 int ff_mpv_export_qp_table(const MpegEncContext *s, AVFrame *f,
                            const MPVPicture *p, int qp_type);
+/**
+ * update_thread_context for mpegvideo-based decoders. It updates
+ * the MPVPictures and generic stream-level parameters. If necessary
+ * (on dimension changes), it also performs reinitialization.
+ *
+ * @retval 1 if a reinitialization happened
+ * @retval 0 on success if no reinitialization happened
+ * @retval "<0" error code
+ */
 int ff_mpeg_update_thread_context(AVCodecContext *dst, const AVCodecContext *src);
 void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_mpeg_flush(AVCodecContext *avctx);
