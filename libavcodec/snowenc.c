@@ -68,6 +68,8 @@ typedef struct SnowEncContext {
     unsigned me_cache_generation;
 
     uint64_t encoding_error[SNOW_MAX_PLANES];
+
+    IDWTELEM obmc_scratchpad[MB_SIZE * MB_SIZE * 12 * 2];
 } SnowEncContext;
 
 static void init_ref(MotionEstContext *c, const uint8_t *const src[3],
@@ -234,8 +236,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     mpv->me.temp      =
     mpv->me.scratchpad = av_calloc(avctx->width + 64, 2*16*2*sizeof(uint8_t));
-    mpv->c.sc.obmc_scratchpad = av_mallocz(MB_SIZE*MB_SIZE*12*sizeof(uint32_t));
-    if (!mpv->me.scratchpad || !mpv->c.sc.obmc_scratchpad)
+    if (!mpv->me.scratchpad)
         return AVERROR(ENOMEM);
 
     mpv->me.mv_penalty = ff_h263_get_mv_penalty();
@@ -670,7 +671,7 @@ static int get_dc(SnowEncContext *enc, int mb_x, int mb_y, int plane_index)
     const int obmc_stride= plane_index ? (2*block_size)>>s->chroma_h_shift : 2*block_size;
     const int ref_stride= s->current_picture->linesize[plane_index];
     const uint8_t *src = s->input_picture->data[plane_index];
-    IDWTELEM *dst = (IDWTELEM*)enc->m.s.c.sc.obmc_scratchpad + plane_index * block_size * block_size * 4; //FIXME change to unsigned
+    IDWTELEM *dst = enc->obmc_scratchpad + plane_index * block_size * block_size * 4; //FIXME change to unsigned
     const int b_stride = s->b_width << s->block_max_depth;
     const int w= p->width;
     const int h= p->height;
@@ -768,7 +769,7 @@ static int get_block_rd(SnowEncContext *enc, int mb_x, int mb_y,
     const int ref_stride= s->current_picture->linesize[plane_index];
     uint8_t *dst= s->current_picture->data[plane_index];
     const uint8_t *src = s->input_picture->data[plane_index];
-    IDWTELEM *pred = (IDWTELEM*)enc->m.s.c.sc.obmc_scratchpad + plane_index * block_size * block_size * 4;
+    IDWTELEM *pred = enc->obmc_scratchpad + plane_index * block_size * block_size * 4;
     uint8_t *cur = s->scratchbuf;
     uint8_t *tmp = s->emu_edge_buffer;
     const int b_stride = s->b_width << s->block_max_depth;
@@ -2091,7 +2092,6 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
     enc->m.s.me.temp = NULL;
     av_freep(&enc->m.s.me.scratchpad);
-    av_freep(&enc->m.s.c.sc.obmc_scratchpad);
 
     av_freep(&avctx->stats_out);
 
