@@ -39,16 +39,17 @@ av_cold void ff_mpeg4_init_rl_intra(void)
     ff_thread_once(&init_static_once, mpeg4_init_rl_intra);
 }
 
-int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s)
+int ff_mpeg4_get_video_packet_prefix_length(enum AVPictureType pict_type,
+                                            int f_code, int b_code)
 {
-    switch (s->pict_type) {
+    switch (pict_type) {
     case AV_PICTURE_TYPE_I:
         return 16;
     case AV_PICTURE_TYPE_P:
     case AV_PICTURE_TYPE_S:
-        return s->f_code + 15;
+        return f_code + 15;
     case AV_PICTURE_TYPE_B:
-        return FFMAX3(s->f_code, s->b_code, 2) + 15;
+        return FFMAX3(f_code, b_code, 2) + 15;
     default:
         return -1;
     }

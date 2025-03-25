@@ -28,7 +28,8 @@
 #include "mpegvideo.h"
 
 void ff_mpeg4_clean_buffers(MpegEncContext *s);
-int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s);
+int ff_mpeg4_get_video_packet_prefix_length(enum AVPictureType pict_type,
+                                            int f_code, int b_code);
 void ff_mpeg4_init_direct_mv(MpegEncContext *s);
 
 /**

@@ -421,7 +421,7 @@ static inline int mpeg4_is_resync(Mpeg4DecContext *ctx)
 
             s->gb = gb;
 
-            if (len >= ff_mpeg4_get_video_packet_prefix_length(s))
+            if (len >= ff_mpeg4_get_video_packet_prefix_length(s->pict_type, s->f_code, s->b_code))
                 return mb_num;
         }
     }
@@ -714,7 +714,7 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
         if (get_bits1(&s->gb))
             break;
 
-    if (len != ff_mpeg4_get_video_packet_prefix_length(s)) {
+    if (len != ff_mpeg4_get_video_packet_prefix_length(s->pict_type, s->f_code, s->b_code)) {
         av_log(s->avctx, AV_LOG_ERROR, "marker does not match f_code\n");
         return AVERROR_INVALIDDATA;
     }

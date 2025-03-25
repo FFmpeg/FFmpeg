@@ -1393,7 +1393,7 @@ void ff_mpeg4_encode_video_packet_header(MPVEncContext *const s)
 {
     int mb_num_bits = av_log2(s->c.mb_num - 1) + 1;
 
-    put_bits(&s->pb, ff_mpeg4_get_video_packet_prefix_length(&s->c), 0);
+    put_bits(&s->pb, ff_mpeg4_get_video_packet_prefix_length(s->c.pict_type, s->c.f_code, s->c.b_code), 0);
     put_bits(&s->pb, 1, 1);
 
     put_bits(&s->pb, mb_num_bits, s->c.mb_x + s->c.mb_y * s->c.mb_width);
