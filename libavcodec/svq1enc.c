@@ -540,7 +540,6 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
                                       avctx->frame_num));
 
     av_freep(&s->m.me.scratchpad);
-    av_freep(&s->m.me.map);
     av_freep(&s->mb_type);
     av_freep(&s->dummy);
     av_freep(&s->scratchbuf);
@@ -620,13 +619,11 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
                                         s->y_block_height * sizeof(int16_t));
     s->dummy               = av_mallocz((s->y_block_width + 1) *
                                         s->y_block_height * sizeof(int32_t));
-    s->m.me.map            = av_mallocz(2 * ME_MAP_SIZE * sizeof(*s->m.me.map));
     s->m.new_pic       = av_frame_alloc();
 
-    if (!s->m.me.scratchpad || !s->m.me.map ||
+    if (!s->m.me.scratchpad ||
         !s->mb_type || !s->dummy || !s->m.new_pic)
         return AVERROR(ENOMEM);
-    s->m.me.score_map = s->m.me.map + ME_MAP_SIZE;
 
     ff_svq1enc_init(&s->svq1encdsp);
 

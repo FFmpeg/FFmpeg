@@ -451,13 +451,12 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
 #else
         ALIGN = 128,
 #endif
-        ME_MAP_ALLOC_SIZE = FFALIGN(2 * ME_MAP_SIZE * sizeof(*s->me.map), ALIGN),
         DCT_ERROR_SIZE    = FFALIGN(2 * sizeof(*s->dct_error_sum), ALIGN),
     };
-    static_assert(FFMAX(ME_MAP_ALLOC_SIZE, DCT_ERROR_SIZE) * MAX_THREADS + ALIGN - 1 <= SIZE_MAX,
+    static_assert(DCT_ERROR_SIZE * MAX_THREADS + ALIGN - 1 <= SIZE_MAX,
                   "Need checks for potential overflow.");
     unsigned nb_slices = s->c.slice_context_count, mv_table_size, mb_array_size;
-    char *dct_error = NULL, *me_map;
+    char *dct_error = NULL;
     int has_b_frames = !!m->max_b_frames, nb_mv_tables = 1 + 5 * has_b_frames;
     int16_t (*mv_table)[2];
 
@@ -470,11 +469,6 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
         m->dct_error_sum_base = dct_error;
         dct_error += FFALIGN((uintptr_t)dct_error, ALIGN) - (uintptr_t)dct_error;
     }
-    me_map = av_mallocz(ALIGN - 1 + nb_slices * ME_MAP_ALLOC_SIZE);
-    if (!me_map)
-        return AVERROR(ENOMEM);
-    m->me_map_base = me_map;
-    me_map += FFALIGN((uintptr_t)me_map, ALIGN) - (uintptr_t)me_map;
 
     /* Allocate MB type table */
     mb_array_size = s->c.mb_stride * s->c.mb_height;
@@ -513,10 +507,6 @@ static av_cold int init_buffers(MPVMainEncContext *const m, AVCodecContext *avct
         s2->mb_var       = s2->mc_mb_var + mb_array_size;
         s2->mb_mean      = (uint8_t*)(s2->mb_var + mb_array_size);
         s2->lambda_table = s->lambda_table;
-
-        s2->me.map       = (uint32_t*)me_map;
-        s2->me.score_map = s2->me.map + ME_MAP_SIZE;
-        me_map          += ME_MAP_ALLOC_SIZE;
 
         s2->p_mv_table            = tmp_mv_table;
         if (has_b_frames) {
@@ -1132,7 +1122,6 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     av_freep(&m->mv_table_base);
     av_freep(&s->p_field_select_table[0]);
     av_freep(&m->dct_error_sum_base);
-    av_freep(&m->me_map_base);
 
     av_freep(&s->mb_type);
     av_freep(&s->lambda_table);
