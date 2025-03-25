@@ -43,26 +43,16 @@ DECLARE_ALIGNED(16, static const uint16_t, inv_zigzag_direct16)[64] = {
 #if HAVE_6REGS
 
 #if HAVE_SSE2_INLINE
-#undef COMPILE_TEMPLATE_SSE2
-#undef COMPILE_TEMPLATE_SSSE3
-#define COMPILE_TEMPLATE_SSE2   1
 #define COMPILE_TEMPLATE_SSSE3  0
-#undef RENAME
-#undef RENAME_FDCT
 #define RENAME(a)      a ## _sse2
-#define RENAME_FDCT(a) a ## _sse2
 #include "mpegvideoenc_template.c"
 #endif /* HAVE_SSE2_INLINE */
 
 #if HAVE_SSSE3_INLINE
-#undef COMPILE_TEMPLATE_SSE2
 #undef COMPILE_TEMPLATE_SSSE3
-#define COMPILE_TEMPLATE_SSE2   1
 #define COMPILE_TEMPLATE_SSSE3  1
 #undef RENAME
-#undef RENAME_FDCT
 #define RENAME(a)      a ## _ssse3
-#define RENAME_FDCT(a) a ## _sse2
 #include "mpegvideoenc_template.c"
 #endif /* HAVE_SSSE3_INLINE */
 
