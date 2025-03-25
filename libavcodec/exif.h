@@ -184,6 +184,24 @@ int av_exif_ifd_to_dict(void *logctx, const AVExifMetadata *ifd, AVDictionary **
  */
 AVExifMetadata *av_exif_clone_ifd(const AVExifMetadata *ifd);
 
+/**
+ * Convert a display matrix used by AV_FRAME_DATA_DISPLAYMATRIX
+ * into an orientation constant used by EXIF's orientation tag.
+ *
+ * Returns an EXIF orientation between 1 and 8 (inclusive) depending
+ * on the rotation and flip factors. Returns 0 if the matrix is singular.
+ */
+int av_exif_matrix_to_orientation(const int32_t *matrix);
+
+/**
+ * Convert an orientation constant used by EXIF's orientation tag
+ * into a display matrix used by AV_FRAME_DATA_DISPLAYMATRIX.
+ *
+ * Returns 0 on success and negative if the orientation is invalid,
+ * i.e. not between 1 and 8 (inclusive).
+ */
+int av_exif_orientation_to_matrix(int32_t *matrix, int orientation);
+
 #if FF_API_OLD_EXIF
 /* Used by the AVI demuxer */
 int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
