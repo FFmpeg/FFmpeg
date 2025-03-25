@@ -728,7 +728,8 @@ static void videotoolbox_decoder_callback(void *opaque,
     }
 
     if (!image_buffer) {
-        if (status != kVTVideoDecoderReferenceMissingErr)
+        // kVTVideoDecoderReferenceMissingErr, defined since the macOS 12 SDKs
+        if (status != -17694)
             vtctx->reconfig_needed = true;
 
         av_log(vtctx->logctx, status ? AV_LOG_WARNING : AV_LOG_DEBUG,
