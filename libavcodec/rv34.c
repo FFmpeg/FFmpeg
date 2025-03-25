@@ -1538,19 +1538,21 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
 int ff_rv34_decode_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
     RV34DecContext *r = dst->priv_data, *r1 = src->priv_data;
-    MpegEncContext * const s = &r->s, * const s1 = &r1->s;
-    int err;
+    MpegEncContext *const s1 = &r1->s;
+    int ret;
 
     if (dst == src || !s1->context_initialized)
         return 0;
 
-    if (s->height != s1->height || s->width != s1->width || s->context_reinit) {
-        s->height = s1->height;
-        s->width  = s1->width;
-        if ((err = ff_mpv_common_frame_size_change(s)) < 0)
-            return err;
-        if ((err = rv34_decoder_realloc(r)) < 0)
-            return err;
+    ret = ff_mpeg_update_thread_context(dst, src);
+    if (ret < 0)
+        return ret;
+
+    // Did ff_mpeg_update_thread_context reinit?
+    if (ret > 0) {
+        ret = rv34_decoder_realloc(r);
+        if (ret < 0)
+            return ret;
     }
 
     r->cur_pts  = r1->cur_pts;
@@ -1559,12 +1561,7 @@ int ff_rv34_decode_update_thread_context(AVCodecContext *dst, const AVCodecConte
 
     memset(&r->si, 0, sizeof(r->si));
 
-    // Do no call ff_mpeg_update_thread_context on a partially initialized
-    // decoder context.
-    if (!s1->context_initialized)
-        return 0;
-
-    return ff_mpeg_update_thread_context(dst, src);
+    return 0;
 }
 
 static int get_slice_offset(AVCodecContext *avctx, const uint8_t *buf, int n, int slice_count, int buf_size)
