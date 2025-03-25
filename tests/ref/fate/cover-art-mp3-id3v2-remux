@@ -1,5 +1,5 @@
-a8dc078d174d5c4ae9769090b8404bae *tests/data/fate/cover-art-mp3-id3v2-remux.mp3
-346394 tests/data/fate/cover-art-mp3-id3v2-remux.mp3
+070ed1d95dc1bd365d68ae795966589f *tests/data/fate/cover-art-mp3-id3v2-remux.mp3
+346509 tests/data/fate/cover-art-mp3-id3v2-remux.mp3
 #tb 0: 1/14112000
 #media_type 0: audio
 #codec_id 0: mp3
@@ -23,7 +23,7 @@ a8dc078d174d5c4ae9769090b8404bae *tests/data/fate/cover-art-mp3-id3v2-remux.mp3
 0,    -353590,    -353590,   368640,      417, 0x15848290, S=1, Skip Samples,       10, 0x034e0055
 1,          0,          0,        0,   208350, 0x291b44d1
 2,          0,          0,        0,    15760, 0x71d5c418
-3,          0,          0,        0,   112719, 0x117b6853
+3,          0,          0,        0,   112834, 0x7da17554
 0,      15050,      15050,   368640,      418, 0x46f684a4
 0,     383690,     383690,   368640,      418, 0x46f684a4
 0,     752330,     752330,   368640,      418, 0x46f684a4

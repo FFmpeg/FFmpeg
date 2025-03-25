@@ -1350,6 +1350,13 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
     }
     if (!pw && w && w < 0xFFFFu || !ph && h && h < 0xFFFFu) {
         rewrite = 1;
+        exif = NULL;
+        for (size_t i = 0; i < ifd.count; i++) {
+            if (ifd.entries[i].id == EXIFIFD_TAG && ifd.entries[i].type == AV_TIFF_IFD) {
+                exif = &ifd.entries[i].value.ifd;
+                break;
+            }
+        }
         if (!exif) {
             AVExifMetadata exif_new = { 0 };
             ret = av_exif_set_entry(logctx, &ifd, EXIFIFD_TAG, AV_TIFF_IFD, 1, NULL, 0, &exif_new);
