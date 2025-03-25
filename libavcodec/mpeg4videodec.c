@@ -3774,15 +3774,52 @@ int ff_mpeg4_frame_end(AVCodecContext *avctx, const AVPacket *pkt)
 
 #if CONFIG_MPEG4_DECODER
 #if HAVE_THREADS
-static int update_mpvctx(MpegEncContext *s, const MpegEncContext *s1)
+static av_cold void clear_context(MpegEncContext *s)
+{
+    memset(&s->buffer_pools, 0, sizeof(s->buffer_pools));
+    memset(&s->next_pic, 0, sizeof(s->next_pic));
+    memset(&s->last_pic, 0, sizeof(s->last_pic));
+    memset(&s->cur_pic,  0, sizeof(s->cur_pic));
+
+    memset(s->thread_context, 0, sizeof(s->thread_context));
+
+    s->block = NULL;
+    s->blocks = NULL;
+    s->ac_val_base = NULL;
+    s->ac_val[0] =
+    s->ac_val[1] =
+    s->ac_val[2] =NULL;
+    memset(&s->sc, 0, sizeof(s->sc));
+
+    s->p_field_mv_table_base = NULL;
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < 2; j++)
+            s->p_field_mv_table[i][j] = NULL;
+
+    s->dc_val_base = NULL;
+    s->coded_block_base = NULL;
+    s->mbintra_table = NULL;
+    s->cbp_table = NULL;
+    s->pred_dir_table = NULL;
+
+    s->mbskip_table = NULL;
+
+    s->er.error_status_table = NULL;
+    s->er.er_temp_buffer = NULL;
+    s->mb_index2xy = NULL;
+
+    s->context_initialized   = 0;
+    s->context_reinit        = 0;
+}
+
+static av_cold int update_mpvctx(MpegEncContext *s, const MpegEncContext *s1)
 {
     AVCodecContext *avctx = s->avctx;
     // FIXME the following leads to a data race; instead copy only
     // the necessary fields.
     memcpy(s, s1, sizeof(*s));
+    clear_context(s);
 
-    s->context_initialized = 0;
-    s->context_reinit      = 0;
     s->avctx = avctx;
 
     if (s1->context_initialized) {

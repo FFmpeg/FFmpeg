@@ -379,42 +379,6 @@ av_cold int ff_mpv_init_context_frame(MpegEncContext *s)
     return !CONFIG_MPEGVIDEODEC || s->encoding ? 0 : ff_mpeg_er_init(s);
 }
 
-static void clear_context(MpegEncContext *s)
-{
-    memset(&s->buffer_pools, 0, sizeof(s->buffer_pools));
-    memset(&s->next_pic, 0, sizeof(s->next_pic));
-    memset(&s->last_pic, 0, sizeof(s->last_pic));
-    memset(&s->cur_pic,  0, sizeof(s->cur_pic));
-
-    memset(s->thread_context, 0, sizeof(s->thread_context));
-
-    s->block = NULL;
-    s->blocks = NULL;
-    s->ac_val_base = NULL;
-    s->ac_val[0] =
-    s->ac_val[1] =
-    s->ac_val[2] =NULL;
-    memset(&s->sc, 0, sizeof(s->sc));
-
-
-    s->p_field_mv_table_base = NULL;
-    for (int i = 0; i < 2; i++)
-        for (int j = 0; j < 2; j++)
-            s->p_field_mv_table[i][j] = NULL;
-
-    s->dc_val_base = NULL;
-    s->coded_block_base = NULL;
-    s->mbintra_table = NULL;
-    s->cbp_table = NULL;
-    s->pred_dir_table = NULL;
-
-    s->mbskip_table = NULL;
-
-    s->er.error_status_table = NULL;
-    s->er.er_temp_buffer = NULL;
-    s->mb_index2xy = NULL;
-}
-
 /**
  * init common structure for both encoder and decoder.
  * this assumes that some variables like width/height are already set
@@ -425,8 +389,6 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
                      s->avctx->active_thread_type & FF_THREAD_SLICE) ?
                     s->avctx->thread_count : 1;
     int ret;
-
-    clear_context(s);
 
     if (s->encoding && s->avctx->slices)
         nb_slices = s->avctx->slices;
