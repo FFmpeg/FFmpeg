@@ -394,7 +394,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
 
     if (avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(avctx, AV_LOG_DEBUG, "ver:%X ver0:%"PRIX32"\n", rv->sub_id,
-               ((uint32_t *) avctx->extradata)[0]);
+               AV_RL32A(avctx->extradata));
     }
 
     /* init static VLCs */
