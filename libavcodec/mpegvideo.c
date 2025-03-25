@@ -236,9 +236,6 @@ av_cold void ff_mpv_common_defaults(MpegEncContext *s)
 
     s->picture_number        = 0;
 
-    s->f_code                = 1;
-    s->b_code                = 1;
-
     s->slice_context_count   = 1;
 }
 

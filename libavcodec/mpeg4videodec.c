@@ -3329,6 +3329,8 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
         }
     }
 
+    s->f_code = 1;
+    s->b_code = 1;
     if (ctx->shape != BIN_ONLY_SHAPE) {
         s->chroma_qscale = s->qscale = get_bits(gb, ctx->quant_precision);
         if (s->qscale == 0) {
@@ -3345,8 +3347,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
                 s->f_code = 1;
                 return AVERROR_INVALIDDATA;  // makes no sense to continue, as there is nothing left from the image then
             }
-        } else
-            s->f_code = 1;
+        }
 
         if (s->pict_type == AV_PICTURE_TYPE_B) {
             s->b_code = get_bits(gb, 3);
@@ -3356,8 +3357,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
                 s->b_code=1;
                 return AVERROR_INVALIDDATA; // makes no sense to continue, as the MV decoding will break very quickly
             }
-        } else
-            s->b_code = 1;
+        }
 
         if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
             av_log(s->avctx, AV_LOG_DEBUG,

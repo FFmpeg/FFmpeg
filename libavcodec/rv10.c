@@ -150,7 +150,6 @@ static int rv10_decode_picture_header(MpegEncContext *s)
         mb_count = s->mb_width * s->mb_height;
     }
     skip_bits(&s->gb, 3);   /* ignored */
-    s->f_code          = 1;
 
     return mb_count;
 }
@@ -284,7 +283,6 @@ static int rv20_decode_picture_header(RVDecContext *rv, int whole_size)
         // binary decoder reads 3+2 bits here but they don't seem to be used
         skip_bits(&s->gb, 5);
 
-    s->f_code          = 1;
     s->h263_aic        = s->pict_type == AV_PICTURE_TYPE_I;
     s->modified_quant  = 1;
     if (!s->avctx->lowres)

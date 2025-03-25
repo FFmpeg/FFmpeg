@@ -285,6 +285,9 @@ static av_cold void mpv_encode_defaults(MPVMainEncContext *const m)
 
     ff_mpv_common_defaults(&s->c);
 
+    s->c.f_code = 1;
+    s->c.b_code = 1;
+
     if (!m->fcode_tab) {
         m->fcode_tab = default_fcode_tab + MAX_MV;
         ff_thread_once(&init_static_once, mpv_encode_init_static);

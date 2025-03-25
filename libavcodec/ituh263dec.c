@@ -1353,7 +1353,6 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
             return -1;
         }
     }
-    s->f_code = 1;
 
     if (s->pict_type == AV_PICTURE_TYPE_B)
         s->low_delay = 0;
