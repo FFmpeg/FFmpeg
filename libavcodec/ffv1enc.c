@@ -1289,15 +1289,6 @@ static inline void copy_state(RemapEncoderState *dst, const RemapEncoderState *s
     dst->run1start_last_val = src->run1start_last_val;
 }
 
-static inline void encode_mul(RemapEncoderState *s, int mul_index)
-{
-    av_assert2(s->mul[ mul_index ]);
-    if (s->mul[ mul_index ] < 0) {
-        s->mul[ mul_index ] *= -1;
-        put_symbol_inline(&s->rc, s->state[0][2], s->mul[ mul_index ], 0, NULL, NULL);
-    }
-}
-
 static int encode_float32_remap_segment(FFV1SliceContext *sc,
                                         RemapEncoderState *state_arg, int update, int final)
 {
@@ -1386,7 +1377,11 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
             s.last_val = val;
             s.current_mul_index = ((s.last_val + 1) * s.mul_count) >> 32;
             if (!s.run || s.run1final) {
-                encode_mul(&s, s.current_mul_index);
+                av_assert2(s.mul[ s.current_mul_index ]);
+                if (s.mul[ s.current_mul_index ] < 0) {
+                    s.mul[ s.current_mul_index ] *= -1;
+                    put_symbol_inline(&s.rc, s.state[0][2], s.mul[ s.current_mul_index ], 0, NULL, NULL);
+                }
                 s.compact_index ++;
             }
         }
