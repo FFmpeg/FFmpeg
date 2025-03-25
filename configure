@@ -1619,6 +1619,15 @@ check_type(){
     test_code cc "$headers" "$type v" "$@" && enable_sanitized "$type"
 }
 
+check_objc_class(){
+    log check_objc_class "$@"
+    headers=$1
+    type=$2
+    shift 2
+    disable_sanitized "$type"
+    test_code objcc "$headers" "$type* v" "$@" && enable_sanitized "$type"
+}
+
 check_struct(){
     log check_struct "$@"
     headers=$1
@@ -3738,7 +3747,7 @@ xwma_demuxer_select="riffdec"
 android_camera_indev_deps="android camera2ndk mediandk pthreads"
 alsa_indev_deps="alsa"
 alsa_outdev_deps="alsa"
-avfoundation_indev_deps="avfoundation corevideo coremedia pthreads"
+avfoundation_indev_deps="avfoundation corevideo coremedia pthreads AVCaptureSession"
 avfoundation_indev_suggest="coregraphics applicationservices"
 avfoundation_indev_extralibs="-framework Foundation"
 audiotoolbox_outdev_deps="audiotoolbox pthreads AudioObjectPropertyAddress"
@@ -6735,7 +6744,9 @@ enabled audiotoolbox && {
 enabled avfoundation && {
     disable coregraphics applicationservices
     check_lib coregraphics        CoreGraphics/CoreGraphics.h               CGGetActiveDisplayList "-framework CoreGraphics" ||
-    check_lib applicationservices ApplicationServices/ApplicationServices.h CGGetActiveDisplayList "-framework ApplicationServices"; }
+    check_lib applicationservices ApplicationServices/ApplicationServices.h CGGetActiveDisplayList "-framework ApplicationServices"
+    check_objc_class AVFoundation/AVFoundation.h AVCaptureSession
+}
 
 enabled videotoolbox && {
     check_lib coreservices CoreServices/CoreServices.h UTGetOSTypeFromString "-framework CoreServices"
