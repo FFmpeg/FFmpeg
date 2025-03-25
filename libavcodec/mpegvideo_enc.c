@@ -2660,7 +2660,8 @@ static inline void copy_context_before_encode(MPVEncContext *const d,
 }
 
 static inline void copy_context_after_encode(MPVEncContext *const d,
-                                             const MPVEncContext *const s)
+                                             const MPVEncContext *const s,
+                                             int data_partitioning)
 {
     int i;
 
@@ -2684,7 +2685,7 @@ static inline void copy_context_after_encode(MPVEncContext *const d,
     d->c.mv_type    = s->c.mv_type;
     d->c.mv_dir     = s->c.mv_dir;
     d->pb= s->pb;
-    if (s->c.data_partitioning) {
+    if (data_partitioning) {
         d->pb2= s->pb2;
         d->tex_pb= s->tex_pb;
     }
@@ -2744,7 +2745,7 @@ static void encode_mb_hq(MPVEncContext *const s, MPVEncContext *const backup, MP
         *dmin= score;
         *next_block^=1;
 
-        copy_context_after_encode(best, s);
+        copy_context_after_encode(best, s, s->c.data_partitioning);
     }
 }
 
@@ -3165,8 +3166,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
                 copy_context_before_encode(&backup_s, s);
                 backup_s.pb= s->pb;
-                best_s.c.data_partitioning = s->c.data_partitioning;
-                best_s.c.partitioned_frame = s->c.partitioned_frame;
                 if (s->c.data_partitioning) {
                     backup_s.pb2= s->pb2;
                     backup_s.tex_pb= s->tex_pb;
@@ -3390,7 +3389,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     }
                 }
 
-                copy_context_after_encode(s, &best_s);
+                copy_context_after_encode(s, &best_s, s->c.data_partitioning);
 
                 pb_bits_count= put_bits_count(&s->pb);
                 flush_put_bits(&s->pb);
