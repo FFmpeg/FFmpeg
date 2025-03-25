@@ -814,8 +814,10 @@ static NSArray* getDevicesWithMediaType(AVMediaType mediaType) {
                               mediaType:mediaType
                                position:AVCaptureDevicePositionUnspecified];
     return [captureDeviceDiscoverySession devices];
-#else
+#elif TARGET_OS_OSX
     return [AVCaptureDevice devicesWithMediaType:mediaType];
+#else
+    return nil;
 #endif
 }
 
