@@ -258,8 +258,8 @@ static void update_duplicate_context_after_me(MPVEncContext *const dst,
 {
 #define COPY(a) dst->a = src->a
     COPY(c.pict_type);
-    COPY(c.f_code);
-    COPY(c.b_code);
+    COPY(f_code);
+    COPY(b_code);
     COPY(c.qscale);
     COPY(lambda);
     COPY(lambda2);
@@ -285,8 +285,8 @@ static av_cold void mpv_encode_defaults(MPVMainEncContext *const m)
 
     ff_mpv_common_defaults(&s->c);
 
-    s->c.f_code = 1;
-    s->c.b_code = 1;
+    s->f_code = 1;
+    s->b_code = 1;
 
     if (!m->fcode_tab) {
         m->fcode_tab = default_fcode_tab + MAX_MV;
@@ -3794,23 +3794,23 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
 
     if (!s->c.umvplus) {
         if (s->c.pict_type == AV_PICTURE_TYPE_P || s->c.pict_type == AV_PICTURE_TYPE_S) {
-            s->c.f_code = ff_get_best_fcode(m, s->p_mv_table, CANDIDATE_MB_TYPE_INTER);
+            s->f_code = ff_get_best_fcode(m, s->p_mv_table, CANDIDATE_MB_TYPE_INTER);
 
             if (s->c.avctx->flags & AV_CODEC_FLAG_INTERLACED_ME) {
                 int a,b;
                 a = ff_get_best_fcode(m, s->c.p_field_mv_table[0][0], CANDIDATE_MB_TYPE_INTER_I); //FIXME field_select
                 b = ff_get_best_fcode(m, s->c.p_field_mv_table[1][1], CANDIDATE_MB_TYPE_INTER_I);
-                s->c.f_code = FFMAX3(s->c.f_code, a, b);
+                s->f_code = FFMAX3(s->f_code, a, b);
             }
 
             ff_fix_long_p_mvs(s, s->intra_penalty ? CANDIDATE_MB_TYPE_INTER : CANDIDATE_MB_TYPE_INTRA);
-            ff_fix_long_mvs(s, NULL, 0, s->p_mv_table, s->c.f_code, CANDIDATE_MB_TYPE_INTER, !!s->intra_penalty);
+            ff_fix_long_mvs(s, NULL, 0, s->p_mv_table, s->f_code, CANDIDATE_MB_TYPE_INTER, !!s->intra_penalty);
             if (s->c.avctx->flags & AV_CODEC_FLAG_INTERLACED_ME) {
                 int j;
                 for(i=0; i<2; i++){
                     for(j=0; j<2; j++)
                         ff_fix_long_mvs(s, s->p_field_select_table[i], j,
-                                        s->c.p_field_mv_table[i][j], s->c.f_code, CANDIDATE_MB_TYPE_INTER_I, !!s->intra_penalty);
+                                        s->c.p_field_mv_table[i][j], s->f_code, CANDIDATE_MB_TYPE_INTER_I, !!s->intra_penalty);
                 }
             }
         } else if (s->c.pict_type == AV_PICTURE_TYPE_B) {
@@ -3818,16 +3818,16 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
 
             a = ff_get_best_fcode(m, s->b_forw_mv_table, CANDIDATE_MB_TYPE_FORWARD);
             b = ff_get_best_fcode(m, s->b_bidir_forw_mv_table, CANDIDATE_MB_TYPE_BIDIR);
-            s->c.f_code = FFMAX(a, b);
+            s->f_code = FFMAX(a, b);
 
             a = ff_get_best_fcode(m, s->b_back_mv_table, CANDIDATE_MB_TYPE_BACKWARD);
             b = ff_get_best_fcode(m, s->b_bidir_back_mv_table, CANDIDATE_MB_TYPE_BIDIR);
-            s->c.b_code = FFMAX(a, b);
+            s->b_code = FFMAX(a, b);
 
-            ff_fix_long_mvs(s, NULL, 0, s->b_forw_mv_table, s->c.f_code, CANDIDATE_MB_TYPE_FORWARD, 1);
-            ff_fix_long_mvs(s, NULL, 0, s->b_back_mv_table, s->c.b_code, CANDIDATE_MB_TYPE_BACKWARD, 1);
-            ff_fix_long_mvs(s, NULL, 0, s->b_bidir_forw_mv_table, s->c.f_code, CANDIDATE_MB_TYPE_BIDIR, 1);
-            ff_fix_long_mvs(s, NULL, 0, s->b_bidir_back_mv_table, s->c.b_code, CANDIDATE_MB_TYPE_BIDIR, 1);
+            ff_fix_long_mvs(s, NULL, 0, s->b_forw_mv_table, s->f_code, CANDIDATE_MB_TYPE_FORWARD, 1);
+            ff_fix_long_mvs(s, NULL, 0, s->b_back_mv_table, s->b_code, CANDIDATE_MB_TYPE_BACKWARD, 1);
+            ff_fix_long_mvs(s, NULL, 0, s->b_bidir_forw_mv_table, s->f_code, CANDIDATE_MB_TYPE_BIDIR, 1);
+            ff_fix_long_mvs(s, NULL, 0, s->b_bidir_back_mv_table, s->b_code, CANDIDATE_MB_TYPE_BIDIR, 1);
             if (s->c.avctx->flags & AV_CODEC_FLAG_INTERLACED_ME) {
                 int dir, j;
                 for(dir=0; dir<2; dir++){
@@ -3836,7 +3836,7 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
                             int type= dir ? (CANDIDATE_MB_TYPE_BACKWARD_I|CANDIDATE_MB_TYPE_BIDIR_I)
                                           : (CANDIDATE_MB_TYPE_FORWARD_I |CANDIDATE_MB_TYPE_BIDIR_I);
                             ff_fix_long_mvs(s, s->b_field_select_table[dir][i], j,
-                                            s->b_field_mv_table[dir][i][j], dir ? s->c.b_code : s->c.f_code, type, 1);
+                                            s->b_field_mv_table[dir][i][j], dir ? s->b_code : s->f_code, type, 1);
                         }
                     }
                 }

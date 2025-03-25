@@ -589,7 +589,7 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
                         ff_h263_encode_motion_vector(s,
                                                      s->c.mv[0][0][0] - s->c.last_mv[0][0][0],
                                                      s->c.mv[0][0][1] - s->c.last_mv[0][0][1],
-                                                     s->c.f_code);
+                                                     s->f_code);
                         s->c.last_mv[0][0][0] =
                         s->c.last_mv[0][1][0] = s->c.mv[0][0][0];
                         s->c.last_mv[0][0][1] =
@@ -599,7 +599,7 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
                         ff_h263_encode_motion_vector(s,
                                                      s->c.mv[1][0][0] - s->c.last_mv[1][0][0],
                                                      s->c.mv[1][0][1] - s->c.last_mv[1][0][1],
-                                                     s->c.b_code);
+                                                     s->b_code);
                         s->c.last_mv[1][0][0] =
                         s->c.last_mv[1][1][0] = s->c.mv[1][0][0];
                         s->c.last_mv[1][0][1] =
@@ -619,7 +619,7 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
                             ff_h263_encode_motion_vector(s,
                                                          s->c.mv[0][i][0] - s->c.last_mv[0][i][0],
                                                          s->c.mv[0][i][1] - s->c.last_mv[0][i][1] / 2,
-                                                         s->c.f_code);
+                                                         s->f_code);
                             s->c.last_mv[0][i][0] = s->c.mv[0][i][0];
                             s->c.last_mv[0][i][1] = s->c.mv[0][i][1] * 2;
                         }
@@ -629,7 +629,7 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
                             ff_h263_encode_motion_vector(s,
                                                          s->c.mv[1][i][0] - s->c.last_mv[1][i][0],
                                                          s->c.mv[1][i][1] - s->c.last_mv[1][i][1] / 2,
-                                                         s->c.b_code);
+                                                         s->b_code);
                             s->c.last_mv[1][i][0] = s->c.mv[1][i][0];
                             s->c.last_mv[1][i][1] = s->c.mv[1][i][1] * 2;
                         }
@@ -741,7 +741,7 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
                 ff_h263_encode_motion_vector(s,
                                              motion_x - pred_x,
                                              motion_y - pred_y,
-                                             s->c.f_code);
+                                             s->f_code);
             } else if (s->c.mv_type == MV_TYPE_FIELD) {
                 if (s->dquant)
                     cbpc += 8;
@@ -771,11 +771,11 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
                 ff_h263_encode_motion_vector(s,
                                              s->c.mv[0][0][0] - pred_x,
                                              s->c.mv[0][0][1] - pred_y,
-                                             s->c.f_code);
+                                             s->f_code);
                 ff_h263_encode_motion_vector(s,
                                              s->c.mv[0][1][0] - pred_x,
                                              s->c.mv[0][1][1] - pred_y,
-                                             s->c.f_code);
+                                             s->f_code);
             } else {
                 av_assert2(s->c.mv_type == MV_TYPE_8X8);
                 put_bits(&s->pb,
@@ -796,7 +796,7 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
                     ff_h263_encode_motion_vector(s,
                                                  s->c.cur_pic.motion_val[0][s->c.block_index[i]][0] - pred_x,
                                                  s->c.cur_pic.motion_val[0][s->c.block_index[i]][1] - pred_y,
-                                                 s->c.f_code);
+                                                 s->f_code);
                 }
             }
 
@@ -1116,9 +1116,9 @@ static int mpeg4_encode_picture_header(MPVMainEncContext *const m)
     put_bits(&s->pb, 5, s->c.qscale);
 
     if (s->c.pict_type != AV_PICTURE_TYPE_I)
-        put_bits(&s->pb, 3, s->c.f_code);  /* fcode_for */
+        put_bits(&s->pb, 3, s->f_code);  /* fcode_for */
     if (s->c.pict_type == AV_PICTURE_TYPE_B)
-        put_bits(&s->pb, 3, s->c.b_code);  /* fcode_back */
+        put_bits(&s->pb, 3, s->b_code);  /* fcode_back */
 
     return 0;
 }
@@ -1393,7 +1393,7 @@ void ff_mpeg4_encode_video_packet_header(MPVEncContext *const s)
 {
     int mb_num_bits = av_log2(s->c.mb_num - 1) + 1;
 
-    put_bits(&s->pb, ff_mpeg4_get_video_packet_prefix_length(s->c.pict_type, s->c.f_code, s->c.b_code), 0);
+    put_bits(&s->pb, ff_mpeg4_get_video_packet_prefix_length(s->c.pict_type, s->f_code, s->b_code), 0);
     put_bits(&s->pb, 1, 1);
 
     put_bits(&s->pb, mb_num_bits, s->c.mb_x + s->c.mb_y * s->c.mb_width);

@@ -48,7 +48,7 @@ int ff_rv20_encode_picture_header(MPVMainEncContext *const m)
 
     put_bits(&s->pb, 1, s->c.no_rounding);
 
-    av_assert0(s->c.f_code == 1);
+    av_assert0(s->f_code == 1);
     av_assert0(!s->c.unrestricted_mv);
     av_assert0(!s->c.alt_inter_vlc);
     av_assert0(!s->c.umvplus);

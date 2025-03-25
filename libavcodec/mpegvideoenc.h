@@ -74,6 +74,9 @@ typedef struct MPVEncContext {
     PixblockDSPContext pdsp;
     MotionEstContext me;
 
+    int f_code;                 ///< forward MV resolution
+    int b_code;                 ///< backward MV resolution for B-frames
+
     int16_t (*p_mv_table)[2];            ///< MV table (1MV per MB) P-frame
     int16_t (*b_forw_mv_table)[2];       ///< MV table (1MV per MB) forward mode B-frame
     int16_t (*b_back_mv_table)[2];       ///< MV table (1MV per MB) backward mode B-frame

@@ -179,8 +179,6 @@ typedef struct MpegEncContext {
     QpelDSPContext qdsp;
     VideoDSPContext vdsp;
     H263DSPContext h263dsp;
-    int f_code;                 ///< forward MV resolution
-    int b_code;                 ///< backward MV resolution for B-frames (MPEG-4)
     int16_t (*p_field_mv_table_base)[2];
     int16_t (*p_field_mv_table[2][2])[2];   ///< MV table (2MV per MB) interlaced P-frame encoding
 

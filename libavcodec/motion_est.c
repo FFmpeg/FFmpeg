@@ -910,7 +910,7 @@ void ff_estimate_p_frame_motion(MPVEncContext *const s,
     c->penalty_factor     = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_cmp);
     c->sub_penalty_factor = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_sub_cmp);
     c->mb_penalty_factor  = get_penalty_factor(s->lambda, s->lambda2, c->avctx->mb_cmp);
-    c->current_mv_penalty = c->mv_penalty[s->c.f_code] + MAX_DMV;
+    c->current_mv_penalty = c->mv_penalty[s->f_code] + MAX_DMV;
 
     get_limits(s, 16*mb_x, 16*mb_y, 0);
     c->skip=0;
@@ -1077,7 +1077,7 @@ int ff_pre_estimate_p_frame_motion(MPVEncContext *const s,
     av_assert0(s->c.quarter_sample == 0 || s->c.quarter_sample == 1);
 
     c->pre_penalty_factor = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_pre_cmp);
-    c->current_mv_penalty = c->mv_penalty[s->c.f_code] + MAX_DMV;
+    c->current_mv_penalty = c->mv_penalty[s->f_code] + MAX_DMV;
 
     get_limits(s, 16*mb_x, 16*mb_y, 0);
     c->skip=0;
@@ -1187,8 +1187,8 @@ static inline int check_bidir_mv(MPVEncContext *const s,
     //FIXME better f_code prediction (max mv & distance)
     //FIXME pointers
     MotionEstContext *const c = &s->me;
-    const uint8_t * const mv_penalty_f = c->mv_penalty[s->c.f_code] + MAX_DMV; // f_code of the prev frame
-    const uint8_t * const mv_penalty_b = c->mv_penalty[s->c.b_code] + MAX_DMV; // f_code of the prev frame
+    const uint8_t * const mv_penalty_f = c->mv_penalty[s->f_code] + MAX_DMV; // f_code of the prev frame
+    const uint8_t * const mv_penalty_b = c->mv_penalty[s->b_code] + MAX_DMV; // f_code of the prev frame
     int stride= c->stride;
     uint8_t *dest_y = c->scratchpad;
     const uint8_t *ptr;
@@ -1526,11 +1526,11 @@ void ff_estimate_b_frame_motion(MPVEncContext *const s,
 
 // FIXME penalty stuff for non-MPEG-4
     c->skip=0;
-    fmin = estimate_motion_b(s, mb_x, mb_y, s->b_forw_mv_table, 0, s->c.f_code) +
+    fmin = estimate_motion_b(s, mb_x, mb_y, s->b_forw_mv_table, 0, s->f_code) +
            3 * c->mb_penalty_factor;
 
     c->skip=0;
-    bmin = estimate_motion_b(s, mb_x, mb_y, s->b_back_mv_table, 2, s->c.b_code) +
+    bmin = estimate_motion_b(s, mb_x, mb_y, s->b_back_mv_table, 2, s->b_code) +
            2 * c->mb_penalty_factor;
     ff_dlog(c->avctx, " %d %d ", s->b_forw_mv_table[xy][0], s->b_forw_mv_table[xy][1]);
 
@@ -1541,11 +1541,11 @@ void ff_estimate_b_frame_motion(MPVEncContext *const s,
     if (c->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME) {
 //FIXME mb type penalty
         c->skip=0;
-        c->current_mv_penalty= c->mv_penalty[s->c.f_code] + MAX_DMV;
+        c->current_mv_penalty = c->mv_penalty[s->f_code] + MAX_DMV;
         fimin= interlaced_search(s, 0,
                                  s->b_field_mv_table[0], s->b_field_select_table[0],
                                  s->b_forw_mv_table[xy][0], s->b_forw_mv_table[xy][1], 0);
-        c->current_mv_penalty= c->mv_penalty[s->c.b_code] + MAX_DMV;
+        c->current_mv_penalty = c->mv_penalty[s->b_code] + MAX_DMV;
         bimin= interlaced_search(s, 2,
                                  s->b_field_mv_table[1], s->b_field_select_table[1],
                                  s->b_back_mv_table[xy][0], s->b_back_mv_table[xy][1], 0);
@@ -1661,7 +1661,7 @@ int ff_get_best_fcode(MPVMainEncContext *const m, const int16_t (*mv_table)[2], 
 void ff_fix_long_p_mvs(MPVEncContext *const s, int type)
 {
     MotionEstContext *const c = &s->me;
-    const int f_code= s->c.f_code;
+    const int f_code= s->f_code;
     int y, range;
     av_assert0(s->c.pict_type == AV_PICTURE_TYPE_P);
 

@@ -337,7 +337,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s2->mb_height                     = block_height;
         s2->mb_stride                     = s2->mb_width + 1;
         s2->b8_stride                     = 2 * s2->mb_width + 1;
-        s2->f_code                        = 1;
+        s->m.f_code                       = 1;
         s2->pict_type                     = s->pict_type;
         s->m.me.scene_change_score        = 0;
         // s2->out_format                    = FMT_H263;
@@ -400,7 +400,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         }
 
         ff_fix_long_p_mvs(&s->m, CANDIDATE_MB_TYPE_INTRA);
-        ff_fix_long_mvs(&s->m, NULL, 0, s->m.p_mv_table, s2->f_code,
+        ff_fix_long_mvs(&s->m, NULL, 0, s->m.p_mv_table, s->m.f_code,
                         CANDIDATE_MB_TYPE_INTER, 0);
     }
 

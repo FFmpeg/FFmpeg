@@ -49,8 +49,8 @@ void ff_write_pass1_stats(MPVMainEncContext *const m)
              s->p_tex_bits,
              s->mv_bits,
              s->misc_bits,
-             s->c.f_code,
-             s->c.b_code,
+             s->f_code,
+             s->b_code,
              m->mc_mb_var_sum,
              m->mb_var_sum,
              s->i_count,
@@ -903,8 +903,8 @@ void ff_get_2pass_fcode(MPVMainEncContext *const m)
     const RateControlContext *rcc = &m->rc_context;
     const RateControlEntry   *rce = &rcc->entry[s->c.picture_number];
 
-    s->c.f_code = rce->f_code;
-    s->c.b_code = rce->b_code;
+    s->f_code = rce->f_code;
+    s->b_code = rce->b_code;
 }
 
 // FIXME rd or at least approx for dquant
@@ -997,8 +997,8 @@ float ff_rate_estimate_qscale(MPVMainEncContext *const m, int dry_run)
         rce->mc_mb_var_sum = m->mc_mb_var_sum;
         rce->mb_var_sum    = m->mb_var_sum;
         rce->qscale        = FF_QP2LAMBDA * 2;
-        rce->f_code        = s->c.f_code;
-        rce->b_code        = s->c.b_code;
+        rce->f_code        = s->f_code;
+        rce->b_code        = s->b_code;
         rce->misc_bits     = 1;
 
         bits = predict_size(&rcc->pred[pict_type], rce->qscale, sqrt(var));

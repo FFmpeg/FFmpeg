@@ -34,6 +34,9 @@
 typedef struct Mpeg4DecContext {
     MpegEncContext m;
 
+    int f_code;                 ///< forward MV resolution
+    int b_code;                 ///< backward MV resolution for B-frames
+
     /// number of bits to represent the fractional part of time
     int time_increment_bits;
     int shape;

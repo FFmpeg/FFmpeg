@@ -445,7 +445,7 @@ static int encode_q_branch(SnowEncContext *enc, int level, int x, int y)
     c->penalty_factor    = get_penalty_factor(enc->lambda, enc->lambda2, c->avctx->me_cmp);
     c->sub_penalty_factor= get_penalty_factor(enc->lambda, enc->lambda2, c->avctx->me_sub_cmp);
     c->mb_penalty_factor = get_penalty_factor(enc->lambda, enc->lambda2, c->avctx->mb_cmp);
-    c->current_mv_penalty = c->mv_penalty[enc->m.s.c.f_code=1] + MAX_DMV;
+    c->current_mv_penalty = c->mv_penalty[enc->m.s.f_code=1] + MAX_DMV;
 
     c->xmin = - x*block_w - 16+3;
     c->ymin = - y*block_w - 16+3;
@@ -1863,7 +1863,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         mpv->c.mb_height  = block_height;
         mpv->c.mb_stride  =     mpv->c.mb_width + 1;
         mpv->c.b8_stride  = 2 * mpv->c.mb_width + 1;
-        mpv->c.f_code     = 1;
+        mpv->f_code       = 1;
         mpv->c.pict_type  = pic->pict_type;
         mpv->me.motion_est = enc->motion_est;
         mpv->me.dia_size = avctx->dia_size;
