@@ -1991,6 +1991,9 @@ transcoding, without copying the frames into the system memory.
 
 For it to work, both the decoder and the encoder must support QSV acceleration
 and no filters must be used.
+
+@item videotoolbox
+Use Video Toolbox hardware acceleration.
 @end table
 
 This option has no effect if the selected hwaccel is not available or not
