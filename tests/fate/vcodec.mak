@@ -306,7 +306,8 @@ fate-vsynth%-mpeg4:              FMT     = mp4
 fate-vsynth%-mpeg4-adap:         ENCOPTS = -b 550k -bf 2 -flags +mv4     \
                                            -trellis 1 -cmp 1 -subcmp 2   \
                                            -mbd rd -scplx_mask 0.3       \
-                                           -mpv_flags +mv0
+                                           -mpv_flags +mv0               \
+                                           -b_strategy 1 -b_sensitivity 5
 
 fate-vsynth%-mpeg4-adv:          ENCOPTS = -qscale 9 -flags +mv4+aic       \
                                            -data_partitioning 1 -trellis 1 \
