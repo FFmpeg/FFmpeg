@@ -635,10 +635,18 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         rtp_send_ilbc(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_MJPEG:
+        if (st->codecpar->width <= 0 || st->codecpar->height <= 0) {
+            av_log(s1, AV_LOG_ERROR, "dimensions not set\n");
+            return AVERROR(EINVAL);
+        }
         ff_rtp_send_jpeg(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_BITPACKED:
     case AV_CODEC_ID_RAWVIDEO: {
+        if (st->codecpar->width <= 0 || st->codecpar->height <= 0) {
+            av_log(s1, AV_LOG_ERROR, "dimensions not set\n");
+            return AVERROR(EINVAL);
+        }
         int interlaced = st->codecpar->field_order != AV_FIELD_PROGRESSIVE;
 
         ff_rtp_send_raw_rfc4175(s1, pkt->data, size, interlaced, 0);
@@ -685,5 +693,5 @@ const FFOutputFormat ff_rtp_muxer = {
     .write_packet      = rtp_write_packet,
     .write_trailer     = rtp_write_trailer,
     .p.priv_class      = &rtp_muxer_class,
-    .p.flags           = AVFMT_TS_NONSTRICT,
+    .p.flags           = AVFMT_NODIMENSIONS | AVFMT_TS_NONSTRICT,
 };
