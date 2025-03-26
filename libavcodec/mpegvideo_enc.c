@@ -1726,8 +1726,9 @@ static int set_bframe_chain_length(MPVMainEncContext *const m)
                                         s->c.linesize) + 1;
                 }
             }
-            for (int i = 0; i < m->max_b_frames + 1; i++) {
-                if (!m->input_picture[i] ||
+            for (int i = 0;; i++) {
+                if (i >= m->max_b_frames + 1 ||
+                    !m->input_picture[i] ||
                     m->input_picture[i]->b_frame_score - 1 >
                         s->c.mb_num / m->b_sensitivity) {
                     b_frames = FFMAX(0, i - 1);
