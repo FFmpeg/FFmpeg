@@ -206,6 +206,14 @@ typedef struct CodedBitstreamVP9Context {
     uint8_t subsampling_y;
     int bit_depth;
 
+    int8_t loop_filter_ref_deltas[VP9_MAX_REF_FRAMES];
+    int8_t loop_filter_mode_deltas[2];
+    uint8_t segmentation_tree_probs[7];
+    uint8_t segmentation_pred_prob[3];
+    uint8_t feature_enabled[VP9_MAX_SEGMENTS][VP9_SEG_LVL_MAX];
+    uint8_t feature_value[VP9_MAX_SEGMENTS][VP9_SEG_LVL_MAX];
+    uint8_t feature_sign[VP9_MAX_SEGMENTS][VP9_SEG_LVL_MAX];
+
     VP9ReferenceFrameState ref[VP9_NUM_REF_FRAMES];
 } CodedBitstreamVP9Context;
 

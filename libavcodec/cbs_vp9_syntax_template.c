@@ -152,6 +152,7 @@ static int FUNC(interpolation_filter)(CodedBitstreamContext *ctx, RWContext *rw,
 static int FUNC(loop_filter_params)(CodedBitstreamContext *ctx, RWContext *rw,
                                     VP9RawFrameHeader *current)
 {
+    CodedBitstreamVP9Context *vp9 = ctx->priv_data;
     int err, i;
 
     f(6, loop_filter_level);
@@ -159,6 +160,8 @@ static int FUNC(loop_filter_params)(CodedBitstreamContext *ctx, RWContext *rw,
 
     f(1, loop_filter_delta_enabled);
     if (current->loop_filter_delta_enabled) {
+        memcpy(current->loop_filter_ref_deltas, vp9->loop_filter_ref_deltas, sizeof(vp9->loop_filter_ref_deltas));
+        memcpy(current->loop_filter_mode_deltas, vp9->loop_filter_mode_deltas, sizeof(vp9->loop_filter_mode_deltas));
         f(1, loop_filter_delta_update);
         if (current->loop_filter_delta_update) {
             for (i = 0; i < VP9_MAX_REF_FRAMES; i++) {
@@ -171,6 +174,8 @@ static int FUNC(loop_filter_params)(CodedBitstreamContext *ctx, RWContext *rw,
                 if (current->update_mode_delta[i])
                     ss(6, loop_filter_mode_deltas[i], 1, i);
             }
+            memcpy(vp9->loop_filter_ref_deltas, current->loop_filter_ref_deltas, sizeof(vp9->loop_filter_ref_deltas));
+            memcpy(vp9->loop_filter_mode_deltas, current->loop_filter_mode_deltas, sizeof(vp9->loop_filter_mode_deltas));
         }
     }
 
@@ -197,11 +202,17 @@ static int FUNC(segmentation_params)(CodedBitstreamContext *ctx, RWContext *rw,
     static const uint8_t segmentation_feature_bits[VP9_SEG_LVL_MAX]   = { 8, 6, 2, 0 };
     static const uint8_t segmentation_feature_signed[VP9_SEG_LVL_MAX] = { 1, 1, 0, 0 };
 
+    CodedBitstreamVP9Context *vp9 = ctx->priv_data;
     int err, i, j;
 
     f(1, segmentation_enabled);
 
     if (current->segmentation_enabled) {
+        memcpy(current->segmentation_tree_probs, vp9->segmentation_tree_probs, sizeof(vp9->segmentation_tree_probs));
+        memcpy(current->segmentation_pred_prob, vp9->segmentation_pred_prob, sizeof(vp9->segmentation_pred_prob));
+        memcpy(current->feature_enabled, vp9->feature_enabled, sizeof(vp9->feature_enabled));
+        memcpy(current->feature_value, vp9->feature_value, sizeof(vp9->feature_value));
+        memcpy(current->feature_sign, vp9->feature_sign, sizeof(vp9->feature_sign));
         f(1, segmentation_update_map);
         if (current->segmentation_update_map) {
             for (i = 0; i < 7; i++)
@@ -213,6 +224,8 @@ static int FUNC(segmentation_params)(CodedBitstreamContext *ctx, RWContext *rw,
                 else
                     infer(segmentation_pred_prob[i], 255);
             }
+            memcpy(vp9->segmentation_tree_probs, current->segmentation_tree_probs, sizeof(vp9->segmentation_tree_probs));
+            memcpy(vp9->segmentation_pred_prob, current->segmentation_pred_prob, sizeof(vp9->segmentation_pred_prob));
         }
 
         f(1, segmentation_update_data);
@@ -235,6 +248,9 @@ static int FUNC(segmentation_params)(CodedBitstreamContext *ctx, RWContext *rw,
                     }
                 }
             }
+            memcpy(vp9->feature_enabled, current->feature_enabled, sizeof(vp9->feature_enabled));
+            memcpy(vp9->feature_value, current->feature_value, sizeof(vp9->feature_value));
+            memcpy(vp9->feature_sign, current->feature_sign, sizeof(vp9->feature_sign));
         }
     }
 
@@ -351,6 +367,18 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
     }
 
     f(2, frame_context_idx);
+
+    if (current->frame_type == VP9_KEY_FRAME || current->error_resilient_mode || current->intra_only) {
+        infer(update_ref_delta[0], 1);
+        infer(update_ref_delta[1], 0);
+        infer(update_ref_delta[2], -1);
+        infer(update_ref_delta[3], -1);
+        infer(loop_filter_mode_deltas[0], 0);
+        infer(loop_filter_mode_deltas[1], 0);
+        memset(vp9->feature_enabled, 0, sizeof(current->feature_enabled));
+        memset(vp9->feature_value, 0, sizeof(current->feature_value));
+        memset(vp9->feature_sign, 0, sizeof(current->feature_sign));
+    }
 
     CHECK(FUNC(loop_filter_params)(ctx, rw, current));
     CHECK(FUNC(quantization_params)(ctx, rw, current));
