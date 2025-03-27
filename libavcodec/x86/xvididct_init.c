@@ -25,16 +25,10 @@
 
 #include "xvididct.h"
 
-av_cold void ff_xvid_idct_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
-                                   unsigned high_bit_depth)
+av_cold void ff_xvid_idct_init_x86(IDCTDSPContext *c)
 {
 #if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
-
-    if (high_bit_depth ||
-        !(avctx->idct_algo == FF_IDCT_AUTO ||
-          avctx->idct_algo == FF_IDCT_XVID))
-        return;
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->idct_put  = ff_xvid_idct_put_sse2;
