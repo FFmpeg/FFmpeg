@@ -96,11 +96,9 @@ int ff_vk_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 
     av_refstruct_replace(&dst_ctx->shared_ctx, src_ctx->shared_ctx);
 
-    if (src_ctx->session_params) {
-        err = av_buffer_replace(&dst_ctx->session_params, src_ctx->session_params);
-        if (err < 0)
-            return err;
-    }
+    err = av_buffer_replace(&dst_ctx->session_params, src_ctx->session_params);
+    if (err < 0)
+        return err;
 
     dst_ctx->dedicated_dpb = src_ctx->dedicated_dpb;
     dst_ctx->external_fg = src_ctx->external_fg;
@@ -381,11 +379,12 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
     /* Quirks */
     const int layered_dpb = ctx->common.layered_dpb;
 
-    VkVideoSessionParametersKHR *par = (VkVideoSessionParametersKHR *)dec->session_params->data;
     VkVideoBeginCodingInfoKHR decode_start = {
         .sType = VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR,
         .videoSession = ctx->common.session,
-        .videoSessionParameters = *par,
+        .videoSessionParameters = dec->session_params ?
+                                  *((VkVideoSessionParametersKHR *)dec->session_params->data) :
+                                  VK_NULL_HANDLE,
         .referenceSlotCount = vp->decode_info.referenceSlotCount,
         .pReferenceSlots = vp->decode_info.pReferenceSlots,
     };
