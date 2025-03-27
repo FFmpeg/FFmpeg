@@ -291,13 +291,12 @@ static int alloc_huffman(MJPEGEncContext *const m2)
     static const char blocks_per_mb[] = {
         [CHROMA_420] = 6, [CHROMA_422] = 8, [CHROMA_444] = 12
     };
-    size_t num_blocks, num_codes;
+    size_t num_blocks;
 
     // Make sure we have enough space to hold this frame.
     num_blocks = s->c.mb_num * blocks_per_mb[s->c.chroma_format];
-    num_codes = num_blocks * 64;
 
-    m->huff_buffer = av_malloc_array(num_codes,
+    m->huff_buffer = av_malloc_array(num_blocks,
                                      64 /* codes per MB */ * sizeof(MJpegHuffmanCode));
     if (!m->huff_buffer)
         return AVERROR(ENOMEM);
