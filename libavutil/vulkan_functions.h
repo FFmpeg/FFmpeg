@@ -28,6 +28,7 @@
 /* An enum of bitflags for every optional extension we need */
 typedef uint64_t FFVulkanExtensions;
 
+/* NOTE: when adding new entries, make sure to update ff_vk_extensions_to_mask */
 #define FF_VK_EXT_EXTERNAL_DMABUF_MEMORY (1ULL <<  0) /* VK_EXT_external_memory_dma_buf */
 #define FF_VK_EXT_DRM_MODIFIER_FLAGS     (1ULL <<  1) /* VK_EXT_image_drm_format_modifier */
 #define FF_VK_EXT_EXTERNAL_FD_MEMORY     (1ULL <<  2) /* VK_KHR_external_memory_fd */
