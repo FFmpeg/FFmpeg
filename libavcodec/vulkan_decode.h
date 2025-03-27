@@ -38,6 +38,7 @@ typedef struct FFVulkanDecodeDescriptor {
 typedef struct FFVulkanDecodeProfileData {
     VkVideoDecodeH264ProfileInfoKHR h264_profile;
     VkVideoDecodeH265ProfileInfoKHR h265_profile;
+    VkVideoDecodeVP9ProfileInfoKHR vp9_profile;
     VkVideoDecodeAV1ProfileInfoKHR av1_profile;
     VkVideoDecodeUsageInfoKHR usage;
     VkVideoProfileInfoKHR profile;

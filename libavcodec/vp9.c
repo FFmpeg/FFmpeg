@@ -169,7 +169,8 @@ static int update_size(AVCodecContext *avctx, int w, int h)
                      CONFIG_VP9_NVDEC_HWACCEL + \
                      CONFIG_VP9_VAAPI_HWACCEL + \
                      CONFIG_VP9_VDPAU_HWACCEL + \
-                     CONFIG_VP9_VIDEOTOOLBOX_HWACCEL)
+                     CONFIG_VP9_VIDEOTOOLBOX_HWACCEL + \
+                     CONFIG_VP9_VULKAN_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
     VP9Context *s = avctx->priv_data;
     uint8_t *p;
@@ -207,6 +208,9 @@ static int update_size(AVCodecContext *avctx, int w, int h)
 #if CONFIG_VP9_VIDEOTOOLBOX_HWACCEL
             *fmtp++ = AV_PIX_FMT_VIDEOTOOLBOX;
 #endif
+#if CONFIG_VP9_VULKAN_HWACCEL
+            *fmtp++ = AV_PIX_FMT_VULKAN;
+#endif
             break;
         case AV_PIX_FMT_YUV420P12:
 #if CONFIG_VP9_NVDEC_HWACCEL
@@ -218,6 +222,9 @@ static int update_size(AVCodecContext *avctx, int w, int h)
 #if CONFIG_VP9_VDPAU_HWACCEL
             *fmtp++ = AV_PIX_FMT_VDPAU;
 #endif
+#if CONFIG_VP9_VULKAN_HWACCEL
+            *fmtp++ = AV_PIX_FMT_VULKAN;
+#endif
             break;
         case AV_PIX_FMT_YUV444P:
         case AV_PIX_FMT_YUV444P10:
@@ -225,12 +232,18 @@ static int update_size(AVCodecContext *avctx, int w, int h)
 #if CONFIG_VP9_VAAPI_HWACCEL
             *fmtp++ = AV_PIX_FMT_VAAPI;
 #endif
+#if CONFIG_VP9_VULKAN_HWACCEL
+            *fmtp++ = AV_PIX_FMT_VULKAN;
+#endif
             break;
         case AV_PIX_FMT_GBRP:
         case AV_PIX_FMT_GBRP10:
         case AV_PIX_FMT_GBRP12:
 #if CONFIG_VP9_VAAPI_HWACCEL
             *fmtp++ = AV_PIX_FMT_VAAPI;
+#endif
+#if CONFIG_VP9_VULKAN_HWACCEL
+            *fmtp++ = AV_PIX_FMT_VULKAN;
 #endif
             break;
         }
@@ -1936,6 +1949,9 @@ const FFCodec ff_vp9_decoder = {
 #endif
 #if CONFIG_VP9_VIDEOTOOLBOX_HWACCEL
                                HWACCEL_VIDEOTOOLBOX(vp9),
+#endif
+#if CONFIG_VP9_VULKAN_HWACCEL
+                               HWACCEL_VULKAN(vp9),
 #endif
                                NULL
                            },
