@@ -28,11 +28,8 @@ static void set_erpic(ERPicture *dst, const MPVPicture *src)
     int i;
 
     memset(dst, 0, sizeof(*dst));
-    if (!src) {
-        dst->f  = NULL;
-        dst->tf = NULL;
+    if (!src)
         return;
-    }
 
     dst->f = src->f;
     dst->progress = &src->progress;
