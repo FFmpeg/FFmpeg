@@ -1271,44 +1271,26 @@ typedef struct RemapEncoderState {
     int run1start_mul_index;
 } RemapEncoderState;
 
-static inline void copy_state(RemapEncoderState *dst, const RemapEncoderState *src)
-{
-    dst->rc = src->rc;
-    memcpy(dst->mul, src->mul, (src->mul_count + 1) * sizeof(src->mul[0]));
-    memcpy(dst->state, src->state, sizeof(dst->state));
-    dst->lu             = src->lu;
-    dst->run            = src->run;
-    dst->last_val       = src->last_val;
-    dst->compact_index  = src->compact_index;
-    dst->mul_count      = src->mul_count;
-    dst->i              = src->i;
-    dst->pixel_num      = src->pixel_num;
-    dst->p              = src->p;
-    dst->current_mul_index = src->current_mul_index;
-    dst->run1final      = src->run1final;
-    dst->run1start_i    = src->run1start_i;
-    dst->run1start_last_val = src->run1start_last_val;
-    dst->run1start_mul_index = src->run1start_mul_index;
-}
-
 static int encode_float32_remap_segment(FFV1SliceContext *sc,
-                                        RemapEncoderState *state_arg, int update, int final)
+                                        int p, int mul_count, int *mul_tab, int update, int final)
 {
     RemapEncoderState s;
 
-    copy_state(&s, state_arg);
-
-    if (s.i == 0) {
-        memset(s.state, 128, sizeof(s.state));
-        put_symbol(&s.rc, s.state[0][0], s.mul_count, 0);
-        memset(s.state, 128, sizeof(s.state));
-        s.last_val = -1;
-        s.compact_index = -1;
-        s.lu = 0;
-        s.run = 0;
-        s.current_mul_index = -1;
-        s.run1final = 0;
-    }
+    s.pixel_num = sc->slice_width * sc->slice_height;
+    s.p = p;
+    s.i = 0;
+    s.rc = sc->c;
+    s.mul_count = mul_count;
+    memcpy(s.mul, mul_tab, sizeof(*mul_tab)*(mul_count+1));
+    memset(s.state, 128, sizeof(s.state));
+    put_symbol(&s.rc, s.state[0][0], s.mul_count, 0);
+    memset(s.state, 128, sizeof(s.state));
+    s.last_val = -1;
+    s.compact_index = -1;
+    s.lu = 0;
+    s.run = 0;
+    s.current_mul_index = -1;
+    s.run1final = 0;
 
     for (; s.i < s.pixel_num+1; s.i++) {
         int current_mul = s.current_mul_index < 0 ? 1 : FFABS(s.mul[s.current_mul_index]);
@@ -1395,7 +1377,7 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
     }
 
     if (update) {
-        copy_state(state_arg, &s);
+        sc->c = s.rc;
     }
     return get_rac_count(&s.rc);
 }
@@ -1403,25 +1385,22 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
 static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
                                  const uint8_t *src[4])
 {
-    RemapEncoderState s;
-    s.pixel_num = sc->slice_width * sc->slice_height;
+    int pixel_num = sc->slice_width * sc->slice_height;
+    int mul_count;
 
-    av_assert0 (s.pixel_num <= 65536);
+    av_assert0 (pixel_num <= 65536);
 
     for (int p= 0; p < 1 + 2*f->chroma_planes + f->transparency; p++) {
         float score_sum[2] = {0};
         int mul_all[2][513];
-        s.rc = sc->c;
-        s.i = 0;
-        s.p = p;
 
-        for (int mul_count= 1; mul_count<=512; mul_count+=511) {
+        for (mul_count= 1; mul_count<=512; mul_count+=511) {
             float score_tab_all[513][23] = {0};
             int64_t last_val = -1;
             int *mul_tab = mul_all[mul_count>>9];
             int last_mul_index = -1;
             score_sum[mul_count>>9] += log2(mul_count);
-            for (int i= 0; i<s.pixel_num; i++) {
+            for (int i= 0; i<pixel_num; i++) {
                 int64_t val = sc->unit[p][i].val;
                 int mul_index = (val + 1LL)*mul_count >> 32;
                 if (val != last_val) {
@@ -1461,17 +1440,11 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
             }
             mul_tab[mul_count] = 1;
 
-            s.mul_count = mul_count;
-            memcpy(s.mul, mul_all[s.mul_count>>9], sizeof(*s.mul)*(s.mul_count+1));
-            score_sum[mul_count>>9] = encode_float32_remap_segment(sc, &s, 0, 0);
+            score_sum[mul_count>>9] = encode_float32_remap_segment(sc, p, mul_count, mul_all[mul_count>>9], 0, 0);
         }
 
-        s.mul_count = score_sum[0] <= score_sum[1] ? 1 : 512;
-        memcpy(s.mul, mul_all[s.mul_count>>9], sizeof(*s.mul)*(s.mul_count+1));
-
-        encode_float32_remap_segment(sc, &s, 1, 1);
-
-        sc->c = s.rc;
+        mul_count = score_sum[0] <= score_sum[1] ? 1 : 512;
+        encode_float32_remap_segment(sc, p, mul_count, mul_all[mul_count>>9], 1, 1);
     }
 }
 
