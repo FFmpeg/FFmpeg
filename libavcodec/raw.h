@@ -34,8 +34,6 @@ typedef struct PixelFormatTag {
     unsigned int fourcc;
 } PixelFormatTag;
 
-const struct PixelFormatTag *avpriv_get_raw_pix_fmt_tags(void);
-
 enum PixelFormatTagLists {
     PIX_FMT_LIST_RAW,
     PIX_FMT_LIST_AVI,
