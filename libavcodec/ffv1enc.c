@@ -1409,52 +1409,65 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
     av_assert0 (s.pixel_num <= 65536);
 
     for (int p= 0; p < 1 + 2*f->chroma_planes + f->transparency; p++) {
-        float score_tab[16] = {0};
-        int64_t last_val = -1;
-        int best_index = 0;
+        float score_sum[2] = {0};
+        int mul_all[2][513];
         s.rc = sc->c;
         s.i = 0;
         s.p = p;
 
-        for(int v = 0; v< 512; v++) {
-            if (v >= 0x378/8 && v <= 23 + 0x378/8) {
-                s.mul[v] = -(0x800080 >> (v - 0x378/8));
-            } else
-                s.mul[v] = -1;
-        }
-        for (int i= 0; i<s.pixel_num; i++) {
-            int64_t val = sc->unit[p][i].val;
-            if (val != last_val) {
-                av_assert2(last_val < val);
-                for(int si= 0; si < FF_ARRAY_ELEMS(score_tab); si++) {
-                    int64_t delta = val - last_val;
-                    int mul;
-                    int64_t cost;
+        for (int mul_count= 1; mul_count<=512; mul_count+=511) {
+            float score_tab_all[513][23] = {0};
+            int64_t last_val = -1;
+            int *mul_tab = mul_all[mul_count>>9];
+            int last_mul_index = -1;
+            score_sum[mul_count>>9] += log2(mul_count);
+            for (int i= 0; i<s.pixel_num; i++) {
+                int64_t val = sc->unit[p][i].val;
+                int mul_index = (val + 1LL)*mul_count >> 32;
+                if (val != last_val) {
+                    float *score_tab = score_tab_all[(last_val + 1LL)*mul_count >> 32];
+                    av_assert2(last_val < val);
+                    for(int si= 0; si < FF_ARRAY_ELEMS(*score_tab_all); si++) {
+                        int64_t delta = val - last_val;
+                        int mul;
+                        int64_t cost;
 
-                    if (last_val < 0) {
-                        mul = 1;
-                    } else if (si + 1 == FF_ARRAY_ELEMS(score_tab)) {
-                        mul = -s.mul[ (last_val + 1) >> (32-9) ];
-                    } else
-                        mul = 1<<si;
+                        if (last_val < 0) {
+                            mul = 1;
+                        } else {
+                            mul = (0x10001LL)<<si >> 16;
+                        }
 
-                    cost = FFMAX((delta + mul/2)  / mul, 1);
-                    score_tab[si] += log2(cost) + log2(fabs(delta - cost*mul)+1);
+                        cost = FFMAX((delta + mul/2)  / mul, 1);
+                        score_tab[si] += log2(cost);
+                        if (mul > 1)
+                            score_tab[si] += log2(fabs(delta - cost*mul)+1) * (1 + (mul_count > 1));
+                        if (mul_index != last_mul_index)
+                            score_tab[si] += 0.5*log2(mul);
+                    }
                 }
                 last_val = val;
+                last_mul_index = mul_index;
             }
+            for(int i= 0; i<mul_count; i++) {
+                int best_index = 0;
+                float *score_tab = score_tab_all[i];
+                for(int si= 1; si < FF_ARRAY_ELEMS(*score_tab_all); si++) {
+                    if (score_tab[si] < score_tab[ best_index ])
+                        best_index = si;
+                }
+                mul_tab[i] = -((0x10001LL)<<best_index >> 16);
+                score_sum[mul_count>>9] += score_tab[ best_index ];
+            }
+            mul_tab[mul_count] = 1;
+
+            s.mul_count = mul_count;
+            memcpy(s.mul, mul_all[s.mul_count>>9], sizeof(*s.mul)*(s.mul_count+1));
+            score_sum[mul_count>>9] = encode_float32_remap_segment(sc, &s, 0, 0);
         }
-        for(int si= 1; si < FF_ARRAY_ELEMS(score_tab); si++) {
-            if (score_tab[si] < score_tab[ best_index ])
-                best_index = si;
-        }
-        if (best_index + 1 < FF_ARRAY_ELEMS(score_tab)) {
-            s.mul[0] = -1 << best_index;
-            s.mul_count = 1;
-        } else {
-            s.mul_count = 512;
-        }
-        s.mul[s.mul_count] = 1;
+
+        s.mul_count = score_sum[0] <= score_sum[1] ? 1 : 512;
+        memcpy(s.mul, mul_all[s.mul_count>>9], sizeof(*s.mul)*(s.mul_count+1));
 
         encode_float32_remap_segment(sc, &s, 1, 1);
 
