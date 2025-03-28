@@ -3882,9 +3882,6 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
         vk->GetImageSubresourceLayout(hwctx->act_dev, f->img[i], &sub, &layout);
         drm_desc->layers[i].planes[0].offset = layout.offset;
         drm_desc->layers[i].planes[0].pitch  = layout.rowPitch;
-
-        if (hwfctx->flags & AV_VK_FRAME_FLAG_CONTIGUOUS_MEMORY)
-            drm_desc->layers[i].planes[0].offset += f->offset[i];
     }
 
     dst->width   = src->width;
