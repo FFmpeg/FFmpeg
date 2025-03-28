@@ -28,6 +28,9 @@
 #if CONFIG_D3D11VA
 #include "libavutil/hwcontext_d3d11va.h"
 #endif
+#if CONFIG_D3D12VA
+#include "libavutil/hwcontext_d3d12va.h"
+#endif
 #if CONFIG_DXVA2
 #define COBJMACROS
 #include "libavutil/hwcontext_dxva2.h"
@@ -145,6 +148,9 @@ static const enum AVPixelFormat supported_formats[] = {
     AV_PIX_FMT_P010,
 #if CONFIG_D3D11VA
     AV_PIX_FMT_D3D11,
+#endif
+#if CONFIG_D3D12VA
+    AV_PIX_FMT_D3D12,
 #endif
 #if CONFIG_DXVA2
     AV_PIX_FMT_DXVA2_VLD,
@@ -555,9 +561,32 @@ static int amf_init_from_d3d11_device(AVAMFDeviceContext* amf_ctx, AVD3D11VADevi
             av_log(hwctx, AV_LOG_ERROR, "AMF failed to initialise on the given D3D11 device: %d.\n", res);
         return AVERROR(ENODEV);
     }
+    av_log(hwctx, AV_LOG_ERROR, "AMF via D3D11");
     return 0;
 }
 #endif
+
+#if CONFIG_D3D12VA
+static int amf_init_from_d3d12_device(AVAMFDeviceContext* amf_ctx, AVD3D12VADeviceContext *hwctx)
+{
+    AMF_RESULT res;
+    AMFContext2 *context2 = NULL;
+    AMFGuid guid = IID_AMFContext2();
+    res = amf_ctx->context->pVtbl->QueryInterface(amf_ctx->context, &guid, (void**)&context2);
+    AMF_RETURN_IF_FALSE(hwctx, res == AMF_OK, AVERROR_UNKNOWN, "CreateContext2() failed with error %d\n", res);
+    res = context2->pVtbl->InitDX12(context2, hwctx->device, AMF_DX12);
+    context2->pVtbl->Release(context2);
+    if (res != AMF_OK && res != AMF_ALREADY_INITIALIZED) {
+        if (res == AMF_NOT_SUPPORTED)
+            av_log(hwctx, AV_LOG_ERROR, "AMF via D3D12 is not supported on the given device.\n");
+        else
+            av_log(hwctx, AV_LOG_ERROR, "AMF failed to initialise on the given D3D12 device: %d.\n", res);
+        return AVERROR(ENODEV);
+    }
+    return 0;
+}
+#endif
+
 
 static int amf_device_derive(AVHWDeviceContext *device_ctx,
                               AVHWDeviceContext *child_device_ctx, AVDictionary *opts,
@@ -586,6 +615,13 @@ static int amf_device_derive(AVHWDeviceContext *device_ctx,
     case AV_HWDEVICE_TYPE_D3D11VA: {
             AVD3D11VADeviceContext *child_device_hwctx = child_device_ctx->hwctx;
             return amf_init_from_d3d11_device(amf_ctx, child_device_hwctx);
+        }
+        break;
+#endif
+#if CONFIG_D3D12VA
+    case AV_HWDEVICE_TYPE_D3D12VA: {
+            AVD3D12VADeviceContext *child_device_hwctx = child_device_ctx->hwctx;
+            return amf_init_from_d3d12_device(amf_ctx, child_device_hwctx);
         }
         break;
 #endif
