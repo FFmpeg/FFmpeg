@@ -855,6 +855,7 @@ av_cold void ff_h263_encode_init(MPVMainEncContext *const m)
         }
         break;
         // Note for MPEG-4 & H.263 the dc-scale table will be set per frame as needed later
+#if CONFIG_FLV_ENCODER
     case AV_CODEC_ID_FLV1:
         m->encode_picture_header = ff_flv_encode_picture_header;
         if (s->c.h263_flv > 1) {
@@ -865,6 +866,7 @@ av_cold void ff_h263_encode_init(MPVMainEncContext *const m)
             s->max_qcoeff=  127;
         }
         break;
+#endif
     default: //nothing needed - default table already set in mpegvideo.c
         s->min_qcoeff= -127;
         s->max_qcoeff=  127;
