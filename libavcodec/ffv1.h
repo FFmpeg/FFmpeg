@@ -148,7 +148,7 @@ typedef struct FFV1Context {
     int colorspace;
     int flt;
     int remap_mode;
-
+    int remap_optimizer;
 
     int use32bit;
 

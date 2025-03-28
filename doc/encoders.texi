@@ -554,6 +554,10 @@ use 8bit default
 @item greater8bit
 use >8bit default
 @end table
+
+@item remap_optimizer
+0 - 5, default 3, how much effort the encoder puts into optimizing the remap table.
+
 @end table
 
 @anchor{flac}
