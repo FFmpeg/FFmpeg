@@ -1252,64 +1252,47 @@ static void load_rgb_float32_frame(FFV1Context *f, FFV1SliceContext *sc,
         AV_QSORT(sc->unit[3], i, struct Unit, CMP);
 }
 
-typedef struct RemapEncoderState {
-    uint8_t state[2][3][32];
-    int mul[4096+1];
-    RangeCoder rc;
-    int lu;
-    int run;
-    int64_t last_val;
-    int compact_index;
-    int mul_count;
-    int i;
-    int pixel_num;
-    int p;
-    int current_mul_index;
-    int run1final;
-    int64_t run1start_i;
-    int64_t run1start_last_val;
-    int run1start_mul_index;
-} RemapEncoderState;
-
 static int encode_float32_remap_segment(FFV1SliceContext *sc,
                                         int p, int mul_count, int *mul_tab, int update, int final)
 {
-    RemapEncoderState s;
+    const int pixel_num = sc->slice_width * sc->slice_height;
+    uint8_t state[2][3][32];
+    int mul[4096+1];
+    RangeCoder rc = sc->c;
+    int lu = 0;
+    int run = 0;
+    int64_t last_val = -1;
+    int compact_index = -1;
+    int i = 0;
+    int current_mul_index = -1;
+    int run1final = 0;
+    int64_t run1start_i;
+    int64_t run1start_last_val;
+    int run1start_mul_index;
 
-    s.pixel_num = sc->slice_width * sc->slice_height;
-    s.p = p;
-    s.i = 0;
-    s.rc = sc->c;
-    s.mul_count = mul_count;
-    memcpy(s.mul, mul_tab, sizeof(*mul_tab)*(mul_count+1));
-    memset(s.state, 128, sizeof(s.state));
-    put_symbol(&s.rc, s.state[0][0], s.mul_count, 0);
-    memset(s.state, 128, sizeof(s.state));
-    s.last_val = -1;
-    s.compact_index = -1;
-    s.lu = 0;
-    s.run = 0;
-    s.current_mul_index = -1;
-    s.run1final = 0;
+    memcpy(mul, mul_tab, sizeof(*mul_tab)*(mul_count+1));
+    memset(state, 128, sizeof(state));
+    put_symbol(&rc, state[0][0], mul_count, 0);
+    memset(state, 128, sizeof(state));
 
-    for (; s.i < s.pixel_num+1; s.i++) {
-        int current_mul = s.current_mul_index < 0 ? 1 : FFABS(s.mul[s.current_mul_index]);
+    for (; i < pixel_num+1; i++) {
+        int current_mul = current_mul_index < 0 ? 1 : FFABS(mul[current_mul_index]);
         int64_t val;
-        if (s.i == s.pixel_num) {
-            if (s.last_val == 0xFFFFFFFF) {
+        if (i == pixel_num) {
+            if (last_val == 0xFFFFFFFF) {
                 break;
             } else {
-                val = s.last_val + ((1LL<<32) - s.last_val + current_mul - 1) / current_mul * current_mul;
+                val = last_val + ((1LL<<32) - last_val + current_mul - 1) / current_mul * current_mul;
                 av_assert2(val >= (1LL<<32));
-                val += s.lu * current_mul; //ensure a run1 ends
+                val += lu * current_mul; //ensure a run1 ends
             }
         } else
-            val = sc->unit[s.p][s.i].val;
+            val = sc->unit[p][i].val;
 
-        if (s.last_val != val) {
-            int64_t delta = val - s.last_val;
+        if (last_val != val) {
+            int64_t delta = val - last_val;
             int64_t step  = FFMAX(1, (delta + current_mul/2) / current_mul);
-            av_assert2(s.last_val < val);
+            av_assert2(last_val < val);
             av_assert2(current_mul > 0);
 
             delta -= step*current_mul;
@@ -1317,69 +1300,69 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
             av_assert2(delta > -current_mul);
 
             av_assert2(step > 0);
-            if (s.lu) {
-                if (!s.run) {
-                    s.run1start_i        = s.i - 1;
-                    s.run1start_last_val = s.last_val;
-                    s.run1start_mul_index= s.current_mul_index;
+            if (lu) {
+                if (!run) {
+                    run1start_i        = i - 1;
+                    run1start_last_val = last_val;
+                    run1start_mul_index= current_mul_index;
                 }
                 if (step == 1) {
-                    if (s.run1final) {
+                    if (run1final) {
                         if (current_mul>1)
-                            put_symbol_inline(&s.rc, s.state[s.lu][1], delta, 1, NULL, NULL);
+                            put_symbol_inline(&rc, state[lu][1], delta, 1, NULL, NULL);
                     }
-                    s.run ++;
-                    av_assert2(s.last_val + current_mul + delta == val);
+                    run ++;
+                    av_assert2(last_val + current_mul + delta == val);
                 } else {
-                    if (s.run1final) {
-                        if (s.run == 0)
-                            s.lu ^= 1;
-                        s.i--; // we did not encode val so we need to backstep
-                        s.last_val += current_mul;
+                    if (run1final) {
+                        if (run == 0)
+                            lu ^= 1;
+                        i--; // we did not encode val so we need to backstep
+                        last_val += current_mul;
                     } else {
-                        put_symbol_inline(&s.rc, s.state[s.lu][0], s.run, 0, NULL, NULL);
-                        s.i                 = s.run1start_i;
-                        s.last_val          = s.run1start_last_val; // we could compute this instead of storing
-                        s.current_mul_index = s.run1start_mul_index;
+                        put_symbol_inline(&rc, state[lu][0], run, 0, NULL, NULL);
+                        i                 = run1start_i;
+                        last_val          = run1start_last_val; // we could compute this instead of storing
+                        current_mul_index = run1start_mul_index;
                     }
-                    s.run1final ^= 1;
+                    run1final ^= 1;
 
-                    s.run = 0;
+                    run = 0;
                     continue;
                 }
             } else {
-                av_assert2(s.run == 0);
-                av_assert2(s.run1final == 0);
-                put_symbol_inline(&s.rc, s.state[s.lu][0], step - 1, 0, NULL, NULL);
+                av_assert2(run == 0);
+                av_assert2(run1final == 0);
+                put_symbol_inline(&rc, state[lu][0], step - 1, 0, NULL, NULL);
 
                 if (current_mul > 1)
-                    put_symbol_inline(&s.rc, s.state[s.lu][1], delta, 1, NULL, NULL);
+                    put_symbol_inline(&rc, state[lu][1], delta, 1, NULL, NULL);
                 if (step == 1)
-                    s.lu ^= 1;
+                    lu ^= 1;
 
-                av_assert2(s.last_val + step * current_mul + delta == val);
+                av_assert2(last_val + step * current_mul + delta == val);
             }
-            s.last_val = val;
-            s.current_mul_index = ((s.last_val + 1) * s.mul_count) >> 32;
-            if (!s.run || s.run1final) {
-                av_assert2(s.mul[ s.current_mul_index ]);
-                if (s.mul[ s.current_mul_index ] < 0) {
-                    av_assert2(s.i < s.pixel_num);
-                    s.mul[ s.current_mul_index ] *= -1;
-                    put_symbol_inline(&s.rc, s.state[0][2], s.mul[ s.current_mul_index ], 0, NULL, NULL);
+            last_val = val;
+            current_mul_index = ((last_val + 1) * mul_count) >> 32;
+            if (!run || run1final) {
+                av_assert2(mul[ current_mul_index ]);
+                if (mul[ current_mul_index ] < 0) {
+                    av_assert2(i < pixel_num);
+                    mul[ current_mul_index ] *= -1;
+                    put_symbol_inline(&rc, state[0][2], mul[ current_mul_index ], 0, NULL, NULL);
                 }
-                s.compact_index ++;
+                compact_index ++;
             }
         }
-        if (!s.run || s.run1final)
-            if (final && s.i < s.pixel_num)
-                sc->bitmap[s.p][sc->unit[s.p][s.i].ndx] = s.compact_index;
+        if (!run || run1final)
+            if (final && i < pixel_num)
+                sc->bitmap[p][sc->unit[p][i].ndx] = compact_index;
     }
 
     if (update) {
-        sc->c = s.rc;
+        sc->c = rc;
     }
-    return get_rac_count(&s.rc);
+    return get_rac_count(&rc);
 }
 
 static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
