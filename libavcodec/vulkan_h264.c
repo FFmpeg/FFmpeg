@@ -366,19 +366,10 @@ static int vk_h264_start_frame(AVCodecContext          *avctx,
     int err;
     int dpb_slot_index = 0;
     H264Context *h = avctx->priv_data;
-    FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
-    FFVulkanDecodeShared *ctx = dec->shared_ctx;
 
     H264Picture *pic = h->cur_pic_ptr;
     H264VulkanDecodePicture *hp = pic->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &hp->vp;
-
-    if (!dec->session_params &&
-        !(ctx->s.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_2)) {
-        err = vk_h264_create_params(avctx, &dec->session_params);
-        if (err < 0)
-            return err;
-    }
 
     /* Fill in main slot */
     dpb_slot_index = 0;

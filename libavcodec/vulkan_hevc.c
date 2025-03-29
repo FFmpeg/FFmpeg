@@ -716,8 +716,6 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
     int err;
     HEVCContext *h = avctx->priv_data;
     HEVCLayerContext *l = &h->layers[h->cur_layer];
-    FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
-    FFVulkanDecodeShared *ctx = dec->shared_ctx;
 
     HEVCFrame *pic = h->cur_frame;
     HEVCVulkanDecodePicture *hp = pic->hwaccel_picture_private;
@@ -725,13 +723,6 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
     const HEVCPPS *pps = h->pps;
     const HEVCSPS *sps = pps->sps;
     int nb_refs = 0;
-
-    if (!dec->session_params &&
-        !(ctx->s.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_2)) {
-        err = vk_hevc_create_params(avctx, &dec->session_params);
-        if (err < 0)
-            return err;
-    }
 
     hp->h265pic = (StdVideoDecodeH265PictureInfo) {
         .flags = (StdVideoDecodeH265PictureInfoFlags) {

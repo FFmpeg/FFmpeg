@@ -254,7 +254,6 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
     AV1DecContext *s = avctx->priv_data;
     const AV1Frame *pic = &s->cur_frame;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
-    FFVulkanDecodeShared *ctx = dec->shared_ctx;
 
     AV1VulkanDecodePicture *ap = pic->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &ap->vp;
@@ -268,13 +267,6 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
                                                          STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_SWITCHABLE,
                                                          STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_WIENER,
                                                          STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_SGRPROJ };
-
-    if (!dec->session_params &&
-        !(ctx->s.extensions & FF_VK_EXT_VIDEO_MAINTENANCE_2)) {
-        err = vk_av1_create_params(avctx, &dec->session_params, ap);
-        if (err < 0)
-            return err;
-    }
 
     if (!ap->frame_id_set) {
         unsigned slot_idx = 0;
