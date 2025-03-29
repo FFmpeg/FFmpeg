@@ -213,7 +213,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     unsigned long dsize;
     int i, j, compr, ret;
     int stride;
-    int pc = 0;
     GetByteContext gb;
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
@@ -224,7 +223,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         for(i = 0; i < 256; i++){
             c->pal[i] = 0xFFU << 24 | bytestream2_get_be24(&gb);
         }
-        pc = 1;
     }
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
