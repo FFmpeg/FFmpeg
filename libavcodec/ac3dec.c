@@ -854,16 +854,18 @@ static void decode_band_structure(GetBitContext *gbc, int blk, int eac3,
 static inline int spx_strategy(AC3DecodeContext *s, int blk)
 {
     GetBitContext *bc = &s->gbc;
-    int fbw_channels = s->fbw_channels;
     int dst_start_freq, dst_end_freq, src_start_freq,
-        start_subband, end_subband, ch;
+        start_subband, end_subband;
 
     /* determine which channels use spx */
     if (s->channel_mode == AC3_CHMODE_MONO) {
         s->channel_uses_spx[1] = 1;
     } else {
-        for (ch = 1; ch <= fbw_channels; ch++)
-            s->channel_uses_spx[ch] = get_bits1(bc);
+        unsigned channel_uses_spx = get_bits(bc, s->fbw_channels);
+        for (int ch = s->fbw_channels; ch >= 1; --ch) {
+            s->channel_uses_spx[ch] = channel_uses_spx & 1;
+            channel_uses_spx      >>= 1;
+        }
     }
 
     /* get the frequency bins of the spx copy region and the spx start
