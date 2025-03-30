@@ -118,7 +118,7 @@ static const char* channel_order_names[]  = {"UNSPEC", "NATIVE", "CUSTOM", "AMBI
 
 static void describe_type(AVBPrint *bp, AVChannelLayout *layout)
 {
-    if (layout->order >= 0 && layout->order < FF_ARRAY_ELEMS(channel_order_names)) {
+    if ((unsigned)layout->order < FF_ARRAY_ELEMS(channel_order_names)) {
         av_bprintf(bp, "%-6s (", channel_order_names[layout->order]);
         av_channel_layout_describe_bprint(layout, bp);
         av_bprintf(bp, ")");
