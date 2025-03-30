@@ -1390,7 +1390,7 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
             int last_mul_index = -1;
             int mul_count = 1 << log2_mul_count;
 
-            score_sum[log2_mul_count] += log2_mul_count;
+            score_sum[log2_mul_count] += log2_mul_count * log2_mul_count;
             for (int i= 0; i<pixel_num; i++) {
                 int64_t val = sc->unit[p][i].val;
                 int mul_index = (val + 1LL)*mul_count >> 32;
@@ -1414,11 +1414,17 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
                         }
 
                         cost = FFMAX((delta + mul/2)  / mul, 1);
-                        score_tab[si] += log2(cost);
-                        if (mul > 1)
-                            score_tab[si] += log2(fabs(delta - cost*mul)+1) * (1 + (mul_count > 1));
+                        float score = 1;
+                        if (mul > 1) {
+                            score *= (fabs(delta - cost*mul)+1);
+                            if (mul_count > 1)
+                                score *= score;
+                        }
+                        score *= cost;
+                        score *= score;
                         if (mul_index != last_mul_index)
-                            score_tab[si] += 0.5*log2(mul);
+                            score *= mul;
+                        score_tab[si] += log2f(score);
                     }
                 }
                 last_val = val;
