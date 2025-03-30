@@ -219,6 +219,14 @@ static int rtp_write_header(AVFormatContext *s1)
             s->nal_length_size = (st->codecpar->extradata[21] & 0x03) + 1;
         }
         break;
+    case AV_CODEC_ID_MJPEG:
+    case AV_CODEC_ID_BITPACKED:
+    case AV_CODEC_ID_RAWVIDEO:
+        if (st->codecpar->width <= 0 || st->codecpar->height <= 0) {
+            av_log(s1, AV_LOG_ERROR, "dimensions not set\n");
+            return AVERROR(EINVAL);
+        }
+        break;
     case AV_CODEC_ID_VP9:
         if (s1->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
             av_log(s, AV_LOG_ERROR,
@@ -635,18 +643,10 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         rtp_send_ilbc(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_MJPEG:
-        if (st->codecpar->width <= 0 || st->codecpar->height <= 0) {
-            av_log(s1, AV_LOG_ERROR, "dimensions not set\n");
-            return AVERROR(EINVAL);
-        }
         ff_rtp_send_jpeg(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_BITPACKED:
     case AV_CODEC_ID_RAWVIDEO: {
-        if (st->codecpar->width <= 0 || st->codecpar->height <= 0) {
-            av_log(s1, AV_LOG_ERROR, "dimensions not set\n");
-            return AVERROR(EINVAL);
-        }
         int interlaced = st->codecpar->field_order != AV_FIELD_PROGRESSIVE;
 
         ff_rtp_send_raw_rfc4175(s1, pkt->data, size, interlaced, 0);
