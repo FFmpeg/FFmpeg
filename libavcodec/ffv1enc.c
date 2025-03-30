@@ -1375,6 +1375,7 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
     const int log2_mul_step       = ((int[]){  1,  8,  1,  1,  1,   1})[f->remap_optimizer];
     const int bruteforce_count    = ((int[]){  0,  0,  0,  1,  1,   1})[f->remap_optimizer];
     const int stair_mode          = ((int[]){  0,  0,  0,  1,  0,   0})[f->remap_optimizer];
+    const int magic_log2          = ((int[]){  1,  1,  1,  1,  0,   0})[f->remap_optimizer];
 
     av_assert0 (pixel_num <= 65536);
 
@@ -1390,7 +1391,9 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
             int last_mul_index = -1;
             int mul_count = 1 << log2_mul_count;
 
-            score_sum[log2_mul_count] += log2_mul_count * log2_mul_count;
+            score_sum[log2_mul_count] = 2 * log2_mul_count;
+            if (magic_log2)
+                score_sum[log2_mul_count] = av_float2int((float)mul_count * mul_count);
             for (int i= 0; i<pixel_num; i++) {
                 int64_t val = sc->unit[p][i].val;
                 int mul_index = (val + 1LL)*mul_count >> 32;
@@ -1424,7 +1427,10 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
                         score *= score;
                         if (mul_index != last_mul_index)
                             score *= mul;
-                        score_tab[si] += log2f(score);
+                        if (magic_log2) {
+                            score_tab[si] += av_float2int(score);
+                        } else
+                            score_tab[si] += log2f(score);
                     }
                 }
                 last_val = val;
