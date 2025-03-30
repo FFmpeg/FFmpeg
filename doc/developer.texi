@@ -70,9 +70,6 @@ variable-length arrays;
 
 @item
 complex numbers;
-
-@item
-mixed statements and declarations.
 @end itemize
 
 @subsection SIMD/DSP

@@ -7467,7 +7467,6 @@ fi
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
 # add some useful compiler flags if supported
-check_cflags -Wdeclaration-after-statement
 check_cflags -Wall
 check_cflags -Wdisabled-optimization
 check_cflags -Wpointer-arith
@@ -7503,10 +7502,6 @@ check_disable_warning -Wno-unused-const-variable
 check_disable_warning -Wno-bool-operation
 check_disable_warning -Wno-char-subscripts
 check_disable_warning -Wno-implicit-const-int-float-conversion
-
-# Disable mixed decl and code warning for Objective-C
-test_objcflags $unknown_warning_flags '-Wdeclaration-after-statement' &&
-    add_objcflags '-Wno-declaration-after-statement'
 
 check_disable_warning_headers(){
     warning_flag=-W${1#-Wno-}
