@@ -77,8 +77,6 @@ StdVideoH265LevelIdc ff_vk_h265_level_to_vk(int level_idc);
  */
 StdVideoH264ProfileIdc ff_vk_h264_profile_to_vk(int profile);
 StdVideoH265ProfileIdc ff_vk_h265_profile_to_vk(int profile);
-int ff_vk_h264_profile_to_av(StdVideoH264ProfileIdc profile);
-int ff_vk_h265_profile_to_av(StdVideoH264ProfileIdc profile);
 
 /**
  * Creates image views for video frames.

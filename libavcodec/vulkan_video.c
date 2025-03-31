@@ -247,27 +247,6 @@ StdVideoH265ProfileIdc ff_vk_h265_profile_to_vk(int profile)
     }
 }
 
-int ff_vk_h264_profile_to_av(StdVideoH264ProfileIdc profile)
-{
-    switch (profile) {
-    case STD_VIDEO_H264_PROFILE_IDC_BASELINE: return AV_PROFILE_H264_CONSTRAINED_BASELINE;
-    case STD_VIDEO_H264_PROFILE_IDC_MAIN: return AV_PROFILE_H264_MAIN;
-    case STD_VIDEO_H264_PROFILE_IDC_HIGH: return AV_PROFILE_H264_HIGH;
-    case STD_VIDEO_H264_PROFILE_IDC_HIGH_444_PREDICTIVE: return AV_PROFILE_H264_HIGH_444_PREDICTIVE;
-    default: return AV_PROFILE_UNKNOWN;
-    }
-}
-
-int ff_vk_h265_profile_to_av(StdVideoH264ProfileIdc profile)
-{
-    switch (profile) {
-    case STD_VIDEO_H265_PROFILE_IDC_MAIN: return AV_PROFILE_HEVC_MAIN;
-    case STD_VIDEO_H265_PROFILE_IDC_MAIN_10: return AV_PROFILE_HEVC_MAIN_10;
-    case STD_VIDEO_H265_PROFILE_IDC_FORMAT_RANGE_EXTENSIONS: return AV_PROFILE_HEVC_REXT;
-    default: return AV_PROFILE_UNKNOWN;
-    }
-}
-
 int ff_vk_create_view(FFVulkanContext *s, FFVkVideoCommon *common,
                       VkImageView *view, VkImageAspectFlags *aspect,
                       AVVkFrame *src, VkFormat vkf, int is_dpb)
