@@ -28,7 +28,6 @@
 #include "decode.h"
 #include "hwaccel_internal.h"
 #include "internal.h"
-#include "mpegvideodec.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
 
@@ -353,6 +352,8 @@ int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 #if CONFIG_MPEG1_VDPAU_HWACCEL || \
     CONFIG_MPEG2_VDPAU_HWACCEL || CONFIG_MPEG4_VDPAU_HWACCEL || \
     CONFIG_VC1_VDPAU_HWACCEL   || CONFIG_WMV3_VDPAU_HWACCEL
+#include "mpegvideodec.h"
+
 int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
