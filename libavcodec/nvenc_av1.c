@@ -156,6 +156,8 @@ static const AVOption options[] = {
                                                             OFFSET(extra_sei),    AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
     { "a53cc",        "Use A53 Closed Captions (if available)", OFFSET(a53_cc),   AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
     { "s12m_tc",      "Use timecode (if available)",        OFFSET(s12m_tc),      AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
+    { "cbr_padding",  "Pad the bitstream to ensure bitrate does not drop below the target in CBR mode",
+                                                            OFFSET(cbr_padding),  AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
 #ifdef NVENC_HAVE_H264_AND_AV1_TEMPORAL_FILTER
     { "tf_level",     "Specifies the strength of the temporal filtering",
                                                             OFFSET(tf_level),     AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, INT_MAX, VE, .unit = "tf_level" },

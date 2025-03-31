@@ -1304,7 +1304,12 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
     h264->idrPeriod = cc->gopLength;
 
     if (IS_CBR(cc->rcParams.rateControlMode)) {
-        h264->outputBufferingPeriodSEI = 1;
+        /* Older SDKs use outputBufferingPeriodSEI to control filler data */
+        h264->outputBufferingPeriodSEI = ctx->cbr_padding;
+
+#ifdef NVENC_HAVE_FILLER_DATA
+        h264->enableFillerDataInsertion = ctx->cbr_padding;
+#endif
     }
 
     h264->outputPictureTimingSEI = 1;
@@ -1503,7 +1508,12 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
     hevc->idrPeriod = cc->gopLength;
 
     if (IS_CBR(cc->rcParams.rateControlMode)) {
-        hevc->outputBufferingPeriodSEI = 1;
+        /* Older SDKs use outputBufferingPeriodSEI to control filler data */
+        hevc->outputBufferingPeriodSEI = ctx->cbr_padding;
+
+#ifdef NVENC_HAVE_FILLER_DATA
+        hevc->enableFillerDataInsertion = ctx->cbr_padding;
+#endif
     }
 
     hevc->outputPictureTimingSEI = 1;
@@ -1625,7 +1635,7 @@ static av_cold int nvenc_setup_av1_config(AVCodecContext *avctx)
     av1->idrPeriod = cc->gopLength;
 
     if (IS_CBR(cc->rcParams.rateControlMode)) {
-        av1->enableBitstreamPadding = 1;
+        av1->enableBitstreamPadding = ctx->cbr_padding;
     }
 
     if (ctx->tile_cols >= 0)
