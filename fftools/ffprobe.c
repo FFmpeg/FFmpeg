@@ -2666,10 +2666,10 @@ static void print_pixel_format(WriterContext *w, enum AVPixelFormat pix_fmt)
         char buf[128];
         size_t i = 0;
 
-        while (s[i] && s[i] == s2[i])
+        while (s[i] && s[i] == s2[i] && i < sizeof(buf) - 1) {
+            buf[i] = s[i];
             i++;
-
-        memcpy(buf, s, FFMIN(sizeof(buf) - 1, i));
+        }
         buf[i] = '\0';
 
         print_str    ("pix_fmt", buf);
