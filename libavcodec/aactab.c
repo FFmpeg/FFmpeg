@@ -3884,31 +3884,6 @@ const DECLARE_ALIGNED(32, int, ff_aac_eld_window_480_fixed)[1800] = {
     0xffedebe1, 0xffee287d, 0xffee654e, 0xffeea23f,
 };
 
-/* As specified by ISO/IEC 23003 */
-#define USAC_EMPH_COEFF 0.68
-
-DECLARE_ALIGNED(16, const float, ff_aac_deemph_weights)[16] = {
-    USAC_EMPH_COEFF,
-    USAC_EMPH_COEFF*USAC_EMPH_COEFF,
-    USAC_EMPH_COEFF*USAC_EMPH_COEFF*USAC_EMPH_COEFF,
-    USAC_EMPH_COEFF*USAC_EMPH_COEFF*USAC_EMPH_COEFF*USAC_EMPH_COEFF,
-
-    0,
-    USAC_EMPH_COEFF,
-    USAC_EMPH_COEFF*USAC_EMPH_COEFF,
-    USAC_EMPH_COEFF*USAC_EMPH_COEFF*USAC_EMPH_COEFF,
-
-    0,
-    0,
-    USAC_EMPH_COEFF,
-    USAC_EMPH_COEFF*USAC_EMPH_COEFF,
-
-    0,
-    0,
-    0,
-    USAC_EMPH_COEFF,
-};
-
 const int ff_aac_usac_samplerate[32] = {
     96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050,
     16000, 12000, 11025,  8000,  7350,    -1,    -1, 57600,
@@ -3935,13 +3910,4 @@ const float ff_aac_usac_mdst_filt_cur[4 /* Window */][4 /* Shape */][7] =
       { 0.209526,  0.000000,  0.635722, 0.000000, -0.635722,  0.000000, -0.209526 },
       { 0.207421,  0.001416,  0.635010, 0.000000, -0.635010, -0.001416, -0.207421 },
       { 0.207421, -0.001416,  0.635010, 0.000000, -0.635010,  0.001416, -0.207421 } }
-};
-
-/* Window type (everything/longstop+stopstart), sine or kbd */
-const float ff_aac_usac_mdst_filt_prev[2 /* Window */][2 /* sine/kbd */][7] =
-{
-    { { 0.000000, 0.106103, 0.250000, 0.318310, 0.250000, 0.106103, 0.000000 },
-      { 0.059509, 0.123714, 0.186579, 0.213077, 0.186579, 0.123714, 0.059509 } },
-    { { 0.038498, 0.039212, 0.039645, 0.039790, 0.039645, 0.039212, 0.038498 },
-      { 0.026142, 0.026413, 0.026577, 0.026631, 0.026577, 0.026413, 0.026142 } }
 };
