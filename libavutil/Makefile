@@ -139,12 +139,10 @@ OBJS = adler32.o                                                        \
        file.o                                                           \
        file_open.o                                                      \
        float_dsp.o                                                      \
-       float2half.o                                                     \
        float_scalarproduct.o                                            \
        film_grain_params.o                                              \
        fixed_dsp.o                                                      \
        frame.o                                                          \
-       half2float.o                                                     \
        hash.o                                                           \
        hdr_dynamic_metadata.o                                           \
        hdr_dynamic_vivid_metadata.o                                     \
@@ -220,6 +218,13 @@ OBJS-$(CONFIG_VULKAN)                   += hwcontext_vulkan.o vulkan.o
 OBJS-$(!CONFIG_VULKAN)                  += hwcontext_stub.o
 
 OBJS += $(COMPAT_OBJS:%=../compat/%)
+
+# Object files to satisfy dependencies of other libraries for static builds
+STLIBOBJS-$(CONFIG_EXR_DECODER)         += half2float.o float2half.o
+STLIBOBJS-$(CONFIG_EXR_ENCODER)         += float2half.o
+STLIBOBJS-$(CONFIG_PHM_DECODER)         += half2float.o
+STLIBOBJS-$(CONFIG_PHM_ENCODER)         += float2half.o
+STLIBOBJS-$(CONFIG_SWSCALE)             += half2float.o
 
 # Windows resource file
 SHLIBOBJS-$(HAVE_GNU_WINDRES)           += avutilres.o
