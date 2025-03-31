@@ -22,7 +22,7 @@
 #include "aacdec_usac.h"
 #include "libavcodec/unary.h"
 
-const uint8_t ff_aac_lpd_mode_tab[32][4] = {
+static const uint8_t aac_lpd_mode_tab[32][4] = {
     { 0, 0, 0, 0 },
     { 1, 0, 0, 0 },
     { 0, 1, 0, 0 },
@@ -159,7 +159,7 @@ int ff_aac_ldp_parse_channel_stream(AACDecContext *ac, AACUSACConfig *usac,
     ce->ldp.core_mode_last = get_bits1(gb);
     ce->ldp.fac_data_present = get_bits1(gb);
 
-    mod = ff_aac_lpd_mode_tab[ce->ldp.lpd_mode];
+    mod = aac_lpd_mode_tab[ce->ldp.lpd_mode];
 
     first_ldp_flag = !ce->ldp.core_mode_last;
     if (first_ldp_flag)
