@@ -49,7 +49,6 @@ typedef struct SwsMatrix3x3 {
 } SwsMatrix3x3;
 
 void ff_sws_matrix3x3_mul(SwsMatrix3x3 *a, const SwsMatrix3x3 *b);
-void ff_sws_matrix3x3_rmul(const SwsMatrix3x3 *a, SwsMatrix3x3 *b);
 void ff_sws_matrix3x3_invert(SwsMatrix3x3 *mat);
 void ff_sws_matrix3x3_apply(const SwsMatrix3x3 *mat, float vec[3]);
 
