@@ -301,45 +301,6 @@ ffmpeg -re -i INPUT -c:v rawvideo -pix_fmt bgra -f fbdev /dev/fb0
 
 See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
 
-@section opengl
-OpenGL output device. Deprecated and will be removed.
-
-To enable this output device you need to configure FFmpeg with @code{--enable-opengl}.
-
-This output device allows one to render to OpenGL context.
-Context may be provided by application or default SDL window is created.
-
-When device renders to external context, application must implement handlers for following messages:
-@code{AV_DEV_TO_APP_CREATE_WINDOW_BUFFER} - create OpenGL context on current thread.
-@code{AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER} - make OpenGL context current.
-@code{AV_DEV_TO_APP_DISPLAY_WINDOW_BUFFER} - swap buffers.
-@code{AV_DEV_TO_APP_DESTROY_WINDOW_BUFFER} - destroy OpenGL context.
-Application is also required to inform a device about current resolution by sending @code{AV_APP_TO_DEV_WINDOW_SIZE} message.
-
-@subsection Options
-@table @option
-
-@item background
-Set background color. Black is a default.
-@item no_window
-Disables default SDL window when set to non-zero value.
-Application must provide OpenGL context and both @code{window_size_cb} and @code{window_swap_buffers_cb} callbacks when set.
-@item window_title
-Set the SDL window title, if not specified default to the filename specified for the output device.
-Ignored when @option{no_window} is set.
-@item window_size
-Set preferred window size, can be a string of the form widthxheight or a video size abbreviation.
-If not specified it defaults to the size of the input video, downscaled according to the aspect ratio.
-Mostly usable when @option{no_window} is not set.
-
-@end table
-
-@subsection Examples
-Play a file on SDL window using OpenGL rendering:
-@example
-ffmpeg  -i INPUT -f opengl "window title"
-@end example
-
 @section oss
 
 OSS (Open Sound System) output device.
@@ -404,78 +365,6 @@ by the server.
 Play a file on default device on default server:
 @example
 ffmpeg  -i INPUT -f pulse "stream name"
-@end example
-
-@section sdl
-
-SDL (Simple DirectMedia Layer) output device. Deprecated and will be removed.
-
-For monitoring purposes in FFmpeg, pipes and a video player such as ffplay can be used:
-
-@example
-ffmpeg -i INPUT -f nut -c:v rawvideo - | ffplay -
-@end example
-
-"sdl2" can be used as alias for "sdl".
-
-This output device allows one to show a video stream in an SDL
-window. Only one SDL window is allowed per application, so you can
-have only one instance of this output device in an application.
-
-To enable this output device you need libsdl installed on your system
-when configuring your build.
-
-For more information about SDL, check:
-@url{http://www.libsdl.org/}
-
-@subsection Options
-
-@table @option
-
-@item window_borderless
-Set SDL window border off.
-Default value is 0 (enable window border).
-
-@item window_enable_quit
-Enable quit action (using window button or keyboard key)
-when non-zero value is provided.
-Default value is 1 (enable quit action).
-
-@item window_fullscreen
-Set fullscreen mode when non-zero value is provided.
-Default value is zero.
-
-@item window_size
-Set the SDL window size, can be a string of the form
-@var{width}x@var{height} or a video size abbreviation.
-If not specified it defaults to the size of the input video,
-downscaled according to the aspect ratio.
-
-@item window_title
-Set the SDL window title, if not specified default to the filename
-specified for the output device.
-
-@item window_x
-@item window_y
-Set the position of the window on the screen.
-@end table
-
-@subsection Interactive commands
-
-The window created by the device can be controlled through the
-following interactive commands.
-
-@table @key
-@item q, ESC
-Quit the device immediately.
-@end table
-
-@subsection Examples
-
-The following command shows the @command{ffmpeg} output is an
-SDL window, forcing its size to the qcif format:
-@example
-ffmpeg -i INPUT -c:v rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL output"
 @end example
 
 @section sndio

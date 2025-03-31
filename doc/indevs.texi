@@ -220,41 +220,6 @@ $ ffmpeg -f avfoundation -capture_raw_data true -i "zr100:none" out.dv
 
 @end itemize
 
-@section bktr
-
-BSD video input device. Deprecated and will be removed - please contact
-the developers if you are interested in maintaining it.
-
-@subsection Options
-
-@table @option
-
-@item framerate
-Set the frame rate.
-
-@item video_size
-Set the video frame size. Default is @code{vga}.
-
-@item standard
-
-Available values are:
-@table @samp
-@item pal
-
-@item ntsc
-
-@item secam
-
-@item paln
-
-@item palm
-
-@item ntscj
-
-@end table
-
-@end table
-
 @section decklink
 
 The decklink input device provides capture capabilities for Blackmagic
