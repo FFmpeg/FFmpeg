@@ -364,8 +364,8 @@ typedef struct CheckasmPerf {
                 }\
             }\
             emms_c();\
-            perf->cycles += t;\
-            perf->iterations++;\
+            perf->cycles += tsum;\
+            perf->iterations += tcount;\
             checkasm_set_signal_handler_state(0);\
         }\
     } while (0)
