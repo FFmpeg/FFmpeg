@@ -518,48 +518,6 @@ Selected by Encoder (default)
 
 @end table
 
-@anchor{ffv1}
-@section ffv1
-
-FFv1 Encoder
-
-@subsection Options
-
-The following options are supported by FFmpeg's FFv1 encoder.
-
-@table @option
-@item context
-Sets the context size, 0 (default) is small, 1 is big.
-
-@item coder
-Set the coder,
-@table @samp
-@item rice
-Golomb rice coder
-@item range_def
-Range coder with default table
-@item range_tab
-Range coder with custom table
-@end table
-
-@item slicecrc
--1 (default, automatic), 1 use crc with zero initial and final state, 2 use crc with non zero initial and final state
-
-@item qtable
-@table @samp
-@item default
-default, automatic
-@item 8bit
-use 8bit default
-@item greater8bit
-use >8bit default
-@end table
-
-@item remap_optimizer
-0 - 5, default 3, how much effort the encoder puts into optimizing the remap table.
-
-@end table
-
 @anchor{flac}
 @section flac
 
@@ -1419,6 +1377,48 @@ Vintage compatible is 1..3.
 @item strip_number_adaptivity @var{integer}
 How much number of strips is allowed to change between frames.
 Higher is better but slower.
+
+@end table
+
+@anchor{ffv1}
+@section ffv1
+
+FFv1 Encoder
+
+@subsection Options
+
+The following options are supported by FFmpeg's FFv1 encoder.
+
+@table @option
+@item context
+Sets the context size, 0 (default) is small, 1 is big.
+
+@item coder
+Set the coder,
+@table @samp
+@item rice
+Golomb rice coder
+@item range_def
+Range coder with default table
+@item range_tab
+Range coder with custom table
+@end table
+
+@item slicecrc
+-1 (default, automatic), 1 use crc with zero initial and final state, 2 use crc with non zero initial and final state
+
+@item qtable
+@table @samp
+@item default
+default, automatic
+@item 8bit
+use 8bit default
+@item greater8bit
+use >8bit default
+@end table
+
+@item remap_optimizer
+0 - 5, default 3, how much effort the encoder puts into optimizing the remap table.
 
 @end table
 
