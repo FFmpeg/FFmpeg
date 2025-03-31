@@ -354,7 +354,7 @@ static av_always_inline const FFStream *cffstream(const AVStream *st)
     return (const FFStream*)st;
 }
 
-#ifdef __GNUC__
+#if defined (__GNUC__) || defined (__clang__)
 #define dynarray_add(tab, nb_ptr, elem)\
 do {\
     __typeof__(tab) _tab = (tab);\
