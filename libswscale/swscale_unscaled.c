@@ -1901,7 +1901,8 @@ static rgbConvFn findRgbConvFn(SwsInternal *c)
         else if (CONV_IS(X2RGB10LE, BGR48BE)
               || CONV_IS(X2BGR10LE, RGB48BE)) conv = HAVE_BIGENDIAN ? x2rgb10tobgr48_nobswap
                                                                     : x2rgb10tobgr48_bswap;
-        else if (CONV_IS(X2RGB10LE, RGBA64LE)
+    } else if (isX2RGB(srcFormat) && isRGBA64(dstFormat)) {
+        if      (CONV_IS(X2RGB10LE, RGBA64LE)
               || CONV_IS(X2BGR10LE, BGRA64LE)) conv = HAVE_BIGENDIAN ? x2rgb10to64_bswap
                                                                      : x2rgb10to64_nobswap;
         else if (CONV_IS(X2RGB10LE, RGBA64BE)
