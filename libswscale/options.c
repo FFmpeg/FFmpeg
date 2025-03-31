@@ -50,6 +50,7 @@ static const AVOption swscale_options[] = {
         { "full_chroma_inp", "full chroma input",             0,  AV_OPT_TYPE_CONST, { .i64 = SWS_FULL_CHR_H_INP }, .flags = VE, .unit = "sws_flags" },
         { "bitexact",        "bit-exact mode",                0,  AV_OPT_TYPE_CONST, { .i64 = SWS_BITEXACT       }, .flags = VE, .unit = "sws_flags" },
         { "error_diffusion", "error diffusion dither",        0,  AV_OPT_TYPE_CONST, { .i64 = SWS_ERROR_DIFFUSION}, .flags = VE, .unit = "sws_flags" },
+        { "unstable",        "allow experimental new code",   0,  AV_OPT_TYPE_CONST, { .i64 = SWS_UNSTABLE       }, .flags = VE, .unit = "sws_flags" },
 
     { "param0",          "scaler param 0", OFFSET(scaler_params[0]), AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, VE },
     { "param1",          "scaler param 1", OFFSET(scaler_params[1]), AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, VE },

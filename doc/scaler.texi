@@ -68,6 +68,10 @@ Select full chroma input.
 
 @item bitexact
 Enable bitexact output.
+
+@item unstable
+Allow the use of experimental new code. May subtly affect the output or even
+produce wrong results. For testing only.
 @end table
 
 @item srcw @var{(API only)}
