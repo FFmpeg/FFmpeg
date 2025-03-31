@@ -66,7 +66,7 @@ static av_always_inline av_const int ff_ctzll_x86(long long v)
 
 #endif /* HAVE_FAST_CLZ */
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
 
 /* Our generic version of av_popcount is faster than GCC's built-in on
  * CPUs that don't support the popcnt instruction.
@@ -81,7 +81,7 @@ static av_always_inline av_const int ff_ctzll_x86(long long v)
 
 #if defined(__BMI2__)
 
-#if AV_GCC_VERSION_AT_LEAST(5,1)
+#if AV_GCC_VERSION_AT_LEAST(5,1) || AV_HAS_BUILTIN(__builtin_ia32_bzhi_si)
 #if defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
 #define av_zero_extend av_zero_extend_bmi2
 static av_always_inline av_const unsigned av_zero_extend_bmi2(unsigned a, unsigned p)
