@@ -201,7 +201,7 @@ static int run_test(enum AVPixelFormat src_fmt, enum AVPixelFormat dst_fmt,
     }
 
     get_mse(mse, out, ref, comps);
-    printf("%s %dx%d -> %s %3dx%3d, flags=%u dither=%u, "
+    printf("%s %dx%d -> %s %3dx%3d, flags=0x%x dither=%u, "
            "MSE={%5d %5d %5d %5d}\n",
            av_get_pix_fmt_name(src->format), src->width, src->height,
            av_get_pix_fmt_name(dst->format), dst->width, dst->height,
@@ -314,7 +314,7 @@ static int run_file_tests(const AVFrame *ref, FILE *fp, struct options opts)
         struct mode mode;
 
         ret = sscanf(buf,
-                     " %20s %dx%d -> %20s %dx%d, flags=%u dither=%u, "
+                     " %20s %dx%d -> %20s %dx%d, flags=0x%x dither=%u, "
                      "MSE={%d %d %d %d}\n",
                      src_fmt_str, &sw, &sh, dst_fmt_str, &dw, &dh,
                      &mode.flags, &mode.dither,
