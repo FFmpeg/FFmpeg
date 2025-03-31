@@ -345,6 +345,22 @@ typedef struct CheckasmPerf {
 #define PERF_STOP(t)  t = AV_READ_TIME() - t
 #endif
 
+#define CALL4(...)\
+    do {\
+        tfunc(__VA_ARGS__); \
+        tfunc(__VA_ARGS__); \
+        tfunc(__VA_ARGS__); \
+        tfunc(__VA_ARGS__); \
+    } while (0)
+
+#define CALL16(...)\
+    do {\
+        CALL4(__VA_ARGS__); \
+        CALL4(__VA_ARGS__); \
+        CALL4(__VA_ARGS__); \
+        CALL4(__VA_ARGS__); \
+    } while (0)
+
 /* Benchmark the function */
 #define bench_new(...)\
     do {\
@@ -355,14 +371,12 @@ typedef struct CheckasmPerf {
             uint64_t tsum = 0;\
             uint64_t ti, tcount = 0;\
             uint64_t t = 0; \
-            const uint64_t truns = bench_runs;\
+            const uint64_t truns = FFMAX(bench_runs >> 3, 1);\
             checkasm_set_signal_handler_state(1);\
             for (ti = 0; ti < truns; ti++) {\
                 PERF_START(t);\
-                tfunc(__VA_ARGS__);\
-                tfunc(__VA_ARGS__);\
-                tfunc(__VA_ARGS__);\
-                tfunc(__VA_ARGS__);\
+                CALL16(__VA_ARGS__);\
+                CALL16(__VA_ARGS__);\
                 PERF_STOP(t);\
                 if (t*tcount <= tsum*4 && ti > 0) {\
                     tsum += t;\
