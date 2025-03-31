@@ -95,6 +95,8 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #define TEMP_STRIDE 8
 //#define NUM_BLOCKS_AT_ONCE 16 //not used yet
 
+#define DERING_THRESHOLD 20
+
 #if ARCH_X86 && HAVE_INLINE_ASM
 DECLARE_ASM_CONST(8, uint64_t, w05)= 0x0005000500050005LL;
 DECLARE_ASM_CONST(8, uint64_t, w04)= 0x0004000400040004LL;
@@ -104,9 +106,6 @@ DECLARE_ASM_CONST(8, uint64_t, b01)= 0x0101010101010101LL;
 DECLARE_ASM_CONST(8, uint64_t, b08)= 0x0808080808080808LL;
 DECLARE_ASM_CONST(8, uint64_t, b80)= 0x8080808080808080LL;
 #endif
-
-DECLARE_ASM_CONST(8, int, deringThreshold)= 20;
-
 
 static const struct PPFilter filters[]=
 {

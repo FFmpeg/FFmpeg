@@ -573,7 +573,7 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     src & stride :-(
     */
     uint8_t *srcCopy = src;
-    DECLARE_ALIGNED(16, uint8_t, dt)[16] = { deringThreshold };
+    DECLARE_ALIGNED(16, uint8_t, dt)[16] = { DERING_THRESHOLD };
     const vector signed int zero = vec_splat_s32(0);
     vector unsigned char v_dt = vec_splat(vec_ld(0, dt), 0);
 
