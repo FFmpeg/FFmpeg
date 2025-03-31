@@ -32,12 +32,6 @@ struct Lab {
 };
 
 /**
- * Map sRGB 8-bit color component to a 16-bit linear value (gamma
- * expand from electrical to optical value).
- */
-int32_t ff_srgb_u8_to_linear_int(uint8_t x);
-
-/**
  * Map a 16-bit linear value to a sRGB 8-bit color component (gamma
  * compressed from optical to electrical value).
  */

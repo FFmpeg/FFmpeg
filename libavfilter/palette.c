@@ -110,11 +110,6 @@ static const uint8_t linear2srgb[P + 1] = {
     0xfc, 0xfc, 0xfc, 0xfc, 0xfd, 0xfd, 0xfd, 0xfd, 0xfd, 0xfe, 0xfe, 0xfe, 0xfe, 0xff, 0xff, 0xff,
 };
 
-int32_t ff_srgb_u8_to_linear_int(uint8_t x)
-{
-    return (int32_t)srgb2linear[x];
-}
-
 uint8_t ff_linear_int_to_srgb_u8(int32_t x)
 {
     if (x <= 0) {
