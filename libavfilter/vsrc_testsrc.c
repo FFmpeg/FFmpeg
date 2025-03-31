@@ -988,7 +988,7 @@ AVFILTER_DEFINE_CLASS(rgbtestsrc);
 #define A 3
 
 static void rgbtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
-                              int x, int y, unsigned r, unsigned g, unsigned b, enum AVPixelFormat fmt,
+                              int x, int y, unsigned r, unsigned g, unsigned b, unsigned a, enum AVPixelFormat fmt,
                               uint8_t rgba_map[4])
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
@@ -1027,13 +1027,13 @@ static void rgbtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
         *p16++ = v16 >> 32;
         *p16++ = v16 >> 16;
         *p16++ = v16;
-        *p16++ = 0xffff;
+        *p16++ = a;
         break;
     case AV_PIX_FMT_RGBA:
     case AV_PIX_FMT_BGRA:
     case AV_PIX_FMT_ARGB:
     case AV_PIX_FMT_ABGR:
-        v = (r << (rgba_map[R]*8)) + (g << (rgba_map[G]*8)) + (b << (rgba_map[B]*8)) + (255U << (rgba_map[A]*8));
+        v = (r << (rgba_map[R]*8)) + (g << (rgba_map[G]*8)) + (b << (rgba_map[B]*8)) + (a << (rgba_map[A]*8));
         p = dst + 4*x + y*dst_linesize;
         AV_WL32A(p, v);
         break;
@@ -1046,6 +1046,10 @@ static void rgbtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
         p = dst + 4*x + y*dst_linesize;
         AV_WL32A(p, v);
         break;
+    case AV_PIX_FMT_GBRAP:
+        p = dstp[3] + x + y * dst_linesizep[3];
+        p[0] = a;
+    // fall-through
     case AV_PIX_FMT_GBRP:
         p = dstp[0] + x + y * dst_linesize;
         p[0] = g;
@@ -1054,6 +1058,13 @@ static void rgbtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
         p = dstp[2] + x + y * dst_linesizep[2];
         p[0] = r;
         break;
+    case AV_PIX_FMT_GBRAP10:
+    case AV_PIX_FMT_GBRAP12:
+    case AV_PIX_FMT_GBRAP14:
+    case AV_PIX_FMT_GBRAP16:
+        p16 = (uint16_t *)(dstp[3] + x*2 + y * dst_linesizep[3]);
+        p16[0] = a;
+    // fall-through
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP12:
@@ -1086,7 +1097,7 @@ static void rgbtest_fill_picture_complement(AVFilterContext *ctx, AVFrame *frame
              else if (6*y < 5*h) b = c;
              else                r = c, g = c;
 
-             rgbtest_put_pixel(frame->data, frame->linesize, x, y, r, g, b,
+             rgbtest_put_pixel(frame->data, frame->linesize, x, y, r, g, b, c,
                                ctx->outputs[0]->format, test->rgba_map);
          }
      }
@@ -1106,7 +1117,7 @@ static void rgbtest_fill_picture(AVFilterContext *ctx, AVFrame *frame)
              else if (3*y < 2*h) g = c;
              else                b = c;
 
-             rgbtest_put_pixel(frame->data, frame->linesize, x, y, r, g, b,
+             rgbtest_put_pixel(frame->data, frame->linesize, x, y, r, g, b, c,
                                ctx->outputs[0]->format, test->rgba_map);
          }
      }
@@ -1131,6 +1142,8 @@ static const enum AVPixelFormat rgbtest_pix_fmts[] = {
         AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
+        AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10,
+        AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP14, AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_X2RGB10LE, AV_PIX_FMT_X2BGR10LE,
         AV_PIX_FMT_NONE
     };
@@ -1180,7 +1193,7 @@ const FFFilter ff_vsrc_rgbtestsrc = {
 #define A 3
 
 static void yuvtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
-                              int i, int j, unsigned y, unsigned u, unsigned v, enum AVPixelFormat fmt,
+                              int i, int j, unsigned y, unsigned u, unsigned v, unsigned a, enum AVPixelFormat fmt,
                               uint8_t ayuv_map[4])
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
@@ -1201,25 +1214,38 @@ static void yuvtest_put_pixel(uint8_t *dstp[4], int dst_linesizep[4],
         break;
     case AV_PIX_FMT_XV36:
     case AV_PIX_FMT_XV48:
+        a = UINT16_MAX;
+    // fall-through
     case AV_PIX_FMT_AYUV64:
         AV_WN16A(&dstp[0][i*8 + ayuv_map[Y]*2 + j*dst_linesizep[0]], y << desc->comp[0].shift);
         AV_WN16A(&dstp[0][i*8 + ayuv_map[U]*2 + j*dst_linesizep[0]], u << desc->comp[1].shift);
         AV_WN16A(&dstp[0][i*8 + ayuv_map[V]*2 + j*dst_linesizep[0]], v << desc->comp[2].shift);
-        AV_WN16A(&dstp[0][i*8 + ayuv_map[A]*2 + j*dst_linesizep[0]], UINT16_MAX << desc->comp[3].shift);
+        AV_WN16A(&dstp[0][i*8 + ayuv_map[A]*2 + j*dst_linesizep[0]], a << desc->comp[3].shift);
         break;
+    case AV_PIX_FMT_VUYX:
+        a = UINT8_MAX;
+    // fall-through
     case AV_PIX_FMT_UYVA:
     case AV_PIX_FMT_VUYA:
-    case AV_PIX_FMT_VUYX:
     case AV_PIX_FMT_AYUV:
-        n = (y << (ayuv_map[Y]*8)) + (u << (ayuv_map[U]*8)) + (v << (ayuv_map[V]*8)) + (255U << (ayuv_map[A]*8));
+        n = (y << (ayuv_map[Y]*8)) + (u << (ayuv_map[U]*8)) + (v << (ayuv_map[V]*8)) + (a << (ayuv_map[A]*8));
         AV_WL32A(&dstp[0][i*4 + j*dst_linesizep[0]], n);
         break;
+    case AV_PIX_FMT_YUVA444P:
+        dstp[3][i + j*dst_linesizep[3]] = a;
+    // fall-through
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_YUVJ444P:
         dstp[0][i + j*dst_linesizep[0]] = y;
         dstp[1][i + j*dst_linesizep[1]] = u;
         dstp[2][i + j*dst_linesizep[2]] = v;
         break;
+    case AV_PIX_FMT_YUVA444P9:
+    case AV_PIX_FMT_YUVA444P10:
+    case AV_PIX_FMT_YUVA444P12:
+    case AV_PIX_FMT_YUVA444P16:
+        AV_WN16A(&dstp[3][i*2 + j*dst_linesizep[3]], a);
+    // fall-through
     case AV_PIX_FMT_YUV444P9:
     case AV_PIX_FMT_YUV444P10:
     case AV_PIX_FMT_YUV444P12:
@@ -1266,7 +1292,7 @@ static void yuvtest_fill_picture(AVFilterContext *ctx, AVFrame *frame)
              else if (3*j < 2*h) u = c;
              else                v = c;
 
-             yuvtest_put_pixel(frame->data, frame->linesize, i, j, y, u, v,
+             yuvtest_put_pixel(frame->data, frame->linesize, i, j, y, u, v, c,
                                ctx->outputs[0]->format, test->ayuv_map);
          }
      }
@@ -1286,6 +1312,8 @@ static const enum AVPixelFormat yuvtest_pix_fmts[] = {
     AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14,
     AV_PIX_FMT_YUV444P16, AV_PIX_FMT_VYU444,
+    AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA444P9,
+    AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA444P16,
     AV_PIX_FMT_AYUV, AV_PIX_FMT_UYVA, AV_PIX_FMT_AYUV64,
     AV_PIX_FMT_VUYA, AV_PIX_FMT_VUYX, AV_PIX_FMT_XV48,
     AV_PIX_FMT_XV30LE, AV_PIX_FMT_V30XLE, AV_PIX_FMT_XV36,
