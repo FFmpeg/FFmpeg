@@ -980,7 +980,6 @@ FIND_MIN_MAX((%0, %1, 8))
         PMINUB(t1, pplx, t0)\
         "paddb " #sx ", " #ppsx "               \n\t"\
         "paddb " #psx ", " #ppsx "              \n\t"\
-        "#paddb "MANGLE(b02)", " #ppsx "        \n\t"\
         "pand "MANGLE(b08)", " #ppsx "          \n\t"\
         "pcmpeqb " #lx ", " #ppsx "             \n\t"\
         "pand " #ppsx ", " #pplx "              \n\t"\
@@ -1018,7 +1017,7 @@ DERING_CORE((%0, %1, 8)       ,(%%FF_REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,
 
         "1:                        \n\t"
         : : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb), "m"(c->pQPb2), "q"(tmp)
-          NAMED_CONSTRAINTS_ADD(deringThreshold,b00,b02,b08)
+          NAMED_CONSTRAINTS_ADD(deringThreshold,b00,b08)
         : "%"FF_REG_a, "%"FF_REG_d
     );
 #else // HAVE_7REGS && TEMPLATE_PP_MMXEXT
