@@ -80,9 +80,7 @@ mc_rep_funcs(8tap_hv, 8, 8, 16, sse4)
 
 #if HAVE_AVX2_EXTERNAL
 
-#define MC_REP_FUNCS_AVX2(fname)               \
-    mc_rep_funcs(fname, 8, 32, 64, avx2)       \
-    mc_rep_funcs(fname, 8, 32,128, avx2)       \
+#define MC_REP_FUNCS_AVX2_NO8(fname)           \
     mc_rep_funcs(fname,10, 16, 32, avx2)       \
     mc_rep_funcs(fname,10, 16, 64, avx2)       \
     mc_rep_funcs(fname,10, 16,128, avx2)       \
@@ -90,12 +88,17 @@ mc_rep_funcs(8tap_hv, 8, 8, 16, sse4)
     mc_rep_funcs(fname,12, 16, 64, avx2)       \
     mc_rep_funcs(fname,12, 16,128, avx2)       \
 
+#define MC_REP_FUNCS_AVX2(fname)               \
+    mc_rep_funcs(fname, 8, 32, 64, avx2)       \
+    mc_rep_funcs(fname, 8, 32,128, avx2)       \
+    MC_REP_FUNCS_AVX2_NO8(fname)
+
 MC_REP_FUNCS_AVX2(pixels)
 MC_REP_FUNCS_AVX2(8tap_h)
 MC_REP_FUNCS_AVX2(8tap_v)
-MC_REP_FUNCS_AVX2(8tap_hv)
+MC_REP_FUNCS_AVX2_NO8(8tap_hv)
 MC_REP_FUNCS_AVX2(4tap_h)
 MC_REP_FUNCS_AVX2(4tap_v)
-MC_REP_FUNCS_AVX2(4tap_hv)
+MC_REP_FUNCS_AVX2_NO8(4tap_hv)
 #endif
 #endif
