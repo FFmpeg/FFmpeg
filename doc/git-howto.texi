@@ -142,7 +142,7 @@ git log <filename(s)>
 @end example
 
 You may also use the graphical tools like @command{gitview} or @command{gitk}
-or the web interface available at @url{http://source.ffmpeg.org/}.
+or the web interface available at @url{https://git.ffmpeg.org/ffmpeg.git}.
 
 @section Checking source tree status
 
