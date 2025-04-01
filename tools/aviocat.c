@@ -37,7 +37,6 @@ int main(int argc, char **argv)
     const char *input_url = NULL, *output_url = NULL;
     int64_t stream_pos = 0;
     int64_t start_time;
-    char errbuf[50];
     AVIOContext *input, *output;
     AVDictionary *in_opts = NULL;
     AVDictionary *out_opts = NULL;
@@ -80,8 +79,7 @@ int main(int argc, char **argv)
 
     ret = avio_open2(&input, input_url, AVIO_FLAG_READ, NULL, &in_opts);
     if (ret) {
-        av_strerror(ret, errbuf, sizeof(errbuf));
-        fprintf(stderr, "Unable to open %s: %s\n", input_url, errbuf);
+        fprintf(stderr, "Unable to open %s: %s\n", input_url, av_err2str(ret));
         return 1;
     }
     if (verbose) {
@@ -95,16 +93,14 @@ int main(int argc, char **argv)
     if (duration && !bps) {
         int64_t size = avio_size(input);
         if (size < 0) {
-            av_strerror(ret, errbuf, sizeof(errbuf));
-            fprintf(stderr, "Unable to get size of %s: %s\n", input_url, errbuf);
+            fprintf(stderr, "Unable to get size of %s: %s\n", input_url, av_err2str(ret));
             goto fail;
         }
         bps = size / duration;
     }
     ret = avio_open2(&output, output_url, AVIO_FLAG_WRITE, NULL, &out_opts);
     if (ret) {
-        av_strerror(ret, errbuf, sizeof(errbuf));
-        fprintf(stderr, "Unable to open %s: %s\n", output_url, errbuf);
+        fprintf(stderr, "Unable to open %s: %s\n", output_url, av_err2str(ret));
         goto fail;
     }
 
@@ -117,8 +113,7 @@ int main(int argc, char **argv)
             break;
         avio_write(output, buf, n);
         if (output->error) {
-            av_strerror(output->error, errbuf, sizeof(errbuf));
-            fprintf(stderr, "Unable to write %s: %s\n", output_url, errbuf);
+            fprintf(stderr, "Unable to write %s: %s\n", output_url, av_err2str(output->error));
             break;
         }
         stream_pos += n;
