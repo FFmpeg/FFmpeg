@@ -32,7 +32,7 @@
 #define AES_BLOCK_SIZE (16)
 
 typedef struct AVAESCTR {
-    uint8_t counter[AES_BLOCK_SIZE];
+    DECLARE_ALIGNED(8, uint8_t, counter)[AES_BLOCK_SIZE];
     DECLARE_ALIGNED(8, uint8_t, encrypted_counter)[AES_BLOCK_SIZE];
     AVAES aes;
 } AVAESCTR;
@@ -82,16 +82,10 @@ void av_aes_ctr_free(struct AVAESCTR *a)
     av_free(a);
 }
 
-static void av_aes_ctr_increment_be64(uint8_t* counter)
+static inline void av_aes_ctr_increment_be64(uint8_t* counter)
 {
-    uint8_t* cur_pos;
-
-    for (cur_pos = counter + 7; cur_pos >= counter; cur_pos--) {
-        (*cur_pos)++;
-        if (*cur_pos != 0) {
-            break;
-        }
-    }
+    uint64_t c = AV_RB64A(counter) + 1;
+    AV_WB64A(counter, c);
 }
 
 void av_aes_ctr_increment_iv(struct AVAESCTR *a)
