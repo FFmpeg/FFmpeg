@@ -33,7 +33,6 @@ extern const char *ff_source_ffv1_common_comp;
 extern const char *ff_source_ffv1_dec_setup_comp;
 extern const char *ff_source_ffv1_reset_comp;
 extern const char *ff_source_ffv1_dec_comp;
-extern const char *ff_source_ffv1_dec_rct_comp;
 
 const FFVulkanDecodeDescriptor ff_vk_dec_ffv1_desc = {
     .codec_id         = AV_CODEC_ID_FFV1,
@@ -66,7 +65,6 @@ typedef struct FFv1VulkanDecodeContext {
     FFVulkanShader setup;
     FFVulkanShader reset[2]; /* AC/Golomb */
     FFVulkanShader decode[2][2][2]; /* 16/32 bit, AC/Golomb, Normal/RGB */
-    FFVulkanShader rct[2]; /* 16/32 bit */
 
     FFVkBuffer rangecoder_static_buf;
     FFVkBuffer quant_buf;
@@ -85,11 +83,13 @@ typedef struct FFv1VkParameters {
     VkDeviceAddress slice_state;
     VkDeviceAddress scratch_data;
 
+    int fmt_lut[4];
     uint32_t img_size[2];
     uint32_t chroma_shift[2];
 
     uint32_t plane_state_size;
     uint32_t crcref;
+    int rct_offset;
 
     uint8_t bits_per_raw_sample;
     uint8_t quant_table_count;
@@ -100,6 +100,7 @@ typedef struct FFv1VkParameters {
     uint8_t codec_planes;
     uint8_t color_planes;
     uint8_t transparency;
+    uint8_t planar_rgb;
     uint8_t colorspace;
     uint8_t ec;
     uint8_t golomb;
@@ -116,11 +117,13 @@ static void add_push_data(FFVulkanShader *shd)
     GLSLC(1,    u8buf slice_state;                                  );
     GLSLC(1,    u8buf scratch_data;                                 );
     GLSLC(0,                                                        );
+    GLSLC(1,    ivec4 fmt_lut;                                      );
     GLSLC(1,    uvec2 img_size;                                     );
     GLSLC(1,    uvec2 chroma_shift;                                 );
     GLSLC(0,                                                        );
     GLSLC(1,    uint plane_state_size;                              );
     GLSLC(1,    uint32_t crcref;                                    );
+    GLSLC(1,    int rct_offset;                                     );
     GLSLC(0,                                                        );
     GLSLC(1,    uint8_t bits_per_raw_sample;                        );
     GLSLC(1,    uint8_t quant_table_count;                          );
@@ -131,6 +134,7 @@ static void add_push_data(FFVulkanShader *shd)
     GLSLC(1,    uint8_t codec_planes;                               );
     GLSLC(1,    uint8_t color_planes;                               );
     GLSLC(1,    uint8_t transparency;                               );
+    GLSLC(1,    uint8_t planar_rgb;                                 );
     GLSLC(1,    uint8_t colorspace;                                 );
     GLSLC(1,    uint8_t ec;                                         );
     GLSLC(1,    uint8_t golomb;                                     );
@@ -349,11 +353,17 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
         return err;
 
     if (is_rgb) {
-        RET(ff_vk_exec_add_dep_frame(&ctx->s, exec, vp->dpb_frame,
-                                     VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                                     VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT));
         RET(ff_vk_create_imageviews(&ctx->s, exec, rct_image_views,
                                     vp->dpb_frame, FF_VK_REP_NATIVE));
+        RET(ff_vk_exec_add_dep_frame(&ctx->s, exec, vp->dpb_frame,
+                                     VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                     VK_PIPELINE_STAGE_2_CLEAR_BIT));
+        ff_vk_frame_barrier(&ctx->s, exec, decode_dst, img_bar, &nb_img_bar,
+                            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                            VK_IMAGE_LAYOUT_GENERAL,
+                            VK_QUEUE_FAMILY_IGNORED);
     }
 
     if (!(f->picture.f->flags & AV_FRAME_FLAG_KEY)) {
@@ -391,6 +401,8 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
 
     vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
         .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .pImageMemoryBarriers = img_bar,
+        .imageMemoryBarrierCount = nb_img_bar,
         .pBufferMemoryBarriers = buf_bar,
         .bufferMemoryBarrierCount = nb_buf_bar,
     });
@@ -431,6 +443,7 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
 
         .plane_state_size = fp->plane_state_size,
         .crcref = f->crcref,
+        .rct_offset = 1 << bits,
 
         .bits_per_raw_sample = bits,
         .quant_table_count = f->quant_table_count,
@@ -441,11 +454,23 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
         .codec_planes = f->plane_count,
         .color_planes = color_planes,
         .transparency = f->transparency,
+        .planar_rgb = ff_vk_mt_is_np_rgb(sw_format) &&
+                      (ff_vk_count_images((AVVkFrame *)f->picture.f->data[0]) > 1),
         .colorspace = f->colorspace,
         .ec = f->ec,
         .golomb = f->ac == AC_GOLOMB_RICE,
         .check_crc = !!(avctx->err_recognition & AV_EF_CRCCHECK),
     };
+
+    /* For some reason the C FFv1 encoder/decoder treats these differently */
+    if (sw_format == AV_PIX_FMT_GBRP10 || sw_format == AV_PIX_FMT_GBRP12 ||
+        sw_format == AV_PIX_FMT_GBRP14)
+        memcpy(pd.fmt_lut, (int [4]) { 2, 1, 0, 3 }, 4*sizeof(int));
+    else if (sw_format == AV_PIX_FMT_X2BGR10)
+        memcpy(pd.fmt_lut, (int [4]) { 0, 2, 1, 3 }, 4*sizeof(int));
+    else
+        ff_vk_set_perm(sw_format, pd.fmt_lut, 0);
+
     for (int i = 0; i < MAX_QUANT_TABLES; i++)
         pd.context_count[i] = f->context_count[i];
 
@@ -454,6 +479,18 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
                                    0, sizeof(pd), &pd);
 
     vk->CmdDispatch(exec->buf, f->num_h_slices, f->num_v_slices, 1);
+
+    if (is_rgb) {
+        AVVkFrame *vkf = (AVVkFrame *)vp->dpb_frame->data[0];
+        for (int i = 0; i < color_planes; i++)
+            vk->CmdClearColorImage(exec->buf, vkf->img[i], VK_IMAGE_LAYOUT_GENERAL,
+                                   &((VkClearColorValue) { 0 }),
+                                   1, &((VkImageSubresourceRange) {
+                                       .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                       .levelCount = 1,
+                                       .layerCount = 1,
+                                   }));
+    }
 
     /* Reset shader */
     reset_shader = &fv->reset[f->ac == AC_GOLOMB_RICE];
@@ -493,12 +530,15 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     };
     vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
         .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .pImageMemoryBarriers = img_bar,
+        .imageMemoryBarrierCount = nb_img_bar,
         .pBufferMemoryBarriers = buf_bar,
         .bufferMemoryBarrierCount = nb_buf_bar,
     });
     slice_state->stage = buf_bar[0].dstStageMask;
     slice_state->access = buf_bar[0].dstAccessMask;
     nb_buf_bar = 0;
+    nb_img_bar = 0;
 
     vk->CmdDispatch(exec->buf, f->num_h_slices, f->num_v_slices,
                     f->plane_count);
@@ -515,6 +555,12 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
                                   1, 1,
                                   VK_IMAGE_LAYOUT_GENERAL,
                                   VK_NULL_HANDLE);
+    if (is_rgb)
+        ff_vk_shader_update_img_array(&ctx->s, exec, decode_shader,
+                                      f->picture.f, vp->view.out,
+                                      1, 2,
+                                      VK_IMAGE_LAYOUT_GENERAL,
+                                      VK_NULL_HANDLE);
 
     ff_vk_exec_bind_shader(&ctx->s, exec, decode_shader);
     ff_vk_shader_update_push_const(&ctx->s, exec, decode_shader,
@@ -537,12 +583,20 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     };
 
     /* Input frame barrier */
-    ff_vk_frame_barrier(&ctx->s, exec, decode_dst, img_bar, &nb_img_bar,
+    ff_vk_frame_barrier(&ctx->s, exec, f->picture.f, img_bar, &nb_img_bar,
                         VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                         VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+                        VK_ACCESS_SHADER_WRITE_BIT |
+                        (!is_rgb ? VK_ACCESS_SHADER_READ_BIT : 0),
                         VK_IMAGE_LAYOUT_GENERAL,
                         VK_QUEUE_FAMILY_IGNORED);
+    if (is_rgb)
+        ff_vk_frame_barrier(&ctx->s, exec, vp->dpb_frame, img_bar, &nb_img_bar,
+                            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+                            VK_IMAGE_LAYOUT_GENERAL,
+                            VK_QUEUE_FAMILY_IGNORED);
 
     vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
         .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
@@ -557,74 +611,6 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     nb_buf_bar = 0;
 
     vk->CmdDispatch(exec->buf, f->num_h_slices, f->num_v_slices, 1);
-
-    /* RCT */
-    if (is_rgb) {
-        FFVulkanShader *rct_shader = &fv->rct[f->use32bit];
-        FFv1VkRCTParameters pd_rct;
-
-        ff_vk_shader_update_desc_buffer(&ctx->s, exec, rct_shader,
-                                        1, 0, 0,
-                                        slice_state,
-                                        0, fp->slice_data_size*f->slice_count,
-                                        VK_FORMAT_UNDEFINED);
-        ff_vk_shader_update_img_array(&ctx->s, exec, rct_shader,
-                                      decode_dst, decode_dst_view,
-                                      1, 1,
-                                      VK_IMAGE_LAYOUT_GENERAL,
-                                      VK_NULL_HANDLE);
-        ff_vk_shader_update_img_array(&ctx->s, exec, rct_shader,
-                                      f->picture.f, vp->view.out,
-                                      1, 2,
-                                      VK_IMAGE_LAYOUT_GENERAL,
-                                      VK_NULL_HANDLE);
-
-        ff_vk_exec_bind_shader(&ctx->s, exec, rct_shader);
-
-        pd_rct = (FFv1VkRCTParameters) {
-            .offset = 1 << bits,
-            .bits = bits,
-            .planar_rgb = ff_vk_mt_is_np_rgb(sw_format) &&
-                          (ff_vk_count_images((AVVkFrame *)f->picture.f->data[0]) > 1),
-            .color_planes = color_planes,
-            .transparency = f->transparency,
-        };
-
-        /* For some reason the C FFv1 encoder/decoder treats these differently */
-        if (sw_format == AV_PIX_FMT_GBRP10 || sw_format == AV_PIX_FMT_GBRP12 ||
-            sw_format == AV_PIX_FMT_GBRP14)
-            memcpy(pd_rct.fmt_lut, (int [4]) { 2, 1, 0, 3 }, 4*sizeof(int));
-        else if (sw_format == AV_PIX_FMT_X2BGR10)
-            memcpy(pd_rct.fmt_lut, (int [4]) { 0, 2, 1, 3 }, 4*sizeof(int));
-        else
-            ff_vk_set_perm(sw_format, pd_rct.fmt_lut, 0);
-
-        ff_vk_shader_update_push_const(&ctx->s, exec, rct_shader,
-                                       VK_SHADER_STAGE_COMPUTE_BIT,
-                                       0, sizeof(pd_rct), &pd_rct);
-
-        ff_vk_frame_barrier(&ctx->s, exec, decode_dst, img_bar, &nb_img_bar,
-                            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                            VK_ACCESS_SHADER_READ_BIT,
-                            VK_IMAGE_LAYOUT_GENERAL,
-                            VK_QUEUE_FAMILY_IGNORED);
-        ff_vk_frame_barrier(&ctx->s, exec, f->picture.f, img_bar, &nb_img_bar,
-                            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                            VK_ACCESS_SHADER_WRITE_BIT,
-                            VK_IMAGE_LAYOUT_GENERAL,
-                            VK_QUEUE_FAMILY_IGNORED);
-
-        vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
-            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-            .pImageMemoryBarriers = img_bar,
-            .imageMemoryBarrierCount = nb_img_bar,
-        });
-        nb_img_bar = 0;
-
-        vk->CmdDispatch(exec->buf, f->num_h_slices, f->num_v_slices, 1);
-    }
 
     err = ff_vk_exec_submit(&ctx->s, exec);
     if (err < 0)
@@ -845,7 +831,9 @@ fail:
 
 static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
                               FFVkExecPool *pool, FFVkSPIRVCompiler *spv,
-                              FFVulkanShader *shd, AVHWFramesContext *frames_ctx,
+                              FFVulkanShader *shd,
+                              AVHWFramesContext *dec_frames_ctx,
+                              AVHWFramesContext *out_frames_ctx,
                               int use32bit, int ac, int rgb)
 {
     int err;
@@ -910,127 +898,28 @@ static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
             .buf_elems   = f->max_slice_count,
         },
         {
-            .name       = "dst",
+            .name       = "dec",
             .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .dimensions = 2,
-            .mem_layout = ff_vk_shader_rep_fmt(frames_ctx->sw_format,
+            .mem_layout = ff_vk_shader_rep_fmt(dec_frames_ctx->sw_format,
                                                FF_VK_REP_NATIVE),
-            .elems      = av_pix_fmt_count_planes(frames_ctx->sw_format),
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-        },
-    };
-    RET(ff_vk_shader_add_descriptor_set(s, shd, desc_set, 2, 0, 0));
-
-    GLSLD(ff_source_ffv1_dec_comp);
-
-    RET(spv->compile_shader(s, spv, shd, &spv_data, &spv_len, "main",
-                            &spv_opaque));
-    RET(ff_vk_shader_link(s, shd, spv_data, spv_len, "main"));
-
-    RET(ff_vk_shader_register_exec(s, pool, shd));
-
-fail:
-    if (spv_opaque)
-        spv->free_shader(spv, &spv_opaque);
-
-    return err;
-}
-
-static int init_rct_shader(FFV1Context *f, FFVulkanContext *s,
-                           FFVkExecPool *pool, FFVkSPIRVCompiler *spv,
-                           FFVulkanShader *shd, int use32bit,
-                           AVHWFramesContext *src_ctx, AVHWFramesContext *dst_ctx)
-{
-    int err;
-    FFVulkanDescriptorSetBinding *desc_set;
-
-    uint8_t *spv_data;
-    size_t spv_len;
-    void *spv_opaque = NULL;
-    int wg_count = sqrt(s->props.properties.limits.maxComputeWorkGroupInvocations);
-
-    RET(ff_vk_shader_init(s, shd, "ffv1_rct",
-                          VK_SHADER_STAGE_COMPUTE_BIT,
-                          (const char *[]) { "GL_EXT_buffer_reference",
-                                             "GL_EXT_buffer_reference2" }, 2,
-                          wg_count, wg_count, 1,
-                          0));
-
-    /* Common codec header */
-    GLSLD(ff_source_common_comp);
-
-    GLSLC(0, layout(push_constant, scalar) uniform pushConstants {             );
-    GLSLC(1,    ivec4 fmt_lut;                                                 );
-    GLSLC(1,    int offset;                                                    );
-    GLSLC(1,    uint8_t bits;                                                  );
-    GLSLC(1,    uint8_t planar_rgb;                                            );
-    GLSLC(1,    uint8_t color_planes;                                          );
-    GLSLC(1,    uint8_t transparency;                                          );
-    GLSLC(1,    uint8_t version;                                               );
-    GLSLC(1,    uint8_t micro_version;                                         );
-    GLSLC(1,    uint8_t padding[2];                                            );
-    GLSLC(0, };                                                                );
-    ff_vk_shader_add_push_const(shd, 0, sizeof(FFv1VkRCTParameters),
-                                VK_SHADER_STAGE_COMPUTE_BIT);
-
-    av_bprintf(&shd->src, "#define MAX_QUANT_TABLES %i\n", MAX_QUANT_TABLES);
-    av_bprintf(&shd->src, "#define MAX_CONTEXT_INPUTS %i\n", MAX_CONTEXT_INPUTS);
-    av_bprintf(&shd->src, "#define MAX_QUANT_TABLE_SIZE %i\n", MAX_QUANT_TABLE_SIZE);
-
-    desc_set = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name        = "rangecoder_static_buf",
-            .type        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .mem_layout  = "scalar",
-            .buf_content = "uint8_t zero_one_state[512];",
-        },
-        {
-            .name        = "quant_buf",
-            .type        = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .mem_layout  = "scalar",
-            .buf_content = "int16_t quant_table[MAX_QUANT_TABLES]"
-                           "[MAX_CONTEXT_INPUTS][MAX_QUANT_TABLE_SIZE];",
-        },
-    };
-    RET(ff_vk_shader_add_descriptor_set(s, shd, desc_set, 2, 1, 0));
-
-    define_shared_code(shd, use32bit);
-
-    desc_set = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name        = "slice_data_buf",
-            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .mem_quali   = "readonly",
-            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .buf_content = "SliceContext slice_ctx",
-            .buf_elems   = f->max_slice_count,
-        },
-        {
-            .name       = "src",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .dimensions = 2,
-            .mem_layout = ff_vk_shader_rep_fmt(src_ctx->sw_format,
-                                               FF_VK_REP_NATIVE),
-            .mem_quali  = "readonly",
-            .elems      = av_pix_fmt_count_planes(src_ctx->sw_format),
+            .elems      = av_pix_fmt_count_planes(dec_frames_ctx->sw_format),
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
         },
         {
             .name       = "dst",
             .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .dimensions = 2,
-            .mem_layout = ff_vk_shader_rep_fmt(dst_ctx->sw_format,
+            .mem_layout = ff_vk_shader_rep_fmt(out_frames_ctx->sw_format,
                                                FF_VK_REP_NATIVE),
             .mem_quali  = "writeonly",
-            .elems      = av_pix_fmt_count_planes(dst_ctx->sw_format),
+            .elems      = av_pix_fmt_count_planes(out_frames_ctx->sw_format),
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
         },
     };
-    RET(ff_vk_shader_add_descriptor_set(s, shd, desc_set, 3, 0, 0));
+    RET(ff_vk_shader_add_descriptor_set(s, shd, desc_set, 2 + rgb, 0, 0));
 
-    GLSLD(ff_source_ffv1_dec_rct_comp);
+    GLSLD(ff_source_ffv1_dec_comp);
 
     RET(spv->compile_shader(s, spv, shd, &spv_data, &spv_len, "main",
                             &spv_opaque));
@@ -1051,6 +940,7 @@ static int init_indirect(AVCodecContext *avctx, FFVulkanContext *s,
     int err;
     AVHWFramesContext *frames_ctx;
     AVVulkanFramesContext *vk_frames;
+    FFV1Context *f = avctx->priv_data;
 
     *dst = av_hwframe_ctx_alloc(s->device_ref);
     if (!(*dst))
@@ -1059,13 +949,14 @@ static int init_indirect(AVCodecContext *avctx, FFVulkanContext *s,
     frames_ctx = (AVHWFramesContext *)((*dst)->data);
     frames_ctx->format    = AV_PIX_FMT_VULKAN;
     frames_ctx->sw_format = sw_format;
-    frames_ctx->width     = FFALIGN(s->frames->width, 32);
-    frames_ctx->height    = FFALIGN(s->frames->height, 32);
+    frames_ctx->width     = s->frames->width;
+    frames_ctx->height    = f->num_v_slices*2;
 
     vk_frames = frames_ctx->hwctx;
     vk_frames->tiling    = VK_IMAGE_TILING_OPTIMAL;
-    vk_frames->usage     = VK_IMAGE_USAGE_STORAGE_BIT;
     vk_frames->img_flags = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+    vk_frames->usage     = VK_IMAGE_USAGE_STORAGE_BIT |
+                           VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
     err = av_hwframe_ctx_init(*dst);
     if (err < 0) {
@@ -1094,9 +985,6 @@ static void vk_decode_ffv1_uninit(FFVulkanDecodeShared *ctx)
         for (int j = 0; j < 2; j++) /* AC/Golomb */
             for (int k = 0; k < 2; k++) /* Normal/RGB */
                 ff_vk_shader_free(&ctx->s, &fv->decode[i][j][k]);
-
-    for (int i = 0; i < 2; i++) /* 16/32 bit */
-        ff_vk_shader_free(&ctx->s, &fv->rct[i]);
 
     ff_vk_free_buf(&ctx->s, &fv->quant_buf);
     ff_vk_free_buf(&ctx->s, &fv->rangecoder_static_buf);
@@ -1165,12 +1053,13 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
     for (int i = 0; i < 2; i++) { /* 16/32 bit */
         for (int j = 0; j < 2; j++) { /* AC/Golomb */
             for (int k = 0; k < 2; k++) { /* Normal/RGB */
-                AVHWFramesContext *frames_ctx;
-                frames_ctx = k ? (AVHWFramesContext *)fv->intermediate_frames_ref[i]->data :
-                                 (AVHWFramesContext *)avctx->hw_frames_ctx->data;
+                AVHWFramesContext *dec_frames_ctx;
+                dec_frames_ctx = k ? (AVHWFramesContext *)fv->intermediate_frames_ref[i]->data :
+                                     (AVHWFramesContext *)avctx->hw_frames_ctx->data;
                 err = init_decode_shader(f, &ctx->s, &ctx->exec_pool,
                                          spv, &fv->decode[i][j][k],
-                                         frames_ctx,
+                                         dec_frames_ctx,
+                                         (AVHWFramesContext *)avctx->hw_frames_ctx->data,
                                          i,
                                          !j ? AC_RANGE_CUSTOM_TAB : AC_GOLOMB_RICE,
                                          k);
@@ -1178,16 +1067,6 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
                     return err;
             }
         }
-    }
-
-    /* RCT shaders */
-    for (int i = 0; i < 2; i++) { /* 16/32 bit */
-        err = init_rct_shader(f, &ctx->s, &ctx->exec_pool,
-                              spv, &fv->rct[i], i,
-                              (AVHWFramesContext *)fv->intermediate_frames_ref[i]->data,
-                              (AVHWFramesContext *)avctx->hw_frames_ctx->data);
-        if (err < 0)
-            return err;
     }
 
     /* Range coder data */

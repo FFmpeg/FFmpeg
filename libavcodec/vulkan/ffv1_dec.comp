@@ -20,23 +20,69 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-ivec2 get_pred(ivec2 pos, ivec2 off, int p, int sw, uint8_t quant_table_idx)
+#ifndef RGB
+#define LADDR(p) (p)
+#else
+#define RGB_LINECACHE 2
+#define RGB_LBUF (RGB_LINECACHE - 1)
+#define LADDR(p) (ivec2((p).x, ((p).y & RGB_LBUF)))
+#endif
+
+#ifdef RGB
+ivec2 get_pred(ivec2 sp, ivec2 off, int p, int sw, uint8_t quant_table_idx)
 {
     const ivec2 yoff_border1 = off.x == 0 ? ivec2(1, -1) : ivec2(0, 0);
+
+    /* Thanks to the same coincidence as below, we can skip checking if off == 0, 1 */
+    VTYPE3 top  = VTYPE3(TYPE(imageLoad(dec[p], sp + LADDR(off + ivec2(-1, -1) + yoff_border1))[0]),
+                         TYPE(imageLoad(dec[p], sp + LADDR(off + ivec2(0, -1)))[0]),
+                         TYPE(imageLoad(dec[p], sp + LADDR(off + ivec2(min(1, sw - off.x - 1), -1)))[0]));
+
+    /* Normally, we'd need to check if off != ivec2(0, 0) here, since otherwise, we must
+     * return zero. However, ivec2(-1,  0) + ivec2(1, -1) == ivec2(0, -1), e.g. previous
+     * row, 0 offset, same slice, which is zero since we zero out the buffer for RGB */
+    TYPE cur = TYPE(imageLoad(dec[p], sp + LADDR(off + ivec2(-1,  0) + yoff_border1))[0]);
+
+    int base = quant_table[quant_table_idx][0][(cur    - top[0]) & MAX_QUANT_TABLE_MASK] +
+               quant_table[quant_table_idx][1][(top[0] - top[1]) & MAX_QUANT_TABLE_MASK] +
+               quant_table[quant_table_idx][2][(top[1] - top[2]) & MAX_QUANT_TABLE_MASK];
+
+    if ((quant_table[quant_table_idx][3][127] != 0) ||
+        (quant_table[quant_table_idx][4][127] != 0)) {
+        TYPE cur2 = TYPE(0);
+        if (off.x > 0) {
+            const ivec2 yoff_border2 = off.x == 1 ? ivec2(1, -1) : ivec2(0, 0);
+            cur2 = TYPE(imageLoad(dec[p], sp + LADDR(off + ivec2(-2,  0) + yoff_border2))[0]);
+        }
+        base += quant_table[quant_table_idx][3][(cur2 - cur) & MAX_QUANT_TABLE_MASK];
+
+        /* top-2 became current upon swap */
+        TYPE top2 = TYPE(imageLoad(dec[p], sp + LADDR(off))[0]);
+        base += quant_table[quant_table_idx][4][(top2 - top[1]) & MAX_QUANT_TABLE_MASK];
+    }
+
+    /* context, prediction */
+    return ivec2(base, predict(cur, VTYPE2(top)));
+}
+#else
+ivec2 get_pred(ivec2 sp, ivec2 off, int p, int sw, uint8_t quant_table_idx)
+{
+    const ivec2 yoff_border1 = off.x == 0 ? ivec2(1, -1) : ivec2(0, 0);
+    sp += off;
 
     VTYPE3 top  = VTYPE3(TYPE(0),
                          TYPE(0),
                          TYPE(0));
     if (off.y > 0 && off != ivec2(0, 1))
-        top[0] = TYPE(imageLoad(dst[p], pos + ivec2(-1, -1) + yoff_border1)[0]);
+        top[0] = TYPE(imageLoad(dec[p], sp + ivec2(-1, -1) + yoff_border1)[0]);
     if (off.y > 0) {
-        top[1] = TYPE(imageLoad(dst[p], pos + ivec2(0, -1))[0]);
-        top[2] = TYPE(imageLoad(dst[p], pos + ivec2(min(1, sw - off.x - 1), -1))[0]);
+        top[1] = TYPE(imageLoad(dec[p], sp + ivec2(0, -1))[0]);
+        top[2] = TYPE(imageLoad(dec[p], sp + ivec2(min(1, sw - off.x - 1), -1))[0]);
     }
 
     TYPE cur = TYPE(0);
     if (off != ivec2(0, 0))
-        cur = TYPE(imageLoad(dst[p], pos + ivec2(-1,  0) + yoff_border1)[0]);
+        cur = TYPE(imageLoad(dec[p], sp + ivec2(-1,  0) + yoff_border1)[0]);
 
     int base = quant_table[quant_table_idx][0][(cur - top[0]) & MAX_QUANT_TABLE_MASK] +
                quant_table[quant_table_idx][1][(top[0] - top[1]) & MAX_QUANT_TABLE_MASK] +
@@ -47,19 +93,20 @@ ivec2 get_pred(ivec2 pos, ivec2 off, int p, int sw, uint8_t quant_table_idx)
         TYPE cur2 = TYPE(0);
         if (off.x > 0 && off != ivec2(1, 0)) {
             const ivec2 yoff_border2 = off.x == 1 ? ivec2(1, -1) : ivec2(0, 0);
-            cur2 = TYPE(imageLoad(dst[p], pos + ivec2(-2,  0) + yoff_border2)[0]);
+            cur2 = TYPE(imageLoad(dec[p], sp + ivec2(-2,  0) + yoff_border2)[0]);
         }
         base += quant_table[quant_table_idx][3][(cur2 - cur) & MAX_QUANT_TABLE_MASK];
 
         TYPE top2 = TYPE(0);
         if (off.y > 1)
-            top2 = TYPE(imageLoad(dst[p], pos + ivec2(0, -2))[0]);
+            top2 = TYPE(imageLoad(dec[p], sp + ivec2(0, -2))[0]);
         base += quant_table[quant_table_idx][4][(top2 - top[1]) & MAX_QUANT_TABLE_MASK];
     }
 
     /* context, prediction */
     return ivec2(base, predict(cur, VTYPE2(top)));
 }
+#endif
 
 #ifndef GOLOMB
 int get_isymbol(inout RangeCoder c, uint64_t state)
@@ -89,11 +136,8 @@ int get_isymbol(inout RangeCoder c, uint64_t state)
     return get_rac(c, state - 11 + min(e, 10)) ? -a : a;
 }
 
-void decode_line_pcm(inout SliceContext sc, int y, int p, int bits)
+void decode_line_pcm(inout SliceContext sc, ivec2 sp, int w, int y, int p, int bits)
 {
-    ivec2 sp = sc.slice_pos;
-    int w = sc.slice_dim.x;
-
 #ifndef RGB
     if (p > 0 && p < 3) {
         w >>= chroma_shift.x;
@@ -106,16 +150,14 @@ void decode_line_pcm(inout SliceContext sc, int y, int p, int bits)
         for (int i = (bits - 1); i >= 0; i--)
             v |= uint(get_rac_equi(sc.c)) << i;
 
-        imageStore(dst[p], sp + ivec2(x, y), uvec4(v));
+        imageStore(dec[p], sp + LADDR(ivec2(x, y)), uvec4(v));
     }
 }
 
-void decode_line(inout SliceContext sc, uint64_t state,
-                 int y, int p, int bits, const int run_index)
+void decode_line(inout SliceContext sc, ivec2 sp, int w,
+                 int y, int p, int bits, uint64_t state,
+                 const int run_index)
 {
-    ivec2 sp = sc.slice_pos;
-    int w = sc.slice_dim.x;
-
 #ifndef RGB
     if (p > 0 && p < 3) {
         w >>= chroma_shift.x;
@@ -124,7 +166,7 @@ void decode_line(inout SliceContext sc, uint64_t state,
 #endif
 
     for (int x = 0; x < w; x++) {
-        ivec2 pr = get_pred(sp + ivec2(x, y), ivec2(x, y), p, w,
+        ivec2 pr = get_pred(sp, ivec2(x, y), p, w,
                             sc.quant_table_idx[p]);
 
         int diff = get_isymbol(sc.c, state + CONTEXT_SIZE*abs(pr[0]));
@@ -132,18 +174,16 @@ void decode_line(inout SliceContext sc, uint64_t state,
             diff = -diff;
 
         uint v = zero_extend(pr[1] + diff, bits);
-        imageStore(dst[p], sp + ivec2(x, y), uvec4(v));
+        imageStore(dec[p], sp + LADDR(ivec2(x, y)), uvec4(v));
     }
 }
 
 #else /* GOLOMB */
 
-void decode_line(inout SliceContext sc, uint64_t state,
-                 int y, int p, int bits, inout int run_index)
+void decode_line(inout SliceContext sc, ivec2 sp, int w,
+                 int y, int p, int bits, uint64_t state,
+                 inout int run_index)
 {
-    ivec2 sp = sc.slice_pos;
-    int w = sc.slice_dim.x;
-
 #ifndef RGB
     if (p > 0 && p < 3) {
         w >>= chroma_shift.x;
@@ -157,7 +197,7 @@ void decode_line(inout SliceContext sc, uint64_t state,
     for (int x = 0; x < w; x++) {
         ivec2 pos = sp + ivec2(x, y);
         int diff;
-        ivec2 pr = get_pred(sp + ivec2(x, y), ivec2(x, y), p, w,
+        ivec2 pr = get_pred(sp, ivec2(x, y), p, w,
                             sc.quant_table_idx[p]);
 
         VlcState sb = VlcState(state + VLC_STATE_SIZE*abs(pr[0]));
@@ -202,7 +242,44 @@ void decode_line(inout SliceContext sc, uint64_t state,
             diff = -diff;
 
         uint v = zero_extend(pr[1] + diff, bits);
-        imageStore(dst[p], sp + ivec2(x, y), uvec4(v));
+        imageStore(dec[p], sp + LADDR(ivec2(x, y)), uvec4(v));
+    }
+}
+#endif
+
+#ifdef RGB
+ivec4 transform_sample(ivec4 pix, ivec2 rct_coef)
+{
+    pix.b -= rct_offset;
+    pix.r -= rct_offset;
+    pix.g -= (pix.b*rct_coef.y + pix.r*rct_coef.x) >> 2;
+    pix.b += pix.g;
+    pix.r += pix.g;
+    return ivec4(pix[fmt_lut[0]], pix[fmt_lut[1]],
+                 pix[fmt_lut[2]], pix[fmt_lut[3]]);
+}
+
+void writeout_rgb(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
+{
+    for (int x = 0; x < w; x++) {
+        ivec2 lpos = sp + LADDR(ivec2(x, y));
+        ivec2 pos = sc.slice_pos + ivec2(x, y);
+
+        ivec4 pix;
+        pix.r = int(imageLoad(dec[2], lpos)[0]);
+        pix.g = int(imageLoad(dec[0], lpos)[0]);
+        pix.b = int(imageLoad(dec[1], lpos)[0]);
+        if (transparency != 0)
+            pix.a = int(imageLoad(dec[3], lpos)[0]);
+
+        if (apply_rct)
+            pix = transform_sample(pix, sc.slice_rct_coef);
+
+        imageStore(dst[0], pos, pix);
+        if (planar_rgb != 0) {
+            for (int i = 1; i < color_planes; i++)
+                imageStore(dst[i], pos, ivec4(pix[i]));
+        }
     }
 }
 #endif
@@ -210,6 +287,8 @@ void decode_line(inout SliceContext sc, uint64_t state,
 void decode_slice(inout SliceContext sc, const uint slice_idx)
 {
     int run_index = 0;
+    int w = sc.slice_dim.x;
+    ivec2 sp = sc.slice_pos;
 
 #ifndef RGB
     int bits = bits_per_raw_sample;
@@ -217,6 +296,8 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
     int bits = 9;
     if (bits != 8 || sc.slice_coding_mode != 0)
         bits = bits_per_raw_sample + int(sc.slice_coding_mode != 1);
+
+    sp.y = int(gl_WorkGroupID.y)*RGB_LINECACHE;
 #endif
 
     /* PCM coding */
@@ -229,12 +310,14 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
                 h >>= chroma_shift.y;
 
             for (int y = 0; y < h; y++)
-                decode_line_pcm(sc, y, p, bits);
+                decode_line_pcm(sc, sp, w, y, p, bits);
         }
 #else
         for (int y = 0; y < sc.slice_dim.y; y++) {
             for (int p = 0; p < color_planes; p++)
-                decode_line_pcm(sc, y, p, bits);
+                decode_line_pcm(sc, sp, w, y, p, bits);
+
+            writeout_rgb(sc, sp, w, y, false);
         }
 #endif
     } else
@@ -242,8 +325,9 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
     /* Arithmetic coding */
 #endif
     {
-        uint64_t slice_state_off = uint64_t(slice_state) +
-                                   slice_idx*plane_state_size*codec_planes;
+        u64vec4 slice_state_off = (uint64_t(slice_state) +
+                                   slice_idx*plane_state_size*codec_planes) +
+                                  plane_state_size*uvec4(0, 1, 1, 2);
 
 #ifndef RGB
         for (int p = 0; p < planes; p++) {
@@ -252,18 +336,16 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
                 h >>= chroma_shift.y;
 
             for (int y = 0; y < h; y++)
-                decode_line(sc, slice_state_off, y, p, bits, run_index);
-
-            /* For the second chroma plane, reuse the first plane's state */
-            if (p != 1)
-                slice_state_off += plane_state_size;
+                decode_line(sc, sp, w, y, p, bits,
+                            slice_state_off[p], run_index);
         }
 #else
         for (int y = 0; y < sc.slice_dim.y; y++) {
             for (int p = 0; p < color_planes; p++)
-                decode_line(sc,
-                            slice_state_off + plane_state_size*((p + 1) >> 1),
-                            y, p, bits, run_index);
+                decode_line(sc, sp, w, y, p, bits,
+                            slice_state_off[p], run_index);
+
+            writeout_rgb(sc, sp, w, y, true);
         }
 #endif
     }
