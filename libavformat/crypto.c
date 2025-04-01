@@ -313,11 +313,9 @@ static int64_t crypto_seek(URLContext *h, int64_t pos, int whence)
 
         // if we did not get all the bytes
         if (len != 0) {
-            char errbuf[100] = "unknown error";
-            av_strerror(res, errbuf, sizeof(errbuf));
             av_log(h, AV_LOG_ERROR,
                 "Crypto: discard read did not get all the bytes (%d remain) - read returned (%d)-%s\n",
-                len, res, errbuf);
+                len, res, av_err2str(res));
             return AVERROR(EINVAL);
         }
     }
