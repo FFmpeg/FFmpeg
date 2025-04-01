@@ -506,10 +506,9 @@ static av_cold int init(AVFilterContext *ctx)
 
             if (!s->stats_file) {
                 const int err = AVERROR(errno);
-                char buf[128];
 
-                av_strerror(err, buf, sizeof(buf));
-                av_log(ctx, AV_LOG_ERROR, "Could not open statistics file %s: %s\n", s->stats_file_str, buf);
+                av_log(ctx, AV_LOG_ERROR, "Could not open statistics file %s: %s\n",
+                    s->stats_file_str, av_err2str(err));
                 return err;
             }
         }
