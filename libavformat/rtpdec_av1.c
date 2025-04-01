@@ -373,7 +373,7 @@ static int av1_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         }
         is_frag_cont = 0;
 
-        if (!rem_pkt_size && !num_obus && (num_obus != obu_cnt)) {
+        if (!rem_pkt_size && num_obus && (num_obus != obu_cnt)) {
             av_log(ctx, AV_LOG_WARNING, "AV1 aggregation header indicated %u OBU elements, was %u\n",
                    num_obus, obu_cnt);
         }
