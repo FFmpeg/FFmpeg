@@ -219,6 +219,43 @@ void ff_ffv1_clear_slice_state(const FFV1Context *f, FFV1SliceContext *sc)
     }
 }
 
+void ff_ffv1_compute_bits_per_plane(const FFV1Context *f, FFV1SliceContext *sc, int bits[4], int *offset, int mask[4], int bits_per_raw_sample)
+{
+    // to simplify we use the remap_count as the symbol range in each plane
+    if (!sc->remap) {
+        sc->remap_count[0] =
+        sc->remap_count[1] =
+        sc->remap_count[2] =
+        sc->remap_count[3] = 1 << (bits_per_raw_sample > 0 ? bits_per_raw_sample : 8);
+    }
+
+    if (sc->remap)
+        av_assert0(bits_per_raw_sample > 8); //breaks with lbd, needs review if added
+
+    //bits with no RCT
+    for (int p=0; p<3+f->transparency; p++) {
+        bits[p] = av_ceil_log2(sc->remap_count[p]);
+        if (mask)
+            mask[p] = (1<<bits[p]) - 1;
+    }
+
+    //RCT
+    if (sc->slice_coding_mode == 0) {
+        *offset = sc->remap_count[0];
+
+        bits[0] = av_ceil_log2(FFMAX3(sc->remap_count[0], sc->remap_count[1], sc->remap_count[2]));
+        bits[1] = av_ceil_log2(sc->remap_count[0] + sc->remap_count[1]);
+        bits[2] = av_ceil_log2(sc->remap_count[0] + sc->remap_count[2]);
+
+        //old version coded a bit more than needed
+        if (f->combined_version < 0x40008) {
+            bits[0]++;
+            if(f->transparency)
+                bits[3]++;
+        }
+    }
+}
+
 int ff_ffv1_get_symbol(RangeCoder *c, uint8_t *state, int is_signed)
 {
     return get_symbol_inline(c, state, is_signed);

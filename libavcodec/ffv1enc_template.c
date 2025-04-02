@@ -35,6 +35,9 @@ RENAME(encode_line)(FFV1Context *f, FFV1SliceContext *sc,
     int run_count = 0;
     int run_mode  = 0;
 
+    if (bits == 0)
+        return 0;
+
     if (ac != AC_GOLOMB_RICE) {
         if (c->bytestream_end - c->bytestream < w * 35) {
             av_log(logctx, AV_LOG_ERROR, "encoded Range Coder frame too large\n");
@@ -172,10 +175,11 @@ static int RENAME(encode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
     const int pass1 = !!(f->avctx->flags & AV_CODEC_FLAG_PASS1);
     int lbd    = f->bits_per_raw_sample <= 8;
     int packed = !src[1];
-    int bits   = f->bits_per_raw_sample > 0 ? f->bits_per_raw_sample : 8;
-    int offset = 1 << bits;
+    int bits[4], offset;
     int transparency = f->transparency;
     int packed_size = (3 + transparency)*2;
+
+    ff_ffv1_compute_bits_per_plane(f, sc, bits, &offset, NULL, f->bits_per_raw_sample);
 
     sc->run_index = 0;
 
@@ -239,11 +243,11 @@ static int RENAME(encode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
             int ret;
             sample[p][0][-1] = sample[p][1][0  ];
             sample[p][1][ w] = sample[p][1][w-1];
-            if (lbd && sc->slice_coding_mode == 0)
+            if (bits[p] == 9)
                 ret = RENAME(encode_line)(f, sc, f->avctx, w, sample[p], (p + 1) / 2, 9, ac, pass1);
             else
                 ret = RENAME(encode_line)(f, sc, f->avctx, w, sample[p], (p + 1) / 2,
-                                          bits + (sc->slice_coding_mode != 1), ac, pass1);
+                                          bits[p], ac, pass1);
             if (ret < 0)
                 return ret;
         }

@@ -99,6 +99,16 @@ static int decode_plane(FFV1Context *f, FFV1SliceContext *sc,
 {
     int x, y;
     int16_t *sample[2];
+    int bits;
+    unsigned mask;
+
+    if (sc->remap) {
+        bits = av_ceil_log2(sc->remap_count[remap_index]);
+        mask = (1<<bits)-1;
+    } else {
+        bits = f->avctx->bits_per_raw_sample;
+    }
+
     sample[0] = sc->sample_buffer + 3;
     sample[1] = sc->sample_buffer + w + 6 + 3;
 
@@ -125,18 +135,18 @@ static int decode_plane(FFV1Context *f, FFV1SliceContext *sc,
             for (x = 0; x < w; x++)
                 src[x*pixel_stride + stride * y] = sample[1][x];
         } else {
-            int ret = decode_line(f, sc, gb, w, sample, plane_index, f->avctx->bits_per_raw_sample, ac);
+            int ret = decode_line(f, sc, gb, w, sample, plane_index, bits, ac);
             if (ret < 0)
                 return ret;
 
             if (sc->remap) {
                 if (f->packed_at_lsb || f->avctx->bits_per_raw_sample == 16) {
                     for (x = 0; x < w; x++) {
-                        ((uint16_t*)(src + stride*y))[x*pixel_stride] = sc->fltmap[remap_index][sample[1][x] & 0xFFFF];
+                        ((uint16_t*)(src + stride*y))[x*pixel_stride] = sc->fltmap[remap_index][sample[1][x] & mask];
                     }
                 } else {
                     for (x = 0; x < w; x++) {
-                        int v = sc->fltmap[remap_index][sample[1][x] & 0xFFFF];
+                        int v = sc->fltmap[remap_index][sample[1][x] & mask];
                         ((uint16_t*)(src + stride*y))[x*pixel_stride] = v << (16 - f->avctx->bits_per_raw_sample) | v >> (2 * f->avctx->bits_per_raw_sample - 16);
                     }
                 }
@@ -337,6 +347,7 @@ static int decode_remap(FFV1Context *f, FFV1SliceContext *sc)
             }
             lu ^= !run;
         }
+        sc->remap_count[p] = j;
     }
     return 0;
 }

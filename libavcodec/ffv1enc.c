@@ -433,7 +433,7 @@ static void set_micro_version(FFV1Context *f)
         if (f->version == 3) {
             f->micro_version = 4;
         } else if (f->version == 4) {
-            f->micro_version = 7;
+            f->micro_version = 8;
         } else
             av_assert0(0);
 
@@ -1216,6 +1216,7 @@ static void encode_histogram_remap(FFV1Context *f, FFV1SliceContext *sc)
         }
         if (run)
             put_symbol(&sc->c, state[lu], run, 0);
+        sc->remap_count[p] = j;
     }
 }
 
@@ -1370,7 +1371,8 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
                     mul[ current_mul_index ] *= -1;
                     put_symbol_inline(&rc, state[0][2], mul[ current_mul_index ], 0, NULL, NULL);
                 }
-                compact_index ++;
+                if (i < pixel_num)
+                    compact_index ++;
             }
         }
         if (!run || run1final)
@@ -1380,6 +1382,8 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
 
     if (update) {
         sc->c = rc;
+        av_assert0(compact_index <= 65535);
+        sc->remap_count[p] = compact_index + 1;
     }
     return get_rac_count(&rc);
 }
@@ -1492,9 +1496,10 @@ static int encode_float32_rgb_frame(FFV1Context *f, FFV1SliceContext *sc,
     const int ring_size = f->context_model ? 3 : 2;
     int32_t *sample[4][3];
     const int pass1 = !!(f->avctx->flags & AV_CODEC_FLAG_PASS1);
-    int bits   = 16;  //TODO explain this in the specifciation, we have 32bits in but really encode max 16
-    int offset = 1 << bits;
+    int bits[4], offset;
     int transparency = f->transparency;
+
+    ff_ffv1_compute_bits_per_plane(f, sc, bits, &offset, NULL, f->bits_per_raw_sample);
 
     sc->run_index = 0;
 
@@ -1532,7 +1537,7 @@ static int encode_float32_rgb_frame(FFV1Context *f, FFV1SliceContext *sc,
             sample[p][0][-1] = sample[p][1][0  ];
             sample[p][1][ w] = sample[p][1][w-1];
             ret = encode_line32(f, sc, f->avctx, w, sample[p], (p + 1) / 2,
-                                bits + (sc->slice_coding_mode != 1), ac, pass1);
+                                bits[p], ac, pass1);
             if (ret < 0)
                 return ret;
         }
