@@ -58,6 +58,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "checkasm.h"
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/intfloat.h"
@@ -1189,10 +1190,12 @@ int checkasm_check_##type(const char *file, int line, \
                           int align_w, int align_h, \
                           int padding) \
 { \
-    int aligned_w = (w + align_w - 1) & ~(align_w - 1); \
-    int aligned_h = (h + align_h - 1) & ~(align_h - 1); \
+    int64_t aligned_w = (w - 1LL + align_w) & ~(align_w - 1); \
+    int64_t aligned_h = (h - 1LL + align_h) & ~(align_h - 1); \
     int err = 0; \
     int y = 0; \
+    av_assert0(aligned_w == (int32_t)aligned_w);\
+    av_assert0(aligned_h == (int32_t)aligned_h);\
     stride1 /= sizeof(*buf1); \
     stride2 /= sizeof(*buf2); \
     for (y = 0; y < h; y++) \
