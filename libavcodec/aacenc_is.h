@@ -30,22 +30,6 @@
 
 #include "aacenc.h"
 
-/** Frequency in Hz for lower limit of intensity stereo **/
-#define INT_STEREO_LOW_LIMIT 6100
-
-struct AACISError {
-    int pass;    /* 1 if dist2 <= dist1  */
-    int phase;   /* -1 or +1             */
-    float error; /* fabs(dist1 - dist2)  */
-    float dist1; /* From original coeffs */
-    float dist2; /* From IS'd coeffs     */
-    float ener01;
-};
-
-struct AACISError ff_aac_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
-                                         int start, int w, int g, float ener0,
-                                         float ener1, float ener01,
-                                         int use_pcoeffs, int phase);
 void ff_aac_search_for_is(AACEncContext *s, AVCodecContext *avctx, ChannelElement *cpe);
 
 #endif /* AVCODEC_AACENC_IS_H */
