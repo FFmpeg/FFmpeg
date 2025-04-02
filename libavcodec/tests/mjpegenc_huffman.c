@@ -23,12 +23,12 @@
  * Optimal Huffman Encoding tests.
  */
 
-#include "libavcodec/avcodec.h"
-#include <stdlib.h>
-#include "libavcodec/mjpegenc.h"
-#include "libavcodec/mjpegenc_huffman.h"
-#include "libavcodec/mjpegenc_common.h"
-#include "libavcodec/mpegvideo.h"
+#include <stdio.h>
+
+#include "libavutil/avassert.h"
+#include "libavutil/macros.h"
+
+#include "libavcodec/mjpegenc_huffman.c"
 
 // Validate the computed lengths satisfy the JPEG restrictions and is optimal.
 static int check_lengths(int L, int expected_length,
@@ -45,7 +45,7 @@ static int check_lengths(int L, int expected_length,
         val_counts[i] = (PTable){.value = i, .prob = probs[i]};
     }
 
-    ff_mjpegenc_huffman_compute_bits(val_counts, lengths, nprobs, L);
+    mjpegenc_huffman_compute_bits(val_counts, lengths, nprobs, L);
 
     for (i = 0; i < nprobs; i++) {
         // Find the value's prob and length
@@ -137,8 +137,8 @@ int main(int argc, char **argv)
 
     // Build optimal huffman tree using an internal function, to allow for
     // smaller-than-normal test cases. This mutates val_counts by sorting.
-    ff_mjpegenc_huffman_compute_bits(val_counts, distincts,
-                                     FF_ARRAY_ELEMS(distincts), 3);
+    mjpegenc_huffman_compute_bits(val_counts, distincts,
+                                  FF_ARRAY_ELEMS(distincts), 3);
 
     for (i = 0; i < FF_ARRAY_ELEMS(distincts); i++) {
         if (distincts[i].code != expected[i].code ||

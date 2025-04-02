@@ -26,6 +26,32 @@
 #include "mjpegenc_huffman.h"
 
 /**
+ * Used to assign a occurrence count or "probability" to an input value
+ */
+typedef struct PTable {
+    int value;  ///< input value
+    int prob;   ///< number of occurences of this value in input
+} PTable;
+
+/**
+ * Used to store intermediate lists in the package merge algorithm
+ */
+typedef struct PackageMergerList {
+    int nitems;             ///< number of items in the list and probability      ex. 4
+    int item_idx[515];      ///< index range for each item in items                   0, 2, 5, 9, 13
+    int probability[514];   ///< probability of each item                             3, 8, 18, 46
+    int items[257 * 16];    ///< chain of all individual values that make up items    A, B, A, B, C, A, B, C, D, C, D, D, E
+} PackageMergerList;
+
+/**
+ * Used to store optimal huffman encoding results
+ */
+typedef struct HuffTable {
+    int code;       ///< code is the input value
+    int length;     ///< length of the encoding
+} HuffTable;
+
+/**
  * Comparison function for two PTables by prob
  *
  * @param a First PTable to compare
@@ -74,7 +100,8 @@ static int compare_by_length(const void *a, const void *b)
  * @param size       size of the prob_table array
  * @param max_length max length of an encoding
  */
-void ff_mjpegenc_huffman_compute_bits(PTable *prob_table, HuffTable *distincts, int size, int max_length)
+static void mjpegenc_huffman_compute_bits(PTable *prob_table, HuffTable *distincts,
+                                          int size, int max_length)
 {
     PackageMergerList list_a, list_b, *to = &list_a, *from = &list_b, *temp;
 
@@ -178,7 +205,7 @@ void ff_mjpeg_encode_huffman_close(MJpegEncHuffmanContext *s, uint8_t bits[17],
     }
     val_counts[j].value = 256;
     val_counts[j].prob = 0;
-    ff_mjpegenc_huffman_compute_bits(val_counts, distincts, nval + 1, 16);
+    mjpegenc_huffman_compute_bits(val_counts, distincts, nval + 1, 16);
     AV_QSORT(distincts, nval, HuffTable, compare_by_length);
 
     memset(bits, 0, sizeof(bits[0]) * 17);
