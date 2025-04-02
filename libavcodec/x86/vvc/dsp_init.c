@@ -71,20 +71,13 @@ DMVR_PROTOTYPES( 8, avx2)
 DMVR_PROTOTYPES(10, avx2)
 DMVR_PROTOTYPES(12, avx2)
 
-#define OF_PROTOTYPES(bd, opt)                                                                      \
-void ff_vvc_apply_bdof_##bd##_##opt(uint8_t *dst, ptrdiff_t dst_stride,                             \
-    const int16_t *src0, const int16_t *src1, int w, int h);                                        \
-
-OF_PROTOTYPES( 8, avx2)
-OF_PROTOTYPES(10, avx2)
-OF_PROTOTYPES(12, avx2)
-
 #if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
-void ff_vvc_apply_bdof_avx2(uint8_t *dst, ptrdiff_t dst_stride,                                     \
-    const int16_t *src0, const int16_t *src1, int w, int h, int pixel_max);                         \
+void ff_vvc_apply_bdof_avx2(uint8_t *dst, ptrdiff_t dst_stride,
+                            const int16_t *src0, const int16_t *src1,
+                            int w, int h, int pixel_max);
 
 #define OF_FUNC(bd, opt)                                                                            \
-void ff_vvc_apply_bdof_##bd##_##opt(uint8_t *dst, ptrdiff_t dst_stride,                             \
+static void vvc_apply_bdof_##bd##_##opt(uint8_t *dst, ptrdiff_t dst_stride,                         \
     const int16_t *src0, const int16_t *src1, int w, int h)                                         \
 {                                                                                                   \
     ff_vvc_apply_bdof##_##opt(dst, dst_stride, src0, src1, w, h, (1 << bd)  - 1);                   \
@@ -93,6 +86,8 @@ void ff_vvc_apply_bdof_##bd##_##opt(uint8_t *dst, ptrdiff_t dst_stride,         
 OF_FUNC( 8, avx2)
 OF_FUNC(10, avx2)
 OF_FUNC(12, avx2)
+
+#define OF_INIT(bd) c->inter.apply_bdof = vvc_apply_bdof_##bd##_avx2
 #endif
 
 #define ALF_BPC_PROTOTYPES(bpc, opt)                                                                                     \
@@ -319,10 +314,6 @@ ALF_FUNCS(16, 12, avx2)
     c->inter.dmvr[0][1]   = ff_vvc_dmvr_h_##bd##_avx2;               \
     c->inter.dmvr[1][0]   = ff_vvc_dmvr_v_##bd##_avx2;               \
     c->inter.dmvr[1][1]   = ff_vvc_dmvr_hv_##bd##_avx2;              \
-} while (0)
-
-#define OF_INIT(bd) do {                                             \
-    c->inter.apply_bdof   = ff_vvc_apply_bdof_##bd##_avx2;           \
 } while (0)
 
 #define ALF_INIT(bd) do {                                            \
