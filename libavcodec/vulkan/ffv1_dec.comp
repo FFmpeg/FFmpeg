@@ -78,13 +78,11 @@ int get_isymbol(inout RangeCoder c, uint64_t state)
 
     state += 21;
 
-    int a = 1 << e;
-    int i;
-    for (i = e - 1; i >= 9; i--)
-        a |= int(get_rac(c, state + 9)) << i;  // 22..31
-
-    for (; i >= 0; i--)
-        a |= int(get_rac(c, state + i)) << i;  // 22..31
+    int a = 1;
+    for (int i = e - 1; i >= 0; i--) {
+        a <<= 1;
+        a |= int(get_rac(c, state + min(i, 9)));  // 22..31
+    }
 
     return get_rac(c, state - 11 + min(e, 10)) ? -a : a;
 }
