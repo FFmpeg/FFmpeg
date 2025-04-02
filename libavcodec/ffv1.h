@@ -114,7 +114,7 @@ typedef struct FFV1SliceContext {
     struct Unit {
         uint32_t val; //this is unneeded if you accept a dereference on each access
         uint16_t ndx;
-    } unit[4][65536];
+    } *unit[4];
 } FFV1SliceContext;
 
 typedef struct FFV1Context {

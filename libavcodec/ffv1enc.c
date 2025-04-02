@@ -1003,11 +1003,21 @@ static av_cold int encode_init_internal(AVCodecContext *avctx)
     s->slice_count = s->max_slice_count;
 
     for (int j = 0; j < s->slice_count; j++) {
+        FFV1SliceContext *sc = &s->slices[j];
+
         for (int i = 0; i < s->plane_count; i++) {
             PlaneContext *const p = &s->slices[j].plane[i];
 
             p->quant_table_index = s->context_model;
             p->context_count     = s->context_count[p->quant_table_index];
+        }
+        av_assert0(s->remap_mode >= 0);
+        if (s->remap_mode && s->bits_per_raw_sample == 32) {
+            for (int p = 0; p < 1 + 2*s->chroma_planes + s->transparency ; p++) {
+                sc->unit[p] = av_malloc_array(sc->slice_width, sc->slice_height * sizeof(**sc->unit));
+                if (!sc->unit[p])
+                    return AVERROR(ENOMEM);
+            }
         }
 
         ff_build_rac_states(&s->slices[j].c, 0.05 * (1LL << 32), 256 - 8);
@@ -1807,6 +1817,13 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 static av_cold int encode_close(AVCodecContext *avctx)
 {
     FFV1Context *const s = avctx->priv_data;
+
+    for (int j = 0; j < s->max_slice_count; j++) {
+        FFV1SliceContext *sc = &s->slices[j];
+
+        for(int p = 0; p<4; p++)
+            av_freep(&sc->unit[p]);
+    }
 
     av_freep(&avctx->stats_out);
     ff_ffv1_close(s);
