@@ -2954,11 +2954,8 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_INFO, "Single field\n");
     }
 
-    if (s->picture) {
-        av_frame_free(&s->picture);
-        s->picture_ptr = NULL;
-    } else if (s->picture_ptr)
-        av_frame_unref(s->picture_ptr);
+    av_frame_free(&s->picture);
+    s->picture_ptr = NULL;
 
     av_frame_free(&s->smv_frame);
 
