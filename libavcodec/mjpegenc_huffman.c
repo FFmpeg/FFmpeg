@@ -185,31 +185,27 @@ void ff_mjpeg_encode_huffman_init(MJpegEncHuffmanContext *s)
 void ff_mjpeg_encode_huffman_close(MJpegEncHuffmanContext *s, uint8_t bits[17],
                                    uint8_t val[], int max_nval)
 {
-    int i, j;
-    int nval = 0;
     PTable val_counts[257];
     HuffTable distincts[256];
 
-    for (i = 0; i < 256; i++) {
-        if (s->val_count[i]) nval++;
-    }
-    av_assert0 (nval <= max_nval);
+    av_assert1(max_nval <= FF_ARRAY_ELEMS(val_counts) - 1);
 
-    j = 0;
-    for (i = 0; i < 256; i++) {
+    int nval = 0;
+    for (int i = 0; i < 256; i++) {
         if (s->val_count[i]) {
-            val_counts[j].value = i;
-            val_counts[j].prob = s->val_count[i];
-            j++;
+            val_counts[nval].value = i;
+            val_counts[nval].prob  = s->val_count[i];
+            nval++;
+            av_assert2(nval <= max_nval);
         }
     }
-    val_counts[j].value = 256;
-    val_counts[j].prob = 0;
+    val_counts[nval].value = 256;
+    val_counts[nval].prob  = 0;
     mjpegenc_huffman_compute_bits(val_counts, distincts, nval + 1, 16);
     AV_QSORT(distincts, nval, HuffTable, compare_by_length);
 
     memset(bits, 0, sizeof(bits[0]) * 17);
-    for (i = 0; i < nval; i++) {
+    for (int i = 0; i < nval; i++) {
         val[i] = distincts[i].code;
         bits[distincts[i].length]++;
     }
