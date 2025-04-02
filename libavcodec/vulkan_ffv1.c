@@ -197,7 +197,7 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
                                       &fp->slice_state,
                                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                      NULL, f->max_slice_count*fp->slice_state_size,
+                                      NULL, f->slice_count*fp->slice_state_size,
                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         if (err < 0)
             return err;
@@ -213,7 +213,7 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
                                   &fp->tmp_data,
                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                  NULL, f->max_slice_count*CONTEXT_SIZE,
+                                  NULL, f->slice_count*CONTEXT_SIZE,
                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     if (err < 0)
         return err;
@@ -223,7 +223,7 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
                                   &fp->slice_offset_buf,
                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                  NULL, 2*f->max_slice_count*sizeof(uint32_t),
+                                  NULL, 2*f->slice_count*sizeof(uint32_t),
                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     if (err < 0)
@@ -234,7 +234,7 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
                                   &fp->slice_status_buf,
                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                  NULL, f->max_slice_count*sizeof(uint32_t),
+                                  NULL, f->slice_count*sizeof(uint32_t),
                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     if (err < 0)
