@@ -326,7 +326,7 @@ static int decode_remap(FFV1Context *f, FFV1SliceContext *sc)
                 }
                 if (i - 1 >= end)
                     break;
-                if (j >= FF_ARRAY_ELEMS(sc->fltmap[p]))
+                if (j >= 65536 /*FF_ARRAY_ELEMS(sc->fltmap[p])*/)
                     return AVERROR_INVALIDDATA;
                 if (end <= 0xFFFF) {
                     sc->fltmap  [p][j++] = i ^ ((i&    0x8000) ? 0 : flip);
@@ -387,6 +387,22 @@ static int decode_slice(AVCodecContext *c, void *arg)
     y      = sc->slice_y;
 
     if (sc->remap) {
+        for(int p = 0; p < 1 + 2*f->chroma_planes + f->transparency ; p++) {
+            if (f->avctx->bits_per_raw_sample == 32) {
+                if (!sc->fltmap32[p]) {
+                    sc->fltmap32[p] = av_malloc_array(65536, sizeof(*sc->fltmap32[p]));
+                    if (!sc->fltmap32[p])
+                        return AVERROR(ENOMEM);
+                }
+            } else {
+                if (!sc->fltmap[p]) {
+                    sc->fltmap[p] = av_malloc_array(65536, sizeof(*sc->fltmap[p]));
+                    if (!sc->fltmap[p])
+                        return AVERROR(ENOMEM);
+                }
+            }
+        }
+
         ret = decode_remap(f, sc);
         if (ret < 0)
             return ret;

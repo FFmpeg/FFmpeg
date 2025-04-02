@@ -134,7 +134,8 @@ static void RENAME(load_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
     int x, y;
     int transparency = f->transparency;
 
-    memset(sc->fltmap, 0, sizeof(sc->fltmap));
+    for (int p = 0; p<3 + transparency; p++)
+        memset(sc->fltmap[p], 0, 65536 * sizeof(**sc->fltmap));
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
