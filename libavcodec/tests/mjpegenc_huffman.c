@@ -34,10 +34,9 @@
 static int check_lengths(int L, const int *probs, int nprobs,
                          int expected_length, const uint8_t expected_len_counts[/* L + 1 */])
 {
-    HuffTable lengths[256];
     PTable val_counts[256];
-    uint8_t len_counts[17] = { 0 };
-    int actual_length = 0, i, j, k, prob, length;
+    uint8_t len_counts[17];
+    int actual_length = 0, i;
     int ret = 0;
     av_assert0(nprobs <= 256);
     av_assert0(L < FF_ARRAY_ELEMS(len_counts));
@@ -46,20 +45,12 @@ static int check_lengths(int L, const int *probs, int nprobs,
         val_counts[i] = (PTable){.value = i, .prob = probs[i]};
     }
 
-    mjpegenc_huffman_compute_bits(val_counts, lengths, nprobs, L);
+    mjpegenc_huffman_compute_bits(val_counts, len_counts, nprobs, L);
 
-    for (int i = 0; i < nprobs; ++i) {
-        if (lengths[i].length > L) {
-            fprintf(stderr,
-                    "Len %d of element %d of Huffman table with %d elements exceeds max length %d\n",
-                    lengths[i].length, i, nprobs, L);
-            return 1;
-        }
-        len_counts[lengths[i].length]++;
-    }
     // Test that the lengths can be made part of a complete, prefix-free tree:
-    unsigned code = 0;
+    unsigned code = 0, count = 0;
     for (int i = 1; i <= L; ++i) {
+        count += len_counts[i];
         code <<= 1;
         code += len_counts[i];
     }
@@ -67,22 +58,36 @@ static int check_lengths(int L, const int *probs, int nprobs,
         fprintf(stderr, "Huffman tree overdetermined/invalid\n");
         ret = 1;
     }
-
-    for (i = 0; i < nprobs; i++) {
-        // Find the value's prob and length
-        for (j = 0; j < nprobs; j++)
-            if (val_counts[j].value == i) break;
-        for (k = 0; k < nprobs; k++)
-            if (lengths[k].code == i) break;
-        if (!(j < nprobs && k < nprobs)) return 1;
-        prob = val_counts[j].prob;
-        length = lengths[k].length;
-
-        if (prob) {
-            actual_length += prob * length;
+    if (count != nprobs) {
+        fprintf(stderr, "Total count %u does not match expected value %d\n",
+                count, nprobs);
+        ret = 1;
+    }
+    // Test that the input values have been properly ordered.
+    for (unsigned i = 0; i < count; ++i) {
+        if (val_counts[i].prob != probs[val_counts[i].value]) {
+            fprintf(stderr, "PTable not properly reordered\n");
+            ret = 1;
         }
-
-        if (length > L || length < 1) return 1;
+        if (i && val_counts[i - 1].prob > val_counts[i].prob) {
+            fprintf(stderr, "PTable not order ascendingly: [%u] = %d > [%u] = %d\n",
+                    i - 1, val_counts[i - 1].prob, i, val_counts[i].prob);
+            ret = 1;
+        }
+        unsigned j;
+        for (j = 0; j < count; ++j)
+            if (val_counts[j].value == i)
+                break;
+        if (j >= count) {
+            fprintf(stderr, "Element %u missing after sorting\n", i);
+            ret = 1;
+        }
+    }
+    for (int len = L, j = 0; len; --len) {
+        int prob = 0;
+        for (int end = j + len_counts[len]; j < end; ++j)
+            prob += val_counts[j].prob;
+        actual_length += prob * len;
     }
     // Check that the total length is optimal
     if (actual_length != expected_length) ret = 1;
@@ -141,7 +146,10 @@ static const uint8_t len_counts_sat[] = {
 // http://guru.multimedia.cx/small-tasks-for-ffmpeg/
 int main(int argc, char **argv)
 {
-    int i, ret = 0;
+    enum {
+        MAX_LEN = 3,
+    };
+    int ret = 0;
     // Probabilities of symbols 0..4
     PTable val_counts[] = {
         {.value = 0, .prob = 1},
@@ -151,30 +159,33 @@ int main(int argc, char **argv)
         {.value = 4, .prob = 21},
     };
     // Expected code lengths for each symbol
-    static const HuffTable expected[] = {
-        {.code = 0, .length = 3},
-        {.code = 1, .length = 3},
-        {.code = 2, .length = 3},
-        {.code = 3, .length = 3},
-        {.code = 4, .length = 1},
+    static const uint8_t expected[MAX_LEN + 1] = {
+        [1] = 1, [3] = 4,
     };
     // Actual code lengths
-    HuffTable distincts[5];
+    uint8_t len_counts[MAX_LEN + 1];
 
     // Build optimal huffman tree using an internal function, to allow for
     // smaller-than-normal test cases. This mutates val_counts by sorting.
-    mjpegenc_huffman_compute_bits(val_counts, distincts,
-                                  FF_ARRAY_ELEMS(distincts), 3);
+    mjpegenc_huffman_compute_bits(val_counts, len_counts,
+                                  FF_ARRAY_ELEMS(val_counts), MAX_LEN);
 
-    for (i = 0; i < FF_ARRAY_ELEMS(distincts); i++) {
-        if (distincts[i].code != expected[i].code ||
-            distincts[i].length != expected[i].length) {
+    for (unsigned i = 1; i < FF_ARRAY_ELEMS(len_counts); i++) {
+        if (len_counts[i] != expected[i]) {
             fprintf(stderr,
                     "Built huffman does not equal expectations. "
-                    "Expected: code %d probability %d, "
-                    "Actual: code %d probability %d\n",
-                    expected[i].code, expected[i].length,
-                    distincts[i].code, distincts[i].length);
+                    "Expected: %d codes of length %u, "
+                    "Actual: %d codes of length %u\n",
+                    (int)expected[i], i,
+                    (int)len_counts[i], i);
+            ret = 1;
+        }
+    }
+    for (unsigned i = 1; i < FF_ARRAY_ELEMS(val_counts); ++i) {
+        if (val_counts[i - 1].prob > val_counts[i].prob) {
+            fprintf(stderr, "Probability table not ordered ascendingly. "
+                    "val_counts[%u] == %d, val_counts[%u] == %d\n",
+                    i - 1, val_counts[i - 1].prob, i, val_counts[i].prob);
             ret = 1;
         }
     }

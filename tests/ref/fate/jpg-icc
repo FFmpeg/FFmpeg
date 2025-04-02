@@ -1,5 +1,5 @@
-5c83d22a628d01c095704f58328f63c9 *tests/data/fate/jpg-icc.mjpeg
-11016 tests/data/fate/jpg-icc.mjpeg
+4d8f3d93f55267cc90bd1d2a94cfa84f *tests/data/fate/jpg-icc.mjpeg
+11011 tests/data/fate/jpg-icc.mjpeg
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo
@@ -19,7 +19,7 @@ best_effort_timestamp_time=0.000000
 duration=1
 duration_time=0.040000
 pkt_pos=0
-pkt_size=11016
+pkt_size=11011
 width=128
 height=128
 crop_top=0

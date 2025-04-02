@@ -1,4 +1,4 @@
-494812cc00c2d51df2d9cbc03dc9eecd *tests/data/fate/vsynth_lena-mjpeg-422.avi
-707466 tests/data/fate/vsynth_lena-mjpeg-422.avi
+778be0c8ee9c030aa2838bf249874082 *tests/data/fate/vsynth_lena-mjpeg-422.avi
+707170 tests/data/fate/vsynth_lena-mjpeg-422.avi
 16d2be35266d303dff3361e4535e8dd8 *tests/data/fate/vsynth_lena-mjpeg-422.out.rawvideo
 stddev:    4.18 PSNR: 35.70 MAXDIFF:   49 bytes:  7603200/  7603200
