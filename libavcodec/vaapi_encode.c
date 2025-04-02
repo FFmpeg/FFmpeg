@@ -1294,7 +1294,8 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
     // * If bitrate and quality are both set, try QVBR.
     // * If quality is set, try ICQ, then CQP.
     // * If bitrate and maxrate are set and have the same value, try CBR.
-    // * If a bitrate is set, try AVBR, then VBR, then CBR.
+    // * If bitrate is set and RC buffer size/occupancy is not, try AVBR.
+    // * If a bitrate is set, try VBR, then CBR.
     // * If no bitrate is set, try ICQ, then CQP.
 
 #define TRY_RC_MODE(mode, fail) do { \
@@ -1338,7 +1339,10 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
         TRY_RC_MODE(RC_MODE_CBR, 0);
 
     if (avctx->bit_rate > 0) {
-        TRY_RC_MODE(RC_MODE_AVBR, 0);
+        // AVBR does not enforce RC buffer constraints
+        if (!avctx->rc_buffer_size && !avctx->rc_initial_buffer_occupancy)
+            TRY_RC_MODE(RC_MODE_AVBR, 0);
+
         TRY_RC_MODE(RC_MODE_VBR, 0);
         TRY_RC_MODE(RC_MODE_CBR, 0);
     } else {
