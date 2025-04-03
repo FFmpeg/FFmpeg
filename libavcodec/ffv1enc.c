@@ -581,7 +581,11 @@ int ff_ffv1_encode_determine_slices(AVCodecContext *avctx)
                 if (  ff_need_new_slices(avctx->width , s->num_h_slices, s->chroma_h_shift)
                     ||ff_need_new_slices(avctx->height, s->num_v_slices, s->chroma_v_shift))
                     continue;
-            if (avctx->slices == s->num_h_slices * s->num_v_slices && avctx->slices <= MAX_SLICES || !avctx->slices)
+            if (avctx->slices == s->num_h_slices * s->num_v_slices && avctx->slices <= MAX_SLICES)
+                return 0;
+            if (maxw*maxh > 360*288)
+                continue;
+            if (!avctx->slices)
                 return 0;
         }
     }
