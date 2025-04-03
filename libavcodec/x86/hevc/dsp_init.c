@@ -92,7 +92,7 @@ IDCT_FUNCS(avx)
     const uint8_t *vf = ff_hevc_ ## f ## _filters[my];
 
 #define FW_PUT(p, a, b, depth, opt) \
-void ff_hevc_put_ ## a ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride,        \
+static void hevc_put_ ## a ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride,    \
                                                int height, intptr_t mx, intptr_t my,int width)               \
 {                                                                                                            \
     DECL_HV_FILTER(p)                                                                                        \
@@ -190,7 +190,7 @@ FW_QPEL_HV(16, 10, avx2)
 #endif
 
 #define mc_rep_func(name, bitd, step, W, opt) \
-void ff_hevc_put_##name##W##_##bitd##_##opt(int16_t *_dst,                                                      \
+static void hevc_put_##name##W##_##bitd##_##opt(int16_t *_dst,                                                  \
                                             const uint8_t *_src, ptrdiff_t _srcstride, int height,              \
                                             intptr_t mx, intptr_t my, int width)                                \
 {                                                                                                               \
@@ -199,7 +199,7 @@ void ff_hevc_put_##name##W##_##bitd##_##opt(int16_t *_dst,                      
     for (i = 0; i < W; i += step) {                                                                             \
         const uint8_t *src  = _src + (i * ((bitd + 7) / 8));                                                    \
         dst = _dst + i;                                                                                         \
-        ff_hevc_put_##name##step##_##bitd##_##opt(dst, src, _srcstride, height, mx, my, width);                 \
+        hevc_put_##name##step##_##bitd##_##opt(dst, src, _srcstride, height, mx, my, width);                    \
     }                                                                                                           \
 }
 #define mc_rep_uni_func(name, bitd, step, W, opt) \
@@ -238,13 +238,13 @@ void ff_hevc_put_bi_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststrid
     mc_rep_bi_func(name, bitd, step, W, opt)
 
 #define mc_rep_func2(name, bitd, step1, step2, W, opt) \
-void ff_hevc_put_##name##W##_##bitd##_##opt(int16_t *dst,                                                       \
-                                            const uint8_t *src, ptrdiff_t _srcstride, int height,               \
-                                            intptr_t mx, intptr_t my, int width)                                \
+static void hevc_put_##name##W##_##bitd##_##opt(int16_t *dst,                                                   \
+                                                const uint8_t *src, ptrdiff_t _srcstride, int height,           \
+                                                intptr_t mx, intptr_t my, int width)                            \
 {                                                                                                               \
-    ff_hevc_put_##name##step1##_##bitd##_##opt(dst, src, _srcstride, height, mx, my, width);                    \
-    ff_hevc_put_##name##step2##_##bitd##_##opt(dst + step1, src + (step1 * ((bitd + 7) / 8)),                   \
-                                               _srcstride, height, mx, my, width);                              \
+    hevc_put_##name##step1##_##bitd##_##opt(dst, src, _srcstride, height, mx, my, width);                       \
+    hevc_put_##name##step2##_##bitd##_##opt(dst + step1, src + (step1 * ((bitd + 7) / 8)),                      \
+                                            _srcstride, height, mx, my, width);                                 \
 }
 #define mc_rep_uni_func2(name, bitd, step1, step2, W, opt) \
 static void hevc_put_uni_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride,                          \
@@ -275,12 +275,12 @@ void ff_hevc_put_bi_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride
 #if ARCH_X86_64 && HAVE_SSE4_EXTERNAL
 
 #define mc_rep_mix_10(name, width1, width2, width3, opt1, opt2, width4)                                       \
-void ff_hevc_put_##name##width1##_10_##opt1(int16_t *dst, const uint8_t *src, ptrdiff_t _srcstride,           \
+static void hevc_put_##name##width1##_10_##opt1(int16_t *dst, const uint8_t *src, ptrdiff_t _srcstride,       \
                                             int height, intptr_t mx, intptr_t my, int width)                  \
                                                                                                               \
 {                                                                                                             \
-    ff_hevc_put_##name##width2##_10_##opt1(dst, src, _srcstride, height, mx, my, width);                      \
-    ff_hevc_put_##name##width3##_10_##opt2(dst+ width2, src+ width4, _srcstride, height, mx, my, width);      \
+    hevc_put_##name##width2##_10_##opt1(dst, src, _srcstride, height, mx, my, width);                         \
+    hevc_put_##name##width3##_10_##opt2(dst+ width2, src+ width4, _srcstride, height, mx, my, width);         \
 }
 
 #define mc_bi_rep_mix_10(name, width1, width2, width3, opt1, opt2, width4)                                    \
@@ -311,12 +311,12 @@ mc_bi_rep_mix_10(name, width1, width2, width3, opt1, opt2, width4)         \
 mc_uni_rep_mix_10(name, width1, width2, width3, opt1, opt2, width4)
 
 #define mc_rep_mix_8(name, width1, width2, width3, opt1, opt2)                                                \
-void ff_hevc_put_##name##width1##_8_##opt1(int16_t *dst, const uint8_t *src, ptrdiff_t _srcstride,            \
+static void hevc_put_##name##width1##_8_##opt1(int16_t *dst, const uint8_t *src, ptrdiff_t _srcstride,        \
                                            int height, intptr_t mx, intptr_t my, int width)                   \
                                                                                                               \
 {                                                                                                             \
-    ff_hevc_put_##name##width2##_8_##opt1(dst, src, _srcstride, height, mx, my, width);                       \
-    ff_hevc_put_##name##width3##_8_##opt2(dst+ width2, src+ width2, _srcstride, height, mx, my, width);       \
+    hevc_put_##name##width2##_8_##opt1(dst, src, _srcstride, height, mx, my, width);                          \
+    hevc_put_##name##width3##_8_##opt2(dst+ width2, src+ width2, _srcstride, height, mx, my, width);          \
 }
 
 #define mc_bi_rep_mix_8(name, width1, width2, width3, opt1, opt2)                                             \
@@ -615,7 +615,7 @@ static void hevc_put_uni_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _
                                                       intptr_t mx, intptr_t my, int width)          \
 {                                                                                                   \
     LOCAL_ALIGNED_16(int16_t, temp, [71 * MAX_PB_SIZE]);                                            \
-    ff_hevc_put_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);          \
+    hevc_put_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);             \
     ff_hevc_put_uni_w##W##_##bitd##_##opt(_dst, _dststride, temp, height, denom, _wx, _ox);         \
 }
 
@@ -674,7 +674,7 @@ static void hevc_put_bi_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _d
                                                      intptr_t mx, intptr_t my, int width)            \
 {                                                                                                    \
     LOCAL_ALIGNED_16(int16_t, temp, [71 * MAX_PB_SIZE]);                                             \
-    ff_hevc_put_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);           \
+    hevc_put_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);              \
     ff_hevc_put_bi_w##W##_##bitd##_##opt(_dst, _dststride, temp, _src2,                              \
                                          height, denom, _wx0, _wx1, _ox0, _ox1);                     \
 }
@@ -886,13 +886,13 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_8_avx2;
 
 #if ARCH_X86_64
-                c->put_hevc_epel[7][0][0] = ff_hevc_put_pel_pixels32_8_avx2;
-                c->put_hevc_epel[8][0][0] = ff_hevc_put_pel_pixels48_8_avx2;
-                c->put_hevc_epel[9][0][0] = ff_hevc_put_pel_pixels64_8_avx2;
+            c->put_hevc_epel[7][0][0] = hevc_put_pel_pixels32_8_avx2;
+            c->put_hevc_epel[8][0][0] = hevc_put_pel_pixels48_8_avx2;
+            c->put_hevc_epel[9][0][0] = hevc_put_pel_pixels64_8_avx2;
 
-                c->put_hevc_qpel[7][0][0] = ff_hevc_put_pel_pixels32_8_avx2;
-                c->put_hevc_qpel[8][0][0] = ff_hevc_put_pel_pixels48_8_avx2;
-                c->put_hevc_qpel[9][0][0] = ff_hevc_put_pel_pixels64_8_avx2;
+            c->put_hevc_qpel[7][0][0] = hevc_put_pel_pixels32_8_avx2;
+            c->put_hevc_qpel[8][0][0] = hevc_put_pel_pixels48_8_avx2;
+            c->put_hevc_qpel[9][0][0] = hevc_put_pel_pixels64_8_avx2;
 
             c->put_hevc_epel_uni[7][0][0] = hevc_put_uni_pel_pixels32_8_avx2;
             c->put_hevc_epel_uni[8][0][0] = hevc_put_uni_pel_pixels48_8_avx2;
@@ -910,9 +910,9 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_epel_bi[8][0][0] = ff_hevc_put_bi_pel_pixels48_8_avx2;
                 c->put_hevc_epel_bi[9][0][0] = ff_hevc_put_bi_pel_pixels64_8_avx2;
 
-                c->put_hevc_epel[7][0][1] = ff_hevc_put_epel_h32_8_avx2;
-                c->put_hevc_epel[8][0][1] = ff_hevc_put_epel_h48_8_avx2;
-                c->put_hevc_epel[9][0][1] = ff_hevc_put_epel_h64_8_avx2;
+            c->put_hevc_epel[7][0][1] = hevc_put_epel_h32_8_avx2;
+            c->put_hevc_epel[8][0][1] = hevc_put_epel_h48_8_avx2;
+            c->put_hevc_epel[9][0][1] = hevc_put_epel_h64_8_avx2;
 
             c->put_hevc_epel_uni[7][0][1] = hevc_put_uni_epel_h32_8_avx2;
             c->put_hevc_epel_uni[8][0][1] = hevc_put_uni_epel_h48_8_avx2;
@@ -922,9 +922,9 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_epel_bi[8][0][1] = ff_hevc_put_bi_epel_h48_8_avx2;
                 c->put_hevc_epel_bi[9][0][1] = ff_hevc_put_bi_epel_h64_8_avx2;
 
-                c->put_hevc_epel[7][1][0] = ff_hevc_put_epel_v32_8_avx2;
-                c->put_hevc_epel[8][1][0] = ff_hevc_put_epel_v48_8_avx2;
-                c->put_hevc_epel[9][1][0] = ff_hevc_put_epel_v64_8_avx2;
+            c->put_hevc_epel[7][1][0] = hevc_put_epel_v32_8_avx2;
+            c->put_hevc_epel[8][1][0] = hevc_put_epel_v48_8_avx2;
+            c->put_hevc_epel[9][1][0] = hevc_put_epel_v64_8_avx2;
 
             c->put_hevc_epel_uni[7][1][0] = hevc_put_uni_epel_v32_8_avx2;
             c->put_hevc_epel_uni[8][1][0] = hevc_put_uni_epel_v48_8_avx2;
@@ -934,9 +934,9 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_epel_bi[8][1][0] = ff_hevc_put_bi_epel_v48_8_avx2;
                 c->put_hevc_epel_bi[9][1][0] = ff_hevc_put_bi_epel_v64_8_avx2;
 
-                c->put_hevc_epel[7][1][1] = ff_hevc_put_epel_hv32_8_avx2;
-                c->put_hevc_epel[8][1][1] = ff_hevc_put_epel_hv48_8_avx2;
-                c->put_hevc_epel[9][1][1] = ff_hevc_put_epel_hv64_8_avx2;
+            c->put_hevc_epel[7][1][1] = hevc_put_epel_hv32_8_avx2;
+            c->put_hevc_epel[8][1][1] = hevc_put_epel_hv48_8_avx2;
+            c->put_hevc_epel[9][1][1] = hevc_put_epel_hv64_8_avx2;
 
             c->put_hevc_epel_uni[7][1][1] = hevc_put_uni_epel_hv32_8_avx2;
             c->put_hevc_epel_uni[8][1][1] = hevc_put_uni_epel_hv48_8_avx2;
@@ -946,13 +946,13 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_epel_bi[8][1][1] = ff_hevc_put_bi_epel_hv48_8_avx2;
                 c->put_hevc_epel_bi[9][1][1] = ff_hevc_put_bi_epel_hv64_8_avx2;
 
-                c->put_hevc_qpel[7][0][1] = ff_hevc_put_qpel_h32_8_avx2;
-                c->put_hevc_qpel[8][0][1] = ff_hevc_put_qpel_h48_8_avx2;
-                c->put_hevc_qpel[9][0][1] = ff_hevc_put_qpel_h64_8_avx2;
+            c->put_hevc_qpel[7][0][1] = hevc_put_qpel_h32_8_avx2;
+            c->put_hevc_qpel[8][0][1] = hevc_put_qpel_h48_8_avx2;
+            c->put_hevc_qpel[9][0][1] = hevc_put_qpel_h64_8_avx2;
 
-                c->put_hevc_qpel[7][1][0] = ff_hevc_put_qpel_v32_8_avx2;
-                c->put_hevc_qpel[8][1][0] = ff_hevc_put_qpel_v48_8_avx2;
-                c->put_hevc_qpel[9][1][0] = ff_hevc_put_qpel_v64_8_avx2;
+            c->put_hevc_qpel[7][1][0] = hevc_put_qpel_v32_8_avx2;
+            c->put_hevc_qpel[8][1][0] = hevc_put_qpel_v48_8_avx2;
+            c->put_hevc_qpel[9][1][0] = hevc_put_qpel_v64_8_avx2;
 
             c->put_hevc_qpel_uni[7][0][1] = hevc_put_uni_qpel_h32_8_avx2;
             c->put_hevc_qpel_uni[8][0][1] = hevc_put_uni_qpel_h48_8_avx2;
@@ -1059,17 +1059,17 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_10_avx2;
 
 #if ARCH_X86_64
-                c->put_hevc_epel[5][0][0] = ff_hevc_put_pel_pixels16_10_avx2;
-                c->put_hevc_epel[6][0][0] = ff_hevc_put_pel_pixels24_10_avx2;
-                c->put_hevc_epel[7][0][0] = ff_hevc_put_pel_pixels32_10_avx2;
-                c->put_hevc_epel[8][0][0] = ff_hevc_put_pel_pixels48_10_avx2;
-                c->put_hevc_epel[9][0][0] = ff_hevc_put_pel_pixels64_10_avx2;
+            c->put_hevc_epel[5][0][0] = hevc_put_pel_pixels16_10_avx2;
+            c->put_hevc_epel[6][0][0] = hevc_put_pel_pixels24_10_avx2;
+            c->put_hevc_epel[7][0][0] = hevc_put_pel_pixels32_10_avx2;
+            c->put_hevc_epel[8][0][0] = hevc_put_pel_pixels48_10_avx2;
+            c->put_hevc_epel[9][0][0] = hevc_put_pel_pixels64_10_avx2;
 
-                c->put_hevc_qpel[5][0][0] = ff_hevc_put_pel_pixels16_10_avx2;
-                c->put_hevc_qpel[6][0][0] = ff_hevc_put_pel_pixels24_10_avx2;
-                c->put_hevc_qpel[7][0][0] = ff_hevc_put_pel_pixels32_10_avx2;
-                c->put_hevc_qpel[8][0][0] = ff_hevc_put_pel_pixels48_10_avx2;
-                c->put_hevc_qpel[9][0][0] = ff_hevc_put_pel_pixels64_10_avx2;
+            c->put_hevc_qpel[5][0][0] = hevc_put_pel_pixels16_10_avx2;
+            c->put_hevc_qpel[6][0][0] = hevc_put_pel_pixels24_10_avx2;
+            c->put_hevc_qpel[7][0][0] = hevc_put_pel_pixels32_10_avx2;
+            c->put_hevc_qpel[8][0][0] = hevc_put_pel_pixels48_10_avx2;
+            c->put_hevc_qpel[9][0][0] = hevc_put_pel_pixels64_10_avx2;
 
             c->put_hevc_epel_uni[5][0][0] = hevc_put_uni_pel_pixels32_8_avx2;
             c->put_hevc_epel_uni[6][0][0] = hevc_put_uni_pel_pixels48_8_avx2;
@@ -1094,11 +1094,11 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_qpel_bi[8][0][0] = ff_hevc_put_bi_pel_pixels48_10_avx2;
                 c->put_hevc_qpel_bi[9][0][0] = ff_hevc_put_bi_pel_pixels64_10_avx2;
 
-                c->put_hevc_epel[5][0][1] = ff_hevc_put_epel_h16_10_avx2;
-                c->put_hevc_epel[6][0][1] = ff_hevc_put_epel_h24_10_avx2;
-                c->put_hevc_epel[7][0][1] = ff_hevc_put_epel_h32_10_avx2;
-                c->put_hevc_epel[8][0][1] = ff_hevc_put_epel_h48_10_avx2;
-                c->put_hevc_epel[9][0][1] = ff_hevc_put_epel_h64_10_avx2;
+            c->put_hevc_epel[5][0][1] = hevc_put_epel_h16_10_avx2;
+            c->put_hevc_epel[6][0][1] = hevc_put_epel_h24_10_avx2;
+            c->put_hevc_epel[7][0][1] = hevc_put_epel_h32_10_avx2;
+            c->put_hevc_epel[8][0][1] = hevc_put_epel_h48_10_avx2;
+            c->put_hevc_epel[9][0][1] = hevc_put_epel_h64_10_avx2;
 
             c->put_hevc_epel_uni[5][0][1] = hevc_put_uni_epel_h16_10_avx2;
             c->put_hevc_epel_uni[6][0][1] = hevc_put_uni_epel_h24_10_avx2;
@@ -1112,11 +1112,11 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_epel_bi[8][0][1] = ff_hevc_put_bi_epel_h48_10_avx2;
                 c->put_hevc_epel_bi[9][0][1] = ff_hevc_put_bi_epel_h64_10_avx2;
 
-                c->put_hevc_epel[5][1][0] = ff_hevc_put_epel_v16_10_avx2;
-                c->put_hevc_epel[6][1][0] = ff_hevc_put_epel_v24_10_avx2;
-                c->put_hevc_epel[7][1][0] = ff_hevc_put_epel_v32_10_avx2;
-                c->put_hevc_epel[8][1][0] = ff_hevc_put_epel_v48_10_avx2;
-                c->put_hevc_epel[9][1][0] = ff_hevc_put_epel_v64_10_avx2;
+            c->put_hevc_epel[5][1][0] = hevc_put_epel_v16_10_avx2;
+            c->put_hevc_epel[6][1][0] = hevc_put_epel_v24_10_avx2;
+            c->put_hevc_epel[7][1][0] = hevc_put_epel_v32_10_avx2;
+            c->put_hevc_epel[8][1][0] = hevc_put_epel_v48_10_avx2;
+            c->put_hevc_epel[9][1][0] = hevc_put_epel_v64_10_avx2;
 
             c->put_hevc_epel_uni[5][1][0] = hevc_put_uni_epel_v16_10_avx2;
             c->put_hevc_epel_uni[6][1][0] = hevc_put_uni_epel_v24_10_avx2;
@@ -1130,11 +1130,11 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_epel_bi[8][1][0] = ff_hevc_put_bi_epel_v48_10_avx2;
                 c->put_hevc_epel_bi[9][1][0] = ff_hevc_put_bi_epel_v64_10_avx2;
 
-                c->put_hevc_epel[5][1][1] = ff_hevc_put_epel_hv16_10_avx2;
-                c->put_hevc_epel[6][1][1] = ff_hevc_put_epel_hv24_10_avx2;
-                c->put_hevc_epel[7][1][1] = ff_hevc_put_epel_hv32_10_avx2;
-                c->put_hevc_epel[8][1][1] = ff_hevc_put_epel_hv48_10_avx2;
-                c->put_hevc_epel[9][1][1] = ff_hevc_put_epel_hv64_10_avx2;
+            c->put_hevc_epel[5][1][1] = hevc_put_epel_hv16_10_avx2;
+            c->put_hevc_epel[6][1][1] = hevc_put_epel_hv24_10_avx2;
+            c->put_hevc_epel[7][1][1] = hevc_put_epel_hv32_10_avx2;
+            c->put_hevc_epel[8][1][1] = hevc_put_epel_hv48_10_avx2;
+            c->put_hevc_epel[9][1][1] = hevc_put_epel_hv64_10_avx2;
 
             c->put_hevc_epel_uni[5][1][1] = hevc_put_uni_epel_hv16_10_avx2;
             c->put_hevc_epel_uni[6][1][1] = hevc_put_uni_epel_hv24_10_avx2;
@@ -1148,11 +1148,11 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_epel_bi[8][1][1] = ff_hevc_put_bi_epel_hv48_10_avx2;
                 c->put_hevc_epel_bi[9][1][1] = ff_hevc_put_bi_epel_hv64_10_avx2;
 
-                c->put_hevc_qpel[5][0][1] = ff_hevc_put_qpel_h16_10_avx2;
-                c->put_hevc_qpel[6][0][1] = ff_hevc_put_qpel_h24_10_avx2;
-                c->put_hevc_qpel[7][0][1] = ff_hevc_put_qpel_h32_10_avx2;
-                c->put_hevc_qpel[8][0][1] = ff_hevc_put_qpel_h48_10_avx2;
-                c->put_hevc_qpel[9][0][1] = ff_hevc_put_qpel_h64_10_avx2;
+            c->put_hevc_qpel[5][0][1] = hevc_put_qpel_h16_10_avx2;
+            c->put_hevc_qpel[6][0][1] = hevc_put_qpel_h24_10_avx2;
+            c->put_hevc_qpel[7][0][1] = hevc_put_qpel_h32_10_avx2;
+            c->put_hevc_qpel[8][0][1] = hevc_put_qpel_h48_10_avx2;
+            c->put_hevc_qpel[9][0][1] = hevc_put_qpel_h64_10_avx2;
 
             c->put_hevc_qpel_uni[5][0][1] = hevc_put_uni_qpel_h16_10_avx2;
             c->put_hevc_qpel_uni[6][0][1] = hevc_put_uni_qpel_h24_10_avx2;
@@ -1166,11 +1166,11 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_qpel_bi[8][0][1] = ff_hevc_put_bi_qpel_h48_10_avx2;
                 c->put_hevc_qpel_bi[9][0][1] = ff_hevc_put_bi_qpel_h64_10_avx2;
 
-                c->put_hevc_qpel[5][1][0] = ff_hevc_put_qpel_v16_10_avx2;
-                c->put_hevc_qpel[6][1][0] = ff_hevc_put_qpel_v24_10_avx2;
-                c->put_hevc_qpel[7][1][0] = ff_hevc_put_qpel_v32_10_avx2;
-                c->put_hevc_qpel[8][1][0] = ff_hevc_put_qpel_v48_10_avx2;
-                c->put_hevc_qpel[9][1][0] = ff_hevc_put_qpel_v64_10_avx2;
+            c->put_hevc_qpel[5][1][0] = hevc_put_qpel_v16_10_avx2;
+            c->put_hevc_qpel[6][1][0] = hevc_put_qpel_v24_10_avx2;
+            c->put_hevc_qpel[7][1][0] = hevc_put_qpel_v32_10_avx2;
+            c->put_hevc_qpel[8][1][0] = hevc_put_qpel_v48_10_avx2;
+            c->put_hevc_qpel[9][1][0] = hevc_put_qpel_v64_10_avx2;
 
             c->put_hevc_qpel_uni[5][1][0] = hevc_put_uni_qpel_v16_10_avx2;
             c->put_hevc_qpel_uni[6][1][0] = hevc_put_uni_qpel_v24_10_avx2;
@@ -1184,11 +1184,11 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
                 c->put_hevc_qpel_bi[8][1][0] = ff_hevc_put_bi_qpel_v48_10_avx2;
                 c->put_hevc_qpel_bi[9][1][0] = ff_hevc_put_bi_qpel_v64_10_avx2;
 
-                c->put_hevc_qpel[5][1][1] = ff_hevc_put_qpel_hv16_10_avx2;
-                c->put_hevc_qpel[6][1][1] = ff_hevc_put_qpel_hv24_10_avx2;
-                c->put_hevc_qpel[7][1][1] = ff_hevc_put_qpel_hv32_10_avx2;
-                c->put_hevc_qpel[8][1][1] = ff_hevc_put_qpel_hv48_10_avx2;
-                c->put_hevc_qpel[9][1][1] = ff_hevc_put_qpel_hv64_10_avx2;
+            c->put_hevc_qpel[5][1][1] = hevc_put_qpel_hv16_10_avx2;
+            c->put_hevc_qpel[6][1][1] = hevc_put_qpel_hv24_10_avx2;
+            c->put_hevc_qpel[7][1][1] = hevc_put_qpel_hv32_10_avx2;
+            c->put_hevc_qpel[8][1][1] = hevc_put_qpel_hv48_10_avx2;
+            c->put_hevc_qpel[9][1][1] = hevc_put_qpel_hv64_10_avx2;
 
             c->put_hevc_qpel_uni[5][1][1] = hevc_put_uni_qpel_hv16_10_avx2;
             c->put_hevc_qpel_uni[6][1][1] = hevc_put_uni_qpel_hv24_10_avx2;
