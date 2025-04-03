@@ -22,8 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_X86_HEVCDSP_H
-#define AVCODEC_X86_HEVCDSP_H
+#ifndef AVCODEC_X86_HEVC_DSP_H
+#define AVCODEC_X86_HEVC_DSP_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -186,4 +186,4 @@ void ff_hevc_add_residual_32_10_sse2(uint8_t *dst, const int16_t *res, ptrdiff_t
 void ff_hevc_add_residual_16_10_avx2(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
 void ff_hevc_add_residual_32_10_avx2(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
 
-#endif // AVCODEC_X86_HEVCDSP_H
+#endif // AVCODEC_X86_HEVC_DSP_H

@@ -27,7 +27,7 @@
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/hevc/dsp.h"
-#include "libavcodec/x86/hevcdsp.h"
+#include "libavcodec/x86/hevc/dsp.h"
 #include "libavcodec/x86/h26x/h2656dsp.h"
 
 #define LFC_FUNC(DIR, DEPTH, OPT) \
