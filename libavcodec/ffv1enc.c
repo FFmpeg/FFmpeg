@@ -577,9 +577,6 @@ int ff_ffv1_encode_determine_slices(AVCodecContext *avctx)
                 continue;
             if (maxw * maxh * (int64_t)(s->bits_per_raw_sample+1) * plane_count > 8<<24)
                 continue;
-            if (s->bits_per_raw_sample == 32)
-                if (maxw * maxh > 65536)
-                    continue;
             if (s->version < 4)
                 if (  ff_need_new_slices(avctx->width , s->num_h_slices, s->chroma_h_shift)
                     ||ff_need_new_slices(avctx->height, s->num_v_slices, s->chroma_v_shift))
@@ -1382,7 +1379,6 @@ static int encode_float32_remap_segment(FFV1SliceContext *sc,
 
     if (update) {
         sc->c = rc;
-        av_assert0(compact_index <= 65535);
         sc->remap_count[p] = compact_index + 1;
     }
     return get_rac_count(&rc);
@@ -1399,8 +1395,6 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
     const int bruteforce_count    = ((int[]){  0,  0,  0,  1,  1,   1})[f->remap_optimizer];
     const int stair_mode          = ((int[]){  0,  0,  0,  1,  0,   0})[f->remap_optimizer];
     const int magic_log2          = ((int[]){  1,  1,  1,  1,  0,   0})[f->remap_optimizer];
-
-    av_assert0 (pixel_num <= 65536);
 
     for (int p= 0; p < 1 + 2*f->chroma_planes + f->transparency; p++) {
         int best_log2_mul_count = 0;
