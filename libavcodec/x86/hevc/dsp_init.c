@@ -608,11 +608,11 @@ mc_rep_bi_w(12, 8, 48, sse4)
 mc_rep_bi_w(12, 8, 64, sse4)
 
 #define mc_uni_w_func(name, bitd, W, opt) \
-void ff_hevc_put_uni_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _dststride,              \
-                                                  const uint8_t *_src, ptrdiff_t _srcstride,        \
-                                                  int height, int denom,                            \
-                                                  int _wx, int _ox,                                 \
-                                                  intptr_t mx, intptr_t my, int width)              \
+static void hevc_put_uni_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _dststride,          \
+                                                      const uint8_t *_src, ptrdiff_t _srcstride,    \
+                                                      int height, int denom,                        \
+                                                      int _wx, int _ox,                             \
+                                                      intptr_t mx, intptr_t my, int width)          \
 {                                                                                                   \
     LOCAL_ALIGNED_16(int16_t, temp, [71 * MAX_PB_SIZE]);                                            \
     ff_hevc_put_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);          \
@@ -843,7 +843,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             }
             SAO_EDGE_INIT(8, ssse3);
         }
-        if (EXTERNAL_SSE4(cpu_flags) && ARCH_X86_64) {
+#if HAVE_SSE4_EXTERNAL && ARCH_X86_64
+        if (EXTERNAL_SSE4(cpu_flags)) {
 
             EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels,  8, sse4);
             EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,      8, sse4);
@@ -855,6 +856,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     8, sse4);
             QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    8, sse4);
         }
+#endif
         if (EXTERNAL_AVX(cpu_flags)) {
             c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_8_avx;
             c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_8_avx;
@@ -1015,7 +1017,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_10_ssse3;
             c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_10_ssse3;
         }
-        if (EXTERNAL_SSE4(cpu_flags) && ARCH_X86_64) {
+#if HAVE_SSE4_EXTERNAL && ARCH_X86_64
+        if (EXTERNAL_SSE4(cpu_flags)) {
             EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 10, sse4);
             EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,     10, sse4);
             EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v,     10, sse4);
@@ -1026,6 +1029,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     10, sse4);
             QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    10, sse4);
         }
+#endif
         if (EXTERNAL_AVX(cpu_flags)) {
             c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_avx;
             c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_10_avx;
@@ -1220,7 +1224,8 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             c->hevc_v_loop_filter_luma = ff_hevc_v_loop_filter_luma_12_ssse3;
             c->hevc_h_loop_filter_luma = ff_hevc_h_loop_filter_luma_12_ssse3;
         }
-        if (EXTERNAL_SSE4(cpu_flags) && ARCH_X86_64) {
+#if HAVE_SSE4_EXTERNAL && ARCH_X86_64
+        if (EXTERNAL_SSE4(cpu_flags)) {
             EPEL_LINKS(c->put_hevc_epel, 0, 0, pel_pixels, 12, sse4);
             EPEL_LINKS(c->put_hevc_epel, 0, 1, epel_h,     12, sse4);
             EPEL_LINKS(c->put_hevc_epel, 1, 0, epel_v,     12, sse4);
@@ -1231,6 +1236,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             QPEL_LINKS(c->put_hevc_qpel, 1, 0, qpel_v,     12, sse4);
             QPEL_LINKS(c->put_hevc_qpel, 1, 1, qpel_hv,    12, sse4);
         }
+#endif
         if (EXTERNAL_AVX(cpu_flags)) {
             c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_12_avx;
             c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_12_avx;
