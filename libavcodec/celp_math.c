@@ -24,6 +24,7 @@
 
 #include "config.h"
 #include "libavutil/avassert.h"
+#include "libavutil/float_dsp.h"
 #include "libavutil/intmath.h"
 #include "mathops.h"
 #include "celp_math.h"
@@ -107,20 +108,9 @@ int64_t ff_dot_product(const int16_t *a, const int16_t *b, int length)
     return sum;
 }
 
-float ff_dot_productf(const float* a, const float* b, int length)
-{
-    float sum = 0;
-    int i;
-
-    for(i=0; i<length; i++)
-        sum += a[i] * b[i];
-
-    return sum;
-}
-
 void ff_celp_math_init(CELPMContext *c)
 {
-    c->dot_productf   = ff_dot_productf;
+    c->dot_productf = ff_scalarproduct_float_c;
 
 #if HAVE_MIPSFPU
     ff_celp_math_init_mips(c);

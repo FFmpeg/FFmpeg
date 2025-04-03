@@ -16,8 +16,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <math.h>
+#include <stdint.h>
+
+#include "libavutil/avassert.h"
+#include "libavutil/float_dsp.h"
 #include "libavutil/libm.h"
-#include "libavcodec/celp_math.c"
+#include "libavutil/macros.h"
+
+#include "libavcodec/celp_math.h"
 
 static inline void IsAlmostEqual(float A, float B, float epsilon)
 {
@@ -36,7 +43,7 @@ int main(void)
     const int16_t i1[3] = {6,  7,  8};
     const int16_t i2[3] = {9, 10, 11};
 
-    float   r = ff_dot_productf(f1, f2, FF_ARRAY_ELEMS(f1));
+    float   r = ff_scalarproduct_float_c(f1, f2, FF_ARRAY_ELEMS(f1));
     int64_t d = ff_dot_product(i1, i2, FF_ARRAY_ELEMS(i1));
 
     IsAlmostEqual(16.94f, r, 0.000001f);

@@ -84,14 +84,4 @@ static inline unsigned bidir_sal(unsigned value, int offset)
     else           return value <<  offset;
 }
 
-/**
- * Return the dot product.
- * @param a input data array
- * @param b input data array
- * @param length number of elements
- *
- * @return dot product = sum of elementwise products
- */
-float ff_dot_productf(const float* a, const float* b, int length);
-
 #endif /* AVCODEC_CELP_MATH_H */
