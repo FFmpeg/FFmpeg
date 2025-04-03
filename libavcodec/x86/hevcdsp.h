@@ -75,7 +75,6 @@ void ff_hevc_put_uni_w##width##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride
 void ff_hevc_put_bi_w##width##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, const int16_t *_src, const int16_t *_src2, int height, int denom,  int _wx0,  int _wx1, int _ox0, int _ox1)
 
 #define WEIGHTING_PROTOTYPES(bitd, opt) \
-        WEIGHTING_PROTOTYPE(2, bitd, opt); \
         WEIGHTING_PROTOTYPE(4, bitd, opt); \
         WEIGHTING_PROTOTYPE(6, bitd, opt); \
         WEIGHTING_PROTOTYPE(8, bitd, opt); \
