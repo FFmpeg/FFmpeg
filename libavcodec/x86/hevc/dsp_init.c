@@ -217,7 +217,7 @@ static void hevc_put_uni_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dst
     }                                                                                                           \
 }
 #define mc_rep_bi_func(name, bitd, step, W, opt) \
-void ff_hevc_put_bi_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, const uint8_t *_src,         \
+static void ff_hevc_put_bi_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststride, const uint8_t *_src,  \
                                                ptrdiff_t _srcstride, const int16_t *_src2,                      \
                                                int height, intptr_t mx, intptr_t my, int width)                 \
 {                                                                                                               \
@@ -257,7 +257,7 @@ static void hevc_put_uni_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dsts
                                                    height, mx, my, width);                                      \
 }
 #define mc_rep_bi_func2(name, bitd, step1, step2, W, opt) \
-void ff_hevc_put_bi_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,           \
+static void ff_hevc_put_bi_##name##W##_##bitd##_##opt(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,    \
                                                ptrdiff_t _srcstride, const int16_t *src2,                       \
                                                int height, intptr_t mx, intptr_t my, int width)                 \
 {                                                                                                               \
@@ -284,7 +284,7 @@ static void hevc_put_##name##width1##_10_##opt1(int16_t *dst, const uint8_t *src
 }
 
 #define mc_bi_rep_mix_10(name, width1, width2, width3, opt1, opt2, width4)                                    \
-void ff_hevc_put_bi_##name##width1##_10_##opt1(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,         \
+static void ff_hevc_put_bi_##name##width1##_10_##opt1(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,  \
                                                ptrdiff_t _srcstride, const int16_t *src2,                     \
                                                int height, intptr_t mx, intptr_t my, int width)               \
 {                                                                                                             \
@@ -320,7 +320,7 @@ static void hevc_put_##name##width1##_8_##opt1(int16_t *dst, const uint8_t *src,
 }
 
 #define mc_bi_rep_mix_8(name, width1, width2, width3, opt1, opt2)                                             \
-void ff_hevc_put_bi_##name##width1##_8_##opt1(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,          \
+static void ff_hevc_put_bi_##name##width1##_8_##opt1(uint8_t *dst, ptrdiff_t dststride, const uint8_t *src,   \
                                               ptrdiff_t _srcstride, const int16_t *src2,                      \
                                               int height, intptr_t mx, intptr_t my, int width)                \
 {                                                                                                             \
