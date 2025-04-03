@@ -42,20 +42,8 @@ void BF(ff_vvc_w_avg, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,             
     const int16_t *src0, const int16_t *src1, intptr_t width, intptr_t height,                       \
     intptr_t denom, intptr_t w0, intptr_t w1,  intptr_t o0, intptr_t o1, intptr_t pixel_max);
 
-#define AVG_PROTOTYPES(bd, opt)                                                                      \
-void bf(ff_vvc_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                     \
-    const int16_t *src0, const int16_t *src1, int width, int height);                                \
-void bf(ff_vvc_w_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                   \
-    const int16_t *src0, const int16_t *src1, int width, int height,                                 \
-    int denom, int w0, int w1, int o0, int o1);
-
 AVG_BPC_PROTOTYPES( 8, avx2)
 AVG_BPC_PROTOTYPES(16, avx2)
-
-AVG_PROTOTYPES( 8, avx2)
-AVG_PROTOTYPES(10, avx2)
-AVG_PROTOTYPES(12, avx2)
-
 
 #define DMVR_PROTOTYPES(bd, opt)                                                                    \
 void ff_vvc_dmvr_##bd##_##opt(int16_t *dst, const uint8_t *src, ptrdiff_t src_stride,               \
@@ -183,12 +171,12 @@ FW_PUT_16BPC_AVX2(10)
 FW_PUT_16BPC_AVX2(12)
 
 #define AVG_FUNCS(bpc, bd, opt)                                                                     \
-void bf(ff_vvc_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                    \
+static void bf(vvc_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                \
     const int16_t *src0, const int16_t *src1, int width, int height)                                \
 {                                                                                                   \
     BF(ff_vvc_avg, bpc, opt)(dst, dst_stride, src0, src1, width, height, (1 << bd)  - 1);           \
 }                                                                                                   \
-void bf(ff_vvc_w_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                  \
+static void bf(vvc_w_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                              \
     const int16_t *src0, const int16_t *src1, int width, int height,                                \
     int denom, int w0, int w1, int o0, int o1)                                                      \
 {                                                                                                   \
@@ -293,8 +281,8 @@ ALF_FUNCS(16, 12, avx2)
     MC_TAP_LINKS_16BPC_AVX2(CHROMA, 4, bd);
 
 #define AVG_INIT(bd, opt) do {                                       \
-    c->inter.avg    = bf(ff_vvc_avg, bd, opt);                       \
-    c->inter.w_avg  = bf(ff_vvc_w_avg, bd, opt);                     \
+    c->inter.avg    = bf(vvc_avg, bd, opt);                          \
+    c->inter.w_avg  = bf(vvc_w_avg, bd, opt);                        \
 } while (0)
 
 #define DMVR_INIT(bd) do {                                           \
