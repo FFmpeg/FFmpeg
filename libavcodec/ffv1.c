@@ -236,6 +236,8 @@ av_cold void ff_ffv1_close(FFV1Context *s)
         for(int p = 0; p < 4 ; p++) {
             av_freep(&sc->fltmap[p]);
             av_freep(&sc->fltmap32[p]);
+            sc->fltmap_size  [p] = 0;
+            sc->fltmap32_size[p] = 0;
         }
 
         av_refstruct_unref(&sc->plane);

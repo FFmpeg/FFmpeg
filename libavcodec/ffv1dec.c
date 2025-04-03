@@ -254,10 +254,6 @@ static int decode_slice_header(const FFV1Context *f,
             av_log(f->avctx, AV_LOG_ERROR, "unsupported remap\n");
             return AVERROR_INVALIDDATA;
         }
-        if (sc->slice_width * sc->slice_height > 65536) {
-            av_log(f->avctx, AV_LOG_ERROR, "32bit needs remap\n");
-            return AVERROR_INVALIDDATA;
-        }
     }
 
     return 0;
@@ -288,6 +284,7 @@ static int decode_remap(FFV1Context *f, FFV1SliceContext *sc)
 {
     unsigned int end = (1LL<<f->avctx->bits_per_raw_sample) - 1;
     int flip = sc->remap == 2 ? (end>>1) : 0;
+    const int pixel_num = sc->slice_width * sc->slice_height;
 
     for (int p= 0; p < 1 + 2*f->chroma_planes + f->transparency; p++) {
         int j = 0;
@@ -326,7 +323,7 @@ static int decode_remap(FFV1Context *f, FFV1SliceContext *sc)
                 }
                 if (i - 1 >= end)
                     break;
-                if (j >= 65536 /*FF_ARRAY_ELEMS(sc->fltmap[p])*/)
+                if (j >= pixel_num)
                     return AVERROR_INVALIDDATA;
                 if (end <= 0xFFFF) {
                     sc->fltmap  [p][j++] = i ^ ((i&    0x8000) ? 0 : flip);
@@ -387,19 +384,17 @@ static int decode_slice(AVCodecContext *c, void *arg)
     y      = sc->slice_y;
 
     if (sc->remap) {
+        const int pixel_num = sc->slice_width * sc->slice_height;
+
         for(int p = 0; p < 1 + 2*f->chroma_planes + f->transparency ; p++) {
             if (f->avctx->bits_per_raw_sample == 32) {
-                if (!sc->fltmap32[p]) {
-                    sc->fltmap32[p] = av_malloc_array(65536, sizeof(*sc->fltmap32[p]));
-                    if (!sc->fltmap32[p])
-                        return AVERROR(ENOMEM);
-                }
+                av_fast_malloc(&sc->fltmap32[p], &sc->fltmap32_size[p], pixel_num * sizeof(*sc->fltmap32[p]));
+                if (!sc->fltmap32[p])
+                    return AVERROR(ENOMEM);
             } else {
-                if (!sc->fltmap[p]) {
-                    sc->fltmap[p] = av_malloc_array(65536, sizeof(*sc->fltmap[p]));
-                    if (!sc->fltmap[p])
-                        return AVERROR(ENOMEM);
-                }
+                av_fast_malloc(&sc->fltmap[p], &sc->fltmap_size[p], pixel_num * sizeof(*sc->fltmap[p]));
+                if (!sc->fltmap[p])
+                    return AVERROR(ENOMEM);
             }
         }
 

@@ -110,6 +110,8 @@ typedef struct FFV1SliceContext {
     uint16_t   *bitmap  [4]; //float encode
     uint16_t   *fltmap  [4]; //halffloat encode & decode
     uint32_t   *fltmap32[4]; //float decode
+    unsigned int fltmap_size[4];
+    unsigned int fltmap32_size[4];
     struct Unit {
         uint32_t val; //this is unneeded if you accept a dereference on each access
         uint16_t ndx;
