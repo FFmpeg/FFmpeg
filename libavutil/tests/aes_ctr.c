@@ -45,36 +45,36 @@ int main (void)
     const uint8_t *iv;
 
     for (int i = 0; i < 2; i++) {
-    ae = av_aes_ctr_alloc();
-    ad = av_aes_ctr_alloc();
+        ae = av_aes_ctr_alloc();
+        ad = av_aes_ctr_alloc();
 
-    if (!ae || !ad)
-        goto ERROR;
+        if (!ae || !ad)
+            goto ERROR;
 
-    if (av_aes_ctr_init(ae, (const uint8_t*)"0123456789abcdef") < 0)
-        goto ERROR;
+        if (av_aes_ctr_init(ae, (const uint8_t*)"0123456789abcdef") < 0)
+            goto ERROR;
 
-    if (av_aes_ctr_init(ad, (const uint8_t*)"0123456789abcdef") < 0)
-        goto ERROR;
+        if (av_aes_ctr_init(ad, (const uint8_t*)"0123456789abcdef") < 0)
+            goto ERROR;
 
         if (i)
             av_aes_ctr_set_iv(ae, fixed_iv);
         else
-    av_aes_ctr_set_random_iv(ae);
-    iv =   av_aes_ctr_get_iv(ae);
-    av_aes_ctr_set_full_iv(ad, iv);
+            av_aes_ctr_set_random_iv(ae);
+        iv =   av_aes_ctr_get_iv(ae);
+        av_aes_ctr_set_full_iv(ad, iv);
 
-    av_aes_ctr_crypt(ae, tmp, plain, sizeof(tmp));
+        av_aes_ctr_crypt(ae, tmp, plain, sizeof(tmp));
         if (i && memcmp(tmp, encrypted, sizeof(tmp)) != 0) {
             av_log(NULL, AV_LOG_ERROR, "test failed\n");
             goto ERROR;
         }
-    av_aes_ctr_crypt(ad, tmp, tmp,   sizeof(tmp));
 
-    if (memcmp(tmp, plain, sizeof(tmp)) != 0){
-        av_log(NULL, AV_LOG_ERROR, "test failed\n");
-        goto ERROR;
-    }
+        av_aes_ctr_crypt(ad, tmp, tmp,   sizeof(tmp));
+        if (memcmp(tmp, plain, sizeof(tmp)) != 0){
+            av_log(NULL, AV_LOG_ERROR, "test failed\n");
+            goto ERROR;
+        }
 
         av_aes_ctr_free(ae);
         av_aes_ctr_free(ad);
