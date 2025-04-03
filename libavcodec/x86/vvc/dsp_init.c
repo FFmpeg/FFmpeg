@@ -32,39 +32,6 @@
 
 #if ARCH_X86_64
 
-#define PUT_PROTOTYPE(name, depth, opt) \
-void ff_vvc_put_ ## name ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride, int height, const int8_t *hf, const int8_t *vf, int width);
-
-#define PUT_PROTOTYPES(name, bitd, opt) \
-        PUT_PROTOTYPE(name##2,   bitd, opt) \
-        PUT_PROTOTYPE(name##4,   bitd, opt) \
-        PUT_PROTOTYPE(name##8,   bitd, opt) \
-        PUT_PROTOTYPE(name##12,  bitd, opt) \
-        PUT_PROTOTYPE(name##16,  bitd, opt) \
-        PUT_PROTOTYPE(name##24,  bitd, opt) \
-        PUT_PROTOTYPE(name##32,  bitd, opt) \
-        PUT_PROTOTYPE(name##48,  bitd, opt) \
-        PUT_PROTOTYPE(name##64,  bitd, opt) \
-        PUT_PROTOTYPE(name##128, bitd, opt)
-
-#define PUT_BPC_PROTOTYPES(name, opt) \
-    PUT_PROTOTYPES(name,  8, opt)     \
-    PUT_PROTOTYPES(name, 10, opt)     \
-    PUT_PROTOTYPES(name, 12, opt)
-
-#define PUT_TAP_PROTOTYPES(n, opt) \
-    PUT_BPC_PROTOTYPES(n##tap_h,  opt) \
-    PUT_BPC_PROTOTYPES(n##tap_v,  opt) \
-    PUT_BPC_PROTOTYPES(n##tap_hv, opt)
-
-PUT_BPC_PROTOTYPES(pixels, sse4)
-PUT_BPC_PROTOTYPES(pixels, avx2)
-
-PUT_TAP_PROTOTYPES(4, sse4)
-PUT_TAP_PROTOTYPES(8, sse4)
-PUT_TAP_PROTOTYPES(4, avx2)
-PUT_TAP_PROTOTYPES(8, avx2)
-
 #define bf(fn, bd,  opt) fn##_##bd##_##opt
 #define BF(fn, bpc, opt) fn##_##bpc##bpc_##opt
 
@@ -156,14 +123,14 @@ ALF_PROTOTYPES(16, 10, avx2)
 ALF_PROTOTYPES(16, 12, avx2)
 
 #if ARCH_X86_64
-#if HAVE_SSE4_EXTERNAL
 #define FW_PUT(name, depth, opt) \
-void ff_vvc_put_ ## name ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride,        \
+static void vvc_put_ ## name ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride,    \
                                                  int height, const int8_t *hf, const int8_t *vf, int width)    \
 {                                                                                                              \
     ff_h2656_put_## name ## _ ## depth ## _##opt(dst, 2 * MAX_PB_SIZE, src, srcstride, height, hf, vf, width); \
 }
 
+#if HAVE_SSE4_EXTERNAL
 #define FW_PUT_TAP(fname, bitd, opt ) \
     FW_PUT(fname##4,   bitd, opt )    \
     FW_PUT(fname##8,   bitd, opt )    \
@@ -278,7 +245,7 @@ ALF_FUNCS(16, 12, avx2)
 #endif
 
 #define PEL_LINK(dst, C, W, idx1, idx2, name, D, opt)                              \
-    dst[C][W][idx1][idx2] = ff_vvc_put_## name ## _ ## D ## _##opt;                \
+    dst[C][W][idx1][idx2] = vvc_put_## name ## _ ## D ## _##opt;                   \
     dst ## _uni[C][W][idx1][idx2] = ff_h2656_put_uni_ ## name ## _ ## D ## _##opt; \
 
 #define MC_TAP_LINKS(pointer, C, my, mx, fname, bitd, opt )          \
@@ -378,9 +345,12 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
 
     switch (bd) {
     case 8:
+#if HAVE_SSE4_EXTERNAL
         if (EXTERNAL_SSE4(cpu_flags)) {
             MC_LINK_SSE4(8);
         }
+#endif
+#if HAVE_AVX2_EXTERNAL
         if (EXTERNAL_AVX2_FAST(cpu_flags)) {
             ALF_INIT(8);
             AVG_INIT(8, avx2);
@@ -389,11 +359,15 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             DMVR_INIT(8);
             SAD_INIT();
         }
+#endif
         break;
     case 10:
+#if HAVE_SSE4_EXTERNAL
         if (EXTERNAL_SSE4(cpu_flags)) {
             MC_LINK_SSE4(10);
         }
+#endif
+#if HAVE_AVX2_EXTERNAL
         if (EXTERNAL_AVX2_FAST(cpu_flags)) {
             ALF_INIT(10);
             AVG_INIT(10, avx2);
@@ -403,11 +377,15 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             DMVR_INIT(10);
             SAD_INIT();
         }
+#endif
         break;
     case 12:
+#if HAVE_SSE4_EXTERNAL
         if (EXTERNAL_SSE4(cpu_flags)) {
             MC_LINK_SSE4(12);
         }
+#endif
+#if HAVE_AVX2_EXTERNAL
         if (EXTERNAL_AVX2_FAST(cpu_flags)) {
             ALF_INIT(12);
             AVG_INIT(12, avx2);
@@ -417,6 +395,7 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             DMVR_INIT(12);
             SAD_INIT();
         }
+#endif
         break;
     default:
         break;
