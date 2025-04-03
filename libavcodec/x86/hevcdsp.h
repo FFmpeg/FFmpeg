@@ -28,15 +28,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-
-#define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
-dst[idx1][idx2][idx3] = hevc_put_ ## name ## _ ## D ## _##opt;      \
-dst ## _bi[idx1][idx2][idx3] = ff_hevc_put_bi_ ## name ## _ ## D ## _##opt;      \
-dst ## _uni[idx1][idx2][idx3] = hevc_put_uni_ ## name ## _ ## D ## _##opt;      \
-dst ## _uni_w[idx1][idx2][idx3] = hevc_put_uni_w_ ## name ## _ ## D ## _##opt;      \
-dst ## _bi_w[idx1][idx2][idx3] = hevc_put_bi_w_ ## name ## _ ## D ## _##opt
-
-
 typedef void bi_pel_func(uint8_t *_dst, ptrdiff_t _dststride,
                          const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
                          int height, intptr_t mx, intptr_t my, int width);

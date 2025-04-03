@@ -783,6 +783,13 @@ SAO_EDGE_FILTER_FUNCS(12, avx2)
     c->sao_edge_filter[4]      = ff_hevc_sao_edge_filter_64_##bitd##_##opt; \
 } while (0)
 
+#define PEL_LINK(dst, idx1, idx2, idx3, name, D, opt) \
+dst          [idx1][idx2][idx3] = hevc_put_       ## name ## _ ## D ## _##opt; \
+dst ## _bi   [idx1][idx2][idx3] = ff_hevc_put_bi_ ## name ## _ ## D ## _##opt; \
+dst ## _uni  [idx1][idx2][idx3] = hevc_put_uni_   ## name ## _ ## D ## _##opt; \
+dst ## _uni_w[idx1][idx2][idx3] = hevc_put_uni_w_ ## name ## _ ## D ## _##opt; \
+dst ## _bi_w [idx1][idx2][idx3] = hevc_put_bi_w_  ## name ## _ ## D ## _##opt
+
 #define EPEL_LINKS(pointer, my, mx, fname, bitd, opt )           \
         PEL_LINK(pointer, 1, my , mx , fname##4 ,  bitd, opt ); \
         PEL_LINK(pointer, 2, my , mx , fname##6 ,  bitd, opt ); \
