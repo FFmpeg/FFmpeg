@@ -34,14 +34,13 @@ dst[idx1][idx2][idx3] = ff_hevc_put_ ## name ## _ ## D ## _##opt;      \
 dst ## _bi[idx1][idx2][idx3] = ff_hevc_put_bi_ ## name ## _ ## D ## _##opt;      \
 dst ## _uni[idx1][idx2][idx3] = ff_hevc_put_uni_ ## name ## _ ## D ## _##opt;      \
 dst ## _uni_w[idx1][idx2][idx3] = hevc_put_uni_w_ ## name ## _ ## D ## _##opt;      \
-dst ## _bi_w[idx1][idx2][idx3] = ff_hevc_put_bi_w_ ## name ## _ ## D ## _##opt
+dst ## _bi_w[idx1][idx2][idx3] = hevc_put_bi_w_ ## name ## _ ## D ## _##opt
 
 
 #define PEL_PROTOTYPE(name, D, opt) \
 void ff_hevc_put_ ## name ## _ ## D ## _##opt(int16_t *dst, const uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my,int width);      \
 void ff_hevc_put_bi_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2, int height, intptr_t mx, intptr_t my, int width);      \
 void ff_hevc_put_uni_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride, int height, intptr_t mx, intptr_t my, int width);      \
-void ff_hevc_put_bi_w_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2, int height, int denom, int wx0, int wx1, int ox0, int ox1, intptr_t mx, intptr_t my, int width)
 
 
 ///////////////////////////////////////////////////////////////////////////////

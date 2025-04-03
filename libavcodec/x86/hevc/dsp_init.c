@@ -666,12 +666,12 @@ mc_uni_w_funcs(qpel_v, 12, sse4)
 mc_uni_w_funcs(qpel_hv, 12, sse4)
 
 #define mc_bi_w_func(name, bitd, W, opt) \
-void ff_hevc_put_bi_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _dststride,                \
-                                                 const uint8_t *_src, ptrdiff_t _srcstride,          \
-                                                 const int16_t *_src2,                               \
-                                                 int height, int denom,                              \
-                                                 int _wx0, int _wx1, int _ox0, int _ox1,             \
-                                                 intptr_t mx, intptr_t my, int width)                \
+static void hevc_put_bi_w_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t _dststride,            \
+                                                     const uint8_t *_src, ptrdiff_t _srcstride,      \
+                                                     const int16_t *_src2,                           \
+                                                     int height, int denom,                          \
+                                                     int _wx0, int _wx1, int _ox0, int _ox1,         \
+                                                     intptr_t mx, intptr_t my, int width)            \
 {                                                                                                    \
     LOCAL_ALIGNED_16(int16_t, temp, [71 * MAX_PB_SIZE]);                                             \
     ff_hevc_put_##name##W##_##bitd##_##opt(temp, _src, _srcstride, height, mx, my, width);           \
