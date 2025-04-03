@@ -570,7 +570,7 @@ int ff_ffv1_encode_determine_slices(AVCodecContext *avctx)
     s->num_v_slices = (avctx->width > 352 || avctx->height > 288 || !avctx->slices) ? 2 : 1;
     s->num_v_slices = FFMIN(s->num_v_slices, max_v_slices);
     for (; s->num_v_slices < 32; s->num_v_slices++) {
-        for (s->num_h_slices = s->num_v_slices; s->num_h_slices < 2*s->num_v_slices; s->num_h_slices++) {
+        for (s->num_h_slices = s->num_v_slices; s->num_h_slices <= 2*s->num_v_slices; s->num_h_slices++) {
             int maxw = (avctx->width  + s->num_h_slices - 1) / s->num_h_slices;
             int maxh = (avctx->height + s->num_v_slices - 1) / s->num_v_slices;
             if (s->num_h_slices > max_h_slices || s->num_v_slices > max_v_slices)
