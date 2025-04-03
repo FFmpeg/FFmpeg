@@ -68,14 +68,6 @@ void ff_acelp_lsf2lsp(int16_t *lsp, const int16_t *lsf, int lp_order);
 void ff_acelp_lsf2lspd(double *lsp, const float *lsf, int lp_order);
 
 /**
- * @brief LSP to LP conversion (3.2.6 of G.729)
- * @param[out] lp decoded LP coefficients (-0x8000 <= (3.12) < 0x8000)
- * @param lsp LSP coefficients (-0x8000 <= (0.15) < 0x8000)
- * @param lp_half_order LP filter order, divided by 2
- */
-void ff_acelp_lsp2lpc(int16_t* lp, const int16_t* lsp, int lp_half_order);
-
-/**
  * LSP to LP conversion (5.2.4 of AMR-WB)
  */
 void ff_amrwb_lsp2lpc(const double *lsp, float *lp, int lp_order);
