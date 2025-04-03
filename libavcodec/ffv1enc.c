@@ -942,7 +942,7 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
         return AVERROR(ENOSYS);
     }
     s->flt = !!(desc->flags & AV_PIX_FMT_FLAG_FLOAT);
-    if (s->flt)
+    if (s->flt || s->remap_mode > 0)
         s->version = FFMAX(s->version, 4);
     av_assert0(s->bits_per_raw_sample >= 8);
 
