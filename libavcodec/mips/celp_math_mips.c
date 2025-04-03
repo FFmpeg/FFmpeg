@@ -53,6 +53,7 @@
  */
 #include "config.h"
 #include "libavcodec/celp_math.h"
+#include "libavutil/attributes.h"
 #include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
@@ -84,7 +85,7 @@ static float ff_dot_productf_mips(const float* a, const float* b,
 #endif /* !HAVE_MIPS32R6 && !HAVE_MIPS64R6 */
 #endif /* HAVE_INLINE_ASM */
 
-void ff_celp_math_init_mips(CELPMContext *c)
+av_cold void ff_celp_math_init_mips(CELPMContext *c)
 {
 #if HAVE_INLINE_ASM
 #if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
