@@ -219,7 +219,7 @@ void refill(inout RangeCoder c)
     c.range <<= 8;
     c.low   <<= 8;
     if (c.bytestream < c.bytestream_end) {
-        c.low += u8buf(c.bytestream).v;
+        c.low |= u8buf(c.bytestream).v;
         c.bytestream++;
     } else {
         overread++;
@@ -234,11 +234,10 @@ bool get_rac(inout RangeCoder c, uint64_t state)
     int ranged = c.range + range1;
 
     bool bit = c.low >= ranged;
-    int bv = bit ? 0xFFFFFFFF : 0;
-    sb.v = zero_one_state[(bv & 0x100) + val];
+    sb.v = zero_one_state[val + (bit ? 256 : 0)];
 
-    c.low = c.low - (bv & ranged);
-    c.range = (ranged & ~bv) - (range1 & bv);
+    c.low = c.low - (bit ? ranged : 0);
+    c.range = (bit ? 0 : ranged) - (bit ? range1 : 0);
 
     if (c.range < 0x100)
         refill(c);
