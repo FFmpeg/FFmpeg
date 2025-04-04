@@ -113,13 +113,16 @@ static const AVOption options[] = {
 
     { "high_motion_quality_boost_enable",   "Enable High motion quality boost mode",  OFFSET(hw_high_motion_quality_boost), AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
 
-    // min_qp_i -> min_qp_intra, min_qp_p -> min_qp_inter
+    // min_qp_i -> min_qp_intra, min_qp_p -> min_qp_p min_qp_b -> min_qp_b
     { "min_qp_i",               "min quantization parameter for I-frame",   OFFSET(min_qp_i),                       AV_OPT_TYPE_INT, {.i64 = -1  }, -1, 255, VE },
     { "max_qp_i",               "max quantization parameter for I-frame",   OFFSET(max_qp_i),                       AV_OPT_TYPE_INT, {.i64 = -1  }, -1, 255, VE },
     { "min_qp_p",               "min quantization parameter for P-frame",   OFFSET(min_qp_p),                       AV_OPT_TYPE_INT, {.i64 = -1  }, -1, 255, VE },
     { "max_qp_p",               "max quantization parameter for P-frame",   OFFSET(max_qp_p),                       AV_OPT_TYPE_INT, {.i64 = -1  }, -1, 255, VE },
+    { "min_qp_b",               "min quantization parameter for B-frame",   OFFSET(min_qp_b),                       AV_OPT_TYPE_INT, {.i64 = -1  }, -1, 255, VE },
+    { "max_qp_b",               "max quantization parameter for B-frame",   OFFSET(max_qp_b),                       AV_OPT_TYPE_INT, {.i64 = -1  }, -1, 255, VE },
     { "qp_p",                   "quantization parameter for P-frame",       OFFSET(qp_p),                           AV_OPT_TYPE_INT, {.i64 = -1  }, -1, 255, VE },
     { "qp_i",                   "quantization parameter for I-frame",       OFFSET(qp_i),                           AV_OPT_TYPE_INT, {.i64 = -1  }, -1, 255, VE },
+    { "qp_b",                   "quantization parameter for B-frame",       OFFSET(qp_b),                           AV_OPT_TYPE_INT, {.i64 = -1  }, -1, 255, VE },
     { "skip_frame",             "Rate Control Based Frame Skip",            OFFSET(skip_frame),                     AV_OPT_TYPE_BOOL,{.i64 = -1  }, -1, 1, VE },
 
     { "aq_mode",                "adaptive quantization mode",       OFFSET(aq_mode),      AV_OPT_TYPE_INT, {.i64 = -1  }, -1, AMF_VIDEO_ENCODER_AV1_AQ_MODE_CAQ, VE , .unit = "adaptive_quantisation_mode" },
@@ -309,7 +312,8 @@ static av_cold int amf_encode_init_av1(AVCodecContext* avctx)
     if (ctx->rate_control_mode == AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_UNKNOWN) {
         if (ctx->min_qp_i != -1 || ctx->max_qp_i != -1 ||
             ctx->min_qp_p != -1 || ctx->max_qp_p != -1 ||
-            ctx->qp_i != -1 || ctx->qp_p != -1) {
+            ctx->min_qp_b != -1 || ctx->max_qp_b != -1 ||
+            ctx->qp_i != -1 || ctx->qp_p != -1 || ctx->qp_b != -1) {
             ctx->rate_control_mode = AMF_VIDEO_ENCODER_AV1_RATE_CONTROL_METHOD_CONSTANT_QP;
             av_log(ctx, AV_LOG_DEBUG, "Rate control turned to CQP\n");
         }
@@ -589,6 +593,13 @@ static av_cold int amf_encode_init_av1(AVCodecContext* avctx)
         int qval = avctx->qmin > 255 ? 255 : avctx->qmin;
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTER, qval);
     }
+    if (ctx->min_qp_b != -1) {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTER_B, ctx->min_qp_b);
+    }
+    else if (avctx->qmin != -1) {
+        int qval = avctx->qmin > 255 ? 255 : avctx->qmin;
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_MIN_Q_INDEX_INTER_B, qval);
+    }
     if (ctx->max_qp_p != -1) {
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTER, ctx->max_qp_p);
     }
@@ -596,12 +607,22 @@ static av_cold int amf_encode_init_av1(AVCodecContext* avctx)
         int qval = avctx->qmax > 255 ? 255 : avctx->qmax;
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTER, qval);
     }
+    if (ctx->max_qp_b != -1) {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTER_B, ctx->max_qp_b);
+    }
+    else if (avctx->qmax != -1) {
+        int qval = avctx->qmax > 255 ? 255 : avctx->qmax;
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_MAX_Q_INDEX_INTER_B, qval);
+    }
 
     if (ctx->qp_p != -1) {
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTER, ctx->qp_p);
     }
     if (ctx->qp_i != -1) {
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTRA, ctx->qp_i);
+    }
+    if (ctx->qp_b != -1) {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_Q_INDEX_INTER_B, ctx->qp_b);
     }
 
     if (ctx->skip_frame != -1) {

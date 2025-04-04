@@ -106,6 +106,8 @@ typedef struct AMFEncoderContext {
     int                 max_qp_i;
     int                 min_qp_p;
     int                 max_qp_p;
+    int                 min_qp_b;
+    int                 max_qp_b;
     int                 tier;
 
     // AV1 - specific options
