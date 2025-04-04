@@ -510,9 +510,6 @@ typedef struct AVCodecContext {
      *
      * After being set, the array is owned by the codec and freed in
      * avcodec_free_context().
-     *
-     * @warning the deprecated avcodec_close() function DOES NOT free this array
-     * for decoding, it must be freed manually by the caller.
      */
     uint8_t *extradata;
     int extradata_size;
@@ -1737,9 +1734,6 @@ typedef struct AVCodecContext {
      *
      * After being set, the array is owned by the codec and freed in
      * avcodec_free_context().
-     *
-     * @warning the deprecated avcodec_close() function DOES NOT free this array
-     * for encoding, it must be freed manually by the caller.
      */
     int subtitle_header_size;
     uint8_t *subtitle_header;
@@ -2941,8 +2935,8 @@ void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size);
 void av_fast_padded_mallocz(void *ptr, unsigned int *size, size_t min_size);
 
 /**
- * @return a positive value if s is open (i.e. avcodec_open2() was called on it
- * with no corresponding avcodec_close()), 0 otherwise.
+ * @return a positive value if s is open (i.e. avcodec_open2() was called on it),
+ * 0 otherwise.
  */
 int avcodec_is_open(AVCodecContext *s);
 
