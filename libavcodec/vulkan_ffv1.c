@@ -182,14 +182,11 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
     fp->crc_checked = f->ec && (avctx->err_recognition & AV_EF_CRCCHECK);
 
     /* Host map the input slices data if supported */
-    if (ctx->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY) {
-        err = ff_vk_host_map_buffer(&ctx->s, &vp->slices_buf, buffer_ref->data,
-                                    buffer_ref,
-                                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
-        if (err < 0)
-            return err;
-    }
+    if (ctx->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY)
+        ff_vk_host_map_buffer(&ctx->s, &vp->slices_buf, buffer_ref->data,
+                              buffer_ref,
+                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                              VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 
     /* Allocate slice state data */
     if (f->picture.f->flags & AV_FRAME_FLAG_KEY) {
@@ -266,16 +263,14 @@ static int vk_ffv1_decode_slice(AVCodecContext *avctx,
                                 uint32_t        size)
 {
     FFV1Context *f = avctx->priv_data;
-    FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
-    FFVulkanDecodeShared *ctx = dec->shared_ctx;
 
     FFv1VulkanDecodePicture *fp = f->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &fp->vp;
 
     FFVkBuffer *slice_offset = (FFVkBuffer *)fp->slice_offset_buf->data;
+    FFVkBuffer *slices_buf = vp->slices_buf ? (FFVkBuffer *)vp->slices_buf->data : NULL;
 
-    if (ctx->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY) {
-        FFVkBuffer *slices_buf = (FFVkBuffer *)vp->slices_buf->data;
+    if (slices_buf && slices_buf->host_ref) {
         AV_WN32(slice_offset->mapped_mem + (2*fp->slice_num + 0)*sizeof(uint32_t),
                 data - slices_buf->mapped_mem);
         AV_WN32(slice_offset->mapped_mem + (2*fp->slice_num + 1)*sizeof(uint32_t),
