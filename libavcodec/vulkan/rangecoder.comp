@@ -193,8 +193,8 @@ void rac_init(out RangeCoder r, u8buf data, uint buf_size)
 }
 
 /* Decoder */
-uint overread;
-bool corrupt;
+uint overread = 0;
+bool corrupt = false;
 
 void rac_init_dec(out RangeCoder r, u8buf data, uint buf_size)
 {
