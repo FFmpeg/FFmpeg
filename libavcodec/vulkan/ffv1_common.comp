@@ -32,8 +32,7 @@ struct SliceContext {
     ivec2 slice_dim;
     ivec2 slice_pos;
     ivec2 slice_rct_coef;
-    u8vec4 quant_table_idx;
-    uint context_count;
+    u8vec3 quant_table_idx;
 
     uint hdr_len; // only used for golomb
 

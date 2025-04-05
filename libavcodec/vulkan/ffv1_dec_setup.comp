@@ -76,7 +76,6 @@ bool decode_slice_header(inout SliceContext sc, uint64_t state)
         if (idx >= quant_table_count)
             return true;
         sc.quant_table_idx[i] = uint8_t(idx);
-        sc.context_count = context_count[idx];
     }
 
     get_usymbol(sc.c, state);

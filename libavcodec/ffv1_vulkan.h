@@ -49,9 +49,9 @@ typedef struct FFv1VkRCTParameters {
 } FFv1VkRCTParameters;
 
 typedef struct FFv1VkResetParameters {
+    uint32_t context_count[MAX_QUANT_TABLES];
     VkDeviceAddress slice_state;
     uint32_t plane_state_size;
-    uint32_t context_count;
     uint8_t codec_planes;
     uint8_t key_frame;
     uint8_t version;

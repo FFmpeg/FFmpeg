@@ -28,14 +28,15 @@ void main(void)
         slice_ctx[slice_idx].slice_reset_contexts == false)
         return;
 
+    const uint8_t qidx = slice_ctx[slice_idx].quant_table_idx[gl_WorkGroupID.z];
+    uint contexts = context_count[qidx];
     uint64_t slice_state_off = uint64_t(slice_state) +
                                slice_idx*plane_state_size*codec_planes;
 
 #ifdef GOLOMB
     uint64_t start = slice_state_off +
-                     (gl_WorkGroupID.z*context_count +
-                      gl_LocalInvocationID.x)*VLC_STATE_SIZE;
-    for (uint x = gl_LocalInvocationID.x; x < context_count; x += gl_WorkGroupSize.x) {
+                     (gl_WorkGroupID.z*(plane_state_size/VLC_STATE_SIZE) + gl_LocalInvocationID.x)*VLC_STATE_SIZE;
+    for (uint x = gl_LocalInvocationID.x; x < contexts; x += gl_WorkGroupSize.x) {
         VlcState sb = VlcState(start);
         sb.drift     =  int16_t(0);
         sb.error_sum = uint16_t(4);
@@ -45,9 +46,9 @@ void main(void)
     }
 #else
     uint64_t start = slice_state_off +
-                     (gl_WorkGroupID.z*context_count)*CONTEXT_SIZE +
+                     gl_WorkGroupID.z*plane_state_size +
                      (gl_LocalInvocationID.x << 2 /* dwords */); /* Bytes */
-    uint count_total = context_count*(CONTEXT_SIZE /* bytes */ >> 2 /* dwords */);
+    uint count_total = contexts*(CONTEXT_SIZE /* bytes */ >> 2 /* dwords */);
     for (uint x = gl_LocalInvocationID.x; x < count_total; x += gl_WorkGroupSize.x) {
         u32buf(start).v = 0x80808080;
         start += gl_WorkGroupSize.x*(CONTEXT_SIZE >> 3 /* 1/8th of context */);

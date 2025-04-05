@@ -51,8 +51,8 @@ ivec2 get_pred(ivec2 sp, ivec2 off, int p, int sw, uint8_t quant_table_idx)
         (quant_table[quant_table_idx][4][127] != 0)) {
         TYPE cur2 = TYPE(0);
         if (off.x > 0) {
-            const ivec2 yoff_border2 = off.x == 1 ? ivec2(1, -1) : ivec2(0, 0);
-            cur2 = TYPE(imageLoad(dec[p], sp + LADDR(off + ivec2(-2,  0) + yoff_border2))[0]);
+            const ivec2 yoff_border2 = off.x == 1 ? ivec2(-1, -1) : ivec2(-2, 0);
+            cur2 = TYPE(imageLoad(dec[p], sp + LADDR(off + yoff_border2))[0]);
         }
         base += quant_table[quant_table_idx][3][(cur2 - cur) & MAX_QUANT_TABLE_MASK];
 
@@ -156,7 +156,7 @@ void decode_line_pcm(inout SliceContext sc, ivec2 sp, int w, int y, int p, int b
 
 void decode_line(inout SliceContext sc, ivec2 sp, int w,
                  int y, int p, int bits, uint64_t state,
-                 const int run_index)
+                 uint8_t quant_table_idx, const int run_index)
 {
 #ifndef RGB
     if (p > 0 && p < 3) {
@@ -167,7 +167,7 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
 
     for (int x = 0; x < w; x++) {
         ivec2 pr = get_pred(sp, ivec2(x, y), p, w,
-                            sc.quant_table_idx[p]);
+                            quant_table_idx);
 
         int diff = get_isymbol(sc.c, state + CONTEXT_SIZE*abs(pr[0]));
         if (pr[0] < 0)
@@ -182,7 +182,7 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
 
 void decode_line(inout SliceContext sc, ivec2 sp, int w,
                  int y, int p, int bits, uint64_t state,
-                 inout int run_index)
+                 uint8_t quant_table_idx, inout int run_index)
 {
 #ifndef RGB
     if (p > 0 && p < 3) {
@@ -198,7 +198,7 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
         ivec2 pos = sp + ivec2(x, y);
         int diff;
         ivec2 pr = get_pred(sp, ivec2(x, y), p, w,
-                            sc.quant_table_idx[p]);
+                            quant_table_idx);
 
         VlcState sb = VlcState(state + VLC_STATE_SIZE*abs(pr[0]));
 
@@ -325,6 +325,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
     /* Arithmetic coding */
 #endif
     {
+        u8vec4 quant_table_idx = sc.quant_table_idx.xyyz;
         u64vec4 slice_state_off = (uint64_t(slice_state) +
                                    slice_idx*plane_state_size*codec_planes) +
                                   plane_state_size*uvec4(0, 1, 1, 2);
@@ -337,13 +338,13 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
 
             for (int y = 0; y < h; y++)
                 decode_line(sc, sp, w, y, p, bits,
-                            slice_state_off[p], run_index);
+                            slice_state_off[p], quant_table_idx[p], run_index);
         }
 #else
         for (int y = 0; y < sc.slice_dim.y; y++) {
             for (int p = 0; p < color_planes; p++)
                 decode_line(sc, sp, w, y, p, bits,
-                            slice_state_off[p], run_index);
+                            slice_state_off[p], quant_table_idx[p], run_index);
 
             writeout_rgb(sc, sp, w, y, true);
         }

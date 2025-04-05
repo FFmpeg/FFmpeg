@@ -49,7 +49,6 @@ typedef struct FFv1VulkanDecodePicture {
     uint32_t plane_state_size;
     uint32_t slice_state_size;
     uint32_t slice_data_size;
-    uint32_t max_context_count;
 
     AVBufferRef *slice_offset_buf;
     uint32_t    *slice_offset;
@@ -77,8 +76,6 @@ typedef struct FFv1VulkanDecodeContext {
 } FFv1VulkanDecodeContext;
 
 typedef struct FFv1VkParameters {
-    uint32_t context_count[MAX_QUANT_TABLES];
-
     VkDeviceAddress slice_data;
     VkDeviceAddress slice_state;
     VkDeviceAddress scratch_data;
@@ -111,8 +108,6 @@ typedef struct FFv1VkParameters {
 static void add_push_data(FFVulkanShader *shd)
 {
     GLSLC(0, layout(push_constant, scalar) uniform pushConstants {  );
-    GLSLF(1,    uint context_count[%i];                             ,MAX_QUANT_TABLES);
-    GLSLC(0,                                                        );
     GLSLC(1,    u8buf slice_data;                                   );
     GLSLC(1,    u8buf slice_state;                                  );
     GLSLC(1,    u8buf scratch_data;                                 );
@@ -162,13 +157,15 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
     AVHWFramesContext *hwfc = (AVHWFramesContext *)avctx->hw_frames_ctx->data;
     enum AVPixelFormat sw_format = hwfc->sw_format;
 
+    int max_contexts;
     int is_rgb = !(f->colorspace == 0 && sw_format != AV_PIX_FMT_YA8) &&
                  !(sw_format == AV_PIX_FMT_YA8);
 
     fp->slice_num = 0;
 
+    max_contexts = 0;
     for (int i = 0; i < f->quant_table_count; i++)
-        fp->max_context_count = FFMAX(f->context_count[i], fp->max_context_count);
+        max_contexts = FFMAX(f->context_count[i], max_contexts);
 
     /* Allocate slice buffer data */
     if (f->ac == AC_GOLOMB_RICE)
@@ -176,7 +173,7 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
     else
         fp->plane_state_size = CONTEXT_SIZE;
 
-    fp->plane_state_size *= fp->max_context_count;
+    fp->plane_state_size *= max_contexts;
     fp->slice_state_size = fp->plane_state_size*f->plane_count;
 
     fp->slice_data_size = 256; /* Overestimation for the SliceContext struct */
@@ -430,8 +427,6 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
 
     ff_vk_exec_bind_shader(&ctx->s, exec, &fv->setup);
     pd = (FFv1VkParameters) {
-        /* context_count */
-
         .slice_data = slices_buf->address,
         .slice_state = slice_state->address + f->slice_count*fp->slice_data_size,
         .scratch_data = tmp_data->address,
@@ -471,9 +466,6 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     else
         ff_vk_set_perm(sw_format, pd.fmt_lut, 0);
 
-    for (int i = 0; i < MAX_QUANT_TABLES; i++)
-        pd.context_count[i] = f->context_count[i];
-
     ff_vk_shader_update_push_const(&ctx->s, exec, &fv->setup,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
                                    0, sizeof(pd), &pd);
@@ -505,12 +497,14 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     pd_reset = (FFv1VkResetParameters) {
         .slice_state = slice_state->address + f->slice_count*fp->slice_data_size,
         .plane_state_size = fp->plane_state_size,
-        .context_count = fp->max_context_count,
         .codec_planes = f->plane_count,
         .key_frame = f->picture.f->flags & AV_FRAME_FLAG_KEY,
         .version = f->version,
         .micro_version = f->micro_version,
     };
+    for (int i = 0; i < f->quant_table_count; i++)
+        pd_reset.context_count[i] = f->context_count[i];
+
     ff_vk_shader_update_push_const(&ctx->s, exec, reset_shader,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
                                    0, sizeof(pd_reset), &pd_reset);
@@ -763,9 +757,9 @@ static int init_reset_shader(FFV1Context *f, FFVulkanContext *s,
     GLSLD(ff_source_common_comp);
 
     GLSLC(0, layout(push_constant, scalar) uniform pushConstants {             );
+    GLSLF(1,    uint context_count[%i];                                        ,MAX_QUANT_TABLES);
     GLSLC(1,    u8buf slice_state;                                             );
     GLSLC(1,    uint plane_state_size;                                         );
-    GLSLC(1,    uint context_count;                                            );
     GLSLC(1,    uint8_t codec_planes;                                          );
     GLSLC(1,    uint8_t key_frame;                                             );
     GLSLC(1,    uint8_t version;                                               );

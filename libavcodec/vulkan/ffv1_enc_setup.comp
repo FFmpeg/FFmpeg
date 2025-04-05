@@ -38,6 +38,7 @@ void init_slice(out SliceContext sc, const uint slice_idx)
     sc.slice_rct_coef = ivec2(1, 1);
     sc.slice_coding_mode = int(force_pcm == 1);
     sc.slice_reset_contexts = sc.slice_coding_mode == 1;
+    sc.quant_table_idx = u8vec3(context_model);
 
     rac_init(sc.c,
              OFFBUF(u8buf, out_data, slice_idx * slice_size_max),
@@ -84,7 +85,7 @@ void write_slice_header(inout SliceContext sc, uint64_t state)
     put_symbol_unsigned(sc.c, state, 0);
 
     for (int i = 0; i < codec_planes; i++)
-        put_symbol_unsigned(sc.c, state, context_model);
+        put_symbol_unsigned(sc.c, state, sc.quant_table_idx[i]);
 
     put_symbol_unsigned(sc.c, state, pic_mode);
     put_symbol_unsigned(sc.c, state, sar.x);

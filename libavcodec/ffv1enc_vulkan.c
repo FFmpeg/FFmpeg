@@ -542,10 +542,12 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
         pd_reset = (FFv1VkResetParameters) {
             .slice_state = slice_data_buf->address + f->slice_count*256,
             .plane_state_size = plane_state_size,
-            .context_count = context_count,
             .codec_planes = f->plane_count,
             .key_frame = f->key_frame,
         };
+        for (int i = 0; i < f->quant_table_count; i++)
+            pd_reset.context_count[i] = f->context_count[i];
+
         ff_vk_shader_update_push_const(&fv->s, exec, &fv->reset,
                                        VK_SHADER_STAGE_COMPUTE_BIT,
                                        0, sizeof(pd_reset), &pd_reset);
@@ -1071,9 +1073,9 @@ static int init_reset_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
     GLSLD(ff_source_common_comp);
 
     GLSLC(0, layout(push_constant, scalar) uniform pushConstants {             );
+    GLSLF(1,    uint context_count[%i];                                        ,MAX_QUANT_TABLES);
     GLSLC(1,    u8buf slice_state;                                             );
     GLSLC(1,    uint plane_state_size;                                         );
-    GLSLC(1,    uint context_count;                                            );
     GLSLC(1,    uint8_t codec_planes;                                          );
     GLSLC(1,    uint8_t key_frame;                                             );
     GLSLC(1,    uint8_t version;                                               );
