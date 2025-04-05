@@ -41,8 +41,6 @@ const FFVulkanDecodeDescriptor ff_vk_dec_ffv1_desc = {
     .queue_flags      = VK_QUEUE_COMPUTE_BIT,
 };
 
-#define HOST_MAP
-
 typedef struct FFv1VulkanDecodePicture {
     FFVulkanDecodePicture vp;
 
