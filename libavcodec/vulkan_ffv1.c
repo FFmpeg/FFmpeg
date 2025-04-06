@@ -43,8 +43,6 @@ const FFVulkanDecodeDescriptor ff_vk_dec_ffv1_desc = {
 typedef struct FFv1VulkanDecodePicture {
     FFVulkanDecodePicture vp;
 
-    AVBufferRef *tmp_data;
-
     AVBufferRef *slice_state;
     uint32_t plane_state_size;
     uint32_t slice_state_size;
@@ -70,7 +68,6 @@ typedef struct FFv1VulkanDecodeContext {
     FFVkBuffer crc_tab_buf;
 
     AVBufferPool *slice_state_pool;
-    AVBufferPool *tmp_data_pool;
     AVBufferPool *slice_offset_pool;
     AVBufferPool *slice_status_pool;
 } FFv1VulkanDecodeContext;
@@ -78,7 +75,6 @@ typedef struct FFv1VulkanDecodeContext {
 typedef struct FFv1VkParameters {
     VkDeviceAddress slice_data;
     VkDeviceAddress slice_state;
-    VkDeviceAddress scratch_data;
 
     int fmt_lut[4];
     uint32_t img_size[2];
@@ -111,7 +107,6 @@ static void add_push_data(FFVulkanShader *shd)
     GLSLC(0, layout(push_constant, scalar) uniform pushConstants {  );
     GLSLC(1,    u8buf slice_data;                                   );
     GLSLC(1,    u8buf slice_state;                                  );
-    GLSLC(1,    u8buf scratch_data;                                 );
     GLSLC(0,                                                        );
     GLSLC(1,    ivec4 fmt_lut;                                      );
     GLSLC(1,    uvec2 img_size;                                     );
@@ -207,16 +202,6 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
         if (!fp->slice_state)
             return AVERROR(ENOMEM);
     }
-
-    /* Allocate temporary data buffer */
-    err = ff_vk_get_pooled_buffer(&ctx->s, &fv->tmp_data_pool,
-                                  &fp->tmp_data,
-                                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                  NULL, f->slice_count*CONTEXT_SIZE,
-                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    if (err < 0)
-        return err;
 
     /* Allocate slice offsets buffer */
     err = ff_vk_get_pooled_buffer(&ctx->s, &fv->slice_offset_pool,
@@ -327,7 +312,6 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     FFVkBuffer *slice_offset = (FFVkBuffer *)fp->slice_offset_buf->data;
     FFVkBuffer *slice_status = (FFVkBuffer *)fp->slice_status_buf->data;
 
-    FFVkBuffer *tmp_data = (FFVkBuffer *)fp->tmp_data->data;
     VkImageView rct_image_views[AV_NUM_DATA_POINTERS];
 
     AVFrame *decode_dst = is_rgb ? vp->dpb_frame : f->picture.f;
@@ -380,8 +364,6 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     vp->slices_buf = NULL;
     RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &fp->slice_offset_buf, 1, 0));
     fp->slice_offset_buf = NULL;
-    RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &fp->tmp_data, 1, 0));
-    fp->tmp_data = NULL;
 
     /* Entry barrier for the slice state */
     buf_bar[nb_buf_bar++] = (VkBufferMemoryBarrier2) {
@@ -430,8 +412,7 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     ff_vk_exec_bind_shader(&ctx->s, exec, &fv->setup);
     pd = (FFv1VkParameters) {
         .slice_data = slices_buf->address,
-        .slice_state = slice_state->address + f->slice_count*fp->slice_data_size,
-        .scratch_data = tmp_data->address,
+        .slice_state  = slice_state->address + f->slice_count*fp->slice_data_size,
 
         .img_size[0] = f->picture.f->width,
         .img_size[1] = f->picture.f->height,
@@ -990,7 +971,6 @@ static void vk_decode_ffv1_uninit(FFVulkanDecodeShared *ctx)
     ff_vk_free_buf(&ctx->s, &fv->rangecoder_static_buf);
     ff_vk_free_buf(&ctx->s, &fv->crc_tab_buf);
 
-    av_buffer_pool_uninit(&fv->tmp_data_pool);
     av_buffer_pool_uninit(&fv->slice_state_pool);
     av_buffer_pool_uninit(&fv->slice_offset_pool);
     av_buffer_pool_uninit(&fv->slice_status_pool);
@@ -1148,7 +1128,6 @@ static void vk_ffv1_free_frame_priv(AVRefStructOpaque _hwctx, void *data)
     av_buffer_unref(&fp->slice_state);
     av_buffer_unref(&fp->slice_offset_buf);
     av_buffer_unref(&fp->slice_status_buf);
-    av_buffer_unref(&fp->tmp_data);
 }
 
 const FFHWAccel ff_ffv1_vulkan_hwaccel = {
