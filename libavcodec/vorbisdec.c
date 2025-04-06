@@ -1469,8 +1469,10 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
                             unsigned step = FASTDIV(vr->partition_size << 1, dim << 1);
                             vorbis_codebook codebook = vc->codebooks[vqbook];
 
-                            if (get_bits_left(gb) <= 0)
-                                return AVERROR_INVALIDDATA;
+                            if (get_bits_left(gb) < 0) {
+                                av_log(vc->avctx, AV_LOG_ERROR, "Overread %d bits\n", -get_bits_left(gb));
+                                return 0;
+                            }
 
                             if (vr_type == 0) {
 
