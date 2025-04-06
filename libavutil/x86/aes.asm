@@ -28,7 +28,7 @@ SECTION .text
 ;-----------------------------------------------------------------------------
 %macro AES_CRYPT 1
 cglobal aes_%1rypt, 6,6,2
-    test      r3, r3
+    test     r3d, r3d
     je .ret
     shl      r3d, 4
     add      r5d, r5d
