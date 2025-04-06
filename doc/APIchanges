@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
+2025-04-07 - 19e9a203b7 - lavu 60.01.100 - dict.h
+  Add AV_DICT_DEDUP.
+
 2025-03-17 - xxxxxxxxxx - lavu 59.60.100 - pixfmt.h
   Add AV_PIX_FMT_GBRAP32BE and AV_PIX_FMT_GBRAP32LE.
 
