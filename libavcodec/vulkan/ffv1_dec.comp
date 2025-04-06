@@ -44,15 +44,17 @@ ivec2 get_pred(ivec2 pos, ivec2 off, int p, int sw, uint8_t quant_table_idx)
 
     if ((quant_table[quant_table_idx][3][127] != 0) ||
         (quant_table[quant_table_idx][4][127] != 0)) {
+        TYPE cur2 = TYPE(0);
         if (off.x > 0 && off != ivec2(1, 0)) {
             const ivec2 yoff_border2 = off.x == 1 ? ivec2(1, -1) : ivec2(0, 0);
-            TYPE cur2 = TYPE(imageLoad(dst[p], pos + ivec2(-2,  0) + yoff_border2)[0]);
-            base += quant_table[quant_table_idx][3][(cur2 - cur) & MAX_QUANT_TABLE_MASK];
+            cur2 = TYPE(imageLoad(dst[p], pos + ivec2(-2,  0) + yoff_border2)[0]);
         }
-        if (off.y > 1) {
-            TYPE top2 = TYPE(imageLoad(dst[p], pos + ivec2(0, -2))[0]);
-            base += quant_table[quant_table_idx][4][(top2 - top[1]) & MAX_QUANT_TABLE_MASK];
-        }
+        base += quant_table[quant_table_idx][3][(cur2 - cur) & MAX_QUANT_TABLE_MASK];
+
+        TYPE top2 = TYPE(0);
+        if (off.y > 1)
+            top2 = TYPE(imageLoad(dst[p], pos + ivec2(0, -2))[0]);
+        base += quant_table[quant_table_idx][4][(top2 - top[1]) & MAX_QUANT_TABLE_MASK];
     }
 
     /* context, prediction */
