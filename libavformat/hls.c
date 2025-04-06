@@ -2591,6 +2591,7 @@ static const AVOption hls_options[] = {
         OFFSET(allowed_extensions), AV_OPT_TYPE_STRING,
         {.str = "3gp,aac,avi,ac3,eac3,flac,mkv,m3u8,m4a,m4s,m4v,mpg,mov,mp2,mp3,mp4,mpeg,mpegts,ogg,ogv,oga,ts,vob,vtt,wav,webvtt"
             ",cmfv,cmfa" // Ticket11526 www.nicovideo.jp
+            ",ec3"       // part of Ticket11435 (Elisa Viihde (Finnish online recording service))
         },
         INT_MIN, INT_MAX, FLAGS},
     {"extension_picky", "Be picky with all extensions matching",
