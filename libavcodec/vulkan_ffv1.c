@@ -88,6 +88,7 @@ typedef struct FFv1VkParameters {
     uint32_t crcref;
     int rct_offset;
 
+    uint8_t extend_lookup[8];
     uint8_t bits_per_raw_sample;
     uint8_t quant_table_count;
     uint8_t version;
@@ -120,6 +121,7 @@ static void add_push_data(FFVulkanShader *shd)
     GLSLC(1,    uint32_t crcref;                                    );
     GLSLC(1,    int rct_offset;                                     );
     GLSLC(0,                                                        );
+    GLSLC(1,    uint8_t extend_lookup[8];                           );
     GLSLC(1,    uint8_t bits_per_raw_sample;                        );
     GLSLC(1,    uint8_t quant_table_count;                          );
     GLSLC(1,    uint8_t version;                                    );
@@ -456,6 +458,10 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
         .golomb = f->ac == AC_GOLOMB_RICE,
         .check_crc = !!(avctx->err_recognition & AV_EF_CRCCHECK),
     };
+    for (int i = 0; i < f->quant_table_count; i++)
+        pd.extend_lookup[i] = (f->quant_tables[i][3][127] != 0) ||
+                              (f->quant_tables[i][4][127] != 0);
+
 
     /* For some reason the C FFv1 encoder/decoder treats these differently */
     if (sw_format == AV_PIX_FMT_GBRP10 || sw_format == AV_PIX_FMT_GBRP12 ||

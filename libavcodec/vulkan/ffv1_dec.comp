@@ -47,8 +47,7 @@ ivec2 get_pred(ivec2 sp, ivec2 off, int p, int sw, uint8_t quant_table_idx)
                quant_table[quant_table_idx][1][(top[0] - top[1]) & MAX_QUANT_TABLE_MASK] +
                quant_table[quant_table_idx][2][(top[1] - top[2]) & MAX_QUANT_TABLE_MASK];
 
-    if ((quant_table[quant_table_idx][3][127] != 0) ||
-        (quant_table[quant_table_idx][4][127] != 0)) {
+    if (extend_lookup[quant_table_idx] > 0) {
         TYPE cur2 = TYPE(0);
         if (off.x > 0) {
             const ivec2 yoff_border2 = off.x == 1 ? ivec2(-1, -1) : ivec2(-2, 0);
