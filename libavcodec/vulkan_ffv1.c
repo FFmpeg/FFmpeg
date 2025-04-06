@@ -484,8 +484,7 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
         .srcStageMask = slice_state->stage,
         .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
         .srcAccessMask = slice_state->access,
-        .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT |
-                         VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+        .dstAccessMask = VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .buffer = slice_state->buf,
@@ -534,7 +533,7 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .buffer = slice_state->buf,
         .offset = fp->slice_data_size*f->slice_count,
-        .size = slice_state->size - fp->slice_data_size*f->slice_count,
+        .size = f->slice_count*(fp->slice_state_size - fp->slice_data_size),
     };
 
     /* Input frame barrier */
