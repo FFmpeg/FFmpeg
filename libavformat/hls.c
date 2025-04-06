@@ -745,7 +745,7 @@ static int test_segment(AVFormatContext *s, const AVInputFormat *in_fmt, struct 
                  + 2*(ff_match_url_ext(seg->url, c->allowed_extensions) > 0);
 
     if (!matchA) {
-        av_log(s, AV_LOG_ERROR, "URL %s is not in allowed_extensions\n", seg->url);
+        av_log(s, AV_LOG_ERROR, "URL %s is not in allowed_extensions, consider updating hls.c and submitting a patch to ffmpeg-devel, if this should be added\n", seg->url);
         return AVERROR_INVALIDDATA;
     }
 
