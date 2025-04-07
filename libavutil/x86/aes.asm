@@ -26,13 +26,12 @@ SECTION .text
 ; void ff_aes_decrypt(AVAES *a, uint8_t *dst, const uint8_t *src,
 ;                     int count, uint8_t *iv, int rounds)
 ;-----------------------------------------------------------------------------
-%macro AES_CRYPT 1
-cglobal aes_%1rypt, 6,6,2
+%macro AES_CRYPT 2
+cglobal aes_%1rypt_%2, 5, 5, 2
     test     r3d, r3d
     je .ret
     shl      r3d, 4
-    add      r5d, r5d
-    add       r0, 0x60
+    add       r0, 0x70
     add       r2, r3
     add       r1, r3
     neg       r3
@@ -45,17 +44,15 @@ cglobal aes_%1rypt, 6,6,2
 %ifidn %1, enc
     pxor      m0, m1
 %endif
-    pxor      m0, [r0+8*r5-0x60]
-    cmp      r5d, 24
-    je .rounds12
-    jl .rounds10
-    aes%1     m0, [r0+0x70]
+    pxor      m0, [r0+8*2*%2-0x70]
+%if %2 > 10
+%if %2 > 12
     aes%1     m0, [r0+0x60]
-.rounds12:
     aes%1     m0, [r0+0x50]
+%endif
     aes%1     m0, [r0+0x40]
-.rounds10:
     aes%1     m0, [r0+0x30]
+%endif
     aes%1     m0, [r0+0x20]
     aes%1     m0, [r0+0x10]
     aes%1     m0, [r0+0x00]
@@ -64,7 +61,8 @@ cglobal aes_%1rypt, 6,6,2
     aes%1     m0, [r0-0x30]
     aes%1     m0, [r0-0x40]
     aes%1     m0, [r0-0x50]
-    aes%1last m0, [r0-0x60]
+    aes%1     m0, [r0-0x60]
+    aes%1last m0, [r0-0x70]
     test      r4, r4
     je .noiv
 %ifidn %1, enc
@@ -90,6 +88,10 @@ cglobal aes_%1rypt, 6,6,2
 
 %if HAVE_AESNI_EXTERNAL
 INIT_XMM aesni
-AES_CRYPT enc
-AES_CRYPT dec
+AES_CRYPT enc, 10
+AES_CRYPT enc, 12
+AES_CRYPT enc, 14
+AES_CRYPT dec, 10
+AES_CRYPT dec, 12
+AES_CRYPT dec, 14
 %endif

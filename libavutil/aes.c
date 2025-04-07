@@ -234,6 +234,7 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
     int KC = key_bits >> 5;
     int rounds = KC + 6;
 
+    a->rounds = rounds;
     a->crypt = decrypt ? aes_decrypt : aes_encrypt;
     if (ARCH_X86)
         ff_init_aes_x86(a, decrypt);
@@ -242,8 +243,6 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
 
     if (key_bits != 128 && key_bits != 192 && key_bits != 256)
         return AVERROR(EINVAL);
-
-    a->rounds = rounds;
 
     memcpy(tk, key, KC * 4);
     memcpy(a->round_key[0].u8, key, KC * 4);
