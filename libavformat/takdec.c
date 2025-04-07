@@ -116,7 +116,8 @@ static int tak_read_header(AVFormatContext *s)
             if (size != 19)
                 return AVERROR_INVALIDDATA;
             ffio_init_checksum(pb, tak_check_crc, 0xCE04B7U);
-            avio_read(pb, md5, 16);
+            if (avio_read(pb, md5, 16) != 16)
+                return AVERROR(EIO);
             if (ffio_get_checksum(s->pb) != avio_rb24(pb)) {
                 av_log(s, AV_LOG_ERROR, "MD5 metadata block CRC error.\n");
                 if (s->error_recognition & AV_EF_EXPLODE)
