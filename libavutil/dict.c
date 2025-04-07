@@ -99,27 +99,28 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value,
         err = AVERROR(EINVAL);
         goto err_out;
     }
+    if (flags & AV_DICT_DONT_STRDUP_KEY)
+        copy_key = (void *)key;
+    else
+        copy_key = av_strdup(key);
+    if (!copy_key || (value && !copy_value))
+        goto enomem;
+
     if (!(flags & AV_DICT_MULTIKEY)) {
         tag = av_dict_get(m, key, NULL, flags);
     } else if (flags & AV_DICT_DEDUP) {
         while ((tag = av_dict_get(m, key, tag, flags))) {
             if ((!value && !tag->value) ||
                 (value && tag->value && !strcmp(value, tag->value))) {
-                if (flags & AV_DICT_DONT_STRDUP_KEY)
-                    av_free((void*)key);
-                if (flags & AV_DICT_DONT_STRDUP_VAL)
-                    av_free((void*)value);
+                av_free(copy_key);
+                av_free(copy_value);
                 return 0;
             }
         }
     }
-    if (flags & AV_DICT_DONT_STRDUP_KEY)
-        copy_key = (void *)key;
-    else
-        copy_key = av_strdup(key);
     if (!m)
         m = *pm = av_mallocz(sizeof(*m));
-    if (!m || !copy_key || (value && !copy_value))
+    if (!m)
         goto enomem;
 
     if (tag) {
