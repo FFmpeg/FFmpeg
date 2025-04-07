@@ -1,6 +1,7 @@
 FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-aacpsdsp                                  \
                 fate-checkasm-ac3dsp                                    \
+                fate-checkasm-aes                                       \
                 fate-checkasm-af_afir                                   \
                 fate-checkasm-alacdsp                                   \
                 fate-checkasm-audiodsp                                  \
