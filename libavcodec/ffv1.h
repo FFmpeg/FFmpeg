@@ -151,6 +151,7 @@ typedef struct FFV1Context {
     int flt;
     int remap_mode;
     int remap_optimizer;
+    int maxsize_warned;
 
     int use32bit;
 

@@ -1749,7 +1749,11 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     maxsize = ff_ffv1_encode_buffer_size(avctx);
 
     if (maxsize > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE - 32) {
-        av_log(avctx, AV_LOG_WARNING, "Cannot allocate worst case packet size, the encoding could fail\n");
+        FFV1Context *f = avctx->priv_data;
+        if (!f->maxsize_warned) {
+            av_log(avctx, AV_LOG_WARNING, "Cannot allocate worst case packet size, the encoding could fail\n");
+            f->maxsize_warned++;
+        }
         maxsize = INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE - 32;
     }
 
