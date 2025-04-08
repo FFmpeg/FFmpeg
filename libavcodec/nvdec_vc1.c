@@ -22,6 +22,7 @@
 
 #include "config_components.h"
 
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "hwaccel_internal.h"
 #include "internal.h"
@@ -109,6 +110,48 @@ static int nvdec_vc1_start_frame(AVCodecContext *avctx,
     return 0;
 }
 
+static int nvdec_vc1_decode_slice(AVCodecContext *avctx, const uint8_t *buffer,
+                                  uint32_t size)
+{
+    NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
+    const VC1Context *v = avctx->priv_data;
+    uint32_t marker;
+    int marker_size;
+    void *tmp;
+
+    if (ctx->bitstream_len)
+        marker = VC1_CODE_SLICE;
+    else if (v->profile == PROFILE_ADVANCED && v->fcm == ILACE_FIELD && v->second_field)
+        marker = VC1_CODE_FIELD;
+    else
+        marker = VC1_CODE_FRAME;
+
+    /* Only insert the marker if not already present in the bitstream */
+    marker_size = (size >= sizeof(marker) && AV_RB32(buffer) != marker) ? sizeof(marker) : 0;
+
+    tmp = av_fast_realloc(ctx->bitstream_internal, &ctx->bitstream_allocated,
+                          ctx->bitstream_len + size + marker_size);
+    if (!tmp)
+        return AVERROR(ENOMEM);
+    ctx->bitstream = ctx->bitstream_internal = tmp;
+
+    tmp = av_fast_realloc(ctx->slice_offsets, &ctx->slice_offsets_allocated,
+                          (ctx->nb_slices + 1) * sizeof(*ctx->slice_offsets));
+    if (!tmp)
+        return AVERROR(ENOMEM);
+    ctx->slice_offsets = tmp;
+
+    if (marker_size)
+        AV_WB32(ctx->bitstream_internal + ctx->bitstream_len, marker);
+
+    memcpy(ctx->bitstream_internal + ctx->bitstream_len + marker_size, buffer, size);
+    ctx->slice_offsets[ctx->nb_slices] = ctx->bitstream_len;
+    ctx->bitstream_len += size + marker_size;
+    ctx->nb_slices++;
+
+    return 0;
+}
+
 static int nvdec_vc1_frame_params(AVCodecContext *avctx,
                                   AVBufferRef *hw_frames_ctx)
 {
@@ -123,7 +166,7 @@ const FFHWAccel ff_vc1_nvdec_hwaccel = {
     .p.pix_fmt            = AV_PIX_FMT_CUDA,
     .start_frame          = nvdec_vc1_start_frame,
     .end_frame            = ff_nvdec_simple_end_frame,
-    .decode_slice         = ff_nvdec_simple_decode_slice,
+    .decode_slice         = nvdec_vc1_decode_slice,
     .frame_params         = nvdec_vc1_frame_params,
     .init                 = ff_nvdec_decode_init,
     .uninit               = ff_nvdec_decode_uninit,
