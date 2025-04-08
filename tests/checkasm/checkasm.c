@@ -1196,14 +1196,8 @@ static int check_err(const char *file, int line,
     return 0;
 }
 
-#define DEF_CHECKASM_CHECK_FUNC(type, fmt) \
-int checkasm_check_##type(const char *file, int line, \
-                          const type *buf1, ptrdiff_t stride1, \
-                          const type *buf2, ptrdiff_t stride2, \
-                          int w, int h, const char *name, \
-                          int align_w, int align_h, \
-                          int padding) \
-{ \
+#define DEF_CHECKASM_CHECK_BODY(compare, type, fmt) \
+do { \
     int64_t aligned_w = (w - 1LL + align_w) & ~(align_w - 1); \
     int64_t aligned_h = (h - 1LL + align_h) & ~(align_h - 1); \
     int err = 0; \
@@ -1213,7 +1207,7 @@ int checkasm_check_##type(const char *file, int line, \
     stride1 /= sizeof(*buf1); \
     stride2 /= sizeof(*buf2); \
     for (y = 0; y < h; y++) \
-        if (memcmp(&buf1[y*stride1], &buf2[y*stride2], w*sizeof(*buf1))) \
+        if (!compare(&buf1[y*stride1], &buf2[y*stride2], w)) \
             break; \
     if (y != h) { \
         if (check_err(file, line, name, w, h, &err)) \
@@ -1235,38 +1229,50 @@ int checkasm_check_##type(const char *file, int line, \
         buf2 -= h*stride2; \
     } \
     for (y = -padding; y < 0; y++) \
-        if (memcmp(&buf1[y*stride1 - padding], &buf2[y*stride2 - padding], \
-                   (w + 2*padding)*sizeof(*buf1))) { \
+        if (!compare(&buf1[y*stride1 - padding], &buf2[y*stride2 - padding], \
+                     w + 2*padding)) { \
             if (check_err(file, line, name, w, h, &err)) \
                 return 1; \
             fprintf(stderr, " overwrite above\n"); \
             break; \
         } \
     for (y = aligned_h; y < aligned_h + padding; y++) \
-        if (memcmp(&buf1[y*stride1 - padding], &buf2[y*stride2 - padding], \
-                   (w + 2*padding)*sizeof(*buf1))) { \
+        if (!compare(&buf1[y*stride1 - padding], &buf2[y*stride2 - padding], \
+                     w + 2*padding)) { \
             if (check_err(file, line, name, w, h, &err)) \
                 return 1; \
             fprintf(stderr, " overwrite below\n"); \
             break; \
         } \
     for (y = 0; y < h; y++) \
-        if (memcmp(&buf1[y*stride1 - padding], &buf2[y*stride2 - padding], \
-                   padding*sizeof(*buf1))) { \
+        if (!compare(&buf1[y*stride1 - padding], &buf2[y*stride2 - padding], \
+                     padding)) { \
             if (check_err(file, line, name, w, h, &err)) \
                 return 1; \
             fprintf(stderr, " overwrite left\n"); \
             break; \
         } \
     for (y = 0; y < h; y++) \
-        if (memcmp(&buf1[y*stride1 + aligned_w], &buf2[y*stride2 + aligned_w], \
-                   padding*sizeof(*buf1))) { \
+        if (!compare(&buf1[y*stride1 + aligned_w], &buf2[y*stride2 + aligned_w], \
+                     padding)) { \
             if (check_err(file, line, name, w, h, &err)) \
                 return 1; \
             fprintf(stderr, " overwrite right\n"); \
             break; \
         } \
     return err; \
+} while (0)
+
+#define cmp_int(a, b, len) (!memcmp(a, b, (len) * sizeof(*(a))))
+#define DEF_CHECKASM_CHECK_FUNC(type, fmt) \
+int checkasm_check_##type(const char *file, int line, \
+                          const type *buf1, ptrdiff_t stride1, \
+                          const type *buf2, ptrdiff_t stride2, \
+                          int w, int h, const char *name, \
+                          int align_w, int align_h, \
+                          int padding) \
+{ \
+    DEF_CHECKASM_CHECK_BODY(cmp_int, type, fmt); \
 }
 
 DEF_CHECKASM_CHECK_FUNC(uint8_t,  "%02x")
@@ -1274,3 +1280,15 @@ DEF_CHECKASM_CHECK_FUNC(uint16_t, "%04x")
 DEF_CHECKASM_CHECK_FUNC(uint32_t, "%08x")
 DEF_CHECKASM_CHECK_FUNC(int16_t,  "%6d")
 DEF_CHECKASM_CHECK_FUNC(int32_t,  "%9d")
+
+int checkasm_check_float_ulp(const char *file, int line,
+                             const float *buf1, ptrdiff_t stride1,
+                             const float *buf2, ptrdiff_t stride2,
+                             int w, int h, const char *name,
+                             unsigned max_ulp, int align_w, int align_h,
+                             int padding)
+{
+    #define cmp_float(a, b, len) float_near_ulp_array(a, b, max_ulp, len)
+    DEF_CHECKASM_CHECK_BODY(cmp_float, float, "%g");
+    #undef cmp_float
+}
