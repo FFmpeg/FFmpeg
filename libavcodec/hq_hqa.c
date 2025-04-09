@@ -78,8 +78,6 @@ static int hq_decode_block(HQContext *c, GetBitContext *gb, int16_t block[64],
     const int32_t *q;
     int val, pos = 1;
 
-    memset(block, 0, 64 * sizeof(*block));
-
     if (!is_hqa) {
         block[0] = get_sbits(gb, 9) * 64;
         q = hq_quants[qsel][is_chroma][get_bits(gb, 2)];
@@ -108,6 +106,8 @@ static int hq_decode_mb(HQContext *c, AVFrame *pic,
 {
     int qgroup, flag;
     int i, ret;
+
+    memset(c->block, 0, 8 * sizeof(c->block[0]));
 
     qgroup = get_bits(gb, 4);
     flag = get_bits1(gb);
@@ -197,8 +197,7 @@ static int hqa_decode_mb(HQContext *c, AVFrame *pic, int qgroup,
     if (get_bits_left(gb) < 1)
         return AVERROR_INVALIDDATA;
 
-    for (i = 0; i < 12; i++)
-        memset(c->block[i], 0, sizeof(*c->block));
+    memset(c->block, 0, 12 * sizeof(c->block[0]));
     for (i = 0; i < 12; i++)
         c->block[i][0] = -128 * (1 << 6);
 
