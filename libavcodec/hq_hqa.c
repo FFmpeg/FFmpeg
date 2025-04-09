@@ -376,24 +376,22 @@ static int hq_hqa_decode_frame(AVCodecContext *avctx, AVFrame *pic,
 
 static av_cold void hq_init_static(void)
 {
-    VLC_INIT_STATIC_TABLE(hq_ac_rvlc, 9, NUM_HQ_AC_ENTRIES,
-                          hq_ac_bits, 1, 1, hq_ac_codes, 2, 2, 0);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(hq_ac_rvlc, 9, NUM_HQ_AC_ENTRIES,
+                                       hq_ac_lens, 1, hq_ac_sym, 2, 2, 0, 0);
 
     for (size_t i = 0; i < FF_ARRAY_ELEMS(hq_ac_rvlc); ++i) {
         int len = hq_ac_rvlc[i].len;
-        int sym = hq_ac_rvlc[i].sym, level = sym;
-        int run;
+        int sym = (int16_t)hq_ac_rvlc[i].sym, level = sym;
+
+        // The invalid code has been remapped to HQ_AC_INVALID_RUN,
+        // so the VLC is complete.
+        av_assert1(len != 0);
 
         if (len > 0) {
-            level = hq_ac_syms[sym];
-            run   = hq_ac_skips[sym] + 1;
-        } else if (len < 0) { // More bits needed
-            run   = 0;
-        } else { // Invalid code
-            run = HQ_AC_INVALID_RUN;
+            level = sym >> 7;
+            hq_ac_rvlc[i].run = sym & 0x7F;
         }
         hq_ac_rvlc[i].len8  = len;
-        hq_ac_rvlc[i].run   = run;
         hq_ac_rvlc[i].level = level;
     }
 
