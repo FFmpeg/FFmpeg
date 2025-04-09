@@ -1155,6 +1155,8 @@ static const uint8_t hq_quant_map[NUM_HQ_QUANTS][2][4] =
     { { QMAT3A, QMAT48, QMAT4C, QMAT4C }, { QMAT3B, QMAT49, QMAT4D, QMAT4D } },
 };
 
+#define HQ_AC_INVALID_RUN 128
+
 static const uint8_t hq_ac_bits[NUM_HQ_AC_ENTRIES] = {
      3,  3,  4,  4,  4,  5,  5,  5,  5,  5,  5,  6,  6,  6,  6,  6,
      6,  6,  6,  7,  7,  7,  7,  7,  7,  7,  7,  8,  8,  8,  8,  8,

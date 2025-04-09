@@ -60,7 +60,7 @@ typedef struct HQContext {
 
 static const int32_t *hq_quants[NUM_HQ_QUANTS][2][4];
 
-static VLCElem hq_ac_vlc[1184];
+static RL_VLC_ELEM hq_ac_rvlc[1184];
 
 static inline void put_blocks(HQContext *c, AVFrame *pic,
                               int plane, int x, int y, int ilace,
@@ -78,7 +78,6 @@ static int hq_decode_block(HQContext *c, GetBitContext *gb, int16_t block[64],
                            int qsel, int is_chroma, int is_hqa)
 {
     const int32_t *q;
-    int val, pos = 1;
 
     if (!is_hqa) {
         block[0] = get_sbits(gb, 9) * 64;
@@ -88,17 +87,23 @@ static int hq_decode_block(HQContext *c, GetBitContext *gb, int16_t block[64],
         block[0] = get_sbits(gb, 9) * 64;
     }
 
-    for (;;) {
-        val = get_vlc2(gb, hq_ac_vlc, 9, 2);
-        if (val < 0)
+    OPEN_READER(re, gb);
+    for (int pos = 1;;) {
+        int level, run;
+        UPDATE_CACHE(re, gb);
+        GET_RL_VLC(level, run, re, gb, hq_ac_rvlc, 9, 2, 0);
+        if (run == HQ_AC_INVALID_RUN) {
+            CLOSE_READER(re, gb);
             return AVERROR_INVALIDDATA;
+        }
 
-        pos += hq_ac_skips[val];
+        pos += run;
         if (pos >= 64)
             break;
-        block[ff_zigzag_direct[pos]] = (int)(hq_ac_syms[val] * (unsigned)q[pos]) >> 12;
+        block[ff_zigzag_direct[pos]] = (int)(level * (unsigned)q[pos]) >> 12;
         pos++;
     }
+    CLOSE_READER(re, gb);
 
     return 0;
 }
@@ -372,8 +377,26 @@ static int hq_hqa_decode_frame(AVCodecContext *avctx, AVFrame *pic,
 
 static av_cold void hq_init_static(void)
 {
-    VLC_INIT_STATIC_TABLE(hq_ac_vlc, 9, NUM_HQ_AC_ENTRIES,
+    VLC_INIT_STATIC_TABLE(hq_ac_rvlc, 9, NUM_HQ_AC_ENTRIES,
                           hq_ac_bits, 1, 1, hq_ac_codes, 2, 2, 0);
+
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(hq_ac_rvlc); ++i) {
+        int len = hq_ac_rvlc[i].len;
+        int sym = hq_ac_rvlc[i].sym, level = sym;
+        int run;
+
+        if (len > 0) {
+            level = hq_ac_syms[sym];
+            run   = hq_ac_skips[sym];
+        } else if (len < 0) { // More bits needed
+            run   = 0;
+        } else { // Invalid code
+            run = HQ_AC_INVALID_RUN;
+        }
+        hq_ac_rvlc[i].len8  = len;
+        hq_ac_rvlc[i].run   = run;
+        hq_ac_rvlc[i].level = level;
+    }
 
     for (size_t i = 0; i < FF_ARRAY_ELEMS(hq_quants); ++i) {
         for (size_t j = 0; j < FF_ARRAY_ELEMS(hq_quants[0]); ++j) {
