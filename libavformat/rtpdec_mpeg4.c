@@ -363,6 +363,7 @@ const RTPDynamicProtocolHandler ff_mpeg4_generic_dynamic_handler = {
     .enc_name           = "mpeg4-generic",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
     .codec_id           = AV_CODEC_ID_AAC,
+    .need_parsing       = AVSTREAM_PARSE_HEADERS,
     .priv_data_size     = sizeof(PayloadContext),
     .parse_sdp_a_line   = parse_sdp_line,
     .close              = close_context,
