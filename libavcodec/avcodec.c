@@ -429,9 +429,6 @@ av_cold void ff_codec_close(AVCodecContext *avctx)
 {
     int i;
 
-    if (!avctx)
-        return;
-
     if (avcodec_is_open(avctx)) {
         AVCodecInternal *avci = avctx->internal;
 
