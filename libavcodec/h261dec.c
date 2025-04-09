@@ -88,6 +88,12 @@ static av_cold int h261_decode_init(AVCodecContext *avctx)
 
     avctx->framerate = (AVRational) { 30000, 1001 };
 
+    /* The H.261 analog of intra/key frames is setting the freeze picture release flag,
+     * but this does not guarantee that the frame uses intra-only encoding,
+     * so we still need to allocate dummy frames. So set pict_type to P here
+     * for all frames and override it after having decoded the frame. */
+    s->pict_type = AV_PICTURE_TYPE_P;
+
     s->private_ctx = &h->common;
     // set defaults
     ret = ff_mpv_decode_init(s, avctx);
@@ -500,11 +506,6 @@ static int h261_decode_picture_header(H261DecContext *h, int *is_key)
     /* PEI */
     if (skip_1stop_8data_bits(&s->gb) < 0)
         return AVERROR_INVALIDDATA;
-
-    /* H.261 has no I-frames, but if we pass AV_PICTURE_TYPE_I for the first
-     * frame, the codec crashes if it does not contain all I-blocks
-     * (e.g. when a packet is lost). */
-    s->pict_type = AV_PICTURE_TYPE_P;
 
     h->gob_number = 0;
     return 0;
