@@ -32,5 +32,27 @@ color_transfer=unknown
 chroma_location=unspecified
 TAG:document_name=image_small.tiff
 TAG:page_number=    0 /     1
-TAG:software=ImageMagick 6.5.8-0 2010-02-09 Q16 http://www.imagemagick.org
+TAG:0x0129=      0,       1
+TAG:ImageWidth=    200
+TAG:ImageLength=    112
+TAG:BitsPerSample=      8,       8,       8
+TAG:Compression=      1
+TAG:PhotometricInterpretation=      2
+TAG:0x010A=      1
+TAG:0x010D=image_small.tiff
+TAG:StripOffsets=      8,    7808,   15608,   23408,   31208,   39008,   46808,   54608
+  62408
+TAG:Orientation=      1
+TAG:SamplesPerPixel=      3
+TAG:RowsPerStrip=     13
+TAG:StripByteCounts=   7800,    7800,    7800,    7800,    7800,    7800,    7800,    7800
+   4800
+TAG:XResolution=1188833536:16777216
+TAG:YResolution=1188833536:16777216
+TAG:PlanarConfiguration=      1
+TAG:ResolutionUnit=      3
+TAG:Software=ImageMagick 6.5.8-0 2010-02-09 Q16 http://www.imagemagick.org
+[SIDE_DATA]
+side_data_type=EXIF metadata
+[/SIDE_DATA]
 [/FRAME]

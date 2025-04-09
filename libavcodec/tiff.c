@@ -47,6 +47,7 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "exif_internal.h"
 #include "faxcompr.h"
 #include "lzw.h"
 #include "tiff.h"
@@ -124,6 +125,8 @@ typedef struct TiffContext {
 
     int geotag_count;
     TiffGeoTag *geotags;
+
+    AVExifMetadata exif_meta;
 } TiffContext;
 
 static const float d65_white[3] = { 0.950456f, 1.f, 1.088754f };
@@ -1937,6 +1940,12 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     int is_dng;
     int has_tile_bits, has_strip_bits;
 
+    av_exif_free(&s->exif_meta);
+    /* this will not parse the image data */
+    ret = av_exif_parse_buffer(avctx, avpkt->data, avpkt->size, &s->exif_meta, AV_EXIF_TIFF_HEADER);
+    if (ret < 0)
+        av_log(avctx, AV_LOG_ERROR, "could not parse EXIF data: %s\n", av_err2str(ret));
+
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
     // parse image header
@@ -2402,6 +2411,10 @@ again:
         }
     }
 
+    ret = ff_exif_attach_ifd(avctx, p, &s->exif_meta);
+    if (ret < 0)
+        av_log(avctx, AV_LOG_ERROR, "error attaching EXIF ifd: %s\n", av_err2str(ret));
+
     *got_frame = 1;
 
     return avpkt->size;
@@ -2450,6 +2463,7 @@ static av_cold int tiff_end(AVCodecContext *avctx)
     TiffContext *const s = avctx->priv_data;
 
     free_geotags(s);
+    av_exif_free(&s->exif_meta);
 
     ff_lzw_decode_close(&s->lzw);
     av_freep(&s->deinvert_buf);
