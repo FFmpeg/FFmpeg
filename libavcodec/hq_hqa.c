@@ -149,6 +149,9 @@ static int hq_decode_frame(HQContext *ctx, AVFrame *pic, GetByteContext *gbc,
         av_log(ctx->avctx, AV_LOG_VERBOSE, "HQ Profile %d\n", prof_num);
     }
 
+    if (bytestream2_get_bytes_left(gbc) < 3 * (profile->num_slices + 1))
+        return AVERROR_INVALIDDATA;
+
     ctx->avctx->coded_width         = FFALIGN(profile->width,  16);
     ctx->avctx->coded_height        = FFALIGN(profile->height, 16);
     ctx->avctx->width               = profile->width;
