@@ -326,11 +326,11 @@ static int hq_hqa_decode_frame(AVCodecContext *avctx, AVFrame *pic,
     unsigned int data_size;
     int ret;
 
-    bytestream2_init(gbc, avpkt->data, avpkt->size);
-    if (bytestream2_get_bytes_left(gbc) < 4 + 4) {
+    if (avpkt->size < 4 + 4) {
         av_log(avctx, AV_LOG_ERROR, "Frame is too small (%d).\n", avpkt->size);
         return AVERROR_INVALIDDATA;
     }
+    bytestream2_init(gbc, avpkt->data, avpkt->size);
 
     uint32_t info_tag = bytestream2_peek_le32u(gbc);
     if (info_tag == MKTAG('I', 'N', 'F', 'O')) {
