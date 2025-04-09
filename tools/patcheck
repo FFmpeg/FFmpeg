@@ -9,7 +9,7 @@ if [ $# = 0 ]; then
 fi
 
 GREP=grep
-EGREP=egrep
+EGREP='grep -E'
 TMP=patcheck.tmp
 OPT="-nH"
 #FILES=$($GREP '^+++' $* | sed 's/+++ //g')
