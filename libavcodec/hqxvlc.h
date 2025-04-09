@@ -28,7 +28,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/macros.h"
 
-#define HQX_CBP_VLC_BITS 5
 #define HQX_DC_VLC_BITS 9
 
 enum HQXACMode {
@@ -45,15 +44,6 @@ typedef struct HQXAC {
     int bits;
     const RL_VLC_ELEM *lut;
 } HQXAC;
-
-static const uint8_t cbp_vlc_bits[16] = {
-    0x04, 0x1C, 0x1D, 0x09, 0x1E, 0x0B, 0x1B, 0x08,
-    0x1F, 0x1A, 0x0C, 0x07, 0x0A, 0x06, 0x05, 0x00,
-};
-
-static const uint8_t cbp_vlc_lens[16] = {
-    4, 5, 5, 4, 5, 4, 5, 4, 5, 5, 4, 4, 4, 4, 4, 2,
-};
 
 static const uint16_t dc9_vlc_bits[512] = {
     0x0010, 0x0008, 0x0022, 0x0024, 0x0026, 0x0028, 0x002A, 0x002C,
@@ -1529,11 +1519,10 @@ static const uint8_t hqx_ac_lens[] = {
 
 static const uint16_t hqx_ac_nb_elems[] = { 815, 907, 512, 354, 257, 194 };
 
-static VLCElem cbp_vlc[(1 << HQX_CBP_VLC_BITS) + 896 /* dc9 */ + 1344 /* dc10 */
+static VLCElem cbp_vlc[896 /* dc9 */ + 1344 /* dc10 */
                        + 15630 /* RL_VLC_ELEMS for hqx_ac */];
 
 static const VLCElem *dc_vlc[2];
-
 #define INIT_DC_TABLE(idx, name)                                              \
     do {                                                                      \
          dc_vlc[idx] = ff_vlc_init_tables(&state, HQX_DC_VLC_BITS,            \
@@ -1547,9 +1536,6 @@ static av_cold av_unused void hqx_init_static(void)
     VLCInitState state = VLC_INIT_STATE(cbp_vlc);
     const uint8_t *lens = hqx_ac_lens;
     const int16_t *run_level = hqx_ac_run_level;
-
-    ff_vlc_init_tables(&state, HQX_CBP_VLC_BITS, FF_ARRAY_ELEMS(cbp_vlc_lens),
-                       cbp_vlc_lens, 1, 1, cbp_vlc_bits, 1, 1, 0);
 
     INIT_DC_TABLE(0, dc9);
     INIT_DC_TABLE(1, dc10);

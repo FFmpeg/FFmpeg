@@ -30,6 +30,7 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "get_bits.h"
+#include "hq_common.h"
 #include "hq_hqadata.h"
 #include "hq_hqadsp.h"
 #include "vlc.h"
@@ -58,7 +59,6 @@ typedef struct HQContext {
 } HQContext;
 
 static VLCElem hq_ac_vlc[1184];
-static VLCElem hqa_cbp_vlc[32];
 
 static inline void put_blocks(HQContext *c, AVFrame *pic,
                               int plane, int x, int y, int ilace,
@@ -192,18 +192,17 @@ static int hqa_decode_mb(HQContext *c, AVFrame *pic, int qgroup,
                          GetBitContext *gb, int x, int y)
 {
     int flag = 0;
-    int i, ret, cbp;
+    int i, ret;
 
     if (get_bits_left(gb) < 1)
         return AVERROR_INVALIDDATA;
-
-    cbp = get_vlc2(gb, hqa_cbp_vlc, 5, 1);
 
     for (i = 0; i < 12; i++)
         memset(c->block[i], 0, sizeof(*c->block));
     for (i = 0; i < 12; i++)
         c->block[i][0] = -128 * (1 << 6);
 
+    int cbp = get_vlc2(gb, ff_hq_cbp_vlc, HQ_CBP_VLC_BITS, 1);
     if (cbp) {
         flag = get_bits1(gb);
 
@@ -373,9 +372,6 @@ static int hq_hqa_decode_frame(AVCodecContext *avctx, AVFrame *pic,
 
 static av_cold void hq_init_vlcs(void)
 {
-    VLC_INIT_STATIC_TABLE(hqa_cbp_vlc, 5, FF_ARRAY_ELEMS(cbp_vlc_lens),
-                          cbp_vlc_lens, 1, 1, cbp_vlc_bits, 1, 1, 0);
-
     VLC_INIT_STATIC_TABLE(hq_ac_vlc, 9, NUM_HQ_AC_ENTRIES,
                           hq_ac_bits, 1, 1, hq_ac_codes, 2, 2, 0);
 }

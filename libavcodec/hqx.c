@@ -35,6 +35,7 @@
 
 #include "hqxdsp.h"
 #include "hqxvlc.h"
+#include "hq_common.h"
 
 /* HQX has four modes - 422, 444, 422alpha and 444alpha - all 12-bit */
 enum HQXFormat {
@@ -219,13 +220,12 @@ static int hqx_decode_422a(HQXContext *ctx, int slice_no, int x, int y)
     int flag = 0;
     int last_dc;
     int i, ret;
-    int cbp;
 
     memset(slice->block, 0, sizeof(*slice->block) * 12);
     for (i = 0; i < 12; i++)
         slice->block[i][0] = -0x800;
 
-    cbp = get_vlc2(gb, cbp_vlc, HQX_CBP_VLC_BITS, 1);
+    int cbp = get_vlc2(gb, ff_hq_cbp_vlc, HQ_CBP_VLC_BITS, 1);
     if (cbp) {
         const unsigned *quants;
 
@@ -305,13 +305,12 @@ static int hqx_decode_444a(HQXContext *ctx, int slice_no, int x, int y)
     int flag = 0;
     int last_dc;
     int i, ret;
-    int cbp;
 
     memset(slice->block, 0, sizeof(*slice->block) * 16);
     for (i = 0; i < 16; i++)
         slice->block[i][0] = -0x800;
 
-    cbp = get_vlc2(gb, cbp_vlc, HQX_CBP_VLC_BITS, 1);
+    int cbp = get_vlc2(gb, ff_hq_cbp_vlc, HQ_CBP_VLC_BITS, 1);
     if (cbp) {
         const unsigned *quants;
 
