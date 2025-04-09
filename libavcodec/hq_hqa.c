@@ -206,7 +206,6 @@ static int hqa_decode_mb(HQContext *c, AVFrame *pic, int qgroup,
     if (cbp) {
         flag = get_bits1(gb);
 
-        cbp |= cbp << 4;
         if (cbp & 0x3)
             cbp |= 0x500;
         if (cbp & 0xC)

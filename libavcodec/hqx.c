@@ -234,7 +234,6 @@ static int hqx_decode_422a(HQXContext *ctx, int slice_no, int x, int y)
 
         quants = hqx_quants[get_bits(gb, 4)];
 
-        cbp |= cbp << 4; // alpha CBP
         if (cbp & 0x3)   // chroma CBP - top
             cbp |= 0x500;
         if (cbp & 0xC)   // chroma CBP - bottom
@@ -319,7 +318,6 @@ static int hqx_decode_444a(HQXContext *ctx, int slice_no, int x, int y)
 
         quants = hqx_quants[get_bits(gb, 4)];
 
-        cbp |= cbp << 4; // alpha CBP
         cbp |= cbp << 8; // chroma CBP
         for (i = 0; i < 16; i++) {
             if (!(i & 3))

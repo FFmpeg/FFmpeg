@@ -19,7 +19,7 @@
 #include "hq_common.h"
 
 #define REPEAT(x) x x
-#define ELEM(_sym, _len) {.sym = _sym, .len = _len },
+#define ELEM(_sym, _len) {.sym = _sym << 4 | _sym, .len = _len },
 #define LEN5(sym) ELEM(sym, 5)
 #define LEN4(sym) REPEAT(ELEM(sym, 4))
 #define LEN2(sym) REPEAT(REPEAT(REPEAT(ELEM(sym, 2))))
