@@ -88,7 +88,7 @@ static int hq_decode_block(HQContext *c, GetBitContext *gb, int16_t block[64],
     }
 
     OPEN_READER(re, gb);
-    for (int pos = 1;;) {
+    for (int pos = 0;;) {
         int level, run;
         UPDATE_CACHE(re, gb);
         GET_RL_VLC(level, run, re, gb, hq_ac_rvlc, 9, 2, 0);
@@ -101,7 +101,6 @@ static int hq_decode_block(HQContext *c, GetBitContext *gb, int16_t block[64],
         if (pos >= 64)
             break;
         block[ff_zigzag_direct[pos]] = (int)(level * (unsigned)q[pos]) >> 12;
-        pos++;
     }
     CLOSE_READER(re, gb);
 
@@ -387,7 +386,7 @@ static av_cold void hq_init_static(void)
 
         if (len > 0) {
             level = hq_ac_syms[sym];
-            run   = hq_ac_skips[sym];
+            run   = hq_ac_skips[sym] + 1;
         } else if (len < 0) { // More bits needed
             run   = 0;
         } else { // Invalid code
