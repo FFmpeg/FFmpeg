@@ -25,7 +25,6 @@
  * H.261 decoder.
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
 #include "codec_internal.h"
@@ -458,7 +457,7 @@ intra:
  * Decode the H.261 picture header.
  * @return <0 if no startcode found
  */
-static int h261_decode_picture_header(H261DecContext *h)
+static int h261_decode_picture_header(H261DecContext *h, int *is_key)
 {
     MpegEncContext *const s = &h->s;
     int format, i;
@@ -482,7 +481,7 @@ static int h261_decode_picture_header(H261DecContext *h)
     /* PTYPE starts here */
     skip_bits1(&s->gb); /* split screen off */
     skip_bits1(&s->gb); /* camera  off */
-    skip_bits1(&s->gb); /* freeze picture release off */
+    *is_key = get_bits1(&s->gb); /* freeze picture release off */
 
     format = get_bits1(&s->gb);
 
@@ -545,7 +544,7 @@ static int h261_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     MpegEncContext *s  = &h->s;
-    int ret;
+    int ret, is_key;
 
     ff_dlog(avctx, "*****frame %"PRId64" size=%d\n", avctx->frame_num, buf_size);
     ff_dlog(avctx, "bytes=%x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
@@ -554,7 +553,7 @@ static int h261_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
     init_get_bits(&s->gb, buf, buf_size * 8);
 
-    ret = h261_decode_picture_header(h);
+    ret = h261_decode_picture_header(h, &is_key);
 
     /* skip if the header was thrashed */
     if (ret < 0) {
@@ -575,7 +574,7 @@ static int h261_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             return ret;
     }
 
-    if ((avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type != AV_PICTURE_TYPE_I) ||
+    if ((avctx->skip_frame >= AVDISCARD_NONINTRA && !is_key) ||
          avctx->skip_frame >= AVDISCARD_ALL)
         return buf_size;
 
@@ -595,7 +594,10 @@ static int h261_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     }
     ff_mpv_frame_end(s);
 
-    av_assert0(s->pict_type == s->cur_pic.ptr->f->pict_type);
+    if (is_key) {
+        s->cur_pic.ptr->f->pict_type = AV_PICTURE_TYPE_I;
+        s->cur_pic.ptr->f->flags    |= AV_FRAME_FLAG_KEY;
+    }
 
     if ((ret = av_frame_ref(pict, s->cur_pic.ptr->f)) < 0)
         return ret;
