@@ -58,6 +58,8 @@ typedef struct HQContext {
     DECLARE_ALIGNED(16, int16_t, block)[12][64];
 } HQContext;
 
+static const int32_t *hq_quants[NUM_HQ_QUANTS][2][4];
+
 static VLCElem hq_ac_vlc[1184];
 
 static inline void put_blocks(HQContext *c, AVFrame *pic,
@@ -368,10 +370,17 @@ static int hq_hqa_decode_frame(AVCodecContext *avctx, AVFrame *pic,
     return avpkt->size;
 }
 
-static av_cold void hq_init_vlcs(void)
+static av_cold void hq_init_static(void)
 {
     VLC_INIT_STATIC_TABLE(hq_ac_vlc, 9, NUM_HQ_AC_ENTRIES,
                           hq_ac_bits, 1, 1, hq_ac_codes, 2, 2, 0);
+
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(hq_quants); ++i) {
+        for (size_t j = 0; j < FF_ARRAY_ELEMS(hq_quants[0]); ++j) {
+            for (size_t k = 0; k < FF_ARRAY_ELEMS(hq_quants[0][0]); ++k)
+                hq_quants[i][j][k] = qmats[hq_quant_map[i][j][k]];
+        }
+    }
 }
 
 static av_cold int hq_hqa_decode_init(AVCodecContext *avctx)
@@ -382,7 +391,7 @@ static av_cold int hq_hqa_decode_init(AVCodecContext *avctx)
 
     ff_hqdsp_init(&ctx->hqhqadsp);
 
-    ff_thread_once(&init_static_once, hq_init_vlcs);
+    ff_thread_once(&init_static_once, hq_init_static);
 
     return 0;
 }
