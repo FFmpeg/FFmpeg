@@ -25,6 +25,7 @@
 #include "config.h"
 #include "aes.h"
 #include "aes_internal.h"
+#include "attributes.h"
 #include "error.h"
 #include "intreadwrite.h"
 #include "macros.h"
@@ -200,7 +201,7 @@ static void init_multbl2(uint32_t tbl[][256], const int c[4],
 
 static AVOnce aes_static_init = AV_ONCE_INIT;
 
-static void aes_init_static(void)
+static av_cold void aes_init_static(void)
 {
     uint8_t log8[256];
     uint8_t alog8[512];
