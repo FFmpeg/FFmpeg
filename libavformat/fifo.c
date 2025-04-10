@@ -106,6 +106,9 @@ typedef struct FifoThreadContext {
     uint8_t header_written;
 
     int64_t last_received_dts;
+
+    /* If > 0 at least one of the streams is a video stream */
+    uint8_t has_video_stream;
 } FifoThreadContext;
 
 typedef enum FifoMessageType {
@@ -185,14 +188,26 @@ static int fifo_thread_write_packet(FifoThreadContext *ctx, AVPacket *pkt)
     AVRational src_tb, dst_tb;
     int ret, s_idx;
     int64_t orig_pts, orig_dts, orig_duration;
+    enum AVMediaType stream_codec_type = avf->streams[pkt->stream_index]->codecpar->codec_type;
 
     if (fifo->timeshift && pkt->dts != AV_NOPTS_VALUE)
         atomic_fetch_sub_explicit(&fifo->queue_duration, next_duration(avf, pkt, &ctx->last_received_dts), memory_order_relaxed);
 
     if (ctx->drop_until_keyframe) {
         if (pkt->flags & AV_PKT_FLAG_KEY) {
-            ctx->drop_until_keyframe = 0;
-            av_log(avf, AV_LOG_VERBOSE, "Keyframe received, recovering...\n");
+            if (!ctx->has_video_stream) {
+                ctx->drop_until_keyframe = 0;
+                av_log(avf, AV_LOG_VERBOSE, "Keyframe received, recovering...\n");
+            } else {
+                if (stream_codec_type == AVMEDIA_TYPE_VIDEO) {
+                    ctx->drop_until_keyframe = 0;
+                    av_log(avf, AV_LOG_VERBOSE, "Video keyframe received, recovering...\n");
+                } else {
+                    av_log(avf, AV_LOG_VERBOSE, "Dropping non-video keyframe\n");
+                    av_packet_unref(pkt);
+                    return 0;
+                }
+            }
         } else {
             av_log(avf, AV_LOG_VERBOSE, "Dropping non-keyframe packet\n");
             av_packet_unref(pkt);
@@ -425,7 +440,7 @@ static void *fifo_consumer_thread(void *data)
     FifoContext *fifo = avf->priv_data;
     AVThreadMessageQueue *queue = fifo->queue;
     FifoMessage msg = {fifo->timeshift ? FIFO_NOOP : FIFO_WRITE_HEADER, {0}};
-    int ret;
+    int ret, i;
 
     FifoThreadContext fifo_thread_ctx;
     memset(&fifo_thread_ctx, 0, sizeof(FifoThreadContext));
@@ -433,6 +448,13 @@ static void *fifo_consumer_thread(void *data)
     fifo_thread_ctx.last_received_dts = AV_NOPTS_VALUE;
 
     ff_thread_setname("fifo-consumer");
+
+    for (i = 0; i < avf->nb_streams; i++) {
+        if (avf->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            fifo_thread_ctx.has_video_stream = 1;
+            break;
+        }
+    }
 
     while (1) {
         uint8_t just_flushed = 0;
