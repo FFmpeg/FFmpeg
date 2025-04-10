@@ -1235,14 +1235,13 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     }
 
     /* Samplerate */
-    for (i = 0; i < 16; i++)
-        if (avctx->sample_rate == ff_mpeg4audio_sample_rates[i])
+    for (int i = 0;; i++) {
+        av_assert1(i < 13);
+        if (avctx->sample_rate == ff_mpeg4audio_sample_rates[i]) {
+            s->samplerate_index = i;
             break;
-    s->samplerate_index = i;
-    ERROR_IF(s->samplerate_index == 16 ||
-             s->samplerate_index >= ff_aac_swb_size_1024_len ||
-             s->samplerate_index >= ff_aac_swb_size_128_len,
-             "Unsupported sample rate %d\n", avctx->sample_rate);
+        }
+    }
 
     /* Bitrate limiting */
     WARN_IF(1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * s->channels,

@@ -103,6 +103,3 @@ const uint8_t *const ff_aac_swb_size_1024[] = {
     swb_size_1024_16, swb_size_1024_16, swb_size_1024_8,
     swb_size_1024_8
 };
-
-const int ff_aac_swb_size_128_len  = FF_ARRAY_ELEMS(ff_aac_swb_size_128);
-const int ff_aac_swb_size_1024_len = FF_ARRAY_ELEMS(ff_aac_swb_size_1024);
