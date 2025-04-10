@@ -271,8 +271,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
     }
 
-    if ((ret = ff_alloc_packet(avctx, pkt, c->mb_height * c->mb_width * MAX_MB_SIZE +
-                               FF_INPUT_BUFFER_MIN_SIZE)) < 0)
+    ret = ff_alloc_packet(avctx, pkt, c->mb_height * c->mb_width * MAX_MB_SIZE + 3);
+    if (ret < 0)
         return ret;
 
     init_put_bits(&a->pb, pkt->data, pkt->size);
