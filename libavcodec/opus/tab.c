@@ -110,11 +110,7 @@ const uint16_t ff_silk_model_pitch_highbits[] = {
     216, 224, 231, 237, 241, 243, 245, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256
 };
 
-const uint16_t ff_silk_model_pitch_lowbits_nb[] = { 256, 64, 128, 192, 256 };
-
 const uint16_t ff_silk_model_pitch_lowbits_mb[] = { 256, 43, 85, 128, 171, 213, 256 };
-
-const uint16_t ff_silk_model_pitch_lowbits_wb[] = { 256, 32, 64, 96, 128, 160, 192, 224, 256 };
 
 const uint16_t ff_silk_model_pitch_delta[] = {
     256,  46,  48,  50,  53,  57,  63,  73,  88, 114, 152, 182, 204, 219, 229, 236,
@@ -762,8 +758,6 @@ const uint16_t ff_celt_model_spread[] = { 32, 7, 9, 30, 32 };
 const uint16_t ff_celt_model_alloc_trim[] = {
     128,   2,   4,   9,  19,  41,  87, 109, 119, 124, 126, 128
 };
-
-const uint16_t ff_celt_model_energy_small[] = { 4, 2, 3, 4 };
 
 const uint8_t ff_celt_freq_bands[] = { /* in steps of 200Hz */
     0,  1,  2,  3,  4,  5,  6,  7,  8, 10, 12, 14, 16, 20, 24, 28, 34, 40, 48, 60, 78, 100
