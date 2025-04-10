@@ -24,6 +24,7 @@
  * The simplest mpeg audio layer 2 encoder.
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 
 #include "avcodec.h"
@@ -89,17 +90,14 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
 
     /* encoding freq */
     s->lsf = 0;
-    for(i=0;i<3;i++) {
+    for (i = 0;; i++) {
+        av_assert1(i < 3);
         if (ff_mpa_freq_tab[i] == freq)
             break;
         if ((ff_mpa_freq_tab[i] / 2) == freq) {
             s->lsf = 1;
             break;
         }
-    }
-    if (i == 3){
-        av_log(avctx, AV_LOG_ERROR, "Sampling rate %d is not allowed in mp2\n", freq);
-        return AVERROR(EINVAL);
     }
     s->freq_index = i;
 
