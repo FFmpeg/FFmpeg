@@ -717,14 +717,11 @@ static void encode_frame(MpegAudioContext *s,
                 sf = &s->scale_factors[ch][i][0];
                 switch(s->scale_code[ch][i]) {
                 case 0:
-                    put_bits(p, 6, sf[0]);
-                    put_bits(p, 6, sf[1]);
-                    put_bits(p, 6, sf[2]);
+                    put_bits(p, 18, sf[0] << 12 | sf[1] << 6 | sf[2]);
                     break;
                 case 3:
                 case 1:
-                    put_bits(p, 6, sf[0]);
-                    put_bits(p, 6, sf[2]);
+                    put_bits(p, 12, sf[0] << 6 | sf[2]);
                     break;
                 case 2:
                     put_bits(p, 6, sf[0]);
