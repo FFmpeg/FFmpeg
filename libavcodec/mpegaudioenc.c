@@ -743,9 +743,12 @@ static void encode_frame(MpegAudioContext *s,
 
     av_assert1(put_bits_left(p) == padding);
 
+    /* flush */
+    flush_put_bits(p);
+
     /* padding */
-    for(i=0;i<padding;i++)
-        put_bits(p, 1, 0);
+    if (put_bytes_left(p, 0))
+        memset(put_bits_ptr(p), 0, put_bytes_left(p, 0));
 }
 
 static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
@@ -777,9 +780,6 @@ static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     init_put_bits(&s->pb, avpkt->data, avpkt->size);
 
     encode_frame(s, bit_alloc, padding);
-
-    /* flush */
-    flush_put_bits(&s->pb);
 
     if (frame->pts != AV_NOPTS_VALUE)
         avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->initial_padding);
