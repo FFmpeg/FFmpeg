@@ -50,7 +50,6 @@
 #define SAMPLES_BUF_SIZE 4096
 
 typedef struct MpegAudioContext {
-    PutBitContext pb;
     int nb_channels;
     int lsf;           /* 1 if mpeg2 low bitrate selected */
     int bitrate_index; /* bit rate */
@@ -669,13 +668,15 @@ static av_always_inline void encode_subbands(MpegAudioContext *const s,
  * Output the MPEG audio layer 2 frame. Note how the code is small
  * compared to other encoders :-)
  */
-static void encode_frame(MpegAudioContext *s,
+static void encode_frame(MpegAudioContext *s, uint8_t *buf, unsigned buf_size,
                          unsigned char bit_alloc[MPA_MAX_CHANNELS][SBLIMIT],
                          int padding)
 {
     int i, j, bit_alloc_bits, ch;
     unsigned char *sf;
-    PutBitContext *p = &s->pb;
+    PutBitContext p0, *p = &p0;
+
+    init_put_bits(p, buf, buf_size);
 
     /* header */
 
@@ -777,9 +778,7 @@ static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (ret < 0)
         return ret;
 
-    init_put_bits(&s->pb, avpkt->data, avpkt->size);
-
-    encode_frame(s, bit_alloc, padding);
+    encode_frame(s, avpkt->data, frame_size, bit_alloc, padding);
 
     if (frame->pts != AV_NOPTS_VALUE)
         avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->initial_padding);
