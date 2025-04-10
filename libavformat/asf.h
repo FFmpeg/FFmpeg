@@ -98,7 +98,7 @@ extern const ff_asf_guid ff_asf_language_guid;
 extern const ff_asf_guid ff_asf_content_encryption;
 extern const ff_asf_guid ff_asf_ext_content_encryption;
 extern const ff_asf_guid ff_asf_digital_signature;
-extern const ff_asf_guid ff_asf_extended_stream_properties_object;
+#define ff_asf_extended_stream_properties_object ff_asf_ext_stream_header
 extern const ff_asf_guid ff_asf_group_mutual_exclusion_object;
 extern const ff_asf_guid ff_asf_mutex_language;
 
