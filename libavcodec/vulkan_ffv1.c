@@ -823,12 +823,14 @@ static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
     uint8_t *spv_data;
     size_t spv_len;
     void *spv_opaque = NULL;
+    int use_cached_reader = ac != AC_GOLOMB_RICE &&
+                            s->driver_props.driverID == VK_DRIVER_ID_MESA_RADV;
 
     RET(ff_vk_shader_init(s, shd, "ffv1_dec",
                           VK_SHADER_STAGE_COMPUTE_BIT,
                           (const char *[]) { "GL_EXT_buffer_reference",
                                              "GL_EXT_buffer_reference2" }, 2,
-                          1, 1, 1,
+                          use_cached_reader ? CONTEXT_SIZE : 1, 1, 1,
                           0));
 
     if (ac == AC_GOLOMB_RICE)
@@ -836,6 +838,9 @@ static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
 
     if (rgb)
         av_bprintf(&shd->src, "#define RGB\n");
+
+    if (use_cached_reader)
+        av_bprintf(&shd->src, "#define CACHED_SYMBOL_READER 1\n");
 
     /* Common codec header */
     GLSLD(ff_source_common_comp);
