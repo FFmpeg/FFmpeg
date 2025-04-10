@@ -508,7 +508,7 @@ static void psycho_acoustic_model(MpegAudioContext *s, short smr[SBLIMIT])
 /* Try to maximize the smr while using a number of bits inferior to
    the frame size. I tried to make the code simpler, faster and
    smaller than other encoders :-) */
-static void compute_bit_allocation(MpegAudioContext *s,
+static unsigned compute_bit_allocation(MpegAudioContext *s,
                                    short smr1[MPA_MAX_CHANNELS][SBLIMIT],
                                    unsigned char bit_alloc[MPA_MAX_CHANNELS][SBLIMIT],
                                    int *padding)
@@ -598,6 +598,7 @@ static void compute_bit_allocation(MpegAudioContext *s,
     }
     *padding = max_frame_size - current_frame_size;
     av_assert0(*padding >= 0);
+    return max_frame_size / 8U;
 }
 
 /// Quantization & write sub band samples
@@ -740,6 +741,8 @@ static void encode_frame(MpegAudioContext *s,
         encode_subbands(s, p, bit_alloc, 0);
 #endif
 
+    av_assert1(put_bits_left(p) == padding);
+
     /* padding */
     for(i=0;i<padding;i++)
         put_bits(p, 1, 0);
@@ -765,9 +768,10 @@ static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     for(i=0;i<s->nb_channels;i++) {
         psycho_acoustic_model(s, smr[i]);
     }
-    compute_bit_allocation(s, smr, bit_alloc, &padding);
+    unsigned frame_size = compute_bit_allocation(s, smr, bit_alloc, &padding);
 
-    if ((ret = ff_alloc_packet(avctx, avpkt, MPA_MAX_CODED_FRAME_SIZE)) < 0)
+    ret = ff_get_encode_buffer(avctx, avpkt, frame_size, 0);
+    if (ret < 0)
         return ret;
 
     init_put_bits(&s->pb, avpkt->data, avpkt->size);
@@ -776,7 +780,6 @@ static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     /* flush */
     flush_put_bits(&s->pb);
-    avpkt->size = put_bytes_output(&s->pb);
 
     if (frame->pts != AV_NOPTS_VALUE)
         avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->initial_padding);
