@@ -25,9 +25,7 @@ static const uint8_t swb_size_128_96[] = {
     4, 4, 4, 4, 4, 4, 8, 8, 8, 16, 28, 36
 };
 
-static const uint8_t swb_size_128_64[] = {
-    4, 4, 4, 4, 4, 4, 8, 8, 8, 16, 28, 36
-};
+#define swb_size_128_64 swb_size_128_96
 
 static const uint8_t swb_size_128_48[] = {
     4, 4, 4, 4, 4, 8, 8, 8, 12, 12, 12, 16, 16, 16

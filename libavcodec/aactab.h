@@ -76,7 +76,7 @@ extern const uint8_t ff_aac_num_swb_768 [];
 extern const uint8_t ff_aac_num_swb_512 [];
 extern const uint8_t ff_aac_num_swb_480 [];
 extern const uint8_t ff_aac_num_swb_128 [];
-extern const uint8_t ff_aac_num_swb_120 [];
+#define ff_aac_num_swb_120 ff_aac_num_swb_128
 extern const uint8_t ff_aac_num_swb_96  [];
 // @}
 
