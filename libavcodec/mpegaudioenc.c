@@ -81,7 +81,7 @@ typedef struct MpegAudioContext {
 
 #define IS_FIXED(s) (CONFIG_MP2_ENCODER && CONFIG_MP2FIXED_ENCODER ? (s)->is_fixed : CONFIG_MP2FIXED_ENCODER)
 
-static av_cold int MPA_encode_init(AVCodecContext *avctx)
+static av_cold int mpa_encode_init(AVCodecContext *avctx)
 {
     MpegAudioContext *s = avctx->priv_data;
     int freq = avctx->sample_rate;
@@ -752,7 +752,7 @@ static void encode_frame(MpegAudioContext *s, uint8_t *buf, unsigned buf_size,
         memset(put_bits_ptr(p), 0, put_bytes_left(p, 0));
 }
 
-static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+static int mpa_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                             const AVFrame *frame, int *got_packet_ptr)
 {
     MpegAudioContext *s = avctx->priv_data;
@@ -800,8 +800,8 @@ const FFCodec ff_mp2_encoder = {
     .p.id                  = AV_CODEC_ID_MP2,
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size        = sizeof(MpegAudioContext),
-    .init                  = MPA_encode_init,
-    FF_CODEC_ENCODE_CB(MPA_encode_frame),
+    .init                  = mpa_encode_init,
+    FF_CODEC_ENCODE_CB(mpa_encode_frame),
     CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16),
     CODEC_SAMPLERATES(44100, 48000, 32000, 22050, 24000, 16000),
     CODEC_CH_LAYOUTS(AV_CHANNEL_LAYOUT_MONO, AV_CHANNEL_LAYOUT_STEREO),
@@ -815,7 +815,7 @@ static av_cold int mpa_fixed_encode_init(AVCodecContext *avctx)
     MpegAudioContext *s = avctx->priv_data;
 
     s->is_fixed = 1;
-    return MPA_encode_init(avctx);
+    return mpa_encode_init(avctx);
 }
 
 const FFCodec ff_mp2fixed_encoder = {
@@ -826,7 +826,7 @@ const FFCodec ff_mp2fixed_encoder = {
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size        = sizeof(MpegAudioContext),
     .init                  = mpa_fixed_encode_init,
-    FF_CODEC_ENCODE_CB(MPA_encode_frame),
+    FF_CODEC_ENCODE_CB(mpa_encode_frame),
     CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S16),
     CODEC_SAMPLERATES(44100, 48000, 32000, 22050, 24000, 16000),
     CODEC_CH_LAYOUTS(AV_CHANNEL_LAYOUT_MONO, AV_CHANNEL_LAYOUT_STEREO),
