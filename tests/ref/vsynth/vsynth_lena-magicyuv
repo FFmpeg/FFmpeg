@@ -1,4 +1,4 @@
-3f74bf17bb8d9ba2022004f95de4b666 *tests/data/fate/vsynth_lena-magicyuv.avi
-3477676 tests/data/fate/vsynth_lena-magicyuv.avi
+b7cd87cec898d66cfce82e649376bb0d *tests/data/fate/vsynth_lena-magicyuv.avi
+3471504 tests/data/fate/vsynth_lena-magicyuv.avi
 d7bfbe259af9ae323bb94b09c33570a5 *tests/data/fate/vsynth_lena-magicyuv.out.rawvideo
 stddev:   18.65 PSNR: 22.72 MAXDIFF:   72 bytes:  7603200/  7603200

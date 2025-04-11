@@ -395,20 +395,20 @@ static int encode_table(AVCodecContext *avctx,
                         PutBitContext *pb, HuffEntry *he, int plane)
 {
     MagicYUVContext *s = avctx->priv_data;
-    PTable counts[256] = { {0} };
+    PTable counts[256];
     uint16_t codes_counts[33] = { 0 };
+
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(counts); i++) {
+        counts[i].prob  = 1;
+        counts[i].value = i;
+    }
 
     for (int n = 0; n < s->nb_slices; n++) {
         Slice *sl = &s->slices[n * s->planes + plane];
         PTable *slice_counts = sl->counts;
 
         for (int i = 0; i < 256; i++)
-            counts[i].prob = slice_counts[i].prob;
-    }
-
-    for (int i = 0; i < 256; i++) {
-        counts[i].prob++;
-        counts[i].value = i;
+            counts[i].prob += slice_counts[i].prob;
     }
 
     magy_huffman_compute_bits(counts, he, codes_counts, 256, 12);
