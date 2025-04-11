@@ -233,6 +233,15 @@ fate-vsynth%-jpeg2000-yuva444p16:     ENCOPTS = -qscale 8 -pred 1 -pix_fmt yuva4
 FATE_VCODEC-$(call ENCDEC, LJPEG MJPEG, AVI) += ljpeg
 fate-vsynth%-ljpeg:              ENCOPTS = -strict -1
 
+FATE_VCODEC_SCALE-$(call ENCDEC, MAGICYUV, AVI) += magicyuv
+fate-vsynth1-magicyuv:                ENCOPTS = -threads 7 -thread_type slice
+fate-vsynth2-magicyuv:                ENCOPTS = -pix_fmt gbrp -pred gradient \
+                                                -sws_flags neighbor+bitexact
+fate-vsynth3-magicyuv:                ENCOPTS = -pix_fmt yuv444p -pred median \
+                                                -sws_flags neighbor+bitexact
+fate-vsynth_lena-magicyuv:            ENCOPTS = -slices 3 -pix_fmt gray -pred left
+fate-vsynth%-magicyuv:                DECOPTS = -sws_flags neighbor+bitexact
+
 FATE_VCODEC_SCALE-$(call ENCDEC, MJPEG, AVI) += mjpeg mjpeg-422 mjpeg-444 mjpeg-trell mjpeg-huffman mjpeg-trell-huffman
 fate-vsynth%-mjpeg:                   ENCOPTS = -qscale 9 -pix_fmt yuvj420p -huffman default -threads 5 -thread_type slice
 fate-vsynth%-mjpeg-422:               ENCOPTS = -qscale 9 -pix_fmt yuvj422p

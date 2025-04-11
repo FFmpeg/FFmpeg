@@ -1,0 +1,4 @@
+380d5b8fe8f566b1e1ab48fb917f316e *tests/data/fate/vsynth3-magicyuv.avi
+102448 tests/data/fate/vsynth3-magicyuv.avi
+a038ad7c3c09f776304ef7accdea9c74 *tests/data/fate/vsynth3-magicyuv.out.rawvideo
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:    86700/    86700
