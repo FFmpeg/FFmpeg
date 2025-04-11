@@ -43,4 +43,6 @@
 
 #define LIBPOSTPROC_IDENT       "postproc" AV_STRINGIFY(LIBPOSTPROC_VERSION)
 
+#define PP_AMD_3DNOW               (LIBPOSTPROC_VERSION_MAJOR < 60)
+
 #endif /* POSTPROC_VERSION_H */
