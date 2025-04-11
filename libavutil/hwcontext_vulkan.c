@@ -79,6 +79,7 @@ typedef struct VulkanDeviceFeatures {
     VkPhysicalDeviceVulkan12Features vulkan_1_2;
     VkPhysicalDeviceVulkan13Features vulkan_1_3;
     VkPhysicalDeviceTimelineSemaphoreFeatures timeline_semaphore;
+    VkPhysicalDeviceShaderExpectAssumeFeatures expect_assume;
 
     VkPhysicalDeviceVideoMaintenance1FeaturesKHR video_maintenance_1;
 #ifdef VK_KHR_video_maintenance2
@@ -210,6 +211,9 @@ static void device_features_init(AVHWDeviceContext *ctx, VulkanDeviceFeatures *f
     OPT_CHAIN(&feats->timeline_semaphore, FF_VK_EXT_PORTABILITY_SUBSET,
               VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
 
+    OPT_CHAIN(&feats->expect_assume, FF_VK_EXT_EXPECT_ASSUME,
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EXPECT_ASSUME_FEATURES_KHR);
+
     OPT_CHAIN(&feats->video_maintenance_1, FF_VK_EXT_VIDEO_MAINTENANCE_1,
               VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR);
 #ifdef VK_KHR_video_maintenance2
@@ -301,6 +305,8 @@ static void device_features_copy_needed(VulkanDeviceFeatures *dst, VulkanDeviceF
 #ifdef VK_KHR_shader_relaxed_extended_instruction
     COPY_VAL(relaxed_extended_instruction.shaderRelaxedExtendedInstruction);
 #endif
+
+    COPY_VAL(expect_assume.shaderExpectAssume);
 
     COPY_VAL(optical_flow.opticalFlow);
 #undef COPY_VAL
@@ -616,6 +622,7 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME,               FF_VK_EXT_COOP_MATRIX            },
     { VK_NV_OPTICAL_FLOW_EXTENSION_NAME,                      FF_VK_EXT_OPTICAL_FLOW           },
     { VK_EXT_SHADER_OBJECT_EXTENSION_NAME,                    FF_VK_EXT_SHADER_OBJECT          },
+    { VK_KHR_SHADER_EXPECT_ASSUME_EXTENSION_NAME,             FF_VK_EXT_EXPECT_ASSUME          },
     { VK_KHR_VIDEO_MAINTENANCE_1_EXTENSION_NAME,              FF_VK_EXT_VIDEO_MAINTENANCE_1    },
 #ifdef VK_KHR_video_maintenance2
     { VK_KHR_VIDEO_MAINTENANCE_2_EXTENSION_NAME,              FF_VK_EXT_VIDEO_MAINTENANCE_2    },

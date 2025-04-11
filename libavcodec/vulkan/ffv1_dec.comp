@@ -31,7 +31,7 @@
 #ifdef RGB
 ivec2 get_pred(ivec2 sp, ivec2 off, int p, int sw, uint8_t quant_table_idx)
 {
-    const ivec2 yoff_border1 = off.x == 0 ? ivec2(1, -1) : ivec2(0, 0);
+    const ivec2 yoff_border1 = expectEXT(off.x == 0, false) ? ivec2(1, -1) : ivec2(0, 0);
 
     /* Thanks to the same coincidence as below, we can skip checking if off == 0, 1 */
     VTYPE3 top  = VTYPE3(TYPE(imageLoad(dec[p], sp + LADDR(off + ivec2(-1, -1) + yoff_border1))[0]),
@@ -47,10 +47,10 @@ ivec2 get_pred(ivec2 sp, ivec2 off, int p, int sw, uint8_t quant_table_idx)
                quant_table[quant_table_idx][1][(top[0] - top[1]) & MAX_QUANT_TABLE_MASK] +
                quant_table[quant_table_idx][2][(top[1] - top[2]) & MAX_QUANT_TABLE_MASK];
 
-    if (extend_lookup[quant_table_idx] > 0) {
+    if (expectEXT(extend_lookup[quant_table_idx] > 0, false)) {
         TYPE cur2 = TYPE(0);
-        if (off.x > 0) {
-            const ivec2 yoff_border2 = off.x == 1 ? ivec2(-1, -1) : ivec2(-2, 0);
+        if (expectEXT(off.x > 0, true)) {
+            const ivec2 yoff_border2 = expectEXT(off.x == 1, false) ? ivec2(-1, -1) : ivec2(-2, 0);
             cur2 = TYPE(imageLoad(dec[p], sp + LADDR(off + yoff_border2))[0]);
         }
         base += quant_table[quant_table_idx][3][(cur2 - cur) & MAX_QUANT_TABLE_MASK];
@@ -120,9 +120,9 @@ int get_isymbol(inout RangeCoder c, uint64_t state)
         if (!get_rac(c, state + min(e, 9)))
             break;
 
-    if (e == 0) {
+    if (expectEXT(e == 0, false)) {
         return get_rac(c, state + 10) ? -1 : 1;
-    } else if (e > 31) {
+    } else if (expectEXT(e > 31, false)) {
         corrupt = true;
         return 0;
     }
@@ -274,7 +274,7 @@ void writeout_rgb(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
         if (transparency != 0)
             pix.a = int(imageLoad(dec[3], lpos)[0]);
 
-        if (apply_rct)
+        if (expectEXT(apply_rct, true))
             pix = transform_sample(pix, sc.slice_rct_coef);
 
         imageStore(dst[0], pos, pix);

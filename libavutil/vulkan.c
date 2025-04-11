@@ -2046,6 +2046,12 @@ int ff_vk_shader_init(FFVulkanContext *s, FFVulkanShader *shd, const char *name,
     GLSLC(0, #extension GL_EXT_scalar_block_layout : require                  );
     GLSLC(0, #extension GL_EXT_shader_explicit_arithmetic_types : require     );
     GLSLC(0, #extension GL_EXT_control_flow_attributes : require              );
+    if (s->extensions & FF_VK_EXT_EXPECT_ASSUME) {
+        GLSLC(0, #extension GL_EXT_expect_assume : require                    );
+    } else {
+        GLSLC(0, #define assumeEXT(x) (x)                                     );
+        GLSLC(0, #define expectEXT(x, c) (x)                                  );
+    }
     if ((s->extensions & FF_VK_EXT_DEBUG_UTILS) &&
         (s->extensions & FF_VK_EXT_RELAXED_EXTENDED_INSTR)) {
         GLSLC(0, #extension GL_EXT_debug_printf : require                     );

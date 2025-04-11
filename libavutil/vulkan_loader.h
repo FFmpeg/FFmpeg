@@ -76,6 +76,7 @@ static inline uint64_t ff_vk_extensions_to_mask(const char * const *extensions,
         { VK_KHR_VIDEO_DECODE_H265_EXTENSION_NAME,         FF_VK_EXT_VIDEO_DECODE_H265      },
         { VK_KHR_VIDEO_DECODE_AV1_EXTENSION_NAME,          FF_VK_EXT_VIDEO_DECODE_AV1       },
         { VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,           FF_VK_EXT_PUSH_DESCRIPTOR        },
+        { VK_KHR_SHADER_EXPECT_ASSUME_EXTENSION_NAME,      FF_VK_EXT_EXPECT_ASSUME          },
     };
 
     FFVulkanExtensions mask = 0x0;
