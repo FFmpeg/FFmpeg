@@ -102,10 +102,9 @@ void ff_progress_frame_report(ProgressFrame *f, int progress);
 void ff_progress_frame_await(const ProgressFrame *f, int progress);
 
 /**
- * This function allocates ProgressFrame.f
- * May be called before ff_progress_frame_get_buffer() in the cases where the
- * AVFrame needs to be accessed before the ff_thread_get_buffer() call in
- * ff_progress_frame_alloc().
+ * This function sets up the ProgressFrame, i.e. ProgressFrame.f
+ * and ProgressFrame.progress. ProgressFrame.f will be blank
+ * (as if from av_frame_alloc() or av_frame_unref()) on success.
  *
  * @note: This must only be called by codecs with the
  *        FF_CODEC_CAP_USES_PROGRESSFRAMES internal cap.
@@ -113,8 +112,7 @@ void ff_progress_frame_await(const ProgressFrame *f, int progress);
 int ff_progress_frame_alloc(struct AVCodecContext *avctx, ProgressFrame *f);
 
 /**
- * This function sets up the ProgressFrame, i.e. allocates ProgressFrame.f
- * if needed, and also calls ff_thread_get_buffer() on the frame.
+ * Wrapper around ff_progress_frame_alloc() and ff_thread_get_buffer().
  *
  * @note: This must only be called by codecs with the
  *        FF_CODEC_CAP_USES_PROGRESSFRAMES internal cap.

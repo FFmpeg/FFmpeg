@@ -1761,14 +1761,9 @@ int ff_progress_frame_alloc(AVCodecContext *avctx, ProgressFrame *f)
 
 int ff_progress_frame_get_buffer(AVCodecContext *avctx, ProgressFrame *f, int flags)
 {
-    int ret;
-
-    check_progress_consistency(f);
-    if (!f->f) {
-        ret = ff_progress_frame_alloc(avctx, f);
-        if (ret < 0)
-            return ret;
-    }
+    int ret = ff_progress_frame_alloc(avctx, f);
+    if (ret < 0)
+        return ret;
 
     ret = ff_thread_get_buffer(avctx, f->progress->f, flags);
     if (ret < 0) {
