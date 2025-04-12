@@ -1342,6 +1342,8 @@ static void print_frame_side_data(AVTextFormatContext *tfc,
             print_film_grain_params(tfc, fgp);
         } else if (sd->type == AV_FRAME_DATA_VIEW_ID) {
             print_int("view_id", *(int*)sd->data);
+        } else if (sd->type == AV_FRAME_DATA_EXIF) {
+            print_int("size", sd->size);
         }
         avtext_print_section_footer(tfc);
     }
