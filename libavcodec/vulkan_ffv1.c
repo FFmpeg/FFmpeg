@@ -1142,20 +1142,6 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
         return err;
     ctx = dec->shared_ctx;
 
-    switch (ctx->s.driver_props.driverID) {
-    case VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS:
-    case VK_DRIVER_ID_INTEL_OPEN_SOURCE_MESA:
-        if (avctx->strict_std_compliance < FF_COMPLIANCE_UNOFFICIAL) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Intel's drivers are unsupported, use -strict -1 to enable acceleration.\n");
-            return AVERROR(ENOTSUP);
-        } else {
-            av_log(avctx, AV_LOG_WARNING,
-                   "Enabling acceleration on Intel's drivers.\n");
-        }
-        break;
-    };
-
     fv = ctx->sd_ctx = av_mallocz(sizeof(*fv));
     if (!fv) {
         err = AVERROR(ENOMEM);
