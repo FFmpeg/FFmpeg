@@ -85,7 +85,7 @@ static int shdc_shader_compile(FFVulkanContext *s, FFVkSPIRVCompiler *ctx,
     if (ret != shaderc_compilation_status_success && !err)
         err = 1;
 
-    loglevel = err ? AV_LOG_ERROR : warn ? AV_LOG_WARNING : AV_LOG_VERBOSE;
+    loglevel = err ? AV_LOG_ERROR : warn ? AV_LOG_WARNING : AV_LOG_TRACE;
 
     ff_vk_shader_print(s, shd, loglevel);
     if (message && (err || warn))

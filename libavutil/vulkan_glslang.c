@@ -250,7 +250,7 @@ static int glslc_shader_compile(FFVulkanContext *s, FFVkSPIRVCompiler *ctx,
         ff_vk_shader_print(s, shd, AV_LOG_WARNING);
         av_log(s, AV_LOG_WARNING, "%s\n", messages);
     } else {
-        ff_vk_shader_print(s, shd, AV_LOG_VERBOSE);
+        ff_vk_shader_print(s, shd, AV_LOG_TRACE);
     }
 
     glslang_shader_delete(glslc_shader);
