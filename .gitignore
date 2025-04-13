@@ -44,3 +44,4 @@
 /tools/python/__pycache__/
 /libavcodec/vulkan/*.c
 /libavfilter/vulkan/*.c
+/.*/
