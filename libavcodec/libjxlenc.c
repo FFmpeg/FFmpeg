@@ -247,6 +247,73 @@ static int libjxl_populate_primaries(void *avctx, JxlColorEncoding *jxl_color, e
     return 0;
 }
 
+static int libjxl_populate_colorspace(AVCodecContext *avctx, const AVFrame *frame,
+                                      const AVPixFmtDescriptor *pix_desc, const JxlBasicInfo *info)
+{
+    JxlColorEncoding jxl_color;
+    LibJxlEncodeContext *ctx = avctx->priv_data;
+    int ret;
+
+    switch (frame->color_trc && frame->color_trc != AVCOL_TRC_UNSPECIFIED
+            ? frame->color_trc : avctx->color_trc) {
+    case AVCOL_TRC_BT709:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_709;
+        break;
+    case AVCOL_TRC_LINEAR:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
+        break;
+    case AVCOL_TRC_IEC61966_2_1:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_SRGB;
+        break;
+    case AVCOL_TRC_SMPTE428:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_DCI;
+        break;
+    case AVCOL_TRC_SMPTE2084:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_PQ;
+        break;
+    case AVCOL_TRC_ARIB_STD_B67:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_HLG;
+        break;
+    case AVCOL_TRC_GAMMA22:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_GAMMA;
+        jxl_color.gamma = 1/2.2f;
+        break;
+    case AVCOL_TRC_GAMMA28:
+        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_GAMMA;
+        jxl_color.gamma = 1/2.8f;
+        break;
+    default:
+        if (pix_desc->flags & AV_PIX_FMT_FLAG_FLOAT) {
+            av_log(avctx, AV_LOG_WARNING,
+                    "Unknown transfer function, assuming Linear Light. Colors may be wrong.\n");
+            jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
+        } else {
+            av_log(avctx, AV_LOG_WARNING,
+                    "Unknown transfer function, assuming IEC61966-2-1/sRGB. Colors may be wrong.\n");
+            jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_SRGB;
+        }
+    }
+
+    jxl_color.rendering_intent = JXL_RENDERING_INTENT_RELATIVE;
+    if (info->num_color_channels == 1)
+        jxl_color.color_space = JXL_COLOR_SPACE_GRAY;
+    else
+        jxl_color.color_space = JXL_COLOR_SPACE_RGB;
+
+    ret = libjxl_populate_primaries(avctx, &jxl_color,
+        frame->color_primaries && frame->color_primaries != AVCOL_PRI_UNSPECIFIED
+        ? frame->color_primaries : avctx->color_primaries);
+    if (ret < 0)
+        return ret;
+
+    if (JxlEncoderSetColorEncoding(ctx->encoder, &jxl_color) != JXL_ENC_SUCCESS) {
+        av_log(avctx, AV_LOG_WARNING, "Failed to set JxlColorEncoding\n");
+        return AVERROR_EXTERNAL;
+    }
+
+    return 0;
+}
+
 /**
  * Sends metadata to libjxl based on the first frame of the stream, such as pixel format,
  * orientation, bit depth, and that sort of thing.
@@ -254,11 +321,9 @@ static int libjxl_populate_primaries(void *avctx, JxlColorEncoding *jxl_color, e
 static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame, int animated)
 {
     LibJxlEncodeContext *ctx = avctx->priv_data;
-    int ret;
     AVFrameSideData *sd;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(frame->format);
     JxlBasicInfo info;
-    JxlColorEncoding jxl_color;
     JxlPixelFormat *jxl_fmt = &ctx->jxl_fmt;
     int bits_per_sample;
 #if JPEGXL_NUMERIC_VERSION >= JPEGXL_COMPUTE_NUMERIC_VERSION(0, 8, 0)
@@ -320,66 +385,14 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
         return AVERROR_EXTERNAL;
     }
 
-    /* rendering intent doesn't matter here
-     * but libjxl will whine if we don't set it */
-    jxl_color.rendering_intent = JXL_RENDERING_INTENT_RELATIVE;
-
-    switch (frame->color_trc && frame->color_trc != AVCOL_TRC_UNSPECIFIED
-            ? frame->color_trc : avctx->color_trc) {
-    case AVCOL_TRC_BT709:
-        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_709;
-        break;
-    case AVCOL_TRC_LINEAR:
-        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
-        break;
-    case AVCOL_TRC_IEC61966_2_1:
-        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_SRGB;
-        break;
-    case AVCOL_TRC_SMPTE428:
-        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_DCI;
-        break;
-    case AVCOL_TRC_SMPTE2084:
-        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_PQ;
-        break;
-    case AVCOL_TRC_ARIB_STD_B67:
-        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_HLG;
-        break;
-    case AVCOL_TRC_GAMMA22:
-        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_GAMMA;
-        jxl_color.gamma = 1/2.2f;
-        break;
-    case AVCOL_TRC_GAMMA28:
-        jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_GAMMA;
-        jxl_color.gamma = 1/2.8f;
-        break;
-    default:
-        if (pix_desc->flags & AV_PIX_FMT_FLAG_FLOAT) {
-            av_log(avctx, AV_LOG_WARNING, "Unknown transfer function, assuming Linear Light. Colors may be wrong.\n");
-            jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_LINEAR;
-        } else {
-            av_log(avctx, AV_LOG_WARNING, "Unknown transfer function, assuming IEC61966-2-1/sRGB. Colors may be wrong.\n");
-            jxl_color.transfer_function = JXL_TRANSFER_FUNCTION_SRGB;
-        }
+    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_ICC_PROFILE);
+    if (sd && sd->size && JxlEncoderSetICCProfile(ctx->encoder, sd->data, sd->size) != JXL_ENC_SUCCESS) {
+        av_log(avctx, AV_LOG_WARNING, "Could not set ICC Profile\n");
+        sd = NULL;
     }
 
-    /* This should be implied to be honest
-     * but a libjxl bug makes it fail otherwise */
-    if (info.num_color_channels == 1)
-        jxl_color.color_space = JXL_COLOR_SPACE_GRAY;
-    else
-        jxl_color.color_space = JXL_COLOR_SPACE_RGB;
-
-    ret = libjxl_populate_primaries(avctx, &jxl_color,
-            frame->color_primaries && frame->color_primaries != AVCOL_PRI_UNSPECIFIED
-            ? frame->color_primaries : avctx->color_primaries);
-    if (ret < 0)
-        return ret;
-
-    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_ICC_PROFILE);
-    if (sd && sd->size && JxlEncoderSetICCProfile(ctx->encoder, sd->data, sd->size) != JXL_ENC_SUCCESS)
-        av_log(avctx, AV_LOG_WARNING, "Could not set ICC Profile\n");
-    if (JxlEncoderSetColorEncoding(ctx->encoder, &jxl_color) != JXL_ENC_SUCCESS)
-        av_log(avctx, AV_LOG_WARNING, "Failed to set JxlColorEncoding\n");
+    if (!sd || !sd->size)
+        libjxl_populate_colorspace(avctx, frame, pix_desc, &info);
 
 #if JPEGXL_NUMERIC_VERSION >= JPEGXL_COMPUTE_NUMERIC_VERSION(0, 8, 0)
     if (JxlEncoderSetFrameBitDepth(ctx->options, &jxl_bit_depth) != JXL_ENC_SUCCESS)
