@@ -23,7 +23,6 @@
 
 #include <stdatomic.h>
 
-#include "thread.h"
 #include "pixdesc.h"
 #include "bprint.h"
 #include "hwcontext.h"
@@ -112,7 +111,6 @@ typedef struct FFVkBuffer {
 typedef struct FFVkExecContext {
     uint32_t idx;
     const struct FFVkExecPool *parent;
-    pthread_mutex_t lock;
     int had_submission;
 
     /* Queue for the execution context */
