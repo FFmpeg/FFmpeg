@@ -29,6 +29,7 @@
 #include "libavutil/common.h"
 #include "libavutil/csp.h"
 #include "libavutil/error.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
@@ -37,6 +38,7 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "exif_internal.h"
 #include "internal.h"
 
 #include <jxl/decode.h>
@@ -59,6 +61,8 @@ typedef struct LibJxlDecodeContext {
     int prev_is_last;
     AVRational anim_timebase;
     AVFrame *frame;
+    AVBufferRef *exif;
+    size_t exif_pos;
 } LibJxlDecodeContext;
 
 static int libjxl_init_jxl_decoder(AVCodecContext *avctx)
@@ -66,9 +70,15 @@ static int libjxl_init_jxl_decoder(AVCodecContext *avctx)
     LibJxlDecodeContext *ctx = avctx->priv_data;
 
     ctx->events = JXL_DEC_BASIC_INFO | JXL_DEC_FULL_IMAGE
-        | JXL_DEC_COLOR_ENCODING | JXL_DEC_FRAME;
+        | JXL_DEC_COLOR_ENCODING | JXL_DEC_FRAME
+        | JXL_DEC_BOX | JXL_DEC_BOX_COMPLETE;
     if (JxlDecoderSubscribeEvents(ctx->decoder, ctx->events) != JXL_DEC_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Error subscribing to JXL events\n");
+        return AVERROR_EXTERNAL;
+    }
+
+    if (JxlDecoderSetDecompressBoxes(ctx->decoder, JXL_TRUE) != JXL_DEC_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Error setting compress box mode\n");
         return AVERROR_EXTERNAL;
     }
 
@@ -77,6 +87,7 @@ static int libjxl_init_jxl_decoder(AVCodecContext *avctx)
         return AVERROR_EXTERNAL;
     }
 
+    av_buffer_unref(&ctx->exif);
     memset(&ctx->basic_info, 0, sizeof(JxlBasicInfo));
     memset(&ctx->jxl_pixfmt, 0, sizeof(JxlPixelFormat));
     ctx->prev_is_last = 1;
@@ -487,6 +498,28 @@ static int libjxl_receive_frame(AVCodecContext *avctx, AVFrame *frame)
                 if (ret < 0)
                     return ret;
             }
+            if (ctx->exif) {
+                AVExifMetadata ifd = { 0 };
+                /* size may be larger than exif_pos due to the realloc loop */
+                ret = av_exif_parse_buffer(avctx, ctx->exif->data, ctx->exif_pos, &ifd, AV_EXIF_T_OFF);
+                av_buffer_unref(&ctx->exif);
+                if (ret < 0) {
+                    av_log(avctx, AV_LOG_ERROR, "Unable to parse EXIF buffer\n");
+                    continue;
+                }
+                /*
+                 * JPEG XL Codestream orientation overrides EXIF orientation in all cases.
+                 * As a result, we remove the EXIF Orientation tag rather than just zeroing it
+                 * in order to prevent any ambiguity. libjxl autorotates the image for us so we
+                 * do not need to worry about that.
+                 */
+                ret = av_exif_remove_entry(avctx, &ifd, av_exif_get_tag_id("Orientation"), 0);
+                if (ret < 0)
+                    av_log(avctx, AV_LOG_WARNING, "Unable to remove orientation from EXIF buffer\n");
+                ret = ff_exif_attach_ifd(avctx, ctx->frame, &ifd);
+                if (ret < 0)
+                    av_log(avctx, AV_LOG_ERROR, "Unable to attach EXIF ifd\n");
+            }
             if (ctx->basic_info.have_animation) {
                 ctx->frame->pts = av_rescale_q(ctx->accumulated_pts, ctx->anim_timebase, avctx->pkt_timebase);
                 ctx->frame->duration = av_rescale_q(ctx->frame_duration, ctx->anim_timebase, avctx->pkt_timebase);
@@ -511,6 +544,48 @@ static int libjxl_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             JxlDecoderReset(ctx->decoder);
             libjxl_init_jxl_decoder(avctx);
             continue;
+        case JXL_DEC_BOX: {
+            char type[4];
+            av_log(avctx, AV_LOG_DEBUG, "BOX event emitted\n");
+            if (JxlDecoderGetBoxType(ctx->decoder, type, JXL_TRUE) != JXL_DEC_SUCCESS) {
+                av_log(avctx, AV_LOG_ERROR, "Error getting box type\n");
+                return AVERROR_EXTERNAL;
+            }
+            if (AV_RL32(type) != MKTAG('E','x','i','f'))
+                continue;
+            av_buffer_unref(&ctx->exif);
+            ctx->exif_pos = 0;
+            // 4k buffer should usually be enough
+            ret = av_buffer_realloc(&ctx->exif, 4096);
+            if (ret < 0)
+                return AVERROR(ENOMEM);
+            if (JxlDecoderSetBoxBuffer(ctx->decoder, ctx->exif->data, ctx->exif->size) != JXL_DEC_SUCCESS) {
+                av_log(avctx, AV_LOG_ERROR, "Error setting box buffer\n");
+                return AVERROR_EXTERNAL;
+            }
+            continue;
+        }
+        case JXL_DEC_BOX_NEED_MORE_OUTPUT: {
+            av_log(avctx, AV_LOG_DEBUG, "BOX_NEED_MORE_OUTPUT event emitted\n");
+            size_t remainder = JxlDecoderReleaseBoxBuffer(ctx->decoder);
+            ctx->exif_pos = ctx->exif->size - remainder;
+            size_t new_size = ctx->exif->size << 1;
+            ret = av_buffer_realloc(&ctx->exif, new_size);
+            if (ret < 0)
+                return AVERROR(ENOMEM);
+            if (JxlDecoderSetBoxBuffer(ctx->decoder, ctx->exif->data + ctx->exif_pos,
+                                       ctx->exif->size - ctx->exif_pos) != JXL_DEC_SUCCESS) {
+                av_log(avctx, AV_LOG_ERROR, "Error setting box buffer\n");
+                return AVERROR_EXTERNAL;
+            }
+            continue;
+        }
+        case JXL_DEC_BOX_COMPLETE: {
+            av_log(avctx, AV_LOG_DEBUG, "BOX_COMPLETE event emitted\n");
+            size_t remainder = JxlDecoderReleaseBoxBuffer(ctx->decoder);
+            ctx->exif_pos = ctx->exif->size - remainder;
+            continue;
+        }
         default:
              av_log(avctx, AV_LOG_ERROR, "Bad libjxl event: %d\n", jret);
              return AVERROR_EXTERNAL;
@@ -528,6 +603,7 @@ static av_cold int libjxl_decode_close(AVCodecContext *avctx)
     if (ctx->decoder)
         JxlDecoderDestroy(ctx->decoder);
     ctx->decoder = NULL;
+    av_buffer_unref(&ctx->exif);
     av_buffer_unref(&ctx->iccp);
     av_frame_free(&ctx->frame);
 
