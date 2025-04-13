@@ -2133,7 +2133,7 @@ static int create_shader_module(FFVulkanContext *s, FFVulkanShader *shd,
     ret = vk->CreateShaderModule(s->hwctx->act_dev, &shader_module_info,
                                  s->hwctx->alloc, mod);
     if (ret != VK_SUCCESS) {
-        av_log(s, AV_LOG_VERBOSE, "Error creating shader module: %s\n",
+        av_log(s, AV_LOG_ERROR, "Error creating shader module: %s\n",
                ff_vk_ret2str(ret));
         return AVERROR_EXTERNAL;
     }
