@@ -25,10 +25,9 @@
 #include <string.h>
 
 #include "avtextformat.h"
-#include <libavutil/mem.h>
-#include <libavutil/avassert.h>
-#include <libavutil/bprint.h>
-#include <libavutil/opt.h>
+
+#include "libavutil/bprint.h"
+#include "libavutil/opt.h"
 
 #define writer_w8(wctx_, b_) (wctx_)->writer->writer->writer_w8((wctx_)->writer, b_)
 #define writer_put_str(wctx_, str_) (wctx_)->writer->writer->writer_put_str((wctx_)->writer, str_)

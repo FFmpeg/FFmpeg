@@ -25,12 +25,9 @@
 #include <string.h>
 
 #include "avtextformat.h"
-#include <libavutil/mem.h>
-#include <libavutil/avassert.h>
-#include <libavutil/bprint.h>
-#include <libavutil/error.h>
-#include <libavutil/macros.h>
-#include <libavutil/opt.h>
+#include "libavutil/bprint.h"
+#include "libavutil/error.h"
+#include "libavutil/opt.h"
 
 
 #define writer_w8(wctx_, b_) (wctx_)->writer->writer->writer_w8((wctx_)->writer, b_)
