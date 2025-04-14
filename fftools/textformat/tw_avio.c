@@ -20,9 +20,11 @@
 
 #include <limits.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "avtextwriters.h"
-#include "libavutil/opt.h"
+
+#include "libavutil/error.h"
 
 /* AVIO Writer */
 
@@ -33,16 +35,6 @@ typedef struct IOWriterContext {
     AVIOContext *avio_context;
     int close_on_uninit;
 } IOWriterContext;
-
-static const char *iowriter_get_name(void *ctx)
-{
-    return WRITER_NAME;
-}
-
-static const AVClass iowriter_class = {
-    .class_name = WRITER_NAME,
-    .item_name = iowriter_get_name,
-};
 
 static av_cold void iowriter_uninit(AVTextWriterContext *wctx)
 {
@@ -81,7 +73,6 @@ const AVTextWriter avtextwriter_avio = {
     .name                 = WRITER_NAME,
     .priv_size            = sizeof(IOWriterContext),
     .uninit               = iowriter_uninit,
-    .priv_class           = &iowriter_class,
     .writer_put_str       = io_put_str,
     .writer_printf        = io_printf,
     .writer_w8            = io_w8
