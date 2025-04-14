@@ -460,10 +460,9 @@ int avtext_print_string(AVTextFormatContext *tctx, const char *key, const char *
 void avtext_print_rational(AVTextFormatContext *tctx,
                                          const char *key, AVRational q, char sep)
 {
-    AVBPrint buf;
-    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_AUTOMATIC);
-    av_bprintf(&buf, "%d%c%d", q.num, sep, q.den);
-    avtext_print_string(tctx, key, buf.str, 0);
+    char buf[44];
+    snprintf(buf, sizeof(buf), "%d%c%d", q.num, sep, q.den);
+    avtext_print_string(tctx, key, buf, 0);
 }
 
 void avtext_print_time(AVTextFormatContext *tctx, const char *key,
