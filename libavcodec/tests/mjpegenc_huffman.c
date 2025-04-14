@@ -31,21 +31,42 @@
 #include "libavcodec/mjpegenc_huffman.c"
 
 // Validate the computed lengths satisfy the JPEG restrictions and is optimal.
-static int check_lengths(int L, int expected_length,
-                         const int *probs, int nprobs)
+static int check_lengths(int L, const int *probs, int nprobs,
+                         int expected_length, const uint8_t expected_len_counts[/* L + 1 */])
 {
     HuffTable lengths[256];
     PTable val_counts[256];
+    uint8_t len_counts[17] = { 0 };
     int actual_length = 0, i, j, k, prob, length;
     int ret = 0;
-    double cantor_measure = 0;
     av_assert0(nprobs <= 256);
+    av_assert0(L < FF_ARRAY_ELEMS(len_counts));
 
     for (i = 0; i < nprobs; i++) {
         val_counts[i] = (PTable){.value = i, .prob = probs[i]};
     }
 
     mjpegenc_huffman_compute_bits(val_counts, lengths, nprobs, L);
+
+    for (int i = 0; i < nprobs; ++i) {
+        if (lengths[i].length > L) {
+            fprintf(stderr,
+                    "Len %d of element %d of Huffman table with %d elements exceeds max length %d\n",
+                    lengths[i].length, i, nprobs, L);
+            return 1;
+        }
+        len_counts[lengths[i].length]++;
+    }
+    // Test that the lengths can be made part of a complete, prefix-free tree:
+    unsigned code = 0;
+    for (int i = 1; i <= L; ++i) {
+        code <<= 1;
+        code += len_counts[i];
+    }
+    if (code > 1U << L) {
+        fprintf(stderr, "Huffman tree overdetermined/invalid\n");
+        ret = 1;
+    }
 
     for (i = 0; i < nprobs; i++) {
         // Find the value's prob and length
@@ -59,22 +80,18 @@ static int check_lengths(int L, int expected_length,
 
         if (prob) {
             actual_length += prob * length;
-            cantor_measure += 1. / (1 << length);
         }
 
         if (length > L || length < 1) return 1;
     }
-    // Check that the codes can be prefix-free.
-    if (cantor_measure > 1) ret = 1;
     // Check that the total length is optimal
     if (actual_length != expected_length) ret = 1;
 
     if (ret == 1) {
       fprintf(stderr,
-              "Cantor measure: %f\n"
               "Actual length: %d\n"
               "Expected length: %d\n",
-              cantor_measure, actual_length, expected_length);
+              actual_length, expected_length);
     }
 
     return ret;
@@ -82,6 +99,9 @@ static int check_lengths(int L, int expected_length,
 
 static const int probs_zeroes[] = {
     6, 6, 0, 0, 0
+};
+static const uint8_t len_counts_zeroes[] = {
+    0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2,
 };
 
 static const int probs_skewed[] = {
@@ -96,6 +116,9 @@ static const int probs_skewed[] = {
     0, 3, 0, 0, 28, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 23, 0, 0, 0, 0,
     0, 21, 1, 0, 3, 24, 2, 0, 0, 7, 0, 0, 1, 5, 1, 2, 0, 5
 };
+static const uint8_t len_counts_skewed[] = {
+    0, 1, 0, 0, 1, 2, 7, 11, 18, 31, 28, 40, 0, 1, 0, 0, 116,
+};
 
 static const int probs_sat[] = {
     74, 8, 14, 7, 9345, 40, 0, 2014, 2, 1, 115, 0, 2, 1, 194, 388, 20, 0, 0, 2, 1, 121,
@@ -109,6 +132,9 @@ static const int probs_sat[] = {
     13, 11, 0, 51, 1, 13, 19, 0, 26, 0, 7276, 4, 207, 31, 1, 2, 4, 6, 19, 8, 17, 4, 6,
     0, 1085, 0, 0, 0, 3, 489, 36, 1, 0, 1, 9420, 294, 28, 0, 57, 5, 0, 9, 2, 0, 1, 2,
     2, 0, 0, 9, 2, 29, 2, 2, 7, 0, 5, 490, 0, 7, 5, 0, 1, 8, 0, 0, 23255, 0, 1
+};
+static const uint8_t len_counts_sat[] = {
+    0, 1, 0, 2, 1, 2, 2, 5, 5, 7, 7, 8, 17, 23, 16, 24, 136,
 };
 
 // Test the example given on @see
@@ -154,13 +180,13 @@ int main(int argc, char **argv)
     }
 
     // Check handling of zero probabilities
-    if (check_lengths(16, 18, probs_zeroes, FF_ARRAY_ELEMS(probs_zeroes)))
+    if (check_lengths(16, probs_zeroes, FF_ARRAY_ELEMS(probs_zeroes), 18, len_counts_zeroes))
         ret = 1;
     // Check skewed distribution over 256 without saturated lengths
-    if (check_lengths(16, 41282, probs_skewed, FF_ARRAY_ELEMS(probs_skewed)))
+    if (check_lengths(16, probs_skewed, FF_ARRAY_ELEMS(probs_skewed), 41282, len_counts_skewed))
         ret = 1;
     // Check skewed distribution over 256 with saturated lengths
-    if (check_lengths(16, 669904, probs_sat, FF_ARRAY_ELEMS(probs_sat)))
+    if (check_lengths(16, probs_sat, FF_ARRAY_ELEMS(probs_sat), 669904, len_counts_sat))
         ret = 1;
 
     return ret;
