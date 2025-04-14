@@ -56,11 +56,11 @@ typedef struct DefaultContext {
 #define OFFSET(x) offsetof(DefaultContext, x)
 
 static const AVOption default_options[] = {
-    { "noprint_wrappers", "do not print headers and footers", OFFSET(noprint_wrappers), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1 },
-    { "nw",               "do not print headers and footers", OFFSET(noprint_wrappers), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1 },
-    { "nokey",          "force no key printing",     OFFSET(nokey),          AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1 },
-    { "nk",             "force no key printing",     OFFSET(nokey),          AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1 },
-    {NULL},
+    { "noprint_wrappers", "do not print headers and footers", OFFSET(noprint_wrappers), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1 },
+    { "nw",               "do not print headers and footers", OFFSET(noprint_wrappers), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1 },
+    { "nokey",            "force no key printing",            OFFSET(nokey),            AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1 },
+    { "nk",               "force no key printing",            OFFSET(nokey),            AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1 },
+    { NULL },
 };
 
 DEFINE_FORMATTER_CLASS(default);
@@ -69,7 +69,7 @@ DEFINE_FORMATTER_CLASS(default);
 static inline char *upcase_string(char *dst, size_t dst_size, const char *src)
 {
     int i;
-    for (i = 0; src[i] && i < dst_size-1; i++)
+    for (i = 0; src[i] && i < dst_size - 1; i++)
         dst[i] = av_toupper(src[i]);
     dst[i] = 0;
     return dst;
@@ -85,10 +85,10 @@ static void default_print_section_header(AVTextFormatContext *wctx, const void *
 
     av_bprint_clear(&wctx->section_pbuf[wctx->level]);
     if (parent_section &&
-        !(parent_section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER|AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY))) {
+        !(parent_section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY))) {
         def->nested_section[wctx->level] = 1;
         av_bprintf(&wctx->section_pbuf[wctx->level], "%s%s:",
-                   wctx->section_pbuf[wctx->level-1].str,
+                   wctx->section_pbuf[wctx->level - 1].str,
                    upcase_string(buf, sizeof(buf),
                                  av_x_if_null(section->element_name, section->name)));
     }
@@ -96,7 +96,7 @@ static void default_print_section_header(AVTextFormatContext *wctx, const void *
     if (def->noprint_wrappers || def->nested_section[wctx->level])
         return;
 
-    if (!(section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER|AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY)))
+    if (!(section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY)))
         writer_printf(wctx, "[%s]\n", upcase_string(buf, sizeof(buf), section->name));
 }
 
@@ -109,7 +109,7 @@ static void default_print_section_footer(AVTextFormatContext *wctx)
     if (def->noprint_wrappers || def->nested_section[wctx->level])
         return;
 
-    if (!(section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER|AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY)))
+    if (!(section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER | AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY)))
         writer_printf(wctx, "[/%s]\n", upcase_string(buf, sizeof(buf), section->name));
 }
 

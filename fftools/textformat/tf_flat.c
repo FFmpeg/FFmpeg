@@ -57,12 +57,12 @@ typedef struct FlatContext {
 #undef OFFSET
 #define OFFSET(x) offsetof(FlatContext, x)
 
-static const AVOption flat_options[]= {
-    {"sep_char", "set separator",    OFFSET(sep_str),    AV_OPT_TYPE_STRING, {.str="."},  0, 0 },
-    {"s",        "set separator",    OFFSET(sep_str),    AV_OPT_TYPE_STRING, {.str="."},  0, 0 },
-    {"hierarchical", "specify if the section specification should be hierarchical", OFFSET(hierarchical), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1 },
-    {"h",            "specify if the section specification should be hierarchical", OFFSET(hierarchical), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1 },
-    {NULL},
+static const AVOption flat_options[] = {
+    { "sep_char",     "set separator",                                               OFFSET(sep_str),      AV_OPT_TYPE_STRING, { .str = "." }, 0, 0 },
+    { "s",            "set separator",                                               OFFSET(sep_str),      AV_OPT_TYPE_STRING, { .str = "." }, 0, 0 },
+    { "hierarchical", "specify if the section specification should be hierarchical", OFFSET(hierarchical), AV_OPT_TYPE_BOOL,   { .i64 = 1   }, 0, 1 },
+    { "h",            "specify if the section specification should be hierarchical", OFFSET(hierarchical), AV_OPT_TYPE_BOOL,   { .i64 = 1   }, 0, 1 },
+    { NULL },
 };
 
 DEFINE_FORMATTER_CLASS(flat);
@@ -126,16 +126,18 @@ static void flat_print_section_header(AVTextFormatContext *wctx, const void *dat
     av_bprint_clear(buf);
     if (!parent_section)
         return;
-    av_bprintf(buf, "%s", wctx->section_pbuf[wctx->level-1].str);
+
+    av_bprintf(buf, "%s", wctx->section_pbuf[wctx->level - 1].str);
 
     if (flat->hierarchical ||
-        !(section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY|AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER))) {
+        !(section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY | AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER))) {
         av_bprintf(buf, "%s%s", wctx->section[wctx->level]->name, flat->sep_str);
 
         if (parent_section->flags & AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY) {
-            int n = parent_section->flags & AV_TEXTFORMAT_SECTION_FLAG_NUMBERING_BY_TYPE ?
-                wctx->nb_item_type[wctx->level-1][section->id] :
-                wctx->nb_item[wctx->level-1];
+            int n = parent_section->flags & AV_TEXTFORMAT_SECTION_FLAG_NUMBERING_BY_TYPE
+                ? wctx->nb_item_type[wctx->level - 1][section->id]
+                : wctx->nb_item[wctx->level - 1];
+
             av_bprintf(buf, "%d%s", n, flat->sep_str);
         }
     }
@@ -166,6 +168,6 @@ const AVTextFormatter avtextformatter_flat = {
     .print_section_header  = flat_print_section_header,
     .print_integer         = flat_print_int,
     .print_string          = flat_print_str,
-    .flags = AV_TEXTFORMAT_FLAG_SUPPORTS_OPTIONAL_FIELDS|AV_TEXTFORMAT_FLAG_SUPPORTS_MIXED_ARRAY_CONTENT,
+    .flags = AV_TEXTFORMAT_FLAG_SUPPORTS_OPTIONAL_FIELDS | AV_TEXTFORMAT_FLAG_SUPPORTS_MIXED_ARRAY_CONTENT,
     .priv_class            = &flat_class,
 };

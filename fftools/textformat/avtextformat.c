@@ -34,9 +34,9 @@
 #include "libavutil/opt.h"
 #include "avtextformat.h"
 
-#define SECTION_ID_NONE -1
+#define SECTION_ID_NONE (-1)
 
-#define SHOW_OPTIONAL_FIELDS_AUTO       -1
+#define SHOW_OPTIONAL_FIELDS_AUTO      (-1)
 #define SHOW_OPTIONAL_FIELDS_NEVER       0
 #define SHOW_OPTIONAL_FIELDS_ALWAYS      1
 
@@ -64,14 +64,14 @@ static const char *textcontext_get_formatter_name(void *p)
 
 static const AVOption textcontext_options[] = {
     { "string_validation", "set string validation mode",
-      OFFSET(string_validation), AV_OPT_TYPE_INT, {.i64=AV_TEXTFORMAT_STRING_VALIDATION_REPLACE}, 0, AV_TEXTFORMAT_STRING_VALIDATION_NB-1, .unit = "sv" },
+      OFFSET(string_validation), AV_OPT_TYPE_INT, { .i64 = AV_TEXTFORMAT_STRING_VALIDATION_REPLACE }, 0, AV_TEXTFORMAT_STRING_VALIDATION_NB - 1, .unit = "sv" },
     { "sv", "set string validation mode",
-      OFFSET(string_validation), AV_OPT_TYPE_INT, {.i64=AV_TEXTFORMAT_STRING_VALIDATION_REPLACE}, 0, AV_TEXTFORMAT_STRING_VALIDATION_NB-1, .unit = "sv" },
-        { "ignore",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AV_TEXTFORMAT_STRING_VALIDATION_IGNORE},  .unit = "sv" },
-        { "replace", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AV_TEXTFORMAT_STRING_VALIDATION_REPLACE}, .unit = "sv" },
-        { "fail",    NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AV_TEXTFORMAT_STRING_VALIDATION_FAIL},    .unit = "sv" },
-    { "string_validation_replacement", "set string validation replacement string", OFFSET(string_validation_replacement), AV_OPT_TYPE_STRING, {.str=""}},
-    { "svr", "set string validation replacement string", OFFSET(string_validation_replacement), AV_OPT_TYPE_STRING, {.str="\xEF\xBF\xBD"}},
+      OFFSET(string_validation), AV_OPT_TYPE_INT, { .i64 = AV_TEXTFORMAT_STRING_VALIDATION_REPLACE }, 0, AV_TEXTFORMAT_STRING_VALIDATION_NB - 1, .unit = "sv" },
+        { "ignore",  NULL, 0, AV_OPT_TYPE_CONST,  { .i64 = AV_TEXTFORMAT_STRING_VALIDATION_IGNORE },  .unit = "sv" },
+        { "replace", NULL, 0, AV_OPT_TYPE_CONST,  { .i64 = AV_TEXTFORMAT_STRING_VALIDATION_REPLACE }, .unit = "sv" },
+        { "fail",    NULL, 0, AV_OPT_TYPE_CONST,  { .i64 = AV_TEXTFORMAT_STRING_VALIDATION_FAIL },    .unit = "sv" },
+    { "string_validation_replacement", "set string validation replacement string", OFFSET(string_validation_replacement), AV_OPT_TYPE_STRING, { .str = "" } },
+    { "svr", "set string validation replacement string", OFFSET(string_validation_replacement), AV_OPT_TYPE_STRING, { .str = "\xEF\xBF\xBD" } },
     { NULL }
 };
 
@@ -126,7 +126,7 @@ void avtext_context_close(AVTextFormatContext **ptctx)
 
 
 int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *formatter, AVTextWriterContext *writer_context, const char *args,
-                        const struct AVTextFormatSection *sections, int nb_sections,
+                        const AVTextFormatSection *sections, int nb_sections,
                         int show_value_unit,
                         int use_value_prefix,
                         int use_byte_value_binary_prefix,
@@ -209,7 +209,7 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
                     av_log(NULL, AV_LOG_ERROR, " %s", n);
                 av_log(NULL, AV_LOG_ERROR, "\n");
             }
-            return ret;
+            goto fail;
         }
     }
 
@@ -224,10 +224,10 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
             if (ret < 0) {
                 AVBPrint bp;
                 av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
-                bprint_bytes(&bp, p0, p-p0),
-                    av_log(tctx, AV_LOG_ERROR,
-                           "Invalid UTF8 sequence %s found in string validation replace '%s'\n",
-                           bp.str, tctx->string_validation_replacement);
+                bprint_bytes(&bp, p0, p - p0);
+                av_log(tctx, AV_LOG_ERROR,
+                       "Invalid UTF8 sequence %s found in string validation replace '%s'\n",
+                       bp.str, tctx->string_validation_replacement);
                 return ret;
             }
         }
@@ -248,15 +248,13 @@ fail:
 }
 
 /* Temporary definitions during refactoring */
-static const char unit_second_str[]         = "s"    ;
-static const char unit_hertz_str[]          = "Hz"   ;
-static const char unit_byte_str[]           = "byte" ;
+static const char unit_second_str[]         = "s";
+static const char unit_hertz_str[]          = "Hz";
+static const char unit_byte_str[]           = "byte";
 static const char unit_bit_per_second_str[] = "bit/s";
 
 
-void avtext_print_section_header(AVTextFormatContext *tctx,
-                                               const void *data,
-                                               int section_id)
+void avtext_print_section_header(AVTextFormatContext *tctx, const void *data, int section_id)
 {
     tctx->level++;
     av_assert0(tctx->level < SECTION_MAX_NB_LEVELS);
@@ -273,7 +271,7 @@ void avtext_print_section_footer(AVTextFormatContext *tctx)
 {
     int section_id = tctx->section[tctx->level]->id;
     int parent_section_id = tctx->level ?
-        tctx->section[tctx->level-1]->id : SECTION_ID_NONE;
+        tctx->section[tctx->level - 1]->id : SECTION_ID_NONE;
 
     if (parent_section_id != SECTION_ID_NONE) {
         tctx->nb_item[tctx->level - 1]++;
@@ -285,8 +283,7 @@ void avtext_print_section_footer(AVTextFormatContext *tctx)
     tctx->level--;
 }
 
-void avtext_print_integer(AVTextFormatContext *tctx,
-                                        const char *key, int64_t val)
+void avtext_print_integer(AVTextFormatContext *tctx, const char *key, int64_t val)
 {
     const struct AVTextFormatSection *section = tctx->section[tctx->level];
 
@@ -324,11 +321,9 @@ static inline int validate_string(AVTextFormatContext *tctx, char **dstp, const 
 
             switch (tctx->string_validation) {
             case AV_TEXTFORMAT_STRING_VALIDATION_FAIL:
-                av_log(tctx, AV_LOG_ERROR,
-                       "Invalid UTF-8 sequence found in string '%s'\n", src);
+                av_log(tctx, AV_LOG_ERROR, "Invalid UTF-8 sequence found in string '%s'\n", src);
                 ret = AVERROR_INVALIDDATA;
                 goto end;
-                break;
 
             case AV_TEXTFORMAT_STRING_VALIDATION_REPLACE:
                 av_bprintf(&dstbuf, "%s", tctx->string_validation_replacement);
@@ -340,11 +335,10 @@ static inline int validate_string(AVTextFormatContext *tctx, char **dstp, const 
             av_bprint_append_data(&dstbuf, p0, p-p0);
     }
 
-    if (invalid_chars_nb && tctx->string_validation == AV_TEXTFORMAT_STRING_VALIDATION_REPLACE) {
+    if (invalid_chars_nb && tctx->string_validation == AV_TEXTFORMAT_STRING_VALIDATION_REPLACE)
         av_log(tctx, AV_LOG_WARNING,
                "%d invalid UTF-8 sequence(s) found in string '%s', replaced with '%s'\n",
                invalid_chars_nb, src, tctx->string_validation_replacement);
-    }
 
 end:
     av_bprint_finalize(&dstbuf, dstp);
@@ -352,7 +346,11 @@ end:
 }
 
 struct unit_value {
-    union { double d; int64_t i; } val;
+    union {
+        double  d;
+        int64_t i;
+    } val;
+
     const char *unit;
 };
 
@@ -402,8 +400,9 @@ static char *value_string(AVTextFormatContext *tctx, char *buf, int buf_size, st
             snprintf(buf, buf_size, "%f", vald);
         else
             snprintf(buf, buf_size, "%"PRId64, vali);
+
         av_strlcatf(buf, buf_size, "%s%s%s", *prefix_string || tctx->show_value_unit ? " " : "",
-                 prefix_string, tctx->show_value_unit ? uv.unit : "");
+                    prefix_string, tctx->show_value_unit ? uv.unit : "");
     }
 
     return buf;
@@ -427,8 +426,8 @@ int avtext_print_string(AVTextFormatContext *tctx, const char *key, const char *
 
     if (tctx->show_optional_fields == SHOW_OPTIONAL_FIELDS_NEVER ||
         (tctx->show_optional_fields == SHOW_OPTIONAL_FIELDS_AUTO
-        && (flags & AV_TEXTFORMAT_PRINT_STRING_OPTIONAL)
-        && !(tctx->formatter->flags & AV_TEXTFORMAT_FLAG_SUPPORTS_OPTIONAL_FIELDS)))
+            && (flags & AV_TEXTFORMAT_PRINT_STRING_OPTIONAL)
+            && !(tctx->formatter->flags & AV_TEXTFORMAT_FLAG_SUPPORTS_OPTIONAL_FIELDS)))
         return 0;
 
     if (section->show_all_entries || av_dict_get(section->entries_to_show, key, NULL, 0)) {
@@ -440,11 +439,10 @@ int avtext_print_string(AVTextFormatContext *tctx, const char *key, const char *
             if (ret < 0) goto end;
             tctx->formatter->print_string(tctx, key1, val1);
         end:
-            if (ret < 0) {
+            if (ret < 0)
                 av_log(tctx, AV_LOG_ERROR,
                        "Invalid key=value string combination %s=%s in section %s\n",
                        key, val, section->unique_name);
-            }
             av_free(key1);
             av_free(val1);
         } else {
@@ -457,8 +455,7 @@ int avtext_print_string(AVTextFormatContext *tctx, const char *key, const char *
     return ret;
 }
 
-void avtext_print_rational(AVTextFormatContext *tctx,
-                                         const char *key, AVRational q, char sep)
+void avtext_print_rational(AVTextFormatContext *tctx, const char *key, AVRational q, char sep)
 {
     char buf[44];
     snprintf(buf, sizeof(buf), "%d%c%d", q.num, sep, q.den);
@@ -466,7 +463,7 @@ void avtext_print_rational(AVTextFormatContext *tctx,
 }
 
 void avtext_print_time(AVTextFormatContext *tctx, const char *key,
-                              int64_t ts, const AVRational *time_base, int is_duration)
+                       int64_t ts, const AVRational *time_base, int is_duration)
 {
     char buf[128];
 
@@ -484,15 +481,14 @@ void avtext_print_time(AVTextFormatContext *tctx, const char *key,
 
 void avtext_print_ts(AVTextFormatContext *tctx, const char *key, int64_t ts, int is_duration)
 {
-    if ((!is_duration && ts == AV_NOPTS_VALUE) || (is_duration && ts == 0)) {
+    if ((!is_duration && ts == AV_NOPTS_VALUE) || (is_duration && ts == 0))
         avtext_print_string(tctx, key, "N/A", AV_TEXTFORMAT_PRINT_STRING_OPTIONAL);
-    } else {
+    else
         avtext_print_integer(tctx, key, ts);
-    }
 }
 
 void avtext_print_data(AVTextFormatContext *tctx, const char *name,
-                              const uint8_t *data, int size)
+                       const uint8_t *data, int size)
 {
     AVBPrint bp;
     int offset = 0, l, i;
@@ -520,12 +516,13 @@ void avtext_print_data(AVTextFormatContext *tctx, const char *name,
 }
 
 void avtext_print_data_hash(AVTextFormatContext *tctx, const char *name,
-                                   const uint8_t *data, int size)
+                            const uint8_t *data, int size)
 {
     char *p, buf[AV_HASH_MAX_SIZE * 2 + 64] = { 0 };
 
     if (!tctx->hash)
         return;
+
     av_hash_init(tctx->hash);
     av_hash_update(tctx->hash, data, size);
     snprintf(buf, sizeof(buf), "%s:", av_hash_get_name(tctx->hash));
@@ -551,7 +548,7 @@ void avtext_print_integers(AVTextFormatContext *tctx, const char *name,
             else if (bytes == 2) av_bprintf(&bp, format, AV_RN16(data));
             else if (bytes == 4) av_bprintf(&bp, format, AV_RN32(data));
             data += bytes;
-            size --;
+            size--;
         }
         av_bprintf(&bp, "\n");
         offset += offset_add;
@@ -641,7 +638,8 @@ fail:
     return ret;
 }
 
-static const AVTextFormatter *registered_formatters[7+1];
+static const AVTextFormatter *registered_formatters[7 + 1];
+
 static void formatters_register_all(void)
 {
     static int initialized;

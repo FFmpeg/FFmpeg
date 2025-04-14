@@ -37,11 +37,11 @@ typedef struct AVTextWriter {
     int priv_size;                  ///< private size for the writer private class
     const char *name;
 
-    int (* init)(AVTextWriterContext *wctx);
-    void (* uninit)(AVTextWriterContext *wctx);
-    void (* writer_w8)(AVTextWriterContext *wctx, int b);
-    void (* writer_put_str)(AVTextWriterContext *wctx, const char *str);
-    void (* writer_printf)(AVTextWriterContext *wctx, const char *fmt, ...);
+    int (*init)(AVTextWriterContext *wctx);
+    void (*uninit)(AVTextWriterContext *wctx);
+    void (*writer_w8)(AVTextWriterContext *wctx, int b);
+    void (*writer_put_str)(AVTextWriterContext *wctx, const char *str);
+    void (*writer_printf)(AVTextWriterContext *wctx, const char *fmt, ...);
 } AVTextWriter;
 
 typedef struct AVTextWriterContext {
@@ -49,7 +49,6 @@ typedef struct AVTextWriterContext {
     const AVTextWriter *writer;
     const char *name;
     void *priv;                     ///< private data for use by the writer
-
 } AVTextWriterContext;
 
 

@@ -56,9 +56,9 @@ typedef struct JSONContext {
 #undef OFFSET
 #define OFFSET(x) offsetof(JSONContext, x)
 
-static const AVOption json_options[]= {
-    { "compact", "enable compact output", OFFSET(compact), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1 },
-    { "c",       "enable compact output", OFFSET(compact), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1 },
+static const AVOption json_options[] = {
+    { "compact", "enable compact output", OFFSET(compact), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1 },
+    { "c",       "enable compact output", OFFSET(compact), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1 },
     { NULL }
 };
 
@@ -76,8 +76,8 @@ static av_cold int json_init(AVTextFormatContext *wctx)
 
 static const char *json_escape_str(AVBPrint *dst, const char *src, void *log_ctx)
 {
-    static const char json_escape[] = {'"', '\\', '\b', '\f', '\n', '\r', '\t', 0};
-    static const char json_subst[]  = {'"', '\\',  'b',  'f',  'n',  'r',  't', 0};
+    static const char json_escape[] = { '"', '\\', '\b', '\f', '\n', '\r', '\t', 0 };
+    static const char json_subst[]  = { '"', '\\',  'b',  'f',  'n',  'r',  't', 0 };
     const char *p;
 
     for (p = src; *p; p++) {

@@ -58,11 +58,11 @@ typedef struct XMLContext {
 #define OFFSET(x) offsetof(XMLContext, x)
 
 static const AVOption xml_options[] = {
-    {"fully_qualified", "specify if the output should be fully qualified", OFFSET(fully_qualified), AV_OPT_TYPE_BOOL, {.i64=0},  0, 1 },
-    {"q",               "specify if the output should be fully qualified", OFFSET(fully_qualified), AV_OPT_TYPE_BOOL, {.i64=0},  0, 1 },
-    {"xsd_strict",      "ensure that the output is XSD compliant",         OFFSET(xsd_strict),      AV_OPT_TYPE_BOOL, {.i64=0},  0, 1 },
-    {"x",               "ensure that the output is XSD compliant",         OFFSET(xsd_strict),      AV_OPT_TYPE_BOOL, {.i64=0},  0, 1 },
-    {NULL},
+    { "fully_qualified", "specify if the output should be fully qualified", OFFSET(fully_qualified), AV_OPT_TYPE_BOOL, { .i64 = 0 },  0, 1 },
+    { "q",               "specify if the output should be fully qualified", OFFSET(fully_qualified), AV_OPT_TYPE_BOOL, { .i64 = 0 },  0, 1 },
+    { "xsd_strict",      "ensure that the output is XSD compliant",         OFFSET(xsd_strict),      AV_OPT_TYPE_BOOL, { .i64 = 0 },  0, 1 },
+    { "x",               "ensure that the output is XSD compliant",         OFFSET(xsd_strict),      AV_OPT_TYPE_BOOL, { .i64 = 0 },  0, 1 },
+    { NULL },
 };
 
 DEFINE_FORMATTER_CLASS(xml);
@@ -104,8 +104,8 @@ static void xml_print_section_header(AVTextFormatContext *wctx, const void *data
 
         writer_put_str(wctx, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         writer_printf(wctx, "<%sffprobe%s>\n",
-               xml->fully_qualified ? "ffprobe:" : "",
-               xml->fully_qualified ? qual : "");
+                      xml->fully_qualified ? "ffprobe:" : "",
+                      xml->fully_qualified ? qual : "");
         return;
     }
 
@@ -115,12 +115,13 @@ static void xml_print_section_header(AVTextFormatContext *wctx, const void *data
     }
 
     if (parent_section && (parent_section->flags & AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER) &&
-        wctx->level && wctx->nb_item[wctx->level-1])
+        wctx->level && wctx->nb_item[wctx->level - 1])
         writer_w8(wctx, '\n');
     xml->indent_level++;
 
-    if (section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY|AV_TEXTFORMAT_SECTION_FLAG_HAS_VARIABLE_FIELDS)) {
-        XML_INDENT(); writer_printf(wctx, "<%s", section->name);
+    if (section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY | AV_TEXTFORMAT_SECTION_FLAG_HAS_VARIABLE_FIELDS)) {
+        XML_INDENT();
+        writer_printf(wctx, "<%s", section->name);
 
         if (section->flags & AV_TEXTFORMAT_SECTION_FLAG_HAS_TYPE) {
             AVBPrint buf;
@@ -131,7 +132,8 @@ static void xml_print_section_header(AVTextFormatContext *wctx, const void *data
         }
         writer_printf(wctx, ">\n", section->name);
     } else {
-        XML_INDENT(); writer_printf(wctx, "<%s ", section->name);
+        XML_INDENT();
+        writer_printf(wctx, "<%s ", section->name);
         xml->within_tag = 1;
     }
 }
@@ -148,7 +150,8 @@ static void xml_print_section_footer(AVTextFormatContext *wctx)
         writer_put_str(wctx, "/>\n");
         xml->indent_level--;
     } else {
-        XML_INDENT(); writer_printf(wctx, "</%s>\n", section->name);
+        XML_INDENT();
+        writer_printf(wctx, "</%s>\n", section->name);
         xml->indent_level--;
     }
 }
@@ -195,7 +198,8 @@ static void xml_print_value(AVTextFormatContext *wctx, const char *key,
     av_bprint_finalize(&buf, NULL);
 }
 
-static inline void xml_print_str(AVTextFormatContext *wctx, const char *key, const char *value) {
+static inline void xml_print_str(AVTextFormatContext *wctx, const char *key, const char *value)
+{
     xml_print_value(wctx, key, value, 0, 0);
 }
 

@@ -46,11 +46,11 @@ typedef struct AVTextFormatSection {
 #define AV_TEXTFORMAT_SECTION_FLAG_NUMBERING_BY_TYPE 16 ///< the items in this array section should be numbered individually by type
 
     int flags;
-    const int children_ids[SECTION_MAX_NB_CHILDREN+1]; ///< list of children section IDS, terminated by -1
+    const int children_ids[SECTION_MAX_NB_CHILDREN + 1]; ///< list of children section IDS, terminated by -1
     const char *element_name; ///< name of the contained element, if provided
     const char *unique_name;  ///< unique section name, in case the name is ambiguous
     AVDictionary *entries_to_show;
-    const char *(* get_type)(const void *data); ///< function returning a type if defined, must be defined when SECTION_FLAG_HAS_TYPE is defined
+    const char *(*get_type)(const void *data); ///< function returning a type if defined, must be defined when SECTION_FLAG_HAS_TYPE is defined
     int show_all_entries;
 } AVTextFormatSection;
 
@@ -86,17 +86,17 @@ typedef struct AVTextFormatter {
 #define SECTION_MAX_NB_SECTIONS 100
 
 struct AVTextFormatContext {
-    const AVClass *class;           ///< class of the formatter
-    const AVTextFormatter *formatter;           ///< the AVTextFormatter of which this is an instance
-    AVTextWriterContext *writer;           ///< the AVTextWriterContext
+    const AVClass *class;              ///< class of the formatter
+    const AVTextFormatter *formatter;  ///< the AVTextFormatter of which this is an instance
+    AVTextWriterContext *writer;       ///< the AVTextWriterContext
 
-    char *name;                     ///< name of this formatter instance
-    void *priv;                     ///< private data for use by the filter
+    char *name;                        ///< name of this formatter instance
+    void *priv;                        ///< private data for use by the filter
 
-    const struct AVTextFormatSection *sections; ///< array containing all sections
-    int nb_sections;                ///< number of sections
+    const AVTextFormatSection *sections; ///< array containing all sections
+    int nb_sections;                   ///< number of sections
 
-    int level;                      ///< current level, starting from 0
+    int level;                         ///< current level, starting from 0
 
     /** number of the item printed in the given section, starting from 0 */
     unsigned int nb_item[SECTION_MAX_NB_LEVELS];
