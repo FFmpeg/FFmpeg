@@ -590,10 +590,12 @@ int avtextwriter_context_close(AVTextWriterContext **pwctx)
     if (!wctx)
         return EINVAL;
 
-    if (wctx->writer->uninit)
-        wctx->writer->uninit(wctx);
-    if (wctx->writer->priv_class)
-        av_opt_free(wctx->priv);
+    if (wctx->writer) {
+        if (wctx->writer->uninit)
+            wctx->writer->uninit(wctx);
+        if (wctx->writer->priv_class)
+            av_opt_free(wctx->priv);
+    }
     av_freep(&wctx->priv);
     av_freep(pwctx);
     return ret;
