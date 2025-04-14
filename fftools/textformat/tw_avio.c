@@ -40,9 +40,8 @@ static av_cold void iowriter_uninit(AVTextWriterContext *wctx)
 {
     IOWriterContext *ctx = wctx->priv;
 
-    if (ctx->close_on_uninit && ctx->avio_context) {
-        avio_close(ctx->avio_context);
-    }
+    if (ctx->close_on_uninit)
+        avio_closep(&ctx->avio_context);
 }
 
 static void io_w8(AVTextWriterContext *wctx, int b)
