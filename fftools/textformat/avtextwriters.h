@@ -61,7 +61,7 @@ int avtextwriter_create_stdout(AVTextWriterContext **pwctx);
 
 int avtextwriter_create_avio(AVTextWriterContext **pwctx, AVIOContext *avio_ctx, int close_on_uninit);
 
-int avtextwriter_create_file(AVTextWriterContext **pwctx, const char *output_filename, int close_on_uninit);
+int avtextwriter_create_file(AVTextWriterContext **pwctx, const char *output_filename);
 
 int avtextwriter_create_buffer(AVTextWriterContext **pwctx, AVBPrint *buffer);
 

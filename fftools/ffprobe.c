@@ -3161,7 +3161,7 @@ int main(int argc, char **argv)
     }
 
     if (output_filename) {
-        ret = avtextwriter_create_file(&wctx, output_filename, 1);
+        ret = avtextwriter_create_file(&wctx, output_filename);
     } else
         ret = avtextwriter_create_stdout(&wctx);
 

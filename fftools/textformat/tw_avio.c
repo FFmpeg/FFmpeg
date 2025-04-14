@@ -76,7 +76,7 @@ const AVTextWriter avtextwriter_avio = {
     .writer_w8            = io_w8
 };
 
-int avtextwriter_create_file(AVTextWriterContext **pwctx, const char *output_filename, int close_on_uninit)
+int avtextwriter_create_file(AVTextWriterContext **pwctx, const char *output_filename)
 {
     IOWriterContext *ctx;
     int ret;
@@ -95,7 +95,7 @@ int avtextwriter_create_file(AVTextWriterContext **pwctx, const char *output_fil
         return ret;
     }
 
-    ctx->close_on_uninit = close_on_uninit;
+    ctx->close_on_uninit = 1;
 
     return ret;
 }
