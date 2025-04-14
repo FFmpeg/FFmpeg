@@ -97,6 +97,18 @@ const char *avfilter_pad_get_name(const AVFilterPad *pads, int pad_idx);
 enum AVMediaType avfilter_pad_get_type(const AVFilterPad *pads, int pad_idx);
 
 /**
+ * Get the hardware frames context of a filter link.
+ *
+ * @param link an AVFilterLink
+ *
+ * @return a ref-counted copy of the link's hw_frames_ctx field if there is
+ *         a hardware frames context associated with the link or NULL otherwise.
+ *         The returned AVBufferRef needs to be released with av_buffer_unref()
+ *         when it is no longer used.
+ */
+AVBufferRef* avfilter_link_get_hw_frames_ctx(AVFilterLink *link);
+
+/**
  * Lists of formats / etc. supported by an end of a link.
  *
  * This structure is directly part of AVFilterLink, in two copies:

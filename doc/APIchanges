@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
+2025-02-xx - xxxxxxxxxx - lavfi 10.10.100 - avfilter.h
+  Add avfilter_link_get_hw_frames_ctx().
+
 2025-04-21 - xxxxxxxxxx - lavu 60.2.100 - log.h
   Add AV_CLASS_CATEGORY_HWDEVICE.
 

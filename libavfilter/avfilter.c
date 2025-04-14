@@ -989,6 +989,15 @@ enum AVMediaType avfilter_pad_get_type(const AVFilterPad *pads, int pad_idx)
     return pads[pad_idx].type;
 }
 
+AVBufferRef *avfilter_link_get_hw_frames_ctx(AVFilterLink *link)
+{
+    FilterLink *plink = ff_filter_link(link);
+    if (plink->hw_frames_ctx)
+        return av_buffer_ref(plink->hw_frames_ctx);
+
+    return NULL;
+}
+
 static int default_filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     return ff_filter_frame(link->dst->outputs[0], frame);
