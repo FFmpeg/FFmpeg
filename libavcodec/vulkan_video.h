@@ -71,12 +71,14 @@ int ff_vk_h265_level_to_av(StdVideoH265LevelIdc level);
 
 StdVideoH264LevelIdc ff_vk_h264_level_to_vk(int level_idc);
 StdVideoH265LevelIdc ff_vk_h265_level_to_vk(int level_idc);
+StdVideoAV1Level     ff_vk_av1_level_to_vk(int level);
 
 /**
  * Convert profile from/to AV to Vulkan
  */
 StdVideoH264ProfileIdc ff_vk_h264_profile_to_vk(int profile);
 StdVideoH265ProfileIdc ff_vk_h265_profile_to_vk(int profile);
+StdVideoAV1Profile     ff_vk_av1_profile_to_vk(int profile);
 
 /**
  * Creates image views for video frames.

@@ -226,6 +226,37 @@ StdVideoH265LevelIdc ff_vk_h265_level_to_vk(int level_idc)
     }
 }
 
+StdVideoAV1Level ff_vk_av1_level_to_vk(int level)
+{
+    switch (level) {
+    case 20: return STD_VIDEO_AV1_LEVEL_2_0;
+    case 21: return STD_VIDEO_AV1_LEVEL_2_1;
+    case 22: return STD_VIDEO_AV1_LEVEL_2_2;
+    case 23: return STD_VIDEO_AV1_LEVEL_2_3;
+    case 30: return STD_VIDEO_AV1_LEVEL_3_0;
+    case 31: return STD_VIDEO_AV1_LEVEL_3_1;
+    case 32: return STD_VIDEO_AV1_LEVEL_3_2;
+    case 33: return STD_VIDEO_AV1_LEVEL_3_3;
+    case 40: return STD_VIDEO_AV1_LEVEL_4_0;
+    case 41: return STD_VIDEO_AV1_LEVEL_4_1;
+    case 42: return STD_VIDEO_AV1_LEVEL_4_2;
+    case 43: return STD_VIDEO_AV1_LEVEL_4_3;
+    case 50: return STD_VIDEO_AV1_LEVEL_5_0;
+    case 51: return STD_VIDEO_AV1_LEVEL_5_1;
+    case 52: return STD_VIDEO_AV1_LEVEL_5_2;
+    case 53: return STD_VIDEO_AV1_LEVEL_5_3;
+    case 60: return STD_VIDEO_AV1_LEVEL_6_0;
+    case 61: return STD_VIDEO_AV1_LEVEL_6_1;
+    case 62: return STD_VIDEO_AV1_LEVEL_6_2;
+    case 63: return STD_VIDEO_AV1_LEVEL_6_3;
+    case 70: return STD_VIDEO_AV1_LEVEL_7_0;
+    case 71: return STD_VIDEO_AV1_LEVEL_7_1;
+    case 72: return STD_VIDEO_AV1_LEVEL_7_2;
+    default:
+    case 73: return STD_VIDEO_AV1_LEVEL_7_3;
+    }
+}
+
 StdVideoH264ProfileIdc ff_vk_h264_profile_to_vk(int profile)
 {
     switch (profile) {
@@ -244,6 +275,16 @@ StdVideoH265ProfileIdc ff_vk_h265_profile_to_vk(int profile)
     case AV_PROFILE_HEVC_MAIN_10: return STD_VIDEO_H265_PROFILE_IDC_MAIN_10;
     case AV_PROFILE_HEVC_REXT:    return STD_VIDEO_H265_PROFILE_IDC_FORMAT_RANGE_EXTENSIONS;
     default: return STD_VIDEO_H265_PROFILE_IDC_INVALID;
+    }
+}
+
+StdVideoAV1Profile ff_vk_av1_profile_to_vk(int profile)
+{
+    switch (profile) {
+    case AV_PROFILE_AV1_MAIN: return STD_VIDEO_AV1_PROFILE_MAIN;
+    case AV_PROFILE_AV1_HIGH: return STD_VIDEO_AV1_PROFILE_HIGH;
+    case AV_PROFILE_AV1_PROFESSIONAL: return STD_VIDEO_AV1_PROFILE_PROFESSIONAL;
+    default: return STD_VIDEO_AV1_PROFILE_INVALID;
     }
 }
 
