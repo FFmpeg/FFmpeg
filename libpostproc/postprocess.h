@@ -87,7 +87,7 @@ void pp_free_context(pp_context *ppContext);
 
 #define PP_CPU_CAPS_MMX   0x80000000
 #define PP_CPU_CAPS_MMX2  0x20000000
-#if PP_AMD_3DNOW
+#if FF_API_PP_AMD_3DNOW
 #define PP_CPU_CAPS_3DNOW 0x40000000
 #endif
 #define PP_CPU_CAPS_ALTIVEC 0x10000000
