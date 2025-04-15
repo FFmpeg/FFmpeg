@@ -55,7 +55,7 @@ typedef struct AVTextWriterContext {
 
 int avtextwriter_context_open(AVTextWriterContext **pwctx, const AVTextWriter *writer);
 
-int avtextwriter_context_close(AVTextWriterContext **pwctx);
+void avtextwriter_context_close(AVTextWriterContext **pwctx);
 
 int avtextwriter_create_stdout(AVTextWriterContext **pwctx);
 

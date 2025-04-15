@@ -99,14 +99,13 @@ static void bprint_bytes(AVBPrint *bp, const uint8_t *ubuf, size_t ubuf_size)
         av_bprintf(bp, "%02X", ubuf[i]);
 }
 
-int avtext_context_close(AVTextFormatContext **ptctx)
+void avtext_context_close(AVTextFormatContext **ptctx)
 {
     AVTextFormatContext *tctx = *ptctx;
     int i;
-    int ret = 0;
 
     if (!tctx)
-        return AVERROR(EINVAL);
+        return;
 
     av_hash_freep(&tctx->hash);
 
@@ -123,7 +122,6 @@ int avtext_context_close(AVTextFormatContext **ptctx)
     av_freep(&tctx->priv);
     av_opt_free(tctx);
     av_freep(ptctx);
-    return ret;
 }
 
 
@@ -584,13 +582,13 @@ static const AVClass textwriter_class = {
 };
 
 
-int avtextwriter_context_close(AVTextWriterContext **pwctx)
+void avtextwriter_context_close(AVTextWriterContext **pwctx)
 {
     AVTextWriterContext *wctx = *pwctx;
     int ret = 0;
 
     if (!wctx)
-        return AVERROR(EINVAL);
+        return;
 
     if (wctx->writer) {
         if (wctx->writer->uninit)
@@ -600,7 +598,6 @@ int avtextwriter_context_close(AVTextWriterContext **pwctx)
     }
     av_freep(&wctx->priv);
     av_freep(pwctx);
-    return ret;
 }
 
 

@@ -132,7 +132,7 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
                         int show_optional_fields,
                         char *show_data_hash);
 
-int avtext_context_close(AVTextFormatContext **tctx);
+void avtext_context_close(AVTextFormatContext **tctx);
 
 
 void avtext_print_section_header(AVTextFormatContext *tctx, const void *data, int section_id);
