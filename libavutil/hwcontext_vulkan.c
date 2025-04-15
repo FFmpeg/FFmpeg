@@ -81,7 +81,7 @@ typedef struct VulkanDeviceFeatures {
     VkPhysicalDeviceTimelineSemaphoreFeatures timeline_semaphore;
 
 #ifdef VK_KHR_shader_expect_assume
-    VkPhysicalDeviceShaderExpectAssumeFeatures expect_assume;
+    VkPhysicalDeviceShaderExpectAssumeFeaturesKHR expect_assume;
 #endif
 
     VkPhysicalDeviceVideoMaintenance1FeaturesKHR video_maintenance_1;
