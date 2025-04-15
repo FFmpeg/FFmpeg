@@ -106,7 +106,7 @@ int avtext_context_close(AVTextFormatContext **ptctx)
     int ret = 0;
 
     if (!tctx)
-        return EINVAL;
+        return AVERROR(EINVAL);
 
     av_hash_freep(&tctx->hash);
 
@@ -590,7 +590,7 @@ int avtextwriter_context_close(AVTextWriterContext **pwctx)
     int ret = 0;
 
     if (!wctx)
-        return EINVAL;
+        return AVERROR(EINVAL);
 
     if (wctx->writer) {
         if (wctx->writer->uninit)
