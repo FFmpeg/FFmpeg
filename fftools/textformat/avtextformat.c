@@ -112,12 +112,14 @@ int avtext_context_close(AVTextFormatContext **ptctx)
 
     av_hash_freep(&tctx->hash);
 
-    if (tctx->formatter->uninit)
-        tctx->formatter->uninit(tctx);
+    if (tctx->formatter) {
+        if (tctx->formatter->uninit)
+            tctx->formatter->uninit(tctx);
+        if (tctx->formatter->priv_class)
+            av_opt_free(tctx->priv);
+    }
     for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
         av_bprint_finalize(&tctx->section_pbuf[i], NULL);
-    if (tctx->formatter->priv_class)
-        av_opt_free(tctx->priv);
     av_freep(&tctx->priv);
     av_opt_free(tctx);
     av_freep(ptctx);
