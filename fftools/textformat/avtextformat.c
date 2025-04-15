@@ -144,6 +144,12 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
         goto fail;
     }
 
+    for (int i = 0; i < SECTION_MAX_NB_LEVELS; i++)
+        av_bprint_init(&tctx->section_pbuf[i], 1, AV_BPRINT_SIZE_UNLIMITED);
+
+    tctx->class = &textcontext_class;
+    av_opt_set_defaults(tctx);
+
     if (!(tctx->priv = av_mallocz(formatter->priv_size))) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -161,14 +167,11 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
         goto fail;
     }
 
-    tctx->class = &textcontext_class;
     tctx->formatter = formatter;
     tctx->level = -1;
     tctx->sections = sections;
     tctx->nb_sections = nb_sections;
     tctx->writer = writer_context;
-
-    av_opt_set_defaults(tctx);
 
     if (formatter->priv_class) {
         void *priv_ctx = tctx->priv;
@@ -231,9 +234,6 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
             }
         }
     }
-
-    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
-        av_bprint_init(&tctx->section_pbuf[i], 1, AV_BPRINT_SIZE_UNLIMITED);
 
     if (tctx->formatter->init)
         ret = tctx->formatter->init(tctx);
