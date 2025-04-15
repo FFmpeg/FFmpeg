@@ -28,6 +28,10 @@ void ff_h26x_sao_band_filter_8x8_8_neon(uint8_t *_dst, const uint8_t *_src,
                                         ptrdiff_t stride_dst, ptrdiff_t stride_src,
                                         const int16_t *sao_offset_val, int sao_left_class,
                                         int width, int height);
+void ff_h26x_sao_band_filter_16x16_8_neon(uint8_t *_dst, const uint8_t *_src,
+                                        ptrdiff_t stride_dst, ptrdiff_t stride_src,
+                                        const int16_t *sao_offset_val, int sao_left_class,
+                                        int width, int height);
 void ff_hevc_sao_edge_filter_16x16_8_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride_dst,
                                           const int16_t *sao_offset_val, int eo, int width, int height);
 void ff_hevc_sao_edge_filter_8x8_8_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride_dst,

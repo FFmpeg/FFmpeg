@@ -197,8 +197,9 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->inter.dmvr[1][1] = ff_vvc_dmvr_hv_8_neon;
         c->inter.apply_bdof = apply_bdof_8;
 
-        for (int i = 0; i < FF_ARRAY_ELEMS(c->sao.band_filter); i++)
-            c->sao.band_filter[i] = ff_h26x_sao_band_filter_8x8_8_neon;
+        c->sao.band_filter[0] = ff_h26x_sao_band_filter_8x8_8_neon;
+        for (int i = 1; i < FF_ARRAY_ELEMS(c->sao.band_filter); i++)
+            c->sao.band_filter[i] = ff_h26x_sao_band_filter_16x16_8_neon;
         c->sao.edge_filter[0] = ff_vvc_sao_edge_filter_8x8_8_neon;
         for (int i = 1; i < FF_ARRAY_ELEMS(c->sao.edge_filter); i++)
             c->sao.edge_filter[i] = ff_vvc_sao_edge_filter_16x16_8_neon;

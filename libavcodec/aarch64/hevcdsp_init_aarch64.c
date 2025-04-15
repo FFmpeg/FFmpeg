@@ -157,11 +157,11 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         c->idct_dc[2]                  = ff_hevc_idct_16x16_dc_8_neon;
         c->idct_dc[3]                  = ff_hevc_idct_32x32_dc_8_neon;
         c->transform_4x4_luma          = ff_hevc_transform_luma_4x4_neon_8;
-        c->sao_band_filter[0]          =
+        c->sao_band_filter[0]          = ff_h26x_sao_band_filter_8x8_8_neon;
         c->sao_band_filter[1]          =
         c->sao_band_filter[2]          =
         c->sao_band_filter[3]          =
-        c->sao_band_filter[4]          = ff_h26x_sao_band_filter_8x8_8_neon;
+        c->sao_band_filter[4]          = ff_h26x_sao_band_filter_16x16_8_neon;
         c->sao_edge_filter[0]          = ff_hevc_sao_edge_filter_8x8_8_neon;
         c->sao_edge_filter[1]          =
         c->sao_edge_filter[2]          =

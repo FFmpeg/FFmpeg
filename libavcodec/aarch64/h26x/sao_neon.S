@@ -35,48 +35,67 @@
 //                      int16_t *sao_offset_val, int sao_left_class,
 //                      int width, int height)
 function ff_h26x_sao_band_filter_8x8_8_neon, export=1
-        stp             xzr, xzr, [sp, #-64]!
+        stp             xzr, xzr, [sp, #-32]!
         stp             xzr, xzr, [sp, #16]
-        stp             xzr, xzr, [sp, #32]
-        stp             xzr, xzr, [sp, #48]
         mov             w8,  #4
-0:      ldrsh           x9, [x4,  x8, lsl #1]      // sao_offset_val[k+1]
-        subs            w8,  w8,  #1
-        add             w10, w8,  w5               // k + sao_left_class
+0:
+        ldrsh           x9, [x4, x8, lsl #1]        // sao_offset_val[k+1]
+        subs            w8, w8, #1
+        add             w10, w8, w5                 // k + sao_left_class
         and             w10, w10, #0x1F
-        strh            w9, [sp, x10, lsl #1]
+        strb            w9, [sp, x10]
         bne             0b
-        add             w6,  w6,  #7
-        bic             w6,  w6,  #7
-        ld1             {v16.16b-v19.16b}, [sp], #64
-        sub             x2,  x2,  x6
-        sub             x3,  x3,  x6
-        movi            v20.8h,   #1
-1:      mov             w8,  w6                    // beginning of line
-2:      // Simple layout for accessing 16bit values
-        // with 8bit LUT.
-        //
-        //   00  01  02  03  04  05  06  07
-        // +----------------------------------->
-        // |xDE#xAD|xCA#xFE|xBE#xEF|xFE#xED|....
-        // +----------------------------------->
-        //    i-0     i-1     i-2     i-3
-        ld1             {v2.8b}, [x1], #8          // dst[x] = av_clip_pixel(src[x] + offset_table[src[x] >> shift]);
-        subs            w8, w8,  #8
-        uxtl            v0.8h,  v2.8b              // load src[x]
-        ushr            v2.8h,  v0.8h, #3          // >> BIT_DEPTH - 3
-        shl             v1.8h,  v2.8h, #1          // low (x2, accessing short)
-        add             v3.8h,  v1.8h, v20.8h      // +1 access upper short
-        sli             v1.8h,  v3.8h, #8          // shift insert index to upper byte
-        tbx             v2.16b, {v16.16b-v19.16b}, v1.16b // table
-        add             v1.8h,  v0.8h, v2.8h       // src[x] + table
-        sqxtun          v4.8b,  v1.8h              // clip + narrow
-        st1             {v4.8b}, [x0], #8          // store
-        // done 8 pixels
+        ldp             q16, q17, [sp], #32
+1:
+        ld1             {v2.8b}, [x1], x3
+        subs            w7, w7, #1
+        uxtl            v0.8h, v2.8b
+        ushr            v3.8b, v2.8b, #3            // >> BIT_DEPTH - 3
+        tbl             v3.8b, {v16.16b-v17.16b}, v3.8b
+        sxtl            v2.8h, v3.8b
+        add             v0.8h, v0.8h, v2.8h         // src[x] + table
+        sqxtun          v0.8b, v0.8h                // clip + narrow
+        st1             {v0.8b}, [x0], x2
+        bne             1b
+        ret
+endfunc
+
+function ff_h26x_sao_band_filter_16x16_8_neon, export=1
+        stp             xzr, xzr, [sp, #-32]!
+        stp             xzr, xzr, [sp, #16]
+        mov             w8,  #4
+0:
+        ldrsh           x9, [x4, x8, lsl #1]        // sao_offset_val[k+1]
+        subs            w8,  w8, #1
+        add             w10, w8, w5                 // k + sao_left_class
+        and             w10, w10, #0x1F
+        strb            w9, [sp, x10]
+        bne             0b
+        add             w6, w6, #15
+        bic             w6, w6, #15
+        ldp             q16, q17, [sp], #32
+        sub             x2, x2, x6
+        sub             x3, x3, x6
+1:
+        mov             w8, w6                      // beginning of line
+2:
+        ldr             q2, [x1], #16
+        subs            w8, w8, #16
+        uxtl            v0.8h, v2.8b
+        uxtl2           v1.8h, v2.16b
+        ushr            v3.16b, v2.16b, #3          // >> BIT_DEPTH - 3
+        tbl             v3.16b, {v16.16b-v17.16b}, v3.16b
+        sxtl            v2.8h, v3.8b
+        sxtl2           v3.8h, v3.16b
+        add             v0.8h, v0.8h, v2.8h         // src[x] + table
+        add             v1.8h, v1.8h, v3.8h
+        sqxtun          v0.8b, v0.8h                // clip + narrow
+        sqxtun2         v0.16b, v1.8h
+        str             q0, [x0], #16
         bne             2b
-        subs            w7, w7,  #1                // finished line, prep. new
-        add             x0, x0,  x2                // dst += stride_dst
-        add             x1, x1,  x3                // src += stride_src
+        subs            w7, w7, #1
+        add             x0, x0, x2                  // dst += stride_dst
+        add             x1, x1, x3                  // src += stride_src
         bne             1b
         ret
 endfunc
