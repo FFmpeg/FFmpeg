@@ -673,7 +673,6 @@ static VkBool32 VKAPI_CALL vk_dbg_callback(VkDebugUtilsMessageSeverityFlagBitsEX
     case 0xfd92477a: /* BestPractices-vkAllocateMemory-small-allocation */
     case 0x618ab1e7: /* VUID-VkImageViewCreateInfo-usage-02275 */
     case 0x30f4ac70: /* VUID-VkImageCreateInfo-pNext-06811 */
-    case 0xa05b236e: /* UNASSIGNED-Threading-MultipleThreads-Write */
         return VK_FALSE;
     default:
         break;

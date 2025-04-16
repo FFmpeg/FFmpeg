@@ -253,7 +253,7 @@ typedef struct FFVkExecPool {
     FFVkExecContext *contexts;
     atomic_uint_least64_t idx;
 
-    VkCommandPool cmd_buf_pool;
+    VkCommandPool *cmd_buf_pools;
     VkCommandBuffer *cmd_bufs;
     int pool_size;
 
