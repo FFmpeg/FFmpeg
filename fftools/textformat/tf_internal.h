@@ -29,13 +29,9 @@
 #include "avtextformat.h"
 
 #define DEFINE_FORMATTER_CLASS(name)                \
-static const char *name##_get_name(void *ctx)       \
-{                                                   \
-    return #name ;                                  \
-}                                                   \
 static const AVClass name##_class = {               \
     .class_name = #name,                            \
-    .item_name  = name##_get_name,                  \
+    .item_name  = av_default_item_name,             \
     .option     = name##_options                    \
 }
 
