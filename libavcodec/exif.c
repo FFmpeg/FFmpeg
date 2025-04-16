@@ -1080,6 +1080,36 @@ end:
     return ret;
 }
 
+static int exif_get_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int depth, AVExifEntry **value)
+{
+    int offset = 1;
+
+    if (!ifd || ifd->entries && !ifd->count || ifd->count && !ifd->entries || !value)
+        return AVERROR(EINVAL);
+
+    for (size_t i = 0; i < ifd->count; i++) {
+        if (ifd->entries[i].id == id) {
+            *value = &ifd->entries[i];
+            return i + offset;
+        }
+        if (ifd->entries[i].type == AV_TIFF_IFD) {
+            if (depth < 3) {
+                int ret = exif_get_entry(logctx, &ifd->entries[i].value.ifd, id, depth + 1, value);
+                if (ret)
+                    return ret < 0 ? ret : ret + offset;
+            }
+            offset += ifd->entries[i].value.ifd.count;
+        }
+    }
+
+    return 0;
+}
+
+int av_exif_get_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int recursive, AVExifEntry **value)
+{
+    return exif_get_entry(logctx, ifd, id, recursive ? 0 : INT_MAX, value);
+}
+
 int av_exif_set_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, enum AVTiffDataType type,
     uint32_t count, const uint8_t *ifd_lead, uint32_t ifd_offset, const void *value)
 {
@@ -1093,12 +1123,9 @@ int av_exif_set_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, enum AVTif
              || !value || ifd->count == 0xFFFFu)
         return AVERROR(EINVAL);
 
-    for (size_t i = 0; i < ifd->count; i++) {
-        if (ifd->entries[i].id == id) {
-            entry = &ifd->entries[i];
-            break;
-        }
-    }
+    ret = av_exif_get_entry(logctx, ifd, id, 0, &entry);
+    if (ret < 0)
+        return ret;
 
     if (entry) {
         exif_free_entry(entry);
@@ -1292,7 +1319,6 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
     AVExifEntry *ih = NULL;
     AVExifEntry *pw = NULL;
     AVExifEntry *ph = NULL;
-    AVExifMetadata *exif = NULL;
     uint64_t orientation = 1;
     uint64_t w = frame->width;
     uint64_t h = frame->height;
@@ -1333,7 +1359,7 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
             continue;
         }
         if (entry->id == EXIFIFD_TAG && entry->type == AV_TIFF_IFD) {
-            exif = &entry->value.ifd;
+            AVExifMetadata *exif = &entry->value.ifd;
             for (size_t j = 0; j < exif->count; j++) {
                 AVExifEntry *exifentry = &exif->entries[j];
                 if (exifentry->id == PIXEL_X_TAG && exifentry->count > 0 && exifentry->type == AV_TIFF_SHORT) {
@@ -1387,15 +1413,15 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
             goto end;
     }
     if (!pw && w && w < 0xFFFFu || !ph && h && h < 0xFFFFu) {
+        AVExifMetadata *exif;
+        AVExifEntry *exif_entry;
+        int exif_found = av_exif_get_entry(logctx, &ifd, EXIFIFD_TAG, 0, &exif_entry);
         rewrite = 1;
-        exif = NULL;
-        for (size_t i = 0; i < ifd.count; i++) {
-            if (ifd.entries[i].id == EXIFIFD_TAG && ifd.entries[i].type == AV_TIFF_IFD) {
-                exif = &ifd.entries[i].value.ifd;
-                break;
-            }
-        }
-        if (!exif) {
+        if (exif_found < 0)
+            goto end;
+        if (exif_found > 0) {
+            exif = &exif_entry->value.ifd;
+        } else {
             AVExifMetadata exif_new = { 0 };
             ret = av_exif_set_entry(logctx, &ifd, EXIFIFD_TAG, AV_TIFF_IFD, 1, NULL, 0, &exif_new);
             if (ret < 0) {

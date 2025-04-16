@@ -145,6 +145,17 @@ int av_exif_set_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, enum AVTif
                       uint32_t count, const uint8_t *ifd_lead, uint32_t ifd_offset, const void *value);
 
 /**
+ * Get an entry with the tagged ID from the EXIF metadata struct. A pointer to the entry
+ * will be written into *value. If the recursive flag is set to true, this function will check
+ * subdirectories as well.
+ *
+ * If the entry was present and returned successfully, a positive number is returned.
+ * If the entry was not found, *value is left untouched and zero is returned.
+ * If an error occurred, a negative number is returned.
+ */
+int av_exif_get_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int recursive, AVExifEntry **value);
+
+/**
  * Remove an entry from the provided EXIF metadata struct. If the recursive flag is set
  * to true, then this function will check subdirectories as well.
  *
