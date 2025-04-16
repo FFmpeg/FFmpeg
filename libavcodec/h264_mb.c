@@ -407,7 +407,7 @@ static av_always_inline void mc_part_weighted(const H264Context *h, H264SliceCon
         /* don't optimize for luma-only case, since B-frames usually
          * use implicit weights => chroma too. */
         uint8_t *tmp_cb = sl->bipred_scratchpad;
-        uint8_t *tmp_cr = sl->bipred_scratchpad + (16 << pixel_shift);
+        uint8_t *tmp_cr = sl->bipred_scratchpad + (8 << pixel_shift + (chroma_idc == 3));
         uint8_t *tmp_y  = sl->bipred_scratchpad + 16 * sl->mb_uvlinesize;
         int refn0       = sl->ref_cache[0][scan8[n]];
         int refn1       = sl->ref_cache[1][scan8[n]];
