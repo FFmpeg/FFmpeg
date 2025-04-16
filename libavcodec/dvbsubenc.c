@@ -284,6 +284,9 @@ static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
     if (h->num_rects && !h->rects)
         return AVERROR(EINVAL);
 
+    if (h->num_rects >= 256)
+        return AVERROR(EINVAL);
+
     if (avctx->width > 0 && avctx->height > 0) {
         if (buf_size < 11)
             return AVERROR_BUFFER_TOO_SMALL;
