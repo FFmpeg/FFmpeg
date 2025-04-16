@@ -244,11 +244,7 @@ bool get_rac_direct(inout RangeCoder c, inout uint8_t state)
 
 bool get_rac(inout RangeCoder c, uint64_t state)
 {
-    u8buf sb = u8buf(state);
-    uint8_t val = sb.v;
-    bool ret = get_rac_direct(c, val);
-    sb.v = val;
-    return ret;
+    return get_rac_direct(c, u8buf(state).v);
 }
 
 bool get_rac_equi(inout RangeCoder c)
