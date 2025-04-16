@@ -585,7 +585,6 @@ static const AVClass textwriter_class = {
 void avtextwriter_context_close(AVTextWriterContext **pwctx)
 {
     AVTextWriterContext *wctx = *pwctx;
-    int ret = 0;
 
     if (!wctx)
         return;
