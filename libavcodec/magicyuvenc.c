@@ -625,12 +625,14 @@ static av_cold int magy_encode_close(AVCodecContext *avctx)
 {
     MagicYUVContext *s = avctx->priv_data;
 
-    for (int i = 0; i < s->planes * s->nb_slices && s->slices; i++) {
-        Slice *sl = &s->slices[i];
+    if (s->slices) {
+        for (int i = 0; i < s->planes * s->nb_slices; i++) {
+            Slice *sl = &s->slices[i];
 
-        av_freep(&sl->slice);
+            av_freep(&sl->slice);
+        }
+        av_freep(&s->slices);
     }
-    av_freep(&s->slices);
     av_freep(&s->decorrelate_buf);
 
     return 0;
