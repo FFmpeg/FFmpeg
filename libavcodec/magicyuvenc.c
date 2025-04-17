@@ -233,10 +233,8 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
 
             sl->slice = av_malloc(avctx->width * (s->slice_height + 2) +
                                                      AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!sl->slice) {
-                av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer.\n");
+            if (!sl->slice)
                 return AVERROR(ENOMEM);
-            }
         }
     }
 
@@ -250,11 +248,8 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
 
     avctx->extradata = av_mallocz(avctx->extradata_size +
                                   AV_INPUT_BUFFER_PADDING_SIZE);
-
-    if (!avctx->extradata) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate extradata.\n");
+    if (!avctx->extradata)
         return AVERROR(ENOMEM);
-    }
 
     bytestream2_init_writer(&pb, avctx->extradata, MAGICYUV_EXTRADATA_SIZE);
     bytestream2_put_le32u(&pb, MKTAG('M', 'A', 'G', 'Y'));
