@@ -38,7 +38,6 @@ typedef struct Node {
 
 #define FF_HUFFMAN_FLAG_HNODE_FIRST 0x01
 #define FF_HUFFMAN_FLAG_ZERO_COUNT  0x02
-#define FF_HUFFMAN_BITS 10
 
 typedef int (*HuffCmp)(const void *va, const void *vb);
 int ff_huff_build_tree(void *logctx, VLC *vlc, int nb_codes, int nb_bits,

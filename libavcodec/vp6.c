@@ -41,6 +41,8 @@
 #include "vpx_rac.h"
 
 #define VP6_MAX_HUFF_SIZE 12
+#define AC_DC_HUFF_BITS   10
+#define RUN_HUFF_BITS      8
 
 static int vp6_parse_coeff(VP56Context *s);
 static int vp6_parse_coeff_huffman(VP56Context *s);
@@ -266,7 +268,8 @@ static int vp6_huff_cmp(const void *va, const void *vb)
 }
 
 static int vp6_build_huff_tree(VP56Context *s, uint8_t coeff_model[],
-                               const uint8_t *map, unsigned size, VLC *vlc)
+                               const uint8_t *map, unsigned size,
+                               int nb_bits, VLC *vlc)
 {
     Node nodes[2*VP6_MAX_HUFF_SIZE], *tmp = &nodes[size];
     int a, b, i;
@@ -282,7 +285,7 @@ static int vp6_build_huff_tree(VP56Context *s, uint8_t coeff_model[],
 
     ff_vlc_free(vlc);
     /* then build the huffman tree according to probabilities */
-    return ff_huff_build_tree(s->avctx, vlc, size, FF_HUFFMAN_BITS,
+    return ff_huff_build_tree(s->avctx, vlc, size, nb_bits,
                               nodes, vp6_huff_cmp,
                               FF_HUFFMAN_FLAG_HNODE_FIRST);
 }
@@ -333,15 +336,18 @@ static int vp6_parse_coeff_models(VP56Context *s)
     if (s->use_huffman) {
         for (pt=0; pt<2; pt++) {
             if (vp6_build_huff_tree(s, model->coeff_dccv[pt],
-                                    vp6_huff_coeff_map, 12, &s->dccv_vlc[pt]))
+                                    vp6_huff_coeff_map, 12, AC_DC_HUFF_BITS,
+                                    &s->dccv_vlc[pt]))
                 return -1;
             if (vp6_build_huff_tree(s, model->coeff_runv[pt],
-                                    vp6_huff_run_map, 9, &s->runv_vlc[pt]))
+                                    vp6_huff_run_map, 9, RUN_HUFF_BITS,
+                                    &s->runv_vlc[pt]))
                 return -1;
             for (ct=0; ct<3; ct++)
                 for (int cg = 0; cg < 4; cg++)
                     if (vp6_build_huff_tree(s, model->coeff_ract[pt][ct][cg],
                                             vp6_huff_coeff_map, 12,
+                                            AC_DC_HUFF_BITS,
                                             &s->ract_vlc[pt][ct][cg]))
                         return -1;
         }
@@ -433,11 +439,11 @@ static int vp6_parse_coeff_huffman(VP56Context *s)
             } else {
                 if (get_bits_left(&s->gb) <= 0)
                     return AVERROR_INVALIDDATA;
-                int coeff = get_vlc2(&s->gb, vlc_coeff->table, FF_HUFFMAN_BITS, 2);
+                int coeff = get_vlc2(&s->gb, vlc_coeff->table, AC_DC_HUFF_BITS, 2);
                 if (coeff == 0) {
                     if (coeff_idx) {
                         int pt = (coeff_idx >= 6);
-                        run += get_vlc2(&s->gb, s->runv_vlc[pt].table, FF_HUFFMAN_BITS, 1);
+                        run += get_vlc2(&s->gb, s->runv_vlc[pt].table, RUN_HUFF_BITS, 1);
                         if (run >= 9)
                             run += get_bits(&s->gb, 6);
                     } else
