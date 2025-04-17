@@ -415,7 +415,7 @@ static int vp6_parse_coeff_huffman(VP56Context *s)
     VP56Model *model = s->modelp;
     uint8_t *permute = s->idct_scantable;
     VLC *vlc_coeff;
-    int coeff, sign, coeff_idx;
+    int sign, coeff_idx;
     int b, cg, idx;
     int pt = 0;    /* plane type (0 for Y, 1 for U or V) */
 
@@ -433,11 +433,11 @@ static int vp6_parse_coeff_huffman(VP56Context *s)
             } else {
                 if (get_bits_left(&s->gb) <= 0)
                     return AVERROR_INVALIDDATA;
-                coeff = get_vlc2(&s->gb, vlc_coeff->table, FF_HUFFMAN_BITS, 3);
+                int coeff = get_vlc2(&s->gb, vlc_coeff->table, FF_HUFFMAN_BITS, 2);
                 if (coeff == 0) {
                     if (coeff_idx) {
                         int pt = (coeff_idx >= 6);
-                        run += get_vlc2(&s->gb, s->runv_vlc[pt].table, FF_HUFFMAN_BITS, 3);
+                        run += get_vlc2(&s->gb, s->runv_vlc[pt].table, FF_HUFFMAN_BITS, 1);
                         if (run >= 9)
                             run += get_bits(&s->gb, 6);
                     } else
