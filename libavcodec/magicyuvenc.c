@@ -58,7 +58,7 @@ typedef struct Slice {
     unsigned size;
     uint8_t *slice;
     uint8_t *bitslice;
-    PTable counts[256];
+    int64_t counts[256];
 } Slice;
 
 typedef struct MagicYUVContext {
@@ -288,11 +288,11 @@ static void calculate_codes(HuffEntry *he, uint16_t codes_count[33])
 }
 
 static void count_usage(const uint8_t *src, int width,
-                        int height, PTable *counts)
+                        int height, int64_t *counts)
 {
     for (int j = 0; j < height; j++) {
         for (int i = 0; i < width; i++)
-            counts[src[i]].prob++;
+            counts[src[i]]++;
         src += width;
     }
 }
@@ -378,7 +378,7 @@ static int count_plane_slice(AVCodecContext *avctx, int n, int plane)
     MagicYUVContext *s = avctx->priv_data;
     Slice *sl = &s->slices[n * s->planes + plane];
     const uint8_t *dst = sl->slice;
-    PTable *counts = sl->counts;
+    int64_t *counts = sl->counts;
     const int slice_height = s->slice_height;
     const int last_height = FFMIN(slice_height, avctx->height - n * slice_height);
     const int height = (n < (s->nb_slices - 1)) ? slice_height : last_height;
@@ -405,10 +405,10 @@ static int encode_table(AVCodecContext *avctx,
 
     for (int n = 0; n < s->nb_slices; n++) {
         Slice *sl = &s->slices[n * s->planes + plane];
-        PTable *slice_counts = sl->counts;
+        int64_t *slice_counts = sl->counts;
 
         for (int i = 0; i < 256; i++)
-            counts[i].prob += slice_counts[i].prob;
+            counts[i].prob += slice_counts[i];
     }
 
     magy_huffman_compute_bits(counts, he, codes_counts, 256, 12);
