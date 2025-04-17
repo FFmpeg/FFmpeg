@@ -257,22 +257,22 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
     }
 
     bytestream2_init_writer(&pb, avctx->extradata, MAGICYUV_EXTRADATA_SIZE);
-    bytestream2_put_le32(&pb, MKTAG('M', 'A', 'G', 'Y'));
-    bytestream2_put_le32(&pb, 32);
-    bytestream2_put_byte(&pb, 7);
-    bytestream2_put_byte(&pb, s->format);
-    bytestream2_put_byte(&pb, 12);
-    bytestream2_put_byte(&pb, 0);
+    bytestream2_put_le32u(&pb, MKTAG('M', 'A', 'G', 'Y'));
+    bytestream2_put_le32u(&pb, 32);
+    bytestream2_put_byteu(&pb, 7);
+    bytestream2_put_byteu(&pb, s->format);
+    bytestream2_put_byteu(&pb, 12);
+    bytestream2_put_byteu(&pb, 0);
 
-    bytestream2_put_byte(&pb, 0);
-    bytestream2_put_byte(&pb, 0);
-    bytestream2_put_byte(&pb, 32);
-    bytestream2_put_byte(&pb, 0);
+    bytestream2_put_byteu(&pb, 0);
+    bytestream2_put_byteu(&pb, 0);
+    bytestream2_put_byteu(&pb, 32);
+    bytestream2_put_byteu(&pb, 0);
 
-    bytestream2_put_le32(&pb, avctx->width);
-    bytestream2_put_le32(&pb, avctx->height);
-    bytestream2_put_le32(&pb, avctx->width);
-    bytestream2_put_le32(&pb, avctx->height);
+    bytestream2_put_le32u(&pb, avctx->width);
+    bytestream2_put_le32u(&pb, avctx->height);
+    bytestream2_put_le32u(&pb, avctx->width);
+    bytestream2_put_le32u(&pb, avctx->height);
 
     return 0;
 }
@@ -421,7 +421,7 @@ static void output_codes(PutByteContext *pb, const HuffEntry he[256])
     for (int i = 0; i < 256; i++) {
         // The seven low bits are len; the top bit means the run of
         // codes of this length has length one.
-        bytestream2_put_byte(pb, he[i].len);
+        bytestream2_put_byteu(pb, he[i].len);
     }
 }
 
@@ -581,39 +581,39 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
 
     bytestream2_init_writer(&pb, pkt->data, pkt->size);
-    bytestream2_put_le32(&pb, MKTAG('M', 'A', 'G', 'Y'));
-    bytestream2_put_le32(&pb, 32); // header size
-    bytestream2_put_byte(&pb, 7);  // version
-    bytestream2_put_byte(&pb, s->format);
-    bytestream2_put_byte(&pb, 12); // max huffman length
-    bytestream2_put_byte(&pb, 0);
+    bytestream2_put_le32u(&pb, MKTAG('M', 'A', 'G', 'Y'));
+    bytestream2_put_le32u(&pb, 32); // header size
+    bytestream2_put_byteu(&pb, 7);  // version
+    bytestream2_put_byteu(&pb, s->format);
+    bytestream2_put_byteu(&pb, 12); // max huffman length
+    bytestream2_put_byteu(&pb, 0);
 
-    bytestream2_put_byte(&pb, 0);
-    bytestream2_put_byte(&pb, 0);
-    bytestream2_put_byte(&pb, 32); // coder type
-    bytestream2_put_byte(&pb, 0);
+    bytestream2_put_byteu(&pb, 0);
+    bytestream2_put_byteu(&pb, 0);
+    bytestream2_put_byteu(&pb, 32); // coder type
+    bytestream2_put_byteu(&pb, 0);
 
-    bytestream2_put_le32(&pb, avctx->width);
-    bytestream2_put_le32(&pb, avctx->height);
-    bytestream2_put_le32(&pb, avctx->width);
-    bytestream2_put_le32(&pb, s->slice_height);
+    bytestream2_put_le32u(&pb, avctx->width);
+    bytestream2_put_le32u(&pb, avctx->height);
+    bytestream2_put_le32u(&pb, avctx->width);
+    bytestream2_put_le32u(&pb, s->slice_height);
 
     // Slice position is relative to the current position (i.e. 32)
-    bytestream2_put_le32(&pb, header_size - 32);
+    bytestream2_put_le32u(&pb, header_size - 32);
 
     for (int i = 0; i < s->planes; ++i) {
         for (int j = 0; j < s->nb_slices; ++j) {
             Slice *const sl = &s->slices[j * s->planes + i];
-            bytestream2_put_le32(&pb, sl->pos - 32);
+            bytestream2_put_le32u(&pb, sl->pos - 32);
             sl->dst    = pkt->data + sl->pos;
         }
     }
 
-    bytestream2_put_byte(&pb, s->planes);
+    bytestream2_put_byteu(&pb, s->planes);
 
     for (int i = 0; i < s->planes; i++) {
         for (int n = 0; n < s->nb_slices; n++)
-            bytestream2_put_byte(&pb, n * s->planes + i);
+            bytestream2_put_byteu(&pb, n * s->planes + i);
     }
 
     for (int i = 0; i < s->planes; ++i)
