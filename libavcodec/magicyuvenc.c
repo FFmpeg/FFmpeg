@@ -56,6 +56,7 @@ typedef struct PTable {
 typedef struct Slice {
     int width;
     int height;
+    int encode_raw;
     unsigned pos;
     unsigned size;
     uint8_t *slice;
@@ -425,7 +426,7 @@ static int encode_table(AVCodecContext *avctx,
     return 0;
 }
 
-static int encode_plane_slice_raw(const uint8_t *src, uint8_t *dst, unsigned dst_size,
+static int encode_plane_slice_raw(const uint8_t *src, uint8_t *dst,
                                   int width, int height, int prediction)
 {
     unsigned count = width * height;
@@ -442,10 +443,9 @@ static int encode_plane_slice_raw(const uint8_t *src, uint8_t *dst, unsigned dst
     return count;
 }
 
-static int encode_plane_slice(const uint8_t *src, uint8_t *dst, unsigned dst_size,
-                              int width, int height, HuffEntry *he, int prediction)
+static void encode_plane_slice(const uint8_t *src, uint8_t *dst, unsigned dst_size,
+                               int width, int height, HuffEntry *he, int prediction)
 {
-    const uint8_t *osrc = src;
     PutBitContext pb;
     int count;
 
@@ -458,8 +458,6 @@ static int encode_plane_slice(const uint8_t *src, uint8_t *dst, unsigned dst_siz
         for (int i = 0; i < width; i++) {
             const int idx = src[i];
             const int len = he[idx].len;
-            if (put_bits_left(&pb) < len + 32)
-                return encode_plane_slice_raw(osrc, dst, dst_size, width, height, prediction);
             put_bits(&pb, len, he[idx].code);
         }
 
@@ -472,8 +470,7 @@ static int encode_plane_slice(const uint8_t *src, uint8_t *dst, unsigned dst_siz
         put_bits(&pb, 32 - count, 0);
 
     flush_put_bits(&pb);
-
-    return put_bytes_output(&pb);
+    av_assert1(put_bytes_left(&pb, 0) == 0);
 }
 
 static int encode_slice(AVCodecContext *avctx, void *tdata,
@@ -484,10 +481,13 @@ static int encode_slice(AVCodecContext *avctx, void *tdata,
     for (int i = 0; i < s->planes; i++) {
         Slice *sl = &s->slices[n * s->planes + i];
 
-        sl->size =
+        if (sl->encode_raw)
+            encode_plane_slice_raw(sl->slice, sl->bitslice,
+                                   sl->width, sl->height, s->frame_pred);
+        else
             encode_plane_slice(sl->slice,
                                sl->bitslice,
-                               s->bitslice_size,
+                               sl->size,
                                sl->width, sl->height,
                                s->he[i], s->frame_pred);
     }
@@ -612,6 +612,20 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     tables_size = put_bytes_count(&pbit, 1);
     bytestream2_skip_p(&pb, tables_size);
 
+    for (int i = 0; i < s->planes; ++i) {
+        for (int j = 0; j < s->nb_slices; ++j) {
+            Slice *const sl = &s->slices[j * s->planes + i];
+            int64_t size = 0;
+
+            for (size_t k = 0; k < FF_ARRAY_ELEMS(sl->counts); ++k)
+                size += sl->counts[k] * s->he[i][k].len;
+            size = AV_CEIL_RSHIFT(size, 3);
+            sl->encode_raw = size >= sl->width * sl->height;
+            if (sl->encode_raw)
+                size = sl->width * sl->height;
+            sl->size = FFALIGN(size + 2, 4);
+        }
+    }
     avctx->execute2(avctx, encode_slice, NULL, NULL, s->nb_slices);
 
     for (int n = 0; n < s->nb_slices; n++) {
