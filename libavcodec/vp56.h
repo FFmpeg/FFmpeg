@@ -203,7 +203,7 @@ struct vp56_context {
     GetBitContext gb;
     VLC dccv_vlc[2];
     VLC runv_vlc[2];
-    VLC ract_vlc[2][3][6];
+    VLC ract_vlc[2][3][4];
     unsigned int nb_null[2][2];       /* number of consecutive NULL DC/AC */
 
     int have_undamaged_frame;

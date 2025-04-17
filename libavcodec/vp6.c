@@ -339,7 +339,7 @@ static int vp6_parse_coeff_models(VP56Context *s)
                                     vp6_huff_run_map, 9, &s->runv_vlc[pt]))
                 return -1;
             for (ct=0; ct<3; ct++)
-                for (cg = 0; cg < 6; cg++)
+                for (int cg = 0; cg < 4; cg++)
                     if (vp6_build_huff_tree(s, model->coeff_ract[pt][ct][cg],
                                             vp6_huff_coeff_map, 12,
                                             &s->ract_vlc[pt][ct][cg]))
@@ -704,15 +704,13 @@ static av_cold int vp6_decode_free(AVCodecContext *avctx)
 
 static av_cold void vp6_decode_free_context(VP56Context *s)
 {
-    int pt, ct, cg;
-
     ff_vp56_free_context(s);
 
-    for (pt=0; pt<2; pt++) {
+    for (int pt = 0; pt < 2; ++pt) {
         ff_vlc_free(&s->dccv_vlc[pt]);
         ff_vlc_free(&s->runv_vlc[pt]);
-        for (ct=0; ct<3; ct++)
-            for (cg=0; cg<6; cg++)
+        for (int ct = 0; ct < 3; ++ct)
+            for (int cg = 0; cg < 4; ++cg)
                 ff_vlc_free(&s->ract_vlc[pt][ct][cg]);
     }
 }
