@@ -54,6 +54,8 @@ typedef struct PTable {
 } PTable;
 
 typedef struct Slice {
+    int width;
+    int height;
     unsigned pos;
     unsigned size;
     uint8_t *slice;
@@ -226,6 +228,10 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
         for (int i = 0; i < s->planes; i++) {
             Slice *sl = &s->slices[n * s->planes + i];
 
+            sl->height = n == s->nb_slices - 1 ? avctx->height - n * s->slice_height : s->slice_height;
+            sl->height = AV_CEIL_RSHIFT(sl->height, s->vshift[i]);
+            sl->width  = AV_CEIL_RSHIFT(avctx->width, s->hshift[i]);
+
             sl->bitslice = av_malloc(s->bitslice_size + AV_INPUT_BUFFER_PADDING_SIZE);
             sl->slice = av_malloc(avctx->width * (s->slice_height + 2) +
                                                      AV_INPUT_BUFFER_PADDING_SIZE);
@@ -379,14 +385,10 @@ static int count_plane_slice(AVCodecContext *avctx, int n, int plane)
     Slice *sl = &s->slices[n * s->planes + plane];
     const uint8_t *dst = sl->slice;
     int64_t *counts = sl->counts;
-    const int slice_height = s->slice_height;
-    const int last_height = FFMIN(slice_height, avctx->height - n * slice_height);
-    const int height = (n < (s->nb_slices - 1)) ? slice_height : last_height;
 
     memset(counts, 0, sizeof(sl->counts));
 
-    count_usage(dst, AV_CEIL_RSHIFT(avctx->width, s->hshift[plane]),
-                AV_CEIL_RSHIFT(height, s->vshift[plane]), counts);
+    count_usage(dst, sl->width, sl->height, counts);
 
     return 0;
 }
@@ -478,9 +480,6 @@ static int encode_slice(AVCodecContext *avctx, void *tdata,
                         int n, int threadnr)
 {
     MagicYUVContext *s = avctx->priv_data;
-    const int slice_height = s->slice_height;
-    const int last_height = FFMIN(slice_height, avctx->height - n * slice_height);
-    const int height = (n < (s->nb_slices - 1)) ? slice_height : last_height;
 
     for (int i = 0; i < s->planes; i++) {
         Slice *sl = &s->slices[n * s->planes + i];
@@ -489,8 +488,7 @@ static int encode_slice(AVCodecContext *avctx, void *tdata,
             encode_plane_slice(sl->slice,
                                sl->bitslice,
                                s->bitslice_size,
-                               AV_CEIL_RSHIFT(avctx->width, s->hshift[i]),
-                               AV_CEIL_RSHIFT(height, s->vshift[i]),
+                               sl->width, sl->height,
                                s->he[i], s->frame_pred);
     }
 
@@ -546,8 +544,7 @@ static int predict_slice(AVCodecContext *avctx, void *tdata,
             s->predict(s, frame->data[i] + n * (slice_height >> s->vshift[i]) * frame->linesize[i],
                        sl->slice,
                        frame->linesize[i],
-                       AV_CEIL_RSHIFT(frame->width, s->hshift[i]),
-                       AV_CEIL_RSHIFT(height, s->vshift[i]));
+                       sl->width, sl->height);
         }
     }
 
