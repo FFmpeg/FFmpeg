@@ -392,7 +392,7 @@ static int count_plane_slice(AVCodecContext *avctx, int n, int plane)
 }
 
 static int encode_table(AVCodecContext *avctx,
-                        PutBitContext *pb, HuffEntry *he, int plane)
+                        PutByteContext *pb, HuffEntry *he, int plane)
 {
     MagicYUVContext *s = avctx->priv_data;
     PTable counts[256];
@@ -416,8 +416,9 @@ static int encode_table(AVCodecContext *avctx,
     calculate_codes(he, codes_counts);
 
     for (int i = 0; i < 256; i++) {
-        put_bits(pb, 1, 0);
-        put_bits(pb, 7, he[i].len);
+        // The seven low bits are len; the top bit means the run of
+        // codes of this length has length one.
+        bytestream2_put_byte(pb, he[i].len);
     }
 
     return 0;
@@ -548,8 +549,6 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     MagicYUVContext *s = avctx->priv_data;
     const int width = avctx->width, height = avctx->height;
     const int slice_height = s->slice_height;
-    unsigned tables_size;
-    PutBitContext pbit;
     PutByteContext pb;
     int pos, ret = 0;
 
@@ -592,13 +591,8 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     avctx->execute2(avctx, predict_slice, (void *)frame, NULL, s->nb_slices);
 
-    init_put_bits(&pbit, pkt->data + bytestream2_tell_p(&pb), bytestream2_get_bytes_left_p(&pb));
-
     for (int i = 0; i < s->planes; i++)
-        encode_table(avctx, &pbit, s->he[i], i);
-
-    tables_size = put_bytes_count(&pbit, 1);
-    bytestream2_skip_p(&pb, tables_size);
+        encode_table(avctx, &pb, s->he[i], i);
 
     for (int i = 0; i < s->nb_slices; ++i) {
         for (int j = 0; j < s->planes; ++j) {
