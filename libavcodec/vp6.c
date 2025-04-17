@@ -298,6 +298,7 @@ static int vp6_parse_coeff_models(VP56Context *s)
     int node, cg, ctx, pos;
     int ct;    /* code type */
     int pt;    /* plane type (0 for Y, 1 for U or V) */
+    int ret;
 
     memset(def_prob, 0x80, sizeof(def_prob));
 
@@ -335,21 +336,25 @@ static int vp6_parse_coeff_models(VP56Context *s)
 
     if (s->use_huffman) {
         for (pt=0; pt<2; pt++) {
-            if (vp6_build_huff_tree(s, model->coeff_dccv[pt],
-                                    vp6_huff_coeff_map, 12, AC_DC_HUFF_BITS,
-                                    &s->dccv_vlc[pt]))
-                return -1;
-            if (vp6_build_huff_tree(s, model->coeff_runv[pt],
-                                    vp6_huff_run_map, 9, RUN_HUFF_BITS,
-                                    &s->runv_vlc[pt]))
-                return -1;
+            ret = vp6_build_huff_tree(s, model->coeff_dccv[pt],
+                                      vp6_huff_coeff_map, 12, AC_DC_HUFF_BITS,
+                                      &s->dccv_vlc[pt]);
+            if (ret < 0)
+                return ret;
+            ret = vp6_build_huff_tree(s, model->coeff_runv[pt],
+                                      vp6_huff_run_map, 9, RUN_HUFF_BITS,
+                                      &s->runv_vlc[pt]);
+            if (ret < 0)
+                return ret;
             for (ct=0; ct<3; ct++)
-                for (int cg = 0; cg < 4; cg++)
-                    if (vp6_build_huff_tree(s, model->coeff_ract[pt][ct][cg],
-                                            vp6_huff_coeff_map, 12,
-                                            AC_DC_HUFF_BITS,
-                                            &s->ract_vlc[pt][ct][cg]))
-                        return -1;
+                for (int cg = 0; cg < 4; cg++) {
+                    ret = vp6_build_huff_tree(s, model->coeff_ract[pt][ct][cg],
+                                              vp6_huff_coeff_map, 12,
+                                              AC_DC_HUFF_BITS,
+                                              &s->ract_vlc[pt][ct][cg]);
+                    if (ret < 0)
+                        return ret;
+                }
         }
         memset(s->nb_null, 0, sizeof(s->nb_null));
     } else {
