@@ -423,14 +423,13 @@ static int encode_table(AVCodecContext *avctx,
     return 0;
 }
 
-static void encode_plane_slice_raw(const uint8_t *src, uint8_t *dst, int dst_size,
+static void encode_plane_slice_raw(const uint8_t *src, uint8_t *dst,
                                    int width, int height, int prediction)
 {
     unsigned count = width * height;
 
     dst[0] = 1;
     dst[1] = prediction;
-    AV_WN32(dst + dst_size - 4, 0);
 
     memcpy(dst + 2, src, count);
 }
@@ -439,7 +438,6 @@ static void encode_plane_slice(const uint8_t *src, uint8_t *dst, unsigned dst_si
                                int width, int height, HuffEntry *he, int prediction)
 {
     PutBitContext pb;
-    int count;
 
     init_put_bits(&pb, dst, dst_size);
 
@@ -456,13 +454,8 @@ static void encode_plane_slice(const uint8_t *src, uint8_t *dst, unsigned dst_si
         src += width;
     }
 
-    count = put_bits_count(&pb) & 0x1F;
-
-    if (count)
-        put_bits(&pb, 32 - count, 0);
-
     flush_put_bits(&pb);
-    av_assert1(put_bytes_left(&pb, 0) == 0);
+    av_assert1(put_bytes_left(&pb, 0) <= 3);
 }
 
 static int encode_slice(AVCodecContext *avctx, void *tdata,
@@ -473,8 +466,11 @@ static int encode_slice(AVCodecContext *avctx, void *tdata,
     for (int i = 0; i < s->planes; i++) {
         Slice *sl = &s->slices[n * s->planes + i];
 
+        // Zero the padding now
+        AV_WN32(sl->dst + sl->size - 4, 0);
+
         if (sl->encode_raw)
-            encode_plane_slice_raw(sl->slice, sl->dst, sl->size,
+            encode_plane_slice_raw(sl->slice, sl->dst,
                                    sl->width, sl->height, s->frame_pred);
         else
             encode_plane_slice(sl->slice,
