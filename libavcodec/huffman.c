@@ -115,40 +115,36 @@ end:
     return ret;
 }
 
-static void get_tree_codes(uint32_t *bits, int16_t *lens, uint8_t *xlat,
-                           Node *nodes, int node,
-                           uint32_t pfx, int pl, int *pos, int no_zero_count)
+static void get_tree_codes(int8_t *lens, uint8_t *xlat,
+                           Node *nodes, int node, int pl, int *pos, int no_zero_count)
 {
     int s;
 
     s = nodes[node].sym;
     if (s != HNODE || (no_zero_count && !nodes[node].count)) {
-        bits[*pos] = pfx;
         lens[*pos] = pl;
         xlat[*pos] = s;
         (*pos)++;
     } else {
-        pfx <<= 1;
         pl++;
-        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0, pfx, pl,
+        get_tree_codes(lens, xlat, nodes, nodes[node].n0, pl,
                        pos, no_zero_count);
-        pfx |= 1;
-        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0 + 1, pfx, pl,
+        get_tree_codes(lens, xlat, nodes, nodes[node].n0 + 1, pl,
                        pos, no_zero_count);
     }
 }
 
-static int build_huff_tree(VLC *vlc, Node *nodes, int head, int flags, int nb_bits)
+static int build_huff_tree(VLC *vlc, Node *nodes, int head, int flags, int nb_bits, void *logctx)
 {
     int no_zero_count = !(flags & FF_HUFFMAN_FLAG_ZERO_COUNT);
-    uint32_t bits[256];
-    int16_t lens[256];
+    int8_t lens[256];
     uint8_t xlat[256];
     int pos = 0;
 
-    get_tree_codes(bits, lens, xlat, nodes, head, 0, 0,
+    get_tree_codes(lens, xlat, nodes, head, 0,
                    &pos, no_zero_count);
-    return ff_vlc_init_sparse(vlc, nb_bits, pos, lens, 2, 2, bits, 4, 4, xlat, 1, 1, 0);
+    return ff_vlc_init_from_lengths(vlc, nb_bits, pos, lens, 1,
+                                    xlat, 1, 1, 0, 0, logctx);
 }
 
 
@@ -194,7 +190,7 @@ int ff_huff_build_tree(void *logctx, VLC *vlc, int nb_codes, int nb_bits,
         nodes[j].n0 = i;
         cur_node++;
     }
-    if (build_huff_tree(vlc, nodes, nb_codes * 2 - 2, flags, nb_bits) < 0) {
+    if (build_huff_tree(vlc, nodes, nb_codes * 2 - 2, flags, nb_bits, logctx) < 0) {
         av_log(logctx, AV_LOG_ERROR, "Error building tree\n");
         return -1;
     }
