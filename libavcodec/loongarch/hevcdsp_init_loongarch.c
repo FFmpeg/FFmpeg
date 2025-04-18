@@ -139,7 +139,6 @@ void ff_hevc_dsp_init_loongarch(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel_bi[6][1][0] = ff_hevc_put_hevc_bi_epel_v24_8_lsx;
             c->put_hevc_epel_bi[7][1][0] = ff_hevc_put_hevc_bi_epel_v32_8_lsx;
 
-            c->put_hevc_epel_bi[2][1][1] = ff_hevc_put_hevc_bi_epel_hv6_8_lsx;
             c->put_hevc_epel_bi[3][1][1] = ff_hevc_put_hevc_bi_epel_hv8_8_lsx;
             c->put_hevc_epel_bi[5][1][1] = ff_hevc_put_hevc_bi_epel_hv16_8_lsx;
             c->put_hevc_epel_bi[6][1][1] = ff_hevc_put_hevc_bi_epel_hv24_8_lsx;

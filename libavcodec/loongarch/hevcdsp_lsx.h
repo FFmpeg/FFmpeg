@@ -141,7 +141,6 @@ BI_MC(epel, v, 16);
 BI_MC(epel, v, 24);
 BI_MC(epel, v, 32);
 
-BI_MC(epel, hv, 6);
 BI_MC(epel, hv, 8);
 BI_MC(epel, hv, 16);
 BI_MC(epel, hv, 24);
