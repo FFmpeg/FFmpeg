@@ -1080,13 +1080,13 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
     if ((s->slice_width  & (s->slice_width  - 1)) ||
         (s->slice_height & (s->slice_height - 1))) {
         av_log(avctx, AV_LOG_ERROR, "Slice size is not a power of two!\n");
-        return AVERROR_UNKNOWN;
+        return AVERROR(EINVAL);
     }
 
     if ((s->slice_width > avctx->width) ||
         (s->slice_height > avctx->height)) {
         av_log(avctx, AV_LOG_ERROR, "Slice size is bigger than the image!\n");
-        return AVERROR_UNKNOWN;
+        return AVERROR(EINVAL);
     }
 
     if (s->base_vf <= 0) {
@@ -1096,7 +1096,7 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
         } else {
             av_log(avctx, AV_LOG_WARNING, "Given format does not strictly comply with "
                    "the specifications, decrease strictness to use it.\n");
-            return AVERROR_UNKNOWN;
+            return AVERROR(EINVAL);
         }
     } else {
         av_log(avctx, AV_LOG_INFO, "Selected base video format = %i (%s)\n",
