@@ -1804,10 +1804,13 @@ static VkFormat map_fmt_to_rep(VkFormat fmt, enum FFVkShaderRepFormat rep_fmt)
     return VK_FORMAT_UNDEFINED;
 }
 
-static void bgr_workaround(AVVulkanFramesContext *vkfc,
+static void bgr_workaround(FFVulkanContext *s,
+                           AVVulkanFramesContext *vkfc,
                            VkImageViewCreateInfo *ci)
 {
-    if (!(vkfc->usage & VK_IMAGE_USAGE_STORAGE_BIT))
+    if (!(vkfc->usage & VK_IMAGE_USAGE_STORAGE_BIT) ||
+        s->feats.features.shaderStorageImageReadWithoutFormat ||
+        s->feats.features.shaderStorageImageWriteWithoutFormat)
         return;
     switch (ci->format) {
 #define REMAP(src, dst)   \
@@ -1858,7 +1861,7 @@ int ff_vk_create_imageview(FFVulkanContext *s,
             .layerCount = 1,
         },
     };
-    bgr_workaround(vkfc, &view_create_info);
+    bgr_workaround(s, vkfc, &view_create_info);
     if (view_create_info.format == VK_FORMAT_UNDEFINED) {
         av_log(s, AV_LOG_ERROR, "Unable to find a compatible representation "
                                 "of format %i and mode %i\n",
@@ -1920,7 +1923,7 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
                 .layerCount = 1,
             },
         };
-        bgr_workaround(vkfc, &view_create_info);
+        bgr_workaround(s, vkfc, &view_create_info);
         if (view_create_info.format == VK_FORMAT_UNDEFINED) {
             av_log(s, AV_LOG_ERROR, "Unable to find a compatible representation "
                                     "of format %i and mode %i\n",
@@ -2060,6 +2063,7 @@ int ff_vk_shader_init(FFVulkanContext *s, FFVulkanShader *shd, const char *name,
     GLSLC(0, #extension GL_EXT_scalar_block_layout : require                  );
     GLSLC(0, #extension GL_EXT_shader_explicit_arithmetic_types : require     );
     GLSLC(0, #extension GL_EXT_control_flow_attributes : require              );
+    GLSLC(0, #extension GL_EXT_shader_image_load_formatted : require          );
     if (s->extensions & FF_VK_EXT_EXPECT_ASSUME) {
         GLSLC(0, #extension GL_EXT_expect_assume : require                    );
     } else {
@@ -2457,8 +2461,10 @@ print:
         const struct descriptor_props *prop = &descriptor_props[desc[i].type];
         GLSLA("layout (set = %i, binding = %i", FFMAX(shd->nb_descriptor_sets - 1, 0), i);
 
-        if (desc[i].mem_layout)
+        if (desc[i].mem_layout &&
+            (desc[i].type != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE))
             GLSLA(", %s", desc[i].mem_layout);
+
         GLSLA(")");
 
         if (prop->is_uniform)
