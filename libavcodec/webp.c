@@ -253,64 +253,58 @@ static int huff_reader_get_symbol(HuffReader *r, GetBitContext *gb)
 }
 
 static int huff_reader_build_canonical(HuffReader *r, const uint8_t *code_lengths,
-                                       int alphabet_size)
+                                       uint16_t len_counts[MAX_HUFFMAN_CODE_LENGTH + 1],
+                                       int alphabet_size, void *logctx)
 {
-    int len = 0, sym, code = 0, ret;
-    int max_code_length = 0;
-    uint16_t *codes;
+    uint16_t *syms;
+    uint8_t *lens;
+    unsigned nb_codes = 0;
+    int ret;
 
-    /* special-case 1 symbol since the vlc reader cannot handle it */
-    for (sym = 0; sym < alphabet_size; sym++) {
-        if (code_lengths[sym] > 0) {
-            len++;
-            code = sym;
-            if (len > 1)
-                break;
+    // Count the number of symbols of each length and transform len_counts
+    // into an array of offsets.
+    for (int len = 1; len <= MAX_HUFFMAN_CODE_LENGTH; ++len) {
+        unsigned cnt = len_counts[len];
+        len_counts[len] = nb_codes;
+        nb_codes += cnt;
+    }
+    if (nb_codes <= 1) {
+        if (nb_codes == 1) {
+            /* special-case 1 symbol since the vlc reader cannot handle it */
+            r->nb_symbols = 1;
+            r->simple = 1;
+            for (int sym = 0;; ++sym) {
+                av_assert1(sym < alphabet_size);
+                if (code_lengths[sym]) {
+                    r->simple_symbols[0] = sym;
+                    return 0;
+                }
+            }
         }
-    }
-    if (len == 1) {
-        r->nb_symbols = 1;
-        r->simple_symbols[0] = code;
-        r->simple = 1;
-        return 0;
-    }
-
-    for (sym = 0; sym < alphabet_size; sym++)
-        max_code_length = FFMAX(max_code_length, code_lengths[sym]);
-
-    if (max_code_length == 0)
-        return AVERROR(EINVAL);
-
-    codes = av_malloc_array(alphabet_size, sizeof(*codes));
-    if (!codes)
-        return AVERROR(ENOMEM);
-
-    code = 0;
-    r->nb_symbols = 0;
-    for (len = 1; len <= max_code_length; len++) {
-        for (sym = 0; sym < alphabet_size; sym++) {
-            if (code_lengths[sym] != len)
-                continue;
-            codes[sym] = code++;
-            r->nb_symbols++;
-        }
-        code <<= 1;
-    }
-    if (!r->nb_symbols) {
-        av_free(codes);
+        // No symbols
         return AVERROR_INVALIDDATA;
     }
 
-    ret = vlc_init(&r->vlc, 8, alphabet_size,
-                   code_lengths, sizeof(*code_lengths), sizeof(*code_lengths),
-                   codes, sizeof(*codes), sizeof(*codes), VLC_INIT_OUTPUT_LE);
-    if (ret < 0) {
-        av_free(codes);
-        return ret;
+    syms = av_malloc_array(nb_codes, sizeof(*syms) + sizeof(*lens));
+    if (!syms)
+        return AVERROR(ENOMEM);
+    lens = (uint8_t*)(syms + nb_codes);
+
+    for (int sym = 0; sym < alphabet_size; ++sym) {
+        if (code_lengths[sym]) {
+            unsigned idx = len_counts[code_lengths[sym]]++;
+            syms[idx] = sym;
+            lens[idx] = code_lengths[sym];
+        }
     }
+
+    ret = ff_vlc_init_from_lengths(&r->vlc, 8, nb_codes, lens, 1,
+                                   syms, 2, 2, 0, VLC_INIT_OUTPUT_LE, logctx);
+    av_free(syms);
+    if (ret < 0)
+        return ret;
     r->simple = 0;
 
-    av_free(codes);
     return 0;
 }
 
@@ -335,20 +329,24 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
     HuffReader code_len_hc = { { 0 }, 0, 0, { 0 } };
     uint8_t *code_lengths;
     uint8_t code_length_code_lengths[NUM_CODE_LENGTH_CODES] = { 0 };
-    int i, symbol, max_symbol, prev_code_len, ret;
+    uint16_t len_counts[MAX_HUFFMAN_CODE_LENGTH + 1] = { 0 };
+    int symbol, max_symbol, prev_code_len, ret;
     int num_codes = 4 + get_bits(&s->gb, 4);
 
     av_assert1(num_codes <= NUM_CODE_LENGTH_CODES);
 
-    for (i = 0; i < num_codes; i++)
-        code_length_code_lengths[code_length_code_order[i]] = get_bits(&s->gb, 3);
+    for (int i = 0; i < num_codes; i++) {
+        unsigned len = get_bits(&s->gb, 3);
+        code_length_code_lengths[code_length_code_order[i]] = len;
+        len_counts[len]++;
+    }
 
-    ret = huff_reader_build_canonical(&code_len_hc, code_length_code_lengths,
-                                      NUM_CODE_LENGTH_CODES);
+    ret = huff_reader_build_canonical(&code_len_hc, code_length_code_lengths, len_counts,
+                                      NUM_CODE_LENGTH_CODES, s->avctx);
     if (ret < 0)
         return ret;
 
-    code_lengths = av_mallocz(alphabet_size);
+    code_lengths = av_malloc(alphabet_size);
     if (!code_lengths) {
         ret = AVERROR(ENOMEM);
         goto finish;
@@ -369,6 +367,7 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
 
     prev_code_len = 8;
     symbol        = 0;
+    memset(len_counts, 0, sizeof(len_counts));
     while (symbol < alphabet_size) {
         int code_len;
 
@@ -378,6 +377,7 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
         if (code_len < 16U) {
             /* Code length code [0..15] indicates literal code lengths. */
             code_lengths[symbol++] = code_len;
+            len_counts[code_len]++;
             if (code_len)
                 prev_code_len = code_len;
         } else {
@@ -392,6 +392,7 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
                  * non-zero value has been emitted, a value of 8 is repeated. */
                 repeat = 3 + get_bits(&s->gb, 2);
                 length = prev_code_len;
+                len_counts[length] += repeat;
                 break;
             case 17:
                 /* Code 17 emits a streak of zeros [3..10], i.e.,
@@ -416,7 +417,8 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
         }
     }
 
-    ret = huff_reader_build_canonical(hc, code_lengths, alphabet_size);
+    ret = huff_reader_build_canonical(hc, code_lengths, len_counts,
+                                      symbol, s->avctx);
 
 finish:
     ff_vlc_free(&code_len_hc.vlc);
