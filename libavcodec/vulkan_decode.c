@@ -1070,7 +1070,8 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
 
     hwfc->format[0]    = vkfmt;
     hwfc->tiling       = VK_IMAGE_TILING_OPTIMAL;
-    hwfc->usage        = VK_IMAGE_USAGE_TRANSFER_SRC_BIT         |
+    hwfc->usage        = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                         VK_IMAGE_USAGE_STORAGE_BIT      |
                          VK_IMAGE_USAGE_SAMPLED_BIT;
 
     if (prof) {
@@ -1084,8 +1085,6 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
         if (ctx->s.extensions & (FF_VK_EXT_VIDEO_ENCODE_QUEUE |
                                  FF_VK_EXT_VIDEO_MAINTENANCE_1))
             hwfc->usage |= VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
-    } else if (DECODER_IS_SDR(avctx->codec_id)) {
-        hwfc->usage |= VK_IMAGE_USAGE_STORAGE_BIT;
     }
 
     return err;
