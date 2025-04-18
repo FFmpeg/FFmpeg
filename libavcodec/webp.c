@@ -278,7 +278,7 @@ static int huff_reader_build_canonical(HuffReader *r, const uint8_t *code_length
     for (sym = 0; sym < alphabet_size; sym++)
         max_code_length = FFMAX(max_code_length, code_lengths[sym]);
 
-    if (max_code_length == 0 || max_code_length > MAX_HUFFMAN_CODE_LENGTH)
+    if (max_code_length == 0)
         return AVERROR(EINVAL);
 
     codes = av_malloc_array(alphabet_size, sizeof(*codes));
@@ -375,7 +375,7 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
         if (!max_symbol--)
             break;
         code_len = huff_reader_get_symbol(&code_len_hc, &s->gb);
-        if (code_len < 16) {
+        if (code_len < 16U) {
             /* Code length code [0..15] indicates literal code lengths. */
             code_lengths[symbol++] = code_len;
             if (code_len)
@@ -383,6 +383,9 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
         } else {
             int repeat = 0, length = 0;
             switch (code_len) {
+            default:
+                ret = AVERROR_INVALIDDATA;
+                goto finish;
             case 16:
                 /* Code 16 repeats the previous non-zero value [3..6] times,
                  * i.e., 3 + ReadBits(2) times. If code 16 is used before a
