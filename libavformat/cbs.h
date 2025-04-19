@@ -22,6 +22,7 @@
 #define CBS_PREFIX lavf_cbs
 #define CBS_WRITE 0
 #define CBS_TRACE 0
+#define CBS_APV 0
 #define CBS_H264 0
 #define CBS_H265 0
 #define CBS_H266 0

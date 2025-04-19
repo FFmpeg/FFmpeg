@@ -42,6 +42,9 @@
 #define CBS_TRACE 1
 #endif
 
+#ifndef CBS_APV
+#define CBS_APV CONFIG_CBS_APV
+#endif
 #ifndef CBS_AV1
 #define CBS_AV1 CONFIG_CBS_AV1
 #endif
@@ -383,6 +386,7 @@ int CBS_FUNC(write_signed)(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #define CBS_UNIT_TYPE_END_OF_LIST { .nb_unit_types = 0 }
 
 
+extern const CodedBitstreamType CBS_FUNC(type_apv);
 extern const CodedBitstreamType CBS_FUNC(type_av1);
 extern const CodedBitstreamType CBS_FUNC(type_h264);
 extern const CodedBitstreamType CBS_FUNC(type_h265);

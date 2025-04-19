@@ -31,6 +31,9 @@
 
 
 static const CodedBitstreamType *const cbs_type_table[] = {
+#if CBS_APV
+    &CBS_FUNC(type_apv),
+#endif
 #if CBS_AV1
     &CBS_FUNC(type_av1),
 #endif
@@ -58,6 +61,9 @@ static const CodedBitstreamType *const cbs_type_table[] = {
 };
 
 const enum AVCodecID CBS_FUNC(all_codec_ids)[] = {
+#if CBS_APV
+    AV_CODEC_ID_APV,
+#endif
 #if CBS_AV1
     AV_CODEC_ID_AV1,
 #endif
