@@ -1022,5 +1022,8 @@ finish:
 
     sch_free(&sch);
 
+    av_log(NULL, AV_LOG_VERBOSE, "\n");
+    av_log(NULL, AV_LOG_VERBOSE, "Exiting with exit code %d\n", ret);
+
     return ret;
 }
