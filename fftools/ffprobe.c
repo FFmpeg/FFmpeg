@@ -3081,6 +3081,8 @@ int main(int argc, char **argv)
 
     init_dynload();
 
+    setvbuf(stderr, NULL, _IONBF, 0); /* win32 runtime needs this */
+
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
 
     options = real_options;
