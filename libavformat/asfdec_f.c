@@ -608,7 +608,8 @@ static int asf_read_metadata(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     ASFContext *asf = s->priv_data;
-    int n, stream_num, name_len_utf16, name_len_utf8, value_len;
+    int n, stream_num, name_len_utf16, name_len_utf8;
+    unsigned int value_len;
     int ret, i;
     n = avio_rl16(pb);
 
@@ -622,7 +623,7 @@ static int asf_read_metadata(AVFormatContext *s)
         value_type = avio_rl16(pb); /* value_type */
         value_len  = avio_rl32(pb);
 
-        if (value_len < 0 || value_len > UINT16_MAX)
+        if (value_len >= (INT_MAX - LEN) / 2)
             return AVERROR_INVALIDDATA;
 
         name_len_utf8 = 2*name_len_utf16 + 1;
