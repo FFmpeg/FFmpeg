@@ -133,4 +133,8 @@ static void apv_decode_transquant_c(void *output,
 av_cold void ff_apv_dsp_init(APVDSPContext *dsp)
 {
     dsp->decode_transquant = apv_decode_transquant_c;
+
+#if ARCH_X86_64
+    ff_apv_dsp_init_x86_64(dsp);
+#endif
 }

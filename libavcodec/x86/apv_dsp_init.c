@@ -16,24 +16,29 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_APV_DSP_H
-#define AVCODEC_APV_DSP_H
+#include "config.h"
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
+#include "libavcodec/apv_dsp.h"
 
-#include <stddef.h>
-#include <stdint.h>
+#if ARCH_X86_64
 
+void ff_apv_decode_transquant_avx2(void *output,
+                                   ptrdiff_t pitch,
+                                   const int16_t *input,
+                                   const int16_t *qmatrix,
+                                   int bit_depth,
+                                   int qp_shift);
 
-typedef struct APVDSPContext {
-    void (*decode_transquant)(void *output,
-                              ptrdiff_t pitch,
-                              const int16_t *input,
-                              const int16_t *qmatrix,
-                              int bit_depth,
-                              int qp_shift);
-} APVDSPContext;
+av_cold void ff_apv_dsp_init_x86_64(APVDSPContext *dsp)
+{
+    int cpu_flags = av_get_cpu_flags();
 
-void ff_apv_dsp_init(APVDSPContext *dsp);
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+        dsp->decode_transquant = ff_apv_decode_transquant_avx2;
+    }
+}
 
-void ff_apv_dsp_init_x86_64(APVDSPContext *dsp);
-
-#endif /* AVCODEC_APV_DSP_H */
+#endif /* ARCH_X86_64 */
