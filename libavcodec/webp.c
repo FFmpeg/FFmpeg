@@ -254,10 +254,9 @@ static int huff_reader_get_symbol(HuffReader *r, GetBitContext *gb)
 
 static int huff_reader_build_canonical(HuffReader *r, const uint8_t *code_lengths,
                                        uint16_t len_counts[MAX_HUFFMAN_CODE_LENGTH + 1],
+                                       uint8_t lens[], uint16_t syms[],
                                        int alphabet_size, void *logctx)
 {
-    uint16_t *syms;
-    uint8_t *lens;
     unsigned nb_codes = 0;
     int ret;
 
@@ -285,11 +284,6 @@ static int huff_reader_build_canonical(HuffReader *r, const uint8_t *code_length
         return AVERROR_INVALIDDATA;
     }
 
-    syms = av_malloc_array(nb_codes, sizeof(*syms) + sizeof(*lens));
-    if (!syms)
-        return AVERROR(ENOMEM);
-    lens = (uint8_t*)(syms + nb_codes);
-
     for (int sym = 0; sym < alphabet_size; ++sym) {
         if (code_lengths[sym]) {
             unsigned idx = len_counts[code_lengths[sym]]++;
@@ -300,7 +294,6 @@ static int huff_reader_build_canonical(HuffReader *r, const uint8_t *code_length
 
     ret = ff_vlc_init_from_lengths(&r->vlc, 8, nb_codes, lens, 1,
                                    syms, 2, 2, 0, VLC_INIT_OUTPUT_LE, logctx);
-    av_free(syms);
     if (ret < 0)
         return ret;
     r->simple = 0;
@@ -329,6 +322,8 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
     HuffReader code_len_hc = { { 0 }, 0, 0, { 0 } };
     uint8_t *code_lengths;
     uint8_t code_length_code_lengths[NUM_CODE_LENGTH_CODES] = { 0 };
+    uint8_t reordered_code_length_code_lengths[NUM_CODE_LENGTH_CODES];
+    uint16_t reordered_code_length_syms[NUM_CODE_LENGTH_CODES];
     uint16_t len_counts[MAX_HUFFMAN_CODE_LENGTH + 1] = { 0 };
     int symbol, max_symbol, prev_code_len, ret;
     int num_codes = 4 + get_bits(&s->gb, 4);
@@ -354,11 +349,13 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
     }
 
     ret = huff_reader_build_canonical(&code_len_hc, code_length_code_lengths, len_counts,
+                                      reordered_code_length_code_lengths,
+                                      reordered_code_length_syms,
                                       NUM_CODE_LENGTH_CODES, s->avctx);
     if (ret < 0)
         return ret;
 
-    code_lengths = av_malloc(alphabet_size);
+    code_lengths = av_malloc_array(alphabet_size, 2 * sizeof(uint8_t) + sizeof(uint16_t));
     if (!code_lengths) {
         ret = AVERROR(ENOMEM);
         goto finish;
@@ -417,6 +414,8 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
     }
 
     ret = huff_reader_build_canonical(hc, code_lengths, len_counts,
+                                      code_lengths + symbol,
+                                      (uint16_t*)(code_lengths + 2 * symbol),
                                       symbol, s->avctx);
 
 finish:
