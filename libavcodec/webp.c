@@ -267,22 +267,6 @@ static int huff_reader_build_canonical(HuffReader *r, const uint8_t *code_length
         len_counts[len] = nb_codes;
         nb_codes += cnt;
     }
-    if (nb_codes <= 1) {
-        if (nb_codes == 1) {
-            /* special-case 1 symbol since the vlc reader cannot handle it */
-            r->nb_symbols = 1;
-            r->simple = 1;
-            for (int sym = 0;; ++sym) {
-                av_assert1(sym < alphabet_size);
-                if (code_lengths[sym]) {
-                    r->simple_symbols[0] = sym;
-                    return 0;
-                }
-            }
-        }
-        // No symbols
-        return AVERROR_INVALIDDATA;
-    }
 
     for (int sym = 0; sym < alphabet_size; ++sym) {
         if (code_lengths[sym]) {
@@ -291,7 +275,16 @@ static int huff_reader_build_canonical(HuffReader *r, const uint8_t *code_length
             lens[idx] = code_lengths[sym];
         }
     }
-
+    if (nb_codes <= 1) {
+        if (nb_codes == 1) {
+            /* special-case 1 symbol since the vlc reader cannot handle it */
+            r->nb_symbols = 1;
+            r->simple = 1;
+            r->simple_symbols[0] = syms[0];
+        }
+        // No symbols
+        return AVERROR_INVALIDDATA;
+    }
     ret = ff_vlc_init_from_lengths(&r->vlc, 8, nb_codes, lens, 1,
                                    syms, 2, 2, 0, VLC_INIT_OUTPUT_LE, logctx);
     if (ret < 0)
