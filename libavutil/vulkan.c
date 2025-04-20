@@ -141,53 +141,36 @@ int ff_vk_load_props(FFVulkanContext *s)
 {
     FFVulkanFunctions *vk = &s->vkfn;
 
-    s->hprops = (VkPhysicalDeviceExternalMemoryHostPropertiesEXT) {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT,
-    };
-    s->optical_flow_props = (VkPhysicalDeviceOpticalFlowPropertiesNV) {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_PROPERTIES_NV,
-        .pNext = &s->hprops,
-    };
-    s->push_desc_props = (VkPhysicalDevicePushDescriptorPropertiesKHR) {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES,
-        .pNext = &s->optical_flow_props,
-    };
-    s->coop_matrix_props = (VkPhysicalDeviceCooperativeMatrixPropertiesKHR) {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR,
-        .pNext = &s->push_desc_props,
-    };
-    s->subgroup_props = (VkPhysicalDeviceSubgroupSizeControlProperties) {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES,
-        .pNext = &s->coop_matrix_props,
-    };
-    s->desc_buf_props = (VkPhysicalDeviceDescriptorBufferPropertiesEXT) {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT,
-        .pNext = &s->subgroup_props,
-    };
-    s->driver_props = (VkPhysicalDeviceDriverProperties) {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES,
-        .pNext = &s->desc_buf_props,
-    };
-    s->props_11 = (VkPhysicalDeviceVulkan11Properties) {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES,
-        .pNext = &s->driver_props,
-    };
     s->props = (VkPhysicalDeviceProperties2) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-        .pNext = &s->props_11,
     };
 
-    s->atomic_float_feats = (VkPhysicalDeviceShaderAtomicFloatFeaturesEXT) {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT,
-    };
-    s->feats_12 = (VkPhysicalDeviceVulkan12Features) {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
-        .pNext = &s->atomic_float_feats,
-    };
+    FF_VK_STRUCT_EXT(s, &s->props, &s->props_11, FF_VK_EXT_NO_FLAG,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES);
+    FF_VK_STRUCT_EXT(s, &s->props, &s->driver_props, FF_VK_EXT_NO_FLAG,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES);
+    FF_VK_STRUCT_EXT(s, &s->props, &s->subgroup_props, FF_VK_EXT_NO_FLAG,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES);
+
+    FF_VK_STRUCT_EXT(s, &s->props, &s->push_desc_props, FF_VK_EXT_PUSH_DESCRIPTOR,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES);
+    FF_VK_STRUCT_EXT(s, &s->props, &s->hprops, FF_VK_EXT_EXTERNAL_HOST_MEMORY,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT);
+    FF_VK_STRUCT_EXT(s, &s->props, &s->coop_matrix_props, FF_VK_EXT_COOP_MATRIX,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR);
+    FF_VK_STRUCT_EXT(s, &s->props, &s->desc_buf_props, FF_VK_EXT_DESCRIPTOR_BUFFER,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT);
+    FF_VK_STRUCT_EXT(s, &s->props, &s->optical_flow_props, FF_VK_EXT_OPTICAL_FLOW,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_PROPERTIES_NV);
+
     s->feats = (VkPhysicalDeviceFeatures2) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-        .pNext = &s->feats_12,
     };
+
+    FF_VK_STRUCT_EXT(s, &s->feats, &s->feats_12, FF_VK_EXT_NO_FLAG,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
+    FF_VK_STRUCT_EXT(s, &s->feats, &s->atomic_float_feats, FF_VK_EXT_ATOMIC_FLOAT,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT);
 
     vk->GetPhysicalDeviceProperties2(s->hwctx->phys_dev, &s->props);
     vk->GetPhysicalDeviceMemoryProperties(s->hwctx->phys_dev, &s->mprops);
@@ -218,17 +201,14 @@ int ff_vk_load_props(FFVulkanContext *s)
     }
 
     for (uint32_t i = 0; i < s->tot_nb_qfs; i++) {
-        s->query_props[i] = (VkQueueFamilyQueryResultStatusPropertiesKHR) {
-            .sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_KHR,
-        };
-        s->video_props[i] = (VkQueueFamilyVideoPropertiesKHR) {
-            .sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR,
-            .pNext = &s->query_props[i],
-        };
         s->qf_props[i] = (VkQueueFamilyProperties2) {
             .sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2,
-            .pNext = s->extensions & FF_VK_EXT_VIDEO_QUEUE ? &s->video_props[i] : NULL,
         };
+
+        FF_VK_STRUCT_EXT(s, &s->qf_props[i], &s->query_props[i], FF_VK_EXT_NO_FLAG,
+                         VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_KHR);
+        FF_VK_STRUCT_EXT(s, &s->qf_props[i], &s->video_props[i], FF_VK_EXT_VIDEO_QUEUE,
+                         VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR);
     }
 
     vk->GetPhysicalDeviceQueueFamilyProperties2(s->hwctx->phys_dev, &s->tot_nb_qfs, s->qf_props);

@@ -349,6 +349,15 @@ static inline void ff_vk_link_struct(void *chain, const void *in)
     out->pNext = (void *)in;
 }
 
+#define FF_VK_STRUCT_EXT(CTX, BASE, STRUCT_P, EXT_FLAG, TYPE) \
+    do {                                                      \
+        if ((EXT_FLAG == FF_VK_EXT_NO_FLAG) ||                \
+            ((CTX)->extensions & EXT_FLAG)) {                 \
+            (STRUCT_P)->sType = TYPE;                         \
+            ff_vk_link_struct(BASE, STRUCT_P);                \
+        }                                                     \
+    } while (0)
+
 /* Identity mapping - r = r, b = b, g = g, a = a */
 extern const VkComponentMapping ff_comp_identity_map;
 

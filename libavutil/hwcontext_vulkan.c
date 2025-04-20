@@ -190,59 +190,50 @@ typedef struct AVVkFrameInternal {
 static void device_features_init(AVHWDeviceContext *ctx, VulkanDeviceFeatures *feats)
 {
     VulkanDevicePriv *p = ctx->hwctx;
-
-#define OPT_CHAIN(STRUCT_P, EXT_FLAG, TYPE)              \
-    do {                                                 \
-        if ((EXT_FLAG == FF_VK_EXT_NO_FLAG) ||           \
-            (p->vkctx.extensions & EXT_FLAG)) {          \
-            (STRUCT_P)->sType = TYPE;                    \
-            ff_vk_link_struct(&feats->device, STRUCT_P); \
-        }                                                \
-    } while (0)
+    FFVulkanContext *s = &p->vkctx;
 
     feats->device = (VkPhysicalDeviceFeatures2) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
     };
 
-    OPT_CHAIN(&feats->vulkan_1_1, FF_VK_EXT_NO_FLAG,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES);
-    OPT_CHAIN(&feats->vulkan_1_2, FF_VK_EXT_NO_FLAG,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
-    OPT_CHAIN(&feats->vulkan_1_3, FF_VK_EXT_NO_FLAG,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES);
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->vulkan_1_1, FF_VK_EXT_NO_FLAG,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES);
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->vulkan_1_2, FF_VK_EXT_NO_FLAG,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->vulkan_1_3, FF_VK_EXT_NO_FLAG,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES);
 
-    OPT_CHAIN(&feats->timeline_semaphore, FF_VK_EXT_PORTABILITY_SUBSET,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->timeline_semaphore, FF_VK_EXT_PORTABILITY_SUBSET,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
 
 #ifdef VK_KHR_shader_expect_assume
-    OPT_CHAIN(&feats->expect_assume, FF_VK_EXT_EXPECT_ASSUME,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EXPECT_ASSUME_FEATURES_KHR);
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->expect_assume, FF_VK_EXT_EXPECT_ASSUME,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_EXPECT_ASSUME_FEATURES_KHR);
 #endif
 
-    OPT_CHAIN(&feats->video_maintenance_1, FF_VK_EXT_VIDEO_MAINTENANCE_1,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR);
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->video_maintenance_1, FF_VK_EXT_VIDEO_MAINTENANCE_1,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR);
 #ifdef VK_KHR_video_maintenance2
-    OPT_CHAIN(&feats->video_maintenance_2, FF_VK_EXT_VIDEO_MAINTENANCE_2,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_2_FEATURES_KHR);
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->video_maintenance_2, FF_VK_EXT_VIDEO_MAINTENANCE_2,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_2_FEATURES_KHR);
 #endif
 
-    OPT_CHAIN(&feats->shader_object, FF_VK_EXT_SHADER_OBJECT,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT);
-    OPT_CHAIN(&feats->cooperative_matrix, FF_VK_EXT_COOP_MATRIX,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR);
-    OPT_CHAIN(&feats->descriptor_buffer, FF_VK_EXT_DESCRIPTOR_BUFFER,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT);
-    OPT_CHAIN(&feats->atomic_float, FF_VK_EXT_ATOMIC_FLOAT,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT);
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->shader_object, FF_VK_EXT_SHADER_OBJECT,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT);
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->cooperative_matrix, FF_VK_EXT_COOP_MATRIX,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR);
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->descriptor_buffer, FF_VK_EXT_DESCRIPTOR_BUFFER,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT);
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->atomic_float, FF_VK_EXT_ATOMIC_FLOAT,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT);
 
 #ifdef VK_KHR_shader_relaxed_extended_instruction
-    OPT_CHAIN(&feats->relaxed_extended_instruction, FF_VK_EXT_RELAXED_EXTENDED_INSTR,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR);
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->relaxed_extended_instruction, FF_VK_EXT_RELAXED_EXTENDED_INSTR,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_RELAXED_EXTENDED_INSTRUCTION_FEATURES_KHR);
 #endif
 
-    OPT_CHAIN(&feats->optical_flow, FF_VK_EXT_OPTICAL_FLOW,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_FEATURES_NV);
-#undef OPT_CHAIN
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->optical_flow, FF_VK_EXT_OPTICAL_FLOW,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_FEATURES_NV);
 }
 
 /* Copy all needed device features */
