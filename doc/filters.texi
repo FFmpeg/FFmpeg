@@ -16397,7 +16397,7 @@ Cubic spline approximation of lanczos. No difference in performance, but has
 very slightly less ringing.
 
 @item ewa_lanczos
-Elliptically weighted average version of lanczos, based on a jinc-sinc kernel.
+Elliptically weighted average version of lanczos, based on a jinc-jinc kernel.
 This is also popularly referred to as just "Jinc scaling". Slow but very high
 quality.
 
