@@ -148,9 +148,13 @@ int ff_vk_load_props(FFVulkanContext *s)
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_PROPERTIES_NV,
         .pNext = &s->hprops,
     };
+    s->push_desc_props = (VkPhysicalDevicePushDescriptorPropertiesKHR) {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES,
+        .pNext = &s->optical_flow_props,
+    };
     s->coop_matrix_props = (VkPhysicalDeviceCooperativeMatrixPropertiesKHR) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR,
-        .pNext = &s->optical_flow_props,
+        .pNext = &s->push_desc_props,
     };
     s->subgroup_props = (VkPhysicalDeviceSubgroupSizeControlProperties) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES,
@@ -2250,15 +2254,16 @@ static int init_descriptors(FFVulkanContext *s, FFVulkanShader *shd)
 
     if (!(s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER)) {
         int has_singular = 0;
+        int max_descriptors = 0;
         for (int i = 0; i < shd->nb_descriptor_sets; i++) {
-            if (shd->desc_set[i].singular) {
+            max_descriptors = FFMAX(max_descriptors, shd->desc_set[i].nb_bindings);
+            if (shd->desc_set[i].singular)
                 has_singular = 1;
-                break;
-            }
         }
         shd->use_push = (s->extensions & FF_VK_EXT_PUSH_DESCRIPTOR) &&
+                        (max_descriptors <= s->push_desc_props.maxPushDescriptors) &&
                         (shd->nb_descriptor_sets == 1) &&
-                        !has_singular;
+                        (has_singular == 0);
     }
 
     for (int i = 0; i < shd->nb_descriptor_sets; i++) {
