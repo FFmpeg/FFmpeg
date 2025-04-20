@@ -84,6 +84,40 @@ const char *ff_vk_ret2str(VkResult res)
 #undef CASE
 }
 
+/* Malitia pura, Khronos */
+#define FN_MAP_TO(dst_t, dst_name, src_t, src_name)                                 \
+    dst_t ff_vk_map_ ##src_name## _to_ ##dst_name(src_t src) \
+    {                                                                   \
+        dst_t dst = 0x0;                                                \
+        MAP_TO(VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,                   \
+               VK_IMAGE_USAGE_SAMPLED_BIT);                             \
+        MAP_TO(VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT,                    \
+               VK_IMAGE_USAGE_TRANSFER_SRC_BIT);                        \
+        MAP_TO(VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT,                    \
+               VK_IMAGE_USAGE_TRANSFER_DST_BIT);                        \
+        MAP_TO(VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT,                   \
+               VK_IMAGE_USAGE_STORAGE_BIT);                             \
+        MAP_TO(VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT,                \
+               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);                    \
+        MAP_TO(VK_FORMAT_FEATURE_2_VIDEO_DECODE_OUTPUT_BIT_KHR,         \
+               VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR);                \
+        MAP_TO(VK_FORMAT_FEATURE_2_VIDEO_DECODE_DPB_BIT_KHR,            \
+               VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR);                \
+        MAP_TO(VK_FORMAT_FEATURE_2_VIDEO_ENCODE_DPB_BIT_KHR,            \
+               VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR);                \
+        MAP_TO(VK_FORMAT_FEATURE_2_VIDEO_ENCODE_INPUT_BIT_KHR,          \
+               VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR);                \
+        return dst;                                                     \
+    }
+
+#define MAP_TO(flag1, flag2) if (src & flag2) dst |= flag1;
+FN_MAP_TO(VkFormatFeatureFlagBits2, feats, VkImageUsageFlags, usage)
+#undef MAP_TO
+#define MAP_TO(flag1, flag2) if (src & flag1) dst |= flag2;
+FN_MAP_TO(VkImageUsageFlags, usage, VkFormatFeatureFlagBits2, feats)
+#undef MAP_TO
+#undef FN_MAP_TO
+
 static void load_enabled_qfs(FFVulkanContext *s)
 {
     s->nb_qfs = 0;

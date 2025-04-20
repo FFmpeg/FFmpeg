@@ -365,6 +365,12 @@ int ff_vk_init(FFVulkanContext *s, void *log_parent,
 const char *ff_vk_ret2str(VkResult res);
 
 /**
+ * Map between usage and features.
+ */
+VkImageUsageFlags ff_vk_map_feats_to_usage(VkFormatFeatureFlagBits2 feats);
+VkFormatFeatureFlagBits2 ff_vk_map_usage_to_feats(VkImageUsageFlags usage);
+
+/**
  * Returns 1 if pixfmt is a usable RGB format.
  */
 int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt);

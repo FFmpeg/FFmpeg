@@ -437,40 +437,6 @@ static const struct FFVkFormatEntry *vk_find_format_entry(enum AVPixelFormat p)
     return NULL;
 }
 
-/* Malitia pura, Khronos */
-#define FN_MAP_TO(dst_t, dst_name, src_t, src_name)                                 \
-    static av_unused dst_t map_ ##src_name## _to_ ##dst_name(src_t src) \
-    {                                                                   \
-        dst_t dst = 0x0;                                                \
-        MAP_TO(VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT,                   \
-               VK_IMAGE_USAGE_SAMPLED_BIT);                             \
-        MAP_TO(VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT,                    \
-               VK_IMAGE_USAGE_TRANSFER_SRC_BIT);                        \
-        MAP_TO(VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT,                    \
-               VK_IMAGE_USAGE_TRANSFER_DST_BIT);                        \
-        MAP_TO(VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT,                   \
-               VK_IMAGE_USAGE_STORAGE_BIT);                             \
-        MAP_TO(VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT,                \
-               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);                    \
-        MAP_TO(VK_FORMAT_FEATURE_2_VIDEO_DECODE_OUTPUT_BIT_KHR,         \
-               VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR);                \
-        MAP_TO(VK_FORMAT_FEATURE_2_VIDEO_DECODE_DPB_BIT_KHR,            \
-               VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR);                \
-        MAP_TO(VK_FORMAT_FEATURE_2_VIDEO_ENCODE_DPB_BIT_KHR,            \
-               VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR);                \
-        MAP_TO(VK_FORMAT_FEATURE_2_VIDEO_ENCODE_INPUT_BIT_KHR,          \
-               VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR);                \
-        return dst;                                                     \
-    }
-
-#define MAP_TO(flag1, flag2) if (src & flag2) dst |= flag1;
-FN_MAP_TO(VkFormatFeatureFlagBits2, feats, VkImageUsageFlags, usage)
-#undef MAP_TO
-#define MAP_TO(flag1, flag2) if (src & flag1) dst |= flag2;
-FN_MAP_TO(VkImageUsageFlags, usage, VkFormatFeatureFlagBits2, feats)
-#undef MAP_TO
-#undef FN_MAP_TO
-
 static int vkfmt_from_pixfmt2(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
                               VkImageTiling tiling,
                               VkFormat fmts[AV_NUM_DATA_POINTERS], /* Output format list */
@@ -538,7 +504,7 @@ static int vkfmt_from_pixfmt2(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
                 if (aspect)
                     *aspect = vk_formats_list[i].aspect;
                 if (supported_usage)
-                    *supported_usage = map_feats_to_usage(feats_primary) |
+                    *supported_usage = ff_vk_map_feats_to_usage(feats_primary) |
                                        ((need_storage && (storage_primary | storage_secondary)) ?
                                         VK_IMAGE_USAGE_STORAGE_BIT : 0);
                 return 0;
@@ -553,7 +519,7 @@ static int vkfmt_from_pixfmt2(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
                 if (aspect)
                     *aspect = vk_formats_list[i].aspect;
                 if (supported_usage)
-                    *supported_usage = map_feats_to_usage(feats_secondary);
+                    *supported_usage = ff_vk_map_feats_to_usage(feats_secondary);
                 return 0;
             } else {
                 return AVERROR(ENOTSUP);
@@ -2680,6 +2646,10 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, size_t size)
         try_export_flags(hwfc, &eiinfo.handleTypes, &e,
                          VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
 #endif
+
+    if (p->vkctx.extensions & FF_VK_EXT_EXTERNAL_DMABUF_MEMORY)
+        try_export_flags(hwfc, &eiinfo.handleTypes, &e,
+                         VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT);
 
     for (int i = 0; i < av_pix_fmt_count_planes(hwfc->sw_format); i++) {
         eminfo[i].sType       = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO;
