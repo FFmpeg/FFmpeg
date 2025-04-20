@@ -341,6 +341,18 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
         len_counts[len]++;
     }
 
+    if (get_bits1(&s->gb)) {
+        int bits   = 2 + 2 * get_bits(&s->gb, 3);
+        max_symbol = 2 + get_bits(&s->gb, bits);
+        if (max_symbol > alphabet_size) {
+            av_log(s->avctx, AV_LOG_ERROR, "max symbol %d > alphabet size %d\n",
+                   max_symbol, alphabet_size);
+            return AVERROR_INVALIDDATA;
+        }
+    } else {
+        max_symbol = alphabet_size;
+    }
+
     ret = huff_reader_build_canonical(&code_len_hc, code_length_code_lengths, len_counts,
                                       NUM_CODE_LENGTH_CODES, s->avctx);
     if (ret < 0)
@@ -350,19 +362,6 @@ static int read_huffman_code_normal(WebPContext *s, HuffReader *hc,
     if (!code_lengths) {
         ret = AVERROR(ENOMEM);
         goto finish;
-    }
-
-    if (get_bits1(&s->gb)) {
-        int bits   = 2 + 2 * get_bits(&s->gb, 3);
-        max_symbol = 2 + get_bits(&s->gb, bits);
-        if (max_symbol > alphabet_size) {
-            av_log(s->avctx, AV_LOG_ERROR, "max symbol %d > alphabet size %d\n",
-                   max_symbol, alphabet_size);
-            ret = AVERROR_INVALIDDATA;
-            goto finish;
-        }
-    } else {
-        max_symbol = alphabet_size;
     }
 
     prev_code_len = 8;
