@@ -521,7 +521,7 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
     }
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     av_assert1(desc);
-    s->decorrelate = !!(desc->flags & AV_PIX_FMT_FLAG_RGB);
+    int is_rgb = s->decorrelate = !!(desc->flags & AV_PIX_FMT_FLAG_RGB);
     s->hshift[1] = s->hshift[2] = desc->log2_chroma_w;
     s->vshift[1] = s->vshift[2] = desc->log2_chroma_h;
     s->bps = desc->comp[0].depth;
@@ -628,14 +628,7 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
     s->p = p;
     avctx->execute2(avctx, s->magy_decode_slice, NULL, NULL, s->nb_slices);
 
-    if (avctx->pix_fmt == AV_PIX_FMT_GBRP   ||
-        avctx->pix_fmt == AV_PIX_FMT_GBRAP  ||
-        avctx->pix_fmt == AV_PIX_FMT_GBRP10 ||
-        avctx->pix_fmt == AV_PIX_FMT_GBRAP10||
-        avctx->pix_fmt == AV_PIX_FMT_GBRAP12||
-        avctx->pix_fmt == AV_PIX_FMT_GBRAP14||
-        avctx->pix_fmt == AV_PIX_FMT_GBRP12||
-        avctx->pix_fmt == AV_PIX_FMT_GBRP14) {
+    if (is_rgb) {
         FFSWAP(uint8_t*, p->data[0], p->data[1]);
         FFSWAP(int, p->linesize[0], p->linesize[1]);
     } else {
