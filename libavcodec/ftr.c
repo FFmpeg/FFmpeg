@@ -51,7 +51,7 @@ static av_cold int ftr_init(AVCodecContext *avctx)
 
     codec = avcodec_find_decoder(AV_CODEC_ID_AAC);
     if (!codec)
-        return AVERROR_BUG;
+        return AVERROR_DECODER_NOT_FOUND;
 
     for (int i = 0; i < s->nb_context; i++) {
         s->aac_avctx[i] = avcodec_alloc_context3(codec);
