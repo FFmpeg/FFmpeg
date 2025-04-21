@@ -462,37 +462,22 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
         return AVERROR_PATCHWELCOME;
     }
 
-    s->hshift[1] =
-    s->vshift[1] =
-    s->hshift[2] =
-    s->vshift[2] = 0;
-    s->decorrelate = 0;
-    s->bps = 8;
-
     format = bytestream2_get_byteu(&gb);
     switch (format) {
     case 0x65:
         avctx->pix_fmt = AV_PIX_FMT_GBRP;
-        s->decorrelate = 1;
         break;
     case 0x66:
         avctx->pix_fmt = AV_PIX_FMT_GBRAP;
-        s->decorrelate = 1;
         break;
     case 0x67:
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         break;
     case 0x68:
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
-        s->hshift[1] =
-        s->hshift[2] = 1;
         break;
     case 0x69:
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
-        s->hshift[1] =
-        s->vshift[1] =
-        s->hshift[2] =
-        s->vshift[2] = 1;
         break;
     case 0x6a:
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
@@ -502,60 +487,44 @@ static int magy_decode_frame(AVCodecContext *avctx, AVFrame *p,
         break;
     case 0x6c:
         avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
-        s->hshift[1] =
-        s->hshift[2] = 1;
-        s->bps = 10;
         break;
     case 0x76:
         avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
-        s->bps = 10;
         break;
     case 0x6d:
         avctx->pix_fmt = AV_PIX_FMT_GBRP10;
-        s->decorrelate = 1;
-        s->bps = 10;
         break;
     case 0x6e:
         avctx->pix_fmt = AV_PIX_FMT_GBRAP10;
-        s->decorrelate = 1;
-        s->bps = 10;
         break;
     case 0x6f:
         avctx->pix_fmt = AV_PIX_FMT_GBRP12;
-        s->decorrelate = 1;
-        s->bps = 12;
         break;
     case 0x70:
         avctx->pix_fmt = AV_PIX_FMT_GBRAP12;
-        s->decorrelate = 1;
-        s->bps = 12;
         break;
     case 0x71:
         avctx->pix_fmt = AV_PIX_FMT_GBRP14;
-        s->decorrelate = 1;
-        s->bps = 14;
         break;
     case 0x72:
         avctx->pix_fmt = AV_PIX_FMT_GBRAP14;
-        s->decorrelate = 1;
-        s->bps = 14;
         break;
     case 0x73:
         avctx->pix_fmt = AV_PIX_FMT_GRAY10;
-        s->bps = 10;
         break;
     case 0x7b:
         avctx->pix_fmt = AV_PIX_FMT_YUV420P10;
-        s->hshift[1] =
-        s->vshift[1] =
-        s->hshift[2] =
-        s->vshift[2] = 1;
-        s->bps = 10;
         break;
     default:
         avpriv_request_sample(avctx, "Format 0x%X", format);
         return AVERROR_PATCHWELCOME;
     }
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+    av_assert1(desc);
+    s->decorrelate = !!(desc->flags & AV_PIX_FMT_FLAG_RGB);
+    s->hshift[1] = s->hshift[2] = desc->log2_chroma_w;
+    s->vshift[1] = s->vshift[2] = desc->log2_chroma_h;
+    s->bps = desc->comp[0].depth;
     s->max = 1 << s->bps;
     s->magy_decode_slice = s->bps == 8 ? magy_decode_slice : magy_decode_slice10;
     s->planes = av_pix_fmt_count_planes(avctx->pix_fmt);
