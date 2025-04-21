@@ -193,11 +193,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         extern FFCodec DECODER_SYMBOL(FFMPEG_DECODER);
         codec_list[0] = &DECODER_SYMBOL(FFMPEG_DECODER);
 
-#if FFMPEG_DECODER == tiff || FFMPEG_DECODER == tdsc
-        extern FFCodec DECODER_SYMBOL(mjpeg);
-        codec_list[1] = &DECODER_SYMBOL(mjpeg);
-#endif
-
         c = &DECODER_SYMBOL(FFMPEG_DECODER);
 #else
         c = AVCodecInitialize(FFMPEG_CODEC);  // Done once.
