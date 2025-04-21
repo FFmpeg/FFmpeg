@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes_internal.h"
 #include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
@@ -51,32 +52,27 @@ static const struct IMM5_unit {
 static av_cold int imm5_init(AVCodecContext *avctx)
 {
     IMM5Context *ctx = avctx->priv_data;
-    const AVCodec *codec;
     int ret;
 
-    codec = avcodec_find_decoder(AV_CODEC_ID_H264);
-    if (!codec)
-        return AVERROR_BUG;
-    ctx->h264_avctx = avcodec_alloc_context3(codec);
+    EXTERN const FFCodec ff_h264_decoder;
+    ctx->h264_avctx = avcodec_alloc_context3(&ff_h264_decoder.p);
     if (!ctx->h264_avctx)
         return AVERROR(ENOMEM);
     ctx->h264_avctx->thread_count = 1;
     ctx->h264_avctx->flags        = avctx->flags;
     ctx->h264_avctx->flags2       = avctx->flags2;
-    ret = avcodec_open2(ctx->h264_avctx, codec, NULL);
+    ret = avcodec_open2(ctx->h264_avctx, NULL, NULL);
     if (ret < 0)
         return ret;
 
-    codec = avcodec_find_decoder(AV_CODEC_ID_HEVC);
-    if (!codec)
-        return AVERROR_BUG;
-    ctx->hevc_avctx = avcodec_alloc_context3(codec);
+    EXTERN const FFCodec ff_hevc_decoder;
+    ctx->hevc_avctx = avcodec_alloc_context3(&ff_hevc_decoder.p);
     if (!ctx->hevc_avctx)
         return AVERROR(ENOMEM);
     ctx->hevc_avctx->thread_count = 1;
     ctx->hevc_avctx->flags        = avctx->flags;
     ctx->hevc_avctx->flags2       = avctx->flags2;
-    ret = avcodec_open2(ctx->hevc_avctx, codec, NULL);
+    ret = avcodec_open2(ctx->hevc_avctx, NULL, NULL);
     if (ret < 0)
         return ret;
 
