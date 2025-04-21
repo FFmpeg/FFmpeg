@@ -30,6 +30,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "riff.h"
 
@@ -94,6 +95,7 @@ static int qcp_read_header(AVFormatContext *s)
     QCPContext    *c  = s->priv_data;
     AVStream      *st = avformat_new_stream(s, NULL);
     uint8_t       buf[16];
+    int           ret;
     int           i;
     unsigned      nb_rates;
 
@@ -105,8 +107,9 @@ static int qcp_read_header(AVFormatContext *s)
 
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->ch_layout  = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
-    if (avio_read(pb, buf, 16) != 16)
-        return AVERROR_INVALIDDATA;
+    ret = ffio_read_size(pb, buf, 16);
+    if (ret < 0)
+        return ret;
     if (is_qcelp_13k_guid(buf)) {
         st->codecpar->codec_id = AV_CODEC_ID_QCELP;
     } else if (!memcmp(buf, guid_evrc, 16)) {

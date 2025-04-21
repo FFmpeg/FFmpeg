@@ -62,6 +62,7 @@
 #include "libavutil/opt.h"
 #include "avformat.h"
 #include "avlanguage.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "mxf.h"
@@ -659,6 +660,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     uint64_t plaintext_size;
     uint8_t ivec[16];
     uint8_t tmpbuf[16];
+    int ret;
     int index;
     int body_sid;
 
@@ -696,8 +698,9 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     if (size < 32 || size - 32 < orig_size || (int)orig_size != orig_size)
         return AVERROR_INVALIDDATA;
     avio_read(pb, ivec, 16);
-    if (avio_read(pb, tmpbuf, 16) != 16)
-        return AVERROR_INVALIDDATA;
+    ret = ffio_read_size(pb, tmpbuf, 16);
+    if (ret < 16)
+        return ret;
     if (mxf->aesc)
         av_aes_crypt(mxf->aesc, tmpbuf, tmpbuf, 1, ivec, 1);
     if (memcmp(tmpbuf, checkv, 16))
@@ -753,6 +756,7 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     uint64_t footer_partition;
     uint32_t nb_essence_containers;
     uint64_t this_partition;
+    int ret;
 
     if (mxf->partitions_count >= INT_MAX / 2)
         return AVERROR_INVALIDDATA;
@@ -818,9 +822,10 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     if (partition->body_offset < 0)
         return AVERROR_INVALIDDATA;
 
-    if (avio_read(pb, op, sizeof(UID)) != sizeof(UID)) {
+    ret = ffio_read_size(pb, op, sizeof(UID));
+    if (ret < 0) {
         av_log(mxf->fc, AV_LOG_ERROR, "Failed reading UID\n");
-        return AVERROR_INVALIDDATA;
+        return ret;
     }
     nb_essence_containers = avio_rb32(pb);
 
@@ -1552,12 +1557,14 @@ static int mxf_read_indirect_value(void *arg, AVIOContext *pb, int size)
 {
     MXFTaggedValue *tagged_value = arg;
     uint8_t key[17];
+    int ret;
 
     if (size <= 17)
         return 0;
 
-    if (avio_read(pb, key, 17) != 17)
-        return AVERROR_INVALIDDATA;
+    ret = ffio_read_size(pb, key, 17);
+    if (ret < 0)
+        return ret;
     /* TODO: handle other types of of indirect values */
     if (memcmp(key, mxf_indirect_value_utf16le, 17) == 0) {
         return mxf_read_utf16le_string(pb, size - 17, &tagged_value->value);
