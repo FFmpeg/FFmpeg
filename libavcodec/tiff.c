@@ -36,6 +36,7 @@
 #include <float.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/attributes_internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/error.h"
 #include "libavutil/intreadwrite.h"
@@ -2409,7 +2410,6 @@ again:
 static av_cold int tiff_init(AVCodecContext *avctx)
 {
     TiffContext *s = avctx->priv_data;
-    const AVCodec *codec;
     int ret;
 
     s->width  = 0;
@@ -2429,17 +2429,15 @@ static av_cold int tiff_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     /* Prepare everything needed for JPEG decoding */
-    codec = avcodec_find_decoder(AV_CODEC_ID_MJPEG);
-    if (!codec)
-        return AVERROR_BUG;
-    s->avctx_mjpeg = avcodec_alloc_context3(codec);
+    EXTERN const FFCodec ff_mjpeg_decoder;
+    s->avctx_mjpeg = avcodec_alloc_context3(&ff_mjpeg_decoder.p);
     if (!s->avctx_mjpeg)
         return AVERROR(ENOMEM);
     s->avctx_mjpeg->flags = avctx->flags;
     s->avctx_mjpeg->flags2 = avctx->flags2;
     s->avctx_mjpeg->idct_algo = avctx->idct_algo;
     s->avctx_mjpeg->max_pixels = avctx->max_pixels;
-    ret = avcodec_open2(s->avctx_mjpeg, codec, NULL);
+    ret = avcodec_open2(s->avctx_mjpeg, NULL, NULL);
     if (ret < 0) {
         return ret;
     }
