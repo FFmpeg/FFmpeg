@@ -504,7 +504,7 @@ static void readrate_sleep(Demuxer *d)
                           (f->start_time != AV_NOPTS_VALUE ? f->start_time : 0)
                          );
     int64_t initial_burst = AV_TIME_BASE * d->readrate_initial_burst;
-    int resume_warn;
+    int resume_warn = 0;
 
     for (int i = 0; i < f->nb_streams; i++) {
         InputStream *ist = f->streams[i];
