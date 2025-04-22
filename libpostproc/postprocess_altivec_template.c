@@ -530,7 +530,7 @@ static inline void doVertDefFilter_altivec(uint8_t src[], int stride, PPContext 
      STORE(5)
 }
 
-static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
+static inline void dering_altivec(uint8_t src[], int stride, PPContext *c, int leftborder, int rightborder) {
     const vector signed int vsint32_8 = vec_splat_s32(8);
     const vector unsigned int vuint32_4 = vec_splat_u32(4);
     const vector signed char neg1 = vec_splat_s8(-1);
