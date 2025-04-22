@@ -1441,7 +1441,7 @@ static void encode_float32_remap(FFV1Context *f, FFV1SliceContext *sc,
                         cost = FFMAX((delta + mul/2)  / mul, 1);
                         float score = 1;
                         if (mul > 1) {
-                            score *= (fabs(delta - cost*mul)+1);
+                            score *= (FFABS(delta - cost*mul)+1);
                             if (mul_count > 1)
                                 score *= score;
                         }
