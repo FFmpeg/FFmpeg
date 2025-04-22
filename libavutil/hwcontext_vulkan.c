@@ -278,6 +278,7 @@ static void device_features_copy_needed(VulkanDeviceFeatures *dst, VulkanDeviceF
     COPY_VAL(vulkan_1_3.maintenance4);
     COPY_VAL(vulkan_1_3.synchronization2);
     COPY_VAL(vulkan_1_3.computeFullSubgroups);
+    COPY_VAL(vulkan_1_3.subgroupSizeControl);
     COPY_VAL(vulkan_1_3.shaderZeroInitializeWorkgroupMemory);
     COPY_VAL(vulkan_1_3.dynamicRendering);
 
