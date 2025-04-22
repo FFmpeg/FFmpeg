@@ -831,9 +831,11 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
 #endif //TEMPLATE_PP_ALTIVEC
 
 #if !TEMPLATE_PP_ALTIVEC
-static inline void RENAME(dering)(uint8_t src[], int stride, PPContext *c, int leftborder, int rightborder)
+static inline void RENAME(dering)(uint8_t src[], int stride, PPContext *c, int leftborder, int rightborder, int topborder)
 {
 #if TEMPLATE_PP_MMXEXT && HAVE_7REGS
+    if (topborder)
+        return;
     DECLARE_ALIGNED(8, uint64_t, tmp)[3];
     __asm__ volatile(
         "pxor %%mm6, %%mm6                      \n\t"
@@ -1044,7 +1046,8 @@ DERING_CORE((%0, %1, 8)       ,(%%FF_REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,
 
     if(max - min <deringThreshold) return;
 
-    for(y=0; y<10; y++){
+    s[0] = 0;
+    for(y=topborder; y<10; y++){
         int t = 0;
 
         if(!leftborder && src[stride*y + 0] > avg) t+= 1;
@@ -3210,8 +3213,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 }
 #endif //TEMPLATE_PP_MMX
                 if(mode & DERING){
-                //FIXME filter first line
-                    if(y>0) RENAME(dering)(dstBlock - stride - 8, stride, c, x<=8, 0);
+                    RENAME(dering)(dstBlock - stride - 8, stride, c, x<=8, 0, y<=0);
                 }
 
                 if(mode & TEMP_NOISE_FILTER)
@@ -3233,7 +3235,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
         }
 
         if(mode & DERING){
-            if(y > 0) RENAME(dering)(dstBlock - dstStride - 8, dstStride, c, 0, 1);
+            RENAME(dering)(dstBlock - dstStride - 8, dstStride, c, 0, 1, y<=0);
         }
 
         if((mode & TEMP_NOISE_FILTER)){
