@@ -92,6 +92,11 @@ NEON8_FNPROTO(pel_bi_pixels, (uint8_t *dst, ptrdiff_t dststride,
         const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
         int height, intptr_t mx, intptr_t my, int width),);
 
+NEON8_FNPROTO(pel_bi_w_pixels, (uint8_t *_dst, ptrdiff_t _dststride,
+        const uint8_t *_src, ptrdiff_t _srcstride, const int16_t *src2,
+        int height, int denom, int wx0, int wx1,
+        int ox0, int ox1, intptr_t mx, intptr_t my, int width),);
+
 NEON8_FNPROTO(epel_bi_h, (uint8_t *dst, ptrdiff_t dststride,
         const uint8_t *src, ptrdiff_t srcstride, const int16_t *src2,
         int height, intptr_t mx, intptr_t my, int width),);

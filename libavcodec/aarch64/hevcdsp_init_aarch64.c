@@ -134,6 +134,17 @@ void ff_hevc_transform_luma_4x4_neon_8(int16_t *coeffs);
         member[7][v][h] = ff_hevc_put_hevc_##fn##32_8_neon##ext; \
         member[9][v][h] = ff_hevc_put_hevc_##fn##64_8_neon##ext;
 
+#define NEON8_FNASSIGN_PARTIAL_6(member, v, h, fn, ext) \
+        member[1][v][h] = ff_hevc_put_hevc_##fn##4_8_neon##ext;  \
+        member[2][v][h] = ff_hevc_put_hevc_##fn##6_8_neon##ext;  \
+        member[3][v][h] = ff_hevc_put_hevc_##fn##8_8_neon##ext;  \
+        member[4][v][h] = ff_hevc_put_hevc_##fn##12_8_neon##ext; \
+        member[5][v][h] = ff_hevc_put_hevc_##fn##16_8_neon##ext; \
+        member[6][v][h] = ff_hevc_put_hevc_##fn##24_8_neon##ext; \
+        member[7][v][h] = ff_hevc_put_hevc_##fn##32_8_neon##ext; \
+        member[8][v][h] = ff_hevc_put_hevc_##fn##24_8_neon##ext; \
+        member[9][v][h] = ff_hevc_put_hevc_##fn##32_8_neon##ext;
+
 av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -204,6 +215,8 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         NEON8_FNASSIGN(c->put_hevc_epel_bi, 1, 0, epel_bi_v,);
         NEON8_FNASSIGN(c->put_hevc_qpel_bi, 0, 0, pel_bi_pixels,);
         NEON8_FNASSIGN(c->put_hevc_qpel_bi, 1, 0, qpel_bi_v,);
+        NEON8_FNASSIGN_PARTIAL_6(c->put_hevc_qpel_bi_w, 0, 0, pel_bi_w_pixels,);
+        NEON8_FNASSIGN_PARTIAL_6(c->put_hevc_epel_bi_w, 0, 0, pel_bi_w_pixels,);
         NEON8_FNASSIGN(c->put_hevc_epel_uni, 0, 0, pel_uni_pixels,);
         NEON8_FNASSIGN(c->put_hevc_epel_uni, 1, 0, epel_uni_v,);
         NEON8_FNASSIGN(c->put_hevc_qpel_uni, 0, 0, pel_uni_pixels,);
