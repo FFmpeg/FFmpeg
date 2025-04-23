@@ -1353,7 +1353,7 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
     if (seg->key_type == KEY_AES_128 || seg->key_type == KEY_SAMPLE_AES) {
         if (strcmp(seg->key, pls->key_url)) {
             AVIOContext *pb = NULL;
-            if (open_url(pls->parent, &pb, seg->key, &c->avio_opts, opts, NULL) == 0) {
+            if (open_url(pls->parent, &pb, seg->key, &c->avio_opts, NULL, NULL) == 0) {
                 ret = avio_read(pb, pls->key, sizeof(pls->key));
                 if (ret != sizeof(pls->key)) {
                     av_log(pls->parent, AV_LOG_ERROR, "Unable to read key file %s\n",
