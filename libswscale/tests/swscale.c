@@ -79,11 +79,12 @@ static int speedup_count;
 
 static const char *speedup_color(double ratio)
 {
-    return ratio > 1.10 ? "\033[1;32m" : /* bold green */
-           ratio > 1.02 ? "\033[32m"   : /* green */
-           ratio > 0.98 ? ""           : /* default */
-           ratio > 0.95 ? "\033[33m"   : /* yellow */
-           ratio > 0.90 ? "\033[31m"   : /* red */
+    return ratio > 10.00 ? "\033[1;94m" : /* bold blue */
+           ratio >  2.00 ? "\033[1;32m" : /* bold green */
+           ratio >  1.02 ? "\033[32m"   : /* green */
+           ratio >  0.98 ? ""           : /* default */
+           ratio >  0.90 ? "\033[33m"   : /* yellow */
+           ratio >  0.75 ? "\033[31m"   : /* red */
             "\033[1;31m";  /* bold red */
 }
 
