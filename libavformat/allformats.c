@@ -73,6 +73,7 @@ extern const FFOutputFormat ff_aptx_muxer;
 extern const FFInputFormat  ff_aptx_hd_demuxer;
 extern const FFOutputFormat ff_aptx_hd_muxer;
 extern const FFInputFormat  ff_apv_demuxer;
+extern const FFOutputFormat ff_apv_muxer;
 extern const FFInputFormat  ff_aqtitle_demuxer;
 extern const FFInputFormat  ff_argo_asf_demuxer;
 extern const FFOutputFormat ff_argo_asf_muxer;

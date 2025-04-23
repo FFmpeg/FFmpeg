@@ -120,6 +120,7 @@ OBJS-$(CONFIG_APTX_MUXER)                += rawenc.o
 OBJS-$(CONFIG_APTX_HD_DEMUXER)           += aptxdec.o
 OBJS-$(CONFIG_APTX_HD_MUXER)             += rawenc.o
 OBJS-$(CONFIG_APV_DEMUXER)               += apvdec.o
+OBJS-$(CONFIG_APV_MUXER)                 += apvenc.o
 OBJS-$(CONFIG_AQTITLE_DEMUXER)           += aqtitledec.o subtitles.o
 OBJS-$(CONFIG_ARGO_ASF_DEMUXER)          += argo_asf.o
 OBJS-$(CONFIG_ARGO_ASF_MUXER)            += argo_asf.o
