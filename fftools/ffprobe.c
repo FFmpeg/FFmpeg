@@ -3167,10 +3167,15 @@ int main(int argc, char **argv)
     if (ret < 0)
         goto end;
 
-    if ((ret = avtext_context_open(&tctx, f, wctx, f_args,
-                           sections, FF_ARRAY_ELEMS(sections), show_value_unit,
-                            use_value_prefix, use_byte_value_binary_prefix, use_value_sexagesimal_format,
-                            show_optional_fields, show_data_hash)) >= 0) {
+    AVTextFormatOptions tf_options = {
+        .show_optional_fields = show_optional_fields,
+        .show_value_unit = show_value_unit,
+        .use_value_prefix = use_value_prefix,
+        .use_byte_value_binary_prefix = use_byte_value_binary_prefix,
+        .use_value_sexagesimal_format = use_value_sexagesimal_format,
+    };
+
+    if ((ret = avtext_context_open(&tctx, f, wctx, f_args, sections, FF_ARRAY_ELEMS(sections), tf_options, show_data_hash)) >= 0) {
         if (f == &avtextformatter_xml)
             tctx->string_validation_utf8_flags |= AV_UTF8_FLAG_EXCLUDE_XML_INVALID_CONTROL_CODES;
 

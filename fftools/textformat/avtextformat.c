@@ -125,13 +125,7 @@ void avtext_context_close(AVTextFormatContext **ptctx)
 
 
 int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *formatter, AVTextWriterContext *writer_context, const char *args,
-                        const AVTextFormatSection *sections, int nb_sections,
-                        int show_value_unit,
-                        int use_value_prefix,
-                        int use_byte_value_binary_prefix,
-                        int use_value_sexagesimal_format,
-                        int show_optional_fields,
-                        char *show_data_hash)
+                        const AVTextFormatSection *sections, int nb_sections, AVTextFormatOptions options, char *show_data_hash)
 {
     AVTextFormatContext *tctx;
     int i, ret = 0;
@@ -154,11 +148,11 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
         goto fail;
     }
 
-    tctx->show_value_unit = show_value_unit;
-    tctx->use_value_prefix = use_value_prefix;
-    tctx->use_byte_value_binary_prefix = use_byte_value_binary_prefix;
-    tctx->use_value_sexagesimal_format = use_value_sexagesimal_format;
-    tctx->show_optional_fields = show_optional_fields;
+    tctx->show_value_unit = options.show_value_unit;
+    tctx->use_value_prefix = options.use_value_prefix;
+    tctx->use_byte_value_binary_prefix = options.use_byte_value_binary_prefix;
+    tctx->use_value_sexagesimal_format = options.use_value_sexagesimal_format;
+    tctx->show_optional_fields = options.show_optional_fields;
 
     if (nb_sections > SECTION_MAX_NB_SECTIONS) {
         av_log(tctx, AV_LOG_ERROR, "The number of section definitions (%d) is larger than the maximum allowed (%d)\n", nb_sections, SECTION_MAX_NB_SECTIONS);
