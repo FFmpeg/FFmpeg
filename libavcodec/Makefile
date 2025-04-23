@@ -1151,6 +1151,7 @@ OBJS-$(CONFIG_LIBKVAZAAR_ENCODER)         += libkvazaar.o
 OBJS-$(CONFIG_LIBLC3_ENCODER)             += liblc3enc.o
 OBJS-$(CONFIG_LIBLC3_DECODER)             += liblc3dec.o
 OBJS-$(CONFIG_LIBMP3LAME_ENCODER)         += libmp3lame.o
+OBJS-$(CONFIG_LIBOAPV_ENCODER)            += liboapvenc.o
 OBJS-$(CONFIG_LIBOPENCORE_AMRNB_DECODER)  += libopencore-amr.o
 OBJS-$(CONFIG_LIBOPENCORE_AMRNB_ENCODER)  += libopencore-amr.o
 OBJS-$(CONFIG_LIBOPENCORE_AMRWB_DECODER)  += libopencore-amr.o

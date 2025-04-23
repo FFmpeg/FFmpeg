@@ -1889,6 +1889,42 @@ ffmpeg -i input -c:v libaom-av1 -b:v 500K -aom-params tune=psnr:enable-tpl-model
 
 @end table
 
+@section liboapv
+
+Advanced Professional Video codec encoder wrapper.
+
+This encoder requires the presence of the liboapv headers and library
+during configuration. You need to explicitly configure the build with
+@option{--enable-liboapv}.
+
+@float NOTE
+Many liboapv encoder options are mapped to FFmpeg global codec options,
+while unique encoder options are provided through private options.
+@end float
+
+The apv project website is at @url{https://github.com/AcademySoftwareFoundation/openapv}.
+
+@subsection Options
+
+The following options are supported by the liboapv wrapper.
+
+@float NOTE
+To get a more extensive documentation of the liboapv options, consult the
+liboapv documentation.
+@end float
+
+@table @option
+@item preset
+Set the quality-speed tradeoff [fastest, fast, medium, slow, placebo, default]
+
+@item qp
+Set the quantization parameter value for CQP rate control mode.
+
+@item oapv-params (@emph{parse_apv_params})
+Set liboapvenc options using a list of @var{key}=@var{value} pairs separated
+by ":". See the liboapv encoder user guide for a list of accepted parameters.
+@end table
+
 @section libsvtav1
 
 SVT-AV1 encoder wrapper.

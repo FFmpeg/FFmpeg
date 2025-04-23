@@ -15,6 +15,7 @@ version <next>:
 - pngenc: set default prediction method to PAETH
 - APV decoder and APV raw bitstream muxing and demuxing
 - APV parser
+- APV encoding support through a libopenapv wrapper
 
 
 version 7.1:

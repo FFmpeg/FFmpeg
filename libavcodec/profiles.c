@@ -203,4 +203,15 @@ const AVProfile ff_evc_profiles[] = {
     { AV_PROFILE_UNKNOWN },
 };
 
+const AVProfile ff_apv_profiles[] = {
+    { AV_PROFILE_APV_422_10,             "422-10"          },
+    { AV_PROFILE_APV_422_12,             "422-12"          },
+    { AV_PROFILE_APV_444_10,             "444-10"          },
+    { AV_PROFILE_APV_444_12,             "444-12"          },
+    { AV_PROFILE_APV_4444_10,            "4444-10"         },
+    { AV_PROFILE_APV_4444_12,            "4444-12"         },
+    { AV_PROFILE_APV_400_10,             "400-10"          },
+    { AV_PROFILE_UNKNOWN },
+};
+
 #endif /* !CONFIG_SMALL */
