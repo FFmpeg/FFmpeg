@@ -224,7 +224,7 @@ FATE_H264-$(call FRAMECRC, MOV, H264) += fate-h264-unescaped-extradata
 # this sample contains field-coded frames, with both fields in a single packet
 FATE_H264-$(call FRAMECRC, MOV, H264) += fate-h264-twofields-packet
 
-FATE_H264-$(call DEMMUX, MOV, H264, H264_MP4TOANNEXB_BSF SCALE_FILTER) += fate-h264-bsf-mp4toannexb-new-extradata
+FATE_H264-$(call DEMMUX, MOV, H264, H264_MP4TOANNEXB_BSF H264_METADATA_BSF SCALE_FILTER) += fate-h264-bsf-mp4toannexb-new-extradata
 
 FATE_H264-$(call DEMMUX, MOV, H264, H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb \
                                                              fate-h264-bsf-mp4toannexb-2 \
@@ -438,7 +438,7 @@ fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(TARGET_SAMPLES)
 fate-h264-bsf-mp4toannexb-2:                      CMD = md5 -i $(TARGET_SAMPLES)/h264/ps_prefix_first_idr.mp4 -c:v copy -f h264
 fate-h264-bsf-mp4toannexb-2:                      CMP = oneline
 fate-h264-bsf-mp4toannexb-2:                      REF = cffcfa6a2d0b58c9de1f5785f099f41d
-fate-h264-bsf-mp4toannexb-new-extradata:          CMD = stream_remux mov $(TARGET_SAMPLES)/h264/extradata-reload-multi-stsd.mov "" h264 "-map 0:v"
+fate-h264-bsf-mp4toannexb-new-extradata:          CMD = stream_remux mov $(TARGET_SAMPLES)/h264/extradata-reload-multi-stsd.mov "" h264 "-bsf h264_mp4toannexb,h264_metadata -map 0:v"
 fate-h264-bsf-dts2pts:                            CMD = transcode "h264" $(TARGET_SAMPLES)/h264-conformance/CAPAMA3_Sand_F.264 \
                                                         mov "-c:v copy -bsf:v dts2pts -frames:v 50" "-c:v copy"
 fate-h264_mp4toannexb_ticket5927:                 CMD = transcode "mp4" $(TARGET_SAMPLES)/h264/thezerotheorem-cut.mp4 \

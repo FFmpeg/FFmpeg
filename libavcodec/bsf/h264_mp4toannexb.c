@@ -93,6 +93,11 @@ static int h264_extradata_to_annexb(AVBSFContext *ctx,
     const int padding                   = AV_INPUT_BUFFER_PADDING_SIZE;
     int length_size, pps_offset = 0;
 
+    if (extradata_size < 7) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid extradata size: %d\n", extradata_size);
+        return AVERROR_INVALIDDATA;
+    }
+
     bytestream2_init(gb, extradata, extradata_size);
 
     bytestream2_skipu(gb, 4);
@@ -262,16 +267,11 @@ static int h264_mp4toannexb_init(AVBSFContext *ctx)
         (extra_size >= 4 && AV_RB32(ctx->par_in->extradata) == 1)) {
         av_log(ctx, AV_LOG_VERBOSE,
                "The input looks like it is Annex B already\n");
-    } else if (extra_size >= 7) {
-        return h264_extradata_to_annexb(ctx,
-                                        ctx->par_in->extradata,
-                                        ctx->par_in->extradata_size);
-    } else {
-        av_log(ctx, AV_LOG_ERROR, "Invalid extradata size: %d\n", extra_size);
-        return AVERROR_INVALIDDATA;
+        return 0;
     }
-
-    return 0;
+    return h264_extradata_to_annexb(ctx,
+                                    ctx->par_in->extradata,
+                                    ctx->par_in->extradata_size);
 }
 
 static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *opkt)
@@ -293,10 +293,12 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *opkt)
 
     extradata = av_packet_get_side_data(in, AV_PKT_DATA_NEW_EXTRADATA,
                                         &extradata_size);
-    if (extradata) {
+    if (extradata && extradata[0] == 1) {
         ret = h264_extradata_to_annexb(ctx, extradata, extradata_size);
         if (ret < 0)
             goto fail;
+        av_packet_side_data_remove(in->side_data, &in->side_data_elems,
+                                   AV_PKT_DATA_NEW_EXTRADATA);
     }
 
     /* nothing to filter */
