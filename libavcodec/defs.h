@@ -334,6 +334,20 @@ typedef struct AVProducerReferenceTime {
 } AVProducerReferenceTime;
 
 /**
+ * RTCP SR (Sender Report) information
+ *
+ * The received sender report information for an RTSP
+ * stream, exposed as AV_PKT_DATA_RTCP_SR side data.
+ */
+typedef struct AVRTCPSenderReport {
+    uint32_t ssrc; ///< Synchronization source identifier
+    uint64_t ntp_timestamp; ///< NTP time when the report was sent
+    uint32_t rtp_timestamp; ///< RTP time when the report was sent
+    uint32_t sender_nb_packets; ///< Total number of packets sent
+    uint32_t sender_nb_bytes; ///< Total number of bytes sent (excluding headers or padding)
+} AVRTCPSenderReport;
+
+/**
  * Encode extradata length to a buffer. Used by xiph codecs.
  *
  * @param s buffer to write to; must be at least (v/255+1) bytes long

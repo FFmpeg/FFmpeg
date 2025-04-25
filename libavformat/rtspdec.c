@@ -553,7 +553,7 @@ static int rtsp_read_play(AVFormatContext *s)
                 if (!rtpctx)
                     continue;
                 ff_rtp_reset_packet_queue(rtpctx);
-                rtpctx->last_rtcp_ntp_time  = AV_NOPTS_VALUE;
+                rtpctx->last_sr.ntp_timestamp = AV_NOPTS_VALUE;
                 rtpctx->first_rtcp_ntp_time = AV_NOPTS_VALUE;
                 rtpctx->base_timestamp      = 0;
                 rtpctx->timestamp           = 0;

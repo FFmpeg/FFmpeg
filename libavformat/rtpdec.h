@@ -173,11 +173,11 @@ struct RTPDemuxContext {
     /*@}*/
 
     /* rtcp sender statistics receive */
-    uint64_t last_rtcp_ntp_time;
     int64_t last_rtcp_reception_time;
     uint64_t first_rtcp_ntp_time;
-    uint32_t last_rtcp_timestamp;
     int64_t rtcp_ts_offset;
+    AVRTCPSenderReport last_sr; ///< Last RTCP SR data
+    int pending_sr; ///< Indicates if there is a SR pending to be attached as sidedata
 
     /* rtcp sender statistics */
     unsigned int packet_count;
