@@ -612,12 +612,30 @@ static int rtp_set_prft(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestamp) {
     return 0;
 }
 
+static int rtp_add_sr_sidedata(RTPDemuxContext *s, AVPacket *pkt) {
+    AVRTCPSenderReport *sr =
+        (AVRTCPSenderReport *) av_packet_new_side_data(
+            pkt, AV_PKT_DATA_RTCP_SR, sizeof(AVRTCPSenderReport));
+    if (!sr)
+        return AVERROR(ENOMEM);
+
+    memcpy(sr, &s->last_sr, sizeof(AVRTCPSenderReport));
+    s->pending_sr = 0;
+    return 0;
+}
+
 /**
  * This was the second switch in rtp_parse packet.
  * Normalizes time, if required, sets stream_index, etc.
  */
 static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestamp)
 {
+    if (s->pending_sr) {
+        int ret = rtp_add_sr_sidedata(s, pkt);
+        if (ret < 0)
+            av_log(s->ic, AV_LOG_WARNING, "rtpdec: failed to add SR sidedata\n");
+    }
+
     if (pkt->pts != AV_NOPTS_VALUE || pkt->dts != AV_NOPTS_VALUE)
         return; /* Timestamp already set by depacketizer */
     if (timestamp == RTP_NOTS_VALUE)
