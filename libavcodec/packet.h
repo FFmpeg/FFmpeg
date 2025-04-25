@@ -357,6 +357,12 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_3D_REFERENCE_DISPLAYS,
 
     /**
+     * Contains the last received RTCP SR (Sender Report) information
+     * in the form of the AVRTCPSenderReport struct.
+     */
+    AV_PKT_DATA_RTCP_SR,
+
+    /**
      * The number of side data types.
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.

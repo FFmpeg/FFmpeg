@@ -309,6 +309,7 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type)
     case AV_PKT_DATA_FRAME_CROPPING:             return "Frame Cropping";
     case AV_PKT_DATA_LCEVC:                      return "LCEVC NAL data";
     case AV_PKT_DATA_3D_REFERENCE_DISPLAYS:      return "3D Reference Displays Info";
+    case AV_PKT_DATA_RTCP_SR:                    return "RTCP Sender Report";
     }
     return NULL;
 }
