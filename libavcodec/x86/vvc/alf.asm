@@ -44,8 +44,8 @@ CLASSIFY_SHUFFE: times 2    db 2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12,
 TRANSPOSE_PERMUTE:          dd 0, 1, 4, 5, 2, 3, 6, 7
 ARG_VAR_SHUFFE: times 2     db 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4
 
+cextern pd_64
 dd448: times 8             dd 512 - 64
-dw64: times 8              dd 64
 dd2:  times 8              dd 2
 dw3:  times 8              dd 3
 dw5:  times 8              dd 5
@@ -287,8 +287,8 @@ SECTION .text
 ; output: m0, m1
 ; temp:   s0q...s1q
 %macro FILTER_VB 1
-    vpbroadcastd      m0, [dw64]
-    vpbroadcastd      m1, [dw64]
+    vpbroadcastd      m0, [pd_64]
+    vpbroadcastd      m1, [pd_64]
 
     GET_SRCS %1
 %if LUMA

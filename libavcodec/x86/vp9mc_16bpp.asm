@@ -24,8 +24,7 @@
 
 SECTION_RODATA 32
 
-pd_64: times 8 dd 64
-
+cextern pd_64
 cextern pw_1023
 cextern pw_4095
 

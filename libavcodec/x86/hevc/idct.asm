@@ -25,7 +25,7 @@
 
 SECTION_RODATA
 
-pd_64: times 4 dd 64
+cextern pd_64
 pd_2048: times 4 dd 2048
 pd_512: times 4 dd 512
 
