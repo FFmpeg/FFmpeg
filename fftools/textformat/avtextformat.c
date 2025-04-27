@@ -507,7 +507,7 @@ void avtext_print_ts(AVTextFormatContext *tctx, const char *key, int64_t ts, int
         avtext_print_integer(tctx, key, ts);
 }
 
-void avtext_print_data(AVTextFormatContext *tctx, const char *name,
+void avtext_print_data(AVTextFormatContext *tctx, const char *key,
                        const uint8_t *data, int size)
 {
     AVBPrint bp;
@@ -532,11 +532,11 @@ void avtext_print_data(AVTextFormatContext *tctx, const char *name,
         data   += l;
         size   -= l;
     }
-    avtext_print_string(tctx, name, bp.str, 0);
+    avtext_print_string(tctx, key, bp.str, 0);
     av_bprint_finalize(&bp, NULL);
 }
 
-void avtext_print_data_hash(AVTextFormatContext *tctx, const char *name,
+void avtext_print_data_hash(AVTextFormatContext *tctx, const char *key,
                             const uint8_t *data, int size)
 {
     char buf[AV_HASH_MAX_SIZE * 2 + 64] = { 0 };
@@ -549,10 +549,10 @@ void avtext_print_data_hash(AVTextFormatContext *tctx, const char *name,
     av_hash_update(tctx->hash, data, size);
     len = snprintf(buf, sizeof(buf), "%s:", av_hash_get_name(tctx->hash));
     av_hash_final_hex(tctx->hash, (uint8_t *)&buf[len], (int)sizeof(buf) - len);
-    avtext_print_string(tctx, name, buf, 0);
+    avtext_print_string(tctx, key, buf, 0);
 }
 
-void avtext_print_integers(AVTextFormatContext *tctx, const char *name,
+void avtext_print_integers(AVTextFormatContext *tctx, const char *key,
                            uint8_t *data, int size, const char *format,
                            int columns, int bytes, int offset_add)
 {
@@ -560,7 +560,7 @@ void avtext_print_integers(AVTextFormatContext *tctx, const char *name,
     unsigned offset = 0;
     int l, i;
 
-    if (!name || !data || !format || columns <= 0 || bytes <= 0)
+    if (!key || !data || !format || columns <= 0 || bytes <= 0)
         return;
 
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
@@ -578,7 +578,7 @@ void avtext_print_integers(AVTextFormatContext *tctx, const char *name,
         av_bprintf(&bp, "\n");
         offset += offset_add;
     }
-    avtext_print_string(tctx, name, bp.str, 0);
+    avtext_print_string(tctx, key, bp.str, 0);
     av_bprint_finalize(&bp, NULL);
 }
 

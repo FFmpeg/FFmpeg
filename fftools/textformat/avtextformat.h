@@ -148,11 +148,11 @@ void avtext_print_time(AVTextFormatContext *tctx, const char *key, int64_t ts, c
 
 void avtext_print_ts(AVTextFormatContext *tctx, const char *key, int64_t ts, int is_duration);
 
-void avtext_print_data(AVTextFormatContext *tctx, const char *name, const uint8_t *data, int size);
+void avtext_print_data(AVTextFormatContext *tctx, const char *key, const uint8_t *data, int size);
 
-void avtext_print_data_hash(AVTextFormatContext *tctx, const char *name, const uint8_t *data, int size);
+void avtext_print_data_hash(AVTextFormatContext *tctx, const char *key, const uint8_t *data, int size);
 
-void avtext_print_integers(AVTextFormatContext *tctx, const char *name, uint8_t *data, int size,
+void avtext_print_integers(AVTextFormatContext *tctx, const char *key, uint8_t *data, int size,
                            const char *format, int columns, int bytes, int offset_add);
 
 const AVTextFormatter *avtext_get_formatter_by_name(const char *name);
