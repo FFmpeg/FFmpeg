@@ -160,6 +160,14 @@ static VVCFrame *alloc_frame(VVCContext *s, VVCFrameContext *fc)
         frame->ref_width   = pps->r->pps_pic_width_in_luma_samples  - win->left_offset   - win->right_offset;
         frame->ref_height  = pps->r->pps_pic_height_in_luma_samples - win->bottom_offset - win->top_offset;
 
+        if (fc->sei.frame_field_info.present) {
+            if (fc->sei.frame_field_info.picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD)
+                frame->frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
+            if (fc->sei.frame_field_info.picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD ||
+                fc->sei.frame_field_info.picture_struct == AV_PICTURE_STRUCTURE_BOTTOM_FIELD)
+                frame->frame->flags |= AV_FRAME_FLAG_INTERLACED;
+        }
+
         frame->progress = alloc_progress();
         if (!frame->progress)
             goto fail;
