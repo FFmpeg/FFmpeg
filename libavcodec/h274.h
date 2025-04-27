@@ -64,4 +64,14 @@ int ff_h274_apply_film_grain(AVFrame *out, const AVFrame *in,
                              H274FilmGrainDatabase *db,
                              const AVFilmGrainParams *params);
 
+typedef struct H274SEIPictureHash {
+    int present;
+    union {
+        uint8_t  md5[3][16];
+        uint16_t crc[3];
+        uint32_t checksum[3];
+    };
+    uint8_t hash_type;
+} H274SEIPictureHash;
+
 #endif /* AVCODEC_H274_H */
