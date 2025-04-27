@@ -36,24 +36,13 @@ typedef struct APVHeaderInfo {
     int      frame_width;
     int      frame_height;
 
-    uint8_t  chroma_format_idc;
     uint8_t  bit_depth_minus8;
-
-    enum AVPixelFormat pixel_format;
 } APVHeaderInfo;
 
-static const enum AVPixelFormat apv_format_table[5][5] = {
-    { AV_PIX_FMT_GRAY8,    AV_PIX_FMT_GRAY10,     AV_PIX_FMT_GRAY12,     AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16 },
-    { 0 }, // 4:2:0 is not valid.
-    { AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV422P10,  AV_PIX_FMT_YUV422P12,  AV_PIX_FMT_GRAY14, AV_PIX_FMT_YUV422P16 },
-    { AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV444P10,  AV_PIX_FMT_YUV444P12,  AV_PIX_FMT_GRAY14, AV_PIX_FMT_YUV444P16 },
-    { AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_YUVA444P16 },
-};
-
-static int apv_extract_header_info(APVHeaderInfo *info,
-                                   GetByteContext *gbc)
+static int apv_extract_header_info(GetByteContext *gbc)
 {
-    int zero, byte, bit_depth_index;
+    APVHeaderInfo header, *info = &header;
+    int zero, byte;
 
     info->pbu_type = bytestream2_get_byte(gbc);
     info->group_id = bytestream2_get_be16(gbc);
@@ -81,7 +70,6 @@ static int apv_extract_header_info(APVHeaderInfo *info,
         return AVERROR_INVALIDDATA;
 
     byte = bytestream2_get_byte(gbc);
-    info->chroma_format_idc = byte >> 4;
     info->bit_depth_minus8  = byte & 0xf;
 
     if (info->bit_depth_minus8 > 8) {
@@ -89,18 +77,6 @@ static int apv_extract_header_info(APVHeaderInfo *info,
     }
     if (info->bit_depth_minus8 % 2) {
         // Odd bit depths are technically valid but not useful here.
-        return AVERROR_INVALIDDATA;
-    }
-    bit_depth_index = info->bit_depth_minus8 / 2;
-
-    switch (info->chroma_format_idc) {
-    case APV_CHROMA_FORMAT_400:
-    case APV_CHROMA_FORMAT_422:
-    case APV_CHROMA_FORMAT_444:
-    case APV_CHROMA_FORMAT_4444:
-        info->pixel_format = apv_format_table[info->chroma_format_idc][bit_depth_index];
-        break;
-    default:
         return AVERROR_INVALIDDATA;
     }
 
@@ -117,7 +93,6 @@ static int apv_extract_header_info(APVHeaderInfo *info,
 static int apv_probe(const AVProbeData *p)
 {
     GetByteContext gbc;
-    APVHeaderInfo header;
     uint32_t au_size, signature, pbu_size;
     int err;
 
@@ -144,7 +119,7 @@ static int apv_probe(const AVProbeData *p)
         return 0;
     }
 
-    err = apv_extract_header_info(&header, &gbc);
+    err = apv_extract_header_info(&gbc);
     if (err < 0) {
         // Header does not look like APV.
         return 0;
@@ -156,8 +131,7 @@ static int apv_read_header(AVFormatContext *s)
 {
     AVStream *st;
     GetByteContext gbc;
-    APVHeaderInfo header;
-    uint8_t buffer[28];
+    uint8_t buffer[12];
     uint32_t au_size, signature, pbu_size;
     int err, size;
 
@@ -186,22 +160,14 @@ static int apv_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    err = apv_extract_header_info(&header, &gbc);
-    if (err < 0)
-        return err;
-
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id   = AV_CODEC_ID_APV;
-    st->codecpar->format     = header.pixel_format;
-    st->codecpar->profile    = header.profile_idc;
-    st->codecpar->level      = header.level_idc;
-    st->codecpar->width      = header.frame_width;
-    st->codecpar->height     = header.frame_height;
 
+    ffstream(st)->need_parsing = AVSTREAM_PARSE_HEADERS;
     st->avg_frame_rate = (AVRational){ 30, 1 };
     avpriv_set_pts_info(st, 64, 1, 30);
 
