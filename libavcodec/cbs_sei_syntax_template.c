@@ -295,6 +295,32 @@ SEI_FUNC(display_orientation, (CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+SEI_FUNC(frame_field_information, (CodedBitstreamContext *ctx, RWContext *rw,
+                                       SEIRawFrameFieldInformation *current,
+                                       SEIMessageState *state))
+{
+    int err;
+
+    HEADER("Frame-field information");
+
+    flag(ffi_field_pic_flag);
+    if (current->ffi_field_pic_flag) {
+        flag(ffi_bottom_field_flag);
+        flag(ffi_pairing_indicated_flag);
+        if (current->ffi_pairing_indicated_flag)
+            flag(ffi_paired_with_next_field_flag);
+    } else {
+        flag(ffi_display_fields_from_frame_flag);
+        if (current->ffi_display_fields_from_frame_flag)
+            flag(ffi_top_field_first_flag);
+        u(8, ffi_display_elemental_periods_minus1, 0, 0xff);
+    }
+    u(2, ffi_source_scan_type, 0, 3);
+    flag(ffi_duplicate_flag);
+
+    return 0;
+}
+
 static int FUNC(message)(CodedBitstreamContext *ctx, RWContext *rw,
                          SEIRawMessage *current)
 {

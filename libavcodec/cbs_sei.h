@@ -125,6 +125,18 @@ typedef struct SEIRawDisplayOrientation {
     uint8_t      display_orientation_reserved_zero_3bits;
 } SEIRawDisplayOrientation;
 
+typedef struct SEIRawFrameFieldInformation {
+    uint8_t      ffi_field_pic_flag;
+    uint8_t      ffi_bottom_field_flag;
+    uint8_t      ffi_pairing_indicated_flag;
+    uint8_t      ffi_paired_with_next_field_flag;
+    uint8_t      ffi_display_fields_from_frame_flag;
+    uint8_t      ffi_top_field_first_flag;
+    uint8_t      ffi_display_elemental_periods_minus1;
+    uint8_t      ffi_source_scan_type;
+    uint8_t      ffi_duplicate_flag;
+} SEIRawFrameFieldInformation;
+
 typedef struct SEIRawMessage {
     uint32_t     payload_type;
     uint32_t     payload_size;

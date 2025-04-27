@@ -2323,6 +2323,12 @@ static const SEIMessageTypeDescriptor cbs_sei_h274_types[] = {
         sizeof(SEIRawDisplayOrientation),
         SEI_MESSAGE_RW(sei, display_orientation)
     },
+    {
+        SEI_TYPE_FRAME_FIELD_INFO,
+        1, 0,
+        sizeof(SEIRawFrameFieldInformation),
+        SEI_MESSAGE_RW(sei, frame_field_information)
+    },
     SEI_MESSAGE_TYPE_END,
 };
 
