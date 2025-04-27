@@ -277,10 +277,8 @@ static int apv_decode(AVCodecContext *avctx, AVFrame *output,
     }
 
     err = ff_thread_get_buffer(avctx, output, 0);
-    if (err) {
-        av_log(avctx, AV_LOG_ERROR, "No output frame supplied.\n");
+    if (err < 0)
         return err;
-    }
 
     apv->output_frame = output;
 
