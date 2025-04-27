@@ -1096,7 +1096,25 @@ static int frame_end(VVCContext *s, VVCFrameContext *fc)
         }
     }
 
-    return ret;
+    if (!s->avctx->hwaccel && s->avctx->err_recognition & AV_EF_CRCCHECK) {
+        VVCSEI *sei = &fc->sei;
+        if (sei->picture_hash.present) {
+            int ret = ff_h274_hash_init(&s->hash_ctx, sei->picture_hash.hash_type);
+            if (ret < 0)
+                return ret;
+
+            ret = ff_h274_hash_verify(s->hash_ctx, &sei->picture_hash, fc->ref->frame, fc->ps.pps->width, fc->ps.pps->height);
+            if (ret < 0) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                    "Verifying checksum for frame with decoder_order %d: failed\n",
+                    (int)fc->decode_order);
+                if (s->avctx->err_recognition & AV_EF_EXPLODE)
+                    return ret;
+            }
+        }
+    }
+
+    return 0;
 }
 
 static int wait_delayed_frame(VVCContext *s, AVFrame *output, int *got_output)
@@ -1224,6 +1242,7 @@ static av_cold int vvc_decode_free(AVCodecContext *avctx)
             frame_context_free(s->fcs + i);
         av_free(s->fcs);
     }
+    ff_h274_hash_freep(&s->hash_ctx);
     ff_vvc_ps_uninit(&s->ps);
     ff_cbs_close(&s->cbc);
 

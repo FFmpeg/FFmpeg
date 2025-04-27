@@ -249,6 +249,8 @@ typedef struct VVCContext {
 
     uint64_t nb_frames;     ///< processed frames
     int nb_delayed;         ///< delayed frames
+
+    H274HashContext *hash_ctx;
 }  VVCContext ;
 
 #endif /* AVCODEC_VVC_DEC_H */
