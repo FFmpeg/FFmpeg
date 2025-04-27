@@ -35,6 +35,6 @@ const FFOutputFormat ff_apv_muxer = {
     .p.audio_codec    = AV_CODEC_ID_NONE,
     .p.video_codec    = AV_CODEC_ID_APV,
     .p.subtitle_codec = AV_CODEC_ID_NONE,
-    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH | FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet     = apv_write_packet,
 };
