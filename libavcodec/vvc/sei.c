@@ -94,6 +94,30 @@ static int decode_decoded_picture_hash(H274SEIPictureHash *h, const SEIRawDecode
     return 0;
 }
 
+static int decode_display_orientation(H2645SEIDisplayOrientation *h, const SEIRawDisplayOrientation *s)
+{
+    int degrees[] = { 0, 0x8000, 0x4000, 0xC000 };
+
+    h->present = !s->display_orientation_cancel_flag;
+    if (h->present) {
+        if (s->display_orientation_transform_type > 7)
+            return AVERROR_INVALIDDATA;
+
+        h->vflip = 0;
+        if (s->display_orientation_transform_type == 1 ||
+            s->display_orientation_transform_type == 3 ||
+            s->display_orientation_transform_type == 4 ||
+            s->display_orientation_transform_type == 6) {
+            h->hflip = 1;
+        } else {
+            h->hflip = 0;
+        }
+        h->anticlockwise_rotation = degrees[s->display_orientation_transform_type >> 1];
+    }
+
+    return 0;
+}
+
 int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameContext *fc)
 {
     H2645SEI *c  = &s->common;
@@ -115,6 +139,9 @@ int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameCon
 
         case SEI_TYPE_DECODED_PICTURE_HASH:
             return decode_decoded_picture_hash(&s->picture_hash, payload);
+
+        case SEI_TYPE_DISPLAY_ORIENTATION:
+            return decode_display_orientation(&s->common.display_orientation, payload);
 
         default:
             av_log(fc->log_ctx, AV_LOG_DEBUG, "Skipped %s SEI %d\n",
