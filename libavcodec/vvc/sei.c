@@ -148,6 +148,16 @@ static int decode_frame_field_info(H274SEIFrameFieldInfo *h, const SEIRawFrameFi
     return 0;
 }
 
+static int decode_ambient_viewing_environment(H2645SEIAmbientViewingEnvironment *h, const SEIRawAmbientViewingEnvironment *s)
+{
+    h->present             = 1;
+    h->ambient_illuminance = s->ambient_illuminance;
+    h->ambient_light_x     = s->ambient_light_x;
+    h->ambient_light_y     = s->ambient_light_y;
+
+    return 0;
+}
+
 int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameContext *fc)
 {
     H2645SEI *c  = &s->common;
@@ -178,6 +188,9 @@ int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameCon
 
         case SEI_TYPE_FRAME_FIELD_INFO:
             return decode_frame_field_info(&s->frame_field_info, payload);
+
+        case SEI_TYPE_AMBIENT_VIEWING_ENVIRONMENT:
+            return decode_ambient_viewing_environment(&s->common.ambient_viewing_environment, payload);
 
         default:
             av_log(fc->log_ctx, AV_LOG_DEBUG, "Skipped %s SEI %d\n",
