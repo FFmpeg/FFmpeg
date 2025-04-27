@@ -80,6 +80,20 @@ static int decode_film_grain_characteristics(H2645SEIFilmGrainCharacteristics *h
     return 0;
 }
 
+static int decode_decoded_picture_hash(H274SEIPictureHash *h, const SEIRawDecodedPictureHash *s)
+{
+    h->present   = 1;
+    h->hash_type = s->dph_sei_hash_type;
+    if (h->hash_type == 0)
+        memcpy(h->md5, s->dph_sei_picture_md5, sizeof(h->md5));
+    else if (h->hash_type == 1)
+        memcpy(h->crc, s->dph_sei_picture_crc, sizeof(h->crc));
+    else if (h->hash_type == 2)
+        memcpy(h->checksum, s->dph_sei_picture_checksum, sizeof(h->checksum));
+
+    return 0;
+}
+
 int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameContext *fc)
 {
     H2645SEI *c  = &s->common;
@@ -99,6 +113,9 @@ int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameCon
                 return AVERROR(ENOMEM);
             return decode_film_grain_characteristics(c->film_grain_characteristics, payload, fc);
 
+        case SEI_TYPE_DECODED_PICTURE_HASH:
+            return decode_decoded_picture_hash(&s->picture_hash, payload);
+
         default:
             av_log(fc->log_ctx, AV_LOG_DEBUG, "Skipped %s SEI %d\n",
                 sei->nal_unit_header.nal_unit_type == VVC_PREFIX_SEI_NUT ?
@@ -112,10 +129,12 @@ int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameCon
 
 int ff_vvc_sei_replace(VVCSEI *dst, const VVCSEI *src)
 {
+    dst->picture_hash.present = 0;        // drop hash
     return ff_h2645_sei_ctx_replace(&dst->common, &src->common);
 }
 
 void ff_vvc_sei_reset(VVCSEI *s)
 {
     ff_h2645_sei_reset(&s->common);
+    s->picture_hash.present = 0;
 }

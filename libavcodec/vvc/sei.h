@@ -31,9 +31,11 @@
 #include "libavcodec/h2645_sei.h"
 #include "libavcodec/sei.h"
 #include "libavcodec/vvc.h"
+#include "libavcodec/h274.h"
 
 typedef struct VVCSEI {
     H2645SEI common;
+    H274SEIPictureHash picture_hash;
 } VVCSEI;
 
 struct VVCFrameContext;
