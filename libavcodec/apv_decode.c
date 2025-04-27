@@ -173,8 +173,8 @@ static int apv_decode_tile_component(AVCodecContext *avctx, void *data,
     const AVPixFmtDescriptor *pix_fmt_desc =
         av_pix_fmt_desc_get(avctx->pix_fmt);
 
-    int sub_w = comp_index == 0 ? 1 : pix_fmt_desc->log2_chroma_w + 1;
-    int sub_h = comp_index == 0 ? 1 : pix_fmt_desc->log2_chroma_h + 1;
+    int sub_w_shift = comp_index == 0 ? 0 : pix_fmt_desc->log2_chroma_w;
+    int sub_h_shift = comp_index == 0 ? 0 : pix_fmt_desc->log2_chroma_h;
 
     APVRawTile *tile = &input->tile[tile_index];
 
@@ -190,8 +190,8 @@ static int apv_decode_tile_component(AVCodecContext *avctx, void *data,
     int tile_mb_width  = tile_width  / APV_MB_WIDTH;
     int tile_mb_height = tile_height / APV_MB_HEIGHT;
 
-    int blk_mb_width  = 2 / sub_w;
-    int blk_mb_height = 2 / sub_h;
+    int blk_mb_width  = 2 >> sub_w_shift;
+    int blk_mb_height = 2 >> sub_h_shift;
 
     int bit_depth;
     int qp_shift;
@@ -234,10 +234,10 @@ static int apv_decode_tile_component(AVCodecContext *avctx, void *data,
                 for (int blk_x = 0; blk_x < blk_mb_width; blk_x++) {
                     int frame_y = (tile_start_y +
                                    APV_MB_HEIGHT * mb_y +
-                                   APV_TR_SIZE * blk_y) / sub_h;
+                                   APV_TR_SIZE * blk_y) >> sub_h_shift;
                     int frame_x = (tile_start_x +
                                    APV_MB_WIDTH * mb_x +
-                                   APV_TR_SIZE * blk_x) / sub_w;
+                                   APV_TR_SIZE * blk_x) >> sub_w_shift;
 
                     ptrdiff_t frame_pitch = apv->output_frame->linesize[comp_index];
                     uint8_t  *block_start = apv->output_frame->data[comp_index] +
