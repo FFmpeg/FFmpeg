@@ -13,6 +13,8 @@ version <next>:
 - VVC in Matroska
 - CENC AV1 support in MP4 muxer
 - pngenc: set default prediction method to PAETH
+- APV decoder and APV raw bitstream muxing and demuxing
+
 
 version 7.1:
 - Raw Captions with Time (RCWT) closed caption demuxer

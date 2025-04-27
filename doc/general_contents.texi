@@ -625,6 +625,7 @@ library:
 @item raw AMR-NB                @tab   @tab X
 @item raw AMR-WB                @tab   @tab X
 @item raw APAC                  @tab   @tab X
+@item raw APV                   @tab X @tab X
 @item raw aptX                  @tab X @tab X
 @item raw aptX HD               @tab X @tab X
 @item raw Bonk                  @tab   @tab X
@@ -895,6 +896,7 @@ following image formats are supported:
     @tab fourcc: apch,apcn,apcs,apco,ap4h,ap4x
 @item Apple QuickDraw        @tab     @tab  X
     @tab fourcc: qdrw
+@item APV                    @tab     @tab  X
 @item Argonaut Video         @tab     @tab  X
     @tab Used in some Argonaut games.
 @item Asus v1                @tab  X  @tab  X
