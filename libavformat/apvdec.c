@@ -244,7 +244,6 @@ const FFInputFormat ff_apv_demuxer = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("APV raw bitstream"),
     .p.extensions   = "apv",
     .p.flags        = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
-    .flags_internal = FF_INFMT_FLAG_INIT_CLEANUP,
     .read_probe     = apv_probe,
     .read_header    = apv_read_header,
     .read_packet    = apv_read_packet,
