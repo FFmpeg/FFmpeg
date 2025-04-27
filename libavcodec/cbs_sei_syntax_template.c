@@ -277,6 +277,24 @@ SEI_FUNC(film_grain_characteristics,
     return 0;
 }
 
+SEI_FUNC(display_orientation, (CodedBitstreamContext *ctx, RWContext *rw,
+                               SEIRawDisplayOrientation *current,
+                               SEIMessageState *state))
+{
+    int err;
+
+    HEADER("Display Orientation");
+
+    flag(display_orientation_cancel_flag);
+    if (!current->display_orientation_cancel_flag) {
+        flag(display_orientation_persistence_flag);
+        u(3, display_orientation_transform_type, 0, 7);
+        ub(3, display_orientation_reserved_zero_3bits);
+    }
+
+    return 0;
+}
+
 static int FUNC(message)(CodedBitstreamContext *ctx, RWContext *rw,
                          SEIRawMessage *current)
 {

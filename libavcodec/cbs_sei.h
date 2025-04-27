@@ -118,6 +118,13 @@ typedef struct SEIRawFilmGrainCharacteristics {
     uint8_t      fg_characteristics_persistence_flag;
 } SEIRawFilmGrainCharacteristics;
 
+typedef struct SEIRawDisplayOrientation {
+    uint8_t      display_orientation_cancel_flag;
+    uint8_t      display_orientation_persistence_flag;
+    uint8_t      display_orientation_transform_type;
+    uint8_t      display_orientation_reserved_zero_3bits;
+} SEIRawDisplayOrientation;
+
 typedef struct SEIRawMessage {
     uint32_t     payload_type;
     uint32_t     payload_size;
