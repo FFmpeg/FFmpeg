@@ -26,7 +26,11 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/bswap.h"
+#include "libavutil/crc.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/md5.h"
+#include "libavutil/mem.h"
 
 #include "h274.h"
 
@@ -790,3 +794,154 @@ static const int8_t R64T[64][64] = {
          17, -16,  15, -14,  13, -12,  11, -10,   9,  -8,   7,  -6,   4,  -3,   2,  -1,
     }
 };
+
+static int verify_plane_md5(struct AVMD5 *ctx,
+    const uint8_t *src, const int w, const int h, const int stride,
+    const uint8_t *expected)
+{
+#define MD5_SIZE 16
+    uint8_t md5[MD5_SIZE];
+    av_md5_init(ctx);
+    for (int j = 0; j < h; j++) {
+        av_md5_update(ctx, src, w);
+        src += stride;
+    }
+    av_md5_final(ctx, md5);
+
+    if (memcmp(md5, expected, MD5_SIZE))
+        return AVERROR_INVALIDDATA;
+
+    return 0;
+}
+
+static int verify_plane_crc(const uint8_t *src, const int w, const int h, const int stride,
+    uint16_t expected)
+{
+    uint32_t crc = 0x0F1D;     // CRC-16-CCITT-AUG
+    const AVCRC *ctx = av_crc_get_table(AV_CRC_16_CCITT);
+
+    expected = av_le2ne32(expected);
+    for (int j = 0; j < h; j++) {
+        crc = av_crc(ctx, crc, src, w);
+        src += stride;
+    }
+    crc = av_bswap16(crc);
+
+    if (crc != expected)
+        return AVERROR_INVALIDDATA;
+
+    return 0;
+}
+
+#define CAL_CHECKSUM(pixel) ((pixel) ^ xor_mask)
+static int verify_plane_checksum(const uint8_t *src, const int w, const int h, const int stride, const int ps,
+    uint32_t expected)
+{
+    uint32_t checksum = 0;
+    expected = av_le2ne32(expected);
+
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            const int xor_mask = (x & 0xFF) ^ (y & 0xFF) ^ (x >> 8) ^ (y >> 8);
+            checksum += CAL_CHECKSUM(src[x << ps]);
+            if (ps)
+                checksum += CAL_CHECKSUM(src[(x << ps) + 1]);
+        }
+        src += stride;
+    }
+
+    if (checksum != expected)
+        return AVERROR_INVALIDDATA;
+
+    return 0;
+}
+
+enum {
+    HASH_MD5SUM,
+    HASH_CRC,
+    HASH_CHECKSUM,
+    HASH_LAST = HASH_CHECKSUM,
+};
+
+struct H274HashContext {
+    int type;
+    struct AVMD5 *ctx;
+};
+
+void ff_h274_hash_freep(H274HashContext **ctx)
+{
+    if (*ctx) {
+        H274HashContext *c = *ctx;
+        if (c->ctx)
+            av_free(c->ctx);
+        av_freep(ctx);
+    }
+}
+
+int ff_h274_hash_init(H274HashContext **ctx, const int type)
+{
+    H274HashContext *c;
+
+    if (type > HASH_LAST || !ctx)
+        return AVERROR(EINVAL);
+
+    c = *ctx;
+    if (c) {
+        if (c->type != type) {
+            if (c->type == HASH_MD5SUM)
+                av_freep(&c->ctx);
+            c->type = type;
+        }
+    } else {
+        c = av_mallocz(sizeof(H274HashContext));
+        if (!c)
+            return AVERROR(ENOMEM);
+        c->type = type;
+        *ctx = c;
+    }
+
+    if (type == HASH_MD5SUM && !c->ctx) {
+        c->ctx = av_md5_alloc();
+        if (!c->ctx)
+            return AVERROR(ENOMEM);
+    }
+
+    return 0;
+}
+
+int ff_h274_hash_verify(H274HashContext *c, const H274SEIPictureHash *hash,
+    const AVFrame *frame, const int coded_width, const int coded_height)
+{
+    const AVPixFmtDescriptor *desc;
+    int err = 0;
+
+    if (!c || !hash || !frame)
+        return AVERROR(EINVAL);
+
+    if (c->type != hash->hash_type)
+        return AVERROR(EINVAL);
+
+    desc = av_pix_fmt_desc_get(frame->format);
+    if (!desc)
+        return AVERROR(EINVAL);
+
+    for (int i = 0; i < desc->nb_components; i++) {
+        const int w        = i ? (coded_width  >> desc->log2_chroma_w) : coded_width;
+        const int h        = i ? (coded_height >> desc->log2_chroma_h) : coded_height;
+        const int ps       = desc->comp[i].step - 1;
+        const uint8_t *src = frame->data[i];
+        const int stride   = frame->linesize[i];
+
+        if (c->type == HASH_MD5SUM)
+            err = verify_plane_md5(c->ctx, src, w << ps, h, stride, hash->md5[i]);
+        else if (c->type == HASH_CRC)
+            err = verify_plane_crc(src, w << ps, h, stride, hash->crc[i]);
+        else if (c->type == HASH_CHECKSUM)
+            err = verify_plane_checksum(src, w, h, stride, ps, hash->checksum[i]);
+        if (err < 0)
+            goto fail;
+    }
+
+fail:
+    return err;
+}
