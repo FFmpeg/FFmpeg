@@ -164,7 +164,7 @@ static int apv_read_header(AVFormatContext *s)
     err = ffio_ensure_seekback(s->pb, sizeof(buffer));
     if (err < 0)
         return err;
-    size = avio_read(s->pb, buffer, sizeof(buffer));
+    size = ffio_read_size(s->pb, buffer, sizeof(buffer));
     if (size < 0)
         return size;
 
