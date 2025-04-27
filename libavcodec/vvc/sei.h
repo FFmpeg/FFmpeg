@@ -36,6 +36,7 @@
 typedef struct VVCSEI {
     H2645SEI common;
     H274SEIPictureHash picture_hash;
+    H274SEIFrameFieldInfo frame_field_info;
 } VVCSEI;
 
 struct VVCFrameContext;

@@ -127,6 +127,27 @@ static int decode_content_light_level_info(H2645SEIContentLight *h, const SEIRaw
     return 0;
 }
 
+static int decode_frame_field_info(H274SEIFrameFieldInfo *h, const SEIRawFrameFieldInformation *s)
+{
+    if (s->ffi_source_scan_type > 3)
+        return AVERROR_INVALIDDATA;
+
+    h->present = 1;
+    if (s->ffi_field_pic_flag) {
+        if (s->ffi_bottom_field_flag)
+            h->picture_struct = AV_PICTURE_STRUCTURE_BOTTOM_FIELD;
+        else
+            h->picture_struct = AV_PICTURE_STRUCTURE_TOP_FIELD;
+    } else {
+        h->display_elemental_periods = s->ffi_display_elemental_periods_minus1 + 1;
+    }
+
+    h->source_scan_type = s->ffi_source_scan_type;
+    h->duplicate_flag   = s->ffi_duplicate_flag;
+
+    return 0;
+}
+
 int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameContext *fc)
 {
     H2645SEI *c  = &s->common;
@@ -155,6 +176,9 @@ int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameCon
         case SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
             return decode_content_light_level_info(&s->common.content_light, payload);
 
+        case SEI_TYPE_FRAME_FIELD_INFO:
+            return decode_frame_field_info(&s->frame_field_info, payload);
+
         default:
             av_log(fc->log_ctx, AV_LOG_DEBUG, "Skipped %s SEI %d\n",
                 sei->nal_unit_header.nal_unit_type == VVC_PREFIX_SEI_NUT ?
@@ -169,6 +193,7 @@ int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameCon
 int ff_vvc_sei_replace(VVCSEI *dst, const VVCSEI *src)
 {
     dst->picture_hash.present = 0;        // drop hash
+    dst->frame_field_info.present = 0;    // drop field info
     return ff_h2645_sei_ctx_replace(&dst->common, &src->common);
 }
 
@@ -176,4 +201,5 @@ void ff_vvc_sei_reset(VVCSEI *s)
 {
     ff_h2645_sei_reset(&s->common);
     s->picture_hash.present = 0;
+    s->frame_field_info.present = 0;
 }
