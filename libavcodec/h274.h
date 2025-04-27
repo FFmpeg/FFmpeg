@@ -81,4 +81,12 @@ int ff_h274_hash_verify(H274HashContext *c, const H274SEIPictureHash *hash,
     const AVFrame *frame, int coded_width, int coded_height);
 void ff_h274_hash_freep(H274HashContext **c);
 
+typedef struct H274SEIFrameFieldInfo {
+    int present;
+    int picture_struct;
+    uint8_t display_elemental_periods;
+    uint8_t source_scan_type;
+    uint8_t duplicate_flag;
+} H274SEIFrameFieldInfo;
+
 #endif /* AVCODEC_H274_H */
