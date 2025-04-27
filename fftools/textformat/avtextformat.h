@@ -75,7 +75,6 @@ typedef struct AVTextFormatter {
     void (*print_section_header)(AVTextFormatContext *tctx, const void *data);
     void (*print_section_footer)(AVTextFormatContext *tctx);
     void (*print_integer)       (AVTextFormatContext *tctx, const char *, int64_t);
-    void (*print_rational)      (AVTextFormatContext *tctx, AVRational *q, char *sep);
     void (*print_string)        (AVTextFormatContext *tctx, const char *, const char *);
     int flags;                  ///< a combination or AV_TEXTFORMAT__FLAG_*
 } AVTextFormatter;

@@ -21,14 +21,9 @@
 #ifndef FFTOOLS_TEXTFORMAT_AVTEXTWRITERS_H
 #define FFTOOLS_TEXTFORMAT_AVTEXTWRITERS_H
 
-#include <stddef.h>
 #include <stdint.h>
-#include "libavutil/attributes.h"
-#include "libavutil/dict.h"
 #include "libavformat/avio.h"
 #include "libavutil/bprint.h"
-#include "libavutil/rational.h"
-#include "libavutil/hash.h"
 
 typedef struct AVTextWriterContext AVTextWriterContext;
 
