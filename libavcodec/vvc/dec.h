@@ -26,6 +26,7 @@
 
 #include "libavcodec/videodsp.h"
 #include "libavcodec/vvc.h"
+#include "libavcodec/h274.h"
 
 #include "ps.h"
 #include "dsp.h"
@@ -71,12 +72,15 @@ typedef struct VVCWindow {
 
 typedef struct VVCFrame {
     struct AVFrame *frame;
-
+    struct AVFrame *frame_grain;
     const VVCSPS *sps;                          ///< RefStruct reference
     const VVCPPS *pps;                          ///< RefStruct reference
     struct MvField *tab_dmvr_mvf;               ///< RefStruct reference
     RefPicListTab **rpl_tab;                    ///< RefStruct reference
     RefPicListTab  *rpl;                        ///< RefStruct reference
+
+    int needs_fg;                               ///< 1 if grain needs to be applied by the decoder
+
     int nb_rpl_elems;
 
     int ctb_count;
@@ -218,6 +222,7 @@ typedef struct VVCContext {
     CodedBitstreamFragment current_frame;
 
     VVCParamSets ps;
+    H274FilmGrainDatabase h274db;
 
     int temporal_id;        ///< temporal_id_plus1 - 1
     int poc_tid0;
@@ -228,6 +233,7 @@ typedef struct VVCContext {
     enum VVCNALUnitType vcl_unit_type;
     int no_output_before_recovery_flag; ///< NoOutputBeforeRecoveryFlag
     int gdr_recovery_point_poc;         ///< recoveryPointPocVal
+    int film_grain_warning_shown;
 
     /**
      * Sequence counters for decoded and output frames, so that old
