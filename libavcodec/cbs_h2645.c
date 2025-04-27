@@ -2311,6 +2311,12 @@ static const SEIMessageTypeDescriptor cbs_sei_h266_types[] = {
 };
 
 static const SEIMessageTypeDescriptor cbs_sei_h274_types[] = {
+    {
+        SEI_TYPE_FILM_GRAIN_CHARACTERISTICS,
+        1, 0,
+        sizeof(SEIRawFilmGrainCharacteristics),
+        SEI_MESSAGE_RW(sei, film_grain_characteristics),
+    },
     SEI_MESSAGE_TYPE_END,
 };
 
