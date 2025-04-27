@@ -657,6 +657,7 @@ static av_cold void frame_context_free(VVCFrameContext *fc)
     pic_arrays_free(fc);
     av_frame_free(&fc->output_frame);
     ff_vvc_frame_ps_free(&fc->ps);
+    ff_vvc_sei_reset(&fc->sei);
 }
 
 static av_cold int frame_context_init(VVCFrameContext *fc, AVCodecContext *avctx)
@@ -699,6 +700,10 @@ static int frame_context_setup(VVCFrameContext *fc, VVCContext *s)
                     return ret;
             }
         }
+
+        ret = ff_vvc_sei_replace(&fc->sei, &prev->sei);
+        if (ret < 0)
+            return ret;
     }
 
     if (IS_IDR(s)) {
@@ -714,6 +719,22 @@ static int frame_context_setup(VVCFrameContext *fc, VVCContext *s)
     return 0;
 }
 
+/* SEI does not affect decoding, so we ignore the return value */
+static void decode_prefix_sei(VVCFrameContext *fc, VVCContext *s)
+{
+    CodedBitstreamFragment *frame = &s->current_frame;
+
+    for (int i = 0; i < frame->nb_units; i++) {
+        const CodedBitstreamUnit *unit = frame->units + i;
+
+        if (unit->type == VVC_PREFIX_SEI_NUT) {
+            int ret = ff_vvc_sei_decode(&fc->sei, unit->content_ref, fc);
+            if (ret < 0)
+                return;
+        }
+    }
+}
+
 static int frame_start(VVCContext *s, VVCFrameContext *fc, SliceContext *sc)
 {
     const VVCPH *ph                 = &fc->ps.ph;
@@ -726,6 +747,8 @@ static int frame_start(VVCContext *s, VVCFrameContext *fc, SliceContext *sc)
 
     if ((ret = ff_vvc_set_new_ref(s, fc, &fc->frame)) < 0)
         goto fail;
+
+    decode_prefix_sei(fc, s);
 
     if (!IS_IDR(s))
         ff_vvc_bump_frame(s, fc);
@@ -930,6 +953,15 @@ static int decode_nal_unit(VVCContext *s, VVCFrameContext *fc, AVBufferRef *buf_
         ret = ff_vvc_decode_aps(&s->ps, unit);
         if (ret < 0)
             return ret;
+        break;
+    case VVC_PREFIX_SEI_NUT:
+        /* handle by decode_prefix_sei() */
+        break;
+
+    case VVC_SUFFIX_SEI_NUT:
+        /* SEI does not affect decoding, so we ignore the return value*/
+        if (fc)
+            ff_vvc_sei_decode(&fc->sei, unit->content_ref, fc);
         break;
     }
 

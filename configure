@@ -2661,6 +2661,7 @@ CONFIG_EXTRA="
     vp56dsp
     vp8dsp
     vulkan_encode
+    vvc_sei
     wma_freqs
     wmv2dsp
 "
@@ -2910,6 +2911,7 @@ mpegvideoenc_select="aandcttables fdctdsp me_cmp mpegvideo pixblockdsp"
 msmpeg4dec_select="h263_decoder"
 msmpeg4enc_select="h263_encoder"
 vc1dsp_select="h264chroma qpeldsp startcode"
+vvc_sei_select="atsc_a53 golomb"
 wmv2dsp_select="qpeldsp"
 
 # decoders / encoders
@@ -3147,7 +3149,7 @@ vp6f_decoder_select="vp6_decoder"
 vp7_decoder_select="h264pred videodsp vp8dsp"
 vp8_decoder_select="h264pred videodsp vp8dsp"
 vp9_decoder_select="videodsp vp9_parser vp9_superframe_split_bsf"
-vvc_decoder_select="cabac cbs_h266 golomb videodsp"
+vvc_decoder_select="cabac cbs_h266 golomb videodsp vvc_sei"
 wcmv_decoder_select="inflate_wrapper"
 webp_decoder_select="vp8_decoder exif"
 wmalossless_decoder_select="llauddsp"
