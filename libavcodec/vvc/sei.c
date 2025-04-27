@@ -158,6 +158,24 @@ static int decode_ambient_viewing_environment(H2645SEIAmbientViewingEnvironment 
     return 0;
 }
 
+static int decode_mastering_display_colour_volume(H2645SEIMasteringDisplay *h, const SEIRawMasteringDisplayColourVolume *s)
+{
+    h->present = 1;
+
+    for (int c = 0; c < 3; c++) {
+        h->display_primaries[c][0] = s->display_primaries_x[c];
+        h->display_primaries[c][1] = s->display_primaries_y[c];
+    }
+
+    h->white_point[0] = s->white_point_x;
+    h->white_point[1] = s->white_point_y;
+
+    h->max_luminance  = s->max_display_mastering_luminance;
+    h->min_luminance  = s->min_display_mastering_luminance;
+
+    return 0;
+}
+
 int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameContext *fc)
 {
     H2645SEI *c  = &s->common;
@@ -191,6 +209,9 @@ int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameCon
 
         case SEI_TYPE_AMBIENT_VIEWING_ENVIRONMENT:
             return decode_ambient_viewing_environment(&s->common.ambient_viewing_environment, payload);
+
+        case SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
+            return decode_mastering_display_colour_volume(&s->common.mastering_display, payload);
 
         default:
             av_log(fc->log_ctx, AV_LOG_DEBUG, "Skipped %s SEI %d\n",
