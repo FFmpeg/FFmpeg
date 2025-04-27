@@ -313,11 +313,11 @@ static int apv_decode_metadata(AVCodecContext *avctx, AVFrame *frame,
                     return err;
 
                 if (mdm) {
-                    for (int i = 0; i < 3; i++) {
-                        mdm->display_primaries[i][0] =
-                            av_make_q(mdcv->primary_chromaticity_x[i], 1 << 16);
-                        mdm->display_primaries[i][1] =
-                            av_make_q(mdcv->primary_chromaticity_y[i], 1 << 16);
+                    for (int j = 0; j < 3; j++) {
+                        mdm->display_primaries[j][0] =
+                            av_make_q(mdcv->primary_chromaticity_x[j], 1 << 16);
+                        mdm->display_primaries[j][1] =
+                            av_make_q(mdcv->primary_chromaticity_y[j], 1 << 16);
                     }
 
                     mdm->white_point[0] =
