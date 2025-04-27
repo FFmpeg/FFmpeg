@@ -108,7 +108,7 @@ typedef struct H2645SEIFilmGrainCharacteristics {
     uint8_t intensity_interval_upper_bound[3][256];
     int16_t comp_model_value[3][256][6];
     int repetition_period;       //< H.264 only
-    int persistence_flag;        //< HEVC  only
+    int persistence_flag;        //< HEVC/VVC
 } H2645SEIFilmGrainCharacteristics;
 
 typedef struct H2645SEIMasteringDisplay {

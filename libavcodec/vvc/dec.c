@@ -735,6 +735,14 @@ static void decode_prefix_sei(VVCFrameContext *fc, VVCContext *s)
     }
 }
 
+static int set_side_data(VVCContext *s, VVCFrameContext *fc)
+{
+    AVFrame *out = fc->ref->frame;
+
+    return ff_h2645_sei_to_frame(out, &fc->sei.common, AV_CODEC_ID_VVC, s->avctx,
+        NULL, fc->ps.sps->bit_depth, fc->ps.sps->bit_depth, fc->ref->poc);
+}
+
 static int frame_start(VVCContext *s, VVCFrameContext *fc, SliceContext *sc)
 {
     const VVCPH *ph                 = &fc->ps.ph;
@@ -749,6 +757,10 @@ static int frame_start(VVCContext *s, VVCFrameContext *fc, SliceContext *sc)
         goto fail;
 
     decode_prefix_sei(fc, s);
+
+    ret = set_side_data(s, fc);
+    if (ret < 0)
+        goto fail;
 
     if (!IS_IDR(s))
         ff_vvc_bump_frame(s, fc);

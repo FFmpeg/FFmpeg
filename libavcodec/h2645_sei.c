@@ -44,8 +44,9 @@
 #include "h2645_sei.h"
 #include "itut35.h"
 
-#define IS_H264(codec_id) (CONFIG_H264_SEI && CONFIG_HEVC_SEI ? codec_id == AV_CODEC_ID_H264 : CONFIG_H264_SEI)
-#define IS_HEVC(codec_id) (CONFIG_H264_SEI && CONFIG_HEVC_SEI ? codec_id == AV_CODEC_ID_HEVC : CONFIG_HEVC_SEI)
+#define IS_H264(codec_id) (CONFIG_H264_SEI && (CONFIG_HEVC_SEI || CONFIG_VVC_SEI ) ? codec_id == AV_CODEC_ID_H264 : CONFIG_H264_SEI)
+#define IS_HEVC(codec_id) (CONFIG_HEVC_SEI && (CONFIG_H264_SEI || CONFIG_VVC_SEI ) ? codec_id == AV_CODEC_ID_HEVC : CONFIG_HEVC_SEI)
+#define IS_VVC(codec_id)  (CONFIG_VVC_SEI  && (CONFIG_H264_SEI || CONFIG_HEVC_SEI) ? codec_id == AV_CODEC_ID_VVC  : CONFIG_VVC_SEI )
 
 #if CONFIG_HEVC_SEI
 static int decode_registered_user_data_dynamic_hdr_plus(HEVCSEIDynamicHDRPlus *s,
@@ -427,7 +428,7 @@ static int decode_film_grain_characteristics(H2645SEIFilmGrainCharacteristics *h
                 }
             }
         }
-        if (IS_HEVC(codec_id))
+        if (!IS_H264(codec_id))
             h->persistence_flag = get_bits1(gb);
         else
             h->repetition_period = get_ue_golomb_long(gb);
@@ -854,7 +855,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         fgp->subsampling_x = fgp->subsampling_y = 0;
 
         h274->model_id = fgc->model_id;
-        if (fgc->separate_colour_description_present_flag) {
+        if (IS_VVC(codec_id) || fgc->separate_colour_description_present_flag) {
             fgp->bit_depth_luma   = fgc->bit_depth_luma;
             fgp->bit_depth_chroma = fgc->bit_depth_chroma;
             fgp->color_range      = fgc->full_range + 1;
