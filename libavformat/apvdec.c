@@ -225,7 +225,9 @@ static int apv_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     ret = av_get_packet(s->pb, pkt, au_size);
-    pkt->flags        = AV_PKT_FLAG_KEY;
+    if (ret < 0)
+        return ret;
+    pkt->flags = AV_PKT_FLAG_KEY;
 
     signature = AV_RB32(pkt->data);
     if (signature != APV_SIGNATURE) {
@@ -233,7 +235,7 @@ static int apv_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_INVALIDDATA;
     }
 
-    return ret;
+    return 0;
 }
 
 const FFInputFormat ff_apv_demuxer = {
