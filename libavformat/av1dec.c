@@ -36,6 +36,7 @@ typedef struct AV1DemuxContext {
     AVRational framerate;
     uint32_t temporal_unit_size;
     uint32_t frame_unit_size;
+    int64_t pos;
 } AV1DemuxContext;
 
 //return < 0 if we need more data
@@ -95,6 +96,8 @@ static int av1_read_header(AVFormatContext *s)
     ret = av_bsf_init(c->bsf);
     if (ret < 0)
         return ret;
+
+    c->pos = avio_tell(s->pb);
 
     return 0;
 }
@@ -224,6 +227,7 @@ static int annexb_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AV1DemuxContext *const c = s->priv_data;
     uint32_t obu_unit_size;
+    int64_t pos = c->pos;
     int ret, len;
 
 retry:
@@ -234,6 +238,7 @@ retry:
     }
 
     if (!c->temporal_unit_size) {
+        c->pos = avio_tell(s->pb);
         len = leb(s->pb, &c->temporal_unit_size, 1);
         if (len == AVERROR_EOF) goto end;
         else if (len < 0) return len;
@@ -278,6 +283,9 @@ end:
 
     if (ret == AVERROR(EAGAIN))
         goto retry;
+
+    if (!ret)
+        pkt->pos = pos;
 
     return ret;
 }
