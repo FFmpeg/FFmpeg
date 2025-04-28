@@ -227,6 +227,7 @@ static int apv_read_packet(AVFormatContext *s, AVPacket *pkt)
     ret = av_get_packet(s->pb, pkt, au_size);
     if (ret < 0)
         return ret;
+    pkt->pos  -= 4;
     pkt->flags = AV_PKT_FLAG_KEY;
 
     signature = AV_RB32(pkt->data);
