@@ -53,13 +53,9 @@ static inline void stdout_put_str(AVTextWriterContext *wctx, const char *str)
     printf("%s", str);
 }
 
-static inline void stdout_printf(AVTextWriterContext *wctx, const char *fmt, ...)
+static inline void stdout_vprintf(AVTextWriterContext *wctx, const char *fmt, va_list vl)
 {
-    va_list ap;
-
-    va_start(ap, fmt);
-    vprintf(fmt, ap);
-    va_end(ap);
+    vprintf(fmt, vl);
 }
 
 
@@ -68,7 +64,7 @@ static const AVTextWriter avtextwriter_stdout = {
     .priv_size            = sizeof(StdOutWriterContext),
     .priv_class           = &stdoutwriter_class,
     .writer_put_str       = stdout_put_str,
-    .writer_printf        = stdout_printf,
+    .writer_vprintf       = stdout_vprintf,
     .writer_w8            = stdout_w8
 };
 

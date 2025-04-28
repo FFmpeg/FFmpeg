@@ -28,22 +28,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/error.h"
 #include "libavutil/opt.h"
-
-#define writer_w8(wctx_, b_) (wctx_)->writer->writer->writer_w8((wctx_)->writer, b_)
-#define writer_put_str(wctx_, str_) (wctx_)->writer->writer->writer_put_str((wctx_)->writer, str_)
-#define writer_printf(wctx_, fmt_, ...) (wctx_)->writer->writer->writer_printf((wctx_)->writer, fmt_, __VA_ARGS__)
-
-#define DEFINE_FORMATTER_CLASS(name)                   \
-static const char *name##_get_name(void *ctx)       \
-{                                                   \
-    return #name ;                                  \
-}                                                   \
-static const AVClass name##_class = {               \
-    .class_name = #name,                            \
-    .item_name  = name##_get_name,                  \
-    .option     = name##_options                    \
-}
-
+#include "tf_internal.h"
 
 /* Flat output */
 
@@ -118,9 +103,11 @@ static void flat_print_section_header(AVTextFormatContext *wctx, const void *dat
 {
     FlatContext *flat = wctx->priv;
     AVBPrint *buf = &wctx->section_pbuf[wctx->level];
-    const struct AVTextFormatSection *section = wctx->section[wctx->level];
-    const struct AVTextFormatSection *parent_section = wctx->level ?
-        wctx->section[wctx->level-1] : NULL;
+    const AVTextFormatSection *section = tf_get_section(wctx, wctx->level);
+    const AVTextFormatSection *parent_section = tf_get_parent_section(wctx, wctx->level);
+
+    if (!section)
+        return;
 
     /* build section header */
     av_bprint_clear(buf);

@@ -56,14 +56,11 @@ static void buffer_put_str(AVTextWriterContext *wctx, const char *str)
     av_bprintf(ctx->buffer, "%s", str);
 }
 
-static void buffer_printf(AVTextWriterContext *wctx, const char *fmt, ...)
+static void buffer_vprintf(AVTextWriterContext *wctx, const char *fmt, va_list vl)
 {
     BufferWriterContext *ctx = wctx->priv;
 
-    va_list vargs;
-    va_start(vargs, fmt);
-    av_vbprintf(ctx->buffer, fmt, vargs);
-    va_end(vargs);
+    av_vbprintf(ctx->buffer, fmt, vl);
 }
 
 
@@ -72,7 +69,7 @@ const AVTextWriter avtextwriter_buffer = {
     .priv_size            = sizeof(BufferWriterContext),
     .priv_class           = &bufferwriter_class,
     .writer_put_str       = buffer_put_str,
-    .writer_printf        = buffer_printf,
+    .writer_vprintf       = buffer_vprintf,
     .writer_w8            = buffer_w8
 };
 

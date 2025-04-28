@@ -25,21 +25,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/error.h"
 #include "libavutil/opt.h"
-
-#define writer_w8(wctx_, b_) (wctx_)->writer->writer->writer_w8((wctx_)->writer, b_)
-#define writer_put_str(wctx_, str_) (wctx_)->writer->writer->writer_put_str((wctx_)->writer, str_)
-#define writer_printf(wctx_, fmt_, ...) (wctx_)->writer->writer->writer_printf((wctx_)->writer, fmt_, __VA_ARGS__)
-
-#define DEFINE_FORMATTER_CLASS(name)                   \
-static const char *name##_get_name(void *ctx)       \
-{                                                   \
-    return #name ;                                  \
-}                                                   \
-static const AVClass name##_class = {               \
-    .class_name = #name,                            \
-    .item_name  = name##_get_name,                  \
-    .option     = name##_options                    \
-}
+#include "tf_internal.h"
 
 /* XML output */
 
@@ -90,9 +76,11 @@ static av_cold int xml_init(AVTextFormatContext *wctx)
 static void xml_print_section_header(AVTextFormatContext *wctx, const void *data)
 {
     XMLContext *xml = wctx->priv;
-    const struct AVTextFormatSection *section = wctx->section[wctx->level];
-    const struct AVTextFormatSection *parent_section = wctx->level ?
-        wctx->section[wctx->level-1] : NULL;
+    const AVTextFormatSection *section = tf_get_section(wctx, wctx->level);
+    const AVTextFormatSection *parent_section = tf_get_parent_section(wctx, wctx->level);
+
+    if (!section)
+        return;
 
     if (wctx->level == 0) {
         const char *qual = " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "
@@ -138,7 +126,10 @@ static void xml_print_section_header(AVTextFormatContext *wctx, const void *data
 static void xml_print_section_footer(AVTextFormatContext *wctx)
 {
     XMLContext *xml = wctx->priv;
-    const struct AVTextFormatSection *section = wctx->section[wctx->level];
+    const AVTextFormatSection *section = tf_get_section(wctx, wctx->level);
+
+    if (!section)
+        return;
 
     if (wctx->level == 0) {
         writer_printf(wctx, "</%sffprobe>\n", xml->fully_qualified ? "ffprobe:" : "");
@@ -158,7 +149,10 @@ static void xml_print_value(AVTextFormatContext *wctx, const char *key,
 {
     AVBPrint buf;
     XMLContext *xml = wctx->priv;
-    const struct AVTextFormatSection *section = wctx->section[wctx->level];
+    const AVTextFormatSection *section = tf_get_section(wctx, wctx->level);
+
+    if (!section)
+        return;
 
     av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
@@ -216,4 +210,3 @@ const AVTextFormatter avtextformatter_xml = {
     .flags = AV_TEXTFORMAT_FLAG_SUPPORTS_MIXED_ARRAY_CONTENT,
     .priv_class           = &xml_class,
 };
-
