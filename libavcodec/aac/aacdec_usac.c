@@ -1478,11 +1478,11 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
         ret = ff_aac_sbr_decode_usac_data(ac, che, ec, gb, sbr_ch, indep_flag);
         if (ret < 0)
             return ret;
+    }
 
-        if (ec->stereo_config_index) {
-            avpriv_report_missing_feature(ac->avctx, "AAC USAC Mps212");
-            return AVERROR_PATCHWELCOME;
-        }
+    if (ec->stereo_config_index) {
+        avpriv_report_missing_feature(ac->avctx, "AAC USAC Mps212");
+        return AVERROR_PATCHWELCOME;
     }
 
     spectrum_decode(ac, usac, che, core_nb_channels);
