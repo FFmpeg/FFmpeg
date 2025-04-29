@@ -5851,6 +5851,13 @@ case $target_os in
             clang_version=$($cc -dumpversion)
             test ${clang_version%%.*} -eq 11 && add_cflags -fno-stack-check
         fi
+
+        # Xcode Clang doesn't default to -fno-common while upstream llvm.org
+        # Clang (and GCC) do. This avoids linker warnings on Xcode 16.3 about
+        # "reducing alignment of section __DATA,__common from 0x8000 to 0x4000
+        # because it exceeds segment maximum alignment".
+        check_cflags -fno-common
+
         ;;
     msys*)
         die "Native MSYS builds are discouraged, please use the MINGW environment."
