@@ -3774,15 +3774,40 @@ int ff_mpeg4_frame_end(AVCodecContext *avctx, const AVPacket *pkt)
 
 #if CONFIG_MPEG4_DECODER
 #if HAVE_THREADS
+static int update_mpvctx(MpegEncContext *s, const MpegEncContext *s1)
+{
+    AVCodecContext *avctx = s->avctx;
+    // FIXME the following leads to a data race; instead copy only
+    // the necessary fields.
+    memcpy(s, s1, sizeof(*s));
+
+    s->context_initialized = 0;
+    s->context_reinit      = 0;
+    s->avctx = avctx;
+
+    if (s1->context_initialized) {
+        int err = ff_mpv_common_init(s);
+        if (err < 0)
+            return err;
+    }
+    return 0;
+}
+
 static int mpeg4_update_thread_context(AVCodecContext *dst,
                                        const AVCodecContext *src)
 {
     Mpeg4DecContext *s = dst->priv_data;
     const Mpeg4DecContext *s1 = src->priv_data;
     int init = s->m.context_initialized;
+    int ret;
 
-    int ret = ff_mpeg_update_thread_context(dst, src);
+    if (!init) {
+        ret = update_mpvctx(&s->m, &s1->m);
+        if (ret < 0)
+            return ret;
+    }
 
+    ret = ff_mpeg_update_thread_context(dst, src);
     if (ret < 0)
         return ret;
 
