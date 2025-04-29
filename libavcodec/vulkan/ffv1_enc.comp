@@ -26,14 +26,18 @@ void encode_slice(inout SliceContext sc, const uint slice_idx)
 
 #ifndef GOLOMB
     if (sc.slice_coding_mode == 1) {
-        for (int p = 0; p < planes; p++) {
+        for (int c = 0; c < components; c++) {
 
             int h = sc.slice_dim.y;
-            if (p > 0 && p < 3)
+            if (c > 0 && c < 3)
                 h >>= chroma_shift.y;
 
+            /* Takes into account dual-plane YUV formats */
+            int p = min(c, planes - 1);
+            int comp = c - p;
+
             for (int y = 0; y < h; y++)
-                encode_line_pcm(sc, y, p, 0, bits);
+                encode_line_pcm(sc, y, p, comp, bits);
         }
     } else
 #endif
@@ -41,18 +45,21 @@ void encode_slice(inout SliceContext sc, const uint slice_idx)
         uint64_t slice_state_off = uint64_t(slice_state) +
                                    slice_idx*plane_state_size*codec_planes;
 
-        for (int p = 0; p < planes; p++) {
+        for (int c = 0; c < components; c++) {
             int run_index = 0;
 
             int h = sc.slice_dim.y;
-            if (p > 0 && p < 3)
+            if (c > 0 && c < 3)
                 h >>= chroma_shift.y;
 
+            int p = min(c, planes - 1);
+            int comp = c - p;
+
             for (int y = 0; y < h; y++)
-                encode_line(sc, slice_state_off, y, p, 0, bits, run_index);
+                encode_line(sc, slice_state_off, y, p, comp, bits, run_index);
 
             /* For the second chroma plane, reuse the first plane's state */
-            if (p != 1)
+            if (c != 1)
                 slice_state_off += plane_state_size;
         }
     }

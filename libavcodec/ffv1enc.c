@@ -839,6 +839,9 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
             s->bits_per_raw_sample = 14;
         s->packed_at_lsb = 1;
     case AV_PIX_FMT_GRAY16:
+    case AV_PIX_FMT_P016:
+    case AV_PIX_FMT_P216:
+    case AV_PIX_FMT_P416:
     case AV_PIX_FMT_YUV444P16:
     case AV_PIX_FMT_YUV422P16:
     case AV_PIX_FMT_YUV420P16:
@@ -859,6 +862,9 @@ av_cold int ff_ffv1_encode_setup_plane_info(AVCodecContext *avctx,
         s->version = FFMAX(s->version, 1);
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_YA8:
+    case AV_PIX_FMT_NV12:
+    case AV_PIX_FMT_NV16:
+    case AV_PIX_FMT_NV24:
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_YUV440P:
     case AV_PIX_FMT_YUV422P:

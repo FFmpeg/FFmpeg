@@ -141,6 +141,7 @@ typedef struct FFv1VkParameters {
     uint8_t micro_version;
     uint8_t force_pcm;
     uint8_t key_frame;
+    uint8_t components;
     uint8_t planes;
     uint8_t codec_planes;
     uint8_t transparency;
@@ -149,7 +150,7 @@ typedef struct FFv1VkParameters {
     uint8_t ec;
     uint8_t ppi;
     uint8_t chunks;
-    uint8_t padding[2];
+    uint8_t padding[1];
 } FFv1VkParameters;
 
 static void add_push_data(FFVulkanShader *shd)
@@ -173,6 +174,7 @@ static void add_push_data(FFVulkanShader *shd)
     GLSLC(1,    uint8_t micro_version;                                        );
     GLSLC(1,    uint8_t force_pcm;                                            );
     GLSLC(1,    uint8_t key_frame;                                            );
+    GLSLC(1,    uint8_t components;                                           );
     GLSLC(1,    uint8_t planes;                                               );
     GLSLC(1,    uint8_t codec_planes;                                         );
     GLSLC(1,    uint8_t transparency;                                         );
@@ -181,7 +183,7 @@ static void add_push_data(FFVulkanShader *shd)
     GLSLC(1,    uint8_t ec;                                                   );
     GLSLC(1,    uint8_t ppi;                                                  );
     GLSLC(1,    uint8_t chunks;                                               );
-    GLSLC(1,    uint8_t padding[2];                                           );
+    GLSLC(1,    uint8_t padding[1];                                           );
     GLSLC(0, };                                                               );
     ff_vk_shader_add_push_const(shd, 0, sizeof(FFv1VkParameters),
                                 VK_SHADER_STAGE_COMPUTE_BIT);
@@ -326,6 +328,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
 
     int has_inter = avctx->gop_size > 1;
     uint32_t context_count = f->context_count[f->context_model];
+    const AVPixFmtDescriptor *fmt_desc = av_pix_fmt_desc_get(avctx->sw_pix_fmt);
 
     VkImageView in_views[AV_NUM_DATA_POINTERS];
     VkImageView intermediate_views[AV_NUM_DATA_POINTERS];
@@ -498,6 +501,7 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
         .micro_version = f->micro_version,
         .force_pcm = fv->force_pcm,
         .key_frame = f->key_frame,
+        .components = fmt_desc->nb_components,
         .planes = av_pix_fmt_count_planes(avctx->sw_pix_fmt),
         .codec_planes = f->plane_count,
         .transparency = f->transparency,
