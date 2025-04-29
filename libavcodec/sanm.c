@@ -1603,6 +1603,7 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
     uint16_t w, h, parm2;
     uint8_t codec, param;
     int16_t left, top;
+    int fsc, sote;
 
     codec = bytestream2_get_byteu(gb);
     param = bytestream2_get_byteu(gb);
@@ -1620,6 +1621,14 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
         return 0;
     }
 
+    /* codecs with their own buffers */
+    fsc = (codec == 37 || codec == 47 || codec == 48);
+
+    /* special case for "Shadows of the Empire" videos */
+    sote = ((w == 640) && (h == 272) && (codec == 47));
+    if (sote)
+        left = top = 0;
+
     if (!ctx->have_dimensions) {
         int xres, yres;
         if (ctx->subversion < 2) {
@@ -1633,12 +1642,24 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
             yres = h;
             ctx->have_dimensions = 1;
         } else {
-            /* Rebel Assault 2: 424x260 internal size */
-            if (((left + w) == 424) && ((top + h) == 260))
+            /* detect common sizes */
+            xres = w + left;
+            yres = h + top;
+            if (sote) {
+                /* SotE: has top=60 at all times to center video
+                 * inside the 640x480 game window
+                 */
+                xres = w;
+                yres = h;
                 ctx->have_dimensions = 1;
+            } else if (((xres == 424) && (yres == 260)) ||  /* RA1 */
+                       ((xres == 320) && (yres == 200)) ||  /* ft/dig/... */
+                       ((xres == 640) && (yres == 480))) {  /* ol/comi/mots... */
+                ctx->have_dimensions = 1;
+            }
 
-            xres = FFMAX(left + w, ctx->width);
-            yres = FFMAX(top + h, ctx->height);
+            xres = FFMAX(xres, ctx->width);
+            yres = FFMAX(yres, ctx->height);
         }
 
         if (ctx->width < xres || ctx->height < yres) {
@@ -1652,8 +1673,7 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
             }
         }
     } else {
-        if (((left + w > ctx->width) || (top + h > ctx->height))
-            && (codec >= 37)) {
+        if (((left + w > ctx->width) || (top + h > ctx->height)) && fsc) {
             /* correct unexpected overly large frames: this happens
              * for instance with The Dig's sq1.san video: it has a few
              * (all black) 640x480 frames halfway in, while the rest is
@@ -1671,7 +1691,7 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
      */
     if (ctx->first_fob) {
         ctx->first_fob = 0;
-        if (codec < 37)
+        if (!fsc)
             memset(ctx->frm0, 0, ctx->frm0_size);
     }
 
