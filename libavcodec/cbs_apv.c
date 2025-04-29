@@ -168,8 +168,8 @@ static int cbs_apv_split_fragment(CodedBitstreamContext *ctx,
     uint32_t signature;
     int err, trace;
 
-    if (header) {
-        // Ignore extradata fragments.
+    if (header || !frag->data_size) {
+        // Ignore empty or extradata fragments.
         return 0;
     }
 
