@@ -16,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
+#include "libavutil/buffer.h"
+
 #include "avcodec.h"
 #include "apv.h"
 #include "cbs.h"
@@ -34,6 +37,11 @@ static const enum AVPixelFormat apv_format_table[5][5] = {
     { AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_YUVA444P16 },
 };
 
+static void dummy_free(void *opaque, uint8_t *data)
+{
+    av_assert0(opaque == data);
+}
+
 static int parse(AVCodecParserContext *s,
                  AVCodecContext *avctx,
                  const uint8_t **poutbuf, int *poutbuf_size,
@@ -41,14 +49,20 @@ static int parse(AVCodecParserContext *s,
 {
     APVParseContext *p = s->priv_data;
     CodedBitstreamFragment *au = &p->au;
+    AVBufferRef *ref = NULL;
     int ret;
 
     *poutbuf      = buf;
     *poutbuf_size = buf_size;
 
+    ref = av_buffer_create((uint8_t *)buf, buf_size, dummy_free,
+                           (void *)buf, AV_BUFFER_FLAG_READONLY);
+    if (!ref)
+        return buf_size;
+
     p->cbc->log_ctx = avctx;
 
-    ret = ff_cbs_read(p->cbc, au, NULL, buf, buf_size);
+    ret = ff_cbs_read(p->cbc, au, ref, buf, buf_size);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to parse access unit.\n");
         goto end;
@@ -92,6 +106,8 @@ static int parse(AVCodecParserContext *s,
 
 end:
     ff_cbs_fragment_reset(au);
+    av_assert1(av_buffer_get_ref_count(ref) == 1);
+    av_buffer_unref(&ref);
     p->cbc->log_ctx = NULL;
 
     return buf_size;
