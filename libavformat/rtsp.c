@@ -663,8 +663,8 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             rtsp_parse_range_npt(p, &start, &end);
             s->start_time = start;
             /* AV_NOPTS_VALUE means live broadcast (and can't seek) */
-            s->duration   = (end == AV_NOPTS_VALUE) ?
-                            AV_NOPTS_VALUE : end - start;
+            if (end != AV_NOPTS_VALUE)
+                s->duration = end - start;
         } else if (av_strstart(p, "lang:", &p)) {
             if (s->nb_streams > 0) {
                 get_word(buf1, sizeof(buf1), &p);
@@ -754,6 +754,8 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
     char buf[SDP_MAX_SIZE], *q;
     SDPParseState sdp_parse_state = { { 0 } }, *s1 = &sdp_parse_state;
 
+    s->duration = AV_NOPTS_VALUE;
+
     p = content;
     for (;;) {
         p += strspn(p, SPACE_CHARS);
@@ -786,6 +788,9 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
     for (i = 0; i < s1->nb_default_exclude_source_addrs; i++)
         av_freep(&s1->default_exclude_source_addrs[i]);
     av_freep(&s1->default_exclude_source_addrs);
+
+    if (s->duration == AV_NOPTS_VALUE)
+        s->ctx_flags |= AVFMTCTX_UNSEEKABLE;
 
     return 0;
 }
