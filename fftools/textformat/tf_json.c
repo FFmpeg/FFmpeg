@@ -80,13 +80,18 @@ static const char *json_escape_str(AVBPrint *dst, const char *src, void *log_ctx
     static const char json_subst[]  = { '"', '\\',  'b',  'f',  'n',  'r',  't', 0 };
     const char *p;
 
+    if (!src) {
+        av_log(log_ctx, AV_LOG_WARNING, "Cannot escape NULL string, returning NULL\n");
+        return NULL;
+    }
+
     for (p = src; *p; p++) {
         char *s = strchr(json_escape, *p);
         if (s) {
             av_bprint_chars(dst, '\\', 1);
             av_bprint_chars(dst, json_subst[s - json_escape], 1);
         } else if ((unsigned char)*p < 32) {
-            av_bprintf(dst, "\\u00%02x", *p & 0xff);
+            av_bprintf(dst, "\\u00%02x", (unsigned char)*p);
         } else {
             av_bprint_chars(dst, *p, 1);
         }
@@ -100,11 +105,10 @@ static void json_print_section_header(AVTextFormatContext *wctx, const void *dat
 {
     JSONContext *json = wctx->priv;
     AVBPrint buf;
-    const struct AVTextFormatSection *section = wctx->section[wctx->level];
-    const struct AVTextFormatSection *parent_section = wctx->level ?
-        wctx->section[wctx->level-1] : NULL;
+    const AVTextFormatSection *section = wctx->section[wctx->level];
+    const AVTextFormatSection *parent_section = wctx->level ? wctx->section[wctx->level - 1] : NULL;
 
-    if (wctx->level && wctx->nb_item[wctx->level-1])
+    if (wctx->level && wctx->nb_item[wctx->level - 1])
         writer_put_str(wctx, ",\n");
 
     if (section->flags & AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER) {
@@ -185,8 +189,7 @@ static void json_print_str(AVTextFormatContext *wctx, const char *key, const cha
 static void json_print_int(AVTextFormatContext *wctx, const char *key, int64_t value)
 {
     JSONContext *json = wctx->priv;
-    const struct AVTextFormatSection *parent_section = wctx->level ?
-        wctx->section[wctx->level-1] : NULL;
+    const AVTextFormatSection *parent_section = wctx->level ? wctx->section[wctx->level - 1] : NULL;
     AVBPrint buf;
 
     if (wctx->nb_item[wctx->level] || (parent_section && parent_section->flags & AV_TEXTFORMAT_SECTION_FLAG_NUMBERING_BY_TYPE))

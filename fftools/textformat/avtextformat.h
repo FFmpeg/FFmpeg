@@ -21,9 +21,7 @@
 #ifndef FFTOOLS_TEXTFORMAT_AVTEXTFORMAT_H
 #define FFTOOLS_TEXTFORMAT_AVTEXTFORMAT_H
 
-#include <stddef.h>
 #include <stdint.h>
-#include "libavutil/attributes.h"
 #include "libavutil/dict.h"
 #include "libavformat/avio.h"
 #include "libavutil/bprint.h"
@@ -103,7 +101,7 @@ struct AVTextFormatContext {
     unsigned int nb_item_type[SECTION_MAX_NB_LEVELS][SECTION_MAX_NB_SECTIONS];
 
     /** section per each level */
-    const struct AVTextFormatSection *section[SECTION_MAX_NB_LEVELS];
+    const AVTextFormatSection *section[SECTION_MAX_NB_LEVELS];
     AVBPrint section_pbuf[SECTION_MAX_NB_LEVELS]; ///< generic print buffer dedicated to each section,
                                                   ///  used by various formatters
 
@@ -124,7 +122,7 @@ struct AVTextFormatContext {
 #define AV_TEXTFORMAT_PRINT_STRING_VALIDATE 2
 
 int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *formatter, AVTextWriterContext *writer_context, const char *args,
-                        const struct AVTextFormatSection *sections, int nb_sections,
+                        const AVTextFormatSection *sections, int nb_sections,
                         int show_value_unit,
                         int use_value_prefix,
                         int use_byte_value_binary_prefix,

@@ -91,7 +91,7 @@ static char *ini_escape_str(AVBPrint *dst, const char *src)
             /* fallthrough */
         default:
             if ((unsigned char)c < 32)
-                av_bprintf(dst, "\\x00%02x", c & 0xff);
+                av_bprintf(dst, "\\x00%02x", (unsigned char)c);
             else
                 av_bprint_chars(dst, c, 1);
             break;

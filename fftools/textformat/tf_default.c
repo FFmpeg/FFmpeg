@@ -68,9 +68,10 @@ DEFINE_FORMATTER_CLASS(default);
 /* lame uppercasing routine, assumes the string is lower case ASCII */
 static inline char *upcase_string(char *dst, size_t dst_size, const char *src)
 {
-    int i;
+    unsigned i;
+
     for (i = 0; src[i] && i < dst_size - 1; i++)
-        dst[i] = av_toupper(src[i]);
+        dst[i] = (char)av_toupper(src[i]);
     dst[i] = 0;
     return dst;
 }
@@ -105,6 +106,9 @@ static void default_print_section_footer(AVTextFormatContext *wctx)
     DefaultContext *def = wctx->priv;
     const struct AVTextFormatSection *section = wctx->section[wctx->level];
     char buf[32];
+
+    if (!section)
+        return;
 
     if (def->noprint_wrappers || def->nested_section[wctx->level])
         return;

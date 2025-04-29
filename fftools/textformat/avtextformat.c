@@ -93,9 +93,8 @@ static const AVClass textcontext_class = {
 
 static void bprint_bytes(AVBPrint *bp, const uint8_t *ubuf, size_t ubuf_size)
 {
-    int i;
     av_bprintf(bp, "0X");
-    for (i = 0; i < ubuf_size; i++)
+    for (unsigned i = 0; i < ubuf_size; i++)
         av_bprintf(bp, "%02X", ubuf[i]);
 }
 
@@ -136,6 +135,8 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
 {
     AVTextFormatContext *tctx;
     int i, ret = 0;
+
+    av_assert0(ptctx && formatter);
 
     if (!(tctx = av_mallocz(sizeof(AVTextFormatContext)))) {
         ret = AVERROR(ENOMEM);
@@ -215,8 +216,8 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
 
     /* validate replace string */
     {
-        const uint8_t *p = tctx->string_validation_replacement;
-        const uint8_t *endp = p + strlen(p);
+        const uint8_t *p = (uint8_t *)tctx->string_validation_replacement;
+        const uint8_t *endp = p + strlen((const char *)p);
         while (*p) {
             const uint8_t *p0 = p;
             int32_t code;
@@ -229,6 +230,7 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
                        "Invalid UTF8 sequence %s found in string validation replace '%s'\n",
                        bp.str, tctx->string_validation_replacement);
                 return ret;
+                goto fail;
             }
         }
     }
@@ -256,6 +258,11 @@ static const char unit_bit_per_second_str[] = "bit/s";
 
 void avtext_print_section_header(AVTextFormatContext *tctx, const void *data, int section_id)
 {
+    if (section_id < 0 || section_id >= tctx->nb_sections) {
+        av_log(tctx, AV_LOG_ERROR, "Invalid section_id for section_header: %d\n", section_id);
+        return;
+    }
+
     tctx->level++;
     av_assert0(tctx->level < SECTION_MAX_NB_LEVELS);
 
@@ -269,6 +276,11 @@ void avtext_print_section_header(AVTextFormatContext *tctx, const void *data, in
 
 void avtext_print_section_footer(AVTextFormatContext *tctx)
 {
+    if (tctx->level < 0 || tctx->level >= SECTION_MAX_NB_LEVELS) {
+        av_log(tctx, AV_LOG_ERROR, "Invalid level for section_footer: %d\n", tctx->level);
+        return;
+    }
+
     int section_id = tctx->section[tctx->level]->id;
     int parent_section_id = tctx->level ?
         tctx->section[tctx->level - 1]->id : SECTION_ID_NONE;
@@ -285,7 +297,11 @@ void avtext_print_section_footer(AVTextFormatContext *tctx)
 
 void avtext_print_integer(AVTextFormatContext *tctx, const char *key, int64_t val)
 {
-    const struct AVTextFormatSection *section = tctx->section[tctx->level];
+    const AVTextFormatSection *section;
+
+    av_assert0(key && tctx->level >= 0 && tctx->level < SECTION_MAX_NB_LEVELS);
+
+    section = tctx->section[tctx->level];
 
     if (section->show_all_entries || av_dict_get(section->entries_to_show, key, NULL, 0)) {
         tctx->formatter->print_integer(tctx, key, val);
@@ -354,17 +370,18 @@ struct unit_value {
     const char *unit;
 };
 
-static char *value_string(AVTextFormatContext *tctx, char *buf, int buf_size, struct unit_value uv)
+static char *value_string(const AVTextFormatContext *tctx, char *buf, int buf_size, struct unit_value uv)
 {
     double vald;
-    int64_t vali;
+    int64_t vali = 0;
     int show_float = 0;
 
     if (uv.unit == unit_second_str) {
         vald = uv.val.d;
         show_float = 1;
     } else {
-        vald = vali = uv.val.i;
+        vald = (double)uv.val.i;
+        vali = uv.val.i;
     }
 
     if (uv.unit == unit_second_str && tctx->use_value_sexagesimal_format) {
@@ -383,17 +400,17 @@ static char *value_string(AVTextFormatContext *tctx, char *buf, int buf_size, st
             int64_t index;
 
             if (uv.unit == unit_byte_str && tctx->use_byte_value_binary_prefix) {
-                index = (int64_t) (log2(vald)) / 10;
-                index = av_clip(index, 0, FF_ARRAY_ELEMS(si_prefixes) - 1);
+                index = (int64_t)(log2(vald) / 10);
+                index = av_clip64(index, 0, FF_ARRAY_ELEMS(si_prefixes) - 1);
                 vald /= si_prefixes[index].bin_val;
                 prefix_string = si_prefixes[index].bin_str;
             } else {
-                index = (int64_t) (log10(vald)) / 3;
-                index = av_clip(index, 0, FF_ARRAY_ELEMS(si_prefixes) - 1);
+                index = (int64_t)(log10(vald) / 3);
+                index = av_clip64(index, 0, FF_ARRAY_ELEMS(si_prefixes) - 1);
                 vald /= si_prefixes[index].dec_val;
                 prefix_string = si_prefixes[index].dec_str;
             }
-            vali = vald;
+            vali = (int64_t)vald;
         }
 
         if (show_float || (tctx->use_value_prefix && vald != (int64_t)vald))
@@ -421,8 +438,12 @@ void avtext_print_unit_int(AVTextFormatContext *tctx, const char *key, int value
 
 int avtext_print_string(AVTextFormatContext *tctx, const char *key, const char *val, int flags)
 {
-    const struct AVTextFormatSection *section = tctx->section[tctx->level];
+    const AVTextFormatSection *section;
     int ret = 0;
+
+    av_assert0(key && val && tctx->level >= 0 && tctx->level < SECTION_MAX_NB_LEVELS);
+
+    section = tctx->section[tctx->level];
 
     if (tctx->show_optional_fields == SHOW_OPTIONAL_FIELDS_NEVER ||
         (tctx->show_optional_fields == SHOW_OPTIONAL_FIELDS_AUTO
@@ -465,12 +486,11 @@ void avtext_print_rational(AVTextFormatContext *tctx, const char *key, AVRationa
 void avtext_print_time(AVTextFormatContext *tctx, const char *key,
                        int64_t ts, const AVRational *time_base, int is_duration)
 {
-    char buf[128];
-
     if ((!is_duration && ts == AV_NOPTS_VALUE) || (is_duration && ts == 0)) {
         avtext_print_string(tctx, key, "N/A", AV_TEXTFORMAT_PRINT_STRING_OPTIONAL);
     } else {
-        double d = ts * av_q2d(*time_base);
+        char buf[128];
+        double d = av_q2d(*time_base) * ts;
         struct unit_value uv;
         uv.val.d = d;
         uv.unit = unit_second_str;
@@ -491,7 +511,8 @@ void avtext_print_data(AVTextFormatContext *tctx, const char *name,
                        const uint8_t *data, int size)
 {
     AVBPrint bp;
-    int offset = 0, l, i;
+    unsigned offset = 0;
+    int l, i;
 
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
     av_bprintf(&bp, "\n");
@@ -518,25 +539,29 @@ void avtext_print_data(AVTextFormatContext *tctx, const char *name,
 void avtext_print_data_hash(AVTextFormatContext *tctx, const char *name,
                             const uint8_t *data, int size)
 {
-    char *p, buf[AV_HASH_MAX_SIZE * 2 + 64] = { 0 };
+    char buf[AV_HASH_MAX_SIZE * 2 + 64] = { 0 };
+    int len;
 
     if (!tctx->hash)
         return;
 
     av_hash_init(tctx->hash);
     av_hash_update(tctx->hash, data, size);
-    snprintf(buf, sizeof(buf), "%s:", av_hash_get_name(tctx->hash));
-    p = buf + strlen(buf);
-    av_hash_final_hex(tctx->hash, p, buf + sizeof(buf) - p);
+    len = snprintf(buf, sizeof(buf), "%s:", av_hash_get_name(tctx->hash));
+    av_hash_final_hex(tctx->hash, (uint8_t *)&buf[len], (int)sizeof(buf) - len);
     avtext_print_string(tctx, name, buf, 0);
 }
 
 void avtext_print_integers(AVTextFormatContext *tctx, const char *name,
-                                  uint8_t *data, int size, const char *format,
-                                  int columns, int bytes, int offset_add)
+                           uint8_t *data, int size, const char *format,
+                           int columns, int bytes, int offset_add)
 {
     AVBPrint bp;
-    int offset = 0, l, i;
+    unsigned offset = 0;
+    int l, i;
+
+    if (!name || !data || !format || columns <= 0 || bytes <= 0)
+        return;
 
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
     av_bprintf(&bp, "\n");
@@ -602,12 +627,15 @@ int avtextwriter_context_open(AVTextWriterContext **pwctx, const AVTextWriter *w
     AVTextWriterContext *wctx;
     int ret = 0;
 
-    if (!(wctx = av_mallocz(sizeof(AVTextWriterContext)))) {
+    if (!pwctx || !writer)
+        return AVERROR(EINVAL);
+
+    if (!((wctx = av_mallocz(sizeof(AVTextWriterContext))))) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
 
-    if (!(wctx->priv = av_mallocz(writer->priv_size))) {
+    if (writer->priv_size && !((wctx->priv = av_mallocz(writer->priv_size)))) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
