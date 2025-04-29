@@ -58,7 +58,6 @@
 #include "mpegvideodec.h"
 #include "profiles.h"
 #include "startcode.h"
-#include "thread.h"
 
 #define A53_MAX_CC_COUNT 2000
 
@@ -786,28 +785,6 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-#if HAVE_THREADS
-static int mpeg_decode_update_thread_context(AVCodecContext *avctx,
-                                             const AVCodecContext *avctx_from)
-{
-    Mpeg1Context *ctx = avctx->priv_data, *ctx_from = avctx_from->priv_data;
-    MpegEncContext *s = &ctx->mpeg_enc_ctx, *s1 = &ctx_from->mpeg_enc_ctx;
-    int err;
-
-    if (avctx == avctx_from || !s1->context_initialized)
-        return 0;
-
-    err = ff_mpeg_update_thread_context(avctx, avctx_from);
-    if (err)
-        return err;
-
-    if (!s->context_initialized)
-        memcpy(s + 1, s1 + 1, sizeof(Mpeg1Context) - sizeof(MpegEncContext));
-
-    return 0;
-}
-#endif
-
 static const enum AVPixelFormat mpeg1_hwaccel_pixfmt_list_420[] = {
 #if CONFIG_MPEG1_NVDEC_HWACCEL
     AV_PIX_FMT_CUDA,
@@ -1321,9 +1298,6 @@ static int mpeg_field_start(Mpeg1Context *s1, const uint8_t *buf, int buf_size)
                 *sd->data = s1->afd;
             s1->has_afd = 0;
         }
-
-        if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_FRAME))
-            ff_thread_finish_setup(avctx);
     } else { // second field
         second_field = 1;
         if (!s->cur_pic.ptr) {
@@ -1528,7 +1502,6 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
             int left;
 
             ff_mpeg_draw_horiz_band(s, mb_size * (s->mb_y >> field_pic), mb_size);
-            ff_mpv_report_decode_progress(s);
 
             s->mb_x  = 0;
             s->mb_y += 1 << field_pic;
@@ -2667,7 +2640,6 @@ const FFCodec ff_mpeg1video_decoder = {
     .caps_internal         = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush                 = flush,
     .p.max_lowres          = 3,
-    UPDATE_THREAD_CONTEXT(mpeg_decode_update_thread_context),
     .hw_configs            = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_MPEG1_NVDEC_HWACCEL
                                HWACCEL_NVDEC(mpeg1),
