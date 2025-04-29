@@ -138,7 +138,7 @@ void avtext_print_section_header(AVTextFormatContext *tctx, const void *data, in
 
 void avtext_print_section_footer(AVTextFormatContext *tctx);
 
-void avtext_print_integer(AVTextFormatContext *tctx, const char *key, int64_t val);
+void avtext_print_integer(AVTextFormatContext *tctx, const char *key, int64_t val, int flags);
 
 int avtext_print_string(AVTextFormatContext *tctx, const char *key, const char *val, int flags);
 

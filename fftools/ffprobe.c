@@ -420,7 +420,7 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
     avtext_print_string(tfc, k, pbuf.str, 0);     \
 } while (0)
 
-#define print_int(k, v)         avtext_print_integer(tfc, k, v)
+#define print_int(k, v)         avtext_print_integer(tfc, k, v, 0)
 #define print_q(k, v, s)        avtext_print_rational(tfc, k, v, s)
 #define print_str(k, v)         avtext_print_string(tfc, k, v, 0)
 #define print_str_opt(k, v)     avtext_print_string(tfc, k, v, AV_TEXTFORMAT_PRINT_STRING_OPTIONAL)

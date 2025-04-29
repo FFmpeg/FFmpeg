@@ -289,9 +289,19 @@ void avtext_print_section_footer(AVTextFormatContext *tctx)
     tctx->level--;
 }
 
-void avtext_print_integer(AVTextFormatContext *tctx, const char *key, int64_t val)
+void avtext_print_integer(AVTextFormatContext *tctx, const char *key, int64_t val, int flags)
 {
     const AVTextFormatSection *section;
+
+    av_assert0(tctx);
+
+    if (tctx->show_optional_fields == SHOW_OPTIONAL_FIELDS_NEVER)
+        return;
+
+    if (tctx->show_optional_fields == SHOW_OPTIONAL_FIELDS_AUTO
+        && (flags & AV_TEXTFORMAT_PRINT_STRING_OPTIONAL)
+        && !(tctx->formatter->flags & AV_TEXTFORMAT_FLAG_SUPPORTS_OPTIONAL_FIELDS))
+        return;
 
     av_assert0(key && tctx->level >= 0 && tctx->level < SECTION_MAX_NB_LEVELS);
 
@@ -444,10 +454,12 @@ int avtext_print_string(AVTextFormatContext *tctx, const char *key, const char *
 
     section = tctx->section[tctx->level];
 
-    if (tctx->show_optional_fields == SHOW_OPTIONAL_FIELDS_NEVER ||
-        (tctx->show_optional_fields == SHOW_OPTIONAL_FIELDS_AUTO
-            && (flags & AV_TEXTFORMAT_PRINT_STRING_OPTIONAL)
-            && !(tctx->formatter->flags & AV_TEXTFORMAT_FLAG_SUPPORTS_OPTIONAL_FIELDS)))
+    if (tctx->show_optional_fields == SHOW_OPTIONAL_FIELDS_NEVER)
+        return 0;
+
+    if (tctx->show_optional_fields == SHOW_OPTIONAL_FIELDS_AUTO
+        && (flags & AV_TEXTFORMAT_PRINT_STRING_OPTIONAL)
+        && !(tctx->formatter->flags & AV_TEXTFORMAT_FLAG_SUPPORTS_OPTIONAL_FIELDS))
         return 0;
 
     if (section->show_all_entries || av_dict_get(section->entries_to_show, key, NULL, 0)) {
@@ -503,7 +515,7 @@ void avtext_print_ts(AVTextFormatContext *tctx, const char *key, int64_t ts, int
     if ((!is_duration && ts == AV_NOPTS_VALUE) || (is_duration && ts == 0))
         avtext_print_string(tctx, key, "N/A", AV_TEXTFORMAT_PRINT_STRING_OPTIONAL);
     else
-        avtext_print_integer(tctx, key, ts);
+        avtext_print_integer(tctx, key, ts, 0);
 }
 
 void avtext_print_data(AVTextFormatContext *tctx, const char *key,
