@@ -357,7 +357,7 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
         return 1;
     }
 
-    if ((ret = ff_cbs_read(ctx->cbc, pu, buf, buf_size)) < 0) {
+    if ((ret = ff_cbs_read(ctx->cbc, pu, NULL, buf, buf_size)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to parse picture unit.\n");
         goto end;
     }

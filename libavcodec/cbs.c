@@ -261,7 +261,7 @@ static int cbs_fill_fragment_data(CodedBitstreamFragment *frag,
 
 static int cbs_read_data(CodedBitstreamContext *ctx,
                          CodedBitstreamFragment *frag,
-                         AVBufferRef *buf,
+                         const AVBufferRef *buf,
                          const uint8_t *data, size_t size,
                          int header)
 {
@@ -329,9 +329,10 @@ int CBS_FUNC(read_packet_side_data)(CodedBitstreamContext *ctx,
 
 int CBS_FUNC(read)(CodedBitstreamContext *ctx,
                 CodedBitstreamFragment *frag,
+                const AVBufferRef *buf,
                 const uint8_t *data, size_t size)
 {
-    return cbs_read_data(ctx, frag, NULL,
+    return cbs_read_data(ctx, frag, buf,
                          data, size, 0);
 }
 #endif

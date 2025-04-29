@@ -48,7 +48,7 @@ static int parse(AVCodecParserContext *s,
 
     p->cbc->log_ctx = avctx;
 
-    ret = ff_cbs_read(p->cbc, au, buf, buf_size);
+    ret = ff_cbs_read(p->cbc, au, NULL, buf, buf_size);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to parse access unit.\n");
         goto end;

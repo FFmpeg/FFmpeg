@@ -379,6 +379,7 @@ int CBS_FUNC(read_packet)(CodedBitstreamContext *ctx,
  */
 int CBS_FUNC(read)(CodedBitstreamContext *ctx,
                 CodedBitstreamFragment *frag,
+                const AVBufferRef *buf,
                 const uint8_t *data, size_t size);
 
 

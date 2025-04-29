@@ -1061,7 +1061,7 @@ static int parse_feedback_units(AVCodecContext *avctx,
     if (err < 0)
         return err;
 
-    err = ff_cbs_read(cbs, &au, data, size);
+    err = ff_cbs_read(cbs, &au, NULL, data, size);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Unable to parse feedback units, bad drivers: %s\n",
                av_err2str(err));

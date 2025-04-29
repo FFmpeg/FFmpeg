@@ -82,7 +82,7 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
         ff_cbs_fragment_reset(td);
     }
 
-    ret = ff_cbs_read(s->cbc, td, data, size);
+    ret = ff_cbs_read(s->cbc, td, NULL, data, size);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to parse temporal unit.\n");
         goto end;
