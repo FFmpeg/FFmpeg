@@ -139,13 +139,6 @@ stream.
 All the container format information is printed within a section with
 name "FORMAT".
 
-@item -show_format_entry @var{name}
-Like @option{-show_format}, but only prints the specified entry of the
-container format information, rather than all. This option may be given more
-than once, then all specified entries will be shown.
-
-This option is deprecated, use @code{show_entries} instead.
-
 @item -show_entries @var{section_entries}
 Set list of entries to show.
 
