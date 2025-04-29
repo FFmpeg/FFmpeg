@@ -1493,7 +1493,8 @@ int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt)
         pix_fmt == AV_PIX_FMT_GBRPF32 || pix_fmt == AV_PIX_FMT_GBRAPF32 ||
         pix_fmt == AV_PIX_FMT_X2RGB10 || pix_fmt == AV_PIX_FMT_X2BGR10 ||
         pix_fmt == AV_PIX_FMT_RGBAF32 || pix_fmt == AV_PIX_FMT_RGBF32 ||
-        pix_fmt == AV_PIX_FMT_RGBA128 || pix_fmt == AV_PIX_FMT_RGB96)
+        pix_fmt == AV_PIX_FMT_RGBA128 || pix_fmt == AV_PIX_FMT_RGB96 ||
+        pix_fmt == AV_PIX_FMT_GBRP)
         return 1;
     return 0;
 }
@@ -1501,8 +1502,8 @@ int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt)
 void ff_vk_set_perm(enum AVPixelFormat pix_fmt, int lut[4], int inv)
 {
     switch (pix_fmt) {
-    case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GBRP:
+    case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GBRAP10:
     case AV_PIX_FMT_GBRAP12:
     case AV_PIX_FMT_GBRAP14:
@@ -1605,6 +1606,7 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
         };
         return rep_tab[rep_fmt];
     }
+    case AV_PIX_FMT_GBRP:
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_YUV420P:
