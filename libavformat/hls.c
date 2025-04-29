@@ -222,6 +222,7 @@ typedef struct HLSContext {
     AVDictionary *avio_opts;
     AVDictionary *seg_format_opts;
     char *allowed_extensions;
+    char *allowed_segment_extensions;
     int extension_picky;
     int max_reload;
     int http_persistent;
@@ -735,12 +736,12 @@ static int test_segment(AVFormatContext *s, const AVInputFormat *in_fmt, struct 
     if (!c->extension_picky)
         return 0;
 
-    if (strcmp(c->allowed_extensions, "ALL"))
-        matchA =      av_match_ext    (seg->url, c->allowed_extensions)
-                 + 2*(ff_match_url_ext(seg->url, c->allowed_extensions) > 0);
+    if (strcmp(c->allowed_segment_extensions, "ALL"))
+        matchA =      av_match_ext    (seg->url, c->allowed_segment_extensions)
+                 + 2*(ff_match_url_ext(seg->url, c->allowed_segment_extensions) > 0);
 
     if (!matchA) {
-        av_log(s, AV_LOG_ERROR, "URL %s is not in allowed_extensions\n", seg->url);
+        av_log(s, AV_LOG_ERROR, "URL %s is not in allowed_segment_extensions\n", seg->url);
         return AVERROR_INVALIDDATA;
     }
 
@@ -2618,6 +2619,14 @@ static const AVOption hls_options[] = {
         OFFSET(prefer_x_start), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS},
     {"allowed_extensions", "List of file extensions that hls is allowed to access",
         OFFSET(allowed_extensions), AV_OPT_TYPE_STRING,
+        {.str = "3gp,aac,avi,ac3,eac3,flac,mkv,m3u8,m4a,m4s,m4v,mpg,mov,mp2,mp3,mp4,mpeg,mpegts,ogg,ogv,oga,ts,vob,vtt,wav,webvtt"
+            ",cmfv,cmfa" // Ticket11526 www.nicovideo.jp
+            ",ec3"       // part of Ticket11435 (Elisa Viihde (Finnish online recording service))
+            ",fmp4"      // https://github.com/yt-dlp/yt-dlp/issues/12700
+        },
+        INT_MIN, INT_MAX, FLAGS},
+    {"allowed_segment_extensions", "List of file extensions that hls is allowed to access",
+        OFFSET(allowed_segment_extensions), AV_OPT_TYPE_STRING,
         {.str = "3gp,aac,avi,ac3,eac3,flac,mkv,m3u8,m4a,m4s,m4v,mpg,mov,mp2,mp3,mp4,mpeg,mpegts,ogg,ogv,oga,ts,vob,vtt,wav,webvtt"
             ",cmfv,cmfa" // Ticket11526 www.nicovideo.jp
             ",ec3"       // part of Ticket11435 (Elisa Viihde (Finnish online recording service))
