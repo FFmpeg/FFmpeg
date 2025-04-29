@@ -1586,7 +1586,8 @@ static int old_codec48(SANMVideoContext *ctx, int width, int height)
             return AVERROR_INVALIDDATA;
         codec47_comp1(ctx, dst, width, height, width);
         break;
-
+    case 6:      // in some videos of "Star Wars - Making Magic", ignored.
+        break;
     default:
         avpriv_report_missing_feature(ctx->avctx,
                                       "Subcodec 48 compression %d", compr);
