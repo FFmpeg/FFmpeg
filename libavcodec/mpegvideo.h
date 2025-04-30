@@ -80,10 +80,6 @@ typedef struct MpegEncContext {
     uint8_t permutated_intra_v_scantable[64];
 
     struct AVCodecContext *avctx;
-    union {
-        const struct MpegEncContext *parent;
-        const struct MPVMainEncContext *encparent;
-    };
     /* The following pointer is intended for codecs sharing code
      * between decoder and encoder and in need of a common context to do so. */
     void *private_ctx;

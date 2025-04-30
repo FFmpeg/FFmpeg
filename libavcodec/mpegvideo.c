@@ -142,8 +142,6 @@ av_cold int ff_mpv_init_duplicate_contexts(MpegEncContext *s)
     int nb_slices = s->slice_context_count, ret;
     size_t slice_size = s->slice_ctx_size ? s->slice_ctx_size : sizeof(*s);
 
-    s->parent = s;
-
     /* We initialize the copies before the original so that
      * fields allocated in init_duplicate_context are NULL after
      * copying. This prevents double-frees upon allocation error. */

@@ -69,6 +69,8 @@ typedef struct MPVEncContext {
      */
     AVFrame *new_pic;
 
+    struct MPVMainEncContext *parent;
+
     FDCTDSPContext fdsp;
     MpegvideoEncDSPContext mpvencdsp;
     PixblockDSPContext pdsp;
@@ -254,7 +256,7 @@ static inline const MPVMainEncContext *slice_to_mainenc(const MPVEncContext *s)
                !(s->c.avctx->codec->capabilities & AV_CODEC_CAP_SLICE_THREADS));
     return (const MPVMainEncContext*)s;
 #else
-    return s->c.encparent;
+    return s->parent;
 #endif
 }
 

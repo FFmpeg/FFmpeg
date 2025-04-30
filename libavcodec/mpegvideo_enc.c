@@ -1024,6 +1024,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     /* ff_mpv_common_init() will copy (memdup) the contents of the main slice
      * to the slice contexts, so we initialize various fields of it
      * before calling ff_mpv_common_init(). */
+    s->parent = m;
     ff_mpv_idct_init(&s->c);
     init_unquantize(&s->c, avctx);
     ff_fdctdsp_init(&s->fdsp, avctx);
