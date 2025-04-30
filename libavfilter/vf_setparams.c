@@ -246,6 +246,7 @@ static av_cold int init_setrange(AVFilterContext *ctx)
     s->color_primaries = -1;
     s->color_trc       = -1;
     s->colorspace      = -1;
+    s->chroma_location = -1;
     return 0;
 }
 
@@ -282,6 +283,7 @@ static av_cold int init_setfield(AVFilterContext *ctx)
     s->color_primaries = -1;
     s->color_trc       = -1;
     s->colorspace      = -1;
+    s->chroma_location = -1;
     return 0;
 }
 
