@@ -58,7 +58,7 @@ static void apv_decode_transquant_c(void *output,
 
         for (int y = 0; y < 8; y++) {
             for (int x = 0; x < 8; x++) {
-                int coeff = (((input[y][x] * qmatrix[y][x]) << qp_shift) +
+                int coeff = (input[y][x] * qmatrix[y][x] * (1 << qp_shift) +
                              (1 << (bd_shift - 1))) >> bd_shift;
 
                 scaled_coeff[y][x] =
