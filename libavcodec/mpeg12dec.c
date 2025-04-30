@@ -80,7 +80,7 @@ typedef struct Mpeg1Context {
     int has_afd;
     int slice_count;
     unsigned aspect_ratio_info;
-    int save_width, save_height, save_progressive_seq;
+    int save_width, save_height, save_progressive_seq, save_chroma_format;
     AVRational frame_rate_ext;  /* MPEG-2 specific framerate modificator */
     unsigned frame_rate_index;
     int sync;                   /* Did we reach a sync point like a GOP/SEQ/KEYFrame? */
@@ -917,6 +917,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         avctx->coded_height      != s->height               ||
         s1->save_width           != s->width                ||
         s1->save_height          != s->height               ||
+        s1->save_chroma_format   != s->chroma_format        ||
         (s1->save_progressive_seq != s->progressive_sequence && FFALIGN(s->height, 16) != FFALIGN(s->height, 32)) ||
         0) {
         if (s->context_initialized)
@@ -936,6 +937,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         s1->save_width           = s->width;
         s1->save_height          = s->height;
         s1->save_progressive_seq = s->progressive_sequence;
+        s1->save_chroma_format   = s->chroma_format;
 
         /* low_delay may be forced, in this case we will have B-frames
          * that behave like P-frames. */
