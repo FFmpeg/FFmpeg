@@ -365,7 +365,6 @@ typedef struct VC1Context{
     int cur_field_type;     ///< 0: top, 1: bottom
     int ref_field_type[2];  ///< forward and backward reference field type (top or bottom)
     int blocks_off, mb_off;
-    int qs_last;            ///< if qpel has been used in the previous (tr.) picture
     int bmvtype;
     int frfd, brfd;         ///< reference frame distance (forward or backward)
     int first_pic_header_flag;

@@ -724,7 +724,6 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
             INIT_LUT(v->lumscale, v->lumshift, v->last_luty[0], v->last_lutuv[0], 1);
             INIT_LUT(v->lumscale, v->lumshift, v->last_luty[1], v->last_lutuv[1], 1);
         }
-        v->qs_last = v->s.quarter_sample;
         if (v->mv_mode == MV_PMODE_INTENSITY_COMP) {
             v->s.quarter_sample = (v->mv_mode2 != MV_PMODE_1MV_HPEL &&
                                    v->mv_mode2 != MV_PMODE_1MV_HPEL_BILIN);
@@ -781,7 +780,6 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         v->tt_index = (v->pq > 4) + (v->pq > 12);
 
         v->mv_mode          = get_bits1(gb) ? MV_PMODE_1MV : MV_PMODE_1MV_HPEL_BILIN;
-        v->qs_last          = v->s.quarter_sample;
         v->s.quarter_sample = (v->mv_mode == MV_PMODE_1MV);
         v->s.mspel          = v->s.quarter_sample;
 
@@ -1119,7 +1117,6 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
                 }
                 v->last_use_ic = 1;
             }
-            v->qs_last = v->s.quarter_sample;
             if (v->mv_mode == MV_PMODE_INTENSITY_COMP) {
                 v->s.quarter_sample = (v->mv_mode2 != MV_PMODE_1MV_HPEL &&
                                        v->mv_mode2 != MV_PMODE_1MV_HPEL_BILIN);
@@ -1154,7 +1151,6 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             v->cbptab           = get_bits(gb, 2);
             v->cbpcy_vlc        = ff_vc1_cbpcy_p_vlc[v->cbptab];
         } else if (v->fcm == ILACE_FRAME) { // frame interlaced
-            v->qs_last          = v->s.quarter_sample;
             v->s.quarter_sample = 1;
             v->s.mspel          = 1;
         } else {    // field interlaced
@@ -1218,7 +1214,6 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             mvmode = get_unary(gb, 1, 3);
             lowquant = (v->pq > 12) ? 0 : 1;
             v->mv_mode          = ff_vc1_mv_pmode_table2[lowquant][mvmode];
-            v->qs_last          = v->s.quarter_sample;
             v->s.quarter_sample = (v->mv_mode == MV_PMODE_1MV || v->mv_mode == MV_PMODE_MIXED_MV);
             v->s.mspel          = (v->mv_mode != MV_PMODE_1MV_HPEL_BILIN);
             status = bitplane_decoding(v->forward_mb_plane, &v->fmb_is_raw, v);
@@ -1248,7 +1243,6 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             v->intcomp          = 0;
             v->mv_mode          = MV_PMODE_1MV;
             v->fourmvswitch     = 0;
-            v->qs_last          = v->s.quarter_sample;
             v->s.quarter_sample = 1;
             v->s.mspel          = 1;
             status              = bitplane_decoding(v->direct_mb_plane, &v->dmb_is_raw, v);
@@ -1274,7 +1268,6 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             v->fourmvbp_vlc = ff_vc1_4mv_block_pattern_vlc[v->fourmvbptab];
         } else {
             v->mv_mode          = get_bits1(gb) ? MV_PMODE_1MV : MV_PMODE_1MV_HPEL_BILIN;
-            v->qs_last          = v->s.quarter_sample;
             v->s.quarter_sample = (v->mv_mode == MV_PMODE_1MV);
             v->s.mspel          = v->s.quarter_sample;
             status              = bitplane_decoding(v->direct_mb_plane, &v->dmb_is_raw, v);
