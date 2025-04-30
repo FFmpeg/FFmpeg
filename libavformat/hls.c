@@ -1336,6 +1336,37 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
         pls->is_id3_timestamped = (pls->id3_mpegts_timestamp != AV_NOPTS_VALUE);
 }
 
+static int read_key(HLSContext *c, struct playlist *pls, struct segment *seg)
+{
+    AVIOContext *pb = NULL;
+
+    int ret = open_url(pls->parent, &pb, seg->key, &c->avio_opts, NULL, NULL);
+    if (ret < 0) {
+        av_log(pls->parent, AV_LOG_ERROR, "Unable to open key file %s, %s\n",
+               seg->key, av_err2str(ret));
+        return ret;
+    }
+
+    ret = avio_read(pb, pls->key, sizeof(pls->key));
+    ff_format_io_close(pls->parent, &pb);
+    if (ret != sizeof(pls->key)) {
+        if (ret < 0) {
+            av_log(pls->parent, AV_LOG_ERROR, "Unable to read key file %s, %s\n",
+                   seg->key, av_err2str(ret));
+        } else {
+            av_log(pls->parent, AV_LOG_ERROR, "Unable to read key file %s, read bytes %d != %zu\n",
+                   seg->key, ret, sizeof(pls->key));
+            ret = AVERROR_INVALIDDATA;
+        }
+
+        return ret;
+    }
+
+    av_strlcpy(pls->key_url, seg->key, sizeof(pls->key_url));
+
+    return 0;
+}
+
 static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, AVIOContext **in)
 {
     AVDictionary *opts = NULL;
@@ -1357,19 +1388,9 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
 
     if (seg->key_type == KEY_AES_128 || seg->key_type == KEY_SAMPLE_AES) {
         if (strcmp(seg->key, pls->key_url)) {
-            AVIOContext *pb = NULL;
-            if (open_url(pls->parent, &pb, seg->key, &c->avio_opts, NULL, NULL) == 0) {
-                ret = avio_read(pb, pls->key, sizeof(pls->key));
-                if (ret != sizeof(pls->key)) {
-                    av_log(pls->parent, AV_LOG_ERROR, "Unable to read key file %s\n",
-                           seg->key);
-                }
-                ff_format_io_close(pls->parent, &pb);
-            } else {
-                av_log(pls->parent, AV_LOG_ERROR, "Unable to open key file %s\n",
-                       seg->key);
-            }
-            av_strlcpy(pls->key_url, seg->key, sizeof(pls->key_url));
+            ret = read_key(c, pls, seg);
+            if (ret < 0)
+                goto cleanup;
         }
     }
 
