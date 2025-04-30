@@ -67,6 +67,7 @@ static int dump_stream_meta(const char *input_filename) {
     printf("Stream ID: %d, codec name: %s, metadata: %s\n", stream_idx,
            avcodec_get_name(origin_par->codec_id),
            strlen(metadata) ? metadata : "N/A");
+    av_free(metadata);
 
     codec = avcodec_find_decoder(origin_par->codec_id);
     if (!codec) {
@@ -128,6 +129,7 @@ static int dump_stream_meta(const char *input_filename) {
 
             printf("Stream ID: %d, new metadata: %s\n", pkt->stream_index,
                    strlen(metadata) ? metadata : "N/A");
+            av_free(metadata);
 
             st->event_flags &= ~AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
         }
@@ -158,6 +160,7 @@ static int dump_stream_meta(const char *input_filename) {
             printf("Stream ID: %d, frame PTS: %s, metadata: %s\n",
                    pkt->stream_index, av_ts2str(fr->pts),
                    strlen(metadata) ? metadata : "N/A");
+            av_free(metadata);
         } while (1);
     }
 
