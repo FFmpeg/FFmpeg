@@ -644,11 +644,6 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (ret < 0)
         return ret;
 
-    if (avctx->pix_fmt != AV_PIX_FMT_YUV410P) {
-        av_log(avctx, AV_LOG_ERROR, "unsupported pixel format\n");
-        return -1;
-    }
-
     if (!s->current_picture->data[0]) {
         if ((ret = ff_encode_alloc_frame(avctx, s->current_picture)) < 0) {
             return ret;
