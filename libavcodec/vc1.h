@@ -314,10 +314,6 @@ typedef struct VC1Context{
     uint8_t numpanscanwin;
     uint8_t tfcntr;
     uint8_t rptfrm, tff, rff;
-    uint16_t topleftx;
-    uint16_t toplefty;
-    uint16_t bottomrightx;
-    uint16_t bottomrighty;
     uint8_t uvsamp;
     uint8_t postproc;
     int hrd_num_leaky_buckets;
