@@ -1344,6 +1344,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
     // Note intra & rvlc should be optimized away if this is inlined
 
     if (intra) {
+        // FIXME add short header support
         if (use_intra_dc_vlc) {
             /* DC coef */
             if (s->partitioned_frame) {
@@ -3407,10 +3408,6 @@ end:
 
     s->picture_number++;  // better than pic number==0 always ;)
 
-    // FIXME add short header support
-    s->y_dc_scale_table = ff_mpeg4_y_dc_scale_table;
-    s->c_dc_scale_table = ff_mpeg4_c_dc_scale_table;
-
     if (s->workaround_bugs & FF_BUG_EDGE) {
         s->h_edge_pos = s->width;
         s->v_edge_pos = s->height;
@@ -3883,6 +3880,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     // dct_unquantize_inter is only used with MPEG-2 quantizers,
     // so we can already set dct_unquantize_inter here once and for all.
     s->dct_unquantize_inter = unquant_dsp_ctx.dct_unquantize_mpeg2_inter;
+
+    s->y_dc_scale_table = ff_mpeg4_y_dc_scale_table;
+    s->c_dc_scale_table = ff_mpeg4_c_dc_scale_table;
 
     s->h263_pred = 1;
     s->low_delay = 0; /* default, might be overridden in the vol header during header parsing */
