@@ -594,6 +594,15 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     if (!s->current_picture || !s->last_picture) {
         return AVERROR(ENOMEM);
     }
+    ret = ff_encode_alloc_frame(avctx, s->current_picture);
+    if (ret < 0)
+        return ret;
+    ret = ff_encode_alloc_frame(avctx, s->last_picture);
+    if (ret < 0)
+        return ret;
+    s->scratchbuf = av_malloc_array(s->current_picture->linesize[0], 16 * 3);
+    if (!s->scratchbuf)
+        return AVERROR(ENOMEM);
 
     s->frame_width  = avctx->width;
     s->frame_height = avctx->height;
@@ -643,22 +652,6 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                           MAX_MB_BYTES * 3 + FF_INPUT_BUFFER_MIN_SIZE);
     if (ret < 0)
         return ret;
-
-    if (!s->current_picture->data[0]) {
-        if ((ret = ff_encode_alloc_frame(avctx, s->current_picture)) < 0) {
-            return ret;
-        }
-    }
-    if (!s->last_picture->data[0]) {
-        ret = ff_encode_alloc_frame(avctx, s->last_picture);
-        if (ret < 0)
-            return ret;
-    }
-    if (!s->scratchbuf) {
-        s->scratchbuf = av_malloc_array(s->current_picture->linesize[0], 16 * 3);
-        if (!s->scratchbuf)
-            return AVERROR(ENOMEM);
-    }
 
     FFSWAP(AVFrame*, s->current_picture, s->last_picture);
 
