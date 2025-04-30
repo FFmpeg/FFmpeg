@@ -114,11 +114,11 @@ int main(int argc, char **argv) {
         "be,l5",
     };
 
-    for (int w=8; w< 352; w=w*3-1) {
-        for (int h=8; h< 352; h=h*5-7) {
+    for (int w=16; w< 352; w=w*3-16) {
+        for (int h=16; h< 352; h=h*5-16) {
             for (int b=0; b<6; b++) {
                 for (int m=0; m<17; m = 2*m+1) {
-                    int64_t ret = test(352, 288, teststrings[b], m, PP_FORMAT_420, 0, 11);
+                    int64_t ret = test(w, h, teststrings[b], m, PP_FORMAT_420, 0, 11);
                     printf("striptest %dx%d T:%s m:%d result %"PRIX64"\n", w, h, teststrings[b], m, ret);
                 }
             }
