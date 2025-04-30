@@ -80,7 +80,6 @@ typedef struct Mpeg1Context {
     int has_afd;
     int slice_count;
     unsigned aspect_ratio_info;
-    AVRational save_aspect;
     int save_width, save_height, save_progressive_seq;
     AVRational frame_rate_ext;  /* MPEG-2 specific framerate modificator */
     unsigned frame_rate_index;
@@ -918,7 +917,6 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         avctx->coded_height      != s->height               ||
         s1->save_width           != s->width                ||
         s1->save_height          != s->height               ||
-        av_cmp_q(s1->save_aspect, s->avctx->sample_aspect_ratio) ||
         (s1->save_progressive_seq != s->progressive_sequence && FFALIGN(s->height, 16) != FFALIGN(s->height, 32)) ||
         0) {
         if (s->context_initialized)
@@ -935,7 +933,6 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
                    (s1->bit_rate != 0x3FFFF*400 || s1->vbv_delay != 0xFFFF)) {
             avctx->bit_rate = s1->bit_rate;
         }
-        s1->save_aspect          = s->avctx->sample_aspect_ratio;
         s1->save_width           = s->width;
         s1->save_height          = s->height;
         s1->save_progressive_seq = s->progressive_sequence;
