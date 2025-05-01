@@ -3265,6 +3265,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
     if (get_bits1(gb) != 1) {
         if (s->avctx->debug & FF_DEBUG_PICT_INFO)
             av_log(s->avctx, AV_LOG_ERROR, "vop not coded\n");
+        s->skipped_last_frame = 1;
         return FRAME_SKIPPED;
     }
     if (ctx->new_pred)
@@ -3690,6 +3691,8 @@ end:
 int ff_mpeg4_decode_picture_header(MpegEncContext *s)
 {
     Mpeg4DecContext *const ctx = (Mpeg4DecContext*)s;
+
+    s->skipped_last_frame = 0;
 
     if (ctx->bitstream_buffer) {
         int buf_size = get_bits_left(&s->gb) / 8U;

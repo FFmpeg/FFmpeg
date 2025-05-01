@@ -463,7 +463,6 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 #endif
     } else if (CONFIG_MPEG4_DECODER && avctx->codec_id == AV_CODEC_ID_MPEG4) {
         ret = ff_mpeg4_decode_picture_header(s);
-        s->skipped_last_frame = (ret == FRAME_SKIPPED);
     } else if (CONFIG_H263I_DECODER && s->codec_id == AV_CODEC_ID_H263I) {
         ret = ff_intel_h263_decode_picture_header(s);
     } else if (CONFIG_FLV_DECODER && s->h263_flv) {
