@@ -1129,15 +1129,40 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
 
             {
                 const int o = s->nb_channels == 4;
+                float *yb = td->block[0];
+                float *ub = td->block[1];
+                float *vb = td->block[2];
+                if (s->pixel_type == EXR_HALF) {
+                    uint16_t *bo = ((uint16_t *)td->uncompressed_data) +
+                        y * td->xsize * s->nb_channels + td->xsize * (o + 0) + x;
+                    uint16_t *go = ((uint16_t *)td->uncompressed_data) +
+                        y * td->xsize * s->nb_channels + td->xsize * (o + 1) + x;
+                    uint16_t *ro = ((uint16_t *)td->uncompressed_data) +
+                        y * td->xsize * s->nb_channels + td->xsize * (o + 2) + x;
+
+                    for (int yy = 0; yy < 8; yy++) {
+                        for (int xx = 0; xx < 8; xx++) {
+                            const int idx = xx + yy * 8;
+                            float b, g, r;
+
+                            convert(yb[idx], ub[idx], vb[idx], &b, &g, &r);
+
+                            bo[xx] = float2half(av_float2int(to_linear(b, 1.f)), &s->f2h_tables);
+                            go[xx] = float2half(av_float2int(to_linear(g, 1.f)), &s->f2h_tables);
+                            ro[xx] = float2half(av_float2int(to_linear(r, 1.f)), &s->f2h_tables);
+                        }
+
+                        bo += td->xsize * s->nb_channels;
+                        go += td->xsize * s->nb_channels;
+                        ro += td->xsize * s->nb_channels;
+                    }
+                } else {
                 float *bo = ((float *)td->uncompressed_data) +
                     y * td->xsize * s->nb_channels + td->xsize * (o + 0) + x;
                 float *go = ((float *)td->uncompressed_data) +
                     y * td->xsize * s->nb_channels + td->xsize * (o + 1) + x;
                 float *ro = ((float *)td->uncompressed_data) +
                     y * td->xsize * s->nb_channels + td->xsize * (o + 2) + x;
-                float *yb = td->block[0];
-                float *ub = td->block[1];
-                float *vb = td->block[2];
 
                 for (int yy = 0; yy < 8; yy++) {
                     for (int xx = 0; xx < 8; xx++) {
@@ -1154,6 +1179,7 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
                     go += td->xsize * s->nb_channels;
                     ro += td->xsize * s->nb_channels;
                 }
+                }
             }
         }
     }
@@ -1161,6 +1187,16 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
     if (s->nb_channels < 4)
         return 0;
 
+    if (s->pixel_type == EXR_HALF) {
+        for (int y = 0; y < td->ysize && td->rle_raw_data; y++) {
+            uint16_t *ao = ((uint16_t *)td->uncompressed_data) + y * td->xsize * s->nb_channels;
+            uint8_t *ai0 = td->rle_raw_data + y * td->xsize;
+            uint8_t *ai1 = td->rle_raw_data + y * td->xsize + rle_raw_size / 2;
+
+            for (int x = 0; x < td->xsize; x++)
+                ao[x] = ai0[x] | (ai1[x] << 8);
+        }
+    } else {
     for (int y = 0; y < td->ysize && td->rle_raw_data; y++) {
         uint32_t *ao = ((uint32_t *)td->uncompressed_data) + y * td->xsize * s->nb_channels;
         uint8_t *ai0 = td->rle_raw_data + y * td->xsize;
@@ -1171,6 +1207,7 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
 
             ao[x] = half2float(ha, &s->h2f_tables);
         }
+    }
     }
 
     return 0;
@@ -1387,9 +1424,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                 if (s->desc->flags & AV_PIX_FMT_FLAG_PLANAR || !c)
                     memset(ptr, 0, bxmin);
 
-                if (s->pixel_type == EXR_FLOAT ||
-                    s->compression == EXR_DWAA ||
-                    s->compression == EXR_DWAB) {
+                if (s->pixel_type == EXR_FLOAT) {
                     // 32-bit
 #if FF_API_EXR_GAMMA
                     if (trc_func && (!c || (c < 3 && s->desc->flags & AV_PIX_FMT_FLAG_PLANAR))) {
@@ -2039,16 +2074,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
     if ((ret = decode_header(s, picture)) < 0)
         return ret;
 
-    if ((s->compression == EXR_DWAA || s->compression == EXR_DWAB) &&
-        s->pixel_type == EXR_HALF) {
-        s->current_channel_offset *= 2;
-        for (int i = 0; i < 4; i++)
-            s->channel_offsets[i] *= 2;
-    }
-
     switch (s->pixel_type) {
     case EXR_HALF:
-        if (!(s->compression == EXR_DWAA || s->compression == EXR_DWAB)) {
             if (s->channel_offsets[3] >= 0) {
                 if (!s->is_luma) {
                     avctx->pix_fmt = AV_PIX_FMT_GBRAPF16;
@@ -2063,7 +2090,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
                 }
             }
             break;
-        }
     case EXR_FLOAT:
         if (s->channel_offsets[3] >= 0) {
             if (!s->is_luma) {
