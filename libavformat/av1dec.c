@@ -275,17 +275,18 @@ end:
     }
 
     ret = av_bsf_receive_packet(c->bsf, pkt);
-    if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
-        av_log(s, AV_LOG_ERROR, "av1_frame_merge filter failed to "
-                                "send output packet\n");
+    if (ret < 0) {
+        if (ret == AVERROR(EAGAIN))
+            goto retry;
+        if (ret != AVERROR_EOF)
+            av_log(s, AV_LOG_ERROR, "av1_frame_merge filter failed to "
+                                    "send output packet\n");
+        return ret;
+    }
 
-    if (ret == AVERROR(EAGAIN))
-        goto retry;
+    pkt->pos = pos;
 
-    if (!ret)
-        pkt->pos = pos;
-
-    return ret;
+    return 0;
 }
 
 const FFInputFormat ff_av1_demuxer = {
