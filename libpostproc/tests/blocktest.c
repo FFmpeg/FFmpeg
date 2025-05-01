@@ -97,11 +97,11 @@ end:
 
 int main(int argc, char **argv) {
 
-    for (int w=8; w< 352; w=w*3-1) {
-        for (int h=8; h< 352; h=h*5-7) {
+    for (int w=16; w< 352; w=w*3-16) {
+        for (int h=16; h< 352; h=h*5-16) {
             for (int b=1; b<17; b*=2) {
                 for (int q=0; q<17; q = 2*q+1) {
-                    int64_t ret = test(352, 288, b, PP_FORMAT_420, 0, q);
+                    int64_t ret = test(w, h, b, PP_FORMAT_420, 0, q);
                     printf("blocktest %dx%d b:%d q:%d result %"PRIX64"\n", w, h, b, q, ret);
                 }
             }
