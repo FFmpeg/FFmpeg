@@ -54,11 +54,11 @@ static int64_t chksum(AVFrame *f)
     return a;
 }
 
-static int64_t test(int width, int height, int blocksize, int flags, int pict_type, int quality) {
+static int64_t test(int width, int height, const char * filter_string, int blocksize, int flags, int pict_type, int quality) {
     AVFrame *in  = av_frame_alloc();
     AVFrame *out = av_frame_alloc();
     pp_context *context = pp_get_context(width, height, flags);
-    pp_mode *mode = pp_get_mode_by_name_and_quality("be,de", quality);
+    pp_mode *mode = pp_get_mode_by_name_and_quality(filter_string, quality);
     int64_t ret;
 #define  QP_STRIDE (352/16)
     int8_t qp[QP_STRIDE * 352/16];
@@ -101,13 +101,23 @@ end:
 }
 
 int main(int argc, char **argv) {
+    const char *teststrings[] = {
+        "be,de",
+        "be,h1,v1",
+        "be,ha,va",
+        "be,al,de",
+        "be,vi,de",
+        "be,vi,ha,va",
+    };
 
     for (int w=16; w< 352; w=w*3-16) {
         for (int h=16; h< 352; h=h*5-16) {
             for (int b=1; b<17; b*=2) {
-                for (int q=0; q<17; q = 2*q+1) {
-                    int64_t ret = test(w, h, b, PP_FORMAT_420, 0, q);
-                    printf("blocktest %dx%d b:%d q:%d result %"PRIX64"\n", w, h, b, q, ret);
+                for (int c=0; c<6; c++) {
+                    for (int q=0; q<17; q = 2*q+1) {
+                        int64_t ret = test(w, h, teststrings[c], b, PP_FORMAT_420, 0, q);
+                        printf("blocktest %dx%d %s b:%d q:%d result %"PRIX64"\n", w, h, teststrings[c], b, q, ret);
+                    }
                 }
             }
         }
