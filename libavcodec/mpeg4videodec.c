@@ -3021,7 +3021,36 @@ static int decode_user_data(Mpeg4DecContext *ctx, GetBitContext *gb)
     return 0;
 }
 
-int ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
+static av_cold void permute_quant_matrix(uint16_t matrix[64],
+                                         const uint8_t new_perm[64],
+                                         const uint8_t old_perm[64])
+{
+    uint16_t tmp[64];
+
+    memcpy(tmp, matrix, sizeof(tmp));
+    for (int i = 0; i < 64; ++i)
+        matrix[new_perm[i]] = tmp[old_perm[i]];
+}
+
+static av_cold void switch_to_xvid_idct(AVCodecContext *const avctx,
+                                        MpegEncContext *const s)
+{
+    uint8_t old_permutation[64];
+
+    memcpy(old_permutation, s->idsp.idct_permutation, sizeof(old_permutation));
+
+    avctx->idct_algo = FF_IDCT_XVID;
+    ff_mpv_idct_init(s);
+    ff_permute_scantable(s->permutated_intra_h_scantable,
+                         s->alternate_scan ? ff_alternate_vertical_scan : ff_alternate_horizontal_scan,
+                         s->idsp.idct_permutation);
+
+    // Normal (i.e. non-studio) MPEG-4 does not use the chroma matrices.
+    permute_quant_matrix(s->inter_matrix, s->idsp.idct_permutation, old_permutation);
+    permute_quant_matrix(s->intra_matrix, s->idsp.idct_permutation, old_permutation);
+}
+
+void ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
 {
     Mpeg4DecContext *ctx = avctx->priv_data;
     MpegEncContext *s = &ctx->m;
@@ -3129,13 +3158,9 @@ int ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
                ctx->divx_version, ctx->divx_build, s->divx_packed ? "p" : "");
 
     if (CONFIG_MPEG4_DECODER && ctx->xvid_build >= 0 &&
-        avctx->idct_algo == FF_IDCT_AUTO) {
-        avctx->idct_algo = FF_IDCT_XVID;
-        ff_mpv_idct_init(s);
-        return 1;
+        avctx->idct_algo == FF_IDCT_AUTO && !s->studio_profile) {
+        switch_to_xvid_idct(avctx, s);
     }
-
-    return 0;
 }
 
 static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,

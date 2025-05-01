@@ -449,7 +449,6 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         return 0;
     }
 
-retry:
     // s->gb might be overridden in ff_mpeg4_decode_picture_header() below.
     ret = init_get_bits8(&s->gb, buf, buf_size);
     if (ret < 0)
@@ -505,8 +504,7 @@ retry:
     if (CONFIG_MPEG4_DECODER && avctx->codec_id == AV_CODEC_ID_MPEG4) {
         if (s->pict_type != AV_PICTURE_TYPE_B && s->mb_num/2 > get_bits_left(&s->gb))
             return AVERROR_INVALIDDATA;
-        if (ff_mpeg4_workaround_bugs(avctx) == 1)
-            goto retry;
+        ff_mpeg4_workaround_bugs(avctx);
         if (s->studio_profile != (s->idsp.idct == NULL))
             ff_mpv_idct_init(s);
     }
