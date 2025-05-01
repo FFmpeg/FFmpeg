@@ -99,6 +99,7 @@ static int mpeg4_decode_header(AVCodecParserContext *s1, AVCodecContext *avctx,
 
     init_get_bits(gb, buf, 8 * buf_size);
     ret = ff_mpeg4_parse_picture_header(dec_ctx, gb, 0, 1);
+    avctx->has_b_frames = !s->low_delay;
     if (s->width && (!avctx->width || !avctx->height ||
                      !avctx->coded_width || !avctx->coded_height)) {
         ret = ff_set_dimensions(avctx, s->width, s->height);

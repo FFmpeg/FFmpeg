@@ -3676,7 +3676,6 @@ int ff_mpeg4_parse_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb,
 end:
     if (s->avctx->flags & AV_CODEC_FLAG_LOW_DELAY)
         s->low_delay = 1;
-    s->avctx->has_b_frames = !s->low_delay;
 
     if (s->studio_profile) {
         if (!s->avctx->bits_per_raw_sample) {
