@@ -926,6 +926,11 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
     int minStride= FFMAX(FFABS(srcStride[0]), FFABS(dstStride[0]));
     int absQPStride = FFABS(QPStride);
 
+    if (width < 16 || height < 16) {
+        av_log(c, AV_LOG_ERROR, "Postproc is designed to filter 16x16 macroblock based formats, the minimum size is 1 macroblock\n");
+        return;
+    }
+
     // c->stride and c->QPStride are always positive
     if(c->stride < minStride || c->qpStride < absQPStride)
         reallocBuffers(c, width, height,
