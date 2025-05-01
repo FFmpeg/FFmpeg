@@ -114,13 +114,9 @@ extern const char *ff_source_rangecoder_comp;
 extern const char *ff_source_ffv1_vlc_comp;
 extern const char *ff_source_ffv1_common_comp;
 extern const char *ff_source_ffv1_reset_comp;
-extern const char *ff_source_ffv1_enc_common_comp;
 extern const char *ff_source_ffv1_enc_rct_comp;
-extern const char *ff_source_ffv1_enc_vlc_comp;
-extern const char *ff_source_ffv1_enc_ac_comp;
 extern const char *ff_source_ffv1_enc_setup_comp;
 extern const char *ff_source_ffv1_enc_comp;
-extern const char *ff_source_ffv1_enc_rgb_comp;
 
 typedef struct FFv1VkParameters {
     VkDeviceAddress slice_state;
@@ -961,6 +957,9 @@ static void define_shared_code(AVCodecContext *avctx, FFVulkanShader *shd)
         av_bprintf(&shd->src, "#define GOLOMB\n"                         );
     }
 
+    if (fv->is_rgb)
+        av_bprintf(&shd->src, "#define RGB\n");
+
     GLSLF(0, #define TYPE int%i_t                                        ,smp_bits);
     GLSLF(0, #define VTYPE2 i%ivec2                                      ,smp_bits);
     GLSLF(0, #define VTYPE3 i%ivec3                                      ,smp_bits);
@@ -1260,7 +1259,6 @@ static int init_encode_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
 {
     int err;
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
-    FFV1Context *f = &fv->ctx;
     FFVulkanShader *shd = &fv->enc;
     FFVulkanDescriptorSetBinding *desc_set;
 
@@ -1344,18 +1342,7 @@ static int init_encode_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
     };
     RET(ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set, 3, 0, 0));
 
-    /* Assemble the shader body */
-    GLSLD(ff_source_ffv1_enc_common_comp);
-
-    if (f->ac == AC_GOLOMB_RICE)
-        GLSLD(ff_source_ffv1_enc_vlc_comp);
-    else
-        GLSLD(ff_source_ffv1_enc_ac_comp);
-
-    if (fv->is_rgb)
-        GLSLD(ff_source_ffv1_enc_rgb_comp);
-    else
-        GLSLD(ff_source_ffv1_enc_comp);
+    GLSLD(ff_source_ffv1_enc_comp);
 
     RET(spv->compile_shader(&fv->s, spv, shd, &spv_data, &spv_len, "main",
                             &spv_opaque));

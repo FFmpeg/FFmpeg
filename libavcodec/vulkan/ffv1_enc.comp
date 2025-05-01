@@ -20,12 +20,186 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+ivec2 get_diff(ivec2 pos, ivec2 off, int p, int comp, int sw, int bits)
+{
+    const ivec2 yoff_border1 = off.x == 0 ? ivec2(1, -1) : ivec2(0, 0);
+    const ivec2 yoff_border2 = off.x == 1 ? ivec2(1, -1) : ivec2(0, 0);
+
+    TYPE top2 = TYPE(0);
+    if (off.y > 1)
+        top2 = TYPE(imageLoad(src[p], pos + ivec2(0, -2))[comp]);
+
+    VTYPE3 top  = VTYPE3(TYPE(0),
+                         TYPE(0),
+                         TYPE(0));
+    if (off.y > 0 && off != ivec2(0, 1))
+        top[0] = TYPE(imageLoad(src[p], pos + ivec2(-1, -1) + yoff_border1)[comp]);
+    if (off.y > 0) {
+        top[1] = TYPE(imageLoad(src[p], pos + ivec2(0, -1))[comp]);
+        top[2] = TYPE(imageLoad(src[p], pos + ivec2(min(1, sw - off.x - 1), -1))[comp]);
+    }
+
+    VTYPE3 cur = VTYPE3(TYPE(0),
+                        TYPE(0),
+                        imageLoad(src[p], pos)[comp]);
+    if (off.x > 0 && off != ivec2(1, 0))
+        cur[0] = TYPE(imageLoad(src[p], pos + ivec2(-2,  0) + yoff_border2)[comp]);
+    if (off != ivec2(0, 0))
+        cur[1] = TYPE(imageLoad(src[p], pos + ivec2(-1,  0) + yoff_border1)[comp]);
+
+    /* context, diff */
+    ivec2 d = ivec2(get_context(VTYPE2(cur), top, top2, context_model),
+                    cur[2] - predict(cur[1], VTYPE2(top)));
+
+    if (d[0] < 0)
+        d = -d;
+
+    d[1] = fold(d[1], bits);
+
+    return d;
+}
+
+#ifndef GOLOMB
+void put_rac(inout RangeCoder c, uint64_t state, bool bit)
+{
+    put_rac_norenorm(c, state, bit);
+    if (c.range < 0x100)
+        renorm_encoder(c);
+}
+
+/* Note - only handles signed values */
+void put_symbol(inout RangeCoder c, uint64_t state, int v)
+{
+    bool is_nil = (v == 0);
+    put_rac(c, state, is_nil);
+    if (is_nil)
+        return;
+
+    const int a = abs(v);
+    const int e = findMSB(a);
+
+    state += 1;
+    for (int i = 0; i < e; i++)
+        put_rac(c, state + min(i, 9), true);
+    put_rac(c, state + min(e, 9), false);
+
+    state += 21;
+    for (int i = e - 1; i >= 0; i--)
+        put_rac(c, state + min(i, 9), bool(bitfieldExtract(a, i, 1)));
+
+    put_rac(c, state - 11 + min(e, 10), v < 0);
+}
+
+void encode_line_pcm(inout SliceContext sc, int y, int p, int comp,
+                     int bits)
+{
+    ivec2 sp = sc.slice_pos;
+    int w = sc.slice_dim.x;
+    if (p > 0 && p < 3) {
+        w >>= chroma_shift.x;
+        sp >>= chroma_shift;
+    }
+
+    for (int x = 0; x < w; x++) {
+        uint v = imageLoad(src[p], (sp + ivec2(x, y)))[comp];
+        for (int i = (bits - 1); i >= 0; i--)
+            put_rac_equi(sc.c, bool(bitfieldExtract(v, i, 1)));
+    }
+}
+
+void encode_line(inout SliceContext sc, uint64_t state,
+                 int y, int p, int comp, int bits, const int run_index)
+{
+    ivec2 sp = sc.slice_pos;
+
+    int w = sc.slice_dim.x;
+    if (p > 0 && p < 3) {
+        w >>= chroma_shift.x;
+        sp >>= chroma_shift;
+    }
+
+    for (int x = 0; x < w; x++) {
+        const ivec2 d = get_diff(sp + ivec2(x, y), ivec2(x, y), p, comp, w, bits);
+        put_symbol(sc.c, state + CONTEXT_SIZE*d[0], d[1]);
+    }
+}
+
+#else /* GOLOMB */
+
+void encode_line(inout SliceContext sc, uint64_t state,
+                 int y, int p, int comp, int bits, inout int run_index)
+{
+    ivec2 sp = sc.slice_pos;
+
+    int w = sc.slice_dim.x;
+    if (p > 0 && p < 3) {
+        w >>= chroma_shift.x;
+        sp >>= chroma_shift;
+    }
+
+    int run_count = 0;
+    bool run_mode = false;
+
+    for (int x = 0; x < w; x++) {
+        ivec2 d = get_diff(sp + ivec2(x, y), ivec2(x, y), p, comp, w, bits);
+
+        if (d[0] == 0)
+            run_mode = true;
+
+        if (run_mode) {
+            if (d[1] != 0) {
+                /* A very unlikely loop */
+                while (run_count >= 1 << log2_run[run_index]) {
+                    run_count -= 1 << log2_run[run_index];
+                    run_index++;
+                    put_bits(sc.pb, 1, 1);
+                }
+
+                put_bits(sc.pb, 1 + log2_run[run_index], run_count);
+                if (run_index != 0)
+                    run_index--;
+                run_count = 0;
+                run_mode  = false;
+                if (d[1] > 0)
+                    d[1]--;
+            } else {
+                run_count++;
+            }
+        }
+
+        if (!run_mode) {
+            VlcState sb = VlcState(state + VLC_STATE_SIZE*d[0]);
+            Symbol sym = get_vlc_symbol(sb, d[1], bits);
+            put_bits(sc.pb, sym.bits, sym.val);
+        }
+    }
+
+    if (run_mode) {
+        while (run_count >= (1 << log2_run[run_index])) {
+            run_count -= 1 << log2_run[run_index];
+            run_index++;
+            put_bits(sc.pb, 1, 1);
+        }
+
+        if (run_count > 0)
+            put_bits(sc.pb, 1, 1);
+    }
+}
+#endif
+
 void encode_slice(inout SliceContext sc, const uint slice_idx)
 {
+#ifndef RGB
     int bits = bits_per_raw_sample;
+#else
+    int bits = 9;
+    if (bits != 8 || sc.slice_coding_mode != 0)
+        bits = bits_per_raw_sample + int(sc.slice_coding_mode != 1);
+#endif
 
 #ifndef GOLOMB
     if (sc.slice_coding_mode == 1) {
+#ifndef RGB
         for (int c = 0; c < components; c++) {
 
             int h = sc.slice_dim.y;
@@ -39,12 +213,22 @@ void encode_slice(inout SliceContext sc, const uint slice_idx)
             for (int y = 0; y < h; y++)
                 encode_line_pcm(sc, y, p, comp, bits);
         }
+#else
+        for (int y = 0; y < sc.slice_dim.y; y++) {
+            encode_line_pcm(sc, y, 0, 1, bits);
+            encode_line_pcm(sc, y, 0, 2, bits);
+            encode_line_pcm(sc, y, 0, 0, bits);
+            if (transparency == 1)
+                encode_line_pcm(sc, y, 0, 3, bits);
+        }
+#endif
     } else
 #endif
     {
         uint64_t slice_state_off = uint64_t(slice_state) +
                                    slice_idx*plane_state_size*codec_planes;
 
+#ifndef RGB
         for (int c = 0; c < components; c++) {
             int run_index = 0;
 
@@ -62,13 +246,67 @@ void encode_slice(inout SliceContext sc, const uint slice_idx)
             if (c != 1)
                 slice_state_off += plane_state_size;
         }
+#else
+        int run_index = 0;
+        for (int y = 0; y < sc.slice_dim.y; y++) {
+            encode_line(sc, slice_state_off + plane_state_size*0,
+                        y, 0, 1, bits, run_index);
+            encode_line(sc, slice_state_off + plane_state_size*1,
+                        y, 0, 2, bits, run_index);
+            encode_line(sc, slice_state_off + plane_state_size*1,
+                        y, 0, 0, bits, run_index);
+            if (transparency == 1)
+                encode_line(sc, slice_state_off + plane_state_size*2,
+                            y, 0, 3, bits, run_index);
+        }
+#endif
+    }
+}
+
+void finalize_slice(inout SliceContext sc, const uint slice_idx)
+{
+#ifdef GOLOMB
+    uint32_t enc_len = sc.hdr_len + flush_put_bits(sc.pb);
+#else
+    uint32_t enc_len = rac_terminate(sc.c);
+#endif
+
+    u8buf bs = u8buf(sc.c.bytestream_start);
+
+    /* Append slice length */
+    u8vec4 enc_len_p = unpack8(enc_len);
+    bs[enc_len + 0].v = enc_len_p.z;
+    bs[enc_len + 1].v = enc_len_p.y;
+    bs[enc_len + 2].v = enc_len_p.x;
+    enc_len += 3;
+
+    /* Calculate and write CRC */
+    if (ec != 0) {
+        bs[enc_len].v = uint8_t(0);
+        enc_len++;
+
+        uint32_t crc = crcref;
+        for (int i = 0; i < enc_len; i++)
+            crc = crc_ieee[(crc & 0xFF) ^ uint32_t(bs[i].v)] ^ (crc >> 8);
+
+        if (crcref != 0x00000000)
+            crc ^= 0x8CD88196;
+
+        u8vec4 crc_p = unpack8(crc);
+        bs[enc_len + 0].v = crc_p.x;
+        bs[enc_len + 1].v = crc_p.y;
+        bs[enc_len + 2].v = crc_p.z;
+        bs[enc_len + 3].v = crc_p.w;
+        enc_len += 4;
     }
 
-    finalize_slice(sc, slice_idx);
+    slice_results[slice_idx*2 + 0] = enc_len;
+    slice_results[slice_idx*2 + 1] = uint64_t(bs) - uint64_t(out_data);
 }
 
 void main(void)
 {
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
     encode_slice(slice_ctx[slice_idx], slice_idx);
+    finalize_slice(slice_ctx[slice_idx], slice_idx);
 }

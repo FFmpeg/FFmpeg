@@ -6,10 +6,8 @@ clean::
 OBJS-$(CONFIG_FFV1_VULKAN_ENCODER)  +=  vulkan/common.o \
 					vulkan/rangecoder.o vulkan/ffv1_vlc.o \
 					vulkan/ffv1_common.o vulkan/ffv1_reset.o \
-					vulkan/ffv1_enc_common.o \
 					vulkan/ffv1_enc_rct.o vulkan/ffv1_enc_setup.o \
-					vulkan/ffv1_enc_vlc.o vulkan/ffv1_enc_ac.o \
-					vulkan/ffv1_enc.o vulkan/ffv1_enc_rgb.o
+					vulkan/ffv1_enc.o
 
 OBJS-$(CONFIG_FFV1_VULKAN_HWACCEL)  +=  vulkan/common.o \
 					vulkan/rangecoder.o vulkan/ffv1_vlc.o \
