@@ -426,22 +426,19 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     /* no supplementary picture */
     if (buf_size == 0) {
         /* special case for last picture */
-        if (s->low_delay == 0 && s->next_pic.ptr) {
+        if ((!s->low_delay || s->skipped_last_frame) && s->next_pic.ptr) {
             if ((ret = av_frame_ref(pict, s->next_pic.ptr->f)) < 0)
                 return ret;
-            ff_mpv_unref_picture(&s->next_pic);
+            if (s->skipped_last_frame) {
+                /* If the stream ended with an NVOP, we output the last frame
+                 * in display order, but with the props from the last input
+                 * packet so that the stream's end time is correct. */
+                ret = ff_decode_frame_props(avctx, pict);
+                if (ret < 0)
+                    return ret;
+            }
 
-            *got_frame = 1;
-        } else if (s->skipped_last_frame && s->cur_pic.ptr) {
-            /* Output the last picture we decoded again if the stream ended with
-             * an NVOP */
-            if ((ret = av_frame_ref(pict, s->cur_pic.ptr->f)) < 0)
-                return ret;
-            /* Copy props from the last input packet. Otherwise, props from the last
-             * returned picture would be reused */
-            if ((ret = ff_decode_frame_props(avctx, pict)) < 0)
-                return ret;
-            ff_mpv_unref_picture(&s->cur_pic);
+            ff_mpv_unref_picture(&s->next_pic);
 
             *got_frame = 1;
         }
