@@ -3871,6 +3871,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     s->cplx_estimation_trash_p   = s1->cplx_estimation_trash_p;
     s->cplx_estimation_trash_b   = s1->cplx_estimation_trash_b;
     s->rgb                       = s1->rgb;
+    s->m.skipped_last_frame      = s1->m.skipped_last_frame;
 
     memcpy(s->sprite_shift, s1->sprite_shift, sizeof(s1->sprite_shift));
     memcpy(s->sprite_traj,  s1->sprite_traj,  sizeof(s1->sprite_traj));
