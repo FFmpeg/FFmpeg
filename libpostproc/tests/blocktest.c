@@ -60,6 +60,8 @@ static int64_t test(int width, int height, int blocksize, int flags, int pict_ty
     pp_context *context = pp_get_context(width, height, flags);
     pp_mode *mode = pp_get_mode_by_name_and_quality("be,de", quality);
     int64_t ret;
+#define  QP_STRIDE (352/16)
+    int8_t qp[QP_STRIDE * 352/16];
 
     if (!in || !out || !context || !mode) {
         ret = AVERROR(ENOMEM);
@@ -80,9 +82,12 @@ static int64_t test(int width, int height, int blocksize, int flags, int pict_ty
 
     blocks(in, blocksize, 11);
 
+    for(int i= 0; i<sizeof(qp); i++)
+        qp[i] = i % 31;
+
     pp_postprocess( (cuint8[]){in->data[0], in->data[1], in->data[2]}, in->linesize,
                    out->data, out->linesize,
-                   width, height, NULL, 0,
+                   width, height, qp, QP_STRIDE,
                    mode, context, pict_type);
 
     ret = chksum(out);
