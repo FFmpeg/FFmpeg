@@ -3234,7 +3234,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
         }
 
         if(mode & DERING){
-            RENAME(dering)(dstBlock - dstStride - 8, dstStride, c, 0, 1, y<=0);
+            RENAME(dering)(dstBlock - dstStride - 8, dstStride, c, x<=8, 1, y<=0);
         }
 
         if((mode & TEMP_NOISE_FILTER)){
