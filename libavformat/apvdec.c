@@ -51,7 +51,24 @@ static int apv_extract_header_info(GetByteContext *gbc)
     if (zero != 0)
         return AVERROR_INVALIDDATA;
 
-    if (info->pbu_type != APV_PBU_PRIMARY_FRAME)
+    if (info->pbu_type == APV_PBU_ACCESS_UNIT_INFORMATION) {
+        unsigned int num_frames = bytestream2_get_be16(gbc);
+        int pbu_type;
+
+        if (num_frames < 1)
+            return AVERROR_INVALIDDATA;
+
+        info->pbu_type = bytestream2_get_byte(gbc);
+        if (info->pbu_type != APV_PBU_PRIMARY_FRAME &&
+            info->pbu_type != APV_PBU_NON_PRIMARY_FRAME &&
+            (info->pbu_type < APV_PBU_PREVIEW_FRAME || info->pbu_type > APV_PBU_ALPHA_FRAME))
+            return AVERROR_INVALIDDATA;
+
+        bytestream2_skip(gbc, 2); // group_id
+        zero = bytestream2_get_byte(gbc);
+        if (zero != 0)
+            return AVERROR_INVALIDDATA;
+    } else if (info->pbu_type != APV_PBU_PRIMARY_FRAME)
         return AVERROR_INVALIDDATA;
 
     info->profile_idc = bytestream2_get_byte(gbc);
