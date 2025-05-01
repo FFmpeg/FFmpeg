@@ -92,3 +92,90 @@ uint slice_coord(uint width, uint sx, uint num_h_slices, uint chroma_shift)
 
     return sx;
 }
+
+#ifdef RGB
+#define RGB_LBUF (RGB_LINECACHE - 1)
+#define LADDR(p) (ivec2((p).x, ((p).y & RGB_LBUF)))
+
+ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
+               int comp, int sw, uint8_t quant_table_idx, bool extend_lookup)
+{
+    const ivec2 yoff_border1 = expectEXT(off.x == 0, false) ? ivec2(1, -1) : ivec2(0, 0);
+
+    /* Thanks to the same coincidence as below, we can skip checking if off == 0, 1 */
+    VTYPE3 top  = VTYPE3(TYPE(imageLoad(pred, sp + LADDR(off + ivec2(-1, -1) + yoff_border1))[comp]),
+                         TYPE(imageLoad(pred, sp + LADDR(off + ivec2(0, -1)))[comp]),
+                         TYPE(imageLoad(pred, sp + LADDR(off + ivec2(min(1, sw - off.x - 1), -1)))[comp]));
+
+    /* Normally, we'd need to check if off != ivec2(0, 0) here, since otherwise, we must
+     * return zero. However, ivec2(-1,  0) + ivec2(1, -1) == ivec2(0, -1), e.g. previous
+     * row, 0 offset, same slice, which is zero since we zero out the buffer for RGB */
+    TYPE cur = TYPE(imageLoad(pred, sp + LADDR(off + ivec2(-1,  0) + yoff_border1))[comp]);
+
+    int base = quant_table[quant_table_idx][0][(cur    - top[0]) & MAX_QUANT_TABLE_MASK] +
+               quant_table[quant_table_idx][1][(top[0] - top[1]) & MAX_QUANT_TABLE_MASK] +
+               quant_table[quant_table_idx][2][(top[1] - top[2]) & MAX_QUANT_TABLE_MASK];
+
+    if (expectEXT(extend_lookup, false)) {
+        TYPE cur2 = TYPE(0);
+        if (expectEXT(off.x > 0, true)) {
+            const ivec2 yoff_border2 = expectEXT(off.x == 1, false) ? ivec2(-1, -1) : ivec2(-2, 0);
+            cur2 = TYPE(imageLoad(pred, sp + LADDR(off + yoff_border2))[comp]);
+        }
+        base += quant_table[quant_table_idx][3][(cur2 - cur) & MAX_QUANT_TABLE_MASK];
+
+        /* top-2 became current upon swap */
+        TYPE top2 = TYPE(imageLoad(pred, sp + LADDR(off))[comp]);
+        base += quant_table[quant_table_idx][4][(top2 - top[1]) & MAX_QUANT_TABLE_MASK];
+    }
+
+    /* context, prediction */
+    return ivec2(base, predict(cur, VTYPE2(top)));
+}
+
+#else /* RGB */
+
+#define LADDR(p) (p)
+
+ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
+               int comp, int sw, uint8_t quant_table_idx, bool extend_lookup)
+{
+    const ivec2 yoff_border1 = off.x == 0 ? ivec2(1, -1) : ivec2(0, 0);
+    sp += off;
+
+    VTYPE3 top  = VTYPE3(TYPE(0),
+                         TYPE(0),
+                         TYPE(0));
+    if (off.y > 0 && off != ivec2(0, 1))
+        top[0] = TYPE(imageLoad(pred, sp + ivec2(-1, -1) + yoff_border1)[comp]);
+    if (off.y > 0) {
+        top[1] = TYPE(imageLoad(pred, sp + ivec2(0, -1))[comp]);
+        top[2] = TYPE(imageLoad(pred, sp + ivec2(min(1, sw - off.x - 1), -1))[comp]);
+    }
+
+    TYPE cur = TYPE(0);
+    if (off != ivec2(0, 0))
+        cur = TYPE(imageLoad(pred, sp + ivec2(-1,  0) + yoff_border1)[comp]);
+
+    int base = quant_table[quant_table_idx][0][(cur - top[0]) & MAX_QUANT_TABLE_MASK] +
+               quant_table[quant_table_idx][1][(top[0] - top[1]) & MAX_QUANT_TABLE_MASK] +
+               quant_table[quant_table_idx][2][(top[1] - top[2]) & MAX_QUANT_TABLE_MASK];
+
+    if (expectEXT(extend_lookup, false)) {
+        TYPE cur2 = TYPE(0);
+        if (off.x > 0 && off != ivec2(1, 0)) {
+            const ivec2 yoff_border2 = off.x == 1 ? ivec2(1, -1) : ivec2(0, 0);
+            cur2 = TYPE(imageLoad(pred, sp + ivec2(-2,  0) + yoff_border2)[comp]);
+        }
+        base += quant_table[quant_table_idx][3][(cur2 - cur) & MAX_QUANT_TABLE_MASK];
+
+        TYPE top2 = TYPE(0);
+        if (off.y > 1)
+            top2 = TYPE(imageLoad(pred, sp + ivec2(0, -2))[comp]);
+        base += quant_table[quant_table_idx][4][(top2 - top[1]) & MAX_QUANT_TABLE_MASK];
+    }
+
+    /* context, prediction */
+    return ivec2(base, predict(cur, VTYPE2(top)));
+}
+#endif

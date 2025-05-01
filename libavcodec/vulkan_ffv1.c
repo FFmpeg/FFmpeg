@@ -26,6 +26,8 @@
 #include "libavutil/vulkan_spirv.h"
 #include "libavutil/mem.h"
 
+#define RGB_LINECACHE 2
+
 extern const char *ff_source_common_comp;
 extern const char *ff_source_rangecoder_comp;
 extern const char *ff_source_ffv1_vlc_comp;
@@ -610,6 +612,7 @@ static void define_shared_code(FFVulkanShader *shd, int use32bit)
 
     GLSLC(0, #define DECODE                                              );
 
+    av_bprintf(&shd->src, "#define RGB_LINECACHE %i\n"                   ,RGB_LINECACHE);
     av_bprintf(&shd->src, "#define CONTEXT_SIZE %i\n"                    ,CONTEXT_SIZE);
     av_bprintf(&shd->src, "#define MAX_QUANT_TABLE_MASK 0x%x\n"          ,MAX_QUANT_TABLE_MASK);
 
@@ -936,7 +939,7 @@ static int init_indirect(AVCodecContext *avctx, FFVulkanContext *s,
     frames_ctx->format    = AV_PIX_FMT_VULKAN;
     frames_ctx->sw_format = sw_format;
     frames_ctx->width     = s->frames->width;
-    frames_ctx->height    = f->num_v_slices*2;
+    frames_ctx->height    = f->num_v_slices*RGB_LINECACHE;
 
     vk_frames = frames_ctx->hwctx;
     vk_frames->tiling    = VK_IMAGE_TILING_OPTIMAL;
