@@ -97,8 +97,6 @@ static int av1_read_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-    c->pos = avio_tell(s->pb);
-
     return 0;
 }
 
