@@ -1154,7 +1154,7 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
     }
 
     ret = get_bits1(gb);
-    if (!ret) {
+    if (!ret && get_bits_left(gb) >= 0) {
         av_log(s->avctx, AV_LOG_ERROR, "alignment_bit_equal_to_one=0\n");
         return AVERROR_INVALIDDATA;
     }
