@@ -91,15 +91,13 @@ void renorm_encoder(inout RangeCoder c)
         bs[i].v = fill;
 }
 
-void put_rac_norenorm(inout RangeCoder c, uint64_t state, bool bit)
+void put_rac_direct(inout RangeCoder c, uint8_t state, bool bit)
 {
-    u8buf sb = u8buf(state);
-    uint val = uint(sb.v);
-    int range1 = uint16_t((c.range * val) >> 8);
+    int range1 = uint16_t((c.range * state) >> 8);
 
 #ifdef DEBUG
-    if (val == 0)
-        debugPrintfEXT("Error: state is zero (addr: 0x%lx)", uint64_t(sb));
+    if (state == 0)
+        debugPrintfEXT("Error: state is zero");
     if (range1 >= c.range)
         debugPrintfEXT("Error: range1 >= c.range");
     if (range1 <= 0)
@@ -113,13 +111,21 @@ void put_rac_norenorm(inout RangeCoder c, uint64_t state, bool bit)
     } else {
         c.range  = diff;
     }
+}
 
-    sb.v = zero_one_state[(uint(bit) << 8) + val];
+void put_rac_norenorm(inout RangeCoder c, uint64_t state, bool bit)
+{
+    put_rac_direct(c, u8buf(state).v, bit);
 
-#ifdef DEBUG
-    if (sb.v == 0)
-        debugPrintfEXT("Error: inserted zero state from tab %i idx %i", bit, val);
-#endif
+    u8buf(state).v = zero_one_state[(uint(bit) << 8) + u8buf(state).v];
+}
+
+void put_rac(inout RangeCoder c, inout uint8_t state, bool bit)
+{
+    put_rac_direct(c, state, bit);
+    if (c.range < 0x100)
+        renorm_encoder_full(c);
+    state = zero_one_state[(uint(bit) << 8) + state];
 }
 
 /* Equiprobable bit */

@@ -88,9 +88,6 @@ typedef struct VulkanEncodeFFv1Context {
     AVBufferPool *out_data_pool;
     AVBufferPool *pkt_data_pool;
 
-    /* Temporary data buffer */
-    AVBufferPool *tmp_data_pool;
-
     /* Slice results buffer */
     AVBufferPool *results_data_pool;
 
@@ -303,11 +300,6 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
 
     AVFrame *intermediate_frame = NULL;
 
-    /* Temporary data */
-    size_t tmp_data_size;
-    AVBufferRef *tmp_data_ref;
-    FFVkBuffer *tmp_data_buf;
-
     /* Slice data */
     AVBufferRef *slice_data_ref;
     FFVkBuffer *slice_data_buf;
@@ -351,17 +343,6 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     }
 
     f->slice_count = f->max_slice_count;
-
-    /* Allocate temporary data buffer */
-    tmp_data_size = f->slice_count*CONTEXT_SIZE;
-    RET(ff_vk_get_pooled_buffer(&fv->s, &fv->tmp_data_pool,
-                                &tmp_data_ref,
-                                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                                NULL, tmp_data_size,
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
-    tmp_data_buf = (FFVkBuffer *)tmp_data_ref->data;
-    ff_vk_exec_add_dep_buf(&fv->s, exec, &tmp_data_ref, 1, 0);
 
     /* Allocate slice buffer data */
     if (f->ac == AC_GOLOMB_RICE)
@@ -481,7 +462,6 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
     ff_vk_exec_bind_shader(&fv->s, exec, &fv->setup);
     pd = (FFv1VkParameters) {
         .slice_state = slice_data_buf->address + f->slice_count*256,
-        .scratch_data = tmp_data_buf->address,
         .out_data = out_data_buf->address,
         .bits_per_raw_sample = f->bits_per_raw_sample,
         .sar[0] = pict->sample_aspect_ratio.num,
@@ -1698,7 +1678,6 @@ static av_cold int vulkan_encode_ffv1_close(AVCodecContext *avctx)
 
     av_buffer_pool_uninit(&fv->out_data_pool);
     av_buffer_pool_uninit(&fv->pkt_data_pool);
-    av_buffer_pool_uninit(&fv->tmp_data_pool);
 
     av_buffer_unref(&fv->keyframe_slice_data_ref);
     av_buffer_pool_uninit(&fv->slice_data_pool);

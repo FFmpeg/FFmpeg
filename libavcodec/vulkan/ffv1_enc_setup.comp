@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+uint8_t state[CONTEXT_SIZE];
+
 void init_slice(out SliceContext sc, const uint slice_idx)
 {
     /* Set coordinates */
@@ -45,67 +47,54 @@ void init_slice(out SliceContext sc, const uint slice_idx)
              slice_size_max);
 }
 
-void put_rac_full(inout RangeCoder c, uint64_t state, bool bit)
-{
-    put_rac_norenorm(c, state, bit);
-    if (c.range < 0x100)
-        renorm_encoder_full(c);
-}
-
-void put_symbol_unsigned(inout RangeCoder c, uint64_t state, uint v)
+void put_usymbol(inout RangeCoder c, uint v)
 {
     bool is_nil = (v == 0);
-    put_rac_full(c, state, is_nil);
+    put_rac(c, state[0], is_nil);
     if (is_nil)
         return;
 
     const int e = findMSB(v);
 
-    state += 1;
     for (int i = 0; i < e; i++)
-        put_rac_full(c, state + min(i, 9), true);
-    put_rac_full(c, state + min(e, 9), false);
+        put_rac(c, state[1 + min(i, 9)], true);
+    put_rac(c, state[1 + min(e, 9)], false);
 
-    state += 21;
     for (int i = e - 1; i >= 0; i--)
-        put_rac_full(c, state + min(i, 9), bool(bitfieldExtract(v, i, 1)));
+        put_rac(c, state[22 + min(i, 9)], bool(bitfieldExtract(v, i, 1)));
 }
 
-void write_slice_header(inout SliceContext sc, uint64_t state)
+void write_slice_header(inout SliceContext sc)
 {
-    u8buf sb = u8buf(state);
-
     [[unroll]]
     for (int i = 0; i < CONTEXT_SIZE; i++)
-        sb[i].v = uint8_t(128);
+        state[i] = uint8_t(128);
 
-    put_symbol_unsigned(sc.c, state, gl_WorkGroupID.x);
-    put_symbol_unsigned(sc.c, state, gl_WorkGroupID.y);
-    put_symbol_unsigned(sc.c, state, 0);
-    put_symbol_unsigned(sc.c, state, 0);
+    put_usymbol(sc.c, gl_WorkGroupID.x);
+    put_usymbol(sc.c, gl_WorkGroupID.y);
+    put_usymbol(sc.c, 0);
+    put_usymbol(sc.c, 0);
 
     for (int i = 0; i < codec_planes; i++)
-        put_symbol_unsigned(sc.c, state, sc.quant_table_idx[i]);
+        put_usymbol(sc.c, sc.quant_table_idx[i]);
 
-    put_symbol_unsigned(sc.c, state, pic_mode);
-    put_symbol_unsigned(sc.c, state, sar.x);
-    put_symbol_unsigned(sc.c, state, sar.y);
+    put_usymbol(sc.c, pic_mode);
+    put_usymbol(sc.c, sar.x);
+    put_usymbol(sc.c, sar.y);
 
     if (version >= 4) {
-        put_rac_full(sc.c, state, sc.slice_reset_contexts);
-        put_symbol_unsigned(sc.c, state, sc.slice_coding_mode);
+        put_rac(sc.c, state[0], sc.slice_reset_contexts);
+        put_usymbol(sc.c, sc.slice_coding_mode);
         if (sc.slice_coding_mode != 1 && colorspace == 1) {
-            put_symbol_unsigned(sc.c, state, sc.slice_rct_coef.y);
-            put_symbol_unsigned(sc.c, state, sc.slice_rct_coef.x);
+            put_usymbol(sc.c, sc.slice_rct_coef.y);
+            put_usymbol(sc.c, sc.slice_rct_coef.x);
         }
     }
 }
 
-void write_frame_header(inout SliceContext sc, uint64_t state)
+void write_frame_header(inout SliceContext sc)
 {
-    u8buf sb = u8buf(state);
-    sb.v = uint8_t(128);
-    put_rac_full(sc.c, state, bool(key_frame));
+    put_rac_equi(sc.c, bool(key_frame));
 }
 
 #ifdef GOLOMB
@@ -122,16 +111,12 @@ void main(void)
 {
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
 
-    /* Write slice data */
-    uint64_t scratch_state = uint64_t(scratch_data) + slice_idx*CONTEXT_SIZE;
-    u8buf sb = u8buf(scratch_state);
-
     init_slice(slice_ctx[slice_idx], slice_idx);
 
     if (slice_idx == 0)
-        write_frame_header(slice_ctx[slice_idx], scratch_state);
+        write_frame_header(slice_ctx[slice_idx]);
 
-    write_slice_header(slice_ctx[slice_idx], scratch_state);
+    write_slice_header(slice_ctx[slice_idx]);
 
 #ifdef GOLOMB
     init_golomb(slice_ctx[slice_idx]);
