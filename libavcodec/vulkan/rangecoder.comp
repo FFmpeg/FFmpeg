@@ -109,14 +109,10 @@ void put_rac_direct(inout RangeCoder c, inout uint8_t state, bool bit)
 #endif
 
     int diff = c.range - range1;
-    if (bit) {
-        c.low   += diff;
-        c.range  = range1;
-    } else {
-        c.range  = diff;
-    }
+    c.low += bit ? diff : 0;
+    c.range = bit ? range1 : diff;
 
-    if (c.range < 0x100)
+    if (expectEXT(c.range < 0x100, false))
         renorm_encoder(c);
 
     state = zero_one_state[(uint(bit) << 8) + state];
@@ -139,12 +135,9 @@ void put_rac_equi(inout RangeCoder c, bool bit)
         debugPrintfEXT("Error: range1 <= 0");
 #endif
 
-    if (bit) {
-        c.low   += c.range - range1;
-        c.range  = range1;
-    } else {
-        c.range -= range1;
-    }
+    int diff = c.range - range1;
+    c.low += bit ? diff : 0;
+    c.range = bit ? range1 : diff;
 
     if (expectEXT(c.range < 0x100, false))
         renorm_encoder(c);
