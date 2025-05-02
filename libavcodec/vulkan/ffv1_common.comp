@@ -100,17 +100,17 @@ uint slice_coord(uint width, uint sx, uint num_h_slices, uint chroma_shift)
 ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
                int comp, int sw, uint8_t quant_table_idx, bool extend_lookup)
 {
-    const ivec2 yoff_border1 = expectEXT(off.x == 0, false) ? ivec2(1, -1) : ivec2(0, 0);
+    const ivec2 yoff_border1 = expectEXT(off.x == 0, false) ? off + ivec2(1, -1) : off;
 
     /* Thanks to the same coincidence as below, we can skip checking if off == 0, 1 */
-    VTYPE3 top  = VTYPE3(TYPE(imageLoad(pred, sp + LADDR(off + ivec2(-1, -1) + yoff_border1))[comp]),
+    VTYPE3 top  = VTYPE3(TYPE(imageLoad(pred, sp + LADDR(yoff_border1 + ivec2(-1, -1)))[comp]),
                          TYPE(imageLoad(pred, sp + LADDR(off + ivec2(0, -1)))[comp]),
                          TYPE(imageLoad(pred, sp + LADDR(off + ivec2(min(1, sw - off.x - 1), -1)))[comp]));
 
     /* Normally, we'd need to check if off != ivec2(0, 0) here, since otherwise, we must
      * return zero. However, ivec2(-1,  0) + ivec2(1, -1) == ivec2(0, -1), e.g. previous
      * row, 0 offset, same slice, which is zero since we zero out the buffer for RGB */
-    TYPE cur = TYPE(imageLoad(pred, sp + LADDR(off + ivec2(-1,  0) + yoff_border1))[comp]);
+    TYPE cur = TYPE(imageLoad(pred, sp + LADDR(yoff_border1 + ivec2(-1,  0)))[comp]);
 
     int base = quant_table[quant_table_idx][0][(cur    - top[0]) & MAX_QUANT_TABLE_MASK] +
                quant_table[quant_table_idx][1][(top[0] - top[1]) & MAX_QUANT_TABLE_MASK] +
