@@ -976,6 +976,7 @@ static int init_setup_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
     av_bprintf(&shd->src, "#define MAX_QUANT_TABLES %i\n", MAX_QUANT_TABLES);
     av_bprintf(&shd->src, "#define MAX_CONTEXT_INPUTS %i\n", MAX_CONTEXT_INPUTS);
     av_bprintf(&shd->src, "#define MAX_QUANT_TABLE_SIZE %i\n", MAX_QUANT_TABLE_SIZE);
+    av_bprintf(&shd->src, "#define FULL_RENORM\n");
 
     desc_set = (FFVulkanDescriptorSetBinding []) {
         {

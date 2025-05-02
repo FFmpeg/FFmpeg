@@ -63,13 +63,6 @@ ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off, int comp, int sw, ui
 }
 
 #ifndef GOLOMB
-void put_rac(inout RangeCoder c, uint64_t state, bool bit)
-{
-    put_rac_norenorm(c, state, bit);
-    if (c.range < 0x100)
-        renorm_encoder(c);
-}
-
 /* Note - only handles signed values */
 void put_symbol(inout RangeCoder c, uint64_t state, int v)
 {

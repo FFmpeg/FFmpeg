@@ -31,8 +31,9 @@ struct RangeCoder {
     uint8_t outstanding_byte;
 };
 
+#ifdef FULL_RENORM
 /* Full renorm version that can handle outstanding_byte == 0xFF */
-void renorm_encoder_full(inout RangeCoder c)
+void renorm_encoder(inout RangeCoder c)
 {
     int bs_cnt = 0;
     u8buf bytestream = u8buf(c.bytestream);
@@ -62,6 +63,8 @@ void renorm_encoder_full(inout RangeCoder c)
     c.low = bitfieldInsert(0, c.low, 8, 8);
 }
 
+#else
+
 /* Cannot deal with outstanding_byte == -1 in the name of speed */
 void renorm_encoder(inout RangeCoder c)
 {
@@ -90,8 +93,9 @@ void renorm_encoder(inout RangeCoder c)
     for (int i = 1; i < oc; i++)
         bs[i].v = fill;
 }
+#endif
 
-void put_rac_direct(inout RangeCoder c, uint8_t state, bool bit)
+void put_rac_direct(inout RangeCoder c, inout uint8_t state, bool bit)
 {
     int range1 = uint16_t((c.range * state) >> 8);
 
@@ -111,21 +115,16 @@ void put_rac_direct(inout RangeCoder c, uint8_t state, bool bit)
     } else {
         c.range  = diff;
     }
+
+    if (c.range < 0x100)
+        renorm_encoder(c);
+
+    state = zero_one_state[(uint(bit) << 8) + state];
 }
 
-void put_rac_norenorm(inout RangeCoder c, uint64_t state, bool bit)
+void put_rac(inout RangeCoder c, uint64_t state, bool bit)
 {
     put_rac_direct(c, u8buf(state).v, bit);
-
-    u8buf(state).v = zero_one_state[(uint(bit) << 8) + u8buf(state).v];
-}
-
-void put_rac(inout RangeCoder c, inout uint8_t state, bool bit)
-{
-    put_rac_direct(c, state, bit);
-    if (c.range < 0x100)
-        renorm_encoder_full(c);
-    state = zero_one_state[(uint(bit) << 8) + state];
 }
 
 /* Equiprobable bit */
