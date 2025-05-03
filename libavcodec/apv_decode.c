@@ -385,7 +385,7 @@ static int apv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         case APV_PBU_PRIMARY_FRAME:
             err = apv_decode(avctx, frame, pbu->content);
             if (err < 0)
-                return err;
+                goto fail;
             *got_frame = 1;
             break;
         case APV_PBU_METADATA:
@@ -419,9 +419,10 @@ static int apv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
     }
 
+    err = packet->size;
+fail:
     ff_cbs_fragment_reset(au);
-
-    return packet->size;
+    return err;
 }
 
 const FFCodec ff_apv_decoder = {
