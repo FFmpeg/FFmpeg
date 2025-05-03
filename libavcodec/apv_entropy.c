@@ -84,6 +84,14 @@ static unsigned int apv_read_vlc(GetBitContext *gbc, int k_param,
         next_bits = show_bits(gbc, 16);
         leading_zeroes = 15 - av_log2(next_bits);
 
+        if (leading_zeroes == 0) {
+            // This can't happen mid-stream because the lookup would
+            // have resolved a leading one into a shorter code, but it
+            // can happen if we are hitting the end of the buffer.
+            // Return an invalid code to propagate as an error.
+            return APV_MAX_TRANS_COEFF + 1;
+        }
+
         skip_bits(gbc, leading_zeroes + 1);
 
         return (2 << k_param) +
@@ -181,6 +189,14 @@ int ff_apv_entropy_decode_block(int16_t *coeff,
                     level = -abs_ac_coeff_minus1 - 1;
                 else
                     level = abs_ac_coeff_minus1 + 1;
+
+                if (level < APV_MIN_TRANS_COEFF ||
+                    level > APV_MAX_TRANS_COEFF) {
+                    av_log(state->log_ctx, AV_LOG_ERROR,
+                           "Out-of-range AC coefficient value: %d "
+                           "(from prev_level %d abs_ac_coeff_minus1 %d sign_ac_coeff %d)\n",
+                           level, prev_level, abs_ac_coeff_minus1, sign_ac_coeff);
+                }
 
                 coeff[ff_zigzag_direct[scan_pos]] = level;
 
