@@ -88,7 +88,6 @@ typedef struct VulkanEncodeFFv1Context {
 
     /* Output data buffer */
     AVBufferPool *out_data_pool;
-    AVBufferPool *pkt_data_pool;
 
     /* Slice results buffer */
     AVBufferPool *results_data_pool;
@@ -299,8 +298,11 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                 NULL, maxsize,
-                                maxsize < fv->max_heap_size ?
-                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0x0));
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                (maxsize < fv->max_heap_size ?
+                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0x0) |
+                                (!(fv->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY) ?
+                                 VK_MEMORY_PROPERTY_HOST_CACHED_BIT : 0x0)));
     out_data_buf = (FFVkBuffer *)fd->out_data_ref->data;
     ff_vk_exec_add_dep_buf(&fv->s, exec, &fd->out_data_ref, 1, 1);
 
@@ -583,10 +585,10 @@ fail:
     return err;
 }
 
-static int download_slices(AVCodecContext *avctx,
+static int transfer_slices(AVCodecContext *avctx,
                            VkBufferCopy *buf_regions, int nb_regions,
                            VulkanEncodeFFv1FrameData *fd,
-                           AVBufferRef *pkt_data_ref)
+                           uint8_t *dst, AVBufferRef *dst_ref)
 {
     int err;
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
@@ -594,10 +596,19 @@ static int download_slices(AVCodecContext *avctx,
     FFVkExecContext *exec;
 
     FFVkBuffer *out_data_buf = (FFVkBuffer *)fd->out_data_ref->data;
-    FFVkBuffer *pkt_data_buf = (FFVkBuffer *)pkt_data_ref->data;
+
+    AVBufferRef *mapped_ref;
+    FFVkBuffer *mapped_buf;
 
     VkBufferMemoryBarrier2 buf_bar[8];
     int nb_buf_bar = 0;
+
+    err = ff_vk_host_map_buffer(&fv->s, &mapped_ref, dst, dst_ref,
+                                VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    if (err < 0)
+        return err;
+
+    mapped_buf = (FFVkBuffer *)mapped_ref->data;
 
     /* Transfer the slices */
     exec = ff_vk_exec_get(&fv->s, &fv->transfer_exec_pool);
@@ -606,7 +617,8 @@ static int download_slices(AVCodecContext *avctx,
     ff_vk_exec_add_dep_buf(&fv->s, exec, &fd->out_data_ref, 1, 0);
     fd->out_data_ref = NULL; /* Ownership passed */
 
-    ff_vk_exec_add_dep_buf(&fv->s, exec, &pkt_data_ref, 1, 1);
+    ff_vk_exec_add_dep_buf(&fv->s, exec, &mapped_ref, 1, 0);
+    mapped_ref = NULL; /* Ownership passed */
 
     /* Ensure the output buffer is finished */
     buf_bar[nb_buf_bar++] = (VkBufferMemoryBarrier2) {
@@ -630,8 +642,11 @@ static int download_slices(AVCodecContext *avctx,
     out_data_buf->access = buf_bar[0].dstAccessMask;
     nb_buf_bar = 0;
 
+    for (int i = 0; i < nb_regions; i++)
+        buf_regions[i].dstOffset += mapped_buf->virtual_offset;
+
     vk->CmdCopyBuffer(exec->buf,
-                      out_data_buf->buf, pkt_data_buf->buf,
+                      out_data_buf->buf, mapped_buf->buf,
                       nb_regions, buf_regions);
 
     /* Submit */
@@ -641,18 +656,6 @@ static int download_slices(AVCodecContext *avctx,
 
     /* We need the encoded data immediately */
     ff_vk_exec_wait(&fv->s, exec);
-
-    /* Invalidate slice/output data if needed */
-    if (!(pkt_data_buf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-        VkMappedMemoryRange invalidate_data = {
-            .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-            .memory = pkt_data_buf->mem,
-            .offset = 0,
-            .size = VK_WHOLE_SIZE,
-        };
-        vk->InvalidateMappedMemoryRanges(fv->s.hwctx->act_dev,
-                                         1, &invalidate_data);
-    }
 
     return 0;
 }
@@ -664,13 +667,9 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec,
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
     FFV1Context *f = &fv->ctx;
     FFVulkanFunctions *vk = &fv->s.vkfn;
-
-    /* Packet data */
-    AVBufferRef *pkt_data_ref;
-    FFVkBuffer *pkt_data_buf;
-
     VulkanEncodeFFv1FrameData *fd = exec->opaque;
 
+    FFVkBuffer *out_data_buf = (FFVkBuffer *)fd->out_data_ref->data;
     FFVkBuffer *results_data_buf = (FFVkBuffer *)fd->results_data_ref->data;
     uint64_t *sc;
 
@@ -707,20 +706,9 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec,
     av_log(avctx, AV_LOG_VERBOSE, "Encoded data: %iMiB\n", pkt->size / (1024*1024));
     av_buffer_unref(&fd->results_data_ref); /* No need for this buffer anymore */
 
-    /* Allocate packet buffer */
-    err = ff_vk_get_pooled_buffer(&fv->s, &fv->pkt_data_pool,
-                                  &pkt_data_ref,
-                                  VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                  NULL, pkt->size,
-                                  VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
-                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-    if (err < 0)
+    /* Allocate packet */
+    if ((err = ff_get_encode_buffer(avctx, pkt, pkt->size, 0)) < 0)
         return err;
-    pkt_data_buf = (FFVkBuffer *)pkt_data_ref->data;
-
-    /* Setup packet data */
-    pkt->data     = pkt_data_buf->mapped_mem;
-    pkt->buf      = pkt_data_ref;
 
     pkt->pts      = fd->pts;
     pkt->dts      = fd->pts;
@@ -733,8 +721,37 @@ static int get_packet(AVCodecContext *avctx, FFVkExecContext *exec,
         fd->frame_opaque_ref = NULL;
     }
 
-    return download_slices(avctx, fv->buf_regions, f->slice_count, fd,
-                           pkt_data_ref);
+    /* Try using host mapped memory transfers first */
+    if (fv->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY) {
+        err = transfer_slices(avctx, fv->buf_regions, f->slice_count, fd,
+                              pkt->data, pkt->buf);
+        if (err >= 0)
+            return err;
+    }
+
+    /* Invalidate slice/output data if needed */
+    if (!(out_data_buf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+        VkMappedMemoryRange invalidate_data = {
+            .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+            .memory = out_data_buf->mem,
+            .offset = 0,
+            .size = VK_WHOLE_SIZE,
+        };
+        vk->InvalidateMappedMemoryRanges(fv->s.hwctx->act_dev,
+                                         1, &invalidate_data);
+    }
+
+    /* Copy each slice */
+    for (int i = 0; i < f->slice_count; i++) {
+        VkBufferCopy *region = &fv->buf_regions[i];
+        memcpy(pkt->data + region->dstOffset,
+               out_data_buf->mapped_mem + region->srcOffset,
+               region->size);
+    }
+
+    av_buffer_unref(&fd->out_data_ref);
+
+    return 0;
 }
 
 static int vulkan_encode_ffv1_receive_packet(AVCodecContext *avctx,
@@ -1523,7 +1540,6 @@ static av_cold int vulkan_encode_ffv1_close(AVCodecContext *avctx)
     av_buffer_pool_uninit(&fv->results_data_pool);
 
     av_buffer_pool_uninit(&fv->out_data_pool);
-    av_buffer_pool_uninit(&fv->pkt_data_pool);
 
     av_buffer_unref(&fv->keyframe_slice_data_ref);
     av_buffer_pool_uninit(&fv->slice_data_pool);
