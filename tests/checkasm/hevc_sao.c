@@ -119,21 +119,21 @@ static void check_sao_edge(HEVCDSPContext *h, int bit_depth)
         declare_func(void, uint8_t *dst, const uint8_t *src, ptrdiff_t stride_dst,
                      const int16_t *sao_offset_val, int eo, int width, int height);
 
-        for (int w = prev_size + 4; w <= block_size; w += 4) {
-            randomize_buffers(src0, src1, BUF_SIZE);
-            randomize_buffers2(offset_val, OFFSET_LENGTH);
-            memset(dst0, 0, BUF_SIZE);
-            memset(dst1, 0, BUF_SIZE);
+        if (check_func(h->sao_edge_filter[i], "hevc_sao_edge_%d_%d", block_size, bit_depth)) {
+            for (int w = prev_size + 4; w <= block_size; w += 4) {
+                randomize_buffers(src0, src1, BUF_SIZE);
+                randomize_buffers2(offset_val, OFFSET_LENGTH);
+                memset(dst0, 0, BUF_SIZE);
+                memset(dst1, 0, BUF_SIZE);
 
-            if (check_func(h->sao_edge_filter[i], "hevc_sao_edge_%d_%d", block_size, bit_depth)) {
                 call_ref(dst0, src0 + offset, stride, offset_val, eo, w, block_size);
                 call_new(dst1, src1 + offset, stride, offset_val, eo, w, block_size);
                 for (int j = 0; j < block_size; j++) {
                     if (memcmp(dst0 + j*stride, dst1 + j*stride, w*SIZEOF_PIXEL))
                         fail();
                 }
-                bench_new(dst1, src1 + offset, stride, offset_val, eo, block_size, block_size);
             }
+            bench_new(dst1, src1 + offset, stride, offset_val, eo, block_size, block_size);
         }
     }
 }
