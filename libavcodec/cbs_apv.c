@@ -230,14 +230,14 @@ static int cbs_apv_split_fragment(CodedBitstreamContext *ctx,
 
         err = cbs_apv_read_pbu_header(ctx, &gbc, &pbu_header);
         if (err < 0)
-            return err;
+            goto fail;
 
         // Could select/skip frames based on type/group_id here.
 
         err = ff_cbs_append_unit_data(frag, pbu_header.pbu_type,
                                       data, pbu_size, frag->data_ref);
         if (err < 0)
-            return err;
+            goto fail;
 
         data += pbu_size;
         size -= pbu_size;
