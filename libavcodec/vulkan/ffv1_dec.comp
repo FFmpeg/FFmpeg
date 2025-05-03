@@ -56,6 +56,11 @@ int get_isymbol(inout RangeCoder c, uint state_off)
 
 void decode_line_pcm(inout SliceContext sc, ivec2 sp, int w, int y, int p, int bits)
 {
+#ifdef CACHED_SYMBOL_READER
+    if (gl_LocalInvocationID.x > 0)
+        return;
+#endif
+
 #ifndef RGB
     if (p > 0 && p < 3) {
         w >>= chroma_shift.x;
@@ -235,8 +240,6 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
     /* PCM coding */
 #ifndef GOLOMB
     if (sc.slice_coding_mode == 1) {
-        if (gl_LocalInvocationID.x > 0)
-            return;
 #ifndef RGB
         for (int p = 0; p < planes; p++) {
             int h = sc.slice_dim.y;
