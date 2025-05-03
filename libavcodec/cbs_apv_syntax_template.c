@@ -113,12 +113,18 @@ static int FUNC(tile_info)(CodedBitstreamContext *ctx, RWContext *rw,
                            const APVRawFrameHeader *fh)
 {
     CodedBitstreamAPVContext *priv = ctx->priv_data;
+    int frame_width_in_mbs   = (fh->frame_info.frame_width  + 15) / 16;
+    int frame_height_in_mbs  = (fh->frame_info.frame_height + 15) / 16;
+    uint32_t min_tile_width  = FFMAX(APV_MIN_TILE_WIDTH_IN_MBS,
+                                     (frame_width_in_mbs + APV_MAX_TILE_COLS - 1) /
+                                     APV_MAX_TILE_COLS);
+    uint32_t min_tile_height = FFMAX(APV_MIN_TILE_HEIGHT_IN_MBS,
+                                     (frame_height_in_mbs + APV_MAX_TILE_ROWS - 1) /
+                                     APV_MAX_TILE_ROWS);
     int err;
 
-    u(20, tile_width_in_mbs,
-      APV_MIN_TILE_WIDTH_IN_MBS,  MAX_UINT_BITS(20));
-    u(20, tile_height_in_mbs,
-      APV_MIN_TILE_HEIGHT_IN_MBS, MAX_UINT_BITS(20));
+    u(20, tile_width_in_mbs,  min_tile_width,  MAX_UINT_BITS(20));
+    u(20, tile_height_in_mbs, min_tile_height, MAX_UINT_BITS(20));
 
     ub(1, tile_size_present_in_fh_flag);
 

@@ -409,7 +409,7 @@ static int apv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     err = ff_cbs_read_packet(apv->cbc, au, packet);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to read packet.\n");
-        return err;
+        goto fail;
     }
 
     for (int i = 0; i < au->nb_units; i++) {
