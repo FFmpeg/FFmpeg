@@ -1099,12 +1099,13 @@ static int init_encode_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
     uint8_t *spv_data;
     size_t spv_len;
     void *spv_opaque = NULL;
+    int use_cached_reader = fv->ctx.ac != AC_GOLOMB_RICE;
 
     RET(ff_vk_shader_init(&fv->s, shd, "ffv1_enc",
                           VK_SHADER_STAGE_COMPUTE_BIT,
                           (const char *[]) { "GL_EXT_buffer_reference",
                                              "GL_EXT_buffer_reference2" }, 2,
-                          1, 1, 1,
+                          use_cached_reader ? CONTEXT_SIZE : 1, 1, 1,
                           0));
 
     /* Common codec header */
@@ -1115,6 +1116,9 @@ static int init_encode_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
     av_bprintf(&shd->src, "#define MAX_QUANT_TABLES %i\n", MAX_QUANT_TABLES);
     av_bprintf(&shd->src, "#define MAX_CONTEXT_INPUTS %i\n", MAX_CONTEXT_INPUTS);
     av_bprintf(&shd->src, "#define MAX_QUANT_TABLE_SIZE %i\n", MAX_QUANT_TABLE_SIZE);
+
+    if (use_cached_reader)
+        av_bprintf(&shd->src, "#define CACHED_SYMBOL_READER 1\n");
 
     desc_set = (FFVulkanDescriptorSetBinding []) {
         {

@@ -21,33 +21,43 @@
  */
 
 #ifndef GOLOMB
+#ifdef CACHED_SYMBOL_READER
+shared uint8_t state[CONTEXT_SIZE];
+#define WRITE(c, off, val) put_rac_direct(c, state[off], val)
+#else
+#define WRITE(c, off, val) put_rac(c, uint64_t(slice_state) + (state_off + off), val)
+#endif
+
 /* Note - only handles signed values */
-void put_symbol(inout RangeCoder c, uint64_t state, int v)
+void put_symbol(inout RangeCoder c, uint state_off, int v)
 {
     bool is_nil = (v == 0);
-    put_rac(c, state, is_nil);
+    WRITE(c, 0, is_nil);
     if (is_nil)
         return;
 
     const int a = abs(v);
     const int e = findMSB(a);
 
-    state += 1;
     for (int i = 0; i < e; i++)
-        put_rac(c, state + min(i, 9), true);
-    put_rac(c, state + min(e, 9), false);
+        WRITE(c, 1 + min(i, 9), true);
+    WRITE(c, 1 + min(e, 9), false);
 
-    state += 21;
     for (int i = e - 1; i >= 0; i--)
-        put_rac(c, state + min(i, 9), bool(bitfieldExtract(a, i, 1)));
+        WRITE(c, 22 + min(i, 9), bool(bitfieldExtract(a, i, 1)));
 
-    put_rac(c, state - 11 + min(e, 10), v < 0);
+    WRITE(c, 22 - 11 + min(e, 10), v < 0);
 }
 
 void encode_line_pcm(inout SliceContext sc, readonly uimage2D img,
                      ivec2 sp, int y, int p, int comp, int bits)
 {
     int w = sc.slice_dim.x;
+
+#ifdef CACHED_SYMBOL_READER
+    if (gl_LocalInvocationID.x > 0)
+        return;
+#endif
 
 #ifndef RGB
     if (p > 0 && p < 3) {
@@ -63,7 +73,7 @@ void encode_line_pcm(inout SliceContext sc, readonly uimage2D img,
     }
 }
 
-void encode_line(inout SliceContext sc, readonly uimage2D img, uint64_t state,
+void encode_line(inout SliceContext sc, readonly uimage2D img, uint state_off,
                  ivec2 sp, int y, int p, int comp, int bits,
                  uint8_t quant_table_idx, const int run_index)
 {
@@ -86,13 +96,25 @@ void encode_line(inout SliceContext sc, readonly uimage2D img, uint64_t state,
 
         d[1] = fold(d[1], bits);
 
-        put_symbol(sc.c, state + CONTEXT_SIZE*d[0], d[1]);
+        uint context_off = state_off + CONTEXT_SIZE*d[0];
+#ifdef CACHED_SYMBOL_READER
+        u8buf sb = u8buf(uint64_t(slice_state) + context_off + gl_LocalInvocationID.x);
+        state[gl_LocalInvocationID.x] = sb.v;
+        barrier();
+        if (gl_LocalInvocationID.x == 0)
+#endif
+
+            put_symbol(sc.c, context_off, d[1]);
+
+#ifdef CACHED_SYMBOL_READER
+        sb.v = state[gl_LocalInvocationID.x];
+#endif
     }
 }
 
 #else /* GOLOMB */
 
-void encode_line(inout SliceContext sc, readonly uimage2D img, uint64_t state,
+void encode_line(inout SliceContext sc, readonly uimage2D img, uint state_off,
                  ivec2 sp, int y, int p, int comp, int bits,
                  uint8_t quant_table_idx, inout int run_index)
 {
@@ -143,7 +165,7 @@ void encode_line(inout SliceContext sc, readonly uimage2D img, uint64_t state,
         }
 
         if (!run_mode) {
-            VlcState sb = VlcState(state + VLC_STATE_SIZE*d[0]);
+            VlcState sb = VlcState(uint64_t(slice_state) + state_off + VLC_STATE_SIZE*d[0]);
             Symbol sym = get_vlc_symbol(sb, d[1], bits);
             put_bits(sc.pb, sym.bits, sym.val);
         }
@@ -245,8 +267,7 @@ void encode_slice(inout SliceContext sc, const uint slice_idx)
 #endif
     {
         u8vec4 quant_table_idx = sc.quant_table_idx.xyyz;
-        uint64_t slice_state_off = uint64_t(slice_state) +
-                                   slice_idx*plane_state_size*codec_planes;
+        u32vec4 slice_state_off = (slice_idx*codec_planes + uvec4(0, 1, 1, 2))*plane_state_size;
 
 #ifndef RGB
         for (int c = 0; c < components; c++) {
@@ -260,26 +281,22 @@ void encode_slice(inout SliceContext sc, const uint slice_idx)
             int comp = c - p;
 
             for (int y = 0; y < h; y++)
-                encode_line(sc, src[p], slice_state_off, sp, y, p,
+                encode_line(sc, src[p], slice_state_off[c], sp, y, p,
                             comp, bits, quant_table_idx[c], run_index);
-
-            /* For the second chroma plane, reuse the first plane's state */
-            if (c != 1)
-                slice_state_off += plane_state_size;
         }
 #else
         int run_index = 0;
         for (int y = 0; y < sc.slice_dim.y; y++) {
             preload_rgb(sc, sp, sc.slice_dim.x, y, true);
 
-            encode_line(sc, tmp, slice_state_off + plane_state_size*0,
+            encode_line(sc, tmp, slice_state_off[0],
                         sp, y, 0, 1, bits, quant_table_idx[0], run_index);
-            encode_line(sc, tmp, slice_state_off + plane_state_size*1,
+            encode_line(sc, tmp, slice_state_off[1],
                         sp, y, 0, 2, bits, quant_table_idx[1], run_index);
-            encode_line(sc, tmp, slice_state_off + plane_state_size*1,
+            encode_line(sc, tmp, slice_state_off[2],
                         sp, y, 0, 0, bits, quant_table_idx[2], run_index);
             if (transparency == 1)
-                encode_line(sc, tmp, slice_state_off + plane_state_size*2,
+                encode_line(sc, tmp, slice_state_off[3],
                             sp, y, 0, 3, bits, quant_table_idx[3], run_index);
         }
 #endif
@@ -288,6 +305,11 @@ void encode_slice(inout SliceContext sc, const uint slice_idx)
 
 void finalize_slice(inout SliceContext sc, const uint slice_idx)
 {
+#ifdef CACHED_SYMBOL_READER
+    if (gl_LocalInvocationID.x > 0)
+        return;
+#endif
+
 #ifdef GOLOMB
     uint32_t enc_len = sc.hdr_len + flush_put_bits(sc.pb);
 #else
