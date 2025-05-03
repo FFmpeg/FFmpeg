@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdatomic.h>
+
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
@@ -41,6 +43,7 @@ typedef struct APVDecodeContext {
     APVDerivedTileInfo tile_info;
 
     AVFrame *output_frame;
+    atomic_int tile_errors;
 
     uint8_t warned_additional_frames;
     uint8_t warned_unknown_pbu_types;
@@ -129,6 +132,8 @@ static av_cold int apv_decode_init(AVCodecContext *avctx)
 
     ff_apv_dsp_init(&apv->dsp);
 
+    atomic_init(&apv->tile_errors, 0);
+
     return 0;
 }
 
@@ -158,7 +163,7 @@ static int apv_decode_block(AVCodecContext *avctx,
 
     err = ff_apv_entropy_decode_block(coeff, gbc, entropy_state);
     if (err < 0)
-        return 0;
+        return err;
 
     apv->dsp.decode_transquant(output, pitch,
                                coeff, qmatrix,
@@ -215,8 +220,12 @@ static int apv_decode_tile_component(AVCodecContext *avctx, void *data,
         .prev_1st_ac_level = 0,
     };
 
-    init_get_bits8(&gbc, tile->tile_data[comp_index],
-                   tile->tile_header.tile_data_size[comp_index]);
+    int err;
+
+    err = init_get_bits8(&gbc, tile->tile_data[comp_index],
+                         tile->tile_header.tile_data_size[comp_index]);
+    if (err < 0)
+        goto fail;
 
     // Combine the bitstream quantisation matrix with the qp scaling
     // in advance.  (Including qp_shift as well would overflow 16 bits.)
@@ -251,12 +260,17 @@ static int apv_decode_tile_component(AVCodecContext *avctx, void *data,
                     uint8_t  *block_start = apv->output_frame->data[comp_index] +
                                             frame_y * frame_pitch + 2 * frame_x;
 
-                    apv_decode_block(avctx,
-                                     block_start, frame_pitch,
-                                     &gbc, &entropy_state,
-                                     bit_depth,
-                                     qp_shift,
-                                     qmatrix_scaled);
+                    err = apv_decode_block(avctx,
+                                           block_start, frame_pitch,
+                                           &gbc, &entropy_state,
+                                           bit_depth,
+                                           qp_shift,
+                                           qmatrix_scaled);
+                    if (err < 0) {
+                        // Error in block decode means entropy desync,
+                        // so this is not recoverable.
+                        goto fail;
+                    }
                 }
             }
         }
@@ -268,6 +282,13 @@ static int apv_decode_tile_component(AVCodecContext *avctx, void *data,
            tile_start_x, tile_start_y);
 
     return 0;
+
+fail:
+    av_log(avctx, AV_LOG_VERBOSE,
+           "Decode error in tile %d component %d.\n",
+           tile_index, comp_index);
+    atomic_fetch_add_explicit(&apv->tile_errors, 1, memory_order_relaxed);
+    return err;
 }
 
 static int apv_decode(AVCodecContext *avctx, AVFrame *output,
@@ -289,6 +310,7 @@ static int apv_decode(AVCodecContext *avctx, AVFrame *output,
         return err;
 
     apv->output_frame = output;
+    atomic_store_explicit(&apv->tile_errors, 0, memory_order_relaxed);
 
     // Each component within a tile is independent of every other,
     // so we can decode all in parallel.
@@ -296,6 +318,18 @@ static int apv_decode(AVCodecContext *avctx, AVFrame *output,
 
     avctx->execute2(avctx, apv_decode_tile_component,
                     input, NULL, job_count);
+
+    err = atomic_load_explicit(&apv->tile_errors, memory_order_relaxed);
+    if (err > 0) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Decode errors in %d tile components.\n", err);
+        if (avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) {
+            // Output the frame anyway.
+            output->flags |= AV_FRAME_FLAG_CORRUPT;
+        } else {
+            return AVERROR_INVALIDDATA;
+        }
+    }
 
     return 0;
 }
