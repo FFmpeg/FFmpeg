@@ -67,12 +67,13 @@ static const uint32_t sao_size[5] = {8, 16, 32, 48, 64};
 static void check_sao_band(HEVCDSPContext *h, int bit_depth)
 {
     int i;
-    LOCAL_ALIGNED_32(uint8_t, dst0, [BUF_SIZE]);
-    LOCAL_ALIGNED_32(uint8_t, dst1, [BUF_SIZE]);
+    PIXEL_RECT(dst0, MAX_PB_SIZE, MAX_PB_SIZE);
+    PIXEL_RECT(dst1, MAX_PB_SIZE, MAX_PB_SIZE);
     LOCAL_ALIGNED_32(uint8_t, src0, [BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t, src1, [BUF_SIZE]);
     int16_t offset_val[OFFSET_LENGTH];
     int left_class = rnd()%32;
+    const int walign = 16;
 
     for (i = 0; i <= 4; i++) {
         int block_size = sao_size[i];
@@ -86,17 +87,14 @@ static void check_sao_band(HEVCDSPContext *h, int bit_depth)
             for (int w = prev_size + 4; w <= block_size; w += 4) {
                 randomize_buffers(src0, src1, BUF_SIZE);
                 randomize_buffers2(offset_val, OFFSET_LENGTH);
-                memset(dst0, 0, BUF_SIZE);
-                memset(dst1, 0, BUF_SIZE);
+                CLEAR_PIXEL_RECT(dst0);
+                CLEAR_PIXEL_RECT(dst1);
 
-                call_ref(dst0, src0, stride, stride, offset_val, left_class, w, block_size);
-                call_new(dst1, src1, stride, stride, offset_val, left_class, w, block_size);
-                for (int j = 0; j < block_size; j++) {
-                    if (memcmp(dst0 + j*stride, dst1 + j*stride, w*SIZEOF_PIXEL))
-                        fail();
-                }
+                call_ref(dst0, src0, dst0_stride, stride, offset_val, left_class, w, block_size);
+                call_new(dst1, src1, dst1_stride, stride, offset_val, left_class, w, block_size);
+                checkasm_check_pixel_padded_align(dst0, dst0_stride, dst1, dst1_stride, w, block_size, "dst", walign, 1);
             }
-            bench_new(dst1, src1, stride, stride, offset_val, left_class, block_size, block_size);
+            bench_new(dst1, src1, dst1_stride, stride, offset_val, left_class, block_size, block_size);
         }
     }
 }
@@ -104,17 +102,17 @@ static void check_sao_band(HEVCDSPContext *h, int bit_depth)
 static void check_sao_edge(HEVCDSPContext *h, int bit_depth)
 {
     int i;
-    LOCAL_ALIGNED_32(uint8_t, dst0, [BUF_SIZE]);
-    LOCAL_ALIGNED_32(uint8_t, dst1, [BUF_SIZE]);
+    PIXEL_RECT(dst0, MAX_PB_SIZE, MAX_PB_SIZE);
+    PIXEL_RECT(dst1, MAX_PB_SIZE, MAX_PB_SIZE);
     LOCAL_ALIGNED_32(uint8_t, src0, [BUF_SIZE]);
     LOCAL_ALIGNED_32(uint8_t, src1, [BUF_SIZE]);
     int16_t offset_val[OFFSET_LENGTH];
     int eo = rnd()%4;
+    const int walign = 16;
 
     for (i = 0; i <= 4; i++) {
         int block_size = sao_size[i];
         int prev_size = i > 0 ? sao_size[i - 1] : 0;
-        ptrdiff_t stride = PIXEL_STRIDE*SIZEOF_PIXEL;
         int offset = (AV_INPUT_BUFFER_PADDING_SIZE + PIXEL_STRIDE)*SIZEOF_PIXEL;
         declare_func(void, uint8_t *dst, const uint8_t *src, ptrdiff_t stride_dst,
                      const int16_t *sao_offset_val, int eo, int width, int height);
@@ -123,17 +121,14 @@ static void check_sao_edge(HEVCDSPContext *h, int bit_depth)
             for (int w = prev_size + 4; w <= block_size; w += 4) {
                 randomize_buffers(src0, src1, BUF_SIZE);
                 randomize_buffers2(offset_val, OFFSET_LENGTH);
-                memset(dst0, 0, BUF_SIZE);
-                memset(dst1, 0, BUF_SIZE);
+                CLEAR_PIXEL_RECT(dst0);
+                CLEAR_PIXEL_RECT(dst1);
 
-                call_ref(dst0, src0 + offset, stride, offset_val, eo, w, block_size);
-                call_new(dst1, src1 + offset, stride, offset_val, eo, w, block_size);
-                for (int j = 0; j < block_size; j++) {
-                    if (memcmp(dst0 + j*stride, dst1 + j*stride, w*SIZEOF_PIXEL))
-                        fail();
-                }
+                call_ref(dst0, src0 + offset, dst0_stride, offset_val, eo, w, block_size);
+                call_new(dst1, src1 + offset, dst1_stride, offset_val, eo, w, block_size);
+                checkasm_check_pixel_padded_align(dst0, dst0_stride, dst1, dst1_stride, w, block_size, "dst", walign, 1);
             }
-            bench_new(dst1, src1 + offset, stride, offset_val, eo, block_size, block_size);
+            bench_new(dst1, src1 + offset, dst1_stride, offset_val, eo, block_size, block_size);
         }
     }
 }
