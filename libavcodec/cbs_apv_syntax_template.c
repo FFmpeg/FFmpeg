@@ -189,10 +189,12 @@ static int FUNC(frame_header)(CodedBitstreamContext *ctx, RWContext *rw,
 }
 
 static int FUNC(tile_header)(CodedBitstreamContext *ctx, RWContext *rw,
-                             APVRawTileHeader *current, int tile_idx)
+                             APVRawTileHeader *current,
+                             int tile_idx, uint32_t tile_size)
 {
     const CodedBitstreamAPVContext *priv = ctx->priv_data;
     uint16_t expected_tile_header_size;
+    uint32_t tile_size_remaining;
     uint8_t max_qp;
     int err;
 
@@ -203,8 +205,10 @@ static int FUNC(tile_header)(CodedBitstreamContext *ctx, RWContext *rw,
 
     u(16, tile_index, tile_idx, tile_idx);
 
+    tile_size_remaining = tile_size - current->tile_header_size;
     for (int c = 0; c < priv->num_comp; c++) {
-        us(32, tile_data_size[c], 1, MAX_UINT_BITS(32), 1, c);
+        us(32, tile_data_size[c], 1, tile_size_remaining, 1, c);
+        tile_size_remaining -= current->tile_data_size[c];
     }
 
     max_qp = 3 + priv->bit_depth * 6;
@@ -218,12 +222,14 @@ static int FUNC(tile_header)(CodedBitstreamContext *ctx, RWContext *rw,
 }
 
 static int FUNC(tile)(CodedBitstreamContext *ctx, RWContext *rw,
-                      APVRawTile *current, int tile_idx)
+                      APVRawTile *current,
+                      int tile_idx, uint32_t tile_size)
 {
     const CodedBitstreamAPVContext *priv = ctx->priv_data;
     int err;
 
-    CHECK(FUNC(tile_header)(ctx, rw, &current->tile_header, tile_idx));
+    CHECK(FUNC(tile_header)(ctx, rw, &current->tile_header,
+                            tile_idx, tile_size));
 
     for (int c = 0; c < priv->num_comp; c++) {
         uint32_t comp_size = current->tile_header.tile_data_size[c];
@@ -257,7 +263,8 @@ static int FUNC(frame)(CodedBitstreamContext *ctx, RWContext *rw,
     for (int t = 0; t < priv->tile_info.num_tiles; t++) {
         us(32, tile_size[t], 10, MAX_UINT_BITS(32), 1, t);
 
-        CHECK(FUNC(tile)(ctx, rw, &current->tile[t], t));
+        CHECK(FUNC(tile)(ctx, rw, &current->tile[t],
+                         t, current->tile_size[t]));
     }
 
     CHECK(FUNC(filler)(ctx, rw, &current->filler));
