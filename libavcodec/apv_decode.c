@@ -19,6 +19,7 @@
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/thread.h"
 
 #include "apv.h"
 #include "apv_decode.h"
@@ -39,8 +40,6 @@ typedef struct APVDecodeContext {
     CodedBitstreamFragment au;
     APVDerivedTileInfo tile_info;
 
-    APVVLCLUT decode_lut;
-
     AVFrame *output_frame;
 
     uint8_t warned_additional_frames;
@@ -54,6 +53,8 @@ static const enum AVPixelFormat apv_format_table[5][5] = {
     { AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV444P10,  AV_PIX_FMT_YUV444P12,  AV_PIX_FMT_GRAY14, AV_PIX_FMT_YUV444P16 },
     { AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_YUVA444P16 },
 };
+
+static APVVLCLUT decode_lut;
 
 static int apv_decode_check_format(AVCodecContext *avctx,
                                    const APVRawFrameHeader *header)
@@ -101,10 +102,19 @@ static const CodedBitstreamUnitType apv_decompose_unit_types[] = {
     APV_PBU_METADATA,
 };
 
+static AVOnce apv_entropy_once = AV_ONCE_INIT;
+
+static av_cold void apv_entropy_build_decode_lut(void)
+{
+    ff_apv_entropy_build_decode_lut(&decode_lut);
+}
+
 static av_cold int apv_decode_init(AVCodecContext *avctx)
 {
     APVDecodeContext *apv = avctx->priv_data;
     int err;
+
+    ff_thread_once(&apv_entropy_once, apv_entropy_build_decode_lut);
 
     err = ff_cbs_init(&apv->cbc, AV_CODEC_ID_APV, avctx);
     if (err < 0)
@@ -116,8 +126,6 @@ static av_cold int apv_decode_init(AVCodecContext *avctx)
         FF_ARRAY_ELEMS(apv_decompose_unit_types);
 
     // Extradata could be set here, but is ignored by the decoder.
-
-    ff_apv_entropy_build_decode_lut(&apv->decode_lut);
 
     ff_apv_dsp_init(&apv->dsp);
 
@@ -201,7 +209,7 @@ static int apv_decode_tile_component(AVCodecContext *avctx, void *data,
 
     APVEntropyState entropy_state = {
         .log_ctx           = avctx,
-        .decode_lut        = &apv->decode_lut,
+        .decode_lut        = &decode_lut,
         .prev_dc           = 0,
         .prev_dc_diff      = 20,
         .prev_1st_ac_level = 0,
