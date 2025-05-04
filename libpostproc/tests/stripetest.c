@@ -21,6 +21,7 @@
 #include "libavutil/frame.h"
 #include "libavutil/adler32.h"
 #include "libpostproc/postprocess.h"
+#include "test_utils.h"
 
 typedef const uint8_t *cuint8;
 
@@ -46,21 +47,6 @@ static void strips(AVFrame *frame, int mul)
             }
         }
     }
-}
-
-static int64_t chksum(AVFrame *f)
-{
-    AVAdler a = 123;
-
-    for(int y=0; y<f->height; y++) {
-        a = av_adler32_update(a, &f->data[0][y*f->linesize[0]], f->width);
-    }
-    for(int y=0; y<(f->height+1)/2; y++) {
-        a = av_adler32_update(a, &f->data[1][y*f->linesize[1]], (f->width+1)/2);
-        a = av_adler32_update(a, &f->data[2][y*f->linesize[2]], (f->width+1)/2);
-    }
-
-    return a;
 }
 
 static int64_t test(int width, int height, const char *testname, int mul, int flags, int pict_type, int quality) {
@@ -94,7 +80,7 @@ static int64_t test(int width, int height, const char *testname, int mul, int fl
                    width, height, NULL, 0,
                    mode, context, pict_type);
 
-    ret = chksum(out);
+    ret = ff_chksum(out);
 end:
     av_frame_free(&in);
     av_frame_free(&out);
