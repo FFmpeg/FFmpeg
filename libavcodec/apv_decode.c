@@ -160,6 +160,7 @@ static int apv_decode_block(AVCodecContext *avctx,
     int err;
 
     LOCAL_ALIGNED_32(int16_t, coeff, [64]);
+    memset(coeff, 0, 64 * sizeof(int16_t));
 
     err = ff_apv_entropy_decode_block(coeff, gbc, entropy_state);
     if (err < 0)
@@ -216,8 +217,8 @@ static int apv_decode_tile_component(AVCodecContext *avctx, void *data,
         .log_ctx           = avctx,
         .decode_lut        = &decode_lut,
         .prev_dc           = 0,
-        .prev_dc_diff      = 20,
-        .prev_1st_ac_level = 0,
+        .prev_k_dc         = 5,
+        .prev_k_level      = 0,
     };
 
     int err;

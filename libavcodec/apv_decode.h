@@ -33,14 +33,39 @@
 #define APV_VLC_LUT_BITS 9
 #define APV_VLC_LUT_SIZE (1 << APV_VLC_LUT_BITS)
 
-typedef struct APVVLCLUTEntry {
+typedef struct APVSingleVLCLUTEntry {
     uint16_t result;  // Return value if not reading more.
     uint8_t  consume; // Number of bits to consume.
     uint8_t  more;    // Whether to read additional bits.
-} APVVLCLUTEntry;
+} APVSingleVLCLUTEntry;
+
+typedef struct APVMultiVLCLUTEntry {
+    // Number of symbols this bit stream resolves to.
+    uint8_t count;
+    // k_run after decoding all symbols.
+    uint8_t k_run     : 2;
+    // k_level after decoding the first level symbol.
+    uint8_t k_level_0 : 3;
+    // k_level after decoding all symbols.
+    uint8_t k_level_1 : 3;
+    // Run output values.
+    uint8_t run[2];
+    // Level output values.
+    int16_t level[2];
+    // Bit index of the end of each code.
+    uint8_t offset[4];
+} APVMultiVLCLUTEntry;
 
 typedef struct APVVLCLUT {
-    APVVLCLUTEntry lut[6][APV_VLC_LUT_SIZE];
+    // Single-symbol LUT for VLCs.
+    // Applies to all coefficients, but used only for DC coefficients
+    // in the decoder.
+    APVSingleVLCLUTEntry single_lut[6][APV_VLC_LUT_SIZE];
+    // Multi-symbol LUT for run/level combinations, decoding up to four
+    // symbols per step.  Comes in two versions, which to use depends on
+    // whether the next symbol is a run or a level.
+    APVMultiVLCLUTEntry run_first_lut[3][5][APV_VLC_LUT_SIZE];
+    APVMultiVLCLUTEntry level_first_lut[3][5][APV_VLC_LUT_SIZE];
 } APVVLCLUT;
 
 typedef struct APVEntropyState {
@@ -48,33 +73,29 @@ typedef struct APVEntropyState {
 
     const APVVLCLUT *decode_lut;
 
+    // Previous DC level value.
     int16_t prev_dc;
-    int16_t prev_dc_diff;
-    int16_t prev_1st_ac_level;
+    // k parameter implied by the previous DC level value.
+    uint8_t prev_k_dc;
+    // k parameter implied by the previous first AC level value.
+    uint8_t prev_k_level;
 } APVEntropyState;
 
 
 /**
- * Build the decoder VLC look-up table.
+ * Build the decoder VLC look-up tables.
  */
 void ff_apv_entropy_build_decode_lut(APVVLCLUT *decode_lut);
 
 /**
  * Entropy decode a single 8x8 block to coefficients.
  *
- * Outputs in block order (dezigzag already applied).
+ * Outputs nonzero coefficients only to the block row-major order
+ * (dezigzag is applied within the function).  The output block
+ * must have been filled with zeroes before calling this function.
  */
-int ff_apv_entropy_decode_block(int16_t *coeff,
-                                GetBitContext *gbc,
-                                APVEntropyState *state);
-
-/**
- * Read a single APV VLC code.
- *
- * This entrypoint is exposed for testing.
- */
-unsigned int ff_apv_read_vlc(GetBitContext *gbc, int k_param,
-                             const APVVLCLUT *lut);
-
+int ff_apv_entropy_decode_block(int16_t *restrict coeff,
+                                GetBitContext *restrict gbc,
+                                APVEntropyState *restrict state);
 
 #endif /* AVCODEC_APV_DECODE_H */
