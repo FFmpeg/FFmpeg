@@ -1329,6 +1329,7 @@ TESTPROGS = avcodec                                                     \
             jpeg2000dwt                                                 \
             mathops                                                    \
 
+TESTPROGS-$(CONFIG_APV_DECODER)           += apv
 TESTPROGS-$(CONFIG_AV1_VAAPI_ENCODER)     += av1_levels
 TESTPROGS-$(CONFIG_CABAC)                 += cabac
 TESTPROGS-$(CONFIG_GOLOMB)                += golomb
