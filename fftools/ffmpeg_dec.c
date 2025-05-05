@@ -733,13 +733,12 @@ static int packet_decode(DecoderPriv *dp, AVPacket *pkt, AVFrame *frame)
         av_log(dp, AV_LOG_ERROR, "Error submitting %s to decoder: %s\n",
                pkt ? "packet" : "EOF", av_err2str(ret));
 
-        if (ret != AVERROR_EOF) {
-            dp->dec.decode_errors++;
-            if (!exit_on_error)
-                ret = 0;
-        }
+        if (ret == AVERROR_EOF)
+            return ret;
 
-        return ret;
+        dp->dec.decode_errors++;
+        if (exit_on_error)
+            return ret;
     }
 
     while (1) {
