@@ -2,7 +2,7 @@
 # arguments, it decomposes the stream fully and then recomposes it
 # without making any changes.
 
-fate-cbs: fate-cbs-av1 fate-cbs-h264 fate-cbs-hevc fate-cbs-mpeg2 fate-cbs-vp9 fate-cbs-vvc
+fate-cbs: fate-cbs-apv fate-cbs-av1 fate-cbs-h264 fate-cbs-hevc fate-cbs-mpeg2 fate-cbs-vp9 fate-cbs-vvc
 
 FATE_CBS_DEPS = $(call ALLYES, $(1)_DEMUXER $(2)_PARSER $(3)_METADATA_BSF $(4)_DECODER $(5)_MUXER)
 FATE_CBS_NO_DEC_DEPS = $(call ALLYES, $(1)_DEMUXER $(1)_PARSER $(1)_METADATA_BSF $(1)_MUXER)
@@ -24,6 +24,17 @@ define FATE_CBS_DISCARD_TEST
 FATE_CBS_$(1)_DISCARD += fate-cbs-$(1)-discard-$(2)
 fate-cbs-$(1)-discard-$(2): CMD = md5 -i $(TARGET_SAMPLES)/$(3) -c:v copy -y -bsf:v filter_units=discard=$(2) -f $(4)
 endef
+
+# APV read/write
+
+FATE_CBS_APV_SAMPLES =             \
+    profile_422-10.apv
+
+$(foreach N,$(FATE_CBS_APV_SAMPLES),$(eval $(call FATE_CBS_TEST,apv,$(basename $(N)),apv,apv/$(N),apv)))
+
+FATE_CBS_APV-$(call FATE_CBS_DEPS, APV, APV, APV, APV, APV) = $(FATE_CBS_apv)
+FATE_SAMPLES_AVCONV += $(FATE_CBS_APV-yes)
+fate-cbs-apv: $(FATE_CBS_APV-yes)
 
 # AV1 read/write
 
