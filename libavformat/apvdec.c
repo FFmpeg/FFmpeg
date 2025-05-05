@@ -53,7 +53,6 @@ static int apv_extract_header_info(GetByteContext *gbc)
 
     if (info->pbu_type == APV_PBU_ACCESS_UNIT_INFORMATION) {
         unsigned int num_frames = bytestream2_get_be16(gbc);
-        int pbu_type;
 
         if (num_frames < 1)
             return AVERROR_INVALIDDATA;
