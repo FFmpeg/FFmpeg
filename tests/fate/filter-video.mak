@@ -498,7 +498,7 @@ fate-filter-pp7: CMD = framecrc -flags bitexact -export_side_data venc_params -i
 FATE_FILTER_VSYNTH1_MPEG4_QPRD-$(call FILTERDEMDEC, SPP, AVI, MPEG4) += spp
 fate-filter-spp: CMD = framecrc -flags bitexact -export_side_data venc_params -idct simple -i $(TARGET_PATH)/tests/data/fate/vsynth1-mpeg4-qprd.avi -frames:v 5 -flags +bitexact -vf "spp=idct=simple:dct=int"
 
-FATE_FILTER_VSYNTH1_MPEG4_QPRD-$(call FILTERDEMDEC, PP, AVI, MPEG4) += codecview
+FATE_FILTER_VSYNTH1_MPEG4_QPRD-$(call FILTERDEMDEC, CODECVIEW, AVI, MPEG4) += codecview
 fate-filter-codecview: CMD = framecrc -flags bitexact -idct simple -flags2 +export_mvs -i $(TARGET_PATH)/tests/data/fate/vsynth1-mpeg4-qprd.avi -frames:v 5 -flags +bitexact -vf codecview=mv=pf+bf+bb
 
 # The above tests use vsynth1-mpeg4-qprd.avi created by fate-vsynth1-mpeg4-qprd
