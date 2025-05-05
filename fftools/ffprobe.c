@@ -62,8 +62,6 @@
 #include "libswscale/version.h"
 #include "libswresample/swresample.h"
 #include "libswresample/version.h"
-#include "libpostproc/postprocess.h"
-#include "libpostproc/version.h"
 #include "libavfilter/version.h"
 #include "textformat/avtextformat.h"
 #include "cmdutils.h"
@@ -2573,7 +2571,6 @@ static void ffprobe_show_library_versions(AVTextFormatContext *tfc)
     SHOW_LIB_VERSION(avfilter,   AVFILTER);
     SHOW_LIB_VERSION(swscale,    SWSCALE);
     SHOW_LIB_VERSION(swresample, SWRESAMPLE);
-    SHOW_LIB_VERSION(postproc,   POSTPROC);
     avtext_print_section_footer(tfc);
 }
 

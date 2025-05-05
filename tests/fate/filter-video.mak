@@ -533,19 +533,6 @@ fate-filter-idet: CMD = framecrc -flags bitexact -idct simple -i $(SRC) -vf idet
 FATE_FILTER_VSYNTH_VIDEO_FILTER-$(CONFIG_PAD_FILTER) += fate-filter-pad
 fate-filter-pad: CMD = video_filter "pad=iw*1.5:ih*1.5:iw*0.3:ih*0.2"
 
-fate-filter-pp1: CMD = video_filter "pp=fq|4/be/hb/vb/tn/l5/al"
-fate-filter-pp2: CMD = video_filter "qp=2*(x+y),pp=be/h1/v1/lb"
-fate-filter-pp3: CMD = video_filter "qp=2*(x+y),pp=be/ha|128|7/va/li"
-fate-filter-pp4: CMD = video_filter "pp=be/ci"
-fate-filter-pp5: CMD = video_filter "pp=md"
-fate-filter-pp6: CMD = video_filter "pp=be/fd"
-
-FATE_FILTER_VSYNTH_VIDEO_FILTER-$(CONFIG_PP_FILTER) += $(addprefix fate-filter-, pp1 pp4 pp5 pp6)
-FATE_FILTER_VSYNTH_VIDEO_FILTER-$(call ALLYES, PP_FILTER QP_FILTER) += fate-filter-pp2 fate-filter-pp3
-
-FATE_FILTER_VSYNTH1_MPEG4_QPRD-$(call FILTERDEMDEC, PP, AVI, MPEG4) += pp
-fate-filter-pp:  CMD = framecrc -flags bitexact -export_side_data venc_params -idct simple -i $(TARGET_PATH)/tests/data/fate/vsynth1-mpeg4-qprd.avi -frames:v 5 -flags +bitexact -vf "pp=be/hb/vb/tn/l5/al"
-
 FATE_FILTER_VSYNTH1_MPEG4_QPRD-$(call FILTERDEMDEC, PP7, AVI, MPEG4) += pp7
 fate-filter-pp7: CMD = framecrc -flags bitexact -export_side_data venc_params -idct simple -i $(TARGET_PATH)/tests/data/fate/vsynth1-mpeg4-qprd.avi -frames:v 5 -flags +bitexact -vf "pp7"
 
@@ -562,9 +549,6 @@ FATE_FILTER_VSYNTH1_MPEG4_QPRD := $(if $(filter fate-vsynth1-mpeg4-qprd, $(FATE_
 FATE_FILTER_VSYNTH-yes += $(FATE_FILTER_VSYNTH1_MPEG4_QPRD)
 $(FATE_FILTER_VSYNTH1_MPEG4_QPRD): fate-vsynth1-mpeg4-qprd
 fate-vsynth1-mpeg4-qprd: KEEP_FILES ?= 1
-
-FATE_FILTER_VSYNTH_VIDEO_FILTER-$(call ALLYES, QP_FILTER PP_FILTER) += fate-filter-qp
-fate-filter-qp: CMD = video_filter "qp=34,pp=be/hb/vb/tn/l5/al"
 
 FATE_FILTER_VSYNTH-$(call FILTERDEMDEC, SELECT, IMAGE2, PGM) += fate-filter-select
 fate-filter-select: CMD = framecrc -flags bitexact -idct simple -i $(SRC) -vf "select=not(eq(mod(n\,2)\,0)+eq(mod(n\,3)\,0))" -frames:v 25 -flags +bitexact

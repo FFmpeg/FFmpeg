@@ -134,8 +134,6 @@ Generic Parts:
     ratecontrol.c                   [2] Michael Niedermayer
   simple IDCT:
     simple_idct.c, simple_idct.h    [2] Michael Niedermayer
-  postprocessing:
-    libpostproc/*                   [2] Michael Niedermayer
   table generation:
     tableprint.c, tableprint.h          Reimar Doeffinger
   fixed point FFT:

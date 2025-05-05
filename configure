@@ -130,7 +130,6 @@ Component options:
   --disable-avformat       disable libavformat build
   --disable-swresample     disable libswresample build
   --disable-swscale        disable libswscale build
-  --disable-postproc       disable libpostproc build
   --disable-avfilter       disable libavfilter build
   --disable-pthreads       disable pthreads [autodetect]
   --disable-w32threads     disable Win32 threads [autodetect]
@@ -2072,7 +2071,6 @@ LIBRARY_LIST="
     avdevice
     avfilter
     swscale
-    postproc
     avformat
     avcodec
     swresample
@@ -3969,7 +3967,6 @@ pan_filter_deps="swresample"
 perspective_filter_deps="gpl"
 phase_filter_deps="gpl"
 pp7_filter_deps="gpl"
-pp_filter_deps="gpl postproc"
 prewitt_opencl_filter_deps="opencl"
 procamp_vaapi_filter_deps="vaapi"
 program_opencl_filter_deps="opencl"
@@ -4086,8 +4083,6 @@ avfilter_suggest="libm stdatomic spirv_compiler"
 avformat_deps="avcodec avutil"
 avformat_suggest="libm network zlib stdatomic"
 avutil_suggest="clock_gettime ffnvcodec gcrypt libm libdrm libmfx opencl openssl user32 vaapi vulkan videotoolbox corefoundation corevideo coremedia bcrypt stdatomic"
-postproc_deps="avutil gpl"
-postproc_suggest="libm stdatomic"
 swresample_deps="avutil"
 swresample_suggest="libm libsoxr stdatomic"
 swscale_deps="avutil"
@@ -7533,7 +7528,7 @@ void (^block)(void);
 EOF
 
 # add some linker flags
-check_ldflags -Wl,-rpath-link=:libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil
+check_ldflags -Wl,-rpath-link=:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil
 enabled rpath && add_ldexeflags -Wl,-rpath,$libdir && add_ldsoflags -Wl,-rpath,$libdir
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
@@ -7898,7 +7893,6 @@ enabled fsync_filter        && prepend avfilter_deps "avformat"
 enabled mcdeint_filter      && prepend avfilter_deps "avcodec"
 enabled movie_filter        && prepend avfilter_deps "avformat avcodec"
 enabled pan_filter          && prepend avfilter_deps "swresample"
-enabled pp_filter           && prepend avfilter_deps "postproc"
 enabled qrencode_filter     && prepend avfilter_deps "swscale"
 enabled qrencodesrc_filter  && prepend avfilter_deps "swscale"
 enabled removelogo_filter   && prepend avfilter_deps "avformat avcodec swscale"
@@ -7949,9 +7943,6 @@ expand_deps(){
     eval is_in $1 \$${1}_deps && die "Dependency cycle at ${1}_deps"
     reorder_by ${1}_deps LIBRARY_LIST  # linking order is expected later
 }
-
-#we have to remove gpl from the deps here as some code assumes all lib deps are libs
-postproc_deps="$(filter_out 'gpl' $postproc_deps)"
 
 map 'expand_deps $v' $LIBRARY_LIST
 
@@ -8043,7 +8034,6 @@ echo "optimize for size         ${small-no}"
 echo "optimizations             ${optimizations-no}"
 echo "static                    ${static-no}"
 echo "shared                    ${shared-no}"
-echo "postprocessing support    ${postproc-no}"
 echo "network support           ${network-no}"
 echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
@@ -8420,7 +8410,6 @@ extralibs_avcodec="$avcodec_extralibs"
 extralibs_avformat="$avformat_extralibs"
 extralibs_avdevice="$avdevice_extralibs"
 extralibs_avfilter="$avfilter_extralibs"
-extralibs_postproc="$postproc_extralibs"
 extralibs_swscale="$swscale_extralibs"
 extralibs_swresample="$swresample_extralibs"
 EOF

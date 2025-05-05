@@ -404,7 +404,6 @@ extern const FFFilter ff_vf_photosensitivity;
 extern const FFFilter ff_vf_pixdesctest;
 extern const FFFilter ff_vf_pixelize;
 extern const FFFilter ff_vf_pixscope;
-extern const FFFilter ff_vf_pp;
 extern const FFFilter ff_vf_pp7;
 extern const FFFilter ff_vf_premultiply;
 extern const FFFilter ff_vf_prewitt;
