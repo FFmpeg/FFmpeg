@@ -132,7 +132,7 @@ static av_cold int init(AVCodecParserContext *s)
     return 0;
 }
 
-static void close(AVCodecParserContext *s)
+static av_cold void close(AVCodecParserContext *s)
 {
     APVParseContext *p = s->priv_data;
 
