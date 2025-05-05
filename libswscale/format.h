@@ -85,6 +85,20 @@ typedef struct SwsFormat {
     SwsColor color;
 } SwsFormat;
 
+static inline void ff_fmt_clear(SwsFormat *fmt)
+{
+    *fmt = (SwsFormat) {
+        .format     = AV_PIX_FMT_NONE,
+        .range      = AVCOL_RANGE_UNSPECIFIED,
+        .csp        = AVCOL_SPC_UNSPECIFIED,
+        .loc        = AVCHROMA_LOC_UNSPECIFIED,
+        .color = {
+            .prim = AVCOL_PRI_UNSPECIFIED,
+            .trc  = AVCOL_TRC_UNSPECIFIED,
+        },
+    };
+}
+
 /**
  * This function also sanitizes and strips the input data, removing irrelevant
  * fields for certain formats.
