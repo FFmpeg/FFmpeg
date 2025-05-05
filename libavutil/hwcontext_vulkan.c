@@ -2590,7 +2590,7 @@ static void try_export_flags(AVHWFramesContext *hwfc,
     VkPhysicalDeviceImageFormatInfo2 pinfo = {
         .sType  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
         .pNext  = !exp ? NULL : &enext,
-        .format = av_vkfmt_from_pixfmt(hwfc->sw_format)[0],
+        .format = vk_find_format_entry(hwfc->sw_format)->vkf,
         .type   = VK_IMAGE_TYPE_2D,
         .tiling = hwctx->tiling,
         .usage  = hwctx->usage,
