@@ -783,14 +783,12 @@ static int cbs_insert_unit(CodedBitstreamFragment *frag,
         if (position < frag->nb_units)
             memcpy(units + position + 1, frag->units + position,
                    (frag->nb_units - position) * sizeof(*units));
-    }
 
-    memset(units + position, 0, sizeof(*units));
-
-    if (units != frag->units) {
         av_free(frag->units);
         frag->units = units;
     }
+
+    memset(units + position, 0, sizeof(*units));
 
     ++frag->nb_units;
 
