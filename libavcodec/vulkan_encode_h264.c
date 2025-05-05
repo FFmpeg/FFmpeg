@@ -1065,7 +1065,7 @@ static int parse_feedback_units(AVCodecContext *avctx,
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Unable to parse feedback units, bad drivers: %s\n",
                av_err2str(err));
-        return err;
+        goto fail;
     }
 
     /* If PPS has an override, just copy it entirely. */
@@ -1079,10 +1079,12 @@ static int parse_feedback_units(AVCodecContext *avctx,
         }
     }
 
+    err = 0;
+fail:
     ff_cbs_fragment_free(&au);
     ff_cbs_close(&cbs);
 
-    return 0;
+    return err;
 }
 
 static int init_base_units(AVCodecContext *avctx)
