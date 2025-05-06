@@ -2987,6 +2987,7 @@ static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
     case AV_CODEC_ID_VP9:
         sti->need_parsing = AVSTREAM_PARSE_FULL;
         break;
+    case AV_CODEC_ID_APV:
     case AV_CODEC_ID_EVC:
     case AV_CODEC_ID_AV1:
         /* field_order detection of H264 requires parsing */
@@ -9325,6 +9326,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('a','m','v','e'), mov_read_amve }, /* ambient viewing environment box */
 { MKTAG('l','h','v','C'), mov_read_lhvc },
 { MKTAG('l','v','c','C'), mov_read_glbl },
+{ MKTAG('a','p','v','C'), mov_read_glbl },
 #if CONFIG_IAMFDEC
 { MKTAG('i','a','c','b'), mov_read_iacb },
 #endif
@@ -11032,7 +11034,10 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return FFERROR_REDO;
         }
 #endif
-        else
+        else if (st->codecpar->codec_id == AV_CODEC_ID_APV && sample->size > 4) {
+            const uint32_t au_size = avio_rb32(sc->pb);
+            ret = av_get_packet(sc->pb, pkt, au_size);
+        } else
             ret = av_get_packet(sc->pb, pkt, sample->size);
         if (ret < 0) {
             if (should_retry(sc->pb, ret)) {

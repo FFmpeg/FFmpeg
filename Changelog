@@ -21,6 +21,7 @@ version <next>:
 - G.728 decoder
 - pad_cuda filter
 - Sanyo LD-ADPCM decoder
+- APV in MP4/ISOBMFF demuxing
 
 
 version 7.1:
