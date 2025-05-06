@@ -2319,7 +2319,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
         ) /* End of CASE */
     default:
-        av_assert0(0); // unsupported codec_id should not happen
+        av_unreachable("There are cases for all codec ids using adpcm_decode_frame");
     }
 
     if (avpkt->size && bytestream2_tell(&gb) == 0) {
