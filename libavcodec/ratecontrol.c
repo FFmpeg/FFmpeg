@@ -699,7 +699,7 @@ av_cold int ff_rate_control_init(MPVMainEncContext *const m)
     if (s->adaptive_quant) {
         unsigned mb_array_size = s->c.mb_stride * s->c.mb_height;
 
-        rcc->cplx_tab = av_malloc_array(mb_array_size, 2 * sizeof(rcc->cplx_tab));
+        rcc->cplx_tab = av_malloc_array(mb_array_size, 2 * sizeof(*rcc->cplx_tab));
         if (!rcc->cplx_tab)
             return AVERROR(ENOMEM);
         rcc->bits_tab = rcc->cplx_tab + mb_array_size;
