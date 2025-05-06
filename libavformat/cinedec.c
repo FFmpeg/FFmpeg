@@ -52,6 +52,8 @@ enum {
     CFA_VRIV6     = 2,  /**< BGGR/GRBG */
     CFA_BAYER     = 3,  /**< GB/RG */
     CFA_BAYERFLIP = 4,  /**< RG/GB */
+    CFA_BAYERFLIPB = 5, /**< GR/BG */
+    CFA_BAYERFLIPH = 6, /**< BG/GR */
 };
 
 #define CFA_TLGRAY  0x80000000U
@@ -232,6 +234,26 @@ static int cine_read_header(AVFormatContext *avctx)
                 st->codecpar->format = AV_PIX_FMT_BAYER_RGGB8;
             } else if (biBitCount == 16) {
                 st->codecpar->format = AV_PIX_FMT_BAYER_RGGB16LE;
+            } else {
+                avpriv_request_sample(avctx, "unsupported biBitCount %i", biBitCount);
+                return AVERROR_INVALIDDATA;
+            }
+            break;
+        case CFA_BAYERFLIPB:
+            if (biBitCount == 8) {
+                st->codecpar->format = AV_PIX_FMT_BAYER_GRBG8;
+            } else if (biBitCount == 16) {
+                st->codecpar->format = AV_PIX_FMT_BAYER_GRBG16LE;
+            } else {
+                avpriv_request_sample(avctx, "unsupported biBitCount %i", biBitCount);
+                return AVERROR_INVALIDDATA;
+            }
+            break;
+        case CFA_BAYERFLIPH:
+            if (biBitCount == 8) {
+                st->codecpar->format = AV_PIX_FMT_BAYER_BGGR8;
+            } else if (biBitCount == 16) {
+                st->codecpar->format = AV_PIX_FMT_BAYER_BGGR16LE;
             } else {
                 avpriv_request_sample(avctx, "unsupported biBitCount %i", biBitCount);
                 return AVERROR_INVALIDDATA;
