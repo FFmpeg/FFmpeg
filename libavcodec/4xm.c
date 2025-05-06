@@ -337,7 +337,8 @@ static inline void mcdc(uint16_t *dst, const uint16_t *src, int log2w,
         }
         break;
     default:
-        av_assert0(0);
+        av_unreachable("log2w starts at 3 and gets only decremented during "
+                       "recursive calls to decode_p_block");
     }
 }
 
