@@ -239,10 +239,6 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, char *magic, 
     os->start_trimming = 0;
     os->end_trimming = 0;
 
-    /* Chained files have extradata as a new packet */
-    if (codec == &ff_opus_codec)
-        os->header = -1;
-
     return i;
 }
 

@@ -36,6 +36,51 @@ struct oggopus_private {
 #define OPUS_SEEK_PREROLL_MS 80
 #define OPUS_HEAD_SIZE 19
 
+static int parse_opus_header(AVFormatContext *avf, AVStream *st, struct ogg_stream *os,
+                             struct oggopus_private *priv, uint8_t *packet,
+                             size_t psize)
+{
+    int channels;
+    int ret;
+
+    if (psize < OPUS_HEAD_SIZE || (AV_RL8(packet + 8) & 0xF0) != 0)
+        return AVERROR_INVALIDDATA;
+
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id   = AV_CODEC_ID_OPUS;
+
+    channels = AV_RL8(packet + 9);
+    if (st->codecpar->ch_layout.nb_channels &&
+        channels != st->codecpar->ch_layout.nb_channels) {
+        av_log(avf, AV_LOG_ERROR, "Channel change is not supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    st->codecpar->ch_layout.nb_channels = channels;
+
+    priv->pre_skip        = AV_RL16(packet + 10);
+    st->codecpar->initial_padding = priv->pre_skip;
+    os->start_trimming = priv->pre_skip;
+    /*orig_sample_rate    = AV_RL32(packet + 12);*/
+    /*gain                = AV_RL16(packet + 16);*/
+    /*channel_map         = AV_RL8 (packet + 18);*/
+
+    ret = ff_alloc_extradata(st->codecpar, os->psize);
+    if (ret < 0)
+        return ret;
+
+    memcpy(st->codecpar->extradata, packet, os->psize);
+
+    st->codecpar->sample_rate = 48000;
+    st->codecpar->seek_preroll = av_rescale(OPUS_SEEK_PREROLL_MS,
+                                            st->codecpar->sample_rate, 1000);
+    avpriv_set_pts_info(st, 64, 1, 48000);
+
+    priv->need_comments = 1;
+
+    return 1;
+}
+
 static int opus_header(AVFormatContext *avf, int idx)
 {
     struct ogg *ogg              = avf->priv_data;
@@ -43,7 +88,6 @@ static int opus_header(AVFormatContext *avf, int idx)
     AVStream *st                 = avf->streams[idx];
     struct oggopus_private *priv = os->private;
     uint8_t *packet              = os->buf + os->pstart;
-    int ret;
 
     if (!priv) {
         priv = os->private = av_mallocz(sizeof(*priv));
@@ -51,32 +95,8 @@ static int opus_header(AVFormatContext *avf, int idx)
             return AVERROR(ENOMEM);
     }
 
-    if (os->flags & OGG_FLAG_BOS) {
-        if (os->psize < OPUS_HEAD_SIZE || (AV_RL8(packet + 8) & 0xF0) != 0)
-            return AVERROR_INVALIDDATA;
-        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codecpar->codec_id   = AV_CODEC_ID_OPUS;
-        st->codecpar->ch_layout.nb_channels = AV_RL8(packet + 9);
-
-        priv->pre_skip        = AV_RL16(packet + 10);
-        st->codecpar->initial_padding = priv->pre_skip;
-        os->start_trimming = priv->pre_skip;
-        /*orig_sample_rate    = AV_RL32(packet + 12);*/
-        /*gain                = AV_RL16(packet + 16);*/
-        /*channel_map         = AV_RL8 (packet + 18);*/
-
-        if ((ret = ff_alloc_extradata(st->codecpar, os->psize)) < 0)
-            return ret;
-
-        memcpy(st->codecpar->extradata, packet, os->psize);
-
-        st->codecpar->sample_rate = 48000;
-        st->codecpar->seek_preroll = av_rescale(OPUS_SEEK_PREROLL_MS,
-                                                st->codecpar->sample_rate, 1000);
-        avpriv_set_pts_info(st, 64, 1, 48000);
-        priv->need_comments = 1;
-        return 1;
-    }
+    if (os->flags & OGG_FLAG_BOS)
+        return parse_opus_header(avf, st, os, priv, packet, os->psize);
 
     if (priv->need_comments) {
         if (os->psize < 8 || memcmp(packet, "OpusTags", 8))
@@ -123,6 +143,19 @@ static int opus_packet(AVFormatContext *avf, int idx)
     if (os->granule > (1LL << 62)) {
         av_log(avf, AV_LOG_ERROR, "Unsupported huge granule pos %"PRId64 "\n", os->granule);
         return AVERROR_INVALIDDATA;
+    }
+
+     if (os->psize > 8 && !memcmp(packet, "OpusHead", 8)) {
+        ret = parse_opus_header(avf, st, os, priv, packet, os->psize);
+        if (ret < 0)
+            return ret;
+
+        return 1;
+    }
+
+    if (os->psize > 8 && !memcmp(packet, "OpusTags", 8)) {
+        priv->need_comments = 0;
+        return 1;
     }
 
     if ((!os->lastpts || os->lastpts == AV_NOPTS_VALUE) && !(os->flags & OGG_FLAG_EOS)) {

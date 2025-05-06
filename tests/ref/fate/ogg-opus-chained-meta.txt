@@ -13,7 +13,6 @@ Stream ID: 0, frame PTS: 3528, metadata: N/A
 Stream ID: 0, packet PTS: 4488, packet DTS: 4488
 Stream ID: 0, frame PTS: 4488, metadata: N/A
 Stream ID: 0, packet PTS: -312, packet DTS: -312
-Stream ID: 0, new metadata: encoder=Lavc61.19.100 libopus;Lavc61.19.100 libopus:title=First Stream;Second Stream
 Stream ID: 0, frame PTS: -312, metadata: N/A
 Stream ID: 0, packet PTS: 648, packet DTS: 648
 Stream ID: 0, frame PTS: 648, metadata: N/A
