@@ -526,7 +526,7 @@ static void reverse_matrixing(float *su1, float *su2, int *prev_code,
             }
             break;
         default:
-            av_assert1(0);
+            av_unreachable("curr_code/matrix_coeff_index_* values are stored in two bits");
         }
     }
 }
