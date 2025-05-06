@@ -5,8 +5,6 @@ Stream ID: 0, frame PTS: 0, metadata: N/A
 Stream ID: 0, packet PTS: 4608, packet DTS: 4608
 Stream ID: 0, frame PTS: 4608, metadata: N/A
 Stream ID: 0, packet PTS: 0, packet DTS: 0
-Stream ID: 0, packet PTS: 0, packet DTS: 0
-Stream ID: 0, packet PTS: 0, packet DTS: 0
 Stream ID: 0, frame PTS: 0, metadata: N/A
 Stream ID: 0, packet PTS: 4608, packet DTS: 4608
 Stream ID: 0, frame PTS: 4608, metadata: N/A

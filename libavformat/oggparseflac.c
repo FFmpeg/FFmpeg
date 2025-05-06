@@ -27,6 +27,8 @@
 #include "oggdec.h"
 
 #define OGG_FLAC_METADATA_TYPE_STREAMINFO 0x7F
+#define OGG_FLAC_MAGIC "\177FLAC"
+#define OGG_FLAC_MAGIC_SIZE sizeof(OGG_FLAC_MAGIC)-1
 
 static int
 flac_header (AVFormatContext * s, int idx)
@@ -79,6 +81,27 @@ flac_header (AVFormatContext * s, int idx)
 }
 
 static int
+flac_packet (AVFormatContext * s, int idx)
+{
+    struct ogg *ogg = s->priv_data;
+    struct ogg_stream *os = ogg->streams + idx;
+
+    if (os->psize > OGG_FLAC_MAGIC_SIZE &&
+        !memcmp(
+            os->buf + os->pstart,
+            OGG_FLAC_MAGIC,
+            OGG_FLAC_MAGIC_SIZE))
+        return 1;
+
+    if (os->psize > 0 &&
+        ((os->buf[os->pstart] & 0x7F) == FLAC_METADATA_TYPE_VORBIS_COMMENT)) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static int
 old_flac_header (AVFormatContext * s, int idx)
 {
     struct ogg *ogg = s->priv_data;
@@ -127,10 +150,11 @@ fail:
 }
 
 const struct ogg_codec ff_flac_codec = {
-    .magic = "\177FLAC",
-    .magicsize = 5,
+    .magic = OGG_FLAC_MAGIC,
+    .magicsize = OGG_FLAC_MAGIC_SIZE,
     .header = flac_header,
     .nb_header = 2,
+    .packet = flac_packet,
 };
 
 const struct ogg_codec ff_old_flac_codec = {
