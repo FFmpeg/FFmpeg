@@ -35,6 +35,7 @@
 #include "mpeg4videoenc.h"
 #include "mpegvideoenc.h"
 #include "profiles.h"
+#include "put_bits.h"
 #include "version.h"
 
 /**
@@ -1069,6 +1070,8 @@ static int mpeg4_encode_picture_header(MPVMainEncContext *const m)
     MPVEncContext *const s = &m->s;
     uint64_t time_incr;
     int64_t time_div, time_mod;
+
+    put_bits_assume_flushed(&s->pb);
 
     if (s->c.pict_type == AV_PICTURE_TYPE_I) {
         if (!(s->c.avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)) {

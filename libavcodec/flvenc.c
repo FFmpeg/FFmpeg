@@ -22,13 +22,14 @@
 #include "flvenc.h"
 #include "mpegvideo.h"
 #include "mpegvideoenc.h"
+#include "put_bits.h"
 
 int ff_flv_encode_picture_header(MPVMainEncContext *const m)
 {
     MPVEncContext *const s = &m->s;
     int format;
 
-    align_put_bits(&s->pb);
+    put_bits_assume_flushed(&s->pb);
 
     put_bits(&s->pb, 17, 1);
     /* 0: H.263 escape codes 1: 11-bit escape codes */

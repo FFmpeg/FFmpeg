@@ -38,6 +38,8 @@ int ff_rv20_encode_picture_header(MPVMainEncContext *const m)
 {
     MPVEncContext *const s = &m->s;
 
+    put_bits_assume_flushed(&s->pb);
+
     put_bits(&s->pb, 2, s->c.pict_type); //I 0 vs. 1 ?
     put_bits(&s->pb, 1, 0);     /* unknown bit */
     put_bits(&s->pb, 5, s->c.qscale);

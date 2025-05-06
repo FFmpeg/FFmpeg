@@ -35,6 +35,7 @@
 #include "h261.h"
 #include "h261enc.h"
 #include "mpegvideoenc.h"
+#include "put_bits.h"
 
 #define H261_MAX_RUN   26
 #define H261_MAX_LEVEL 15
@@ -72,7 +73,7 @@ static int h261_encode_picture_header(MPVMainEncContext *const m)
     MPVEncContext *const s = &h->s.s;
     int temp_ref;
 
-    align_put_bits(&s->pb);
+    put_bits_assume_flushed(&s->pb);
 
     put_bits(&s->pb, 20, 0x10); /* PSC */
 

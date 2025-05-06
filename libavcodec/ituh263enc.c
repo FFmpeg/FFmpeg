@@ -46,6 +46,7 @@
 #include "mathops.h"
 #include "mpegutils.h"
 #include "internal.h"
+#include "put_bits.h"
 
 /**
  * Table of number of bits a motion vector component needs.
@@ -230,6 +231,8 @@ static int h263_encode_picture_header(MPVMainEncContext *const m)
     int best_error= INT_MAX;
     int custom_pcf;
 
+    put_bits_assume_flushed(&s->pb);
+
     if(s->c.h263_plus){
         for(i=0; i<2; i++){
             int div, error;
@@ -246,8 +249,6 @@ static int h263_encode_picture_header(MPVMainEncContext *const m)
     custom_pcf = best_clock_code != 1 || best_divisor != 60;
     coded_frame_rate= 1800000;
     coded_frame_rate_base= (1000+best_clock_code)*best_divisor;
-
-    align_put_bits(&s->pb);
 
     put_bits(&s->pb, 22, 0x20); /* PSC */
     temp_ref= s->c.picture_number * (int64_t)coded_frame_rate * s->c.avctx->time_base.num / //FIXME use timestamp

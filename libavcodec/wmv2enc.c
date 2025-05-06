@@ -28,6 +28,7 @@
 #include "msmpeg4enc.h"
 #include "msmpeg4data.h"
 #include "msmpeg4_vc1_data.h"
+#include "put_bits.h"
 #include "wmv2.h"
 
 #define WMV2_EXTRADATA_SIZE 4
@@ -77,6 +78,8 @@ static int wmv2_encode_picture_header(MPVMainEncContext *const m)
     WMV2EncContext *const w = (WMV2EncContext *) m;
     MSMPEG4EncContext *const ms = &w->msmpeg4;
     MPVEncContext *const s = &m->s;
+
+    put_bits_assume_flushed(&s->pb);
 
     put_bits(&s->pb, 1, s->c.pict_type - 1);
     if (s->c.pict_type == AV_PICTURE_TYPE_I)
