@@ -1140,7 +1140,8 @@ static void decode_sb(VP9TileData *td, int row, int col, VP9Filter *lflvl,
                           uvoff + (8 * hbs * bytesperpixel >> s->ss_h), bl + 1);
                 break;
             default:
-                av_assert0(0);
+                av_unreachable("ff_vp9_partition_tree only has "
+                               "the four PARTITION_* terminal codes");
             }
         } else if (vpx_rac_get_prob_branchy(td->c, p[1])) {
             bp = PARTITION_SPLIT;
