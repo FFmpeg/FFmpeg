@@ -114,6 +114,7 @@ typedef struct FFVulkanDecodePicture {
     /* Vulkan functions needed for destruction, as no other context is guaranteed to exist */
     PFN_vkWaitSemaphores            wait_semaphores;
     PFN_vkDestroyImageView          destroy_image_view;
+    PFN_vkInvalidateMappedMemoryRanges invalidate_memory_ranges;
 } FFVulkanDecodePicture;
 
 /**

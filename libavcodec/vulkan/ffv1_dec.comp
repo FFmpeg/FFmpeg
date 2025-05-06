@@ -291,4 +291,8 @@ void main(void)
 {
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
     decode_slice(slice_ctx[slice_idx], slice_idx);
+
+    uint32_t status = corrupt ? uint32_t(corrupt) : overread;
+    if (status != 0)
+        slice_status[2*slice_idx + 1] = status;
 }

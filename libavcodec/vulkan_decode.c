@@ -142,6 +142,7 @@ static void init_frame(FFVulkanDecodeContext *dec, FFVulkanDecodePicture *vkpic)
 
     vkpic->destroy_image_view = vk->DestroyImageView;
     vkpic->wait_semaphores = vk->WaitSemaphores;
+    vkpic->invalidate_memory_ranges = vk->InvalidateMappedMemoryRanges;
 }
 
 int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,

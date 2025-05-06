@@ -133,6 +133,8 @@ void main(void)
         for (int i = 0; i < slice_size; i++)
             crc = crc_ieee[(crc & 0xFF) ^ uint32_t(bs[i].v)] ^ (crc >> 8);
 
-        slice_crc_mismatch[slice_idx] = crc;
+        slice_status[2*slice_idx + 0] = crc;
     }
+
+    slice_status[2*slice_idx + 1] = corrupt ? uint32_t(corrupt) : overread;
 }
