@@ -95,26 +95,26 @@ void renorm_encoder(inout RangeCoder c)
 }
 #endif
 
-void put_rac_direct(inout RangeCoder c, inout uint8_t state, bool bit)
+void put_rac_internal(inout RangeCoder c, const int range1, bool bit)
 {
-    int range1 = uint16_t((c.range * state) >> 8);
-
 #ifdef DEBUG
-    if (state == 0)
-        debugPrintfEXT("Error: state is zero");
     if (range1 >= c.range)
         debugPrintfEXT("Error: range1 >= c.range");
     if (range1 <= 0)
         debugPrintfEXT("Error: range1 <= 0");
 #endif
 
-    int diff = c.range - range1;
-    c.low += bit ? diff : 0;
-    c.range = bit ? range1 : diff;
+    int ranged = c.range - range1;
+    c.low += bit ? ranged : 0;
+    c.range = bit ? range1 : ranged;
 
     if (expectEXT(c.range < 0x100, false))
         renorm_encoder(c);
+}
 
+void put_rac_direct(inout RangeCoder c, inout uint8_t state, bool bit)
+{
+    put_rac_internal(c, (c.range * state) >> 8, bit);
     state = zero_one_state[(uint(bit) << 8) + state];
 }
 
@@ -126,21 +126,7 @@ void put_rac(inout RangeCoder c, uint64_t state, bool bit)
 /* Equiprobable bit */
 void put_rac_equi(inout RangeCoder c, bool bit)
 {
-    int range1 = c.range >> 1;
-
-#ifdef DEBUG
-    if (range1 >= c.range)
-        debugPrintfEXT("Error: range1 >= c.range");
-    if (range1 <= 0)
-        debugPrintfEXT("Error: range1 <= 0");
-#endif
-
-    int diff = c.range - range1;
-    c.low += bit ? diff : 0;
-    c.range = bit ? range1 : diff;
-
-    if (expectEXT(c.range < 0x100, false))
-        renorm_encoder(c);
+    put_rac_internal(c, c.range >> 1, bit);
 }
 
 void put_rac_terminate(inout RangeCoder c)
@@ -224,11 +210,9 @@ void refill(inout RangeCoder c)
     }
 }
 
-bool get_rac_direct(inout RangeCoder c, inout uint8_t state)
+bool get_rac_internal(inout RangeCoder c, const int range1)
 {
-    int range1 = c.range * state >> 8;
     int ranged = c.range - range1;
-
     bool bit = c.low >= ranged;
     c.low -= bit ? ranged : 0;
     c.range = (bit ? 0 : ranged) + (bit ? range1 : 0);
@@ -236,6 +220,12 @@ bool get_rac_direct(inout RangeCoder c, inout uint8_t state)
     if (expectEXT(c.range < 0x100, false))
         refill(c);
 
+    return bit;
+}
+
+bool get_rac_direct(inout RangeCoder c, inout uint8_t state)
+{
+    bool bit = get_rac_internal(c, c.range * state >> 8);
     state = zero_one_state[state + (bit ? 256 : 0)];
     return bit;
 }
@@ -247,18 +237,5 @@ bool get_rac(inout RangeCoder c, uint64_t state)
 
 bool get_rac_equi(inout RangeCoder c)
 {
-    int range1 = c.range >> 1;
-
-    c.range -= range1;
-
-    bool bit = c.low >= c.range;
-    if (bit) {
-        c.low -= c.range;
-        c.range = range1;
-    }
-
-    if (expectEXT(c.range < 0x100, false))
-        refill(c);
-
-    return bit;
+    return get_rac_internal(c, c.range >> 1);
 }
