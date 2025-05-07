@@ -3074,7 +3074,7 @@ int main(int argc, char **argv)
     AVTextWriterContext *wctx;
     char *buf;
     char *f_name = NULL, *f_args = NULL;
-    int ret, i;
+    int ret, input_ret, i;
 
     init_dynload();
 
@@ -3201,11 +3201,19 @@ int main(int argc, char **argv)
                 show_error(tctx, ret);
         }
 
+        input_ret = ret;
+
         avtext_print_section_footer(tctx);
 
-        avtextwriter_context_close(&wctx);
+        ret = avtextwriter_context_close(&wctx);
+        if (ret < 0)
+            av_log(NULL, AV_LOG_ERROR, "Writing output failed (closing writer): %s\n", av_err2str(ret));
 
-        avtext_context_close(&tctx);
+        ret = avtext_context_close(&tctx);
+        if (ret < 0)
+            av_log(NULL, AV_LOG_ERROR, "Writing output failed (closing formatter): %s\n", av_err2str(ret));
+
+        ret = FFMIN(ret, input_ret);
     }
 
 end:
