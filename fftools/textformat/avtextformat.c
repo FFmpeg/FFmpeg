@@ -113,7 +113,7 @@ int avtext_context_close(AVTextFormatContext **ptctx)
 
     if (tctx->formatter) {
         if (tctx->formatter->uninit)
-            tctx->formatter->uninit(tctx);
+            ret = tctx->formatter->uninit(tctx);
         if (tctx->formatter->priv_class)
             av_opt_free(tctx->priv);
     }
@@ -627,7 +627,7 @@ int avtextwriter_context_close(AVTextWriterContext **pwctx)
 
     if (wctx->writer) {
         if (wctx->writer->uninit)
-            wctx->writer->uninit(wctx);
+            ret = wctx->writer->uninit(wctx);
         if (wctx->writer->priv_class)
             av_opt_free(wctx->priv);
     }

@@ -37,12 +37,14 @@ typedef struct IOWriterContext {
     int close_on_uninit;
 } IOWriterContext;
 
-static av_cold void iowriter_uninit(AVTextWriterContext *wctx)
+static av_cold int iowriter_uninit(AVTextWriterContext *wctx)
 {
     IOWriterContext *ctx = wctx->priv;
+    int ret = 0;
 
     if (ctx->close_on_uninit)
-        avio_closep(&ctx->avio_context);
+        ret = avio_closep(&ctx->avio_context);
+    return ret;
 }
 
 static void io_w8(AVTextWriterContext *wctx, int b)

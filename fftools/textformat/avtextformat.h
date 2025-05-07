@@ -97,7 +97,7 @@ typedef struct AVTextFormatter {
     const char *name;
 
     int  (*init)  (AVTextFormatContext *tctx);
-    void (*uninit)(AVTextFormatContext *tctx);
+    int  (*uninit)(AVTextFormatContext *tctx);
 
     void (*print_section_header)(AVTextFormatContext *tctx, const void *data);
     void (*print_section_footer)(AVTextFormatContext *tctx);
