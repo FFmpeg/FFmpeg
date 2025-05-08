@@ -496,6 +496,8 @@ static int iff_read_header(AVFormatContext *s)
                 st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
             else if (st->codecpar->ch_layout.nb_channels == 2)
                 st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
+            else if (st->codecpar->ch_layout.nb_channels == 0)
+                return AVERROR_INVALIDDATA;
             break;
 
         case ID_ABIT:
