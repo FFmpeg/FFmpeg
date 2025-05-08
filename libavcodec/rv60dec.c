@@ -1791,7 +1791,7 @@ static int decode_cu_r(RV60Context * s, AVFrame * frame, ThreadContext * thread,
         ttype = cu.pu_type == PU_FULL ? TRANSFORM_8X8 : TRANSFORM_4X4;
 
     is_intra = cu.cu_type == CU_INTRA;
-    if (is_intra && qp >= 32)
+    if (qp >= 32)
         return AVERROR_INVALIDDATA;
     cu_pos = ((xpos & 63) >> 3) + ((ypos & 63) >> 3) * 8;
 
