@@ -91,7 +91,7 @@ static void mm_decode_pal(MmContext *s)
     int start = bytestream2_get_le16(&s->gb);
     int count = bytestream2_get_le16(&s->gb);
     for (int i = 0; i < count; i++)
-        s->palette[start+i] = 0xFFU << 24 | (bytestream2_get_be24(&s->gb) << 2);
+        s->palette[(start+i)&0xFF] = 0xFFU << 24 | (bytestream2_get_be24(&s->gb) << 2);
 }
 
 /**
