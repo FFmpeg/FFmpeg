@@ -105,9 +105,6 @@ static inline int get_color_format(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_YUV422P10:
         cf = OAPV_CF_YCBCR422;
         break;
-    case AV_PIX_FMT_YUV444P10:
-        cf = OAPV_CF_YCBCR444;
-        break;
     default:
         av_assert0(cf != OAPV_CF_UNKNOWN);
     }
@@ -434,7 +431,6 @@ static av_cold int liboapve_close(AVCodecContext *avctx)
 
 static const enum AVPixelFormat supported_pixel_formats[] = {
     AV_PIX_FMT_YUV422P10,
-    AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_NONE
 };
 
