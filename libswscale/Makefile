@@ -18,6 +18,7 @@ OBJS = alphablend.o                                     \
        ops.o                                            \
        ops_backend.o                                    \
        ops_chain.o                                      \
+       ops_memcpy.o                                     \
        ops_optimizer.o                                  \
        options.o                                        \
        output.o                                         \

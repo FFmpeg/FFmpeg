@@ -27,9 +27,11 @@
 #include "ops.h"
 #include "ops_internal.h"
 
-const extern SwsOpBackend backend_c;
+extern const SwsOpBackend backend_c;
+extern const SwsOpBackend backend_murder;
 
 const SwsOpBackend * const ff_sws_op_backends[] = {
+    &backend_murder,
     &backend_c,
     NULL
 };
