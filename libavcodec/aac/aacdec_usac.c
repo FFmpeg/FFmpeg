@@ -1023,8 +1023,9 @@ static void apply_noise_fill(AACDecContext *ac, SingleChannelElement *sce,
                 }
             }
 
-            if (band_quantized_to_zero)
-                sce->sfo[g*ics->max_sfb + sfb] += noise_offset;
+            if (band_quantized_to_zero) {
+                sce->sfo[g*ics->max_sfb + sfb] = FFMAX(sce->sfo[g*ics->max_sfb + sfb] + noise_offset, -200);
+            }
         }
         coef += g_len << 7;
     }
