@@ -169,7 +169,7 @@ typedef struct SpeexSubmode {
 
 typedef struct SpeexMode {
     int modeID;                 /**< ID of the mode */
-    int (*decode)(AVCodecContext *avctx, void *dec, GetBitContext *gb, float *out);
+    int (*decode)(AVCodecContext *avctx, void *dec, GetBitContext *gb, float *out, int packets_left);
     int frame_size;             /**< Size of frames used for decoding */
     int subframe_size;          /**< Size of sub-frames used for decoding */
     int lpc_size;               /**< Order of LPC filter */
@@ -521,8 +521,8 @@ static const SpeexSubmode wb_submode4 = {
     split_cb_shape_sign_unquant, &split_cb_high, -1.f
 };
 
-static int nb_decode(AVCodecContext *, void *, GetBitContext *, float *);
-static int sb_decode(AVCodecContext *, void *, GetBitContext *, float *);
+static int nb_decode(AVCodecContext *, void *, GetBitContext *, float *, int packets_left);
+static int sb_decode(AVCodecContext *, void *, GetBitContext *, float *, int packets_left);
 
 static const SpeexMode speex_modes[SPEEX_NB_MODES] = {
     {
@@ -867,7 +867,7 @@ static void lsp_to_lpc(const float *freq, float *ak, int lpcrdr)
 }
 
 static int nb_decode(AVCodecContext *avctx, void *ptr_st,
-                     GetBitContext *gb, float *out)
+                     GetBitContext *gb, float *out, int packets_left)
 {
     DecoderState *st = ptr_st;
     float ol_gain = 0, ol_pitch_coef = 0, best_pitch_gain = 0, pitch_average = 0;
@@ -1218,7 +1218,7 @@ static void qmf_synth(const float *x1, const float *x2, const float *a, float *y
 }
 
 static int sb_decode(AVCodecContext *avctx, void *ptr_st,
-                     GetBitContext *gb, float *out)
+                     GetBitContext *gb, float *out, int packets_left)
 {
     SpeexContext *s = avctx->priv_data;
     DecoderState *st = ptr_st;
@@ -1234,9 +1234,11 @@ static int sb_decode(AVCodecContext *avctx, void *ptr_st,
     mode = st->mode;
 
     if (st->modeID > 0) {
+        if (packets_left <= 1)
+            return AVERROR_INVALIDDATA;
         low_innov_alias = out + st->frame_size;
         s->st[st->modeID - 1].innov_save = low_innov_alias;
-        ret = speex_modes[st->modeID - 1].decode(avctx, &s->st[st->modeID - 1], gb, out);
+        ret = speex_modes[st->modeID - 1].decode(avctx, &s->st[st->modeID - 1], gb, out, packets_left);
         if (ret < 0)
             return ret;
     }
@@ -1559,7 +1561,7 @@ static int speex_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     dst = (float *)frame->extended_data[0];
     for (int i = 0; i < frames_per_packet; i++) {
-        ret = speex_modes[s->mode].decode(avctx, &s->st[s->mode], &s->gb, dst + i * s->frame_size);
+        ret = speex_modes[s->mode].decode(avctx, &s->st[s->mode], &s->gb, dst + i * s->frame_size, frames_per_packet - i);
         if (ret < 0)
             return ret;
         if (avctx->ch_layout.nb_channels == 2)
