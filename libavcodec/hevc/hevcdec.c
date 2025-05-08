@@ -1110,7 +1110,7 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
     if (pps->tiles_enabled_flag || pps->entropy_coding_sync_enabled_flag) {
         unsigned num_entry_point_offsets = get_ue_golomb_long(gb);
         // It would be possible to bound this tighter but this here is simpler
-        if (num_entry_point_offsets > get_bits_left(gb)) {
+        if (num_entry_point_offsets > get_bits_left(gb) || num_entry_point_offsets > UINT16_MAX) {
             av_log(s->avctx, AV_LOG_ERROR, "num_entry_point_offsets %d is invalid\n", num_entry_point_offsets);
             return AVERROR_INVALIDDATA;
         }
