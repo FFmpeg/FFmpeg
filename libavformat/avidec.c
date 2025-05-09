@@ -1114,6 +1114,10 @@ static int read_gab2_sub(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         int size;
         AVProbeData pd;
         unsigned int desc_len;
+
+        if (ast->sub_ctx)
+            return 0;
+
         AVIOContext *pb = avio_alloc_context(pkt->data + 7,
                                              pkt->size - 7,
                                              0, NULL, NULL, NULL, NULL);
