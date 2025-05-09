@@ -43,6 +43,7 @@ struct ogg_codec {
      * @return < 0 (AVERROR) code or -1 on error
      *         == 0 if the packet was a regular data packet.
      *         == 0 or 1 if the packet was a header from a chained bitstream.
+     *           (1 will cause the packet to be skiped in calling code (ogg_packet())
      */
     int (*packet)(AVFormatContext *, int);
     /**
