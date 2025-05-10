@@ -1253,6 +1253,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
             uint8_t *buf;
 
             if (watermark_height <= 0 ||
+                get_bits_left(&gb) <= 0 ||
                 (uint64_t)watermark_width * 4 > UINT_MAX / watermark_height)
                 return AVERROR_INVALIDDATA;
 
