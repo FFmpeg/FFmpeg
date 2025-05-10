@@ -711,29 +711,29 @@ static int fill_virtual_tracks(void *log_ctx, xmlNodePtr cpl_element, FFIMFCPL *
         sequence_list_elem = ff_imf_xml_get_child_element_by_name(segment_elem, "SequenceList");
         if (sequence_list_elem) {
 
-        sequence_elem = xmlFirstElementChild(sequence_list_elem);
-        while (sequence_elem) {
-            if (xmlStrcmp(sequence_elem->name, "MarkerSequence") == 0)
-                ret = push_marker_sequence(log_ctx, sequence_elem, cpl);
+            sequence_elem = xmlFirstElementChild(sequence_list_elem);
+            while (sequence_elem) {
+                if (xmlStrcmp(sequence_elem->name, "MarkerSequence") == 0)
+                    ret = push_marker_sequence(log_ctx, sequence_elem, cpl);
 
-            else if (xmlStrcmp(sequence_elem->name, "MainImageSequence") == 0)
-                ret = push_main_image_2d_sequence(log_ctx, sequence_elem, cpl);
+                else if (xmlStrcmp(sequence_elem->name, "MainImageSequence") == 0)
+                    ret = push_main_image_2d_sequence(log_ctx, sequence_elem, cpl);
 
-            else if (xmlStrcmp(sequence_elem->name, "MainAudioSequence") == 0)
-                ret = push_main_audio_sequence(log_ctx, sequence_elem, cpl);
+                else if (xmlStrcmp(sequence_elem->name, "MainAudioSequence") == 0)
+                    ret = push_main_audio_sequence(log_ctx, sequence_elem, cpl);
 
-            else
-                av_log(log_ctx,
-                       AV_LOG_INFO,
-                       "The following Sequence is not supported and is ignored: %s\n",
-                       sequence_elem->name);
+                else
+                    av_log(log_ctx,
+                        AV_LOG_INFO,
+                        "The following Sequence is not supported and is ignored: %s\n",
+                        sequence_elem->name);
 
-            /* abort parsing only if memory error occurred */
-            if (ret == AVERROR(ENOMEM))
-                return ret;
+                /* abort parsing only if memory error occurred */
+                if (ret == AVERROR(ENOMEM))
+                    return ret;
 
-            sequence_elem = xmlNextElementSibling(sequence_elem);
-        }
+                sequence_elem = xmlNextElementSibling(sequence_elem);
+            }
         }
 
         segment_elem = xmlNextElementSibling(segment_elem);
