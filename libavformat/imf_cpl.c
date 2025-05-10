@@ -629,8 +629,7 @@ static int fill_virtual_tracks(xmlNodePtr cpl_element, FFIMFCPL *cpl)
         av_log(NULL, AV_LOG_DEBUG, "Processing IMF CPL Segment\n");
 
         sequence_list_elem = ff_imf_xml_get_child_element_by_name(segment_elem, "SequenceList");
-        if (!segment_list_elem)
-            continue;
+        if (sequence_list_elem) {
 
         sequence_elem = xmlFirstElementChild(sequence_list_elem);
         while (sequence_elem) {
@@ -654,6 +653,7 @@ static int fill_virtual_tracks(xmlNodePtr cpl_element, FFIMFCPL *cpl)
                 return ret;
 
             sequence_elem = xmlNextElementSibling(sequence_elem);
+        }
         }
 
         segment_elem = xmlNextElementSibling(segment_elem);
