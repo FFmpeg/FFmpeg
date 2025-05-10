@@ -1626,6 +1626,9 @@ static void sbr_env_estimate(AAC_FLOAT (*e_curr)[48], INTFLOAT X_high[64][40][2]
             int ilb = ch_data->t_env[e]     * 2 + ENVELOPE_ADJUSTMENT_OFFSET;
             int iub = ch_data->t_env[e + 1] * 2 + ENVELOPE_ADJUSTMENT_OFFSET;
 
+            if (ilb >= 40)
+                return;
+
             for (m = 0; m < sbr->m[1]; m++) {
                 AAC_FLOAT sum = sbr->dsp.sum_square(X_high[m+kx1] + ilb, iub - ilb);
 #if USE_FIXED
@@ -1643,6 +1646,9 @@ static void sbr_env_estimate(AAC_FLOAT (*e_curr)[48], INTFLOAT X_high[64][40][2]
             int ilb = ch_data->t_env[e]     * 2 + ENVELOPE_ADJUSTMENT_OFFSET;
             int iub = ch_data->t_env[e + 1] * 2 + ENVELOPE_ADJUSTMENT_OFFSET;
             const uint16_t *table = ch_data->bs_freq_res[e + 1] ? sbr->f_tablehigh : sbr->f_tablelow;
+
+            if (ilb >= 40)
+                return;
 
             for (p = 0; p < sbr->n[ch_data->bs_freq_res[e + 1]]; p++) {
 #if USE_FIXED
