@@ -6295,6 +6295,11 @@ static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                    c->fc->nb_streams-1, i, e->time);
             return AVERROR_INVALIDDATA;
         }
+        if (e->duration < 0) {
+            av_log(c->fc, AV_LOG_ERROR, "Track %d, edit %d: Invalid edit list duration=%"PRId64"\n",
+                   c->fc->nb_streams-1, i, e->duration);
+            return AVERROR_INVALIDDATA;
+        }
     }
     sc->elst_count = i;
 
