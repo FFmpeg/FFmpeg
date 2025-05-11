@@ -432,6 +432,9 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
             return AVERROR_INVALIDDATA;
     }
 
+    if (get_bits_left(gb) < 2*10 + 2*size)
+        return AVERROR_INVALIDDATA;
+
     s->predictors[0] = get_sbits(gb, 10);
     s->predictors[1] = get_sbits(gb, 10);
     s->predictors[2] = get_sbits(gb, size) * (1 << (10 - size));
