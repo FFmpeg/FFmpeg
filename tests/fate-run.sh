@@ -98,6 +98,10 @@ probefmt(){
     run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_entries format=format_name -print_format default=nw=1:nk=1 "$@"
 }
 
+probecodec(){
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_entries stream=codec_name -print_format default=nw=1:nk=1 "$@"
+}
+
 probeaudiostream(){
     run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_entries stream=codec_name,codec_time_base,sample_fmt,channels,channel_layout:side_data "$@"
 }
