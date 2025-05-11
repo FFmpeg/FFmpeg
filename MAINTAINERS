@@ -56,6 +56,7 @@ presets                             [0]
 metadata subsystem                      Aurelien Jacobs
 release management                      Michael Niedermayer
 API tests                           [0]
+samples-request                     [2] Thilo Borgmann, James Almer, Ben Littler
 
 
 Communication
