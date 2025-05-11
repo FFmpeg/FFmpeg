@@ -2842,6 +2842,8 @@ static int mka_parse_audio(MatroskaTrack *track, AVStream *st,
     par->sample_rate = track->audio.out_samplerate;
     // channel layout may be already set by codec private checks above
     if (!av_channel_layout_check(&par->ch_layout)) {
+        if (track->audio.channels > INT32_MAX)
+            return AVERROR_PATCHWELCOME;
         par->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
         par->ch_layout.nb_channels = track->audio.channels;
     }
