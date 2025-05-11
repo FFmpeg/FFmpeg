@@ -13,6 +13,9 @@ fate-probe-format-roundup2015: REF = dv
 FATE_PROBE_FORMAT-$(CONFIG_WAV_DEMUXER) += fate-probe-format-codec-trac11581
 fate-probe-format-codec-trac11581: REF = pcm_s16le
 
+FATE_PROBE_FORMAT-$(call ALLYES, WAV_DEMUXER DTS_DEMUXER) += fate-probe-format-codec-dts-in-wav
+fate-probe-format-codec-dts-in-wav: REF = dts
+
 FATE_PROBE_FORMAT = $(FATE_PROBE_FORMAT-yes)
 
 FATE_EXTERN-$(CONFIG_FFPROBE) += $(FATE_PROBE_FORMAT)
