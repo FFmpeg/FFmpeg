@@ -94,7 +94,6 @@ extern const FFInputFormat  ff_av1_demuxer;
 extern const FFInputFormat  ff_avi_demuxer;
 extern const FFOutputFormat ff_avi_muxer;
 extern const FFOutputFormat ff_avif_muxer;
-extern const FFInputFormat  ff_avisynth_demuxer;
 extern const FFOutputFormat ff_avm2_muxer;
 extern const FFInputFormat  ff_avr_demuxer;
 extern const FFInputFormat  ff_avs_demuxer;
@@ -155,7 +154,6 @@ extern const FFInputFormat  ff_dv_demuxer;
 extern const FFOutputFormat ff_dv_muxer;
 extern const FFInputFormat  ff_dvbsub_demuxer;
 extern const FFInputFormat  ff_dvbtxt_demuxer;
-extern const FFInputFormat  ff_dvdvideo_demuxer;
 extern const FFInputFormat  ff_dxa_demuxer;
 extern const FFInputFormat  ff_ea_demuxer;
 extern const FFInputFormat  ff_ea_cdata_demuxer;
@@ -573,7 +571,9 @@ extern const FFInputFormat  ff_image_xpm_pipe_demuxer;
 extern const FFInputFormat  ff_image_xwd_pipe_demuxer;
 
 /* external libraries */
+extern const FFInputFormat  ff_avisynth_demuxer;
 extern const FFOutputFormat ff_chromaprint_muxer;
+extern const FFInputFormat  ff_dvdvideo_demuxer;
 extern const FFInputFormat  ff_libgme_demuxer;
 extern const FFInputFormat  ff_libmodplug_demuxer;
 extern const FFInputFormat  ff_libopenmpt_demuxer;
