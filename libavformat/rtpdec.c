@@ -61,12 +61,6 @@ static const RTPDynamicProtocolHandler speex_dynamic_handler = {
     .codec_id   = AV_CODEC_ID_SPEEX,
 };
 
-static const RTPDynamicProtocolHandler opus_dynamic_handler = {
-    .enc_name   = "opus",
-    .codec_type = AVMEDIA_TYPE_AUDIO,
-    .codec_id   = AV_CODEC_ID_OPUS,
-};
-
 static const RTPDynamicProtocolHandler t140_dynamic_handler = { /* RFC 4103 */
     .enc_name   = "t140",
     .codec_type = AVMEDIA_TYPE_SUBTITLE,
@@ -125,7 +119,7 @@ static const RTPDynamicProtocolHandler *const rtp_dynamic_protocol_handler_list[
     &ff_vp9_dynamic_handler,
     &gsm_dynamic_handler,
     &l24_dynamic_handler,
-    &opus_dynamic_handler,
+    &ff_opus_dynamic_handler,
     &realmedia_mp3_dynamic_handler,
     &speex_dynamic_handler,
     &t140_dynamic_handler,
@@ -531,43 +525,6 @@ int ff_rtp_send_rtcp_feedback(RTPDemuxContext *s, URLContext *fd,
     return 0;
 }
 
-static int opus_write_extradata(AVCodecParameters *codecpar)
-{
-    uint8_t *bs;
-    int ret;
-
-    /* This function writes an extradata with a channel mapping family of 0.
-     * This mapping family only supports mono and stereo layouts. And RFC7587
-     * specifies that the number of channels in the SDP must be 2.
-     */
-    if (codecpar->ch_layout.nb_channels > 2) {
-        return AVERROR_INVALIDDATA;
-    }
-
-    ret = ff_alloc_extradata(codecpar, 19);
-    if (ret < 0)
-        return ret;
-
-    bs = (uint8_t *)codecpar->extradata;
-
-    /* Opus magic */
-    bytestream_put_buffer(&bs, "OpusHead", 8);
-    /* Version */
-    bytestream_put_byte  (&bs, 0x1);
-    /* Channel count */
-    bytestream_put_byte  (&bs, codecpar->ch_layout.nb_channels);
-    /* Pre skip */
-    bytestream_put_le16  (&bs, 0);
-    /* Input sample rate */
-    bytestream_put_le32  (&bs, 48000);
-    /* Output gain */
-    bytestream_put_le16  (&bs, 0x0);
-    /* Mapping family */
-    bytestream_put_byte  (&bs, 0x0);
-
-    return 0;
-}
-
 /**
  * open a new RTP parse context for stream 'st'. 'st' can be NULL for
  * MPEG-2 TS streams.
@@ -576,7 +533,6 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
                                    int payload_type, int queue_size)
 {
     RTPDemuxContext *s;
-    int ret;
 
     s = av_mallocz(sizeof(RTPDemuxContext));
     if (!s)
@@ -599,16 +555,6 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
              * even if the sample rate is 16000. */
             if (st->codecpar->sample_rate == 8000)
                 st->codecpar->sample_rate = 16000;
-            break;
-        case AV_CODEC_ID_OPUS:
-            ret = opus_write_extradata(st->codecpar);
-            if (ret < 0) {
-                av_log(s1, AV_LOG_ERROR,
-                       "Error creating opus extradata: %s\n",
-                       av_err2str(ret));
-                av_free(s);
-                return NULL;
-            }
             break;
         default:
             break;

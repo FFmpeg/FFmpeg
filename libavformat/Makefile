@@ -62,6 +62,7 @@ OBJS-$(CONFIG_RTPDEC)                    += rdt.o                       \
                                             rtpdec_mpeg12.o             \
                                             rtpdec_mpeg4.o              \
                                             rtpdec_mpegts.o             \
+                                            rtpdec_opus.o               \
                                             rtpdec_qcelp.o              \
                                             rtpdec_qdm2.o               \
                                             rtpdec_qt.o                 \
