@@ -19,14 +19,13 @@ vpath %/fate_config.sh.template $(SRC_PATH)
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64 audiomatch
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
 
-ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale swresample
+ALLFFLIBS = avcodec avdevice avfilter avformat avutil swscale swresample
 
 # $(FFLIBS-yes) needs to be in linking order
 FFLIBS-$(CONFIG_AVDEVICE)   += avdevice
 FFLIBS-$(CONFIG_AVFILTER)   += avfilter
 FFLIBS-$(CONFIG_AVFORMAT)   += avformat
 FFLIBS-$(CONFIG_AVCODEC)    += avcodec
-FFLIBS-$(CONFIG_POSTPROC)   += postproc
 FFLIBS-$(CONFIG_SWRESAMPLE) += swresample
 FFLIBS-$(CONFIG_SWSCALE)    += swscale
 
