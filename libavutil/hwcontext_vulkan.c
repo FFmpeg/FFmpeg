@@ -80,6 +80,7 @@ typedef struct VulkanDeviceFeatures {
     VkPhysicalDeviceVulkan13Features vulkan_1_3;
     VkPhysicalDeviceTimelineSemaphoreFeatures timeline_semaphore;
     VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR subgroup_rotate;
+    VkPhysicalDeviceHostImageCopyFeaturesEXT host_image_copy;
 
 #ifdef VK_KHR_shader_expect_assume
     VkPhysicalDeviceShaderExpectAssumeFeaturesKHR expect_assume;
@@ -209,6 +210,8 @@ static void device_features_init(AVHWDeviceContext *ctx, VulkanDeviceFeatures *f
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
     FF_VK_STRUCT_EXT(s, &feats->device, &feats->subgroup_rotate, FF_VK_EXT_SUBGROUP_ROTATE,
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES_KHR);
+    FF_VK_STRUCT_EXT(s, &feats->device, &feats->host_image_copy, FF_VK_EXT_HOST_IMAGE_COPY,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES_EXT);
 
 #ifdef VK_KHR_shader_expect_assume
     FF_VK_STRUCT_EXT(s, &feats->device, &feats->expect_assume, FF_VK_EXT_EXPECT_ASSUME,
@@ -285,6 +288,7 @@ static void device_features_copy_needed(VulkanDeviceFeatures *dst, VulkanDeviceF
 
     COPY_VAL(timeline_semaphore.timelineSemaphore);
     COPY_VAL(subgroup_rotate.shaderSubgroupRotate);
+    COPY_VAL(host_image_copy.hostImageCopy);
 
     COPY_VAL(video_maintenance_1.videoMaintenance1);
 #ifdef VK_KHR_video_maintenance2
@@ -606,6 +610,7 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME,               FF_VK_EXT_COOP_MATRIX            },
     { VK_EXT_SHADER_OBJECT_EXTENSION_NAME,                    FF_VK_EXT_SHADER_OBJECT          },
     { VK_KHR_SHADER_SUBGROUP_ROTATE_EXTENSION_NAME,           FF_VK_EXT_SUBGROUP_ROTATE        },
+    { VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME,                  FF_VK_EXT_HOST_IMAGE_COPY        },
 #ifdef VK_KHR_shader_expect_assume
     { VK_KHR_SHADER_EXPECT_ASSUME_EXTENSION_NAME,             FF_VK_EXT_EXPECT_ASSUME          },
 #endif
@@ -2825,10 +2830,14 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
 
     /* Image usage flags */
     if (!hwctx->usage) {
-        hwctx->usage = supported_usage & (VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+        hwctx->usage = supported_usage & (VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
                                           VK_IMAGE_USAGE_STORAGE_BIT       |
                                           VK_IMAGE_USAGE_SAMPLED_BIT);
+
+        if (p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY)
+            hwctx->usage |= supported_usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT;
+        else
+            hwctx->usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
         /* Enables encoding of images, if supported by format and extensions */
         if ((supported_usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) &&
@@ -4148,6 +4157,113 @@ fail:
     return err;
 }
 
+static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
+                                AVFrame *swf, int upload)
+{
+    VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
+    AVVulkanFramesContext *hwfc_vk = hwfc->hwctx;
+    AVVulkanDeviceContext *hwctx = &p->p;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
+
+    AVVkFrame *hwf_vk = (AVVkFrame *)hwf->data[0];
+    const int planes = av_pix_fmt_count_planes(swf->format);
+    const int nb_images = ff_vk_count_images(hwf_vk);
+
+    VkSemaphoreWaitInfo sem_wait;
+    VkHostImageLayoutTransitionInfo layout_ch_info[];
+    int nb_layout_ch = 0;
+
+    hwfc_vk->lock_frame(hwfc, hwf_vk);
+
+    for (int i = 0; i < nb_images; i++) {
+        if (hwf_vk->layout[i])
+            continue;
+
+        layout_ch_info[nb_layout_ch++] = (VkHostImageLayoutTransitionInfo) {
+            .sType = VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO,
+            .image = hwf_vk->img[i],
+            .oldLayout = hwf_vk->layout[i],
+            .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+            .subresourceRange = {
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .levelCount = 1,
+                .layerCount = 1,
+            };
+        };
+    }
+
+    if (nb_layout_ch)
+        vk->TransitionImageLayoutEXT(hwctx->act_dev,
+                                     nb_layout_ch, layout_ch_info);
+
+    sem_wait = (VkSemaphoreWaitInfo) {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+        .pSemaphores = hwf_vk->sem,
+        .pValues = hwf_vk->sem_value,
+        .semaphoreCount = nb_images,
+    };
+
+    vk->WaitSemaphores(hwctx->act_dev, &sem_wait, UINT64_MAX);
+
+    if (upload) {
+        VkMemoryToImageCopy region_info = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY,
+            .imageSubresource = {
+                .layerCount = 1,
+            },
+        };
+        VkCopyMemoryToImageInfo copy_info = {
+            .sType = VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO,
+            .flags = VK_HOST_IMAGE_COPY_MEMCPY,
+            .regionCount = 1,
+            .pRegions = &region_info,
+        };
+        for (int i = 0; i < planes; i++) {
+            int img_idx = FFMIN(i, (nb_images - 1));
+            uint32_t p_w, p_h;
+            get_plane_wh(&p_w, &p_h, swf->format, swf->width, swf->height, i);
+
+            region_info.pHostPointer = swf->data[i];
+            region_info.imageSubresource.aspectMask = ff_vk_aspect_flag(hwf, i);
+            region_info.imageExtent = (VkExtent3D){ p_w, p_h, 1 };
+            copy_info.dstImage = hwf_vk->img[img_idx];
+            copy_info.dstImageLayout = hwf_vk->layout[img_idx];
+
+            vk->CopyMemoryToImageEXT(hwctx->act_dev, &copy_info);
+        }
+    } else {
+        VkImageToMemoryCopy region_info = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY,
+            .imageSubresource = {
+                .layerCount = 1,
+            },
+        };
+        VkCopyImageToMemoryInfo copy_info = {
+            .sType = VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO,
+            .flags = VK_HOST_IMAGE_COPY_MEMCPY,
+            .regionCount = 1,
+            .pRegions = &region_info,
+        };
+        for (int i = 0; i < planes; i++) {
+            int img_idx = FFMIN(i, (nb_images - 1));
+            uint32_t p_w, p_h;
+            get_plane_wh(&p_w, &p_h, swf->format, swf->width, swf->height, i);
+
+            region_info.pHostPointer = swf->data[i];
+            region_info.imageSubresource.aspectMask = ff_vk_aspect_flag(hwf, i);
+            region_info.imageExtent = (VkExtent3D){ p_w, p_h, 1 };
+            copy_info.srcImage = hwf_vk->img[img_idx];
+            copy_info.srcImageLayout = hwf_vk->layout[img_idx];
+
+            vk->CopyImageToMemoryEXT(hwctx->act_dev, &copy_info);
+        }
+    }
+
+    hwfc_vk->unlock_frame(hwfc, hwf_vk);
+
+    return 0;
+}
+
 static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
                                  AVFrame *swf, AVFrame *hwf,
                                  int upload)
@@ -4183,6 +4299,9 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
 
     if (swf->width > hwfc->width || swf->height > hwfc->height)
         return AVERROR(EINVAL);
+
+    if (p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY)
+        return vulkan_transfer_host(hwfc, hwf, swf, upload);
 
     for (int i = 0; i < av_pix_fmt_count_planes(swf->format); i++) {
         uint32_t p_w, p_h;

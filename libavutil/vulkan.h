@@ -291,6 +291,8 @@ typedef struct FFVulkanContext {
     VkQueueFamilyVideoPropertiesKHR *video_props;
     VkQueueFamilyProperties2 *qf_props;
     int tot_nb_qfs;
+    VkPhysicalDeviceHostImageCopyPropertiesEXT host_image_props;
+    VkImageLayout *host_image_copy_layouts;
 
     VkCooperativeMatrixPropertiesKHR *coop_mat_props;
     uint32_t coop_mat_props_nb;

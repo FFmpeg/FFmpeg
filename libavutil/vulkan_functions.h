@@ -49,6 +49,7 @@ typedef uint64_t FFVulkanExtensions;
 #define FF_VK_EXT_RELAXED_EXTENDED_INSTR (1ULL << 15) /* VK_KHR_shader_relaxed_extended_instruction */
 #define FF_VK_EXT_EXPECT_ASSUME          (1ULL << 16) /* VK_KHR_shader_expect_assume */
 #define FF_VK_EXT_SUBGROUP_ROTATE        (1ULL << 17) /* VK_KHR_shader_subgroup_rotate */
+#define FF_VK_EXT_HOST_IMAGE_COPY        (1ULL << 18) /* VK_EXT_host_image_copy */
 
 /* Video extensions */
 #define FF_VK_EXT_VIDEO_QUEUE            (1ULL << 36) /* VK_KHR_video_queue */
@@ -207,6 +208,11 @@ typedef uint64_t FFVulkanExtensions;
     /* sync2 */                                                                            \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CmdPipelineBarrier2)                       \
                                                                                            \
+    /* Host image copy */                                                                              \
+    MACRO(1, 1, FF_VK_EXT_HOST_IMAGE_COPY,      TransitionImageLayoutEXT)                              \
+    MACRO(1, 1, FF_VK_EXT_HOST_IMAGE_COPY,      CopyMemoryToImageEXT)                                  \
+    MACRO(1, 1, FF_VK_EXT_HOST_IMAGE_COPY,      CopyImageToMemoryEXT)                                  \
+                                                                                                       \
     /* Video queue */                                                                      \
     MACRO(1, 1, FF_VK_EXT_VIDEO_QUEUE,          CreateVideoSessionKHR)                     \
     MACRO(1, 1, FF_VK_EXT_VIDEO_QUEUE,          CreateVideoSessionParametersKHR)           \

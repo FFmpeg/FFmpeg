@@ -162,6 +162,8 @@ int ff_vk_load_props(FFVulkanContext *s)
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT);
     FF_VK_STRUCT_EXT(s, &s->props, &s->optical_flow_props, FF_VK_EXT_OPTICAL_FLOW,
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_PROPERTIES_NV);
+    FF_VK_STRUCT_EXT(s, &s->props, &s->host_image_props, FF_VK_EXT_HOST_IMAGE_COPY,
+                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES);
 
     s->feats = (VkPhysicalDeviceFeatures2) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
@@ -172,7 +174,39 @@ int ff_vk_load_props(FFVulkanContext *s)
     FF_VK_STRUCT_EXT(s, &s->feats, &s->atomic_float_feats, FF_VK_EXT_ATOMIC_FLOAT,
                      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT);
 
+    /* Try allocating 1024 layouts */
+    s->host_image_copy_layouts = av_malloc(sizeof(*s->host_image_copy_layouts)*1024);
+    s->host_image_props.pCopySrcLayouts = s->host_image_copy_layouts;
+    s->host_image_props.copySrcLayoutCount = 512;
+    s->host_image_props.pCopyDstLayouts = s->host_image_copy_layouts + 512;
+    s->host_image_props.copyDstLayoutCount = 512;
+
     vk->GetPhysicalDeviceProperties2(s->hwctx->phys_dev, &s->props);
+
+    /* Check if we had enough memory for all layouts */
+    if (s->host_image_props.copySrcLayoutCount == 512 ||
+        s->host_image_props.copyDstLayoutCount == 512) {
+        VkImageLayout *new_array;
+        size_t new_size;
+        s->host_image_props.pCopySrcLayouts =
+        s->host_image_props.pCopyDstLayouts = NULL;
+        s->host_image_props.copySrcLayoutCount =
+        s->host_image_props.copyDstLayoutCount = NULL;
+        vk->GetPhysicalDeviceProperties2(s->hwctx->phys_dev, &s->props);
+
+        new_size = s->host_image_props.copySrcLayoutCount +
+                   s->host_image_props.copyDstLayoutCount;
+        new_size *= sizeof(*s->host_image_copy_layouts);
+        new_array = av_realloc(s->host_image_copy_layouts, new_size);
+        if (!new_array)
+            return AVERROR(ENOMEM);
+
+        s->host_image_copy_layouts = new_array;
+        s->host_image_props.pCopySrcLayouts = new_array;
+        s->host_image_props.pCopyDstLayouts = new_array + s->host_image_props.copySrcLayoutCount;
+        vk->GetPhysicalDeviceProperties2(s->hwctx->phys_dev, &s->props);
+    }
+
     vk->GetPhysicalDeviceMemoryProperties(s->hwctx->phys_dev, &s->mprops);
     vk->GetPhysicalDeviceFeatures2(s->hwctx->phys_dev, &s->feats);
 
@@ -2927,6 +2961,7 @@ void ff_vk_uninit(FFVulkanContext *s)
     av_freep(&s->qf_props);
     av_freep(&s->video_props);
     av_freep(&s->coop_mat_props);
+    av_freep(&s->host_image_copy_layouts);
 
     av_buffer_unref(&s->device_ref);
     av_buffer_unref(&s->frames_ref);
