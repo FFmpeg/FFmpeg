@@ -38,6 +38,24 @@ RENAME(encode_line)(FFV1Context *f, FFV1SliceContext *sc,
     if (bits == 0)
         return 0;
 
+    if (sc->slice_coding_mode == 1) {
+        av_assert0(ac != AC_GOLOMB_RICE);
+        if (c->bytestream_end - c->bytestream < (w * bits + 7LL)>>3) {
+            av_log(logctx, AV_LOG_ERROR, "encoded Range Coder frame too large\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        for (x = 0; x < w; x++) {
+            int i;
+            int v = sample[0][x];
+            for (i = bits-1; i>=0; i--) {
+                uint8_t state = 128;
+                put_rac(c, &state, (v>>i) & 1);
+            }
+        }
+        return 0;
+    }
+
     if (ac != AC_GOLOMB_RICE) {
         if (c->bytestream_end - c->bytestream < w * 35) {
             av_log(logctx, AV_LOG_ERROR, "encoded Range Coder frame too large\n");
@@ -48,18 +66,6 @@ RENAME(encode_line)(FFV1Context *f, FFV1SliceContext *sc,
             av_log(logctx, AV_LOG_ERROR, "encoded Golomb Rice frame too large\n");
             return AVERROR_INVALIDDATA;
         }
-    }
-
-    if (sc->slice_coding_mode == 1) {
-        for (x = 0; x < w; x++) {
-            int i;
-            int v = sample[0][x];
-            for (i = bits-1; i>=0; i--) {
-                uint8_t state = 128;
-                put_rac(c, &state, (v>>i) & 1);
-            }
-        }
-        return 0;
     }
 
     for (x = 0; x < w; x++) {
