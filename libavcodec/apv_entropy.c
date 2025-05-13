@@ -278,6 +278,13 @@ int ff_apv_entropy_decode_block(int16_t *restrict coeff,
             bits = next_bits & 0xffff;
             // Determine code length.
             leading_zeroes = 15 - av_log2(bits);
+            if (leading_zeroes >= 6) {
+                // 6 zeroes implies run > 64, which is always invalid.
+                av_log(state->log_ctx, AV_LOG_ERROR,
+                       "Out-of-range run value: %d leading zeroes.\n",
+                       leading_zeroes);
+                return AVERROR_INVALIDDATA;
+            }
             // Extract the low bits.
             low_bit_count = leading_zeroes;
             low_bit_shift = 16 - (1 + 2 * leading_zeroes);
@@ -443,6 +450,13 @@ int ff_apv_entropy_decode_block(int16_t *restrict coeff,
             bits = next_bits & 0xffff;
             // Determine code length.
             leading_zeroes = 15 - av_log2(bits);
+            if (leading_zeroes >= 6) {
+                // 6 zeroes implies run > 64, which is always invalid.
+                av_log(state->log_ctx, AV_LOG_ERROR,
+                       "Out-of-range run value: %d leading zeroes.\n",
+                       leading_zeroes);
+                return AVERROR_INVALIDDATA;
+            }
             // Extract the low bits.
             low_bit_count = leading_zeroes + k_run;
             low_bit_shift = 16 - (1 + 2 * leading_zeroes + k_run);
