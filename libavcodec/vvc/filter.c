@@ -772,17 +772,15 @@ static int get_qp(const VVCFrameContext *fc, const uint8_t *src, const int x, co
 
 static void vvc_deblock(const VVCLocalContext *lc, int x0, int y0, const int rs, const int vertical)
 {
-    VVCFrameContext *fc    = lc->fc;
-    const VVCSPS *sps      = fc->ps.sps;
-    const int c_end        = sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
-    const int ctb_size     = fc->ps.sps->ctb_size_y;
-    const DBParams *params = fc->tab.deblock + rs;
-    int x_end              = FFMIN(x0 + ctb_size, fc->ps.pps->width);
-    int y_end              = FFMIN(y0 + ctb_size, fc->ps.pps->height);
-
-    //not use this yet, may needed by plt.
-    const uint8_t no_p[4]  = { 0 };
-    const uint8_t no_q[4]  = { 0 } ;
+    VVCFrameContext *fc        = lc->fc;
+    const VVCSPS *sps          = fc->ps.sps;
+    const int c_end            = sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
+    const int ctb_size         = fc->ps.sps->ctb_size_y;
+    const DBParams *params     = fc->tab.deblock + rs;
+    int x_end                  = FFMIN(x0 + ctb_size, fc->ps.pps->width);
+    int y_end                  = FFMIN(y0 + ctb_size, fc->ps.pps->height);
+    const int log2_min_cb_size = fc->ps.sps->min_cb_log2_size_y;
+    const int min_cb_width     = fc->ps.pps->min_cb_width;
 
     if (!vertical) {
         FFSWAP(int, x_end, y_end);
@@ -802,6 +800,8 @@ static void vvc_deblock(const VVCLocalContext *lc, int x0, int y0, const int rs,
                 const uint8_t horizontal_ctu_edge = !vertical && !(x % ctb_size);
                 int32_t bs[4], beta[4], tc[4] = { 0 }, all_zero_bs = 1;
                 uint8_t max_len_p[4], max_len_q[4];
+                uint8_t no_p[4] = { 0 };
+                uint8_t no_q[4] = { 0 };
 
                 for (int i = 0; i < DEBLOCK_STEP >> (2 - vs); i++) {
                     int tx         = x;
@@ -818,6 +818,13 @@ static void vvc_deblock(const VVCLocalContext *lc, int x0, int y0, const int rs,
                         tc[i] = TC_CALC(qp, bs[i]) ;
                         max_filter_length(fc, tx, ty, c_idx, vertical, horizontal_ctu_edge, bs[i], &max_len_p[i], &max_len_q[i]);
                         all_zero_bs = 0;
+
+                        if (sps->r->sps_palette_enabled_flag) {
+                            const int cu_q = (ty             >> log2_min_cb_size) * min_cb_width + (tx            >> log2_min_cb_size);
+                            const int cu_p = (ty - !vertical >> log2_min_cb_size) * min_cb_width + (tx - vertical >> log2_min_cb_size);
+                            no_q[i] = fc->tab.cpm[!!c_idx][cu_q] == MODE_PLT;
+                            no_p[i] = cu_p >= 0 && fc->tab.cpm[!!c_idx][cu_p] == MODE_PLT;
+                        }
                     }
                 }
 
