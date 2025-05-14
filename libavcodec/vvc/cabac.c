@@ -1377,6 +1377,58 @@ int ff_vvc_intra_chroma_pred_mode(VVCLocalContext *lc)
     return (get_cabac_bypass(&lc->ep->cc) << 1) | get_cabac_bypass(&lc->ep->cc);
 }
 
+int ff_vvc_palette_predictor_run(VVCLocalContext *lc)
+{
+    return kth_order_egk_decode(&lc->ep->cc, 0);
+}
+
+int ff_vvc_num_signalled_palette_entries(VVCLocalContext *lc)
+{
+    return kth_order_egk_decode(&lc->ep->cc, 0);
+}
+
+int ff_vvc_new_palette_entries(VVCLocalContext *lc, const int bit_depth)
+{
+    return fixed_length_decode(&lc->ep->cc, bit_depth);
+}
+
+bool ff_vvc_palette_escape_val_present_flag(VVCLocalContext *lc)
+{
+    return get_cabac_bypass(&lc->ep->cc);
+}
+
+bool ff_vvc_palette_transpose_flag(VVCLocalContext *lc)
+{
+    return GET_CABAC(PALETTE_TRANSPOSE_FLAG);
+}
+
+bool ff_vvc_run_copy_flag(VVCLocalContext *lc, const int prev_run_type, const int prev_run_position, const int cur_pos)
+{
+    uint8_t run_left_lut[] = { 0, 1, 2, 3, 4 };
+    uint8_t run_top_lut[] = { 5, 6, 6, 7, 7 };
+
+    int bin_dist = cur_pos - prev_run_position - 1;
+    uint8_t *run_lut = prev_run_type == 1 ? run_top_lut : run_left_lut;
+    uint8_t ctx_inc = bin_dist <= 4 ? run_lut[bin_dist] : run_lut[4];
+
+    return GET_CABAC(RUN_COPY_FLAG + ctx_inc);
+}
+
+bool ff_vvc_copy_above_palette_indices_flag(VVCLocalContext *lc)
+{
+    return GET_CABAC(COPY_ABOVE_PALETTE_INDICES_FLAG);
+}
+
+int ff_vvc_palette_idx_idc(VVCLocalContext *lc, const int max_palette_index, const bool adjust)
+{
+    return truncated_binary_decode(lc, max_palette_index - adjust);
+}
+
+int ff_vvc_palette_escape_val(VVCLocalContext *lc)
+{
+    return kth_order_egk_decode(&lc->ep->cc, 5);
+}
+
 int ff_vvc_general_merge_flag(VVCLocalContext *lc)
 {
     return GET_CABAC(GENERAL_MERGE_FLAG);
