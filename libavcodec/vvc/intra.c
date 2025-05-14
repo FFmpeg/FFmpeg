@@ -164,28 +164,6 @@ static void derive_transform_type(const VVCFrameContext *fc, const VVCLocalConte
     *trv = mts_to_trv[cu->mts_idx];
 }
 
-static void add_residual_for_joint_coding_chroma(VVCLocalContext *lc,
-    const TransformUnit *tu, TransformBlock *tb, const int chroma_scale)
-{
-    const VVCFrameContext *fc  = lc->fc;
-    const CodingUnit *cu = lc->cu;
-    const int c_sign = 1 - 2 * fc->ps.ph.r->ph_joint_cbcr_sign_flag;
-    const int shift  = tu->coded_flag[1] ^ tu->coded_flag[2];
-    const int c_idx  = 1 + tu->coded_flag[1];
-    const ptrdiff_t stride = fc->frame->linesize[c_idx];
-    const int hs = fc->ps.sps->hshift[c_idx];
-    const int vs = fc->ps.sps->vshift[c_idx];
-    uint8_t *dst = &fc->frame->data[c_idx][(tb->y0 >> vs) * stride +
-                                          ((tb->x0 >> hs) << fc->ps.sps->pixel_shift)];
-    if (chroma_scale) {
-        fc->vvcdsp.itx.pred_residual_joint(tb->coeffs, tb->coeffs, tb->tb_width, tb->tb_height, c_sign, shift);
-        fc->vvcdsp.intra.lmcs_scale_chroma(lc, tb->coeffs, tb->coeffs, tb->tb_width, tb->tb_height, cu->x0, cu->y0);
-        fc->vvcdsp.itx.add_residual(dst, tb->coeffs, tb->tb_width, tb->tb_height, stride);
-    } else {
-        fc->vvcdsp.itx.add_residual_joint(dst, tb->coeffs, tb->tb_width, tb->tb_height, stride, c_sign, shift);
-    }
-}
-
 static int add_reconstructed_area(VVCLocalContext *lc, const int ch_type, const int x0, const int y0, const int w, const int h)
 {
     const VVCSPS *sps       = lc->fc->ps.sps;
@@ -531,7 +509,7 @@ static void itransform(VVCLocalContext *lc, TransformUnit *tu, const int tu_idx,
             const ptrdiff_t stride  = fc->frame->linesize[c_idx];
             const int hs            = sps->hshift[c_idx];
             const int vs            = sps->vshift[c_idx];
-            uint8_t *dst            = &fc->frame->data[c_idx][(tb->y0 >> vs) * stride + ((tb->x0 >> hs) << ps)];
+            const int has_jcbcr     = tu->joint_cbcr_residual_flag && c_idx;
 
             if (cu->bdpcm_flag[tb->c_idx])
                 transform_bdpcm(tb, lc, cu);
@@ -548,14 +526,25 @@ static void itransform(VVCLocalContext *lc, TransformUnit *tu, const int tu_idx,
                     itx_1d(fc, tb, trh, trv);
             }
 
-            if (chroma_scale)
-                fc->vvcdsp.intra.lmcs_scale_chroma(lc, temp, tb->coeffs, w, h, cu->x0, cu->y0);
-            // TODO: Address performance issue here by combining transform, lmcs_scale_chroma, and add_residual into one function.
-            // Complete this task before implementing ASM code.
-            fc->vvcdsp.itx.add_residual(dst, chroma_scale ? temp : tb->coeffs, w, h, stride);
+            for (int j = 0; j < 1 + has_jcbcr; j++) {
+                const bool is_jcbcr   = j > 0;
+                const int jcbcr_idx   = CB + tu->coded_flag[CB];
+                TransformBlock *jcbcr = &tu->tbs[jcbcr_idx - tu->tbs[0].c_idx];
+                const int c           = is_jcbcr ? jcbcr_idx : tb->c_idx;
+                int *coeffs           = is_jcbcr ? jcbcr->coeffs : tb->coeffs;
+                uint8_t *dst          = &fc->frame->data[c][(tb->y0 >> vs) * stride + ((tb->x0 >> hs) << ps)];
 
-            if (tu->joint_cbcr_residual_flag && tb->c_idx)
-                add_residual_for_joint_coding_chroma(lc, tu, tb, chroma_scale);
+                if (!j && has_jcbcr) {
+                    const int c_sign = 1 - 2 * fc->ps.ph.r->ph_joint_cbcr_sign_flag;
+                    const int shift  = tu->coded_flag[CB] ^ tu->coded_flag[CR];
+                    fc->vvcdsp.itx.pred_residual_joint(jcbcr->coeffs, tb->coeffs, tb->tb_width, tb->tb_height, c_sign, shift);
+                }
+                if (chroma_scale)
+                    fc->vvcdsp.intra.lmcs_scale_chroma(lc, temp, coeffs, w, h, cu->x0, cu->y0);
+                // TODO: Address performance issue here by combining transform, lmcs_scale_chroma, and add_residual into one function.
+                // Complete this task before implementing ASM code.
+                fc->vvcdsp.itx.add_residual(dst, chroma_scale ? temp : coeffs, w, h, stride);
+            }
         }
     }
 }

@@ -45,23 +45,6 @@ static void FUNC(add_residual)(uint8_t *_dst, const int *res,
     }
 }
 
-static void FUNC(add_residual_joint)(uint8_t *_dst, const int *res,
-    const int w, const int h, const ptrdiff_t _stride, const int c_sign, const int shift)
-{
-    pixel *dst = (pixel *)_dst;
-
-    const int stride = _stride / sizeof(pixel);
-
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            const int r = ((*res) * c_sign) >> shift;
-            dst[x] = av_clip_pixel(dst[x] + r);
-            res++;
-        }
-        dst += stride;
-    }
-}
-
 static void FUNC(pred_residual_joint)(int *dst, const int *src, const int w, const int h,
     const int c_sign, const int shift)
 {
@@ -121,7 +104,6 @@ static void FUNC(ff_vvc_itx_dsp_init)(VVCItxDSPContext *const itx)
         VVC_ITX(TYPE, type, 32);
 
     itx->add_residual                = FUNC(add_residual);
-    itx->add_residual_joint          = FUNC(add_residual_joint);
     itx->pred_residual_joint         = FUNC(pred_residual_joint);
     itx->transform_bdpcm             = FUNC(transform_bdpcm);
     VVC_ITX(DCT2, dct2, 2)
