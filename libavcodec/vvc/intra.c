@@ -27,6 +27,10 @@
 #include "intra.h"
 #include "itx_1d.h"
 
+#define POS(c_idx, x, y)    \
+    &fc->frame->data[c_idx][((y) >> fc->ps.sps->vshift[c_idx]) * fc->frame->linesize[c_idx] +   \
+        (((x) >> fc->ps.sps->hshift[c_idx]) << fc->ps.sps->pixel_shift)]
+
 static int is_cclm(enum IntraPredMode mode)
 {
     return mode == INTRA_LT_CCLM || mode == INTRA_L_CCLM || mode == INTRA_T_CCLM;
@@ -488,28 +492,65 @@ static void transform_bdpcm(TransformBlock *tb, const VVCLocalContext *lc, const
         tb->max_scan_x = tb->tb_width - 1;
 }
 
-static void itransform(VVCLocalContext *lc, TransformUnit *tu, const int tu_idx, const int target_ch_type)
+static void lmcs_scale_chroma(VVCLocalContext *lc, TransformUnit *tu, TransformBlock *tb, const int target_ch_type)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const VVCSPS *sps           = fc->ps.sps;
-    const VVCSH *sh             = &lc->sc->sh;
-    const CodingUnit *cu        = lc->cu;
-    const int ps                = fc->ps.sps->pixel_shift;
+    const VVCFrameContext *fc = lc->fc;
+    const VVCSH *sh           = &lc->sc->sh;
+    const CodingUnit *cu      = lc->cu;
+    const int c_idx           = tb->c_idx;
+    const int ch_type         = c_idx > 0;
+    const int w               = tb->tb_width;
+    const int h               = tb->tb_height;
+    const int chroma_scale    = ch_type && sh->r->sh_lmcs_used_flag && fc->ps.ph.r->ph_chroma_residual_scale_flag && (w * h > 4);
+    const int has_jcbcr       = tu->joint_cbcr_residual_flag && c_idx;
+
+    for (int j = 0; j < 1 + has_jcbcr; j++) {
+        const bool is_jcbcr   = j > 0;
+        const int jcbcr_idx   = CB + tu->coded_flag[CB];
+        TransformBlock *jcbcr = &tu->tbs[jcbcr_idx - tu->tbs[0].c_idx];
+        int *coeffs           = is_jcbcr ? jcbcr->coeffs : tb->coeffs;
+
+        if (!j && has_jcbcr) {
+            const int c_sign = 1 - 2 * fc->ps.ph.r->ph_joint_cbcr_sign_flag;
+            const int shift  = tu->coded_flag[CB] ^ tu->coded_flag[CR];
+            fc->vvcdsp.itx.pred_residual_joint(jcbcr->coeffs, tb->coeffs, w, h, c_sign, shift);
+        }
+        if (chroma_scale)
+            fc->vvcdsp.intra.lmcs_scale_chroma(lc, coeffs, w, h, cu->x0, cu->y0);
+    }
+}
+
+static void add_residual(const VVCLocalContext *lc, TransformUnit *tu, const int target_ch_type)
+{
+    const VVCFrameContext *fc = lc->fc;
 
     for (int i = 0; i < tu->nb_tbs; i++) {
-        TransformBlock *tb  = &tu->tbs[i];
-        const int c_idx     = tb->c_idx;
-        const int ch_type   = c_idx > 0;
+        TransformBlock *tb      = tu->tbs + i;
+        const int c_idx         = tb->c_idx;
+        const int ch_type       = c_idx > 0;
+        const ptrdiff_t stride  = fc->frame->linesize[c_idx];
+        const bool has_residual = tb->has_coeffs ||
+                                  (c_idx && tu->joint_cbcr_residual_flag);
+        uint8_t *dst            = POS(c_idx, tb->x0, tb->y0);
 
-        if (ch_type == target_ch_type && tb->has_coeffs) {
-            const int w             = tb->tb_width;
-            const int h             = tb->tb_height;
-            const int chroma_scale  = ch_type && sh->r->sh_lmcs_used_flag && fc->ps.ph.r->ph_chroma_residual_scale_flag && (w * h > 4);
-            const ptrdiff_t stride  = fc->frame->linesize[c_idx];
-            const int hs            = sps->hshift[c_idx];
-            const int vs            = sps->vshift[c_idx];
-            const int has_jcbcr     = tu->joint_cbcr_residual_flag && c_idx;
+        if (ch_type == target_ch_type && has_residual)
+             fc->vvcdsp.itx.add_residual(dst, tb->coeffs, tb->tb_width, tb->tb_height, stride);
+    }
+}
 
+static void itransform(VVCLocalContext *lc, TransformUnit *tu, const int target_ch_type)
+{
+    const VVCFrameContext *fc = lc->fc;
+    const CodingUnit *cu      = lc->cu;
+    TransformBlock *tbs       = tu->tbs;
+
+    for (int i = 0; i < tu->nb_tbs; i++) {
+        TransformBlock *tb = tbs + i;
+        const int c_idx    = tb->c_idx;
+        const int ch_type  = c_idx > 0;
+        const bool do_itx  = ch_type == target_ch_type;
+
+        if (tb->has_coeffs && do_itx) {
             if (cu->bdpcm_flag[tb->c_idx])
                 transform_bdpcm(tb, lc, cu);
             dequant(lc, tu, tb);
@@ -519,33 +560,15 @@ static void itransform(VVCLocalContext *lc, TransformUnit *tu, const int tu_idx,
                 if (cu->apply_lfnst_flag[c_idx])
                     ilfnst_transform(lc, tb);
                 derive_transform_type(fc, lc, tb, &trh, &trv);
-                if (w > 1 && h > 1)
+                if (tb->tb_width > 1 && tb->tb_height > 1)
                     itx_2d(fc, tb, trh, trv);
                 else
                     itx_1d(fc, tb, trh, trv);
             }
-
-            for (int j = 0; j < 1 + has_jcbcr; j++) {
-                const bool is_jcbcr   = j > 0;
-                const int jcbcr_idx   = CB + tu->coded_flag[CB];
-                TransformBlock *jcbcr = &tu->tbs[jcbcr_idx - tu->tbs[0].c_idx];
-                const int c           = is_jcbcr ? jcbcr_idx : tb->c_idx;
-                int *coeffs           = is_jcbcr ? jcbcr->coeffs : tb->coeffs;
-                uint8_t *dst          = &fc->frame->data[c][(tb->y0 >> vs) * stride + ((tb->x0 >> hs) << ps)];
-
-                if (!j && has_jcbcr) {
-                    const int c_sign = 1 - 2 * fc->ps.ph.r->ph_joint_cbcr_sign_flag;
-                    const int shift  = tu->coded_flag[CB] ^ tu->coded_flag[CR];
-                    fc->vvcdsp.itx.pred_residual_joint(jcbcr->coeffs, tb->coeffs, tb->tb_width, tb->tb_height, c_sign, shift);
-                }
-                if (chroma_scale)
-                    fc->vvcdsp.intra.lmcs_scale_chroma(lc, coeffs, w, h, cu->x0, cu->y0);
-                // TODO: Address performance issue here by combining transform, lmcs_scale_chroma, and add_residual into one function.
-                // Complete this task before implementing ASM code.
-                fc->vvcdsp.itx.add_residual(dst, coeffs, w, h, stride);
-            }
+            lmcs_scale_chroma(lc, tu, tb, target_ch_type);
         }
     }
+    add_residual(lc, tu, target_ch_type);
 }
 
 static int reconstruct(VVCLocalContext *lc)
@@ -559,16 +582,12 @@ static int reconstruct(VVCLocalContext *lc)
         TransformUnit *tu = cu->tus.head;
         for (int i = 0; tu; i++) {
             predict_intra(lc, tu, i, ch_type);
-            itransform(lc, tu, i, ch_type);
+            itransform(lc, tu, ch_type);
             tu = tu->next;
         }
     }
     return 0;
 }
-
-#define POS(c_idx, x, y)    \
-    &fc->frame->data[c_idx][((y) >> fc->ps.sps->vshift[c_idx]) * fc->frame->linesize[c_idx] +   \
-        (((x) >> fc->ps.sps->hshift[c_idx]) << fc->ps.sps->pixel_shift)]
 
 #define IBC_POS(c_idx, x, y) \
     (fc->tab.ibc_vir_buf[c_idx] + \
