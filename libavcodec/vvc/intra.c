@@ -336,29 +336,30 @@ static void derive_qp(const VVCLocalContext *lc, const TransformUnit *tu, Transf
     tb->bd_offset = (1 << tb->bd_shift) >> 1;
 }
 
+static const uint8_t rem6[63 + 8 * 6 + 1] = {
+    0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,
+    0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,
+    0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,
+    0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,
+    0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,
+};
+
+static const uint8_t div6[63 + 8 * 6 + 1] = {
+    0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,
+    4,  4,  4,  4,  4,  4,  5,  5,  5,  5,  5,  5,  6,  6,  6,  6,  6,  6,  7,  7,  7,  7,  7,  7,
+    8,  8,  8,  8,  8,  8,  9,  9,  9,  9,  9,  9, 10, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 11,
+   12, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15,
+   16, 16, 16, 16, 16, 16, 17, 17, 17, 17, 17, 17, 18, 18, 18, 18,
+};
+
+const static int level_scale[2][6] = {
+   { 40, 45, 51, 57, 64, 72 },
+   { 57, 64, 72, 80, 90, 102 }
+};
+
 //8.7.3 Scaling process for transform coefficients
 static av_always_inline int derive_scale(const TransformBlock *tb, const int sh_dep_quant_used_flag)
 {
-    static const uint8_t rem6[63 + 8 * 6 + 1] = {
-         0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,
-         0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,
-         0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,
-         0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,
-         0,  1,  2,  3,  4,  5,  0,  1,  2,  3,  4,  5,  0,  1,  2,  3,
-    };
-
-    static const uint8_t div6[63 + 8 * 6 + 1] = {
-         0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,
-         4,  4,  4,  4,  4,  4,  5,  5,  5,  5,  5,  5,  6,  6,  6,  6,  6,  6,  7,  7,  7,  7,  7,  7,
-         8,  8,  8,  8,  8,  8,  9,  9,  9,  9,  9,  9, 10, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 11,
-        12, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14, 15, 15, 15, 15, 15, 15,
-        16, 16, 16, 16, 16, 16, 17, 17, 17, 17, 17, 17, 18, 18, 18, 18,
-    };
-
-    const static int level_scale[2][6] = {
-        { 40, 45, 51, 57, 64, 72 },
-        { 57, 64, 72, 80, 90, 102 }
-    };
     const int addin = sh_dep_quant_used_flag && !tb->ts;
     const int qp    = tb->qp + addin;
 
@@ -656,6 +657,17 @@ static void ibc_fill_vir_buf(const VVCLocalContext *lc, const CodingUnit *cu)
 
         av_image_copy_plane(ibc_buf, ibc_stride, src, src_stride, cu->cb_width >> hs << ps , cu->cb_height >> vs);
     }
+}
+
+int ff_vvc_palette_derive_scale(VVCLocalContext *lc, const TransformUnit *tu, TransformBlock *tb)
+{
+    const VVCSPS *sps = lc->fc->ps.sps;
+    const int qp_prime_ts_min  = 4 + 6 * sps->r->sps_min_qp_prime_ts;
+    int qp;
+
+    derive_qp(lc, tu, tb);
+    qp = FFMAX(qp_prime_ts_min, tb->qp);
+    return level_scale[0][rem6[qp]] << div6[qp];
 }
 
 int ff_vvc_reconstruct(VVCLocalContext *lc, const int rs, const int rx, const int ry)
