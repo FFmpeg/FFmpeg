@@ -154,6 +154,9 @@ enum {
 
     // {sps, ph}_num_{ver, hor}_virtual_boundaries should in [0, 3]
     VVC_MAX_VBS = 3,
+
+    // 8.4.5.3 Decoding process for palette mode - maxNumPalettePredictorSize
+    VVC_MAX_NUM_PALETTE_PREDICTOR_SIZE = 63
 };
 
 #endif /* AVCODEC_VVC_H */
