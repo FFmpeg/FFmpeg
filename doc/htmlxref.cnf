@@ -1,0 +1,6 @@
+ffmpeg mono ./ffmpeg.html
+ffmpeg-filters mono ./ffmpeg-filters.html
+ffmpeg-formats mono ./ffmpeg-formats.html
+ffmpeg-resampler mono ./ffmpeg-resampler.html
+ffmpeg-scaler mono ./ffmpeg-scaler.html
+ffmpeg-utils mono ./ffmpeg-utils.html
