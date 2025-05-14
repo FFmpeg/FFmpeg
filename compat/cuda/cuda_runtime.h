@@ -189,4 +189,7 @@ static inline __device__ float __cosf(float a) { return __nvvm_cos_approx_f(a); 
 static inline __device__ float __expf(float a) { return __nvvm_ex2_approx_f(a * (float)__builtin_log2(__builtin_exp(1))); }
 static inline __device__ float __powf(float a, float b) { return __nvvm_ex2_approx_f(__nvvm_lg2_approx_f(a) * b); }
 
+// Misc helper functions
+extern "C" __device__ int printf(const char*, ...);
+
 #endif /* COMPAT_CUDA_CUDA_RUNTIME_H */
