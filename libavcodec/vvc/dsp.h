@@ -106,7 +106,7 @@ struct VVCLocalContext;
 
 typedef struct VVCIntraDSPContext {
     void (*intra_cclm_pred)(const struct VVCLocalContext *lc, int x0, int y0, int w, int h);
-    void (*lmcs_scale_chroma)(struct VVCLocalContext *lc, int *dst, const int *coeff, int w, int h, int x0_cu, int y0_cu);
+    void (*lmcs_scale_chroma)(struct VVCLocalContext *lc, int *coeff, int w, int h, int x0_cu, int y0_cu);
     void (*intra_pred)(const struct VVCLocalContext *lc, int x0, int y0, int w, int h, int c_idx);
     void (*pred_planar)(uint8_t *src, const uint8_t *top, const uint8_t *left, int w, int h, ptrdiff_t stride);
     void (*pred_mip)(uint8_t *src, const uint8_t *top, const uint8_t *left, int w, int h, ptrdiff_t stride,

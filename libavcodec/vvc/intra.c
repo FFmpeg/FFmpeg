@@ -495,7 +495,6 @@ static void itransform(VVCLocalContext *lc, TransformUnit *tu, const int tu_idx,
     const VVCSH *sh             = &lc->sc->sh;
     const CodingUnit *cu        = lc->cu;
     const int ps                = fc->ps.sps->pixel_shift;
-    DECLARE_ALIGNED(32, int, temp)[MAX_TB_SIZE * MAX_TB_SIZE];
 
     for (int i = 0; i < tu->nb_tbs; i++) {
         TransformBlock *tb  = &tu->tbs[i];
@@ -540,10 +539,10 @@ static void itransform(VVCLocalContext *lc, TransformUnit *tu, const int tu_idx,
                     fc->vvcdsp.itx.pred_residual_joint(jcbcr->coeffs, tb->coeffs, tb->tb_width, tb->tb_height, c_sign, shift);
                 }
                 if (chroma_scale)
-                    fc->vvcdsp.intra.lmcs_scale_chroma(lc, temp, coeffs, w, h, cu->x0, cu->y0);
+                    fc->vvcdsp.intra.lmcs_scale_chroma(lc, coeffs, w, h, cu->x0, cu->y0);
                 // TODO: Address performance issue here by combining transform, lmcs_scale_chroma, and add_residual into one function.
                 // Complete this task before implementing ASM code.
-                fc->vvcdsp.itx.add_residual(dst, chroma_scale ? temp : coeffs, w, h, stride);
+                fc->vvcdsp.itx.add_residual(dst, coeffs, w, h, stride);
             }
         }
     }
