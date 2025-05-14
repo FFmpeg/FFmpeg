@@ -968,6 +968,17 @@ static int limited_kth_order_egk_decode(CABACContext *c, const int k, const int 
     return val;
 }
 
+// 9.3.3.7 Fixed-length binarization process
+static int fixed_length_decode(CABACContext* c, const int len)
+{
+    int value = 0;
+
+    for (int i = 0; i < len; i++)
+        value = (value << 1) | get_cabac_bypass(c);
+
+    return value;
+}
+
 static av_always_inline
 void get_left_top(const VVCLocalContext *lc, uint8_t *left, uint8_t *top,
     const int x0, const int y0, const uint8_t *left_ctx, const uint8_t *top_ctx)
@@ -1011,11 +1022,7 @@ int ff_vvc_sao_type_idx_decode(VVCLocalContext *lc)
 
 int ff_vvc_sao_band_position_decode(VVCLocalContext *lc)
 {
-    int value = get_cabac_bypass(&lc->ep->cc);
-
-    for (int i = 0; i < 4; i++)
-        value = (value << 1) | get_cabac_bypass(&lc->ep->cc);
-    return value;
+    return fixed_length_decode(&lc->ep->cc, 5);
 }
 
 int ff_vvc_sao_offset_abs_decode(VVCLocalContext *lc)
@@ -1035,9 +1042,7 @@ int ff_vvc_sao_offset_sign_decode(VVCLocalContext *lc)
 
 int ff_vvc_sao_eo_class_decode(VVCLocalContext *lc)
 {
-    int ret = get_cabac_bypass(&lc->ep->cc) << 1;
-    ret    |= get_cabac_bypass(&lc->ep->cc);
-    return ret;
+    return (get_cabac_bypass(&lc->ep->cc) << 1) | get_cabac_bypass(&lc->ep->cc);
 }
 
 int ff_vvc_alf_ctb_flag(VVCLocalContext *lc, const int rx, const int ry, const int c_idx)
@@ -1479,12 +1484,7 @@ int ff_vvc_merge_idx(VVCLocalContext *lc)
 
 int ff_vvc_merge_gpm_partition_idx(VVCLocalContext *lc)
 {
-    int i = 0;
-
-    for (int j = 0; j < 6; j++)
-        i = (i << 1) | get_cabac_bypass(&lc->ep->cc);
-
-    return i;
+    return fixed_length_decode(&lc->ep->cc, 6);
 }
 
 int ff_vvc_merge_gpm_idx(VVCLocalContext *lc, const int idx)
