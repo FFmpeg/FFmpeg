@@ -1,0 +1,3 @@
+#!/bin/sh
+
+git pull --no-rebase --log --stat --commit --no-edit  https://github.com/michaelni/FFmpeg.git sourceplugin-libpostproc

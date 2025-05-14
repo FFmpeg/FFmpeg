@@ -1,5 +1,8 @@
 ## Installing FFmpeg
 
+0. If you like to include source plugins, merge them before configure
+for example run tools/merge-all-source-plugins
+
 1. Type `./configure` to create the configuration. A list of configure
 options is printed by running `configure --help`.
 
