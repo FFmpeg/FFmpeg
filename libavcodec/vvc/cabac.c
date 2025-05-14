@@ -928,6 +928,27 @@ static int truncated_binary_decode(VVCLocalContext *lc, const int c_max)
     return v;
 }
 
+// 9.3.3.5 k-th order Exp - Golomb binarization process
+static int kth_order_egk_decode(CABACContext *c, int k)
+{
+    int bit    = 1;
+    int value  = 0;
+    int symbol = 0;
+
+    while (bit) {
+        bit = get_cabac_bypass(c);
+        value += bit << k++;
+    }
+
+    if (--k) {
+        for (int i = 0; i < k; i++)
+            symbol = (symbol << 1) | get_cabac_bypass(c);
+        value += symbol;
+    }
+
+    return value;
+}
+
 // 9.3.3.6 Limited k-th order Exp-Golomb binarization process
 static int limited_kth_order_egk_decode(CABACContext *c, const int k, const int max_pre_ext_len, const int trunc_suffix_len)
 {
