@@ -16,6 +16,8 @@ version <next>:
 - APV decoder and APV raw bitstream muxing and demuxing
 - APV parser
 - APV encoding support through a libopenapv wrapper
+- VVC decoder supports all content of SCC (Screen Content Coding):
+  IBC (Inter Block Copy), Palette Mode and ACT (Adaptive Color Transform
 
 
 version 7.1:
