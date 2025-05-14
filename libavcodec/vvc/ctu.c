@@ -1756,7 +1756,7 @@ static void fill_dmvr_info(const VVCLocalContext *lc)
     const CodingUnit *cu      = lc->cu;
 
     if (cu->pred_mode == MODE_IBC) {
-        ff_vvc_set_intra_mvf(lc, 1);
+        ff_vvc_set_intra_mvf(lc, true, PF_IBC, false);
     } else {
         const VVCPPS *pps = fc->ps.pps;
         const int w       = cu->cb_width >> MIN_PU_LOG2;
@@ -1849,8 +1849,8 @@ static int hls_coding_unit(VVCLocalContext *lc, int x0, int y0, int cb_width, in
                 return AVERROR_PATCHWELCOME;
             } else {
                 intra_luma_pred_modes(lc);
+                ff_vvc_set_intra_mvf(lc, false, PF_INTRA, cu->ciip_flag);
             }
-            ff_vvc_set_intra_mvf(lc, 0);
         }
         if ((tree_type == SINGLE_TREE || tree_type == DUAL_TREE_CHROMA) && sps->r->sps_chroma_format_idc) {
             if (pred_mode_plt_flag && tree_type == DUAL_TREE_CHROMA) {
