@@ -639,11 +639,11 @@ static void ibc_fill_vir_buf(const VVCLocalContext *lc, const CodingUnit *cu)
 {
     const VVCFrameContext *fc = lc->fc;
     const VVCSPS *sps         = fc->ps.sps;
-    const int has_chroma      = sps->r->sps_chroma_format_idc && cu->tree_type != DUAL_TREE_LUMA;
-    const int start           = cu->tree_type == DUAL_TREE_CHROMA;
-    const int end             = has_chroma ? CR : LUMA;
+    int start, end;
 
-    for (int c_idx = start; c_idx <= end; c_idx++) {
+    ff_vvc_channel_range(&start, &end, cu->tree_type, sps->r->sps_chroma_format_idc);
+
+    for (int c_idx = start; c_idx < end; c_idx++) {
         const int hs = sps->hshift[c_idx];
         const int vs = sps->vshift[c_idx];
         const int ps = sps->pixel_shift;

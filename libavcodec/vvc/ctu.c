@@ -501,13 +501,12 @@ static int skipped_transform_tree(VVCLocalContext *lc, int x0, int y0,int tu_wid
             SKIPPED_TRANSFORM_TREE(x0, y0 + trafo_height);
     } else {
         TransformUnit *tu    = add_tu(fc, lc->cu, x0, y0, tu_width, tu_height);
-        const int has_chroma = sps->r->sps_chroma_format_idc && cu->tree_type != DUAL_TREE_LUMA;
-        const int c_start    = cu->tree_type == DUAL_TREE_CHROMA ? CB : LUMA;
-        const int c_end      = has_chroma ? VVC_MAX_SAMPLE_ARRAYS : CB;
+        int start, end;
 
         if (!tu)
             return AVERROR_INVALIDDATA;
-        for (int i = c_start; i < c_end; i++) {
+        ff_vvc_channel_range(&start, &end, cu->tree_type, sps->r->sps_chroma_format_idc);
+        for (int i = start; i < end; i++) {
             TransformBlock *tb = add_tb(tu, lc, x0, y0, tu_width >> sps->hshift[i], tu_height >> sps->vshift[i], i);
             if (i != CR)
                 set_tb_size(fc, tb);
@@ -2579,4 +2578,13 @@ void ff_vvc_ep_init_stat_coeff(EntryPoint *ep,
         ep->stat_coeff[i] =
             persistent_rice_adaptation_enabled_flag ? 2 * (av_log2(bit_depth - 10)) : 0;
     }
+}
+
+void ff_vvc_channel_range(int *start, int *end, const VVCTreeType tree_type, const uint8_t chroma_format_idc)
+{
+    const bool has_chroma = chroma_format_idc && tree_type != DUAL_TREE_LUMA;
+    const bool has_luma   = tree_type != DUAL_TREE_CHROMA;
+
+    *start = has_luma   ? LUMA : CB;
+    *end   = has_chroma ? VVC_MAX_SAMPLE_ARRAYS : CB;
 }
