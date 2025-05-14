@@ -523,13 +523,14 @@ static void lmcs_scale_chroma(VVCLocalContext *lc, TransformUnit *tu, TransformB
 static void add_residual(const VVCLocalContext *lc, TransformUnit *tu, const int target_ch_type)
 {
     const VVCFrameContext *fc = lc->fc;
+    const CodingUnit *cu      = lc->cu;
 
     for (int i = 0; i < tu->nb_tbs; i++) {
         TransformBlock *tb      = tu->tbs + i;
         const int c_idx         = tb->c_idx;
         const int ch_type       = c_idx > 0;
         const ptrdiff_t stride  = fc->frame->linesize[c_idx];
-        const bool has_residual = tb->has_coeffs ||
+        const bool has_residual = tb->has_coeffs || cu->act_enabled_flag ||
                                   (c_idx && tu->joint_cbcr_residual_flag);
         uint8_t *dst            = POS(c_idx, tb->x0, tb->y0);
 
@@ -543,12 +544,13 @@ static void itransform(VVCLocalContext *lc, TransformUnit *tu, const int target_
     const VVCFrameContext *fc = lc->fc;
     const CodingUnit *cu      = lc->cu;
     TransformBlock *tbs       = tu->tbs;
+    const bool is_act_luma    = cu->act_enabled_flag && target_ch_type == LUMA;
 
     for (int i = 0; i < tu->nb_tbs; i++) {
         TransformBlock *tb = tbs + i;
         const int c_idx    = tb->c_idx;
         const int ch_type  = c_idx > 0;
-        const bool do_itx  = ch_type == target_ch_type;
+        const bool do_itx  = is_act_luma || !cu->act_enabled_flag && ch_type == target_ch_type;
 
         if (tb->has_coeffs && do_itx) {
             if (cu->bdpcm_flag[tb->c_idx])
@@ -568,6 +570,13 @@ static void itransform(VVCLocalContext *lc, TransformUnit *tu, const int target_
             lmcs_scale_chroma(lc, tu, tb, target_ch_type);
         }
     }
+
+    if (is_act_luma) {
+        fc->vvcdsp.itx.adaptive_color_transform(
+            tbs[LUMA].coeffs, tbs[CB].coeffs, tbs[CR].coeffs,
+            tbs[LUMA].tb_width, tbs[LUMA].tb_height);
+    }
+
     add_residual(lc, tu, target_ch_type);
 }
 
