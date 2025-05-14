@@ -1703,6 +1703,11 @@ int ff_vvc_tu_y_coded_flag(VVCLocalContext *lc)
     return lc->parse.prev_tu_cbf_y;
 }
 
+int ff_vvc_cu_act_enabled_flag(VVCLocalContext *lc)
+{
+    return GET_CABAC(CU_ACT_ENABLED_FLAG);
+}
+
 int ff_vvc_cu_qp_delta_abs(VVCLocalContext *lc)
 {
     int v, i, k;

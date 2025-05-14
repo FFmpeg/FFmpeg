@@ -120,6 +120,7 @@ int ff_vvc_bcw_idx(VVCLocalContext *lc, int no_backward_pred_flag);
 int ff_vvc_tu_cb_coded_flag(VVCLocalContext *lc);
 int ff_vvc_tu_cr_coded_flag(VVCLocalContext *lc, int tu_cb_coded_flag);
 int ff_vvc_tu_y_coded_flag(VVCLocalContext *lc);
+int ff_vvc_cu_act_enabled_flag(VVCLocalContext *lc);
 int ff_vvc_cu_chroma_qp_offset_flag(VVCLocalContext *lc);
 int ff_vvc_cu_chroma_qp_offset_idx(VVCLocalContext *lc);
 int ff_vvc_tu_joint_cbcr_residual_flag(VVCLocalContext *lc, int tu_cb_coded_flag, int tu_cr_coded_flag);
