@@ -543,11 +543,11 @@ static int FUNC(metadata)(CodedBitstreamContext *ctx, RWContext *rw,
             return AVERROR_INVALIDDATA;
         }
 
+        current->metadata_count = p + 1;
+
         CHECK(FUNC(metadata_payload)(ctx, rw, pl));
 
         metadata_bytes_left -= pl->payload_size;
-
-        current->metadata_count = p + 1;
         if (metadata_bytes_left == 0)
             break;
     }
