@@ -895,7 +895,7 @@ static void derive_chroma_intra_pred_mode(VVCLocalContext *lc,
     enum IntraPredMode luma_intra_pred_mode = SAMPLE_CTB(fc->tab.ipm, x_cb, y_cb);
 
     if (cu->tree_type == SINGLE_TREE && sps->r->sps_chroma_format_idc == CHROMA_FORMAT_444 &&
-        intra_chroma_pred_mode == 4 && intra_mip_flag) {
+        (intra_chroma_pred_mode == 4 || cu->act_enabled_flag) && intra_mip_flag) {
         cu->mip_chroma_direct_flag = 1;
         cu->intra_pred_mode_c = luma_intra_pred_mode;
         return;
@@ -1007,34 +1007,38 @@ static void intra_luma_pred_modes(VVCLocalContext *lc)
 
 static void intra_chroma_pred_modes(VVCLocalContext *lc)
 {
-    const VVCSPS *sps   = lc->fc->ps.sps;
-    CodingUnit *cu      = lc->cu;
-    const int hs        = sps->hshift[CHROMA];
-    const int vs        = sps->vshift[CHROMA];
+    const VVCSPS *sps          = lc->fc->ps.sps;
+    CodingUnit *cu             = lc->cu;
+    const int hs               = sps->hshift[CHROMA];
+    const int vs               = sps->vshift[CHROMA];
+    int cclm_mode_flag         = 0;
+    int cclm_mode_idx          = 0;
+    int intra_chroma_pred_mode = 0;
 
-    cu->mip_chroma_direct_flag = 0;
-    if (sps->r->sps_bdpcm_enabled_flag &&
-        (cu->cb_width  >> hs) <= sps->max_ts_size &&
-        (cu->cb_height >> vs) <= sps->max_ts_size) {
-        cu->bdpcm_flag[CB] = cu->bdpcm_flag[CR] = ff_vvc_intra_bdpcm_chroma_flag(lc);
+    if (!cu->act_enabled_flag) {
+        cu->mip_chroma_direct_flag = 0;
+        if (sps->r->sps_bdpcm_enabled_flag &&
+            (cu->cb_width  >> hs) <= sps->max_ts_size &&
+            (cu->cb_height >> vs) <= sps->max_ts_size) {
+            cu->bdpcm_flag[CB] = cu->bdpcm_flag[CR] = ff_vvc_intra_bdpcm_chroma_flag(lc);
+        }
+        if (cu->bdpcm_flag[CHROMA]) {
+            cu->intra_pred_mode_c = ff_vvc_intra_bdpcm_chroma_dir_flag(lc) ? INTRA_VERT : INTRA_HORZ;
+        } else {
+            const int cclm_enabled = get_cclm_enabled(lc, cu->x0, cu->y0);
+
+            if (cclm_enabled)
+                cclm_mode_flag = ff_vvc_cclm_mode_flag(lc);
+
+            if (cclm_mode_flag)
+                cclm_mode_idx = ff_vvc_cclm_mode_idx(lc);
+            else
+                intra_chroma_pred_mode = ff_vvc_intra_chroma_pred_mode(lc);
+        }
     }
-    if (cu->bdpcm_flag[CHROMA]) {
-        cu->intra_pred_mode_c = ff_vvc_intra_bdpcm_chroma_dir_flag(lc) ? INTRA_VERT : INTRA_HORZ;
-    } else {
-        const int cclm_enabled = get_cclm_enabled(lc, cu->x0, cu->y0);
-        int cclm_mode_flag = 0;
-        int cclm_mode_idx = 0;
-        int intra_chroma_pred_mode = 0;
 
-        if (cclm_enabled)
-            cclm_mode_flag = ff_vvc_cclm_mode_flag(lc);
-
-        if (cclm_mode_flag)
-            cclm_mode_idx = ff_vvc_cclm_mode_idx(lc);
-        else
-            intra_chroma_pred_mode = ff_vvc_intra_chroma_pred_mode(lc);
+    if (!cu->bdpcm_flag[CHROMA])
         derive_chroma_intra_pred_mode(lc, cclm_mode_flag, cclm_mode_idx, intra_chroma_pred_mode);
-    }
 }
 
 static PredMode pred_mode_decode(VVCLocalContext *lc,
@@ -2122,8 +2126,7 @@ static int intra_data(VVCLocalContext *lc)
             if ((ret = hls_palette_coding(lc, tree_type)) < 0)
                 return ret;
         } else if (!pred_mode_plt_flag) {
-            if (!cu->act_enabled_flag)
-                intra_chroma_pred_modes(lc);
+            intra_chroma_pred_modes(lc);
         }
     }
 
