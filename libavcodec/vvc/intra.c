@@ -303,21 +303,15 @@ static void scale(int *out, const int *in, const int w, const int h, const int s
 // part of 8.7.3 Scaling process for transform coefficients
 static void derive_qp(const VVCLocalContext *lc, const TransformUnit *tu, TransformBlock *tb)
 {
-    const VVCSPS *sps               = lc->fc->ps.sps;
-    const H266RawSliceHeader *rsh   = lc->sc->sh.r;
-    const CodingUnit *cu            = lc->cu;
-    int qp, qp_act_offset;
+    const VVCSPS *sps             = lc->fc->ps.sps;
+    const H266RawSliceHeader *rsh = lc->sc->sh.r;
+    const CodingUnit *cu          = lc->cu;
+    const bool is_jcbcr           = tb->c_idx && tu->joint_cbcr_residual_flag && tu->coded_flag[CB] && tu->coded_flag[CR];
+    const int idx                 = is_jcbcr ? JCBCR : tb->c_idx;
+    const int qp                  = cu->qp[idx] + (idx ? 0 : sps->qp_bd_offset);
+    const int act_offset[]        = { -5, 1, 3, 1 };
+    const int qp_act_offset       = cu->act_enabled_flag ? act_offset[idx] : 0;
 
-    if (tb->c_idx == 0) {
-        //fix me
-        qp = cu->qp[LUMA] + sps->qp_bd_offset;
-        qp_act_offset = cu->act_enabled_flag ? -5 : 0;
-    } else {
-        const int is_jcbcr = tu->joint_cbcr_residual_flag && tu->coded_flag[CB] && tu->coded_flag[CR];
-        const int idx = is_jcbcr ? JCBCR : tb->c_idx;
-        qp = cu->qp[idx];
-        qp_act_offset = cu->act_enabled_flag ? 1 : 0;
-    }
     if (tb->ts) {
         const int qp_prime_ts_min = 4 + 6 * sps->r->sps_min_qp_prime_ts;
 
