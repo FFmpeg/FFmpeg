@@ -2150,10 +2150,9 @@ static int hls_coding_unit(VVCLocalContext *lc, int x0, int y0, int cb_width, in
         mode_type = MODE_TYPE_INTRA;
     cu->pred_mode = pred_mode_decode(lc, tree_type, mode_type);
 
-    if (cu->pred_mode == MODE_INTRA && sps->r->sps_act_enabled_flag && tree_type == SINGLE_TREE) {
-        avpriv_report_missing_feature(fc->log_ctx, "Adaptive Color Transform");
-        return AVERROR_PATCHWELCOME;
-    }
+    if (cu->pred_mode == MODE_INTRA && sps->r->sps_act_enabled_flag && tree_type == SINGLE_TREE)
+        cu->act_enabled_flag = ff_vvc_cu_act_enabled_flag(lc);
+
     if (cu->pred_mode == MODE_INTRA || cu->pred_mode == MODE_PLT)
         ret = intra_data(lc);
     else if (tree_type != DUAL_TREE_CHROMA) /* MODE_INTER or MODE_IBC */
@@ -2169,10 +2168,8 @@ static int hls_coding_unit(VVCLocalContext *lc, int x0, int y0, int cb_width, in
 
     if (cu->coded_flag) {
         sbt_info(lc, sps);
-        if (sps->r->sps_act_enabled_flag && cu->pred_mode != MODE_INTRA && tree_type == SINGLE_TREE) {
-            avpriv_report_missing_feature(fc->log_ctx, "Adaptive Color Transform");
-            return AVERROR_PATCHWELCOME;
-        }
+        if (sps->r->sps_act_enabled_flag && cu->pred_mode != MODE_INTRA && tree_type == SINGLE_TREE)
+            cu->act_enabled_flag = ff_vvc_cu_act_enabled_flag(lc);
         lc->parse.lfnst_dc_only = 1;
         lc->parse.lfnst_zero_out_sig_coeff_flag = 1;
         lc->parse.mts_dc_only = 1;
