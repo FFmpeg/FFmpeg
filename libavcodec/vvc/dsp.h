@@ -123,7 +123,7 @@ typedef struct VVCIntraDSPContext {
 typedef struct VVCItxDSPContext {
     void (*add_residual)(uint8_t *dst, const int *res, int width, int height, ptrdiff_t stride);
     void (*add_residual_joint)(uint8_t *dst, const int *res, int width, int height, ptrdiff_t stride, int c_sign, int shift);
-    void (*pred_residual_joint)(int *buf, int width, int height, int c_sign, int shift);
+    void (*pred_residual_joint)(int *dst, const int *src, int width, int height, int c_sign, int shift);
 
     void (*itx[VVC_N_TX_TYPE][VVC_N_TX_SIZE])(int *coeffs, ptrdiff_t step, size_t nz);
     void (*transform_bdpcm)(int *coeffs, int width, int height, int vertical, int log2_transform_range);

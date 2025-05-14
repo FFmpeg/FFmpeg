@@ -178,7 +178,7 @@ static void add_residual_for_joint_coding_chroma(VVCLocalContext *lc,
     uint8_t *dst = &fc->frame->data[c_idx][(tb->y0 >> vs) * stride +
                                           ((tb->x0 >> hs) << fc->ps.sps->pixel_shift)];
     if (chroma_scale) {
-        fc->vvcdsp.itx.pred_residual_joint(tb->coeffs, tb->tb_width, tb->tb_height, c_sign, shift);
+        fc->vvcdsp.itx.pred_residual_joint(tb->coeffs, tb->coeffs, tb->tb_width, tb->tb_height, c_sign, shift);
         fc->vvcdsp.intra.lmcs_scale_chroma(lc, tb->coeffs, tb->coeffs, tb->tb_width, tb->tb_height, cu->x0, cu->y0);
         fc->vvcdsp.itx.add_residual(dst, tb->coeffs, tb->tb_width, tb->tb_height, stride);
     } else {

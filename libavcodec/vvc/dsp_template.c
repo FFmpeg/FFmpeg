@@ -62,15 +62,12 @@ static void FUNC(add_residual_joint)(uint8_t *_dst, const int *res,
     }
 }
 
-static void FUNC(pred_residual_joint)(int *buf, const int w, const int h,
+static void FUNC(pred_residual_joint)(int *dst, const int *src, const int w, const int h,
     const int c_sign, const int shift)
 {
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            *buf = ((*buf) * c_sign) >> shift;
-            buf++;
-        }
-    }
+    const int size = w * h;
+    for (int i = 0; i < size; i++)
+        dst[i] = (src[i] * c_sign) >> shift;
 }
 
 static void FUNC(transform_bdpcm)(int *coeffs, const int width, const int height,
