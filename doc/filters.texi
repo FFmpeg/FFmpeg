@@ -16321,6 +16321,18 @@ to double the input image resolution:
 -vf "libplacebo=w=iw*2:h=ih*2:extra_opts='upscaler=custom\:upscaler_preset=ewa_lanczos\:upscaler_blur=0.9812505644269356'"
 @end example
 
+
+@item shader_cache
+File path of a cache directory that libplacebo will use to store and load
+cached shader objects. This cache is not cleaned up automatically. If the
+path does not end in a directory separator, the generated filenames will be
+effectively prefixed by the last path component. All directories must already
+exist.
+
+@example
+-vf "libplacebo=shader_cache=/tmp/pl-shader-"
+@end example
+
 @item colorspace
 @item color_primaries
 @item color_trc

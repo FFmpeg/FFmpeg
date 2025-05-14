@@ -196,6 +196,11 @@ typedef struct LibplaceboContext {
     int rotation;
     AVDictionary *extra_opts;
 
+#if PL_API_VER >= 351
+    pl_cache cache;
+    char *shader_cache;
+#endif
+
     int have_hwdevice;
 
     /* pl_render_params */
@@ -523,6 +528,21 @@ static int libplacebo_init(AVFilterContext *avctx)
         return AVERROR(ENOMEM);
     }
 
+#if PL_API_VER >= 351
+    if (s->shader_cache && s->shader_cache[0]) {
+        s->cache = pl_cache_create(pl_cache_params(
+            .log  = s->log,
+            .get  = pl_cache_get_file,
+            .set  = pl_cache_set_file,
+            .priv = s->shader_cache,
+        ));
+        if (!s->cache) {
+            libplacebo_uninit(avctx);
+            return AVERROR(ENOMEM);
+        }
+    }
+#endif
+
     if (s->out_format_string) {
         s->out_format = av_get_pix_fmt(s->out_format_string);
         if (s->out_format == AV_PIX_FMT_NONE) {
@@ -677,6 +697,9 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
     }
 
     s->gpu = s->vulkan->gpu;
+#if PL_API_VER >= 351
+    pl_gpu_set_cache(s->gpu, s->cache);
+#endif
 
     /* Parse the user shaders, if requested */
     if (s->shader_bin_len)
@@ -715,6 +738,9 @@ static void libplacebo_uninit(AVFilterContext *avctx)
         av_freep(&s->inputs);
     }
 
+#if PL_API_VER >= 351
+    pl_cache_destroy(&s->cache);
+#endif
     pl_options_free(&s->opts);
     pl_vulkan_destroy(&s->vulkan);
     pl_log_destroy(&s->log);
@@ -1344,6 +1370,9 @@ static const AVOption libplacebo_options[] = {
     { "fillcolor", "Background fill color", OFFSET(fillcolor), AV_OPT_TYPE_COLOR, {.str = "black@0"}, .flags = DYNAMIC },
     { "corner_rounding", "Corner rounding radius", OFFSET(corner_rounding), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 1.0, .flags = DYNAMIC },
     { "extra_opts", "Pass extra libplacebo-specific options using a :-separated list of key=value pairs", OFFSET(extra_opts), AV_OPT_TYPE_DICT, .flags = DYNAMIC },
+#if PL_API_VER >= 351
+    { "shader_cache",  "Set shader cache path", OFFSET(shader_cache), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = STATIC },
+#endif
 
     {"colorspace", "select colorspace", OFFSET(colorspace), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_SPC_NB-1, DYNAMIC, .unit = "colorspace"},
     {"auto", "keep the same colorspace",  0, AV_OPT_TYPE_CONST, {.i64=-1},                          INT_MIN, INT_MAX, STATIC, .unit = "colorspace"},
