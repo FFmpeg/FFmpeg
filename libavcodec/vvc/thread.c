@@ -286,6 +286,7 @@ static void add_progress_listener(VVCFrame *ref, ProgressListener *l,
 static void ep_init_wpp(EntryPoint *next, const EntryPoint *ep, const VVCSPS *sps)
 {
     memcpy(next->cabac_state, ep->cabac_state, sizeof(next->cabac_state));
+    memcpy(next->pp, ep->pp, sizeof(next->pp));
     ff_vvc_ep_init_stat_coeff(next, sps->bit_depth, sps->r->sps_persistent_rice_adaptation_enabled_flag);
 }
 

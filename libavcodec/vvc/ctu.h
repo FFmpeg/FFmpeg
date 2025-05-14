@@ -36,6 +36,7 @@
 #define MIN_CU_SIZE             4
 #define MIN_CU_LOG2             2
 #define MAX_CU_DEPTH            7
+#define MAX_PALETTE_CU_SIZE     64
 
 #define MAX_PARTS_IN_CTU        ((MAX_CTU_SIZE >> MIN_CU_LOG2) * (MAX_CTU_SIZE >> MIN_CU_LOG2))
 
@@ -224,6 +225,7 @@ typedef enum PredFlag {
     PF_L1    = 0x2,
     PF_BI    = 0x3,
     PF_IBC   = PF_L0 | 0x4,
+    PF_PLT   = 0x8,
 } PredFlag;
 
 typedef enum IntraPredMode {
@@ -277,6 +279,11 @@ typedef struct PredictionUnit {
     int cb_prof_flag[2];
 } PredictionUnit;
 
+typedef struct Palette {
+    uint8_t size;
+    uint16_t entries[VVC_MAX_NUM_PALETTE_PREDICTOR_SIZE];
+} Palette;
+
 typedef struct CodingUnit {
     VVCTreeType tree_type;
     int x0;
@@ -326,6 +333,8 @@ typedef struct CodingUnit {
 
     int8_t qp[4];                                   ///< QpY, Qp′Cb, Qp′Cr, Qp′CbCr
 
+    Palette plt[VVC_MAX_SAMPLE_ARRAYS];
+
     PredictionUnit pu;
 
     struct CodingUnit *next;                        ///< RefStruct reference
@@ -355,6 +364,8 @@ typedef struct EntryPoint {
     int8_t qp_y;                                    ///< QpY
 
     int stat_coeff[VVC_MAX_SAMPLE_ARRAYS];          ///< StatCoeff
+
+    Palette pp[VVC_MAX_SAMPLE_ARRAYS];              // PalettePredictor
 
     VVCCabacState cabac_state[VVC_CONTEXTS];
     CABACContext cc;

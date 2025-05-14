@@ -145,7 +145,8 @@ static int derive_temporal_colocated_mvs(const VVCLocalContext *lc, MvField temp
     RefPicList* refPicList      = sc->rpl;
 
     if (temp_col.pred_flag == PF_INTRA ||
-        temp_col.pred_flag == PF_IBC)
+        temp_col.pred_flag == PF_IBC   ||
+        temp_col.pred_flag == PF_PLT)
         return 0;
 
     if (sb_flag){

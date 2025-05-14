@@ -551,6 +551,9 @@ static int ep_init(EntryPoint *ep, const int ctu_addr, const int ctu_end, GetBit
     ep->ctu_start = ctu_addr;
     ep->ctu_end   = ctu_end;
 
+    for (int c_idx = LUMA; c_idx <= CR; c_idx++)
+        ep->pp[c_idx].size = 0;
+
     return 0;
 }
 
