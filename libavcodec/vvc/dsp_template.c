@@ -91,6 +91,24 @@ static void FUNC(transform_bdpcm)(int *coeffs, const int width, const int height
     }
 }
 
+// 8.7.4.6 Residual modification process for blocks using colour space conversion
+static void FUNC(adaptive_color_transform)(int *y, int *u, int *v, const int width, const int height)
+{
+    const int size = width * height;
+    const int bits = BIT_DEPTH + 1;
+
+    for (int i = 0; i < size; i++) {
+        const int y0 = av_clip_intp2(y[i], bits);
+        const int cg = av_clip_intp2(u[i], bits);
+        const int co = av_clip_intp2(v[i], bits);
+        const int t  = y0 - (cg >> 1);
+
+        y[i] = cg + t;
+        u[i] = t - (co >> 1);
+        v[i] = co + u[i];
+    }
+}
+
 static void FUNC(ff_vvc_itx_dsp_init)(VVCItxDSPContext *const itx)
 {
 #define VVC_ITX(TYPE, type, s)                                                  \
@@ -111,6 +129,8 @@ static void FUNC(ff_vvc_itx_dsp_init)(VVCItxDSPContext *const itx)
     VVC_ITX_COMMON(DCT2, dct2)
     VVC_ITX_COMMON(DCT8, dct8)
     VVC_ITX_COMMON(DST7, dst7)
+
+    itx->adaptive_color_transform = FUNC(adaptive_color_transform);
 
 #undef VVC_ITX
 #undef VVC_ITX_COMMON

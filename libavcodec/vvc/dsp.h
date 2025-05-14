@@ -127,6 +127,8 @@ typedef struct VVCItxDSPContext {
 
     void (*itx[VVC_N_TX_TYPE][VVC_N_TX_SIZE])(int *coeffs, ptrdiff_t step, size_t nz);
     void (*transform_bdpcm)(int *coeffs, int width, int height, int vertical, int log2_transform_range);
+
+    void (*adaptive_color_transform)(int *y, int *u, int *v, int width, int height);
 } VVCItxDSPContext;
 
 typedef struct VVCLMCSDSPContext {
