@@ -670,6 +670,27 @@ int ff_vvc_palette_derive_scale(VVCLocalContext *lc, const TransformUnit *tu, Tr
     return level_scale[0][rem6[qp]] << div6[qp];
 }
 
+// 8.4.5.3 Decoding process for palette mode
+static void vvc_predict_palette(VVCLocalContext *lc)
+{
+    const VVCFrameContext *fc = lc->fc;
+    const CodingUnit *cu      = lc->cu;
+    TransformUnit *tu         = cu->tus.head;
+    const VVCSPS *sps         = fc->ps.sps;
+    const int ps              = sps->pixel_shift;
+
+    for (int i = 0; i < tu->nb_tbs; i++) {
+        TransformBlock *tb     = &tu->tbs[i];
+        const int c_idx        = tb->c_idx;
+        const int w            = tb->tb_width;
+        const int h            = tb->tb_height;
+        const ptrdiff_t stride = fc->frame->linesize[c_idx];
+        uint8_t *dst           = POS(c_idx, cu->x0, cu->y0);
+
+        av_image_copy_plane(dst, stride, (uint8_t*)tb->coeffs, w << ps, w << ps, h);
+    }
+}
+
 int ff_vvc_reconstruct(VVCLocalContext *lc, const int rs, const int rx, const int ry)
 {
     const VVCFrameContext *fc   = lc->fc;
@@ -690,6 +711,8 @@ int ff_vvc_reconstruct(VVCLocalContext *lc, const int rs, const int rx, const in
             ff_vvc_predict_ciip(lc);
         else if (cu->pred_mode == MODE_IBC)
             vvc_predict_ibc(lc);
+        else if (cu->pred_mode == MODE_PLT)
+            vvc_predict_palette(lc);
         if (cu->coded_flag) {
             ret = reconstruct(lc);
         } else {
