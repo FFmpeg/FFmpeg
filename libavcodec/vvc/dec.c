@@ -506,23 +506,18 @@ static int slices_realloc(VVCFrameContext *fc)
     return 0;
 }
 
-static int ep_init_cabac_decoder(SliceContext *sc, const int index,
-    const H2645NAL *nal, GetBitContext *gb, const CodedBitstreamUnit *unit)
+static int get_ep_size(const H266RawSliceHeader *rsh, GetBitContext *gb, const H2645NAL *nal, const int header_size, const int ep_index)
 {
-    const H266RawSlice *slice     = unit->content_ref;
-    const H266RawSliceHeader *rsh = sc->sh.r;
-    EntryPoint *ep                = sc->eps + index;
     int size;
-    int ret;
 
-    if (index < rsh->num_entry_points) {
+    if (ep_index < rsh->num_entry_points) {
         int skipped = 0;
         int64_t start =  (gb->index >> 3);
-        int64_t end = start + rsh->sh_entry_point_offset_minus1[index] + 1;
-        while (skipped < nal->skipped_bytes && nal->skipped_bytes_pos[skipped] <= start + slice->header_size) {
+        int64_t end = start + rsh->sh_entry_point_offset_minus1[ep_index] + 1;
+        while (skipped < nal->skipped_bytes && nal->skipped_bytes_pos[skipped] <= start + header_size) {
             skipped++;
         }
-        while (skipped < nal->skipped_bytes && nal->skipped_bytes_pos[skipped] <= end + slice->header_size) {
+        while (skipped < nal->skipped_bytes && nal->skipped_bytes_pos[skipped] <= end + header_size) {
             end--;
             skipped++;
         }
@@ -531,11 +526,31 @@ static int ep_init_cabac_decoder(SliceContext *sc, const int index,
     } else {
         size = get_bits_left(gb) / 8;
     }
+    return size;
+}
+
+static int ep_init_cabac_decoder(EntryPoint *ep, GetBitContext *gb, const int size)
+{
+    int ret;
+
     av_assert0(gb->buffer + get_bits_count(gb) / 8 + size <= gb->buffer_end);
     ret = ff_init_cabac_decoder (&ep->cc, gb->buffer + get_bits_count(gb) / 8, size);
     if (ret < 0)
         return ret;
     skip_bits(gb, size * 8);
+    return 0;
+}
+
+static int ep_init(EntryPoint *ep, const int ctu_addr, const int ctu_end, GetBitContext *gb, const int size)
+{
+    const int ret = ep_init_cabac_decoder(ep, gb, size);
+
+    if (ret < 0)
+        return ret;
+
+    ep->ctu_start = ctu_addr;
+    ep->ctu_end   = ctu_end;
+
     return 0;
 }
 
@@ -562,19 +577,18 @@ static int slice_init_entry_points(SliceContext *sc,
         return ret;
     for (int i = 0; i < sc->nb_eps; i++)
     {
-        EntryPoint *ep = sc->eps + i;
+        const int size    = get_ep_size(sc->sh.r, &gb, nal, slice->header_size, i);
+        const int ctu_end = (i + 1 == sc->nb_eps ? sh->num_ctus_in_curr_slice : sh->entry_point_start_ctu[i]);
+        EntryPoint *ep    = sc->eps + i;
 
-        ep->ctu_start = ctu_addr;
-        ep->ctu_end   = (i + 1 == sc->nb_eps ? sh->num_ctus_in_curr_slice : sh->entry_point_start_ctu[i]);
+        ret = ep_init(ep, ctu_addr, ctu_end, &gb, size);
+        if (ret < 0)
+            return ret;
 
         for (int j = ep->ctu_start; j < ep->ctu_end; j++) {
             const int rs = sc->sh.ctb_addr_in_curr_slice[j];
             fc->tab.slice_idx[rs] = sc->slice_idx;
         }
-
-        ret = ep_init_cabac_decoder(sc, i, nal, &gb, unit);
-        if (ret < 0)
-            return ret;
 
         if (i + 1 < sc->nb_eps)
             ctu_addr = sh->entry_point_start_ctu[i];

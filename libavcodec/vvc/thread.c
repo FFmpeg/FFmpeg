@@ -283,6 +283,12 @@ static void add_progress_listener(VVCFrame *ref, ProgressListener *l,
     ff_vvc_add_progress_listener(ref, (VVCProgressListener*)l);
 }
 
+static void ep_init_wpp(EntryPoint *next, const EntryPoint *ep, const VVCSPS *sps)
+{
+    memcpy(next->cabac_state, ep->cabac_state, sizeof(next->cabac_state));
+    ff_vvc_ep_init_stat_coeff(next, sps->bit_depth, sps->r->sps_persistent_rice_adaptation_enabled_flag);
+}
+
 static void schedule_next_parse(VVCContext *s, VVCFrameContext *fc, const SliceContext *sc, const VVCTask *t)
 {
     VVCFrameThread *ft = fc->ft;
@@ -292,10 +298,8 @@ static void schedule_next_parse(VVCContext *s, VVCFrameContext *fc, const SliceC
     if (sps->r->sps_entropy_coding_sync_enabled_flag) {
         if (t->rx == fc->ps.pps->ctb_to_col_bd[t->rx]) {
             EntryPoint *next = ep + 1;
-            if (next < sc->eps + sc->nb_eps && !is_first_row(fc, t->rx, t->ry + 1)) {
-                memcpy(next->cabac_state, ep->cabac_state, sizeof(next->cabac_state));
-                ff_vvc_ep_init_stat_coeff(next, sps->bit_depth, sps->r->sps_persistent_rice_adaptation_enabled_flag);
-            }
+            if (next < sc->eps + sc->nb_eps && !is_first_row(fc, t->rx, t->ry + 1))
+                ep_init_wpp(next, ep, sps);
         }
         if (t->ry + 1 < ft->ctu_height && !is_first_row(fc, t->rx, t->ry + 1))
             frame_thread_add_score(s, ft, t->rx, t->ry + 1, VVC_TASK_STAGE_PARSE);
