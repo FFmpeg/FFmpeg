@@ -20,13 +20,12 @@
 
 #include <string.h>
 
+#include "checkasm.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
 
 #include "libavcodec/vvc/dsp.h"
 #include "libavcodec/vvc/ctu.h"
-
-#include "checkasm.h"
 
 static const uint32_t pixel_mask[3] = { 0xffffffff, 0x03ff03ff, 0x0fff0fff };
 static const uint32_t sao_size[] = {8, 16, 32, 48, 64, 80, 96, 112, 128};
