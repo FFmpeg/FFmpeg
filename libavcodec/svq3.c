@@ -1377,6 +1377,23 @@ fail:
     return ret;
 }
 
+static av_cold int alloc_dummy_frame(AVCodecContext *avctx, SVQ3Frame *pic)
+{
+    av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
+    av_frame_unref(pic->f);
+    int ret = get_buffer(avctx, pic);
+    if (ret < 0)
+        return ret;
+
+    memset(pic->f->data[0], 0, avctx->height * pic->f->linesize[0]);
+    memset(pic->f->data[1], 0x80, (avctx->height / 2) *
+            pic->f->linesize[1]);
+    memset(pic->f->data[2], 0x80, (avctx->height / 2) *
+            pic->f->linesize[2]);
+
+    return 0;
+}
+
 static int svq3_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                              int *got_frame, AVPacket *avpkt)
 {
@@ -1441,29 +1458,15 @@ static int svq3_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     if (s->pict_type != AV_PICTURE_TYPE_I) {
         if (!s->last_pic->f->data[0]) {
-            av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
-            av_frame_unref(s->last_pic->f);
-            ret = get_buffer(avctx, s->last_pic);
+            ret = alloc_dummy_frame(avctx, s->last_pic);
             if (ret < 0)
                 return ret;
-            memset(s->last_pic->f->data[0], 0, avctx->height * s->last_pic->f->linesize[0]);
-            memset(s->last_pic->f->data[1], 0x80, (avctx->height / 2) *
-                   s->last_pic->f->linesize[1]);
-            memset(s->last_pic->f->data[2], 0x80, (avctx->height / 2) *
-                   s->last_pic->f->linesize[2]);
         }
 
         if (s->pict_type == AV_PICTURE_TYPE_B && !s->next_pic->f->data[0]) {
-            av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
-            av_frame_unref(s->next_pic->f);
-            ret = get_buffer(avctx, s->next_pic);
+            ret = alloc_dummy_frame(avctx, s->next_pic);
             if (ret < 0)
                 return ret;
-            memset(s->next_pic->f->data[0], 0, avctx->height * s->next_pic->f->linesize[0]);
-            memset(s->next_pic->f->data[1], 0x80, (avctx->height / 2) *
-                   s->next_pic->f->linesize[1]);
-            memset(s->next_pic->f->data[2], 0x80, (avctx->height / 2) *
-                   s->next_pic->f->linesize[2]);
         }
     }
 
