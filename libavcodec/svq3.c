@@ -104,7 +104,6 @@ typedef struct SVQ3Context {
     int adaptive_quant;
     int h_edge_pos;
     int v_edge_pos;
-    int last_frame_output;
     int slice_num;
     int qscale;
     int cbp;
@@ -1398,11 +1397,8 @@ static int svq3_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     /* special case for last picture */
     if (buf_size == 0) {
-        if (s->next_pic->f->data[0] && !s->low_delay && !s->last_frame_output) {
-            ret = av_frame_ref(rframe, s->next_pic->f);
-            if (ret < 0)
-                return ret;
-            s->last_frame_output = 1;
+        if (s->next_pic->f->data[0] && !s->low_delay) {
+            av_frame_move_ref(rframe, s->next_pic->f);
             *got_frame          = 1;
         }
         return 0;
