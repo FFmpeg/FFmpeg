@@ -1114,14 +1114,139 @@ static void init_dequant4_coeff_table(SVQ3Context *s)
     }
 }
 
+static av_cold int svq3_decode_extradata(AVCodecContext *avctx, SVQ3Context *s,
+                                         int seqh_offset)
+{
+    const uint8_t *extradata = avctx->extradata + seqh_offset;
+    unsigned int size = AV_RB32(extradata + 4);
+    GetBitContext gb;
+    int ret;
+
+    if (size > avctx->extradata_size - seqh_offset - 8)
+        return AVERROR_INVALIDDATA;
+    extradata += 8;
+    init_get_bits(&gb, extradata, size * 8);
+
+    /* 'frame size code' and optional 'width, height' */
+    int frame_size_code = get_bits(&gb, 3);
+    int w, h;
+    switch (frame_size_code) {
+    case 0:
+        w = 160;
+        h = 120;
+        break;
+    case 1:
+        w = 128;
+        h =  96;
+        break;
+    case 2:
+        w = 176;
+        h = 144;
+        break;
+    case 3:
+        w = 352;
+        h = 288;
+        break;
+    case 4:
+        w = 704;
+        h = 576;
+        break;
+    case 5:
+        w = 240;
+        h = 180;
+        break;
+    case 6:
+        w = 320;
+        h = 240;
+        break;
+    case 7:
+        w = get_bits(&gb, 12);
+        h = get_bits(&gb, 12);
+        break;
+    }
+    ret = ff_set_dimensions(avctx, w, h);
+    if (ret < 0)
+        return ret;
+
+    s->halfpel_flag  = get_bits1(&gb);
+    s->thirdpel_flag = get_bits1(&gb);
+
+    /* unknown fields */
+    int unk0 = get_bits1(&gb);
+    int unk1 = get_bits1(&gb);
+    int unk2 = get_bits1(&gb);
+    int unk3 = get_bits1(&gb);
+
+    s->low_delay = get_bits1(&gb);
+    avctx->has_b_frames = !s->low_delay;
+
+    /* unknown field */
+    int unk4 = get_bits1(&gb);
+
+    av_log(avctx, AV_LOG_DEBUG, "Unknown fields %d %d %d %d %d\n",
+           unk0, unk1, unk2, unk3, unk4);
+
+    if (skip_1stop_8data_bits(&gb) < 0)
+        return AVERROR_INVALIDDATA;
+
+    s->has_watermark = get_bits1(&gb);
+
+    if (!s->has_watermark)
+        return 0;
+
+#if CONFIG_ZLIB
+    unsigned watermark_width  = get_interleaved_ue_golomb(&gb);
+    unsigned watermark_height = get_interleaved_ue_golomb(&gb);
+    int u1                    = get_interleaved_ue_golomb(&gb);
+    int u2                    = get_bits(&gb, 8);
+    int u3                    = get_bits(&gb, 2);
+    int u4                    = get_interleaved_ue_golomb(&gb);
+    unsigned long buf_len     = watermark_width *
+                                watermark_height * 4;
+    int offset                = get_bits_count(&gb) + 7 >> 3;
+
+    if (watermark_height <= 0 ||
+        get_bits_left(&gb) <= 0 ||
+        (uint64_t)watermark_width * 4 > UINT_MAX / watermark_height)
+        return AVERROR_INVALIDDATA;
+
+    av_log(avctx, AV_LOG_DEBUG, "watermark size: %ux%u\n",
+           watermark_width, watermark_height);
+    av_log(avctx, AV_LOG_DEBUG,
+           "u1: %x u2: %x u3: %x compressed data size: %d offset: %d\n",
+           u1, u2, u3, u4, offset);
+
+    uint8_t *buf = av_malloc(buf_len);
+    if (!buf)
+        return AVERROR(ENOMEM);
+
+    if (uncompress(buf, &buf_len, extradata + offset,
+                   size - offset) != Z_OK) {
+        av_log(avctx, AV_LOG_ERROR,
+               "could not uncompress watermark logo\n");
+        av_free(buf);
+        return -1;
+    }
+    s->watermark_key = av_bswap16(av_crc(av_crc_get_table(AV_CRC_16_CCITT), 0, buf, buf_len));
+
+    s->watermark_key = s->watermark_key << 16 | s->watermark_key;
+    av_log(avctx, AV_LOG_DEBUG,
+           "watermark key %#"PRIx32"\n", s->watermark_key);
+    av_free(buf);
+
+    return 0;
+#else
+    av_log(avctx, AV_LOG_ERROR,
+           "this svq3 file contains watermark which need zlib support compiled in\n");
+    return AVERROR(ENOSYS);
+#endif
+}
+
 static av_cold int svq3_decode_init(AVCodecContext *avctx)
 {
     SVQ3Context *s = avctx->priv_data;
     int m, x, y;
     unsigned char *extradata;
-    unsigned char *extradata_end;
-    unsigned int size;
-    int marker_found = 0;
     int ret;
 
     s->cur_pic  = &s->frames[0];
@@ -1154,136 +1279,16 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
 
     /* prowl for the "SEQH" marker in the extradata */
     extradata     = (unsigned char *)avctx->extradata;
-    extradata_end = avctx->extradata + avctx->extradata_size;
     if (extradata) {
         for (m = 0; m + 8 < avctx->extradata_size; m++) {
             if (!memcmp(extradata, "SEQH", 4)) {
-                marker_found = 1;
+                /* if a match was found, parse the extra data */
+                ret = svq3_decode_extradata(avctx, s, m);
+                if (ret < 0)
+                    return ret;
                 break;
             }
             extradata++;
-        }
-    }
-
-    /* if a match was found, parse the extra data */
-    if (marker_found) {
-        GetBitContext gb;
-        int frame_size_code;
-        int unk0, unk1, unk2, unk3, unk4;
-        int w,h;
-
-        size = AV_RB32(&extradata[4]);
-        if (size > extradata_end - extradata - 8)
-            return AVERROR_INVALIDDATA;
-        init_get_bits(&gb, extradata + 8, size * 8);
-
-        /* 'frame size code' and optional 'width, height' */
-        frame_size_code = get_bits(&gb, 3);
-        switch (frame_size_code) {
-        case 0:
-            w = 160;
-            h = 120;
-            break;
-        case 1:
-            w = 128;
-            h =  96;
-            break;
-        case 2:
-            w = 176;
-            h = 144;
-            break;
-        case 3:
-            w = 352;
-            h = 288;
-            break;
-        case 4:
-            w = 704;
-            h = 576;
-            break;
-        case 5:
-            w = 240;
-            h = 180;
-            break;
-        case 6:
-            w = 320;
-            h = 240;
-            break;
-        case 7:
-            w = get_bits(&gb, 12);
-            h = get_bits(&gb, 12);
-            break;
-        }
-        ret = ff_set_dimensions(avctx, w, h);
-        if (ret < 0)
-            return ret;
-
-        s->halfpel_flag  = get_bits1(&gb);
-        s->thirdpel_flag = get_bits1(&gb);
-
-        /* unknown fields */
-        unk0 = get_bits1(&gb);
-        unk1 = get_bits1(&gb);
-        unk2 = get_bits1(&gb);
-        unk3 = get_bits1(&gb);
-
-        s->low_delay = get_bits1(&gb);
-
-        /* unknown field */
-        unk4 = get_bits1(&gb);
-
-        av_log(avctx, AV_LOG_DEBUG, "Unknown fields %d %d %d %d %d\n",
-               unk0, unk1, unk2, unk3, unk4);
-
-        if (skip_1stop_8data_bits(&gb) < 0)
-            return AVERROR_INVALIDDATA;
-
-        s->has_watermark  = get_bits1(&gb);
-        avctx->has_b_frames = !s->low_delay;
-        if (s->has_watermark) {
-#if CONFIG_ZLIB
-            unsigned watermark_width  = get_interleaved_ue_golomb(&gb);
-            unsigned watermark_height = get_interleaved_ue_golomb(&gb);
-            int u1                    = get_interleaved_ue_golomb(&gb);
-            int u2                    = get_bits(&gb, 8);
-            int u3                    = get_bits(&gb, 2);
-            int u4                    = get_interleaved_ue_golomb(&gb);
-            unsigned long buf_len     = watermark_width *
-                                        watermark_height * 4;
-            int offset                = get_bits_count(&gb) + 7 >> 3;
-            uint8_t *buf;
-
-            if (watermark_height <= 0 ||
-                get_bits_left(&gb) <= 0 ||
-                (uint64_t)watermark_width * 4 > UINT_MAX / watermark_height)
-                return AVERROR_INVALIDDATA;
-
-            buf = av_malloc(buf_len);
-            if (!buf)
-                return AVERROR(ENOMEM);
-
-            av_log(avctx, AV_LOG_DEBUG, "watermark size: %ux%u\n",
-                   watermark_width, watermark_height);
-            av_log(avctx, AV_LOG_DEBUG,
-                   "u1: %x u2: %x u3: %x compressed data size: %d offset: %d\n",
-                   u1, u2, u3, u4, offset);
-            if (uncompress(buf, &buf_len, extradata + 8 + offset,
-                           size - offset) != Z_OK) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "could not uncompress watermark logo\n");
-                av_free(buf);
-                return -1;
-            }
-            s->watermark_key = av_bswap16(av_crc(av_crc_get_table(AV_CRC_16_CCITT), 0, buf, buf_len));
-
-            s->watermark_key = s->watermark_key << 16 | s->watermark_key;
-            av_log(avctx, AV_LOG_DEBUG,
-                   "watermark key %#"PRIx32"\n", s->watermark_key);
-            av_free(buf);
-#else
-            av_log(avctx, AV_LOG_ERROR,
-                   "this svq3 file contains watermark which need zlib support compiled in\n");
-            return AVERROR(ENOSYS);
-#endif
         }
     }
 
