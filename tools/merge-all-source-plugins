@@ -18,6 +18,17 @@ merge(){ # $1=repository, $2=refspec
     suceeded="$suceeded $2"
 }
 
+error(){
+    echo $1
+    exit 1
+}
+
+git diff --exit-code >/dev/null ||\
+    error "Please commit local changes first"
+
+git diff --cached --exit-code >/dev/null ||\
+    error "Please commit local changes first"
+
 #version="12.34"
 
 merge "https://github.com/michaelni/FFmpeg.git" "libpostproc"
