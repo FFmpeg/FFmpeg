@@ -71,13 +71,14 @@
  * svq3 decoder.
  */
 
+#define NUM_PICS 3
+
 typedef struct SVQ3Frame {
     AVFrame *f;
 
-    int16_t (*motion_val_buf)[2];
     int16_t (*motion_val[2])[2];
 
-    uint32_t *mb_type_buf, *mb_type;
+    uint32_t *mb_type;
 } SVQ3Frame;
 
 typedef struct SVQ3Context {
@@ -142,7 +143,10 @@ typedef struct SVQ3Context {
     DECLARE_ALIGNED(8, uint8_t, non_zero_count_cache)[15 * 8];
     uint32_t dequant4_coeff[QP_MAX_NUM + 1][16];
     int block_offset[2 * (16 * 3)];
-    SVQ3Frame frames[3];
+    SVQ3Frame frames[NUM_PICS];
+
+    uint32_t *mb_type_buf;
+    int16_t (*motion_val_buf)[2];
 } SVQ3Context;
 
 #define FULLPEL_MODE  1
@@ -1300,6 +1304,34 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     s->h_edge_pos = s->mb_width * 16;
     s->v_edge_pos = s->mb_height * 16;
 
+    const unsigned big_mb_num = s->mb_stride * (s->mb_height + 2) + 1;
+
+    s->mb_type_buf = av_calloc(big_mb_num, NUM_PICS * sizeof(*s->mb_type_buf));
+    if (!s->mb_type_buf)
+        return AVERROR(ENOMEM);
+    uint32_t *mb_type_buf = s->mb_type_buf + 2 * s->mb_stride + 1;
+
+    const unsigned b4_stride     = s->mb_width * 4 + 1;
+    const unsigned b4_array_size = b4_stride * s->mb_height * 4;
+    const unsigned motion_val_buf_size = b4_array_size + 4;
+
+    s->motion_val_buf = av_calloc(motion_val_buf_size,
+                                  NUM_PICS * 2 * sizeof(*s->motion_val_buf));
+    if (!s->motion_val_buf)
+        return AVERROR(ENOMEM);
+    int16_t (*motion_val_buf)[2] = s->motion_val_buf + 4;
+
+    for (size_t i = 0; i < NUM_PICS; ++i) {
+        SVQ3Frame *const pic = &s->frames[i];
+
+        pic->mb_type = mb_type_buf;
+        mb_type_buf += big_mb_num;
+        for (size_t j = 0; j < FF_ARRAY_ELEMS(pic->motion_val); ++j) {
+            pic->motion_val[j] = motion_val_buf;
+            motion_val_buf    += motion_val_buf_size;
+        }
+    }
+
     s->intra4x4_pred_mode = av_mallocz(s->mb_stride * 2 * 8);
     if (!s->intra4x4_pred_mode)
         return AVERROR(ENOMEM);
@@ -1321,42 +1353,14 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void free_picture(SVQ3Frame *pic)
-{
-    av_freep(&pic->motion_val_buf);
-    av_freep(&pic->mb_type_buf);
-
-    av_frame_unref(pic->f);
-}
-
 static int get_buffer(AVCodecContext *avctx, SVQ3Frame *pic)
 {
     SVQ3Context *s = avctx->priv_data;
-    const int big_mb_num    = s->mb_stride * (s->mb_height + 1) + 1;
-    const int b4_stride     = s->mb_width * 4 + 1;
-    const int b4_array_size = b4_stride * s->mb_height * 4;
-    int ret;
-
-    if (!pic->motion_val_buf) {
-        pic->mb_type_buf = av_calloc(big_mb_num + s->mb_stride, sizeof(uint32_t));
-        if (!pic->mb_type_buf)
-            return AVERROR(ENOMEM);
-        pic->mb_type = pic->mb_type_buf + 2 * s->mb_stride + 1;
-
-        pic->motion_val_buf = av_calloc(b4_array_size + 4, 2 * sizeof(*pic->motion_val[0]));
-        if (!pic->motion_val_buf) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        pic->motion_val[0] = pic->motion_val_buf + 4;
-        pic->motion_val[1] = pic->motion_val[0]  + b4_array_size + 4;
-    }
-
-    ret = ff_get_buffer(avctx, pic->f,
-                        (s->pict_type != AV_PICTURE_TYPE_B) ?
-                         AV_GET_BUFFER_FLAG_REF : 0);
+    int ret = ff_get_buffer(avctx, pic->f,
+                            (s->pict_type != AV_PICTURE_TYPE_B) ?
+                            AV_GET_BUFFER_FLAG_REF : 0);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     if (!s->edge_emu_buffer) {
         s->edge_emu_buffer = av_calloc(pic->f->linesize[0], 17);
@@ -1365,9 +1369,6 @@ static int get_buffer(AVCodecContext *avctx, SVQ3Frame *pic)
     }
 
     return 0;
-fail:
-    free_picture(pic);
-    return ret;
 }
 
 static av_cold int alloc_dummy_frame(AVCodecContext *avctx, SVQ3Frame *pic)
@@ -1586,10 +1587,10 @@ static av_cold int svq3_decode_end(AVCodecContext *avctx)
 {
     SVQ3Context *s = avctx->priv_data;
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(s->frames); i++) {
-        free_picture(&s->frames[i]);
+    for (int i = 0; i < NUM_PICS; i++)
         av_frame_free(&s->frames[i].f);
-    }
+    av_freep(&s->motion_val_buf);
+    av_freep(&s->mb_type_buf);
     av_freep(&s->slice_buf);
     av_freep(&s->intra4x4_pred_mode);
     av_freep(&s->edge_emu_buffer);
