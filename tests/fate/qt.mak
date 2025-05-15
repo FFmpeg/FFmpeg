@@ -57,7 +57,7 @@ fate-svq3-1: CMD = framecrc -i $(TARGET_SAMPLES)/svq3/Vertical400kbit.sorenson3.
 fate-svq3-2: CMD = framecrc -flags +bitexact -ignore_editlist 1 -i $(TARGET_SAMPLES)/svq3/svq3_decoding_regression.mov -an
 
 FATE_SVQ3 += fate-svq3-watermark
-fate-svq3-watermark: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/svq3/svq3_watermark.mov
+fate-svq3-watermark: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/svq3/svq3_watermark.mov -fps_mode passthrough
 
 FATE_QT-$(call FRAMECRC, MOV, SVQ3, ZLIB) += $(FATE_SVQ3)
 fate-svq3: $(FATE_SVQ3)
