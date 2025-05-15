@@ -1,0 +1,4 @@
+*.html.c
+*.css.c
+*.html.gz
+*.css.gz

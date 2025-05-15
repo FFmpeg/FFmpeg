@@ -139,6 +139,44 @@ else
 	$(BIN2C) $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<) $@ $(subst .,_,$(basename $(notdir $@)))
 endif
 
+# 1) Preprocess CSS to a minified version
+%.css.min: %.css
+	# Must start with a tab in the real Makefile
+	sed 's!/\\*.*\\*/!!g' $< \
+	| tr '\n' ' ' \
+	| tr -s ' ' \
+	| sed 's/^ //; s/ $$//' \
+	> $@
+
+ifdef CONFIG_RESOURCE_COMPRESSION
+
+# 2) Gzip the minified CSS
+%.css.min.gz: %.css.min
+	$(M)gzip -nc9 $< > $@
+
+# 3) Convert the gzipped CSS to a .c array
+%.css.c: %.css.min.gz $(BIN2CEXE)
+	$(BIN2C) $< $@ $(subst .,_,$(basename $(notdir $@)))
+
+# 4) Gzip the HTML file (no minification needed)
+%.html.gz: %.html
+	$(M)gzip -nc9 $< > $@
+
+# 5) Convert the gzipped HTML to a .c array
+%.html.c: %.html.gz $(BIN2CEXE)
+	$(BIN2C) $< $@ $(subst .,_,$(basename $(notdir $@)))
+
+else   # NO COMPRESSION
+
+# 2) Convert the minified CSS to a .c array
+%.css.c: %.css.min $(BIN2CEXE)
+	$(BIN2C) $< $@ $(subst .,_,$(basename $(notdir $@)))
+
+# 3) Convert the plain HTML to a .c array
+%.html.c: %.html $(BIN2CEXE)
+	$(BIN2C) $< $@ $(subst .,_,$(basename $(notdir $@)))
+endif
+
 clean::
 	$(RM) $(BIN2CEXE) $(CLEANSUFFIXES:%=ffbuild/%)
 
@@ -191,9 +229,10 @@ SKIPHEADERS += $(ARCH_HEADERS:%=$(ARCH)/%) $(SKIPHEADERS-)
 SKIPHEADERS := $(SKIPHEADERS:%=$(SUBDIR)%)
 HOBJS        = $(filter-out $(SKIPHEADERS:.h=.h.o),$(ALLHEADERS:.h=.h.o))
 PTXOBJS      = $(filter %.ptx.o,$(OBJS))
+RESOURCEOBJS = $(filter %.css.o %.html.o,$(OBJS))
 $(HOBJS):     CCFLAGS += $(CFLAGS_HEADERS)
 checkheaders: $(HOBJS)
-.SECONDARY:   $(HOBJS:.o=.c) $(PTXOBJS:.o=.c) $(PTXOBJS:.o=.gz) $(PTXOBJS:.o=)
+.SECONDARY:   $(HOBJS:.o=.c) $(PTXOBJS:.o=.c) $(PTXOBJS:.o=.gz) $(PTXOBJS:.o=) $(RESOURCEOBJS:.o=.c) $(RESOURCEOBJS:%.css.o=%.css.min) $(RESOURCEOBJS:%.css.o=%.css.min.gz) $(RESOURCEOBJS:%.html.o=%.html.gz) $(RESOURCEOBJS:.o=)
 
 alltools: $(TOOLS)
 
@@ -214,7 +253,7 @@ $(TOOLOBJS): | tools
 
 OUTDIRS := $(OUTDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(SLIBOBJS) $(SHLIBOBJS) $(STLIBOBJS) $(TESTOBJS))
 
-CLEANSUFFIXES     = *.d *.gcda *.gcno *.h.c *.ho *.map *.o *.objs *.pc *.ptx *.ptx.gz *.ptx.c *.ver *.version *$(DEFAULT_X86ASMD).asm *~ *.ilk *.pdb
+CLEANSUFFIXES     = *.d *.gcda *.gcno *.h.c *.ho *.map *.o *.objs *.pc *.ptx *.ptx.gz *.ptx.c *.ver *.version *.html.gz *.html.c *.css.gz *.css.c  *$(DEFAULT_X86ASMD).asm *~ *.ilk *.pdb
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
 define RULES

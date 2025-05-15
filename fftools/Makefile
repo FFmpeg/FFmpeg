@@ -42,7 +42,7 @@ ifdef HAVE_GNU_WINDRES
 OBJS-$(1) += fftools/fftoolsres.o
 endif
 $(1)$(PROGSSUF)_g$(EXESUF): $$(OBJS-$(1))
-$$(OBJS-$(1)): | fftools fftools/textformat
+$$(OBJS-$(1)): | fftools fftools/textformat fftools/resources
 $$(OBJS-$(1)): CFLAGS  += $(CFLAGS-$(1))
 $(1)$(PROGSSUF)_g$(EXESUF): LDFLAGS += $(LDFLAGS-$(1))
 $(1)$(PROGSSUF)_g$(EXESUF): FF_EXTRALIBS += $(EXTRALIBS-$(1))
@@ -56,6 +56,7 @@ all: $(AVPROGS)
 fftools/ffprobe.o fftools/cmdutils.o: libavutil/ffversion.h | fftools
 OUTDIRS += fftools
 OUTDIRS += fftools/textformat
+OUTDIRS += fftools/resources
 
 ifdef AVPROGS
 install: install-progs install-data

@@ -523,6 +523,7 @@ Developer options (useful when working on FFmpeg itself):
   --enable-macos-kperf     enable macOS kperf (private) API
   --disable-large-tests    disable tests that use a large amount of memory
   --disable-ptx-compression don't compress CUDA PTX code even when possible
+  --disable-resource-compression don't compress resources even when possible
   --disable-version-tracking don't include the git/release version in the build
 
 NOTE: Object files are built at the place where configure is launched.
@@ -2123,6 +2124,7 @@ CONFIG_LIST="
     ossfuzz
     pic
     ptx_compression
+    resource_compression
     thumb
     valgrind_backtrace
     xmm_clobber_test
@@ -4179,6 +4181,7 @@ enable iamf
 enable large_tests
 enable optimizations
 enable ptx_compression
+enable resource_compression
 enable runtime_cpudetect
 enable safe_bitstream_reader
 enable static
@@ -6903,6 +6906,8 @@ EOF
 [ -x "$(command -v gzip)" ] && enable gzip
 
 enabled zlib_gzip && enabled gzip || disable ptx_compression
+
+enabled zlib_gzip && enabled gzip || disable resource_compression
 
 # On some systems dynamic loading requires no extra linker flags
 check_lib libdl dlfcn.h "dlopen dlsym" || check_lib libdl dlfcn.h "dlopen dlsym" -ldl
