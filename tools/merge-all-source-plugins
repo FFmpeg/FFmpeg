@@ -1,3 +1,27 @@
 #!/bin/sh
 
-git pull --no-rebase --log --stat --commit --no-edit  https://github.com/michaelni/FFmpeg.git sourceplugin-libpostproc
+#If a version is set then we only try merging a source plugin with matching version as a generic one could change the ABI to master HEAD
+merge_internal(){ # $1=repository, $2=refspec
+    [ -n "$version" ] && git pull --no-rebase --log --stat --commit --no-edit  $1 sourceplugin-$2-$version
+    [ -z "$version" ] && git pull --no-rebase --log --stat --commit --no-edit  $1 sourceplugin-$2
+}
+
+unset suceeded failed version
+
+merge(){ # $1=repository, $2=refspec
+    merge_internal "$1" "$2" || {
+        git reset --hard
+        echo merge of $1 $2 failed, continuing with other plugins
+        failed="$failed $2"
+        return 0
+    }
+    suceeded="$suceeded $2"
+}
+
+#version="12.34"
+
+merge "https://github.com/michaelni/FFmpeg.git" "libpostproc"
+
+[ -n "$version"  ] && echo version: $version
+[ -n "$suceeded" ] && echo Succeeded merging: $suceeded
+[ -n "$failed"   ] && echo Failed merging: $failed
