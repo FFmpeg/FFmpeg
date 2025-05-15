@@ -81,6 +81,7 @@
 #include "ffmpeg.h"
 #include "ffmpeg_sched.h"
 #include "ffmpeg_utils.h"
+#include "graph/graphprint.h"
 
 const char program_name[] = "ffmpeg";
 const int program_birth_year = 2000;
@@ -308,6 +309,9 @@ const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };
 
 static void ffmpeg_cleanup(int ret)
 {
+    if (print_graphs || print_graphs_file)
+        print_filtergraphs(filtergraphs, nb_filtergraphs, input_files, nb_input_files, output_files, nb_output_files);
+
     if (do_benchmark) {
         int64_t maxrss = getmaxrss() / 1024;
         av_log(NULL, AV_LOG_INFO, "bench: maxrss=%"PRId64"KiB\n", maxrss);

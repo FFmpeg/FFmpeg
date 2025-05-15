@@ -22,6 +22,7 @@
 
 #include "ffmpeg.h"
 #include "ffmpeg_filter.h"
+#include "graph/graphprint.h"
 
 #include "libavfilter/avfilter.h"
 #include "libavfilter/buffersink.h"
@@ -2983,6 +2984,10 @@ read_frames:
     }
 
 finish:
+
+    if (print_graphs || print_graphs_file)
+        print_filtergraph(fg, fgt.graph);
+
     // EOF is normal termination
     if (ret == AVERROR_EOF)
         ret = 0;

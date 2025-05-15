@@ -1394,6 +1394,16 @@ It is on by default, to explicitly disable it you need to specify @code{-nostats
 @item -stats_period @var{time} (@emph{global})
 Set period at which encoding progress/statistics are updated. Default is 0.5 seconds.
 
+@item -print_graphs (@emph{global})
+Prints execution graph details to stderr in the format set via -print_graphs_format.
+
+@item -print_graphs_file @var{filename} (@emph{global})
+Writes execution graph details to the specified file in the format set via -print_graphs_format.
+
+@item -print_graphs_format @var{format} (@emph{global})
+Sets the output format (available formats are: default, compact, csv, flat, ini, json, xml, mermaid, mermaidhtml)
+The default format is json.
+
 @item -progress @var{url} (@emph{global})
 Send program-friendly progress information to @var{url}.
 

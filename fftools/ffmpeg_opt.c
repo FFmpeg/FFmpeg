@@ -47,6 +47,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/stereo3d.h"
+#include "graph/graphprint.h"
 
 HWDevice *filter_hw_device;
 
@@ -75,6 +76,9 @@ float max_error_rate  = 2.0/3;
 char *filter_nbthreads;
 int filter_complex_nbthreads = 0;
 int vstats_version = 2;
+int print_graphs = 0;
+char *print_graphs_file = NULL;
+char *print_graphs_format = NULL;
 int auto_conversion_filters = 1;
 int64_t stats_period = 500000;
 
@@ -1735,6 +1739,15 @@ const OptionDef options[] = {
         { .func_arg = opt_filter_complex_script },
         "deprecated, use -/filter_complex instead", "filename" },
 #endif
+    { "print_graphs",   OPT_TYPE_BOOL, 0,
+        { &print_graphs },
+        "print execution graph data to stderr" },
+    { "print_graphs_file", OPT_TYPE_STRING, 0,
+        { &print_graphs_file },
+        "write execution graph data to the specified file", "filename" },
+    { "print_graphs_format", OPT_TYPE_STRING, 0,
+        { &print_graphs_format },
+      "set the output printing format (available formats are: default, compact, csv, flat, ini, json, xml, mermaid, mermaidhtml)", "format" },
     { "auto_conversion_filters", OPT_TYPE_BOOL, OPT_EXPERT,
         { &auto_conversion_filters },
         "enable automatic conversion filters globally" },
