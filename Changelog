@@ -2,6 +2,26 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.4.6:
+ avcodec/takdec: Check remaining space for first predictors
+ avcodec/svq3: Check there are bits left before decompression
+ avcodec/sonic: Check num_taps
+ avformat/mov: reject negative ELST durations
+ avformat/avidec: Ignore duplicate GAB2
+ avcodec/h264_mb: Fix tmp_cr for arm
+ avcodec/vorbisdec: Dont treat overread as error
+ libpostproc: check minimum size
+ avformat/hls: Fix flash1.bogulus.cfd support
+ avformat/hls: Split allowed_segment_extensions off allowed_extensions
+ avformat/hls: Fix Youtube AAC
+ avformat/hls: add fmp4 to allowed_extensions
+ avformat/hls: Add ec3 to allowed_extensions
+ avformat/hls: Add cmfv and cmfa to allowed_extensions
+ configure: Clearer documentation for "disable-safe-bitstream-reader"
+ swscale/output: Fix integer overflow in yuv2gbrp_full_X_c()
+ avcodec/libtheora: fix setting keyframe_mask
+ avfilter/buffersrc: check for valid sample rate
+ doc: replace http/git by https urls
+ Update for 4.4.6
  configure: update copyright year
  avformat/hls: Partially revert "reduce default max reload to 3"
  avformat/hls: Fix twitter
