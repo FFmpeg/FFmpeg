@@ -196,7 +196,7 @@ DISABLE_SVE2
         .popsection
 #endif
 
-.macro  function name, export=0, align=2
+.macro  function name, export=0, align=4
     .macro endfunc
 ELF     .size   \name, . - \name
 FUNC    .endfunc
@@ -217,7 +217,7 @@ FUNC    .func   \name
     .endif
 .endm
 
-.macro  const   name, align=2, relocate=0
+.macro  const   name, align=4, relocate=0
     .macro endconst
 ELF     .size   \name, . - \name
         .purgem endconst
