@@ -1225,7 +1225,7 @@ static av_cold int svq3_decode_extradata(AVCodecContext *avctx, SVQ3Context *s,
         av_log(avctx, AV_LOG_ERROR,
                "could not uncompress watermark logo\n");
         av_free(buf);
-        return -1;
+        return AVERROR_EXTERNAL;
     }
     s->watermark_key = av_bswap16(av_crc(av_crc_get_table(AV_CRC_16_CCITT), 0, buf, buf_len));
 
@@ -1403,8 +1403,9 @@ static int svq3_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     if (ret < 0)
         return ret;
 
-    if (svq3_decode_slice_header(avctx))
-        return -1;
+    ret = svq3_decode_slice_header(avctx);
+    if (ret < 0)
+        return ret;
 
     if (avpkt->size < s->mb_width * s->mb_height / 8)
         return AVERROR_INVALIDDATA;
@@ -1517,8 +1518,9 @@ static int svq3_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                 if (((get_bits_count(&s->gb_slice) & 7) == 0 ||
                     show_bits(&s->gb_slice, get_bits_left(&s->gb_slice) & 7) == 0)) {
 
-                    if (svq3_decode_slice_header(avctx))
-                        return -1;
+                    ret = svq3_decode_slice_header(avctx);
+                    if (ret < 0)
+                        return ret;
                 }
                 if (s->slice_type != s->pict_type) {
                     avpriv_request_sample(avctx, "non constant slice type");
