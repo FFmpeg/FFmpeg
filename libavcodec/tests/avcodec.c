@@ -167,6 +167,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 !(codec->capabilities & AV_CODEC_CAP_DELAY))
                 ERR("EOF_FLUSH encoder %s is not marked as having delay\n");
         } else {
+            if ((codec2->update_thread_context || codec2->update_thread_context_for_user) &&
+                !(codec->capabilities & AV_CODEC_CAP_FRAME_THREADS))
+                ERR("Non-frame-threaded decoder %s has update_thread_context set");
             if ((codec->type == AVMEDIA_TYPE_SUBTITLE) != (codec2->cb_type == FF_CODEC_CB_TYPE_DECODE_SUB))
                 ERR("Subtitle decoder %s does not implement decode_sub callback\n");
             if (codec->type == AVMEDIA_TYPE_SUBTITLE && codec2->bsfs)
