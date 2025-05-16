@@ -1866,6 +1866,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     s1->save_width           = s->width;
     s1->save_height          = s->height;
     s1->save_progressive_seq = s->progressive_sequence;
+    s1->save_chroma_format   = s->chroma_format;
     return 0;
 }
 
