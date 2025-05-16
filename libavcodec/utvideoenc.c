@@ -153,7 +153,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
 
     if (c->frame_pred == PRED_GRADIENT) {
         av_log(avctx, AV_LOG_ERROR, "Gradient prediction is not supported.\n");
-        return AVERROR_OPTION_NOT_FOUND;
+        return AVERROR_PATCHWELCOME;
     }
 
     /*
@@ -646,7 +646,6 @@ static const AVOption options[] = {
 { "pred", "Prediction method", OFFSET(frame_pred), AV_OPT_TYPE_INT, { .i64 = PRED_LEFT }, PRED_NONE, PRED_MEDIAN, VE, .unit = "pred" },
     { "none",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRED_NONE }, INT_MIN, INT_MAX, VE, .unit = "pred" },
     { "left",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRED_LEFT }, INT_MIN, INT_MAX, VE, .unit = "pred" },
-    { "gradient", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRED_GRADIENT }, INT_MIN, INT_MAX, VE, .unit = "pred" },
     { "median",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRED_MEDIAN }, INT_MIN, INT_MAX, VE, .unit = "pred" },
 
     { NULL},
