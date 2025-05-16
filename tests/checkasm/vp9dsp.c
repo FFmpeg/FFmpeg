@@ -310,13 +310,13 @@ static int is_zero(const int16_t *c, int sz)
 
 static void check_itxfm(void)
 {
-    LOCAL_ALIGNED_32(uint8_t, src, [32 * 32 * 2]);
-    LOCAL_ALIGNED_32(uint8_t, dst, [32 * 32 * 2]);
-    LOCAL_ALIGNED_32(uint8_t, dst0, [32 * 32 * 2]);
-    LOCAL_ALIGNED_32(uint8_t, dst1, [32 * 32 * 2]);
-    LOCAL_ALIGNED_32(int16_t, coef, [32 * 32 * 2]);
-    LOCAL_ALIGNED_32(int16_t, subcoef0, [32 * 32 * 2]);
-    LOCAL_ALIGNED_32(int16_t, subcoef1, [32 * 32 * 2]);
+    LOCAL_ALIGNED_64(uint8_t, src, [32 * 32 * 2]);
+    LOCAL_ALIGNED_64(uint8_t, dst, [32 * 32 * 2]);
+    LOCAL_ALIGNED_64(uint8_t, dst0, [32 * 32 * 2]);
+    LOCAL_ALIGNED_64(uint8_t, dst1, [32 * 32 * 2]);
+    LOCAL_ALIGNED_64(int16_t, coef, [32 * 32 * 2]);
+    LOCAL_ALIGNED_64(int16_t, subcoef0, [32 * 32 * 2]);
+    LOCAL_ALIGNED_64(int16_t, subcoef1, [32 * 32 * 2]);
     declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
     VP9DSPContext dsp;
     int y, x, tx, txtp, bit_depth, sub;

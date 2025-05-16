@@ -131,4 +131,6 @@
 
 #define LOCAL_ALIGNED_32(t, v, ...) E1(LOCAL_ALIGNED_D(32, t, v, __VA_ARGS__,,))
 
+#define LOCAL_ALIGNED_64(t, v, ...) E1(LOCAL_ALIGNED_D(64, t, v, __VA_ARGS__,,))
+
 #endif /* AVUTIL_MEM_INTERNAL_H */

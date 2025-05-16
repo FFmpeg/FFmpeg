@@ -184,6 +184,7 @@ X86ASM-OBJS-$(CONFIG_VP6_DECODER)      += x86/vp6dsp.o
 X86ASM-OBJS-$(CONFIG_VP9_DECODER)      += x86/vp9intrapred.o            \
                                           x86/vp9intrapred_16bpp.o      \
                                           x86/vp9itxfm.o                \
+                                          x86/vp9itxfm_avx512.o         \
                                           x86/vp9itxfm_16bpp.o          \
                                           x86/vp9lpf.o                  \
                                           x86/vp9lpf_16bpp.o            \

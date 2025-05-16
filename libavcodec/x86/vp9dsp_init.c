@@ -114,7 +114,9 @@ itxfm_func(idct, idct, 32, ssse3);
 itxfm_func(idct, idct, 32, avx);
 itxfm_func(iwht, iwht, 4, mmx);
 itxfm_funcs(16, avx2);
+itxfm_funcs(16, avx512icl);
 itxfm_func(idct, idct, 32, avx2);
+itxfm_func(idct, idct, 32, avx512icl);
 
 #undef itxfm_func
 #undef itxfm_funcs
@@ -405,6 +407,19 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         init_ipred(32, avx2, h,  HOR);
         init_ipred(32, avx2, tm, TM_VP8);
     }
+
+#if ARCH_X86_64
+    if (EXTERNAL_AVX512ICL(cpu_flags)) {
+        dsp->itxfm_add[TX_16X16][DCT_DCT]   = ff_vp9_idct_idct_16x16_add_avx512icl;
+        dsp->itxfm_add[TX_16X16][ADST_DCT]  = ff_vp9_idct_iadst_16x16_add_avx512icl;
+        dsp->itxfm_add[TX_16X16][DCT_ADST]  = ff_vp9_iadst_idct_16x16_add_avx512icl;
+        dsp->itxfm_add[TX_16X16][ADST_ADST] = ff_vp9_iadst_iadst_16x16_add_avx512icl;
+        dsp->itxfm_add[TX_32X32][ADST_ADST] =
+        dsp->itxfm_add[TX_32X32][ADST_DCT]  =
+        dsp->itxfm_add[TX_32X32][DCT_ADST]  =
+        dsp->itxfm_add[TX_32X32][DCT_DCT]   = ff_vp9_idct_idct_32x32_add_avx512icl;
+    }
+#endif
 
 #undef init_fpel
 #undef init_subpel1
