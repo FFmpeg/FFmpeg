@@ -472,7 +472,8 @@ static int mpeg1_encode_picture_header(MPVMainEncContext *const m)
                     (side_data->size / 3 & A53_MAX_CC_COUNT) | 0x40); // flags, cc_count
                 put_bits(&s->pb, 8, 0xff);                  // em_data
 
-                ff_copy_bits(&s->pb, side_data->data, side_data->size);
+                for (int i = 0; i < side_data->size; i++)
+                    put_bits(&s->pb, 8, side_data->data[i]);
 
                 put_bits(&s->pb, 8, 0xff);                  // marker_bits
             } else {
