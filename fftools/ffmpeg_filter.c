@@ -2985,7 +2985,7 @@ read_frames:
 
 finish:
 
-    if (print_graphs || print_graphs_file || show_graph)
+    if (print_graphs || print_graphs_file)
         print_filtergraph(fg, fgt.graph);
 
     // EOF is normal termination

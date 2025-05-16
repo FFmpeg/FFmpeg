@@ -79,7 +79,6 @@ int vstats_version = 2;
 int print_graphs = 0;
 char *print_graphs_file = NULL;
 char *print_graphs_format = NULL;
-int show_graph = 0;
 int auto_conversion_filters = 1;
 int64_t stats_period = 500000;
 
@@ -1749,9 +1748,6 @@ const OptionDef options[] = {
     { "print_graphs_format", OPT_TYPE_STRING, 0,
         { &print_graphs_format },
       "set the output printing format (available formats are: default, compact, csv, flat, ini, json, xml, mermaid, mermaidhtml)", "format" },
-    { "sg",   OPT_TYPE_BOOL, 0,
-        { &show_graph },
-        "create execution graph as temporary html file and try to launch it in the default browser" },
     { "auto_conversion_filters", OPT_TYPE_BOOL, OPT_EXPERT,
         { &auto_conversion_filters },
         "enable automatic conversion filters globally" },

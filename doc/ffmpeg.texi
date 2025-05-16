@@ -1404,10 +1404,6 @@ Writes execution graph details to the specified file in the format set via -prin
 Sets the output format (available formats are: default, compact, csv, flat, ini, json, xml, mermaid, mermaidhtml)
 The default format is json.
 
-@item -sg (@emph{global})
-Writes the execution graph to a temporary html file (mermaidhtml format) and
-tries to launch it in the default browser.
-
 @item -progress @var{url} (@emph{global})
 Send program-friendly progress information to @var{url}.
 

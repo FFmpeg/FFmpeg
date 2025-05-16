@@ -309,7 +309,7 @@ const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };
 
 static void ffmpeg_cleanup(int ret)
 {
-    if (print_graphs || print_graphs_file || show_graph)
+    if (print_graphs || print_graphs_file)
         print_filtergraphs(filtergraphs, nb_filtergraphs, input_files, nb_input_files, output_files, nb_output_files);
 
     if (do_benchmark) {
