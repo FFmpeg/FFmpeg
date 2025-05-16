@@ -1590,22 +1590,49 @@ static void update_frame_props(AVCodecContext *avctx, AVFrame *frame)
     }
 }
 
-static void attach_post_process_data(AVCodecContext *avctx, AVFrame *frame)
+static int attach_post_process_data(AVCodecContext *avctx, AVFrame *frame)
 {
     AVCodecInternal    *avci = avctx->internal;
     DecodeContext        *dc = decode_ctx(avci);
 
     if (dc->lcevc_frame) {
         FrameDecodeData *fdd = frame->private_ref;
+        FFLCEVCFrame *frame_ctx;
+        int ret;
 
-        fdd->post_process_opaque = av_refstruct_ref(dc->lcevc);
-        fdd->post_process_opaque_free = ff_lcevc_unref;
-        fdd->post_process = ff_lcevc_process;
+        frame_ctx = av_mallocz(sizeof(*frame_ctx));
+        if (!frame_ctx)
+            return AVERROR(ENOMEM);
+
+        frame_ctx->frame = av_frame_alloc();
+        if (!frame_ctx->frame) {
+            av_free(frame_ctx);
+            return AVERROR(ENOMEM);
+        }
+
+        frame_ctx->lcevc = av_refstruct_ref(dc->lcevc);
+        frame_ctx->frame->width  = frame->width;
+        frame_ctx->frame->height = frame->height;
+        frame_ctx->frame->format = frame->format;
 
         frame->width  = dc->width;
         frame->height = dc->height;
+
+        ret = avctx->get_buffer2(avctx, frame_ctx->frame, 0);
+        if (ret < 0) {
+            ff_lcevc_unref(frame_ctx);
+            return ret;
+        }
+
+        validate_avframe_allocation(avctx, frame_ctx->frame);
+
+        fdd->post_process_opaque = frame_ctx;
+        fdd->post_process_opaque_free = ff_lcevc_unref;
+        fdd->post_process = ff_lcevc_process;
     }
     dc->lcevc_frame = 0;
+
+    return 0;
 }
 
 int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
@@ -1666,7 +1693,9 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
     if (ret < 0)
         goto fail;
 
-    attach_post_process_data(avctx, frame);
+    ret = attach_post_process_data(avctx, frame);
+    if (ret < 0)
+        goto fail;
 
 end:
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO && !override_dimensions &&

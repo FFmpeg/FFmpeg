@@ -35,6 +35,11 @@ typedef struct FFLCEVCContext {
 
 struct AVFrame;
 
+typedef struct FFLCEVCFrame {
+    FFLCEVCContext *lcevc;
+    struct AVFrame *frame;
+} FFLCEVCFrame;
+
 int ff_lcevc_alloc(FFLCEVCContext **plcevc);
 int ff_lcevc_process(void *logctx, struct AVFrame *frame);
 void ff_lcevc_unref(void *opaque);
