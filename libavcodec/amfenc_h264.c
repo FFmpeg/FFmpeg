@@ -468,26 +468,61 @@ static av_cold int amf_encode_init_h264(AVCodecContext *avctx)
     }
 
     // B-Frames
-    if (ctx->max_consecutive_b_frames != -1) {
-        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_MAX_CONSECUTIVE_BPICTURES, ctx->max_consecutive_b_frames);
-        if (ctx->max_b_frames != -1) {
-            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_B_PIC_PATTERN, ctx->max_b_frames);
-            if (res != AMF_OK) {
-                res = ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_B_PIC_PATTERN, &var);
-                av_log(ctx, AV_LOG_WARNING, "B-frames=%d is not supported by this GPU, switched to %d\n",
-                    ctx->max_b_frames, (int)var.int64Value);
-                ctx->max_b_frames = (int)var.int64Value;
+    AMFVariantStruct    is_adaptive_b_frames = { 0 };
+    res = ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_ADAPTIVE_MINIGOP, &is_adaptive_b_frames);
+    if (ctx->max_consecutive_b_frames != -1 || ctx->max_b_frames != -1 || is_adaptive_b_frames.boolValue == true) {
+
+        //Get the capability of encoder
+        AMFCaps *encoder_caps = NULL;
+        ctx->encoder->pVtbl->GetCaps(ctx->encoder, &encoder_caps);
+        if (encoder_caps != NULL)
+        {
+            res = encoder_caps->pVtbl->GetProperty(encoder_caps, AMF_VIDEO_ENCODER_CAP_BFRAMES, &var);
+            if (res == AMF_OK) {
+
+                //encoder supports H.264 B-frame
+                if(var.boolValue == true){
+                    //adaptive b-frames is higher priority than max_b_frames
+                    if (is_adaptive_b_frames.boolValue == true)
+                    {
+                        //force AMF_VIDEO_ENCODER_MAX_CONSECUTIVE_BPICTURES to 3
+                        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_MAX_CONSECUTIVE_BPICTURES, 3);
+
+                        if(ctx->pa_lookahead_buffer_depth < 1)
+                        {
+                            //force AMF_PA_LOOKAHEAD_BUFFER_DEPTH to 1 if not set or smaller than 1
+                            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_PA_LOOKAHEAD_BUFFER_DEPTH, 1);
+                        }
+                    }
+                    else {
+                        if (ctx->max_b_frames != -1) {
+                            //in case user sets B-frames
+                            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_B_PIC_PATTERN, ctx->max_b_frames);
+                            if (res != AMF_OK) {
+                                res = ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_B_PIC_PATTERN, &var);
+                                av_log(ctx, AV_LOG_WARNING, "B-frames=%d is not supported by this GPU, switched to %d\n", ctx->max_b_frames, (int)var.int64Value);
+                                ctx->max_b_frames = (int)var.int64Value;
+                            }
+                            AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_MAX_CONSECUTIVE_BPICTURES, ctx->max_b_frames);
+                        }
+                    }
+
+                }
+                //encoder doesn't support H.264 B-frame
+                else {
+                    av_log(ctx, AV_LOG_WARNING, "The current GPU in use does not support H.264 B-frame encoding, there will be no B-frame in bitstream.\n");
+                }
+            } else {
+                //Can't get the capability of encoder
+                av_log(ctx, AV_LOG_WARNING, "Unable to get H.264 B-frame capability.\n");
+                av_log(ctx, AV_LOG_WARNING, "There will be no B-frame in bitstream.\n");
             }
-            if (ctx->max_consecutive_b_frames < ctx->max_b_frames) {
-                av_log(ctx, AVERROR_BUG, "Maxium B frames needs to be greater than the specified B frame count.\n");
-            }
+
+            encoder_caps->pVtbl->Release(encoder_caps);
+            encoder_caps = NULL;
         }
     }
-    else {
-        if (ctx->max_b_frames != -1) {
-            av_log(ctx, AVERROR_BUG, "Maxium number of B frames needs to be specified.\n");
-        }
-    }
+
     res = ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_B_PIC_PATTERN, &var);
     if ((int)var.int64Value) {
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_B_PIC_DELTA_QP, ctx->b_frame_delta_qp);
