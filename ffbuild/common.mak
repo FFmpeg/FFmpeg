@@ -197,7 +197,6 @@ endif
 include $(SRC_PATH)/ffbuild/arch.mak
 
 OBJS      += $(OBJS-yes)
-SLIBOBJS  += $(SLIBOBJS-yes)
 SHLIBOBJS += $(SHLIBOBJS-yes)
 STLIBOBJS += $(STLIBOBJS-yes)
 FFLIBS    := $($(NAME)_FFLIBS) $(FFLIBS-yes) $(FFLIBS)
@@ -207,7 +206,6 @@ LDLIBS       = $(FFLIBS:%=%$(BUILDSUF))
 FFEXTRALIBS := $(LDLIBS:%=$(LD_LIB)) $(foreach lib,EXTRALIBS-$(NAME) $(FFLIBS:%=EXTRALIBS-%),$($(lib))) $(EXTRALIBS)
 
 OBJS      := $(sort $(OBJS:%=$(SUBDIR)%))
-SLIBOBJS  := $(sort $(SLIBOBJS:%=$(SUBDIR)%))
 SHLIBOBJS := $(sort $(SHLIBOBJS:%=$(SUBDIR)%))
 STLIBOBJS := $(sort $(STLIBOBJS:%=$(SUBDIR)%))
 TESTOBJS  := $(TESTOBJS:%=$(SUBDIR)tests/%) $(TESTPROGS:%=$(SUBDIR)tests/%.o)
@@ -245,13 +243,12 @@ $(HOSTPROGS): %$(HOSTEXESUF): %.o
 $(OBJS):     | $(sort $(dir $(OBJS)))
 $(HOBJS):    | $(sort $(dir $(HOBJS)))
 $(HOSTOBJS): | $(sort $(dir $(HOSTOBJS)))
-$(SLIBOBJS): | $(sort $(dir $(SLIBOBJS)))
 $(SHLIBOBJS): | $(sort $(dir $(SHLIBOBJS)))
 $(STLIBOBJS): | $(sort $(dir $(STLIBOBJS)))
 $(TESTOBJS): | $(sort $(dir $(TESTOBJS)))
 $(TOOLOBJS): | tools
 
-OUTDIRS := $(OUTDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(SLIBOBJS) $(SHLIBOBJS) $(STLIBOBJS) $(TESTOBJS))
+OUTDIRS := $(OUTDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(SHLIBOBJS) $(STLIBOBJS) $(TESTOBJS))
 
 CLEANSUFFIXES     = *.d *.gcda *.gcno *.h.c *.ho *.map *.o *.objs *.pc *.ptx *.ptx.gz *.ptx.c *.ver *.version *.html.gz *.html.c *.css.gz *.css.c  *$(DEFAULT_X86ASMD).asm *~ *.ilk *.pdb
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
@@ -263,4 +260,4 @@ endef
 
 $(eval $(RULES))
 
--include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d) $(HOBJS:.o=.d) $(SHLIBOBJS:.o=.d) $(STLIBOBJS:.o=.d) $(SLIBOBJS:.o=.d)) $(OBJS:.o=$(DEFAULT_X86ASMD).d)
+-include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d) $(HOBJS:.o=.d) $(SHLIBOBJS:.o=.d) $(STLIBOBJS:.o=.d)) $(OBJS:.o=$(DEFAULT_X86ASMD).d)
