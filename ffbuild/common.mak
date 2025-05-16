@@ -140,9 +140,9 @@ else
 endif
 
 # 1) Preprocess CSS to a minified version
+%.css.min: TAG = SED
 %.css.min: %.css
-	# Must start with a tab in the real Makefile
-	sed 's!/\\*.*\\*/!!g' $< \
+	$(M)sed 's!/\\*.*\\*/!!g' $< \
 	| tr '\n' ' ' \
 	| tr -s ' ' \
 	| sed 's/^ //; s/ $$//' \
@@ -151,6 +151,7 @@ endif
 ifdef CONFIG_RESOURCE_COMPRESSION
 
 # 2) Gzip the minified CSS
+%.css.min.gz: TAG = GZIP
 %.css.min.gz: %.css.min
 	$(M)gzip -nc9 $< > $@
 
@@ -159,6 +160,7 @@ ifdef CONFIG_RESOURCE_COMPRESSION
 	$(BIN2C) $< $@ $(subst .,_,$(basename $(notdir $@)))
 
 # 4) Gzip the HTML file (no minification needed)
+%.html.gz: TAG = GZIP
 %.html.gz: %.html
 	$(M)gzip -nc9 $< > $@
 
