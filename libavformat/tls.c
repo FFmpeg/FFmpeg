@@ -1,6 +1,7 @@
 /*
- * TLS/SSL Protocol
+ * TLS/DTLS/SSL Protocol
  * Copyright (c) 2011 Martin Storsjo
+ * Copyright (c) 2025 Jack Lau
  *
  * This file is part of FFmpeg.
  *
@@ -20,6 +21,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "network.h"
 #include "os_support.h"
 #include "url.h"
@@ -93,7 +95,7 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
             c->listen = 1;
     }
 
-    ff_url_join(buf, sizeof(buf), "tcp", NULL, c->underlying_host, port, "%s", p);
+    ff_url_join(buf, sizeof(buf), c->is_dtls ? "udp" : "tcp", NULL, c->underlying_host, port, "%s", p);
 
     hints.ai_flags = AI_NUMERICHOST;
     if (!getaddrinfo(c->underlying_host, NULL, &hints, &ai)) {
@@ -124,7 +126,65 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
     }
 
     freeenv_utf8(env_http_proxy);
-    return ffurl_open_whitelist(&c->tcp, buf, AVIO_FLAG_READ_WRITE,
-                                &parent->interrupt_callback, options,
-                                parent->protocol_whitelist, parent->protocol_blacklist, parent);
+    if (c->is_dtls) {
+        av_dict_set_int(options, "connect", 1, 0);
+        av_dict_set_int(options, "fifo_size", 0, 0);
+        /* Set the max packet size to the buffer size. */
+        av_dict_set_int(options, "pkt_size", c->mtu, 0);
+    }
+    ret = ffurl_open_whitelist(c->is_dtls ? &c->udp : &c->tcp, buf, AVIO_FLAG_READ_WRITE,
+                               &parent->interrupt_callback, options,
+                               parent->protocol_whitelist, parent->protocol_blacklist, parent);
+    if (c->is_dtls) {
+        if (ret < 0) {
+            av_log(c, AV_LOG_ERROR, "WHIP: Failed to connect udp://%s:%d\n", c->underlying_host, port);
+            return ret;
+        }
+        /* Make the socket non-blocking, set to READ and WRITE mode after connected */
+        ff_socket_nonblock(ffurl_get_file_handle(c->udp), 1);
+        c->udp->flags |= AVIO_FLAG_READ | AVIO_FLAG_NONBLOCK;
+    }
+    return ret;
+}
+
+/**
+ * Read all data from the given URL url and store it in the given buffer bp.
+ */
+int ff_url_read_all(const char *url, AVBPrint *bp)
+{
+    int ret = 0;
+    AVDictionary *opts = NULL;
+    URLContext *uc = NULL;
+    char buf[MAX_URL_SIZE];
+
+    ret = ffurl_open_whitelist(&uc, url, AVIO_FLAG_READ, NULL, &opts, NULL, NULL, NULL);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "TLS: Failed to open url %s\n", url);
+        goto end;
+    }
+
+    while (1) {
+        ret = ffurl_read(uc, buf, sizeof(buf));
+        if (ret == AVERROR_EOF) {
+            /* Reset the error because we read all response as answer util EOF. */
+            ret = 0;
+            break;
+        }
+        if (ret <= 0) {
+            av_log(NULL, AV_LOG_ERROR, "TLS: Failed to read from url=%s, key is %s\n", url, bp->str);
+            goto end;
+        }
+
+        av_bprintf(bp, "%.*s", ret, buf);
+        if (!av_bprint_is_complete(bp)) {
+            av_log(NULL, AV_LOG_ERROR, "TLS: Exceed max size %.*s, %s\n", ret, buf, bp->str);
+            ret = AVERROR(EIO);
+            goto end;
+        }
+    }
+
+end:
+    ffurl_closep(&uc);
+    av_dict_free(&opts);
+    return ret;
 }

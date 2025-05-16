@@ -3879,4 +3879,51 @@ ffmpeg -f webm_dash_manifest -i video1.webm \
        manifest.xml
 @end example
 
+@anchor{whip}
+@section whip
+
+WebRTC (Real-Time Communication) muxer that supports sub-second latency streaming according to
+the WHIP (WebRTC-HTTP ingestion protocol) specification.
+
+It uses HTTP as a signaling protocol to exchange SDP capabilities and ICE lite candidates. Then,
+it uses STUN binding requests and responses to establish a session over UDP. Subsequently, it
+initiates a DTLS handshake to exchange the SRTP encryption keys. Lastly, it splits video and
+audio frames into RTP packets and encrypts them using SRTP.
+
+Ensure that you use H.264 without B frames and Opus for the audio codec. For example, to convert
+an input file with @command{ffmpeg} to WebRTC:
+@example
+ffmpeg -re -i input.mp4 -acodec libopus -ar 48000 -ac 2 \
+  -vcodec libx264 -profile:v baseline -tune zerolatency -threads 1 -bf 0 \
+  -f whip "http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream"
+@end example
+
+For this example, we have employed low latency options, resulting in an end-to-end latency of
+approximately 150ms.
+
+@subsection Options
+
+This muxer supports the following options:
+
+@table @option
+
+@item handshake_timeout @var{integer}
+Set the timeout in milliseconds for ICE and DTLS handshake.
+Default value is 5000.
+
+@item pkt_size @var{integer}
+Set the maximum size, in bytes, of RTP packets that send out.
+Default value is 1500.
+
+@item authorization @var{string}
+The optional Bearer token for WHIP Authorization.
+
+@item cert_file @var{string}
+The optional certificate file path for DTLS.
+
+@item key_file @var{string}
+The optional private key file path for DTLS.
+
+@end table
+
 @c man end MUXERS

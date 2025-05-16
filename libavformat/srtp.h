@@ -27,7 +27,7 @@
 struct AVAES;
 struct AVHMAC;
 
-struct SRTPContext {
+typedef struct SRTPContext {
     struct AVAES *aes;
     struct AVHMAC *hmac;
     int rtp_hmac_size, rtcp_hmac_size;
@@ -40,7 +40,7 @@ struct SRTPContext {
     uint32_t roc;
 
     uint32_t rtcp_index;
-};
+} SRTPContext;
 
 int ff_srtp_set_crypto(struct SRTPContext *s, const char *suite,
                        const char *params);

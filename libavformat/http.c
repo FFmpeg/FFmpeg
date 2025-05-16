@@ -562,6 +562,12 @@ int ff_http_averror(int status_code, int default_averror)
         return default_averror;
 }
 
+const char* ff_http_get_new_location(URLContext *h)
+{
+    HTTPContext *s = h->priv_data;
+    return s->new_location;
+}
+
 static int http_write_reply(URLContext* h, int status_code)
 {
     int ret, body = 0, reply_code, message_len;
