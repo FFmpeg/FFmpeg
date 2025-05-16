@@ -150,9 +150,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         s->h263_flv = 1;
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Unsupported codec %d\n",
-               avctx->codec->id);
-        return AVERROR(ENOSYS);
+        av_unreachable("Switch contains a case for every codec using ff_h263_decode_init()");
     }
 
     if (avctx->codec_tag == AV_RL32("L263") || avctx->codec_tag == AV_RL32("S263"))
