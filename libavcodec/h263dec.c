@@ -174,6 +174,12 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static void report_decode_progress(MpegEncContext *s)
+{
+    if (s->pict_type != AV_PICTURE_TYPE_B && !s->partitioned_frame && !s->er.error_occurred)
+        ff_thread_progress_report(&s->cur_pic.ptr->progress, s->mb_y);
+}
+
 static int decode_slice(MpegEncContext *s)
 {
     const int part_mask = s->partitioned_frame
@@ -278,8 +284,8 @@ static int decode_slice(MpegEncContext *s)
 
                     if (++s->mb_x >= s->mb_width) {
                         s->mb_x = 0;
+                        report_decode_progress(s);
                         ff_mpeg_draw_horiz_band(s, s->mb_y * mb_size, mb_size);
-                        ff_mpv_report_decode_progress(s);
                         s->mb_y++;
                     }
                     return 0;
@@ -305,8 +311,8 @@ static int decode_slice(MpegEncContext *s)
                 ff_h263_loop_filter(s);
         }
 
+        report_decode_progress(s);
         ff_mpeg_draw_horiz_band(s, s->mb_y * mb_size, mb_size);
-        ff_mpv_report_decode_progress(s);
 
         s->mb_x = 0;
     }

@@ -424,13 +424,6 @@ av_cold void ff_mpeg_flush(AVCodecContext *avctx)
     s->pp_time = 0;
 }
 
-void ff_mpv_report_decode_progress(MpegEncContext *s)
-{
-    if (s->pict_type != AV_PICTURE_TYPE_B && !s->partitioned_frame && !s->er.error_occurred)
-        ff_thread_progress_report(&s->cur_pic.ptr->progress, s->mb_y);
-}
-
-
 static inline int hpel_motion_lowres(MpegEncContext *s,
                                      uint8_t *dest, const uint8_t *src,
                                      int field_based, int field_select,
