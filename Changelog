@@ -1,6 +1,110 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.2.11:
+ avcodec/takdec: Check remaining space for first predictors
+ avcodec/sonic: Check num_taps
+ avformat/mov: reject negative ELST durations
+ avcodec/h264_mb: Fix tmp_cr for arm
+ avcodec/vorbisdec: Dont treat overread as error
+ libpostproc: check minimum size
+ avformat/hls: add fmp4 to allowed_extensions
+ avformat/hls: Add ec3 to allowed_extensions
+ avformat/hls: Add cmfv and cmfa to allowed_extensions
+ configure: Clearer documentation for "disable-safe-bitstream-reader"
+ swscale/output: Fix integer overflow in yuv2gbrp_full_X_c()
+ avcodec/libtheora: fix setting keyframe_mask
+ avfilter/buffersrc: check for valid sample rate
+ doc: replace http/git by https urls
+ configure: update copyright year
+ avfilter/bwdif: account for chroma sub-sampling in min size calculation
+ avformat/iff: Check that we have a stream in read_dst_frame()
+ avformat/mlvdec: fix size checks
+ avformat/mxfdec: Check edit unit for overflow in mxf_set_current_edit_unit()
+ avcodec/h263dec: Check against previous dimensions instead of coded
+ avformat/mxfdec: Check avio_read() success in mxf_decrypt_triplet()
+ avcodec/huffyuvdec: Initialize whole output for decode_gray_bitstream()
+ avformat/ipmovie: Check signature_buffer read
+ avformat/wtvdec: Initialize buf
+ avcodec/cbs_vp9: Initialize VP9RawSuperframeIndex
+ avformat/vqf: Check avio_read() in add_metadata()
+ avformat/dashdec: Check whitelist
+ avutil/avstring: dont mess with NULL pointers in av_match_list()
+ avcodec/mpegvideo_enc: Check FLV1 resolution limits
+ avcodec/ffv1enc: Fix handling of 32bit unsigned symbols
+ avcodec/vc1dec: Clear block_index in vc1_decode_reset()
+ avcodec/aacsbr_template: Clear n_q on error
+ swscale/output: Fix undefined overflow in yuv2rgba64_full_X_c_template()
+ avfilter/af_pan: Fix sscanf() use
+ avformat/rmdec: check that buf if completely filled
+ avcodec/hapdec: Clear tex buffer
+ avformat/mxfdec: Check that key was read sucessfull
+ avformat/rpl: Fix check for negative values
+ avformat/mlvdec: Check avio_read()
+ avcodec/utils: Fix block align overflow for ADPCM_IMA_WAV
+ avformat/matroskadec: Check pre_ns for overflow
+ avcodec/webp: Check ref_x/y
+ avcodec/ilbcdec: Initialize tempbuff2
+ avformat/dxa: check bpc
+ swscale/slice: clear allocated memory in alloc_lines()
+ avformat/icodec: fix integer overflow with nb_pal
+ doc/developer: Document relationship between git accounts and MAINTAINERS
+ avformat/vividas: Check avio_read() for failure
+ avformat/ilbc: Check avio_read() for failure
+ avformat/nistspheredec: Clear buffer
+ INSTALL: explain the circular dependency issue and solution
+ avformat/mpegts: Initialize predefined_SLConfigDescriptor_seen
+ avformat/mxfdec: Fix overflow in midpoint computation
+ avcodec/rangecoder: only perform renorm check/loop for callers that need it
+ avcodec/ffv1dec: Fix end computation with ec=2
+ avcodec/ffv1enc: Prevent generation of files with broken slices
+ avformat/matroskadec: Check desc_bytes so bits fit in 64bit
+ avcodec/ffv1enc: Correct error message about unsupported version
+ avcodec/ffv1enc: Slice combination is unsupported
+ avcodec/ffv1enc: 2Pass mode is not possible with golomb coding
+ avcodec/ffv1enc: Fix >8bit context size
+ avcodec/xan: Add basic input size check
+ avcodec/svq3: Check for minimum size input
+ avcodec/eacmv: Check input size for intra frames
+ avcodec/jfdctint_template: use unsigned z* in row_fdct()
+ avformat/mxfdec: More offset_temp checks
+ swscale/output: Fix undefined integer overflow in yuv2rgba64_2_c_template()
+ swscale/swscale: Use unsigned operation to avoid undefined behavior
+ avcodec/vc2enc: basic sanity check on slice_max_bytes
+ avformat/mvdec: Check if name was fully read
+ avcodec/wmavoice: Do not use uninitialized pitch[0]
+ avformat/apetag: Check APETAGEX
+ avcodec/avcodec: Warn about data returned from get_buffer*()
+ avcodec/aic: Clear slice_data
+ avcodec/vc1dec: Clear mb_type_base and ttblk_base
+ avcodec/shorten: clear padding
+ avformat/mpeg: Check an avio_read() for failure
+ avformat/segafilm: Set keyframe
+ avcodec/dxva2: initialize hr in ff_dxva2_common_end_frame()
+ avcodec/dxva2: initialize validate
+ avcodec/dxva2: Initialize ConfigBitstreamRaw
+ avcodec/dxva2: Initialize dxva_size and check it
+ avfilter/vf_tonemap_opencl: Dereference after NULL check
+ avformat/lmlm4: Eliminate some AVERROR(EIO)
+ avformat/wtvdec: Check length of read mpeg2_descriptor
+ avformat/wtvdec: clear sectors
+ avcodec/parser: ensure input padding is zeroed
+ avformat/img2dec: Clear padding data after EOF
+ avformat/wavdec: Check if there are 16 bytes before testing them
+ vp9: recon: Use emulated edge to prevent buffer overflows
+ arm: vp9mc: Load only 12 pixels in the 4 pixel wide horizontal filter
+ aarch64: vp9mc: Load only 12 pixels in the 4 pixel wide horizontal filter
+ configure: improve check for POSIX ioctl
+ configure: restore autodetection of v4l2 and fbdev
+ configure: fix --disable-v4l2-m2m can't work
+ configure: use just the pkg-config for sndio
+ configure: enable ffnvcodec, nvenc, nvdec for FreeBSD
+ avutil/ppc/cpu: Also use the machdep.altivec sysctl on NetBSD
+ avutil/ppc/cpu: Use proper header for OpenBSD PPC CPU detection
+ lavd/v4l2: Use proper field type for second parameter of ioctl() with BSD's
+ configure: use pkg-config for sndio
+ libavcodec/arm/mlpdsp_armv5te: fix label format to work with binutils 2.43
+
 
 version 4.2.10:
  avcodec/snow: Fix off by 1 error in run_buffer
