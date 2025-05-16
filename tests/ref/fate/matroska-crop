@@ -1,0 +1,70 @@
+fc4932f90dfc955b55cfbdbb210fdd16 *tests/data/fate/matroska-crop.matroska
+355698 tests/data/fate/matroska-crop.matroska
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 720x1280
+#sar 0: 0/1
+#tb 1: 1/1
+#media_type 1: video
+#codec_id 1: rawvideo
+#dimensions 1: 360x640
+#sar 1: 0/1
+#tb 2: 1/1
+#media_type 2: video
+#codec_id 2: rawvideo
+#dimensions 2: 360x640
+#sar 2: 0/1
+0,          0,          0,        1,  1382400, 0xc8267e89
+1,          0,          0,        1,   345600, 0x84b4bdaa
+2,          0,          0,        1,   345600, 0x84b4bdaa
+[STREAM]
+index=0
+codec_name=hevc
+width=1280
+height=720
+[SIDE_DATA]
+side_data_type=Frame Cropping
+crop_top=180
+crop_bottom=180
+crop_left=320
+crop_right=320
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Display Matrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[/STREAM]
+[STREAM]
+index=1
+codec_name=hevc
+width=1280
+height=720
+[SIDE_DATA]
+side_data_type=Frame Cropping
+crop_top=180
+crop_bottom=180
+crop_left=320
+crop_right=320
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Display Matrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[/STREAM]
+[STREAM]
+index=2
+codec_name=utvideo
+width=360
+height=640
+[/STREAM]

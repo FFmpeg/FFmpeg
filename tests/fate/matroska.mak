@@ -100,6 +100,18 @@ fate-matroska-non-rotation-displaymatrix: CMD = transcode mov $(TARGET_SAMPLES)/
     "-c copy" \
     "-show_entries stream_side_data_list"
 
+# This test tests container cropping. The expected output is that
+# only the copied streams have cropping (and displaymatrix) side data
+# and that stream #1 (for which applying cropping was not disabled)
+# and the reencoded stream #2 decode to the same.
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call TRANSCODE, UTVIDEO, MATROSKA, MOV_DEMUXER HEVC_DECODER) \
+                               += fate-matroska-crop
+fate-matroska-crop: CMD = transcode mov $(TARGET_SAMPLES)/heif-conformance/MIAF007.heic matroska \
+    "-map 0:0 -map 0:0 -map 0:0 -c:0 copy -c:1 copy -c:2 utvideo" \
+    "-map 0" \
+    "-show_entries stream=index,codec_name,width,height:stream_side_data_list" "" \
+    "-apply_cropping:0 none"
+
 # This tests DOVI (reading from MP4 and Matroska and writing to Matroska)
 # as well as writing the Cues at the front (by shifting data) if
 # the initially reserved amount of space turns out to be insufficient.
