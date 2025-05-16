@@ -559,9 +559,10 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV422P:
         s->c.chroma_format = CHROMA_422;
         break;
+    default:
+        av_unreachable("Already checked via CODEC_PIXFMTS");
     case AV_PIX_FMT_YUVJ420P:
     case AV_PIX_FMT_YUV420P:
-    default:
         s->c.chroma_format = CHROMA_420;
         break;
     }
@@ -992,7 +993,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->c.low_delay         = 1;
         break;
     default:
-        return AVERROR(EINVAL);
+        av_unreachable("List contains all codecs using ff_mpv_encode_init()");
     }
 
     avctx->has_b_frames = !s->c.low_delay;
@@ -3541,7 +3542,10 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     }
                     break;
                 default:
-                    av_log(s->c.avctx, AV_LOG_ERROR, "illegal MB type\n");
+                    av_unreachable("There is a case for every CANDIDATE_MB_TYPE_* "
+                                   "except CANDIDATE_MB_TYPE_SKIPPED which is never "
+                                   "the only candidate (always coupled with INTER) "
+                                   "so that it never reaches this switch");
                 }
 
                 encode_mb(s, motion_x, motion_y);
