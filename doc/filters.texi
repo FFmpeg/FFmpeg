@@ -16259,6 +16259,16 @@ and @code{(oh-ph)/2}.
 Set the output placement width/height expressions, default values are @code{ow}
 and @code{oh}.
 
+@item rotate
+Rotate the input frame clockwise by the specified angle.
+
+@table @samp
+@item 0, 360
+@item 90
+@item 180
+@item 270
+@end table
+
 @item fps
 Set the output frame rate. This can be rational, e.g. @code{60000/1001}. If
 set to the special string @code{none} (the default), input timestamps will
