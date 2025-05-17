@@ -862,6 +862,8 @@ static void uninit_graphprint(GraphPrintContext *gpc)
 
     // Finalize the print buffer if it was initialized
     av_bprint_finalize(&gpc->pbuf, NULL);
+
+    av_freep(&gpc);
 }
 
 static int init_graphprint(GraphPrintContext **pgpc, AVBPrint *target_buf)
