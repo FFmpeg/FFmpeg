@@ -842,6 +842,9 @@ av_cold void ff_h263_encode_init(MPVMainEncContext *const m)
     if (s->c.modified_quant)
         s->c.chroma_qscale_table = ff_h263_chroma_qscale_table;
 
+    // Only used for H.263 and H.263+
+    s->c.gob_index = H263_GOB_HEIGHT(s->c.height);
+
     // use fcodes >1 only for MPEG-4 & H.263 & H.263+ FIXME
     switch(s->c.codec_id){
     case AV_CODEC_ID_H263P:

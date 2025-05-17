@@ -3007,24 +3007,16 @@ static int encode_thread(AVCodecContext *c, void *arg){
         s->c.last_dc[0] = 128 * 8 / 13;
         s->c.last_dc[1] = 128 * 8 / 14;
         s->c.last_dc[2] = 128 * 8 / 14;
+#if CONFIG_MPEG4_ENCODER
+    } else if (s->c.partitioned_frame) {
+        av_assert1(s->c.codec_id == AV_CODEC_ID_MPEG4);
+        ff_mpeg4_init_partitions(s);
+#endif
     }
     s->c.mb_skip_run = 0;
     memset(s->c.last_mv, 0, sizeof(s->c.last_mv));
 
     s->last_mv_dir = 0;
-
-    switch (s->c.codec_id) {
-    case AV_CODEC_ID_H263:
-    case AV_CODEC_ID_H263P:
-    case AV_CODEC_ID_FLV1:
-        if (CONFIG_H263_ENCODER)
-            s->c.gob_index = H263_GOB_HEIGHT(s->c.height);
-        break;
-    case AV_CODEC_ID_MPEG4:
-        if (CONFIG_MPEG4_ENCODER && s->c.partitioned_frame)
-            ff_mpeg4_init_partitions(s);
-        break;
-    }
 
     s->c.resync_mb_x = 0;
     s->c.resync_mb_y = 0;
