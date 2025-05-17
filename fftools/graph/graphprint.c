@@ -780,6 +780,8 @@ static int print_streams(GraphPrintContext *gpc, InputFile **ifiles, int nb_ifil
 
         avtext_print_section_header(tfc, &sec_ctx, SECTION_ID_OUTPUTSTREAMS);
 
+        av_freep(&sec_ctx.context_id);
+
         for (int i = 0; i < of->nb_streams; i++) {
             OutputStream *ost = of->streams[i];
             const AVCodecDescriptor *codec_desc = avcodec_descriptor_get(ost->st->codecpar->codec_id);
