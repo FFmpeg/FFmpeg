@@ -383,11 +383,10 @@ void avformat_close_input(AVFormatContext **ps)
         if (ffifmt(s->iformat)->read_close)
             ffifmt(s->iformat)->read_close(s);
 
+    ff_format_io_close(s, &pb);
     avformat_free_context(s);
 
     *ps = NULL;
-
-    avio_close(pb);
 }
 
 static void force_codec_ids(AVFormatContext *s, AVStream *st)
