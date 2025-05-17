@@ -19,6 +19,7 @@
  */
 
 #include "codec_internal.h"
+#include "h263.h"
 #include "mpegvideo.h"
 #include "mpegvideodec.h"
 #include "h263data.h"
@@ -118,6 +119,8 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     /* PEI */
     if (skip_1stop_8data_bits(&s->gb) < 0)
         return AVERROR_INVALIDDATA;
+
+    s->gob_index = H263_GOB_HEIGHT(s->height);
 
     ff_h263_show_pict_info(s);
 

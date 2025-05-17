@@ -535,11 +535,6 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         }
     }
 
-    if (s->codec_id == AV_CODEC_ID_H263  ||
-        s->codec_id == AV_CODEC_ID_H263P ||
-        s->codec_id == AV_CODEC_ID_H263I)
-        s->gob_index = H263_GOB_HEIGHT(s->height);
-
     /* skip B-frames if we don't have reference frames */
     if (!s->last_pic.ptr &&
         (s->pict_type == AV_PICTURE_TYPE_B || s->droppable))

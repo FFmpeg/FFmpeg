@@ -1314,6 +1314,8 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
     s->mb_height = (s->height  + 15) / 16;
     s->mb_num = s->mb_width * s->mb_height;
 
+    s->gob_index = H263_GOB_HEIGHT(s->height);
+
     if (s->pb_frame) {
         skip_bits(&s->gb, 3); /* Temporal reference for B-pictures */
         if (s->custom_pcf)
