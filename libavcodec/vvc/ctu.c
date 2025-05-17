@@ -1845,7 +1845,7 @@ static TransformUnit* palette_add_tu(VVCLocalContext *lc, const int start, const
     return tu;
 }
 
-static void palette_predicted(VVCLocalContext *lc, const bool local_dual_tree, int start, int end,
+static int palette_predicted(VVCLocalContext *lc, const bool local_dual_tree, int start, int end,
     bool *predictor_reused, const int predictor_size, const int max_entries)
 {
     CodingUnit  *cu  = lc->cu;
@@ -1863,6 +1863,10 @@ static void palette_predicted(VVCLocalContext *lc, const bool local_dual_tree, i
 
         if (run > 1)
             i += run - 1;
+
+        if (i >= predictor_size)
+            return AVERROR_INVALIDDATA;
+
         predictor_reused[i] = true;
         for (int c = start; c < end; c++)
             cu->plt[c].entries[nb_predicted] = lc->ep->pp[c].entries[i];
@@ -1871,9 +1875,11 @@ static void palette_predicted(VVCLocalContext *lc, const bool local_dual_tree, i
 
     for (int c = start; c < end; c++)
         cu->plt[c].size = nb_predicted;
+
+    return 0;
 }
 
-static void palette_signaled(VVCLocalContext *lc, const bool local_dual_tree,
+static int palette_signaled(VVCLocalContext *lc, const bool local_dual_tree,
     const int start, const int end, const int max_entries)
 {
     const VVCSPS *sps         = lc->fc->ps.sps;
@@ -1882,6 +1888,9 @@ static void palette_signaled(VVCLocalContext *lc, const bool local_dual_tree,
     const int nb_signaled     = nb_predicted < max_entries ? ff_vvc_num_signalled_palette_entries(lc) : 0;
     const int size            = nb_predicted + nb_signaled;
     const bool dual_tree_luma = local_dual_tree && cu->tree_type == DUAL_TREE_LUMA;
+
+    if (size > max_entries)
+        return AVERROR_INVALIDDATA;
 
     for (int c = start; c < end; c++) {
         Palette *plt = cu->plt + c;
@@ -1894,6 +1903,8 @@ static void palette_signaled(VVCLocalContext *lc, const bool local_dual_tree,
         }
         plt->size = size;
     }
+
+    return 0;
 }
 
 static void palette_update_predictor(VVCLocalContext *lc, const bool local_dual_tree, int start, int end,
@@ -2070,7 +2081,7 @@ static int hls_palette_coding(VVCLocalContext *lc, const VVCTreeType tree_type)
     int max_index                 = 0;
     int prev_run_pos              = 0;
 
-    int predictor_size, start, end;
+    int predictor_size, start, end, ret;
     bool reused[VVC_MAX_NUM_PALETTE_PREDICTOR_SIZE];
     uint8_t run_type[MAX_PALETTE_CU_SIZE * MAX_PALETTE_CU_SIZE];
     uint8_t index[MAX_PALETTE_CU_SIZE * MAX_PALETTE_CU_SIZE];
@@ -2082,8 +2093,15 @@ static int hls_palette_coding(VVCLocalContext *lc, const VVCTreeType tree_type)
 
     predictor_size = pp[start].size;
     memset(reused, 0, sizeof(reused[0]) * predictor_size);
-    palette_predicted(lc, local_dual_tree, start, end, reused, predictor_size, max_entries);
-    palette_signaled(lc, local_dual_tree, start, end, max_entries);
+
+    ret = palette_predicted(lc, local_dual_tree, start, end, reused, predictor_size, max_entries);
+    if (ret < 0)
+        return ret;
+
+    ret = palette_signaled(lc, local_dual_tree, start, end, max_entries);
+    if (ret < 0)
+        return ret;
+
     palette_update_predictor(lc, local_dual_tree, start, end, reused, predictor_size);
 
     if (cu->plt[start].size > 0)
