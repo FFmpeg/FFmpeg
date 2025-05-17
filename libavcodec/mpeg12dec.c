@@ -381,9 +381,6 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
     return 0;
 }
 
-/******************************************/
-/* decoding */
-
 static inline int get_dmv(MpegEncContext *s)
 {
     if (get_bits1(&s->gb))
