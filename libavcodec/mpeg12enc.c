@@ -454,8 +454,7 @@ static int mpeg1_encode_picture_header(MPVMainEncContext *const m)
 
             put_bits(&s->pb, 1, 1);     // reserved_bit
             put_bits(&s->pb, 7, fpa_type); // S3D_video_format_type
-            put_bits(&s->pb, 8, 0x04);  // reserved_data[0]
-            put_bits(&s->pb, 8, 0xFF);  // reserved_data[1]
+            put_bits(&s->pb, 16, 0x04FF);  // reserved_data
         }
     }
 
