@@ -380,6 +380,7 @@ static int open_track_resource_context(AVFormatContext *s,
 
     track_resource->ctx->io_open = s->io_open;
     track_resource->ctx->io_close2 = s->io_close2;
+    track_resource->ctx->opaque = s->opaque;
     track_resource->ctx->flags |= s->flags & ~AVFMT_FLAG_CUSTOM_IO;
 
     if ((ret = ff_copy_whiteblacklists(track_resource->ctx, s)) < 0)
