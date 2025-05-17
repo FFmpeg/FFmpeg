@@ -385,6 +385,9 @@ static int boundary_strength(const VVCLocalContext *lc, const MvField *curr, con
 {
     RefPicList *rpl = lc->sc->rpl;
 
+    if (curr->pred_flag == PF_PLT)
+        return 0;
+
     if (curr->pred_flag == PF_IBC)
         return FFABS(neigh->mv[0].x - curr->mv[0].x) >= 8 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 8;
 
