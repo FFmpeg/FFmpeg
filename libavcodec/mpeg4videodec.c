@@ -3901,7 +3901,6 @@ static int mpeg4_update_thread_context_for_user(AVCodecContext *dst,
 
 static av_cold void mpeg4_init_static(void)
 {
-    static uint8_t mpeg4_rvlc_rl_tables[2][2][2 * MAX_RUN + MAX_LEVEL + 3];
     static VLCElem vlc_buf[6498];
     VLCInitState state = VLC_INIT_STATE(vlc_buf);
 
@@ -3924,8 +3923,6 @@ static av_cold void mpeg4_init_static(void)
     }
 
     ff_mpeg4_init_rl_intra();
-    ff_rl_init(&ff_rvlc_rl_inter, mpeg4_rvlc_rl_tables[0]);
-    ff_rl_init(&ff_rvlc_rl_intra, mpeg4_rvlc_rl_tables[1]);
     INIT_FIRST_VLC_RL(ff_mpeg4_rl_intra, 554);
     VLC_INIT_RL(ff_rvlc_rl_inter, 1072);
     INIT_FIRST_VLC_RL(ff_rvlc_rl_intra, 1072);
