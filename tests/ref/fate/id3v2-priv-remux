@@ -5,7 +5,7 @@ bb2816e3a05ce136e9ac14479c1ebe24 *tests/data/fate/id3v2-priv-remux.mp3
 #codec_id 0: mp3
 #sample_rate 0: 48000
 #channel_layout_name 0: mono
-0,    -155528,    -155528,   338688,      192, 0x3774510e, S=1,       10
+0,    -155528,    -155528,   338688,      192, 0x3774510e, S=1, Skip Samples,       10, 0x00bc0013
 0,     183160,     183160,   338688,      192, 0x856c5b02
 0,     521848,     521848,   338688,      192, 0xb86e557f
 0,     860536,     860536,   338688,      192, 0x3b6c5cb7

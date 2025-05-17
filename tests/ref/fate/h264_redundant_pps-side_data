@@ -6,7 +6,7 @@ a35cca13c3f91d1a279bf576b8264d05 *tests/data/fate/h264_redundant_pps-side_data.n
 #codec_id 0: h264
 #dimensions 0: 1920x1080
 #sar 0: 0/1
-0,      -2002,          0,     2002,   247959, 0xdb721881, S=1,       34
+0,      -2002,          0,     2002,   247959, 0xdb721881, S=1, New Extradata,       34, 0x850408e3
 0,          0,       4004,     2002,    43356, 0xa366eb79, F=0x0
 0,       2002,       2002,     2002,    11423, 0x9c0a86fa, F=0x0
 0,       4004,       8008,     2002,    50801, 0xfbfe860d, F=0x0

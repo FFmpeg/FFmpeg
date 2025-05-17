@@ -5,7 +5,7 @@
 #codec_id 0: vp9
 #dimensions 0: 1280x720
 #sar 0: 1/1
-0,          0,          0,       40,    13350, 0x5f64e443, S=1,    11304
+0,          0,          0,       40,    13350, 0x5f64e443, S=1, HDR10+ Dynamic Metadata (SMPTE 2094-40),    11304, 0xf822276d
 [PACKET]
 codec_type=video
 stream_index=0

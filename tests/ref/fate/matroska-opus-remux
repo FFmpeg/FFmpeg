@@ -57,7 +57,7 @@ b9881205f8945fefc16a6f23474071a6 *tests/data/fate/matroska-opus-remux.matroska
 0,        954,        954,       20,      154, 0x9a084dcd
 0,        974,        974,       20,      155, 0x90a54ac8
 0,        994,        994,       20,      324, 0x8e34a2f5
-0,       1014,       1014,       20,      268, 0x10f37203, S=1,       10
+0,       1014,       1014,       20,      268, 0x10f37203, S=1, Skip Samples,       10, 0x049600c4
 [PACKET]
 codec_type=audio
 stream_index=0
