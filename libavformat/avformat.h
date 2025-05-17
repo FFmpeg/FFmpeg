@@ -1870,10 +1870,6 @@ typedef struct AVFormatContext {
     /**
      * A callback for closing the streams opened with AVFormatContext.io_open().
      *
-     * Using this is preferred over io_close, because this can return an error.
-     * Therefore this callback is used instead of io_close by the generic
-     * libavformat code if io_close is NULL or the default.
-     *
      * @param s the format context
      * @param pb IO context to be closed and freed
      * @return 0 on success, a negative AVERROR code on failure
