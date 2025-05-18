@@ -699,7 +699,7 @@ static void packed16togbra16(const uint8_t *src, int srcStride,
                     dst[0][x] = av_bswap16(av_bswap16(*src_line++) >> shift);
                     dst[1][x] = av_bswap16(av_bswap16(*src_line++) >> shift);
                     dst[2][x] = av_bswap16(av_bswap16(*src_line++) >> shift);
-                    dst[3][x] = 0xFFFF;
+                    dst[3][x] = av_bswap16(0xFFFF >> shift);
                 }
             } else if (src_alpha) {
                 for (x = 0; x < width; x++) {
@@ -729,7 +729,7 @@ static void packed16togbra16(const uint8_t *src, int srcStride,
                     dst[0][x] = av_bswap16(*src_line++ >> shift);
                     dst[1][x] = av_bswap16(*src_line++ >> shift);
                     dst[2][x] = av_bswap16(*src_line++ >> shift);
-                    dst[3][x] = 0xFFFF;
+                    dst[3][x] = av_bswap16(0xFFFF >> shift);
                 }
             } else if (src_alpha) {
                 for (x = 0; x < width; x++) {
@@ -759,7 +759,7 @@ static void packed16togbra16(const uint8_t *src, int srcStride,
                     dst[0][x] = av_bswap16(*src_line++) >> shift;
                     dst[1][x] = av_bswap16(*src_line++) >> shift;
                     dst[2][x] = av_bswap16(*src_line++) >> shift;
-                    dst[3][x] = 0xFFFF;
+                    dst[3][x] = 0xFFFF >> shift;
                 }
             } else if (src_alpha) {
                 for (x = 0; x < width; x++) {
@@ -789,7 +789,7 @@ static void packed16togbra16(const uint8_t *src, int srcStride,
                     dst[0][x] = *src_line++ >> shift;
                     dst[1][x] = *src_line++ >> shift;
                     dst[2][x] = *src_line++ >> shift;
-                    dst[3][x] = 0xFFFF;
+                    dst[3][x] = 0xFFFF >> shift;
                 }
             } else if (src_alpha) {
                 for (x = 0; x < width; x++) {
