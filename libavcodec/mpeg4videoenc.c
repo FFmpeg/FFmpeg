@@ -238,11 +238,10 @@ static inline int decide_ac_pred(MPVEncContext *const s, int16_t block[6][64],
  */
 void ff_clean_mpeg4_qscales(MPVEncContext *const s)
 {
-    int8_t *const qscale_table = s->c.cur_pic.qscale_table;
-
     ff_clean_h263_qscales(s);
 
     if (s->c.pict_type == AV_PICTURE_TYPE_B) {
+        int8_t *const qscale_table = s->c.cur_pic.qscale_table;
         int odd = 0;
         /* ok, come on, this isn't funny anymore, there's more code for
          * handling this MPEG-4 mess than for the actual adaptive quantization */
