@@ -27,6 +27,18 @@
 
 #include "put_bits.h"
 
+enum {
+    MAX_PB2_INTRA_SIZE = 1 /* ac_pred */ + 5 /* max cbpy len */ +
+                         2 /* dquant */ + 1 /* interlaced dct */
+                         + 4 * (8 /* longest luma dct_dc_size */ +
+                                9 /* longest dc diff */ + 1 /* marker */)
+                         + 2 * (9 + 9 + 1),
+    MAX_PB2_INTER_SIZE = 5 /* max cbpy len */ +
+                         2 /* dquant */ + 1 /* interlaced_dct */ + 1,
+    MAX_PB2_MB_SIZE    = (FFMAX(MAX_PB2_INTER_SIZE, MAX_PB2_INTRA_SIZE) + 7) / 8,
+    MAX_AC_TEX_MB_SIZE = 64 * 6 * 30 /* longest escape code */ / 8,
+};
+
 typedef struct MPVEncContext MPVEncContext;
 
 void ff_set_mpeg4_time(MPVEncContext *s);

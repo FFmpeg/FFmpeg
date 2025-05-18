@@ -2979,14 +2979,15 @@ static int encode_thread(AVCodecContext *c, void *arg){
     int i;
     MBBackup best_s = { 0 }, backup_s;
     uint8_t bit_buf[2][MAX_MB_BYTES];
-    uint8_t bit_buf2[2][MAX_MB_BYTES];
-    uint8_t bit_buf_tex[2][MAX_MB_BYTES];
+    // + 2 because ff_copy_bits() overreads
+    uint8_t bit_buf2[2][MAX_PB2_MB_SIZE + 2];
+    uint8_t bit_buf_tex[2][MAX_AC_TEX_MB_SIZE + 2];
     PutBitContext pb[2], pb2[2], tex_pb[2];
 
     for(i=0; i<2; i++){
         init_put_bits(&pb    [i], bit_buf    [i], MAX_MB_BYTES);
-        init_put_bits(&pb2   [i], bit_buf2   [i], MAX_MB_BYTES);
-        init_put_bits(&tex_pb[i], bit_buf_tex[i], MAX_MB_BYTES);
+        init_put_bits(&pb2   [i], bit_buf2   [i], MAX_PB2_MB_SIZE);
+        init_put_bits(&tex_pb[i], bit_buf_tex[i], MAX_AC_TEX_MB_SIZE);
     }
 
     s->last_bits= put_bits_count(&s->pb);
