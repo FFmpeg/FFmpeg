@@ -818,6 +818,7 @@ static void packed30togbra10(const uint8_t *src, int srcStride,
     int x, h, i;
     int dst_alpha = dst[3] != NULL;
     int scale_high = bpc - 10, scale_low = 10 - scale_high;
+    uint16_t alpha_val = (1U << bpc) - 1;
     for (h = 0; h < srcSliceH; h++) {
         uint32_t *src_line = (uint32_t *)(src + srcStride * h);
         unsigned component;
@@ -834,7 +835,7 @@ static void packed30togbra10(const uint8_t *src, int srcStride,
                     dst[1][x] = av_bswap16(component << scale_high | component >> scale_low);
                     component =  p        & 0x3FF;
                     dst[2][x] = av_bswap16(component << scale_high | component >> scale_low);
-                    dst[3][x] = 0xFFFF;
+                    dst[3][x] = av_bswap16(alpha_val);
                     src_line++;
                 }
             } else {
@@ -860,7 +861,7 @@ static void packed30togbra10(const uint8_t *src, int srcStride,
                     dst[1][x] = component << scale_high | component >> scale_low;
                     component =  p        & 0x3FF;
                     dst[2][x] = component << scale_high | component >> scale_low;
-                    dst[3][x] = 0xFFFF;
+                    dst[3][x] = alpha_val;
                     src_line++;
                 }
             } else {
