@@ -1378,8 +1378,15 @@ static int planarRgbToplanarRgbWrapper(SwsInternal *c,
                  dst[1], dstStride[1]);
     ff_copyPlane(src[2], srcStride[2], srcSliceY, srcSliceH, c->opts.src_w,
                  dst[2], dstStride[2]);
-    if (dst[3])
-        fillPlane(dst[3], dstStride[3], c->opts.src_w, srcSliceH, srcSliceY, 255);
+    if (dst[3]) {
+        if (is16BPS(c->opts.dst_format) || isNBPS(c->opts.dst_format)) {
+            const AVPixFmtDescriptor *desc_dst = av_pix_fmt_desc_get(c->opts.dst_format);
+            fillPlane16(dst[3], dstStride[3], c->opts.src_w, srcSliceH, srcSliceY, 1,
+                        desc_dst->comp[3].depth, isBE(c->opts.dst_format));
+        } else {
+            fillPlane(dst[3], dstStride[3], c->opts.src_w, srcSliceH, srcSliceY, 255);
+        }
+    }
 
     return srcSliceH;
 }
