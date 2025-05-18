@@ -82,7 +82,7 @@ enum {
 };
 
 static const VLCElem * cbp8_vlc[7][4];
-static const VLCElem * cbp16_vlc[7][3][4];
+static const VLCElem * cbp16_vlc[7][4][4];
 
 typedef struct {
     const VLCElem * l0[2];
@@ -137,12 +137,12 @@ static av_cold void rv60_init_static_data(void)
 
     for (int i = 0; i < 7; i++)
         for (int j = 0; j < 4; j++)
-            cbp8_vlc[i][j] = gen_vlc(rv60_cbp8_lens[i][j], 64, &state);
+            cbp16_vlc[i][0][j] = cbp8_vlc[i][j] = gen_vlc(rv60_cbp8_lens[i][j], 64, &state);
 
     for (int i = 0; i < 7; i++)
         for (int j = 0; j < 3; j++)
             for (int k = 0; k < 4; k++)
-                cbp16_vlc[i][j][k] = gen_vlc(rv60_cbp16_lens[i][j][k], 64, &state);
+                cbp16_vlc[i][j + 1][k] = gen_vlc(rv60_cbp16_lens[i][j][k], 64, &state);
 
     build_coeff_vlc(rv60_intra_lens, intra_coeff_vlc, 5, &state);
     build_coeff_vlc(rv60_inter_lens, inter_coeff_vlc, 7, &state);
@@ -1650,10 +1650,7 @@ static int decode_super_cbp(GetBitContext * gb, const VLCElem * vlc[4])
 static int decode_cbp16(GetBitContext * gb, int subset, int qp)
 {
     int cb_set = rv60_qp_to_idx[qp];
-    if (!subset)
-        return decode_super_cbp(gb, cbp8_vlc[cb_set]);
-    else
-        return decode_super_cbp(gb, cbp16_vlc[cb_set][subset - 1]);
+    return decode_super_cbp(gb, cbp16_vlc[cb_set][subset]);
 }
 
 static int decode_cu_r(RV60Context * s, AVFrame * frame, ThreadContext * thread, GetBitContext * gb, int xpos, int ypos, int log_size, int qp, int sel_qp)
