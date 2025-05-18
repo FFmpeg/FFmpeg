@@ -27,6 +27,16 @@
 #include "ops.h"
 #include "ops_internal.h"
 
+const SwsOpBackend * const ff_sws_op_backends[] = {
+    NULL
+};
+
+#define RET(x)                                                                 \
+    do {                                                                       \
+        if ((ret = (x)) < 0)                                                   \
+            return ret;                                                        \
+    } while (0)
+
 const char *ff_sws_pixel_type_name(SwsPixelType type)
 {
     switch (type) {
@@ -507,4 +517,58 @@ void ff_sws_op_list_print(void *log, int lev, const SwsOpList *ops)
     }
 
     av_log(log, lev, "    (X = unused, + = exact, 0 = zero)\n");
+}
+
+int ff_sws_ops_compile_backend(SwsContext *ctx, const SwsOpBackend *backend,
+                               const SwsOpList *ops, SwsCompiledOp *out)
+{
+    SwsOpList *copy, rest;
+    SwsCompiledOp compiled = {0};
+    int ret = 0;
+
+    copy = ff_sws_op_list_duplicate(ops);
+    if (!copy)
+        return AVERROR(ENOMEM);
+
+    /* Ensure these are always set during compilation */
+    ff_sws_op_list_update_comps(copy);
+
+    /* Make an on-stack copy of `ops` to ensure we can still properly clean up
+     * the copy afterwards */
+    rest = *copy;
+
+    ret = backend->compile(ctx, &rest, &compiled);
+    if (ret < 0) {
+        int msg_lev = ret == AVERROR(ENOTSUP) ? AV_LOG_TRACE : AV_LOG_ERROR;
+        av_log(ctx, msg_lev, "Backend '%s' failed to compile operations: %s\n",
+               backend->name, av_err2str(ret));
+        if (rest.num_ops != ops->num_ops) {
+            av_log(ctx, msg_lev, "Uncompiled remainder:\n");
+            ff_sws_op_list_print(ctx, msg_lev, &rest);
+        }
+    } else {
+        *out = compiled;
+    }
+
+    ff_sws_op_list_free(&copy);
+    return ret;
+}
+
+int ff_sws_ops_compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out)
+{
+    for (int n = 0; ff_sws_op_backends[n]; n++) {
+        const SwsOpBackend *backend = ff_sws_op_backends[n];
+        if (ff_sws_ops_compile_backend(ctx, backend, ops, out) < 0)
+            continue;
+
+        av_log(ctx, AV_LOG_VERBOSE, "Compiled using backend '%s': "
+               "block size = %d, over-read = %d, over-write = %d, cpu flags = 0x%x\n",
+               backend->name, out->block_size, out->over_read, out->over_write,
+               out->cpu_flags);
+        return 0;
+    }
+
+    av_log(ctx, AV_LOG_WARNING, "No backend found for operations:\n");
+    ff_sws_op_list_print(ctx, AV_LOG_WARNING, ops);
+    return AVERROR(ENOTSUP);
 }

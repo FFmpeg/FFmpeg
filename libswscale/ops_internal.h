@@ -21,6 +21,8 @@
 #ifndef SWSCALE_OPS_INTERNAL_H
 #define SWSCALE_OPS_INTERNAL_H
 
+#include "libavutil/mem_internal.h"
+
 #include "ops.h"
 
 #define Q(N) ((AVRational) { N, 1 })
@@ -44,5 +46,84 @@ static inline void ff_sws_pack_op_decode(const SwsOp *op, uint64_t mask[4], int 
         shift[i] = (i ? shift[i - 1] : size) - bits;
     }
 }
+
+/**
+ * Global execution context for all compiled functions.
+ *
+ * Note: This struct is hard-coded in assembly, so do not change the layout
+ * without updating the corresponding assembly definitions.
+ */
+typedef struct SwsOpExec {
+    /* The data pointers point to the first pixel to process */
+    DECLARE_ALIGNED_32(const uint8_t, *in[4]);
+    DECLARE_ALIGNED_32(uint8_t, *out[4]);
+
+    /* Separation between lines in bytes */
+    DECLARE_ALIGNED_32(ptrdiff_t, in_stride[4]);
+    DECLARE_ALIGNED_32(ptrdiff_t, out_stride[4]);
+
+    /* Extra metadata, may or may not be useful */
+    int32_t width, height;      /* Overall image dimensions */
+    int32_t slice_y, slice_h;   /* Start and height of current slice */
+    int32_t pixel_bits_in;      /* Bits per input pixel */
+    int32_t pixel_bits_out;     /* Bits per output pixel */
+} SwsOpExec;
+
+static_assert(sizeof(SwsOpExec) == 16 * sizeof(void *) + 8 * sizeof(int32_t),
+              "SwsOpExec layout mismatch");
+
+/**
+ * Process a given range of pixel blocks.
+ *
+ * Note: `bx_start` and `bx_end` are in units of `SwsCompiledOp.block_size`.
+ */
+typedef void (*SwsOpFunc)(const SwsOpExec *exec, const void *priv,
+                          int bx_start, int y_start, int bx_end, int y_end);
+
+#define SWS_DECL_FUNC(NAME) \
+    void NAME(const SwsOpExec *, const void *, int, int, int, int)
+
+typedef struct SwsCompiledOp {
+    SwsOpFunc func;
+
+    int block_size; /* number of pixels processed per iteration */
+    int over_read;  /* implementation over-reads input by this many bytes */
+    int over_write; /* implementation over-writes output by this many bytes */
+    int cpu_flags;  /* active set of CPU flags (informative) */
+
+    /* Arbitrary private data */
+    void *priv;
+    void (*free)(void *priv);
+} SwsCompiledOp;
+
+typedef struct SwsOpBackend {
+    const char *name; /* Descriptive name for this backend */
+
+    /**
+     * Compile an operation list to an implementation chain. May modify `ops`
+     * freely; the original list will be freed automatically by the caller.
+     *
+     * Returns 0 or a negative error code.
+     */
+    int (*compile)(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out);
+} SwsOpBackend;
+
+/* List of all backends, terminated by NULL */
+extern const SwsOpBackend *const ff_sws_op_backends[];
+
+/**
+ * Attempt to compile a list of operations using a specific backend.
+ *
+ * Returns 0 on success, or a negative error code on failure.
+ */
+int ff_sws_ops_compile_backend(SwsContext *ctx, const SwsOpBackend *backend,
+                               const SwsOpList *ops, SwsCompiledOp *out);
+
+/**
+ * Compile a list of operations using the best available backend.
+ *
+ * Returns 0 on success, or a negative error code on failure.
+ */
+int ff_sws_ops_compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out);
 
 #endif /* SWSCALE_OPS_INTERNAL_H */
