@@ -55,21 +55,25 @@ static inline void ff_sws_pack_op_decode(const SwsOp *op, uint64_t mask[4], int 
  */
 typedef struct SwsOpExec {
     /* The data pointers point to the first pixel to process */
-    DECLARE_ALIGNED_32(const uint8_t, *in[4]);
-    DECLARE_ALIGNED_32(uint8_t, *out[4]);
+    const uint8_t *in[4];
+    uint8_t *out[4];
 
     /* Separation between lines in bytes */
-    DECLARE_ALIGNED_32(ptrdiff_t, in_stride[4]);
-    DECLARE_ALIGNED_32(ptrdiff_t, out_stride[4]);
+    ptrdiff_t in_stride[4];
+    ptrdiff_t out_stride[4];
+
+    /* Pointer bump, difference between stride and processed line size */
+    ptrdiff_t in_bump[4];
+    ptrdiff_t out_bump[4];
 
     /* Extra metadata, may or may not be useful */
     int32_t width, height;      /* Overall image dimensions */
     int32_t slice_y, slice_h;   /* Start and height of current slice */
-    int32_t pixel_bits_in;      /* Bits per input pixel */
-    int32_t pixel_bits_out;     /* Bits per output pixel */
+    int32_t block_size_in;      /* Size of a block of pixels in bytes */
+    int32_t block_size_out;
 } SwsOpExec;
 
-static_assert(sizeof(SwsOpExec) == 16 * sizeof(void *) + 8 * sizeof(int32_t),
+static_assert(sizeof(SwsOpExec) == 24 * sizeof(void *) + 6 * sizeof(int32_t),
               "SwsOpExec layout mismatch");
 
 /**

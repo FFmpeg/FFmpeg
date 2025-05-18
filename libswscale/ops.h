@@ -252,4 +252,18 @@ void ff_sws_op_list_update_comps(SwsOpList *ops);
  */
 int ff_sws_op_list_optimize(SwsOpList *ops);
 
+enum SwsOpCompileFlags {
+    /* Automatically optimize the operations when compiling */
+    SWS_OP_FLAG_OPTIMIZE = 1 << 0,
+};
+
+/**
+ * Resolves an operation list to a graph pass. The first and last operations
+ * must be a read/write respectively. `flags` is a list of SwsOpCompileFlags.
+ *
+ * Note: `ops` may be modified by this function.
+ */
+int ff_sws_compile_pass(SwsGraph *graph, SwsOpList *ops, int flags, SwsFormat dst,
+                        SwsPass *input, SwsPass **output);
+
 #endif
