@@ -240,4 +240,16 @@ void ff_sws_op_list_remove_at(SwsOpList *ops, int index, int count);
  */
 void ff_sws_op_list_print(void *log_ctx, int log_level, const SwsOpList *ops);
 
+/**
+ * Infer + propagate known information about components. Called automatically
+ * when needed by the optimizer and compiler.
+ */
+void ff_sws_op_list_update_comps(SwsOpList *ops);
+
+/**
+ * Fuse compatible and eliminate redundant operations, as well as replacing
+ * some operations with more efficient alternatives.
+ */
+int ff_sws_op_list_optimize(SwsOpList *ops);
+
 #endif
