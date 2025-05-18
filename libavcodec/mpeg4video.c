@@ -20,24 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/thread.h"
-
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mpeg4video.h"
 #include "mpeg4data.h"
-
-static av_cold void mpeg4_init_rl_intra(void)
-{
-    static uint8_t mpeg4_rl_intra_table[2][2 * MAX_RUN + MAX_LEVEL + 3];
-    ff_rl_init(&ff_mpeg4_rl_intra, mpeg4_rl_intra_table);
-}
-
-av_cold void ff_mpeg4_init_rl_intra(void)
-{
-    static AVOnce init_static_once = AV_ONCE_INIT;
-    ff_thread_once(&init_static_once, mpeg4_init_rl_intra);
-}
 
 int ff_mpeg4_get_video_packet_prefix_length(enum AVPictureType pict_type,
                                             int f_code, int b_code)

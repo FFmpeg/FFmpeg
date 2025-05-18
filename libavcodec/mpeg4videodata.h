@@ -35,7 +35,6 @@ extern const int8_t ff_mpeg4_intra_level[102];
 extern const int8_t ff_mpeg4_intra_run[102];
 
 extern RLTable ff_mpeg4_rl_intra;
-void ff_mpeg4_init_rl_intra(void);
 
 /* Note this is identical to the intra rvlc except that it is reordered. */
 extern RLTable ff_rvlc_rl_inter;
