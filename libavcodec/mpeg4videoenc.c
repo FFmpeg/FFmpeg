@@ -1184,103 +1184,84 @@ static av_cold void init_uni_dc_tab(void)
 static av_cold void init_uni_mpeg4_rl_tab(RLTable *rl, uint32_t *bits_tab,
                                           uint8_t *len_tab)
 {
-    int slevel, run, last;
+    // Type 3 escape method. The escape code is the same for both VLCs
+    // (0x3, seven bits), so it is hardcoded.
+    memset(len_tab, 30, 2 * 2 * 64 * 64);
+    len_tab  += 64;
+    bits_tab += 64;
+    for (int run = 0; run < 64; ++run) {
+        for (int level = 1;; ++level) {
+                       //  Escape code   type 3     not last    run (6 bits)   marker   marker
+            unsigned code = (3 << 23) | (3 << 21) | (0 << 20) | (run << 14) | (1 << 13) | 1;
+            // first the negative levels
+            bits_tab[UNI_MPEG4_ENC_INDEX(0, run, -level)] = code | (-level & 0xfff) << 1;
+            bits_tab[UNI_MPEG4_ENC_INDEX(1, run, -level)] =
+                bits_tab[UNI_MPEG4_ENC_INDEX(0, run, -level)] | (1 << 20) /* last */;
 
-    av_assert0(MAX_LEVEL >= 64);
-    av_assert0(MAX_RUN >= 63);
-
-    for (slevel = -64; slevel < 64; slevel++) {
-        if (slevel == 0)
-            continue;
-        for (run = 0; run < 64; run++) {
-            for (last = 0; last <= 1; last++) {
-                const int index = UNI_MPEG4_ENC_INDEX(last, run, slevel + 64);
-                int level       = slevel < 0 ? -slevel : slevel;
-                int sign        = slevel < 0 ? 1 : 0;
-                int bits, len, code;
-                int level1, run1;
-
-                len_tab[index] = 100;
-
-                /* ESC0 */
-                code = get_rl_index(rl, last, run, level);
-                bits = rl->table_vlc[code][0];
-                len  = rl->table_vlc[code][1];
-                bits = bits * 2 + sign;
-                len++;
-
-                if (code != rl->n && len < len_tab[index]) {
-                    bits_tab[index] = bits;
-                    len_tab[index]  = len;
-                }
-                /* ESC1 */
-                bits = rl->table_vlc[rl->n][0];
-                len  = rl->table_vlc[rl->n][1];
-                bits = bits * 2;
-                len++;                 // esc1
-                level1 = level - rl->max_level[last][run];
-                if (level1 > 0) {
-                    code   = get_rl_index(rl, last, run, level1);
-                    bits <<= rl->table_vlc[code][1];
-                    len   += rl->table_vlc[code][1];
-                    bits  += rl->table_vlc[code][0];
-                    bits   = bits * 2 + sign;
-                    len++;
-
-                    if (code != rl->n && len < len_tab[index]) {
-                        bits_tab[index] = bits;
-                        len_tab[index]  = len;
-                    }
-                }
-                /* ESC2 */
-                bits = rl->table_vlc[rl->n][0];
-                len  = rl->table_vlc[rl->n][1];
-                bits = bits * 4 + 2;
-                len += 2;                 // esc2
-                run1 = run - rl->max_run[last][level] - 1;
-                if (run1 >= 0) {
-                    code   = get_rl_index(rl, last, run1, level);
-                    bits <<= rl->table_vlc[code][1];
-                    len   += rl->table_vlc[code][1];
-                    bits  += rl->table_vlc[code][0];
-                    bits   = bits * 2 + sign;
-                    len++;
-
-                    if (code != rl->n && len < len_tab[index]) {
-                        bits_tab[index] = bits;
-                        len_tab[index]  = len;
-                    }
-                }
-                /* ESC3 */
-                bits = rl->table_vlc[rl->n][0];
-                len  = rl->table_vlc[rl->n][1];
-                bits = bits * 4 + 3;
-                len += 2;                 // esc3
-                bits = bits * 2 + last;
-                len++;
-                bits = bits * 64 + run;
-                len += 6;
-                bits = bits * 2 + 1;
-                len++;                    // marker
-                bits = bits * 4096 + (slevel & 0xfff);
-                len += 12;
-                bits = bits * 2 + 1;
-                len++;                    // marker
-
-                if (len < len_tab[index]) {
-                    bits_tab[index] = bits;
-                    len_tab[index]  = len;
-                }
-            }
+            if (level == 64) // positive levels have a range of 1..63
+                break;
+            bits_tab[UNI_MPEG4_ENC_INDEX(0, run, level)] = code | level << 1;
+            bits_tab[UNI_MPEG4_ENC_INDEX(1, run, level)] =
+                bits_tab[UNI_MPEG4_ENC_INDEX(0, run, level)] | (1 << 20) /* last */;
         }
+        // Is this needed at all?
+        len_tab[UNI_MPEG4_ENC_INDEX(0, run, 0)] =
+        len_tab[UNI_MPEG4_ENC_INDEX(1, run, 0)] = 0;
+    }
+
+    uint8_t max_run[2][32] = { 0 };
+
+#define VLC_NUM_CODES 102 // excluding the escape
+    av_assert2(rl->n == VLC_NUM_CODES);
+    for (int i = VLC_NUM_CODES - 1, max_level, cur_run = 0; i >= 0; --i) {
+        int run = rl->table_run[i], level = rl->table_level[i];
+        int last = i >= rl->last;
+        unsigned code = rl->table_vlc[i][0] << 1;
+        int len = rl->table_vlc[i][1] + 1;
+
+        bits_tab[UNI_MPEG4_ENC_INDEX(last, run,  level)] = code;
+        len_tab [UNI_MPEG4_ENC_INDEX(last, run,  level)] = len;
+        bits_tab[UNI_MPEG4_ENC_INDEX(last, run, -level)] = code | 1;
+        len_tab [UNI_MPEG4_ENC_INDEX(last, run, -level)] = len;
+
+        if (!max_run[last][level])
+            max_run[last][level] = run + 1;
+        av_assert2(run + 1 <= max_run[last][level]);
+
+        int run3 = run + max_run[last][level];
+        int len3 = len + 7 + 2;
+
+        if (run3 < 64 && len3 < len_tab[UNI_MPEG4_ENC_INDEX(last, run3, level)]) {
+            unsigned code3 = code | (0x3 << 2 | 0x2) << len;
+            bits_tab[UNI_MPEG4_ENC_INDEX(last, run3,  level)] = code3;
+            len_tab [UNI_MPEG4_ENC_INDEX(last, run3,  level)] = len3;
+            bits_tab[UNI_MPEG4_ENC_INDEX(last, run3, -level)] = code3 | 1;
+            len_tab [UNI_MPEG4_ENC_INDEX(last, run3, -level)] = len3;
+        }
+        // table_run and table_level are ordered so that all the entries
+        // with the same last and run are consecutive and level is ascending
+        // among these entries. By traversing downwards we therefore automatically
+        // encounter max_level of a given run first, needed for escape method 1.
+        if (run != cur_run) {
+            max_level = level;
+            cur_run   = run;
+        } else
+            av_assert2(max_level > level);
+
+        code  |= 0x3 << (len + 1);
+        len   += 7 + 1;
+        level += max_level;
+        av_assert2(len_tab [UNI_MPEG4_ENC_INDEX(last, run,  level)] >= len);
+        bits_tab[UNI_MPEG4_ENC_INDEX(last, run,  level)] = code;
+        len_tab [UNI_MPEG4_ENC_INDEX(last, run,  level)] = len;
+        bits_tab[UNI_MPEG4_ENC_INDEX(last, run, -level)] = code | 1;
+        len_tab [UNI_MPEG4_ENC_INDEX(last, run, -level)] = len;
     }
 }
 
 static av_cold void mpeg4_encode_init_static(void)
 {
     init_uni_dc_tab();
-
-    ff_mpeg4_init_rl_intra();
 
     init_uni_mpeg4_rl_tab(&ff_mpeg4_rl_intra, uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
     init_uni_mpeg4_rl_tab(&ff_h263_rl_inter,  uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
