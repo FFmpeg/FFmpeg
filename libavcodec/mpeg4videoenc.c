@@ -293,37 +293,18 @@ static inline void mpeg4_encode_dc(PutBitContext *s, int level, int n)
 }
 
 /**
- * Encode an 8x8 block.
- * @param n block index (0-3 are luma, 4-5 are chroma)
+ * Encode the AC coefficients of an 8x8 block.
  */
-static inline void mpeg4_encode_block(const MPVEncContext *const s,
-                                      const int16_t *block, int n, int intra_dc,
-                                      const uint8_t *scan_table, PutBitContext *dc_pb,
-                                      PutBitContext *ac_pb)
+static inline void mpeg4_encode_ac_coeffs(const int16_t block[64],
+                                          const int last_index, int i,
+                                          const uint8_t *const scan_table,
+                                          PutBitContext *const ac_pb,
+                                          const uint32_t *const bits_tab,
+                                          const uint8_t *const len_tab)
 {
-    int i, last_non_zero;
-    const uint32_t *bits_tab;
-    const uint8_t *len_tab;
-    const int last_index = s->c.block_last_index[n];
-
-    if (s->c.mb_intra) {  // Note gcc (3.2.1 at least) will optimize this away
-        /* MPEG-4 based DC predictor */
-        mpeg4_encode_dc(dc_pb, intra_dc, n);
-        if (last_index < 1)
-            return;
-        i = 1;
-        bits_tab = uni_mpeg4_intra_rl_bits;
-        len_tab  = uni_mpeg4_intra_rl_len;
-    } else {
-        if (last_index < 0)
-            return;
-        i = 0;
-        bits_tab = uni_mpeg4_inter_rl_bits;
-        len_tab  = uni_mpeg4_inter_rl_len;
-    }
+    int last_non_zero = i - 1;
 
     /* AC coefs */
-    last_non_zero = i - 1;
     for (; i < last_index; i++) {
         int level = block[scan_table[i]];
         if (level) {
@@ -357,25 +338,40 @@ static inline void mpeg4_encode_block(const MPVEncContext *const s,
     }
 }
 
-static inline void mpeg4_encode_blocks(MPVEncContext *const s,
-                                       const int16_t block[6][64],
-                                       const int intra_dc[6],
-                                       const uint8_t * const *scan_table,
-                                       PutBitContext *dc_pb,
-                                       PutBitContext *ac_pb)
+static void mpeg4_encode_blocks_inter(MPVEncContext *const s,
+                                      const int16_t block[6][64],
+                                      PutBitContext *ac_pb)
 {
-    int i;
+    /* encode each block */
+    for (int n = 0; n < 6; ++n) {
+        const int last_index = s->c.block_last_index[n];
+        if (last_index < 0)
+            continue;
 
-    if (scan_table) {
-            /* encode each block */
-            for (i = 0; i < 6; i++)
-                mpeg4_encode_block(s, block[i], i,
-                                   intra_dc[i], scan_table[i], dc_pb, ac_pb);
-    } else {
-            /* encode each block */
-            for (i = 0; i < 6; i++)
-                mpeg4_encode_block(s, block[i], i, 0,
-                                   s->c.intra_scantable.permutated, dc_pb, ac_pb);
+        mpeg4_encode_ac_coeffs(block[n], last_index, 0,
+                               s->c.intra_scantable.permutated, ac_pb,
+                               uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
+    }
+}
+
+static void mpeg4_encode_blocks_intra(MPVEncContext *const s,
+                                      const int16_t block[6][64],
+                                      const int intra_dc[6],
+                                      const uint8_t * const *scan_table,
+                                      PutBitContext *dc_pb,
+                                      PutBitContext *ac_pb)
+{
+    /* encode each block */
+    for (int n = 0; n < 6; ++n) {
+        mpeg4_encode_dc(dc_pb, intra_dc[n], n);
+
+        const int last_index = s->c.block_last_index[n];
+        if (last_index <= 0)
+            continue;
+
+        mpeg4_encode_ac_coeffs(block[n], last_index, 1,
+                               scan_table[n], ac_pb,
+                               uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
     }
 }
 
@@ -565,7 +561,7 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
             if (interleaved_stats)
                 s->mv_bits += get_bits_diff(s);
 
-            mpeg4_encode_blocks(s, block, NULL, NULL, NULL, &s->pb);
+            mpeg4_encode_blocks_inter(s, block, &s->pb);
 
             if (interleaved_stats)
                 s->p_tex_bits += get_bits_diff(s);
@@ -728,7 +724,7 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
             if (interleaved_stats)
                 s->mv_bits += get_bits_diff(s);
 
-            mpeg4_encode_blocks(s, block, NULL, NULL, NULL, tex_pb);
+            mpeg4_encode_blocks_inter(s, block, tex_pb);
 
             if (interleaved_stats)
                 s->p_tex_bits += get_bits_diff(s);
@@ -790,7 +786,7 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
         if (interleaved_stats)
             s->misc_bits += get_bits_diff(s);
 
-        mpeg4_encode_blocks(s, block, dc_diff, scan_table, dc_pb, tex_pb);
+        mpeg4_encode_blocks_intra(s, block, dc_diff, scan_table, dc_pb, tex_pb);
 
         if (interleaved_stats)
             s->i_tex_bits += get_bits_diff(s);
