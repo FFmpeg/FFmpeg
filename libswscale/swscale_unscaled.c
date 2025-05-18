@@ -2221,7 +2221,7 @@ static int planarCopyWrapper(SwsInternal *c, const uint8_t *const src[],
 
         // ignore palette for GRAY8
         if (plane == 1 && desc_dst->nb_components < 3) continue;
-        if (!src[plane] || (plane == 1 && desc_src->nb_components < 3)) {
+        if (!src[plane] || (plane == 1 && desc_src->nb_components < 3) || (plane == 3 && desc_src->nb_components <= 3)) {
             if (is16BPS(c->opts.dst_format) || isNBPS(c->opts.dst_format)) {
                 fillPlane16(dst[plane], dstStride[plane], length, height, y,
                         plane == 3, desc_dst->comp[plane].depth,
