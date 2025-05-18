@@ -49,7 +49,6 @@ OBJS-ffprobe +=                       \
     fftools/textformat/tw_avio.o      \
     fftools/textformat/tw_buffer.o    \
     fftools/textformat/tw_stdout.o    \
-    $(OBJS-resman)                    \
 
 OBJS-ffplay += fftools/ffplay_renderer.o
 
