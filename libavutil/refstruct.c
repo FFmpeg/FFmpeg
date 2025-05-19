@@ -45,7 +45,7 @@
 #define REFSTRUCT_COOKIE AV_NE((uint64_t)MKBETAG('R', 'e', 'f', 'S') << 32 | MKBETAG('t', 'r', 'u', 'c'), \
                                MKTAG('R', 'e', 'f', 'S') | (uint64_t)MKTAG('t', 'r', 'u', 'c') << 32)
 
-#if __STDC_VERSION__ >= 201112L && !defined(_MSC_VER)
+#ifndef _MSC_VER
 #define REFCOUNT_OFFSET FFALIGN(sizeof(RefCount), FFMAX(ALIGN_64, _Alignof(max_align_t)))
 #else
 #define REFCOUNT_OFFSET FFALIGN(sizeof(RefCount), ALIGN_64)
