@@ -48,7 +48,6 @@
 #include "profiles.h"
 #include "qpeldsp.h"
 #include "threadprogress.h"
-#include "xvididct.h"
 #include "unary.h"
 
 #if 0 //3IV1 is quite rare and it slows things down a tiny bit
@@ -3879,9 +3878,6 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
 
     memcpy(s->sprite_shift, s1->sprite_shift, sizeof(s1->sprite_shift));
     memcpy(s->sprite_traj,  s1->sprite_traj,  sizeof(s1->sprite_traj));
-
-    if (!init && s1->xvid_build >= 0)
-        ff_xvid_idct_init(&s->m.idsp, dst);
 
     return av_buffer_replace(&s->bitstream_buffer, s1->bitstream_buffer);
 }
