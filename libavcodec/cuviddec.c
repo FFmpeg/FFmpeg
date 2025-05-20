@@ -505,7 +505,12 @@ static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
         ctx->decoder_flushing = 1;
     }
 
-    ret = CHECK_CU(ctx->cvdl->cuvidParseVideoData(ctx->cuparser, &cupkt));
+    // When flushing, only actually flush cuvid when the output buffer has been fully emptied.
+    // CUVID happily dumps out a ton of frames with no regard for its own available surfaces.
+    if (!ctx->decoder_flushing || (ctx->decoder_flushing && !av_fifo_can_read(ctx->frame_queue)))
+        ret = CHECK_CU(ctx->cvdl->cuvidParseVideoData(ctx->cuparser, &cupkt));
+    else
+        ret = 0;
 
     if (ret < 0)
         goto error;
