@@ -960,11 +960,8 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
         }
 
         /* add dct residue */
-        if (!(IS_MPEG12_H261(s) || s->msmpeg4_version != MSMP4_UNUSED ||
-              (s->codec_id == AV_CODEC_ID_MPEG4 && !s->mpeg_quant))) {
+        if (is_mpeg12 != DEFINITELY_MPEG12_H261 && s->dct_unquantize_inter) {
             // H.263, H.263+, H.263I, FLV, RV10, RV20 and MPEG-4 with MPEG-2 quantization
-            // Also RV30, RV40 when performing error resilience, but
-            // all blocks are skipped in this case.
             add_dequant_dct(s, block[0], 0, dest_y                          , dct_linesize, s->qscale);
             add_dequant_dct(s, block[1], 1, dest_y              + block_size, dct_linesize, s->qscale);
             add_dequant_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);
@@ -978,7 +975,8 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
         } else if (is_mpeg12 == DEFINITELY_MPEG12_H261 || lowres_flag || (s->codec_id != AV_CODEC_ID_WMV2)) {
             // H.261, MPEG-1, MPEG-2, MPEG-4 with H.263 quantization,
             // MSMP4V1-3 and WMV1.
-            // Also the VC-1 family when performing error resilience
+            // Also RV30, RV40 and the VC-1 family when performing error resilience,
+            // but all blocks are skipped in this case.
             add_dct(s, block[0], 0, dest_y                          , dct_linesize);
             add_dct(s, block[1], 1, dest_y              + block_size, dct_linesize);
             add_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize);

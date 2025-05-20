@@ -3417,6 +3417,8 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
 
     s->dct_unquantize_intra = s->mpeg_quant ? ctx->dct_unquantize_mpeg2_intra
                                             : ctx->dct_unquantize_h263_intra;
+    // The following tells ff_mpv_reconstruct_mb() to unquantize iff mpeg_quant
+    s->dct_unquantize_inter = s->mpeg_quant ? ctx->dct_unquantize_mpeg2_inter : NULL;
 
 end:
     /* detect buggy encoders which don't set the low_delay flag
@@ -3961,8 +3963,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->dct_unquantize_h263_intra  = unquant_dsp_ctx.dct_unquantize_h263_intra;
     ctx->dct_unquantize_mpeg2_intra = unquant_dsp_ctx.dct_unquantize_mpeg2_intra;
     // dct_unquantize_inter is only used with MPEG-2 quantizers,
-    // so we can already set dct_unquantize_inter here once and for all.
-    s->dct_unquantize_inter = unquant_dsp_ctx.dct_unquantize_mpeg2_inter;
+    // so that is all we keep.
+    ctx->dct_unquantize_mpeg2_inter = unquant_dsp_ctx.dct_unquantize_mpeg2_inter;
 
     s->y_dc_scale_table = ff_mpeg4_y_dc_scale_table;
     s->c_dc_scale_table = ff_mpeg4_c_dc_scale_table;

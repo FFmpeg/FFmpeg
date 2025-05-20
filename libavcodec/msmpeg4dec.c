@@ -366,6 +366,9 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
     if (ff_h263_decode_init(avctx) < 0)
         return -1;
 
+    // We unquantize inter blocks as we parse them.
+    s->dct_unquantize_inter = NULL;
+
     ff_msmpeg4_common_init(s);
 
     switch (s->msmpeg4_version) {

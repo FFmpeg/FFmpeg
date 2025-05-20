@@ -110,7 +110,8 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     ff_mpv_unquantize_init(&unquant_dsp_ctx,
                            avctx->flags & AV_CODEC_FLAG_BITEXACT, 0);
     // dct_unquantize defaults for H.263;
-    // they might change on a per-frame basis for MPEG-4.
+    // they might change on a per-frame basis for MPEG-4;
+    // dct_unquantize_inter will be unset for MSMPEG4 codecs later.
     s->dct_unquantize_intra = unquant_dsp_ctx.dct_unquantize_h263_intra;
     s->dct_unquantize_inter = unquant_dsp_ctx.dct_unquantize_h263_inter;
 
