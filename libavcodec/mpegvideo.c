@@ -335,9 +335,11 @@ av_cold int ff_mpv_init_context_frame(MpegEncContext *s)
         s->coded_block = s->coded_block_base + s->b8_stride + 1;
     }
 
-    if (s->h263_pred || s->h263_plus || !s->encoding) {
+    if (s->h263_pred || s->h263_aic || !s->encoding) {
         /* dc values */
         // MN: we need these for error resilience of intra-frames
+        // Allocating them unconditionally for decoders also means
+        // that we don't need to reinitialize when e.g. h263_aic changes.
         if (!FF_ALLOCZ_TYPED_ARRAY(s->dc_val_base, yc_size))
             return AVERROR(ENOMEM);
         s->dc_val[0] = s->dc_val_base + s->b8_stride + 1;

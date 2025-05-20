@@ -944,8 +944,9 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         avctx->delay       = 0;
         s->c.low_delay       = 1;
         s->c.modified_quant  = 1;
+        // Set here to force allocation of dc_val;
+        // will be set later on a per-frame basis.
         s->c.h263_aic        = 1;
-        s->c.h263_plus       = 1;
         s->c.loop_filter     = 1;
         s->c.unrestricted_mv = 0;
         break;
