@@ -153,7 +153,6 @@ typedef struct MermaidContext {
     }  section_data[SECTION_MAX_NB_LEVELS];
 
     unsigned nb_link_captions[SECTION_MAX_NB_LEVELS]; ///< generic print buffer dedicated to each section,
-    AVBPrint section_pbuf[SECTION_MAX_NB_LEVELS]; ///< generic print buffer dedicated to each section,
     AVBPrint link_buf; ///< print buffer for writing diagram links
     AVDictionary *link_dict;
 } MermaidContext;
@@ -216,6 +215,32 @@ static av_cold int mermaid_init_html(AVTextFormatContext *tfc)
     return 0;
 }
 
+static av_cold int mermaid_uninit(AVTextFormatContext *tfc)
+{
+    MermaidContext *mmc = tfc->priv;
+
+    av_bprint_finalize(&mmc->link_buf, NULL);
+    av_dict_free(&mmc->link_dict);
+
+    for (unsigned i = 0; i < SECTION_MAX_NB_LEVELS; i++) {
+        av_freep(&mmc->section_data[i].dest_id);
+        av_freep(&mmc->section_data[i].section_id);
+        av_freep(&mmc->section_data[i].src_id);
+        av_freep(&mmc->section_data[i].section_type);
+    }
+
+    return 0;
+}
+
+static void set_str(const char **dst, const char *src)
+{
+    if (*dst)
+        av_freep(dst);
+
+    if (src)
+        *dst = av_strdup(src);
+}
+
 #define MM_INDENT() writer_printf(tfc, "%*c", mmc->indent_level * 2, ' ')
 
 static void mermaid_print_section_header(AVTextFormatContext *tfc, const void *data)
@@ -266,6 +291,8 @@ static void mermaid_print_section_header(AVTextFormatContext *tfc, const void *d
             break;
         }
 
+        av_bprint_finalize(&css_buf, NULL);
+        av_freep(&directive);
         return;
     }
 
@@ -310,7 +337,7 @@ static void mermaid_print_section_header(AVTextFormatContext *tfc, const void *d
         }
 
         mmc->section_data[tfc->level].subgraph_start_incomplete = 1;
-        mmc->section_data[tfc->level].section_id = av_strdup(sec_ctx->context_id);
+        set_str(&mmc->section_data[tfc->level].section_id, sec_ctx->context_id);
     }
 
     if (section->flags & AV_TEXTFORMAT_SECTION_FLAG_IS_SHAPE) {
@@ -322,7 +349,7 @@ static void mermaid_print_section_header(AVTextFormatContext *tfc, const void *d
 
         if (sec_ctx->context_id) {
 
-            mmc->section_data[tfc->level].section_id = av_strdup(sec_ctx->context_id);
+            set_str(&mmc->section_data[tfc->level].section_id, sec_ctx->context_id);
 
             switch (mmc->diagram_config->diagram_type) {
             case AV_DIAGRAMTYPE_GRAPH:
@@ -352,7 +379,7 @@ static void mermaid_print_section_header(AVTextFormatContext *tfc, const void *d
             av_log(tfc, AV_LOG_ERROR, "Unable to write shape start. Missing id field. Section: %s", section->name);
         }
 
-        mmc->section_data[tfc->level].section_id = av_strdup(sec_ctx->context_id);
+        set_str(&mmc->section_data[tfc->level].section_id, sec_ctx->context_id);
     }
 
 
@@ -371,7 +398,7 @@ static void mermaid_print_section_header(AVTextFormatContext *tfc, const void *d
         mmc->nb_link_captions[tfc->level] = 0;
 
         if (sec_ctx && sec_ctx->context_type)
-            mmc->section_data[tfc->level].section_type = av_strdup(sec_ctx->context_type);
+            set_str(&mmc->section_data[tfc->level].section_type, sec_ctx->context_type);
 
         ////if (section->flags & AV_TEXTFORMAT_SECTION_FLAG_HAS_TYPE) {
         ////    AVBPrint buf;
@@ -533,17 +560,17 @@ static void mermaid_print_value(AVTextFormatContext *tfc, const char *key,
     int exit = 0;
 
     if (section->id_key && !strcmp(section->id_key, key)) {
-        mmc->section_data[tfc->level].section_id = av_strdup(str);
+        set_str(&mmc->section_data[tfc->level].section_id, str);
         exit = 1;
     }
 
     if (section->dest_id_key && !strcmp(section->dest_id_key, key)) {
-        mmc->section_data[tfc->level].dest_id = av_strdup(str);
+        set_str(&mmc->section_data[tfc->level].dest_id, str);
         exit = 1;
     }
 
     if (section->src_id_key && !strcmp(section->src_id_key, key)) {
-        mmc->section_data[tfc->level].src_id = av_strdup(str);
+        set_str(&mmc->section_data[tfc->level].src_id, str);
         exit = 1;
     }
 
@@ -636,6 +663,7 @@ const AVTextFormatter avtextformatter_mermaid = {
     .name                 = "mermaid",
     .priv_size            = sizeof(MermaidContext),
     .init                 = mermaid_init,
+    .uninit               = mermaid_uninit,
     .print_section_header = mermaid_print_section_header,
     .print_section_footer = mermaid_print_section_footer,
     .print_integer        = mermaid_print_int,
@@ -649,6 +677,7 @@ const AVTextFormatter avtextformatter_mermaidhtml = {
     .name                 = "mermaidhtml",
     .priv_size            = sizeof(MermaidContext),
     .init                 = mermaid_init_html,
+    .uninit               = mermaid_uninit,
     .print_section_header = mermaid_print_section_header,
     .print_section_footer = mermaid_print_section_footer,
     .print_integer        = mermaid_print_int,
