@@ -318,6 +318,7 @@ static void print_link(GraphPrintContext *gpc, AVFilterLink *link)
 
     if (hw_frames_ctx && hw_frames_ctx->data)
         print_hwframescontext(gpc, (AVHWFramesContext *)hw_frames_ctx->data);
+    av_buffer_unref(&hw_frames_ctx);
 }
 
 static char sanitize_char(const char c)
@@ -1107,5 +1108,7 @@ cleanup:
 
 int print_filtergraphs(FilterGraph **graphs, int nb_graphs, InputFile **ifiles, int nb_ifiles, OutputFile **ofiles, int nb_ofiles)
 {
-    return print_filtergraphs_priv(graphs, nb_graphs, ifiles, nb_ifiles, ofiles, nb_ofiles);
+    int ret = print_filtergraphs_priv(graphs, nb_graphs, ifiles, nb_ifiles, ofiles, nb_ofiles);
+    ff_resman_uninit();
+    return ret;
 }
