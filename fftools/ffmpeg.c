@@ -344,6 +344,9 @@ static void ffmpeg_cleanup(int ret)
 
     av_freep(&filter_nbthreads);
 
+    av_freep(&print_graphs_file);
+    av_freep(&print_graphs_format);
+
     av_freep(&input_files);
     av_freep(&output_files);
 
