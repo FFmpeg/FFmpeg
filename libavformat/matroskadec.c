@@ -3824,9 +3824,6 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
         text_len = len;
     }
 
-    if (text_len <= 0)
-        return AVERROR_INVALIDDATA;
-
     err = av_new_packet(pkt, text_len);
     if (err < 0) {
         return err;
