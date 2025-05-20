@@ -276,6 +276,10 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
                 c->idct      = ff_faanidct;
                 c->perm_type = FF_IDCT_PERM_NONE;
 #endif /* CONFIG_FAANIDCT */
+#if CONFIG_MPEG4_DECODER
+            } else if (avctx->idct_algo == FF_IDCT_XVID) {
+                ff_xvid_idct_init(c);
+#endif
             } else { // accurate/default
                 c->idct_put  = ff_simple_idct_put_int16_8bit;
                 c->idct_add  = ff_simple_idct_add_int16_8bit;
@@ -288,9 +292,6 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
     c->put_pixels_clamped        = ff_put_pixels_clamped_c;
     c->put_signed_pixels_clamped = put_signed_pixels_clamped_c;
     c->add_pixels_clamped        = ff_add_pixels_clamped_c;
-
-    if (CONFIG_MPEG4_DECODER && avctx->idct_algo == FF_IDCT_XVID)
-        ff_xvid_idct_init(c, avctx);
 
 #if ARCH_AARCH64
     ff_idctdsp_init_aarch64(c, avctx, high_bit_depth);

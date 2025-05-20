@@ -21,12 +21,11 @@
 
 #include <stdint.h>
 
-#include "avcodec.h"
 #include "idctdsp.h"
 
 void ff_xvid_idct(int16_t *const in);
 
-void ff_xvid_idct_init(IDCTDSPContext *c, AVCodecContext *avctx);
+void ff_xvid_idct_init(IDCTDSPContext *c);
 
 void ff_xvid_idct_init_x86(IDCTDSPContext *c);
 void ff_xvid_idct_init_mips(IDCTDSPContext *c);

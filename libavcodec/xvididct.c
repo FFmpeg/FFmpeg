@@ -32,7 +32,6 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
-#include "avcodec.h"
 #include "idctdsp.h"
 #include "xvididct.h"
 
@@ -330,13 +329,8 @@ static void xvid_idct_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
     ff_add_pixels_clamped_c(block, dest, line_size);
 }
 
-av_cold void ff_xvid_idct_init(IDCTDSPContext *c, AVCodecContext *avctx)
+av_cold void ff_xvid_idct_init(IDCTDSPContext *c)
 {
-    const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
-
-    if (high_bit_depth || avctx->lowres)
-        return;
-
     c->idct_put  = xvid_idct_put;
     c->idct_add  = xvid_idct_add;
     c->idct      = ff_xvid_idct;
