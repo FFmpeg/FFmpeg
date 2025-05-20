@@ -424,6 +424,7 @@ static int CUDAAPI cuvid_handle_picture_display(void *opaque, CUVIDPARSERDISPINF
     AVCodecContext *avctx = opaque;
     CuvidContext *ctx = avctx->priv_data;
     CuvidParsedFrame parsed_frame = { { 0 } };
+    int ret;
 
     parsed_frame.dispinfo = *dispinfo;
     ctx->internal_error = 0;
@@ -432,13 +433,20 @@ static int CUDAAPI cuvid_handle_picture_display(void *opaque, CUVIDPARSERDISPINF
     parsed_frame.dispinfo.progressive_frame = ctx->progressive_sequence;
 
     if (ctx->deint_mode_current == cudaVideoDeinterlaceMode_Weave) {
-        av_fifo_write(ctx->frame_queue, &parsed_frame, 1);
+        ret = av_fifo_write(ctx->frame_queue, &parsed_frame, 1);
+        if (ret < 0)
+            av_log(avctx, AV_LOG_ERROR, "Writing frame to fifo failed!\n");
     } else {
         parsed_frame.is_deinterlacing = 1;
-        av_fifo_write(ctx->frame_queue, &parsed_frame, 1);
+        ret = av_fifo_write(ctx->frame_queue, &parsed_frame, 1);
+        if (ret < 0)
+            av_log(avctx, AV_LOG_ERROR, "Writing first frame to fifo failed!\n");
+
         if (!ctx->drop_second_field) {
             parsed_frame.second_field = 1;
-            av_fifo_write(ctx->frame_queue, &parsed_frame, 1);
+            ret = av_fifo_write(ctx->frame_queue, &parsed_frame, 1);
+            if (ret < 0)
+                av_log(avctx, AV_LOG_ERROR, "Writing second frame to fifo failed!\n");
         }
     }
 
