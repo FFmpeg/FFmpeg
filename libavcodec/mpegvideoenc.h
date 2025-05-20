@@ -147,6 +147,7 @@ typedef struct MPVEncContext {
     int last_mv_dir;               ///< last mv_dir, used for B-frame encoding
 
     /* MPEG-4 specific */
+    int mpeg_quant;
     PutBitContext tex_pb;          ///< used for data partitioned VOPs
     PutBitContext pb2;             ///< used for data partitioned VOPs
 

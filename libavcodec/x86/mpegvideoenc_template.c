@@ -109,7 +109,7 @@ static int RENAME(dct_quantize)(MPVEncContext *const s,
         qmat = s->q_inter_matrix16[qscale][0];
     }
 
-    if ((s->c.out_format == FMT_H263 || s->c.out_format == FMT_H261) && !s->c.mpeg_quant) {
+    if ((s->c.out_format == FMT_H263 || s->c.out_format == FMT_H261) && !s->mpeg_quant) {
         __asm__ volatile(
             "movd %%"FF_REG_a", %%xmm3          \n\t" // last_non_zero_p1
             SPREADW("%%xmm3")

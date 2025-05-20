@@ -313,14 +313,15 @@ av_cold void ff_dct_encode_init(MPVEncContext *const s)
         s->dct_quantize  = dct_quantize_trellis_c;
 }
 
-static av_cold void init_unquantize(MpegEncContext *const s, AVCodecContext *avctx)
+static av_cold void init_unquantize(MPVEncContext *const s2, AVCodecContext *avctx)
 {
+    MpegEncContext *const s = &s2->c;
     MPVUnquantDSPContext unquant_dsp_ctx;
 
     ff_mpv_unquantize_init(&unquant_dsp_ctx,
                            avctx->flags & AV_CODEC_FLAG_BITEXACT, s->q_scale_type);
 
-    if (s->mpeg_quant || s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+    if (s2->mpeg_quant || s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
         s->dct_unquantize_intra = unquant_dsp_ctx.dct_unquantize_mpeg2_intra;
         s->dct_unquantize_inter = unquant_dsp_ctx.dct_unquantize_mpeg2_inter;
     } else if (s->out_format == FMT_H263 || s->out_format == FMT_H261) {
@@ -403,7 +404,7 @@ static av_cold int init_matrices(MPVMainEncContext *const m, AVCodecContext *avc
     }
 
     if (CONFIG_MPEG4_ENCODER && s->c.codec_id == AV_CODEC_ID_MPEG4 &&
-        s->c.mpeg_quant) {
+        s->mpeg_quant) {
         intra_matrix = ff_mpeg4_default_intra_matrix;
         inter_matrix = ff_mpeg4_default_non_intra_matrix;
     } else if (s->c.out_format == FMT_H263 || s->c.out_format == FMT_H261) {
@@ -839,7 +840,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         //return -1;
     }
 
-    if (s->c.mpeg_quant || s->c.codec_id == AV_CODEC_ID_MPEG1VIDEO || s->c.codec_id == AV_CODEC_ID_MPEG2VIDEO || s->c.codec_id == AV_CODEC_ID_MJPEG || s->c.codec_id == AV_CODEC_ID_AMV || s->c.codec_id == AV_CODEC_ID_SPEEDHQ) {
+    if (s->mpeg_quant || s->c.codec_id == AV_CODEC_ID_MPEG1VIDEO || s->c.codec_id == AV_CODEC_ID_MPEG2VIDEO || s->c.codec_id == AV_CODEC_ID_MJPEG || s->c.codec_id == AV_CODEC_ID_AMV || s->c.codec_id == AV_CODEC_ID_SPEEDHQ) {
         // (a + x * 3 / 8) / x
         s->intra_quant_bias = 3 << (QUANT_BIAS_SHIFT - 3);
         s->inter_quant_bias = 0;
@@ -1027,7 +1028,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
      * before calling ff_mpv_common_init(). */
     s->parent = m;
     ff_mpv_idct_init(&s->c);
-    init_unquantize(&s->c, avctx);
+    init_unquantize(s, avctx);
     ff_fdctdsp_init(&s->fdsp, avctx);
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
     ff_pixblockdsp_init(&s->pdsp, avctx);
@@ -4016,7 +4017,7 @@ static int dct_quantize_trellis_c(MPVEncContext *const s,
         last_non_zero = 0;
         qmat = n < 4 ? s->q_intra_matrix[qscale] : s->q_chroma_intra_matrix[qscale];
         matrix = n < 4 ? s->c.intra_matrix : s->c.chroma_intra_matrix;
-        if (s->c.mpeg_quant || s->c.out_format == FMT_MPEG1 || s->c.out_format == FMT_MJPEG)
+        if (s->mpeg_quant || s->c.out_format == FMT_MPEG1 || s->c.out_format == FMT_MJPEG)
             bias= 1<<(QMAT_SHIFT-1);
 
         if (n > 3 && s->intra_chroma_ac_vlc_length) {
@@ -4331,7 +4332,7 @@ static int dct_quantize_refine(MPVEncContext *const s, //FIXME breaks denoise?
         dc= block[0]*q;
 //        block[0] = (block[0] + (q >> 1)) / q;
         start_i = 1;
-//        if (s->c.mpeg_quant || s->c.out_format == FMT_MPEG1)
+//        if (s->mpeg_quant || s->c.out_format == FMT_MPEG1)
 //            bias= 1<<(QMAT_SHIFT-1);
         if (n > 3 && s->intra_chroma_ac_vlc_length) {
             length     = s->intra_chroma_ac_vlc_length;

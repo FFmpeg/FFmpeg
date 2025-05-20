@@ -52,6 +52,7 @@ typedef struct Mpeg4DecContext {
     /// sprite shift [isChroma]
     int sprite_shift[2];
 
+    int mpeg_quant;
     // reversible vlc
     int rvlc;
     /// could this stream contain resync markers

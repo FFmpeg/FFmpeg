@@ -68,7 +68,7 @@ static int vdpau_mpeg4_start_frame(AVCodecContext *avctx,
     info->vop_fcode_backward                = ctx->b_code;
     info->resync_marker_disable             = !ctx->resync_marker;
     info->interlaced                        = !s->progressive_sequence;
-    info->quant_type                        = s->mpeg_quant;
+    info->quant_type                        = ctx->mpeg_quant;
     info->quarter_sample                    = s->quarter_sample;
     info->short_video_header                = avctx->codec->id == AV_CODEC_ID_H263;
     info->rounding_control                  = s->no_rounding;

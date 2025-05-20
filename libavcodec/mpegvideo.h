@@ -254,7 +254,6 @@ typedef struct MpegEncContext {
     int data_partitioning;           ///< data partitioning flag from header
     int partitioned_frame;           ///< is current frame partitioned
     int low_delay;                   ///< no reordering needed / has no B-frames
-    int mpeg_quant;
     int padding_bug_score;             ///< used to detect the VERY common padding bug in MPEG-4
 
     /* divx specific, used to workaround (many) bugs in divx5 */

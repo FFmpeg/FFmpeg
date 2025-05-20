@@ -1125,7 +1125,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     } else {
         s->min_qcoeff = -2047;
         s->max_qcoeff = 2047;
-        s->c.mpeg_quant = 1;
+        s->mpeg_quant = 1;
     }
     if (s->c.intra_vlc_format) {
         s->intra_ac_vlc_length      =

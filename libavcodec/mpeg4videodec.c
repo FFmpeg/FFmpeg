@@ -1399,7 +1399,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
 
         scan_table = s->intra_scantable.permutated;
 
-        if (s->mpeg_quant) {
+        if (ctx->mpeg_quant) {
             qmul = 1;
             qadd = 0;
             if (rvlc)
@@ -2155,7 +2155,7 @@ static int mpeg4_decode_studio_block(MpegEncContext *s, int32_t block[64], int n
 
     s->last_dc[cc] += dct_diff;
 
-    if (s->mpeg_quant)
+    if (ctx->mpeg_quant)
         block[0] = s->last_dc[cc] * (8 >> s->intra_dc_precision);
     else
         block[0] = s->last_dc[cc] * (8 >> s->intra_dc_precision) * (8 >> s->dct_precision);
@@ -2585,7 +2585,7 @@ static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     skip_bits(gb, 15); /* latter_half_vbv_occupancy */
     check_marker(s->avctx, gb, "after latter_half_vbv_occupancy");
     s->low_delay  = get_bits1(gb);
-    s->mpeg_quant = get_bits1(gb); /* mpeg2_stream */
+    ctx->mpeg_quant = get_bits1(gb); /* mpeg2_stream */
 
     next_start_code_studio(gb);
     extension_and_user_data(s, gb, 2);
@@ -2767,7 +2767,7 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
         // FIXME a bunch of grayscale shape things
 
-        if ((s->mpeg_quant = get_bits1(gb))) { /* vol_quant_type */
+        if ((ctx->mpeg_quant = get_bits1(gb))) { /* vol_quant_type */
             int i, v;
 
             mpeg4_load_default_matrices(s);
@@ -3415,10 +3415,10 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
         }
     }
 
-    s->dct_unquantize_intra = s->mpeg_quant ? ctx->dct_unquantize_mpeg2_intra
-                                            : ctx->dct_unquantize_h263_intra;
+    s->dct_unquantize_intra = ctx->mpeg_quant ? ctx->dct_unquantize_mpeg2_intra
+                                              : ctx->dct_unquantize_h263_intra;
     // The following tells ff_mpv_reconstruct_mb() to unquantize iff mpeg_quant
-    s->dct_unquantize_inter = s->mpeg_quant ? ctx->dct_unquantize_mpeg2_inter : NULL;
+    s->dct_unquantize_inter = ctx->mpeg_quant ? ctx->dct_unquantize_mpeg2_inter : NULL;
 
 end:
     /* detect buggy encoders which don't set the low_delay flag
@@ -3857,6 +3857,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     s->sprite_warping_accuracy   = s1->sprite_warping_accuracy;
     s->num_sprite_warping_points = s1->num_sprite_warping_points;
     s->m.data_partitioning       = s1->m.data_partitioning;
+    s->mpeg_quant                = s1->mpeg_quant;
     s->rvlc                      = s1->rvlc;
     s->resync_marker             = s1->resync_marker;
     s->t_frame                   = s1->t_frame;

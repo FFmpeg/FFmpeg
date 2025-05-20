@@ -952,9 +952,9 @@ static void mpeg4_encode_vol_header(Mpeg4EncContext *const m4,
         put_bits(&s->pb, 2, 0);       /* sprite enable */
 
     put_bits(&s->pb, 1, 0);             /* not 8 bit == false */
-    put_bits(&s->pb, 1, s->c.mpeg_quant); /* quant type = (0 = H.263 style) */
+    put_bits(&s->pb, 1, s->mpeg_quant); /* quant type = (0 = H.263 style) */
 
-    if (s->c.mpeg_quant) {
+    if (s->mpeg_quant) {
         ff_write_quant_matrix(&s->pb, s->c.avctx->intra_matrix);
         ff_write_quant_matrix(&s->pb, s->c.avctx->inter_matrix);
     }
@@ -1304,11 +1304,11 @@ void ff_mpeg4_encode_video_packet_header(MPVEncContext *const s)
     put_bits(&s->pb, 1, 0); /* no HEC */
 }
 
-#define OFFSET(x) offsetof(MPVEncContext, c.x)
+#define OFFSET(x) offsetof(MPVEncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "data_partitioning", "Use data partitioning.",      OFFSET(data_partitioning), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-    { "alternate_scan",    "Enable alternate scantable.", OFFSET(alternate_scan),    AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "data_partitioning", "Use data partitioning.",      OFFSET(c.data_partitioning), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "alternate_scan",    "Enable alternate scantable.", OFFSET(c.alternate_scan),    AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "mpeg_quant",        "Use MPEG quantizers instead of H.263",
       OFFSET(mpeg_quant), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, VE },
     FF_MPV_COMMON_BFRAME_OPTS
