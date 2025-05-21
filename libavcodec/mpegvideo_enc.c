@@ -908,7 +908,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         break;
     case AV_CODEC_ID_H263P:
         s->c.out_format = FMT_H263;
-        s->c.h263_plus  = 1;
         /* Fx */
         s->c.h263_aic        = (avctx->flags & AV_CODEC_FLAG_AC_PRED) ? 1 : 0;
         s->c.modified_quant  = s->c.h263_aic;
