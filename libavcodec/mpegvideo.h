@@ -90,7 +90,6 @@ typedef struct MpegEncContext {
     int pb_frame;     ///< PB-frame mode (0 = none, 1 = base, 2 = improved)
 
 /* the following codec id fields are deprecated in favor of codec_id */
-    int h263_plus;    ///< H.263+ headers
     int h263_flv;     ///< use flv H.263 header
 
     enum AVCodecID codec_id;     /* see AV_CODEC_ID_xxx */

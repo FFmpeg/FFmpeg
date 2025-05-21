@@ -55,7 +55,7 @@ int ff_h263_decode_mba(MpegEncContext *s);
 /**
  * Print picture info if FF_DEBUG_PICT_INFO is set.
  */
-void ff_h263_show_pict_info(MpegEncContext *s);
+void ff_h263_show_pict_info(MpegEncContext *s, int h263_plus);
 
 int ff_intel_h263_decode_picture_header(MpegEncContext *s);
 int ff_h263_decode_mb(MpegEncContext *s,

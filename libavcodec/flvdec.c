@@ -89,8 +89,6 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
     skip_bits1(&s->gb); /* deblocking flag */
     s->chroma_qscale = s->qscale = get_bits(&s->gb, 5);
 
-    s->h263_plus = 0;
-
     s->h263_long_vectors = 0;
 
     /* PEI */

@@ -77,7 +77,8 @@ static const int16_t h263_mb_type_b_map[15]= {
     MB_TYPE_INTRA4x4                | MB_TYPE_CBP | MB_TYPE_QUANT,
 };
 
-void ff_h263_show_pict_info(MpegEncContext *s){
+void ff_h263_show_pict_info(MpegEncContext *s, int h263_plus)
+{
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
     av_log(s->avctx, AV_LOG_DEBUG, "qp:%d %c size:%d rnd:%d%s%s%s%s%s%s%s%s%s %d/%d\n",
          s->qscale, av_get_picture_type_char(s->pict_type),
@@ -85,7 +86,7 @@ void ff_h263_show_pict_info(MpegEncContext *s){
          s->obmc ? " AP" : "",
          s->umvplus ? " UMV" : "",
          s->h263_long_vectors ? " LONG" : "",
-         s->h263_plus ? " +" : "",
+         h263_plus ? " +" : "",
          s->h263_aic ? " AIC" : "",
          s->alt_inter_vlc ? " AIV" : "",
          s->modified_quant ? " MQ" : "",
@@ -1089,6 +1090,7 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
 {
     int format, width, height, i, ret;
     uint32_t startcode;
+    int h263_plus;
 
     align_get_bits(&s->gb);
 
@@ -1137,7 +1139,7 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
     */
 
     if (format != 7 && format != 6) {
-        s->h263_plus = 0;
+        h263_plus = 0;
         /* H.263v1 */
         width = ff_h263_format[format][0];
         height = ff_h263_format[format][1];
@@ -1166,7 +1168,7 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
         int ufep;
 
         /* H.263v2 */
-        s->h263_plus = 1;
+        h263_plus = 1;
         ufep = get_bits(&s->gb, 3); /* Update Full Extended PTYPE */
 
         /* ufep other than 0 and 1 are reserved */
@@ -1366,7 +1368,8 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }
 
-        ff_h263_show_pict_info(s);
+    ff_h263_show_pict_info(s, h263_plus);
+
     if (s->pict_type == AV_PICTURE_TYPE_I && s->codec_tag == AV_RL32("ZYGO") && get_bits_left(&s->gb) >= 85 + 13*3*16 + 50){
         int i,j;
         for(i=0; i<85; i++) av_log(s->avctx, AV_LOG_DEBUG, "%d", get_bits1(&s->gb));
