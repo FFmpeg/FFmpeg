@@ -189,7 +189,9 @@ static int interlace_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     AVFrame *out = NULL, *input_top, *input_bot;
     AVFilterContext *ctx = link->dst;
     InterlaceVulkanContext *s = ctx->priv;
+    const AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink *l = ff_filter_link(outlink);
 
     if (!s->initialized)
         RET(init_filter(ctx));
@@ -226,6 +228,9 @@ static int interlace_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     if (s->mode == MODE_TFF)
         out->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
 
+    out->pts = av_rescale_q(out->pts, inlink->time_base, outlink->time_base);
+    out->duration = av_rescale_q(1, av_inv_q(l->frame_rate), outlink->time_base);
+
     av_frame_free(&s->cur);
     av_frame_free(&in);
 
@@ -260,9 +265,12 @@ static void interlace_vulkan_uninit(AVFilterContext *avctx)
 
 static int config_out_props(AVFilterLink *outlink)
 {
+    AVFilterLink *inlink = outlink->src->inputs[0];
+    const FilterLink *il = ff_filter_link(inlink);
     FilterLink *ol = ff_filter_link(outlink);
 
-    ol->frame_rate = av_mul_q(ol->frame_rate, av_make_q(1, 2));
+    ol->frame_rate = av_mul_q(il->frame_rate, av_make_q(1, 2));
+    outlink->time_base = av_mul_q(inlink->time_base, av_make_q(2, 1));
     return ff_vk_filter_config_output(outlink);
 }
 
