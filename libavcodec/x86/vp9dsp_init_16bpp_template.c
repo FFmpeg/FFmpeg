@@ -127,6 +127,8 @@ decl_itxfm_func(iwht, iwht, 4, BPC, mmxext);
 #if BPC == 10
 decl_itxfm_func(idct,  idct,  4, BPC, mmxext);
 decl_itxfm_funcs(4, BPC, ssse3);
+decl_itxfm_funcs(16, BPC, avx512icl);
+decl_itxfm_func(idct,  idct, 32, BPC, avx512icl);
 #else
 decl_itxfm_func(idct,  idct,  4, BPC, sse2);
 #endif
@@ -233,6 +235,12 @@ av_cold void INIT_FUNC(VP9DSPContext *dsp, int bitexact)
 #endif
     }
 
+#if ARCH_X86_64 && BPC == 10
+    if (EXTERNAL_AVX512ICL(cpu_flags)) {
+        init_itx_funcs(TX_16X16, 16, BPC, avx512icl);
+        init_itx_func_one(TX_32X32, idct, idct, 32, BPC, avx512icl);
+    }
+#endif
 #endif /* HAVE_X86ASM */
 
     ff_vp9dsp_init_16bpp_x86(dsp);

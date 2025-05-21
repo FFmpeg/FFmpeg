@@ -220,8 +220,8 @@ struct VP9TileData {
     DECLARE_ALIGNED(8, uint8_t, left_ref_ctx)[8];
     DECLARE_ALIGNED(8, uint8_t, left_filter_ctx)[8];
     // block reconstruction intermediates
-    DECLARE_ALIGNED(32, uint8_t, tmp_y)[64 * 64 * 2];
-    DECLARE_ALIGNED(32, uint8_t, tmp_uv)[2][64 * 64 * 2];
+    DECLARE_ALIGNED(64, uint8_t, tmp_y)[64 * 64 * 2];
+    DECLARE_ALIGNED(64, uint8_t, tmp_uv)[2][64 * 64 * 2];
     struct { int x, y; } min_mv, max_mv;
     int16_t *block_base, *block, *uvblock_base[2], *uvblock[2];
     uint8_t *eob_base, *uveob_base[2], *eob, *uveob[2];
