@@ -99,10 +99,12 @@ typedef struct Mpeg4DecContext {
     void (*dct_unquantize_h263_intra)(MpegEncContext *s,
                                       int16_t *block, int n, int qscale);
 
-    DECLARE_ALIGNED(8, int32_t, block32)[12][64];
+    union {
+        DECLARE_ALIGNED(8, int32_t, block32)[12][64];
+        int16_t dpcm_macroblock[3][256];
+    };
     // 0 = DCT, 1 = DPCM top to bottom scan, -1 = DPCM bottom to top scan
     int dpcm_direction;
-    int16_t dpcm_macroblock[3][256];
 } Mpeg4DecContext;
 
 int ff_mpeg4_decode_picture_header(MpegEncContext *s);
