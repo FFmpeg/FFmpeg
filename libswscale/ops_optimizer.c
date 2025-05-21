@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include <libavutil/bswap.h>
 #include "libavutil/rational.h"
 
 #include "ops.h"
@@ -768,4 +769,98 @@ retry:
     }
 
     return 0;
+}
+
+int ff_sws_solve_shuffle(const SwsOpList *const ops, uint8_t shuffle[],
+                         int size, uint8_t clear_val,
+                         int *read_bytes, int *write_bytes)
+{
+    const SwsOp read = ops->ops[0];
+    const int read_size = ff_sws_pixel_type_size(read.type);
+    uint32_t mask[4] = {0};
+
+    if (!ops->num_ops || read.op != SWS_OP_READ)
+        return AVERROR(EINVAL);
+    if (read.rw.frac || (!read.rw.packed && read.rw.elems > 1))
+        return AVERROR(ENOTSUP);
+
+    for (int i = 0; i < read.rw.elems; i++)
+        mask[i] = 0x01010101 * i * read_size + 0x03020100;
+
+    for (int opidx = 1; opidx < ops->num_ops; opidx++) {
+        const SwsOp *op = &ops->ops[opidx];
+        switch (op->op) {
+        case SWS_OP_SWIZZLE: {
+            uint32_t orig[4] = { mask[0], mask[1], mask[2], mask[3] };
+            for (int i = 0; i < 4; i++)
+                mask[i] = orig[op->swizzle.in[i]];
+            break;
+        }
+
+        case SWS_OP_SWAP_BYTES:
+            for (int i = 0; i < 4; i++) {
+                switch (ff_sws_pixel_type_size(op->type)) {
+                case 2: mask[i] = av_bswap16(mask[i]); break;
+                case 4: mask[i] = av_bswap32(mask[i]); break;
+                }
+            }
+            break;
+
+        case SWS_OP_CLEAR:
+            for (int i = 0; i < 4; i++) {
+                if (!op->c.q4[i].den)
+                    continue;
+                if (op->c.q4[i].num != 0 || !clear_val)
+                    return AVERROR(ENOTSUP);
+                mask[i] = 0x1010101ul * clear_val;
+            }
+            break;
+
+        case SWS_OP_CONVERT: {
+            if (!op->convert.expand)
+                return AVERROR(ENOTSUP);
+            for (int i = 0; i < 4; i++) {
+                switch (ff_sws_pixel_type_size(op->type)) {
+                case 1: mask[i] = 0x01010101 * (mask[i] & 0xFF);   break;
+                case 2: mask[i] = 0x00010001 * (mask[i] & 0xFFFF); break;
+                }
+            }
+            break;
+        }
+
+        case SWS_OP_WRITE: {
+            if (op->rw.frac || (!op->rw.packed && op->rw.elems > 1))
+                return AVERROR(ENOTSUP);
+
+            /* Initialize to no-op */
+            memset(shuffle, clear_val, size);
+
+            const int write_size  = ff_sws_pixel_type_size(op->type);
+            const int read_chunk  = read.rw.elems * read_size;
+            const int write_chunk = op->rw.elems * write_size;
+            const int num_groups  = size / FFMAX(read_chunk, write_chunk);
+            for (int n = 0; n < num_groups; n++) {
+                const int base_in  = n * read_chunk;
+                const int base_out = n * write_chunk;
+                for (int i = 0; i < op->rw.elems; i++) {
+                    const int offset = base_out + i * write_size;
+                    for (int b = 0; b < write_size; b++) {
+                        const uint8_t idx = mask[i] >> (b * 8);
+                        if (idx != clear_val)
+                            shuffle[offset + b] = base_in + idx;
+                    }
+                }
+            }
+
+            *read_bytes  = num_groups * read_chunk;
+            *write_bytes = num_groups * write_chunk;
+            return num_groups;
+        }
+
+        default:
+            return AVERROR(ENOTSUP);
+        }
+    }
+
+    return AVERROR(EINVAL);
 }

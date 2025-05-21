@@ -130,4 +130,32 @@ int ff_sws_ops_compile_backend(SwsContext *ctx, const SwsOpBackend *backend,
  */
 int ff_sws_ops_compile(SwsContext *ctx, const SwsOpList *ops, SwsCompiledOp *out);
 
+/**
+ * "Solve" an op list into a fixed shuffle mask, with an optional ability to
+ * also directly clear the output value (for e.g. rgb24 -> rgb0). This can
+ * accept any operation chain that only consists of the following operations:
+ *
+ * - SWS_OP_READ (non-planar, non-fractional)
+ * - SWS_OP_SWIZZLE
+ * - SWS_OP_SWAP_BYTES
+ * - SWS_OP_CLEAR to zero (when clear_val is specified)
+ * - SWS_OP_CONVERT (integer expand)
+ * - SWS_OP_WRITE (non-planar, non-fractional)
+ *
+ * Basically, any operation that purely consists of moving around and reordering
+ * bytes within a single plane, can be turned into a shuffle mask.
+ *
+ * @param ops         The operation list to decompose.
+ * @param shuffle     The output shuffle mask.
+ * @param size        The size (in bytes) of the output shuffle mask.
+ * @param clear_val   If nonzero, this index will be used to clear the output.
+ * @param read_bytes  Returns the number of bytes read per shuffle iteration.
+ * @param write_bytes Returns the number of bytes written per shuffle iteration.
+ *
+ * @return  The number of pixels processed per iteration, or a negative error
+            code; in particular AVERROR(ENOTSUP) for unsupported operations.
+ */
+int ff_sws_solve_shuffle(const SwsOpList *ops, uint8_t shuffle[], int size,
+                         uint8_t clear_val, int *read_bytes, int *write_bytes);
+
 #endif /* SWSCALE_OPS_INTERNAL_H */
