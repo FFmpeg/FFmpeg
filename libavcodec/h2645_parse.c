@@ -22,6 +22,7 @@
 
 #include "config.h"
 
+#include "libavutil/error.h"
 #include "libavutil/intmath.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
@@ -588,8 +589,9 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
         } else
             ret = h264_parse_nal_header(nal, logctx);
         if (ret < 0) {
-            av_log(logctx, AV_LOG_WARNING, "Invalid NAL unit %d, skipping.\n",
-                   nal->type);
+            av_log(logctx, AV_LOG_WARNING,
+                   "Failed to parse header of NALU (type %d): \"%s\". Skipping NALU.\n",
+                   nal->type, av_err2str(ret));
             continue;
         }
 
