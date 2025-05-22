@@ -67,11 +67,16 @@ void ff_h2645_decode_common_vui_params(GetBitContext *gb, H2645VUI *vui, void *l
             vui->matrix_coeffs            = get_bits(gb, 8);
 
             // Set invalid values to "unspecified"
-            if (!av_color_primaries_name(vui->colour_primaries))
+            if (vui->colour_primaries == AVCOL_PRI_RESERVED0 ||
+                vui->colour_primaries == AVCOL_PRI_RESERVED ||
+                !av_color_primaries_name(vui->colour_primaries))
                 vui->colour_primaries = AVCOL_PRI_UNSPECIFIED;
-            if (!av_color_transfer_name(vui->transfer_characteristics))
+            if (vui->transfer_characteristics == AVCOL_TRC_RESERVED0 ||
+                vui->transfer_characteristics == AVCOL_TRC_RESERVED ||
+                !av_color_transfer_name(vui->transfer_characteristics))
                 vui->transfer_characteristics = AVCOL_TRC_UNSPECIFIED;
-            if (!av_color_space_name(vui->matrix_coeffs))
+            if (vui->matrix_coeffs == AVCOL_SPC_RESERVED ||
+                !av_color_space_name(vui->matrix_coeffs))
                 vui->matrix_coeffs = AVCOL_SPC_UNSPECIFIED;
         }
     }
