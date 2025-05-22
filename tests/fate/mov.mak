@@ -84,6 +84,11 @@ fate-mov-ibi-elst-starts-b: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)
 # Makes sure that we handle overlapping framgments
 fate-mov-frag-overlap: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/frag_overlap.mp4
 
+fate-mov-mp4-frag-flush: CMD = md5 -f lavfi -i color=blue,format=rgb24,trim=duration=0.04 -f lavfi -i anullsrc,aformat=s16,atrim=duration=2 -c:v png -c:a pcm_s16le -movflags +empty_moov+hybrid_fragmented -frag_duration 1000000 -frag_interleave 1 -f mp4
+fate-mov-mp4-frag-flush: CMP = oneline
+fate-mov-mp4-frag-flush: REF = a10c0e2e2dfc120f31ca5e59e0e4392a
+FATE_MOV-$(call ALLYES, LAVFI_INDEV, COLOR_FILTER, FORMAT_FILTER, TRIM_FILTER, ANULL_FILTER, AFORMAT_FILTER, ATRIM_FILTER, PNG_ENCODER, PCM_S16LE_ENCODER, MOV_MUXER) += fate-mov-mp4-frag-flush
+
 # Makes sure that we pick the right frames according to edit list when there is no keyframe with PTS < edit list start.
 # For example, when video starts on a B-frame, and edit list starts on that B-frame too.
 # GOP structure : B B I in presentation order.
