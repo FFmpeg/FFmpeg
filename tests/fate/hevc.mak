@@ -294,6 +294,9 @@ FATE_HEVC-$(call FRAMECRC, MOV, HEVC) += fate-hevc-mv-position
 fate-hevc-alpha: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/alpha.mp4
 FATE_HEVC-$(call FRAMECRC, MOV, HEVC) += fate-hevc-alpha
 
+fate-hevc-color-reserved: CMD = framecrc -bsf:v hevc_metadata=colour_primaries=0:transfer_characteristics=0:matrix_coefficients=3 -i $(TARGET_SAMPLES)/hevc-conformance/AMP_A_Samsung_4.bit -vf scale,format=nv12 -frames:v 1
+FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_METADATA_BSF SCALE_FILTER) += fate-hevc-color-reserved
+
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_HEVC_FFPROBE-yes)
 
