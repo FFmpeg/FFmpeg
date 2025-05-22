@@ -867,6 +867,9 @@ int ff_sdp_write_media(char *buff, int size, const AVStream *st, int idx,
     if (p->bit_rate) {
         av_strlcatf(buff, size, "b=AS:%"PRId64"\r\n", p->bit_rate / 1000);
     }
+    if (p->framerate.num > 0 && p->framerate.den > 0) {
+        av_strlcatf(buff, size, "a=framerate:%g\r\n", av_q2d(p->framerate));
+    }
 
     return sdp_write_media_attributes(buff, size, st, payload_type, fmt);
 }
