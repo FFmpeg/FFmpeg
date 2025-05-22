@@ -62,40 +62,43 @@ enum {
 static inline void asv1_put_level(PutBitContext *pb, int level)
 {
     unsigned int index = level + 3;
+    unsigned n, code;
 
     if (index <= 6) {
-        put_bits(pb, ff_asv_level_tab[index][1], ff_asv_level_tab[index][0]);
+        n    = ff_asv_level_tab[index][1];
+        code = ff_asv_level_tab[index][0];
     } else {
-        put_bits(pb, 3, 0); /* Escape code */
-        put_sbits(pb, 8, level);
+        n    = 3 + 8;
+        code = (0 /* Escape code */ << 8)  | (level & 0xFF);
     }
+    put_bits(pb, n, code);
 }
 
 static inline void asv2_put_level(ASVEncContext *a, PutBitContext *pb, int level)
 {
     unsigned int index = level + 31;
+    unsigned n, code;
 
     if (index <= 62) {
-        put_bits_le(pb, ff_asv2_level_tab[index][1], ff_asv2_level_tab[index][0]);
+        n    = ff_asv2_level_tab[index][1];
+        code = ff_asv2_level_tab[index][0];
     } else {
-        put_bits_le(pb, 5, 0); /* Escape code */
         if (level < -128 || level > 127) {
             av_log(a->c.avctx, AV_LOG_WARNING, "Clipping level %d, increase qscale\n", level);
             level = av_clip_int8(level);
         }
-        put_bits_le(pb, 8, level & 0xFF);
+        n    = 5 + 8;
+        code = (level & 0xFF) << 5 | /* Escape code */ 0;
     }
+    put_bits_le(pb, n, code);
 }
 
 static inline void asv1_encode_block(ASVEncContext *a, int16_t block[64])
 {
-    int i;
-    int nc_count = 0;
-
     put_bits(&a->pb, 8, (block[0] + 32) >> 6);
     block[0] = 0;
 
-    for (i = 0; i < 10; i++) {
+    for (unsigned i = 0, nc_bits = 0, nc_val = 0; i < 10; i++) {
         const int index = ff_asv_scantab[4 * i];
         int ccp         = 0;
 
@@ -113,10 +116,11 @@ static inline void asv1_encode_block(ASVEncContext *a, int16_t block[64])
             ccp |= 1;
 
         if (ccp) {
-            for (; nc_count; nc_count--)
-                put_bits(&a->pb, 2, 2); /* Skip */
-
-            put_bits(&a->pb, ff_asv_ccp_tab[ccp][1], ff_asv_ccp_tab[ccp][0]);
+            put_bits(&a->pb, nc_bits + ff_asv_ccp_tab[ccp][1],
+                             nc_val << ff_asv_ccp_tab[ccp][1] /* Skip */ |
+                             ff_asv_ccp_tab[ccp][0]);
+            nc_bits = 0;
+            nc_val  = 0;
 
             if (ccp & 8)
                 asv1_put_level(&a->pb, block[index + 0]);
@@ -127,7 +131,8 @@ static inline void asv1_encode_block(ASVEncContext *a, int16_t block[64])
             if (ccp & 1)
                 asv1_put_level(&a->pb, block[index + 9]);
         } else {
-            nc_count++;
+            nc_bits += 2;
+            nc_val   = (nc_val << 2) | 2;
         }
     }
     put_bits(&a->pb, 5, 0xF); /* End of block */
@@ -146,8 +151,8 @@ static inline void asv2_encode_block(ASVEncContext *a, int16_t block[64])
 
     count >>= 2;
 
-    put_bits_le(&a->pb, 4, count);
-    put_bits_le(&a->pb, 8, (block[0] + 32) >> 6);
+    put_bits_le(&a->pb, 4 + 8, count /* 4 bits */ |
+                               (/* DC */(block[0] + 32) >> 6) << 4);
     block[0] = 0;
 
     for (i = 0; i <= count; i++) {
