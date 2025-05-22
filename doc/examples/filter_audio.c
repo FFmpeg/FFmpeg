@@ -270,7 +270,6 @@ int main(int argc, char *argv[])
     AVFilterGraph *graph;
     AVFilterContext *src, *sink;
     AVFrame *frame;
-    uint8_t errstr[1024];
     float duration;
     int err, nb_frames, i;
 
@@ -354,7 +353,6 @@ int main(int argc, char *argv[])
     return 0;
 
 fail:
-    av_strerror(err, errstr, sizeof(errstr));
-    fprintf(stderr, "%s\n", errstr);
+    fprintf(stderr, "%s\n", av_err2str(err));
     return 1;
 }
