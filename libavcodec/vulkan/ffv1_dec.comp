@@ -110,6 +110,8 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
 
 #ifdef CACHED_SYMBOL_READER
         }
+
+        barrier();
         sb.v = state[gl_LocalInvocationID.x];
 #endif
     }

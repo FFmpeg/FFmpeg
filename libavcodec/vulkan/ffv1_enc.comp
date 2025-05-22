@@ -107,6 +107,7 @@ void encode_line(inout SliceContext sc, readonly uimage2D img, uint state_off,
             put_symbol(sc.c, context_off, d[1]);
 
 #ifdef CACHED_SYMBOL_READER
+        barrier();
         sb.v = state[gl_LocalInvocationID.x];
 #endif
     }
