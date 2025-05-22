@@ -53,6 +53,13 @@ typedef struct MFFunctions {
                                                    IMFMediaBuffer **ppBuffer);
     HRESULT (WINAPI *MFCreateSample) (IMFSample **ppIMFSample);
     HRESULT (WINAPI *MFCreateMediaType) (IMFMediaType **ppMFType);
+    HRESULT (WINAPI *MFCreateDXGISurfaceBuffer) (REFIID riid,
+                                IUnknown* punkSurface,
+                                UINT uSubresourceIndex,
+                                BOOL fBottomUpWhenLinear,
+                                IMFMediaBuffer** ppBuffer);
+    HRESULT (WINAPI *MFCreateDXGIDeviceManager) (UINT* resetToken,
+                                                IMFDXGIDeviceManager** ppDeviceManager);
     // MFTEnumEx is missing in Windows Vista's mfplat.dll.
     HRESULT (WINAPI *MFTEnumEx)(GUID guidCategory, UINT32 Flags,
                                 const MFT_REGISTER_TYPE_INFO *pInputType,
