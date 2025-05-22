@@ -91,10 +91,7 @@ uint32_t ff_aac_ac_get_pk(uint32_t c)
 void ff_aac_ac_update_context(AACArithState *state, int idx,
                               uint16_t a, uint16_t b)
 {
-    state->cur[0] = a + b + 1;
-    if (state->cur[0] > 0xF)
-        state->cur[0] = 0xF;
-
+    state->cur[0] = FFMIN(a + b + 1, 0xF);
     state->cur[3] = state->cur[2];
     state->cur[2] = state->cur[1];
     state->cur[1] = state->cur[0];
