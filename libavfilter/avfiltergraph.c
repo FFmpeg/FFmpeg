@@ -1068,8 +1068,8 @@ static void swap_channel_layouts_on_filter(AVFilterContext *filter)
             }
 
             /* no penalty for LFE channel mismatch */
-            if (av_channel_layout_channel_from_index(&in_chlayout,  AV_CHAN_LOW_FREQUENCY) >= 0 &&
-                av_channel_layout_channel_from_index(&out_chlayout, AV_CHAN_LOW_FREQUENCY) >= 0)
+            if (av_channel_layout_index_from_channel(&in_chlayout,  AV_CHAN_LOW_FREQUENCY) >= 0 &&
+                av_channel_layout_index_from_channel(&out_chlayout, AV_CHAN_LOW_FREQUENCY) >= 0)
                 score += 10;
             av_channel_layout_from_mask(&in_chlayout, av_channel_layout_subset(&in_chlayout, ~AV_CH_LOW_FREQUENCY));
             av_channel_layout_from_mask(&out_chlayout, av_channel_layout_subset(&out_chlayout, ~AV_CH_LOW_FREQUENCY));
