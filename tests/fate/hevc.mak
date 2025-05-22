@@ -292,7 +292,7 @@ fate-hevc-mv-position: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/multiview.mov -m
 FATE_HEVC-$(call FRAMECRC, MOV, HEVC) += fate-hevc-mv-position
 
 fate-hevc-alpha: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/alpha.mp4
-FATE_HEVC-$(call FRAMECRC, HEVC, HEVC) += fate-hevc-alpha
+FATE_HEVC-$(call FRAMECRC, MOV, HEVC) += fate-hevc-alpha
 
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_HEVC_FFPROBE-yes)
