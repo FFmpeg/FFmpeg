@@ -26,6 +26,7 @@
 #include "config_components.h"
 
 #include "libavutil/attributes.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 
@@ -228,54 +229,64 @@ static inline void dct_get(ASVEncContext *a, const AVFrame *frame,
     }
 }
 
+static void handle_partial_mb(ASVEncContext *a, const uint8_t *const data[3],
+                              const int linesizes[3],
+                              int valid_width, int valid_height)
+{
+    const int nb_blocks = a->c.avctx->flags & AV_CODEC_FLAG_GRAY ? 4 : 6;
+    static const struct Descriptor {
+        uint8_t x_offset, y_offset;
+        uint8_t component, subsampling;
+    } block_descriptor[] = {
+        { 0, 0, 0, 0 }, { 8, 0, 0, 0 }, { 0, 8, 0, 0 }, { 8, 8, 0, 0 },
+        { 0, 0, 1, 1 }, { 0, 0, 2, 1 },
+    };
+
+    for (int i = 0; i < nb_blocks; ++i) {
+        const struct Descriptor *const desc = block_descriptor + i;
+        int width_avail  = AV_CEIL_RSHIFT(valid_width,  desc->subsampling) - desc->x_offset;
+        int height_avail = AV_CEIL_RSHIFT(valid_height, desc->subsampling) - desc->y_offset;
+
+        if (width_avail <= 0 || height_avail <= 0) {
+            // This block is outside of the visible part; don't replicate pixels,
+            // just zero the block, so that only the dc value will be coded.
+            memset(a->block[i], 0, sizeof(a->block[i]));
+            continue;
+        }
+        width_avail  = FFMIN(width_avail,  8);
+        height_avail = FFMIN(height_avail, 8);
+
+        ptrdiff_t linesize = linesizes[desc->component];
+        const uint8_t *src = data[desc->component] + desc->y_offset * linesize + desc->x_offset;
+        int16_t *block = a->block[i];
+
+        for (int h = 0;; block += 8, src += linesize) {
+            int16_t last;
+            for (int w = 0; w < width_avail; ++w)
+                last = block[w] = src[w];
+            for (int w = width_avail; w < 8; ++w)
+                block[w] = last;
+            if (++h == height_avail)
+                break;
+        }
+        const int16_t *const last_row = block;
+        for (int h = height_avail; h < 8; ++h) {
+            block += 8;
+            AV_COPY128(block, last_row);
+        }
+
+        a->fdsp.fdct(a->block[i]);
+    }
+
+    encode_mb(a, a->block);
+}
+
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
     ASVEncContext *const a = avctx->priv_data;
     const ASVCommonContext *const c = &a->c;
     int size, ret;
-
-    if (pict->width % 16 || pict->height % 16) {
-        AVFrame *clone = av_frame_alloc();
-        int i;
-
-        if (!clone)
-            return AVERROR(ENOMEM);
-        clone->format = pict->format;
-        clone->width  = FFALIGN(pict->width, 16);
-        clone->height = FFALIGN(pict->height, 16);
-        ret = av_frame_get_buffer(clone, 0);
-        if (ret < 0) {
-            av_frame_free(&clone);
-            return ret;
-        }
-
-        ret = av_frame_copy(clone, pict);
-        if (ret < 0) {
-            av_frame_free(&clone);
-            return ret;
-        }
-
-        for (i = 0; i<3; i++) {
-            int x, y;
-            int w  = AV_CEIL_RSHIFT(pict->width, !!i);
-            int h  = AV_CEIL_RSHIFT(pict->height, !!i);
-            int w2 = AV_CEIL_RSHIFT(clone->width, !!i);
-            int h2 = AV_CEIL_RSHIFT(clone->height, !!i);
-            for (y=0; y<h; y++)
-                for (x=w; x<w2; x++)
-                    clone->data[i][x + y*clone->linesize[i]] =
-                        clone->data[i][w - 1 + y*clone->linesize[i]];
-            for (y=h; y<h2; y++)
-                for (x=0; x<w2; x++)
-                    clone->data[i][x + y*clone->linesize[i]] =
-                        clone->data[i][x + (h-1)*clone->linesize[i]];
-        }
-        ret = encode_frame(avctx, pkt, clone, got_packet);
-
-        av_frame_free(&clone);
-        return ret;
-    }
 
     ret = ff_alloc_packet(avctx, pkt, c->mb_height * c->mb_width * MAX_MB_SIZE + 3);
     if (ret < 0)
@@ -290,19 +301,37 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
-    if (c->mb_width2 != c->mb_width) {
-        int mb_x = c->mb_width2;
+    if (avctx->width & 15) {
+        const uint8_t *src[3] = {
+            pict->data[0] + c->mb_width2 * 16,
+            pict->data[1] + c->mb_width2 *  8,
+            pict->data[2] + c->mb_width2 *  8,
+        };
+        int available_width = avctx->width & 15;
+
         for (int mb_y = 0; mb_y < c->mb_height2; mb_y++) {
-            dct_get(a, pict, mb_x, mb_y);
-            encode_mb(a, a->block);
+            handle_partial_mb(a, src, pict->linesize, available_width, 16);
+            src[0] += 16 * pict->linesize[0];
+            src[1] +=  8 * pict->linesize[1];
+            src[2] +=  8 * pict->linesize[2];
         }
     }
 
-    if (c->mb_height2 != c->mb_height) {
-        int mb_y = c->mb_height2;
-        for (int mb_x = 0; mb_x < c->mb_width; mb_x++) {
-            dct_get(a, pict, mb_x, mb_y);
-            encode_mb(a, a->block);
+    if (avctx->height & 15) {
+        const uint8_t *src[3] = {
+            pict->data[0] + c->mb_height2 * 16 * pict->linesize[0],
+            pict->data[1] + c->mb_height2 *  8 * pict->linesize[1],
+            pict->data[2] + c->mb_height2 *  8 * pict->linesize[2],
+        };
+        int available_height = avctx->height & 15;
+
+        for (int remaining = avctx->width;; remaining -= 16) {
+            handle_partial_mb(a, src, pict->linesize, remaining, available_height);
+            if (remaining <= 16)
+                break;
+            src[0] += 16;
+            src[1] +=  8;
+            src[2] +=  8;
         }
     }
 
