@@ -379,8 +379,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (!avctx->extradata)
         return AVERROR(ENOMEM);
     avctx->extradata_size              = 8;
-    AV_WLA(32, avctx->extradata, inv_qscale);
-    ((uint32_t *) avctx->extradata)[1] = av_le2ne32(AV_RL32("ASUS"));
+    AV_WL32A(avctx->extradata, inv_qscale);
+    AV_WL32A(avctx->extradata + 4, MKTAG('A', 'S', 'U', 'S'));
 
     for (i = 0; i < 64; i++) {
         if (a->fdsp.fdct == ff_fdct_ifast) {
