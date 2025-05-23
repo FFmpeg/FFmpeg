@@ -91,10 +91,12 @@ fate-ac3-fixed-encode: CMD = md5 -i $(SRC) -c ac3_fixed -ab 128k -f ac3 -flags +
 fate-ac3-fixed-encode: CMP = oneline
 fate-ac3-fixed-encode: REF = e9d78bca187b4bbafc4512bcea8efd3e
 
-FATE_AC3-$(call ALLYES, EAC3_DEMUXER AC3_FIXED_ENCODER AC3_MUXER ARESAMPLE_FILTER) += fate-ac3-fixed-encode-2
-fate-ac3-fixed-encode-2: CMD = md5pipe -i $(TARGET_SAMPLES)/eac3/the_great_wall_7.1.eac3 -c:a ac3_fixed -ab 256k -f ac3 -flags +bitexact -af aresample
-fate-ac3-fixed-encode-2: CMP = oneline
-fate-ac3-fixed-encode-2: REF = 1b92b037b23b231c9523f334ccfb11da
+# This tests that the LFE does not get lost when converting the input 7.1
+# to a channel layout supported by the encoder.
+FATE_AC3-$(call FRAMECRC, WAV, PCM_S16LE, ARESAMPLE_FILTER AC3_FIXED_ENCODER) += fate-ac3-fixed-encode-2
+fate-ac3-fixed-encode-2: tests/data/asynth-44100-8.wav
+fate-ac3-fixed-encode-2: SRC = $(TARGET_PATH)/tests/data/asynth-44100-8.wav
+fate-ac3-fixed-encode-2: CMD = framecrc -i $(SRC) -c:a ac3_fixed -ab 256k -frames:a 6 -af aresample
 
 FATE_EAC3-$(call ALLYES, EAC3_DEMUXER EAC3_MUXER EAC3_CORE_BSF) += fate-eac3-core-bsf
 fate-eac3-core-bsf: CMD = md5pipe -i $(TARGET_SAMPLES)/eac3/the_great_wall_7.1.eac3 -c:a copy -bsf:a eac3_core -fflags +bitexact -f eac3
