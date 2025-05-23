@@ -1358,6 +1358,8 @@ static int init_encode_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
             .mem_quali   = "writeonly",
             .buf_content = "uint64_t slice_results[2048];",
         },
+        { /* place holder for desc_set[3] */
+        },
     };
     if (fv->is_rgb) {
         AVHWFramesContext *intermediate_frames_ctx;
