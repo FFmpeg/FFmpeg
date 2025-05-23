@@ -4159,6 +4159,8 @@ if test "$target_os_default" = aix; then
     arch_default=$(uname -p)
     strip_default="strip -X32_64"
     nm_default="nm -g -X32_64"
+elif test "$MSYSTEM_CARCH" != ""; then
+    arch_default="$MSYSTEM_CARCH"
 else
     arch_default=$(uname -m)
 fi
