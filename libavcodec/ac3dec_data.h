@@ -24,9 +24,18 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes_internal.h"
+
+FF_VISIBILITY_PUSH_HIDDEN
+
 extern const uint8_t ff_ac3_ungroup_3_in_5_bits_tab[32][3];
+
+extern const int     ff_ac3_bap3_mantissas[ 7 + 1];
+extern const int     ff_ac3_bap5_mantissas[15 + 1];
 
 extern const uint8_t ff_eac3_hebap_tab[64];
 extern const uint8_t ff_eac3_default_spx_band_struct[17];
+
+FF_VISIBILITY_POP_HIDDEN
 
 #endif /* AVCODEC_AC3DEC_DATA_H */

@@ -21,7 +21,7 @@
 
 /**
  * @file
- * Tables taken directly from the AC-3 spec.
+ * Tables taken directly from the AC-3 spec or derived from it.
  */
 
 #include "ac3dec_data.h"
@@ -40,6 +40,43 @@ const uint8_t ff_ac3_ungroup_3_in_5_bits_tab[32][3] = {
     { 2, 0, 2 }, { 2, 1, 0 }, { 2, 1, 1 }, { 2, 1, 2 },
     { 2, 2, 0 }, { 2, 2, 1 }, { 2, 2, 2 }, { 3, 0, 0 },
     { 3, 0, 1 }, { 3, 0, 2 }, { 3, 1, 0 }, { 3, 1, 1 }
+};
+
+/**
+ * Ungrouped mantissa tables; the extra entry is padding to avoid range checks
+ */
+#define SYMMETRIC_DEQUANT(code, levels) (((code - (levels >> 1)) * (1 << 24)) / levels)
+/**
+ * Table 7.21
+ */
+const int ff_ac3_bap3_mantissas[7 + 1] = {
+    SYMMETRIC_DEQUANT(0, 7),
+    SYMMETRIC_DEQUANT(1, 7),
+    SYMMETRIC_DEQUANT(2, 7),
+    SYMMETRIC_DEQUANT(3, 7),
+    SYMMETRIC_DEQUANT(4, 7),
+    SYMMETRIC_DEQUANT(5, 7),
+    SYMMETRIC_DEQUANT(6, 7),
+};
+/**
+ * Table 7.23
+ */
+const int ff_ac3_bap5_mantissas[15 + 1] = {
+    SYMMETRIC_DEQUANT(0,  15),
+    SYMMETRIC_DEQUANT(1,  15),
+    SYMMETRIC_DEQUANT(2,  15),
+    SYMMETRIC_DEQUANT(3,  15),
+    SYMMETRIC_DEQUANT(4,  15),
+    SYMMETRIC_DEQUANT(5,  15),
+    SYMMETRIC_DEQUANT(6,  15),
+    SYMMETRIC_DEQUANT(7,  15),
+    SYMMETRIC_DEQUANT(8,  15),
+    SYMMETRIC_DEQUANT(9,  15),
+    SYMMETRIC_DEQUANT(10, 15),
+    SYMMETRIC_DEQUANT(11, 15),
+    SYMMETRIC_DEQUANT(12, 15),
+    SYMMETRIC_DEQUANT(13, 15),
+    SYMMETRIC_DEQUANT(14, 15),
 };
 
 const uint8_t ff_eac3_hebap_tab[64] = {

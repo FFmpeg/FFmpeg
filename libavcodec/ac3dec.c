@@ -55,9 +55,7 @@ static uint8_t ungroup_3_in_7_bits_tab[128][3];
 /** tables for ungrouping mantissas */
 static int b1_mantissas[32][3];
 static int b2_mantissas[128][3];
-static int b3_mantissas[8];
 static int b4_mantissas[128][2];
-static int b5_mantissas[16];
 
 /**
  * Quantization table: levels for symmetric. bits for asymmetric.
@@ -154,16 +152,6 @@ static av_cold void ac3_tables_init(void)
         /* bap=4 mantissas */
         b4_mantissas[i][0] = symmetric_dequant(i / 11, 11);
         b4_mantissas[i][1] = symmetric_dequant(i % 11, 11);
-    }
-    /* generate ungrouped mantissa tables
-       reference: Tables 7.21 and 7.23 */
-    for (i = 0; i < 7; i++) {
-        /* bap=3 mantissas */
-        b3_mantissas[i] = symmetric_dequant(i, 7);
-    }
-    for (i = 0; i < 15; i++) {
-        /* bap=5 mantissas */
-        b5_mantissas[i] = symmetric_dequant(i, 15);
     }
 
 #if (!USE_FIXED)
@@ -595,7 +583,7 @@ static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, ma
             }
             break;
         case 3:
-            mantissa = b3_mantissas[get_bits(gbc, 3)];
+            mantissa = ff_ac3_bap3_mantissas[get_bits(gbc, 3)];
             break;
         case 4:
             if (m->b4) {
@@ -609,7 +597,7 @@ static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, ma
             }
             break;
         case 5:
-            mantissa = b5_mantissas[get_bits(gbc, 4)];
+            mantissa = ff_ac3_bap5_mantissas[get_bits(gbc, 4)];
             break;
         default: /* 6 to 15 */
             /* Shift mantissa and sign-extend it. */
