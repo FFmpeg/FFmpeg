@@ -34,6 +34,17 @@
 #define AC3_CRITICAL_BANDS 50
 #define AC3_MAX_CPL_BANDS  18
 
+/* pre-defined gain values */
+#define LEVEL_PLUS_3DB          M_SQRT2
+#define LEVEL_PLUS_1POINT5DB    1.1892071150027209
+#define LEVEL_MINUS_1POINT5DB   0.8408964152537145
+#define LEVEL_MINUS_3DB         M_SQRT1_2
+#define LEVEL_MINUS_4POINT5DB   0.5946035575013605
+#define LEVEL_MINUS_6DB         0.5000000000000000
+#define LEVEL_MINUS_9DB         0.3535533905932738
+#define LEVEL_ZERO              0.0000000000000000
+#define LEVEL_ONE               1.0000000000000000
+
 /* exponent encoding strategy */
 #define EXP_REUSE 0
 #define EXP_NEW   1
