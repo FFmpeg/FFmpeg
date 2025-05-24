@@ -71,10 +71,7 @@ static const float surmixlev_options[SURMIXLEV_NUM_OPTIONS] = {
 };
 
 #define EXTMIXLEV_NUM_OPTIONS 8
-static const float extmixlev_options[EXTMIXLEV_NUM_OPTIONS] = {
-    LEVEL_PLUS_3DB,  LEVEL_PLUS_1POINT5DB,  LEVEL_ONE,       LEVEL_MINUS_1POINT5DB,
-    LEVEL_MINUS_3DB, LEVEL_MINUS_4POINT5DB, LEVEL_MINUS_6DB, LEVEL_ZERO
-};
+#define extmixlev_options ff_ac3_gain_levels
 
 /* The first two options apply only to the AC-3 encoders;
  * the rest is also valid for EAC-3. When modifying it,

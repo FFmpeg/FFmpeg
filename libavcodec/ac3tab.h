@@ -26,6 +26,9 @@
 
 #include "ac3defs.h"
 
+#include "libavutil/attributes_internal.h"
+
+FF_VISIBILITY_PUSH_HIDDEN
 extern const uint16_t ff_ac3_frame_size_tab[38][3];
 extern const uint8_t  ff_ac3_channels_tab[8];
 extern const uint16_t ff_ac3_channel_layout_tab[8];
@@ -43,7 +46,9 @@ extern const int16_t  ff_ac3_floor_tab[8];
 extern const uint16_t ff_ac3_fast_gain_tab[8];
 extern const uint8_t  ff_ac3_band_start_tab[AC3_CRITICAL_BANDS+1];
 extern const uint8_t  ff_ac3_bin_to_band_tab[253];
+extern const float    ff_ac3_gain_levels[9];
 extern const uint64_t ff_eac3_custom_channel_map_locations[16][2];
+FF_VISIBILITY_POP_HIDDEN
 
 #define COMMON_CHANNEL_MAP \
     { { 0, 1,          }, { 0, 1, 2,         } },\

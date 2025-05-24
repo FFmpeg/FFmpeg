@@ -61,18 +61,6 @@ static float dynamic_range_tab[256];
 float ff_ac3_heavy_dynamic_range_tab[256];
 #endif
 
-/** Adjustments in dB gain */
-static const float gain_levels[9] = {
-    LEVEL_PLUS_3DB,
-    LEVEL_PLUS_1POINT5DB,
-    LEVEL_ONE,
-    LEVEL_MINUS_1POINT5DB,
-    LEVEL_MINUS_3DB,
-    LEVEL_MINUS_4POINT5DB,
-    LEVEL_MINUS_6DB,
-    LEVEL_ZERO,
-    LEVEL_MINUS_9DB
-};
 
 /** Adjustments in dB gain (LFE, +10 to -21 dB) */
 static const float gain_levels_lfe[32] = {
@@ -346,8 +334,8 @@ static int parse_frame_header(AC3DecodeContext *s)
 static int set_downmix_coeffs(AC3DecodeContext *s)
 {
     int i;
-    float cmix = gain_levels[s->  center_mix_level];
-    float smix = gain_levels[s->surround_mix_level];
+    float cmix = ff_ac3_gain_levels[s->  center_mix_level];
+    float smix = ff_ac3_gain_levels[s->surround_mix_level];
     float norm0, norm1;
     float downmix_coeffs[2][AC3_MAX_CHANNELS];
 
@@ -360,8 +348,8 @@ static int set_downmix_coeffs(AC3DecodeContext *s)
     }
 
     for (i = 0; i < s->fbw_channels; i++) {
-        downmix_coeffs[0][i] = gain_levels[ac3_default_coeffs[s->channel_mode][i][0]];
-        downmix_coeffs[1][i] = gain_levels[ac3_default_coeffs[s->channel_mode][i][1]];
+        downmix_coeffs[0][i] = ff_ac3_gain_levels[ac3_default_coeffs[s->channel_mode][i][0]];
+        downmix_coeffs[1][i] = ff_ac3_gain_levels[ac3_default_coeffs[s->channel_mode][i][1]];
     }
     if (s->channel_mode > 1 && s->channel_mode & 1) {
         downmix_coeffs[0][1] = downmix_coeffs[1][1] = cmix;
@@ -1562,10 +1550,10 @@ dependent_frame:
             s->output_mode  = AC3_CHMODE_STEREO;
         }
 
-        s->loro_center_mix_level   = gain_levels[s->  center_mix_level];
-        s->loro_surround_mix_level = gain_levels[s->surround_mix_level];
-        s->ltrt_center_mix_level   = gain_levels[s->  center_mix_level_ltrt];
-        s->ltrt_surround_mix_level = gain_levels[s->surround_mix_level_ltrt];
+        s->loro_center_mix_level   = ff_ac3_gain_levels[s->  center_mix_level];
+        s->loro_surround_mix_level = ff_ac3_gain_levels[s->surround_mix_level];
+        s->ltrt_center_mix_level   = ff_ac3_gain_levels[s->  center_mix_level_ltrt];
+        s->ltrt_surround_mix_level = ff_ac3_gain_levels[s->surround_mix_level_ltrt];
         switch (s->preferred_downmix) {
         case AC3_DMIXMOD_LTRT:
             s->preferred_stereo_downmix = AV_DOWNMIX_TYPE_LTRT;
@@ -1804,10 +1792,10 @@ skip:
             downmix_info->preferred_downmix_type = AV_DOWNMIX_TYPE_UNKNOWN;
             break;
         }
-        downmix_info->center_mix_level        = gain_levels[s->       center_mix_level];
-        downmix_info->center_mix_level_ltrt   = gain_levels[s->  center_mix_level_ltrt];
-        downmix_info->surround_mix_level      = gain_levels[s->     surround_mix_level];
-        downmix_info->surround_mix_level_ltrt = gain_levels[s->surround_mix_level_ltrt];
+        downmix_info->center_mix_level        = ff_ac3_gain_levels[s->       center_mix_level];
+        downmix_info->center_mix_level_ltrt   = ff_ac3_gain_levels[s->  center_mix_level_ltrt];
+        downmix_info->surround_mix_level      = ff_ac3_gain_levels[s->     surround_mix_level];
+        downmix_info->surround_mix_level_ltrt = ff_ac3_gain_levels[s->surround_mix_level_ltrt];
         if (s->lfe_mix_level_exists)
             downmix_info->lfe_mix_level       = gain_levels_lfe[s->lfe_mix_level];
         else

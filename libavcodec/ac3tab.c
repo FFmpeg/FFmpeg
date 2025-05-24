@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/mathematics.h"
 
 #include "ac3tab.h"
 
@@ -145,6 +146,19 @@ const int16_t ff_ac3_floor_tab[8]= {
 
 const uint16_t ff_ac3_fast_gain_tab[8]= {
     0x080, 0x100, 0x180, 0x200, 0x280, 0x300, 0x380, 0x400,
+};
+
+/** Adjustments in dB gain */
+const float ff_ac3_gain_levels[9] = {
+    LEVEL_PLUS_3DB,
+    LEVEL_PLUS_1POINT5DB,
+    LEVEL_ONE,
+    LEVEL_MINUS_1POINT5DB,
+    LEVEL_MINUS_3DB,
+    LEVEL_MINUS_4POINT5DB,
+    LEVEL_MINUS_6DB,
+    LEVEL_ZERO,
+    LEVEL_MINUS_9DB
 };
 
 const uint64_t ff_eac3_custom_channel_map_locations[16][2] = {
