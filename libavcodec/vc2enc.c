@@ -193,6 +193,8 @@ static uint16_t interleaved_ue_golomb_tab[256];
 static uint16_t top_interleaved_ue_golomb_tab[256];
 /// 1 x_{k-1} ... x_0 -> 2 * k
 static uint8_t golomb_len_tab[256];
+/// quant -> av_log2(ff_dirac_qscale_tab[quant]) + 32
+static uint8_t qscale_len_tab[FF_ARRAY_ELEMS(ff_dirac_qscale_tab)];
 
 static av_cold void vc2_init_static_data(void)
 {
@@ -202,6 +204,8 @@ static av_cold void vc2_init_static_data(void)
         interleaved_ue_golomb_tab[i] = (interleaved_ue_golomb_tab[i >> 1] << 2) | (i & 1);
         top_interleaved_ue_golomb_tab[i] = interleaved_ue_golomb_tab[i] ^ (1 << golomb_len_tab[i]);
     }
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(qscale_len_tab); ++i)
+        qscale_len_tab[i] = av_log2(ff_dirac_qscale_tab[i]) + 32;
 }
 
 static av_always_inline void put_vc2_ue_uint_inline(PutBitContext *pb, uint32_t val)
@@ -545,7 +549,7 @@ static void encode_subband(const VC2EncContext *s, PutBitContext *pb,
     dwtcoef *coeff = b->buf + top * b->stride;
     const uint64_t q_m = ((uint64_t)(s->qmagic_lut[quant][0])) << 2;
     const uint64_t q_a = s->qmagic_lut[quant][1];
-    const int q_s = av_log2(ff_dirac_qscale_tab[quant]) + 32;
+    const int q_s = qscale_len_tab[quant];
 
     for (y = top; y < bottom; y++) {
         for (x = left; x < right; x++) {
@@ -586,7 +590,7 @@ static int count_hq_slice(SliceArgs *slice, int quant_idx)
                 const int q_idx = quants[level][orientation];
                 const uint64_t q_m = ((uint64_t)s->qmagic_lut[q_idx][0]) << 2;
                 const uint64_t q_a = s->qmagic_lut[q_idx][1];
-                const int q_s = av_log2(ff_dirac_qscale_tab[q_idx]) + 32;
+                const int q_s = qscale_len_tab[q_idx];
 
                 const int left   = b->width  * slice->x    / s->num_x;
                 const int right  = b->width  *(slice->x+1) / s->num_x;
