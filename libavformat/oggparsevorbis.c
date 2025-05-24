@@ -293,6 +293,62 @@ static int vorbis_update_metadata(AVFormatContext *s, int idx)
     return ret;
 }
 
+static int vorbis_parse_header(AVFormatContext *s, AVStream *st,
+                               const uint8_t *p, unsigned int psize)
+{
+    unsigned blocksize, bs0, bs1;
+    int srate;
+    int channels;
+
+    if (psize != 30)
+        return AVERROR_INVALIDDATA;
+
+    p += 7; /* skip "\001vorbis" tag */
+
+    if (bytestream_get_le32(&p) != 0) /* vorbis_version */
+        return AVERROR_INVALIDDATA;
+
+    channels = bytestream_get_byte(&p);
+    if (st->codecpar->ch_layout.nb_channels &&
+        channels != st->codecpar->ch_layout.nb_channels) {
+        av_log(s, AV_LOG_ERROR, "Channel change is not supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+    st->codecpar->ch_layout.nb_channels = channels;
+    srate               = bytestream_get_le32(&p);
+    p += 4; // skip maximum bitrate
+    st->codecpar->bit_rate = bytestream_get_le32(&p); // nominal bitrate
+    p += 4; // skip minimum bitrate
+
+    blocksize = bytestream_get_byte(&p);
+    bs0       = blocksize & 15;
+    bs1       = blocksize >> 4;
+
+    if (bs0 > bs1)
+        return AVERROR_INVALIDDATA;
+    if (bs0 < 6 || bs1 > 13)
+        return AVERROR_INVALIDDATA;
+
+    if (bytestream_get_byte(&p) != 1) /* framing_flag */
+        return AVERROR_INVALIDDATA;
+
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id   = AV_CODEC_ID_VORBIS;
+
+    if (srate > 0) {
+        if (st->codecpar->sample_rate &&
+            srate != st->codecpar->sample_rate) {
+            av_log(s, AV_LOG_ERROR, "Sample rate change is not supported\n");
+            return AVERROR_PATCHWELCOME;
+        }
+
+        st->codecpar->sample_rate = srate;
+        avpriv_set_pts_info(st, 64, 1, srate);
+    }
+
+    return 1;
+}
+
 static int vorbis_header(AVFormatContext *s, int idx)
 {
     struct ogg *ogg = s->priv_data;
@@ -329,50 +385,10 @@ static int vorbis_header(AVFormatContext *s, int idx)
     priv->packet[pkt_type >> 1] = av_memdup(os->buf + os->pstart, os->psize);
     if (!priv->packet[pkt_type >> 1])
         return AVERROR(ENOMEM);
-    if (os->buf[os->pstart] == 1) {
-        const uint8_t *p = os->buf + os->pstart + 7; /* skip "\001vorbis" tag */
-        unsigned blocksize, bs0, bs1;
-        int srate;
-        int channels;
+    if (pkt_type == 1)
+        return vorbis_parse_header(s, st, os->buf + os->pstart, os->psize);
 
-        if (os->psize != 30)
-            return AVERROR_INVALIDDATA;
-
-        if (bytestream_get_le32(&p) != 0) /* vorbis_version */
-            return AVERROR_INVALIDDATA;
-
-        channels = bytestream_get_byte(&p);
-        if (st->codecpar->ch_layout.nb_channels &&
-            channels != st->codecpar->ch_layout.nb_channels) {
-            av_log(s, AV_LOG_ERROR, "Channel change is not supported\n");
-            return AVERROR_PATCHWELCOME;
-        }
-        st->codecpar->ch_layout.nb_channels = channels;
-        srate               = bytestream_get_le32(&p);
-        p += 4; // skip maximum bitrate
-        st->codecpar->bit_rate = bytestream_get_le32(&p); // nominal bitrate
-        p += 4; // skip minimum bitrate
-
-        blocksize = bytestream_get_byte(&p);
-        bs0       = blocksize & 15;
-        bs1       = blocksize >> 4;
-
-        if (bs0 > bs1)
-            return AVERROR_INVALIDDATA;
-        if (bs0 < 6 || bs1 > 13)
-            return AVERROR_INVALIDDATA;
-
-        if (bytestream_get_byte(&p) != 1) /* framing_flag */
-            return AVERROR_INVALIDDATA;
-
-        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codecpar->codec_id   = AV_CODEC_ID_VORBIS;
-
-        if (srate > 0) {
-            st->codecpar->sample_rate = srate;
-            avpriv_set_pts_info(st, 64, 1, srate);
-        }
-    } else if (os->buf[os->pstart] == 3) {
+    if (pkt_type == 3) {
         if (vorbis_update_metadata(s, idx) >= 0 && priv->len[1] > 10) {
             unsigned new_len;
 
