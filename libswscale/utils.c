@@ -692,13 +692,35 @@ static void fill_rgb2yuv_table(SwsInternal *c, const int table[4], int dstRange)
         AV_WL16(p + 16*4 + 2*i, map[i] >= 0 ? c->input_rgb2yuv_table[map[i]] : 0);
 }
 
-static int fill_xyztables(SwsInternal *c)
+#if CONFIG_SMALL
+static void init_xyz_tables(uint16_t xyzgamma_tab[4096],  uint16_t xyzgammainv_tab[65536],
+                            uint16_t rgbgamma_tab[65536], uint16_t rgbgammainv_tab[4096])
+#else
+static uint16_t xyzgamma_tab[4096],  rgbgammainv_tab[4096];
+static uint16_t rgbgamma_tab[65536], xyzgammainv_tab[65536];
+static av_cold void init_xyz_tables(void)
+#endif
 {
-    int i;
-    double xyzgamma = XYZ_GAMMA;
-    double rgbgamma = 1.0 / RGB_GAMMA;
+    double xyzgamma    = XYZ_GAMMA;
+    double rgbgamma    = 1.0 / RGB_GAMMA;
     double xyzgammainv = 1.0 / XYZ_GAMMA;
     double rgbgammainv = RGB_GAMMA;
+
+    /* set input gamma vectors */
+    for (int i = 0; i < 4096; i++) {
+        xyzgamma_tab[i]    = lrint(pow(i / 4095.0, xyzgamma)    * 65535.0);
+        rgbgammainv_tab[i] = lrint(pow(i / 4095.0, rgbgammainv) * 65535.0);
+    }
+
+    /* set output gamma vectors */
+    for (int i = 0; i < 65536; i++) {
+        rgbgamma_tab[i]    = lrint(pow(i / 65535.0, rgbgamma)    * 4095.0);
+        xyzgammainv_tab[i] = lrint(pow(i / 65535.0, xyzgammainv) * 4095.0);
+    }
+}
+
+static int fill_xyztables(SwsInternal *c)
+{
     static const int16_t xyz2rgb_matrix[3][4] = {
         {13270, -6295, -2041},
         {-3969,  7682,   170},
@@ -707,10 +729,7 @@ static int fill_xyztables(SwsInternal *c)
         {1689, 1464,  739},
         { 871, 2929,  296},
         {  79,  488, 3891} };
-#if !CONFIG_SMALL
-    static uint16_t xyzgamma_tab[4096],  rgbgammainv_tab[4096];
-    static uint16_t rgbgamma_tab[65536], xyzgammainv_tab[65536];
-#endif
+
     if (c->xyzgamma)
         return 0;
 
@@ -724,26 +743,16 @@ static int fill_xyztables(SwsInternal *c)
     c->rgbgammainv = c->xyzgamma + 4096;
     c->rgbgamma = c->rgbgammainv + 4096;
     c->xyzgammainv = c->rgbgamma + 65536;
+    init_xyz_tables(c->xyzgamma, c->xyzgammainv, c->rgbgamma, c->rgbgammainv);
 #else
     c->xyzgamma = xyzgamma_tab;
     c->rgbgamma = rgbgamma_tab;
     c->xyzgammainv = xyzgammainv_tab;
     c->rgbgammainv = rgbgammainv_tab;
-    if (xyzgamma_tab[4095])
-        return 0;
+
+    static AVOnce xyz_init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&xyz_init_static_once, init_xyz_tables);
 #endif
-
-    /* set input gamma vectors */
-    for (i = 0; i < 4096; i++) {
-        c->xyzgamma[i]    = lrint(pow(i / 4095.0, xyzgamma) * 65535.0);
-        c->rgbgammainv[i] = lrint(pow(i / 4095.0, rgbgammainv) * 65535.0);
-    }
-
-    /* set output gamma vectors */
-    for (i = 0; i < 65536; i++) {
-        c->rgbgamma[i]    = lrint(pow(i / 65535.0, rgbgamma) * 4095.0);
-        c->xyzgammainv[i] = lrint(pow(i / 65535.0, xyzgammainv) * 4095.0);
-    }
     return 0;
 }
 
