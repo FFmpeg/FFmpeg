@@ -849,7 +849,7 @@ static int lmcs_derive_lut(VVCLMCS *lmcs, const H266RawAPS *rlmcs, const H266Raw
     uint16_t input_pivot[LMCS_MAX_BIN_SIZE];
     uint16_t scale_coeff[LMCS_MAX_BIN_SIZE];
     uint16_t inv_scale_coeff[LMCS_MAX_BIN_SIZE];
-    int i, delta_crs;
+    int i, delta_crs, sum_cw = 0;
     if (bit_depth > LMCS_MAX_BIT_DEPTH)
         return AVERROR_PATCHWELCOME;
 
@@ -860,8 +860,12 @@ static int lmcs_derive_lut(VVCLMCS *lmcs, const H266RawAPS *rlmcs, const H266Raw
     lmcs->max_bin_idx = LMCS_MAX_BIN_SIZE - 1 - rlmcs->lmcs_delta_max_bin_idx;
 
     memset(cw, 0, sizeof(cw));
-    for (int i = lmcs->min_bin_idx; i <= lmcs->max_bin_idx; i++)
+    for (int i = lmcs->min_bin_idx; i <= lmcs->max_bin_idx; i++) {
         cw[i] = org_cw + (1 - 2 * rlmcs->lmcs_delta_sign_cw_flag[i]) * rlmcs->lmcs_delta_abs_cw[i];
+        sum_cw += cw[i];
+    }
+    if (sum_cw > (1 << bit_depth) - 1)
+        return AVERROR_INVALIDDATA;
 
     delta_crs = (1 - 2 * rlmcs->lmcs_delta_sign_crs_flag) * rlmcs->lmcs_delta_abs_crs;
 
@@ -869,13 +873,20 @@ static int lmcs_derive_lut(VVCLMCS *lmcs, const H266RawAPS *rlmcs, const H266Raw
     for (i = 0; i < LMCS_MAX_BIN_SIZE; i++) {
         input_pivot[i]        = i * org_cw;
         lmcs->pivot[i + 1] = lmcs->pivot[i] + cw[i];
+        if (i >= lmcs->min_bin_idx && i <= lmcs->max_bin_idx &&
+            lmcs->pivot[i] % (1 << (bit_depth - 5)) != 0 &&
+            lmcs->pivot[i] >> (bit_depth - 5) == lmcs->pivot[i + 1] >> (bit_depth - 5))
+            return AVERROR_INVALIDDATA;
         scale_coeff[i]        = (cw[i] * (1 << 11) +  off) >> shift;
         if (cw[i] == 0) {
             inv_scale_coeff[i] = 0;
             lmcs->chroma_scale_coeff[i] = (1 << 11);
         } else {
+            const int cw_plus_d = cw[i] + delta_crs;
+            if (cw_plus_d < (org_cw >> 3) || cw_plus_d > ((org_cw << 3) - 1))
+                return AVERROR_INVALIDDATA;
             inv_scale_coeff[i] = org_cw * (1 << 11) / cw[i];
-            lmcs->chroma_scale_coeff[i] = org_cw * (1 << 11) / (cw[i] + delta_crs);
+            lmcs->chroma_scale_coeff[i] = org_cw * (1 << 11) / cw_plus_d;
         }
     }
 
