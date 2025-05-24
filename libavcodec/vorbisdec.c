@@ -43,6 +43,7 @@
 #include "vorbis.h"
 #include "vorbisdsp.h"
 #include "vorbis_data.h"
+#include "vorbis_parser.h"
 #include "xiph.h"
 
 #define V_NB_BITS 8
@@ -1778,47 +1779,59 @@ static int vorbis_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     GetBitContext *gb = &vc->gb;
     float *channel_ptrs[255];
     int i, len, ret;
+    size_t new_extradata_size;
+    vorbis_new_extradata *new_extradata;
+    const uint8_t *header;
+    const uint8_t *setup;
 
     ff_dlog(NULL, "packet length %d \n", buf_size);
 
-    if (*buf == 1 && buf_size > 7) {
-        if ((ret = init_get_bits8(gb, buf + 1, buf_size - 1)) < 0)
-            return ret;
+    new_extradata = (vorbis_new_extradata *)av_packet_get_side_data(
+        avpkt, AV_PKT_DATA_NEW_EXTRADATA, &new_extradata_size);
 
-        vorbis_free(vc);
-        if ((ret = vorbis_parse_id_hdr(vc))) {
-            av_log(avctx, AV_LOG_ERROR, "Id header corrupt.\n");
+    if (new_extradata) {
+        header = new_extradata->header;
+        setup = new_extradata->setup;
+
+        if (new_extradata->header_size > 7 && *header == 1) {
+            if ((ret = init_get_bits8(
+                            gb, header + 1,
+                            new_extradata->header_size - 1)) < 0)
+                return ret;
+
             vorbis_free(vc);
-            return ret;
+            if ((ret = vorbis_parse_id_hdr(vc))) {
+                av_log(avctx, AV_LOG_ERROR, "Id header corrupt.\n");
+                vorbis_free(vc);
+                return ret;
+            }
+
+            av_channel_layout_uninit(&avctx->ch_layout);
+            if (vc->audio_channels > 8) {
+                avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+                avctx->ch_layout.nb_channels = vc->audio_channels;
+            } else {
+                av_channel_layout_copy(
+                    &avctx->ch_layout,
+                    &ff_vorbis_ch_layouts[vc->audio_channels - 1]);
+            }
+
+            avctx->sample_rate = vc->audio_samplerate;
         }
 
-        av_channel_layout_uninit(&avctx->ch_layout);
-        if (vc->audio_channels > 8) {
-            avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
-            avctx->ch_layout.nb_channels = vc->audio_channels;
-        } else {
-            av_channel_layout_copy(&avctx->ch_layout, &ff_vorbis_ch_layouts[vc->audio_channels - 1]);
+        if (new_extradata->setup_size > 7 && *setup == 5 &&
+            vc->channel_residues && !vc->modes) {
+            if ((ret = init_get_bits8(
+                           gb, setup + 1,
+                           new_extradata->setup_size - 1)) < 0)
+                return ret;
+
+            if ((ret = vorbis_parse_setup_hdr(vc))) {
+                av_log(avctx, AV_LOG_ERROR, "Setup header corrupt.\n");
+                vorbis_free(vc);
+                return ret;
+            }
         }
-
-        avctx->sample_rate = vc->audio_samplerate;
-        return buf_size;
-    }
-
-    if (*buf == 3 && buf_size > 7) {
-        av_log(avctx, AV_LOG_DEBUG, "Ignoring comment header\n");
-        return buf_size;
-    }
-
-    if (*buf == 5 && buf_size > 7 && vc->channel_residues && !vc->modes) {
-        if ((ret = init_get_bits8(gb, buf + 1, buf_size - 1)) < 0)
-            return ret;
-
-        if ((ret = vorbis_parse_setup_hdr(vc))) {
-            av_log(avctx, AV_LOG_ERROR, "Setup header corrupt.\n");
-            vorbis_free(vc);
-            return ret;
-        }
-        return buf_size;
     }
 
     if (!vc->channel_residues || !vc->modes) {
