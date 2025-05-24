@@ -25,6 +25,7 @@
  */
 
 #include "ac3dec_data.h"
+#include "libavutil/thread.h"
 
 /**
  * Table used to ungroup 3 values stored in 5 bits.
@@ -43,9 +44,20 @@ const uint8_t ff_ac3_ungroup_3_in_5_bits_tab[32][3] = {
 };
 
 /**
- * Ungrouped mantissa tables; the extra entry is padding to avoid range checks
+ * table for ungrouping 3 values in 7 bits.
+ * used for exponents and bap=2 mantissas
+ */
+uint8_t ff_ac3_ungroup_3_in_7_bits_tab[128][3];
+
+/**
+ * Symmetrical Dequantization
+ * reference: Section 7.3.3 Expansion of Mantissas for Symmetrical Quantization
+ *            Tables 7.19 to 7.23
  */
 #define SYMMETRIC_DEQUANT(code, levels) (((code - (levels >> 1)) * (1 << 24)) / levels)
+/**
+ * Ungrouped mantissa tables; the extra entry is padding to avoid range checks
+ */
 /**
  * Table 7.21
  */
@@ -78,6 +90,52 @@ const int ff_ac3_bap5_mantissas[15 + 1] = {
     SYMMETRIC_DEQUANT(13, 15),
     SYMMETRIC_DEQUANT(14, 15),
 };
+
+int ff_ac3_bap1_mantissas[32][3];
+int ff_ac3_bap2_mantissas[128][3];
+int ff_ac3_bap4_mantissas[128][2];
+
+static inline int
+symmetric_dequant(int code, int levels)
+{
+    return SYMMETRIC_DEQUANT(code, levels);
+}
+
+static av_cold void ac3_init_static(void)
+{
+    /* generate table for ungrouping 3 values in 7 bits
+       reference: Section 7.1.3 Exponent Decoding */
+    for (int i = 0; i < 128; ++i) {
+        ff_ac3_ungroup_3_in_7_bits_tab[i][0] =  i / 25;
+        ff_ac3_ungroup_3_in_7_bits_tab[i][1] = (i % 25) / 5;
+        ff_ac3_ungroup_3_in_7_bits_tab[i][2] = (i % 25) % 5;
+    }
+
+    /* generate grouped mantissa tables
+       reference: Section 7.3.5 Ungrouping of Mantissas */
+    for (int i = 0; i < 32; ++i) {
+        /* bap=1 mantissas */
+        ff_ac3_bap1_mantissas[i][0] = symmetric_dequant(ff_ac3_ungroup_3_in_5_bits_tab[i][0], 3);
+        ff_ac3_bap1_mantissas[i][1] = symmetric_dequant(ff_ac3_ungroup_3_in_5_bits_tab[i][1], 3);
+        ff_ac3_bap1_mantissas[i][2] = symmetric_dequant(ff_ac3_ungroup_3_in_5_bits_tab[i][2], 3);
+    }
+    for (int i = 0; i < 128; ++i) {
+        /* bap=2 mantissas */
+        ff_ac3_bap2_mantissas[i][0] = symmetric_dequant(ff_ac3_ungroup_3_in_7_bits_tab[i][0], 5);
+        ff_ac3_bap2_mantissas[i][1] = symmetric_dequant(ff_ac3_ungroup_3_in_7_bits_tab[i][1], 5);
+        ff_ac3_bap2_mantissas[i][2] = symmetric_dequant(ff_ac3_ungroup_3_in_7_bits_tab[i][2], 5);
+
+        /* bap=4 mantissas */
+        ff_ac3_bap4_mantissas[i][0] = symmetric_dequant(i / 11, 11);
+        ff_ac3_bap4_mantissas[i][1] = symmetric_dequant(i % 11, 11);
+    }
+}
+
+av_cold void ff_ac3_init_static(void)
+{
+    static AVOnce ac3_init_static_once = AV_ONCE_INIT;
+    ff_thread_once(&ac3_init_static_once, ac3_init_static);
+}
 
 const uint8_t ff_eac3_hebap_tab[64] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 8,
