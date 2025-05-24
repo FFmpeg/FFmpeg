@@ -94,6 +94,8 @@ struct ogg_stream {
     int end_trimming; ///< set the number of packets to drop from the end
     uint8_t *new_metadata;
     size_t new_metadata_size;
+    uint8_t *new_extradata;
+    size_t new_extradata_size;
     void *private;
 };
 

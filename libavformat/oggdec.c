@@ -77,6 +77,7 @@ static void free_stream(AVFormatContext *s, int i)
 
     av_freep(&stream->private);
     av_freep(&stream->new_metadata);
+    av_freep(&stream->new_extradata);
 }
 
 //FIXME We could avoid some structure duplication
@@ -886,6 +887,16 @@ retry:
 
         os->new_metadata      = NULL;
         os->new_metadata_size = 0;
+    }
+
+    if (os->new_extradata) {
+        ret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                      os->new_extradata, os->new_extradata_size);
+        if (ret < 0)
+            return ret;
+
+        os->new_extradata      = NULL;
+        os->new_extradata_size = 0;
     }
 
     return psize;
