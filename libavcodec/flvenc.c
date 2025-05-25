@@ -70,20 +70,23 @@ int ff_flv_encode_picture_header(MPVMainEncContext *const m)
 void ff_flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level,
                            int run, int last)
 {
+    unsigned code;
+    int bits;
     if (level < 64) { // 7-bit level
-        put_bits(pb, 1, 0);
-        put_bits(pb, 1, last);
-        put_bits(pb, 6, run);
-
-        put_sbits(pb, 7, slevel);
+        bits = 1 + 1 + 6 + 7;
+        code = (0 << (1 + 6 + 7)) |
+               (last <<  (6 + 7)) |
+               (run << 7) |
+               (slevel & 0x7f);
     } else {
         /* 11-bit level */
-        put_bits(pb, 1, 1);
-        put_bits(pb, 1, last);
-        put_bits(pb, 6, run);
-
-        put_sbits(pb, 11, slevel);
+        bits = 1 + 1 + 6 + 11;
+        code = (1 << (1 + 6 + 11)) |
+               (last <<  (6 + 11)) |
+               (run << 11) |
+               (slevel & 0x7ff);
     }
+    put_bits(pb, bits, code);
 }
 
 const FFCodec ff_flv_encoder = {
