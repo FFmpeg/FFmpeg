@@ -417,6 +417,28 @@ void ff_clean_h263_qscales(MPVEncContext *const s)
 
 static const int dquant_code[5]= {1,0,9,2,3};
 
+static void flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level,
+                               int run, int last)
+{
+    unsigned code;
+    int bits;
+    if (level < 64) { // 7-bit level
+        bits = 1 + 1 + 6 + 7;
+        code = (0 << (1 + 6 + 7)) |
+               (last <<  (6 + 7)) |
+               (run << 7) |
+               (slevel & 0x7f);
+    } else {
+        /* 11-bit level */
+        bits = 1 + 1 + 6 + 11;
+        code = (1 << (1 + 6 + 11)) |
+               (last <<  (6 + 11)) |
+               (run << 11) |
+               (slevel & 0x7ff);
+    }
+    put_bits(pb, bits, code);
+}
+
 /**
  * Encode an 8x8 block.
  * @param block the 8x8 block
@@ -522,7 +544,7 @@ static void h263_encode_block(MPVEncContext *const s, int16_t block[], int n)
                         put_sbits(&s->pb, 6, slevel>>5);
                     }
                 } else {
-                    ff_flv2_encode_ac_esc(&s->pb, slevel, level, run, last);
+                    flv2_encode_ac_esc(&s->pb, slevel, level, run, last);
                 }
             } else {
                 put_bits(&s->pb, 1, sign);

@@ -21,12 +21,8 @@
 #ifndef AVCODEC_FLVENC_H
 #define AVCODEC_FLVENC_H
 
-#include "put_bits.h"
-
 typedef struct MPVMainEncContext MPVMainEncContext;
 
 int ff_flv_encode_picture_header(MPVMainEncContext *const m);
-void ff_flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level, int run,
-                           int last);
 
 #endif /* AVCODEC_FLV_H */
