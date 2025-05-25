@@ -448,34 +448,25 @@ static void h263_decode_dquant(MpegEncContext *s){
 
 static void h263_pred_acdc(MpegEncContext * s, int16_t *block, int n)
 {
-    int x, y, wrap, a, c, pred_dc, scale;
-    int16_t *dc_val, *ac_val, *ac_val1;
+    int wrap, a, c, pred_dc, scale;
+    const int xy = s->block_index[n];
+    int16_t *const dc_val =  s->dc_val[0] + xy;
+    int16_t *const ac_val = (s->ac_val[0] + xy)[0];
 
     /* find prediction */
     if (n < 4) {
-        x = 2 * s->mb_x + (n & 1);
-        y = 2 * s->mb_y + (n>> 1);
         wrap = s->b8_stride;
-        dc_val = s->dc_val[0];
-        ac_val = s->ac_val[0][0];
         scale = s->y_dc_scale;
     } else {
-        x = s->mb_x;
-        y = s->mb_y;
         wrap = s->mb_stride;
-        dc_val = s->dc_val[n - 4 + 1];
-        ac_val = s->ac_val[n - 4 + 1][0];
         scale = s->c_dc_scale;
     }
-
-    ac_val += ((y) * wrap + (x)) * 16;
-    ac_val1 = ac_val;
 
     /* B C
      * A X
      */
-    a = dc_val[(x - 1) + (y) * wrap];
-    c = dc_val[(x) + (y - 1) * wrap];
+    a = dc_val[-1];
+    c = dc_val[-wrap];
 
     /* No prediction outside GOB boundary */
     if (s->first_slice_line && n != 3) {
@@ -488,18 +479,18 @@ static void h263_pred_acdc(MpegEncContext * s, int16_t *block, int n)
         if (s->h263_aic_dir) {
             /* left prediction */
             if (a != 1024) {
-                ac_val -= 16;
+                int16_t *const ac_val2 = ac_val - 16;
                 for (int i = 1; i < 8; i++) {
-                    block[s->idsp.idct_permutation[i << 3]] += ac_val[i];
+                    block[s->idsp.idct_permutation[i << 3]] += ac_val2[i];
                 }
                 pred_dc = a;
             }
         } else {
             /* top prediction */
             if (c != 1024) {
-                ac_val -= 16 * wrap;
+                int16_t *const ac_val2 = ac_val - 16 * wrap;
                 for (int i = 1; i < 8; i++) {
-                    block[s->idsp.idct_permutation[i]] += ac_val[i + 8];
+                    block[s->idsp.idct_permutation[i]] += ac_val2[i + 8];
                 }
                 pred_dc = c;
             }
@@ -523,14 +514,14 @@ static void h263_pred_acdc(MpegEncContext * s, int16_t *block, int n)
         block[0] |= 1;
 
     /* Update AC/DC tables */
-    dc_val[(x) + (y) * wrap] = block[0];
+    *dc_val = block[0];
 
     /* left copy */
     for (int i = 1; i < 8; i++)
-        ac_val1[i]     = block[s->idsp.idct_permutation[i << 3]];
+        ac_val[i]     = block[s->idsp.idct_permutation[i << 3]];
     /* top copy */
     for (int i = 1; i < 8; i++)
-        ac_val1[8 + i] = block[s->idsp.idct_permutation[i]];
+        ac_val[8 + i] = block[s->idsp.idct_permutation[i]];
 }
 
 static int h263_decode_block(MpegEncContext * s, int16_t * block,
