@@ -629,7 +629,6 @@ av_cold int ff_ffv1_encode_init(AVCodecContext *avctx)
     if (s->ec < 0) {
         if (s->version >= 4) {
             s->ec = 2;
-            s->crcref = 0x7a8c4079;
         } else if (s->version >= 3) {
             s->ec = 1;
         } else
@@ -639,8 +638,10 @@ av_cold int ff_ffv1_encode_init(AVCodecContext *avctx)
     // CRC requires version 3+
     if (s->ec == 1)
         s->version = FFMAX(s->version, 3);
-    if (s->ec == 2)
+    if (s->ec == 2) {
         s->version = FFMAX(s->version, 4);
+        s->crcref = 0x7a8c4079;
+    }
 
     if ((s->version == 2 || s->version>3) && avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
         av_log(avctx, AV_LOG_ERROR, "Version 2 or 4 needed for requested features but version 2 or 4 is experimental and not enabled\n");
