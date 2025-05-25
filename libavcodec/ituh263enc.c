@@ -505,22 +505,22 @@ static void h263_encode_block(MPVEncContext *const s, int16_t block[], int n)
             code = get_rl_index(rl, last, run, level);
             put_bits(&s->pb, rl->table_vlc[code][1], rl->table_vlc[code][0]);
             if (code == rl->n) {
-              if(!CONFIG_FLV_ENCODER || s->c.h263_flv <= 1){
-                put_bits(&s->pb, 1, last);
-                put_bits(&s->pb, 6, run);
+                if (!CONFIG_FLV_ENCODER || s->c.h263_flv <= 1) {
+                    put_bits(&s->pb, 1, last);
+                    put_bits(&s->pb, 6, run);
 
-                av_assert2(slevel != 0);
+                    av_assert2(slevel != 0);
 
-                if(level < 128)
-                    put_sbits(&s->pb, 8, slevel);
-                else{
-                    put_bits(&s->pb, 8, 128);
-                    put_sbits(&s->pb, 5, slevel);
-                    put_sbits(&s->pb, 6, slevel>>5);
-                }
-              }else{
+                    if (level < 128) {
+                        put_sbits(&s->pb, 8, slevel);
+                    } else {
+                        put_bits(&s->pb, 8, 128);
+                        put_sbits(&s->pb, 5, slevel);
+                        put_sbits(&s->pb, 6, slevel>>5);
+                    }
+                } else {
                     ff_flv2_encode_ac_esc(&s->pb, slevel, level, run, last);
-              }
+                }
             } else {
                 put_bits(&s->pb, 1, sign);
             }
