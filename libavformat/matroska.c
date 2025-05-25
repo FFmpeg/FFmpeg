@@ -82,6 +82,7 @@ const CodecTags ff_mkv_codec_tags[]={
     {"V_AVS3"           , AV_CODEC_ID_AVS3},
     {"V_DIRAC"          , AV_CODEC_ID_DIRAC},
     {"V_FFV1"           , AV_CODEC_ID_FFV1},
+    {"V_JPEG2000"       , AV_CODEC_ID_JPEG2000},
     {"V_MJPEG"          , AV_CODEC_ID_MJPEG},
     {"V_MPEG1"          , AV_CODEC_ID_MPEG1VIDEO},
     {"V_MPEG2"          , AV_CODEC_ID_MPEG2VIDEO},
