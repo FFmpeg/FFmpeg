@@ -542,10 +542,10 @@ static int h263_decode_block(MpegEncContext * s, int16_t * block,
 
     scan_table = s->intra_scantable.permutated;
     if (s->h263_aic && s->mb_intra) {
+        i = 0;
         if (!coded)
             goto not_coded;
         rl = &ff_rl_intra_aic;
-        i = 0;
         if (s->ac_pred) {
             if (s->h263_aic_dir)
                 scan_table = s->permutated_intra_v_scantable; /* left */
@@ -672,7 +672,6 @@ retry:
     if (s->mb_intra && s->h263_aic) {
 not_coded:
         h263_pred_acdc(s, block, n);
-        i = 63;
     }
     s->block_last_index[n] = i;
     return 0;
