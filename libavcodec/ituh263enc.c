@@ -572,26 +572,17 @@ static void h263p_encode_umotion(PutBitContext *pb, int val)
 
 static int h263_pred_dc(MPVEncContext *const s, int n, int16_t **dc_val_ptr)
 {
-    int x, y, wrap, a, c, pred_dc;
-    int16_t *dc_val;
+    const int wrap = s->c.block_wrap[n];
+    const int xy   = s->c.block_index[n];
+    int16_t *const dc_val = s->c.dc_val[0] + xy;
+    int pred_dc;
 
     /* find prediction */
-    if (n < 4) {
-        x = 2 * s->c.mb_x + (n & 1);
-        y = 2 * s->c.mb_y + ((n & 2) >> 1);
-        wrap = s->c.b8_stride;
-        dc_val = s->c.dc_val[0];
-    } else {
-        x = s->c.mb_x;
-        y = s->c.mb_y;
-        wrap = s->c.mb_stride;
-        dc_val = s->c.dc_val[n - 4 + 1];
-    }
     /* B C
      * A X
      */
-    a = dc_val[(x - 1) + (y) * wrap];
-    c = dc_val[(x) + (y - 1) * wrap];
+    int a = dc_val[-1];
+    int c = dc_val[-wrap];
 
     /* No prediction outside GOB boundary */
     if (s->c.first_slice_line && n != 3) {
@@ -607,7 +598,7 @@ static int h263_pred_dc(MPVEncContext *const s, int n, int16_t **dc_val_ptr)
         pred_dc = c;
 
     /* we assume pred is positive */
-    *dc_val_ptr = &dc_val[x + y * wrap];
+    *dc_val_ptr = dc_val;
     return pred_dc;
 }
 
