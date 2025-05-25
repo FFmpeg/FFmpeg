@@ -377,7 +377,6 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
 
     check_scantable_index(s, i);
 
-    s->block_last_index[n] = i;
     return 0;
 }
 
@@ -518,8 +517,6 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
                            s->mb_x, s->mb_y);
                     return ret;
                 }
-
-                s->block_last_index[i] = ret;
             }
         }
     } else {

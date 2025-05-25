@@ -276,7 +276,7 @@ end:
     }
 
     if (i > MAX_INDEX)
-        i = AVERROR_INVALIDDATA;
+        return AVERROR_INVALIDDATA;
 
-    return i;
+    return 0;
 }
