@@ -284,7 +284,6 @@ static int rv20_decode_picture_header(RVDecContext *rv, int whole_size)
         skip_bits(&s->gb, 5);
 
     s->h263_aic        = s->pict_type == AV_PICTURE_TYPE_I;
-    s->modified_quant  = 1;
     if (!s->avctx->lowres)
         s->loop_filter = 1;
 
@@ -370,6 +369,10 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
 
     s->h263_long_vectors = avctx->extradata[3] & 1;
     rv->sub_id           = AV_RB32A(avctx->extradata + 4);
+    if (avctx->codec_id == AV_CODEC_ID_RV20) {
+        s->modified_quant      = 1;
+        s->chroma_qscale_table = ff_h263_chroma_qscale_table;
+    }
 
     major_ver = RV_GET_MAJOR_VER(rv->sub_id);
     minor_ver = RV_GET_MINOR_VER(rv->sub_id);
@@ -474,9 +477,6 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
         s->y_dc_scale_table =
         s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
     }
-
-    if (s->modified_quant)
-        s->chroma_qscale_table = ff_h263_chroma_qscale_table;
 
     ff_set_qscale(s, s->qscale);
 
