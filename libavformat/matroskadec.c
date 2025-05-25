@@ -2877,6 +2877,11 @@ static int mkv_parse_video_codec(MatroskaTrack *track, AVCodecParameters *par,
 {
     if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC") &&
         track->codec_priv.size >= 40) {
+        uint32_t size = AV_RL32A(track->codec_priv.data);
+        // VFW extradata is padded to an even length, yet
+        // the size field contains the real length.
+        if (size & 1 && size == track->codec_priv.size - 1)
+            --track->codec_priv.size;
         track->ms_compat    = 1;
         par->bits_per_coded_sample = AV_RL16(track->codec_priv.data + 14);
         par->codec_tag      = AV_RL32(track->codec_priv.data + 16);

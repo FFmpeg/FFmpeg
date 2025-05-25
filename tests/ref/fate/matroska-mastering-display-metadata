@@ -1,7 +1,7 @@
 c1e5e2ecf433cf05af8556debc7d4d0b *tests/data/fate/matroska-mastering-display-metadata.matroska
 1669773 tests/data/fate/matroska-mastering-display-metadata.matroska
 #extradata 0:        4, 0x040901a3
-#extradata 3:      202, 0xfce96279
+#extradata 3:      201, 0x9a706279
 #tb 0: 1/1000
 #media_type 0: video
 #codec_id 0: prores
