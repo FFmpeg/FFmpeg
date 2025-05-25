@@ -1960,8 +1960,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 
         // look for a codec ID string specific to mkv to use,
         // if none are found, use AVI codes
-        if (par->codec_id == AV_CODEC_ID_FFV1 || par->codec_id == AV_CODEC_ID_JPEG2000) {
-            /* FFV1 and JPEG2000 are actually supported natively in Matroska,
+        if (par->codec_id == AV_CODEC_ID_JPEG2000) {
+            /* JPEG2000 is actually supported natively in Matroska,
              * yet we use the VfW way to mux it for compatibility
              * with old demuxers. (FIXME: Are they really important?) */
         } else if (par->codec_id != AV_CODEC_ID_RAWVIDEO || par->codec_tag) {

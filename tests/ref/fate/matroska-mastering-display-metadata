@@ -1,5 +1,5 @@
-c1e5e2ecf433cf05af8556debc7d4d0b *tests/data/fate/matroska-mastering-display-metadata.matroska
-1669773 tests/data/fate/matroska-mastering-display-metadata.matroska
+bdca53906b34c57192416a0f737b885e *tests/data/fate/matroska-mastering-display-metadata.matroska
+1669723 tests/data/fate/matroska-mastering-display-metadata.matroska
 #extradata 0:        4, 0x040901a3
 #extradata 3:      201, 0x9a706279
 #tb 0: 1/1000
