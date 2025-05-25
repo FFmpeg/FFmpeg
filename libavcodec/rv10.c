@@ -284,6 +284,13 @@ static int rv20_decode_picture_header(RVDecContext *rv, int whole_size)
         skip_bits(&s->gb, 5);
 
     s->h263_aic        = s->pict_type == AV_PICTURE_TYPE_I;
+    if (s->h263_aic) {
+        s->y_dc_scale_table =
+        s->c_dc_scale_table = ff_aic_dc_scale_table;
+    } else {
+        s->y_dc_scale_table =
+        s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
+    }
     if (!s->avctx->lowres)
         s->loop_filter = 1;
 
@@ -470,13 +477,6 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
     }
     start_mb_x     = s->mb_x;
     s->resync_mb_y = s->mb_y;
-    if (s->h263_aic) {
-        s->y_dc_scale_table =
-        s->c_dc_scale_table = ff_aic_dc_scale_table;
-    } else {
-        s->y_dc_scale_table =
-        s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
-    }
 
     ff_set_qscale(s, s->qscale);
 
