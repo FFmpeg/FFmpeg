@@ -1745,11 +1745,11 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
             }
         } while (cbpc == 20);
 
-        s->bdsp.clear_blocks(s->block[0]);
         dquant      = cbpc & 8;
         s->mb_intra = ((cbpc & 4) != 0);
         if (s->mb_intra)
             goto intra;
+        s->bdsp.clear_blocks(s->block[0]);
 
         if (s->pict_type == AV_PICTURE_TYPE_S &&
             ctx->vol_sprite_usage == GMC_SPRITE && (cbpc & 16) == 0)
