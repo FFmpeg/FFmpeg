@@ -226,7 +226,6 @@ void writeout_rgb(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
 
 void decode_slice(inout SliceContext sc, const uint slice_idx)
 {
-    int run_index = 0;
     int w = sc.slice_dim.x;
     ivec2 sp = sc.slice_pos;
 
@@ -274,11 +273,13 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
             if (p > 0 && p < 3)
                 h >>= chroma_shift.y;
 
+            int run_index = 0;
             for (int y = 0; y < h; y++)
                 decode_line(sc, sp, w, y, p, bits,
                             slice_state_off[p], quant_table_idx[p], run_index);
         }
 #else
+        int run_index = 0;
         for (int y = 0; y < sc.slice_dim.y; y++) {
             for (int p = 0; p < color_planes; p++)
                 decode_line(sc, sp, w, y, p, bits,
