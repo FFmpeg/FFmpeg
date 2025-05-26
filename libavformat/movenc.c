@@ -7731,6 +7731,12 @@ static int mov_init(AVFormatContext *s)
                       FF_MOV_FLAG_FRAG_EVERY_FRAME))
         mov->flags |= FF_MOV_FLAG_FRAGMENT;
 
+    if (mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED &&
+        mov->flags & FF_MOV_FLAG_FASTSTART) {
+        av_log(s, AV_LOG_ERROR, "Setting both hybrid_fragmented and faststart is not supported.\n");
+        return AVERROR(EINVAL);
+    }
+
     /* Set other implicit flags immediately */
     if (mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED)
         mov->flags |= FF_MOV_FLAG_FRAGMENT;
