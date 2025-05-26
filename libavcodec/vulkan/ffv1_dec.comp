@@ -139,7 +139,8 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
         ivec2 pr = get_pred(dec[p], sp, ivec2(x, y), 0, w,
                             quant_table_idx, extend_lookup[quant_table_idx] > 0);
 
-        VlcState sb = VlcState(uint64_t(slice_state) + state_off + VLC_STATE_SIZE*abs(pr[0]));
+        uint context_off = state_off + VLC_STATE_SIZE*abs(pr[0]);
+        VlcState sb = VlcState(uint64_t(slice_state) + context_off);
 
         if (pr[0] == 0 && run_mode == 0)
             run_mode = 1;
