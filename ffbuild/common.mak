@@ -115,6 +115,12 @@ COMPILE_LASX = $(call COMPILE,CC,LASXFLAGS)
 $(BIN2CEXE): ffbuild/bin2c_host.o
 	$(HOSTLD) $(HOSTLDFLAGS) $(HOSTLD_O) $^ $(HOSTEXTRALIBS)
 
+RUN_BIN2C = $(BIN2C) $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<) $@ $(subst .,_,$(basename $(notdir $@)))
+RUN_GZIP  = $(M)gzip -nc9 $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<) >$@
+RUN_MINIFY = $(M)sed 's!/\\*.*\\*/!!g' $< | tr '\n' ' ' | tr -s ' ' | sed 's/^ //; s/ $$//' > $@
+%.gz: TAG = GZIP
+%.min: TAG = MINIFY
+
 %.metal.air: %.metal
 	$(METALCC) $< -o $@
 
@@ -122,61 +128,46 @@ $(BIN2CEXE): ffbuild/bin2c_host.o
 	$(METALLIB) --split-module-without-linking $< -o $@
 
 %.metallib.c: %.metallib $(BIN2CEXE)
-	$(BIN2C) $< $@ $(subst .,_,$(basename $(notdir $@)))
+	$(RUN_BIN2C)
 
 %.ptx: %.cu $(SRC_PATH)/compat/cuda/cuda_runtime.h
 	$(COMPILE_NVCC)
 
 ifdef CONFIG_PTX_COMPRESSION
-%.ptx.gz: TAG = GZIP
 %.ptx.gz: %.ptx
-	$(M)gzip -nc9 $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<) >$@
+	$(RUN_GZIP)
 
 %.ptx.c: %.ptx.gz $(BIN2CEXE)
-	$(BIN2C) $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<) $@ $(subst .,_,$(basename $(notdir $@)))
+	$(RUN_BIN2C)
 else
 %.ptx.c: %.ptx $(BIN2CEXE)
-	$(BIN2C) $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<) $@ $(subst .,_,$(basename $(notdir $@)))
+	$(RUN_BIN2C)
 endif
 
-# 1) Preprocess CSS to a minified version
-%.css.min: TAG = SED
 %.css.min: %.css
-	$(M)sed 's!/\\*.*\\*/!!g' $< \
-	| tr '\n' ' ' \
-	| tr -s ' ' \
-	| sed 's/^ //; s/ $$//' \
-	> $@
+	$(RUN_MINIFY)
 
 ifdef CONFIG_RESOURCE_COMPRESSION
 
-# 2) Gzip the minified CSS
-%.css.min.gz: TAG = GZIP
 %.css.min.gz: %.css.min
-	$(M)gzip -nc9 $< > $@
+	$(RUN_GZIP)
 
-# 3) Convert the gzipped CSS to a .c array
 %.css.c: %.css.min.gz $(BIN2CEXE)
-	$(BIN2C) $< $@ $(subst .,_,$(basename $(notdir $@)))
+	$(RUN_BIN2C)
 
-# 4) Gzip the HTML file (no minification needed)
-%.html.gz: TAG = GZIP
 %.html.gz: %.html
-	$(M)gzip -nc9 $< > $@
+	$(RUN_GZIP)
 
-# 5) Convert the gzipped HTML to a .c array
 %.html.c: %.html.gz $(BIN2CEXE)
-	$(BIN2C) $< $@ $(subst .,_,$(basename $(notdir $@)))
+	$(RUN_BIN2C)
 
 else   # NO COMPRESSION
 
-# 2) Convert the minified CSS to a .c array
 %.css.c: %.css.min $(BIN2CEXE)
-	$(BIN2C) $< $@ $(subst .,_,$(basename $(notdir $@)))
+	$(RUN_BIN2C)
 
-# 3) Convert the plain HTML to a .c array
 %.html.c: %.html $(BIN2CEXE)
-	$(BIN2C) $< $@ $(subst .,_,$(basename $(notdir $@)))
+	$(RUN_BIN2C)
 endif
 
 clean::
