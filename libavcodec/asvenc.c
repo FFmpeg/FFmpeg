@@ -301,9 +301,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (ret < 0)
         return ret;
 
-    if ((uintptr_t)pict->data[0] & 7 || pict->linesize[0] & 7 ||
-        (uintptr_t)pict->data[1] & 7 || pict->linesize[1] & 7 ||
-        (uintptr_t)pict->data[2] & 7 || pict->linesize[2] & 7)
+    if (!PIXBLOCKDSP_8BPP_GET_PIXELS_SUPPORTS_UNALIGNED &&
+        ((uintptr_t)pict->data[0] & 7 || pict->linesize[0] & 7 ||
+         (uintptr_t)pict->data[1] & 7 || pict->linesize[1] & 7 ||
+         (uintptr_t)pict->data[2] & 7 || pict->linesize[2] & 7))
         a->get_pixels = a->pdsp.get_pixels_unaligned;
     else
         a->get_pixels = a->pdsp.get_pixels;

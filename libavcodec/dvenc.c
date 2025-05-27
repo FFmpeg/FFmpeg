@@ -1200,9 +1200,10 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
     DVEncContext *s = c->priv_data;
     int ret;
 
-    if ((uintptr_t)frame->data[0] & 7 || frame->linesize[0] & 7 ||
-        (uintptr_t)frame->data[1] & 7 || frame->linesize[1] & 7 ||
-        (uintptr_t)frame->data[2] & 7 || frame->linesize[2] & 7)
+    if (!PIXBLOCKDSP_8BPP_GET_PIXELS_SUPPORTS_UNALIGNED &&
+        ((uintptr_t)frame->data[0] & 7 || frame->linesize[0] & 7 ||
+         (uintptr_t)frame->data[1] & 7 || frame->linesize[1] & 7 ||
+         (uintptr_t)frame->data[2] & 7 || frame->linesize[2] & 7))
         s->get_pixels = s->pdsp.get_pixels_unaligned;
     else
         s->get_pixels = s->pdsp.get_pixels;

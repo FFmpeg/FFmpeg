@@ -22,9 +22,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define PIXBLOCKDSP_8BPP_GET_PIXELS_SUPPORTS_UNALIGNED \
+    !(ARCH_ARM || ARCH_MIPS || ARCH_PPC || ARCH_RISCV)
+
 typedef struct PixblockDSPContext {
     void (*get_pixels)(int16_t *restrict block /* align 16 */,
-                       const uint8_t *pixels /* align 8 for <= 8 bit, 16 otherwise */,
+                       /* align 16 for > 8 bits; align 8 for <= 8 bits
+                        * (or 1 if PIXBLOCKDSP_8BPP_GET_PIXELS_SUPPORTS_UNALIGNED is set) */
+                       const uint8_t *pixels,
                        ptrdiff_t stride);
     void (*get_pixels_unaligned)(int16_t *restrict block /* align 16 */,
                        const uint8_t *pixels,
