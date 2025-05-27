@@ -87,38 +87,31 @@ static void diff_pixels_c(int16_t *restrict block, const uint8_t *s1,
 
 av_cold void ff_pixblockdsp_init(PixblockDSPContext *c, AVCodecContext *avctx)
 {
-    av_unused const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8;
+    const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8 &&
+                                    avctx->bits_per_raw_sample <= 16;
 
     c->diff_pixels_unaligned =
     c->diff_pixels = diff_pixels_c;
 
-    switch (avctx->bits_per_raw_sample) {
-    case 9:
-    case 10:
-    case 12:
-    case 14:
+    if (high_bit_depth) {
         c->get_pixels_unaligned = get_pixels_unaligned_16_c;
-        c->get_pixels = get_pixels_16_c;
-        break;
-    default:
-        if (avctx->bits_per_raw_sample<=8 || avctx->codec_type != AVMEDIA_TYPE_VIDEO) {
-            c->get_pixels_unaligned =
-            c->get_pixels = get_pixels_8_c;
-        }
-        break;
+        c->get_pixels           = get_pixels_16_c;
+    } else {
+        c->get_pixels_unaligned =
+        c->get_pixels           = get_pixels_8_c;
     }
 
 #if ARCH_AARCH64
-    ff_pixblockdsp_init_aarch64(c, avctx, high_bit_depth);
+    ff_pixblockdsp_init_aarch64(c, high_bit_depth);
 #elif ARCH_ARM
-    ff_pixblockdsp_init_arm(c, avctx, high_bit_depth);
+    ff_pixblockdsp_init_arm(c, high_bit_depth);
 #elif ARCH_PPC
-    ff_pixblockdsp_init_ppc(c, avctx, high_bit_depth);
+    ff_pixblockdsp_init_ppc(c, high_bit_depth);
 #elif ARCH_RISCV
-    ff_pixblockdsp_init_riscv(c, avctx, high_bit_depth);
+    ff_pixblockdsp_init_riscv(c, high_bit_depth);
 #elif ARCH_X86
-    ff_pixblockdsp_init_x86(c, avctx, high_bit_depth);
+    ff_pixblockdsp_init_x86(c, high_bit_depth);
 #elif ARCH_MIPS
-    ff_pixblockdsp_init_mips(c, avctx, high_bit_depth);
+    ff_pixblockdsp_init_mips(c, high_bit_depth);
 #endif
 }

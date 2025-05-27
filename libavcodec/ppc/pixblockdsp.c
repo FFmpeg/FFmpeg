@@ -27,7 +27,6 @@
 #include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 
-#include "libavcodec/avcodec.h"
 #include "libavcodec/pixblockdsp.h"
 
 #if HAVE_ALTIVEC
@@ -263,7 +262,6 @@ static void diff_pixels_vsx(int16_t *restrict block, const uint8_t *s1,
 #endif /* HAVE_VSX */
 
 av_cold void ff_pixblockdsp_init_ppc(PixblockDSPContext *c,
-                                     AVCodecContext *avctx,
                                      unsigned high_bit_depth)
 {
 #if HAVE_ALTIVEC

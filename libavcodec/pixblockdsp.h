@@ -42,17 +42,17 @@ typedef struct PixblockDSPContext {
 } PixblockDSPContext;
 
 void ff_pixblockdsp_init(PixblockDSPContext *c, AVCodecContext *avctx);
-void ff_pixblockdsp_init_aarch64(PixblockDSPContext *c, AVCodecContext *avctx,
+void ff_pixblockdsp_init_aarch64(PixblockDSPContext *c,
                                  unsigned high_bit_depth);
-void ff_pixblockdsp_init_arm(PixblockDSPContext *c, AVCodecContext *avctx,
+void ff_pixblockdsp_init_arm(PixblockDSPContext *c,
                              unsigned high_bit_depth);
-void ff_pixblockdsp_init_ppc(PixblockDSPContext *c, AVCodecContext *avctx,
+void ff_pixblockdsp_init_ppc(PixblockDSPContext *c,
                              unsigned high_bit_depth);
-void ff_pixblockdsp_init_riscv(PixblockDSPContext *c, AVCodecContext *avctx,
+void ff_pixblockdsp_init_riscv(PixblockDSPContext *c,
                                unsigned high_bit_depth);
-void ff_pixblockdsp_init_x86(PixblockDSPContext *c, AVCodecContext *avctx,
+void ff_pixblockdsp_init_x86(PixblockDSPContext *c,
                              unsigned high_bit_depth);
-void ff_pixblockdsp_init_mips(PixblockDSPContext *c, AVCodecContext *avctx,
+void ff_pixblockdsp_init_mips(PixblockDSPContext *c,
                               unsigned high_bit_depth);
 
 #endif /* AVCODEC_PIXBLOCKDSP_H */

@@ -21,7 +21,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/aarch64/cpu.h"
-#include "libavcodec/avcodec.h"
 #include "libavcodec/pixblockdsp.h"
 
 void ff_get_pixels_neon(int16_t *block, const uint8_t *pixels,
@@ -30,7 +29,6 @@ void ff_diff_pixels_neon(int16_t *block, const uint8_t *s1,
                          const uint8_t *s2, ptrdiff_t stride);
 
 av_cold void ff_pixblockdsp_init_aarch64(PixblockDSPContext *c,
-                                         AVCodecContext *avctx,
                                          unsigned high_bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
