@@ -45,6 +45,10 @@ typedef struct ASVEncContext {
 
     PutBitContext pb;
 
+    void (*get_pixels)(int16_t *restrict block,
+                       const uint8_t *pixels,
+                       ptrdiff_t stride);
+
     PixblockDSPContext pdsp;
     FDCTDSPContext fdsp;
     DECLARE_ALIGNED(32, int16_t, block)[6][64];
@@ -219,16 +223,16 @@ static inline void dct_get(ASVEncContext *a, const AVFrame *frame,
     const uint8_t *ptr_cb = frame->data[1] + (mb_y *  8 * frame->linesize[1]) + mb_x *  8;
     const uint8_t *ptr_cr = frame->data[2] + (mb_y *  8 * frame->linesize[2]) + mb_x *  8;
 
-    a->pdsp.get_pixels(block[0], ptr_y,                    linesize);
-    a->pdsp.get_pixels(block[1], ptr_y + 8,                linesize);
-    a->pdsp.get_pixels(block[2], ptr_y + 8 * linesize,     linesize);
-    a->pdsp.get_pixels(block[3], ptr_y + 8 * linesize + 8, linesize);
+    a->get_pixels(block[0], ptr_y,                    linesize);
+    a->get_pixels(block[1], ptr_y + 8,                linesize);
+    a->get_pixels(block[2], ptr_y + 8 * linesize,     linesize);
+    a->get_pixels(block[3], ptr_y + 8 * linesize + 8, linesize);
     for (i = 0; i < 4; i++)
         a->fdsp.fdct(block[i]);
 
     if (!(a->c.avctx->flags & AV_CODEC_FLAG_GRAY)) {
-        a->pdsp.get_pixels(block[4], ptr_cb, frame->linesize[1]);
-        a->pdsp.get_pixels(block[5], ptr_cr, frame->linesize[2]);
+        a->get_pixels(block[4], ptr_cb, frame->linesize[1]);
+        a->get_pixels(block[5], ptr_cr, frame->linesize[2]);
         for (i = 4; i < 6; i++)
             a->fdsp.fdct(block[i]);
     }
@@ -296,6 +300,13 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ret = ff_alloc_packet(avctx, pkt, c->mb_height * c->mb_width * MAX_MB_SIZE + 3);
     if (ret < 0)
         return ret;
+
+    if ((uintptr_t)pict->data[0] & 7 || pict->linesize[0] & 7 ||
+        (uintptr_t)pict->data[1] & 7 || pict->linesize[1] & 7 ||
+        (uintptr_t)pict->data[2] & 7 || pict->linesize[2] & 7)
+        a->get_pixels = a->pdsp.get_pixels_unaligned;
+    else
+        a->get_pixels = a->pdsp.get_pixels;
 
     init_put_bits(&a->pb, pkt->data, pkt->size);
 
