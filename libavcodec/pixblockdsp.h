@@ -24,7 +24,7 @@
 
 typedef struct PixblockDSPContext {
     void (*get_pixels)(int16_t *restrict block /* align 16 */,
-                       const uint8_t *pixels /* align 8 */,
+                       const uint8_t *pixels /* align 8 for <= 8 bit, 16 otherwise */,
                        ptrdiff_t stride);
     void (*get_pixels_unaligned)(int16_t *restrict block /* align 16 */,
                        const uint8_t *pixels,
