@@ -45,6 +45,8 @@ Commandline utility code:
 QuickTime faststart:
   tools/qt-faststart.c                  Baptiste Coudurier
 
+Execution Graph Printing
+  fftools/graph, fftools/resources  [2] softworkz
 
 Miscellaneous Areas
 ===================
@@ -554,7 +556,6 @@ Pedro Arthur
 Sebastien Zwickert
 Vittorio Giovara
 wm4
-softworkz
 (this list is incomplete)
 
 
