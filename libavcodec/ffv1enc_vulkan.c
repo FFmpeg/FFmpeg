@@ -1761,8 +1761,8 @@ static av_cold int vulkan_encode_ffv1_close(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(VulkanEncodeFFv1Context, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption vulkan_encode_ffv1_options[] = {
-    { "slicecrc", "Protect slices with CRCs", OFFSET(ctx.ec), AV_OPT_TYPE_BOOL,
-            { .i64 = -1 }, -1, 1, VE },
+    { "slicecrc", "Protect slices with CRCs", OFFSET(ctx.ec), AV_OPT_TYPE_INT,
+            { .i64 = -1 }, -1, 2, VE },
     { "context", "Context model", OFFSET(ctx.context_model), AV_OPT_TYPE_INT,
             { .i64 = 0 }, 0, 1, VE },
     { "coder", "Coder type", OFFSET(ctx.ac), AV_OPT_TYPE_INT,
