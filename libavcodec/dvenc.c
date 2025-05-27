@@ -63,6 +63,8 @@ typedef struct DVEncContext {
     DVwork_chunk work_chunks[4 * 12 * 27];
 
     int quant_deadzone;
+
+    PixblockDSPContext pdsp;
 } DVEncContext;
 
 
@@ -70,7 +72,6 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
 {
     DVEncContext *s = avctx->priv_data;
     FDCTDSPContext fdsp;
-    PixblockDSPContext pdsp;
     int ret;
 
     s->avctx = avctx;
@@ -108,12 +109,10 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
     }
 
     memset(&fdsp,0, sizeof(fdsp));
-    memset(&pdsp,0, sizeof(pdsp));
     ff_fdctdsp_init(&fdsp, avctx);
-    ff_pixblockdsp_init(&pdsp, avctx);
-    s->get_pixels = pdsp.get_pixels;
     s->fdct[0]    = fdsp.fdct;
     s->fdct[1]    = fdsp.fdct248;
+    ff_pixblockdsp_init(&s->pdsp, avctx);
 
 #if !CONFIG_HARDCODED_TABLES
     {
@@ -1200,6 +1199,13 @@ static int dvvideo_encode_frame(AVCodecContext *c, AVPacket *pkt,
 {
     DVEncContext *s = c->priv_data;
     int ret;
+
+    if ((uintptr_t)frame->data[0] & 7 || frame->linesize[0] & 7 ||
+        (uintptr_t)frame->data[1] & 7 || frame->linesize[1] & 7 ||
+        (uintptr_t)frame->data[2] & 7 || frame->linesize[2] & 7)
+        s->get_pixels = s->pdsp.get_pixels_unaligned;
+    else
+        s->get_pixels = s->pdsp.get_pixels;
 
     if ((ret = ff_get_encode_buffer(c, pkt, s->sys->frame_size, 0)) < 0)
         return ret;
