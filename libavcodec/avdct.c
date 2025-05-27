@@ -119,7 +119,7 @@ int avcodec_dct_init(AVDCT *dsp)
 #if CONFIG_PIXBLOCKDSP
     {
         PixblockDSPContext pdsp;
-        ff_pixblockdsp_init(&pdsp, avctx);
+        ff_pixblockdsp_init(&pdsp, dsp->bits_per_sample);
         COPY(pdsp, get_pixels);
         COPY(pdsp, get_pixels_unaligned);
     }

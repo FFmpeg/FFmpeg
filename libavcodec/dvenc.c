@@ -112,7 +112,7 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
     ff_fdctdsp_init(&fdsp, avctx);
     s->fdct[0]    = fdsp.fdct;
     s->fdct[1]    = fdsp.fdct248;
-    ff_pixblockdsp_init(&s->pdsp, avctx);
+    ff_pixblockdsp_init(&s->pdsp, 8);
 
 #if !CONFIG_HARDCODED_TABLES
     {

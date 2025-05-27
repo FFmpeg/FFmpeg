@@ -19,9 +19,8 @@
 #ifndef AVCODEC_PIXBLOCKDSP_H
 #define AVCODEC_PIXBLOCKDSP_H
 
+#include <stddef.h>
 #include <stdint.h>
-
-#include "avcodec.h"
 
 typedef struct PixblockDSPContext {
     void (*get_pixels)(int16_t *restrict block /* align 16 */,
@@ -41,7 +40,7 @@ typedef struct PixblockDSPContext {
 
 } PixblockDSPContext;
 
-void ff_pixblockdsp_init(PixblockDSPContext *c, AVCodecContext *avctx);
+void ff_pixblockdsp_init(PixblockDSPContext *c, int bits_per_raw_sample);
 void ff_pixblockdsp_init_aarch64(PixblockDSPContext *c,
                                  unsigned high_bit_depth);
 void ff_pixblockdsp_init_arm(PixblockDSPContext *c,

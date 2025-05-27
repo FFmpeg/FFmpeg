@@ -1031,7 +1031,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     init_unquantize(s, avctx);
     ff_fdctdsp_init(&s->fdsp, avctx);
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
-    ff_pixblockdsp_init(&s->pdsp, avctx);
+    ff_pixblockdsp_init(&s->pdsp, 8);
     ret = me_cmp_init(m, avctx);
     if (ret < 0)
         return ret;

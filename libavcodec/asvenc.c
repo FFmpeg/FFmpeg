@@ -378,7 +378,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     ff_asv_common_init(avctx);
     ff_fdctdsp_init(&a->fdsp, avctx);
-    ff_pixblockdsp_init(&a->pdsp, avctx);
+    ff_pixblockdsp_init(&a->pdsp, 8);
 
     if (avctx->global_quality <= 0)
         avctx->global_quality = 4 * FF_QUALITY_SCALE;

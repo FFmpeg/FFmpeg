@@ -423,7 +423,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
     ff_fdctdsp_init(&ctx->m.fdsp, avctx);
     ff_mpv_idct_init(&ctx->m.c);
     ff_mpegvideoencdsp_init(&ctx->m.mpvencdsp, avctx);
-    ff_pixblockdsp_init(&ctx->m.pdsp, avctx);
+    ff_pixblockdsp_init(&ctx->m.pdsp, ctx->bit_depth);
     ff_dct_encode_init(&ctx->m);
 
     if (ctx->profile != AV_PROFILE_DNXHD)

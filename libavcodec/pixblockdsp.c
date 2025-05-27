@@ -21,7 +21,6 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
-#include "avcodec.h"
 #include "pixblockdsp.h"
 
 static void get_pixels_16_c(int16_t *restrict block, const uint8_t *pixels,
@@ -85,10 +84,10 @@ static void diff_pixels_c(int16_t *restrict block, const uint8_t *s1,
     }
 }
 
-av_cold void ff_pixblockdsp_init(PixblockDSPContext *c, AVCodecContext *avctx)
+av_cold void ff_pixblockdsp_init(PixblockDSPContext *c, int bits_per_raw_sample)
 {
-    const unsigned high_bit_depth = avctx->bits_per_raw_sample > 8 &&
-                                    avctx->bits_per_raw_sample <= 16;
+    const unsigned high_bit_depth = bits_per_raw_sample > 8 &&
+                                    bits_per_raw_sample <= 16;
 
     c->diff_pixels_unaligned =
     c->diff_pixels = diff_pixels_c;
