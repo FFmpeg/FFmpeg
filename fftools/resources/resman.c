@@ -32,7 +32,6 @@
 #endif
 
 #include "resman.h"
-#include "fftools/ffmpeg_filter.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/dict.h"

@@ -353,6 +353,18 @@ typedef struct OutputFilterOptions {
 typedef struct InputFilter {
     struct FilterGraph *graph;
     uint8_t            *name;
+    int                 index;
+
+    // filter data type
+    enum AVMediaType    type;
+
+    AVFilterContext    *filter;
+
+    char               *input_name;
+
+    /* for filters that are not yet bound to an input stream,
+     * this stores the input linklabel, if any */
+    uint8_t            *linklabel;
 } InputFilter;
 
 typedef struct OutputFilter {
@@ -360,6 +372,11 @@ typedef struct OutputFilter {
 
     struct FilterGraph  *graph;
     uint8_t             *name;
+    int                  index;
+
+    AVFilterContext     *filter;
+
+    char                *output_name;
 
     /* for filters that are not yet bound to an output stream,
      * this stores the output linklabel, if any */
