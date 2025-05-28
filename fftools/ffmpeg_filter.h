@@ -37,48 +37,6 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/downmix_info.h"
 
-typedef struct FilterGraphPriv {
-    FilterGraph      fg;
-
-    // name used for logging
-    char             log_name[32];
-
-    int              is_simple;
-    // true when the filtergraph contains only meta filters
-    // that do not modify the frame data
-    int              is_meta;
-    // source filters are present in the graph
-    int              have_sources;
-    int              disable_conversions;
-
-    unsigned         nb_outputs_done;
-
-    const char      *graph_desc;
-
-    int              nb_threads;
-
-    // frame for temporarily holding output from the filtergraph
-    AVFrame         *frame;
-    // frame for sending output to the encoder
-    AVFrame         *frame_enc;
-
-    Scheduler       *sch;
-    unsigned         sch_idx;
-
-    AVBPrint graph_print_buf;
-
-} FilterGraphPriv;
-
-static inline FilterGraphPriv *fgp_from_fg(FilterGraph *fg)
-{
-    return (FilterGraphPriv*)fg;
-}
-
-static inline const FilterGraphPriv *cfgp_from_cfg(const FilterGraph *fg)
-{
-    return (const FilterGraphPriv*)fg;
-}
-
 typedef struct InputFilterPriv {
     InputFilter         ifilter;
 

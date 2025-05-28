@@ -44,6 +44,42 @@
 // FIXME private header, used for mid_pred()
 #include "libavcodec/mathops.h"
 
+typedef struct FilterGraphPriv {
+    FilterGraph      fg;
+
+    // name used for logging
+    char             log_name[32];
+
+    int              is_simple;
+    // true when the filtergraph contains only meta filters
+    // that do not modify the frame data
+    int              is_meta;
+    // source filters are present in the graph
+    int              have_sources;
+    int              disable_conversions;
+
+    unsigned         nb_outputs_done;
+
+    int              nb_threads;
+
+    // frame for temporarily holding output from the filtergraph
+    AVFrame         *frame;
+    // frame for sending output to the encoder
+    AVFrame         *frame_enc;
+
+    Scheduler       *sch;
+    unsigned         sch_idx;
+} FilterGraphPriv;
+
+static FilterGraphPriv *fgp_from_fg(FilterGraph *fg)
+{
+    return (FilterGraphPriv*)fg;
+}
+
+static const FilterGraphPriv *cfgp_from_cfg(const FilterGraph *fg)
+{
+    return (const FilterGraphPriv*)fg;
+}
 
 // data that is local to the filter thread and not visible outside of it
 typedef struct FilterGraphThread {
@@ -856,7 +892,7 @@ void fg_free(FilterGraph **pfg)
         av_freep(&fg->outputs[j]);
     }
     av_freep(&fg->outputs);
-    av_freep(&fgp->graph_desc);
+    av_freep(&fg->graph_desc);
 
     av_frame_free(&fgp->frame);
     av_frame_free(&fgp->frame_enc);
@@ -909,7 +945,7 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
     }
 
     fg->class       = &fg_class;
-    fgp->graph_desc = graph_desc;
+    fg->graph_desc  = graph_desc;
     fgp->disable_conversions = !auto_conversion_filters;
     fgp->nb_threads          = -1;
     fgp->sch                 = sch;
@@ -928,7 +964,7 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
         return AVERROR(ENOMEM);;
     graph->nb_threads = 1;
 
-    ret = graph_parse(fg, graph, fgp->graph_desc, &inputs, &outputs,
+    ret = graph_parse(fg, graph, fg->graph_desc, &inputs, &outputs,
                       hw_device_for_filter());
     if (ret < 0)
         goto fail;
@@ -1070,7 +1106,6 @@ int fg_create_simple(FilterGraph **pfg,
 
 static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
 {
-    FilterGraphPriv *fgp = fgp_from_fg(fg);
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     InputStream *ist = NULL;
     enum AVMediaType type = ifp->type;
@@ -1086,7 +1121,7 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
         dec_idx = strtol(ifp->linklabel + 4, &p, 0);
         if (dec_idx < 0 || dec_idx >= nb_decoders) {
             av_log(fg, AV_LOG_ERROR, "Invalid decoder index %d in filtergraph description %s\n",
-                   dec_idx, fgp->graph_desc);
+                   dec_idx, fg->graph_desc);
             return AVERROR(EINVAL);
         }
 
@@ -1137,7 +1172,7 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
         file_idx = strtol(ifp->linklabel, &p, 0);
         if (file_idx < 0 || file_idx >= nb_input_files) {
             av_log(fg, AV_LOG_FATAL, "Invalid file index %d in filtergraph description %s.\n",
-                   file_idx, fgp->graph_desc);
+                   file_idx, fg->graph_desc);
             return AVERROR(EINVAL);
         }
         s = input_files[file_idx]->ctx;
@@ -1171,7 +1206,7 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
         stream_specifier_uninit(&ss);
         if (!st) {
             av_log(fg, AV_LOG_FATAL, "Stream specifier '%s' in filtergraph description %s "
-                   "matches no streams.\n", p, fgp->graph_desc);
+                   "matches no streams.\n", p, fg->graph_desc);
             return AVERROR(EINVAL);
         }
         ist = input_files[file_idx]->streams[st->index];
@@ -1733,7 +1768,7 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
     AVFilterInOut *inputs, *outputs, *cur;
     int ret = AVERROR_BUG, i, simple = filtergraph_is_simple(fg);
     int have_input_eof = 0;
-    const char *graph_desc = fgp->graph_desc;
+    const char *graph_desc = fg->graph_desc;
 
     cleanup_filtergraph(fg, fgt);
     fgt->graph = avfilter_graph_alloc();

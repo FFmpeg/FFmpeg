@@ -479,14 +479,13 @@ static void init_sections(void)
 static void print_filtergraph_single(GraphPrintContext *gpc, FilterGraph *fg, AVFilterGraph *graph)
 {
     AVTextFormatContext *tfc = gpc->tfc;
-    FilterGraphPriv *fgp = fgp_from_fg(fg);
     AVDictionary *input_map = NULL;
     AVDictionary *output_map = NULL;
 
     print_int("graph_index", fg->index);
     print_fmt("name", "Graph %d.%d", gpc->id_prefix_num, fg->index);
     print_fmt("id", "Graph_%d_%d", gpc->id_prefix_num, fg->index);
-    print_str("description", fgp->graph_desc);
+    print_str("description", fg->graph_desc);
 
     print_section_header_id(gpc, SECTION_ID_GRAPH_INPUTS, "Input_File", 0);
 
@@ -557,7 +556,7 @@ static void print_filtergraph_single(GraphPrintContext *gpc, FilterGraph *fg, AV
 
         if (gpc->is_diagram) {
             print_fmt("name", "Graph %d.%d", gpc->id_prefix_num, fg->index);
-            print_str("description", fgp->graph_desc);
+            print_str("description", fg->graph_desc);
             print_str("id", sec_ctx.context_id);
         }
 
@@ -967,11 +966,10 @@ int print_filtergraph(FilterGraph *fg, AVFilterGraph *graph)
 {
     GraphPrintContext *gpc = NULL;
     AVTextFormatContext *tfc;
-    FilterGraphPriv *fgp = fgp_from_fg(fg);
-    AVBPrint *target_buf = &fgp->graph_print_buf;
+    AVBPrint *target_buf = &fg->graph_print_buf;
     int ret;
 
-    if (!fg || !fgp) {
+    if (!fg) {
         av_log(NULL, AV_LOG_ERROR, "Invalid filter graph provided\n");
         return AVERROR(EINVAL);
     }
@@ -1035,8 +1033,7 @@ static int print_filtergraphs_priv(FilterGraph **graphs, int nb_graphs, InputFil
     avtext_print_section_header(tfc, NULL, SECTION_ID_FILTERGRAPHS);
 
     for (int i = 0; i < nb_graphs; i++) {
-        FilterGraphPriv *fgp = fgp_from_fg(graphs[i]);
-        AVBPrint *graph_buf = &fgp->graph_print_buf;
+        AVBPrint *graph_buf = &graphs[i]->graph_print_buf;
 
         if (graph_buf->len > 0) {
             avtext_print_section_header(tfc, NULL, SECTION_ID_FILTERGRAPH);
@@ -1053,8 +1050,7 @@ static int print_filtergraphs_priv(FilterGraph **graphs, int nb_graphs, InputFil
             OutputStream *ost = of->streams[i];
 
             if (ost->fg_simple) {
-                FilterGraphPriv *fgp = fgp_from_fg(ost->fg_simple);
-                AVBPrint *graph_buf = &fgp->graph_print_buf;
+                AVBPrint *graph_buf = &ost->fg_simple->graph_print_buf;
 
                 if (graph_buf->len > 0) {
                     avtext_print_section_header(tfc, NULL, SECTION_ID_FILTERGRAPH);

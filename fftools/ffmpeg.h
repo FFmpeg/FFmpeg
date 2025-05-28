@@ -39,6 +39,7 @@
 #include "libavfilter/avfilter.h"
 
 #include "libavutil/avutil.h"
+#include "libavutil/bprint.h"
 #include "libavutil/dict.h"
 #include "libavutil/eval.h"
 #include "libavutil/fifo.h"
@@ -381,6 +382,9 @@ typedef struct FilterGraph {
     int          nb_inputs;
     OutputFilter **outputs;
     int         nb_outputs;
+
+    const char      *graph_desc;
+    struct AVBPrint graph_print_buf;
 } FilterGraph;
 
 enum DecoderFlags {
