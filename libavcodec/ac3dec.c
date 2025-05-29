@@ -46,47 +46,11 @@
 #include "decode.h"
 #include "kbdwin.h"
 
-/**
- * Quantization table: levels for symmetric. bits for asymmetric.
- * reference: Table 7.18 Mapping of bap to Quantizer
- */
-static const uint8_t quantization_tab[16] = {
-    0, 3, 5, 7, 11, 15,
-    5, 6, 7, 8, 9, 10, 11, 12, 14, 16
-};
-
 #if (!USE_FIXED)
 /** dynamic range table. converts codes to scale factors. */
 static float dynamic_range_tab[256];
 float ff_ac3_heavy_dynamic_range_tab[256];
-#endif
 
-
-/** Adjustments in dB gain (LFE, +10 to -21 dB) */
-static const float gain_levels_lfe[32] = {
-    3.162275, 2.818382, 2.511886, 2.238719, 1.995261, 1.778278, 1.584893,
-    1.412536, 1.258924, 1.122018, 1.000000, 0.891251, 0.794328, 0.707946,
-    0.630957, 0.562341, 0.501187, 0.446683, 0.398107, 0.354813, 0.316227,
-    0.281838, 0.251188, 0.223872, 0.199526, 0.177828, 0.158489, 0.141253,
-    0.125892, 0.112201, 0.100000, 0.089125
-};
-
-/**
- * Table for default stereo downmixing coefficients
- * reference: Section 7.8.2 Downmixing Into Two Channels
- */
-static const uint8_t ac3_default_coeffs[8][5][2] = {
-    { { 2, 7 }, { 7, 2 },                               },
-    { { 4, 4 },                                         },
-    { { 2, 7 }, { 7, 2 },                               },
-    { { 2, 7 }, { 5, 5 }, { 7, 2 },                     },
-    { { 2, 7 }, { 7, 2 }, { 6, 6 },                     },
-    { { 2, 7 }, { 5, 5 }, { 7, 2 }, { 8, 8 },           },
-    { { 2, 7 }, { 7, 2 }, { 6, 7 }, { 7, 6 },           },
-    { { 2, 7 }, { 5, 5 }, { 7, 2 }, { 6, 7 }, { 7, 6 }, },
-};
-
-#if (!USE_FIXED)
 /*
  * Initialize tables at runtime.
  */
@@ -348,8 +312,8 @@ static int set_downmix_coeffs(AC3DecodeContext *s)
     }
 
     for (i = 0; i < s->fbw_channels; i++) {
-        downmix_coeffs[0][i] = ff_ac3_gain_levels[ac3_default_coeffs[s->channel_mode][i][0]];
-        downmix_coeffs[1][i] = ff_ac3_gain_levels[ac3_default_coeffs[s->channel_mode][i][1]];
+        downmix_coeffs[0][i] = ff_ac3_gain_levels[ff_ac3_default_coeffs[s->channel_mode][i][0]];
+        downmix_coeffs[1][i] = ff_ac3_gain_levels[ff_ac3_default_coeffs[s->channel_mode][i][1]];
     }
     if (s->channel_mode > 1 && s->channel_mode & 1) {
         downmix_coeffs[0][1] = downmix_coeffs[1][1] = cmix;
@@ -547,7 +511,7 @@ static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, ma
                 av_log(s->avctx, AV_LOG_ERROR, "bap %d is invalid in plain AC-3\n", bap);
                 bap = 15;
             }
-            mantissa = (unsigned)get_sbits(gbc, quantization_tab[bap]) << (24 - quantization_tab[bap]);
+            mantissa = (unsigned)get_sbits(gbc, ff_ac3_quantization_tab[bap]) << (24 - ff_ac3_quantization_tab[bap]);
             break;
         }
         coeffs[freq] = mantissa >> exps[freq];
@@ -1797,7 +1761,7 @@ skip:
         downmix_info->surround_mix_level      = ff_ac3_gain_levels[s->     surround_mix_level];
         downmix_info->surround_mix_level_ltrt = ff_ac3_gain_levels[s->surround_mix_level_ltrt];
         if (s->lfe_mix_level_exists)
-            downmix_info->lfe_mix_level       = gain_levels_lfe[s->lfe_mix_level];
+            downmix_info->lfe_mix_level       = ff_eac3_gain_levels_lfe[s->lfe_mix_level];
         else
             downmix_info->lfe_mix_level       = 0.0; // -inf dB
     }

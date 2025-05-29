@@ -137,6 +137,30 @@ av_cold void ff_ac3_init_static(void)
     ff_thread_once(&ac3_init_static_once, ac3_init_static);
 }
 
+/**
+ * Quantization table: levels for symmetric. bits for asymmetric.
+ * reference: Table 7.18 Mapping of bap to Quantizer
+ */
+const uint8_t ff_ac3_quantization_tab[16] = {
+    0, 3, 5, 7, 11, 15,
+    5, 6, 7, 8, 9, 10, 11, 12, 14, 16
+};
+
+/**
+ * Table for default stereo downmixing coefficients
+ * reference: Section 7.8.2 Downmixing Into Two Channels
+ */
+const uint8_t ff_ac3_default_coeffs[8][5][2] = {
+    { { 2, 7 }, { 7, 2 },                               },
+    { { 4, 4 },                                         },
+    { { 2, 7 }, { 7, 2 },                               },
+    { { 2, 7 }, { 5, 5 }, { 7, 2 },                     },
+    { { 2, 7 }, { 7, 2 }, { 6, 6 },                     },
+    { { 2, 7 }, { 5, 5 }, { 7, 2 }, { 8, 8 },           },
+    { { 2, 7 }, { 7, 2 }, { 6, 7 }, { 7, 6 },           },
+    { { 2, 7 }, { 5, 5 }, { 7, 2 }, { 6, 7 }, { 7, 6 }, },
+};
+
 const uint8_t ff_eac3_hebap_tab[64] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 8,
     8, 8, 9, 9, 9, 10, 10, 10, 10, 11,
@@ -152,3 +176,12 @@ const uint8_t ff_eac3_hebap_tab[64] = {
  */
 const uint8_t ff_eac3_default_spx_band_struct[17] =
 { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 };
+
+/** Adjustments in dB gain (LFE, +10 to -21 dB) */
+const float ff_eac3_gain_levels_lfe[32] = {
+    3.162275, 2.818382, 2.511886, 2.238719, 1.995261, 1.778278, 1.584893,
+    1.412536, 1.258924, 1.122018, 1.000000, 0.891251, 0.794328, 0.707946,
+    0.630957, 0.562341, 0.501187, 0.446683, 0.398107, 0.354813, 0.316227,
+    0.281838, 0.251188, 0.223872, 0.199526, 0.177828, 0.158489, 0.141253,
+    0.125892, 0.112201, 0.100000, 0.089125
+};
