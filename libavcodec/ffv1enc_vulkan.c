@@ -1012,6 +1012,7 @@ static int init_rct_search_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
 {
     int err;
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
+    FFV1Context *f = &fv->ctx;
     FFVulkanShader *shd = &fv->rct_search;
     FFVulkanDescriptorSetBinding *desc_set;
 
@@ -1075,7 +1076,8 @@ static int init_rct_search_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
             .name        = "slice_data_buf",
             .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .buf_content = "SliceContext slice_ctx[1024];",
+            .buf_content = "SliceContext slice_ctx",
+            .buf_elems   = f->max_slice_count,
         },
         {
             .name       = "src",
@@ -1109,6 +1111,7 @@ static int init_setup_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
 {
     int err;
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
+    FFV1Context *f = &fv->ctx;
     FFVulkanShader *shd = &fv->setup;
     FFVulkanDescriptorSetBinding *desc_set;
 
@@ -1158,7 +1161,8 @@ static int init_setup_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
             .name        = "slice_data_buf",
             .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .buf_content = "SliceContext slice_ctx[1024];",
+            .buf_content = "SliceContext slice_ctx",
+            .buf_elems   = f->max_slice_count,
         },
         {
             .name       = "src",
@@ -1192,6 +1196,7 @@ static int init_reset_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
 {
     int err;
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
+    FFV1Context *f = &fv->ctx;
     FFVulkanShader *shd = &fv->reset;
     FFVulkanDescriptorSetBinding *desc_set;
 
@@ -1254,7 +1259,8 @@ static int init_reset_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
             .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .mem_quali   = "readonly",
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .buf_content = "SliceContext slice_ctx[1024];",
+            .buf_content = "SliceContext slice_ctx",
+            .buf_elems   = f->max_slice_count,
         },
     };
     RET(ff_vk_shader_add_descriptor_set(&fv->s, shd, desc_set, 1, 0, 0));
@@ -1278,6 +1284,7 @@ static int init_encode_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
 {
     int err;
     VulkanEncodeFFv1Context *fv = avctx->priv_data;
+    FFV1Context *f = &fv->ctx;
     FFVulkanShader *shd = &fv->enc;
     FFVulkanDescriptorSetBinding *desc_set;
 
@@ -1339,7 +1346,8 @@ static int init_encode_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
             .name        = "slice_data_buf",
             .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
-            .buf_content = "SliceContext slice_ctx[1024];",
+            .buf_content = "SliceContext slice_ctx",
+            .buf_elems   = f->max_slice_count,
         },
         {
             .name       = "src",
@@ -1483,21 +1491,23 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
                 f->num_v_slices = 32;
             }
         } else if (f->num_h_slices && f->num_v_slices <= 0) {
-            f->num_v_slices = 1024 / f->num_h_slices;
+            f->num_v_slices = MAX_SLICES / f->num_h_slices;
         } else if (f->num_v_slices && f->num_h_slices <= 0) {
-            f->num_h_slices = 1024 / f->num_v_slices;
+            f->num_h_slices = MAX_SLICES / f->num_v_slices;
         }
 
         f->num_h_slices = FFMIN(f->num_h_slices, avctx->width);
         f->num_v_slices = FFMIN(f->num_v_slices, avctx->height);
 
-        if (f->num_h_slices * f->num_v_slices > 1024) {
+        if (f->num_h_slices * f->num_v_slices > MAX_SLICES) {
             av_log(avctx, AV_LOG_ERROR, "Too many slices (%i), maximum supported "
-                                        "by the standard is 1024\n",
-                   f->num_h_slices * f->num_v_slices);
+                                        "by the standard is %i\n",
+                   f->num_h_slices * f->num_v_slices, MAX_SLICES);
             return AVERROR_PATCHWELCOME;
         }
     }
+
+    f->max_slice_count = f->num_h_slices * f->num_v_slices;
 
     if ((err = ff_ffv1_write_extradata(avctx)) < 0)
         return err;
@@ -1707,7 +1717,6 @@ static av_cold int vulkan_encode_ffv1_init(AVCodecContext *avctx)
     for (int i = 0; i < fv->async_depth; i++)
         fv->exec_pool.contexts[i].opaque = &fv->exec_ctx_info[i];
 
-    f->max_slice_count = f->num_h_slices * f->num_v_slices;
     fv->buf_regions = av_malloc_array(f->max_slice_count, sizeof(*fv->buf_regions));
     if (!fv->buf_regions)
         return AVERROR(ENOMEM);
@@ -1783,9 +1792,9 @@ static const AVOption vulkan_encode_ffv1_options[] = {
             { .i64 = QTABLE_GT8BIT }, INT_MIN, INT_MAX, VE, .unit = "qtable" },
 
     { "slices_h", "Number of horizontal slices", OFFSET(num_h_slices), AV_OPT_TYPE_INT,
-            { .i64 = -1 }, -1, 1024, VE },
+            { .i64 = -1 }, -1, MAX_SLICES, VE },
     { "slices_v", "Number of vertical slices", OFFSET(num_v_slices), AV_OPT_TYPE_INT,
-            { .i64 = -1 }, -1, 1024, VE },
+            { .i64 = -1 }, -1, MAX_SLICES, VE },
 
     { "force_pcm", "Code all slices with no prediction", OFFSET(force_pcm), AV_OPT_TYPE_BOOL,
             { .i64 = 0 }, 0, 1, VE },
