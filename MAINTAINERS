@@ -176,6 +176,7 @@ Codecs:
   dss_sp.c                              Oleksij Rempel
   dv.c                                  Roman Shaposhnik
   dvbsubdec.c                           Anshul Maheshwari
+  dxv.*, dxvenc.*                       Emma Worley
   eacmv*, eaidct*, eat*                 Peter Ross
   exif.c, exif.h                        Thilo Borgmann
   ffv1*                             [2] Michael Niedermayer
