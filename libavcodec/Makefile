@@ -42,6 +42,7 @@ OBJS = ac3_parser.o                                                     \
        dv_profile.o                                                     \
        encode.o                                                         \
        get_buffer.o                                                     \
+       hashtable.o                                                      \
        imgconvert.o                                                     \
        jni.o                                                            \
        lcevcdec.o                                                       \
@@ -1326,6 +1327,7 @@ TESTPROGS = avcodec                                                     \
             bitstream_le                                                \
             celp_math                                                   \
             codec_desc                                                  \
+            hashtable                                                   \
             htmlsubtitles                                               \
             jpeg2000dwt                                                 \
             mathops                                                    \
