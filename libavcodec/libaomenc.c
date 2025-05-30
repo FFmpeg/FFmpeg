@@ -140,6 +140,8 @@ typedef struct AOMEncoderContext {
     AVDictionary *aom_params;
 } AOMContext;
 
+#define OFFSET(x) offsetof(AOMContext, x)
+
 static const char *const ctlidstr[] = {
     [AOME_SET_CPUUSED]          = "AOME_SET_CPUUSED",
     [AOME_SET_CQ_LEVEL]         = "AOME_SET_CQ_LEVEL",
@@ -673,6 +675,46 @@ static int choose_tiling(AVCodecContext *avctx,
     return 0;
 }
 
+
+static const struct {
+    int aom_enum;
+    unsigned offset;
+} option_map[] = {
+    { AOME_SET_ENABLEAUTOALTREF,          OFFSET(auto_alt_ref) },
+    { AOME_SET_ARNR_MAXFRAMES,            OFFSET(arnr_max_frames) },
+    { AOME_SET_ARNR_STRENGTH,             OFFSET(arnr_strength) },
+    { AV1E_SET_ENABLE_CDEF,               OFFSET(enable_cdef) },
+    { AV1E_SET_ENABLE_RESTORATION,        OFFSET(enable_restoration) },
+    { AV1E_SET_ENABLE_RECT_PARTITIONS,    OFFSET(enable_rect_partitions) },
+    { AV1E_SET_ENABLE_1TO4_PARTITIONS,    OFFSET(enable_1to4_partitions) },
+    { AV1E_SET_ENABLE_AB_PARTITIONS,      OFFSET(enable_ab_partitions) },
+    { AV1E_SET_ENABLE_ANGLE_DELTA,        OFFSET(enable_angle_delta) },
+    { AV1E_SET_ENABLE_CFL_INTRA,          OFFSET(enable_cfl_intra) },
+    { AV1E_SET_ENABLE_FILTER_INTRA,       OFFSET(enable_filter_intra) },
+    { AV1E_SET_ENABLE_INTRA_EDGE_FILTER,  OFFSET(enable_intra_edge_filter) },
+    { AV1E_SET_ENABLE_PAETH_INTRA,        OFFSET(enable_paeth_intra) },
+    { AV1E_SET_ENABLE_SMOOTH_INTRA,       OFFSET(enable_smooth_intra) },
+    { AV1E_SET_ENABLE_PALETTE,            OFFSET(enable_palette) },
+    { AV1E_SET_ENABLE_TX64,               OFFSET(enable_tx64) },
+    { AV1E_SET_ENABLE_FLIP_IDTX,          OFFSET(enable_flip_idtx) },
+    { AV1E_SET_INTRA_DCT_ONLY,            OFFSET(use_intra_dct_only) },
+    { AV1E_SET_INTER_DCT_ONLY,            OFFSET(use_inter_dct_only) },
+    { AV1E_SET_INTRA_DEFAULT_TX_ONLY,     OFFSET(use_intra_default_tx_only) },
+    { AV1E_SET_REDUCED_TX_TYPE_SET,       OFFSET(reduced_tx_type_set) },
+    { AV1E_SET_ENABLE_REF_FRAME_MVS,      OFFSET(enable_ref_frame_mvs) },
+    { AV1E_SET_REDUCED_REFERENCE_SET,     OFFSET(enable_reduced_reference_set) },
+    { AV1E_SET_ENABLE_DIFF_WTD_COMP,      OFFSET(enable_diff_wtd_comp) },
+    { AV1E_SET_ENABLE_DIST_WTD_COMP,      OFFSET(enable_dist_wtd_comp) },
+    { AV1E_SET_ENABLE_DUAL_FILTER,        OFFSET(enable_dual_filter) },
+    { AV1E_SET_ENABLE_INTERINTER_WEDGE,   OFFSET(enable_interinter_wedge) },
+    { AV1E_SET_ENABLE_MASKED_COMP,        OFFSET(enable_masked_comp) },
+    { AV1E_SET_ENABLE_INTERINTRA_COMP,    OFFSET(enable_interintra_comp) },
+    { AV1E_SET_ENABLE_INTERINTRA_WEDGE,   OFFSET(enable_interintra_wedge) },
+    { AV1E_SET_ENABLE_OBMC,               OFFSET(enable_obmc) },
+    { AV1E_SET_ENABLE_ONESIDED_COMP,      OFFSET(enable_onesided_comp) },
+    { AV1E_SET_ENABLE_SMOOTH_INTERINTRA,  OFFSET(enable_smooth_interintra) },
+};
+
 static av_cold int aom_init(AVCodecContext *avctx,
                             const struct aom_codec_iface *iface)
 {
@@ -859,73 +901,12 @@ static av_cold int aom_init(AVCodecContext *avctx,
     // codec control failures are currently treated only as warnings
     av_log(avctx, AV_LOG_DEBUG, "aom_codec_control\n");
     codecctl_int(avctx, AOME_SET_CPUUSED, ctx->cpu_used);
-    if (ctx->auto_alt_ref >= 0)
-        codecctl_int(avctx, AOME_SET_ENABLEAUTOALTREF, ctx->auto_alt_ref);
-    if (ctx->arnr_max_frames >= 0)
-        codecctl_int(avctx, AOME_SET_ARNR_MAXFRAMES,   ctx->arnr_max_frames);
-    if (ctx->arnr_strength >= 0)
-        codecctl_int(avctx, AOME_SET_ARNR_STRENGTH,    ctx->arnr_strength);
-    if (ctx->enable_cdef >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_CDEF, ctx->enable_cdef);
-    if (ctx->enable_restoration >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_RESTORATION, ctx->enable_restoration);
-    if (ctx->enable_rect_partitions >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_RECT_PARTITIONS, ctx->enable_rect_partitions);
-    if (ctx->enable_1to4_partitions >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_1TO4_PARTITIONS, ctx->enable_1to4_partitions);
-    if (ctx->enable_ab_partitions >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_AB_PARTITIONS, ctx->enable_ab_partitions);
-    if (ctx->enable_angle_delta >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_ANGLE_DELTA, ctx->enable_angle_delta);
-    if (ctx->enable_cfl_intra >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_CFL_INTRA, ctx->enable_cfl_intra);
-    if (ctx->enable_filter_intra >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_FILTER_INTRA, ctx->enable_filter_intra);
-    if (ctx->enable_intra_edge_filter >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_INTRA_EDGE_FILTER, ctx->enable_intra_edge_filter);
-    if (ctx->enable_paeth_intra >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_PAETH_INTRA, ctx->enable_paeth_intra);
-    if (ctx->enable_smooth_intra >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_SMOOTH_INTRA, ctx->enable_smooth_intra);
-    if (ctx->enable_palette >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_PALETTE, ctx->enable_palette);
-    if (ctx->enable_tx64 >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_TX64, ctx->enable_tx64);
-    if (ctx->enable_flip_idtx >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_FLIP_IDTX, ctx->enable_flip_idtx);
-    if (ctx->use_intra_dct_only >= 0)
-        codecctl_int(avctx, AV1E_SET_INTRA_DCT_ONLY, ctx->use_intra_dct_only);
-    if (ctx->use_inter_dct_only >= 0)
-        codecctl_int(avctx, AV1E_SET_INTER_DCT_ONLY, ctx->use_inter_dct_only);
-    if (ctx->use_intra_default_tx_only >= 0)
-        codecctl_int(avctx, AV1E_SET_INTRA_DEFAULT_TX_ONLY, ctx->use_intra_default_tx_only);
-    if (ctx->reduced_tx_type_set >= 0)
-        codecctl_int(avctx, AV1E_SET_REDUCED_TX_TYPE_SET, ctx->reduced_tx_type_set);
-    if (ctx->enable_ref_frame_mvs >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_REF_FRAME_MVS, ctx->enable_ref_frame_mvs);
-    if (ctx->enable_reduced_reference_set >= 0)
-        codecctl_int(avctx, AV1E_SET_REDUCED_REFERENCE_SET, ctx->enable_reduced_reference_set);
-    if (ctx->enable_diff_wtd_comp >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_DIFF_WTD_COMP, ctx->enable_diff_wtd_comp);
-    if (ctx->enable_dist_wtd_comp >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_DIST_WTD_COMP, ctx->enable_dist_wtd_comp);
-    if (ctx->enable_dual_filter >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_DUAL_FILTER, ctx->enable_dual_filter);
-    if (ctx->enable_interinter_wedge >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_INTERINTER_WEDGE, ctx->enable_interinter_wedge);
-    if (ctx->enable_masked_comp >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_MASKED_COMP, ctx->enable_masked_comp);
-    if (ctx->enable_interintra_comp >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_INTERINTRA_COMP, ctx->enable_interintra_comp);
-    if (ctx->enable_interintra_wedge >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_INTERINTRA_WEDGE, ctx->enable_interintra_wedge);
-    if (ctx->enable_obmc >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_OBMC, ctx->enable_obmc);
-    if (ctx->enable_onesided_comp >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_ONESIDED_COMP, ctx->enable_onesided_comp);
-    if (ctx->enable_smooth_interintra >= 0)
-        codecctl_int(avctx, AV1E_SET_ENABLE_SMOOTH_INTERINTRA, ctx->enable_smooth_interintra);
 
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(option_map); ++i) {
+        int val = *(int*)((char*)ctx + option_map[i].offset);
+        if (val >= 0)
+            codecctl_int(avctx, option_map[i].aom_enum, val);
+    }
     codecctl_int(avctx, AOME_SET_STATIC_THRESHOLD, ctx->static_thresh);
     if (ctx->crf >= 0)
         codecctl_int(avctx, AOME_SET_CQ_LEVEL,          ctx->crf);
@@ -1457,7 +1438,6 @@ static av_cold int av1_init(AVCodecContext *avctx)
     return aom_init(avctx, aom_codec_av1_cx());
 }
 
-#define OFFSET(x) offsetof(AOMContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "cpu-used",        "Quality/Speed ratio modifier",           OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1}, 0, 8, VE},
