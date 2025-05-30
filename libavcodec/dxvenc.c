@@ -1,6 +1,6 @@
 /*
  * Resolume DXV encoder
- * Copyright (C) 2024 Connor Worley <connorbworley@gmail.com>
+ * Copyright (C) 2024 Emma Worley <emma@emma.gg>
  *
  * This file is part of FFmpeg.
  *
@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 
-#include "libavutil/crc.h"
+#include "libavcodec/hashtable.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -39,71 +39,8 @@
  * appeared in the decompressed stream. Using a simple hash table (HT)
  * significantly speeds up the lookback process while encoding.
  */
-#define LOOKBACK_HT_ELEMS 0x40000
+#define LOOKBACK_HT_ELEMS 0x20202
 #define LOOKBACK_WORDS    0x20202
-
-typedef struct HTEntry {
-    uint32_t key;
-    uint32_t pos;
-} HTEntry;
-
-static void ht_init(HTEntry *ht)
-{
-    for (size_t i = 0; i < LOOKBACK_HT_ELEMS; i++) {
-        ht[i].pos = -1;
-    }
-}
-
-static uint32_t ht_lookup_and_upsert(HTEntry *ht, const AVCRC *hash_ctx,
-                                    uint32_t key, uint32_t pos)
-{
-    uint32_t ret = -1;
-    size_t hash = av_crc(hash_ctx, 0, (uint8_t*)&key, 4) % LOOKBACK_HT_ELEMS;
-    for (size_t i = hash; i < hash + LOOKBACK_HT_ELEMS; i++) {
-        size_t wrapped_index = i % LOOKBACK_HT_ELEMS;
-        HTEntry *entry = &ht[wrapped_index];
-        if (entry->key == key || entry->pos == -1) {
-            ret = entry->pos;
-            entry->key = key;
-            entry->pos = pos;
-            break;
-        }
-    }
-    return ret;
-}
-
-static void ht_delete(HTEntry *ht, const AVCRC *hash_ctx,
-                      uint32_t key, uint32_t pos)
-{
-    HTEntry *removed_entry = NULL;
-    size_t removed_hash;
-    size_t hash = av_crc(hash_ctx, 0, (uint8_t*)&key, 4) % LOOKBACK_HT_ELEMS;
-
-    for (size_t i = hash; i < hash + LOOKBACK_HT_ELEMS; i++) {
-        size_t wrapped_index = i % LOOKBACK_HT_ELEMS;
-        HTEntry *entry = &ht[wrapped_index];
-        if (entry->pos == -1)
-            return;
-        if (removed_entry) {
-            size_t candidate_hash = av_crc(hash_ctx, 0, (uint8_t*)&entry->key, 4) % LOOKBACK_HT_ELEMS;
-            if ((wrapped_index > removed_hash && (candidate_hash <= removed_hash || candidate_hash > wrapped_index)) ||
-                (wrapped_index < removed_hash && (candidate_hash <= removed_hash && candidate_hash > wrapped_index))) {
-                *removed_entry = *entry;
-                entry->pos = -1;
-                removed_entry = entry;
-                removed_hash = wrapped_index;
-            }
-        } else if (entry->key == key) {
-            if (entry->pos <= pos) {
-                entry->pos = -1;
-                removed_entry = entry;
-                removed_hash = wrapped_index;
-            } else {
-                return;
-            }
-        }
-    }
-}
 
 typedef struct DXVEncContext {
     AVClass *class;
@@ -121,10 +58,8 @@ typedef struct DXVEncContext {
     DXVTextureFormat tex_fmt;
     int (*compress_tex)(AVCodecContext *avctx);
 
-    const AVCRC *crc_ctx;
-
-    HTEntry color_lookback_ht[LOOKBACK_HT_ELEMS];
-    HTEntry lut_lookback_ht[LOOKBACK_HT_ELEMS];
+    FFHashtableContext *color_ht;
+    FFHashtableContext *lut_ht;
 } DXVEncContext;
 
 /* Converts an index offset value to a 2-bit opcode and pushes it to a stream.
@@ -159,27 +94,32 @@ static int dxv_compress_dxt1(AVCodecContext *avctx)
     DXVEncContext *ctx = avctx->priv_data;
     PutByteContext *pbc = &ctx->pbc;
     void *value;
-    uint32_t color, lut, idx, color_idx, lut_idx, prev_pos, state = 16, pos = 2, op = 0;
+    uint32_t color, lut, idx, color_idx, lut_idx, prev_pos, state = 16, pos = 0, op = 0;
 
-    ht_init(ctx->color_lookback_ht);
-    ht_init(ctx->lut_lookback_ht);
+    ff_hashtable_clear(ctx->color_ht);
+    ff_hashtable_clear(ctx->lut_ht);
 
     bytestream2_put_le32(pbc, AV_RL32(ctx->tex_data));
+    ff_hashtable_set(ctx->color_ht, ctx->tex_data, &pos);
+    pos++;
     bytestream2_put_le32(pbc, AV_RL32(ctx->tex_data + 4));
-
-    ht_lookup_and_upsert(ctx->color_lookback_ht, ctx->crc_ctx, AV_RL32(ctx->tex_data), 0);
-    ht_lookup_and_upsert(ctx->lut_lookback_ht, ctx->crc_ctx, AV_RL32(ctx->tex_data + 4), 1);
+    ff_hashtable_set(ctx->lut_ht, ctx->tex_data + 4, &pos);
+    pos++;
 
     while (pos + 2 <= ctx->tex_size / 4) {
         idx = 0;
+        color_idx = 0;
+        lut_idx = 0;
 
         color = AV_RL32(ctx->tex_data + pos * 4);
-        prev_pos = ht_lookup_and_upsert(ctx->color_lookback_ht, ctx->crc_ctx, color, pos);
-        color_idx = prev_pos != -1 ? pos - prev_pos : 0;
+        if (ff_hashtable_get(ctx->color_ht, &color, &prev_pos))
+            color_idx = pos - prev_pos;
+        ff_hashtable_set(ctx->color_ht, &color, &pos);
+
         if (pos >= LOOKBACK_WORDS) {
             uint32_t old_pos = pos - LOOKBACK_WORDS;
-            uint32_t old_color = AV_RL32(ctx->tex_data + old_pos * 4);
-            ht_delete(ctx->color_lookback_ht, ctx->crc_ctx, old_color, old_pos);
+            if (ff_hashtable_get(ctx->color_ht, ctx->tex_data + old_pos * 4, &prev_pos) && prev_pos <= old_pos)
+                ff_hashtable_delete(ctx->color_ht, ctx->tex_data + old_pos * 4);
         }
         pos++;
 
@@ -188,13 +128,14 @@ static int dxv_compress_dxt1(AVCodecContext *avctx)
             idx = color_idx;
         } else {
             idx = 0;
-            prev_pos = ht_lookup_and_upsert(ctx->lut_lookback_ht, ctx->crc_ctx, lut, pos);
-            lut_idx = prev_pos != -1 ? pos - prev_pos : 0;
+            if (ff_hashtable_get(ctx->lut_ht, &lut, &prev_pos))
+                lut_idx = pos - prev_pos;
+            ff_hashtable_set(ctx->lut_ht, &lut, &pos);
         }
         if (pos >= LOOKBACK_WORDS) {
             uint32_t old_pos = pos - LOOKBACK_WORDS;
-            uint32_t old_lut = AV_RL32(ctx->tex_data + old_pos * 4);
-            ht_delete(ctx->lut_lookback_ht, ctx->crc_ctx, old_lut, old_pos);
+            if (ff_hashtable_get(ctx->lut_ht, ctx->tex_data + old_pos * 4, &prev_pos) && prev_pos <= old_pos)
+                ff_hashtable_delete(ctx->lut_ht, ctx->tex_data + old_pos * 4);
         }
         pos++;
 
@@ -306,11 +247,12 @@ static av_cold int dxv_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    ctx->crc_ctx = av_crc_get_table(AV_CRC_32_IEEE);
-    if (!ctx->crc_ctx) {
-        av_log(avctx, AV_LOG_ERROR, "Could not initialize CRC table.\n");
-        return AVERROR_BUG;
-    }
+    ret = ff_hashtable_alloc(&ctx->color_ht, sizeof(uint32_t), sizeof(uint32_t), LOOKBACK_HT_ELEMS);
+    if (ret < 0)
+        return ret;
+    ret = ff_hashtable_alloc(&ctx->lut_ht, sizeof(uint32_t), sizeof(uint32_t), LOOKBACK_HT_ELEMS);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
@@ -320,6 +262,9 @@ static av_cold int dxv_close(AVCodecContext *avctx)
     DXVEncContext *ctx = avctx->priv_data;
 
     av_freep(&ctx->tex_data);
+
+    ff_hashtable_freep(&ctx->color_ht);
+    ff_hashtable_freep(&ctx->lut_ht);
 
     return 0;
 }

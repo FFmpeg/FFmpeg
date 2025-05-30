@@ -1,6 +1,6 @@
 /*
  * Resolume DXV common
- * Copyright (C) 2024 Connor Worley <connorbworley@gmail.com>
+ * Copyright (C) 2024 Emma Worley <emma@emma.gg>
  *
  * This file is part of FFmpeg.
  *
