@@ -103,9 +103,7 @@ static av_cold int dovi_configure_ext(DOVIContext *s, enum AVCodecID codec_id,
             dv_profile = 8;
         break;
     default:
-        /* No other encoder should be calling this! */
-        av_assert0(0);
-        return AVERROR_BUG;
+        av_unreachable("ff_dovi_configure only used with AV1, H.264 and HEVC");
     }
 
     if (strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
