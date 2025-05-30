@@ -22,6 +22,9 @@
  * MMX optimization by Nick Kurshev <nickols_k@mail.ru>
  */
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
@@ -74,18 +77,262 @@ void ff_avg_approx_pixels8_xy2_mmxext(uint8_t *block, const uint8_t *pixels,
 /* MMX no rounding */
 #define DEF(x, y) x ## _no_rnd_ ## y ## _mmx
 #define SET_RND  MOVQ_WONE
-#define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX_NO_RND(a, b, c, d, e, f)
-#define PAVGB(a, b, c, e)               PAVGB_MMX_NO_RND(a, b, c, e)
 #define STATIC static
 
 #include "rnd_template.c"
-#include "hpeldsp_rnd_template.c"
 
 #undef DEF
 #undef SET_RND
-#undef PAVGBP
-#undef PAVGB
 #undef STATIC
+
+// this routine is 'slightly' suboptimal but mostly unused
+static void avg_no_rnd_pixels8_xy2_mmx(uint8_t *block, const uint8_t *pixels,
+                                       ptrdiff_t line_size, int h)
+{
+    MOVQ_ZERO(mm7);
+    MOVQ_WONE(mm6); // =2 for rnd  and  =1 for no_rnd version
+    __asm__ volatile(
+        "movq   (%1), %%mm0             \n\t"
+        "movq   1(%1), %%mm4            \n\t"
+        "movq   %%mm0, %%mm1            \n\t"
+        "movq   %%mm4, %%mm5            \n\t"
+        "punpcklbw %%mm7, %%mm0         \n\t"
+        "punpcklbw %%mm7, %%mm4         \n\t"
+        "punpckhbw %%mm7, %%mm1         \n\t"
+        "punpckhbw %%mm7, %%mm5         \n\t"
+        "paddusw %%mm0, %%mm4           \n\t"
+        "paddusw %%mm1, %%mm5           \n\t"
+        "xor    %%"FF_REG_a", %%"FF_REG_a" \n\t"
+        "add    %3, %1                  \n\t"
+        ".p2align 3                     \n\t"
+        "1:                             \n\t"
+        "movq   (%1, %%"FF_REG_a"), %%mm0  \n\t"
+        "movq   1(%1, %%"FF_REG_a"), %%mm2 \n\t"
+        "movq   %%mm0, %%mm1            \n\t"
+        "movq   %%mm2, %%mm3            \n\t"
+        "punpcklbw %%mm7, %%mm0         \n\t"
+        "punpcklbw %%mm7, %%mm2         \n\t"
+        "punpckhbw %%mm7, %%mm1         \n\t"
+        "punpckhbw %%mm7, %%mm3         \n\t"
+        "paddusw %%mm2, %%mm0           \n\t"
+        "paddusw %%mm3, %%mm1           \n\t"
+        "paddusw %%mm6, %%mm4           \n\t"
+        "paddusw %%mm6, %%mm5           \n\t"
+        "paddusw %%mm0, %%mm4           \n\t"
+        "paddusw %%mm1, %%mm5           \n\t"
+        "psrlw  $2, %%mm4               \n\t"
+        "psrlw  $2, %%mm5               \n\t"
+                "movq   (%2, %%"FF_REG_a"), %%mm3  \n\t"
+        "packuswb  %%mm5, %%mm4         \n\t"
+                "pcmpeqd %%mm2, %%mm2   \n\t"
+                "paddb %%mm2, %%mm2     \n\t"
+                PAVGB_MMX(%%mm3, %%mm4, %%mm5, %%mm2)
+                "movq   %%mm5, (%2, %%"FF_REG_a")  \n\t"
+        "add    %3, %%"FF_REG_a"        \n\t"
+
+        "movq   (%1, %%"FF_REG_a"), %%mm2  \n\t" // 0 <-> 2   1 <-> 3
+        "movq   1(%1, %%"FF_REG_a"), %%mm4 \n\t"
+        "movq   %%mm2, %%mm3            \n\t"
+        "movq   %%mm4, %%mm5            \n\t"
+        "punpcklbw %%mm7, %%mm2         \n\t"
+        "punpcklbw %%mm7, %%mm4         \n\t"
+        "punpckhbw %%mm7, %%mm3         \n\t"
+        "punpckhbw %%mm7, %%mm5         \n\t"
+        "paddusw %%mm2, %%mm4           \n\t"
+        "paddusw %%mm3, %%mm5           \n\t"
+        "paddusw %%mm6, %%mm0           \n\t"
+        "paddusw %%mm6, %%mm1           \n\t"
+        "paddusw %%mm4, %%mm0           \n\t"
+        "paddusw %%mm5, %%mm1           \n\t"
+        "psrlw  $2, %%mm0               \n\t"
+        "psrlw  $2, %%mm1               \n\t"
+                "movq   (%2, %%"FF_REG_a"), %%mm3  \n\t"
+        "packuswb  %%mm1, %%mm0         \n\t"
+                "pcmpeqd %%mm2, %%mm2   \n\t"
+                "paddb %%mm2, %%mm2     \n\t"
+                PAVGB_MMX(%%mm3, %%mm0, %%mm1, %%mm2)
+                "movq   %%mm1, (%2, %%"FF_REG_a")  \n\t"
+        "add    %3, %%"FF_REG_a"           \n\t"
+
+        "subl   $2, %0                  \n\t"
+        "jnz    1b                      \n\t"
+        :"+g"(h), "+S"(pixels)
+        :"D"(block), "r"((x86_reg)line_size)
+        :FF_REG_a, "memory");
+}
+
+static void put_no_rnd_pixels8_x2_mmx(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
+{
+    MOVQ_BFE(mm6);
+    __asm__ volatile(
+        "lea    (%3, %3), %%"FF_REG_a"  \n\t"
+        ".p2align 3                     \n\t"
+        "1:                             \n\t"
+        "movq   (%1), %%mm0             \n\t"
+        "movq   1(%1), %%mm1            \n\t"
+        "movq   (%1, %3), %%mm2         \n\t"
+        "movq   1(%1, %3), %%mm3        \n\t"
+        PAVGBP_MMX_NO_RND(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
+        "movq   %%mm4, (%2)             \n\t"
+        "movq   %%mm5, (%2, %3)         \n\t"
+        "add    %%"FF_REG_a", %1        \n\t"
+        "add    %%"FF_REG_a", %2        \n\t"
+        "movq   (%1), %%mm0             \n\t"
+        "movq   1(%1), %%mm1            \n\t"
+        "movq   (%1, %3), %%mm2         \n\t"
+        "movq   1(%1, %3), %%mm3        \n\t"
+        PAVGBP_MMX_NO_RND(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
+        "movq   %%mm4, (%2)             \n\t"
+        "movq   %%mm5, (%2, %3)         \n\t"
+        "add    %%"FF_REG_a", %1        \n\t"
+        "add    %%"FF_REG_a", %2        \n\t"
+        "subl   $4, %0                  \n\t"
+        "jnz    1b                      \n\t"
+        :"+g"(h), "+S"(pixels), "+D"(block)
+        :"r"((x86_reg)line_size)
+        :FF_REG_a, "memory");
+}
+
+static void put_no_rnd_pixels16_x2_mmx(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
+{
+    MOVQ_BFE(mm6);
+    __asm__ volatile(
+        "lea    (%3, %3), %%"FF_REG_a"  \n\t"
+        ".p2align 3                     \n\t"
+        "1:                             \n\t"
+        "movq   (%1), %%mm0             \n\t"
+        "movq   1(%1), %%mm1            \n\t"
+        "movq   (%1, %3), %%mm2         \n\t"
+        "movq   1(%1, %3), %%mm3        \n\t"
+        PAVGBP_MMX_NO_RND(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
+        "movq   %%mm4, (%2)             \n\t"
+        "movq   %%mm5, (%2, %3)         \n\t"
+        "movq   8(%1), %%mm0            \n\t"
+        "movq   9(%1), %%mm1            \n\t"
+        "movq   8(%1, %3), %%mm2        \n\t"
+        "movq   9(%1, %3), %%mm3        \n\t"
+        PAVGBP_MMX_NO_RND(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
+        "movq   %%mm4, 8(%2)            \n\t"
+        "movq   %%mm5, 8(%2, %3)        \n\t"
+        "add    %%"FF_REG_a", %1        \n\t"
+        "add    %%"FF_REG_a", %2        \n\t"
+        "movq   (%1), %%mm0             \n\t"
+        "movq   1(%1), %%mm1            \n\t"
+        "movq   (%1, %3), %%mm2         \n\t"
+        "movq   1(%1, %3), %%mm3        \n\t"
+        PAVGBP_MMX_NO_RND(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
+        "movq   %%mm4, (%2)             \n\t"
+        "movq   %%mm5, (%2, %3)         \n\t"
+        "movq   8(%1), %%mm0            \n\t"
+        "movq   9(%1), %%mm1            \n\t"
+        "movq   8(%1, %3), %%mm2        \n\t"
+        "movq   9(%1, %3), %%mm3        \n\t"
+        PAVGBP_MMX_NO_RND(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
+        "movq   %%mm4, 8(%2)            \n\t"
+        "movq   %%mm5, 8(%2, %3)        \n\t"
+        "add    %%"FF_REG_a", %1        \n\t"
+        "add    %%"FF_REG_a", %2        \n\t"
+        "subl   $4, %0                  \n\t"
+        "jnz    1b                      \n\t"
+        :"+g"(h), "+S"(pixels), "+D"(block)
+        :"r"((x86_reg)line_size)
+        :FF_REG_a, "memory");
+}
+
+static void put_no_rnd_pixels8_y2_mmx(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
+{
+    MOVQ_BFE(mm6);
+    __asm__ volatile(
+        "lea (%3, %3), %%"FF_REG_a"     \n\t"
+        "movq (%1), %%mm0               \n\t"
+        ".p2align 3                     \n\t"
+        "1:                             \n\t"
+        "movq   (%1, %3), %%mm1         \n\t"
+        "movq   (%1, %%"FF_REG_a"),%%mm2\n\t"
+        PAVGBP_MMX_NO_RND(%%mm1, %%mm0, %%mm4,   %%mm2, %%mm1, %%mm5)
+        "movq   %%mm4, (%2)             \n\t"
+        "movq   %%mm5, (%2, %3)         \n\t"
+        "add    %%"FF_REG_a", %1        \n\t"
+        "add    %%"FF_REG_a", %2        \n\t"
+        "movq   (%1, %3), %%mm1         \n\t"
+        "movq   (%1, %%"FF_REG_a"),%%mm0\n\t"
+        PAVGBP_MMX_NO_RND(%%mm1, %%mm2, %%mm4,   %%mm0, %%mm1, %%mm5)
+        "movq   %%mm4, (%2)             \n\t"
+        "movq   %%mm5, (%2, %3)         \n\t"
+        "add    %%"FF_REG_a", %1        \n\t"
+        "add    %%"FF_REG_a", %2        \n\t"
+        "subl   $4, %0                  \n\t"
+        "jnz    1b                      \n\t"
+        :"+g"(h), "+S"(pixels), "+D"(block)
+        :"r"((x86_reg)line_size)
+        :FF_REG_a, "memory");
+}
+
+static void avg_no_rnd_pixels16_x2_mmx(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
+{
+    MOVQ_BFE(mm6);
+        __asm__ volatile(
+            ".p2align 3                 \n\t"
+            "1:                         \n\t"
+            "movq  (%1), %%mm0          \n\t"
+            "movq  1(%1), %%mm1         \n\t"
+            "movq  (%2), %%mm3          \n\t"
+            PAVGB_MMX_NO_RND(%%mm0, %%mm1, %%mm2, %%mm6)
+            PAVGB_MMX(%%mm3, %%mm2, %%mm0, %%mm6)
+            "movq  %%mm0, (%2)          \n\t"
+            "movq  8(%1), %%mm0         \n\t"
+            "movq  9(%1), %%mm1         \n\t"
+            "movq  8(%2), %%mm3         \n\t"
+            PAVGB_MMX_NO_RND(%%mm0, %%mm1, %%mm2, %%mm6)
+            PAVGB_MMX(%%mm3, %%mm2, %%mm0, %%mm6)
+            "movq  %%mm0, 8(%2)         \n\t"
+            "add    %3, %1              \n\t"
+            "add    %3, %2              \n\t"
+            "subl   $1, %0              \n\t"
+            "jnz    1b                  \n\t"
+            :"+g"(h), "+S"(pixels), "+D"(block)
+            :"r"((x86_reg)line_size)
+            :"memory");
+}
+
+static void avg_no_rnd_pixels8_y2_mmx(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
+{
+    MOVQ_BFE(mm6);
+    __asm__ volatile(
+        "lea    (%3, %3), %%"FF_REG_a"  \n\t"
+        "movq   (%1), %%mm0             \n\t"
+        ".p2align 3                     \n\t"
+        "1:                             \n\t"
+        "movq   (%1, %3), %%mm1         \n\t"
+        "movq   (%1, %%"FF_REG_a"), %%mm2 \n\t"
+        PAVGBP_MMX_NO_RND(%%mm1, %%mm0, %%mm4,   %%mm2, %%mm1, %%mm5)
+        "movq   (%2), %%mm3             \n\t"
+        PAVGB_MMX(%%mm3, %%mm4, %%mm0, %%mm6)
+        "movq   (%2, %3), %%mm3         \n\t"
+        PAVGB_MMX(%%mm3, %%mm5, %%mm1, %%mm6)
+        "movq   %%mm0, (%2)             \n\t"
+        "movq   %%mm1, (%2, %3)         \n\t"
+        "add    %%"FF_REG_a", %1        \n\t"
+        "add    %%"FF_REG_a", %2        \n\t"
+
+        "movq   (%1, %3), %%mm1         \n\t"
+        "movq   (%1, %%"FF_REG_a"), %%mm0 \n\t"
+        PAVGBP_MMX_NO_RND(%%mm1, %%mm2, %%mm4,   %%mm0, %%mm1, %%mm5)
+        "movq   (%2), %%mm3             \n\t"
+        PAVGB_MMX(%%mm3, %%mm4, %%mm2, %%mm6)
+        "movq   (%2, %3), %%mm3         \n\t"
+        PAVGB_MMX(%%mm3, %%mm5, %%mm1, %%mm6)
+        "movq   %%mm2, (%2)             \n\t"
+        "movq   %%mm1, (%2, %3)         \n\t"
+        "add    %%"FF_REG_a", %1        \n\t"
+        "add    %%"FF_REG_a", %2        \n\t"
+
+        "subl   $4, %0                  \n\t"
+        "jnz    1b                      \n\t"
+        :"+g"(h), "+S"(pixels), "+D"(block)
+        :"r"((x86_reg)line_size)
+        :FF_REG_a, "memory");
+}
 
 #if HAVE_MMX
 CALL_2X_PIXELS(avg_no_rnd_pixels16_y2_mmx, avg_no_rnd_pixels8_y2_mmx, 8)
@@ -101,7 +348,6 @@ CALL_2X_PIXELS(put_no_rnd_pixels16_xy2_mmx, put_no_rnd_pixels8_xy2_mmx, 8)
 #define SET_RND  MOVQ_WTWO
 #define DEF(x, y) ff_ ## x ## _ ## y ## _mmx
 #define STATIC
-#define NO_AVG
 
 #include "rnd_template.c"
 
