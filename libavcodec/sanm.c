@@ -493,14 +493,12 @@ static void codec33_gen_tiles(SANMVideoContext *ctx, int8_t param1)
         for (k = 0; k < 8; k++) {
             j = i + param1;
             l = k + param1;
-            p = (j + k) / 2;
-            j = (j + p) / 2;
-            m = l / 2;
-            n = (i + param1);
-            o = (k + param1);
+            p = (j + l) >> 1;
+            n = (j + p) >> 1;
+            m = (p + l) >> 1;
 
-            *dst++ = p; *dst++ = p; *dst++ = j; *dst++ = n;
-            *dst++ = p; *dst++ = p; *dst++ = j; *dst++ = i;
+            *dst++ = p; *dst++ = p; *dst++ = n; *dst++ = j;
+            *dst++ = p; *dst++ = p; *dst++ = n; *dst++ = j;
             *dst++ = m; *dst++ = m; *dst++ = p; *dst++ = j;
             *dst++ = l; *dst++ = l; *dst++ = m; *dst++ = p;
         }
@@ -510,8 +508,8 @@ static void codec33_gen_tiles(SANMVideoContext *ctx, int8_t param1)
         for (k = 0; k < 8; k++) {
             j = i + param1;
             l = k + param1;
-            n = ((j + l) / 2);
-            m = ((l + n) / 2);
+            n = (j + l) >> 1;
+            m = (l + n) >> 1;
 
             *dst++ = j; *dst++ = j; *dst++ = j; *dst++ = j;
             *dst++ = n; *dst++ = n; *dst++ = n; *dst++ = n;
@@ -524,13 +522,12 @@ static void codec33_gen_tiles(SANMVideoContext *ctx, int8_t param1)
         for (k = 0; k < 8; k++) {
             j = i + param1;
             l = k + param1;
-            m = (j + l) / 2;
-            n = (j + m) / 2;
-            o = m / 2;
-            p = j & 0xff;
+            m = (j + l) >> 1;
+            n = (j + m) >> 1;
+            o = (l + m) >> 1;
 
-            *dst++ = p; *dst++ = p; *dst++ = n; *dst++ = m;
-            *dst++ = p; *dst++ = p; *dst++ = n; *dst++ = m;
+            *dst++ = j; *dst++ = j; *dst++ = n; *dst++ = m;
+            *dst++ = j; *dst++ = j; *dst++ = n; *dst++ = m;
             *dst++ = n; *dst++ = n; *dst++ = m; *dst++ = o;
             *dst++ = m; *dst++ = m; *dst++ = o; *dst++ = l;
         }
@@ -540,8 +537,8 @@ static void codec33_gen_tiles(SANMVideoContext *ctx, int8_t param1)
         for (k = 0; k < 8; k++) {
             j = i + param1;
             l = k + param1;
-            m = (j + l) / 2;
-            n = m / 2;
+            m = (j + l) >> 1;
+            n = (l + m) >> 1;
 
             *dst++ = j; *dst++ = m; *dst++ = n; *dst++ = l;
             *dst++ = j; *dst++ = m; *dst++ = n; *dst++ = l;
