@@ -20,16 +20,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/crc.h"
 #include "libavutil/mem.h"
+#include "libavutil/refstruct.h"
 
 #include "avcodec.h"
 #include "dovi_rpu.h"
 #include "itut35.h"
 #include "put_bits.h"
 #include "put_golomb.h"
-#include "libavutil/refstruct.h"
 
 static const struct {
     uint64_t pps; // maximum pixels per second
@@ -52,18 +53,18 @@ static const struct {
     [13] = {7680*4320*120u, 7680, 240, 800},
 };
 
-static int dovi_configure_ext(DOVIContext *s, enum AVCodecID codec_id,
-                              const AVDOVIMetadata *metadata,
-                              enum AVDOVICompression compression,
-                              int strict_std_compliance,
-                              int width, int height,
-                              AVRational framerate,
-                              enum AVPixelFormat pix_format,
-                              enum AVColorSpace color_space,
-                              enum AVColorPrimaries color_primaries,
-                              enum AVColorTransferCharacteristic color_trc,
-                              AVPacketSideData **coded_side_data,
-                              int *nb_coded_side_data)
+static av_cold int dovi_configure_ext(DOVIContext *s, enum AVCodecID codec_id,
+                                      const AVDOVIMetadata *metadata,
+                                      enum AVDOVICompression compression,
+                                      int strict_std_compliance,
+                                      int width, int height,
+                                      AVRational framerate,
+                                      enum AVPixelFormat pix_format,
+                                      enum AVColorSpace color_space,
+                                      enum AVColorPrimaries color_primaries,
+                                      enum AVColorTransferCharacteristic color_trc,
+                                      AVPacketSideData **coded_side_data,
+                                      int *nb_coded_side_data)
 {
     AVDOVIDecoderConfigurationRecord *cfg;
     const AVDOVIRpuDataHeader *hdr = NULL;
@@ -246,10 +247,10 @@ skip:
     return 0;
 }
 
-int ff_dovi_configure_from_codedpar(DOVIContext *s, AVCodecParameters *par,
-                          const AVDOVIMetadata *metadata,
-                          enum AVDOVICompression compression,
-                          int strict_std_compliance)
+av_cold int ff_dovi_configure_from_codedpar(DOVIContext *s, AVCodecParameters *par,
+                                            const AVDOVIMetadata *metadata,
+                                            enum AVDOVICompression compression,
+                                            int strict_std_compliance)
 {
     return dovi_configure_ext(s, par->codec_id, metadata, compression,
                               strict_std_compliance, par->width, par->height,
@@ -258,7 +259,7 @@ int ff_dovi_configure_from_codedpar(DOVIContext *s, AVCodecParameters *par,
                               &par->coded_side_data, &par->nb_coded_side_data);
 }
 
-int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
+av_cold int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
 {
     const AVDOVIMetadata *metadata = NULL;
     const AVFrameSideData *sd;
