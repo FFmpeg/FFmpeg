@@ -228,8 +228,8 @@ static int dovi_rpu_init(AVBSFContext *bsf)
         } else {
             av_log(bsf, AV_LOG_WARNING, "No Dolby Vision configuration record "
                    "found? Generating one, but results may be invalid.\n");
-            ret = ff_dovi_configure_ext(&s->enc, bsf->par_out, NULL, s->compression,
-                                        FF_COMPLIANCE_NORMAL);
+            ret = ff_dovi_configure_from_codedpar(&s->enc, bsf->par_out, NULL, s->compression,
+                                                  FF_COMPLIANCE_NORMAL);
             if (ret < 0)
                 return ret;
             /* Be conservative in accepting all compressed RPUs */
