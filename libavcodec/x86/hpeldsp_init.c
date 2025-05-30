@@ -122,7 +122,6 @@ CALL_2X_PIXELS(put_pixels16_xy2_mmx, ff_put_pixels8_xy2_mmx, 8)
     CALL_2X_PIXELS(put_no_rnd_pixels16_x2 ## CPUEXT, ff_put_no_rnd_pixels8_x2 ## CPUEXT, 8) \
     CALL_2X_PIXELS(put_pixels16_y2        ## CPUEXT, ff_put_pixels8_y2        ## CPUEXT, 8) \
     CALL_2X_PIXELS(put_no_rnd_pixels16_y2 ## CPUEXT, ff_put_no_rnd_pixels8_y2 ## CPUEXT, 8) \
-    CALL_2X_PIXELS(avg_pixels16           ## CPUEXT, ff_avg_pixels8           ## CPUEXT, 8) \
     CALL_2X_PIXELS(avg_pixels16_x2        ## CPUEXT, ff_avg_pixels8_x2        ## CPUEXT, 8) \
     CALL_2X_PIXELS(avg_pixels16_y2        ## CPUEXT, ff_avg_pixels8_y2        ## CPUEXT, 8) \
     CALL_2X_PIXELS(avg_pixels16_xy2       ## CPUEXT, ff_avg_pixels8_xy2       ## CPUEXT, 8) \
@@ -170,7 +169,7 @@ static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags)
     c->put_pixels_tab[0][1] = ff_put_pixels16_x2_mmxext;
     c->put_pixels_tab[0][2] = put_pixels16_y2_mmxext;
 
-    c->avg_pixels_tab[0][0] = avg_pixels16_mmxext;
+    c->avg_pixels_tab[0][0] = ff_avg_pixels16_mmxext;
     c->avg_pixels_tab[0][1] = avg_pixels16_x2_mmxext;
     c->avg_pixels_tab[0][2] = avg_pixels16_y2_mmxext;
     c->avg_pixels_tab[0][3] = avg_pixels16_xy2_mmxext;
