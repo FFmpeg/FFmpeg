@@ -874,8 +874,6 @@ static int init_graphprint(GraphPrintContext **pgpc, AVBPrint *target_buf)
     AVTextFormatContext *tfc = NULL;
     AVTextWriterContext *wctx = NULL;
     GraphPrintContext *gpc = NULL;
-    char *w_args = NULL;
-    char *w_name;
     int ret;
 
     init_sections();
@@ -883,19 +881,7 @@ static int init_graphprint(GraphPrintContext **pgpc, AVBPrint *target_buf)
 
     av_bprint_init(target_buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
-    if (!print_graphs_format)
-        print_graphs_format = av_strdup("json");
-    if (!print_graphs_format) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    w_name = av_strtok(print_graphs_format, "=", &w_args);
-    if (!w_name) {
-        av_log(NULL, AV_LOG_ERROR, "No name specified for the filter graph output format\n");
-        ret = AVERROR(EINVAL);
-        goto fail;
-    }
+    const char *w_name = print_graphs_format ? print_graphs_format : "json";
 
     text_formatter = avtext_get_formatter_by_name(w_name);
     if (!text_formatter) {
@@ -912,6 +898,9 @@ static int init_graphprint(GraphPrintContext **pgpc, AVBPrint *target_buf)
     }
 
     AVTextFormatOptions tf_options = { .show_optional_fields = -1 };
+    const char *w_args = print_graphs_format ? strchr(print_graphs_format, '=') : NULL;
+    if (w_args)
+        ++w_args; // consume '='
     ret = avtext_context_open(&tfc, text_formatter, wctx, w_args, sections, FF_ARRAY_ELEMS(sections), tf_options, NULL);
     if (ret < 0) {
         goto fail;

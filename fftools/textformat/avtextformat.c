@@ -706,9 +706,12 @@ const AVTextFormatter *avtext_get_formatter_by_name(const char *name)
 {
     formatters_register_all();
 
-    for (int i = 0; registered_formatters[i]; i++)
-        if (!strcmp(registered_formatters[i]->name, name))
+    for (int i = 0; registered_formatters[i]; i++) {
+        const char *end;
+        if (av_strstart(name, registered_formatters[i]->name, &end) &&
+            (*end == '\0' || *end == '='))
             return registered_formatters[i];
+    }
 
     return NULL;
 }
