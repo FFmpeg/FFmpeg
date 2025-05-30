@@ -35,6 +35,11 @@
 #define DXV_HEADER_LENGTH 12
 
 /*
+ * Resolume will refuse to display frames that are not padded to 16x16 pixels.
+ */
+#define DXV_ALIGN(x) FFALIGN(x, 16)
+
+/*
  * DXV uses LZ-like back-references to avoid copying words that have already
  * appeared in the decompressed stream. Using a simple hash table (HT)
  * significantly speeds up the lookback process while encoding.
@@ -60,6 +65,7 @@ typedef struct DXVEncContext {
 
     FFHashtableContext *color_ht;
     FFHashtableContext *lut_ht;
+    FFHashtableContext *combo_ht;
 } DXVEncContext;
 
 /* Converts an index offset value to a 2-bit opcode and pushes it to a stream.
@@ -94,10 +100,14 @@ static int dxv_compress_dxt1(AVCodecContext *avctx)
     DXVEncContext *ctx = avctx->priv_data;
     PutByteContext *pbc = &ctx->pbc;
     void *value;
-    uint32_t color, lut, idx, color_idx, lut_idx, prev_pos, state = 16, pos = 0, op = 0;
+    uint64_t combo;
+    uint32_t color, lut, idx, combo_idx, prev_pos, old_pos, state = 16, pos = 0, op = 0;
 
     ff_hashtable_clear(ctx->color_ht);
     ff_hashtable_clear(ctx->lut_ht);
+    ff_hashtable_clear(ctx->combo_ht);
+
+    ff_hashtable_set(ctx->combo_ht, ctx->tex_data, &pos);
 
     bytestream2_put_le32(pbc, AV_RL32(ctx->tex_data));
     ff_hashtable_set(ctx->color_ht, ctx->tex_data, &pos);
@@ -107,51 +117,46 @@ static int dxv_compress_dxt1(AVCodecContext *avctx)
     pos++;
 
     while (pos + 2 <= ctx->tex_size / 4) {
-        idx = 0;
-        color_idx = 0;
-        lut_idx = 0;
+        combo = AV_RL64(ctx->tex_data + pos * 4);
+        combo_idx = ff_hashtable_get(ctx->combo_ht, &combo, &prev_pos) ? pos - prev_pos : 0;
+        idx = combo_idx;
+        PUSH_OP(2);
+        if (pos >= LOOKBACK_WORDS) {
+            old_pos = pos - LOOKBACK_WORDS;
+            if (ff_hashtable_get(ctx->combo_ht, ctx->tex_data + old_pos * 4, &prev_pos) && prev_pos <= old_pos)
+                ff_hashtable_delete(ctx->combo_ht, ctx->tex_data + old_pos * 4);
+        }
+        ff_hashtable_set(ctx->combo_ht, &combo, &pos);
 
         color = AV_RL32(ctx->tex_data + pos * 4);
-        if (ff_hashtable_get(ctx->color_ht, &color, &prev_pos))
-            color_idx = pos - prev_pos;
-        ff_hashtable_set(ctx->color_ht, &color, &pos);
-
+        if (!combo_idx) {
+            idx = ff_hashtable_get(ctx->color_ht, &color, &prev_pos) ? pos - prev_pos : 0;
+            PUSH_OP(2);
+            if (!idx)
+                bytestream2_put_le32(pbc, color);
+        }
         if (pos >= LOOKBACK_WORDS) {
-            uint32_t old_pos = pos - LOOKBACK_WORDS;
+            old_pos = pos - LOOKBACK_WORDS;
             if (ff_hashtable_get(ctx->color_ht, ctx->tex_data + old_pos * 4, &prev_pos) && prev_pos <= old_pos)
                 ff_hashtable_delete(ctx->color_ht, ctx->tex_data + old_pos * 4);
         }
+        ff_hashtable_set(ctx->color_ht, &color, &pos);
         pos++;
 
         lut = AV_RL32(ctx->tex_data + pos * 4);
-        if (color_idx && lut == AV_RL32(ctx->tex_data + (pos - color_idx) * 4)) {
-            idx = color_idx;
-        } else {
-            idx = 0;
-            if (ff_hashtable_get(ctx->lut_ht, &lut, &prev_pos))
-                lut_idx = pos - prev_pos;
-            ff_hashtable_set(ctx->lut_ht, &lut, &pos);
+        if (!combo_idx) {
+            idx = ff_hashtable_get(ctx->lut_ht, &lut, &prev_pos) ? pos - prev_pos : 0;
+            PUSH_OP(2);
+            if (!idx)
+                bytestream2_put_le32(pbc, lut);
         }
         if (pos >= LOOKBACK_WORDS) {
-            uint32_t old_pos = pos - LOOKBACK_WORDS;
+            old_pos = pos - LOOKBACK_WORDS;
             if (ff_hashtable_get(ctx->lut_ht, ctx->tex_data + old_pos * 4, &prev_pos) && prev_pos <= old_pos)
                 ff_hashtable_delete(ctx->lut_ht, ctx->tex_data + old_pos * 4);
         }
+        ff_hashtable_set(ctx->lut_ht, &lut, &pos);
         pos++;
-
-        PUSH_OP(2);
-
-        if (!idx) {
-            idx = color_idx;
-            PUSH_OP(2);
-            if (!idx)
-                bytestream2_put_le32(pbc,  color);
-
-            idx = lut_idx;
-            PUSH_OP(2);
-            if (!idx)
-                bytestream2_put_le32(pbc,  lut);
-        }
     }
 
     return 0;
@@ -172,12 +177,50 @@ static int dxv_encode(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
 
     if (ctx->enc.tex_funct) {
+        uint8_t *safe_data[4] = {frame->data[0], 0, 0, 0};
+        int safe_linesize[4] = {frame->linesize[0], 0, 0, 0};
+
+        if (avctx->width != DXV_ALIGN(avctx->width) || avctx->height != DXV_ALIGN(avctx->height)) {
+            ret = av_image_alloc(
+                safe_data,
+                safe_linesize,
+                DXV_ALIGN(avctx->width),
+                DXV_ALIGN(avctx->height),
+                avctx->pix_fmt,
+                1);
+            if (ret < 0)
+                return ret;
+
+            av_image_copy2(
+                safe_data,
+                safe_linesize,
+                frame->data,
+                frame->linesize,
+                avctx->pix_fmt,
+                avctx->width,
+                avctx->height);
+
+            if (avctx->width != DXV_ALIGN(avctx->width)) {
+                for (int y = 0; y < avctx->height; y++) {
+                    memset(safe_data[0] + y * safe_linesize[0] + frame->linesize[0], 0, safe_linesize[0] - frame->linesize[0]);
+                }
+            }
+            if (avctx->height != DXV_ALIGN(avctx->height)) {
+                for (int y = avctx->height; y < DXV_ALIGN(avctx->height); y++) {
+                    memset(safe_data[0] + y * safe_linesize[0], 0, safe_linesize[0]);
+                }
+            }
+        }
+
         ctx->enc.tex_data.out = ctx->tex_data;
-        ctx->enc.frame_data.in = frame->data[0];
-        ctx->enc.stride = frame->linesize[0];
-        ctx->enc.width  = avctx->width;
-        ctx->enc.height = avctx->height;
+        ctx->enc.frame_data.in = safe_data[0];
+        ctx->enc.stride = safe_linesize[0];
+        ctx->enc.width  = DXV_ALIGN(avctx->width);
+        ctx->enc.height = DXV_ALIGN(avctx->height);
         ff_texturedsp_exec_compress_threads(avctx, &ctx->enc);
+
+        if (safe_data[0] != frame->data[0])
+            av_freep(&safe_data[0]);
     } else {
         /* unimplemented: YCoCg formats */
         return AVERROR_INVALIDDATA;
@@ -216,14 +259,6 @@ static av_cold int dxv_init(AVCodecContext *avctx)
         return ret;
     }
 
-    if (avctx->width % TEXTURE_BLOCK_W || avctx->height % TEXTURE_BLOCK_H) {
-        av_log(avctx,
-               AV_LOG_ERROR,
-               "Video size %dx%d is not multiple of "AV_STRINGIFY(TEXTURE_BLOCK_W)"x"AV_STRINGIFY(TEXTURE_BLOCK_H)".\n",
-               avctx->width, avctx->height);
-        return AVERROR_INVALIDDATA;
-    }
-
     ff_texturedspenc_init(&texdsp);
 
     switch (ctx->tex_fmt) {
@@ -237,10 +272,10 @@ static av_cold int dxv_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
     ctx->enc.raw_ratio = 16;
-    ctx->tex_size = avctx->width  / TEXTURE_BLOCK_W *
-                    avctx->height / TEXTURE_BLOCK_H *
+    ctx->tex_size = DXV_ALIGN(avctx->width) / TEXTURE_BLOCK_W *
+                    DXV_ALIGN(avctx->height) / TEXTURE_BLOCK_H *
                     ctx->enc.tex_ratio;
-    ctx->enc.slice_count = av_clip(avctx->thread_count, 1, avctx->height / TEXTURE_BLOCK_H);
+    ctx->enc.slice_count = av_clip(avctx->thread_count, 1, DXV_ALIGN(avctx->height) / TEXTURE_BLOCK_H);
 
     ctx->tex_data = av_malloc(ctx->tex_size);
     if (!ctx->tex_data) {
@@ -251,6 +286,9 @@ static av_cold int dxv_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
     ret = ff_hashtable_alloc(&ctx->lut_ht, sizeof(uint32_t), sizeof(uint32_t), LOOKBACK_HT_ELEMS);
+    if (ret < 0)
+        return ret;
+    ret = ff_hashtable_alloc(&ctx->combo_ht, sizeof(uint64_t), sizeof(uint32_t), LOOKBACK_HT_ELEMS);
     if (ret < 0)
         return ret;
 
@@ -265,6 +303,7 @@ static av_cold int dxv_close(AVCodecContext *avctx)
 
     ff_hashtable_freep(&ctx->color_ht);
     ff_hashtable_freep(&ctx->lut_ht);
+    ff_hashtable_freep(&ctx->combo_ht);
 
     return 0;
 }
