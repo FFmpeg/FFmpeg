@@ -681,7 +681,6 @@ static av_cold int aom_init(AVCodecContext *avctx,
     struct aom_codec_enc_cfg enccfg = { 0 };
     aom_codec_flags_t flags =
         (avctx->flags & AV_CODEC_FLAG_PSNR) ? AOM_CODEC_USE_PSNR : 0;
-    AVCPBProperties *cpb_props;
     int res;
     aom_img_fmt_t img_fmt;
     aom_codec_caps_t codec_caps = aom_codec_get_caps(iface);
@@ -989,10 +988,6 @@ static av_cold int aom_init(AVCodecContext *avctx,
     if (codec_caps & AOM_CODEC_CAP_HIGHBITDEPTH)
         ctx->rawimg.bit_depth = enccfg.g_bit_depth;
 
-    cpb_props = ff_encode_add_cpb_side_data(avctx);
-    if (!cpb_props)
-        return AVERROR(ENOMEM);
-
     ctx->dovi.logctx = avctx;
     if ((res = ff_dovi_configure(&ctx->dovi, avctx)) < 0)
         return res;
@@ -1018,6 +1013,10 @@ static av_cold int aom_init(AVCodecContext *avctx,
         if (ret < 0)
            return ret;
     }
+
+    AVCPBProperties *cpb_props = ff_encode_add_cpb_side_data(avctx);
+    if (!cpb_props)
+        return AVERROR(ENOMEM);
 
     if (enccfg.rc_end_usage == AOM_CBR ||
         enccfg.g_pass != AOM_RC_ONE_PASS) {
