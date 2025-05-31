@@ -322,6 +322,7 @@ enc_external(){
 
     srcfile=$(target_path $srcfile)
     encfile=$(target_path "${outdir}/${test}.${enc_fmt}")
+    test "$keep" -ge 1 || cleanfiles="$cleanfiles $encfile"
 
     ffmpeg -i $srcfile $enc_opt -f $enc_fmt -y $encfile || return
     run ffprobe${PROGSUF}${EXECSUF} -bitexact $probe_opt $encfile || return
