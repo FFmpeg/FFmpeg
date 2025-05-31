@@ -1077,7 +1077,7 @@ fail:
 static int frame_end(VVCContext *s, VVCFrameContext *fc)
 {
     const AVFilmGrainParams *fgp;
-    int ret = 0;
+    int ret;
 
     if (fc->ref->needs_fg) {
         av_assert0(fc->ref->frame_grain->buf[0]);
@@ -1089,9 +1089,13 @@ static int frame_end(VVCContext *s, VVCFrameContext *fc)
         case AV_FILM_GRAIN_PARAMS_H274:
             ret = ff_h274_apply_film_grain(fc->ref->frame_grain, fc->ref->frame,
                 &s->h274db, fgp);
+            if (ret < 0)
+                return ret;
             break;
         case AV_FILM_GRAIN_PARAMS_AV1:
             ret = ff_aom_apply_film_grain(fc->ref->frame_grain, fc->ref->frame, fgp);
+            if (ret < 0)
+                return ret;
             break;
         }
     }
@@ -1099,7 +1103,7 @@ static int frame_end(VVCContext *s, VVCFrameContext *fc)
     if (!s->avctx->hwaccel && s->avctx->err_recognition & AV_EF_CRCCHECK) {
         VVCSEI *sei = &fc->sei;
         if (sei->picture_hash.present) {
-            int ret = ff_h274_hash_init(&s->hash_ctx, sei->picture_hash.hash_type);
+            ret = ff_h274_hash_init(&s->hash_ctx, sei->picture_hash.hash_type);
             if (ret < 0)
                 return ret;
 
