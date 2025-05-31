@@ -74,7 +74,7 @@ typedef enum {
     SECTION_ID_ENCODER,
 } SectionID;
 
-static struct AVTextFormatSection sections[] = {
+static const AVTextFormatSection sections[] = {
     [SECTION_ID_ROOT]            = { SECTION_ID_ROOT, "root", AV_TEXTFORMAT_SECTION_FLAG_IS_WRAPPER, { SECTION_ID_FILTERGRAPHS, SECTION_ID_INPUTFILES, SECTION_ID_OUTPUTFILES, SECTION_ID_DECODERS, SECTION_ID_ENCODERS, SECTION_ID_STREAMLINKS, -1 } },
 
     [SECTION_ID_FILTERGRAPHS]    = { SECTION_ID_FILTERGRAPHS, "graphs", AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY, { SECTION_ID_FILTERGRAPH, -1 } },
@@ -468,12 +468,6 @@ static void print_filter(GraphPrintContext *gpc, const AVFilterContext *filter, 
     avtext_print_section_footer(tfc); // SECTION_ID_FILTER_OUTPUTS
 
     avtext_print_section_footer(tfc); // SECTION_ID_FILTER
-}
-
-static void init_sections(void)
-{
-    for (unsigned i = 0; i < FF_ARRAY_ELEMS(sections); i++)
-        sections[i].show_all_entries = 1;
 }
 
 static void print_filtergraph_single(GraphPrintContext *gpc, FilterGraph *fg, AVFilterGraph *graph)
@@ -876,7 +870,6 @@ static int init_graphprint(GraphPrintContext **pgpc, AVBPrint *target_buf)
     GraphPrintContext *gpc = NULL;
     int ret;
 
-    init_sections();
     *pgpc = NULL;
 
     av_bprint_init(target_buf, 0, AV_BPRINT_SIZE_UNLIMITED);

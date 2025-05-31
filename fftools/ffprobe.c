@@ -252,7 +252,7 @@ static const char *get_stream_group_type(const void *data)
     return av_x_if_null(avformat_stream_group_name(stg->type), "unknown");
 }
 
-static struct AVTextFormatSection sections[] = {
+static const AVTextFormatSection sections[] = {
     [SECTION_ID_CHAPTERS] =           { SECTION_ID_CHAPTERS, "chapters", AV_TEXTFORMAT_SECTION_FLAG_IS_ARRAY, { SECTION_ID_CHAPTER, -1 } },
     [SECTION_ID_CHAPTER] =            { SECTION_ID_CHAPTER, "chapter", 0, { SECTION_ID_CHAPTER_TAGS, -1 } },
     [SECTION_ID_CHAPTER_TAGS] =       { SECTION_ID_CHAPTER_TAGS, "tags", AV_TEXTFORMAT_SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "chapter_tags" },
@@ -324,6 +324,13 @@ static struct AVTextFormatSection sections[] = {
     [SECTION_ID_SUBTITLE] =           { SECTION_ID_SUBTITLE, "subtitle", 0, { -1 } },
 };
 
+typedef struct EntrySelection {
+    int show_all_entries;
+    AVDictionary *entries_to_show;
+} EntrySelection;
+
+static EntrySelection selected_entries[FF_ARRAY_ELEMS(sections)] = { 0 };
+
 static const OptionDef *options;
 
 /* FFprobe context */
@@ -357,6 +364,14 @@ typedef struct LogBuffer {
 
 static LogBuffer *log_buffer;
 static int log_buffer_size;
+
+static int is_key_selected_callback(AVTextFormatContext *tctx, const char *key)
+{
+    const AVTextFormatSection *section = tctx->section[tctx->level];
+    const EntrySelection *selection = &selected_entries[section - sections];
+
+    return selection->show_all_entries || av_dict_get(selection->entries_to_show, key, NULL, 0);
+}
 
 static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
 {
@@ -2737,14 +2752,15 @@ static int opt_format(void *optctx, const char *opt, const char *arg)
 static inline void mark_section_show_entries(SectionID section_id,
                                              int show_all_entries, AVDictionary *entries)
 {
-    struct AVTextFormatSection *section = &sections[section_id];
+    EntrySelection *selection = &selected_entries[section_id];
 
-    section->show_all_entries = show_all_entries;
+    selection->show_all_entries = show_all_entries;
     if (show_all_entries) {
+        const AVTextFormatSection *section = &sections[section_id];
         for (const int *id = section->children_ids; *id != -1; id++)
             mark_section_show_entries(*id, show_all_entries, entries);
     } else {
-        av_dict_copy(&section->entries_to_show, entries, 0);
+        av_dict_copy(&selection->entries_to_show, entries, 0);
     }
 }
 
@@ -3167,9 +3183,12 @@ static const OptionDef real_options[] = {
 
 static inline int check_section_show_entries(int section_id)
 {
-    struct AVTextFormatSection *section = &sections[section_id];
-    if (sections[section_id].show_all_entries || sections[section_id].entries_to_show)
+    const EntrySelection *selection = &selected_entries[section_id];
+
+    if (selection->show_all_entries || selection->entries_to_show)
         return 1;
+
+    const AVTextFormatSection *section = &sections[section_id];
     for (const int *id = section->children_ids; *id != -1; id++)
         if (check_section_show_entries(*id))
             return 1;
@@ -3188,7 +3207,7 @@ int main(int argc, char **argv)
     AVTextWriterContext *wctx;
     char *buf;
     char *f_name = NULL, *f_args = NULL;
-    int ret, input_ret, i;
+    int ret, input_ret;
 
     init_dynload();
 
@@ -3282,6 +3301,7 @@ int main(int argc, char **argv)
         goto end;
 
     AVTextFormatOptions tf_options = {
+        .is_key_selected              = is_key_selected_callback,
         .show_optional_fields = show_optional_fields,
         .show_value_unit = show_value_unit,
         .use_value_prefix = use_value_prefix,
@@ -3338,8 +3358,8 @@ end:
     av_freep(&read_intervals);
 
     uninit_opts();
-    for (i = 0; i < FF_ARRAY_ELEMS(sections); i++)
-        av_dict_free(&(sections[i].entries_to_show));
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(selected_entries); ++i)
+        av_dict_free(&selected_entries[i].entries_to_show);
 
     avformat_network_deinit();
 

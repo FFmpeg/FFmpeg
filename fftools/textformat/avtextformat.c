@@ -147,6 +147,7 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
         goto fail;
     }
 
+    tctx->is_key_selected = options.is_key_selected;
     tctx->show_value_unit = options.show_value_unit;
     tctx->use_value_prefix = options.use_value_prefix;
     tctx->use_byte_value_binary_prefix = options.use_byte_value_binary_prefix;
@@ -289,8 +290,6 @@ void avtext_print_section_footer(AVTextFormatContext *tctx)
 
 void avtext_print_integer(AVTextFormatContext *tctx, const char *key, int64_t val, int flags)
 {
-    const AVTextFormatSection *section;
-
     av_assert0(tctx);
 
     if (tctx->show_optional_fields == SHOW_OPTIONAL_FIELDS_NEVER)
@@ -303,9 +302,7 @@ void avtext_print_integer(AVTextFormatContext *tctx, const char *key, int64_t va
 
     av_assert0(key && tctx->level >= 0 && tctx->level < SECTION_MAX_NB_LEVELS);
 
-    section = tctx->section[tctx->level];
-
-    if (section->show_all_entries || av_dict_get(section->entries_to_show, key, NULL, 0)) {
+    if (!tctx->is_key_selected || tctx->is_key_selected(tctx, key)) {
         tctx->formatter->print_integer(tctx, key, val);
         tctx->nb_item[tctx->level]++;
     }
@@ -460,7 +457,7 @@ int avtext_print_string(AVTextFormatContext *tctx, const char *key, const char *
         && !(tctx->formatter->flags & AV_TEXTFORMAT_FLAG_SUPPORTS_OPTIONAL_FIELDS))
         return 0;
 
-    if (section->show_all_entries || av_dict_get(section->entries_to_show, key, NULL, 0)) {
+    if (!tctx->is_key_selected || tctx->is_key_selected(tctx, key)) {
         if (flags & AV_TEXTFORMAT_PRINT_STRING_VALIDATE) {
             char *key1 = NULL, *val1 = NULL;
             ret = validate_string(tctx, &key1, key);

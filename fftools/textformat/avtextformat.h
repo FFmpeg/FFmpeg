@@ -57,9 +57,7 @@ typedef struct AVTextFormatSection {
     const int children_ids[SECTION_MAX_NB_CHILDREN + 1]; ///< list of children section IDS, terminated by -1
     const char *element_name; ///< name of the contained element, if provided
     const char *unique_name;  ///< unique section name, in case the name is ambiguous
-    AVDictionary *entries_to_show;
     const char *(*get_type)(const void *data); ///< function returning a type if defined, must be defined when SECTION_FLAG_HAS_TYPE is defined
-    int show_all_entries;
     const char *id_key;          ///< name of the key to be used as the id
     const char *src_id_key;     ///< name of the key to be used as the source id for diagram connections
     const char *dest_id_key;   ///< name of the key to be used as the target id for diagram connections
@@ -131,6 +129,16 @@ struct AVTextFormatContext {
     AVBPrint section_pbuf[SECTION_MAX_NB_LEVELS]; ///< generic print buffer dedicated to each section,
                                                   ///  used by various formatters
 
+    /**
+     * Callback to discard certain elements based upon the key used.
+     * It is called before any element with a key is printed.
+     * If this callback is unset, all elements are printed.
+     *
+     * @retval 1 if the element is supposed to be printed
+     * @retval 0 if the element is supposed to be discarded
+     */
+    int (*is_key_selected)(struct AVTextFormatContext *tctx, const char *key);
+
     int show_optional_fields;
     int show_value_unit;
     int use_value_prefix;
@@ -145,6 +153,7 @@ struct AVTextFormatContext {
 };
 
 typedef struct AVTextFormatOptions {
+    int (*is_key_selected)(struct AVTextFormatContext *tctx, const char *key);
     int show_optional_fields;
     int show_value_unit;
     int use_value_prefix;
