@@ -255,18 +255,11 @@ static void vorbis_cleanup(AVFormatContext *s, int idx)
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
     struct oggvorbis_private *priv = os->private;
-    vorbis_new_extradata *new_extradata;
     int i;
     if (os->private) {
         av_vorbis_parse_free(&priv->vp);
         for (i = 0; i < 3; i++)
             av_freep(&priv->packet[i]);
-    }
-
-    if (os->new_extradata) {
-        new_extradata = (vorbis_new_extradata *)os->new_extradata;
-        av_freep(&new_extradata->header);
-        av_freep(&new_extradata->setup);
     }
 }
 
@@ -440,10 +433,7 @@ static int vorbis_packet(AVFormatContext *s, int idx)
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
     struct oggvorbis_private *priv = os->private;
-    vorbis_new_extradata *new_extradata;
     int duration, flags = 0;
-    int skip_packet = 0;
-    int ret;
 
     if (!priv->vp)
         return AVERROR_INVALIDDATA;
@@ -506,61 +496,10 @@ static int vorbis_packet(AVFormatContext *s, int idx)
         if (duration < 0) {
             os->pflags |= AV_PKT_FLAG_CORRUPT;
             return 0;
-        }
-
-        if (flags & VORBIS_FLAG_HEADER) {
-            ret = vorbis_parse_header(s, s->streams[idx], os->buf + os->pstart, os->psize);
-            if (ret < 0)
-                return ret;
-
-            if (!os->new_extradata) {
-                os->new_extradata = av_mallocz(sizeof(vorbis_new_extradata));
-                if (!os->new_extradata)
-                    return AVERROR(ENOMEM);
-            }
-
-            os->new_extradata_size = sizeof(vorbis_new_extradata);
-            new_extradata = (vorbis_new_extradata *)os->new_extradata;
-
-            ret = av_reallocp(&new_extradata->header, os->psize);
-            if (ret < 0)
-                return ret;
-
-            memcpy(new_extradata->header,  os->buf + os->pstart, os->psize);
-            new_extradata->header_size = os->psize;
-
-            skip_packet = 1;
-        }
-
-        if (flags & VORBIS_FLAG_COMMENT) {
-            ret = vorbis_update_metadata(s, idx);
-            if (ret < 0)
-                return ret;
-
+        } else if (flags & VORBIS_FLAG_COMMENT) {
+            vorbis_update_metadata(s, idx);
             flags = 0;
-            skip_packet = 1;
         }
-
-        if (flags & VORBIS_FLAG_SETUP) {
-            if (!os->new_extradata) {
-                os->new_extradata = av_mallocz(sizeof(vorbis_new_extradata));
-                if (!os->new_extradata)
-                    return AVERROR(ENOMEM);
-            }
-
-            os->new_extradata_size = sizeof(vorbis_new_extradata);
-            new_extradata = (vorbis_new_extradata *)os->new_extradata;
-
-            ret = av_reallocp(&new_extradata->setup, os->psize);
-            if (ret < 0)
-                return ret;
-
-            memcpy(new_extradata->setup, os->buf + os->pstart, os->psize);
-            new_extradata->setup_size = os->psize;
-
-            skip_packet = 1;
-        }
-
         os->pduration = duration;
     }
 
@@ -582,7 +521,7 @@ static int vorbis_packet(AVFormatContext *s, int idx)
         priv->final_duration += os->pduration;
     }
 
-    return skip_packet;
+    return 0;
 }
 
 const struct ogg_codec ff_vorbis_codec = {

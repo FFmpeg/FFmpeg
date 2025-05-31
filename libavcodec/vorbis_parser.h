@@ -31,17 +31,6 @@
 typedef struct AVVorbisParseContext AVVorbisParseContext;
 
 /**
- * Used by the vorbis parser to pass new chained stream headers
- * as extradata.
- */
-typedef struct vorbis_new_extradata {
-    uint8_t *header;
-    size_t   header_size;
-    uint8_t *setup;
-    size_t   setup_size;
-} vorbis_new_extradata;
-
-/**
  * Allocate and initialize the Vorbis parser using headers in the extradata.
  */
 AVVorbisParseContext *av_vorbis_parse_init(const uint8_t *extradata,
