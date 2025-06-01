@@ -159,13 +159,13 @@ char *ff_resman_get_string(FFResourceId resource_id)
         int ret = decompress_gzip(ctx, (uint8_t *)resource_definition.data, *resource_definition.data_len, &out, &out_len);
 
         if (ret) {
-            av_log(NULL, AV_LOG_ERROR, "Unable to decompress the resource with ID %d\n", resource_id);
+            av_log(ctx, AV_LOG_ERROR, "Unable to decompress the resource with ID %d\n", resource_id);
             goto end;
         }
 
         dict_ret = av_dict_set(&ctx->resource_dic, resource_definition.name, out, 0);
         if (dict_ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Failed to store decompressed resource in dictionary: %d\n", dict_ret);
+            av_log(ctx, AV_LOG_ERROR, "Failed to store decompressed resource in dictionary: %d\n", dict_ret);
             av_freep(&out);
             goto end;
         }
@@ -175,7 +175,7 @@ char *ff_resman_get_string(FFResourceId resource_id)
 
         dict_ret = av_dict_set(&ctx->resource_dic, resource_definition.name, (const char *)resource_definition.data, 0);
         if (dict_ret < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Failed to store resource in dictionary: %d\n", dict_ret);
+            av_log(ctx, AV_LOG_ERROR, "Failed to store resource in dictionary: %d\n", dict_ret);
             goto end;
         }
 
@@ -183,7 +183,7 @@ char *ff_resman_get_string(FFResourceId resource_id)
         dic_entry = av_dict_get(ctx->resource_dic, resource_definition.name, NULL, 0);
 
         if (!dic_entry) {
-            av_log(NULL, AV_LOG_ERROR, "Failed to retrieve resource from dictionary after storing it\n");
+            av_log(ctx, AV_LOG_ERROR, "Failed to retrieve resource from dictionary after storing it\n");
             goto end;
         }
     }
