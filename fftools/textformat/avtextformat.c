@@ -43,8 +43,8 @@
 static const struct {
     double bin_val;
     double dec_val;
-    const char *bin_str;
-    const char *dec_str;
+    char bin_str[4];
+    char dec_str[4];
 } si_prefixes[] = {
     { 1.0, 1.0, "", "" },
     { 1.024e3, 1e3, "Ki", "K" },
