@@ -1070,7 +1070,6 @@ static int print_filtergraphs_priv(FilterGraph **graphs, int nb_graphs, InputFil
             }
 
             avio_write(avio, (const unsigned char *)target_buf.str, FFMIN(target_buf.len, target_buf.size - 1));
-            avio_flush(avio);
 
             if ((ret = avio_closep(&avio)) < 0)
                 av_log(NULL, AV_LOG_ERROR, "Error closing graph output file, loss of information possible: %s\n", av_err2str(ret));
