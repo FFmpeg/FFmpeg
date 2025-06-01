@@ -60,7 +60,7 @@ typedef struct ResourceManagerContext {
 
 static AVMutex mutex = AV_MUTEX_INITIALIZER;
 
-ResourceManagerContext *resman_ctx = NULL;
+static ResourceManagerContext resman_ctx = { .class = &resman_class };
 
 
 #if CONFIG_RESOURCE_COMPRESSION
@@ -117,39 +117,11 @@ static int decompress_gzip(ResourceManagerContext *ctx, uint8_t *in, unsigned in
 }
 #endif
 
-static ResourceManagerContext *get_resman_context(void)
-{
-    ResourceManagerContext *res = resman_ctx;
-
-    ff_mutex_lock(&mutex);
-
-    if (res)
-        goto end;
-
-    res = av_mallocz(sizeof(ResourceManagerContext));
-    if (!res) {
-        av_log(NULL, AV_LOG_ERROR, "Failed to allocate resource manager context\n");
-        goto end;
-    }
-
-    res->class = &resman_class;
-    resman_ctx = res;
-
-end:
-    ff_mutex_unlock(&mutex);
-    return res;
-}
-
-
 void ff_resman_uninit(void)
 {
     ff_mutex_lock(&mutex);
 
-    if (resman_ctx) {
-        if (resman_ctx->resource_dic)
-            av_dict_free(&resman_ctx->resource_dic);
-        av_freep(&resman_ctx);
-    }
+    av_dict_free(&resman_ctx.resource_dic);
 
     ff_mutex_unlock(&mutex);
 }
@@ -157,13 +129,10 @@ void ff_resman_uninit(void)
 
 char *ff_resman_get_string(FFResourceId resource_id)
 {
-    ResourceManagerContext *ctx               = get_resman_context();
+    ResourceManagerContext *ctx = &resman_ctx;
     FFResourceDefinition resource_definition = { 0 };
     AVDictionaryEntry *dic_entry;
     char *res = NULL;
-
-    if (!ctx)
-        return NULL;
 
     for (unsigned i = 0; i < FF_ARRAY_ELEMS(resource_definitions); ++i) {
         FFResourceDefinition def = resource_definitions[i];
