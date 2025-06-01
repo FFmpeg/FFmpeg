@@ -457,6 +457,43 @@ static inline int show_tags(AVTextFormatContext *tfc, AVDictionary *tags, int se
     return ret;
 }
 
+static void print_displaymatrix(AVTextFormatContext *tfc, const int32_t matrix[9])
+{
+    double rotation = av_display_rotation_get(matrix);
+    if (isnan(rotation))
+        rotation = 0;
+    avtext_print_integers(tfc, "displaymatrix", (void*)matrix, 9, " %11d", 3, 4, 1);
+    print_int("rotation", rotation);
+}
+
+static void print_mastering_display_metadata(AVTextFormatContext *tfc,
+                                             const AVMasteringDisplayMetadata *metadata)
+{
+    if (metadata->has_primaries) {
+        print_q("red_x",   metadata->display_primaries[0][0], '/');
+        print_q("red_y",   metadata->display_primaries[0][1], '/');
+        print_q("green_x", metadata->display_primaries[1][0], '/');
+        print_q("green_y", metadata->display_primaries[1][1], '/');
+        print_q("blue_x",  metadata->display_primaries[2][0], '/');
+        print_q("blue_y",  metadata->display_primaries[2][1], '/');
+
+        print_q("white_point_x", metadata->white_point[0], '/');
+        print_q("white_point_y", metadata->white_point[1], '/');
+    }
+
+    if (metadata->has_luminance) {
+        print_q("min_luminance", metadata->min_luminance, '/');
+        print_q("max_luminance", metadata->max_luminance, '/');
+    }
+}
+
+static void print_context_light_level(AVTextFormatContext *tfc,
+                                      const AVContentLightMetadata *metadata)
+{
+    print_int("max_content", metadata->MaxCLL);
+    print_int("max_average", metadata->MaxFALL);
+}
+
 static void print_dovi_metadata(AVTextFormatContext *tfc, const AVDOVIMetadata *dovi)
 {
     if (!dovi)
@@ -934,11 +971,7 @@ static void print_pkt_side_data(AVTextFormatContext *tfc,
         avtext_print_section_header(tfc, sd, id_data);
         print_str("side_data_type", name ? name : "unknown");
         if (sd->type == AV_PKT_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
-            double rotation = av_display_rotation_get((int32_t *)sd->data);
-            if (isnan(rotation))
-                rotation = 0;
-            avtext_print_integers(tfc, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
-            print_int("rotation", rotation);
+            print_displaymatrix(tfc, (const int32_t*)sd->data);
         } else if (sd->type == AV_PKT_DATA_STEREO3D) {
             const AVStereo3D *stereo = (AVStereo3D *)sd->data;
             print_str("type", av_stereo3d_type_name(stereo->type));
@@ -972,28 +1005,9 @@ static void print_pkt_side_data(AVTextFormatContext *tfc,
             print_int("skip_reason",     AV_RL8(sd->data + 8));
             print_int("discard_reason",  AV_RL8(sd->data + 9));
         } else if (sd->type == AV_PKT_DATA_MASTERING_DISPLAY_METADATA) {
-            AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)sd->data;
-
-            if (metadata->has_primaries) {
-                print_q("red_x", metadata->display_primaries[0][0], '/');
-                print_q("red_y", metadata->display_primaries[0][1], '/');
-                print_q("green_x", metadata->display_primaries[1][0], '/');
-                print_q("green_y", metadata->display_primaries[1][1], '/');
-                print_q("blue_x", metadata->display_primaries[2][0], '/');
-                print_q("blue_y", metadata->display_primaries[2][1], '/');
-
-                print_q("white_point_x", metadata->white_point[0], '/');
-                print_q("white_point_y", metadata->white_point[1], '/');
-            }
-
-            if (metadata->has_luminance) {
-                print_q("min_luminance", metadata->min_luminance, '/');
-                print_q("max_luminance", metadata->max_luminance, '/');
-            }
+            print_mastering_display_metadata(tfc, (AVMasteringDisplayMetadata *)sd->data);
         } else if (sd->type == AV_PKT_DATA_CONTENT_LIGHT_LEVEL) {
-            AVContentLightMetadata *metadata = (AVContentLightMetadata *)sd->data;
-            print_int("max_content", metadata->MaxCLL);
-            print_int("max_average", metadata->MaxFALL);
+            print_context_light_level(tfc, (AVContentLightMetadata *)sd->data);
         } else if (sd->type == AV_PKT_DATA_AMBIENT_VIEWING_ENVIRONMENT) {
             print_ambient_viewing_environment(
                 tfc, (const AVAmbientViewingEnvironment *)sd->data);
@@ -1279,11 +1293,7 @@ static void print_frame_side_data(AVTextFormatContext *tfc,
         name = av_frame_side_data_name(sd->type);
         print_str("side_data_type", name ? name : "unknown");
         if (sd->type == AV_FRAME_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
-            double rotation = av_display_rotation_get((int32_t *)sd->data);
-            if (isnan(rotation))
-                rotation = 0;
-            avtext_print_integers(tfc, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
-            print_int("rotation", rotation);
+            print_displaymatrix(tfc, (const int32_t*)sd->data);
         } else if (sd->type == AV_FRAME_DATA_AFD && sd->size > 0) {
             print_int("active_format", *sd->data);
         } else if (sd->type == AV_FRAME_DATA_GOP_TIMECODE && sd->size >= 8) {
@@ -1303,31 +1313,12 @@ static void print_frame_side_data(AVTextFormatContext *tfc,
             }
             avtext_print_section_footer(tfc);
         } else if (sd->type == AV_FRAME_DATA_MASTERING_DISPLAY_METADATA) {
-            AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)sd->data;
-
-            if (metadata->has_primaries) {
-                print_q("red_x", metadata->display_primaries[0][0], '/');
-                print_q("red_y", metadata->display_primaries[0][1], '/');
-                print_q("green_x", metadata->display_primaries[1][0], '/');
-                print_q("green_y", metadata->display_primaries[1][1], '/');
-                print_q("blue_x", metadata->display_primaries[2][0], '/');
-                print_q("blue_y", metadata->display_primaries[2][1], '/');
-
-                print_q("white_point_x", metadata->white_point[0], '/');
-                print_q("white_point_y", metadata->white_point[1], '/');
-            }
-
-            if (metadata->has_luminance) {
-                print_q("min_luminance", metadata->min_luminance, '/');
-                print_q("max_luminance", metadata->max_luminance, '/');
-            }
+            print_mastering_display_metadata(tfc, (AVMasteringDisplayMetadata *)sd->data);
         } else if (sd->type == AV_FRAME_DATA_DYNAMIC_HDR_PLUS) {
             AVDynamicHDRPlus *metadata = (AVDynamicHDRPlus *)sd->data;
             print_dynamic_hdr10_plus(tfc, metadata);
         } else if (sd->type == AV_FRAME_DATA_CONTENT_LIGHT_LEVEL) {
-            AVContentLightMetadata *metadata = (AVContentLightMetadata *)sd->data;
-            print_int("max_content", metadata->MaxCLL);
-            print_int("max_average", metadata->MaxFALL);
+            print_context_light_level(tfc, (AVContentLightMetadata *)sd->data);
         } else if (sd->type == AV_FRAME_DATA_ICC_PROFILE) {
             const AVDictionaryEntry *tag = av_dict_get(sd->metadata, "name", NULL, AV_DICT_MATCH_CASE);
             if (tag)
