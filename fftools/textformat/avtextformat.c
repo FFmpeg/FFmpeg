@@ -558,34 +558,6 @@ void avtext_print_data_hash(AVTextFormatContext *tctx, const char *key,
     avtext_print_string(tctx, key, buf, 0);
 }
 
-void avtext_print_integers(AVTextFormatContext *tctx, const char *key,
-                           uint8_t *data, int size, const char *format,
-                           int columns, int bytes, int offset_add)
-{
-    AVBPrint bp;
-    unsigned offset = 0;
-
-    if (!key || !data || !format || columns <= 0 || bytes <= 0)
-        return;
-
-    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
-    av_bprintf(&bp, "\n");
-    while (size) {
-        av_bprintf(&bp, "%08x: ", offset);
-        for (int i = 0, l = FFMIN(size, columns); i < l; i++) {
-            if      (bytes == 1) av_bprintf(&bp, format, *data);
-            else if (bytes == 2) av_bprintf(&bp, format, AV_RN16(data));
-            else if (bytes == 4) av_bprintf(&bp, format, AV_RN32(data));
-            data += bytes;
-            size--;
-        }
-        av_bprintf(&bp, "\n");
-        offset += offset_add;
-    }
-    avtext_print_string(tctx, key, bp.str, 0);
-    av_bprint_finalize(&bp, NULL);
-}
-
 static const char *writercontext_get_writer_name(void *p)
 {
     AVTextWriterContext *wctx = p;

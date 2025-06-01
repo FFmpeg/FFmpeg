@@ -190,9 +190,6 @@ void avtext_print_data(AVTextFormatContext *tctx, const char *key, const uint8_t
 
 void avtext_print_data_hash(AVTextFormatContext *tctx, const char *key, const uint8_t *data, int size);
 
-void avtext_print_integers(AVTextFormatContext *tctx, const char *key, uint8_t *data, int size,
-                           const char *format, int columns, int bytes, int offset_add);
-
 const AVTextFormatter *avtext_get_formatter_by_name(const char *name);
 
 extern const AVTextFormatter avtextformatter_default;

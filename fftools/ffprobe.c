@@ -452,6 +452,30 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
 #define print_duration_ts(k, v)       avtext_print_ts(tfc, k, v, 1)
 #define print_val(k, v, u)      avtext_print_unit_integer(tfc, k, v, u)
 
+static void print_integers(AVTextFormatContext *tfc, const char *key,
+                           const void *data, int size, const char *format,
+                           int columns, int bytes, int offset_add)
+{
+    AVBPrint bp;
+    unsigned offset = 0;
+
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_chars(&bp, '\n', 1);
+    while (size) {
+        av_bprintf(&bp, "%08x: ", offset);
+        for (int i = 0, l = FFMIN(size, columns); i < l; i++) {
+            if      (bytes == 1) av_bprintf(&bp, format, *(const uint8_t*)data);
+            else if (bytes == 2) av_bprintf(&bp, format, AV_RN16(data));
+            else if (bytes == 4) av_bprintf(&bp, format, AV_RN32(data));
+            data = (const char*)data + bytes;
+            size--;
+        }
+        av_bprint_chars(&bp, '\n', 1);
+        offset += offset_add;
+    }
+    avtext_print_string(tfc, key, bp.str, 0);
+}
+
 #define REALLOCZ_ARRAY_STREAM(ptr, cur_n, new_n)                        \
 {                                                                       \
     ret = av_reallocp_array(&(ptr), (new_n), sizeof(*(ptr)));           \
@@ -483,7 +507,7 @@ static void print_displaymatrix(AVTextFormatContext *tfc, const int32_t matrix[9
     double rotation = av_display_rotation_get(matrix);
     if (isnan(rotation))
         rotation = 0;
-    avtext_print_integers(tfc, "displaymatrix", (void*)matrix, 9, " %11d", 3, 4, 1);
+    print_integers(tfc, "displaymatrix", matrix, 9, " %11d", 3, 4, 1);
     print_int("rotation", rotation);
 }
 
