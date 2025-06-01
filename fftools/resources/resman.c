@@ -142,10 +142,7 @@ char *ff_resman_get_string(FFResourceId resource_id)
         }
     }
 
-    if (!resource_definition.name) {
-        av_log(ctx, AV_LOG_ERROR, "Unable to find resource with ID %d\n", resource_id);
-        return NULL;
-    }
+    av_assert1(resource_definition.name);
 
     ff_mutex_lock(&mutex);
 
