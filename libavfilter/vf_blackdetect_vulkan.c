@@ -42,7 +42,6 @@ typedef struct BlackDetectVulkanContext {
     int    alpha;
 
     int64_t black_start;
-    int64_t black_end;
 } BlackDetectVulkanContext;
 
 typedef struct BlackDetectPushData {
@@ -145,6 +144,7 @@ static av_cold int init_filter(AVFilterContext *ctx)
 
     RET(ff_vk_shader_register_exec(vkctx, &s->e, &s->shd));
 
+    s->black_start = AV_NOPTS_VALUE;
     s->initialized = 1;
 
 fail:
@@ -154,6 +154,22 @@ fail:
         spv->uninit(&spv);
 
     return err;
+}
+
+static void report_black_region(AVFilterContext *ctx, int64_t black_end)
+{
+    BlackDetectVulkanContext *s = ctx->priv;
+    const AVFilterLink *inlink = ctx->inputs[0];
+    if (s->black_start == AV_NOPTS_VALUE)
+        return;
+
+    if ((black_end - s->black_start) >= s->black_min_duration_time / av_q2d(inlink->time_base)) {
+        av_log(s, AV_LOG_INFO,
+               "black_start:%s black_end:%s black_duration:%s\n",
+               av_ts2timestr(s->black_start, &inlink->time_base),
+               av_ts2timestr(black_end, &inlink->time_base),
+               av_ts2timestr(black_end - s->black_start, &inlink->time_base));
+    }
 }
 
 static void evaluate(AVFilterLink *link, AVFrame *in,
@@ -183,15 +199,9 @@ static void evaluate(AVFilterLink *link, AVFrame *in,
                 av_ts2timestr(in->pts, &in->time_base), 0);
         }
     } else if (s->black_start != AV_NOPTS_VALUE) {
+        report_black_region(ctx, in->pts);
         av_dict_set(&in->metadata, "lavfi.black_end",
             av_ts2timestr(in->pts, &in->time_base), 0);
-        if ((in->pts - s->black_start) >= s->black_min_duration_time / av_q2d(in->time_base)) {
-            av_log(s, AV_LOG_INFO,
-                   "black_start:%s black_end:%s black_duration:%s\n",
-                   av_ts2timestr(s->black_start, &in->time_base),
-                   av_ts2timestr(in->pts, &in->time_base),
-                   av_ts2timestr(in->pts - s->black_start, &in->time_base));
-        }
         s->black_start = AV_NOPTS_VALUE;
     }
 }
@@ -349,7 +359,11 @@ fail:
 static void blackdetect_vulkan_uninit(AVFilterContext *avctx)
 {
     BlackDetectVulkanContext *s = avctx->priv;
+    AVFilterLink *inlink = avctx->inputs[0];
+    FilterLink *inl = ff_filter_link(inlink);
     FFVulkanContext *vkctx = &s->vkctx;
+
+    report_black_region(avctx, inl->current_pts);
 
     ff_vk_exec_pool_free(vkctx, &s->e);
     ff_vk_shader_free(vkctx, &s->shd);
