@@ -1,0 +1,123 @@
+/*
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+/* Two macroblocks, padded to avoid bank conflicts */
+shared float blocks[4*2][8*(8+1)];
+
+uint get_px(uint tex_idx, ivec2 pos)
+{
+#ifndef INTERLACED
+    return imageLoad(dst[tex_idx], pos).x;
+#else
+    return imageLoad(dst[tex_idx], ivec2(pos.x, (pos.y << 1) + bottom_field)).x;
+#endif
+}
+
+void put_px(uint tex_idx, ivec2 pos, uint v)
+{
+#ifndef INTERLACED
+    imageStore(dst[tex_idx], pos, uvec4(v));
+#else
+    imageStore(dst[tex_idx], ivec2(pos.x, (pos.y << 1) + bottom_field), uvec4(v));
+#endif
+}
+
+/* 7.4 Inverse Transform */
+void idct(uint block, uint offset, uint stride)
+{
+    float c0 = blocks[block][0*stride + offset];
+    float c1 = blocks[block][1*stride + offset];
+    float c2 = blocks[block][2*stride + offset];
+    float c3 = blocks[block][3*stride + offset];
+    float c4 = blocks[block][4*stride + offset];
+    float c5 = blocks[block][5*stride + offset];
+    float c6 = blocks[block][6*stride + offset];
+    float c7 = blocks[block][7*stride + offset];
+
+    float tmp1 = c6 * 1.4142134189605712891 + (c2 - c6);
+    float tmp2 = c6 * 1.4142134189605712891 - (c2 - c6);
+
+    float a1 = (c0 + c4) * 0.35355341434478759766 + tmp1 * 0.46193981170654296875;
+    float a4 = (c0 + c4) * 0.35355341434478759766 - tmp1 * 0.46193981170654296875;
+
+    float a3 = (c0 - c4) * 0.35355341434478759766 + tmp2 * 0.19134169816970825195;
+    float a2 = (c0 - c4) * 0.35355341434478759766 - tmp2 * 0.19134169816970825195;
+
+    float tmp3 = (c3 - c5) * 0.70710682868957519531 + c7;
+    float tmp4 = (c3 - c5) * 0.70710682868957519531 - c7;
+
+    float tmp5 = (c5 - c7) *  1.4142134189605712891 + (c5 - c7) + (c1 - c3);
+    float tmp6 = (c5 - c7) * -1.4142134189605712891 + (c5 - c7) + (c1 - c3);
+
+    float m1 = tmp3 *  2.6131260395050048828 + tmp5;
+    float m4 = tmp3 * -2.6131260395050048828 + tmp5;
+
+    float m2 = tmp4 *  1.0823919773101806641 + tmp6;
+    float m3 = tmp4 * -1.0823919773101806641 + tmp6;
+
+    blocks[block][0*stride + offset] = m1 *  0.49039259552955627441  + a1;
+    blocks[block][7*stride + offset] = m1 * -0.49039259552955627441  + a1;
+    blocks[block][1*stride + offset] = m2 *  0.41573479771614074707  + a2;
+    blocks[block][6*stride + offset] = m2 * -0.41573479771614074707  + a2;
+    blocks[block][2*stride + offset] = m3 *  0.27778509259223937988  + a3;
+    blocks[block][5*stride + offset] = m3 * -0.27778509259223937988  + a3;
+    blocks[block][3*stride + offset] = m4 *  0.097545139491558074951 + a4;
+    blocks[block][4*stride + offset] = m4 * -0.097545139491558074951 + a4;
+}
+
+void main(void)
+{
+    uvec3 gid = gl_GlobalInvocationID, lid = gl_LocalInvocationID;
+    uint comp = gid.z, block = (lid.y << 2) | (lid.x >> 3), idx = lid.x & 0x7;
+    uint chroma_shift = comp != 0 ? log2_chroma_w : 0;
+    bool act = gid.x < mb_width << (4 - chroma_shift);
+
+    /* Coalesced load of DCT coeffs in shared memory, second part of inverse quantization */
+    if (act) {
+        /**
+         * According to spec indexing an array in push constant memory with
+         * a non-dynamically uniform value is illegal ($15.9.1 in v1.4.326),
+         * so copy the whole matrix locally.
+         */
+        uint8_t[64] qmat = comp == 0 ? qmat_luma : qmat_chroma;
+        [[unroll]] for (uint i = 0; i < 8; ++i) {
+            int v = sign_extend(int(get_px(comp, ivec2(gid.x, (gid.y << 3) | i))), 16);
+            blocks[block][i * 9 + idx] = float(v * int(qmat[(i << 3) + idx]));
+        }
+    }
+
+    /* Row-wise iDCT */
+    barrier();
+    idct(block, idx * 9, 1);
+
+    /* Column-wise iDCT */
+    barrier();
+    idct(block, idx, 9);
+
+    float fact = 1.0f / (1 << (12 - depth)), off = 1 << (depth - 1);
+    int maxv = (1 << depth) - 1;
+
+    /* 7.5.1 Color Component Samples. Rescale, clamp and write back to global memory */
+    barrier();
+    if (act) {
+        [[unroll]] for (uint i = 0; i < 8; ++i) {
+            float v = blocks[block][i * 9 + idx] * fact + off;
+            put_px(comp, ivec2(gid.x, (gid.y << 3) | i), clamp(int(v), 0, maxv));
+        }
+    }
+}

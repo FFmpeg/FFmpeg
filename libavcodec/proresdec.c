@@ -251,7 +251,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     }
 
     if (pix_fmt != ctx->pix_fmt) {
-#define HWACCEL_MAX (CONFIG_PRORES_VIDEOTOOLBOX_HWACCEL)
+#define HWACCEL_MAX (CONFIG_PRORES_VIDEOTOOLBOX_HWACCEL + CONFIG_PRORES_VULKAN_HWACCEL)
 #if HWACCEL_MAX
         enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
         int ret;
@@ -260,6 +260,9 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
 
 #if CONFIG_PRORES_VIDEOTOOLBOX_HWACCEL
         *fmtp++ = AV_PIX_FMT_VIDEOTOOLBOX;
+#endif
+#if CONFIG_PRORES_VULKAN_HWACCEL
+        *fmtp++ = AV_PIX_FMT_VULKAN;
 #endif
         *fmtp++ = ctx->pix_fmt;
         *fmtp = AV_PIX_FMT_NONE;
@@ -872,6 +875,9 @@ const FFCodec ff_prores_decoder = {
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_PRORES_VIDEOTOOLBOX_HWACCEL
         HWACCEL_VIDEOTOOLBOX(prores),
+#endif
+#if CONFIG_PRORES_VULKAN_HWACCEL
+        HWACCEL_VULKAN(prores),
 #endif
         NULL
     },

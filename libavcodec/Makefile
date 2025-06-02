@@ -1106,6 +1106,7 @@ OBJS-$(CONFIG_VP9_VULKAN_HWACCEL)         += vulkan_decode.o vulkan_vp9.o
 OBJS-$(CONFIG_VP8_QSV_HWACCEL)            += qsvdec.o
 OBJS-$(CONFIG_VVC_VAAPI_HWACCEL)          += vaapi_vvc.o
 OBJS-$(CONFIG_PRORES_RAW_VULKAN_HWACCEL)  += vulkan_decode.o vulkan_prores_raw.o
+OBJS-$(CONFIG_PRORES_VULKAN_HWACCEL)      += vulkan_decode.o vulkan_prores.o
 
 # Objects duplicated from other libraries for shared builds
 SHLIBOBJS                              += log2_tab.o reverse.o
@@ -1350,7 +1351,7 @@ SKIPHEADERS-$(CONFIG_QSVENC)           += qsvenc.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_decode.h vaapi_hevc.h vaapi_encode.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 SKIPHEADERS-$(CONFIG_VIDEOTOOLBOX)     += videotoolbox.h vt_internal.h
-SKIPHEADERS-$(CONFIG_VULKAN)           += ffv1_vulkan.h vulkan_video.h \
+SKIPHEADERS-$(CONFIG_VULKAN)           += ffv1_vulkan.h prores_vulkan.h vulkan_video.h \
                                           vulkan_encode.h vulkan_decode.h
 SKIPHEADERS-$(CONFIG_V4L2_M2M)         += v4l2_buffers.h v4l2_context.h v4l2_m2m.h
 SKIPHEADERS-$(CONFIG_ZLIB)             += zlib_wrapper.h

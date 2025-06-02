@@ -1,0 +1,38 @@
+/*
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+void main(void)
+{
+    uvec3 gid = gl_GlobalInvocationID;
+#ifndef INTERLACED
+    ivec2 pos = ivec2(gid);
+#else
+    ivec2 pos = ivec2(gid.x, (gid.y << 1) + bottom_field);
+#endif
+
+    /* Clear luma plane */
+    imageStore(dst[0], pos, uvec4(0));
+
+    /* Clear chroma plane */
+    if (gid.x < mb_width << (4 - log2_chroma_w)) {
+        imageStore(dst[1], pos, uvec4(0));
+        imageStore(dst[2], pos, uvec4(0));
+    }
+
+    /* Alpha plane doesn't need a clear because it is not sparsely encoded */
+}

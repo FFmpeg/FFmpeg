@@ -68,6 +68,7 @@ extern const struct FFHWAccel ff_mpeg4_vdpau_hwaccel;
 extern const struct FFHWAccel ff_mpeg4_videotoolbox_hwaccel;
 extern const struct FFHWAccel ff_prores_videotoolbox_hwaccel;
 extern const struct FFHWAccel ff_prores_raw_vulkan_hwaccel;
+extern const struct FFHWAccel ff_prores_vulkan_hwaccel;
 extern const struct FFHWAccel ff_vc1_d3d11va_hwaccel;
 extern const struct FFHWAccel ff_vc1_d3d11va2_hwaccel;
 extern const struct FFHWAccel ff_vc1_d3d12va_hwaccel;
