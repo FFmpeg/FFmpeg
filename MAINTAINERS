@@ -267,7 +267,7 @@ Codecs:
   vp8                                   David Conrad, Ronald Bultje
   vp9                                   Ronald Bultje
   vqavideo.c                            Mike Melanson
-  vvc                               [2] Nuo Mi
+  vvc                               [2] Nuo Mi, Wu Jianhua
   wmaprodec.c                           Sascha Sommer
   wmavoice.c                            Ronald S. Bultje
   wmv2.c                                Michael Niedermayer
