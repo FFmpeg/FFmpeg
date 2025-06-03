@@ -348,17 +348,16 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
     if (src->extended_data != src->data) {
         int ch = dst->ch_layout.nb_channels;
 
-        if (!ch) {
+        if (ch <= 0 || ch > SIZE_MAX / sizeof(*dst->extended_data)) {
             ret = AVERROR(EINVAL);
             goto fail;
         }
 
-        dst->extended_data = av_malloc_array(sizeof(*dst->extended_data), ch);
+        dst->extended_data = av_memdup(src->extended_data, sizeof(*dst->extended_data) * ch);
         if (!dst->extended_data) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        memcpy(dst->extended_data, src->extended_data, sizeof(*src->extended_data) * ch);
     } else
         dst->extended_data = dst->data;
 
