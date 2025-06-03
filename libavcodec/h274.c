@@ -27,6 +27,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/bswap.h"
+#include "libavcodec/bswapdsp.h"
 #include "libavutil/crc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/md5.h"
@@ -795,15 +796,41 @@ static const int8_t R64T[64][64] = {
     }
 };
 
-static int verify_plane_md5(struct AVMD5 *ctx,
-    const uint8_t *src, const int w, const int h, const int stride,
-    const uint8_t *expected)
+struct H274HashContext {
+    int type;
+    struct AVMD5 *ctx;
+
+#if HAVE_BIGENDIAN
+    BswapDSPContext bdsp;
+    uint8_t *buf;
+    int      buf_size;
+#endif
+};
+
+static av_always_inline void bswap16_buf_if_be(H274HashContext *s, const int ps, const uint8_t **src, const int w)
+{
+#if HAVE_BIGENDIAN
+    if (ps) {
+        s->bdsp.bswap16_buf((uint16_t *)s->buf,
+            (const uint16_t *)*src, w);
+        *src = s->buf;
+    }
+#endif
+}
+
+static int verify_plane_md5(H274HashContext *s,
+    const uint8_t *_src, const int w, const int h, const int stride,
+    const int ps, const uint8_t *expected)
 {
 #define MD5_SIZE 16
+    struct AVMD5 *ctx = s->ctx;
     uint8_t md5[MD5_SIZE];
+
     av_md5_init(ctx);
     for (int j = 0; j < h; j++) {
-        av_md5_update(ctx, src, w);
+        const uint8_t *src = &_src[j * stride];
+        bswap16_buf_if_be(s, ps, &src, w);
+        av_md5_update(ctx, src, w << ps);
         src += stride;
     }
     av_md5_final(ctx, md5);
@@ -814,15 +841,16 @@ static int verify_plane_md5(struct AVMD5 *ctx,
     return 0;
 }
 
-static int verify_plane_crc(const uint8_t *src, const int w, const int h, const int stride,
-    uint16_t expected)
+static int verify_plane_crc(H274HashContext *s, const uint8_t *_src, const int w, const int h, const int stride,
+    const int ps, uint16_t expected)
 {
     uint32_t crc = 0x0F1D;     // CRC-16-CCITT-AUG
     const AVCRC *ctx = av_crc_get_table(AV_CRC_16_CCITT);
 
-    expected = av_le2ne32(expected);
     for (int j = 0; j < h; j++) {
-        crc = av_crc(ctx, crc, src, w);
+        const uint8_t *src = &_src[j * stride];
+        bswap16_buf_if_be(s, ps, &src, w);
+        crc = av_crc(ctx, crc, src, w << ps);
         src += stride;
     }
     crc = av_bswap16(crc);
@@ -863,11 +891,6 @@ enum {
     HASH_LAST = HASH_CHECKSUM,
 };
 
-struct H274HashContext {
-    int type;
-    struct AVMD5 *ctx;
-};
-
 void ff_h274_hash_freep(H274HashContext **ctx)
 {
     if (*ctx) {
@@ -875,6 +898,9 @@ void ff_h274_hash_freep(H274HashContext **ctx)
         if (c->ctx)
             av_free(c->ctx);
         av_freep(ctx);
+#if HAVE_BIGENDIAN
+        av_freep(&c->buf);
+#endif
     }
 }
 
@@ -906,6 +932,10 @@ int ff_h274_hash_init(H274HashContext **ctx, const int type)
             return AVERROR(ENOMEM);
     }
 
+#if HAVE_BIGENDIAN
+    ff_bswapdsp_init(&c->bdsp);
+#endif
+
     return 0;
 }
 
@@ -932,10 +962,22 @@ int ff_h274_hash_verify(H274HashContext *c, const H274SEIPictureHash *hash,
         const uint8_t *src = frame->data[i];
         const int stride   = frame->linesize[i];
 
+#if HAVE_BIGENDIAN
+        if (c->type != HASH_CHECKSUM) {
+            if (ps) {
+                av_fast_malloc(&c->buf, &c->buf_size,
+                    FFMAX3(frame->linesize[0], frame->linesize[1],
+                        frame->linesize[2]));
+                if (!c->buf)
+                    return AVERROR(ENOMEM);
+            }
+        }
+#endif
+
         if (c->type == HASH_MD5SUM)
-            err = verify_plane_md5(c->ctx, src, w << ps, h, stride, hash->md5[i]);
+            err = verify_plane_md5(c, src, w, h, stride, ps, hash->md5[i]);
         else if (c->type == HASH_CRC)
-            err = verify_plane_crc(src, w << ps, h, stride, hash->crc[i]);
+            err = verify_plane_crc(c, src, w, h, stride, ps, hash->crc[i]);
         else if (c->type == HASH_CHECKSUM)
             err = verify_plane_checksum(src, w, h, stride, ps, hash->checksum[i]);
         if (err < 0)
