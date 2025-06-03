@@ -732,25 +732,6 @@ static int old_codec4(SANMVideoContext *ctx, GetByteContext *gb, int top, int le
                 }
                 pxo2 = pxo2 - 4 + p;
             }
-
-            /* smooth top and left block borders with neighbours */
-            if (((pxoff - p + k) < 0) || ((pxoff - p + k) >= maxpxo)
-                || ((pxoff + 3 * p) < 0) || ((pxoff + 3 * p) >= maxpxo)
-                || (i == 0) || (j == 0))
-                continue;
-            if (param & 0x80) {
-                for (k = 0; k < 4; k++)
-                    *(dst + pxoff + k) = ((*(dst + pxoff + k) + *(dst + pxoff - p + k)) >> 1) | 0x80;
-                *(dst + pxoff + 1 * p) = (*(dst + pxoff + 1 * p) + *(dst + pxoff + 1 * p - 1)) >> 1 | 0x80;
-                *(dst + pxoff + 2 * p) = (*(dst + pxoff + 2 * p) + *(dst + pxoff + 2 * p - 1)) >> 1 | 0x80;
-                *(dst + pxoff + 3 * p) = (*(dst + pxoff + 3 * p) + *(dst + pxoff + 3 * p - 1)) >> 1 | 0x80;
-            } else {
-                for (k = 0; k < 4; k++)
-                    *(dst + pxoff + k) = ((*(dst + pxoff + k) + *(dst + pxoff - p + k)) >> 1) & 0x7f;
-                *(dst + pxoff + 1 * p) = (*(dst + pxoff + 1 * p) + *(dst + pxoff + 1 * p - 1)) >> 1;
-                *(dst + pxoff + 2 * p) = (*(dst + pxoff + 2 * p) + *(dst + pxoff + 2 * p - 1)) >> 1;
-                *(dst + pxoff + 3 * p) = (*(dst + pxoff + 3 * p) + *(dst + pxoff + 3 * p - 1)) >> 1;
-            }
         }
     }
     return 0;
