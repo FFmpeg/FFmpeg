@@ -56,12 +56,18 @@ struct FFHashtableContext {
 
 int ff_hashtable_alloc(struct FFHashtableContext **ctx, size_t key_size, size_t val_size, size_t max_entries)
 {
+    const size_t keyval_size = key_size + val_size;
+
+    if (keyval_size < key_size || // did (unsigned,defined) wraparound happen?
+        keyval_size > SIZE_MAX - sizeof(size_t) - (ALIGN - 1))
+        return AVERROR(ERANGE);
+
     FFHashtableContext *res = av_mallocz(sizeof(*res));
     if (!res)
         return AVERROR(ENOMEM);
     res->key_size = key_size;
     res->val_size = val_size;
-    res->entry_size = FFALIGN(sizeof(size_t) + key_size + val_size, ALIGN);
+    res->entry_size = FFALIGN(sizeof(size_t) + keyval_size, ALIGN);
     res->max_entries = max_entries;
     res->nb_entries = 0;
     res->crc = av_crc_get_table(AV_CRC_32_IEEE);
