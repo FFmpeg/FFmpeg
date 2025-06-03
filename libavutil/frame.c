@@ -456,13 +456,10 @@ int av_frame_replace(AVFrame *dst, const AVFrame *src)
     if (src->extended_data != src->data) {
         int ch = dst->ch_layout.nb_channels;
 
-        if (!ch) {
+        if (ch <= 0 || ch > SIZE_MAX / sizeof(*dst->extended_data)) {
             ret = AVERROR(EINVAL);
             goto fail;
         }
-
-        if (ch > SIZE_MAX / sizeof(*dst->extended_data))
-            goto fail;
 
         dst->extended_data = av_memdup(src->extended_data, sizeof(*dst->extended_data) * ch);
         if (!dst->extended_data) {
