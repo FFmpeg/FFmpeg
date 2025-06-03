@@ -32,6 +32,7 @@ VVC_SAMPLES_422_10BIT =   \
 
 VVC_SAMPLES_444_10BIT =   \
     CROP_B_4              \
+    ACT_A_3               \
 
 # not tested:
 # BOUNDARY_A_3 (too big)
