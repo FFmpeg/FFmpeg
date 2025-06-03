@@ -37,17 +37,14 @@ av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
     ctx->avctx = avctx;
     ctx->ch        = av_calloc(avctx->ch_layout.nb_channels, 2 * sizeof(ctx->ch[0]));
     ctx->group     = av_calloc(num_groups, sizeof(ctx->group[0]));
-    ctx->bands     = av_malloc_array (sizeof(ctx->bands[0]),      num_lens);
-    ctx->num_bands = av_malloc_array (sizeof(ctx->num_bands[0]),  num_lens);
+    ctx->bands     = av_memdup(bands,     num_lens * sizeof(ctx->bands[0]));
+    ctx->num_bands = av_memdup(num_bands, num_lens * sizeof(ctx->num_bands[0]));
     ctx->cutoff    = avctx->cutoff;
 
     if (!ctx->ch || !ctx->group || !ctx->bands || !ctx->num_bands) {
         ff_psy_end(ctx);
         return AVERROR(ENOMEM);
     }
-
-    memcpy(ctx->bands,     bands,     sizeof(ctx->bands[0])     *  num_lens);
-    memcpy(ctx->num_bands, num_bands, sizeof(ctx->num_bands[0]) *  num_lens);
 
     /* assign channels to groups (with virtual channels for coupling) */
     for (i = 0; i < num_groups; i++) {
