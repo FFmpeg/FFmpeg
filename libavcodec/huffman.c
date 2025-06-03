@@ -39,7 +39,10 @@
 #define HNODE -1
 
 typedef struct HeapElem {
-    uint64_t val;
+    union {
+        uint64_t val;
+        uint16_t dummy; // exists solely to ensure alignof(HeapElem) >= alignof(uint16_t)
+    };
     int name;
 } HeapElem;
 
@@ -59,18 +62,22 @@ static void heap_sift(HeapElem *h, int root, int size)
 
 int ff_huff_gen_len_table(uint8_t *dst, const uint64_t *stats, int stats_size, int skip0)
 {
-    HeapElem *h  = av_malloc_array(sizeof(*h), stats_size);
-    int *up      = av_malloc_array(sizeof(*up) * 2, stats_size);
-    uint8_t *len = av_malloc_array(sizeof(*len) * 2, stats_size);
-    uint16_t *map= av_malloc_array(sizeof(*map), stats_size);
+    int *up;
+    uint16_t *map;
+    uint8_t *len;
+    HeapElem *h = av_malloc_array(stats_size,
+                                  sizeof(*h) + 2 * sizeof(up) + 2 * sizeof(len) + sizeof(map));
+    if (!h)
+        return AVERROR(ENOMEM);
+    up  = (int*)(h + stats_size);
+    // map is suitably aligned because up uses an even number of elements
+    // and alignof(uint16_t) is either 1 or 2.
+    map = (uint16_t*)(up + 2 * stats_size);
+    len = (uint8_t*)(map + stats_size);
+
     int offset, i, next;
     int size = 0;
     int ret = 0;
-
-    if (!h || !up || !len || !map) {
-        ret = AVERROR(ENOMEM);
-        goto end;
-    }
 
     for (i = 0; i<stats_size; i++) {
         dst[i] = 255;
@@ -107,11 +114,7 @@ int ff_huff_gen_len_table(uint8_t *dst, const uint64_t *stats, int stats_size, i
         }
         if (i==size) break;
     }
-end:
     av_free(h);
-    av_free(up);
-    av_free(len);
-    av_free(map);
     return ret;
 }
 
