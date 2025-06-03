@@ -37,7 +37,7 @@ struct FFHashtableContext {
     size_t nb_entries;
     const AVCRC *crc;
     uint8_t *table;
-    uint8_t *swapbuf;
+    uint8_t swapbuf[];
 };
 
 /*
@@ -59,10 +59,11 @@ int ff_hashtable_alloc(struct FFHashtableContext **ctx, size_t key_size, size_t 
     const size_t keyval_size = key_size + val_size;
 
     if (keyval_size < key_size || // did (unsigned,defined) wraparound happen?
-        keyval_size > SIZE_MAX - sizeof(size_t) - (ALIGN - 1))
+        keyval_size > FFMIN(SIZE_MAX - sizeof(size_t) - (ALIGN - 1),
+                            (SIZE_MAX - sizeof(FFHashtableContext)) / 2))
         return AVERROR(ERANGE);
 
-    FFHashtableContext *res = av_mallocz(sizeof(*res));
+    FFHashtableContext *res = av_mallocz(sizeof(*res) + 2 * keyval_size);
     if (!res)
         return AVERROR(ENOMEM);
     res->key_size = key_size;
@@ -81,11 +82,6 @@ int ff_hashtable_alloc(struct FFHashtableContext **ctx, size_t key_size, size_t 
         return AVERROR(ENOMEM);
     }
 
-    res->swapbuf = av_calloc(2, res->key_size + res->val_size);
-    if (!res->swapbuf) {
-        ff_hashtable_freep(&res);
-        return AVERROR(ENOMEM);
-    }
     *ctx = res;
     return 0;
 }
@@ -208,7 +204,6 @@ void ff_hashtable_freep(struct FFHashtableContext **ctx)
 {
     if (*ctx) {
         av_freep(&(*ctx)->table);
-        av_freep(&(*ctx)->swapbuf);
     }
     av_freep(ctx);
 }
