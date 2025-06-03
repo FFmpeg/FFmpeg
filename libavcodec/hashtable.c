@@ -31,9 +31,7 @@
 
 struct FFHashtableContext {
     size_t key_size;
-    size_t key_size_aligned;
     size_t val_size;
-    size_t val_size_aligned;
     size_t entry_size;
     size_t max_entries;
     size_t nb_entries;
@@ -51,8 +49,8 @@ struct FFHashtableContext {
  */
 
 #define ENTRY_PSL_VAL(entry) (*(size_t*)(entry))
-#define ENTRY_KEY_PTR(entry) ((entry) + FFALIGN(sizeof(size_t), ALIGN))
-#define ENTRY_VAL_PTR(entry) (ENTRY_KEY_PTR(entry) + ctx->key_size_aligned)
+#define ENTRY_KEY_PTR(entry) ((entry) + sizeof(size_t))
+#define ENTRY_VAL_PTR(entry) (ENTRY_KEY_PTR(entry) + ctx->key_size)
 
 #define KEYS_EQUAL(k1, k2) (!memcmp((k1), (k2), ctx->key_size))
 
@@ -62,12 +60,8 @@ int ff_hashtable_alloc(struct FFHashtableContext **ctx, size_t key_size, size_t 
     if (!res)
         return AVERROR(ENOMEM);
     res->key_size = key_size;
-    res->key_size_aligned = FFALIGN(key_size, ALIGN);
     res->val_size = val_size;
-    res->val_size_aligned = FFALIGN(val_size, ALIGN);
-    res->entry_size = FFALIGN(sizeof(size_t), ALIGN)
-                    + res->key_size_aligned
-                    + res->val_size_aligned;
+    res->entry_size = FFALIGN(sizeof(size_t) + key_size + val_size, ALIGN);
     res->max_entries = max_entries;
     res->nb_entries = 0;
     res->crc = av_crc_get_table(AV_CRC_32_IEEE);
@@ -81,7 +75,7 @@ int ff_hashtable_alloc(struct FFHashtableContext **ctx, size_t key_size, size_t 
         return AVERROR(ENOMEM);
     }
 
-    res->swapbuf = av_calloc(2, res->key_size_aligned + res->val_size_aligned);
+    res->swapbuf = av_calloc(2, res->key_size + res->val_size);
     if (!res->swapbuf) {
         ff_hashtable_freep(&res);
         return AVERROR(ENOMEM);
@@ -124,10 +118,10 @@ int ff_hashtable_set(struct FFHashtableContext *ctx, const void *key, const void
     size_t hash = hash_key(ctx, key);
     size_t wrapped_index = hash % ctx->max_entries;
     uint8_t *set = ctx->swapbuf;
-    uint8_t *tmp = ctx->swapbuf + ctx->key_size_aligned + ctx->val_size_aligned;
+    uint8_t *tmp = ctx->swapbuf + ctx->key_size + ctx->val_size;
 
     memcpy(set, key, ctx->key_size);
-    memcpy(set + ctx->key_size_aligned, val, ctx->val_size);
+    memcpy(set + ctx->key_size, val, ctx->val_size);
 
     for (size_t i = 0; i < ctx->max_entries; i++) {
         if (++wrapped_index == ctx->max_entries)
@@ -137,7 +131,7 @@ int ff_hashtable_set(struct FFHashtableContext *ctx, const void *key, const void
             if (!ENTRY_PSL_VAL(entry))
                 ctx->nb_entries++;
             ENTRY_PSL_VAL(entry) = psl;
-            memcpy(ENTRY_KEY_PTR(entry), set, ctx->key_size_aligned + ctx->val_size);
+            memcpy(ENTRY_KEY_PTR(entry), set, ctx->key_size + ctx->val_size);
             return 1;
         }
         if (ENTRY_PSL_VAL(entry) < psl) {
@@ -151,8 +145,8 @@ int ff_hashtable_set(struct FFHashtableContext *ctx, const void *key, const void
             // PSL of the inserted entry.
             swapping = 1;
             // set needs to swap with entry
-            memcpy(tmp, ENTRY_KEY_PTR(entry), ctx->key_size_aligned + ctx->val_size_aligned);
-            memcpy(ENTRY_KEY_PTR(entry), set, ctx->key_size_aligned + ctx->val_size_aligned);
+            memcpy(tmp, ENTRY_KEY_PTR(entry), ctx->key_size + ctx->val_size);
+            memcpy(ENTRY_KEY_PTR(entry), set, ctx->key_size + ctx->val_size);
             FFSWAP(uint8_t*, set, tmp);
             FFSWAP(size_t, psl, ENTRY_PSL_VAL(entry));
         }
