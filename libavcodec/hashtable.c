@@ -207,6 +207,6 @@ av_cold void ff_hashtable_freep(FFHashtableContext **ctx)
 {
     if (*ctx) {
         av_freep(&(*ctx)->table);
+        av_freep(ctx);
     }
-    av_freep(ctx);
 }
