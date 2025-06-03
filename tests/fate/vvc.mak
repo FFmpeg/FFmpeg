@@ -26,6 +26,7 @@ VVC_SAMPLES_10BIT =       \
     WP_A_3                \
     WPP_A_3               \
     WRAP_A_4              \
+    FIELD_A_4             \
 
 VVC_SAMPLES_422_10BIT =   \
     10b422_L_5            \
