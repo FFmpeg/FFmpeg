@@ -22,8 +22,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/crc.h"
 #include "libavutil/error.h"
+#include "libavutil/macros.h"
 #include "libavutil/mem.h"
 #include "hashtable.h"
 
@@ -54,7 +56,8 @@ struct FFHashtableContext {
 
 #define KEYS_EQUAL(k1, k2) (!memcmp((k1), (k2), ctx->key_size))
 
-int ff_hashtable_alloc(struct FFHashtableContext **ctx, size_t key_size, size_t val_size, size_t max_entries)
+av_cold int ff_hashtable_alloc(FFHashtableContext **ctx, size_t key_size,
+                               size_t val_size, size_t max_entries)
 {
     const size_t keyval_size = key_size + val_size;
 
@@ -200,7 +203,7 @@ void ff_hashtable_clear(struct FFHashtableContext *ctx)
     memset(ctx->table, 0, ctx->entry_size * ctx->max_entries);
 }
 
-void ff_hashtable_freep(struct FFHashtableContext **ctx)
+av_cold void ff_hashtable_freep(FFHashtableContext **ctx)
 {
     if (*ctx) {
         av_freep(&(*ctx)->table);
