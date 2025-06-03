@@ -421,8 +421,8 @@ int av_frame_replace(AVFrame *dst, const AVFrame *src)
             for (int i = nb_extended_buf; i < dst->nb_extended_buf; i++)
                 av_buffer_unref(&dst->extended_buf[i]);
 
-            tmp = av_realloc_array(dst->extended_buf, sizeof(*dst->extended_buf),
-                                   src->nb_extended_buf);
+            tmp = av_realloc_array(dst->extended_buf, src->nb_extended_buf,
+                                   sizeof(*dst->extended_buf));
             if (!tmp) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
