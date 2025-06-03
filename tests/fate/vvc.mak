@@ -27,6 +27,9 @@ VVC_SAMPLES_10BIT =       \
     WPP_A_3               \
     WRAP_A_4              \
 
+VVC_SAMPLES_422_10BIT =   \
+    10b422_L_5            \
+
 VVC_SAMPLES_444_10BIT =   \
     CROP_B_4              \
 
@@ -35,11 +38,12 @@ VVC_SAMPLES_444_10BIT =   \
 # OPI_B_3 (Inter layer ref support needed)
 # VPS_A_3 (Inter layer ref support needed)
 
-FATE_VVC_VARS := 8BIT 10BIT 444_10BIT
+FATE_VVC_VARS := 8BIT 10BIT 422_10BIT 444_10BIT
 $(foreach VAR,$(FATE_VVC_VARS), $(eval VVC_TESTS_$(VAR) := $(addprefix fate-vvc-conformance-, $(VVC_SAMPLES_$(VAR)))))
 
 $(VVC_TESTS_8BIT): SCALE_OPTS := -pix_fmt yuv420p
 $(VVC_TESTS_10BIT): SCALE_OPTS := -pix_fmt yuv420p10le -vf scale
+$(VVC_TESTS_422_10BIT): SCALE_OPTS := -pix_fmt yuv422p10le -vf scale
 $(VVC_TESTS_444_10BIT): SCALE_OPTS := -pix_fmt yuv444p10le -vf scale
 fate-vvc-conformance-%: CMD = framecrc -c:v vvc -i $(TARGET_SAMPLES)/vvc-conformance/$(subst fate-vvc-conformance-,,$(@)).bit $(SCALE_OPTS)
 fate-vvc-output-ref: CMD = framecrc -c:v vvc -i $(TARGET_SAMPLES)/vvc/Hierarchical.bit $(SCALE_OPTS)
@@ -49,6 +53,7 @@ fate-vvc-wpp-single-slice-pic: CMD = framecrc -c:v vvc -i $(TARGET_SAMPLES)/vvc/
 FATE_VVC-$(call FRAMECRC, VVC, VVC, VVC_PARSER) += $(VVC_TESTS_8BIT) fate-vvc-output-ref
 FATE_VVC-$(call FRAMECRC, VVC, VVC, VVC_PARSER SCALE_FILTER) +=                   \
                                                     $(VVC_TESTS_10BIT)            \
+                                                    $(VVC_TESTS_422_10BIT)        \
                                                     $(VVC_TESTS_444_10BIT)        \
                                                     fate-vvc-frames-with-ltr      \
                                                     fate-vvc-wpp-single-slice-pic \
