@@ -60,6 +60,5 @@ Files that have MIPS copyright notice in them:
       compute_antialias_float.h
       lsp_mips.h
       fmtconvert_mips.c
-      iirfilter_mips.c
       mpegaudiodsp_mips_fixed.c
       mpegaudiodsp_mips_float.c

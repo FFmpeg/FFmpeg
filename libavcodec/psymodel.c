@@ -19,11 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <string.h>
-
 #include "avcodec.h"
 #include "psymodel.h"
-#include "iirfilter.h"
 #include "libavutil/mem.h"
 
 extern const FFPsyModel ff_aac_psy_model;
@@ -85,74 +82,4 @@ av_cold void ff_psy_end(FFPsyContext *ctx)
     av_freep(&ctx->num_bands);
     av_freep(&ctx->group);
     av_freep(&ctx->ch);
-}
-
-typedef struct FFPsyPreprocessContext{
-    AVCodecContext *avctx;
-    float stereo_att;
-    struct FFIIRFilterCoeffs *fcoeffs;
-    struct FFIIRFilterState **fstate;
-    struct FFIIRFilterContext fiir;
-}FFPsyPreprocessContext;
-
-#define FILT_ORDER 4
-
-av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *avctx)
-{
-    FFPsyPreprocessContext *ctx;
-    int i;
-    float cutoff_coeff = 0;
-    ctx        = av_mallocz(sizeof(FFPsyPreprocessContext));
-    if (!ctx)
-        return NULL;
-    ctx->avctx = avctx;
-
-    /* AAC has its own LP method */
-    if (avctx->codec_id != AV_CODEC_ID_AAC) {
-        if (avctx->cutoff > 0)
-            cutoff_coeff = 2.0 * avctx->cutoff / avctx->sample_rate;
-
-        if (cutoff_coeff && cutoff_coeff < 0.98)
-        ctx->fcoeffs = ff_iir_filter_init_coeffs(avctx, FF_FILTER_TYPE_BUTTERWORTH,
-                                                 FF_FILTER_MODE_LOWPASS, FILT_ORDER,
-                                                 cutoff_coeff, 0.0, 0.0);
-        if (ctx->fcoeffs) {
-            ctx->fstate = av_calloc(avctx->ch_layout.nb_channels, sizeof(ctx->fstate[0]));
-            if (!ctx->fstate) {
-                av_free(ctx->fcoeffs);
-                av_free(ctx);
-                return NULL;
-            }
-            for (i = 0; i < avctx->ch_layout.nb_channels; i++)
-                ctx->fstate[i] = ff_iir_filter_init_state(FILT_ORDER);
-        }
-    }
-
-    ff_iir_filter_init(&ctx->fiir);
-
-    return ctx;
-}
-
-void ff_psy_preprocess(struct FFPsyPreprocessContext *ctx, float **audio, int channels)
-{
-    int ch;
-    int frame_size = ctx->avctx->frame_size;
-    FFIIRFilterContext *iir = &ctx->fiir;
-
-    if (ctx->fstate) {
-        for (ch = 0; ch < channels; ch++)
-            iir->filter_flt(ctx->fcoeffs, ctx->fstate[ch], frame_size,
-                            &audio[ch][frame_size], 1, &audio[ch][frame_size], 1);
-    }
-}
-
-av_cold void ff_psy_preprocess_end(struct FFPsyPreprocessContext *ctx)
-{
-    int i;
-    ff_iir_filter_free_coeffsp(&ctx->fcoeffs);
-    if (ctx->fstate)
-        for (i = 0; i < ctx->avctx->ch_layout.nb_channels; i++)
-            ff_iir_filter_free_statep(&ctx->fstate[i]);
-    av_freep(&ctx->fstate);
-    av_free(ctx);
 }

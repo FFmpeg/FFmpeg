@@ -199,7 +199,6 @@ typedef struct AACEncContext {
 
     ChannelElement *cpe;                         ///< channel elements
     FFPsyContext psy;
-    struct FFPsyPreprocessContext* psypp;
     const AACCoefficientsEncoder *coder;
     int cur_channel;                             ///< current channel for coder context
     int random_state;

@@ -14,7 +14,6 @@ MIPSFPU-OBJS-$(CONFIG_MPEGAUDIODSP)       += mips/mpegaudiodsp_mips_float.o
 MIPSDSP-OBJS-$(CONFIG_MPEGAUDIODSP)       += mips/mpegaudiodsp_mips_fixed.o
 MIPSFPU-OBJS-$(CONFIG_FMTCONVERT)         += mips/fmtconvert_mips.o
 OBJS-$(CONFIG_AC3DSP)                     += mips/ac3dsp_mips.o
-MIPSFPU-OBJS-$(CONFIG_AAC_ENCODER)        += mips/iirfilter_mips.o
 OBJS-$(CONFIG_HEVC_DECODER)               += mips/hevcdsp_init_mips.o      \
                                              mips/hevcpred_init_mips.o
 OBJS-$(CONFIG_VP9_DECODER)                += mips/vp9dsp_init_mips.o

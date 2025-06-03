@@ -845,8 +845,6 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     copy_input_samples(s, frame);
-    if (s->psypp)
-        ff_psy_preprocess(s->psypp, s->planar_samples, s->channels);
 
     if (!avctx->frame_num)
         return 0;
@@ -1141,8 +1139,6 @@ static av_cold int aac_encode_end(AVCodecContext *avctx)
     av_tx_uninit(&s->mdct128);
     ff_psy_end(&s->psy);
     ff_lpc_end(&s->lpc);
-    if (s->psypp)
-        ff_psy_preprocess_end(s->psypp);
     av_freep(&s->buffer.samples);
     av_freep(&s->cpe);
     av_freep(&s->fdsp);
@@ -1294,7 +1290,6 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if ((ret = ff_psy_init(&s->psy, avctx, 2, sizes, lengths,
                            s->chan_map[0], grouping)) < 0)
         return ret;
-    s->psypp = ff_psy_preprocess_init(avctx);
     ff_lpc_init(&s->lpc, 2*avctx->frame_size, TNS_MAX_ORDER, FF_LPC_TYPE_LEVINSON);
     s->random_state = 0x1f2e3d4c;
 
