@@ -43,6 +43,11 @@ fate-golomb: libavcodec/tests/golomb$(EXESUF)
 fate-golomb: CMD = run libavcodec/tests/golomb$(EXESUF)
 fate-golomb: CMP = null
 
+FATE_LIBAVCODEC-$(CONFIG_DXV_ENCODER) += fate-hashtable
+fate-hashtable: libavcodec/tests/hashtable$(EXESUF)
+fate-hashtable: CMD = run libavcodec/tests/hashtable$(EXESUF)
+fate-hashtable: CMP = null
+
 FATE_LIBAVCODEC-$(CONFIG_IDCTDSP) += fate-idct8x8-0 fate-idct8x8-1 fate-idct8x8-2 fate-idct248
 
 fate-idct8x8-0: libavcodec/tests/dct$(EXESUF)
