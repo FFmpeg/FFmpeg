@@ -58,7 +58,7 @@ struct FFHashtableContext {
 
 int ff_hashtable_alloc(struct FFHashtableContext **ctx, size_t key_size, size_t val_size, size_t max_entries)
 {
-    struct FFHashtableContext *res = av_malloc(sizeof(struct FFHashtableContext));
+    FFHashtableContext *res = av_mallocz(sizeof(*res));
     if (!res)
         return AVERROR(ENOMEM);
     res->key_size = key_size;
