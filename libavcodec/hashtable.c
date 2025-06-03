@@ -194,7 +194,7 @@ int ff_hashtable_delete(struct FFHashtableContext *ctx, const void *key)
                 entry = next_entry;
             }
         }
-    };
+    }
     return 0;
 }
 
