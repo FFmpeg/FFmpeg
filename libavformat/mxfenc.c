@@ -117,9 +117,9 @@ typedef struct MXFStreamContext {
     int max_gop;             ///< maximum gop size, used by mpeg-2 descriptor
     int b_picture_count;     ///< maximum number of consecutive b pictures, used in mpeg-2 descriptor
     int low_delay;           ///< low delay, used in mpeg-2 descriptor
-    int avc_intra;
     int micro_version;       ///< format micro_version, used in ffv1 descriptor
     j2k_info_t j2k_info;
+    enum MXFMetadataSetType sub_descriptor;
 } MXFStreamContext;
 
 typedef struct MXFContainerEssenceEntry {
@@ -417,8 +417,9 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x4406, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x02,0x01,0x02,0x0C,0x00,0x00,0x00}}, /* User Comments */
     { 0x5001, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x02,0x01,0x02,0x09,0x01,0x00,0x00}}, /* Name */
     { 0x5003, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x02,0x01,0x02,0x0A,0x01,0x00,0x00}}, /* Value */
-    // mxf_avc_subdescriptor_local_tags
+    // sub descriptor used AVC, JPEG2000 and FFV1
     { 0x8100, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x09,0x06,0x01,0x01,0x04,0x06,0x10,0x00,0x00}}, /* SubDescriptors */
+    // mxf_avc_subdescriptor_local_tags
     { 0x8200, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x06,0x01,0x0E,0x00,0x00}}, /* AVC Decoding Delay */
     { 0x8201, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x06,0x01,0x0A,0x00,0x00}}, /* AVC Profile */
     { 0x8202, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x06,0x01,0x0D,0x00,0x00}}, /* AVC Level */
@@ -432,7 +433,6 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0xDFDA, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x0C,0x05,0x00,0x00,0x00}}, /* FFV1 Version */
     { 0xDFDB, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x0C,0x01,0x00,0x00,0x00}}, /* FFV1 Initialization Metadata */
     // ff_mxf_jpeg2000_local_tags
-    { 0x8400, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x09,0x06,0x01,0x01,0x04,0x06,0x10,0x00,0x00}}, /* Sub Descriptors / Opt Ordered array of strong references to sub descriptor sets */
     { 0x8401, {0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x0a,0x04,0x01,0x06,0x03,0x01,0x00,0x00,0x00}}, /* Rsiz: An enumerated value that defines the decoder capabilities */
     { 0x8402, {0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x0a,0x04,0x01,0x06,0x03,0x02,0x00,0x00,0x00}}, /* Xsiz: Width of the reference grid */
     { 0x8403, {0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x0a,0x04,0x01,0x06,0x03,0x03,0x00,0x00,0x00}}, /* Ysiz: Height of the reference grid */
@@ -582,10 +582,11 @@ static void mxf_write_primer_pack(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int local_tag_number = MXF_NUM_TAGS, i;
     int will_have_avc_tags = 0, will_have_mastering_tags = 0, will_have_ffv1_tags = 0, will_have_jpeg2000_tags = 0;
+    int will_have_sub_descriptor = 0;
 
     for (i = 0; i < s->nb_streams; i++) {
         MXFStreamContext *sc = s->streams[i]->priv_data;
-        if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_H264 && !sc->avc_intra) {
+        if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_H264 && sc->sub_descriptor) {
             will_have_avc_tags = 1;
         }
         if (av_packet_side_data_get(s->streams[i]->codecpar->coded_side_data,
@@ -599,6 +600,9 @@ static void mxf_write_primer_pack(AVFormatContext *s)
         if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_JPEG2000){
             will_have_jpeg2000_tags = 1;
         }
+        if (sc->sub_descriptor) {
+            will_have_sub_descriptor = 1;
+        }
     }
 
     if (!mxf->store_user_comments) {
@@ -607,7 +611,7 @@ static void mxf_write_primer_pack(AVFormatContext *s)
         mxf_mark_tag_unused(mxf, 0x5003);
     }
 
-    if (!will_have_avc_tags && !will_have_ffv1_tags) {
+    if (!will_have_sub_descriptor) {
         mxf_mark_tag_unused(mxf, 0x8100);
     }
 
@@ -631,7 +635,6 @@ static void mxf_write_primer_pack(AVFormatContext *s)
     }
 
     if (!will_have_jpeg2000_tags) {
-        mxf_mark_tag_unused(mxf, 0x8400);
         mxf_mark_tag_unused(mxf, 0x8401);
         mxf_mark_tag_unused(mxf, 0x8402);
         mxf_mark_tag_unused(mxf, 0x8403);
@@ -1451,18 +1454,10 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
         avio_w8(pb, sc->field_dominance);
     }
 
-    if (st->codecpar->codec_id == AV_CODEC_ID_H264 && !sc->avc_intra) {
-        // write avc sub descriptor ref
+    if (sc->sub_descriptor) {
         mxf_write_local_tag(s, 8 + 16, 0x8100);
         mxf_write_refs_count(pb, 1);
-        mxf_write_uuid(pb, AVCSubDescriptor, 0);
-    }
-
-    if (st->codecpar->codec_id == AV_CODEC_ID_FFV1) {
-        // write ffv1 sub descriptor ref
-        mxf_write_local_tag(s, 8 + 16, 0x8100);
-        mxf_write_refs_count(pb, 1);
-        mxf_write_uuid(pb, FFV1SubDescriptor, 0);
+        mxf_write_uuid(pb, sc->sub_descriptor, 0);
     }
 
     return pos;
@@ -1561,22 +1556,22 @@ static int mxf_write_jpeg2000_subdesc(AVFormatContext *s, AVStream *st)
 
 static int mxf_write_cdci_desc(AVFormatContext *s, AVStream *st)
 {
+    MXFStreamContext *sc = st->priv_data;
     int64_t pos = mxf_write_cdci_common(s, st, mxf_cdci_descriptor_key);
     mxf_update_klv_size(s->pb, pos);
 
-    if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
-        mxf_write_avc_subdesc(s, st);
+    switch (sc->sub_descriptor) {
+    case AVCSubDescriptor: mxf_write_avc_subdesc(s, st); break;
+    case JPEG2000SubDescriptor: mxf_write_jpeg2000_subdesc(s, st); break;
     }
-    if (st->codecpar->codec_id == AV_CODEC_ID_JPEG2000) {
-         return mxf_write_jpeg2000_subdesc(s, st);
-    }
+
     return 0;
 }
 
 static int mxf_write_h264_desc(AVFormatContext *s, AVStream *st)
 {
     MXFStreamContext *sc = st->priv_data;
-    if (sc->avc_intra) {
+    if (!sc->sub_descriptor) {
         mxf_write_mpegvideo_desc(s, st);
     } else {
         int64_t pos = mxf_write_cdci_common(s, st, mxf_cdci_descriptor_key);
@@ -2514,7 +2509,7 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
     const UID *codec_ul = NULL;
     uint32_t state = -1;
     int extra_size = 512; // support AVC Intra files without SPS/PPS header
-    int i, frame_size, slice_type, has_sps = 0, intra_only = 0, ret;
+    int i, frame_size, slice_type, has_sps = 0, intra_only = 0, avc_intra = 0, ret;
 
     for (;;) {
         buf = avpriv_find_start_code(buf, buf_end, &state);
@@ -2588,7 +2583,7 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
             codec_ul = &mxf_h264_codec_uls[i].uid;
             sc->aspect_ratio = (AVRational){ 16, 9 }; // 16:9 is mandatory for broadcast HD
             st->codecpar->profile = mxf_h264_codec_uls[i].profile;
-            sc->avc_intra = 1;
+            avc_intra = 1;
             mxf->cbr_index = 1;
             sc->frame_size = pkt->size;
             if (sc->interlaced)
@@ -2609,7 +2604,12 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
         av_log(s, AV_LOG_ERROR, "h264 profile not supported\n");
         return 0;
     }
+
     sc->codec_ul = codec_ul;
+
+    if (!avc_intra) {
+        sc->sub_descriptor = AVCSubDescriptor;
+    }
 
     return 1;
 }
@@ -2669,6 +2669,7 @@ static int mxf_parse_ffv1_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         av_assert0(v < 2);
     }
     sc->codec_ul = &mxf_ffv1_codec_uls[v];
+    sc->sub_descriptor = FFV1SubDescriptor;
 
     if (st->codecpar->field_order > AV_FIELD_PROGRESSIVE) {
         sc->interlaced = 1;
@@ -2726,6 +2727,7 @@ static int mxf_parse_jpeg2000_frame(AVFormatContext *s, AVStream *st, AVPacket *
     bytestream2_get_bufferu(&g, sc->j2k_info.j2k_comp_desc, 3 * j2k_ncomponents);
 
     sc->frame_size = pkt->size;
+    sc->sub_descriptor = JPEG2000SubDescriptor;
 
     return 1;
 }
