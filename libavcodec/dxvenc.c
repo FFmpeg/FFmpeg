@@ -100,8 +100,7 @@ static int dxv_compress_dxt1(AVCodecContext *avctx)
     DXVEncContext *ctx = avctx->priv_data;
     PutByteContext *pbc = &ctx->pbc;
     void *value;
-    uint64_t combo;
-    uint32_t color, lut, idx, combo_idx, prev_pos, old_pos, state = 16, pos = 0, op = 0;
+    uint32_t idx, combo_idx, prev_pos, old_pos, state = 16, pos = 0, op = 0;
 
     ff_hashtable_clear(ctx->color_ht);
     ff_hashtable_clear(ctx->lut_ht);
@@ -117,8 +116,7 @@ static int dxv_compress_dxt1(AVCodecContext *avctx)
     pos++;
 
     while (pos + 2 <= ctx->tex_size / 4) {
-        combo = AV_RL64(ctx->tex_data + pos * 4);
-        combo_idx = ff_hashtable_get(ctx->combo_ht, &combo, &prev_pos) ? pos - prev_pos : 0;
+        combo_idx = ff_hashtable_get(ctx->combo_ht, ctx->tex_data + pos * 4, &prev_pos) ? pos - prev_pos : 0;
         idx = combo_idx;
         PUSH_OP(2);
         if (pos >= LOOKBACK_WORDS) {
@@ -126,36 +124,34 @@ static int dxv_compress_dxt1(AVCodecContext *avctx)
             if (ff_hashtable_get(ctx->combo_ht, ctx->tex_data + old_pos * 4, &prev_pos) && prev_pos <= old_pos)
                 ff_hashtable_delete(ctx->combo_ht, ctx->tex_data + old_pos * 4);
         }
-        ff_hashtable_set(ctx->combo_ht, &combo, &pos);
+        ff_hashtable_set(ctx->combo_ht, ctx->tex_data + pos * 4, &pos);
 
-        color = AV_RL32(ctx->tex_data + pos * 4);
         if (!combo_idx) {
-            idx = ff_hashtable_get(ctx->color_ht, &color, &prev_pos) ? pos - prev_pos : 0;
+            idx = ff_hashtable_get(ctx->color_ht, ctx->tex_data + pos * 4, &prev_pos) ? pos - prev_pos : 0;
             PUSH_OP(2);
             if (!idx)
-                bytestream2_put_le32(pbc, color);
+                bytestream2_put_le32(pbc, AV_RL32(ctx->tex_data + pos * 4));
         }
         if (pos >= LOOKBACK_WORDS) {
             old_pos = pos - LOOKBACK_WORDS;
             if (ff_hashtable_get(ctx->color_ht, ctx->tex_data + old_pos * 4, &prev_pos) && prev_pos <= old_pos)
                 ff_hashtable_delete(ctx->color_ht, ctx->tex_data + old_pos * 4);
         }
-        ff_hashtable_set(ctx->color_ht, &color, &pos);
+        ff_hashtable_set(ctx->color_ht, ctx->tex_data + pos * 4, &pos);
         pos++;
 
-        lut = AV_RL32(ctx->tex_data + pos * 4);
         if (!combo_idx) {
-            idx = ff_hashtable_get(ctx->lut_ht, &lut, &prev_pos) ? pos - prev_pos : 0;
+            idx = ff_hashtable_get(ctx->lut_ht, ctx->tex_data + pos * 4, &prev_pos) ? pos - prev_pos : 0;
             PUSH_OP(2);
             if (!idx)
-                bytestream2_put_le32(pbc, lut);
+                bytestream2_put_le32(pbc, AV_RL32(ctx->tex_data + pos * 4));
         }
         if (pos >= LOOKBACK_WORDS) {
             old_pos = pos - LOOKBACK_WORDS;
             if (ff_hashtable_get(ctx->lut_ht, ctx->tex_data + old_pos * 4, &prev_pos) && prev_pos <= old_pos)
                 ff_hashtable_delete(ctx->lut_ht, ctx->tex_data + old_pos * 4);
         }
-        ff_hashtable_set(ctx->lut_ht, &lut, &pos);
+        ff_hashtable_set(ctx->lut_ht, ctx->tex_data + pos * 4, &pos);
         pos++;
     }
 
