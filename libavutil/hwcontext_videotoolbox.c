@@ -590,7 +590,7 @@ static int vt_pixbuf_set_colorspace(void *log_ctx,
             colorpri, kCVAttachmentMode_ShouldPropagate);
     else {
         CVBufferRemoveAttachment(pixbuf, kCVImageBufferColorPrimariesKey);
-        if (src->color_primaries != AVCOL_SPC_UNSPECIFIED)
+        if (src->color_primaries != AVCOL_PRI_UNSPECIFIED)
             av_log(log_ctx, AV_LOG_WARNING,
                 "Color primaries %s is not supported.\n",
                 av_color_primaries_name(src->color_primaries));
