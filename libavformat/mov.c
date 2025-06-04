@@ -1277,6 +1277,11 @@ static int mov_read_clap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         err = AVERROR_INVALIDDATA;
         goto fail;
     }
+    if ((av_cmp_q((AVRational) { width,  1 }, aperture_width)  < 0) ||
+        (av_cmp_q((AVRational) { height, 1 }, aperture_height) < 0)) {
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
     av_log(c->fc, AV_LOG_TRACE, "clap: apertureWidth %d/%d, apertureHeight %d/%d "
                                 "horizOff %d/%d vertOff %d/%d\n",
            aperture_width.num, aperture_width.den, aperture_height.num, aperture_height.den,
