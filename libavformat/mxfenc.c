@@ -106,11 +106,7 @@ typedef struct MXFStreamContext {
     int order;               ///< interleaving order if dts are equal
     int interlaced;          ///< whether picture is interlaced
     int field_dominance;     ///< tff=1, bff=2
-    int component_depth;
-    int color_siting;
     int signal_standard;
-    int h_chroma_sub_sample;
-    int v_chroma_sub_sample;
     int temporal_reordering;
     AVRational aspect_ratio; ///< display aspect ratio
     int closed_gop;          ///< gop is closed, used in mpeg-2 frame parsing
@@ -179,6 +175,8 @@ static int mxf_write_ffv1_desc(AVFormatContext *s, AVStream *st);
 static int mxf_write_cdci_desc(AVFormatContext *s, AVStream *st);
 static int mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st);
 static int mxf_write_s436m_anc_desc(AVFormatContext *s, AVStream *st);
+
+static enum AVChromaLocation choose_chroma_location(AVFormatContext *s, AVStream *st);
 
 static const MXFContainerEssenceEntry mxf_essence_container_uls[] = {
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x02,0x0D,0x01,0x03,0x01,0x02,0x04,0x60,0x01 },
@@ -1207,6 +1205,7 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
 {
     MXFStreamContext *sc = st->priv_data;
     AVIOContext *pb = s->pb;
+    const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(st->codecpar->format);
     int stored_width = st->codecpar->width;
     int stored_height = st->codecpar->height;
     int display_width;
@@ -1309,21 +1308,37 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     }
 
     if (key != mxf_rgba_descriptor_key) {
+        int component_depth     = pix_desc->comp[0].depth;
+        int h_chroma_sub_sample = 1 << pix_desc->log2_chroma_w;
+        int v_chroma_sub_sample = 1 << pix_desc->log2_chroma_h;
+        int color_siting;
+
         // component depth
         mxf_write_local_tag(s, 4, 0x3301);
-        avio_wb32(pb, sc->component_depth);
+        avio_wb32(pb, component_depth);
 
         // horizontal subsampling
         mxf_write_local_tag(s, 4, 0x3302);
-        avio_wb32(pb, sc->h_chroma_sub_sample);
+        avio_wb32(pb, h_chroma_sub_sample);
 
         // vertical subsampling
         mxf_write_local_tag(s, 4, 0x3308);
-        avio_wb32(pb, sc->v_chroma_sub_sample);
+        avio_wb32(pb, v_chroma_sub_sample);
+
+        switch (choose_chroma_location(s, st)) {
+        case AVCHROMA_LOC_TOPLEFT: color_siting = 0; break;
+        case AVCHROMA_LOC_LEFT:    color_siting = 6; break;
+        case AVCHROMA_LOC_TOP:     color_siting = 1; break;
+        case AVCHROMA_LOC_CENTER:  color_siting = 3; break;
+        default:                   color_siting = 0xff;
+        }
+
+        if (IS_D10(s))
+            color_siting = 0; // color siting is specified to be 0 in d-10 specs
 
         // color siting
         mxf_write_local_tag(s, 1, 0x3303);
-        avio_w8(pb, sc->color_siting);
+        avio_w8(pb, color_siting);
 
         // Padding Bits
         mxf_write_local_tag(s, 2, 0x3307);
@@ -1331,12 +1346,12 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
 
         if (st->codecpar->color_range != AVCOL_RANGE_UNSPECIFIED) {
             int black = 0,
-                white = (1<<sc->component_depth) - 1,
-                color = (1<<sc->component_depth);
+                white = (1<<component_depth) - 1,
+                color = (1<<component_depth);
             if (st->codecpar->color_range == AVCOL_RANGE_MPEG) {
-                black = 1   << (sc->component_depth - 4);
-                white = 235 << (sc->component_depth - 8);
-                color = (14 << (sc->component_depth - 4)) + 1;
+                black = 1   << (component_depth - 4);
+                white = 235 << (component_depth - 8);
+                color = (14 << (component_depth - 4)) + 1;
             }
             mxf_write_local_tag(s, 4, 0x3304);
             avio_wb32(pb, black);
@@ -2354,15 +2369,6 @@ static int mxf_parse_dnxhd_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt
     if (i == FF_ARRAY_ELEMS(mxf_dnxhd_codec_uls))
         return 0;
 
-    sc->component_depth = 0;
-    switch (pkt->data[0x21] >> 5) {
-    case 1: sc->component_depth = 8; break;
-    case 2: sc->component_depth = 10; break;
-    case 3: sc->component_depth = 12; break;
-    }
-    if (!sc->component_depth)
-        return 0;
-
     if (cid >= 1270) { // RI raster
         av_reduce(&sc->aspect_ratio.num, &sc->aspect_ratio.den,
                   st->codecpar->width, st->codecpar->height,
@@ -2536,7 +2542,6 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
                       sc->aspect_ratio.num, sc->aspect_ratio.den, 1024*1024);
             intra_only = (sps->constraint_set_flags >> 3) & 1;
             sc->interlaced = !sps->frame_mbs_only_flag;
-            sc->component_depth = sps->bit_depth_luma;
 
             buf = nal_end;
             break;
@@ -2581,7 +2586,6 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
     for (i = 0; i < FF_ARRAY_ELEMS(mxf_h264_codec_uls); i++) {
         if (frame_size == mxf_h264_codec_uls[i].frame_size && sc->interlaced == mxf_h264_codec_uls[i].interlaced) {
             codec_ul = &mxf_h264_codec_uls[i].uid;
-            sc->component_depth = 10; // AVC Intra is always 10 Bit
             sc->aspect_ratio = (AVRational){ 16, 9 }; // 16:9 is mandatory for broadcast HD
             st->codecpar->profile = mxf_h264_codec_uls[i].profile;
             sc->avc_intra = 1;
@@ -2953,17 +2957,6 @@ static int mxf_init(AVFormatContext *s)
                                             av_make_q(st->codecpar->width, st->codecpar->height));
             }
 
-            sc->component_depth     = pix_desc->comp[0].depth;
-            sc->h_chroma_sub_sample = 1 << pix_desc->log2_chroma_w;
-            sc->v_chroma_sub_sample = 1 << pix_desc->log2_chroma_h;
-
-            switch (choose_chroma_location(s, st)) {
-            case AVCHROMA_LOC_TOPLEFT: sc->color_siting = 0; break;
-            case AVCHROMA_LOC_LEFT:    sc->color_siting = 6; break;
-            case AVCHROMA_LOC_TOP:     sc->color_siting = 1; break;
-            case AVCHROMA_LOC_CENTER:  sc->color_siting = 3; break;
-            }
-
             mxf->content_package_rate = ff_mxf_get_content_package_rate(tbc);
             mxf->time_base = tbc;
             avpriv_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
@@ -3006,7 +2999,6 @@ static int mxf_init(AVFormatContext *s)
                 sc->container_ul = &mxf_d10_container_uls[ul_index];
                 sc->index = INDEX_D10_VIDEO;
                 sc->signal_standard = 1;
-                sc->color_siting = 0;
                 sc->frame_size = (int64_t)sc->video_bit_rate *
                     mxf->time_base.num / (8*mxf->time_base.den);
             }
