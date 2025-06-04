@@ -1493,11 +1493,6 @@ static int mxf_write_jpeg2000_subdesc(AVFormatContext *s, AVStream *st)
     int64_t pos;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(st->codecpar->format);
 
-    if (!pix_desc) {
-        av_log(s, AV_LOG_ERROR, "Pixel format not set - not writing JPEG2000SubDescriptor\n");
-        return AVERROR(EINVAL);
-    }
-
     /* JPEG2000 subdescriptor key */
     avio_write(pb, mxf_jpeg2000_subdescriptor_key, 16);
     klv_encode_ber4_length(pb, 0);
@@ -1610,7 +1605,6 @@ static int mxf_write_ffv1_desc(AVFormatContext *s, AVStream *st)
 {
     int is_rgb, pos;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codecpar->format);
-    av_assert0(desc);
     is_rgb = desc->flags & AV_PIX_FMT_FLAG_RGB;
 
     pos = mxf_write_cdci_common(s, st, is_rgb ? mxf_rgba_descriptor_key : mxf_cdci_descriptor_key);
@@ -2692,11 +2686,6 @@ static int mxf_parse_jpeg2000_frame(AVFormatContext *s, AVStream *st, AVPacket *
     GetByteContext g;
     uint32_t j2k_ncomponents;
 
-    if (!pix_desc) {
-        av_log(s, AV_LOG_ERROR, "Pixel format not set\n");
-        return AVERROR(EINVAL);
-    }
-
     if (mxf->header_written)
         return 1;
 
@@ -2898,20 +2887,18 @@ static enum AVChromaLocation choose_chroma_location(AVFormatContext *s, AVStream
     if (par->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
         return par->chroma_location;
 
-    if (pix_desc) {
-        if (pix_desc->log2_chroma_h == 0) {
-            return AVCHROMA_LOC_TOPLEFT;
-        } else if (pix_desc->log2_chroma_w == 1 && pix_desc->log2_chroma_h == 1) {
-            if (par->field_order == AV_FIELD_UNKNOWN || par->field_order == AV_FIELD_PROGRESSIVE) {
-                switch (par->codec_id) {
-                case AV_CODEC_ID_MJPEG:
-                case AV_CODEC_ID_MPEG1VIDEO: return AVCHROMA_LOC_CENTER;
-                }
+    if (pix_desc->log2_chroma_h == 0) {
+        return AVCHROMA_LOC_TOPLEFT;
+    } else if (pix_desc->log2_chroma_w == 1 && pix_desc->log2_chroma_h == 1) {
+        if (par->field_order == AV_FIELD_UNKNOWN || par->field_order == AV_FIELD_PROGRESSIVE) {
+            switch (par->codec_id) {
+            case AV_CODEC_ID_MJPEG:
+            case AV_CODEC_ID_MPEG1VIDEO: return AVCHROMA_LOC_CENTER;
             }
-            if (par->field_order == AV_FIELD_UNKNOWN || par->field_order != AV_FIELD_PROGRESSIVE) {
-                switch (par->codec_id) {
-                case AV_CODEC_ID_MPEG2VIDEO: return AVCHROMA_LOC_LEFT;
-                }
+        }
+        if (par->field_order == AV_FIELD_UNKNOWN || par->field_order != AV_FIELD_PROGRESSIVE) {
+            switch (par->codec_id) {
+            case AV_CODEC_ID_MPEG2VIDEO: return AVCHROMA_LOC_LEFT;
             }
         }
     }
@@ -2950,27 +2937,26 @@ static int mxf_init(AVFormatContext *s)
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(st->codecpar->format);
             AVRational tbc = (AVRational){ 0, 0 };
+
+            if (!pix_desc) {
+                av_log(s, AV_LOG_ERROR, "video stream require the codec pixel format to be set\n");
+                return -1;
+            }
+
             if (st->avg_frame_rate.num > 0 && st->avg_frame_rate.den > 0)
                 tbc = av_inv_q(st->avg_frame_rate);
             else if (st->r_frame_rate.num > 0 && st->r_frame_rate.den > 0)
                 tbc = av_inv_q(st->r_frame_rate);
-
-            // Default component depth to 8
-            sc->component_depth = 8;
-            sc->h_chroma_sub_sample = 2;
-            sc->v_chroma_sub_sample = 2;
-            sc->color_siting = 0xFF;
 
             if (st->codecpar->sample_aspect_ratio.num && st->codecpar->sample_aspect_ratio.den) {
                 sc->aspect_ratio = av_mul_q(st->codecpar->sample_aspect_ratio,
                                             av_make_q(st->codecpar->width, st->codecpar->height));
             }
 
-            if (pix_desc) {
-                sc->component_depth     = pix_desc->comp[0].depth;
-                sc->h_chroma_sub_sample = 1 << pix_desc->log2_chroma_w;
-                sc->v_chroma_sub_sample = 1 << pix_desc->log2_chroma_h;
-            }
+            sc->component_depth     = pix_desc->comp[0].depth;
+            sc->h_chroma_sub_sample = 1 << pix_desc->log2_chroma_w;
+            sc->v_chroma_sub_sample = 1 << pix_desc->log2_chroma_h;
+
             switch (choose_chroma_location(s, st)) {
             case AVCHROMA_LOC_TOPLEFT: sc->color_siting = 0; break;
             case AVCHROMA_LOC_LEFT:    sc->color_siting = 6; break;
