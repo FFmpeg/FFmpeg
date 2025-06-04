@@ -467,7 +467,6 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
     int dst_hp = AV_CEIL_RSHIFT(dst_h, vsub);                                                              \
     int yp = y>>vsub;                                                                                      \
     int xp = x>>hsub;                                                                                      \
-    uint##depth##_t *s, *sp, *d, *dp, *dap, *a, *ap;                                                       \
     int jmax, j, k, kmax;                                                                                  \
     int slice_start, slice_end;                                                                            \
     const uint##depth##_t max = (1 << nbits) - 1;                                                          \
@@ -481,20 +480,19 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
     slice_start = j + (jmax * jobnr) / nb_jobs;                                                            \
     slice_end = j + (jmax * (jobnr+1)) / nb_jobs;                                                          \
                                                                                                            \
-    sp = (uint##depth##_t *)(src->data[i] + (slice_start) * src->linesize[i]);                             \
-    dp = (uint##depth##_t *)(dst->data[dst_plane]                                                          \
+    const uint8_t *sp = src->data[i] + (slice_start) * src->linesize[i];                                   \
+    uint8_t       *dp = dst->data[dst_plane]                                                               \
                       + (yp + slice_start) * dst->linesize[dst_plane]                                      \
-                      + dst_offset);                                                                       \
-    ap = (uint##depth##_t *)(src->data[3] + (slice_start << vsub) * src->linesize[3]);                     \
-    if (main_has_alpha)                                                                                    \
-        dap = (uint##depth##_t *)(dst->data[3] + ((yp + slice_start) << vsub) * dst->linesize[3]);         \
+                      + dst_offset;                                                                        \
+    const uint8_t *ap = src->data[3] + (slice_start << vsub) * src->linesize[3];                           \
+    const uint8_t *dap = main_has_alpha ? dst->data[3] + ((yp + slice_start) << vsub) * dst->linesize[3] : NULL; \
                                                                                                            \
     for (j = slice_start; j < slice_end; j++) {                                                            \
         k = FFMAX(-xp, 0);                                                                                 \
-        d = dp + (xp+k) * dst_step;                                                                        \
-        s = sp + k;                                                                                        \
-        a = ap + (k<<hsub);                                                                                \
-        uint##depth##_t *da = main_has_alpha ? dap + ((xp+k) << hsub) : NULL;                              \
+        const uint##depth##_t  *s = (const uint##depth##_t *)sp + k;                                       \
+        const uint##depth##_t  *a = (const uint##depth##_t *)ap + (k<<hsub);                               \
+        const uint##depth##_t *da = main_has_alpha ? (uint##depth##_t *)dap + ((xp + k) << hsub) : NULL;   \
+        uint##depth##_t *d = (uint##depth##_t *)dp + (xp + k) * dst_step;                                  \
         kmax = FFMIN(-xp + dst_wp, src_wp);                                                                \
                                                                                                            \
         if (nbits == 8 && ((vsub && j+1 < src_hp) || !vsub) && octx->blend_row[i]) {                       \
@@ -566,11 +564,11 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
                 da += 1 << hsub;                                                                           \
             a += 1 << hsub;                                                                                \
         }                                                                                                  \
-        dp += dst->linesize[dst_plane] / bytes;                                                            \
-        sp += src->linesize[i] / bytes;                                                                    \
-        ap += (1 << vsub) * src->linesize[3] / bytes;                                                      \
+        dp += dst->linesize[dst_plane];                                                                    \
+        sp += src->linesize[i];                                                                            \
+        ap += (1 << vsub) * src->linesize[3];                                                              \
         if (main_has_alpha)                                                                                \
-            dap += (1 << vsub) * dst->linesize[3] / bytes;                                                 \
+            dap += (1 << vsub) * dst->linesize[3];                                                         \
     }                                                                                                      \
 }
 DEFINE_BLEND_PLANE(8, 8)
@@ -584,11 +582,9 @@ static inline void alpha_composite_##depth##_##nbits##bits(const AVFrame *src, c
                                    int jobnr, int nb_jobs)                                                 \
 {                                                                                                          \
     uint##depth##_t alpha;          /* the amount of overlay to blend on to main */                        \
-    uint##depth##_t *s, *sa, *d, *da;                                                                      \
     int i, imax, j, jmax;                                                                                  \
     int slice_start, slice_end;                                                                            \
     const uint##depth##_t max = (1 << nbits) - 1;                                                          \
-    int bytes = depth / 8;                                                                                 \
                                                                                                            \
     imax = FFMIN3(-y + dst_h, FFMIN(src_h, dst_h), y + src_h);                                             \
     i = FFMAX(-y, 0);                                                                                      \
@@ -596,13 +592,13 @@ static inline void alpha_composite_##depth##_##nbits##bits(const AVFrame *src, c
     slice_start = i + (imax * jobnr) / nb_jobs;                                                            \
     slice_end = i + ((imax * (jobnr+1)) / nb_jobs);                                                        \
                                                                                                            \
-    sa = (uint##depth##_t *)(src->data[3] + (slice_start) * src->linesize[3]);                             \
-    da = (uint##depth##_t *)(dst->data[3] + (y + slice_start) * dst->linesize[3]);                         \
+    const uint8_t *sa = src->data[3] +     (slice_start) * src->linesize[3];                               \
+    uint8_t       *da = dst->data[3] + (y + slice_start) * dst->linesize[3];                               \
                                                                                                            \
     for (i = slice_start; i < slice_end; i++) {                                                            \
         j = FFMAX(-x, 0);                                                                                  \
-        s = sa + j;                                                                                        \
-        d = da + x+j;                                                                                      \
+        const uint##depth##_t *s = (const uint##depth##_t *)sa + j;                                        \
+        uint##depth##_t *d = (uint##depth##_t *)da + x+j;                                                  \
                                                                                                            \
         for (jmax = FFMIN(-x + dst_w, src_w); j < jmax; j++) {                                             \
             alpha = *s;                                                                                    \
@@ -622,8 +618,8 @@ static inline void alpha_composite_##depth##_##nbits##bits(const AVFrame *src, c
             d += 1;                                                                                        \
             s += 1;                                                                                        \
         }                                                                                                  \
-        da += dst->linesize[3] / bytes;                                                                    \
-        sa += src->linesize[3] / bytes;                                                                    \
+        da += dst->linesize[3];                                                                            \
+        sa += src->linesize[3];                                                                            \
     }                                                                                                      \
 }
 DEFINE_ALPHA_COMPOSITE(8, 8)
