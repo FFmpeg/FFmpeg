@@ -1088,13 +1088,15 @@ static int d3d12va_encode_init_gop_structure(AVCodecContext *avctx)
         switch (ctx->codec->d3d12_codec) {
             case D3D12_VIDEO_ENCODER_CODEC_H264:
                 ref_l0 = FFMIN(support.PictureSupport.pH264Support->MaxL0ReferencesForP,
-                               support.PictureSupport.pH264Support->MaxL1ReferencesForB);
+                               support.PictureSupport.pH264Support->MaxL1ReferencesForB ?
+                               support.PictureSupport.pH264Support->MaxL1ReferencesForB : UINT_MAX);
                 ref_l1 = support.PictureSupport.pH264Support->MaxL1ReferencesForB;
                 break;
 
             case D3D12_VIDEO_ENCODER_CODEC_HEVC:
                 ref_l0 = FFMIN(support.PictureSupport.pHEVCSupport->MaxL0ReferencesForP,
-                               support.PictureSupport.pHEVCSupport->MaxL1ReferencesForB);
+                               support.PictureSupport.pHEVCSupport->MaxL1ReferencesForB ?
+                               support.PictureSupport.pHEVCSupport->MaxL1ReferencesForB : UINT_MAX);
                 ref_l1 = support.PictureSupport.pHEVCSupport->MaxL1ReferencesForB;
                 break;
 
