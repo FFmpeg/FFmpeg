@@ -1613,11 +1613,10 @@ static int mxf_write_ffv1_subdesc(AVFormatContext *s, AVStream *st)
 
 static int mxf_write_ffv1_desc(AVFormatContext *s, AVStream *st)
 {
-    int is_rgb, pos;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codecpar->format);
-    is_rgb = desc->flags & AV_PIX_FMT_FLAG_RGB;
+    int is_rgb = desc->flags & AV_PIX_FMT_FLAG_RGB;
 
-    pos = mxf_write_cdci_common(s, st, is_rgb ? mxf_rgba_descriptor_key : mxf_cdci_descriptor_key);
+    int64_t pos = mxf_write_cdci_common(s, st, is_rgb ? mxf_rgba_descriptor_key : mxf_cdci_descriptor_key);
     mxf_update_klv_size(s->pb, pos);
     return mxf_write_ffv1_subdesc(s, st);
 }
