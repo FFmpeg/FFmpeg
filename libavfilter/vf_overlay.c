@@ -353,6 +353,9 @@ static int config_output(AVFilterLink *outlink)
 // ((((x) + (y)) << 8) - ((x) + (y)) - (y) * (x)) is a faster version of: 255 * (x + y)
 #define UNPREMULTIPLY_ALPHA(x, y) ((((x) << 16) - ((x) << 9) + (x)) / ((((x) + (y)) << 8) - ((x) + (y)) - (y) * (x)))
 
+#define PTR_ADD(TYPE, ptr, byte_addend) ((TYPE*)((uint8_t*)ptr + (byte_addend)))
+#define CPTR_ADD(TYPE, ptr, byte_addend) ((const TYPE*)((const uint8_t*)ptr + (byte_addend)))
+
 /**
  * Blend image in src to destination buffer dst at position (x, y).
  */
@@ -511,13 +514,14 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
                                                                                                            \
             /* average alpha for color components, improve quality */                                      \
             if (hsub && vsub && j+1 < src_hp && k+1 < src_wp) {                                            \
-                alpha = (a[0] + a[src->linesize[3]] +                                                      \
-                         a[1] + a[src->linesize[3]+1]) >> 2;                                               \
+                const T *next_line = CPTR_ADD(T, a, src->linesize[3]);                                     \
+                alpha = (a[0] + next_line[0] +                                                             \
+                         a[1] + next_line[1]) >> 2;                                                        \
             } else if (hsub || vsub) {                                                                     \
                 alpha_h = hsub && k+1 < src_wp ?                                                           \
                     (a[0] + a[1]) >> 1 : a[0];                                                             \
                 alpha_v = vsub && j+1 < src_hp ?                                                           \
-                    (a[0] + a[src->linesize[3]]) >> 1 : a[0];                                              \
+                    (a[0] + *CPTR_ADD(T, a, src->linesize[3])) >> 1 : a[0];                                \
                 alpha = (alpha_v + alpha_h) >> 1;                                                          \
             } else                                                                                         \
                 alpha = a[0];                                                                              \
@@ -527,13 +531,14 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
                 /* average alpha for color components, improve quality */                                  \
                 uint8_t alpha_d;                                                                           \
                 if (hsub && vsub && j+1 < src_hp && k+1 < src_wp) {                                        \
-                    alpha_d = (da[0] + da[dst->linesize[3]] +                                              \
-                               da[1] + da[dst->linesize[3]+1]) >> 2;                                       \
+                    const T *next_line = CPTR_ADD(T, da, dst->linesize[3]);                                \
+                    alpha_d = (da[0] + next_line[0] +                                                      \
+                               da[1] + next_line[1]) >> 2;                                                 \
                 } else if (hsub || vsub) {                                                                 \
                     alpha_h = hsub && k+1 < src_wp ?                                                       \
                         (da[0] + da[1]) >> 1 : da[0];                                                      \
                     alpha_v = vsub && j+1 < src_hp ?                                                       \
-                        (da[0] + da[dst->linesize[3]]) >> 1 : da[0];                                       \
+                        (da[0] + *CPTR_ADD(T, da, dst->linesize[3])) >> 1 : da[0];                         \
                     alpha_d = (alpha_v + alpha_h) >> 1;                                                    \
                 } else                                                                                     \
                     alpha_d = da[0];                                                                       \
