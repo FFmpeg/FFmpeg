@@ -1679,17 +1679,18 @@ static int mov_write_apvc_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
 }
 
 /* also used by all avid codecs (dv, imx, meridien) and their variants */
+/* https://community.avid.com/forums/t/136517.aspx */
 static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
 {
     int interlaced;
     int cid;
     int display_width = track->par->width;
+    const uint8_t *extradata;
 
     if (track->extradata[track->last_stsd_index] && track->extradata_size[track->last_stsd_index] > 0x29) {
         if (ff_dnxhd_parse_header_prefix(track->extradata[track->last_stsd_index]) != 0) {
             /* looks like a DNxHD bit stream */
-            interlaced = (track->extradata[track->last_stsd_index][5] & 2);
-            cid = AV_RB32(track->extradata[track->last_stsd_index] + 0x28);
+            extradata = track->extradata[track->last_stsd_index];
         } else {
             av_log(NULL, AV_LOG_WARNING, "Could not locate DNxHD bit stream in vos_data\n");
             return 0;
@@ -1699,60 +1700,97 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
         return 0;
     }
 
+    cid = AV_RB32(extradata + 0x28);
+
     avio_wb32(pb, 24); /* size */
     ffio_wfourcc(pb, "ACLR");
     ffio_wfourcc(pb, "ACLR");
     ffio_wfourcc(pb, "0001");
+    // 1: CCIR (supercolors will be dropped, 16 will be displayed as black)
+    // 2: FullRange (0 will be displayed as black, 16 will be displayed as dark grey)
     if (track->par->color_range == AVCOL_RANGE_MPEG || /* Legal range (16-235) */
         track->par->color_range == AVCOL_RANGE_UNSPECIFIED) {
-        avio_wb32(pb, 1); /* Corresponds to 709 in official encoder */
-    } else { /* Full range (0-255) */
-        avio_wb32(pb, 2); /* Corresponds to RGB in official encoder */
+        avio_wb32(pb, 1);
+    } else {
+        avio_wb32(pb, 2);
     }
-    avio_wb32(pb, 0); /* unknown */
+    avio_wb32(pb, 0); /* reserved */
 
     if (track->tag == MKTAG('A','V','d','h')) {
+        int alp = extradata[0x07] & 1;
+        int pma = (extradata[0x07] >> 2) & 1;
+        int sbd = (extradata[0x21] >> 5) & 3;
+        int ssc = (extradata[0x2C] >> 5) & 3;
+        int clv = (extradata[0x2C] >> 1) & 3;
+        int clf = extradata[0x2C] & 1;
+
         avio_wb32(pb, 32);
         ffio_wfourcc(pb, "ADHR");
         ffio_wfourcc(pb, "0001");
-        avio_wb32(pb, cid);
-        avio_wb32(pb, 0); /* unknown */
-        avio_wb32(pb, 1); /* unknown */
-        avio_wb32(pb, 0); /* unknown */
-        avio_wb32(pb, 0); /* unknown */
+        avio_wb32(pb, cid); // Compression ID
+        // 0: 4:2:2 Sub Sampling
+        // 1: 4:2:0 Sub Sampling
+        // 2: 4:4:4 Sub Sampling
+        avio_wb32(pb, ssc); // Sub Sampling Control
+        // 1:  8-bits per sample
+        // 2: 10-bits per sample
+        // 3: 12-bits per sample
+        avio_wb32(pb, sbd); // Sample Bit Depth
+        // 0:  Bitstream is encoded using the YCBCR format rules and tables
+        // 1:  Bitstream is encoded using the RGB format rules and tables – only Compression IDs 1256, 1270
+        avio_wb16(pb, clf); // Color Format
+        // 0: ITU-R BT.709
+        // 1: ITU-R BT.2020
+        // 2: ITU-R BT.2020 C
+        // 3: Out-of-band
+        avio_wb16(pb, clv); // Color Volume
+        // 0: Alpha channel not present
+        // 1: Alpha channel present
+        avio_wb16(pb, alp); // Alpha Present
+        // 0: Alpha has not been applied to video channels
+        // 1: Alpha has been applied to the video channels prior to encoding
+        avio_wb16(pb, pma); // Pre-Multiplied Alpha
         return 0;
     }
+
+    interlaced = extradata[5] & 2;
 
     avio_wb32(pb, 24); /* size */
     ffio_wfourcc(pb, "APRG");
     ffio_wfourcc(pb, "APRG");
     ffio_wfourcc(pb, "0001");
-    avio_wb32(pb, 1); /* unknown */
-    avio_wb32(pb, 0); /* unknown */
+    // 1 for progressive or 2 for interlaced
+    if (interlaced)
+        avio_wb32(pb, 2);
+    else
+        avio_wb32(pb, 1);
+    avio_wb32(pb, 0); /* reserved */
 
     avio_wb32(pb, 120); /* size */
     ffio_wfourcc(pb, "ARES");
     ffio_wfourcc(pb, "ARES");
     ffio_wfourcc(pb, "0001");
-    avio_wb32(pb, cid); /* dnxhd cid, some id ? */
+    avio_wb32(pb, cid); /* cid */
     if (   track->par->sample_aspect_ratio.num > 0
         && track->par->sample_aspect_ratio.den > 0)
         display_width = display_width * track->par->sample_aspect_ratio.num / track->par->sample_aspect_ratio.den;
-    avio_wb32(pb, display_width);
-    /* values below are based on samples created with quicktime and avid codecs */
+    avio_wb32(pb, display_width); // field width
     if (interlaced) {
-        avio_wb32(pb, track->par->height / 2);
-        avio_wb32(pb, 2); /* unknown */
-        avio_wb32(pb, 0); /* unknown */
-        avio_wb32(pb, 4); /* unknown */
+        avio_wb32(pb, track->par->height / 2); // field height
+        avio_wb32(pb, 2); // num fields
+        avio_wb32(pb, 0); // num black lines (must be 0)
+        // 4: HD1080i
+        // 5: HD1080P
+        // 6: HD720P
+        avio_wb32(pb, 4); // video format
     } else {
         avio_wb32(pb, track->par->height);
-        avio_wb32(pb, 1); /* unknown */
-        avio_wb32(pb, 0); /* unknown */
+        avio_wb32(pb, 1); // num fields
+        avio_wb32(pb, 0);
         if (track->par->height == 1080)
-            avio_wb32(pb, 5); /* unknown */
+            avio_wb32(pb, 5);
         else
-            avio_wb32(pb, 6); /* unknown */
+            avio_wb32(pb, 6);
     }
     /* padding */
     ffio_fill(pb, 0, 10 * 8);
