@@ -467,7 +467,7 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
     int dst_hp = AV_CEIL_RSHIFT(dst_h, vsub);                                                              \
     int yp = y>>vsub;                                                                                      \
     int xp = x>>hsub;                                                                                      \
-    uint##depth##_t *s, *sp, *d, *dp, *dap, *a, *da, *ap;                                                  \
+    uint##depth##_t *s, *sp, *d, *dp, *dap, *a, *ap;                                                       \
     int jmax, j, k, kmax;                                                                                  \
     int slice_start, slice_end;                                                                            \
     const uint##depth##_t max = (1 << nbits) - 1;                                                          \
@@ -486,14 +486,15 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
                       + (yp + slice_start) * dst->linesize[dst_plane]                                      \
                       + dst_offset);                                                                       \
     ap = (uint##depth##_t *)(src->data[3] + (slice_start << vsub) * src->linesize[3]);                     \
-    dap = (uint##depth##_t *)(dst->data[3] + ((yp + slice_start) << vsub) * dst->linesize[3]);             \
+    if (main_has_alpha)                                                                                    \
+        dap = (uint##depth##_t *)(dst->data[3] + ((yp + slice_start) << vsub) * dst->linesize[3]);         \
                                                                                                            \
     for (j = slice_start; j < slice_end; j++) {                                                            \
         k = FFMAX(-xp, 0);                                                                                 \
         d = dp + (xp+k) * dst_step;                                                                        \
         s = sp + k;                                                                                        \
         a = ap + (k<<hsub);                                                                                \
-        da = dap + ((xp+k) << hsub);                                                                       \
+        uint##depth##_t *da = main_has_alpha ? dap + ((xp+k) << hsub) : NULL;                              \
         kmax = FFMIN(-xp + dst_wp, src_wp);                                                                \
                                                                                                            \
         if (nbits == 8 && ((vsub && j+1 < src_hp) || !vsub) && octx->blend_row[i]) {                       \
@@ -502,7 +503,8 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
                                                                                                            \
             s += c;                                                                                        \
             d += dst_step * c;                                                                             \
-            da += (1 << hsub) * c;                                                                         \
+            if (main_has_alpha)                                                                            \
+                da += (1 << hsub) * c;                                                                     \
             a += (1 << hsub) * c;                                                                          \
             k += c;                                                                                        \
         }                                                                                                  \
@@ -560,13 +562,15 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
             }                                                                                              \
             s++;                                                                                           \
             d += dst_step;                                                                                 \
-            da += 1 << hsub;                                                                               \
+            if (main_has_alpha)                                                                            \
+                da += 1 << hsub;                                                                           \
             a += 1 << hsub;                                                                                \
         }                                                                                                  \
         dp += dst->linesize[dst_plane] / bytes;                                                            \
         sp += src->linesize[i] / bytes;                                                                    \
         ap += (1 << vsub) * src->linesize[3] / bytes;                                                      \
-        dap += (1 << vsub) * dst->linesize[3] / bytes;                                                     \
+        if (main_has_alpha)                                                                                \
+            dap += (1 << vsub) * dst->linesize[3] / bytes;                                                 \
     }                                                                                                      \
 }
 DEFINE_BLEND_PLANE(8, 8)
