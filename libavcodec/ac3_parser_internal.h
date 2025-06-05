@@ -46,6 +46,7 @@ typedef struct AC3HeaderInfo {
     int substreamid;                        ///< substream identification
     int center_mix_level;                   ///< Center mix level index
     int surround_mix_level;                 ///< Surround mix level index
+    uint8_t channel_map_present;
     uint16_t channel_map;
     int num_blocks;                         ///< number of audio blocks
     int dolby_surround_mode;
@@ -62,6 +63,23 @@ typedef struct AC3HeaderInfo {
     uint64_t channel_layout;
     int8_t ac3_bit_rate_code;
     /** @} */
+
+    /** @name enhanced eac3 extension coded elements
+     * @{
+     */
+    int8_t dialog_normalization[2];
+    uint8_t compression_exists[2];
+    uint8_t heavy_dynamic_range[2];
+    uint8_t center_mix_level_ltrt;              ///< Center mix level index
+    uint8_t surround_mix_level_ltrt;            ///< Surround mix level index
+    uint8_t dolby_headphone_mode;
+    uint8_t dolby_surround_ex_mode;
+    uint8_t lfe_mix_level_exists;
+    uint8_t lfe_mix_level;
+    uint8_t preferred_downmix;
+    uint8_t eac3_extension_type_a;
+    uint8_t complexity_index_type_a;
+    /** @} */
 } AC3HeaderInfo;
 
 typedef enum {
@@ -71,6 +89,7 @@ typedef enum {
     AC3_PARSE_ERROR_FRAME_SIZE  = -0x4030c0a,
     AC3_PARSE_ERROR_FRAME_TYPE  = -0x5030c0a,
     AC3_PARSE_ERROR_CRC         = -0x6030c0a,
+    AC3_PARSE_ERROR_CHANNEL_MAP = -0x7030c0a,
 } AC3ParseError;
 
 /**

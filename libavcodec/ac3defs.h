@@ -34,6 +34,8 @@
 #define AC3_CRITICAL_BANDS 50
 #define AC3_MAX_CPL_BANDS  18
 
+#define EAC3_SR_CODE_REDUCED 3
+
 /* pre-defined gain values */
 #define LEVEL_PLUS_3DB          M_SQRT2
 #define LEVEL_PLUS_1POINT5DB    1.1892071150027209

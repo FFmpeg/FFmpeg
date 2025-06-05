@@ -53,8 +53,6 @@ typedef enum {
     EAC3_GAQ_124
 } EAC3GaqMode;
 
-#define EAC3_SR_CODE_REDUCED  3
-
 static void ff_eac3_apply_spectral_extension(AC3DecodeContext *s)
 {
     int bin, bnd, ch, i;
@@ -287,7 +285,7 @@ static void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch)
     }
 }
 
-static int ff_eac3_parse_header(AC3DecodeContext *s)
+static int ff_eac3_parse_header(AC3DecodeContext *s, const AC3HeaderInfo *hdr)
 {
     int i, blk, ch;
     int ac3_exponent_strategy, parse_aht_info, parse_spx_atten_data;
@@ -323,11 +321,10 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
         avpriv_request_sample(s->avctx, "Reduced sampling rate");
         return AVERROR_PATCHWELCOME;
     }
-    skip_bits(gbc, 5); // skip bitstream id
 
     /* volume control params */
     for (i = 0; i < (s->channel_mode ? 1 : 2); i++) {
-        s->dialog_normalization[i] = -get_bits(gbc, 5);
+        s->dialog_normalization[i] = hdr->dialog_normalization[i];
         if (s->dialog_normalization[i] == 0) {
             s->dialog_normalization[i] = -31;
         }
@@ -335,147 +332,30 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
             s->level_gain[i] = powf(2.0f,
                 (float)(s->target_level - s->dialog_normalization[i])/6.0f);
         }
-        s->compression_exists[i] = get_bits1(gbc);
-        if (s->compression_exists[i]) {
-            s->heavy_dynamic_range[i] = AC3_HEAVY_RANGE(get_bits(gbc, 8));
+        if (hdr->compression_exists[i]) {
+            s->heavy_dynamic_range[i] = AC3_HEAVY_RANGE(hdr->heavy_dynamic_range[i]);
         }
     }
 
-    /* dependent stream channel map */
-    if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT) {
-        if (get_bits1(gbc)) {
-            int64_t channel_layout = 0;
-            int channel_map = get_bits(gbc, 16);
-            av_log(s->avctx, AV_LOG_DEBUG, "channel_map: %0X\n", channel_map);
-
-            for (i = 0; i < 16; i++)
-                if (channel_map & (1 << (EAC3_MAX_CHANNELS - i - 1)))
-                    channel_layout |= ff_eac3_custom_channel_map_locations[i][1];
-
-            if (av_popcount64(channel_layout) > EAC3_MAX_CHANNELS) {
-                return AVERROR_INVALIDDATA;
-            }
-            s->channel_map = channel_map;
-        }
-    }
+    s->channel_map = hdr->channel_map;
 
     /* mixing metadata */
-    if (get_bits1(gbc)) {
-        /* center and surround mix levels */
-        if (s->channel_mode > AC3_CHMODE_STEREO) {
-            s->preferred_downmix = get_bits(gbc, 2);
-            if (s->channel_mode & 1) {
-                /* if three front channels exist */
-                s->center_mix_level_ltrt = get_bits(gbc, 3);
-                s->center_mix_level      = get_bits(gbc, 3);
-            }
-            if (s->channel_mode & 4) {
-                /* if a surround channel exists */
-                s->surround_mix_level_ltrt = av_clip(get_bits(gbc, 3), 3, 7);
-                s->surround_mix_level      = av_clip(get_bits(gbc, 3), 3, 7);
-            }
-        }
-
-        /* lfe mix level */
-        if (s->lfe_on && (s->lfe_mix_level_exists = get_bits1(gbc))) {
-            s->lfe_mix_level = get_bits(gbc, 5);
-        }
-
-        /* info for mixing with other streams and substreams */
-        if (s->frame_type == EAC3_FRAME_TYPE_INDEPENDENT) {
-            for (i = 0; i < (s->channel_mode ? 1 : 2); i++) {
-                // TODO: apply program scale factor
-                if (get_bits1(gbc)) {
-                    skip_bits(gbc, 6);  // skip program scale factor
-                }
-            }
-            if (get_bits1(gbc)) {
-                skip_bits(gbc, 6);  // skip external program scale factor
-            }
-            /* skip mixing parameter data */
-            switch(get_bits(gbc, 2)) {
-                case 1: skip_bits(gbc, 5);  break;
-                case 2: skip_bits(gbc, 12); break;
-                case 3: {
-                    int mix_data_size = (get_bits(gbc, 5) + 2) << 3;
-                    skip_bits_long(gbc, mix_data_size);
-                    break;
-                }
-            }
-            /* skip pan information for mono or dual mono source */
-            if (s->channel_mode < AC3_CHMODE_STEREO) {
-                for (i = 0; i < (s->channel_mode ? 1 : 2); i++) {
-                    if (get_bits1(gbc)) {
-                        /* note: this is not in the ATSC A/52B specification
-                           reference: ETSI TS 102 366 V1.1.1
-                                      section: E.1.3.1.25 */
-                        skip_bits(gbc, 8);  // skip pan mean direction index
-                        skip_bits(gbc, 6);  // skip reserved paninfo bits
-                    }
-                }
-            }
-            /* skip mixing configuration information */
-            if (get_bits1(gbc)) {
-                for (blk = 0; blk < s->num_blocks; blk++) {
-                    if (s->num_blocks == 1 || get_bits1(gbc)) {
-                        skip_bits(gbc, 5);
-                    }
-                }
-            }
-        }
-    }
+    s->preferred_downmix       = hdr->preferred_downmix;
+    s->center_mix_level_ltrt   = hdr->center_mix_level_ltrt;
+    s->center_mix_level        = hdr->center_mix_level;
+    s->surround_mix_level_ltrt = hdr->surround_mix_level_ltrt;
+    s->surround_mix_level      = hdr->surround_mix_level;
+    s->lfe_mix_level_exists    = hdr->lfe_mix_level_exists;
+    s->lfe_mix_level           = hdr->lfe_mix_level;
+    s->dolby_surround_mode     = hdr->dolby_surround_mode;
+    s->dolby_headphone_mode    = hdr->dolby_headphone_mode;
+    s->dolby_surround_ex_mode  = hdr->dolby_surround_ex_mode;
 
     /* informational metadata */
-    if (get_bits1(gbc)) {
-        s->bitstream_mode = get_bits(gbc, 3);
-        skip_bits(gbc, 2); // skip copyright bit and original bitstream bit
-        if (s->channel_mode == AC3_CHMODE_STEREO) {
-            s->dolby_surround_mode  = get_bits(gbc, 2);
-            s->dolby_headphone_mode = get_bits(gbc, 2);
-        }
-        if (s->channel_mode >= AC3_CHMODE_2F2R) {
-            s->dolby_surround_ex_mode = get_bits(gbc, 2);
-        }
-        for (i = 0; i < (s->channel_mode ? 1 : 2); i++) {
-            if (get_bits1(gbc)) {
-                skip_bits(gbc, 8); // skip mix level, room type, and A/D converter type
-            }
-        }
-        if (s->bit_alloc_params.sr_code != EAC3_SR_CODE_REDUCED) {
-            skip_bits1(gbc); // skip source sample rate code
-        }
-    }
-
-    /* converter synchronization flag
-       If frames are less than six blocks, this bit should be turned on
-       once every 6 blocks to indicate the start of a frame set.
-       reference: RFC 4598, Section 2.1.3  Frame Sets */
-    if (s->frame_type == EAC3_FRAME_TYPE_INDEPENDENT && s->num_blocks != 6) {
-        skip_bits1(gbc); // skip converter synchronization flag
-    }
-
-    /* original frame size code if this stream was converted from AC-3 */
-    if (s->frame_type == EAC3_FRAME_TYPE_AC3_CONVERT &&
-            (s->num_blocks == 6 || get_bits1(gbc))) {
-        skip_bits(gbc, 6); // skip frame size code
-    }
+    s->bitstream_mode = hdr->bitstream_mode;
 
     /* additional bitstream info */
-    if (get_bits1(gbc)) {
-        int addbsil = get_bits(gbc, 6);
-        for (i = 0; i < addbsil + 1; i++) {
-            if (i == 0) {
-                /* In this 8 bit chunk, the LSB is equal to flag_ec3_extension_type_a
-                   which can be used to detect Atmos presence */
-                skip_bits(gbc, 7);
-                if (get_bits1(gbc)) {
-                    s->eac3_extension_type_a = 1;
-                }
-            } else {
-                skip_bits(gbc, 8); // skip additional bit stream info
-            }
-        }
-    }
+    s->eac3_extension_type_a = hdr->eac3_extension_type_a;
 
     /* audio frame syntax flags, strategy data, and per-frame data */
 

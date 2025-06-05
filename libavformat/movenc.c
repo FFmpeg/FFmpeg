@@ -532,8 +532,6 @@ static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
             int parent = hdr->substreamid;
 
             while (cumul_size != pkt->size) {
-                GetBitContext gbc;
-                int i;
                 ret = avpriv_ac3_parse_header(&hdr, pkt->data + cumul_size, pkt->size - cumul_size);
                 if (ret < 0)
                     goto end;
@@ -544,20 +542,9 @@ static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
                 info->substream[parent].num_dep_sub++;
                 ret /= 8;
 
-                /* header is parsed up to lfeon, but custom channel map may be needed */
-                init_get_bits8(&gbc, pkt->data + cumul_size + ret, pkt->size - cumul_size - ret);
-                /* skip bsid */
-                skip_bits(&gbc, 5);
-                /* skip volume control params */
-                for (i = 0; i < (hdr->channel_mode ? 1 : 2); i++) {
-                    skip_bits(&gbc, 5); // skip dialog normalization
-                    if (get_bits1(&gbc)) {
-                        skip_bits(&gbc, 8); // skip compression gain word
-                    }
-                }
                 /* get the dependent stream channel map, if exists */
-                if (get_bits1(&gbc))
-                    info->substream[parent].chan_loc |= (get_bits(&gbc, 16) >> 5) & 0x1f;
+                if (hdr->channel_map_present)
+                    info->substream[parent].chan_loc |= (hdr->channel_map >> 5) & 0x1f;
                 else
                     info->substream[parent].chan_loc |= hdr->channel_mode;
                 cumul_size += hdr->frame_size;
