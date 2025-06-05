@@ -90,7 +90,7 @@ typedef struct TLSShared {
     {"verifyhost", "Verify against a specific hostname",  offsetof(pstruct, options_field . host),      AV_OPT_TYPE_STRING, .flags = TLS_OPTFL }, \
     {"http_proxy", "Set proxy to tunnel through",         offsetof(pstruct, options_field . http_proxy), AV_OPT_TYPE_STRING, .flags = TLS_OPTFL }, \
     {"use_external_udp", "Use external UDP from muxer or demuxer", offsetof(pstruct, options_field . use_external_udp), AV_OPT_TYPE_INT, { .i64 = 0}, 0, 1, .flags = TLS_OPTFL }, \
-    {"mtu", "Maximum Transmission Unit", offsetof(pstruct, options_field . mtu), AV_OPT_TYPE_INT,  { .i64 = 0}, INT64_MIN, INT64_MAX, .flags = TLS_OPTFL}, \
+    {"mtu", "Maximum Transmission Unit", offsetof(pstruct, options_field . mtu), AV_OPT_TYPE_INT,  { .i64 = 0 }, 0, INT_MAX, .flags = TLS_OPTFL}, \
     {"fingerprint", "The optional fingerprint for DTLS", offsetof(pstruct, options_field . fingerprint), AV_OPT_TYPE_STRING, .flags = TLS_OPTFL}, \
     {"cert_buf", "The optional certificate buffer for DTLS", offsetof(pstruct, options_field . cert_buf), AV_OPT_TYPE_STRING, .flags = TLS_OPTFL}, \
     {"key_buf", "The optional private key buffer for DTLS", offsetof(pstruct, options_field . key_buf), AV_OPT_TYPE_STRING, .flags = TLS_OPTFL}
