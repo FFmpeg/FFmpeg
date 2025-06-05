@@ -1115,13 +1115,13 @@ static int ice_is_binding_response(uint8_t *b, int size)
  * The RTCP packet header is similar to RTP,
  * see https://www.rfc-editor.org/rfc/rfc3550#section-6.4.1
  */
-static int media_is_rtp_rtcp(uint8_t *b, int size)
+static int media_is_rtp_rtcp(const uint8_t *b, int size)
 {
     return size >= WHIP_RTP_HEADER_SIZE && (b[0] & 0xC0) == 0x80;
 }
 
 /* Whether the packet is RTCP. */
-static int media_is_rtcp(uint8_t *b, int size)
+static int media_is_rtcp(const uint8_t *b, int size)
 {
     return size >= WHIP_RTP_HEADER_SIZE && b[1] >= WHIP_RTCP_PT_START && b[1] <= WHIP_RTCP_PT_END;
 }
