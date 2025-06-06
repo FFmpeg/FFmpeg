@@ -688,7 +688,7 @@ AVFilterFormats *ff_all_alpha_modes(void)
     if (!f)                                                                     \
         return AVERROR(ENOMEM);                                                 \
                                                                                 \
-    tmp = av_realloc_array(f->refs, sizeof(*f->refs), f->refcount + 1);         \
+    tmp = av_realloc_array(f->refs, f->refcount + 1, sizeof(*f->refs));         \
     if (!tmp) {                                                                 \
         unref_fn(&f);                                                           \
         return AVERROR(ENOMEM);                                                 \

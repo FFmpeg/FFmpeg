@@ -176,7 +176,7 @@ static int config_input(AVFilterLink *inlink)
                                    sizeof(*s->nb_null_samples));
     if (!s->nb_null_samples)
         return AVERROR(ENOMEM);
-    s->start = av_malloc_array(sizeof(*s->start), s->independent_channels);
+    s->start = av_malloc_array(s->independent_channels, sizeof(*s->start));
     if (!s->start)
         return AVERROR(ENOMEM);
     for (c = 0; c < s->independent_channels; c++)

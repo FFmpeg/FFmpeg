@@ -463,11 +463,11 @@ static int create_vorbis_context(vorbis_enc_context *venc,
     venc->modes[1].mapping   = 0;
 
     venc->have_saved = 0;
-    venc->saved      = av_malloc_array(sizeof(float) * venc->channels, (1 << venc->log2_blocksize[1]) / 2);
-    venc->samples    = av_malloc_array(sizeof(float) * venc->channels, (1 << venc->log2_blocksize[1]));
-    venc->floor      = av_malloc_array(sizeof(float) * venc->channels, (1 << venc->log2_blocksize[1]) / 2);
-    venc->coeffs     = av_malloc_array(sizeof(float) * venc->channels, (1 << venc->log2_blocksize[1]) / 2);
-    venc->scratch    = av_malloc_array(sizeof(float) * venc->channels, (1 << venc->log2_blocksize[1]));
+    venc->saved      = av_malloc_array((1 << venc->log2_blocksize[1]) / 2, sizeof(float) * venc->channels);
+    venc->samples    = av_malloc_array((1 << venc->log2_blocksize[1]), sizeof(float) * venc->channels);
+    venc->floor      = av_malloc_array((1 << venc->log2_blocksize[1]) / 2, sizeof(float) * venc->channels);
+    venc->coeffs     = av_malloc_array((1 << venc->log2_blocksize[1]) / 2, sizeof(float) * venc->channels);
+    venc->scratch    = av_malloc_array((1 << venc->log2_blocksize[1]), sizeof(float) * venc->channels);
 
     if (!venc->saved || !venc->samples || !venc->floor || !venc->coeffs || !venc->scratch)
         return AVERROR(ENOMEM);

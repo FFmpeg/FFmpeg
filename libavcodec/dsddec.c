@@ -52,7 +52,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     ff_init_dsd_data();
 
-    s = av_malloc_array(sizeof(DSDContext), avctx->ch_layout.nb_channels);
+    s = av_malloc_array(avctx->ch_layout.nb_channels, sizeof(*s));
     if (!s)
         return AVERROR(ENOMEM);
 

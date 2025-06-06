@@ -52,7 +52,7 @@ static int vaapi_encode_make_packed_header(AVCodecContext *avctx,
         .has_emulation_bytes = 1,
     };
 
-    tmp = av_realloc_array(pic->param_buffers, sizeof(*tmp), pic->nb_param_buffers + 2);
+    tmp = av_realloc_array(pic->param_buffers, pic->nb_param_buffers + 2, sizeof(*tmp));
     if (!tmp)
         return AVERROR(ENOMEM);
     pic->param_buffers = tmp;
@@ -93,7 +93,7 @@ static int vaapi_encode_make_param_buffer(AVCodecContext *avctx,
     VABufferID *tmp;
     VABufferID buffer;
 
-    tmp = av_realloc_array(pic->param_buffers, sizeof(*tmp), pic->nb_param_buffers + 1);
+    tmp = av_realloc_array(pic->param_buffers, pic->nb_param_buffers + 1, sizeof(*tmp));
     if (!tmp)
         return AVERROR(ENOMEM);
     pic->param_buffers = tmp;
