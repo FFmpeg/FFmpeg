@@ -29,7 +29,7 @@
 typedef struct IOContext {
     int64_t pos;
     int64_t filesize;
-    uint8_t *fuzz;
+    const uint8_t *fuzz;
     int fuzz_size;
 } IOContext;
 
