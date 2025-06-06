@@ -281,6 +281,7 @@ static int64_t get_duration(AVFormatContext *s)
     }
 
     if (end_pos < 0 || end_pos + 16 > end_buffer_pos + end_buffer_size) {
+        av_freep(&end_buffer);
         avio_seek(s->pb, start_pos, SEEK_SET);
         return 0;
     }
@@ -288,6 +289,8 @@ static int64_t get_duration(AVFormatContext *s)
     date = AV_RL32(end_buffer + (end_pos - end_buffer_pos) + 16);
     get_timeinfo(date, &timeinfo);
     end = av_timegm(&timeinfo) * 1000LL;
+
+    av_freep(&end_buffer);
 
     avio_seek(s->pb, start_pos, SEEK_SET);
 
