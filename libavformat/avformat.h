@@ -470,8 +470,7 @@ typedef struct AVProbeData {
 /**
  * The muxer/demuxer is experimental and should be used with caution.
  *
- * - demuxers: will not be selected automatically by probing, must be specified
- *             explicitly.
+ * It will not be selected automatically, and must be specified explicitly.
  */
 #define AVFMT_EXPERIMENTAL  0x0004
 #define AVFMT_SHOW_IDS      0x0008 /**< Show format stream IDs numbers. */

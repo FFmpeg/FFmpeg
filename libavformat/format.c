@@ -95,6 +95,8 @@ const AVOutputFormat *av_guess_format(const char *short_name, const char *filena
     /* Find the proper file type. */
     score_max = 0;
     while ((fmt = av_muxer_iterate(&i))) {
+        if (fmt->flags & AVFMT_EXPERIMENTAL && !short_name)
+            continue;
         score = 0;
         if (fmt->name && short_name && av_match_name(short_name, fmt->name))
             score += 100;
