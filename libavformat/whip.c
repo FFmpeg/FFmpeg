@@ -1660,8 +1660,6 @@ static int h264_annexb_insert_sps_pps(AVFormatContext *s, AVPacket *pkt)
     uint8_t unit_type, sps_seen = 0, pps_seen = 0, idr_seen = 0, *out;
     const uint8_t *buf, *buf_end, *r1;
 
-    if (!pkt || !pkt->data || pkt->size <= 0)
-        return ret;
     if (!par || !par->extradata || par->extradata_size <= 0)
         return ret;
 
