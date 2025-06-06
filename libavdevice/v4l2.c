@@ -111,7 +111,7 @@ struct video_data {
     int (*open_f)(const char *file, int oflag, ...);
     int (*close_f)(int fd);
     int (*dup_f)(int fd);
-#if HAVE_POSIX_IOCTL
+#if HAVE_IOCTL_POSIX
     int (*ioctl_f)(int fd, int request, ...);
 #else
     int (*ioctl_f)(int fd, unsigned long int request, ...);

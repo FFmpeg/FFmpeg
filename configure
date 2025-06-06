@@ -2533,6 +2533,7 @@ HAVE_LIST="
     $TOOLCHAIN_FEATURES
     $TYPES_LIST
     gzip
+    ioctl_posix
     libdrm_getfb2
     makeinfo
     makeinfo_html
@@ -2545,7 +2546,6 @@ HAVE_LIST="
     opencl_videotoolbox
     perl
     pod2man
-    posix_ioctl
     texi2html
     xmllint
     zlib_gzip
@@ -7275,7 +7275,7 @@ xmllint --version  > /dev/null 2>&1 && enable xmllint   || disable xmllint
 check_headers linux/fb.h
 check_headers linux/videodev2.h
 test_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_sanitized struct_v4l2_frmivalenum_discrete
-test_code cc sys/ioctl.h "int ioctl(int, int, ...)" && enable posix_ioctl
+test_code cc sys/ioctl.h "int ioctl(int, int, ...)" && enable ioctl_posix
 
 # check V4L2 codecs available in the API
 if enabled v4l2_m2m; then
