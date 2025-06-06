@@ -246,11 +246,12 @@ static int64_t get_duration(AVFormatContext *s)
     int64_t end_buffer_pos;
     int64_t offset;
     unsigned date;
+    int64_t size = avio_size(s->pb);
 
     if (!s->pb->seekable)
         return 0;
 
-    if (start_pos + 16 > avio_size(s->pb))
+    if (start_pos + 16 > size)
         return 0;
 
     avio_skip(s->pb, 16);
@@ -258,13 +259,13 @@ static int64_t get_duration(AVFormatContext *s)
     get_timeinfo(date, &timeinfo);
     start = av_timegm(&timeinfo) * 1000LL;
 
-    end_buffer_size = FFMIN(MAX_DURATION_BUFFER_SIZE, avio_size(s->pb));
+    end_buffer_size = FFMIN(MAX_DURATION_BUFFER_SIZE, size);
     end_buffer = av_malloc(end_buffer_size);
     if (!end_buffer) {
         avio_seek(s->pb, start_pos, SEEK_SET);
         return 0;
     }
-    end_buffer_pos = avio_size(s->pb) - end_buffer_size;
+    end_buffer_pos = size - end_buffer_size;
     avio_seek(s->pb, end_buffer_pos, SEEK_SET);
     avio_read(s->pb, end_buffer, end_buffer_size);
 
