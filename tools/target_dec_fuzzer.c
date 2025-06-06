@@ -72,6 +72,8 @@ static void error(const char *err)
 }
 
 static const FFCodec *c = NULL;
+
+#ifndef FFMPEG_DECODER
 static const FFCodec *AVCodecInitialize(enum AVCodecID codec_id)
 {
     const AVCodec *res;
@@ -81,6 +83,7 @@ static const FFCodec *AVCodecInitialize(enum AVCodecID codec_id)
         error("Failed to find decoder");
     return ffcodec(res);
 }
+#endif
 
 static int subtitle_handler(AVCodecContext *avctx, AVFrame *unused,
                             int *got_sub_ptr, const AVPacket *avpkt)
