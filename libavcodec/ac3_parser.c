@@ -202,9 +202,13 @@ int av_ac3_parse_header(const uint8_t *buf, size_t size,
 {
     GetBitContext gb;
     AC3HeaderInfo hdr;
+    uint8_t tmp[32 + AV_INPUT_BUFFER_PADDING_SIZE];
     int err;
 
-    err = init_get_bits8(&gb, buf, size);
+    size = FFMIN(32, size);
+    memcpy(tmp, buf, size);
+    memset(tmp + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+    err = init_get_bits8(&gb, tmp, size);
     if (err < 0)
         return AVERROR_INVALIDDATA;
     err = ff_ac3_parse_header(&gb, &hdr);
