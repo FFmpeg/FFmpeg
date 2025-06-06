@@ -84,9 +84,9 @@ fate-mov-ibi-elst-starts-b: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)
 # Makes sure that we handle overlapping framgments
 fate-mov-frag-overlap: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/frag_overlap.mp4
 
-fate-mov-mp4-frag-flush: CMD = md5 -f lavfi -i color=blue,format=rgb24,trim=duration=0.04 -f lavfi -i anullsrc,aformat=s16,atrim=duration=2 -c:v png -c:a pcm_s16le -movflags +empty_moov+hybrid_fragmented -frag_duration 1000000 -frag_interleave 1 -f mp4
+fate-mov-mp4-frag-flush: CMD = md5 -f lavfi -i color=blue,format=rgb24,trim=duration=0.04 -f lavfi -i anullsrc,aformat=s16,atrim=duration=2 -c:v png -c:a pcm_s16le -movflags +empty_moov+hybrid_fragmented -frag_duration 1000000 -frag_interleave 1 -bitexact -f mp4
 fate-mov-mp4-frag-flush: CMP = oneline
-fate-mov-mp4-frag-flush: REF = a10c0e2e2dfc120f31ca5e59e0e4392a
+fate-mov-mp4-frag-flush: REF = c9d0236bde4a0b24a01f6a032fd72e04
 FATE_MOV_FFMPEG-$(call ALLYES, LAVFI_INDEV COLOR_FILTER FORMAT_FILTER TRIM_FILTER \
                                ANULLSRC_FILTER AFORMAT_FILTER ATRIM_FILTER        \
                                WRAPPED_AVFRAME_DECODER PCM_S16LE_DECODER PCM_S16BE_DECODER \
