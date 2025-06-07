@@ -21,6 +21,7 @@
 #include "libavutil/cpu_internal.h"
 #include "libavcodec/hevc/dsp.h"
 #include "libavcodec/wasm/hevc/idct.h"
+#include "libavcodec/wasm/hevc/sao.h"
 
 av_cold void ff_hevc_dsp_init_wasm(HEVCDSPContext *c, const int bit_depth)
 {
@@ -35,6 +36,12 @@ av_cold void ff_hevc_dsp_init_wasm(HEVCDSPContext *c, const int bit_depth)
         c->idct[1] = ff_hevc_idct_8x8_8_simd128;
         c->idct[2] = ff_hevc_idct_16x16_8_simd128;
         c->idct[3] = ff_hevc_idct_32x32_8_simd128;
+
+        c->sao_band_filter[0] = ff_hevc_sao_band_filter_8x8_8_simd128;
+        c->sao_band_filter[1] =
+        c->sao_band_filter[2] =
+        c->sao_band_filter[3] =
+        c->sao_band_filter[4] = ff_hevc_sao_band_filter_16x16_8_simd128;
     } else if (bit_depth == 10) {
         c->idct[0] = ff_hevc_idct_4x4_10_simd128;
         c->idct[1] = ff_hevc_idct_8x8_10_simd128;
