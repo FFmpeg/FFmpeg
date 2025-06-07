@@ -261,13 +261,12 @@ static int64_t get_duration(AVFormatContext *s)
 
     end_buffer_size = FFMIN(MAX_DURATION_BUFFER_SIZE, size);
     end_buffer = av_malloc(end_buffer_size);
-    if (!end_buffer) {
-        avio_seek(s->pb, start_pos, SEEK_SET);
-        return 0;
-    }
+    if (!end_buffer)
+        goto fail;
     end_buffer_pos = size - end_buffer_size;
     avio_seek(s->pb, end_buffer_pos, SEEK_SET);
-    avio_read(s->pb, end_buffer, end_buffer_size);
+    if (ffio_read_size(s->pb, end_buffer, end_buffer_size) < 0)
+        goto fail;
 
     offset = end_buffer_size - 8;
     while (offset > 0) {
@@ -280,11 +279,8 @@ static int64_t get_duration(AVFormatContext *s)
         }
     }
 
-    if (end_pos < 0 || end_pos + 16 > end_buffer_pos + end_buffer_size) {
-        av_freep(&end_buffer);
-        avio_seek(s->pb, start_pos, SEEK_SET);
-        return 0;
-    }
+    if (end_pos < 0 || end_pos + 16 > end_buffer_pos + end_buffer_size)
+        goto fail;
 
     date = AV_RL32(end_buffer + (end_pos - end_buffer_pos) + 16);
     get_timeinfo(date, &timeinfo);
@@ -295,6 +291,10 @@ static int64_t get_duration(AVFormatContext *s)
     avio_seek(s->pb, start_pos, SEEK_SET);
 
     return end - start;
+fail:
+    av_freep(&end_buffer);
+    avio_seek(s->pb, start_pos, SEEK_SET);
+    return 0;
 }
 
 static int dhav_read_header(AVFormatContext *s)
