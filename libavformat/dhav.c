@@ -237,6 +237,9 @@ static void get_timeinfo(unsigned date, struct tm *timeinfo)
 
 static int64_t get_duration(AVFormatContext *s)
 {
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
+        return 0;
+
     int64_t start_pos = avio_tell(s->pb);
     int64_t end_pos = -1;
     int64_t start = 0, end = 0;
@@ -247,9 +250,6 @@ static int64_t get_duration(AVFormatContext *s)
     int64_t offset;
     unsigned date;
     int64_t size = avio_size(s->pb);
-
-    if (!s->pb->seekable)
-        return 0;
 
     if (start_pos + 16 > size)
         return 0;
