@@ -38,5 +38,15 @@ void ff_hevc_sao_band_filter_16x16_8_simd128(uint8_t *_dst, const uint8_t *_src,
                                              int sao_left_class, int width,
                                              int height);
 
+void ff_hevc_sao_edge_filter_8x8_8_simd128(uint8_t *_dst, const uint8_t *_src,
+                                       ptrdiff_t stride_dst,
+                                       const int16_t *sao_offset_val,
+                                       int eo, int width, int height);
+
+void ff_hevc_sao_edge_filter_16x16_8_simd128(uint8_t *_dst, const uint8_t *_src,
+                                             ptrdiff_t stride_dst,
+                                             const int16_t *sao_offset_val,
+                                             int eo, int width, int height);
+
 #endif
 
