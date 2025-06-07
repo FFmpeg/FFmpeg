@@ -22,7 +22,6 @@
 #include "config_components.h"
 
 #include "libavutil/buffer.h"
-#include "libavutil/eval.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/mastering_display_metadata.h"
@@ -30,7 +29,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/stereo3d.h"
 #include "libavutil/time.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/video_hint.h"
 #include "avcodec.h"
 #include "codec_internal.h"
