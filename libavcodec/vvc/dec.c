@@ -1112,13 +1112,11 @@ static int frame_end(VVCContext *s, VVCFrameContext *fc)
                 return ret;
 
             ret = ff_h274_hash_verify(s->hash_ctx, &sei->picture_hash, fc->ref->frame, fc->ps.pps->width, fc->ps.pps->height);
-            if (ret < 0) {
-                av_log(s->avctx, AV_LOG_ERROR,
-                    "Verifying checksum for frame with decoder_order %d: failed\n",
-                    (int)fc->decode_order);
-                if (s->avctx->err_recognition & AV_EF_EXPLODE)
-                    return ret;
-            }
+            av_log(s->avctx, ret < 0 ? AV_LOG_ERROR : AV_LOG_DEBUG,
+                "Verifying checksum for frame with decode_order %d: %s\n",
+                (int)fc->decode_order, ret < 0 ? "incorrect": "correct");
+            if (ret < 0 && (s->avctx->err_recognition & AV_EF_EXPLODE))
+                return ret;
         }
     }
 
