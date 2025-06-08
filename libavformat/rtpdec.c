@@ -597,6 +597,7 @@ static int rtp_set_prft(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestamp) {
         return AVERROR(ENOMEM);
 
     rtcp_time = ff_parse_ntp_time(s->last_rtcp_ntp_time) - NTP_OFFSET_US;
+    /* Cast to int32_t to handle timestamp wraparound correctly */
     delta_timestamp = (int32_t)(timestamp - s->last_rtcp_timestamp);
     delta_time = av_rescale_q(delta_timestamp, s->st->time_base, AV_TIME_BASE_Q);
 
@@ -624,10 +625,11 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
 
     if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE && s->ic->nb_streams > 1) {
         int64_t addend;
-        int delta_timestamp;
+        int32_t delta_timestamp;
 
         /* compute pts from timestamp with received ntp_time */
-        delta_timestamp = timestamp - s->last_rtcp_timestamp;
+        /* Cast to int32_t to handle timestamp wraparound correctly */
+        delta_timestamp = (int32_t)(timestamp - s->last_rtcp_timestamp);
         /* convert to the PTS timebase */
         addend = av_rescale(s->last_rtcp_ntp_time - s->first_rtcp_ntp_time,
                             s->st->time_base.den,
