@@ -2672,7 +2672,7 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
         ret = avfilter_graph_request_oldest(fgt->graph);
         if (ret == AVERROR(EAGAIN)) {
             fgt->next_in = choose_input(fg, fgt);
-            break;
+            return 0;
         } else if (ret < 0) {
             if (ret == AVERROR_EOF)
                 av_log(fg, AV_LOG_VERBOSE, "Filtergraph returned EOF, finishing\n");
@@ -2702,7 +2702,7 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
         did_step = 1;
     }
 
-    return (fgp->nb_outputs_done == fg->nb_outputs) ? AVERROR_EOF : 0;
+    return AVERROR_EOF;
 }
 
 static void sub2video_heartbeat(InputFilter *ifilter, int64_t pts, AVRational tb)
