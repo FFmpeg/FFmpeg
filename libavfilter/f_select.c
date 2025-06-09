@@ -179,8 +179,6 @@ static const AVOption filt_name##_options[] = {                     \
     { NULL }                                                            \
 }
 
-static int request_frame(AVFilterLink *outlink);
-
 static av_cold int init(AVFilterContext *ctx)
 {
     SelectContext *select = ctx->priv;
@@ -201,7 +199,6 @@ static av_cold int init(AVFilterContext *ctx)
         if (!pad.name)
             return AVERROR(ENOMEM);
         pad.type = ctx->filter->inputs[0].type;
-        pad.request_frame = request_frame;
         if ((ret = ff_append_outpad_free_name(ctx, &pad)) < 0)
             return ret;
     }
@@ -349,7 +346,7 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
     if (isnan(select->var_values[VAR_START_T]))
         select->var_values[VAR_START_T] = TS2D(frame->pts) * av_q2d(inlink->time_base);
 
-    select->var_values[VAR_N  ] = inl->frame_count_out;
+    select->var_values[VAR_N  ] = inl->frame_count_out - 1;
     select->var_values[VAR_PTS] = TS2D(frame->pts);
     select->var_values[VAR_T  ] = TS2D(frame->pts) * av_q2d(inlink->time_base);
     select->var_values[VAR_KEY] = !!(frame->flags & AV_FRAME_FLAG_KEY);
@@ -428,24 +425,35 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
     select->var_values[VAR_PREV_T]   = select->var_values[VAR_T];
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = inlink->dst;
     SelectContext *select = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFrame *in;
+    int nb_eofs = 0;
+    int ret;
 
-    select_frame(ctx, frame);
-    if (select->select)
-        return ff_filter_frame(ctx->outputs[select->select_out], frame);
+    for (int i = 0; i < ctx->nb_outputs; i++)
+        nb_eofs += ff_outlink_get_status(ctx->outputs[i]) == AVERROR_EOF;
 
-    av_frame_free(&frame);
-    return 0;
-}
+    if (nb_eofs == ctx->nb_outputs) {
+        ff_inlink_set_status(inlink, AVERROR_EOF);
+        return 0;
+    }
 
-static int request_frame(AVFilterLink *outlink)
-{
-    AVFilterLink *inlink = outlink->src->inputs[0];
-    int ret = ff_request_frame(inlink);
-    return ret;
+    while ((ret = ff_inlink_consume_frame(inlink, &in))) {
+        if (ret < 0)
+            return ret;
+        select_frame(ctx, in);
+        if (select->select && !ff_outlink_get_status(ctx->outputs[select->select_out]))
+            return ff_filter_frame(ctx->outputs[select->select_out], in);
+        av_frame_free(&in);
+    };
+
+    FF_FILTER_FORWARD_STATUS_ALL(inlink, ctx);
+    FF_FILTER_FORWARD_WANTED_ANY(ctx, inlink);
+
+    return FFERROR_NOT_READY;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -486,7 +494,6 @@ static const AVFilterPad avfilter_af_aselect_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
-        .filter_frame = filter_frame,
     },
 };
 
@@ -542,7 +549,6 @@ static const AVFilterPad avfilter_vf_select_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input,
-        .filter_frame = filter_frame,
     },
 };
 
@@ -553,6 +559,7 @@ const FFFilter ff_vf_select = {
     .p.flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS | AVFILTER_FLAG_METADATA_ONLY,
     .init          = select_init,
     .uninit        = uninit,
+    .activate      = activate,
     .priv_size     = sizeof(SelectContext),
     FILTER_INPUTS(avfilter_vf_select_inputs),
     FILTER_QUERY_FUNC2(query_formats),
