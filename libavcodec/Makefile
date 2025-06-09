@@ -92,6 +92,7 @@ OBJS-$(CONFIG_CBS_JPEG)                += cbs_jpeg.o
 OBJS-$(CONFIG_CBS_MPEG2)               += cbs_mpeg2.o
 OBJS-$(CONFIG_CBS_VP8)                 += cbs_vp8.o vp8data.o
 OBJS-$(CONFIG_CBS_VP9)                 += cbs_vp9.o
+OBJS-$(CONFIG_CELP_MATH)               += celp_math.o
 OBJS-$(CONFIG_D3D12VA_ENCODE)          += d3d12va_encode.o hw_base_encode.o
 OBJS-$(CONFIG_DEFLATE_WRAPPER)         += zlib_wrapper.o
 OBJS-$(CONFIG_DOVI_RPUDEC)             += dovi_rpu.o dovi_rpudec.o
@@ -212,7 +213,7 @@ OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc_float.o ac3enc.o ac3tab.o \
                                           ac3.o kbdwin.o
 OBJS-$(CONFIG_AC3_FIXED_ENCODER)       += ac3enc_fixed.o ac3enc.o ac3tab.o ac3.o kbdwin.o
 OBJS-$(CONFIG_AC3_MF_ENCODER)          += mfenc.o mf_utils.o
-OBJS-$(CONFIG_ACELP_KELVIN_DECODER)    += g729dec.o lsp.o celp_math.o celp_filters.o acelp_filters.o acelp_pitch_delay.o acelp_vectors.o g729postfilter.o
+OBJS-$(CONFIG_ACELP_KELVIN_DECODER)    += g729dec.o lsp.o celp_filters.o acelp_filters.o acelp_pitch_delay.o acelp_vectors.o g729postfilter.o
 OBJS-$(CONFIG_AGM_DECODER)             += agm.o jpegquanttables.o
 OBJS-$(CONFIG_AIC_DECODER)             += aic.o
 OBJS-$(CONFIG_ALAC_DECODER)            += alac.o alac_data.o alacdsp.o
@@ -221,11 +222,11 @@ OBJS-$(CONFIG_ALIAS_PIX_DECODER)       += aliaspixdec.o
 OBJS-$(CONFIG_ALIAS_PIX_ENCODER)       += aliaspixenc.o
 OBJS-$(CONFIG_ALS_DECODER)             += alsdec.o bgmc.o mlz.o
 OBJS-$(CONFIG_AMRNB_DECODER)           += amrnbdec.o celp_filters.o   \
-                                          celp_math.o acelp_filters.o \
+                                          acelp_filters.o \
                                           acelp_vectors.o             \
                                           acelp_pitch_delay.o
 OBJS-$(CONFIG_AMRWB_DECODER)           += amrwbdec.o celp_filters.o   \
-                                          celp_math.o acelp_filters.o \
+                                          acelp_filters.o \
                                           acelp_vectors.o             \
                                           acelp_pitch_delay.o
 OBJS-$(CONFIG_AMRNB_MEDIACODEC_DECODER) += mediacodecdec.o
@@ -392,10 +393,10 @@ OBJS-$(CONFIG_FRWU_DECODER)            += frwu.o
 OBJS-$(CONFIG_FTR_DECODER)             += ftr.o
 OBJS-$(CONFIG_G2M_DECODER)             += g2meet.o elsdec.o mjpegdec_common.o
 OBJS-$(CONFIG_G723_1_DECODER)          += g723_1dec.o g723_1.o \
-                                          acelp_vectors.o celp_filters.o celp_math.o
+                                          acelp_vectors.o celp_filters.o
 OBJS-$(CONFIG_G723_1_ENCODER)          += g723_1enc.o g723_1.o \
-                                          acelp_vectors.o celp_filters.o celp_math.o
-OBJS-$(CONFIG_G729_DECODER)            += g729dec.o lsp.o celp_math.o celp_filters.o acelp_filters.o acelp_pitch_delay.o acelp_vectors.o g729postfilter.o
+                                          acelp_vectors.o celp_filters.o
+OBJS-$(CONFIG_G729_DECODER)            += g729dec.o lsp.o celp_filters.o acelp_filters.o acelp_pitch_delay.o acelp_vectors.o g729postfilter.o
 OBJS-$(CONFIG_GDV_DECODER)             += gdv.o
 OBJS-$(CONFIG_GEM_DECODER)             += gemdec.o
 OBJS-$(CONFIG_GIF_DECODER)             += gifdec.o lzw.o
@@ -686,7 +687,7 @@ OBJS-$(CONFIG_SGIRLE_DECODER)          += sgirledec.o
 OBJS-$(CONFIG_SHEERVIDEO_DECODER)      += sheervideo.o
 OBJS-$(CONFIG_SHORTEN_DECODER)         += shorten.o
 OBJS-$(CONFIG_SIPR_DECODER)            += sipr.o acelp_pitch_delay.o \
-                                          celp_math.o acelp_vectors.o \
+                                          acelp_vectors.o \
                                           acelp_filters.o celp_filters.o \
                                           sipr16k.o
 OBJS-$(CONFIG_SIREN_DECODER)           += siren.o
@@ -1323,7 +1324,6 @@ TESTPROGS = avcodec                                                     \
             avpacket                                                    \
             bitstream_be                                                \
             bitstream_le                                                \
-            celp_math                                                   \
             codec_desc                                                  \
             htmlsubtitles                                               \
             jpeg2000dwt                                                 \
@@ -1332,6 +1332,7 @@ TESTPROGS = avcodec                                                     \
 TESTPROGS-$(CONFIG_APV_DECODER)           += apv
 TESTPROGS-$(CONFIG_AV1_VAAPI_ENCODER)     += av1_levels
 TESTPROGS-$(CONFIG_CABAC)                 += cabac
+TESTPROGS-$(CONFIG_CELP_MATH)             += celp_math
 TESTPROGS-$(CONFIG_GOLOMB)                += golomb
 TESTPROGS-$(CONFIG_IDCTDSP)               += dct
 TESTPROGS-$(CONFIG_DXV_ENCODER)           += hashtable

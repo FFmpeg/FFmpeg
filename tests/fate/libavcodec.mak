@@ -28,7 +28,7 @@ fate-cabac: libavcodec/tests/cabac$(EXESUF)
 fate-cabac: CMD = run libavcodec/tests/cabac$(EXESUF)
 fate-cabac: CMP = null
 
-FATE_LIBAVCODEC-yes += fate-celp_math
+FATE_LIBAVCODEC-$(CONFIG_CELP_MATH) += fate-celp_math
 fate-celp_math: libavcodec/tests/celp_math$(EXESUF)
 fate-celp_math: CMD = run libavcodec/tests/celp_math$(EXESUF)
 fate-celp_math: CMP = null
