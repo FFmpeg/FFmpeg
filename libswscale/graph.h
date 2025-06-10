@@ -92,8 +92,6 @@ struct SwsPass {
 
     /**
      * Called once from the main thread before running the filter. Optional.
-     * `out` and `in` always point to the main image input/output, regardless
-     * of `input` and `output` fields.
      */
     void (*setup)(const SwsImg *out, const SwsImg *in, const SwsPass *pass);
 
