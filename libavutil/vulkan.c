@@ -332,6 +332,8 @@ void ff_vk_exec_pool_free(FFVulkanContext *s, FFVkExecPool *pool)
         av_freep(&sd->desc_sets);
     }
 
+    av_freep(&pool->reg_shd);
+
     for (int i = 0; i < pool->pool_size; i++) {
         if (pool->cmd_buf_pools[i])
             vk->FreeCommandBuffers(s->hwctx->act_dev, pool->cmd_buf_pools[i],
