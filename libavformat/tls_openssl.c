@@ -315,7 +315,8 @@ end:
 
 static int openssl_gen_certificate(EVP_PKEY *pkey, X509 **cert, char **fingerprint)
 {
-    int ret = 0, serial, expire_day;
+    int ret = 0, expire_day;
+    uint64_t serial;
     const char *aor = "lavf";
     X509_NAME* subject = NULL;
 
@@ -330,8 +331,8 @@ static int openssl_gen_certificate(EVP_PKEY *pkey, X509 **cert, char **fingerpri
         goto enomem_end;
     }
 
-    serial = (int)av_get_random_seed();
-    if (ASN1_INTEGER_set(X509_get_serialNumber(*cert), serial) != 1) {
+    serial = av_get_random_seed();
+    if (ASN1_INTEGER_set_uint64(X509_get_serialNumber(*cert), serial) != 1) {
         av_log(NULL, AV_LOG_ERROR, "TLS: Failed to set serial, %s\n", ERR_error_string(ERR_get_error(), NULL));
         goto einval_end;
     }
