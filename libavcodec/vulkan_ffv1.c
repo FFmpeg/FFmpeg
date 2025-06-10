@@ -995,6 +995,8 @@ static void vk_decode_ffv1_uninit(FFVulkanDecodeShared *ctx)
     av_buffer_pool_uninit(&fv->slice_state_pool);
     av_buffer_pool_uninit(&fv->slice_offset_pool);
     av_buffer_pool_uninit(&fv->slice_status_pool);
+
+    av_freep(&fv);
 }
 
 static int vk_decode_ffv1_init(AVCodecContext *avctx)
