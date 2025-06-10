@@ -3885,6 +3885,8 @@ ffmpeg -f webm_dash_manifest -i video1.webm \
 WebRTC (Real-Time Communication) muxer that supports sub-second latency streaming according to
 the WHIP (WebRTC-HTTP ingestion protocol) specification.
 
+This is an experimental feature.
+
 It uses HTTP as a signaling protocol to exchange SDP capabilities and ICE lite candidates. Then,
 it uses STUN binding requests and responses to establish a session over UDP. Subsequently, it
 initiates a DTLS handshake to exchange the SRTP encryption keys. Lastly, it splits video and
