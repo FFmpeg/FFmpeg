@@ -1033,23 +1033,17 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
 
     /* Intermediate frame pool for RCT */
     for (int i = 0; i < 2; i++) { /* 16/32 bit */
-        err = init_indirect(avctx, &ctx->s, &fv->intermediate_frames_ref[i],
-                            i ? AV_PIX_FMT_GBRAP32 : AV_PIX_FMT_GBRAP16);
-        if (err < 0)
-            return err;
+        RET(init_indirect(avctx, &ctx->s, &fv->intermediate_frames_ref[i],
+                          i ? AV_PIX_FMT_GBRAP32 : AV_PIX_FMT_GBRAP16));
     }
 
     /* Setup shader */
-    err = init_setup_shader(f, &ctx->s, &ctx->exec_pool, spv, &fv->setup);
-    if (err < 0)
-        return err;
+    RET(init_setup_shader(f, &ctx->s, &ctx->exec_pool, spv, &fv->setup));
 
     /* Reset shaders */
     for (int i = 0; i < 2; i++) { /* AC/Golomb */
-        err = init_reset_shader(f, &ctx->s, &ctx->exec_pool,
-                                spv, &fv->reset[i], !i ? AC_RANGE_CUSTOM_TAB : 0);
-        if (err < 0)
-            return err;
+        RET(init_reset_shader(f, &ctx->s, &ctx->exec_pool,
+                              spv, &fv->reset[i], !i ? AC_RANGE_CUSTOM_TAB : 0));
     }
 
     /* Decode shaders */
@@ -1059,39 +1053,31 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
                 AVHWFramesContext *dec_frames_ctx;
                 dec_frames_ctx = k ? (AVHWFramesContext *)fv->intermediate_frames_ref[i]->data :
                                      (AVHWFramesContext *)avctx->hw_frames_ctx->data;
-                err = init_decode_shader(f, &ctx->s, &ctx->exec_pool,
-                                         spv, &fv->decode[i][j][k],
-                                         dec_frames_ctx,
-                                         (AVHWFramesContext *)avctx->hw_frames_ctx->data,
-                                         i,
-                                         !j ? AC_RANGE_CUSTOM_TAB : AC_GOLOMB_RICE,
-                                         k);
-                if (err < 0)
-                    return err;
+                RET(init_decode_shader(f, &ctx->s, &ctx->exec_pool,
+                                       spv, &fv->decode[i][j][k],
+                                       dec_frames_ctx,
+                                       (AVHWFramesContext *)avctx->hw_frames_ctx->data,
+                                       i,
+                                       !j ? AC_RANGE_CUSTOM_TAB : AC_GOLOMB_RICE,
+                                       k));
             }
         }
     }
 
     /* Range coder data */
-    err = ff_ffv1_vk_init_state_transition_data(&ctx->s,
-                                                &fv->rangecoder_static_buf,
-                                                f);
-    if (err < 0)
-        return err;
+    RET(ff_ffv1_vk_init_state_transition_data(&ctx->s,
+                                              &fv->rangecoder_static_buf,
+                                              f));
 
     /* Quantization table data */
-    err = ff_ffv1_vk_init_quant_table_data(&ctx->s,
-                                           &fv->quant_buf,
-                                           f);
-    if (err < 0)
-        return err;
+    RET(ff_ffv1_vk_init_quant_table_data(&ctx->s,
+                                         &fv->quant_buf,
+                                         f));
 
     /* CRC table buffer */
-    err = ff_ffv1_vk_init_crc_table_data(&ctx->s,
-                                         &fv->crc_tab_buf,
-                                         f);
-    if (err < 0)
-        return err;
+    RET(ff_ffv1_vk_init_crc_table_data(&ctx->s,
+                                       &fv->crc_tab_buf,
+                                       f));
 
     /* Update setup global descriptors */
     RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
@@ -1124,6 +1110,8 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
     }
 
 fail:
+    spv->uninit(&spv);
+
     return err;
 }
 
