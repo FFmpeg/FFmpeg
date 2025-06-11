@@ -25,6 +25,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/time.h"
 #include "decode.h"
+#include "decode_bsf.h"
 #include "libavutil/mastering_display_metadata.h"
 
 #if CONFIG_D3D11VA
@@ -187,9 +188,12 @@ static int amf_init_decoder(AVCodecContext *avctx)
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->decoder, AMF_VIDEO_DECODER_SURFACE_COPY, ctx->copy_output);
 
     if (avctx->extradata_size) {
-        res = amf_device_ctx->context->pVtbl->AllocBuffer(amf_device_ctx->context, AMF_MEMORY_HOST, avctx->extradata_size, &buffer);
+        const uint8_t *extradata;
+        int extradata_size;
+        ff_decode_get_extradata(avctx, &extradata, &extradata_size);
+        res = amf_device_ctx->context->pVtbl->AllocBuffer(amf_device_ctx->context, AMF_MEMORY_HOST, extradata_size, &buffer);
         if (res == AMF_OK) {
-            memcpy(buffer->pVtbl->GetNative(buffer), avctx->extradata, avctx->extradata_size);
+            memcpy(buffer->pVtbl->GetNative(buffer), extradata, extradata_size);
             AMF_ASSIGN_PROPERTY_INTERFACE(res,ctx->decoder, AMF_VIDEO_DECODER_EXTRADATA, buffer);
             buffer->pVtbl->Release(buffer);
             buffer = NULL;

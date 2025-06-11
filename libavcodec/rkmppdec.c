@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "decode_bsf.h"
 #include "hwconfig.h"
 #include "libavutil/refstruct.h"
 #include "libavutil/buffer.h"
@@ -279,9 +280,11 @@ static int rkmpp_send_packet(AVCodecContext *avctx, const AVPacket *avpkt)
     // on first packet, send extradata
     if (decoder->first_packet) {
         if (avctx->extradata_size) {
-            ret = rkmpp_write_data(avctx, avctx->extradata,
-                                            avctx->extradata_size,
-                                            avpkt->pts);
+            const uint8_t *extradata;
+            int extradata_size;
+            ff_decode_get_extradata(avctx, &extradata, &extradata_size);
+            ret = rkmpp_write_data(avctx, (uint8_t*)extradata, extradata_size,
+                                   avpkt->pts);
             if (ret) {
                 av_log(avctx, AV_LOG_ERROR, "Failed to write extradata to decoder (code = %d)\n", ret);
                 return ret;
