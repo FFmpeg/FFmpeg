@@ -6952,7 +6952,7 @@ enabled jni               && { [ $target_os = "android" ] && check_headers jni.h
 enabled ladspa            && require_headers "ladspa.h dlfcn.h"
 enabled lcms2             && require_pkg_config lcms2 "lcms2 >= 2.13" lcms2.h cmsCreateContext
 enabled libaom            && require_pkg_config libaom "aom >= 2.0.0" aom/aom_codec.h aom_codec_version
-enabled liboapv           && require_pkg_config liboapv "oapv >= 0.1.13" "oapv/oapv.h" oapve_encode
+enabled liboapv           && require_pkg_config liboapv "oapv >= 0.1.13.1" "oapv/oapv.h" oapve_encode
 enabled libaribb24        && { check_pkg_config libaribb24 "aribb24 > 1.0.3" "aribb24/aribb24.h" arib_instance_new ||
                                { enabled gpl && require_pkg_config libaribb24 aribb24 "aribb24/aribb24.h" arib_instance_new; } ||
                                die "ERROR: libaribb24 requires version higher than 1.0.3 or --enable-gpl."; }
