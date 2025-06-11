@@ -2836,7 +2836,7 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
                                           VK_IMAGE_USAGE_SAMPLED_BIT);
 
         if (p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY)
-            hwctx->usage |= supported_usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT;
+            hwctx->usage |= supported_usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
 
         /* Enables encoding of images, if supported by format and extensions */
         if ((supported_usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) &&
@@ -4311,7 +4311,7 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
     if (swf->width > hwfc->width || swf->height > hwfc->height)
         return AVERROR(EINVAL);
 
-    if (hwctx->usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT)
+    if (hwctx->usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT)
         return vulkan_transfer_host(hwfc, hwf, swf, upload);
 
     for (int i = 0; i < av_pix_fmt_count_planes(swf->format); i++) {
