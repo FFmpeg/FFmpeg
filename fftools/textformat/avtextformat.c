@@ -101,7 +101,6 @@ static void bprint_bytes(AVBPrint *bp, const uint8_t *ubuf, size_t ubuf_size)
 int avtext_context_close(AVTextFormatContext **ptctx)
 {
     AVTextFormatContext *tctx = *ptctx;
-    int i;
     int ret = 0;
 
     if (!tctx)
@@ -117,7 +116,7 @@ int avtext_context_close(AVTextFormatContext **ptctx)
         if (tctx->formatter->priv_class)
             av_opt_free(tctx->priv);
     }
-    for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
+    for (int i = 0; i < SECTION_MAX_NB_LEVELS; i++)
         av_bprint_finalize(&tctx->section_pbuf[i], NULL);
     av_freep(&tctx->priv);
     av_opt_free(tctx);
@@ -130,7 +129,7 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
                         const AVTextFormatSection *sections, int nb_sections, AVTextFormatOptions options, char *show_data_hash)
 {
     AVTextFormatContext *tctx;
-    int i, ret = 0;
+    int ret = 0;
 
     av_assert0(ptctx && formatter);
 
@@ -202,7 +201,7 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
             if (ret == AVERROR(EINVAL)) {
                 const char *n;
                 av_log(NULL, AV_LOG_ERROR, "Unknown hash algorithm '%s'\nKnown algorithms:", show_data_hash);
-                for (i = 0; (n = av_hash_names(i)); i++)
+                for (unsigned i = 0; (n = av_hash_names(i)); i++)
                     av_log(NULL, AV_LOG_ERROR, " %s", n);
                 av_log(NULL, AV_LOG_ERROR, "\n");
             }
@@ -525,13 +524,13 @@ void avtext_print_data(AVTextFormatContext *tctx, const char *key,
 {
     AVBPrint bp;
     unsigned offset = 0;
-    int l, i;
+    int i;
 
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
     av_bprintf(&bp, "\n");
     while (size) {
         av_bprintf(&bp, "%08x: ", offset);
-        l = FFMIN(size, 16);
+        int l = FFMIN(size, 16);
         for (i = 0; i < l; i++) {
             av_bprintf(&bp, "%02x", data[i]);
             if (i & 1)
@@ -571,7 +570,6 @@ void avtext_print_integers(AVTextFormatContext *tctx, const char *key,
 {
     AVBPrint bp;
     unsigned offset = 0;
-    int l, i;
 
     if (!key || !data || !format || columns <= 0 || bytes <= 0)
         return;
@@ -580,8 +578,7 @@ void avtext_print_integers(AVTextFormatContext *tctx, const char *key,
     av_bprintf(&bp, "\n");
     while (size) {
         av_bprintf(&bp, "%08x: ", offset);
-        l = FFMIN(size, columns);
-        for (i = 0; i < l; i++) {
+        for (int i = 0, l = FFMIN(size, columns); i < l; i++) {
             if      (bytes == 1) av_bprintf(&bp, format, *data);
             else if (bytes == 2) av_bprintf(&bp, format, AV_RN16(data));
             else if (bytes == 4) av_bprintf(&bp, format, AV_RN32(data));
