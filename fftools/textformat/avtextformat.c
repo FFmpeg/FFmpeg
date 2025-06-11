@@ -222,7 +222,6 @@ int avtext_context_open(AVTextFormatContext **ptctx, const AVTextFormatter *form
                 av_log(tctx, AV_LOG_ERROR,
                        "Invalid UTF8 sequence %s found in string validation replace '%s'\n",
                        bp.str, tctx->string_validation_replacement);
-                return ret;
                 goto fail;
             }
         }
