@@ -251,6 +251,10 @@ fate-mdec: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/ea-dct/NFS2Esprit-pa
 FATE_VIDEO-$(call FRAMECRC, STR, MDEC) += fate-mdec-v3
 fate-mdec-v3: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/psx-str/abc000_cut.str -an
 
+FATE_VIDEO-$(call REMUX, MOV, MEDIA100_TO_MJPEGB_BSF MEDIA100_DECODER MJPEGB_DECODER) += fate-media100
+fate-media100: CMD = transcode mov $(TARGET_SAMPLES)/mjpegb/media100.mov mov \
+                     "-map 0 -map 0 -c copy -bsf:v:0 media100_to_mjpegb -tag:v:0 mjpb" "-map 0"
+
 FATE_VIDEO-$(call FRAMECRC, MSNWC_TCP, MIMIC) += fate-mimic
 fate-mimic: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/mimic/mimic2-womanloveffmpeg.cam
 

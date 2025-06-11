@@ -1,0 +1,14 @@
+36ca02da1b757454a710e0879d32e19f *tests/data/fate/media100.mov
+155218 tests/data/fate/media100.mov
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 768x576
+#sar 0: 0/1
+#tb 1: 1/25
+#media_type 1: video
+#codec_id 1: rawvideo
+#dimensions 1: 768x576
+#sar 1: 0/1
+0,          0,          0,        1,   884736, 0x22304315
+1,          0,          0,        1,   884736, 0x22304315
