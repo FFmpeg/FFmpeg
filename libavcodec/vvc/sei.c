@@ -184,6 +184,7 @@ int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameCon
         return AVERROR_INVALIDDATA;
 
     for (int i = 0; i < sei->message_list.nb_messages; i++) {
+        int ret = 0;
         SEIRawMessage *message = &sei->message_list.messages[i];
         void *payload          = message->payload;
 
@@ -193,25 +194,32 @@ int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameCon
             c->film_grain_characteristics = av_refstruct_allocz(sizeof(*c->film_grain_characteristics));
             if (!c->film_grain_characteristics)
                 return AVERROR(ENOMEM);
-            return decode_film_grain_characteristics(c->film_grain_characteristics, payload, fc);
+            ret = decode_film_grain_characteristics(c->film_grain_characteristics, payload, fc);
+            break;
 
         case SEI_TYPE_DECODED_PICTURE_HASH:
-            return decode_decoded_picture_hash(&s->picture_hash, payload);
+            ret = decode_decoded_picture_hash(&s->picture_hash, payload);
+            break;
 
         case SEI_TYPE_DISPLAY_ORIENTATION:
-            return decode_display_orientation(&s->common.display_orientation, payload);
+            ret = decode_display_orientation(&s->common.display_orientation, payload);
+            break;
 
         case SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
-            return decode_content_light_level_info(&s->common.content_light, payload);
+            ret = decode_content_light_level_info(&s->common.content_light, payload);
+            break;
 
         case SEI_TYPE_FRAME_FIELD_INFO:
-            return decode_frame_field_info(&s->frame_field_info, payload);
+            ret = decode_frame_field_info(&s->frame_field_info, payload);
+            break;
 
         case SEI_TYPE_AMBIENT_VIEWING_ENVIRONMENT:
-            return decode_ambient_viewing_environment(&s->common.ambient_viewing_environment, payload);
+            ret = decode_ambient_viewing_environment(&s->common.ambient_viewing_environment, payload);
+            break;
 
         case SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
-            return decode_mastering_display_colour_volume(&s->common.mastering_display, payload);
+            ret = decode_mastering_display_colour_volume(&s->common.mastering_display, payload);
+            break;
 
         default:
             av_log(fc->log_ctx, AV_LOG_DEBUG, "Skipped %s SEI %d\n",
@@ -219,6 +227,13 @@ int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameCon
                     "PREFIX" : "SUFFIX", message->payload_type);
             return FF_H2645_SEI_MESSAGE_UNHANDLED;
         }
+
+        if (ret == AVERROR(ENOMEM))
+            return ret;
+        if (ret < 0)
+            av_log(fc->log_ctx, AV_LOG_WARNING, "Failure to parse %s SEI %d: %s\n",
+                sei->nal_unit_header.nal_unit_type == VVC_PREFIX_SEI_NUT ?
+                    "PREFIX" : "SUFFIX", message->payload_type, av_err2str(ret));
     }
 
     return 0;
