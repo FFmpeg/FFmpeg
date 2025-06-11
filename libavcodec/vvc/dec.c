@@ -770,7 +770,8 @@ static int check_film_grain(VVCContext *s, VVCFrameContext *fc)
         !s->avctx->hwaccel;
 
     if (fc->ref->needs_fg &&
-        (fc->sei.common.film_grain_characteristics->present &&
+        (fc->sei.common.film_grain_characteristics &&
+         fc->sei.common.film_grain_characteristics->present &&
             !ff_h274_film_grain_params_supported(fc->sei.common.film_grain_characteristics->model_id,
                 fc->ref->frame->format) ||
             !av_film_grain_params_select(fc->ref->frame))) {
