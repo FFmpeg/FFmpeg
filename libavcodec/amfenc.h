@@ -46,6 +46,8 @@ typedef struct AMFEncoderContext {
     AMFComponent       *encoder; ///< AMF encoder object
     amf_bool            eof;     ///< flag indicating EOF happened
     AMF_SURFACE_FORMAT  format;  ///< AMF surface format
+    wchar_t             *pts_property_name;
+    wchar_t             *av_frame_property_name;
 
     int                 hwsurfaces_in_queue;
     int                 hwsurfaces_in_queue_max;

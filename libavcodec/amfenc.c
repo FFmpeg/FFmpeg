@@ -40,7 +40,8 @@
 #include "internal.h"
 #include "libavutil/mastering_display_metadata.h"
 
-#define AMF_AV_FRAME_REF L"av_frame_ref"
+#define AMF_AV_FRAME_REF    L"av_frame_ref"
+#define PTS_PROP            L"PtsProp"
 
 static int amf_save_hdr_metadata(AVCodecContext *avctx, const AVFrame *frame, AMFHDRMetadata *hdrmeta)
 {
@@ -104,7 +105,6 @@ static int amf_save_hdr_metadata(AVCodecContext *avctx, const AVFrame *frame, AM
 
 #define FFMPEG_AMF_WRITER_ID L"ffmpeg_amf"
 
-#define PTS_PROP L"PtsProp"
 
 const enum AVPixelFormat ff_amf_pix_fmts[] = {
     AV_PIX_FMT_NV12,
@@ -127,6 +127,8 @@ const enum AVPixelFormat ff_amf_pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
+static int64_t next_encoder_index = 0;
+
 static int amf_init_encoder(AVCodecContext *avctx)
 {
     AMFEncoderContext  *ctx = avctx->priv_data;
@@ -135,6 +137,21 @@ static int amf_init_encoder(AVCodecContext *avctx)
     enum AVPixelFormat  pix_fmt;
     AVHWDeviceContext  *hw_device_ctx = (AVHWDeviceContext*)ctx->device_ctx_ref->data;
     AVAMFDeviceContext *amf_device_ctx = (AVAMFDeviceContext *)hw_device_ctx->hwctx;
+    int                 alloc_size;
+    wchar_t             name[512];
+
+
+    alloc_size = swprintf(name, amf_countof(name), L"%s%lld",PTS_PROP, next_encoder_index) + 1;
+    ctx->pts_property_name = av_memdup(name, alloc_size * sizeof(wchar_t));
+    if(!ctx->pts_property_name)
+        return AVERROR(ENOMEM);
+
+    alloc_size = swprintf(name, amf_countof(name), L"%s%lld",AMF_AV_FRAME_REF, next_encoder_index) + 1;
+    ctx->av_frame_property_name = av_memdup(name, alloc_size * sizeof(wchar_t));
+    if(!ctx->av_frame_property_name)
+        return AVERROR(ENOMEM);
+
+    next_encoder_index++;
 
     switch (avctx->codec->id) {
         case AV_CODEC_ID_H264:
@@ -186,6 +203,9 @@ int av_cold ff_amf_encode_close(AVCodecContext *avctx)
 
     av_buffer_unref(&ctx->device_ctx_ref);
     av_fifo_freep2(&ctx->timestamp_list);
+
+    av_freep(&ctx->pts_property_name);
+    av_freep(&ctx->av_frame_property_name);
 
     return 0;
 }
@@ -249,7 +269,7 @@ static int amf_copy_buffer(AVCodecContext *avctx, AVPacket *pkt, AMFBuffer *buff
             break;
     }
 
-    buffer->pVtbl->GetProperty(buffer, PTS_PROP, &var);
+    buffer->pVtbl->GetProperty(buffer, ctx->pts_property_name, &var);
 
     pkt->pts = var.int64Value; // original pts
 
@@ -298,7 +318,7 @@ int ff_amf_encode_init(AVCodecContext *avctx)
         }
         else {
             ret = av_hwdevice_ctx_create_derived(&ctx->device_ctx_ref, AV_HWDEVICE_TYPE_AMF, avctx->hw_device_ctx, 0);
-            AMF_RETURN_IF_FALSE(avctx, ret == 0, ret, "Failed to create derived AMF device context: %s\n", av_err2str(ret));
+            AMF_RETURN_IF_FALSE(ctx, ret == 0, ret, "Failed to create derived AMF device context: %s\n", av_err2str(ret));
         }
     } else if (avctx->hw_frames_ctx) {
         AVHWFramesContext *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
@@ -308,13 +328,13 @@ int ff_amf_encode_init(AVCodecContext *avctx)
             }
             else {
                 ret = av_hwdevice_ctx_create_derived(&ctx->device_ctx_ref, AV_HWDEVICE_TYPE_AMF, frames_ctx->device_ref, 0);
-                AMF_RETURN_IF_FALSE(avctx, ret == 0, ret, "Failed to create derived AMF device context: %s\n", av_err2str(ret));
+                AMF_RETURN_IF_FALSE(ctx, ret == 0, ret, "Failed to create derived AMF device context: %s\n", av_err2str(ret));
             }
         }
     }
     else {
         ret = av_hwdevice_ctx_create(&ctx->device_ctx_ref, AV_HWDEVICE_TYPE_AMF, NULL, NULL, 0);
-        AMF_RETURN_IF_FALSE(avctx, ret == 0, ret, "Failed to create  hardware device context (AMF) : %s\n", av_err2str(ret));
+        AMF_RETURN_IF_FALSE(ctx, ret == 0, ret, "Failed to create  hardware device context (AMF) : %s\n", av_err2str(ret));
     }
 
     if ((ret = amf_init_encoder(avctx)) == 0) {
@@ -347,22 +367,105 @@ static AMF_RESULT amf_set_property_buffer(AMFSurface *object, const wchar_t *nam
     return res;
 }
 
-static AMF_RESULT amf_store_attached_frame_ref(const AVFrame *frame, AMFSurface *surface)
+static AMF_RESULT amf_lock_context(AVCodecContext *avctx)
+{
+    AMFEncoderContext     *ctx = avctx->priv_data;
+    AVHWDeviceContext     *hw_device_ctx = (AVHWDeviceContext*)ctx->device_ctx_ref->data;
+    AVAMFDeviceContext    *amf_device_ctx = (AVAMFDeviceContext *)hw_device_ctx->hwctx;
+    AMF_RESULT res;
+
+    switch(amf_device_ctx->memory_type) {
+    case AMF_MEMORY_DX11:
+        res = amf_device_ctx->context->pVtbl->LockDX11(amf_device_ctx->context);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockDX11() failed  with error %d\n", res);
+        break;
+    case AMF_MEMORY_DX12:
+        {
+        AMFContext2 *context2 = NULL;
+        AMFGuid guid = IID_AMFContext2();
+        res = amf_device_ctx->context->pVtbl->QueryInterface(amf_device_ctx->context, &guid, (void**)&context2);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface for AMFContext2 failed with error %d\n", res);
+        res = context2->pVtbl->LockDX12(context2);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockDX12() failed  with error %d\n", res);
+        context2->pVtbl->Release(context2);
+        }
+        break;
+    case AMF_MEMORY_DX9:
+        res = amf_device_ctx->context->pVtbl->LockDX9(amf_device_ctx->context);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockDX9() failed  with error %d\n", res);
+
+    case AMF_MEMORY_VULKAN:
+        {
+        AMFContext2 *context2 = NULL;
+        AMFGuid guid = IID_AMFContext2();
+        res = amf_device_ctx->context->pVtbl->QueryInterface(amf_device_ctx->context, &guid, (void**)&context2);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface for AMFContext2 failed with error %d\n", res);
+        res = context2->pVtbl->LockVulkan(context2);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockVulkan() failed  with error %d\n", res);
+        context2->pVtbl->Release(context2);
+        }
+        break;
+    }
+    return AMF_OK;
+}
+static AMF_RESULT amf_unlock_context(AVCodecContext *avctx)
+{
+    AMFEncoderContext     *ctx = avctx->priv_data;
+    AVHWDeviceContext     *hw_device_ctx = (AVHWDeviceContext*)ctx->device_ctx_ref->data;
+    AVAMFDeviceContext    *amf_device_ctx = (AVAMFDeviceContext *)hw_device_ctx->hwctx;
+    AMF_RESULT res;
+
+    switch(amf_device_ctx->memory_type) {
+    case AMF_MEMORY_DX11:
+        res = amf_device_ctx->context->pVtbl->UnlockDX11(amf_device_ctx->context);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockDX11() failed  with error %d\n", res);
+        break;
+    case AMF_MEMORY_DX12:
+        {
+        AMFContext2 *context2 = NULL;
+        AMFGuid guid = IID_AMFContext2();
+        res = amf_device_ctx->context->pVtbl->QueryInterface(amf_device_ctx->context, &guid, (void**)&context2);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface for AMFContext2 failed with error %d\n", res);
+        res = context2->pVtbl->UnlockDX12(context2);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockDX12() failed  with error %d\n", res);
+        context2->pVtbl->Release(context2);
+        }
+        break;
+    case AMF_MEMORY_DX9:
+        res = amf_device_ctx->context->pVtbl->UnlockDX9(amf_device_ctx->context);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockDX9() failed  with error %d\n", res);
+
+    case AMF_MEMORY_VULKAN:
+        {
+        AMFContext2 *context2 = NULL;
+        AMFGuid guid = IID_AMFContext2();
+        res = amf_device_ctx->context->pVtbl->QueryInterface(amf_device_ctx->context, &guid, (void**)&context2);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface for AMFContext2 failed with error %d\n", res);
+        res = context2->pVtbl->UnlockVulkan(context2);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockVulkan() failed  with error %d\n", res);
+        context2->pVtbl->Release(context2);
+        }
+        break;
+    }
+    return AMF_OK;
+}
+
+static AMF_RESULT amf_store_attached_frame_ref(AMFEncoderContext *ctx, const AVFrame *frame, AMFSurface *surface)
 {
     AMF_RESULT res = AMF_FAIL;
     int64_t data;
     AVFrame *frame_ref = av_frame_clone(frame);
     if (frame_ref) {
         memcpy(&data, &frame_ref, sizeof(frame_ref)); // store pointer in 8 bytes
-        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_AV_FRAME_REF, data);
+        AMF_ASSIGN_PROPERTY_INT64(res, surface, ctx->av_frame_property_name, data);
     }
     return res;
 }
 
-static AMF_RESULT amf_release_attached_frame_ref(AMFBuffer *buffer)
+static AMF_RESULT amf_release_attached_frame_ref(AMFEncoderContext *ctx, AMFBuffer *buffer)
 {
     AMFVariantStruct var = {0};
-    AMF_RESULT res = buffer->pVtbl->GetProperty(buffer, AMF_AV_FRAME_REF, &var);
+    AMF_RESULT res = buffer->pVtbl->GetProperty(buffer, ctx->av_frame_property_name, &var);
     if(res == AMF_OK && var.int64Value){
         AVFrame *frame_ref;
         memcpy(&frame_ref, &var.int64Value, sizeof(frame_ref));
@@ -371,20 +474,184 @@ static AMF_RESULT amf_release_attached_frame_ref(AMFBuffer *buffer)
     return res;
 }
 
+static int amf_submit_frame(AVCodecContext *avctx, AVFrame    *frame, AMFSurface **surface_resubmit)
+{
+    AMFEncoderContext      *ctx = avctx->priv_data;
+    AVHWDeviceContext      *hw_device_ctx = (AVHWDeviceContext*)ctx->device_ctx_ref->data;
+    AVAMFDeviceContext     *amf_device_ctx = (AVAMFDeviceContext *)hw_device_ctx->hwctx;
+    AMFSurface             *surface;
+    AMF_RESULT              res;
+    int                     ret;
+    int                     hw_surface = 0;
+    int                     max_b_frames = ctx->max_b_frames < 0 ? 0 : ctx->max_b_frames;
+
+// prepare surface from frame
+    switch (frame->format) {
+#if CONFIG_D3D11VA
+    case AV_PIX_FMT_D3D11:
+        {
+            static const GUID AMFTextureArrayIndexGUID = { 0x28115527, 0xe7c3, 0x4b66, { 0x99, 0xd3, 0x4f, 0x2a, 0xe6, 0xb4, 0x7f, 0xaf } };
+            ID3D11Texture2D *texture = (ID3D11Texture2D*)frame->data[0]; // actual texture
+            int index = (intptr_t)frame->data[1]; // index is a slice in texture array is - set to tell AMF which slice to use
+                av_assert0(frame->hw_frames_ctx       && avctx->hw_frames_ctx &&
+                    frame->hw_frames_ctx->data == avctx->hw_frames_ctx->data);
+                texture->lpVtbl->SetPrivateData(texture, &AMFTextureArrayIndexGUID, sizeof(index), &index);
+                res = amf_device_ctx->context->pVtbl->CreateSurfaceFromDX11Native(amf_device_ctx->context, texture, &surface, NULL); // wrap to AMF surface
+            AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "CreateSurfaceFromDX11Native() failed  with error %d\n", res);
+                hw_surface = 1;
+        }
+        break;
+#endif
+#if CONFIG_DXVA2
+    case AV_PIX_FMT_DXVA2_VLD:
+        {
+            IDirect3DSurface9 *texture = (IDirect3DSurface9 *)frame->data[3]; // actual texture
+                res = amf_device_ctx->context->pVtbl->CreateSurfaceFromDX9Native(amf_device_ctx->context, texture, &surface, NULL); // wrap to AMF surface
+            AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "CreateSurfaceFromDX9Native() failed  with error %d\n", res);
+                hw_surface = 1;
+        }
+        break;
+#endif
+    case AV_PIX_FMT_AMF_SURFACE:
+        {
+            surface = (AMFSurface*)frame->data[0];
+            surface->pVtbl->Acquire(surface);
+            hw_surface = 1;
+        }
+        break;
+    default:
+        {
+            res = amf_device_ctx->context->pVtbl->AllocSurface(amf_device_ctx->context, AMF_MEMORY_HOST, ctx->format, avctx->width, avctx->height, &surface);
+            AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "AllocSurface() failed  with error %d\n", res);
+            amf_copy_surface(avctx, frame, surface);
+        }
+        break;
+    }
+    if (hw_surface) {
+        amf_store_attached_frame_ref(ctx, frame, surface);
+        ctx->hwsurfaces_in_queue++;
+        // input HW surfaces can be vertically aligned by 16; tell AMF the real size
+        surface->pVtbl->SetCrop(surface, 0, 0, frame->width, frame->height);
+    }
+        // HDR10 metadata
+    if (frame->color_trc == AVCOL_TRC_SMPTE2084) {
+        AMFBuffer * hdrmeta_buffer = NULL;
+        res = amf_device_ctx->context->pVtbl->AllocBuffer(amf_device_ctx->context, AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &hdrmeta_buffer);
+        if (res == AMF_OK) {
+            AMFHDRMetadata * hdrmeta = (AMFHDRMetadata*)hdrmeta_buffer->pVtbl->GetNative(hdrmeta_buffer);
+            if (amf_save_hdr_metadata(avctx, frame, hdrmeta) == 0) {
+                switch (avctx->codec->id) {
+                case AV_CODEC_ID_H264:
+                    AMF_ASSIGN_PROPERTY_INTERFACE(res, ctx->encoder, AMF_VIDEO_ENCODER_INPUT_HDR_METADATA, hdrmeta_buffer); break;
+                case AV_CODEC_ID_HEVC:
+                    AMF_ASSIGN_PROPERTY_INTERFACE(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_INPUT_HDR_METADATA, hdrmeta_buffer); break;
+                case AV_CODEC_ID_AV1:
+                    AMF_ASSIGN_PROPERTY_INTERFACE(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_INPUT_HDR_METADATA, hdrmeta_buffer); break;
+                }
+                res = amf_set_property_buffer(surface, L"av_frame_hdrmeta", hdrmeta_buffer);
+                AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "SetProperty failed for \"av_frame_hdrmeta\" with error %d\n", res);
+            }
+            hdrmeta_buffer->pVtbl->Release(hdrmeta_buffer);
+        }
+    }
+    surface->pVtbl->SetPts(surface, frame->pts);
+
+    AMF_ASSIGN_PROPERTY_INT64(res, surface, ctx->pts_property_name, frame->pts);
+
+    switch (avctx->codec->id) {
+    case AV_CODEC_ID_H264:
+        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_INSERT_AUD, !!ctx->aud);
+        switch (frame->pict_type) {
+        case AV_PICTURE_TYPE_I:
+            if (ctx->forced_idr) {
+                AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_INSERT_SPS, 1);
+                AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_INSERT_PPS, 1);
+                AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR);
+            } else {
+                AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_I);
+            }
+            break;
+        case AV_PICTURE_TYPE_P:
+            AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_P);
+            break;
+        case AV_PICTURE_TYPE_B:
+            AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_B);
+            break;
+        }
+        break;
+    case AV_CODEC_ID_HEVC:
+        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_HEVC_INSERT_AUD, !!ctx->aud);
+        switch (frame->pict_type) {
+        case AV_PICTURE_TYPE_I:
+            if (ctx->forced_idr) {
+                AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_HEVC_INSERT_HEADER, 1);
+                AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_HEVC_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_HEVC_PICTURE_TYPE_IDR);
+            } else {
+                AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_HEVC_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_HEVC_PICTURE_TYPE_I);
+            }
+            break;
+        case AV_PICTURE_TYPE_P:
+            AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_HEVC_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_HEVC_PICTURE_TYPE_P);
+            break;
+        }
+        break;
+    case AV_CODEC_ID_AV1:
+        if (frame->pict_type == AV_PICTURE_TYPE_I) {
+            if (ctx->forced_idr) {
+                AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_AV1_FORCE_INSERT_SEQUENCE_HEADER, 1);
+                AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_AV1_FORCE_FRAME_TYPE, AMF_VIDEO_ENCODER_AV1_FORCE_FRAME_TYPE_KEY);
+            } else {
+                AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_AV1_FORCE_FRAME_TYPE, AMF_VIDEO_ENCODER_AV1_FORCE_FRAME_TYPE_INTRA_ONLY);
+            }
+        }
+        break;
+    default:
+        break;
+    }
+    // submit surface
+    res = ctx->encoder->pVtbl->SubmitInput(ctx->encoder, (AMFData*)surface);
+    if (res == AMF_INPUT_FULL) { // handle full queue
+        //store surface for later submission
+        *surface_resubmit = surface;
+    } else {
+        surface->pVtbl->Release(surface);
+        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "SubmitInput() failed with error %d\n", res);
+            ctx->submitted_frame++;
+        ret = av_fifo_write(ctx->timestamp_list, &frame->pts, 1);
+            if (ret < 0)
+            return ret;
+        if(ctx->submitted_frame <= ctx->encoded_frame + max_b_frames + 1)
+            return AVERROR(EAGAIN); // if frame just submiited - don't poll or wait
+    }
+    return 0;
+}
+
+static int amf_submit_frame_locked(AVCodecContext *avctx, AVFrame *frame, AMFSurface **surface_resubmit)
+{
+    int ret;
+    int locked = amf_lock_context(avctx);
+    if(locked != AMF_OK)
+        av_log(avctx, AV_LOG_WARNING, "amf_lock_context() failed with %d - should not happen\n", locked);
+
+    ret = amf_submit_frame(avctx, frame, surface_resubmit);
+
+    if(locked == AMF_OK)
+        amf_unlock_context(avctx);
+    return ret;
+}
+
 int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
 {
     AMFEncoderContext     *ctx = avctx->priv_data;
     AVHWDeviceContext     *hw_device_ctx = (AVHWDeviceContext*)ctx->device_ctx_ref->data;
     AVAMFDeviceContext    *amf_device_ctx = (AVAMFDeviceContext *)hw_device_ctx->hwctx;
-    AMFSurface *surface;
+    AMFSurface *surface = NULL;
     AMF_RESULT  res;
     int         ret;
     AMF_RESULT  res_query;
     AMFData    *data = NULL;
     AVFrame    *frame = av_frame_alloc();
     int         block_and_wait;
-    int         input_full = 0;
-    int         hw_surface = 0;
     int64_t     pts = 0;
     int max_b_frames = ctx->max_b_frames < 0 ? 0 : ctx->max_b_frames;
 
@@ -418,158 +685,12 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
                 }
             }
         } else { // submit frame
-
-            // prepare surface from frame
-            switch (frame->format) {
-    #if CONFIG_D3D11VA
-            case AV_PIX_FMT_D3D11:
-                {
-                    static const GUID AMFTextureArrayIndexGUID = { 0x28115527, 0xe7c3, 0x4b66, { 0x99, 0xd3, 0x4f, 0x2a, 0xe6, 0xb4, 0x7f, 0xaf } };
-                    ID3D11Texture2D *texture = (ID3D11Texture2D*)frame->data[0]; // actual texture
-                    int index = (intptr_t)frame->data[1]; // index is a slice in texture array is - set to tell AMF which slice to use
-
-                    av_assert0(frame->hw_frames_ctx       && avctx->hw_frames_ctx &&
-                            frame->hw_frames_ctx->data == avctx->hw_frames_ctx->data);
-
-                    texture->lpVtbl->SetPrivateData(texture, &AMFTextureArrayIndexGUID, sizeof(index), &index);
-
-                    res = amf_device_ctx->context->pVtbl->CreateSurfaceFromDX11Native(amf_device_ctx->context, texture, &surface, NULL); // wrap to AMF surface
-                    AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "CreateSurfaceFromDX11Native() failed  with error %d\n", res);
-
-                    hw_surface = 1;
-                }
-                break;
-    #endif
-    #if CONFIG_DXVA2
-            case AV_PIX_FMT_DXVA2_VLD:
-                {
-                    IDirect3DSurface9 *texture = (IDirect3DSurface9 *)frame->data[3]; // actual texture
-
-                    res = amf_device_ctx->context->pVtbl->CreateSurfaceFromDX9Native(amf_device_ctx->context, texture, &surface, NULL); // wrap to AMF surface
-                    AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "CreateSurfaceFromDX9Native() failed  with error %d\n", res);
-
-                    hw_surface = 1;
-                }
-                break;
-    #endif
-            case AV_PIX_FMT_AMF_SURFACE:
-                {
-                    surface = (AMFSurface*)frame->data[0];
-                    surface->pVtbl->Acquire(surface);
-                    hw_surface = 1;
-                }
-                break;
-            default:
-                {
-                    res = amf_device_ctx->context->pVtbl->AllocSurface(amf_device_ctx->context, AMF_MEMORY_HOST, ctx->format, avctx->width, avctx->height, &surface);
-                    AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "AllocSurface() failed  with error %d\n", res);
-                    amf_copy_surface(avctx, frame, surface);
-                }
-                break;
-            }
-
-            if (hw_surface) {
-                amf_store_attached_frame_ref(frame, surface);
-                ctx->hwsurfaces_in_queue++;
-                // input HW surfaces can be vertically aligned by 16; tell AMF the real size
-                surface->pVtbl->SetCrop(surface, 0, 0, frame->width, frame->height);
-            }
-
-            // HDR10 metadata
-            if (frame->color_trc == AVCOL_TRC_SMPTE2084) {
-                AMFBuffer * hdrmeta_buffer = NULL;
-                res = amf_device_ctx->context->pVtbl->AllocBuffer(amf_device_ctx->context, AMF_MEMORY_HOST, sizeof(AMFHDRMetadata), &hdrmeta_buffer);
-                if (res == AMF_OK) {
-                    AMFHDRMetadata * hdrmeta = (AMFHDRMetadata*)hdrmeta_buffer->pVtbl->GetNative(hdrmeta_buffer);
-                    if (amf_save_hdr_metadata(avctx, frame, hdrmeta) == 0) {
-                        switch (avctx->codec->id) {
-                        case AV_CODEC_ID_H264:
-                            AMF_ASSIGN_PROPERTY_INTERFACE(res, ctx->encoder, AMF_VIDEO_ENCODER_INPUT_HDR_METADATA, hdrmeta_buffer); break;
-                        case AV_CODEC_ID_HEVC:
-                            AMF_ASSIGN_PROPERTY_INTERFACE(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_INPUT_HDR_METADATA, hdrmeta_buffer); break;
-                        case AV_CODEC_ID_AV1:
-                            AMF_ASSIGN_PROPERTY_INTERFACE(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_INPUT_HDR_METADATA, hdrmeta_buffer); break;
-                        }
-                        res = amf_set_property_buffer(surface, L"av_frame_hdrmeta", hdrmeta_buffer);
-                        AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "SetProperty failed for \"av_frame_hdrmeta\" with error %d\n", res);
-                    }
-                    hdrmeta_buffer->pVtbl->Release(hdrmeta_buffer);
-                }
-            }
-
-            surface->pVtbl->SetPts(surface, frame->pts);
-            AMF_ASSIGN_PROPERTY_INT64(res, surface, PTS_PROP, frame->pts);
-
-            switch (avctx->codec->id) {
-            case AV_CODEC_ID_H264:
-                AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_INSERT_AUD, !!ctx->aud);
-                switch (frame->pict_type) {
-                case AV_PICTURE_TYPE_I:
-                    if (ctx->forced_idr) {
-                        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_INSERT_SPS, 1);
-                        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_INSERT_PPS, 1);
-                        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_IDR);
-                    } else {
-                        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_I);
-                    }
-                    break;
-                case AV_PICTURE_TYPE_P:
-                    AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_P);
-                    break;
-                case AV_PICTURE_TYPE_B:
-                    AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_PICTURE_TYPE_B);
-                    break;
-                }
-                break;
-            case AV_CODEC_ID_HEVC:
-                AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_HEVC_INSERT_AUD, !!ctx->aud);
-                switch (frame->pict_type) {
-                case AV_PICTURE_TYPE_I:
-                    if (ctx->forced_idr) {
-                        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_HEVC_INSERT_HEADER, 1);
-                        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_HEVC_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_HEVC_PICTURE_TYPE_IDR);
-                    } else {
-                        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_HEVC_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_HEVC_PICTURE_TYPE_I);
-                    }
-                    break;
-                case AV_PICTURE_TYPE_P:
-                    AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_HEVC_FORCE_PICTURE_TYPE, AMF_VIDEO_ENCODER_HEVC_PICTURE_TYPE_P);
-                    break;
-                }
-                break;
-            case AV_CODEC_ID_AV1:
-                if (frame->pict_type == AV_PICTURE_TYPE_I) {
-                    if (ctx->forced_idr) {
-                        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_AV1_FORCE_INSERT_SEQUENCE_HEADER, 1);
-                        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_AV1_FORCE_FRAME_TYPE, AMF_VIDEO_ENCODER_AV1_FORCE_FRAME_TYPE_KEY);
-                    } else {
-                        AMF_ASSIGN_PROPERTY_INT64(res, surface, AMF_VIDEO_ENCODER_AV1_FORCE_FRAME_TYPE, AMF_VIDEO_ENCODER_AV1_FORCE_FRAME_TYPE_INTRA_ONLY);
-                    }
-                }
-                break;
-            default:
-                break;
+            ret = amf_submit_frame_locked(avctx, frame, &surface);
+            if(ret < 0){
+                av_frame_free(&frame);
+                return ret;
             }
             pts = frame->pts;
-            // submit surface
-            res = ctx->encoder->pVtbl->SubmitInput(ctx->encoder, (AMFData*)surface);
-            av_frame_free(&frame);
-
-            if (res == AMF_INPUT_FULL) { // handle full queue
-                //store surface for later submission
-                input_full = 1;
-            } else {
-                surface->pVtbl->Release(surface);
-                AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "SubmitInput() failed with error %d\n", res);
-
-                ctx->submitted_frame++;
-                ret = av_fifo_write(ctx->timestamp_list, &pts, 1);
-
-                if (ret < 0)
-                    return ret;
-                if(ctx->submitted_frame <= ctx->encoded_frame + max_b_frames + 1)
-                    return AVERROR(EAGAIN); // if frame just submiited - don't poll or wait
-            }
         }
     }
     av_frame_free(&frame);
@@ -585,7 +706,7 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
             AMFGuid guid = IID_AMFBuffer();
             data->pVtbl->QueryInterface(data, &guid, (void**)&buffer); // query for buffer interface
             ret = amf_copy_buffer(avctx, avpkt, buffer);
-            if (amf_release_attached_frame_ref(buffer) == AMF_OK) {
+            if (amf_release_attached_frame_ref(ctx, buffer) == AMF_OK) {
                 ctx->hwsurfaces_in_queue--;
             }
             ctx->encoded_frame++;
@@ -604,7 +725,7 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
                     av_log(avctx, AV_LOG_WARNING, "Data acquired but delayed drain submission got AMF_INPUT_FULL- should not happen\n");
                 }
             }
-        } else if (ctx->delayed_drain || (ctx->eof && res_query != AMF_EOF) || (ctx->hwsurfaces_in_queue >= ctx->hwsurfaces_in_queue_max) || input_full) {
+        } else if (ctx->delayed_drain || (ctx->eof && res_query != AMF_EOF) || (ctx->hwsurfaces_in_queue >= ctx->hwsurfaces_in_queue_max) || surface) {
             block_and_wait = 1;
             // Only sleep if the driver doesn't support waiting in QueryOutput()
             // or if we already have output data so we will skip calling it.
@@ -619,7 +740,7 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
     } else if (data == NULL) {
         ret = AVERROR(EAGAIN);
     } else {
-        if(input_full) {
+        if(surface) {
             // resubmit surface
             res = ctx->encoder->pVtbl->SubmitInput(ctx->encoder, (AMFData*)surface);
             surface->pVtbl->Release(surface);

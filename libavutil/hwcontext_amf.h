@@ -35,8 +35,9 @@ typedef struct AVAMFDeviceContext {
     AMFFactory         *factory;
     void               *trace_writer;
 
-    int64_t            version; ///< version of AMF runtime
+    int64_t             version; ///< version of AMF runtime
     AMFContext         *context;
+    AMF_MEMORY_TYPE     memory_type;
 } AVAMFDeviceContext;
 
 enum AMF_SURFACE_FORMAT av_av_to_amf_format(enum AVPixelFormat fmt);
