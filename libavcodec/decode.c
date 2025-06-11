@@ -204,9 +204,6 @@ static int decode_bsfs_init(AVCodecContext *avctx)
     ret = av_bsf_init(avci->bsf);
     if (ret < 0)
         goto fail;
-    ret = avcodec_parameters_to_context(avctx, avci->bsf->par_out);
-    if (ret < 0)
-        goto fail;
 
     return 0;
 fail:
