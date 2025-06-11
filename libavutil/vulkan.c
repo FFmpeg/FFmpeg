@@ -107,6 +107,8 @@ const char *ff_vk_ret2str(VkResult res)
                VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR);                \
         MAP_TO(VK_FORMAT_FEATURE_2_VIDEO_ENCODE_INPUT_BIT_KHR,          \
                VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR);                \
+        MAP_TO(VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT,         \
+               VK_IMAGE_USAGE_HOST_TRANSFER_BIT);                       \
         return dst;                                                     \
     }
 
@@ -191,7 +193,7 @@ int ff_vk_load_props(FFVulkanContext *s)
         s->host_image_props.pCopySrcLayouts =
         s->host_image_props.pCopyDstLayouts = NULL;
         s->host_image_props.copySrcLayoutCount =
-        s->host_image_props.copyDstLayoutCount = NULL;
+        s->host_image_props.copyDstLayoutCount = 0;
         vk->GetPhysicalDeviceProperties2(s->hwctx->phys_dev, &s->props);
 
         new_size = s->host_image_props.copySrcLayoutCount +

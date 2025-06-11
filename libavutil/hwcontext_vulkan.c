@@ -2830,14 +2830,13 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
 
     /* Image usage flags */
     if (!hwctx->usage) {
-        hwctx->usage = supported_usage & (VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                                          VK_IMAGE_USAGE_STORAGE_BIT       |
+        hwctx->usage = supported_usage & (VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                          VK_IMAGE_USAGE_STORAGE_BIT      |
                                           VK_IMAGE_USAGE_SAMPLED_BIT);
 
         if (p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY)
             hwctx->usage |= supported_usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT;
-        else
-            hwctx->usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
         /* Enables encoding of images, if supported by format and extensions */
         if ((supported_usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) &&
@@ -4160,8 +4159,9 @@ fail:
 static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
                                 AVFrame *swf, int upload)
 {
+    VulkanFramesPriv *fp = hwfc->hwctx;
+    AVVulkanFramesContext *hwfc_vk = &fp->p;
     VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
-    AVVulkanFramesContext *hwfc_vk = hwfc->hwctx;
     AVVulkanDeviceContext *hwctx = &p->p;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
 
@@ -4170,16 +4170,23 @@ static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
     const int nb_images = ff_vk_count_images(hwf_vk);
 
     VkSemaphoreWaitInfo sem_wait;
-    VkHostImageLayoutTransitionInfo layout_ch_info[];
+    VkHostImageLayoutTransitionInfo layout_ch_info[AV_NUM_DATA_POINTERS];
     int nb_layout_ch = 0;
 
     hwfc_vk->lock_frame(hwfc, hwf_vk);
 
     for (int i = 0; i < nb_images; i++) {
-        if (hwf_vk->layout[i])
+        int compat = 0;
+        for (int j = 0; j < p->vkctx.host_image_props.copySrcLayoutCount; j++) {
+            if (hwf_vk->layout[i] == p->vkctx.host_image_props.pCopySrcLayouts[j]) {
+                compat = 1;
+                break;
+            }
+        }
+        if (compat)
             continue;
 
-        layout_ch_info[nb_layout_ch++] = (VkHostImageLayoutTransitionInfo) {
+        layout_ch_info[nb_layout_ch] = (VkHostImageLayoutTransitionInfo) {
             .sType = VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO,
             .image = hwf_vk->img[i],
             .oldLayout = hwf_vk->layout[i],
@@ -4188,13 +4195,12 @@ static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
                 .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                 .levelCount = 1,
                 .layerCount = 1,
-            };
+            },
         };
-    }
 
-    if (nb_layout_ch)
-        vk->TransitionImageLayoutEXT(hwctx->act_dev,
-                                     nb_layout_ch, layout_ch_info);
+        hwf_vk->layout[i] = layout_ch_info[nb_layout_ch].newLayout;
+        nb_layout_ch++;
+    }
 
     sem_wait = (VkSemaphoreWaitInfo) {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
@@ -4204,6 +4210,10 @@ static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
     };
 
     vk->WaitSemaphores(hwctx->act_dev, &sem_wait, UINT64_MAX);
+
+    if (nb_layout_ch)
+        vk->TransitionImageLayoutEXT(hwctx->act_dev,
+                                     nb_layout_ch, layout_ch_info);
 
     if (upload) {
         VkMemoryToImageCopy region_info = {
@@ -4270,6 +4280,7 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
 {
     int err;
     VulkanFramesPriv *fp = hwfc->hwctx;
+    AVVulkanFramesContext *hwctx = &fp->p;
     VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
 
@@ -4300,7 +4311,7 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
     if (swf->width > hwfc->width || swf->height > hwfc->height)
         return AVERROR(EINVAL);
 
-    if (p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY)
+    if (hwctx->usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT)
         return vulkan_transfer_host(hwfc, hwf, swf, upload);
 
     for (int i = 0; i < av_pix_fmt_count_planes(swf->format); i++) {
