@@ -108,8 +108,6 @@ int avtext_context_close(AVTextFormatContext **ptctx)
 
     av_hash_freep(&tctx->hash);
 
-    av_hash_freep(&tctx->hash);
-
     if (tctx->formatter) {
         if (tctx->formatter->uninit)
             ret = tctx->formatter->uninit(tctx);
