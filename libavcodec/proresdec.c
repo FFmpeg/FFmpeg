@@ -777,6 +777,13 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     if ((ret = ff_thread_get_buffer(avctx, frame, 0)) < 0)
         return ret;
+
+    av_refstruct_unref(&ctx->hwaccel_last_picture_private);
+    FFSWAP(void *, ctx->hwaccel_picture_private, ctx->hwaccel_last_picture_private);
+
+    if ((ret = ff_hwaccel_frame_priv_alloc(avctx, &ctx->hwaccel_picture_private)) < 0)
+        return ret;
+
     ff_thread_finish_setup(avctx);
 
     if (HWACCEL_MAX && avctx->hwaccel) {
@@ -814,6 +821,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 
 finish:
+    av_refstruct_unref(&ctx->hwaccel_last_picture_private);
+
     *got_frame      = 1;
 
     return avpkt->size;
@@ -824,6 +833,8 @@ static av_cold int decode_close(AVCodecContext *avctx)
     ProresContext *ctx = avctx->priv_data;
 
     av_freep(&ctx->slices);
+    av_refstruct_unref(&ctx->hwaccel_picture_private);
+    av_refstruct_unref(&ctx->hwaccel_last_picture_private);
 
     return 0;
 }
