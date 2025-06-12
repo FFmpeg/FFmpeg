@@ -75,6 +75,11 @@ struct integrator {
 
 struct rect { int x, y, w, h; };
 
+struct biquad {
+    double b0, b1, b2;
+    double a1, a2;
+};
+
 typedef struct EBUR128Context {
     const AVClass *class;           ///< AVClass context for log and options purpose
 
@@ -117,10 +122,8 @@ typedef struct EBUR128Context {
      * The mult by 3 in the following is for X[i], X[i-1] and X[i-2] */
     double *y;                      ///< 3 pre-filter samples cache for each channel
     double *z;                      ///< 3 RLB-filter samples cache for each channel
-    double pre_b[3];                ///< pre-filter numerator coefficients
-    double pre_a[3];                ///< pre-filter denominator coefficients
-    double rlb_b[3];                ///< rlb-filter numerator coefficients
-    double rlb_a[3];                ///< rlb-filter denominator coefficients
+    struct biquad pre;
+    struct biquad rlb;
 
     struct integrator i400;         ///< 400ms integrator, used for Momentary loudness  (M), and Integrated loudness (I)
     struct integrator i3000;        ///<    3s integrator, used for Short term loudness (S), and Loudness Range      (LRA)
@@ -405,21 +408,21 @@ static int config_audio_input(AVFilterLink *inlink)
 
     double a0 = 1.0 + K / Q + K * K;
 
-    ebur128->pre_b[0] = (Vh + Vb * K / Q + K * K) / a0;
-    ebur128->pre_b[1] = 2.0 * (K * K - Vh) / a0;
-    ebur128->pre_b[2] = (Vh - Vb * K / Q + K * K) / a0;
-    ebur128->pre_a[1] = 2.0 * (K * K - 1.0) / a0;
-    ebur128->pre_a[2] = (1.0 - K / Q + K * K) / a0;
+    ebur128->pre.b0 = (Vh + Vb * K / Q + K * K) / a0;
+    ebur128->pre.b1 = 2.0 * (K * K - Vh) / a0;
+    ebur128->pre.b2 = (Vh - Vb * K / Q + K * K) / a0;
+    ebur128->pre.a1 = 2.0 * (K * K - 1.0) / a0;
+    ebur128->pre.a2 = (1.0 - K / Q + K * K) / a0;
 
     f0 = 38.13547087602444;
     Q = 0.5003270373238773;
     K = tan(M_PI * f0 / (double)inlink->sample_rate);
 
-    ebur128->rlb_b[0] = 1.0;
-    ebur128->rlb_b[1] = -2.0;
-    ebur128->rlb_b[2] = 1.0;
-    ebur128->rlb_a[1] = 2.0 * (K * K - 1.0) / (1.0 + K / Q + K * K);
-    ebur128->rlb_a[2] = (1.0 - K / Q + K * K) / (1.0 + K / Q + K * K);
+    ebur128->rlb.b0 = 1.0;
+    ebur128->rlb.b1 = -2.0;
+    ebur128->rlb.b2 = 1.0;
+    ebur128->rlb.a1 = 2.0 * (K * K - 1.0) / (1.0 + K / Q + K * K);
+    ebur128->rlb.a2 = (1.0 - K / Q + K * K) / (1.0 + K / Q + K * K);
 
     /* Force 100ms framing in case of metadata injection: the frames must have
      * a granularity of the window overlap to be accurately exploited.
@@ -654,6 +657,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     }
 #endif
 
+    const struct biquad pre = ebur128->pre;
+    const struct biquad rlb = ebur128->rlb;
+
     for (idx_insample = ebur128->idx_insample; idx_insample < nb_samples; idx_insample++) {
         const int bin_id_400  = ebur128->i400.cache_pos;
         const int bin_id_3000 = ebur128->i3000.cache_pos;
@@ -678,10 +684,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 continue;
 
             /* Y[i] = X[i]*b0 + X[i-1]*b1 + X[i-2]*b2 - Y[i-1]*a1 - Y[i-2]*a2 */
-#define FILTER(DST, SRC, NUM, DEN) do {                                         \
-            const double tmp = DST[0] = NUM[0] * SRC + DST[1];                  \
-            DST[1] = NUM[1] * SRC + DST[2] - DEN[1] * tmp;                      \
-            DST[2] = NUM[2] * SRC - DEN[2] * tmp;                               \
+#define FILTER(DST, SRC, FILT) do {                                             \
+            const double tmp = DST[0] = FILT.b0 * SRC + DST[1];                 \
+            DST[1] = FILT.b1 * SRC + DST[2] - FILT.a1 * tmp;                    \
+            DST[2] = FILT.b2 * SRC - FILT.a2 * tmp;                             \
 } while (0)
 
             const double x = samples[idx_insample * nb_channels + ch];
@@ -689,14 +695,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             double *restrict z = &ebur128->z[3 * ch];
 
             // TODO: merge both filters in one?
-            FILTER(y, x, ebur128->pre_b, ebur128->pre_a);  // apply pre-filter
-            FILTER(z, *y, ebur128->rlb_b, ebur128->rlb_a);  // apply RLB-filter
+            FILTER(y, x, pre);  // apply pre-filter
+            FILTER(z, *y, rlb); // apply RLB-filter
 
             /* add the new value, and limit the sum to the cache size (400ms or 3s)
              * by removing the oldest one */
-            double bin = *z * *z;
-            ebur128->i400.sum [ch] = ebur128->i400.sum [ch] + bin - ebur128->i400.cache [ch][bin_id_400];
-            ebur128->i3000.sum[ch] = ebur128->i3000.sum[ch] + bin - ebur128->i3000.cache[ch][bin_id_3000];
+            const double bin = *z * *z;
+            ebur128->i400.sum [ch] += bin - ebur128->i400.cache [ch][bin_id_400];
+            ebur128->i3000.sum[ch] += bin - ebur128->i3000.cache[ch][bin_id_3000];
 
             /* override old cache entry with the new value */
             ebur128->i400.cache [ch][bin_id_400 ] = bin;
