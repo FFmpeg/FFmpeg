@@ -62,7 +62,7 @@ struct hist_entry {
 };
 
 struct integrator {
-    double **cache;                 ///< window of filtered samples (N ms)
+    double *cache;                  ///< window of filtered samples (N ms)
     int cache_pos;                  ///< focus on the last added bin in the cache array
     int cache_size;
     double *sum;                    ///< sum of the last N ms filtered samples (cache content)
@@ -457,10 +457,12 @@ static int config_audio_output(AVFilterLink *outlink)
 #define I400_BINS(x)  ((x) * 4 / 10)
 #define I3000_BINS(x) ((x) * 3)
 
+    ebur128->i400.cache_size = I400_BINS(outlink->sample_rate);
+    ebur128->i3000.cache_size = I3000_BINS(outlink->sample_rate);
     ebur128->i400.sum = av_calloc(nb_channels, sizeof(*ebur128->i400.sum));
     ebur128->i3000.sum = av_calloc(nb_channels, sizeof(*ebur128->i3000.sum));
-    ebur128->i400.cache = av_calloc(nb_channels, sizeof(*ebur128->i400.cache));
-    ebur128->i3000.cache = av_calloc(nb_channels, sizeof(*ebur128->i3000.cache));
+    ebur128->i400.cache = av_calloc(nb_channels * ebur128->i400.cache_size, sizeof(*ebur128->i400.cache));
+    ebur128->i3000.cache = av_calloc(nb_channels * ebur128->i3000.cache_size, sizeof(*ebur128->i3000.cache));
     if (!ebur128->i400.sum || !ebur128->i3000.sum ||
         !ebur128->i400.cache || !ebur128->i3000.cache)
         return AVERROR(ENOMEM);
@@ -475,17 +477,6 @@ static int config_audio_output(AVFilterLink *outlink)
         } else {
             ebur128->ch_weighting[i] = 1.0;
         }
-
-        if (!ebur128->ch_weighting[i])
-            continue;
-
-        /* bins buffer for the two integration window (400ms and 3s) */
-        ebur128->i400.cache_size = I400_BINS(outlink->sample_rate);
-        ebur128->i3000.cache_size = I3000_BINS(outlink->sample_rate);
-        ebur128->i400.cache[i]  = av_calloc(ebur128->i400.cache_size,  sizeof(*ebur128->i400.cache[0]));
-        ebur128->i3000.cache[i] = av_calloc(ebur128->i3000.cache_size, sizeof(*ebur128->i3000.cache[0]));
-        if (!ebur128->i400.cache[i] || !ebur128->i3000.cache[i])
-            return AVERROR(ENOMEM);
     }
 
 #if CONFIG_SWRESAMPLE
@@ -663,6 +654,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     for (idx_insample = ebur128->idx_insample; idx_insample < nb_samples; idx_insample++) {
         const int bin_id_400  = ebur128->i400.cache_pos;
         const int bin_id_3000 = ebur128->i3000.cache_pos;
+        double *restrict cache_400  = &ebur128->i400.cache[bin_id_400 * nb_channels];
+        double *restrict cache_3000 = &ebur128->i3000.cache[bin_id_3000 * nb_channels];
 
 #define MOVE_TO_NEXT_CACHED_ENTRY(time) do {                \
     ebur128->i##time.cache_pos++;                           \
@@ -701,12 +694,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             /* add the new value, and limit the sum to the cache size (400ms or 3s)
              * by removing the oldest one */
             const double bin = *z * *z;
-            ebur128->i400.sum [ch] += bin - ebur128->i400.cache [ch][bin_id_400];
-            ebur128->i3000.sum[ch] += bin - ebur128->i3000.cache[ch][bin_id_3000];
-
-            /* override old cache entry with the new value */
-            ebur128->i400.cache [ch][bin_id_400 ] = bin;
-            ebur128->i3000.cache[ch][bin_id_3000] = bin;
+            ebur128->i400.sum [ch] += bin - cache_400[ch];
+            ebur128->i3000.sum[ch] += bin - cache_3000[ch];
+            cache_400[ch] = cache_3000[ch] = bin;
         }
 
 #define FIND_PEAK(global, sp, ptype) do {                        \
@@ -1083,12 +1073,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&ebur128->i3000.sum);
     av_freep(&ebur128->i400.histogram);
     av_freep(&ebur128->i3000.histogram);
-    for (int i = 0; i < ebur128->nb_channels; i++) {
-        if (ebur128->i400.cache)
-            av_freep(&ebur128->i400.cache[i]);
-        if (ebur128->i3000.cache)
-            av_freep(&ebur128->i3000.cache[i]);
-    }
     av_freep(&ebur128->i400.cache);
     av_freep(&ebur128->i3000.cache);
     av_frame_free(&ebur128->outpicref);
