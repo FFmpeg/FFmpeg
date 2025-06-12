@@ -609,11 +609,48 @@ static int gate_update(struct integrator *integ, double power,
     return gate_hist_pos;
 }
 
+void ff_ebur128_filter_channels_c(const EBUR128DSPContext *dsp,
+                                  const double *restrict samples,
+                                  double *restrict cache_400,
+                                  double *restrict cache_3000,
+                                  double *restrict sum_400,
+                                  double *restrict sum_3000,
+                                  const int nb_channels)
+{
+    const EBUR128Biquad pre = dsp->pre;
+    const EBUR128Biquad rlb = dsp->rlb;
+
+    for (int ch = 0; ch < nb_channels; ch++) {
+        /* Y[i] = X[i]*b0 + X[i-1]*b1 + X[i-2]*b2 - Y[i-1]*a1 - Y[i-2]*a2 */
+#define FILTER(DST, SRC, FILT) do {                                         \
+        const double tmp = DST[0] = FILT.b0 * SRC + DST[1];                 \
+        DST[1] = FILT.b1 * SRC + DST[2] - FILT.a1 * tmp;                    \
+        DST[2] = FILT.b2 * SRC - FILT.a2 * tmp;                             \
+} while (0)
+
+        const double x = samples[ch];
+        double *restrict y = &dsp->y[3 * ch];
+        double *restrict z = &dsp->z[3 * ch];
+
+        // TODO: merge both filters in one?
+        FILTER(y, x, pre);  // apply pre-filter
+        FILTER(z, *y, rlb); // apply RLB-filter
+
+        /* add the new value, and limit the sum to the cache size (400ms or 3s)
+         * by removing the oldest one */
+        const double bin = *z * *z;
+        sum_400 [ch] += bin - cache_400[ch];
+        sum_3000[ch] += bin - cache_3000[ch];
+        cache_400[ch] = cache_3000[ch] = bin;
+    }
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     int i, ch, idx_insample, ret;
     AVFilterContext *ctx = inlink->dst;
     EBUR128Context *ebur128 = ctx->priv;
+    const EBUR128DSPContext *dsp = &ebur128->dsp;
     const int nb_channels = ebur128->nb_channels;
     const int nb_samples  = insamples->nb_samples;
     const double *samples = (double *)insamples->data[0];
@@ -639,14 +676,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     }
 #endif
 
-    const EBUR128Biquad pre = ebur128->dsp.pre;
-    const EBUR128Biquad rlb = ebur128->dsp.rlb;
-
     for (idx_insample = ebur128->idx_insample; idx_insample < nb_samples; idx_insample++) {
         const int bin_id_400  = ebur128->i400.cache_pos;
         const int bin_id_3000 = ebur128->i3000.cache_pos;
-        double *restrict cache_400  = &ebur128->i400.cache[bin_id_400 * nb_channels];
-        double *restrict cache_3000 = &ebur128->i3000.cache[bin_id_3000 * nb_channels];
 
 #define MOVE_TO_NEXT_CACHED_ENTRY(time) do {                \
     ebur128->i##time.cache_pos++;                           \
@@ -660,35 +692,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         MOVE_TO_NEXT_CACHED_ENTRY(400);
         MOVE_TO_NEXT_CACHED_ENTRY(3000);
 
-        for (ch = 0; ch < nb_channels; ch++) {
-            if (ebur128->peak_mode & PEAK_MODE_SAMPLES_PEAKS)
-                ebur128->sample_peaks[ch] = FFMAX(ebur128->sample_peaks[ch], fabs(samples[idx_insample * nb_channels + ch]));
-
-            if (!ebur128->ch_weighting[ch])
-                continue;
-
-            /* Y[i] = X[i]*b0 + X[i-1]*b1 + X[i-2]*b2 - Y[i-1]*a1 - Y[i-2]*a2 */
-#define FILTER(DST, SRC, FILT) do {                                             \
-            const double tmp = DST[0] = FILT.b0 * SRC + DST[1];                 \
-            DST[1] = FILT.b1 * SRC + DST[2] - FILT.a1 * tmp;                    \
-            DST[2] = FILT.b2 * SRC - FILT.a2 * tmp;                             \
-} while (0)
-
-            const double x = samples[idx_insample * nb_channels + ch];
-            double *restrict y = &ebur128->dsp.y[3 * ch];
-            double *restrict z = &ebur128->dsp.z[3 * ch];
-
-            // TODO: merge both filters in one?
-            FILTER(y, x, pre);  // apply pre-filter
-            FILTER(z, *y, rlb); // apply RLB-filter
-
-            /* add the new value, and limit the sum to the cache size (400ms or 3s)
-             * by removing the oldest one */
-            const double bin = *z * *z;
-            ebur128->i400.sum [ch] += bin - cache_400[ch];
-            ebur128->i3000.sum[ch] += bin - cache_3000[ch];
-            cache_400[ch] = cache_3000[ch] = bin;
-        }
+        ff_ebur128_filter_channels_c(dsp, &samples[idx_insample * nb_channels],
+                                     &ebur128->i400.cache[bin_id_400 * nb_channels],
+                                     &ebur128->i3000.cache[bin_id_3000 * nb_channels],
+                                     ebur128->i400.sum, ebur128->i3000.sum,
+                                     nb_channels);
 
 #define FIND_PEAK(global, sp, ptype) do {                        \
     int ch;                                                      \
@@ -700,6 +708,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         global = DBFS(maxpeak);                                  \
     }                                                            \
 } while (0)
+
+        if (ebur128->peak_mode & PEAK_MODE_SAMPLES_PEAKS) {
+            for (ch = 0; ch < nb_channels; ch++) {
+                const double sample = samples[idx_insample * nb_channels + ch];
+                ebur128->sample_peaks[ch] = FFMAX(ebur128->sample_peaks[ch], fabs(sample));
+            }
+        }
 
         FIND_PEAK(ebur128->sample_peak, ebur128->sample_peaks, SAMPLES);
         FIND_PEAK(ebur128->true_peak,   ebur128->true_peaks,   TRUE);
