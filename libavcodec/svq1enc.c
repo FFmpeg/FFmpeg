@@ -62,7 +62,6 @@ typedef struct SVQ1EncContext {
     MPVEncContext m;
     AVCodecContext *avctx;
     MECmpContext mecc;
-    HpelDSPContext hdsp;
     AVFrame *current_picture;
     AVFrame *last_picture;
 
@@ -468,10 +467,10 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
 
                     dxy = (mx & 1) + 2 * (my & 1);
 
-                    s->hdsp.put_pixels_tab[0][dxy](temp + 16*stride,
-                                                   ref + (mx >> 1) +
-                                                   stride * (my >> 1),
-                                                   stride, 16);
+                    s2->hdsp.put_pixels_tab[0][dxy](temp + 16*stride,
+                                                    ref + (mx >> 1) +
+                                                    stride * (my >> 1),
+                                                    stride, 16);
 
                     score[1] += encode_block(s, src + 16 * x, temp + 16*stride,
                                              decoded, stride, 5, 64, lambda, 0);
@@ -482,7 +481,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                     score[2] += SVQ1_BLOCK_SKIP_LEN * lambda;
                     if (score[2] < score[best] && mx == 0 && my == 0) {
                         best = 2;
-                        s->hdsp.put_pixels_tab[0][0](decoded, ref, stride, 16);
+                        s2->hdsp.put_pixels_tab[0][0](decoded, ref, stride, 16);
                         put_bits(pb, SVQ1_BLOCK_SKIP_LEN, SVQ1_BLOCK_SKIP_CODE);
                     }
                 }
@@ -511,7 +510,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                 ff_copy_bits(pb, reorder_buffer[best][i],
                                  count[best][i]);
             if (best == 0)
-                s->hdsp.put_pixels_tab[0][0](decoded, temp, stride, 16);
+                s2->hdsp.put_pixels_tab[0][0](decoded, temp, stride, 16);
         }
         s2->first_slice_line = 0;
     }
@@ -532,9 +531,6 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
     av_freep(&s->mb_type);
     av_freep(&s->dummy);
     av_freep(&s->scratchbuf);
-
-    s->m.mb_type = NULL;
-    ff_mpv_common_end(&s->m.c);
 
     for (i = 0; i < 3; i++) {
         av_freep(&s->motion_val8[i]);
@@ -571,7 +567,7 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    ff_hpeldsp_init(&s->hdsp, avctx->flags);
+    ff_hpeldsp_init(&s->m.c.hdsp, avctx->flags);
     ff_me_cmp_init(&s->mecc, avctx);
     ret = ff_me_init(&s->m.me, avctx, &s->mecc, 0);
     if (ret < 0)
@@ -604,10 +600,6 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
 
     s->avctx               = avctx;
     s->m.c.avctx           = avctx;
-
-    ret = ff_mpv_common_init(&s->m.c);
-    if (ret < 0)
-        return ret;
 
     for (size_t plane = 0; plane < FF_ARRAY_ELEMS(s->motion_val16); ++plane) {
         const int shift = plane ? 2 : 0;
