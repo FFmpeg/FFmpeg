@@ -290,8 +290,6 @@ static void init_block_index(MpegEncContext *const s)
     s->block_index[1]= s->b8_stride*(s->mb_y*2    ) + 1 + s->mb_x*2;
     s->block_index[2]= s->b8_stride*(s->mb_y*2 + 1)     + s->mb_x*2;
     s->block_index[3]= s->b8_stride*(s->mb_y*2 + 1) + 1 + s->mb_x*2;
-    s->block_index[4]= s->mb_stride*(s->mb_y + 1)                + s->b8_stride*s->mb_height*2 + s->mb_x;
-    s->block_index[5]= s->mb_stride*(s->mb_y + s->mb_height + 2) + s->b8_stride*s->mb_height*2 + s->mb_x;
 }
 
 static int svq1_encode_plane(SVQ1EncContext *s, int plane,
