@@ -756,6 +756,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     int frame_hdr_size, pic_size, ret;
+    int i;
 
     if (buf_size < 28 || AV_RL32(buf + 4) != AV_RL32("icpf")) {
         av_log(avctx, AV_LOG_ERROR, "invalid frame header\n");
@@ -786,20 +787,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     ff_thread_finish_setup(avctx);
 
-    if (HWACCEL_MAX && avctx->hwaccel) {
-        const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
-        ret = hwaccel->start_frame(avctx, avpkt->buf, avpkt->data, avpkt->size);
-        if (ret < 0)
-            return ret;
-        ret = hwaccel->decode_slice(avctx, avpkt->data, avpkt->size);
-        if (ret < 0)
-            return ret;
-        ret = hwaccel->end_frame(avctx);
-        if (ret < 0)
-            return ret;
-        goto finish;
-    }
-
  decode_picture:
     pic_size = decode_picture_header(avctx, buf, buf_size);
     if (pic_size < 0) {
@@ -807,7 +794,23 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return pic_size;
     }
 
-    if ((ret = decode_picture(avctx)) < 0) {
+    if (HWACCEL_MAX && avctx->hwaccel) {
+        const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
+
+        ret = hwaccel->start_frame(avctx, avpkt->buf, avpkt->data, avpkt->size);
+        if (ret < 0)
+            return ret;
+
+        for (i = 0; i < ctx->slice_count; ++i) {
+            ret = hwaccel->decode_slice(avctx, ctx->slices[i].data, ctx->slices[i].data_size);
+            if (ret < 0)
+                return ret;
+        }
+
+        ret = hwaccel->end_frame(avctx);
+        if (ret < 0)
+            return ret;
+    } else if ((ret = decode_picture(avctx)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "error decoding picture\n");
         return ret;
     }
@@ -820,7 +823,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         goto decode_picture;
     }
 
-finish:
     av_refstruct_unref(&ctx->hwaccel_last_picture_private);
 
     *got_frame      = 1;
