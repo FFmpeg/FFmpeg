@@ -427,7 +427,6 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
     }
 
     s->context_initialized = 1;
-    memset(s->thread_context, 0, sizeof(s->thread_context));
     s->thread_context[0]   = s;
     s->slice_context_count = nb_slices;
 
