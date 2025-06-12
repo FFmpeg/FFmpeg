@@ -686,17 +686,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             /* Y[i] = X[i]*b0 + X[i-1]*b1 + X[i-2]*b2 - Y[i-1]*a1 - Y[i-2]*a2 */
 #define FILTER(Y, X, NUM, DEN) do {                                             \
             double *dst = ebur128->Y + ch*3;                                    \
-            double *src = ebur128->X + ch*3;                                    \
-            dst[2] = dst[1];                                                    \
-            dst[1] = dst[0];                                                    \
-            dst[0] = src[0]*NUM[0] + src[1]*NUM[1] + src[2]*NUM[2]              \
-                                   - dst[1]*DEN[1] - dst[2]*DEN[2];             \
+            double src = ebur128->X[ch*3]  ;                                    \
+            double dst0 = NUM[0] * src + dst[1];                                \
+            dst[1] = NUM[1] * src + dst[2] - DEN[1] * dst0;                     \
+            dst[2] = NUM[2] * src - DEN[2] * dst0;                              \
+            dst[0] = dst0;                                                      \
 } while (0)
 
             // TODO: merge both filters in one?
             FILTER(y, x, ebur128->pre_b, ebur128->pre_a);  // apply pre-filter
-            ebur128->x[ch * 3 + 2] = ebur128->x[ch * 3 + 1];
-            ebur128->x[ch * 3 + 1] = ebur128->x[ch * 3    ];
             FILTER(z, y, ebur128->rlb_b, ebur128->rlb_a);  // apply RLB-filter
 
             bin = ebur128->z[ch * 3] * ebur128->z[ch * 3];
