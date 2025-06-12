@@ -80,10 +80,6 @@ typedef struct SVQ1EncContext {
     int y_block_width;
     int y_block_height;
 
-    /* U & V plane (C planes) block dimensions */
-    int c_block_width;
-    int c_block_height;
-
     DECLARE_ALIGNED(16, int16_t, encoded_block_levels)[6][7][256];
 
     uint16_t *mb_type;
@@ -594,9 +590,6 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
 
     s->y_block_width  = (s->frame_width  + 15) / 16;
     s->y_block_height = (s->frame_height + 15) / 16;
-
-    s->c_block_width  = (s->frame_width  / 4 + 15) / 16;
-    s->c_block_height = (s->frame_height / 4 + 15) / 16;
 
     s->avctx               = avctx;
     s->m.c.avctx           = avctx;
