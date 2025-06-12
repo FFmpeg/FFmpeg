@@ -681,7 +681,6 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 av_freep(&s->motion_val8[j]);
                 av_freep(&s->motion_val16[j]);
             }
-            av_freep(&s->scratchbuf);
             return -1;
         }
     }
