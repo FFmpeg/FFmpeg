@@ -133,13 +133,11 @@ static int h264_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
     int i;
     int ret;
 
-    H264ParamSets ps;
+    H264ParamSets ps = {0};
     const PPS *pps = NULL;
     const SPS *sps = NULL;
     int is_avc = 0;
     int nal_length_size = 0;
-
-    memset(&ps, 0, sizeof(ps));
 
     ret = ff_h264_decode_extradata(avctx->extradata, avctx->extradata_size,
                                    &ps, &is_avc, &nal_length_size, 0, avctx);
@@ -199,8 +197,8 @@ static int hevc_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
     int i;
     int ret;
 
-    HEVCParamSets ps;
-    HEVCSEI sei;
+    HEVCParamSets ps = {0};
+    HEVCSEI sei = {0};
 
     const HEVCVPS *vps = NULL;
     const HEVCPPS *pps = NULL;
@@ -214,9 +212,6 @@ static int hevc_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
     int vps_data_size = 0;
     int sps_data_size = 0;
     int pps_data_size = 0;
-
-    memset(&ps, 0, sizeof(ps));
-    memset(&sei, 0, sizeof(sei));
 
     ret = ff_hevc_decode_extradata(avctx->extradata, avctx->extradata_size,
                                    &ps, &sei, &is_nalff, &nal_length_size, 0, 1, avctx);
