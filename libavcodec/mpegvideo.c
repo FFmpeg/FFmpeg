@@ -508,8 +508,6 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
     /* ac pred */
     memset(s->ac_val[1][xy], 0, 16 * sizeof(int16_t));
     memset(s->ac_val[2][xy], 0, 16 * sizeof(int16_t));
-
-    s->mbintra_table[xy]= 0;
 }
 
 void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename

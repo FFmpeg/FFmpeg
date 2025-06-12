@@ -260,8 +260,7 @@ static int decode_slice(MpegEncContext *s)
             if (s->h263_pred || s->h263_aic) {
                 int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
                 if (!s->mb_intra) {
-                    if (s->mbintra_table[mb_xy])
-                        ff_clean_intra_table_entries(s);
+                    ff_h263_clean_intra_table_entries(s, mb_xy);
                 } else
                     s->mbintra_table[mb_xy] = 1;
             }

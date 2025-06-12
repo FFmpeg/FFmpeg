@@ -1073,8 +1073,7 @@ try_again:
                     mot_val[1 + stride] =
                     mot_val[3 + stride] = my;
 
-                    if (s->mbintra_table[xy])
-                        ff_clean_intra_table_entries(s);
+                    ff_h263_clean_intra_table_entries(s, xy);
                     continue;
                 }
 
@@ -1103,8 +1102,7 @@ try_again:
                     mot_val[1 + stride] =
                     mot_val[3 + stride] = 0;
                 } else {
-                    if (s->mbintra_table[xy])
-                        ff_clean_intra_table_entries(s);
+                    ff_h263_clean_intra_table_entries(s, xy);
 
                     if (s->pict_type == AV_PICTURE_TYPE_S &&
                         ctx->vol_sprite_usage == GMC_SPRITE &&

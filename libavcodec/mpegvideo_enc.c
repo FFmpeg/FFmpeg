@@ -3559,8 +3559,11 @@ static int encode_thread(AVCodecContext *c, void *arg){
             if (s->c.mb_intra /* && I,P,S_TYPE */) {
                 s->p_mv_table[xy][0]=0;
                 s->p_mv_table[xy][1]=0;
-            } else if ((s->c.h263_pred || s->c.h263_aic) && s->c.mbintra_table[xy])
-                ff_clean_intra_table_entries(&s->c);
+#if CONFIG_H263_ENCODER
+            } else if (s->c.h263_pred || s->c.h263_aic) {
+                ff_h263_clean_intra_table_entries(&s->c, xy);
+#endif
+            }
 
             if (s->c.avctx->flags & AV_CODEC_FLAG_PSNR) {
                 int w= 16;

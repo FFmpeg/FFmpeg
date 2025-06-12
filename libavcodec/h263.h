@@ -44,4 +44,12 @@ void ff_h263_init_rl_inter(void);
 void ff_h263_update_motion_val(MpegEncContext * s);
 void ff_h263_loop_filter(MpegEncContext * s);
 
+static inline void ff_h263_clean_intra_table_entries(MpegEncContext *s, int xy)
+{
+    if (s->mbintra_table[xy]) {
+        s->mbintra_table[xy] = 0;
+        ff_clean_intra_table_entries(s);
+    }
+}
+
 #endif /* AVCODEC_H263_H */
