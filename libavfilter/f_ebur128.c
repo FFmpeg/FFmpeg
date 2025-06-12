@@ -579,6 +579,11 @@ static av_cold int init(AVFilterContext *ctx)
     /* summary */
     av_log(ctx, AV_LOG_VERBOSE, "EBU +%d scale\n", ebur128->meter);
 
+    ebur128->dsp.filter_channels = ff_ebur128_filter_channels_c;
+#if ARCH_X86
+    ff_ebur128_init_x86(&ebur128->dsp);
+#endif
+
     return 0;
 }
 
@@ -692,11 +697,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         MOVE_TO_NEXT_CACHED_ENTRY(400);
         MOVE_TO_NEXT_CACHED_ENTRY(3000);
 
-        ff_ebur128_filter_channels_c(dsp, &samples[idx_insample * nb_channels],
-                                     &ebur128->i400.cache[bin_id_400 * nb_channels],
-                                     &ebur128->i3000.cache[bin_id_3000 * nb_channels],
-                                     ebur128->i400.sum, ebur128->i3000.sum,
-                                     nb_channels);
+        dsp->filter_channels(dsp, &samples[idx_insample * nb_channels],
+                             &ebur128->i400.cache[bin_id_400 * nb_channels],
+                             &ebur128->i3000.cache[bin_id_3000 * nb_channels],
+                             ebur128->i400.sum, ebur128->i3000.sum,
+                             nb_channels);
 
 #define FIND_PEAK(global, sp, ptype) do {                        \
     int ch;                                                      \

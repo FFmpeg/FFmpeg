@@ -22,6 +22,9 @@
 #ifndef AVFILTER_F_EBUR128_H
 #define AVFILTER_F_EBUR128_H
 
+#include <assert.h>
+#include <stddef.h>
+
 typedef struct EBUR128Biquad {
     double b0, b1, b2;
     double a1, a2;
@@ -35,7 +38,20 @@ typedef struct EBUR128DSPContext {
     /* Cache of 3 samples for each channel */
     double *y; /* after pre-filter */
     double *z; /* after RLB-filter */
+
+    /* DSP functions */
+    void (*filter_channels)(const struct EBUR128DSPContext *dsp,
+                            const double *samples,
+                            double *cache_400, double *cache_3000,
+                            double *sum_400, double *sum_3000,
+                            int nb_channels);
 } EBUR128DSPContext;
+
+static_assert(offsetof(EBUR128DSPContext, pre) == 0,                   "struct layout mismatch");
+static_assert(offsetof(EBUR128DSPContext, rlb) == 5  * sizeof(double), "struct layout mismatch");
+static_assert(offsetof(EBUR128DSPContext, y)   == 10 * sizeof(double), "struct layout mismatch");
+
+void ff_ebur128_init_x86(EBUR128DSPContext *dsp);
 
 void ff_ebur128_filter_channels_c(const EBUR128DSPContext *, const double *,
                                   double *, double *, double *, double *, int);
