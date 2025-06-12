@@ -350,17 +350,6 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
                                              FF_LAMBDA_SCALE / 2 >>
                                              FF_LAMBDA_SHIFT;
 
-        if (!s->motion_val8[plane]) {
-            s->motion_val8[plane]  = av_mallocz((s2->b8_stride *
-                                                 block_height * 2 + 2) *
-                                                2 * sizeof(int16_t));
-            s->motion_val16[plane] = av_mallocz((s2->mb_stride *
-                                                 (block_height + 2) + 1) *
-                                                2 * sizeof(int16_t));
-            if (!s->motion_val8[plane] || !s->motion_val16[plane])
-                return AVERROR(ENOMEM);
-        }
-
         s->m.mb_type = s->mb_type;
 
         // dummies, to avoid segfaults
@@ -620,6 +609,19 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
+    for (size_t plane = 0; plane < FF_ARRAY_ELEMS(s->motion_val16); ++plane) {
+        const int shift = plane ? 2 : 0;
+        unsigned block_height = ((s->frame_height >> shift) + 15U) / 16;
+        unsigned block_width  = ((s->frame_width  >> shift) + 15U) / 16;
+
+        s->motion_val8[plane]  = av_calloc((2 * block_width + 1) * block_height * 2 + 2,
+                                           2 * sizeof(int16_t));
+        s->motion_val16[plane] = av_calloc((block_width + 1) * (block_height + 2) + 1,
+                                           2 * sizeof(int16_t));
+        if (!s->motion_val8[plane] || !s->motion_val16[plane])
+            return AVERROR(ENOMEM);
+    }
+
     s->m.c.picture_structure = PICT_FRAME;
     s->m.me.temp           =
     s->m.me.scratchpad     = av_mallocz((avctx->width + 64) *
@@ -675,14 +677,8 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                               pict->linesize[i],
                               s->current_picture->linesize[i]);
         emms_c();
-        if (ret < 0) {
-            int j;
-            for (j = 0; j < i; j++) {
-                av_freep(&s->motion_val8[j]);
-                av_freep(&s->motion_val16[j]);
-            }
-            return -1;
-        }
+        if (ret < 0)
+            return ret;
     }
 
     // align_put_bits(&pb);
