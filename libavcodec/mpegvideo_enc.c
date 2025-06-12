@@ -1023,9 +1023,9 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         m->lmin = m->lmax;
     }
 
-    /* ff_mpv_common_init() will copy (memdup) the contents of the main slice
-     * to the slice contexts, so we initialize various fields of it
-     * before calling ff_mpv_common_init(). */
+    /* ff_mpv_init_duplicate_contexts() will copy (memdup) the contents of the
+     * main slice to the slice contexts, so we initialize various fields of it
+     * before calling ff_mpv_init_duplicate_contexts(). */
     s->parent = m;
     ff_mpv_idct_init(&s->c);
     init_unquantize(s, avctx);
@@ -1057,6 +1057,9 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     s->c.slice_ctx_size = sizeof(*s);
     ret = ff_mpv_common_init(&s->c);
+    if (ret < 0)
+        return ret;
+    ret = ff_mpv_init_duplicate_contexts(&s->c);
     if (ret < 0)
         return ret;
 

@@ -431,9 +431,11 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
     s->slice_context_count = nb_slices;
 
 //     if (s->width && s->height) {
-    ret = ff_mpv_init_duplicate_contexts(s);
-    if (ret < 0)
-        goto fail;
+    if (!s->encoding) {
+        ret = ff_mpv_init_duplicate_contexts(s);
+        if (ret < 0)
+            goto fail;
+    }
 //     }
 
     return 0;
