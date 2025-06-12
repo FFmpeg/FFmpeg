@@ -43,6 +43,8 @@
 #include "formats.h"
 #include "video.h"
 
+#include "f_ebur128.h"
+
 #define ABS_THRES    -70            ///< silence gate: we discard anything below this absolute (LUFS) threshold
 #define ABS_UP_THRES  10            ///< upper loud limit to consider (ABS_THRES being the minimum)
 #define HIST_GRAIN   100            ///< defines histogram precision
@@ -75,13 +77,9 @@ struct integrator {
 
 struct rect { int x, y, w, h; };
 
-struct biquad {
-    double b0, b1, b2;
-    double a1, a2;
-};
-
 typedef struct EBUR128Context {
     const AVClass *class;           ///< AVClass context for log and options purpose
+    EBUR128DSPContext dsp;
 
     /* peak metering */
     int peak_mode;                  ///< enabled peak modes
@@ -117,13 +115,6 @@ typedef struct EBUR128Context {
     int nb_samples;                 ///< number of samples to consume per single input frame
     int idx_insample;               ///< current sample position of processed samples in single input frame
     AVFrame *insamples;             ///< input samples reference, updated regularly
-
-    /* Filter caches.
-     * The mult by 3 in the following is for X[i], X[i-1] and X[i-2] */
-    double *y;                      ///< 3 pre-filter samples cache for each channel
-    double *z;                      ///< 3 RLB-filter samples cache for each channel
-    struct biquad pre;
-    struct biquad rlb;
 
     struct integrator i400;         ///< 400ms integrator, used for Momentary loudness  (M), and Integrated loudness (I)
     struct integrator i3000;        ///<    3s integrator, used for Short term loudness (S), and Loudness Range      (LRA)
@@ -408,21 +399,21 @@ static int config_audio_input(AVFilterLink *inlink)
 
     double a0 = 1.0 + K / Q + K * K;
 
-    ebur128->pre.b0 = (Vh + Vb * K / Q + K * K) / a0;
-    ebur128->pre.b1 = 2.0 * (K * K - Vh) / a0;
-    ebur128->pre.b2 = (Vh - Vb * K / Q + K * K) / a0;
-    ebur128->pre.a1 = 2.0 * (K * K - 1.0) / a0;
-    ebur128->pre.a2 = (1.0 - K / Q + K * K) / a0;
+    ebur128->dsp.pre.b0 = (Vh + Vb * K / Q + K * K) / a0;
+    ebur128->dsp.pre.b1 = 2.0 * (K * K - Vh) / a0;
+    ebur128->dsp.pre.b2 = (Vh - Vb * K / Q + K * K) / a0;
+    ebur128->dsp.pre.a1 = 2.0 * (K * K - 1.0) / a0;
+    ebur128->dsp.pre.a2 = (1.0 - K / Q + K * K) / a0;
 
     f0 = 38.13547087602444;
     Q = 0.5003270373238773;
     K = tan(M_PI * f0 / (double)inlink->sample_rate);
 
-    ebur128->rlb.b0 = 1.0;
-    ebur128->rlb.b1 = -2.0;
-    ebur128->rlb.b2 = 1.0;
-    ebur128->rlb.a1 = 2.0 * (K * K - 1.0) / (1.0 + K / Q + K * K);
-    ebur128->rlb.a2 = (1.0 - K / Q + K * K) / (1.0 + K / Q + K * K);
+    ebur128->dsp.rlb.b0 = 1.0;
+    ebur128->dsp.rlb.b1 = -2.0;
+    ebur128->dsp.rlb.b2 = 1.0;
+    ebur128->dsp.rlb.a1 = 2.0 * (K * K - 1.0) / (1.0 + K / Q + K * K);
+    ebur128->dsp.rlb.a2 = (1.0 - K / Q + K * K) / (1.0 + K / Q + K * K);
 
     /* Force 100ms framing in case of metadata injection: the frames must have
      * a granularity of the window overlap to be accurately exploited.
@@ -448,10 +439,10 @@ static int config_audio_output(AVFilterLink *outlink)
                    AV_CH_SURROUND_DIRECT_LEFT               |AV_CH_SURROUND_DIRECT_RIGHT)
 
     ebur128->nb_channels  = nb_channels;
-    ebur128->y            = av_calloc(nb_channels, 3 * sizeof(*ebur128->y));
-    ebur128->z            = av_calloc(nb_channels, 3 * sizeof(*ebur128->z));
+    ebur128->dsp.y        = av_calloc(nb_channels, 3 * sizeof(*ebur128->dsp.y));
+    ebur128->dsp.z        = av_calloc(nb_channels, 3 * sizeof(*ebur128->dsp.z));
     ebur128->ch_weighting = av_calloc(nb_channels, sizeof(*ebur128->ch_weighting));
-    if (!ebur128->ch_weighting ||  !ebur128->y || !ebur128->z)
+    if (!ebur128->ch_weighting || !ebur128->dsp.y || !ebur128->dsp.z)
         return AVERROR(ENOMEM);
 
 #define I400_BINS(x)  ((x) * 4 / 10)
@@ -648,8 +639,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     }
 #endif
 
-    const struct biquad pre = ebur128->pre;
-    const struct biquad rlb = ebur128->rlb;
+    const EBUR128Biquad pre = ebur128->dsp.pre;
+    const EBUR128Biquad rlb = ebur128->dsp.rlb;
 
     for (idx_insample = ebur128->idx_insample; idx_insample < nb_samples; idx_insample++) {
         const int bin_id_400  = ebur128->i400.cache_pos;
@@ -684,8 +675,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 } while (0)
 
             const double x = samples[idx_insample * nb_channels + ch];
-            double *restrict y = &ebur128->y[3 * ch];
-            double *restrict z = &ebur128->z[3 * ch];
+            double *restrict y = &ebur128->dsp.y[3 * ch];
+            double *restrict z = &ebur128->dsp.z[3 * ch];
 
             // TODO: merge both filters in one?
             FILTER(y, x, pre);  // apply pre-filter
@@ -1063,8 +1054,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
 
     av_freep(&ebur128->y_line_ref);
-    av_freep(&ebur128->y);
-    av_freep(&ebur128->z);
+    av_freep(&ebur128->dsp.y);
+    av_freep(&ebur128->dsp.z);
     av_freep(&ebur128->ch_weighting);
     av_freep(&ebur128->true_peaks);
     av_freep(&ebur128->sample_peaks);
