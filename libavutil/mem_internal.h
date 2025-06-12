@@ -82,8 +82,8 @@
     #define DECLARE_ASM_CONST(n,t,v)    alignas(FFMIN(n, 16)) static const t av_used v
 #elif defined(_MSC_VER)
     #define DECLARE_ALIGNED_T(n,t,v)    __declspec(align(n)) t v
-    #define DECLARE_ASM_ALIGNED(n,t,v)  __declspec(align(n)) t v
-    #define DECLARE_ASM_CONST(n,t,v)    __declspec(align(n)) static const t v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  __declspec(align(n)) t av_used v
+    #define DECLARE_ASM_CONST(n,t,v)    __declspec(align(n)) static const t av_used v
 #else
     #define DECLARE_ALIGNED_T(n,t,v)    alignas(n) t v
     #define DECLARE_ASM_ALIGNED(n,t,v)  alignas(n) t av_used v
