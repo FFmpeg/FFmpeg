@@ -320,7 +320,6 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
     block_height = (height + 15) / 16;
 
     if (s->pict_type == AV_PICTURE_TYPE_P) {
-        s2->avctx                         = s->avctx;
         s2->last_pic.data[0]        = ref_plane;
         s2->linesize                      =
         s2->last_pic.linesize[0]    =
