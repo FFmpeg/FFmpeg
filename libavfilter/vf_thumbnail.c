@@ -53,6 +53,8 @@ typedef struct ThumbContext {
 
     int planewidth[4];
     int planeheight[4];
+    int planes;
+    int bitdepth;
 } ThumbContext;
 
 #define OFFSET(x) offsetof(ThumbContext, x)
@@ -194,7 +196,7 @@ static int do_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         }
         break;
     default:
-        for (int plane = 0; plane < 3; plane++) {
+        for (int plane = 0; plane < s->planes; plane++) {
             const int slice_start = (s->planeheight[plane] * jobnr) / nb_jobs;
             const int slice_end = (s->planeheight[plane] * (jobnr+1)) / nb_jobs;
             const uint8_t *p = frame->data[plane] + slice_start * frame->linesize[plane];
@@ -202,10 +204,21 @@ static int do_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             const int planewidth = s->planewidth[plane];
             int *hhist = hist + 256 * plane;
 
-            for (int j = slice_start; j < slice_end; j++) {
-                for (int i = 0; i < planewidth; i++)
-                    hhist[p[i]]++;
-                p += linesize;
+            if (s->bitdepth > 8) {
+                const uint16_t *p16 = (const uint16_t *) p;
+                const int shift = s->bitdepth - 8;
+
+                for (int j = slice_start; j < slice_end; j++) {
+                    for (int i = 0; i < planewidth; i++)
+                        hhist[(p16[i] >> shift) & 0xFF]++;
+                    p16 += linesize >> 1;
+                }
+            } else {
+                for (int j = slice_start; j < slice_end; j++) {
+                    for (int i = 0; i < planewidth; i++)
+                        hhist[p[i]]++;
+                    p += linesize;
+                }
             }
         }
         break;
@@ -286,6 +299,8 @@ static int config_props(AVFilterLink *inlink)
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
     s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
+    s->planes         = av_pix_fmt_count_planes(inlink->format) - !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
+    s->bitdepth       = desc->comp[0].depth;
 
     return 0;
 }
