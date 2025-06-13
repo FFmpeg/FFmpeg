@@ -545,6 +545,7 @@ static av_cold int init_slice_buffers(MPVMainEncContext *const m)
         }
 
         if (s2->c.ac_val) {
+            s2->c.dc_val += offset + i;
             s2->c.ac_val += offset;
             offset       += yc_size;
         }

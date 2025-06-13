@@ -179,6 +179,7 @@ static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
     COPY(block);
     COPY(start_mb_y);
     COPY(end_mb_y);
+    COPY(dc_val);
     COPY(ac_val);
 #undef COPY
 }
@@ -235,7 +236,7 @@ av_cold int ff_mpv_init_context_frame(MpegEncContext *s)
                      s->avctx->active_thread_type & FF_THREAD_SLICE) ?
                     s->avctx->thread_count : 1;
     BufferPoolContext *const pools = &s->buffer_pools;
-    int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y;
+    int y_size, c_size, yc_size, mb_array_size, mv_table_size, x, y;
     int mb_height;
 
     if (s->encoding && s->avctx->slices)
@@ -337,6 +338,9 @@ av_cold int ff_mpv_init_context_frame(MpegEncContext *s)
     }
 
     if (s->h263_pred || s->h263_aic || !s->encoding) {
+        // When encoding, each slice (and therefore each thread)
+        // gets its own ac_val and dc_val buffers in order to avoid
+        // races.
         size_t allslice_yc_size = yc_size * (s->encoding ? nb_slices : 1);
         if (s->out_format == FMT_H263) {
             /* ac values */
@@ -349,10 +353,15 @@ av_cold int ff_mpv_init_context_frame(MpegEncContext *s)
         // MN: we need these for error resilience of intra-frames
         // Allocating them unconditionally for decoders also means
         // that we don't need to reinitialize when e.g. h263_aic changes.
-        if (!FF_ALLOC_TYPED_ARRAY(s->dc_val_base, yc_size))
+
+        // y_size and therefore yc_size is always odd; allocate one element
+        // more for each encoder slice in order to be able to align each slice's
+        // dc_val to four in order to use aligned stores when cleaning dc_val.
+        allslice_yc_size += s->encoding * nb_slices;
+        if (!FF_ALLOC_TYPED_ARRAY(s->dc_val_base, allslice_yc_size))
             return AVERROR(ENOMEM);
         s->dc_val = s->dc_val_base + s->b8_stride + 1;
-        for (i = 0; i < yc_size; i++)
+        for (size_t i = 0; i < allslice_yc_size; ++i)
             s->dc_val_base[i] = 1024;
     }
 
