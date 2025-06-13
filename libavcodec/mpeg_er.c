@@ -96,7 +96,7 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     ff_mpv_reconstruct_mb(s, s->block);
 }
 
-int ff_mpeg_er_init(MpegEncContext *s)
+av_cold int ff_mpeg_er_init(MpegEncContext *s)
 {
     ERContext *er = &s->er;
     int mb_array_size = s->mb_height * s->mb_stride;
