@@ -443,5 +443,16 @@ DECL_CHECKASM_CHECK_FUNC(int32_t);
 #define checkasm_check_pixel_padded_align(...) \
     checkasm_check_pixel2(__VA_ARGS__, 8)
 
+/* This assumes that there is a local variable named "bit_depth".
+ * For tests that don't have that and only operate on a single
+ * bitdepth, just call checkasm_check(uint8_t, ...) directly. */
+#define checkasm_check_dctcoef(buf1, stride1, buf2, stride2, ...) \
+    ((bit_depth > 8) ?                                        \
+     checkasm_check(int32_t, (const int32_t*)buf1, stride1,   \
+                             (const int32_t*)buf2, stride2,   \
+                             __VA_ARGS__) :                   \
+     checkasm_check(int16_t, (const int16_t*)buf1, stride1,   \
+                             (const int16_t*)buf2, stride2,   \
+                             __VA_ARGS__))
 
 #endif /* TESTS_CHECKASM_CHECKASM_H */
