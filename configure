@@ -5130,7 +5130,10 @@ probe_cc(){
     elif $_cc -nologo- 2>&1 | grep -q ^Microsoft || { $_cc -v 2>&1 | grep -q clang && $_cc -? > /dev/null 2>&1; }; then
         _type=msvc
         if $_cc -nologo- 2>&1 | grep -q ^Microsoft; then
-            _ident=$($_cc 2>&1 | head -n1 | tr -d '\r')
+            # The version number is printed on the first line on stderr, stdout
+            # gets the usage instructions. Only include stderr, to avoid
+            # potential ordering race conditions.
+            _ident=$($_cc 2>&1 >/dev/null | head -n1 | tr -d '\r')
         else
             _ident=$($_cc --version 2>/dev/null | head -n1 | tr -d '\r')
         fi
