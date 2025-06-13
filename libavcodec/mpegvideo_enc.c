@@ -3327,7 +3327,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                             if(storecoefs){
                                 for(i=0; i<6; i++){
                                     dc[i] = s->c.dc_val[0][s->c.block_index[i]];
-                                    memcpy(ac[i], s->c.ac_val[0][s->c.block_index[i]], sizeof(int16_t)*16);
+                                    memcpy(ac[i], s->c.ac_val[s->c.block_index[i]], sizeof(*s->c.ac_val));
                                 }
                             }
 
@@ -3337,7 +3337,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                                 if(storecoefs){
                                     for(i=0; i<6; i++){
                                         s->c.dc_val[0][s->c.block_index[i]] = dc[i];
-                                        memcpy(s->c.ac_val[0][s->c.block_index[i]], ac[i], sizeof(int16_t)*16);
+                                        memcpy(s->c.ac_val[s->c.block_index[i]], ac[i], sizeof(*s->c.ac_val));
                                     }
                                 }
                             }

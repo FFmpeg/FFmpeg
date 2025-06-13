@@ -129,9 +129,7 @@ static av_cold int init_duplicate_context(MpegEncContext *s)
         /* ac values */
         if (!FF_ALLOCZ_TYPED_ARRAY(s->ac_val_base,  yc_size))
             return AVERROR(ENOMEM);
-        s->ac_val[0] = s->ac_val_base + s->b8_stride + 1;
-        s->ac_val[1] = s->ac_val_base + y_size + s->mb_stride + 1;
-        s->ac_val[2] = s->ac_val[1] + c_size;
+        s->ac_val = s->ac_val_base + s->b8_stride + 1;
     }
 
     return 0;
@@ -195,9 +193,7 @@ static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
     COPY(start_mb_y);
     COPY(end_mb_y);
     COPY(ac_val_base);
-    COPY(ac_val[0]);
-    COPY(ac_val[1]);
-    COPY(ac_val[2]);
+    COPY(ac_val);
 #undef COPY
 }
 
@@ -502,7 +498,7 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
     dc_val[uxy] =
     dc_val[vxy] = 1024;
     /* ac pred */
-    int16_t (*ac_val)[16] = s->ac_val[0];
+    int16_t (*ac_val)[16] = s->ac_val;
     av_assume(!((uintptr_t)ac_val & 0xF));
     // Don't reset the upper-left luma block, as it will only ever be
     // referenced by blocks from the same macroblock.

@@ -326,7 +326,7 @@ void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n, int dir)
     int8_t *const qscale_table = s->cur_pic.qscale_table;
 
     /* find prediction */
-    ac_val  = &s->ac_val[0][0][0] + s->block_index[n] * 16;
+    ac_val  = &s->ac_val[0][0] + s->block_index[n] * 16;
     ac_val1 = ac_val;
     if (s->ac_pred) {
         if (dir == 0) {
@@ -3785,9 +3785,7 @@ static av_cold void clear_context(MpegEncContext *s)
     s->block = NULL;
     s->blocks = NULL;
     s->ac_val_base = NULL;
-    s->ac_val[0] =
-    s->ac_val[1] =
-    s->ac_val[2] =NULL;
+    s->ac_val = NULL;
     memset(&s->sc, 0, sizeof(s->sc));
 
     s->p_field_mv_table_base = NULL;

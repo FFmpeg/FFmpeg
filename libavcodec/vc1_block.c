@@ -611,7 +611,7 @@ static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
     /* Store the quantized DC coeff, used for prediction */
     block[0] = dcdiff * s->y_dc_scale;
 
-    ac_val  = s->ac_val[0][s->block_index[n]];
+    ac_val  = s->ac_val[s->block_index[n]];
     ac_val2 = ac_val;
     if (dc_pred_dir) // left
         ac_val -= 16;
@@ -750,7 +750,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
 
     scale = quant * 2 + ((mquant < 0) ? 0 : v->halfpq);
 
-    ac_val  = s->ac_val[0][s->block_index[n]];
+    ac_val  = s->ac_val[s->block_index[n]];
     ac_val2 = ac_val;
     if (dc_pred_dir) // left
         ac_val -= 16;
@@ -938,7 +938,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     if (!a_avail) dc_pred_dir = 1;
     if (!c_avail) dc_pred_dir = 0;
     if (!a_avail && !c_avail) use_pred = 0;
-    ac_val = s->ac_val[0][s->block_index[n]];
+    ac_val  = s->ac_val[s->block_index[n]];
     ac_val2 = ac_val;
 
     scale = quant * 2 + ((mquant < 0) ? 0 : v->halfpq);

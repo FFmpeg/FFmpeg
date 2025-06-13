@@ -130,7 +130,7 @@ static inline void restore_ac_coeffs(MPVEncContext *const s, int16_t block[6][64
     memcpy(s->c.block_last_index, zigzag_last_index, sizeof(int) * 6);
 
     for (n = 0; n < 6; n++) {
-        int16_t *ac_val = &s->c.ac_val[0][0][0] + s->c.block_index[n] * 16;
+        int16_t *ac_val = &s->c.ac_val[0][0] + s->c.block_index[n] * 16;
 
         st[n] = s->c.intra_scantable.permutated;
         if (dir[n]) {
@@ -169,7 +169,7 @@ static inline int decide_ac_pred(MPVEncContext *const s, int16_t block[6][64],
         score -= get_block_rate(s, block[n], s->c.block_last_index[n],
                                 s->c.intra_scantable.permutated);
 
-        ac_val  = &s->c.ac_val[0][0][0] + s->c.block_index[n] * 16;
+        ac_val  = &s->c.ac_val[0][0] + s->c.block_index[n] * 16;
         ac_val1 = ac_val;
         if (dir[n]) {
             const int xy = s->c.mb_x + s->c.mb_y * s->c.mb_stride - s->c.mb_stride;

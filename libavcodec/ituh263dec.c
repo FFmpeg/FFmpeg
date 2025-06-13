@@ -451,7 +451,7 @@ static void h263_pred_acdc(MpegEncContext * s, int16_t *block, int n)
     int wrap, a, c, pred_dc, scale;
     const int xy = s->block_index[n];
     int16_t *const dc_val =  s->dc_val[0] + xy;
-    int16_t *const ac_val = (s->ac_val[0] + xy)[0];
+    int16_t *const ac_val = (s->ac_val + xy)[0];
 
     /* find prediction */
     if (n < 4) {
