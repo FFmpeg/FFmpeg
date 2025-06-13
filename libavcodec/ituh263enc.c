@@ -596,7 +596,7 @@ static int h263_pred_dc(MPVEncContext *const s, int n, int16_t **dc_val_ptr)
 {
     const int wrap = s->c.block_wrap[n];
     const int xy   = s->c.block_index[n];
-    int16_t *const dc_val = s->c.dc_val[0] + xy;
+    int16_t *const dc_val = s->c.dc_val + xy;
     int pred_dc;
 
     /* find prediction */

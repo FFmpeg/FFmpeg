@@ -45,12 +45,11 @@ int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);
 static inline int ff_mpeg4_pred_dc(MpegEncContext *s, int n, int *dir_ptr)
 {
     int a, b, c, wrap, pred;
-    const int16_t *dc_val;
+    const int16_t *const dc_val = s->dc_val + s->block_index[n];
 
     /* find prediction */
 
     wrap   = s->block_wrap[n];
-    dc_val = s->dc_val[0] + s->block_index[n];
 
     /* B C
      * A X

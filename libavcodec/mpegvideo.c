@@ -351,9 +351,7 @@ av_cold int ff_mpv_init_context_frame(MpegEncContext *s)
         // that we don't need to reinitialize when e.g. h263_aic changes.
         if (!FF_ALLOC_TYPED_ARRAY(s->dc_val_base, yc_size))
             return AVERROR(ENOMEM);
-        s->dc_val[0] = s->dc_val_base + s->b8_stride + 1;
-        s->dc_val[1] = s->dc_val_base + y_size + s->mb_stride + 1;
-        s->dc_val[2] = s->dc_val[1] + c_size;
+        s->dc_val = s->dc_val_base + s->b8_stride + 1;
         for (i = 0; i < yc_size; i++)
             s->dc_val_base[i] = 1024;
     }
@@ -486,7 +484,7 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
     /* chroma */
     unsigned uxy = s->block_index[4];
     unsigned vxy = s->block_index[5];
-    int16_t *dc_val = s->dc_val[0];
+    int16_t *dc_val = s->dc_val;
 
     AV_WN32A(dc_val + xy,        1024 << 16 | 1024);
     AV_WN32 (dc_val + xy + wrap, 1024 << 16 | 1024);

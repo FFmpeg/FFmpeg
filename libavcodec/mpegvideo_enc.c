@@ -3316,7 +3316,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         int16_t ac[6][16];
                         const int mvdir = (best_s.c.mv_dir & MV_DIR_BACKWARD) ? 1 : 0;
                         static const int dquant_tab[4]={-1,1,-2,2};
-                        int storecoefs = s->c.mb_intra && s->c.dc_val[0];
+                        int storecoefs = s->c.mb_intra && s->c.dc_val;
 
                         av_assert2(backup_s.dquant == 0);
 
@@ -3338,7 +3338,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                             backup_s.dquant= dquant;
                             if(storecoefs){
                                 for(i=0; i<6; i++){
-                                    dc[i] = s->c.dc_val[0][s->c.block_index[i]];
+                                    dc[i] = s->c.dc_val[s->c.block_index[i]];
                                     memcpy(ac[i], s->c.ac_val[s->c.block_index[i]], sizeof(*s->c.ac_val));
                                 }
                             }
@@ -3348,7 +3348,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                             if (best_s.c.qscale != qp) {
                                 if(storecoefs){
                                     for(i=0; i<6; i++){
-                                        s->c.dc_val[0][s->c.block_index[i]] = dc[i];
+                                        s->c.dc_val[s->c.block_index[i]] = dc[i];
                                         memcpy(s->c.ac_val[s->c.block_index[i]], ac[i], sizeof(*s->c.ac_val));
                                     }
                                 }

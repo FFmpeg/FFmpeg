@@ -197,7 +197,7 @@ int ff_msmpeg4_pred_dc(MpegEncContext *s, int n,
                        int16_t **dc_val_ptr, int *dir_ptr)
 {
     int a, b, c, wrap, pred, scale;
-    int16_t *dc_val;
+    int16_t *const dc_val = s->dc_val + s->block_index[n];
 
     /* find prediction */
     if (n < 4) {
@@ -207,7 +207,6 @@ int ff_msmpeg4_pred_dc(MpegEncContext *s, int n,
     }
 
     wrap = s->block_wrap[n];
-    dc_val= s->dc_val[0] + s->block_index[n];
 
     /* B C
      * A X

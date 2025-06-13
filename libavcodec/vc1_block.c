@@ -357,7 +357,7 @@ static inline int vc1_i_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
     scale = s->y_dc_scale;
 
     wrap   = s->block_wrap[n];
-    dc_val = s->dc_val[0] + s->block_index[n];
+    dc_val = s->dc_val + s->block_index[n];
 
     /* B A
      * C X
@@ -422,7 +422,7 @@ static inline int ff_vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
         return 0;
 
     wrap = s->block_wrap[n];
-    dc_val = s->dc_val[0] + s->block_index[n];
+    dc_val = s->dc_val + s->block_index[n];
 
     /* B A
      * C X
@@ -1314,7 +1314,7 @@ static int vc1_decode_p_mb(VC1Context *v)
             if (!s->mb_intra) ff_vc1_mc_1mv(v, 0);
             dst_idx = 0;
             for (i = 0; i < 6; i++) {
-                s->dc_val[0][s->block_index[i]] = 0;
+                s->dc_val[s->block_index[i]] = 0;
                 dst_idx += i >> 2;
                 val = ((cbp >> (5 - i)) & 1);
                 off = (i & 4) ? 0 : ((i & 1) * 8 + (i & 2) * 4 * s->linesize);
@@ -1355,7 +1355,7 @@ static int vc1_decode_p_mb(VC1Context *v)
             s->mb_intra = 0;
             for (i = 0; i < 6; i++) {
                 v->mb_type[0][s->block_index[i]] = 0;
-                s->dc_val[0][s->block_index[i]]  = 0;
+                s->dc_val[s->block_index[i]]  = 0;
             }
             s->cur_pic.mb_type[mb_pos]      = MB_TYPE_SKIP;
             s->cur_pic.qscale_table[mb_pos] = 0;
@@ -1370,7 +1370,7 @@ static int vc1_decode_p_mb(VC1Context *v)
             cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
             for (i = 0; i < 6; i++) {
                 val = ((cbp >> (5 - i)) & 1);
-                s->dc_val[0][s->block_index[i]] = 0;
+                s->dc_val[s->block_index[i]] = 0;
                 s->mb_intra                     = 0;
                 if (i < 4) {
                     dmv_x = dmv_y = 0;
@@ -1463,7 +1463,7 @@ static int vc1_decode_p_mb(VC1Context *v)
             s->cur_pic.qscale_table[mb_pos] = 0;
             for (i = 0; i < 6; i++) {
                 v->mb_type[0][s->block_index[i]] = 0;
-                s->dc_val[0][s->block_index[i]]  = 0;
+                s->dc_val[s->block_index[i]]  = 0;
             }
             for (i = 0; i < 4; i++) {
                 ff_vc1_pred_mv(v, i, 0, 0, 0, v->range_x, v->range_y, v->mb_type[0], 0, 0);
@@ -1570,7 +1570,7 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
             for (i = 0; i < 6; i++) {
                 v->a_avail = v->c_avail          = 0;
                 v->mb_type[0][s->block_index[i]] = 1;
-                s->dc_val[0][s->block_index[i]]  = 0;
+                s->dc_val[s->block_index[i]]  = 0;
                 dst_idx += i >> 2;
                 val = ((cbp >> (5 - i)) & 1);
                 if (i == 2 || i == 3 || !s->first_slice_line)
@@ -1648,7 +1648,7 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
             if (!v->ttmbf && cbp)
                 ttmb = get_vlc2(gb, ff_vc1_ttmb_vlc[v->tt_index], VC1_TTMB_VLC_BITS, 2);
             for (i = 0; i < 6; i++) {
-                s->dc_val[0][s->block_index[i]] = 0;
+                s->dc_val[s->block_index[i]] = 0;
                 dst_idx += i >> 2;
                 val = ((cbp >> (5 - i)) & 1);
                 if (!fieldtx)
@@ -1673,7 +1673,7 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
         s->mb_intra = v->is_intra[s->mb_x] = 0;
         for (i = 0; i < 6; i++) {
             v->mb_type[0][s->block_index[i]] = 0;
-            s->dc_val[0][s->block_index[i]] = 0;
+            s->dc_val[s->block_index[i]] = 0;
         }
         s->cur_pic.mb_type[mb_pos]      = MB_TYPE_SKIP;
         s->cur_pic.qscale_table[mb_pos] = 0;
@@ -1736,7 +1736,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
         for (i = 0; i < 6; i++) {
             v->a_avail = v->c_avail          = 0;
             v->mb_type[0][s->block_index[i]] = 1;
-            s->dc_val[0][s->block_index[i]]  = 0;
+            s->dc_val[s->block_index[i]]  = 0;
             dst_idx += i >> 2;
             val = ((cbp >> (5 - i)) & 1);
             if (i == 2 || i == 3 || !s->first_slice_line)
@@ -1789,7 +1789,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
         }
         dst_idx = 0;
         for (i = 0; i < 6; i++) {
-            s->dc_val[0][s->block_index[i]] = 0;
+            s->dc_val[s->block_index[i]] = 0;
             dst_idx += i >> 2;
             val = ((cbp >> (5 - i)) & 1);
             off = (i & 4) ? 0 : (i & 1) * 8 + (i & 2) * 4 * s->linesize;
@@ -1854,7 +1854,7 @@ static int vc1_decode_b_mb(VC1Context *v)
     dmv_x[0] = dmv_x[1] = dmv_y[0] = dmv_y[1] = 0;
     for (i = 0; i < 6; i++) {
         v->mb_type[0][s->block_index[i]] = 0;
-        s->dc_val[0][s->block_index[i]]  = 0;
+        s->dc_val[s->block_index[i]]  = 0;
     }
     s->cur_pic.qscale_table[mb_pos] = 0;
 
@@ -1937,7 +1937,7 @@ static int vc1_decode_b_mb(VC1Context *v)
     }
     dst_idx = 0;
     for (i = 0; i < 6; i++) {
-        s->dc_val[0][s->block_index[i]] = 0;
+        s->dc_val[s->block_index[i]] = 0;
         dst_idx += i >> 2;
         val = ((cbp >> (5 - i)) & 1);
         off = (i & 4) ? 0 : ((i & 1) * 8 + (i & 2) * 4 * s->linesize);
@@ -2023,7 +2023,7 @@ static int vc1_decode_b_mb_intfi(VC1Context *v)
         for (i = 0; i < 6; i++) {
             v->a_avail = v->c_avail          = 0;
             v->mb_type[0][s->block_index[i]] = 1;
-            s->dc_val[0][s->block_index[i]]  = 0;
+            s->dc_val[s->block_index[i]]  = 0;
             dst_idx += i >> 2;
             val = ((cbp >> (5 - i)) & 1);
             if (i == 2 || i == 3 || !s->first_slice_line)
@@ -2124,7 +2124,7 @@ static int vc1_decode_b_mb_intfi(VC1Context *v)
         }
         dst_idx = 0;
         for (i = 0; i < 6; i++) {
-            s->dc_val[0][s->block_index[i]] = 0;
+            s->dc_val[s->block_index[i]] = 0;
             dst_idx += i >> 2;
             val = ((cbp >> (5 - i)) & 1);
             off = (i & 4) ? 0 : (i & 1) * 8 + (i & 2) * 4 * s->linesize;
@@ -2219,7 +2219,7 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
         for (i = 0; i < 6; i++) {
             v->a_avail = v->c_avail          = 0;
             v->mb_type[0][s->block_index[i]] = 1;
-            s->dc_val[0][s->block_index[i]]  = 0;
+            s->dc_val[s->block_index[i]]  = 0;
             dst_idx += i >> 2;
             val = ((cbp >> (5 - i)) & 1);
             if (i == 2 || i == 3 || !s->first_slice_line)
@@ -2422,7 +2422,7 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
             if (!v->ttmbf && cbp)
                 ttmb = get_vlc2(gb, ff_vc1_ttmb_vlc[v->tt_index], VC1_TTMB_VLC_BITS, 2);
             for (i = 0; i < 6; i++) {
-                s->dc_val[0][s->block_index[i]] = 0;
+                s->dc_val[s->block_index[i]] = 0;
                 dst_idx += i >> 2;
                 val = ((cbp >> (5 - i)) & 1);
                 if (!fieldtx)
@@ -2447,7 +2447,7 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
             dir = 0;
             for (i = 0; i < 6; i++) {
                 v->mb_type[0][s->block_index[i]] = 0;
-                s->dc_val[0][s->block_index[i]] = 0;
+                s->dc_val[s->block_index[i]] = 0;
             }
             s->cur_pic.mb_type[mb_pos]      = MB_TYPE_SKIP;
             s->cur_pic.qscale_table[mb_pos] = 0;

@@ -920,7 +920,7 @@ static inline int mpeg4_get_level_dc(MpegEncContext *s, int n, int pred, int lev
         else if (!(s->workaround_bugs & FF_BUG_DC_CLIP))
             level = 2047;
     }
-    s->dc_val[0][s->block_index[n]] = level;
+    s->dc_val[s->block_index[n]] = level;
 
     return ret;
 }
@@ -1347,7 +1347,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
         if (use_intra_dc_vlc) {
             /* DC coef */
             if (s->partitioned_frame) {
-                level = s->dc_val[0][s->block_index[n]];
+                level = s->dc_val[s->block_index[n]];
                 if (n < 4)
                     level = FASTDIV((level + (s->y_dc_scale >> 1)), s->y_dc_scale);
                 else

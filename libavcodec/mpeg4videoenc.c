@@ -742,7 +742,7 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
 
             pred = FASTDIV((pred + (scale >> 1)), scale);
             dc_diff[i] = block[i][0] - pred;
-            s->c.dc_val[0][s->c.block_index[i]] = av_clip_uintp2(block[i][0] * scale, 11);
+            s->c.dc_val[s->c.block_index[i]] = av_clip_uintp2(block[i][0] * scale, 11);
         }
 
         if (s->c.avctx->flags & AV_CODEC_FLAG_AC_PRED) {

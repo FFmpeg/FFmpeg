@@ -141,13 +141,13 @@ typedef struct MpegEncContext {
     int skipped_last_frame;
     int last_dc[3];                ///< last DC values for MPEG-1
     int16_t *dc_val_base;
-    int16_t *dc_val[3];            ///< used for MPEG-4 DC prediction, all 3 arrays must be continuous
     const uint8_t *y_dc_scale_table;     ///< qscale -> y_dc_scale table
     const uint8_t *c_dc_scale_table;     ///< qscale -> c_dc_scale table
     const uint8_t *chroma_qscale_table;  ///< qscale -> chroma_qscale (H.263)
     uint8_t *coded_block_base;
     uint8_t *coded_block;          ///< used for coded block pattern prediction (msmpeg4v3, wmv1)
     int16_t (*ac_val_base)[16];
+    int16_t *dc_val;              ///< used for H.263 AIC/MPEG-4 DC prediction and ER
     int16_t (*ac_val)[16];        ///< used for H.263 AIC, MPEG-4 AC prediction
     int mb_skipped;                ///< MUST BE SET only during DECODING
     uint8_t *mbskip_table;        /**< used to avoid copy if macroblock skipped (for black regions for example)

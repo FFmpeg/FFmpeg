@@ -100,7 +100,6 @@ av_cold int ff_mpeg_er_init(MpegEncContext *s)
 {
     ERContext *er = &s->er;
     int mb_array_size = s->mb_height * s->mb_stride;
-    int i;
 
     er->avctx       = s->avctx;
 
@@ -111,6 +110,10 @@ av_cold int ff_mpeg_er_init(MpegEncContext *s)
     er->mb_stride   = s->mb_stride;
     er->b8_stride   = s->b8_stride;
 
+    er->dc_val[0] = s->dc_val;
+    er->dc_val[1] = er->dc_val[0] + s->b8_stride * 2 * s->buffer_pools.alloc_mb_height + s->mb_stride;
+    er->dc_val[2] = er->dc_val[1] + s->mb_stride * (s->buffer_pools.alloc_mb_height + 1);
+
     er->er_temp_buffer     = av_malloc(s->mb_height * s->mb_stride * (4*sizeof(int) + 1));
     er->error_status_table = av_mallocz(mb_array_size);
     if (!er->er_temp_buffer || !er->error_status_table)
@@ -118,9 +121,6 @@ av_cold int ff_mpeg_er_init(MpegEncContext *s)
 
     er->mbskip_table  = s->mbskip_table;
     er->mbintra_table = s->mbintra_table;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(s->dc_val); i++)
-        er->dc_val[i] = s->dc_val[i];
 
     er->decode_mb = mpeg_er_decode_mb;
     er->opaque    = s;
