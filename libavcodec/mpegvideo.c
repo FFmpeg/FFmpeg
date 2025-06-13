@@ -497,10 +497,8 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
     unsigned vxy = s->block_index[5];
     int16_t *dc_val = s->dc_val[0];
 
-    s->dc_val[0][xy           ] =
-    s->dc_val[0][xy + 1       ] =
-    s->dc_val[0][xy     + wrap] =
-    s->dc_val[0][xy + 1 + wrap] = 1024;
+    AV_WN32A(dc_val + xy,        1024 << 16 | 1024);
+    AV_WN32 (dc_val + xy + wrap, 1024 << 16 | 1024);
     dc_val[uxy] =
     dc_val[vxy] = 1024;
     /* ac pred */
