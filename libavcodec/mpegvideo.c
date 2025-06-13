@@ -171,27 +171,24 @@ static av_cold void free_duplicate_contexts(MpegEncContext *s)
     free_duplicate_context(s);
 }
 
-static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
-{
-#define COPY(a) bak->a = src->a
-    COPY(sc);
-    COPY(blocks);
-    COPY(block);
-    COPY(start_mb_y);
-    COPY(end_mb_y);
-    COPY(dc_val);
-    COPY(ac_val);
-#undef COPY
-}
-
 int ff_update_duplicate_context(MpegEncContext *dst, const MpegEncContext *src)
 {
-    MpegEncContext bak;
+#define COPY(M)              \
+    M(ScratchpadContext, sc) \
+    M(void*, blocks)         \
+    M(void*, block)          \
+    M(int, start_mb_y)       \
+    M(int, end_mb_y)         \
+    M(int16_t*, dc_val)      \
+    M(void*, ac_val)
+
     int ret;
     // FIXME copy only needed parts
-    backup_duplicate_context(&bak, dst);
+#define BACKUP(T, member) T member = dst->member;
+    COPY(BACKUP)
     memcpy(dst, src, sizeof(MpegEncContext));
-    backup_duplicate_context(dst, &bak);
+#define RESTORE(T, member) dst->member = member;
+    COPY(RESTORE)
 
     ret = ff_mpv_framesize_alloc(dst->avctx, &dst->sc, dst->linesize);
     if (ret < 0) {
