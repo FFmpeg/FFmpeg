@@ -1824,10 +1824,8 @@ static int select_input_picture(MPVMainEncContext *const m)
             ret = av_frame_ref(s->new_pic, m->reordered_input_picture[0]->f);
             if (ret < 0)
                 goto fail;
-            for (int i = 0; i < MPV_MAX_PLANES; i++) {
-                if (s->new_pic->data[i])
-                    s->new_pic->data[i] += INPLACE_OFFSET;
-            }
+            for (int i = 0; i < MPV_MAX_PLANES; i++)
+                s->new_pic->data[i] += INPLACE_OFFSET;
         }
         s->c.cur_pic.ptr = m->reordered_input_picture[0];
         m->reordered_input_picture[0] = NULL;
