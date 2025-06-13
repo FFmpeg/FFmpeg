@@ -682,20 +682,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 #endif
 
     for (idx_insample = ebur128->idx_insample; idx_insample < nb_samples; idx_insample++) {
-        const int bin_id_400  = ebur128->i400.cache_pos;
-        const int bin_id_3000 = ebur128->i3000.cache_pos;
+        const int bin_id_400  = ebur128->i400.cache_pos++;
+        const int bin_id_3000 = ebur128->i3000.cache_pos++;
 
-#define MOVE_TO_NEXT_CACHED_ENTRY(time) do {                \
-    ebur128->i##time.cache_pos++;                           \
-    if (ebur128->i##time.cache_pos ==                       \
-        ebur128->i##time.cache_size) {                      \
-        ebur128->i##time.filled    = 1;                     \
-        ebur128->i##time.cache_pos = 0;                     \
-    }                                                       \
-} while (0)
+        if (ebur128->i400.cache_pos == ebur128->i400.cache_size) {
+            ebur128->i400.filled    = 1;
+            ebur128->i400.cache_pos = 0;
+        }
 
-        MOVE_TO_NEXT_CACHED_ENTRY(400);
-        MOVE_TO_NEXT_CACHED_ENTRY(3000);
+        if (ebur128->i3000.cache_pos == ebur128->i3000.cache_size) {
+            ebur128->i3000.filled    = 1;
+            ebur128->i3000.cache_pos = 0;
+        }
 
         dsp->filter_channels(dsp, &samples[idx_insample * nb_channels],
                              &ebur128->i400.cache[bin_id_400 * nb_channels],
