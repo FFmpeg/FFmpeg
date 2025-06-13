@@ -687,6 +687,24 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     }
 #endif
 
+    if (ebur128->peak_mode & PEAK_MODE_SAMPLES_PEAKS) {
+        double maxpeak = 0.0;
+        for (int ch = 0; ch < nb_channels; ch++) {
+            const double *restrict samples_ch = &samples[ch];
+            double sp = ebur128->sample_peaks[ch];
+
+            for (int i = ebur128->idx_insample; i < nb_samples; i++) {
+                const double sample = fabs(samples_ch[nb_channels * i]);
+                sp = FFMAX(sp, sample);
+            }
+            maxpeak = FFMAX(maxpeak, sp);
+            ebur128->sample_peaks[ch] = sp;
+        }
+
+        ebur128->sample_peak = DBFS(maxpeak);
+    }
+
+
     for (idx_insample = ebur128->idx_insample; idx_insample < nb_samples; idx_insample++) {
         const int bin_id_400  = ebur128->i400.cache_pos++;
         const int bin_id_3000 = ebur128->i3000.cache_pos++;
@@ -706,26 +724,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                              &ebur128->i3000.cache[bin_id_3000 * nb_channels],
                              ebur128->i400.sum, ebur128->i3000.sum,
                              nb_channels);
-
-#define FIND_PEAK(global, sp, ptype) do {                        \
-    int ch;                                                      \
-    double maxpeak;                                              \
-    maxpeak = 0.0;                                               \
-    if (ebur128->peak_mode & PEAK_MODE_ ## ptype ## _PEAKS) {    \
-        for (ch = 0; ch < ebur128->nb_channels; ch++)            \
-            maxpeak = FFMAX(maxpeak, sp[ch]);                    \
-        global = DBFS(maxpeak);                                  \
-    }                                                            \
-} while (0)
-
-        if (ebur128->peak_mode & PEAK_MODE_SAMPLES_PEAKS) {
-            for (ch = 0; ch < nb_channels; ch++) {
-                const double sample = samples[idx_insample * nb_channels + ch];
-                ebur128->sample_peaks[ch] = FFMAX(ebur128->sample_peaks[ch], fabs(sample));
-            }
-        }
-
-        FIND_PEAK(ebur128->sample_peak, ebur128->sample_peaks, SAMPLES);
 
         /* For integrated loudness, gating blocks are 400ms long with 75%
          * overlap (see BS.1770-2 p5), so a re-computation is needed each 100ms
