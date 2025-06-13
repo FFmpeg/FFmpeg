@@ -668,16 +668,22 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                               (const uint8_t **)insamples->data, nb_samples);
         if (ret < 0)
             return ret;
-        for (ch = 0; ch < nb_channels; ch++)
-            ebur128->true_peaks_per_frame[ch] = 0.0;
-        for (idx_insample = 0; idx_insample < ret; idx_insample++) {
-            for (ch = 0; ch < nb_channels; ch++) {
-                ebur128->true_peaks[ch] = FFMAX(ebur128->true_peaks[ch], fabs(*swr_samples));
-                ebur128->true_peaks_per_frame[ch] = FFMAX(ebur128->true_peaks_per_frame[ch],
-                                                          fabs(*swr_samples));
-                swr_samples++;
+
+        double maxpeak = 0.0;
+        for (int ch = 0; ch < nb_channels; ch++) {
+            double tp   = ebur128->true_peaks[ch];
+            double tppf = 0.0;
+            for (int i = 0; i < ret; i++) {
+                const double sample = fabs(swr_samples[i * nb_channels]);
+                tp   = FFMAX(tp,   sample);
+                tppf = FFMAX(tppf, sample);
             }
+            maxpeak = FFMAX(maxpeak, tp);
+            ebur128->true_peaks[ch] = tp;
+            ebur128->true_peaks_per_frame[ch] = tppf;
         }
+
+        ebur128->true_peak = DBFS(maxpeak);
     }
 #endif
 
@@ -720,7 +726,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         }
 
         FIND_PEAK(ebur128->sample_peak, ebur128->sample_peaks, SAMPLES);
-        FIND_PEAK(ebur128->true_peak,   ebur128->true_peaks,   TRUE);
 
         /* For integrated loudness, gating blocks are 400ms long with 75%
          * overlap (see BS.1770-2 p5), so a re-computation is needed each 100ms
