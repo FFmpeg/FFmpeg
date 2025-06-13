@@ -504,11 +504,13 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
     dc_val[uxy] =
     dc_val[vxy] = 1024;
     /* ac pred */
-    memset(s->ac_val[0][xy       ], 0, 32 * sizeof(int16_t));
-    memset(s->ac_val[0][xy + wrap], 0, 32 * sizeof(int16_t));
+    int16_t (*ac_val)[16] = s->ac_val[0];
+    av_assume(!((uintptr_t)ac_val & 0xF));
+    memset(ac_val[xy       ], 0, 2 * sizeof(*ac_val));
+    memset(ac_val[xy + wrap], 0, 2 * sizeof(*ac_val));
     /* ac pred */
-    memset(s->ac_val[0][uxy], 0, 16 * sizeof(int16_t));
-    memset(s->ac_val[0][vxy], 0, 16 * sizeof(int16_t));
+    memset(ac_val[uxy], 0, sizeof(*ac_val));
+    memset(ac_val[vxy], 0, sizeof(*ac_val));
 }
 
 void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
