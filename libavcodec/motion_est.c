@@ -118,64 +118,64 @@ static av_always_inline int cmp_direct_inline(MPVEncContext *const s, const int 
     const uint8_t * const * const src = c->src[src_index];
     int d;
     //FIXME check chroma 4mv, (no crashes ...)
-        av_assert2(x >= c->xmin && hx <= c->xmax<<(qpel+1) && y >= c->ymin && hy <= c->ymax<<(qpel+1));
-        if(x >= c->xmin && hx <= c->xmax<<(qpel+1) && y >= c->ymin && hy <= c->ymax<<(qpel+1)){
-            const int time_pp = s->c.pp_time;
-            const int time_pb = s->c.pb_time;
-            const int mask= 2*qpel+1;
-            if (s->c.mv_type == MV_TYPE_8X8) {
-                int i;
-                for(i=0; i<4; i++){
-                    int fx = c->direct_basis_mv[i][0] + hx;
-                    int fy = c->direct_basis_mv[i][1] + hy;
-                    int bx = hx ? fx - c->co_located_mv[i][0] : c->co_located_mv[i][0]*(time_pb - time_pp)/time_pp + ((i &1)<<(qpel+4));
-                    int by = hy ? fy - c->co_located_mv[i][1] : c->co_located_mv[i][1]*(time_pb - time_pp)/time_pp + ((i>>1)<<(qpel+4));
-                    int fxy= (fx&mask) + ((fy&mask)<<(qpel+1));
-                    int bxy= (bx&mask) + ((by&mask)<<(qpel+1));
+    av_assert2(x >= c->xmin && hx <= c->xmax<<(qpel+1) && y >= c->ymin && hy <= c->ymax<<(qpel+1));
+    if (x >= c->xmin && hx <= c->xmax << (qpel + 1) &&
+        y >= c->ymin && hy <= c->ymax << (qpel + 1)) {
+        const int time_pp = s->c.pp_time;
+        const int time_pb = s->c.pb_time;
+        const int mask    = 2 * qpel + 1;
+        if (s->c.mv_type == MV_TYPE_8X8) {
+            for(int i = 0; i < 4; ++i) {
+                int fx  = c->direct_basis_mv[i][0] + hx;
+                int fy  = c->direct_basis_mv[i][1] + hy;
+                int bx  = hx ? fx - c->co_located_mv[i][0] : c->co_located_mv[i][0] * (time_pb - time_pp)/time_pp + ((i &1)<<(qpel+4));
+                int by  = hy ? fy - c->co_located_mv[i][1] : c->co_located_mv[i][1] * (time_pb - time_pp)/time_pp + ((i>>1)<<(qpel+4));
+                int fxy = (fx & mask) + ((fy & mask) << (qpel + 1));
+                int bxy = (bx & mask) + ((by & mask) << (qpel + 1));
 
-                    uint8_t *dst= c->temp + 8*(i&1) + 8*stride*(i>>1);
-                    if(qpel){
-                        c->qpel_put[1][fxy](dst, ref[0] + (fx>>2) + (fy>>2)*stride, stride);
-                        c->qpel_avg[1][bxy](dst, ref[8] + (bx>>2) + (by>>2)*stride, stride);
-                    }else{
-                        c->hpel_put[1][fxy](dst, ref[0] + (fx>>1) + (fy>>1)*stride, stride, 8);
-                        c->hpel_avg[1][bxy](dst, ref[8] + (bx>>1) + (by>>1)*stride, stride, 8);
-                    }
-                }
-            }else{
-                int fx = c->direct_basis_mv[0][0] + hx;
-                int fy = c->direct_basis_mv[0][1] + hy;
-                int bx = hx ? fx - c->co_located_mv[0][0] : (c->co_located_mv[0][0]*(time_pb - time_pp)/time_pp);
-                int by = hy ? fy - c->co_located_mv[0][1] : (c->co_located_mv[0][1]*(time_pb - time_pp)/time_pp);
-                int fxy= (fx&mask) + ((fy&mask)<<(qpel+1));
-                int bxy= (bx&mask) + ((by&mask)<<(qpel+1));
-
-                if(qpel){
-                    c->qpel_put[1][fxy](c->temp               , ref[0] + (fx>>2) + (fy>>2)*stride               , stride);
-                    c->qpel_put[1][fxy](c->temp + 8           , ref[0] + (fx>>2) + (fy>>2)*stride + 8           , stride);
-                    c->qpel_put[1][fxy](c->temp     + 8*stride, ref[0] + (fx>>2) + (fy>>2)*stride     + 8*stride, stride);
-                    c->qpel_put[1][fxy](c->temp + 8 + 8*stride, ref[0] + (fx>>2) + (fy>>2)*stride + 8 + 8*stride, stride);
-                    c->qpel_avg[1][bxy](c->temp               , ref[8] + (bx>>2) + (by>>2)*stride               , stride);
-                    c->qpel_avg[1][bxy](c->temp + 8           , ref[8] + (bx>>2) + (by>>2)*stride + 8           , stride);
-                    c->qpel_avg[1][bxy](c->temp     + 8*stride, ref[8] + (bx>>2) + (by>>2)*stride     + 8*stride, stride);
-                    c->qpel_avg[1][bxy](c->temp + 8 + 8*stride, ref[8] + (bx>>2) + (by>>2)*stride + 8 + 8*stride, stride);
-                }else{
-                    av_assert2((fx>>1) + 16*s->c.mb_x >= -16);
-                    av_assert2((fy>>1) + 16*s->c.mb_y >= -16);
-                    av_assert2((fx>>1) + 16*s->c.mb_x <= s->c.width);
-                    av_assert2((fy>>1) + 16*s->c.mb_y <= s->c.height);
-                    av_assert2((bx>>1) + 16*s->c.mb_x >= -16);
-                    av_assert2((by>>1) + 16*s->c.mb_y >= -16);
-                    av_assert2((bx>>1) + 16*s->c.mb_x <= s->c.width);
-                    av_assert2((by>>1) + 16*s->c.mb_y <= s->c.height);
-
-                    c->hpel_put[0][fxy](c->temp, ref[0] + (fx>>1) + (fy>>1)*stride, stride, 16);
-                    c->hpel_avg[0][bxy](c->temp, ref[8] + (bx>>1) + (by>>1)*stride, stride, 16);
+                uint8_t *dst = c->temp + 8 * (i & 1) + 8 * stride * (i >> 1);
+                if (qpel) {
+                    c->qpel_put[1][fxy](dst, ref[0] + (fx >> 2) + (fy >> 2) * stride, stride);
+                    c->qpel_avg[1][bxy](dst, ref[8] + (bx >> 2) + (by >> 2) * stride, stride);
+                } else {
+                    c->hpel_put[1][fxy](dst, ref[0] + (fx >> 1) + (fy >> 1) * stride, stride, 8);
+                    c->hpel_avg[1][bxy](dst, ref[8] + (bx >> 1) + (by >> 1) * stride, stride, 8);
                 }
             }
-            d = cmp_func(s, c->temp, src[0], stride, 16);
-        }else
-            d= 256*256*256*32;
+        } else {
+            int fx  = c->direct_basis_mv[0][0] + hx;
+            int fy  = c->direct_basis_mv[0][1] + hy;
+            int bx  = hx ? fx - c->co_located_mv[0][0] : (c->co_located_mv[0][0] * (time_pb - time_pp)/time_pp);
+            int by  = hy ? fy - c->co_located_mv[0][1] : (c->co_located_mv[0][1] * (time_pb - time_pp)/time_pp);
+            int fxy = (fx & mask) + ((fy & mask) << (qpel + 1));
+            int bxy = (bx & mask) + ((by & mask) << (qpel + 1));
+
+            if (qpel) {
+                c->qpel_put[1][fxy](c->temp               , ref[0] + (fx>>2) + (fy>>2)*stride               , stride);
+                c->qpel_put[1][fxy](c->temp + 8           , ref[0] + (fx>>2) + (fy>>2)*stride + 8           , stride);
+                c->qpel_put[1][fxy](c->temp     + 8*stride, ref[0] + (fx>>2) + (fy>>2)*stride     + 8*stride, stride);
+                c->qpel_put[1][fxy](c->temp + 8 + 8*stride, ref[0] + (fx>>2) + (fy>>2)*stride + 8 + 8*stride, stride);
+                c->qpel_avg[1][bxy](c->temp               , ref[8] + (bx>>2) + (by>>2)*stride               , stride);
+                c->qpel_avg[1][bxy](c->temp + 8           , ref[8] + (bx>>2) + (by>>2)*stride + 8           , stride);
+                c->qpel_avg[1][bxy](c->temp     + 8*stride, ref[8] + (bx>>2) + (by>>2)*stride     + 8*stride, stride);
+                c->qpel_avg[1][bxy](c->temp + 8 + 8*stride, ref[8] + (bx>>2) + (by>>2)*stride + 8 + 8*stride, stride);
+            } else {
+                av_assert2((fx >> 1) + 16 * s->c.mb_x >= -16);
+                av_assert2((fy >> 1) + 16 * s->c.mb_y >= -16);
+                av_assert2((fx >> 1) + 16 * s->c.mb_x <= s->c.width);
+                av_assert2((fy >> 1) + 16 * s->c.mb_y <= s->c.height);
+                av_assert2((bx >> 1) + 16 * s->c.mb_x >= -16);
+                av_assert2((by >> 1) + 16 * s->c.mb_y >= -16);
+                av_assert2((bx >> 1) + 16 * s->c.mb_x <= s->c.width);
+                av_assert2((by >> 1) + 16 * s->c.mb_y <= s->c.height);
+
+                c->hpel_put[0][fxy](c->temp, ref[0] + (fx >> 1) + (fy >> 1) * stride, stride, 16);
+                c->hpel_avg[0][bxy](c->temp, ref[8] + (bx >> 1) + (by >> 1) * stride, stride, 16);
+            }
+        }
+        d = cmp_func(s, c->temp, src[0], stride, 16);
+    } else
+        d = 256 * 256 * 256 * 32;
     return d;
 }
 
@@ -192,42 +192,42 @@ static av_always_inline int cmp_inline(MPVEncContext *const s, const int x, cons
     const uint8_t * const * const src = c->src[src_index];
     int d;
     //FIXME check chroma 4mv, (no crashes ...)
-        int uvdxy;              /* no, it might not be used uninitialized */
-        if(dxy){
-            if(qpel){
-                if (h << size == 16) {
-                    c->qpel_put[size][dxy](c->temp, ref[0] + x + y*stride, stride); //FIXME prototype (add h)
-                } else if (size == 0 && h == 8) {
-                    c->qpel_put[1][dxy](c->temp    , ref[0] + x + y*stride    , stride);
-                    c->qpel_put[1][dxy](c->temp + 8, ref[0] + x + y*stride + 8, stride);
-                } else
-                    av_assert2(0);
-                if(chroma){
-                    int cx= hx/2;
-                    int cy= hy/2;
-                    cx= (cx>>1)|(cx&1);
-                    cy= (cy>>1)|(cy&1);
-                    uvdxy= (cx&1) + 2*(cy&1);
-                    // FIXME x/y wrong, but MPEG-4 qpel is sick anyway, we should drop as much of it as possible in favor for H.264
-                }
-            }else{
-                c->hpel_put[size][dxy](c->temp, ref[0] + x + y*stride, stride, h);
-                if(chroma)
-                    uvdxy= dxy | (x&1) | (2*(y&1));
+    int uvdxy;              /* no, it might not be used uninitialized */
+    if (dxy) {
+        if (qpel) {
+            if (h << size == 16) {
+                c->qpel_put[size][dxy](c->temp,  ref[0] + x + y * stride, stride); //FIXME prototype (add h)
+            } else if (size == 0 && h == 8) {
+                c->qpel_put[1][dxy](c->temp    , ref[0] + x + y * stride    , stride);
+                c->qpel_put[1][dxy](c->temp + 8, ref[0] + x + y * stride + 8, stride);
+            } else
+                av_assert2(0);
+            if (chroma) {
+                int cx = hx / 2;
+                int cy = hy / 2;
+                cx = (cx >> 1) | (cx & 1);
+                cy = (cy >> 1) | (cy & 1);
+                uvdxy = (cx & 1) + 2 * (cy & 1);
+                // FIXME x/y wrong, but MPEG-4 qpel is sick anyway, we should drop as much of it as possible in favor for H.264
             }
-            d = cmp_func(s, c->temp, src[0], stride, h);
-        }else{
-            d = cmp_func(s, src[0], ref[0] + x + y*stride, stride, h);
-            if(chroma)
-                uvdxy= (x&1) + 2*(y&1);
+        } else {
+            c->hpel_put[size][dxy](c->temp, ref[0] + x + y * stride, stride, h);
+            if (chroma)
+                uvdxy = dxy | (x & 1) | (2 * (y & 1));
         }
-        if(chroma){
-            uint8_t * const uvtemp= c->temp + 16*stride;
-            c->hpel_put[size+1][uvdxy](uvtemp  , ref[1] + (x>>1) + (y>>1)*uvstride, uvstride, h>>1);
-            c->hpel_put[size+1][uvdxy](uvtemp+8, ref[2] + (x>>1) + (y>>1)*uvstride, uvstride, h>>1);
-            d += chroma_cmp_func(s, uvtemp  , src[1], uvstride, h>>1);
-            d += chroma_cmp_func(s, uvtemp+8, src[2], uvstride, h>>1);
-        }
+        d = cmp_func(s, c->temp, src[0], stride, h);
+    } else {
+        d = cmp_func(s, src[0], ref[0] + x + y * stride, stride, h);
+        if (chroma)
+            uvdxy = (x & 1) + 2 * (y & 1);
+    }
+    if (chroma) {
+        uint8_t *const uvtemp = c->temp + 16 * stride;
+        c->hpel_put[size + 1][uvdxy](uvtemp    , ref[1] + (x >> 1) + (y >> 1) * uvstride, uvstride, h >> 1);
+        c->hpel_put[size + 1][uvdxy](uvtemp + 8, ref[2] + (x >> 1) + (y >> 1) * uvstride, uvstride, h >> 1);
+        d += chroma_cmp_func(s, uvtemp    , src[1], uvstride, h >> 1);
+        d += chroma_cmp_func(s, uvtemp + 8, src[2], uvstride, h >> 1);
+    }
     return d;
 }
 
