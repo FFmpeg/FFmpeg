@@ -307,6 +307,14 @@ static av_cold int liboapve_init(AVCodecContext *avctx)
         return AVERROR_EXTERNAL;
     }
 
+    int value = OAPV_CFG_VAL_AU_BS_FMT_NONE;
+    int size = 4;
+    ret = oapve_config(apv->id, OAPV_CFG_SET_AU_BS_FMT, &value, &size);
+    if (OAPV_FAILED(ret)) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to set config for using encoder output format\n");
+        return AVERROR_EXTERNAL;
+    }
+
     apv->ifrms.frm[FRM_IDX].imgb = apv_imgb_create(avctx);
     if (apv->ifrms.frm[FRM_IDX].imgb == NULL)
         return AVERROR(ENOMEM);
