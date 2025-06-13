@@ -580,6 +580,8 @@ static av_cold int init(AVFilterContext *ctx)
     av_log(ctx, AV_LOG_VERBOSE, "EBU +%d scale\n", ebur128->meter);
 
     ebur128->dsp.filter_channels = ff_ebur128_filter_channels_c;
+    ebur128->dsp.find_peak = ff_ebur128_find_peak_c;
+
 #if ARCH_X86
     ff_ebur128_init_x86(&ebur128->dsp);
 #endif
@@ -650,6 +652,23 @@ void ff_ebur128_filter_channels_c(const EBUR128DSPContext *dsp,
     }
 }
 
+double ff_ebur128_find_peak_c(double *restrict ch_peaks, const int nb_channels,
+                              const double *samples, const int nb_samples)
+{
+    double maxpeak = 0.0;
+    for (int ch = 0; ch < nb_channels; ch++) {
+        double ch_peak = ch_peaks[ch];
+        for (int i = 0; i < nb_samples; i++) {
+            const double sample = fabs(samples[i * nb_channels]);
+            ch_peak = FFMAX(ch_peak, sample);
+        }
+        maxpeak = FFMAX(maxpeak, ch_peak);
+        ch_peaks[ch] = ch_peak;
+    }
+
+    return maxpeak;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     int ret;
@@ -669,41 +688,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         if (ret < 0)
             return ret;
 
-        double maxpeak = 0.0;
-        for (int ch = 0; ch < nb_channels; ch++) {
-            double tp   = ebur128->true_peaks[ch];
-            double tppf = 0.0;
-            for (int i = 0; i < ret; i++) {
-                const double sample = fabs(swr_samples[i * nb_channels]);
-                tp   = FFMAX(tp,   sample);
-                tppf = FFMAX(tppf, sample);
-            }
-            maxpeak = FFMAX(maxpeak, tp);
-            ebur128->true_peaks[ch] = tp;
-            ebur128->true_peaks_per_frame[ch] = tppf;
-        }
+        memset(ebur128->true_peaks_per_frame, 0,
+               nb_channels * sizeof(*ebur128->true_peaks_per_frame));
 
-        ebur128->true_peak = DBFS(maxpeak);
+        double peak = dsp->find_peak(ebur128->true_peaks_per_frame, nb_channels,
+                                     swr_samples, ret);
+
+        ebur128->true_peak = DBFS(peak);
+        for (int ch = 0; ch < nb_channels; ch++) {
+            ebur128->true_peaks[ch] = FFMAX(ebur128->true_peaks[ch],
+                                            ebur128->true_peaks_per_frame[ch]);
+        }
     }
 #endif
 
     if (ebur128->peak_mode & PEAK_MODE_SAMPLES_PEAKS) {
-        double maxpeak = 0.0;
-        for (int ch = 0; ch < nb_channels; ch++) {
-            const double *restrict samples_ch = &samples[ch];
-            double sp = ebur128->sample_peaks[ch];
-
-            for (int i = ebur128->idx_insample; i < nb_samples; i++) {
-                const double sample = fabs(samples_ch[nb_channels * i]);
-                sp = FFMAX(sp, sample);
-            }
-            maxpeak = FFMAX(maxpeak, sp);
-            ebur128->sample_peaks[ch] = sp;
-        }
-
-        ebur128->sample_peak = DBFS(maxpeak);
+        double peak = dsp->find_peak(ebur128->sample_peaks, nb_channels,
+                                     samples, nb_samples);
+        ebur128->sample_peak = DBFS(peak);
     }
-
 
     for (int idx_insample = ebur128->idx_insample; idx_insample < nb_samples; idx_insample++) {
         const int bin_id_400  = ebur128->i400.cache_pos++;

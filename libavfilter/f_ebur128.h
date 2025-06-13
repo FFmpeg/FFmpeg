@@ -45,6 +45,10 @@ typedef struct EBUR128DSPContext {
                             double *cache_400, double *cache_3000,
                             double *sum_400, double *sum_3000,
                             int nb_channels);
+
+    /* Updates ch_peaks[] and returns maximum from all channels */
+    double (*find_peak)(double *ch_peaks, int nb_channels,
+                        const double *samples, int nb_samples);
 } EBUR128DSPContext;
 
 static_assert(offsetof(EBUR128DSPContext, pre) == 0,                   "struct layout mismatch");
@@ -55,5 +59,7 @@ void ff_ebur128_init_x86(EBUR128DSPContext *dsp);
 
 void ff_ebur128_filter_channels_c(const EBUR128DSPContext *, const double *,
                                   double *, double *, double *, double *, int);
+
+double ff_ebur128_find_peak_c(double *, int, const double *, int);
 
 #endif /* AVFILTER_F_EBUR128_H */
