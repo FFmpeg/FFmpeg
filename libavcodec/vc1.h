@@ -263,7 +263,7 @@ typedef struct VC1Context{
     int codingset2;          ///< index of current table set from 11.8 to use for chroma block decoding
     int pqindex;             ///< raw pqindex used in coding set selection
     int a_avail, c_avail;
-    uint8_t *mb_type_base, *mb_type[3];
+    uint8_t *mb_type_base, *mb_type;
 
 
     /** Luma compensation parameters */

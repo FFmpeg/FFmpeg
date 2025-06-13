@@ -175,7 +175,7 @@ void ff_vc1_p_overlap_filter(VC1Context *v)
         if (s->mb_x == 0 && (i & 5) != 1)
             continue;
 
-        if (v->mb_type[0][s->block_index[i]] && v->mb_type[0][s->block_index[i] - 1])
+        if (v->mb_type[s->block_index[i]] && v->mb_type[s->block_index[i] - 1])
             vc1_h_overlap_filter(v,
                                  s->mb_x ? left_blk : cur_blk, cur_blk,
                                  v->fcm == ILACE_FRAME && s->mb_x && v->fieldtx_plane[mb_pos - 1],
@@ -188,12 +188,12 @@ void ff_vc1_p_overlap_filter(VC1Context *v)
             if (s->first_slice_line && !(i & 2))
                 continue;
 
-            if (s->mb_x && v->mb_type[0][s->block_index[i] - 2 + (i > 3)] &&
-                v->mb_type[0][s->block_index[i] - s->block_wrap[i] - 2 + (i > 3)])
+            if (s->mb_x && v->mb_type[s->block_index[i] - 2 + (i > 3)] &&
+                v->mb_type[s->block_index[i] - s->block_wrap[i] - 2 + (i > 3)])
                 vc1_v_overlap_filter(v, s->first_slice_line ? left_blk : topleft_blk, left_blk, i);
             if (s->mb_x == s->mb_width - 1)
-                if (v->mb_type[0][s->block_index[i]] &&
-                    v->mb_type[0][s->block_index[i] - s->block_wrap[i]])
+                if (v->mb_type[s->block_index[i]] &&
+                    v->mb_type[s->block_index[i] - s->block_wrap[i]])
                     vc1_v_overlap_filter(v, s->first_slice_line ? cur_blk : top_blk, cur_blk, i);
         }
 }
