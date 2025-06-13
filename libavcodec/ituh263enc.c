@@ -361,6 +361,22 @@ static int h263_encode_picture_header(MPVMainEncContext *const m)
     return 0;
 }
 
+void ff_h263_mpeg4_reset_dc(MPVEncContext *s)
+{
+    int16_t *dc = s->c.dc_val;
+
+    // The "- 1" is for the top-left entry
+    const int l_xy = s->c.block_index[2];
+    for (int i = l_xy - 2 * s->c.b8_stride - 1; i < l_xy; i += 2)
+        AV_WN32A(dc + i, 1024 << 16 | 1024);
+
+    const int u_xy = s->c.block_index[4];
+    const int v_xy = s->c.block_index[5];
+    int16_t *dc2 = dc + v_xy - u_xy;
+    for (int i = u_xy - s->c.mb_stride - 1; i < u_xy; ++i)
+        dc[i] = dc2[i] = 1024;
+}
+
 /**
  * Encode a group of blocks header.
  */
@@ -606,11 +622,6 @@ static int h263_pred_dc(MPVEncContext *const s, int n, int16_t **dc_val_ptr)
     int a = dc_val[-1];
     int c = dc_val[-wrap];
 
-    /* No prediction outside GOB boundary */
-    if (s->c.first_slice_line && n != 3) {
-        if (n != 2) c = 1024;
-        if (n != 1 && s->c.mb_x == s->c.resync_mb_x) a = 1024;
-    }
     /* just DC prediction */
     if (a != 1024 && c != 1024)
         pred_dc = (a + c) >> 1;

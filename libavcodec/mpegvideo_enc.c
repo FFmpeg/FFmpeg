@@ -3140,6 +3140,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         if (CONFIG_MPEG4_ENCODER) {
                             ff_mpeg4_encode_video_packet_header(s);
                             ff_mpeg4_clean_buffers(&s->c);
+                            ff_h263_mpeg4_reset_dc(s);
                         }
                     break;
                     case AV_CODEC_ID_MPEG1VIDEO:
@@ -3149,8 +3150,13 @@ static int encode_thread(AVCodecContext *c, void *arg){
                             ff_mpeg1_clean_buffers(&s->c);
                         }
                     break;
-                    case AV_CODEC_ID_H263:
+#if CONFIG_H263P_ENCODER
                     case AV_CODEC_ID_H263P:
+                        if (s->c.dc_val)
+                            ff_h263_mpeg4_reset_dc(s);
+                        // fallthrough
+#endif
+                    case AV_CODEC_ID_H263:
                         if (CONFIG_H263_ENCODER) {
                             update_mb_info(s, 1);
                             ff_h263_encode_gob_header(s, mb_y);

@@ -146,6 +146,36 @@ static inline void restore_ac_coeffs(MPVEncContext *const s, int16_t block[6][64
 }
 
 /**
+ * Predict the dc.
+ * @param n block index (0-3 are luma, 4-5 are chroma)
+ * @param dir_ptr pointer to an integer where the prediction direction will be stored
+ */
+static int mpeg4_pred_dc(MpegEncContext *s, int n, int *dir_ptr)
+{
+    const int16_t *const dc_val = s->dc_val + s->block_index[n];
+    const int wrap = s->block_wrap[n];
+
+    /* B C
+     * A X
+     */
+    const int a = dc_val[-1];
+    const int b = dc_val[-1 - wrap];
+    const int c = dc_val[-wrap];
+    int pred;
+
+    // There is no need for out-of-slice handling here, as all values are set
+    // appropriately when a new slice is opened.
+    if (abs(a - b) < abs(b - c)) {
+        pred     = c;
+        *dir_ptr = 1; /* top */
+    } else {
+        pred     = a;
+        *dir_ptr = 0; /* left */
+    }
+    return pred;
+}
+
+/**
  * Return the optimal value (0 or 1) for the ac_pred element for the given MB in MPEG-4.
  * This function will also update s->c.block_last_index and s->c.ac_val.
  * @param[in,out] block MB coefficients, these will be updated if 1 is returned
@@ -737,7 +767,7 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
         int i;
 
         for (int i = 0; i < 6; i++) {
-            int pred  = ff_mpeg4_pred_dc(&s->c, i, &dir[i]);
+            int pred  = mpeg4_pred_dc(&s->c, i, &dir[i]);
             int scale = i < 4 ? s->c.y_dc_scale : s->c.c_dc_scale;
 
             pred = FASTDIV((pred + (scale >> 1)), scale);

@@ -27,6 +27,7 @@
 const uint8_t (*ff_h263_get_mv_penalty(void))[MAX_DMV*2+1];
 
 void ff_h263_encode_init(MPVMainEncContext *m);
+void ff_h263_mpeg4_reset_dc(MPVEncContext *s);
 void ff_h263_encode_gob_header(MPVEncContext *s, int mb_line);
 void ff_h263_encode_mba(MPVEncContext *s);
 
