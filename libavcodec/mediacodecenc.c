@@ -1352,7 +1352,7 @@ static const AVOption vp9_options[] = {
                 0, AV_OPT_TYPE_CONST, { .i64 = VP9Level52 },  0, 0, VE,  .unit = "level" },
     { "6",     "Level 6",
                 0, AV_OPT_TYPE_CONST, { .i64 = VP9Level6  },  0, 0, VE,  .unit = "level" },
-    { "6.1",   "Level 4.1",
+    { "6.1",   "Level 6.1",
                 0, AV_OPT_TYPE_CONST, { .i64 = VP9Level61 },  0, 0, VE,  .unit = "level" },
     { "6.2",   "Level 6.2",
                 0, AV_OPT_TYPE_CONST, { .i64 = VP9Level62 },  0, 0, VE,  .unit = "level" },
