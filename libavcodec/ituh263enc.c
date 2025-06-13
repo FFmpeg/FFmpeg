@@ -615,7 +615,6 @@ static void h263_encode_mb(MPVEncContext *const s,
     int cbpc, cbpy, i, cbp, pred_x, pred_y;
     int16_t pred_dc;
     int16_t rec_intradc[6];
-    int16_t *dc_ptr[6];
     const int interleaved_stats = s->c.avctx->flags & AV_CODEC_FLAG_PASS1;
 
     if (!s->c.mb_intra) {
@@ -709,9 +708,10 @@ static void h263_encode_mb(MPVEncContext *const s,
             /* Predict DC */
             for(i=0; i<6; i++) {
                 int16_t level = block[i][0];
+                int16_t *dc_ptr;
                 int scale = i < 4 ? s->c.y_dc_scale : s->c.c_dc_scale;
 
-                pred_dc = h263_pred_dc(s, i, &dc_ptr[i]);
+                pred_dc = h263_pred_dc(s, i, &dc_ptr);
                 level -= pred_dc;
                 /* Quant */
                 if (level >= 0)
@@ -740,7 +740,7 @@ static void h263_encode_mb(MPVEncContext *const s,
                     rec_intradc[i] = 2047;
 
                 /* Update AC/DC tables */
-                *dc_ptr[i] = rec_intradc[i];
+                *dc_ptr = rec_intradc[i];
                 /* AIC can change CBP */
                 if (s->c.block_last_index[i] > 0 ||
                     (s->c.block_last_index[i] == 0 && level !=0))
