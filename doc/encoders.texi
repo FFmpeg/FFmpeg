@@ -3342,6 +3342,75 @@ fastest.
 
 @end table
 
+@section MediaCodec
+
+MediaCodec encoder wrapper enables hardware-accelerated video encoding on
+Android device. It supports H.264, H.265 (HEVC), VP8, VP9, MPEG-4, and AV1
+encoding (whether works or not is device dependent).
+
+Android provides two sets of APIs: Java MediaCodec and NDK MediaCodec. The
+MediaCodec encoder wrapper supports both. Note that the NDK MediaCodec API
+operates without requiring JVM, but may fail to function outside the JVM
+environment due to dependencies on system framework services, particularly
+after Android 15.
+
+@table @option
+@item ndk_codec @var{boolean}
+Use the NDK-based MediaCodec API instead of the Java API. Enabled by default
+if @code{av_jni_get_java_vm()} return NULL.
+
+@item ndk_async @var{boolean}
+Use NDK MediaCodec in async mode. Async mode has less overhead than poll in a
+loop in sync mode. The drawback of async mode is AV_CODEC_FLAG_GLOBAL_HEADER
+doesn't work (use extract_extradata bsf when necessary). It doesn't work and
+will be disabled automatically on devices below Android 8.0.
+
+@item codec_name @var{string}
+A codec type can have multiple implementations on a single device, this option
+specify which backend to use (via MediaCodec createCodecByName API). It's NULL
+by default, and encoder is created by createEncoderByType.
+
+@item bitrate_mode @var{integer}
+
+Possible values:
+@table @samp
+@item cq
+Constant quality mode
+@item vbr
+Variable bitrate mode
+@item cbr
+Constant bitrate mode
+@item cbr_fd
+Constant bitrate mode with frame drops
+@end table
+
+@item pts_as_dts @var{boolean}
+Use PTS as DTS. This is a workaround since MediaCodec API doesn't provide
+decoding timestamp. It is enabled automatically if B frame is 0.
+
+@item operating_rate @var{integer}
+The desired operating rate that the codec will need to operate at, zero for
+unspecified. This is used for cases like high-speed/slow-motion video capture,
+where the video encoder format contains the target playback rate (e.g. 30fps),
+but the component must be able to handle the high operating capture rate (e.g.
+240fps). This rate will be used by codec for resource planning and setting the
+operating points.
+
+@item qp_i_min @var{integer}
+Minimum quantization parameter for I frame.
+@item qp_p_min @var{integer}
+Minimum quantization parameter for P frame.
+@item qp_b_min @var{integer}
+Minimum quantization parameter for B frame.
+@item qp_i_max @var{integer}
+Maximum quantization parameter for I frame.
+@item qp_p_max @var{integer}
+Maximum quantization parameter for P frame.
+@item qp_b_max @var{integer}
+Maximum quantization parameter for B frame.
+
+@end table
+
 @section MediaFoundation
 
 This provides wrappers to encoders (both audio and video) in the
