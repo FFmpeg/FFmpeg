@@ -888,6 +888,49 @@ static inline int get_amv(Mpeg4DecContext *ctx, int n)
     return sum;
 }
 
+/**
+ * Predict the dc.
+ * @param n block index (0-3 are luma, 4-5 are chroma)
+ * @param dir_ptr pointer to an integer where the prediction direction will be stored
+ */
+static inline int mpeg4_pred_dc(MpegEncContext *s, int n, int *dir_ptr)
+{
+    const int16_t *const dc_val = s->dc_val + s->block_index[n];
+    const int wrap = s->block_wrap[n];
+    int pred;
+
+    /* find prediction */
+
+    /* B C
+     * A X
+     */
+    int a = dc_val[-1];
+    int b = dc_val[-1 - wrap];
+    int c = dc_val[-wrap];
+
+    /* outside slice handling (we can't do that by memset as we need the
+     * dc for error resilience) */
+    if (s->first_slice_line && n != 3) {
+        if (n != 2)
+            b = c = 1024;
+        if (n != 1 && s->mb_x == s->resync_mb_x)
+            b = a = 1024;
+    }
+    if (s->mb_x == s->resync_mb_x && s->mb_y == s->resync_mb_y + 1) {
+        if (n == 0 || n == 4 || n == 5)
+            b = 1024;
+    }
+
+    if (abs(a - b) < abs(b - c)) {
+        pred     = c;
+        *dir_ptr = 1; /* top */
+    } else {
+        pred     = a;
+        *dir_ptr = 0; /* left */
+    }
+    return pred;
+}
+
 static inline int mpeg4_get_level_dc(MpegEncContext *s, int n, int pred, int level)
 {
     int scale = n < 4 ? s->y_dc_scale : s->c_dc_scale;
@@ -971,7 +1014,7 @@ static inline int mpeg4_decode_dc(MpegEncContext *s, int n, int *dir_ptr)
         }
     }
 
-    pred = ff_mpeg4_pred_dc(s, n, dir_ptr);
+    pred = mpeg4_pred_dc(s, n, dir_ptr);
     return mpeg4_get_level_dc(s, n, pred, level);
 }
 
@@ -1362,7 +1405,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
             i        = 0;
         } else {
             i = -1;
-            pred = ff_mpeg4_pred_dc(s, n, &dc_pred_dir);
+            pred = mpeg4_pred_dc(s, n, &dc_pred_dir);
         }
         if (!coded)
             goto not_coded;
