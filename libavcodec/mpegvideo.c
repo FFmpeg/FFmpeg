@@ -120,18 +120,6 @@ static av_cold int init_duplicate_context(MpegEncContext *s)
         return AVERROR(ENOMEM);
     s->block = s->blocks[0];
 
-    if (s->out_format == FMT_H263) {
-        int mb_height = s->msmpeg4_version == MSMP4_VC1 ?
-                            FFALIGN(s->mb_height, 2) : s->mb_height;
-        int y_size = s->b8_stride * (2 * mb_height + 1);
-        int c_size = s->mb_stride * (mb_height + 1);
-        int yc_size = y_size + 2 * c_size;
-        /* ac values */
-        if (!FF_ALLOCZ_TYPED_ARRAY(s->ac_val_base,  yc_size))
-            return AVERROR(ENOMEM);
-        s->ac_val = s->ac_val_base + s->b8_stride + 1;
-    }
-
     return 0;
 }
 
@@ -171,7 +159,6 @@ static av_cold void free_duplicate_context(MpegEncContext *s)
     s->sc.linesize = 0;
 
     av_freep(&s->blocks);
-    av_freep(&s->ac_val_base);
     s->block = NULL;
 }
 
@@ -192,7 +179,6 @@ static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
     COPY(block);
     COPY(start_mb_y);
     COPY(end_mb_y);
-    COPY(ac_val_base);
     COPY(ac_val);
 #undef COPY
 }
@@ -245,14 +231,33 @@ static av_cold void free_buffer_pools(BufferPoolContext *pools)
 
 av_cold int ff_mpv_init_context_frame(MpegEncContext *s)
 {
+    int nb_slices = (HAVE_THREADS &&
+                     s->avctx->active_thread_type & FF_THREAD_SLICE) ?
+                    s->avctx->thread_count : 1;
     BufferPoolContext *const pools = &s->buffer_pools;
     int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y;
     int mb_height;
+
+    if (s->encoding && s->avctx->slices)
+        nb_slices = s->avctx->slices;
 
     if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO && !s->progressive_sequence)
         s->mb_height = (s->height + 31) / 32 * 2;
     else
         s->mb_height = (s->height + 15) / 16;
+
+    if (nb_slices > MAX_THREADS || (nb_slices > s->mb_height && s->mb_height)) {
+        int max_slices;
+        if (s->mb_height)
+            max_slices = FFMIN(MAX_THREADS, s->mb_height);
+        else
+            max_slices = MAX_THREADS;
+        av_log(s->avctx, AV_LOG_WARNING, "too many threads/slices (%d),"
+               " reducing to %d\n", nb_slices, max_slices);
+        nb_slices = max_slices;
+    }
+
+    s->slice_context_count = nb_slices;
 
     /* VC-1 can change from being progressive to interlaced on a per-frame
      * basis. We therefore allocate certain buffers so big that they work
@@ -332,6 +337,14 @@ av_cold int ff_mpv_init_context_frame(MpegEncContext *s)
     }
 
     if (s->h263_pred || s->h263_aic || !s->encoding) {
+        size_t allslice_yc_size = yc_size * (s->encoding ? nb_slices : 1);
+        if (s->out_format == FMT_H263) {
+            /* ac values */
+            if (!FF_ALLOCZ_TYPED_ARRAY(s->ac_val_base, allslice_yc_size))
+                return AVERROR(ENOMEM);
+            s->ac_val = s->ac_val_base + s->b8_stride + 1;
+        }
+
         /* dc values */
         // MN: we need these for error resilience of intra-frames
         // Allocating them unconditionally for decoders also means
@@ -381,13 +394,7 @@ av_cold int ff_mpv_init_context_frame(MpegEncContext *s)
  */
 av_cold int ff_mpv_common_init(MpegEncContext *s)
 {
-    int nb_slices = (HAVE_THREADS &&
-                     s->avctx->active_thread_type & FF_THREAD_SLICE) ?
-                    s->avctx->thread_count : 1;
     int ret;
-
-    if (s->encoding && s->avctx->slices)
-        nb_slices = s->avctx->slices;
 
     if (s->avctx->pix_fmt == AV_PIX_FMT_NONE) {
         av_log(s->avctx, AV_LOG_ERROR,
@@ -411,20 +418,8 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
     if ((ret = ff_mpv_init_context_frame(s)))
         goto fail;
 
-    if (nb_slices > MAX_THREADS || (nb_slices > s->mb_height && s->mb_height)) {
-        int max_slices;
-        if (s->mb_height)
-            max_slices = FFMIN(MAX_THREADS, s->mb_height);
-        else
-            max_slices = MAX_THREADS;
-        av_log(s->avctx, AV_LOG_WARNING, "too many threads/slices (%d),"
-               " reducing to %d\n", nb_slices, max_slices);
-        nb_slices = max_slices;
-    }
-
     s->context_initialized = 1;
     s->thread_context[0]   = s;
-    s->slice_context_count = nb_slices;
 
 //     if (s->width && s->height) {
     if (!s->encoding) {
@@ -450,6 +445,7 @@ av_cold void ff_mpv_free_context_frame(MpegEncContext *s)
         for (int j = 0; j < 2; j++)
             s->p_field_mv_table[i][j] = NULL;
 
+    av_freep(&s->ac_val_base);
     av_freep(&s->dc_val_base);
     av_freep(&s->coded_block_base);
     av_freep(&s->mbintra_table);

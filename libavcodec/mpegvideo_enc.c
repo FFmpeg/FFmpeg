@@ -518,24 +518,36 @@ static av_cold int init_slice_buffers(MPVMainEncContext *const m)
     static_assert(DCT_ERROR_SIZE * MAX_THREADS + ALIGN - 1 <= SIZE_MAX,
                   "Need checks for potential overflow.");
     unsigned nb_slices = s->c.slice_context_count;
+    char *dct_error = NULL;
 
-    if (!m->noise_reduction)
-        return 0;
+    if (m->noise_reduction) {
+        if (!FF_ALLOCZ_TYPED_ARRAY(s->dct_offset, 2))
+            return AVERROR(ENOMEM);
+        dct_error = av_mallocz(ALIGN - 1 + nb_slices * DCT_ERROR_SIZE);
+        if (!dct_error)
+            return AVERROR(ENOMEM);
+        m->dct_error_sum_base = dct_error;
+        dct_error += FFALIGN((uintptr_t)dct_error, ALIGN) - (uintptr_t)dct_error;
+    }
 
-    if (!FF_ALLOCZ_TYPED_ARRAY(s->dct_offset, 2))
-        return AVERROR(ENOMEM);
-    char *dct_error = av_mallocz(ALIGN - 1 + nb_slices * DCT_ERROR_SIZE);
-    if (!dct_error)
-        return AVERROR(ENOMEM);
-    m->dct_error_sum_base = dct_error;
-    dct_error += FFALIGN((uintptr_t)dct_error, ALIGN) - (uintptr_t)dct_error;
+    const int y_size  = s->c.b8_stride * (2 * s->c.mb_height + 1);
+    const int c_size  = s->c.mb_stride * (s->c.mb_height + 1);
+    const int yc_size = y_size + 2 * c_size;
+    ptrdiff_t offset = 0;
 
     for (unsigned i = 0; i < nb_slices; ++i) {
         MPVEncContext *const s2 = s->c.enc_contexts[i];
 
-        s2->dct_offset    = s->dct_offset;
-        s2->dct_error_sum = (void*)dct_error;
-        dct_error        += DCT_ERROR_SIZE;
+        if (dct_error) {
+            s2->dct_offset    = s->dct_offset;
+            s2->dct_error_sum = (void*)dct_error;
+            dct_error        += DCT_ERROR_SIZE;
+        }
+
+        if (s2->c.ac_val) {
+            s2->c.ac_val += offset;
+            offset       += yc_size;
+        }
     }
     return 0;
 }
