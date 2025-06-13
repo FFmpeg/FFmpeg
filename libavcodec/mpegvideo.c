@@ -361,9 +361,8 @@ av_cold int ff_mpv_init_context_frame(MpegEncContext *s)
     // Note the + 1 is for a quicker MPEG-4 slice_end detection
     if (!(s->mbskip_table  = av_mallocz(mb_array_size + 2)) ||
         /* which mb is an intra block,  init macroblock skip table */
-        !(s->mbintra_table = av_malloc(mb_array_size)))
+        !(s->mbintra_table = av_mallocz(mb_array_size)))
         return AVERROR(ENOMEM);
-    memset(s->mbintra_table, 1, mb_array_size);
 
     ALLOC_POOL(qscale_table, mv_table_size, 0);
     ALLOC_POOL(mb_type, mv_table_size * sizeof(uint32_t), 0);
