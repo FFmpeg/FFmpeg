@@ -573,38 +573,20 @@ static void h263_encode_block(MPVEncContext *const s, int16_t block[], int n)
 /* Encode MV differences on H.263+ with Unrestricted MV mode */
 static void h263p_encode_umotion(PutBitContext *pb, int val)
 {
-    short sval = 0;
-    short i = 0;
-    short n_bits = 0;
-    short temp_val;
-    int code = 0;
-    int tcode;
-
     if ( val == 0)
         put_bits(pb, 1, 1);
-    else if (val == 1)
-        put_bits(pb, 3, 0);
-    else if (val == -1)
-        put_bits(pb, 3, 2);
     else {
+        unsigned code = (val < 0) << 1;
+        unsigned aval = val < 0 ? -val : val;
+        unsigned n_bits = 2;
 
-        sval = ((val < 0) ? (short)(-val):(short)val);
-        temp_val = sval;
-
-        while (temp_val != 0) {
-            temp_val = temp_val >> 1;
-            n_bits++;
+        while (aval != 1) { // The leading digit is implicitly coded via length
+            unsigned tmp = (aval & 1) << 1 | 1;
+            aval  >>= 1;
+            code   |= tmp << n_bits;
+            n_bits += 2;
         }
-
-        i = n_bits - 1;
-        while (i > 0) {
-            tcode = (sval & (1 << (i-1))) >> (i-1);
-            tcode = (tcode << 1) | 1;
-            code = (code << 2) | tcode;
-            i--;
-        }
-        code = ((code << 1) | (val < 0)) << 1;
-        put_bits(pb, (2*n_bits)+1, code);
+        put_bits(pb, n_bits + 1, code);
     }
 }
 
