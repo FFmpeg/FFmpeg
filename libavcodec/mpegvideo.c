@@ -506,7 +506,9 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
     /* ac pred */
     int16_t (*ac_val)[16] = s->ac_val[0];
     av_assume(!((uintptr_t)ac_val & 0xF));
-    memset(ac_val[xy       ], 0, 2 * sizeof(*ac_val));
+    // Don't reset the upper-left luma block, as it will only ever be
+    // referenced by blocks from the same macroblock.
+    memset(ac_val[xy +    1], 0,     sizeof(*ac_val));
     memset(ac_val[xy + wrap], 0, 2 * sizeof(*ac_val));
     /* ac pred */
     memset(ac_val[uxy], 0, sizeof(*ac_val));
