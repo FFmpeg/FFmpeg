@@ -205,7 +205,7 @@ static inline int decide_ac_pred(MPVEncContext *const s, int16_t block[6][64],
             const int xy = s->c.mb_x + s->c.mb_y * s->c.mb_stride - s->c.mb_stride;
             /* top prediction */
             ac_val -= s->c.block_wrap[n] * 16;
-            if (s->c.mb_y == 0 || s->c.qscale == qscale_table[xy] || n == 2 || n == 3) {
+            if (s->c.first_slice_line || s->c.qscale == qscale_table[xy] || n == 2 || n == 3) {
                 /* same qscale */
                 for (i = 1; i < 8; i++) {
                     const int level = block[n][s->c.idsp.idct_permutation[i]];
