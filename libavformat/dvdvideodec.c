@@ -80,7 +80,6 @@ typedef struct DVDVideoVTSVideoStreamEntry {
     int                                 height;
     AVRational                          dar;
     AVRational                          framerate;
-    int                                 has_cc;
 } DVDVideoVTSVideoStreamEntry;
 
 typedef struct DVDVideoPGCAudioStreamEntry {
@@ -1048,7 +1047,6 @@ static int dvdvideo_video_stream_analyze(AVFormatContext *s, video_attr_t video_
     entry->height = height;
     entry->dar = video_attr.display_aspect_ratio ? (AVRational) { 16, 9 } : (AVRational) { 4, 3 };
     entry->framerate = framerate;
-    entry->has_cc = !is_pal && (video_attr.line21_cc_1 || video_attr.line21_cc_2);
 
     return 0;
 }
