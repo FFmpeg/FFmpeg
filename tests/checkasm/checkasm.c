@@ -208,7 +208,7 @@ static const struct {
     #if CONFIG_ME_CMP
         { "motion", checkasm_check_motion },
     #endif
-    #if CONFIG_MPEGVIDEOENC
+    #if CONFIG_MPEGVIDEOENCDSP
         { "mpegvideoencdsp", checkasm_check_mpegvideoencdsp },
     #endif
     #if CONFIG_OPUS_DECODER

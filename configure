@@ -2630,6 +2630,7 @@ CONFIG_EXTRA="
     mpegvideo
     mpegvideodec
     mpegvideoenc
+    mpegvideoencdsp
     msmpeg4dec
     msmpeg4enc
     mss34dsp
@@ -2907,7 +2908,7 @@ mpeg_er_select="error_resilience"
 mpegaudio_select="mpegaudiodsp mpegaudioheader"
 mpegvideo_select="blockdsp hpeldsp idctdsp videodsp"
 mpegvideodec_select="h264chroma mpegvideo mpeg_er"
-mpegvideoenc_select="aandcttables fdctdsp me_cmp mpegvideo pixblockdsp"
+mpegvideoenc_select="aandcttables fdctdsp me_cmp mpegvideo mpegvideoencdsp pixblockdsp"
 msmpeg4dec_select="h263_decoder"
 msmpeg4enc_select="h263_encoder"
 vc1dsp_select="h264chroma qpeldsp startcode"

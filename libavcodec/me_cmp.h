@@ -21,12 +21,7 @@
 
 #include <stdint.h>
 
-#include "libavutil/attributes_internal.h"
-
 #include "avcodec.h"
-
-EXTERN const uint32_t ff_square_tab[512];
-
 
 /* minimum alignment rules ;)
  * If you notice errors in the align stuff, need more alignment for some ASM code

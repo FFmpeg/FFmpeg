@@ -152,8 +152,8 @@ OBJS-$(CONFIG_MPEGVIDEO)               += mpegvideo.o rl.o \
                                           to_upper4.o
 OBJS-$(CONFIG_MPEGVIDEODEC)            += mpegvideo_dec.o mpegutils.o
 OBJS-$(CONFIG_MPEGVIDEOENC)            += mpegvideo_enc.o mpeg12data.o  \
-                                          motion_est.o ratecontrol.o    \
-                                          mpegvideoencdsp.o
+                                          motion_est.o ratecontrol.o
+OBJS-$(CONFIG_MPEGVIDEOENCDSP)         += mpegvideoencdsp.o
 OBJS-$(CONFIG_MSMPEG4DEC)              += msmpeg4dec.o msmpeg4.o msmpeg4data.o \
                                           msmpeg4_vc1_data.o
 OBJS-$(CONFIG_MSMPEG4ENC)              += msmpeg4enc.o msmpeg4.o msmpeg4data.o \

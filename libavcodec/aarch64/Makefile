@@ -10,7 +10,7 @@ OBJS-$(CONFIG_HPELDSP)                  += aarch64/hpeldsp_init_aarch64.o
 OBJS-$(CONFIG_IDCTDSP)                  += aarch64/idctdsp_init_aarch64.o
 OBJS-$(CONFIG_ME_CMP)                   += aarch64/me_cmp_init_aarch64.o
 OBJS-$(CONFIG_MPEGAUDIODSP)             += aarch64/mpegaudiodsp_init.o
-OBJS-$(CONFIG_MPEGVIDEOENC)             += aarch64/mpegvideoencdsp_init.o
+OBJS-$(CONFIG_MPEGVIDEOENCDSP)          += aarch64/mpegvideoencdsp_init.o
 OBJS-$(CONFIG_NEON_CLOBBER_TEST)        += aarch64/neontest.o
 OBJS-$(CONFIG_PIXBLOCKDSP)              += aarch64/pixblockdsp_init_aarch64.o
 OBJS-$(CONFIG_VIDEODSP)                 += aarch64/videodsp_init.o
@@ -54,7 +54,7 @@ NEON-OBJS-$(CONFIG_IDCTDSP)             += aarch64/idctdsp_neon.o              \
                                            aarch64/simple_idct_neon.o
 NEON-OBJS-$(CONFIG_ME_CMP)              += aarch64/me_cmp_neon.o
 NEON-OBJS-$(CONFIG_MPEGAUDIODSP)        += aarch64/mpegaudiodsp_neon.o
-NEON-OBJS-$(CONFIG_MPEGVIDEOENC)        += aarch64/mpegvideoencdsp_neon.o
+NEON-OBJS-$(CONFIG_MPEGVIDEOENCDSP)     += aarch64/mpegvideoencdsp_neon.o
 NEON-OBJS-$(CONFIG_PIXBLOCKDSP)         += aarch64/pixblockdsp_neon.o
 NEON-OBJS-$(CONFIG_VC1DSP)              += aarch64/vc1dsp_neon.o
 NEON-OBJS-$(CONFIG_VP8DSP)              += aarch64/vp8dsp_neon.o
