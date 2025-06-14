@@ -5127,9 +5127,9 @@ probe_cc(){
         _flags_filter=msvc_flags
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
-    elif $_cc -nologo- 2>&1 | grep -q Microsoft || { $_cc -v 2>&1 | grep -q clang && $_cc -? > /dev/null 2>&1; }; then
+    elif $_cc -nologo- 2>&1 | grep -q ^Microsoft || { $_cc -v 2>&1 | grep -q clang && $_cc -? > /dev/null 2>&1; }; then
         _type=msvc
-        if $_cc -nologo- 2>&1 | grep -q Microsoft; then
+        if $_cc -nologo- 2>&1 | grep -q ^Microsoft; then
             _ident=$($_cc 2>&1 | head -n1 | tr -d '\r')
         else
             _ident=$($_cc --version 2>/dev/null | head -n1 | tr -d '\r')
@@ -5239,7 +5239,7 @@ if [ -z "$CC_DEPFLAGS" ] && [ "$dep_cc" != "$cc" ]; then
     DEPCCFLAGS=$_flags
 fi
 
-if $ar 2>&1 | grep -q Microsoft; then
+if $ar 2>&1 | grep -q ^Microsoft; then
     arflags="-nologo"
     ar_o='-out:$@'
 elif $ar 2>&1 | grep -q "\[D\] "; then
