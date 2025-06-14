@@ -347,6 +347,7 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
         if ((fourcc_str_len + 1) % 5 != 0) {
             av_log(s, AV_LOG_ERROR, "Malformed rtmp_enhanched_codecs, "
                    "should be of the form hvc1[,av01][,vp09][,...]\n");
+            ff_rtmp_packet_destroy(&pkt);
             return AVERROR(EINVAL);
         }
 
@@ -370,6 +371,7 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
                     ff_amf_write_string(&p, fourcc);
             } else {
                     av_log(s, AV_LOG_ERROR, "Unsupported codec fourcc, %.*s\n", 4, fourcc_data);
+                    ff_rtmp_packet_destroy(&pkt);
                     return AVERROR_PATCHWELCOME;
             }
 
