@@ -722,7 +722,7 @@ OBJS-$(CONFIG_SBC_DECODER)             += sbcdec.o sbc.o
 OBJS-$(CONFIG_SBC_ENCODER)             += sbcenc.o sbc.o sbcdsp.o
 OBJS-$(CONFIG_SVQ1_DECODER)            += svq1dec.o svq1.o h263data.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1enc.o svq1.o  h263data.o  \
-                                          h263.o ituh263enc.o
+                                          h263.o ituh263enc.o motion_est.o
 OBJS-$(CONFIG_SVQ3_DECODER)            += svq3.o mpegutils.o h264data.o
 OBJS-$(CONFIG_TEXT_DECODER)            += textdec.o ass.o
 OBJS-$(CONFIG_TEXT_ENCODER)            += srtenc.o ass_split.o

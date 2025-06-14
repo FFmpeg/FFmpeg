@@ -27,17 +27,19 @@
  * H.263/MPEG-4 codec.
  */
 
+#include "config.h"
+
 #include "libavutil/thread.h"
 #include "mpegvideo.h"
 #include "h263.h"
 #include "h263data.h"
 #include "h263dsp.h"
-#include "idctdsp.h"
 #include "mathops.h"
 #include "mpegpicture.h"
 #include "mpegutils.h"
 #include "rl.h"
 
+#if CONFIG_MPEGVIDEO
 static av_cold void h263_init_rl_inter(void)
 {
     static uint8_t h263_rl_inter_table[2][2 * MAX_RUN + MAX_LEVEL + 3];
@@ -49,6 +51,7 @@ av_cold void ff_h263_init_rl_inter(void)
     static AVOnce init_static_once = AV_ONCE_INIT;
     ff_thread_once(&init_static_once, h263_init_rl_inter);
 }
+#endif
 
 void ff_h263_update_motion_val(MpegEncContext * s){
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;

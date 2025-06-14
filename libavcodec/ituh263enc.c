@@ -53,21 +53,7 @@
  */
 static uint8_t mv_penalty[MAX_FCODE+1][MAX_DMV*2+1];
 
-/**
- * Minimal fcode that a motion vector component would need in umv.
- * All entries in this table are 1.
- */
-static uint8_t umv_fcode_tab[MAX_MV*2+1];
-
-//unified encoding tables for run length encoding of coefficients
-//unified in the sense that the specification specifies the encoding in several steps.
-static uint8_t  uni_h263_intra_aic_rl_len [64*64*2*2];
-static uint8_t  uni_h263_inter_rl_len [64*64*2*2];
-//#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128 + (run)*256 + (level))
-//#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128*64 + (run) + (level)*64)
-#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128*64 + (run)*128 + (level))
-
-static av_cold void init_mv_penalty_and_fcode(void)
+static av_cold void init_mv_penalty(void)
 {
     for (int f_code = 1; f_code <= MAX_FCODE; f_code++) {
         for (int mv = -MAX_DMV; mv <= MAX_DMV; mv++) {
@@ -94,9 +80,22 @@ static av_cold void init_mv_penalty_and_fcode(void)
             mv_penalty[f_code][mv + MAX_DMV] = len;
         }
     }
-
-    memset(umv_fcode_tab, 1, sizeof(umv_fcode_tab));
 }
+
+#if CONFIG_H263_ENCODER
+/**
+ * Minimal fcode that a motion vector component would need in umv.
+ * All entries in this table are 1.
+ */
+static uint8_t umv_fcode_tab[MAX_MV*2+1];
+
+//unified encoding tables for run length encoding of coefficients
+//unified in the sense that the specification specifies the encoding in several steps.
+static uint8_t  uni_h263_intra_aic_rl_len [64*64*2*2];
+static uint8_t  uni_h263_inter_rl_len [64*64*2*2];
+//#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128 + (run)*256 + (level))
+//#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128*64 + (run) + (level)*64)
+#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128*64 + (run)*128 + (level))
 
 static av_cold void init_uni_h263_rl_tab(const RLTable *rl, uint8_t *len_tab)
 {
@@ -137,18 +136,22 @@ static av_cold void init_uni_h263_rl_tab(const RLTable *rl, uint8_t *len_tab)
         }
     }
 }
+#endif
 
 static av_cold void h263_encode_init_static(void)
 {
+#if CONFIG_H263_ENCODER
     static uint8_t rl_intra_table[2][2 * MAX_RUN + MAX_LEVEL + 3];
-
     ff_rl_init(&ff_rl_intra_aic, rl_intra_table);
     ff_h263_init_rl_inter();
 
     init_uni_h263_rl_tab(&ff_rl_intra_aic,  uni_h263_intra_aic_rl_len);
     init_uni_h263_rl_tab(&ff_h263_rl_inter, uni_h263_inter_rl_len);
 
-    init_mv_penalty_and_fcode();
+    memset(umv_fcode_tab, 1, sizeof(umv_fcode_tab));
+#endif
+
+    init_mv_penalty();
 }
 
 av_cold const uint8_t (*ff_h263_get_mv_penalty(void))[MAX_DMV*2+1]
