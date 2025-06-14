@@ -59,6 +59,10 @@ extern const uint16_t ff_inter_vlc[103][2];
 extern const int8_t ff_inter_level[102];
 extern const int8_t ff_inter_run[102];
 
+/* the following defines are valid for both ff_h263_rl_inter and ff_rl_intra_aic */
+#define H263_RL_NB_ELEMS 102 // does not include escape
+#define H263_RL_NON_LAST_CODES 58
+#define H263_ESCAPE_CODE_LENGTH 7
 extern RLTable ff_h263_rl_inter;
 extern RLTable ff_rl_intra_aic;
 
