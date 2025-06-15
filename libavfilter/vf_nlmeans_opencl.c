@@ -207,7 +207,7 @@ static int nlmeans_plane(AVFilterContext *avctx, cl_mem dst, cl_mem src,
             }
         }
     }
-    // repack dx/dy seperately, as we want to do four pairs of dx/dy in a batch
+    // repack dx/dy separately, as we want to do four pairs of dx/dy in a batch
     for (i = 0; i < nb_pixel / 4; i++) {
         dxdy[i * 8] = tmp[i * 8];         // dx0
         dxdy[i * 8 + 1] = tmp[i * 8 + 2]; // dx1

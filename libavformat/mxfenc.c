@@ -2682,7 +2682,7 @@ static int mxf_parse_jpeg2000_frame(AVFormatContext *s, AVStream *st, AVPacket *
         return AVERROR_INVALIDDATA;
     }
 
-    /* Extract usefull size information from the SIZ marker */
+    /* Extract useful size information from the SIZ marker */
     if (bytestream2_get_be16u(&g) != JPEG2000_SIZ) {
         av_log(s, AV_LOG_ERROR, "Mandatory SIZ marker is not present\n");
         return AVERROR_INVALIDDATA;

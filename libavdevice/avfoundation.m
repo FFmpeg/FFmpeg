@@ -150,7 +150,7 @@ static void unlock_frames(AVFContext* ctx)
     pthread_mutex_unlock(&ctx->frame_lock);
 }
 
-/** FrameReciever class - delegate for AVCaptureSession
+/** FrameReceiver class - delegate for AVCaptureSession
  */
 @interface AVFFrameReceiver : NSObject
 {
@@ -242,7 +242,7 @@ static void unlock_frames(AVFContext* ctx)
 
 @end
 
-/** AudioReciever class - delegate for AVCaptureSession
+/** AudioReceiver class - delegate for AVCaptureSession
  */
 @interface AVFAudioReceiver : NSObject
 {

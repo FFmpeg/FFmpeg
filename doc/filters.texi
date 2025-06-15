@@ -14547,7 +14547,7 @@ e.g. quality comparison.
 
 Each line of the map file must contain three items per input frame, the input
 PTS (decimal), the output PTS (decimal) and the
-output TIMEBASE (decimal/decimal), seperated by a space.
+output TIMEBASE (decimal/decimal), separated by a space.
 This file format corresponds to the output
 of @code{-stats_mux_pre_fmt="@{ptsi@} @{pts@} @{tb@}"}.
 
