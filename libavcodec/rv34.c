@@ -1029,8 +1029,7 @@ static inline void rv34_process_block(RV34DecContext *r,
                                       uint8_t *pdst, int stride,
                                       int fc, int sc, int q_dc, int q_ac)
 {
-    MpegEncContext *s = &r->s;
-    int16_t *ptr = s->block[0];
+    int16_t *const ptr = r->block;
     int has_ac = rv34_decode_block(ptr, &r->gb, r->cur_vlcs,
                                    fc, sc, q_dc, q_ac, q_ac);
     if(has_ac){
@@ -1049,7 +1048,7 @@ static void rv34_output_i16x16(RV34DecContext *r, int8_t *intra_types, int cbp)
     int             q_dc = rv34_qscale_tab[ r->luma_dc_quant_i[s->qscale] ],
                     q_ac = rv34_qscale_tab[s->qscale];
     uint8_t        *dst  = s->dest[0];
-    int16_t        *ptr  = s->block[0];
+    int16_t  *const ptr  = r->block;
     int i, j, itype, has_ac;
 
     memset(block16, 0, 16 * sizeof(*block16));
@@ -1215,7 +1214,7 @@ static int rv34_decode_inter_macroblock(RV34DecContext *r, int8_t *intra_types)
     MpegEncContext *s   = &r->s;
     GetBitContext *const gb = &r->gb;
     uint8_t        *dst = s->dest[0];
-    int16_t        *ptr = s->block[0];
+    int16_t  *const ptr = r->block;
     int          mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int cbp, cbp2;
     int q_dc, q_ac, has_ac;

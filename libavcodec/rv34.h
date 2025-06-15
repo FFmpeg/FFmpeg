@@ -119,6 +119,7 @@ typedef struct RV34DecContext{
     uint8_t  *cbp_chroma;    ///< CBP values for chroma subblocks
     uint16_t *deblock_coefs; ///< deblock coefficients for each macroblock
 
+    DECLARE_ALIGNED_16(int16_t, block)[16];
     /** 8x8 block available flags (for MV prediction) */
     DECLARE_ALIGNED(8, uint32_t, avail_cache)[3*4];
 
