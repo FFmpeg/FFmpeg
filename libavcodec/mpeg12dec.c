@@ -395,7 +395,7 @@ static inline int get_dmv(MpegEncContext *s)
 #define MT_16X8  2
 #define MT_DMV   3
 
-static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
+static int mpeg_decode_mb(MPVContext *const s)
 {
     int i, j, k, cbp, val, mb_type, motion_type;
     const int mb_block_count = 4 + (1 << s->chroma_format);
@@ -1449,7 +1449,8 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
     }
 
     for (;;) {
-        if ((ret = mpeg_decode_mb(s, s->block)) < 0)
+        ret = mpeg_decode_mb(s);
+        if (ret < 0)
             return ret;
 
         // Note motion_val is normally NULL unless we want to extract the MVs.
