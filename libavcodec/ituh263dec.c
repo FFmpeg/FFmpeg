@@ -123,7 +123,6 @@ static av_cold void h263_decode_init_vlc(void)
     VLC_INIT_STATIC_TABLE(ff_h263_mv_vlc, H263_MV_VLC_BITS, 33,
                           &ff_mvtab[0][1], 2, 1,
                           &ff_mvtab[0][0], 2, 1, 0);
-    ff_h263_init_rl_inter();
     VLC_INIT_RL(ff_h263_rl_inter, 554);
     INIT_FIRST_VLC_RL(ff_rl_intra_aic, 554);
     VLC_INIT_STATIC_SPARSE_TABLE(h263_mbtype_b_vlc, H263_MBTYPE_B_VLC_BITS, 15,
