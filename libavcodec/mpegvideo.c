@@ -116,9 +116,11 @@ av_cold void ff_mpv_idct_init(MpegEncContext *s)
 
 static av_cold int init_duplicate_context(MpegEncContext *s)
 {
-    if (!FF_ALLOCZ_TYPED_ARRAY(s->blocks,  1 + s->encoding))
-        return AVERROR(ENOMEM);
-    s->block = s->blocks[0];
+    if (!s->encoding) {
+        s->block = av_mallocz(12 * sizeof(*s->block));
+        if (!s->block)
+            return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
@@ -158,8 +160,7 @@ static av_cold void free_duplicate_context(MpegEncContext *s)
     s->sc.obmc_scratchpad = NULL;
     s->sc.linesize = 0;
 
-    av_freep(&s->blocks);
-    s->block = NULL;
+    av_freep(&s->block);
 }
 
 static av_cold void free_duplicate_contexts(MpegEncContext *s)
@@ -175,7 +176,6 @@ int ff_update_duplicate_context(MpegEncContext *dst, const MpegEncContext *src)
 {
 #define COPY(M)              \
     M(ScratchpadContext, sc) \
-    M(void*, blocks)         \
     M(void*, block)          \
     M(int, start_mb_y)       \
     M(int, end_mb_y)         \

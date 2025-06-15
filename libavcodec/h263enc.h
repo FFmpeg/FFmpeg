@@ -87,7 +87,7 @@ static inline int get_p_cbp(MPVEncContext *const s,
         for (int i = 0; i < 6; i++) {
             if (s->c.block_last_index[i] >= 0 && !((cbp >> (5 - i)) & 1)) {
                 s->c.block_last_index[i] = -1;
-                s->c.bdsp.clear_block(s->c.block[i]);
+                s->c.bdsp.clear_block(s->block[i]);
             }
         }
     } else {

@@ -538,6 +538,8 @@ static av_cold int init_slice_buffers(MPVMainEncContext *const m)
     for (unsigned i = 0; i < nb_slices; ++i) {
         MPVEncContext *const s2 = s->c.enc_contexts[i];
 
+        s2->block = s2->blocks[0];
+
         if (dct_error) {
             s2->dct_offset    = s->dct_offset;
             s2->dct_error_sum = (void*)dct_error;
@@ -2184,7 +2186,7 @@ static inline void dct_single_coeff_elimination(MPVEncContext *const s,
     int score = 0;
     int run = 0;
     int i;
-    int16_t *block = s->c.block[n];
+    int16_t *block = s->block[n];
     const int last_index = s->c.block_last_index[n];
     int skip_dc;
 
@@ -2399,27 +2401,27 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
             }
         }
 
-        s->pdsp.get_pixels(s->c.block[0], ptr_y,                  wrap_y);
-        s->pdsp.get_pixels(s->c.block[1], ptr_y + 8,              wrap_y);
-        s->pdsp.get_pixels(s->c.block[2], ptr_y + dct_offset,     wrap_y);
-        s->pdsp.get_pixels(s->c.block[3], ptr_y + dct_offset + 8, wrap_y);
+        s->pdsp.get_pixels(s->block[0], ptr_y,                  wrap_y);
+        s->pdsp.get_pixels(s->block[1], ptr_y + 8,              wrap_y);
+        s->pdsp.get_pixels(s->block[2], ptr_y + dct_offset,     wrap_y);
+        s->pdsp.get_pixels(s->block[3], ptr_y + dct_offset + 8, wrap_y);
 
         if (s->c.avctx->flags & AV_CODEC_FLAG_GRAY) {
             skip_dct[4] = 1;
             skip_dct[5] = 1;
         } else {
-            s->pdsp.get_pixels(s->c.block[4], ptr_cb, wrap_c);
-            s->pdsp.get_pixels(s->c.block[5], ptr_cr, wrap_c);
+            s->pdsp.get_pixels(s->block[4], ptr_cb, wrap_c);
+            s->pdsp.get_pixels(s->block[5], ptr_cr, wrap_c);
             if (chroma_format == CHROMA_422) {
-                s->pdsp.get_pixels(s->c.block[6], ptr_cb + uv_dct_offset, wrap_c);
-                s->pdsp.get_pixels(s->c.block[7], ptr_cr + uv_dct_offset, wrap_c);
+                s->pdsp.get_pixels(s->block[6], ptr_cb + uv_dct_offset, wrap_c);
+                s->pdsp.get_pixels(s->block[7], ptr_cr + uv_dct_offset, wrap_c);
             } else if (chroma_format == CHROMA_444) {
-                s->pdsp.get_pixels(s->c.block[ 6], ptr_cb + 8, wrap_c);
-                s->pdsp.get_pixels(s->c.block[ 7], ptr_cr + 8, wrap_c);
-                s->pdsp.get_pixels(s->c.block[ 8], ptr_cb + uv_dct_offset, wrap_c);
-                s->pdsp.get_pixels(s->c.block[ 9], ptr_cr + uv_dct_offset, wrap_c);
-                s->pdsp.get_pixels(s->c.block[10], ptr_cb + uv_dct_offset + 8, wrap_c);
-                s->pdsp.get_pixels(s->c.block[11], ptr_cr + uv_dct_offset + 8, wrap_c);
+                s->pdsp.get_pixels(s->block[ 6], ptr_cb + 8, wrap_c);
+                s->pdsp.get_pixels(s->block[ 7], ptr_cr + 8, wrap_c);
+                s->pdsp.get_pixels(s->block[ 8], ptr_cb + uv_dct_offset, wrap_c);
+                s->pdsp.get_pixels(s->block[ 9], ptr_cr + uv_dct_offset, wrap_c);
+                s->pdsp.get_pixels(s->block[10], ptr_cb + uv_dct_offset + 8, wrap_c);
+                s->pdsp.get_pixels(s->block[11], ptr_cr + uv_dct_offset + 8, wrap_c);
             }
         }
     } else {
@@ -2483,23 +2485,23 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
             }
         }
 
-        s->pdsp.diff_pixels(s->c.block[0], ptr_y, dest_y, wrap_y);
-        s->pdsp.diff_pixels(s->c.block[1], ptr_y + 8, dest_y + 8, wrap_y);
-        s->pdsp.diff_pixels(s->c.block[2], ptr_y + dct_offset,
+        s->pdsp.diff_pixels(s->block[0], ptr_y, dest_y, wrap_y);
+        s->pdsp.diff_pixels(s->block[1], ptr_y + 8, dest_y + 8, wrap_y);
+        s->pdsp.diff_pixels(s->block[2], ptr_y + dct_offset,
                             dest_y + dct_offset, wrap_y);
-        s->pdsp.diff_pixels(s->c.block[3], ptr_y + dct_offset + 8,
+        s->pdsp.diff_pixels(s->block[3], ptr_y + dct_offset + 8,
                             dest_y + dct_offset + 8, wrap_y);
 
         if (s->c.avctx->flags & AV_CODEC_FLAG_GRAY) {
             skip_dct[4] = 1;
             skip_dct[5] = 1;
         } else {
-            s->pdsp.diff_pixels(s->c.block[4], ptr_cb, dest_cb, wrap_c);
-            s->pdsp.diff_pixels(s->c.block[5], ptr_cr, dest_cr, wrap_c);
+            s->pdsp.diff_pixels(s->block[4], ptr_cb, dest_cb, wrap_c);
+            s->pdsp.diff_pixels(s->block[5], ptr_cr, dest_cr, wrap_c);
             if (!chroma_y_shift) { /* 422 */
-                s->pdsp.diff_pixels(s->c.block[6], ptr_cb + uv_dct_offset,
+                s->pdsp.diff_pixels(s->block[6], ptr_cb + uv_dct_offset,
                                     dest_cb + uv_dct_offset, wrap_c);
-                s->pdsp.diff_pixels(s->c.block[7], ptr_cr + uv_dct_offset,
+                s->pdsp.diff_pixels(s->block[7], ptr_cr + uv_dct_offset,
                                     dest_cr + uv_dct_offset, wrap_c);
             }
         }
@@ -2554,7 +2556,7 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
                 get_visual_weight(weight[7], ptr_cr + uv_dct_offset,
                                   wrap_c);
         }
-        memcpy(orig[0], s->c.block[0], sizeof(int16_t) * 64 * mb_block_count);
+        memcpy(orig[0], s->block[0], sizeof(int16_t) * 64 * mb_block_count);
     }
 
     /* DCT & quantize */
@@ -2563,14 +2565,14 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
         for (i = 0; i < mb_block_count; i++) {
             if (!skip_dct[i]) {
                 int overflow;
-                s->c.block_last_index[i] = s->dct_quantize(s, s->c.block[i], i, s->c.qscale, &overflow);
+                s->c.block_last_index[i] = s->dct_quantize(s, s->block[i], i, s->c.qscale, &overflow);
                 // FIXME we could decide to change to quantizer instead of
                 // clipping
                 // JS: I don't think that would be a good idea it could lower
                 //     quality instead of improve it. Just INTRADC clipping
                 //     deserves changes in quantizer
                 if (overflow)
-                    clip_coeffs(s, s->c.block[i], s->c.block_last_index[i]);
+                    clip_coeffs(s, s->block[i], s->c.block_last_index[i]);
             } else
                 s->c.block_last_index[i] = -1;
         }
@@ -2578,7 +2580,7 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
             for (i = 0; i < mb_block_count; i++) {
                 if (!skip_dct[i]) {
                     s->c.block_last_index[i] =
-                        dct_quantize_refine(s, s->c.block[i], weight[i],
+                        dct_quantize_refine(s, s->block[i], weight[i],
                                             orig[i], i, s->c.qscale);
                 }
             }
@@ -2602,12 +2604,12 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
     if ((s->c.avctx->flags & AV_CODEC_FLAG_GRAY) && s->c.mb_intra) {
         s->c.block_last_index[4] =
         s->c.block_last_index[5] = 0;
-        s->c.block[4][0] =
-        s->c.block[5][0] = (1024 + s->c.c_dc_scale / 2) / s->c.c_dc_scale;
+        s->block[4][0] =
+        s->block[5][0] = (1024 + s->c.c_dc_scale / 2) / s->c.c_dc_scale;
         if (!chroma_y_shift) { /* 422 / 444 */
             for (i=6; i<12; i++) {
                 s->c.block_last_index[i] = 0;
-                s->c.block[i][0] = s->c.block[4][0];
+                s->block[i][0] = s->block[4][0];
             }
         }
     }
@@ -2618,7 +2620,7 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
             int j;
             if (s->c.block_last_index[i] > 0) {
                 for (j = 63; j > 0; j--) {
-                    if (s->c.block[i][s->c.intra_scantable.permutated[j]])
+                    if (s->block[i][s->c.intra_scantable.permutated[j]])
                         break;
                 }
                 s->c.block_last_index[i] = j;
@@ -2626,7 +2628,7 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
         }
     }
 
-    s->encode_mb(s, s->c.block, motion_x, motion_y);
+    s->encode_mb(s, s->block, motion_x, motion_y);
 }
 
 static void encode_mb(MPVEncContext *const s, int motion_x, int motion_y)
@@ -2649,11 +2651,11 @@ typedef struct MBBackup {
         int qscale;
         int block_last_index[8];
         int interlaced_dct;
-        int16_t (*block)[64];
     } c;
     int mv_bits, i_tex_bits, p_tex_bits, i_count, misc_bits, last_bits;
     int dquant;
     int esc3_level_length;
+    int16_t (*block)[64];
     PutBitContext pb, pb2, tex_pb;
 } MBBackup;
 
@@ -2713,7 +2715,7 @@ static inline void AFTER ## _context_after_encode(DST_TYPE *const d,        \
         d->pb2    = s->pb2;                                                 \
         d->tex_pb = s->tex_pb;                                              \
     }                                                                       \
-    d->c.block = s->c.block;                                                \
+    d->block = s->block;                                                    \
     for (int i = 0; i < 8; i++)                                             \
         d->c.block_last_index[i] = s->c.block_last_index[i];                \
     d->c.interlaced_dct = s->c.interlaced_dct;                              \
@@ -2734,7 +2736,7 @@ static void encode_mb_hq(MPVEncContext *const s, MBBackup *const backup, MBBacku
 
     reset_context_before_encode(s, backup);
 
-    s->c.block = s->c.blocks[*next_block];
+    s->block = s->blocks[*next_block];
     s->pb      = pb[*next_block];
     if (s->c.data_partitioning) {
         s->pb2   = pb2   [*next_block];
@@ -2758,7 +2760,7 @@ static void encode_mb_hq(MPVEncContext *const s, MBBackup *const backup, MBBacku
     }
 
     if (s->c.avctx->mb_decision == FF_MB_DECISION_RD) {
-        mpv_reconstruct_mb(s, s->c.block);
+        mpv_reconstruct_mb(s, s->block);
 
         score *= s->lambda2;
         score += sse_mb(s) << FF_LAMBDA_SHIFT;
@@ -3446,7 +3448,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 }
 
                 if (s->c.avctx->mb_decision == FF_MB_DECISION_BITS)
-                    mpv_reconstruct_mb(s, s->c.block);
+                    mpv_reconstruct_mb(s, s->block);
             } else {
                 int motion_x = 0, motion_y = 0;
                 s->c.mv_type = MV_TYPE_16X16;
@@ -3569,7 +3571,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     s->c.out_format == FMT_H263 && s->c.pict_type != AV_PICTURE_TYPE_B)
                     ff_h263_update_mb(s);
 
-                mpv_reconstruct_mb(s, s->c.block);
+                mpv_reconstruct_mb(s, s->block);
             }
 
             s->c.cur_pic.qscale_table[xy] = s->c.qscale;

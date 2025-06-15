@@ -31,6 +31,7 @@
 #include <float.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
 #include "fdctdsp.h"
 #include "motion_est.h"
@@ -110,6 +111,8 @@ typedef struct MPVEncContext {
 
     int coded_score[12];
 
+    int16_t (*block)[64];       ///< points into blocks below
+
     /** precomputed matrix (combine qscale and DCT renorm) */
     int (*q_intra_matrix)[64];
     int (*q_chroma_intra_matrix)[64];
@@ -173,6 +176,8 @@ typedef struct MPVEncContext {
     int (*sum_abs_dctelem)(const int16_t *block);
 
     int intra_penalty;
+
+    DECLARE_ALIGNED_32(int16_t, blocks)[2][12][64]; // for HQ mode we need to keep the best block
 } MPVEncContext;
 
 typedef struct MPVMainEncContext {

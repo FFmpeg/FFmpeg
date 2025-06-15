@@ -3826,7 +3826,6 @@ static av_cold void clear_context(MpegEncContext *s)
     memset(s->thread_context, 0, sizeof(s->thread_context));
 
     s->block = NULL;
-    s->blocks = NULL;
     s->ac_val_base = NULL;
     s->ac_val = NULL;
     memset(&s->sc, 0, sizeof(s->sc));
