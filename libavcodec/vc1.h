@@ -31,6 +31,8 @@
 #include "vc1_common.h"
 #include "vc1dsp.h"
 
+#include "libavutil/mem_internal.h"
+
 #define AC_VLC_BITS 9
 
 /** Sequence quantizer mode */
@@ -399,6 +401,8 @@ typedef struct VC1Context{
 
     int parse_only;              ///< Context is used within parser
     int resync_marker;           ///< could this stream contain resync markers
+
+    DECLARE_ALIGNED_32(int16_t, blocks)[6][64];
 } VC1Context;
 
 /**

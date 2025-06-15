@@ -1950,22 +1950,22 @@ static int vc1_decode_b_mb(VC1Context *v)
             if (i == 1 || i == 3 || s->mb_x)
                 v->c_avail = v->mb_type[s->block_index[i] - 1];
 
-            ret = vc1_decode_intra_block(v, s->block[i], i, val, mquant,
+            ret = vc1_decode_intra_block(v, v->blocks[i], i, val, mquant,
                                          (i & 4) ? v->codingset2 : v->codingset);
             if (ret < 0)
                 return ret;
             if (CONFIG_GRAY && (i > 3) && (s->avctx->flags & AV_CODEC_FLAG_GRAY))
                 continue;
-            v->vc1dsp.vc1_inv_trans_8x8(s->block[i]);
+            v->vc1dsp.vc1_inv_trans_8x8(v->blocks[i]);
             if (v->rangeredfrm)
                 for (j = 0; j < 64; j++)
-                    s->block[i][j] *= 2;
-            s->idsp.put_signed_pixels_clamped(s->block[i],
+                    v->blocks[i][j] *= 2;
+            s->idsp.put_signed_pixels_clamped(v->blocks[i],
                                               s->dest[dst_idx] + off,
                                               i & 4 ? s->uvlinesize
                                                     : s->linesize);
         } else if (val) {
-            int pat = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb,
+            int pat = vc1_decode_p_block(v, v->blocks[i], i, mquant, ttmb,
                                          first_block, s->dest[dst_idx] + off,
                                          (i & 4) ? s->uvlinesize : s->linesize,
                                          CONFIG_GRAY && (i & 4) && (s->avctx->flags & AV_CODEC_FLAG_GRAY), NULL);
@@ -2031,18 +2031,18 @@ static int vc1_decode_b_mb_intfi(VC1Context *v)
             if (i == 1 || i == 3 || s->mb_x)
                 v->c_avail = v->mb_type[s->block_index[i] - 1];
 
-            ret = vc1_decode_intra_block(v, s->block[i], i, val, mquant,
+            ret = vc1_decode_intra_block(v, v->blocks[i], i, val, mquant,
                                          (i & 4) ? v->codingset2 : v->codingset);
             if (ret < 0)
                 return ret;
             if (CONFIG_GRAY && (i > 3) && (s->avctx->flags & AV_CODEC_FLAG_GRAY))
                 continue;
-            v->vc1dsp.vc1_inv_trans_8x8(s->block[i]);
+            v->vc1dsp.vc1_inv_trans_8x8(v->blocks[i]);
             if (v->rangeredfrm)
                 for (j = 0; j < 64; j++)
-                    s->block[i][j] <<= 1;
+                    v->blocks[i][j] <<= 1;
             off  = (i & 4) ? 0 : ((i & 1) * 8 + (i & 2) * 4 * s->linesize);
-            s->idsp.put_signed_pixels_clamped(s->block[i],
+            s->idsp.put_signed_pixels_clamped(v->blocks[i],
                                               s->dest[dst_idx] + off,
                                               (i & 4) ? s->uvlinesize
                                                       : s->linesize);
@@ -2129,7 +2129,7 @@ static int vc1_decode_b_mb_intfi(VC1Context *v)
             val = ((cbp >> (5 - i)) & 1);
             off = (i & 4) ? 0 : (i & 1) * 8 + (i & 2) * 4 * s->linesize;
             if (val) {
-                pat = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb,
+                pat = vc1_decode_p_block(v, v->blocks[i], i, mquant, ttmb,
                                          first_block, s->dest[dst_idx] + off,
                                          (i & 4) ? s->uvlinesize : s->linesize,
                                          CONFIG_GRAY && (i & 4) && (s->avctx->flags & AV_CODEC_FLAG_GRAY), &block_tt);
@@ -2227,13 +2227,13 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
             if (i == 1 || i == 3 || s->mb_x)
                 v->c_avail = v->mb_type[s->block_index[i] - 1];
 
-            ret = vc1_decode_intra_block(v, s->block[i], i, val, mquant,
+            ret = vc1_decode_intra_block(v, v->blocks[i], i, val, mquant,
                                          (i & 4) ? v->codingset2 : v->codingset);
             if (ret < 0)
                 return ret;
             if (CONFIG_GRAY && i > 3 && (s->avctx->flags & AV_CODEC_FLAG_GRAY))
                 continue;
-            v->vc1dsp.vc1_inv_trans_8x8(s->block[i]);
+            v->vc1dsp.vc1_inv_trans_8x8(v->blocks[i]);
             if (i < 4) {
                 stride_y = s->linesize << fieldtx;
                 off = (fieldtx) ? ((i & 1) * 8) + ((i & 2) >> 1) * s->linesize : (i & 1) * 8 + 4 * (i & 2) * s->linesize;
@@ -2241,7 +2241,7 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
                 stride_y = s->uvlinesize;
                 off = 0;
             }
-            s->idsp.put_signed_pixels_clamped(s->block[i],
+            s->idsp.put_signed_pixels_clamped(v->blocks[i],
                                               s->dest[dst_idx] + off,
                                               stride_y);
         }
@@ -2430,7 +2430,7 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
                 else
                     off = (i & 4) ? 0 : ((i & 1) * 8 + ((i > 1) * s->linesize));
                 if (val) {
-                    pat = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb,
+                    pat = vc1_decode_p_block(v, v->blocks[i], i, mquant, ttmb,
                                              first_block, s->dest[dst_idx] + off,
                                              (i & 4) ? s->uvlinesize : (s->linesize << fieldtx),
                                              CONFIG_GRAY && (i & 4) && (s->avctx->flags & AV_CODEC_FLAG_GRAY), &block_tt);
