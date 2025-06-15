@@ -1083,7 +1083,7 @@ static av_cold void debug_dct_coeffs(MPVContext *s, const int16_t block[][64])
     }
 }
 
-void ff_mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
+void ff_mpv_reconstruct_mb(MPVContext *s, int16_t block[][64])
 {
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
     uint8_t *mbskip_ptr = &s->mbskip_table[mb_xy];

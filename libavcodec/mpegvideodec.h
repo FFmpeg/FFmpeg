@@ -56,7 +56,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx);
  * Ensure that the dummy frames are allocated according to pict_type if necessary.
  */
 int ff_mpv_alloc_dummy_frames(MpegEncContext *s);
-void ff_mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64]);
+void ff_mpv_reconstruct_mb(MPVContext *s, int16_t block[][64]);
 void ff_mpv_frame_end(MpegEncContext *s);
 
 int ff_mpv_export_qp_table(const MpegEncContext *s, AVFrame *f,
