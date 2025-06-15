@@ -1066,6 +1066,9 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
 
 static av_cold void debug_dct_coeffs(MPVContext *s, const int16_t block[][64])
 {
+    if (!block) // happens when called via error resilience
+        return;
+
     void *const logctx = s->avctx;
     const uint8_t *const idct_permutation = s->idsp.idct_permutation;
 
