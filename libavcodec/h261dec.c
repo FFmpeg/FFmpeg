@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "get_bits.h"
 #include "mpeg_er.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
@@ -50,6 +51,8 @@ static VLCElem h261_cbp_vlc[512];
 
 typedef struct H261DecContext {
     MpegEncContext s;
+
+    GetBitContext gb;
 
     H261Context common;
 
@@ -129,18 +132,18 @@ static int h261_decode_gob_header(H261DecContext *h)
 
     if (!h->gob_start_code_skipped) {
         /* Check for GOB Start Code */
-        val = show_bits(&s->gb, 15);
+        val = show_bits(&h->gb, 15);
         if (val)
             return -1;
 
         /* We have a GBSC */
-        skip_bits(&s->gb, 16);
+        skip_bits(&h->gb, 16);
     }
 
     h->gob_start_code_skipped = 0;
 
-    h->gob_number = get_bits(&s->gb, 4); /* GN */
-    s->qscale     = get_bits(&s->gb, 5); /* GQUANT */
+    h->gob_number = get_bits(&h->gb, 4); /* GN */
+    s->qscale     = get_bits(&h->gb, 5); /* GQUANT */
 
     /* Check if gob_number is valid */
     if (s->mb_height == 18) { // CIF
@@ -153,7 +156,7 @@ static int h261_decode_gob_header(H261DecContext *h)
     }
 
     /* GEI */
-    if (skip_1stop_8data_bits(&s->gb) < 0)
+    if (skip_1stop_8data_bits(&h->gb) < 0)
         return AVERROR_INVALIDDATA;
 
     if (s->qscale == 0) {
@@ -257,7 +260,7 @@ static int h261_decode_block(H261DecContext *h, int16_t *block, int n, int coded
     scan_table = s->intra_scantable.permutated;
     if (s->mb_intra) {
         /* DC coef */
-        level = get_bits(&s->gb, 8);
+        level = get_bits(&h->gb, 8);
         // 0 (00000000b) and -128 (10000000b) are FORBIDDEN
         if ((level & 0x7F) == 0) {
             av_log(s->avctx, AV_LOG_ERROR, "illegal dc %d at %d %d\n",
@@ -275,10 +278,10 @@ static int h261_decode_block(H261DecContext *h, int16_t *block, int n, int coded
         // EOB          Not possible for first level when cbp is available (that's why the table is different)
         // 0    1       1s
         // *    *       0*
-        int check = show_bits(&s->gb, 2);
+        int check = show_bits(&h->gb, 2);
         i = 0;
         if (check & 0x2) {
-            skip_bits(&s->gb, 2);
+            skip_bits(&h->gb, 2);
             block[0] = qmul + qadd;
             block[0] *= (check & 0x1) ? -1 : 1;
             i        = 1;
@@ -291,14 +294,14 @@ static int h261_decode_block(H261DecContext *h, int16_t *block, int n, int coded
         return 0;
     }
     {
-    OPEN_READER(re, &s->gb);
+    OPEN_READER(re, &h->gb);
     i--; // offset by -1 to allow direct indexing of scan_table
     for (;;) {
-        UPDATE_CACHE(re, &s->gb);
-        GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0], TCOEFF_VLC_BITS, 2, 0);
+        UPDATE_CACHE(re, &h->gb);
+        GET_RL_VLC(level, run, re, &h->gb, rl->rl_vlc[0], TCOEFF_VLC_BITS, 2, 0);
         if (run == 66) {
             if (level) {
-                CLOSE_READER(re, &s->gb);
+                CLOSE_READER(re, &h->gb);
                 av_log(s->avctx, AV_LOG_ERROR, "illegal ac vlc code at %dx%d\n",
                        s->mb_x, s->mb_y);
                 return -1;
@@ -307,25 +310,25 @@ static int h261_decode_block(H261DecContext *h, int16_t *block, int n, int coded
             /* The remaining combinations of (run, level) are encoded with a
              * 20-bit word consisting of 6 bits escape, 6 bits run and 8 bits
              * level. */
-            run   = SHOW_UBITS(re, &s->gb, 6) + 1;
-            SKIP_CACHE(re, &s->gb, 6);
-            level = SHOW_SBITS(re, &s->gb, 8);
+            run   = SHOW_UBITS(re, &h->gb, 6) + 1;
+            SKIP_CACHE(re, &h->gb, 6);
+            level = SHOW_SBITS(re, &h->gb, 8);
             if (level > 0)
                 level = level * qmul + qadd;
             else if (level < 0)
                 level = level * qmul - qadd;
-            SKIP_COUNTER(re, &s->gb, 6 + 8);
+            SKIP_COUNTER(re, &h->gb, 6 + 8);
         } else if (level == 0) {
             break;
         } else {
             level = level * qmul + qadd;
-            if (SHOW_UBITS(re, &s->gb, 1))
+            if (SHOW_UBITS(re, &h->gb, 1))
                 level = -level;
-            SKIP_COUNTER(re, &s->gb, 1);
+            SKIP_COUNTER(re, &h->gb, 1);
         }
         i += run;
         if (i >= 64) {
-            CLOSE_READER(re, &s->gb);
+            CLOSE_READER(re, &h->gb);
             av_log(s->avctx, AV_LOG_ERROR, "run overflow at %dx%d\n",
                    s->mb_x, s->mb_y);
             return -1;
@@ -333,7 +336,7 @@ static int h261_decode_block(H261DecContext *h, int16_t *block, int n, int coded
         j        = scan_table[i];
         block[j] = level;
     }
-    CLOSE_READER(re, &s->gb);
+    CLOSE_READER(re, &h->gb);
     }
     s->block_last_index[n] = i;
     return 0;
@@ -348,7 +351,7 @@ static int h261_decode_mb(H261DecContext *h)
     cbp = 63;
     // Read mba
     do {
-        h->mba_diff = get_vlc2(&s->gb, h261_mba_vlc,
+        h->mba_diff = get_vlc2(&h->gb, h261_mba_vlc,
                                H261_MBA_VLC_BITS, 2);
 
         /* Check for slice end */
@@ -360,7 +363,7 @@ static int h261_decode_mb(H261DecContext *h)
     } while (h->mba_diff == MBA_STUFFING); // stuffing
 
     if (h->mba_diff < 0) {
-        if (get_bits_left(&s->gb) <= 7)
+        if (get_bits_left(&h->gb) <= 7)
             return SLICE_END;
 
         av_log(s->avctx, AV_LOG_ERROR, "illegal mba at %d %d\n", s->mb_x, s->mb_y);
@@ -379,7 +382,7 @@ static int h261_decode_mb(H261DecContext *h)
     h261_init_dest(s);
 
     // Read mtype
-    com->mtype = get_vlc2(&s->gb, h261_mtype_vlc, H261_MTYPE_VLC_BITS, 2);
+    com->mtype = get_vlc2(&h->gb, h261_mtype_vlc, H261_MTYPE_VLC_BITS, 2);
     if (com->mtype < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid mtype index\n");
         return SLICE_ERROR;
@@ -387,7 +390,7 @@ static int h261_decode_mb(H261DecContext *h)
 
     // Read mquant
     if (IS_QUANT(com->mtype)) {
-        s->qscale = get_bits(&s->gb, 5);
+        s->qscale = get_bits(&h->gb, 5);
         if (!s->qscale)
             s->qscale = 1;
     }
@@ -410,8 +413,8 @@ static int h261_decode_mb(H261DecContext *h)
             h->current_mv_y = 0;
         }
 
-        h->current_mv_x = decode_mv_component(&s->gb, h->current_mv_x);
-        h->current_mv_y = decode_mv_component(&s->gb, h->current_mv_y);
+        h->current_mv_x = decode_mv_component(&h->gb, h->current_mv_x);
+        h->current_mv_y = decode_mv_component(&h->gb, h->current_mv_y);
     } else {
         h->current_mv_x = 0;
         h->current_mv_y = 0;
@@ -419,7 +422,7 @@ static int h261_decode_mb(H261DecContext *h)
 
     // Read cbp
     if (HAS_CBP(com->mtype))
-        cbp = get_vlc2(&s->gb, h261_cbp_vlc, H261_CBP_VLC_BITS, 1) + 1;
+        cbp = get_vlc2(&h->gb, h261_cbp_vlc, H261_CBP_VLC_BITS, 1) + 1;
 
     if (s->mb_intra) {
         s->cur_pic.mb_type[xy] = MB_TYPE_INTRA;
@@ -466,11 +469,10 @@ intra:
 static int h261_decode_picture_header(H261DecContext *h, int *is_key)
 {
     MpegEncContext *const s = &h->s;
-    int format, i;
     uint32_t startcode = 0;
 
-    for (i = get_bits_left(&s->gb); i > 24; i -= 1) {
-        startcode = ((startcode << 1) | get_bits(&s->gb, 1)) & 0x000FFFFF;
+    for (int i = get_bits_left(&h->gb); i > 24; i -= 1) {
+        startcode = ((startcode << 1) | get_bits(&h->gb, 1)) & 0x000FFFFF;
 
         if (startcode == 0x10)
             break;
@@ -482,14 +484,14 @@ static int h261_decode_picture_header(H261DecContext *h, int *is_key)
     }
 
     /* temporal reference */
-    skip_bits(&s->gb, 5); /* picture timestamp */
+    skip_bits(&h->gb, 5); /* picture timestamp */
 
     /* PTYPE starts here */
-    skip_bits1(&s->gb); /* split screen off */
-    skip_bits1(&s->gb); /* camera  off */
-    *is_key = get_bits1(&s->gb); /* freeze picture release off */
+    skip_bits1(&h->gb); /* split screen off */
+    skip_bits1(&h->gb); /* camera  off */
+    *is_key = get_bits1(&h->gb); /* freeze picture release off */
 
-    format = get_bits1(&s->gb);
+    int format = get_bits1(&h->gb);
 
     // only 2 formats possible
     if (format == 0) { // QCIF
@@ -500,11 +502,11 @@ static int h261_decode_picture_header(H261DecContext *h, int *is_key)
         s->height    = 288;
     }
 
-    skip_bits1(&s->gb); /* still image mode off */
-    skip_bits1(&s->gb); /* Reserved */
+    skip_bits1(&h->gb); /* still image mode off */
+    skip_bits1(&h->gb); /* Reserved */
 
     /* PEI */
-    if (skip_1stop_8data_bits(&s->gb) < 0)
+    if (skip_1stop_8data_bits(&h->gb) < 0)
         return AVERROR_INVALIDDATA;
 
     h->gob_number = 0;
@@ -552,7 +554,7 @@ static int h261_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
     h->gob_start_code_skipped = 0;
 
-    init_get_bits(&s->gb, buf, buf_size * 8);
+    init_get_bits(&h->gb, buf, buf_size * 8);
 
     ret = h261_decode_picture_header(h, &is_key);
 
