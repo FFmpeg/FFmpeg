@@ -2095,7 +2095,6 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
 static void mpeg_decode_user_data(AVCodecContext *avctx,
                                   const uint8_t *p, int buf_size)
 {
-    Mpeg1Context *s = avctx->priv_data;
     const uint8_t *buf_end = p + buf_size;
     Mpeg1Context *s1 = avctx->priv_data;
 
@@ -2111,7 +2110,7 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
         int i;
         for(i=0; i<20; i++)
             if (!memcmp(p+i, "\0TMPGEXS\0", 9)){
-                s->tmpgexs= 1;
+                s1->tmpgexs = 1;
             }
     }
     /* we parse the DTG active format information */
