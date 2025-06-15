@@ -332,6 +332,7 @@ typedef struct MpegEncContext {
     ERContext er;
 } MpegEncContext;
 
+typedef MpegEncContext MPVContext;
 
 /**
  * Set the given MpegEncContext to common defaults (same for encoding
