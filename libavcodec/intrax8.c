@@ -437,7 +437,7 @@ static void x8_ac_compensation(IntraX8Context *const w, const int direction,
                                const int dc_level)
 {
     int t;
-#define B(x,y)  w->block[0][w->idct_permutation[(x) + (y) * 8]]
+#define B(x,y)  w->block[w->idct_permutation[(x) + (y) * 8]]
 #define T(x)  ((x) * dc_level + 0x8000) >> 16;
     switch (direction) {
     case 0:
@@ -530,7 +530,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
     int sign;
 
     av_assert2(w->orient < 12);
-    w->bdsp.clear_block(w->block[0]);
+    w->bdsp.clear_block(w->block);
 
     if (chroma)
         dc_mode = 2;
@@ -591,7 +591,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
             if (use_quant_matrix)
                 level = (level * quant_table[pos]) >> 8;
 
-            w->block[0][scantable[pos]] = level;
+            w->block[scantable[pos]] = level;
         } while (!final);
     } else { // DC only
         if (w->flat_dc && ((unsigned) (dc_level + 1)) < 3) { // [-1; 1]
@@ -613,9 +613,9 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
         zeros_only = dc_level == 0;
     }
     if (!chroma)
-        w->block[0][0] = dc_level * w->quant;
+        w->block[0] = dc_level * w->quant;
     else
-        w->block[0][0] = dc_level * w->quant_dc_chroma;
+        w->block[0] = dc_level * w->quant_dc_chroma;
 
     // there is !zero_only check in the original, but dc_level check is enough
     if ((unsigned int) (dc_level + 1) >= 3 && (w->edges & 3) != 3) {
@@ -624,7 +624,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
          * -> 01'10' 10'10' 00'00' 00'01' 01'11' 11'00 => 0x6A017C */
         direction = (0x6A017C >> (w->orient * 2)) & 3;
         if (direction != 3) {
-            x8_ac_compensation(w, direction, w->block[0][0]);
+            x8_ac_compensation(w, direction, w->block[0]);
         }
     }
 
@@ -639,7 +639,7 @@ static int x8_decode_intra_mb(IntraX8Context *const w, const int chroma)
     if (!zeros_only)
         w->wdsp.idct_add(w->dest[chroma],
                          w->frame->linesize[!!chroma],
-                         w->block[0]);
+                         w->block);
 
 block_placed:
     if (!chroma)
@@ -678,7 +678,7 @@ static void x8_init_block_index(IntraX8Context *w, AVFrame *frame)
 
 av_cold int ff_intrax8_common_init(AVCodecContext *avctx,
                                    IntraX8Context *w,
-                                   int16_t (*block)[64],
+                                   int16_t block[64],
                                    int mb_width, int mb_height)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;

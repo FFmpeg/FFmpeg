@@ -38,7 +38,7 @@ typedef struct IntraX8Context {
     WMV2DSPContext wdsp;
     uint8_t idct_permutation[64];
     AVCodecContext *avctx;
-    int16_t (*block)[64];
+    int16_t *block;
 
     // set by the caller codec
     IntraX8DSPContext dsp;
@@ -82,7 +82,7 @@ typedef struct IntraX8Context {
  */
 int ff_intrax8_common_init(AVCodecContext *avctx,
                            IntraX8Context *w,
-                           int16_t (*block)[64],
+                           int16_t block[64],
                            int mb_width, int mb_height);
 
 /**
