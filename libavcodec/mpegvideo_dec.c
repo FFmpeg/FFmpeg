@@ -1066,15 +1066,18 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
 
 static av_cold void debug_dct_coeffs(MPVContext *s, const int16_t block[][64])
 {
-       /* print DCT coefficients */
-       av_log(s->avctx, AV_LOG_DEBUG, "DCT coeffs of MB at %dx%d:\n", s->mb_x, s->mb_y);
-       for (int i = 0; i < 6; i++) {
-           for (int j = 0; j < 64; j++) {
-               av_log(s->avctx, AV_LOG_DEBUG, "%5d",
-                      block[i][s->idsp.idct_permutation[j]]);
-           }
-           av_log(s->avctx, AV_LOG_DEBUG, "\n");
-       }
+    void *const logctx = s->avctx;
+    const uint8_t *const idct_permutation = s->idsp.idct_permutation;
+
+    /* print DCT coefficients */
+    av_log(logctx, AV_LOG_DEBUG, "DCT coeffs of MB at %dx%d:\n", s->mb_x, s->mb_y);
+    for (int i = 0; i < 6; i++) {
+        for (int j = 0; j < 64; j++) {
+            av_log(logctx, AV_LOG_DEBUG, "%5d",
+                   block[i][idct_permutation[j]]);
+        }
+        av_log(logctx, AV_LOG_DEBUG, "\n");
+    }
 }
 
 void ff_mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
