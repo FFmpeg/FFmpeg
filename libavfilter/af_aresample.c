@@ -354,8 +354,7 @@ static int activate(AVFilterContext *ctx)
         return ff_filter_frame(outlink, outsamplesref);
     }
 
-    ff_filter_set_ready(ctx, 100);
-    return 0;
+    return FFERROR_NOT_READY;
 }
 
 static const AVClass *resample_child_class_iterate(void **iter)
