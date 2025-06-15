@@ -101,6 +101,7 @@ static int activate(AVFilterContext *ctx)
         av_frame_free(&in);
         if (ret < 0)
             return ret;
+        return 0;
     }
 
     if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
