@@ -24,6 +24,7 @@
 #define AVCODEC_VC1_H
 
 #include "avcodec.h"
+#include "get_bits.h"
 #include "h264chroma.h"
 #include "mpegvideo.h"
 #include "intrax8.h"
@@ -172,6 +173,7 @@ enum Imode {
  */
 typedef struct VC1Context{
     MpegEncContext s;
+    GetBitContext gb;
     IntraX8Context x8;
     H264ChromaContext h264chroma;
     VC1DSPContext vc1dsp;

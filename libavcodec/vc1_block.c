@@ -269,7 +269,7 @@ static av_always_inline void get_mvdata_interlaced(VC1Context *v, int *dmv_x,
 {
     int index, index1;
     int extend_x, extend_y;
-    GetBitContext *gb = &v->s.gb;
+    GetBitContext *const gb = &v->gb;
     int bits, esc;
     int val, sign;
 
@@ -515,7 +515,7 @@ static inline int vc1_coded_block_pred(MpegEncContext * s, int n,
 static int vc1_decode_ac_coeff(VC1Context *v, int *last, int *skip,
                                 int *value, int codingset)
 {
-    GetBitContext *gb = &v->s.gb;
+    GetBitContext *const gb = &v->gb;
     int index, run, level, lst, sign;
 
     index = get_vlc2(gb, ff_vc1_ac_coeff_table[codingset], AC_VLC_BITS, 3);
@@ -582,7 +582,7 @@ static int vc1_decode_ac_coeff(VC1Context *v, int *last, int *skip,
 static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
                               int coded, int codingset)
 {
-    GetBitContext *gb = &v->s.gb;
+    GetBitContext *const gb = &v->gb;
     MpegEncContext *s = &v->s;
     int dc_pred_dir = 0; /* Direction of the DC prediction used */
     int16_t *dc_val;
@@ -590,7 +590,7 @@ static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
     int dcdiff, scale;
 
     /* Get DC differential */
-    dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_vlc[v->dc_table_index][n >= 4],
+    dcdiff = get_vlc2(gb, ff_msmp4_dc_vlc[v->dc_table_index][n >= 4],
                       MSMP4_DC_VLC_BITS, 3);
     if (dcdiff) {
         const int m = (v->pq == 1 || v->pq == 2) ? 3 - v->pq : 0;
@@ -709,7 +709,7 @@ static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
 static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
                                   int coded, int codingset, int mquant)
 {
-    GetBitContext *gb = &v->s.gb;
+    GetBitContext *const gb = &v->gb;
     MpegEncContext *s = &v->s;
     int dc_pred_dir = 0; /* Direction of the DC prediction used */
     int16_t *dc_val = NULL;
@@ -723,7 +723,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
     int quant = FFABS(mquant);
 
     /* Get DC differential */
-    dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_vlc[v->dc_table_index][n >= 4],
+    dcdiff = get_vlc2(gb, ff_msmp4_dc_vlc[v->dc_table_index][n >= 4],
                       MSMP4_DC_VLC_BITS, 3);
     if (dcdiff) {
         const int m = (quant == 1 || quant == 2) ? 3 - quant : 0;
@@ -889,7 +889,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
 static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
                                   int coded, int mquant, int codingset)
 {
-    GetBitContext *gb = &v->s.gb;
+    GetBitContext *const gb = &v->gb;
     MpegEncContext *s = &v->s;
     int dc_pred_dir = 0; /* Direction of the DC prediction used */
     int16_t *dc_val = NULL;
@@ -911,7 +911,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     s->y_dc_scale = ff_wmv3_dc_scale_table[quant];
 
     /* Get DC differential */
-    dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_vlc[v->dc_table_index][n >= 4],
+    dcdiff = get_vlc2(gb, ff_msmp4_dc_vlc[v->dc_table_index][n >= 4],
                       MSMP4_DC_VLC_BITS, 3);
     if (dcdiff) {
         const int m = (quant == 1 || quant == 2) ? 3 - quant : 0;
@@ -1084,7 +1084,7 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
                               int *ttmb_out)
 {
     MpegEncContext *s = &v->s;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *const gb = &v->gb;
     int i, j;
     int subblkpat = 0;
     int scale, off, idx, last, skip, value;
@@ -1253,7 +1253,7 @@ static const uint8_t size_table[6] = { 0, 2, 3, 4,  5,  8 };
 static int vc1_decode_p_mb(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *const gb = &v->gb;
     int i, j;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int cbp; /* cbp decoding stuff */
@@ -1300,7 +1300,7 @@ static int vc1_decode_p_mb(VC1Context *v)
             } else if (mb_has_coeffs) {
                 if (s->mb_intra)
                     s->ac_pred = get_bits1(gb);
-                cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
+                cbp = get_vlc2(gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
                 GET_MQUANT();
             } else {
                 mquant = v->pq;
@@ -1367,7 +1367,7 @@ static int vc1_decode_p_mb(VC1Context *v)
             int intra_count = 0, coded_inter = 0;
             int is_intra[6], is_coded[6];
             /* Get CBPCY */
-            cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
+            cbp = get_vlc2(gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
             for (i = 0; i < 6; i++) {
                 val = ((cbp >> (5 - i)) & 1);
                 s->dc_val[s->block_index[i]] = 0;
@@ -1490,7 +1490,7 @@ end:
 static int vc1_decode_p_mb_intfr(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *const gb = &v->gb;
     int i;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int cbp = 0; /* cbp decoding stuff */
@@ -1560,7 +1560,7 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
             fieldtx = v->fieldtx_plane[mb_pos] = get_bits1(gb);
             mb_has_coeffs = get_bits1(gb);
             if (mb_has_coeffs)
-                cbp = 1 + get_vlc2(&v->s.gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
+                cbp = 1 + get_vlc2(gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
             v->s.ac_pred = v->acpred_plane[mb_pos] = get_bits1(gb);
             GET_MQUANT();
             s->cur_pic.qscale_table[mb_pos] = mquant;
@@ -1591,7 +1591,7 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
         } else { // inter MB
             mb_has_coeffs = ff_vc1_mbmode_intfrp[v->fourmvswitch][idx_mbmode][3];
             if (mb_has_coeffs)
-                cbp = 1 + get_vlc2(&v->s.gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
+                cbp = 1 + get_vlc2(gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
             if (ff_vc1_mbmode_intfrp[v->fourmvswitch][idx_mbmode][0] == MV_PMODE_INTFR_2MV_FIELD) {
                 v->twomvbp = get_vlc2(gb, v->twomvbp_vlc, VC1_2MV_BLOCK_PATTERN_VLC_BITS, 1);
             } else {
@@ -1698,7 +1698,7 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
 static int vc1_decode_p_mb_intfi(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *const gb = &v->gb;
     int i;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int cbp = 0; /* cbp decoding stuff */
@@ -1731,7 +1731,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
         v->s.ac_pred  = v->acpred_plane[mb_pos] = get_bits1(gb);
         mb_has_coeffs = idx_mbmode & 1;
         if (mb_has_coeffs)
-            cbp = 1 + get_vlc2(&v->s.gb, v->cbpcy_vlc, VC1_ICBPCY_VLC_BITS, 2);
+            cbp = 1 + get_vlc2(gb, v->cbpcy_vlc, VC1_ICBPCY_VLC_BITS, 2);
         dst_idx = 0;
         for (i = 0; i < 6; i++) {
             v->a_avail = v->c_avail          = 0;
@@ -1779,7 +1779,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
             mb_has_coeffs = idx_mbmode & 1;
         }
         if (mb_has_coeffs)
-            cbp = 1 + get_vlc2(&v->s.gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
+            cbp = 1 + get_vlc2(gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
         if (cbp) {
             GET_MQUANT();
         }
@@ -1823,7 +1823,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
 static int vc1_decode_b_mb(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *const gb = &v->gb;
     int i, j;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int cbp = 0; /* cbp decoding stuff */
@@ -1890,7 +1890,7 @@ static int vc1_decode_b_mb(VC1Context *v)
         return 0;
     }
     if (direct) {
-        cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
+        cbp = get_vlc2(gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
         GET_MQUANT();
         s->mb_intra = 0;
         s->cur_pic.qscale_table[mb_pos] = mquant;
@@ -1928,7 +1928,7 @@ static int vc1_decode_b_mb(VC1Context *v)
             }
             if (s->mb_intra)
                 s->ac_pred = get_bits1(gb);
-            cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
+            cbp = get_vlc2(gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
             GET_MQUANT();
             s->cur_pic.qscale_table[mb_pos] = mquant;
             if (!v->ttmbf && !s->mb_intra && mb_has_coeffs)
@@ -1984,7 +1984,7 @@ static int vc1_decode_b_mb(VC1Context *v)
 static int vc1_decode_b_mb_intfi(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *const gb = &v->gb;
     int i, j;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int cbp = 0; /* cbp decoding stuff */
@@ -2018,7 +2018,7 @@ static int vc1_decode_b_mb_intfi(VC1Context *v)
         v->s.ac_pred  = v->acpred_plane[mb_pos] = get_bits1(gb);
         mb_has_coeffs = idx_mbmode & 1;
         if (mb_has_coeffs)
-            cbp = 1 + get_vlc2(&v->s.gb, v->cbpcy_vlc, VC1_ICBPCY_VLC_BITS, 2);
+            cbp = 1 + get_vlc2(gb, v->cbpcy_vlc, VC1_ICBPCY_VLC_BITS, 2);
         dst_idx = 0;
         for (i = 0; i < 6; i++) {
             v->a_avail = v->c_avail          = 0;
@@ -2114,7 +2114,7 @@ static int vc1_decode_b_mb_intfi(VC1Context *v)
             mb_has_coeffs = idx_mbmode & 1;
         }
         if (mb_has_coeffs)
-            cbp = 1 + get_vlc2(&v->s.gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
+            cbp = 1 + get_vlc2(gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
         if (cbp) {
             GET_MQUANT();
         }
@@ -2153,7 +2153,7 @@ static int vc1_decode_b_mb_intfi(VC1Context *v)
 static int vc1_decode_b_mb_intfr(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *const gb = &v->gb;
     int i, j;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int cbp = 0; /* cbp decoding stuff */
@@ -2209,7 +2209,7 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
         fieldtx = v->fieldtx_plane[mb_pos] = get_bits1(gb);
         mb_has_coeffs = get_bits1(gb);
         if (mb_has_coeffs)
-            cbp = 1 + get_vlc2(&v->s.gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
+            cbp = 1 + get_vlc2(gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
         v->s.ac_pred = v->acpred_plane[mb_pos] = get_bits1(gb);
         GET_MQUANT();
         s->cur_pic.qscale_table[mb_pos] = mquant;
@@ -2305,7 +2305,7 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
         if (!skipped) { // inter MB
             mb_has_coeffs = ff_vc1_mbmode_intfrp[0][idx_mbmode][3];
             if (mb_has_coeffs)
-                cbp = 1 + get_vlc2(&v->s.gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
+                cbp = 1 + get_vlc2(gb, v->cbpcy_vlc, VC1_CBPCY_P_VLC_BITS, 2);
             if (!direct) {
                 if (bmvtype == BMV_TYPE_INTERPOLATED && twomv) {
                     v->fourmvbp = get_vlc2(gb, v->fourmvbp_vlc, VC1_4MV_BLOCK_PATTERN_VLC_BITS, 1);
@@ -2557,9 +2557,9 @@ static void vc1_decode_i_blocks(VC1Context *v)
             }
 
             // do actual MB decoding and displaying
-            cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc,
+            cbp = get_vlc2(&v->gb, ff_msmp4_mb_i_vlc,
                            MSMP4_MB_INTRA_VLC_BITS, 2);
-            v->s.ac_pred = get_bits1(&v->s.gb);
+            v->s.ac_pred = get_bits1(&v->gb);
 
             for (k = 0; k < 6; k++) {
                 v->mb_type[s->block_index[k]] = 1;
@@ -2598,10 +2598,10 @@ static void vc1_decode_i_blocks(VC1Context *v)
             if (v->s.loop_filter)
                 ff_vc1_i_loop_filter(v);
 
-            if (get_bits_left(&s->gb) < 0) {
+            if (get_bits_left(&v->gb) < 0) {
                 ff_er_add_slice(&s->er, 0, 0, s->mb_x, s->mb_y, ER_MB_ERROR);
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i\n",
-                       get_bits_count(&s->gb), s->gb.size_in_bits);
+                       get_bits_count(&v->gb), v->gb.size_in_bits);
                 return;
             }
 
@@ -2625,12 +2625,12 @@ static int vc1_decode_i_blocks_adv(VC1Context *v)
 {
     int k;
     MpegEncContext *s = &v->s;
+    GetBitContext *const gb = &v->gb;
     int cbp, val;
     uint8_t *coded_val;
     int mb_pos;
     int mquant;
     int mqdiff;
-    GetBitContext *gb = &s->gb;
 
     if (get_bits_left(gb) <= 1)
         return AVERROR_INVALIDDATA;
@@ -2685,21 +2685,21 @@ static int vc1_decode_i_blocks_adv(VC1Context *v)
 
             // do actual MB decoding and displaying
             if (v->fieldtx_is_raw)
-                v->fieldtx_plane[mb_pos] = get_bits1(&v->s.gb);
-            if (get_bits_left(&v->s.gb) <= 1) {
+                v->fieldtx_plane[mb_pos] = get_bits1(gb);
+            if (get_bits_left(gb) <= 1) {
                 ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
                 return 0;
             }
 
-            cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc,
+            cbp = get_vlc2(gb, ff_msmp4_mb_i_vlc,
                            MSMP4_MB_INTRA_VLC_BITS, 2);
             if (v->acpred_is_raw)
-                v->s.ac_pred = get_bits1(&v->s.gb);
+                v->s.ac_pred = get_bits1(gb);
             else
                 v->s.ac_pred = v->acpred_plane[mb_pos];
 
             if (v->condover == CONDOVER_SELECT && v->overflg_is_raw)
-                v->over_flags_plane[mb_pos] = get_bits1(&v->s.gb);
+                v->over_flags_plane[mb_pos] = get_bits1(gb);
 
             GET_MQUANT();
 
@@ -2736,11 +2736,11 @@ static int vc1_decode_i_blocks_adv(VC1Context *v)
             if (v->s.loop_filter)
                 ff_vc1_i_loop_filter(v);
 
-            if (get_bits_left(&s->gb) < 0) {
+            if (get_bits_left(gb) < 0) {
                 // TODO: may need modification to handle slice coding
                 ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i\n",
-                       get_bits_count(&s->gb), s->gb.size_in_bits);
+                       get_bits_count(gb), gb->size_in_bits);
                 return 0;
             }
             inc_blk_idx(v->topleft_blk_idx);
@@ -2797,7 +2797,7 @@ static void vc1_decode_p_blocks(VC1Context *v)
             update_block_index(s);
 
             if (v->fcm == ILACE_FIELD || (v->fcm == PROGRESSIVE && v->mv_type_is_raw) || v->skip_is_raw)
-                if (get_bits_left(&v->s.gb) <= 1) {
+                if (get_bits_left(&v->gb) <= 1) {
                     ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
                     return;
                 }
@@ -2815,11 +2815,11 @@ static void vc1_decode_p_blocks(VC1Context *v)
                 if (apply_loop_filter)
                     ff_vc1_p_loop_filter(v);
             }
-            if (ret < 0 || get_bits_left(&s->gb) < 0 || get_bits_count(&s->gb) < 0) {
+            if (ret < 0 || get_bits_left(&v->gb) < 0 || get_bits_count(&v->gb) < 0) {
                 // TODO: may need modification to handle slice coding
                 ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
                 av_log(s->avctx, AV_LOG_ERROR, "Error or Bits overconsumption: %i > %i at %ix%i\n",
-                       get_bits_count(&s->gb), s->gb.size_in_bits, s->mb_x, s->mb_y);
+                       get_bits_count(&v->gb), v->gb.size_in_bits, s->mb_x, s->mb_y);
                 return;
             }
             inc_blk_idx(v->topleft_blk_idx);
@@ -2882,7 +2882,7 @@ static void vc1_decode_b_blocks(VC1Context *v)
             update_block_index(s);
 
             if (v->fcm == ILACE_FIELD || v->skip_is_raw || v->dmb_is_raw)
-                if (get_bits_left(&v->s.gb) <= 1) {
+                if (get_bits_left(&v->gb) <= 1) {
                     ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
                     return;
                 }
@@ -2900,11 +2900,11 @@ static void vc1_decode_b_blocks(VC1Context *v)
                 if (v->s.loop_filter)
                     ff_vc1_i_loop_filter(v);
             }
-            if (get_bits_left(&s->gb) < 0 || get_bits_count(&s->gb) < 0) {
+            if (get_bits_left(&v->gb) < 0 || get_bits_count(&v->gb) < 0) {
                 // TODO: may need modification to handle slice coding
                 ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i at %ix%i\n",
-                       get_bits_count(&s->gb), s->gb.size_in_bits, s->mb_x, s->mb_y);
+                       get_bits_count(&v->gb), v->gb.size_in_bits, s->mb_x, s->mb_y);
                 return;
             }
         }
@@ -2949,7 +2949,7 @@ void ff_vc1_decode_blocks(VC1Context *v)
     v->esc3_level_length = 0;
     if (v->x8_type) {
         ff_intrax8_decode_picture(&v->x8, v->s.cur_pic.ptr,
-                                  &v->s.gb, &v->s.mb_x, &v->s.mb_y,
+                                  &v->gb, &v->s.mb_x, &v->s.mb_y,
                                   2 * v->pq + v->halfpq, v->pq * !v->pquantizer,
                                   v->s.loop_filter, v->s.low_delay);
 

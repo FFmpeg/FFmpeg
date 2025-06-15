@@ -490,7 +490,7 @@ static int vaapi_vc1_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, 
         .slice_data_size         = size,
         .slice_data_offset       = 0,
         .slice_data_flag         = VA_SLICE_DATA_FLAG_ALL,
-        .macroblock_offset       = get_bits_count(&s->gb),
+        .macroblock_offset       = get_bits_count(&v->gb),
         .slice_vertical_position = s->mb_y % mb_height,
     };
 

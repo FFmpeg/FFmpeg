@@ -94,7 +94,7 @@ static void decode_colskip(uint8_t* plane, int width, int height, int stride,
  */
 static int bitplane_decoding(uint8_t* data, int *raw_flag, VC1Context *v)
 {
-    GetBitContext *gb = &v->s.gb;
+    GetBitContext *const gb = &v->gb;
 
     int imode, x, y, code, offset;
     uint8_t invert, *planep = data;
@@ -161,7 +161,7 @@ static int bitplane_decoding(uint8_t* data, int *raw_flag, VC1Context *v)
                 planep += stride * 3;
             }
             if (width & 1)
-                decode_colskip(data, 1, height, stride, &v->s.gb);
+                decode_colskip(data, 1, height, stride, &v->gb);
         } else { // 3x2
             planep += (height & 1) * stride;
             for (y = height & 1; y < height; y += 2) {
@@ -182,16 +182,16 @@ static int bitplane_decoding(uint8_t* data, int *raw_flag, VC1Context *v)
             }
             x = width % 3;
             if (x)
-                decode_colskip(data,             x, height, stride, &v->s.gb);
+                decode_colskip(data,             x, height, stride, &v->gb);
             if (height & 1)
-                decode_rowskip(data + x, width - x,      1, stride, &v->s.gb);
+                decode_rowskip(data + x, width - x,      1, stride, &v->gb);
         }
         break;
     case IMODE_ROWSKIP:
-        decode_rowskip(data, width, height, stride, &v->s.gb);
+        decode_rowskip(data, width, height, stride, &v->gb);
         break;
     case IMODE_COLSKIP:
-        decode_colskip(data, width, height, stride, &v->s.gb);
+        decode_colskip(data, width, height, stride, &v->gb);
         break;
     default:
         break;
@@ -227,7 +227,7 @@ static int bitplane_decoding(uint8_t* data, int *raw_flag, VC1Context *v)
  */
 static int vop_dquant_decoding(VC1Context *v)
 {
-    GetBitContext *gb = &v->s.gb;
+    GetBitContext *const gb = &v->gb;
     int pqdiff;
 
     //variable size

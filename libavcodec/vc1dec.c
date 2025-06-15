@@ -899,8 +899,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                 }
                 case VC1_CODE_ENTRYPOINT: /* it should be before frame data */
                     buf_size2 = v->vc1dsp.vc1_unescape_buffer(start + 4, size, buf2);
-                    init_get_bits(&s->gb, buf2, buf_size2 * 8);
-                    ff_vc1_decode_entry_point(avctx, v, &s->gb);
+                    init_get_bits(&v->gb, buf2, buf_size2 * 8);
+                    ff_vc1_decode_entry_point(avctx, v, &v->gb);
                     break;
                 case VC1_CODE_SLICE: {
                     int buf_size3;
@@ -964,16 +964,16 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         } else {
             buf_size2 = v->vc1dsp.vc1_unescape_buffer(buf, buf_size, buf2);
         }
-        init_get_bits(&s->gb, buf2, buf_size2*8);
+        init_get_bits(&v->gb, buf2, buf_size2*8);
     } else{
-        ret = init_get_bits8(&s->gb, buf, buf_size);
+        ret = init_get_bits8(&v->gb, buf, buf_size);
         if (ret < 0)
             return ret;
     }
 
     if (v->res_sprite) {
-        v->new_sprite  = !get_bits1(&s->gb);
-        v->two_sprites =  get_bits1(&s->gb);
+        v->new_sprite  = !get_bits1(&v->gb);
+        v->two_sprites =  get_bits1(&v->gb);
         /* res_sprite means a Windows Media Image stream, AV_CODEC_ID_*IMAGE means
            we're using the sprite compositor. These are intentionally kept separate
            so you can get the raw sprites by using the wmv3 decoder for WMVP or
@@ -1016,11 +1016,11 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     v->pic_header_flag = 0;
     v->first_pic_header_flag = 1;
     if (v->profile < PROFILE_ADVANCED) {
-        if ((ret = ff_vc1_parse_frame_header(v, &s->gb)) < 0) {
+        if ((ret = ff_vc1_parse_frame_header(v, &v->gb)) < 0) {
             goto err;
         }
     } else {
-        if ((ret = ff_vc1_parse_frame_header_adv(v, &s->gb)) < 0) {
+        if ((ret = ff_vc1_parse_frame_header_adv(v, &v->gb)) < 0) {
             goto err;
         }
     }
@@ -1103,12 +1103,12 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                     goto err;
 
                 for (i = 0 ; i < n_slices1 + 1; i++) {
-                    s->gb = slices[i].gb;
+                    v->gb = slices[i].gb;
                     s->mb_y = slices[i].mby_start;
 
-                    v->pic_header_flag = get_bits1(&s->gb);
+                    v->pic_header_flag = get_bits1(&v->gb);
                     if (v->pic_header_flag) {
-                        if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
+                        if (ff_vc1_parse_frame_header_adv(v, &v->gb) < 0) {
                             av_log(v->s.avctx, AV_LOG_ERROR, "Slice header damaged\n");
                             ret = AVERROR_INVALIDDATA;
                             if (avctx->err_recognition & AV_EF_EXPLODE)
@@ -1128,12 +1128,12 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                 goto err;
 
             // decode second field
-            s->gb = slices[n_slices1 + 1].gb;
+            v->gb = slices[n_slices1 + 1].gb;
             s->mb_y = slices[n_slices1 + 1].mby_start;
             s->picture_structure = PICT_TOP_FIELD + v->tff;
             v->second_field = 1;
             v->pic_header_flag = 0;
-            if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
+            if (ff_vc1_parse_frame_header_adv(v, &v->gb) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "parsing header for second field failed");
                 ret = AVERROR_INVALIDDATA;
                 goto err;
@@ -1158,12 +1158,12 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                     goto err;
 
                 for (i = n_slices1 + 2; i < n_slices; i++) {
-                    s->gb = slices[i].gb;
+                    v->gb = slices[i].gb;
                     s->mb_y = slices[i].mby_start;
 
-                    v->pic_header_flag = get_bits1(&s->gb);
+                    v->pic_header_flag = get_bits1(&v->gb);
                     if (v->pic_header_flag) {
-                        if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
+                        if (ff_vc1_parse_frame_header_adv(v, &v->gb) < 0) {
                             av_log(v->s.avctx, AV_LOG_ERROR, "Slice header damaged\n");
                             ret = AVERROR_INVALIDDATA;
                             if (avctx->err_recognition & AV_EF_EXPLODE)
@@ -1203,12 +1203,12 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
                 // and process the slices as additional slices afterwards
                 for (i = 0 ; i < n_slices; i++) {
-                    s->gb = slices[i].gb;
+                    v->gb = slices[i].gb;
                     s->mb_y = slices[i].mby_start;
 
-                    v->pic_header_flag = get_bits1(&s->gb);
+                    v->pic_header_flag = get_bits1(&v->gb);
                     if (v->pic_header_flag) {
-                        if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
+                        if (ff_vc1_parse_frame_header_adv(v, &v->gb) < 0) {
                             av_log(v->s.avctx, AV_LOG_ERROR, "Slice header damaged\n");
                             ret = AVERROR_INVALIDDATA;
                             if (avctx->err_recognition & AV_EF_EXPLODE)
@@ -1263,16 +1263,16 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             if (i) {
                 v->pic_header_flag = 0;
                 if (v->field_mode && i == n_slices1 + 2) {
-                    if ((header_ret = ff_vc1_parse_frame_header_adv(v, &s->gb)) < 0) {
+                    if ((header_ret = ff_vc1_parse_frame_header_adv(v, &v->gb)) < 0) {
                         av_log(v->s.avctx, AV_LOG_ERROR, "Field header damaged\n");
                         ret = AVERROR_INVALIDDATA;
                         if (avctx->err_recognition & AV_EF_EXPLODE)
                             goto err;
                         continue;
                     }
-                } else if (get_bits1(&s->gb)) {
+                } else if (get_bits1(&v->gb)) {
                     v->pic_header_flag = 1;
-                    if ((header_ret = ff_vc1_parse_frame_header_adv(v, &s->gb)) < 0) {
+                    if ((header_ret = ff_vc1_parse_frame_header_adv(v, &v->gb)) < 0) {
                         av_log(v->s.avctx, AV_LOG_ERROR, "Slice header damaged\n");
                         ret = AVERROR_INVALIDDATA;
                         if (avctx->err_recognition & AV_EF_EXPLODE)
@@ -1305,7 +1305,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             }
             ff_vc1_decode_blocks(v);
             if (i != n_slices) {
-                s->gb = slices[i].gb;
+                v->gb = slices[i].gb;
             }
         }
         if (v->field_mode) {
@@ -1321,8 +1321,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             }
         }
         ff_dlog(s->avctx, "Consumed %i/%i bits\n",
-                get_bits_count(&s->gb), s->gb.size_in_bits);
-//  if (get_bits_count(&s->gb) > buf_size * 8)
+                get_bits_count(&v->gb), v->gb.size_in_bits);
+//  if (get_bits_count(&v->gb) > buf_size * 8)
 //      return -1;
         if(s->er.error_occurred && s->pict_type == AV_PICTURE_TYPE_B) {
             ret = AVERROR_INVALIDDATA;
@@ -1348,7 +1348,7 @@ image:
             goto err;
         }
 #if CONFIG_WMV3IMAGE_DECODER || CONFIG_VC1IMAGE_DECODER
-        if ((ret = vc1_decode_sprites(v, &s->gb)) < 0)
+        if ((ret = vc1_decode_sprites(v, &v->gb)) < 0)
             goto err;
 #endif
         if ((ret = av_frame_ref(pict, v->sprite_output_frame)) < 0)
