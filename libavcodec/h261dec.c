@@ -25,6 +25,7 @@
  * H.261 decoder.
  */
 
+#include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
 #include "codec_internal.h"
@@ -62,6 +63,8 @@ typedef struct H261DecContext {
     int current_mv_y;
     int gob_number;
     int gob_start_code_skipped; // 1 if gob start code is already read before gob header is read
+
+    DECLARE_ALIGNED_32(int16_t, block)[6][64];
 } H261DecContext;
 
 static av_cold void h261_decode_init_static(void)
@@ -213,7 +216,7 @@ static int h261_decode_mb_skipped(H261DecContext *h, int mba1, int mba2)
             s->cur_pic.motion_val[0][b_xy][1] = s->mv[0][0][1];
         }
 
-        ff_mpv_reconstruct_mb(s, s->block);
+        ff_mpv_reconstruct_mb(s, h->block);
     }
 
     return 0;
@@ -446,9 +449,9 @@ static int h261_decode_mb(H261DecContext *h)
 intra:
     /* decode each block */
     if (s->mb_intra || HAS_CBP(com->mtype)) {
-        s->bdsp.clear_blocks(s->block[0]);
+        s->bdsp.clear_blocks(h->block[0]);
         for (i = 0; i < 6; i++) {
-            if (h261_decode_block(h, s->block[i], i, cbp & 32) < 0)
+            if (h261_decode_block(h, h->block[i], i, cbp & 32) < 0)
                 return SLICE_ERROR;
             cbp += cbp;
         }
@@ -457,7 +460,7 @@ intra:
             s->block_last_index[i] = -1;
     }
 
-    ff_mpv_reconstruct_mb(s, s->block);
+    ff_mpv_reconstruct_mb(s, h->block);
 
     return SLICE_OK;
 }
