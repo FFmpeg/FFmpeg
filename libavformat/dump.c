@@ -680,7 +680,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (st->start_time != AV_NOPTS_VALUE && st->start_time != 0 && st->time_base.den && st->time_base.num) {
         const double stream_start = av_q2d(st->time_base) * st->start_time;
-        av_log(NULL, AV_LOG_INFO, ", Start %.6f", stream_start);
+        av_log(NULL, AV_LOG_INFO, ", start %.6f", stream_start);
     }
 
     dump_disposition(st->disposition, log_level);
