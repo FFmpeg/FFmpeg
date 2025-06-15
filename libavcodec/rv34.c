@@ -363,7 +363,7 @@ static inline RV34VLC* choose_vlc_set(int quant, int mod, int type)
 static int rv34_decode_intra_mb_header(RV34DecContext *r, int8_t *intra_types)
 {
     MpegEncContext *s = &r->s;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *const gb = &r->gb;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int t;
 
@@ -398,7 +398,7 @@ static int rv34_decode_intra_mb_header(RV34DecContext *r, int8_t *intra_types)
 static int rv34_decode_inter_mb_header(RV34DecContext *r, int8_t *intra_types)
 {
     MpegEncContext *s = &r->s;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *const gb = &r->gb;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int i, t;
 
@@ -871,7 +871,7 @@ static const int num_mvs[RV34_MB_TYPES] = { 0, 0, 1, 4, 1, 1, 0, 0, 2, 2, 2, 1 }
 static int rv34_decode_mv(RV34DecContext *r, int block_type)
 {
     MpegEncContext *s = &r->s;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *const gb = &r->gb;
     int i, j, k, l;
     int mv_pos = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride;
     int next_bt;
@@ -1031,7 +1031,7 @@ static inline void rv34_process_block(RV34DecContext *r,
 {
     MpegEncContext *s = &r->s;
     int16_t *ptr = s->block[0];
-    int has_ac = rv34_decode_block(ptr, &s->gb, r->cur_vlcs,
+    int has_ac = rv34_decode_block(ptr, &r->gb, r->cur_vlcs,
                                    fc, sc, q_dc, q_ac, q_ac);
     if(has_ac){
         r->rdsp.rv34_idct_add(pdst, stride, ptr);
@@ -1045,7 +1045,7 @@ static void rv34_output_i16x16(RV34DecContext *r, int8_t *intra_types, int cbp)
 {
     LOCAL_ALIGNED_16(int16_t, block16, [16]);
     MpegEncContext *s    = &r->s;
-    GetBitContext  *gb   = &s->gb;
+    GetBitContext *const gb = &r->gb;
     int             q_dc = rv34_qscale_tab[ r->luma_dc_quant_i[s->qscale] ],
                     q_ac = rv34_qscale_tab[s->qscale];
     uint8_t        *dst  = s->dest[0];
@@ -1213,7 +1213,7 @@ static int rv34_set_deblock_coef(RV34DecContext *r)
 static int rv34_decode_inter_macroblock(RV34DecContext *r, int8_t *intra_types)
 {
     MpegEncContext *s   = &r->s;
-    GetBitContext  *gb  = &s->gb;
+    GetBitContext *const gb = &r->gb;
     uint8_t        *dst = s->dest[0];
     int16_t        *ptr = s->block[0];
     int          mb_pos = s->mb_x + s->mb_y * s->mb_stride;
@@ -1367,8 +1367,8 @@ static int check_slice_end(RV34DecContext *r, MpegEncContext *s)
         return 1;
     if(r->s.mb_skip_run > 1)
         return 0;
-    bits = get_bits_left(&s->gb);
-    if(bits <= 0 || (bits < 8 && !show_bits(&s->gb, bits)))
+    bits = get_bits_left(&r->gb);
+    if (bits <= 0 || (bits < 8 && !show_bits(&r->gb, bits)))
         return 1;
     return 0;
 }
@@ -1424,11 +1424,11 @@ static int rv34_decoder_realloc(RV34DecContext *r)
 static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int buf_size)
 {
     MpegEncContext *s = &r->s;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *const gb = &r->gb;
     int mb_pos, slice_type;
     int res;
 
-    init_get_bits(&r->s.gb, buf, buf_size*8);
+    init_get_bits(gb, buf, buf_size*8);
     res = r->parse_slice_header(r, gb, &r->si);
     if(res < 0){
         av_log(s->avctx, AV_LOG_ERROR, "Incorrect or unknown slice header\n");
@@ -1651,8 +1651,8 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
         return AVERROR_INVALIDDATA;
     }
-    init_get_bits(&s->gb, buf+offset, (buf_size-offset)*8);
-    if(r->parse_slice_header(r, &r->s.gb, &si) < 0 || si.start){
+    init_get_bits(&r->gb, buf+offset, (buf_size-offset)*8);
+    if (r->parse_slice_header(r, &r->gb, &si) < 0 || si.start) {
         av_log(avctx, AV_LOG_ERROR, "First slice header is incorrect\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1781,8 +1781,8 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                 av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
                 break;
             }
-            init_get_bits(&s->gb, buf+offset1, (buf_size-offset1)*8);
-            if(r->parse_slice_header(r, &r->s.gb, &si) < 0){
+            init_get_bits(&r->gb, buf+offset1, (buf_size-offset1)*8);
+            if (r->parse_slice_header(r, &r->gb, &si) < 0) {
                 size = offset2 - offset;
             }else
                 r->si.end = si.start;

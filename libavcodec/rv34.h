@@ -30,6 +30,7 @@
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
+#include "get_bits.h"
 #include "mpegvideo.h"
 
 #include "h264pred.h"
@@ -85,6 +86,7 @@ typedef struct SliceInfo{
 /** decoder context */
 typedef struct RV34DecContext{
     MpegEncContext s;
+    GetBitContext gb;
     RV34DSPContext rdsp;
     int8_t *intra_types_hist;///< old block types, used for prediction
     int8_t *intra_types;     ///< block types

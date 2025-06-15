@@ -226,7 +226,7 @@ static int rv40_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
 static int rv40_decode_mb_info(RV34DecContext *r)
 {
     MpegEncContext *s = &r->s;
-    GetBitContext *gb = &s->gb;
+    GetBitContext *const gb = &r->gb;
     int q, i;
     int prev_type = 0;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
