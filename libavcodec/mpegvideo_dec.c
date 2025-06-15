@@ -1064,6 +1064,19 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
     }
 }
 
+static av_cold void debug_dct_coeffs(MPVContext *s, const int16_t block[][64])
+{
+       /* print DCT coefficients */
+       av_log(s->avctx, AV_LOG_DEBUG, "DCT coeffs of MB at %dx%d:\n", s->mb_x, s->mb_y);
+       for (int i = 0; i < 6; i++) {
+           for (int j = 0; j < 64; j++) {
+               av_log(s->avctx, AV_LOG_DEBUG, "%5d",
+                      block[i][s->idsp.idct_permutation[j]]);
+           }
+           av_log(s->avctx, AV_LOG_DEBUG, "\n");
+       }
+}
+
 void ff_mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
 {
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
@@ -1082,17 +1095,8 @@ void ff_mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
         *mbskip_ptr = 0; /* not skipped */
     }
 
-    if (s->avctx->debug & FF_DEBUG_DCT_COEFF) {
-       /* print DCT coefficients */
-       av_log(s->avctx, AV_LOG_DEBUG, "DCT coeffs of MB at %dx%d:\n", s->mb_x, s->mb_y);
-       for (int i = 0; i < 6; i++) {
-           for (int j = 0; j < 64; j++) {
-               av_log(s->avctx, AV_LOG_DEBUG, "%5d",
-                      block[i][s->idsp.idct_permutation[j]]);
-           }
-           av_log(s->avctx, AV_LOG_DEBUG, "\n");
-       }
-    }
+    if (s->avctx->debug & FF_DEBUG_DCT_COEFF)
+        debug_dct_coeffs(s, block);
 
     av_assert2((s->out_format <= FMT_H261) == (s->out_format == FMT_H261 || s->out_format == FMT_MPEG1));
     if (!s->avctx->lowres) {
