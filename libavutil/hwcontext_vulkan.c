@@ -2854,6 +2854,12 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
             return err;
     }
 
+    /* Nvidia is violating the spec because they thought no one would use this. */
+    if (p->dev_is_nvidia &&
+        (((fmt->nb_images == 1) && (fmt->vk_planes > 1)) ||
+         (av_pix_fmt_desc_get(hwfc->sw_format)->nb_components == 1)))
+        supported_usage &= ~VK_IMAGE_USAGE_HOST_TRANSFER_BIT;
+
     /* Image usage flags */
     if (!hwctx->usage) {
         hwctx->usage = supported_usage & (VK_IMAGE_USAGE_TRANSFER_DST_BIT |
