@@ -265,7 +265,7 @@ fate-mov-mp4-iamf-7_1_4-video-first: CMD = transcode wav $(SRC) mp4 "-auto_conve
   -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/iamf_7_1_4 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/audio_element-7_1_4-2 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/mix_presentation-7_1_4 \
-  -streamid 0:1 -streamid 1:2 -streamid 2:3 -streamid 3:4 -streamid 4:5 -streamid 5:6 -streamid 6:7 -streamid 7:8 -map 1:v:0 -map [FRONT] -map [BACK] -map [CENTER] -map [LFE] -map [SIDE] -map [TOP_FRONT] -map [TOP_BACK] -c:a flac -c:v mpeg4 -t 1" "-c:a copy -c:v copy -map 0" \
+  -streamid 0:1 -streamid 1:2 -streamid 2:3 -streamid 3:4 -streamid 4:5 -streamid 5:6 -streamid 6:7 -streamid 7:8 -map 1:v:0 -map [FRONT] -map [TOP_FRONT] -map [CENTER] -map [LFE] -map [SIDE] -map [BACK] -map [TOP_BACK] -c:a flac -c:v mpeg4 -t 1" "-c:a copy -c:v copy -map 0" \
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition:stream=index,id" \
   "-f rawvideo -s 352x288 -pix_fmt yuv420p -i $(SRC2)"
 
@@ -278,7 +278,7 @@ fate-mov-mp4-iamf-7_1_4-video-last: CMD = transcode wav $(SRC) mp4 "-auto_conver
   -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/iamf_7_1_4 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/audio_element-7_1_4 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/mix_presentation-7_1_4 \
-  -streamid 0:1 -streamid 1:2 -streamid 2:3 -streamid 3:4 -streamid 4:5 -streamid 5:6 -streamid 6:7 -streamid 7:8 -map [FRONT] -map [BACK] -map [CENTER] -map [LFE] -map [SIDE] -map [TOP_FRONT] -map [TOP_BACK] -map 1:v:0 -use_stream_ids_as_track_ids true -c:a flac -c:v mpeg4 -t 1" "-c:a copy -c:v copy -map 0" \
+  -streamid 0:1 -streamid 1:2 -streamid 2:3 -streamid 3:4 -streamid 4:5 -streamid 5:6 -streamid 6:7 -streamid 7:8 -map [FRONT] -map [TOP_FRONT] -map [CENTER] -map [LFE] -map [SIDE] -map [BACK] -map [TOP_BACK] -map 1:v:0 -use_stream_ids_as_track_ids true -c:a flac -c:v mpeg4 -t 1" "-c:a copy -c:v copy -map 0" \
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition:stream=index,id" \
   "-f rawvideo -s 352x288 -pix_fmt yuv420p -i $(SRC2)"
 
