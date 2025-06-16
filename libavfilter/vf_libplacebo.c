@@ -1298,7 +1298,7 @@ static int libplacebo_config_output(AVFilterLink *outlink)
     RET(ff_scale_eval_dimensions(s, s->w_expr, s->h_expr, inlink, outlink,
                                  &outlink->w, &outlink->h));
 
-    s->reset_sar = s->normalize_sar || s->nb_inputs > 1;
+    s->reset_sar |= s->normalize_sar || s->nb_inputs > 1;
     double sar_in = inlink->sample_aspect_ratio.num ?
                     av_q2d(inlink->sample_aspect_ratio) : 1.0;
 
@@ -1401,7 +1401,8 @@ static const AVOption libplacebo_options[] = {
         { "decrease", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1 }, 0, 0, STATIC, .unit = "force_oar" },
         { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 2 }, 0, 0, STATIC, .unit = "force_oar" },
     { "force_divisible_by", "enforce that the output resolution is divisible by a defined integer when force_original_aspect_ratio is used", OFFSET(force_divisible_by), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, 256, STATIC },
-    { "normalize_sar", "force SAR normalization to 1:1 by adjusting pos_x/y/w/h", OFFSET(normalize_sar), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, STATIC },
+    { "reset_sar", "force SAR normalization to 1:1 by adjusting pos_x/y/w/h", OFFSET(reset_sar), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, STATIC },
+    { "normalize_sar", "like reset_sar, but pad/crop instead of stretching the video", OFFSET(normalize_sar), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, STATIC },
     { "pad_crop_ratio", "ratio between padding and cropping when normalizing SAR (0=pad, 1=crop)", OFFSET(pad_crop_ratio), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, 1.0, DYNAMIC },
     { "fillcolor", "Background fill color", OFFSET(fillcolor), AV_OPT_TYPE_COLOR, {.str = "black@0"}, .flags = DYNAMIC },
     { "corner_rounding", "Corner rounding radius", OFFSET(corner_rounding), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 1.0, .flags = DYNAMIC },

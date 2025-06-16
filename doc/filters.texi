@@ -16291,11 +16291,15 @@ will be performed.
 @item force_divisible_by
 Work the same as the identical @ref{scale} filter options.
 
+@item reset_sar
+If enabled, output frames will always have a pixel aspect ratio of 1:1.  If
+disabled (the default), any aspect ratio mismatches, including those from
+e.g. anamorphic video sources, are forwarded to the output pixel aspect ratio.
+
 @item normalize_sar
-If enabled, output frames will always have a pixel aspect ratio of 1:1. This
-will introduce additional padding/cropping as necessary. If disabled (the
-default), any aspect ratio mismatches, including those from e.g. anamorphic
-video sources, are forwarded to the output pixel aspect ratio.
+Like @option{reset_sar}, but instead of stretching the video content to fill
+the new output aspect ratio, the content is instead padded or cropped as
+necessary.
 
 @item pad_crop_ratio
 Specifies a ratio (between @code{0.0} and @code{1.0}) between padding and
