@@ -146,8 +146,8 @@ static void reset_stats(OSQChannel *cb)
 
 static void update_stats(OSQChannel *cb, int val)
 {
-    cb->sum += FFABS(val) - cb->history[cb->pos];
-    cb->history[cb->pos] = FFABS(val);
+    cb->sum += FFABS((int64_t)val) - cb->history[cb->pos];
+    cb->history[cb->pos] = FFABS((int64_t)val);
     cb->pos++;
     cb->count++;
     if (cb->pos >= FF_ARRAY_ELEMS(cb->history))
