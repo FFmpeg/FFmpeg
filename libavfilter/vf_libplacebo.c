@@ -647,8 +647,7 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
 
     if (hwctx) {
 #if PL_API_VER >= 278
-        /* Import libavfilter vulkan context into libplacebo */
-        s->vulkan = pl_vulkan_import(s->log, pl_vulkan_import_params(
+        struct pl_vulkan_import_params import_params = {
             .instance       = hwctx->inst,
             .get_proc_addr  = hwctx->get_proc_addr,
             .phys_device    = hwctx->phys_dev,
@@ -660,20 +659,39 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
             .unlock_queue   = unlock_queue,
             .queue_ctx      = avctx->hw_device_ctx->data,
             .queue_graphics = {
-                .index = hwctx->queue_family_index,
-                .count = hwctx->nb_graphics_queues,
+                .index = VK_QUEUE_FAMILY_IGNORED,
+                .count = 0,
             },
             .queue_compute = {
-                .index = hwctx->queue_family_comp_index,
-                .count = hwctx->nb_comp_queues,
+                .index = VK_QUEUE_FAMILY_IGNORED,
+                .count = 0,
             },
             .queue_transfer = {
-                .index = hwctx->queue_family_tx_index,
-                .count = hwctx->nb_tx_queues,
+                .index = VK_QUEUE_FAMILY_IGNORED,
+                .count = 0,
             },
             /* This is the highest version created by hwcontext_vulkan.c */
             .max_api_version = VK_API_VERSION_1_3,
-        ));
+        };
+        for (int i = 0; i < hwctx->nb_qf; i++) {
+            const AVVulkanDeviceQueueFamily *qf = &hwctx->qf[i];
+
+            if (qf->flags & VK_QUEUE_GRAPHICS_BIT) {
+                import_params.queue_graphics.index = qf->idx;
+                import_params.queue_graphics.count = qf->num;
+            }
+            if (qf->flags & VK_QUEUE_COMPUTE_BIT) {
+                import_params.queue_compute.index = qf->idx;
+                import_params.queue_compute.count = qf->num;
+            }
+            if (qf->flags & VK_QUEUE_TRANSFER_BIT) {
+                import_params.queue_transfer.index = qf->idx;
+                import_params.queue_transfer.count = qf->num;
+            }
+        }
+
+        /* Import libavfilter vulkan context into libplacebo */
+        s->vulkan = pl_vulkan_import(s->log, &import_params);
 #else
         av_log(s, AV_LOG_ERROR, "libplacebo version %s too old to import "
                "Vulkan device, remove it or upgrade libplacebo to >= 5.278\n",
