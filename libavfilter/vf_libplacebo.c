@@ -1168,8 +1168,17 @@ static int libplacebo_query_format(const AVFilterContext *ctx,
     const AVPixFmtDescriptor *desc = NULL;
     AVFilterFormats *infmts = NULL, *outfmts = NULL;
 
+    /* List AV_PIX_FMT_VULKAN first to prefer it when possible */
+    if (s->have_hwdevice) {
+        RET(ff_add_format(&infmts, AV_PIX_FMT_VULKAN));
+        if (s->out_format == AV_PIX_FMT_NONE || av_vkfmt_from_pixfmt(s->out_format))
+            RET(ff_add_format(&outfmts, AV_PIX_FMT_VULKAN));
+    }
+
     while ((desc = av_pix_fmt_desc_next(desc))) {
         enum AVPixelFormat pixfmt = av_pix_fmt_desc_get_id(desc);
+        if (pixfmt == AV_PIX_FMT_VULKAN)
+            continue; /* Handled above */
 
 #if PL_API_VER < 232
         // Older libplacebo can't handle >64-bit pixel formats, so safe-guard
@@ -1177,9 +1186,6 @@ static int libplacebo_query_format(const AVFilterContext *ctx,
         if (av_get_bits_per_pixel(desc) > 64)
             continue;
 #endif
-
-        if (pixfmt == AV_PIX_FMT_VULKAN && !s->have_hwdevice)
-            continue;
 
         if (!pl_test_pixfmt(s->gpu, pixfmt))
             continue;
@@ -1191,15 +1197,8 @@ static int libplacebo_query_format(const AVFilterContext *ctx,
             continue; /* BE formats are not supported by pl_download_avframe */
 
         /* Mask based on user specified format */
-        if (s->out_format != AV_PIX_FMT_NONE) {
-            if (pixfmt == AV_PIX_FMT_VULKAN && av_vkfmt_from_pixfmt(s->out_format)) {
-                /* OK */
-            } else if (pixfmt == s->out_format) {
-                /* OK */
-            } else {
-                continue; /* Not OK */
-            }
-        }
+        if (pixfmt != s->out_format && s->out_format != AV_PIX_FMT_NONE)
+            continue;
 
 #if PL_API_VER >= 293
         if (!pl_test_pixfmt_caps(s->gpu, pixfmt, PL_FMT_CAP_RENDERABLE))
