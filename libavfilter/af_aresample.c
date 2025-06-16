@@ -43,7 +43,6 @@ typedef struct AResampleContext {
     struct SwrContext *swr;
     int64_t next_pts;
     int more_data;
-    int eof;
 } AResampleContext;
 
 static av_cold int preinit(AVFilterContext *ctx)
@@ -209,7 +208,7 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
+static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref, AVFrame **outsamplesref_ret)
 {
     AVFilterContext *ctx = inlink->dst;
     AResampleContext *aresample = ctx->priv;
@@ -220,23 +219,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
     AVFrame *outsamplesref;
     int ret;
 
+    *outsamplesref_ret = NULL;
     delay = swr_get_delay(aresample->swr, outlink->sample_rate);
     if (delay > 0)
         n_out += FFMIN(delay, FFMAX(4096, n_out));
 
     outsamplesref = ff_get_audio_buffer(outlink, n_out);
-
-    if(!outsamplesref) {
-        av_frame_free(&insamplesref);
+    if (!outsamplesref)
         return AVERROR(ENOMEM);
-    }
 
     av_frame_copy_props(outsamplesref, insamplesref);
     outsamplesref->format                = outlink->format;
     ret = av_channel_layout_copy(&outsamplesref->ch_layout, &outlink->ch_layout);
     if (ret < 0) {
         av_frame_free(&outsamplesref);
-        av_frame_free(&insamplesref);
         return ret;
     }
     outsamplesref->sample_rate           = outlink->sample_rate;
@@ -257,8 +253,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
                                  (void *)insamplesref->extended_data, n_in);
     if (n_out <= 0) {
         av_frame_free(&outsamplesref);
-        av_frame_free(&insamplesref);
-        ff_inlink_request_frame(inlink);
         return 0;
     }
 
@@ -266,9 +260,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
 
     outsamplesref->nb_samples  = n_out;
 
-    ret = ff_filter_frame(outlink, outsamplesref);
-    av_frame_free(&insamplesref);
-    return ret;
+    *outsamplesref_ret = outsamplesref;
+    return 1;
 }
 
 static int flush_frame(AVFilterLink *outlink, int final, AVFrame **outsamplesref_ret)
@@ -291,7 +284,7 @@ static int flush_frame(AVFilterLink *outlink, int final, AVFrame **outsamplesref
     n_out = swr_convert(aresample->swr, outsamplesref->extended_data, n_out, final ? NULL : (void*)outsamplesref->extended_data, 0);
     if (n_out <= 0) {
         av_frame_free(&outsamplesref);
-        return (n_out == 0) ? AVERROR_EOF : n_out;
+        return n_out;
     }
 
     outsamplesref->sample_rate = outlink->sample_rate;
@@ -299,7 +292,7 @@ static int flush_frame(AVFilterLink *outlink, int final, AVFrame **outsamplesref
 
     outsamplesref->pts = pts;
 
-    return 0;
+    return 1;
 }
 
 static int activate(AVFilterContext *ctx)
@@ -307,52 +300,53 @@ static int activate(AVFilterContext *ctx)
     AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
     AResampleContext *aresample = ctx->priv;
+    AVFrame *frame;
     int ret = 0, status;
     int64_t pts;
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
-    if (!aresample->eof && ff_inlink_queued_frames(inlink)) {
-        AVFrame *frame = NULL;
-
-        ret = ff_inlink_consume_frame(inlink, &frame);
-        if (ret < 0)
-            return ret;
-        if (ret > 0)
-            return filter_frame(inlink, frame);
-    }
-
     // First try to get data from the internal buffers
     if (aresample->more_data) {
         AVFrame *outsamplesref;
 
-        if (flush_frame(outlink, 0, &outsamplesref) >= 0) {
+        ret = flush_frame(outlink, 0, &outsamplesref);
+        if (ret < 0)
+            return ret;
+        if (ret > 0)
             return ff_filter_frame(outlink, outsamplesref);
-        }
     }
     aresample->more_data = 0;
 
-    if (!aresample->eof && ff_inlink_acknowledge_status(inlink, &status, &pts))
-        aresample->eof = 1;
+    // Then consume frames from inlink
+    while ((ret = ff_inlink_consume_frame(inlink, &frame))) {
+        AVFrame *outsamplesref;
+        if (ret < 0)
+            return ret;
 
-    // Second request more data from the input
-    if (!aresample->eof)
-        FF_FILTER_FORWARD_WANTED(outlink, inlink);
+        ret = filter_frame(inlink, frame, &outsamplesref);
+        av_frame_free(&frame);
+        if (ret < 0)
+            return ret;
+        if (ret > 0)
+            return ff_filter_frame(outlink, outsamplesref);
+    }
 
-    // Third if we hit the end flush
-    if (aresample->eof) {
+    // If we hit the end flush
+    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
         AVFrame *outsamplesref;
 
-        if ((ret = flush_frame(outlink, 1, &outsamplesref)) < 0) {
-            if (ret == AVERROR_EOF) {
-                ff_outlink_set_status(outlink, AVERROR_EOF, aresample->next_pts);
-                return 0;
-            }
+        ret = flush_frame(outlink, 1, &outsamplesref);
+        if (ret < 0)
             return ret;
-        }
-
-        return ff_filter_frame(outlink, outsamplesref);
+        if (ret > 0)
+            return ff_filter_frame(outlink, outsamplesref);
+        ff_outlink_set_status(outlink, status, aresample->next_pts);
+        return 0;
     }
+
+    // If not, request more data from the input
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
 
     return FFERROR_NOT_READY;
 }
