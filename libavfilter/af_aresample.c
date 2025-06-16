@@ -302,13 +302,25 @@ static int flush_frame(AVFilterLink *outlink, int final, AVFrame **outsamplesref
     return 0;
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
     AResampleContext *aresample = ctx->priv;
     int ret = 0, status;
     int64_t pts;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    if (!aresample->eof && ff_inlink_queued_frames(inlink)) {
+        AVFrame *frame = NULL;
+
+        ret = ff_inlink_consume_frame(inlink, &frame);
+        if (ret < 0)
+            return ret;
+        if (ret > 0)
+            return filter_frame(inlink, frame);
+    }
 
     // First try to get data from the internal buffers
     if (aresample->more_data) {
@@ -344,28 +356,6 @@ static int request_frame(AVFilterLink *outlink)
 
     ff_filter_set_ready(ctx, 100);
     return 0;
-}
-
-static int activate(AVFilterContext *ctx)
-{
-    AResampleContext *aresample = ctx->priv;
-    AVFilterLink *inlink = ctx->inputs[0];
-    AVFilterLink *outlink = ctx->outputs[0];
-
-    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
-
-    if (!aresample->eof && ff_inlink_queued_frames(inlink)) {
-        AVFrame *frame = NULL;
-        int ret;
-
-        ret = ff_inlink_consume_frame(inlink, &frame);
-        if (ret < 0)
-            return ret;
-        if (ret > 0)
-            return filter_frame(inlink, frame);
-    }
-
-    return request_frame(outlink);
 }
 
 static const AVClass *resample_child_class_iterate(void **iter)
