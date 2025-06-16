@@ -395,6 +395,7 @@ extern const FFFilter ff_vf_overlay_vulkan;
 extern const FFFilter ff_vf_overlay_cuda;
 extern const FFFilter ff_vf_owdenoise;
 extern const FFFilter ff_vf_pad;
+extern const FFFilter ff_vf_pad_cuda;
 extern const FFFilter ff_vf_pad_opencl;
 extern const FFFilter ff_vf_palettegen;
 extern const FFFilter ff_vf_paletteuse;

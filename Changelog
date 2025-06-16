@@ -19,6 +19,7 @@ version <next>:
 - VVC decoder supports all content of SCC (Screen Content Coding):
   IBC (Inter Block Copy), Palette Mode and ACT (Adaptive Color Transform
 - G.728 decoder
+- pad_cuda filter
 
 
 version 7.1:
