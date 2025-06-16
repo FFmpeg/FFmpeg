@@ -618,7 +618,7 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
 
                 put_registration_descriptor(&q, MKTAG('O', 'p', 'u', 's'));
 
-                *q++ = EXTENSION_DESCRIPTOR; /* DVB extension descriptor */
+                *q++ = DVB_EXTENSION_DESCRIPTOR;
                 *q++ = 2;
                 *q++ = 0x80;
 

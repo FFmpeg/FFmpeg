@@ -815,6 +815,7 @@ static const StreamType ISO_types[] = {
     { STREAM_TYPE_VIDEO_MVC,      AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_H264       },
     { STREAM_TYPE_VIDEO_JPEG2000, AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_JPEG2000   },
     { STREAM_TYPE_VIDEO_HEVC,     AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_HEVC       },
+    { STREAM_TYPE_VIDEO_JPEGXS,   AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_JPEGXS     },
     { STREAM_TYPE_VIDEO_VVC,      AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_VVC        },
     { STREAM_TYPE_VIDEO_CAVS,     AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_CAVS       },
     { STREAM_TYPE_VIDEO_DIRAC,    AVMEDIA_TYPE_VIDEO, AV_CODEC_ID_DIRAC      },
@@ -1028,6 +1029,16 @@ static int new_pes_packet(PESContext *pes, AVPacket *pkt)
         av_log(pes->stream, AV_LOG_WARNING, "PES packet size mismatch\n");
         pes->flags |= AV_PKT_FLAG_CORRUPT;
     }
+
+    // JPEG-XS PES payload
+    if (pes->stream_id == 0xbd && pes->stream_type == 0x32 &&
+        pkt->size >= 8 && memcmp(pkt->data + 4, "jxes", 4) == 0)
+    {
+        uint32_t header_size = AV_RB32(pkt->data);
+        pkt->data += header_size;
+        pkt->size -= header_size;
+    }
+
     memset(pkt->data + pkt->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     // Separate out the AC3 substream from an HDMV combined TrueHD/AC3 PID
@@ -1816,6 +1827,92 @@ static const uint8_t opus_channel_map[8][8] = {
     { 0,6,1,2,3,4,5,7 },
 };
 
+static int parse_mpeg2_extension_descriptor(AVFormatContext *fc, AVStream *st,
+                                            const uint8_t **pp, const uint8_t *desc_end)
+{
+    int ext_tag = get8(pp, desc_end);
+
+    switch (ext_tag) {
+    case JXS_VIDEO_DESCRIPTOR: /* JPEG-XS video descriptor*/
+        {
+            int horizontal_size, vertical_size, schar;
+            int colour_primaries, transfer_characteristics, matrix_coefficients, video_full_range_flag;
+            int descriptor_version, interlace_mode, n_fields;
+            unsigned frat;
+
+            if (desc_end - *pp < 29)
+                return AVERROR_INVALIDDATA;
+
+            descriptor_version = get8(pp, desc_end);
+            if (descriptor_version) {
+                av_log(fc, AV_LOG_WARNING, "Unsupported JPEG-XS descriptor version (%d != 0)", descriptor_version);
+                return AVERROR_INVALIDDATA;
+            }
+
+            horizontal_size = get16(pp, desc_end);
+            vertical_size = get16(pp, desc_end);
+            *pp += 4; /* brat */
+            frat = bytestream_get_be32(pp);
+            schar = get16(pp, desc_end);
+            *pp += 2; /* Ppih */
+            *pp += 2; /* Plev */
+            *pp += 4; /* max_buffer_size */
+            *pp += 1; /* buffer_model_type */
+            colour_primaries = get8(pp, desc_end);
+            transfer_characteristics = get8(pp, desc_end);
+            matrix_coefficients = get8(pp, desc_end);
+            video_full_range_flag = (get8(pp, desc_end) & 0x80) == 0x80 ? 1 : 0;
+
+            interlace_mode = (frat >> 30) & 0x3;
+            if (interlace_mode == 3) {
+                av_log(fc, AV_LOG_WARNING, "Unknown JPEG XS interlace mode 3");
+                return AVERROR_INVALIDDATA;
+            }
+
+            st->codecpar->field_order = interlace_mode == 0 ? AV_FIELD_PROGRESSIVE
+                                                            : (interlace_mode == 1 ? AV_FIELD_TT : AV_FIELD_BB);
+            n_fields = st->codecpar->field_order == AV_FIELD_PROGRESSIVE ? 1 : 2;
+
+            st->codecpar->width  = horizontal_size;
+            st->codecpar->height = vertical_size * n_fields;
+
+            if (frat != 0) {
+                int framerate_num = (frat & 0x0000FFFFU);
+                int framerate_den = ((frat >> 24) & 0x0000003FU);
+
+                if (framerate_den == 2) {
+                    framerate_num *= 1000;
+                    framerate_den = 1001;
+                } else if (framerate_den != 1) {
+                    av_log(fc, AV_LOG_WARNING, "Unknown JPEG XS framerate denominator code %u", framerate_den);
+                    return AVERROR_INVALIDDATA;
+                }
+
+                st->codecpar->framerate.num = framerate_num;
+                st->codecpar->framerate.den = framerate_den;
+            }
+
+            switch (schar & 0xf) {
+            case 0: st->codecpar->format = AV_PIX_FMT_YUV422P10LE; break;
+            case 1: st->codecpar->format = AV_PIX_FMT_YUV444P10LE; break;
+            default:
+                av_log(fc, AV_LOG_WARNING, "Unknown JPEG XS sampling format");
+                break;
+            }
+
+            st->codecpar->color_range = video_full_range_flag ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+            st->codecpar->color_primaries = colour_primaries;
+            st->codecpar->color_trc = transfer_characteristics;
+            st->codecpar->color_space = matrix_coefficients;
+        }
+        break;
+    default:
+        break;
+    }
+
+    return 0;
+}
+
 int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type,
                               const uint8_t **pp, const uint8_t *desc_list_end,
                               Mp4Descr *mp4_descr, int mp4_descr_count, int pid,
@@ -2043,7 +2140,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 mpegts_find_stream_type(st, st->codecpar->codec_tag, METADATA_types);
         }
         break;
-    case EXTENSION_DESCRIPTOR: /* DVB extension descriptor */
+    case DVB_EXTENSION_DESCRIPTOR: /* DVB extension descriptor */
         ext_desc_tag = get8(pp, desc_end);
         if (ext_desc_tag < 0)
             return AVERROR_INVALIDDATA;
@@ -2246,6 +2343,14 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                    dependency_pid,
                    dovi->dv_bl_signal_compatibility_id,
                    dovi->dv_md_compression);
+        }
+        break;
+    case EXTENSION_DESCRIPTOR: /* descriptor extension */
+        {
+            int ret = parse_mpeg2_extension_descriptor(fc, st, pp, desc_end);
+
+            if (ret < 0)
+                return ret;
         }
         break;
     default:
