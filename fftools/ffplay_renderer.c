@@ -259,8 +259,8 @@ static int create_vk_by_hwcontext(VkRenderer *renderer,
 
     ctx->get_proc_addr = hwctx->get_proc_addr;
     ctx->inst = hwctx->inst;
-    ctx->placebo_vulkan = pl_vulkan_import(ctx->vk_log,
-        pl_vulkan_import_params(
+
+    struct pl_vulkan_import_params import_params = {
             .instance = hwctx->inst,
             .get_proc_addr = hwctx->get_proc_addr,
             .phys_device = hwctx->phys_dev,
@@ -272,18 +272,36 @@ static int create_vk_by_hwcontext(VkRenderer *renderer,
             .unlock_queue   = hwctx_unlock_queue,
             .queue_ctx      = dev,
             .queue_graphics = {
-                .index = hwctx->queue_family_index,
-                .count = hwctx->nb_graphics_queues,
+                .index = VK_QUEUE_FAMILY_IGNORED,
+                .count = 0,
             },
             .queue_compute = {
-                .index = hwctx->queue_family_comp_index,
-                .count = hwctx->nb_comp_queues,
+                .index = VK_QUEUE_FAMILY_IGNORED,
+                .count = 0,
             },
             .queue_transfer = {
-                .index = hwctx->queue_family_tx_index,
-                .count = hwctx->nb_tx_queues,
+                .index = VK_QUEUE_FAMILY_IGNORED,
+                .count = 0,
             },
-        ));
+    };
+    for (int i = 0; i < hwctx->nb_qf; i++) {
+        const AVVulkanDeviceQueueFamily *qf = &hwctx->qf[i];
+
+        if (qf->flags & VK_QUEUE_GRAPHICS_BIT) {
+            import_params.queue_graphics.index = qf->idx;
+            import_params.queue_graphics.count = qf->num;
+        }
+        if (qf->flags & VK_QUEUE_COMPUTE_BIT) {
+            import_params.queue_compute.index = qf->idx;
+            import_params.queue_compute.count = qf->num;
+        }
+        if (qf->flags & VK_QUEUE_TRANSFER_BIT) {
+            import_params.queue_transfer.index = qf->idx;
+            import_params.queue_transfer.count = qf->num;
+        }
+    }
+
+    ctx->placebo_vulkan = pl_vulkan_import(ctx->vk_log, &import_params);
     if (!ctx->placebo_vulkan)
         return AVERROR_EXTERNAL;
 
@@ -408,21 +426,38 @@ static int create_vk_by_placebo(VkRenderer *renderer,
     vk_dev_ctx->enabled_dev_extensions = ctx->placebo_vulkan->extensions;
     vk_dev_ctx->nb_enabled_dev_extensions = ctx->placebo_vulkan->num_extensions;
 
-    vk_dev_ctx->queue_family_index = ctx->placebo_vulkan->queue_graphics.index;
-    vk_dev_ctx->nb_graphics_queues = ctx->placebo_vulkan->queue_graphics.count;
-
-    vk_dev_ctx->queue_family_tx_index = ctx->placebo_vulkan->queue_transfer.index;
-    vk_dev_ctx->nb_tx_queues = ctx->placebo_vulkan->queue_transfer.count;
-
-    vk_dev_ctx->queue_family_comp_index = ctx->placebo_vulkan->queue_compute.index;
-    vk_dev_ctx->nb_comp_queues = ctx->placebo_vulkan->queue_compute.count;
+    int nb_qf = 0;
+    vk_dev_ctx->qf[nb_qf] = (AVVulkanDeviceQueueFamily) {
+        .idx = ctx->placebo_vulkan->queue_graphics.index,
+        .num = ctx->placebo_vulkan->queue_graphics.count,
+        .flags = VK_QUEUE_GRAPHICS_BIT,
+    };
+    nb_qf++;
+    vk_dev_ctx->qf[nb_qf] = (AVVulkanDeviceQueueFamily) {
+        .idx = ctx->placebo_vulkan->queue_transfer.index,
+        .num = ctx->placebo_vulkan->queue_transfer.count,
+        .flags = VK_QUEUE_TRANSFER_BIT,
+    };
+    nb_qf++;
+    vk_dev_ctx->qf[nb_qf] = (AVVulkanDeviceQueueFamily) {
+        .idx = ctx->placebo_vulkan->queue_compute.index,
+        .num = ctx->placebo_vulkan->queue_compute.count,
+        .flags = VK_QUEUE_COMPUTE_BIT,
+    };
+    nb_qf++;
 
     ret = get_decode_queue(renderer, &decode_index, &decode_count);
     if (ret < 0)
         return ret;
 
-    vk_dev_ctx->queue_family_decode_index = decode_index;
-    vk_dev_ctx->nb_decode_queues = decode_count;
+    vk_dev_ctx->qf[nb_qf] = (AVVulkanDeviceQueueFamily) {
+        .idx = decode_index,
+        .num = decode_count,
+        .flags = VK_QUEUE_VIDEO_DECODE_BIT_KHR,
+    };
+    nb_qf++;
+
+    vk_dev_ctx->nb_qf = nb_qf;
 
     ret = av_hwdevice_ctx_init(ctx->hw_device_ref);
     if (ret < 0)
