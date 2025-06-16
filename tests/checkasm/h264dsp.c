@@ -328,18 +328,15 @@ static void check_idct_multiple(void)
 static void check_idct_dequant(void)
 {
     static const int depths[5] = { 8, 9, 10, 12, 14 };
-    LOCAL_ALIGNED_16(int16_t, src, [16]);
-    /* Ensure dst buffers are large enough to hold dctcoefs of all bit-depths. */
-    LOCAL_ALIGNED_16(uint8_t, dst0, [16 * 16 * sizeof(int32_t)]);
-    LOCAL_ALIGNED_16(uint8_t, dst1, [16 * 16 * sizeof(int32_t)]);
-    int16_t *dst_ref = (int16_t *)dst0;
-    int16_t *dst_new = (int16_t *)dst1;
+    LOCAL_ALIGNED_16(int16_t, src16, [16]);
+    LOCAL_ALIGNED_16(int32_t, src32, [16]);
+    LOCAL_ALIGNED_16(int16_t, dst0_16, [16 * 16]);
+    LOCAL_ALIGNED_16(int16_t, dst1_16, [16 * 16]);
+    LOCAL_ALIGNED_16(int32_t, dst0_32, [16 * 16]);
+    LOCAL_ALIGNED_16(int32_t, dst1_32, [16 * 16]);
     H264DSPContext h;
     int bit_depth, i, qmul;
     declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_SSE2, void, int16_t *output, int16_t *input, int qmul);
-
-    for (int j = 0; j < 16; j++)
-        src[j] = (rnd() % 512) - 256;
 
     qmul = rnd() % 4096;
 
@@ -347,14 +344,28 @@ static void check_idct_dequant(void)
         bit_depth = depths[i];
         ff_h264dsp_init(&h, bit_depth, 1);
 
-        memset(dst0, 0, 16 * 16 * SIZEOF_COEF);
-        memset(dst1, 0, 16 * 16 * SIZEOF_COEF);
+        void *src, *dst_ref, *dst_new;
+        if (bit_depth == 8) {
+            src     = src16;
+            dst_ref = dst0_16;
+            dst_new = dst1_16;
+            for (int j = 0; j < 16; j++)
+                src16[j] = (rnd() % 512) - 256;
+        } else {
+            src     = src32;
+            dst_ref = dst0_32;
+            dst_new = dst1_32;
+            for (int j = 0; j < 16; j++)
+                src32[j] = (rnd() % (1 << (bit_depth + 1))) - (1 << bit_depth);
+        }
+        memset(dst_ref, 0, 16 * 16 * SIZEOF_COEF);
+        memset(dst_new, 0, 16 * 16 * SIZEOF_COEF);
 
         if (check_func(h.h264_luma_dc_dequant_idct, "h264_luma_dc_dequant_idct_%d", bit_depth)) {
 
             call_ref(dst_ref, src, qmul);
             call_new(dst_new, src, qmul);
-            checkasm_check_dctcoef(dst_ref, 16*SIZEOF_COEF, dst_new, 16*SIZEOF_COEF, 16, 16, "dst");
+            checkasm_check_dctcoef(dst0, 16*SIZEOF_COEF, dst1, 16*SIZEOF_COEF, 16, 16, "dst");
             bench_new(dst_new, src, qmul);
         }
     }
