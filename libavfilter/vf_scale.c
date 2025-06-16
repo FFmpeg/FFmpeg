@@ -854,10 +854,14 @@ scale:
                                            AV_SIDE_DATA_PROP_COLOR_DEPENDENT);
     }
 
-    av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
-              (int64_t)in->sample_aspect_ratio.num * outlink->h * link->w,
-              (int64_t)in->sample_aspect_ratio.den * outlink->w * link->h,
-              INT_MAX);
+    if (scale->reset_sar) {
+        out->sample_aspect_ratio = outlink->sample_aspect_ratio;
+    } else {
+        av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
+                (int64_t)in->sample_aspect_ratio.num * outlink->h * link->w,
+                (int64_t)in->sample_aspect_ratio.den * outlink->w * link->h,
+                INT_MAX);
+    }
 
     if (sws_is_noop(out, in)) {
         av_frame_free(&out);
