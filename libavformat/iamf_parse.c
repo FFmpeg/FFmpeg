@@ -465,14 +465,16 @@ static int ambisonics_config(void *s, AVIOContext *pb,
                 return ret;
         }
 
-        layer->ch_layout.order = AV_CHANNEL_ORDER_CUSTOM;
-        layer->ch_layout.nb_channels = output_channel_count;
-        layer->ch_layout.u.map = av_calloc(output_channel_count, sizeof(*layer->ch_layout.u.map));
-        if (!layer->ch_layout.u.map)
-            return AVERROR(ENOMEM);
+        ret = av_channel_layout_custom_init(&layer->ch_layout, output_channel_count);
+        if (ret < 0)
+            return ret;
 
         for (int i = 0; i < output_channel_count; i++)
             layer->ch_layout.u.map[i].id = avio_r8(pb) + AV_CHAN_AMBISONIC_BASE;
+
+        ret = av_channel_layout_retype(&layer->ch_layout, AV_CHANNEL_ORDER_AMBISONIC, 0);
+        if (ret < 0 && ret != AVERROR(ENOSYS))
+            return ret;
     } else {
         int coupled_substream_count = avio_r8(pb);  // M
         int nb_demixing_matrix = substream_count + coupled_substream_count;
