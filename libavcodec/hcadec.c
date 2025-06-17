@@ -245,6 +245,7 @@ static int init_hca(AVCodecContext *avctx, const uint8_t *extradata,
         c->base_band_count     = bytestream2_get_byteu(gb);
         c->stereo_band_count   = bytestream2_get_byte (gb);
         c->bands_per_hfr_group = bytestream2_get_byte (gb);
+        bytestream2_skipu(gb, 2);
     } else if (chunk == MKBETAG('d', 'e', 'c', 0)) {
         bytestream2_skipu(gb, 2);
         bytestream2_skipu(gb, 1);
