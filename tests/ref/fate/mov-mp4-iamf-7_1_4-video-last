@@ -158,17 +158,17 @@ output_gain_flags=0
 output_gain=0/1
 [/SUBCOMPONENT]
 [SUBCOMPONENT]
-channel_layout=3.1.2
+channel_layout=6 channels (FL+FR+TFL+TFR+FC+LFE)
 output_gain_flags=0
 output_gain=0/1
 [/SUBCOMPONENT]
 [SUBCOMPONENT]
-channel_layout=7.1.2
+channel_layout=10 channels (FL+FR+TFL+TFR+FC+LFE+SL+SR+BL+BR)
 output_gain_flags=0
 output_gain=0/1
 [/SUBCOMPONENT]
 [SUBCOMPONENT]
-channel_layout=7.1.4
+channel_layout=12 channels (FL+FR+TFL+TFR+FC+LFE+SL+SR+BL+BR+TBL+TBR)
 output_gain_flags=0
 output_gain=0/1
 [/SUBCOMPONENT]

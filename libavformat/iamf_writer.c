@@ -250,14 +250,18 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
 
         for (int j, i = 0; i < iamf_audio_element->nb_layers; i++) {
             const AVIAMFLayer *layer = iamf_audio_element->layers[i];
+
             for (j = 0; j < FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts); j++)
-                if (!av_channel_layout_compare(&layer->ch_layout, &ff_iamf_scalable_ch_layouts[j]))
+                if (av_channel_layout_subset(&layer->ch_layout, UINT64_MAX) ==
+                    av_channel_layout_subset(&ff_iamf_scalable_ch_layouts[j], UINT64_MAX))
                     break;
 
             if (j >= FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts)) {
                 for (j = 0; j < FF_ARRAY_ELEMS(ff_iamf_expanded_scalable_ch_layouts); j++)
-                    if (!av_channel_layout_compare(&layer->ch_layout, &ff_iamf_expanded_scalable_ch_layouts[j]))
+                    if (av_channel_layout_subset(&layer->ch_layout, UINT64_MAX) ==
+                        av_channel_layout_subset(&ff_iamf_expanded_scalable_ch_layouts[j], UINT64_MAX))
                         break;
+
                 if (j >= FF_ARRAY_ELEMS(ff_iamf_expanded_scalable_ch_layouts)) {
                     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
                     av_channel_layout_describe_bprint(&layer->ch_layout, &bp);
@@ -592,12 +596,26 @@ static int scalable_channel_layout_config(const IAMFAudioElement *audio_element,
             if (!av_channel_layout_compare(&layer->ch_layout, &ff_iamf_scalable_ch_layouts[layout]))
                 break;
         }
-        if (layout >= FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts))
-            for (expanded_layout = 0; expanded_layout < FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts); expanded_layout++) {
+        if (layout >= FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts)) {
+            for (layout = 0; layout < FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts); layout++)
+                if (av_channel_layout_subset(&layer->ch_layout, UINT64_MAX) ==
+                    av_channel_layout_subset(&ff_iamf_scalable_ch_layouts[layout], UINT64_MAX))
+                    break;
+        }
+        if (layout >= FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts)) {
+            for (expanded_layout = 0; expanded_layout < FF_ARRAY_ELEMS(ff_iamf_expanded_scalable_ch_layouts); expanded_layout++) {
                 if (!av_channel_layout_compare(&layer->ch_layout, &ff_iamf_expanded_scalable_ch_layouts[expanded_layout]))
                     break;
             }
-        av_assert0(expanded_layout > 0 || layout < FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts));
+            if (expanded_layout >= FF_ARRAY_ELEMS(ff_iamf_expanded_scalable_ch_layouts)) {
+                for (expanded_layout = 0; expanded_layout < FF_ARRAY_ELEMS(ff_iamf_expanded_scalable_ch_layouts); expanded_layout++)
+                    if (av_channel_layout_subset(&layer->ch_layout, UINT64_MAX) ==
+                        av_channel_layout_subset(&ff_iamf_expanded_scalable_ch_layouts[expanded_layout], UINT64_MAX))
+                        break;
+            }
+        }
+        av_assert0((expanded_layout > 0 && expanded_layout < FF_ARRAY_ELEMS(ff_iamf_expanded_scalable_ch_layouts)) ||
+                   layout < FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts));
         init_put_bits(&pb, header, sizeof(header));
         put_bits(&pb, 4, expanded_layout >= 0 ? 15 : layout);
         put_bits(&pb, 1, !!layer->output_gain_flags);

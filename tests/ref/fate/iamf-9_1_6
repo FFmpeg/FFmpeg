@@ -170,7 +170,7 @@ nb_layers=1
 audio_element_type=0
 default_w=0
 [SUBCOMPONENT]
-channel_layout=9.1.6
+channel_layout=16 channels (FL+FR+FLC+FRC+SL+SR+BL+BR+TFL+TFR+TSL+TSR+TBL+TBR+FC+LFE)
 output_gain_flags=0
 output_gain=0/1
 [/SUBCOMPONENT]

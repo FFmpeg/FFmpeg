@@ -37,7 +37,7 @@ output_gain_flags=0
 output_gain=0/1
 [/SUBCOMPONENT]
 [SUBCOMPONENT]
-channel_layout=5.1(side)
+channel_layout=6 channels (FL+FR+SL+SR+FC+LFE)
 output_gain_flags=0
 output_gain=0/1
 [/SUBCOMPONENT]
