@@ -149,6 +149,8 @@ static void update_stats(OSQChannel *cb, int val)
     cb->history[cb->pos] = FFABS((int64_t)val);
     cb->pos++;
     cb->count++;
+    //NOTE for this to make sense count would need to be limited to FF_ARRAY_ELEMS(cb->history)
+    //Otherwise the average computation later makes no sense
     if (cb->pos >= FF_ARRAY_ELEMS(cb->history))
         cb->pos = 0;
 }
