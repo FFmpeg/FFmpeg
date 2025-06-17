@@ -164,7 +164,8 @@ static int update_residue_parameter(OSQChannel *cb)
     if (!sum)
         return 0;
     x = sum / cb->count;
-    rice_k = ceil(log2(x));
+    av_assert2(x <= 0x80000000U);
+    rice_k = av_ceil_log2(x);
     if (rice_k >= 30) {
         double f = floor(sum / 1.4426952 + 0.5);
         if (f <= 1) {
