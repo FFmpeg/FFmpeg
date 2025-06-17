@@ -212,6 +212,8 @@ static int osq_channel_parameters(AVCodecContext *avctx, int ch)
         cb->residue_parameter = get_urice(gb, 4);
         if (!cb->residue_parameter || cb->residue_parameter >= 31)
             return AVERROR_INVALIDDATA;
+        if (cb->coding_mode == 2)
+            avpriv_request_sample(avctx, "coding mode 2");
     } else if (cb->coding_mode == 3) {
         cb->residue_bits = get_urice(gb, 4);
         if (!cb->residue_bits || cb->residue_bits >= 31)
