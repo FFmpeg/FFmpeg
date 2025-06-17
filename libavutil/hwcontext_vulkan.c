@@ -4170,7 +4170,7 @@ static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
     const int nb_images = ff_vk_count_images(hwf_vk);
 
     VkSemaphoreWaitInfo sem_wait;
-    VkHostImageLayoutTransitionInfo layout_ch_info[AV_NUM_DATA_POINTERS];
+    VkHostImageLayoutTransitionInfoEXT layout_ch_info[AV_NUM_DATA_POINTERS];
     int nb_layout_ch = 0;
 
     hwfc_vk->lock_frame(hwfc, hwf_vk);
@@ -4186,8 +4186,8 @@ static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
         if (compat)
             continue;
 
-        layout_ch_info[nb_layout_ch] = (VkHostImageLayoutTransitionInfo) {
-            .sType = VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO,
+        layout_ch_info[nb_layout_ch] = (VkHostImageLayoutTransitionInfoEXT) {
+            .sType = VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT,
             .image = hwf_vk->img[i],
             .oldLayout = hwf_vk->layout[i],
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -4216,15 +4216,15 @@ static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
                                      nb_layout_ch, layout_ch_info);
 
     if (upload) {
-        VkMemoryToImageCopy region_info = {
-            .sType = VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY,
+        VkMemoryToImageCopyEXT region_info = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT,
             .imageSubresource = {
                 .layerCount = 1,
             },
         };
-        VkCopyMemoryToImageInfo copy_info = {
-            .sType = VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO,
-            .flags = VK_HOST_IMAGE_COPY_MEMCPY,
+        VkCopyMemoryToImageInfoEXT copy_info = {
+            .sType = VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT,
+            .flags = VK_HOST_IMAGE_COPY_MEMCPY_EXT,
             .regionCount = 1,
             .pRegions = &region_info,
         };
@@ -4242,15 +4242,15 @@ static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
             vk->CopyMemoryToImageEXT(hwctx->act_dev, &copy_info);
         }
     } else {
-        VkImageToMemoryCopy region_info = {
-            .sType = VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY,
+        VkImageToMemoryCopyEXT region_info = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT,
             .imageSubresource = {
                 .layerCount = 1,
             },
         };
-        VkCopyImageToMemoryInfo copy_info = {
-            .sType = VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO,
-            .flags = VK_HOST_IMAGE_COPY_MEMCPY,
+        VkCopyImageToMemoryInfoEXT copy_info = {
+            .sType = VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO_EXT,
+            .flags = VK_HOST_IMAGE_COPY_MEMCPY_EXT,
             .regionCount = 1,
             .pRegions = &region_info,
         };
