@@ -245,7 +245,9 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
                 return AVERROR(EINVAL);
             }
         }
-    } else
+    } else {
+        AVBPrint bp;
+
         for (int j, i = 0; i < iamf_audio_element->nb_layers; i++) {
             const AVIAMFLayer *layer = iamf_audio_element->layers[i];
             for (j = 0; j < FF_ARRAY_ELEMS(ff_iamf_scalable_ch_layouts); j++)
@@ -257,7 +259,6 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
                     if (!av_channel_layout_compare(&layer->ch_layout, &ff_iamf_expanded_scalable_ch_layouts[j]))
                         break;
                 if (j >= FF_ARRAY_ELEMS(ff_iamf_expanded_scalable_ch_layouts)) {
-                    AVBPrint bp;
                     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
                     av_channel_layout_describe_bprint(&layer->ch_layout, &bp);
                     av_log(log_ctx, AV_LOG_ERROR, "Unsupported channel layout in Audio Element id %"PRId64
@@ -267,7 +268,26 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
                     return AVERROR(EINVAL);
                 }
             }
+
+            if (!i)
+                continue;
+
+            const AVIAMFLayer *prev_layer = iamf_audio_element->layers[i-1];
+            uint64_t prev_mask = av_channel_layout_subset(&prev_layer->ch_layout, UINT64_MAX);
+            if (av_channel_layout_subset(&layer->ch_layout, prev_mask) != prev_mask || (layer->ch_layout.nb_channels <=
+                                                                                        prev_layer->ch_layout.nb_channels)) {
+                av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+                av_bprintf(&bp, "Channel layout \"");
+                av_channel_layout_describe_bprint(&layer->ch_layout, &bp);
+                av_bprintf(&bp, "\" can't follow channel layout \"");
+                av_channel_layout_describe_bprint(&prev_layer->ch_layout, &bp);
+                av_bprintf(&bp, "\" in Scalable Audio Element id %"PRId64, stg->id);
+                av_log(log_ctx, AV_LOG_ERROR, "%s\n", bp.str);
+                av_bprint_finalize(&bp, NULL);
+                return AVERROR(EINVAL);
+            }
         }
+    }
 
     for (int i = 0; i < iamf->nb_audio_elements; i++) {
         if (stg->id == iamf->audio_elements[i]->audio_element_id) {
