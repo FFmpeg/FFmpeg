@@ -783,7 +783,7 @@ static int iamf_write_audio_element(const IAMFContext *iamf,
 
     ffio_write_leb(dyn_bc, av_popcount(param_definition_types)); // num_parameters
 
-    if (param_definition_types & 1) {
+    if (param_definition_types & AV_IAMF_PARAMETER_DEFINITION_DEMIXING) {
         const AVIAMFParamDefinition *param = element->demixing_info;
         const IAMFParamDefinition *param_def;
         const AVIAMFDemixingInfo *demix;
@@ -799,7 +799,7 @@ static int iamf_write_audio_element(const IAMFContext *iamf,
         avio_w8(dyn_bc, demix->dmixp_mode << 5); // dmixp_mode
         avio_w8(dyn_bc, element->default_w << 4); // default_w
     }
-    if (param_definition_types & 2) {
+    if (param_definition_types & AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN) {
         const AVIAMFParamDefinition *param = element->recon_gain_info;
         const IAMFParamDefinition *param_def;
 
