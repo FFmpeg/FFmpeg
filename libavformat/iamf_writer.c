@@ -758,14 +758,14 @@ static int iamf_write_audio_element(const IAMFContext *iamf,
         /* When the loudspeaker_layout of the (non-)scalable channel audio (i.e., num_layers = 1) is less than or equal to 3.1.2ch,
          * (i.e., Mono, Stereo, or 3.1.2ch), the type PARAMETER_DEFINITION_DEMIXING SHALL NOT be present. */
         else if (element->nb_layers == 1 && (layout == 0 || layout == 1 || layout == 8))
-        param_definition_types &= ~AV_IAMF_PARAMETER_DEFINITION_DEMIXING;
-    /* When num_layers > 1, the type PARAMETER_DEFINITION_RECON_GAIN SHALL be present */
-    if (element->nb_layers > 1)
-        param_definition_types |= AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN;
-    /* When codec_id = fLaC or ipcm, the type PARAMETER_DEFINITION_RECON_GAIN SHALL NOT be present. */
-    if (codec_config->codec_tag == MKTAG('f','L','a','C') ||
-        codec_config->codec_tag == MKTAG('i','p','c','m'))
-        param_definition_types &= ~AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN;
+            param_definition_types &= ~AV_IAMF_PARAMETER_DEFINITION_DEMIXING;
+        /* When num_layers > 1, the type PARAMETER_DEFINITION_RECON_GAIN SHALL be present */
+        if (element->nb_layers > 1)
+            param_definition_types |= AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN;
+        /* When codec_id = fLaC or ipcm, the type PARAMETER_DEFINITION_RECON_GAIN SHALL NOT be present. */
+        if (codec_config->codec_tag == MKTAG('f','L','a','C') ||
+            codec_config->codec_tag == MKTAG('i','p','c','m'))
+            param_definition_types &= ~AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN;
         if ((param_definition_types & AV_IAMF_PARAMETER_DEFINITION_DEMIXING) && !element->demixing_info) {
             if (element->nb_layers > 1) {
                 get_loudspeaker_layout(element->layers[element->nb_layers-1], &layout, &expanded_layout);
