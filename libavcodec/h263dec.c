@@ -256,7 +256,7 @@ static int decode_slice(H263DecContext *const h)
                     get_bits_count(&h->c.gb), show_bits(&h->c.gb, 24));
 
             ff_tlog(NULL, "Decoding MB at %dx%d\n", h->c.mb_x, h->c.mb_y);
-            ret = h->decode_mb(h, h->c.block);
+            ret = h->decode_mb(h);
 
             if (h->c.h263_pred || h->c.h263_aic) {
                 int mb_xy = h->c.mb_y * h->c.mb_stride + h->c.mb_x;

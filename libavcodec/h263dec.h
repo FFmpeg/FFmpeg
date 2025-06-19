@@ -46,7 +46,7 @@ extern VLCElem ff_h263_mv_vlc[];
 typedef struct H263DecContext {
     MPVContext c;
 
-    int (*decode_mb)(struct H263DecContext *h, int16_t block[6][64]);
+    int (*decode_mb)(struct H263DecContext *h);
 } H263DecContext;
 
 int ff_h263_decode_motion(H263DecContext *const h, int pred, int f_code);
@@ -64,8 +64,7 @@ int ff_h263_decode_mba(H263DecContext *const h);
 void ff_h263_show_pict_info(H263DecContext *const h, int h263_plus);
 
 int ff_intel_h263_decode_picture_header(H263DecContext *const h);
-int ff_h263_decode_mb(H263DecContext *const h,
-                      int16_t block[6][64]);
+int ff_h263_decode_mb(H263DecContext *const h);
 
 int ff_h263_resync(H263DecContext *const h);
 

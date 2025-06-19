@@ -1651,7 +1651,7 @@ not_coded:
  * decode partition C of one MB.
  * @return <0 if an error occurred
  */
-static int mpeg4_decode_partitioned_mb(H263DecContext *const h, int16_t block[6][64])
+static int mpeg4_decode_partitioned_mb(H263DecContext *const h)
 {
     Mpeg4DecContext *const ctx = h263_to_mpeg4(h);
     const int xy = h->c.mb_x + h->c.mb_y * h->c.mb_stride;
@@ -1711,7 +1711,7 @@ static int mpeg4_decode_partitioned_mb(H263DecContext *const h, int16_t block[6]
         h->c.bdsp.clear_blocks(h->c.block[0]);
         /* decode each block */
         for (i = 0; i < 6; i++) {
-            if (mpeg4_decode_block(ctx, block[i], i, cbp & 32, h->c.mb_intra,
+            if (mpeg4_decode_block(ctx, h->c.block[i], i, cbp & 32, h->c.mb_intra,
                                    use_intra_dc_vlc, ctx->rvlc) < 0) {
                 av_log(h->c.avctx, AV_LOG_ERROR,
                        "texture corrupted at %d %d %d\n",
@@ -1738,7 +1738,7 @@ static int mpeg4_decode_partitioned_mb(H263DecContext *const h, int16_t block[6]
     }
 }
 
-static int mpeg4_decode_mb(H263DecContext *const h, int16_t block[6][64])
+static int mpeg4_decode_mb(H263DecContext *const h)
 {
     Mpeg4DecContext *const ctx = h263_to_mpeg4(h);
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
@@ -2076,7 +2076,7 @@ intra:
         h->c.bdsp.clear_blocks(h->c.block[0]);
         /* decode each block */
         for (i = 0; i < 6; i++) {
-            if (mpeg4_decode_block(ctx, block[i], i, cbp & 32,
+            if (mpeg4_decode_block(ctx, h->c.block[i], i, cbp & 32,
                                    1, use_intra_dc_vlc, 0) < 0)
                 return AVERROR_INVALIDDATA;
             cbp += cbp;
@@ -2086,7 +2086,7 @@ intra:
 
     /* decode each block */
     for (i = 0; i < 6; i++) {
-        if (mpeg4_decode_block(ctx, block[i], i, cbp & 32, 0, 0, 0) < 0)
+        if (mpeg4_decode_block(ctx, h->c.block[i], i, cbp & 32, 0, 0, 0) < 0)
             return AVERROR_INVALIDDATA;
         cbp += cbp;
     }
@@ -2353,7 +2353,7 @@ static int mpeg4_decode_dpcm_macroblock(Mpeg4DecContext *const ctx,
     return 0;
 }
 
-static int mpeg4_decode_studio_mb(H263DecContext *const h, int16_t block_[12][64])
+static int mpeg4_decode_studio_mb(H263DecContext *const h)
 {
     Mpeg4DecContext *const ctx = h263_to_mpeg4(h);
     int i;

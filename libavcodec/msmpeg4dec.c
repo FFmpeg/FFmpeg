@@ -106,7 +106,7 @@ static int msmpeg4v2_decode_motion(H263DecContext *const h, int pred, int f_code
     return val;
 }
 
-static int msmpeg4v12_decode_mb(H263DecContext *const h, int16_t block[6][64])
+static int msmpeg4v12_decode_mb(H263DecContext *const h)
 {
     MSMP4DecContext *const ms = mpv_to_msmpeg4(h);
     int cbp, code, i;
@@ -203,7 +203,7 @@ static int msmpeg4v12_decode_mb(H263DecContext *const h, int16_t block[6][64])
 
     h->c.bdsp.clear_blocks(h->c.block[0]);
     for (i = 0; i < 6; i++) {
-        if (ff_msmpeg4_decode_block(ms, block[i], i, (cbp >> (5 - i)) & 1, NULL) < 0)
+        if (ff_msmpeg4_decode_block(ms, h->c.block[i], i, (cbp >> (5 - i)) & 1, NULL) < 0)
         {
              av_log(h->c.avctx, AV_LOG_ERROR, "\nerror while decoding block: %d x %d (%d)\n",
                     h->c.mb_x, h->c.mb_y, i);
@@ -213,7 +213,7 @@ static int msmpeg4v12_decode_mb(H263DecContext *const h, int16_t block[6][64])
     return 0;
 }
 
-static int msmpeg4v34_decode_mb(H263DecContext *const h, int16_t block[6][64])
+static int msmpeg4v34_decode_mb(H263DecContext *const h)
 {
     MSMP4DecContext *const ms = mpv_to_msmpeg4(h);
     int cbp, code, i;
@@ -294,7 +294,7 @@ static int msmpeg4v34_decode_mb(H263DecContext *const h, int16_t block[6][64])
 
     h->c.bdsp.clear_blocks(h->c.block[0]);
     for (i = 0; i < 6; i++) {
-        if (ff_msmpeg4_decode_block(ms, block[i], i, (cbp >> (5 - i)) & 1, NULL) < 0)
+        if (ff_msmpeg4_decode_block(ms, h->c.block[i], i, (cbp >> (5 - i)) & 1, NULL) < 0)
         {
             av_log(h->c.avctx, AV_LOG_ERROR, "\nerror while decoding block: %d x %d (%d)\n",
                    h->c.mb_x, h->c.mb_y, i);

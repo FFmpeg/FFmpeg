@@ -776,7 +776,7 @@ static int set_direct_mv(MpegEncContext *s)
     }
 }
 
-int ff_h263_decode_mb(H263DecContext *const h, int16_t block[6][64])
+int ff_h263_decode_mb(H263DecContext *const h)
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
     int16_t *mot_val;
@@ -947,7 +947,7 @@ int ff_h263_decode_mb(H263DecContext *const h, int16_t block[6][64])
 //FIXME UMV
 
             if (HAS_FORWARD_MV(mb_type)) {
-                int16_t *mot_val= ff_h263_pred_motion(&h->c, 0, 0, &pred_x, &pred_y);
+                int16_t *mot_val = ff_h263_pred_motion(&h->c, 0, 0, &pred_x, &pred_y);
                 h->c.mv_dir = MV_DIR_FORWARD;
 
                 if (h->c.umvplus)
@@ -974,7 +974,7 @@ int ff_h263_decode_mb(H263DecContext *const h, int16_t block[6][64])
             }
 
             if (HAS_BACKWARD_MV(mb_type)) {
-                int16_t *mot_val= ff_h263_pred_motion(&h->c, 0, 1, &pred_x, &pred_y);
+                int16_t *mot_val = ff_h263_pred_motion(&h->c, 0, 1, &pred_x, &pred_y);
                 h->c.mv_dir |= MV_DIR_BACKWARD;
 
                 if (h->c.umvplus)
@@ -1051,7 +1051,7 @@ intra:
 
     /* decode each block */
     for (i = 0; i < 6; i++) {
-        if (h263_decode_block(h, block[i], i, cbp&32) < 0)
+        if (h263_decode_block(h, h->c.block[i], i, cbp&32) < 0)
             return -1;
         cbp+=cbp;
     }

@@ -442,7 +442,7 @@ static inline int wmv2_decode_inter_block(WMV2DecContext *w, int16_t *block,
     }
 }
 
-static int wmv2_decode_mb(H263DecContext *const h, int16_t block[6][64])
+static int wmv2_decode_mb(H263DecContext *const h)
 {
     /* The following is only allowed because this decoder
      * does not use slice threading. */
@@ -522,7 +522,7 @@ static int wmv2_decode_mb(H263DecContext *const h, int16_t block[6][64])
         h->c.mv[0][0][1] = my;
 
         for (i = 0; i < 6; i++) {
-            if ((ret = wmv2_decode_inter_block(w, block[i], i, (cbp >> (5 - i)) & 1)) < 0) {
+            if ((ret = wmv2_decode_inter_block(w, h->c.block[i], i, (cbp >> (5 - i)) & 1)) < 0) {
                 av_log(h->c.avctx, AV_LOG_ERROR,
                        "\nerror while decoding inter block: %d x %d (%d)\n",
                        h->c.mb_x, h->c.mb_y, i);
@@ -549,7 +549,7 @@ static int wmv2_decode_mb(H263DecContext *const h, int16_t block[6][64])
 
         h->c.bdsp.clear_blocks(h->c.block[0]);
         for (i = 0; i < 6; i++) {
-            ret = ff_msmpeg4_decode_block(ms, block[i], i, (cbp >> (5 - i)) & 1, NULL);
+            ret = ff_msmpeg4_decode_block(ms, h->c.block[i], i, (cbp >> (5 - i)) & 1, NULL);
             if (ret < 0) {
                 av_log(h->c.avctx, AV_LOG_ERROR,
                        "\nerror while decoding intra block: %d x %d (%d)\n",
