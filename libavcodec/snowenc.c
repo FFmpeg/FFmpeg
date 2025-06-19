@@ -1869,7 +1869,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         mpv->me.dia_size = avctx->dia_size;
         mpv->c.quarter_sample  = (s->avctx->flags & AV_CODEC_FLAG_QPEL)!=0;
         mpv->c.out_format      = FMT_H263;
-        mpv->c.unrestricted_mv = 1;
+        mpv->me.unrestricted_mv = 1;
 
         mpv->lambda   = enc->lambda;
         mpv->c.qscale = (mpv->lambda*139 + FF_LAMBDA_SCALE*64) >> (FF_LAMBDA_SHIFT + 7);

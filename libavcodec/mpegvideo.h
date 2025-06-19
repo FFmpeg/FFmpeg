@@ -164,7 +164,6 @@ typedef struct MpegEncContext {
     int droppable;
 
     /* motion compensation */
-    int unrestricted_mv;        ///< mv can point outside of the coded picture
     int h263_long_vectors;      ///< use horrible H.263v1 long vector mode
 
     BlockDSPContext bdsp;

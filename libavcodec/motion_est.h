@@ -69,6 +69,7 @@ typedef struct MotionEstContext {
     int mb_flags;
     int pre_pass;                   ///< = 1 for the pre pass
     int dia_size;
+    int unrestricted_mv;            ///< mv can point outside of the coded picture
     int xmin;
     int xmax;
     int ymin;

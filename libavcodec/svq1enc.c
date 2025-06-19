@@ -333,7 +333,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s2->pict_type                     = s->pict_type;
         s->m.me.scene_change_score        = 0;
         // s2->out_format                    = FMT_H263;
-        // s2->unrestricted_mv               = 1;
+        // s->m.me.unrestricted_mv           = 1;
         s->m.lambda                       = s->quality;
         s2->qscale                        = s->m.lambda * 139 +
                                              FF_LAMBDA_SCALE * 64 >>
