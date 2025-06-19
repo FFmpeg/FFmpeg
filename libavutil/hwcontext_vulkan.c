@@ -172,6 +172,9 @@ typedef struct VulkanFramesPriv {
 
     /* Modifier info list to free at uninit */
     VkImageDrmFormatModifierListCreateInfoEXT *modifier_info;
+
+    /* Properties for DRM modifier for each plane in the image */
+    VkDrmFormatModifierPropertiesEXT drm_format_modifier_properties[5];
 } VulkanFramesPriv;
 
 typedef struct AVVkFrameInternal {
@@ -2803,7 +2806,9 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
     VulkanFramesPriv *fp = hwfc->hwctx;
     AVVulkanFramesContext *hwctx = &fp->p;
     VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
+    AVVulkanDeviceContext *dev_hwctx = &p->p;
     VkImageUsageFlagBits supported_usage;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
     const struct FFVkFormatEntry *fmt;
     int disable_multiplane = p->disable_multiplane ||
                              (hwctx->flags & AV_VK_FRAME_FLAG_DISABLE_MULTIPLANE);
@@ -2948,6 +2953,63 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
                        hwctx->nb_layers, hwctx->create_pnext);
     if (err)
         return err;
+
+    /* Collect `VkDrmFormatModifierPropertiesEXT` for each plane. Required for DRM export. */
+    if (p->vkctx.extensions & FF_VK_EXT_DRM_MODIFIER_FLAGS && hwctx->tiling == VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT) {
+        VkImageDrmFormatModifierPropertiesEXT drm_mod = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT,
+        };
+        err = vk->GetImageDrmFormatModifierPropertiesEXT(dev_hwctx->act_dev, f->img[0],
+                                                        &drm_mod);
+        if (err != VK_SUCCESS) {
+            av_log(hwfc, AV_LOG_ERROR, "Failed to get image DRM format modifier properties");
+            vulkan_frame_free(hwfc, f);
+            return AVERROR_EXTERNAL;
+        }
+        for (int i = 0; i < fmt->vk_planes; ++i) {
+            VkDrmFormatModifierPropertiesListEXT modp;
+            VkFormatProperties2 fmtp;
+            VkDrmFormatModifierPropertiesEXT *mod_props = NULL;
+
+            modp = (VkDrmFormatModifierPropertiesListEXT) {
+                .sType = VK_STRUCTURE_TYPE_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_EXT,
+            };
+            fmtp = (VkFormatProperties2) {
+                .sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2,
+                .pNext = &modp,
+            };
+
+            /* query drmFormatModifierCount by keeping pDrmFormatModifierProperties NULL */
+            vk->GetPhysicalDeviceFormatProperties2(dev_hwctx->phys_dev, fmt->fallback[i], &fmtp);
+
+            modp.pDrmFormatModifierProperties =
+                av_calloc(modp.drmFormatModifierCount, sizeof(*modp.pDrmFormatModifierProperties));
+            if (!modp.pDrmFormatModifierProperties) {
+                vulkan_frame_free(hwfc, f);
+                return AVERROR(ENOMEM);
+            }
+            vk->GetPhysicalDeviceFormatProperties2(dev_hwctx->phys_dev, fmt->fallback[i], &fmtp);
+
+            for (uint32_t i = 0; i < modp.drmFormatModifierCount; ++i) {
+                VkDrmFormatModifierPropertiesEXT *m = &modp.pDrmFormatModifierProperties[i];
+                if (m->drmFormatModifier == drm_mod.drmFormatModifier) {
+                    mod_props = m;
+                    break;
+                }
+            }
+
+            if (mod_props == NULL) {
+                av_log(hwfc, AV_LOG_ERROR, "No DRM format modifier properties found for modifier 0x%016lx\n",
+                          drm_mod.drmFormatModifier);
+                av_free(modp.pDrmFormatModifierProperties);
+                vulkan_frame_free(hwfc, f);
+                return AVERROR_EXTERNAL;
+            }
+
+            fp->drm_format_modifier_properties[i] = *mod_props;
+            av_free(modp.pDrmFormatModifierProperties);
+        }
+    }
 
     vulkan_frame_free(hwfc, f);
 
@@ -3879,6 +3941,17 @@ static inline uint32_t vulkan_fmt_to_drm(VkFormat vkfmt)
     return DRM_FORMAT_INVALID;
 }
 
+#define MAX_MEMORY_PLANES 4
+static VkImageAspectFlags plane_index_to_aspect(int plane) {
+    if (plane == 0) return VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT;
+    if (plane == 1) return VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT;
+    if (plane == 2) return VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT;
+    if (plane == 3) return VK_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT;
+
+    av_assert2 (false && "Invalid plane index");
+    return VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT;
+}
+
 static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
                              const AVFrame *src, int flags)
 {
@@ -3947,14 +4020,29 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
 
     drm_desc->nb_layers = planes;
     for (int i = 0; i < drm_desc->nb_layers; i++) {
-        VkSubresourceLayout layout;
-        VkImageSubresource sub = {
-            .aspectMask = VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT,
-        };
         VkFormat plane_vkfmt = av_vkfmt_from_pixfmt(hwfc->sw_format)[i];
 
-        drm_desc->layers[i].format    = vulkan_fmt_to_drm(plane_vkfmt);
-        drm_desc->layers[i].nb_planes = 1;
+        drm_desc->layers[i].format = vulkan_fmt_to_drm(plane_vkfmt);
+        drm_desc->layers[i].nb_planes = fp->drm_format_modifier_properties[i].drmFormatModifierPlaneCount;
+
+        if (drm_desc->layers[i].nb_planes > MAX_MEMORY_PLANES) {
+            av_log(hwfc, AV_LOG_ERROR, "Too many memory planes for DRM format!\n");
+            err = AVERROR_EXTERNAL;
+            goto end;
+        }
+
+        for (int j = 0; j < drm_desc->layers[i].nb_planes; j++) {
+            VkSubresourceLayout layout;
+            VkImageSubresource sub = {
+                .aspectMask = plane_index_to_aspect(j),
+            };
+
+            drm_desc->layers[i].planes[j].object_index = FFMIN(i, drm_desc->nb_objects - 1);
+
+            vk->GetImageSubresourceLayout(hwctx->act_dev, f->img[i], &sub, &layout);
+            drm_desc->layers[i].planes[j].offset = layout.offset;
+            drm_desc->layers[i].planes[j].pitch  = layout.rowPitch;
+        }
 
         if (drm_desc->layers[i].format == DRM_FORMAT_INVALID) {
             av_log(hwfc, AV_LOG_ERROR, "Cannot map to DRM layer, unsupported!\n");
@@ -3962,14 +4050,10 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
             goto end;
         }
 
-        drm_desc->layers[i].planes[0].object_index = FFMIN(i, drm_desc->nb_objects - 1);
 
         if (f->tiling == VK_IMAGE_TILING_OPTIMAL)
             continue;
 
-        vk->GetImageSubresourceLayout(hwctx->act_dev, f->img[i], &sub, &layout);
-        drm_desc->layers[i].planes[0].offset = layout.offset;
-        drm_desc->layers[i].planes[0].pitch  = layout.rowPitch;
     }
 
     dst->width   = src->width;
