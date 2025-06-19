@@ -29,6 +29,7 @@
 #include "mpegvideo.h"
 #include "h263.h"
 #include "h263enc.h"
+#include "mathops.h"
 #include "mpeg4video.h"
 #include "mpeg4videodata.h"
 #include "mpeg4videodefs.h"

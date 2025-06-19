@@ -27,6 +27,7 @@
 #include "libavutil/mem_internal.h"
 #include "avcodec.h"
 #include "copy_block.h"
+#include "mathops.h"
 #include "simple_idct.h"
 #include "me_cmp.h"
 #include "mpegvideoenc.h"

@@ -36,6 +36,7 @@
 
 #include "avcodec.h"
 #include "idctdsp.h"
+#include "mathops.h"
 #include "mpegvideo.h"
 #include "msmpeg4.h"
 #include "mpeg4videodata.h"

@@ -25,7 +25,6 @@
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dct.h"
 #include "libavcodec/mpegvideoenc.h"
 
 /* not permutated inverse zigzag_direct + 1 for MMX quantizer */
