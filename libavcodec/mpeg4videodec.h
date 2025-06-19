@@ -105,6 +105,7 @@ typedef struct Mpeg4DecContext {
     };
     // 0 = DCT, 1 = DPCM top to bottom scan, -1 = DPCM bottom to top scan
     int dpcm_direction;
+    int dct_precision;
 } Mpeg4DecContext;
 
 int ff_mpeg4_decode_picture_header(MpegEncContext *s);

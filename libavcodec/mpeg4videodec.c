@@ -787,12 +787,13 @@ int ff_mpeg4_decode_video_packet_header(MPVContext *const s)
     return 0;
 }
 
-static void reset_studio_dc_predictors(MpegEncContext *s)
+static void reset_studio_dc_predictors(Mpeg4DecContext *const ctx)
 {
+    MPVContext *const s = &ctx->m;
     /* Reset DC Predictors */
     s->last_dc[0] =
     s->last_dc[1] =
-    s->last_dc[2] = 1 << (s->avctx->bits_per_raw_sample + s->dct_precision + s->intra_dc_precision - 1);
+    s->last_dc[2] = 1 << (s->avctx->bits_per_raw_sample + ctx->dct_precision + s->intra_dc_precision - 1);
 }
 
 /**
@@ -827,7 +828,7 @@ int ff_mpeg4_decode_studio_slice_header(MPVContext *const s)
                 skip_bits(gb, 8); /* extra_information_slice */
         }
 
-        reset_studio_dc_predictors(s);
+        reset_studio_dc_predictors(ctx);
     }
     else {
         return AVERROR_INVALIDDATA;
@@ -2160,7 +2161,7 @@ static int mpeg4_decode_studio_block(MpegEncContext *s, int32_t block[64], int n
     uint32_t flc;
     const int min = -1 *  (1 << (s->avctx->bits_per_raw_sample + 6));
     const int max =      ((1 << (s->avctx->bits_per_raw_sample + 6)) - 1);
-    int shift =  3 - s->dct_precision;
+    int shift =  3 - ctx->dct_precision;
 
     mismatch = 1;
 
@@ -2196,7 +2197,7 @@ static int mpeg4_decode_studio_block(MpegEncContext *s, int32_t block[64], int n
     if (ctx->mpeg_quant)
         block[0] = s->last_dc[cc] * (8 >> s->intra_dc_precision);
     else
-        block[0] = s->last_dc[cc] * (8 >> s->intra_dc_precision) * (8 >> s->dct_precision);
+        block[0] = s->last_dc[cc] * (8 >> s->intra_dc_precision) * (8 >> ctx->dct_precision);
     /* TODO: support mpeg_quant for AC coefficients */
 
     block[0] = av_clip(block[0], min, max);
@@ -2246,7 +2247,7 @@ static int mpeg4_decode_studio_block(MpegEncContext *s, int32_t block[64], int n
             if (idx > 63)
                 return AVERROR_INVALIDDATA;
             j = scantable[idx++];
-            additional_code_len = s->avctx->bits_per_raw_sample + s->dct_precision + 4;
+            additional_code_len = s->avctx->bits_per_raw_sample + ctx->dct_precision + 4;
             flc = get_bits(&s->gb, additional_code_len);
             if (flc >> (additional_code_len-1))
                 block[j] = -1 * (( flc ^ ((1 << additional_code_len) -1)) + 1);
@@ -2263,8 +2264,10 @@ static int mpeg4_decode_studio_block(MpegEncContext *s, int32_t block[64], int n
     return 0;
 }
 
-static int mpeg4_decode_dpcm_macroblock(MpegEncContext *s, int16_t macroblock[256], int n)
+static int mpeg4_decode_dpcm_macroblock(Mpeg4DecContext *const ctx,
+                                        int16_t macroblock[256], int n)
 {
+    MPVContext *const s = &ctx->m;
     int i, j, w, h, idx = 0;
     int block_mean, rice_parameter, rice_prefix_code, rice_suffix_code,
         dpcm_residual, left, top, topleft, min_left_top, max_left_top, p, p2, output;
@@ -2276,7 +2279,7 @@ static int mpeg4_decode_dpcm_macroblock(MpegEncContext *s, int16_t macroblock[25
         av_log(s->avctx, AV_LOG_ERROR, "Forbidden block_mean\n");
         return AVERROR_INVALIDDATA;
     }
-    s->last_dc[n] = block_mean * (1 << (s->dct_precision + s->intra_dc_precision));
+    s->last_dc[n] = block_mean * (1 << (ctx->dct_precision + s->intra_dc_precision));
 
     rice_parameter = get_bits(&s->gb, 4);
     if (rice_parameter == 0) {
@@ -2373,7 +2376,7 @@ static int mpeg4_decode_studio_mb(MpegEncContext *s, int16_t block_[12][64])
         check_marker(s->avctx, &s->gb, "DPCM block start");
         ctx->dpcm_direction = get_bits1(&s->gb) ? -1 : 1;
         for (i = 0; i < 3; i++) {
-            if (mpeg4_decode_dpcm_macroblock(s, ctx->dpcm_macroblock[i], i) < 0)
+            if (mpeg4_decode_dpcm_macroblock(ctx, ctx->dpcm_macroblock[i], i) < 0)
                 return AVERROR_INVALIDDATA;
         }
     }
@@ -3521,13 +3524,13 @@ static int decode_studio_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {
         if (get_bits1(gb))
-            reset_studio_dc_predictors(s);
+            reset_studio_dc_predictors(ctx);
     }
 
     if (ctx->shape != BIN_ONLY_SHAPE) {
         s->alternate_scan = get_bits1(gb);
         s->frame_pred_frame_dct = get_bits1(gb);
-        s->dct_precision = get_bits(gb, 2);
+        ctx->dct_precision      = get_bits(gb, 2);
         s->intra_dc_precision = get_bits(gb, 2);
         s->q_scale_type = get_bits1(gb);
     }

@@ -238,7 +238,6 @@ typedef struct MpegEncContext {
 
     /* MPEG-4 specific */
     int studio_profile;
-    int dct_precision;
     int last_time_base;
     int time_base;                  ///< time in seconds of last I,P,S Frame
     int64_t time;                   ///< time of current frame
