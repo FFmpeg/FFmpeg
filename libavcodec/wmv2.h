@@ -44,7 +44,7 @@ void ff_mspel_motion(MpegEncContext *s,
                      int motion_x, int motion_y, int h);
 
 
-static av_always_inline int wmv2_get_cbp_table_index(MpegEncContext *s, int cbp_index)
+static av_always_inline int wmv2_get_cbp_table_index(int qscale, int cbp_index)
 {
     static const uint8_t map[3][3] = {
         { 0, 2, 1 },
@@ -52,7 +52,7 @@ static av_always_inline int wmv2_get_cbp_table_index(MpegEncContext *s, int cbp_
         { 2, 1, 0 },
     };
 
-    return map[(s->qscale > 10) + (s->qscale > 20)][cbp_index];
+    return map[(qscale > 10) + (qscale > 20)][cbp_index];
 }
 
 #endif /* AVCODEC_WMV2_H */

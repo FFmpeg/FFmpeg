@@ -21,8 +21,8 @@
 #ifndef AVCODEC_FLVDEC_H
 #define AVCODEC_FLVDEC_H
 
-#include "mpegvideo.h"
+struct H263DecContext;
 
-int ff_flv_decode_picture_header(MpegEncContext *s);
+int ff_flv_decode_picture_header(struct H263DecContext *const h);
 
 #endif /* AVCODEC_FLVDEC_H */

@@ -26,13 +26,14 @@
 #include <stdint.h>
 
 #include "get_bits.h"
+#include "h263dec.h"
 #include "mpegvideo.h"
 #include "mpeg4videodsp.h"
 
 #include "libavutil/mem_internal.h"
 
 typedef struct Mpeg4DecContext {
-    MpegEncContext m;
+    H263DecContext h;
 
     int f_code;                 ///< forward MV resolution
     int b_code;                 ///< backward MV resolution for B-frames
@@ -108,7 +109,7 @@ typedef struct Mpeg4DecContext {
     int dct_precision;
 } Mpeg4DecContext;
 
-int ff_mpeg4_decode_picture_header(MpegEncContext *s);
+int ff_mpeg4_decode_picture_header(H263DecContext *const h);
 int ff_mpeg4_parse_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb,
                                   int header, int parse_only);
 void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb,
@@ -117,11 +118,11 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
 void ff_mpeg4_mcsel_motion(MpegEncContext *s,
                            uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                            uint8_t *const *ref_picture);
-int ff_mpeg4_decode_partitions(MPVContext *const s);
-int ff_mpeg4_decode_video_packet_header(MPVContext *const s);
-int ff_mpeg4_decode_studio_slice_header(MPVContext *const s);
+int ff_mpeg4_decode_partitions(H263DecContext *const h);
+int ff_mpeg4_decode_video_packet_header(H263DecContext *const h);
+int ff_mpeg4_decode_studio_slice_header(H263DecContext *const h);
 void ff_mpeg4_workaround_bugs(AVCodecContext *avctx);
-void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n,
+void ff_mpeg4_pred_ac(H263DecContext *const h, int16_t *block, int n,
                       int dir);
 int ff_mpeg4_frame_end(AVCodecContext *avctx, const AVPacket *pkt);
 

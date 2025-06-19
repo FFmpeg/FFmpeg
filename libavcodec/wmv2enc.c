@@ -118,7 +118,7 @@ static int wmv2_encode_picture_header(MPVMainEncContext *const m)
         put_bits(&s->pb, 2, SKIP_TYPE_NONE);
 
         ff_msmpeg4_code012(&s->pb, cbp_index = 0);
-        w->cbp_table_index = wmv2_get_cbp_table_index(&s->c, cbp_index);
+        w->cbp_table_index = wmv2_get_cbp_table_index(s->c.qscale, cbp_index);
 
         if (w->mspel_bit)
             put_bits(&s->pb, 1, s->c.mspel);

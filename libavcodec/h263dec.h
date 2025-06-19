@@ -43,24 +43,30 @@ extern VLCElem ff_h263_inter_MCBPC_vlc[];
 extern VLCElem ff_h263_cbpy_vlc[];
 extern VLCElem ff_h263_mv_vlc[];
 
-int ff_h263_decode_motion(MpegEncContext * s, int pred, int f_code);
+typedef struct H263DecContext {
+    MPVContext c;
+
+    int (*decode_mb)(struct H263DecContext *h, int16_t block[6][64]);
+} H263DecContext;
+
+int ff_h263_decode_motion(H263DecContext *const h, int pred, int f_code);
 int ff_h263_decode_init(AVCodecContext *avctx);
 int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                          int *got_frame, AVPacket *avpkt);
 void ff_h263_decode_init_vlc(void);
-int ff_h263_decode_picture_header(MpegEncContext *s);
-int ff_h263_decode_gob_header(MpegEncContext *s);
-int ff_h263_decode_mba(MpegEncContext *s);
+int ff_h263_decode_picture_header(H263DecContext *const h);
+int ff_h263_decode_gob_header(H263DecContext *const h);
+int ff_h263_decode_mba(H263DecContext *const h);
 
 /**
  * Print picture info if FF_DEBUG_PICT_INFO is set.
  */
-void ff_h263_show_pict_info(MpegEncContext *s, int h263_plus);
+void ff_h263_show_pict_info(H263DecContext *const h, int h263_plus);
 
-int ff_intel_h263_decode_picture_header(MpegEncContext *s);
-int ff_h263_decode_mb(MpegEncContext *s,
+int ff_intel_h263_decode_picture_header(H263DecContext *const h);
+int ff_h263_decode_mb(H263DecContext *const h,
                       int16_t block[6][64]);
 
-int ff_h263_resync(MpegEncContext *s);
+int ff_h263_resync(H263DecContext *const h);
 
 #endif

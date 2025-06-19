@@ -52,7 +52,7 @@
 #define DC_VLC_BITS        9
 
 typedef struct RVDecContext {
-    MpegEncContext m;
+    H263DecContext h;
     int sub_id;
     int orig_width, orig_height;
 } RVDecContext;
@@ -80,16 +80,16 @@ static const uint16_t rv_chrom_len_count[15] = {
 
 static VLCElem rv_dc_lum[1472], rv_dc_chrom[992];
 
-int ff_rv_decode_dc(MpegEncContext *s, int n)
+int ff_rv_decode_dc(H263DecContext *const h, int n)
 {
     int code;
 
     if (n < 4) {
-        code = get_vlc2(&s->gb, rv_dc_lum, DC_VLC_BITS, 2);
+        code = get_vlc2(&h->c.gb, rv_dc_lum, DC_VLC_BITS, 2);
     } else {
-        code = get_vlc2(&s->gb, rv_dc_chrom, DC_VLC_BITS, 2);
+        code = get_vlc2(&h->c.gb, rv_dc_chrom, DC_VLC_BITS, 2);
         if (code < 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "chroma dc error\n");
+            av_log(h->c.avctx, AV_LOG_ERROR, "chroma dc error\n");
             return -1;
         }
     }
@@ -97,59 +97,59 @@ int ff_rv_decode_dc(MpegEncContext *s, int n)
 }
 
 /* read RV 1.0 compatible frame header */
-static int rv10_decode_picture_header(MpegEncContext *s)
+static int rv10_decode_picture_header(H263DecContext *const h)
 {
     int mb_count, pb_frame, marker, mb_xy;
 
-    marker = get_bits1(&s->gb);
+    marker = get_bits1(&h->c.gb);
 
-    if (get_bits1(&s->gb))
-        s->pict_type = AV_PICTURE_TYPE_P;
+    if (get_bits1(&h->c.gb))
+        h->c.pict_type = AV_PICTURE_TYPE_P;
     else
-        s->pict_type = AV_PICTURE_TYPE_I;
+        h->c.pict_type = AV_PICTURE_TYPE_I;
 
     if (!marker)
-        av_log(s->avctx, AV_LOG_ERROR, "marker missing\n");
+        av_log(h->c.avctx, AV_LOG_ERROR, "marker missing\n");
 
-    pb_frame = get_bits1(&s->gb);
+    pb_frame = get_bits1(&h->c.gb);
 
-    ff_dlog(s->avctx, "pict_type=%d pb_frame=%d\n", s->pict_type, pb_frame);
+    ff_dlog(h->c.avctx, "pict_type=%d pb_frame=%d\n", h->c.pict_type, pb_frame);
 
     if (pb_frame) {
-        avpriv_request_sample(s->avctx, "PB-frame");
+        avpriv_request_sample(h->c.avctx, "PB-frame");
         return AVERROR_PATCHWELCOME;
     }
 
-    s->qscale = get_bits(&s->gb, 5);
-    if (s->qscale == 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid qscale value: 0\n");
+    h->c.qscale = get_bits(&h->c.gb, 5);
+    if (h->c.qscale == 0) {
+        av_log(h->c.avctx, AV_LOG_ERROR, "Invalid qscale value: 0\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if (s->pict_type == AV_PICTURE_TYPE_I) {
-        if (s->rv10_version == 3) {
+    if (h->c.pict_type == AV_PICTURE_TYPE_I) {
+        if (h->c.rv10_version == 3) {
             /* specific MPEG like DC coding not used */
-            s->last_dc[0] = get_bits(&s->gb, 8);
-            s->last_dc[1] = get_bits(&s->gb, 8);
-            s->last_dc[2] = get_bits(&s->gb, 8);
-            ff_dlog(s->avctx, "DC:%d %d %d\n", s->last_dc[0],
-                    s->last_dc[1], s->last_dc[2]);
+            h->c.last_dc[0] = get_bits(&h->c.gb, 8);
+            h->c.last_dc[1] = get_bits(&h->c.gb, 8);
+            h->c.last_dc[2] = get_bits(&h->c.gb, 8);
+            ff_dlog(h->c.avctx, "DC:%d %d %d\n", h->c.last_dc[0],
+                    h->c.last_dc[1], h->c.last_dc[2]);
         }
     }
     /* if multiple packets per frame are sent, the position at which
      * to display the macroblocks is coded here */
 
-    mb_xy = s->mb_x + s->mb_y * s->mb_width;
-    if (show_bits(&s->gb, 12) == 0 || (mb_xy && mb_xy < s->mb_num)) {
-        s->mb_x  = get_bits(&s->gb, 6); /* mb_x */
-        s->mb_y  = get_bits(&s->gb, 6); /* mb_y */
-        mb_count = get_bits(&s->gb, 12);
+    mb_xy = h->c.mb_x + h->c.mb_y * h->c.mb_width;
+    if (show_bits(&h->c.gb, 12) == 0 || (mb_xy && mb_xy < h->c.mb_num)) {
+        h->c.mb_x  = get_bits(&h->c.gb, 6); /* mb_x */
+        h->c.mb_y  = get_bits(&h->c.gb, 6); /* mb_y */
+        mb_count   = get_bits(&h->c.gb, 12);
     } else {
-        s->mb_x  = 0;
-        s->mb_y  = 0;
-        mb_count = s->mb_width * s->mb_height;
+        h->c.mb_x  = 0;
+        h->c.mb_y  = 0;
+        mb_count = h->c.mb_width * h->c.mb_height;
     }
-    skip_bits(&s->gb, 3);   /* ignored */
+    skip_bits(&h->c.gb, 3);   /* ignored */
 
     return mb_count;
 }
@@ -159,151 +159,151 @@ static int rv20_decode_picture_header(RVDecContext *rv, int whole_size)
     static const enum AVPictureType pict_types[] =
         { AV_PICTURE_TYPE_I, AV_PICTURE_TYPE_I /* hmm ... */,
           AV_PICTURE_TYPE_P, AV_PICTURE_TYPE_B };
-    MpegEncContext *s = &rv->m;
+    H263DecContext *const h = &rv->h;
     int seq, mb_pos, ret;
     int rpr_max;
 
-    s->pict_type = pict_types[get_bits(&s->gb, 2)];
+    h->c.pict_type = pict_types[get_bits(&h->c.gb, 2)];
 
-    if (s->low_delay && s->pict_type == AV_PICTURE_TYPE_B) {
-        av_log(s->avctx, AV_LOG_ERROR, "low delay B\n");
+    if (h->c.low_delay && h->c.pict_type == AV_PICTURE_TYPE_B) {
+        av_log(h->c.avctx, AV_LOG_ERROR, "low delay B\n");
         return -1;
     }
-    if (!s->last_pic.ptr && s->pict_type == AV_PICTURE_TYPE_B) {
-        av_log(s->avctx, AV_LOG_ERROR, "early B-frame\n");
+    if (!h->c.last_pic.ptr && h->c.pict_type == AV_PICTURE_TYPE_B) {
+        av_log(h->c.avctx, AV_LOG_ERROR, "early B-frame\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if (get_bits1(&s->gb)) {
-        av_log(s->avctx, AV_LOG_ERROR, "reserved bit set\n");
+    if (get_bits1(&h->c.gb)) {
+        av_log(h->c.avctx, AV_LOG_ERROR, "reserved bit set\n");
         return AVERROR_INVALIDDATA;
     }
 
-    s->qscale = get_bits(&s->gb, 5);
-    if (s->qscale == 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid qscale value: 0\n");
+    h->c.qscale = get_bits(&h->c.gb, 5);
+    if (h->c.qscale == 0) {
+        av_log(h->c.avctx, AV_LOG_ERROR, "Invalid qscale value: 0\n");
         return AVERROR_INVALIDDATA;
     }
 
     if (RV_GET_MINOR_VER(rv->sub_id) >= 2)
-        s->loop_filter = get_bits1(&s->gb) && !s->avctx->lowres;
+        h->c.loop_filter = get_bits1(&h->c.gb) && !h->c.avctx->lowres;
 
     if (RV_GET_MINOR_VER(rv->sub_id) <= 1)
-        seq = get_bits(&s->gb, 8) << 7;
+        seq = get_bits(&h->c.gb, 8) << 7;
     else
-        seq = get_bits(&s->gb, 13) << 2;
+        seq = get_bits(&h->c.gb, 13) << 2;
 
-    rpr_max = s->avctx->extradata[1] & 7;
+    rpr_max = h->c.avctx->extradata[1] & 7;
     if (rpr_max) {
         int f, new_w, new_h;
         int rpr_bits = av_log2(rpr_max) + 1;
 
-        f = get_bits(&s->gb, rpr_bits);
+        f = get_bits(&h->c.gb, rpr_bits);
 
         if (f) {
-            if (s->avctx->extradata_size < 8 + 2 * f) {
-                av_log(s->avctx, AV_LOG_ERROR, "Extradata too small.\n");
+            if (h->c.avctx->extradata_size < 8 + 2 * f) {
+                av_log(h->c.avctx, AV_LOG_ERROR, "Extradata too small.\n");
                 return AVERROR_INVALIDDATA;
             }
 
-            new_w = 4 * s->avctx->extradata[6 + 2 * f];
-            new_h = 4 * s->avctx->extradata[7 + 2 * f];
+            new_w = 4 * h->c.avctx->extradata[6 + 2 * f];
+            new_h = 4 * h->c.avctx->extradata[7 + 2 * f];
         } else {
             new_w = rv->orig_width;
             new_h = rv->orig_height;
         }
-        if (new_w != s->width || new_h != s->height || !s->context_initialized) {
-            AVRational old_aspect = s->avctx->sample_aspect_ratio;
-            av_log(s->avctx, AV_LOG_DEBUG,
+        if (new_w != h->c.width || new_h != h->c.height || !h->c.context_initialized) {
+            AVRational old_aspect = h->c.avctx->sample_aspect_ratio;
+            av_log(h->c.avctx, AV_LOG_DEBUG,
                    "attempting to change resolution to %dx%d\n", new_w, new_h);
-            if (av_image_check_size(new_w, new_h, 0, s->avctx) < 0)
+            if (av_image_check_size(new_w, new_h, 0, h->c.avctx) < 0)
                 return AVERROR_INVALIDDATA;
 
             if (whole_size < (new_w + 15)/16 * ((new_h + 15)/16) / 8)
                 return AVERROR_INVALIDDATA;
 
-            ff_mpv_common_end(s);
+            ff_mpv_common_end(&h->c);
 
             // attempt to keep aspect during typical resolution switches
             if (!old_aspect.num)
                 old_aspect = (AVRational){1, 1};
-            if (2 * (int64_t)new_w * s->height == (int64_t)new_h * s->width)
-                s->avctx->sample_aspect_ratio = av_mul_q(old_aspect, (AVRational){2, 1});
-            if ((int64_t)new_w * s->height == 2 * (int64_t)new_h * s->width)
-                s->avctx->sample_aspect_ratio = av_mul_q(old_aspect, (AVRational){1, 2});
+            if (2 * (int64_t)new_w * h->c.height == (int64_t)new_h * h->c.width)
+                h->c.avctx->sample_aspect_ratio = av_mul_q(old_aspect, (AVRational){2, 1});
+            if ((int64_t)new_w * h->c.height == 2 * (int64_t)new_h * h->c.width)
+                h->c.avctx->sample_aspect_ratio = av_mul_q(old_aspect, (AVRational){1, 2});
 
-            ret = ff_set_dimensions(s->avctx, new_w, new_h);
+            ret = ff_set_dimensions(h->c.avctx, new_w, new_h);
             if (ret < 0)
                 return ret;
 
-            s->width  = new_w;
-            s->height = new_h;
-            if ((ret = ff_mpv_common_init(s)) < 0)
+            h->c.width  = new_w;
+            h->c.height = new_h;
+            if ((ret = ff_mpv_common_init(&h->c)) < 0)
                 return ret;
         }
 
-        if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
-            av_log(s->avctx, AV_LOG_DEBUG, "F %d/%d/%d\n", f, rpr_bits, rpr_max);
+        if (h->c.avctx->debug & FF_DEBUG_PICT_INFO) {
+            av_log(h->c.avctx, AV_LOG_DEBUG, "F %d/%d/%d\n", f, rpr_bits, rpr_max);
         }
     }
-    if (av_image_check_size(s->width, s->height, 0, s->avctx) < 0)
+    if (av_image_check_size(h->c.width, h->c.height, 0, h->c.avctx) < 0)
         return AVERROR_INVALIDDATA;
 
-    mb_pos = ff_h263_decode_mba(s);
+    mb_pos = ff_h263_decode_mba(h);
 
-    seq |= s->time & ~0x7FFF;
-    if (seq - s->time >  0x4000)
+    seq |= h->c.time & ~0x7FFF;
+    if (seq - h->c.time >  0x4000)
         seq -= 0x8000;
-    if (seq - s->time < -0x4000)
+    if (seq - h->c.time < -0x4000)
         seq += 0x8000;
 
-    if (seq != s->time) {
-        if (s->pict_type != AV_PICTURE_TYPE_B) {
-            s->time            = seq;
-            s->pp_time         = s->time - s->last_non_b_time;
-            s->last_non_b_time = s->time;
+    if (seq != h->c.time) {
+        if (h->c.pict_type != AV_PICTURE_TYPE_B) {
+            h->c.time            = seq;
+            h->c.pp_time         = h->c.time - h->c.last_non_b_time;
+            h->c.last_non_b_time = h->c.time;
         } else {
-            s->time    = seq;
-            s->pb_time = s->pp_time - (s->last_non_b_time - s->time);
+            h->c.time    = seq;
+            h->c.pb_time = h->c.pp_time - (h->c.last_non_b_time - h->c.time);
         }
     }
-    if (s->pict_type == AV_PICTURE_TYPE_B) {
-        if (s->pp_time <=s->pb_time || s->pp_time <= s->pp_time - s->pb_time || s->pp_time<=0) {
-            av_log(s->avctx, AV_LOG_DEBUG,
+    if (h->c.pict_type == AV_PICTURE_TYPE_B) {
+        if (h->c.pp_time <=h->c.pb_time || h->c.pp_time <= h->c.pp_time - h->c.pb_time || h->c.pp_time<=0) {
+            av_log(h->c.avctx, AV_LOG_DEBUG,
                    "messed up order, possible from seeking? skipping current B-frame\n");
 #define ERROR_SKIP_FRAME -123
             return ERROR_SKIP_FRAME;
         }
-        ff_mpeg4_init_direct_mv(s);
+        ff_mpeg4_init_direct_mv(&h->c);
     }
 
-    s->no_rounding = get_bits1(&s->gb);
+    h->c.no_rounding = get_bits1(&h->c.gb);
 
-    if (RV_GET_MINOR_VER(rv->sub_id) <= 1 && s->pict_type == AV_PICTURE_TYPE_B)
+    if (RV_GET_MINOR_VER(rv->sub_id) <= 1 && h->c.pict_type == AV_PICTURE_TYPE_B)
         // binary decoder reads 3+2 bits here but they don't seem to be used
-        skip_bits(&s->gb, 5);
+        skip_bits(&h->c.gb, 5);
 
-    s->h263_aic        = s->pict_type == AV_PICTURE_TYPE_I;
-    if (s->h263_aic) {
-        s->y_dc_scale_table =
-        s->c_dc_scale_table = ff_aic_dc_scale_table;
+    h->c.h263_aic        = h->c.pict_type == AV_PICTURE_TYPE_I;
+    if (h->c.h263_aic) {
+        h->c.y_dc_scale_table =
+        h->c.c_dc_scale_table = ff_aic_dc_scale_table;
     } else {
-        s->y_dc_scale_table =
-        s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
+        h->c.y_dc_scale_table =
+        h->c.c_dc_scale_table = ff_mpeg1_dc_scale_table;
     }
-    if (!s->avctx->lowres)
-        s->loop_filter = 1;
+    if (!h->c.avctx->lowres)
+        h->c.loop_filter = 1;
 
-    if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
-        av_log(s->avctx, AV_LOG_INFO,
+    if (h->c.avctx->debug & FF_DEBUG_PICT_INFO) {
+        av_log(h->c.avctx, AV_LOG_INFO,
                "num:%5d x:%2d y:%2d type:%d qscale:%2d rnd:%d\n",
-               seq, s->mb_x, s->mb_y, s->pict_type, s->qscale,
-               s->no_rounding);
+               seq, h->c.mb_x, h->c.mb_y, h->c.pict_type, h->c.qscale,
+               h->c.no_rounding);
     }
 
-    av_assert0(s->pict_type != AV_PICTURE_TYPE_B || !s->low_delay);
+    av_assert0(h->c.pict_type != AV_PICTURE_TYPE_B || !h->c.low_delay);
 
-    return s->mb_width * s->mb_height - mb_pos;
+    return h->c.mb_width * h->c.mb_height - mb_pos;
 }
 
 static av_cold void rv10_build_vlc(VLCElem vlc[], int table_size,
@@ -351,7 +351,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
     RVDecContext *rv = avctx->priv_data;
-    MpegEncContext *s = &rv->m;
+    H263DecContext *const h = &rv->h;
     int major_ver, minor_ver, micro_ver, ret;
 
     if (avctx->extradata_size < 8) {
@@ -369,11 +369,11 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     rv->orig_width  = avctx->coded_width;
     rv->orig_height = avctx->coded_height;
 
-    s->h263_long_vectors = avctx->extradata[3] & 1;
+    h->c.h263_long_vectors = avctx->extradata[3] & 1;
     rv->sub_id           = AV_RB32A(avctx->extradata + 4);
     if (avctx->codec_id == AV_CODEC_ID_RV20) {
-        s->modified_quant      = 1;
-        s->chroma_qscale_table = ff_h263_chroma_qscale_table;
+        h->c.modified_quant      = 1;
+        h->c.chroma_qscale_table = ff_h263_chroma_qscale_table;
     }
 
     major_ver = RV_GET_MAJOR_VER(rv->sub_id);
@@ -382,12 +382,12 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
 
     switch (major_ver) {
     case 1:
-        s->rv10_version = micro_ver ? 3 : 1;
-        s->obmc         = micro_ver == 2;
+        h->c.rv10_version = micro_ver ? 3 : 1;
+        h->c.obmc         = micro_ver == 2;
         break;
     case 2:
         if (minor_ver >= 2) {
-            s->low_delay           = 0;
+            h->c.low_delay      = 0;
             avctx->has_b_frames = 1;
         }
         break;
@@ -412,126 +412,126 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
                               int buf_size, int buf_size2, int whole_size)
 {
     RVDecContext *rv = avctx->priv_data;
-    MpegEncContext *s = &rv->m;
+    H263DecContext *const h = &rv->h;
     int mb_count, mb_pos, left, start_mb_x, active_bits_size, ret;
 
     active_bits_size = buf_size * 8;
-    init_get_bits(&s->gb, buf, FFMAX(buf_size, buf_size2) * 8);
-    if (s->codec_id == AV_CODEC_ID_RV10)
-        mb_count = rv10_decode_picture_header(s);
+    init_get_bits(&h->c.gb, buf, FFMAX(buf_size, buf_size2) * 8);
+    if (h->c.codec_id == AV_CODEC_ID_RV10)
+        mb_count = rv10_decode_picture_header(h);
     else
         mb_count = rv20_decode_picture_header(rv, whole_size);
     if (mb_count < 0) {
         if (mb_count != ERROR_SKIP_FRAME)
-            av_log(s->avctx, AV_LOG_ERROR, "HEADER ERROR\n");
+            av_log(h->c.avctx, AV_LOG_ERROR, "HEADER ERROR\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if (s->mb_x >= s->mb_width ||
-        s->mb_y >= s->mb_height) {
-        av_log(s->avctx, AV_LOG_ERROR, "POS ERROR %d %d\n", s->mb_x, s->mb_y);
+    if (h->c.mb_x >= h->c.mb_width ||
+        h->c.mb_y >= h->c.mb_height) {
+        av_log(h->c.avctx, AV_LOG_ERROR, "POS ERROR %d %d\n", h->c.mb_x, h->c.mb_y);
         return AVERROR_INVALIDDATA;
     }
-    mb_pos = s->mb_y * s->mb_width + s->mb_x;
-    left   = s->mb_width * s->mb_height - mb_pos;
+    mb_pos = h->c.mb_y * h->c.mb_width + h->c.mb_x;
+    left   = h->c.mb_width * h->c.mb_height - mb_pos;
     if (mb_count > left) {
-        av_log(s->avctx, AV_LOG_ERROR, "COUNT ERROR\n");
+        av_log(h->c.avctx, AV_LOG_ERROR, "COUNT ERROR\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if (whole_size < s->mb_width * s->mb_height / 8)
+    if (whole_size < h->c.mb_width * h->c.mb_height / 8)
         return AVERROR_INVALIDDATA;
 
-    if ((s->mb_x == 0 && s->mb_y == 0) || !s->cur_pic.ptr) {
+    if ((h->c.mb_x == 0 && h->c.mb_y == 0) || !h->c.cur_pic.ptr) {
         // FIXME write parser so we always have complete frames?
-        if (s->cur_pic.ptr) {
-            ff_er_frame_end(&s->er, NULL);
-            ff_mpv_frame_end(s);
-            s->mb_x = s->mb_y = s->resync_mb_x = s->resync_mb_y = 0;
+        if (h->c.cur_pic.ptr) {
+            ff_er_frame_end(&h->c.er, NULL);
+            ff_mpv_frame_end(&h->c);
+            h->c.mb_x = h->c.mb_y = h->c.resync_mb_x = h->c.resync_mb_y = 0;
         }
-        if ((ret = ff_mpv_frame_start(s, avctx)) < 0)
+        if ((ret = ff_mpv_frame_start(&h->c, avctx)) < 0)
             return ret;
-        ff_mpeg_er_frame_start(s);
+        ff_mpeg_er_frame_start(&h->c);
     } else {
-        if (s->cur_pic.ptr->f->pict_type != s->pict_type) {
-            av_log(s->avctx, AV_LOG_ERROR, "Slice type mismatch\n");
+        if (h->c.cur_pic.ptr->f->pict_type != h->c.pict_type) {
+            av_log(h->c.avctx, AV_LOG_ERROR, "Slice type mismatch\n");
             return AVERROR_INVALIDDATA;
         }
     }
 
 
-    ff_dlog(avctx, "qscale=%d\n", s->qscale);
+    ff_dlog(avctx, "qscale=%d\n", h->c.qscale);
 
     /* default quantization values */
-    if (s->codec_id == AV_CODEC_ID_RV10) {
-        if (s->mb_y == 0)
-            s->first_slice_line = 1;
+    if (h->c.codec_id == AV_CODEC_ID_RV10) {
+        if (h->c.mb_y == 0)
+            h->c.first_slice_line = 1;
     } else {
-        s->first_slice_line = 1;
-        s->resync_mb_x      = s->mb_x;
+        h->c.first_slice_line = 1;
+        h->c.resync_mb_x      = h->c.mb_x;
     }
-    start_mb_x     = s->mb_x;
-    s->resync_mb_y = s->mb_y;
+    start_mb_x     = h->c.mb_x;
+    h->c.resync_mb_y = h->c.mb_y;
 
-    ff_set_qscale(s, s->qscale);
+    ff_set_qscale(&h->c, h->c.qscale);
 
-    s->rv10_first_dc_coded[0] = 0;
-    s->rv10_first_dc_coded[1] = 0;
-    s->rv10_first_dc_coded[2] = 0;
-    ff_init_block_index(s);
+    h->c.rv10_first_dc_coded[0] = 0;
+    h->c.rv10_first_dc_coded[1] = 0;
+    h->c.rv10_first_dc_coded[2] = 0;
+    ff_init_block_index(&h->c);
 
     /* decode each macroblock */
-    for (s->mb_num_left = mb_count; s->mb_num_left > 0; s->mb_num_left--) {
+    for (h->c.mb_num_left = mb_count; h->c.mb_num_left > 0; h->c.mb_num_left--) {
         int ret;
-        ff_update_block_index(s, 8, s->avctx->lowres, 1);
-        ff_tlog(avctx, "**mb x=%d y=%d\n", s->mb_x, s->mb_y);
+        ff_update_block_index(&h->c, 8, h->c.avctx->lowres, 1);
+        ff_tlog(avctx, "**mb x=%d y=%d\n", h->c.mb_x, h->c.mb_y);
 
-        s->mv_dir  = MV_DIR_FORWARD;
-        s->mv_type = MV_TYPE_16X16;
-        ret = ff_h263_decode_mb(s, s->block);
+        h->c.mv_dir  = MV_DIR_FORWARD;
+        h->c.mv_type = MV_TYPE_16X16;
+        ret = ff_h263_decode_mb(h, h->c.block);
 
         // Repeat the slice end check from ff_h263_decode_mb with our active
         // bitstream size
-        if (ret != SLICE_ERROR && active_bits_size >= get_bits_count(&s->gb)) {
-            int v = show_bits(&s->gb, 16);
+        if (ret != SLICE_ERROR && active_bits_size >= get_bits_count(&h->c.gb)) {
+            int v = show_bits(&h->c.gb, 16);
 
-            if (get_bits_count(&s->gb) + 16 > active_bits_size)
-                v >>= get_bits_count(&s->gb) + 16 - active_bits_size;
+            if (get_bits_count(&h->c.gb) + 16 > active_bits_size)
+                v >>= get_bits_count(&h->c.gb) + 16 - active_bits_size;
 
             if (!v)
                 ret = SLICE_END;
         }
-        if (ret != SLICE_ERROR && active_bits_size < get_bits_count(&s->gb) &&
-            8 * buf_size2 >= get_bits_count(&s->gb)) {
+        if (ret != SLICE_ERROR && active_bits_size < get_bits_count(&h->c.gb) &&
+            8 * buf_size2 >= get_bits_count(&h->c.gb)) {
             active_bits_size = buf_size2 * 8;
             av_log(avctx, AV_LOG_DEBUG, "update size from %d to %d\n",
                    8 * buf_size, active_bits_size);
             ret = SLICE_OK;
         }
 
-        if (ret == SLICE_ERROR || active_bits_size < get_bits_count(&s->gb)) {
-            av_log(s->avctx, AV_LOG_ERROR, "ERROR at MB %d %d\n", s->mb_x,
-                   s->mb_y);
+        if (ret == SLICE_ERROR || active_bits_size < get_bits_count(&h->c.gb)) {
+            av_log(h->c.avctx, AV_LOG_ERROR, "ERROR at MB %d %d\n", h->c.mb_x,
+                   h->c.mb_y);
             return AVERROR_INVALIDDATA;
         }
-        if (s->pict_type != AV_PICTURE_TYPE_B)
-            ff_h263_update_motion_val(s);
-        ff_mpv_reconstruct_mb(s, s->block);
-        if (s->loop_filter)
-            ff_h263_loop_filter(s);
+        if (h->c.pict_type != AV_PICTURE_TYPE_B)
+            ff_h263_update_motion_val(&h->c);
+        ff_mpv_reconstruct_mb(&h->c, h->c.block);
+        if (h->c.loop_filter)
+            ff_h263_loop_filter(&h->c);
 
-        if (++s->mb_x == s->mb_width) {
-            s->mb_x = 0;
-            s->mb_y++;
-            ff_init_block_index(s);
+        if (++h->c.mb_x == h->c.mb_width) {
+            h->c.mb_x = 0;
+            h->c.mb_y++;
+            ff_init_block_index(&h->c);
         }
-        if (s->mb_x == s->resync_mb_x)
-            s->first_slice_line = 0;
+        if (h->c.mb_x == h->c.resync_mb_x)
+            h->c.first_slice_line = 0;
         if (ret == SLICE_END)
             break;
     }
 
-    ff_er_add_slice(&s->er, start_mb_x, s->resync_mb_y, s->mb_x - 1, s->mb_y,
+    ff_er_add_slice(&h->c.er, start_mb_x, h->c.resync_mb_y, h->c.mb_x - 1, h->c.mb_y,
                     ER_MB_END);
 
     return active_bits_size;

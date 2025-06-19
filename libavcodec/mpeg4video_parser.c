@@ -84,7 +84,7 @@ static int mpeg4_decode_header(AVCodecParserContext *s1, AVCodecContext *avctx,
 {
     struct Mp4vParseContext *pc = s1->priv_data;
     Mpeg4DecContext *dec_ctx = &pc->dec_ctx;
-    MpegEncContext *s = &dec_ctx->m;
+    MPVContext *const s = &dec_ctx->h.c;
     GetBitContext gb1, *gb = &gb1;
     int ret;
 
@@ -124,7 +124,7 @@ static av_cold int mpeg4video_parse_init(AVCodecParserContext *s)
 
     pc->first_picture           = 1;
     pc->dec_ctx.quant_precision       = 5;
-    pc->dec_ctx.m.slice_context_count = 1;
+    pc->dec_ctx.h.c.slice_context_count = 1;
     pc->dec_ctx.showed_packed_warning = 1;
     return 0;
 }

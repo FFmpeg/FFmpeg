@@ -51,7 +51,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx,
                                    av_unused uint32_t size)
 {
     Mpeg4DecContext *ctx = avctx->priv_data;
-    MpegEncContext *s = &ctx->m;
+    MPVContext *const s = &ctx->h.c;
     VAAPIDecodePicture *pic = s->cur_pic.ptr->hwaccel_picture_private;
     VAPictureParameterBufferMPEG4 pic_param;
     int i, err;

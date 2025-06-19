@@ -307,7 +307,6 @@ typedef struct MpegEncContext {
     int first_field;         ///< is 1 for the first field of a field picture 0 otherwise
 
     int16_t (*block)[64];
-    int (*decode_mb)(struct MpegEncContext *s, int16_t block[12][64]); // used by some codecs to avoid a switch()
 
 #define SLICE_OK         0
 #define SLICE_ERROR     -1

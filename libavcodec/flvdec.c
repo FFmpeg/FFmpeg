@@ -26,31 +26,31 @@
 #include "mpegvideo.h"
 #include "mpegvideodec.h"
 
-int ff_flv_decode_picture_header(MpegEncContext *s)
+int ff_flv_decode_picture_header(H263DecContext *const h)
 {
     int format, width, height;
 
     /* picture header */
-    if (get_bits(&s->gb, 17) != 1) {
-        av_log(s->avctx, AV_LOG_ERROR, "Bad picture start code\n");
+    if (get_bits(&h->c.gb, 17) != 1) {
+        av_log(h->c.avctx, AV_LOG_ERROR, "Bad picture start code\n");
         return AVERROR_INVALIDDATA;
     }
-    format = get_bits(&s->gb, 5);
+    format = get_bits(&h->c.gb, 5);
     if (format != 0 && format != 1) {
-        av_log(s->avctx, AV_LOG_ERROR, "Bad picture format\n");
+        av_log(h->c.avctx, AV_LOG_ERROR, "Bad picture format\n");
         return AVERROR_INVALIDDATA;
     }
-    s->h263_flv       = format + 1;
-    s->picture_number = get_bits(&s->gb, 8); /* picture timestamp */
-    format            = get_bits(&s->gb, 3);
+    h->c.h263_flv       = format + 1;
+    h->c.picture_number = get_bits(&h->c.gb, 8); /* picture timestamp */
+    format            = get_bits(&h->c.gb, 3);
     switch (format) {
     case 0:
-        width  = get_bits(&s->gb, 8);
-        height = get_bits(&s->gb, 8);
+        width  = get_bits(&h->c.gb, 8);
+        height = get_bits(&h->c.gb, 8);
         break;
     case 1:
-        width  = get_bits(&s->gb, 16);
-        height = get_bits(&s->gb, 16);
+        width  = get_bits(&h->c.gb, 16);
+        height = get_bits(&h->c.gb, 16);
         break;
     case 2:
         width  = 352;
@@ -76,32 +76,32 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
         width = height = 0;
         break;
     }
-    if (av_image_check_size(width, height, 0, s->avctx))
+    if (av_image_check_size(width, height, 0, h->c.avctx))
         return AVERROR(EINVAL);
-    s->width  = width;
-    s->height = height;
+    h->c.width  = width;
+    h->c.height = height;
 
-    s->pict_type = AV_PICTURE_TYPE_I + get_bits(&s->gb, 2);
-    s->droppable = s->pict_type > AV_PICTURE_TYPE_P;
-    if (s->droppable)
-        s->pict_type = AV_PICTURE_TYPE_P;
+    h->c.pict_type = AV_PICTURE_TYPE_I + get_bits(&h->c.gb, 2);
+    h->c.droppable = h->c.pict_type > AV_PICTURE_TYPE_P;
+    if (h->c.droppable)
+        h->c.pict_type = AV_PICTURE_TYPE_P;
 
-    skip_bits1(&s->gb); /* deblocking flag */
-    s->chroma_qscale = s->qscale = get_bits(&s->gb, 5);
+    skip_bits1(&h->c.gb); /* deblocking flag */
+    h->c.chroma_qscale = h->c.qscale = get_bits(&h->c.gb, 5);
 
-    s->h263_long_vectors = 0;
+    h->c.h263_long_vectors = 0;
 
     /* PEI */
-    if (skip_1stop_8data_bits(&s->gb) < 0)
+    if (skip_1stop_8data_bits(&h->c.gb) < 0)
         return AVERROR_INVALIDDATA;
 
-    if (s->ehc_mode)
-        s->avctx->sample_aspect_ratio= (AVRational){1,2};
+    if (h->c.ehc_mode)
+        h->c.avctx->sample_aspect_ratio= (AVRational){1,2};
 
-    if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
-        av_log(s->avctx, AV_LOG_DEBUG, "%c esc_type:%d, qp:%d num:%d\n",
-               s->droppable ? 'D' : av_get_picture_type_char(s->pict_type),
-               s->h263_flv - 1, s->qscale, s->picture_number);
+    if (h->c.avctx->debug & FF_DEBUG_PICT_INFO) {
+        av_log(h->c.avctx, AV_LOG_DEBUG, "%c esc_type:%d, qp:%d num:%d\n",
+               h->c.droppable ? 'D' : av_get_picture_type_char(h->c.pict_type),
+               h->c.h263_flv - 1, h->c.qscale, h->c.picture_number);
     }
 
     return 0;
@@ -112,7 +112,7 @@ const FFCodec ff_flv_decoder = {
     CODEC_LONG_NAME("FLV / Sorenson Spark / Sorenson H.263 (Flash Video)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_FLV1,
-    .priv_data_size = sizeof(MpegEncContext),
+    .priv_data_size = sizeof(H263DecContext),
     .init           = ff_h263_decode_init,
     FF_CODEC_DECODE_CB(ff_h263_decode_frame),
     .close          = ff_mpv_decode_close,
