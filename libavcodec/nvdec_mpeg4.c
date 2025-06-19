@@ -73,7 +73,7 @@ static int nvdec_mpeg4_start_frame(AVCodecContext *avctx,
             .quant_type                   = m->mpeg_quant,
             .quarter_sample               = s->quarter_sample,
             .short_video_header           = avctx->codec->id == AV_CODEC_ID_H263,
-            .divx_flags                   = s->divx_packed ? 5 : 0,
+            .divx_flags                   = m->h.divx_packed ? 5 : 0,
 
             .vop_coding_type              = s->pict_type - AV_PICTURE_TYPE_I,
             .vop_coded                    = 1,

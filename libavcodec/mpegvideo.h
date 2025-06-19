@@ -86,7 +86,6 @@ typedef struct MpegEncContext {
     int width, height;///< picture size. must be a multiple of 16
     enum OutputFormat out_format; ///< output format
     int h263_pred;    ///< use MPEG-4/H.263 ac/dc predictions
-    int pb_frame;     ///< PB-frame mode (0 = none, 1 = base, 2 = improved)
 
 /* the following codec id fields are deprecated in favor of codec_id */
     int h263_flv;     ///< use flv H.263 header
@@ -138,7 +137,6 @@ typedef struct MpegEncContext {
      */
     MPVWorkPicture cur_pic;
 
-    int skipped_last_frame;
     int last_dc[3];                ///< last DC values for MPEG-1
     int16_t *dc_val_base;
     const uint8_t *y_dc_scale_table;     ///< qscale -> y_dc_scale table
@@ -162,9 +160,6 @@ typedef struct MpegEncContext {
     int chroma_qscale;          ///< chroma QP
     int pict_type;              ///< AV_PICTURE_TYPE_I, AV_PICTURE_TYPE_P, AV_PICTURE_TYPE_B, ...
     int droppable;
-
-    /* motion compensation */
-    int h263_long_vectors;      ///< use horrible H.263v1 long vector mode
 
     BlockDSPContext bdsp;
     H264ChromaContext h264chroma;
@@ -224,7 +219,6 @@ typedef struct MpegEncContext {
     /* H.263 specific */
     int gob_index;
     int obmc;                       ///< overlapped block motion compensation
-    int ehc_mode;
 
     /* H.263+ specific */
     int umvplus;                    ///< == H.263+ && unrestricted_mv
@@ -233,7 +227,6 @@ typedef struct MpegEncContext {
     int alt_inter_vlc;              ///< alternative inter vlc
     int modified_quant;
     int loop_filter;
-    int custom_pcf;
 
     /* MPEG-4 specific */
     int studio_profile;
@@ -250,14 +243,6 @@ typedef struct MpegEncContext {
     int data_partitioning;           ///< data partitioning flag from header
     int partitioned_frame;           ///< is current frame partitioned
     int low_delay;                   ///< no reordering needed / has no B-frames
-    int padding_bug_score;             ///< used to detect the VERY common padding bug in MPEG-4
-
-    /* divx specific, used to workaround (many) bugs in divx5 */
-    int divx_packed;
-
-    /* RV10 specific */
-    int rv10_version; ///< RV10 version: 0 or 3
-    int rv10_first_dc_coded[3];
 
     /* MSMPEG4 specific */
     int slice_height;      ///< in macroblocks

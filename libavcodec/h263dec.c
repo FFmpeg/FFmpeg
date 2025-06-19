@@ -157,7 +157,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
 
     if (avctx->codec_tag == AV_RL32("L263") || avctx->codec_tag == AV_RL32("S263"))
         if (avctx->extradata_size == 56 && avctx->extradata[0] == 1)
-            s->ehc_mode = 1;
+            h->ehc_mode = 1;
 
     /* for H.263, we allocate the images after having read the header */
     if (avctx->codec->id != AV_CODEC_ID_H263 &&
@@ -279,7 +279,7 @@ static int decode_slice(H263DecContext *const h)
                     ff_er_add_slice(&h->c.er, h->c.resync_mb_x, h->c.resync_mb_y,
                                     h->c.mb_x, h->c.mb_y, ER_MB_END & part_mask);
 
-                    h->c.padding_bug_score--;
+                    h->padding_bug_score--;
 
                     if (++h->c.mb_x >= h->c.mb_width) {
                         h->c.mb_x = 0;
@@ -324,7 +324,7 @@ static int decode_slice(H263DecContext *const h)
         get_bits_left(&h->gb) >= 48                &&
         show_bits(&h->gb, 24) == 0x4010            &&
         !h->c.data_partitioning)
-        h->c.padding_bug_score += 32;
+        h->padding_bug_score += 32;
 
     /* try to detect the padding bug */
     if (h->c.codec_id == AV_CODEC_ID_MPEG4         &&
@@ -336,18 +336,18 @@ static int decode_slice(H263DecContext *const h)
         const int bits_left  = h->gb.size_in_bits - bits_count;
 
         if (bits_left == 0) {
-            h->c.padding_bug_score += 16;
+            h->padding_bug_score += 16;
         } else if (bits_left != 1) {
             int v = show_bits(&h->gb, 8);
             v |= 0x7F >> (7 - (bits_count & 7));
 
             if (v == 0x7F && bits_left <= 8)
-                h->c.padding_bug_score--;
+                h->padding_bug_score--;
             else if (v == 0x7F && ((get_bits_count(&h->gb) + 8) & 8) &&
                      bits_left <= 16)
-                h->c.padding_bug_score += 4;
+                h->padding_bug_score += 4;
             else
-                h->c.padding_bug_score++;
+                h->padding_bug_score++;
         }
     }
 
@@ -359,7 +359,7 @@ static int decode_slice(H263DecContext *const h)
         show_bits(&h->gb, 8) == 0                  &&
         !h->c.data_partitioning) {
 
-        h->c.padding_bug_score += 32;
+        h->padding_bug_score += 32;
     }
 
     if (h->c.codec_id == AV_CODEC_ID_H263          &&
@@ -367,12 +367,12 @@ static int decode_slice(H263DecContext *const h)
         get_bits_left(&h->gb) >= 64                &&
         AV_RB64(h->gb.buffer_end - 8) == 0xCDCDCDCDFC7F0000) {
 
-        h->c.padding_bug_score += 32;
+        h->padding_bug_score += 32;
     }
 
     if (h->c.workaround_bugs & FF_BUG_AUTODETECT) {
         if (
-            (h->c.padding_bug_score > -2 && !h->c.data_partitioning))
+            (h->padding_bug_score > -2 && !h->c.data_partitioning))
             h->c.workaround_bugs |= FF_BUG_NO_PADDING;
         else
             h->c.workaround_bugs &= ~FF_BUG_NO_PADDING;
@@ -410,7 +410,7 @@ static int decode_slice(H263DecContext *const h)
 
     av_log(h->c.avctx, AV_LOG_ERROR,
            "slice end not reached but screenspace end (%d left %06X, score= %d)\n",
-           get_bits_left(&h->gb), show_bits(&h->gb, 24), h->c.padding_bug_score);
+           get_bits_left(&h->gb), show_bits(&h->gb, 24), h->padding_bug_score);
 
     ff_er_add_slice(&h->c.er, h->c.resync_mb_x, h->c.resync_mb_y, h->c.mb_x, h->c.mb_y,
                     ER_MB_END & part_mask);
@@ -432,10 +432,10 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     /* no supplementary picture */
     if (buf_size == 0) {
         /* special case for last picture */
-        if ((!h->c.low_delay || h->c.skipped_last_frame) && h->c.next_pic.ptr) {
+        if ((!h->c.low_delay || h->skipped_last_frame) && h->c.next_pic.ptr) {
             if ((ret = av_frame_ref(pict, h->c.next_pic.ptr->f)) < 0)
                 return ret;
-            if (h->c.skipped_last_frame) {
+            if (h->skipped_last_frame) {
                 /* If the stream ended with an NVOP, we output the last frame
                  * in display order, but with the props from the last input
                  * packet so that the stream's end time is correct. */
@@ -549,7 +549,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     if ((ret = ff_mpv_frame_start(s, avctx)) < 0)
         return ret;
 
-    if (!h->c.divx_packed)
+    if (!h->divx_packed)
         ff_thread_finish_setup(avctx);
 
     if (avctx->hwaccel) {

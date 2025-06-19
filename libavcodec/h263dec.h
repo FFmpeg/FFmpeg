@@ -50,6 +50,26 @@ typedef struct H263DecContext {
 
     GetBitContext gb;
 
+    int pb_frame;     ///< PB-frame mode (0 = none, 1 = base, 2 = improved)
+
+    /* motion compensation */
+    int h263_long_vectors;      ///< use horrible H.263v1 long vector mode
+
+    /* H.263 specific */
+    int ehc_mode;
+
+    /* H.263+ specific */
+    int custom_pcf;
+
+    /* MPEG-4 specific */
+    int padding_bug_score;      ///< used to detect the VERY common padding bug in MPEG-4
+    int skipped_last_frame;
+    int divx_packed;            ///< divx specific, used to workaround (many) bugs in divx5
+
+    /* RV10 specific */
+    int rv10_version; ///< RV10 version: 0 or 3
+    int rv10_first_dc_coded[3];
+
     int (*decode_mb)(struct H263DecContext *h);
 
     GetBitContext last_resync_gb;    ///< used to search for the next resync marker

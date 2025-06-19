@@ -3031,7 +3031,7 @@ static int decode_user_data(Mpeg4DecContext *ctx, GetBitContext *gb)
     if (e >= 2) {
         ctx->divx_version = ver;
         ctx->divx_build   = build;
-        h->c.divx_packed  = e == 3 && last == 'p';
+        h->divx_packed  = e == 3 && last == 'p';
     }
 
     /* libavcodec detection */
@@ -3132,7 +3132,7 @@ void ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
             h->c.workaround_bugs |= FF_BUG_QPEL_CHROMA2;
 
         if (ctx->xvid_build <= 3U)
-            h->c.padding_bug_score = 256 * 256 * 256 * 64;
+            h->padding_bug_score = 256 * 256 * 256 * 64;
 
         if (ctx->xvid_build <= 1U)
             h->c.workaround_bugs |= FF_BUG_QPEL_CHROMA;
@@ -3170,7 +3170,7 @@ void ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
         if (ctx->divx_version >= 0)
             h->c.workaround_bugs |= FF_BUG_DIRECT_BLOCKSIZE;
         if (ctx->divx_version == 501 && ctx->divx_build == 20020416)
-            h->c.padding_bug_score = 256 * 256 * 256 * 64;
+            h->padding_bug_score = 256 * 256 * 256 * 64;
 
         if (ctx->divx_version < 500U)
             h->c.workaround_bugs |= FF_BUG_EDGE;
@@ -3199,7 +3199,7 @@ void ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
         av_log(h->c.avctx, AV_LOG_DEBUG,
                "bugs: %X lavc_build:%d xvid_build:%d divx_version:%d divx_build:%d %s\n",
                h->c.workaround_bugs, ctx->lavc_build, ctx->xvid_build,
-               ctx->divx_version, ctx->divx_build, h->c.divx_packed ? "p" : "");
+               ctx->divx_version, ctx->divx_build, h->divx_packed ? "p" : "");
 
     if (CONFIG_MPEG4_DECODER && ctx->xvid_build >= 0 &&
         avctx->idct_algo == FF_IDCT_AUTO && !h->c.studio_profile) {
@@ -3313,7 +3313,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
     if (get_bits1(gb) != 1) {
         if (h->c.avctx->debug & FF_DEBUG_PICT_INFO)
             av_log(h->c.avctx, AV_LOG_ERROR, "vop not coded\n");
-        h->c.skipped_last_frame = 1;
+        h->skipped_last_frame = 1;
         return FRAME_SKIPPED;
     }
     if (ctx->new_pred)
@@ -3740,14 +3740,14 @@ int ff_mpeg4_decode_picture_header(H263DecContext *const h)
 {
     Mpeg4DecContext *const ctx = h263_to_mpeg4(h);
 
-    h->c.skipped_last_frame = 0;
+    h->skipped_last_frame = 0;
 
     if (ctx->bitstream_buffer) {
         int buf_size = get_bits_left(&h->gb) / 8U;
         int bitstream_buffer_size = ctx->bitstream_buffer->size;
         const uint8_t *buf = h->gb.buffer;
 
-        if (h->c.divx_packed) {
+        if (h->divx_packed) {
             for (int i = 0; i < buf_size - 3; i++) {
                 if (buf[i] == 0 && buf[i+1] == 0 && buf[i+2] == 1) {
                     if (buf[i+3] == 0xB0) {
@@ -3759,7 +3759,7 @@ int ff_mpeg4_decode_picture_header(H263DecContext *const h)
             }
         }
         ctx->bitstream_buffer->size = 0;
-        if (bitstream_buffer_size && (h->c.divx_packed || buf_size <= MAX_NVOP_SIZE)) {// divx 5.01+/xvid frame reorder
+        if (bitstream_buffer_size && (h->divx_packed || buf_size <= MAX_NVOP_SIZE)) {// divx 5.01+/xvid frame reorder
             int ret = init_get_bits8(&h->gb, ctx->bitstream_buffer->data,
                                      bitstream_buffer_size);
             if (ret < 0)
@@ -3780,7 +3780,7 @@ int ff_mpeg4_frame_end(AVCodecContext *avctx, const AVPacket *pkt)
     av_assert1(!ctx->bitstream_buffer || !ctx->bitstream_buffer->size);
 
     /* divx 5.01+ bitstream reorder stuff */
-    if (h->c.divx_packed) {
+    if (h->divx_packed) {
         int current_pos     = ctx->bitstream_buffer && h->gb.buffer == ctx->bitstream_buffer->data ? 0 : (get_bits_count(&h->gb) >> 3);
         int startcode_found = 0;
         uint8_t *buf = pkt->data;
@@ -3907,7 +3907,7 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     s->enhancement_type          = s1->enhancement_type;
     s->scalability               = s1->scalability;
     s->intra_dc_threshold        = s1->intra_dc_threshold;
-    s->h.c.divx_packed           = s1->h.c.divx_packed;
+    s->h.divx_packed             = s1->h.divx_packed;
     s->divx_version              = s1->divx_version;
     s->divx_build                = s1->divx_build;
     s->xvid_build                = s1->xvid_build;
@@ -3919,7 +3919,9 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
     s->cplx_estimation_trash_p   = s1->cplx_estimation_trash_p;
     s->cplx_estimation_trash_b   = s1->cplx_estimation_trash_b;
     s->rgb                       = s1->rgb;
-    s->h.c.skipped_last_frame    = s1->h.c.skipped_last_frame;
+
+    s->h.skipped_last_frame      = s1->h.skipped_last_frame;
+    s->h.padding_bug_score       = s1->h.padding_bug_score; // FIXME: racy
 
     memcpy(s->sprite_shift, s1->sprite_shift, sizeof(s1->sprite_shift));
     memcpy(s->sprite_traj,  s1->sprite_traj,  sizeof(s1->sprite_traj));
@@ -3930,11 +3932,11 @@ static int mpeg4_update_thread_context(AVCodecContext *dst,
 static int mpeg4_update_thread_context_for_user(AVCodecContext *dst,
                                                 const AVCodecContext *src)
 {
-    MpegEncContext *m = dst->priv_data;
-    const MpegEncContext *m1 = src->priv_data;
+    H263DecContext *const h = dst->priv_data;
+    const H263DecContext *const h1 = src->priv_data;
 
-    m->quarter_sample = m1->quarter_sample;
-    m->divx_packed    = m1->divx_packed;
+    h->c.quarter_sample = h1->c.quarter_sample;
+    h->divx_packed      = h1->divx_packed;
 
     return 0;
 }
@@ -4054,10 +4056,10 @@ static av_cold int mpeg4_close(AVCodecContext *avctx)
     return ff_mpv_decode_close(avctx);
 }
 
-#define OFFSET(x) offsetof(MpegEncContext, x)
+#define OFFSET(x) offsetof(H263DecContext, x)
 #define FLAGS AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY
 static const AVOption mpeg4_options[] = {
-    {"quarter_sample", "1/4 subpel MC", OFFSET(quarter_sample), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS},
+    {"quarter_sample", "1/4 subpel MC", OFFSET(c.quarter_sample), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS},
     {"divx_packed", "divx style packed b frames", OFFSET(divx_packed), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS},
     {NULL}
 };

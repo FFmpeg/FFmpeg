@@ -108,7 +108,6 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
 
     // Error/bug resilience
     s->workaround_bugs      = s1->workaround_bugs;
-    s->padding_bug_score    = s1->padding_bug_score;
 
     // MPEG-4 timing info
     memcpy(&s->last_time_base, &s1->last_time_base,

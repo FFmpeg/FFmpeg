@@ -89,13 +89,13 @@ int ff_flv_decode_picture_header(H263DecContext *const h)
     skip_bits1(&h->gb); /* deblocking flag */
     h->c.chroma_qscale = h->c.qscale = get_bits(&h->gb, 5);
 
-    h->c.h263_long_vectors = 0;
+    h->h263_long_vectors = 0;
 
     /* PEI */
     if (skip_1stop_8data_bits(&h->gb) < 0)
         return AVERROR_INVALIDDATA;
 
-    if (h->c.ehc_mode)
+    if (h->ehc_mode)
         h->c.avctx->sample_aspect_ratio= (AVRational){1,2};
 
     if (h->c.avctx->debug & FF_DEBUG_PICT_INFO) {

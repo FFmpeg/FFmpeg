@@ -127,7 +127,7 @@ static int rv10_decode_picture_header(H263DecContext *const h)
     }
 
     if (h->c.pict_type == AV_PICTURE_TYPE_I) {
-        if (h->c.rv10_version == 3) {
+        if (h->rv10_version == 3) {
             /* specific MPEG like DC coding not used */
             h->c.last_dc[0] = get_bits(&h->gb, 8);
             h->c.last_dc[1] = get_bits(&h->gb, 8);
@@ -369,7 +369,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     rv->orig_width  = avctx->coded_width;
     rv->orig_height = avctx->coded_height;
 
-    h->c.h263_long_vectors = avctx->extradata[3] & 1;
+    h->h263_long_vectors = avctx->extradata[3] & 1;
     rv->sub_id           = AV_RB32A(avctx->extradata + 4);
     if (avctx->codec_id == AV_CODEC_ID_RV20) {
         h->c.modified_quant      = 1;
@@ -382,7 +382,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
 
     switch (major_ver) {
     case 1:
-        h->c.rv10_version = micro_ver ? 3 : 1;
+        h->rv10_version = micro_ver ? 3 : 1;
         h->c.obmc         = micro_ver == 2;
         break;
     case 2:
@@ -475,9 +475,9 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
 
     ff_set_qscale(&h->c, h->c.qscale);
 
-    h->c.rv10_first_dc_coded[0] = 0;
-    h->c.rv10_first_dc_coded[1] = 0;
-    h->c.rv10_first_dc_coded[2] = 0;
+    h->rv10_first_dc_coded[0] = 0;
+    h->rv10_first_dc_coded[1] = 0;
+    h->rv10_first_dc_coded[2] = 0;
     ff_init_block_index(&h->c);
 
     /* decode each macroblock */

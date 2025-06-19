@@ -60,14 +60,14 @@ int ff_intel_h263_decode_picture_header(H263DecContext *const h)
 
     h->c.pict_type = AV_PICTURE_TYPE_I + get_bits1(&h->gb);
 
-    h->c.h263_long_vectors = get_bits1(&h->gb);
+    h->h263_long_vectors = get_bits1(&h->gb);
 
     if (get_bits1(&h->gb) != 0) {
         av_log(h->c.avctx, AV_LOG_ERROR, "SAC not supported\n");
         return -1;      /* SAC: off */
     }
     h->c.obmc     = get_bits1(&h->gb);
-    h->c.pb_frame = get_bits1(&h->gb);
+    h->pb_frame = get_bits1(&h->gb);
 
     if (format < 6) {
         h->c.width  = ff_h263_format[format][0];
@@ -86,7 +86,7 @@ int ff_intel_h263_decode_picture_header(H263DecContext *const h)
         if (get_bits1(&h->gb))
             av_log(h->c.avctx, AV_LOG_ERROR, "Bad value for reserved field\n");
         if (get_bits1(&h->gb))
-            h->c.pb_frame = 2;
+            h->pb_frame = 2;
         if (get_bits(&h->gb, 5))
             av_log(h->c.avctx, AV_LOG_ERROR, "Bad value for reserved field\n");
         if (get_bits(&h->gb, 5) != 1)
@@ -110,7 +110,7 @@ int ff_intel_h263_decode_picture_header(H263DecContext *const h)
     h->c.chroma_qscale = h->c.qscale = get_bits(&h->gb, 5);
     skip_bits1(&h->gb); /* Continuous Presence Multipoint mode: off */
 
-    if (h->c.pb_frame) {
+    if (h->pb_frame) {
         skip_bits(&h->gb, 3); //temporal reference for B-frame
         skip_bits(&h->gb, 2); //dbquant
     }
