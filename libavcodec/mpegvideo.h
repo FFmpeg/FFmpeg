@@ -30,7 +30,6 @@
 
 #include "blockdsp.h"
 #include "error_resilience.h"
-#include "get_bits.h"
 #include "h264chroma.h"
 #include "h263dsp.h"
 #include "hpeldsp.h"
@@ -274,9 +273,6 @@ typedef struct MpegEncContext {
     } msmpeg4_version;
     int inter_intra_pred;
     int mspel;
-
-    /* decompression specific */
-    GetBitContext gb;
 
     /* MPEG-2-specific - I wished not to have to support this mess. */
     int progressive_sequence;
