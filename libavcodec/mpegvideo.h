@@ -116,6 +116,7 @@ typedef struct MpegEncContext {
     int end_mb_y;              ///< end   mb_y of this thread (so current thread should process start_mb_y <= row < end_mb_y)
     union {
         struct MpegEncContext *thread_context[MAX_THREADS];
+        struct Mpeg12SliceContext *mpeg12_contexts[MAX_THREADS];
         struct MPVEncContext  *enc_contexts[MAX_THREADS];
     };
     int slice_context_count;   ///< number of used thread_contexts

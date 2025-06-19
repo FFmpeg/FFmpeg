@@ -128,7 +128,7 @@ static av_cold int init_duplicate_context(MpegEncContext *s)
 av_cold int ff_mpv_init_duplicate_contexts(MpegEncContext *s)
 {
     int nb_slices = s->slice_context_count, ret;
-    size_t slice_size = s->slice_ctx_size ? s->slice_ctx_size : sizeof(*s);
+    const size_t slice_size = s->slice_ctx_size;
 
     /* We initialize the copies before the original so that
      * fields allocated in init_duplicate_context are NULL after
