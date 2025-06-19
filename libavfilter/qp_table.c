@@ -39,8 +39,9 @@ int ff_qp_table_extract(AVFrame *frame, int8_t **table, int *table_w, int *table
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_VIDEO_ENC_PARAMS);
     if (!sd)
         return 0;
-    par = (AVVideoEncParams*)sd->data;
-    if (par->type != AV_VIDEO_ENC_PARAMS_MPEG2 ||
+    par = (AVVideoEncParams *)sd->data;
+    if ((par->type != AV_VIDEO_ENC_PARAMS_MPEG2 &&
+         par->type != AV_VIDEO_ENC_PARAMS_H264) ||
         (par->nb_blocks != 0 && par->nb_blocks != nb_mb))
         return AVERROR(ENOSYS);
 
