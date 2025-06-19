@@ -500,7 +500,7 @@ static int wmv2_decode_mb(H263DecContext *const h)
         wmv2_pred_motion(w, &mx, &my);
 
         if (cbp) {
-            h->c.bdsp.clear_blocks(h->c.block[0]);
+            h->c.bdsp.clear_blocks(h->block[0]);
             if (ms->per_mb_rl_table) {
                 ms->rl_table_index        = decode012(&h->c.gb);
                 ms->rl_chroma_table_index = ms->rl_table_index;
@@ -522,7 +522,7 @@ static int wmv2_decode_mb(H263DecContext *const h)
         h->c.mv[0][0][1] = my;
 
         for (i = 0; i < 6; i++) {
-            if ((ret = wmv2_decode_inter_block(w, h->c.block[i], i, (cbp >> (5 - i)) & 1)) < 0) {
+            if ((ret = wmv2_decode_inter_block(w, h->block[i], i, (cbp >> (5 - i)) & 1)) < 0) {
                 av_log(h->c.avctx, AV_LOG_ERROR,
                        "\nerror while decoding inter block: %d x %d (%d)\n",
                        h->c.mb_x, h->c.mb_y, i);
@@ -547,9 +547,9 @@ static int wmv2_decode_mb(H263DecContext *const h)
             ms->rl_chroma_table_index = ms->rl_table_index;
         }
 
-        h->c.bdsp.clear_blocks(h->c.block[0]);
+        h->c.bdsp.clear_blocks(h->block[0]);
         for (i = 0; i < 6; i++) {
-            ret = ff_msmpeg4_decode_block(ms, h->c.block[i], i, (cbp >> (5 - i)) & 1, NULL);
+            ret = ff_msmpeg4_decode_block(ms, h->block[i], i, (cbp >> (5 - i)) & 1, NULL);
             if (ret < 0) {
                 av_log(h->c.avctx, AV_LOG_ERROR,
                        "\nerror while decoding intra block: %d x %d (%d)\n",
@@ -580,7 +580,7 @@ static av_cold int wmv2_decode_init(AVCodecContext *avctx)
 
     decode_ext_header(w);
 
-    return ff_intrax8_common_init(avctx, &w->x8, h->c.block[0],
+    return ff_intrax8_common_init(avctx, &w->x8, h->block[0],
                                   s->mb_width, s->mb_height);
 }
 

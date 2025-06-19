@@ -808,7 +808,7 @@ int ff_h263_decode_mb(H263DecContext *const h)
             }
         }while(cbpc == 20);
 
-        h->c.bdsp.clear_blocks(h->c.block[0]);
+        h->c.bdsp.clear_blocks(h->block[0]);
 
         dquant = cbpc & 8;
         h->c.mb_intra = ((cbpc & 4) != 0);
@@ -910,7 +910,7 @@ int ff_h263_decode_mb(H263DecContext *const h)
 
         h->c.mb_intra = IS_INTRA(mb_type);
         if(HAS_CBP(mb_type)){
-            h->c.bdsp.clear_blocks(h->c.block[0]);
+            h->c.bdsp.clear_blocks(h->block[0]);
             cbpc = get_vlc2(&h->c.gb, cbpc_b_vlc, CBPC_B_VLC_BITS, 1);
             if (h->c.mb_intra) {
                 dquant = IS_QUANT(mb_type);
@@ -1012,7 +1012,7 @@ int ff_h263_decode_mb(H263DecContext *const h)
             }
         }while(cbpc == 8);
 
-        h->c.bdsp.clear_blocks(h->c.block[0]);
+        h->c.bdsp.clear_blocks(h->block[0]);
 
         dquant = cbpc & 4;
         h->c.mb_intra = 1;
@@ -1051,7 +1051,7 @@ intra:
 
     /* decode each block */
     for (i = 0; i < 6; i++) {
-        if (h263_decode_block(h, h->c.block[i], i, cbp&32) < 0)
+        if (h263_decode_block(h, h->block[i], i, cbp&32) < 0)
             return -1;
         cbp+=cbp;
     }

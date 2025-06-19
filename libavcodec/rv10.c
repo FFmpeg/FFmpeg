@@ -516,7 +516,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
         }
         if (h->c.pict_type != AV_PICTURE_TYPE_B)
             ff_h263_update_motion_val(&h->c);
-        ff_mpv_reconstruct_mb(&h->c, h->c.block);
+        ff_mpv_reconstruct_mb(&h->c, h->block);
         if (h->c.loop_filter)
             ff_h263_loop_filter(&h->c);
 

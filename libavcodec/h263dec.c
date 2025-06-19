@@ -272,7 +272,7 @@ static int decode_slice(H263DecContext *const h)
             if (ret < 0) {
                 const int xy = h->c.mb_x + h->c.mb_y * h->c.mb_stride;
                 if (ret == SLICE_END) {
-                    ff_mpv_reconstruct_mb(&h->c, h->c.block);
+                    ff_mpv_reconstruct_mb(&h->c, h->block);
                     if (h->c.loop_filter)
                         ff_h263_loop_filter(&h->c);
 
@@ -305,7 +305,7 @@ static int decode_slice(H263DecContext *const h)
                 return AVERROR_INVALIDDATA;
             }
 
-            ff_mpv_reconstruct_mb(&h->c, h->c.block);
+            ff_mpv_reconstruct_mb(&h->c, h->block);
             if (h->c.loop_filter)
                 ff_h263_loop_filter(&h->c);
         }

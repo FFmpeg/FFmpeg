@@ -201,9 +201,9 @@ static int msmpeg4v12_decode_mb(H263DecContext *const h)
         *mb_type_ptr = MB_TYPE_INTRA;
     }
 
-    h->c.bdsp.clear_blocks(h->c.block[0]);
+    h->c.bdsp.clear_blocks(h->block[0]);
     for (i = 0; i < 6; i++) {
-        if (ff_msmpeg4_decode_block(ms, h->c.block[i], i, (cbp >> (5 - i)) & 1, NULL) < 0)
+        if (ff_msmpeg4_decode_block(ms, h->block[i], i, (cbp >> (5 - i)) & 1, NULL) < 0)
         {
              av_log(h->c.avctx, AV_LOG_ERROR, "\nerror while decoding block: %d x %d (%d)\n",
                     h->c.mb_x, h->c.mb_y, i);
@@ -292,9 +292,9 @@ static int msmpeg4v34_decode_mb(H263DecContext *const h)
         }
     }
 
-    h->c.bdsp.clear_blocks(h->c.block[0]);
+    h->c.bdsp.clear_blocks(h->block[0]);
     for (i = 0; i < 6; i++) {
-        if (ff_msmpeg4_decode_block(ms, h->c.block[i], i, (cbp >> (5 - i)) & 1, NULL) < 0)
+        if (ff_msmpeg4_decode_block(ms, h->block[i], i, (cbp >> (5 - i)) & 1, NULL) < 0)
         {
             av_log(h->c.avctx, AV_LOG_ERROR, "\nerror while decoding block: %d x %d (%d)\n",
                    h->c.mb_x, h->c.mb_y, i);

@@ -1708,10 +1708,10 @@ static int mpeg4_decode_partitioned_mb(H263DecContext *const h)
 
     if (!IS_SKIP(mb_type)) {
         int i;
-        h->c.bdsp.clear_blocks(h->c.block[0]);
+        h->c.bdsp.clear_blocks(h->block[0]);
         /* decode each block */
         for (i = 0; i < 6; i++) {
-            if (mpeg4_decode_block(ctx, h->c.block[i], i, cbp & 32, h->c.mb_intra,
+            if (mpeg4_decode_block(ctx, h->block[i], i, cbp & 32, h->c.mb_intra,
                                    use_intra_dc_vlc, ctx->rvlc) < 0) {
                 av_log(h->c.avctx, AV_LOG_ERROR,
                        "texture corrupted at %d %d %d\n",
@@ -1792,7 +1792,7 @@ static int mpeg4_decode_mb(H263DecContext *const h)
         h->c.mb_intra = ((cbpc & 4) != 0);
         if (h->c.mb_intra)
             goto intra;
-        h->c.bdsp.clear_blocks(h->c.block[0]);
+        h->c.bdsp.clear_blocks(h->block[0]);
 
         if (h->c.pict_type == AV_PICTURE_TYPE_S &&
             ctx->vol_sprite_usage == GMC_SPRITE && (cbpc & 16) == 0)
@@ -1936,7 +1936,7 @@ static int mpeg4_decode_mb(H263DecContext *const h)
             if (modb2) {
                 cbp = 0;
             } else {
-                h->c.bdsp.clear_blocks(h->c.block[0]);
+                h->c.bdsp.clear_blocks(h->block[0]);
                 cbp = get_bits(&h->c.gb, 6);
             }
 
@@ -2073,10 +2073,10 @@ intra:
         if (!h->c.progressive_sequence)
             h->c.interlaced_dct = get_bits1(&h->c.gb);
 
-        h->c.bdsp.clear_blocks(h->c.block[0]);
+        h->c.bdsp.clear_blocks(h->block[0]);
         /* decode each block */
         for (i = 0; i < 6; i++) {
-            if (mpeg4_decode_block(ctx, h->c.block[i], i, cbp & 32,
+            if (mpeg4_decode_block(ctx, h->block[i], i, cbp & 32,
                                    1, use_intra_dc_vlc, 0) < 0)
                 return AVERROR_INVALIDDATA;
             cbp += cbp;
@@ -2086,7 +2086,7 @@ intra:
 
     /* decode each block */
     for (i = 0; i < 6; i++) {
-        if (mpeg4_decode_block(ctx, h->c.block[i], i, cbp & 32, 0, 0, 0) < 0)
+        if (mpeg4_decode_block(ctx, h->block[i], i, cbp & 32, 0, 0, 0) < 0)
             return AVERROR_INVALIDDATA;
         cbp += cbp;
     }

@@ -22,6 +22,7 @@
 
 #include "mpegvideo.h"
 #include "vlc.h"
+#include "libavutil/mem_internal.h"
 
 /**
  * Return value for header parsers if frame is not coded.
@@ -47,6 +48,8 @@ typedef struct H263DecContext {
     MPVContext c;
 
     int (*decode_mb)(struct H263DecContext *h);
+
+    DECLARE_ALIGNED_32(int16_t, block)[6][64];
 } H263DecContext;
 
 int ff_h263_decode_motion(H263DecContext *const h, int pred, int f_code);
