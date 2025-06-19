@@ -700,9 +700,9 @@ static int decode_new_pred(Mpeg4DecContext *ctx, GetBitContext *gb) {
  * Decode the next video packet.
  * @return <0 if something went wrong
  */
-int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
+int ff_mpeg4_decode_video_packet_header(MPVContext *const s)
 {
-    MpegEncContext *s = &ctx->m;
+    Mpeg4DecContext *const ctx = (Mpeg4DecContext*)s;
 
     int mb_num_bits      = av_log2(s->mb_num - 1) + 1;
     int header_extension = 0, mb_num, len;
@@ -799,9 +799,9 @@ static void reset_studio_dc_predictors(MpegEncContext *s)
  * Decode the next video packet.
  * @return <0 if something went wrong
  */
-int ff_mpeg4_decode_studio_slice_header(Mpeg4DecContext *ctx)
+int ff_mpeg4_decode_studio_slice_header(MPVContext *const s)
 {
-    MpegEncContext *s = &ctx->m;
+    Mpeg4DecContext *const ctx = (Mpeg4DecContext*)s;
     GetBitContext *gb = &s->gb;
     unsigned vlc_len;
     uint16_t mb_num;
@@ -1307,9 +1307,9 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count)
  * Decode the first and second partition.
  * @return <0 if error (and sets error type in the error_status_table)
  */
-int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx)
+int ff_mpeg4_decode_partitions(MPVContext *const s)
 {
-    MpegEncContext *s = &ctx->m;
+    Mpeg4DecContext *const ctx = (Mpeg4DecContext*)s;
     int mb_num;
     int ret;
     const int part_a_error = s->pict_type == AV_PICTURE_TYPE_I ? (ER_DC_ERROR | ER_MV_ERROR) : ER_MV_ERROR;

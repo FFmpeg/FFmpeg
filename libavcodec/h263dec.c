@@ -194,7 +194,7 @@ static int decode_slice(MpegEncContext *s)
     ff_set_qscale(s, s->qscale);
 
     if (s->studio_profile) {
-        if ((ret = ff_mpeg4_decode_studio_slice_header(s->avctx->priv_data)) < 0)
+        if ((ret = ff_mpeg4_decode_studio_slice_header(s)) < 0)
             return ret;
     }
 
@@ -210,7 +210,7 @@ static int decode_slice(MpegEncContext *s)
         const int qscale = s->qscale;
 
         if (CONFIG_MPEG4_DECODER && s->codec_id == AV_CODEC_ID_MPEG4)
-            if ((ret = ff_mpeg4_decode_partitions(s->avctx->priv_data)) < 0)
+            if ((ret = ff_mpeg4_decode_partitions(s)) < 0)
                 return ret;
 
         /* restore variables which were modified */

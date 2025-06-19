@@ -116,9 +116,9 @@ void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb
 void ff_mpeg4_mcsel_motion(MpegEncContext *s,
                            uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                            uint8_t *const *ref_picture);
-int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx);
-int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx);
-int ff_mpeg4_decode_studio_slice_header(Mpeg4DecContext *ctx);
+int ff_mpeg4_decode_partitions(MPVContext *const s);
+int ff_mpeg4_decode_video_packet_header(MPVContext *const s);
+int ff_mpeg4_decode_studio_slice_header(MPVContext *const s);
 void ff_mpeg4_workaround_bugs(AVCodecContext *avctx);
 void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n,
                       int dir);
