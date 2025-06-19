@@ -31,6 +31,7 @@
 typedef struct MSMP4DecContext {
     MpegEncContext m;
     int bit_rate;
+    int flipflop_rounding;
     int mv_table_index;
     int rl_table_index;
     int rl_chroma_table_index;

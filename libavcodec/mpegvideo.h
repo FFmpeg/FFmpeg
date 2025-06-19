@@ -265,7 +265,6 @@ typedef struct MpegEncContext {
     /* MSMPEG4 specific */
     int slice_height;      ///< in macroblocks
     int first_slice_line;  ///< used in MPEG-4 too to handle resync markers
-    int flipflop_rounding;
     enum {
         MSMP4_UNUSED,
         MSMP4_V1,

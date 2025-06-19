@@ -155,6 +155,7 @@ typedef struct MPVEncContext {
     PutBitContext pb2;             ///< used for data partitioned VOPs
 
     /* MSMPEG4 specific */
+    int flipflop_rounding;         ///< also used for MPEG-4, H.263+
     int esc3_level_length;
 
     /* RTP specific */

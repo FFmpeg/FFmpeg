@@ -298,9 +298,9 @@ void ff_msmpeg4_encode_ext_header(MPVEncContext *const s)
     put_bits(&s->pb, 11, FFMIN(m->bit_rate / 1024, 2047));
 
     if (s->c.msmpeg4_version >= MSMP4_V3)
-        put_bits(&s->pb, 1, s->c.flipflop_rounding);
+        put_bits(&s->pb, 1, s->flipflop_rounding);
     else
-        av_assert0(!s->c.flipflop_rounding);
+        av_assert0(!s->flipflop_rounding);
 }
 
 void ff_msmpeg4_encode_motion(MSMPEG4EncContext *const ms,

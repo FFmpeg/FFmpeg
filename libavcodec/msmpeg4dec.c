@@ -544,7 +544,7 @@ int ff_msmpeg4_decode_picture_header(MpegEncContext * s)
                 ms->per_mb_rl_table,
                 s->qscale);
 
-        if(s->flipflop_rounding){
+        if (ms->flipflop_rounding) {
             s->no_rounding ^= 1;
         }else{
             s->no_rounding = 0;
@@ -570,13 +570,13 @@ int ff_msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
         skip_bits(&s->gb, 5); /* fps */
         ms->bit_rate = get_bits(&s->gb, 11) * 1024;
         if (s->msmpeg4_version >= MSMP4_V3)
-            s->flipflop_rounding= get_bits1(&s->gb);
+            ms->flipflop_rounding = get_bits1(&s->gb);
         else
-            s->flipflop_rounding= 0;
+            ms->flipflop_rounding = 0;
     }
     else if(left<length+8)
     {
-        s->flipflop_rounding= 0;
+        ms->flipflop_rounding = 0;
         if (s->msmpeg4_version != MSMP4_V2)
             av_log(s->avctx, AV_LOG_ERROR, "ext header missing, %d left\n", left);
     }

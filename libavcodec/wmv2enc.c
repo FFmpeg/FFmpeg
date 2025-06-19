@@ -94,7 +94,7 @@ static int wmv2_encode_picture_header(MPVMainEncContext *const m)
     w->abt_type        = 0;
     w->j_type          = 0;
 
-    av_assert0(s->c.flipflop_rounding);
+    av_assert0(s->flipflop_rounding);
 
     if (s->c.pict_type == AV_PICTURE_TYPE_I) {
         av_assert0(s->c.no_rounding == 1);
