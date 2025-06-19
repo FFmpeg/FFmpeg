@@ -1295,7 +1295,8 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
         s->qscale = get_bits(&s->gb, 5);
     }
 
-    if ((ret = av_image_check_size(s->width, s->height, 0, s)) < 0)
+    ret = av_image_check_size(s->width, s->height, 0, s->avctx);
+    if (ret < 0)
         return ret;
 
     if (!(s->avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)) {
