@@ -77,10 +77,10 @@ int ff_mpv_decode_close(AVCodecContext *avctx);
 
 void ff_print_debug_info(const MpegEncContext *s, const MPVPicture *p, AVFrame *pict);
 
-static inline int mpeg_get_qscale(MpegEncContext *s)
+static inline int mpeg_get_qscale(GetBitContext *const gb, int q_scale_type)
 {
-    int qscale = get_bits(&s->gb, 5);
-    if (s->q_scale_type)
+    int qscale = get_bits(gb, 5);
+    if (q_scale_type)
         return ff_mpeg2_non_linear_qscale[qscale];
     else
         return qscale << 1;

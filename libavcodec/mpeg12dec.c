@@ -479,7 +479,7 @@ static int mpeg_decode_mb(MPVContext *const s)
             s->interlaced_dct = get_bits1(&s->gb);
 
         if (IS_QUANT(mb_type))
-            s->qscale = mpeg_get_qscale(s);
+            s->qscale = mpeg_get_qscale(&s->gb, s->q_scale_type);
 
         if (s->concealment_motion_vectors) {
             /* just parse them */
@@ -537,7 +537,7 @@ static int mpeg_decode_mb(MPVContext *const s)
             }
 
             if (IS_QUANT(mb_type))
-                s->qscale = mpeg_get_qscale(s);
+                s->qscale = mpeg_get_qscale(&s->gb, s->q_scale_type);
 
             s->last_mv[0][0][0] = 0;
             s->last_mv[0][0][1] = 0;
@@ -558,7 +558,7 @@ static int mpeg_decode_mb(MPVContext *const s)
             }
 
             if (IS_QUANT(mb_type))
-                s->qscale = mpeg_get_qscale(s);
+                s->qscale = mpeg_get_qscale(&s->gb, s->q_scale_type);
 
             /* motion vectors */
             s->mv_dir = MB_TYPE_MV_2_MV_DIR(mb_type);
@@ -1370,7 +1370,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
     ff_mpeg1_clean_buffers(s);
     s->interlaced_dct = 0;
 
-    s->qscale = mpeg_get_qscale(s);
+    s->qscale = mpeg_get_qscale(&s->gb, s->q_scale_type);
 
     if (s->qscale == 0) {
         av_log(s->avctx, AV_LOG_ERROR, "qscale == 0\n");
@@ -2805,7 +2805,7 @@ static int ipu_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 skip_bits1(gb);
 
             if (intraquant)
-                m->qscale = mpeg_get_qscale(m);
+                m->qscale = mpeg_get_qscale(&m->gb, m->q_scale_type);
 
             memset(s->block, 0, sizeof(s->block));
 

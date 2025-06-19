@@ -157,8 +157,8 @@ fail:
 
 static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
 {
-    MpegEncContext *s = avctx->priv_data;
-    VAAPIDecodePicture *pic = s->cur_pic.ptr->hwaccel_picture_private;
+    H263DecContext *const h = avctx->priv_data;
+    VAAPIDecodePicture *pic = h->c.cur_pic.ptr->hwaccel_picture_private;
     VASliceParameterBufferMPEG4 slice_param;
     int err;
 
@@ -166,9 +166,9 @@ static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
         .slice_data_size   = size,
         .slice_data_offset = 0,
         .slice_data_flag   = VA_SLICE_DATA_FLAG_ALL,
-        .macroblock_offset = get_bits_count(&s->gb) % 8,
+        .macroblock_offset = get_bits_count(&h->gb) % 8,
         .macroblock_number = 0,
-        .quant_scale       = s->qscale,
+        .quant_scale       = h->c.qscale,
     };
 
     err = ff_vaapi_decode_make_slice_buffer(avctx, pic,

@@ -105,7 +105,7 @@ static int parse_mb_skip(WMV2DecContext *w)
     int coded_mb_count = 0;
     uint32_t *const mb_type = h->c.cur_pic.mb_type;
 
-    w->skip_type = get_bits(&h->c.gb, 2);
+    w->skip_type = get_bits(&h->gb, 2);
     switch (w->skip_type) {
     case SKIP_TYPE_NONE:
         for (int mb_y = 0; mb_y < h->c.mb_height; mb_y++)
@@ -114,40 +114,40 @@ static int parse_mb_skip(WMV2DecContext *w)
                     MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
         break;
     case SKIP_TYPE_MPEG:
-        if (get_bits_left(&h->c.gb) < h->c.mb_height * h->c.mb_width)
+        if (get_bits_left(&h->gb) < h->c.mb_height * h->c.mb_width)
             return AVERROR_INVALIDDATA;
         for (int mb_y = 0; mb_y < h->c.mb_height; mb_y++)
             for (int mb_x = 0; mb_x < h->c.mb_width; mb_x++)
                 mb_type[mb_y * h->c.mb_stride + mb_x] =
-                    (get_bits1(&h->c.gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
+                    (get_bits1(&h->gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
         break;
     case SKIP_TYPE_ROW:
         for (int mb_y = 0; mb_y < h->c.mb_height; mb_y++) {
-            if (get_bits_left(&h->c.gb) < 1)
+            if (get_bits_left(&h->gb) < 1)
                 return AVERROR_INVALIDDATA;
-            if (get_bits1(&h->c.gb)) {
+            if (get_bits1(&h->gb)) {
                 for (int mb_x = 0; mb_x < h->c.mb_width; mb_x++)
                     mb_type[mb_y * h->c.mb_stride + mb_x] =
                         MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
             } else {
                 for (int mb_x = 0; mb_x < h->c.mb_width; mb_x++)
                     mb_type[mb_y * h->c.mb_stride + mb_x] =
-                        (get_bits1(&h->c.gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
+                        (get_bits1(&h->gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
             }
         }
         break;
     case SKIP_TYPE_COL:
         for (int mb_x = 0; mb_x < h->c.mb_width; mb_x++) {
-            if (get_bits_left(&h->c.gb) < 1)
+            if (get_bits_left(&h->gb) < 1)
                 return AVERROR_INVALIDDATA;
-            if (get_bits1(&h->c.gb)) {
+            if (get_bits1(&h->gb)) {
                 for (int mb_y = 0; mb_y < h->c.mb_height; mb_y++)
                     mb_type[mb_y * h->c.mb_stride + mb_x] =
                         MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
             } else {
                 for (int mb_y = 0; mb_y < h->c.mb_height; mb_y++)
                     mb_type[mb_y * h->c.mb_stride + mb_x] =
-                        (get_bits1(&h->c.gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
+                        (get_bits1(&h->gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
             }
         }
         break;
@@ -157,7 +157,7 @@ static int parse_mb_skip(WMV2DecContext *w)
         for (int mb_x = 0; mb_x < h->c.mb_width; mb_x++)
             coded_mb_count += !IS_SKIP(mb_type[mb_y * h->c.mb_stride + mb_x]);
 
-    if (coded_mb_count > get_bits_left(&h->c.gb))
+    if (coded_mb_count > get_bits_left(&h->gb))
         return AVERROR_INVALIDDATA;
 
     return 0;
@@ -205,17 +205,17 @@ int ff_wmv2_decode_picture_header(H263DecContext *const h)
 {
     int code;
 
-    h->c.pict_type = get_bits1(&h->c.gb) + 1;
+    h->c.pict_type = get_bits1(&h->gb) + 1;
     if (h->c.pict_type == AV_PICTURE_TYPE_I) {
-        code = get_bits(&h->c.gb, 7);
+        code = get_bits(&h->gb, 7);
         av_log(h->c.avctx, AV_LOG_DEBUG, "I7:%X/\n", code);
     }
-    h->c.chroma_qscale = h->c.qscale = get_bits(&h->c.gb, 5);
+    h->c.chroma_qscale = h->c.qscale = get_bits(&h->gb, 5);
     if (h->c.qscale <= 0)
         return AVERROR_INVALIDDATA;
 
-    if (h->c.pict_type != AV_PICTURE_TYPE_I && show_bits(&h->c.gb, 1)) {
-        GetBitContext gb = h->c.gb;
+    if (h->c.pict_type != AV_PICTURE_TYPE_I && show_bits(&h->gb, 1)) {
+        GetBitContext gb = h->gb;
         int skip_type = get_bits(&gb, 2);
         int run = skip_type == SKIP_TYPE_COL ? h->c.mb_width : h->c.mb_height;
 
@@ -241,29 +241,29 @@ int ff_wmv2_decode_secondary_picture_header(H263DecContext *const h)
         memset(h->c.cur_pic.mb_type, 0,
                sizeof(*h->c.cur_pic.mb_type) * h->c.mb_height * h->c.mb_stride);
         if (w->j_type_bit)
-            w->j_type = get_bits1(&h->c.gb);
+            w->j_type = get_bits1(&h->gb);
         else
             w->j_type = 0; // FIXME check
 
         if (!w->j_type) {
             if (w->per_mb_rl_bit)
-                w->ms.per_mb_rl_table = get_bits1(&h->c.gb);
+                w->ms.per_mb_rl_table = get_bits1(&h->gb);
             else
                 w->ms.per_mb_rl_table = 0;
 
             if (!w->ms.per_mb_rl_table) {
-                w->ms.rl_chroma_table_index = decode012(&h->c.gb);
-                w->ms.rl_table_index        = decode012(&h->c.gb);
+                w->ms.rl_chroma_table_index = decode012(&h->gb);
+                w->ms.rl_table_index        = decode012(&h->gb);
             }
 
-            w->ms.dc_table_index = get_bits1(&h->c.gb);
+            w->ms.dc_table_index = get_bits1(&h->gb);
 
             // at minimum one bit per macroblock is required at least in a valid frame,
             // we discard frames much smaller than this. Frames smaller than 1/8 of the
             // smallest "black/skip" frame generally contain not much recoverable content
             // while at the same time they have the highest computational requirements
             // per byte
-            if (get_bits_left(&h->c.gb) * 8LL < (h->c.width+15)/16 * ((h->c.height+15)/16))
+            if (get_bits_left(&h->gb) * 8LL < (h->c.width+15)/16 * ((h->c.height+15)/16))
                 return AVERROR_INVALIDDATA;
         }
         h->c.inter_intra_pred = 0;
@@ -282,35 +282,35 @@ int ff_wmv2_decode_secondary_picture_header(H263DecContext *const h)
         ret = parse_mb_skip(w);
         if (ret < 0)
             return ret;
-        cbp_index = decode012(&h->c.gb);
+        cbp_index = decode012(&h->gb);
         w->cbp_table_index = wmv2_get_cbp_table_index(h->c.qscale, cbp_index);
 
         if (w->mspel_bit)
-            h->c.mspel = get_bits1(&h->c.gb);
+            h->c.mspel = get_bits1(&h->gb);
         else
             h->c.mspel = 0; // FIXME check
 
         if (w->abt_flag) {
-            w->per_mb_abt = get_bits1(&h->c.gb) ^ 1;
+            w->per_mb_abt = get_bits1(&h->gb) ^ 1;
             if (!w->per_mb_abt)
-                w->abt_type = decode012(&h->c.gb);
+                w->abt_type = decode012(&h->gb);
         }
 
         if (w->per_mb_rl_bit)
-            w->ms.per_mb_rl_table = get_bits1(&h->c.gb);
+            w->ms.per_mb_rl_table = get_bits1(&h->gb);
         else
             w->ms.per_mb_rl_table = 0;
 
         if (!w->ms.per_mb_rl_table) {
-            w->ms.rl_table_index        = decode012(&h->c.gb);
+            w->ms.rl_table_index        = decode012(&h->gb);
             w->ms.rl_chroma_table_index = w->ms.rl_table_index;
         }
 
-        if (get_bits_left(&h->c.gb) < 2)
+        if (get_bits_left(&h->gb) < 2)
             return AVERROR_INVALIDDATA;
 
-        w->ms.dc_table_index = get_bits1(&h->c.gb);
-        w->ms.mv_table_index = get_bits1(&h->c.gb);
+        w->ms.dc_table_index = get_bits1(&h->gb);
+        w->ms.mv_table_index = get_bits1(&h->gb);
 
         h->c.inter_intra_pred = 0; // (h->c.width * h->c.height < 320 * 240 && w->ms.bit_rate <= II_BITRATE);
         h->c.no_rounding     ^= 1;
@@ -331,7 +331,7 @@ int ff_wmv2_decode_secondary_picture_header(H263DecContext *const h)
 
     if (w->j_type) {
         ff_intrax8_decode_picture(&w->x8, h->c.cur_pic.ptr,
-                                  &h->c.gb, &h->c.mb_x, &h->c.mb_y,
+                                  &h->gb, &h->c.mb_x, &h->c.mb_y,
                                   2 * h->c.qscale, (h->c.qscale - 1) | 1,
                                   h->c.loop_filter, h->c.low_delay);
 
@@ -351,7 +351,7 @@ static inline void wmv2_decode_motion(WMV2DecContext *w, int *mx_ptr, int *my_pt
     ff_msmpeg4_decode_motion(&w->ms, mx_ptr, my_ptr);
 
     if ((((*mx_ptr) | (*my_ptr)) & 1) && h->c.mspel)
-        w->common.hshift = get_bits1(&h->c.gb);
+        w->common.hshift = get_bits1(&h->gb);
     else
         w->common.hshift = 0;
 }
@@ -376,7 +376,7 @@ static int16_t *wmv2_pred_motion(WMV2DecContext *w, int *px, int *py)
         diff = 0;
 
     if (diff >= 8)
-        type = get_bits1(&h->c.gb);
+        type = get_bits1(&h->gb);
     else
         type = 2;
 
@@ -413,13 +413,13 @@ static inline int wmv2_decode_inter_block(WMV2DecContext *w, int16_t *block,
     }
 
     if (w->per_block_abt)
-        w->abt_type = decode012(&h->c.gb);
+        w->abt_type = decode012(&h->gb);
     w->abt_type_table[n] = w->abt_type;
 
     if (w->abt_type) {
         const uint8_t *scantable = w->abt_type == 1 ? ff_wmv2_scantableA : ff_wmv2_scantableB;
 
-        sub_cbp = sub_cbp_table[decode012(&h->c.gb)];
+        sub_cbp = sub_cbp_table[decode012(&h->gb)];
 
         if (sub_cbp & 1) {
             ret = ff_msmpeg4_decode_block(&w->ms, block, n, 1, scantable);
@@ -468,19 +468,19 @@ static int wmv2_decode_mb(H263DecContext *const h)
             w->common.hshift      = 0;
             return 0;
         }
-        if (get_bits_left(&h->c.gb) <= 0)
+        if (get_bits_left(&h->gb) <= 0)
             return AVERROR_INVALIDDATA;
 
-        code = get_vlc2(&h->c.gb, ff_mb_non_intra_vlc[w->cbp_table_index],
+        code = get_vlc2(&h->gb, ff_mb_non_intra_vlc[w->cbp_table_index],
                         MB_NON_INTRA_VLC_BITS, 3);
         h->c.mb_intra = (~code & 0x40) >> 6;
 
         cbp = code & 0x3f;
     } else {
         h->c.mb_intra = 1;
-        if (get_bits_left(&h->c.gb) <= 0)
+        if (get_bits_left(&h->gb) <= 0)
             return AVERROR_INVALIDDATA;
-        code = get_vlc2(&h->c.gb, ff_msmp4_mb_i_vlc,
+        code = get_vlc2(&h->gb, ff_msmp4_mb_i_vlc,
                         MSMP4_MB_INTRA_VLC_BITS, 2);
         /* predict coded block pattern */
         cbp = 0;
@@ -502,14 +502,14 @@ static int wmv2_decode_mb(H263DecContext *const h)
         if (cbp) {
             h->c.bdsp.clear_blocks(h->block[0]);
             if (ms->per_mb_rl_table) {
-                ms->rl_table_index        = decode012(&h->c.gb);
+                ms->rl_table_index        = decode012(&h->gb);
                 ms->rl_chroma_table_index = ms->rl_table_index;
             }
 
             if (w->abt_flag && w->per_mb_abt) {
-                w->per_block_abt = get_bits1(&h->c.gb);
+                w->per_block_abt = get_bits1(&h->gb);
                 if (!w->per_block_abt)
-                    w->abt_type = decode012(&h->c.gb);
+                    w->abt_type = decode012(&h->gb);
             } else
                 w->per_block_abt = 0;
         }
@@ -534,16 +534,16 @@ static int wmv2_decode_mb(H263DecContext *const h)
             ff_dlog(h->c.avctx, "%d%d ", h->c.inter_intra_pred, cbp);
         ff_dlog(h->c.avctx, "I at %d %d %d %06X\n", h->c.mb_x, h->c.mb_y,
                 ((cbp & 3) ? 1 : 0) + ((cbp & 0x3C) ? 2 : 0),
-                show_bits(&h->c.gb, 24));
-        h->c.ac_pred = get_bits1(&h->c.gb);
+                show_bits(&h->gb, 24));
+        h->c.ac_pred = get_bits1(&h->gb);
         if (h->c.inter_intra_pred) {
-            h->c.h263_aic_dir = get_vlc2(&h->c.gb, ff_inter_intra_vlc,
+            h->c.h263_aic_dir = get_vlc2(&h->gb, ff_inter_intra_vlc,
                                        INTER_INTRA_VLC_BITS, 1);
             ff_dlog(h->c.avctx, "%d%d %d %d/",
                     h->c.ac_pred, h->c.h263_aic_dir, h->c.mb_x, h->c.mb_y);
         }
         if (ms->per_mb_rl_table && cbp) {
-            ms->rl_table_index        = decode012(&h->c.gb);
+            ms->rl_table_index        = decode012(&h->gb);
             ms->rl_chroma_table_index = ms->rl_table_index;
         }
 

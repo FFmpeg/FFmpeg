@@ -85,9 +85,9 @@ int ff_rv_decode_dc(H263DecContext *const h, int n)
     int code;
 
     if (n < 4) {
-        code = get_vlc2(&h->c.gb, rv_dc_lum, DC_VLC_BITS, 2);
+        code = get_vlc2(&h->gb, rv_dc_lum, DC_VLC_BITS, 2);
     } else {
-        code = get_vlc2(&h->c.gb, rv_dc_chrom, DC_VLC_BITS, 2);
+        code = get_vlc2(&h->gb, rv_dc_chrom, DC_VLC_BITS, 2);
         if (code < 0) {
             av_log(h->c.avctx, AV_LOG_ERROR, "chroma dc error\n");
             return -1;
@@ -101,9 +101,9 @@ static int rv10_decode_picture_header(H263DecContext *const h)
 {
     int mb_count, pb_frame, marker, mb_xy;
 
-    marker = get_bits1(&h->c.gb);
+    marker = get_bits1(&h->gb);
 
-    if (get_bits1(&h->c.gb))
+    if (get_bits1(&h->gb))
         h->c.pict_type = AV_PICTURE_TYPE_P;
     else
         h->c.pict_type = AV_PICTURE_TYPE_I;
@@ -111,7 +111,7 @@ static int rv10_decode_picture_header(H263DecContext *const h)
     if (!marker)
         av_log(h->c.avctx, AV_LOG_ERROR, "marker missing\n");
 
-    pb_frame = get_bits1(&h->c.gb);
+    pb_frame = get_bits1(&h->gb);
 
     ff_dlog(h->c.avctx, "pict_type=%d pb_frame=%d\n", h->c.pict_type, pb_frame);
 
@@ -120,7 +120,7 @@ static int rv10_decode_picture_header(H263DecContext *const h)
         return AVERROR_PATCHWELCOME;
     }
 
-    h->c.qscale = get_bits(&h->c.gb, 5);
+    h->c.qscale = get_bits(&h->gb, 5);
     if (h->c.qscale == 0) {
         av_log(h->c.avctx, AV_LOG_ERROR, "Invalid qscale value: 0\n");
         return AVERROR_INVALIDDATA;
@@ -129,9 +129,9 @@ static int rv10_decode_picture_header(H263DecContext *const h)
     if (h->c.pict_type == AV_PICTURE_TYPE_I) {
         if (h->c.rv10_version == 3) {
             /* specific MPEG like DC coding not used */
-            h->c.last_dc[0] = get_bits(&h->c.gb, 8);
-            h->c.last_dc[1] = get_bits(&h->c.gb, 8);
-            h->c.last_dc[2] = get_bits(&h->c.gb, 8);
+            h->c.last_dc[0] = get_bits(&h->gb, 8);
+            h->c.last_dc[1] = get_bits(&h->gb, 8);
+            h->c.last_dc[2] = get_bits(&h->gb, 8);
             ff_dlog(h->c.avctx, "DC:%d %d %d\n", h->c.last_dc[0],
                     h->c.last_dc[1], h->c.last_dc[2]);
         }
@@ -140,16 +140,16 @@ static int rv10_decode_picture_header(H263DecContext *const h)
      * to display the macroblocks is coded here */
 
     mb_xy = h->c.mb_x + h->c.mb_y * h->c.mb_width;
-    if (show_bits(&h->c.gb, 12) == 0 || (mb_xy && mb_xy < h->c.mb_num)) {
-        h->c.mb_x  = get_bits(&h->c.gb, 6); /* mb_x */
-        h->c.mb_y  = get_bits(&h->c.gb, 6); /* mb_y */
-        mb_count   = get_bits(&h->c.gb, 12);
+    if (show_bits(&h->gb, 12) == 0 || (mb_xy && mb_xy < h->c.mb_num)) {
+        h->c.mb_x  = get_bits(&h->gb, 6); /* mb_x */
+        h->c.mb_y  = get_bits(&h->gb, 6); /* mb_y */
+        mb_count   = get_bits(&h->gb, 12);
     } else {
         h->c.mb_x  = 0;
         h->c.mb_y  = 0;
         mb_count = h->c.mb_width * h->c.mb_height;
     }
-    skip_bits(&h->c.gb, 3);   /* ignored */
+    skip_bits(&h->gb, 3);   /* ignored */
 
     return mb_count;
 }
@@ -163,7 +163,7 @@ static int rv20_decode_picture_header(RVDecContext *rv, int whole_size)
     int seq, mb_pos, ret;
     int rpr_max;
 
-    h->c.pict_type = pict_types[get_bits(&h->c.gb, 2)];
+    h->c.pict_type = pict_types[get_bits(&h->gb, 2)];
 
     if (h->c.low_delay && h->c.pict_type == AV_PICTURE_TYPE_B) {
         av_log(h->c.avctx, AV_LOG_ERROR, "low delay B\n");
@@ -174,31 +174,31 @@ static int rv20_decode_picture_header(RVDecContext *rv, int whole_size)
         return AVERROR_INVALIDDATA;
     }
 
-    if (get_bits1(&h->c.gb)) {
+    if (get_bits1(&h->gb)) {
         av_log(h->c.avctx, AV_LOG_ERROR, "reserved bit set\n");
         return AVERROR_INVALIDDATA;
     }
 
-    h->c.qscale = get_bits(&h->c.gb, 5);
+    h->c.qscale = get_bits(&h->gb, 5);
     if (h->c.qscale == 0) {
         av_log(h->c.avctx, AV_LOG_ERROR, "Invalid qscale value: 0\n");
         return AVERROR_INVALIDDATA;
     }
 
     if (RV_GET_MINOR_VER(rv->sub_id) >= 2)
-        h->c.loop_filter = get_bits1(&h->c.gb) && !h->c.avctx->lowres;
+        h->c.loop_filter = get_bits1(&h->gb) && !h->c.avctx->lowres;
 
     if (RV_GET_MINOR_VER(rv->sub_id) <= 1)
-        seq = get_bits(&h->c.gb, 8) << 7;
+        seq = get_bits(&h->gb, 8) << 7;
     else
-        seq = get_bits(&h->c.gb, 13) << 2;
+        seq = get_bits(&h->gb, 13) << 2;
 
     rpr_max = h->c.avctx->extradata[1] & 7;
     if (rpr_max) {
         int f, new_w, new_h;
         int rpr_bits = av_log2(rpr_max) + 1;
 
-        f = get_bits(&h->c.gb, rpr_bits);
+        f = get_bits(&h->gb, rpr_bits);
 
         if (f) {
             if (h->c.avctx->extradata_size < 8 + 2 * f) {
@@ -277,11 +277,11 @@ static int rv20_decode_picture_header(RVDecContext *rv, int whole_size)
         ff_mpeg4_init_direct_mv(&h->c);
     }
 
-    h->c.no_rounding = get_bits1(&h->c.gb);
+    h->c.no_rounding = get_bits1(&h->gb);
 
     if (RV_GET_MINOR_VER(rv->sub_id) <= 1 && h->c.pict_type == AV_PICTURE_TYPE_B)
         // binary decoder reads 3+2 bits here but they don't seem to be used
-        skip_bits(&h->c.gb, 5);
+        skip_bits(&h->gb, 5);
 
     h->c.h263_aic        = h->c.pict_type == AV_PICTURE_TYPE_I;
     if (h->c.h263_aic) {
@@ -416,7 +416,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
     int mb_count, mb_pos, left, start_mb_x, active_bits_size, ret;
 
     active_bits_size = buf_size * 8;
-    init_get_bits(&h->c.gb, buf, FFMAX(buf_size, buf_size2) * 8);
+    init_get_bits(&h->gb, buf, FFMAX(buf_size, buf_size2) * 8);
     if (h->c.codec_id == AV_CODEC_ID_RV10)
         mb_count = rv10_decode_picture_header(h);
     else
@@ -492,24 +492,24 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
 
         // Repeat the slice end check from ff_h263_decode_mb with our active
         // bitstream size
-        if (ret != SLICE_ERROR && active_bits_size >= get_bits_count(&h->c.gb)) {
-            int v = show_bits(&h->c.gb, 16);
+        if (ret != SLICE_ERROR && active_bits_size >= get_bits_count(&h->gb)) {
+            int v = show_bits(&h->gb, 16);
 
-            if (get_bits_count(&h->c.gb) + 16 > active_bits_size)
-                v >>= get_bits_count(&h->c.gb) + 16 - active_bits_size;
+            if (get_bits_count(&h->gb) + 16 > active_bits_size)
+                v >>= get_bits_count(&h->gb) + 16 - active_bits_size;
 
             if (!v)
                 ret = SLICE_END;
         }
-        if (ret != SLICE_ERROR && active_bits_size < get_bits_count(&h->c.gb) &&
-            8 * buf_size2 >= get_bits_count(&h->c.gb)) {
+        if (ret != SLICE_ERROR && active_bits_size < get_bits_count(&h->gb) &&
+            8 * buf_size2 >= get_bits_count(&h->gb)) {
             active_bits_size = buf_size2 * 8;
             av_log(avctx, AV_LOG_DEBUG, "update size from %d to %d\n",
                    8 * buf_size, active_bits_size);
             ret = SLICE_OK;
         }
 
-        if (ret == SLICE_ERROR || active_bits_size < get_bits_count(&h->c.gb)) {
+        if (ret == SLICE_ERROR || active_bits_size < get_bits_count(&h->gb)) {
             av_log(h->c.avctx, AV_LOG_ERROR, "ERROR at MB %d %d\n", h->c.mb_x,
                    h->c.mb_y);
             return AVERROR_INVALIDDATA;

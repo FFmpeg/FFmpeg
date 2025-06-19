@@ -20,6 +20,7 @@
 #ifndef AVCODEC_H263DEC_H
 #define AVCODEC_H263DEC_H
 
+#include "get_bits.h"
 #include "mpegvideo.h"
 #include "vlc.h"
 #include "libavutil/mem_internal.h"
@@ -47,7 +48,11 @@ extern VLCElem ff_h263_mv_vlc[];
 typedef struct H263DecContext {
     MPVContext c;
 
+    GetBitContext gb;
+
     int (*decode_mb)(struct H263DecContext *h);
+
+    GetBitContext last_resync_gb;    ///< used to search for the next resync marker
 
     DECLARE_ALIGNED_32(int16_t, block)[6][64];
 } H263DecContext;

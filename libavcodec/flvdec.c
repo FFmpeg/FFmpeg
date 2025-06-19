@@ -31,26 +31,26 @@ int ff_flv_decode_picture_header(H263DecContext *const h)
     int format, width, height;
 
     /* picture header */
-    if (get_bits(&h->c.gb, 17) != 1) {
+    if (get_bits(&h->gb, 17) != 1) {
         av_log(h->c.avctx, AV_LOG_ERROR, "Bad picture start code\n");
         return AVERROR_INVALIDDATA;
     }
-    format = get_bits(&h->c.gb, 5);
+    format = get_bits(&h->gb, 5);
     if (format != 0 && format != 1) {
         av_log(h->c.avctx, AV_LOG_ERROR, "Bad picture format\n");
         return AVERROR_INVALIDDATA;
     }
     h->c.h263_flv       = format + 1;
-    h->c.picture_number = get_bits(&h->c.gb, 8); /* picture timestamp */
-    format            = get_bits(&h->c.gb, 3);
+    h->c.picture_number = get_bits(&h->gb, 8); /* picture timestamp */
+    format            = get_bits(&h->gb, 3);
     switch (format) {
     case 0:
-        width  = get_bits(&h->c.gb, 8);
-        height = get_bits(&h->c.gb, 8);
+        width  = get_bits(&h->gb, 8);
+        height = get_bits(&h->gb, 8);
         break;
     case 1:
-        width  = get_bits(&h->c.gb, 16);
-        height = get_bits(&h->c.gb, 16);
+        width  = get_bits(&h->gb, 16);
+        height = get_bits(&h->gb, 16);
         break;
     case 2:
         width  = 352;
@@ -81,18 +81,18 @@ int ff_flv_decode_picture_header(H263DecContext *const h)
     h->c.width  = width;
     h->c.height = height;
 
-    h->c.pict_type = AV_PICTURE_TYPE_I + get_bits(&h->c.gb, 2);
+    h->c.pict_type = AV_PICTURE_TYPE_I + get_bits(&h->gb, 2);
     h->c.droppable = h->c.pict_type > AV_PICTURE_TYPE_P;
     if (h->c.droppable)
         h->c.pict_type = AV_PICTURE_TYPE_P;
 
-    skip_bits1(&h->c.gb); /* deblocking flag */
-    h->c.chroma_qscale = h->c.qscale = get_bits(&h->c.gb, 5);
+    skip_bits1(&h->gb); /* deblocking flag */
+    h->c.chroma_qscale = h->c.qscale = get_bits(&h->gb, 5);
 
     h->c.h263_long_vectors = 0;
 
     /* PEI */
-    if (skip_1stop_8data_bits(&h->c.gb) < 0)
+    if (skip_1stop_8data_bits(&h->gb) < 0)
         return AVERROR_INVALIDDATA;
 
     if (h->c.ehc_mode)

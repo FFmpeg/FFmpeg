@@ -187,7 +187,7 @@ static int decode_slice(H263DecContext *const h)
     const int mb_size   = 16 >> h->c.avctx->lowres;
     int ret;
 
-    h->c.last_resync_gb   = h->c.gb;
+    h->last_resync_gb     = h->gb;
     h->c.first_slice_line = 1;
     h->c.resync_mb_x      = h->c.mb_x;
     h->c.resync_mb_y      = h->c.mb_y;
@@ -200,8 +200,8 @@ static int decode_slice(H263DecContext *const h)
     }
 
     if (h->c.avctx->hwaccel) {
-        const uint8_t *start = h->c.gb.buffer + get_bits_count(&h->c.gb) / 8;
-        ret = FF_HW_CALL(h->c.avctx, decode_slice, start, h->c.gb.buffer_end - start);
+        const uint8_t *start = h->gb.buffer + get_bits_count(&h->gb) / 8;
+        ret = FF_HW_CALL(h->c.avctx, decode_slice, start, h->gb.buffer_end - start);
         // ensure we exit decode loop
         h->c.mb_y = h->c.mb_height;
         return ret;
@@ -253,7 +253,7 @@ static int decode_slice(H263DecContext *const h)
             h->c.mv_dir  = MV_DIR_FORWARD;
             h->c.mv_type = MV_TYPE_16X16;
             ff_dlog(h->c.avctx, "%d %06X\n",
-                    get_bits_count(&h->c.gb), show_bits(&h->c.gb, 24));
+                    get_bits_count(&h->gb), show_bits(&h->gb, 24));
 
             ff_tlog(NULL, "Decoding MB at %dx%d\n", h->c.mb_x, h->c.mb_y);
             ret = h->decode_mb(h);
@@ -300,7 +300,7 @@ static int decode_slice(H263DecContext *const h)
                 ff_er_add_slice(&h->c.er, h->c.resync_mb_x, h->c.resync_mb_y,
                                 h->c.mb_x, h->c.mb_y, ER_MB_ERROR & part_mask);
 
-                if ((h->c.avctx->err_recognition & AV_EF_IGNORE_ERR) && get_bits_left(&h->c.gb) > 0)
+                if ((h->c.avctx->err_recognition & AV_EF_IGNORE_ERR) && get_bits_left(&h->gb) > 0)
                     continue;
                 return AVERROR_INVALIDDATA;
             }
@@ -321,29 +321,29 @@ static int decode_slice(H263DecContext *const h)
     // Detect incorrect padding with wrong stuffing codes used by NEC N-02B
     if (h->c.codec_id == AV_CODEC_ID_MPEG4         &&
         (h->c.workaround_bugs & FF_BUG_AUTODETECT) &&
-        get_bits_left(&h->c.gb) >= 48              &&
-        show_bits(&h->c.gb, 24) == 0x4010          &&
+        get_bits_left(&h->gb) >= 48                &&
+        show_bits(&h->gb, 24) == 0x4010            &&
         !h->c.data_partitioning)
         h->c.padding_bug_score += 32;
 
     /* try to detect the padding bug */
     if (h->c.codec_id == AV_CODEC_ID_MPEG4         &&
         (h->c.workaround_bugs & FF_BUG_AUTODETECT) &&
-        get_bits_left(&h->c.gb) >= 0               &&
-        get_bits_left(&h->c.gb) < 137              &&
+        get_bits_left(&h->gb) >= 0                 &&
+        get_bits_left(&h->gb) < 137                &&
         !h->c.data_partitioning) {
-        const int bits_count = get_bits_count(&h->c.gb);
-        const int bits_left  = h->c.gb.size_in_bits - bits_count;
+        const int bits_count = get_bits_count(&h->gb);
+        const int bits_left  = h->gb.size_in_bits - bits_count;
 
         if (bits_left == 0) {
             h->c.padding_bug_score += 16;
         } else if (bits_left != 1) {
-            int v = show_bits(&h->c.gb, 8);
+            int v = show_bits(&h->gb, 8);
             v |= 0x7F >> (7 - (bits_count & 7));
 
             if (v == 0x7F && bits_left <= 8)
                 h->c.padding_bug_score--;
-            else if (v == 0x7F && ((get_bits_count(&h->c.gb) + 8) & 8) &&
+            else if (v == 0x7F && ((get_bits_count(&h->gb) + 8) & 8) &&
                      bits_left <= 16)
                 h->c.padding_bug_score += 4;
             else
@@ -353,10 +353,10 @@ static int decode_slice(H263DecContext *const h)
 
     if (h->c.codec_id == AV_CODEC_ID_H263          &&
         (h->c.workaround_bugs & FF_BUG_AUTODETECT) &&
-        get_bits_left(&h->c.gb) >= 8               &&
-        get_bits_left(&h->c.gb) < 300              &&
+        get_bits_left(&h->gb) >= 8                 &&
+        get_bits_left(&h->gb) < 300                &&
         h->c.pict_type == AV_PICTURE_TYPE_I        &&
-        show_bits(&h->c.gb, 8) == 0                &&
+        show_bits(&h->gb, 8) == 0                  &&
         !h->c.data_partitioning) {
 
         h->c.padding_bug_score += 32;
@@ -364,8 +364,8 @@ static int decode_slice(H263DecContext *const h)
 
     if (h->c.codec_id == AV_CODEC_ID_H263          &&
         (h->c.workaround_bugs & FF_BUG_AUTODETECT) &&
-        get_bits_left(&h->c.gb) >= 64              &&
-        AV_RB64(h->c.gb.buffer_end - 8) == 0xCDCDCDCDFC7F0000) {
+        get_bits_left(&h->gb) >= 64                &&
+        AV_RB64(h->gb.buffer_end - 8) == 0xCDCDCDCDFC7F0000) {
 
         h->c.padding_bug_score += 32;
     }
@@ -380,7 +380,7 @@ static int decode_slice(H263DecContext *const h)
 
     // handle formats which don't have unique end markers
     if (h->c.msmpeg4_version != MSMP4_UNUSED || (h->c.workaround_bugs & FF_BUG_NO_PADDING)) { // FIXME perhaps solve this more cleanly
-        int left      = get_bits_left(&h->c.gb);
+        int left      = get_bits_left(&h->gb);
         int max_extra = 7;
 
         /* no markers in M$ crap */
@@ -398,7 +398,7 @@ static int decode_slice(H263DecContext *const h)
         if (left > max_extra)
             av_log(h->c.avctx, AV_LOG_ERROR,
                    "discarding %d junk bits at end, next would be %X\n",
-                   left, show_bits(&h->c.gb, 24));
+                   left, show_bits(&h->gb, 24));
         else if (left < 0)
             av_log(h->c.avctx, AV_LOG_ERROR, "overreading %d bits\n", -left);
         else
@@ -410,7 +410,7 @@ static int decode_slice(H263DecContext *const h)
 
     av_log(h->c.avctx, AV_LOG_ERROR,
            "slice end not reached but screenspace end (%d left %06X, score= %d)\n",
-           get_bits_left(&h->c.gb), show_bits(&h->c.gb, 24), h->c.padding_bug_score);
+           get_bits_left(&h->gb), show_bits(&h->gb, 24), h->c.padding_bug_score);
 
     ff_er_add_slice(&h->c.er, h->c.resync_mb_x, h->c.resync_mb_y, h->c.mb_x, h->c.mb_y,
                     ER_MB_END & part_mask);
@@ -452,8 +452,8 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         return 0;
     }
 
-    // h->c.gb might be overridden in ff_mpeg4_decode_picture_header() below.
-    ret = init_get_bits8(&h->c.gb, buf, buf_size);
+    // h->gb might be overridden in ff_mpeg4_decode_picture_header() below.
+    ret = init_get_bits8(&h->gb, buf, buf_size);
     if (ret < 0)
         return ret;
 
@@ -504,7 +504,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     avctx->has_b_frames = !h->c.low_delay;
 
     if (CONFIG_MPEG4_DECODER && avctx->codec_id == AV_CODEC_ID_MPEG4) {
-        if (h->c.pict_type != AV_PICTURE_TYPE_B && h->c.mb_num/2 > get_bits_left(&h->c.gb))
+        if (h->c.pict_type != AV_PICTURE_TYPE_B && h->c.mb_num/2 > get_bits_left(&h->gb))
             return AVERROR_INVALIDDATA;
         ff_mpeg4_workaround_bugs(avctx);
         if (h->c.studio_profile != (h->c.idsp.idct == NULL))
@@ -554,7 +554,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
     if (avctx->hwaccel) {
         ret = FF_HW_CALL(avctx, start_frame, NULL,
-                         h->c.gb.buffer, h->c.gb.buffer_end - h->c.gb.buffer);
+                         h->gb.buffer, h->gb.buffer_end - h->gb.buffer);
         if (ret < 0 )
             return ret;
     }
@@ -582,7 +582,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     while (h->c.mb_y < h->c.mb_height) {
         if (h->c.msmpeg4_version != MSMP4_UNUSED) {
             if (h->c.slice_height == 0 || h->c.mb_x != 0 || slice_ret < 0 ||
-                (h->c.mb_y % h->c.slice_height) != 0 || get_bits_left(&h->c.gb) < 0)
+                (h->c.mb_y % h->c.slice_height) != 0 || get_bits_left(&h->gb) < 0)
                 break;
         } else {
             int prev_x = h->c.mb_x, prev_y = h->c.mb_y;
