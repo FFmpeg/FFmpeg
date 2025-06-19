@@ -417,9 +417,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
 
     s->uncompressed_size = s->line_size * s->height * s->channel_count;
 
-    if ((ret = ff_get_buffer(avctx, picture, 0)) < 0)
-        return ret;
-
     /* decode picture if need */
     if (s->compression == PSD_RLE) {
         s->tmp = av_malloc(s->uncompressed_size);
@@ -441,6 +438,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
         }
         ptr_data = s->gb.buffer;
     }
+
+    if ((ret = ff_get_buffer(avctx, picture, 0)) < 0)
+        return ret;
 
     /* Store data */
     if ((avctx->pix_fmt == AV_PIX_FMT_YA8)||(avctx->pix_fmt == AV_PIX_FMT_YA16BE)){/* Interleaved */
