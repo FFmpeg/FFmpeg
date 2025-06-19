@@ -1647,11 +1647,9 @@ not_coded:
  */
 static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
 {
-    Mpeg4DecContext *ctx = s->avctx->priv_data;
+    Mpeg4DecContext *const ctx = (Mpeg4DecContext*)s;
     int cbp, mb_type, use_intra_dc_vlc;
     const int xy = s->mb_x + s->mb_y * s->mb_stride;
-
-    av_assert2(s == (void*)ctx);
 
     mb_type = s->cur_pic.mb_type[xy];
     cbp     = s->cbp_table[xy];
@@ -1737,13 +1735,12 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
 
 static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
 {
-    Mpeg4DecContext *ctx = s->avctx->priv_data;
+    Mpeg4DecContext *const ctx = (Mpeg4DecContext*)s;
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
     static const int8_t quant_tab[4] = { -1, -2, 1, 2 };
     const int xy = s->mb_x + s->mb_y * s->mb_stride;
     int next;
 
-    av_assert2(s ==  (void*)ctx);
     av_assert2(s->h263_pred);
 
     if (s->pict_type == AV_PICTURE_TYPE_P ||
@@ -2153,7 +2150,7 @@ static const uint8_t ac_state_tab[22][2] =
 
 static int mpeg4_decode_studio_block(MpegEncContext *s, int32_t block[64], int n)
 {
-    Mpeg4DecContext *ctx = s->avctx->priv_data;
+    Mpeg4DecContext *const ctx = (Mpeg4DecContext*)s;
 
     int cc, dct_dc_size, dct_diff, code, j, idx = 1, group = 0, run = 0,
         additional_code_len, sign, mismatch;
