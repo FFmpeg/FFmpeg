@@ -2053,6 +2053,8 @@ static int palette_subblock_data(VVCLocalContext *lc,
                 const int v = PALETTE_INDEX(xc, yc);
                 if (v == esc) {
                     const int coeff = ff_vvc_palette_escape_val(lc);
+                    if (coeff >= (1U << sps->bit_depth))
+                        return AVERROR_INVALIDDATA;
                     const int pixel = av_clip_intp2(RSHIFT(coeff * scale, 6), sps->bit_depth);
                     PALETTE_SET_PIXEL(xc, yc, pixel);
                 } else {
