@@ -115,31 +115,15 @@ av_cold void ff_mpv_idct_init(MpegEncContext *s)
                          s->idsp.idct_permutation);
 }
 
-static av_cold int init_duplicate_context(MpegEncContext *s)
-{
-    if (!s->encoding) {
-        s->block = av_mallocz(12 * sizeof(*s->block));
-        if (!s->block)
-            return AVERROR(ENOMEM);
-    }
-
-    return 0;
-}
-
 av_cold int ff_mpv_init_duplicate_contexts(MpegEncContext *s)
 {
-    int nb_slices = s->slice_context_count, ret;
+    const int nb_slices = s->slice_context_count;
     const size_t slice_size = s->slice_ctx_size;
 
-    /* We initialize the copies before the original so that
-     * fields allocated in init_duplicate_context are NULL after
-     * copying. This prevents double-frees upon allocation error. */
     for (int i = 1; i < nb_slices; i++) {
         s->thread_context[i] = av_memdup(s, slice_size);
         if (!s->thread_context[i])
             return AVERROR(ENOMEM);
-        if ((ret = init_duplicate_context(s->thread_context[i])) < 0)
-            return ret;
         s->thread_context[i]->start_mb_y =
             (s->mb_height * (i    ) + nb_slices / 2) / nb_slices;
         s->thread_context[i]->end_mb_y   =
@@ -148,7 +132,7 @@ av_cold int ff_mpv_init_duplicate_contexts(MpegEncContext *s)
     s->start_mb_y = 0;
     s->end_mb_y   = nb_slices > 1 ? (s->mb_height + nb_slices / 2) / nb_slices
                                   : s->mb_height;
-    return init_duplicate_context(s);
+    return 0;
 }
 
 static av_cold void free_duplicate_context(MpegEncContext *s)
@@ -160,8 +144,6 @@ static av_cold void free_duplicate_context(MpegEncContext *s)
     av_freep(&s->sc.scratchpad_buf);
     s->sc.obmc_scratchpad = NULL;
     s->sc.linesize = 0;
-
-    av_freep(&s->block);
 }
 
 static av_cold void free_duplicate_contexts(MpegEncContext *s)
@@ -177,7 +159,6 @@ int ff_update_duplicate_context(MpegEncContext *dst, const MpegEncContext *src)
 {
 #define COPY(M)              \
     M(ScratchpadContext, sc) \
-    M(void*, block)          \
     M(int, start_mb_y)       \
     M(int, end_mb_y)         \
     M(int16_t*, dc_val)      \

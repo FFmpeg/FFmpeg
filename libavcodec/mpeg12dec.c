@@ -73,6 +73,8 @@ enum Mpeg2ClosedCaptionsFormat {
 typedef struct Mpeg12SliceContext {
     MPVContext c;
     GetBitContext gb;
+
+    DECLARE_ALIGNED_32(int16_t, block)[12][64];
 } Mpeg12SliceContext;
 
 typedef struct Mpeg1Context {
@@ -472,10 +474,10 @@ static int mpeg_decode_mb(Mpeg12SliceContext *const s)
     ff_tlog(s->c.avctx, "mb_type=%x\n", mb_type);
 //    motion_type = 0; /* avoid warning */
     if (IS_INTRA(mb_type)) {
-        s->c.bdsp.clear_blocks(s->c.block[0]);
+        s->c.bdsp.clear_blocks(s->block[0]);
 
         if (!s->c.chroma_y_shift)
-            s->c.bdsp.clear_blocks(s->c.block[6]);
+            s->c.bdsp.clear_blocks(s->block[6]);
 
         /* compute DCT type */
         // FIXME: add an interlaced_dct coded var?
@@ -509,14 +511,14 @@ static int mpeg_decode_mb(Mpeg12SliceContext *const s)
 
         if (s->c.codec_id == AV_CODEC_ID_MPEG2VIDEO) {
             for (i = 0; i < mb_block_count; i++)
-                if ((ret = mpeg2_decode_block_intra(s, s->c.block[i], i)) < 0)
+                if ((ret = mpeg2_decode_block_intra(s, s->block[i], i)) < 0)
                     return ret;
         } else {
             for (i = 0; i < 6; i++) {
                 ret = ff_mpeg1_decode_block_intra(&s->gb,
                                                   s->c.intra_matrix,
                                                   s->c.intra_scantable.permutated,
-                                                  s->c.last_dc, s->c.block[i],
+                                                  s->c.last_dc, s->block[i],
                                                   i, s->c.qscale);
                 if (ret < 0) {
                     av_log(s->c.avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n",
@@ -714,13 +716,13 @@ static int mpeg_decode_mb(Mpeg12SliceContext *const s)
         s->c.mb_intra = 0;
         s->c.last_dc[0] = s->c.last_dc[1] = s->c.last_dc[2] = 128 << s->c.intra_dc_precision;
         if (HAS_CBP(mb_type)) {
-            s->c.bdsp.clear_blocks(s->c.block[0]);
+            s->c.bdsp.clear_blocks(s->block[0]);
 
             cbp = get_vlc2(&s->gb, ff_mb_pat_vlc, MB_PAT_VLC_BITS, 1);
             if (mb_block_count > 6) {
                 cbp *= 1 << mb_block_count - 6;
                 cbp |= get_bits(&s->gb, mb_block_count - 6);
-                s->c.bdsp.clear_blocks(s->c.block[6]);
+                s->c.bdsp.clear_blocks(s->block[6]);
             }
             if (cbp <= 0) {
                 av_log(s->c.avctx, AV_LOG_ERROR,
@@ -733,7 +735,7 @@ static int mpeg_decode_mb(Mpeg12SliceContext *const s)
 
                 for (i = 0; i < mb_block_count; i++) {
                     if (cbp & (1 << 11)) {
-                        if ((ret = mpeg2_decode_block_non_intra(s, s->c.block[i], i)) < 0)
+                        if ((ret = mpeg2_decode_block_non_intra(s, s->block[i], i)) < 0)
                             return ret;
                     } else {
                         s->c.block_last_index[i] = -1;
@@ -743,7 +745,7 @@ static int mpeg_decode_mb(Mpeg12SliceContext *const s)
             } else {
                 for (i = 0; i < 6; i++) {
                     if (cbp & 32) {
-                        if ((ret = mpeg1_decode_block_inter(s, s->c.block[i], i)) < 0)
+                        if ((ret = mpeg1_decode_block_inter(s, s->block[i], i)) < 0)
                             return ret;
                     } else {
                         s->c.block_last_index[i] = -1;
@@ -1498,7 +1500,7 @@ static int mpeg_decode_slice(Mpeg12SliceContext *const s, int mb_y,
         s->c.dest[1] +=(16 >> lowres) >> s->c.chroma_x_shift;
         s->c.dest[2] +=(16 >> lowres) >> s->c.chroma_x_shift;
 
-        ff_mpv_reconstruct_mb(&s->c, s->c.block);
+        ff_mpv_reconstruct_mb(&s->c, s->block);
 
         if (++s->c.mb_x >= s->c.mb_width) {
             const int mb_size = 16 >> s->c.avctx->lowres;
@@ -2755,7 +2757,6 @@ typedef struct IPUContext {
     Mpeg12SliceContext m;
 
     int flags;
-    DECLARE_ALIGNED(32, int16_t, block)[6][64];
 } IPUContext;
 
 static int ipu_decode_frame(AVCodecContext *avctx, AVFrame *frame,
@@ -2764,6 +2765,7 @@ static int ipu_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     IPUContext *s = avctx->priv_data;
     MPVContext *const m = &s->m.c;
     GetBitContext *const gb = &s->m.gb;
+    int16_t (*const block)[64] = s->m.block;
     int ret;
 
     // Check for minimal intra MB size (considering mb header, luma & chroma dc VLC, ac EOB VLC)
@@ -2813,17 +2815,17 @@ static int ipu_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             if (intraquant)
                 m->qscale = mpeg_get_qscale(gb, m->q_scale_type);
 
-            memset(s->block, 0, sizeof(s->block));
+            memset(block, 0, 6 * sizeof(*block));
 
             for (int n = 0; n < 6; n++) {
                 if (s->flags & 0x80) {
                     ret = ff_mpeg1_decode_block_intra(gb,
                                                       m->intra_matrix,
                                                       m->intra_scantable.permutated,
-                                                      m->last_dc, s->block[n],
+                                                      m->last_dc, block[n],
                                                       n, m->qscale);
                 } else {
-                    ret = mpeg2_decode_block_intra(&s->m, s->block[n], n);
+                    ret = mpeg2_decode_block_intra(&s->m, block[n], n);
                 }
 
                 if (ret < 0)
@@ -2831,17 +2833,17 @@ static int ipu_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             }
 
             m->idsp.idct_put(frame->data[0] + y * frame->linesize[0] + x,
-                             frame->linesize[0], s->block[0]);
+                             frame->linesize[0], block[0]);
             m->idsp.idct_put(frame->data[0] + y * frame->linesize[0] + x + 8,
-                             frame->linesize[0], s->block[1]);
+                             frame->linesize[0], block[1]);
             m->idsp.idct_put(frame->data[0] + (y + 8) * frame->linesize[0] + x,
-                             frame->linesize[0], s->block[2]);
+                             frame->linesize[0], block[2]);
             m->idsp.idct_put(frame->data[0] + (y + 8) * frame->linesize[0] + x + 8,
-                             frame->linesize[0], s->block[3]);
+                             frame->linesize[0], block[3]);
             m->idsp.idct_put(frame->data[1] + (y >> 1) * frame->linesize[1] + (x >> 1),
-                             frame->linesize[1], s->block[4]);
+                             frame->linesize[1], block[4]);
             m->idsp.idct_put(frame->data[2] + (y >> 1) * frame->linesize[2] + (x >> 1),
-                             frame->linesize[2], s->block[5]);
+                             frame->linesize[2], block[5]);
         }
     }
 

@@ -302,8 +302,6 @@ typedef struct MpegEncContext {
     int interlaced_dct;
     int first_field;         ///< is 1 for the first field of a field picture 0 otherwise
 
-    int16_t (*block)[64];
-
 #define SLICE_OK         0
 #define SLICE_ERROR     -1
 #define SLICE_END       -2 ///<end marker found
