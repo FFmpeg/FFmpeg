@@ -5958,7 +5958,11 @@ case $target_os in
         SLIB_INSTALL_LINKS=
         SLIB_INSTALL_EXTRA_SHLIB='$(SLIBNAME:$(SLIBSUF)=.lib)'
         SLIB_INSTALL_EXTRA_LIB='$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.def)'
-        SHFLAGS='-dll -def:$$(@:$(SLIBSUF)=.def) -implib:$(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
+        if test $ld_type = "clang"; then
+            SHFLAGS='-Wl,-dll -Wl,-def:$$(@:$(SLIBSUF)=.def) -Wl,-implib:$(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
+        else
+            SHFLAGS='-dll -def:$$(@:$(SLIBSUF)=.def) -implib:$(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
+        fi
         enabled x86_64 && objformat="win64" || objformat="win32"
         ranlib=:
         enable dos_paths
