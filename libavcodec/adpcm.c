@@ -241,6 +241,29 @@ static const int8_t mtf_index_table[16] = {
     -1, -1, -1, -1,  2,  4,  6,  8,
 };
 
+static const int16_t rhetorex_step[128] = {
+       40,   130,   232,   350,   493,   673,   927,  1382,
+       60,   195,   348,   526,   740,  1010,  1391,  2074,
+       85,   277,   494,   745,  1048,  1431,  1971,  2938,
+      121,   391,   697,  1052,  1480,  2021,  2782,  4148,
+      176,   570,  1017,  1535,  2158,  2947,  4058,  6050,
+      257,   831,  1482,  2236,  3145,  4295,  5913,  8815,
+      373,  1206,  2151,  3245,  4564,  6232,  8579, 12791,
+      534,  1728,  3082,  4649,  6538,  8928, 12290, 18323,
+      782,  2527,  4507,  6798,  9560, 13055, 17971, 26793,
+     1115,  3603,  6426,  9692, 13631, 18614, 25623, 32767,
+     1620,  5233,  9334, 14078, 19799, 27036, 32767, 32767,
+     2361,  7630, 13608, 20526, 28866, 32767, 32767, 32767,
+     3447, 11136, 19860, 29955, 32767, 32767, 32767, 32767,
+     4865, 15717, 28031, 32767, 32767, 32767, 32767, 32767,
+     6888, 22255, 32767, 32767, 32767, 32767, 32767, 32767,
+   -10336, 32144,  5984,-24288,  4752, 24112, 24688,-26336,
+};
+
+static const int16_t rhetorex_index[8] = {
+      -83,   -55,   -27,   163,   374,   677,  1864,  3408,
+};
+
 /* end of tables */
 
 typedef struct ADPCMDecodeContext {
@@ -262,6 +285,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     switch(avctx->codec->id) {
     case AV_CODEC_ID_ADPCM_IMA_AMV:
     case AV_CODEC_ID_ADPCM_N64:
+    case AV_CODEC_ID_ADPCM_RHETOREX:
         max_channels = 1;
         break;
     case AV_CODEC_ID_ADPCM_SANYO:
@@ -719,6 +743,34 @@ static inline int16_t adpcm_ct_expand_nibble(ADPCMChannelStatus *c, int8_t nibbl
     c->step = av_clip(new_step, 511, 32767);
 
     return (int16_t)c->predictor;
+}
+
+static inline int16_t adpcm_rhetorex_expand_nibble(ADPCMChannelStatus *c, uint16_t nibble)
+{
+    int delta, add, a, b;
+    int16_t sample;
+
+    delta = nibble & 7;
+    add = rhetorex_step[((c->step_index >> 8) & 0xF8) + delta];
+    if (nibble & 0x8)
+        add = -add;
+
+    sample = av_clip_int16(c->predictor + add);
+
+    a = 32768 * c->coeff1 + (add >> 1) * c->sample2;
+    c->coeff1 = av_clip_int16((a - ((a >> 7) & ~0xFF)) >> 15);
+
+    b = 32768 * c->coeff2 + (add >> 1) * c->sample1;
+    c->coeff2 = av_clip_int16((b - ((b >> 7) & ~0xFF) + 0x800000) >> 15);
+
+    c->predictor = av_clip_int16((c->coeff1 * c->sample1 + c->coeff2 * sample) >> 15);
+
+    c->sample2 = c->sample1;
+    c->sample1 = sample;
+
+    c->step_index = FFABS(64512 * c->step_index + 65536 * rhetorex_index[delta]) >> 16;
+
+    return sample;
 }
 
 static inline int16_t adpcm_sbpro_expand_nibble(ADPCMChannelStatus *c, int8_t nibble, int size, int shift)
@@ -1417,6 +1469,9 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         break;
     case AV_CODEC_ID_ADPCM_PSXC:
         nb_samples = ((buf_size - 1) / ch) * 2;
+        break;
+    case AV_CODEC_ID_ADPCM_RHETOREX:
+        nb_samples = buf_size * 2;
         break;
     case AV_CODEC_ID_ADPCM_ARGO:
         nb_samples = buf_size / avctx->block_align * 32;
@@ -2825,6 +2880,13 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         align_get_bits(&g);
         bytestream2_skip(&gb, get_bits_count(&g) / 8);
         ) /* End of CASE */
+    CASE(ADPCM_RHETOREX,
+        for (int i = 0; i < nb_samples / 2; i++) {
+            uint8_t byte = bytestream2_get_byteu(&gb);
+            *samples++ = adpcm_rhetorex_expand_nibble(c->status, byte >> 4);
+            *samples++ = adpcm_rhetorex_expand_nibble(c->status, byte);
+        }
+        ) /* End of CASE */
     CASE(ADPCM_ARGO,
         /*
          * The format of each block:
@@ -3015,6 +3077,7 @@ ADPCM_DECODER(ADPCM_MTAF,        adpcm_mtaf,        "ADPCM MTAF")
 ADPCM_DECODER(ADPCM_N64,         adpcm_n64,         "ADPCM Silicon Graphics N64")
 ADPCM_DECODER(ADPCM_PSX,         adpcm_psx,         "ADPCM Playstation")
 ADPCM_DECODER(ADPCM_PSXC,        adpcm_psxc,        "ADPCM Playstation C")
+ADPCM_DECODER(ADPCM_RHETOREX,    adpcm_rhetorex,    "ADPCM Rhetorex")
 ADPCM_DECODER(ADPCM_SANYO,       adpcm_sanyo,       "ADPCM Sanyo")
 ADPCM_DECODER(ADPCM_SBPRO_2,     adpcm_sbpro_2,     "ADPCM Sound Blaster Pro 2-bit")
 ADPCM_DECODER(ADPCM_SBPRO_3,     adpcm_sbpro_3,     "ADPCM Sound Blaster Pro 2.6-bit")
