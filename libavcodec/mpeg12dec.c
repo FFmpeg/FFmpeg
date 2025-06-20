@@ -402,7 +402,7 @@ static inline int get_dmv(Mpeg12SliceContext *const s)
 #define MT_16X8  2
 #define MT_DMV   3
 
-static int mpeg_decode_mb(Mpeg12SliceContext *const s)
+static int mpeg_decode_mb(Mpeg12SliceContext *const s, int *mb_skip_run)
 {
     int i, j, k, cbp, val, mb_type, motion_type;
     const int mb_block_count = 4 + (1 << s->c.chroma_format);
@@ -412,7 +412,7 @@ static int mpeg_decode_mb(Mpeg12SliceContext *const s)
 
     av_assert2(s->c.mb_skipped == 0);
 
-    if (s->c.mb_skip_run-- != 0) {
+    if ((*mb_skip_run)-- != 0) {
         if (s->c.pict_type == AV_PICTURE_TYPE_P) {
             s->c.mb_skipped = 1;
             s->c.cur_pic.mb_type[s->c.mb_x + s->c.mb_y * s->c.mb_stride] =
@@ -1432,7 +1432,6 @@ static int mpeg_decode_slice(Mpeg12SliceContext *const s, int mb_y,
 
     s->c.resync_mb_x = s->c.mb_x;
     s->c.resync_mb_y = s->c.mb_y = mb_y;
-    s->c.mb_skip_run = 0;
     ff_init_block_index(&s->c);
 
     if (s->c.mb_y == 0 && s->c.mb_x == 0 && (s->c.first_field || s->c.picture_structure == PICT_FRAME)) {
@@ -1456,8 +1455,8 @@ static int mpeg_decode_slice(Mpeg12SliceContext *const s, int mb_y,
         }
     }
 
-    for (;;) {
-        ret = mpeg_decode_mb(s);
+    for (int mb_skip_run = 0;;) {
+        ret = mpeg_decode_mb(s, &mb_skip_run);
         if (ret < 0)
             return ret;
 
@@ -1552,7 +1551,7 @@ static int mpeg_decode_slice(Mpeg12SliceContext *const s, int mb_y,
                 !s->c.progressive_sequence &&
                 left <= 25 &&
                 left >= 0 &&
-                s->c.mb_skip_run == -1 &&
+                mb_skip_run == -1 &&
                 (!left || show_bits(&s->gb, left) == 0))
                 goto eos;
 
@@ -1560,9 +1559,9 @@ static int mpeg_decode_slice(Mpeg12SliceContext *const s, int mb_y,
         }
 
         /* skip mb handling */
-        if (s->c.mb_skip_run == -1) {
+        if (mb_skip_run == -1) {
             /* read increment again */
-            s->c.mb_skip_run = 0;
+            mb_skip_run = 0;
             for (;;) {
                 int code = get_vlc2(&s->gb, ff_mbincr_vlc,
                                     MBINCR_VLC_BITS, 2);
@@ -1572,9 +1571,9 @@ static int mpeg_decode_slice(Mpeg12SliceContext *const s, int mb_y,
                 }
                 if (code >= 33) {
                     if (code == 33) {
-                        s->c.mb_skip_run += 33;
+                        mb_skip_run += 33;
                     } else if (code == 35) {
-                        if (s->c.mb_skip_run != 0 || show_bits(&s->gb, 15) != 0) {
+                        if (mb_skip_run != 0 || show_bits(&s->gb, 15) != 0) {
                             av_log(s->c.avctx, AV_LOG_ERROR, "slice mismatch\n");
                             return AVERROR_INVALIDDATA;
                         }
@@ -1582,11 +1581,11 @@ static int mpeg_decode_slice(Mpeg12SliceContext *const s, int mb_y,
                     }
                     /* otherwise, stuffing, nothing to do */
                 } else {
-                    s->c.mb_skip_run += code;
+                    mb_skip_run += code;
                     break;
                 }
             }
-            if (s->c.mb_skip_run) {
+            if (mb_skip_run) {
                 int i;
                 if (s->c.pict_type == AV_PICTURE_TYPE_I) {
                     av_log(s->c.avctx, AV_LOG_ERROR,
