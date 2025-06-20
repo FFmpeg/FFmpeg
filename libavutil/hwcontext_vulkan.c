@@ -144,6 +144,9 @@ typedef struct VulkanDevicePriv {
     /* Disable multiplane images */
     int disable_multiplane;
 
+    /* Disable host image transfer */
+    int disable_host_transfer;
+
     /* Maximum queues */
     int limit_queues;
 
@@ -1694,6 +1697,23 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
         goto end;
     }
 
+    /* Get device memory properties */
+    vk->GetPhysicalDeviceMemoryProperties(hwctx->phys_dev, &p->mprops);
+    VkDeviceSize max_vram = 0, max_visible_vram = 0;
+    for (int i = 0; i < p->mprops.memoryTypeCount; i++) {
+        const VkMemoryType type = p->mprops.memoryTypes[i];
+        const VkMemoryHeap heap = p->mprops.memoryHeaps[type.heapIndex];
+        if (!(type.propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
+            continue;
+        max_vram = FFMAX(max_vram, heap.size);
+        if (type.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+            max_visible_vram = FFMAX(max_visible_vram, heap.size);
+    }
+
+    /* Only use host image transfers if ReBAR is enabled */
+    const int has_rebar = max_vram - max_visible_vram < 1024; /* 1 kB tolerance */
+    p->disable_host_transfer = !has_rebar;
+
     /* Get all supported features for the physical device */
     device_features_init(ctx, &supported_feats);
     vk->GetPhysicalDeviceFeatures2(hwctx->phys_dev, &supported_feats.device);
@@ -1989,9 +2009,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         hwctx->lock_queue = lock_queue;
     if (!hwctx->unlock_queue)
         hwctx->unlock_queue = unlock_queue;
-
-    /* Get device capabilities */
-    vk->GetPhysicalDeviceMemoryProperties(hwctx->phys_dev, &p->mprops);
 
     p->vkctx.device = ctx;
     p->vkctx.hwctx = hwctx;
@@ -2835,7 +2852,7 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
                                           VK_IMAGE_USAGE_STORAGE_BIT      |
                                           VK_IMAGE_USAGE_SAMPLED_BIT);
 
-        if (p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY)
+        if ((p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY) && !p->disable_host_transfer)
             hwctx->usage |= supported_usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
 
         /* Enables encoding of images, if supported by format and extensions */
