@@ -433,11 +433,11 @@ static char *value_string(const AVTextFormatContext *tctx, char *buf, int buf_si
 }
 
 
-void avtext_print_unit_int(AVTextFormatContext *tctx, const char *key, int64_t value, const char *unit)
+void avtext_print_unit_integer(AVTextFormatContext *tctx, const char *key, int64_t val, const char *unit)
 {
     char val_str[128];
     struct unit_value uv;
-    uv.val.i = value;
+    uv.val.i = val;
     uv.unit = unit;
     avtext_print_string(tctx, key, value_string(tctx, val_str, sizeof(val_str), uv), 0);
 }

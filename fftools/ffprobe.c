@@ -429,7 +429,7 @@ static void log_callback(void *ptr, int level, const char *fmt, va_list vl)
 #define print_ts(k, v)          avtext_print_ts(tfc, k, v, 0)
 #define print_duration_time(k, v, tb) avtext_print_time(tfc, k, v, tb, 1)
 #define print_duration_ts(k, v)       avtext_print_ts(tfc, k, v, 1)
-#define print_val(k, v, u)      avtext_print_unit_int(tfc, k, v, u)
+#define print_val(k, v, u)      avtext_print_unit_integer(tfc, k, v, u)
 
 #define REALLOCZ_ARRAY_STREAM(ptr, cur_n, new_n)                        \
 {                                                                       \

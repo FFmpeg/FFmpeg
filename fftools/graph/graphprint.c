@@ -140,7 +140,7 @@ typedef struct GraphPrintContext {
 #define print_q(k, v, s)        avtext_print_rational(tfc, k, v, s)
 #define print_str(k, v)         avtext_print_string(tfc, k, v, 0)
 #define print_str_opt(k, v)     avtext_print_string(tfc, k, v, gpc->opt_flags)
-#define print_val(k, v, u)      avtext_print_unit_int(tfc, k, v, u)
+#define print_val(k, v, u)      avtext_print_unit_integer(tfc, k, v, u)
 
 #define print_fmt(k, f, ...) do {              \
     av_bprint_clear(&gpc->pbuf);                    \
