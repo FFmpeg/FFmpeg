@@ -433,7 +433,7 @@ static char *value_string(const AVTextFormatContext *tctx, char *buf, int buf_si
 }
 
 
-void avtext_print_unit_int(AVTextFormatContext *tctx, const char *key, int value, const char *unit)
+void avtext_print_unit_int(AVTextFormatContext *tctx, const char *key, int64_t value, const char *unit)
 {
     char val_str[128];
     struct unit_value uv;

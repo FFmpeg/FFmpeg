@@ -169,7 +169,7 @@ void avtext_print_integer(AVTextFormatContext *tctx, const char *key, int64_t va
 
 int avtext_print_string(AVTextFormatContext *tctx, const char *key, const char *val, int flags);
 
-void avtext_print_unit_int(AVTextFormatContext *tctx, const char *key, int value, const char *unit);
+void avtext_print_unit_int(AVTextFormatContext *tctx, const char *key, int64_t value, const char *unit);
 
 void avtext_print_rational(AVTextFormatContext *tctx, const char *key, AVRational q, char sep);
 
