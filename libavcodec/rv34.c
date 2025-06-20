@@ -1364,7 +1364,7 @@ static int check_slice_end(RV34DecContext *r, MpegEncContext *s)
         return 1;
     if (!r->mb_num_left)
         return 1;
-    if(r->s.mb_skip_run > 1)
+    if (r->mb_skip_run > 1)
         return 0;
     bits = get_bits_left(&r->gb);
     if (bits <= 0 || (bits < 8 && !show_bits(&r->gb, bits)))
@@ -1447,7 +1447,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
     r->si.end = end;
     s->qscale = r->si.quant;
     r->mb_num_left = r->si.end - r->si.start;
-    r->s.mb_skip_run = 0;
+    r->mb_skip_run = 0;
 
     mb_pos = s->mb_x + s->mb_y * s->mb_width;
     if(r->si.start != mb_pos){

@@ -231,13 +231,13 @@ static int rv40_decode_mb_info(RV34DecContext *r)
     int prev_type = 0;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
 
-    if(!r->s.mb_skip_run) {
-        r->s.mb_skip_run = get_interleaved_ue_golomb(gb) + 1;
-        if(r->s.mb_skip_run > (unsigned)s->mb_num)
+    if (!r->mb_skip_run) {
+        r->mb_skip_run = get_interleaved_ue_golomb(gb) + 1;
+        if (r->mb_skip_run > (unsigned)s->mb_num)
             return -1;
     }
 
-    if(--r->s.mb_skip_run)
+    if (--r->mb_skip_run)
          return RV34_MB_SKIP;
 
     if(r->avail_cache[6-4]){

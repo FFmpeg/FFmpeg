@@ -99,6 +99,7 @@ typedef struct RV34DecContext{
     SliceInfo si;            ///< current slice information
 
     int mb_num_left;         ///< number of MBs left in this video packet
+    int mb_skip_run;
 
     int *mb_type;            ///< internal macroblock types
     int block_type;          ///< current block type

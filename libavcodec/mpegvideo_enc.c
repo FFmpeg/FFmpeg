@@ -2647,11 +2647,12 @@ typedef struct MBBackup {
         int last_mv[2][2][2];
         int mv_type, mv_dir;
         int last_dc[3];
-        int mb_intra, mb_skipped, mb_skip_run;
+        int mb_intra, mb_skipped;
         int qscale;
         int block_last_index[8];
         int interlaced_dct;
     } c;
+    int mb_skip_run;
     int mv_bits, i_tex_bits, p_tex_bits, i_count, misc_bits, last_bits;
     int dquant;
     int esc3_level_length;
@@ -2667,7 +2668,7 @@ static inline void BEFORE ##_context_before_encode(DST_TYPE *const d,       \
     memcpy(d->c.last_mv, s->c.last_mv, 2*2*2*sizeof(int));                  \
                                                                             \
     /* MPEG-1 */                                                            \
-    d->c.mb_skip_run = s->c.mb_skip_run;                                    \
+    d->mb_skip_run = s->mb_skip_run;                                        \
     for (int i = 0; i < 3; i++)                                             \
         d->c.last_dc[i] = s->c.last_dc[i];                                  \
                                                                             \
@@ -2695,7 +2696,7 @@ static inline void AFTER ## _context_after_encode(DST_TYPE *const d,        \
     memcpy(d->c.last_mv, s->c.last_mv, 2*2*2*sizeof(int));                  \
                                                                             \
     /* MPEG-1 */                                                            \
-    d->c.mb_skip_run = s->c.mb_skip_run;                                    \
+    d->mb_skip_run = s->mb_skip_run;                                        \
     for (int i = 0; i < 3; i++)                                             \
         d->c.last_dc[i] = s->c.last_dc[i];                                  \
                                                                             \
@@ -3029,7 +3030,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
         ff_mpeg4_init_partitions(s);
 #endif
     }
-    s->c.mb_skip_run = 0;
+    s->mb_skip_run = 0;
     memset(s->c.last_mv, 0, sizeof(s->c.last_mv));
 
     s->last_mv_dir = 0;
@@ -3108,7 +3109,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     if (s->c.mb_x == 0 && s->c.mb_y != 0) is_gob_start = 1;
                 case AV_CODEC_ID_MPEG1VIDEO:
                     if (s->c.codec_id == AV_CODEC_ID_MPEG1VIDEO && s->c.mb_y >= 175 ||
-                        s->c.mb_skip_run)
+                        s->mb_skip_run)
                         is_gob_start=0;
                     break;
                 case AV_CODEC_ID_MJPEG:

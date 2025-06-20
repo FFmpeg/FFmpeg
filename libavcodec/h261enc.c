@@ -92,7 +92,7 @@ static int h261_encode_picture_header(MPVMainEncContext *const m)
 
     put_bits(&s->pb, 1, 0); /* no PEI */
     h->gob_number = h->format - 1;
-    s->c.mb_skip_run = 0;
+    s->mb_skip_run = 0;
 
     return 0;
 }
@@ -112,7 +112,7 @@ static void h261_encode_gob_header(MPVEncContext *const s, int mb_line)
     put_bits(&s->pb, 4, h->gob_number); /* GN */
     put_bits(&s->pb, 5, s->c.qscale);     /* GQUANT */
     put_bits(&s->pb, 1, 0);             /* no GEI */
-    s->c.mb_skip_run = 0;
+    s->mb_skip_run = 0;
     s->c.last_mv[0][0][0] = 0;
     s->c.last_mv[0][0][1] = 0;
 }
@@ -248,7 +248,7 @@ static void h261_encode_mb(MPVEncContext *const s, int16_t block[6][64],
 
         if ((cbp | mvd) == 0) {
             /* skip macroblock */
-            s->c.mb_skip_run++;
+            s->mb_skip_run++;
             s->c.last_mv[0][0][0] = 0;
             s->c.last_mv[0][0][1] = 0;
             s->c.qscale -= s->dquant;
@@ -258,9 +258,9 @@ static void h261_encode_mb(MPVEncContext *const s, int16_t block[6][64],
 
     /* MB is not skipped, encode MBA */
     put_bits(&s->pb,
-             ff_h261_mba_bits[s->c.mb_skip_run],
-             ff_h261_mba_code[s->c.mb_skip_run]);
-    s->c.mb_skip_run = 0;
+             ff_h261_mba_bits[s->mb_skip_run],
+             ff_h261_mba_code[s->mb_skip_run]);
+    s->mb_skip_run = 0;
 
     /* calculate MTYPE */
     if (!s->c.mb_intra) {

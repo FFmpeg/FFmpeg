@@ -196,7 +196,6 @@ typedef struct MpegEncContext {
 
     /* macroblock layer */
     int mb_x, mb_y;
-    int mb_skip_run;
     int mb_intra;
 
     int block_index[6]; ///< index to current MB in block based arrays with edges

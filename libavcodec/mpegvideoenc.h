@@ -136,6 +136,8 @@ typedef struct MPVEncContext {
     int misc_bits; ///< cbp, mb_type
     int last_bits; ///< temp var used for calculating the above vars
 
+    int mb_skip_run;
+
     /* H.263 specific */
     int mb_info;                   ///< interval for outputting info about mb offsets as side data
     int prev_mb_info, last_mb_info;
