@@ -50,6 +50,8 @@ typedef struct H263DecContext {
 
     GetBitContext gb;
 
+    int mb_num_left;            ///< number of MBs left in this video packet (for partitioned slices only)
+
     int pb_frame;     ///< PB-frame mode (0 = none, 1 = base, 2 = improved)
 
     /* motion compensation */

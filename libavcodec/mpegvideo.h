@@ -214,7 +214,6 @@ typedef struct MpegEncContext {
     /* error concealment / resync */
     int resync_mb_x;                 ///< x position of last resync marker
     int resync_mb_y;                 ///< y position of last resync marker
-    int mb_num_left;                 ///< number of MBs left in this video packet (for partitioned Slices only)
 
     /* H.263 specific */
     int gob_index;

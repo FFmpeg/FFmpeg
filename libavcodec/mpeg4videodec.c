@@ -1335,7 +1335,7 @@ int ff_mpeg4_decode_partitions(H263DecContext *const h)
         return AVERROR_INVALIDDATA;
     }
 
-    h->c.mb_num_left = mb_num;
+    h->mb_num_left = mb_num;
 
     if (h->c.pict_type == AV_PICTURE_TYPE_I) {
         while (show_bits(&h->gb, 9) == 1)
@@ -1723,7 +1723,7 @@ static int mpeg4_decode_partitioned_mb(H263DecContext *const h)
     }
 
     /* per-MB end of slice check */
-    if (--h->c.mb_num_left <= 0) {
+    if (--h->mb_num_left <= 0) {
         if (mpeg4_is_resync(ctx))
             return SLICE_END;
         else

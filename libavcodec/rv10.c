@@ -481,7 +481,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
     ff_init_block_index(&h->c);
 
     /* decode each macroblock */
-    for (h->c.mb_num_left = mb_count; h->c.mb_num_left > 0; h->c.mb_num_left--) {
+    for (h->mb_num_left = mb_count; h->mb_num_left > 0; h->mb_num_left--) {
         int ret;
         ff_update_block_index(&h->c, 8, h->c.avctx->lowres, 1);
         ff_tlog(avctx, "**mb x=%d y=%d\n", h->c.mb_x, h->c.mb_y);

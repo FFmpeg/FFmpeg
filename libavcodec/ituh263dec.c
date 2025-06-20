@@ -1061,7 +1061,7 @@ intra:
         return -1;
     if (h->c.obmc && !h->c.mb_intra) {
         if (h->c.pict_type == AV_PICTURE_TYPE_P &&
-            h->c.mb_x + 1 < h->c.mb_width && h->c.mb_num_left != 1)
+            h->c.mb_x + 1 < h->c.mb_width && h->mb_num_left != 1)
             preview_obmc(h);
     }
 end:

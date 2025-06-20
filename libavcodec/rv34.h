@@ -98,6 +98,8 @@ typedef struct RV34DecContext{
     H264PredContext h;       ///< functions for 4x4 and 16x16 intra block prediction
     SliceInfo si;            ///< current slice information
 
+    int mb_num_left;         ///< number of MBs left in this video packet
+
     int *mb_type;            ///< internal macroblock types
     int block_type;          ///< current block type
     int luma_vlc;            ///< which VLC set will be used for decoding of luma blocks

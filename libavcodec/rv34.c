@@ -1362,7 +1362,7 @@ static int check_slice_end(RV34DecContext *r, MpegEncContext *s)
     int bits;
     if(s->mb_y >= s->mb_height)
         return 1;
-    if(!s->mb_num_left)
+    if (!r->mb_num_left)
         return 1;
     if(r->s.mb_skip_run > 1)
         return 0;
@@ -1446,7 +1446,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
 
     r->si.end = end;
     s->qscale = r->si.quant;
-    s->mb_num_left = r->si.end - r->si.start;
+    r->mb_num_left = r->si.end - r->si.start;
     r->s.mb_skip_run = 0;
 
     mb_pos = s->mb_x + s->mb_y * s->mb_width;
@@ -1492,7 +1492,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
         }
         if(s->mb_x == s->resync_mb_x)
             s->first_slice_line=0;
-        s->mb_num_left--;
+        r->mb_num_left--;
     }
     ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END);
 
@@ -1579,7 +1579,7 @@ static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
 
     ff_er_frame_end(&s->er, NULL);
     ff_mpv_frame_end(s);
-    s->mb_num_left = 0;
+    r->mb_num_left = 0;
 
     if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
         ff_thread_progress_report(&s->cur_pic.ptr->progress, INT_MAX);
@@ -1667,9 +1667,9 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
     /* first slice */
     if (si.start == 0) {
-        if (s->mb_num_left > 0 && s->cur_pic.ptr) {
+        if (r->mb_num_left > 0 && s->cur_pic.ptr) {
             av_log(avctx, AV_LOG_ERROR, "New frame but still %d MB left.\n",
-                   s->mb_num_left);
+                   r->mb_num_left);
             if (!s->context_reinit)
                 ff_er_frame_end(&s->er, NULL);
             ff_mpv_frame_end(s);
@@ -1772,7 +1772,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         size = offset1 - offset;
 
         r->si.end = s->mb_width * s->mb_height;
-        s->mb_num_left = r->s.mb_x + r->s.mb_y*r->s.mb_width - r->si.start;
+        r->mb_num_left = r->s.mb_x + r->s.mb_y*r->s.mb_width - r->si.start;
 
         if(i+1 < slice_count){
             int offset2 = get_slice_offset(avctx, slices_hdr, i+2, slice_count, buf_size);
@@ -1808,7 +1808,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
              * only complete frames */
             ff_er_frame_end(&s->er, NULL);
             ff_mpv_frame_end(s);
-            s->mb_num_left = 0;
+            r->mb_num_left = 0;
             ff_thread_progress_report(&s->cur_pic.ptr->progress, INT_MAX);
             return AVERROR_INVALIDDATA;
         }
