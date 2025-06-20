@@ -1889,7 +1889,7 @@ static int palette_signaled(VVCLocalContext *lc, const bool local_dual_tree,
     const int size            = nb_predicted + nb_signaled;
     const bool dual_tree_luma = local_dual_tree && cu->tree_type == DUAL_TREE_LUMA;
 
-    if (size > max_entries)
+    if (size > max_entries || nb_signaled < 0)
         return AVERROR_INVALIDDATA;
 
     for (int c = start; c < end; c++) {
