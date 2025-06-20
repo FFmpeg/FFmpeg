@@ -285,11 +285,6 @@ typedef struct MpegEncContext {
     int interlaced_dct;
     int first_field;         ///< is 1 for the first field of a field picture 0 otherwise
 
-#define SLICE_OK         0
-#define SLICE_ERROR     -1
-#define SLICE_END       -2 ///<end marker found
-#define SLICE_NOEND     -3 ///<no end marker or error found but mb count exceeded
-
     void (*dct_unquantize_intra)(struct MpegEncContext *s, // unquantizer to use (MPEG-4 can use both)
                            int16_t *block/*align 16*/, int n, int qscale);
     void (*dct_unquantize_inter)(struct MpegEncContext *s, // unquantizer to use (MPEG-4 can use both)

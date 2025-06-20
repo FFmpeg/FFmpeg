@@ -73,6 +73,10 @@ typedef struct H263DecContext {
     int rv10_first_dc_coded[3];
 
     int (*decode_mb)(struct H263DecContext *h);
+#define SLICE_OK         0
+#define SLICE_ERROR     -1
+#define SLICE_END       -2 ///<end marker found
+#define SLICE_NOEND     -3 ///<no end marker or error found but mb count exceeded
 
     GetBitContext last_resync_gb;    ///< used to search for the next resync marker
 

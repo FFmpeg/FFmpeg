@@ -37,6 +37,10 @@
 #include "mpegvideodec.h"
 #include "h261.h"
 
+#define SLICE_OK         0
+#define SLICE_ERROR     -1
+#define SLICE_END       -2 ///<end marker found
+
 #define H261_MBA_VLC_BITS 8
 #define H261_MTYPE_VLC_BITS 6
 #define H261_MV_VLC_BITS 7
