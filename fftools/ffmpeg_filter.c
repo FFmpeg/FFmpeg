@@ -2669,6 +2669,22 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
     while (fgp->nb_outputs_done < fg->nb_outputs) {
         int ret;
 
+        /* Reap all buffers present in the buffer sinks */
+        for (int i = 0; i < fg->nb_outputs; i++) {
+            OutputFilterPriv *ofp = ofp_from_ofilter(fg->outputs[i]);
+
+            ret = 0;
+            while (!ret) {
+                ret = fg_output_step(ofp, fgt, frame);
+                if (ret < 0)
+                    return ret;
+            }
+        }
+
+        // return after one iteration, so that scheduler can rate-control us
+        if (did_step && fgp->have_sources)
+            return 0;
+
         ret = avfilter_graph_request_oldest(fgt->graph);
         if (ret == AVERROR(EAGAIN)) {
             fgt->next_in = choose_input(fg, fgt);
@@ -2684,21 +2700,6 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
         }
         fgt->next_in = fg->nb_inputs;
 
-        // return after one iteration, so that scheduler can rate-control us
-        if (did_step && fgp->have_sources)
-            return 0;
-
-        /* Reap all buffers present in the buffer sinks */
-        for (int i = 0; i < fg->nb_outputs; i++) {
-            OutputFilterPriv *ofp = ofp_from_ofilter(fg->outputs[i]);
-
-            ret = 0;
-            while (!ret) {
-                ret = fg_output_step(ofp, fgt, frame);
-                if (ret < 0)
-                    return ret;
-            }
-        }
         did_step = 1;
     }
 
