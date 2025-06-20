@@ -37,11 +37,18 @@ void ff_vvc_prof_grad_filter_8x_neon(int16_t *gradient_h,
                                      ptrdiff_t src_stride,
                                      int width, int height);
 
-void ff_vvc_derive_bdof_vx_vy_neon(const int16_t *_src0, const int16_t *_src1,
-                                   int pad_mask,
-                                   const int16_t **gradient_h,
-                                   const int16_t **gradient_v,
-                                   int16_t *vx, int16_t *vy);
+void ff_vvc_derive_bdof_vx_vy_8x_neon(const int16_t *_src0,
+                                      const int16_t *_src1,
+                                      int16_t *const gradient_h[2],
+                                      int16_t *const gradient_v[2],
+                                      int16_t vx[16], int16_t vy[16],
+                                      int block_h);
+void ff_vvc_derive_bdof_vx_vy_16x_neon(const int16_t *_src0,
+                                       const int16_t *_src1,
+                                       int16_t *const gradient_h[2],
+                                       int16_t *const gradient_v[2],
+                                       int16_t vx[16], int16_t vy[16],
+                                       int block_h);
 #define BIT_DEPTH 8
 #include "alf_template.c"
 #include "of_template.c"
