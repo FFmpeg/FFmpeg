@@ -1207,16 +1207,14 @@ static int forward_status_change(AVFilterContext *filter, FilterLinkInternal *li
 static int ff_filter_activate_default(AVFilterContext *filter)
 {
     unsigned i;
+    int nb_eofs = 0;
 
-    for (i = 0; i < filter->nb_outputs; i++) {
-        FilterLinkInternal *li = ff_link_internal(filter->outputs[i]);
-        int ret = li->status_in;
-
-        if (ret) {
-            for (int j = 0; j < filter->nb_inputs; j++)
-                ff_inlink_set_status(filter->inputs[j], ret);
-            return 0;
-        }
+    for (i = 0; i < filter->nb_outputs; i++)
+        nb_eofs += ff_outlink_get_status(filter->outputs[i]) == AVERROR_EOF;
+    if (filter->nb_outputs && nb_eofs == filter->nb_outputs) {
+        for (int j = 0; j < filter->nb_inputs; j++)
+            ff_inlink_set_status(filter->inputs[j], AVERROR_EOF);
+        return 0;
     }
 
     for (i = 0; i < filter->nb_inputs; i++) {
