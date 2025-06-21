@@ -633,11 +633,6 @@ static int encode_preinit_audio(AVCodecContext *avctx)
                avctx->sample_fmt);
         return AVERROR(EINVAL);
     }
-    if (avctx->sample_rate <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid audio sample rate: %d\n",
-               avctx->sample_rate);
-        return AVERROR(EINVAL);
-    }
 
     ret = avcodec_get_supported_config(avctx, NULL, AV_CODEC_CONFIG_SAMPLE_FORMAT,
                                        0, (const void **) &sample_fmts,

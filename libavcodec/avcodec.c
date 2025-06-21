@@ -255,7 +255,11 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         }
     }
 
-    if (avctx->sample_rate < 0) {
+    /* AV_CODEC_CAP_CHANNEL_CONF is a decoder-only flag; so the code below
+     * in particular checks that sample_rate is set for all audio encoders. */
+    if (avctx->sample_rate < 0 ||
+        avctx->sample_rate == 0 && avctx->codec_type == AVMEDIA_TYPE_AUDIO &&
+        !(codec->capabilities & AV_CODEC_CAP_CHANNEL_CONF)) {
         av_log(avctx, AV_LOG_ERROR, "Invalid sample rate: %d\n", avctx->sample_rate);
         ret = AVERROR(EINVAL);
         goto free_and_end;
