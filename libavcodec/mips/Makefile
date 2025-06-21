@@ -1,12 +1,36 @@
 ARCH_HEADERS                               = cabac.h compute_antialias_fixed.h \
                                              compute_antialias_float.h     \
 
+MIPSFPU-OBJS-$(CONFIG_ACELP_KELVIN_DECODER) += mips/acelp_filters_mips.o   \
+                                             mips/celp_filters_mips.o      \
+                                             mips/acelp_vectors_mips.o
 MIPSFPU-OBJS-$(CONFIG_AMRNB_DECODER)      += mips/acelp_filters_mips.o     \
                                              mips/celp_filters_mips.o      \
                                              mips/acelp_vectors_mips.o
 MIPSFPU-OBJS-$(CONFIG_AMRWB_DECODER)      += mips/acelp_filters_mips.o     \
                                              mips/celp_filters_mips.o      \
                                              mips/amrwbdec_mips.o          \
+                                             mips/acelp_vectors_mips.o
+MIPSFPU-OBJS-$(CONFIG_COMFORTNOISE_DECODER) += mips/celp_filters_mips.o
+MIPSFPU-OBJS-$(CONFIG_EVRC_DECODER)       += mips/acelp_vectors_mips.o
+MIPSFPU-OBJS-$(CONFIG_G723_1_DECODER)     += mips/celp_filters_mips.o      \
+                                             mips/acelp_vectors_mips.o
+MIPSFPU-OBJS-$(CONFIG_G723_1_ENCODER)     += mips/celp_filters_mips.o      \
+                                             mips/acelp_vectors_mips.o
+MIPSFPU-OBJS-$(CONFIG_G729_DECODER)       += mips/acelp_filters_mips.o     \
+                                             mips/celp_filters_mips.o      \
+                                             mips/acelp_vectors_mips.o
+MIPSFPU-OBJS-$(CONFIG_QCELP_DECODER)      += mips/acelp_filters_mips.o     \
+                                             mips/celp_filters_mips.o      \
+                                             mips/acelp_vectors_mips.o
+MIPSFPU-OBJS-$(CONFIG_RA_144_DECODER)     += mips/celp_filters_mips.o
+MIPSFPU-OBJS-$(CONFIG_RA_144_ENCODER)     += mips/celp_filters_mips.o
+MIPSFPU-OBJS-$(CONFIG_RA_288_DECODER)     += mips/celp_filters_mips.o
+MIPSFPU-OBJS-$(CONFIG_SIPR_DECODER)       += mips/acelp_filters_mips.o     \
+                                             mips/celp_filters_mips.o      \
+                                             mips/acelp_vectors_mips.o
+MIPSFPU-OBJS-$(CONFIG_WMAVOICE_DECODER)   += mips/acelp_filters_mips.o     \
+                                             mips/celp_filters_mips.o      \
                                              mips/acelp_vectors_mips.o
 MIPSFPU-OBJS-$(CONFIG_CELP_MATH)          += mips/celp_math_mips.o
 MIPSFPU-OBJS-$(CONFIG_MPEGAUDIODSP)       += mips/mpegaudiodsp_mips_float.o
