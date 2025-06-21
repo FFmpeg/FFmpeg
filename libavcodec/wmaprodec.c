@@ -370,14 +370,6 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx, int nu
     int log2_max_num_subframes;
     int num_possible_block_sizes;
 
-    if (avctx->codec_id == AV_CODEC_ID_XMA1 || avctx->codec_id == AV_CODEC_ID_XMA2)
-        avctx->block_align = 2048;
-
-    if (!avctx->block_align) {
-        av_log(avctx, AV_LOG_ERROR, "block_align is not set\n");
-        return AVERROR(EINVAL);
-    }
-
     s->avctx = avctx;
 
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
@@ -602,6 +594,11 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx, int nu
 static av_cold int wmapro_decode_init(AVCodecContext *avctx)
 {
     WMAProDecodeCtx *s = avctx->priv_data;
+
+    if (!avctx->block_align) {
+        av_log(avctx, AV_LOG_ERROR, "block_align is not set\n");
+        return AVERROR(EINVAL);
+    }
 
     return decode_init(s, avctx, 0);
 }
@@ -1956,6 +1953,8 @@ static av_cold int xma_decode_init(AVCodecContext *avctx)
 {
     XMADecodeCtx *s = avctx->priv_data;
     int i, ret, start_channels = 0;
+
+    avctx->block_align = 2048;
 
     if (avctx->ch_layout.nb_channels <= 0 || avctx->extradata_size == 0)
         return AVERROR_INVALIDDATA;
