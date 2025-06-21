@@ -367,10 +367,10 @@ static const uint8_t* derive_scale_m(const VVCLocalContext *lc, const TransformB
     const int log2_matrix_size = (id < 2) ? 1 : (id < 8) ? 2 : 3;
     uint8_t *p = scale_m;
 
-    av_assert0(!sps->r->sps_scaling_matrix_for_alternative_colour_space_disabled_flag);
-
     if (!rsh->sh_explicit_scaling_list_used_flag || tb->ts ||
-        sps->r->sps_scaling_matrix_for_lfnst_disabled_flag && cu->apply_lfnst_flag[tb->c_idx])
+        (sps->r->sps_scaling_matrix_for_lfnst_disabled_flag && cu->apply_lfnst_flag[tb->c_idx]) ||
+        (sps->r->sps_scaling_matrix_for_alternative_colour_space_disabled_flag &&
+            sps->r->sps_scaling_matrix_designated_colour_space_flag == cu->act_enabled_flag))
         return ff_vvc_default_scale_m;
 
     if (!sl) {
