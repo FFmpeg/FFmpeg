@@ -236,6 +236,8 @@ static int FUNC(tile)(CodedBitstreamContext *ctx, RWContext *rw,
 #ifdef READ
         int pos = get_bits_count(rw);
         av_assert0(pos % 8 == 0);
+        if (get_bits_left(rw) < 8LL * comp_size)
+            return AVERROR_INVALIDDATA;
         current->tile_data[c] = (uint8_t*)align_get_bits(rw);
         skip_bits_long(rw, 8 * comp_size);
 #else
