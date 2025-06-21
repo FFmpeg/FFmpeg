@@ -277,7 +277,7 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
             if (size < 2)
                 return AVERROR_INVALIDDATA;
             st->codecpar->channels       = avio_rb16(pb);
-            if (size < 2 + st->codecpar->channels * 4)
+            if (size < 2 + st->codecpar->channels * 4 || !st->codecpar->channels      )
                 return AVERROR_INVALIDDATA;
             st->codecpar->channel_layout = 0;
             if (st->codecpar->channels > FF_ARRAY_ELEMS(dsd_layout)) {
