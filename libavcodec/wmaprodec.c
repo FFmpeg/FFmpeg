@@ -471,11 +471,6 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx, int nu
         return AVERROR_INVALIDDATA;
     }
 
-    if (s->avctx->sample_rate <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "invalid sample rate\n");
-        return AVERROR_INVALIDDATA;
-    }
-
     if (s->nb_channels <= 0) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels %d\n",
                s->nb_channels);
