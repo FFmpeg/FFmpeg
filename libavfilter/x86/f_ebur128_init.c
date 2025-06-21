@@ -26,10 +26,15 @@
 void ff_ebur128_filter_channels_avx(const EBUR128DSPContext *, const double *,
                                     double *, double *, double *, double *, int);
 
-av_cold void ff_ebur128_init_x86(EBUR128DSPContext *dsp)
+double ff_ebur128_find_peak_2ch_avx(double *, int, const double *, int);
+
+av_cold void ff_ebur128_init_x86(EBUR128DSPContext *dsp, int nb_channels)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (ARCH_X86_64 && EXTERNAL_AVX(cpu_flags))
+    if (ARCH_X86_64 && EXTERNAL_AVX(cpu_flags)) {
         dsp->filter_channels = ff_ebur128_filter_channels_avx;
+        if (nb_channels == 2)
+            dsp->find_peak = ff_ebur128_find_peak_2ch_avx;
+    }
 }

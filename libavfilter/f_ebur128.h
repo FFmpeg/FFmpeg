@@ -55,7 +55,7 @@ static_assert(offsetof(EBUR128DSPContext, pre) == 0,                   "struct l
 static_assert(offsetof(EBUR128DSPContext, rlb) == 5  * sizeof(double), "struct layout mismatch");
 static_assert(offsetof(EBUR128DSPContext, y)   == 10 * sizeof(double), "struct layout mismatch");
 
-void ff_ebur128_init_x86(EBUR128DSPContext *dsp);
+void ff_ebur128_init_x86(EBUR128DSPContext *dsp, int nb_channels);
 
 void ff_ebur128_filter_channels_c(const EBUR128DSPContext *, const double *,
                                   double *, double *, double *, double *, int);

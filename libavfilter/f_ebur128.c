@@ -502,6 +502,9 @@ static int config_audio_output(AVFilterLink *outlink)
             return AVERROR(ENOMEM);
     }
 
+#if ARCH_X86
+    ff_ebur128_init_x86(&ebur128->dsp, nb_channels);
+#endif
     return 0;
 }
 
@@ -581,11 +584,6 @@ static av_cold int init(AVFilterContext *ctx)
 
     ebur128->dsp.filter_channels = ff_ebur128_filter_channels_c;
     ebur128->dsp.find_peak = ff_ebur128_find_peak_c;
-
-#if ARCH_X86
-    ff_ebur128_init_x86(&ebur128->dsp);
-#endif
-
     return 0;
 }
 
