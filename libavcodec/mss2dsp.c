@@ -56,7 +56,7 @@ static av_always_inline void mss2_blit_wmv9_template(uint8_t *dst,
                 }
             }
         }
-        mask +=  mask_stride;
+        mask  = FF_PTR_ADD(mask, mask_stride);
         dst  +=   dst_stride;
         srcy +=  srcy_stride;
         srcu += srcuv_stride * (r & 1);
