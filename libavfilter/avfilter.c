@@ -1288,6 +1288,10 @@ static int filter_activate_default(AVFilterContext *filter)
         if (li->frame_wanted_out)
             return request_frame_to_filter(filter->outputs[i]);
     }
+    if (!filter->nb_outputs) {
+        ff_inlink_request_frame(filter->inputs[0]);
+        return 0;
+    }
     return FFERROR_NOT_READY;
 }
 
@@ -1427,6 +1431,11 @@ static int filter_activate_default(AVFilterContext *filter)
      Rationale: even if all inputs are blocked an activate callback should
      request a frame on some if its inputs if a frame is requested on any of
      its output.
+
+   - Request a frame on the input for sinks.
+
+     Rationale: sinks using the old api have no way to request a frame on their
+     input, so we need to do it for them.
  */
 
 int ff_filter_activate(AVFilterContext *filter)
