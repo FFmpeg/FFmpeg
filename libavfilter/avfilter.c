@@ -1283,6 +1283,11 @@ static int filter_activate_default(AVFilterContext *filter)
             return request_frame_to_filter(filter->outputs[i]);
         }
     }
+    for (i = 0; i < filter->nb_outputs; i++) {
+        FilterLinkInternal * const li = ff_link_internal(filter->outputs[i]);
+        if (li->frame_wanted_out)
+            return request_frame_to_filter(filter->outputs[i]);
+    }
     return FFERROR_NOT_READY;
 }
 
@@ -1416,6 +1421,12 @@ static int filter_activate_default(AVFilterContext *filter)
      Rationale: checking frame_blocked_in is necessary to avoid requesting
      repeatedly on a blocked input if another is not blocked (example:
      [buffersrc1][testsrc1][buffersrc2][testsrc2]concat=v=2).
+
+   - If an output has frame_wanted_out > 0 call request_frame().
+
+     Rationale: even if all inputs are blocked an activate callback should
+     request a frame on some if its inputs if a frame is requested on any of
+     its output.
  */
 
 int ff_filter_activate(AVFilterContext *filter)
