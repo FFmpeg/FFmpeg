@@ -536,7 +536,7 @@ static void h263_encode_block(MPVEncContext *const s, int16_t block[], int n)
             code = get_rl_index(rl, last, run, level);
             put_bits(&s->pb, rl->table_vlc[code][1], rl->table_vlc[code][0]);
             if (code == rl->n) {
-                if (!CONFIG_FLV_ENCODER || s->c.h263_flv <= 1) {
+                if (!CONFIG_FLV_ENCODER || s->c.codec_id != AV_CODEC_ID_FLV1) {
                     put_bits(&s->pb, 1, last);
                     put_bits(&s->pb, 6, run);
 
@@ -861,13 +861,9 @@ av_cold void ff_h263_encode_init(MPVMainEncContext *const m)
 #if CONFIG_FLV_ENCODER
     case AV_CODEC_ID_FLV1:
         m->encode_picture_header = ff_flv_encode_picture_header;
-        if (s->c.h263_flv > 1) {
-            s->min_qcoeff= -1023;
-            s->max_qcoeff=  1023;
-        } else {
-            s->min_qcoeff= -127;
-            s->max_qcoeff=  127;
-        }
+        /* format = 1; 11-bit codes */
+        s->min_qcoeff = -1023;
+        s->max_qcoeff =  1023;
         break;
 #endif
     default: //nothing needed - default table already set in mpegvideo.c

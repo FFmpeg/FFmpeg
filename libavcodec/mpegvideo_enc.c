@@ -936,7 +936,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         break;
     case AV_CODEC_ID_FLV1:
         s->c.out_format      = FMT_H263;
-        s->c.h263_flv        = 2; /* format = 1; 11-bit codes */
         s->me.unrestricted_mv = 1;
         s->rtp_mode  = 0; /* don't allow GOB */
         avctx->delay = 0;

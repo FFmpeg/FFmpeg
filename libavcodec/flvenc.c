@@ -33,7 +33,7 @@ int ff_flv_encode_picture_header(MPVMainEncContext *const m)
 
     put_bits(&s->pb, 17, 1);
     /* 0: H.263 escape codes 1: 11-bit escape codes */
-    put_bits(&s->pb, 5, (s->c.h263_flv - 1));
+    put_bits(&s->pb, 5, 1);
     put_bits(&s->pb, 8,
              (((int64_t) s->c.picture_number * 30 * s->c.avctx->time_base.num) /   // FIXME use timestamp
               s->c.avctx->time_base.den) & 0xff);   /* TemporalReference */
