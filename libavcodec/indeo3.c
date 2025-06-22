@@ -691,9 +691,11 @@ static int decode_cell(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
             }
 
             zoom_fac = mode == 10;
-            error = decode_cell_data(ctx, cell, block, ref_block, plane->pitch,
-                                     zoom_fac, 1, mode, delta, swap_quads,
-                                     &data_ptr, last_ptr);
+            av_assert2(!ref_block);
+            error = decode_cell_data(ctx, cell, block,
+                                     block /* dummy to avoid UB pointer arithmetic */,
+                                     plane->pitch, zoom_fac, 1, mode, delta,
+                                     swap_quads, &data_ptr, last_ptr);
         }
         break;
     default:
