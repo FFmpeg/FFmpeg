@@ -360,45 +360,6 @@ static av_cold void msmpeg4_decode_init_static(void)
     ff_msmp4_vc1_vlcs_init_once();
 }
 
-av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
-{
-    static AVOnce init_static_once = AV_ONCE_INIT;
-    H263DecContext *const h = avctx->priv_data;
-    int ret;
-
-    if ((ret = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0)
-        return ret;
-
-    if (ff_h263_decode_init(avctx) < 0)
-        return -1;
-
-    // We unquantize inter blocks as we parse them.
-    h->c.dct_unquantize_inter = NULL;
-
-    ff_msmpeg4_common_init(&h->c);
-
-    switch (h->c.msmpeg4_version) {
-    case MSMP4_V1:
-    case MSMP4_V2:
-        h->decode_mb = msmpeg4v12_decode_mb;
-        break;
-    case MSMP4_V3:
-    case MSMP4_WMV1:
-        h->decode_mb = msmpeg4v34_decode_mb;
-        break;
-    case MSMP4_WMV2:
-        break;
-    default:
-        av_unreachable("List contains all cases using ff_msmpeg4_decode_init()");
-    }
-
-    h->c.slice_height = h->c.mb_height; //to avoid 1/0 if the first frame is not a keyframe
-
-    ff_thread_once(&init_static_once, msmpeg4_decode_init_static);
-
-    return 0;
-}
-
 int ff_msmpeg4_decode_picture_header(H263DecContext *const h)
 {
     MSMP4DecContext *const ms = mpv_to_msmpeg4(h);
@@ -868,6 +829,46 @@ void ff_msmpeg4_decode_motion(MSMP4DecContext *const ms, int *mx_ptr, int *my_pt
         my -= 64;
     *mx_ptr = mx;
     *my_ptr = my;
+}
+
+av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
+{
+    static AVOnce init_static_once = AV_ONCE_INIT;
+    H263DecContext *const h = avctx->priv_data;
+    int ret;
+
+    ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
+    if (ret < 0)
+        return ret;
+
+    if (ff_h263_decode_init(avctx) < 0)
+        return -1;
+
+    // We unquantize inter blocks as we parse them.
+    h->c.dct_unquantize_inter = NULL;
+
+    ff_msmpeg4_common_init(&h->c);
+
+    switch (h->c.msmpeg4_version) {
+    case MSMP4_V1:
+    case MSMP4_V2:
+        h->decode_mb = msmpeg4v12_decode_mb;
+        break;
+    case MSMP4_V3:
+    case MSMP4_WMV1:
+        h->decode_mb = msmpeg4v34_decode_mb;
+        break;
+    case MSMP4_WMV2:
+        break;
+    default:
+        av_unreachable("List contains all cases using ff_msmpeg4_decode_init()");
+    }
+
+    h->c.slice_height = h->c.mb_height; //to avoid 1/0 if the first frame is not a keyframe
+
+    ff_thread_once(&init_static_once, msmpeg4_decode_init_static);
+
+    return 0;
 }
 
 const FFCodec ff_msmpeg4v1_decoder = {
