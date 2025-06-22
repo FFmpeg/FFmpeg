@@ -324,7 +324,7 @@ static inline uint32_t replicate32(uint32_t a) {
 
 /* Fill n lines with 64-bit pixel value pix */
 static inline void fill_64(uint8_t *dst, const uint64_t pix, int32_t n,
-                           int32_t row_offset)
+                           ptrdiff_t row_offset)
 {
     for (; n > 0; dst += row_offset, n--)
         AV_WN64A(dst, pix);
@@ -441,10 +441,9 @@ static int decode_cell_data(Indeo3DecodeContext *ctx, Cell *cell,
     unsigned int  dyad1, dyad2;
     uint64_t      pix64;
     int           skip_flag = 0, is_top_of_cell, is_first_row = 1;
-    int           blk_row_offset, line_offset;
 
-    blk_row_offset = (row_offset << (2 + v_zoom)) - (cell->width << 2);
-    line_offset    = v_zoom ? row_offset : 0;
+    const ptrdiff_t blk_row_offset = (row_offset << (2 + v_zoom)) - (cell->width << 2);
+    const ptrdiff_t line_offset    = v_zoom ? row_offset : 0;
 
     if (cell->height & v_zoom || cell->width & h_zoom)
         return IV3_BAD_DATA;
