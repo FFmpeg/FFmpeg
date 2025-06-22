@@ -25,11 +25,11 @@
  * DFPWM1a encoder
  */
 
-#include "libavutil/internal.h"
 #include "avcodec.h"
 #include "codec_id.h"
 #include "codec_internal.h"
 #include "encode.h"
+#include "internal.h"
 
 typedef struct {
     int fq, q, s, lt;
@@ -85,6 +85,10 @@ static av_cold int dfpwm_enc_init(struct AVCodecContext *ctx)
     state->lt = -128;
 
     ctx->bits_per_coded_sample = 1;
+    // Pad so that nb_samples * nb_channels is always a multiple of eight.
+    ctx->internal->pad_samples = (const uint8_t[]){ 1, 8, 4, 8, 2, 8, 4, 8 }[ctx->ch_layout.nb_channels & 7];
+    if (ctx->frame_size <= 0 || ctx->frame_size * ctx->ch_layout.nb_channels % 8U)
+        ctx->frame_size = 4096;
 
     return 0;
 }
@@ -93,7 +97,7 @@ static int dfpwm_enc_frame(struct AVCodecContext *ctx, struct AVPacket *packet,
     const struct AVFrame *frame, int *got_packet)
 {
     DFPWMState *state = ctx->priv_data;
-    int size = frame->nb_samples * frame->ch_layout.nb_channels / 8 + (frame->nb_samples % 8 > 0 ? 1 : 0);
+    int size = frame->nb_samples * frame->ch_layout.nb_channels / 8U;
     int ret = ff_get_encode_buffer(ctx, packet, size, 0);
 
     if (ret) {
@@ -112,10 +116,9 @@ const FFCodec ff_dfpwm_encoder = {
     CODEC_LONG_NAME("DFPWM1a audio"),
     .p.type          = AVMEDIA_TYPE_AUDIO,
     .p.id            = AV_CODEC_ID_DFPWM,
+    .p.capabilities  = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size  = sizeof(DFPWMState),
     .init            = dfpwm_enc_init,
     FF_CODEC_ENCODE_CB(dfpwm_enc_frame),
     CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_U8),
-    .p.capabilities  = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE |
-                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
 };
