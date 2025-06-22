@@ -51,10 +51,7 @@ void ff_mpeg_er_frame_start(MpegEncContext *s)
     set_erpic(&er->next_pic, s->next_pic.ptr);
     set_erpic(&er->last_pic, s->last_pic.ptr);
 
-    er->pp_time           = s->pp_time;
-    er->pb_time           = s->pb_time;
     er->quarter_sample    = s->quarter_sample;
-    er->partitioned_frame = s->partitioned_frame;
 
     ff_er_frame_start(er);
 }

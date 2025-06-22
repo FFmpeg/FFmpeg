@@ -551,7 +551,8 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             return ret;
     }
 
-    ff_mpeg_er_frame_start(s);
+    ff_mpv_er_frame_start_ext(s, s->partitioned_frame,
+                              s->pp_time, s->pb_time);
 
     /* the second part of the wmv2 header contains the MB skip bits which
      * are stored in current_picture->mb_type which is not available before

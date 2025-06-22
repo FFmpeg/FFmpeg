@@ -24,4 +24,13 @@
 int ff_mpeg_er_init(MpegEncContext *s);
 void ff_mpeg_er_frame_start(MpegEncContext *s);
 
+static inline void ff_mpv_er_frame_start_ext(MPVContext *const s, int partitioned_frame,
+                                             uint16_t pp_time, uint16_t pb_time)
+{
+    s->er.partitioned_frame = partitioned_frame;
+    s->er.pp_time           = pp_time;
+    s->er.pb_time           = pb_time;
+    ff_mpeg_er_frame_start(s);
+}
+
 #endif /* AVCODEC_MPEG_ER_H */

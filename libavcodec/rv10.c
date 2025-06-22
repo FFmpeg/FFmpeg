@@ -451,7 +451,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
         }
         if ((ret = ff_mpv_frame_start(&h->c, avctx)) < 0)
             return ret;
-        ff_mpeg_er_frame_start(&h->c);
+        ff_mpv_er_frame_start_ext(&h->c, 0, h->c.pp_time, h->c.pb_time);
     } else {
         if (h->c.cur_pic.ptr->f->pict_type != h->c.pict_type) {
             av_log(h->c.avctx, AV_LOG_ERROR, "Slice type mismatch\n");
