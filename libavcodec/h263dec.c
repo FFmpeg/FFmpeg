@@ -155,7 +155,6 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
 #endif
 #if CONFIG_FLV_DECODER
     case AV_CODEC_ID_FLV1:
-        s->h263_flv = 1;
         h->decode_header = ff_flv_decode_picture_header;
         break;
 #endif

@@ -40,7 +40,7 @@ int ff_flv_decode_picture_header(H263DecContext *const h)
         av_log(h->c.avctx, AV_LOG_ERROR, "Bad picture format\n");
         return AVERROR_INVALIDDATA;
     }
-    h->c.h263_flv       = format + 1;
+    h->c.h263_flv       = format;
     h->c.picture_number = get_bits(&h->gb, 8); /* picture timestamp */
     format            = get_bits(&h->gb, 3);
     switch (format) {
@@ -101,7 +101,7 @@ int ff_flv_decode_picture_header(H263DecContext *const h)
     if (h->c.avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(h->c.avctx, AV_LOG_DEBUG, "%c esc_type:%d, qp:%d num:%d\n",
                h->c.droppable ? 'D' : av_get_picture_type_char(h->c.pict_type),
-               h->c.h263_flv - 1, h->c.qscale, h->c.picture_number);
+               h->c.h263_flv, h->c.qscale, h->c.picture_number);
     }
 
     return 0;

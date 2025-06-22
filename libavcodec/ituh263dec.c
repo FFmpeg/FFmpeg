@@ -598,7 +598,7 @@ retry:
                 return -1;
             }
             /* escape */
-            if (CONFIG_FLV_DECODER && h->c.h263_flv > 1) {
+            if (CONFIG_FLV_DECODER && h->c.h263_flv) {
                 int is11 = SHOW_UBITS(re, &h->gb, 1);
                 SKIP_CACHE(re, &h->gb, 1);
                 run = SHOW_UBITS(re, &h->gb, 7) + 1;
