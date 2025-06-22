@@ -145,7 +145,7 @@ cglobal ebur128_filter_channels, 7, 9, 14, dsp, samples, cache400, cache3000, su
     RET
 
 cglobal ebur128_find_peak_2ch, 4, 5, 3, ch_peaks, channels, samples, nb_samples
-    vpbroadcastq m2, [abs_mask]
+    movddup m2, [abs_mask]
     movupd m0, [ch_peaksq]
 .loop:
     movupd m1, [samplesq]
