@@ -123,6 +123,10 @@ probechapters(){
     run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_chapters "$@"
 }
 
+probe(){
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact "$@"
+}
+
 probegaplessinfo(){
     filename="$1"
     shift
