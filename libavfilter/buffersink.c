@@ -113,6 +113,7 @@ static int get_frame_internal(AVFilterContext *ctx, AVFrame *frame, int flags, i
     int status, ret;
     AVFrame *cur_frame;
     int64_t pts;
+    int buffersrc_empty = 0;
 
     if (buf->peeked_frame)
         return return_or_keep_frame(buf, frame, buf->peeked_frame, flags);
@@ -132,7 +133,11 @@ static int get_frame_internal(AVFilterContext *ctx, AVFrame *frame, int flags, i
         } else if (li->frame_wanted_out) {
             ret = ff_filter_graph_run_once(ctx->graph);
             if (ret == FFERROR_BUFFERSRC_EMPTY) {
-                // Do nothing for now...
+                buffersrc_empty = 1;
+            } else if (ret == AVERROR(EAGAIN)) {
+                if (buffersrc_empty)
+                    return ret;
+                ff_inlink_request_frame(inlink);
             } else if (ret < 0) {
                 return ret;
             }
