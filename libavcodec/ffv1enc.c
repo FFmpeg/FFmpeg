@@ -281,6 +281,8 @@ static int encode_plane(FFV1Context *f, FFV1SliceContext *sc,
     int16_t *sample[3];
     sc->run_index = 0;
 
+    sample[2] = sc->sample_buffer; // dummy to avoid UB pointer arithmetic
+
     memset(sc->sample_buffer, 0, ring_size * (w + 6) * sizeof(*sc->sample_buffer));
 
     for (y = 0; y < h; y++) {
@@ -1508,6 +1510,9 @@ static int encode_float32_rgb_frame(FFV1Context *f, FFV1SliceContext *sc,
     ff_ffv1_compute_bits_per_plane(f, sc, bits, &offset, NULL, f->bits_per_raw_sample);
 
     sc->run_index = 0;
+
+    for (int p = 0; p < MAX_PLANES; ++p)
+        sample[p][2] = sc->sample_buffer32; // dummy to avoid UB pointer arithmetic
 
     memset(RENAME(sc->sample_buffer), 0, ring_size * MAX_PLANES *
            (w + 6) * sizeof(*RENAME(sc->sample_buffer)));
