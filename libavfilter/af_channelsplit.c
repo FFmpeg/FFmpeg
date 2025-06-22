@@ -228,15 +228,7 @@ static int activate(AVFilterContext *ctx)
         return 0;
     }
 
-    for (int i = 0; i < ctx->nb_outputs; i++) {
-        if (ff_outlink_get_status(ctx->outputs[i]))
-            continue;
-
-        if (ff_outlink_frame_wanted(ctx->outputs[i])) {
-            ff_inlink_request_frame(inlink);
-            return 0;
-        }
-    }
+    FF_FILTER_FORWARD_WANTED_ANY(ctx, inlink);
 
     return FFERROR_NOT_READY;
 }

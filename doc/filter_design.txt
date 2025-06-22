@@ -214,6 +214,7 @@ Frame scheduling
     FF_FILTER_FORWARD_STATUS(inlink, outlink);
     FF_FILTER_FORWARD_STATUS_ALL(inlink, filter);
     FF_FILTER_FORWARD_WANTED(outlink, inlink);
+    FF_FILTER_FORWARD_WANTED_ANY(filter, inlink);
 
   filter_frame
   ------------
