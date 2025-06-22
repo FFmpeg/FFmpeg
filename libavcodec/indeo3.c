@@ -429,14 +429,13 @@ if (*data_ptr >= last_ptr) \
 
 
 static int decode_cell_data(Indeo3DecodeContext *ctx, Cell *cell,
-                            uint8_t *block, uint8_t *ref_block,
+                            uint8_t *block, const uint8_t *ref_block,
                             ptrdiff_t row_offset, int h_zoom, int v_zoom, int mode,
                             const vqEntry *delta[2], int swap_quads[2],
                             const uint8_t **data_ptr, const uint8_t *last_ptr)
 {
     int           x, y, line, num_lines;
     int           rle_blocks = 0;
-    uint8_t       code, *dst, *ref;
     const vqEntry *delta_tab;
     unsigned int  dyad1, dyad2;
     uint64_t      pix64;
@@ -450,8 +449,8 @@ static int decode_cell_data(Indeo3DecodeContext *ctx, Cell *cell,
 
     for (y = 0; y < cell->height; is_first_row = 0, y += 1 + v_zoom) {
         for (x = 0; x < cell->width; x += 1 + h_zoom) {
-            ref = ref_block;
-            dst = block;
+            const uint8_t *ref = ref_block;
+            uint8_t *dst = block;
 
             if (rle_blocks > 0) {
                 if (mode <= 4) {
@@ -471,7 +470,7 @@ static int decode_cell_data(Indeo3DecodeContext *ctx, Cell *cell,
                     else
                         delta_tab = delta[1];
                     BUFFER_PRECHECK;
-                    code = bytestream_get_byte(data_ptr);
+                    uint8_t code = bytestream_get_byte(data_ptr);
                     if (code < 248) {
                         if (code < delta_tab->num_dyads) {
                             BUFFER_PRECHECK;
