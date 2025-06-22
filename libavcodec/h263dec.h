@@ -73,6 +73,7 @@ typedef struct H263DecContext {
     int skipped_last_frame;
     int divx_packed;            ///< divx specific, used to workaround (many) bugs in divx5
     int data_partitioning;      ///< data partitioning flag from header
+    int partitioned_frame;      ///< is current frame partitioned
 
     /* MSMPEG4 specific */
     int slice_height;           ///< in macroblocks

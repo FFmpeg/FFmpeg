@@ -391,7 +391,7 @@ static inline int mpeg4_is_resync(Mpeg4DecContext *ctx)
 
     while (v <= 0xFF) {
         if (h->c.pict_type == AV_PICTURE_TYPE_B ||
-            (v >> (8 - h->c.pict_type) != 1) || h->c.partitioned_frame)
+            (v >> (8 - h->c.pict_type) != 1) || h->partitioned_frame)
             break;
         skip_bits(&h->gb, 8 + h->c.pict_type);
         bits_count += 8 + h->c.pict_type;
@@ -1395,7 +1395,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
         // FIXME add short header support
         if (use_intra_dc_vlc) {
             /* DC coef */
-            if (h->c.partitioned_frame) {
+            if (h->partitioned_frame) {
                 level = h->c.dc_val[h->c.block_index[n]];
                 if (n < 4)
                     level = FASTDIV((level + (h->c.y_dc_scale >> 1)), h->c.y_dc_scale);
@@ -3222,8 +3222,8 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
         h->c.low_delay = 0;
     }
 
-    h->c.partitioned_frame = h->data_partitioning && h->c.pict_type != AV_PICTURE_TYPE_B;
-    if (h->c.partitioned_frame)
+    h->partitioned_frame = h->data_partitioning && h->c.pict_type != AV_PICTURE_TYPE_B;
+    if (h->partitioned_frame)
         h->decode_mb = mpeg4_decode_partitioned_mb;
     else
         h->decode_mb = mpeg4_decode_mb;
@@ -3513,7 +3513,7 @@ static int decode_studio_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     if (get_bits_left(gb) <= 32)
         return 0;
 
-    h->c.partitioned_frame = 0;
+    h->partitioned_frame = 0;
     h->c.interlaced_dct = 0;
     h->decode_mb = mpeg4_decode_studio_mb;
 

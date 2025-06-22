@@ -181,15 +181,15 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void report_decode_progress(MpegEncContext *s)
+static void report_decode_progress(H263DecContext *const h)
 {
-    if (s->pict_type != AV_PICTURE_TYPE_B && !s->partitioned_frame && !s->er.error_occurred)
-        ff_thread_progress_report(&s->cur_pic.ptr->progress, s->mb_y);
+    if (h->c.pict_type != AV_PICTURE_TYPE_B && !h->partitioned_frame && !h->c.er.error_occurred)
+        ff_thread_progress_report(&h->c.cur_pic.ptr->progress, h->c.mb_y);
 }
 
 static int decode_slice(H263DecContext *const h)
 {
-    const int part_mask = h->c.partitioned_frame
+    const int part_mask = h->partitioned_frame
                           ? (ER_AC_END | ER_AC_ERROR) : 0x7F;
     const int mb_size   = 16 >> h->c.avctx->lowres;
     int ret;
@@ -214,7 +214,7 @@ static int decode_slice(H263DecContext *const h)
         return ret;
     }
 
-    if (h->c.partitioned_frame) {
+    if (h->partitioned_frame) {
         const int qscale = h->c.qscale;
 
         if (CONFIG_MPEG4_DECODER && h->c.codec_id == AV_CODEC_ID_MPEG4)
@@ -290,7 +290,7 @@ static int decode_slice(H263DecContext *const h)
 
                     if (++h->c.mb_x >= h->c.mb_width) {
                         h->c.mb_x = 0;
-                        report_decode_progress(&h->c);
+                        report_decode_progress(h);
                         ff_mpeg_draw_horiz_band(&h->c, h->c.mb_y * mb_size, mb_size);
                         h->c.mb_y++;
                     }
@@ -317,7 +317,7 @@ static int decode_slice(H263DecContext *const h)
                 ff_h263_loop_filter(&h->c);
         }
 
-        report_decode_progress(&h->c);
+        report_decode_progress(h);
         ff_mpeg_draw_horiz_band(&h->c, h->c.mb_y * mb_size, mb_size);
 
         h->c.mb_x = 0;
@@ -551,7 +551,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             return ret;
     }
 
-    ff_mpv_er_frame_start_ext(s, s->partitioned_frame,
+    ff_mpv_er_frame_start_ext(s, h->partitioned_frame,
                               s->pp_time, s->pb_time);
 
     /* the second part of the wmv2 header contains the MB skip bits which

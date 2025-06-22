@@ -265,7 +265,7 @@ static void update_duplicate_context_after_me(MPVEncContext *const dst,
     COPY(lambda2);
     COPY(c.frame_pred_frame_dct); // FIXME don't set in encode_header
     COPY(c.progressive_frame);    // FIXME don't set in encode_header
-    COPY(c.partitioned_frame);    // FIXME don't set in encode_header
+    COPY(partitioned_frame);      // FIXME don't set in encode_header
 #undef COPY
 }
 
@@ -2894,7 +2894,7 @@ static int mb_var_thread(AVCodecContext *c, void *arg){
 static void write_slice_end(MPVEncContext *const s)
 {
     if (CONFIG_MPEG4_ENCODER && s->c.codec_id == AV_CODEC_ID_MPEG4) {
-        if (s->c.partitioned_frame)
+        if (s->partitioned_frame)
             ff_mpeg4_merge_partitions(s);
 
         ff_mpeg4_stuffing(&s->pb);
@@ -2907,7 +2907,7 @@ static void write_slice_end(MPVEncContext *const s)
 
     flush_put_bits(&s->pb);
 
-    if ((s->c.avctx->flags & AV_CODEC_FLAG_PASS1) && !s->c.partitioned_frame)
+    if ((s->c.avctx->flags & AV_CODEC_FLAG_PASS1) && !s->partitioned_frame)
         s->misc_bits+= get_bits_diff(s);
 }
 
@@ -3024,7 +3024,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
         s->c.last_dc[1] = 128 * 8 / 14;
         s->c.last_dc[2] = 128 * 8 / 14;
 #if CONFIG_MPEG4_ENCODER
-    } else if (s->c.partitioned_frame) {
+    } else if (s->partitioned_frame) {
         av_assert1(s->c.codec_id == AV_CODEC_ID_MPEG4);
         ff_mpeg4_init_partitions(s);
 #endif
@@ -3120,7 +3120,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     if (s->c.start_mb_y != mb_y || mb_x != 0) {
                         write_slice_end(s);
 
-                        if (CONFIG_MPEG4_ENCODER && s->c.codec_id == AV_CODEC_ID_MPEG4 && s->c.partitioned_frame)
+                        if (CONFIG_MPEG4_ENCODER && s->c.codec_id == AV_CODEC_ID_MPEG4 && s->partitioned_frame)
                             ff_mpeg4_init_partitions(s);
                     }
 

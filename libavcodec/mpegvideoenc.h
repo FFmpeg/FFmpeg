@@ -162,6 +162,7 @@ typedef struct MPVEncContext {
 
     /* MPEG-4 specific */
     int data_partitioning;         ///< data partitioning flag, set via option
+    int partitioned_frame;         ///< is current frame partitioned
     int mpeg_quant;
     PutBitContext tex_pb;          ///< used for data partitioned VOPs
     PutBitContext pb2;             ///< used for data partitioned VOPs

@@ -229,7 +229,6 @@ typedef struct MpegEncContext {
     uint16_t pb_field_time;         ///< like above, just for interlaced
     int mcsel;
     int quarter_sample;              ///< 1->qpel, 0->half pel ME/MC
-    int partitioned_frame;           ///< is current frame partitioned
     int low_delay;                   ///< no reordering needed / has no B-frames
 
     /* MSMPEG4 specific */

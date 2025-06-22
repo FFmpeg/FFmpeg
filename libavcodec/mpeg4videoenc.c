@@ -1033,7 +1033,7 @@ static int mpeg4_encode_picture_header(MPVMainEncContext *const m)
         mpeg4_encode_gop_header(m);
     }
 
-    s->c.partitioned_frame = s->data_partitioning && s->c.pict_type != AV_PICTURE_TYPE_B;
+    s->partitioned_frame = s->data_partitioning && s->c.pict_type != AV_PICTURE_TYPE_B;
 
     put_bits32(&s->pb, VOP_STARTCODE);      /* vop header */
     put_bits(&s->pb, 2, s->c.pict_type - 1);  /* pict type: I = 0 , P = 1 */
