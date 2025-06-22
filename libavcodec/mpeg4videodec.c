@@ -3736,7 +3736,7 @@ end:
         return decode_vop_header(ctx, gb, parse_only);
 }
 
-int ff_mpeg4_decode_picture_header(H263DecContext *const h)
+static int mpeg4_decode_picture_header(H263DecContext *const h)
 {
     Mpeg4DecContext *const ctx = h263_to_mpeg4(h);
 
@@ -4017,6 +4017,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     h->c.h263_pred = 1;
     h->c.low_delay = 0; /* default, might be overridden in the vol header during header parsing */
+    h->decode_header = mpeg4_decode_picture_header;
     h->decode_mb   = mpeg4_decode_mb;
     ctx->time_increment_bits = 4; /* default value for broken headers */
     ctx->quant_precision     = 5;

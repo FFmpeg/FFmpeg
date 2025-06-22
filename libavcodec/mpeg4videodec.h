@@ -109,7 +109,6 @@ typedef struct Mpeg4DecContext {
     int dct_precision;
 } Mpeg4DecContext;
 
-int ff_mpeg4_decode_picture_header(H263DecContext *const h);
 int ff_mpeg4_parse_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb,
                                   int header, int parse_only);
 void ff_mpeg4_decode_studio(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb,

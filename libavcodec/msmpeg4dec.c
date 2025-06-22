@@ -360,7 +360,7 @@ static av_cold void msmpeg4_decode_init_static(void)
     ff_msmp4_vc1_vlcs_init_once();
 }
 
-int ff_msmpeg4_decode_picture_header(H263DecContext *const h)
+static int msmpeg4_decode_picture_header(H263DecContext *const h)
 {
     MSMP4DecContext *const ms = mpv_to_msmpeg4(h);
     int code;
@@ -445,7 +445,7 @@ int ff_msmpeg4_decode_picture_header(H263DecContext *const h)
             h->c.inter_intra_pred= 0;
             break;
         default:
-            av_unreachable("ff_msmpeg4_decode_picture_header() only used by MSMP4V1-3, WMV1");
+            av_unreachable("msmpeg4_decode_picture_header() only used by MSMP4V1-3, WMV1");
         }
         h->c.no_rounding = 1;
         if (h->c.avctx->debug & FF_DEBUG_PICT_INFO)
@@ -498,7 +498,7 @@ int ff_msmpeg4_decode_picture_header(H263DecContext *const h)
                                   ms->bit_rate <= II_BITRATE;
             break;
         default:
-            av_unreachable("ff_msmpeg4_decode_picture_header() only used by MSMP4V1-3, WMV1");
+            av_unreachable("msmpeg4_decode_picture_header() only used by MSMP4V1-3, WMV1");
         }
 
         if (h->c.avctx->debug&FF_DEBUG_PICT_INFO)
@@ -846,6 +846,8 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
 
     // We unquantize inter blocks as we parse them.
     h->c.dct_unquantize_inter = NULL;
+
+    h->decode_header = msmpeg4_decode_picture_header;
 
     ff_msmpeg4_common_init(&h->c);
 

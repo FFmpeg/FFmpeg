@@ -121,6 +121,7 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_H263:
     case AV_CODEC_ID_H263P:
         avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
+        h->decode_header = ff_h263_decode_picture_header;
         break;
     case AV_CODEC_ID_MPEG4:
         break;
@@ -144,13 +145,20 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         s->h263_pred       = 1;
         s->msmpeg4_version = MSMP4_WMV2;
         break;
-    case AV_CODEC_ID_H263I:
     case AV_CODEC_ID_RV10:
     case AV_CODEC_ID_RV20:
         break;
+#if CONFIG_H263I_DECODER
+    case AV_CODEC_ID_H263I:
+        h->decode_header = ff_intel_h263_decode_picture_header;
+        break;
+#endif
+#if CONFIG_FLV_DECODER
     case AV_CODEC_ID_FLV1:
         s->h263_flv = 1;
+        h->decode_header = ff_flv_decode_picture_header;
         break;
+#endif
     default:
         av_unreachable("Switch contains a case for every codec using ff_h263_decode_init()");
     }
@@ -461,22 +469,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     bak_height = h->c.height;
 
     /* let's go :-) */
-    if (CONFIG_WMV2_DECODER && h->c.msmpeg4_version == MSMP4_WMV2) {
-        ret = ff_wmv2_decode_picture_header(h);
-#if CONFIG_MSMPEG4DEC
-    } else if (h->c.msmpeg4_version != MSMP4_UNUSED) {
-        ret = ff_msmpeg4_decode_picture_header(h);
-#endif
-    } else if (CONFIG_MPEG4_DECODER && avctx->codec_id == AV_CODEC_ID_MPEG4) {
-        ret = ff_mpeg4_decode_picture_header(h);
-    } else if (CONFIG_H263I_DECODER && h->c.codec_id == AV_CODEC_ID_H263I) {
-        ret = ff_intel_h263_decode_picture_header(h);
-    } else if (CONFIG_FLV_DECODER && h->c.h263_flv) {
-        ret = ff_flv_decode_picture_header(h);
-    } else {
-        ret = ff_h263_decode_picture_header(h);
-    }
-
+    ret = h->decode_header(h);
     if (ret < 0 || ret == FRAME_SKIPPED) {
         if (   h->c.width  != bak_width
             || h->c.height != bak_height) {

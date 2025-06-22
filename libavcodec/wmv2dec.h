@@ -24,7 +24,6 @@
 #include "mpegvideo.h"
 struct H263DecContext;
 
-int ff_wmv2_decode_picture_header(struct H263DecContext *const h);
 int ff_wmv2_decode_secondary_picture_header(struct H263DecContext *const h);
 void ff_wmv2_add_mb(MpegEncContext *s, int16_t block[6][64],
                     uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr);

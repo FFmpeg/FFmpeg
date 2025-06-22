@@ -201,7 +201,7 @@ static int decode_ext_header(WMV2DecContext *w)
     return 0;
 }
 
-int ff_wmv2_decode_picture_header(H263DecContext *const h)
+static int wmv2_decode_picture_header(H263DecContext *const h)
 {
     int code;
 
@@ -574,6 +574,7 @@ static av_cold int wmv2_decode_init(AVCodecContext *avctx)
     if ((ret = ff_msmpeg4_decode_init(avctx)) < 0)
         return ret;
 
+    h->decode_header = wmv2_decode_picture_header;
     h->decode_mb = wmv2_decode_mb;
 
     ff_wmv2_common_init(s);

@@ -53,7 +53,6 @@ extern const VLCElem *ff_mb_non_intra_vlc[4];
 extern VLCElem ff_inter_intra_vlc[8];
 
 int ff_msmpeg4_decode_init(AVCodecContext *avctx);
-int ff_msmpeg4_decode_picture_header(H263DecContext *const h);
 int ff_msmpeg4_decode_ext_header(H263DecContext *const h, int buf_size);
 void ff_msmpeg4_decode_motion(MSMP4DecContext *ms, int *mx_ptr, int *my_ptr);
 int ff_msmpeg4_decode_block(MSMP4DecContext *ms, int16_t * block,

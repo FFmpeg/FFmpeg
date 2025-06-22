@@ -25,11 +25,6 @@
 #include "vlc.h"
 #include "libavutil/mem_internal.h"
 
-/**
- * Return value for header parsers if frame is not coded.
- * */
-#define FRAME_SKIPPED 100
-
 // The defines below define the number of bits that are read at once for
 // reading vlc values. Changing these may improve speed and data cache needs
 // be aware though that decreasing them may need the number of stages that is
@@ -71,6 +66,9 @@ typedef struct H263DecContext {
     /* RV10 specific */
     int rv10_version; ///< RV10 version: 0 or 3
     int rv10_first_dc_coded[3];
+
+    int (*decode_header)(struct H263DecContext *const h);
+#define FRAME_SKIPPED 100 ///< Frame is not coded
 
     int (*decode_mb)(struct H263DecContext *h);
 #define SLICE_OK         0
