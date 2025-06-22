@@ -701,9 +701,7 @@ static inline void ff_outlink_set_status(AVFilterLink *link, int status, int64_t
  * If the flag is set on any of the outputs, this macro will return immediately.
  */
 #define FF_FILTER_FORWARD_WANTED_ANY(filter, inlink) do { \
-    for (int i = 0; i < filter->nb_outputs; i++) { \
-        if (ff_outlink_get_status(filter->outputs[i])) \
-            continue; \
+    for (unsigned i = 0; i < filter->nb_outputs; i++) { \
         if (ff_outlink_frame_wanted(filter->outputs[i])) { \
             ff_inlink_request_frame(inlink); \
             return 0; \
