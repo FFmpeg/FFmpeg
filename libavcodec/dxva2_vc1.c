@@ -108,7 +108,7 @@ void ff_dxva2_vc1_fill_picture_parameters(AVCodecContext *avctx,
     pp->bRcontrol               = v->rnd;
     pp->bPicSpatialResid8       = (v->panscanflag  << 7) |
                                   (v->refdist_flag << 6) |
-                                  (s->loop_filter  << 5) |
+                                  (v->loop_filter  << 5) |
                                   (v->fastuvmc     << 4) |
                                   (v->extended_mv  << 3) |
                                   (v->dquant       << 1) |
@@ -121,7 +121,7 @@ void ff_dxva2_vc1_fill_picture_parameters(AVCodecContext *avctx,
     pp->bPicExtrapolation       = (!v->interlace || v->fcm == PROGRESSIVE) ? 1 : 2;
     pp->bPicDeblocked           = ((!pp->bPicBackwardPrediction && v->overlap)        << 6) |
                                   ((v->profile != PROFILE_ADVANCED && v->rangeredfrm) << 5) |
-                                  (s->loop_filter                                     << 1);
+                                  (v->loop_filter                                     << 1);
     pp->bPicDeblockConfined     = (v->postprocflag             << 7) |
                                   (v->broadcast                << 6) |
                                   (v->interlace                << 5) |

@@ -654,7 +654,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
                          (s->mpv_flags & FF_MPV_FLAG_QP_RD)) &&
                         !m->fixed_qscale;
 
-    s->c.loop_filter = !!(avctx->flags & AV_CODEC_FLAG_LOOP_FILTER);
+    s->loop_filter = !!(avctx->flags & AV_CODEC_FLAG_LOOP_FILTER);
 
     if (avctx->rc_max_rate && !avctx->rc_buffer_size) {
         switch(avctx->codec_id) {
@@ -925,8 +925,8 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         /* Fx */
         s->c.h263_aic        = (avctx->flags & AV_CODEC_FLAG_AC_PRED) ? 1 : 0;
         s->modified_quant  = s->c.h263_aic;
-        s->c.loop_filter     = (avctx->flags & AV_CODEC_FLAG_LOOP_FILTER) ? 1 : 0;
-        s->me.unrestricted_mv = s->c.obmc || s->c.loop_filter || s->umvplus;
+        s->loop_filter        = !!(avctx->flags & AV_CODEC_FLAG_LOOP_FILTER);
+        s->me.unrestricted_mv = s->c.obmc || s->loop_filter || s->umvplus;
         s->flipflop_rounding = 1;
 
         /* /Fx */
@@ -959,7 +959,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         // Set here to force allocation of dc_val;
         // will be set later on a per-frame basis.
         s->c.h263_aic        = 1;
-        s->c.loop_filter     = 1;
+        s->loop_filter     = 1;
         s->me.unrestricted_mv = 0;
         break;
 #endif
@@ -3603,7 +3603,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     s, s->new_pic->data[2] + s->c.mb_x*8  + s->c.mb_y*s->c.uvlinesize*chr_h,
                     s->c.dest[2], w>>1, h>>s->c.chroma_y_shift, s->c.uvlinesize);
             }
-            if (s->c.loop_filter) {
+            if (s->loop_filter) {
                 if (CONFIG_H263_ENCODER && s->c.out_format == FMT_H263)
                     ff_h263_loop_filter(&s->c);
             }

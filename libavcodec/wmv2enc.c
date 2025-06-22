@@ -59,7 +59,7 @@ static int encode_ext_header(WMV2EncContext *w)
     put_bits(&pb, 11, FFMIN(w->msmpeg4.m.bit_rate / 1024, 2047));
 
     put_bits(&pb, 1, w->mspel_bit        = 1);
-    put_bits(&pb, 1, s->c.loop_filter);
+    put_bits(&pb, 1, s->loop_filter);
     put_bits(&pb, 1, w->abt_flag         = 1);
     put_bits(&pb, 1, w->j_type_bit       = 1);
     put_bits(&pb, 1, w->top_left_mv_flag = 0);

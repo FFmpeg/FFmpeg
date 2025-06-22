@@ -285,7 +285,7 @@ static int h263_encode_picture_header(MPVMainEncContext *const m)
         put_bits(&s->pb,1,0); /* SAC: off */
         put_bits(&s->pb,1,s->c.obmc); /* Advanced Prediction Mode */
         put_bits(&s->pb,1,s->c.h263_aic); /* Advanced Intra Coding */
-        put_bits(&s->pb,1,s->c.loop_filter); /* Deblocking Filter */
+        put_bits(&s->pb,1,s->loop_filter); /* Deblocking Filter */
         put_bits(&s->pb,1,s->h263_slice_structured); /* Slice Structured */
         put_bits(&s->pb,1,0); /* Reference Picture Selection: off */
         put_bits(&s->pb,1,0); /* Independent Segment Decoding: off */

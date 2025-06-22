@@ -280,7 +280,7 @@ static int decode_slice(H263DecContext *const h)
                 const int xy = h->c.mb_x + h->c.mb_y * h->c.mb_stride;
                 if (ret == SLICE_END) {
                     ff_mpv_reconstruct_mb(&h->c, h->block);
-                    if (h->c.loop_filter)
+                    if (h->loop_filter)
                         ff_h263_loop_filter(&h->c);
 
                     ff_er_add_slice(&h->c.er, h->c.resync_mb_x, h->c.resync_mb_y,
@@ -313,7 +313,7 @@ static int decode_slice(H263DecContext *const h)
             }
 
             ff_mpv_reconstruct_mb(&h->c, h->block);
-            if (h->c.loop_filter)
+            if (h->loop_filter)
                 ff_h263_loop_filter(&h->c);
         }
 

@@ -90,7 +90,7 @@ void ff_h263_show_pict_info(H263DecContext *const h, int h263_plus)
                h->c.h263_aic ? " AIC" : "",
                h->alt_inter_vlc ? " AIV" : "",
                h->modified_quant ? " MQ" : "",
-               h->c.loop_filter ? " LOOP" : "",
+               h->loop_filter ? " LOOP" : "",
                h->h263_slice_structured ? " SS" : "",
                h->c.avctx->framerate.num, h->c.avctx->framerate.den);
     }
@@ -798,7 +798,7 @@ int ff_h263_decode_mb(H263DecContext *const h)
                 h->c.cur_pic.mb_type[xy] = MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
                 h->c.mv[0][0][0] = 0;
                 h->c.mv[0][0][1] = 0;
-                h->c.mb_skipped = !(h->c.obmc | h->c.loop_filter);
+                h->c.mb_skipped = !(h->c.obmc | h->loop_filter);
                 goto end;
             }
             cbpc = get_vlc2(&h->gb, ff_h263_inter_MCBPC_vlc, INTER_MCBPC_VLC_BITS, 2);
@@ -1181,9 +1181,9 @@ int ff_h263_decode_picture_header(H263DecContext *const h)
             }
             h->c.obmc        = get_bits1(&h->gb); /* Advanced prediction mode */
             h->c.h263_aic    = get_bits1(&h->gb); /* Advanced Intra Coding (AIC) */
-            h->c.loop_filter = get_bits1(&h->gb);
+            h->loop_filter = get_bits1(&h->gb);
             if (h->c.avctx->lowres)
-                h->c.loop_filter = 0;
+                h->loop_filter = 0;
 
             h->h263_slice_structured = get_bits1(&h->gb);
             if (get_bits1(&h->gb) != 0) {

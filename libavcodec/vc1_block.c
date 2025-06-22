@@ -2595,7 +2595,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
                 vc1_put_blocks_clamped(v, 0);
             }
 
-            if (v->s.loop_filter)
+            if (v->loop_filter)
                 ff_vc1_i_loop_filter(v);
 
             if (get_bits_left(&v->gb) < 0) {
@@ -2733,7 +2733,7 @@ static int vc1_decode_i_blocks_adv(VC1Context *v)
             if (v->overlap && (v->pq >= 9 || v->condover != CONDOVER_NONE))
                 ff_vc1_i_overlap_filter(v);
             vc1_put_blocks_clamped(v, 1);
-            if (v->s.loop_filter)
+            if (v->loop_filter)
                 ff_vc1_i_loop_filter(v);
 
             if (get_bits_left(gb) < 0) {
@@ -2787,7 +2787,7 @@ static void vc1_decode_p_blocks(VC1Context *v)
         break;
     }
 
-    apply_loop_filter   = s->loop_filter && !(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY);
+    apply_loop_filter   = v->loop_filter && !(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY);
     s->first_slice_line = 1;
     memset(v->cbp_base, 0, sizeof(v->cbp_base[0]) * 3 * s->mb_stride);
     for (s->mb_y = s->start_mb_y; s->mb_y < s->end_mb_y; s->mb_y++) {
@@ -2889,15 +2889,15 @@ static void vc1_decode_b_blocks(VC1Context *v)
 
             if (v->fcm == ILACE_FIELD) {
                 vc1_decode_b_mb_intfi(v);
-                if (v->s.loop_filter)
+                if (v->loop_filter)
                     ff_vc1_b_intfi_loop_filter(v);
             } else if (v->fcm == ILACE_FRAME) {
                 vc1_decode_b_mb_intfr(v);
-                if (v->s.loop_filter)
+                if (v->loop_filter)
                     ff_vc1_p_intfr_loop_filter(v);
             } else {
                 vc1_decode_b_mb(v);
-                if (v->s.loop_filter)
+                if (v->loop_filter)
                     ff_vc1_i_loop_filter(v);
             }
             if (get_bits_left(&v->gb) < 0 || get_bits_count(&v->gb) < 0) {
@@ -2951,7 +2951,7 @@ void ff_vc1_decode_blocks(VC1Context *v)
         ff_intrax8_decode_picture(&v->x8, v->s.cur_pic.ptr,
                                   &v->gb, &v->s.mb_x, &v->s.mb_y,
                                   2 * v->pq + v->halfpq, v->pq * !v->pquantizer,
-                                  v->s.loop_filter, v->s.low_delay);
+                                  v->loop_filter, v->s.low_delay);
 
         ff_er_add_slice(&v->s.er, 0, 0,
                         (v->s.mb_x >> 1) - 1, (v->s.mb_y >> 1) - 1,

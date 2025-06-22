@@ -178,7 +178,7 @@ static int decode_ext_header(WMV2DecContext *w)
     fps                 = get_bits(&gb, 5);
     w->ms.bit_rate      = get_bits(&gb, 11) * 1024;
     w->mspel_bit        = get_bits1(&gb);
-    h->c.loop_filter    = get_bits1(&gb);
+    h->loop_filter      = get_bits1(&gb);
     w->abt_flag         = get_bits1(&gb);
     w->j_type_bit       = get_bits1(&gb);
     w->top_left_mv_flag = get_bits1(&gb);
@@ -196,7 +196,7 @@ static int decode_ext_header(WMV2DecContext *w)
                "tl_mv_flag:%d, mbrl_bit:%d, code:%d, loop_filter:%d, "
                "slices:%d\n",
                fps, w->ms.bit_rate, w->mspel_bit, w->abt_flag, w->j_type_bit,
-               w->top_left_mv_flag, w->per_mb_rl_bit, code, h->c.loop_filter,
+               w->top_left_mv_flag, w->per_mb_rl_bit, code, h->loop_filter,
                code);
     return 0;
 }
@@ -333,7 +333,7 @@ int ff_wmv2_decode_secondary_picture_header(H263DecContext *const h)
         ff_intrax8_decode_picture(&w->x8, h->c.cur_pic.ptr,
                                   &h->gb, &h->c.mb_x, &h->c.mb_y,
                                   2 * h->c.qscale, (h->c.qscale - 1) | 1,
-                                  h->c.loop_filter, h->c.low_delay);
+                                  h->loop_filter, h->c.low_delay);
 
         ff_er_add_slice(&h->c.er, 0, 0,
                         (h->c.mb_x >> 1) - 1, (h->c.mb_y >> 1) - 1,

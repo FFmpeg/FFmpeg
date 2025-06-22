@@ -83,7 +83,7 @@ static int vdpau_vc1_start_frame(AVCodecContext *avctx,
     info->extended_dmv      = v->extended_dmv;
     info->overlap           = v->overlap;
     info->vstransform       = v->vstransform;
-    info->loopfilter        = v->s.loop_filter;
+    info->loopfilter        = v->loop_filter;
     info->fastuvmc          = v->fastuvmc;
     info->range_mapy_flag   = v->range_mapy_flag;
     info->range_mapy        = v->range_mapy;

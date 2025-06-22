@@ -152,6 +152,7 @@ typedef struct MPVEncContext {
     int h263_slice_structured;
     int alt_inter_vlc;             ///< alternative inter vlc
     int modified_quant;
+    int loop_filter;
 
     /* MJPEG specific */
     struct MJpegContext *mjpeg_ctx;

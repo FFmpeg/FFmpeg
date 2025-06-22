@@ -66,6 +66,7 @@ typedef struct H263DecContext {
     int umvplus;                ///< == H.263+ && unrestricted_mv
     int h263_slice_structured;
     int alt_inter_vlc;          ///< alternative inter vlc
+    int loop_filter;
     int modified_quant;
 
     /* MPEG-4 specific */

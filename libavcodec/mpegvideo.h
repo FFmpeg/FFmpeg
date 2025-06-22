@@ -215,7 +215,6 @@ typedef struct MpegEncContext {
 
     /* H.263+ specific */
     int h263_aic_dir;               ///< AIC direction: 0 = left, 1 = top
-    int loop_filter;
 
     /* MPEG-4 specific */
     int studio_profile;

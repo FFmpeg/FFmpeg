@@ -300,13 +300,13 @@ int ff_vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitCo
     v->frmrtq_postproc = get_bits(gb, 3); //common
     // (bitrate-32kbps)/64kbps
     v->bitrtq_postproc = get_bits(gb, 5); //common
-    v->s.loop_filter   = get_bits1(gb); //common
-    if (v->s.loop_filter == 1 && v->profile == PROFILE_SIMPLE) {
+    v->loop_filter     = get_bits1(gb); //common
+    if (v->loop_filter == 1 && v->profile == PROFILE_SIMPLE) {
         av_log(avctx, AV_LOG_ERROR,
                "LOOPFILTER shall not be enabled in Simple Profile\n");
     }
     if (v->s.avctx->skip_loop_filter >= AVDISCARD_ALL)
-        v->s.loop_filter = 0;
+        v->loop_filter = 0;
 
     v->res_x8          = get_bits1(gb); //reserved
     v->multires        = get_bits1(gb);
@@ -376,7 +376,7 @@ int ff_vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitCo
            "Rangered=%i, VSTransform=%i, Overlap=%i, SyncMarker=%i\n"
            "DQuant=%i, Quantizer mode=%i, Max B-frames=%i\n",
            v->profile, v->frmrtq_postproc, v->bitrtq_postproc,
-           v->s.loop_filter, v->multires, v->fastuvmc, v->extended_mv,
+           v->loop_filter, v->multires, v->fastuvmc, v->extended_mv,
            v->rangered, v->vstransform, v->overlap, v->resync_marker,
            v->dquant, v->quantizer_mode, avctx->max_b_frames);
     return 0;
@@ -415,7 +415,7 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
            "LoopFilter=%i, ChromaFormat=%i, Pulldown=%i, Interlace: %i\n"
            "TFCTRflag=%i, FINTERPflag=%i\n",
            v->level, v->frmrtq_postproc, v->bitrtq_postproc,
-           v->s.loop_filter, v->chromaformat, v->broadcast, v->interlace,
+           v->loop_filter, v->chromaformat, v->broadcast, v->interlace,
            v->tfcntrflag, v->finterpflag);
 
     v->psf = get_bits1(gb);
@@ -501,9 +501,9 @@ int ff_vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContex
     v->closed_entry   = get_bits1(gb);
     v->panscanflag    = get_bits1(gb);
     v->refdist_flag   = get_bits1(gb);
-    v->s.loop_filter  = get_bits1(gb);
+    v->loop_filter    = get_bits1(gb);
     if (v->s.avctx->skip_loop_filter >= AVDISCARD_ALL)
-        v->s.loop_filter = 0;
+        v->loop_filter = 0;
     v->fastuvmc       = get_bits1(gb);
     v->extended_mv    = get_bits1(gb);
     v->dquant         = get_bits(gb, 2);
@@ -544,7 +544,7 @@ int ff_vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContex
            "BrokenLink=%i, ClosedEntry=%i, PanscanFlag=%i\n"
            "RefDist=%i, Postproc=%i, FastUVMC=%i, ExtMV=%i\n"
            "DQuant=%i, VSTransform=%i, Overlap=%i, Qmode=%i\n",
-           v->broken_link, v->closed_entry, v->panscanflag, v->refdist_flag, v->s.loop_filter,
+           v->broken_link, v->closed_entry, v->panscanflag, v->refdist_flag, v->loop_filter,
            v->fastuvmc, v->extended_mv, v->dquant, v->vstransform, v->overlap, v->quantizer_mode);
 
     return 0;

@@ -186,7 +186,7 @@ static int rv20_decode_picture_header(RVDecContext *rv, int whole_size)
     }
 
     if (RV_GET_MINOR_VER(rv->sub_id) >= 2)
-        h->c.loop_filter = get_bits1(&h->gb) && !h->c.avctx->lowres;
+        h->loop_filter = get_bits1(&h->gb) && !h->c.avctx->lowres;
 
     if (RV_GET_MINOR_VER(rv->sub_id) <= 1)
         seq = get_bits(&h->gb, 8) << 7;
@@ -292,7 +292,7 @@ static int rv20_decode_picture_header(RVDecContext *rv, int whole_size)
         h->c.c_dc_scale_table = ff_mpeg1_dc_scale_table;
     }
     if (!h->c.avctx->lowres)
-        h->c.loop_filter = 1;
+        h->loop_filter = 1;
 
     if (h->c.avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(h->c.avctx, AV_LOG_INFO,
@@ -517,7 +517,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
         if (h->c.pict_type != AV_PICTURE_TYPE_B)
             ff_h263_update_motion_val(&h->c);
         ff_mpv_reconstruct_mb(&h->c, h->block);
-        if (h->c.loop_filter)
+        if (h->loop_filter)
             ff_h263_loop_filter(&h->c);
 
         if (++h->c.mb_x == h->c.mb_width) {

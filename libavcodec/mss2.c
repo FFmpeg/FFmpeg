@@ -390,7 +390,7 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
     if ((ret = init_get_bits8(&v->gb, buf, buf_size)) < 0)
         return ret;
 
-    s->loop_filter = avctx->skip_loop_filter < AVDISCARD_ALL;
+    v->loop_filter = avctx->skip_loop_filter < AVDISCARD_ALL;
 
     if (ff_vc1_parse_frame_header(v, &v->gb) < 0) {
         av_log(v->s.avctx, AV_LOG_ERROR, "header error\n");

@@ -55,7 +55,7 @@ int ff_rv20_encode_picture_header(MPVMainEncContext *const m)
     av_assert1(!s->alt_inter_vlc);
     av_assert1(!s->umvplus);
     av_assert1(s->modified_quant == 1);
-    av_assert1(s->c.loop_filter == 1);
+    av_assert1(s->loop_filter == 1);
 
     s->c.h263_aic = s->c.pict_type == AV_PICTURE_TYPE_I;
     if (s->c.h263_aic) {

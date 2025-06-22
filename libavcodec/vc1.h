@@ -220,6 +220,7 @@ typedef struct VC1Context{
     int profile;          ///< 2 bits, Profile
     int frmrtq_postproc;  ///< 3 bits,
     int bitrtq_postproc;  ///< 5 bits, quantized framerate-based postprocessing strength
+    int loop_filter;
     int max_coded_width, max_coded_height;
     int fastuvmc;         ///< Rounding of qpel vector to hpel ? (not in Simple)
     int extended_mv;      ///< Ext MV in P/B (not in Simple)

@@ -266,9 +266,9 @@ static void h261_encode_mb(MPVEncContext *const s, int16_t block[6][64],
     if (!s->c.mb_intra) {
         com->mtype++;
 
-        if (mvd || s->c.loop_filter)
+        if (mvd || s->loop_filter)
             com->mtype += 3;
-        if (s->c.loop_filter)
+        if (s->loop_filter)
             com->mtype += 3;
         if (cbp)
             com->mtype++;
