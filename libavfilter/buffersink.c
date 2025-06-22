@@ -131,8 +131,11 @@ static int get_frame_internal(AVFilterContext *ctx, AVFrame *frame, int flags, i
             return AVERROR(EAGAIN);
         } else if (li->frame_wanted_out) {
             ret = ff_filter_graph_run_once(ctx->graph);
-            if (ret < 0)
+            if (ret == FFERROR_BUFFERSRC_EMPTY) {
+                // Do nothing for now...
+            } else if (ret < 0) {
                 return ret;
+            }
         } else {
             ff_inlink_request_frame(inlink);
         }

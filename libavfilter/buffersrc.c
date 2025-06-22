@@ -195,7 +195,7 @@ static int push_frame(AVFilterGraph *graph)
         ret = ff_filter_graph_run_once(graph);
         if (ret == AVERROR(EAGAIN))
             break;
-        if (ret < 0)
+        if (ret < 0 && ret != FFERROR_BUFFERSRC_EMPTY)
             return ret;
     }
     return 0;
@@ -552,7 +552,7 @@ static int activate(AVFilterContext *ctx)
         return 0;
     }
     c->nb_failed_requests++;
-    return FFERROR_NOT_READY;
+    return FFERROR_BUFFERSRC_EMPTY;
 }
 
 static const AVFilterPad avfilter_vsrc_buffer_outputs[] = {

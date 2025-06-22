@@ -31,6 +31,7 @@
  * Special return code when activate() did not do anything.
  */
 #define FFERROR_NOT_READY FFERRTAG('N','R','D','Y')
+#define FFERROR_BUFFERSRC_EMPTY FFERRTAG('M','P','T','Y')
 
 /**
  * A filter pad used for either input or output.

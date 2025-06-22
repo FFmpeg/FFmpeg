@@ -1460,6 +1460,8 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
     frame_count = oldesti->l.frame_count_out;
     while (frame_count == oldesti->l.frame_count_out) {
         r = ff_filter_graph_run_once(graph);
+        if (r == FFERROR_BUFFERSRC_EMPTY)
+            r = 0;
         if (r == AVERROR(EAGAIN) &&
             !oldesti->frame_wanted_out && !oldesti->frame_blocked_in &&
             !oldesti->status_in)
