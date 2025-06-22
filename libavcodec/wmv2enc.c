@@ -68,7 +68,7 @@ static int encode_ext_header(WMV2EncContext *w)
 
     flush_put_bits(&pb);
 
-    s->c.slice_height = s->c.mb_height / code;
+    s->slice_height = s->c.mb_height / code;
 
     return 0;
 }

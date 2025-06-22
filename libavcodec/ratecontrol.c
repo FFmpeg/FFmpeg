@@ -901,7 +901,7 @@ void ff_get_2pass_fcode(MPVMainEncContext *const m)
 {
     MPVEncContext *const s = &m->s;
     const RateControlContext *rcc = &m->rc_context;
-    const RateControlEntry   *rce = &rcc->entry[s->c.picture_number];
+    const RateControlEntry   *rce = &rcc->entry[s->picture_number];
 
     s->f_code = rce->f_code;
     s->b_code = rce->b_code;
@@ -920,7 +920,7 @@ float ff_rate_estimate_qscale(MPVMainEncContext *const m, int dry_run)
     double diff;
     double short_term_q;
     double fps;
-    int picture_number = s->c.picture_number;
+    int picture_number = s->picture_number;
     int64_t wanted_bits;
     RateControlEntry local_rce, *rce;
     double bits;

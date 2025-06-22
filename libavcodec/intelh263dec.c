@@ -39,7 +39,7 @@ int ff_intel_h263_decode_picture_header(H263DecContext *const h)
         av_log(h->c.avctx, AV_LOG_ERROR, "Bad picture start code\n");
         return -1;
     }
-    h->c.picture_number = get_bits(&h->gb, 8); /* picture timestamp */
+    h->picture_number = get_bits(&h->gb, 8); /* picture timestamp */
 
     if (check_marker(h->c.avctx, &h->gb, "after picture_number") != 1) {
         return -1;      /* marker */
@@ -119,7 +119,7 @@ int ff_intel_h263_decode_picture_header(H263DecContext *const h)
     if (skip_1stop_8data_bits(&h->gb) < 0)
         return AVERROR_INVALIDDATA;
 
-    h->c.gob_index = H263_GOB_HEIGHT(h->c.height);
+    h->gob_index = H263_GOB_HEIGHT(h->c.height);
 
     ff_h263_show_pict_info(h, 0);
 

@@ -188,7 +188,7 @@ static int decode_ext_header(WMV2DecContext *w)
     if (code == 0)
         return AVERROR_INVALIDDATA;
 
-    h->c.slice_height = h->c.mb_height / code;
+    h->slice_height = h->c.mb_height / code;
 
     if (h->c.avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(h->c.avctx, AV_LOG_DEBUG,

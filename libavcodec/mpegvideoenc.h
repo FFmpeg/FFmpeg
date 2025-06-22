@@ -128,6 +128,8 @@ typedef struct MPVEncContext {
     int dct_count[2];
     uint16_t (*dct_offset)[64];
 
+    int picture_number;
+
     /* statistics, used for 2-pass encoding */
     int mv_bits;
     int i_tex_bits;
@@ -139,10 +141,17 @@ typedef struct MPVEncContext {
     int mb_skip_run;
 
     /* H.263 specific */
+    int gob_index;
     int mb_info;                   ///< interval for outputting info about mb offsets as side data
     int prev_mb_info, last_mb_info;
     int mb_info_size;
     uint8_t *mb_info_ptr;
+
+    /* H.263+ specific */
+    int umvplus;                   ///< == H.263+ && unrestricted_mv
+    int h263_slice_structured;
+    int alt_inter_vlc;             ///< alternative inter vlc
+    int modified_quant;
 
     /* MJPEG specific */
     struct MJpegContext *mjpeg_ctx;
@@ -152,11 +161,13 @@ typedef struct MPVEncContext {
     int last_mv_dir;               ///< last mv_dir, used for B-frame encoding
 
     /* MPEG-4 specific */
+    int data_partitioning;         ///< data partitioning flag, set via option
     int mpeg_quant;
     PutBitContext tex_pb;          ///< used for data partitioned VOPs
     PutBitContext pb2;             ///< used for data partitioned VOPs
 
     /* MSMPEG4 specific */
+    int slice_height;              ///< in macroblocks
     int flipflop_rounding;         ///< also used for MPEG-4, H.263+
     int esc3_level_length;
 

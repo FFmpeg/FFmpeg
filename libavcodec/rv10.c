@@ -372,7 +372,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     h->h263_long_vectors = avctx->extradata[3] & 1;
     rv->sub_id           = AV_RB32A(avctx->extradata + 4);
     if (avctx->codec_id == AV_CODEC_ID_RV20) {
-        h->c.modified_quant      = 1;
+        h->modified_quant        = 1;
         h->c.chroma_qscale_table = ff_h263_chroma_qscale_table;
     }
 

@@ -87,9 +87,6 @@ typedef struct MpegEncContext {
     enum OutputFormat out_format; ///< output format
     int h263_pred;    ///< use MPEG-4/H.263 ac/dc predictions
 
-/* the following codec id fields are deprecated in favor of codec_id */
-    int h263_flv;     ///< use flv H.263 header
-
     enum AVCodecID codec_id;     /* see AV_CODEC_ID_xxx */
     int encoding;     ///< true if we are encoding (vs decoding)
     int workaround_bugs;       ///< workaround bugs in encoders which cannot be detected automatically
@@ -98,7 +95,6 @@ typedef struct MpegEncContext {
 
     /* sequence parameters */
     int context_initialized;
-    int picture_number;       //FIXME remove, unclear definition
     int mb_width, mb_height;   ///< number of MBs horizontally & vertically
     int mb_stride;             ///< mb_width+1 used for some arrays to allow simple addressing of left & top MBs without sig11
     int b8_stride;             ///< 2*mb_width+1 used for some 8x8 block arrays to allow simple addressing
@@ -215,15 +211,10 @@ typedef struct MpegEncContext {
     int resync_mb_y;                 ///< y position of last resync marker
 
     /* H.263 specific */
-    int gob_index;
     int obmc;                       ///< overlapped block motion compensation
 
     /* H.263+ specific */
-    int umvplus;                    ///< == H.263+ && unrestricted_mv
     int h263_aic_dir;               ///< AIC direction: 0 = left, 1 = top
-    int h263_slice_structured;
-    int alt_inter_vlc;              ///< alternative inter vlc
-    int modified_quant;
     int loop_filter;
 
     /* MPEG-4 specific */
@@ -238,12 +229,10 @@ typedef struct MpegEncContext {
     uint16_t pb_field_time;         ///< like above, just for interlaced
     int mcsel;
     int quarter_sample;              ///< 1->qpel, 0->half pel ME/MC
-    int data_partitioning;           ///< data partitioning flag from header
     int partitioned_frame;           ///< is current frame partitioned
     int low_delay;                   ///< no reordering needed / has no B-frames
 
     /* MSMPEG4 specific */
-    int slice_height;      ///< in macroblocks
     int first_slice_line;  ///< used in MPEG-4 too to handle resync markers
     enum {
         MSMP4_UNUSED,

@@ -194,8 +194,6 @@ av_cold void ff_mpv_common_defaults(MpegEncContext *s)
     s->progressive_sequence  = 1;
     s->picture_structure     = PICT_FRAME;
 
-    s->picture_number        = 0;
-
     s->slice_context_count   = 1;
 }
 

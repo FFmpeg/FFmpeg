@@ -47,21 +47,35 @@ typedef struct H263DecContext {
 
     int mb_num_left;            ///< number of MBs left in this video packet (for partitioned slices only)
 
+    int picture_number;
+
     int pb_frame;     ///< PB-frame mode (0 = none, 1 = base, 2 = improved)
 
     /* motion compensation */
     int h263_long_vectors;      ///< use horrible H.263v1 long vector mode
 
+    /* FLV specific */
+    int flv;                    ///< use flv H.263 header
+
     /* H.263 specific */
     int ehc_mode;
+    int gob_index;
 
     /* H.263+ specific */
     int custom_pcf;
+    int umvplus;                ///< == H.263+ && unrestricted_mv
+    int h263_slice_structured;
+    int alt_inter_vlc;          ///< alternative inter vlc
+    int modified_quant;
 
     /* MPEG-4 specific */
     int padding_bug_score;      ///< used to detect the VERY common padding bug in MPEG-4
     int skipped_last_frame;
     int divx_packed;            ///< divx specific, used to workaround (many) bugs in divx5
+    int data_partitioning;      ///< data partitioning flag from header
+
+    /* MSMPEG4 specific */
+    int slice_height;           ///< in macroblocks
 
     /* RV10 specific */
     int rv10_version; ///< RV10 version: 0 or 3

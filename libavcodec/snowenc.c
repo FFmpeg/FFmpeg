@@ -1792,7 +1792,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     pic->pict_type = pict->pict_type;
     pic->quality = pict->quality;
 
-    mpv->c.picture_number = avctx->frame_num;
+    mpv->picture_number = avctx->frame_num;
     if(avctx->flags&AV_CODEC_FLAG_PASS2){
         mpv->c.pict_type = pic->pict_type = enc->m.rc_context.entry[avctx->frame_num].new_pict_type;
         s->keyframe = pic->pict_type == AV_PICTURE_TYPE_I;

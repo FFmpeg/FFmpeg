@@ -84,14 +84,14 @@ void ff_h263_show_pict_info(H263DecContext *const h, int h263_plus)
                h->c.qscale, av_get_picture_type_char(h->c.pict_type),
                h->gb.size_in_bits, 1-h->c.no_rounding,
                h->c.obmc ? " AP" : "",
-               h->c.umvplus ? " UMV" : "",
+               h->umvplus ? " UMV" : "",
                h->h263_long_vectors ? " LONG" : "",
                h263_plus ? " +" : "",
                h->c.h263_aic ? " AIC" : "",
-               h->c.alt_inter_vlc ? " AIV" : "",
-               h->c.modified_quant ? " MQ" : "",
+               h->alt_inter_vlc ? " AIV" : "",
+               h->modified_quant ? " MQ" : "",
                h->c.loop_filter ? " LOOP" : "",
-               h->c.h263_slice_structured ? " SS" : "",
+               h->h263_slice_structured ? " SS" : "",
                h->c.avctx->framerate.num, h->c.avctx->framerate.den);
     }
 }
@@ -179,7 +179,7 @@ static int h263_decode_gob_header(H263DecContext *const h)
     if(left<=13)
         return -1;
 
-    if (h->c.h263_slice_structured) {
+    if (h->h263_slice_structured) {
         if (check_marker(h->c.avctx, &h->gb, "before MBA")==0)
             return -1;
 
@@ -196,7 +196,7 @@ static int h263_decode_gob_header(H263DecContext *const h)
     }else{
         gob_number = get_bits(&h->gb, 5); /* GN */
         h->c.mb_x = 0;
-        h->c.mb_y = h->c.gob_index* gob_number;
+        h->c.mb_y = h->gob_index* gob_number;
         skip_bits(&h->gb, 2); /* GFID */
         h->c.qscale = get_bits(&h->gb, 5); /* GQUANT */
     }
@@ -377,19 +377,19 @@ static void preview_obmc(H263DecContext *const h)
     }else{
         get_vlc2(&h->gb, ff_h263_cbpy_vlc, CBPY_VLC_BITS, 1);
         if (cbpc & 8) {
-            skip_bits(&h->gb, h->c.modified_quant ? (get_bits1(&h->gb) ? 1 : 5) : 2);
+            skip_bits(&h->gb, h->modified_quant ? (get_bits1(&h->gb) ? 1 : 5) : 2);
         }
 
         if ((cbpc & 16) == 0) {
                 h->c.cur_pic.mb_type[xy] = MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
                 /* 16x16 motion prediction */
                 mot_val= ff_h263_pred_motion(&h->c, 0, 0, &pred_x, &pred_y);
-                if (h->c.umvplus)
+                if (h->umvplus)
                     mx = h263p_decode_umotion(h, pred_x);
                 else
                     mx = ff_h263_decode_motion(h, pred_x, 1);
 
-                if (h->c.umvplus)
+                if (h->umvplus)
                     my = h263p_decode_umotion(h, pred_y);
                 else
                     my = ff_h263_decode_motion(h, pred_y, 1);
@@ -402,16 +402,16 @@ static void preview_obmc(H263DecContext *const h)
             h->c.cur_pic.mb_type[xy] = MB_TYPE_8x8 | MB_TYPE_FORWARD_MV;
             for(i=0;i<4;i++) {
                 mot_val = ff_h263_pred_motion(&h->c, i, 0, &pred_x, &pred_y);
-                if (h->c.umvplus)
+                if (h->umvplus)
                     mx = h263p_decode_umotion(h, pred_x);
                 else
                     mx = ff_h263_decode_motion(h, pred_x, 1);
 
-                if (h->c.umvplus)
+                if (h->umvplus)
                     my = h263p_decode_umotion(h, pred_y);
                 else
                     my = ff_h263_decode_motion(h, pred_y, 1);
-                if (h->c.umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
+                if (h->umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
                     skip_bits1(&h->gb); /* Bit stuffing to prevent PSC */
                 mot_val[0] = mx;
                 mot_val[1] = my;
@@ -434,7 +434,7 @@ static void h263_decode_dquant(H263DecContext *const h)
     static const int8_t quant_tab[4] = { -1, -2, 1, 2 };
     int qscale;
 
-    if (h->c.modified_quant) {
+    if (h->modified_quant) {
         if (get_bits1(&h->gb))
             qscale = ff_modified_quant_tab[get_bits1(&h->gb)][h->c.qscale];
         else
@@ -598,7 +598,7 @@ retry:
                 return -1;
             }
             /* escape */
-            if (CONFIG_FLV_DECODER && h->c.h263_flv) {
+            if (CONFIG_FLV_DECODER && h->flv) {
                 int is11 = SHOW_UBITS(re, &h->gb, 1);
                 SKIP_CACHE(re, &h->gb, 1);
                 run = SHOW_UBITS(re, &h->gb, 7) + 1;
@@ -646,7 +646,7 @@ retry:
                 block[scan_table[i]] = level;
                 break;
             }
-            if(h->c.alt_inter_vlc && rl == &ff_h263_rl_inter && !h->c.mb_intra){
+            if(h->alt_inter_vlc && rl == &ff_h263_rl_inter && !h->c.mb_intra){
                 //Looks like a hack but no, it's the way it is supposed to work ...
                 rl = &ff_rl_intra_aic;
                 i = 0;
@@ -826,7 +826,7 @@ int ff_h263_decode_mb(H263DecContext *const h)
             return SLICE_ERROR;
         }
 
-        if (!h->c.alt_inter_vlc|| (cbpc & 3)!=3)
+        if (!h->alt_inter_vlc|| (cbpc & 3)!=3)
             cbpy ^= 0xF;
 
         cbp = (cbpc & 3) | (cbpy << 2);
@@ -840,7 +840,7 @@ int ff_h263_decode_mb(H263DecContext *const h)
             /* 16x16 motion prediction */
             h->c.mv_type = MV_TYPE_16X16;
             ff_h263_pred_motion(&h->c, 0, 0, &pred_x, &pred_y);
-            if (h->c.umvplus)
+            if (h->umvplus)
                mx = h263p_decode_umotion(h, pred_x);
             else
                mx = ff_h263_decode_motion(h, pred_x, 1);
@@ -848,7 +848,7 @@ int ff_h263_decode_mb(H263DecContext *const h)
             if (mx >= 0xffff)
                 return SLICE_ERROR;
 
-            if (h->c.umvplus)
+            if (h->umvplus)
                my = h263p_decode_umotion(h, pred_y);
             else
                my = ff_h263_decode_motion(h, pred_y, 1);
@@ -858,21 +858,21 @@ int ff_h263_decode_mb(H263DecContext *const h)
             h->c.mv[0][0][0] = mx;
             h->c.mv[0][0][1] = my;
 
-            if (h->c.umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
+            if (h->umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
                 skip_bits1(&h->gb); /* Bit stuffing to prevent PSC */
         } else {
             h->c.cur_pic.mb_type[xy] = MB_TYPE_8x8 | MB_TYPE_FORWARD_MV;
             h->c.mv_type = MV_TYPE_8X8;
             for(i=0;i<4;i++) {
                 mot_val = ff_h263_pred_motion(&h->c, i, 0, &pred_x, &pred_y);
-                if (h->c.umvplus)
+                if (h->umvplus)
                     mx = h263p_decode_umotion(h, pred_x);
                 else
                     mx = ff_h263_decode_motion(h, pred_x, 1);
                 if (mx >= 0xffff)
                     return SLICE_ERROR;
 
-                if (h->c.umvplus)
+                if (h->umvplus)
                     my = h263p_decode_umotion(h, pred_y);
                 else
                     my = ff_h263_decode_motion(h, pred_y, 1);
@@ -880,7 +880,7 @@ int ff_h263_decode_mb(H263DecContext *const h)
                     return SLICE_ERROR;
                 h->c.mv[0][i][0] = mx;
                 h->c.mv[0][i][1] = my;
-                if (h->c.umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
+                if (h->umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
                     skip_bits1(&h->gb); /* Bit stuffing to prevent PSC */
                 mot_val[0] = mx;
                 mot_val[1] = my;
@@ -926,7 +926,7 @@ int ff_h263_decode_mb(H263DecContext *const h)
                 return SLICE_ERROR;
             }
 
-            if (!h->c.alt_inter_vlc || (cbpc & 3)!=3)
+            if (!h->alt_inter_vlc || (cbpc & 3)!=3)
                 cbpy ^= 0xF;
 
             cbp = (cbpc & 3) | (cbpy << 2);
@@ -951,21 +951,21 @@ int ff_h263_decode_mb(H263DecContext *const h)
                 int16_t *mot_val = ff_h263_pred_motion(&h->c, 0, 0, &pred_x, &pred_y);
                 h->c.mv_dir = MV_DIR_FORWARD;
 
-                if (h->c.umvplus)
+                if (h->umvplus)
                     mx = h263p_decode_umotion(h, pred_x);
                 else
                     mx = ff_h263_decode_motion(h, pred_x, 1);
                 if (mx >= 0xffff)
                     return SLICE_ERROR;
 
-                if (h->c.umvplus)
+                if (h->umvplus)
                     my = h263p_decode_umotion(h, pred_y);
                 else
                     my = ff_h263_decode_motion(h, pred_y, 1);
                 if (my >= 0xffff)
                     return SLICE_ERROR;
 
-                if (h->c.umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
+                if (h->umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
                     skip_bits1(&h->gb); /* Bit stuffing to prevent PSC */
 
                 h->c.mv[0][0][0] = mx;
@@ -978,21 +978,21 @@ int ff_h263_decode_mb(H263DecContext *const h)
                 int16_t *mot_val = ff_h263_pred_motion(&h->c, 0, 1, &pred_x, &pred_y);
                 h->c.mv_dir |= MV_DIR_BACKWARD;
 
-                if (h->c.umvplus)
+                if (h->umvplus)
                     mx = h263p_decode_umotion(h, pred_x);
                 else
                     mx = ff_h263_decode_motion(h, pred_x, 1);
                 if (mx >= 0xffff)
                     return SLICE_ERROR;
 
-                if (h->c.umvplus)
+                if (h->umvplus)
                     my = h263p_decode_umotion(h, pred_y);
                 else
                     my = ff_h263_decode_motion(h, pred_y, 1);
                 if (my >= 0xffff)
                     return SLICE_ERROR;
 
-                if (h->c.umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
+                if (h->umvplus && (mx - pred_x) == 1 && (my - pred_y) == 1)
                     skip_bits1(&h->gb); /* Bit stuffing to prevent PSC */
 
                 h->c.mv[1][0][0] = mx;
@@ -1112,9 +1112,9 @@ int ff_h263_decode_picture_header(H263DecContext *const h)
     /* temporal reference */
     i = get_bits(&h->gb, 8); /* picture timestamp */
 
-    i -= (i - (h->c.picture_number & 0xFF) + 128) & ~0xFF;
+    i -= (i - (h->picture_number & 0xFF) + 128) & ~0xFF;
 
-    h->c.picture_number = (h->c.picture_number&~0xFF) + i;
+    h->picture_number = (h->picture_number&~0xFF) + i;
 
     /* PTYPE starts here */
     if (check_marker(h->c.avctx, &h->gb, "in PTYPE") != 1) {
@@ -1175,7 +1175,7 @@ int ff_h263_decode_picture_header(H263DecContext *const h)
             format = get_bits(&h->gb, 3);
             ff_dlog(h->c.avctx, "ufep=1, format: %d\n", format);
             h->custom_pcf = get_bits1(&h->gb);
-            h->c.umvplus    = get_bits1(&h->gb); /* Unrestricted Motion Vector */
+            h->umvplus    = get_bits1(&h->gb); /* Unrestricted Motion Vector */
             if (get_bits1(&h->gb) != 0) {
                 av_log(h->c.avctx, AV_LOG_ERROR, "Syntax-based Arithmetic Coding (SAC) not supported\n");
             }
@@ -1185,16 +1185,16 @@ int ff_h263_decode_picture_header(H263DecContext *const h)
             if (h->c.avctx->lowres)
                 h->c.loop_filter = 0;
 
-            h->c.h263_slice_structured = get_bits1(&h->gb);
+            h->h263_slice_structured = get_bits1(&h->gb);
             if (get_bits1(&h->gb) != 0) {
                 av_log(h->c.avctx, AV_LOG_ERROR, "Reference Picture Selection not supported\n");
             }
             if (get_bits1(&h->gb) != 0) {
                 av_log(h->c.avctx, AV_LOG_ERROR, "Independent Segment Decoding not supported\n");
             }
-            h->c.alt_inter_vlc  = get_bits1(&h->gb);
-            h->c.modified_quant = get_bits1(&h->gb);
-            if (h->c.modified_quant)
+            h->alt_inter_vlc  = get_bits1(&h->gb);
+            h->modified_quant = get_bits1(&h->gb);
+            if (h->modified_quant)
                 h->c.chroma_qscale_table= ff_h263_chroma_qscale_table;
 
             skip_bits(&h->gb, 1); /* Prevent start code emulation */
@@ -1277,11 +1277,11 @@ int ff_h263_decode_picture_header(H263DecContext *const h)
             skip_bits(&h->gb, 2); //extended Temporal reference
 
         if (ufep) {
-            if (h->c.umvplus) {
+            if (h->umvplus) {
                 if (get_bits1(&h->gb)==0) /* Unlimited Unrestricted Motion Vectors Indicator (UUI) */
                     skip_bits1(&h->gb);
             }
-            if (h->c.h263_slice_structured) {
+            if (h->h263_slice_structured) {
                 if (get_bits1(&h->gb) != 0) {
                     av_log(h->c.avctx, AV_LOG_ERROR, "rectangular slices not supported\n");
                 }
@@ -1313,7 +1313,7 @@ int ff_h263_decode_picture_header(H263DecContext *const h)
     h->c.mb_height = (h->c.height + 15U) / 16;
     h->c.mb_num    = h->c.mb_width * h->c.mb_height;
 
-    h->c.gob_index = H263_GOB_HEIGHT(h->c.height);
+    h->gob_index = H263_GOB_HEIGHT(h->c.height);
 
     if (h->pb_frame) {
         skip_bits(&h->gb, 3); /* Temporal reference for B-pictures */
@@ -1323,11 +1323,11 @@ int ff_h263_decode_picture_header(H263DecContext *const h)
     }
 
     if (h->c.pict_type!=AV_PICTURE_TYPE_B) {
-        h->c.time            = h->c.picture_number;
+        h->c.time            = h->picture_number;
         h->c.pp_time         = h->c.time - h->c.last_non_b_time;
         h->c.last_non_b_time = h->c.time;
     }else{
-        h->c.time    = h->c.picture_number;
+        h->c.time    = h->picture_number;
         h->c.pb_time = h->c.pp_time - (h->c.last_non_b_time - h->c.time);
         if (h->c.pp_time <= h->c.pb_time ||
             h->c.pp_time <= h->c.pp_time - h->c.pb_time ||
@@ -1342,7 +1342,7 @@ int ff_h263_decode_picture_header(H263DecContext *const h)
     if (skip_1stop_8data_bits(&h->gb) < 0)
         return AVERROR_INVALIDDATA;
 
-    if (h->c.h263_slice_structured) {
+    if (h->h263_slice_structured) {
         if (check_marker(h->c.avctx, &h->gb, "SEPB1") != 1) {
             return -1;
         }

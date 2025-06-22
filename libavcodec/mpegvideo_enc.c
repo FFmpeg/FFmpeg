@@ -924,9 +924,9 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->c.out_format = FMT_H263;
         /* Fx */
         s->c.h263_aic        = (avctx->flags & AV_CODEC_FLAG_AC_PRED) ? 1 : 0;
-        s->c.modified_quant  = s->c.h263_aic;
+        s->modified_quant  = s->c.h263_aic;
         s->c.loop_filter     = (avctx->flags & AV_CODEC_FLAG_LOOP_FILTER) ? 1 : 0;
-        s->me.unrestricted_mv = s->c.obmc || s->c.loop_filter || s->c.umvplus;
+        s->me.unrestricted_mv = s->c.obmc || s->c.loop_filter || s->umvplus;
         s->flipflop_rounding = 1;
 
         /* /Fx */
@@ -955,7 +955,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->c.out_format      = FMT_H263;
         avctx->delay       = 0;
         s->c.low_delay       = 1;
-        s->c.modified_quant  = 1;
+        s->modified_quant  = 1;
         // Set here to force allocation of dc_val;
         // will be set later on a per-frame basis.
         s->c.h263_aic        = 1;
@@ -1078,7 +1078,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     if (s->c.slice_context_count > 1) {
         s->rtp_mode = 1;
         if (avctx->codec_id == AV_CODEC_ID_H263P)
-            s->c.h263_slice_structured = 1;
+            s->h263_slice_structured = 1;
     }
     ret = ff_mpv_init_duplicate_contexts(&s->c);
     if (ret < 0)
@@ -1853,7 +1853,7 @@ static int select_input_picture(MPVMainEncContext *const m)
             ff_mpv_unref_picture(&s->c.cur_pic);
             return ret;
         }
-        s->c.picture_number = s->c.cur_pic.ptr->display_picture_number;
+        s->picture_number = s->c.cur_pic.ptr->display_picture_number;
 
     }
     return 0;
@@ -1963,7 +1963,7 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
     /* output? */
     if (s->new_pic->data[0]) {
-        int growing_buffer = context_count == 1 && !s->c.data_partitioning;
+        int growing_buffer = context_count == 1 && !s->data_partitioning;
         size_t pkt_size = 10000 + s->c.mb_width * s->c.mb_height *
                                   (growing_buffer ? 64 : (MAX_MB_BYTES + 100));
         if (CONFIG_MJPEG_ENCODER && avctx->codec_id == AV_CODEC_ID_MJPEG) {
@@ -2738,7 +2738,7 @@ static void encode_mb_hq(MPVEncContext *const s, MBBackup *const backup, MBBacku
 
     s->block = s->blocks[*next_block];
     s->pb      = pb[*next_block];
-    if (s->c.data_partitioning) {
+    if (s->data_partitioning) {
         s->pb2   = pb2   [*next_block];
         s->tex_pb= tex_pb[*next_block];
     }
@@ -2754,7 +2754,7 @@ static void encode_mb_hq(MPVEncContext *const s, MBBackup *const backup, MBBacku
     encode_mb(s, motion_x, motion_y);
 
     score= put_bits_count(&s->pb);
-    if (s->c.data_partitioning) {
+    if (s->data_partitioning) {
         score+= put_bits_count(&s->pb2);
         score+= put_bits_count(&s->tex_pb);
     }
@@ -2774,7 +2774,7 @@ static void encode_mb_hq(MPVEncContext *const s, MBBackup *const backup, MBBacku
         *dmin= score;
         *next_block^=1;
 
-        save_context_after_encode(best, s, s->c.data_partitioning);
+        save_context_after_encode(best, s, s->data_partitioning);
     }
 }
 
@@ -2915,8 +2915,8 @@ static void write_mb_info(MPVEncContext *const s)
 {
     uint8_t *ptr = s->mb_info_ptr + s->mb_info_size - 12;
     int offset = put_bits_count(&s->pb);
-    int mba  = s->c.mb_x + s->c.mb_width * (s->c.mb_y % s->c.gob_index);
-    int gobn = s->c.mb_y / s->c.gob_index;
+    int mba  = s->c.mb_x + s->c.mb_width * (s->c.mb_y % s->gob_index);
+    int gobn = s->c.mb_y / s->gob_index;
     int pred_x, pred_y;
     if (CONFIG_H263_ENCODER)
         ff_h263_pred_motion(&s->c, 0, 0, &pred_x, &pred_y);
@@ -3068,7 +3068,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 av_log(s->c.avctx, AV_LOG_ERROR, "encoded frame too large\n");
                 return -1;
             }
-            if (s->c.data_partitioning) {
+            if (s->data_partitioning) {
                 if (put_bytes_left(&s->pb2,    0) < MAX_MB_BYTES ||
                     put_bytes_left(&s->tex_pb, 0) < MAX_MB_BYTES) {
                     av_log(s->c.avctx, AV_LOG_ERROR, "encoded partitioned frame too large\n");
@@ -3101,8 +3101,8 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 switch (s->c.codec_id) {
                 case AV_CODEC_ID_H263:
                 case AV_CODEC_ID_H263P:
-                    if (!s->c.h263_slice_structured)
-                        if (s->c.mb_x || s->c.mb_y % s->c.gob_index) is_gob_start = 0;
+                    if (!s->h263_slice_structured)
+                        if (s->c.mb_x || s->c.mb_y % s->gob_index) is_gob_start = 0;
                     break;
                 case AV_CODEC_ID_MPEG2VIDEO:
                     if (s->c.mb_x == 0 && s->c.mb_y != 0) is_gob_start = 1;
@@ -3128,7 +3128,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     current_packet_size= put_bits_ptr(&s->pb) - s->ptr_lastgob;
 
                     if (s->error_rate && s->c.resync_mb_x + s->c.resync_mb_y > 0) {
-                        int r = put_bytes_count(&s->pb, 0) + s->c.picture_number + 16 + s->c.mb_x + s->c.mb_y;
+                        int r = put_bytes_count(&s->pb, 0) + s->picture_number + 16 + s->c.mb_x + s->c.mb_y;
                         int d = 100 / s->error_rate;
                         if(r % d == 0){
                             current_packet_size=0;
@@ -3194,7 +3194,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
                 backup_context_before_encode(&backup_s, s);
                 backup_s.pb= s->pb;
-                if (s->c.data_partitioning) {
+                if (s->data_partitioning) {
                     backup_s.pb2= s->pb2;
                     backup_s.tex_pb= s->tex_pb;
                 }
@@ -3417,14 +3417,14 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     }
                 }
 
-                store_context_after_encode(s, &best_s, s->c.data_partitioning);
+                store_context_after_encode(s, &best_s, s->data_partitioning);
 
                 pb_bits_count= put_bits_count(&s->pb);
                 flush_put_bits(&s->pb);
                 ff_copy_bits(&backup_s.pb, bit_buf[next_block^1], pb_bits_count);
                 s->pb= backup_s.pb;
 
-                if (s->c.data_partitioning) {
+                if (s->data_partitioning) {
                     pb2_bits_count= put_bits_count(&s->pb2);
                     flush_put_bits(&s->pb2);
                     ff_copy_bits(&backup_s.pb2, bit_buf2[next_block^1], pb2_bits_count);
@@ -3711,7 +3711,7 @@ static void set_frame_distances(MPVEncContext *const s)
     }else{
         s->c.pp_time = s->c.time - s->c.last_non_b_time;
         s->c.last_non_b_time = s->c.time;
-        av_assert1(s->c.picture_number == 0 || s->c.pp_time > 0);
+        av_assert1(s->picture_number == 0 || s->c.pp_time > 0);
     }
 }
 
@@ -3814,7 +3814,7 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
                 m->mb_var_sum, m->mc_mb_var_sum);
     }
 
-    if (!s->c.umvplus) {
+    if (!s->umvplus) {
         if (s->c.pict_type == AV_PICTURE_TYPE_P || s->c.pict_type == AV_PICTURE_TYPE_S) {
             s->f_code = ff_get_best_fcode(m, s->p_mv_table, CANDIDATE_MB_TYPE_INTER);
 

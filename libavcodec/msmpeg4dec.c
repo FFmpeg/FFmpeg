@@ -403,7 +403,7 @@ static int msmpeg4_decode_picture_header(H263DecContext *const h)
                 return -1;
             }
 
-            h->c.slice_height = code;
+            h->slice_height = code;
         }else{
             /* 0x17: one slice, 0x18: two slices, ... */
             if (code < 0x17){
@@ -411,7 +411,7 @@ static int msmpeg4_decode_picture_header(H263DecContext *const h)
                 return -1;
             }
 
-            h->c.slice_height = h->c.mb_height / (code - 0x16);
+            h->slice_height = h->c.mb_height / (code - 0x16);
         }
 
         switch (h->c.msmpeg4_version) {
@@ -455,7 +455,7 @@ static int msmpeg4_decode_picture_header(H263DecContext *const h)
                 ms->rl_table_index,
                 ms->dc_table_index,
                 ms->per_mb_rl_table,
-                h->c.slice_height);
+                h->slice_height);
     } else {
         switch (h->c.msmpeg4_version) {
         case MSMP4_V1:
@@ -866,7 +866,7 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
         av_unreachable("List contains all cases using ff_msmpeg4_decode_init()");
     }
 
-    h->c.slice_height = h->c.mb_height; //to avoid 1/0 if the first frame is not a keyframe
+    h->slice_height = h->c.mb_height; //to avoid 1/0 if the first frame is not a keyframe
 
     ff_thread_once(&init_static_once, msmpeg4_decode_init_static);
 

@@ -453,10 +453,10 @@ static void mpeg4_encode_mb(MPVEncContext *const s, int16_t block[][64],
                             int motion_x, int motion_y)
 {
     int cbpc, cbpy, pred_x, pred_y;
-    PutBitContext *const pb2    = s->c.data_partitioning ? &s->pb2 : &s->pb;
-    PutBitContext *const tex_pb = s->c.data_partitioning && s->c.pict_type != AV_PICTURE_TYPE_B ? &s->tex_pb : &s->pb;
-    PutBitContext *const dc_pb  = s->c.data_partitioning && s->c.pict_type != AV_PICTURE_TYPE_I ? &s->pb2 : &s->pb;
-    const int interleaved_stats = (s->c.avctx->flags & AV_CODEC_FLAG_PASS1) && !s->c.data_partitioning ? 1 : 0;
+    PutBitContext *const pb2    = s->data_partitioning ? &s->pb2 : &s->pb;
+    PutBitContext *const tex_pb = s->data_partitioning && s->c.pict_type != AV_PICTURE_TYPE_B ? &s->tex_pb : &s->pb;
+    PutBitContext *const dc_pb  = s->data_partitioning && s->c.pict_type != AV_PICTURE_TYPE_I ? &s->pb2 : &s->pb;
+    const int interleaved_stats = (s->c.avctx->flags & AV_CODEC_FLAG_PASS1) && !s->data_partitioning;
 
     if (!s->c.mb_intra) {
         int i, cbp;
@@ -994,8 +994,8 @@ static void mpeg4_encode_vol_header(Mpeg4EncContext *const m4,
         put_bits(&s->pb, 1, s->c.quarter_sample);
     put_bits(&s->pb, 1, 1);             /* complexity estimation disable */
     put_bits(&s->pb, 1, s->rtp_mode ? 0 : 1); /* resync marker disable */
-    put_bits(&s->pb, 1, s->c.data_partitioning ? 1 : 0);
-    if (s->c.data_partitioning)
+    put_bits(&s->pb, 1, s->data_partitioning);
+    if (s->data_partitioning)
         put_bits(&s->pb, 1, 0);         /* no rvlc */
 
     if (vo_ver_id != 1) {
@@ -1027,13 +1027,13 @@ static int mpeg4_encode_picture_header(MPVMainEncContext *const m)
         if (!(s->c.avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)) {
             if (s->c.avctx->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT)  // HACK, the reference sw is buggy
                 mpeg4_encode_visual_object_header(m);
-            if (s->c.avctx->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT || s->c.picture_number == 0)  // HACK, the reference sw is buggy
+            if (s->c.avctx->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT || s->picture_number == 0)  // HACK, the reference sw is buggy
                 mpeg4_encode_vol_header(m4, 0, 0);
         }
         mpeg4_encode_gop_header(m);
     }
 
-    s->c.partitioned_frame = s->c.data_partitioning && s->c.pict_type != AV_PICTURE_TYPE_B;
+    s->c.partitioned_frame = s->data_partitioning && s->c.pict_type != AV_PICTURE_TYPE_B;
 
     put_bits32(&s->pb, VOP_STARTCODE);      /* vop header */
     put_bits(&s->pb, 2, s->c.pict_type - 1);  /* pict type: I = 0 , P = 1 */
@@ -1338,7 +1338,7 @@ void ff_mpeg4_encode_video_packet_header(MPVEncContext *const s)
 #define OFFSET(x) offsetof(MPVEncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "data_partitioning", "Use data partitioning.",      OFFSET(c.data_partitioning), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "data_partitioning", "Use data partitioning.", FF_MPV_OFFSET(data_partitioning), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "alternate_scan",    "Enable alternate scantable.", OFFSET(c.alternate_scan),    AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "mpeg_quant",        "Use MPEG quantizers instead of H.263",
       OFFSET(mpeg_quant), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, VE },

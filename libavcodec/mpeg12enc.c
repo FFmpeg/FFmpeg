@@ -350,9 +350,8 @@ static int mpeg1_encode_picture_header(MPVMainEncContext *const m)
     put_header(s, PICTURE_START_CODE);
     /* temporal reference */
 
-    // RAL: s->c.picture_number instead of s->fake_picture_number
     put_bits(&s->pb, 10,
-             (s->c.picture_number - mpeg12->gop_picture_number) & 0x3ff);
+             (s->picture_number - mpeg12->gop_picture_number) & 0x3ff);
     put_bits(&s->pb, 3, s->c.pict_type);
 
     m->vbv_delay_pos = put_bytes_count(&s->pb, 0);
