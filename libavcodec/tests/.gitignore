@@ -9,6 +9,7 @@
 /codec_desc
 /dct
 /golomb
+/hashtable
 /h264_levels
 /h265_levels
 /htmlsubtitles
