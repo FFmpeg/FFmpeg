@@ -422,11 +422,10 @@ static int fic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     /* Draw cursor if needed. */
     if (!skip_cursor) {
-    /* Make sure we use a user-supplied buffer. */
-    if ((ret = ff_reget_buffer(avctx, ctx->final_frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not make frame writable.\n");
-        return ret;
-    }
+        /* Make frame writable. */
+        ret = ff_reget_buffer(avctx, ctx->final_frame, 0);
+        if (ret < 0)
+            return ret;
 
         fic_draw_cursor(avctx, src + CURSOR_OFFSET, cur_x, cur_y);
     }
