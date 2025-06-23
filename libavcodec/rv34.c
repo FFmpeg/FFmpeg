@@ -1800,7 +1800,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             *got_picture_ptr = ret;
         } else if (HAVE_THREADS &&
                    (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
-            av_log(avctx, AV_LOG_INFO, "marking unfished frame as finished\n");
+            av_log(avctx, AV_LOG_INFO, "marking unfinished frame as finished\n");
             /* always mark the current frame as finished, frame-mt supports
              * only complete frames */
             ff_er_frame_end(&s->er, NULL);
