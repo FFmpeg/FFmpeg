@@ -56,7 +56,6 @@ typedef struct FICContext {
     int aligned_width, aligned_height;
     int num_slices, slice_h;
 
-    uint8_t cursor_buf[4096];
     int skip_cursor;
 } FICContext;
 
@@ -86,6 +85,7 @@ static const uint8_t fic_header[7] = { 0, 0, 1, 'F', 'I', 'C', 'V' };
 
 #define FIC_HEADER_SIZE 27
 #define CURSOR_OFFSET 59
+#define CURSOR_SIZE   4096
 
 static av_always_inline void fic_idct(int16_t *blk, int step, int shift, int rnd)
 {
@@ -214,10 +214,11 @@ static av_always_inline void fic_alpha_blend(uint8_t *dst, uint8_t *src,
         dst[i] += ((src[i] - dst[i]) * alpha[i]) >> 8;
 }
 
-static void fic_draw_cursor(AVCodecContext *avctx, int cur_x, int cur_y)
+static void fic_draw_cursor(AVCodecContext *avctx, const uint8_t cursor_buf[CURSOR_SIZE],
+                            int cur_x, int cur_y)
 {
     FICContext *ctx = avctx->priv_data;
-    uint8_t *ptr    = ctx->cursor_buf;
+    const uint8_t *ptr = cursor_buf;
     uint8_t *dstptr[3];
     uint8_t planes[4][1024];
     uint8_t chroma[3][256];
@@ -346,9 +347,8 @@ static int fic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         skip_cursor = 1;
     }
 
-    if (!skip_cursor && avpkt->size < CURSOR_OFFSET + sizeof(ctx->cursor_buf)) {
+    if (!skip_cursor && avpkt->size < CURSOR_OFFSET + CURSOR_SIZE)
         skip_cursor = 1;
-    }
 
     /* Slice height for all but the last slice. */
     ctx->slice_h = 16 * (ctx->aligned_height >> 4) / nslices;
@@ -431,8 +431,7 @@ static int fic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     /* Draw cursor. */
     if (!skip_cursor) {
-        memcpy(ctx->cursor_buf, src + CURSOR_OFFSET, sizeof(ctx->cursor_buf));
-        fic_draw_cursor(avctx, cur_x, cur_y);
+        fic_draw_cursor(avctx, src + CURSOR_OFFSET, cur_x, cur_y);
     }
 
 skip:
