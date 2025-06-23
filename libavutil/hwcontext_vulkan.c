@@ -1663,6 +1663,29 @@ static void vulkan_device_uninit(AVHWDeviceContext *ctx)
     ff_vk_uninit(&p->vkctx);
 }
 
+static int vulkan_device_has_rebar(AVHWDeviceContext *ctx)
+{
+    VulkanDevicePriv *p = ctx->hwctx;
+    AVVulkanDeviceContext *hwctx = &p->p;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
+    VkPhysicalDeviceMemoryProperties mprops;
+    VkDeviceSize max_vram = 0, max_visible_vram = 0;
+
+    /* Get device memory properties */
+    vk->GetPhysicalDeviceMemoryProperties(hwctx->phys_dev, &mprops);
+    for (int i = 0; i < mprops.memoryTypeCount; i++) {
+        const VkMemoryType type = mprops.memoryTypes[i];
+        const VkMemoryHeap heap = mprops.memoryHeaps[type.heapIndex];
+        if (!(type.propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
+            continue;
+        max_vram = FFMAX(max_vram, heap.size);
+        if (type.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+            max_visible_vram = FFMAX(max_visible_vram, heap.size);
+    }
+
+    return max_vram - max_visible_vram < 1024; /* 1 kB tolerance */
+}
+
 static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
                                          VulkanDeviceSelection *dev_select,
                                          int disable_multiplane,
@@ -1696,23 +1719,6 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
         av_free((void *)dev_info.pQueueCreateInfos);
         goto end;
     }
-
-    /* Get device memory properties */
-    vk->GetPhysicalDeviceMemoryProperties(hwctx->phys_dev, &p->mprops);
-    VkDeviceSize max_vram = 0, max_visible_vram = 0;
-    for (int i = 0; i < p->mprops.memoryTypeCount; i++) {
-        const VkMemoryType type = p->mprops.memoryTypes[i];
-        const VkMemoryHeap heap = p->mprops.memoryHeaps[type.heapIndex];
-        if (!(type.propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
-            continue;
-        max_vram = FFMAX(max_vram, heap.size);
-        if (type.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-            max_visible_vram = FFMAX(max_visible_vram, heap.size);
-    }
-
-    /* Only use host image transfers if ReBAR is enabled */
-    const int has_rebar = max_vram - max_visible_vram < 1024; /* 1 kB tolerance */
-    p->disable_host_transfer = !has_rebar;
 
     /* Get all supported features for the physical device */
     device_features_init(ctx, &supported_feats);
@@ -2016,6 +2022,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     ff_vk_load_props(&p->vkctx);
     p->compute_qf = ff_vk_qf_find(&p->vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     p->transfer_qf = ff_vk_qf_find(&p->vkctx, VK_QUEUE_TRANSFER_BIT, 0);
+
+    /* Only use host image transfers if ReBAR is enabled */
+    p->disable_host_transfer = !vulkan_device_has_rebar(ctx);
 
 end:
     av_free(qf_vid);
