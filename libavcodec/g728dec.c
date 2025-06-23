@@ -215,6 +215,4 @@ const FFCodec ff_g728_decoder = {
     FF_CODEC_DECODE_CB(g728_decode_frame),
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
-    .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLT,
-                                                      AV_SAMPLE_FMT_NONE },
 };
