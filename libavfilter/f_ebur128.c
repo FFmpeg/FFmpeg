@@ -692,11 +692,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         double peak = dsp->find_peak(ebur128->true_peaks_per_frame, nb_channels,
                                      swr_samples, ret);
 
-        ebur128->true_peak = DBFS(peak);
         for (int ch = 0; ch < nb_channels; ch++) {
+            peak = FFMAX(peak, ebur128->true_peaks[ch]);
             ebur128->true_peaks[ch] = FFMAX(ebur128->true_peaks[ch],
                                             ebur128->true_peaks_per_frame[ch]);
         }
+
+        ebur128->true_peak = DBFS(peak);
     }
 #endif
 
