@@ -301,6 +301,10 @@ static int fic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             av_log(avctx, AV_LOG_WARNING, "Initial frame is skipped\n");
             return AVERROR_INVALIDDATA;
         }
+        ret = ff_reget_buffer(avctx, ctx->final_frame,
+                              FF_REGET_BUFFER_FLAG_READONLY);
+        if (ret < 0)
+            return ret;
         goto skip;
     }
 
