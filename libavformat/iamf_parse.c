@@ -288,7 +288,7 @@ static int update_extradata(AVCodecParameters *codecpar)
         uint8_t buf[6];
         int size = FFMIN(codecpar->extradata_size, sizeof(buf));
 
-        init_put_bits(&pb, buf, size);
+        init_put_bits(&pb, buf, sizeof(buf));
         ret = init_get_bits8(&gb, codecpar->extradata, size);
         if (ret < 0)
             return ret;
@@ -304,7 +304,10 @@ static int update_extradata(AVCodecParameters *codecpar)
 
         skip_bits(&gb, 4);
         put_bits(&pb, 4, codecpar->ch_layout.nb_channels); // set channel config
-        ret = put_bits_left(&pb);
+        ret = get_bits_left(&gb);
+        if (ret < 0)
+            return AVERROR_INVALIDDATA;
+        ret = FFMIN(ret, put_bits_left(&pb));
         while (ret >= 32) {
            put_bits32(&pb, get_bits_long(&gb, 32));
            ret -= 32;
@@ -317,9 +320,10 @@ static int update_extradata(AVCodecParameters *codecpar)
     }
     case AV_CODEC_ID_FLAC: {
         uint8_t buf[13];
+        int size = FFMIN(codecpar->extradata_size, sizeof(buf));
 
         init_put_bits(&pb, buf, sizeof(buf));
-        ret = init_get_bits8(&gb, codecpar->extradata, codecpar->extradata_size);
+        ret = init_get_bits8(&gb, codecpar->extradata, size);
         if (ret < 0)
             return ret;
 
@@ -328,11 +332,14 @@ static int update_extradata(AVCodecParameters *codecpar)
         put_bits(&pb, 20, get_bits(&gb, 20)); // samplerate
         skip_bits(&gb, 3);
         put_bits(&pb, 3, codecpar->ch_layout.nb_channels - 1);
-        ret = put_bits_left(&pb);
+        ret = get_bits_left(&gb);
+        if (ret < 0)
+            return AVERROR_INVALIDDATA;
+        ret = FFMIN(ret, put_bits_left(&pb));
         put_bits(&pb, ret, get_bits(&gb, ret));
         flush_put_bits(&pb);
 
-        memcpy(codecpar->extradata, buf, sizeof(buf));
+        memcpy(codecpar->extradata, buf, put_bytes_output(&pb));
         break;
     }
     }
