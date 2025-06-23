@@ -282,9 +282,6 @@ static int fic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     int skip_cursor = ctx->skip_cursor;
     const uint8_t *sdata;
 
-    if ((ret = ff_reget_buffer(avctx, ctx->frame, 0)) < 0)
-        return ret;
-
     /* Header + at least one slice (4) */
     if (avpkt->size < FIC_HEADER_SIZE + 4) {
         av_log(avctx, AV_LOG_ERROR, "Frame data is too small.\n");
@@ -406,6 +403,9 @@ static int fic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         ctx->slice_data[slice].slice_h  = slice_h;
         ctx->slice_data[slice].y_off    = y_off;
     }
+
+    if ((ret = ff_reget_buffer(avctx, ctx->frame, 0)) < 0)
+        return ret;
 
     if ((ret = avctx->execute(avctx, fic_decode_slice, ctx->slice_data,
                               NULL, nslices, sizeof(ctx->slice_data[0]))) < 0)
