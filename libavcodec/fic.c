@@ -297,7 +297,7 @@ static int fic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     /* Is it a skip frame? */
     if (src[17]) {
-        if (!ctx->final_frame) {
+        if (!ctx->final_frame->data[0]) {
             av_log(avctx, AV_LOG_WARNING, "Initial frame is skipped\n");
             return AVERROR_INVALIDDATA;
         }
@@ -416,12 +416,9 @@ static int fic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             break;
         }
     }
-    av_frame_free(&ctx->final_frame);
-    ctx->final_frame = av_frame_clone(ctx->frame);
-    if (!ctx->final_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Could not clone frame buffer.\n");
-        return AVERROR(ENOMEM);
-    }
+    ret = av_frame_replace(ctx->final_frame, ctx->frame);
+    if (ret < 0)
+        return ret;
 
     /* Make sure we use a user-supplied buffer. */
     if ((ret = ff_reget_buffer(avctx, ctx->final_frame, 0)) < 0) {
@@ -468,6 +465,9 @@ static av_cold int fic_decode_init(AVCodecContext *avctx)
     ctx->frame = av_frame_alloc();
     if (!ctx->frame)
         return AVERROR(ENOMEM);
+    ctx->final_frame = av_frame_alloc();
+    if (!ctx->final_frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -495,4 +495,5 @@ const FFCodec ff_fic_decoder = {
     .close          = fic_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
     .p.priv_class   = &fic_decoder_class,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
