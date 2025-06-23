@@ -421,7 +421,7 @@ static void image_available(void *context, AImageReader *reader)
         }
     }
 
-    pkt_buffer_size = av_image_get_buffer_size(ctx->image_format, ctx->width, ctx->height, 32);
+    pkt_buffer_size = av_image_get_buffer_size(ctx->image_format, ctx->width, ctx->height, 1);
     AImage_getTimestamp(image, &image_timestamp);
 
     AImage_getPlaneRowStride(image, 0, &image_linestrides[0]);
@@ -460,7 +460,7 @@ static void image_available(void *context, AImageReader *reader)
     av_image_copy_to_buffer(pkt.data, pkt_buffer_size,
                             (const uint8_t * const *) image_plane_data,
                             image_linestrides, ctx->image_format,
-                            ctx->width, ctx->height, 32);
+                            ctx->width, ctx->height, 1);
 
     ret = av_thread_message_queue_send(ctx->input_queue, &pkt, AV_THREAD_MESSAGE_NONBLOCK);
 
