@@ -36,6 +36,7 @@ OBJS-ffmpeg +=                  \
     fftools/textformat/tw_buffer.o    \
     fftools/textformat/tw_stdout.o    \
     $(OBJS-resman)                    \
+    $(RESOBJS)                        \
 
 OBJS-ffprobe +=                       \
     fftools/textformat/avtextformat.o \

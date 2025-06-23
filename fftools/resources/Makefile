@@ -4,10 +4,16 @@ clean::
 vpath %.html $(SRC_PATH)
 vpath %.css  $(SRC_PATH)
 
-# Uncomment to prevent deletion during build
-#.PRECIOUS: %.css.c %.css.min %.css.gz %.css.min.gz %.html.gz %.html.c
-
 OBJS-resman +=                     \
     fftools/resources/resman.o     \
+
+
+RESOBJS +=                         \
     fftools/resources/graph.html.o \
     fftools/resources/graph.css.o  \
+
+
+$(RESOBJS): CCDEP       =
+$(RESOBJS): CC_DEPFLAGS =
+
+.SECONDARY: $(RESOBJS:.o=.gz) $(RESOBJS:.o=.c) $(RESOBJS:%.css.o=%.css.min) $(RESOBJS:%.css.o=%.css.min.gz) $(RESOBJS:%.html.o=%.html.gz) $(RESOBJS:.o=)
