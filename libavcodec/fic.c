@@ -431,9 +431,9 @@ static int fic_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     }
 
 skip:
-    *got_frame = 1;
     if ((ret = av_frame_ref(rframe, ctx->final_frame)) < 0)
         return ret;
+    *got_frame = 1;
 
     return avpkt->size;
 }
