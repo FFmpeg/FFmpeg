@@ -5,8 +5,9 @@ fate-cscd: CMD = framecrc -i $(TARGET_SAMPLES)/CSCD/sample_video.avi -an -pix_fm
 FATE_SCREEN-$(call FRAMECRC, AVI, DXTORY) += fate-dxtory
 fate-dxtory: CMD = framecrc -i $(TARGET_SAMPLES)/dxtory/dxtory_mic.avi -an
 
-FATE_SCREEN-$(call FRAMECRC, AVI, FIC) += fate-fic-avi
+FATE_SCREEN-$(call FRAMECRC, AVI, FIC) += fate-fic-avi fate-fic-avi-skip_cursor
 fate-fic-avi: CMD = framecrc -i $(TARGET_SAMPLES)/fic/fic-partial-2MB.avi -an
+fate-fic-avi-skip_cursor: CMD = framecrc -skip_cursor 1 -i $(TARGET_SAMPLES)/fic/fic-partial-2MB.avi -an
 
 FATE_FMVC += fate-fmvc-type1
 fate-fmvc-type1: CMD = framecrc -i $(TARGET_SAMPLES)/fmvc/6-methyl-5-hepten-2-one-CC-db_small.avi
