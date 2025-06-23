@@ -581,7 +581,7 @@ int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mus
     int off = 0;
 
     if(s->mix_any_f) {
-        s->mix_any_f(out->ch, (const uint8_t **)in->ch, s->native_matrix, len);
+        s->mix_any_f(out->ch, (const uint8_t *const *)in->ch, s->native_matrix, len);
         return 0;
     }
 

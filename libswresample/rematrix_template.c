@@ -50,7 +50,7 @@
 #endif
 
 static void RENAME(sum2)(void *out_, const void *in1_, const void *in2_,
-                         void *coeffp_, integer index1, integer index2, integer len)
+                         const void *coeffp_, integer index1, integer index2, integer len)
 {
     const SAMPLE *in1 = in1_, *in2 = in2_;
     const COEFF *coeffp = coeffp_;
@@ -63,7 +63,8 @@ static void RENAME(sum2)(void *out_, const void *in1_, const void *in2_,
         out[i] = R(coeff1*in1[i] + coeff2*in2[i]);
 }
 
-static void RENAME(copy)(void *out_, const void *in_, void *coeffp_, integer index, integer len)
+static void RENAME(copy)(void *out_, const void *in_, const void *coeffp_,
+                         integer index, integer len)
 {
     const COEFF *coeffp = coeffp_;
     const SAMPLE *in = in_;
@@ -74,7 +75,8 @@ static void RENAME(copy)(void *out_, const void *in_, void *coeffp_, integer ind
         out[i] = R(coeff*in[i]);
 }
 
-static void RENAME(mix6to2)(uint8_t **out_, const uint8_t **in_, void *coeffp_, integer len)
+static void RENAME(mix6to2)(uint8_t *const *out_, const uint8_t *const *in_,
+                            const void *coeffp_, integer len)
 {
     const SAMPLE *const *const in = (const SAMPLE *const *)in_;
     SAMPLE *const *const out = (SAMPLE *const*)out_;
@@ -88,7 +90,8 @@ static void RENAME(mix6to2)(uint8_t **out_, const uint8_t **in_, void *coeffp_, 
     }
 }
 
-static void RENAME(mix8to2)(uint8_t **out_, const uint8_t **in_, void *coeffp_, integer len)
+static void RENAME(mix8to2)(uint8_t *const *out_, const uint8_t *const *in_,
+                            const void *coeffp_, integer len)
 {
     const SAMPLE *const *const in = (const SAMPLE *const *)in_;
     SAMPLE *const *const out = (SAMPLE *const*)out_;
