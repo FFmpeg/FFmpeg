@@ -3856,7 +3856,7 @@ tcp_protocol_select="network"
 tls_protocol_deps_any="gnutls openssl schannel securetransport libtls mbedtls"
 tls_protocol_select="tcp_protocol"
 # TODO: Support libtls, mbedtls, and gnutls.
-dtls_protocol_deps_any="openssl"
+dtls_protocol_deps_any="openssl schannel"
 dtls_protocol_select="udp_protocol"
 udp_protocol_select="network"
 udplite_protocol_select="network"
@@ -7265,8 +7265,10 @@ enabled securetransport &&
 
 enabled schannel &&
     check_func_headers "windows.h security.h" InitializeSecurityContext -DSECURITY_WIN32 -lsecur32 &&
+    check_func_headers "windows.h ncrypt.h" NCryptOpenStorageProvider -DSECURITY_WIN32 -lncrypt &&
+    check_func_headers "windows.h wincrypt.h" CertCreateSelfSignCertificate -DSECURITY_WIN32 -lcrypt32 &&
     test_cpp_condition winerror.h "defined(SEC_I_CONTEXT_EXPIRED)" &&
-    schannel_extralibs="-lsecur32" ||
+    schannel_extralibs="-lsecur32 -lncrypt -lcrypt32" ||
         disable schannel
 
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo

@@ -32,6 +32,7 @@
 #include <windows.h>
 #include <security.h>
 #include <schnlsp.h>
+#include <sddl.h>
 
 #define SCHANNEL_INITIAL_BUFFER_SIZE   4096
 #define SCHANNEL_FREE_BUFFER_SIZE      1024
@@ -41,6 +42,521 @@
 #define SECBUFFER_ALERT                17
 #endif
 
+/* This is the name used for the private key in the MS Keystore.
+ * There is as of time of writing no way to use schannel without
+ * persisting the private key. Which usually means the default MS
+ * keystore will write it to disk unencrypted, user-read/writable.
+ * To combat this as much as possible, the code makes sure to
+ * delete the private key ASAP once SChannel has gotten ahold of
+ * it.
+ * Apparently this is because SChannel neglects marshaling the
+ * private key alongside the certificate for the out-of-process
+ * tls handler.
+ * See this GitHub issue for the most detailed explanation out there:
+ * https://github.com/dotnet/runtime/issues/23749#issuecomment-485947319
+ */
+#define FF_NCRYPT_TEMP_KEY_NAME L"FFMPEG_TEMP_TLS_KEY"
+
+static int der_to_pem(const char *data, size_t len, const char *header, char *buf, size_t bufsize)
+{
+    const int line_length = 64;
+    AVBPrint pem;
+    DWORD base64len = 0;
+    char *base64 = NULL;
+    int ret = 0;
+
+    if (!CryptBinaryToStringA(data, len, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &base64len)) {
+        av_log(NULL, AV_LOG_ERROR, "CryptBinaryToString failed\n");
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
+
+    base64 = av_malloc(base64len);
+
+    if (!CryptBinaryToStringA(data, len, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, base64, &base64len)) {
+        av_log(NULL, AV_LOG_ERROR, "CryptBinaryToString failed\n");
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
+
+    av_bprint_init_for_buffer(&pem, buf, bufsize);
+    av_bprintf(&pem, "-----BEGIN %s-----\n", header);
+
+    for (DWORD i = 0; i < base64len; i += line_length) {
+        av_bprintf(&pem, "%.*s\n", line_length, base64 + i);
+    }
+
+    av_bprintf(&pem, "-----END %s-----\n", header);
+
+    if (!av_bprint_is_complete(&pem)) {
+        ret = AVERROR(ENOSPC);
+        goto end;
+    }
+
+end:
+    av_free(base64);
+    return ret;
+}
+
+static int pem_to_der(const char *pem, char **buf, int *out_len)
+{
+    DWORD derlen = 0;
+
+    if (!CryptStringToBinaryA(pem, 0, CRYPT_STRING_BASE64HEADER, NULL, &derlen, NULL, NULL)) {
+        av_log(NULL, AV_LOG_ERROR, "CryptStringToBinaryA failed\n");
+        return AVERROR(EINVAL);
+    }
+
+    *buf = av_malloc(derlen);
+    if (!*buf)
+        return AVERROR(ENOMEM);
+
+    if (!CryptStringToBinaryA(pem, 0, CRYPT_STRING_BASE64HEADER, *buf, &derlen, NULL, NULL)) {
+        av_log(NULL, AV_LOG_ERROR, "CryptStringToBinaryA failed\n");
+        return AVERROR(EINVAL);
+    }
+
+    *out_len = derlen;
+
+    return 0;
+}
+
+static int der_to_fingerprint(const char *data, size_t len, char **fingerprint)
+{
+    AVBPrint buf;
+    unsigned char hash[32];
+    DWORD hashsize = sizeof(hash);
+
+    if (!CryptHashCertificate2(BCRYPT_SHA256_ALGORITHM, 0, NULL, data, len, hash, &hashsize))
+    {
+        av_log(NULL, AV_LOG_ERROR, "CryptHashCertificate2 failed\n");
+        return AVERROR_EXTERNAL;
+    }
+
+    av_bprint_init(&buf, hashsize*3, hashsize*3);
+
+    for (int i = 0; i < hashsize - 1; i++)
+        av_bprintf(&buf, "%02X:", hash[i]);
+    av_bprintf(&buf, "%02X", hash[hashsize - 1]);
+
+    return av_bprint_finalize(&buf, fingerprint);
+}
+
+static int tls_gen_self_signed(NCRYPT_KEY_HANDLE *key, PCCERT_CONTEXT *crtctx)
+{
+    NCRYPT_PROV_HANDLE provider = 0;
+    CERT_NAME_BLOB subject = { 0 };
+
+    DWORD export_props = NCRYPT_ALLOW_EXPORT_FLAG | NCRYPT_ALLOW_PLAINTEXT_EXPORT_FLAG;
+    DWORD usage_props = NCRYPT_ALLOW_ALL_USAGES;
+    LPCSTR ext_usages[] = { szOID_PKIX_KP_SERVER_AUTH };
+    BYTE key_usage = CERT_KEY_ENCIPHERMENT_KEY_USAGE | CERT_DIGITAL_SIGNATURE_KEY_USAGE;
+    CRYPT_BIT_BLOB key_usage_blob = { 0 };
+    CERT_ENHKEY_USAGE eku = { 0 };
+    CERT_BASIC_CONSTRAINTS2_INFO basic_constraints = { 0 };
+    CERT_ALT_NAME_ENTRY san_entry = { 0 };
+    CERT_ALT_NAME_INFO san_info = { 0 };
+    CERT_EXTENSION ext[4] = { 0 };
+    CERT_EXTENSIONS exts = { 0 };
+    CRYPT_ALGORITHM_IDENTIFIER sig_alg = { (LPSTR)szOID_ECDSA_SHA256 };
+    CRYPT_KEY_PROV_INFO prov_info = { 0 };
+    const char *subj_str = "CN=lavf";
+
+    SECURITY_STATUS sspi_ret;
+    int ret = 0;
+
+    *crtctx = NULL;
+
+    sspi_ret = NCryptOpenStorageProvider(&provider, MS_KEY_STORAGE_PROVIDER, 0);
+    if (sspi_ret != ERROR_SUCCESS) {
+        av_log(NULL, AV_LOG_ERROR, "NCryptOpenStorageProvider failed(0x%lx)\n", sspi_ret);
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    sspi_ret = NCryptCreatePersistedKey(provider, key, BCRYPT_ECDSA_P256_ALGORITHM, FF_NCRYPT_TEMP_KEY_NAME, 0, NCRYPT_OVERWRITE_KEY_FLAG);
+    if (sspi_ret != ERROR_SUCCESS) {
+        av_log(NULL, AV_LOG_ERROR, "NCryptCreatePersistedKey failed(0x%lx)\n", sspi_ret);
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    sspi_ret = NCryptSetProperty(*key, NCRYPT_EXPORT_POLICY_PROPERTY, (PBYTE)&export_props, sizeof(export_props), 0);
+    if (sspi_ret != ERROR_SUCCESS) {
+        av_log(NULL, AV_LOG_ERROR, "NCryptSetProperty(NCRYPT_EXPORT_POLICY_PROPERTY) failed(0x%lx)\n", sspi_ret);
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    sspi_ret = NCryptSetProperty(*key, NCRYPT_KEY_USAGE_PROPERTY, (PBYTE)&usage_props, sizeof(usage_props), 0);
+    if (sspi_ret != ERROR_SUCCESS) {
+        av_log(NULL, AV_LOG_ERROR, "NCryptSetProperty(NCRYPT_KEY_USAGE_PROPERTY) failed(0x%lx)\n", sspi_ret);
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    sspi_ret = NCryptFinalizeKey(*key, 0);
+    if (sspi_ret != ERROR_SUCCESS) {
+        av_log(NULL, AV_LOG_ERROR, "NCryptFinalizeKey failed(0x%lx)\n", sspi_ret);
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    if (!CertStrToNameA(X509_ASN_ENCODING, subj_str, 0, NULL, NULL, &subject.cbData, NULL))
+    {
+        av_log(NULL, AV_LOG_ERROR, "Initial subj init failed\n");
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    subject.pbData = av_malloc(subject.cbData);
+    if (!subject.pbData) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    if (!CertStrToNameA(X509_ASN_ENCODING, subj_str, 0, NULL, subject.pbData, &subject.cbData, NULL))
+    {
+        av_log(NULL, AV_LOG_ERROR, "Subj init failed\n");
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    // Extended Key Usage extension
+    eku.cUsageIdentifier = 1;
+    eku.rgpszUsageIdentifier = (LPSTR*)ext_usages;
+
+    if (!CryptEncodeObjectEx(X509_ASN_ENCODING, X509_ENHANCED_KEY_USAGE, &eku,
+                             CRYPT_ENCODE_ALLOC_FLAG, NULL, &ext[0].Value.pbData, &ext[0].Value.cbData)) {
+        av_log(NULL, AV_LOG_ERROR, "CryptEncodeObjectEx for EKU failed\n");
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    ext[0].pszObjId = (LPSTR)szOID_ENHANCED_KEY_USAGE;
+    ext[0].fCritical = TRUE;
+
+    // Key usage extension
+    key_usage_blob.cbData = sizeof(key_usage);
+    key_usage_blob.pbData = &key_usage;
+
+    if (!CryptEncodeObjectEx(X509_ASN_ENCODING, X509_BITS, &key_usage_blob,
+                             CRYPT_ENCODE_ALLOC_FLAG, NULL, &ext[1].Value.pbData, &ext[1].Value.cbData)) {
+        av_log(NULL, AV_LOG_ERROR, "CryptEncodeObjectEx for KU failed\n");
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    ext[1].pszObjId = (LPSTR)szOID_KEY_USAGE;
+    ext[1].fCritical = TRUE;
+
+    // Cert Basic Constraints
+    basic_constraints.fCA = FALSE;
+
+    if (!CryptEncodeObjectEx(X509_ASN_ENCODING, X509_BASIC_CONSTRAINTS2, &basic_constraints,
+                             CRYPT_ENCODE_ALLOC_FLAG, NULL, &ext[2].Value.pbData, &ext[2].Value.cbData)) {
+        av_log(NULL, AV_LOG_ERROR, "CryptEncodeObjectEx for KU failed\n");
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    ext[2].pszObjId = (LPSTR)szOID_BASIC_CONSTRAINTS2;
+    ext[2].fCritical = TRUE;
+
+    // Subject Alt Names
+    san_entry.dwAltNameChoice = CERT_ALT_NAME_DNS_NAME;
+    san_entry.pwszDNSName = (LPWSTR)L"localhost";
+
+    san_info.cAltEntry = 1;
+    san_info.rgAltEntry = &san_entry;
+
+    if (!CryptEncodeObjectEx(X509_ASN_ENCODING, X509_ALTERNATE_NAME, &san_info,
+                             CRYPT_ENCODE_ALLOC_FLAG, NULL, &ext[3].Value.pbData, &ext[3].Value.cbData)) {
+        av_log(NULL, AV_LOG_ERROR, "CryptEncodeObjectEx for KU failed\n");
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    ext[3].pszObjId = (LPSTR)szOID_SUBJECT_ALT_NAME2;
+    ext[3].fCritical = TRUE;
+
+    exts.cExtension = 4;
+    exts.rgExtension = ext;
+
+    prov_info.pwszProvName = (LPWSTR)MS_KEY_STORAGE_PROVIDER;
+    prov_info.pwszContainerName = (LPWSTR)FF_NCRYPT_TEMP_KEY_NAME;
+    prov_info.dwFlags = CERT_SET_KEY_CONTEXT_PROP_ID;
+
+    *crtctx = CertCreateSelfSignCertificate(*key, &subject, 0, &prov_info, &sig_alg, NULL, NULL, &exts);
+    if (!*crtctx) {
+        av_log(NULL, AV_LOG_ERROR, "CertCreateSelfSignCertificate failed: %lu\n", GetLastError());
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    NCryptFreeObject(provider);
+    av_free(subject.pbData);
+    for (int i = 0; i < FF_ARRAY_ELEMS(ext); i++)
+        LocalFree(ext[i].Value.pbData);
+
+    return 0;
+
+fail:
+    if (*crtctx)
+        CertFreeCertificateContext(*crtctx);
+    if (*key)
+        if (NCryptDeleteKey(*key, NCRYPT_SILENT_FLAG) != ERROR_SUCCESS)
+            NCryptFreeObject(*key);
+    if (provider)
+        NCryptFreeObject(provider);
+    if (subject.pbData)
+        av_free(subject.pbData);
+    for (int i = 0; i < FF_ARRAY_ELEMS(ext); i++)
+        if (ext[i].Value.pbData)
+            LocalFree(ext[i].Value.pbData);
+
+    *key = 0;
+    *crtctx = NULL;
+
+    return ret;
+}
+
+static int tls_export_key_cert(NCRYPT_KEY_HANDLE key, PCCERT_CONTEXT crtctx,
+                               char *key_buf, size_t key_sz, char *cert_buf, size_t cert_sz, char **fingerprint)
+{
+    DWORD keysize = 0;
+    char *keybuf = NULL;
+
+    SECURITY_STATUS sspi_ret;
+    int ret = 0;
+
+    sspi_ret = NCryptExportKey(key, 0, NCRYPT_PKCS8_PRIVATE_KEY_BLOB, NULL, NULL, 0, &keysize, 0);
+    if (sspi_ret != ERROR_SUCCESS) {
+        av_log(NULL, AV_LOG_ERROR, "Initial NCryptExportKey failed(0x%lx)\n", sspi_ret);
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
+
+    keybuf = av_malloc(keysize);
+    if (!keybuf) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    sspi_ret = NCryptExportKey(key, 0, NCRYPT_PKCS8_PRIVATE_KEY_BLOB, NULL, keybuf, keysize, &keysize, 0);
+    if (sspi_ret != ERROR_SUCCESS) {
+        av_log(NULL, AV_LOG_ERROR, "Initial NCryptExportKey failed(0x%lx)\n", sspi_ret);
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
+
+    ret = der_to_pem(keybuf, keysize, "PRIVATE KEY", key_buf, key_sz);
+    if (ret < 0)
+        goto end;
+
+    ret = der_to_pem(crtctx->pbCertEncoded, crtctx->cbCertEncoded, "CERTIFICATE", cert_buf, cert_sz);
+    if (ret < 0)
+        goto end;
+
+    ret = der_to_fingerprint(crtctx->pbCertEncoded, crtctx->cbCertEncoded, fingerprint);
+    if (ret < 0)
+        goto end;
+
+end:
+    av_free(keybuf);
+    return ret;
+}
+
+int ff_ssl_gen_key_cert(char *key_buf, size_t key_sz, char *cert_buf, size_t cert_sz, char **fingerprint)
+{
+    NCRYPT_KEY_HANDLE key = 0;
+    PCCERT_CONTEXT crtctx = NULL;
+
+    int ret = tls_gen_self_signed(&key, &crtctx);
+    if (ret < 0)
+        goto end;
+
+    ret = tls_export_key_cert(key, crtctx, key_buf, key_sz, cert_buf, cert_sz, fingerprint);
+    if (ret < 0)
+        goto end;
+
+end:
+    if (key)
+        if (NCryptDeleteKey(key, NCRYPT_SILENT_FLAG) != ERROR_SUCCESS)
+            NCryptFreeObject(key);
+    if (crtctx)
+        CertFreeCertificateContext(crtctx);
+
+    return ret;
+}
+
+static int tls_import_key_cert(char *key_buf, char *cert_buf, NCRYPT_KEY_HANDLE *key, PCCERT_CONTEXT *crtctx)
+{
+    NCRYPT_PROV_HANDLE provider = 0;
+
+    DWORD export_props = NCRYPT_ALLOW_EXPORT_FLAG | NCRYPT_ALLOW_PLAINTEXT_EXPORT_FLAG;
+    DWORD usage_props = NCRYPT_ALLOW_ALL_USAGES;
+    NCryptBufferDesc buffer_desc = { 0 };
+    NCryptBuffer buffer = { 0 };
+    CRYPT_KEY_PROV_INFO prov_info = { 0 };
+
+    int key_der_len = 0, cert_der_len = 0;
+    char *key_der = NULL, *cert_der = NULL;
+
+    SECURITY_STATUS sspi_ret;
+    int ret = 0;
+
+    ret = pem_to_der(key_buf, &key_der, &key_der_len);
+    if (ret < 0)
+        goto fail;
+
+    ret = pem_to_der(cert_buf, &cert_der, &cert_der_len);
+    if (ret < 0)
+        goto fail;
+
+    sspi_ret = NCryptOpenStorageProvider(&provider, MS_KEY_STORAGE_PROVIDER, 0);
+    if (sspi_ret != ERROR_SUCCESS) {
+        av_log(NULL, AV_LOG_ERROR, "NCryptOpenStorageProvider failed(0x%lx)\n", sspi_ret);
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    buffer_desc.ulVersion = NCRYPTBUFFER_VERSION;
+    buffer_desc.cBuffers = 1;
+    buffer_desc.pBuffers = &buffer;
+
+    buffer.BufferType = NCRYPTBUFFER_PKCS_KEY_NAME;
+    buffer.pvBuffer = (LPWSTR)FF_NCRYPT_TEMP_KEY_NAME;
+    buffer.cbBuffer = sizeof(FF_NCRYPT_TEMP_KEY_NAME);
+
+    sspi_ret = NCryptImportKey(provider, 0, NCRYPT_PKCS8_PRIVATE_KEY_BLOB, &buffer_desc, key, key_der, key_der_len, NCRYPT_DO_NOT_FINALIZE_FLAG | NCRYPT_OVERWRITE_KEY_FLAG);
+    if (sspi_ret != ERROR_SUCCESS) {
+        av_log(NULL, AV_LOG_ERROR, "NCryptImportKey failed(0x%lx)\n", sspi_ret);
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    sspi_ret = NCryptSetProperty(*key, NCRYPT_EXPORT_POLICY_PROPERTY, (PBYTE)&export_props, sizeof(export_props), 0);
+    if (sspi_ret != ERROR_SUCCESS) {
+        av_log(NULL, AV_LOG_ERROR, "NCryptSetProperty(NCRYPT_EXPORT_POLICY_PROPERTY) failed(0x%lx)\n", sspi_ret);
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    sspi_ret = NCryptSetProperty(*key, NCRYPT_KEY_USAGE_PROPERTY, (PBYTE)&usage_props, sizeof(usage_props), 0);
+    if (sspi_ret != ERROR_SUCCESS) {
+        av_log(NULL, AV_LOG_ERROR, "NCryptSetProperty(NCRYPT_KEY_USAGE_PROPERTY) failed(0x%lx)\n", sspi_ret);
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    sspi_ret = NCryptFinalizeKey(*key, 0);
+    if (sspi_ret != ERROR_SUCCESS) {
+        av_log(NULL, AV_LOG_ERROR, "NCryptFinalizeKey failed(0x%lx)\n", sspi_ret);
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    *crtctx = CertCreateCertificateContext(X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, cert_der, cert_der_len);
+    if (!*crtctx) {
+        av_log(NULL, AV_LOG_ERROR, "CertCreateCertificateContext failed: %lu\n", GetLastError());
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    if (!CertSetCertificateContextProperty(*crtctx, CERT_NCRYPT_KEY_HANDLE_PROP_ID, 0, key)) {
+        av_log(NULL, AV_LOG_ERROR, "CertSetCertificateContextProperty(CERT_NCRYPT_KEY_HANDLE_PROP_ID) failed: %lu\n", GetLastError());
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    prov_info.pwszProvName = (LPWSTR)MS_KEY_STORAGE_PROVIDER;
+    prov_info.pwszContainerName = (LPWSTR)FF_NCRYPT_TEMP_KEY_NAME;
+    prov_info.dwFlags = CERT_SET_KEY_CONTEXT_PROP_ID;
+
+    if (!CertSetCertificateContextProperty(*crtctx, CERT_KEY_PROV_INFO_PROP_ID, 0, &prov_info)) {
+        av_log(NULL, AV_LOG_ERROR, "CertSetCertificateContextProperty(CERT_KEY_PROV_INFO_PROP_ID) failed: %lu\n", GetLastError());
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    goto end;
+
+fail:
+    if (*key)
+        if (NCryptDeleteKey(*key, NCRYPT_SILENT_FLAG) != ERROR_SUCCESS)
+            NCryptFreeObject(*key);
+    if (*crtctx)
+        CertFreeCertificateContext(*crtctx);
+
+    *key = 0;
+    *crtctx = NULL;
+
+end:
+    if (key_der)
+        av_free(key_der);
+    if (cert_der)
+        av_free(cert_der);
+    if (provider)
+        NCryptFreeObject(provider);
+    return ret;
+}
+
+static int tls_load_key_cert(char *key_url, char *cert_url, NCRYPT_KEY_HANDLE *key, PCCERT_CONTEXT *crtctx)
+{
+    AVBPrint key_bp, cert_bp;
+    int ret = 0;
+
+    av_bprint_init(&key_bp, 1, MAX_CERTIFICATE_SIZE);
+    av_bprint_init(&cert_bp, 1, MAX_CERTIFICATE_SIZE);
+
+    /* Read key file. */
+    ret = ff_url_read_all(key_url, &key_bp);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Failed to open key file %s\n", key_url);
+        goto end;
+    }
+
+    ret = ff_url_read_all(cert_url, &cert_bp);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Failed to open cert file %s\n", cert_url);
+        goto end;
+    }
+
+    ret = tls_import_key_cert(key_bp.str, cert_bp.str, key, crtctx);
+    if (ret < 0)
+        goto end;
+
+end:
+    av_bprint_finalize(&key_bp, NULL);
+    av_bprint_finalize(&cert_bp, NULL);
+
+    return ret;
+}
+
+int ff_ssl_read_key_cert(char *key_url, char *cert_url, char *key_buf, size_t key_sz, char *cert_buf, size_t cert_sz, char **fingerprint)
+{
+    NCRYPT_KEY_HANDLE key = 0;
+    PCCERT_CONTEXT crtctx = NULL;
+
+    int ret = tls_load_key_cert(key_url, cert_url, &key, &crtctx);
+    if (ret < 0)
+        goto end;
+
+    ret = tls_export_key_cert(key, crtctx, key_buf, key_sz, cert_buf, cert_sz, fingerprint);
+    if (ret < 0)
+        goto end;
+
+end:
+    if (key)
+        if (NCryptDeleteKey(key, NCRYPT_SILENT_FLAG) != ERROR_SUCCESS)
+            NCryptFreeObject(key);
+    if (crtctx)
+        CertFreeCertificateContext(crtctx);
+
+    return ret;
+}
+
 typedef struct TLSContext {
     const AVClass *class;
     TLSShared tls_shared;
@@ -49,6 +565,7 @@ typedef struct TLSContext {
     TimeStamp cred_timestamp;
 
     CtxtHandle ctxt_handle;
+    int have_context;
     TimeStamp ctxt_timestamp;
 
     ULONG request_flags;
@@ -68,6 +585,67 @@ typedef struct TLSContext {
     int connection_closed;
     int sspi_close_notify;
 } TLSContext;
+
+int ff_tls_set_external_socket(URLContext *h, URLContext *sock)
+{
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
+
+    if (s->is_dtls)
+        c->tls_shared.udp = sock;
+    else
+        c->tls_shared.tcp = sock;
+
+    return 0;
+}
+
+int ff_dtls_export_materials(URLContext *h, char *dtls_srtp_materials, size_t materials_sz)
+{
+    TLSContext *c = h->priv_data;
+
+    SecPkgContext_KeyingMaterialInfo keying_info = { 0 };
+    SecPkgContext_KeyingMaterial keying_material = { 0 };
+
+    const char* dst = "EXTRACTOR-dtls_srtp";
+    SECURITY_STATUS sspi_ret;
+
+    if (!c->have_context)
+        return AVERROR(EINVAL);
+
+    keying_info.cbLabel = strlen(dst) + 1;
+    keying_info.pszLabel = (LPSTR)dst;
+    keying_info.cbContextValue = 0;
+    keying_info.pbContextValue = NULL;
+    keying_info.cbKeyingMaterial = materials_sz;
+
+    sspi_ret = SetContextAttributes(&c->ctxt_handle, SECPKG_ATTR_KEYING_MATERIAL_INFO, &keying_info, sizeof(keying_info));
+    if (sspi_ret != SEC_E_OK) {
+        av_log(h, AV_LOG_ERROR, "Setting keying material info failed: %lx\n", sspi_ret);
+        return AVERROR_EXTERNAL;
+    }
+
+    sspi_ret = QueryContextAttributes(&c->ctxt_handle, SECPKG_ATTR_KEYING_MATERIAL, &keying_material);
+    if (sspi_ret != SEC_E_OK) {
+        av_log(h, AV_LOG_ERROR, "Querying keying material failed: %lx\n", sspi_ret);
+        return AVERROR_EXTERNAL;
+    }
+
+    memcpy(dtls_srtp_materials, keying_material.pbKeyingMaterial, FFMIN(materials_sz, keying_material.cbKeyingMaterial));
+    FreeContextBuffer(keying_material.pbKeyingMaterial);
+
+    if (keying_material.cbKeyingMaterial > materials_sz) {
+        av_log(h, AV_LOG_WARNING, "Keying material size mismatch: %ld > %zu\n", keying_material.cbKeyingMaterial, materials_sz);
+        return AVERROR(ENOSPC);
+    }
+
+    return 0;
+}
+
+int ff_dtls_state(URLContext *h)
+{
+    TLSContext *c = h->priv_data;
+    return c->tls_shared.state;
+}
 
 static void init_sec_buffer(SecBuffer *buffer, unsigned long type,
                             void *data, unsigned long size)
@@ -89,6 +667,7 @@ static int tls_shutdown_client(URLContext *h)
 {
     TLSContext *c = h->priv_data;
     TLSShared *s = &c->tls_shared;
+    URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     int ret;
 
     if (c->connected) {
@@ -106,19 +685,31 @@ static int tls_shutdown_client(URLContext *h)
         if (sspi_ret != SEC_E_OK)
             av_log(h, AV_LOG_ERROR, "ApplyControlToken failed\n");
 
-        init_sec_buffer(&outbuf, SECBUFFER_EMPTY, NULL, 0);
+        init_sec_buffer(&outbuf, SECBUFFER_TOKEN, NULL, 0);
         init_sec_buffer_desc(&outbuf_desc, &outbuf, 1);
 
-        sspi_ret = InitializeSecurityContext(&c->cred_handle, &c->ctxt_handle, s->host,
-                                             c->request_flags, 0, 0, NULL, 0, &c->ctxt_handle,
-                                             &outbuf_desc, &c->context_flags, &c->ctxt_timestamp);
-        if (sspi_ret == SEC_E_OK || sspi_ret == SEC_I_CONTEXT_EXPIRED) {
-            s->tcp->flags &= ~AVIO_FLAG_NONBLOCK;
-            ret = ffurl_write(s->tcp, outbuf.pvBuffer, outbuf.cbBuffer);
-            FreeContextBuffer(outbuf.pvBuffer);
-            if (ret < 0 || ret != outbuf.cbBuffer)
-                av_log(h, AV_LOG_ERROR, "Failed to send close message\n");
-        }
+        do {
+            if (s->listen)
+                sspi_ret = AcceptSecurityContext(&c->cred_handle, &c->ctxt_handle, NULL, c->request_flags, 0,
+                                                 &c->ctxt_handle, &outbuf_desc, &c->context_flags,
+                                                 &c->ctxt_timestamp);
+            else
+                sspi_ret = InitializeSecurityContext(&c->cred_handle, &c->ctxt_handle, s->host,
+                                                     c->request_flags, 0, 0, NULL, 0, &c->ctxt_handle,
+                                                     &outbuf_desc, &c->context_flags, &c->ctxt_timestamp);
+
+            if (outbuf.pvBuffer) {
+                if (outbuf.cbBuffer > 0) {
+                    uc->flags &= ~AVIO_FLAG_NONBLOCK;
+                    ret = ffurl_write(uc, outbuf.pvBuffer, outbuf.cbBuffer);
+                    if (ret < 0 || ret != outbuf.cbBuffer)
+                        av_log(h, AV_LOG_ERROR, "Failed to send close message\n");
+                }
+                FreeContextBuffer(outbuf.pvBuffer);
+            }
+        } while(sspi_ret == SEC_I_MESSAGE_FRAGMENT || sspi_ret == SEC_I_CONTINUE_NEEDED);
+
+        av_log(h, AV_LOG_DEBUG, "Close session result: 0x%lx\n", sspi_ret);
 
         c->connected = 0;
     }
@@ -128,6 +719,7 @@ static int tls_shutdown_client(URLContext *h)
 static int tls_close(URLContext *h)
 {
     TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
 
     tls_shutdown_client(h);
 
@@ -140,19 +732,28 @@ static int tls_close(URLContext *h)
     av_freep(&c->dec_buf);
     c->dec_buf_size = c->dec_buf_offset = 0;
 
-    ffurl_closep(&c->tls_shared.tcp);
+    if (s->is_dtls) {
+        if (!s->external_sock)
+            ffurl_closep(&c->tls_shared.udp);
+    } else {
+        ffurl_closep(&c->tls_shared.tcp);
+    }
+
     return 0;
 }
 
-static int tls_client_handshake_loop(URLContext *h, int initial)
+static int tls_handshake_loop(URLContext *h, int initial)
 {
     TLSContext *c = h->priv_data;
     TLSShared *s = &c->tls_shared;
+    URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     SECURITY_STATUS sspi_ret;
     SecBuffer outbuf[3] = { 0 };
     SecBufferDesc outbuf_desc;
-    SecBuffer inbuf[2];
+    SecBuffer inbuf[3];
     SecBufferDesc inbuf_desc;
+    struct sockaddr_storage recv_addr = { 0 };
+    socklen_t recv_addr_len = 0;
     int i, ret = 0, read_data = initial;
 
     if (c->enc_buf == NULL) {
@@ -171,6 +772,8 @@ static int tls_client_handshake_loop(URLContext *h, int initial)
         c->dec_buf_size = SCHANNEL_INITIAL_BUFFER_SIZE;
     }
 
+    uc->flags &= ~AVIO_FLAG_NONBLOCK;
+
     while (1) {
         if (c->enc_buf_size - c->enc_buf_offset < SCHANNEL_FREE_BUFFER_SIZE) {
             c->enc_buf_size = c->enc_buf_offset + SCHANNEL_FREE_BUFFER_SIZE;
@@ -182,19 +785,35 @@ static int tls_client_handshake_loop(URLContext *h, int initial)
         }
 
         if (read_data) {
-            ret = ffurl_read(c->tls_shared.tcp, c->enc_buf + c->enc_buf_offset,
-                             c->enc_buf_size - c->enc_buf_offset);
+            ret = ffurl_read(uc, c->enc_buf + c->enc_buf_offset, c->enc_buf_size - c->enc_buf_offset);
             if (ret < 0) {
                 av_log(h, AV_LOG_ERROR, "Failed to read handshake response\n");
                 goto fail;
             }
             c->enc_buf_offset += ret;
+            if (s->is_dtls && !recv_addr_len) {
+                ff_udp_get_last_recv_addr(uc, &recv_addr, &recv_addr_len);
+
+                if (s->listen) {
+                    ret = ff_udp_set_remote_addr(uc, (struct sockaddr *)&recv_addr, recv_addr_len, 1);
+                    if (ret < 0) {
+                        av_log(h, AV_LOG_ERROR, "Failed connecting udp context\n");
+                        goto fail;
+                    }
+                    av_log(h, AV_LOG_TRACE, "Set UDP remote addr on UDP socket, now 'connected'\n");
+                }
+            }
         }
 
         /* input buffers */
         init_sec_buffer(&inbuf[0], SECBUFFER_TOKEN, av_malloc(c->enc_buf_offset), c->enc_buf_offset);
         init_sec_buffer(&inbuf[1], SECBUFFER_EMPTY, NULL, 0);
-        init_sec_buffer_desc(&inbuf_desc, inbuf, 2);
+        if (s->listen && s->is_dtls) {
+            init_sec_buffer(&inbuf[2], SECBUFFER_EXTRA, &recv_addr, recv_addr_len);
+            init_sec_buffer_desc(&inbuf_desc, inbuf, 3);
+        } else {
+            init_sec_buffer_desc(&inbuf_desc, inbuf, 2);
+        }
 
         if (inbuf[0].pvBuffer == NULL) {
             av_log(h, AV_LOG_ERROR, "Failed to allocate input buffer\n");
@@ -210,16 +829,25 @@ static int tls_client_handshake_loop(URLContext *h, int initial)
         init_sec_buffer(&outbuf[2], SECBUFFER_EMPTY, NULL, 0);
         init_sec_buffer_desc(&outbuf_desc, outbuf, 3);
 
-        sspi_ret = InitializeSecurityContext(&c->cred_handle, &c->ctxt_handle, s->host, c->request_flags,
-                                             0, 0, &inbuf_desc, 0, NULL, &outbuf_desc, &c->context_flags,
-                                             &c->ctxt_timestamp);
+        if (s->listen)
+            sspi_ret = AcceptSecurityContext(&c->cred_handle, c->have_context ? &c->ctxt_handle : NULL, &inbuf_desc,
+                                             c->request_flags, 0, &c->ctxt_handle, &outbuf_desc,
+                                             &c->context_flags, &c->ctxt_timestamp);
+        else
+            sspi_ret = InitializeSecurityContext(&c->cred_handle, c->have_context ? &c->ctxt_handle : NULL,
+                                                 s->host, c->request_flags, 0, 0, &inbuf_desc, 0, &c->ctxt_handle,
+                                                 &outbuf_desc, &c->context_flags, &c->ctxt_timestamp);
         av_freep(&inbuf[0].pvBuffer);
 
+        av_log(h, AV_LOG_TRACE, "Handshake res with %d bytes of data: 0x%lx\n", c->enc_buf_offset, sspi_ret);
+
         if (sspi_ret == SEC_E_INCOMPLETE_MESSAGE) {
-            av_log(h, AV_LOG_DEBUG, "Received incomplete handshake, need more data\n");
+            av_log(h, AV_LOG_TRACE, "Received incomplete handshake, need more data\n");
             read_data = 1;
             continue;
         }
+
+        c->have_context = 1;
 
         /* remote requests a client certificate - attempt to continue without one anyway */
         if (sspi_ret == SEC_I_INCOMPLETE_CREDENTIALS &&
@@ -231,10 +859,10 @@ static int tls_client_handshake_loop(URLContext *h, int initial)
         }
 
         /* continue handshake */
-        if (sspi_ret == SEC_I_CONTINUE_NEEDED || sspi_ret == SEC_E_OK) {
+        if (sspi_ret == SEC_I_CONTINUE_NEEDED || sspi_ret == SEC_I_MESSAGE_FRAGMENT || sspi_ret == SEC_E_OK) {
             for (i = 0; i < 3; i++) {
                 if (outbuf[i].BufferType == SECBUFFER_TOKEN && outbuf[i].cbBuffer > 0) {
-                    ret = ffurl_write(c->tls_shared.tcp, outbuf[i].pvBuffer, outbuf[i].cbBuffer);
+                    ret = ffurl_write(uc, outbuf[i].pvBuffer, outbuf[i].cbBuffer);
                     if (ret < 0 || ret != outbuf[i].cbBuffer) {
                         av_log(h, AV_LOG_VERBOSE, "Failed to send handshake data\n");
                         ret = AVERROR(EIO);
@@ -256,12 +884,19 @@ static int tls_client_handshake_loop(URLContext *h, int initial)
             goto fail;
         }
 
+        if (sspi_ret == SEC_I_MESSAGE_FRAGMENT) {
+            av_log(h, AV_LOG_TRACE, "Writing fragmented output message part\n");
+            read_data = 0;
+            continue;
+        }
+
         if (inbuf[1].BufferType == SECBUFFER_EXTRA && inbuf[1].cbBuffer > 0) {
             if (c->enc_buf_offset > inbuf[1].cbBuffer) {
                 memmove(c->enc_buf, (c->enc_buf + c->enc_buf_offset) - inbuf[1].cbBuffer,
                         inbuf[1].cbBuffer);
                 c->enc_buf_offset = inbuf[1].cbBuffer;
                 if (sspi_ret == SEC_I_CONTINUE_NEEDED) {
+                    av_log(h, AV_LOG_TRACE, "Sent reply, handshake continues. %d extra bytes\n", (int)inbuf[1].cbBuffer);
                     read_data = 0;
                     continue;
                 }
@@ -271,12 +906,15 @@ static int tls_client_handshake_loop(URLContext *h, int initial)
         }
 
         if (sspi_ret == SEC_I_CONTINUE_NEEDED) {
+            av_log(h, AV_LOG_TRACE, "Handshake continues\n");
             read_data = 1;
             continue;
         }
 
         break;
     }
+
+    av_log(h, AV_LOG_TRACE, "Handshake completed\n");
 
     return 0;
 
@@ -289,6 +927,8 @@ fail:
         }
     }
 
+    av_log(h, AV_LOG_TRACE, "Handshake failed\n");
+
     return ret;
 }
 
@@ -296,6 +936,7 @@ static int tls_client_handshake(URLContext *h)
 {
     TLSContext *c = h->priv_data;
     TLSShared *s = &c->tls_shared;
+    URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     SecBuffer outbuf;
     SecBufferDesc outbuf_desc;
     SECURITY_STATUS sspi_ret;
@@ -305,8 +946,11 @@ static int tls_client_handshake(URLContext *h)
     init_sec_buffer_desc(&outbuf_desc, &outbuf, 1);
 
     c->request_flags = ISC_REQ_SEQUENCE_DETECT | ISC_REQ_REPLAY_DETECT |
-                       ISC_REQ_CONFIDENTIALITY | ISC_REQ_ALLOCATE_MEMORY |
-                       ISC_REQ_STREAM;
+                       ISC_REQ_CONFIDENTIALITY | ISC_REQ_ALLOCATE_MEMORY;
+    if (s->is_dtls)
+        c->request_flags |= ISC_REQ_DATAGRAM;
+    else
+        c->request_flags |= ISC_REQ_STREAM;
 
     sspi_ret = InitializeSecurityContext(&c->cred_handle, NULL, s->host, c->request_flags, 0, 0,
                                          NULL, 0, &c->ctxt_handle, &outbuf_desc, &c->context_flags,
@@ -317,8 +961,10 @@ static int tls_client_handshake(URLContext *h)
         goto fail;
     }
 
-    s->tcp->flags &= ~AVIO_FLAG_NONBLOCK;
-    ret = ffurl_write(s->tcp, outbuf.pvBuffer, outbuf.cbBuffer);
+    c->have_context = 1;
+
+    uc->flags &= ~AVIO_FLAG_NONBLOCK;
+    ret = ffurl_write(uc, outbuf.pvBuffer, outbuf.cbBuffer);
     FreeContextBuffer(outbuf.pvBuffer);
     if (ret < 0 || ret != outbuf.cbBuffer) {
         av_log(h, AV_LOG_ERROR, "Failed to send initial handshake data\n");
@@ -326,10 +972,60 @@ static int tls_client_handshake(URLContext *h)
         goto fail;
     }
 
-    return tls_client_handshake_loop(h, 1);
+    return tls_handshake_loop(h, 1);
 
 fail:
     DeleteSecurityContext(&c->ctxt_handle);
+    return ret;
+}
+
+static int tls_server_handshake(URLContext *h)
+{
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
+
+    c->request_flags = ASC_REQ_SEQUENCE_DETECT | ASC_REQ_REPLAY_DETECT |
+                       ASC_REQ_CONFIDENTIALITY | ASC_REQ_ALLOCATE_MEMORY;
+    if (s->is_dtls)
+        c->request_flags |= ASC_REQ_DATAGRAM;
+    else
+        c->request_flags |= ASC_REQ_STREAM;
+
+    c->have_context = 0;
+
+    return tls_handshake_loop(h, 1);
+}
+
+static int tls_handshake(URLContext *h)
+{
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
+    SECURITY_STATUS sspi_ret;
+    int ret = 0;
+
+    if (s->listen)
+        ret = tls_server_handshake(h);
+    else
+        ret = tls_client_handshake(h);
+
+    if (ret < 0)
+        goto fail;
+
+    if (s->is_dtls && s->mtu > 0) {
+        ULONG mtu = s->mtu;
+        sspi_ret = SetContextAttributes(&c->ctxt_handle, SECPKG_ATTR_DTLS_MTU, &mtu, sizeof(mtu));
+        if (sspi_ret != SEC_E_OK) {
+            av_log(h, AV_LOG_ERROR, "Failed setting DTLS MTU to %d.\n", s->mtu);
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+        av_log(h, AV_LOG_VERBOSE, "Set DTLS MTU to %d\n", s->mtu);
+    }
+
+    c->connected = 1;
+    s->state = DTLS_STATE_FINISHED;
+
+fail:
     return ret;
 }
 
@@ -339,31 +1035,58 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     TLSShared *s = &c->tls_shared;
     SECURITY_STATUS sspi_ret;
     SCHANNEL_CRED schannel_cred = { 0 };
-    int ret;
+    PCCERT_CONTEXT crtctx = NULL;
+    NCRYPT_KEY_HANDLE key = 0;
+    int ret = 0;
 
-    if ((ret = ff_tls_open_underlying(s, h, uri, options)) < 0)
-        goto fail;
-
-    if (s->listen) {
-        av_log(h, AV_LOG_ERROR, "TLS Listen Sockets with SChannel is not implemented.\n");
-        ret = AVERROR(EINVAL);
-        goto fail;
+    if (!s->external_sock) {
+        if ((ret = ff_tls_open_underlying(s, h, uri, options)) < 0)
+            goto fail;
     }
 
     /* SChannel Options */
     schannel_cred.dwVersion = SCHANNEL_CRED_VERSION;
 
-    if (s->verify)
-        schannel_cred.dwFlags = SCH_CRED_AUTO_CRED_VALIDATION |
-                                SCH_CRED_REVOCATION_CHECK_CHAIN;
-    else
-        schannel_cred.dwFlags = SCH_CRED_MANUAL_CRED_VALIDATION |
-                                SCH_CRED_IGNORE_NO_REVOCATION_CHECK |
-                                SCH_CRED_IGNORE_REVOCATION_OFFLINE;
+    if (s->listen) {
+        if (s->key_buf && s->cert_buf) {
+            ret = tls_import_key_cert(s->key_buf, s->cert_buf, &key, &crtctx);
+            if (ret < 0)
+                goto fail;
+        } else if (s->key_file && s->cert_file) {
+            ret = tls_load_key_cert(s->key_file, s->cert_file, &key, &crtctx);
+            if (ret < 0)
+                goto fail;
+        } else {
+            av_log(h, AV_LOG_VERBOSE, "No server certificate provided, using self-signed\n");
+            ret = tls_gen_self_signed(&key, &crtctx);
+            if (ret < 0)
+                goto fail;
+        }
+
+        schannel_cred.cCreds = 1;
+        schannel_cred.paCred = &crtctx;
+
+        schannel_cred.dwFlags = SCH_CRED_NO_SYSTEM_MAPPER | SCH_CRED_MANUAL_CRED_VALIDATION;
+
+        if (s->is_dtls)
+            schannel_cred.grbitEnabledProtocols = SP_PROT_DTLS1_X_SERVER;
+    } else {
+        if (s->verify)
+            schannel_cred.dwFlags = SCH_CRED_AUTO_CRED_VALIDATION |
+                                    SCH_CRED_REVOCATION_CHECK_CHAIN;
+        else
+            schannel_cred.dwFlags = SCH_CRED_MANUAL_CRED_VALIDATION |
+                                    SCH_CRED_IGNORE_NO_REVOCATION_CHECK |
+                                    SCH_CRED_IGNORE_REVOCATION_OFFLINE;
+
+        if (s->is_dtls)
+            schannel_cred.grbitEnabledProtocols = SP_PROT_DTLS1_X_CLIENT;
+    }
 
     /* Get credential handle */
-    sspi_ret = AcquireCredentialsHandle(NULL, (TCHAR *)UNISP_NAME, SECPKG_CRED_OUTBOUND,
-                                        NULL,  &schannel_cred, NULL, NULL, &c->cred_handle,
+    sspi_ret = AcquireCredentialsHandle(NULL, (TCHAR *)UNISP_NAME,
+                                        s->listen ? SECPKG_CRED_INBOUND : SECPKG_CRED_OUTBOUND,
+                                        NULL, &schannel_cred, NULL, NULL, &c->cred_handle,
                                         &c->cred_timestamp);
     if (sspi_ret != SEC_E_OK) {
         av_log(h, AV_LOG_ERROR, "Unable to acquire security credentials (0x%lx)\n", sspi_ret);
@@ -371,23 +1094,42 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         goto fail;
     }
 
-    ret = tls_client_handshake(h);
-    if (ret < 0)
-        goto fail;
+    if (!s->external_sock) {
+        ret = tls_handshake(h);
+        if (ret < 0)
+            goto fail;
+    }
 
-    c->connected = 1;
-
-    return 0;
+    goto end;
 
 fail:
     tls_close(h);
+
+end:
+    if (crtctx)
+        CertFreeCertificateContext(crtctx);
+    if (key)
+        if (NCryptDeleteKey(key, NCRYPT_SILENT_FLAG) != ERROR_SUCCESS)
+            NCryptFreeObject(key);
+
     return ret;
+}
+
+static int dtls_open(URLContext *h, const char *uri, int flags, AVDictionary **options)
+{
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
+
+    s->is_dtls = 1;
+
+    return tls_open(h, uri, flags, options);
 }
 
 static int tls_read(URLContext *h, uint8_t *buf, int len)
 {
     TLSContext *c = h->priv_data;
     TLSShared *s = &c->tls_shared;
+    URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     SECURITY_STATUS sspi_ret = SEC_E_OK;
     SecBuffer inbuf[4];
     SecBufferDesc inbuf_desc;
@@ -418,10 +1160,10 @@ static int tls_read(URLContext *h, uint8_t *buf, int len)
             }
         }
 
-        s->tcp->flags &= ~AVIO_FLAG_NONBLOCK;
-        s->tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+        uc->flags &= ~AVIO_FLAG_NONBLOCK;
+        uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
 
-        ret = ffurl_read(s->tcp, c->enc_buf + c->enc_buf_offset,
+        ret = ffurl_read(uc, c->enc_buf + c->enc_buf_offset,
                          c->enc_buf_size - c->enc_buf_offset);
         if (ret == AVERROR_EOF) {
             c->connection_closed = 1;
@@ -489,7 +1231,7 @@ static int tls_read(URLContext *h, uint8_t *buf, int len)
                 }
 
                 av_log(h, AV_LOG_VERBOSE, "Re-negotiating security context\n");
-                ret = tls_client_handshake_loop(h, 0);
+                ret = tls_handshake_loop(h, 0);
                 if (ret < 0) {
                     goto cleanup;
                 }
@@ -536,6 +1278,7 @@ static int tls_write(URLContext *h, const uint8_t *buf, int len)
 {
     TLSContext *c = h->priv_data;
     TLSShared *s = &c->tls_shared;
+    URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     SECURITY_STATUS sspi_ret;
     int ret = 0, data_size;
     uint8_t *data = NULL;
@@ -549,7 +1292,7 @@ static int tls_write(URLContext *h, const uint8_t *buf, int len)
     }
 
     /* limit how much data we can consume */
-    len = FFMIN(len, c->sizes.cbMaximumMessage);
+    len = FFMIN(len, c->sizes.cbMaximumMessage - c->sizes.cbHeader - c->sizes.cbTrailer);
 
     data_size = c->sizes.cbHeader + len + c->sizes.cbTrailer;
     data = av_malloc(data_size);
@@ -572,10 +1315,10 @@ static int tls_write(URLContext *h, const uint8_t *buf, int len)
     if (sspi_ret == SEC_E_OK)  {
         len = outbuf[0].cbBuffer + outbuf[1].cbBuffer + outbuf[2].cbBuffer;
 
-        s->tcp->flags &= ~AVIO_FLAG_NONBLOCK;
-        s->tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+        uc->flags &= ~AVIO_FLAG_NONBLOCK;
+        uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
 
-        ret = ffurl_write(s->tcp, data, len);
+        ret = ffurl_write(uc, data, len);
         if (ret == AVERROR(EAGAIN)) {
             goto done;
         } else if (ret < 0 || ret != len) {
@@ -600,13 +1343,15 @@ done:
 static int tls_get_file_handle(URLContext *h)
 {
     TLSContext *c = h->priv_data;
-    return ffurl_get_file_handle(c->tls_shared.tcp);
+    TLSShared *s = &c->tls_shared;
+    return ffurl_get_file_handle(s->is_dtls ? s->udp : s->tcp);
 }
 
 static int tls_get_short_seek(URLContext *h)
 {
-    TLSContext *s = h->priv_data;
-    return ffurl_get_short_seek(s->tls_shared.tcp);
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
+    return ffurl_get_short_seek(s->is_dtls ? s->udp : s->tcp);
 }
 
 static const AVOption options[] = {
@@ -632,4 +1377,25 @@ const URLProtocol ff_tls_protocol = {
     .priv_data_size = sizeof(TLSContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
     .priv_data_class = &tls_class,
+};
+
+static const AVClass dtls_class = {
+    .class_name = "dtls",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+const URLProtocol ff_dtls_protocol = {
+    .name           = "dtls",
+    .url_open2      = dtls_open,
+    .url_handshake  = tls_handshake,
+    .url_close      = tls_close,
+    .url_read       = tls_read,
+    .url_write      = tls_write,
+    .url_get_file_handle = tls_get_file_handle,
+    .url_get_short_seek  = tls_get_short_seek,
+    .priv_data_size = sizeof(TLSContext),
+    .flags          = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class = &dtls_class,
 };
