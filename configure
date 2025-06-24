@@ -2612,6 +2612,7 @@ TYPES_LIST="
     kCVPixelFormatType_444YpCbCr8BiPlanarVideoRange
     kCVPixelFormatType_444YpCbCr10BiPlanarVideoRange
     kCVPixelFormatType_444YpCbCr16BiPlanarVideoRange
+    kCVPixelFormatType_422YpCbCr8_yuvs
     kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ
     kCVImageBufferTransferFunction_ITU_R_2100_HLG
     kCVImageBufferTransferFunction_Linear

@@ -82,6 +82,9 @@ static const struct {
 #if HAVE_KCVPIXELFORMATTYPE_444YPCBCR16BIPLANARVIDEORANGE
     { kCVPixelFormatType_444YpCbCr16BiPlanarVideoRange, false, AV_PIX_FMT_P416 },
 #endif
+#if HAVE_KCVPIXELFORMATTYPE_422YPCBCR8_YUVS
+    { kCVPixelFormatType_422YpCbCr8_yuvs,               false, AV_PIX_FMT_YUYV422 },
+#endif
 };
 
 static const enum AVPixelFormat supported_formats[] = {
@@ -112,6 +115,9 @@ static const enum AVPixelFormat supported_formats[] = {
 #endif
 #if HAVE_KCVPIXELFORMATTYPE_444YPCBCR16BIPLANARVIDEORANGE
     AV_PIX_FMT_P416,
+#endif
+#if HAVE_KCVPIXELFORMATTYPE_422YPCBCR8_YUVS
+    AV_PIX_FMT_YUYV422,
 #endif
     AV_PIX_FMT_BGRA,
 };
