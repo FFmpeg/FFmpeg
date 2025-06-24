@@ -82,7 +82,6 @@ static int iamf_read_header(AVFormatContext *s)
     for (int i = 0; i < iamf->nb_audio_elements; i++) {
         IAMFAudioElement *audio_element = iamf->audio_elements[i];
         AVStreamGroup *stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT, NULL);
-        int coupled_substream_count = audio_element->layers[audio_element->nb_layers - 1].coupled_substream_count;
 
         if (!stg)
             return AVERROR(ENOMEM);
@@ -93,7 +92,7 @@ static int iamf_read_header(AVFormatContext *s)
         stg->params.iamf_audio_element = audio_element->element;
         audio_element->element = NULL;
 
-        for (int j = 0, k = 0; j < audio_element->nb_substreams; j++) {
+        for (int j = 0; j < audio_element->nb_substreams; j++) {
             IAMFSubStream *substream = &audio_element->substreams[j];
             AVStream *st = avformat_new_stream(s, NULL);
 
@@ -114,8 +113,6 @@ static int iamf_read_header(AVFormatContext *s)
                 st->disposition |= AV_DISPOSITION_DEPENDENT;
             st->id = substream->audio_substream_id;
             avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
-
-            k += 1 + (coupled_substream_count-- > 0);
         }
     }
 
