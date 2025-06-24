@@ -78,19 +78,23 @@ typedef struct TLSShared {
 } TLSShared;
 
 #define TLS_OPTFL (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
-#define TLS_COMMON_OPTIONS(pstruct, options_field) \
+
+#define FF_TLS_CLIENT_OPTIONS(pstruct, options_field) \
     {"ca_file",    "Certificate Authority database file", offsetof(pstruct, options_field . ca_file),   AV_OPT_TYPE_STRING, .flags = TLS_OPTFL }, \
     {"cafile",     "Certificate Authority database file", offsetof(pstruct, options_field . ca_file),   AV_OPT_TYPE_STRING, .flags = TLS_OPTFL }, \
     {"tls_verify", "Verify the peer certificate",         offsetof(pstruct, options_field . verify),    AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = TLS_OPTFL }, \
     {"cert_file",  "Certificate file",                    offsetof(pstruct, options_field . cert_file), AV_OPT_TYPE_STRING, .flags = TLS_OPTFL }, \
     {"key_file",   "Private key file",                    offsetof(pstruct, options_field . key_file),  AV_OPT_TYPE_STRING, .flags = TLS_OPTFL }, \
-    {"cert_pem",   "Certificate PEM string",              offsetof(pstruct, options_field . cert_buf),  AV_OPT_TYPE_STRING, .flags = TLS_OPTFL }, \
-    {"key_pem",    "Private key PEM string",              offsetof(pstruct, options_field . key_buf),   AV_OPT_TYPE_STRING, .flags = TLS_OPTFL }, \
+    {"verifyhost", "Verify against a specific hostname",  offsetof(pstruct, options_field . host),      AV_OPT_TYPE_STRING, .flags = TLS_OPTFL }
+
+#define TLS_COMMON_OPTIONS(pstruct, options_field) \
     {"listen",     "Listen for incoming connections",     offsetof(pstruct, options_field . listen),    AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = TLS_OPTFL }, \
-    {"verifyhost", "Verify against a specific hostname",  offsetof(pstruct, options_field . host),      AV_OPT_TYPE_STRING, .flags = TLS_OPTFL }, \
     {"http_proxy", "Set proxy to tunnel through",         offsetof(pstruct, options_field . http_proxy), AV_OPT_TYPE_STRING, .flags = TLS_OPTFL }, \
     {"use_external_udp", "Use external UDP from muxer or demuxer", offsetof(pstruct, options_field . use_external_udp), AV_OPT_TYPE_INT, { .i64 = 0}, 0, 1, .flags = TLS_OPTFL }, \
-    {"mtu",        "Maximum Transmission Unit",           offsetof(pstruct, options_field . mtu),       AV_OPT_TYPE_INT,  { .i64 = 0 }, 0, INT_MAX, .flags = TLS_OPTFL }
+    {"mtu", "Maximum Transmission Unit", offsetof(pstruct, options_field . mtu), AV_OPT_TYPE_INT,  { .i64 = 0 }, 0, INT_MAX, .flags = TLS_OPTFL}, \
+    {"cert_buf", "The optional certificate buffer for DTLS", offsetof(pstruct, options_field . cert_buf), AV_OPT_TYPE_STRING, .flags = TLS_OPTFL}, \
+    {"key_buf", "The optional private key buffer for DTLS", offsetof(pstruct, options_field . key_buf), AV_OPT_TYPE_STRING, .flags = TLS_OPTFL}, \
+    FF_TLS_CLIENT_OPTIONS(pstruct, options_field)
 
 int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AVDictionary **options);
 
