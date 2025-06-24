@@ -421,6 +421,9 @@ fate-filter-atempo: REF = $(SAMPLES)/filter-reference/atempo.pcm
 fate-filter-aloop: CMD = framecrc -filter_complex "sine=r=48000:f=480:d=4,aloop=loop=4:start=48000:size=48000,asetnsamples=9600"
 FATE_AFILTER-$(call ALLYES, SINE_FILTER ALOOP_FILTER ASETNSAMPLES_FILTER PCM_S16LE_ENCODER FRAMECRC_MUXER PIPE_PROTOCOL) += fate-filter-aloop
 
+fate-filter-anullsink: CMD = framecrc -f lavfi -i "sine=d=1" -af "aresample=22050,asplit[a][b];[a]anullsink;[b]atrim=end_sample=256"
+FATE_AFILTER-$(call ALLYES, LAVFI_INDEV SINE_FILTER ARESAMPLE_FILTER ASPLIT_FILTER ANULLSINK_FILTER ATRIM_FILTER PCM_S16LE_ENCODER FRAMECRC_MUXER PIPE_PROTOCOL) += fate-filter-anullsink
+
 fate-filter-crazychannels: tests/data/filtergraphs/crazychannels
 fate-filter-crazychannels: CMD = framecrc -auto_conversion_filters -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/crazychannels
 FATE_AFILTER-$(call FILTERFRAMECRC, ARESAMPLE SINE JOIN ATRIM CHANNELMAP CHANNELSPLIT) += fate-filter-crazychannels

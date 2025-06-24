@@ -1,0 +1,6 @@
+#tb 0: 1/22050
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 22050
+#channel_layout_name 0: mono
+0,          0,          0,      256,      512, 0x270ff949
