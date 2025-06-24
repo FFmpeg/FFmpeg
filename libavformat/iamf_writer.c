@@ -771,7 +771,7 @@ static int iamf_write_audio_element(const IAMFContext *iamf,
                 get_loudspeaker_layout(element->layers[element->nb_layers-1], &layout, &expanded_layout);
                 /* When the highest loudspeaker_layout of the scalable channel audio (i.e., num_layers > 1) is greater than 3.1.2ch,
                  * (i.e., 5.1.2ch, 5.1.4ch, 7.1.2ch, or 7.1.4ch), type PARAMETER_DEFINITION_DEMIXING SHALL be present. */
-                if (layout == 3 && layout == 4 && layout == 6 && layout == 7) {
+                if (layout == 3 || layout == 4 || layout == 6 || layout == 7) {
                     av_log(log_ctx, AV_LOG_ERROR, "demixing_info needed but not set in Stream Group #%u\n",
                            audio_element->audio_element_id);
                     return AVERROR(EINVAL);
