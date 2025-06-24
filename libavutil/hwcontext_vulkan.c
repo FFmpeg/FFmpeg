@@ -1720,6 +1720,9 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
         goto end;
     }
 
+    /* Get supported memory types */
+    vk->GetPhysicalDeviceMemoryProperties(hwctx->phys_dev, &p->mprops);
+
     /* Get all supported features for the physical device */
     device_features_init(ctx, &supported_feats);
     vk->GetPhysicalDeviceFeatures2(hwctx->phys_dev, &supported_feats.device);
