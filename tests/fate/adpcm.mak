@@ -82,6 +82,15 @@ fate-adpcm-ms-mono: CMD = framecrc -i $(TARGET_SAMPLES)/dxa/meetsquid.dxa -t 2 -
 FATE_ADPCM-$(call DEMDEC, MOV, ADPCM_MS) += fate-adpcm_ms-stereo
 fate-adpcm_ms-stereo: CMD = md5 -i $(TARGET_SAMPLES)/qt-surge-suite/surge-2-16-L-ms02.mov -f s16le
 
+FATE_ADPCM-$(call FRAMECRC, WAV, ADPCM_SANYO, ARESAMPLE_FILTER) += fate-adpcm-sanyo-3bit
+fate-adpcm-sanyo-3bit: CMD = framecrc -i $(TARGET_SAMPLES)/sanyo/sanyo-mono-3bit-8000.wav -af aresample
+
+FATE_ADPCM-$(call FRAMECRC, WAV, ADPCM_SANYO, ARESAMPLE_FILTER) += fate-adpcm-sanyo-4bit
+fate-adpcm-sanyo-4bit: CMD = framecrc -i $(TARGET_SAMPLES)/sanyo/sanyo-mono-4bit-8000.wav -af aresample
+
+FATE_ADPCM-$(call FRAMECRC, WAV, ADPCM_SANYO, ARESAMPLE_FILTER) += fate-adpcm-sanyo-5bit
+fate-adpcm-sanyo-5bit: CMD = framecrc -i $(TARGET_SAMPLES)/sanyo/sanyo-mono-5bit-8000.wav -af aresample
+
 FATE_ADPCM-$(call FRAMECRC, THP, ADPCM_THP, ARESAMPLE_FILTER) += fate-adpcm-thp
 fate-adpcm-thp: CMD = framecrc -i $(TARGET_SAMPLES)/thp/pikmin2-opening1-partial.thp -vn -af aresample
 
