@@ -1815,6 +1815,7 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
                                "Failed to get DRM device info for device %d.\n", n);
                         close(priv->drm_fd);
                         priv->drm_fd = -1;
+                        drmFreeVersion(info);
                         continue;
                     }
 
@@ -1826,6 +1827,7 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
                         drmFreeDevice(&device);
                         close(priv->drm_fd);
                         priv->drm_fd = -1;
+                        drmFreeVersion(info);
                         continue;
                     }
                     av_log(ctx, AV_LOG_VERBOSE, "Trying to use "
@@ -1833,6 +1835,7 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
                            "with matching vendor id (%s).\n",
                            n, vendor_id->value);
                     drmFreeDevice(&device);
+                    drmFreeVersion(info);
                     break;
                 }
                 drmFreeVersion(info);
