@@ -114,7 +114,7 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
                 proxy_path && av_strstart(proxy_path, "http://", NULL);
     freeenv_utf8(env_no_proxy);
 
-    if (use_proxy) {
+    if (!c->is_dtls && use_proxy) {
         char proxy_host[200], proxy_auth[200], dest[200];
         int proxy_port;
         av_url_split(NULL, 0, proxy_auth, sizeof(proxy_auth),
