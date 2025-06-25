@@ -567,11 +567,9 @@ static int url_bio_destroy(BIO *b)
     return 1;
 }
 
-#define GET_BIO_DATA(x) BIO_get_data(x)
-
 static int url_bio_bread(BIO *b, char *buf, int len)
 {
-    TLSContext *c = GET_BIO_DATA(b);
+    TLSContext *c = BIO_get_data(b);
     int ret = ffurl_read(c->tls_shared.is_dtls ? c->tls_shared.udp : c->tls_shared.tcp, buf, len);
     if (ret >= 0)
         return ret;
@@ -587,7 +585,7 @@ static int url_bio_bread(BIO *b, char *buf, int len)
 
 static int url_bio_bwrite(BIO *b, const char *buf, int len)
 {
-    TLSContext *c = GET_BIO_DATA(b);
+    TLSContext *c = BIO_get_data(b);
     int ret = ffurl_write(c->tls_shared.is_dtls ? c->tls_shared.udp : c->tls_shared.tcp, buf, len);
     if (ret >= 0)
         return ret;
