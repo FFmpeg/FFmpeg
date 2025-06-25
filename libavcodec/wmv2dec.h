@@ -28,4 +28,10 @@ int ff_wmv2_decode_secondary_picture_header(struct H263DecContext *const h);
 void ff_wmv2_add_mb(MpegEncContext *s, int16_t block[6][64],
                     uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr);
 
+void ff_mspel_motion(MPVContext *const s,
+                     uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
+                     uint8_t *const *ref_picture,
+                     const op_pixels_func (*pix_op)[4],
+                     int motion_x, int motion_y, int h);
+
 #endif
