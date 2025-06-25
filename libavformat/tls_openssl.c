@@ -369,7 +369,6 @@ einval_end:
     ret = AVERROR(EINVAL);
 end:
     X509_NAME_free(subject);
-    //av_bprint_finalize(&fingerprint, NULL);
     return ret;
 }
 
