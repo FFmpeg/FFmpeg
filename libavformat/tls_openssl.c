@@ -899,7 +899,11 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         ret = AVERROR(EIO);
         goto fail;
     }
-    SSL_CTX_set_options(p->ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
+    if (!SSL_CTX_set_min_proto_version(p->ctx, TLS1_VERSION)) {
+        av_log(h, AV_LOG_ERROR, "Failed to set minimum TLS version to TLSv1\n");
+        ret = AVERROR_EXTERNAL;
+        goto fail;
+    }
     ret = openssl_init_ca_key_cert(h);
     if (ret < 0) goto fail;
     // Note, this doesn't check that the peer certificate actually matches
