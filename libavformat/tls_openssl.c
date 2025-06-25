@@ -228,8 +228,8 @@ end:
     av_bprint_finalize(&key_bp, NULL);
     BIO_free(cert_b);
     av_bprint_finalize(&cert_bp, NULL);
-    if (key_tem) av_free(key_tem);
-    if (cert_tem) av_free(cert_tem);
+    av_free(key_tem);
+    av_free(cert_tem);
     return ret;
 }
 
@@ -392,8 +392,8 @@ int ff_ssl_gen_key_cert(char *key_buf, size_t key_sz, char *cert_buf, size_t cer
     snprintf(key_buf,  key_sz,  "%s", key_tem);
     snprintf(cert_buf, cert_sz, "%s", cert_tem);
 
-    if (key_tem) av_free(key_tem);
-    if (cert_tem) av_free(cert_tem);
+    av_free(key_tem);
+    av_free(cert_tem);
 error:
     return ret;
 }
