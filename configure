@@ -7196,13 +7196,10 @@ enabled omx               && require_headers OMX_Core.h && \
 enabled openssl           && { { check_pkg_config openssl "openssl >= 3.0.0" openssl/ssl.h OPENSSL_init_ssl &&
                                  { enabled gplv3 || ! enabled gpl || enabled nonfree || die "ERROR: OpenSSL >=3.0.0 requires --enable-version3"; }; } ||
                                { enabled gpl && ! enabled nonfree && die "ERROR: OpenSSL <3.0.0 is incompatible with the gpl"; } ||
-                               check_pkg_config openssl openssl openssl/ssl.h OPENSSL_init_ssl ||
-                               check_pkg_config openssl openssl openssl/ssl.h SSL_library_init ||
+                               check_pkg_config openssl "openssl >= 1.1.0" openssl/ssl.h OPENSSL_init_ssl ||
                                check_lib openssl openssl/ssl.h OPENSSL_init_ssl -lssl -lcrypto ||
-                               check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto ||
-                               check_lib openssl openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
-                               check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
-                               die "ERROR: openssl not found"; }
+                               check_lib openssl openssl/ssl.h OPENSSL_init_ssl -lssl -lcrypto -lws2_32 -lgdi32 ||
+                               die "ERROR: openssl (>= 1.1.0) not found"; }
 enabled pocketsphinx      && require_pkg_config pocketsphinx pocketsphinx pocketsphinx/pocketsphinx.h ps_init
 enabled rkmpp             && { require_pkg_config rkmpp rockchip_mpp  rockchip/rk_mpi.h mpp_create &&
                                require_pkg_config rockchip_mpp "rockchip_mpp >= 1.3.7" rockchip/rk_mpi.h mpp_create &&
