@@ -28,6 +28,7 @@
  */
 
 #include "config.h"
+#include "config_components.h"
 
 #include "libavutil/thread.h"
 #if ARCH_X86
@@ -42,6 +43,7 @@
 #include "mpeg4videodata.h"
 #include "msmpeg4data.h"
 #include "msmpeg4_vc1_data.h"
+#include "wmv2.h"
 
 /*
  * You can also call this codec: MPEG-4 with a twist!
@@ -133,8 +135,12 @@ av_cold void ff_msmpeg4_common_init(MpegEncContext *s)
             s->c_dc_scale_table= ff_mpeg4_c_dc_scale_table;
         }
         break;
-    case MSMP4_WMV1:
+#if CONFIG_WMV2_DECODER || CONFIG_WMV2_ENCODER
     case MSMP4_WMV2:
+        ff_wmv2_common_init(s);
+        // fallthrough
+#endif
+    case MSMP4_WMV1:
         s->y_dc_scale_table= ff_wmv1_y_dc_scale_table;
         s->c_dc_scale_table= ff_wmv1_c_dc_scale_table;
         break;

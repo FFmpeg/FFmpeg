@@ -578,8 +578,6 @@ static av_cold int wmv2_decode_init(AVCodecContext *avctx)
     h->decode_header = wmv2_decode_picture_header;
     h->decode_mb = wmv2_decode_mb;
 
-    ff_wmv2_common_init(s);
-
     decode_ext_header(w);
 
     return ff_intrax8_common_init(avctx, &w->x8, h->block[0],

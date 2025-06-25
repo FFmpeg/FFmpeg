@@ -233,8 +233,6 @@ static av_cold int wmv2_encode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    ff_wmv2_common_init(&s->c);
-
     avctx->extradata_size = WMV2_EXTRADATA_SIZE;
     avctx->extradata      = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata)
