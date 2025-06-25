@@ -35,7 +35,6 @@
 
 typedef struct WMV2EncContext {
     MSMPEG4EncContext msmpeg4;
-    WMV2Context common;
     int j_type_bit;
     int j_type;
     int abt_flag;
@@ -228,7 +227,7 @@ static av_cold int wmv2_encode_init(AVCodecContext *avctx)
 
     w->msmpeg4.m.encode_picture_header = wmv2_encode_picture_header;
     s->encode_mb                       = wmv2_encode_mb;
-    s->c.private_ctx = &w->common;
+
     ret = ff_mpv_encode_init(avctx);
     if (ret < 0)
         return ret;

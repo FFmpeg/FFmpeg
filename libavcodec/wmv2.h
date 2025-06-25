@@ -30,11 +30,6 @@
 #define SKIP_TYPE_ROW  2
 #define SKIP_TYPE_COL  3
 
-
-typedef struct WMV2Context {
-    int hshift;
-} WMV2Context;
-
 static av_always_inline int wmv2_get_cbp_table_index(int qscale, int cbp_index)
 {
     static const uint8_t map[3][3] = {

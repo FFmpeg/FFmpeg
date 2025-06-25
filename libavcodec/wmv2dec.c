@@ -40,7 +40,6 @@
 
 typedef struct WMV2DecContext {
     MSMP4DecContext ms;
-    WMV2Context common;
     IntraX8Context x8;
 
     qpel_mc_func put_mspel_pixels_tab[8];
@@ -56,6 +55,7 @@ typedef struct WMV2DecContext {
     int cbp_table_index;
     int top_left_mv_flag;
     int per_mb_rl_bit;
+    int hshift;
 
     DECLARE_ALIGNED(32, int16_t, abt_block2)[6][64];
 } WMV2DecContext;
@@ -192,7 +192,7 @@ void ff_mspel_motion(MPVContext *const s, uint8_t *dest_y,
     int emu = 0;
 
     dxy   = ((motion_y & 1) << 1) | (motion_x & 1);
-    dxy   = 2 * dxy + w->common.hshift;
+    dxy   = 2 * dxy + w->hshift;
     src_x = s->mb_x * 16 + (motion_x >> 1);
     src_y = s->mb_y * 16 + (motion_y >> 1);
 
@@ -564,9 +564,9 @@ static inline void wmv2_decode_motion(WMV2DecContext *w, int *mx_ptr, int *my_pt
     ff_msmpeg4_decode_motion(&w->ms, mx_ptr, my_ptr);
 
     if ((((*mx_ptr) | (*my_ptr)) & 1) && h->c.mspel)
-        w->common.hshift = get_bits1(&h->gb);
+        w->hshift = get_bits1(&h->gb);
     else
-        w->common.hshift = 0;
+        w->hshift = 0;
 }
 
 static int16_t *wmv2_pred_motion(WMV2DecContext *w, int *px, int *py)
@@ -678,7 +678,7 @@ static int wmv2_decode_mb(H263DecContext *const h)
             h->c.mv[0][0][0] = 0;
             h->c.mv[0][0][1] = 0;
             h->c.mb_skipped  = 1;
-            w->common.hshift      = 0;
+            w->hshift        = 0;
             return 0;
         }
         if (get_bits_left(&h->gb) <= 0)
@@ -783,8 +783,6 @@ static av_cold int wmv2_decode_init(AVCodecContext *avctx)
     int ret;
 
     wmv2_mspel_init(w);
-
-    s->private_ctx = &w->common;
 
     if ((ret = ff_msmpeg4_decode_init(avctx)) < 0)
         return ret;
