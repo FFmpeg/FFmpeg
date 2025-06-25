@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
@@ -77,7 +78,7 @@ static void wmv2_add_block(WMV2DecContext *w, int16_t blocks1[][64],
             h->c.bdsp.clear_block(w->abt_block2[n]);
             break;
         default:
-            av_log(h->c.avctx, AV_LOG_ERROR, "internal error in WMV2 abt\n");
+            av_unreachable("abt_type_table is read via decode012");
         }
     }
 }
