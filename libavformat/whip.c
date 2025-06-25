@@ -388,6 +388,11 @@ static av_cold int dtls_initialize(AVFormatContext *s)
     WHIPContext *whip = s->priv_data;
     /* reuse the udp created by whip */
     ff_dtls_set_udp(whip->dtls_uc, whip->udp);
+
+    /* Make the socket non-blocking */
+    ff_socket_nonblock(ffurl_get_file_handle(whip->dtls_uc), 1);
+    whip->dtls_uc->flags |= AVIO_FLAG_NONBLOCK;
+
     return 0;
 }
 

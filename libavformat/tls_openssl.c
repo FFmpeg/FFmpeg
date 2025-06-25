@@ -975,14 +975,16 @@ static int tls_write(URLContext *h, const uint8_t *buf, int size)
 
 static int tls_get_file_handle(URLContext *h)
 {
-    TLSContext *c = h->priv_data;
-    return ffurl_get_file_handle(c->tls_shared.tcp);
+    TLSContext *p = h->priv_data;
+    TLSShared *c = &p->tls_shared;
+    return ffurl_get_file_handle(c->is_dtls ? c->udp : c->tcp);
 }
 
 static int tls_get_short_seek(URLContext *h)
 {
-    TLSContext *s = h->priv_data;
-    return ffurl_get_short_seek(s->tls_shared.tcp);
+    TLSContext *p = h->priv_data;
+    TLSShared *c = &p->tls_shared;
+    return ffurl_get_short_seek(c->is_dtls ? c->udp : c->tcp);
 }
 
 static const AVOption options[] = {
@@ -1024,6 +1026,8 @@ const URLProtocol ff_dtls_protocol = {
     .url_close      = dtls_close,
     .url_read       = tls_read,
     .url_write      = tls_write,
+    .url_get_file_handle = tls_get_file_handle,
+    .url_get_short_seek  = tls_get_short_seek,
     .priv_data_size = sizeof(TLSContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
     .priv_data_class = &dtls_class,

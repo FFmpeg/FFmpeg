@@ -141,15 +141,6 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
     ret = ffurl_open_whitelist(c->is_dtls ? &c->udp : &c->tcp, buf, AVIO_FLAG_READ_WRITE,
                                &parent->interrupt_callback, options,
                                parent->protocol_whitelist, parent->protocol_blacklist, parent);
-    if (c->is_dtls) {
-        if (ret < 0) {
-            av_log(c, AV_LOG_ERROR, "Failed to open udp://%s:%d\n", c->underlying_host, port);
-            return ret;
-        }
-        /* Make the socket non-blocking, set to READ and WRITE mode after connected */
-        ff_socket_nonblock(ffurl_get_file_handle(c->udp), 1);
-        c->udp->flags |= AVIO_FLAG_READ | AVIO_FLAG_NONBLOCK;
-    }
     return ret;
 }
 
