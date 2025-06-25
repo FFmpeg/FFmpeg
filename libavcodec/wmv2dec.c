@@ -51,7 +51,6 @@ typedef struct WMV2DecContext {
     int cbp_table_index;
     int top_left_mv_flag;
     int per_mb_rl_bit;
-    int skip_type;
 
     DECLARE_ALIGNED(32, int16_t, abt_block2)[6][64];
 } WMV2DecContext;
@@ -106,8 +105,8 @@ static int parse_mb_skip(WMV2DecContext *w)
     int coded_mb_count = 0;
     uint32_t *const mb_type = h->c.cur_pic.mb_type;
 
-    w->skip_type = get_bits(&h->gb, 2);
-    switch (w->skip_type) {
+    int skip_type = get_bits(&h->gb, 2);
+    switch (skip_type) {
     case SKIP_TYPE_NONE:
         for (int mb_y = 0; mb_y < h->c.mb_height; mb_y++)
             for (int mb_x = 0; mb_x < h->c.mb_width; mb_x++)
