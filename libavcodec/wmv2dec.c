@@ -376,17 +376,17 @@ static int parse_mb_skip(WMV2DecContext *w)
     return 0;
 }
 
-static int decode_ext_header(WMV2DecContext *w)
+static av_cold int decode_ext_header(AVCodecContext *avctx, WMV2DecContext *w)
 {
     H263DecContext *const h = &w->ms.h;
     GetBitContext gb;
     int fps;
     int code;
 
-    if (h->c.avctx->extradata_size < 4)
+    if (avctx->extradata_size < 4)
         return AVERROR_INVALIDDATA;
 
-    init_get_bits(&gb, h->c.avctx->extradata, 32);
+    init_get_bits(&gb, avctx->extradata, 32);
 
     fps                 = get_bits(&gb, 5);
     w->ms.bit_rate      = get_bits(&gb, 11) * 1024;
@@ -403,8 +403,8 @@ static int decode_ext_header(WMV2DecContext *w)
 
     h->slice_height = h->c.mb_height / code;
 
-    if (h->c.avctx->debug & FF_DEBUG_PICT_INFO)
-        av_log(h->c.avctx, AV_LOG_DEBUG,
+    if (avctx->debug & FF_DEBUG_PICT_INFO)
+        av_log(avctx, AV_LOG_DEBUG,
                "fps:%d, br:%d, qpbit:%d, abt_flag:%d, j_type_bit:%d, "
                "tl_mv_flag:%d, mbrl_bit:%d, code:%d, loop_filter:%d, "
                "slices:%d\n",
@@ -790,7 +790,7 @@ static av_cold int wmv2_decode_init(AVCodecContext *avctx)
     h->decode_header = wmv2_decode_picture_header;
     h->decode_mb = wmv2_decode_mb;
 
-    decode_ext_header(w);
+    decode_ext_header(avctx, w);
 
     return ff_intrax8_common_init(avctx, &w->x8, h->block[0],
                                   s->mb_width, s->mb_height);
