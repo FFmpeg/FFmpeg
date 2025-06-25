@@ -36,11 +36,6 @@
 int ff_tls_init(void)
 {
 #if CONFIG_TLS_PROTOCOL
-#if CONFIG_OPENSSL && OPENSSL_VERSION_NUMBER < 0x10100000L
-    int ret;
-    if ((ret = ff_openssl_init()) < 0)
-        return ret;
-#endif
 #if CONFIG_GNUTLS
     ff_gnutls_init();
 #endif
@@ -51,9 +46,6 @@ int ff_tls_init(void)
 void ff_tls_deinit(void)
 {
 #if CONFIG_TLS_PROTOCOL
-#if CONFIG_OPENSSL && OPENSSL_VERSION_NUMBER < 0x10100000L
-    ff_openssl_deinit();
-#endif
 #if CONFIG_GNUTLS
     ff_gnutls_deinit();
 #endif
