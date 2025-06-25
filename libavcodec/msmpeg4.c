@@ -118,7 +118,9 @@ static av_cold void msmpeg4_common_init_static(void)
     init_h263_dc_for_msmpeg4();
 }
 
-av_cold void ff_msmpeg4_common_init(MpegEncContext *s)
+av_cold void ff_msmpeg4_common_init(MPVContext *const s,
+                                    uint8_t permutated_intra_h_scantable[64],
+                                    uint8_t permutated_intra_v_scantable[64])
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
 
@@ -148,9 +150,9 @@ av_cold void ff_msmpeg4_common_init(MpegEncContext *s)
         s->c_dc_scale_table= ff_wmv1_c_dc_scale_table;
         ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,   ff_wmv1_scantable[1]);
         ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable,   ff_wmv1_scantable[0]);
-        ff_permute_scantable(s->permutated_intra_h_scantable, ff_wmv1_scantable[2],
+        ff_permute_scantable(permutated_intra_h_scantable, ff_wmv1_scantable[2],
                              s->idsp.idct_permutation);
-        ff_permute_scantable(s->permutated_intra_v_scantable, ff_wmv1_scantable[3],
+        ff_permute_scantable(permutated_intra_v_scantable, ff_wmv1_scantable[3],
                              s->idsp.idct_permutation);
         break;
     }

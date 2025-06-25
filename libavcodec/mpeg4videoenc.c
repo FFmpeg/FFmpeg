@@ -223,7 +223,7 @@ static inline int decide_ac_pred(MPVEncContext *const s, int16_t block[6][64],
                     ac_val1[i + 8] = level;
                 }
             }
-            st[n] = s->c.permutated_intra_h_scantable;
+            st[n] = s->permutated_intra_h_scantable;
         } else {
             const int xy = s->c.mb_x - 1 + s->c.mb_y * s->c.mb_stride;
             /* left prediction */
@@ -245,7 +245,7 @@ static inline int decide_ac_pred(MPVEncContext *const s, int16_t block[6][64],
                     ac_val1[i + 8] = block[n][s->c.idsp.idct_permutation[i]];
                 }
             }
-            st[n] = s->c.permutated_intra_v_scantable;
+            st[n] = s->permutated_intra_v_scantable;
         }
 
         for (i = 63; i > 0; i--)  // FIXME optimize

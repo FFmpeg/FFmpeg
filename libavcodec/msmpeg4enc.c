@@ -675,7 +675,8 @@ av_cold void ff_msmpeg4_encode_init(MPVMainEncContext *const m)
     MPVEncContext *const s = &m->s;
     static AVOnce init_static_once = AV_ONCE_INIT;
 
-    ff_msmpeg4_common_init(&s->c);
+    ff_msmpeg4_common_init(&s->c, s->permutated_intra_h_scantable,
+                           s->permutated_intra_v_scantable);
 
     if (s->c.msmpeg4_version <= MSMP4_WMV1) {
         m->encode_picture_header = msmpeg4_encode_picture_header;

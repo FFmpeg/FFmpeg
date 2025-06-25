@@ -79,9 +79,6 @@ typedef struct MpegEncContext {
     /* WARNING: changes above this line require updates to hardcoded
      *          offsets used in ASM. */
 
-    uint8_t permutated_intra_h_scantable[64];
-    uint8_t permutated_intra_v_scantable[64];
-
     struct AVCodecContext *avctx;
     /* The following pointer is intended for codecs sharing code
      * between decoder and encoder and in need of a common context to do so. */

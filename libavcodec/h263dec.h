@@ -97,6 +97,9 @@ typedef struct H263DecContext {
 
     GetBitContext last_resync_gb;    ///< used to search for the next resync marker
 
+    uint8_t permutated_intra_h_scantable[64];
+    uint8_t permutated_intra_v_scantable[64];
+
     DECLARE_ALIGNED_32(int16_t, block)[6][64];
 } H263DecContext;
 

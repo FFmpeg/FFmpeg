@@ -108,6 +108,11 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     s->y_dc_scale_table =
     s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
 
+    ff_permute_scantable(h->permutated_intra_h_scantable, ff_alternate_horizontal_scan,
+                         s->idsp.idct_permutation);
+    ff_permute_scantable(h->permutated_intra_v_scantable, ff_alternate_vertical_scan,
+                         s->idsp.idct_permutation);
+
     ff_mpv_unquantize_init(&unquant_dsp_ctx,
                            avctx->flags & AV_CODEC_FLAG_BITEXACT, 0);
     // dct_unquantize defaults for H.263;

@@ -31,7 +31,9 @@
 
 #define DC_MAX 119
 
-void ff_msmpeg4_common_init(MpegEncContext *s);
+void ff_msmpeg4_common_init(MPVContext *const s,
+                            uint8_t permutated_intra_h_scantable[64],
+                            uint8_t permutated_intra_v_scantable[64]);
 int ff_msmpeg4_coded_block_pred(MpegEncContext * s, int n,
                                 uint8_t **coded_block_ptr);
 

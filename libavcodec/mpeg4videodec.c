@@ -1425,9 +1425,9 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
         }
         if (h->c.ac_pred) {
             if (dc_pred_dir == 0)
-                scan_table = h->c.permutated_intra_v_scantable;  /* left */
+                scan_table = h->permutated_intra_v_scantable;  /* left */
             else
-                scan_table = h->c.permutated_intra_h_scantable;  /* top */
+                scan_table = h->permutated_intra_h_scantable;  /* top */
         } else {
             scan_table = h->c.intra_scantable.permutated;
         }
@@ -3232,14 +3232,14 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
 
     if (h->c.alternate_scan) {
         ff_init_scantable(h->c.idsp.idct_permutation, &h->c.intra_scantable,   ff_alternate_vertical_scan);
-        ff_permute_scantable(h->c.permutated_intra_h_scantable, ff_alternate_vertical_scan,
+        ff_permute_scantable(h->permutated_intra_h_scantable, ff_alternate_vertical_scan,
                              h->c.idsp.idct_permutation);
     } else {
         ff_init_scantable(h->c.idsp.idct_permutation, &h->c.intra_scantable,   ff_zigzag_direct);
-        ff_permute_scantable(h->c.permutated_intra_h_scantable, ff_alternate_horizontal_scan,
+        ff_permute_scantable(h->permutated_intra_h_scantable, ff_alternate_horizontal_scan,
                              h->c.idsp.idct_permutation);
     }
-    ff_permute_scantable(h->c.permutated_intra_v_scantable, ff_alternate_vertical_scan,
+    ff_permute_scantable(h->permutated_intra_v_scantable, ff_alternate_vertical_scan,
                          h->c.idsp.idct_permutation);
 
     if (h->c.pict_type == AV_PICTURE_TYPE_S) {
@@ -3609,21 +3609,23 @@ static av_cold void permute_quant_matrix(uint16_t matrix[64],
 }
 
 static av_cold void switch_to_xvid_idct(AVCodecContext *const avctx,
-                                        MpegEncContext *const s)
+                                        H263DecContext *const h)
 {
     uint8_t old_permutation[64];
 
-    memcpy(old_permutation, s->idsp.idct_permutation, sizeof(old_permutation));
+    memcpy(old_permutation, h->c.idsp.idct_permutation, sizeof(old_permutation));
 
     avctx->idct_algo = FF_IDCT_XVID;
-    ff_mpv_idct_init(s);
-    ff_permute_scantable(s->permutated_intra_h_scantable,
-                         s->alternate_scan ? ff_alternate_vertical_scan : ff_alternate_horizontal_scan,
-                         s->idsp.idct_permutation);
+    ff_mpv_idct_init(&h->c);
+    ff_permute_scantable(h->permutated_intra_h_scantable,
+                         h->c.alternate_scan ? ff_alternate_vertical_scan : ff_alternate_horizontal_scan,
+                         h->c.idsp.idct_permutation);
+    ff_permute_scantable(h->permutated_intra_v_scantable, ff_alternate_vertical_scan,
+                         h->c.idsp.idct_permutation);
 
     // Normal (i.e. non-studio) MPEG-4 does not use the chroma matrices.
-    permute_quant_matrix(s->inter_matrix, s->idsp.idct_permutation, old_permutation);
-    permute_quant_matrix(s->intra_matrix, s->idsp.idct_permutation, old_permutation);
+    permute_quant_matrix(h->c.inter_matrix, h->c.idsp.idct_permutation, old_permutation);
+    permute_quant_matrix(h->c.intra_matrix, h->c.idsp.idct_permutation, old_permutation);
 }
 
 void ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
@@ -3735,7 +3737,7 @@ void ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
 
     if (ctx->xvid_build >= 0 &&
         avctx->idct_algo == FF_IDCT_AUTO && !h->c.studio_profile) {
-        switch_to_xvid_idct(avctx, &h->c);
+        switch_to_xvid_idct(avctx, h);
     }
 }
 

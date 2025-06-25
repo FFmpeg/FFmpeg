@@ -193,6 +193,9 @@ typedef struct MPVEncContext {
 
     int intra_penalty;
 
+    uint8_t permutated_intra_h_scantable[64];
+    uint8_t permutated_intra_v_scantable[64];
+
     DECLARE_ALIGNED_32(int16_t, blocks)[2][12][64]; // for HQ mode we need to keep the best block
 } MPVEncContext;
 
