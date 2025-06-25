@@ -666,6 +666,11 @@ int ff_hw_base_init_gop_structure(FFHWBaseEncodeContext *ctx, AVCodecContext *av
     ctx->ref_l0 = FFMIN(ref_l0, MAX_PICTURE_REFERENCES);
     ctx->ref_l1 = FFMIN(ref_l1, MAX_PICTURE_REFERENCES);
 
+    if (avctx->refs > 0) {
+        ctx->ref_l0 = FFMIN(ctx->ref_l0, avctx->refs);
+        ctx->ref_l1 = FFMIN(ctx->ref_l1, avctx->refs);
+    }
+
     if (flags & FF_HW_FLAG_INTRA_ONLY || avctx->gop_size <= 1) {
         av_log(avctx, AV_LOG_VERBOSE, "Using intra frames only.\n");
         ctx->gop_size = 1;

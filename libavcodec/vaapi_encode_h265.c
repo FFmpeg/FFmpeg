@@ -1184,6 +1184,7 @@ static const FFCodecDefault vaapi_encode_h265_defaults[] = {
     { "b_qoffset",      "0"   },
     { "qmin",           "-1"  },
     { "qmax",           "-1"  },
+    { "refs",           "0"   },
     { NULL },
 };
 

@@ -1367,6 +1367,7 @@ static const FFCodecDefault vulkan_encode_av1_defaults[] = {
     { "g",              "300" },
     { "qmin",           "1"   },
     { "qmax",           "255" },
+    { "refs",           "0"   },
     { NULL },
 };
 

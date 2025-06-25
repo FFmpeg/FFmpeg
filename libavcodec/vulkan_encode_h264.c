@@ -1634,6 +1634,7 @@ static const FFCodecDefault vulkan_encode_h264_defaults[] = {
     { "b_qoffset",      "0"   },
     { "qmin",           "-1"  },
     { "qmax",           "-1"  },
+    { "refs",           "0"   },
     { NULL },
 };
 

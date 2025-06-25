@@ -762,6 +762,7 @@ static const FFCodecDefault d3d12va_encode_hevc_defaults[] = {
     { "b_qoffset",      "0"   },
     { "qmin",           "-1"  },
     { "qmax",           "-1"  },
+    { "refs",           "0"   },
     { NULL },
 };
 
