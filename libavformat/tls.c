@@ -137,7 +137,7 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
                                parent->protocol_whitelist, parent->protocol_blacklist, parent);
     if (c->is_dtls) {
         if (ret < 0) {
-            av_log(c, AV_LOG_ERROR, "WHIP: Failed to connect udp://%s:%d\n", c->underlying_host, port);
+            av_log(c, AV_LOG_ERROR, "Failed to open udp://%s:%d\n", c->underlying_host, port);
             return ret;
         }
         /* Make the socket non-blocking, set to READ and WRITE mode after connected */
