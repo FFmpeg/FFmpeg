@@ -890,10 +890,10 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         goto fail;
 
     // We want to support all versions of TLS >= 1.0, but not the deprecated
-    // and insecure SSLv2 and SSLv3.  Despite the name, SSLv23_*_method()
+    // and insecure SSLv2 and SSLv3.  Despite the name, TLS_*_method()
     // enables support for all versions of SSL and TLS, and we then disable
     // support for the old protocols immediately after creating the context.
-    p->ctx = SSL_CTX_new(c->listen ? SSLv23_server_method() : SSLv23_client_method());
+    p->ctx = SSL_CTX_new(c->listen ? TLS_server_method() : TLS_client_method());
     if (!p->ctx) {
         av_log(h, AV_LOG_ERROR, "%s\n", openssl_get_error(p));
         ret = AVERROR(EIO);
