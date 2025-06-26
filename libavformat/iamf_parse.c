@@ -397,8 +397,6 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
             expanded_loudspeaker_layout = avio_r8(pb);
         if (expanded_loudspeaker_layout > 0 && expanded_loudspeaker_layout < 13) {
             av_channel_layout_copy(&ch_layout, &ff_iamf_expanded_scalable_ch_layouts[expanded_loudspeaker_layout]);
-            if (i)
-                ch_layout.u.mask &= ~av_channel_layout_subset(&audio_element->element->layers[i-1]->ch_layout, UINT64_MAX);
         } else if (loudspeaker_layout < 10) {
             av_channel_layout_copy(&ch_layout, &ff_iamf_scalable_ch_layouts[loudspeaker_layout]);
             if (i)
