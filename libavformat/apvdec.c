@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
+
 #include "libavcodec/apv.h"
 #include "libavcodec/bytestream.h"
 
@@ -24,6 +26,10 @@
 #include "demux.h"
 #include "internal.h"
 
+typedef struct APVDemuxerContext {
+    const AVClass *class;     /**< Class for private options. */
+    AVRational framerate;    /**< AVRational describing framerate, set by a private option. */
+} APVDemuxerContext;
 
 typedef struct APVHeaderInfo {
     uint8_t  pbu_type;
@@ -145,6 +151,7 @@ static int apv_probe(const AVProbeData *p)
 
 static int apv_read_header(AVFormatContext *s)
 {
+    APVDemuxerContext *apv = s->priv_data;
     AVStream *st;
     GetByteContext gbc;
     uint8_t buffer[12];
@@ -184,8 +191,8 @@ static int apv_read_header(AVFormatContext *s)
     st->codecpar->codec_id   = AV_CODEC_ID_APV;
 
     ffstream(st)->need_parsing = AVSTREAM_PARSE_HEADERS;
-    st->avg_frame_rate = (AVRational){ 30, 1 };
-    avpriv_set_pts_info(st, 64, 1, 30);
+    st->avg_frame_rate = apv->framerate;
+    avpriv_set_pts_info(st, 64, apv->framerate.den, apv->framerate.num);
 
     avio_seek(s->pb, -size, SEEK_CUR);
 
@@ -221,11 +228,27 @@ static int apv_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+#define OFFSET(x) offsetof(APVDemuxerContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption apv_options[] = {
+    { "framerate", "set frame rate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, { .str = "30" }, 0, INT_MAX, DEC },
+    { NULL },
+};
+
+static const AVClass apv_demuxer_class = {
+    .class_name = "apv demuxer",
+    .item_name  = av_default_item_name,
+    .option     = apv_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 const FFInputFormat ff_apv_demuxer = {
     .p.name         = "apv",
     .p.long_name    = NULL_IF_CONFIG_SMALL("APV raw bitstream"),
     .p.extensions   = "apv",
     .p.flags        = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
+    .p.priv_class   = &apv_demuxer_class,
+    .priv_data_size = sizeof(APVDemuxerContext),
     .read_probe     = apv_probe,
     .read_header    = apv_read_header,
     .read_packet    = apv_read_packet,
