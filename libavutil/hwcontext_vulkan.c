@@ -1666,16 +1666,12 @@ static void vulkan_device_uninit(AVHWDeviceContext *ctx)
 static int vulkan_device_has_rebar(AVHWDeviceContext *ctx)
 {
     VulkanDevicePriv *p = ctx->hwctx;
-    AVVulkanDeviceContext *hwctx = &p->p;
-    FFVulkanFunctions *vk = &p->vkctx.vkfn;
-    VkPhysicalDeviceMemoryProperties mprops;
     VkDeviceSize max_vram = 0, max_visible_vram = 0;
 
     /* Get device memory properties */
-    vk->GetPhysicalDeviceMemoryProperties(hwctx->phys_dev, &mprops);
-    for (int i = 0; i < mprops.memoryTypeCount; i++) {
-        const VkMemoryType type = mprops.memoryTypes[i];
-        const VkMemoryHeap heap = mprops.memoryHeaps[type.heapIndex];
+    for (int i = 0; i < p->mprops.memoryTypeCount; i++) {
+        const VkMemoryType type = p->mprops.memoryTypes[i];
+        const VkMemoryHeap heap = p->mprops.memoryHeaps[type.heapIndex];
         if (!(type.propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
             continue;
         max_vram = FFMAX(max_vram, heap.size);
@@ -2019,12 +2015,18 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!hwctx->unlock_queue)
         hwctx->unlock_queue = unlock_queue;
 
+    /* Re-query device capabilities, in case the device was created externally */
+    vk->GetPhysicalDeviceMemoryProperties(hwctx->phys_dev, &p->mprops);
+
     p->vkctx.device = ctx;
     p->vkctx.hwctx = hwctx;
 
     ff_vk_load_props(&p->vkctx);
     p->compute_qf = ff_vk_qf_find(&p->vkctx, VK_QUEUE_COMPUTE_BIT, 0);
     p->transfer_qf = ff_vk_qf_find(&p->vkctx, VK_QUEUE_TRANSFER_BIT, 0);
+
+    /* Re-query device capabilities, in case the device was created externally */
+    vk->GetPhysicalDeviceMemoryProperties(hwctx->phys_dev, &p->mprops);
 
     /* Only use host image transfers if ReBAR is enabled */
     p->disable_host_transfer = !vulkan_device_has_rebar(ctx);
