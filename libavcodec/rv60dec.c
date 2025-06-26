@@ -390,14 +390,14 @@ static int read_frame_header(RV60Context *s, GetBitContext *gb, int * width, int
 static int read_slice_sizes(RV60Context *s, GetBitContext *gb)
 {
     int nbits = get_bits(gb, 5) + 1;
-    int last_size, sum = 0;
+    int last_size;
 
     for (int i = 0; i < s->cu_height; i++)
         s->slice[i].sign = get_bits1(gb);
 
-    s->slice[0].size = last_size = sum = get_bits_long(gb, nbits);
+    s->slice[0].size = last_size = get_bits_long(gb, nbits);
 
-    if (sum < 0)
+    if (last_size < 0)
         return AVERROR_INVALIDDATA;
 
     for (int i = 1; i < s->cu_height; i++) {
@@ -409,7 +409,6 @@ static int read_slice_sizes(RV60Context *s, GetBitContext *gb)
         if (last_size <= 0)
             return AVERROR_INVALIDDATA;
         s->slice[i].size = last_size;
-        sum += s->slice[i].size;
     }
 
     align_get_bits(gb);
