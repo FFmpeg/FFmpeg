@@ -81,7 +81,7 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
     if (ret < 0)
         return ret;
 
-    if (c->listen)
+    if (c->listen && !c->is_dtls)
         snprintf(opts, sizeof(opts), "?listen=1");
 
     av_url_split(NULL, 0, NULL, 0, c->underlying_host, sizeof(c->underlying_host), &port, NULL, 0, uri);
@@ -95,7 +95,7 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
             c->listen = 1;
     }
 
-    ff_url_join(buf, sizeof(buf), c->is_dtls ? "udp" : "tcp", NULL, c->underlying_host, port, "%s", p);
+    ff_url_join(buf, sizeof(buf), c->is_dtls ? "udp" : "tcp", NULL, (c->is_dtls && c->listen) ? "" : c->underlying_host, port, "%s", p);
 
     hints.ai_flags = AI_NUMERICHOST;
     if (!getaddrinfo(c->underlying_host, NULL, &hints, &ai)) {
@@ -127,7 +127,13 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
 
     freeenv_utf8(env_http_proxy);
     if (c->is_dtls) {
-        av_dict_set_int(options, "connect", 1, 0);
+        if (c->listen) {
+            av_dict_set_int(options, "localport", port, 0);
+            av_dict_set(options, "localaddr", c->underlying_host, 0);
+        } else {
+            av_dict_set_int(options, "localport", 0, 0);
+            av_dict_set_int(options, "connect", 1, 0);
+        }
         av_dict_set_int(options, "fifo_size", 0, 0);
         /* Set the max packet size to the buffer size. */
         av_dict_set_int(options, "pkt_size", c->mtu, 0);
