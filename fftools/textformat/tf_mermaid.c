@@ -616,10 +616,7 @@ static void mermaid_print_value(AVTextFormatContext *tfc, const char *key,
 
                 MM_INDENT();
 
-                if (is_int)
-                    writer_printf(tfc, "    %s %"PRId64" %s\n", key, num, col_type);
-                else
-                    writer_printf(tfc, "    %s %s %s\n", key, str, col_type);
+                writer_printf(tfc, "    %s %s %s\n", key, str, col_type);
             }
             break;
         }
