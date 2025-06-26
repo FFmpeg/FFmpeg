@@ -579,15 +579,11 @@ static void mermaid_print_value(AVTextFormatContext *tfc, const char *key,
         exit = 1;
     }
 
-    //if (exit)
-    //    return;
+    if (exit)
+        return;
 
     if ((section->flags & (AV_TEXTFORMAT_SECTION_FLAG_IS_SHAPE | AV_TEXTFORMAT_SECTION_PRINT_TAGS))
         || (section->flags & AV_TEXTFORMAT_SECTION_FLAG_IS_SUBGRAPH && sec_data.subgraph_start_incomplete)) {
-
-        if (exit)
-            return;
-
         switch (mmc->diagram_config->diagram_type) {
         case AV_DIAGRAMTYPE_GRAPH:
 
@@ -632,10 +628,6 @@ static void mermaid_print_value(AVTextFormatContext *tfc, const char *key,
         }
 
     } else if (section->flags & AV_TEXTFORMAT_SECTION_FLAG_HAS_LINKS) {
-
-        if (exit)
-            return;
-
         if (buf->len > 0)
             av_bprintf(buf, "%s", "<br>");
 
