@@ -575,7 +575,7 @@ static void mermaid_print_value(AVTextFormatContext *tfc, const char *key,
     }
 
     if (section->linktype_key && !strcmp(section->linktype_key, key)) {
-        mmc->section_data[tfc->level].link_type = (AVTextFormatLinkType)num;;
+        mmc->section_data[tfc->level].link_type = (AVTextFormatLinkType)num;
         exit = 1;
     }
 
@@ -590,10 +590,7 @@ static void mermaid_print_value(AVTextFormatContext *tfc, const char *key,
             if (is_int) {
                 writer_printf(tfc, "<span class=\"%s\">%s: %"PRId64"</span>", key, key, num);
             } else {
-                ////AVBPrint b;
-                ////av_bprint_init(&b, 0, AV_BPRINT_SIZE_UNLIMITED);
                 const char *tmp = av_strireplace(str, "\"", "'");
-                ////av_bprint_escape(&b, str, NULL, AV_ESCAPE_MODE_AUTO, AV_ESCAPE_FLAG_STRICT);
                 writer_printf(tfc, "<span class=\"%s\">%s</span>", key, tmp);
                 av_freep(&tmp);
             }
