@@ -279,7 +279,7 @@ int ff_mjpeg_encode_stuffing(MPVEncContext *const s)
 
 fail:
     for (int i = 0; i < 3; i++)
-        s->last_dc[i] = 128 << s->c.intra_dc_precision;
+        s->last_dc[i] = 128;
 
     return ret;
 }

@@ -3024,7 +3024,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
             mb_y = ff_speedhq_mb_y_order_to_mb(mb_y_order, s->c.mb_height, &first_in_slice);
             if (first_in_slice && mb_y_order != s->c.start_mb_y)
                 ff_speedhq_end_slice(s);
-            s->last_dc[0] = s->last_dc[1] = s->last_dc[2] = 1024 << s->c.intra_dc_precision;
+            s->last_dc[0] = s->last_dc[1] = s->last_dc[2] = 1024;
         } else {
             mb_y = mb_y_order;
         }
@@ -3882,9 +3882,8 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
                 s->c.       intra_matrix[j] = av_clip_uint8((  luma_matrix[i] * s->c.qscale) >> 3);
             }
             s->c.y_dc_scale_table =
-            s->c.c_dc_scale_table = ff_mpeg12_dc_scale_table[s->c.intra_dc_precision];
-            s->c.chroma_intra_matrix[0] =
-            s->c.intra_matrix[0]  = ff_mpeg12_dc_scale_table[s->c.intra_dc_precision][8];
+            s->c.c_dc_scale_table = ff_mpeg12_dc_scale_table[0];
+            s->c.chroma_intra_matrix[0] = s->c.intra_matrix[0] = 8;
         } else {
             static const uint8_t y[32] = {13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13};
             static const uint8_t c[32] = {14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14};
