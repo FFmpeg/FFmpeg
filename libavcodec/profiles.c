@@ -182,6 +182,12 @@ const AVProfile ff_prores_profiles[] = {
     { AV_PROFILE_UNKNOWN }
 };
 
+const AVProfile ff_prores_raw_profiles[] = {
+    { AV_PROFILE_PRORES_RAW,    "RAW"    },
+    { AV_PROFILE_PRORES_RAW_HQ, "RAW HQ" },
+    { AV_PROFILE_UNKNOWN }
+};
+
 const AVProfile ff_mjpeg_profiles[] = {
     { AV_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,            "Baseline"    },
     { AV_PROFILE_MJPEG_HUFFMAN_EXTENDED_SEQUENTIAL_DCT, "Sequential"  },

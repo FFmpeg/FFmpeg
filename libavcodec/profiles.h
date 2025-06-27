@@ -74,6 +74,7 @@ extern const AVProfile ff_vp9_profiles[];
 extern const AVProfile ff_av1_profiles[];
 extern const AVProfile ff_sbc_profiles[];
 extern const AVProfile ff_prores_profiles[];
+extern const AVProfile ff_prores_raw_profiles[];
 extern const AVProfile ff_mjpeg_profiles[];
 extern const AVProfile ff_arib_caption_profiles[];
 extern const AVProfile ff_evc_profiles[];
