@@ -8437,6 +8437,20 @@ static int mov_write_header(AVFormatContext *s)
             avio_wb32(pb, 8); // placeholder for extended size field (64 bit)
             ffio_wfourcc(pb, mov->mode == MODE_MOV ? "wide" : "free");
             mov->mdat_pos = avio_tell(pb);
+            // The free/wide header that later will be converted into an
+            // mdat, covering the initial moov and all the fragments.
+            avio_wb32(pb, 0);
+            ffio_wfourcc(pb, mov->mode == MODE_MOV ? "wide" : "free");
+            // Write an ftyp atom, hidden in a free/wide. This is neither
+            // exposed while the file is written, as fragmented, nor when the
+            // file is finalized into non-fragmented form. However, this allows
+            // accessing a pristine, sequential ftyp+moov init segment, even
+            // after the file is finalized. It also allows dumping the whole
+            // contents of the mdat box, to get the fragmented form of the
+            // file.
+            if ((ret = mov_write_identification(pb, s)) < 0)
+                return ret;
+            update_size(pb, mov->mdat_pos);
         }
     } else if (mov->mode != MODE_AVIF) {
         if (mov->flags & FF_MOV_FLAG_FASTSTART)
@@ -8598,7 +8612,7 @@ static void mov_write_mdat_size(AVFormatContext *s)
         avio_seek(pb, mov->mdat_pos, SEEK_SET);
         avio_wb32(pb, mov->mdat_size + 8);
         if (mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED)
-            ffio_wfourcc(pb, "mdat"); // overwrite the original moov into a mdat
+            ffio_wfourcc(pb, "mdat"); // overwrite the original free/wide into a mdat
     } else {
         /* overwrite 'wide' placeholder atom */
         avio_seek(pb, mov->mdat_pos - 8, SEEK_SET);

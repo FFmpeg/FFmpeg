@@ -92,7 +92,7 @@ fate-mov-frag-overlap: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/frag_overlap.mp4
 
 fate-mov-mp4-frag-flush: CMD = md5 -f lavfi -i color=blue,format=rgb24,trim=duration=0.04 -f lavfi -i anullsrc,aformat=s16,atrim=duration=2 -c:v png -c:a pcm_s16le -movflags +empty_moov+hybrid_fragmented -frag_duration 1000000 -frag_interleave 1 -bitexact -f mp4
 fate-mov-mp4-frag-flush: CMP = oneline
-fate-mov-mp4-frag-flush: REF = a1ac687d15552505f3c01a43285f32d0
+fate-mov-mp4-frag-flush: REF = 48d833e4773f7542f65dadb446f8bf61
 FATE_MOV_FFMPEG-$(call ALLYES, LAVFI_INDEV COLOR_FILTER FORMAT_FILTER TRIM_FILTER \
                                ANULLSRC_FILTER AFORMAT_FILTER ATRIM_FILTER        \
                                WRAPPED_AVFRAME_DECODER PCM_S16LE_DECODER PCM_S16BE_DECODER \
