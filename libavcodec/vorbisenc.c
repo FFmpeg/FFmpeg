@@ -740,8 +740,10 @@ static int put_main_header(vorbis_enc_context *venc, uint8_t **out)
 
     len = hlens[0] + hlens[1] + hlens[2];
     p = *out = av_mallocz(64 + len + len/255);
-    if (!p)
+    if (!p) {
+        av_freep(&buffer);
         return AVERROR(ENOMEM);
+    }
 
     *p++ = 2;
     p += av_xiphlacing(p, hlens[0]);
