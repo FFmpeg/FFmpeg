@@ -1234,7 +1234,7 @@ static int sb_decode(AVCodecContext *avctx, void *ptr_st,
     mode = st->mode;
 
     if (st->modeID > 0) {
-        if (packets_left <= 1)
+        if (packets_left * s->frame_size < 2*st->frame_size)
             return AVERROR_INVALIDDATA;
         low_innov_alias = out + st->frame_size;
         s->st[st->modeID - 1].innov_save = low_innov_alias;
