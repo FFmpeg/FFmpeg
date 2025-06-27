@@ -1006,7 +1006,7 @@ static int parse_cinespace(AVFilterContext *ctx, FILE *f)
 
             ret = allocate_3dlut(ctx, size, prelut);
             if (ret < 0)
-                return ret;
+                goto end;
 
             for (int k = 0; k < size; k++) {
                 for (int j = 0; j < size; j++) {
