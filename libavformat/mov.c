@@ -484,7 +484,7 @@ retry:
                 return ret;
             }
         } else return 0;
-    } else if (atom.size > 4 && key && !c->itunes_metadata && !raw) {
+    } else if (atom.size > 4 && (key || c->export_all) && !c->itunes_metadata && !raw) {
         str_size = avio_rb16(pb); // string length
         if (str_size > atom.size) {
             raw = 1;
