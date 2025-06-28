@@ -29,9 +29,8 @@
 #include "mpegvideo.h"
 #include "mpegvideoenc.h"
 #include "put_bits.h"
-#include "rv10enc.h"
 
-int ff_rv10_encode_picture_header(MPVMainEncContext *const m)
+static int rv10_encode_picture_header(MPVMainEncContext *const m)
 {
     MPVEncContext *const s = &m->s;
     int full_frame= 0;
@@ -63,6 +62,10 @@ int ff_rv10_encode_picture_header(MPVMainEncContext *const m)
 
 static av_cold int rv10_encode_init(AVCodecContext *avctx)
 {
+    MPVMainEncContext *const m = avctx->priv_data;
+
+    m->encode_picture_header = rv10_encode_picture_header;
+
     if ((avctx->width | avctx->height) & 15) {
         av_log(avctx, AV_LOG_ERROR, "width and height must be a multiple of 16\n");
         return AVERROR(EINVAL);

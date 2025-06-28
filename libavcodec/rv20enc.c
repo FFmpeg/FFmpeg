@@ -32,7 +32,7 @@
 #include "h263data.h"
 #include "h263enc.h"
 #include "put_bits.h"
-#include "rv10enc.h"
+#include "rv20enc.h"
 
 int ff_rv20_encode_picture_header(MPVMainEncContext *const m)
 {

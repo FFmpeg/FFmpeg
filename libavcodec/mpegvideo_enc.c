@@ -72,7 +72,7 @@
 #include "mpeg4videoenc.h"
 #include "internal.h"
 #include "bytestream.h"
-#include "rv10enc.h"
+#include "rv20enc.h"
 #include "libavutil/refstruct.h"
 #include <limits.h>
 #include "sp5x.h"
@@ -930,7 +930,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         break;
 #if CONFIG_RV10_ENCODER
     case AV_CODEC_ID_RV10:
-        m->encode_picture_header = ff_rv10_encode_picture_header;
         s->c.out_format = FMT_H263;
         avctx->delay  = 0;
         s->c.low_delay  = 1;

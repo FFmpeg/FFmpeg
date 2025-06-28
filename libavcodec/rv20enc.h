@@ -18,12 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_RV10ENC_H
-#define AVCODEC_RV10ENC_H
+#ifndef AVCODEC_RV20ENC_H
+#define AVCODEC_RV20ENC_H
 
 typedef struct MPVMainEncContext MPVMainEncContext;
 
-int ff_rv10_encode_picture_header(MPVMainEncContext *m);
 int ff_rv20_encode_picture_header(MPVMainEncContext *m);
 
-#endif /* AVCODEC_RV10ENC_H */
+#endif /* AVCODEC_RV20ENC_H */
