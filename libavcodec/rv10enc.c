@@ -66,6 +66,16 @@ int ff_rv10_encode_picture_header(MPVMainEncContext *const m)
     return 0;
 }
 
+static av_cold int rv10_encode_init(AVCodecContext *avctx)
+{
+    if ((avctx->width | avctx->height) & 15) {
+        av_log(avctx, AV_LOG_ERROR, "width and height must be a multiple of 16\n");
+        return AVERROR(EINVAL);
+    }
+
+    return ff_mpv_encode_init(avctx);
+}
+
 const FFCodec ff_rv10_encoder = {
     .p.name         = "rv10",
     CODEC_LONG_NAME("RealVideo 1.0"),
@@ -74,7 +84,7 @@ const FFCodec ff_rv10_encoder = {
     .p.priv_class   = &ff_mpv_enc_class,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(MPVMainEncContext),
-    .init           = ff_mpv_encode_init,
+    .init           = rv10_encode_init,
     FF_CODEC_ENCODE_CB(ff_mpv_encode_picture),
     .close          = ff_mpv_encode_end,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
