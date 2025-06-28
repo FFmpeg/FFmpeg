@@ -52,11 +52,6 @@ int ff_rv10_encode_picture_header(MPVMainEncContext *const m)
     /* if multiple packets per frame are sent, the position at which
        to display the macroblocks is coded here */
     if(!full_frame){
-        if (s->c.mb_width * s->c.mb_height >= (1U << 12)) {
-            avpriv_report_missing_feature(s->c.avctx, "Encoding frames with %d (>= 4096) macroblocks",
-                                          s->c.mb_width * s->c.mb_height);
-            return AVERROR(ENOSYS);
-        }
         put_bits(&s->pb, 6, 0); /* mb_x */
         put_bits(&s->pb, 6, 0); /* mb_y */
         put_bits(&s->pb, 12, s->c.mb_width * s->c.mb_height);
@@ -71,6 +66,11 @@ static av_cold int rv10_encode_init(AVCodecContext *avctx)
     if ((avctx->width | avctx->height) & 15) {
         av_log(avctx, AV_LOG_ERROR, "width and height must be a multiple of 16\n");
         return AVERROR(EINVAL);
+    }
+    if (avctx->width * avctx->height >= 1U << 20) {
+        avpriv_report_missing_feature(avctx, "Encoding frames with %d (>= 4096) macroblocks",
+                                      avctx->width * avctx->height >> 8);
+        return AVERROR(ENOSYS);
     }
 
     return ff_mpv_encode_init(avctx);
