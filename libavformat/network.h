@@ -339,5 +339,6 @@ int ff_connect_parallel(struct addrinfo *addrs, int timeout_ms_per_address,
                         int (*customize_fd)(void *, int, int), void *customize_ctx);
 
 void ff_udp_get_last_recv_addr(URLContext *h, struct sockaddr_storage *addr, socklen_t *addr_len);
+int ff_udp_set_remote_addr(URLContext *h, const struct sockaddr *dest_addr, socklen_t dest_addr_len, int do_connect);
 
 #endif /* AVFORMAT_NETWORK_H */

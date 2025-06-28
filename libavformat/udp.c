@@ -466,6 +466,36 @@ int ff_udp_set_remote_url(URLContext *h, const char *uri)
 }
 
 /**
+ * This function is identical to ff_udp_set_remote_url, except that it takes a sockaddr directly.
+ */
+int ff_udp_set_remote_addr(URLContext *h, const struct sockaddr *dest_addr, socklen_t dest_addr_len, int do_connect)
+{
+    UDPContext *s = h->priv_data;
+
+    /* set the destination address */
+    if (dest_addr_len < 0 || dest_addr_len > sizeof(s->dest_addr))
+        return AVERROR(EIO);
+    s->dest_addr_len = dest_addr_len;
+    memcpy(&s->dest_addr, dest_addr, dest_addr_len);
+
+    s->is_multicast = ff_is_multicast_address((struct sockaddr*) &s->dest_addr);
+    if (do_connect >= 0) {
+        int was_connected = s->is_connected;
+        s->is_connected = do_connect;
+        if (s->is_connected && !was_connected) {
+            if (connect(s->udp_fd, (struct sockaddr *) &s->dest_addr,
+                        s->dest_addr_len)) {
+                s->is_connected = 0;
+                ff_log_net_error(h, AV_LOG_ERROR, "connect");
+                return AVERROR(EIO);
+            }
+        }
+    }
+
+    return 0;
+}
+
+/**
  * Return the local port used by the UDP connection
  * @param h media file context
  * @return the local port number
