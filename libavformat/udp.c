@@ -102,7 +102,8 @@ typedef struct UDPContext {
 
     /* Circular Buffer variables for use in UDP receive code */
     int circular_buffer_size;
-    AVFifo *fifo;
+    AVFifo *rx_fifo;
+    AVFifo *tx_fifo;
     int circular_buffer_error;
     int64_t bitrate; /* number of bits to send per second */
     int64_t burst_bits;
@@ -531,7 +532,7 @@ static void *circular_buffer_task_rx( void *_URLContext)
             continue;
         memcpy(s->tmp, &pkt_header, sizeof(pkt_header));
 
-        if (av_fifo_can_write(s->fifo) < pkt_header.pkt_size + sizeof(pkt_header)) {
+        if (av_fifo_can_write(s->rx_fifo) < pkt_header.pkt_size + sizeof(pkt_header)) {
             /* No Space left */
             if (s->overrun_nonfatal) {
                 av_log(h, AV_LOG_WARNING, "Circular buffer overrun. "
@@ -545,7 +546,7 @@ static void *circular_buffer_task_rx( void *_URLContext)
                 goto end;
             }
         }
-        av_fifo_write(s->fifo, s->tmp, pkt_header.pkt_size + sizeof(pkt_header));
+        av_fifo_write(s->rx_fifo, s->tmp, pkt_header.pkt_size + sizeof(pkt_header));
         pthread_cond_signal(&s->cond);
     }
 
@@ -581,22 +582,22 @@ static void *circular_buffer_task_tx( void *_URLContext)
         uint8_t tmp[4];
         int64_t timestamp;
 
-        len = av_fifo_can_read(s->fifo);
+        len = av_fifo_can_read(s->tx_fifo);
 
         while (len<4) {
             if (s->close_req)
                 goto end;
             pthread_cond_wait(&s->cond, &s->mutex);
-            len = av_fifo_can_read(s->fifo);
+            len = av_fifo_can_read(s->tx_fifo);
         }
 
-        av_fifo_read(s->fifo, tmp, 4);
+        av_fifo_read(s->tx_fifo, tmp, 4);
         len = AV_RL32(tmp);
 
         av_assert0(len >= 0);
         av_assert0(len <= sizeof(s->tmp));
 
-        av_fifo_read(s->fifo, s->tmp, len);
+        av_fifo_read(s->tx_fifo, s->tmp, len);
 
         pthread_mutex_unlock(&s->mutex);
 
@@ -948,11 +949,15 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     if ((!is_output && s->circular_buffer_size) || (is_output && s->bitrate && s->circular_buffer_size)) {
         /* start the task going */
-        s->fifo = av_fifo_alloc2(s->circular_buffer_size, 1, 0);
-        if (!s->fifo) {
+        AVFifo *fifo = av_fifo_alloc2(s->circular_buffer_size, 1, 0);
+        if (!fifo) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
+        if (is_output)
+            s->tx_fifo = fifo;
+        else
+            s->rx_fifo = fifo;
         ret = pthread_mutex_init(&s->mutex, NULL);
         if (ret != 0) {
             av_log(h, AV_LOG_ERROR, "pthread_mutex_init failed : %s\n", strerror(ret));
@@ -985,7 +990,8 @@ static int udp_open(URLContext *h, const char *uri, int flags)
  fail:
     if (udp_fd >= 0)
         closesocket(udp_fd);
-    av_fifo_freep2(&s->fifo);
+    av_fifo_freep2(&s->rx_fifo);
+    av_fifo_freep2(&s->tx_fifo);
     ff_ip_reset_filters(&s->filters);
     return ret;
 }
@@ -1007,14 +1013,14 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
 #if HAVE_PTHREAD_CANCEL
     int avail, nonblock = h->flags & AVIO_FLAG_NONBLOCK;
 
-    if (s->fifo) {
+    if (s->rx_fifo) {
         pthread_mutex_lock(&s->mutex);
         do {
-            avail = av_fifo_can_read(s->fifo);
+            avail = av_fifo_can_read(s->rx_fifo);
             if (avail) { // >=size) {
                 UDPQueuedPacketHeader header;
 
-                av_fifo_read(s->fifo, &header, sizeof(header));
+                av_fifo_read(s->rx_fifo, &header, sizeof(header));
 
                 s->last_recv_addr = header.addr;
                 s->last_recv_addr_len = header.addr_len;
@@ -1025,8 +1031,8 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
                     avail = size;
                 }
 
-                av_fifo_read(s->fifo, buf, avail);
-                av_fifo_drain2(s->fifo, header.pkt_size - avail);
+                av_fifo_read(s->rx_fifo, buf, avail);
+                av_fifo_drain2(s->rx_fifo, header.pkt_size - avail);
                 pthread_mutex_unlock(&s->mutex);
                 return avail;
             } else if(s->circular_buffer_error){
@@ -1073,7 +1079,7 @@ static int udp_write(URLContext *h, const uint8_t *buf, int size)
     int ret;
 
 #if HAVE_PTHREAD_CANCEL
-    if (s->fifo) {
+    if (s->tx_fifo) {
         uint8_t tmp[4];
 
         pthread_mutex_lock(&s->mutex);
@@ -1088,14 +1094,14 @@ static int udp_write(URLContext *h, const uint8_t *buf, int size)
             return err;
         }
 
-        if (av_fifo_can_write(s->fifo) < size + 4) {
+        if (av_fifo_can_write(s->tx_fifo) < size + 4) {
             /* What about a partial packet tx ? */
             pthread_mutex_unlock(&s->mutex);
             return AVERROR(ENOMEM);
         }
         AV_WL32(tmp, size);
-        av_fifo_write(s->fifo, tmp, 4); /* size of packet */
-        av_fifo_write(s->fifo, buf, size); /* the data */
+        av_fifo_write(s->tx_fifo, tmp, 4); /* size of packet */
+        av_fifo_write(s->tx_fifo, buf, size); /* the data */
         pthread_cond_signal(&s->cond);
         pthread_mutex_unlock(&s->mutex);
         return size;
@@ -1157,7 +1163,8 @@ static int udp_close(URLContext *h)
     }
 #endif
     closesocket(s->udp_fd);
-    av_fifo_freep2(&s->fifo);
+    av_fifo_freep2(&s->rx_fifo);
+    av_fifo_freep2(&s->tx_fifo);
     ff_ip_reset_filters(&s->filters);
     return 0;
 }
