@@ -338,4 +338,6 @@ int ff_connect_parallel(struct addrinfo *addrs, int timeout_ms_per_address,
                         int parallel, URLContext *h, int *fd,
                         int (*customize_fd)(void *, int, int), void *customize_ctx);
 
+void ff_udp_get_last_recv_addr(URLContext *h, struct sockaddr_storage *addr, socklen_t *addr_len);
+
 #endif /* AVFORMAT_NETWORK_H */
