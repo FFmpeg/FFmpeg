@@ -87,6 +87,9 @@ fate-on2avc: CMD = framecrc -i $(TARGET_SAMPLES)/vp7/potter-40.vp7 -frames 30 -v
 FATE_SAMPLES_AUDIO-$(call FRAMECRC, PAF, PAF_AUDIO) += fate-paf-audio
 fate-paf-audio: CMD = framecrc -i $(TARGET_SAMPLES)/paf/hod1-partial.paf -vn
 
+FATE_SAMPLES_AUDIO-$(call FRAMECRC, WAV, ADPCM_RHETOREX) += fate-rhetorex
+fate-rhetorex: CMD = framecrc -i $(TARGET_SAMPLES)/rhetorex/rhetorex-mono-4bit-8000.wav
+
 FATE_SAMPLES_AUDIO-$(call FRAMECRC, VMD, VMDAUDIO, ARESAMPLE_FILTER) += fate-sierra-vmd-audio
 fate-sierra-vmd-audio: CMD = framecrc -i $(TARGET_SAMPLES)/vmd/12.vmd -vn -af aresample
 
