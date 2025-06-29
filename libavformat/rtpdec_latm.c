@@ -104,7 +104,7 @@ static int parse_fmtp_config(AVStream *st, const char *value)
     ff_hex_to_data(config, value);
     ret = init_get_bits(&gb, config, len*8);
     if (ret < 0)
-        return ret;
+        goto end;
     audio_mux_version = get_bits(&gb, 1);
     same_time_framing = get_bits(&gb, 1);
     skip_bits(&gb, 6); /* num_sub_frames */
