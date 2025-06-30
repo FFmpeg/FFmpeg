@@ -244,7 +244,7 @@ fate-aac-autobsf-adtstoasc: CMD = transcode "aac" $(TARGET_SAMPLES)/audiomatch/t
 FATE_AAC-$(call      PCM,    AAC,    AAC,       ARESAMPLE_FILTER) += $(FATE_AAC_CT_RAW)
 FATE_AAC-$(call      PCM,    MOV,    AAC,       ARESAMPLE_FILTER) += $(FATE_AAC)
 FATE_AAC_LATM-$(call PCM,    MPEGTS, AAC_LATM,  ARESAMPLE_FILTER) += $(FATE_AAC_LATM)
-FATE_AAC-$(call      PCM,    AAC,    AAC_FIXED, ARESAMPLE_FILTER) += $(FATE_AAC_FIXED)
+FATE_AAC-$(call      PCM,    MOV,    AAC_FIXED, ARESAMPLE_FILTER) += $(FATE_AAC_FIXED)
 
 FATE_AAC_ALL = $(FATE_AAC-yes) $(FATE_AAC_LATM-yes) $(FATE_AAC_FIXED-yes)
 
