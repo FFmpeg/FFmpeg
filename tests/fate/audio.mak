@@ -5,12 +5,12 @@ FATE_SAMPLES_AUDIO-$(call TRANSCODE, APTX_HD, APTX_HD, WAV_DEMUXER PCM_S16LE_DEC
                           ARESAMPLE_FILTER PCM_S32LE_ENCODER) += fate-aptx-hd
 fate-aptx-hd: CMD = transcode wav $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav aptx_hd "-af aresample -c aptx_hd" "-af aresample -c:a pcm_s32le -t 0.25" "" "" "-f aptx_hd -sample_rate 44100"
 
-FATE_BINKAUDIO-$(call DEMDEC, BINK, BINKAUDIO_DCT, ARESAMPLE_FILTER) += fate-binkaudio-dct
+FATE_BINKAUDIO-$(call PCM, BINK, BINKAUDIO_DCT, ARESAMPLE_FILTER) += fate-binkaudio-dct
 fate-binkaudio-dct: CMD = pcm -i $(TARGET_SAMPLES)/bink/binkaudio_dct.bik
 fate-binkaudio-dct: REF = $(SAMPLES)/bink/binkaudio_dct.pcm
 fate-binkaudio-dct: FUZZ = 2
 
-FATE_BINKAUDIO-$(call DEMDEC, BINK, BINKAUDIO_RDFT, ARESAMPLE_FILTER) += fate-binkaudio-rdft
+FATE_BINKAUDIO-$(call PCM, BINK, BINKAUDIO_RDFT, ARESAMPLE_FILTER) += fate-binkaudio-rdft
 fate-binkaudio-rdft: CMD = pcm -i $(TARGET_SAMPLES)/bink/binkaudio_rdft.bik
 fate-binkaudio-rdft: REF = $(SAMPLES)/bink/binkaudio_rdft.pcm
 fate-binkaudio-rdft: FUZZ = 2
@@ -26,7 +26,7 @@ fate-bmv-audio: CMD = framecrc -i $(TARGET_SAMPLES)/bmv/SURFING-partial.BMV -vn
 FATE_SAMPLES_AUDIO-$(call DEMDEC, DSICIN, DSICINAUDIO) += fate-delphine-cin-audio
 fate-delphine-cin-audio: CMD = framecrc -i $(TARGET_SAMPLES)/delphine-cin/LOGO-partial.CIN -vn
 
-FATE_SAMPLES_AUDIO-$(call DEMDEC, S337M, DOLBY_E, ARESAMPLE_FILTER) += fate-dolby-e
+FATE_SAMPLES_AUDIO-$(call PCM, S337M, DOLBY_E, ARESAMPLE_FILTER) += fate-dolby-e
 fate-dolby-e: CMD = pcm -i $(TARGET_SAMPLES)/dolby_e/16-11
 fate-dolby-e: CMP = oneoff
 fate-dolby-e: REF = $(SAMPLES)/dolby_e/16-11.pcm
@@ -37,7 +37,7 @@ fate-dss-lp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/lp.dss -frames 30 -af aresa
 FATE_SAMPLES_AUDIO-$(call DEMDEC, DSS, DSS_SP) += fate-dss-sp
 fate-dss-sp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/sp.dss -frames 30
 
-FATE_SAMPLES_AUDIO-$(call DEMDEC, DSF, DST, ARESAMPLE_FILTER) += fate-dsf-dst
+FATE_SAMPLES_AUDIO-$(call PCM, DSF, DST, ARESAMPLE_FILTER) += fate-dsf-dst
 fate-dsf-dst: CMD = pcm -i $(TARGET_SAMPLES)/dst/dst-64fs44-2ch.dff
 fate-dsf-dst: CMP = oneoff
 fate-dsf-dst: REF = $(SAMPLES)/dst/dst-64fs44-2ch.pcm
@@ -48,12 +48,12 @@ fate-imc: CMP = oneoff
 fate-imc: CMP_TARGET = 59416
 fate-imc: REF = $(SAMPLES)/imc/imc-201706.pcm
 
-FATE_SAMPLES_AUDIO-$(call DEMDEC, WAV, MSNSIREN, ARESAMPLE_FILTER) += fate-msnsiren
+FATE_SAMPLES_AUDIO-$(call PCM, WAV, MSNSIREN, ARESAMPLE_FILTER) += fate-msnsiren
 fate-msnsiren: CMD = pcm -i $(TARGET_SAMPLES)/msnsiren/msnsiren2.wav
 fate-msnsiren: CMP = oneoff
 fate-msnsiren: REF = $(SAMPLES)/msnsiren/msnsiren2.pcm
 
-FATE_SAMPLES_AUDIO-$(call DEMDEC, FLV, NELLYMOSER, ARESAMPLE_FILTER) += fate-nellymoser
+FATE_SAMPLES_AUDIO-$(call PCM, FLV, NELLYMOSER, ARESAMPLE_FILTER) += fate-nellymoser
 fate-nellymoser: CMD = pcm -i $(TARGET_SAMPLES)/nellymoser/nellymoser.flv
 fate-nellymoser: CMP = oneoff
 fate-nellymoser: REF = $(SAMPLES)/nellymoser/nellymoser.pcm
