@@ -225,15 +225,15 @@ FATE_H264-$(call FRAMECRC, MOV, H264) += fate-h264-unescaped-extradata
 # this sample contains field-coded frames, with both fields in a single packet
 FATE_H264-$(call FRAMECRC, MOV, H264) += fate-h264-twofields-packet
 
-FATE_H264-$(call DEMMUX, MOV, H264, H264_MP4TOANNEXB_BSF H264_METADATA_BSF SCALE_FILTER) += fate-h264-bsf-mp4toannexb-new-extradata
+FATE_H264-$(call DEMDEC, MOV H264, H264, H264_PARSER H264_MUXER H264_MP4TOANNEXB_BSF H264_METADATA_BSF SCALE_FILTER) += fate-h264-bsf-mp4toannexb-new-extradata
 
 FATE_H264-$(call DEMMUX, MOV, H264, H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb \
                                                              fate-h264-bsf-mp4toannexb-2 \
 
-FATE_H264-$(call DEMMUX, MOV, H264, H264_MP4TOANNEXB_BSF EXTRACT_EXTRADATA_BSF) += fate-h264_mp4toannexb_ticket5927 \
+FATE_H264-$(call DEMDEC, MOV H264, H264, H264_PARSER H264_MUXER H264_MP4TOANNEXB_BSF EXTRACT_EXTRADATA_BSF) += fate-h264_mp4toannexb_ticket5927 \
                                                              fate-h264_mp4toannexb_ticket5927_2
 
-FATE_H264-$(call DEMMUX, H264, MOV, DTS2PTS_BSF) += fate-h264-bsf-dts2pts
+FATE_H264-$(call DEMMUX, H264, MOV, H264_PARSER DTS2PTS_BSF) += fate-h264-bsf-dts2pts
 
 FATE_H264-$(call FRAMECRC, MATROSKA, H264) += fate-h264-direct-bff
 FATE_H264-$(call FRAMECRC, FLV, H264, SCALE_FILTER) += fate-h264-brokensps-2580

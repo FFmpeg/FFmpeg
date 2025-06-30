@@ -9,7 +9,7 @@ fate-matroska-prores-header-insertion-bz2: CMD = framecrc -i $(TARGET_SAMPLES)/m
 # This tests that the matroska demuxer supports modifying the colorspace
 # properties in remuxing (-c:v copy)
 # It also tests automatic insertion of the vp9_superframe bitstream filter
-FATE_MATROSKA-$(call DEMMUX, MATROSKA, MATROSKA) += fate-matroska-remux
+FATE_MATROSKA-$(call DEMMUX, MATROSKA, MATROSKA, VP9_DECODER VP9_PARSER MD5_PROTOCOL) += fate-matroska-remux
 fate-matroska-remux: CMD = md5pipe -i $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-2pass-akiyo.webm -color_trc 4 -c:v copy -fflags +bitexact -strict -2 -f matroska
 fate-matroska-remux: CMP = oneline
 fate-matroska-remux: REF = b9c7b650349972c9dce42ab79b472917
@@ -213,6 +213,7 @@ fate-matroska-ogg-opus-remux: CMD = transcode ogg $(TARGET_SAMPLES)/ogg/intro-pa
 FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, MXF_DEMUXER PCM_S16LE_DECODER \
                                            MP2FIXED_ENCODER ARESAMPLE_FILTER       \
                                            MPEG2VIDEO_DECODER MPEGVIDEO_PARSER     \
+                                           MPEGAUDIO_PARSER                        \
                                            EXTRACT_EXTRADATA_BSF) += fate-matroska-encoding-delay
 fate-matroska-encoding-delay: CMD = transcode mxf $(TARGET_SAMPLES)/mxf/Sony-00001.mxf matroska "-c:v copy -af aresample -c:a mp2fixed" "-copyts -c copy" "-show_packets -show_entries stream=codec_name,initial_padding -read_intervals %0.05"
 
@@ -234,7 +235,7 @@ fate-matroska-pgs-remux-durations: CMD = transcode sup $(TARGET_SAMPLES)/sub/pgs
 FATE_MATROSKA-$(call REMUX, MATROSKA, MPEGTS_DEMUXER DVBSUB_PARSER SETTS_BSF) += fate-matroska-dvbsub-remux
 fate-matroska-dvbsub-remux: CMD = transcode mpegts $(TARGET_SAMPLES)/sub/dvbsubtest_filter.ts matroska "-map 0:s -map 0:s -t 20 -c copy -bsf:0 setts=duration=if(gt(DURATION\,0)\,DURATION\,if(eq(PTS\,NOPTS)\,0\,if(eq(NEXT_PTS\,NOPTS)\,0\,NEXT_PTS-PTS))):pts=PTS" "-map 0 -c copy"
 
-FATE_MATROSKA_FFPROBE-$(call ALLYES, MATROSKA_DEMUXER) += fate-matroska-spherical-mono
+FATE_MATROSKA_FFPROBE-$(call DEMDEC, MATROSKA, H264) += fate-matroska-spherical-mono
 fate-matroska-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mkv/spherical.mkv
 
 # This test tests the handling of AVStereo3D information, in particular
@@ -272,7 +273,7 @@ FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, WEBM MATROSKA, VP9_PARSER) \
                                += fate-webm-hdr10-plus-remux
 fate-webm-hdr10-plus-remux: CMD = transcode webm $(TARGET_SAMPLES)/mkv/hdr10_plus_vp9_sample.webm webm "-map 0 -c:v copy" "-map 0 -c:v copy" "-show_packets"
 
-FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, VP9_PARSER) \
+FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, VP9_DECODER VP9_PARSER) \
                                += fate-matroska-hdr10-plus-remux
 fate-matroska-hdr10-plus-remux: CMD = transcode webm $(TARGET_SAMPLES)/mkv/hdr10_plus_vp9_sample.webm matroska "-map 0 -c:v copy" "-map 0 -c:v copy" "-show_packets"
 

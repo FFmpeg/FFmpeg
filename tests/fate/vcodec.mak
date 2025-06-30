@@ -207,9 +207,11 @@ FATE_VCODEC-$(call ENCDEC, H261, AVI)   += h261 h261-trellis
 fate-vsynth%-h261:               ENCOPTS = -qscale 11 -flags +loop
 fate-vsynth%-h261-trellis:       ENCOPTS = -qscale 12 -trellis 1 -mbd rd
 
-FATE_VCODEC-$(call ENCDEC, H263, AVI)   += h263 h263-obmc h263p
+FATE_VCODEC-$(call ENCDEC, H263, AVI)  += h263 h263-obmc
 fate-vsynth%-h263:               ENCOPTS = -qscale 10
 fate-vsynth%-h263-obmc:          ENCOPTS = -qscale 10 -obmc 1
+
+FATE_VCODEC-$(call ENCDEC, H263P, AVI)  += h263p
 fate-vsynth%-h263p:              ENCOPTS = -qscale 2 -flags +aic -umv 1 -aiv 1 -ps 300
 
 FATE_VCODEC_SCALE-$(call ENCDEC, HUFFYUV, AVI) += huffyuv huffyuvbgr24 huffyuvbgra

@@ -1,7 +1,7 @@
 FATE_G722-$(call DEMDEC, G722, ADPCM_G722) += fate-g722dec-1
 fate-g722dec-1: CMD = framecrc -i $(TARGET_SAMPLES)/g722/conf-adminmenu-162.g722
 
-FATE_G722-$(call ENCMUX, ADPCM_G722, WAV) += fate-g722-encode
+FATE_G722-$(call TRANSCODE, ADPCM_G722, WAV, PCM_S16LE_DECODER) += fate-g722-encode
 fate-g722-encode: tests/data/asynth-16000-1.wav
 fate-g722-encode: SRC = tests/data/asynth-16000-1.wav
 fate-g722-encode: CMD = enc_dec_pcm wav framemd5 s16le $(SRC) -c:a g722
@@ -51,7 +51,7 @@ fate-g726-encode-5bit: CMD = enc_dec_pcm wav framemd5 s16le $(SRC) -c:a g726 -b:
 $(FATE_G726): tests/data/asynth-8000-1.wav
 $(FATE_G726): SRC = tests/data/asynth-8000-1.wav
 
-FATE_VOICE-$(call ENCMUX, ADPCM_G726, WAV) += $(FATE_G726)
+FATE_VOICE-$(call TRANSCODE, ADPCM_G726, WAV, PCM_S16LE_DECODER) += $(FATE_G726)
 fate-g726: $(FATE_G726)
 
 FATE_GSM-$(call DEMDEC, WAV, GSM) += fate-gsm-ms

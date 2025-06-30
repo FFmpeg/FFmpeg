@@ -175,7 +175,7 @@ FATE_CBS_HEVC-$(call ALLYES, HEVC_DEMUXER HEVC_MUXER HEVC_PARSER FILTER_UNITS_BS
 fate-cbs-hevc-metadata-set-color: CMD = md5 -i $(TARGET_SAMPLES)/hevc-conformance/AMP_A_Samsung_4.bit -c:v copy -bsf:v hevc_metadata=colour_primaries=0:transfer_characteristics=0:matrix_coefficients=3 -f hevc
 fate-cbs-hevc-metadata-set-color: CMP = oneline
 fate-cbs-hevc-metadata-set-color: REF = d073124fca9e30a46c173292f948967c
-FATE_CBS_HEVC-$(call ALLYES, HEVC_DEMUXER, HEVC_METADATA_BSF, HEVC_MUXER) += fate-cbs-hevc-metadata-set-color
+FATE_CBS_HEVC-$(call ALLYES, HEVC_DEMUXER HEVC_METADATA_BSF HEVC_MUXER) += fate-cbs-hevc-metadata-set-color
 
 FATE_SAMPLES_AVCONV += $(FATE_CBS_HEVC-yes)
 fate-cbs-hevc: $(FATE_CBS_HEVC-yes)

@@ -8,7 +8,7 @@ fate-api-band: $(APITESTSDIR)/api-band-test$(EXESUF)
 fate-api-band: CMD = run $(APITESTSDIR)/api-band-test$(EXESUF) $(TARGET_SAMPLES)/mpeg4/resize_down-up.h263
 fate-api-band: CMP = null
 
-FATE_API_SAMPLES_LIBAVFORMAT-$(call DEMDEC, H264, H264) += fate-api-h264
+FATE_API_SAMPLES_LIBAVFORMAT-$(call DEMDEC, H264, H264, H264_PARSER) += fate-api-h264
 fate-api-h264: $(APITESTSDIR)/api-h264-test$(EXESUF)
 fate-api-h264: CMD = run $(APITESTSDIR)/api-h264-test$(EXESUF) $(TARGET_SAMPLES)/h264-conformance/SVA_NL2_E.264
 

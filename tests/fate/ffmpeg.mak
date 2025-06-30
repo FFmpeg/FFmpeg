@@ -40,7 +40,7 @@ fate-force_key_frames-source-dup: CMD = framecrc -i $(TARGET_SAMPLES)/h264/intra
   -c:v mpeg2video -g 400 -sc_threshold 99999 \
   -force_key_frames source -r 39 -force_fps -strict experimental
 
-FATE_SAMPLES_FFMPEG-$(call ENCDEC, MPEG2VIDEO H264, FRAMECRC H264, CROP_FILTER DRAWBOX_FILTER) += \
+FATE_SAMPLES_FFMPEG-$(call ENCDEC, MPEG2VIDEO H264, FRAMECRC H264, H264_PARSER CROP_FILTER DRAWBOX_FILTER) += \
     fate-force_key_frames-source fate-force_key_frames-source-drop fate-force_key_frames-source-dup
 
 # Tests that the video is properly autorotated using the contained
@@ -171,7 +171,7 @@ FATE_STREAMCOPY-$(call REMUX, PSP MOV, H264_PARSER H264_DECODER) += fate-copy-ps
 fate-copy-psp: CMD = transcode "mov" $(TARGET_SAMPLES)/h264/wwwq_cut.mp4\
                       psp "-c copy" "-codec copy"
 
-FATE_STREAMCOPY-$(call FRAMEMD5, FLV, H264) += fate-ffmpeg-streamloop-copy
+FATE_STREAMCOPY-$(call FRAMEMD5, FLV, H264, H264_PARSER) += fate-ffmpeg-streamloop-copy
 fate-ffmpeg-streamloop-copy: CMD = framemd5 -stream_loop 2 -i $(TARGET_SAMPLES)/flv/streamloop.flv -c copy
 
 tests/data/audio_shorter_than_video.nut: TAG = GEN
@@ -255,7 +255,7 @@ fate-ffmpeg-streamcopy-t: CMP = null
 fate-ffmpeg-streamcopy-t: CMD = ffmpeg                                                                \
     -stream_loop -1 -f rawvideo -s 352x288 -pix_fmt yuv420p -i $(TARGET_PATH)/tests/data/vsynth1.yuv  \
     -c copy -f null -t 1 -
-FATE_FFMPEG-$(call REMUX, RAWVIDEO) += fate-ffmpeg-streamcopy-t
+FATE_FFMPEG-$(call REMUX, RAWVIDEO, NULL_MUXER) += fate-ffmpeg-streamcopy-t
 
 # Test loopback decoding and passing the output to a complex graph.
 fate-ffmpeg-loopback-decoding: tests/data/vsynth1.yuv

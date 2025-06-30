@@ -23,7 +23,7 @@ fate-fitsdec-bitpix-32: CMD = framecrc -i $(TARGET_SAMPLES)/fits/tst0005.fits -p
 FATE_FITS_DEC-$(call FRAMECRC, FITS, FITS, SCALE_FILTER) += fate-fitsdec-bitpix-64
 fate-fitsdec-bitpix-64: CMD = framecrc -i $(TARGET_SAMPLES)/fits/tst0006.fits -pix_fmt gray16le -vf scale
 
-FATE_FITS_DEC-$(call TRANSCODE, FITS, FITS, GIF_DEMUXER GIF_DECODER SCALE_FILTER) += fate-fitsdec-multi
+FATE_FITS_DEC-$(call TRANSCODE, FITS, FITS, GIF_DEMUXER GIF_DECODER GIF_PARSER SCALE_FILTER) += fate-fitsdec-multi
 fate-fitsdec-multi: tests/data/fits-multi.fits
 fate-fitsdec-multi: CMD = framecrc -i $(TARGET_PATH)/tests/data/fits-multi.fits -pix_fmt gbrap
 
@@ -42,7 +42,7 @@ fate-fitsenc%: CMD = framecrc -auto_conversion_filters -i $(SRC) -c:v fits -pix_
 
 FATE_FITS_ENC_PIXFMT = gray gray16be gbrp gbrap gbrp16be gbrap16be
 $(FATE_FITS_ENC_PIXFMT:%=fate-fitsenc-%): tests/data/fits-multi.fits
-FATE_FITS_ENC-$(call TRANSCODE, FITS, FITS, GIF_DEMUXER GIF_DECODER SCALE_FILTER) += $(FATE_FITS_ENC_PIXFMT:%=fate-fitsenc-%)
+FATE_FITS_ENC-$(call TRANSCODE, FITS, FITS, GIF_DEMUXER GIF_DECODER GIF_PARSER SCALE_FILTER) += $(FATE_FITS_ENC_PIXFMT:%=fate-fitsenc-%)
 
 FATE_FITS += $(FATE_FITS_ENC-yes)
 fate-fitsenc: $(FATE_FITS_ENC-yes)

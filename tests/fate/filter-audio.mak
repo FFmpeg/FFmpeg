@@ -210,7 +210,7 @@ tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
         -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f segment -segment_time 10 -map 0 -flags +bitexact -codec:a mp2fixed \
         -segment_list $(TARGET_PATH)/$@ -y $(TARGET_PATH)/tests/data/hls-out-%03d.ts 2>/dev/null
 
-FATE_AFILTER-$(call ALLYES, HLS_DEMUXER MPEGTS_MUXER MPEGTS_DEMUXER AEVALSRC_FILTER ARESAMPLE_FILTER LAVFI_INDEV MP2FIXED_ENCODER) += fate-filter-hls
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, ARESAMPLE AEVALSRC, HLS MPEGTS, MP2 PCM_F64LE, MP2FIXED, SEGMENT MPEGTS, LAVFI_INDEV) += fate-filter-hls
 fate-filter-hls: tests/data/hls-list.m3u8
 fate-filter-hls: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/hls-list.m3u8 -af aresample
 
@@ -224,7 +224,7 @@ tests/data/hls-list-append.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
         -hls_flags append_list -codec:a mp2fixed -hls_segment_filename $(TARGET_PATH)/tests/data/hls-append-out-%03d.ts \
         $(TARGET_PATH)/tests/data/hls-list-append.m3u8 2>/dev/null
 
-FATE_AFILTER-$(call ALLYES, HLS_DEMUXER MPEGTS_MUXER MPEGTS_DEMUXER AEVALSRC_FILTER ARESAMPLE_FILTER LAVFI_INDEV MP2FIXED_ENCODER) += fate-filter-hls-append
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, ARESAMPLE AEVALSRC ASETPTS, HLS MPEGTS, PCM_F64LE MP2, MP2FIXED, SEGMENT HLS MPEGTS, LAVFI_INDEV) += fate-filter-hls-append
 fate-filter-hls-append: tests/data/hls-list-append.m3u8
 fate-filter-hls-append: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/hls-list-append.m3u8 -af asetpts=N*23,aresample
 
@@ -249,7 +249,7 @@ $(FATE_AMIX): SRC1 = $(TARGET_PATH)/tests/data/asynth-44100-2-2.wav
 $(FATE_AMIX): CMP  = oneoff
 $(FATE_AMIX): CMP_UNIT = f32
 
-FATE_AFILTER_SAMPLES-$(CONFIG_ARESAMPLE_FILTER) += fate-filter-aresample
+FATE_AFILTER_SAMPLES-$(call DEMDEC, FLV, NELLYMOSER, PCM_S16LE_MUXER ARESAMPLE_FILTER) += fate-filter-aresample
 fate-filter-aresample: SRC = $(TARGET_SAMPLES)/nellymoser/nellymoser-discont.flv
 fate-filter-aresample: CMD = pcm -analyzeduration 10000000 -i $(SRC) -af aresample=min_comp=0.001:min_hard_comp=0.1:first_pts=0
 fate-filter-aresample: CMP = oneoff
@@ -412,7 +412,7 @@ fate-filter-hdcd-s32p: CMD = md5 -i $(SRC) -af hdcd -f s32le
 fate-filter-hdcd-s32p: CMP = oneline
 fate-filter-hdcd-s32p: REF = 0c5513e83eedaa10ab6fac9ddc173cf5
 
-FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, ATEMPO, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-atempo
+FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, ATEMPO, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE WAV) += fate-filter-atempo
 fate-filter-atempo: tests/data/asynth-44100-1.wav
 fate-filter-atempo: CMD = pcm -i $(TARGET_PATH)/tests/data/asynth-44100-1.wav -af "atempo=2.0"
 fate-filter-atempo: CMP = oneoff
