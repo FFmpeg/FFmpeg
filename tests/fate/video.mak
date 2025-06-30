@@ -292,7 +292,7 @@ fate-nuv-rtjpeg: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/nuv/Today.nuv 
 FATE_NUV += fate-nuv-rtjpeg-fh
 fate-nuv-rtjpeg-fh: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/nuv/rtjpeg_frameheader.nuv -an
 
-FATE_VIDEO-$(call DEMDEC, NUV, NUV) += $(FATE_NUV)
+FATE_VIDEO-$(call FRAMECRC, NUV, NUV) += $(FATE_NUV)
 fate-nuv: $(FATE_NUV)
 
 FATE_VIDEO-$(call FRAMECRC, PAF, PAF_VIDEO, SCALE_FILTER) += fate-paf-video

@@ -16,13 +16,13 @@ fate-lossless-rka: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/luckynight-part
 FATE_SAMPLES_LOSSLESS_AUDIO-$(call DEMDEC, OSQ, OSQ, ARESAMPLE_FILTER) += fate-lossless-osq
 fate-lossless-osq: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/luckynight-partial.osq -f s16le -af aresample
 
-FATE_SAMPLES_LOSSLESS_AUDIO-$(call DEMDEC, TAK, TAK, ARESAMPLE_FILTER) += fate-lossless-tak
+FATE_SAMPLES_LOSSLESS_AUDIO-$(call CRC, TAK, TAK, ARESAMPLE_FILTER) += fate-lossless-tak
 fate-lossless-tak: CMD = crc -i $(TARGET_SAMPLES)/lossless-audio/luckynight-partial.tak -af aresample
 
-FATE_SAMPLES_LOSSLESS_AUDIO-$(call DEMDEC, TTA, TTA) += fate-lossless-tta
+FATE_SAMPLES_LOSSLESS_AUDIO-$(call CRC, TTA, TTA) += fate-lossless-tta
 fate-lossless-tta: CMD = crc -i $(TARGET_SAMPLES)/lossless-audio/inside.tta
 
-FATE_SAMPLES_LOSSLESS_AUDIO-$(call DEMDEC, TTA, TTA) += fate-lossless-tta-encrypted
+FATE_SAMPLES_LOSSLESS_AUDIO-$(call CRC, TTA, TTA) += fate-lossless-tta-encrypted
 fate-lossless-tta-encrypted: CMD = crc -password ffmpeg -i $(TARGET_SAMPLES)/lossless-audio/encrypted.tta
 
 FATE_SAMPLES_LOSSLESS_AUDIO-$(call DEMDEC, ASF, WMALOSSLESS, ARESAMPLE_FILTER) += fate-lossless-wma fate-lossless-wma24-1 fate-lossless-wma24-2 fate-lossless-wma24-rawtile
@@ -35,5 +35,5 @@ fate-lossless-wmall: fate-lossless-wma fate-lossless-wma24-1 fate-lossless-wma24
 FATE_SAMPLES_LOSSLESS_AUDIO += $(FATE_SAMPLES_LOSSLESS_AUDIO-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_SAMPLES_LOSSLESS_AUDIO)
-fate-lossless-audio: $(FATE_SAMPLES_LOSSLESS_AUDIO)
 
+fate-lossless-audio: $(FATE_SAMPLES_LOSSLESS_AUDIO)

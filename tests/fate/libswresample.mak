@@ -1085,7 +1085,7 @@ $(call CROSS_TEST,$(SAMPLERATES_LITE),ARESAMPLE_EXACT_LIN_ASYNC,dblp,f64le,s16)
 FATE_SWR_RESAMPLE-$(call FILTERDEMDEC, ARESAMPLE ASETPTS ATRIM SINE, , PCM_S16LE, LAVFI_INDEV) += fate-swr-async-firstpts
 fate-swr-async-firstpts: CMD = framecrc -auto_conversion_filters -copyts -f lavfi -i "sine=r=1000:samples_per_frame=100,asetpts=PTS+S+S*floor(ld(1)/4)+st(1\,ld(1)+1)*0,atrim=end=2" -filter:a aresample=async=300:first_pts=0
 
-FATE_SWR_RESAMPLE-$(call FILTERDEMDECENCMUX, ARESAMPLE, WAV, PCM_S16LE, PCM_S16LE, WAV) += $(FATE_SWR_RESAMPLE)
+FATE_SWR_RESAMPLE-$(call FILTERDEMDECENCMUX, ARESAMPLE, WAV, PCM_S16LE, PCM_S16LE, WAV, PIPE_PROTOCOL) += $(FATE_SWR_RESAMPLE)
 fate-swr-resample: $(FATE_SWR_RESAMPLE-yes)
 FATE_SWR += $(FATE_SWR_RESAMPLE-yes)
 

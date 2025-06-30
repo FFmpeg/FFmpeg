@@ -13,7 +13,7 @@ fate-apng-dispose-background: CMD = framecrc -i $(TARGET_SAMPLES)/apng/015.png
 FATE_APNG += fate-apng-dispose-background2
 fate-apng-dispose-background2: CMD = framecrc -i $(TARGET_SAMPLES)/apng/alogo.png
 
-FATE_APNG-$(call DEMDEC, APNG, APNG) += $(FATE_APNG)
+FATE_APNG-$(call FRAMECRC, APNG, APNG) += $(FATE_APNG)
 
 FATE_SAMPLES_FFMPEG += $(FATE_APNG-yes)
 fate-apng: $(FATE_APNG-yes)

@@ -331,7 +331,7 @@ FATE_EXR-$(call DEMDEC, IMAGE2, EXR, SCALE_FILTER) += $(FATE_EXR)
 FATE_IMAGE_FRAMECRC += $(FATE_EXR-yes)
 fate-exr: $(FATE_EXR-yes)
 
-FATE_JPG-$(call DEMDEC, IMAGE2, MJPEG, SCALE_FILTER SETSAR_FILTER) += fate-jpg-12bpp
+FATE_JPG-$(call FRAMECRC, IMAGE2, MJPEG, SCALE_FILTER SETSAR_FILTER) += fate-jpg-12bpp
 fate-jpg-12bpp: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpg/12bpp.jpg -f rawvideo -pix_fmt gray16le -vf setsar=sar=sar,scale
 
 FATE_JPG += fate-jpg-jfif
@@ -360,7 +360,7 @@ fate-jpg-rgb-5: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/jpg/jpg-8930-5.
 FATE_JPG_TRANSCODE-$(call TRANSCODE, MJPEG, MJPEG IMAGE_JPEG_PIPE, IMAGE_PNG_PIPE_DEMUXER PNG_DECODER SCALE_FILTER) += fate-jpg-icc
 fate-jpg-icc: CMD = transcode png_pipe $(TARGET_SAMPLES)/png1/lena-int_rgb24.png mjpeg "-vf scale" "" "-show_frames"
 
-FATE_JPG-$(call DEMDEC, IMAGE2, MJPEG) += $(FATE_JPG)
+FATE_JPG-$(call FRAMECRC, IMAGE2, MJPEG) += $(FATE_JPG)
 FATE_IMAGE_FRAMECRC += $(FATE_JPG-yes)
 FATE_IMAGE_TRANSCODE += $(FATE_JPG_TRANSCODE-yes)
 fate-jpg: $(FATE_JPG-yes) $(FATE_JPG_TRANSCODE-yes)

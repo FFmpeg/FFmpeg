@@ -1,4 +1,4 @@
-FATE_OMA_FFMPEG-$(call ALLYES, OMA_DEMUXER CRC_MUXER) += fate-oma-demux
+FATE_OMA_FFMPEG-$(call CRC, OMA) += fate-oma-demux
 fate-oma-demux: CMD = crc -i $(TARGET_SAMPLES)/oma/01-Untitled-partial.oma -c:a copy
 
 # Also tests splitting and joining the date into TYER and TDAT id3v2.3 tags.

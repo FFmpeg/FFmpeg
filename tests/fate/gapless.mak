@@ -1,4 +1,4 @@
-FATE_GAPLESS-$(call DEMDEC, MP3, MP3, ARESAMPLE_FILTER) += fate-gapless-mp3
+FATE_GAPLESS-$(call FRAMECRC, MP3, MP3, ARESAMPLE_FILTER) += fate-gapless-mp3
 fate-gapless-mp3: CMD = gapless $(TARGET_SAMPLES)/gapless/gapless.mp3 "-c:a mp3"
 
 FATE_GAPLESSINFO_PROBE-$(CONFIG_MP3_DEMUXER) += fate-gapless-mp3-side-data

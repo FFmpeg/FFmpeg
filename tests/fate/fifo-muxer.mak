@@ -2,7 +2,7 @@ fate-fifo-muxer-h264: CMD = ffmpeg -i $(TARGET_SAMPLES)/mkv/1242-small.mkv -fram
                             -c:v copy -c:a copy -map v:0 -map a:0 -flags +bitexact\
                             -fflags +bitexact -f fifo -fifo_format framecrc -
 fate-fifo-muxer-h264: REF = $(SRC_PATH)/tests/ref/fate/mkv-1242
-FATE_SAMPLES_FIFO_MUXER-$(call ALLYES, FIFO_MUXER, MATROSKA_DEMUXER, H264_DECODER) += fate-fifo-muxer-h264
+FATE_SAMPLES_FIFO_MUXER-$(call FRAMECRC, MATROSKA, H264, FIFO_MUXER) += fate-fifo-muxer-h264
 
 fate-fifo-muxer-wav: CMD = ffmpeg -i $(TARGET_SAMPLES)/audio-reference/chorusnoise_2ch_44kHz_s16.wav\
                            -c:a copy -map a:0 -flags +bitexact\

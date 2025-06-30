@@ -47,7 +47,7 @@ fate-wmv3-drm-nodec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c34
 FATE_MICROSOFT += $(FATE_WMV3_DRM-yes)
 fate-wmv3-drm: $(FATE_WMV3_DRM-yes)
 
-FATE_MICROSOFT-$(call DEMDEC, ASF, WMV2) += fate-wmv8-x8intra
+FATE_MICROSOFT-$(call FRAMECRC, ASF, WMV2) += fate-wmv8-x8intra
 fate-wmv8-x8intra: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/wmv8/wmv8_x8intra.wmv -an
 
 FATE_VC1 += fate-vc1_sa00040

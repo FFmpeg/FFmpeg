@@ -106,6 +106,9 @@ FRAMEMD5 = $(call ALLYES, $(1:%=%_DEMUXER) $(2:%=%_DECODER) $(3)              \
 FRAMECRC = $(call ALLYES, $(1:%=%_DEMUXER) $(2:%=%_DECODER) $(3)              \
                           PCM_S16LE_ENCODER RAWVIDEO_ENCODER FRAMECRC_MUXER   \
                           PIPE_PROTOCOL FILE_PROTOCOL)
+CRC = $(call ALLYES, $(1:%=%_DEMUXER) $(2:%=%_DECODER) $(3)              \
+                          PCM_S16LE_ENCODER RAWVIDEO_ENCODER CRC_MUXER   \
+                          PIPE_PROTOCOL FILE_PROTOCOL)
 
 # Variant of DEMDEC for use with the "pcm" command.
 PCM = $(call ALLYES, $(1:%=%_DEMUXER) $(2:%=%_DECODER)  $(3) FILE_PROTOCOL    \

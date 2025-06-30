@@ -1,4 +1,4 @@
-FATE_CAF_FFMPEG-$(call ALLYES, CAF_DEMUXER CRC_MUXER) += fate-caf-demux
+FATE_CAF_FFMPEG-$(call CRC, CAF) += fate-caf-demux
 fate-caf-demux: CMD = crc -i $(TARGET_SAMPLES)/caf/caf-pcm16.caf -c copy
 
 FATE_CAF_FFMPEG_FFPROBE-$(call REMUX, CAF, MOV_DEMUXER) += fate-caf-alac-remux

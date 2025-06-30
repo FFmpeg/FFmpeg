@@ -1,7 +1,7 @@
-FATE_DPCM-$(call DEMDEC, ROQ, ROQ_DPCM) += fate-dpcm-idroq
+FATE_DPCM-$(call FRAMECRC, ROQ, ROQ_DPCM) += fate-dpcm-idroq
 fate-dpcm-idroq: CMD = framecrc -i $(TARGET_SAMPLES)/idroq/idlogo.roq -vn
 
-FATE_DPCM-$(call DEMDEC, IPMOVIE, INTERPLAY_DPCM) += fate-dpcm-interplay
+FATE_DPCM-$(call FRAMECRC, IPMOVIE, INTERPLAY_DPCM) += fate-dpcm-interplay
 fate-dpcm-interplay: CMD = framecrc -i $(TARGET_SAMPLES)/interplay-mve/interplay-logo-2MB.mve -vn
 
 FATE_DPCM-$(call DEMDEC, SOL, SOL_DPCM) += fate-dpcm-sierra

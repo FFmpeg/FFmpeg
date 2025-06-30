@@ -105,6 +105,8 @@ tests/data/hls_fmp4_ac3.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	-hls_time 2 -hls_segment_filename "$(TARGET_PATH)/tests/data/hls_fmp4_ac3_%d.m4s" \
 	$(TARGET_PATH)/tests/data/hls_fmp4_ac3.m3u8 2>/dev/null
 
+FATE_HLSENC-yes := $(if $(call FRAMECRC), $(FATE_HLSENC-yes))
+
 FATE_HLSENC_PROBE-$(call DEMMUX, HLS AC3, HLS MP4, AC3_DECODER) += fate-hls-fmp4_ac3
 fate-hls-fmp4_ac3: tests/data/hls_fmp4_ac3.m3u8
 fate-hls-fmp4_ac3: CMD = probeaudiostream $(TARGET_PATH)/tests/data/now_ac3.mp4

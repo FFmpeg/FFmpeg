@@ -1,7 +1,7 @@
-FATE_ADPCM-$(call DEMDEC, FOURXM, ADPCM_4XM, ARESAMPLE_FILTER) += fate-adpcm-4xm
+FATE_ADPCM-$(call FRAMECRC, FOURXM, ADPCM_4XM, ARESAMPLE_FILTER) += fate-adpcm-4xm
 fate-adpcm-4xm: CMD = framecrc -i $(TARGET_SAMPLES)/4xm/dracula.4xm -vn -map 0:6 -af aresample
 
-FATE_ADPCM-$(call DEMDEC, AST, ADPCM_AFC, ARESAMPLE_FILTER) += fate-adpcm-afc
+FATE_ADPCM-$(call FRAMECRC, AST, ADPCM_AFC, ARESAMPLE_FILTER) += fate-adpcm-afc
 fate-adpcm-afc: CMD = framecrc -i $(TARGET_SAMPLES)/ast/demo11_02_partial.ast -af aresample
 
 FATE_ADPCM-$(call DEMDEC, WAV, ADPCM_CT) += fate-adpcm-creative
@@ -16,28 +16,28 @@ fate-adpcm-creative-8-2.6bit: CMD = md5 -i $(TARGET_SAMPLES)/creative/BBC_3BIT.V
 FATE_ADPCM-$(call DEMDEC, VOC, ADPCM_SBPRO_4) += fate-adpcm-creative-8-4bit
 fate-adpcm-creative-8-4bit: CMD = md5 -i $(TARGET_SAMPLES)/creative/BBC_4BIT.VOC -f s16le
 
-FATE_ADPCM-$(call DEMDEC, ADP, ADPCM_DTK, ARESAMPLE_FILTER) += fate-adpcm-dtk
+FATE_ADPCM-$(call FRAMECRC, ADP, ADPCM_DTK, ARESAMPLE_FILTER) += fate-adpcm-dtk
 fate-adpcm-dtk: CMD = framecrc -i $(TARGET_SAMPLES)/adp/shakespr_partial.adp -f s16le -af aresample
 
-FATE_ADPCM-$(call DEMDEC, EA, ADPCM_EA) += fate-adpcm-ea-1
+FATE_ADPCM-$(call FRAMECRC, EA, ADPCM_EA) += fate-adpcm-ea-1
 fate-adpcm-ea-1: CMD = framecrc -i $(TARGET_SAMPLES)/ea-wve/networkBackbone-partial.wve -frames:a 26 -vn
 
-FATE_ADPCM-$(call DEMDEC, EA, ADPCM_EA) += fate-adpcm-ea-2
+FATE_ADPCM-$(call FRAMECRC, EA, ADPCM_EA) += fate-adpcm-ea-2
 fate-adpcm-ea-2: CMD = framecrc -i $(TARGET_SAMPLES)/ea-dct/NFS2Esprit-partial.dct -vn
 
-FATE_ADPCM-$(call DEMDEC, XA, ADPCM_EA_MAXIS_XA) += fate-adpcm-ea-maxis-xa
+FATE_ADPCM-$(call FRAMECRC, XA, ADPCM_EA_MAXIS_XA) += fate-adpcm-ea-maxis-xa
 fate-adpcm-ea-maxis-xa: CMD = framecrc -i $(TARGET_SAMPLES)/maxis-xa/SC2KBUG.XA -frames:a 30
 
-FATE_ADPCM-$(call DEMDEC, EA, ADPCM_EA_R1, ARESAMPLE_FILTER) += fate-adpcm-ea-r1
+FATE_ADPCM-$(call FRAMECRC, EA, ADPCM_EA_R1, ARESAMPLE_FILTER) += fate-adpcm-ea-r1
 fate-adpcm-ea-r1: CMD = framecrc -i $(TARGET_SAMPLES)/ea-mad/NFS6LogoE.mad -vn -af aresample
 
-FATE_ADPCM-$(call DEMDEC, EA, ADPCM_EA_R2, ARESAMPLE_FILTER) += fate-adpcm-ea-r2
+FATE_ADPCM-$(call CRC, EA, ADPCM_EA_R2, ARESAMPLE_FILTER) += fate-adpcm-ea-r2
 fate-adpcm-ea-r2: CMD = crc -i $(TARGET_SAMPLES)/ea-mpc/THX_logo.mpc -vn -af aresample
 
-FATE_ADPCM-$(call DEMDEC, EA, ADPCM_EA_R3, ARESAMPLE_FILTER) += fate-adpcm-ea-r3
+FATE_ADPCM-$(call CRC, EA, ADPCM_EA_R3, ARESAMPLE_FILTER) += fate-adpcm-ea-r3
 fate-adpcm-ea-r3: CMD = crc -i $(TARGET_SAMPLES)/ea-vp6/THX_logo.vp6 -vn -af aresample
 
-FATE_ADPCM-$(call DEMDEC, AVI, ADPCM_IMA_AMV) += fate-adpcm-ima-amv
+FATE_ADPCM-$(call FRAMECRC, AVI, ADPCM_IMA_AMV) += fate-adpcm-ima-amv
 fate-adpcm-ima-amv: CMD = framecrc -i $(TARGET_SAMPLES)/amv/MTV_high_res_320x240_sample_Penguin_Joke_MTV_from_WMV.amv -t 10 -vn
 
 FATE_ADPCM-$(call DEMDEC, APC, ADPCM_IMA_APC) += fate-adpcm-ima-apc
@@ -49,10 +49,10 @@ fate-adpcm-ima-dk3: CMD = md5 -i $(TARGET_SAMPLES)/duck/sop-audio-only.avi -f s1
 FATE_ADPCM-$(call DEMDEC, AVI, ADPCM_IMA_DK4) += fate-adpcm-ima-dk4
 fate-adpcm-ima-dk4: CMD = md5 -i $(TARGET_SAMPLES)/duck/salsa-audio-only.avi -f s16le
 
-FATE_ADPCM-$(call DEMDEC, EA, ADPCM_IMA_EA_EACS) += fate-adpcm-ima-ea-eacs
+FATE_ADPCM-$(call FRAMECRC, EA, ADPCM_IMA_EA_EACS) += fate-adpcm-ima-ea-eacs
 fate-adpcm-ima-ea-eacs: CMD = framecrc -i $(TARGET_SAMPLES)/ea-tgv/INTRO8K-partial.TGV -vn
 
-FATE_ADPCM-$(call DEMDEC, EA, ADPCM_IMA_EA_SEAD) += fate-adpcm-ima-ea-sead
+FATE_ADPCM-$(call FRAMECRC, EA, ADPCM_IMA_EA_SEAD) += fate-adpcm-ima-ea-sead
 fate-adpcm-ima-ea-sead: CMD = framecrc -i $(TARGET_SAMPLES)/ea-tgv/INTEL_S.TGV -vn
 
 FATE_ADPCM-$(call DEMDEC, ISS, ADPCM_IMA_ISS) += fate-adpcm-ima-iss
@@ -64,31 +64,31 @@ fate-adpcm-ima-oki: CMD = md5 -i $(TARGET_SAMPLES)/oki/test.wav -f s16le
 FATE_ADPCM-$(call DEMDEC, RSD, ADPCM_IMA_RAD) += fate-adpcm-ima-rad
 fate-adpcm-ima-rad: CMD = md5 -i $(TARGET_SAMPLES)/rsd/hit_run_partial.rsd -f s16le
 
-FATE_ADPCM-$(call DEMDEC, SMJPEG, ADPCM_IMA_SMJPEG) += fate-adpcm-ima-smjpeg
+FATE_ADPCM-$(call FRAMECRC, SMJPEG, ADPCM_IMA_SMJPEG) += fate-adpcm-ima-smjpeg
 fate-adpcm-ima-smjpeg: CMD = framecrc -i $(TARGET_SAMPLES)/smjpeg/scenwin.mjpg -vn
 
 FATE_ADPCM-$(call DEMDEC, MOV, ADPCM_IMA_WAV, ARESAMPLE_FILTER) += fate-adpcm-ima_wav-stereo
 fate-adpcm-ima_wav-stereo: CMD = md5 -i $(TARGET_SAMPLES)/qt-surge-suite/surge-2-16-L-ms11.mov -f s16le -af aresample
 
-FATE_ADPCM-$(call DEMDEC, WSVQA, ADPCM_IMA_WS) += fate-adpcm-ima-ws
+FATE_ADPCM-$(call FRAMECRC, WSVQA, ADPCM_IMA_WS) += fate-adpcm-ima-ws
 fate-adpcm-ima-ws: CMD = framecrc -i $(TARGET_SAMPLES)/vqa/cc-demo1-partial.vqa -vn
 
-FATE_ADPCM-$(call DEMDEC, WSVQA, ADPCM_IMA_WS, ARESAMPLE_FILTER) += fate-adpcm-ima-ws-vqa3
+FATE_ADPCM-$(call FRAMECRC, WSVQA, ADPCM_IMA_WS, ARESAMPLE_FILTER) += fate-adpcm-ima-ws-vqa3
 fate-adpcm-ima-ws-vqa3: CMD = framecrc -i $(TARGET_SAMPLES)/vqa/small-cut-v3.vqa -vn -af aresample
 
-FATE_ADPCM-$(call DEMDEC, DXA, ADPCM_MS) += fate-adpcm-ms-mono
+FATE_ADPCM-$(call FRAMECRC, DXA, ADPCM_MS) += fate-adpcm-ms-mono
 fate-adpcm-ms-mono: CMD = framecrc -i $(TARGET_SAMPLES)/dxa/meetsquid.dxa -t 2 -vn
 
 FATE_ADPCM-$(call DEMDEC, MOV, ADPCM_MS) += fate-adpcm_ms-stereo
 fate-adpcm_ms-stereo: CMD = md5 -i $(TARGET_SAMPLES)/qt-surge-suite/surge-2-16-L-ms02.mov -f s16le
 
-FATE_ADPCM-$(call DEMDEC, THP, ADPCM_THP, ARESAMPLE_FILTER) += fate-adpcm-thp
+FATE_ADPCM-$(call FRAMECRC, THP, ADPCM_THP, ARESAMPLE_FILTER) += fate-adpcm-thp
 fate-adpcm-thp: CMD = framecrc -i $(TARGET_SAMPLES)/thp/pikmin2-opening1-partial.thp -vn -af aresample
 
-FATE_ADPCM-$(call DEMDEC, SMUSH, ADPCM_VIMA) += fate-adpcm-vima
+FATE_ADPCM-$(call FRAMECRC, SMUSH, ADPCM_VIMA) += fate-adpcm-vima
 fate-adpcm-vima: CMD = framecrc -i $(TARGET_SAMPLES)/smush/ronin_part.znm -vn
 
-FATE_ADPCM-$(call DEMDEC, STR, ADPCM_XA, ARESAMPLE_FILTER) += fate-adpcm-xa
+FATE_ADPCM-$(call FRAMECRC, STR, ADPCM_XA, ARESAMPLE_FILTER) += fate-adpcm-xa
 fate-adpcm-xa: CMD = framecrc -i $(TARGET_SAMPLES)/psx-str/abc000_cut.str -vn -af aresample
 
 FATE_ADPCM-$(call DEMDEC, ARGO_ASF, ADPCM_ARGO, ARESAMPLE_FILTER) += fate-adpcm-argo-mono
