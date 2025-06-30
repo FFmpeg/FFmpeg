@@ -2787,8 +2787,11 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             break;
         pmt_pid &= 0x1fff;
 
-        if (pmt_pid == ts->current_pid)
-            break;
+        if (pmt_pid <= 0x000F || pmt_pid == 0x1FFF) {
+            av_log(ts->stream, AV_LOG_WARNING,
+                   "Ignoring invalid PAT entry: sid=0x%x pid=0x%x\n", sid, pmt_pid);
+            continue;
+        }
 
         av_log(ts->stream, AV_LOG_TRACE, "sid=0x%x pid=0x%x\n", sid, pmt_pid);
 
