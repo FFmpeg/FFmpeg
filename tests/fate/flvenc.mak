@@ -9,7 +9,7 @@ FATE_ENHANCED_FLVENC_FFMPEG-$(call REMUX, FLV IVF, FLV_DEMUXER VP9_PARSER) += fa
 fate-enhanced-flv-vp9: CMD = transcode ivf $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-05-resize.ivf\
 		flv "-c copy" "-c copy"
 
-FATE_ENHANCED_FLVENC_FFMPEG-$(call REMUX, FLV IVF, FLV_DEMUXER AV1_DECODER AV1_PARSER) += fate-enhanced-flv-av1
+FATE_ENHANCED_FLVENC_FFMPEG-$(call REMUX, FLV IVF, FLV_DEMUXER AV1_DECODER AV1_PARSER EXTRACT_EXTRADATA_BSF) += fate-enhanced-flv-av1
 fate-enhanced-flv-av1: CMD = stream_remux ivf $(TARGET_SAMPLES)/av1/seq_hdr_op_param_info.ivf "-c:v av1" \
 		flv "-c copy" "-c:v av1" "-c copy"
 

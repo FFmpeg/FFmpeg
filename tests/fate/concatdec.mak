@@ -23,5 +23,5 @@ $(foreach D,$(FATE_CONCAT_DEMUXER_EXTENDED_LAVF),$(eval fate-concat-demuxer-exte
 $(foreach D,$(FATE_CONCAT_DEMUXER_EXTENDED_LAVF),$(eval fate-concat-demuxer-extended-lavf-$(D): CMD = concat $(SRC_PATH)/tests/extended.ffconcat ../lavf/lavf.$(D) md5))
 FATE_CONCAT_DEMUXER += $(FATE_CONCAT_DEMUXER_EXTENDED_LAVF:%=fate-concat-demuxer-extended-lavf-%)
 
-FATE_CONCAT_DEMUXER := $(if $(CONFIG_CONCAT_DEMUXER), $(FATE_CONCAT_DEMUXER))
+FATE_CONCAT_DEMUXER := $(if $(call ALLYES, CONCAT_DEMUXER EXTRACT_EXTRADATA_BSF), $(FATE_CONCAT_DEMUXER))
 FATE_FFPROBE += $(FATE_CONCAT_DEMUXER)

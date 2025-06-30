@@ -35,7 +35,7 @@ tests/data/adts-to-mkv-cated-%.mkv: tests/data/adts-to-mkv-header.mkv tests/data
 FATE_SEGMENT += fate-segment-mp4-to-ts
 fate-segment-mp4-to-ts: tests/data/mp4-to-ts.m3u8
 fate-segment-mp4-to-ts: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/mp4-to-ts.m3u8 -c copy
-FATE_SEGMENT-$(call ALLYES, MOV_DEMUXER H264_MP4TOANNEXB_BSF MPEGTS_MUXER MATROSKA_DEMUXER SEGMENT_MUXER HLS_DEMUXER) += fate-segment-mp4-to-ts
+FATE_SEGMENT-$(call ALLYES, MOV_DEMUXER H264_MP4TOANNEXB_BSF MPEGTS_MUXER MATROSKA_DEMUXER SEGMENT_MUXER HLS_DEMUXER EXTRACT_EXTRADATA_BSF) += fate-segment-mp4-to-ts
 
 FATE_SEGMENT += fate-segment-adts-to-mkv
 fate-segment-adts-to-mkv: tests/data/adts-to-mkv.m3u8

@@ -229,7 +229,7 @@ tests/data/hevc-mp4.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
 	-i $(TARGET_SAMPLES)/hevc-conformance/WPP_A_ericsson_MAIN10_2.bit -c copy -flags +bitexact $(TARGET_PATH)/$@ -y 2>/dev/null
 
-FATE_HEVC-$(call ALLYES, HEVC_DEMUXER MOV_DEMUXER HEVC_PARSER HEVC_MP4TOANNEXB_BSF MOV_MUXER HEVC_MUXER) += fate-hevc-bsf-mp4toannexb
+FATE_HEVC-$(call ALLYES, HEVC_DEMUXER MOV_DEMUXER HEVC_PARSER HEVC_MP4TOANNEXB_BSF EXTRACT_EXTRADATA_BSF MOV_MUXER HEVC_MUXER) += fate-hevc-bsf-mp4toannexb
 fate-hevc-bsf-mp4toannexb: tests/data/hevc-mp4.mov
 fate-hevc-bsf-mp4toannexb: CMD = md5 -i $(TARGET_PATH)/tests/data/hevc-mp4.mov -c:v copy -fflags +bitexact -f hevc
 fate-hevc-bsf-mp4toannexb: CMP = oneline
@@ -249,7 +249,7 @@ fate-hevc-monochrome-crop: CMD = probeframes -show_entries frame=width,height:st
 FATE_HEVC_FFPROBE-$(call PARSERDEMDEC, HEVC, HEVC, HEVC) += fate-hevc-monochrome-crop
 
 fate-hevc-afd-tc-sei: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -bitexact -flags output_corrupt -show_entries frame_side_data_list -select_streams v $(TARGET_SAMPLES)/mpegts/loewe.ts
-FATE_HEVC_FFPROBE-$(call PARSERDEMDEC, HEVC, HEVC, HEVC) += fate-hevc-afd-tc-sei
+FATE_HEVC_FFPROBE-$(call PARSERDEMDEC, HEVC, HEVC, HEVC, EXTRACT_EXTRADATA_BSF) += fate-hevc-afd-tc-sei
 
 fate-hevc-hdr10-plus-metadata: CMD = probeframes -show_entries frame=side_data_list $(TARGET_SAMPLES)/hevc/hdr10_plus_h265_sample.hevc
 FATE_HEVC_FFPROBE-$(call DEMDEC, HEVC, HEVC) += fate-hevc-hdr10-plus-metadata
