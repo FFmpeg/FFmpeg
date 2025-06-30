@@ -62,7 +62,6 @@ FATE_SEEK_VSYNTH_LENA += asv1 asv2                      \
                          mpeg2-422    mpeg2-idct-int    \
                          mpeg2-ilace  mpeg2-ivlc-qprd   \
                          mpeg2-thread mpeg2-thread-ivlc \
-                         mpeg4 $(FATE_MPEG4_AVI)        \
                          msmpeg4 msmpeg4v2              \
                          rgb                            \
                          roqvideo                       \
@@ -71,6 +70,8 @@ FATE_SEEK_VSYNTH_LENA += asv1 asv2                      \
                          svq1                           \
                          wmv1 wmv2                      \
                          yuv                            \
+
+FATE_SEEK_VSYNTH_LENA += $(if $(CONFIG_MPEG4VIDEO_PARSER), mpeg4 $(FATE_MPEG4_AVI))
 
 fate-seek-vsynth_lena-asv1:              SRC = fate/vsynth_lena-asv1.avi
 fate-seek-vsynth_lena-asv2:              SRC = fate/vsynth_lena-asv2.avi
