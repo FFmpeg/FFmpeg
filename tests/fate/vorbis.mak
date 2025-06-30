@@ -1,10 +1,10 @@
-FATE_VORBIS += fate-vorbis-encode
-fate-vorbis-encode: CMD = enc_dec_pcm ogg wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -c:a vorbis -strict experimental
-fate-vorbis-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
-fate-vorbis-encode: CMP_SHIFT = 0
-fate-vorbis-encode: CMP_TARGET = 296
-fate-vorbis-encode: SIZE_TOLERANCE = 3560
-fate-vorbis-encode: FUZZ = 30
+FATE_VORBIS_ENCODE += fate-vorbis-encode-1
+fate-vorbis-encode-1: CMD = enc_dec_pcm ogg wav s16le $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav -c:a vorbis -strict experimental
+fate-vorbis-encode-1: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
+fate-vorbis-encode-1: CMP_SHIFT = 0
+fate-vorbis-encode-1: CMP_TARGET = 296
+fate-vorbis-encode-1: SIZE_TOLERANCE = 3560
+fate-vorbis-encode-1: FUZZ = 30
 
 FATE_VORBIS += fate-vorbis-1
 fate-vorbis-1: CMD = pcm -i $(TARGET_SAMPLES)/vorbis/1.0.1-test_small.ogg
@@ -94,9 +94,11 @@ fate-vorbis-1833-chapters: CMD = probechapters $(TARGET_SAMPLES)/vorbis/vorbis_c
 
 FATE_SAMPLES_FFPROBE += $(FATE_VORBIS_FFPROBE-yes)
 
-FATE_VORBIS-$(call DEMDEC, OGG, VORBIS, ARESAMPLE_FILTER) += $(FATE_VORBIS)
+FATE_VORBIS-$(call PCM, OGG, VORBIS, ARESAMPLE_FILTER) += $(FATE_VORBIS)
+FATE_VORBIS_ENCODE-$(call TRANSCODE, VORBIS, OGG, WAV_MUXER WAV_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += $(FATE_VORBIS_ENCODE)
 
-FATE_SAMPLES_AVCONV += $(FATE_VORBIS-yes)
-fate-vorbis: $(FATE_VORBIS-yes) $(FATE_VORBIS_FFPROBE-yes)
+FATE_SAMPLES_AVCONV += $(FATE_VORBIS-yes) $(FATE_VORBIS_ENCODE-yes)
+fate-vorbis: $(FATE_VORBIS-yes) $(FATE_VORBIS_ENCODE-yes) $(FATE_VORBIS_FFPROBE-yes)
 $(FATE_VORBIS-yes): CMP = oneoff
-fate-vorbis-encode: CMP = stddev
+fate-vorbis-encode: $(FATE_VORBIS_ENCODE-yes)
+$(FATE_VORBIS_ENCODE-yes): CMP = stddev
