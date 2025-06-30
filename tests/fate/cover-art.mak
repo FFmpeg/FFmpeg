@@ -31,7 +31,7 @@ fate-cover-art-wv: CMD = md5 -i $(TARGET_SAMPLES)/cover_art/luckynight_cover.wv 
 fate-cover-art-wv: REF = 45333c983c45af54449dff10af144317
 
 # Tests writing id3v2 tags (some with non-ASCII characters) and apics.
-FATE_COVER_ART_REMUX-$(call ALLYES, FILE_PROTOCOL FLAC_DEMUXER MJPEG_DECODER \
+FATE_COVER_ART_REMUX-$(call ALLYES, FLAC_DEMUXER MJPEG_DECODER \
                                     FLAC_DECODER SCALE_FILTER PNG_ENCODER    \
                                     BMP_ENCODER PCM_S16BE_ENCODER AIFF_MUXER \
                                     AIFF_DEMUXER BMP_DECODER PNG_DECODER     \
@@ -39,7 +39,7 @@ FATE_COVER_ART_REMUX-$(call ALLYES, FILE_PROTOCOL FLAC_DEMUXER MJPEG_DECODER \
                        += fate-cover-art-aiff-id3v2-remux
 fate-cover-art-aiff-id3v2-remux: CMD = transcode flac $(TARGET_SAMPLES)/cover_art/cover_art.flac aiff "-map 0 -map 0:v -map 0:v -map 0:v -c:a pcm_s16be -c:v:0 copy -filter:v:1 scale -c:v:1 png -filter:v:2 scale -c:v:2 bmp -c:v:3 copy -write_id3v2 1 -metadata:g unknown_key=unknown_value -metadata compilation=foo -metadata:s:v:0 title=first -metadata:s:v:1 title=second -metadata:s:v:1 comment=Illustration -metadata:s:v:2 title=third -metadata:s:v:2 comment=Conductor -metadata:s:v:3 title=fourth -metadata:s:v:3 comment=Composer" "-map 0 -c copy -t 0.1" "-show_entries format_tags:stream_tags:stream_disposition=attached_pic:stream=index,codec_name"
 
-FATE_COVER_ART_REMUX-$(call ALLYES, FILE_PROTOCOL MP3_DEMUXER MJPEG_DECODER \
+FATE_COVER_ART_REMUX-$(call ALLYES, MP3_DEMUXER MJPEG_DECODER \
                                     SCALE_FILTER PNG_ENCODER BMP_ENCODER    \
                                     MP3_MUXER BMP_DECODER PNG_DECODER       \
                                     FRAMECRC_MUXER PIPE_PROTOCOL)           \
@@ -48,7 +48,7 @@ fate-cover-art-mp3-id3v2-remux: CMD = transcode mp3 $(TARGET_SAMPLES)/exif/embed
 
 # Also covers muxing and demuxing of nonstandard channel layouts into FLAC
 # as well as the unorthodox multi_dim_quant option of the FLAC encoder.
-FATE_COVER_ART_REMUX-$(call ALLYES, FILE_PROTOCOL MOV_DEMUXER OGG_DEMUXER   \
+FATE_COVER_ART_REMUX-$(call ALLYES, MOV_DEMUXER OGG_DEMUXER   \
                                     ALAC_DECODER MJPEG_DECODER SCALE_FILTER \
                                     CHANNELMAP_FILTER ARESAMPLE_FILTER      \
                                     FLAC_ENCODER BMP_ENCODER PNG_ENCODER    \
@@ -57,7 +57,7 @@ FATE_COVER_ART_REMUX-$(call ALLYES, FILE_PROTOCOL MOV_DEMUXER OGG_DEMUXER   \
                        += fate-cover-art-flac-remux
 fate-cover-art-flac-remux: CMD = transcode mov $(TARGET_SAMPLES)/lossless-audio/inside.m4a flac "-map 0 -map 1:v -map 1:v -af channelmap=channel_layout=FL+FC,aresample -c:a flac -multi_dim_quant 1 -c:v:0 copy -metadata:s:v:0 comment=Illustration -metadata:s:v:0 title=OpenMusic  -filter:v:1 scale -c:v:1 png -metadata:s:v:1 title=landscape -c:v:2 copy -filter:v:3 scale -metadata:s:v:2 title=portrait -c:v:3 bmp  -metadata:s:v:3 comment=Conductor -c:v:4 copy -t 0.4" "-map 0 -map 0:a -c:a:0 copy -c:v copy" "-show_entries format_tags:stream_tags:stream_disposition=attached_pic:stream=index,codec_name" "-f ogg -i $(TARGET_SAMPLES)/cover_art/ogg_vorbiscomment_cover.opus"
 
-FCA_TEMP-$(call ALLYES, RAWVIDEO_MUXER FILE_PROTOCOL) = $(FATE_COVER_ART-yes)
+FCA_TEMP-$(call ALLYES, RAWVIDEO_MUXER) = $(FATE_COVER_ART-yes)
 FATE_COVER_ART = $(FCA_TEMP-yes)
 $(FATE_COVER_ART): CMP = oneline
 

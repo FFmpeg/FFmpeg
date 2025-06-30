@@ -80,7 +80,7 @@ fate-vc1-ism: CMD = framecrc -i $(TARGET_SAMPLES)/isom/vc1-wmapro.ism -an
 FATE_MICROSOFT += $(FATE_VC1-yes)
 fate-vc1: $(FATE_VC1-yes)
 
-FATE_MICROSOFT-$(call ALLYES, FILE_PROTOCOL PIPE_PROTOCOL ASF_DEMUXER FRAMECRC_MUXER) += fate-asf-repldata
+FATE_MICROSOFT-$(call ALLYES, PIPE_PROTOCOL ASF_DEMUXER FRAMECRC_MUXER) += fate-asf-repldata
 fate-asf-repldata: CMD = framecrc -i $(TARGET_SAMPLES)/asf/bug821-2.asf -c copy
 
 FATE_MICROSOFT += $(FATE_MICROSOFT-yes)

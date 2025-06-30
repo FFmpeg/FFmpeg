@@ -33,7 +33,7 @@ $(FATE_PIXFMT): CMD = pixfmt_conversion
 $(FATE_PIXFMT): REF = $(SRC_PATH)/tests/ref/pixfmt/$(@:fate-pixfmt-%=%)
 $(FATE_PIXFMT): $(VREF)
 
-FATE_PIXFMT := $(if $(call DEMDEC, IMAGE2, PGMYUV RAWVIDEO, RAWVIDEO_DEMUXER RAWVIDEO_MUXER RAWVIDEO_ENCODER FILE_PROTOCOL), $(FATE_PIXFMT))
+FATE_PIXFMT := $(if $(call DEMDEC, IMAGE2, PGMYUV RAWVIDEO, RAWVIDEO_DEMUXER RAWVIDEO_MUXER RAWVIDEO_ENCODER), $(FATE_PIXFMT))
 PIXFMT_16_LIST =        gray16le        \
                         gray16be        \
                         yuv420p16le     \

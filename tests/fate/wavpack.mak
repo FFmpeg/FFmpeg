@@ -81,7 +81,7 @@ FATE_WAVPACK_S16 += fate-wavpack-cuesheet
 fate-wavpack-cuesheet: CMD = md5pipe -i $(TARGET_SAMPLES)/wavpack/special/cue_sheet.wv -f s16le -af aresample
 
 # The sample file has APE tags containing a cuesheet.
-FATE_WAVPACK_FFPROBE-$(call ALLYES, WV_DEMUXER FILE_PROTOCOL) += fate-wavpack-cuesheet-tags
+FATE_WAVPACK_FFPROBE-$(call ALLYES, WV_DEMUXER) += fate-wavpack-cuesheet-tags
 fate-wavpack-cuesheet-tags: CMD = probetags $(TARGET_SAMPLES)/wavpack/special/cue_sheet.wv
 
 FATE_WAVPACK_S16 += fate-wavpack-falsestereo

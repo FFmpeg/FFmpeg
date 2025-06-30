@@ -319,7 +319,7 @@ fate-filter-join: CMD = md5 -auto_conversion_filters -i $(SRC1) -i $(SRC2) -filt
 fate-filter-join: CMP = oneline
 fate-filter-join: REF = 88b0d24a64717ba8635b29e8dac6ecd8
 
-FATE_AFILTER-$(call ALLYES, WAV_DEMUXER PCM_S16LE_DECODER PCM_S16LE_ENCODER PCM_S16LE_MUXER APERMS_FILTER VOLUME_FILTER) += fate-filter-volume
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, VOLUME, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE, APERMS_FILTER) += fate-filter-volume
 fate-filter-volume: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-volume: tests/data/asynth-44100-2.wav
 fate-filter-volume: CMD = md5 -i $(SRC) -af aperms=random,volume=precision=fixed:volume=0.5 -f s16le
@@ -426,7 +426,7 @@ FATE_AFILTER-$(call ALLYES, LAVFI_INDEV SINE_FILTER ARESAMPLE_FILTER ASPLIT_FILT
 
 fate-filter-crazychannels: tests/data/filtergraphs/crazychannels
 fate-filter-crazychannels: CMD = framecrc -auto_conversion_filters -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/crazychannels
-FATE_AFILTER-$(call FILTERFRAMECRC, ARESAMPLE SINE JOIN ATRIM CHANNELMAP CHANNELSPLIT) += fate-filter-crazychannels
+FATE_AFILTER-$(call FILTERFRAMECRC, ARESAMPLE SINE JOIN ATRIM CHANNELMAP CHANNELSPLIT, FILE_PROTOCOL) += fate-filter-crazychannels
 
 FATE_AFILTER-yes += fate-filter-formats
 fate-filter-formats: libavfilter/tests/formats$(EXESUF)
