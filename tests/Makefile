@@ -97,21 +97,21 @@ TRANSCODE = $(call ALLYES, $(firstword $(1))_ENCODER $(lastword $(1))_DECODER \
 REMUX = $(call ALLYES, $(firstword $(1))_MUXER $(lastword $(1))_DEMUXER \
                        $(2) FILE_PROTOCOL PIPE_PROTOCOL FRAMECRC_MUXER)
 
-DEMDEC  = $(call ALLYES, $(1)_DEMUXER $(2:%=%_DECODER) $(3) FILE_PROTOCOL)
-ENCMUX  = $(call ALLYES, $(1:%=%_ENCODER) $(2)_MUXER   $(3))
+DEMDEC  = $(call ALLYES, $(1:%=%_DEMUXER) $(2:%=%_DECODER) $(3) FILE_PROTOCOL)
+ENCMUX  = $(call ALLYES, $(1:%=%_ENCODER) $(2:%=%_MUXER)   $(3))
 
-FRAMEMD5 = $(call ALLYES, $(1)_DEMUXER $(2:%=%_DECODER) $(3)                  \
+FRAMEMD5 = $(call ALLYES, $(1:%=%_DEMUXER) $(2:%=%_DECODER) $(3)              \
                           PCM_S16LE_ENCODER RAWVIDEO_ENCODER FRAMEMD5_MUXER   \
                           PIPE_PROTOCOL FILE_PROTOCOL)
-FRAMECRC = $(call ALLYES, $(1)_DEMUXER $(2:%=%_DECODER) $(3)                  \
+FRAMECRC = $(call ALLYES, $(1:%=%_DEMUXER) $(2:%=%_DECODER) $(3)              \
                           PCM_S16LE_ENCODER RAWVIDEO_ENCODER FRAMECRC_MUXER   \
                           PIPE_PROTOCOL FILE_PROTOCOL)
 
 # Variant of DEMDEC for use with the "pcm" command.
-PCM = $(call ALLYES, $(1)_DEMUXER $(2)_DECODER  $(3) FILE_PROTOCOL            \
+PCM = $(call ALLYES, $(1:%=%_DEMUXER) $(2:%=%_DECODER)  $(3) FILE_PROTOCOL    \
                      PCM_S16LE_ENCODER PCM_S16LE_MUXER PIPE_PROTOCOL)
 
-DEMMUX  = $(call ALLYES, $(1)_DEMUXER $(2)_MUXER $(3) FILE_PROTOCOL)
+DEMMUX  = $(call ALLYES, $(1:%=%_DEMUXER) $(2:%=%_MUXER) $(3) FILE_PROTOCOL)
 
 # Variant of FRAMECRC for the cases with -lavfi where no demuxer is involved.
 FILTERFRAMECRC     = $(call ALLYES, $(1:%=%_FILTER) $(2) PCM_S16LE_ENCODER    \
@@ -120,9 +120,9 @@ FILTERFRAMECRC     = $(call ALLYES, $(1:%=%_FILTER) $(2) PCM_S16LE_ENCODER    \
 FILTERDEMDEC       = $(call ALLYES, $(1:%=%_FILTER) $(2:%=%_DEMUXER) $(3:%=%_DECODER) \
                                     $(4) PCM_S16LE_ENCODER RAWVIDEO_ENCODER   \
                                     FRAMECRC_MUXER FILE_PROTOCOL PIPE_PROTOCOL)
-FILTERDEMDECENCMUX = $(call ALLYES, $(1:%=%_FILTER) $(2)_DEMUXER $(3)_DECODER $(4)_ENCODER $(5)_MUXER $(6) FILE_PROTOCOL)
+FILTERDEMDECENCMUX = $(call ALLYES, $(1:%=%_FILTER) $(2:%=%_DEMUXER) $(3:%=%_DECODER) $(4:%=%_ENCODER) $(5:%=%_MUXER) $(6) FILE_PROTOCOL)
 
-PARSERDEMDEC       = $(call ALLYES, $(1)_PARSER $(2)_DEMUXER $(3)_DECODER $(4) FILE_PROTOCOL)
+PARSERDEMDEC       = $(call ALLYES, $(1:%=%_PARSER) $(2:%=%_DEMUXER) $(3:%=%_DECODER) $(4) FILE_PROTOCOL)
 
 # Allow overriding CONFIG_LARGE_TESTS via LARGE_TESTS, if set on the
 # make command line.
