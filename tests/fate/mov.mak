@@ -216,13 +216,13 @@ fate-mov-channel-description: tests/data/asynth-44100-1.wav tests/data/filtergra
 fate-mov-channel-description: CMD = transcode wav $(TARGET_PATH)/tests/data/asynth-44100-1.wav mov "-/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/mov-channel-description -map [outFL] -map [outFR] -map [outFC] -map [outLFE] -map [outBL] -map [outBR] -map [outDL] -map [outDR] -c:a pcm_s16le" "-map 0 -c copy -frames:a 0"
 
 # Test PCM in mp4 and channel layout
-FATE_MOV_FFMPEG-$(call TRANSCODE, PCM_S16LE, MOV, WAV_DEMUXER PAN_FILTER) \
+FATE_MOV_FFMPEG-$(call TRANSCODE, PCM_S16LE, MP4 WAV, PAN_FILTER) \
                           += fate-mov-mp4-pcm
 fate-mov-mp4-pcm: tests/data/asynth-44100-1.wav tests/data/filtergraphs/mov-mp4-pcm
 fate-mov-mp4-pcm: CMD = transcode wav $(TARGET_PATH)/tests/data/asynth-44100-1.wav mp4 "-/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/mov-mp4-pcm -map [mono] -map [stereo] -map [2.1] -map [5.1] -map [7.1] -c:a pcm_s16le" "-map 0 -c copy -frames:a 0"
 
 # Test floating sample format PCM in mp4 and unusual channel layout
-FATE_MOV_FFMPEG-$(call TRANSCODE, PCM_S16LE, MOV, WAV_DEMUXER PAN_FILTER) \
+FATE_MOV_FFMPEG-$(call TRANSCODE, PCM_S16LE, MP4 WAV, PAN_FILTER) \
                           += fate-mov-mp4-pcm-float
 fate-mov-mp4-pcm-float: tests/data/asynth-44100-1.wav
 fate-mov-mp4-pcm-float: CMD = transcode wav $(TARGET_PATH)/tests/data/asynth-44100-1.wav mp4 "-af aresample,pan=FR+FL+FR|c0=c0|c1=c0|c2=c0 -c:a pcm_f32le" "-map 0 -c copy -frames:a 0"
@@ -237,7 +237,7 @@ fate-mov-vfr: CMD = md5 -filter_complex testsrc=size=2x2:duration=1,setpts=N*N:s
 fate-mov-vfr: CMP = oneline
 fate-mov-vfr: REF = 1558b4a9398d8635783c93f84eb5a60d
 
-FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER) += fate-mov-mp4-iamf-stereo
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MP4 WAV, PCM_S16LE_DECODER) += fate-mov-mp4-iamf-stereo
 fate-mov-mp4-iamf-stereo: tests/data/asynth-44100-2.wav tests/data/streamgroups/audio_element-stereo tests/data/streamgroups/mix_presentation-stereo
 fate-mov-mp4-iamf-stereo: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-mov-mp4-iamf-stereo: CMD = transcode wav $(SRC) mp4 " \
@@ -246,7 +246,7 @@ fate-mov-mp4-iamf-stereo: CMD = transcode wav $(SRC) mp4 " \
   -streamid 0:0 -c:a flac -t 1" "-c:a copy -map 0" \
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
-FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-5_1_4
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MP4 WAV, PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-5_1_4
 fate-mov-mp4-iamf-5_1_4: tests/data/asynth-44100-10.wav tests/data/filtergraphs/iamf_5_1_4 tests/data/streamgroups/audio_element-5_1_4 tests/data/streamgroups/mix_presentation-5_1_4
 fate-mov-mp4-iamf-5_1_4: SRC = $(TARGET_PATH)/tests/data/asynth-44100-10.wav
 fate-mov-mp4-iamf-5_1_4: CMD = transcode wav $(SRC) mp4 "-auto_conversion_filters \
@@ -257,7 +257,7 @@ fate-mov-mp4-iamf-5_1_4: CMD = transcode wav $(SRC) mp4 "-auto_conversion_filter
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
 # Test muxing an IAMF track alongside a video one, with video as the first track.
-FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, MPEG4 FLAC, MOV, WAV_DEMUXER RAWVIDEO_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-7_1_4-video-first
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, MPEG4 FLAC, MP4 WAV, RAWVIDEO_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-7_1_4-video-first
 fate-mov-mp4-iamf-7_1_4-video-first: tests/data/asynth-44100-12.wav tests/data/vsynth1.yuv tests/data/filtergraphs/iamf_7_1_4 tests/data/streamgroups/audio_element-7_1_4-2 tests/data/streamgroups/mix_presentation-7_1_4
 fate-mov-mp4-iamf-7_1_4-video-first: SRC = $(TARGET_PATH)/tests/data/asynth-44100-12.wav
 fate-mov-mp4-iamf-7_1_4-video-first: SRC2 = $(TARGET_PATH)/tests/data/vsynth1.yuv
@@ -270,7 +270,7 @@ fate-mov-mp4-iamf-7_1_4-video-first: CMD = transcode wav $(SRC) mp4 "-auto_conve
   "-f rawvideo -s 352x288 -pix_fmt yuv420p -i $(SRC2)"
 
 # Test muxing an IAMF track alongside a video one, with video as the last track. Also, use stream ids as track ids.
-FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, MPEG4 FLAC, MOV, WAV_DEMUXER RAWVIDEO_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-7_1_4-video-last
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, MPEG4 FLAC, MP4 WAV, RAWVIDEO_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-7_1_4-video-last
 fate-mov-mp4-iamf-7_1_4-video-last: tests/data/asynth-44100-12.wav tests/data/vsynth1.yuv tests/data/filtergraphs/iamf_7_1_4 tests/data/streamgroups/audio_element-7_1_4 tests/data/streamgroups/mix_presentation-7_1_4
 fate-mov-mp4-iamf-7_1_4-video-last: SRC = $(TARGET_PATH)/tests/data/asynth-44100-12.wav
 fate-mov-mp4-iamf-7_1_4-video-last: SRC2 = $(TARGET_PATH)/tests/data/vsynth1.yuv
@@ -282,7 +282,7 @@ fate-mov-mp4-iamf-7_1_4-video-last: CMD = transcode wav $(SRC) mp4 "-auto_conver
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition:stream=index,id" \
   "-f rawvideo -s 352x288 -pix_fmt yuv420p -i $(SRC2)"
 
-FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-ambisonic_1
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MP4 WAV, PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-ambisonic_1
 fate-mov-mp4-iamf-ambisonic_1: tests/data/asynth-44100-4.wav tests/data/filtergraphs/iamf_ambisonic_1 tests/data/streamgroups/audio_element-ambisonic_1 tests/data/streamgroups/mix_presentation-ambisonic_1
 fate-mov-mp4-iamf-ambisonic_1: SRC = $(TARGET_PATH)/tests/data/asynth-44100-4.wav
 fate-mov-mp4-iamf-ambisonic_1: CMD = transcode wav $(SRC) mp4 "-auto_conversion_filters \
