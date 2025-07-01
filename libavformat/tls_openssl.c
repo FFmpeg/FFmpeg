@@ -836,14 +836,14 @@ static av_cold int openssl_init_ca_key_cert(URLContext *h)
             ret = AVERROR(EIO);
             goto fail;
         }
-    } else if (p->tls_shared.cert_buf) {
-        cert = cert_from_pem_string(p->tls_shared.cert_buf);
+    } else if (c->cert_buf) {
+        cert = cert_from_pem_string(c->cert_buf);
         if (SSL_CTX_use_certificate(p->ctx, cert) != 1) {
             av_log(p, AV_LOG_ERROR, "SSL: Init SSL_CTX_use_certificate failed, %s\n", openssl_get_error(p));
             ret = AVERROR(EINVAL);
             return ret;
         }
-    } else if (p->tls_shared.is_dtls){
+    } else if (c->is_dtls){
         av_log(p, AV_LOG_ERROR, "TLS: Init cert failed, %s\n", openssl_get_error(p));
         ret = AVERROR(EINVAL);
         goto fail;
@@ -857,14 +857,14 @@ static av_cold int openssl_init_ca_key_cert(URLContext *h)
             ret = AVERROR(EIO);
             goto fail;
         }
-    } else if (p->tls_shared.key_buf) {
-        p->pkey = pkey = pkey_from_pem_string(p->tls_shared.key_buf, 1);
+    } else if (c->key_buf) {
+        p->pkey = pkey = pkey_from_pem_string(c->key_buf, 1);
         if (SSL_CTX_use_PrivateKey(p->ctx, pkey) != 1) {
             av_log(p, AV_LOG_ERROR, "TLS: Init SSL_CTX_use_PrivateKey failed, %s\n", openssl_get_error(p));
             ret = AVERROR(EINVAL);
             return ret;
         }
-    } else if (p->tls_shared.is_dtls){
+    } else if (c->is_dtls) {
         av_log(p, AV_LOG_ERROR, "TLS: Init pkey failed, %s\n", openssl_get_error(p));
         ret = AVERROR(EINVAL);
         goto fail;
