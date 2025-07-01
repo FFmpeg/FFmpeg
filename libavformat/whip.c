@@ -1303,6 +1303,7 @@ next_packet:
                 /* If got the first binding response, start DTLS handshake. */
                 ret = ffurl_open_whitelist(&whip->dtls_uc, buf, AVIO_FLAG_READ_WRITE, &s->interrupt_callback,
                     &opts, s->protocol_whitelist, s->protocol_blacklist, NULL);
+                av_dict_free(&opts);
                 if (ret < 0)
                     goto end;
                 dtls_initialize(s);
