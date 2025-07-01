@@ -1291,12 +1291,12 @@ next_packet:
                 if (whip->cert_file) {
                     av_dict_set(&opts, "cert_file", whip->cert_file, 0);
                 } else
-                    av_dict_set(&opts, "cert_buf", whip->cert_buf, 0);
+                    av_dict_set(&opts, "cert_pem", whip->cert_buf, 0);
 
                 if (whip->key_file) {
                     av_dict_set(&opts, "key_file", whip->key_file, 0);
                 } else
-                    av_dict_set(&opts, "key_buf", whip->key_buf, 0);
+                    av_dict_set(&opts, "key_pem", whip->key_buf, 0);
                 av_dict_set_int(&opts, "use_external_udp", 1, 0);
                 av_dict_set_int(&opts, "listen", 1, 0);
                 /* If got the first binding response, start DTLS handshake. */
