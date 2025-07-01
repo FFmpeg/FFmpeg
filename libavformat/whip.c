@@ -926,7 +926,7 @@ static int parse_answer(AVFormatContext *s)
     if (whip->state < WHIP_STATE_NEGOTIATED)
         whip->state = WHIP_STATE_NEGOTIATED;
     whip->whip_answer_time = av_gettime();
-    av_log(whip, AV_LOG_VERBOSE, "SDP state=%d, offer=%luB, answer=%luB, ufrag=%s, pwd=%luB, transport=%s://%s:%d, elapsed=%dms\n",
+    av_log(whip, AV_LOG_VERBOSE, "SDP state=%d, offer=%zuB, answer=%zuB, ufrag=%s, pwd=%zuB, transport=%s://%s:%d, elapsed=%dms\n",
         whip->state, strlen(whip->sdp_offer), strlen(whip->sdp_answer), whip->ice_ufrag_remote, strlen(whip->ice_pwd_remote),
         whip->ice_protocol, whip->ice_host, whip->ice_port, ELAPSED(whip->whip_starttime, av_gettime()));
 
@@ -977,7 +977,7 @@ static int ice_create_request(AVFormatContext *s, uint8_t *buf, int buf_size, in
     /* The username is the concatenation of the two ICE ufrag */
     ret = snprintf(username, sizeof(username), "%s:%s", whip->ice_ufrag_remote, whip->ice_ufrag_local);
     if (ret <= 0 || ret >= sizeof(username)) {
-        av_log(whip, AV_LOG_ERROR, "Failed to build username %s:%s, max=%lu, ret=%d\n",
+        av_log(whip, AV_LOG_ERROR, "Failed to build username %s:%s, max=%zu, ret=%d\n",
             whip->ice_ufrag_remote, whip->ice_ufrag_local, sizeof(username), ret);
         ret = AVERROR(EIO);
         goto end;
@@ -1419,7 +1419,7 @@ static int setup_srtp(AVFormatContext *s)
     if (whip->state < WHIP_STATE_SRTP_FINISHED)
         whip->state = WHIP_STATE_SRTP_FINISHED;
     whip->whip_srtp_time = av_gettime();
-    av_log(whip, AV_LOG_VERBOSE, "SRTP setup done, state=%d, suite=%s, key=%luB, elapsed=%dms\n",
+    av_log(whip, AV_LOG_VERBOSE, "SRTP setup done, state=%d, suite=%s, key=%zuB, elapsed=%dms\n",
         whip->state, suite, sizeof(send_key), ELAPSED(whip->whip_starttime, av_gettime()));
 
 end:
