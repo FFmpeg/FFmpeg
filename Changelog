@@ -20,6 +20,7 @@ version <next>:
   IBC (Inter Block Copy), Palette Mode and ACT (Adaptive Color Transform
 - G.728 decoder
 - pad_cuda filter
+- Sanyo LD-ADPCM decoder
 
 
 version 7.1:

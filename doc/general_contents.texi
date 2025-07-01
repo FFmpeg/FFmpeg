@@ -1244,6 +1244,7 @@ following image formats are supported:
 @item ADPCM Nintendo THP  @tab     @tab  X
 @item ADPCM Playstation      @tab     @tab  X
 @item ADPCM QT IMA           @tab  X  @tab  X
+@item ADPCM Sanyo            @tab     @tab  X
 @item ADPCM SEGA CRI ADX     @tab  X  @tab  X
     @tab Used in Sega Dreamcast games.
 @item ADPCM Shockwave Flash  @tab  X  @tab  X

@@ -29,8 +29,8 @@
 
 #include "version_major.h"
 
-#define LIBAVCODEC_VERSION_MINOR   4
-#define LIBAVCODEC_VERSION_MICRO 103
+#define LIBAVCODEC_VERSION_MINOR   5
+#define LIBAVCODEC_VERSION_MICRO 100
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
