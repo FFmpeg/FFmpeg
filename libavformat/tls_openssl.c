@@ -1010,8 +1010,7 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
         }
     }
 
-    av_log(p, AV_LOG_VERBOSE, "TLS: Setup ok, MTU=%d, fingerprint %s\n",
-        p->tls_shared.mtu, p->tls_shared.fingerprint);
+    av_log(p, AV_LOG_VERBOSE, "TLS: Setup ok, MTU=%d\n", p->tls_shared.mtu);
 
     ret = 0;
 fail:
@@ -1029,7 +1028,6 @@ static av_cold int dtls_close(URLContext *h)
     TLSContext *ctx = h->priv_data;
     SSL_free(ctx->ssl);
     SSL_CTX_free(ctx->ctx);
-    av_freep(&ctx->tls_shared.fingerprint);
     av_freep(&ctx->tls_shared.cert_buf);
     av_freep(&ctx->tls_shared.key_buf);
     EVP_PKEY_free(ctx->pkey);
