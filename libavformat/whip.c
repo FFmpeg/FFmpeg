@@ -1221,7 +1221,6 @@ static int ice_dtls_handshake(AVFormatContext *s)
     int64_t starttime = av_gettime(), now;
     WHIPContext *whip = s->priv_data;
     AVDictionary *opts = NULL;
-    char str[8];
     char buf[256], *cert_buf = NULL, *key_buf = NULL;
 
     if (whip->state < WHIP_STATE_UDP_CONNECTED || !whip->udp) {
@@ -1288,8 +1287,7 @@ next_packet:
                     whip->ice_ufrag_remote, whip->ice_ufrag_local, ret, ELAPSED(whip->whip_starttime, av_gettime()));
 
                 ff_url_join(buf, sizeof(buf), "dtls", NULL, whip->ice_host, whip->ice_port, NULL);
-                snprintf(str, sizeof(str), "%d", whip->pkt_size);
-                av_dict_set(&opts, "mtu", str, 0);
+                av_dict_set_int(&opts, "mtu", whip->pkt_size, 0);
                 if (whip->cert_file) {
                     av_dict_set(&opts, "cert_file", whip->cert_file, 0);
                 } else
@@ -1299,10 +1297,9 @@ next_packet:
                     av_dict_set(&opts, "key_file", whip->key_file, 0);
                 } else
                     av_dict_set(&opts, "key_buf", whip->key_buf, 0);
-
                 av_dict_set(&opts, "fingerprint", whip->dtls_fingerprint, 0);
-                av_dict_set(&opts, "use_external_udp", "1", 0);
-                av_dict_set(&opts, "listen", "1", 0);
+                av_dict_set_int(&opts, "use_external_udp", 1, 0);
+                av_dict_set_int(&opts, "listen", 1, 0);
                 /* If got the first binding response, start DTLS handshake. */
                 ret = ffurl_open_whitelist(&whip->dtls_uc, buf, AVIO_FLAG_READ_WRITE, &s->interrupt_callback,
                     &opts, s->protocol_whitelist, s->protocol_blacklist, NULL);
