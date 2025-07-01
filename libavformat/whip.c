@@ -387,7 +387,7 @@ static av_cold int dtls_initialize(AVFormatContext *s)
 {
     WHIPContext *whip = s->priv_data;
     /* reuse the udp created by whip */
-    ff_dtls_set_udp(whip->dtls_uc, whip->udp);
+    ff_tls_set_external_socket(whip->dtls_uc, whip->udp);
 
     /* Make the socket non-blocking */
     ff_socket_nonblock(ffurl_get_file_handle(whip->dtls_uc), 1);
@@ -1302,7 +1302,7 @@ next_packet:
                     av_dict_set(&opts, "key_file", whip->key_file, 0);
                 } else
                     av_dict_set(&opts, "key_pem", whip->key_buf, 0);
-                av_dict_set_int(&opts, "use_external_udp", 1, 0);
+                av_dict_set_int(&opts, "external_sock", 1, 0);
                 av_dict_set_int(&opts, "listen", 1, 0);
                 /* If got the first binding response, start DTLS handshake. */
                 ret = ffurl_open_whitelist(&whip->dtls_uc, buf, AVIO_FLAG_READ_WRITE, &s->interrupt_callback,

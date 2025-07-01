@@ -486,10 +486,16 @@ static const char* openssl_get_error(TLSContext *ctx)
     return ctx->error_message;
 }
 
-int ff_dtls_set_udp(URLContext *h, URLContext *udp)
+int ff_tls_set_external_socket(URLContext *h, URLContext *sock)
 {
     TLSContext *c = h->priv_data;
-    c->tls_shared.udp = udp;
+    TLSShared *s = &c->tls_shared;
+
+    if (s->is_dtls)
+        c->tls_shared.udp = sock;
+    else
+        c->tls_shared.tcp = sock;
+
     return 0;
 }
 
@@ -829,7 +835,7 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     if (ret < 0)
         goto fail;
 
-    if (p->tls_shared.use_external_udp != 1) {
+    if (p->tls_shared.external_sock != 1) {
         if ((ret = ff_tls_open_underlying(&p->tls_shared, h, url, options)) < 0) {
             av_log(p, AV_LOG_ERROR, "Failed to connect %s\n", url);
             return ret;
@@ -850,7 +856,7 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
      *
      * The SSL_do_handshake can't be called if DTLS hasn't prepare for udp.
      */
-    if (p->tls_shared.use_external_udp != 1) {
+    if (p->tls_shared.external_sock != 1) {
         ret = dtls_handshake(h);
         // Fatal SSL error, for example, no available suite when peer is DTLS 1.0 while we are DTLS 1.2.
         if (ret < 0) {
