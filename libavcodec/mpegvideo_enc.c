@@ -608,25 +608,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     s->c.quarter_sample     = (avctx->flags & AV_CODEC_FLAG_QPEL) != 0;
     s->rtp_mode           = !!s->rtp_payload_size;
-    s->c.intra_dc_precision = avctx->intra_dc_precision;
-
-    // workaround some differences between how applications specify dc precision
-    if (s->c.intra_dc_precision < 0) {
-        s->c.intra_dc_precision += 8;
-    } else if (s->c.intra_dc_precision >= 8)
-        s->c.intra_dc_precision -= 8;
-
-    if (s->c.intra_dc_precision < 0) {
-        av_log(avctx, AV_LOG_ERROR,
-                "intra dc precision must be positive, note some applications use"
-                " 0 and some 8 as base meaning 8bit, the value must not be smaller than that\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (s->c.intra_dc_precision > (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO ? 3 : 0)) {
-        av_log(avctx, AV_LOG_ERROR, "intra dc precision too large\n");
-        return AVERROR(EINVAL);
-    }
     m->user_specified_pts = AV_NOPTS_VALUE;
 
     if (m->gop_size <= 1) {
@@ -867,7 +848,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->c.out_format = FMT_MPEG1;
         s->c.low_delay  = !!(avctx->flags & AV_CODEC_FLAG_LOW_DELAY);
         avctx->delay  = s->c.low_delay ? 0 : (m->max_b_frames + 1);
-        ff_mpeg1_encode_init(s);
         break;
 #endif
 #if CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER

@@ -22,19 +22,9 @@
 #ifndef AVCODEC_MPEG12ENC_H
 #define AVCODEC_MPEG12ENC_H
 
-#include <stdint.h>
-
 #include "mpegvideoenc.h"
-#include "mpegvideodata.h"
 
 void ff_mpeg1_encode_slice_header(MPVEncContext *s);
-
-// Must not be called before intra_dc_precision has been sanitized in ff_mpv_encode_init()
-static inline void ff_mpeg1_encode_init(MPVEncContext *s)
-{
-    s->c.y_dc_scale_table =
-    s->c.c_dc_scale_table = ff_mpeg12_dc_scale_table[s->c.intra_dc_precision];
-}
 
 static inline void ff_mpeg1_clean_buffers(MPVEncContext *s)
 {

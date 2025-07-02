@@ -47,6 +47,7 @@
 #include "mpeg12vlc.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpegvideodata.h"
 #include "mpegvideoenc.h"
 #include "profiles.h"
 #include "put_bits.h"
@@ -1125,7 +1126,29 @@ static av_cold int encode_init(AVCodecContext *avctx)
         s->min_qcoeff = -2047;
         s->max_qcoeff = 2047;
         s->mpeg_quant = 1;
+
+        s->c.intra_dc_precision = avctx->intra_dc_precision;
+        // workaround some differences between how applications specify dc precision
+        if (s->c.intra_dc_precision < 0) {
+            s->c.intra_dc_precision += 8;
+        } else if (s->c.intra_dc_precision >= 8)
+            s->c.intra_dc_precision -= 8;
+
+        if (s->c.intra_dc_precision < 0) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "intra dc precision must be positive, note some applications use"
+                   " 0 and some 8 as base meaning 8bit, the value must not be smaller than that\n");
+            return AVERROR(EINVAL);
+        }
+
+        if (s->c.intra_dc_precision > 3) {
+            av_log(avctx, AV_LOG_ERROR, "intra dc precision too large\n");
+            return AVERROR(EINVAL);
+        }
     }
+    s->c.y_dc_scale_table =
+    s->c.c_dc_scale_table = ff_mpeg12_dc_scale_table[s->c.intra_dc_precision];
+
     if (s->c.intra_vlc_format) {
         s->intra_ac_vlc_length      =
         s->intra_ac_vlc_last_length = uni_mpeg2_ac_vlc_len;
