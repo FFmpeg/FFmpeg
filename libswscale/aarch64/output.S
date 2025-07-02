@@ -20,6 +20,182 @@
 
 #include "libavutil/aarch64/asm.S"
 
+function ff_yuv2planeX_10_neon, export=1
+// x0 = filter (int16_t*)
+// w1 = filterSize
+// x2 = src (int16_t**)
+// x3 = dest (uint16_t*)
+// w4 = dstW
+// w5 = big_endian
+// w6 = output_bits
+
+        mov             w8, #27
+        sub             w8, w8, w6                      // shift = 11 + 16 - output_bits
+
+        sub             w9, w8, #1
+        mov             w10, #1
+        lsl             w9, w10, w9                     // val = 1 << (shift - 1)
+
+        dup             v1.4s, w9
+        dup             v2.4s, w9                       // Create vectors with val
+
+        neg             w16, w8
+        dup             v20.4s, w16                     // Create (-shift) vector for right shift
+
+        mov             w10, #1
+        lsl             w10, w10, w6
+        sub             w10, w10, #1                    // (1U << output_bits) - 1
+        dup             v21.4s, w10                     // Create Clip vector for upper bound
+        dup             v27.8h, w10
+
+        mov             x7, #0                          // i = 0
+
+1:
+        cmp             w4, #16                         // Process 16-pixels if available
+        blt             4f
+
+        mov             v3.16b, v1.16b
+        mov             v4.16b, v2.16b
+        mov             v5.16b, v1.16b
+        mov             v6.16b, v2.16b
+
+        mov             w11, w1                         // tmpfilterSize = filterSize
+        mov             x12, x2                         // srcp = src
+        mov             x13, x0                         // filterp = filter
+
+2:                                                      // Filter loop
+        ldp             x14, x15, [x12], #16            // get 2 pointers: src[j] and src[j+1]
+        ldr             s7, [x13], #4                   // load filter coefficients
+        add             x14, x14, x7, lsl #1
+        add             x15, x15, x7, lsl #1
+        ld1             {v16.8h, v17.8h}, [x14]
+        ld1             {v18.8h, v19.8h}, [x15]
+
+        subs            w11, w11, #2                    // tmpfilterSize -= 2
+
+        smlal           v3.4s,  v16.4h, v7.h[0]         // Multiply-accumulate
+        smlal2          v4.4s,  v16.8h, v7.h[0]
+        smlal           v5.4s,  v17.4h, v7.h[0]
+        smlal2          v6.4s,  v17.8h, v7.h[0]
+
+        smlal           v3.4s,  v18.4h, v7.h[1]
+        smlal2          v4.4s,  v18.8h, v7.h[1]
+        smlal           v5.4s,  v19.4h, v7.h[1]
+        smlal2          v6.4s,  v19.8h, v7.h[1]
+
+        b.gt            2b                              // continue filter loop
+
+        sshl            v3.4s,  v3.4s, v20.4s           // Shift results
+        sshl            v4.4s,  v4.4s, v20.4s
+        sshl            v5.4s,  v5.4s, v20.4s
+        sshl            v6.4s,  v6.4s, v20.4s
+
+        sqxtun          v23.4h, v3.4s                   // Narrow and clamp to 0
+        sqxtun2         v23.8h, v4.4s
+        sqxtun          v24.4h, v5.4s
+        sqxtun2         v24.8h, v6.4s
+
+        umin            v23.8h, v23.8h, v27.8h
+        umin            v24.8h, v24.8h, v27.8h
+
+        cbz             w5, 3f                          // Check if big endian
+        rev16           v23.16b, v23.16b
+        rev16           v24.16b, v24.16b                // Swap bits for big endian
+3:
+        st1             {v23.8h, v24.8h}, [x3], #32
+
+        subs            w4, w4, #16                     // dstW = dstW - 16
+        add             x7, x7, #16                     // i = i + 16
+        b               1b                              // Continue loop
+
+4:
+        cmp             w4, #8                          // Process 8-pixels if available
+        blt             8f
+5:
+        mov             v3.16b, v1.16b
+        mov             v4.16b, v2.16b
+
+        mov             w11, w1                         // tmpfilterSize = filterSize
+        mov             x12, x2                         // srcp = src
+        mov             x13, x0                         // filterp = filter
+
+6:                                                      // Filter loop
+        ldp             x14, x15, [x12], #16
+        ldr             s7, [x13], #4
+        add             x14, x14, x7, lsl #1
+        add             x15, x15, x7, lsl #1
+        ld1             {v5.8h}, [x14]
+        ld1             {v6.8h}, [x15]
+
+        subs            w11, w11, #2                    // tmpfilterSize -= 2
+
+        smlal           v3.4s, v5.4h, v7.h[0]           // Multiply-accumulate
+        smlal2          v4.4s, v5.8h, v7.h[0]
+        smlal           v3.4s, v6.4h, v7.h[1]
+        smlal2          v4.4s, v6.8h, v7.h[1]
+
+        b.gt            6b                              // loop until filterSize consumed
+
+        sshl            v3.4s, v3.4s, v20.4s            // Shift results
+        sshl            v4.4s, v4.4s, v20.4s
+
+        sqxtun          v25.4h, v3.4s                   // Narrow and clamp to 0
+        sqxtun2         v25.8h, v4.4s
+
+        umin            v25.8h, v25.8h, v27.8h
+
+        cbz             w5, 7f                          // Check if big endian
+        rev16           v25.16b, v25.16b
+
+7:
+        st1             {v25.8h}, [x3], #16             // Store 8 pixels
+
+        subs            w4, w4, #8                      // dstW = dstW - 8
+        add             x7, x7, #8                      // i = i + 8
+8:
+        cbz             w4, 12f                         // Scalar loop for remaining pixels
+9:
+        mov             w11, w1                         // tmpfilterSize = filterSize
+        mov             x12, x2                         // srcp = src
+        mov             x13, x0                         // filterp = filter
+        sxtw            x9, w9
+        mov             x17, x9
+
+10:                                                     // Filter loop
+        ldr             x14, [x12], #8                  // Load src pointer
+        ldrsh           w15, [x13], #2                  // Load filter coefficient
+        add             x14, x14, x7, lsl #1            // Add pixel offset
+        ldrh            w16, [x14]
+
+        sxtw            x16, w16
+        sxtw            x15, w15
+        madd            x17, x16, x15, x17
+
+        subs            w11, w11, #1                    // tmpfilterSize -= 1
+        b.gt            10b                             // loop until filterSize consumed
+
+        sxtw            x8, w8
+        asr             x17, x17, x8
+        cmp             x17, #0
+        csel            x17, x17, xzr, ge               // Clamp to 0 if negative
+
+        sxtw            x10, w10
+        cmp             x17, x10
+        csel            x17, x10, x17, gt               // Clamp to max if greater than max
+
+        cbz             w5, 11f                         // Check if big endian
+        rev16           x17, x17                        // Swap bits for big endian
+11:
+        strh            w17, [x3], #2
+
+        subs            w4, w4, #1                      // dstW = dstW - 1
+        add             x7, x7, #1                      // i = i + 1
+        b.gt            9b                              // Loop if more pixels
+
+12:
+        ret
+endfunc
+
 function ff_yuv2planeX_8_neon, export=1
 // x0 - const int16_t *filter,
 // x1 - int filterSize,

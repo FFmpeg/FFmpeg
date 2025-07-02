@@ -52,50 +52,59 @@ static void yuv2planeX_8_ref(const int16_t *filter, int filterSize,
     }
 }
 
-static int cmp_off_by_n(const uint8_t *ref, const uint8_t *test, size_t n, int accuracy)
-{
-    for (size_t i = 0; i < n; i++) {
-        if (abs(ref[i] - test[i]) > accuracy)
-            return 1;
-    }
-    return 0;
+#define CMP_FUNC(bits)                                                                      \
+static int cmp_off_by_n_##bits(const uint##bits##_t *ref, const uint##bits##_t *test,       \
+                               size_t n, int accuracy)                                      \
+{                                                                                           \
+    for (size_t i = 0; i < n; i++) {                                                        \
+        if (abs((int)ref[i] - (int)test[i]) > accuracy)                                     \
+            return 1;                                                                       \
+    }                                                                                       \
+    return 0;                                                                               \
 }
 
-static void print_data(uint8_t *p, size_t len, size_t offset)
-{
-    size_t i = 0;
-    for (; i < len; i++) {
-        if (i % 8 == 0) {
-            printf("0x%04zx: ", i+offset);
-        }
-        printf("0x%02x ", (uint32_t) p[i]);
-        if (i % 8 == 7) {
-            printf("\n");
-        }
-    }
-    if (i % 8 != 0) {
-        printf("\n");
-    }
+CMP_FUNC(8)
+CMP_FUNC(16)
+
+#define SHOW_DIFF_FUNC(bits)                                                                \
+static void print_data_##bits(const uint##bits##_t *p, size_t len, size_t offset)           \
+{                                                                                           \
+    size_t i = 0;                                                                           \
+    for (; i < len; i++) {                                                                  \
+        if (i % 8 == 0) {                                                                   \
+            printf("0x%04zx: ", i+offset);                                                  \
+        }                                                                                   \
+        printf("0x%02x ", (uint32_t) p[i]);                                                 \
+        if (i % 8 == 7) {                                                                   \
+            printf("\n");                                                                   \
+        }                                                                                   \
+    }                                                                                       \
+    if (i % 8 != 0) {                                                                       \
+        printf("\n");                                                                       \
+    }                                                                                       \
+}                                                                                           \
+static size_t show_differences_##bits(const uint##bits##_t *a, const uint##bits##_t *b,     \
+                                      size_t len)                                           \
+{                                                                                           \
+    for (size_t i = 0; i < len; i++) {                                                      \
+        if (a[i] != b[i]) {                                                                 \
+            size_t offset_of_mismatch = i;                                                  \
+            size_t offset;                                                                  \
+            if (i >= 8) i-=8;                                                               \
+            offset = i & (~7);                                                              \
+            printf("test a:\n");                                                            \
+            print_data_##bits(&a[offset], 32, offset);                                      \
+            printf("\ntest b:\n");                                                          \
+            print_data_##bits(&b[offset], 32, offset);                                      \
+            printf("\n");                                                                   \
+            return offset_of_mismatch;                                                      \
+        }                                                                                   \
+    }                                                                                       \
+    return len;                                                                             \
 }
 
-static size_t show_differences(uint8_t *a, uint8_t *b, size_t len)
-{
-    for (size_t i = 0; i < len; i++) {
-        if (a[i] != b[i]) {
-            size_t offset_of_mismatch = i;
-            size_t offset;
-            if (i >= 8) i-=8;
-            offset = i & (~7);
-            printf("test a:\n");
-            print_data(&a[offset], 32, offset);
-            printf("\ntest b:\n");
-            print_data(&b[offset], 32, offset);
-            printf("\n");
-            return offset_of_mismatch;
-        }
-    }
-    return len;
-}
+SHOW_DIFF_FUNC(8)
+SHOW_DIFF_FUNC(16)
 
 static void check_yuv2yuv1(int accurate)
 {
@@ -140,10 +149,10 @@ static void check_yuv2yuv1(int accurate)
 
                 call_ref(src_pixels, dst0, dstW, dither, offset);
                 call_new(src_pixels, dst1, dstW, dither, offset);
-                if (cmp_off_by_n(dst0, dst1, dstW * sizeof(dst0[0]), accurate ? 0 : 2)) {
+                if (cmp_off_by_n_8(dst0, dst1, dstW * sizeof(dst0[0]), accurate ? 0 : 2)) {
                     fail();
                     printf("failed: yuv2yuv1_%d_%di_%s\n", offset, dstW, accurate_str);
-                    fail_offset = show_differences(dst0, dst1, LARGEST_INPUT_SIZE * sizeof(dst0[0]));
+                    fail_offset = show_differences_8(dst0, dst1, LARGEST_INPUT_SIZE * sizeof(dst0[0]));
                     printf("failing values: src: 0x%04x dither: 0x%02x dst-c: %02x dst-asm: %02x\n",
                             (int) src_pixels[fail_offset],
                             (int) dither[(fail_offset + fail_offset) & 7],
@@ -158,7 +167,7 @@ static void check_yuv2yuv1(int accurate)
     sws_freeContext(sws);
 }
 
-static void check_yuv2yuvX(int accurate)
+static void check_yuv2yuvX(int accurate, int bit_depth, int dst_pix_format)
 {
     SwsContext *sws;
     SwsInternal *c;
@@ -179,8 +188,8 @@ static void check_yuv2yuvX(int accurate)
     const int16_t **src;
     LOCAL_ALIGNED_16(int16_t, src_pixels, [LARGEST_FILTER * LARGEST_INPUT_SIZE]);
     LOCAL_ALIGNED_16(int16_t, filter_coeff, [LARGEST_FILTER]);
-    LOCAL_ALIGNED_16(uint8_t, dst0, [LARGEST_INPUT_SIZE]);
-    LOCAL_ALIGNED_16(uint8_t, dst1, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_16(uint16_t, dst0, [LARGEST_INPUT_SIZE]);
+    LOCAL_ALIGNED_16(uint16_t, dst1, [LARGEST_INPUT_SIZE]);
     LOCAL_ALIGNED_16(uint8_t, dither, [LARGEST_INPUT_SIZE]);
     union VFilterData{
         const int16_t *src;
@@ -190,12 +199,14 @@ static void check_yuv2yuvX(int accurate)
     memset(dither, d_val, LARGEST_INPUT_SIZE);
     randomize_buffers((uint8_t*)src_pixels, LARGEST_FILTER * LARGEST_INPUT_SIZE * sizeof(int16_t));
     sws = sws_alloc_context();
+    sws->dst_format = dst_pix_format;
     if (accurate)
         sws->flags |= SWS_ACCURATE_RND;
     if (sws_init_context(sws, NULL, NULL) < 0)
         fail();
 
     c = sws_internal(sws);
+    c->dstBpc = bit_depth;
     ff_sws_init_scale(c);
     for(isi = 0; isi < FF_ARRAY_ELEMS(input_sizes); ++isi){
         dstW = input_sizes[isi];
@@ -227,24 +238,36 @@ static void check_yuv2yuvX(int accurate)
                     for(j = 0; j < 4; ++j)
                         vFilterData[i].coeff[j + 4] = filter_coeff[i];
                 }
-                if (check_func(c->yuv2planeX, "yuv2yuvX_%d_%d_%d_%s", filter_sizes[fsi], osi, dstW, accurate_str)){
+                if (check_func(c->yuv2planeX, "yuv2yuvX_%d%s_%d_%d_%d_%s", bit_depth, (bit_depth == 8) ? "" : (isBE(dst_pix_format) ? "BE" : "LE"), filter_sizes[fsi], osi, dstW, accurate_str)) {
                     // use vFilterData for the mmx function
                     const int16_t *filter = c->use_mmx_vfilter ? (const int16_t*)vFilterData : &filter_coeff[0];
                     memset(dst0, 0, LARGEST_INPUT_SIZE * sizeof(dst0[0]));
                     memset(dst1, 0, LARGEST_INPUT_SIZE * sizeof(dst1[0]));
 
-                    // We can't use call_ref here, because we don't know if use_mmx_vfilter was set for that
-                    // function or not, so we can't pass it the parameters correctly.
-                    yuv2planeX_8_ref(&filter_coeff[0], filter_sizes[fsi], src, dst0, dstW - osi, dither, osi);
+                    if (c->dstBpc == 8) {
+                        // We can't use call_ref here, because we don't know if use_mmx_vfilter was set for that
+                        // function or not, so we can't pass it the parameters correctly.
 
-                    call_new(filter, filter_sizes[fsi], src, dst1, dstW - osi, dither, osi);
-                    if (cmp_off_by_n(dst0, dst1, LARGEST_INPUT_SIZE * sizeof(dst0[0]), accurate ? 0 : 2)) {
-                        fail();
-                        printf("failed: yuv2yuvX_%d_%d_%d_%s\n", filter_sizes[fsi], osi, dstW, accurate_str);
-                        show_differences(dst0, dst1, LARGEST_INPUT_SIZE * sizeof(dst0[0]));
+                        yuv2planeX_8_ref(&filter_coeff[0], filter_sizes[fsi], src, (uint8_t*)dst0, dstW - osi, dither, osi);
+                        call_new(filter, filter_sizes[fsi], src, (uint8_t*)dst1, dstW - osi, dither, osi);
+
+                        if (cmp_off_by_n_8((uint8_t*)dst0, (uint8_t*)dst1, LARGEST_INPUT_SIZE, accurate ? 0 : 2)) {
+                            fail();
+                            printf("failed: yuv2yuvX_%d_%d_%d_%d_%s\n", bit_depth, filter_sizes[fsi], osi, dstW, accurate_str);
+                            show_differences_8((uint8_t*)dst0, (uint8_t*)dst1, LARGEST_INPUT_SIZE);
+                        }
+                    } else {
+                        call_ref(&filter_coeff[0], filter_sizes[fsi], src, (uint8_t*)dst0, dstW - osi, dither, osi);
+                        call_new(&filter_coeff[0], filter_sizes[fsi], src, (uint8_t*)dst1, dstW - osi, dither, osi);
+
+                        if (cmp_off_by_n_16(dst0, dst1, LARGEST_INPUT_SIZE, accurate ? 0 : 2)) {
+                            fail();
+                            printf("failed: yuv2yuvX_%d%s_%d_%d_%d_%s\n", bit_depth, isBE(dst_pix_format) ? "BE" : "LE", filter_sizes[fsi], osi, dstW, accurate_str);
+                            show_differences_16(dst0, dst1, LARGEST_INPUT_SIZE);
+                        }
                     }
                     if(dstW == LARGEST_INPUT_SIZE)
-                        bench_new((const int16_t*)vFilterData, filter_sizes[fsi], src, dst1, dstW - osi, dither, osi);
+                        bench_new(filter, filter_sizes[fsi], src, (uint8_t*)dst1, dstW - osi, dither, osi);
 
                 }
                 av_freep(&src);
@@ -311,10 +334,10 @@ static void check_yuv2nv12cX(int accurate)
                 call_ref(sws->dst_format, dither, &filter_coeff[0], filter_size, srcU, srcV, dst0, dstW);
                 call_new(sws->dst_format, dither, &filter_coeff[0], filter_size, srcU, srcV, dst1, dstW);
 
-                if (cmp_off_by_n(dst0, dst1, dstW * 2 * sizeof(dst0[0]), accurate ? 0 : 2)) {
+                if (cmp_off_by_n_8(dst0, dst1, dstW * 2 * sizeof(dst0[0]), accurate ? 0 : 2)) {
                     fail();
                     printf("failed: yuv2nv12wX_%d_%d_%s\n", filter_size, dstW, accurate_str);
-                    show_differences(dst0, dst1, dstW * 2 * sizeof(dst0[0]));
+                    show_differences_8(dst0, dst1, dstW * 2 * sizeof(dst0[0]));
                 }
                 if (dstW == LARGEST_INPUT_SIZE)
                     bench_new(sws->dst_format, dither, &filter_coeff[0], filter_size, srcU, srcV, dst1, dstW);
@@ -441,9 +464,33 @@ void checkasm_check_sw_scale(void)
     check_yuv2yuv1(0);
     check_yuv2yuv1(1);
     report("yuv2yuv1");
-    check_yuv2yuvX(0);
-    check_yuv2yuvX(1);
-    report("yuv2yuvX");
+    check_yuv2yuvX(0, 8, AV_PIX_FMT_YUV420P);
+    check_yuv2yuvX(1, 8, AV_PIX_FMT_YUV420P);
+    report("yuv2yuvX_8");
+    check_yuv2yuvX(0, 9, AV_PIX_FMT_YUV420P9LE);
+    check_yuv2yuvX(1, 9, AV_PIX_FMT_YUV420P9LE);
+    report("yuv2yuvX_9LE");
+    check_yuv2yuvX(0, 9, AV_PIX_FMT_YUV420P9BE);
+    check_yuv2yuvX(1, 9, AV_PIX_FMT_YUV420P9BE);
+    report("yuv2yuvX_9BE");
+    check_yuv2yuvX(0, 10, AV_PIX_FMT_YUV420P10LE);
+    check_yuv2yuvX(1, 10, AV_PIX_FMT_YUV420P10LE);
+    report("yuv2yuvX_10LE");
+    check_yuv2yuvX(0, 10, AV_PIX_FMT_YUV420P10BE);
+    check_yuv2yuvX(1, 10, AV_PIX_FMT_YUV420P10BE);
+    report("yuv2yuvX_10BE");
+    check_yuv2yuvX(0, 12, AV_PIX_FMT_YUV420P12LE);
+    check_yuv2yuvX(1, 12, AV_PIX_FMT_YUV420P12LE);
+    report("yuv2yuvX_12LE");
+    check_yuv2yuvX(0, 12, AV_PIX_FMT_YUV420P12BE);
+    check_yuv2yuvX(1, 12, AV_PIX_FMT_YUV420P12BE);
+    report("yuv2yuvX_12BE");
+    check_yuv2yuvX(0, 14, AV_PIX_FMT_YUV420P14LE);
+    check_yuv2yuvX(1, 14, AV_PIX_FMT_YUV420P14LE);
+    report("yuv2yuvX_14LE");
+    check_yuv2yuvX(0, 14, AV_PIX_FMT_YUV420P14BE);
+    check_yuv2yuvX(1, 14, AV_PIX_FMT_YUV420P14BE);
+    report("yuv2yuvX_14BE");
     check_yuv2nv12cX(0);
     check_yuv2nv12cX(1);
     report("yuv2nv12cX");
