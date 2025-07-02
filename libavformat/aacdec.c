@@ -208,7 +208,7 @@ retry:
 const FFInputFormat ff_aac_demuxer = {
     .p.name       = "aac",
     .p.long_name  = NULL_IF_CONFIG_SMALL("raw ADTS AAC (Advanced Audio Coding)"),
-    .p.flags      = AVFMT_GENERIC_INDEX,
+    .p.flags      = AVFMT_GENERIC_INDEX | AVFMT_FLAG_ID3V2_AUTO,
     .p.extensions = "aac",
     .p.mime_type  = "audio/aac,audio/aacp,audio/x-aac",
     .read_probe   = adts_aac_probe,

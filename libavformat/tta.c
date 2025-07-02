@@ -191,6 +191,7 @@ static int tta_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 const FFInputFormat ff_tta_demuxer = {
     .p.name         = "tta",
     .p.long_name    = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
+    .p.flags        = AVFMT_FLAG_ID3V2_AUTO,
     .p.extensions   = "tta",
     .priv_data_size = sizeof(TTAContext),
     .read_probe     = tta_probe,

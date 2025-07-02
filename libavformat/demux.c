@@ -214,6 +214,10 @@ static int update_stream_avctx(AVFormatContext *s)
     return 0;
 }
 
+static av_always_inline int is_id3v2_format(const AVInputFormat *fmt) {
+    return fmt->flags & AVFMT_FLAG_ID3V2_AUTO;
+}
+
 int avformat_open_input(AVFormatContext **ps, const char *filename,
                         const AVInputFormat *fmt, AVDictionary **options)
 {
@@ -302,7 +306,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     }
 
     /* e.g. AVFMT_NOFILE formats will not have an AVIOContext */
-    if (s->pb)
+    if (s->pb && is_id3v2_format(s->iformat))
         ff_id3v2_read_dict(s->pb, &si->id3v2_meta, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
 
     if (ffifmt(s->iformat)->read_header)
@@ -321,8 +325,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     }
 
     if (id3v2_extra_meta) {
-        if (!strcmp(s->iformat->name, "mp3") || !strcmp(s->iformat->name, "aac") ||
-            !strcmp(s->iformat->name, "tta") || !strcmp(s->iformat->name, "wav")) {
+        if (is_id3v2_format(s->iformat)) {
             if ((ret = ff_id3v2_parse_apic(s, id3v2_extra_meta)) < 0)
                 goto close;
             if ((ret = ff_id3v2_parse_chapters(s, id3v2_extra_meta)) < 0)
