@@ -263,7 +263,7 @@ static int FUNC(frame)(CodedBitstreamContext *ctx, RWContext *rw,
     CHECK(FUNC(frame_header)(ctx, rw, &current->frame_header));
 
     for (int t = 0; t < priv->num_tiles; t++) {
-        us(32, tile_size[t], 10, MAX_UINT_BITS(32), 1, t);
+        us(32, tile_size[t], 10, MAX_INT_BITS(32), 1, t);
 
         CHECK(FUNC(tile)(ctx, rw, &current->tile[t],
                          t, current->tile_size[t]));
