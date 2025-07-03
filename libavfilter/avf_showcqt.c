@@ -1516,7 +1516,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         i = insamples->nb_samples - remaining;
         j = s->fft_len/2 + s->remaining_fill_max - s->remaining_fill;
         if (remaining >= s->remaining_fill) {
-            for (m = 0; m < s->remaining_fill; m++) {
+            for (m = FFMAX(0, -j); m < s->remaining_fill; m++) {
                 s->fft_data[j+m].re = audio_data[2*(i+m)];
                 s->fft_data[j+m].im = audio_data[2*(i+m)+1];
             }
@@ -1545,7 +1545,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 s->fft_data[m] = s->fft_data[m+step];
             s->remaining_fill = step;
         } else {
-            for (m = 0; m < remaining; m++) {
+            for (m = FFMAX(0, -j); m < remaining; m++) {
                 s->fft_data[j+m].re = audio_data[2*(i+m)];
                 s->fft_data[j+m].im = audio_data[2*(i+m)+1];
             }
