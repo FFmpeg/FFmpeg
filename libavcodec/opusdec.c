@@ -522,6 +522,9 @@ static int opus_decode_packet(AVCodecContext *avctx, AVFrame *frame,
         s->decoded_samples = ret;
         decoded_samples       = FFMIN(decoded_samples, ret);
 
+        if (!buf)
+            continue;
+
         buf      += s->packet.packet_size;
         buf_size -= s->packet.packet_size;
     }
