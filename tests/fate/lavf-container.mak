@@ -55,7 +55,7 @@ fate-lavf-mov_hybrid_frag: CMD = lavf_container "" "-movflags +hybrid_fragmented
 fate-lavf-mp4: CMD = lavf_container_timecode "-c:v mpeg4 -an -threads 1"
 fate-lavf-mpg: CMD = lavf_container_timecode "-ar 44100 -threads 1"
 fate-lavf-mxf: CMD = lavf_container_timecode "-af aresample=48000:tsf=s16p -bf 2 -threads 1"
-fate-lavf-mxf_d10: CMD = lavf_container "-ar 48000 -ac 2" "-r 25 -vf scale=720:576,pad=720:608:0:32,setfield=tff -c:v mpeg2video -g 0 -flags +ildct+low_delay -dc 10 -non_linear_quant 1 -intra_vlc 1 -qscale 1 -ps 1 -qmin 1 -rc_max_vbv_use 1 -rc_min_vbv_use 1 -pix_fmt yuv422p -minrate 30000k -maxrate 30000k -b 30000k -bufsize 1200000 -rc_init_occupancy 1200000 -qmax 12 -f mxf_d10"
+fate-lavf-mxf_d10: CMD = lavf_container "-ar 48000 -ac 2" "-r 25 -vf scale=720:576,pad=720:608:0:32,setfield=tff -c:v mpeg2video -g 0 -flags +ildct+low_delay -intra_dc_precision 2 -non_linear_quant 1 -intra_vlc 1 -qscale 1 -ps 1 -qmin 1 -rc_max_vbv_use 1 -rc_min_vbv_use 1 -pix_fmt yuv422p -minrate 30000k -maxrate 30000k -b 30000k -bufsize 1200000 -rc_init_occupancy 1200000 -qmax 12 -f mxf_d10"
 fate-lavf-mxf_dv25: CMD = lavf_container "-ar 48000 -ac 2" "-r 25 -vf scale=720:576,setdar=4/3,setfield=bff -c:v dvvideo -pix_fmt yuv420p -b 25000k -f mxf"
 fate-lavf-mxf_dvcpro50: CMD = lavf_container "-ar 48000 -ac 2" "-r 25 -vf scale=720:576,setdar=16/9,setfield=bff -c:v dvvideo -pix_fmt yuv422p -b 50000k -f mxf"
 fate-lavf-mxf_dvcpro100: CMD = lavf_container "-ar 48000 -ac 2" "-r 25 -vf scale=1440:1080,setdar=16/9,setfield=bff -c:v dvvideo -pix_fmt yuv422p -b 100000k -f mxf"

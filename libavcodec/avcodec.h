@@ -971,12 +971,16 @@ typedef struct AVCodecContext {
      */
     uint16_t *chroma_intra_matrix;
 
+#if FF_API_INTRA_DC_PRECISION
     /**
      * precision of the intra DC coefficient - 8
      * - encoding: Set by user.
      * - decoding: Set by libavcodec
+     * @deprecated Use the MPEG-2 encoder's private option "intra_dc_precision" instead.
      */
+    attribute_deprecated
     int intra_dc_precision;
+#endif
 
     /**
      * minimum MB Lagrange multiplier

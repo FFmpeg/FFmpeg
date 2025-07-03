@@ -284,7 +284,7 @@ fate-vsynth%-mpeg2-422:          ENCOPTS = -b:v 1000k                   \
                                            -intra_vlc 1                 \
                                            -mbd rd                      \
                                            -pix_fmt yuv422p
-fate-vsynth%-mpeg2-idct-int:     ENCOPTS = -qscale 10 -idct int -dct int -dc 2
+fate-vsynth%-mpeg2-idct-int:     ENCOPTS = -qscale 10 -idct int -dct int -intra_dc_precision 2
 fate-vsynth%-mpeg2-ilace:        ENCOPTS = -qscale 10 -flags +ildct+ilme
 fate-vsynth%-mpeg2-ivlc-qprd:    ENCOPTS = -b:v 500k                    \
                                            -bf 2                        \

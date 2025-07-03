@@ -1126,8 +1126,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
         s->min_qcoeff = -2047;
         s->max_qcoeff = 2047;
         s->mpeg_quant = 1;
-
+#if FF_API_INTRA_DC_PRECISION
+        if (s->c.intra_dc_precision < 0) {
+FF_DISABLE_DEPRECATION_WARNINGS
         s->c.intra_dc_precision = avctx->intra_dc_precision;
+FF_ENABLE_DEPRECATION_WARNINGS
         // workaround some differences between how applications specify dc precision
         if (s->c.intra_dc_precision < 0) {
             s->c.intra_dc_precision += 8;
@@ -1145,6 +1148,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "intra dc precision too large\n");
             return AVERROR(EINVAL);
         }
+        }
+#endif
     }
     s->c.y_dc_scale_table =
     s->c.c_dc_scale_table = ff_mpeg12_dc_scale_table[s->c.intra_dc_precision];
@@ -1254,6 +1259,11 @@ static const AVOption mpeg1_options[] = {
 
 static const AVOption mpeg2_options[] = {
     COMMON_OPTS
+#if FF_API_INTRA_DC_PRECISION
+    { "intra_dc_precision", "Precision of the DC coefficient - 8", FF_MPV_OFFSET(c.intra_dc_precision), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 3, VE },
+#else
+    { "intra_dc_precision", "Precision of the DC coefficient - 8", FF_MPV_OFFSET(c.intra_dc_precision), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 3, VE },
+#endif
     { "intra_vlc",        "Use MPEG-2 intra VLC table.",
       FF_MPV_OFFSET(c.intra_vlc_format),    AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "non_linear_quant", "Use nonlinear quantizer.",    FF_MPV_OFFSET(c.q_scale_type),   AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
