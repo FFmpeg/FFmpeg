@@ -641,10 +641,6 @@ static int smka_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                "The buffer does not contain an integer number of samples\n");
         return AVERROR_INVALIDDATA;
     }
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
-    samples  = (int16_t *)frame->data[0];
-    samples8 =            frame->data[0];
 
     // Initialize
     for(i = 0; i < (1 << (bits + stereo)); i++) {
@@ -666,6 +662,12 @@ static int smka_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         } else
             values[i] = h.entries[0].value;
     }
+
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+        return ret;
+    samples  = (int16_t *)frame->data[0];
+    samples8 =            frame->data[0];
+
     /* this codec relies on wraparound instead of clipping audio */
     if(bits) { //decode 16-bit data
         for(i = stereo; i >= 0; i--)
