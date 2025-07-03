@@ -182,9 +182,8 @@ static int h261_decode_gob_header(H261DecContext *h)
 
 /**
  * Decode skipped macroblocks.
- * @return 0
  */
-static int h261_decode_mb_skipped(H261DecContext *h, int mba1, int mba2)
+static void h261_decode_mb_skipped(H261DecContext *h, int mba1, int mba2)
 {
     MpegEncContext *const s = &h->s;
     int i;
@@ -219,8 +218,6 @@ static int h261_decode_mb_skipped(H261DecContext *h, int mba1, int mba2)
 
         ff_mpv_reconstruct_mb(s, h->block);
     }
-
-    return 0;
 }
 
 static int decode_mv_component(GetBitContext *gb, int v)
