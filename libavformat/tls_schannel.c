@@ -502,6 +502,32 @@ end:
     return ret;
 }
 
+static int tls_cert_from_store(void *logctx, const char *cert_store_name, const char *cert_subj, PCCERT_CONTEXT *crtctx)
+{
+    HCERTSTORE cert_store = NULL;
+    int ret = 0;
+
+    cert_store = CertOpenStore(CERT_STORE_PROV_SYSTEM_A, 0, 0, CERT_SYSTEM_STORE_CURRENT_USER, cert_store_name);
+    if (!cert_store) {
+        av_log(logctx, AV_LOG_ERROR, "Opening user cert store %s failed\n", cert_store_name);
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
+
+    *crtctx = CertFindCertificateInStore(cert_store, X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, 0, CERT_FIND_SUBJECT_STR_A, cert_subj, NULL);
+    if (!*crtctx) {
+        av_log(logctx, AV_LOG_ERROR, "Could not find certificate in store\n");
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
+
+end:
+    if (cert_store)
+        CertCloseStore(cert_store, 0);
+
+    return ret;
+}
+
 static int tls_load_key_cert(char *key_url, char *cert_url, NCRYPT_KEY_HANDLE *key, PCCERT_CONTEXT *crtctx)
 {
     AVBPrint key_bp, cert_bp;
@@ -560,6 +586,9 @@ end:
 typedef struct TLSContext {
     const AVClass *class;
     TLSShared tls_shared;
+
+    char *cert_store_subject;
+    char *cert_store_name;
 
     CredHandle cred_handle;
     TimeStamp cred_timestamp;
@@ -1048,20 +1077,19 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     schannel_cred.dwVersion = SCHANNEL_CRED_VERSION;
 
     if (s->listen) {
-        if (s->key_buf && s->cert_buf) {
+        if (c->cert_store_name && c->cert_store_subject) {
+            ret = tls_cert_from_store(h, c->cert_store_name, c->cert_store_subject, &crtctx);
+        } else if (s->key_buf && s->cert_buf) {
             ret = tls_import_key_cert(s->key_buf, s->cert_buf, &key, &crtctx);
-            if (ret < 0)
-                goto fail;
         } else if (s->key_file && s->cert_file) {
             ret = tls_load_key_cert(s->key_file, s->cert_file, &key, &crtctx);
-            if (ret < 0)
-                goto fail;
         } else {
             av_log(h, AV_LOG_VERBOSE, "No server certificate provided, using self-signed\n");
             ret = tls_gen_self_signed(&key, &crtctx);
-            if (ret < 0)
-                goto fail;
         }
+
+        if (ret < 0)
+            goto fail;
 
         schannel_cred.cCreds = 1;
         schannel_cred.paCred = &crtctx;
@@ -1354,8 +1382,13 @@ static int tls_get_short_seek(URLContext *h)
     return ffurl_get_short_seek(s->is_dtls ? s->udp : s->tcp);
 }
 
+#define OFFSET(x) offsetof(TLSContext, x)
 static const AVOption options[] = {
     TLS_COMMON_OPTIONS(TLSContext, tls_shared),
+    { "cert_store_subject", "Load certificate (and associated key) from users keystore by subject",
+                            OFFSET(cert_store_subject), AV_OPT_TYPE_STRING, .flags = TLS_OPTFL },
+    { "cert_store_name",    "Name of the specific cert store to search in (for cert_store_subject)",
+                            OFFSET(cert_store_name), AV_OPT_TYPE_STRING, { .str = "MY" }, .flags = TLS_OPTFL },
     { NULL }
 };
 
