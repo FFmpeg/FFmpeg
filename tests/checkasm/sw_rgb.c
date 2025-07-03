@@ -142,7 +142,7 @@ static void check_rgb24toyv12(SwsContext *sws)
 
     declare_func(void, const uint8_t *src, uint8_t *ydst, uint8_t *udst,
                        uint8_t *vdst, int width, int height, int lumStride,
-                       int chromStride, int srcStride, int32_t *rgb2yuv);
+                       int chromStride, int srcStride, const int32_t *rgb2yuv);
 
     randomize_buffers(src, BUFSIZE * 3);
 

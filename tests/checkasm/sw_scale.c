@@ -362,7 +362,7 @@ static void check_hscale(void)
 
     // The dst parameter here is either int16_t or int32_t but we use void* to
     // just cover both cases.
-    declare_func(void, void *c, void *dst, int dstW,
+    declare_func(void, SwsInternal *c, int16_t *dst, int dstW,
                  const uint8_t *src, const int16_t *filter,
                  const int32_t *filterPos, int filterSize);
 
@@ -422,11 +422,11 @@ static void check_hscale(void)
                     memset(dst0, 0, SRC_PIXELS * sizeof(dst0[0]));
                     memset(dst1, 0, SRC_PIXELS * sizeof(dst1[0]));
 
-                    call_ref(NULL, dst0, sws->dst_w, src, filter, filterPos, width);
-                    call_new(NULL, dst1, sws->dst_w, src, filterAvx2, filterPosAvx, width);
+                    call_ref(NULL, (int16_t *)dst0, sws->dst_w, src, filter, filterPos, width);
+                    call_new(NULL, (int16_t *)dst1, sws->dst_w, src, filterAvx2, filterPosAvx, width);
                     if (memcmp(dst0, dst1, sws->dst_w * sizeof(dst0[0])))
                         fail();
-                    bench_new(NULL, dst0, sws->dst_w, src, filter, filterPosAvx, width);
+                    bench_new(NULL, (int16_t *)dst0, sws->dst_w, src, filter, filterPosAvx, width);
                 }
             }
         }

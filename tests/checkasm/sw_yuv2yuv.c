@@ -46,9 +46,9 @@ static void check_semiplanar(int dst_pix_fmt)
     static const int input_sizes[] = {8, 128, 1080, MAX_LINE_SIZE};
 
     declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_MMXEXT,
-                      int, SwsInternal *c, const uint8_t *src[],
-                           int srcStride[], int srcSliceY, int srcSliceH,
-                           uint8_t *dst[], int dstStride[]);
+                      int, SwsInternal *c, const uint8_t *const src[],
+                           const int srcStride[], int srcSliceY, int srcSliceH,
+                           uint8_t *const dstParam[], const int dstStride[]);
 
     LOCAL_ALIGNED_8(uint8_t, src_y,  [MAX_LINE_SIZE * NUM_LINES]);
     LOCAL_ALIGNED_8(uint8_t, src_uv, [MAX_LINE_SIZE * NUM_LINES * 2]);
