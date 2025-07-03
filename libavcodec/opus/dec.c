@@ -393,9 +393,7 @@ static int opus_decode_frame(OpusStreamContext *s, const uint8_t *data, int size
     return samples;
 }
 
-static int opus_decode_subpacket(OpusStreamContext *s,
-                                 const uint8_t *buf, int buf_size,
-                                 int nb_samples)
+static int opus_decode_subpacket(OpusStreamContext *s, const uint8_t *buf)
 {
     int output_samples = 0;
     int flush_needed   = 0;
@@ -578,8 +576,7 @@ static int opus_decode_packet(AVCodecContext *avctx, AVFrame *frame,
             s->silk_samplerate = get_silk_samplerate(s->packet.config);
         }
 
-        ret = opus_decode_subpacket(&c->streams[i], buf, s->packet.data_size,
-                                    coded_samples);
+        ret = opus_decode_subpacket(&c->streams[i], buf);
         if (ret < 0)
             return ret;
         s->decoded_samples = ret;
