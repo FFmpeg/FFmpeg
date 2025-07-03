@@ -662,6 +662,10 @@ static int smka_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         } else
             values[i] = h.entries[0].value;
     }
+    if (get_bits_left(&gb) < (stereo+1) * (bits+1) * 8) {
+        ret = AVERROR_INVALIDDATA;
+        goto error;
+    }
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
