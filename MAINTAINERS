@@ -211,7 +211,7 @@ Codecs:
   libkvazaar.c                          Arttu Ylä-Outinen
   libopenh264enc.c                      Martin Storsjo, Linjie Fu
   libopenjpegenc.c                      Michael Bradshaw
-  libtheoraenc.c                        David Conrad
+  libtheoraenc.c                    [0]
   libvorbis.c                           David Conrad
   libvpx*                               James Zern
   libxavs.c                             Stefan Gehrer
