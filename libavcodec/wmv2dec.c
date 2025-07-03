@@ -56,12 +56,13 @@ typedef struct WMV2DecContext {
     DECLARE_ALIGNED(32, int16_t, abt_block2)[6][64];
 } WMV2DecContext;
 
-static void wmv2_add_block(WMV2DecContext *w, int16_t *block1,
+static void wmv2_add_block(WMV2DecContext *w, int16_t blocks1[][64],
                            uint8_t *dst, int stride, int n)
 {
     H263DecContext *const h = &w->ms.h;
 
     if (h->c.block_last_index[n] >= 0) {
+        int16_t *block1 = blocks1[n];
         switch (w->abt_type_table[n]) {
         case 0:
             w->common.wdsp.idct_add(dst, stride, block1);
@@ -87,16 +88,16 @@ void ff_wmv2_add_mb(MpegEncContext *s, int16_t block1[6][64],
 {
     WMV2DecContext *const w = (WMV2DecContext *) s;
 
-    wmv2_add_block(w, block1[0], dest_y,                       s->linesize, 0);
-    wmv2_add_block(w, block1[1], dest_y + 8,                   s->linesize, 1);
-    wmv2_add_block(w, block1[2], dest_y + 8 * s->linesize,     s->linesize, 2);
-    wmv2_add_block(w, block1[3], dest_y + 8 + 8 * s->linesize, s->linesize, 3);
+    wmv2_add_block(w, block1, dest_y,                       s->linesize, 0);
+    wmv2_add_block(w, block1, dest_y + 8,                   s->linesize, 1);
+    wmv2_add_block(w, block1, dest_y + 8 * s->linesize,     s->linesize, 2);
+    wmv2_add_block(w, block1, dest_y + 8 + 8 * s->linesize, s->linesize, 3);
 
     if (s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
 
-    wmv2_add_block(w, block1[4], dest_cb, s->uvlinesize, 4);
-    wmv2_add_block(w, block1[5], dest_cr, s->uvlinesize, 5);
+    wmv2_add_block(w, block1, dest_cb, s->uvlinesize, 4);
+    wmv2_add_block(w, block1, dest_cr, s->uvlinesize, 5);
 }
 
 static int parse_mb_skip(WMV2DecContext *w)

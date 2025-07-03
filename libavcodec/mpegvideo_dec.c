@@ -851,10 +851,10 @@ unhandled:
 
 /* add block[] to dest[] */
 static inline void add_dct(MpegEncContext *s,
-                           int16_t *block, int i, uint8_t *dest, int line_size)
+                           int16_t block[][64], int i, uint8_t *dest, int line_size)
 {
     if (s->block_last_index[i] >= 0) {
-        s->idsp.idct_add(dest, line_size, block);
+        s->idsp.idct_add(dest, line_size, block[i]);
     }
 }
 
@@ -867,12 +867,12 @@ static inline void put_dct(MpegEncContext *s,
 }
 
 static inline void add_dequant_dct(MpegEncContext *s,
-                           int16_t *block, int i, uint8_t *dest, int line_size, int qscale)
+                                   int16_t block[][64], int i, uint8_t *dest, int line_size, int qscale)
 {
     if (s->block_last_index[i] >= 0) {
-        s->dct_unquantize_inter(s, block, i, qscale);
+        s->dct_unquantize_inter(s, block[i], i, qscale);
 
-        s->idsp.idct_add(dest, line_size, block);
+        s->idsp.idct_add(dest, line_size, block[i]);
     }
 }
 
@@ -959,44 +959,44 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
         /* add dct residue */
         if (is_mpeg12 != DEFINITELY_MPEG12_H261 && s->dct_unquantize_inter) {
             // H.263, H.263+, H.263I, FLV, RV10, RV20 and MPEG-4 with MPEG-2 quantization
-            add_dequant_dct(s, block[0], 0, dest_y                          , dct_linesize, s->qscale);
-            add_dequant_dct(s, block[1], 1, dest_y              + block_size, dct_linesize, s->qscale);
-            add_dequant_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);
-            add_dequant_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize, s->qscale);
+            add_dequant_dct(s, block, 0, dest_y                          , dct_linesize, s->qscale);
+            add_dequant_dct(s, block, 1, dest_y              + block_size, dct_linesize, s->qscale);
+            add_dequant_dct(s, block, 2, dest_y + dct_offset             , dct_linesize, s->qscale);
+            add_dequant_dct(s, block, 3, dest_y + dct_offset + block_size, dct_linesize, s->qscale);
 
             if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
                 av_assert2(s->chroma_y_shift);
-                add_dequant_dct(s, block[4], 4, dest_cb, uvlinesize, s->chroma_qscale);
-                add_dequant_dct(s, block[5], 5, dest_cr, uvlinesize, s->chroma_qscale);
+                add_dequant_dct(s, block, 4, dest_cb, uvlinesize, s->chroma_qscale);
+                add_dequant_dct(s, block, 5, dest_cr, uvlinesize, s->chroma_qscale);
             }
         } else if (is_mpeg12 == DEFINITELY_MPEG12_H261 || lowres_flag || (s->codec_id != AV_CODEC_ID_WMV2)) {
             // H.261, MPEG-1, MPEG-2, MPEG-4 with H.263 quantization,
             // MSMP4V1-3 and WMV1.
             // Also RV30, RV40 and the VC-1 family when performing error resilience,
             // but all blocks are skipped in this case.
-            add_dct(s, block[0], 0, dest_y                          , dct_linesize);
-            add_dct(s, block[1], 1, dest_y              + block_size, dct_linesize);
-            add_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize);
-            add_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize);
+            add_dct(s, block, 0, dest_y                          , dct_linesize);
+            add_dct(s, block, 1, dest_y              + block_size, dct_linesize);
+            add_dct(s, block, 2, dest_y + dct_offset             , dct_linesize);
+            add_dct(s, block, 3, dest_y + dct_offset + block_size, dct_linesize);
 
             if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
                 if (s->chroma_y_shift) {//Chroma420
-                    add_dct(s, block[4], 4, dest_cb, uvlinesize);
-                    add_dct(s, block[5], 5, dest_cr, uvlinesize);
+                    add_dct(s, block, 4, dest_cb, uvlinesize);
+                    add_dct(s, block, 5, dest_cr, uvlinesize);
                 } else {
                     //chroma422
                     dct_linesize = uvlinesize << s->interlaced_dct;
                     dct_offset   = s->interlaced_dct ? uvlinesize : uvlinesize*block_size;
 
-                    add_dct(s, block[4], 4, dest_cb, dct_linesize);
-                    add_dct(s, block[5], 5, dest_cr, dct_linesize);
-                    add_dct(s, block[6], 6, dest_cb + dct_offset, dct_linesize);
-                    add_dct(s, block[7], 7, dest_cr + dct_offset, dct_linesize);
+                    add_dct(s, block, 4, dest_cb, dct_linesize);
+                    add_dct(s, block, 5, dest_cr, dct_linesize);
+                    add_dct(s, block, 6, dest_cb + dct_offset, dct_linesize);
+                    add_dct(s, block, 7, dest_cr + dct_offset, dct_linesize);
                     if (!s->chroma_x_shift) {//Chroma444
-                        add_dct(s, block[8],   8, dest_cb + block_size, dct_linesize);
-                        add_dct(s, block[9],   9, dest_cr + block_size, dct_linesize);
-                        add_dct(s, block[10], 10, dest_cb + block_size + dct_offset, dct_linesize);
-                        add_dct(s, block[11], 11, dest_cr + block_size + dct_offset, dct_linesize);
+                        add_dct(s, block,  8, dest_cb + block_size, dct_linesize);
+                        add_dct(s, block,  9, dest_cr + block_size, dct_linesize);
+                        add_dct(s, block, 10, dest_cb + block_size + dct_offset, dct_linesize);
+                        add_dct(s, block, 11, dest_cr + block_size + dct_offset, dct_linesize);
                     }
                 }
             } //fi gray
