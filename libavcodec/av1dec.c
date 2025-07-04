@@ -1019,7 +1019,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (provider_oriented_code != 0x800)
             return 0; // ignore
 
-        ret = ff_dovi_rpu_parse(&s->dovi, gb.buffer, gb.buffer_end - gb.buffer,
+        ret = ff_dovi_rpu_parse(&s->dovi, gb.buffer, bytestream2_get_bytes_left(&gb),
                                 avctx->err_recognition);
         if (ret < 0) {
             av_log(avctx, AV_LOG_WARNING, "Error parsing DOVI OBU.\n");
