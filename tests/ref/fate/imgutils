@@ -298,6 +298,14 @@ yaf16be         planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0 
 yaf16le         planes: 1, linesizes: 256   0   0   0, plane_sizes: 12288     0     0     0, plane_offsets:     0     0     0, total_size: 12288
 gbrap32be       planes: 4, linesizes: 256 256 256 256, plane_sizes: 12288 12288 12288 12288, plane_offsets: 12288 12288 12288, total_size: 49152
 gbrap32le       planes: 4, linesizes: 256 256 256 256, plane_sizes: 12288 12288 12288 12288, plane_offsets: 12288 12288 12288, total_size: 49152
+yuv444p10msbbe  planes: 3, linesizes: 128 128 128   0, plane_sizes:  6144  6144  6144     0, plane_offsets:  6144  6144     0, total_size: 18432
+yuv444p10msble  planes: 3, linesizes: 128 128 128   0, plane_sizes:  6144  6144  6144     0, plane_offsets:  6144  6144     0, total_size: 18432
+yuv444p12msbbe  planes: 3, linesizes: 128 128 128   0, plane_sizes:  6144  6144  6144     0, plane_offsets:  6144  6144     0, total_size: 18432
+yuv444p12msble  planes: 3, linesizes: 128 128 128   0, plane_sizes:  6144  6144  6144     0, plane_offsets:  6144  6144     0, total_size: 18432
+gbrp10msbbe     planes: 3, linesizes: 128 128 128   0, plane_sizes:  6144  6144  6144     0, plane_offsets:  6144  6144     0, total_size: 18432
+gbrp10msble     planes: 3, linesizes: 128 128 128   0, plane_sizes:  6144  6144  6144     0, plane_offsets:  6144  6144     0, total_size: 18432
+gbrp12msbbe     planes: 3, linesizes: 128 128 128   0, plane_sizes:  6144  6144  6144     0, plane_offsets:  6144  6144     0, total_size: 18432
+gbrp12msble     planes: 3, linesizes: 128 128 128   0, plane_sizes:  6144  6144  6144     0, plane_offsets:  6144  6144     0, total_size: 18432
 
 image_fill_black tests
 yuv420p         total_size:   4608,  black_unknown_crc: 0xd00f6cc6,  black_tv_crc: 0xd00f6cc6,  black_pc_crc: 0x234969af
@@ -543,3 +551,11 @@ yaf16be         total_size:  12288,  black_unknown_crc: 0x7afe9aae,  black_tv_cr
 yaf16le         total_size:  12288,  black_unknown_crc: 0x94c0068b,  black_tv_crc: 0x94c0068b,  black_pc_crc: 0xc05ce449
 gbrap32be       total_size:  49152,  black_unknown_crc: 0x7bd30c95,  black_tv_crc: 0x7bd30c95,  black_pc_crc: 0x7bd30c95
 gbrap32le       total_size:  49152,  black_unknown_crc: 0x7bd30c95,  black_tv_crc: 0x7bd30c95,  black_pc_crc: 0x7bd30c95
+yuv444p10msbbe  total_size:  18432,  black_unknown_crc: 0x26991800,  black_tv_crc: 0x26991800,  black_pc_crc: 0xfe7f6700
+yuv444p10msble  total_size:  18432,  black_unknown_crc: 0x4028ac30,  black_tv_crc: 0x4028ac30,  black_pc_crc: 0xab7c7698
+yuv444p12msbbe  total_size:  18432,  black_unknown_crc: 0x26991800,  black_tv_crc: 0x26991800,  black_pc_crc: 0xfe7f6700
+yuv444p12msble  total_size:  18432,  black_unknown_crc: 0x4028ac30,  black_tv_crc: 0x4028ac30,  black_pc_crc: 0xab7c7698
+gbrp10msbbe     total_size:  18432,  black_unknown_crc: 0x00000000,  black_tv_crc: 0x00000000,  black_pc_crc: 0x00000000
+gbrp10msble     total_size:  18432,  black_unknown_crc: 0x00000000,  black_tv_crc: 0x00000000,  black_pc_crc: 0x00000000
+gbrp12msbbe     total_size:  18432,  black_unknown_crc: 0x00000000,  black_tv_crc: 0x00000000,  black_pc_crc: 0x00000000
+gbrp12msble     total_size:  18432,  black_unknown_crc: 0x00000000,  black_tv_crc: 0x00000000,  black_pc_crc: 0x00000000

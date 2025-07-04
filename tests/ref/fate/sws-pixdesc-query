@@ -61,8 +61,12 @@ isNBPS:
   gbrap14le
   gbrp10be
   gbrp10le
+  gbrp10msbbe
+  gbrp10msble
   gbrp12be
   gbrp12le
+  gbrp12msbbe
+  gbrp12msble
   gbrp14be
   gbrp14le
   gbrp9be
@@ -127,8 +131,12 @@ isNBPS:
   yuv440p12le
   yuv444p10be
   yuv444p10le
+  yuv444p10msbbe
+  yuv444p10msble
   yuv444p12be
   yuv444p12le
+  yuv444p12msbbe
+  yuv444p12msble
   yuv444p14be
   yuv444p14le
   yuv444p9be
@@ -169,7 +177,9 @@ isBE:
   gbrapf16be
   gbrapf32be
   gbrp10be
+  gbrp10msbbe
   gbrp12be
+  gbrp12msbbe
   gbrp14be
   gbrp16be
   gbrp9be
@@ -230,7 +240,9 @@ isBE:
   yuv440p10be
   yuv440p12be
   yuv444p10be
+  yuv444p10msbbe
   yuv444p12be
+  yuv444p12msbbe
   yuv444p14be
   yuv444p16be
   yuv444p9be
@@ -336,8 +348,12 @@ isYUV:
   yuv444p
   yuv444p10be
   yuv444p10le
+  yuv444p10msbbe
+  yuv444p10msble
   yuv444p12be
   yuv444p12le
+  yuv444p12msbbe
+  yuv444p12msble
   yuv444p14be
   yuv444p14le
   yuv444p16be
@@ -435,8 +451,12 @@ isPlanarYUV:
   yuv444p
   yuv444p10be
   yuv444p10le
+  yuv444p10msbbe
+  yuv444p10msble
   yuv444p12be
   yuv444p12le
+  yuv444p12msbbe
+  yuv444p12msble
   yuv444p14be
   yuv444p14le
   yuv444p16be
@@ -551,8 +571,12 @@ isRGB:
   gbrp
   gbrp10be
   gbrp10le
+  gbrp10msbbe
+  gbrp10msble
   gbrp12be
   gbrp12le
+  gbrp12msbbe
+  gbrp12msble
   gbrp14be
   gbrp14le
   gbrp16be
@@ -727,8 +751,12 @@ AnyRGB:
   gbrp
   gbrp10be
   gbrp10le
+  gbrp10msbbe
+  gbrp10msble
   gbrp12be
   gbrp12le
+  gbrp12msbbe
+  gbrp12msble
   gbrp14be
   gbrp14le
   gbrp16be
@@ -966,8 +994,12 @@ Planar:
   gbrp
   gbrp10be
   gbrp10le
+  gbrp10msbbe
+  gbrp10msble
   gbrp12be
   gbrp12le
+  gbrp12msbbe
+  gbrp12msble
   gbrp14be
   gbrp14le
   gbrp16be
@@ -1035,8 +1067,12 @@ Planar:
   yuv444p
   yuv444p10be
   yuv444p10le
+  yuv444p10msbbe
+  yuv444p10msble
   yuv444p12be
   yuv444p12le
+  yuv444p12msbbe
+  yuv444p12msble
   yuv444p14be
   yuv444p14le
   yuv444p16be
@@ -1159,8 +1195,12 @@ PlanarRGB:
   gbrp
   gbrp10be
   gbrp10le
+  gbrp10msbbe
+  gbrp10msble
   gbrp12be
   gbrp12le
+  gbrp12msbbe
+  gbrp12msble
   gbrp14be
   gbrp14le
   gbrp16be
@@ -1181,6 +1221,10 @@ usePal:
   rgb8
 
 DataInHighBits:
+  gbrp10msbbe
+  gbrp10msble
+  gbrp12msbbe
+  gbrp12msble
   p010be
   p010le
   p012be
@@ -1201,6 +1245,10 @@ DataInHighBits:
   y210le
   y212be
   y212le
+  yuv444p10msbbe
+  yuv444p10msble
+  yuv444p12msbbe
+  yuv444p12msble
 
 SwappedChroma:
   nv21

@@ -488,6 +488,15 @@ enum AVPixelFormat {
     AV_PIX_FMT_GBRAP32BE,   ///< planar GBRA 4:4:4:4 128bpp, big-endian
     AV_PIX_FMT_GBRAP32LE,   ///< planar GBRA 4:4:4:4 128bpp, little-endian
 
+    AV_PIX_FMT_YUV444P10MSBBE, ///< planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), lowest bits zero, big-endian
+    AV_PIX_FMT_YUV444P10MSBLE, ///< planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), lowest bits zero, little-endian
+    AV_PIX_FMT_YUV444P12MSBBE, ///< planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), lowest bits zero, big-endian
+    AV_PIX_FMT_YUV444P12MSBLE, ///< planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), lowest bits zero, little-endian
+    AV_PIX_FMT_GBRP10MSBBE,    ///< planar GBR 4:4:4 30bpp, lowest bits zero, big-endian
+    AV_PIX_FMT_GBRP10MSBLE,    ///< planar GBR 4:4:4 30bpp, lowest bits zero, little-endian
+    AV_PIX_FMT_GBRP12MSBBE,    ///< planar GBR 4:4:4 36bpp, lowest bits zero, big-endian
+    AV_PIX_FMT_GBRP12MSBLE,    ///< planar GBR 4:4:4 36bpp, lowest bits zero, little-endian
+
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
@@ -540,6 +549,9 @@ enum AVPixelFormat {
 #define AV_PIX_FMT_YUV422P16 AV_PIX_FMT_NE(YUV422P16BE, YUV422P16LE)
 #define AV_PIX_FMT_YUV444P16 AV_PIX_FMT_NE(YUV444P16BE, YUV444P16LE)
 
+#define AV_PIX_FMT_YUV444P10MSB AV_PIX_FMT_NE(YUV444P10MSBBE, YUV444P10MSBLE)
+#define AV_PIX_FMT_YUV444P12MSB AV_PIX_FMT_NE(YUV444P12MSBBE, YUV444P12MSBLE)
+
 #define AV_PIX_FMT_GBRP9     AV_PIX_FMT_NE(GBRP9BE ,    GBRP9LE)
 #define AV_PIX_FMT_GBRP10    AV_PIX_FMT_NE(GBRP10BE,    GBRP10LE)
 #define AV_PIX_FMT_GBRP12    AV_PIX_FMT_NE(GBRP12BE,    GBRP12LE)
@@ -550,6 +562,9 @@ enum AVPixelFormat {
 #define AV_PIX_FMT_GBRAP14   AV_PIX_FMT_NE(GBRAP14BE,   GBRAP14LE)
 #define AV_PIX_FMT_GBRAP16   AV_PIX_FMT_NE(GBRAP16BE,   GBRAP16LE)
 #define AV_PIX_FMT_GBRAP32   AV_PIX_FMT_NE(GBRAP32BE,   GBRAP32LE)
+
+#define AV_PIX_FMT_GBRP10MSB AV_PIX_FMT_NE(GBRP10MSBBE, GBRP10MSBLE)
+#define AV_PIX_FMT_GBRP12MSB AV_PIX_FMT_NE(GBRP12MSBBE, GBRP12MSBLE)
 
 #define AV_PIX_FMT_BAYER_BGGR16 AV_PIX_FMT_NE(BAYER_BGGR16BE,    BAYER_BGGR16LE)
 #define AV_PIX_FMT_BAYER_RGGB16 AV_PIX_FMT_NE(BAYER_RGGB16BE,    BAYER_RGGB16LE)

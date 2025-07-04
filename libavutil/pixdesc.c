@@ -1701,6 +1701,30 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR,
     },
+    [AV_PIX_FMT_YUV444P10MSBLE] = {
+        .name = "yuv444p10msble",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 6, 10 },        /* Y */
+            { 1, 2, 0, 6, 10 },        /* U */
+            { 2, 2, 0, 6, 10 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_YUV444P10MSBBE] = {
+        .name = "yuv444p10msbbe",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 6, 10 },        /* Y */
+            { 1, 2, 0, 6, 10 },        /* U */
+            { 2, 2, 0, 6, 10 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR,
+    },
     [AV_PIX_FMT_YUV444P9LE] = {
         .name = "yuv444p9le",
         .nb_components = 3,
@@ -1746,6 +1770,30 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 2, 0, 0, 12 },        /* Y */
             { 1, 2, 0, 0, 12 },        /* U */
             { 2, 2, 0, 0, 12 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_YUV444P12MSBLE] = {
+        .name = "yuv444p12msble",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 4, 12 },        /* Y */
+            { 1, 2, 0, 4, 12 },        /* U */
+            { 2, 2, 0, 4, 12 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_YUV444P12MSBBE] = {
+        .name = "yuv444p12msbbe",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 4, 12 },        /* Y */
+            { 1, 2, 0, 4, 12 },        /* U */
+            { 2, 2, 0, 4, 12 },        /* V */
         },
         .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR,
     },
@@ -1877,6 +1925,30 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB,
     },
+    [AV_PIX_FMT_GBRP10MSBLE] = {
+        .name = "gbrp10msble",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 2, 0, 6, 10 },        /* R */
+            { 0, 2, 0, 6, 10 },        /* G */
+            { 1, 2, 0, 6, 10 },        /* B */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB,
+    },
+    [AV_PIX_FMT_GBRP10MSBBE] = {
+        .name = "gbrp10msbbe",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 2, 0, 6, 10 },        /* R */
+            { 0, 2, 0, 6, 10 },        /* G */
+            { 1, 2, 0, 6, 10 },        /* B */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB,
+    },
     [AV_PIX_FMT_GBRP12LE] = {
         .name = "gbrp12le",
         .nb_components = 3,
@@ -1898,6 +1970,30 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 2, 2, 0, 0, 12 },        /* R */
             { 0, 2, 0, 0, 12 },        /* G */
             { 1, 2, 0, 0, 12 },        /* B */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB,
+    },
+    [AV_PIX_FMT_GBRP12MSBLE] = {
+        .name = "gbrp12msble",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 2, 0, 4, 12 },        /* R */
+            { 0, 2, 0, 4, 12 },        /* G */
+            { 1, 2, 0, 4, 12 },        /* B */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB,
+    },
+    [AV_PIX_FMT_GBRP12MSBBE] = {
+        .name = "gbrp12msbbe",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 2, 0, 4, 12 },        /* R */
+            { 0, 2, 0, 4, 12 },        /* G */
+            { 1, 2, 0, 4, 12 },        /* B */
         },
         .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB,
     },
