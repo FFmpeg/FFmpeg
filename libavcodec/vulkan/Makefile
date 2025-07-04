@@ -14,6 +14,9 @@ OBJS-$(CONFIG_FFV1_VULKAN_HWACCEL)  +=  vulkan/common.o \
 					vulkan/ffv1_common.o vulkan/ffv1_reset.o \
 					vulkan/ffv1_dec_setup.o vulkan/ffv1_dec.o
 
+OBJS-$(CONFIG_PRORES_RAW_VULKAN_HWACCEL) += vulkan/common.o \
+                                            vulkan/prores_raw.o
+
 VULKAN = $(subst $(SRC_PATH)/,,$(wildcard $(SRC_PATH)/libavcodec/vulkan/*.comp))
 .SECONDARY: $(VULKAN:.comp=.c)
 libavcodec/vulkan/%.c: TAG = VULKAN
