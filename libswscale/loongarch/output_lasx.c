@@ -1768,6 +1768,7 @@ av_cold void ff_sws_init_output_lasx(SwsInternal *c,
     /* Add initialization once optimized */
     if (isSemiPlanarYUV(dstFormat) && isDataInHighBits(dstFormat)) {
     } else if (is16BPS(dstFormat)) {
+    } else if (isNBPS(dstFormat) && isDataInHighBits(dstFormat)) {
     } else if (isNBPS(dstFormat)) {
     } else if (dstFormat == AV_PIX_FMT_GRAYF32BE) {
     } else if (dstFormat == AV_PIX_FMT_GRAYF32LE) {

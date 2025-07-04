@@ -34,8 +34,12 @@ gbrapf32le          9e32cc5fc7b487ea94b9f440d645040d
 gbrp                dc3387f925f972c61aae7eb23cdc19f0
 gbrp10be            a318ea42e53a7b80a55aa7c19c9a0ab5
 gbrp10le            994e8fc6a1e5b230f4c55893fd7618d6
+gbrp10msbbe         045c5f8af6dafc1ceb06cfe3181c3ee9
+gbrp10msble         8c74e50b03a0cb475145e83d0d15110b
 gbrp12be            bfbd419dd18c0a5677d4bce55ab24e2e
 gbrp12le            95af1f8495b2a7a7ad67802e3e8bca01
+gbrp12msbbe         69c01758aa175918b27e3de5b488b2ee
+gbrp12msble         907712bd8af9e3e39b1881b26273b7d1
 gbrp14be            9d8113c9a5182c02dbe4576509f59a96
 gbrp14le            952f39881e500ed684c8b216185f4b80
 gbrp16be            5241eee3465096efa111b86b30c3aaaa
@@ -153,8 +157,12 @@ yuv440p12le         bb9ffc3033fe32b9ce3233524ed5ab70
 yuv444p             098f01e6790e1e6beff8d604120c2664
 yuv444p10be         024ee33cac7b5b7b225d7acb9dc59da3
 yuv444p10le         a085fff2fb81d76753da689aee365b55
+yuv444p10msbbe      39e20d08b28c3c3a63978e427d7567fe
+yuv444p10msble      e49af28d1827e757d725433c4c8bf571
 yuv444p12be         a181627b93bd9c4c384b83e17d373a7c
 yuv444p12le         97e47326ff0efe89c295fd9ddb0ca854
+yuv444p12msbbe      0fa425c7d9f5a7f7fe4933f4fe89dd6b
+yuv444p12msble      9439ab6089e6ad3102b878124f1de98e
 yuv444p14be         3eac31f0d4969210640de74914faf86d
 yuv444p14le         2c362c4cf167b7e2d83f4eb0dfaeb2b9
 yuv444p16be         a60c674411d64cc4b9fbf17039afffb3

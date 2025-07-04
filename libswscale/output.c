@@ -386,6 +386,68 @@ yuv2NBPS(14, LE, 0, 10, int16_t)
 yuv2NBPS(16, BE, 1, 16, int32_t)
 yuv2NBPS(16, LE, 0, 16, int32_t)
 
+#define output_pixel(pos, val) \
+    if (big_endian) { \
+        AV_WB16(pos, av_clip_uintp2(val >> shift, output_bits) << (16 - output_bits)); \
+    } else { \
+        AV_WL16(pos, av_clip_uintp2(val >> shift, output_bits) << (16 - output_bits)); \
+    }
+
+static av_always_inline void
+yuv2msbplane1_10_c_template(const int16_t *src, uint16_t *dest, int dstW,
+                            int big_endian, int output_bits)
+{
+    int i;
+    int shift = 15 - output_bits;
+
+    for (i = 0; i < dstW; i++) {
+        int val = src[i] + (1 << (shift - 1));
+        output_pixel(&dest[i], val);
+    }
+}
+
+static av_always_inline void
+yuv2msbplaneX_10_c_template(const int16_t *filter, int filterSize,
+                            const int16_t **src, uint16_t *dest, int dstW,
+                            int big_endian, int output_bits)
+{
+    int i;
+    int shift = 11 + 16 - output_bits;
+
+    for (i = 0; i < dstW; i++) {
+        int val = 1 << (shift - 1);
+        int j;
+
+        for (j = 0; j < filterSize; j++)
+            val += src[j][i] * filter[j];
+
+        output_pixel(&dest[i], val);
+    }
+}
+
+#define yuv2MSBNBPS(bits, BE_LE, is_be, template_size, typeX_t) \
+static void yuv2msbplane1_ ## bits ## BE_LE ## _c(const int16_t *src, \
+                              uint8_t *dest, int dstW, \
+                              const uint8_t *dither, int offset)\
+{ \
+    yuv2msbplane1_ ## template_size ## _c_template((const typeX_t *) src, \
+                         (uint16_t *) dest, dstW, is_be, bits); \
+}\
+static void yuv2msbplaneX_ ## bits ## BE_LE ## _c(const int16_t *filter, int filterSize, \
+                              const int16_t **src, uint8_t *dest, int dstW, \
+                              const uint8_t *dither, int offset)\
+{ \
+    yuv2msbplaneX_## template_size ## _c_template(filter, \
+                         filterSize, (const typeX_t **) src, \
+                         (uint16_t *) dest, dstW, is_be, bits); \
+}
+
+yuv2MSBNBPS(10, BE, 1, 10, int16_t)
+yuv2MSBNBPS(10, LE, 0, 10, int16_t)
+yuv2MSBNBPS(12, BE, 1, 10, int16_t)
+yuv2MSBNBPS(12, LE, 0, 10, int16_t)
+
+#undef output_pixel
 
 static void yuv2nv12cX_16LE_c(enum AVPixelFormat dstFormat, const uint8_t *chrDither,
                               const int16_t *chrFilter, int chrFilterSize,
@@ -2353,6 +2415,46 @@ yuv2gbrp_full_X_c(SwsInternal *c, const int16_t *lumFilter,
 }
 
 static void
+yuv2gbrpmsb_full_X_c(SwsInternal *c, const int16_t *lumFilter,
+                     const int16_t **lumSrc, int lumFilterSize,
+                     const int16_t *chrFilter, const int16_t **chrUSrc,
+                     const int16_t **chrVSrc, int chrFilterSize,
+                     const int16_t **alpSrc, uint8_t **dest,
+                     int dstW, int y)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->opts.dst_format);
+    int hasAlpha = (desc->flags & AV_PIX_FMT_FLAG_ALPHA) && alpSrc;
+    uint16_t **dest16 = (uint16_t**)dest;
+    int shift = 16 - desc->comp[0].depth;
+    int i;
+
+    yuv2gbrp_full_X_c(c, lumFilter, lumSrc, lumFilterSize,
+                      chrFilter, chrUSrc, chrVSrc, chrFilterSize,
+                      alpSrc, dest, dstW, y);
+
+    if (desc->comp[0].depth <= 8)
+        return;
+
+    if ((!isBE(c->opts.dst_format)) != (!HAVE_BIGENDIAN)) {
+        for (i = 0; i < dstW; i++) {
+            dest16[0][i] = av_bswap16(av_bswap16(dest16[0][i]) << shift);
+            dest16[1][i] = av_bswap16(av_bswap16(dest16[1][i]) << shift);
+            dest16[2][i] = av_bswap16(av_bswap16(dest16[2][i]) << shift);
+            if (hasAlpha)
+                dest16[3][i] = av_bswap16(av_bswap16(dest16[3][i]) << shift);
+        }
+    } else {
+        for (i = 0; i < dstW; i++) {
+            dest16[0][i] = dest16[0][i] << shift;
+            dest16[1][i] = dest16[1][i] << shift;
+            dest16[2][i] = dest16[2][i] << shift;
+            if (hasAlpha)
+                dest16[3][i] = dest16[3][i] << shift;
+        }
+    }
+}
+
+static void
 yuv2gbrp16_full_X_c(SwsInternal *c, const int16_t *lumFilter,
                     const int16_t **lumSrcx, int lumFilterSize,
                     const int16_t *chrFilter, const int16_t **chrUSrcx,
@@ -3215,6 +3317,15 @@ av_cold void ff_sws_init_output_funcs(SwsInternal *c,
         if (isSemiPlanarYUV(dstFormat)) {
           *yuv2nv12cX = isBE(dstFormat) ? yuv2nv12cX_16BE_c : yuv2nv12cX_16LE_c;
         }
+    } else if (isDataInHighBits(dstFormat) && isNBPS(dstFormat)) {
+        if (desc->comp[0].depth == 10) {
+            *yuv2planeX = isBE(dstFormat) ? yuv2msbplaneX_10BE_c  : yuv2msbplaneX_10LE_c;
+            *yuv2plane1 = isBE(dstFormat) ? yuv2msbplane1_10BE_c  : yuv2msbplane1_10LE_c;
+        } else if (desc->comp[0].depth == 12) {
+            *yuv2planeX = isBE(dstFormat) ? yuv2msbplaneX_12BE_c  : yuv2msbplaneX_12LE_c;
+            *yuv2plane1 = isBE(dstFormat) ? yuv2msbplane1_12BE_c  : yuv2msbplane1_12LE_c;
+        } else
+            av_assert0(0);
     } else if (isNBPS(dstFormat)) {
         if (desc->comp[0].depth == 9) {
             *yuv2planeX = isBE(dstFormat) ? yuv2planeX_9BE_c  : yuv2planeX_9LE_c;
@@ -3459,6 +3570,12 @@ av_cold void ff_sws_init_output_funcs(SwsInternal *c,
         case AV_PIX_FMT_GBRAP14BE:
         case AV_PIX_FMT_GBRAP14LE:
             *yuv2anyX = yuv2gbrp_full_X_c;
+            break;
+        case AV_PIX_FMT_GBRP10MSBBE:
+        case AV_PIX_FMT_GBRP10MSBLE:
+        case AV_PIX_FMT_GBRP12MSBBE:
+        case AV_PIX_FMT_GBRP12MSBLE:
+            *yuv2anyX = yuv2gbrpmsb_full_X_c;
             break;
         case AV_PIX_FMT_GBRP16BE:
         case AV_PIX_FMT_GBRP16LE:

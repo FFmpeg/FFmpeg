@@ -22,6 +22,14 @@ gbrpf32le -> yuv444p14le -> gbrpf32le
 avg diff: 0.000127
 min diff: 0.000000
 max diff: 0.000524
+gbrpf32le -> yuv444p10msble -> gbrpf32le
+avg diff: 0.000467
+min diff: 0.000000
+max diff: 0.001912
+gbrpf32le -> yuv444p12msble -> gbrpf32le
+avg diff: 0.000166
+min diff: 0.000000
+max diff: 0.000802
 gbrpf32le -> rgb24 -> gbrpf32le
 avg diff: 0.001011
 min diff: 0.000000
@@ -98,6 +106,14 @@ gbrpf32le -> gbrap10le -> gbrpf32le
 avg diff: 0.000350
 min diff: 0.000000
 max diff: 0.001475
+gbrpf32le -> gbrp10msble -> gbrpf32le
+avg diff: 0.000350
+min diff: 0.000000
+max diff: 0.001475
+gbrpf32le -> gbrp12msble -> gbrpf32le
+avg diff: 0.000260
+min diff: 0.000000
+max diff: 0.001135
 gbrpf32le -> gbrp12le -> gbrpf32le
 avg diff: 0.000260
 min diff: 0.000000
