@@ -323,7 +323,7 @@ static int opus_decode_frame(OpusStreamContext *s, const uint8_t *data, int size
             } else {
                 av_log(s->avctx, AV_LOG_WARNING,
                        "Spurious CELT delay samples present.\n");
-                av_audio_fifo_drain(s->celt_delay, delay_samples);
+                av_audio_fifo_reset(s->celt_delay);
                 if (s->avctx->err_recognition & AV_EF_EXPLODE)
                     return AVERROR_BUG;
             }
@@ -640,10 +640,10 @@ static av_cold void opus_decode_flush(AVCodecContext *ctx)
         memset(&s->packet, 0, sizeof(s->packet));
         s->delayed_samples = 0;
 
-        av_audio_fifo_drain(s->celt_delay, av_audio_fifo_size(s->celt_delay));
+        av_audio_fifo_reset(s->celt_delay);
         swr_close(s->swr);
 
-        av_audio_fifo_drain(s->sync_buffer, av_audio_fifo_size(s->sync_buffer));
+        av_audio_fifo_reset(s->sync_buffer);
 
         ff_silk_flush(s->silk);
         ff_celt_flush(s->celt);
