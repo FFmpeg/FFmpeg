@@ -489,8 +489,9 @@ static int opus_decode_packet(AVCodecContext *avctx, AVFrame *frame,
         OpusStreamContext *s = &c->streams[i];
         s->out[0] =
         s->out[1] = NULL;
+        int fifo_samples = av_audio_fifo_size(s->sync_buffer);
         delayed_samples = FFMAX(delayed_samples,
-                                s->delayed_samples + av_audio_fifo_size(s->sync_buffer));
+                                s->delayed_samples + fifo_samples);
     }
 
     /* decode the header of the first sub-packet to find out the sample count */
