@@ -77,11 +77,11 @@ static av_always_inline type bytestream2_get_ ## name(GetByteContext *g)       \
     }                                                                          \
     return bytestream2_get_ ## name ## u(g);                                   \
 }                                                                              \
-static av_always_inline type bytestream2_peek_ ## name ## u(GetByteContext *g) \
+static av_always_inline type bytestream2_peek_ ## name ## u(const GetByteContext *g) \
 {                                                                              \
     return read(g->buffer);                                                    \
 }                                                                              \
-static av_always_inline type bytestream2_peek_ ## name(GetByteContext *g)      \
+static av_always_inline type bytestream2_peek_ ## name(const GetByteContext *g)\
 {                                                                              \
     if (g->buffer_end - g->buffer < bytes)                                     \
         return 0;                                                              \
@@ -155,12 +155,12 @@ static av_always_inline void bytestream2_init_writer(PutByteContext *p,
     p->eof          = 0;
 }
 
-static av_always_inline int bytestream2_get_bytes_left(GetByteContext *g)
+static av_always_inline int bytestream2_get_bytes_left(const GetByteContext *g)
 {
     return g->buffer_end - g->buffer;
 }
 
-static av_always_inline int bytestream2_get_bytes_left_p(PutByteContext *p)
+static av_always_inline int bytestream2_get_bytes_left_p(const PutByteContext *p)
 {
     return p->buffer_end - p->buffer;
 }
@@ -189,22 +189,22 @@ static av_always_inline void bytestream2_skip_p(PutByteContext *p,
     p->buffer += size2;
 }
 
-static av_always_inline int bytestream2_tell(GetByteContext *g)
+static av_always_inline int bytestream2_tell(const GetByteContext *g)
 {
     return (int)(g->buffer - g->buffer_start);
 }
 
-static av_always_inline int bytestream2_tell_p(PutByteContext *p)
+static av_always_inline int bytestream2_tell_p(const PutByteContext *p)
 {
     return (int)(p->buffer - p->buffer_start);
 }
 
-static av_always_inline int bytestream2_size(GetByteContext *g)
+static av_always_inline int bytestream2_size(const GetByteContext *g)
 {
     return (int)(g->buffer_end - g->buffer_start);
 }
 
-static av_always_inline int bytestream2_size_p(PutByteContext *p)
+static av_always_inline int bytestream2_size_p(const PutByteContext *p)
 {
     return (int)(p->buffer_end - p->buffer_start);
 }
