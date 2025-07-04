@@ -294,7 +294,7 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
     if (!sps)
         return AVERROR(ENOMEM);
 
-    sps->data_size = gb->buffer_end - gb->buffer;
+    sps->data_size = get_bits_bytesize(gb, 1);
     if (sps->data_size > sizeof(sps->data)) {
         av_log(avctx, AV_LOG_DEBUG, "Truncating likely oversized SPS\n");
         sps->data_size = sizeof(sps->data);
@@ -712,7 +712,7 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
     if (!pps)
         return AVERROR(ENOMEM);
 
-    pps->data_size = gb->buffer_end - gb->buffer;
+    pps->data_size = get_bits_bytesize(gb, 1);
     if (pps->data_size > sizeof(pps->data)) {
         av_log(avctx, AV_LOG_DEBUG, "Truncating likely oversized PPS "
                "(%"SIZE_SPECIFIER" > %"SIZE_SPECIFIER")\n",

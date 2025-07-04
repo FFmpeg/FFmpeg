@@ -1635,6 +1635,7 @@ static int slice_decode_thread(AVCodecContext *c, void *arg)
 {
     Mpeg12SliceContext *const s = *(void **) arg;
     const uint8_t *buf  = s->gb.buffer;
+    const uint8_t *end  = buf + get_bits_bytesize(&s->gb, 0);
     int mb_y            = s->c.start_mb_y;
     const int field_pic = s->c.picture_structure != PICT_FRAME;
 
@@ -1644,7 +1645,7 @@ static int slice_decode_thread(AVCodecContext *c, void *arg)
         uint32_t start_code;
         int ret;
 
-        ret = mpeg_decode_slice(s, mb_y, &buf, s->gb.buffer_end - buf);
+        ret = mpeg_decode_slice(s, mb_y, &buf, end - buf);
         emms_c();
         ff_dlog(c, "ret:%d resync:%d/%d mb:%d/%d ts:%d/%d ec:%d\n",
                 ret, s->c.resync_mb_x, s->c.resync_mb_y, s->c.mb_x, s->c.mb_y,
@@ -1666,7 +1667,7 @@ static int slice_decode_thread(AVCodecContext *c, void *arg)
             return 0;
 
         start_code = -1;
-        buf        = avpriv_find_start_code(buf, s->gb.buffer_end, &start_code);
+        buf        = avpriv_find_start_code(buf, end, &start_code);
         if (start_code < SLICE_MIN_START_CODE || start_code > SLICE_MAX_START_CODE)
             return AVERROR_INVALIDDATA;
         mb_y       = start_code - SLICE_MIN_START_CODE;

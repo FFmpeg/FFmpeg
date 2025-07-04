@@ -2752,7 +2752,7 @@ static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
     const HEVCPPS   *const pps = s->pps;
     const HEVCSPS   *const sps = pps->sps;
     const uint8_t *slice_data = gb->buffer + s->sh.data_offset;
-    const size_t   slice_size = gb->buffer_end - gb->buffer - s->sh.data_offset;
+    const size_t   slice_size = get_bits_bytesize(gb, 1) - s->sh.data_offset;
     int ctb_size    = 1 << sps->log2_ctb_size;
     int more_data   = 1;
     int x_ctb       = 0;

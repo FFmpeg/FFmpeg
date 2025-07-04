@@ -157,6 +157,14 @@ static inline int BS_FUNC(size)(const BSCTX *bc)
 }
 
 /**
+ * Return buffer size in bytes.
+ */
+static inline int BS_FUNC(bytesize)(const BSCTX *bc, int round_up)
+{
+    return (bc->size_in_bits + (round_up ? 7 : 0)) >> 3;
+}
+
+/**
  * Return the number of the bits left in a buffer.
  */
 static inline int BS_FUNC(left)(const BSCTX *bc)

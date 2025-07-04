@@ -208,7 +208,8 @@ static int decode_slice(H263DecContext *const h)
 
     if (h->c.avctx->hwaccel) {
         const uint8_t *start = h->gb.buffer + get_bits_count(&h->gb) / 8;
-        ret = FF_HW_CALL(h->c.avctx, decode_slice, start, h->gb.buffer_end - start);
+        ret = FF_HW_CALL(h->c.avctx, decode_slice, start,
+                         get_bits_bytesize(&h->gb, 0) - get_bits_count(&h->gb) / 8);
         // ensure we exit decode loop
         h->c.mb_y = h->c.mb_height;
         return ret;
@@ -372,7 +373,7 @@ static int decode_slice(H263DecContext *const h)
     if (h->c.codec_id == AV_CODEC_ID_H263          &&
         (h->c.workaround_bugs & FF_BUG_AUTODETECT) &&
         get_bits_left(&h->gb) >= 64                &&
-        AV_RB64(h->gb.buffer_end - 8) == 0xCDCDCDCDFC7F0000) {
+        AV_RB64(h->gb.buffer + (get_bits_bytesize(&h->gb, 0) - 8)) == 0xCDCDCDCDFC7F0000) {
 
         h->padding_bug_score += 32;
     }
@@ -546,7 +547,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
     if (avctx->hwaccel) {
         ret = FF_HW_CALL(avctx, start_frame, NULL,
-                         h->gb.buffer, h->gb.buffer_end - h->gb.buffer);
+                         h->gb.buffer, get_bits_bytesize(&h->gb, 0));
         if (ret < 0 )
             return ret;
     }

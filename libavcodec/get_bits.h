@@ -76,6 +76,7 @@
 typedef BitstreamContext GetBitContext;
 
 #define get_bits_count      bits_tell
+#define get_bits_bytesize   bits_bytesize
 #define get_bits_left       bits_left
 #define skip_bits_long      bits_skip
 #define skip_bits           bits_skip
@@ -249,6 +250,20 @@ static inline unsigned int show_bits(GetBitContext *s, int n);
 static inline int get_bits_count(const GetBitContext *s)
 {
     return s->index;
+}
+
+/**
+ * Get the size of the GetBitContext's buffer in bytes.
+ *
+ * @param s        the GetBitContext
+ * @param round_up If set, the number of bits will be rounded up to full bytes;
+ *                 this does not matter if the number of bits is known to be
+ *                 a multiple of eight, e.g. if the GetBitContext has been
+ *                 initialized with init_get_bits8.
+ */
+static inline int get_bits_bytesize(const GetBitContext *s, int round_up)
+{
+    return (s->size_in_bits + (round_up ? 7 : 0)) >> 3;
 }
 
 /**

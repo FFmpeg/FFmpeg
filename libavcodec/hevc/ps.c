@@ -763,7 +763,7 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
 {
     int i;
     int vps_id = get_bits(gb, 4);
-    ptrdiff_t nal_size = gb->buffer_end - gb->buffer;
+    ptrdiff_t nal_size = get_bits_bytesize(gb, 1);
     int ret = AVERROR_INVALIDDATA;
     uint64_t layer1_id_included = 0;
     unsigned vps_base_layer_internal_flag, vps_base_layer_available_flag;
@@ -1710,7 +1710,7 @@ int ff_hevc_decode_nal_sps(GetBitContext *gb, AVCodecContext *avctx,
 
     av_log(avctx, AV_LOG_DEBUG, "Decoding SPS\n");
 
-    sps->data_size = gb->buffer_end - gb->buffer;
+    sps->data_size = get_bits_bytesize(gb, 1);
     sps->data = av_memdup(gb->buffer, sps->data_size);
     if (!sps->data) {
         ret = AVERROR(ENOMEM);
@@ -2165,7 +2165,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     const HEVCSPS *sps = NULL;
     const HEVCVPS *vps = NULL;
     int i, ret = 0;
-    ptrdiff_t nal_size = gb->buffer_end - gb->buffer;
+    ptrdiff_t nal_size = get_bits_bytesize(gb, 1);
     unsigned int pps_id = get_ue_golomb_long(gb);
     unsigned log2_parallel_merge_level_minus2;
     HEVCPPS *pps;
