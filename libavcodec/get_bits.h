@@ -107,7 +107,7 @@ typedef BitstreamContext GetBitContext;
 #else   // CACHED_BITSTREAM_READER
 
 typedef struct GetBitContext {
-    const uint8_t *buffer, *buffer_end;
+    const uint8_t *buffer;
     int index;
     int size_in_bits;
     int size_in_bits_plus8;
@@ -512,7 +512,6 @@ static inline unsigned int show_bits_long(GetBitContext *s, int n)
 static inline int init_get_bits(GetBitContext *s, const uint8_t *buffer,
                                 int bit_size)
 {
-    int buffer_size;
     int ret = 0;
 
     if (bit_size >= INT_MAX - FFMAX(7, AV_INPUT_BUFFER_PADDING_SIZE*8) || bit_size < 0 || !buffer) {
@@ -521,12 +520,9 @@ static inline int init_get_bits(GetBitContext *s, const uint8_t *buffer,
         ret         = AVERROR_INVALIDDATA;
     }
 
-    buffer_size = (bit_size + 7) >> 3;
-
     s->buffer             = buffer;
     s->size_in_bits       = bit_size;
     s->size_in_bits_plus8 = bit_size + 8;
-    s->buffer_end         = buffer + buffer_size;
     s->index              = 0;
 
     return ret;
