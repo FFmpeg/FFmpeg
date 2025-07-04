@@ -20,6 +20,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavcodec/bytestream.h"
 #include "libavcodec/codec_internal.h"
 #include "libavcodec/decode.h"
 #include "libavcodec/hwaccel_internal.h"
@@ -509,13 +511,14 @@ static int slices_realloc(VVCFrameContext *fc)
     return 0;
 }
 
-static int get_ep_size(const H266RawSliceHeader *rsh, GetBitContext *gb, const H2645NAL *nal, const int header_size, const int ep_index)
+static int get_ep_size(const H266RawSliceHeader *rsh, const GetByteContext *gb,
+                       const H2645NAL *nal, const int header_size, const int ep_index)
 {
     int size;
 
     if (ep_index < rsh->num_entry_points) {
         int skipped = 0;
-        int64_t start =  (gb->index >> 3);
+        int64_t start = bytestream2_tell(gb);
         int64_t end = start + rsh->sh_entry_point_offset_minus1[ep_index] + 1;
         while (skipped < nal->skipped_bytes && nal->skipped_bytes_pos[skipped] <= start + header_size) {
             skipped++;
@@ -525,26 +528,27 @@ static int get_ep_size(const H266RawSliceHeader *rsh, GetBitContext *gb, const H
             skipped++;
         }
         size = end - start;
-        size = av_clip(size, 0, get_bits_left(gb) / 8);
+        size = av_clip(size, 0, bytestream2_get_bytes_left(gb));
     } else {
-        size = get_bits_left(gb) / 8;
+        size = bytestream2_get_bytes_left(gb);
     }
     return size;
 }
 
-static int ep_init_cabac_decoder(EntryPoint *ep, GetBitContext *gb, const int size)
+static int ep_init_cabac_decoder(EntryPoint *ep, GetByteContext *gb, const int size)
 {
     int ret;
 
-    av_assert0(gb->buffer + get_bits_count(gb) / 8 + size <= gb->buffer_end);
-    ret = ff_init_cabac_decoder (&ep->cc, gb->buffer + get_bits_count(gb) / 8, size);
+    av_assert0(size <= bytestream2_get_bytes_left(gb));
+    ret = ff_init_cabac_decoder(&ep->cc, gb->buffer, size);
     if (ret < 0)
         return ret;
-    skip_bits(gb, size * 8);
+    bytestream2_skipu(gb, size);
     return 0;
 }
 
-static int ep_init(EntryPoint *ep, const int ctu_addr, const int ctu_end, GetBitContext *gb, const int size)
+static int ep_init(EntryPoint *ep, const int ctu_addr, const int ctu_end,
+                   GetByteContext *gb, const int size)
 {
     const int ret = ep_init_cabac_decoder(ep, gb, size);
 
@@ -567,7 +571,7 @@ static int slice_init_entry_points(SliceContext *sc,
     const H266RawSlice *slice = unit->content_ref;
     int nb_eps                = sh->r->num_entry_points + 1;
     int ctu_addr              = 0;
-    GetBitContext gb;
+    GetByteContext gb;
     int ret;
 
     if (sc->nb_eps != nb_eps) {
@@ -578,9 +582,8 @@ static int slice_init_entry_points(SliceContext *sc,
         sc->nb_eps = nb_eps;
     }
 
-    ret = init_get_bits8(&gb, slice->data, slice->data_size);
-    if (ret < 0)
-        return ret;
+    bytestream2_init(&gb, slice->data, slice->data_size);
+
     for (int i = 0; i < sc->nb_eps; i++)
     {
         const int size    = get_ep_size(sc->sh.r, &gb, nal, slice->header_size, i);
