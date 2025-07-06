@@ -1949,6 +1949,12 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
         fgt->graph->nb_threads = filter_complex_nbthreads;
     }
 
+    if (filter_buffered_frames) {
+        ret = av_opt_set_int(fgt->graph, "max_buffered_frames", filter_buffered_frames, 0);
+        if (ret < 0)
+            return ret;
+    }
+
     hw_device = hw_device_for_filter();
 
     ret = graph_parse(fg, fgt->graph, graph_desc, &inputs, &outputs, hw_device);

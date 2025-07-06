@@ -75,6 +75,7 @@ int stdin_interaction = 1;
 float max_error_rate  = 2.0/3;
 char *filter_nbthreads;
 int filter_complex_nbthreads = 0;
+int filter_buffered_frames = 0;
 int vstats_version = 2;
 int print_graphs = 0;
 char *print_graphs_file = NULL;
@@ -1714,6 +1715,9 @@ const OptionDef options[] = {
     { "filter_threads",         OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT,
         { .func_arg = opt_filter_threads },
         "number of non-complex filter threads" },
+    { "filter_buffered_frames", OPT_TYPE_INT, OPT_EXPERT,
+        { &filter_buffered_frames },
+        "maximum number of buffered frames in a filter graph" },
 #if FFMPEG_OPT_FILTER_SCRIPT
     { "filter_script",          OPT_TYPE_STRING, OPT_PERSTREAM | OPT_EXPERT | OPT_OUTPUT,
         { .off = OFFSET(filter_scripts) },

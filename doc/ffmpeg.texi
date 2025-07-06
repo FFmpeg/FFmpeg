@@ -1384,6 +1384,15 @@ Defines how many threads are used to process a filter pipeline. Each pipeline
 will produce a thread pool with this many threads available for parallel processing.
 The default is the number of available CPUs.
 
+@item -filter_buffered_frames @var{nb_frames} (@emph{global})
+Defines the maximum number of buffered frames allowed in a filtergraph. Under
+normal circumstances, a filtergraph should not buffer more than a few frames,
+especially if frames are being fed to it and read from it in a balanced way
+(which is the intended behavior in ffmpeg). That said, this option allows you
+to limit the total number of frames buffered across all links in a filtergraph.
+If more frames are generated, filtering is aborted and an error is returned.
+The default value is 0, which means no limit.
+
 @item -pre[:@var{stream_specifier}] @var{preset_name} (@emph{output,per-stream})
 Specify the preset for matching stream(s).
 
