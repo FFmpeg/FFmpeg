@@ -629,6 +629,14 @@ typedef struct AVFilterGraph {
     avfilter_execute_func *execute;
 
     char *aresample_swr_opts; ///< swr options to use for the auto-inserted aresample filters, Access ONLY through AVOptions
+
+    /**
+     * Sets the maximum number of buffered frames in the filtergraph combined.
+     *
+     * Zero means no limit. This field must be set before calling
+     * avfilter_graph_config().
+     */
+    unsigned max_buffered_frames;
 } AVFilterGraph;
 
 /**

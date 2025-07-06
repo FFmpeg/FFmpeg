@@ -56,6 +56,8 @@ static const AVOption filtergraph_options[] = {
         AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, F|V },
     {"aresample_swr_opts"   , "default aresample filter options"    , OFFSET(aresample_swr_opts)    ,
         AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, F|A },
+    {"max_buffered_frames"  , "maximum number of buffered frames allowed", OFFSET(max_buffered_frames),
+        AV_OPT_TYPE_UINT,   {.i64 = 0}, 0, UINT_MAX, F|V|A },
     { NULL },
 };
 
@@ -1296,6 +1298,8 @@ int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx)
 {
     int ret;
 
+    if (graphctx->max_buffered_frames)
+        fffiltergraph(graphctx)->frame_queues.max_queued = graphctx->max_buffered_frames;
     if ((ret = graph_check_validity(graphctx, log_ctx)))
         return ret;
     if ((ret = graph_config_formats(graphctx, log_ctx)))
