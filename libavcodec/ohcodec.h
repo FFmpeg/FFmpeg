@@ -52,5 +52,6 @@ static inline const char *ff_oh_mime(enum AVCodecID codec_id, void *log)
 }
 
 enum AVPixelFormat ff_oh_pix_to_ff_pix(OH_AVPixelFormat oh_pix);
+int ff_oh_pix_from_ff_pix(enum AVPixelFormat pix);
 
 #endif

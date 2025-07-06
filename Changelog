@@ -23,6 +23,7 @@ version <next>:
 - pad_cuda filter
 - Sanyo LD-ADPCM decoder
 - APV in MP4/ISOBMFF demuxing
+- OpenHarmony hardware decoder/encoder
 
 
 version 7.1:

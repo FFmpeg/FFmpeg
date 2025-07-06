@@ -3413,6 +3413,7 @@ h264_nvenc_encoder_deps="nvenc"
 h264_nvenc_encoder_select="atsc_a53"
 h264_oh_decoder_deps="ohcodec"
 h264_oh_decoder_select="h264_mp4toannexb_bsf"
+h264_oh_encoder_deps="ohcodec"
 h264_omx_encoder_deps="omx"
 h264_qsv_decoder_select="h264_mp4toannexb_bsf qsvdec"
 h264_qsv_encoder_select="atsc_a53 qsvenc"
@@ -3437,6 +3438,7 @@ hevc_nvenc_encoder_deps="nvenc"
 hevc_nvenc_encoder_select="atsc_a53"
 hevc_oh_decoder_deps="ohcodec"
 hevc_oh_decoder_select="hevc_mp4toannexb_bsf"
+hevc_oh_encoder_deps="ohcodec"
 hevc_qsv_decoder_select="hevc_mp4toannexb_bsf qsvdec"
 hevc_qsv_encoder_select="hevcparse qsvenc"
 hevc_rkmpp_decoder_deps="rkmpp"
@@ -7177,8 +7179,9 @@ enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_co
                                  check_lib mmal interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host; } ||
                                die "ERROR: mmal not found" &&
                                check_func_headers interface/mmal/mmal.h "MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS"; }
-enabled ohcodec           && { check_lib ohcodec "multimedia/player_framework/native_avcodec_videodecoder.h" \
-                                    OH_VideoDecoder_CreateByName -lnative_media_codecbase -lnative_media_core -lnative_media_vdec ||
+enabled ohcodec           && { check_lib ohcodec "multimedia/player_framework/native_avcodec_videodecoder.h multimedia/player_framework/native_avcodec_videoencoder.h" \
+                                    "OH_VideoDecoder_CreateByName OH_VideoEncoder_CreateByName" \
+                                    -lnative_media_vdec -lnative_media_venc -lnative_media_codecbase -lnative_media_core -lnative_window ||
                                die "ERROR: missing native_media libs"; }
 enabled openal            && { check_pkg_config openal "openal >= 1.1" "AL/al.h" alGetError ||
                                { for al_extralibs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do

@@ -69,3 +69,11 @@ enum AVPixelFormat ff_oh_pix_to_ff_pix(OH_AVPixelFormat oh_pix)
     return AV_PIX_FMT_NONE;
 }
 
+int ff_oh_pix_from_ff_pix(enum AVPixelFormat pix)
+{
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(oh_pix_map); i++)
+        if (oh_pix_map[i].pix == pix)
+            return oh_pix_map[i].oh_pix;
+
+    return 0;
+}
