@@ -717,6 +717,10 @@ $(FATE_FILTER_VSYNTH-yes): SRC = $(TARGET_PATH)/tests/vsynth1/%02d.pgm
 
 FATE_FFMPEG += $(FATE_FILTER_VSYNTH-yes)
 
+FATE_FILTER_FREI0R-$(call FILTERFRAMECRC, TESTSRC2, FREI0R_FILTER) = fate-filter-frei0r-filter
+fate-filter-frei0r-filter: CMD = framecrc -lavfi "testsrc2=r=1:d=5,frei0r=enable=gte(n\,3):filter_name=distort0r"
+FATE_FFMPEG += $(FATE_FILTER_FREI0R-yes)
+
 #
 # Metadata tests
 #

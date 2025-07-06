@@ -379,7 +379,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         in = in2;
     }
 
-    s->update(s->instance, in->pts * av_q2d(inlink->time_base) * 1000,
+    s->update(s->instance, in->pts * av_q2d(inlink->time_base),
                    (const uint32_t *)in->data[0],
                    (uint32_t *)out->data[0]);
 
