@@ -497,6 +497,8 @@ enum AVPixelFormat {
     AV_PIX_FMT_GBRP12MSBBE,    ///< planar GBR 4:4:4 36bpp, lowest bits zero, big-endian
     AV_PIX_FMT_GBRP12MSBLE,    ///< planar GBR 4:4:4 36bpp, lowest bits zero, little-endian
 
+    AV_PIX_FMT_OHCODEC, /// hardware decoding through openharmony
+
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 

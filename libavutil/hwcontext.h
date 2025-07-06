@@ -39,6 +39,8 @@ enum AVHWDeviceType {
     AV_HWDEVICE_TYPE_VULKAN,
     AV_HWDEVICE_TYPE_D3D12VA,
     AV_HWDEVICE_TYPE_AMF,
+    /* OpenHarmony Codec device */
+    AV_HWDEVICE_TYPE_OHCODEC,
 };
 
 /**

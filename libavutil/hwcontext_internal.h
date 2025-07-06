@@ -164,5 +164,6 @@ extern const HWContextType ff_hwcontext_type_videotoolbox;
 extern const HWContextType ff_hwcontext_type_mediacodec;
 extern const HWContextType ff_hwcontext_type_vulkan;
 extern const HWContextType ff_hwcontext_type_amf;
+extern const HWContextType ff_hwcontext_type_oh;
 
 #endif /* AVUTIL_HWCONTEXT_INTERNAL_H */
