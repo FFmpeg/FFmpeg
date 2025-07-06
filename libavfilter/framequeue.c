@@ -30,6 +30,8 @@ static inline FFFrameBucket *bucket(FFFrameQueue *fq, size_t idx)
 
 void ff_framequeue_global_init(FFFrameQueueGlobal *fqg)
 {
+    fqg->max_queued = SIZE_MAX;
+    fqg->queued = 0;
 }
 
 static void check_consistency(FFFrameQueue *fq)
@@ -49,6 +51,7 @@ void ff_framequeue_init(FFFrameQueue *fq, FFFrameQueueGlobal *fqg)
 {
     fq->queue = &fq->first_bucket;
     fq->allocated = 1;
+    fq->global = fqg;
 }
 
 void ff_framequeue_free(FFFrameQueue *fq)
@@ -66,6 +69,8 @@ int ff_framequeue_add(FFFrameQueue *fq, AVFrame *frame)
     FFFrameBucket *b;
 
     check_consistency(fq);
+    if (fq->global->queued >= fq->global->max_queued)
+        return AVERROR(ENOMEM);
     if (fq->queued == fq->allocated) {
         if (fq->allocated == 1) {
             size_t na = 8;
@@ -89,6 +94,7 @@ int ff_framequeue_add(FFFrameQueue *fq, AVFrame *frame)
     b = bucket(fq, fq->queued);
     b->frame = frame;
     fq->queued++;
+    fq->global->queued++;
     fq->total_frames_head++;
     fq->total_samples_head += frame->nb_samples;
     check_consistency(fq);
@@ -103,6 +109,7 @@ AVFrame *ff_framequeue_take(FFFrameQueue *fq)
     av_assert1(fq->queued);
     b = bucket(fq, 0);
     fq->queued--;
+    fq->global->queued--;
     fq->tail++;
     fq->tail &= fq->allocated - 1;
     fq->total_frames_tail++;
