@@ -1,0 +1,1 @@
+select=n=3:e='lt(t,10)+gte(t,10)*lt(t,20)*2+gte(t,20)*3'[o1][o2][o3]
