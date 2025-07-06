@@ -608,6 +608,10 @@ typedef struct TLSContext {
     int dec_buf_size;
     int dec_buf_offset;
 
+    char *send_buf;
+    int send_buf_size;
+    int send_buf_offset;
+
     SecPkgContext_StreamSizes sizes;
 
     int connected;
@@ -692,6 +696,35 @@ static void init_sec_buffer_desc(SecBufferDesc *desc, SecBuffer *buffers,
     desc->cBuffers = buffer_count;
 }
 
+static int tls_process_send_buffer(URLContext *h)
+{
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
+    URLContext *uc = s->is_dtls ? s->udp : s->tcp;
+    int ret;
+
+    if (!c->send_buf)
+        return 0;
+
+    ret = ffurl_write(uc, c->send_buf + c->send_buf_offset, c->send_buf_size - c->send_buf_offset);
+    if (ret == AVERROR(EAGAIN)) {
+        return AVERROR(EAGAIN);
+    } else if (ret < 0) {
+        av_log(h, AV_LOG_ERROR, "Writing encrypted data to socket failed\n");
+        return AVERROR(EIO);
+    }
+
+    c->send_buf_offset += ret;
+
+    if (c->send_buf_offset < c->send_buf_size)
+        return AVERROR(EAGAIN);
+
+    av_freep(&c->send_buf);
+    c->send_buf_size = c->send_buf_offset = 0;
+
+    return 0;
+}
+
 static int tls_shutdown_client(URLContext *h)
 {
     TLSContext *c = h->priv_data;
@@ -709,6 +742,11 @@ static int tls_shutdown_client(URLContext *h)
         DWORD dwshut = SCHANNEL_SHUTDOWN;
         init_sec_buffer(&Buffer, SECBUFFER_TOKEN, &dwshut, sizeof(dwshut));
         init_sec_buffer_desc(&BuffDesc, &Buffer, 1);
+
+        uc->flags &= ~AVIO_FLAG_NONBLOCK;
+        ret = tls_process_send_buffer(h);
+        if (ret < 0)
+            return ret;
 
         sspi_ret = ApplyControlToken(&c->ctxt_handle, &BuffDesc);
         if (sspi_ret != SEC_E_OK)
@@ -729,7 +767,6 @@ static int tls_shutdown_client(URLContext *h)
 
             if (outbuf.pvBuffer) {
                 if (outbuf.cbBuffer > 0) {
-                    uc->flags &= ~AVIO_FLAG_NONBLOCK;
                     ret = ffurl_write(uc, outbuf.pvBuffer, outbuf.cbBuffer);
                     if (ret < 0 || ret != outbuf.cbBuffer)
                         av_log(h, AV_LOG_ERROR, "Failed to send close message\n");
@@ -760,6 +797,9 @@ static int tls_close(URLContext *h)
 
     av_freep(&c->dec_buf);
     c->dec_buf_size = c->dec_buf_offset = 0;
+
+    av_freep(&c->send_buf);
+    c->send_buf_size = c->send_buf_offset = 0;
 
     if (s->is_dtls) {
         if (!s->external_sock)
@@ -1264,6 +1304,11 @@ static int tls_read(URLContext *h, uint8_t *buf, int len)
                     goto cleanup;
                 }
                 sspi_ret = SEC_E_OK;
+
+                /* if somehow any send data was left, it is now invalid */
+                av_freep(&c->send_buf);
+                c->send_buf_size = c->send_buf_offset = 0;
+
                 continue;
             } else if (sspi_ret == SEC_I_CONTEXT_EXPIRED) {
                 c->sspi_close_notify = 1;
@@ -1308,10 +1353,16 @@ static int tls_write(URLContext *h, const uint8_t *buf, int len)
     TLSShared *s = &c->tls_shared;
     URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     SECURITY_STATUS sspi_ret;
-    int ret = 0, data_size;
-    uint8_t *data = NULL;
     SecBuffer outbuf[4];
     SecBufferDesc outbuf_desc;
+    int ret = 0;
+
+    uc->flags &= ~AVIO_FLAG_NONBLOCK;
+    uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+
+    ret = tls_process_send_buffer(h);
+    if (ret < 0)
+        return ret;
 
     if (c->sizes.cbMaximumMessage == 0) {
         sspi_ret = QueryContextAttributes(&c->ctxt_handle, SECPKG_ATTR_STREAM_SIZES, &c->sizes);
@@ -1322,50 +1373,46 @@ static int tls_write(URLContext *h, const uint8_t *buf, int len)
     /* limit how much data we can consume */
     len = FFMIN(len, c->sizes.cbMaximumMessage - c->sizes.cbHeader - c->sizes.cbTrailer);
 
-    data_size = c->sizes.cbHeader + len + c->sizes.cbTrailer;
-    data = av_malloc(data_size);
-    if (data == NULL)
+    c->send_buf_size = c->sizes.cbHeader + len + c->sizes.cbTrailer;
+    c->send_buf = av_malloc(c->send_buf_size);
+    if (c->send_buf == NULL)
         return AVERROR(ENOMEM);
 
     init_sec_buffer(&outbuf[0], SECBUFFER_STREAM_HEADER,
-                  data, c->sizes.cbHeader);
+                    c->send_buf, c->sizes.cbHeader);
     init_sec_buffer(&outbuf[1], SECBUFFER_DATA,
-                  data + c->sizes.cbHeader, len);
+                    c->send_buf + c->sizes.cbHeader, len);
     init_sec_buffer(&outbuf[2], SECBUFFER_STREAM_TRAILER,
-                  data + c->sizes.cbHeader + len,
-                  c->sizes.cbTrailer);
+                    c->send_buf + c->sizes.cbHeader + len,
+                    c->sizes.cbTrailer);
     init_sec_buffer(&outbuf[3], SECBUFFER_EMPTY, NULL, 0);
     init_sec_buffer_desc(&outbuf_desc, outbuf, 4);
 
     memcpy(outbuf[1].pvBuffer, buf, len);
 
     sspi_ret = EncryptMessage(&c->ctxt_handle, 0, &outbuf_desc, 0);
-    if (sspi_ret == SEC_E_OK)  {
-        len = outbuf[0].cbBuffer + outbuf[1].cbBuffer + outbuf[2].cbBuffer;
-
-        uc->flags &= ~AVIO_FLAG_NONBLOCK;
-        uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
-
-        ret = ffurl_write(uc, data, len);
-        if (ret == AVERROR(EAGAIN)) {
-            goto done;
-        } else if (ret < 0 || ret != len) {
-            ret = AVERROR(EIO);
-            av_log(h, AV_LOG_ERROR, "Writing encrypted data to socket failed\n");
-            goto done;
-        }
-    } else {
+    if (sspi_ret != SEC_E_OK) {
+        av_freep(&c->send_buf);
         av_log(h, AV_LOG_ERROR, "Encrypting data failed\n");
         if (sspi_ret == SEC_E_INSUFFICIENT_MEMORY)
-            ret = AVERROR(ENOMEM);
-        else
-            ret = AVERROR(EIO);
-        goto done;
+            return AVERROR(ENOMEM);
+        return AVERROR(EIO);
     }
 
-done:
-    av_freep(&data);
-    return ret < 0 ? ret : outbuf[1].cbBuffer;
+    c->send_buf_size = outbuf[0].cbBuffer + outbuf[1].cbBuffer + outbuf[2].cbBuffer;
+    c->send_buf_offset = 0;
+
+    ret = tls_process_send_buffer(h);
+    if (ret == AVERROR(EAGAIN)) {
+         /* We always need to signal that we consumed all (encryped) data since schannel must not
+            be fed the same data again. Sending will then be completed next call to this function,
+            and EAGAIN returned until all remaining buffer is sent. */
+        return outbuf[1].cbBuffer;
+    } else if (ret < 0) {
+        return ret;
+    }
+
+    return outbuf[1].cbBuffer;
 }
 
 static int tls_get_file_handle(URLContext *h)
