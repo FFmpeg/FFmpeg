@@ -962,7 +962,11 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
             ret = AVERROR_EXTERNAL;
             goto fail;
         }
-        SSL_set_tlsext_host_name(p->ssl, c->host);
+        if (!SSL_set_tlsext_host_name(p->ssl, c->host)) {
+            av_log(h, AV_LOG_ERROR, "Failed to set hostname for SNI: %s\n", openssl_get_error(p));
+            ret = AVERROR_EXTERNAL;
+            goto fail;
+        }
     }
     ret = c->listen ? SSL_accept(p->ssl) : SSL_connect(p->ssl);
     if (ret == 0) {
