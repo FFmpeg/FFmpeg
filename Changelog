@@ -15,6 +15,7 @@ version <next>:
 - H.264 data partitioning support
 - DSD (dsd_msbf) encoder
 - Rhetorex ADPCM decoder
+- ADPCM IMA Citrix decoder
 
 
 version 9.0:

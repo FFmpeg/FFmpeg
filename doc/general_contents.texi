@@ -1318,6 +1318,7 @@ following image formats are supported:
 @item ADPCM IMA Acorn Replay @tab     @tab  X
 @item ADPCM IMA AMV          @tab  X  @tab  X
     @tab Used in AMV files
+@item ADPCM IMA Citrix       @tab     @tab  X
 @item ADPCM IMA Cunning Developments  @tab     @tab  X
 @item ADPCM IMA Electronic Arts EACS  @tab     @tab  X
 @item ADPCM IMA Electronic Arts SEAD  @tab     @tab  X
