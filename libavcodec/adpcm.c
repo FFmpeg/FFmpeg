@@ -877,6 +877,8 @@ static int adpcm_sanyo_expand3(ADPCMChannelStatus *c, int bits)
         add = (11 * c->step) >> 1;
         c->step = 3 * c->step;
         break;
+    default:
+        av_unreachable("There are cases for all control paths when bits is 3-bit");
     }
 
     if (sign)
@@ -934,6 +936,8 @@ static int adpcm_sanyo_expand4(ADPCMChannelStatus *c, int bits)
         add = (25 * c->step) >> 1;
         c->step = 5 * c->step;
         break;
+    default:
+        av_unreachable("There are cases for all control paths when bits is 4-bit");
     }
 
     if (sign)
