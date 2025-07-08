@@ -1847,6 +1847,7 @@ redirect:
         /* GET requests */
         if (ffurl_alloc(&rt->rtsp_hd, httpname, AVIO_FLAG_READ,
                         &s->interrupt_callback) < 0) {
+            av_dict_free(&options);
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1863,6 +1864,7 @@ redirect:
         if (!rt->rtsp_hd->protocol_whitelist && s->protocol_whitelist) {
             rt->rtsp_hd->protocol_whitelist = av_strdup(s->protocol_whitelist);
             if (!rt->rtsp_hd->protocol_whitelist) {
+                av_dict_free(&options);
                 err = AVERROR(ENOMEM);
                 goto fail;
             }
@@ -1878,6 +1880,7 @@ redirect:
         /* POST requests */
         if (ffurl_alloc(&rt->rtsp_hd_out, httpname, AVIO_FLAG_WRITE,
                         &s->interrupt_callback) < 0 ) {
+            av_dict_free(&options);
             err = AVERROR(EIO);
             goto fail;
         }
