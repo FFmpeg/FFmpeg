@@ -43,6 +43,10 @@ fate-adpcm-ima-amv: CMD = framecrc -i $(TARGET_SAMPLES)/amv/MTV_high_res_320x240
 FATE_ADPCM-$(call DEMDEC, APC, ADPCM_IMA_APC) += fate-adpcm-ima-apc
 fate-adpcm-ima-apc: CMD = md5 -i $(TARGET_SAMPLES)/cryo-apc/cine007.APC -f s16le
 
+FATE_ADPCM-$(call FRAMECRC, WAV, ADPCM_IMA_CITRIX, ARESAMPLE_FILTER) += fate-adpcm-ima-citrix-mono fate-adpcm-ima-citrix-stereo
+fate-adpcm-ima-citrix-mono: CMD = framecrc -i $(TARGET_SAMPLES)/citrix/citrix-mono-2bit-8000.wav -f s16le -af aresample
+fate-adpcm-ima-citrix-stereo: CMD = framecrc -i $(TARGET_SAMPLES)/citrix/citrix-stereo-2bit-8000.wav -f s16le -af aresample
+
 FATE_ADPCM-$(call DEMDEC, AVI, ADPCM_IMA_DK3) += fate-adpcm-ima-dk3
 fate-adpcm-ima-dk3: CMD = md5 -i $(TARGET_SAMPLES)/duck/sop-audio-only.avi -f s16le
 
