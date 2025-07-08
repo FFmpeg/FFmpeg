@@ -96,6 +96,9 @@ If value is set to @code{1}, indicates source is full range. Default value is
 If value is set to @code{1}, enable full range for destination. Default value
 is @code{0}, which enables limited range.
 
+@item gamma @var{(boolean)}
+If value is set to @code{1}, enable gamma correct scaling. Default value is @code{0}.
+
 @anchor{sws_params}
 @item param0, param1
 Set scaling algorithm parameters. The specified values are specific of
