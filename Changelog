@@ -21,6 +21,7 @@ version <next>:
 - IAMF Projection mode Ambisonic Audio Elements muxing and demuxing
 - Add vf_mestimate_d3d12 filter
 - xHE-AAC Mps212 decoding support (experimental)
+- Remove the old HLS protocol handler
 
 
 version 8.0:
