@@ -945,9 +945,18 @@ int ist_use(InputStream *ist, int decoding_needed,
 
     if (decoding_needed && ds->sch_idx_dec < 0) {
         int is_audio = ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO;
+        int is_unreliable = !!(d->f.ctx->iformat->flags & AVFMT_NOTIMESTAMPS);
+        int64_t use_wallclock_as_timestamps;
+
+        ret = av_opt_get_int(d->f.ctx, "use_wallclock_as_timestamps", 0, &use_wallclock_as_timestamps);
+        if (ret < 0)
+            return ret;
+
+        if (use_wallclock_as_timestamps)
+            is_unreliable = 0;
 
         ds->dec_opts.flags |= (!!ist->fix_sub_duration * DECODER_FLAG_FIX_SUB_DURATION) |
-                              (!!(d->f.ctx->iformat->flags & AVFMT_NOTIMESTAMPS) * DECODER_FLAG_TS_UNRELIABLE) |
+                              (!!is_unreliable * DECODER_FLAG_TS_UNRELIABLE) |
                               (!!(d->loop && is_audio) * DECODER_FLAG_SEND_END_TS)
 #if FFMPEG_OPT_TOP
                               | ((ist->top_field_first >= 0) * DECODER_FLAG_TOP_FIELD_FIRST)
