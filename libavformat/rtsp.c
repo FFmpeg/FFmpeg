@@ -2004,7 +2004,7 @@ redirect:
            if (CONFIG_RTSP_MUXER)
         err = ff_rtsp_setup_output_streams(s, host);
     else
-        av_assert0(0);
+        av_unreachable("Either muxer or demuxer must be enabled");
     if (err)
         goto fail;
 
