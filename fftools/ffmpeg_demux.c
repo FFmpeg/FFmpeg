@@ -1363,6 +1363,8 @@ int ifile_open(const OptionsContext *o, const char *filename)
     char *    data_codec_name = NULL;
     int scan_all_pmts_set = 0;
 
+    int64_t use_wallclock_as_timestamps;
+
     int64_t start_time     = o->start_time;
     int64_t start_time_eof = o->start_time_eof;
     int64_t stop_time      = o->stop_time;
@@ -1595,6 +1597,12 @@ int ifile_open(const OptionsContext *o, const char *filename)
     d->nb_streams_warn = ic->nb_streams;
 
     f->format_nots = !!(ic->iformat->flags & AVFMT_NOTIMESTAMPS);
+    ret = av_opt_get_int(ic, "use_wallclock_as_timestamps", 0, &use_wallclock_as_timestamps);
+    if (ret < 0)
+        return ret;
+
+    if (use_wallclock_as_timestamps)
+        f->format_nots = 0;
 
     f->readrate = o->readrate ? o->readrate : 0.0;
     if (f->readrate < 0.0f) {
