@@ -121,7 +121,7 @@ Symbol get_vlc_symbol(inout VlcState state, int v, int bits)
     return set_sr_golomb(code, k, 12, bits);
 }
 
-uint get_ur_golomb(inout GetBitContext gb, uint k, int limit, int esc_len)
+uint get_ur_golomb(inout GetBitContext gb, int k, int limit, int esc_len)
 {
     for (uint i = 0; i < 12; i++)
         if (get_bit(gb))
@@ -130,7 +130,7 @@ uint get_ur_golomb(inout GetBitContext gb, uint k, int limit, int esc_len)
     return get_bits(gb, esc_len) + 11;
 }
 
-int get_sr_golomb(inout GetBitContext gb, uint k, int limit, int esc_len)
+int get_sr_golomb(inout GetBitContext gb, int k, int limit, int esc_len)
 {
     int v = int(get_ur_golomb(gb, k, limit, esc_len));
     return (v >> 1) ^ -(v & 1);

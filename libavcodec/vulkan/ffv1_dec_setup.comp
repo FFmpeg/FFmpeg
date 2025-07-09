@@ -107,7 +107,7 @@ void golomb_init(inout SliceContext sc)
 
     uint64_t ac_byte_count = sc.c.bytestream - sc.c.bytestream_start - 1;
     init_get_bits(sc.gb, u8buf(sc.c.bytestream_start + ac_byte_count),
-                  sc.c.bytestream_end - sc.c.bytestream_start - ac_byte_count);
+                  int(sc.c.bytestream_end - sc.c.bytestream_start - ac_byte_count));
 }
 
 void main(void)

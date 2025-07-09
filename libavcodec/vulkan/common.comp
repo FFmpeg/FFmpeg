@@ -193,8 +193,8 @@ struct GetBitContext {
     uint64_t buf_end;
 
     uint64_t bits;
-    uint bits_valid;
-    uint size_in_bits;
+    int bits_valid;
+    int size_in_bits;
 };
 
 #define LOAD64()                                       \
@@ -216,11 +216,11 @@ struct GetBitContext {
         gb.bits_valid += 32;                                      \
     }
 
-void init_get_bits(inout GetBitContext gb, u8buf data, uint64_t len)
+void init_get_bits(inout GetBitContext gb, u8buf data, int len)
 {
     gb.buf = gb.buf_start = uint64_t(data);
     gb.buf_end = uint64_t(data) + len;
-    gb.size_in_bits = uint(len) * 8;
+    gb.size_in_bits = len * 8;
 
     /* Preload */
     LOAD64()
@@ -237,7 +237,7 @@ bool get_bit(inout GetBitContext gb)
     return val;
 }
 
-uint get_bits(inout GetBitContext gb, uint n)
+uint get_bits(inout GetBitContext gb, int n)
 {
     if (n == 0)
         return 0;
@@ -251,7 +251,7 @@ uint get_bits(inout GetBitContext gb, uint n)
     return val;
 }
 
-uint show_bits(inout GetBitContext gb, uint n)
+uint show_bits(inout GetBitContext gb, int n)
 {
     if (n > gb.bits_valid)
         RELOAD32()
@@ -259,7 +259,7 @@ uint show_bits(inout GetBitContext gb, uint n)
     return uint(gb.bits >> (64 - n));
 }
 
-void skip_bits(inout GetBitContext gb, uint n)
+void skip_bits(inout GetBitContext gb, int n)
 {
     if (n > gb.bits_valid)
         RELOAD32()
@@ -268,12 +268,12 @@ void skip_bits(inout GetBitContext gb, uint n)
     gb.bits_valid -= n;
 }
 
-uint tell_bits(in GetBitContext gb)
+int tell_bits(in GetBitContext gb)
 {
-    return uint(gb.buf - gb.buf_start) * 8 - gb.bits_valid;
+    return int(gb.buf - gb.buf_start) * 8 - gb.bits_valid;
 }
 
-uint left_bits(in GetBitContext gb)
+int left_bits(in GetBitContext gb)
 {
-    return gb.size_in_bits - uint(gb.buf - gb.buf_start) * 8 + gb.bits_valid;
+    return gb.size_in_bits - int(gb.buf - gb.buf_start) * 8 + gb.bits_valid;
 }
