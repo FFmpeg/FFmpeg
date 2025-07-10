@@ -16348,6 +16348,36 @@ Render frames with rounded corners. The value, given as a float ranging from
 square to fully circular. In other words, it gives the radius divided by half
 the smaller side length. Defaults to @code{0.0}.
 
+@item lut
+Specifies a custom LUT (in Adobe .cube format) to apply to the colors
+as part of color conversion. The exact interpretation depends on the value
+of @option{lut_type}.
+
+@item lut_type
+Controls the interpretation of color values fed to and from the LUT
+specified as @option{lut}. Valid values are:
+
+@table @samp
+@item auto
+Chooses the interpretation of the LUT automatically from tagged
+metadata, and otherwise falls back to @samp{native}. (Default)
+
+@item native
+Applied to raw image contents in its native RGB colorspace (non-linear
+light), before conversion to the output color space.
+
+@item normalized
+Applied to the normalized RGB image contents, in linear light, before
+conversion to the output color space.
+
+@item conversion
+Fully replaces the conversion from the image color space to the output
+color space. If such a LUT is present, it has the highest priority, and
+overrides any ICC profiles, as well as options related to tone mapping
+and output colorimetry (@option{color_primaries}, @option{color_trc}).
+
+@end table
+
 @item extra_opts
 Pass extra libplacebo internal configuration options. These can be specified
 as a list of @var{key}=@var{value} pairs separated by ':'. The following example
