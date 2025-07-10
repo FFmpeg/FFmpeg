@@ -33,6 +33,7 @@
 #include "filters.h"
 #include "formats.h"
 #include "video.h"
+#include "vf_blackdetect.h"
 
 typedef struct BlackDetectContext {
     const AVClass *class;
@@ -53,6 +54,8 @@ typedef struct BlackDetectContext {
     int          depth;
     int          nb_threads;
     unsigned int *counter;
+
+    ff_blackdetect_fn func;
 } BlackDetectContext;
 
 #define OFFSET(x) offsetof(BlackDetectContext, x)
@@ -133,6 +136,7 @@ static int config_input(AVFilterLink *inlink)
     s->time_base = inlink->time_base;
     s->black_min_duration = s->black_min_duration_time / av_q2d(s->time_base);
     s->counter = av_calloc(s->nb_threads, sizeof(*s->counter));
+    s->func = ff_blackdetect_get_fn(depth);
     if (!s->counter)
         return AVERROR(ENOMEM);
 
@@ -160,37 +164,16 @@ static int black_counter(AVFilterContext *ctx, void *arg,
                          int jobnr, int nb_jobs)
 {
     BlackDetectContext *s = ctx->priv;
-    const unsigned int threshold = s->pixel_black_th_i;
-    unsigned int *counterp = &s->counter[jobnr];
-    AVFrame *in = arg;
+    const AVFrame *in = arg;
     const int plane = s->alpha ? 3 : 0;
     const int linesize = in->linesize[plane];
-    const int w = in->width;
     const int h = in->height;
     const int start = (h * jobnr) / nb_jobs;
     const int end = (h * (jobnr+1)) / nb_jobs;
-    const int size = end - start;
-    unsigned int counter = 0;
 
-    if (s->depth == 8) {
-        const uint8_t *p = in->data[plane] + start * linesize;
-
-        for (int i = 0; i < size; i++) {
-            for (int x = 0; x < w; x++)
-                counter += p[x] <= threshold;
-            p += linesize;
-        }
-    } else {
-        const uint16_t *p = (const uint16_t *)(in->data[plane] + start * linesize);
-
-        for (int i = 0; i < size; i++) {
-            for (int x = 0; x < w; x++)
-                counter += p[x] <= threshold;
-            p += linesize / 2;
-        }
-    }
-
-    *counterp = counter;
+    s->counter[jobnr] = s->func(in->data[plane] + start * linesize,
+                                linesize, in->width, end - start,
+                                s->pixel_black_th_i);
 
     return 0;
 }
