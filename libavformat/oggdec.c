@@ -370,7 +370,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid, int probing)
     flags   = avio_r8(bc);
     gp      = avio_rl64(bc);
     serial  = avio_rl32(bc);
-    avio_skip(bc, 4); /* seq */
+    avio_rl32(bc); /* seq */
 
     crc_tmp = ffio_get_checksum(bc);
     crc     = avio_rb32(bc);
