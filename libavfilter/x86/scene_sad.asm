@@ -72,3 +72,10 @@ INIT_YMM avx2
 SAD_FRAMES
 
 %endif
+
+%if HAVE_AVX512_EXTERNAL
+
+INIT_ZMM avx512
+SAD_FRAMES
+
+%endif
