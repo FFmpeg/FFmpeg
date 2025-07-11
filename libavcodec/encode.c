@@ -845,8 +845,8 @@ int ff_encode_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
     case AVMEDIA_TYPE_VIDEO:
         frame->format = avctx->pix_fmt;
         if (frame->width <= 0 || frame->height <= 0) {
-            frame->width  = FFMAX(avctx->width,  avctx->coded_width);
-            frame->height = FFMAX(avctx->height, avctx->coded_height);
+            frame->width  = avctx->width;
+            frame->height = avctx->height;
         }
 
         break;
