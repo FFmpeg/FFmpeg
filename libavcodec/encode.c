@@ -841,24 +841,12 @@ int ff_encode_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     int ret;
 
-    switch (avctx->codec->type) {
-    case AVMEDIA_TYPE_VIDEO:
-        frame->format = avctx->pix_fmt;
-        if (frame->width <= 0 || frame->height <= 0) {
-            frame->width  = avctx->width;
-            frame->height = avctx->height;
-        }
+    av_assert1(avctx->codec_type == AVMEDIA_TYPE_VIDEO);
 
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        frame->sample_rate = avctx->sample_rate;
-        frame->format      = avctx->sample_fmt;
-        if (!frame->ch_layout.nb_channels) {
-            ret = av_channel_layout_copy(&frame->ch_layout, &avctx->ch_layout);
-            if (ret < 0)
-                return ret;
-        }
-        break;
+    frame->format = avctx->pix_fmt;
+    if (frame->width <= 0 || frame->height <= 0) {
+        frame->width  = avctx->width;
+        frame->height = avctx->height;
     }
 
     ret = avcodec_default_get_buffer2(avctx, frame, 0);
