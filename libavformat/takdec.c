@@ -141,10 +141,11 @@ static int tak_read_header(AVFormatContext *s)
             tc->data_end += curpos;
             return 0;
         }
-        default:
-            ret = avio_skip(pb, size);
-            if (ret < 0)
-                return ret;
+        default: {
+            int64_t ret64 = avio_skip(pb, size);
+            if (ret64 < 0)
+                return ret64;
+        }
         }
 
         if (type == TAK_METADATA_STREAMINFO) {
