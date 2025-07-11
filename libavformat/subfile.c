@@ -128,13 +128,13 @@ static int64_t subfile_seek(URLContext *h, int64_t pos, int whence)
     case AVSEEK_SIZE:
         return end - c->start;
     case SEEK_SET:
-        new_pos = c->start + pos;
+        new_pos = c->start + av_clip(pos, 0, end - c->start);
         break;
     case SEEK_CUR:
-        new_pos = c->pos + pos;
+        new_pos = c->pos + av_clip(pos, -(c->pos - c->start), end - c->pos);
         break;
     case SEEK_END:
-        new_pos = end + pos;
+        new_pos = end + av_clip(pos, -(end - c->start), 0);
         break;
     default:
         av_assert0(0);
