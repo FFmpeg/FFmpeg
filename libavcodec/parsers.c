@@ -68,6 +68,7 @@ extern const AVCodecParser ff_mpegvideo_parser;
 extern const AVCodecParser ff_opus_parser;
 extern const AVCodecParser ff_png_parser;
 extern const AVCodecParser ff_pnm_parser;
+extern const AVCodecParser ff_prores_raw_parser;
 extern const AVCodecParser ff_qoi_parser;
 extern const AVCodecParser ff_rv34_parser;
 extern const AVCodecParser ff_sbc_parser;
