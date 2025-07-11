@@ -51,36 +51,34 @@ static int tta_read_header(AVFormatContext *s)
 {
     TTAContext *c = s->priv_data;
     AVStream *st;
-    int i, channels, bps, samplerate;
-    int64_t framepos, start_offset;
-    uint32_t nb_samples, crc;
+    int64_t framepos;
+    uint8_t header[22];
 
     ff_id3v1_read(s);
 
-    start_offset = avio_tell(s->pb);
-    if (start_offset < 0)
-        return start_offset;
-    ffio_init_checksum(s->pb, ff_crcEDB88320_update, UINT32_MAX);
-    if (avio_rl32(s->pb) != AV_RL32("TTA1"))
+    int ret = ffio_read_size(s->pb, header, sizeof(header));
+    if (ret < 0)
+        return ret;
+
+    if (AV_RL32(header) != MKTAG('T', 'T', 'A', '1'))
         return AVERROR_INVALIDDATA;
 
-    avio_skip(s->pb, 2); // FIXME: flags
-    channels = avio_rl16(s->pb);
-    bps = avio_rl16(s->pb);
-    samplerate = avio_rl32(s->pb);
+    int channels   = AV_RL16(header +  6);
+    int bps        = AV_RL16(header +  8);
+    int samplerate = AV_RL32(header + 10);
     if(samplerate <= 0 || samplerate > 1000000){
         av_log(s, AV_LOG_ERROR, "nonsense samplerate\n");
         return AVERROR_INVALIDDATA;
     }
 
-    nb_samples = avio_rl32(s->pb);
+    uint32_t nb_samples = AV_RL32(header + 14);
     if (!nb_samples) {
         av_log(s, AV_LOG_ERROR, "invalid number of samples\n");
         return AVERROR_INVALIDDATA;
     }
 
-    crc = ffio_get_checksum(s->pb) ^ UINT32_MAX;
-    if (crc != avio_rl32(s->pb) && s->error_recognition & AV_EF_CRCCHECK) {
+    uint32_t crc = av_crc(av_crc_get_table(AV_CRC_32_IEEE_LE), UINT32_MAX, header, 18) ^ UINT32_MAX;
+    if (crc != AV_RL32(header + 18) && s->error_recognition & AV_EF_CRCCHECK) {
         av_log(s, AV_LOG_ERROR, "Header CRC error\n");
         return AVERROR_INVALIDDATA;
     }
@@ -105,19 +103,18 @@ static int tta_read_header(AVFormatContext *s)
     st->start_time = 0;
     st->duration = nb_samples;
 
+    ret = ff_alloc_extradata(st->codecpar, sizeof(header));
+    if (ret < 0)
+        return ret;
+    memcpy(st->codecpar->extradata, header, sizeof(header));
+
     framepos = avio_tell(s->pb);
     if (framepos < 0)
         return framepos;
     framepos += 4 * c->totalframes + 4;
 
-    if (ff_alloc_extradata(st->codecpar, avio_tell(s->pb) - start_offset))
-        return AVERROR(ENOMEM);
-
-    avio_seek(s->pb, start_offset, SEEK_SET);
-    avio_read(s->pb, st->codecpar->extradata, st->codecpar->extradata_size);
-
     ffio_init_checksum(s->pb, ff_crcEDB88320_update, UINT32_MAX);
-    for (i = 0; i < c->totalframes; i++) {
+    for (int i = 0; i < c->totalframes; i++) {
         uint32_t size = avio_rl32(s->pb);
         int r;
         if (avio_feof(s->pb))
