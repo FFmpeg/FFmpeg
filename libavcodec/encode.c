@@ -18,12 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/emms.h"
 #include "libavutil/frame.h"
-#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
@@ -357,8 +355,6 @@ static int encode_receive_packet_internal(AVCodecContext *avctx, AVPacket *avpkt
     if (avctx->codec->type == AVMEDIA_TYPE_VIDEO) {
         if ((avctx->flags & AV_CODEC_FLAG_PASS1) && avctx->stats_out)
             avctx->stats_out[0] = '\0';
-        if (av_image_check_size2(avctx->width, avctx->height, avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx))
-            return AVERROR(EINVAL);
     }
 
     if (ffcodec(avctx->codec)->cb_type == FF_CODEC_CB_TYPE_RECEIVE_PACKET) {
