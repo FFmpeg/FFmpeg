@@ -52,6 +52,7 @@ AVCODECOBJS-$(CONFIG_VVC_DECODER)       += vvc_alf.o vvc_mc.o vvc_sao.o
 CHECKASMOBJS-$(CONFIG_AVCODEC)          += $(AVCODECOBJS-yes)
 
 # libavfilter tests
+AVFILTEROBJS-$(CONFIG_SCENE_SAD)         += scene_sad.o
 AVFILTEROBJS-$(CONFIG_AFIR_FILTER) += af_afir.o
 AVFILTEROBJS-$(CONFIG_BLEND_FILTER) += vf_blend.o
 AVFILTEROBJS-$(CONFIG_BWDIF_FILTER)      += vf_bwdif.o

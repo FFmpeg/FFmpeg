@@ -124,6 +124,7 @@ void checkasm_check_pixblockdsp(void);
 void checkasm_check_sbrdsp(void);
 void checkasm_check_rv34dsp(void);
 void checkasm_check_rv40dsp(void);
+void checkasm_check_scene_sad(void);
 void checkasm_check_svq1enc(void);
 void checkasm_check_synth_filter(void);
 void checkasm_check_sw_gbrp(void);
