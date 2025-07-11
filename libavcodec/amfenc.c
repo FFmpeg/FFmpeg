@@ -204,6 +204,16 @@ int av_cold ff_amf_encode_close(AVCodecContext *avctx)
     av_buffer_unref(&ctx->device_ctx_ref);
     av_fifo_freep2(&ctx->timestamp_list);
 
+    if (ctx->output_list) {
+        // release remaining AMF output buffers
+        while(av_fifo_can_read(ctx->output_list)) {
+            AMFBuffer* buffer = NULL;
+            av_fifo_read(ctx->output_list, &buffer, 1);
+            if(buffer != NULL)
+                buffer->pVtbl->Release(buffer);
+        }
+        av_fifo_freep2(&ctx->output_list);
+    }
     av_freep(&ctx->pts_property_name);
     av_freep(&ctx->av_frame_property_name);
 
@@ -306,6 +316,10 @@ int ff_amf_encode_init(AVCodecContext *avctx)
     if (!ctx->timestamp_list) {
         return AVERROR(ENOMEM);
     }
+    ctx->output_list = av_fifo_alloc2(2, sizeof(AMFBuffer*), AV_FIFO_FLAG_AUTO_GROW);
+    if (!ctx->output_list)
+        return AVERROR(ENOMEM);
+
     ctx->dts_delay = 0;
 
     ctx->hwsurfaces_in_queue = 0;
@@ -639,6 +653,22 @@ static int amf_submit_frame_locked(AVCodecContext *avctx, AVFrame *frame, AMFSur
         amf_unlock_context(avctx);
     return ret;
 }
+static AMF_RESULT amf_query_output(AVCodecContext *avctx, AMFBuffer **buffer)
+{
+    AMFEncoderContext     *ctx = avctx->priv_data;
+    AMFData    *data = NULL;
+    AMF_RESULT ret = ctx->encoder->pVtbl->QueryOutput(ctx->encoder, &data);
+    *buffer = NULL;
+    if (data) {
+        AMFGuid guid = IID_AMFBuffer();
+        data->pVtbl->QueryInterface(data, &guid, (void**)buffer); // query for buffer interface
+        data->pVtbl->Release(data);
+        if (amf_release_attached_frame_ref(ctx, *buffer) == AMF_OK)
+            ctx->hwsurfaces_in_queue--;
+        ctx->encoded_frame++;
+    }
+    return ret;
+}
 
 int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
 {
@@ -649,7 +679,7 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
     AMF_RESULT  res;
     int         ret;
     AMF_RESULT  res_query;
-    AMFData    *data = NULL;
+    AMFBuffer* buffer = NULL;
     AVFrame    *frame = av_frame_alloc();
     int         block_and_wait;
     int64_t     pts = 0;
@@ -659,6 +689,14 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
         av_frame_free(&frame);
         return AVERROR(EINVAL);
     }
+    // check if some outputs are available
+    av_fifo_read(ctx->output_list, &buffer, 1);
+    if (buffer != NULL) { // return already retrieved output
+        ret = amf_copy_buffer(avctx, avpkt, buffer);
+        buffer->pVtbl->Release(buffer);
+        return ret;
+    }
+
     ret = ff_encode_get_frame(avctx, frame);
     if(ret < 0){
         if(ret != AVERROR_EOF){
@@ -698,20 +736,10 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
     do {
         block_and_wait = 0;
         // poll data
-
-        res_query = ctx->encoder->pVtbl->QueryOutput(ctx->encoder, &data);
-        if (data) {
-            // copy data to packet
-            AMFBuffer *buffer;
-            AMFGuid guid = IID_AMFBuffer();
-            data->pVtbl->QueryInterface(data, &guid, (void**)&buffer); // query for buffer interface
+        res_query = amf_query_output(avctx, &buffer);
+        if (buffer) {
             ret = amf_copy_buffer(avctx, avpkt, buffer);
-            if (amf_release_attached_frame_ref(ctx, buffer) == AMF_OK) {
-                ctx->hwsurfaces_in_queue--;
-            }
-            ctx->encoded_frame++;
             buffer->pVtbl->Release(buffer);
-            data->pVtbl->Release(data);
 
             AMF_RETURN_IF_FALSE(ctx, ret >= 0, ret, "amf_copy_buffer() failed with error %d\n", ret);
 
@@ -737,12 +765,29 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
 
     if (res_query == AMF_EOF) {
         ret = AVERROR_EOF;
-    } else if (data == NULL) {
+    } else if (buffer == NULL) {
         ret = AVERROR(EAGAIN);
     } else {
         if(surface) {
             // resubmit surface
-            res = ctx->encoder->pVtbl->SubmitInput(ctx->encoder, (AMFData*)surface);
+            do {
+                res = ctx->encoder->pVtbl->SubmitInput(ctx->encoder, (AMFData*)surface);
+                if (res != AMF_INPUT_FULL)
+                    break;
+
+                if (!ctx->query_timeout_supported)
+                    av_usleep(1000);
+
+                // Need to free up space in the encoder queue.
+                // The number of retrieved outputs is limited currently to 21
+                amf_query_output(avctx, &buffer);
+                if (buffer != NULL) {
+                    ret = av_fifo_write(ctx->output_list, &buffer, 1);
+                    if (ret < 0)
+                        return ret;
+                }
+            } while(res == AMF_INPUT_FULL);
+
             surface->pVtbl->Release(surface);
             if (res == AMF_INPUT_FULL) {
                 av_log(avctx, AV_LOG_WARNING, "Data acquired but delayed SubmitInput returned AMF_INPUT_FULL- should not happen\n");

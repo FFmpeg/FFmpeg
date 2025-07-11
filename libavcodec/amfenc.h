@@ -61,6 +61,7 @@ typedef struct AMFEncoderContext {
     int64_t             dts_delay;
     int64_t             submitted_frame;
     int64_t             encoded_frame;
+    AVFifo             *output_list;
 
     // common encoder options
 
