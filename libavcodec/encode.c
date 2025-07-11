@@ -551,7 +551,7 @@ static int encode_preinit_video(AVCodecContext *avctx)
     const enum AVPixelFormat *pix_fmts;
     int ret, i, num_pix_fmts;
 
-    if (!av_get_pix_fmt_name(avctx->pix_fmt)) {
+    if (!pixdesc) {
         av_log(avctx, AV_LOG_ERROR, "Invalid video pixel format: %d\n",
                avctx->pix_fmt);
         return AVERROR(EINVAL);
