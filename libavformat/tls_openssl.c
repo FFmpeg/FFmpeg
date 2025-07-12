@@ -786,7 +786,7 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     /* Refer to the test cases regarding these curves in the WebRTC code. */
     const char* curves = "X25519:P-256:P-384:P-521";
 
-    p->ctx = SSL_CTX_new(DTLS_method());
+    p->ctx = SSL_CTX_new(c->listen ? DTLS_server_method() : DTLS_client_method());
     if (!p->ctx) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -810,6 +810,7 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
         ret = AVERROR(EINVAL);
         return ret;
     }
+
     ret = openssl_init_ca_key_cert(h);
     if (ret < 0) goto fail;
 
