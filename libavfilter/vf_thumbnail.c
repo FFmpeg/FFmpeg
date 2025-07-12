@@ -27,6 +27,7 @@
  * @see http://notbrainsurgery.livejournal.com/29773.html
  */
 
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -145,6 +146,59 @@ static AVFrame *get_best_frame(AVFilterContext *ctx)
     return picref;
 }
 
+static void get_hist8(int *hist, const uint8_t *p, ptrdiff_t stride,
+                      ptrdiff_t width, ptrdiff_t height)
+{
+    int shist[4][256] = {0};
+
+    const int width4 = width & ~3;
+    while (height--) {
+        for (int x = 0; x < width4; x += 4) {
+            const uint32_t v = AV_RN32(&p[x]);
+            shist[0][(uint8_t) (v >>  0)]++;
+            shist[1][(uint8_t) (v >>  8)]++;
+            shist[2][(uint8_t) (v >> 16)]++;
+            shist[3][(uint8_t) (v >> 24)]++;
+        }
+        /* handle tail */
+        for (int x = width4; x < width; x++)
+            hist[p[x]]++;
+        p += stride;
+    }
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 256; j++)
+            hist[j] += shist[i][j];
+    }
+}
+
+static void get_hist16(int *hist, const uint8_t *p, ptrdiff_t stride,
+                       ptrdiff_t width, ptrdiff_t height, int shift)
+{
+    int shist[4][256] = {0};
+
+    const int width4 = width & ~3;
+    while (height--) {
+        const uint16_t *p16 = (const uint16_t *) p;
+        for (int x = 0; x < width4; x += 4) {
+            const uint64_t v = AV_RN64(&p16[x]);
+            shist[0][(uint8_t) (v >> (shift +  0))]++;
+            shist[1][(uint8_t) (v >> (shift + 16))]++;
+            shist[2][(uint8_t) (v >> (shift + 32))]++;
+            shist[3][(uint8_t) (v >> (shift + 48))]++;
+        }
+        /* handle tail */
+        for (int x = width4; x < width; x++)
+            hist[p16[x]]++;
+        p += stride;
+    }
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 256; j++)
+            hist[j] += shist[i][j];
+    }
+}
+
 static int do_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ThumbContext *s = ctx->priv;
@@ -204,22 +258,11 @@ static int do_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             const ptrdiff_t linesize = frame->linesize[plane];
             const int planewidth = s->planewidth[plane];
             int *hhist = hist + 256 * plane;
-
             if (s->bitdepth > 8) {
-                const uint16_t *p16 = (const uint16_t *) p;
-                const int shift = s->bitdepth - 8;
-
-                for (int j = slice_start; j < slice_end; j++) {
-                    for (int i = 0; i < planewidth; i++)
-                        hhist[(p16[i] >> shift) & 0xFF]++;
-                    p16 += linesize >> 1;
-                }
+                get_hist16(hhist, p, linesize, planewidth, slice_end - slice_start,
+                           s->bitdepth - 8);
             } else {
-                for (int j = slice_start; j < slice_end; j++) {
-                    for (int i = 0; i < planewidth; i++)
-                        hhist[p[i]]++;
-                    p += linesize;
-                }
+                get_hist8(hhist, p, linesize, planewidth, slice_end - slice_start);
             }
         }
         break;
