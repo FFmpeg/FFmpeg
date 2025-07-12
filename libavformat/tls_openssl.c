@@ -465,6 +465,8 @@ typedef struct TLSContext {
     BIO_METHOD* url_bio_method;
     int io_err;
     char error_message[256];
+    struct sockaddr_storage dest_addr;
+    socklen_t dest_addr_len;
 } TLSContext;
 
 /**
@@ -575,9 +577,23 @@ static int url_bio_destroy(BIO *b)
 static int url_bio_bread(BIO *b, char *buf, int len)
 {
     TLSContext *c = BIO_get_data(b);
+    TLSShared *s = &c->tls_shared;
     int ret = ffurl_read(c->tls_shared.is_dtls ? c->tls_shared.udp : c->tls_shared.tcp, buf, len);
-    if (ret >= 0)
+    if (ret >= 0) {
+        if (s->is_dtls && s->listen && !c->dest_addr_len) {
+            int err_ret;
+
+            ff_udp_get_last_recv_addr(s->udp, &c->dest_addr, &c->dest_addr_len);
+            err_ret = ff_udp_set_remote_addr(s->udp, (struct sockaddr *)&c->dest_addr, c->dest_addr_len, 1);
+            if (err_ret < 0) {
+                av_log(c, AV_LOG_ERROR, "Failed connecting udp context\n");
+                return err_ret;
+            }
+            av_log(c, AV_LOG_TRACE, "Set UDP remote addr on UDP socket, now 'connected'\n");
+        }
+
         return ret;
+    }
     BIO_clear_retry_flags(b);
     if (ret == AVERROR_EXIT)
         return 0;
