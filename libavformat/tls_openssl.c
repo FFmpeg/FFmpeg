@@ -717,7 +717,8 @@ static int dtls_handshake(URLContext *h)
         av_log(p, AV_LOG_TRACE, "Handshake success, r0=%d\n", r0);
     }
 
-    if (SSL_is_init_finished(p->ssl) != 1)
+    /* Check whether the handshake is completed. */
+    if (SSL_is_init_finished(p->ssl) != TLS_ST_OK)
         goto end;
 
     ret = 0;
