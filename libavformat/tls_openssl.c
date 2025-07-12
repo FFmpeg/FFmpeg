@@ -839,13 +839,17 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     /* Setup the callback for logging. */
     SSL_set_ex_data(p->ssl, 0, p);
     SSL_set_info_callback(p->ssl, openssl_info_callback);
+
     /**
      * We have set the MTU to fragment the DTLS packet. It is important to note that the
      * packet is split to ensure that each handshake packet is smaller than the MTU.
      */
+    if (c->mtu <= 0)
+        c->mtu = 1096;
     SSL_set_options(p->ssl, SSL_OP_NO_QUERY_MTU);
-    SSL_set_mtu(p->ssl, p->tls_shared.mtu);
-    DTLS_set_link_mtu(p->ssl, p->tls_shared.mtu);
+    SSL_set_mtu(p->ssl, c->mtu);
+    DTLS_set_link_mtu(p->ssl, c->mtu);
+
     ret = init_bio_method(h);
     if (ret < 0)
         goto fail;
