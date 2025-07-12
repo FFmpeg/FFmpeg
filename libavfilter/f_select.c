@@ -272,7 +272,7 @@ static int config_input(AVFilterLink *inlink)
         inlink->type == AVMEDIA_TYPE_AUDIO ? inlink->sample_rate : NAN;
 
     if (CONFIG_SELECT_FILTER && select->do_scene_detect) {
-        select->sad = ff_scene_sad_get_fn(select->bitdepth == 8 ? 8 : 16);
+        select->sad = ff_scene_sad_get_fn(select->bitdepth);
         if (!select->sad)
             return AVERROR(EINVAL);
     }

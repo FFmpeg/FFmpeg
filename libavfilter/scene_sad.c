@@ -63,11 +63,10 @@ ff_scene_sad_fn ff_scene_sad_get_fn(int depth)
     sad = ff_scene_sad_get_fn_x86(depth);
 #endif
     if (!sad) {
-        if (depth == 8)
+        if (depth <= 8)
             sad = ff_scene_sad_c;
-        if (depth == 16)
+        else if (depth <= 16)
             sad = ff_scene_sad16_c;
     }
     return sad;
 }
-

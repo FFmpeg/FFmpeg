@@ -387,7 +387,7 @@ static int config_input(AVFilterLink *inlink)
     }
 
     if (mi_ctx->scd_method == SCD_METHOD_FDIFF) {
-        mi_ctx->sad = ff_scene_sad_get_fn(mi_ctx->bitdepth == 8 ? 8 : 16);
+        mi_ctx->sad = ff_scene_sad_get_fn(mi_ctx->bitdepth);
         if (!mi_ctx->sad)
             return AVERROR(EINVAL);
     }

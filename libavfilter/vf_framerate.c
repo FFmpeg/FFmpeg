@@ -282,7 +282,7 @@ static int config_input(AVFilterLink *inlink)
 
     s->bitdepth = pix_desc->comp[0].depth;
 
-    s->sad = ff_scene_sad_get_fn(s->bitdepth == 8 ? 8 : 16);
+    s->sad = ff_scene_sad_get_fn(s->bitdepth);
     if (!s->sad)
         return AVERROR(EINVAL);
 

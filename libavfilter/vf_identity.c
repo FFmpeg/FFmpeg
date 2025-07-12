@@ -304,7 +304,7 @@ static int config_input_ref(AVFilterLink *inlink)
     s->filter_slice = !s->is_msad ? compute_images_identity : compute_images_msad;
     s->filter_line = desc->comp[0].depth > 8 ? identity_line_16bit : identity_line_8bit;
 
-    s->sad = ff_scene_sad_get_fn(desc->comp[0].depth <= 8 ? 8 : 16);
+    s->sad = ff_scene_sad_get_fn(desc->comp[0].depth);
     if (!s->sad)
         return AVERROR(EINVAL);
 

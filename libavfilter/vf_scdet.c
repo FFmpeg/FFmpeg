@@ -91,7 +91,7 @@ static int config_input(AVFilterLink *inlink)
         s->height[plane] = inlink->h >> ((plane == 1 || plane == 2) ? desc->log2_chroma_h : 0);
     }
 
-    s->sad = ff_scene_sad_get_fn(s->bitdepth == 8 ? 8 : 16);
+    s->sad = ff_scene_sad_get_fn(s->bitdepth);
     if (!s->sad)
         return AVERROR(EINVAL);
 

@@ -47,7 +47,7 @@ ff_scene_sad_fn ff_scene_sad_get_fn_x86(int depth)
 {
 #if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
-    if (depth == 8) {
+    if (depth <= 8) {
 #if HAVE_AVX2_EXTERNAL
         if (EXTERNAL_AVX2_FAST(cpu_flags))
             return scene_sad_avx2;
