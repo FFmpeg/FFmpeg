@@ -578,7 +578,8 @@ static int tls_close(URLContext *h)
     }
     if (c->ctx)
         SSL_CTX_free(c->ctx);
-    ffurl_closep(&c->tls_shared.tcp);
+    if (!c->tls_shared.external_sock)
+        ffurl_closep(c->tls_shared.is_dtls ? &c->tls_shared.udp : &c->tls_shared.tcp);
     if (c->url_bio_method)
         BIO_meth_free(c->url_bio_method);
     return 0;
@@ -908,19 +909,6 @@ fail:
     return ret;
 }
 
-/**
- * Cleanup the DTLS context.
- */
-static av_cold int dtls_close(URLContext *h)
-{
-    TLSContext *ctx = h->priv_data;
-    SSL_free(ctx->ssl);
-    SSL_CTX_free(ctx->ctx);
-    av_freep(&ctx->tls_shared.cert_buf);
-    av_freep(&ctx->tls_shared.key_buf);
-    return 0;
-}
-
 static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **options)
 {
     TLSContext *p = h->priv_data;
@@ -1069,7 +1057,7 @@ const URLProtocol ff_dtls_protocol = {
     .name           = "dtls",
     .url_open2      = dtls_start,
     .url_handshake  = dtls_handshake,
-    .url_close      = dtls_close,
+    .url_close      = tls_close,
     .url_read       = tls_read,
     .url_write      = tls_write,
     .url_get_file_handle = tls_get_file_handle,
