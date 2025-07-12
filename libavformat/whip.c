@@ -1865,12 +1865,12 @@ static av_cold void whip_deinit(AVFormatContext *s)
     av_freep(&whip->authorization);
     av_freep(&whip->cert_file);
     av_freep(&whip->key_file);
-    ffurl_closep(&whip->udp);
     ff_srtp_free(&whip->srtp_audio_send);
     ff_srtp_free(&whip->srtp_video_send);
     ff_srtp_free(&whip->srtp_rtcp_send);
     ff_srtp_free(&whip->srtp_recv);
     ffurl_close(whip->dtls_uc);
+    ffurl_closep(&whip->udp);
 }
 
 static int whip_check_bitstream(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
