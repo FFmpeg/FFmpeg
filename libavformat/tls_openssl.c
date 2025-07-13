@@ -216,11 +216,13 @@ int ff_ssl_read_key_cert(char *key_url, char *cert_url, char *key_buf, size_t ke
     snprintf(cert_buf, cert_sz, "%s", cert_tem);
 
     /* Generate fingerprint. */
-    *fingerprint = generate_fingerprint(cert);
-    if (!*fingerprint) {
-        av_log(NULL, AV_LOG_ERROR, "TLS: Failed to generate fingerprint from %s\n", cert_url);
-        ret = AVERROR(EIO);
-        goto end;
+    if (fingerprint) {
+        *fingerprint = generate_fingerprint(cert);
+        if (!*fingerprint) {
+            av_log(NULL, AV_LOG_ERROR, "TLS: Failed to generate fingerprint from %s\n", cert_url);
+            ret = AVERROR(EIO);
+            goto end;
+        }
     }
 
 end:
@@ -371,9 +373,11 @@ static int openssl_gen_certificate(EVP_PKEY *pkey, X509 **cert, char **fingerpri
         goto einval_end;
     }
 
-    *fingerprint = generate_fingerprint(*cert);
-    if (!*fingerprint) {
-        goto enomem_end;
+    if (fingerprint) {
+        *fingerprint = generate_fingerprint(*cert);
+        if (!*fingerprint) {
+            goto enomem_end;
+        }
     }
 
     goto end;
