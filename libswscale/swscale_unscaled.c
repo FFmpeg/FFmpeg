@@ -912,7 +912,7 @@ static int Rgb16ToPlanarRgb16Wrapper(SwsInternal *c, const uint8_t *const src[],
         return srcSliceH;
     }
 
-    for(i=0; i<4; i++) {
+    for (i = 0; i < 4 && dst[i]; i++) {
         dst2013[i] += stride2013[i] * srcSliceY / 2;
         dst1023[i] += stride1023[i] * srcSliceY / 2;
     }
