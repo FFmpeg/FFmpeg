@@ -235,7 +235,7 @@ end:
     return ret;
 }
 
-static int openssl_gen_private_key(EVP_PKEY **pkey, EC_KEY **eckey)
+static int openssl_gen_private_key(EVP_PKEY **pkey)
 {
     int ret = 0;
 
@@ -250,6 +250,7 @@ static int openssl_gen_private_key(EVP_PKEY **pkey, EC_KEY **eckey)
      */
 #if OPENSSL_VERSION_NUMBER < 0x30000000L /* OpenSSL 3.0 */
     EC_GROUP *ecgroup = NULL;
+    EC_KEY *eckey = NULL;
     int curve = NID_X9_62_prime256v1;
 #else
     const char *curve = SN_X9_62_prime256v1;
@@ -260,8 +261,8 @@ static int openssl_gen_private_key(EVP_PKEY **pkey, EC_KEY **eckey)
     if (!*pkey)
         return AVERROR(ENOMEM);
 
-    *eckey = EC_KEY_new();
-    if (!*eckey) {
+    eckey = EC_KEY_new();
+    if (!eckey) {
         EVP_PKEY_free(*pkey);
         *pkey = NULL;
         return AVERROR(ENOMEM);
@@ -273,17 +274,17 @@ static int openssl_gen_private_key(EVP_PKEY **pkey, EC_KEY **eckey)
         goto einval_end;
     }
 
-    if (EC_KEY_set_group(*eckey, ecgroup) != 1) {
+    if (EC_KEY_set_group(eckey, ecgroup) != 1) {
         av_log(NULL, AV_LOG_ERROR, "TLS: Generate private key, EC_KEY_set_group failed, %s\n", ERR_error_string(ERR_get_error(), NULL));
         goto einval_end;
     }
 
-    if (EC_KEY_generate_key(*eckey) != 1) {
+    if (EC_KEY_generate_key(eckey) != 1) {
         av_log(NULL, AV_LOG_ERROR, "TLS: Generate private key, EC_KEY_generate_key failed, %s\n", ERR_error_string(ERR_get_error(), NULL));
         goto einval_end;
     }
 
-    if (EVP_PKEY_set1_EC_KEY(*pkey, *eckey) != 1) {
+    if (EVP_PKEY_set1_EC_KEY(*pkey, eckey) != 1) {
         av_log(NULL, AV_LOG_ERROR, "TLS: Generate private key, EVP_PKEY_set1_EC_KEY failed, %s\n", ERR_error_string(ERR_get_error(), NULL));
         goto einval_end;
     }
@@ -298,13 +299,12 @@ static int openssl_gen_private_key(EVP_PKEY **pkey, EC_KEY **eckey)
 
 einval_end:
     ret = AVERROR(EINVAL);
-    EC_KEY_free(*eckey);
     EVP_PKEY_free(*pkey);
-    *eckey = NULL;
     *pkey = NULL;
 end:
 #if OPENSSL_VERSION_NUMBER < 0x30000000L /* OpenSSL 3.0 */
     EC_GROUP_free(ecgroup);
+    EC_KEY_free(eckey);
 #endif
     return ret;
 }
@@ -395,11 +395,10 @@ int ff_ssl_gen_key_cert(char *key_buf, size_t key_sz, char *cert_buf, size_t cer
 {
     int ret = 0;
     EVP_PKEY *pkey = NULL;
-    EC_KEY *ec_key = NULL;
     X509 *cert = NULL;
     char *key_tem = NULL, *cert_tem = NULL;
 
-    ret = openssl_gen_private_key(&pkey, &ec_key);
+    ret = openssl_gen_private_key(&pkey);
     if (ret < 0) goto error;
 
     ret = openssl_gen_certificate(pkey, &cert, fingerprint);
@@ -415,7 +414,6 @@ int ff_ssl_gen_key_cert(char *key_buf, size_t key_sz, char *cert_buf, size_t cer
     av_free(cert_tem);
 error:
     X509_free(cert);
-    EC_KEY_free(ec_key);
     EVP_PKEY_free(pkey);
     return ret;
 }
