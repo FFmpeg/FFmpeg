@@ -810,7 +810,7 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
 
     /* Setup the callback for logging. */
     SSL_set_ex_data(p->ssl, 0, p);
-    SSL_set_info_callback(p->ssl, openssl_info_callback);
+    SSL_CTX_set_info_callback(p->ctx, openssl_info_callback);
 
     /**
      * We have set the MTU to fragment the DTLS packet. It is important to note that the
