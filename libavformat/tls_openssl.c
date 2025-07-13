@@ -485,7 +485,6 @@ typedef struct TLSContext {
     TLSShared tls_shared;
     SSL_CTX *ctx;
     SSL *ssl;
-    EVP_PKEY *pkey;
     BIO_METHOD* url_bio_method;
     int io_err;
     char error_message[256];
@@ -756,7 +755,7 @@ static av_cold int openssl_init_ca_key_cert(URLContext *h)
         if (SSL_CTX_use_certificate(p->ctx, cert) != 1) {
             av_log(p, AV_LOG_ERROR, "SSL: Init SSL_CTX_use_certificate failed, %s\n", openssl_get_error(p));
             ret = AVERROR(EINVAL);
-            return ret;
+            goto fail;
         }
     }
 
@@ -769,15 +768,42 @@ static av_cold int openssl_init_ca_key_cert(URLContext *h)
             goto fail;
         }
     } else if (c->key_buf) {
-        p->pkey = pkey = pkey_from_pem_string(c->key_buf, 1);
+        pkey = pkey_from_pem_string(c->key_buf, 1);
         if (SSL_CTX_use_PrivateKey(p->ctx, pkey) != 1) {
             av_log(p, AV_LOG_ERROR, "TLS: Init SSL_CTX_use_PrivateKey failed, %s\n", openssl_get_error(p));
             ret = AVERROR(EINVAL);
-            return ret;
+            goto fail;
         }
     }
+
+    if (c->listen && !c->cert_file && !c->cert_buf && !c->key_file && !c->key_buf) {
+        av_log(h, AV_LOG_VERBOSE, "No server certificate provided, using self-signed\n");
+
+        ret = openssl_gen_private_key(&pkey);
+        if (ret < 0)
+            goto fail;
+
+        ret = openssl_gen_certificate(pkey, &cert, NULL);
+        if (ret < 0)
+            goto fail;
+
+        if (SSL_CTX_use_certificate(p->ctx, cert) != 1) {
+            av_log(p, AV_LOG_ERROR, "SSL_CTX_use_certificate failed for self-signed cert, %s\n", openssl_get_error(p));
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
+        if (SSL_CTX_use_PrivateKey(p->ctx, pkey) != 1) {
+            av_log(p, AV_LOG_ERROR, "SSL_CTX_use_PrivateKey failed for self-signed cert, %s\n", openssl_get_error(p));
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+    }
+
     ret = 0;
 fail:
+    X509_free(cert);
+    EVP_PKEY_free(pkey);
     return ret;
 }
 
@@ -894,7 +920,6 @@ static av_cold int dtls_close(URLContext *h)
     SSL_CTX_free(ctx->ctx);
     av_freep(&ctx->tls_shared.cert_buf);
     av_freep(&ctx->tls_shared.key_buf);
-    EVP_PKEY_free(ctx->pkey);
     return 0;
 }
 
