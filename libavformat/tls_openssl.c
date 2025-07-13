@@ -674,15 +674,6 @@ static void openssl_info_callback(const SSL *ssl, int where, int ret) {
     }
 }
 
-/**
- * Always return 1 to accept any certificate. This is because we allow the peer to
- * use a temporary self-signed certificate for DTLS.
- */
-static int openssl_dtls_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
-{
-    return 1;
-}
-
 static int dtls_handshake(URLContext *h)
 {
     int ret = 1, r0, r1;
@@ -792,13 +783,16 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     ret = openssl_init_ca_key_cert(h);
     if (ret < 0) goto fail;
 
-    /* Server will send Certificate Request. */
-    SSL_CTX_set_verify(p->ctx, SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE, openssl_dtls_verify_callback);
-    /* The depth count is "level 0:peer certificate", "level 1: CA certificate",
-     * "level 2: higher level CA certificate", and so on. */
-    SSL_CTX_set_verify_depth(p->ctx, 4);
+    /* Note, this doesn't check that the peer certificate actually matches the requested hostname. */
+    if (c->verify)
+        SSL_CTX_set_verify(p->ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+
+    if (!c->listen && !c->numerichost)
+        SSL_set_tlsext_host_name(p->ssl, c->host);
+
     /* Whether we should read as many input bytes as possible (for non-blocking reads) or not. */
     SSL_CTX_set_read_ahead(p->ctx, 1);
+
     /* Setup the SRTP context */
     if (SSL_CTX_set_tlsext_use_srtp(p->ctx, profiles)) {
         av_log(p, AV_LOG_ERROR, "TLS: Init SSL_CTX_set_tlsext_use_srtp failed, profiles=%s, %s\n",
