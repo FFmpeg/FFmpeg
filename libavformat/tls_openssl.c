@@ -987,9 +987,14 @@ static int tls_write(URLContext *h, const uint8_t *buf, int size)
     URLContext *uc = c->tls_shared.is_dtls ? c->tls_shared.udp
                                            : c->tls_shared.tcp;
     int ret;
+
     // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
     uc->flags &= ~AVIO_FLAG_NONBLOCK;
     uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+
+    if (c->tls_shared.is_dtls)
+        size = FFMIN(size, DTLS_get_data_mtu(c->ssl));
+
     ret = SSL_write(c->ssl, buf, size);
     if (ret > 0)
         return ret;
