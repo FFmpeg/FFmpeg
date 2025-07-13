@@ -161,8 +161,8 @@ int ff_ssl_read_key_cert(char *key_url, char *cert_url, char *key_buf, size_t ke
     int ret = 0;
     BIO *key_b = NULL, *cert_b = NULL;
     AVBPrint key_bp, cert_bp;
-    EVP_PKEY *pkey;
-    X509 *cert;
+    EVP_PKEY *pkey = NULL;
+    X509 *cert = NULL;
     char *key_tem = NULL, *cert_tem = NULL;
 
     /* To prevent a crash during cleanup, always initialize it. */
@@ -230,6 +230,8 @@ end:
     av_bprint_finalize(&cert_bp, NULL);
     av_free(key_tem);
     av_free(cert_tem);
+    EVP_PKEY_free(pkey);
+    X509_free(cert);
     return ret;
 }
 
@@ -255,7 +257,16 @@ static int openssl_gen_private_key(EVP_PKEY **pkey, EC_KEY **eckey)
 
 #if OPENSSL_VERSION_NUMBER < 0x30000000L /* OpenSSL 3.0 */
     *pkey = EVP_PKEY_new();
+    if (!*pkey)
+        return AVERROR(ENOMEM);
+
     *eckey = EC_KEY_new();
+    if (!*eckey) {
+        EVP_PKEY_free(*pkey);
+        *pkey = NULL;
+        return AVERROR(ENOMEM);
+    }
+
     ecgroup = EC_GROUP_new_by_curve_name(curve);
     if (!ecgroup) {
         av_log(NULL, AV_LOG_ERROR, "TLS: Create EC group by curve=%d failed, %s", curve, ERR_error_string(ERR_get_error(), NULL));
@@ -287,6 +298,10 @@ static int openssl_gen_private_key(EVP_PKEY **pkey, EC_KEY **eckey)
 
 einval_end:
     ret = AVERROR(EINVAL);
+    EC_KEY_free(*eckey);
+    EVP_PKEY_free(*pkey);
+    *eckey = NULL;
+    *pkey = NULL;
 end:
 #if OPENSSL_VERSION_NUMBER < 0x30000000L /* OpenSSL 3.0 */
     EC_GROUP_free(ecgroup);
@@ -368,6 +383,10 @@ enomem_end:
 einval_end:
     ret = AVERROR(EINVAL);
 end:
+    if (ret) {
+        X509_free(*cert);
+        *cert = NULL;
+    }
     X509_NAME_free(subject);
     return ret;
 }
@@ -395,6 +414,9 @@ int ff_ssl_gen_key_cert(char *key_buf, size_t key_sz, char *cert_buf, size_t cer
     av_free(key_tem);
     av_free(cert_tem);
 error:
+    X509_free(cert);
+    EC_KEY_free(ec_key);
+    EVP_PKEY_free(pkey);
     return ret;
 }
 
