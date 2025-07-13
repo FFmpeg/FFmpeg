@@ -776,39 +776,17 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     TLSShared *c = &p->tls_shared;
     int ret = 0;
     c->is_dtls = 1;
-    const char* ciphers = "ALL";
 
     /**
      * The profile for OpenSSL's SRTP is SRTP_AES128_CM_SHA1_80, see ssl/d1_srtp.c.
      * The profile for FFmpeg's SRTP is SRTP_AES128_CM_HMAC_SHA1_80, see libavformat/srtp.c.
      */
     const char* profiles = "SRTP_AES128_CM_SHA1_80";
-    /* Refer to the test cases regarding these curves in the WebRTC code. */
-    const char* curves = "X25519:P-256:P-384:P-521";
 
     p->ctx = SSL_CTX_new(c->listen ? DTLS_server_method() : DTLS_client_method());
     if (!p->ctx) {
         ret = AVERROR(ENOMEM);
         goto fail;
-    }
-
-    /* For ECDSA, we could set the curves list. */
-    if (SSL_CTX_set1_curves_list(p->ctx, curves) != 1) {
-        av_log(p, AV_LOG_ERROR, "TLS: Init SSL_CTX_set1_curves_list failed, curves=%s, %s\n",
-            curves, openssl_get_error(p));
-        ret = AVERROR(EINVAL);
-        return ret;
-    }
-
-    /**
-     * We activate "ALL" cipher suites to align with the peer's capabilities,
-     * ensuring maximum compatibility.
-     */
-    if (SSL_CTX_set_cipher_list(p->ctx, ciphers) != 1) {
-        av_log(p, AV_LOG_ERROR, "TLS: Init SSL_CTX_set_cipher_list failed, ciphers=%s, %s\n",
-            ciphers, openssl_get_error(p));
-        ret = AVERROR(EINVAL);
-        return ret;
     }
 
     ret = openssl_init_ca_key_cert(h);
