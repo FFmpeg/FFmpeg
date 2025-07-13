@@ -790,9 +790,6 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     if (!c->listen && !c->numerichost)
         SSL_set_tlsext_host_name(p->ssl, c->host);
 
-    /* Whether we should read as many input bytes as possible (for non-blocking reads) or not. */
-    SSL_CTX_set_read_ahead(p->ctx, 1);
-
     /* Setup the SRTP context */
     if (SSL_CTX_set_tlsext_use_srtp(p->ctx, profiles)) {
         av_log(p, AV_LOG_ERROR, "TLS: Init SSL_CTX_set_tlsext_use_srtp failed, profiles=%s, %s\n",
