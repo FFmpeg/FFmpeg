@@ -126,9 +126,9 @@ static float estimate_quantization_noise(enum AVPixelFormat fmt)
 static int fmt_comps(enum AVPixelFormat fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-    int comps = desc->nb_components >= 3 ? 0b111 : 0b1;
+    int comps = desc->nb_components >= 3 ? 0x7 : 0x1;
     if (desc->flags & AV_PIX_FMT_FLAG_ALPHA)
-        comps |= 0b1000;
+        comps |= 0x8;
     return comps;
 }
 
