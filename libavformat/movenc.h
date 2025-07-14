@@ -176,6 +176,8 @@ typedef struct MOVTrack {
     int first_iamf_idx;
     int last_iamf_idx;
     AVIOContext *iamf_buf;
+
+    struct APVDecoderConfigurationRecord *apv;
 } MOVTrack;
 
 typedef enum {

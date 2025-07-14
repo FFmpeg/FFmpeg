@@ -37,6 +37,7 @@
 #include "av1.h"
 #include "avc.h"
 #include "evc.h"
+#include "apv.h"
 #include "libavcodec/ac3_parser_internal.h"
 #include "libavcodec/dnxhddata.h"
 #include "libavcodec/flac.h"
@@ -1643,6 +1644,21 @@ static int mov_write_vvcc_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+static int mov_write_apvc_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+
+    avio_wb32(pb, 0);
+    ffio_wfourcc(pb, "apvC");
+
+    avio_w8  (pb, 0); /* version */
+    avio_wb24(pb, 0); /* flags */
+
+    ff_isom_write_apvc(pb, track->apv, s);
+
+    return update_size(pb, pos);
+}
+
 /* also used by all avid codecs (dv, imx, meridien) and their variants */
 static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
 {
@@ -1902,6 +1918,17 @@ static int mov_get_evc_codec_tag(AVFormatContext *s, MOVTrack *track)
     return tag;
 }
 
+static int mov_get_apv_codec_tag(AVFormatContext *s, MOVTrack *track)
+{
+    int tag = track->par->codec_tag;
+
+    if (!tag)
+        tag = MKTAG('a', 'p', 'v', '1');
+
+    return tag;
+}
+
+
 static const struct {
     enum AVPixelFormat pix_fmt;
     uint32_t tag;
@@ -1988,6 +2015,8 @@ static unsigned int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
             tag = mov_get_h264_codec_tag(s, track);
         else if (track->par->codec_id == AV_CODEC_ID_EVC)
             tag = mov_get_evc_codec_tag(s, track);
+        else if (track->par->codec_id == AV_CODEC_ID_APV)
+            tag = mov_get_apv_codec_tag(s, track);
         else if (track->par->codec_id == AV_CODEC_ID_DNXHD)
             tag = mov_get_dnxhd_codec_tag(s, track);
         else if (track->par->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -2753,6 +2782,8 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     }
     else if (track->par->codec_id ==AV_CODEC_ID_EVC) {
         mov_write_evcc_tag(pb, track);
+    } else if (track->par->codec_id ==AV_CODEC_ID_APV) {
+        mov_write_apvc_tag(mov->fc, pb, track);
     } else if (track->par->codec_id == AV_CODEC_ID_VP9) {
         mov_write_vpcc_tag(mov->fc, pb, track);
     } else if (track->par->codec_id == AV_CODEC_ID_AV1) {
@@ -6815,6 +6846,12 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
                 avio_w8(pb, pkt->data[i + 2]);
             }
         }
+    } else if (par->codec_id == AV_CODEC_ID_APV) {
+        ff_isom_parse_apvc(trk->apv, pkt, s);
+        avio_wb32(s->pb, pkt->size);
+        size += 4;
+
+        avio_write(s->pb, pkt->data, pkt->size);
     } else {
         if (trk->cenc.aes_ctr) {
             if (par->codec_id == AV_CODEC_ID_H264 && par->extradata_size > 4) {
@@ -7544,6 +7581,7 @@ static void mov_free(AVFormatContext *s)
             ff_iamf_uninit_context(track->iamf);
         av_freep(&track->iamf);
 #endif
+        ff_isom_close_apvc(&track->apv);
 
         avpriv_packet_list_free(&track->squashed_packet_queue);
     }
@@ -8049,6 +8087,10 @@ static int mov_init(AVFormatContext *s)
                  * so just forbid muxing VP8 streams altogether until a new version does */
                 av_log(s, AV_LOG_ERROR, "VP8 muxing is currently not supported.\n");
                 return AVERROR_PATCHWELCOME;
+            } else if (track->par->codec_id == AV_CODEC_ID_APV) {
+                ret = ff_isom_init_apvc(&track->apv, s);
+                if (ret < 0)
+                    return ret;
             }
             if (is_cover_image(st)) {
                 track->cover_image = av_packet_alloc();
@@ -8658,6 +8700,7 @@ static const AVCodecTag codec_mp4_tags[] = {
     { AV_CODEC_ID_VVC,             MKTAG('v', 'v', 'c', '1') },
     { AV_CODEC_ID_VVC,             MKTAG('v', 'v', 'i', '1') },
     { AV_CODEC_ID_EVC,             MKTAG('e', 'v', 'c', '1') },
+    { AV_CODEC_ID_APV,             MKTAG('a', 'p', 'v', '1') },
     { AV_CODEC_ID_MPEG2VIDEO,      MKTAG('m', 'p', '4', 'v') },
     { AV_CODEC_ID_MPEG1VIDEO,      MKTAG('m', 'p', '4', 'v') },
     { AV_CODEC_ID_MJPEG,           MKTAG('m', 'p', '4', 'v') },

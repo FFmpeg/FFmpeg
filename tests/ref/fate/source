@@ -11,6 +11,7 @@ libavfilter/file_open.c
 libavfilter/log2_tab.c
 libavfilter/riscv/cpu_common.c
 libavformat/cbs.c
+libavformat/cbs_apv.c
 libavformat/cbs_av1.c
 libavformat/file_open.c
 libavformat/golomb_tab.c
