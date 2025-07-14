@@ -18,7 +18,7 @@ X86ASM-OBJS                     += x86/input.o                          \
                                    x86/yuv2yuvX.o                       \
 
 ifdef ARCH_X86_64
-X86ASM-OBJS                     += x86/ops_int.o                        \
+X86ASM-OBJS-$(CONFIG_UNSTABLE)  += x86/ops_int.o                        \
                                    x86/ops_float.o                      \
                                    x86/ops.o
 endif

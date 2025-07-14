@@ -605,6 +605,8 @@ int sws_is_noop(const AVFrame *dst, const AVFrame *src)
     return 1;
 }
 
+#if CONFIG_UNSTABLE
+
 /* Returns the type suitable for a pixel after fully decoding/unpacking it */
 static SwsPixelType fmt_pixel_type(enum AVPixelFormat fmt)
 {
@@ -1536,3 +1538,5 @@ int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type,
         .convert.to = fmt_pixel_type(fmt.format),
     });
 }
+
+#endif /* CONFIG_UNSTABLE */

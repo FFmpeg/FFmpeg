@@ -108,6 +108,7 @@ Configuration options:
   --disable-runtime-cpudetect disable detecting CPU capabilities at runtime (smaller binary)
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
+  --enable-unstable        enable building optional unstable / experimental code
   --disable-all            disable building components, libraries and programs
   --disable-autodetect     disable automatically detected external libraries [no]
 
@@ -2073,6 +2074,7 @@ FEATURE_LIST="
     small
     static
     swscale_alpha
+    unstable
 "
 
 # this list should be kept in linking order
@@ -4135,7 +4137,7 @@ avutil_suggest="clock_gettime ffnvcodec gcrypt libm libdrm libmfx opencl openssl
 swresample_deps="avutil"
 swresample_suggest="libm libsoxr stdatomic"
 swscale_deps="avutil"
-swscale_suggest="libm stdatomic"
+swscale_suggest="libm stdatomic unstable"
 
 avcodec_extralibs="pthreads_extralibs iconv_extralibs dxva2_extralibs liblcevc_dec_extralibs lcms2_extralibs"
 avfilter_extralibs="pthreads_extralibs"

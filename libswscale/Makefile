@@ -15,11 +15,6 @@ OBJS = alphablend.o                                     \
        graph.o                                          \
        input.o                                          \
        lut3d.o                                          \
-       ops.o                                            \
-       ops_backend.o                                    \
-       ops_chain.o                                      \
-       ops_memcpy.o                                     \
-       ops_optimizer.o                                  \
        options.o                                        \
        output.o                                         \
        rgb2rgb.o                                        \
@@ -30,6 +25,13 @@ OBJS = alphablend.o                                     \
        version.o                                        \
        yuv2rgb.o                                        \
        vscale.o                                         \
+
+OBJS-$(CONFIG_UNSTABLE) +=                              \
+       ops.o                                            \
+       ops_backend.o                                    \
+       ops_chain.o                                      \
+       ops_memcpy.o                                     \
+       ops_optimizer.o                                  \
 
 # Objects duplicated from other libraries for shared builds
 SHLIBOBJS                    += log2_tab.o half2float.o

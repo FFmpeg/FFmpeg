@@ -463,6 +463,7 @@ static int add_legacy_sws_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
  * Format conversion *
  *********************/
 
+#if CONFIG_UNSTABLE
 static int add_convert_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
                             SwsPass *input, SwsPass **output)
 {
@@ -536,6 +537,9 @@ fail:
         return add_legacy_sws_pass(graph, src, dst, input, output);
     return ret;
 }
+#else
+#define add_convert_pass add_legacy_sws_pass
+#endif
 
 
 /**************************
