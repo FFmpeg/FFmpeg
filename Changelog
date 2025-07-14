@@ -26,6 +26,7 @@ version <next>:
 - OpenHarmony hardware decoder/encoder
 - Colordetect filter
 - Add vf_scale_d3d11 filter
+- No longer disabling GCC autovectorization, on X86, ARM and AArch64
 
 
 version 7.1:

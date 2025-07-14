@@ -7729,7 +7729,25 @@ if enabled icc; then
             disable aligned_stack
     fi
 elif enabled gcc; then
-    check_optflags -fno-tree-vectorize
+    gcc_version=$($cc -dumpversion)
+    major_version=${gcc_version%%.*}
+    if [ $major_version -lt 13 ]; then
+        # Disable tree-vectorize for GCC <13 - it has historically been buggy.
+        check_optflags -fno-tree-vectorize
+    else
+        case $arch in
+        x86|arm|aarch64)
+            # Allow the default of having tree-vectorize enabled on well tested
+            # architectures.
+            ;;
+        *)
+            # Disable tree-vectorize on potentially less tested
+            # architectures. Known issues:
+            # - https://gcc.gnu.org/PR121064 on Loongarch
+            check_optflags -fno-tree-vectorize
+            ;;
+        esac
+    fi
     check_cflags -Werror=format-security
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
