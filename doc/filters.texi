@@ -9753,6 +9753,33 @@ colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131
 
 This filter supports the all above options as @ref{commands}.
 
+@section colordetect
+Analyze the video frames to determine the effective value range and alpha
+mode.
+
+The filter accepts the following options:
+
+@table @option
+@item mode
+Set of properties to detect. Unavailable properties, such as alpha mode for
+an input image without an alpha channel, will be ignored automatically.
+
+Accepts a combination of the following flags:
+
+@table @samp
+@item color_range
+Detect if the source countains luma pixels outside the limited (MPEG) range,
+which indicates that this is a full range YUV source.
+@item alpha_mode
+Detect if the source contains color values above the alpha channel, which
+indicates that the alpha channel is independent (straight), rather than
+premultiplied.
+@item all
+Enable detection of all of the above properties. This is the default.
+@end table
+
+@end table
+
 @section colorize
 Overlay a solid color on the video stream.
 

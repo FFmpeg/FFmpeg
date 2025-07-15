@@ -218,6 +218,7 @@ extern const FFFilter ff_vf_colorbalance;
 extern const FFFilter ff_vf_colorchannelmixer;
 extern const FFFilter ff_vf_colorcontrast;
 extern const FFFilter ff_vf_colorcorrect;
+extern const FFFilter ff_vf_colordetect;
 extern const FFFilter ff_vf_colorize;
 extern const FFFilter ff_vf_colorkey;
 extern const FFFilter ff_vf_colorkey_opencl;
