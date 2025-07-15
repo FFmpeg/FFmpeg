@@ -1408,7 +1408,8 @@ int ff_vk_host_map_buffer(FFVulkanContext *s, AVBufferRef **dst,
         return AVERROR(ENOMEM);
 
     /* Add the offset at the start, which gets ignored */
-    buffer_size = offs + src_buf->size;
+    const ptrdiff_t src_offset = src_data - src_buf->data;
+    buffer_size = offs + (src_buf->size - src_offset);
     buffer_size = FFALIGN(buffer_size, s->props.properties.limits.minMemoryMapAlignment);
     buffer_size = FFALIGN(buffer_size, s->hprops.minImportedHostPointerAlignment);
 
