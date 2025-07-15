@@ -275,6 +275,9 @@ static int alloc_buffers(AVCodecContext *avctx)
         int height = (i || bayer) ? s->coded_height >> chroma_y_shift : s->coded_height;
         ptrdiff_t stride = (FFALIGN(width  / 8, 8) + 64) * 8;
 
+        if ((ret = av_image_check_size2(stride, height, avctx->max_pixels, s->coded_format, 0, avctx)) < 0)
+            return ret;
+
         if (chroma_y_shift && !bayer)
             height = FFALIGN(height / 8, 2) * 8;
         s->plane[i].width  = width;
