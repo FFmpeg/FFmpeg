@@ -1315,6 +1315,13 @@ static int parse_frame_header(void *avctx, JXLParseContext *ctx, GetBitContext *
     if (get_bits1(gb)) {
         JXLEntropyDecoder dec;
         int64_t end, lehmer = 0;
+        /* parser sanity check to prevent TOC perm from spinning cpu */
+        if (width > meta->coded_width * 8 || height > meta->coded_height * 8) {
+            av_log(avctx, AV_LOG_WARNING, "frame of size %" PRIu32 "x%" PRIu32
+                " exceeds max size of %" PRIu32 "x%" PRIu32 ", aborting parser\n",
+                width, height, meta->coded_width * 8, meta->coded_height * 8);
+            return AVERROR_INVALIDDATA;
+        }
         ret = entropy_decoder_init(avctx, gb, &dec, 8);
         if (ret < 0)
             return ret;
@@ -1331,7 +1338,7 @@ static int parse_frame_header(void *avctx, JXLParseContext *ctx, GetBitContext *
             lehmer = entropy_decoder_read_symbol(gb, &dec, toc_context(lehmer));
             if (lehmer < 0 || get_bits_left(gb) < 0) {
                 entropy_decoder_close(&dec);
-                return AVERROR_BUFFER_TOO_SMALL;
+                return lehmer < 0 ? lehmer : AVERROR_BUFFER_TOO_SMALL;
             }
         }
         entropy_decoder_close(&dec);
