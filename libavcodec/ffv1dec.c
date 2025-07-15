@@ -56,6 +56,11 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState *const state,
         k++;
         i += i;
     }
+    if (k > bits) {
+        ff_dlog(NULL, "k-overflow bias:%d error:%d drift:%d count:%d k:%d",
+                state->bias, state->error_sum, state->drift, state->count, k);
+        k = bits;
+    }
 
     v = get_sr_golomb(gb, k, 12, bits);
     ff_dlog(NULL, "v:%d bias:%d error:%d drift:%d count:%d k:%d",
