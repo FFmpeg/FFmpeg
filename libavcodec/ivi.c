@@ -994,9 +994,11 @@ static int decode_band(IVI45DecContext *ctx,
     for (t = 0; t < band->num_tiles; t++) {
         tile = &band->tiles[t];
 
-        if (tile->mb_size != band->mb_size) {
-            av_log(avctx, AV_LOG_ERROR, "MB sizes mismatch: %d vs. %d\n",
-                   band->mb_size, tile->mb_size);
+        if (tile->mb_size != band->mb_size ||
+            ctx->planes[0].bands[0].mb_size < band->mb_size
+        ) {
+            av_log(avctx, AV_LOG_ERROR, "MB sizes mismatch: %d vs. %d vs. %d\n",
+                   band->mb_size, tile->mb_size, ctx->planes[0].bands[0].mb_size);
             return AVERROR_INVALIDDATA;
         }
         tile->is_empty = get_bits1(&ctx->gb);
