@@ -423,9 +423,9 @@ static const AVOption vibrance_options[] = {
     { "rbal", "set the red balance value",      OFFSET(balance[2]), AV_OPT_TYPE_FLOAT, {.dbl=1},      -10, 10, VF },
     { "gbal", "set the green balance value",    OFFSET(balance[0]), AV_OPT_TYPE_FLOAT, {.dbl=1},      -10, 10, VF },
     { "bbal", "set the blue balance value",     OFFSET(balance[1]), AV_OPT_TYPE_FLOAT, {.dbl=1},      -10, 10, VF },
-    { "rlum", "set the red luma coefficient",   OFFSET(lcoeffs[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.072186}, 0,  1, VF },
+    { "rlum", "set the red luma coefficient",   OFFSET(lcoeffs[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.212656}, 0,  1, VF },
     { "glum", "set the green luma coefficient", OFFSET(lcoeffs[0]), AV_OPT_TYPE_FLOAT, {.dbl=0.715158}, 0,  1, VF },
-    { "blum", "set the blue luma coefficient",  OFFSET(lcoeffs[1]), AV_OPT_TYPE_FLOAT, {.dbl=0.212656}, 0,  1, VF },
+    { "blum", "set the blue luma coefficient",  OFFSET(lcoeffs[1]), AV_OPT_TYPE_FLOAT, {.dbl=0.072186}, 0,  1, VF },
     { "alternate", "use alternate colors",      OFFSET(alternate),  AV_OPT_TYPE_BOOL,  {.i64=0},        0,  1, VF },
     { NULL }
 };
