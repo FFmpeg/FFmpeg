@@ -668,7 +668,7 @@ static int smka_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
+        goto error;
     samples  = (int16_t *)frame->data[0];
     samples8 =            frame->data[0];
 
