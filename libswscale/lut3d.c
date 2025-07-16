@@ -131,19 +131,6 @@ static av_always_inline v3u16_t lookup_input16(const SwsLut3D *lut3d, v3u16_t rg
     return tetrahedral(lut3d, Rx, Gx, Bx, Rf, Gf, Bf);
 }
 
-static av_always_inline v3u16_t lookup_input8(const SwsLut3D *lut3d, v3u8_t rgb)
-{
-    static_assert(INPUT_LUT_BITS <= 8, "INPUT_LUT_BITS must be <= 8");
-    const int shift = 8 - INPUT_LUT_BITS;
-    const int Rx = rgb.x >> shift;
-    const int Gx = rgb.y >> shift;
-    const int Bx = rgb.z >> shift;
-    const int Rf = rgb.x & ((1 << shift) - 1);
-    const int Gf = rgb.y & ((1 << shift) - 1);
-    const int Bf = rgb.z & ((1 << shift) - 1);
-    return tetrahedral(lut3d, Rx, Gx, Bx, Rf, Gf, Bf);
-}
-
 /**
  * Note: These functions are scaled such that x == (1 << shift) corresponds to
  * a value of 1.0. This makes them suitable for use when interpolation LUT
