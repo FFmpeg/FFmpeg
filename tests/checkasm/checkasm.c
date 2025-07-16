@@ -275,6 +275,9 @@ static const struct {
     #if CONFIG_BWDIF_FILTER
         { "vf_bwdif", checkasm_check_vf_bwdif },
     #endif
+    #if CONFIG_COLORDETECT_FILTER
+        { "vf_colordetect", checkasm_check_colordetect },
+    #endif
     #if CONFIG_COLORSPACE_FILTER
         { "vf_colorspace", checkasm_check_colorspace },
     #endif

@@ -59,6 +59,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-vf_blackdetect                            \
                 fate-checkasm-vf_blend                                  \
                 fate-checkasm-vf_bwdif                                  \
+                fate-checkasm-vf_colordetect                            \
                 fate-checkasm-vf_colorspace                             \
                 fate-checkasm-vf_eq                                     \
                 fate-checkasm-vf_gblur                                  \
