@@ -364,9 +364,9 @@ static struct variant *new_variant(HLSContext *c, struct variant_info *info,
 
     if (info) {
         var->bandwidth = atoi(info->bandwidth);
-        strcpy(var->audio_group, info->audio);
-        strcpy(var->video_group, info->video);
-        strcpy(var->subtitles_group, info->subtitles);
+        av_strlcpy(var->audio_group, info->audio, sizeof(var->audio_group));
+        av_strlcpy(var->video_group, info->video, sizeof(var->video_group));
+        av_strlcpy(var->subtitles_group, info->subtitles, sizeof(var->subtitles_group));
     }
 
     dynarray_add(&c->variants, &c->n_variants, var);
@@ -524,9 +524,9 @@ static struct rendition *new_rendition(HLSContext *c, struct rendition_info *inf
     dynarray_add(&c->renditions, &c->n_renditions, rend);
 
     rend->type = type;
-    strcpy(rend->group_id, info->group_id);
-    strcpy(rend->language, info->language);
-    strcpy(rend->name, info->name);
+    av_strlcpy(rend->group_id, info->group_id, sizeof(rend->group_id));
+    av_strlcpy(rend->language, info->language, sizeof(rend->language));
+    av_strlcpy(rend->name, info->name, sizeof(rend->name));
 
     /* add the playlist if this is an external rendition */
     if (info->uri[0]) {

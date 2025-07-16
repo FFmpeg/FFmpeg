@@ -1877,10 +1877,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     for (int i = 0; i < loop; i++) {
         if (header) {
             bbox = av_get_detection_bbox(header, i);
-            strcpy(s->text, bbox->detect_label);
+            av_strlcpy(s->text, bbox->detect_label, sizeof(s->text));
             for (int j = 0; j < bbox->classify_count; j++) {
-                strcat(s->text, ", ");
-                strcat(s->text, bbox->classify_labels[j]);
+                av_strlcat(s->text, ", ", sizeof(s->text));
+                av_strlcat(s->text, bbox->classify_labels[j], sizeof(s->text));
             }
             s->x = bbox->x;
             s->y = bbox->y - s->fontsize;

@@ -143,7 +143,7 @@ static int url_alloc_for_protocol(URLContext **puc, const URLProtocol *up,
     }
     uc->av_class = &url_context_class;
     uc->filename = (char *)&uc[1];
-    strcpy(uc->filename, filename);
+    av_strlcpy(uc->filename, filename, sizeof(uc->filename));
     uc->prot            = up;
     uc->flags           = flags;
     uc->is_streamed     = 0; /* default = not streamed */
