@@ -96,134 +96,6 @@ static inline int shift_down(int a,int b)
     return (a>>b)+(a<0);
 }
 
-static av_always_inline av_flatten void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed, uint64_t rc_stat[256][2], uint64_t rc_stat2[32][2]){
-    int i;
-
-#define put_rac(C,S,B) \
-do{\
-    if(rc_stat){\
-        rc_stat[*(S)][B]++;\
-        rc_stat2[(S)-state][B]++;\
-    }\
-    put_rac(C,S,B);\
-}while(0)
-
-    if(v){
-        const int a= FFABS(v);
-        const int e= av_log2(a);
-        put_rac(c, state+0, 0);
-        if(e<=9){
-            for(i=0; i<e; i++){
-                put_rac(c, state+1+i, 1);  //1..10
-            }
-            put_rac(c, state+1+i, 0);
-
-            for(i=e-1; i>=0; i--){
-                put_rac(c, state+22+i, (a>>i)&1); //22..31
-            }
-
-            if(is_signed)
-                put_rac(c, state+11 + e, v < 0); //11..21
-        }else{
-            for(i=0; i<e; i++){
-                put_rac(c, state+1+FFMIN(i,9), 1);  //1..10
-            }
-            put_rac(c, state+1+9, 0);
-
-            for(i=e-1; i>=0; i--){
-                put_rac(c, state+22+FFMIN(i,9), (a>>i)&1); //22..31
-            }
-
-            if(is_signed)
-                put_rac(c, state+11 + 10, v < 0); //11..21
-        }
-    }else{
-        put_rac(c, state+0, 1);
-    }
-#undef put_rac
-}
-
-static inline av_flatten int get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
-    if(get_rac(c, state+0))
-        return 0;
-    else{
-        int i, e;
-        unsigned a;
-        e= 0;
-        while(get_rac(c, state+1 + FFMIN(e,9))){ //1..10
-            e++;
-            if (e > 31)
-                return AVERROR_INVALIDDATA;
-        }
-
-        a= 1;
-        for(i=e-1; i>=0; i--){
-            a += a + get_rac(c, state+22 + FFMIN(i,9)); //22..31
-        }
-
-        e= -(is_signed && get_rac(c, state+11 + FFMIN(e, 10))); //11..21
-        return (a^e)-e;
-    }
-}
-
-static inline int intlist_write(RangeCoder *c, uint8_t *state, int *buf, int entries, int base_2_part)
-{
-    int i;
-
-    for (i = 0; i < entries; i++)
-        put_symbol(c, state, buf[i], 1, NULL, NULL);
-
-    return 1;
-}
-
-static inline int intlist_read(RangeCoder *c, uint8_t *state, int *buf, int entries, int base_2_part)
-{
-    int i;
-
-    for (i = 0; i < entries; i++)
-        buf[i] = get_symbol(c, state, 1);
-
-    return 1;
-}
-
-static void predictor_init_state(int *k, int *state, int order)
-{
-    int i;
-
-    for (i = order-2; i >= 0; i--)
-    {
-        int j, p, x = state[i];
-
-        for (j = 0, p = i+1; p < order; j++,p++)
-            {
-            int tmp = x + shift_down(k[j] * (unsigned)state[p], LATTICE_SHIFT);
-            state[p] += shift_down(k[j]* (unsigned)x, LATTICE_SHIFT);
-            x = tmp;
-        }
-    }
-}
-
-static int predictor_calc_error(int *k, int *state, int order, int error)
-{
-    int i, x = error - (unsigned)shift_down(k[order-1] *  (unsigned)state[order-1], LATTICE_SHIFT);
-
-    int *k_ptr = &(k[order-2]),
-        *state_ptr = &(state[order-2]);
-    for (i = order-2; i >= 0; i--, k_ptr--, state_ptr--)
-    {
-        int k_value = *k_ptr, state_value = *state_ptr;
-        x -= (unsigned)shift_down(k_value * (unsigned)state_value, LATTICE_SHIFT);
-        state_ptr[1] = state_value + shift_down(k_value * (unsigned)x, LATTICE_SHIFT);
-    }
-
-    // don't drift too far, to avoid overflows
-    if (x >  (SAMPLE_FACTOR<<16)) x =  (SAMPLE_FACTOR<<16);
-    if (x < -(SAMPLE_FACTOR<<16)) x = -(SAMPLE_FACTOR<<16);
-
-    state[0] = x;
-
-    return x;
-}
 
 #if CONFIG_SONIC_ENCODER || CONFIG_SONIC_LS_ENCODER
 // Heavily modified Levinson-Durbin algorithm which
@@ -417,6 +289,63 @@ static av_cold int sonic_encode_close(AVCodecContext *avctx)
     av_freep(&s->int_samples);
 
     return 0;
+}
+
+static av_always_inline av_flatten void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed, uint64_t rc_stat[256][2], uint64_t rc_stat2[32][2]){
+    int i;
+
+#define put_rac(C,S,B) \
+do{\
+    if(rc_stat){\
+        rc_stat[*(S)][B]++;\
+        rc_stat2[(S)-state][B]++;\
+    }\
+    put_rac(C,S,B);\
+}while(0)
+
+    if(v){
+        const int a= FFABS(v);
+        const int e= av_log2(a);
+        put_rac(c, state+0, 0);
+        if(e<=9){
+            for(i=0; i<e; i++){
+                put_rac(c, state+1+i, 1);  //1..10
+            }
+            put_rac(c, state+1+i, 0);
+
+            for(i=e-1; i>=0; i--){
+                put_rac(c, state+22+i, (a>>i)&1); //22..31
+            }
+
+            if(is_signed)
+                put_rac(c, state+11 + e, v < 0); //11..21
+        }else{
+            for(i=0; i<e; i++){
+                put_rac(c, state+1+FFMIN(i,9), 1);  //1..10
+            }
+            put_rac(c, state+1+9, 0);
+
+            for(i=e-1; i>=0; i--){
+                put_rac(c, state+22+FFMIN(i,9), (a>>i)&1); //22..31
+            }
+
+            if(is_signed)
+                put_rac(c, state+11 + 10, v < 0); //11..21
+        }
+    }else{
+        put_rac(c, state+0, 1);
+    }
+#undef put_rac
+}
+
+static inline int intlist_write(RangeCoder *c, uint8_t *state, int *buf, int entries, int base_2_part)
+{
+    int i;
+
+    for (i = 0; i < entries; i++)
+        put_symbol(c, state, buf[i], 1, NULL, NULL);
+
+    return 1;
 }
 
 static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
@@ -683,6 +612,78 @@ static av_cold int sonic_decode_close(AVCodecContext *avctx)
     av_freep(&s->coded_samples[0]);
 
     return 0;
+}
+
+static inline av_flatten int get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
+    if(get_rac(c, state+0))
+        return 0;
+    else{
+        int i, e;
+        unsigned a;
+        e= 0;
+        while(get_rac(c, state+1 + FFMIN(e,9))){ //1..10
+            e++;
+            if (e > 31)
+                return AVERROR_INVALIDDATA;
+        }
+
+        a= 1;
+        for(i=e-1; i>=0; i--){
+            a += a + get_rac(c, state+22 + FFMIN(i,9)); //22..31
+        }
+
+        e= -(is_signed && get_rac(c, state+11 + FFMIN(e, 10))); //11..21
+        return (a^e)-e;
+    }
+}
+
+static inline int intlist_read(RangeCoder *c, uint8_t *state, int *buf, int entries, int base_2_part)
+{
+    int i;
+
+    for (i = 0; i < entries; i++)
+        buf[i] = get_symbol(c, state, 1);
+
+    return 1;
+}
+
+static void predictor_init_state(int *k, int *state, int order)
+{
+    int i;
+
+    for (i = order-2; i >= 0; i--)
+    {
+        int j, p, x = state[i];
+
+        for (j = 0, p = i+1; p < order; j++,p++)
+            {
+            int tmp = x + shift_down(k[j] * (unsigned)state[p], LATTICE_SHIFT);
+            state[p] += shift_down(k[j]* (unsigned)x, LATTICE_SHIFT);
+            x = tmp;
+        }
+    }
+}
+
+static int predictor_calc_error(int *k, int *state, int order, int error)
+{
+    int i, x = error - (unsigned)shift_down(k[order-1] *  (unsigned)state[order-1], LATTICE_SHIFT);
+
+    int *k_ptr = &(k[order-2]),
+        *state_ptr = &(state[order-2]);
+    for (i = order-2; i >= 0; i--, k_ptr--, state_ptr--)
+    {
+        int k_value = *k_ptr, state_value = *state_ptr;
+        x -= (unsigned)shift_down(k_value * (unsigned)state_value, LATTICE_SHIFT);
+        state_ptr[1] = state_value + shift_down(k_value * (unsigned)x, LATTICE_SHIFT);
+    }
+
+    // don't drift too far, to avoid overflows
+    if (x >  (SAMPLE_FACTOR<<16)) x =  (SAMPLE_FACTOR<<16);
+    if (x < -(SAMPLE_FACTOR<<16)) x = -(SAMPLE_FACTOR<<16);
+
+    state[0] = x;
+
+    return x;
 }
 
 static int sonic_decode_frame(AVCodecContext *avctx, AVFrame *frame,
