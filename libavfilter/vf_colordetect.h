@@ -41,6 +41,9 @@ typedef struct FFColorDetectDSPContext {
 void ff_color_detect_dsp_init(FFColorDetectDSPContext *dsp, int depth,
                               enum AVColorRange color_range);
 
+void ff_color_detect_dsp_init_x86(FFColorDetectDSPContext *dsp, int depth,
+                                  enum AVColorRange color_range);
+
 static inline int ff_detect_range_c(const uint8_t *data, ptrdiff_t stride,
                                     ptrdiff_t width, ptrdiff_t height,
                                     int mpeg_min, int mpeg_max)
