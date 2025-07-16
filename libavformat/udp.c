@@ -473,7 +473,7 @@ int ff_udp_set_remote_addr(URLContext *h, const struct sockaddr *dest_addr, sock
     UDPContext *s = h->priv_data;
 
     /* set the destination address */
-    if (dest_addr_len < 0 || dest_addr_len > sizeof(s->dest_addr))
+    if ((size_t)dest_addr_len > sizeof(s->dest_addr))
         return AVERROR(EIO);
     s->dest_addr_len = dest_addr_len;
     memcpy(&s->dest_addr, dest_addr, dest_addr_len);
