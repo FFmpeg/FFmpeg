@@ -837,9 +837,6 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     if (c->verify)
         SSL_CTX_set_verify(p->ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
 
-    if (!c->listen && !c->numerichost)
-        SSL_set_tlsext_host_name(p->ssl, c->host);
-
     /* Setup the SRTP context */
     if (SSL_CTX_set_tlsext_use_srtp(p->ctx, profiles)) {
         av_log(p, AV_LOG_ERROR, "TLS: Init SSL_CTX_set_tlsext_use_srtp failed, profiles=%s, %s\n",
@@ -854,6 +851,9 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
         ret = AVERROR(ENOMEM);
         goto fail;
     }
+
+    if (!c->listen && !c->numerichost)
+        SSL_set_tlsext_host_name(p->ssl, c->host);
 
     /* Setup the callback for logging. */
     SSL_set_ex_data(p->ssl, 0, p);
