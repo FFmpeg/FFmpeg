@@ -30,6 +30,7 @@ typedef struct ProresDSPContext {
     int idct_permutation_type;
     uint8_t idct_permutation[64];
     void (*idct_put)(uint16_t *out, ptrdiff_t linesize, int16_t *block, const int16_t *qmat);
+    void (*idct_put_bayer)(uint16_t *out, ptrdiff_t linesize, int16_t *block, const int16_t *qmat);
 } ProresDSPContext;
 
 void ff_proresdsp_init(ProresDSPContext *dsp, int bits_per_raw_sample);
