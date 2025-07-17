@@ -496,8 +496,10 @@ static int amf_device_create(AVHWDeviceContext *device_ctx,
 
 
         ret = ctx->factory->pVtbl->CreateContext(ctx->factory, &ctx->context);
-        if (ret == AMF_OK)
+        if (ret == AMF_OK) {
+            AMF_ASSIGN_PROPERTY_INT64(ret, ctx->context, L"DeviceSurfaceCacheSize", 50 );
             return 0;
+        }
         av_log(device_ctx, AV_LOG_ERROR, "CreateContext() failed with error %d.\n", ret);
     }
     amf_device_uninit(device_ctx);
