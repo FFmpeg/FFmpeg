@@ -879,8 +879,11 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
         }
     }
 
-    /* Setup DTLS as passive, which is server role. */
-    c->listen ? SSL_set_accept_state(p->ssl) : SSL_set_connect_state(p->ssl);
+    /* This seems to be neccesary despite explicitly setting client/server method above. */
+    if (c->listen)
+        SSL_set_accept_state(p->ssl);
+    else
+        SSL_set_connect_state(p->ssl);
 
     /**
      * During initialization, we only need to call SSL_do_handshake once because SSL_read consumes
