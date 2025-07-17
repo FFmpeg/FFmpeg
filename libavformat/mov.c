@@ -8972,6 +8972,7 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
 
 static int mov_read_iref_thmb(MOVContext *c, AVIOContext *pb, int version)
 {
+    int *thmb_item_id;
     int entries;
     int to_item_id, from_item_id = version ? avio_rb32(pb) : avio_rb16(pb);
 
@@ -8986,10 +8987,15 @@ static int mov_read_iref_thmb(MOVContext *c, AVIOContext *pb, int version)
     if (to_item_id != c->primary_item_id)
         return 0;
 
-    c->thmb_item_id = from_item_id;
+    /* Put thumnbail IDs into an array */
+    thmb_item_id = av_dynarray2_add((void **)&c->thmb_item_id, &c->nb_thmb_item,
+                                    sizeof(*c->thmb_item_id),
+                                    (const void *)&from_item_id);
+    if (!thmb_item_id)
+        return AVERROR(ENOMEM);
 
-    av_log(c->fc, AV_LOG_TRACE, "thmb: from_item_id %d, entries %d\n",
-           from_item_id, entries);
+    av_log(c->fc, AV_LOG_TRACE, "thmb: from_item_id %d, entries %d, nb_thmb: %d\n",
+           from_item_id, entries, c->nb_thmb_item);
 
     return 0;
 }
@@ -9859,6 +9865,7 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&mov->heif_grid[i].tile_item_list);
     }
     av_freep(&mov->heif_grid);
+    av_freep(&mov->thmb_item_id);
 
     return 0;
 }
@@ -10323,9 +10330,12 @@ static int mov_parse_heif_items(AVFormatContext *s)
         if (!item)
             continue;
         if (!item->st) {
-            if (item->item_id == mov->thmb_item_id) {
-                av_log(s, AV_LOG_ERROR, "HEIF thumbnail doesn't reference a stream\n");
-                return AVERROR_INVALIDDATA;
+            for (int j = 0; j < mov->nb_thmb_item; j++) {
+                if (item->item_id == mov->thmb_item_id[j]) {
+                    av_log(s, AV_LOG_ERROR, "HEIF thumbnail ID %d doesn't reference a stream\n",
+                           item->item_id);
+                    return AVERROR_INVALIDDATA;
+                }
             }
             continue;
         }
@@ -10476,7 +10486,7 @@ static int mov_read_header(AVFormatContext *s)
 
     mov->fc = s;
     mov->trak_index = -1;
-    mov->thmb_item_id = -1;
+    mov->thmb_item_id = NULL;
     mov->primary_item_id = -1;
     mov->cur_item_id = -1;
     /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */

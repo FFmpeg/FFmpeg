@@ -376,7 +376,8 @@ typedef struct MOVContext {
     int nb_heif_item;
     HEIFGrid *heif_grid;
     int nb_heif_grid;
-    int thmb_item_id;
+    int* thmb_item_id;
+    int nb_thmb_item;
     int64_t idat_offset;
     int interleaved_read;
 } MOVContext;
