@@ -4613,11 +4613,6 @@ set >> $logfile
 
 test -n "$valgrind" && toolchain="valgrind-memcheck"
 
-enabled ossfuzz && ! echo $CFLAGS | grep -q -- "-fsanitize="  && ! echo $CFLAGS | grep -q -- "-fcoverage-mapping" &&{
-    add_cflags  -fsanitize=address,undefined -fsanitize-coverage=trace-pc-guard,trace-cmp -fno-omit-frame-pointer
-    add_ldflags -fsanitize=address,undefined -fsanitize-coverage=trace-pc-guard,trace-cmp
-}
-
 add_sanitizer_flags(){
     case "$1" in
         asan)
