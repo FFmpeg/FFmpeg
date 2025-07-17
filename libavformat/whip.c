@@ -1495,6 +1495,7 @@ static int create_rtp_muxer(AVFormatContext *s)
     uint8_t *buffer = NULL;
     char buf[64];
     WHIPContext *whip = s->priv_data;
+    whip->udp->flags |= AVIO_FLAG_NONBLOCK;
 
     const AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
     if (!rtp_format) {
