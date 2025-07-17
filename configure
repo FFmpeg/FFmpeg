@@ -381,10 +381,10 @@ Toolchain options:
   --target-samples=DIR     path to samples directory on target
   --tempprefix=PATH        force fixed dir/prefix instead of mktemp for checks
   --toolchain=NAME         set tool defaults according to NAME
-                           (<tool>[-sanitizer[-...]], e.g. clang-asan-usan
+                           (<tool>[-sanitizer[-...]], e.g. clang-asan-ubsan
                            tools: gcc, clang, msvc, icl, gcov, llvm-cov,
                                   valgrind-memcheck, valgrind-massif, hardened
-                           sanitizers: asan, lsan, msan, tsan, usan)
+                           sanitizers: asan, lsan, msan, tsan, ubsan)
   --nm=NM                  use nm tool NM [$nm_default]
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
@@ -4636,7 +4636,7 @@ add_sanitizer_flags(){
             add_cflags  -fsanitize=thread
             add_ldflags -fsanitize=thread
         ;;
-        usan)
+        usan|ubsan)
             add_cflags  -fsanitize=undefined
             add_ldflags -fsanitize=undefined
         ;;
