@@ -381,10 +381,10 @@ Toolchain options:
   --target-samples=DIR     path to samples directory on target
   --tempprefix=PATH        force fixed dir/prefix instead of mktemp for checks
   --toolchain=NAME         set tool defaults according to NAME
-                           (gcc-asan, clang-asan, gcc-msan, clang-msan,
-                           gcc-tsan, clang-tsan, gcc-usan, clang-usan,
-                           valgrind-massif, valgrind-memcheck,
-                           msvc, icl, gcov, llvm-cov, hardened)
+                           (<tool>[-sanitizer[-...]], e.g. clang-asan-usan
+                           tools: gcc, clang, msvc, icl, gcov, llvm-cov,
+                                  valgrind-memcheck, valgrind-massif, hardened
+                           sanitizers: asan, lsan, msan, tsan, usan)
   --nm=NM                  use nm tool NM [$nm_default]
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
@@ -4646,14 +4646,23 @@ add_sanitizer_flags(){
     esac
 }
 
+add_sanitizers(){
+    IFS=-
+    set -- $*
+    unset IFS
+    for sanitizer; do
+        add_sanitizer_flags "$sanitizer"
+    done
+}
+
 case "$toolchain" in
     clang-*)
-        add_sanitizer_flags "${toolchain#clang-}"
+        add_sanitizers "${toolchain#clang-}"
         cc_default="clang"
         cxx_default="clang++"
     ;;
     gcc-*)
-        add_sanitizer_flags "${toolchain#gcc-}"
+        add_sanitizers "${toolchain#gcc-}"
         cc_default="gcc"
         cxx_default="g++"
         # In case of tsan with gcc, PIC has to be enabled
