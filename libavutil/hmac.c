@@ -47,23 +47,37 @@ struct AVHMAC {
     int keylen;
 };
 
-#define DEFINE_SHA(bits)                           \
-static av_cold void sha ## bits ##_init(void *ctx) \
+#define DEFINE_ALGO_BITS_INIT(prefix, bits)        \
+static av_cold void prefix##bits##_init(void *ctx) \
 {                                                  \
-    av_sha_init(ctx, bits);                        \
+    av_##prefix##_init(ctx, bits);                 \
 }
 
-#define DEFINE_SHA512(bits)                        \
-static av_cold void sha ## bits ##_init(void *ctx) \
-{                                                  \
-    av_sha512_init(ctx, bits);                     \
+#define DEFINE_ALGO_INIT(prefix)             \
+static av_cold void prefix##_init(void *ctx) \
+{                                            \
+    av_##prefix##_init(ctx);                 \
 }
 
-DEFINE_SHA(160)
-DEFINE_SHA(224)
-DEFINE_SHA(256)
-DEFINE_SHA512(384)
-DEFINE_SHA512(512)
+#define DEFINE_ALGO(prefix)                                            \
+static void prefix##_update(void *ctx, const uint8_t *src, size_t len) \
+{                                                                      \
+    av_##prefix##_update(ctx, src, len);                               \
+}                                                                      \
+static void prefix##_final(void *ctx, uint8_t *dst)                    \
+{                                                                      \
+    av_##prefix##_final(ctx, dst);                                     \
+}
+
+DEFINE_ALGO_INIT(md5)
+DEFINE_ALGO_BITS_INIT(sha, 160)
+DEFINE_ALGO_BITS_INIT(sha, 224)
+DEFINE_ALGO_BITS_INIT(sha, 256)
+DEFINE_ALGO_BITS_INIT(sha512, 384)
+DEFINE_ALGO_BITS_INIT(sha512, 512)
+DEFINE_ALGO(md5)
+DEFINE_ALGO(sha)
+DEFINE_ALGO(sha512)
 
 AVHMAC *av_hmac_alloc(enum AVHMACType type)
 {
@@ -74,49 +88,49 @@ AVHMAC *av_hmac_alloc(enum AVHMACType type)
     case AV_HMAC_MD5:
         c->blocklen = 64;
         c->hashlen  = 16;
-        c->init     = (hmac_init) av_md5_init;
-        c->update   = (hmac_update) av_md5_update;
-        c->final    = (hmac_final) av_md5_final;
+        c->init     = md5_init;
+        c->update   = md5_update;
+        c->final    = md5_final;
         c->hash     = av_md5_alloc();
         break;
     case AV_HMAC_SHA1:
         c->blocklen = 64;
         c->hashlen  = 20;
         c->init     = sha160_init;
-        c->update   = (hmac_update) av_sha_update;
-        c->final    = (hmac_final) av_sha_final;
+        c->update   = sha_update;
+        c->final    = sha_final;
         c->hash     = av_sha_alloc();
         break;
     case AV_HMAC_SHA224:
         c->blocklen = 64;
         c->hashlen  = 28;
         c->init     = sha224_init;
-        c->update   = (hmac_update) av_sha_update;
-        c->final    = (hmac_final) av_sha_final;
+        c->update   = sha_update;
+        c->final    = sha_final;
         c->hash     = av_sha_alloc();
         break;
     case AV_HMAC_SHA256:
         c->blocklen = 64;
         c->hashlen  = 32;
         c->init     = sha256_init;
-        c->update   = (hmac_update) av_sha_update;
-        c->final    = (hmac_final) av_sha_final;
+        c->update   = sha_update;
+        c->final    = sha_final;
         c->hash     = av_sha_alloc();
         break;
     case AV_HMAC_SHA384:
         c->blocklen = 128;
         c->hashlen  = 48;
-        c->init     = sha384_init;
-        c->update   = (hmac_update) av_sha512_update;
-        c->final    = (hmac_final) av_sha512_final;
+        c->init     = sha512384_init;
+        c->update   = sha512_update;
+        c->final    = sha512_final;
         c->hash     = av_sha512_alloc();
         break;
     case AV_HMAC_SHA512:
         c->blocklen = 128;
         c->hashlen  = 64;
-        c->init     = sha512_init;
-        c->update   = (hmac_update) av_sha512_update;
-        c->final    = (hmac_final) av_sha512_final;
+        c->init     = sha512512_init;
+        c->update   = sha512_update;
+        c->final    = sha512_final;
         c->hash     = av_sha512_alloc();
         break;
     default:
