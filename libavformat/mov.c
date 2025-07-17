@@ -8840,6 +8840,7 @@ static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom, int idx)
 
     switch (item_type) {
     case MKTAG('a','v','0','1'):
+    case MKTAG('j','p','e','g'):
     case MKTAG('h','v','c','1'):
         ret = heif_add_stream(c, c->heif_item[idx]);
         if (ret < 0)
