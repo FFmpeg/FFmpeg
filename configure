@@ -384,7 +384,7 @@ Toolchain options:
                            (<tool>[-sanitizer[-...]], e.g. clang-asan-ubsan
                            tools: gcc, clang, msvc, icl, gcov, llvm-cov,
                                   valgrind-memcheck, valgrind-massif, hardened
-                           sanitizers: asan, lsan, msan, tsan, ubsan)
+                           sanitizers: asan, fuzz, lsan, msan, tsan, ubsan)
   --nm=NM                  use nm tool NM [$nm_default]
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
@@ -4623,6 +4623,11 @@ add_sanitizer_flags(){
         asan)
             add_cflags  -fsanitize=address
             add_ldflags -fsanitize=address
+        ;;
+        fuzz)
+            add_cflags  -fsanitize=fuzzer-no-link
+            add_ldflags -fsanitize=fuzzer-no-link
+            : "${libfuzzer_path:=-fsanitize=fuzzer}"
         ;;
         lsan)
             add_cflags  -fsanitize=leak
