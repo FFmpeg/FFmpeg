@@ -188,6 +188,8 @@ OBJS-$(CONFIG_HILBERT_FILTER)                += asrc_hilbert.o
 OBJS-$(CONFIG_SINC_FILTER)                   += asrc_sinc.o
 OBJS-$(CONFIG_SINE_FILTER)                   += asrc_sine.o
 
+OBJS-$(CONFIG_WHISPER_FILTER)                += af_whisper.o
+
 OBJS-$(CONFIG_ANULLSINK_FILTER)              += asink_anullsink.o
 
 # video filters

@@ -336,6 +336,7 @@ External library support:
   --disable-securetransport disable Secure Transport, needed for TLS support
                            on OSX if openssl and gnutls are not used [autodetect]
   --enable-vapoursynth     enable VapourSynth demuxer [no]
+  --enable-whisper         enable whisper filter [no]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
 
@@ -2005,6 +2006,7 @@ EXTERNAL_LIBRARY_LIST="
     pocketsphinx
     vapoursynth
     vulkan_static
+    whisper
 "
 
 HWACCEL_AUTODETECT_LIBRARY_LIST="
@@ -4085,6 +4087,7 @@ xstack_qsv_filter_deps="libmfx"
 xstack_qsv_filter_select="qsvvpp"
 pad_vaapi_filter_deps="vaapi_1"
 drawbox_vaapi_filter_deps="vaapi_1"
+whisper_filter_deps="whisper"
 
 # examples
 avio_http_serve_files_deps="avformat avutil fork"
@@ -7163,6 +7166,8 @@ enabled libvmaf           && check_pkg_config libvmaf_cuda "libvmaf >= 2.0.0" li
 enabled libvo_amrwbenc    && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
 enabled libvorbis         && require_pkg_config libvorbis vorbis vorbis/codec.h vorbis_info_init &&
                              require_pkg_config libvorbisenc vorbisenc vorbis/vorbisenc.h vorbis_encode_init
+
+enabled whisper           && require_pkg_config whisper "whisper >= 1.7.5" whisper.h whisper_init_from_file_with_params
 
 enabled libvpx            && {
     enabled libvpx_vp8_decoder && {
