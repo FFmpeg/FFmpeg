@@ -28,7 +28,7 @@ unsigned ff_blackdetect_16_avx2(const uint8_t *, ptrdiff_t, ptrdiff_t, ptrdiff_t
 av_cold ff_blackdetect_fn ff_blackdetect_get_fn_x86(int depth)
 {
     int cpu_flags = av_get_cpu_flags();
-    if (EXTERNAL_AVX2(cpu_flags))
+    if (EXTERNAL_AVX2_FAST(cpu_flags))
         return depth == 8 ? ff_blackdetect_8_avx2 : ff_blackdetect_16_avx2;
     return NULL;
 }
