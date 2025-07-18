@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_VF_BLACKDETECT_H
-#define AVFILTER_VF_BLACKDETECT_H
+#ifndef AVFILTER_BLACKDETECT_H
+#define AVFILTER_BLACKDETECT_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -68,4 +68,4 @@ static inline ff_blackdetect_fn ff_blackdetect_get_fn(int depth)
     return fn;
 }
 
-#endif /* AVFILTER_VF_BLACKDETECT_H */
+#endif /* AVFILTER_BLACKDETECT_H */
