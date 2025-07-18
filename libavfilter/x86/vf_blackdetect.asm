@@ -35,12 +35,12 @@ cglobal blackdetect_%1, 5, 7, 2, src, stride, width, height, threshold
     %endif
         add srcq, widthq
         neg widthq
-        xor r4, r4
+        xor r4d, r4d
         mov r5, widthq
         jmp .start
 .loop:
         popcnt r6d, r6d
-        add r4, r6
+        add r4d, r6d
 .start:
         movu m0, [srcq + r5]
     %if %1 == 8
@@ -56,15 +56,15 @@ cglobal blackdetect_%1, 5, 7, 2, src, stride, width, height, threshold
         ; handle tail by shifting away unused high elements
         shlx r6d, r6d, r5d
         popcnt r6d, r6d
-        add r4, r6
+        add r4d, r6d
         add srcq, strideq
         mov r5, widthq
         dec heightq
         jg .start
     %if %1 > 8
-        shr r4, 1
+        shr r4d, 1
     %endif
-        mov rax, r4
+        mov eax, r4d
         RET
 %endmacro
 
