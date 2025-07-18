@@ -184,6 +184,12 @@ FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER) \
 fate-mov-heic-demux-clap-irot-imir: CMD = stream_demux mov $(TARGET_SAMPLES)/heif-conformance/MIAF007.heic "" "-c:v copy -map 0" \
   "-show_entries stream=index,id:stream_disposition:stream_side_data_list"
 
+# heic demuxing - still image with multiple thumbnails, and item entries stored in different order in iloc/iinf.
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call FRAMECRC, MOV, HEVC MJPEG, HEVC_PARSER) \
+                           += fate-mov-heic-demux-still-image-multiple-thumb
+fate-mov-heic-demux-still-image-multiple-thumb: CMD = stream_demux mov $(TARGET_SAMPLES)/heif/P1001091.HIF "" "-c:v copy -map 0" \
+  "-show_entries stream=index,id:stream_disposition"
+
 # heic demuxing - still image with multiple items in a grid.
 FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER) \
                            += fate-mov-heic-demux-still-image-grid
