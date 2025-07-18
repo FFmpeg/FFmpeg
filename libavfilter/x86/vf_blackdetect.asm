@@ -68,6 +68,8 @@ cglobal blackdetect_%1, 5, 7, 2, src, stride, width, height, threshold
         RET
 %endmacro
 
+%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 count_pixels_fn 8
 count_pixels_fn 16
+%endif
