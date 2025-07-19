@@ -806,7 +806,7 @@ static void packed16togbra16(const uint8_t *src, int srcStride,
                 }
             }
         }
-        for (i = 0; i < 4; i++)
+        for (i = 0; i < 4 && dst[i]; i++)
             dst[i] += dstStride[i] >> 1;
     }
 }
@@ -878,7 +878,7 @@ static void packed30togbra10(const uint8_t *src, int srcStride,
             }
             break;
         }
-        for (i = 0; i < 4; i++)
+        for (i = 0; i < 4 && dst[i]; i++)
             dst[i] += dstStride[i] >> 1;
     }
 }
