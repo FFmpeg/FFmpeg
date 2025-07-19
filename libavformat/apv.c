@@ -252,7 +252,7 @@ static int apv_add_frameinfo(APVDecoderConfigurationEntry *configuration_entry,
 int ff_isom_parse_apvc(APVDecoderConfigurationRecord *apvc,
                        const AVPacket *pkt, void *logctx)
 {
-    APVDecoderFrameInfo frame_info = { .capture_time_distance_ignored = 1 };
+    APVDecoderFrameInfo frame_info;
     int ret;
 
     if (pkt->size < 8 || AV_RB32(pkt->data) != APV_SIGNATURE)
@@ -264,6 +264,9 @@ int ff_isom_parse_apvc(APVDecoderConfigurationRecord *apvc,
         av_log(logctx, AV_LOG_ERROR, "Failed to parse access unit.\n");
         return ret;
     }
+
+    memset(&frame_info, 0, sizeof(frame_info));
+    frame_info.capture_time_distance_ignored = 1;
 
     for (int i = 0; i < apvc->frag.nb_units; i++) {
         const CodedBitstreamUnit *pbu = &apvc->frag.units[i];
@@ -304,6 +307,11 @@ int ff_isom_parse_apvc(APVDecoderConfigurationRecord *apvc,
             frame_info.transfer_characteristics = header->transfer_characteristics;
             frame_info.matrix_coefficients = header->matrix_coefficients;
             frame_info.full_range_flag = header->full_range_flag;
+        } else {
+            frame_info.color_primaries =
+            frame_info.transfer_characteristics =
+            frame_info.matrix_coefficients =
+            frame_info.full_range_flag = 0;
         }
 
         for (j = 0; j < apvc->number_of_configuration_entry; j++) {
