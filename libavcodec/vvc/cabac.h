@@ -81,15 +81,15 @@ int ff_vvc_intra_luma_mpm_remainder(VVCLocalContext *lc);
 int ff_vvc_cclm_mode_flag(VVCLocalContext *lc);
 int ff_vvc_cclm_mode_idx(VVCLocalContext *lc);
 int ff_vvc_intra_chroma_pred_mode(VVCLocalContext *lc);
-int ff_vvc_palette_predictor_run(VVCLocalContext *lc);
-int ff_vvc_num_signalled_palette_entries(VVCLocalContext *lc);
+int ff_vvc_palette_predictor_run(VVCLocalContext *lc, const int max);
+int ff_vvc_num_signalled_palette_entries(VVCLocalContext *lc, const int max);
 int ff_vvc_new_palette_entries(VVCLocalContext *lc, int bit_dpeth);
 bool ff_vvc_palette_escape_val_present_flag(VVCLocalContext *lc);
 bool ff_vvc_palette_transpose_flag(VVCLocalContext *lc);
 bool ff_vvc_run_copy_flag(VVCLocalContext *lc, int prev_run_type, int prev_run_position, int cur_pos);
 bool ff_vvc_copy_above_palette_indices_flag(VVCLocalContext *lc);
 int ff_vvc_palette_idx_idc(VVCLocalContext *lc, int max_palette_index, bool adjust);
-int ff_vvc_palette_escape_val(VVCLocalContext *lc);
+int ff_vvc_palette_escape_val(VVCLocalContext *lc, const int max);
 
 //inter
 int ff_vvc_general_merge_flag(VVCLocalContext *lc);
