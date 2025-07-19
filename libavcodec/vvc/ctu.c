@@ -2118,9 +2118,12 @@ static int hls_palette_coding(VVCLocalContext *lc, const VVCTreeType tree_type)
     palette_qp(lc, tree_type, escape_present);
 
     index[0] = 0;
-    for (int i = 0; i <= (cu->cb_width * cu->cb_height - 1) >> 4; i++)
-        palette_subblock_data(lc, max_index, i, transpose,
+    for (int i = 0; i <= (cu->cb_width * cu->cb_height - 1) >> 4; i++) {
+        ret = palette_subblock_data(lc, max_index, i, transpose,
             run_type, index, &prev_run_pos, &adjust);
+        if (ret < 0)
+            return ret;
+    }
 
     return 0;
 }
