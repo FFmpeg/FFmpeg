@@ -201,8 +201,8 @@ static void print_file(AVFilterContext *ctx, const char *msg, ...)
     va_start(argument_list, msg);
     if (msg) {
         char buf[128];
-        vsnprintf(buf, sizeof(buf), msg, argument_list);
-        avio_write(s->avio_context, buf, av_strnlen(buf, sizeof(buf)));
+        int ret = vsnprintf(buf, sizeof(buf), msg, argument_list);
+        avio_write(s->avio_context, buf, ret);
     }
     va_end(argument_list);
 }
