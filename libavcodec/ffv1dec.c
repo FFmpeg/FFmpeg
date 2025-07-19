@@ -447,16 +447,20 @@ static int decode_slice(AVCodecContext *c, void *arg)
          decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0]          , width, height, p->linesize[0], 0, 0, 2, ac);
          decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0] + (ps>>1), width, height, p->linesize[0], 1, 1, 2, ac);
     } else if (f->use32bit) {
-        uint8_t *planes[4] = { p->data[0] + ps * x + y * p->linesize[0],
-                               p->data[1] + ps * x + y * p->linesize[1],
-                               p->data[2] + ps * x + y * p->linesize[2] };
+        uint8_t *planes[4] = { p->data[0] + ps * x + y * p->linesize[0] };
+        if (f->chroma_planes) {
+            planes[1] =        p->data[1] + ps * x + y * p->linesize[1];
+            planes[2] =        p->data[2] + ps * x + y * p->linesize[2];
+        }
         if (f->transparency)
             planes[3] =        p->data[3] + ps * x + y * p->linesize[3];
         decode_rgb_frame32(f, sc, &gb, planes, width, height, p->linesize);
     } else {
-        uint8_t *planes[4] = { p->data[0] + ps * x + y * p->linesize[0],
-                               p->data[1] + ps * x + y * p->linesize[1],
-                               p->data[2] + ps * x + y * p->linesize[2] };
+        uint8_t *planes[4] = { p->data[0] + ps * x + y * p->linesize[0] };
+        if (f->chroma_planes) {
+            planes[1] =        p->data[1] + ps * x + y * p->linesize[1];
+            planes[2] =        p->data[2] + ps * x + y * p->linesize[2];
+        }
         if (f->transparency)
             planes[3] =        p->data[3] + ps * x + y * p->linesize[3];
         decode_rgb_frame(f, sc, &gb, planes, width, height, p->linesize);
