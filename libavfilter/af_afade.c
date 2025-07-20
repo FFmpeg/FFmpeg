@@ -541,13 +541,6 @@ CROSSFADE(flt, float)
 CROSSFADE(s16, int16_t)
 CROSSFADE(s32, int32_t)
 
-static int check_input(AVFilterLink *inlink)
-{
-    const int queued_samples = ff_inlink_queued_samples(inlink);
-
-    return ff_inlink_check_available_samples(inlink, queued_samples + 1) == 1;
-}
-
 static int pass_frame(AVFilterLink *inlink, AVFilterLink *outlink, int64_t *pts)
 {
     AVFrame *in;
@@ -675,10 +668,10 @@ static int activate(AVFilterContext *ctx)
                ff_inlink_queued_samples(ctx->inputs[1]) >= s->nb_samples) {
         return pass_crossfade(ctx);
     } else if (ff_outlink_frame_wanted(outlink)) {
-        if (!s->status[0] && check_input(ctx->inputs[0]))
+        if (!s->status[0] && ff_outlink_get_status(ctx->inputs[0]))
             s->status[0] = AVERROR_EOF;
         s->passthrough = !s->status[0];
-        if (check_input(ctx->inputs[1])) {
+        if (ff_outlink_get_status(ctx->inputs[1])) {
             s->status[1] = AVERROR_EOF;
             ff_outlink_set_status(outlink, AVERROR_EOF, AV_NOPTS_VALUE);
             return 0;
