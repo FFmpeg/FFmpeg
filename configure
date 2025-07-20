@@ -4925,7 +4925,7 @@ msvc_common_flags(){
             -lstdc++)             ;;
             -l*)                  echo ${flag#-l}.lib ;;
             -LARGEADDRESSAWARE)   echo $flag ;;
-            -L*)                  echo -libpath:${flag#-L} ;;
+            -L*) [ "$_flags_type" = "link" ] && echo -libpath:${flag#-L} ;;
             -Wl,*)                ;;
             *)                    echo $flag ;;
         esac
@@ -4945,6 +4945,12 @@ msvc_flags(){
                                        -wd4273 -wd4554 -wd4701 -wd4703 ;;
         esac
     done
+}
+
+msvc_flags_link(){
+    _flags_type=link
+    msvc_flags "$@"
+    unset _flags_type
 }
 
 icl_flags(){
@@ -5173,12 +5179,13 @@ probe_cc(){
         _cflags_noopt="-O1"
         if $_cc -nologo- 2>&1 | grep -q Linker; then
             _ld_o='-out:$@'
+            _flags_filter=msvc_flags_link
         else
             _ld_o='-Fe$@'
+            _flags_filter=msvc_flags
         fi
         _cc_o='-Fo$@'
         _cc_e='-P -Fi$@'
-        _flags_filter=msvc_flags
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
         _flags='-nologo'
