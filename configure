@@ -7575,6 +7575,7 @@ check_disable_warning -Wno-unused-const-variable
 check_disable_warning -Wno-bool-operation
 check_disable_warning -Wno-char-subscripts
 check_disable_warning -Wno-implicit-const-int-float-conversion
+check_disable_warning -Wno-microsoft-enum-forward-reference
 
 check_disable_warning_headers(){
     warning_flag=-W${1#-Wno-}
