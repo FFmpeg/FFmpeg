@@ -419,7 +419,7 @@ int av_match_list(const char *name, const char *list, char separator);
  * See libc sscanf manual for more information.
  * Locale-independent sscanf implementation.
  */
-int av_sscanf(const char *string, const char *format, ...);
+int av_sscanf(const char *string, const char *format, ...) av_scanf_format(2, 3);
 
 /**
  * @}
