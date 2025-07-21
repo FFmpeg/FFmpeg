@@ -24,6 +24,7 @@ version <next>:
 - Sanyo LD-ADPCM decoder
 - APV in MP4/ISOBMFF muxing and demuxing
 - OpenHarmony hardware decoder/encoder
+- Colordetect filter
 
 
 version 7.1:
