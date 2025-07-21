@@ -65,7 +65,7 @@ cglobal detect_range%1, 4, 7, 5, data, stride, width, height, mpeg_min, mpeg_max
     jg .lineloop
 .end:
     setnz al
-    movzx rax, al
+    movzx eax, al
     RET
 %endmacro
 
@@ -125,11 +125,11 @@ cglobal detect_alpha%1_%3, 6, 7, 6, color, color_stride, alpha, alpha_stride, wi
     add alphaq, alpha_strideq
     dec heightq
     jg .lineloop
-    xor rax, rax
+    xor eax, eax
     RET
 
 .found:
-    mov rax, 1
+    mov eax, 1
     RET
 %endmacro
 
