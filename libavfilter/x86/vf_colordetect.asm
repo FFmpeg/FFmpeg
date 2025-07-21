@@ -133,6 +133,7 @@ cglobal detect_alpha%1_%3, 6, 7, 6, color, color_stride, alpha, alpha_stride, wi
     RET
 %endmacro
 
+%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 detect_range_fn b
 detect_range_fn w
@@ -140,7 +141,9 @@ detect_alpha_fn b, w, full
 detect_alpha_fn w, d, full
 detect_alpha_fn b, w, limited
 detect_alpha_fn w, d, limited
+%endif
 
+%if HAVE_AVX512ICL_EXTERNAL
 INIT_ZMM avx512icl
 detect_range_fn b
 detect_range_fn w
@@ -148,3 +151,4 @@ detect_alpha_fn b, w, full
 detect_alpha_fn w, d, full
 detect_alpha_fn b, w, limited
 detect_alpha_fn w, d, limited
+%endif
