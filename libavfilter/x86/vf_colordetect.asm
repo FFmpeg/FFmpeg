@@ -25,15 +25,15 @@
 SECTION .text
 
 %macro detect_range_fn 1 ; suffix
-cglobal detect_range%1, 6, 7, 5, data, stride, width, height, mpeg_min, mpeg_max, x
+cglobal detect_range%1, 4, 7, 5, data, stride, width, height, mpeg_min, mpeg_max, x
 %if UNIX64 && notcpuflag(avx512)
     movd xm0, mpeg_mind
     movd xm1, mpeg_maxd
     vpbroadcast%1 m0, xm0
     vpbroadcast%1 m1, xm1
 %else
-    vpbroadcast%1 m0, mpeg_mind
-    vpbroadcast%1 m1, mpeg_maxd
+    vpbroadcast%1 m0, mpeg_minm
+    vpbroadcast%1 m1, mpeg_maxm
 %endif
     add dataq, widthq
     neg widthq
