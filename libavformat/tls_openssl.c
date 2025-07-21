@@ -476,12 +476,6 @@ int ff_dtls_export_materials(URLContext *h, char *dtls_srtp_materials, size_t ma
     return 0;
 }
 
-int ff_dtls_state(URLContext *h)
-{
-    TLSContext *c = h->priv_data;
-    return c->tls_shared.state;
-}
-
 static int print_ssl_error(URLContext *h, int ret)
 {
     TLSContext *c = h->priv_data;
@@ -656,7 +650,6 @@ static int dtls_handshake(URLContext *h)
         goto end;
 
     ret = 0;
-    c->tls_shared.state = DTLS_STATE_FINISHED;
 end:
     return ret;
 }

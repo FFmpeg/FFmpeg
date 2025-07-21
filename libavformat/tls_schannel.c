@@ -681,12 +681,6 @@ int ff_dtls_export_materials(URLContext *h, char *dtls_srtp_materials, size_t ma
 #endif
 }
 
-int ff_dtls_state(URLContext *h)
-{
-    TLSContext *c = h->priv_data;
-    return c->tls_shared.state;
-}
-
 static void init_sec_buffer(SecBuffer *buffer, unsigned long type,
                             void *data, unsigned long size)
 {
@@ -1111,7 +1105,6 @@ static int tls_handshake(URLContext *h)
 #endif
 
     c->connected = 1;
-    s->state = DTLS_STATE_FINISHED;
 
 fail:
     return ret;

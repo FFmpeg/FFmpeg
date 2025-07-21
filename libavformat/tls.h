@@ -34,17 +34,6 @@
  */
 #define MAX_CERTIFICATE_SIZE 8192
 
-enum DTLSState {
-    DTLS_STATE_NONE,
-
-    /* Whether DTLS handshake is finished. */
-    DTLS_STATE_FINISHED,
-    /* Whether DTLS session is closed. */
-    DTLS_STATE_CLOSED,
-    /* Whether DTLS handshake is failed. */
-    DTLS_STATE_FAILED,
-};
-
 typedef struct TLSShared {
     char *ca_file;
     int verify;
@@ -64,8 +53,6 @@ typedef struct TLSShared {
 
     int is_dtls;
     int use_srtp;
-
-    enum DTLSState state;
 
     /* The certificate and private key content used for DTLS handshake */
     char* cert_buf;
@@ -111,8 +98,6 @@ int ff_url_read_all(const char *url, AVBPrint *bp);
 int ff_tls_set_external_socket(URLContext *h, URLContext *sock);
 
 int ff_dtls_export_materials(URLContext *h, char *dtls_srtp_materials, size_t materials_sz);
-
-int ff_dtls_state(URLContext *h);
 
 int ff_ssl_read_key_cert(char *key_url, char *cert_url, char *key_buf, size_t key_sz, char *cert_buf, size_t cert_sz, char **fingerprint);
 

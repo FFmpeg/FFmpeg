@@ -198,9 +198,6 @@ typedef struct WHIPContext {
 
     /* The state of the RTC connection. */
     enum WHIPState state;
-    /* The callback return value for DTLS. */
-    int dtls_ret;
-    int dtls_closed;
 
     /* Parameters for the input audio and video codecs. */
     AVCodecParameters *audio_par;
@@ -346,41 +343,6 @@ static av_cold int certificate_key_init(AVFormatContext *s)
     }
 
     return ret;
-}
-
-/**
- * When DTLS state change.
- */
-static int dtls_context_on_state(AVFormatContext *s, const char* type, const char* desc)
-{
-    int ret = 0;
-    WHIPContext *whip = s->priv_data;
-    int state = ff_dtls_state(whip->dtls_uc);
-
-    if (state == DTLS_STATE_CLOSED) {
-        whip->dtls_closed = 1;
-        av_log(whip, AV_LOG_VERBOSE, "DTLS session closed, type=%s, desc=%s, elapsed=%dms\n",
-            type ? type : "", desc ? desc : "", ELAPSED(whip->whip_starttime, av_gettime()));
-        goto error;
-    }
-
-    if (state == DTLS_STATE_FAILED) {
-        whip->state = WHIP_STATE_FAILED;
-        av_log(whip, AV_LOG_ERROR, "DTLS session failed, type=%s, desc=%s\n",
-            type ? type : "", desc ? desc : "");
-        whip->dtls_ret = AVERROR(EIO);
-        goto error;
-    }
-
-    if (state == DTLS_STATE_FINISHED && whip->state < WHIP_STATE_DTLS_FINISHED) {
-        whip->state = WHIP_STATE_DTLS_FINISHED;
-        whip->whip_dtls_time = av_gettime();
-        av_log(whip, AV_LOG_VERBOSE, "DTLS handshake is done, elapsed=%dms\n",
-            ELAPSED(whip->whip_starttime, av_gettime()));
-        return ret;
-    }
-error:
-    return -1;
 }
 
 static av_cold int dtls_initialize(AVFormatContext *s)
@@ -1326,9 +1288,18 @@ next_packet:
         /* If got any DTLS messages, handle it. */
         if (is_dtls_packet(whip->buf, ret) && whip->state >= WHIP_STATE_ICE_CONNECTED || whip->state == WHIP_STATE_DTLS_CONNECTING) {
             whip->state = WHIP_STATE_DTLS_CONNECTING;
-            if ((ret = ffurl_handshake(whip->dtls_uc)) < 0)
+            ret = ffurl_handshake(whip->dtls_uc);
+            if (ret < 0) {
+                whip->state = WHIP_STATE_FAILED;
+                av_log(whip, AV_LOG_VERBOSE, "DTLS session failed\n");
                 goto end;
-            dtls_context_on_state(s, NULL, NULL);
+            }
+            if (!ret) {
+                whip->state = WHIP_STATE_DTLS_FINISHED;
+                whip->whip_dtls_time = av_gettime();
+                av_log(whip, AV_LOG_VERBOSE, "DTLS handshake is done, elapsed=%dms\n",
+                    ELAPSED(whip->whip_starttime, whip->whip_dtls_time));
+            }
             goto next_packet;
         }
     }
@@ -1771,10 +1742,8 @@ static av_cold int whip_init(AVFormatContext *s)
         goto end;
 
 end:
-    if (ret < 0 && whip->state < WHIP_STATE_FAILED)
+    if (ret < 0)
         whip->state = WHIP_STATE_FAILED;
-    if (ret >= 0 && whip->state >= WHIP_STATE_FAILED && whip->dtls_ret < 0)
-        ret = whip->dtls_ret;
     return ret;
 }
 
@@ -1822,12 +1791,8 @@ static int whip_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
 end:
-    if (ret < 0 && whip->state < WHIP_STATE_FAILED)
+    if (ret < 0)
         whip->state = WHIP_STATE_FAILED;
-    if (ret >= 0 && whip->state >= WHIP_STATE_FAILED && whip->dtls_ret < 0)
-        ret = whip->dtls_ret;
-    if (ret >= 0 && whip->dtls_closed)
-        ret = AVERROR(EIO);
     return ret;
 }
 
