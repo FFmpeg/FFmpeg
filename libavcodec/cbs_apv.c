@@ -95,6 +95,7 @@ static void cbs_apv_derive_tile_info(APVDerivedTileInfo *ti,
     } while (0)
 
 
+#if CBS_READ
 #define READ
 #define READWRITE read
 #define RWContext GetBitContext
@@ -123,6 +124,7 @@ static void cbs_apv_derive_tile_info(APVDerivedTileInfo *ti,
 #undef xu
 #undef infer
 #undef byte_alignment
+#endif // CBS_READ
 
 #if CBS_WRITE
 #define WRITE
@@ -165,6 +167,7 @@ static int cbs_apv_split_fragment(CodedBitstreamContext *ctx,
                                   CodedBitstreamFragment *frag,
                                   int header)
 {
+#if CBS_READ
     uint8_t *data = frag->data;
     size_t   size = frag->data_size;
     uint32_t signature;
@@ -249,11 +252,15 @@ static int cbs_apv_split_fragment(CodedBitstreamContext *ctx,
 fail:
     ctx->trace_enable = trace;
     return err;
+#else
+    return AVERROR(ENOSYS);
+#endif
 }
 
 static int cbs_apv_read_unit(CodedBitstreamContext *ctx,
                              CodedBitstreamUnit *unit)
 {
+#if CBS_READ
     GetBitContext gbc;
     int err;
 
@@ -312,6 +319,9 @@ static int cbs_apv_read_unit(CodedBitstreamContext *ctx,
     }
 
     return 0;
+#else
+    return AVERROR(ENOSYS);
+#endif
 }
 
 static int cbs_apv_write_unit(CodedBitstreamContext *ctx,
@@ -369,6 +379,7 @@ static int cbs_apv_write_unit(CodedBitstreamContext *ctx,
 static int cbs_apv_assemble_fragment(CodedBitstreamContext *ctx,
                                      CodedBitstreamFragment *frag)
 {
+#if CBS_WRITE
     size_t size = 4, pos;
 
     for (int i = 0; i < frag->nb_units; i++)
@@ -394,6 +405,9 @@ static int cbs_apv_assemble_fragment(CodedBitstreamContext *ctx,
     frag->data_size = size;
 
     return 0;
+#else
+    return AVERROR(ENOSYS);
+#endif
 }
 
 
