@@ -58,13 +58,13 @@ static int FUNC_NAME(const uint8_t *color, ptrdiff_t color_stride,              
 }
 
 #if HAVE_X86ASM
-#if HAVE_AVX512_EXTERNAL
-DETECT_RANGE_FUNC(detect_range_avx512,   ff_detect_rangeb_avx512, ff_detect_range_c,   0, 64)
-DETECT_RANGE_FUNC(detect_range16_avx512, ff_detect_rangew_avx512, ff_detect_range16_c, 1, 64)
-DETECT_ALPHA_FUNC(detect_alpha_full_avx512,   ff_detect_alphab_full_avx512, ff_detect_alpha_full_c,   0, 64)
-DETECT_ALPHA_FUNC(detect_alpha16_full_avx512, ff_detect_alphaw_full_avx512, ff_detect_alpha16_full_c, 1, 64)
-DETECT_ALPHA_FUNC(detect_alpha_limited_avx512,   ff_detect_alphab_limited_avx512, ff_detect_alpha_limited_c,   0, 64)
-DETECT_ALPHA_FUNC(detect_alpha16_limited_avx512, ff_detect_alphaw_limited_avx512, ff_detect_alpha16_limited_c, 1, 64)
+#if HAVE_AVX512ICL_EXTERNAL
+DETECT_RANGE_FUNC(detect_range_avx512icl,   ff_detect_rangeb_avx512icl, ff_detect_range_c,   0, 64)
+DETECT_RANGE_FUNC(detect_range16_avx512icl, ff_detect_rangew_avx512icl, ff_detect_range16_c, 1, 64)
+DETECT_ALPHA_FUNC(detect_alpha_full_avx512icl,   ff_detect_alphab_full_avx512icl, ff_detect_alpha_full_c,   0, 64)
+DETECT_ALPHA_FUNC(detect_alpha16_full_avx512icl, ff_detect_alphaw_full_avx512icl, ff_detect_alpha16_full_c, 1, 64)
+DETECT_ALPHA_FUNC(detect_alpha_limited_avx512icl,   ff_detect_alphab_limited_avx512icl, ff_detect_alpha_limited_c,   0, 64)
+DETECT_ALPHA_FUNC(detect_alpha16_limited_avx512icl, ff_detect_alphaw_limited_avx512icl, ff_detect_alpha16_limited_c, 1, 64)
 #endif
 #if HAVE_AVX2_EXTERNAL
 DETECT_RANGE_FUNC(detect_range_avx2,   ff_detect_rangeb_avx2, ff_detect_range_c,   0, 32)
@@ -91,13 +91,13 @@ av_cold void ff_color_detect_dsp_init_x86(FFColorDetectDSPContext *dsp, int dept
         }
     }
 #endif
-#if HAVE_AVX512_EXTERNAL
-    if (EXTERNAL_AVX512(cpu_flags)) {
-        dsp->detect_range = depth > 8 ? detect_range16_avx512 : detect_range_avx512;
+#if HAVE_AVX512ICL_EXTERNAL
+    if (EXTERNAL_AVX512ICL(cpu_flags)) {
+        dsp->detect_range = depth > 8 ? detect_range16_avx512icl : detect_range_avx512icl;
         if (color_range == AVCOL_RANGE_JPEG) {
-            dsp->detect_alpha = depth > 8 ? detect_alpha16_full_avx512 : detect_alpha_full_avx512;
+            dsp->detect_alpha = depth > 8 ? detect_alpha16_full_avx512icl : detect_alpha_full_avx512icl;
         } else {
-            dsp->detect_alpha = depth > 8 ? detect_alpha16_limited_avx512 : detect_alpha_limited_avx512;
+            dsp->detect_alpha = depth > 8 ? detect_alpha16_limited_avx512icl : detect_alpha_limited_avx512icl;
         }
     }
 #endif

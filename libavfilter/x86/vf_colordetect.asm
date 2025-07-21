@@ -141,7 +141,7 @@ detect_alpha_fn w, d, full
 detect_alpha_fn b, w, limited
 detect_alpha_fn w, d, limited
 
-INIT_ZMM avx512
+INIT_ZMM avx512icl
 detect_range_fn b
 detect_range_fn w
 detect_alpha_fn b, w, full
