@@ -82,7 +82,7 @@ av_cold void ff_color_detect_dsp_init_x86(FFColorDetectDSPContext *dsp, int dept
 #if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 #if HAVE_AVX2_EXTERNAL
-    if (EXTERNAL_AVX2(cpu_flags)) {
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
         dsp->detect_range = depth > 8 ? detect_range16_avx2 : detect_range_avx2;
         if (color_range == AVCOL_RANGE_JPEG) {
             dsp->detect_alpha = depth > 8 ? detect_alpha16_full_avx2 : detect_alpha_full_avx2;
