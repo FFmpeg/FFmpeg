@@ -1,0 +1,39 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  run_fate:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [linux-amd64,linux-aarch64]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure
+        run: ./configure
+      - name: Build
+        run: make -j$(nproc)
+      - name: Restore Cached Fate-Suite
+        uses: actions/cache/restore@v4
+        with:
+          path: fate-suite
+          key: fate-suite
+          restore-keys: |
+            fate-suite-
+      - name: Sync Fate-Suite
+        id: fate
+        run: |
+          make fate-rsync SAMPLES=$PWD/fate-suite
+          echo "hash=$(find fate-suite -type f | sha256sum | cut -d' ' -f1)" >> $FORGEJO_OUTPUT
+      - name: Cache Fate-Suite
+        uses: actions/cache/save@v4
+        with:
+          path: fate-suite
+          key: fate-suite-${{ steps.fate.outputs.hash }}
+      - name: Run Fate
+        run: make fate SAMPLES=$PWD/fate-suite -j$(nproc)
