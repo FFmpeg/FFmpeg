@@ -50,7 +50,6 @@ typedef struct ReferenceFrame {
 static ID3D12Resource *get_reference_only_resource(AVCodecContext *avctx, ID3D12Resource *output_resource)
 {
     D3D12VADecodeContext   *ctx          = D3D12VA_DECODE_CONTEXT(avctx);
-    AVHWFramesContext      *frames_ctx   = D3D12VA_FRAMES_CONTEXT(avctx);
     AVD3D12VADeviceContext *device_hwctx = ctx->device_ctx;
     int i = 0;
     ID3D12Resource *resource = NULL;
