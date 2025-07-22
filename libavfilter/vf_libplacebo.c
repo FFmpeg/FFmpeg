@@ -160,6 +160,10 @@ typedef struct LibplaceboContext {
     pl_gpu gpu;
     pl_tex tex[4];
 
+    /* dedicated renderer for linear output composition */
+    pl_renderer linear_rr;
+    pl_tex linear_tex;
+
     /* input state */
     LibplaceboInput *inputs;
     int nb_inputs;
@@ -735,6 +739,7 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
         return AVERROR(ENOMEM);
     for (int i = 0; i < s->nb_inputs; i++)
         RET(input_init(avctx, &s->inputs[i], i));
+    s->linear_rr = pl_renderer_create(s->log, s->gpu);
 
     /* fall through */
 fail:
@@ -760,6 +765,8 @@ static void libplacebo_uninit(AVFilterContext *avctx)
 #if PL_API_VER >= 351
     pl_cache_destroy(&s->cache);
 #endif
+    pl_renderer_destroy(&s->linear_rr);
+    pl_tex_destroy(s->gpu, &s->linear_tex);
     pl_options_free(&s->opts);
     pl_vulkan_destroy(&s->vulkan);
     pl_log_destroy(&s->log);
@@ -953,6 +960,20 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         goto fail;
     }
 
+    struct pl_frame orig_target = target;
+    bool use_linear_compositor = false;
+    if (s->linear_tex && target.color.transfer != PL_COLOR_TRC_LINEAR && !s->disable_linear) {
+        use_linear_compositor = true;
+        target.color.transfer = PL_COLOR_TRC_LINEAR;
+        target.repr = pl_color_repr_rgb;
+        target.num_planes = 1;
+        target.planes[0] = (struct pl_plane) {
+            .components = 4,
+            .component_mapping = {0, 1, 2, 3},
+            .texture = s->linear_tex,
+        };
+    }
+
     /* Draw first frame opaque, others with blending */
     opts->params.blend_params = NULL;
 #if PL_API_VER >= 346
@@ -979,6 +1000,13 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
 #else
         opts->params.skip_target_clearing = true;
 #endif
+    }
+
+    if (use_linear_compositor) {
+        /* Blit the linear intermediate image to the output frame */
+        target.crop = orig_target.crop = (struct pl_rect2df) {0};
+        pl_render_image(s->linear_rr, &target, &orig_target, &opts->params);
+        target = orig_target;
     }
 
     if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
@@ -1306,6 +1334,29 @@ static int libplacebo_config_output(AVFilterLink *outlink)
                                s->force_original_aspect_ratio,
                                s->force_divisible_by,
                                s->reset_sar ? sar_in : 1.0);
+
+
+    if (s->nb_inputs > 1 && !s->disable_fbos) {
+        /* Create a separate renderer and composition texture */
+        pl_fmt fmt = pl_find_fmt(s->gpu, PL_FMT_FLOAT, 4, 16, 0, PL_FMT_CAP_BLENDABLE);
+        bool ok = !!fmt;
+        if (ok) {
+            ok = pl_tex_recreate(s->gpu, &s->linear_tex, pl_tex_params(
+                .format     = fmt,
+                .w          = outlink->w,
+                .h          = outlink->h,
+                .renderable = true,
+                .sampleable = true,
+                .storable   = fmt->caps & PL_FMT_CAP_STORABLE,
+            ));
+        }
+
+        if (!ok) {
+            av_log(s, AV_LOG_WARNING, "Failed to create a linear texture for "
+                    "compositing multiple inputs, falling back to non-linear "
+                    "blending.\n");
+        }
+    }
 
     if (s->reset_sar) {
         /* SAR is normalized, or we have multiple inputs, set out to 1:1 */
