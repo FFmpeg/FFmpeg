@@ -28,8 +28,14 @@
 
 #include <stdint.h>
 #include "internal.h"
+#include "version.h"
 
+#if LIBAVUTIL_VERSION_MAJOR < 61
 extern av_export_avutil const uint8_t avpriv_cga_font[2048];
 extern av_export_avutil const uint8_t avpriv_vga16_font[4096];
+#endif
+
+const uint8_t *avpriv_cga_font_get(void);
+const uint8_t *avpriv_vga16_font_get(void);
 
 #endif /* AVUTIL_XGA_FONT_DATA_H */
