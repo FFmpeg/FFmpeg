@@ -244,13 +244,16 @@ int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout)
 
     n = 0;
     for (i = 0; i < numfds; i++) {
+#if !HAVE_WINSOCK2_H
         if (fds[i].fd < 0)
             continue;
-#if !HAVE_WINSOCK2_H
         if (fds[i].fd >= FD_SETSIZE) {
             errno = EINVAL;
             return -1;
         }
+#else
+        if (fds[i].fd == INVALID_SOCKET)
+            continue;
 #endif /* !HAVE_WINSOCK2_H */
 
         if (fds[i].events & POLLIN)
