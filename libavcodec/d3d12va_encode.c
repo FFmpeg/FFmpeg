@@ -1154,7 +1154,7 @@ static int d3d12va_create_encoder_heap(AVCodecContext *avctx)
 
     D3D12_VIDEO_ENCODER_HEAP_DESC desc = {
         .NodeMask             = 0,
-        .Flags                = D3D12_VIDEO_ENCODER_FLAG_NONE,
+        .Flags                = D3D12_VIDEO_ENCODER_HEAP_FLAG_NONE,
         .EncodeCodec          = ctx->codec->d3d12_codec,
         .EncodeProfile        = ctx->profile->d3d12_profile,
         .EncodeLevel          = ctx->level,
