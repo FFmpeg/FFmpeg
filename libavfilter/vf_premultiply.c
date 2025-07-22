@@ -103,7 +103,7 @@ static void premultiply8(const uint8_t *msrc, const uint8_t *asrc,
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            dst[x] = ((msrc[x] * (((asrc[x] >> 1) & 1) + asrc[x])) + 128) >> 8;
+            dst[x] = (msrc[x] * asrc[x] + 128) >> 8;
         }
 
         dst  += dlinesize;
@@ -123,7 +123,7 @@ static void premultiply8yuv(const uint8_t *msrc, const uint8_t *asrc,
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            dst[x] = ((((msrc[x] - 128) * (((asrc[x] >> 1) & 1) + asrc[x]))) >> 8) + 128;
+            dst[x] = (((msrc[x] - 128) * asrc[x]) >> 8) + 128;
         }
 
         dst  += dlinesize;
@@ -143,7 +143,7 @@ static void premultiply8offset(const uint8_t *msrc, const uint8_t *asrc,
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            dst[x] = ((((msrc[x] - offset) * (((asrc[x] >> 1) & 1) + asrc[x])) + 128) >> 8) + offset;
+            dst[x] = ((((msrc[x] - offset) * asrc[x]) + 128) >> 8) + offset;
         }
 
         dst  += dlinesize;
@@ -166,7 +166,7 @@ static void premultiply16(const uint8_t *mmsrc, const uint8_t *aasrc,
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            dst[x] = ((msrc[x] * (((asrc[x] >> 1) & 1) + asrc[x])) + half) >> shift;
+            dst[x] = (msrc[x] * asrc[x] + half) >> shift;
         }
 
         dst  += dlinesize / 2;
@@ -189,7 +189,7 @@ static void premultiply16yuv(const uint8_t *mmsrc, const uint8_t *aasrc,
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            dst[x] = ((((msrc[x] - half) * (int64_t)(((asrc[x] >> 1) & 1) + asrc[x]))) >> shift) + half;
+            dst[x] = (((msrc[x] - half) * (int64_t)asrc[x]) >> shift) + half;
         }
 
         dst  += dlinesize / 2;
@@ -212,7 +212,7 @@ static void premultiply16offset(const uint8_t *mmsrc, const uint8_t *aasrc,
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            dst[x] = ((((msrc[x] - offset) * (int64_t)(((asrc[x] >> 1) & 1) + asrc[x])) + half) >> shift) + offset;
+            dst[x] = ((((msrc[x] - offset) * (int64_t)asrc[x]) + half) >> shift) + offset;
         }
 
         dst  += dlinesize / 2;
