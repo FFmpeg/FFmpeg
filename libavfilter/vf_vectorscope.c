@@ -968,7 +968,7 @@ static void draw_ihtext(AVFrame *out, int x, int y, float o1, float o2, const ch
     int font_height;
     int i, plane;
 
-    font = avpriv_cga_font,   font_height =  8;
+    font = avpriv_cga_font_get(),   font_height =  8;
 
     for (plane = 0; plane < 4 && out->data[plane]; plane++) {
         for (i = 0; txt[i]; i++) {
@@ -993,7 +993,7 @@ static void draw_ihtext16(AVFrame *out, int x, int y, float o1, float o2, const 
     int font_height;
     int i, plane;
 
-    font = avpriv_cga_font,   font_height =  8;
+    font = avpriv_cga_font_get(),   font_height =  8;
 
     for (plane = 0; plane < 4 && out->data[plane]; plane++) {
         for (i = 0; txt[i]; i++) {
@@ -1019,7 +1019,7 @@ static void draw_htext(AVFrame *out, int x, int y, float o1, float o2, const cha
     int font_height;
     int i, plane;
 
-    font = avpriv_cga_font,   font_height =  8;
+    font = avpriv_cga_font_get(),   font_height =  8;
 
     for (plane = 0; plane < 4 && out->data[plane]; plane++) {
         for (i = 0; txt[i]; i++) {
@@ -1045,7 +1045,7 @@ static void draw_htext16(AVFrame *out, int x, int y, float o1, float o2, const c
     int font_height;
     int i, plane;
 
-    font = avpriv_cga_font,   font_height =  8;
+    font = avpriv_cga_font_get(),   font_height =  8;
 
     for (plane = 0; plane < 4 && out->data[plane]; plane++) {
         for (i = 0; txt[i]; i++) {

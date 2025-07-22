@@ -246,8 +246,8 @@ static void drawtext(AVFrame *pic, int x, int y, int ftid, const uint8_t *color,
     int font_height;
     va_list vl;
 
-    if      (ftid == FONT16) font = avpriv_vga16_font, font_height = 16;
-    else if (ftid == FONT8)  font = avpriv_cga_font,   font_height =  8;
+    if      (ftid == FONT16) font = avpriv_vga16_font_get(), font_height = 16;
+    else if (ftid == FONT8)  font = avpriv_cga_font_get(),   font_height =  8;
     else return;
 
     va_start(vl, fmt);

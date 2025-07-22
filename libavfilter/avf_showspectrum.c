@@ -492,7 +492,7 @@ static void drawtext(AVFrame *pic, int x, int y, const char *txt, int o)
     const uint8_t *font;
     int font_height;
 
-    font = avpriv_cga_font,   font_height =  8;
+    font = avpriv_cga_font_get(),   font_height =  8;
 
     for (int i = 0; txt[i]; i++) {
         int char_y, mask;

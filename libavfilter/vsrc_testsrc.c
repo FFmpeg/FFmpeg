@@ -733,6 +733,7 @@ static uint32_t color_gradient(unsigned index)
 static void draw_text(TestSourceContext *s, AVFrame *frame, FFDrawColor *color,
                       int x0, int y0, const uint8_t *text)
 {
+    const uint8_t *vga16_font = avpriv_vga16_font_get();
     int x = x0;
 
     for (; *text; text++) {
@@ -743,7 +744,7 @@ static void draw_text(TestSourceContext *s, AVFrame *frame, FFDrawColor *color,
         }
         ff_blend_mask(&s->draw, color, frame->data, frame->linesize,
                       frame->width, frame->height,
-                      avpriv_vga16_font + *text * 16, 1, 8, 16, 0, 0, x, y0);
+                      &vga16_font[*text * 16], 1, 8, 16, 0, 0, x, y0);
         x += 8;
     }
 }
