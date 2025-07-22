@@ -38,6 +38,7 @@
 #include "internal.h"
 #include "mlz.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/crc.h"
 #include "libavutil/softfloat_ieee754.h"
@@ -194,6 +195,7 @@ typedef struct ALSChannelData {
 
 
 typedef struct ALSDecContext {
+    AVClass        *av_class;
     AVCodecContext *avctx;
     ALSSpecificConfig sconf;
     GetBitContext gb;
@@ -239,6 +241,7 @@ typedef struct ALSDecContext {
     unsigned char *larray;          ///< buffer to store the output of masked lz decompression
     int *nbits;                     ///< contains the number of bits to read for masked lz decompression for all samples
     int highest_decoded_channel;
+    int user_max_order;             ///< user specified maximum prediction order
 } ALSDecContext;
 
 
@@ -351,6 +354,11 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
     sconf->rlslms               = get_bits1(&gb);
     skip_bits(&gb, 5);       // skip 5 reserved bits
     skip_bits1(&gb);         // skip aux_data_enabled
+
+    if (sconf->max_order > ctx->user_max_order) {
+        av_log(avctx, AV_LOG_ERROR, "order %d exceeds specified max %d\n", sconf->max_order, ctx->user_max_order);
+        return AVERROR_INVALIDDATA;
+    }
 
 
     // check for ALSSpecificConfig struct
@@ -2183,6 +2191,17 @@ static av_cold void flush(AVCodecContext *avctx)
     ctx->frame_id = 0;
 }
 
+static const AVOption options[] = {
+    { "max_order", "Sets the maximum order (ALS simple profile allows max 15)", offsetof(ALSDecContext, user_max_order), AV_OPT_TYPE_INT, { .i64 = 1023 }, 0, 1023, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM },
+    { NULL }
+};
+
+static const AVClass als_class = {
+    .class_name = "als",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 const FFCodec ff_als_decoder = {
     .p.name         = "als",
@@ -2193,6 +2212,7 @@ const FFCodec ff_als_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     FF_CODEC_DECODE_CB(decode_frame),
+    .p.priv_class   = &als_class,
     .flush          = flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
