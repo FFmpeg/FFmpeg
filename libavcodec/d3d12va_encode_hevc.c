@@ -238,7 +238,6 @@ static int d3d12va_encode_hevc_init_sequence_params(AVCodecContext *avctx)
     AVD3D12VAFramesContext   *hwctx = base_ctx->input_frames->hwctx;
     H265RawSPS                *sps  = &priv->units.raw_sps;
     H265RawPPS                *pps  = &priv->units.raw_pps;
-    H265RawVUI                *vui  = &sps->vui;
     D3D12_VIDEO_ENCODER_PROFILE_HEVC profile = D3D12_VIDEO_ENCODER_PROFILE_HEVC_MAIN;
     D3D12_VIDEO_ENCODER_LEVEL_TIER_CONSTRAINTS_HEVC level = { 0 };
     const AVPixFmtDescriptor *desc;
