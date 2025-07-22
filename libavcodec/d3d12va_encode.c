@@ -1265,7 +1265,7 @@ static int d3d12va_encode_create_command_objects(AVCodecContext *avctx)
 {
     D3D12VAEncodeContext *ctx = avctx->priv_data;
     ID3D12CommandAllocator *command_allocator = NULL;
-    int err;
+    int err = AVERROR_UNKNOWN;
     HRESULT hr;
 
     D3D12_COMMAND_QUEUE_DESC queue_desc = {
