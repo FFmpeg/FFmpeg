@@ -240,8 +240,10 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len, int 
     case ASF_UNICODE:
         avio_get_str16le(s->pb, len, value, 2 * len + 1);
         break;
-    case -1: // ASCI
-        avio_read(s->pb, value, len);
+    case -1:; // ASCII
+        int ret = ffio_read_size(s->pb, value, len);
+        if (ret < 0)
+            goto finish;
         value[len]=0;
         break;
     case ASF_BYTE_ARRAY:
