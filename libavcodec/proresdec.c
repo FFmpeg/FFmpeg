@@ -276,10 +276,10 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
 #endif
     }
 
-    ctx->frame->color_primaries = buf[14];
-    ctx->frame->color_trc       = buf[15];
-    ctx->frame->colorspace      = buf[16];
-    ctx->frame->color_range     = AVCOL_RANGE_MPEG;
+    avctx->color_primaries = buf[14];
+    avctx->color_trc       = buf[15];
+    avctx->colorspace      = buf[16];
+    avctx->color_range     = AVCOL_RANGE_MPEG;
 
     ptr   = buf + 20;
     flags = buf[19];
@@ -779,6 +779,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if (frame_hdr_size < 0)
         return frame_hdr_size;
 
+    if (avctx->skip_frame == AVDISCARD_ALL)
+        return 0;
+
     buf += frame_hdr_size;
     buf_size -= frame_hdr_size;
 
@@ -870,6 +873,7 @@ const FFCodec ff_prores_decoder = {
     FF_CODEC_DECODE_CB(decode_frame),
     UPDATE_THREAD_CONTEXT(update_thread_context),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
+    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
 #if HWACCEL_MAX
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
