@@ -844,8 +844,10 @@ int ff_silk_decode_superframe(SilkContext *s, OpusRangeCoder *rc,
     }
 
     for (i = 0; i < nb_frames; i++) {
-        for (j = 0; j < coded_channels && !s->midonly; j++)
-            silk_decode_frame(s, rc, i, j, coded_channels, active[j][i], active[1][i], 0);
+        for (j = 0; j < coded_channels && !s->midonly; j++) {
+            int active1 = coded_channels > 1 ? active[1][i] : 0;
+            silk_decode_frame(s, rc, i, j, coded_channels, active[j][i], active1, 0);
+        }
 
         /* reset the side channel if it is not coded */
         if (s->midonly && s->frame[1].coded)
