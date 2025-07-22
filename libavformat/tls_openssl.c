@@ -500,16 +500,16 @@ typedef struct TLSContext {
  * to a human-readable string, and stores it in the TLSContext's error_message field.
  * The error queue is then cleared using ERR_clear_error().
  */
-static const char* openssl_get_error(TLSContext *ctx)
+static const char* openssl_get_error(TLSContext *c)
 {
     int r2 = ERR_get_error();
     if (r2) {
-        ERR_error_string_n(r2, ctx->error_message, sizeof(ctx->error_message));
+        ERR_error_string_n(r2, c->error_message, sizeof(c->error_message));
     } else
-        ctx->error_message[0] = '\0';
+        c->error_message[0] = '\0';
 
     ERR_clear_error();
-    return ctx->error_message;
+    return c->error_message;
 }
 
 int ff_tls_set_external_socket(URLContext *h, URLContext *sock)
@@ -661,24 +661,24 @@ static int url_bio_bputs(BIO *b, const char *str)
 
 static av_cold void init_bio_method(URLContext *h)
 {
-    TLSContext *p = h->priv_data;
+    TLSContext *c = h->priv_data;
     BIO *bio;
-    p->url_bio_method = BIO_meth_new(BIO_TYPE_SOURCE_SINK, "urlprotocol bio");
-    BIO_meth_set_write(p->url_bio_method, url_bio_bwrite);
-    BIO_meth_set_read(p->url_bio_method, url_bio_bread);
-    BIO_meth_set_puts(p->url_bio_method, url_bio_bputs);
-    BIO_meth_set_ctrl(p->url_bio_method, url_bio_ctrl);
-    BIO_meth_set_create(p->url_bio_method, url_bio_create);
-    BIO_meth_set_destroy(p->url_bio_method, url_bio_destroy);
-    bio = BIO_new(p->url_bio_method);
-    BIO_set_data(bio, p);
+    c->url_bio_method = BIO_meth_new(BIO_TYPE_SOURCE_SINK, "urlprotocol bio");
+    BIO_meth_set_write(c->url_bio_method, url_bio_bwrite);
+    BIO_meth_set_read(c->url_bio_method, url_bio_bread);
+    BIO_meth_set_puts(c->url_bio_method, url_bio_bputs);
+    BIO_meth_set_ctrl(c->url_bio_method, url_bio_ctrl);
+    BIO_meth_set_create(c->url_bio_method, url_bio_create);
+    BIO_meth_set_destroy(c->url_bio_method, url_bio_destroy);
+    bio = BIO_new(c->url_bio_method);
+    BIO_set_data(bio, c);
 
-    SSL_set_bio(p->ssl, bio, bio);
+    SSL_set_bio(c->ssl, bio, bio);
 }
 
 static void openssl_info_callback(const SSL *ssl, int where, int ret) {
     const char *method = "undefined";
-    TLSContext *ctx = (TLSContext*)SSL_get_ex_data(ssl, 0);
+    TLSContext *c = (TLSContext*)SSL_get_ex_data(ssl, 0);
 
     if (where & SSL_ST_CONNECT) {
         method = "SSL_connect";
@@ -686,11 +686,11 @@ static void openssl_info_callback(const SSL *ssl, int where, int ret) {
         method = "SSL_accept";
 
     if (where & SSL_CB_LOOP) {
-        av_log(ctx, AV_LOG_DEBUG, "Info method=%s state=%s(%s), where=%d, ret=%d\n",
+        av_log(c, AV_LOG_DEBUG, "Info method=%s state=%s(%s), where=%d, ret=%d\n",
                method, SSL_state_string(ssl), SSL_state_string_long(ssl), where, ret);
     } else if (where & SSL_CB_ALERT) {
         method = (where & SSL_CB_READ) ? "read":"write";
-        av_log(ctx, AV_LOG_DEBUG, "Alert method=%s state=%s(%s), where=%d, ret=%d\n",
+        av_log(c, AV_LOG_DEBUG, "Alert method=%s state=%s(%s), where=%d, ret=%d\n",
                method, SSL_state_string(ssl), SSL_state_string_long(ssl), where, ret);
     }
 }
@@ -698,29 +698,29 @@ static void openssl_info_callback(const SSL *ssl, int where, int ret) {
 static int dtls_handshake(URLContext *h)
 {
     int ret = 1, r0, r1;
-    TLSContext *p = h->priv_data;
+    TLSContext *c = h->priv_data;
 
-    p->tls_shared.udp->flags &= ~AVIO_FLAG_NONBLOCK;
+    c->tls_shared.udp->flags &= ~AVIO_FLAG_NONBLOCK;
 
-    r0 = SSL_do_handshake(p->ssl);
+    r0 = SSL_do_handshake(c->ssl);
     if (r0 <= 0) {
-        r1 = SSL_get_error(p->ssl, r0);
+        r1 = SSL_get_error(c->ssl, r0);
 
         if (r1 != SSL_ERROR_WANT_READ && r1 != SSL_ERROR_WANT_WRITE && r1 != SSL_ERROR_ZERO_RETURN) {
-            av_log(p, AV_LOG_ERROR, "Handshake failed, r0=%d, r1=%d\n", r0, r1);
+            av_log(c, AV_LOG_ERROR, "Handshake failed, r0=%d, r1=%d\n", r0, r1);
             ret = print_ssl_error(h, r0);
             goto end;
         }
     } else {
-        av_log(p, AV_LOG_TRACE, "Handshake success, r0=%d\n", r0);
+        av_log(c, AV_LOG_TRACE, "Handshake success, r0=%d\n", r0);
     }
 
     /* Check whether the handshake is completed. */
-    if (SSL_is_init_finished(p->ssl) != TLS_ST_OK)
+    if (SSL_is_init_finished(c->ssl) != TLS_ST_OK)
         goto end;
 
     ret = 0;
-    p->tls_shared.state = DTLS_STATE_FINISHED;
+    c->tls_shared.state = DTLS_STATE_FINISHED;
 end:
     return ret;
 }
@@ -728,57 +728,57 @@ end:
 static av_cold int openssl_init_ca_key_cert(URLContext *h)
 {
     int ret;
-    TLSContext *p = h->priv_data;
-    TLSShared *c = &p->tls_shared;
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
     EVP_PKEY *pkey = NULL;
     X509 *cert = NULL;
     /* setup ca, private key, certificate */
-    if (c->ca_file) {
-        if (!SSL_CTX_load_verify_locations(p->ctx, c->ca_file, NULL))
-            av_log(h, AV_LOG_ERROR, "SSL_CTX_load_verify_locations %s\n", openssl_get_error(p));
+    if (s->ca_file) {
+        if (!SSL_CTX_load_verify_locations(c->ctx, s->ca_file, NULL))
+            av_log(h, AV_LOG_ERROR, "SSL_CTX_load_verify_locations %s\n", openssl_get_error(c));
     } else {
-        if (!SSL_CTX_set_default_verify_paths(p->ctx)) {
+        if (!SSL_CTX_set_default_verify_paths(c->ctx)) {
             // Only log the failure but do not error out, as this is not fatal
             av_log(h, AV_LOG_WARNING, "Failure setting default verify locations: %s\n",
-                openssl_get_error(p));
+                openssl_get_error(c));
         }
     }
 
-    if (c->cert_file) {
-        ret = SSL_CTX_use_certificate_chain_file(p->ctx, c->cert_file);
+    if (s->cert_file) {
+        ret = SSL_CTX_use_certificate_chain_file(c->ctx, s->cert_file);
         if (ret <= 0) {
             av_log(h, AV_LOG_ERROR, "Unable to load cert file %s: %s\n",
-               c->cert_file, openssl_get_error(p));
+               s->cert_file, openssl_get_error(c));
             ret = AVERROR(EIO);
             goto fail;
         }
-    } else if (c->cert_buf) {
-        cert = cert_from_pem_string(c->cert_buf);
-        if (SSL_CTX_use_certificate(p->ctx, cert) != 1) {
-            av_log(p, AV_LOG_ERROR, "SSL: Init SSL_CTX_use_certificate failed, %s\n", openssl_get_error(p));
+    } else if (s->cert_buf) {
+        cert = cert_from_pem_string(s->cert_buf);
+        if (SSL_CTX_use_certificate(c->ctx, cert) != 1) {
+            av_log(c, AV_LOG_ERROR, "SSL: Init SSL_CTX_use_certificate failed, %s\n", openssl_get_error(c));
             ret = AVERROR(EINVAL);
             goto fail;
         }
     }
 
-    if (c->key_file) {
-        ret = SSL_CTX_use_PrivateKey_file(p->ctx, c->key_file, SSL_FILETYPE_PEM);
+    if (s->key_file) {
+        ret = SSL_CTX_use_PrivateKey_file(c->ctx, s->key_file, SSL_FILETYPE_PEM);
         if (ret <= 0) {
             av_log(h, AV_LOG_ERROR, "Unable to load key file %s: %s\n",
-                c->key_file, openssl_get_error(p));
+                s->key_file, openssl_get_error(c));
             ret = AVERROR(EIO);
             goto fail;
         }
-    } else if (c->key_buf) {
-        pkey = pkey_from_pem_string(c->key_buf, 1);
-        if (SSL_CTX_use_PrivateKey(p->ctx, pkey) != 1) {
-            av_log(p, AV_LOG_ERROR, "Init SSL_CTX_use_PrivateKey failed, %s\n", openssl_get_error(p));
+    } else if (s->key_buf) {
+        pkey = pkey_from_pem_string(s->key_buf, 1);
+        if (SSL_CTX_use_PrivateKey(c->ctx, pkey) != 1) {
+            av_log(c, AV_LOG_ERROR, "Init SSL_CTX_use_PrivateKey failed, %s\n", openssl_get_error(c));
             ret = AVERROR(EINVAL);
             goto fail;
         }
     }
 
-    if (c->listen && !c->cert_file && !c->cert_buf && !c->key_file && !c->key_buf) {
+    if (s->listen && !s->cert_file && !s->cert_buf && !s->key_file && !s->key_buf) {
         av_log(h, AV_LOG_VERBOSE, "No server certificate provided, using self-signed\n");
 
         ret = openssl_gen_private_key(&pkey);
@@ -789,14 +789,14 @@ static av_cold int openssl_init_ca_key_cert(URLContext *h)
         if (ret < 0)
             goto fail;
 
-        if (SSL_CTX_use_certificate(p->ctx, cert) != 1) {
-            av_log(p, AV_LOG_ERROR, "SSL_CTX_use_certificate failed for self-signed cert, %s\n", openssl_get_error(p));
+        if (SSL_CTX_use_certificate(c->ctx, cert) != 1) {
+            av_log(c, AV_LOG_ERROR, "SSL_CTX_use_certificate failed for self-signed cert, %s\n", openssl_get_error(c));
             ret = AVERROR(EINVAL);
             goto fail;
         }
 
-        if (SSL_CTX_use_PrivateKey(p->ctx, pkey) != 1) {
-            av_log(p, AV_LOG_ERROR, "SSL_CTX_use_PrivateKey failed for self-signed cert, %s\n", openssl_get_error(p));
+        if (SSL_CTX_use_PrivateKey(c->ctx, pkey) != 1) {
+            av_log(c, AV_LOG_ERROR, "SSL_CTX_use_PrivateKey failed for self-signed cert, %s\n", openssl_get_error(c));
             ret = AVERROR(EINVAL);
             goto fail;
         }
@@ -815,10 +815,10 @@ fail:
  */
 static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **options)
 {
-    TLSContext *p = h->priv_data;
-    TLSShared *c = &p->tls_shared;
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
     int ret = 0;
-    c->is_dtls = 1;
+    s->is_dtls = 1;
 
     /**
      * The profile for OpenSSL's SRTP is SRTP_AES128_CM_SHA1_80, see ssl/d1_srtp.c.
@@ -826,8 +826,8 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
      */
     const char* profiles = "SRTP_AES128_CM_SHA1_80";
 
-    p->ctx = SSL_CTX_new(c->listen ? DTLS_server_method() : DTLS_client_method());
-    if (!p->ctx) {
+    c->ctx = SSL_CTX_new(s->listen ? DTLS_server_method() : DTLS_client_method());
+    if (!c->ctx) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
@@ -836,53 +836,54 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     if (ret < 0) goto fail;
 
     /* Note, this doesn't check that the peer certificate actually matches the requested hostname. */
-    if (c->verify)
-        SSL_CTX_set_verify(p->ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+    if (s->verify)
+        SSL_CTX_set_verify(c->ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
 
     /* Setup the SRTP context */
-    if (SSL_CTX_set_tlsext_use_srtp(p->ctx, profiles)) {
-        av_log(p, AV_LOG_ERROR, "Init SSL_CTX_set_tlsext_use_srtp failed, profiles=%s, %s\n",
-            profiles, openssl_get_error(p));
+    if (SSL_CTX_set_tlsext_use_srtp(c->ctx, profiles)) {
+        av_log(c, AV_LOG_ERROR, "Init SSL_CTX_set_tlsext_use_srtp failed, profiles=%s, %s\n",
+            profiles, openssl_get_error(c));
         ret = AVERROR(EINVAL);
         return ret;
     }
 
     /* The ssl should not be created unless the ctx has been initialized. */
-    p->ssl = SSL_new(p->ctx);
-    if (!p->ssl) {
+    c->ssl = SSL_new(c->ctx);
+    if (!c->ssl) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
 
-    if (!c->listen && !c->numerichost)
-        SSL_set_tlsext_host_name(p->ssl, c->host);
+    if (!s->listen && !s->numerichost)
+        SSL_set_tlsext_host_name(c->ssl, s->host);
 
     /* Setup the callback for logging. */
-    SSL_set_ex_data(p->ssl, 0, p);
-    SSL_CTX_set_info_callback(p->ctx, openssl_info_callback);
+    SSL_set_ex_data(c->ssl, 0, c);
+    SSL_CTX_set_info_callback(c->ctx, openssl_info_callback);
 
     /**
      * We have set the MTU to fragment the DTLS packet. It is important to note that the
      * packet is split to ensure that each handshake packet is smaller than the MTU.
      */
-    if (c->mtu <= 0)
-        c->mtu = 1096;
-    SSL_set_options(p->ssl, SSL_OP_NO_QUERY_MTU);
-    SSL_set_mtu(p->ssl, c->mtu);
-    DTLS_set_link_mtu(p->ssl, c->mtu);
+    if (s->mtu <= 0)
+        s->mtu = 1096;
+    SSL_set_options(c->ssl, SSL_OP_NO_QUERY_MTU);
+    SSL_set_mtu(c->ssl, s->mtu);
+    DTLS_set_link_mtu(c->ssl, s->mtu);
     init_bio_method(h);
-    if (p->tls_shared.external_sock != 1) {
-        if ((ret = ff_tls_open_underlying(&p->tls_shared, h, url, options)) < 0) {
-            av_log(p, AV_LOG_ERROR, "Failed to connect %s\n", url);
+
+    if (c->tls_shared.external_sock != 1) {
+        if ((ret = ff_tls_open_underlying(&c->tls_shared, h, url, options)) < 0) {
+            av_log(c, AV_LOG_ERROR, "Failed to connect %s\n", url);
             return ret;
         }
     }
 
     /* This seems to be necessary despite explicitly setting client/server method above. */
-    if (c->listen)
-        SSL_set_accept_state(p->ssl);
+    if (s->listen)
+        SSL_set_accept_state(c->ssl);
     else
-        SSL_set_connect_state(p->ssl);
+        SSL_set_connect_state(c->ssl);
 
     /**
      * During initialization, we only need to call SSL_do_handshake once because SSL_read consumes
@@ -895,16 +896,16 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
      *
      * The SSL_do_handshake can't be called if DTLS hasn't prepare for udp.
      */
-    if (p->tls_shared.external_sock != 1) {
+    if (c->tls_shared.external_sock != 1) {
         ret = dtls_handshake(h);
         // Fatal SSL error, for example, no available suite when peer is DTLS 1.0 while we are DTLS 1.2.
         if (ret < 0) {
-            av_log(p, AV_LOG_ERROR, "Failed to drive SSL context, ret=%d\n", ret);
+            av_log(c, AV_LOG_ERROR, "Failed to drive SSL context, ret=%d\n", ret);
             return AVERROR(EIO);
         }
     }
 
-    av_log(p, AV_LOG_VERBOSE, "Setup ok, MTU=%d\n", p->tls_shared.mtu);
+    av_log(c, AV_LOG_VERBOSE, "Setup ok, MTU=%d\n", c->tls_shared.mtu);
 
     ret = 0;
 fail:
@@ -913,24 +914,24 @@ fail:
 
 static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **options)
 {
-    TLSContext *p = h->priv_data;
-    TLSShared *c = &p->tls_shared;
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
     int ret;
 
-    if ((ret = ff_tls_open_underlying(c, h, uri, options)) < 0)
+    if ((ret = ff_tls_open_underlying(s, h, uri, options)) < 0)
         goto fail;
 
     // We want to support all versions of TLS >= 1.0, but not the deprecated
     // and insecure SSLv2 and SSLv3.  Despite the name, TLS_*_method()
     // enables support for all versions of SSL and TLS, and we then disable
     // support for the old protocols immediately after creating the context.
-    p->ctx = SSL_CTX_new(c->listen ? TLS_server_method() : TLS_client_method());
-    if (!p->ctx) {
-        av_log(h, AV_LOG_ERROR, "%s\n", openssl_get_error(p));
+    c->ctx = SSL_CTX_new(s->listen ? TLS_server_method() : TLS_client_method());
+    if (!c->ctx) {
+        av_log(h, AV_LOG_ERROR, "%s\n", openssl_get_error(c));
         ret = AVERROR(EIO);
         goto fail;
     }
-    if (!SSL_CTX_set_min_proto_version(p->ctx, TLS1_VERSION)) {
+    if (!SSL_CTX_set_min_proto_version(c->ctx, TLS1_VERSION)) {
         av_log(h, AV_LOG_ERROR, "Failed to set minimum TLS version to TLSv1\n");
         ret = AVERROR_EXTERNAL;
         goto fail;
@@ -938,33 +939,33 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     ret = openssl_init_ca_key_cert(h);
     if (ret < 0) goto fail;
 
-    if (c->verify)
-        SSL_CTX_set_verify(p->ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
-    p->ssl = SSL_new(p->ctx);
-    if (!p->ssl) {
-        av_log(h, AV_LOG_ERROR, "%s\n", openssl_get_error(p));
+    if (s->verify)
+        SSL_CTX_set_verify(c->ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+    c->ssl = SSL_new(c->ctx);
+    if (!c->ssl) {
+        av_log(h, AV_LOG_ERROR, "%s\n", openssl_get_error(c));
         ret = AVERROR(EIO);
         goto fail;
     }
-    SSL_set_ex_data(p->ssl, 0, p);
-    SSL_CTX_set_info_callback(p->ctx, openssl_info_callback);
+    SSL_set_ex_data(c->ssl, 0, c);
+    SSL_CTX_set_info_callback(c->ctx, openssl_info_callback);
     init_bio_method(h);
-    if (!c->listen && !c->numerichost) {
+    if (!s->listen && !s->numerichost) {
         // By default OpenSSL does too lax wildcard matching
-        SSL_set_hostflags(p->ssl, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
-        if (!SSL_set1_host(p->ssl, c->host)) {
+        SSL_set_hostflags(c->ssl, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+        if (!SSL_set1_host(c->ssl, s->host)) {
             av_log(h, AV_LOG_ERROR, "Failed to set hostname for TLS/SSL verification: %s\n",
-                openssl_get_error(p));
+                openssl_get_error(c));
             ret = AVERROR_EXTERNAL;
             goto fail;
         }
-        if (!SSL_set_tlsext_host_name(p->ssl, c->host)) {
-            av_log(h, AV_LOG_ERROR, "Failed to set hostname for SNI: %s\n", openssl_get_error(p));
+        if (!SSL_set_tlsext_host_name(c->ssl, s->host)) {
+            av_log(h, AV_LOG_ERROR, "Failed to set hostname for SNI: %s\n", openssl_get_error(c));
             ret = AVERROR_EXTERNAL;
             goto fail;
         }
     }
-    ret = c->listen ? SSL_accept(p->ssl) : SSL_connect(p->ssl);
+    ret = s->listen ? SSL_accept(c->ssl) : SSL_connect(c->ssl);
     if (ret == 0) {
         av_log(h, AV_LOG_ERROR, "Unable to negotiate TLS/SSL session\n");
         ret = AVERROR(EIO);
@@ -983,10 +984,10 @@ fail:
 static int tls_read(URLContext *h, uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    URLContext *uc = c->tls_shared.is_dtls ? c->tls_shared.udp
-                                           : c->tls_shared.tcp;
+    TLSShared *s = &c->tls_shared;
+    URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     int ret;
-    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    // Set or clear the AVIO_FLAG_NONBLOCK on the underlying socket
     uc->flags &= ~AVIO_FLAG_NONBLOCK;
     uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
     ret = SSL_read(c->ssl, buf, size);
@@ -1000,15 +1001,15 @@ static int tls_read(URLContext *h, uint8_t *buf, int size)
 static int tls_write(URLContext *h, const uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    URLContext *uc = c->tls_shared.is_dtls ? c->tls_shared.udp
-                                           : c->tls_shared.tcp;
+    TLSShared *s = &c->tls_shared;
+    URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     int ret;
 
     // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
     uc->flags &= ~AVIO_FLAG_NONBLOCK;
     uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
 
-    if (c->tls_shared.is_dtls)
+    if (s->is_dtls)
         size = FFMIN(size, DTLS_get_data_mtu(c->ssl));
 
     ret = SSL_write(c->ssl, buf, size);
@@ -1021,16 +1022,16 @@ static int tls_write(URLContext *h, const uint8_t *buf, int size)
 
 static int tls_get_file_handle(URLContext *h)
 {
-    TLSContext *p = h->priv_data;
-    TLSShared *c = &p->tls_shared;
-    return ffurl_get_file_handle(c->is_dtls ? c->udp : c->tcp);
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
+    return ffurl_get_file_handle(s->is_dtls ? s->udp : s->tcp);
 }
 
 static int tls_get_short_seek(URLContext *h)
 {
-    TLSContext *p = h->priv_data;
-    TLSShared *c = &p->tls_shared;
-    return ffurl_get_short_seek(c->is_dtls ? c->udp : c->tcp);
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
+    return ffurl_get_short_seek(s->is_dtls ? s->udp : s->tcp);
 }
 
 static const AVOption options[] = {
