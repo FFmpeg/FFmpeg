@@ -93,10 +93,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_WARNING, "font height %i not supported\n", s->font_height);
             s->font_height = 8;
         case 8:
-            s->font = avpriv_cga_font;
+            s->font = avpriv_cga_font_get();
             break;
         case 16:
-            s->font = avpriv_vga16_font;
+            s->font = avpriv_vga16_font_get();
             break;
         }
     }
