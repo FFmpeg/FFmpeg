@@ -299,21 +299,20 @@ static int d3d12va_encode_issue(AVCodecContext *avctx,
                        "header: %d.\n", err);
                 goto fail;
             }
+            pic->header_size = (int)bit_len / 8;
+            pic->aligned_header_size = pic->header_size % ctx->req.CompressedBitstreamBufferAccessAlignment ?
+                                    FFALIGN(pic->header_size, ctx->req.CompressedBitstreamBufferAccessAlignment) :
+                                    pic->header_size;
+
+            hr = ID3D12Resource_Map(pic->output_buffer, 0, NULL, (void **)&ptr);
+            if (FAILED(hr)) {
+                err = AVERROR_UNKNOWN;
+                goto fail;
+            }
+
+            memcpy(ptr, data, pic->aligned_header_size);
+            ID3D12Resource_Unmap(pic->output_buffer, 0, NULL);
         }
-
-        pic->header_size = (int)bit_len / 8;
-        pic->aligned_header_size = pic->header_size % ctx->req.CompressedBitstreamBufferAccessAlignment ?
-                                   FFALIGN(pic->header_size, ctx->req.CompressedBitstreamBufferAccessAlignment) :
-                                   pic->header_size;
-
-        hr = ID3D12Resource_Map(pic->output_buffer, 0, NULL, (void **)&ptr);
-        if (FAILED(hr)) {
-            err = AVERROR_UNKNOWN;
-            goto fail;
-        }
-
-        memcpy(ptr, data, pic->aligned_header_size);
-        ID3D12Resource_Unmap(pic->output_buffer, 0, NULL);
     }
 
     d3d12_refs.NumTexture2Ds = base_pic->nb_refs[0] + base_pic->nb_refs[1];
