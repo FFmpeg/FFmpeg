@@ -209,7 +209,7 @@ static int vivo_read_header(AVFormatContext *s)
                 value_used = 1;
             } else if (!strcmp(key, "FPS")) {
                 double d;
-                if (av_sscanf(value, "%f", &d) != 1)
+                if (av_sscanf(value, "%lf", &d) != 1)
                     return AVERROR_INVALIDDATA;
 
                 value_used = 1;
