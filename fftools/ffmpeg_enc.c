@@ -266,11 +266,26 @@ int enc_open(void *opaque, const AVFrame *frame)
             enc_ctx->bits_per_raw_sample = FFMIN(fd->bits_per_raw_sample,
                                                  av_pix_fmt_desc_get(enc_ctx->pix_fmt)->comp[0].depth);
 
+        /**
+         * The video color properties should always be in sync with the user-
+         * requested values, since we forward them to the filter graph.
+         */
         enc_ctx->color_range            = frame->color_range;
         enc_ctx->color_primaries        = frame->color_primaries;
         enc_ctx->color_trc              = frame->color_trc;
         enc_ctx->colorspace             = frame->colorspace;
-        enc_ctx->chroma_sample_location = frame->chroma_location;
+
+        /* Video properties which are not part of filter graph negotiation */
+        if (enc_ctx->chroma_sample_location == AVCHROMA_LOC_UNSPECIFIED) {
+            enc_ctx->chroma_sample_location = frame->chroma_location;
+        } else if (enc_ctx->chroma_sample_location != frame->chroma_location &&
+                   frame->chroma_location != AVCHROMA_LOC_UNSPECIFIED) {
+            av_log(e, AV_LOG_WARNING,
+                   "Requested chroma sample location '%s' does not match the "
+                   "frame tagged sample location '%s'; result may be incorrect.\n",
+                   av_chroma_location_name(enc_ctx->chroma_sample_location),
+                   av_chroma_location_name(frame->chroma_location));
+        }
 
         if (enc_ctx->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) ||
             (frame->flags & AV_FRAME_FLAG_INTERLACED)
