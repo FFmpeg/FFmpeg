@@ -144,7 +144,9 @@ static int vqf_read_header(AVFormatContext *s)
             if (len < 12)
                 return AVERROR_INVALIDDATA;
 
-            avio_read(s->pb, comm_chunk, 12);
+            ret = ffio_read_size(s->pb, comm_chunk, 12);
+            if (ret < 0)
+                return ret;
             st->codecpar->ch_layout.nb_channels = AV_RB32(comm_chunk) + 1;
             read_bitrate        = AV_RB32(comm_chunk + 4);
             rate_flag           = AV_RB32(comm_chunk + 8);
