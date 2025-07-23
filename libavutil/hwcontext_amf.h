@@ -26,6 +26,7 @@
 #include <AMF/core/Context.h>
 #include <AMF/core/Trace.h>
 #include <AMF/core/Debug.h>
+#include "thread.h"
 
 /**
  * This struct is allocated as AVHWDeviceContext.hwctx
@@ -38,6 +39,7 @@ typedef struct AVAMFDeviceContext {
     int64_t             version; ///< version of AMF runtime
     AMFContext         *context;
     AMF_MEMORY_TYPE     memory_type;
+	AVMutex             mutex;
 } AVAMFDeviceContext;
 
 enum AMF_SURFACE_FORMAT av_av_to_amf_format(enum AVPixelFormat fmt);

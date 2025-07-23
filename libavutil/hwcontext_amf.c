@@ -137,7 +137,7 @@ enum AVPixelFormat av_amf_to_av_format(enum AMF_SURFACE_FORMAT fmt)
             return format_map[i].av_format;
         }
     }
-    return AMF_SURFACE_UNKNOWN;
+    return AV_PIX_FMT_NONE;
 }
 
 static const enum AVPixelFormat supported_formats[] = {
@@ -378,6 +378,7 @@ static void amf_device_uninit(AVHWDeviceContext *device_ctx)
     }
 
     amf_ctx->version = 0;
+    ff_mutex_destroy(&amf_ctx->mutex);
 }
 
 static int amf_device_init(AVHWDeviceContext *ctx)
@@ -414,7 +415,8 @@ static int amf_device_init(AVHWDeviceContext *ctx)
         }
      }
 #endif
-     return 0;
+    ff_mutex_init(&amf_ctx->mutex, NULL);
+    return 0;
 }
 
 static int amf_load_library(AVAMFDeviceContext* amf_ctx,  void* avcl)

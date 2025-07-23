@@ -381,89 +381,6 @@ static AMF_RESULT amf_set_property_buffer(AMFSurface *object, const wchar_t *nam
     return res;
 }
 
-static AMF_RESULT amf_lock_context(AVCodecContext *avctx)
-{
-    AMFEncoderContext     *ctx = avctx->priv_data;
-    AVHWDeviceContext     *hw_device_ctx = (AVHWDeviceContext*)ctx->device_ctx_ref->data;
-    AVAMFDeviceContext    *amf_device_ctx = (AVAMFDeviceContext *)hw_device_ctx->hwctx;
-    AMF_RESULT res;
-
-    switch(amf_device_ctx->memory_type) {
-    case AMF_MEMORY_DX11:
-        res = amf_device_ctx->context->pVtbl->LockDX11(amf_device_ctx->context);
-        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockDX11() failed  with error %d\n", res);
-        break;
-    case AMF_MEMORY_DX12:
-        {
-        AMFContext2 *context2 = NULL;
-        AMFGuid guid = IID_AMFContext2();
-        res = amf_device_ctx->context->pVtbl->QueryInterface(amf_device_ctx->context, &guid, (void**)&context2);
-        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface for AMFContext2 failed with error %d\n", res);
-        res = context2->pVtbl->LockDX12(context2);
-        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockDX12() failed  with error %d\n", res);
-        context2->pVtbl->Release(context2);
-        }
-        break;
-    case AMF_MEMORY_DX9:
-        res = amf_device_ctx->context->pVtbl->LockDX9(amf_device_ctx->context);
-        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockDX9() failed  with error %d\n", res);
-
-    case AMF_MEMORY_VULKAN:
-        {
-        AMFContext2 *context2 = NULL;
-        AMFGuid guid = IID_AMFContext2();
-        res = amf_device_ctx->context->pVtbl->QueryInterface(amf_device_ctx->context, &guid, (void**)&context2);
-        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface for AMFContext2 failed with error %d\n", res);
-        res = context2->pVtbl->LockVulkan(context2);
-        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockVulkan() failed  with error %d\n", res);
-        context2->pVtbl->Release(context2);
-        }
-        break;
-    }
-    return AMF_OK;
-}
-static AMF_RESULT amf_unlock_context(AVCodecContext *avctx)
-{
-    AMFEncoderContext     *ctx = avctx->priv_data;
-    AVHWDeviceContext     *hw_device_ctx = (AVHWDeviceContext*)ctx->device_ctx_ref->data;
-    AVAMFDeviceContext    *amf_device_ctx = (AVAMFDeviceContext *)hw_device_ctx->hwctx;
-    AMF_RESULT res;
-
-    switch(amf_device_ctx->memory_type) {
-    case AMF_MEMORY_DX11:
-        res = amf_device_ctx->context->pVtbl->UnlockDX11(amf_device_ctx->context);
-        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockDX11() failed  with error %d\n", res);
-        break;
-    case AMF_MEMORY_DX12:
-        {
-        AMFContext2 *context2 = NULL;
-        AMFGuid guid = IID_AMFContext2();
-        res = amf_device_ctx->context->pVtbl->QueryInterface(amf_device_ctx->context, &guid, (void**)&context2);
-        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface for AMFContext2 failed with error %d\n", res);
-        res = context2->pVtbl->UnlockDX12(context2);
-        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockDX12() failed  with error %d\n", res);
-        context2->pVtbl->Release(context2);
-        }
-        break;
-    case AMF_MEMORY_DX9:
-        res = amf_device_ctx->context->pVtbl->UnlockDX9(amf_device_ctx->context);
-        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockDX9() failed  with error %d\n", res);
-
-    case AMF_MEMORY_VULKAN:
-        {
-        AMFContext2 *context2 = NULL;
-        AMFGuid guid = IID_AMFContext2();
-        res = amf_device_ctx->context->pVtbl->QueryInterface(amf_device_ctx->context, &guid, (void**)&context2);
-        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface for AMFContext2 failed with error %d\n", res);
-        res = context2->pVtbl->UnlockVulkan(context2);
-        AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "LockVulkan() failed  with error %d\n", res);
-        context2->pVtbl->Release(context2);
-        }
-        break;
-    }
-    return AMF_OK;
-}
-
 static AMF_RESULT amf_store_attached_frame_ref(AMFEncoderContext *ctx, const AVFrame *frame, AMFSurface *surface)
 {
     AMF_RESULT res = AMF_FAIL;
@@ -643,14 +560,14 @@ static int amf_submit_frame(AVCodecContext *avctx, AVFrame    *frame, AMFSurface
 static int amf_submit_frame_locked(AVCodecContext *avctx, AVFrame *frame, AMFSurface **surface_resubmit)
 {
     int ret;
-    int locked = amf_lock_context(avctx);
-    if(locked != AMF_OK)
-        av_log(avctx, AV_LOG_WARNING, "amf_lock_context() failed with %d - should not happen\n", locked);
+    AMFEncoderContext     *ctx = avctx->priv_data;
+    AVHWDeviceContext     *hw_device_ctx = (AVHWDeviceContext*)ctx->device_ctx_ref->data;
+    AVAMFDeviceContext    *amf_device_ctx = (AVAMFDeviceContext *)hw_device_ctx->hwctx;
 
+    ff_mutex_lock(&amf_device_ctx->mutex);
     ret = amf_submit_frame(avctx, frame, surface_resubmit);
+    ff_mutex_unlock(&amf_device_ctx->mutex);
 
-    if(locked == AMF_OK)
-        amf_unlock_context(avctx);
     return ret;
 }
 static AMF_RESULT amf_query_output(AVCodecContext *avctx, AMFBuffer **buffer)
