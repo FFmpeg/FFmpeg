@@ -1,0 +1,76 @@
+File Format=MacCaption_MCC V2.0
+
+///////////////////////////////////////////////////////////////////////////////////
+// Computer Prompting and Captioning Company
+// Ancillary Data Packet Transfer File
+//
+// Permission to generate this format is granted provided that
+//   1. This ANC Transfer file format is used on an as-is basis and no warranty is given, and
+//   2. This entire descriptive information text is included in a generated .mcc file.
+//
+// General file format:
+//   HH:MM:SS:FF(tab)[Hexadecimal ANC data in groups of 2 characters]
+//     Hexadecimal data starts with the Ancillary Data Packet DID (Data ID defined in S291M)
+//       and concludes with the Check Sum following the User Data Words.
+//     Each time code line must contain at most one complete ancillary data packet.
+//     To transfer additional ANC Data successive lines may contain identical time code.
+//     Time Code Rate=[24, 25, 30, 30DF, 50, 60, 60DF]
+//
+//   ANC data bytes may be represented by one ASCII character according to the following schema:
+//     G  FAh 00h 00h
+//     H  2 x (FAh 00h 00h)
+//     I  3 x (FAh 00h 00h)
+//     J  4 x (FAh 00h 00h)
+//     K  5 x (FAh 00h 00h)
+//     L  6 x (FAh 00h 00h)
+//     M  7 x (FAh 00h 00h)
+//     N  8 x (FAh 00h 00h)
+//     O  9 x (FAh 00h 00h)
+//     P  FBh 80h 80h
+//     Q  FCh 80h 80h
+//     R  FDh 80h 80h
+//     S  96h 69h
+//     T  61h 01h
+//     U  E1h 00h 00h 00h
+//     Z  00h
+//
+///////////////////////////////////////////////////////////////////////////////////
+
+UUID=0087C4F6-A6B4-5469-8C8E-BBF44950401D
+Creation Program=FFmpeg
+Creation Date=Thursday, January 1, 1970
+Creation Time=00:00:00
+Time Code Rate=30DF
+
+00:00:58:29.0,11	T49S497F43FFFF72F4QROO74FFFF93AB
+00:00:59:00.0,11	T49S497F43ZZ72F4QROO74ZZ8FAB
+00:00:59:01.0,11	T49S497F43Z0172F4QROO74Z018DAB
+00:00:59:02.0,11	T49S497F43Z0272F4QROO74Z028BAB
+00:00:59:03.0,11	T49S497F43Z0372F4QROO74Z0389AB
+00:00:59:04.0,11	T49S497F43Z0472F4QROO74Z0487AB
+00:00:59:05.0,11	T49S497F43Z0572F4QROO74Z0585AB
+00:00:59:06.0,11	T49S497F43Z0672F4QROO74Z0683AB
+00:00:59:07.0,11	T49S497F43Z0772F4QROO74Z0781AB
+00:00:59:08.0,11	T49S497F43Z0872F4QROO74Z087FAB
+00:00:59:09.0,11	T49S497F43Z0972F4QROO74Z097DAB
+00:00:59:10.0,11	T49S497F43Z0A72F4QROO74Z0A7BAB
+00:00:59:11.0,11	T49S497F43Z0B72F4QROO74Z0B79AB
+00:00:59:12.0,11	T49S497F43Z0C72F4QROO74Z0C77AB
+00:00:59:13.0,11	T49S497F43Z0D72F4QROO74Z0D75AB
+00:00:59:14.0,11	T49S497F43Z0E72F4QROO74Z0E73AB
+00:00:59:15.0,11	T49S497F43Z0F72F4QROO74Z0F71AB
+00:00:59:16.0,11	T49S497F43Z1072F4QROO74Z106FAB
+00:00:59:17.0,11	T49S497F43Z1172F4QROO74Z116DAB
+00:00:59:18.0,11	T49S497F43Z1272F4QROO74Z126BAB
+00:00:59:19.0,11	T49S497F43Z1372F4QROO74Z1369AB
+00:00:59:20.0,11	T49S497F43Z1472F4QROO74Z1467AB
+00:00:59:21.0,11	T49S497F43Z1572F4QROO74Z1565AB
+00:00:59:22.0,11	T49S497F43Z1672F4QROO74Z1663AB
+00:00:59:23.0,11	T49S497F43Z1772F4QROO74Z1761AB
+00:00:59:24.0,11	T49S497F43Z1872F4QROO74Z185FAB
+00:00:59:25.0,11	T49S497F43Z1972F4QROO74Z195DAB
+00:00:59:26.0,11	T49S497F43Z1A72F4QROO74Z1A5BAB
+00:00:59:27.0,11	T49S497F43Z1B72F4QROO74Z1B59AB
+00:00:59:28.0,11	T49S497F43Z1C72F4QROO74Z1C57AB
+00:00:59:29.0,11	T49S497F43Z1D72F4QROO74Z1D55AB
+00:01:00:02.0,11	T49S497F43Z1E72F4QROO74Z1E53AB

@@ -2940,6 +2940,44 @@ ffmpeg -i INPUT -f md5 -
 @end example
 @end itemize
 
+@anchor{mccenc}
+@section mcc
+Muxer for MacCaption MCC files, it supports MCC versions 1.0 and 2.0.
+MCC files store VANC data, which can include closed captions (EIA-608 and CEA-708), ancillary time code, pan-scan data, etc.
+
+@subsection Options
+
+The muxer options are:
+
+@table @option
+@item override_time_code_rate
+Override the @code{Time Code Rate} value in the output. Defaults to trying to deduce from the stream's @code{time_base}, which often doesn't work.
+@item use_u_alias
+Use the @code{U} alias for the byte sequence @code{E1h 00h 00h 00h}.
+Disabled by default because some @file{.mcc} files disagree on whether it has 2 or 3 zero bytes.
+@item mcc_version
+The MCC file format version. Must be either 1 or 2, defaults to 2.
+@item creation_program
+The creation program. Defaults to this version of FFmpeg.
+@item creation_time
+The creation time. Defaults to the current time.
+@end table
+
+@subsection Examples
+@itemize
+@item
+Extract a MXF @code{SMPTE_436M_ANC} stream from a MXF file and write it to a MCC file at 30 fps.
+@example
+ffmpeg -i input.mxf -c copy -map 0:d -override_time_code_rate 30 out.mcc
+@end example
+
+@item
+Extract EIA-608/CTA-708 closed captions from a @file{.mp4} file and write them to a MCC file at 29.97 fps.
+@example
+ffmpeg -f lavfi -i "movie=input.mp4[out+subcc]" -c:s copy -map 0:s -override_time_code_rate 30000/1001 out.mcc
+@end example
+@end itemize
+
 @section microdvd
 MicroDVD subtitle format muxer.
 
