@@ -75,6 +75,26 @@ typedef struct AVD3D12VADeviceContext {
     void (*lock)(void *lock_ctx);
     void (*unlock)(void *lock_ctx);
     void *lock_ctx;
+
+    /**
+     * Resource flags to be applied to D3D12 resources allocated
+     * for frames using this device context.
+     *
+     * If unset, this will be D3D12_RESOURCE_FLAG_NONE.
+     *
+     * It applies globally to all AVD3D12VAFramesContext allocated from this device context.
+     */
+    D3D12_RESOURCE_FLAGS resource_flags;
+
+    /**
+     * Heap flags to be applied to D3D12 resources allocated
+     * for frames using this device context.
+     *
+     * If unset, this will be D3D12_HEAP_FLAG_NONE.
+     *
+     * It applies globally to all AVD3D12VAFramesContext allocated from this device context.
+     */
+    D3D12_HEAP_FLAGS heap_flags;
 } AVD3D12VADeviceContext;
 
 /**
@@ -163,6 +183,14 @@ typedef struct AVD3D12VAFramesContext {
      * @see https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_resource_flags
      */
     D3D12_RESOURCE_FLAGS resource_flags;
+
+    /**
+     * Options for working with heaps allocation when creating resources.
+     * If unset, this will be D3D12_HEAP_FLAG_NONE.
+     *
+     * @see https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_heap_flags
+     */
+    D3D12_HEAP_FLAGS heap_flags;
 
     /**
      * In texture array mode, the D3D12 uses the same texture array (resource)for all
