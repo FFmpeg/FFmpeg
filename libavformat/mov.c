@@ -1407,7 +1407,9 @@ static int mov_read_adrm(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_read(pb, output, 8); // go to offset 8, absolute position 0x251
     avio_read(pb, input, DRM_BLOB_SIZE);
     avio_read(pb, output, 4); // go to offset 4, absolute position 0x28d
-    avio_read(pb, file_checksum, 20);
+    ret = ffio_read_size(pb, file_checksum, 20);
+    if (ret < 0)
+        goto fail;
 
     // required by external tools
     ff_data_to_hex(checksum_string, file_checksum, sizeof(file_checksum), 1);
