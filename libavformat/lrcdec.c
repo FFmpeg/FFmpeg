@@ -78,7 +78,9 @@ static int64_t count_ts(const char *p)
 static int64_t read_ts(const char *p, int64_t *start)
 {
     int64_t offset = 0;
-    uint64_t mm, ss, cs;
+    uint64_t mm;
+    double ss;
+    char prefix[3];
 
     while(p[offset] == ' ' || p[offset] == '\t') {
         offset++;
@@ -86,13 +88,13 @@ static int64_t read_ts(const char *p, int64_t *start)
     if(p[offset] != '[') {
         return 0;
     }
-    if(sscanf(p, "[-%"SCNu64":%"SCNu64".%"SCNu64"]", &mm, &ss, &cs) == 3) {
-        /* Just in case negative pts, players may drop it but we won't. */
-        *start = -(int64_t) (mm*60000 + ss*1000 + cs*10);
-    } else if(sscanf(p, "[%"SCNu64":%"SCNu64".%"SCNu64"]", &mm, &ss, &cs) == 3) {
-        *start = mm*60000 + ss*1000 + cs*10;
-    } else {
+    int ret = sscanf(p, "%2[[-]%"SCNu64":%lf]", prefix, &mm, &ss);
+    if (ret != 3 || prefix[0] != '[') {
         return 0;
+    }
+    *start = (mm * 60 + ss) * AV_TIME_BASE;
+    if (prefix[1] == '-') {
+        *start = - *start;
     }
     do {
         offset++;
@@ -164,7 +166,7 @@ static int lrc_read_header(AVFormatContext *s)
     if(!st) {
         return AVERROR(ENOMEM);
     }
-    avpriv_set_pts_info(st, 64, 1, 1000);
+    avpriv_set_pts_info(st, 64, 1, AV_TIME_BASE);
     lrc->ts_offset = 0;
     st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codecpar->codec_id   = AV_CODEC_ID_TEXT;
