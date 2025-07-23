@@ -32,6 +32,9 @@ fate-sub-lrc-remux: CMD = fmtstdout lrc -i $(TARGET_SAMPLES)/sub/test-lrc.lrc
 FATE_SUBTITLES-$(call DEMMUX, LRC, LRC) += fate-sub-lrc-ms-remux
 fate-sub-lrc-ms-remux: CMD = fmtstdout lrc -i $(TARGET_SAMPLES)/sub/test-lrc-ms.lrc
 
+FATE_SUBTITLES-$(call DEMMUX, LRC, LRC) += fate-sub-lrc-ms-ms-remux
+fate-sub-lrc-ms-ms-remux: CMD = fmtstdout lrc -i $(TARGET_SAMPLES)/sub/test-lrc-ms.lrc -precision 3
+
 FATE_SUBTITLES_ASS-$(call DEMDEC, MICRODVD, MICRODVD) += fate-sub-microdvd
 fate-sub-microdvd: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/MicroDVD_capability_tester.sub
 
