@@ -3074,7 +3074,8 @@ static int mxf_init(AVFormatContext *s)
                 return ret;
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
             AVDictionaryEntry *e = av_dict_get(st->metadata, "data_type", NULL, 0);
-            if (e && !strcmp(e->value, "vbi_vanc_smpte_436M")) {
+            if ((e && !strcmp(e->value, "vbi_vanc_smpte_436M"))
+                || st->codecpar->codec_id == AV_CODEC_ID_SMPTE_436M_ANC) {
                 sc->index = INDEX_S436M;
             } else {
                 av_log(s, AV_LOG_ERROR, "track %d: unsupported data type\n", i);

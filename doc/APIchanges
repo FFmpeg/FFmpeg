@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
+2025-07-10 - xxxxxxxxxx - lavf 62.2.100
+  mxf [de]muxer now uses AV_CODEC_ID_SMPTE_436M_ANC for
+  the vbi_vanc_smpte_436M streams instead of AV_CODEC_ID_NONE.
+
 2025-07-10 - xxxxxxxxxx - lavc 62.10.100 - codec_id.h
   Add AV_CODEC_ID_SMPTE_436M_ANC.
 
