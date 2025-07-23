@@ -445,6 +445,19 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
         goto end;
     }
 
+    if (info.alpha_bits) {
+        JxlExtraChannelInfo extra_info;
+        JxlEncoderInitExtraChannelInfo(JXL_CHANNEL_ALPHA, &extra_info);
+        extra_info.bits_per_sample = info.alpha_bits;
+        extra_info.exponent_bits_per_sample = info.alpha_exponent_bits;
+        extra_info.alpha_premultiplied = info.alpha_premultiplied;
+
+        if (JxlEncoderSetExtraChannelInfo(ctx->encoder, 0, &extra_info) != JXL_ENC_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to set JxlExtraChannelInfo for alpha!\n");
+            return AVERROR_EXTERNAL;
+        }
+    }
+
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_ICC_PROFILE);
     if (sd && sd->size && JxlEncoderSetICCProfile(ctx->encoder, sd->data, sd->size) != JXL_ENC_SUCCESS) {
         av_log(avctx, AV_LOG_WARNING, "Could not set ICC Profile\n");
