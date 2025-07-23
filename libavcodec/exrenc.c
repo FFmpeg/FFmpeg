@@ -553,4 +553,7 @@ const FFCodec ff_exr_encoder = {
     FF_CODEC_ENCODE_CB(encode_frame),
     .close          = encode_close,
     CODEC_PIXFMTS(AV_PIX_FMT_GRAYF32, AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32),
+    .alpha_modes    = (const enum AVAlphaMode[]) {
+        AVALPHA_MODE_PREMULTIPLIED, AVALPHA_MODE_UNSPECIFIED
+    },
 };
