@@ -444,6 +444,12 @@ static int libjxl_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             if (ctx->basic_info.have_animation)
                 ctx->anim_timebase = av_make_q(ctx->basic_info.animation.tps_denominator,
                                                ctx->basic_info.animation.tps_numerator);
+            if (ctx->basic_info.alpha_bits) {
+                if (ctx->basic_info.alpha_premultiplied)
+                    avctx->alpha_mode = AVALPHA_MODE_PREMULTIPLIED;
+                else
+                    avctx->alpha_mode = AVALPHA_MODE_STRAIGHT;
+            }
             continue;
         case JXL_DEC_COLOR_ENCODING:
             av_log(avctx, AV_LOG_DEBUG, "COLOR_ENCODING event emitted\n");
