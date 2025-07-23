@@ -491,7 +491,9 @@ static int klv_read_packet(MXFContext *mxf, KLVPacket *klv, AVIOContext *pb)
         return AVERROR_INVALIDDATA;
 
     memcpy(klv->key, mxf_klv_key, 4);
-    avio_read(pb, klv->key + 4, 12);
+    int ret = ffio_read_size(pb, klv->key + 4, 12);
+    if (ret < 0)
+        return ret;
     length = klv_decode_ber_length(pb, &llen);
     if (length < 0)
         return length;
