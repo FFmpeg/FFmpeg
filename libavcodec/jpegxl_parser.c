@@ -1074,6 +1074,11 @@ static void populate_fields(AVCodecParserContext *s, AVCodecContext *avctx, cons
         else
             s->format = meta->have_alpha ? AV_PIX_FMT_RGBAF32 : AV_PIX_FMT_RGBF32;
     }
+
+    if (meta->have_alpha) {
+        avctx->alpha_mode = meta->alpha_associated ? AVALPHA_MODE_PREMULTIPLIED
+                                                   : AVALPHA_MODE_STRAIGHT;
+    }
 }
 
 static int skip_icc_profile(void *avctx, JXLParseContext *ctx, GetBitContext *gb)

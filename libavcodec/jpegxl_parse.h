@@ -35,6 +35,7 @@ typedef struct FFJXLMetadata {
     uint32_t coded_height;
     int bit_depth;
     int have_alpha;
+    int alpha_associated;
     /*
      * offset, in bits, of the animation header
      * zero if not animated
