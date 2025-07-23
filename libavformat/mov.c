@@ -6594,6 +6594,85 @@ static int mov_read_st3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_pack(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    MOVStreamContext *sc;
+    int size = 0;
+    int64_t remaining;
+    uint32_t tag = 0;
+    enum AVStereo3DType type = AV_STEREO3D_2D;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+
+    st = c->fc->streams[c->fc->nb_streams - 1];
+    sc = st->priv_data;
+
+    remaining = atom.size;
+    while (remaining > 0) {
+        size = avio_rb32(pb);
+        if (size < 8 || size > remaining ) {
+            av_log(c->fc, AV_LOG_ERROR, "Invalid child size in pack box\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        tag = avio_rl32(pb);
+        switch (tag) {
+        case MKTAG('p','k','i','n'): {
+            if (size != 16) {
+                av_log(c->fc, AV_LOG_ERROR, "Invalid size of pkin box: %d\n", size);
+                return AVERROR_INVALIDDATA;
+            }
+            avio_skip(pb, 1); // version
+            avio_skip(pb, 3); // flags
+
+            tag = avio_rl32(pb);
+            switch (tag) {
+            case MKTAG('s','i','d','e'):
+                type = AV_STEREO3D_SIDEBYSIDE;
+                break;
+            case MKTAG('o','v','e','r'):
+                type = AV_STEREO3D_TOPBOTTOM;
+                break;
+            case 0:
+                // This means value will be set in another layer
+                break;
+            default:
+                av_log(c->fc, AV_LOG_WARNING, "Unknown tag in pkin: 0x%08X\n", tag);
+                avio_skip(pb, size - 8);
+                break;
+            }
+
+            break;
+        }
+        default:
+            av_log(c->fc, AV_LOG_WARNING, "Unknown tag in pack: 0x%08X\n", tag);
+            avio_skip(pb, size - 8);
+            break;
+        }
+        remaining -= size;
+    }
+
+    if (remaining != 0) {
+        av_log(c->fc, AV_LOG_ERROR, "Broken pack box\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (type == AV_STEREO3D_2D)
+        return 0;
+
+    if (!sc->stereo3d) {
+        sc->stereo3d = av_stereo3d_alloc_size(&sc->stereo3d_size);
+        if (!sc->stereo3d)
+            return AVERROR(ENOMEM);
+    }
+
+    sc->stereo3d->type = type;
+
+    return 0;
+}
+
 static int mov_read_sv3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -7001,6 +7080,13 @@ static int mov_read_vexu(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         case MKTAG('e','y','e','s'): {
             MOVAtom eyes = { tag, size - 8 };
             int ret = mov_read_eyes(c, pb, eyes);
+            if (ret < 0)
+                return ret;
+            break;
+        }
+        case MKTAG('p','a','c','k'): {
+            MOVAtom pack = { tag, size - 8 };
+            int ret = mov_read_pack(c, pb, pack);
             if (ret < 0)
                 return ret;
             break;
