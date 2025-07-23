@@ -988,7 +988,9 @@ static void mxf_write_common_fields(AVFormatContext *s, AVStream *st)
     if (st == mxf->timecode_track)
         avio_write(pb, smpte_12m_timecode_track_data_ul, 16);
     else {
-        const MXFCodecUL *data_def_ul = mxf_get_codec_ul_by_id(ff_mxf_data_definition_uls, st->codecpar->codec_type);
+        const MXFCodecUL* data_def_ul = mxf_get_codec_ul_by_id(
+            ff_mxf_data_definition_uls,
+            st->codecpar->codec_id == AV_CODEC_ID_EIA_608 ? AVMEDIA_TYPE_DATA : st->codecpar->codec_type);
         avio_write(pb, data_def_ul->uid, 16);
     }
 
@@ -3072,10 +3074,11 @@ static int mxf_init(AVFormatContext *s)
             ret = ff_stream_add_bitstream_filter(st, "pcm_rechunk", bsf_arg);
             if (ret < 0)
                 return ret;
-        } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
-            AVDictionaryEntry *e = av_dict_get(st->metadata, "data_type", NULL, 0);
-            if ((e && !strcmp(e->value, "vbi_vanc_smpte_436M"))
-                || st->codecpar->codec_id == AV_CODEC_ID_SMPTE_436M_ANC) {
+        } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA || st->codecpar->codec_id == AV_CODEC_ID_EIA_608) {
+            AVDictionaryEntry* e = av_dict_get(st->metadata, "data_type", NULL, 0);
+            if ((e && !strcmp(e->value, "vbi_vanc_smpte_436M")) ||
+                st->codecpar->codec_id == AV_CODEC_ID_SMPTE_436M_ANC ||
+                st->codecpar->codec_id == AV_CODEC_ID_EIA_608) {
                 sc->index = INDEX_S436M;
             } else {
                 av_log(s, AV_LOG_ERROR, "track %d: unsupported data type\n", i);
@@ -3084,6 +3087,16 @@ static int mxf_init(AVFormatContext *s)
             if (st->index != s->nb_streams - 1) {
                 av_log(s, AV_LOG_ERROR, "data track must be placed last\n");
                 return -1;
+            }
+            if (st->codecpar->codec_id == AV_CODEC_ID_EIA_608) {
+                char bsf_arg[64] = "";
+                if (mxf->time_base.num != 0 && mxf->time_base.den != 0) {
+                    // frame rate is reciprocal of time base
+                    snprintf(bsf_arg, sizeof(bsf_arg), "cdp_frame_rate=%d/%d", mxf->time_base.den, mxf->time_base.num);
+                }
+                ret = ff_stream_add_bitstream_filter(st, "eia608_to_smpte436m", bsf_arg);
+                if (ret < 0)
+                    return ret;
             }
         }
 
@@ -3166,7 +3179,8 @@ static void mxf_write_system_item(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         if (s->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
             system_item_bitmap |= 0x4;
-        else if (s->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+        else if (s->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_DATA ||
+                 s->streams[i]->codecpar->codec_id == AV_CODEC_ID_EIA_608)
             system_item_bitmap |= 0x2;
     }
     avio_w8(pb, system_item_bitmap);
@@ -3691,6 +3705,7 @@ const FFOutputFormat ff_mxf_muxer = {
     .priv_data_size    = sizeof(MXFContext),
     .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
     .p.video_codec     = AV_CODEC_ID_MPEG2VIDEO,
+    .p.subtitle_codec  = AV_CODEC_ID_EIA_608,
     .init              = mxf_init,
     .write_packet      = mxf_write_packet,
     .write_trailer     = mxf_write_footer,
@@ -3725,6 +3740,7 @@ const FFOutputFormat ff_mxf_opatom_muxer = {
     .priv_data_size    = sizeof(MXFContext),
     .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
     .p.video_codec     = AV_CODEC_ID_DNXHD,
+    .p.subtitle_codec  = AV_CODEC_ID_EIA_608,
     .init              = mxf_init,
     .write_packet      = mxf_write_packet,
     .write_trailer     = mxf_write_footer,
