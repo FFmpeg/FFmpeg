@@ -8,6 +8,7 @@ ALOG
 ALS
 als
 ANC
+anc
 ANS
 ans
 anull
