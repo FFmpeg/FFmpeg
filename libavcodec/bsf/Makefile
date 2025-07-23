@@ -38,6 +38,7 @@ OBJS-$(CONFIG_PRORES_METADATA_BSF)        += bsf/prores_metadata.o
 OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += bsf/remove_extradata.o
 OBJS-$(CONFIG_SETTS_BSF)                  += bsf/setts.o
 OBJS-$(CONFIG_SHOWINFO_BSF)               += bsf/showinfo.o
+OBJS-$(CONFIG_SMPTE436M_TO_EIA608_BSF)    += bsf/smpte436m_to_eia608.o
 OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += bsf/movsub.o
 OBJS-$(CONFIG_TRACE_HEADERS_BSF)          += bsf/trace_headers.o
 OBJS-$(CONFIG_TRUEHD_CORE_BSF)            += bsf/truehd_core.o

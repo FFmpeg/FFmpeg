@@ -948,6 +948,11 @@ ffmpeg -i INPUT -c:a copy -bsf:a setts=pts=DTS out.mkv
 Log basic packet information. Mainly useful for testing, debugging,
 and development.
 
+@section smpte436m_to_eia608
+
+Convert from a @code{SMPTE_436M_ANC} data stream to a @code{EIA_608} stream,
+extracting the closed captions from CTA-708 CDP VANC packets, and ignoring all other data.
+
 @anchor{text2movsub}
 @section text2movsub
 
