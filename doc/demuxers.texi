@@ -855,6 +855,32 @@ Set the sample rate for libopenmpt to output.
 Range is from 1000 to INT_MAX. The value default is 48000.
 @end table
 
+@anchor{mccdec}
+@section mcc
+
+Demuxer for MacCaption MCC files, it supports MCC versions 1.0 and 2.0.
+MCC files store VANC data, which can include closed captions (EIA-608 and CEA-708), ancillary time code, pan-scan data, etc.
+By default, for backward compatibility, the MCC demuxer extracts just the EIA-608 and CEA-708 closed captions and returns a @code{EIA_608} stream, ignoring all other VANC data.
+You can change it to return all VANC data in a @code{SMPTE_436M_ANC} data stream by setting @option{-eia608_extract 0}
+
+@subsection Examples
+
+@itemize
+@item
+Convert a MCC file to Scenarist (SCC) format:
+@example
+ffmpeg -i CC.mcc -c:s copy CC.scc
+@end example
+Note that the SCC format only supports EIA-608, so this will discard all other data such as CEA-708 extensions.
+
+@item
+Merge a MCC file into a MXF file:
+@example
+ffmpeg -i video_and_audio.mxf -eia608_extract 0 -i CC.mcc -c copy -map 0 -map 1 out.mxf
+@end example
+This retains all VANC data and inserts it into the output MXF file as a @code{SMPTE_436M_ANC} data stream.
+@end itemize
+
 @section mov/mp4/3gp
 
 Demuxer for Quicktime File Format & ISO/IEC Base Media File Format (ISO/IEC 14496-12 or MPEG-4 Part 12, ISO/IEC 15444-12 or JPEG 2000 Part 12).
