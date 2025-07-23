@@ -197,8 +197,9 @@ static int dxv_encode(AVCodecContext *avctx, AVPacket *pkt,
                 avctx->height);
 
             if (avctx->width != DXV_ALIGN(avctx->width)) {
+                av_assert0(frame->format == AV_PIX_FMT_RGBA);
                 for (int y = 0; y < avctx->height; y++) {
-                    memset(safe_data[0] + y * safe_linesize[0] + frame->linesize[0], 0, safe_linesize[0] - frame->linesize[0]);
+                    memset(safe_data[0] + y * safe_linesize[0] + 4*avctx->width, 0, safe_linesize[0] - 4*avctx->width);
                 }
             }
             if (avctx->height != DXV_ALIGN(avctx->height)) {
