@@ -102,8 +102,26 @@ static inline int get_color_format(enum AVPixelFormat pix_fmt)
     int cf = OAPV_CF_UNKNOWN;
 
     switch (pix_fmt) {
+    case AV_PIX_FMT_GRAY10:
+        cf = OAPV_CF_YCBCR400;
+        break;
     case AV_PIX_FMT_YUV422P10:
         cf = OAPV_CF_YCBCR422;
+        break;
+    case AV_PIX_FMT_YUV422P12:
+        cf = OAPV_CF_YCBCR422;
+        break;
+    case AV_PIX_FMT_YUV444P10:
+        cf = OAPV_CF_YCBCR444;
+        break;
+    case AV_PIX_FMT_YUV444P12:
+        cf = OAPV_CF_YCBCR444;
+        break;
+    case AV_PIX_FMT_YUVA444P10:
+        cf = OAPV_CF_YCBCR4444;
+        break;
+    case AV_PIX_FMT_YUVA444P12:
+        cf = OAPV_CF_YCBCR4444;
         break;
     default:
         av_assert0(cf != OAPV_CF_UNKNOWN);
@@ -438,7 +456,13 @@ static av_cold int liboapve_close(AVCodecContext *avctx)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
 static const enum AVPixelFormat supported_pixel_formats[] = {
+    AV_PIX_FMT_GRAY10,
     AV_PIX_FMT_YUV422P10,
+    AV_PIX_FMT_YUV422P12,
+    AV_PIX_FMT_YUV444P10,
+    AV_PIX_FMT_YUV444P12,
+    AV_PIX_FMT_YUVA444P10,
+    AV_PIX_FMT_YUVA444P12,
     AV_PIX_FMT_NONE
 };
 
