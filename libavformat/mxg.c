@@ -127,6 +127,8 @@ static int mxg_update_cache(AVFormatContext *s, unsigned int cache_size)
 
     mxg->cache_size += ret;
 
+    memset(mxg->buffer_ptr + mxg->cache_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
     return ret;
 }
 
