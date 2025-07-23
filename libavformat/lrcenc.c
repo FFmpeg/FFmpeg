@@ -32,6 +32,12 @@
 #include "libavutil/dict.h"
 #include "libavutil/log.h"
 #include "libavutil/macros.h"
+#include "libavutil/opt.h"
+
+typedef struct LRCSubtitleContext {
+    const AVClass *class;
+    int precision; ///< precision of the fractional part of the timestamp, 2 for centiseconds
+} LRCSubtitleContext;
 
 static int lrc_write_header(AVFormatContext *s)
 {
@@ -43,7 +49,7 @@ static int lrc_write_header(AVFormatContext *s)
                avcodec_get_name(s->streams[0]->codecpar->codec_id));
         return AVERROR(EINVAL);
     }
-    avpriv_set_pts_info(s->streams[0], 64, 1, 100);
+    avpriv_set_pts_info(s->streams[0], 64, 1, AV_TIME_BASE);
 
     ff_standardize_creation_time(s);
     ff_metadata_conv_ctx(s, ff_lrc_metadata_conv, NULL);
@@ -77,6 +83,8 @@ static int lrc_write_header(AVFormatContext *s)
 
 static int lrc_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    const LRCSubtitleContext *p = s->priv_data;
+
     if(pkt->pts != AV_NOPTS_VALUE) {
         const uint8_t *line = pkt->data;
         const uint8_t *end  = pkt->data + pkt->size;
@@ -87,6 +95,10 @@ static int lrc_write_packet(AVFormatContext *s, AVPacket *pkt)
             while (line[0] == '\n' || line[0] == '\r')
                 line++; // Skip first empty lines
         }
+
+        int frac_mult = 1;
+        for (int i = 0; i < p->precision; ++i)
+            frac_mult *= 10;
 
         while(line) {
             const uint8_t *next_line = memchr(line, '\n', end - line);
@@ -105,11 +117,14 @@ static int lrc_write_packet(AVFormatContext *s, AVPacket *pkt)
 
             /* Offset feature of LRC can easily make pts negative,
              * we just output it directly and let the player drop it. */
+            uint64_t abs_pts = FFABS64U(pkt->pts);
+            uint64_t minutes = abs_pts / (60 * AV_TIME_BASE);
+            uint64_t seconds = (abs_pts / AV_TIME_BASE) % 60;
+            uint64_t fraction = abs_pts % AV_TIME_BASE;
+            uint64_t rescaled = av_rescale_q(fraction, AV_TIME_BASE_Q, (AVRational){1, frac_mult});
             avio_write(s->pb, "[-", 1 + (pkt->pts < 0));
-            avio_printf(s->pb, "%02"PRIu64":%02"PRIu64".%02"PRIu64"]",
-                        (FFABS64U(pkt->pts) / 6000),
-                        ((FFABS64U(pkt->pts) / 100) % 60),
-                        (FFABS64U(pkt->pts) % 100));
+            avio_printf(s->pb, "%02"PRIu64":%02"PRIu64".%0*"PRIu64"]",
+                        minutes, seconds, p->precision, rescaled);
 
             avio_write(s->pb, line, size);
             avio_w8(s->pb, '\n');
@@ -118,6 +133,20 @@ static int lrc_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
     return 0;
 }
+
+#define OFFSET(x) offsetof(LRCSubtitleContext, x)
+#define SE AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    {"precision", "precision of the fractional part of the timestamp, 2 for centiseconds", OFFSET(precision), AV_OPT_TYPE_INT, {.i64 = 2}, 1, 6, SE},
+    { NULL },
+};
+
+static const AVClass lrcenc_class = {
+    .class_name = "lrc",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 const FFOutputFormat ff_lrc_muxer = {
     .p.name           = "lrc",
@@ -129,7 +158,8 @@ const FFOutputFormat ff_lrc_muxer = {
     .p.audio_codec    = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_SUBRIP,
     .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
-    .priv_data_size = 0,
+    .priv_data_size = sizeof(LRCSubtitleContext),
     .write_header   = lrc_write_header,
     .write_packet   = lrc_write_packet,
+    .p.priv_class   = &lrcenc_class,
 };

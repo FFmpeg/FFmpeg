@@ -4629,4 +4629,18 @@ one byte per subtitle on average.
 By default, this work-around is disabled.
 @end table
 
+@section lrc
+
+This codec encodes the LRC lyrics format.
+
+@subsection Options
+
+@table @option
+@item precision
+Specify the precision of the fractional part of the timestamp. Time base is
+determined based on this value.
+
+Defaults to 2 for centiseconds.
+@end table
+
 @c man end SUBTITLES ENCODERS
