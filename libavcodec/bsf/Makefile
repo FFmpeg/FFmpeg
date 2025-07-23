@@ -12,6 +12,7 @@ OBJS-$(CONFIG_DTS2PTS_BSF)                += bsf/dts2pts.o
 OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)         += bsf/dump_extradata.o
 OBJS-$(CONFIG_DV_ERROR_MARKER_BSF)        += bsf/dv_error_marker.o
 OBJS-$(CONFIG_EAC3_CORE_BSF)              += bsf/eac3_core.o
+OBJS-$(CONFIG_EIA608_TO_SMPTE436M_BSF)    += bsf/eia608_to_smpte436m.o
 OBJS-$(CONFIG_EVC_FRAME_MERGE_BSF)        += bsf/evc_frame_merge.o
 OBJS-$(CONFIG_EXTRACT_EXTRADATA_BSF)      += bsf/extract_extradata.o
 OBJS-$(CONFIG_FILTER_UNITS_BSF)           += bsf/filter_units.o

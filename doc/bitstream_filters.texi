@@ -189,6 +189,52 @@ see page 44-46 or section 5.5 of
 
 Extract the core from a E-AC-3 stream, dropping extra channels.
 
+@section eia608_to_smpte436m
+
+Convert from a @code{EIA_608} stream to a @code{SMPTE_436M_ANC} data stream, wrapping the closed captions in CTA-708 CDP VANC packets.
+
+@table @option
+@item line_number
+Choose which line number the generated VANC packets should go on. You generally want either line 9 (the default) or 11.
+@item wrapping_type
+Choose the SMPTE 436M wrapping type, defaults to @samp{vanc_frame}.
+It accepts the values:
+@table @samp
+@item vanc_frame
+VANC frame (interlaced or segmented progressive frame)
+@item vanc_field_1
+@item vanc_field_2
+@item vanc_progressive_frame
+@end table
+@item sample_coding
+Choose the SMPTE 436M sample coding, defaults to @samp{8bit_luma}.
+It accepts the values:
+@table @samp
+@item 8bit_luma
+8-bit component luma samples
+@item 8bit_color_diff
+8-bit component color difference samples
+@item 8bit_luma_and_color_diff
+8-bit component luma and color difference samples
+@item 10bit_luma
+10-bit component luma samples
+@item 10bit_color_diff
+10-bit component color difference samples
+@item 10bit_luma_and_color_diff
+10-bit component luma and color difference samples
+@item 8bit_luma_parity_error
+8-bit component luma samples with parity error
+@item 8bit_color_diff_parity_error
+8-bit component color difference samples with parity error
+@item 8bit_luma_and_color_diff_parity_error
+8-bit component luma and color difference samples with parity error
+@end table
+@item initial_cdp_sequence_cntr
+The initial value of the CDP's 16-bit unsigned integer @code{cdp_hdr_sequence_cntr} and @code{cdp_ftr_sequence_cntr} fields. Defaults to 0.
+@item cdp_frame_rate
+Set the CDP's @code{cdp_frame_rate} field. This doesn't actually change the timing of the data stream, it just changes the values inserted in that field in the generated CDP packets. Defaults to @samp{30000/1001}.
+@end table
+
 @section extract_extradata
 
 Extract the in-band extradata.

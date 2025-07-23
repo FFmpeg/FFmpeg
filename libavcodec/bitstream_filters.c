@@ -36,6 +36,7 @@ extern const FFBitStreamFilter ff_dovi_rpu_bsf;
 extern const FFBitStreamFilter ff_dts2pts_bsf;
 extern const FFBitStreamFilter ff_dv_error_marker_bsf;
 extern const FFBitStreamFilter ff_eac3_core_bsf;
+extern const FFBitStreamFilter ff_eia608_to_smpte436m_bsf;
 extern const FFBitStreamFilter ff_evc_frame_merge_bsf;
 extern const FFBitStreamFilter ff_extract_extradata_bsf;
 extern const FFBitStreamFilter ff_filter_units_bsf;
