@@ -152,10 +152,10 @@ static int pic_arrays_init(HEVCLayerContext *l, const HEVCSPS *sps)
             int w = sps->width >> sps->hshift[c_idx];
             int h = sps->height >> sps->vshift[c_idx];
             l->sao_pixel_buffer_h[c_idx] =
-                av_malloc((w * 2 * sps->ctb_height) <<
+                av_mallocz((w * 2 * sps->ctb_height) <<
                           sps->pixel_shift);
             l->sao_pixel_buffer_v[c_idx] =
-                av_malloc((h * 2 * sps->ctb_width) <<
+                av_mallocz((h * 2 * sps->ctb_width) <<
                           sps->pixel_shift);
             if (!l->sao_pixel_buffer_h[c_idx] ||
                 !l->sao_pixel_buffer_v[c_idx])
