@@ -6858,6 +6858,9 @@ static int mov_read_vexu_proj(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG('f','i','s','h'):
         projection = AV_SPHERICAL_FISHEYE;
         break;
+    case MKTAG('p','r','i','m'):
+        projection = AV_SPHERICAL_PARAMETRIC_IMMERSIVE;
+        break;
     default:
         av_log(c->fc, AV_LOG_ERROR, "Invalid projection type in prji box: 0x%08X\n", tag);
         return AVERROR_INVALIDDATA;

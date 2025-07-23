@@ -82,6 +82,12 @@ enum AVSphericalProjection {
      * See: https://developer.apple.com/documentation/coremedia/cmprojectiontype/fisheye
      */
     AV_SPHERICAL_FISHEYE,
+
+    /**
+     * Parametric Immersive projection (Apple).
+     * See: https://developer.apple.com/documentation/coremedia/cmprojectiontype/parametricimmersive
+     */
+    AV_SPHERICAL_PARAMETRIC_IMMERSIVE,
 };
 
 /**

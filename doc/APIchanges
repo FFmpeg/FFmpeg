@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
+2025-07-31 - xxxxxxxxxx - lavu 60.7.100 - spherical.h
+  Add AV_SPHERICAL_PARAMETRIC_IMMERSIVE.
+
 2025-07-20 - xxxxxxxxxx - lavu 60.6.100 - attributes.h, avstring.h
   Add av_scanf_format() and use it on av_sscanf().
 
