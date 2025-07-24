@@ -1,0 +1,31 @@
+avcodec:
+  - changed-files:
+    - any-glob-to-any-file: libavcodec/**
+
+avdevice:
+  - changed-files:
+    - any-glob-to-any-file: libavdevice/**
+
+avfilter:
+  - changed-files:
+    - any-glob-to-any-file: libavfilter/**
+
+avformat:
+  - changed-files:
+    - any-glob-to-any-file: libavformat/**
+
+avutil:
+  - changed-files:
+    - any-glob-to-any-file: libavutil/**
+
+swresample:
+  - changed-files:
+    - any-glob-to-any-file: libswresample/**
+
+swscale:
+  - changed-files:
+    - any-glob-to-any-file: libswscale/**
+
+CLI:
+  - changed-files:
+    - any-glob-to-any-file: fftools/**
