@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Configure
-        run: ./configure
+        run: ./configure --enable-gpl --enable-nonfree --enable-memory-poisoning
       - name: Build
         run: make -j$(nproc)
       - name: Restore Cached Fate-Suite
