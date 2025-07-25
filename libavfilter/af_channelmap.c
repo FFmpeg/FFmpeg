@@ -290,6 +290,7 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
         for (i = 0; i < s->nch; i++) {
             s->map[i].in_channel_idx  = i;
             s->map[i].out_channel_idx = i;
+            s->map[i].out_channel = av_channel_layout_channel_from_index(&s->output_layout, i);
         }
     } else if (s->nch != s->output_layout.nb_channels) {
         char buf[256];
