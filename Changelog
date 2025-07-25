@@ -25,6 +25,7 @@ version <next>:
 - APV in MP4/ISOBMFF muxing and demuxing
 - OpenHarmony hardware decoder/encoder
 - Colordetect filter
+- Add vf_scale_d3d11 filter
 
 
 version 7.1:

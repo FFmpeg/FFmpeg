@@ -42,6 +42,8 @@
 #include "thread.h"
 #include "compat/w32dlfcn.h"
 
+#define MAX_ARRAY_SIZE 64 // Driver specification limits ArraySize to 64 for decoder-bound resources
+
 typedef HRESULT(WINAPI *PFN_CREATE_DXGI_FACTORY)(REFIID riid, void **ppFactory);
 
 static AVOnce functions_loaded = AV_ONCE_INIT;
@@ -287,6 +289,8 @@ static int d3d11va_frames_init(AVHWFramesContext *ctx)
                av_get_pix_fmt_name(ctx->sw_format));
         return AVERROR(EINVAL);
     }
+
+    ctx->initial_pool_size = FFMIN(ctx->initial_pool_size, MAX_ARRAY_SIZE);
 
     texDesc = (D3D11_TEXTURE2D_DESC){
         .Width      = ctx->width,
