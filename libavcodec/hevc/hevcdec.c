@@ -3747,8 +3747,10 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         }
 
         s->rpu_buf = av_buffer_alloc(nal->raw_size - 2);
-        if (!s->rpu_buf)
-            return AVERROR(ENOMEM);
+        if (!s->rpu_buf) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
         memcpy(s->rpu_buf->data, nal->raw_data + 2, nal->raw_size - 2);
 
         ret = ff_dovi_rpu_parse(&s->dovi_ctx, nal->data + 2, nal->size - 2,
