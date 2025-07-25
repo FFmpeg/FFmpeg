@@ -440,6 +440,62 @@ static int formats_declared(AVFilterContext *f)
     return 1;
 }
 
+static void print_formats(void *log_ctx, int level, enum AVMediaType type,
+                          const AVFilterFormats *formats)
+{
+    AVBPrint bp;
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
+
+    switch (type) {
+    case AVMEDIA_TYPE_VIDEO:
+        for (unsigned i = 0; i < formats->nb_formats; i++)
+            av_bprintf(&bp, "%s%s", bp.len ? " " : "", av_get_pix_fmt_name(formats->formats[i]));
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        for (unsigned i = 0; i < formats->nb_formats; i++)
+            av_bprintf(&bp, "%s%s", bp.len ? " " : "", av_get_sample_fmt_name(formats->formats[i]));
+        break;
+    default:
+        av_bprintf(&bp, "(unknown)");
+        break;
+    }
+
+    if (av_bprint_is_complete(&bp)) {
+        av_log(log_ctx, level, "%s\n", bp.str);
+    } else {
+        av_log(log_ctx, level, "(out of memory)\n");
+    }
+    av_bprint_finalize(&bp, NULL);
+}
+
+static void print_link_formats(void *log_ctx, int level, const AVFilterLink *l)
+{
+    if (av_log_get_level() < level)
+        return;
+
+    av_log(log_ctx, level, "Link '%s.%s' -> '%s.%s':\n"
+                           "  src: ", l->src->name, l->srcpad->name, l->dst->name, l->dstpad->name);
+    print_formats(log_ctx, level, l->type, l->incfg.formats);
+    av_log(log_ctx, level, "  dst: ");
+    print_formats(log_ctx, level, l->type, l->outcfg.formats);
+}
+
+static void print_filter_formats(void *log_ctx, int level, const AVFilterContext *f)
+{
+    if (av_log_get_level() < level)
+        return;
+
+    av_log(log_ctx, level, "Filter '%s' formats:\n", f->name);
+    for (int i = 0; i < f->nb_inputs; i++) {
+        av_log(log_ctx, level, "  in[%d] '%s': ", i, f->input_pads[i].name);
+        print_formats(log_ctx, level, f->inputs[i]->type, f->inputs[i]->outcfg.formats);
+    }
+    for (int i = 0; i < f->nb_outputs; i++) {
+        av_log(log_ctx, level, "  out[%d] '%s': ", i, f->output_pads[i].name);
+        print_formats(log_ctx, level, f->outputs[i]->type, f->outputs[i]->incfg.formats);
+    }
+}
+
 /**
  * Perform one round of query_formats() and merging formats lists on the
  * filter graph.
@@ -467,7 +523,10 @@ static int query_formats(AVFilterGraph *graph, void *log_ctx)
         if (ret < 0 && ret != AVERROR(EAGAIN))
             return ret;
         /* note: EAGAIN could indicate a partial success, not counted yet */
-        count_queried += ret >= 0;
+        if (ret >= 0) {
+            print_filter_formats(log_ctx, AV_LOG_DEBUG, f);
+            count_queried++;
+        }
     }
 
     /* go through and merge as many format lists as possible */
@@ -524,6 +583,7 @@ static int query_formats(AVFilterGraph *graph, void *log_ctx)
                            "The filters '%s' and '%s' do not have a common format "
                            "and automatic conversion is disabled.\n",
                            link->src->name, link->dst->name);
+                    print_link_formats(log_ctx, AV_LOG_ERROR, link);
                     return AVERROR(EINVAL);
                 }
 
@@ -532,6 +592,7 @@ static int query_formats(AVFilterGraph *graph, void *log_ctx)
                     av_log(log_ctx, AV_LOG_ERROR,
                            "'%s' filter not present, cannot convert formats.\n",
                            neg->conversion_filter);
+                    print_link_formats(log_ctx, AV_LOG_ERROR, link);
                     return AVERROR(EINVAL);
                 }
                 snprintf(inst_name, sizeof(inst_name), "auto_%s_%d",
@@ -583,6 +644,7 @@ static int query_formats(AVFilterGraph *graph, void *log_ctx)
                         av_log(log_ctx, AV_LOG_ERROR,
                                "Impossible to convert between the formats supported by the filter "
                                "'%s' and the filter '%s'\n", link->src->name, link->dst->name);
+                        print_link_formats(log_ctx, AV_LOG_ERROR, link);
                         return AVERROR(ENOSYS);
                     }
                 }
