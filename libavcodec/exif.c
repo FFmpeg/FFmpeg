@@ -1307,13 +1307,10 @@ int av_exif_orientation_to_matrix(int32_t *matrix, int orientation)
     return 0;
 }
 
-int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_ptr, enum AVExifHeaderMode header_mode)
+int ff_exif_sanitize_ifd(void *logctx, const AVFrame *frame, AVExifMetadata *ifd)
 {
     int ret = 0;
-    AVBufferRef *buffer = NULL;
-    AVFrameSideData *sd_exif = NULL;
     AVFrameSideData *sd_orient = NULL;
-    AVExifMetadata ifd = { 0 };
     AVExifEntry *or = NULL;
     AVExifEntry *iw = NULL;
     AVExifEntry *ih = NULL;
@@ -1324,28 +1321,15 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
     uint64_t h = frame->height;
     int rewrite = 0;
 
-    if (!buffer_ptr || *buffer_ptr)
-        return AVERROR(EINVAL);
-
-    sd_exif = av_frame_get_side_data(frame, AV_FRAME_DATA_EXIF);
     sd_orient = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX);
-
-    if (!sd_exif && !sd_orient)
-        return 0;
 
     if (sd_orient)
         orientation = av_exif_matrix_to_orientation((int32_t *) sd_orient->data);
     if (orientation != 1)
         av_log(logctx, AV_LOG_DEBUG, "matrix contains nontrivial EXIF orientation: %" PRIu64 "\n", orientation);
 
-    if (sd_exif) {
-        ret = av_exif_parse_buffer(logctx, sd_exif->data, sd_exif->size, &ifd, AV_EXIF_TIFF_HEADER);
-        if (ret < 0)
-            goto end;
-    }
-
-    for (size_t i = 0; i < ifd.count; i++) {
-        AVExifEntry *entry = &ifd.entries[i];
+    for (size_t i = 0; i < ifd->count; i++) {
+        AVExifEntry *entry = &ifd->entries[i];
         if (entry->id == ORIENTATION_TAG && entry->count > 0 && entry->type == AV_TIFF_SHORT) {
             or = entry;
             continue;
@@ -1396,26 +1380,26 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
     }
     if (!or && orientation != 1) {
         rewrite = 1;
-        ret = av_exif_set_entry(logctx, &ifd, ORIENTATION_TAG, AV_TIFF_SHORT, 1, NULL, 0, &orientation);
+        ret = av_exif_set_entry(logctx, ifd, ORIENTATION_TAG, AV_TIFF_SHORT, 1, NULL, 0, &orientation);
         if (ret < 0)
             goto end;
     }
     if (!iw && w) {
         rewrite = 1;
-        ret = av_exif_set_entry(logctx, &ifd, IMAGE_WIDTH_TAG, AV_TIFF_LONG, 1, NULL, 0, &w);
+        ret = av_exif_set_entry(logctx, ifd, IMAGE_WIDTH_TAG, AV_TIFF_LONG, 1, NULL, 0, &w);
         if (ret < 0)
             goto end;
     }
     if (!ih && h) {
         rewrite = 1;
-        ret = av_exif_set_entry(logctx, &ifd, IMAGE_LENGTH_TAG, AV_TIFF_LONG, 1, NULL, 0, &h);
+        ret = av_exif_set_entry(logctx, ifd, IMAGE_LENGTH_TAG, AV_TIFF_LONG, 1, NULL, 0, &h);
         if (ret < 0)
             goto end;
     }
     if (!pw && w && w < 0xFFFFu || !ph && h && h < 0xFFFFu) {
         AVExifMetadata *exif;
         AVExifEntry *exif_entry;
-        int exif_found = av_exif_get_entry(logctx, &ifd, EXIFIFD_TAG, 0, &exif_entry);
+        int exif_found = av_exif_get_entry(logctx, ifd, EXIFIFD_TAG, 0, &exif_entry);
         rewrite = 1;
         if (exif_found < 0)
             goto end;
@@ -1423,12 +1407,12 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
             exif = &exif_entry->value.ifd;
         } else {
             AVExifMetadata exif_new = { 0 };
-            ret = av_exif_set_entry(logctx, &ifd, EXIFIFD_TAG, AV_TIFF_IFD, 1, NULL, 0, &exif_new);
+            ret = av_exif_set_entry(logctx, ifd, EXIFIFD_TAG, AV_TIFF_IFD, 1, NULL, 0, &exif_new);
             if (ret < 0) {
                 av_exif_free(&exif_new);
                 goto end;
             }
-            exif = &ifd.entries[ifd.count - 1].value.ifd;
+            exif = &ifd->entries[ifd->count - 1].value.ifd;
         }
         if (!pw && w && w < 0xFFFFu) {
             ret = av_exif_set_entry(logctx, exif, PIXEL_X_TAG, AV_TIFF_SHORT, 1, NULL, 0, &w);
@@ -1440,6 +1424,37 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
             if (ret < 0)
                 goto end;
         }
+    }
+
+    return rewrite;
+
+end:
+    return ret;
+}
+
+int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_ptr, enum AVExifHeaderMode header_mode)
+{
+    AVFrameSideData *sd_exif = NULL;
+    AVBufferRef *buffer = NULL;
+    AVExifMetadata ifd = { 0 };
+    int ret = 0;
+    int rewrite = 0;
+
+    if (!buffer_ptr || *buffer_ptr)
+        return AVERROR(EINVAL);
+
+    sd_exif = av_frame_get_side_data(frame, AV_FRAME_DATA_EXIF);
+    if (!sd_exif)
+        return 0;
+
+    ret = av_exif_parse_buffer(logctx, sd_exif->data, sd_exif->size, &ifd, AV_EXIF_TIFF_HEADER);
+    if (ret < 0)
+        goto end;
+
+    rewrite = ff_exif_sanitize_ifd(logctx, frame, &ifd);
+    if (rewrite < 0) {
+        ret = rewrite;
+        goto end;
     }
 
     if (rewrite) {
@@ -1455,6 +1470,9 @@ int ff_exif_get_buffer(void *logctx, const AVFrame *frame, AVBufferRef **buffer_
             goto end;
         }
     }
+
+    av_exif_free(&ifd);
+    return rewrite;
 
 end:
     av_exif_free(&ifd);

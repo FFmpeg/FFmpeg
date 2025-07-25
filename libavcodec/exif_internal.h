@@ -60,6 +60,14 @@ int ff_exif_attach_buffer(void *logctx, AVFrame *frame, AVBufferRef *data, enum 
 int ff_exif_attach_ifd(void *logctx, AVFrame *frame, const AVExifMetadata *ifd);
 
 /**
+ * Compares values in the IFD with data in the provided AVFrame and sets the values
+ * in that IFD to match the ones in that AVFrame. This is mostly useful for an
+ * encoder that wishes to use ff_exif_get_buffer, but would prefer to modify the
+ * IFD after it is sanitized and call av_exif_write afterward.
+ */
+int ff_exif_sanitize_ifd(void *logctx, const AVFrame *frame, AVExifMetadata *ifd);
+
+/**
  * Gets all relevant side data, collects it into an IFD, and writes it into the
  * corresponding buffer pointer. This includes both AV_FRAME_DATA_EXIF and other
  * side data types that are included in the frame data, such as possibly an
