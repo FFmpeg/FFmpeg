@@ -2,6 +2,23 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
+2025-08-19 - ad77345a5d1..fe496b0308f - lavc 62.13.100 - exif.h
+  Add:
+   - enum AVTiffDataType, enum AVExifHeaderMode
+   - struct AVExifMetadata, struct AVExifEntry
+   - av_exif_get_tag_name, av_exif_get_tag_id,
+     av_exif_set_entry, av_exif_get_entry,
+     av_exif_remove_entry, av_exif_parse_buffer,
+     av_exif_write, av_exif_free,
+     av_exif_ifd_to_dict, av_exif_clone_ifd,
+     av_exif_matrix_to_orientation,
+     av_exif_orientation_to_matrix,
+  Deprecate:
+   - avpriv_exif_decode_ifd (deprecated behind FF_API_OLD_EXIF)
+
+2025-08-19 - bb90b262d6d - lavu 60.10.100 - frame.h
+  Add AV_FRAME_DATA_EXIF.
+
 2025-07-29 - 1c85a3832af - lavc 62.10.100 - smpte_436m.h
   Add a new public header smpte_436m.h with API for
   manipulating AV_CODEC_ID_SMPTE_436M_ANC data.
