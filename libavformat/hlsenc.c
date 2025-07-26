@@ -1172,7 +1172,7 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls,
     if (hls->use_localtime_mkdir) {
         filename = vs->avf->url;
     }
-    if ((find_segment_by_filename(vs->segments, filename) || find_segment_by_filename(vs->old_segments, filename))
+    if (vs->nb_entries <= 5000 && (find_segment_by_filename(vs->segments, filename) || find_segment_by_filename(vs->old_segments, filename))
         && !byterange_mode) {
         av_log(hls, AV_LOG_WARNING, "Duplicated segment filename detected: %s\n", filename);
     }
