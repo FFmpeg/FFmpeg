@@ -81,6 +81,8 @@ static av_cold int cinaudio_decode_init(AVCodecContext *avctx)
     cin->initial_decode_frame = 1;
     cin->delta                = 0;
     avctx->sample_fmt         = AV_SAMPLE_FMT_S16;
+    if (!avctx->sample_rate)
+        avctx->sample_rate = 8000;
     av_channel_layout_uninit(&avctx->ch_layout);
     avctx->ch_layout          = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
 
