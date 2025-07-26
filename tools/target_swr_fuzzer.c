@@ -110,9 +110,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     av_channel_layout_describe(& in_ch_layout,  in_layout_string, sizeof( in_layout_string));
     av_channel_layout_describe(&out_ch_layout, out_layout_string, sizeof(out_layout_string));
 
-    fprintf(stderr, "%s %d %s -> %s %d %s\n",
-            av_get_sample_fmt_name( in_sample_fmt),  in_sample_rate,  in_layout_string,
-            av_get_sample_fmt_name(out_sample_fmt), out_sample_rate, out_layout_string);
+    // fprintf(stderr, "%s %d %s -> %s %d %s\n",
+    //         av_get_sample_fmt_name( in_sample_fmt),  in_sample_rate,  in_layout_string,
+    //         av_get_sample_fmt_name(out_sample_fmt), out_sample_rate, out_layout_string);
 
     if (swr_alloc_set_opts2(&swr, &out_ch_layout, out_sample_fmt, out_sample_rate,
                                   &in_ch_layout,   in_sample_fmt,  in_sample_rate,

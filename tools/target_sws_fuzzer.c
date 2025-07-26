@@ -151,7 +151,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     desc_src = av_pix_fmt_desc_get(srcFormat);
     desc_dst = av_pix_fmt_desc_get(dstFormat);
 
-    fprintf(stderr, "%d x %d %s -> %d x %d %s\n", srcW, srcH, desc_src->name, dstW, dstH, desc_dst->name);
+    // fprintf(stderr, "%d x %d %s -> %d x %d %s\n", srcW, srcH, desc_src->name, dstW, dstH, desc_dst->name);
 
     ret = alloc_plane(src, srcStride, srcW, srcH, srcFormat, &srcHShift, &srcVShift);
     if (ret < 0)

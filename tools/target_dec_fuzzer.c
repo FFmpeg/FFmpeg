@@ -622,7 +622,7 @@ maximums_reached:
             break;
     } while (got_frame == 1 && it++ < maxiteration);
 
-    fprintf(stderr, "pixels decoded: %"PRId64", samples decoded: %"PRId64", iterations: %d\n", ec_pixels, nb_samples, it);
+    // fprintf(stderr, "pixels decoded: %"PRId64", samples decoded: %"PRId64", iterations: %d\n", ec_pixels, nb_samples, it);
 
     av_frame_free(&frame);
     avcodec_free_context(&ctx);
