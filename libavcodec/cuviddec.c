@@ -205,7 +205,7 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
 #endif
 #endif
         } else {
-            pix_fmts[1] = AV_PIX_FMT_P016;
+            pix_fmts[1] = AV_PIX_FMT_P010;
         }
         caps = &ctx->caps10;
         break;
