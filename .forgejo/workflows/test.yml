@@ -19,6 +19,7 @@ jobs:
       - name: Build
         run: make -j$(nproc)
       - name: Restore Cached Fate-Suite
+        id: cache
         uses: actions/cache/restore@v4
         with:
           path: fate-suite
@@ -32,6 +33,7 @@ jobs:
           echo "hash=$(find fate-suite -type f | sha256sum | cut -d' ' -f1)" >> $FORGEJO_OUTPUT
       - name: Cache Fate-Suite
         uses: actions/cache/save@v4
+        if: ${{ format('fate-suite-{0}', steps.fate.outputs.hash) != steps.cache.outputs.cache-matched-key }}
         with:
           path: fate-suite
           key: fate-suite-${{ steps.fate.outputs.hash }}
