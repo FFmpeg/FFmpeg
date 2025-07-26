@@ -191,10 +191,18 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
         break;
     case 2: // 10-bit
         if (chroma_444) {
+#if FF_API_NVDEC_OLD_PIX_FMTS
             pix_fmts[1] = AV_PIX_FMT_YUV444P16;
+#else
+            pix_fmts[1] = AV_PIX_FMT_YUV444P10MSB;
+#endif
 #ifdef NVDEC_HAVE_422_SUPPORT
         } else if (format->chroma_format == cudaVideoChromaFormat_422) {
-            pix_fmts[1] = AV_PIX_FMT_P216LE;
+#if FF_API_NVDEC_OLD_PIX_FMTS
+            pix_fmts[1] = AV_PIX_FMT_P216;
+#else
+            pix_fmts[1] = AV_PIX_FMT_P210;
+#endif
 #endif
         } else {
             pix_fmts[1] = AV_PIX_FMT_P016;
@@ -203,13 +211,25 @@ static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* form
         break;
     case 4: // 12-bit
         if (chroma_444) {
+#if FF_API_NVDEC_OLD_PIX_FMTS
             pix_fmts[1] = AV_PIX_FMT_YUV444P16;
+#else
+            pix_fmts[1] = AV_PIX_FMT_YUV444P12MSB;
+#endif
 #ifdef NVDEC_HAVE_422_SUPPORT
         } else if (format->chroma_format == cudaVideoChromaFormat_422) {
-            pix_fmts[1] = AV_PIX_FMT_P216LE;
+#if FF_API_NVDEC_OLD_PIX_FMTS
+            pix_fmts[1] = AV_PIX_FMT_P216;
+#else
+            pix_fmts[1] = AV_PIX_FMT_P212;
+#endif
 #endif
         } else {
+#if FF_API_NVDEC_OLD_PIX_FMTS
             pix_fmts[1] = AV_PIX_FMT_P016;
+#else
+            pix_fmts[1] = AV_PIX_FMT_P012;
+#endif
         }
         caps = &ctx->caps12;
         break;
