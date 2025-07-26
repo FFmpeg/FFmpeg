@@ -44,6 +44,7 @@ typedef struct TCPContext {
     int recv_buffer_size;
     int send_buffer_size;
     int tcp_nodelay;
+    int tcp_keepalive;
 #if !HAVE_WINSOCK2_H
     int tcp_mss;
 #endif /* !HAVE_WINSOCK2_H */
@@ -61,6 +62,7 @@ static const AVOption options[] = {
     { "send_buffer_size", "Socket send buffer size (in bytes)",                OFFSET(send_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "recv_buffer_size", "Socket receive buffer size (in bytes)",             OFFSET(recv_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "tcp_nodelay", "Use TCP_NODELAY to disable nagle's algorithm",           OFFSET(tcp_nodelay), AV_OPT_TYPE_BOOL, { .i64 = 0 },             0, 1, .flags = D|E },
+    { "tcp_keepalive", "Use TCP keepalive to detect dead connections and keep long-lived connections active.",           OFFSET(tcp_keepalive), AV_OPT_TYPE_BOOL, { .i64 = 0 },             0, 1, .flags = D|E },
 #if !HAVE_WINSOCK2_H
     { "tcp_mss",     "Maximum segment size for outgoing TCP packets",          OFFSET(tcp_mss),     AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
 #endif /* !HAVE_WINSOCK2_H */
@@ -125,6 +127,12 @@ static int customize_fd(void *ctx, int fd, int family)
             ff_log_net_error(ctx, AV_LOG_WARNING, "setsockopt(TCP_NODELAY)");
         }
     }
+    if (s->tcp_keepalive > 0) {
+        if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &s->tcp_keepalive, sizeof(s->tcp_keepalive))) {
+            ff_log_net_error(ctx, AV_LOG_WARNING, "setsockopt(SO_KEEPALIVE)");
+        }
+    }
+
 #if !HAVE_WINSOCK2_H
     if (s->tcp_mss > 0) {
         if (setsockopt (fd, IPPROTO_TCP, TCP_MAXSEG, &s->tcp_mss, sizeof (s->tcp_mss))) {
@@ -186,6 +194,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         }
         if (av_find_info_tag(buf, sizeof(buf), "tcp_nodelay", p)) {
             s->tcp_nodelay = strtol(buf, NULL, 10);
+        }
+        if (av_find_info_tag(buf, sizeof(buf), "tcp_keepalive", p)) {
+            s->tcp_keepalive = strtol(buf, NULL, 10);
         }
     }
     if (s->rw_timeout >= 0) {

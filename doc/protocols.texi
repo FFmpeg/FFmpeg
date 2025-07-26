@@ -986,6 +986,11 @@ Set TCP_NODELAY to disable Nagle's algorithm. Default value is 0.
 
 @emph{Remark: Writing to the socket is currently not optimized to minimize system calls and reduces the efficiency / effect of TCP_NODELAY.}
 
+@item tcp_keepalive=@var{1|0}
+Enable the TCP keepalive mechanism to detect dead peers and help maintain long-lived idle connections. Default value is 0.
+
+Only the basic keepalive option (SO_KEEPALIVE) can be enabled or disabled. Platform-specific tuning parameters such as TCP_KEEPIDLE, TCP_KEEPINTVL, or TCP_KEEPCNT are not configurable and will use the operating system's default values.
+
 @end table
 
 For example to read with @command{ffplay} a multimedia resource named
