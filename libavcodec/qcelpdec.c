@@ -89,6 +89,8 @@ static av_cold int qcelp_decode_init(AVCodecContext *avctx)
     av_channel_layout_uninit(&avctx->ch_layout);
     avctx->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
+    if (!avctx->sample_rate)
+        avctx->sample_rate = 8000;
 
     for (i = 0; i < 10; i++)
         q->prev_lspf[i] = (i + 1) / 11.0;
