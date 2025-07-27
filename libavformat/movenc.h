@@ -90,6 +90,13 @@ typedef struct MOVTrack {
     uint64_t    time;
     int64_t     track_duration;
     int         last_sample_is_subtitle_end;
+
+    /* multiple stsd */
+    int         stsd_count;
+    int         last_stsd_index;
+    uint8_t     **extradata;
+    int         *extradata_size;
+
     long        sample_count;
     long        sample_size;
     long        chunkCount;
@@ -111,8 +118,6 @@ typedef struct MOVTrack {
     int mono_as_fc;
     int multichannel_as_mono;
 
-    int         vos_len;
-    uint8_t     *vos_data;
     MOVIentry   *cluster;
     MOVIentry   *cluster_written;
     unsigned    cluster_capacity;
@@ -244,8 +249,6 @@ typedef struct MOVMuxContext {
     int encryption_key_len;
     uint8_t *encryption_kid;
     int encryption_kid_len;
-
-    int need_rewrite_extradata;
 
     int use_stream_ids_as_track_ids;
     int track_ids_ok;
