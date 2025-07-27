@@ -10580,6 +10580,20 @@ static int mov_read_header(AVFormatContext *s)
         MOVStreamContext *sc = st->priv_data;
         uint32_t dvdsub_clut[FF_DVDCLUT_CLUT_LEN] = {0};
         fix_timescale(mov, sc);
+
+        /* Set the primary extradata based on the first Sample. */
+        if (sc->stsc_count && sc->extradata_size && !sc->iamf) {
+            sc->last_stsd_index = sc->stsc_data[0].id - 1;
+            av_freep(&st->codecpar->extradata);
+            st->codecpar->extradata_size = sc->extradata_size[sc->last_stsd_index];
+            if (sc->extradata_size[sc->last_stsd_index]) {
+                st->codecpar->extradata = av_mallocz(sc->extradata_size[sc->last_stsd_index] + AV_INPUT_BUFFER_PADDING_SIZE);
+                if (!st->codecpar->extradata)
+                    return AVERROR(ENOMEM);
+                memcpy(st->codecpar->extradata, sc->extradata[sc->last_stsd_index], sc->extradata_size[sc->last_stsd_index]);
+            }
+        }
+
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
             st->codecpar->codec_id   == AV_CODEC_ID_AAC) {
             sti->skip_samples = sc->start_pad;
