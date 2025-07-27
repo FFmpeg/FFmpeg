@@ -247,7 +247,7 @@ static int mov_write_stsz_tag(AVIOContext *pb, MOVTrack *track)
 /* Sample to chunk atom */
 static int mov_write_stsc_tag(AVIOContext *pb, MOVTrack *track)
 {
-    int index = 0, oldval = -1, i;
+    int index = 0, oldidx = -1, oldval = -1, i;
     int64_t entryPos, curpos;
 
     int64_t pos = avio_tell(pb);
@@ -257,11 +257,13 @@ static int mov_write_stsc_tag(AVIOContext *pb, MOVTrack *track)
     entryPos = avio_tell(pb);
     avio_wb32(pb, track->chunkCount); // entry count
     for (i = 0; i < track->entry; i++) {
-        if (oldval != track->cluster[i].samples_in_chunk && track->cluster[i].chunkNum) {
+        if ((oldval != track->cluster[i].samples_in_chunk ||
+             oldidx != track->cluster[i].stsd_index) && track->cluster[i].chunkNum) {
             avio_wb32(pb, track->cluster[i].chunkNum); // first chunk
             avio_wb32(pb, track->cluster[i].samples_in_chunk); // samples per chunk
-            avio_wb32(pb, 0x1); // sample description index
+            avio_wb32(pb, track->cluster[i].stsd_index + 1); // sample description index
             oldval = track->cluster[i].samples_in_chunk;
+            oldidx = track->cluster[i].stsd_index;
             index++;
         }
     }
@@ -3053,8 +3055,12 @@ static int mov_write_stsd_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "stsd");
     avio_wb32(pb, 0); /* version & flags */
-    avio_wb32(pb, 1); /* entry count */
+    avio_wb32(pb, track->stsd_count);
 
+    int stsd_index_back = track->last_stsd_index;
+    for (track->last_stsd_index = 0;
+         track->last_stsd_index < track->stsd_count;
+         track->last_stsd_index++) {
     if (track->par->codec_type == AVMEDIA_TYPE_VIDEO)
         ret = mov_write_video_tag(s, pb, mov, track);
     else if (track->par->codec_type == AVMEDIA_TYPE_AUDIO)
@@ -3070,6 +3076,9 @@ static int mov_write_stsd_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
 
     if (ret < 0)
         return ret;
+    }
+
+    track->last_stsd_index = stsd_index_back;
 
     return update_size(pb, pos);
 }
@@ -5040,6 +5049,7 @@ static void build_chunks(MOVTrack *trk)
     trk->chunkCount = 1;
     for (i = 1; i<trk->entry; i++){
         if (chunk->pos + chunkSize == trk->cluster[i].pos &&
+            chunk->stsd_index == trk->cluster[i].stsd_index &&
             chunkSize + trk->cluster[i].size < (1<<20)){
             chunkSize             += trk->cluster[i].size;
             chunk->samples_in_chunk += trk->cluster[i].entries;
@@ -6761,6 +6771,39 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         memset(trk->extradata[0] + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     }
 
+    const AVPacketSideData *sd = av_packet_side_data_get(pkt->side_data, pkt->side_data_elems, AV_PKT_DATA_NEW_EXTRADATA);
+    if (pkt->size && sd && sd->size > 0) {
+        int i;
+        for (i = 0; i < trk->stsd_count; i++) {
+            if (trk->extradata_size[i] == sd->size && !memcmp(trk->extradata[i], sd->data, sd->size))
+                break;
+        }
+
+        if (i < trk->stsd_count)
+            trk->last_stsd_index = i;
+        else if (trk->stsd_count <= INT_MAX - 1) {
+            int new_count = trk->stsd_count + 1;
+            uint8_t **extradata = av_realloc_array(trk->extradata, new_count, sizeof(*trk->extradata));
+            if (!extradata)
+                return AVERROR(ENOMEM);
+            trk->extradata = extradata;
+
+            int *extradata_size = av_realloc_array(trk->extradata_size, new_count, sizeof(*trk->extradata_size));
+            if (!extradata_size)
+                return AVERROR(ENOMEM);
+            trk->extradata_size = extradata_size;
+
+            trk->extradata[trk->stsd_count] = av_memdup(sd->data, sd->size);
+            if (!trk->extradata[trk->stsd_count])
+                return AVERROR(ENOMEM);
+
+            trk->extradata_size[trk->stsd_count] = sd->size;
+            trk->last_stsd_index = trk->stsd_count;
+            trk->stsd_count = new_count;
+        } else
+            return AVERROR(ENOMEM);
+    }
+
     if (par->codec_id == AV_CODEC_ID_AAC && pkt->size > 2 &&
         (AV_RB16(pkt->data) & 0xfff0) == 0xfff0) {
         if (!trk->st->nb_frames) {
@@ -6912,6 +6955,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     trk->cluster[trk->entry].pos              = avio_tell(pb) - size;
+    trk->cluster[trk->entry].stsd_index       = trk->last_stsd_index;
     trk->cluster[trk->entry].samples_in_chunk = samples_in_chunk;
     trk->cluster[trk->entry].chunkNum         = 0;
     trk->cluster[trk->entry].size             = size;
@@ -7594,6 +7638,7 @@ static void mov_free(AVFormatContext *s)
         for (int j = 0; j < track->stsd_count; j++)
             av_freep(&track->extradata[j]);
         av_freep(&track->extradata);
+        av_freep(&track->extradata_size);
 
         ff_mov_cenc_free(&track->cenc);
         ffio_free_dyn_buf(&track->mdat_buf);

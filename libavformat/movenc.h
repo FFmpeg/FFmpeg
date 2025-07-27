@@ -50,6 +50,7 @@ typedef struct MOVIentry {
     int64_t      dts;
     int64_t      pts;
     unsigned int size;
+    unsigned int stsd_index;
     unsigned int samples_in_chunk;
     unsigned int chunkNum;              ///< Chunk number if the current entry is a chunk start otherwise 0
     unsigned int entries;
