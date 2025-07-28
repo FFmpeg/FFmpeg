@@ -241,12 +241,12 @@ static int64_t get_duration(AVFormatContext *s)
         return 0;
 
     int64_t start_pos = avio_tell(s->pb);
-    int64_t end_pos = -1;
+    int64_t pos = -1;
     int64_t start = 0, end = 0;
     struct tm timeinfo;
-    uint8_t *end_buffer;
-    int64_t end_buffer_size;
-    int64_t end_buffer_pos;
+    uint8_t *buffer;
+    int64_t buffer_size;
+    int64_t buffer_pos;
     int64_t offset;
     unsigned date;
     int64_t size = avio_size(s->pb);
@@ -259,40 +259,40 @@ static int64_t get_duration(AVFormatContext *s)
     get_timeinfo(date, &timeinfo);
     start = av_timegm(&timeinfo) * 1000LL;
 
-    end_buffer_size = FFMIN(MAX_DURATION_BUFFER_SIZE, size);
-    end_buffer = av_malloc(end_buffer_size);
-    if (!end_buffer)
+    buffer_size = FFMIN(MAX_DURATION_BUFFER_SIZE, size);
+    buffer = av_malloc(buffer_size);
+    if (!buffer)
         goto fail;
-    end_buffer_pos = size - end_buffer_size;
-    avio_seek(s->pb, end_buffer_pos, SEEK_SET);
-    if (ffio_read_size(s->pb, end_buffer, end_buffer_size) < 0)
+    buffer_pos = size - buffer_size;
+    avio_seek(s->pb, buffer_pos, SEEK_SET);
+    if (ffio_read_size(s->pb, buffer, buffer_size) < 0)
         goto fail;
 
-    offset = end_buffer_size - 8;
+    offset = buffer_size - 8;
     while (offset > 0) {
-        if (AV_RL32(end_buffer + offset) == MKTAG('d','h','a','v')) {
-            int64_t seek_back = AV_RL32(end_buffer + offset + 4);
-            end_pos = end_buffer_pos + offset - seek_back + 8;
+        if (AV_RL32(buffer + offset) == MKTAG('d','h','a','v')) {
+            int64_t seek_back = AV_RL32(buffer + offset + 4);
+            pos = buffer_pos + offset - seek_back + 8;
             break;
         } else {
             offset -= 9;
         }
     }
 
-    if (end_pos < end_buffer_pos || end_pos + 16 > end_buffer_pos + end_buffer_size)
+    if (pos < buffer_pos || pos + 16 > buffer_pos + buffer_size)
         goto fail;
 
-    date = AV_RL32(end_buffer + (end_pos - end_buffer_pos) + 16);
+    date = AV_RL32(buffer + (pos - buffer_pos) + 16);
     get_timeinfo(date, &timeinfo);
     end = av_timegm(&timeinfo) * 1000LL;
 
-    av_freep(&end_buffer);
+    av_freep(&buffer);
 
     avio_seek(s->pb, start_pos, SEEK_SET);
 
     return end - start;
 fail:
-    av_freep(&end_buffer);
+    av_freep(&buffer);
     avio_seek(s->pb, start_pos, SEEK_SET);
     return 0;
 }
