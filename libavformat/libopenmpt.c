@@ -148,7 +148,8 @@ static int read_header_openmpt(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, 1, AV_TIME_BASE);
-    st->duration = llrint(openmpt->duration*AV_TIME_BASE);
+    if (openmpt->duration >= 0 && openmpt->duration < ((double)INT64_MAX + 1) / AV_TIME_BASE)
+        st->duration = llrint(openmpt->duration*AV_TIME_BASE);
 
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id    = AV_NE(AV_CODEC_ID_PCM_F32BE, AV_CODEC_ID_PCM_F32LE);
@@ -170,6 +171,8 @@ static int read_packet_openmpt(AVFormatContext *s, AVPacket *pkt)
 
     if ((ret = av_new_packet(pkt, AUDIO_PKT_SIZE)) < 0)
         return ret;
+
+    double pos = openmpt_module_get_position_seconds(openmpt->module);
 
     switch (openmpt->ch_layout.nb_channels) {
     case 1:
@@ -196,6 +199,9 @@ static int read_packet_openmpt(AVFormatContext *s, AVPacket *pkt)
 
     pkt->size = ret * (openmpt->ch_layout.nb_channels * 4);
 
+    if (pos >= 0 && pos < ((double)INT64_MAX + 1) / AV_TIME_BASE)
+        pkt->pts = llrint(pos * AV_TIME_BASE);
+
     return 0;
 }
 
@@ -212,6 +218,8 @@ static int read_close_openmpt(AVFormatContext *s)
 static int read_seek_openmpt(AVFormatContext *s, int stream_idx, int64_t ts, int flags)
 {
     OpenMPTContext *openmpt = s->priv_data;
+    if (ts < 0)
+        ts = 0;
     openmpt_module_set_position_seconds(openmpt->module, (double)ts/AV_TIME_BASE);
     return 0;
 }
