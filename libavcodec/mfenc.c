@@ -296,7 +296,7 @@ static int mf_sample_to_avpacket(AVCodecContext *avctx, IMFSample *sample, AVPac
     return 0;
 }
 
-static IMFSample *mf_a_avframe_to_sample(AVCodecContext *avctx, const AVFrame *frame)
+static int mf_a_avframe_to_sample(AVCodecContext *avctx, const AVFrame *frame, IMFSample **out_sample)
 {
     MFContext *c = avctx->priv_data;
     size_t len;
@@ -308,9 +308,13 @@ static IMFSample *mf_a_avframe_to_sample(AVCodecContext *avctx, const AVFrame *f
 
     sample = ff_create_memory_sample(&c->functions, frame->data[0], len,
                                      c->in_info.cbAlignment);
-    if (sample)
-        IMFSample_SetSampleDuration(sample, mf_to_mf_time(avctx, frame->nb_samples));
-    return sample;
+    if (!sample)
+        return AVERROR(ENOMEM);
+
+    IMFSample_SetSampleDuration(sample, mf_to_mf_time(avctx, frame->nb_samples));
+
+    *out_sample = sample;
+    return 0;
 }
 
 static int initialize_dxgi_manager(AVCodecContext *avctx)
@@ -407,7 +411,7 @@ static int process_software_frame(AVCodecContext *avctx, const AVFrame *frame, I
 
     size = av_image_get_buffer_size(avctx->pix_fmt, avctx->width, avctx->height, 1);
     if (size < 0)
-        return AVERROR_EXTERNAL;
+        return size;
 
     sample = ff_create_memory_sample(&c->functions, NULL, size,
                                      c->in_info.cbAlignment);
@@ -434,7 +438,7 @@ static int process_software_frame(AVCodecContext *avctx, const AVFrame *frame, I
     IMFMediaBuffer_Release(buffer);
     if (ret < 0) {
         IMFSample_Release(sample);
-        return AVERROR_EXTERNAL;
+        return ret;
     }
 
     IMFSample_SetSampleDuration(sample, mf_to_mf_time(avctx, frame->duration));
@@ -443,7 +447,7 @@ static int process_software_frame(AVCodecContext *avctx, const AVFrame *frame, I
     return 0;
 }
 
-static IMFSample *mf_v_avframe_to_sample(AVCodecContext *avctx, const AVFrame *frame)
+static int mf_v_avframe_to_sample(AVCodecContext *avctx, const AVFrame *frame, IMFSample **out_sample)
 {
     MFContext *c = avctx->priv_data;
     MFFunctions *func = &c->functions;
@@ -456,13 +460,13 @@ static IMFSample *mf_v_avframe_to_sample(AVCodecContext *avctx, const AVFrame *f
         // Handle D3D11 hardware frames
         ret = process_d3d11_frame(avctx, frame, &sample);
         if (ret < 0) {
-            return NULL;
+            return ret;
         }
     } else {
         // Handle software frames
         ret = process_software_frame(avctx, frame, &sample);
         if (ret < 0) {
-            return NULL;
+            return ret;
         }
     }
 
@@ -472,24 +476,28 @@ static IMFSample *mf_v_avframe_to_sample(AVCodecContext *avctx, const AVFrame *f
         av_log(avctx, AV_LOG_WARNING, "Failed to set sample duration: %s\n", ff_hr_str(hr));
     }
 
-    return sample;
+    *out_sample = sample;
+    return 0;
 }
 
-static IMFSample *mf_avframe_to_sample(AVCodecContext *avctx, const AVFrame *frame)
+static int mf_avframe_to_sample(AVCodecContext *avctx, const AVFrame *frame, IMFSample **out_sample)
 {
     MFContext *c = avctx->priv_data;
     IMFSample *sample;
+    int ret;
 
     if (c->is_audio) {
-        sample = mf_a_avframe_to_sample(avctx, frame);
+        ret = mf_a_avframe_to_sample(avctx, frame, &sample);
     } else {
-        sample = mf_v_avframe_to_sample(avctx, frame);
+        ret = mf_v_avframe_to_sample(avctx, frame, &sample);
     }
 
-    if (sample)
-        mf_sample_set_pts(avctx, sample, frame->pts);
+    if (ret < 0)
+        return ret;
 
-    return sample;
+    mf_sample_set_pts(avctx, sample, frame->pts);
+    *out_sample = sample;
+    return 0;
 }
 
 static int mf_send_sample(AVCodecContext *avctx, IMFSample *sample)
@@ -625,10 +633,10 @@ static int mf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
     }
 
     if (c->frame->buf[0]) {
-        sample = mf_avframe_to_sample(avctx, c->frame);
-        if (!sample) {
+        ret = mf_avframe_to_sample(avctx, c->frame, &sample);
+        if (ret < 0) {
             av_frame_unref(c->frame);
-            return AVERROR(ENOMEM);
+            return ret;
         }
         if (c->is_video && c->codec_api) {
             if (c->frame->pict_type == AV_PICTURE_TYPE_I || !c->sample_sent)
