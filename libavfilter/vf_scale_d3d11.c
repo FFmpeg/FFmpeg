@@ -196,9 +196,7 @@ static int scale_d3d11_filter_frame(AVFilterLink *inlink, AVFrame *in)
     ret = av_hwframe_get_buffer(s->hw_frames_ctx_out, out, 0);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to get output frame from pool\n");
-        av_frame_free(&in);
-        av_frame_free(&out);
-        return ret;
+        goto fail;
     }
 
     ///< Configure the D3D11 video processor if not already configured
@@ -215,9 +213,7 @@ static int scale_d3d11_filter_frame(AVFilterLink *inlink, AVFrame *in)
         ret = scale_d3d11_configure_processor(s, ctx);
         if (ret < 0) {
             av_log(ctx, AV_LOG_ERROR, "Failed to configure processor\n");
-            av_frame_free(&in);
-            av_frame_free(&out);
-            return ret;
+            goto fail;
         }
     }
 
@@ -235,9 +231,8 @@ static int scale_d3d11_filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->videoDevice, (ID3D11Resource *)d3d11_texture, s->enumerator, &inputViewDesc, &inputView);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Failed to create input view: HRESULT 0x%lX\n", hr);
-        av_frame_free(&in);
-        av_frame_free(&out);
-        return AVERROR_EXTERNAL;
+        ret = AVERROR_EXTERNAL;
+        goto fail;
     }
 
     ///< Create output view for current texture
@@ -251,9 +246,8 @@ static int scale_d3d11_filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->videoDevice, (ID3D11Resource *)output_texture, s->enumerator, &outputViewDesc, &s->outputView);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Failed to create output view: HRESULT 0x%lX\n", hr);
-        av_frame_free(&in);
-        av_frame_free(&out);
-        return AVERROR_EXTERNAL;
+        ret = AVERROR_EXTERNAL;
+        goto fail;
     }
 
     ///< Set up processing stream
@@ -267,32 +261,23 @@ static int scale_d3d11_filter_frame(AVFilterLink *inlink, AVFrame *in)
     hr = s->context->lpVtbl->QueryInterface(s->context, &IID_ID3D11VideoContext, (void **)&videoContext);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Failed to get video context: HRESULT 0x%lX\n", hr);
-        inputView->lpVtbl->Release(inputView);
-        av_frame_free(&in);
-        av_frame_free(&out);
-        return AVERROR_EXTERNAL;
+        ret = AVERROR_EXTERNAL;
+        goto fail;
     }
 
     ///< Process the frame
     hr = videoContext->lpVtbl->VideoProcessorBlt(videoContext, s->processor, s->outputView, 0, 1, &stream);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "VideoProcessorBlt failed: HRESULT 0x%lX\n", hr);
-        videoContext->lpVtbl->Release(videoContext);
-        inputView->lpVtbl->Release(inputView);
-        av_frame_free(&in);
-        av_frame_free(&out);
-        return AVERROR_EXTERNAL;
+        ret = AVERROR_EXTERNAL;
+        goto fail;
     }
 
     ///< Set up output frame
     ret = av_frame_copy_props(out, in);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to copy frame properties\n");
-        videoContext->lpVtbl->Release(videoContext);
-        inputView->lpVtbl->Release(inputView);
-        av_frame_free(&in);
-        av_frame_free(&out);
-        return ret;
+        goto fail;
     }
 
     out->data[0] = (uint8_t *)output_texture;
@@ -312,6 +297,19 @@ static int scale_d3d11_filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     ///< Forward the frame
     return ff_filter_frame(outlink, out);
+
+fail:
+    if (inputView)
+        inputView->lpVtbl->Release(inputView);
+    if (videoContext)
+        videoContext->lpVtbl->Release(videoContext);
+    if (s->outputView) {
+        s->outputView->lpVtbl->Release(s->outputView);
+        s->outputView = NULL;
+    }
+    av_frame_free(&in);
+    av_frame_free(&out);
+    return ret;
 }
 
 static int scale_d3d11_config_props(AVFilterLink *outlink)
