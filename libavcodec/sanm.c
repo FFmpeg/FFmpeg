@@ -1601,6 +1601,11 @@ static int old_codec48(SANMVideoContext *ctx, int width, int height)
         }
         break;
     case 2:
+        if (decoded_size > ctx->buf_size) {
+            av_log(ctx->avctx, AV_LOG_ERROR, "Decoded size %u is too large.\n", decoded_size);
+            return AVERROR_INVALIDDATA;
+        }
+
         if (rle_decode(ctx, &ctx->gb, dst, decoded_size))
             return AVERROR_INVALIDDATA;
         break;
