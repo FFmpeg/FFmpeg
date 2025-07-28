@@ -118,11 +118,9 @@ static int64_t subfile_seek(URLContext *h, int64_t pos, int whence)
     int64_t new_pos, end;
     int ret;
 
-    if (whence == AVSEEK_SIZE || whence == SEEK_END) {
         end = c->end;
         if (end == INT64_MAX && (end = ffurl_seek(c->h, 0, AVSEEK_SIZE)) < 0)
             return end;
-    }
 
     switch (whence) {
     case AVSEEK_SIZE:
