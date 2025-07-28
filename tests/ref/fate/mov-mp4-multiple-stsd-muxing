@@ -1,0 +1,12 @@
+ed3a49723c7134e8761f1a98e2250835 *tests/data/fate/mov-mp4-multiple-stsd-muxing.mp4
+5609 tests/data/fate/mov-mp4-multiple-stsd-muxing.mp4
+#extradata 0:       46, 0x12630e70
+#tb 0: 1/12800
+#media_type 0: video
+#codec_id 0: h264
+#dimensions 0: 256x128
+#sar 0: 1/1
+0,          0,          0,      512,     2293, 0xe4b001aa
+0,        512,        512,      512,       64, 0x78e81f89, F=0x0
+0,       1024,       1024,      512,     2166, 0xf92cca60, S=1, New Extradata,       45, 0x1f810f16
+0,       1536,       1536,      512,       44, 0x6eb91111, F=0x0
