@@ -659,14 +659,11 @@ static int url_bio_bputs(BIO *b, const char *str)
     return url_bio_bwrite(b, str, strlen(str));
 }
 
-static av_cold int init_bio_method(URLContext *h)
+static av_cold void init_bio_method(URLContext *h)
 {
     TLSContext *p = h->priv_data;
     BIO *bio;
-    int bio_idx = BIO_get_new_index();
-    if (bio_idx == -1)
-        return AVERROR_EXTERNAL;
-    p->url_bio_method = BIO_meth_new(bio_idx | BIO_TYPE_SOURCE_SINK, "urlprotocol bio");
+    p->url_bio_method = BIO_meth_new(BIO_TYPE_SOURCE_SINK, "urlprotocol bio");
     BIO_meth_set_write(p->url_bio_method, url_bio_bwrite);
     BIO_meth_set_read(p->url_bio_method, url_bio_bread);
     BIO_meth_set_puts(p->url_bio_method, url_bio_bputs);
@@ -677,7 +674,6 @@ static av_cold int init_bio_method(URLContext *h)
     BIO_set_data(bio, p);
 
     SSL_set_bio(p->ssl, bio, bio);
-    return 0;
 }
 
 static void openssl_info_callback(const SSL *ssl, int where, int ret) {
@@ -874,11 +870,7 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     SSL_set_options(p->ssl, SSL_OP_NO_QUERY_MTU);
     SSL_set_mtu(p->ssl, c->mtu);
     DTLS_set_link_mtu(p->ssl, c->mtu);
-
-    ret = init_bio_method(h);
-    if (ret < 0)
-        goto fail;
-
+    init_bio_method(h);
     if (p->tls_shared.external_sock != 1) {
         if ((ret = ff_tls_open_underlying(&p->tls_shared, h, url, options)) < 0) {
             av_log(p, AV_LOG_ERROR, "Failed to connect %s\n", url);
@@ -956,9 +948,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     }
     SSL_set_ex_data(p->ssl, 0, p);
     SSL_CTX_set_info_callback(p->ctx, openssl_info_callback);
-    ret = init_bio_method(h);
-    if (ret < 0)
-        goto fail;
+    init_bio_method(h);
     if (!c->listen && !c->numerichost) {
         // By default OpenSSL does too lax wildcard matching
         SSL_set_hostflags(p->ssl, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
