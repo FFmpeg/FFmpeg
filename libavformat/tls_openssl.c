@@ -35,8 +35,8 @@
 #include <openssl/x509v3.h>
 
 /**
- * Returns a heap‐allocated null‐terminated string containing
- * the PEM‐encoded public key.  Caller must free.
+ * Returns a heap-allocated null-terminated string containing
+ * the PEM-encoded public key. Caller must free.
  */
 static char *pkey_to_pem_string(EVP_PKEY *pkey) {
     BIO        *mem = NULL;
@@ -61,7 +61,7 @@ static char *pkey_to_pem_string(EVP_PKEY *pkey) {
     if (!pem_str)
         goto err;
 
-    // Copy data & NUL‐terminate
+    // Copy data & NUL-terminate
     memcpy(pem_str, bptr->data, bptr->length);
     pem_str[bptr->length] = '\0';
 
@@ -427,7 +427,7 @@ error:
 
 
 /**
- * Deserialize a PEM‐encoded private or public key from a NUL-terminated C string.
+ * Deserialize a PEM-encoded private or public key from a NUL-terminated C string.
  *
  * @param pem_str   The PEM text, e.g.
  *                  "-----BEGIN PRIVATE KEY-----\n…\n-----END PRIVATE KEY-----\n"
@@ -458,7 +458,7 @@ static EVP_PKEY *pkey_from_pem_string(const char *pem_str, int is_priv)
 }
 
 /**
- * Deserialize a PEM‐encoded certificate from a NUL-terminated C string.
+ * Deserialize a PEM-encoded certificate from a NUL-terminated C string.
  *
  * @param pem_str   The PEM text, e.g.
  *                  "-----BEGIN CERTIFICATE-----\n…\n-----END CERTIFICATE-----\n"
