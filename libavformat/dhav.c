@@ -279,7 +279,7 @@ static int64_t get_duration(AVFormatContext *s)
         }
     }
 
-    if (end_pos < 0 || end_pos + 16 > end_buffer_pos + end_buffer_size)
+    if (end_pos < end_buffer_pos || end_pos + 16 > end_buffer_pos + end_buffer_size)
         goto fail;
 
     date = AV_RL32(end_buffer + (end_pos - end_buffer_pos) + 16);
