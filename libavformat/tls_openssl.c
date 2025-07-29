@@ -91,48 +91,26 @@ done:
 
 /**
  * Generate a SHA-256 fingerprint of an X.509 certificate.
- *
- * @param ctx       AVFormatContext for logging (can be NULL)
- * @param cert      X509 certificate to fingerprint
- * @return          Newly allocated fingerprint string in "AA:BB:CC:…" format,
- *                  or NULL on error (logs via av_log if ctx is not NULL).
- *                  Caller must free() the returned string.
  */
-static char *generate_fingerprint(X509 *cert)
+static int x509_fingerprint(X509 *cert, char **fingerprint)
 {
     unsigned char md[EVP_MAX_MD_SIZE];
     int n = 0;
-    AVBPrint fingerprint;
-    char *result = NULL;
-    int i;
-
-    /* To prevent a crash during cleanup, always initialize it. */
-    av_bprint_init(&fingerprint, 0, AV_BPRINT_SIZE_UNLIMITED);
+    AVBPrint buf;
 
     if (X509_digest(cert, EVP_sha256(), md, &n) != 1) {
-        av_log(NULL, AV_LOG_ERROR, "TLS: Failed to generate fingerprint, %s\n", ERR_error_string(ERR_get_error(), NULL));
-        goto end;
+        av_log(NULL, AV_LOG_ERROR, "TLS: Failed to generate fingerprint, %s\n",
+               ERR_error_string(ERR_get_error(), NULL));
+        return AVERROR(ENOMEM);
     }
 
-    for (i = 0; i < n; i++) {
-        av_bprintf(&fingerprint, "%02X", md[i]);
-        if (i + 1 < n)
-            av_bprintf(&fingerprint, ":");
-    }
+    av_bprint_init(&buf, n*3, n*3);
 
-    if (!fingerprint.str || !strlen(fingerprint.str)) {
-        av_log(NULL, AV_LOG_ERROR, "TLS: Fingerprint is empty\n");
-        goto end;
-    }
+    for (int i = 0; i < n - 1; i++)
+        av_bprintf(&buf, "%02X:", md[i]);
+    av_bprintf(&buf, "%02X", md[n - 1]);
 
-    result = av_strdup(fingerprint.str);
-    if (!result) {
-        av_log(NULL, AV_LOG_ERROR, "TLS: Out of memory generating fingerprint\n");
-    }
-
-end:
-    av_bprint_finalize(&fingerprint, NULL);
-    return result;
+    return av_bprint_finalize(&buf, fingerprint);
 }
 
 int ff_ssl_read_key_cert(char *key_url, char *cert_url, char *key_buf, size_t key_sz, char *cert_buf, size_t cert_sz, char **fingerprint)
@@ -190,15 +168,9 @@ int ff_ssl_read_key_cert(char *key_url, char *cert_url, char *key_buf, size_t ke
     pkey_to_pem_string(pkey, key_buf, key_sz);
     cert_to_pem_string(cert, cert_buf, cert_sz);
 
-    /* Generate fingerprint. */
-    if (fingerprint) {
-        *fingerprint = generate_fingerprint(cert);
-        if (!*fingerprint) {
-            av_log(NULL, AV_LOG_ERROR, "TLS: Failed to generate fingerprint from %s\n", cert_url);
-            ret = AVERROR(EIO);
-            goto end;
-        }
-    }
+    ret = x509_fingerprint(cert, fingerprint);
+    if (ret < 0)
+        av_log(NULL, AV_LOG_ERROR, "TLS: Failed to generate fingerprint from %s\n", cert_url);
 
 end:
     BIO_free(key_b);
@@ -347,12 +319,9 @@ static int openssl_gen_certificate(EVP_PKEY *pkey, X509 **cert, char **fingerpri
         goto einval_end;
     }
 
-    if (fingerprint) {
-        *fingerprint = generate_fingerprint(*cert);
-        if (!*fingerprint) {
-            goto enomem_end;
-        }
-    }
+    ret = x509_fingerprint(*cert, fingerprint);
+    if (ret < 0)
+        goto end;
 
     goto end;
 enomem_end:
