@@ -288,9 +288,10 @@ static int decode_sps(VVCParamSets *ps, AVCodecContext *c, const H266RawSPS *rsp
     }
 
     if (old_sps) {
-        if (old_sps->r == rsps || !memcmp(old_sps->r, rsps, sizeof(*old_sps->r)))
+        if (old_sps->r == rsps || !memcmp(old_sps->r, rsps, sizeof(*old_sps->r))) {
+            ps->sps_id_used |= (1 << sps_id);
             return 0;
-        else if (ps->sps_id_used & (1 << sps_id))
+        } else if (ps->sps_id_used & (1 << sps_id))
             return AVERROR_INVALIDDATA;
     }
 
