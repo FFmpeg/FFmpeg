@@ -35,80 +35,57 @@
 #include <openssl/x509v3.h>
 
 /**
- * Returns a heap-allocated null-terminated string containing
- * the PEM-encoded public key. Caller must free.
+ * Convert an EVP_PKEY to a PEM string.
  */
-static char *pkey_to_pem_string(EVP_PKEY *pkey) {
-    BIO        *mem = NULL;
-    BUF_MEM    *bptr = NULL;
-    char       *pem_str = NULL;
+static int pkey_to_pem_string(EVP_PKEY *pkey, char *out, size_t out_sz)
+{
+    BIO *mem = NULL;
+    size_t read_bytes = 0;
 
-    // Create a memory BIO
+    if (!pkey || !out || !out_sz)
+        goto done;
+
     if (!(mem = BIO_new(BIO_s_mem())))
-        goto err;
+        goto done;
 
-    // Write public key in PEM form
     if (!PEM_write_bio_PrivateKey(mem, pkey, NULL, NULL, 0, NULL, NULL))
-        goto err;
+        goto done;
 
-    // Extract pointer/length
-    BIO_get_mem_ptr(mem, &bptr);
-    if (!bptr || !bptr->length)
-        goto err;
+    if (!BIO_read_ex(mem, out, out_sz - 1, &read_bytes))
+        goto done;
 
-    // Allocate string (+1 for NUL)
-    pem_str = av_malloc(bptr->length + 1);
-    if (!pem_str)
-        goto err;
-
-    // Copy data & NUL-terminate
-    memcpy(pem_str, bptr->data, bptr->length);
-    pem_str[bptr->length] = '\0';
-
-cleanup:
+done:
     BIO_free(mem);
-    return pem_str;
-
-err:
-    // error path: free and return NULL
-    free(pem_str);
-    pem_str = NULL;
-    goto cleanup;
+    if (out && out_sz)
+        out[read_bytes] = '\0';
+    return read_bytes;
 }
 
 /**
- * Serialize an X509 certificate to a av_malloc’d PEM string.
- * Caller must free the returned pointer.
+ * Convert an X509 certificate to a PEM string.
  */
-static char *cert_to_pem_string(X509 *cert)
+static int cert_to_pem_string(X509 *cert, char *out, size_t out_sz)
 {
-    BIO     *mem = BIO_new(BIO_s_mem());
-    BUF_MEM *bptr = NULL;
-    char    *out = NULL;
+    BIO *mem = NULL;
+    size_t read_bytes = 0;
 
-    if (!mem) goto err;
+    if (!cert || !out || !out_sz)
+        goto done;
 
-    /* Write the PEM certificate */
+    if (!(mem = BIO_new(BIO_s_mem())))
+        goto done;
+
     if (!PEM_write_bio_X509(mem, cert))
-        goto err;
+        goto done;
 
-    BIO_get_mem_ptr(mem, &bptr);
-    if (!bptr || !bptr->length) goto err;
+    if (!BIO_read_ex(mem, out, out_sz - 1, &read_bytes))
+        goto done;
 
-    out = av_malloc(bptr->length + 1);
-    if (!out) goto err;
-
-    memcpy(out, bptr->data, bptr->length);
-    out[bptr->length] = '\0';
-
-cleanup:
+done:
     BIO_free(mem);
-    return out;
-
-err:
-    free(out);
-    out = NULL;
-    goto cleanup;
+    if (out && out_sz)
+        out[read_bytes] = '\0';
+    return read_bytes;
 }
 
 
@@ -165,7 +142,6 @@ int ff_ssl_read_key_cert(char *key_url, char *cert_url, char *key_buf, size_t ke
     AVBPrint key_bp, cert_bp;
     EVP_PKEY *pkey = NULL;
     X509 *cert = NULL;
-    char *key_tem = NULL, *cert_tem = NULL;
 
     /* To prevent a crash during cleanup, always initialize it. */
     av_bprint_init(&key_bp, 1, MAX_CERTIFICATE_SIZE);
@@ -211,11 +187,8 @@ int ff_ssl_read_key_cert(char *key_url, char *cert_url, char *key_buf, size_t ke
         goto end;
     }
 
-    key_tem = pkey_to_pem_string(pkey);
-    cert_tem = cert_to_pem_string(cert);
-
-    snprintf(key_buf,  key_sz,  "%s", key_tem);
-    snprintf(cert_buf, cert_sz, "%s", cert_tem);
+    pkey_to_pem_string(pkey, key_buf, key_sz);
+    cert_to_pem_string(cert, cert_buf, cert_sz);
 
     /* Generate fingerprint. */
     if (fingerprint) {
@@ -232,8 +205,6 @@ end:
     av_bprint_finalize(&key_bp, NULL);
     BIO_free(cert_b);
     av_bprint_finalize(&cert_bp, NULL);
-    av_free(key_tem);
-    av_free(cert_tem);
     EVP_PKEY_free(pkey);
     X509_free(cert);
     return ret;
@@ -403,7 +374,6 @@ int ff_ssl_gen_key_cert(char *key_buf, size_t key_sz, char *cert_buf, size_t cer
     int ret = 0;
     EVP_PKEY *pkey = NULL;
     X509 *cert = NULL;
-    char *key_tem = NULL, *cert_tem = NULL;
 
     ret = openssl_gen_private_key(&pkey);
     if (ret < 0) goto error;
@@ -411,14 +381,9 @@ int ff_ssl_gen_key_cert(char *key_buf, size_t key_sz, char *cert_buf, size_t cer
     ret = openssl_gen_certificate(pkey, &cert, fingerprint);
     if (ret < 0) goto error;
 
-    key_tem = pkey_to_pem_string(pkey);
-    cert_tem = cert_to_pem_string(cert);
+    pkey_to_pem_string(pkey, key_buf, key_sz);
+    cert_to_pem_string(cert, cert_buf, cert_sz);
 
-    snprintf(key_buf,  key_sz,  "%s", key_tem);
-    snprintf(cert_buf, cert_sz, "%s", cert_tem);
-
-    av_free(key_tem);
-    av_free(cert_tem);
 error:
     X509_free(cert);
     EVP_PKEY_free(pkey);
