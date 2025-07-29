@@ -94,7 +94,7 @@ static void flac_lpc_33_c(int64_t *decoded, const int32_t *residual,
         int64_t sum = 0;
         for (j = 0; j < pred_order; j++)
             sum += (int64_t)coeffs[j] * (uint64_t)decoded[j];
-        decoded[j] = residual[i] + (sum >> qlevel);
+        decoded[j] = (uint64_t)residual[i] + (uint64_t)(sum >> qlevel);
     }
 }
 
