@@ -26,17 +26,17 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA 32
+SECTION_RODATA 64
 
-pw_coefhf:  times 8 dw  1016, 5570
-pw_coefhf1: times 16 dw -3801
-pw_coefsp:  times 8 dw  5077, -981
-pw_splfdif: times 8 dw  -768,  768
+pw_coefhf:  times 16 dw  1016, 5570
+pw_coefhf1: times 32 dw -3801
+pw_coefsp:  times 16 dw  5077, -981
+pw_splfdif: times 16 dw  -768,  768
 
 SECTION .text
 
 %macro LOAD8 2
-    %if mmsize == 32
+    %if mmsize >= 32
         pmovzxbw %1, %2
     %else
     movh         %1, %2
@@ -49,7 +49,10 @@ SECTION .text
 %endmacro
 
 %macro DISP8 0
-    %if mmsize == 32
+    %if mmsize == 64
+        pmaxsw        m2,    m7
+        vpmovuswb    [dstq], m2
+    %elif mmsize == 32
         vextracti128  xm1,    m2, 1
         packuswb      xm2,   xm1
         movu         [dstq], xm2
@@ -123,8 +126,13 @@ SECTION .text
     mova         m6, m7
     psubw        m6, m3
     pmaxsw       m6, m5
+%if cpuflag(avx512)
+    pcmpgtw      k1, m2, m7
+    vpmovm2w     m3, k1
+%else
     mova         m3, m2
     pcmpgtw      m3, m7
+%endif
     pand         m6, m3
     pmaxsw       m2, m6
     mova        m11, m2
@@ -169,7 +177,12 @@ SECTION .text
     paddw        m6, m5
     psubw        m1, m4
     ABS1         m1, m4
+%if cpuflag(avx512)
+    pcmpgtw      k1, m1, m9
+    vpmovm2w     m1, k1
+%else
     pcmpgtw      m1, m9
+%endif
     mova         m4, m1
     punpcklwd    m1, m4
     punpckhwd    m4, m4
@@ -254,7 +267,7 @@ cglobal bwdif_filter_line_12bit, 4, 9, 13, 0, dst, prev, cur, next, w, \
                                               prefs, mrefs, prefs2, mrefs2, \
                                               prefs3, mrefs3, prefs4, \
                                               mrefs4, parity, clip_max
-    %if mmsize == 32
+    %if mmsize >= 32
         vpbroadcastw m12, WORD clip_maxm
     %else
     movd        m12, DWORD clip_maxm
@@ -281,5 +294,10 @@ BWDIF
 
 %if HAVE_AVX2_EXTERNAL && ARCH_X86_64
 INIT_YMM avx2
+BWDIF
+%endif
+
+%if HAVE_AVX512_EXTERNAL && ARCH_X86_64
+INIT_ZMM avx512icl
 BWDIF
 %endif

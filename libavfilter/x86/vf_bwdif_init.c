@@ -36,6 +36,10 @@ void ff_bwdif_filter_line_avx2(void *dst, const void *prev, const void *cur, con
                                int w, int prefs, int mrefs, int prefs2,
                                int mrefs2, int prefs3, int mrefs3, int prefs4,
                                int mrefs4, int parity, int clip_max);
+void ff_bwdif_filter_line_avx512icl(void *dst, const void *prev, const void *cur, const void *next,
+                                    int w, int prefs, int mrefs, int prefs2,
+                                    int mrefs2, int prefs3, int mrefs3, int prefs4,
+                                    int mrefs4, int parity, int clip_max);
 
 void ff_bwdif_filter_line_12bit_sse2(void *dst, const void *prev, const void *cur, const void *next,
                                      int w, int prefs, int mrefs, int prefs2,
@@ -49,6 +53,10 @@ void ff_bwdif_filter_line_12bit_avx2(void *dst, const void *prev, const void *cu
                                      int w, int prefs, int mrefs, int prefs2,
                                      int mrefs2, int prefs3, int mrefs3, int prefs4,
                                      int mrefs4, int parity, int clip_max);
+void ff_bwdif_filter_line_12bit_avx512icl(void *dst, const void *prev, const void *cur, const void *next,
+                                          int w, int prefs, int mrefs, int prefs2,
+                                          int mrefs2, int prefs3, int mrefs3, int prefs4,
+                                          int mrefs4, int parity, int clip_max);
 
 av_cold void ff_bwdif_init_x86(BWDIFDSPContext *bwdif, int bit_depth)
 {
@@ -61,6 +69,8 @@ av_cold void ff_bwdif_init_x86(BWDIFDSPContext *bwdif, int bit_depth)
             bwdif->filter_line = ff_bwdif_filter_line_ssse3;
         if (ARCH_X86_64 && EXTERNAL_AVX2_FAST(cpu_flags))
             bwdif->filter_line = ff_bwdif_filter_line_avx2;
+        if (ARCH_X86_64 && EXTERNAL_AVX512ICL(cpu_flags))
+            bwdif->filter_line = ff_bwdif_filter_line_avx512icl;
     } else if (bit_depth <= 12) {
         if (EXTERNAL_SSE2(cpu_flags))
             bwdif->filter_line = ff_bwdif_filter_line_12bit_sse2;
@@ -68,5 +78,7 @@ av_cold void ff_bwdif_init_x86(BWDIFDSPContext *bwdif, int bit_depth)
             bwdif->filter_line = ff_bwdif_filter_line_12bit_ssse3;
         if (ARCH_X86_64 && EXTERNAL_AVX2_FAST(cpu_flags))
             bwdif->filter_line = ff_bwdif_filter_line_12bit_avx2;
+        if (ARCH_X86_64 && EXTERNAL_AVX512ICL(cpu_flags))
+            bwdif->filter_line = ff_bwdif_filter_line_12bit_avx512icl;
     }
 }
