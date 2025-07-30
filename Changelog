@@ -8,6 +8,7 @@ version 8.0:
 - Whisper filter
 - Drop support for OpenSSL < 1.1.0
 - Enable TLS peer certificate verification by default (on next major version bump)
+- Drop support for OpenSSL < 1.1.1
 - yasm support dropped, users need to use nasm
 - VVC VAAPI decoder
 - RealVideo 6.0 decoder
