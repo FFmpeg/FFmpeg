@@ -621,6 +621,11 @@ static int android_content_open(URLContext *h, const char *filename, int flags)
     ret = ff_jni_exception_check(env, 1, c);
     if (ret < 0)
         goto done;
+    if (!parcel_file_descriptor) {
+        av_log(c, AV_LOG_ERROR, "file descriptor is null\n");
+        ret = AVERROR_EXTERNAL;
+        goto done;
+    }
 
     fd = (*env)->CallIntMethod(env, parcel_file_descriptor, jfields.detach_fd_id);
     ret = ff_jni_exception_check(env, 1, c);
