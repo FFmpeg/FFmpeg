@@ -1,0 +1,23 @@
+exclude: ^tests/ref/
+
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+    - id: check-case-conflict
+    - id: check-executables-have-shebangs
+    - id: check-illegal-windows-names
+    - id: check-shebang-scripts-are-executable
+    - id: check-yaml
+    - id: end-of-file-fixer
+    - id: fix-byte-order-marker
+    - id: mixed-line-ending
+    - id: trailing-whitespace
+- repo: https://github.com/codespell-project/codespell
+  rev: v2.4.1
+  hooks:
+    - id: codespell
+      args:
+        - --ignore-words=.forgejo/pre-commit/ignored-words.txt
+        - --ignore-multiline-regex=codespell:off.*?(codespell:on|\Z)
+      exclude: ^tools/(patcheck|clean-diff)$

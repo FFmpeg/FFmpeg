@@ -1,0 +1,26 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: utilities
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install pre-commit CI
+        id: install
+        run: |
+            python3 -m venv ~/pre-commit
+            ~/pre-commit/bin/pip install --upgrade pip setuptools
+            ~/pre-commit/bin/pip install pre-commit
+            echo "envhash=$({ python3 --version && cat .forgejo/pre-commit/config.yaml; } | sha256sum | cut -d' ' -f1)" >> $FORGEJO_OUTPUT
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ steps.install.outputs.envhash }}
+      - name: Run pre-commit CI
+        run: ~/pre-commit/bin/pre-commit run -c .forgejo/pre-commit/config.yaml --show-diff-on-failure --color=always --all-files
