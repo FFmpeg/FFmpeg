@@ -397,14 +397,12 @@ static av_always_inline unsigned encode_slice_data(AVCodecContext *avctx,
     *y_data_size = encode_slice_plane(blocks_y, mb_count,
                                       buf, data_size, ctx->qmat_luma[qp - 1], 0, ctx->scantable);
 
-    if (!(avctx->flags & AV_CODEC_FLAG_GRAY)) {
-        *u_data_size = encode_slice_plane(blocks_u, mb_count, buf + *y_data_size, data_size - *y_data_size,
-                                          ctx->qmat_chroma[qp - 1], ctx->is_422, ctx->scantable);
+    *u_data_size = encode_slice_plane(blocks_u, mb_count, buf + *y_data_size, data_size - *y_data_size,
+                                      ctx->qmat_chroma[qp - 1], ctx->is_422, ctx->scantable);
 
-        *v_data_size = encode_slice_plane(blocks_v, mb_count, buf + *y_data_size + *u_data_size,
-                                          data_size - *y_data_size - *u_data_size,
-                                          ctx->qmat_chroma[qp - 1], ctx->is_422, ctx->scantable);
-    }
+    *v_data_size = encode_slice_plane(blocks_v, mb_count, buf + *y_data_size + *u_data_size,
+                                      data_size - *y_data_size - *u_data_size,
+                                      ctx->qmat_chroma[qp - 1], ctx->is_422, ctx->scantable);
 
     return *y_data_size + *u_data_size + *v_data_size;
 }
