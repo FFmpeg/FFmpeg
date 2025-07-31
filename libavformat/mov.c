@@ -5225,17 +5225,13 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     switch (st->codecpar->codec_id) {
-#if CONFIG_H261_DECODER
     case AV_CODEC_ID_H261:
-#endif
-#if CONFIG_H263_DECODER
     case AV_CODEC_ID_H263:
-#endif
-#if CONFIG_MPEG4_DECODER
     case AV_CODEC_ID_MPEG4:
-#endif
         st->codecpar->width = 0; /* let decoder init width/height */
         st->codecpar->height= 0;
+        break;
+    default:
         break;
     }
 
