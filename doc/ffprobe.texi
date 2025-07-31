@@ -368,6 +368,12 @@ Read @var{input_url}.
 Write output to @var{output_url}. If not specified, the output is sent
 to stdout.
 
+@item -c:@var{media_specifier} @var{codec_name}
+@itemx -codec:@var{media_specifier} @var{codec_name}
+Force a specific decoder implementation for the stream identified by
+@var{media_specifier}, which can assume the values @code{a} (audio),
+@code{v} (video), @code{s} (subtitle), and @code{d} (data).
+
 @end table
 @c man end
 

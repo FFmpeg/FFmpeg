@@ -36,6 +36,7 @@
 #include "libavutil/ambient_viewing_environment.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/avutil.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/display.h"
@@ -129,6 +130,11 @@ static int use_value_prefix             = 0;
 static int use_byte_value_binary_prefix = 0;
 static int use_value_sexagesimal_format = 0;
 static int show_private_data            = 1;
+
+static const char *audio_codec_name = NULL;
+static const char *data_codec_name = NULL;
+static const char *subtitle_codec_name = NULL;
+static const char *video_codec_name = NULL;
 
 #define SHOW_OPTIONAL_FIELDS_AUTO       -1
 #define SHOW_OPTIONAL_FIELDS_NEVER       0
@@ -2284,6 +2290,65 @@ static void show_error(AVTextFormatContext *tfc, int err)
     avtext_print_section_footer(tfc);
 }
 
+static int get_decoder_by_name(const char *codec_name, const AVCodec **codec)
+{
+    if (codec_name == NULL)
+        return 0;
+
+    *codec = avcodec_find_decoder_by_name(codec_name);
+    if (*codec == NULL) {
+        av_log(NULL, AV_LOG_ERROR,
+                "No codec could be found with name '%s'\n", codec_name);
+        return AVERROR(EINVAL);
+    }
+    return 0;
+}
+
+static int set_decoders(AVFormatContext *fmt_ctx)
+{
+    int ret;
+
+#define GET_DECODER(type_) \
+    ret = get_decoder_by_name(type_##_codec_name, &fmt_ctx->type_##_codec); \
+    if (ret < 0) return ret;
+
+    GET_DECODER(audio);
+    GET_DECODER(data);
+    GET_DECODER(subtitle);
+    GET_DECODER(video);
+    return 0;
+}
+
+static const AVCodec *get_decoder_for_stream(AVFormatContext *fmt_ctx, AVStream *stream)
+{
+    const AVCodec *codec = NULL;
+    switch (stream->codecpar->codec_type) {
+        case AVMEDIA_TYPE_VIDEO:    codec = fmt_ctx->video_codec; break;
+        case AVMEDIA_TYPE_AUDIO:    codec = fmt_ctx->audio_codec; break;
+        case AVMEDIA_TYPE_SUBTITLE: codec = fmt_ctx->subtitle_codec; break;
+        case AVMEDIA_TYPE_DATA:     codec = fmt_ctx->data_codec; break;
+    }
+
+    if (codec != NULL)
+        return codec;
+
+    if (stream->codecpar->codec_id == AV_CODEC_ID_PROBE) {
+        av_log(NULL, AV_LOG_WARNING,
+               "Failed to probe codec for input stream %d\n", stream->index);
+        return NULL;
+    }
+
+    codec = avcodec_find_decoder(stream->codecpar->codec_id);
+    if (codec == NULL) {
+        av_log(NULL, AV_LOG_WARNING,
+               "Unsupported codec with id %d for input stream %d\n",
+               stream->codecpar->codec_id, stream->index);
+        return NULL;
+    }
+
+    return codec;
+}
+
 static int open_input_file(InputFile *ifile, const char *filename,
                            const char *print_filename)
 {
@@ -2296,6 +2361,9 @@ static int open_input_file(InputFile *ifile, const char *filename,
     if (!fmt_ctx)
         return AVERROR(ENOMEM);
 
+    err = set_decoders(fmt_ctx);
+    if (err < 0)
+        return err;
     if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
         av_dict_set(&format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
         scan_all_pmts_set = 1;
@@ -2350,20 +2418,10 @@ static int open_input_file(InputFile *ifile, const char *filename,
 
         ist->st = stream;
 
-        if (stream->codecpar->codec_id == AV_CODEC_ID_PROBE) {
-            av_log(NULL, AV_LOG_WARNING,
-                   "Failed to probe codec for input stream %d\n",
-                    stream->index);
+        codec = get_decoder_for_stream(fmt_ctx, stream);
+        if (!codec)
             continue;
-        }
 
-        codec = avcodec_find_decoder(stream->codecpar->codec_id);
-        if (!codec) {
-            av_log(NULL, AV_LOG_WARNING,
-                    "Unsupported codec with id %d for input stream %d\n",
-                    stream->codecpar->codec_id, stream->index);
-            continue;
-        }
         {
             AVDictionary *opts;
 
@@ -2510,6 +2568,10 @@ end:
     av_freep(&selected_streams);
     av_freep(&streams_with_closed_captions);
     av_freep(&streams_with_film_grain);
+    av_freep(&audio_codec_name);
+    av_freep(&data_codec_name);
+    av_freep(&subtitle_codec_name);
+    av_freep(&video_codec_name);
 
     return ret;
 }
@@ -2964,6 +3026,36 @@ static int opt_sections(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
+static int opt_codec(void *optctx, const char *opt, const char *arg)
+{
+   const char *spec = strchr(opt, ':');
+   const char **name;
+   if (!spec) {
+       av_log(NULL, AV_LOG_ERROR,
+              "No media specifier was specified for '%s' in option '%s'. Use -%s:<media_spec> "
+              "where <media_spec> can be one of: 'a' (audio), 'v' (video), 's' (subtitle), 'd' (data)\n",
+               arg, opt, opt);
+       return AVERROR(EINVAL);
+   }
+   spec++;
+
+   switch (spec[0]) {
+   case 'a' : name = &audio_codec_name;    break;
+   case 'd' : name = &data_codec_name;     break;
+   case 's' : name = &subtitle_codec_name; break;
+   case 'v' : name = &video_codec_name;    break;
+   default:
+       av_log(NULL, AV_LOG_ERROR,
+              "Invalid media specifier '%s' in option '%s'. "
+              "Must be one of: 'a' (audio), 'v' (video), 's' (subtitle), 'd' (data)\n", spec, opt);
+       return AVERROR(EINVAL);
+   }
+
+   av_freep(name);
+   *name = av_strdup(arg);
+   return *name ? 0 : AVERROR(ENOMEM);
+}
+
 static int opt_show_versions(void *optctx, const char *opt, const char *arg)
 {
     mark_section_show_entries(SECTION_ID_PROGRAM_VERSION, 1, NULL);
@@ -3039,6 +3131,8 @@ static const OptionDef real_options[] = {
     { "print_filename",        OPT_TYPE_FUNC, OPT_FUNC_ARG, {.func_arg = opt_print_filename}, "override the printed input filename", "print_file"},
     { "find_stream_info",      OPT_TYPE_BOOL, OPT_INPUT | OPT_EXPERT, { &find_stream_info },
         "read and decode the streams to fill missing information with heuristics" },
+    { "c",                     OPT_TYPE_FUNC, OPT_FUNC_ARG, { .func_arg = opt_codec}, "force decoder", "decoder_name" },
+    { "codec",                 OPT_TYPE_FUNC, OPT_FUNC_ARG, { .func_arg = opt_codec}, "alias for -c (force decoder)", "decoder_name" },
     { NULL, },
 };
 
