@@ -572,12 +572,15 @@ static int decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
     for (i = 0; i < blocks_per_slice; i++)
         ctx->bdsp.clear_block(blocks+(i<<6));
 
-    init_get_bits(&gb, buf, buf_size << 3);
+    /* Some encodes have empty chroma scans to simulate grayscale */
+    if (buf_size) {
+        init_get_bits(&gb, buf, buf_size << 3);
 
-    if ((ret = decode_dc_coeffs(&gb, blocks, blocks_per_slice)) < 0)
-        return ret;
-    if ((ret = decode_ac_coeffs(avctx, &gb, blocks, blocks_per_slice)) < 0)
-        return ret;
+        if ((ret = decode_dc_coeffs(&gb, blocks, blocks_per_slice)) < 0)
+            return ret;
+        if ((ret = decode_ac_coeffs(avctx, &gb, blocks, blocks_per_slice)) < 0)
+            return ret;
+    }
 
     block = blocks;
     for (i = 0; i < slice->mb_count; i++) {
@@ -638,7 +641,6 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     LOCAL_ALIGNED_16(int16_t, qmat_chroma_scaled,[64]);
     int mb_x_shift;
     int ret;
-    uint16_t val_no_chroma;
 
     slice->ret = -1;
     //av_log(avctx, AV_LOG_INFO, "slice %d mb width %d mb x %d y %d\n",
@@ -702,7 +704,7 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     if (ret < 0)
         return ret;
 
-    if (!(avctx->flags & AV_CODEC_FLAG_GRAY) && (u_data_size + v_data_size) > 0) {
+    if (!(avctx->flags & AV_CODEC_FLAG_GRAY)) {
         ret = decode_slice_chroma(avctx, slice, (uint16_t*)dest_u, chroma_stride,
                                   buf + y_data_size, u_data_size,
                                   qmat_chroma_scaled, log2_chroma_blocks_per_mb);
@@ -714,20 +716,6 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
                                   qmat_chroma_scaled, log2_chroma_blocks_per_mb);
         if (ret < 0)
             return ret;
-    }
-    else {
-        size_t mb_max_x = slice->mb_count << (mb_x_shift - 1);
-        size_t i, j;
-        if (avctx->bits_per_raw_sample == 10) {
-            val_no_chroma = 511;
-        } else { /* 12b */
-            val_no_chroma = 511 * 4;
-        }
-        for (i = 0; i < 16; ++i)
-            for (j = 0; j < mb_max_x; ++j) {
-                *(uint16_t*)(dest_u + (i * chroma_stride) + (j << 1)) = val_no_chroma;
-                *(uint16_t*)(dest_v + (i * chroma_stride) + (j << 1)) = val_no_chroma;
-            }
     }
 
     /* decode alpha plane if available */
