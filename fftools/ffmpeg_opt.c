@@ -1050,7 +1050,8 @@ static int opt_preset(void *optctx, const char *opt, const char *arg)
         else if (!strcmp(key, "vcodec")) opt_video_codec   (o, key, value);
         else if (!strcmp(key, "scodec")) opt_subtitle_codec(o, key, value);
         else if (!strcmp(key, "dcodec")) opt_data_codec    (o, key, value);
-        else if (opt_default_new(o, key, value) < 0) {
+        else if ((parse_option(o, key, value, options) < 0) &&
+                 (opt_default_new(o, key, value) < 0)) {
             av_log(NULL, AV_LOG_FATAL, "%s: Invalid option or argument: '%s', parsed as '%s' = '%s'\n",
                    filename, line, key, value);
             ret = AVERROR(EINVAL);
