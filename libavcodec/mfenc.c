@@ -449,10 +449,7 @@ static int process_software_frame(AVCodecContext *avctx, const AVFrame *frame, I
 
 static int mf_v_avframe_to_sample(AVCodecContext *avctx, const AVFrame *frame, IMFSample **out_sample)
 {
-    MFContext *c = avctx->priv_data;
-    MFFunctions *func = &c->functions;
     IMFSample *sample = NULL;
-    IMFMediaBuffer *buffer = NULL;
     HRESULT hr;
     int ret;
 
