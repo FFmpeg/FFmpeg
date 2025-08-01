@@ -8928,11 +8928,13 @@ static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             continue;
         break;
     }
-    if (!item)
+    if (!item) {
+        av_bprint_finalize(&item_name, NULL);
         return AVERROR(ENOMEM);
+    }
 
-    if (ret)
-        av_bprint_finalize(&item_name, &item->name);
+    av_assert1(ret);
+    av_bprint_finalize(&item_name, &item->name);
     item->item_id = item_id;
     item->type    = item_type;
 
