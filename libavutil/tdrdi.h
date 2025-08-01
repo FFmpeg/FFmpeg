@@ -119,7 +119,7 @@ typedef struct AV3DReferenceDisplay {
     uint8_t mantissa_ref_display_width;
 
     /**
-     * Tthe exponent part of the reference viewing distance of the n-th reference display.
+     * The exponent part of the reference viewing distance of the n-th reference display.
      */
     uint8_t exponent_ref_viewing_distance;
 

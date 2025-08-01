@@ -375,13 +375,13 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
             }
             ff_dlog(NULL, " We expect %d numbers for building the codevectors. \n",
                     codebook_lookup_values);
-            ff_dlog(NULL, "  delta %f minmum %f \n",
+            ff_dlog(NULL, "  delta %f minimum %f \n",
                     codebook_delta_value, codebook_minimum_value);
 
             for (i = 0; i < codebook_lookup_values; ++i) {
                 codebook_multiplicands[i] = get_bits(gb, codebook_value_bits);
 
-                ff_dlog(NULL, " multiplicands*delta+minmum : %e \n",
+                ff_dlog(NULL, " multiplicands*delta+minimum : %e \n",
                         (float)codebook_multiplicands[i] * codebook_delta_value + codebook_minimum_value);
                 ff_dlog(NULL, " multiplicand %u\n", codebook_multiplicands[i]);
             }

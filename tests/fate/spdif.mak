@@ -1,4 +1,4 @@
-# This padds the AAC frames to 16 bit words (the actual size is
+# This pads the AAC frames to 16 bit words (the actual size is
 # still available in the ADTS headers).
 FATE_SPDIF_REMUX-$(call ALLYES, AAC_DEMUXER AAC_DECODER) += fate-spdif-aac-remux
 fate-spdif-aac-remux: CMD = transcode aac $(TARGET_SAMPLES)/aac/foo.aac spdif "-c copy" "-c copy"

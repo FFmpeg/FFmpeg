@@ -36,7 +36,7 @@
 #define MB_TYPE_REF0       MB_TYPE_CODEC_SPECIFIC
 #define MB_TYPE_8x8DCT     0x01000000
 
-// This table must be here because scan8[constant] must be known at compiletime
+// This table must be here because scan8[constant] must be known at compile time
 static const uint8_t scan8[16 * 3 + 3] = {
     4 +  1 * 8, 5 +  1 * 8, 4 +  2 * 8, 5 +  2 * 8,
     6 +  1 * 8, 7 +  1 * 8, 6 +  2 * 8, 7 +  2 * 8,

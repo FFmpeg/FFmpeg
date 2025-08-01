@@ -224,7 +224,7 @@ typedef struct ALSDecContext {
     int32_t *quant_cof_buffer;      ///< contains all quantized parcor coefficients
     int32_t **lpc_cof;              ///< coefficients of the direct form prediction filter for a channel
     int32_t *lpc_cof_buffer;        ///< contains all coefficients of the direct form prediction filter
-    int32_t *lpc_cof_reversed_buffer; ///< temporary buffer to set up a reversed versio of lpc_cof_buffer
+    int32_t *lpc_cof_reversed_buffer; ///< temporary buffer to set up a reversed version of lpc_cof_buffer
     ALSChannelData **chan_data;     ///< channel data for multi-channel correlation
     ALSChannelData *chan_data_buffer; ///< contains channel data for all channels
     int *reverted_channels;         ///< stores a flag for each reverted channel
@@ -1558,7 +1558,7 @@ static int read_diff_float_data(ALSDecContext *ctx, unsigned int ra_frame) {
         if (highest_byte) {
             for (i = 0; i < frame_length; ++i) {
                 if (ctx->raw_samples[c][i] != 0) {
-                    //The following logic is taken from Tabel 14.45 and 14.46 from the ISO spec
+                    //The following logic is taken from Table 14.45 and 14.46 from the ISO spec
                     if (av_cmp_sf_ieee754(acf[c], FLOAT_1)) {
                         nbits[i] = 23 - av_log2(abs(ctx->raw_samples[c][i]));
                     } else {

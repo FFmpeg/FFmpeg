@@ -926,7 +926,7 @@ typedef struct AVStream {
  * the sixth @ref AVStreamGroup.streams "stream" in the group is "512,512",
  * etc.
  *
- * The following is an example of a canvas with overlaping tiles:
+ * The following is an example of a canvas with overlapping tiles:
  *
  * +-----------+
  * |   %%%%%   |
@@ -1420,7 +1420,7 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_NONBLOCK     0x0004 ///< Do not block when reading packets from input.
 #define AVFMT_FLAG_IGNDTS       0x0008 ///< Ignore DTS on frames that contain both DTS & PTS
 #define AVFMT_FLAG_NOFILLIN     0x0010 ///< Do not infer any values from other values, just return what is stored in the container
-#define AVFMT_FLAG_NOPARSE      0x0020 ///< Do not use AVParsers, you also must set AVFMT_FLAG_NOFILLIN as the fillin code works on frames and no parsing -> no frames. Also seeking to frames can not work if parsing to find frame boundaries has been disabled
+#define AVFMT_FLAG_NOPARSE      0x0020 ///< Do not use AVParsers, you also must set AVFMT_FLAG_NOFILLIN as the filling code works on frames and no parsing -> no frames. Also seeking to frames can not work if parsing to find frame boundaries has been disabled
 #define AVFMT_FLAG_NOBUFFER     0x0040 ///< Do not buffer frames when possible
 #define AVFMT_FLAG_CUSTOM_IO    0x0080 ///< The caller has supplied a custom AVIOContext, don't avio_close() it.
 #define AVFMT_FLAG_DISCARD_CORRUPT  0x0100 ///< Discard frames marked corrupted
@@ -1670,7 +1670,7 @@ typedef struct AVFormatContext {
     int use_wallclock_as_timestamps;
 
     /**
-     * Skip duration calcuation in estimate_timings_from_pts.
+     * Skip duration calculation in estimate_timings_from_pts.
      * - encoding: unused
      * - decoding: set by user
      *
@@ -1773,7 +1773,7 @@ typedef struct AVFormatContext {
 
     /**
      * IO repositioned flag.
-     * This is set by avformat when the underlaying IO context read pointer
+     * This is set by avformat when the underlying IO context read pointer
      * is repositioned, for example when doing byte based seeking.
      * Demuxers can use the flag to detect such changes.
      */

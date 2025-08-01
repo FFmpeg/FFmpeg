@@ -2726,7 +2726,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         if (pls->is_subtitle)
             avformat_close_input(&pls->ctx);
 
-        /* Reset the init segment so it's re-fetched and served appropiately */
+        /* Reset the init segment so it's re-fetched and served appropriately */
         pls->cur_init_section = NULL;
 
         pls->seek_timestamp = seek_timestamp;

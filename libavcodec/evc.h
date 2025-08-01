@@ -56,7 +56,7 @@ enum EVCNALUnitType {
     EVC_RSV_VCL_NUT22        = 22,
     EVC_RSV_VCL_NUT23        = 23,
     EVC_SPS_NUT              = 24,  /* Sequence parameter set */
-    EVC_PPS_NUT              = 25,  /* Picture paremeter set */
+    EVC_PPS_NUT              = 25,  /* Picture parameter set */
     EVC_APS_NUT              = 26,  /* Adaptation parameter set */
     EVC_FD_NUT               = 27,  /* Filler data */
     EVC_SEI_NUT              = 28,  /* Supplemental enhancement information */

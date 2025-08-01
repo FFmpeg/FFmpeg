@@ -542,7 +542,7 @@ typedef struct AVOptionRanges {
      */
     int nb_ranges;
     /**
-     * Number of componentes.
+     * Number of components.
      */
     int nb_components;
 } AVOptionRanges;
@@ -1137,7 +1137,7 @@ int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
  * @param[in]  obj           AVClass object to serialize
  * @param[in]  opt_flags     serialize options with all the specified flags set (AV_OPT_FLAG)
  * @param[in]  flags         combination of AV_OPT_SERIALIZE_* flags
- * @param[out] buffer        Pointer to buffer that will be allocated with string containg serialized options.
+ * @param[out] buffer        Pointer to buffer that will be allocated with string containing serialized options.
  *                           Buffer must be freed by the caller when is no longer needed.
  * @param[in]  key_val_sep   character used to separate key from value
  * @param[in]  pairs_sep     character used to separate two pairs from each other
@@ -1167,7 +1167,7 @@ void av_opt_freep_ranges(AVOptionRanges **ranges);
  *
  * The result must be freed with av_opt_freep_ranges.
  *
- * @return number of compontents returned on success, a negative errro code otherwise
+ * @return number of components returned on success, a negative error code otherwise
  */
 int av_opt_query_ranges(AVOptionRanges **, void *obj, const char *key, int flags);
 
@@ -1183,7 +1183,7 @@ int av_opt_query_ranges(AVOptionRanges **, void *obj, const char *key, int flags
  *
  * The result must be freed with av_opt_free_ranges.
  *
- * @return number of compontents returned on success, a negative errro code otherwise
+ * @return number of components returned on success, a negative error code otherwise
  */
 int av_opt_query_ranges_default(AVOptionRanges **, void *obj, const char *key, int flags);
 

@@ -258,7 +258,7 @@ typedef struct WHIPContext {
     int64_t whip_dtls_time;
     int64_t whip_srtp_time;
 
-    /* The certificate and private key content used for DTLS hanshake */
+    /* The certificate and private key content used for DTLS handshake */
     char cert_buf[MAX_CERTIFICATE_SIZE];
     char key_buf[MAX_CERTIFICATE_SIZE];
     /* The fingerprint of certificate, used in SDP offer. */

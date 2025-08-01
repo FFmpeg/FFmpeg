@@ -926,7 +926,7 @@ static void affine_cps_from_nb(const VVCLocalContext *lc,
     }
 }
 
-//derive affine neighbour's postion, width and height,
+//derive affine neighbour's position, width and height,
 static int affine_neighbour_cb(const VVCFrameContext *fc, const int x_nb, const int y_nb, int *x_cb, int *y_cb, int *cbw, int *cbh)
 {
     const int log2_min_cb_size  = fc->ps.sps->min_cb_log2_size_y;

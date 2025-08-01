@@ -158,7 +158,7 @@ endfunc
 .endm
 
 
-/* acculumate and right shift by 2 */
+/* accumulate and right shift by 2 */
 .macro downsample_ars2
     vpadal.u8   r16x8,  r8x16
     vpadal.u8   g16x8,  g8x16

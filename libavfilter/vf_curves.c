@@ -493,7 +493,7 @@ static inline int interpolate_pchip(void *log_ctx, uint16_t *y,
         goto end;
     }
 
-    fi = xi + n;     /* output values at inteval endpoints */
+    fi = xi + n;     /* output values at interval endpoints */
     di = fi + n;     /* output slope wrt normalized input at interval endpoints */
     hi = di + n;     /* interval widths */
     mi = hi + n - 1; /* linear slope over intervals */

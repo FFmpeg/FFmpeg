@@ -71,7 +71,7 @@ static int tta_write_header(AVFormatContext *s)
     if ((ret = avio_open_dyn_buf(&tta->seek_table)) < 0)
         return ret;
 
-    /* Ignore most extradata information if present. It can be innacurate
+    /* Ignore most extradata information if present. It can be inaccurate
        if for example remuxing from Matroska */
     ffio_init_checksum(s->pb, ff_crcEDB88320_update, UINT32_MAX);
     ffio_init_checksum(tta->seek_table, ff_crcEDB88320_update, UINT32_MAX);

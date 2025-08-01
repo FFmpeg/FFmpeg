@@ -1,6 +1,6 @@
 /*
  * AAC encoder assembly optimizations
- * Copyright (c) 2023 Institue of Software Chinese Academy of Sciences (ISCAS).
+ * Copyright (c) 2023 Institute of Software Chinese Academy of Sciences (ISCAS).
  *
  * This file is part of FFmpeg.
  *

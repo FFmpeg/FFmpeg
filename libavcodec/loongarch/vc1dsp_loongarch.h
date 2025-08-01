@@ -30,7 +30,7 @@ void ff_vc1_inv_trans_8x8_dc_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *bloc
 void ff_vc1_inv_trans_8x4_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 void ff_vc1_inv_trans_8x4_dc_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 void ff_vc1_inv_trans_4x8_dc_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *block);
-void ff_vc1_inv_trans_4x8_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *blokc);
+void ff_vc1_inv_trans_4x8_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 void ff_vc1_inv_trans_4x4_dc_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 void ff_vc1_inv_trans_4x4_lasx(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 

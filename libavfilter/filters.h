@@ -508,7 +508,7 @@ int ff_inlink_check_available_frame(AVFilterLink *link);
 
 /***
   * Get the number of samples available on the link.
-  * @return the numer of samples available on the link.
+  * @return the number of samples available on the link.
   */
 int ff_inlink_queued_samples(AVFilterLink *link);
 

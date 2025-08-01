@@ -260,7 +260,7 @@ void ff_rfps_calculate(AVFormatContext *ic);
  * belongs, from a timebase `tb_in` to a timebase `tb_out`.
  *
  * The upper (lower) bound of the output interval is rounded up (down) such that
- * the output interval always falls within the intput interval. The timestamp is
+ * the output interval always falls within the input interval. The timestamp is
  * rounded to the nearest integer and halfway cases away from zero, and can
  * therefore fall outside of the output interval.
  *

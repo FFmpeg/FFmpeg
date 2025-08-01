@@ -68,7 +68,7 @@ typedef struct AMVContext
 
     /*
      * Cumulative PTS values for each stream, used for the final
-     * duration calculcation.
+     * duration calculation.
      */
     int64_t lastpts[AMV_STREAM_COUNT];
 } AMVContext;

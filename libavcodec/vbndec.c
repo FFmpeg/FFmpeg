@@ -142,7 +142,7 @@ static int vbn_decode_frame(AVCodecContext *avctx,
         return image_len;
 
     if (image_len < linesize * avctx->coded_height) {
-        av_log(avctx, AV_LOG_ERROR, "Insufficent data\n");
+        av_log(avctx, AV_LOG_ERROR, "Insufficient data\n");
         ret = AVERROR_INVALIDDATA;
         goto out;
     }

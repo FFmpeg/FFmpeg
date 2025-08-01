@@ -124,7 +124,7 @@ typedef struct AVFilmGrainAOMParams {
 
 /**
  * This structure describes how to handle film grain synthesis for codecs using
- * the ITU-T H.274 Versatile suplemental enhancement information message.
+ * the ITU-T H.274 Versatile supplemental enhancement information message.
  *
  * @note The struct must be allocated as part of AVFilmGrainParams using
  *       av_film_grain_params_alloc(). Its size is not a part of the public ABI.

@@ -410,7 +410,7 @@ static int config_input(AVFilterLink *inlink)
         }
         avctx_enc->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
         avctx_enc->global_quality = 123;
-        avctx_enc->thread_count = 1; // We do threading in the filter with muiltiple codecs
+        avctx_enc->thread_count = 1; // We do threading in the filter with multiple codecs
         ret = avcodec_open2(avctx_enc, enc, &opts);
         av_dict_free(&opts);
         if (ret < 0)

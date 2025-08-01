@@ -259,7 +259,7 @@ static int encode_sample_description(AVCodecContext *avctx)
     // Build font table
     // We can't build a complete font table since that would require
     // scanning all dialogs first.  But we can at least fill in what
-    // is avaiable in the ASS header
+    // is available in the ASS header
     if (style && ass->styles_count) {
         // Find unique font names
         if (style->font_name) {

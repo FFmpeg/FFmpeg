@@ -273,7 +273,7 @@ int CBS_FUNC(write_signed)(CodedBitstreamContext *ctx, PutBitContext *pbc,
     } while (0)
 
 // End of a syntax element which is made up of subelements which
-// are aleady traced, so we are only showing the value.
+// are already traced, so we are only showing the value.
 #define CBS_TRACE_READ_END_VALUE_ONLY() \
     do { \
         if (ctx->trace_enable) { \
@@ -310,7 +310,7 @@ int CBS_FUNC(write_signed)(CodedBitstreamContext *ctx, PutBitContext *pbc,
     } while (0)
 
 // End of a syntax element which is made up of subelements which are
-// aleady traced, so we are only showing the value.  This forges a
+// already traced, so we are only showing the value.  This forges a
 // PutBitContext to point to the position of the start of the syntax
 // element, but the other state doesn't matter because length is zero.
 #define CBS_TRACE_WRITE_END_VALUE_ONLY() \

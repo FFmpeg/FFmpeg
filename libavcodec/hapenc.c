@@ -305,7 +305,7 @@ static av_cold int hap_init(AVCodecContext *avctx)
         }
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Invalid compresor %02X\n", ctx->opt_compressor);
+        av_log(avctx, AV_LOG_ERROR, "Invalid compressor %02X\n", ctx->opt_compressor);
         return AVERROR_INVALIDDATA;
     }
     if (corrected_chunk_count != ctx->opt_chunk_count) {

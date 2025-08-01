@@ -545,7 +545,7 @@ static void *circular_buffer_task_rx( void *_URLContext)
 
         pthread_mutex_unlock(&s->mutex);
         /* Blocking operations are always cancellation points;
-           see "General Information" / "Thread Cancelation Overview"
+           see "General Information" / "Thread Cancellation Overview"
            in Single Unix. */
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_cancelstate);
         pkt_header.pkt_size = recvfrom(s->udp_fd, s->tmp + sizeof(pkt_header), sizeof(s->tmp) - sizeof(pkt_header), 0, (struct sockaddr *)&pkt_header.addr, &pkt_header.addr_len);

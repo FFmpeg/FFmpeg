@@ -102,7 +102,7 @@ typedef struct VUIParameters {
     HRDParameters hrd_parameters;
 } VUIParameters;
 
-// The sturcture reflects SPS RBSP(raw byte sequence payload) layout
+// The structure reflects SPS RBSP(raw byte sequence payload) layout
 // @see ISO_IEC_23094-1 section 7.3.2.1
 //
 // The following descriptors specify the parsing process of each element

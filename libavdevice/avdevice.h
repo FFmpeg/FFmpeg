@@ -372,7 +372,7 @@ void avdevice_free_list_devices(AVDeviceInfoList **device_list);
  * List devices.
  *
  * Returns available device names and their parameters.
- * These are convinient wrappers for avdevice_list_devices().
+ * These are convenient wrappers for avdevice_list_devices().
  * Device context is allocated and deallocated internally.
  *
  * @param device           device format. May be NULL if device name is set.

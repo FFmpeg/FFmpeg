@@ -225,7 +225,7 @@ void av_dict_free(AVDictionary **m);
  * @warning Separators cannot be neither '\\' nor '\0'. They also cannot be the same.
  *
  * @param[in]  m             The dictionary
- * @param[out] buffer        Pointer to buffer that will be allocated with string containg entries.
+ * @param[out] buffer        Pointer to buffer that will be allocated with string containing entries.
  *                           Buffer must be freed by the caller when is no longer needed.
  * @param[in]  key_val_sep   Character used to separate key from value
  * @param[in]  pairs_sep     Character used to separate two pairs from each other

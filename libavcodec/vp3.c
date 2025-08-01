@@ -2713,7 +2713,7 @@ static int vp3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 mb_height_mul = get_bits(&gb, 5);
                 mb_height_div = get_bits(&gb, 3);
                 if (mb_width_mul != 1 || mb_width_div != 1 || mb_height_mul != 1 || mb_height_div != 1)
-                    avpriv_request_sample(s->avctx, "unexpected macroblock dimension multipler/divider");
+                    avpriv_request_sample(s->avctx, "unexpected macroblock dimension multiplier/divider");
 
                 if (get_bits(&gb, 2))
                     avpriv_request_sample(s->avctx, "unknown bits");

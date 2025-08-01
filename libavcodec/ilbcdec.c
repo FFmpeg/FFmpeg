@@ -1097,7 +1097,7 @@ static void do_plc(int16_t *plc_residual,      /* (o) concealed residual */
             use_gain = 29491;   /* 0.9 in Q15 */
         }
 
-        /* Compute mixing factor of picth repeatition and noise:
+        /* Compute mixing factor of picth repetition and noise:
            for max_per>0.7 set periodicity to 1.0
            0.4<max_per<0.7 set periodicity to (maxper-0.4)/0.7-0.4)
            max_per<0.4 set periodicity to 0.0
@@ -1142,7 +1142,7 @@ static void do_plc(int16_t *plc_residual,      /* (o) concealed residual */
                 randvec[i] = s->prevResidual[pick];
             }
 
-            /* pitch repeatition component */
+            /* pitch repetition component */
             pick = i - use_lag;
 
             if (pick < 0) {
@@ -1160,7 +1160,7 @@ static void do_plc(int16_t *plc_residual,      /* (o) concealed residual */
                 tot_gain = SPL_MUL_16_16_RSFT(29491, use_gain, 15);    /* 0.9*use_gain */
             }
 
-            /* mix noise and pitch repeatition */
+            /* mix noise and pitch repetition */
             plc_residual[i] = SPL_MUL_16_16_RSFT(tot_gain, (pitchfact * plc_residual[i] + (32767 - pitchfact) * randvec[i] + 16384) >> 15, 15);
 
             /* Shifting down the result one step extra to ensure that no overflow

@@ -176,7 +176,7 @@ static int set_gauss(AVFilterContext *ctx)
 
 /**
  * Frees up buffers used by grey edge for storing derivatives final
- * and intermidiate results. Number of buffers and number of planes
+ * and intermediate results. Number of buffers and number of planes
  * for last buffer are given so it can be safely called at allocation
  * failure instances.
  *
@@ -201,7 +201,7 @@ static void cleanup_derivative_buffers(ThreadData *td, int nb_buff, int nb_plane
 
 /**
  * Allocates buffers used by grey edge for storing derivatives final
- * and intermidiate results.
+ * and intermediate results.
  *
  * @param ctx the filter context.
  * @param td holds the buffers.
@@ -236,12 +236,12 @@ static int setup_derivative_buffers(AVFilterContext* ctx, ThreadData *td)
 /**
  * Slice calculation of gaussian derivatives. Applies 1-D gaussian derivative filter
  * either horizontally or vertically according to meta data given in thread data.
- * When convoluting horizontally source is always the in frame withing thread data
+ * When convoluting horizontally source is always the in frame within thread data
  * while when convoluting vertically source is a buffer.
  *
  * @param ctx the filter context.
  * @param arg data to be passed between threads.
- * @param jobnr current job nubmer.
+ * @param jobnr current job number.
  * @param nb_jobs total number of jobs.
  *
  * @return 0.
@@ -309,7 +309,7 @@ static int slice_get_derivative(AVFilterContext* ctx, void* arg, int jobnr, int 
  *
  * @param ctx the filter context.
  * @param arg data to be passed between threads.
- * @param jobnr current job nubmer.
+ * @param jobnr current job number.
  * @param nb_jobs total number of jobs.
  *
  * @return 0.
@@ -430,7 +430,7 @@ static int get_derivative(AVFilterContext *ctx, ThreadData *td)
  *
  * @param ctx the filter context.
  * @param arg data to be passed between threads.
- * @param jobnr current job nubmer.
+ * @param jobnr current job number.
  * @param nb_jobs total number of jobs.
  *
  * @return 0.
@@ -479,7 +479,7 @@ static int filter_slice_grey_edge(AVFilterContext* ctx, void* arg, int jobnr, in
  * Main control function for grey edge algorithm.
  *
  * @param ctx the filter context.
- * @param in frame to perfrom grey edge on.
+ * @param in frame to perform grey edge on.
  *
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure.
@@ -558,7 +558,7 @@ static void normalize_light(double *light)
  * after estimation.
  *
  * @param ctx the filter context.
- * @param in frame to perfrom estimation on.
+ * @param in frame to perform estimation on.
  *
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure.
@@ -584,7 +584,7 @@ static int illumination_estimation(AVFilterContext *ctx, AVFrame *in)
  *
  * @param ctx the filter context.
  * @param arg data to be passed between threads.
- * @param jobnr current job nubmer.
+ * @param jobnr current job number.
  * @param nb_jobs total number of jobs.
  *
  * @return 0.

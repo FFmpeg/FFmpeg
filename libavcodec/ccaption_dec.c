@@ -814,7 +814,7 @@ static int process_cc608(CCaptionSubContext *ctx, uint8_t hi, uint8_t lo)
             break;
         case 0x2e:
             /* erase buffered (non displayed) memory */
-            // Only in realtime mode. In buffered mode, we re-use the inactive screen
+            // Only in realtime mode. In buffered mode, we reuse the inactive screen
             // for our own buffering.
             if (ctx->real_time) {
                 struct Screen *screen = ctx->screen + !ctx->active_screen;

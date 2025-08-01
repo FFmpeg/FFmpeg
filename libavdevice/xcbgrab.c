@@ -830,7 +830,7 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
         *display_name = 0;
         if(sscanf(s->url, "+%d,%d", &c->x, &c->y) != 2) {
             if (*s->url)
-                av_log(s, AV_LOG_WARNING, "Ambigous URL: %s\n", s->url);
+                av_log(s, AV_LOG_WARNING, "Ambiguous URL: %s\n", s->url);
         }
     }
 

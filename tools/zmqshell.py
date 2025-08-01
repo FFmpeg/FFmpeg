@@ -12,7 +12,7 @@ Provide a shell used to send interactive commands to a zmq filter.
 The command assumes there is a running zmq or azmq filter acting as a
 ZMQ server.
 
-You can send a command to it, follwing the syntax:
+You can send a command to it, following the syntax:
 TARGET COMMAND [COMMAND_ARGS]
 
 * TARGET is the target filter identifier to send the command to

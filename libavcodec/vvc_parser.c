@@ -300,14 +300,14 @@ static int get_pu_info(PuInfo *info, const CodedBitstreamH266Context *h266,
     }
     info->pps = h266->pps[info->ph->ph_pic_parameter_set_id];
     if (!info->pps) {
-        av_log(logctx, AV_LOG_ERROR, "PPS id %d is not avaliable.\n",
+        av_log(logctx, AV_LOG_ERROR, "PPS id %d is not available.\n",
                info->ph->ph_pic_parameter_set_id);
         ret = AVERROR_INVALIDDATA;
         goto error;
     }
     info->sps = h266->sps[info->pps->pps_seq_parameter_set_id];
     if (!info->sps) {
-        av_log(logctx, AV_LOG_ERROR, "SPS id %d is not avaliable.\n",
+        av_log(logctx, AV_LOG_ERROR, "SPS id %d is not available.\n",
                info->pps->pps_seq_parameter_set_id);
         ret = AVERROR_INVALIDDATA;
         goto error;

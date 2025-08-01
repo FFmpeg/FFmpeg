@@ -871,7 +871,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
         type = get_content_type(adaptionset_node);
     if (type != AVMEDIA_TYPE_VIDEO && type != AVMEDIA_TYPE_AUDIO &&
         type != AVMEDIA_TYPE_SUBTITLE) {
-        av_log(s, AV_LOG_VERBOSE, "Parsing '%s' - skipp not supported representation type\n", url);
+        av_log(s, AV_LOG_VERBOSE, "Parsing '%s' - skip not supported representation type\n", url);
         return 0;
     }
 

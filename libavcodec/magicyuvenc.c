@@ -50,7 +50,7 @@ typedef struct HuffEntry {
 
 typedef struct PTable {
     int     value;  ///< input value
-    int64_t prob;   ///< number of occurences of this value in input
+    int64_t prob;   ///< number of occurrences of this value in input
 } PTable;
 
 typedef struct Slice {

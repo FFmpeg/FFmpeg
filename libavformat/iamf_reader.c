@@ -132,7 +132,7 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
     parameter_id = ffio_read_leb(pb);
     param_definition = ff_iamf_get_param_definition(&c->iamf, parameter_id);
     if (!param_definition) {
-        av_log(s, AV_LOG_VERBOSE, "Non existant parameter_id %d referenced in a parameter block. Ignoring\n",
+        av_log(s, AV_LOG_VERBOSE, "Non existent parameter_id %d referenced in a parameter block. Ignoring\n",
                parameter_id);
         ret = 0;
         goto fail;

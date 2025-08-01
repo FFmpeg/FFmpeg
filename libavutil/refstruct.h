@@ -161,7 +161,7 @@ int av_refstruct_exclusive(const void *obj);
  *
  * Frequently allocating and freeing large or complicated objects may be slow
  * and wasteful. This API is meant to solve this in cases when the caller
- * needs a set of interchangable objects.
+ * needs a set of interchangeable objects.
  *
  * At the beginning, the user must call allocate the pool via
  * av_refstruct_pool_alloc() or its analogue av_refstruct_pool_alloc_ext().

@@ -162,7 +162,7 @@ Then pass @code{--enable-libmp3lame} to configure to enable it.
 
 @section LCEVCdec
 
-FFmpeg can make use of the liblcevc_dec library for LCEVC enhacement layer
+FFmpeg can make use of the liblcevc_dec library for LCEVC enhancement layer
 decoding on supported bitstreams.
 
 Go to @url{https://github.com/v-novaltd/LCEVCdec} and follow the instructions

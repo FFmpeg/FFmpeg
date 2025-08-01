@@ -124,7 +124,7 @@ int ff_v4l2_context_get_format(V4L2Context* ctx, int probe);
  * Releases a V4L2Context.
  *
  * @param[in] ctx A pointer to a V4L2Context.
- *               The caller is reponsible for freeing it.
+ *               The caller is responsible for freeing it.
  *               It must not be used after calling this function.
  */
 void ff_v4l2_context_release(V4L2Context* ctx);

@@ -173,10 +173,10 @@ static int decode_header(PSDContext * s)
     }
     bytestream2_skip(&s->gb, len_section);
 
-    /* image ressources */
+    /* image resources */
     len_section = bytestream2_get_be32(&s->gb);
     if (len_section < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Negative size for image ressources section.\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Negative size for image resources section.\n");
         return AVERROR_INVALIDDATA;
     }
 

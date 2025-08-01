@@ -491,7 +491,7 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
         // We can only add a code that fits with the shortest other code into the table
         // We assume the table is sorted by bits and we skip subtables which from our
         // point of view are basically random corrupted entries
-        // If we have not a single useable vlc we end with max = nb_codes
+        // If we have not a single usable vlc we end with max = nb_codes
         if (buf[max - 1].bits+minbits > numbits)
             break;
     }

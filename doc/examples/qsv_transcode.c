@@ -101,7 +101,7 @@ static int dynamic_set_parameter(AVCodecContext *avctx)
         /* Set codec specific option */
         if ((ret = av_opt_set_dict(avctx->priv_data, &opts)) < 0)
             goto fail;
-        /* There is no "framerate" option in commom option list. Use "-r" to set
+        /* There is no "framerate" option in common option list. Use "-r" to set
          * framerate, which is compatible with ffmpeg commandline. The video is
          * assumed to be average frame rate, so set time_base to 1/framerate. */
         e = av_dict_get(opts, "r", NULL, 0);
@@ -180,7 +180,7 @@ static int open_input_file(char *filename)
         decoder = avcodec_find_decoder_by_name("mjpeg_qsv");
         break;
     default:
-        fprintf(stderr, "Codec is not supportted by qsv\n");
+        fprintf(stderr, "Codec is not supported by qsv\n");
         return AVERROR(EINVAL);
     }
 
@@ -289,7 +289,7 @@ static int dec_enc(AVPacket *pkt, const AVCodec *enc_codec, char *optstr)
                 fprintf(stderr, "Failed to set encoding parameter.\n");
                 goto fail;
             }
-            /* There is no "framerate" option in commom option list. Use "-r" to
+            /* There is no "framerate" option in common option list. Use "-r" to
             * set framerate, which is compatible with ffmpeg commandline. The
             * video is assumed to be average frame rate, so set time_base to
             * 1/framerate. */

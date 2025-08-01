@@ -613,7 +613,7 @@ API changes, most recent first:
   Deprecate AVFrame.palette_has_changed without replacement.
 
 2023-05-15 - 7d1d61cc5f5 - lavc 60 - avcodec.h
-  Depreate AVCodecContext.ticks_per_frame in favor of
+  Deprecate AVCodecContext.ticks_per_frame in favor of
   AVCodecContext.framerate (encoding) and
   AV_CODEC_PROP_FIELDS (decoding).
 
@@ -621,7 +621,7 @@ API changes, most recent first:
   Add AV_CODEC_PROP_FIELDS.
 
 2023-05-15 - 8b20d0dcb5c - lavc 60 - codec.h
-  Depreate AV_CODEC_CAP_SUBFRAMES without replacement.
+  Deprecate AV_CODEC_CAP_SUBFRAMES without replacement.
 
 2023-05-07 - c2ae8e30b7f - lavc 60.11.100 - codec_par.h
   Add AVCodecParameters.framerate.

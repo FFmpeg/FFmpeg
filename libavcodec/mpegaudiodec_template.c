@@ -1770,7 +1770,7 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
     else
         s->syncword = 0xfff00000;
 
-    /* Init the first mp3 decoder in standard way, so that all tables get builded
+    /* Init the first mp3 decoder in standard way, so that all tables get built
      * We replace avctx->priv_data with the context of the first decoder so that
      * decode_init() does not have to be changed.
      * Other decoders will be initialized here copying data from the first context

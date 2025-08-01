@@ -621,7 +621,7 @@ static int count_hq_slice(SliceArgs *slice, int quant_idx)
     return bits;
 }
 
-/* Approaches the best possible quantizer asymptotically, its kinda exaustive
+/* Approaches the best possible quantizer asymptotically, its kinda exhaustive
  * but we have a LUT to get the coefficient size in bits. Guaranteed to never
  * overshoot, which is apparently very important when streaming */
 static int rate_control(AVCodecContext *avctx, void *arg)

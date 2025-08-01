@@ -826,7 +826,7 @@ static int subband_coeffs(const DiracContext *s, int x, int y, int p,
     int level, coef = 0;
     for (level = 0; level < s->wavelet_depth; level++) {
         SliceCoeffs *o = &c[level];
-        const SubBand *b = &s->plane[p].band[level][3]; /* orientation doens't matter */
+        const SubBand *b = &s->plane[p].band[level][3]; /* orientation doesn't matter */
         o->top   = b->height * y / s->num_y;
         o->left  = b->width  * x / s->num_x;
         o->tot_h = ((b->width  * (x + 1)) / s->num_x) - o->left;

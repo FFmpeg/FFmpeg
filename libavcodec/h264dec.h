@@ -541,7 +541,7 @@ typedef struct H264Context {
      * all subsequently output fraames are also marked as recovered
      *
      * In effect, if you want all subsequent DECODED frames marked as recovered, set frame_recovered
-     * If you want all subsequent DISPAYED frames marked as recovered, set the frame->recovered
+     * If you want all subsequent DISPLAYED frames marked as recovered, set the frame->recovered
      */
     int frame_recovered;
 

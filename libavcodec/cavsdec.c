@@ -1184,7 +1184,7 @@ static int decode_seq_header(AVSContext *h)
     h->profile = get_bits(&h->gb, 8);
     if (h->profile != 0x20) {
         avpriv_report_missing_feature(h->avctx,
-                                      "only supprt JiZhun profile");
+                                      "only support JiZhun profile");
         return AVERROR_PATCHWELCOME;
     }
     h->level   = get_bits(&h->gb, 8);

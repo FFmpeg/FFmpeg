@@ -31,7 +31,7 @@
 #include "evc.h"
 #include "evc_ps.h"
 
-// The sturcture reflects Slice Header RBSP(raw byte sequence payload) layout
+// The structure reflects Slice Header RBSP(raw byte sequence payload) layout
 // @see ISO_IEC_23094-1 section 7.3.2.6
 //
 // The following descriptors specify the parsing process of each element

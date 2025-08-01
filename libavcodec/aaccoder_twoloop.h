@@ -311,14 +311,14 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
 
     /**
      * Scale uplims to match rate distortion to quality
-     * bu applying noisy band depriorization and tonal band priorization.
+     * bu applying noisy band depriorization and tonal band prioritization.
      * Maxval-energy ratio gives us an idea of how noisy/tonal the band is.
      * If maxval^2 ~ energy, then that band is mostly noise, and we can relax
      * rate distortion requirements.
      */
     memcpy(euplims, uplims, sizeof(euplims));
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        /** psy already priorizes transients to some extent */
+        /** psy already prioritizes transients to some extent */
         float de_psy_factor = (sce->ics.num_windows > 1) ? 8.0f / sce->ics.group_len[w] : 1.0f;
         start = w*128;
         for (g = 0;  g < sce->ics.num_swb; g++) {
@@ -331,7 +331,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     nzslope * cleanup_factor);
                 energy2uplim *= de_psy_factor;
                 if (!(avctx->flags & AV_CODEC_FLAG_QSCALE)) {
-                    /** In ABR, we need to priorize less and let rate control do its thing */
+                    /** In ABR, we need to prioritize less and let rate control do its thing */
                     energy2uplim = sqrtf(energy2uplim);
                 }
                 energy2uplim = FFMAX(0.015625f, FFMIN(1.0f, energy2uplim));
@@ -345,7 +345,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     2.0f);
                 energy2uplim *= de_psy_factor;
                 if (!(avctx->flags & AV_CODEC_FLAG_QSCALE)) {
-                    /** In ABR, we need to priorize less and let rate control do its thing */
+                    /** In ABR, we need to prioritize less and let rate control do its thing */
                     energy2uplim = sqrtf(energy2uplim);
                 }
                 energy2uplim = FFMAX(0.015625f, FFMIN(1.0f, energy2uplim));

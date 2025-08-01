@@ -104,7 +104,7 @@ align 16
     addps          m5, m7           ; m5 = Sxy_new = X[i] + Sxy_norm
 
   %if USE_APPROXIMATION == 1
-    andps          m5, m0           ; if(X[i] == 0) Sxy_new = 0; Prevent aproximation error from setting pulses in array padding.
+    andps          m5, m0           ; if(X[i] == 0) Sxy_new = 0; Prevent approximation error from setting pulses in array padding.
   %endif
 
 %else

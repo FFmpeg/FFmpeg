@@ -216,7 +216,7 @@ filter input and output pads of all the filterchains are connected.
 
 Leading and trailing whitespaces (space, tabs, or line feeds) separating tokens
 in the filtergraph specification are ignored. This means that the filtergraph
-can be expressed using empty lines and spaces to improve redability.
+can be expressed using empty lines and spaces to improve readability.
 
 For example, the filtergraph:
 @example
@@ -3383,7 +3383,7 @@ where applicable, an overall figure is also given.
 It accepts the following option:
 @table @option
 @item length
-Short window length in seconds, used for peak and trough RMS measurement.
+Short window length in seconds, used for peak and through RMS measurement.
 Default is @code{0.05} (50 milliseconds). Allowed range is @code{[0 - 10]}.
 
 @item metadata
@@ -3544,7 +3544,7 @@ standard RMS level measured in dBFS
 
 @item RMS_peak
 @item RMS_trough
-peak and trough values for RMS level measured over a short window,
+peak and through values for RMS level measured over a short window,
 measured in dBFS.
 
 @item Zero crossings
@@ -7904,7 +7904,7 @@ Gains are separated by white spaces and each gain is set in dBFS.
 Default is @code{0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0}.
 
 @item bands, b
-Set the custom bands from where custon equalizer gains are set.
+Set the custom bands from where custom equalizer gains are set.
 This must be in strictly increasing order. Only used if the preset option is set to @code{custom}.
 Bands are separated by white spaces and each band represent frequency in Hz.
 Default is @code{25 40 63 100 160 250 400 630 1000 1600 2500 4000 6300 10000 16000 24000}.
@@ -9214,7 +9214,7 @@ The default value is @code{all}.
 
 Repack CEA-708 closed captioning side data
 
-This filter fixes various issues seen with commerical encoders
+This filter fixes various issues seen with commercial encoders
 related to upstream malformed CEA-708 payloads, specifically
 incorrect number of tuples (wrong cc_count for the target FPS),
 and incorrect ordering of tuples (i.e. the CEA-608 tuples are not at
@@ -9357,19 +9357,19 @@ Mostly useful to speed-up filtering.
 @item threy
 Set Y threshold for averaging chrominance values.
 Set finer control for max allowed difference between Y components
-of current pixel and neigbour pixels.
+of current pixel and neighbour pixels.
 Default value is 200. Allowed range is from 1 to 200.
 
 @item threu
 Set U threshold for averaging chrominance values.
 Set finer control for max allowed difference between U components
-of current pixel and neigbour pixels.
+of current pixel and neighbour pixels.
 Default value is 200. Allowed range is from 1 to 200.
 
 @item threv
 Set V threshold for averaging chrominance values.
 Set finer control for max allowed difference between V components
-of current pixel and neigbour pixels.
+of current pixel and neighbour pixels.
 Default value is 200. Allowed range is from 1 to 200.
 
 @item distance
@@ -9768,7 +9768,7 @@ Accepts a combination of the following flags:
 
 @table @samp
 @item color_range
-Detect if the source countains luma pixels outside the limited (MPEG) range,
+Detect if the source contains luma pixels outside the limited (MPEG) range,
 which indicates that this is a full range YUV source.
 @item alpha_mode
 Detect if the source contains color values above the alpha channel, which
@@ -19817,7 +19817,7 @@ To enable the compilation of this filter, you need to configure FFmpeg with
 @code{--enable-libqrencode}.
 
 The QR code is generated from the provided text or text pattern. The
-corresponding QR code is scaled and overlayed into the video output according to
+corresponding QR code is scaled and overlaid into the video output according to
 the specified options.
 
 In case no text is specified, no QR code is overlaied.
@@ -23146,7 +23146,7 @@ by progressively selecting a different column from each input frame.
 
 The end result is a sort of inverted parallax, so that far away objects move
 much faster that the ones in the front. The ideal conditions for this video
-effect are when there is either very little motion and the backgroud is static,
+effect are when there is either very little motion and the background is static,
 or when there is a lot of motion and a very wide depth of field (e.g. wide
 panorama, while moving on a train).
 
@@ -23174,7 +23174,7 @@ How many columns should be inserted before end of filtering.
 
 Normally the filter shifts and tilts from the very first frame, and stops when
 the last one is received. However, before filtering starts, normal video may
-be preseved, so that the effect is slowly shifted in its place. Similarly,
+be preserved, so that the effect is slowly shifted in its place. Similarly,
 the last video frame may be reconstructed at the end. Alternatively it is
 possible to just start and end with black.
 
@@ -25495,7 +25495,7 @@ pixel formats are not RGB.
 @item fitmode, fm
 Set sample aspect ratio of video output frames.
 Can be used to configure waveform so it is not
-streched too much in one of directions.
+stretched too much in one of directions.
 
 @table @samp
 @item none

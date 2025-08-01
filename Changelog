@@ -156,6 +156,7 @@ version 6.1:
   variable-fields elements within the same parent element
 - ffprobe -output_format option added as an alias of -of
 
+# codespell:off
 
 version 6.0:
 - Radiance HDR image support

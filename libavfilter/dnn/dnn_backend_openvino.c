@@ -1331,7 +1331,7 @@ static int get_output_ov(DNNModel *model, const char *input_name, int input_widt
 #endif
         ret = init_model_ov(ov_model, input_name, output_name ? &output_name : NULL, 1);
         if (ret != 0) {
-            av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
+            av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO executable network or inference request\n");
             return ret;
         }
     }
@@ -1487,7 +1487,7 @@ static int dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *exec_p
         ret = init_model_ov(ov_model, exec_params->input_name,
                             exec_params->output_names, exec_params->nb_output);
         if (ret != 0) {
-            av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
+            av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO executable network or inference request\n");
             return ret;
         }
     }

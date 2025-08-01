@@ -878,7 +878,7 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
         }
     }
 
-    /* This seems to be neccesary despite explicitly setting client/server method above. */
+    /* This seems to be necessary despite explicitly setting client/server method above. */
     if (c->listen)
         SSL_set_accept_state(p->ssl);
     else

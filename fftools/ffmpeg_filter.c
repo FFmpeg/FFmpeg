@@ -2728,7 +2728,7 @@ static void sub2video_heartbeat(InputFilter *ifilter, int64_t pts, AVRational tb
     if (pts2 >= ifp->sub2video.end_pts || ifp->sub2video.initialize)
         /* if we have hit the end of the current displayed subpicture,
            or if we need to initialize the system, update the
-           overlayed subpicture and its start/end times */
+           overlaid subpicture and its start/end times */
         sub2video_update(ifp, pts2 + 1, NULL);
     else
         sub2video_push_ref(ifp, pts2);
@@ -3141,7 +3141,7 @@ static int filter_thread(void *arg)
             goto finish;
 
 read_frames:
-        // retrieve all newly avalable frames
+        // retrieve all newly available frames
         ret = read_frames(fg, &fgt, fgt.frame);
         if (ret == AVERROR_EOF) {
             av_log(fg, AV_LOG_VERBOSE, "All consumers returned EOF\n");

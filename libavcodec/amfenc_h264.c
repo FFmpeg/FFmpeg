@@ -82,7 +82,7 @@ static const AVOption options[] = {
     { "rc",             "Rate Control Method",                  OFFSET(rate_control_mode), AV_OPT_TYPE_INT,   { .i64 = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_UNKNOWN }, AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_UNKNOWN, AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_HIGH_QUALITY_CBR, VE, .unit = "rc" },
     { "cqp",            "Constant Quantization Parameter",      0,                         AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CONSTANT_QP             }, 0, 0, VE, .unit = "rc" },
     { "cbr",            "Constant Bitrate",                     0,                         AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_CBR                     }, 0, 0, VE, .unit = "rc" },
-    { "vbr_peak",       "Peak Contrained Variable Bitrate",     0,                         AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR    }, 0, 0, VE, .unit = "rc" },
+    { "vbr_peak",       "Peak Constrained Variable Bitrate",     0,                         AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_PEAK_CONSTRAINED_VBR    }, 0, 0, VE, .unit = "rc" },
     { "vbr_latency",    "Latency Constrained Variable Bitrate", 0,                         AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_LATENCY_CONSTRAINED_VBR }, 0, 0, VE, .unit = "rc" },
     { "qvbr",           "Quality Variable Bitrate",             0,                         AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_QUALITY_VBR             }, 0, 0, VE, .unit = "rc" },
     { "hqvbr",          "High Quality Variable Bitrate",        0,                         AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_RATE_CONTROL_METHOD_HIGH_QUALITY_VBR        }, 0, 0, VE, .unit = "rc" },
@@ -151,16 +151,16 @@ static const AVOption options[] = {
     { "pa_scene_change_detection_enable",       "Enable scene change detection",                                OFFSET(pa_scene_change_detection),              AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
 
     { "pa_scene_change_detection_sensitivity",  "Set the sensitivity of scene change detection",                OFFSET(pa_scene_change_detection_sensitivity),  AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_HIGH, VE, .unit = "scene_change_sensitivity" },
-    { "low",                                    "low scene change dectection sensitivity",      0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_LOW     }, 0, 0, VE, .unit = "scene_change_sensitivity" },
-    { "medium",                                 "medium scene change dectection sensitivity",   0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_MEDIUM  }, 0, 0, VE, .unit = "scene_change_sensitivity" },
-    { "high",                                   "high scene change dectection sensitivity",     0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_HIGH    }, 0, 0, VE, .unit = "scene_change_sensitivity" },
+    { "low",                                    "low scene change detection sensitivity",      0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_LOW     }, 0, 0, VE, .unit = "scene_change_sensitivity" },
+    { "medium",                                 "medium scene change detection sensitivity",   0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_MEDIUM  }, 0, 0, VE, .unit = "scene_change_sensitivity" },
+    { "high",                                   "high scene change detection sensitivity",     0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_SCENE_CHANGE_DETECTION_SENSITIVITY_HIGH    }, 0, 0, VE, .unit = "scene_change_sensitivity" },
 
     { "pa_static_scene_detection_enable",       "Enable static scene detection",                                OFFSET(pa_static_scene_detection),              AV_OPT_TYPE_BOOL,   {.i64 = -1 }, -1, 1, VE },
 
     { "pa_static_scene_detection_sensitivity",  "Set the sensitivity of static scene detection",                OFFSET(pa_static_scene_detection_sensitivity),  AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_HIGH, VE , .unit = "static_scene_sensitivity" },
-    { "low",                                    "low static scene dectection sensitivity",      0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_LOW    }, 0, 0, VE, .unit = "static_scene_sensitivity" },
-    { "medium",                                 "medium static scene dectection sensitivity",   0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_MEDIUM }, 0, 0, VE, .unit = "static_scene_sensitivity" },
-    { "high",                                   "high static scene dectection sensitivity",     0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_HIGH   }, 0, 0, VE, .unit = "static_scene_sensitivity" },
+    { "low",                                    "low static scene detection sensitivity",      0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_LOW    }, 0, 0, VE, .unit = "static_scene_sensitivity" },
+    { "medium",                                 "medium static scene detection sensitivity",   0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_MEDIUM }, 0, 0, VE, .unit = "static_scene_sensitivity" },
+    { "high",                                   "high static scene detection sensitivity",     0, AV_OPT_TYPE_CONST, {.i64 = AMF_PA_STATIC_SCENE_DETECTION_SENSITIVITY_HIGH   }, 0, 0, VE, .unit = "static_scene_sensitivity" },
 
     { "pa_initial_qp_after_scene_change",       "The QP value that is used immediately after a scene change",   OFFSET(pa_initial_qp),                          AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, 51, VE },
     { "pa_max_qp_before_force_skip",            "The QP threshold to allow a skip frame",                       OFFSET(pa_max_qp),                              AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, 51, VE },

@@ -2381,7 +2381,7 @@ static int open_input_file(InputFile *ifile, const char *filename,
                 exit(1);
 
             if (do_show_log) {
-                // For loging it is needed to disable at least frame threads as otherwise
+                // For logging it is needed to disable at least frame threads as otherwise
                 // the log information would need to be reordered and matches up to contexts and frames
                 // That is in fact possible but not trivial
                 av_dict_set(&codec_opts, "threads", "1", 0);

@@ -648,7 +648,7 @@ static int graphs_build(AVFrame *in, AVFrame *out, const AVPixFmtDescriptor *des
         alpha_src_format = s->alpha_src_format;
         alpha_dst_format = s->alpha_dst_format;
         /* The input slice is specified through the active_region field, unlike the output slice.
-        according to zimg requirements input and output slices should have even dimentions */
+        according to zimg requirements input and output slices should have even dimensions */
         alpha_src_format.active_region.width = in->width;
         alpha_src_format.active_region.height = in_slice_end - in_slice_start;
         alpha_src_format.active_region.left = 0;

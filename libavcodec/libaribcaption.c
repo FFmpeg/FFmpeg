@@ -250,7 +250,7 @@ static uint8_t clut_pick_or_set(ARIBCaptionContext *ctx, int r, int g, int b, in
     return c;
 }
 
-/* initialiaze CLUT with each character colors */
+/* initialize CLUT with each character colors */
 static void clut_init(ARIBCaptionContext *ctx, aribcc_caption_region_t *region)
 {
     aribcc_color_t text_color, back_color, stroke_color;

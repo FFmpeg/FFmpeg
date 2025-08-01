@@ -59,7 +59,7 @@ static void sbr_turnoff(SpectralBandReplication *sbr) {
     sbr->start = 0;
     sbr->usac = 0;
     sbr->ready_for_dequant = 0;
-    // Init defults used in pure upsampling mode
+    // Init defaults used in pure upsampling mode
     sbr->kx[1] = 32; //Typo in spec, kx' inits to 32
     sbr->m[1] = 0;
     // Reset values for first SBR header

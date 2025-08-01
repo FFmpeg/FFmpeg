@@ -114,7 +114,7 @@ static int recon_frame_process(PrivData *pd, const AVPacket *pkt)
         return ret;
     }
 
-    // the encoder's internal format (in which the reconsturcted frames are
+    // the encoder's internal format (in which the reconstructed frames are
     // exported) may be different from the user-facing pixel format
     if (f->format != pd->enc->pix_fmt) {
         if (!pd->scaler) {
@@ -242,7 +242,7 @@ static int process_frame(DecodeContext *dc, AVFrame *frame)
             else if (ret == AVERROR_EOF)
                 return 0;
             else if (ret < 0) {
-                fprintf(stderr, "Error receving a frame from decoder\n");
+                fprintf(stderr, "Error receiving a frame from decoder\n");
                 return ret;
             }
 

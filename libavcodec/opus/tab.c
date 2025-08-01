@@ -1155,7 +1155,7 @@ const uint32_t * const ff_celt_pvq_u_row[15] = {
 };
 
 /* Deemphasis constant (alpha_p), as specified in RFC6716 as 0.8500061035.
- * libopus uses a slighly rounded constant, set to 0.85 exactly,
+ * libopus uses a slightly rounded constant, set to 0.85 exactly,
  * to simplify its fixed-point version, but it's not significant to impact
  * compliance. */
 #define CELT_EMPH_COEFF 0.8500061035

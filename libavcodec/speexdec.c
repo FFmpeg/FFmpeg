@@ -1299,7 +1299,7 @@ static int sb_decode(AVCodecContext *avctx, void *ptr_st,
         lsp_interpolate(st->old_qlsp, qlsp, interp_qlsp, st->lpc_size, sub, st->nb_subframes, 0.05f);
         lsp_to_lpc(interp_qlsp, ak, st->lpc_size);
 
-        /* Calculate reponse ratio between the low and high filter in the middle
+        /* Calculate response ratio between the low and high filter in the middle
            of the band (4000 Hz) */
         st->pi_gain[sub] = 1.f;
         rh = 1.f;

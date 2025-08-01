@@ -187,7 +187,7 @@ static int v4l2_prepare_encoder(V4L2m2mContext *s)
         return ret;
 
     /**
-     * settingss
+     * settings
      */
     if (avctx->framerate.num || avctx->framerate.den)
         v4l2_set_timeperframe(s, avctx->framerate.den, avctx->framerate.num);

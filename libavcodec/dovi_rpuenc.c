@@ -300,7 +300,7 @@ static int cmp_dm_level0(const AVDOVIColorMetadata *dm1,
                   sizeof(AVDOVIColorMetadata) -offsetof(AVDOVIColorMetadata, signal_eotf));
 }
 
-/* Tries to re-use the static ext blocks. May reorder `ext->dm_static` */
+/* Tries to reuse the static ext blocks. May reorder `ext->dm_static` */
 static int try_reuse_ext(DOVIExt *ext, const AVDOVIMetadata *metadata)
 {
     int i, j, idx = 0;

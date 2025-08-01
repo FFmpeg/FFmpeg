@@ -59,7 +59,7 @@ static int mpeg4video_probe(const AVProbeData *probe_packet)
             res++;
     }
 
-    // res_main repesents the reserved codes within the "main" profile, they are
+    // res_main represents the reserved codes within the "main" profile, they are
     // added to the reserved ones if it appears that this is a "main" profile
     // stream
     if (res_main && 2*res_main < VOP)

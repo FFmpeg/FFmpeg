@@ -43,7 +43,7 @@ AVRC4 *av_rc4_alloc(void);
  * @brief Initializes an AVRC4 context.
  *
  * @param d pointer to the AVRC4 context
- * @param key buffer containig the key
+ * @param key buffer containing the key
  * @param key_bits must be a multiple of 8
  * @param decrypt 0 for encryption, 1 for decryption, currently has no effect
  * @return zero on success, negative value otherwise

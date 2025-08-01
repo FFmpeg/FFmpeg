@@ -211,8 +211,8 @@ static int16_t long_term_filter(AudioDSPContext *adsp, int pitch_delay_int,
             /* Compute signals with non-integer delay k (with 1/8 precision),
                where k is in [0;6] range.
                Entire delay is qual to best_delay+(k+1)/8
-               This is archieved by applying an interpolation filter of
-               legth 33 to source signal. */
+               This is achieved by applying an interpolation filter of
+               length 33 to source signal. */
             for (k = 0; k < ANALYZED_FRAC_DELAYS; k++) {
                 ff_acelp_interpolate(&delayed_signal[k][0],
                                      &sig_scaled[RES_PREV_DATA_SIZE - best_delay_int],

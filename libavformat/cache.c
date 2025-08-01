@@ -154,7 +154,7 @@ static int add_entry(URLContext *h, const unsigned char *buf, int size)
     return 0;
 fail:
     //we could truncate the file to pos here if pos >=0 but ftruncate isn't available in VS so
-    //for simplicty we just leave the file a bit larger
+    //for simplicity we just leave the file a bit larger
     av_free(entry);
     av_free(node);
     return ret;

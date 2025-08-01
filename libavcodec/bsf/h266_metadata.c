@@ -80,7 +80,7 @@ static int h266_metadata_update_fragment(AVBSFContext *bsf, AVPacket *pkt,
             }
         }
         if (!ph) {
-            av_log(bsf, AV_LOG_ERROR, "no avaliable picture header");
+            av_log(bsf, AV_LOG_ERROR, "no available picture header");
             return AVERROR_INVALIDDATA;
         }
 

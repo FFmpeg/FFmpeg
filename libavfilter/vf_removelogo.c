@@ -49,7 +49,7 @@
  * remove rough edges, is stored in each pixel. This is done using an in-place
  * erosion algorithm, and incrementing each pixel that survives any given
  * erosion.  Once every pixel is eroded, the maximum value is recorded, and a
- * set of masks from size 0 to this size are generaged. The masks are circular
+ * set of masks from size 0 to this size are generated. The masks are circular
  * binary masks, where each pixel within a radius N (where N is the size of the
  * mask) is a 1, and all other pixels are a 0. Although a gaussian mask would be
  * more mathematically accurate, a binary mask works better in practice because
@@ -64,7 +64,7 @@
  * condition is met (that the image function itself is continuous), even if the
  * second boundary condition (that the derivative of the image function is
  * continuous) is not met. A masking algorithm that does preserve the second
- * boundary coundition (perhaps something based on a highly-modified bi-cubic
+ * boundary condition (perhaps something based on a highly-modified bi-cubic
  * algorithm) should offer even better results on paper, but the noise in a
  * typical TV signal should make anything based on derivatives hopelessly noisy.
  */

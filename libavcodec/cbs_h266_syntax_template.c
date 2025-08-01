@@ -1725,7 +1725,7 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
          current->pps_pic_height_in_luma_samples !=
          sps->sps_pic_height_max_in_luma_samples)) {
         av_log(ctx->log_ctx, AV_LOG_ERROR,
-               "Resoltuion change is not allowed, "
+               "Resolution change is not allowed, "
                "in max resolution (%ux%u) mismatched with pps(%ux%u).\n",
                sps->sps_pic_width_max_in_luma_samples,
                sps->sps_pic_height_max_in_luma_samples,

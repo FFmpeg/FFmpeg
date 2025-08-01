@@ -158,7 +158,7 @@ static int tonemap_opencl_init(AVFilterContext *avctx)
     av_log(ctx, AV_LOG_DEBUG, "mapping range from %s to %s\n",
            av_color_range_name(ctx->range_in),
            av_color_range_name(ctx->range_out));
-    // checking valid value just because of limited implementaion
+    // checking valid value just because of limited implementation
     // please remove when more functionalities are implemented
     av_assert0(ctx->trc_out == AVCOL_TRC_BT709 ||
                ctx->trc_out == AVCOL_TRC_BT2020_10);

@@ -141,7 +141,7 @@ void avpriv_request_sample(void *avc,
 #   define ff_tlog(ctx, ...) do { } while(0)
 #endif
 
-// For debuging we use signed operations so overflows can be detected (by ubsan)
+// For debugging we use signed operations so overflows can be detected (by ubsan)
 // For production we use unsigned so there are no undefined operations
 #ifdef CHECKED
 #define SUINT   int

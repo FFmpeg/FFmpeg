@@ -50,7 +50,7 @@ enum AVTXType {
 
     /**
      * Standard MDCT with a sample data type of float, double or int32_t,
-     * respecively. For the float and int32 variants, the scale type is
+     * respectively. For the float and int32 variants, the scale type is
      * 'float', while for the double variant, it's 'double'.
      * If scale is NULL, 1.0 will be used as a default.
      *

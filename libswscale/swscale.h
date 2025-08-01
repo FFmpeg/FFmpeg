@@ -126,7 +126,7 @@ typedef enum SwsFlags {
      * the 100x100 yuv444p image to rgba in the final output step.
      *
      * Without this flag, the chroma plane is instead scaled to 50x100 (4:2:2),
-     * with a single chroma sample being re-used for both of the horizontally
+     * with a single chroma sample being reused for both of the horizontally
      * adjacent RGBA output pixels.
      */
     SWS_FULL_CHR_H_INT = 1 << 13,

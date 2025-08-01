@@ -142,7 +142,7 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_CPB_PROPERTIES,
 
     /**
-     * Recommmends skipping the specified number of samples
+     * Recommends skipping the specified number of samples
      * @code
      * u32le number of samples to skip from start of this packet
      * u32le number of samples to skip from end of this packet

@@ -252,7 +252,7 @@ static int peak_write_chunk(AVFormatContext *s)
     WAVMuxContext *wav = s->priv_data;
     AVIOContext *pb = s->pb;
     AVCodecParameters *par = s->streams[0]->codecpar;
-    int64_t peak = ff_start_tag(s->pb, "levl");
+    int64_t peak = ff_start_tag(s->pb, "levl"); // codespell:ignore
     int64_t now0;
     time_t now_secs;
     char timestamp[28];

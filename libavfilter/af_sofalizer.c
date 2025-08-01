@@ -734,7 +734,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
     AVComplexFloat *fft_in_r = NULL;
     float *data_ir_l = NULL;
     float *data_ir_r = NULL;
-    int offset = 0; /* used for faster pointer arithmetics in for-loop */
+    int offset = 0; /* used for faster pointer arithmetic in for-loop */
     int i, j, azim_orig = azim, elev_orig = elev;
     int ret = 0;
     int n_current;
@@ -954,7 +954,7 @@ fail:
     av_freep(&data_hrtf_l); /* free temporary HRTF memory */
     av_freep(&data_hrtf_r);
 
-    av_freep(&data_ir_l); /* free temprary IR memory */
+    av_freep(&data_ir_l); /* free temporary IR memory */
     av_freep(&data_ir_r);
 
     av_freep(&fft_out_l); /* free temporary FFT memory */

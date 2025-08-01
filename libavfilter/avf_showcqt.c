@@ -619,7 +619,7 @@ static int render_fontconfig(ShowCQTContext *s, AVFrame *tmp, char* font)
     FcDefaultSubstitute(pat);
 
     if (!FcConfigSubstitute(fontconfig, pat, FcMatchPattern)) {
-        av_log(s->ctx, AV_LOG_ERROR, "could not substitue fontconfig options.\n");
+        av_log(s->ctx, AV_LOG_ERROR, "could not substitute fontconfig options.\n");
         FcPatternDestroy(pat);
         FcConfigDestroy(fontconfig);
         return AVERROR(ENOMEM);

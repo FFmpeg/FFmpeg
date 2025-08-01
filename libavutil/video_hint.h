@@ -80,7 +80,7 @@ av_video_hint_get_rect(const AVVideoHint *hints, size_t idx) {
  * The side data contains a list of rectangles for the portions of the frame
  * which changed from the last encoded one (and the remainder are assumed to be
  * changed), or, alternately (depending on the type parameter) the unchanged
- * ones (and the remanining ones are those which changed).
+ * ones (and the remaining ones are those which changed).
  * Macroblocks will thus be hinted either to be P_SKIP-ped or go through the
  * regular encoding procedure.
  *

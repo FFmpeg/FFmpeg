@@ -96,7 +96,7 @@ static void init_slice_c(int8_t out[64][64], uint8_t h, uint8_t v,
         }
     }
 
-    // Deblock horizontal edges by simple attentuation of values
+    // Deblock horizontal edges by simple attenuation of values
     for (int y = 0; y < 64; y += 8) {
         for (int x = 0; x < 64; x++) {
             out[y + 0][x] = (out[y + 0][x] * deblock_coeff) >> 7;
@@ -239,7 +239,7 @@ int ff_h274_apply_film_grain(AVFrame *out_frame, const AVFrame *in_frame,
 
         uint8_t * const out = out_frame->data[c];
         const int out_stride = out_frame->linesize[c];
-        int8_t * const grain = out_frame->data[c]; // re-use output buffer for grain
+        int8_t * const grain = out_frame->data[c]; // reuse output buffer for grain
         const int grain_stride = out_stride;
         const uint8_t * const in = in_frame->data[c];
         const int in_stride = in_frame->linesize[c];

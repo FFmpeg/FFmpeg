@@ -39,7 +39,7 @@ static int ircam_probe(const AVProbeData *p)
     return 0;
 }
 
-static const struct endianess {
+static const struct endianness {
     uint32_t magic;
     int      is_le;
 } table[] = {

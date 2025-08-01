@@ -2124,7 +2124,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             av_log(s->avctx, AV_LOG_WARNING, "Invalid number of markers coded in APP2\n");
             goto out;
         } else if (s->iccnum != 0 && nummarkers != s->iccnum) {
-            av_log(s->avctx, AV_LOG_WARNING, "Mistmatch in coded number of ICC markers between markers\n");
+            av_log(s->avctx, AV_LOG_WARNING, "Mismatch in coded number of ICC markers between markers\n");
             goto out;
         } else if (seqno > nummarkers) {
             av_log(s->avctx, AV_LOG_WARNING, "Mismatching sequence number and coded number of ICC markers\n");

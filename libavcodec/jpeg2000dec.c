@@ -1362,7 +1362,7 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                     }
                     bits_to_read = (uint8_t) (bits_to_read + cblk->lblock);
                     segment_bytes = get_bits(s, bits_to_read);
-                    // Write length information for HT Refinment segment
+                    // Write length information for HT Refinement segment
                     cblk->pass_lengths[1] += segment_bytes;
                 } else if (!(cblk->modes & (JPEG2000_CBLK_TERMALL | JPEG2000_CBLK_BYPASS))) {
                     // Common case for non-HT code-blocks; we have only one segment
@@ -2814,7 +2814,7 @@ static av_cold int jpeg2000_decode_init(AVCodecContext *avctx)
     Jpeg2000DecoderContext *s = avctx->priv_data;
 
     if (avctx->lowres)
-        av_log(avctx, AV_LOG_WARNING, "lowres is overriden by reduction_factor but set anyway\n");
+        av_log(avctx, AV_LOG_WARNING, "lowres is overridden by reduction_factor but set anyway\n");
     if (!s->reduction_factor && avctx->lowres < JPEG2000_MAX_RESLEVELS) {
         s->reduction_factor = avctx->lowres;
     }

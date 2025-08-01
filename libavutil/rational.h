@@ -22,7 +22,7 @@
 /**
  * @file
  * @ingroup lavu_math_rational
- * Utilties for rational number calculation.
+ * Utilities for rational number calculation.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 

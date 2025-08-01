@@ -182,7 +182,7 @@ static evrc_packet_rate buf_size2bitrate(const int buf_size)
  *
  * @param avctx the AV codec context
  * @param buf_size length of the buffer
- * @param buf the bufffer
+ * @param buf the buffer
  *
  * @return the bitrate on success,
  *         RATE_ERRS  if the bitrate cannot be satisfactorily determined

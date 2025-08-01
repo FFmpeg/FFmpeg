@@ -319,7 +319,7 @@ This is the same as the @samp{vob} muxer with a few differences.
 @table @option
 @item muxrate @var{rate}
 Set user-defined mux rate expressed as a number of bits/s. If not
-specied the automatically computed mux rate is employed. Default value
+specified the automatically computed mux rate is employed. Default value
 is @code{0}.
 
 @item preload @var{delay}
@@ -772,7 +772,7 @@ Force a delay expressed in seconds after the last frame of each
 repetition. Default value is @code{0.0}.
 
 @item plays @var{repetitions}
-specify how many times to play the content, @code{0} causes an infinte
+specify how many times to play the content, @code{0} causes an infinite
 loop, with @code{1} there is no loop
 @end table
 
@@ -1770,7 +1770,7 @@ for looping indefinitely (default).
 @item final_delay @var{delay}
 Force the delay (expressed in centiseconds) after the last frame. Each frame
 ends with a delay until the next frame. The default is @code{-1}, which is a
-special value to tell the muxer to re-use the previous delay. In case of a
+special value to tell the muxer to reuse the previous delay. In case of a
 loop, you might want to customize this value to mark a pause for instance.
 @end table
 
@@ -1856,7 +1856,7 @@ This muxer creates an .f4m (Adobe Flash Media Manifest File) manifest, an .abst
 (Adobe Bootstrap File) for each stream, and segment files in a directory
 specified as the output.
 
-These needs to be accessed by an HDS player throuhg HTTPS for it to be able to
+These needs to be accessed by an HDS player through HTTPS for it to be able to
 perform playback on the generated stream.
 
 @subsection Options
@@ -2538,7 +2538,7 @@ these applications, audio may be played back on a wide range of devices, e.g.,
 headphones, mobile phones, tablets, TVs, sound bars, home theater systems, and
 big screens.
 
-This format was promoted and desgined by Alliance for Open Media.
+This format was promoted and designed by Alliance for Open Media.
 
 For more information about this format, see @url{https://aomedia.org/iamf/}.
 

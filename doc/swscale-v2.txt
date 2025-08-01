@@ -295,7 +295,7 @@ for improvements:
     - op_scale_1110
     - op_scale_1111
 
-   This reflects the four different arangements of pixel components that are
+   This reflects the four different arrangements of pixel components that are
    typically present (or absent). While best for performance, it does turn into
    a bit of a chore when implementing these kernels.
 

@@ -261,12 +261,12 @@ function ff_hscale8to15_4_neon, export=1
         add             x5, x5, #32                 // advance filterPos
 
         // interleaved SIMD and prefetching intended to keep ld/st and vector pipelines busy
-        uxtl            v16.8h, v16.8b              // unsigned extend long, covert src data to 16-bit
-        uxtl            v17.8h, v17.8b              // unsigned extend long, covert src data to 16-bit
+        uxtl            v16.8h, v16.8b              // unsigned extend long, convert src data to 16-bit
+        uxtl            v17.8h, v17.8b              // unsigned extend long, convert src data to 16-bit
         ldr             w8, [x3, w8, uxtw]          // src[filterPos[idx + 0]], next iteration
         ldr             w9, [x3, w9, uxtw]          // src[filterPos[idx + 1]], next iteration
-        uxtl            v18.8h, v18.8b              // unsigned extend long, covert src data to 16-bit
-        uxtl            v19.8h, v19.8b              // unsigned extend long, covert src data to 16-bit
+        uxtl            v18.8h, v18.8b              // unsigned extend long, convert src data to 16-bit
+        uxtl            v19.8h, v19.8b              // unsigned extend long, convert src data to 16-bit
         ldr             w10, [x3, w10, uxtw]        // src[filterPos[idx + 2]], next iteration
         ldr             w11, [x3, w11, uxtw]        // src[filterPos[idx + 3]], next iteration
 
@@ -302,10 +302,10 @@ function ff_hscale8to15_4_neon, export=1
         movi            v0.16b, #0                  // Clear madd accumulator for idx 0..3
         movi            v5.16b, #0                  // Clear madd accumulator for idx 4..7
 
-        uxtl            v16.8h, v16.8b              // unsigned extend long, covert src data to 16-bit
-        uxtl            v17.8h, v17.8b              // unsigned extend long, covert src data to 16-bit
-        uxtl            v18.8h, v18.8b              // unsigned extend long, covert src data to 16-bit
-        uxtl            v19.8h, v19.8b              // unsigned extend long, covert src data to 16-bit
+        uxtl            v16.8h, v16.8b              // unsigned extend long, convert src data to 16-bit
+        uxtl            v17.8h, v17.8b              // unsigned extend long, convert src data to 16-bit
+        uxtl            v18.8h, v18.8b              // unsigned extend long, convert src data to 16-bit
+        uxtl            v19.8h, v19.8b              // unsigned extend long, convert src data to 16-bit
 
         smlal           v0.4s, v1.4h, v16.4h        // multiply accumulate inner loop j = 0, idx = 0..3
         smlal           v0.4s, v2.4h, v17.4h        // multiply accumulate inner loop j = 1, idx = 0..3
@@ -336,7 +336,7 @@ function ff_hscale8to15_4_neon, export=1
         // load filter
         ld1             {v6.4h}, [x4], #8           // filter[filterSize * i + 0..3]
 
-        uxtl            v5.8h, v5.8b                // unsigned exten long, convert src data to 16-bit
+        uxtl            v5.8h, v5.8b                // unsigned extend long, convert src data to 16-bit
         smull           v0.4s, v5.4h, v6.4h         // 4 iterations of src[...] * filter[...]
         addv            s0, v0.4s                   // add up products of src and filter values
         sqshrn          h0, s0, #7                  // shift and clip the 2x16-bit final value
@@ -842,7 +842,7 @@ function ff_hscale16to15_X8_neon_asm, export=1
         sxtl2           v5.4s, v5.8h                // extend filter upper half to 32 bits
         uxtl            v26.4s, v6.4h               // extend srcp lower half to 32 bits
         mla             v0.4s, v4.4s, v5.4s         // multiply accumulate upper half of v4 * v5
-        sxtl            v27.4s, v7.4h               // exted filter lower half
+        sxtl            v27.4s, v7.4h               // extend filter lower half
         uxtl2           v6.4s, v6.8h                // extend srcp upper half
         sxtl2           v7.4s, v7.8h                // extend filter upper half
         ld1             {v16.8h}, [x10], #16        // srcp[filterPos[2] + {0..7}]
@@ -869,7 +869,7 @@ function ff_hscale16to15_X8_neon_asm, export=1
         addp            v2.4s, v2.4s, v3.4s         // part23 horizontal pair adding
         addp            v0.4s, v0.4s, v2.4s         // part0123 horizontal pair adding
         subs            w2, w2, #4                  // dstW -= 4
-        sshl            v0.4s, v0.4s, v21.4s        // shift right (effectively rigth, as shift is negative); overflow expected
+        sshl            v0.4s, v0.4s, v21.4s        // shift right (effectively right, as shift is negative); overflow expected
         smin            v0.4s, v0.4s, v20.4s        // apply min (do not use sqshl)
         xtn             v0.4h, v0.4s                // narrow down to 16 bits
 
@@ -1247,7 +1247,7 @@ function ff_hscale16to19_X8_neon_asm, export=1
         sxtl2           v5.4s, v5.8h                // extend filter upper half to 32 bits
         uxtl            v26.4s, v6.4h               // extend srcp lower half to 32 bits
         mla             v0.4s, v4.4s, v5.4s         // multiply accumulate upper half of v4 * v5
-        sxtl            v27.4s, v7.4h               // exted filter lower half
+        sxtl            v27.4s, v7.4h               // extend filter lower half
         uxtl2           v6.4s, v6.8h                // extend srcp upper half
         sxtl2           v7.4s, v7.8h                // extend filter upper half
         ld1             {v16.8h}, [x10], #16        // srcp[filterPos[2] + {0..7}]
@@ -1274,7 +1274,7 @@ function ff_hscale16to19_X8_neon_asm, export=1
         addp            v2.4s, v2.4s, v3.4s         // part23 horizontal pair adding
         addp            v0.4s, v0.4s, v2.4s         // part0123 horizontal pair adding
         subs            w2, w2, #4                  // dstW -= 4
-        sshl            v0.4s, v0.4s, v21.4s        // shift right (effectively rigth, as shift is negative); overflow expected
+        sshl            v0.4s, v0.4s, v21.4s        // shift right (effectively right, as shift is negative); overflow expected
         smin            v0.4s, v0.4s, v20.4s        // apply min (do not use sqshl)
         st1             {v0.4s}, [x1], #16          // write to destination part0123
         b.gt            1b                          // loop until end of line

@@ -115,9 +115,9 @@ static int sane_layout(AVChannelLayout *ch_layout) {
         return 0;
     if(!av_channel_layout_subset(ch_layout, AV_CH_LAYOUT_SURROUND)) // at least 1 front speaker
         return 0;
-    if(!even(av_channel_layout_subset(ch_layout, (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT)))) // no asymetric front
+    if(!even(av_channel_layout_subset(ch_layout, (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT)))) // no asymmetric front
         return 0;
-    if(!even(av_channel_layout_subset(ch_layout, (AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT))))   // no asymetric side
+    if(!even(av_channel_layout_subset(ch_layout, (AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT))))   // no asymmetric side
         return 0;
     if(!even(av_channel_layout_subset(ch_layout, (AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT))))
         return 0;

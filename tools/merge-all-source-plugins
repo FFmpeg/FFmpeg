@@ -6,7 +6,7 @@ merge_internal(){ # $1=repository, $2=refspec
     [ -z "$version" ] && git pull --no-rebase --log --stat --commit --no-edit  $1 sourceplugin-$2
 }
 
-unset suceeded failed version
+unset succeeded failed version
 
 merge(){ # $1=repository, $2=refspec
     merge_internal "$1" "$2" || {
@@ -15,7 +15,7 @@ merge(){ # $1=repository, $2=refspec
         failed="$failed $2"
         return 0
     }
-    suceeded="$suceeded $2"
+    succeeded="$succeeded $2"
 }
 
 error(){
@@ -34,5 +34,5 @@ git diff --cached --exit-code >/dev/null ||\
 merge "https://github.com/michaelni/FFmpeg.git" "libpostproc"
 
 [ -n "$version"  ] && echo version: $version
-[ -n "$suceeded" ] && echo Succeeded merging: $suceeded
+[ -n "$succeeded" ] && echo Succeeded merging: $succeeded
 [ -n "$failed"   ] && echo Failed merging: $failed

@@ -250,7 +250,7 @@ fate-h264: $(FATE_H264-yes) $(FATE_H264_FFPROBE-yes)
 
 fate-h264-conformance-aud_mw_e:                   CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/AUD_MW_E.264
 
-#force framerate so that the option is tested, theres no other case that tests it, its not needed at all otherwise here
+#force framerate so that the option is tested, there's no other case that tests it, its not needed at all otherwise here
 fate-h264-conformance-ba1_ft_c:                   CMD = framecrc -framerate 19 -i $(TARGET_SAMPLES)/h264-conformance/BA1_FT_C.264
 
 fate-h264-conformance-ba1_sony_d:                 CMD = framecrc -i $(TARGET_SAMPLES)/h264-conformance/BA1_Sony_D.jsv

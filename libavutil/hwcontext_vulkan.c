@@ -2568,7 +2568,7 @@ static int create_frame(AVHWFramesContext *hwfc, AVVkFrame **frame,
         return AVERROR(ENOMEM);
     }
 
-    // TODO: check witdh and height for alignment in case of multiplanar (must be mod-2 if subsampled)
+    // TODO: check width and height for alignment in case of multiplanar (must be mod-2 if subsampled)
 
     /* Create the images */
     for (int i = 0; (hwfc_vk->format[i] != VK_FORMAT_UNDEFINED); i++) {

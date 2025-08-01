@@ -137,7 +137,7 @@ static int eval_expr(AVFilterContext *ctx)
     var_values[VAR_OVERLAY_X] =
     var_values[VAR_OX]        = av_expr_eval(ox_expr, var_values, NULL);
 
-    /* calc overlay_w and overlay_h again incase relative to ox,oy */
+    /* calc overlay_w and overlay_h again in case relative to ox,oy */
     var_values[VAR_OVERLAY_W] =
     var_values[VAR_OW]        = av_expr_eval(ow_expr, var_values, NULL);
     var_values[VAR_OVERLAY_H] =

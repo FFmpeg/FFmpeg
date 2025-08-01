@@ -447,7 +447,7 @@ static int parse_presentation_segment(AVCodecContext *avctx,
         PGSSubObjectRef *const object = &ctx->presentation.objects[i];
 
         if (buf_end - buf < 8) {
-            av_log(avctx, AV_LOG_ERROR, "Insufficent space for object\n");
+            av_log(avctx, AV_LOG_ERROR, "Insufficient space for object\n");
             ctx->presentation.object_count = i;
             return AVERROR_INVALIDDATA;
         }

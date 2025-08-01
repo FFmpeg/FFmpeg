@@ -155,7 +155,7 @@ static void run_rgb2xyz(const SwsImg *out, const SwsImg *in, int y, int h,
 }
 
 /***********************************************************************
- * Internal ff_swscale() wrapper. This re-uses the legacy scaling API. *
+ * Internal ff_swscale() wrapper. This reuses the legacy scaling API. *
  * This is considered fully deprecated, and will be replaced by a full *
  * reimplementation ASAP.                                              *
  ***********************************************************************/

@@ -277,9 +277,9 @@ void av_log(void *avcl, int level, const char *fmt, ...) av_printf_format(3, 4);
  * @param avcl A pointer to an arbitrary struct of which the first field is a
  *        pointer to an AVClass struct or NULL if general log.
  * @param initial_level importance level of the message expressed using a @ref
- *        lavu_log_constants "Logging Constant" for the first occurance.
+ *        lavu_log_constants "Logging Constant" for the first occurrence.
  * @param subsequent_level importance level of the message expressed using a @ref
- *        lavu_log_constants "Logging Constant" after the first occurance.
+ *        lavu_log_constants "Logging Constant" after the first occurrence.
  * @param fmt The format string (printf-compatible) that specifies how
  *        subsequent arguments are converted to output.
  * @param state a variable to keep trak of if a message has already been printed

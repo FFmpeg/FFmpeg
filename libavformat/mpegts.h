@@ -90,7 +90,7 @@
 #define ONIT_TID        0x41 /* Network Information section - other network */
 #define SDT_TID         0x42 /* Service Description section - actual TS */
 /* TID from 0x43 to 0x45 are reserved for future use */
-#define OSDT_TID        0x46 /* Service Descrition section - other TS */
+#define OSDT_TID        0x46 /* Service Description section - other TS */
 /* TID from 0x47 to 0x49 are reserved for future use */
 #define BAT_TID         0x4A /* Bouquet Association section */
 #define UNT_TID         0x4B /* Update Notification Table section */
@@ -106,7 +106,7 @@
 #define RST_TID         0x71 /* Running Status section */
 #define ST_TID          0x72 /* Stuffing section */
 #define TOT_TID         0x73 /* Time Offset section */
-#define AIT_TID         0x74 /* Application Inforamtion section */
+#define AIT_TID         0x74 /* Application Information section */
 #define CT_TID          0x75 /* Container section */
 #define RCT_TID         0x76 /* Related Content section */
 #define CIT_TID         0x77 /* Content Identifier section */

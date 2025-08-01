@@ -26,7 +26,7 @@
 
 SECTION_RODATA 64
 
-; Thw following set of constants are ordered to form the
+; The following set of constants are ordered to form the
 ; qword shuffle mask { 0,  2,  4,  6,  1,  3,  5,  7 }
 %define deintq_perm pd_5520
 pd_5520:     dd 5520

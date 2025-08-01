@@ -990,7 +990,7 @@ to 1 (-1 means automatic setting, 1 means enabled, 0 means
 disabled). Default value is -1.
 
 @item merge_pmt_versions
-Re-use existing streams when a PMT's version is updated and elementary
+Reuse existing streams when a PMT's version is updated and elementary
 streams move to different PIDs. Default value is 0.
 
 @item max_packet_size

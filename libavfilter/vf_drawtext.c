@@ -562,7 +562,7 @@ static int load_font_fontconfig(AVFilterContext *ctx)
     FcDefaultSubstitute(pat);
 
     if (!FcConfigSubstitute(fontconfig, pat, FcMatchPattern)) {
-        av_log(ctx, AV_LOG_ERROR, "could not substitue fontconfig options"); /* very unlikely */
+        av_log(ctx, AV_LOG_ERROR, "could not substitute fontconfig options"); /* very unlikely */
         FcPatternDestroy(pat);
         return AVERROR(ENOMEM);
     }
@@ -866,7 +866,7 @@ static int func_pts(void *ctx, AVBPrint *bp, const char *function_name, unsigned
     if (argc >= 3) {
         if (!strcmp(fmt, "hms")) {
             if (!strcmp(argv[2], "24HH")) {
-                av_log(ctx, AV_LOG_WARNING, "pts third argument 24HH is deprected, use pts:hms24hh instead\n");
+                av_log(ctx, AV_LOG_WARNING, "pts third argument 24HH is deprecated, use pts:hms24hh instead\n");
                 fmt = "hms24";
             } else {
                 av_log(ctx, AV_LOG_ERROR, "Invalid argument '%s', '24HH' was expected\n", argv[2]);

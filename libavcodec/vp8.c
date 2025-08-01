@@ -733,7 +733,7 @@ static int vp8_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
     int height = s->avctx->height;
 
     if (buf_size < 3) {
-        av_log(s->avctx, AV_LOG_ERROR, "Insufficent data (%d) for header\n", buf_size);
+        av_log(s->avctx, AV_LOG_ERROR, "Insufficient data (%d) for header\n", buf_size);
         return AVERROR_INVALIDDATA;
     }
 
@@ -2416,7 +2416,7 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
         mb = s->macroblocks_base + ((s->mb_width + 1) * (mb_y + 1) + 1);
     else {
         // Make sure the previous frame has read its segmentation map,
-        // if we re-use the same map.
+        // if we reuse the same map.
         if (prev_frame && s->segmentation.enabled &&
             !s->segmentation.update_map)
             ff_progress_frame_await(&prev_frame->tf, mb_y);
@@ -2761,7 +2761,7 @@ int vp78_decode_frame(AVCodecContext *avctx, AVFrame *rframe, int *got_frame,
 
         if (s->mb_layout == 1) {
             // Make sure the previous frame has read its segmentation map,
-            // if we re-use the same map.
+            // if we reuse the same map.
             if (prev_frame && s->segmentation.enabled &&
                 !s->segmentation.update_map)
                 ff_progress_frame_await(&prev_frame->tf, 1);

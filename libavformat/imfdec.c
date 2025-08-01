@@ -139,15 +139,15 @@ static int imf_uri_is_unix_abs_path(const char *string)
 
 static int imf_uri_is_dos_abs_path(const char *string)
 {
-    /* Absolute path case: `C:\path\to\somwhere` */
+    /* Absolute path case: `C:\path\to\somewhere` */
     if (string[1] == ':' && string[2] == '\\')
         return 1;
 
-    /* Absolute path case: `C:/path/to/somwhere` */
+    /* Absolute path case: `C:/path/to/somewhere` */
     if (string[1] == ':' && string[2] == '/')
         return 1;
 
-    /* Network path case: `\\path\to\somwhere` */
+    /* Network path case: `\\path\to\somewhere` */
     if (string[0] == '\\' && string[1] == '\\')
         return 1;
 

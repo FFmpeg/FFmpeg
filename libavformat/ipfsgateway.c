@@ -46,7 +46,7 @@ typedef struct IPFSGatewayContext {
 } IPFSGatewayContext;
 
 // A best-effort way to find the IPFS gateway.
-// Only the most appropiate gateway is set. It's not actually requested
+// Only the most appropriate gateway is set. It's not actually requested
 // (http call) to prevent a potential slowdown in startup. A potential timeout
 // is handled by the HTTP protocol.
 static int populate_ipfs_gateway(URLContext *h)
@@ -171,7 +171,7 @@ static int populate_ipfs_gateway(URLContext *h)
         goto err;
     }
 
-    // Replace first occurence of end of line with \0
+    // Replace first occurrence of end of line with \0
     c->gateway_buffer[strcspn(c->gateway_buffer, "\r\n")] = 0;
 
     // If strlen finds anything longer then 0 characters then we have a

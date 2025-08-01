@@ -355,7 +355,7 @@ enum DemuxSendFlags {
  * @retval "non-negative value" success
  * @retval AVERROR_EOF all consumers for the stream are done
  * @retval AVERROR_EXIT all consumers are done, should terminate demuxing
- * @retval "anoter negative error code" other failure
+ * @retval "another negative error code" other failure
  */
 int sch_demux_send(Scheduler *sch, unsigned demux_idx, struct AVPacket *pkt,
                    unsigned flags);
@@ -436,7 +436,7 @@ void sch_filter_receive_finish(Scheduler *sch, unsigned fg_idx, unsigned in_idx)
  *
  * @retval "non-negative value" success
  * @retval AVERROR_EOF all consumers are done
- * @retval "anoter negative error code" other failure
+ * @retval "another negative error code" other failure
  */
 int sch_filter_send(Scheduler *sch, unsigned fg_idx, unsigned out_idx,
                     struct AVFrame *frame);

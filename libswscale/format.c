@@ -447,7 +447,7 @@ static int infer_prim_ref(SwsColor *csp, const SwsColor *ref)
     if (csp->prim != AVCOL_PRI_UNSPECIFIED)
         return 0;
 
-    /* Re-use the reference gamut only for "safe", similar primaries */
+    /* Reuse the reference gamut only for "safe", similar primaries */
     switch (ref->prim) {
     case AVCOL_PRI_BT709:
     case AVCOL_PRI_BT470M:

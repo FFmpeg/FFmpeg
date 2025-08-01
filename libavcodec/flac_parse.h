@@ -58,7 +58,7 @@ typedef struct FLACFrameInfo {
  * @param[out] s       where parsed information is stored
  * @param[in]  buffer  pointer to start of 34-byte streaminfo data
  *
- * @return negative error code on faiure or >= 0 on success
+ * @return negative error code on failure or >= 0 on success
  */
 int ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
                               const uint8_t *buffer);

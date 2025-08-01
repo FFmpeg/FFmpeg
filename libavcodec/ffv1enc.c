@@ -979,7 +979,7 @@ static av_cold int encode_init_internal(AVCodecContext *avctx)
     if ((ret = ff_ffv1_common_init(avctx, s)) < 0)
         return ret;
 
-    if (s->ac == 1) // Compatbility with common command line usage
+    if (s->ac == 1) // Compatibility with common command line usage
         s->ac = AC_RANGE_CUSTOM_TAB;
     else if (s->ac == AC_RANGE_DEFAULT_TAB_FORCE)
         s->ac = AC_RANGE_DEFAULT_TAB;

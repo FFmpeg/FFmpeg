@@ -278,7 +278,7 @@ int64_t av_rescale_delta(AVRational in_tb, int64_t in_ts,  AVRational fs_tb, int
 /**
  * Add a value to a timestamp.
  *
- * This function guarantees that when the same value is repeatly added that
+ * This function guarantees that when the same value is repeatedly added that
  * no accumulation of rounding errors occurs.
  *
  * @param[in] ts     Input timestamp

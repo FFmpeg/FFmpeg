@@ -103,7 +103,7 @@ int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
  * LHEVCDecoderConfigurationRecord) to the provided AVIOContext.
  *
  * If the extradata is Annex B format, it gets converted to lhvC format before
- * writing. Otherwise, hvcC formated extradata is expected, not lhvC.
+ * writing. Otherwise, hvcC formatted extradata is expected, not lhvC.
  *
  * @param pb address of the AVIOContext where the lhvC shall be written
  * @param data address of the buffer holding the data needed to write the lhvC

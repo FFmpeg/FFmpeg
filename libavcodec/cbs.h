@@ -516,7 +516,7 @@ enum CbsDiscardFlags {
 };
 
 /**
- * Discard units accroding to 'skip'.
+ * Discard units according to 'skip'.
  */
 void CBS_FUNC(discard_units)(CodedBitstreamContext *ctx,
                           CodedBitstreamFragment *frag,

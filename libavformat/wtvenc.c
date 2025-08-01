@@ -575,7 +575,7 @@ static int write_root_table(AVFormatContext *s, int64_t sector_pos)
         }
     }
 
-    // caculate root table size
+    // calculate root table size
     size = avio_tell(pb) - sector_pos;
     pad = WTV_SECTOR_SIZE- size;
     write_pad(pb, pad);

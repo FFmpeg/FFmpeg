@@ -886,7 +886,7 @@ NVXX_TO_UV_FN 5, nv21
         pmovzxbd  G, [srcGq + xq]
         pmovzxbd  B, [srcBq + xq]
     %else
-        ; thought this would be faster but from my measurments its not
+        ; thought this would be faster but from my measurements its not
         ; movd m0, [srcRq + xq + 0]; overeads by 2 bytes
         ; punpcklbw m0, m9 ; interleave bytes with zero
         ; punpcklwd m0, m9 ; interleave words with zero

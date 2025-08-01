@@ -55,7 +55,7 @@ int main(void)
                 printf("%02X", digest[i]);
             putchar('\n');
         }
-        switch (j) { //test vectors (from FIPS PUB 180-4 Apendix A)
+        switch (j) { //test vectors (from FIPS PUB 180-4 Appendix A)
         case 0:
             printf("4634270f 707b6a54 daae7530 460842e2 0e37ed26 5ceee9a4 3e8924aa\n"
                    "23fec5bb 94d60b23 30819264 0b0c4533 35d66473 4fe40e72 68674af9\n"

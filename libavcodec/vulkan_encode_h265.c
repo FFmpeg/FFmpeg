@@ -207,7 +207,7 @@ static int vk_enc_h265_update_pic_info(AVCodecContext *avctx,
     }
 
     // Only look for the metadata on I/IDR frame on the output. We
-    // may force an IDR frame on the output where the medadata gets
+    // may force an IDR frame on the output where the metadata gets
     // changed on the input frame.
     if ((enc->unit_elems & UNIT_SEI_MASTERING_DISPLAY) &&
         (pic->type == FF_HW_PICTURE_TYPE_I || pic->type == FF_HW_PICTURE_TYPE_IDR)) {

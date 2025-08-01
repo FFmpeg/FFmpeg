@@ -674,7 +674,7 @@ endfunc
     vdp2.h.bu.b    \out1,   \in1,    vr5
     vdp2.h.bu.b    vr12,    \in2,    vr5
     vdp2.h.bu.b    vr20,    \in3,    vr5
-    vbsrl.v        \in0,    \in0,    1 //Back up previous 7 loaded datas,
+    vbsrl.v        \in0,    \in0,    1 //Back up previous 7 loaded data,
     vbsrl.v        \in1,    \in1,    1 //so just need to insert the 8th
     vbsrl.v        \in2,    \in2,    1 //load in the next loop.
     vbsrl.v        \in3,    \in3,    1
@@ -903,7 +903,7 @@ endfunc
     xvhaddw.d.h    xr7
     xvhaddw.d.h    xr8
     xvhaddw.d.h    xr9
-    xvbsrl.v       xr14,   xr14,    1 //Back up previous 7 loaded datas,
+    xvbsrl.v       xr14,   xr14,    1 //Back up previous 7 loaded data,
     xvbsrl.v       xr15,   xr15,    1 //so just need to insert the 8th
     xvbsrl.v       xr16,   xr16,    1 //load in next loop.
     xvbsrl.v       xr17,   xr17,    1

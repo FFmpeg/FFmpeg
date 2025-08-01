@@ -491,7 +491,7 @@ int main(void)
         av_log_set_level(AV_LOG_QUIET);
 
         for (i=0; i < FF_ARRAY_ELEMS(options); i++) {
-            int silence_log = !strcmp(options[i], "rational=-1/0"); // inf formating differs between platforms
+            int silence_log = !strcmp(options[i], "rational=-1/0"); // inf formatting differs between platforms
             av_log(&test_ctx, AV_LOG_DEBUG, "Setting options string '%s'\n", options[i]);
             if (silence_log)
                 av_log_set_callback(NULL);

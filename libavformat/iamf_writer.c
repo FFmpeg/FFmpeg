@@ -236,7 +236,7 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
             return AVERROR(EINVAL);
         }
         if (layer->ambisonics_mode >= AV_IAMF_AMBISONICS_MODE_PROJECTION) {
-            av_log(log_ctx, AV_LOG_ERROR, "Unsuported ambisonics mode %d\n", layer->ambisonics_mode);
+            av_log(log_ctx, AV_LOG_ERROR, "Unsupported ambisonics mode %d\n", layer->ambisonics_mode);
             return AVERROR_PATCHWELCOME;
         }
         for (int i = 0; i < stg->nb_streams; i++) {

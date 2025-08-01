@@ -58,7 +58,7 @@ typedef struct CoreImageContext {
     CFTypeRef       *filters;           ///< CIFilter object for all requested filters
     int             num_filters;        ///< Amount of filters in *filters
 
-    char            *output_rect;       ///< Rectangle to be filled with filter intput
+    char            *output_rect;       ///< Rectangle to be filled with filter input
     int             list_filters;       ///< Option used to list all available filters including generators
     int             list_generators;    ///< Option used to list all available generators
 } CoreImageContext;

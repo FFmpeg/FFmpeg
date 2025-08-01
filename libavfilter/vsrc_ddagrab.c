@@ -716,7 +716,7 @@ static int next_frame_internal(AVFilterContext *avctx, ID3D11Texture2D **desktop
             goto error;
         }
 
-        // Unforunately, we can't rely on the desktop_resource's format in this case.
+        // Unfortunately, we can't rely on the desktop_resource's format in this case.
         // The API might even return it in with a format that was not in the initial
         // list of supported formats, and it can change/flicker randomly.
         // To work around this, return an internal copy of the last valid texture we got.

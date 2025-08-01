@@ -208,7 +208,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *cur)
         av_frame_free(&decimate->ref);
         decimate->ref = cur;
         decimate->drop_count = FFMIN(-1, decimate->drop_count-1);
-        if (decimate->keep_count < 0) // re-enable counting similiar frames to ignore before dropping
+        if (decimate->keep_count < 0) // re-enable counting similar frames to ignore before dropping
             decimate->keep_count = 0;
 
         if ((ret = ff_filter_frame(outlink, av_frame_clone(cur))) < 0)

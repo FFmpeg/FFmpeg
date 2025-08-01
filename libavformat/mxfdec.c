@@ -955,7 +955,7 @@ static int mxf_add_metadata_set(MXFContext *mxf, MXFMetadataSet **metadata_set, 
     int ret;
 
     // Index Table is special because it might be added manually without
-    // partition and we iterate thorugh all instances of them. Also some files
+    // partition and we iterate through all instances of them. Also some files
     // use the same Instance UID for different index tables...
     if (type != IndexTableSegment) {
         for (int i = 0; i < mg->metadata_sets_count; i++) {

@@ -81,7 +81,7 @@ static const AVOption dnn_detect_options[] = {
     { "cell_w",      "cell width",                 OFFSET2(cell_w),          AV_OPT_TYPE_INT,       { .i64 = 0 },    0, INTMAX_MAX, FLAGS },
     { "cell_h",      "cell height",                OFFSET2(cell_h),          AV_OPT_TYPE_INT,       { .i64 = 0 },    0, INTMAX_MAX, FLAGS },
     { "nb_classes",  "The number of class",        OFFSET2(nb_classes),      AV_OPT_TYPE_INT,       { .i64 = 0 },    0, INTMAX_MAX, FLAGS },
-    { "anchors",     "anchors, splited by '&'",    OFFSET2(anchors),         AV_OPT_TYPE_FLOAT | AV_OPT_TYPE_FLAG_ARRAY,    { .arr = &anchor_array_def }, FLT_MIN, FLT_MAX, FLAGS },
+    { "anchors",     "anchors, split by '&'",    OFFSET2(anchors),         AV_OPT_TYPE_FLOAT | AV_OPT_TYPE_FLAG_ARRAY,    { .arr = &anchor_array_def }, FLT_MIN, FLT_MAX, FLAGS },
     { NULL }
 };
 

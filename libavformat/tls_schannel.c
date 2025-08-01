@@ -1429,7 +1429,7 @@ static int tls_write(URLContext *h, const uint8_t *buf, int len)
 
     ret = tls_process_send_buffer(h);
     if (ret == AVERROR(EAGAIN)) {
-         /* We always need to signal that we consumed all (encryped) data since schannel must not
+         /* We always need to signal that we consumed all (encrypted) data since schannel must not
             be fed the same data again. Sending will then be completed next call to this function,
             and EAGAIN returned until all remaining buffer is sent. */
         return outbuf[1].cbBuffer;

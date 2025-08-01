@@ -189,7 +189,7 @@ void rac_init_dec(out RangeCoder r, u8buf data, uint buf_size)
     rac_init(r, OFFBUF(u8buf, data, 2), buf_size - 2);
 
     u8vec2 prime = u8vec2buf(data).v;
-    /* Switch endianess of the priming bytes */
+    /* Switch endianness of the priming bytes */
     r.low = pack16(prime.yx);
 
     if (r.low >= 0xFF00) {

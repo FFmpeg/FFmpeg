@@ -218,7 +218,7 @@ while (<F>) {
     # Lines of the form '} SOME_VERSION_NAME_1.0;'
     if (/^[ \t]*\}[ \tA-Z0-9_.a-z]+;[ \t]*$/) {
     $glob = 'glob';
-    # We tried to match symbols agains this version, but none matched.
+    # We tried to match symbols against this version, but none matched.
     # Emit dummy hidden symbol to avoid marking this version WEAK.
     if ($matches_attempted && $matched_symbols == 0) {
         print "  hidden:\n";

@@ -71,7 +71,7 @@ client may also set a user/password for authentication. The default for both
 fields is "guest". Name of virtual host on broker can be set with vhost. The
 default value is "/".
 
-Muliple subscribers may stream from the broker using the command:
+Multiple subscribers may stream from the broker using the command:
 @example
 ffplay amqp://[[user]:[password]@@]hostname[:port][/vhost]
 @end example
@@ -607,7 +607,7 @@ The resource requested by a client, when the experimental HTTP server is in use.
 The HTTP code returned to the client, when the experimental HTTP server is in use.
 
 @item short_seek_size
-Set the threshold, in bytes, for when a readahead should be prefered over a seek and
+Set the threshold, in bytes, for when a readahead should be preferred over a seek and
 new HTTP request. This is useful, for example, to make sure the same connection
 is used for reading large video packets with small audio packets in between.
 

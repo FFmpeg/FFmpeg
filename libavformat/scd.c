@@ -52,7 +52,7 @@ typedef struct SCDOffsetTable {
 
 typedef struct SCDHeader {
     uint64_t magic;         /* SEDBSSCF                                     */
-    uint32_t version;       /* Verison number. We only know about 3.        */
+    uint32_t version;       /* Version number. We only know about 3.        */
     uint16_t unk1;          /* Unknown, 260 in Drakengard 3, 1024 in FFXIV. */
     uint16_t header_size;   /* Total size of this header.                   */
     uint32_t file_size;     /* Is often 0, just ignore it.                  */

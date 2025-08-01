@@ -30,7 +30,7 @@ function ff_yuv2planeX_8_neon, export=1
     vld1.8              {d0}, [r5]                                     @ load 8x8-bit dither values
     cmp                 r6, #0                                         @ check offsetting which can be 0 or 3 only
     beq                 1f
-    vext.u8             d0, d0, d0, #3                                 @ honor offseting which can be 3 only
+    vext.u8             d0, d0, d0, #3                                 @ honor offsetting which can be 3 only
 1:  vmovl.u8            q0, d0                                         @ extend dither to 16-bit
     vshll.u16           q1, d0, #12                                    @ extend dither to 32-bit with left shift by 12 (part 1)
     vshll.u16           q2, d1, #12                                    @ extend dither to 32-bit with left shift by 12 (part 2)

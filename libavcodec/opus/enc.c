@@ -433,7 +433,7 @@ static void celt_encode_frame(OpusEncContext *s, OpusRangeCoder *rc,
 
     if (f->silence) {
         if (f->framebits >= 16)
-            ff_opus_rc_enc_log(rc, 1, 15); /* Silence (if using explicit singalling) */
+            ff_opus_rc_enc_log(rc, 1, 15); /* Silence (if using explicit signalling) */
         for (int ch = 0; ch < s->channels; ch++)
             memset(s->last_quantized_energy[ch], 0.0f, sizeof(float)*CELT_MAX_BANDS);
         return;

@@ -114,7 +114,7 @@ av_cold void ff_atrac3p_init_dsp_static(void)
  *  @param[in]    fdsp          ptr to floating-point DSP context
  *  @param[in]    invert_phase  flag indicating 180° phase shift
  *  @param[in]    reg_offset    region offset for trimming envelope data
- *  @param[out]   out           receives sythesized data
+ *  @param[out]   out           receives synthesized data
  */
 static void waves_synth(Atrac3pWaveSynthParams *synth_param,
                         Atrac3pWavesData *waves_info,

@@ -103,7 +103,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    // Video input data avilable
+    // Video input data available
     AVFilterContext *ctx = inlink->dst;
     SiTiContext *s = ctx->priv;
     int max_pixsteps[4];

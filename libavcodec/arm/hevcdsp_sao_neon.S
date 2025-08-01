@@ -100,7 +100,7 @@ function ff_hevc_sao_edge_filter_neon_8, export=1
         mov     r12,  r4         // r12 = height
         mov     r6,   r0         // r6 = r0 = dst
         mov     r7,   r1         // r7 = r1 = src
-        vld1.8  {d0}, [r11]      // edge_idx tabel load in d0 5x8bit
+        vld1.8  {d0}, [r11]      // edge_idx table load in d0 5x8bit
         vld1.16 {q1}, [r10]      // sao_offset_val table load in q1, 5x16bit
         vmov.u8  d1,  #2
         vmov.u16 q2,  #1

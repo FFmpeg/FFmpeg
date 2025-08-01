@@ -754,7 +754,7 @@ static int decode_nal_units(H264Context *h, AVBufferRef *buf_ref,
         if (h->cur_pic_ptr->decode_error_flags) {
             /* Frame-threading in use */
             atomic_int *decode_error = h->cur_pic_ptr->decode_error_flags;
-            /* Using atomics here is not supposed to provide syncronisation;
+            /* Using atomics here is not supposed to provide synchronisation;
              * they are merely used to allow to set decode_error from both
              * decoding threads in case of coded slices. */
             atomic_fetch_or_explicit(decode_error, FF_DECODE_ERROR_DECODE_SLICES,

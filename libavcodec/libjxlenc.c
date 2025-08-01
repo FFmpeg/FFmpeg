@@ -93,7 +93,7 @@ static float quality_to_distance(float quality)
 }
 
 /**
- * Initalize the encoder on a per-file basis. All of these need to be set
+ * Initialize the encoder on a per-file basis. All of these need to be set
  * once each time the encoder is reset, which is each frame for still
  * images, to make the image2 muxer work. For animation this is run once.
  *

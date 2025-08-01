@@ -225,7 +225,7 @@ typedef struct RcOverride{
 #define AV_CODEC_FLAG_QPEL            (1 <<  4)
 /**
  * Request the encoder to output reconstructed frames, i.e.\ frames that would
- * be produced by decoding the encoded bistream. These frames may be retrieved
+ * be produced by decoding the encoded bitstream. These frames may be retrieved
  * by calling avcodec_receive_frame() immediately after a successful call to
  * avcodec_receive_packet().
  *
@@ -2900,7 +2900,7 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
  *
  * @note for encoders, this function will only do something if the encoder
  * declares support for AV_CODEC_CAP_ENCODER_FLUSH. When called, the encoder
- * will drain any remaining packets, and can then be re-used for a different
+ * will drain any remaining packets, and can then be reused for a different
  * stream (as opposed to sending a null frame which will leave the encoder
  * in a permanent EOF state after draining). This can be desirable if the
  * cost of tearing down and replacing the encoder instance is high.

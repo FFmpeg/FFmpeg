@@ -87,7 +87,7 @@ ALIGN 16
     mov       [frameantq+xq*2], t0w
     movifnidn dstq, dstmp
 %if %1 != 16
-    shr    t0d, 16-%1 ; could eliminate this by storing from t0h, but only with some contraints on register allocation
+    shr    t0d, 16-%1 ; could eliminate this by storing from t0h, but only with some constraints on register allocation
 %endif
 %if %1 == 8
     mov    [dstq+xq], t0b

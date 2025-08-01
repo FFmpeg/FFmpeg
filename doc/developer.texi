@@ -546,7 +546,7 @@ FFmpeg also has a defined scope - your new API must fit within it.
 
 @subsubheading Replacing existing APIs
 If your new API is replacing an existing one, it should be strictly superior to
-it, so that the advantages of using the new API outweight the cost to the
+it, so that the advantages of using the new API outweigh the cost to the
 callers of changing their code. After adding the new API you should then
 deprecate the old one and schedule it for removal, as described in
 @ref{Removing interfaces}.
@@ -596,7 +596,7 @@ change in @file{doc/APIchanges}.
 Backward-incompatible API or ABI changes require incrementing (bumping) the
 major version number, as described in @ref{Major version bumps}. Major
 bumps are significant events that happen on a schedule - so if your change
-strictly requires one you should add it under @code{#if} preprocesor guards that
+strictly requires one you should add it under @code{#if} preprocessor guards that
 disable it until the next major bump happens.
 
 New APIs that can be added without breaking API or ABI compatibility require
@@ -917,7 +917,7 @@ improves readability.
 Consider adding a regression test for your code. All new modules
 should be covered by tests. That includes demuxers, muxers, decoders, encoders
 filters, bitstream filters, parsers. If its not possible to do that, add
-an explanation why to your patchset, its ok to not test if theres a reason.
+an explanation why to your patchset, its ok to not test if there's a reason.
 
 @item
 If you added NASM code please check that things still work with --disable-x86asm.

@@ -41,7 +41,7 @@
  * MODIFIED to calculate coeffs from currently selected color space.
  * MODIFIED core to be a macro where you specify the output format.
  * ADDED UYVY conversion which is never called due to some thing in swscale.
- * CORRECTED algorithim selection to be strict on input formats.
+ * CORRECTED algorithm selection to be strict on input formats.
  * ADDED runtime detection of AltiVec.
  *
  * ADDED altivec_yuv2packedX vertical scl + RGB converter

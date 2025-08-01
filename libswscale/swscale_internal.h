@@ -359,7 +359,7 @@ struct SwsInternal {
 
     RangeList src_ranges;
 
-    /* The cascaded_* fields allow spliting a scaler task into multiple
+    /* The cascaded_* fields allow splitting a scaler task into multiple
      * sequential steps, this is for example used to limit the maximum
      * downscaling factor that needs to be supported in one scaler.
      */

@@ -193,7 +193,7 @@ int ff_vvc_intra_inv_angle_derive(const int intra_pred_angle)
         return -ROUNDED_DIV(32*512, -intra_pred_angle);
 }
 
-//8.4.5.2.7 Wide angle intra prediction mode mapping proces
+//8.4.5.2.7 Wide angle intra prediction mode mapping process
 int ff_vvc_wide_angle_mode_mapping(const CodingUnit *cu,
     const int tb_width, const int tb_height, const int c_idx, int pred_mode_intra)
 {

@@ -213,11 +213,11 @@ typedef struct AVIAMFParamDefinition {
     enum AVIAMFParamDefinitionType type;
 
     /**
-     * Identifier for the paremeter substream.
+     * Identifier for the parameter substream.
      */
     unsigned int parameter_id;
     /**
-     * Sample rate for the paremeter substream. It must not be 0.
+     * Sample rate for the parameter substream. It must not be 0.
      */
     unsigned int parameter_rate;
 

@@ -47,7 +47,7 @@ static void test_postfilter(int period)
     float gains[3] = { 0.3066406250f, 0.2170410156f, 0.1296386719f };
 
     /* The codec will always call with an offset which is aligned once
-     * (period + 2) is subtracted, but here we have to align it outselves. */
+     * (period + 2) is subtracted, but here we have to align it ourselves. */
     int offset = FFALIGN(period + 2, 4);
 
     declare_func(void, float *data, int period, float *gains, int len);

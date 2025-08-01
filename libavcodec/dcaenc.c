@@ -854,7 +854,7 @@ static int init_quantization_noise(DCAEncContext *c, int noise, int forbid_zero)
     if (c->lfe_channel)
         c->consumed_bits += 72;
 
-    /* attempt to guess the bit distribution based on the prevoius frame */
+    /* attempt to guess the bit distribution based on the previous frame */
     for (ch = 0; ch < c->fullband_channels; ch++) {
         for (band = 0; band < 32; band++) {
             int snr_cb = c->peak_cb[ch][band] - c->band_masking_cb[band] - noise;

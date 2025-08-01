@@ -41,7 +41,7 @@
 
 static void usage(void)
 {
-    printf("Simple expression evalutor, please *don't* turn me to a feature-complete language interpreter\n");
+    printf("Simple expression evaluator, please *don't* turn me to a feature-complete language interpreter\n");
     printf("usage: ffeval [OPTIONS]\n");
     printf("\n"
            "Options:\n"

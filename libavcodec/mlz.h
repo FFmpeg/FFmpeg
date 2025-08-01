@@ -42,7 +42,7 @@ typedef struct MLZDict {
     int  match_len;
 } MLZDict;
 
-/** MLZ data strucure
+/** MLZ data structure
  */
 typedef struct MLZ {
     int dic_code_bit;

@@ -160,7 +160,7 @@ static int get_audio_flags(AVFormatContext *s, AVCodecParameters *par)
     } else {
         switch (par->sample_rate) {
         case 48000:
-            // 48khz mp3 is stored with 44k1 samplerate identifer
+            // 48khz mp3 is stored with 44k1 samplerate identifier
             if (par->codec_id == AV_CODEC_ID_MP3) {
                 flags |= FLV_SAMPLERATE_44100HZ;
                 break;

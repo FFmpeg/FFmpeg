@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* x86 optimized discrete wavelet trasnform
+;* x86 optimized discrete wavelet transform
 ;* Copyright (c) 2010 David Conrad
 ;*
 ;* This file is part of FFmpeg.

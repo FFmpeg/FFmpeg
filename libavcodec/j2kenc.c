@@ -1802,7 +1802,7 @@ static int j2kenc_destroy(AVCodecContext *avctx)
     return 0;
 }
 
-// taken from the libopenjpeg wraper so it matches
+// taken from the libopenjpeg wrapper so it matches
 
 #define OFFSET(x) offsetof(Jpeg2000EncoderContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM

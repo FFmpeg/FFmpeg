@@ -386,7 +386,7 @@ static void check_hscale(void)
                     filterPos[i] = i;
                     filterPosAvx[i] = i;
 
-                    // These filter cofficients are chosen to try break two corner
+                    // These filter coefficients are chosen to try break two corner
                     // cases, namely:
                     //
                     // - Negative filter coefficients. The filters output signed

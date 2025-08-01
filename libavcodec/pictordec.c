@@ -172,7 +172,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         1 byte run (=0)
         2 bytes run
         1 byte val
-        thats 5 bytes and the maximum run we can code is 65535
+        that's 5 bytes and the maximum run we can code is 65535
 
         The RLE decoder can exit prematurly but it does not on any image available
         Based on this the formula is assumed correct for undamaged images.

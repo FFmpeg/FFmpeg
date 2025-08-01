@@ -1327,7 +1327,7 @@ int ff_vk_decode_init(AVCodecContext *avctx)
 
     ff_vk_decode_flush(avctx);
 
-    av_log(avctx, AV_LOG_VERBOSE, "Vulkan decoder initialization sucessful\n");
+    av_log(avctx, AV_LOG_VERBOSE, "Vulkan decoder initialization successful\n");
 
     return 0;
 

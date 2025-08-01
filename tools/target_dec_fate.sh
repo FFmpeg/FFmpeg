@@ -39,7 +39,7 @@ EOF
 }
 
 test -z "$1"  && show_help
-test ! -d "$1"  && echo $1 is not an accessable directory && show_help
+test ! -d "$1"  && echo $1 is not an accessible directory && show_help
 test ! -f target_dec_fate.sh && echo $0 Must be run from its location && show_help
 grep 'CONFIG_OSSFUZZ 0' ../config.h && echo not configured for ossfuzz && show_help
 

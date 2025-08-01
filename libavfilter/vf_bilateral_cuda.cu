@@ -28,7 +28,7 @@ extern "C"
  *                      used float4 for better performance
  *
  * @param first_yuv     first color vector
- * @param second_yuv    second color vecotr
+ * @param second_yuv    second color vector
  * @return              answer of squared norm difference
  */
 __device__ static inline float norm_squared(float4 first_yuv, float4 second_yuv)
@@ -43,7 +43,7 @@ __device__ static inline float norm_squared(float4 first_yuv, float4 second_yuv)
  * @brief               calculate w as stated in bilateral filter research paper
  *
  * @param first_yuv     first color vector
- * @param second_yuv    second color vecotr
+ * @param second_yuv    second color vector
  * @return              the calculated w
  */
 __device__ static inline float calculate_w(int x, int y, int r, int c,

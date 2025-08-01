@@ -272,7 +272,7 @@ static int64_t libssh_seek(URLContext *h, int64_t pos, int whence)
     }
 
     if (newpos < 0) {
-        av_log(h, AV_LOG_ERROR, "Seeking to nagative position.\n");
+        av_log(h, AV_LOG_ERROR, "Seeking to negative position.\n");
         return AVERROR(EINVAL);
     }
 

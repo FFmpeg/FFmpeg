@@ -836,7 +836,7 @@ static void print_stats(AVFilterContext *ctx)
             av_log(ctx, AV_LOG_INFO, "RMS peak dB: %f\n", LINEAR_TO_DB(sqrt(p->max_sigma_x2)));
         if (s->measure_perchannel & MEASURE_RMS_TROUGH)
             if (p->min_sigma_x2 != 1)
-                av_log(ctx, AV_LOG_INFO, "RMS trough dB: %f\n",LINEAR_TO_DB(sqrt(p->min_sigma_x2)));
+                av_log(ctx, AV_LOG_INFO, "RMS through dB: %f\n",LINEAR_TO_DB(sqrt(p->min_sigma_x2)));
         if (s->measure_perchannel & MEASURE_CREST_FACTOR)
             av_log(ctx, AV_LOG_INFO, "Crest factor: %f\n", p->sigma_x2 ? FFMAX(-p->nmin, p->nmax) / sqrt(p->sigma_x2 / p->nb_samples) : 1);
         if (s->measure_perchannel & MEASURE_FLAT_FACTOR)
@@ -896,7 +896,7 @@ static void print_stats(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_INFO, "RMS peak dB: %f\n", LINEAR_TO_DB(sqrt(max_sigma_x2)));
     if (s->measure_overall & MEASURE_RMS_TROUGH)
         if (min_sigma_x2 != 1)
-            av_log(ctx, AV_LOG_INFO, "RMS trough dB: %f\n", LINEAR_TO_DB(sqrt(min_sigma_x2)));
+            av_log(ctx, AV_LOG_INFO, "RMS through dB: %f\n", LINEAR_TO_DB(sqrt(min_sigma_x2)));
     if (s->measure_overall & MEASURE_FLAT_FACTOR)
         av_log(ctx, AV_LOG_INFO, "Flat factor: %f\n", LINEAR_TO_DB((min_runs + max_runs) / (min_count + max_count)));
     if (s->measure_overall & MEASURE_PEAK_COUNT)

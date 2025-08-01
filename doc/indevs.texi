@@ -704,7 +704,7 @@ Win32 GDI-based screen capture device.
 
 This device allows you to capture a region of the display on Windows.
 
-Amongst options for the imput filenames are such elements as:
+Amongst options for the input filenames are such elements as:
 @example
 desktop
 @end example

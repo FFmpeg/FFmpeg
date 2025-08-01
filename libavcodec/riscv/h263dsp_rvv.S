@@ -43,7 +43,7 @@ func ff_h263_h_loop_filter_rvv, zve32x
         vsrl.vi     v18, v16, 16 - 3   # v18 = (v16 < 0) ? 7 : 0
         slli        t2, t1, 1          # 2 * strength
         vadd.vv     v16, v16, v18
-        # v16 (d) is signed 7-bit, but later arithmetics require 9 bits.
+        # v16 (d) is signed 7-bit, but later arithmetic require 9 bits.
         vsra.vi     v16, v16, 3        # d
         vmv.v.x     v20, t2
         vmslt.vi    v0, v16, 0

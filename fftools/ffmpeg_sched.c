@@ -1899,7 +1899,7 @@ static int send_to_mux(Scheduler *sch, SchMux *mux, unsigned stream_idx,
 
 update_schedule:
     // TODO: use atomics to check whether this changes trailing dts
-    // to avoid locking unnecesarily
+    // to avoid locking unnecessarily
     if (dts != AV_NOPTS_VALUE || !pkt) {
         pthread_mutex_lock(&sch->schedule_lock);
 

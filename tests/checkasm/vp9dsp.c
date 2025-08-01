@@ -256,7 +256,7 @@ static int copy_subcoefs(int16_t *out, const int16_t *in, enum TxfmMode tx,
     // copy the topleft coefficients such that the return value (being the
     // coefficient scantable index for the eob token) guarantees that only
     // the topleft $sub out of $sz (where $sz >= $sub) coefficients in both
-    // dimensions are non-zero. This leads to braching to specific optimized
+    // dimensions are non-zero. This leads to branching to specific optimized
     // simd versions (e.g. dc-only) so that we get full asm coverage in this
     // test
 

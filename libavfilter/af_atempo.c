@@ -112,7 +112,7 @@ typedef struct ATempoContext {
     // number of channels:
     int channels;
 
-    // row of bytes to skip from one sample to next, across multple channels;
+    // row of bytes to skip from one sample to next, across multiple channels;
     // stride = (number-of-channels * bits-per-sample-per-channel) / 8
     int stride;
 

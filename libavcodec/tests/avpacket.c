@@ -87,7 +87,7 @@ int main(void)
     /* test av_packet_alloc */
     avpkt = av_packet_alloc();
     if(!avpkt) {
-        av_log(NULL, AV_LOG_ERROR, "av_packet_alloc failed to allcoate AVPacket\n");
+        av_log(NULL, AV_LOG_ERROR, "av_packet_alloc failed to allocate AVPacket\n");
         return 1;
     }
 

@@ -26,7 +26,7 @@ ifdef CONFIG_SHARED
 # for purely shared builds.
 # Test programs are always statically linked against their library
 # to be able to access their library's internals, even with shared builds.
-# Yet linking against dependend libraries still uses dynamic linking.
+# Yet linking against dependent libraries still uses dynamic linking.
 # This means that we are in the scenario described above.
 # In case only static libs are used, the linker will only use
 # one of these copies; this depends on the duplicated object files

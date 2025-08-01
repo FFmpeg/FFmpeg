@@ -365,7 +365,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
 
     /* Container */
     if (s->cfg.dv_profile == 10 /* dav1.10 */) {
-        /* DV inside AV1 re-uses an EMDF container skeleton, but with fixed
+        /* DV inside AV1 reuses an EMDF container skeleton, but with fixed
          * values - so we can effectively treat this as a magic byte sequence.
          *
          * The exact fields are, as follows:

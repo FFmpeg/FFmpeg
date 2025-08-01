@@ -96,7 +96,7 @@ enum AVFrameSideDataType {
      */
     AV_FRAME_DATA_MOTION_VECTORS,
     /**
-     * Recommmends skipping the specified number of samples. This is exported
+     * Recommends skipping the specified number of samples. This is exported
      * only if the "skip_manual" AVOption is set in libavcodec.
      * This has the same format as AV_PKT_DATA_SKIP_SAMPLES.
      * @code

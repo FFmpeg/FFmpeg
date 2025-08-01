@@ -1038,7 +1038,7 @@ forces a wideband cutoff for bitrates < 15 kbps, unless CELT-only
 Set channel mapping family to be used by the encoder. The default value of -1
 uses mapping family 0 for mono and stereo inputs, and mapping family 1
 otherwise. The default also disables the surround masking and LFE bandwidth
-optimzations in libopus, and requires that the input contains 8 channels or
+optimizations in libopus, and requires that the input contains 8 channels or
 fewer.
 
 Other values include 0 for mono and stereo, 1 for surround sound with masking
@@ -3703,7 +3703,7 @@ For encoders set this flag to ON to reduce power consumption and GPU usage.
 @end table
 
 @subsection Runtime Options
-Following options can be used durning qsv encoding.
+Following options can be used during qsv encoding.
 
 @table @option
 @item @var{global_quality}
@@ -3813,7 +3813,7 @@ improves subjective visual quality. Enabling this flag may have negative impact
 on performance and objective visual quality metric.
 
 @item @var{low_delay_brc}
-Setting this flag turns on or off LowDelayBRC feautre in qsv plugin, which provides
+Setting this flag turns on or off LowDelayBRC feature in qsv plugin, which provides
 more accurate bitrate control to minimize the variance of bitstream size frame
 by frame. Value: -1-default 0-off 1-on
 
@@ -4012,7 +4012,7 @@ improves subjective visual quality. Enabling this flag may have negative impact
 on performance and objective visual quality metric.
 
 @item @var{low_delay_brc}
-Setting this flag turns on or off LowDelayBRC feautre in qsv plugin, which provides
+Setting this flag turns on or off LowDelayBRC feature in qsv plugin, which provides
 more accurate bitrate control to minimize the variance of bitstream size frame
 by frame. Value: -1-default 0-off 1-on
 
@@ -4246,7 +4246,7 @@ Extended bitrate control.
 Depth of look ahead in number frames, available when extbrc option is enabled.
 
 @item @var{low_delay_brc}
-Setting this flag turns on or off LowDelayBRC feautre in qsv plugin, which provides
+Setting this flag turns on or off LowDelayBRC feature in qsv plugin, which provides
 more accurate bitrate control to minimize the variance of bitstream size frame
 by frame. Value: -1-default 0-off 1-on
 

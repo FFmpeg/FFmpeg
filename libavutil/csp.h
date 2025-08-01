@@ -114,7 +114,7 @@ const AVColorPrimariesDesc *av_csp_primaries_desc_from_id(enum AVColorPrimaries 
  * @see enum AVColorPrimaries
  * @param prm A description of the colorspace gamut
  * @return The enum constant associated with this gamut, or
- *     AVCOL_PRI_UNSPECIFIED if no clear match can be idenitified.
+ *     AVCOL_PRI_UNSPECIFIED if no clear match can be identified.
  */
 enum AVColorPrimaries av_csp_primaries_id_from_desc(const AVColorPrimariesDesc *prm);
 

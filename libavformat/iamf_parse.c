@@ -657,7 +657,7 @@ static int param_parse(void *s, IAMFContext *c, AVIOContext *pb,
 
     if (param_definition) {
         if (param_definition->param_size != param_size || memcmp(param_definition->param, param, param_size)) {
-            av_log(s, AV_LOG_ERROR, "Incosistent parameters for parameter_id %u\n", parameter_id);
+            av_log(s, AV_LOG_ERROR, "Inconsistent parameters for parameter_id %u\n", parameter_id);
             av_free(param);
             return AVERROR_INVALIDDATA;
         }
@@ -731,7 +731,7 @@ static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
 
     codec_config = ff_iamf_get_codec_config(c, codec_config_id);
     if (!codec_config) {
-        av_log(s, AV_LOG_ERROR, "Non existant codec config id %d referenced in an audio element\n", codec_config_id);
+        av_log(s, AV_LOG_ERROR, "Non existent codec config id %d referenced in an audio element\n", codec_config_id);
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }

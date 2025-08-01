@@ -58,7 +58,7 @@ static int test_dwt(int *array, int *ref, int border[2][2], int decomp_levels, i
     }
     for (j = 0; j<MAX_W * MAX_W; j++) {
         if (FFABS(array[j] - (int64_t)ref[j]) > max_diff) {
-            fprintf(stderr, "missmatch at %d (%d != %d) decomp:%d border %d %d %d %d\n",
+            fprintf(stderr, "mismatch at %d (%d != %d) decomp:%d border %d %d %d %d\n",
                     j, array[j], ref[j],decomp_levels, border[0][0], border[0][1], border[1][0], border[1][1]);
             return 2;
         }
@@ -97,7 +97,7 @@ static int test_dwtf(float *array, float *ref, int border[2][2], int decomp_leve
     }
     for (j = 0; j<MAX_W * MAX_W; j++) {
         if (FFABS(array[j] - ref[j]) > max_diff) {
-            fprintf(stderr, "missmatch at %d (%f != %f) decomp:%d border %d %d %d %d\n",
+            fprintf(stderr, "mismatch at %d (%f != %f) decomp:%d border %d %d %d %d\n",
                     j, array[j], ref[j],decomp_levels, border[0][0], border[0][1], border[1][0], border[1][1]);
             return 2;
         }

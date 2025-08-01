@@ -619,7 +619,7 @@ static void rpza_encode_stream(RpzaContext *s, const AVFrame *pict)
 
                 if (compare_blocks(&prev_pixels[pblock_offset],
                                    &src_pixels[block_offset], &bi, s->skip_frame_thresh) != 0) {
-                    // write out skipable blocks
+                    // write out skippable blocks
                     if (n_blocks) {
 
                         // write skip opcode

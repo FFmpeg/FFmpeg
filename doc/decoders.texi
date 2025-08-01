@@ -395,7 +395,7 @@ without this library.
 @c man end AUDIO DECODERS
 
 @chapter Subtitles Decoders
-@c man begin SUBTILES DECODERS
+@c man begin SUBTITLES DECODERS
 
 @section libaribb24
 
@@ -427,7 +427,7 @@ Enabled by default.
 Yet another ARIB STD-B24 caption decoder using external @dfn{libaribcaption}
 library.
 
-Implements profiles A and C of the Japanse ARIB STD-B24 standard,
+Implements profiles A and C of the Japanese ARIB STD-B24 standard,
 Brazilian ABNT NBR 15606-1, and Philippines version of ISDB-T.
 
 Requires the presence of the libaribcaption headers and library
@@ -477,7 +477,7 @@ Specify comma-separated list of font family names to be used for @dfn{bitmap}
 or @dfn{ass} type subtitle rendering.
 Only first font name is used for @dfn{ass} type subtitle.
 
-If not specified, use internaly defined default font family.
+If not specified, use internally defined default font family.
 
 @item -ass_single_rect @var{boolean}
 ARIB STD-B24 specifies that some captions may be displayed at different
@@ -495,7 +495,7 @@ default behavior at compilation.
 
 @item -force_outline_text @var{boolean}
 Specify whether always render outline text for all characters regardless of
-the indication by charactor style.
+the indication by character style.
 
 The default is @var{false}.
 
@@ -696,4 +696,4 @@ box and an end box, typically subtitles. Default value is 0 if
 
 @end table
 
-@c man end SUBTILES DECODERS
+@c man end SUBTITLES DECODERS

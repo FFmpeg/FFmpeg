@@ -285,7 +285,7 @@ static int random_coeff(AVLFG *lfg)
 
 static int random_run(AVLFG *lfg)
 {
-    // Expoenential distrbution of run lengths.
+    // Expoenential distribution of run lengths.
     unsigned int random = av_lfg_get(lfg);
     for (int len = 0;; len++) {
         if (random & (1 << len))

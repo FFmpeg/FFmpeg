@@ -871,7 +871,7 @@ static int mov_write_dops_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
         return AVERROR_INVALIDDATA;
     }
     /* extradata contains an Ogg OpusHead, other than byte-ordering and
-       OpusHead's preceeding magic/version, OpusSpecificBox is currently
+       OpusHead's preceding magic/version, OpusSpecificBox is currently
        identical. */
     channels = AV_RB8(track->extradata[track->last_stsd_index] + 9);
     channel_map = AV_RB8(track->extradata[track->last_stsd_index] + 18);
@@ -3229,7 +3229,7 @@ static int mov_preroll_write_stbl_atoms(AVIOContext *pb, MOVTrack *track)
                 if (roll_samples_remaining <= 0)
                     break;
             }
-            /* We don't have enough preceeding samples to compute a valid
+            /* We don't have enough preceding samples to compute a valid
                roll_distance here, so this sample can't be independently
                decoded. */
             if (roll_samples_remaining > 0)
@@ -7324,7 +7324,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         /*
          * Subtitles require special handling.
          *
-         * 1) For full complaince, every track must have a sample at
+         * 1) For full compliance, every track must have a sample at
          * dts == 0, which is rarely true for subtitles. So, as soon
          * as we see any packet with dts > 0, write an empty subtitle
          * at dts == 0 for any subtitle track with no samples in it.

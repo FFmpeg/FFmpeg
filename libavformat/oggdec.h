@@ -43,7 +43,7 @@ struct ogg_codec {
      * @return < 0 (AVERROR) code or -1 on error
      *         == 0 if the packet was a regular data packet.
      *         == 1 if the packet was a header from a chained bitstream.
-     *            This will cause the packet to be skiped in calling code (ogg_packet()
+     *            This will cause the packet to be skipped in calling code (ogg_packet()
      */
     int (*packet)(AVFormatContext *, int);
     /**
@@ -141,7 +141,7 @@ extern const struct ogg_codec ff_vp8_codec;
 /**
  * Parse Vorbis comments
  *
- * @note  The buffer will be temporarily modifed by this function,
+ * @note  The buffer will be temporarily modified by this function,
  *        so it needs to be writable. Furthermore it must be padded
  *        by a single byte (not counted in size).
  *        All changes will have been reverted upon return.
@@ -152,7 +152,7 @@ int ff_vorbis_comment(AVFormatContext *ms, AVDictionary **m,
 /**
  * Parse Vorbis comments and add metadata to an AVStream
  *
- * @note  The buffer will be temporarily modifed by this function,
+ * @note  The buffer will be temporarily modified by this function,
  *        so it needs to be writable. Furthermore it must be padded
  *        by a single byte (not counted in size).
  *        All changes will have been reverted upon return.

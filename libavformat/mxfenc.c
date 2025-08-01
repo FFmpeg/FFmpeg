@@ -1062,7 +1062,7 @@ static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, MXF
     AVIOContext *pb = s->pb;
 
     mxf_write_metadata_key(pb, 0x011100);
-    PRINT_KEY(s, "sturctural component key", pb->buf_ptr - 16);
+    PRINT_KEY(s, "structural component key", pb->buf_ptr - 16);
     klv_encode_ber_length(pb, 108);
 
     // write uid

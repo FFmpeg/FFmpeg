@@ -80,7 +80,7 @@ typedef struct ATRAC9BlockData {
     int cpe_base_channel;
     int is_signs[30];
 
-    int reuseable;
+    int reusable;
 
 } ATRAC9BlockData;
 
@@ -689,7 +689,7 @@ static int atrac9_decode_block(ATRAC9Context *s, GetBitContext *gb,
     if (!reuse_params) {
         int stereo_band, ext_band;
         const int min_band_count = s->samplerate_idx > 7 ? 1 : 3;
-        b->reuseable = 0;
+        b->reusable = 0;
         b->band_count = get_bits(gb, 4) + min_band_count;
         b->q_unit_cnt = at9_tab_band_q_unit_map[b->band_count];
 
@@ -721,9 +721,9 @@ static int atrac9_decode_block(ATRAC9Context *s, GetBitContext *gb,
             }
             b->band_ext_q_unit = at9_tab_band_q_unit_map[ext_band];
         }
-        b->reuseable = 1;
+        b->reusable = 1;
     }
-    if (!b->reuseable) {
+    if (!b->reusable) {
         av_log(s->avctx, AV_LOG_ERROR, "invalid block reused!\n");
         return AVERROR_INVALIDDATA;
     }

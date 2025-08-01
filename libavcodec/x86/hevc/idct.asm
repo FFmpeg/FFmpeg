@@ -532,7 +532,7 @@ cglobal hevc_idct_8x8_%1, 1, 1, 8, coeffs
 ; %1, %2 - transform constants
 ; %3, %4 - regs with interleaved coeffs
 ; %5 - 1/0 SWAP or add
-; %6, %7 - registers for intermidiate sums
+; %6, %7 - registers for intermediate sums
 ; %8 - accumulator register
 %macro ADD_ROWS 8
     pmaddwd %6, %3, %1

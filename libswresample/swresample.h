@@ -337,7 +337,7 @@ int64_t swr_next_pts(struct SwrContext *s, int64_t pts);
  * @}
  *
  * @name Low-level option setting functions
- * These functons provide a means to set low-level options that is not possible
+ * These functions provide a means to set low-level options that is not possible
  * with the AVOption API.
  * @{
  */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Institue of Software Chinese Academy of Sciences (ISCAS).
+ * Copyright (c) 2023 Institute of Software Chinese Academy of Sciences (ISCAS).
  * Copyright © 2024 Rémi Denis-Courmont.
  *
  * This file is part of FFmpeg.

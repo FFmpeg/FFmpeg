@@ -783,7 +783,7 @@ endfunc
         transpose8_4x4  d29, d3, d21, d23
         store16         d22, d23, d20, d21, d2, d3, d28, d29, r8
 
-        @ reload multiplication coefficiens to q1
+        @ reload multiplication coefficients to q1
         vld1.s16        {q1}, [r9, :128]
 .endm
 

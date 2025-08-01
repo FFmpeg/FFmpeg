@@ -307,7 +307,7 @@ typedef struct AVChannelCustom {
  * - with a constructor function, such as av_channel_layout_default(),
  *   av_channel_layout_from_mask() or av_channel_layout_from_string().
  *
- * The channel layout must be unitialized with av_channel_layout_uninit()
+ * The channel layout must be uninitialized with av_channel_layout_uninit()
  *
  * Copying an AVChannelLayout via assigning is forbidden,
  * av_channel_layout_copy() must be used instead (and its return value should
@@ -365,7 +365,7 @@ typedef struct AVChannelLayout {
          *
          * map[i].name may be filled with a 0-terminated string, in which case
          * it will be used for the purpose of identifying the channel with the
-         * convenience functions below. Otherise it must be zeroed.
+         * convenience functions below. Otherwise it must be zeroed.
          */
         AVChannelCustom *map;
     } u;

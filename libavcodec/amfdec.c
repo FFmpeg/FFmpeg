@@ -656,7 +656,7 @@ static int amf_decode_frame(AVCodecContext *avctx, struct AVFrame *frame)
         }else
             return AVERROR_EOF;
     } else {
-        av_log(avctx, AV_LOG_ERROR, "Unkown result from QueryOutput %d\n", res);
+        av_log(avctx, AV_LOG_ERROR, "Unknown result from QueryOutput %d\n", res);
     }
     return got_frame ? 0 : AVERROR(EAGAIN);
 }

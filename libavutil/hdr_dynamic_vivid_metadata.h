@@ -83,7 +83,7 @@ typedef struct AVHDRVividColorToneMappingParams {
     AVRational targeted_system_display_maximum_luminance;
 
     /**
-     * This flag indicates that transfer the base paramter(for value of 1)
+     * This flag indicates that transfer the base parameter(for value of 1)
      */
     int base_enable_flag;
 
@@ -145,7 +145,7 @@ typedef struct AVHDRVividColorToneMappingParams {
     int base_param_k3;
 
     /**
-     * This flag indicates that delta mode of base paramter(for value of 1)
+     * This flag indicates that delta mode of base parameter(for value of 1)
      */
     int base_param_Delta_enable_mode;
 
@@ -158,7 +158,7 @@ typedef struct AVHDRVividColorToneMappingParams {
 
     /**
      * indicates 3Spline_enable_flag in the base parameter,
-     * This flag indicates that transfer three Spline of base paramter(for value of 1)
+     * This flag indicates that transfer three Spline of base parameter(for value of 1)
      */
     int three_Spline_enable_flag;
 

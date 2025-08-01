@@ -108,7 +108,7 @@ typedef const struct {
 
 extern ConstTables ff_aptx_quant_tables[2][NB_SUBBANDS];
 
-/* Rounded right shift with optionnal clipping */
+/* Rounded right shift with optional clipping */
 #define RSHIFT_SIZE(size)                                                     \
 av_always_inline                                                              \
 static int##size##_t rshift##size(int##size##_t value, int shift)             \

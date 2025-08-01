@@ -1828,7 +1828,7 @@ static int select_input_picture(MPVMainEncContext *const m)
 
         if (m->reordered_input_picture[0]->shared || s->c.avctx->rc_buffer_size) {
             // input is a shared pix, so we can't modify it -> allocate a new
-            // one & ensure that the shared one is reuseable
+            // one & ensure that the shared one is reusable
             av_frame_move_ref(s->new_pic, m->reordered_input_picture[0]->f);
 
             ret = prepare_picture(s, m->reordered_input_picture[0]->f, s->new_pic);

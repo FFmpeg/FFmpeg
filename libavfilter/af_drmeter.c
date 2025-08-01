@@ -138,7 +138,7 @@ static void print_stats(AVFilterContext *ctx)
         int peak_bin = BINS;
 
         if (!p->nb_samples) {
-            av_log(ctx, AV_LOG_INFO, "No data, dynamic range not meassurable\n");
+            av_log(ctx, AV_LOG_INFO, "No data, dynamic range not measurable\n");
             return;
         }
 

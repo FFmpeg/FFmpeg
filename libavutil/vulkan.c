@@ -447,7 +447,7 @@ int ff_vk_exec_pool_init(FFVulkanContext *s, AVVulkanDeviceQueueFamily *qf,
         pool->query_results = nb_queries;
         pool->query_statuses = nb_queries;
 
-        /* Video encode quieries produce two results per query */
+        /* Video encode queries produce two results per query */
         if (query_type == VK_QUERY_TYPE_VIDEO_ENCODE_FEEDBACK_KHR) {
             int nb_results = av_popcount(ef->encodeFeedbackFlags);
             pool->query_status_stride = nb_results + 1;

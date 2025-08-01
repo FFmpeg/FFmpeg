@@ -38,7 +38,7 @@
 
 /*
  * @file
- * Caculate the SSIM between two input 360 videos.
+ * Calculate the SSIM between two input 360 videos.
  */
 
 #include <math.h>
@@ -250,7 +250,7 @@ static const AVOption ssim360_options[] = {
       OFFSET(ref_pad), AV_OPT_TYPE_FLOAT, {.dbl = .0f}, 0, 10, .flags = FLAGS },
 
     { "main_pad",
-      "Expansion (padding) coeffiecient for each cube face of the main video",
+      "Expansion (padding) coefficient for each cube face of the main video",
       OFFSET(main_pad), AV_OPT_TYPE_FLOAT, {.dbl = .0f}, 0, 10, .flags = FLAGS },
 
     { "use_tape",

@@ -47,7 +47,7 @@ typedef struct MvContext {
     int aformat;          ///< audio format
 } MvContext;
 
-/* these magic numbers are defined in moviefile.h on Silicon Grahpics IRIX */
+/* these magic numbers are defined in moviefile.h on Silicon Graphics IRIX */
 #define MOVIE_SOUND  1
 #define MOVIE_SILENT 2
 

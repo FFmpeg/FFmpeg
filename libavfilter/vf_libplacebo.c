@@ -1412,7 +1412,7 @@ static int libplacebo_config_output(AVFilterLink *outlink)
 
     s->vkctx.output_width = outlink->w;
     s->vkctx.output_height = outlink->h;
-    /* Default to re-using the input format */
+    /* Default to reusing the input format */
     if (s->out_format == AV_PIX_FMT_NONE || s->out_format == AV_PIX_FMT_VULKAN) {
         s->vkctx.output_format = s->vkctx.input_format;
     } else {

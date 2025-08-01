@@ -146,24 +146,24 @@ static const struct {
     { AV_PIX_FMT_Y210,
                        MFX_FOURCC_Y210, 1 },
     // VUYX is used for VAAPI child device,
-    // the SDK only delares support for AYUV
+    // the SDK only declares support for AYUV
     { AV_PIX_FMT_VUYX,
                        MFX_FOURCC_AYUV, 0 },
     // XV30 is used for VAAPI child device,
-    // the SDK only delares support for Y410
+    // the SDK only declares support for Y410
     { AV_PIX_FMT_XV30,
                        MFX_FOURCC_Y410, 0 },
 #if QSV_VERSION_ATLEAST(1, 31)
     // P012 is used for VAAPI child device,
-    // the SDK only delares support for P016
+    // the SDK only declares support for P016
     { AV_PIX_FMT_P012,
                        MFX_FOURCC_P016, 1 },
     // Y212 is used for VAAPI child device,
-    // the SDK only delares support for Y216
+    // the SDK only declares support for Y216
     { AV_PIX_FMT_Y212,
                        MFX_FOURCC_Y216, 1 },
     // XV36 is used for VAAPI child device,
-    // the SDK only delares support for Y416
+    // the SDK only declares support for Y416
     { AV_PIX_FMT_XV36,
                        MFX_FOURCC_Y416, 1 },
 #endif
@@ -1837,7 +1837,7 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
 
     /* According to MSDK spec for mfxframeinfo, "Width must be a multiple of 16.
      * Height must be a multiple of 16 for progressive frame sequence and a
-     * multiple of 32 otherwise.", so allign all frames to 16 before downloading. */
+     * multiple of 32 otherwise.", so align all frames to 16 before downloading. */
     if (dst->height & 15 || dst->linesize[0] & 15) {
         realigned = 1;
         if (tmp_frame->format != dst->format ||
@@ -1921,7 +1921,7 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
 
     /* According to MSDK spec for mfxframeinfo, "Width must be a multiple of 16.
      * Height must be a multiple of 16 for progressive frame sequence and a
-     * multiple of 32 otherwise.", so allign all frames to 16 before uploading. */
+     * multiple of 32 otherwise.", so align all frames to 16 before uploading. */
     if (src->height & 15 || src->linesize[0] & 15) {
         realigned = 1;
         if (tmp_frame->format != src->format ||

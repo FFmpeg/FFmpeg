@@ -787,7 +787,7 @@ static int get_block_rd(SnowEncContext *enc, int mb_x, int mb_y,
     int y1= FFMIN(block_h*2, h-sy);
     int i,x,y;
 
-    av_assert2(s->chroma_h_shift == s->chroma_v_shift); //obmc and square assumtions below chckinhg only block_w
+    av_assert2(s->chroma_h_shift == s->chroma_v_shift); //obmc and square assumptions below chckinhg only block_w
 
     ff_snow_pred_block(s, cur, tmp, ref_stride, sx, sy, block_w*2, block_h*2, &s->block[mb_x + mb_y*b_stride], plane_index, w, h);
 
@@ -884,7 +884,7 @@ static int get_4block_rd(SnowEncContext *enc, int mb_x, int mb_y, int plane_inde
     int rate= 0;
     const int penalty_factor= get_penalty_factor(enc->lambda, enc->lambda2, s->avctx->me_cmp);
 
-    av_assert2(s->chroma_h_shift == s->chroma_v_shift); //obmc and square assumtions below
+    av_assert2(s->chroma_h_shift == s->chroma_v_shift); //obmc and square assumptions below
 
     for(i=0; i<9; i++){
         int mb_x2= mb_x + (i%3) - 1;
@@ -2108,7 +2108,7 @@ static const AVOption options[] = {
     { "iter", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_ITER }, 0, 0, VE, .unit = "motion_est" },
     { "memc_only",      "Only do ME/MC (I frames -> ref, P frame -> ME+MC).",   OFFSET(memc_only), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "no_bitstream",   "Skip final bitstream writeout.",                    OFFSET(no_bitstream), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-    { "intra_penalty",  "Penalty for intra blocks in block decission",      OFFSET(intra_penalty), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "intra_penalty",  "Penalty for intra blocks in block decision",      OFFSET(intra_penalty), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "iterative_dia_size",  "Dia size for the iterative ME",          OFFSET(iterative_dia_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "sc_threshold",   "Scene change threshold",                   OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, VE },
     { "pred",           "Spatial decomposition type",                                OFFSET(pred), AV_OPT_TYPE_INT, { .i64 = 0 }, DWT_97, DWT_53, VE, .unit = "pred" },

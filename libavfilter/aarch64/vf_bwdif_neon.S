@@ -148,7 +148,7 @@
 // static const uint16_t coef_hf[3] = { 5570, 3801, 1016 };
 // static const uint16_t coef_sp[2] = { 5077, 981 };
 
-const coeffs, align=4   // align 4 means align on 2^4 boundry
+const coeffs, align=4   // align 4 means align on 2^4 boundary
         .hword          4309 * 4, 213 * 4               // lf[0]*4 = v0.h[0]
         .hword          5570, 3801, 1016, -3801         // hf[0] = v0.h[2], -hf[1] = v0.h[5]
         .hword          5077, 981                       // sp[0] = v0.h[6]

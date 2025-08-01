@@ -176,7 +176,7 @@ int amf_setup_input_output_formats(AVFilterContext *avctx,
     AVFilterFormats *input_formats;
     AVFilterFormats *output_formats;
 
-    //in case if hw_device_ctx is set to DXVA2 we change order of pixel formats to set DXVA2 be choosen by default
+    //in case if hw_device_ctx is set to DXVA2 we change order of pixel formats to set DXVA2 be chosen by default
     //The order is ignored if hw_frames_ctx is not NULL on the config_output stage
     if (avctx->hw_device_ctx) {
         AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)avctx->hw_device_ctx->data;

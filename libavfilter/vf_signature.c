@@ -581,7 +581,7 @@ static int request_frame(AVFilterLink *outlink)
     StreamContext *sc, *sc2;
     MatchingInfo match;
     int i, j, ret;
-    int lookup = 1; /* indicates wheather EOF of all files is reached */
+    int lookup = 1; /* indicates whether EOF of all files is reached */
 
     /* process all inputs */
     for (i = 0; i < sic->nb_inputs; i++){

@@ -72,7 +72,7 @@ int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size);
  *
  * @return 0 in case of success, a negative AVERROR code in case of failure.
  *         On failure, *out and *size are unchanged
- * @note *out will be treated as unintialized on input and will not be freed.
+ * @note *out will be treated as uninitialized on input and will not be freed.
  */
 int ff_av1_filter_obus_buf(const uint8_t *in, uint8_t **out,
                            int *size, int *offset);

@@ -823,7 +823,7 @@ is_in(){
 }
 
 # The cfg loop is very hot (several thousands iterations), and in bash also
-# potentialy quite slow. Try to abort the iterations early, preferably without
+# potentially quite slow. Try to abort the iterations early, preferably without
 # calling functions. 70%+ of the time cfg is already done or without deps.
 check_deps(){
     for cfg; do
@@ -929,7 +929,7 @@ reverse () {
     '
 }
 
-# keeps the last occurence of each non-unique item
+# keeps the last occurrence of each non-unique item
 unique(){
     unique_out=
     eval unique_in=\$$1
@@ -4530,7 +4530,7 @@ done
 
 if disabled autodetect; then
 
-    # Unless iconv is explicitely disabled by the user, we still want to probe
+    # Unless iconv is explicitly disabled by the user, we still want to probe
     # for the iconv from the libc.
     disabled iconv || enable libc_iconv
 
@@ -5142,7 +5142,7 @@ probe_cc(){
         disable stripping
     elif $_cc -? 2>/dev/null | grep -q 'LLVM.*Linker'; then
         # lld can emulate multiple different linkers; in ms link.exe mode,
-        # the -? parameter gives the help output which contains an identifyable
+        # the -? parameter gives the help output which contains an identifiable
         # string, while it gives an error in other modes.
         _type=lld-link
         # The link.exe mode doesn't have a switch for getting the version,
@@ -7794,7 +7794,7 @@ elif enabled_any msvc icl; then
     fi
     # msvcrt10 x64 incorrectly enables log2, only msvcrt12 (MSVC 2013) onwards actually has log2.
     check_cpp_condition log2 crtversion.h "_VC_CRT_MAJOR_VERSION >= 12"
-    # the new SSA optimzer in VS2015 U3 is mis-optimizing some parts of the code
+    # the new SSA optimizer in VS2015 U3 is mis-optimizing some parts of the code
     # Issue has been fixed in MSVC v19.00.24218.
     test_cpp_condition windows.h "_MSC_FULL_VER >= 190024218" ||
         check_cflags -d2SSAOptimizer-

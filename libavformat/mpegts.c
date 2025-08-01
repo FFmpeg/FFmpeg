@@ -203,7 +203,7 @@ static const AVOption options[] = {
      {.i64 = -1}, -1, 1, AV_OPT_FLAG_DECODING_PARAM },
     {"skip_unknown_pmt", "skip PMTs for programs not advertised in the PAT", offsetof(MpegTSContext, skip_unknown_pmt), AV_OPT_TYPE_BOOL,
      {.i64 = 0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
-    {"merge_pmt_versions", "re-use streams when PMT's version/pids change", offsetof(MpegTSContext, merge_pmt_versions), AV_OPT_TYPE_BOOL,
+    {"merge_pmt_versions", "reuse streams when PMT's version/pids change", offsetof(MpegTSContext, merge_pmt_versions), AV_OPT_TYPE_BOOL,
      {.i64 = 0}, 0, 1,  AV_OPT_FLAG_DECODING_PARAM },
     {"skip_changes", "skip changing / adding streams / programs", offsetof(MpegTSContext, skip_changes), AV_OPT_TYPE_BOOL,
      {.i64 = 0}, 0, 1, 0 },
@@ -2273,7 +2273,7 @@ static AVStream *find_matching_stream(MpegTSContext *ts, int pid, unsigned int p
 
     if (found) {
         av_log(ts->stream, AV_LOG_VERBOSE,
-               "re-using existing %s stream %d (pid=0x%x) for new pid=0x%x\n",
+               "reusing existing %s stream %d (pid=0x%x) for new pid=0x%x\n",
                av_get_media_type_string(found->codecpar->codec_type),
                found->index, found->id, pid);
     }

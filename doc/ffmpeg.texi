@@ -376,7 +376,7 @@ which they are placed.
 These  examples can of course be further generalized into arbitrary remappings
 of any number of inputs into any number of outputs.
 
-@section Trancoding
+@section Transcoding
 @emph{Transcoding} is the process of decoding a stream and then encoding it
 again. Since encoding tends to be computationally expensive and in most cases
 degrades the stream quality (i.e. it is @emph{lossy}), you should only transcode
@@ -443,7 +443,7 @@ that simple filtergraphs are tied to their output stream, so e.g. if you have
 multiple audio streams, @option{-af} will create a separate filtergraph for each
 one.
 
-Taking the trancoding example from above, adding filtering (and omitting audio,
+Taking the transcoding example from above, adding filtering (and omitting audio,
 for clarity) makes it look like this:
 @verbatim
 ┌──────────┬───────────────┐
@@ -1048,7 +1048,7 @@ The following flags are available:
 
 @table @option
 @item recon_gain
-Wether to signal if recon_gain is present as metadata in parameter blocks within frames
+Whether to signal if recon_gain is present as metadata in parameter blocks within frames
 @end table
 
 @item output_gain

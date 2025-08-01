@@ -252,7 +252,7 @@ static int apm_write_header(AVFormatContext *s)
     avio_wl16(s->pb, APM_TAG_CODEC);
     avio_wl16(s->pb, par->ch_layout.nb_channels);
     avio_wl32(s->pb, par->sample_rate);
-    /* This is the wrong calculation, but it's what the orginal files have. */
+    /* This is the wrong calculation, but it's what the original files have. */
     avio_wl32(s->pb, par->sample_rate * par->ch_layout.nb_channels * 2);
     avio_wl16(s->pb, par->block_align);
     avio_wl16(s->pb, par->bits_per_coded_sample);

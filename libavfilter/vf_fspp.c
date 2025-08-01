@@ -463,7 +463,7 @@ static void row_fdct_c(int16_t *data, const uint8_t *pixels, ptrdiff_t line_size
         tmp12 = tmp1 - tmp2;
         //Even columns are written first, this leads to different order of columns
         //in column_fidct(), but they are processed independently, so all ok.
-        //Later in the row_idct() columns readed at the same order.
+        //Later in the row_idct() columns are read in the same order.
         dataptr[2] = tmp10 + tmp11;
         dataptr[3] = tmp10 - tmp11;
 

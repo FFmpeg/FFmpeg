@@ -1132,7 +1132,7 @@ fill_in_tongue(uint16_t*                  const pixels,
 
     /* Scan the image line by line and  fill  the  tongue  outline
        with the RGB values determined by the color system for the x-y
-       co-ordinates within the tongue.
+       coordinates within the tongue.
     */
 
     for (y = 0; y < h; ++y) {

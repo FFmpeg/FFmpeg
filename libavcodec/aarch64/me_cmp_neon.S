@@ -534,7 +534,7 @@ function ff_pix_abs16_y2_neon, export=1
         ld1             {v2.16b}, [x2], x3              // Load pix3 for first iteration
         ld1             {v0.16b}, [x1], x3              // Load pix1 for first iteration
         urhadd          v30.16b, v1.16b, v2.16b         // Rounding halving add, first iteration
-        ld1             {v5.16b}, [x2], x3              // Load pix3 for second iteartion
+        ld1             {v5.16b}, [x2], x3              // Load pix3 for second iteration
         uabal           v29.8h, v0.8b, v30.8b           // Absolute difference of lower half, first iteration
         uabal2          v28.8h, v0.16b, v30.16b         // Absolute difference of upper half, first iteration
         ld1             {v3.16b}, [x1], x3              // Load pix1 for second iteration
@@ -606,7 +606,7 @@ function sse16_neon, export=1
         uabd            v27.16b, v2.16b, v3.16b         // Absolute difference, second iteration
         uadalp          v17.4s, v29.8h                  // Pairwise add, first iteration
         ld1             {v4.16b}, [x1], x3              // Load pix1 for third iteration
-        umull           v26.8h, v27.8b, v27.8b          // Mulitply lower half, second iteration
+        umull           v26.8h, v27.8b, v27.8b          // Multiply lower half, second iteration
         umull2          v25.8h, v27.16b, v27.16b        // Multiply upper half, second iteration
         ld1             {v5.16b}, [x2], x3              // Load pix2 for third iteration
         uadalp          v17.4s, v26.8h                  // Pairwise add and accumulate, second iteration
@@ -616,7 +616,7 @@ function sse16_neon, export=1
         umull           v23.8h, v24.8b, v24.8b          // Multiply lower half, third iteration
         umull2          v22.8h, v24.16b, v24.16b        // Multiply upper half, third iteration
         uadalp          v17.4s, v23.8h                  // Pairwise add and accumulate, third iteration
-        ld1             {v7.16b}, [x2], x3              // Load pix2 for fouth iteration
+        ld1             {v7.16b}, [x2], x3              // Load pix2 for fourth iteration
         uadalp          v17.4s, v22.8h                  // Pairwise add and accumulate, third iteration
         uabd            v21.16b, v6.16b, v7.16b         // Absolute difference, fourth iteration
         uadalp          v17.4s, v28.8h                  // Pairwise add and accumulate, first iteration
@@ -748,7 +748,7 @@ function sse4_neon, export=1
         uabdl           v28.8h, v4.8b, v5.8b            // Absolute difference, third iteration
         umlal           v16.4s, v29.4h, v29.4h          // Multiply and accumulate, second iteration
         sub             w4, w4, #4
-        uabdl           v27.8h, v6.8b, v7.8b            // Absolue difference, fourth iteration
+        uabdl           v27.8h, v6.8b, v7.8b            // Absolute difference, fourth iteration
         umlal           v16.4s, v28.4h, v28.4h          // Multiply and accumulate, third iteration
         cmp             w4, #4
         umlal           v16.4s, v27.4h, v27.4h          // Multiply and accumulate, fourth iteration
@@ -1593,7 +1593,7 @@ function sse16_neon_dotprod, export=1
         uabd            v24.16b, v4.16b, v5.16b         // Absolute difference, third iteration
         ld1             {v6.16b}, [x1], x3              // Load pix1 for fourth iteration
         udot            v17.4s, v24.16b, v24.16b
-        ld1             {v7.16b}, [x2], x3              // Load pix2 for fouth iteration
+        ld1             {v7.16b}, [x2], x3              // Load pix2 for fourth iteration
         uabd            v21.16b, v6.16b, v7.16b         // Absolute difference, fourth iteration
         sub             w4, w4, #4                      // h -= 4
         udot            v17.4s, v21.16b, v21.16b

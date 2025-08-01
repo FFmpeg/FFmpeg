@@ -395,8 +395,8 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
         FFSWAP(struct elem_to_channel, e2c_vec[6], e2c_vec[4]);   // FLc & FRc fifth (final), SiL & SiR seventh
         FFSWAP(struct elem_to_channel, e2c_vec[7], e2c_vec[6]);   // LFE2 seventh (final), SiL & SiR eight (final)
         FFSWAP(struct elem_to_channel, e2c_vec[9], e2c_vec[8]);   // TpFL & TpFR ninth (final), TFC tenth (final)
-        FFSWAP(struct elem_to_channel, e2c_vec[11], e2c_vec[10]); // TC eleventh (final), TpSiL & TpSiR twelth
-        FFSWAP(struct elem_to_channel, e2c_vec[12], e2c_vec[11]); // TpBL & TpBR twelth (final), TpSiL & TpSiR thirteenth (final)
+        FFSWAP(struct elem_to_channel, e2c_vec[11], e2c_vec[10]); // TC eleventh (final), TpSiL & TpSiR twelfth
+        FFSWAP(struct elem_to_channel, e2c_vec[12], e2c_vec[11]); // TpBL & TpBR twelfth (final), TpSiL & TpSiR thirteenth (final)
     } else {
         // For everything else, utilize the AV channel position define as a
         // stable sort.
@@ -1728,7 +1728,7 @@ int ff_aac_decode_ics(AACDecContext *ac, SingleChannelElement *sce,
             }
         }
         // I see no textual basis in the spec for this occurring after SSR gain
-        // control, but this is what both reference and real implmentations do
+        // control, but this is what both reference and real implementations do
         if (tns->present && er_syntax) {
             ret = ff_aac_decode_tns(ac, tns, gb, ics);
             if (ret < 0)

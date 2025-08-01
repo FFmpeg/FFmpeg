@@ -24,5 +24,5 @@ NOTICE for Package Maintainers
 
  - It is recommended to build FFmpeg twice, first with minimal external dependencies so
    that 3rd party packages, which depend on FFmpegs libavutil/libavfilter/libavcodec/libavformat
-   can then be built. And last build FFmpeg with full dependancies (which may in turn depend on
+   can then be built. And last build FFmpeg with full dependencies (which may in turn depend on
    some of these 3rd party packages). This avoids circular dependencies during build.
