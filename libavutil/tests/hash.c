@@ -49,9 +49,9 @@ int main(void)
        av_hash_init(ctx);
        av_hash_update(ctx, src, SRC_BUF_SIZE);
        av_hash_final_bin(ctx, dst, DST_BUF_SIZE);
-       printf("%s bin: ", av_hash_get_name(ctx));
+       printf("%s bin:", av_hash_get_name(ctx));
        for (j = 0; j < av_hash_get_size(ctx); j++) {
-           printf("%#x ", dst[j]);
+           printf(" %#x", dst[j]);
        }
        printf("\n");
 
