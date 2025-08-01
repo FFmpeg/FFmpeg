@@ -104,7 +104,7 @@ int main(void)
     /* read data */
     for (i = 0; av_fifo_can_read(fifo); i++) {
         av_fifo_read(fifo, &j, 1);
-        printf("%d ", j);
+        printf(i == 0 ? "%d" : " %d", j);
     }
     printf("\n");
 
