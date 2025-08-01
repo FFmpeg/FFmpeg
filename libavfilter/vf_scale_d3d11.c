@@ -370,7 +370,6 @@ static int scale_d3d11_config_props(AVFilterLink *outlink)
     }
 
     ///< Create new hardware frames context for output
-    AVHWFramesContext *in_frames_ctx = (AVHWFramesContext *)inl->hw_frames_ctx->data;
     s->hw_frames_ctx_out = av_hwframe_ctx_alloc(s->hw_device_ctx);
     if (!s->hw_frames_ctx_out)
         return AVERROR(ENOMEM);
