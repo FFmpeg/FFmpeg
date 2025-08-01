@@ -153,6 +153,9 @@ typedef struct VulkanDevicePriv {
     /* Disable host image transfer */
     int disable_host_transfer;
 
+    /* Prefer memcpy over dynamic host pointer imports */
+    int avoid_host_import;
+
     /* Maximum queues */
     int limit_queues;
 } VulkanDevicePriv;
@@ -1792,6 +1795,12 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
         if (opt_d)
             p->disable_multiplane = strtol(opt_d->value, NULL, 10);
     }
+
+    /* Disable host pointer imports (by default on nvidia) */
+    p->avoid_host_import = p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY;
+    opt_d = av_dict_get(opts, "avoid_host_import", NULL, 0);
+    if (opt_d)
+        p->avoid_host_import = strtol(opt_d->value, NULL, 10);
 
     /* Set the public device feature struct and its pNext chain */
     hwctx->device_features = p->feats.device;
@@ -4472,7 +4481,7 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
     }
 
     /* Setup buffers first */
-    if (p->vkctx.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY) {
+    if (p->vkctx.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY && !p->avoid_host_import) {
         err = host_map_frame(hwfc, bufs, &nb_bufs, swf, region, upload);
         if (err >= 0)
             host_mapped = 1;

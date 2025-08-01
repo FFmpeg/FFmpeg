@@ -28755,6 +28755,10 @@ Allocates linear images. Does not apply to decoding.
 
 @item disable_multiplane
 Disables multiplane images. Does not apply to decoding.
+
+@item avoid_host_import
+Avoids the use of dynamic host memory imports, in favor of a regular memcpy()
+into a previously mapped buffer.
 @end table
 
 @item -filter_hw_device @var{name}
