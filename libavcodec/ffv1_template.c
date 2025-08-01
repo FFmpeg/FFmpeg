@@ -50,4 +50,3 @@ static inline int RENAME(get_context)(const int16_t quant_table[MAX_CONTEXT_INPU
                quant_table[1][(LT - T) & MAX_QUANT_TABLE_MASK] +
                quant_table[2][(T - RT) & MAX_QUANT_TABLE_MASK];
 }
-

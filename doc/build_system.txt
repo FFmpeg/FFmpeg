@@ -70,4 +70,3 @@ make -j<num>
 make -k
     Continue build in case of errors, this is useful for the regression tests
     sometimes but note that it will still not run all reg tests.
-

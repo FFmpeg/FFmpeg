@@ -281,4 +281,3 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
 
     return 0;
 }
-

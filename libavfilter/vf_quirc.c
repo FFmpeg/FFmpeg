@@ -177,4 +177,3 @@ const FFFilter ff_vf_quirc = {
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
 };
-

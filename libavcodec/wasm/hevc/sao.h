@@ -49,4 +49,3 @@ void ff_hevc_sao_edge_filter_16x16_8_simd128(uint8_t *_dst, const uint8_t *_src,
                                              int eo, int width, int height);
 
 #endif
-

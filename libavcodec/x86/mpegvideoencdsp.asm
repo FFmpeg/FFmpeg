@@ -104,4 +104,3 @@ cglobal pix_norm1, 2, 3, %1
 
 INIT_XMM sse2
 PIX_NORM1 6, 8
-

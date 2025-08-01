@@ -263,4 +263,3 @@ static int RENAME(encode_rgb_frame)(FFV1Context *f, FFV1SliceContext *sc,
     }
     return 0;
 }
-

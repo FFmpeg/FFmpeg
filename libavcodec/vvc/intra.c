@@ -738,4 +738,3 @@ int ff_vvc_reconstruct(VVCLocalContext *lc, const int rs, const int rx, const in
     ff_vvc_ctu_free_cus(fc->tab.cus + rs);
     return ret;
 }
-

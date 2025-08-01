@@ -88,4 +88,3 @@ const FFCodec ff_cljr_decoder = {
     FF_CODEC_DECODE_CB(decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
 };
-

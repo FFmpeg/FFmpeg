@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [ghcr.io/btbn/ffmpeg-builds/win64-gpl:latest]
+        image: ["ghcr.io/btbn/ffmpeg-builds/win64-gpl:latest"]
     runs-on: linux-amd64
     container: ${{ matrix.image }}
     steps:

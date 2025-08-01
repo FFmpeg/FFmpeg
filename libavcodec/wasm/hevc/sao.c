@@ -251,4 +251,3 @@ void ff_hevc_sao_edge_filter_16x16_8_simd128(uint8_t *dst, const uint8_t *src,
         dst += stride_dst;
     }
 }
-

@@ -67,4 +67,3 @@ int ff_qp_table_extract(AVFrame *frame, int8_t **table, int *table_w, int *table
 
     return 0;
 }
-

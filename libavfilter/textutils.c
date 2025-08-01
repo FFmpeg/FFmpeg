@@ -381,4 +381,3 @@ int ff_load_textfile(void *log_ctx, const char *textfile,
 
     return 0;
 }
-

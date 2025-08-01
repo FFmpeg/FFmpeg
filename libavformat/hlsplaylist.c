@@ -204,4 +204,3 @@ void ff_hls_write_end_list(AVIOContext *out)
         return;
     avio_printf(out, "#EXT-X-ENDLIST\n");
 }
-

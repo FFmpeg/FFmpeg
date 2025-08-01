@@ -39,4 +39,3 @@ size_t ff_get_cpu_max_align_wasm(void)
     return 8;
 #endif
 }
-

@@ -63,4 +63,3 @@ int ff_hls_senc_parse_audio_setup_info(AVStream *st, HLSAudioSetupInfo *info);
 int ff_hls_senc_decrypt_frame(enum AVCodecID codec_id, HLSCryptoContext *crypto_ctx, AVPacket *pkt);
 
 #endif /* AVFORMAT_HLS_SAMPLE_ENCRYPTION_H */
-
