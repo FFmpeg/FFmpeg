@@ -39,3 +39,21 @@ jobs:
           key: fate-suite-${{ steps.fate.outputs.hash }}
       - name: Run Fate
         run: make fate SAMPLES=$PWD/fate-suite -j$(nproc)
+  compile_only:
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [ghcr.io/btbn/ffmpeg-builds/win64-gpl:latest]
+    runs-on: linux-amd64
+    container: ${{ matrix.image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure
+        run: |
+          ./configure --pkg-config-flags="--static" $FFBUILD_TARGET_FLAGS $FF_CONFIGURE \
+              --cc="$CC" --cxx="$CXX" --ar="$AR" --ranlib="$RANLIB" --nm="$NM" \
+              --extra-cflags="$FF_CFLAGS" --extra-cxxflags="$FF_CXXFLAGS" \
+              --extra-libs="$FF_LIBS" --extra-ldflags="$FF_LDFLAGS" --extra-ldexeflags="$FF_LDEXEFLAGS"
+      - name: Build
+        run: make -j$(nproc)
