@@ -26,6 +26,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/dict.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
@@ -142,29 +143,28 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb[4] = {0};
     char* target[4]    = {0};
     char* tmp[4]       = {0};
-    char filename[1024];
     AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(par->format);
     int ret, i;
     AVDictionary *options = NULL;
+    AVBPrint filename;
+    av_bprint_init(&filename, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     if (img->update) {
-        av_strlcpy(filename, s->url, sizeof(filename));
+        av_bprintf(&filename, "%s", s->url);
     } else if (img->use_strftime) {
         time_t now0;
         struct tm *tm, tmpbuf;
         time(&now0);
         tm = localtime_r(&now0, &tmpbuf);
-        if (!strftime(filename, sizeof(filename), s->url, tm)) {
-            av_log(s, AV_LOG_ERROR, "Could not get frame filename with strftime\n");
-            return AVERROR(EINVAL);
-        }
+        av_bprint_strftime(&filename, s->url, tm);
     } else if (img->frame_pts) {
-        if (ff_get_frame_filename(filename, sizeof(filename), s->url, pkt->pts, AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
+        if (ff_bprint_get_frame_filename(&filename, s->url, pkt->pts, AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
             av_log(s, AV_LOG_ERROR, "Cannot write filename by pts of the frames.");
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
-    } else if (ff_get_frame_filename(filename, sizeof(filename), s->url,
+    } else if (ff_bprint_get_frame_filename(&filename, s->url,
                                      img->img_number,
                                      AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
         if (img->img_number == img->start_img_number) {
@@ -172,24 +172,30 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_WARNING,
                    "Use a pattern such as %%03d for an image sequence or "
                    "use the -update option (with -frames:v 1 if needed) to write a single image.\n");
-            av_strlcpy(filename, s->url, sizeof(filename));
+            av_bprint_clear(&filename);
+            av_bprintf(&filename, "%s", s->url);
         } else {
             av_log(s, AV_LOG_ERROR, "Cannot write more than one file with the same name. Are you missing the -update option or a sequence pattern?\n");
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
+    }
+    if (!av_bprint_is_complete(&filename)) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
     for (i = 0; i < 4; i++) {
         av_dict_copy(&options, img->protocol_opts, 0);
         if (img->use_rename) {
-            tmp[i] = av_asprintf("%s.tmp", filename);
-            target[i] = av_strdup(filename);
+            tmp[i] = av_asprintf("%s.tmp", filename.str);
+            target[i] = av_strdup(filename.str);
             if (!tmp[i] || !target[i]) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
         }
-        if (s->io_open(s, &pb[i], tmp[i] ? tmp[i] : filename, AVIO_FLAG_WRITE, &options) < 0) {
-            av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", tmp[i] ? tmp[i] : filename);
+        if (s->io_open(s, &pb[i], tmp[i] ? tmp[i] : filename.str, AVIO_FLAG_WRITE, &options) < 0) {
+            av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", tmp[i] ? tmp[i] : filename.str);
             ret = AVERROR(EIO);
             goto fail;
         }
@@ -201,8 +207,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (!img->split_planes || i+1 >= desc->nb_components)
             break;
-        filename[strlen(filename) - 1] = "UVAx"[i];
+        filename.str[filename.len - 1] = "UVAx"[i];
     }
+    av_bprint_finalize(&filename, NULL);
 
     if (img->split_planes) {
         int ysize = par->width * par->height;
@@ -239,6 +246,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 
 fail:
+    av_bprint_finalize(&filename, NULL);
     av_dict_free(&options);
     for (i = 0; i < FF_ARRAY_ELEMS(pb); i++) {
         av_freep(&tmp[i]);
