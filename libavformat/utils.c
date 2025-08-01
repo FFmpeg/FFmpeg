@@ -283,13 +283,12 @@ uint64_t ff_parse_ntp_time(uint64_t ntp_ts)
     return (sec * 1000000) + usec;
 }
 
-int ff_get_frame_filename(char *buf, int buf_size, const char *path, int64_t number, int flags)
+int ff_bprint_get_frame_filename(struct AVBPrint *buf, const char *path, int64_t number, int flags)
 {
     const char *p;
-    char *q, buf1[20], c;
-    int nd, len, percentd_found;
+    char c;
+    int nd, percentd_found;
 
-    q = buf;
     p = path;
     percentd_found = 0;
     for (;;) {
@@ -316,29 +315,30 @@ int ff_get_frame_filename(char *buf, int buf_size, const char *path, int64_t num
                 percentd_found = 1;
                 if (number < 0)
                     nd += 1;
-                snprintf(buf1, sizeof(buf1), "%0*" PRId64, nd, number);
-                len = strlen(buf1);
-                if ((q - buf + len) > buf_size - 1)
-                    goto fail;
-                memcpy(q, buf1, len);
-                q += len;
+                av_bprintf(buf, "%0*" PRId64, nd, number);
                 break;
             default:
                 goto fail;
             }
         } else {
 addchar:
-            if ((q - buf) < buf_size - 1)
-                *q++ = c;
+            av_bprint_chars(buf, c, 1);
         }
     }
     if (!percentd_found)
         goto fail;
-    *q = '\0';
+    if (!av_bprint_is_complete(buf))
+        return AVERROR(ENOMEM);
     return 0;
 fail:
-    *q = '\0';
-    return -1;
+    return AVERROR(EINVAL);
+}
+
+int ff_get_frame_filename(char *buf, int buf_size, const char *path, int64_t number, int flags)
+{
+    AVBPrint bp;
+    av_bprint_init_for_buffer(&bp, buf, buf_size);
+    return ff_bprint_get_frame_filename(&bp, path, number, flags) < 0 ? -1 : 0;
 }
 
 int av_get_frame_filename2(char *buf, int buf_size, const char *path, int number, int flags)

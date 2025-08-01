@@ -641,6 +641,20 @@ int ff_get_frame_filename(char *buf, int buf_size, const char *path,
                           int64_t number, int flags);
 
 /**
+ * Return in 'buf' the path with '%d' replaced by a number.
+ *
+ * Also handles the '%0nd' format where 'n' is the total number
+ * of digits and '%%'.
+ *
+ * @param buf destination buffer
+ * @param path path with substitution template
+ * @param number the number to substitute
+ * @param flags AV_FRAME_FILENAME_FLAGS_*
+ * @return 0 if OK, <0 on error.
+ */
+int ff_bprint_get_frame_filename(struct AVBPrint *buf, const char *path, int64_t number, int flags);
+
+/**
  * Set a dictionary value to an ISO-8601 compliant timestamp string.
  *
  * @param dict pointer to a pointer to a dictionary struct. If *dict is NULL
