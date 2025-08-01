@@ -329,7 +329,7 @@ static int initialize_dxgi_manager(AVCodecContext *avctx)
         return AVERROR_EXTERNAL;
     }
 
-    hr = IMFDXGIDeviceManager_ResetDevice(c->dxgiManager, c->device_hwctx->device, c->resetToken);
+    hr = IMFDXGIDeviceManager_ResetDevice(c->dxgiManager, (IUnknown*)c->device_hwctx->device, c->resetToken);
     if (FAILED(hr)) {
         av_log(avctx, AV_LOG_ERROR, "Failed to reset device: %s\n", ff_hr_str(hr));
         return AVERROR_EXTERNAL;
@@ -379,7 +379,7 @@ static int process_d3d11_frame(AVCodecContext *avctx, const AVFrame *frame, IMFS
         return AVERROR_EXTERNAL;
     }
 
-    hr = func->MFCreateDXGISurfaceBuffer(&IID_ID3D11Texture2D, d3d11_texture, subIdx, 0, &buffer);
+    hr = func->MFCreateDXGISurfaceBuffer(&IID_ID3D11Texture2D, (IUnknown*)d3d11_texture, subIdx, 0, &buffer);
     if (FAILED(hr)) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create DXGI surface buffer: %s\n", ff_hr_str(hr));
         IMFSample_Release(sample);
