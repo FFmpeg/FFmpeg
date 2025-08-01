@@ -5427,10 +5427,10 @@ static int heif_add_stream(MOVContext *c, HEIFItem *item)
         av_dict_set(&st->metadata, "title", item->name, 0);
 
     // Populate the necessary fields used by mov_build_index.
-    sc->stsc_count = 1;
     sc->stsc_data = av_malloc_array(1, sizeof(*sc->stsc_data));
     if (!sc->stsc_data)
         goto fail;
+    sc->stsc_count = 1;
     sc->stsc_data[0].first = 1;
     sc->stsc_data[0].count = 1;
     sc->stsc_data[0].id = 1;
