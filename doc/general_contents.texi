@@ -250,6 +250,14 @@ Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the
 instructions for installing the library.
 Then pass @code{--enable-libfdk-aac} to configure to enable it.
 
+@subsection Fraunhofer MPEG-H 3D Audio decoder library
+
+FFmpeg can make use of the Fraunhofer MPEG-H decoder library for MPEG-H 3DA decoding.
+
+Go to @url{https://github.com/Fraunhofer-IIS/mpeghdec} and follow the
+instructions for installing the library.
+Then pass @code{--enable-libmpeghdec} to configure to enable it.
+
 @subsection LC3 library
 
 FFmpeg can make use of the Google LC3 library for LC3 decoding & encoding.
@@ -1344,6 +1352,8 @@ following image formats are supported:
 @item MP3 (MPEG audio layer 3)  @tab  E  @tab IX
     @tab encoding supported through external library LAME, ADU MP3 and MP3onMP4 also supported
 @item MPEG-4 Audio Lossless Coding (ALS)  @tab     @tab  X
+@item MPEG-H 3D Audio        @tab     @tab  E
+    @tab decoding supported through external library libmpeghdec
 @item MobiClip FastAudio     @tab     @tab  X
 @item Musepack SV7           @tab     @tab  X
 @item Musepack SV8           @tab     @tab  X
