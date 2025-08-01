@@ -1879,6 +1879,10 @@ static int mov_get_h264_codec_tag(AVFormatContext *s, MOVTrack *track)
     if (!tag)
         tag = MKTAG('a', 'v', 'c', 'i'); //fallback tag
 
+    if (track->par->profile == AV_PROFILE_UNKNOWN ||
+        !(track->par->profile & AV_PROFILE_H264_INTRA))
+        return tag;
+
     if (track->par->format == AV_PIX_FMT_YUV420P10) {
         if (track->par->width == 960 && track->par->height == 720) {
             if (!interlaced) {
