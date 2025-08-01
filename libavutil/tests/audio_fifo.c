@@ -75,7 +75,8 @@ static void print_audio_bytes(const TestStruct *test_sample, void **data_planes,
                 int order = !HAVE_BIGENDIAN ? (byte_offset - f - 1) : f;
                 printf("%02x", *((uint8_t*)data_planes[p] + b + order));
             }
-            putchar(' ');
+            if (b + byte_offset < line_size)
+                putchar(' ');
         }
         putchar('\n');
     }
