@@ -145,7 +145,7 @@ static void srt_text_cb(void *priv, const char *text, int len)
 
 static void srt_new_line_cb(void *priv, int forced)
 {
-    srt_print(priv, "\r\n");
+    srt_print(priv, "\n");
 }
 
 static void srt_style_cb(void *priv, char style, int close)
