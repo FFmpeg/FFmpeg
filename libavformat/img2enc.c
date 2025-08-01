@@ -28,6 +28,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "libavutil/log.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/time_internal.h"
@@ -42,8 +43,6 @@ typedef struct VideoMuxData {
     int start_img_number;
     int img_number;
     int split_planes;       /**< use independent file for each Y, U, V plane */
-    char tmp[4][1024];
-    char target[4][1024];
     int update;
     int use_strftime;
     int frame_pts;
@@ -141,11 +140,12 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     VideoMuxData *img = s->priv_data;
     AVIOContext *pb[4] = {0};
+    char* target[4]    = {0};
+    char* tmp[4]       = {0};
     char filename[1024];
     AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(par->format);
     int ret, i;
-    int nb_renames = 0;
     AVDictionary *options = NULL;
 
     if (img->update) {
@@ -180,10 +180,16 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     }
     for (i = 0; i < 4; i++) {
         av_dict_copy(&options, img->protocol_opts, 0);
-        snprintf(img->tmp[i], sizeof(img->tmp[i]), "%s.tmp", filename);
-        av_strlcpy(img->target[i], filename, sizeof(img->target[i]));
-        if (s->io_open(s, &pb[i], img->use_rename ? img->tmp[i] : filename, AVIO_FLAG_WRITE, &options) < 0) {
-            av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", img->use_rename ? img->tmp[i] : filename);
+        if (img->use_rename) {
+            tmp[i] = av_asprintf("%s.tmp", filename);
+            target[i] = av_strdup(filename);
+            if (!tmp[i] || !target[i]) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+        }
+        if (s->io_open(s, &pb[i], tmp[i] ? tmp[i] : filename, AVIO_FLAG_WRITE, &options) < 0) {
+            av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", tmp[i] ? tmp[i] : filename);
             ret = AVERROR(EIO);
             goto fail;
         }
@@ -197,8 +203,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             break;
         filename[strlen(filename) - 1] = "UVAx"[i];
     }
-    if (img->use_rename)
-        nb_renames = i + 1;
 
     if (img->split_planes) {
         int ysize = par->width * par->height;
@@ -223,10 +227,12 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0)
         goto fail;
 
-    for (i = 0; i < nb_renames; i++) {
-        int ret = ff_rename(img->tmp[i], img->target[i], s);
+    for (i = 0; i < 4 && tmp[i]; i++) {
+        int ret = ff_rename(tmp[i], target[i], s);
         if (ret < 0)
-            return ret;
+            goto fail;
+        av_freep(&tmp[i]);
+        av_freep(&target[i]);
     }
 
     img->img_number++;
@@ -234,9 +240,12 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
 fail:
     av_dict_free(&options);
-    for (i = 0; i < FF_ARRAY_ELEMS(pb); i++)
+    for (i = 0; i < FF_ARRAY_ELEMS(pb); i++) {
+        av_freep(&tmp[i]);
+        av_freep(&target[i]);
         if (pb[i])
             ff_format_io_close(s, &pb[i]);
+    }
     return ret;
 }
 
