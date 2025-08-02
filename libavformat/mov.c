@@ -3028,6 +3028,27 @@ static int mov_skip_multiple_stsd(MOVContext *c, AVIOContext *pb,
     return 0;
 }
 
+static int mov_finalize_stsd_entry(MOVContext *c, AVStream *st)
+{
+    int ret;
+
+    /* special codec parameters handling */
+    switch (st->codecpar->codec_id) {
+    case AV_CODEC_ID_H264:
+        // done for ai5q, ai52, ai55, ai1q, ai12 and ai15.
+        if (!st->codecpar->extradata_size && TAG_IS_AVCI(st->codecpar->codec_tag)) {
+            ret = ff_generate_avci_extradata(st);
+            if (ret < 0)
+               return ret;
+        }
+        break;
+    default:
+        break;
+    }
+
+    return 0;
+}
+
 int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
 {
     AVStream *st;
@@ -3104,6 +3125,10 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                 return ret;
         } else if (a.size > 0)
             avio_skip(pb, a.size);
+
+        ret = mov_finalize_stsd_entry(c, st);
+        if (ret < 0)
+            return ret;
 
         if (sc->extradata && st->codecpar->extradata) {
             int extra_size = st->codecpar->extradata_size;
@@ -5214,14 +5239,6 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den,
                       sc->time_scale, sc->tts_data[0].duration, INT_MAX);
 #endif
-    }
-
-    // done for ai5q, ai52, ai55, ai1q, ai12 and ai15.
-    if (!st->codecpar->extradata_size && st->codecpar->codec_id == AV_CODEC_ID_H264 &&
-        TAG_IS_AVCI(st->codecpar->codec_tag)) {
-        ret = ff_generate_avci_extradata(st);
-        if (ret < 0)
-            return ret;
     }
 
     switch (st->codecpar->codec_id) {
