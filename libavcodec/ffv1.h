@@ -201,7 +201,7 @@ int ff_ffv1_parse_header(FFV1Context *f, RangeCoder *c, uint8_t *state);
 int ff_ffv1_read_extra_header(FFV1Context *f);
 int ff_ffv1_read_quant_tables(RangeCoder *c,
                               int16_t quant_table[MAX_CONTEXT_INPUTS][256]);
-void ff_ffv1_compute_bits_per_plane(const FFV1Context *f, FFV1SliceContext *sc, int bits[4], int offset[1], int mask[4], int bits_per_raw_sample);
+void ff_ffv1_compute_bits_per_plane(const FFV1Context *f, FFV1SliceContext *sc, int bits[4], int *offset, int mask[4], int bits_per_raw_sample);
 int ff_ffv1_get_symbol(RangeCoder *c, uint8_t *state, int is_signed);
 
 /**
