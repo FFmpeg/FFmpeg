@@ -96,6 +96,7 @@ int main(int argc, char *argv[])
     avio_ctx = avio_alloc_context(avio_ctx_buffer, avio_ctx_buffer_size,
                                   0, &bd, &read_packet, NULL, NULL);
     if (!avio_ctx) {
+        av_freep(&avio_ctx_buffer);
         ret = AVERROR(ENOMEM);
         goto end;
     }
