@@ -660,6 +660,10 @@ static int dvbsub_read_8bit_string(AVCodecContext *avctx,
     if (bytestream2_get_byte(gb))
         av_log(avctx, AV_LOG_ERROR, "line overflow\n");
 
+    /* Workaround our own buggy encoder which only put one zero at the end */
+    if (!bytestream2_peek_byte(gb))
+        bytestream2_get_byte(gb);
+
     *srcbuf += bytestream2_tell(gb);
     return pixels_read;
 }
