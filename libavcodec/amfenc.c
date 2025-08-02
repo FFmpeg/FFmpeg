@@ -673,8 +673,6 @@ static AMF_RESULT amf_query_output(AVCodecContext *avctx, AMFBuffer **buffer)
 int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
 {
     AMFEncoderContext     *ctx = avctx->priv_data;
-    AVHWDeviceContext     *hw_device_ctx = (AVHWDeviceContext*)ctx->device_ctx_ref->data;
-    AVAMFDeviceContext    *amf_device_ctx = (AVAMFDeviceContext *)hw_device_ctx->hwctx;
     AMFSurface *surface = NULL;
     AMF_RESULT  res;
     int         ret;
