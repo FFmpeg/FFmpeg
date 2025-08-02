@@ -32,6 +32,8 @@ int avpriv_fits_header_init(FITSHeader *header, FITSHeaderState state)
 {
     header->state = state;
     header->naxis_index = 0;
+    header->naxis = 0;
+    memset(header->naxisn, 0, sizeof(header->naxisn));
     header->blank_found = 0;
     header->pcount = 0;
     header->gcount = 1;
