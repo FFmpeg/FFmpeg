@@ -612,15 +612,16 @@ static int dvbsub_read_8bit_string(AVCodecContext *avctx,
                                     const uint8_t **srcbuf, int buf_size,
                                     int non_mod, uint8_t *map_table, int x_pos)
 {
-    const uint8_t *sbuf_end = (*srcbuf) + buf_size;
     int bits;
     int run_length;
     int pixels_read = x_pos;
+    GetByteContext gb0, *const gb = &gb0;
 
+    bytestream2_init(gb, *srcbuf, buf_size);
     destbuf += x_pos;
 
-    while (*srcbuf < sbuf_end && pixels_read < dbuf_len) {
-        bits = *(*srcbuf)++;
+    while (bytestream2_get_bytes_left(gb) && pixels_read < dbuf_len) {
+        bits = bytestream2_get_byteu(gb);
 
         if (bits) {
             if (non_mod != 1 || bits != 1) {
@@ -631,16 +632,17 @@ static int dvbsub_read_8bit_string(AVCodecContext *avctx,
             }
             pixels_read++;
         } else {
-            bits = *(*srcbuf)++;
+            bits = bytestream2_get_byte(gb);
             run_length = bits & 0x7f;
             if ((bits & 0x80) == 0) {
                 if (run_length == 0) {
+                    *srcbuf += bytestream2_tell(gb);
                     return pixels_read;
                 }
 
                 bits = 0;
             } else {
-                bits = *(*srcbuf)++;
+                bits = bytestream2_get_byte(gb);
             }
             if (non_mod == 1 && bits == 1)
                 pixels_read += run_length;
@@ -655,9 +657,10 @@ static int dvbsub_read_8bit_string(AVCodecContext *avctx,
         }
     }
 
-    if (*(*srcbuf)++)
+    if (bytestream2_get_byte(gb))
         av_log(avctx, AV_LOG_ERROR, "line overflow\n");
 
+    *srcbuf += bytestream2_tell(gb);
     return pixels_read;
 }
 
