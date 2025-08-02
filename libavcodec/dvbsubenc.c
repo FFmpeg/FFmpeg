@@ -258,7 +258,8 @@ static int dvb_encode_rle8(uint8_t **pq, int buf_size,
             x += len;
         }
         /* end of line */
-        // 00000000 end of 8-bit/pixel_code_string
+        // 00000000 00000000 end of 8-bit/pixel_code_string
+        *q++ = 0x00;
         *q++ = 0x00;
         *q++ = 0xf0;
         bitmap += linesize;
