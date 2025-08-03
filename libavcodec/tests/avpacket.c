@@ -101,11 +101,14 @@ int main(void)
 
     if(!avpkt_clone) {
         av_log(NULL, AV_LOG_ERROR,"av_packet_clone failed to clone AVPacket\n");
+        av_packet_free(&avpkt);
         return 1;
     }
     /*test av_grow_packet*/
     if(av_grow_packet(avpkt_clone, 20) < 0){
         av_log(NULL, AV_LOG_ERROR, "av_grow_packet failed\n");
+        av_packet_free(&avpkt_clone);
+        av_packet_free(&avpkt);
         return 1;
     }
     if(av_grow_packet(avpkt_clone, INT_MAX) == 0){
