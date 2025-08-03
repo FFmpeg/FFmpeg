@@ -279,7 +279,7 @@ static int extract_header(AVCodecContext *const avctx,
         if (avctx->codec_tag == MKTAG('P', 'B', 'M', ' ') && s->ham == 4)
             extra_space = 4;
 
-        s->ham_buf = av_malloc((s->planesize * 8) + AV_INPUT_BUFFER_PADDING_SIZE);
+        s->ham_buf = av_mallocz((s->planesize * 8) + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!s->ham_buf)
             return AVERROR(ENOMEM);
 
