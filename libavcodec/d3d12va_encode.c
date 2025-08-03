@@ -973,8 +973,7 @@ rc_mode_found:
         case RC_MODE_CQP:
             // cqp ConfigParams will be updated in ctx->codec->configure.
             break;
-
-        case RC_MODE_CBR:
+        case RC_MODE_CBR: {
             D3D12_VIDEO_ENCODER_RATE_CONTROL_CBR *cbr_ctl;
 
             ctx->rc.ConfigParams.DataSize = sizeof(D3D12_VIDEO_ENCODER_RATE_CONTROL_CBR);
@@ -995,8 +994,8 @@ rc_mode_found:
 
             ctx->rc.ConfigParams.pConfiguration_CBR = cbr_ctl;
             break;
-
-        case RC_MODE_VBR:
+        }
+        case RC_MODE_VBR: {
             D3D12_VIDEO_ENCODER_RATE_CONTROL_VBR *vbr_ctl;
 
             ctx->rc.ConfigParams.DataSize = sizeof(D3D12_VIDEO_ENCODER_RATE_CONTROL_VBR);
@@ -1018,8 +1017,8 @@ rc_mode_found:
 
             ctx->rc.ConfigParams.pConfiguration_VBR = vbr_ctl;
             break;
-
-        case RC_MODE_QVBR:
+        }
+        case RC_MODE_QVBR: {
             D3D12_VIDEO_ENCODER_RATE_CONTROL_QVBR *qvbr_ctl;
 
             ctx->rc.ConfigParams.DataSize = sizeof(D3D12_VIDEO_ENCODER_RATE_CONTROL_QVBR);
@@ -1039,7 +1038,7 @@ rc_mode_found:
 
             ctx->rc.ConfigParams.pConfiguration_QVBR = qvbr_ctl;
             break;
-
+        }
         default:
             break;
     }
