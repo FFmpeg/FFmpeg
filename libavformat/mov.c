@@ -10684,9 +10684,9 @@ static int mov_read_header(AVFormatContext *s)
         uint32_t dvdsub_clut[FF_DVDCLUT_CLUT_LEN] = {0};
         fix_timescale(mov, sc);
 
-        /* Set the primary extradata based on the first Sample. */
+        /* Set the primary extradata based on the first Sample if it doesn't reference the first stsd entry. */
         if (sc->stsc_count && sc->extradata_size && !sc->iamf &&
-            sc->stsc_data[0].id > 0 && sc->stsc_data[0].id <= sc->stsd_count) {
+            sc->stsc_data[0].id > 1 && sc->stsc_data[0].id <= sc->stsd_count) {
             sc->last_stsd_index = sc->stsc_data[0].id - 1;
             av_freep(&st->codecpar->extradata);
             st->codecpar->extradata_size = sc->extradata_size[sc->last_stsd_index];
