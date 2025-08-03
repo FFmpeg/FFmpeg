@@ -3678,6 +3678,8 @@ int ff_mpeg4_parse_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb,
                 name = "Reserved";
             else if (startcode <= 0x1FF)
                 name = "System start";
+            else
+                av_unreachable("Unexpected startcode");
             av_log(s->avctx, AV_LOG_DEBUG, "startcode: %3X %s at %d\n",
                    startcode, name, get_bits_count(gb));
         }
