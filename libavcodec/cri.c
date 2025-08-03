@@ -224,7 +224,8 @@ static int cri_decode_frame(AVCodecContext *avctx, void *data,
             break;
         case 102:;
             int read_len = FFMIN(length, sizeof(codec_name) - 1);
-            bytestream2_get_buffer(gb, codec_name, read_len))
+            if (read_len != bytestream2_get_buffer(gb, codec_name, read_len))
+                return AVERROR_INVALIDDATA;
             length -= read_len;
             if (strncmp(codec_name, "cintel_craw", read_len))
                 return AVERROR_INVALIDDATA;
