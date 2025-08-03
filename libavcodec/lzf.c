@@ -56,7 +56,10 @@ int ff_lzf_uncompress(GetByteContext *gb, uint8_t **buf, int64_t *size)
                 p = *buf + len;
             }
 
-            bytestream2_get_buffer(gb, p, s);
+            int s2 = bytestream2_get_buffer(gb, p, s);
+            if (s2 != s)
+                return AVERROR_INVALIDDATA;
+
             p   += s;
             len += s;
         } else {
