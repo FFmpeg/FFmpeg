@@ -51,6 +51,7 @@ static int setup_side_data_entry(AVPacket* avpkt)
     ret = av_packet_add_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA,
                                         extra_data, bytes);
     if(ret < 0){
+        av_free(extra_data);
         fprintf(stderr,
                 "Error occurred in av_packet_add_side_data: %s\n",
                 av_err2str(ret));
