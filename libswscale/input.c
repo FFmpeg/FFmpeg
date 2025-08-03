@@ -1212,7 +1212,7 @@ static void planar_rgb_to_uv(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[
 #define rdpx(src) \
     (is_be ? AV_RB16(src) : AV_RL16(src))
 
-#define shifted_planar_rgb16(rdpx_shift)                                                                       \
+#define shifted_planar_rgb16_to_y(rdpx_shift)                                                                  \
     static av_always_inline void planar_rgb16_s ## rdpx_shift ## _to_y(uint8_t *_dst, const uint8_t *_src[4],  \
                                                    int width, int bpc, int is_be, int32_t *rgb2yuv)            \
     {                                                                                                          \
@@ -1229,8 +1229,9 @@ static void planar_rgb_to_uv(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[
             dst[i] = (ry*r + gy*g + by*b + (16 << (RGB2YUV_SHIFT + bpc - 8))                                   \
                      + (1 << (RGB2YUV_SHIFT + shift - 15))) >> (RGB2YUV_SHIFT + shift - 14);                   \
         }                                                                                                      \
-    }                                                                                                          \
-                                                                                                               \
+    }
+
+#define shifted_planar_rgb16_to_a(rdpx_shift)                                                                  \
     static av_always_inline void planar_rgb16_s ## rdpx_shift ## _to_a(uint8_t *_dst, const uint8_t *_src[4],  \
                                                    int width, int bpc, int is_be, int32_t *rgb2yuv)            \
     {                                                                                                          \
@@ -1243,7 +1244,8 @@ static void planar_rgb_to_uv(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[
             dst[i] = rdpx(src[3] + i) << (14 - shift);                                                         \
         }                                                                                                      \
     }                                                                                                          \
-                                                                                                               \
+
+#define shifted_planar_rgb16_to_uv(rdpx_shift)                                                                 \
     static av_always_inline void planar_rgb16_s ## rdpx_shift ## _to_uv(uint8_t *_dstU, uint8_t *_dstV,        \
                                                     const uint8_t *_src[4], int width,                         \
                                                     int bpc, int is_be, int32_t *rgb2yuv)                      \
@@ -1267,9 +1269,17 @@ static void planar_rgb_to_uv(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[
         }                                                                                                      \
     }
 
+#define shifted_planar_rgb16_to_y_uv(rdpx_shift)   \
+    shifted_planar_rgb16_to_y(rdpx_shift)          \
+    shifted_planar_rgb16_to_uv(rdpx_shift)
+
+#define shifted_planar_rgb16(rdpx_shift)     \
+    shifted_planar_rgb16_to_y_uv(rdpx_shift) \
+    shifted_planar_rgb16_to_a(rdpx_shift)
+
 shifted_planar_rgb16(16)
-shifted_planar_rgb16(12)
-shifted_planar_rgb16(10)
+shifted_planar_rgb16_to_y_uv(12)
+shifted_planar_rgb16_to_y_uv(10)
 
 #undef rdpx
 
