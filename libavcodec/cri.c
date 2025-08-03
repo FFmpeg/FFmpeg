@@ -218,10 +218,11 @@ static int cri_decode_frame(AVCodecContext *avctx, AVFrame *p,
             if (bytestream2_get_le32(gb) != 0)
                 return AVERROR_INVALIDDATA;
             break;
-        case 102:
-            bytestream2_get_buffer(gb, codec_name, FFMIN(length, sizeof(codec_name) - 1));
-            length -= FFMIN(length, sizeof(codec_name) - 1);
-            if (strncmp(codec_name, "cintel_craw", FFMIN(length, sizeof(codec_name) - 1)))
+        case 102:;
+            int read_len = FFMIN(length, sizeof(codec_name) - 1);
+            bytestream2_get_buffer(gb, codec_name, read_len))
+            length -= read_len;
+            if (strncmp(codec_name, "cintel_craw", read_len))
                 return AVERROR_INVALIDDATA;
             compressed = 1;
             goto skip;
