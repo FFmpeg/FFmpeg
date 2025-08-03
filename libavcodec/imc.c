@@ -966,6 +966,8 @@ static int imc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     LOCAL_ALIGNED_16(uint16_t, buf16, [(IMC_BLOCK_SIZE + AV_INPUT_BUFFER_PADDING_SIZE) / 2]);
 
+    memset(buf16 + IMC_BLOCK_SIZE/2, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
     q->avctx = avctx;
 
     if (buf_size < IMC_BLOCK_SIZE * avctx->ch_layout.nb_channels) {
