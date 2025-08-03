@@ -2776,7 +2776,7 @@ static void *task_wrapper(void *arg)
     ret = task->func(task->func_arg);
     if (ret < 0)
         av_log(task->func_arg, AV_LOG_ERROR,
-               "Task finished with error code: %d (%s)\n", ret, av_err2str(ret));
+               "Task finished with error: %s\n", av_err2str(ret));
 
     err = task_cleanup(sch, task->node);
     ret = err_merge(ret, err);
@@ -2791,9 +2791,12 @@ static void *task_wrapper(void *arg)
         pthread_mutex_unlock(&sch->finish_lock);
     }
 
-    av_log(task->func_arg, ret < 0 ? AV_LOG_ERROR : AV_LOG_VERBOSE,
-           "Terminating thread with return code %d (%s)\n", ret,
-           ret < 0 ? av_err2str(ret) : "success");
+    if (ret < 0)
+        av_log(task->func_arg, AV_LOG_ERROR,
+               "Terminating thread with error: %s\n", av_err2str(ret));
+    else
+        av_log(task->func_arg, AV_LOG_VERBOSE,
+               "Terminating thread with success\n");
 
     return (void*)(intptr_t)ret;
 }
