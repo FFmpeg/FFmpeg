@@ -2267,10 +2267,13 @@ void ff_get_unscaled_swscale(SwsContext *c)
          c->chrDstVSubSample == c->chrSrcVSubSample &&
          !isSemiPlanarYUV(srcFormat) && !isSemiPlanarYUV(dstFormat))))
     {
-        if (isPacked(c->srcFormat))
+        if (isPacked(c->srcFormat)) {
             c->convert_unscaled = packedCopyWrapper;
-        else /* Planar YUV or gray */
+        } else { /* Planar YUV or gray */
             c->convert_unscaled = planarCopyWrapper;
+            if (c->dither != SWS_DITHER_NONE)
+                c->dst_slice_align = 8 << c->chrDstVSubSample;
+        }
     }
 
 #if ARCH_PPC
