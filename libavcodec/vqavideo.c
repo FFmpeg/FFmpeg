@@ -551,8 +551,9 @@ static int vqa_decode_chunk(VqaContext *s, AVFrame *frame)
         }
 
         /* accumulate partial codebook */
-        bytestream2_get_buffer(&s->gb, &s->next_codebook_buffer[s->next_codebook_buffer_index],
-                               chunk_size);
+        if (chunk_size != bytestream2_get_buffer(&s->gb, &s->next_codebook_buffer[s->next_codebook_buffer_index],
+                               chunk_size))
+            return AVERROR_INVALIDDATA;
         s->next_codebook_buffer_index += chunk_size;
 
         s->partial_countdown--;
@@ -580,8 +581,9 @@ static int vqa_decode_chunk(VqaContext *s, AVFrame *frame)
         }
 
         /* accumulate partial codebook */
-        bytestream2_get_buffer(&s->gb, &s->next_codebook_buffer[s->next_codebook_buffer_index],
-                               chunk_size);
+        if (chunk_size != bytestream2_get_buffer(&s->gb, &s->next_codebook_buffer[s->next_codebook_buffer_index],
+                               chunk_size))
+            return AVERROR_INVALIDDATA;
         s->next_codebook_buffer_index += chunk_size;
 
         s->partial_countdown--;
