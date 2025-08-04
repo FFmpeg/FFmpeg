@@ -461,17 +461,17 @@ int avio_put_str16be(AVIOContext *s, const char *str);
 void avio_write_marker(AVIOContext *s, int64_t time, enum AVIODataMarkerType type);
 
 /**
- * ORing this as the "whence" parameter to a seek function causes it to
+ * Passing this as the "whence" parameter to a seek function causes it to
  * return the filesize without seeking anywhere. Supporting this is optional.
  * If it is not supported then the seek function will return <0.
  */
 #define AVSEEK_SIZE 0x10000
 
 /**
- * Passing this flag as the "whence" parameter to a seek function causes it to
+ * OR'ing this flag into the "whence" parameter to a seek function causes it to
  * seek by any means (like reopening and linear reading) or other normally unreasonable
  * means that can be extremely slow.
- * This may be ignored by the seek code.
+ * This is the default and therefore ignored by the seek code since 2010.
  */
 #define AVSEEK_FORCE 0x20000
 
