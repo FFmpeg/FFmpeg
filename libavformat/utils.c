@@ -334,7 +334,7 @@ fail:
     return AVERROR(EINVAL);
 }
 
-int ff_get_frame_filename(char *buf, int buf_size, const char *path, int64_t number, int flags)
+static int get_frame_filename(char *buf, int buf_size, const char *path, int64_t number, int flags)
 {
     AVBPrint bp;
     av_bprint_init_for_buffer(&bp, buf, buf_size);
@@ -343,12 +343,12 @@ int ff_get_frame_filename(char *buf, int buf_size, const char *path, int64_t num
 
 int av_get_frame_filename2(char *buf, int buf_size, const char *path, int number, int flags)
 {
-    return ff_get_frame_filename(buf, buf_size, path, number, flags);
+    return get_frame_filename(buf, buf_size, path, number, flags);
 }
 
 int av_get_frame_filename(char *buf, int buf_size, const char *path, int number)
 {
-    return ff_get_frame_filename(buf, buf_size, path, number, 0);
+    return get_frame_filename(buf, buf_size, path, number, 0);
 }
 
 void av_url_split(char *proto, int proto_size,

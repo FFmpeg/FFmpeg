@@ -631,22 +631,6 @@ int ff_match_url_ext(const char *url, const char *extensions);
  * of digits and '%%'.
  *
  * @param buf destination buffer
- * @param buf_size destination buffer size
- * @param path path with substitution template
- * @param number the number to substitute
- * @param flags AV_FRAME_FILENAME_FLAGS_*
- * @return 0 if OK, -1 on format error
- */
-int ff_get_frame_filename(char *buf, int buf_size, const char *path,
-                          int64_t number, int flags);
-
-/**
- * Return in 'buf' the path with '%d' replaced by a number.
- *
- * Also handles the '%0nd' format where 'n' is the total number
- * of digits and '%%'.
- *
- * @param buf destination buffer
  * @param path path with substitution template
  * @param number the number to substitute
  * @param flags AV_FRAME_FILENAME_FLAGS_*
