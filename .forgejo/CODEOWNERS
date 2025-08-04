@@ -10,17 +10,18 @@
 libavcodec/*aac* @lynne
 libavcodec/*ac3* @lynne
 libavcodec/*atrac9* @lynne
-libavcodec/*opus* @lynne
 libavcodec/*bitpacked* @lynne
 libavcodec/*dirac* @lynne
+libavcodec/*ffv1* @lynne
 libavcodec/*jpegxl* @lynne
 libavcodec/*jxl* @lynne
-libavcodec/*ffv1* @lynne
+libavcodec/*opus* @lynne
 libavcodec/*prores* @lynne
 libavcodec/*siren* @lynne
 libavcodec/*vc2* @lynne
-libavcodec/x86/* @lynne
+
 libavcodec/aarch64/* @lynne
+libavcodec/x86/* @lynne
 
 # avformat
 # =======
@@ -31,8 +32,9 @@ libavformat/iamf* @jamrial
 libavutil/*crc* @lynne
 libavutil/iamf* @jamrial
 libavutil/tx* @lynne
-libavutil/x86/* @lynne
+
 libavutil/aarch64/* @lynne
+libavutil/x86/* @lynne
 
 # Frameworks
 # ==========
