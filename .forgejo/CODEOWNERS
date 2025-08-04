@@ -24,12 +24,12 @@ libavcodec/aarch64/* @lynne
 
 # avformat
 # =======
-libavformat/iamf*
+libavformat/iamf* @jamrial
 
 # avutil
 # ======
 libavutil/*crc* @lynne
-libavutil/iamf*
+libavutil/iamf* @jamrial
 libavutil/tx* @lynne
 libavutil/x86/* @lynne
 libavutil/aarch64/* @lynne
