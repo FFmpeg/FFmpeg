@@ -148,6 +148,15 @@ static int64_t mf_sample_get_pts(AVCodecContext *avctx, IMFSample *sample)
     return mf_from_mf_time(avctx, pts);
 }
 
+static int64_t mf_sample_get_duration(AVCodecContext *avctx, IMFSample *sample)
+{
+    LONGLONG duration;
+    HRESULT hr = IMFSample_GetSampleDuration(sample, &duration);
+    if (FAILED(hr))
+        return 0;
+    return mf_from_mf_time(avctx, duration);
+}
+
 static int mf_enca_output_type_get(AVCodecContext *avctx, IMFMediaType *type)
 {
     MFContext *c = avctx->priv_data;
@@ -275,6 +284,7 @@ static int mf_sample_to_avpacket(AVCodecContext *avctx, IMFSample *sample, AVPac
     IMFMediaBuffer_Release(buffer);
 
     avpkt->pts = avpkt->dts = mf_sample_get_pts(avctx, sample);
+    avpkt->duration = mf_sample_get_duration(avctx, sample);
 
     hr = IMFAttributes_GetUINT32(sample, &MFSampleExtension_CleanPoint, &t32);
     if (c->is_audio || (!FAILED(hr) && t32 != 0))
