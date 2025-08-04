@@ -91,12 +91,12 @@ static inline void init_ref(MotionEstContext *c, uint8_t *const src[3],
     };
     int i;
     for(i=0; i<3; i++){
-        c->src[0][i]= src[i] ? FF_PTR_ADD(src[i], offset[i]) : NULL;
-        c->ref[0][i]= ref[i] ? FF_PTR_ADD(ref[i], offset[i]) : NULL;
+        c->src[0][i]= src[i] ? src[i] + offset[i] : NULL;
+        c->ref[0][i]= ref[i] ? ref[i] + offset[i] : NULL;
     }
     if(ref_index){
         for(i=0; i<3; i++){
-            c->ref[ref_index][i]= ref2[i] ? FF_PTR_ADD(ref2[i], offset[i]) : NULL;
+            c->ref[ref_index][i]= ref2[i] ? ref2[i] + offset[i] : NULL;
         }
     }
 }
