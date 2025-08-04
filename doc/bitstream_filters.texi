@@ -708,12 +708,12 @@ ffmpeg -i INPUT -c copy -bsf noise=1 output.mkv
 Drop every video packet not marked as a keyframe after timestamp 30s but do not
 modify any of the remaining packets.
 @example
-ffmpeg -i INPUT -c copy -bsf:v noise=drop='gt(t\,30)*not(key)' output.mkv
+ffmpeg -i INPUT -c copy -bsf:v noise=drop='gt(pts*tb\,30)*not(key)' output.mkv
 @end example
 
 Drop one second of audio every 10 seconds and add some random noise to the rest.
 @example
-ffmpeg -i INPUT -c copy -bsf:a noise=amount=-1:drop='between(mod(t\,10)\,9\,10)' output.mkv
+ffmpeg -i INPUT -c copy -bsf:a noise=amount=-1:drop='between(mod(pts*tb\,10)\,9\,10)' output.mkv
 @end example
 
 @section null
