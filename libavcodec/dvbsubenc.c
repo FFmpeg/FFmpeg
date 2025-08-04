@@ -22,9 +22,12 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "libavutil/colorspace.h"
+#include "libavutil/opt.h"
 
 typedef struct DVBSubtitleContext {
+    AVClass * class;
     int object_version;
+    int min_bpp;
 } DVBSubtitleContext;
 
 #define PUTBITS2(val)\
@@ -275,12 +278,23 @@ static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
 {
     DVBSubtitleContext *s = avctx->priv_data;
     uint8_t *q, *pseg_len;
-    int page_id, region_id, clut_id, object_id, i, bpp_index, page_state;
+    int page_id, region_id, clut_id, object_id, i, bpp_index, page_state, min_colors;
 
 
     q = outbuf;
 
     page_id = 1;
+
+    switch(s->min_bpp) {
+    case 2:
+    case 4:
+    case 8:
+      min_colors = 1 << s->min_bpp;
+      break;
+    default:
+      av_log(avctx, AV_LOG_ERROR, "Invalid min_bpp value %d.\n", s->min_bpp);
+      return AVERROR(EINVAL);
+    }
 
     if (h->num_rects && !h->rects)
         return AVERROR(EINVAL);
@@ -331,14 +345,15 @@ static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
     if (h->num_rects) {
         for (clut_id = 0; clut_id < h->num_rects; clut_id++) {
             /* CLUT segment */
+            int nb_colors = FFMAX(min_colors, h->rects[clut_id]->nb_colors);
 
-            if (h->rects[clut_id]->nb_colors <= 4U) {
+            if (nb_colors <= 4U) {
                 /* 2 bpp, some decoders do not support it correctly */
                 bpp_index = 0;
-            } else if (h->rects[clut_id]->nb_colors <= 16U) {
+            } else if (nb_colors <= 16U) {
                 /* 4 bpp, standard encoding */
                 bpp_index = 1;
-            } else if (h->rects[clut_id]->nb_colors <= 256U) {
+            } else if (nb_colors <= 256U) {
                 /* 8 bpp, standard encoding */
                 bpp_index = 2;
             } else {
@@ -384,14 +399,15 @@ static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
         for (region_id = 0; region_id < h->num_rects; region_id++) {
 
             /* region composition segment */
+            int nb_colors = FFMAX(min_colors, h->rects[region_id]->nb_colors);
 
-            if (h->rects[region_id]->nb_colors <= 4) {
+            if (nb_colors <= 4) {
                 /* 2 bpp, some decoders do not support it correctly */
                 bpp_index = 0;
-            } else if (h->rects[region_id]->nb_colors <= 16) {
+            } else if (nb_colors <= 16) {
                 /* 4 bpp, standard encoding */
                 bpp_index = 1;
-            } else if (h->rects[region_id]->nb_colors <= 256) {
+            } else if (nb_colors <= 256) {
                 /* 8 bpp, standard encoding */
                 bpp_index = 2;
             } else {
@@ -427,17 +443,19 @@ static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
                                   const uint8_t *bitmap, int linesize,
                                   int w, int h);
 
+            int nb_colors = FFMAX(min_colors, h->rects[object_id]->nb_colors);
+
             if (buf_size < 13)
                 return AVERROR_BUFFER_TOO_SMALL;
 
             /* bpp_index maths */
-            if (h->rects[object_id]->nb_colors <= 4) {
+            if (nb_colors <= 4) {
                 /* 2 bpp, some decoders do not support it correctly */
                 dvb_encode_rle = dvb_encode_rle2;
-            } else if (h->rects[object_id]->nb_colors <= 16) {
+            } else if (nb_colors <= 16) {
                 /* 4 bpp, standard encoding */
                 dvb_encode_rle = dvb_encode_rle4;
-            } else if (h->rects[object_id]->nb_colors <= 256) {
+            } else if (nb_colors <= 256) {
                 /* 8 bpp, standard encoding */
                 dvb_encode_rle = dvb_encode_rle8;
             } else {
@@ -509,6 +527,20 @@ static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
     return q - outbuf;
 }
 
+#define OFFSET(x) offsetof(DVBSubtitleContext, x)
+#define SE AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    {"min_bpp", "minimum bits-per-pixel for subtitle colors (2, 4 or 8)", OFFSET(min_bpp), AV_OPT_TYPE_INT, {.i64 = 4}, 2, 8, SE},
+    { NULL },
+};
+
+static const AVClass dvbsubenc_class = {
+    .class_name = "DVBSUB subtitle encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 const FFCodec ff_dvbsub_encoder = {
     .p.name         = "dvbsub",
     CODEC_LONG_NAME("DVB subtitles"),
@@ -516,4 +548,5 @@ const FFCodec ff_dvbsub_encoder = {
     .p.id           = AV_CODEC_ID_DVB_SUBTITLE,
     .priv_data_size = sizeof(DVBSubtitleContext),
     FF_CODEC_ENCODE_SUB_CB(dvbsub_encode),
+    .p.priv_class   = &dvbsubenc_class,
 };

@@ -4602,6 +4602,25 @@ Reduces detail but attempts to preserve color at extremely low bitrates.
 @chapter Subtitles Encoders
 @c man begin SUBTITLES ENCODERS
 
+@section dvbsub
+
+This codec encodes the bitmap subtitle format that is used in DVB
+broadcasts and recordings. The bitmaps are typically embedded in a
+container such as MPEG-TS as a separate stream.
+
+@subsection Options
+
+@table @option
+@item min_bpp @var{integer (2, 4, or 8)}
+Set a minimum bits-per-pixel value for the subtitle color lookup tables.
+
+DVB supports 2, 4, and 8 bits-per-pixel color lookup tables.  This
+option enables forcing a particular bits-per-pixel value regardless of
+the number of colors.  Since not all players support or properly
+support 2 bits-per-pixel, this value defaults to 4.
+
+@end table
+
 @section dvdsub
 
 This codec encodes the bitmap subtitle format that is used in DVDs.
