@@ -20,8 +20,13 @@ libavcodec/*prores* @lynne
 libavcodec/*siren* @lynne
 libavcodec/*vc2* @lynne
 
-libavcodec/aarch64/* @lynne
+libavcodec/aarch64/* @lynne @mstorsjo
+libavcodec/arm/* @mstorsjo
 libavcodec/x86/* @lynne
+
+# avfilter
+# =======
+libavfilter/aarch64/* @mstorsjo
 
 # avformat
 # =======
@@ -33,8 +38,19 @@ libavutil/*crc* @lynne
 libavutil/iamf* @jamrial
 libavutil/tx* @lynne
 
-libavutil/aarch64/* @lynne
+libavutil/aarch64/* @lynne @mstorsjo
+libavutil/arm/* @mstorsjo
 libavutil/x86/* @lynne
+
+# swresample
+# =======
+libswresample/aarch64/* @mstorsjo
+libswresample/arm/* @mstorsjo
+
+# swscale
+# =======
+libswscale/aarch64/* @mstorsjo
+libswscale/arm/* @mstorsjo
 
 # Frameworks
 # ==========
