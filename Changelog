@@ -2,6 +2,87 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 7.0.3:
+ avcodec/ffv1dec: Disable frame threading due to race condition
+ libavcodec/tests/motion: Add check for avcodec_alloc_context3()
+ avcodec/tests/avpacket: Add av_free() to avoid memory leak
+ examples: Add av_freep to avoid potential memory leak
+ avcodec/tests/avpacket: Add av_packet_free() to avoid memory leak
+ avcodec/fits: Clear naxis
+ avcodec/vqavideo; Check bytestream2_get_buffer() reading next_codebook_buffer
+ avcodec/lzf: Check for input space
+ avcodec/imc: Clear padding of buf16
+ avcodec/iff: Clear ham_buf
+ avcodec/cri: Check bytestream2_get_buffer() for end
+ avcodec/cri: Factor read_len out
+ avformat/dashdec: Allocate space for appended "/"
+ avcodec/mpegvideo_dec: Fix lowres=3 field select interlaced mpeg4 frame
+ avformat/mxg: clear AV_INPUT_BUFFER_PADDING_SIZE
+ avformat/vqf: Ensure that comm_chunk is fully read
+ avformat/mov: make sure file_checksum is fully initialized
+ avformat/asfdec_f: Check amount of value read
+ avcodec/jpegxl_parser: add sanity check for frame size
+ avformat/concatdec: Clip duration in one more case in get_best_effort_duration()
+ avcodec/ffv1dec: Check k in get_vlc_symbol()
+ avcodec/cfhd: Check idwt_buf size before allocation
+ avcodec/ivi: Check luma/chroma mb_size
+ avcodec/motion_est: don't add offsets to NULL pointers
+ swscale/swscale_unscaled: don't add offsets to NULL pointers
+ libavcodec/alsdec.c: Add check for av_malloc_array() and av_calloc()
+ avcodec/psd: Move frame allocation after RLE processing
+ avcodec/smacker: Move buffer allocation to later
+ fftools/cmdutils: don't try to load arguments from file if not needed
+ avcodec/opus: don't materialize buf pointer from null
+ avfilter/avfilter: fix forwarding EOF for simple API filters in filter_activate_default
+ avcodec/speexdec: consider differing frame sizes in remaining space check
+ lavc/vvc: Fix condition for using default scaling factor
+ avformat/iff: Check nb_channels == 0 in CHNL
+ avcodec/osq: Request a coding mode 2 sample
+ avcodec/osq: Switch back to av_ceil_log2()
+ avcodec/osq: Add note about update_stats() count
+ avcodec/osq: Fix signed integer overflow in update_stats()
+ avcodec/mss2dsp: use FF_PTR_ADD to add offsets to a pointer
+ avformat/movenc: fix writing reserved bits in EC3SpecificBox
+ avcodec/hevc/hevcdec: Check num_entry_point_offsets
+ avcodec/speexdec: Pass and check remaining packets to decode functions
+ avcodec/rkmppdec: Fix double-free on error
+ avformat/matroskadec: check that channels fit in signed 32bit int
+ avcodec/takdec: Check remaining space for first predictors
+ avcodec/svq3: Check there are bits left before decompression
+ avcodec/sonic: Check num_taps
+ avformat/imf_cpl: fix indention after previous commit
+ avformat/imf_cpl: do not continue looping forever
+ avformat/mov: reject negative ELST durations
+ avformat/avidec: Ignore duplicate GAB2
+ avcodec/h264_mb: Fix tmp_cr for arm
+ avcodec/vorbisdec: Dont treat overread as error
+ avformat/iff: Check nb_channels == 0 in MHDR
+ tests/fate/filter-video: Fix dependancy for codecview
+ libpostproc: check minimum size
+ avformat/hls: Fix flash1.bogulus.cfd support
+ avformat/hls: Split allowed_segment_extensions off allowed_extensions
+ avformat/hls: Fix Youtube AAC
+ avformat/hls: add fmp4 to allowed_extensions
+ avformat/hls: Add ec3 to allowed_extensions
+ avformat/hls: Add cmfv and cmfa to allowed_extensions
+ postproc/postprocess_template: Fix reading uninitialized pixels in dering_C()
+ configure: Clearer documentation for "disable-safe-bitstream-reader"
+ avcodec/osq: avoid undefined negation
+ swscale/output: Fix integer overflow in yuv2gbrp_full_X_c()
+ avcodec/libtheora: fix setting keyframe_mask
+ avfilter/buffersrc: check for valid sample rate
+ doc: replace http/git by https urls
+ configure: update copyright year
+ avformat/hls: Partially revert "reduce default max reload to 3"
+ aacenc_tns: clamp filter direction energy measurement
+ fftools/ffmpeg_demux: don't flag timestamps as unreliable if they are generated
+ configure: Use MSYSTEM_CARCH for default arch on msys2
+ avfilter/avfiltergraph: fix regression in picking channel layout
+ configure: Enable -fno-common for Darwin targets, avoid linker warnings
+ configure: Only try to use the -no_warn_duplicate_libraries flag on Darwin
+ configure: Silence Xcode warnings about duplicate libraries
+ lsws/ppc/yuv2rgb_altivec: Fix build in non-VSX environments with Clang v2
+ lsws/ppc/yuv2rgb_altivec: Fix build in non-VSX environments with Clang
+ Changelog: update
  doc/t2h: Support texinfo 7.1 and 7.2 pretest
  avformat/iamf_parse: ensure there's at most one of each parameter types in audio elements
  avformat/iamf_parse: add missing constrains for num_parameters in audio_element_oub()
