@@ -969,9 +969,6 @@ static int iff_read_packet(AVFormatContext *s,
         uint32_t chunk_id, chunk_id2;
 
         while (!avio_feof(pb)) {
-            if (avio_feof(pb))
-                return AVERROR_EOF;
-
             orig_pos  = avio_tell(pb);
             chunk_id  = avio_rl32(pb);
             data_size = avio_rb32(pb);
@@ -988,6 +985,9 @@ static int iff_read_packet(AVFormatContext *s,
                 avio_skip(pb, data_size);
             }
         }
+        if (pb->eof_reached)
+            return AVERROR_EOF;
+
         ret = av_get_packet(pb, pkt, data_size);
         pkt->stream_index = iff->video_stream_index;
         pkt->pos = orig_pos;
