@@ -1,0 +1,34 @@
+# This file describes the expected reviewers for a PR based on the changed
+# files. Unlike what the name of the file suggests they don't own the code, but
+# merely have a good understanding of that area of the codebase and therefore
+# are usually suited as a reviewer.
+
+# Mind the alphabetical order
+
+# avcodec
+# =======
+libavcodec/*aac* @lynne
+libavcodec/*ac3* @lynne
+libavcodec/*atrac9* @lynne
+libavcodec/*opus* @lynne
+libavcodec/*bitpacked* @lynne
+libavcodec/*dirac* @lynne
+libavcodec/*jpegxl* @lynne
+libavcodec/*jxl* @lynne
+libavcodec/*ffv1* @lynne
+libavcodec/*prores* @lynne
+libavcodec/*siren* @lynne
+libavcodec/*vc2* @lynne
+libavcodec/x86/* @lynne
+libavcodec/aarch64/* @lynne
+
+# avutil
+# ======
+libavutil/*crc* @lynne
+libavutil/tx* @lynne
+libavutil/x86/* @lynne
+libavutil/aarch64/* @lynne
+
+# Frameworks
+# ==========
+*vulkan* @lynne
