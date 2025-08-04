@@ -2,6 +2,10 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 7.0.3:
+ avformat/libopenmpt: fix seeking weirdness
+ avformat/hls: add cmfv/cmfa exceptions
+ avformat/lrcdec: support arbitrary precision timestamp
+ Changelog: update
  avcodec/ffv1dec: Disable frame threading due to race condition
  libavcodec/tests/motion: Add check for avcodec_alloc_context3()
  avcodec/tests/avpacket: Add av_free() to avoid memory leak
