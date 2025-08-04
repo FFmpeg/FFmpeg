@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - Whisper filter
 - Drop support for OpenSSL < 1.1.0
+- Enable TLS peer certificate verification by default (on next major version bump)
 - yasm support dropped, users need to use nasm
 - VVC VAAPI decoder
 - RealVideo 6.0 decoder
