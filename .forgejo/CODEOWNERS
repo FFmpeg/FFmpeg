@@ -22,9 +22,14 @@ libavcodec/*vc2* @lynne
 libavcodec/x86/* @lynne
 libavcodec/aarch64/* @lynne
 
+# avformat
+# =======
+libavformat/iamf*
+
 # avutil
 # ======
 libavutil/*crc* @lynne
+libavutil/iamf*
 libavutil/tx* @lynne
 libavutil/x86/* @lynne
 libavutil/aarch64/* @lynne
