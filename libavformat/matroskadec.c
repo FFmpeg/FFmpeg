@@ -3931,7 +3931,7 @@ static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
         provider_code = bytestream2_get_be16u(&bc);
 
         if (country_code != ITU_T_T35_COUNTRY_CODE_US ||
-            provider_code != ITU_T_T35_PROVIDER_CODE_SMTPE)
+            provider_code != ITU_T_T35_PROVIDER_CODE_SAMSUNG)
             break; // ignore
 
         provider_oriented_code = bytestream2_get_be16u(&bc);
