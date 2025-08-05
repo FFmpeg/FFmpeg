@@ -8957,6 +8957,7 @@ static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR(ENOMEM);
     }
 
+    av_freep(&item->name);
     av_bprint_finalize(&item_name, ret ? &item->name : NULL);
     item->item_id = item_id;
     item->type    = item_type;
