@@ -158,20 +158,10 @@ static int decode_registered_user_data(H2645SEI *h, GetByteContext *gb,
         bytestream2_skipu(gb, 1);  // itu_t_t35_country_code_extension_byte
     }
 
-    if (country_code != ITU_T_T35_COUNTRY_CODE_US &&
-        country_code != ITU_T_T35_COUNTRY_CODE_UK &&
-        country_code != ITU_T_T35_COUNTRY_CODE_CN) {
-        av_log(logctx, AV_LOG_VERBOSE,
-               "Unsupported User Data Registered ITU-T T35 SEI message (country_code = %d)\n",
-               country_code);
-        return 0;
-    }
-
     /* itu_t_t35_payload_byte follows */
     provider_code = bytestream2_get_be16u(gb);
 
-    switch (provider_code) {
-    case ITU_T_T35_PROVIDER_CODE_ATSC: {
+    if (country_code == ITU_T_T35_COUNTRY_CODE_US && provider_code == ITU_T_T35_PROVIDER_CODE_ATSC) {
         uint32_t user_identifier;
 
         if (bytestream2_get_bytes_left(gb) < 4)
@@ -189,9 +179,7 @@ static int decode_registered_user_data(H2645SEI *h, GetByteContext *gb,
                    user_identifier);
             break;
         }
-        break;
-    }
-    case ITU_T_T35_PROVIDER_CODE_LCEVC: {
+    } else if (country_code == ITU_T_T35_COUNTRY_CODE_UK && provider_code == ITU_T_T35_PROVIDER_CODE_LCEVC) {
         if (bytestream2_get_bytes_left(gb) < 2)
             return AVERROR_INVALIDDATA;
 
@@ -199,7 +187,7 @@ static int decode_registered_user_data(H2645SEI *h, GetByteContext *gb,
         return decode_registered_user_data_lcevc(&h->lcevc, gb);
     }
 #if CONFIG_HEVC_SEI
-    case ITU_T_T35_PROVIDER_CODE_CUVA: {
+    else if (country_code == ITU_T_T35_COUNTRY_CODE_CN && provider_code == ITU_T_T35_PROVIDER_CODE_CUVA) {
         const uint16_t cuva_provider_oriented_code = 0x0005;
         uint16_t provider_oriented_code;
 
@@ -213,9 +201,7 @@ static int decode_registered_user_data(H2645SEI *h, GetByteContext *gb,
         if (provider_oriented_code == cuva_provider_oriented_code) {
             return decode_registered_user_data_dynamic_hdr_vivid(&h->dynamic_hdr_vivid, gb);
         }
-        break;
-    }
-    case ITU_T_T35_PROVIDER_CODE_SMTPE: {
+    } else if(country_code == ITU_T_T35_COUNTRY_CODE_US && provider_code == ITU_T_T35_PROVIDER_CODE_SMTPE) {
         // A/341 Amendment - 2094-40
         const uint16_t smpte2094_40_provider_oriented_code = 0x0001;
         const uint8_t smpte2094_40_application_identifier = 0x04;
@@ -234,9 +220,7 @@ static int decode_registered_user_data(H2645SEI *h, GetByteContext *gb,
             application_identifier == smpte2094_40_application_identifier) {
             return decode_registered_user_data_dynamic_hdr_plus(&h->dynamic_hdr_plus, gb);
         }
-        break;
-    }
-    case 0x5890: { // aom_provider_code
+    } else if (country_code == ITU_T_T35_COUNTRY_CODE_US && provider_code == ITU_T_T35_PROVIDER_CODE_AOM) {
         const uint16_t aom_grain_provider_oriented_code = 0x0001;
         uint16_t provider_oriented_code;
 
@@ -252,15 +236,13 @@ static int decode_registered_user_data(H2645SEI *h, GetByteContext *gb,
                                                 gb->buffer,
                                                 bytestream2_get_bytes_left(gb));
         }
-        break;
     }
-    unsupported_provider_code:
 #endif
-    default:
+    else {
+        unsupported_provider_code:
         av_log(logctx, AV_LOG_VERBOSE,
-               "Unsupported User Data Registered ITU-T T35 SEI message (provider_code = %d)\n",
-               provider_code);
-        break;
+               "Unsupported User Data Registered ITU-T T35 SEI message (country_code = %d, provider_code = %d)\n",
+               country_code, provider_code);
     }
 
     return 0;

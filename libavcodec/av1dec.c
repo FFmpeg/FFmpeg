@@ -965,13 +965,13 @@ static int export_itut_t35(AVCodecContext *avctx, AVFrame *frame,
 {
     GetByteContext gb;
     AV1DecContext *s = avctx->priv_data;
-    int ret, provider_code;
+    int ret, provider_code, country_code;
 
     bytestream2_init(&gb, itut_t35->payload, itut_t35->payload_size);
 
     provider_code = bytestream2_get_be16(&gb);
-    switch (provider_code) {
-    case ITU_T_T35_PROVIDER_CODE_ATSC: {
+    country_code = itut_t35->itu_t_t35_country_code ;
+    if (country_code == ITU_T_T35_COUNTRY_CODE_US && provider_code == ITU_T_T35_PROVIDER_CODE_ATSC) {
         uint32_t user_identifier = bytestream2_get_be32(&gb);
         switch (user_identifier) {
         case MKBETAG('G', 'A', '9', '4'): { // closed captions
@@ -997,16 +997,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
         default: // ignore unsupported identifiers
             break;
         }
-        break;
-    }
-    case ITU_T_T35_PROVIDER_CODE_SMTPE: {
+    } else if (country_code == ITU_T_T35_COUNTRY_CODE_US && provider_code == ITU_T_T35_PROVIDER_CODE_SMTPE) {
         AVDynamicHDRPlus *hdrplus;
         int provider_oriented_code = bytestream2_get_be16(&gb);
         int application_identifier = bytestream2_get_byte(&gb);
 
-        if (itut_t35->itu_t_t35_country_code != ITU_T_T35_COUNTRY_CODE_US ||
-            provider_oriented_code != 1 || application_identifier != 4)
-            break;
+        if (provider_oriented_code != 1 || application_identifier != 4)
+            return 0; // ignore
 
         hdrplus = av_dynamic_hdr_plus_create_side_data(frame);
         if (!hdrplus)
@@ -1016,28 +1013,23 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                            bytestream2_get_bytes_left(&gb));
         if (ret < 0)
             return ret;
-        break;
-    }
-    case ITU_T_T35_PROVIDER_CODE_DOLBY: {
+    } else if (country_code == ITU_T_T35_COUNTRY_CODE_US && provider_code == ITU_T_T35_PROVIDER_CODE_DOLBY) {
         int provider_oriented_code = bytestream2_get_be32(&gb);
-        if (itut_t35->itu_t_t35_country_code != ITU_T_T35_COUNTRY_CODE_US ||
-            provider_oriented_code != 0x800)
-            break;
+        if (provider_oriented_code != 0x800)
+            return 0; // ignore
 
         ret = ff_dovi_rpu_parse(&s->dovi, gb.buffer, gb.buffer_end - gb.buffer,
                                 avctx->err_recognition);
         if (ret < 0) {
             av_log(avctx, AV_LOG_WARNING, "Error parsing DOVI OBU.\n");
-            break; // ignore
+            return 0; // ignore
         }
 
         ret = ff_dovi_attach_side_data(&s->dovi, frame);
         if (ret < 0)
             return ret;
-        break;
-    }
-    default: // ignore unsupported provider codes
-        break;
+    } else {
+        // ignore unsupported provider codes
     }
 
     return 0;

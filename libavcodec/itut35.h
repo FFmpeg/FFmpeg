@@ -23,10 +23,21 @@
 #define ITU_T_T35_COUNTRY_CODE_UK 0xB4
 #define ITU_T_T35_COUNTRY_CODE_US 0xB5
 
-#define ITU_T_T35_PROVIDER_CODE_ATSC  0x31
-#define ITU_T_T35_PROVIDER_CODE_CUVA  0x04
-#define ITU_T_T35_PROVIDER_CODE_DOLBY 0x3B
-#define ITU_T_T35_PROVIDER_CODE_LCEVC 0x50
-#define ITU_T_T35_PROVIDER_CODE_SMTPE 0x3C
+// The Terminal Provider Code (or "Manufacturer Code") identifies the
+// manufacturer within a country. An Assignment Authority appointed by the
+// national body assigns this code nationally. The manufacturer code is always
+// used in conjunction with a country code.
+// - CN providers
+#define ITU_T_T35_PROVIDER_CODE_CUVA    0x0004
+// - UK providers
+// V-Nova should be 0x5000 according to UK Register of Manufacturer Codes
+// https://www.cix.co.uk/~bpechey/H221/h221code.htm
+// but FFmpeg has been using 0x0050
+#define ITU_T_T35_PROVIDER_CODE_LCEVC        0x0050
+// - US providers
+#define ITU_T_T35_PROVIDER_CODE_ATSC         0x0031
+#define ITU_T_T35_PROVIDER_CODE_DOLBY        0x003B
+#define ITU_T_T35_PROVIDER_CODE_AOM          0x5890
+#define ITU_T_T35_PROVIDER_CODE_SMTPE        0x003C
 
 #endif /* AVCODEC_ITUT35_H */
