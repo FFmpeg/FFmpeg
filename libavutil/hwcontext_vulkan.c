@@ -1463,13 +1463,6 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
     VulkanDevicePriv *p = ctx->hwctx;
     AVVulkanDeviceContext *hwctx = &p->p;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
-    VkPhysicalDeviceDriverProperties dprops = {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES,
-    };
-    VkPhysicalDeviceProperties2 props2 = {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-        .pNext = &dprops,
-    };
 
     VkQueueFamilyProperties2 *qf = NULL;
     VkQueueFamilyVideoPropertiesKHR *qf_vid = NULL;
@@ -1523,13 +1516,6 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
 
     hwctx->nb_qf = 0;
 
-    /* NVIDIA's proprietary drivers have stupid limits, where each queue
-     * you allocate takes tens of milliseconds, and the more queues you
-     * allocate, the less you'll have left before initializing a device
-     * simply fails (112 seems to be the max). GLOBALLY.
-     * Detect this, and minimize using queues as much as possible. */
-    vk->GetPhysicalDeviceProperties2(hwctx->phys_dev, &props2);
-
     /* Pick each queue family to use. */
 #define PICK_QF(type, vid_op)                                            \
     do {                                                                 \
@@ -1555,7 +1541,7 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
             hwctx->qf[i].idx = idx;                                      \
             hwctx->qf[i].num = qf[idx].queueFamilyProperties.queueCount; \
             if (p->limit_queues ||                                       \
-                dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY) {    \
+                p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY) { \
                 int max = p->limit_queues;                               \
                 if (type == VK_QUEUE_GRAPHICS_BIT)                       \
                     hwctx->qf[i].num = FFMIN(hwctx->qf[i].num,           \
