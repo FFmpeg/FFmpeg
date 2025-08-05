@@ -462,9 +462,10 @@ static struct segment *new_init_section(struct playlist *pls,
     return sec;
 }
 
-static void handle_init_section_args(struct init_section_info *info, const char *key,
-                                           int key_len, char **dest, int *dest_len)
+static void handle_init_section_args(void *context, const char *key,
+                                     int key_len, char **dest, int *dest_len)
 {
+    struct init_section_info *info = context;
     if (!strncmp(key, "URI=", key_len)) {
         *dest     =        info->uri;
         *dest_len = sizeof(info->uri);
@@ -916,8 +917,7 @@ static int parse_playlist(HLSContext *c, const char *url,
             ret = ensure_playlist(c, &pls, url);
             if (ret < 0)
                 goto fail;
-            ff_parse_key_value(ptr, (ff_parse_key_val_cb) handle_init_section_args,
-                               &info);
+            ff_parse_key_value(ptr, handle_init_section_args, &info);
             cur_init_section = new_init_section(pls, &info, url);
             if (!cur_init_section) {
                 ret = AVERROR(ENOMEM);
