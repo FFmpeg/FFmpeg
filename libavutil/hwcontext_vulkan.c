@@ -155,9 +155,6 @@ typedef struct VulkanDevicePriv {
 
     /* Maximum queues */
     int limit_queues;
-
-    /* Nvidia */
-    int dev_is_nvidia;
 } VulkanDevicePriv;
 
 typedef struct VulkanFramesPriv {
@@ -1871,8 +1868,6 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
         av_log(ctx, AV_LOG_VERBOSE, "    minImportedHostPointerAlignment:    %"PRIu64"\n",
                p->hprops.minImportedHostPointerAlignment);
 
-    p->dev_is_nvidia = (p->props.properties.vendorID == 0x10de);
-
     vk->GetPhysicalDeviceQueueFamilyProperties(hwctx->phys_dev, &qf_num, NULL);
     if (!qf_num) {
         av_log(ctx, AV_LOG_ERROR, "Failed to get queues!\n");
@@ -2891,7 +2886,7 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
     }
 
     /* Nvidia is violating the spec because they thought no one would use this. */
-    if (p->dev_is_nvidia &&
+    if (p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY &&
         (((fmt->nb_images == 1) && (fmt->vk_planes > 1)) ||
          (av_pix_fmt_desc_get(hwfc->sw_format)->nb_components == 1)))
         supported_usage &= ~VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
