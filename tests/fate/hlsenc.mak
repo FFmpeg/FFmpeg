@@ -111,6 +111,21 @@ FATE_HLSENC_PROBE-$(call DEMMUX, HLS AC3, HLS MP4, AC3_DECODER) += fate-hls-fmp4
 fate-hls-fmp4_ac3: tests/data/hls_fmp4_ac3.m3u8
 fate-hls-fmp4_ac3: CMD = probeaudiostream $(TARGET_PATH)/tests/data/now_ac3.mp4
 
+
+tests/data/hls_cmfa.m3u8: TAG = GEN
+tests/data/hls_cmfa.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< -nostdin \
+	-i $(TARGET_SAMPLES)/aac/al06_44.mp4 -c copy -map 0 \
+	-hls_segment_type fmp4 -hls_fmp4_init_filename now.cmfa -hls_list_size 0 \
+	-hls_time 1 -hls_segment_filename "$(TARGET_PATH)/tests/data/hls_fmp4_%d.cmfa" \
+	-t 1 $(TARGET_PATH)/tests/data/hls_cmfa.m3u8 2>/dev/null
+
+FATE_HLSENC-yes := $(if $(call FRAMECRC), $(FATE_HLSENC-yes))
+
+FATE_HLSENC_PROBE-$(call FRAMECRC, HLS) += fate-hls-cmfa
+fate-hls-cmfa: tests/data/hls_cmfa.m3u8
+fate-hls-cmfa: CMD = framecrc -i $(TARGET_PATH)/tests/data/hls_cmfa.m3u8 -c copy
+
 FATE_SAMPLES_FFMPEG += $(FATE_HLSENC-yes)
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_HLSENC_PROBE-yes)
 fate-hlsenc: $(FATE_HLSENC-yes) $(FATE_HLSENC_PROBE-yes)
