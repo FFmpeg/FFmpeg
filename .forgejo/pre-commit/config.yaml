@@ -10,6 +10,11 @@ repos:
     - id: check-shebang-scripts-are-executable
     - id: check-yaml
     - id: end-of-file-fixer
+    - id: file-contents-sorter
+      files:
+        .forgejo/pre-commit/ignored-words.txt
+      args:
+        - --ignore-case
     - id: fix-byte-order-marker
     - id: mixed-line-ending
     - id: trailing-whitespace
