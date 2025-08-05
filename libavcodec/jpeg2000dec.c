@@ -346,6 +346,17 @@ static int get_siz(Jpeg2000DecoderContext *s)
         return AVERROR_INVALIDDATA;
     }
 
+    for (i = 0; i < s->ncomponents; i++) {
+        if (s->cdef[i] < 0) {
+            for (i = 0; i < s->ncomponents; i++) {
+                s->cdef[i] = i + 1;
+            }
+            if ((s->ncomponents & 1) == 0)
+                s->cdef[s->ncomponents-1] = 0;
+        }
+    }
+    // after here we no longer have to consider negative cdef
+
     for (i = 0; i < s->ncomponents; i++) { // Ssiz_i XRsiz_i, YRsiz_i
         uint8_t x    = bytestream2_get_byteu(&s->g);
         s->cbps[i]   = (x & 0x7f) + 1;
