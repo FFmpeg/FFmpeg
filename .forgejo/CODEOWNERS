@@ -12,11 +12,14 @@ libavcodec/*ac3* @lynne
 libavcodec/*atrac9* @lynne
 libavcodec/*bitpacked* @lynne
 libavcodec/*dirac* @lynne
-libavcodec/*ffv1* @lynne
+libavcodec/*ffv1* @lynne @michaelni
+libavcodec/golomb* @michaelni
 libavcodec/*jpegxl* @lynne
 libavcodec/*jxl* @lynne
 libavcodec/*opus* @lynne
 libavcodec/*prores* @lynne
+libavcodec/rangecoder* @michaelni
+libavcodec/ratecontrol* @michaelni
 libavcodec/*siren* @lynne
 libavcodec/*vc2* @lynne
 
@@ -27,6 +30,8 @@ libavcodec/x86/* @lynne
 # avfilter
 # =======
 libavfilter/aarch64/* @mstorsjo
+libavfilter/vf_yadif* @michaelni
+libavfilter/vsrc_mandelbrot* @michaelni
 
 # avformat
 # =======
@@ -34,8 +39,12 @@ libavformat/iamf* @jamrial
 
 # avutil
 # ======
-libavutil/*crc* @lynne
+libavutil/*crc* @lynne @michaelni
+libavutil/eval* @michaelni
 libavutil/iamf* @jamrial
+libavutil/mathematics* @michaelni
+libavutil/mem* @michaelni
+libavutil/rational* @michaelni
 libavutil/tx* @lynne
 
 libavutil/aarch64/* @lynne @mstorsjo
@@ -46,6 +55,7 @@ libavutil/x86/* @lynne
 # =======
 libswresample/aarch64/* @mstorsjo
 libswresample/arm/* @mstorsjo
+libswresample/* @michaelni
 
 # swscale
 # =======
