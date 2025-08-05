@@ -71,11 +71,11 @@ CFDataRef ff_videotoolbox_vpcc_extradata_create(AVCodecContext *avctx)
     uint8_t *vt_extradata;
     int subsampling = get_vpx_chroma_subsampling(avctx->sw_pix_fmt, avctx->chroma_sample_location);
 
-    vt_extradata_size = 1 + 3 + 6 + 2;
-    vt_extradata = av_malloc(vt_extradata_size);
-
     if (subsampling < 0)
         return NULL;
+
+    vt_extradata_size = 1 + 3 + 6 + 2;
+    vt_extradata = av_malloc(vt_extradata_size);
 
     if (!vt_extradata)
         return NULL;
