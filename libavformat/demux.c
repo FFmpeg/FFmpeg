@@ -2509,6 +2509,47 @@ static int extract_extradata(FFFormatContext *si, AVStream *st, const AVPacket *
     return 0;
 }
 
+static int parameters_from_context(AVFormatContext *ic, AVCodecParameters *par,
+                                   const AVCodecContext *avctx)
+{
+    AVCodecParameters *par_tmp;
+    int ret;
+
+    par_tmp = avcodec_parameters_alloc();
+    if (!par_tmp)
+        return AVERROR(ENOMEM);
+
+    ret = avcodec_parameters_copy(par_tmp, par);
+    if (ret < 0)
+        goto fail;
+
+    ret = avcodec_parameters_from_context(par, avctx);
+    if (ret < 0)
+        goto fail;
+
+    /* Restore some values if they are signaled at the container level
+     * given they may have been replaced by codec level values as read
+     * internally by avformat_find_stream_info().
+     */
+    if (par_tmp->color_range != AVCOL_RANGE_UNSPECIFIED)
+        par->color_range = par_tmp->color_range;
+    if (par_tmp->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+        par_tmp->color_trc != AVCOL_TRC_UNSPECIFIED ||
+        par_tmp->color_space != AVCOL_SPC_UNSPECIFIED) {
+        par->color_primaries = par_tmp->color_primaries;
+        par->color_trc = par_tmp->color_trc;
+        par->color_space = par_tmp->color_space;
+    }
+    if (par_tmp->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
+        par->chroma_location = par_tmp->chroma_location;
+
+    ret = 0;
+fail:
+    avcodec_parameters_free(&par_tmp);
+
+    return ret;
+}
+
 int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 {
     FFFormatContext *const si = ffformatcontext(ic);
@@ -3034,7 +3075,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         FFStream *const sti = ffstream(st);
 
         if (sti->avctx_inited) {
-            ret = avcodec_parameters_from_context(st->codecpar, sti->avctx);
+            ret = parameters_from_context(ic, st->codecpar, sti->avctx);
             if (ret < 0)
                 goto find_stream_info_err;
 
