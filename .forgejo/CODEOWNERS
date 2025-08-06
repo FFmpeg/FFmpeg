@@ -14,6 +14,7 @@ libavcodec/.*aac.* @lynne
 libavcodec/.*ac3.* @lynne
 libavcodec/.*atrac9.* @lynne
 libavcodec/.*bitpacked.* @lynne
+libavcodec/.*d3d12va.* @jianhuaw
 libavcodec/.*dirac.* @lynne
 libavcodec/.*ffv1.* @lynne @michaelni
 libavcodec/golomb.* @michaelni
@@ -47,6 +48,7 @@ libavformat/iamf.* @jamrial
 # avutil
 # ======
 libavutil/.*crc.* @lynne @michaelni
+libavutil/.*d3d12va.* @jianhuaw
 libavutil/eval.* @michaelni
 libavutil/iamf.* @jamrial
 libavutil/integer.* @michaelni
@@ -87,4 +89,5 @@ doc/.* @GyanD
 
 # Frameworks
 # ==========
+.*d3d12va.* @jianhuaw
 .*vulkan.* @lynne
