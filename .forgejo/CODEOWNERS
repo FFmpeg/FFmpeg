@@ -42,9 +42,19 @@ libavformat/iamf* @jamrial
 libavutil/*crc* @lynne @michaelni
 libavutil/eval* @michaelni
 libavutil/iamf* @jamrial
+libavutil/integer* @michaelni
+libavutil/kiss99* @michaelni
+libavutil/lfg* @michaelni
+libavutil/lls* @michaelni
+libavutil/md5* @michaelni
 libavutil/mathematics* @michaelni
 libavutil/mem* @michaelni
+libavutil/qsort* @michaelni
+libavutil/random_seed* @michaelni
 libavutil/rational* @michaelni
+libavutil/sfc* @michaelni
+libavutil/softfloat* @michaelni
+libavutil/tree* @michaelni
 libavutil/tx* @lynne
 
 libavutil/aarch64/* @lynne @mstorsjo
