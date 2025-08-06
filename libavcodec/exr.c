@@ -1127,6 +1127,8 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
             float *yb = td->block[0];
             float *ub = td->block[1];
             float *vb = td->block[2];
+            int bw = FFMIN(8, td->xsize - x);
+            int bh = FFMIN(8, td->ysize - y);
 
             memset(td->block, 0, sizeof(td->block));
 
@@ -1151,8 +1153,8 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
                 uint16_t *ro = ((uint16_t *)td->uncompressed_data) +
                     y * td->xsize * s->nb_channels + td->xsize * (o + 2) + x;
 
-                for (int yy = 0; yy < 8; yy++) {
-                    for (int xx = 0; xx < 8; xx++) {
+                for (int yy = 0; yy < bh; yy++) {
+                    for (int xx = 0; xx < bw; xx++) {
                         const int idx = xx + yy * 8;
                         float b, g, r;
 
@@ -1175,8 +1177,8 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
                 float *ro = ((float *)td->uncompressed_data) +
                     y * td->xsize * s->nb_channels + td->xsize * (o + 2) + x;
 
-                for (int yy = 0; yy < 8; yy++) {
-                    for (int xx = 0; xx < 8; xx++) {
+                for (int yy = 0; yy < bh; yy++) {
+                    for (int xx = 0; xx < bw; xx++) {
                         const int idx = xx + yy * 8;
 
                         convert(yb[idx], ub[idx], vb[idx], &bo[xx], &go[xx], &ro[xx]);
