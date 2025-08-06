@@ -822,6 +822,8 @@ static int config_input(AVFilterLink *inlink)
     if (s->dumpfile) {
         s->analysis_rdft = av_rdft_init(rdft_bits, DFT_R2C);
         s->dump_buf = av_malloc_array(s->analysis_rdft_len, sizeof(*s->dump_buf));
+        if (!s->dump_buf)
+            return AVERROR(ENOMEM);
     }
 
     s->analysis_buf = av_malloc_array(s->analysis_rdft_len, sizeof(*s->analysis_buf));
