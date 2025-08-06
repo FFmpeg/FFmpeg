@@ -990,6 +990,7 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
     const int dc_h = td->ysize >> 3;
     GetByteContext gb, agb;
     int skip, ret;
+    int have_rle = 0;
 
     if (compressed_size <= 88)
         return AVERROR_INVALIDDATA;
@@ -1013,6 +1014,11 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
         || ac_count > (uint64_t)INT_MAX/2
     )
         return AVERROR_INVALIDDATA;
+
+    if ((uint64_t)rle_raw_size > INT_MAX) {
+        avpriv_request_sample(s->avctx, "Too big rle_raw_size");
+        return AVERROR_INVALIDDATA;
+    }
 
     bytestream2_init(&gb, src + 88, compressed_size - 88);
     skip = bytestream2_get_le16(&gb);
@@ -1084,6 +1090,9 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
     if (rle_raw_size > 0 && rle_csize > 0 && rle_usize > 0) {
         unsigned long dest_len = rle_usize;
 
+        if (2LL * td->xsize * td->ysize > rle_raw_size)
+            return AVERROR_INVALIDDATA;
+
         av_fast_padded_malloc(&td->rle_data, &td->rle_size, rle_usize);
         if (!td->rle_data)
             return AVERROR(ENOMEM);
@@ -1100,6 +1109,8 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
         if (ret < 0)
             return ret;
         bytestream2_skip(&gb, rle_csize);
+
+        have_rle = 1;
     }
 
     bytestream2_init(&agb, td->ac_data, ac_count * 2);
@@ -1158,7 +1169,7 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
     if (s->nb_channels < 4)
         return 0;
 
-    for (int y = 0; y < td->ysize && td->rle_raw_data; y++) {
+    for (int y = 0; y < td->ysize && have_rle; y++) {
         uint32_t *ao = ((uint32_t *)td->uncompressed_data) + y * td->xsize * s->nb_channels;
         uint8_t *ai0 = td->rle_raw_data + y * td->xsize;
         uint8_t *ai1 = td->rle_raw_data + y * td->xsize + rle_raw_size / 2;
