@@ -92,6 +92,7 @@ Other:
   float_dsp                             Loren Merritt
   hash                                  Reimar Doeffinger
   hwcontext_cuda*                       Timo Rothenpieler
+  hwcontext_d3d12va*                    Wu Jianhua
   hwcontext_vulkan*                 [2] Lynne
   intfloat*                             Michael Niedermayer
   integer.c, integer.h                  Michael Niedermayer
@@ -279,6 +280,7 @@ Codecs:
 Hardware acceleration:
   dxva2*                                Hendrik Leppkes, Laurent Aimar, Steve Lhomme
   d3d11va*                              Steve Lhomme
+  d3d12va*                              Wu Jianhua
   d3d12va_encode*                       Tong Wu
   mediacodec*                           Matthieu Bouron, Aman Gupta, Zhao Zhili
   vaapi*                                Haihao Xiang
