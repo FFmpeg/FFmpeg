@@ -527,7 +527,7 @@ int ff_vlc_init_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int 
     if (ret < 0)
         return ret;
 
-    multi->table = av_malloc(sizeof(*multi->table) << nb_bits);
+    multi->table = av_mallocz(sizeof(*multi->table) << nb_bits);
     if (!multi->table)
         goto fail;
 
