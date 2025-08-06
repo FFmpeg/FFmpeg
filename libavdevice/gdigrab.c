@@ -134,7 +134,8 @@ gdigrab_region_wnd_task(LPVOID opaque)
     MSG msg;
 
     DWORD style = WS_POPUP | WS_VISIBLE;
-    DWORD ex = WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_TRANSPARENT;
+    DWORD ex = WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW |
+        WS_EX_TOPMOST | WS_EX_TRANSPARENT;
 
     rect.left -= REGION_WND_BORDER; rect.top -= REGION_WND_BORDER;
     rect.right += REGION_WND_BORDER; rect.bottom += REGION_WND_BORDER;
@@ -170,6 +171,7 @@ gdigrab_region_wnd_task(LPVOID opaque)
     DeleteObject(region_interior);
 
     SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR) gdigrab_region_wnd_proc);
+    SetLayeredWindowAttributes(hwnd, 0, 0xFF, LWA_ALPHA);
 
     ShowWindow(hwnd, SW_SHOW);
 
