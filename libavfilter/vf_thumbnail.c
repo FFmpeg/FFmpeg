@@ -189,7 +189,7 @@ static void get_hist16(int *hist, const uint8_t *p, ptrdiff_t stride,
         }
         /* handle tail */
         for (int x = width4; x < width; x++)
-            hist[p16[x]]++;
+            hist[(uint8_t) (p16[x] >> shift)]++;
         p += stride;
     }
 
