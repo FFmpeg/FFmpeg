@@ -207,7 +207,7 @@ static int apv_read_packet(AVFormatContext *s, AVPacket *pkt)
     au_size = avio_rb32(s->pb);
     if (au_size == 0 && avio_feof(s->pb))
         return AVERROR_EOF;
-    if (au_size < 24 || au_size > 1 << 24) {
+    if (au_size == 0 || au_size > UINT32_MAX) {
         av_log(s, AV_LOG_ERROR,
                "APV AU has invalid size: %"PRIu32"\n", au_size);
         return AVERROR_INVALIDDATA;
