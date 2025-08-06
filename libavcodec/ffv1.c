@@ -69,7 +69,7 @@ av_cold int ff_ffv1_init_slice_state(const FFV1Context *f, FFV1Context *fs)
 
         if (fs->ac != AC_GOLOMB_RICE) {
             if (!p->state)
-                p->state = av_malloc_array(p->context_count, CONTEXT_SIZE *
+                p->state = av_calloc(p->context_count, CONTEXT_SIZE *
                                      sizeof(uint8_t));
             if (!p->state)
                 return AVERROR(ENOMEM);
