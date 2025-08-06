@@ -1897,10 +1897,10 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
         }
         unified_size = current->pps_tile_column_width_minus1[i - 1] + 1;
         while (remaining_size > 0) {
-            if (current->num_tile_columns > VVC_MAX_TILE_COLUMNS) {
+            if (i == VVC_MAX_TILE_COLUMNS) {
                 av_log(ctx->log_ctx, AV_LOG_ERROR,
-                       "NumTileColumns(%d) > than VVC_MAX_TILE_COLUMNS(%d)\n",
-                       current->num_tile_columns, VVC_MAX_TILE_COLUMNS);
+                       "Exceeded maximum tile columns (%d) (remaining size: %u)\n",
+                       VVC_MAX_TILE_COLUMNS, remaining_size);
                 return AVERROR_INVALIDDATA;
             }
             unified_size = FFMIN(remaining_size, unified_size);
@@ -1909,12 +1909,6 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
             i++;
         }
         current->num_tile_columns = i;
-        if (current->num_tile_columns > VVC_MAX_TILE_COLUMNS) {
-            av_log(ctx->log_ctx, AV_LOG_ERROR,
-                   "NumTileColumns(%d) > than VVC_MAX_TILE_COLUMNS(%d)\n",
-                   current->num_tile_columns, VVC_MAX_TILE_COLUMNS);
-            return AVERROR_INVALIDDATA;
-        }
 
         remaining_size = pic_height_in_ctbs_y;
         for (i = 0; i <= current->pps_num_exp_tile_rows_minus1; i++) {
@@ -1929,18 +1923,18 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
         unified_size = current->pps_tile_row_height_minus1[i - 1] + 1;
 
         while (remaining_size > 0) {
+            if (i == VVC_MAX_TILE_ROWS) {
+                av_log(ctx->log_ctx, AV_LOG_ERROR,
+                       "Exceeded maximum tile rows (%d) (remaining size: %u)\n",
+                       VVC_MAX_TILE_ROWS, remaining_size);
+                return AVERROR_INVALIDDATA;
+            }
             unified_size = FFMIN(remaining_size, unified_size);
             current->row_height_val[i] = unified_size;
             remaining_size -= unified_size;
             i++;
         }
         current->num_tile_rows=i;
-        if (current->num_tile_rows > VVC_MAX_TILE_ROWS) {
-            av_log(ctx->log_ctx, AV_LOG_ERROR,
-                   "NumTileRows(%d) > than VVC_MAX_TILE_ROWS(%d)\n",
-                   current->num_tile_rows, VVC_MAX_TILE_ROWS);
-            return AVERROR_INVALIDDATA;
-        }
 
         current->num_tiles_in_pic = current->num_tile_columns *
                                     current->num_tile_rows;
