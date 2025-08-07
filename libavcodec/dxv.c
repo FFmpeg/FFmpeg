@@ -38,6 +38,7 @@ typedef struct DXVContext {
     GetByteContext gbc;
 
     uint8_t *tex_data;   // Compressed texture
+    unsigned tex_data_size;
     uint8_t *ctex_data;  // Compressed chroma texture
     unsigned ctex_data_size;
 
@@ -972,9 +973,14 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
     ctx->tex_size = avctx->coded_width  / (texdsp_ctx.raw_ratio / (avctx->pix_fmt == AV_PIX_FMT_RGBA ? 4 : 1)) *
                     avctx->coded_height / TEXTURE_BLOCK_H *
                     texdsp_ctx.tex_ratio;
-    ret = av_reallocp(&ctx->tex_data, ctx->tex_size + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (ret < 0)
-        return ret;
+    unsigned old_size = ctx->tex_data_size;
+    void *ptr = av_fast_realloc(ctx->tex_data, &ctx->tex_data_size, ctx->tex_size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!ptr)
+        return AVERROR(ENOMEM);
+    ctx->tex_data = ptr;
+
+    if (ctx->tex_data_size > old_size)
+        memset(ctx->tex_data + old_size, 0, ctx->tex_data_size - old_size);
 
     if (avctx->pix_fmt != AV_PIX_FMT_RGBA) {
         int i;
@@ -1086,6 +1092,8 @@ static int dxv_close(AVCodecContext *avctx)
     DXVContext *ctx = avctx->priv_data;
 
     av_freep(&ctx->tex_data);
+    ctx->tex_data_size = 0;
+
     av_freep(&ctx->ctex_data);
     ctx->ctex_data_size = 0;
 
