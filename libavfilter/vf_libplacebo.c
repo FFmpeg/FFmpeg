@@ -990,15 +990,19 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     struct pl_frame orig_target = target;
     bool use_linear_compositor = false;
     if (s->linear_tex && target.color.transfer != PL_COLOR_TRC_LINEAR && !s->disable_linear) {
-        use_linear_compositor = true;
-        target.color.transfer = PL_COLOR_TRC_LINEAR;
-        target.repr = pl_color_repr_rgb;
-        target.num_planes = 1;
-        target.planes[0] = (struct pl_plane) {
-            .components = 4,
-            .component_mapping = {0, 1, 2, 3},
-            .texture = s->linear_tex,
+        target = (struct pl_frame) {
+            .num_planes = 1,
+            .planes[0] = {
+                .components = 4,
+                .component_mapping = {0, 1, 2, 3},
+                .texture = s->linear_tex,
+            },
+            .repr = pl_color_repr_rgb,
+            .color = orig_target.color,
+            .rotation = orig_target.rotation,
         };
+        target.color.transfer = PL_COLOR_TRC_LINEAR;
+        use_linear_compositor = true;
     }
 
     /* Draw first frame opaque, others with blending */
