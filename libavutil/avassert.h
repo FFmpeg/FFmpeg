@@ -108,16 +108,10 @@ do {                                                                    \
 #define av_unreachable(msg) ((void)0)
 #endif
 
-#if AV_HAS_BUILTIN(__builtin_assume)
-#define av_assume(cond) __builtin_assume(cond)
-#elif defined(_MSC_VER)
-#define av_assume(cond) __assume(cond)
-#else
 #define av_assume(cond) do { \
     if (!(cond))             \
         av_unreachable();    \
 } while (0)
-#endif
 #endif
 
 #endif /* AVUTIL_AVASSERT_H */
