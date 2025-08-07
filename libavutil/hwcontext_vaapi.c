@@ -72,6 +72,7 @@ typedef struct VAAPIDevicePriv {
 typedef struct VAAPISurfaceFormat {
     enum AVPixelFormat pix_fmt;
     VAImageFormat image_format;
+    unsigned int fourcc;
 } VAAPISurfaceFormat;
 
 typedef struct VAAPIDeviceContext {
@@ -218,15 +219,21 @@ static int vaapi_get_image_format(AVHWDeviceContext *hwdev,
                                   VAImageFormat **image_format)
 {
     VAAPIDeviceContext *ctx = hwdev->hwctx;
+    const VAAPIFormatDescriptor *desc;
     int i;
 
+    desc = vaapi_format_from_pix_fmt(pix_fmt);
+    if (!desc || !image_format)
+        goto fail;
+
     for (i = 0; i < ctx->nb_formats; i++) {
-        if (ctx->formats[i].pix_fmt == pix_fmt) {
-            if (image_format)
-                *image_format = &ctx->formats[i].image_format;
+        if (ctx->formats[i].fourcc == desc->fourcc) {
+            *image_format = &ctx->formats[i].image_format;
             return 0;
         }
     }
+
+fail:
     return AVERROR(ENOSYS);
 }
 
@@ -435,6 +442,7 @@ static int vaapi_device_init(AVHWDeviceContext *hwdev)
             av_log(hwdev, AV_LOG_DEBUG, "Format %#x -> %s.\n",
                    fourcc, av_get_pix_fmt_name(pix_fmt));
             ctx->formats[ctx->nb_formats].pix_fmt      = pix_fmt;
+            ctx->formats[ctx->nb_formats].fourcc       = fourcc;
             ctx->formats[ctx->nb_formats].image_format = image_list[i];
             ++ctx->nb_formats;
         }
