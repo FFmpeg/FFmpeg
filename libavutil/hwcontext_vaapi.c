@@ -1019,12 +1019,6 @@ static int vaapi_map_to_memory(AVHWFramesContext *hwfc, AVFrame *dst,
 {
     int err;
 
-    if (dst->format != AV_PIX_FMT_NONE) {
-        err = vaapi_get_image_format(hwfc->device_ctx, dst->format, NULL);
-        if (err < 0)
-            return err;
-    }
-
     err = vaapi_map_frame(hwfc, dst, src, flags);
     if (err)
         return err;
