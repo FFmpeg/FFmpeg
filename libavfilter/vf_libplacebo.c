@@ -1014,7 +1014,7 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
 #endif
     for (int i = 0; i < s->nb_inputs; i++) {
         LibplaceboInput *in = &s->inputs[i];
-        FilterLink *il = ff_filter_link(ctx->inputs[in->idx]);
+        FilterLink *il = ff_filter_link(ctx->inputs[i]);
         FilterLink *ol = ff_filter_link(outlink);
         int high_fps = av_cmp_q(il->frame_rate, ol->frame_rate) >= 0;
         if (in->qstatus != PL_QUEUE_OK)
@@ -1175,7 +1175,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
                 if (av_fifo_peek(in->out_pts, &pts, 1, 0) >= 0) {
                     out_pts = FFMIN(out_pts, pts);
                 } else if (!in->status) {
-                    ff_inlink_request_frame(ctx->inputs[in->idx]);
+                    ff_inlink_request_frame(ctx->inputs[i]);
                     retry = true;
                 }
             }
@@ -1201,7 +1201,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
 
             switch (in->qstatus) {
             case PL_QUEUE_MORE:
-                ff_inlink_request_frame(ctx->inputs[in->idx]);
+                ff_inlink_request_frame(ctx->inputs[i]);
                 retry = true;
                 break;
             case PL_QUEUE_OK:
