@@ -29,6 +29,7 @@ libavcodec/vvc/* @frankplow
 
 libavcodec/aarch64/* @lynne @mstorsjo
 libavcodec/arm/* @mstorsjo
+libavcodec/ppc/* @sean_mcg
 libavcodec/x86/* @lynne
 
 # avfilter
@@ -63,6 +64,7 @@ libavutil/tx* @lynne
 
 libavutil/aarch64/* @lynne @mstorsjo
 libavutil/arm/* @mstorsjo
+libavutil/ppc/* @sean_mcg
 libavutil/x86/* @lynne
 
 # swresample
@@ -75,6 +77,7 @@ libswresample/* @michaelni
 # =======
 libswscale/aarch64/* @mstorsjo
 libswscale/arm/* @mstorsjo
+libswscale/ppc/* @sean_mcg
 
 # doc
 # ===
