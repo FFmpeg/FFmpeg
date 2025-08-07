@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <math.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/eval.h"
 #include "libavutil/fifo.h"
@@ -913,9 +915,38 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     pl_options opts = s->opts;
     AVFilterLink *outlink = ctx->outputs[0];
     const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(outlink->format);
+    const double target_pts = pts * av_q2d(outlink->time_base);
     struct pl_frame target;
     const AVFrame *ref = NULL;
     AVFrame *out;
+
+    /* Count the number of visible inputs, by excluding frames which are fully
+     * obscured or which have no frames in the mix */
+    int idx_start = 0, nb_visible = 0;
+    for (int i = 0; i < s->nb_inputs; i++) {
+        LibplaceboInput *in = &s->inputs[i];
+        struct pl_frame dummy;
+        if (in->qstatus != PL_QUEUE_OK || !in->mix.num_frames)
+            continue;
+        const struct pl_frame *cur = pl_frame_mix_current(&in->mix);
+        update_crops(ctx, in, &dummy, target_pts);
+        const int x0 = roundf(FFMIN(dummy.crop.x0, dummy.crop.x1)),
+                  y0 = roundf(FFMIN(dummy.crop.y0, dummy.crop.y1)),
+                  x1 = roundf(FFMAX(dummy.crop.x0, dummy.crop.x1)),
+                  y1 = roundf(FFMAX(dummy.crop.y0, dummy.crop.y1));
+
+        /* If an opaque frame covers entire the output, disregard all lower layers */
+        const bool cropped = x0 > 0 || y0 > 0 || x1 < outlink->w || y1 < outlink->h;
+        if (!cropped && cur->repr.alpha == PL_ALPHA_NONE) {
+            idx_start = i;
+            nb_visible = 0;
+        }
+        nb_visible++;
+    }
+
+    /* It should be impossible to call output_frame() without at least one
+     * valid nonempty frame mix */
+    av_assert1(nb_visible > 0);
 
     /* Use the first active input as metadata reference */
     for (int i = 0; i < s->nb_inputs; i++) {
@@ -989,7 +1020,8 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
 
     struct pl_frame orig_target = target;
     bool use_linear_compositor = false;
-    if (s->linear_tex && target.color.transfer != PL_COLOR_TRC_LINEAR && !s->disable_linear) {
+    if (s->linear_tex && target.color.transfer != PL_COLOR_TRC_LINEAR &&
+        !s->disable_linear && nb_visible > 1) {
         target = (struct pl_frame) {
             .num_planes = 1,
             .planes[0] = {
@@ -1017,10 +1049,10 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         FilterLink *il = ff_filter_link(ctx->inputs[i]);
         FilterLink *ol = ff_filter_link(outlink);
         int high_fps = av_cmp_q(il->frame_rate, ol->frame_rate) >= 0;
-        if (in->qstatus != PL_QUEUE_OK || !in->mix.num_frames)
+        if (in->qstatus != PL_QUEUE_OK || !in->mix.num_frames || i < idx_start)
             continue;
         opts->params.skip_caching_single_frame = high_fps;
-        update_crops(ctx, in, &target, out->pts * av_q2d(outlink->time_base));
+        update_crops(ctx, in, &target, target_pts);
         pl_render_image_mix(in->renderer, &in->mix, &target, &opts->params);
 
         /* Force straight output and set correct blend mode */
