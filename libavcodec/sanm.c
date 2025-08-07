@@ -1427,8 +1427,18 @@ static void c48_4to8(uint8_t *dst, const uint8_t *src, const uint16_t w)
     }
 }
 
-static int codec48_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *db,
-                         const uint16_t w)
+static int check_mv(int x, int y, const uint16_t w, int h, int blocksize, int mvofs) {
+    if (mvofs < -x + -y*w)
+        return AVERROR_INVALIDDATA;
+
+    if (mvofs > w-x-blocksize + w*(h-y-blocksize))
+        return AVERROR_INVALIDDATA;
+
+    return 0;
+}
+
+static int codec48_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *db, int x, int y,
+                         const uint16_t w, int h)
 {
     uint8_t opc, sb[16];
     int i, j, k, l;
@@ -1453,6 +1463,8 @@ static int codec48_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *db,
         if (bytestream2_get_bytes_left(&ctx->gb) < 2)
             return 1;
         mvofs =  bytestream2_get_le16(&ctx->gb);
+        if (check_mv(x, y, w, h, 8, mvofs))
+            return 1;
         for (i = 0; i < 8; i++) {
             ofs = w * i;
             for (k = 0; k < 8; k++)
@@ -1480,6 +1492,8 @@ static int codec48_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *db,
             for (k = 0; k < 8; k += 4) {
                 opc =  bytestream2_get_byteu(&ctx->gb);
                 mvofs = c37_mv[opc * 2] + (c37_mv[opc * 2 + 1] * w);
+                if (check_mv(x+k, y+i, w, h, 4, mvofs))
+                    return 1;
                 for (j = 0; j < 4; j++) {
                     ofs = (w * (j + i)) + k;
                     for (l = 0; l < 4; l++)
@@ -1494,6 +1508,8 @@ static int codec48_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *db,
         for (i = 0; i < 8; i += 4) {
             for (k = 0; k < 8; k += 4) {
                 mvofs = bytestream2_get_le16(&ctx->gb);
+                if (check_mv(x+k, y+i, w, h, 4, mvofs))
+                    return 1;
                 for (j = 0; j < 4; j++) {
                     ofs = (w * (j + i)) + k;
                     for (l = 0; l < 4; l++)
@@ -1516,6 +1532,8 @@ static int codec48_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *db,
                 ofs = (w * i) + j;
                 opc = bytestream2_get_byteu(&ctx->gb);
                 mvofs = c37_mv[opc * 2] + (c37_mv[opc * 2 + 1] * w);
+                if (check_mv(x+j, y+i, w, h, 2, mvofs))
+                    return 1;
                 for (l = 0; l < 2; l++) {
                     *(dst + ofs + l + 0) = *(db + ofs + l + 0 + mvofs);
                     *(dst + ofs + l + w) = *(db + ofs + l + w + mvofs);
@@ -1530,6 +1548,8 @@ static int codec48_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *db,
             for (j = 0; j < 8; j += 2) {
                 ofs = w * i + j;
                 mvofs = bytestream2_get_le16(&ctx->gb);
+                if (check_mv(x+j, y+i, w, h, 2, mvofs))
+                    return 1;
                 for (l = 0; l < 2; l++) {
                     *(dst + ofs + l + 0) = *(db + ofs + l + 0 + mvofs);
                     *(dst + ofs + l + w) = *(db + ofs + l + w + mvofs);
@@ -1548,6 +1568,8 @@ static int codec48_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *db,
         break;
     default:    // copy 8x8 block from prev, c37_mv from source
         mvofs = c37_mv[opc * 2] + (c37_mv[opc * 2 + 1] * w);
+        if (check_mv(x, y, w, h, 8, mvofs))
+            return 1;
         for (i = 0; i < 8; i++) {
             ofs = i * w;
             for (l = 0; l < 8; l++)
@@ -1613,7 +1635,7 @@ static int old_codec48(SANMVideoContext *ctx, int width, int height)
         if (seq == ctx->prev_seq + 1) {
             for (j = 0; j < height; j += 8) {
                 for (i = 0; i < width; i += 8) {
-                    if (codec48_block(ctx, dst + i, prev + i, width))
+                    if (codec48_block(ctx, dst + i, prev + i, i, j, width, height))
                         return AVERROR_INVALIDDATA;
                 }
                 dst += width * 8;
