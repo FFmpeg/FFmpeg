@@ -14,6 +14,8 @@ libavcodec/*bitpacked* @lynne
 libavcodec/*dirac* @lynne
 libavcodec/*ffv1* @lynne @michaelni
 libavcodec/golomb* @michaelni
+libavcodec/*h266* @frankplow
+libavcodec/h26x/* @frankplow
 libavcodec/*jpegxl* @lynne
 libavcodec/*jxl* @lynne
 libavcodec/*opus* @lynne
@@ -22,6 +24,8 @@ libavcodec/rangecoder* @michaelni
 libavcodec/ratecontrol* @michaelni
 libavcodec/*siren* @lynne
 libavcodec/*vc2* @lynne
+libavcodec/*vvc* @frankplow
+libavcodec/vvc/* @frankplow
 
 libavcodec/aarch64/* @lynne @mstorsjo
 libavcodec/arm/* @mstorsjo
