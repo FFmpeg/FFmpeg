@@ -1017,7 +1017,7 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         FilterLink *il = ff_filter_link(ctx->inputs[i]);
         FilterLink *ol = ff_filter_link(outlink);
         int high_fps = av_cmp_q(il->frame_rate, ol->frame_rate) >= 0;
-        if (in->qstatus != PL_QUEUE_OK)
+        if (in->qstatus != PL_QUEUE_OK || !in->mix.num_frames)
             continue;
         opts->params.skip_caching_single_frame = high_fps;
         update_crops(ctx, in, &target, out->pts * av_q2d(outlink->time_base));
@@ -1205,7 +1205,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
                 retry = true;
                 break;
             case PL_QUEUE_OK:
-                ok = true;
+                ok |= in->mix.num_frames > 0;
                 break;
             case PL_QUEUE_ERR:
                 return AVERROR_EXTERNAL;
