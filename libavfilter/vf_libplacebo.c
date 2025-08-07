@@ -940,22 +940,17 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         if (!cropped && cur->repr.alpha == PL_ALPHA_NONE) {
             idx_start = i;
             nb_visible = 0;
+            ref = NULL;
         }
+        /* Use first visible input as overall reference */
+        if (!ref)
+            ref = ref_frame(&in->mix);
         nb_visible++;
     }
 
     /* It should be impossible to call output_frame() without at least one
      * valid nonempty frame mix */
     av_assert1(nb_visible > 0);
-
-    /* Use the first active input as metadata reference */
-    for (int i = 0; i < s->nb_inputs; i++) {
-        const LibplaceboInput *in = &s->inputs[i];
-        if (in->qstatus == PL_QUEUE_OK && (ref = ref_frame(&in->mix)))
-            break;
-    }
-    if (!ref)
-        return 0;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out)
