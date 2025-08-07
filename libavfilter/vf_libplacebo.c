@@ -1049,8 +1049,10 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         FilterLink *il = ff_filter_link(ctx->inputs[i]);
         FilterLink *ol = ff_filter_link(outlink);
         int high_fps = av_cmp_q(il->frame_rate, ol->frame_rate) >= 0;
-        if (in->qstatus != PL_QUEUE_OK || !in->mix.num_frames || i < idx_start)
+        if (in->qstatus != PL_QUEUE_OK || !in->mix.num_frames || i < idx_start) {
+            pl_renderer_flush_cache(in->renderer);
             continue;
+        }
         opts->params.skip_caching_single_frame = high_fps;
         update_crops(ctx, in, &target, target_pts);
         pl_render_image_mix(in->renderer, &in->mix, &target, &opts->params);
