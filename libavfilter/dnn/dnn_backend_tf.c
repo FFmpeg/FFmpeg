@@ -833,14 +833,12 @@ static int dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_p
 
     ret = extract_lltask_from_task(task, tf_model->lltask_queue);
     if (ret != 0) {
-        av_freep(&task);
         av_log(ctx, AV_LOG_ERROR, "unable to extract last level task from task.\n");
         return ret;
     }
 
     request = ff_safe_queue_pop_front(tf_model->request_queue);
     if (!request) {
-        av_freep(&task);
         av_log(ctx, AV_LOG_ERROR, "unable to get infer request.\n");
         return AVERROR(EINVAL);
     }
