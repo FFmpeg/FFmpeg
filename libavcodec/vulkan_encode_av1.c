@@ -981,7 +981,7 @@ static int init_base_units(AVCodecContext *avctx)
         if (!data)
             return AVERROR(ENOMEM);
     } else {
-        av_log(avctx, AV_LOG_ERROR, "Unable to get feedback for AV1 sequence header = %lu\n",
+        av_log(avctx, AV_LOG_ERROR, "Unable to get feedback for AV1 sequence header = %"SIZE_SPECIFIER"\n",
                data_size);
         return err;
     }
