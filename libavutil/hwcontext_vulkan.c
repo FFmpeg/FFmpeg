@@ -3037,7 +3037,7 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
             }
 
             if (mod_props == NULL) {
-                av_log(hwfc, AV_LOG_ERROR, "No DRM format modifier properties found for modifier 0x%016lx\n",
+                av_log(hwfc, AV_LOG_ERROR, "No DRM format modifier properties found for modifier 0x%016"PRIx64"\n",
                           drm_mod.drmFormatModifier);
                 av_free(modp.pDrmFormatModifierProperties);
                 vulkan_frame_free(hwfc, f);
