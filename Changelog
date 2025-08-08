@@ -29,6 +29,8 @@ version <next>:
 - No longer disabling GCC autovectorization, on X86, ARM and AArch64
 - VP9 Vulkan hwaccel
 - AV1 Vulkan encoder
+- ProRes RAW decoder
+- ProRes RAW Vulkan hwaccel
 
 
 version 7.1:
