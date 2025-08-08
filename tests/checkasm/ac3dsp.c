@@ -152,7 +152,7 @@ static void check_ac3_sum_square_butterfly_int32(AC3DSPContext *c) {
     randomize_i24(rt, ELEMS);
 
     if (check_func(c->sum_square_butterfly_int32,
-                   "ac3_sum_square_bufferfly_int32")) {
+                   "ac3_sum_square_butterfly_int32")) {
         call_ref(v1, lt, rt, ELEMS);
         call_new(v2, lt, rt, ELEMS);
 
@@ -177,7 +177,7 @@ static void check_ac3_sum_square_butterfly_float(AC3DSPContext *c) {
     randomize_float(rt, ELEMS);
 
     if (check_func(c->sum_square_butterfly_float,
-                   "ac3_sum_square_bufferfly_float")) {
+                   "ac3_sum_square_butterfly_float")) {
         call_ref(v1, lt, rt, ELEMS);
         call_new(v2, lt, rt, ELEMS);
 
