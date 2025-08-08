@@ -69,7 +69,6 @@ typedef struct FFVulkanDecodeContext {
 
     int dedicated_dpb; /* Oddity  #1 - separate DPB images */
     int external_fg;   /* Oddity  #2 - hardware can't apply film grain */
-    uint32_t frame_id_alloc_mask; /* For AV1 only */
 
     /* Workaround for NVIDIA drivers tested with CTS version 1.3.8 for AV1.
      * The tests were incorrect as the OrderHints were offset by 1. */

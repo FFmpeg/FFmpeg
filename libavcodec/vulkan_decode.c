@@ -116,7 +116,6 @@ int ff_vk_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 
     dst_ctx->dedicated_dpb = src_ctx->dedicated_dpb;
     dst_ctx->external_fg = src_ctx->external_fg;
-    dst_ctx->frame_id_alloc_mask = src_ctx->frame_id_alloc_mask;
 
     return 0;
 }
