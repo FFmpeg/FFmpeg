@@ -274,7 +274,9 @@ static int dxv_decompress_opcodes(GetByteContext *gb, void *dstp, size_t op_size
 
     if ((flag & 3) == 0) {
         bytestream2_skip(gb, 1);
-        bytestream2_get_buffer(gb, dstp, op_size);
+        int read_size = bytestream2_get_buffer(gb, dstp, op_size);
+        if (read_size != op_size)
+            return AVERROR_INVALIDDATA;
     } else if ((flag & 3) == 1) {
         bytestream2_skip(gb, 1);
         memset(dstp, bytestream2_get_byte(gb), op_size);
