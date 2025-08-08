@@ -143,6 +143,10 @@ FATE_SUBTITLES-$(call DEMMUX, MCC, MCC, SMPTE436M_TO_EIA608_BSF EIA608_TO_SMPTE4
 fate-sub-mcc-remux-eia608: CMD = fmtstdout mcc -f mcc -i $(SRC_PATH)/tests/ref/fate/sub-mcc-remux -map 0:s -c copy -override_time_code_rate ntsc -creation_time "1970-01-01T00:00:00"
 fate-sub-mcc-remux-eia608: CMP = rawdiff
 
+FATE_SUBTITLES-$(call DEMMUX, MCC, MCC, SMPTE436M_TO_EIA608_BSF EIA608_TO_SMPTE436M_BSF) += fate-sub-mcc-remux-eia608-recode
+fate-sub-mcc-remux-eia608-recode: CMD = fmtstdout mcc -eia608_extract 0 -f mcc -i $(SRC_PATH)/tests/ref/fate/sub-mcc-remux -map 0:d -c copy -bsf smpte436m_to_eia608 -override_time_code_rate ntsc -creation_time "1970-01-01T00:00:00"
+fate-sub-mcc-remux-eia608-recode: CMP = rawdiff
+
 FATE_SUBTITLES-$(call DEMMUX, MCC, MCC) += fate-sub-mcc-remux
 fate-sub-mcc-remux: CMD = fmtstdout mcc -eia608_extract 0 -f mcc -i $(SRC_PATH)/tests/ref/fate/sub-mcc-remux -map 0:d -c copy -override_time_code_rate ntsc -creation_time "1970-01-01T00:00:00"
 fate-sub-mcc-remux: CMP = rawdiff
