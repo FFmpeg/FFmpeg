@@ -598,12 +598,11 @@ static int init_profile(AVCodecContext *avctx,
     /* Set level */
     if (avctx->level == AV_LEVEL_UNKNOWN) {
         const AV1LevelDescriptor *level;
-        float framerate;
+        float framerate = 0.0;
 
         if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
-            framerate = avctx->framerate.num / avctx->framerate.den;
-        else
-            framerate = 0;
+            framerate = av_q2d(avctx->framerate);
+
         level = ff_av1_guess_level(avctx->bit_rate, enc->seq_tier,
                                    base_ctx->surface_width, base_ctx->surface_height,
                                    enc->tile_rows * enc->tile_cols,
