@@ -675,6 +675,7 @@ static void get_codebook(int16_t * cbvec,   /* (o) Constructed codebook vector *
         /* get vector */
         memcpy(cbvec, mem + lMem - k, cbveclen * 2);
     } else if (index < base_size) {
+        memset(cbvec, 0, cbveclen * 2);
 
         /* Calculate lag */
 
@@ -701,6 +702,7 @@ static void get_codebook(int16_t * cbvec,   /* (o) Constructed codebook vector *
 
             filter_mafq12(&mem[memIndTest + 4], cbvec, kCbFiltersRev, CB_FILTERLEN, cbveclen);
         } else {
+            memset(cbvec, 0, cbveclen * 2);
             /* interpolated vectors */
             /* Stuff zeros outside memory buffer  */
             memIndTest = lMem - cbveclen - CB_FILTERLEN;
