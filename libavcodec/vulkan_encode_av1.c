@@ -180,14 +180,10 @@ static int init_pic_params(AVCodecContext *avctx, FFHWBaseEncodePicture *pic,
     FFVulkanEncodeContext *ctx = &enc->common;
     FFHWBaseEncodeContext *base_ctx = &ctx->base;
 
-    FFVulkanEncodePicture *vp = pic->priv;
     VulkanEncodeAV1Picture *ap = pic->codec_priv;
     FFHWBaseEncodePicture *ref;
     VulkanEncodeAV1Picture *ap_ref;
     VkVideoReferenceSlotInfoKHR *ref_slot;
-
-    AV1RawOBU *seq_obu = &enc->seq_hdr_obu;
-    AV1RawSequenceHeader *seq = &seq_obu->obu.sequence_header;
 
     uint32_t ref_name_mask = 0x0;
     int name_slots[STD_VIDEO_AV1_REFS_PER_FRAME];
@@ -702,7 +698,6 @@ static int init_enc_options(AVCodecContext *avctx)
 
 static av_cold int init_sequence_headers(AVCodecContext *avctx)
 {
-    int err;
     VulkanEncodeAV1Context *enc = avctx->priv_data;
     FFVulkanEncodeContext *ctx = &enc->common;
     FFVulkanContext *s = &ctx->s;
@@ -1166,7 +1161,6 @@ static av_cold int vulkan_encode_av1_init(AVCodecContext *avctx)
     int err;
     VulkanEncodeAV1Context *enc = avctx->priv_data;
     FFVulkanEncodeContext *ctx = &enc->common;
-    FFVulkanContext *s = &ctx->s;
     FFHWBaseEncodeContext *base_ctx = &ctx->base;
     int flags;
 
