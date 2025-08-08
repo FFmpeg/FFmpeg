@@ -46,6 +46,7 @@ typedef struct DXVContext {
     int64_t ctex_size;   // Chroma texture size
 
     uint8_t *op_data[4]; // Opcodes
+    unsigned op_data_size[4];
     int64_t op_size[4];  // Opcodes size
 } DXVContext;
 
@@ -1003,9 +1004,11 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
             memset(ctx->ctex_data + old_size, 0, ctx->ctex_data_size - old_size);
 
         for (i = 0; i < 4; i++) {
-            ret = av_reallocp(&ctx->op_data[i], ctx->op_size[i]);
-            if (ret < 0)
-                return ret;
+            old_size = ctx->op_data_size[i];
+            ptr = av_fast_realloc(ctx->op_data[i], &ctx->op_data_size[i], ctx->op_size[i]);
+            if (!ptr)
+                return AVERROR(ENOMEM);
+            ctx->op_data[i] = ptr;
         }
     }
 
@@ -1101,6 +1104,7 @@ static av_cold int dxv_close(AVCodecContext *avctx)
     av_freep(&ctx->op_data[1]);
     av_freep(&ctx->op_data[2]);
     av_freep(&ctx->op_data[3]);
+    memset(ctx->op_data_size, 0, sizeof(ctx->op_data_size));
 
     return 0;
 }
