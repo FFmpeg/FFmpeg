@@ -27,6 +27,8 @@ version <next>:
 - Colordetect filter
 - Add vf_scale_d3d11 filter
 - No longer disabling GCC autovectorization, on X86, ARM and AArch64
+- VP9 Vulkan hwaccel
+- AV1 Vulkan encoder
 
 
 version 7.1:
