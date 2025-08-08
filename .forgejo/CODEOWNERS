@@ -38,6 +38,7 @@ libavcodec/x86/.* @lynne
 # avfilter
 # =======
 libavfilter/aarch64/.* @mstorsjo
+libavfilter/af_whisper.* @vpalmisano
 libavfilter/vf_yadif.* @michaelni
 libavfilter/vsrc_mandelbrot.* @michaelni
 
