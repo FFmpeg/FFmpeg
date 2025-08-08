@@ -847,7 +847,7 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
         // own the entire pl_queue, and hence, the pointed-at frames.
         struct pl_frame *image = (struct pl_frame *) in->mix.frames[i];
         const AVFrame *src = pl_get_mapped_avframe(image);
-        double image_pts = src->pts * av_q2d(inlink->time_base);
+        double image_pts = TS2T(src->pts, inlink->time_base);
 
         /* Update dynamic variables */
         s->var_values[VAR_IN_IDX] = s->var_values[VAR_IDX] = in->idx;
@@ -915,7 +915,7 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     pl_options opts = s->opts;
     AVFilterLink *outlink = ctx->outputs[0];
     const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(outlink->format);
-    const double target_pts = pts * av_q2d(outlink->time_base);
+    const double target_pts = TS2T(pts, outlink->time_base);
     struct pl_frame target;
     const AVFrame *ref = NULL;
     AVFrame *out;
@@ -1126,8 +1126,8 @@ static int handle_input(AVFilterContext *ctx, LibplaceboInput *input)
 
     while ((ret = ff_inlink_consume_frame(inlink, &in)) > 0) {
         struct pl_source_frame src = {
-            .pts         = in->pts * av_q2d(inlink->time_base),
-            .duration    = in->duration * av_q2d(inlink->time_base),
+            .pts         = TS2T(in->pts, inlink->time_base),
+            .duration    = TS2T(in->duration, inlink->time_base),
             .first_field = s->deinterlace ? pl_field_from_avframe(in) : PL_FIELD_NONE,
             .frame_data  = in,
             .map         = map_frame,
@@ -1223,7 +1223,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
             }
 
             in->qstatus = pl_queue_update(in->queue, &in->mix, pl_queue_params(
-                .pts            = out_pts * av_q2d(outlink->time_base),
+                .pts            = TS2T(out_pts, outlink->time_base),
                 .radius         = pl_frame_mix_radius(&s->opts->params),
                 .vsync_duration = l->frame_rate.num ? av_q2d(av_inv_q(l->frame_rate)) : 0,
             ));
