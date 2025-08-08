@@ -236,7 +236,7 @@ static int ff_eia608_to_smpte436m_filter(AVBSFContext *ctx, AVPacket *out)
     if (ret < 0)
         goto fail;
 
-    return 0;
+    ret = 0;
 
 fail:
     if (ret < 0)
