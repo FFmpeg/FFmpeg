@@ -675,9 +675,9 @@ static int init_enc_options(AVCodecContext *avctx)
         enc->initial_buffer_fullness = enc->hrd_buffer_size * 3 / 4;
     }
 
-    if (enc->common.opts.rc_mode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR &&
-        avctx->global_quality) {
-        enc->q_idx_p = av_clip_intp2(avctx->global_quality / FF_QP2LAMBDA, 8);
+    if (enc->common.opts.rc_mode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) {
+        enc->q_idx_p = av_clip(enc->common.opts.qp,
+                               enc->caps.minQIndex, enc->caps.maxQIndex);
         if (fabs(avctx->i_quant_factor) > 0.0)
             enc->q_idx_idr =
                 av_clip((fabs(avctx->i_quant_factor) * enc->q_idx_p  +
