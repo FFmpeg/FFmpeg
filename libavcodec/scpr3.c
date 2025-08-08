@@ -1167,7 +1167,7 @@ static int decompress_p3(AVCodecContext *avctx,
                 }
             } else {
                 int run, bx = x * 16 + sx1, by = y * 16 + sy1;
-                uint32_t clr, ptype = 0, r, g, b;
+                uint32_t clr = 0, ptype = 0, r, g, b;
 
                 if (bx >= avctx->width)
                     return AVERROR_INVALIDDATA;
