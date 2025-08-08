@@ -136,15 +136,15 @@ fate-sub-mcc: CMP = oneline
 fate-sub-mcc: REF = 752c60c3a74445a2a76e1a6465064763
 
 FATE_SUBTITLES-$(call DEMMUX, MCC, MCC, SMPTE436M_TO_EIA608_BSF EIA608_TO_SMPTE436M_BSF) += fate-sub-mcc-remux-eia608-bsf
-fate-sub-mcc-remux-eia608-bsf: CMD = fmtstdout mcc -f mcc -i tests/ref/fate/sub-mcc-remux -map 0:s -c copy -bsf "eia608_to_smpte436m=cdp_frame_rate=60000/1001:initial_cdp_sequence_cntr=65535:line_number=11" -override_time_code_rate ntsc -creation_time "1970-01-01T00:00:00"
+fate-sub-mcc-remux-eia608-bsf: CMD = fmtstdout mcc -f mcc -i $(SRC_PATH)/tests/ref/fate/sub-mcc-remux -map 0:s -c copy -bsf "eia608_to_smpte436m=cdp_frame_rate=60000/1001:initial_cdp_sequence_cntr=65535:line_number=11" -override_time_code_rate ntsc -creation_time "1970-01-01T00:00:00"
 fate-sub-mcc-remux-eia608-bsf: CMP = rawdiff
 
 FATE_SUBTITLES-$(call DEMMUX, MCC, MCC, SMPTE436M_TO_EIA608_BSF EIA608_TO_SMPTE436M_BSF) += fate-sub-mcc-remux-eia608
-fate-sub-mcc-remux-eia608: CMD = fmtstdout mcc -f mcc -i tests/ref/fate/sub-mcc-remux -map 0:s -c copy -override_time_code_rate ntsc -creation_time "1970-01-01T00:00:00"
+fate-sub-mcc-remux-eia608: CMD = fmtstdout mcc -f mcc -i $(SRC_PATH)/tests/ref/fate/sub-mcc-remux -map 0:s -c copy -override_time_code_rate ntsc -creation_time "1970-01-01T00:00:00"
 fate-sub-mcc-remux-eia608: CMP = rawdiff
 
 FATE_SUBTITLES-$(call DEMMUX, MCC, MCC) += fate-sub-mcc-remux
-fate-sub-mcc-remux: CMD = fmtstdout mcc -eia608_extract 0 -f mcc -i tests/ref/fate/sub-mcc-remux -map 0:d -c copy -override_time_code_rate ntsc -creation_time "1970-01-01T00:00:00"
+fate-sub-mcc-remux: CMD = fmtstdout mcc -eia608_extract 0 -f mcc -i $(SRC_PATH)/tests/ref/fate/sub-mcc-remux -map 0:d -c copy -override_time_code_rate ntsc -creation_time "1970-01-01T00:00:00"
 fate-sub-mcc-remux: CMP = rawdiff
 
 FATE_SUBTITLES-$(call FRAMECRC, MPEGTS, DVBSUB, DVBSUB_ENCODER) += fate-sub-dvb
