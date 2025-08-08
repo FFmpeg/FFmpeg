@@ -68,6 +68,8 @@ static int ff_smpte436m_to_eia608_filter(AVBSFContext *ctx, AVPacket *out)
         // verified it won't fail by running it above
         av_smpte_291m_anc_8bit_extract_cta_708(&anc, out->data, ctx);
 
+        av_packet_free(&in);
+
         return 0;
     }
     if (ret != AVERROR_EOF)
