@@ -570,8 +570,7 @@ static int vulkan_encode_create_dpb(AVCodecContext *avctx, FFVulkanEncodeContext
     hwfc->format[0]    = ctx->pic_format;
     hwfc->create_pnext = &ctx->profile_list;
     hwfc->tiling       = VK_IMAGE_TILING_OPTIMAL;
-    hwfc->usage        = VK_IMAGE_USAGE_SAMPLED_BIT              |
-                         VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR;
+    hwfc->usage        = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR;
 
     if (ctx->common.layered_dpb)
         hwfc->nb_layers = ctx->caps.maxDpbSlots;
@@ -931,8 +930,7 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
         return AVERROR(EINVAL);
     }
 
-    fmt_info.imageUsage = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR |
-                          VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR;
+    fmt_info.imageUsage = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR;
 
     ctx->common.layered_dpb = !(ctx->caps.flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR);
 
