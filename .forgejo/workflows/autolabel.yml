@@ -9,6 +9,7 @@ on:
 jobs:
   pr_labeler:
     runs-on: utilities
+    if: ${{ github.event.sender.login != 'ffmpeg-devel' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

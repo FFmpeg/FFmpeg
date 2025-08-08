@@ -3,6 +3,17 @@ module.exports = async ({github, context}) => {
     const labels = [];
     const issueNumber = context.payload.pull_request?.number || context.payload.issue?.number;
 
+    const kwmap = {
+      'avcodec': 'avcodec',
+      'avdevice': 'avdevice',
+      'avfilter': 'avfilter',
+      'avformat': 'avformat',
+      'avutil': 'avutil',
+      'swresample': 'swresample',
+      'swscale': 'swscale',
+      'fftools': 'CLI'
+    };
+
     async function isOrgMember(username) {
         try {
             const response = await github.rest.orgs.checkMembershipForUser({
@@ -15,47 +26,33 @@ module.exports = async ({github, context}) => {
         }
     }
 
-    var removeNew = context.payload.action === 'closed';
-
-    if (context.payload.action !== 'opened' && await isOrgMember(context.payload.sender.login)) {
-        if (context.payload.action === 'assigned' ||
-            context.payload.action === 'labeled' ||
-            context.payload.action === 'unlabeled' ||
-            context.payload.comment) {
-            removeNew = true;
-            console.log('Removing "new" label due to member interaction.');
-        }
-    }
-
-    if (removeNew) {
+    if (context.payload.action === 'closed' ||
+        (context.payload.action !== 'opened' && (
+             context.payload.action === 'assigned' ||
+             context.payload.action === 'label_updated' ||
+             context.payload.comment) &&
+         await isOrgMember(context.payload.sender.login))
+    ) {
         try {
             await github.rest.issues.removeLabel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issueNumber,
-                name: 'new'
+                // this should say 'new', but forgejo deviates from GitHub API here and expects the ID
+                name: '41'
             });
             console.log('Removed "new" label');
         } catch (error) {
-            console.log('Could not remove "new" label');
+            if (error.status !== 404 && error.status !== 410) {
+                console.log('Could not remove "new" label');
+            }
         }
     } else if (context.payload.action === 'opened') {
         labels.push('new');
         console.log('Detected label: new');
     }
 
-    if (context.payload.action === 'opened' || context.payload.action === 'edited') {
-        const kwmap = {
-          'avcodec': 'avcodec',
-          'avdevice': 'avdevice',
-          'avfilter': 'avfilter',
-          'avformat': 'avformat',
-          'avutil': 'avutil',
-          'swresample': 'swresample',
-          'swscale': 'swscale',
-          'fftools': 'CLI'
-        };
-
+    if ((context.payload.action === 'opened' || context.payload.action === 'edited') && context.eventName !== 'issue_comment') {
         for (const [kw, label] of Object.entries(kwmap)) {
             if (title.includes(kw)) {
                 labels.push(label);
