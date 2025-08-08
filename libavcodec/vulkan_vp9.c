@@ -110,6 +110,7 @@ static int vk_vp9_start_frame(AVCodecContext          *avctx,
     int err;
     int ref_count = 0;
     const VP9SharedContext *s = avctx->priv_data;
+    uint32_t frame_id_alloc_mask = 0;
 
     const VP9Frame *pic = &s->frames[CUR_FRAME];
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
@@ -118,17 +119,24 @@ static int vk_vp9_start_frame(AVCodecContext          *avctx,
     VP9VulkanDecodePicture *ap = pic->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &ap->vp;
 
+    /* Use the current frame_ids in ref_frames[] to decide occupied frame_ids */
+    for (int i = 0; i < STD_VIDEO_VP9_NUM_REF_FRAMES; i++) {
+        const VP9VulkanDecodePicture* rp = s->ref_frames[i].hwaccel_picture_private;
+        if (rp)
+            frame_id_alloc_mask |= 1 << rp->frame_id;
+    }
+
     if (!ap->frame_id_set) {
         unsigned slot_idx = 0;
         for (unsigned i = 0; i < 32; i++) {
-            if (!(dec->frame_id_alloc_mask & (1 << i))) {
+            if (!(frame_id_alloc_mask & (1 << i))) {
                 slot_idx = i;
                 break;
             }
         }
         ap->frame_id = slot_idx;
         ap->frame_id_set = 1;
-        dec->frame_id_alloc_mask |= (1 << slot_idx);
+        frame_id_alloc_mask |= (1 << slot_idx);
     }
 
     for (int i = 0; i < STD_VIDEO_VP9_REFS_PER_FRAME; i++) {
@@ -338,10 +346,6 @@ static void vk_vp9_free_frame_priv(AVRefStructOpaque _hwctx, void *data)
     AVHWDeviceContext *hwctx = _hwctx.nc;
     VP9VulkanDecodePicture *ap = data;
 
-    /* Workaround for a spec issue. */
-    if (ap->frame_id_set)
-        ap->dec->frame_id_alloc_mask &= ~(1 << ap->frame_id);
-
     /* Free frame resources, this also destroys the session parameters. */
     ff_vk_decode_free_frame(hwctx, &ap->vp);
 }
@@ -362,5 +366,5 @@ const FFHWAccel ff_vp9_vulkan_hwaccel = {
     .uninit                = &ff_vk_decode_uninit,
     .frame_params          = &ff_vk_frame_params,
     .priv_data_size        = sizeof(FFVulkanDecodeContext),
-    .caps_internal         = HWACCEL_CAP_ASYNC_SAFE,
+    .caps_internal         = HWACCEL_CAP_ASYNC_SAFE | HWACCEL_CAP_THREAD_SAFE,
 };
