@@ -1,8 +1,10 @@
 on:
   pull_request_target:
-    types: [opened, edited, synchronize]
+    types: [opened, edited, synchronize, closed, assigned, labeled, unlabeled]
   issues:
-    types: [opened, edited]
+    types: [opened, edited, closed, assigned, labeled, unlabeled]
+  issue_comment:
+    types: [created]
 
 jobs:
   pr_labeler:
