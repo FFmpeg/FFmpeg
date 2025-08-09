@@ -123,7 +123,7 @@ Internally, the TC should take decisions with a majority, or using ranked-choice
 
 Each TC member must vote on such decision according to what is, in their view, best for the project.
 
-If a TC member feels they are affected by a conflict of interest with regards to the case, they should announce it and recurse themselves from the TC
+If a TC member feels they are affected by a conflict of interest with regards to the case, they should announce it and recuse themselves from the TC
 discussion and vote.
 
 A conflict of interest is presumed to occur when a TC member has a personal interest (e.g. financial) in a specific outcome of the case.
