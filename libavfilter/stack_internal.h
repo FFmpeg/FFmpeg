@@ -19,6 +19,10 @@
 #ifndef AVFILTER_STACK_INTERNAL_H
 #define AVFILTER_STACK_INTERNAL_H
 
+#ifdef HWContext
+
+#include "libavfilter/framesync.h"
+
 enum {
     STACK_H = 0,
     STACK_V = 1,
@@ -56,5 +60,7 @@ static int config_comm_output(AVFilterLink *outlink);
 static int stack_init(AVFilterContext *avctx);
 static av_cold void stack_uninit(AVFilterContext *avctx);
 static int stack_activate(AVFilterContext *avctx);
+
+#endif
 
 #endif /* AVFILTER_STACK_INTERNAL_H */
