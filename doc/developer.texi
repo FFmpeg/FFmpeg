@@ -1142,4 +1142,36 @@ Publish the news entry.
 Send an announcement to the mailing list.
 @end enumerate
 
+@anchor{Source Plugins}
+@chapter Source Plugins
+
+@section What are Source Plugins
+
+Source plugins are a way to maintain features outside FFmpeg.
+
+Each is basically an automatically mergable git fork of FFmpeg.
+
+@section Checklist to be listed in merge-all-source-plugins
+
+@enumerate
+@item
+Supporting master and the latest release branch (with security fixes, when vulnerabilities are discovered)
+Supporting older release branches is optional.
+
+@item
+under LGPL or GPL license (that is a compatible Free software license)
+and adds the needed dependancy to the --enable-gpl switch if its GPL.
+@end enumerate
+
+@section How to make a Source Plugin
+
+To be automatically mergable it is important to keep all changes clean and well separated.
+If you want to create a new source plugin, look at an existing one, or simply fork FFmpeg,
+name the repository "sourceplugin-..." and add it to tools/merge-all-source-plugins
+and try running it. Also check that it works with the latest releases.
+
+@section merge Source Plugins
+
+tools/merge-all-source-plugins
+
 @bye
