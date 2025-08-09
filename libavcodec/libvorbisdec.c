@@ -113,6 +113,12 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
         }
     }
 
+    if (context->vi.rate <= 0 || context->vi.rate > INT_MAX) {
+        av_log(avccontext, AV_LOG_ERROR, "vorbis rate is invalid\n");
+        ret = AVERROR_INVALIDDATA;
+        goto error;
+    }
+
     av_channel_layout_uninit(&avccontext->ch_layout);
     avccontext->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
     avccontext->ch_layout.nb_channels = context->vi.channels;
