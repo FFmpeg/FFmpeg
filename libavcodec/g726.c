@@ -455,6 +455,8 @@ static av_cold int g726_decode_init(AVCodecContext *avctx)
     g726_reset(c);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    if (!avctx->sample_rate)
+        avctx->sample_rate = 8000;
 
     return 0;
 }
