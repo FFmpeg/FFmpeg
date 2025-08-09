@@ -2086,6 +2086,17 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
     if ((ret = decode_header(s, picture)) < 0)
         return ret;
 
+    if (s->compression == EXR_DWAA ||
+        s->compression == EXR_DWAB) {
+        for (int i = 0; i<s->nb_channels; i++) {
+            EXRChannel *channel = &s->channels[i];
+            if (channel->pixel_type != s->pixel_type) {
+                avpriv_request_sample(s->avctx, "mixed pixel type DWA");
+                return AVERROR_PATCHWELCOME;
+            }
+        }
+    }
+
     switch (s->pixel_type) {
     case EXR_HALF:
         if (s->channel_offsets[3] >= 0) {
