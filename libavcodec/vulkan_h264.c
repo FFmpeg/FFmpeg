@@ -588,5 +588,5 @@ const FFHWAccel ff_h264_vulkan_hwaccel = {
     .uninit                = &ff_vk_decode_uninit,
     .frame_params          = &ff_vk_frame_params,
     .priv_data_size        = sizeof(FFVulkanDecodeContext),
-    .caps_internal         = HWACCEL_CAP_ASYNC_SAFE | HWACCEL_CAP_THREAD_SAFE,
+    .caps_internal         = HWACCEL_CAP_ASYNC_SAFE,
 };
