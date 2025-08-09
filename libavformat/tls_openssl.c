@@ -822,12 +822,6 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     av_assert0(s);
     s->is_dtls = 1;
 
-    /**
-     * The profile for OpenSSL's SRTP is SRTP_AES128_CM_SHA1_80, see ssl/d1_srtp.c.
-     * The profile for FFmpeg's SRTP is SRTP_AES128_CM_HMAC_SHA1_80, see libavformat/srtp.c.
-     */
-    const char* profiles = "SRTP_AES128_CM_SHA1_80";
-
     c->ctx = SSL_CTX_new(s->listen ? DTLS_server_method() : DTLS_client_method());
     if (!c->ctx) {
         ret = AVERROR(ENOMEM);
@@ -841,12 +835,18 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     if (s->verify)
         SSL_CTX_set_verify(c->ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
 
-    /* Setup the SRTP context */
-    if (SSL_CTX_set_tlsext_use_srtp(c->ctx, profiles)) {
-        av_log(c, AV_LOG_ERROR, "Init SSL_CTX_set_tlsext_use_srtp failed, profiles=%s, %s\n",
-            profiles, openssl_get_error(c));
-        ret = AVERROR(EINVAL);
-        return ret;
+    if (s->use_srtp) {
+        /**
+         * The profile for OpenSSL's SRTP is SRTP_AES128_CM_SHA1_80, see ssl/d1_srtp.c.
+         * The profile for FFmpeg's SRTP is SRTP_AES128_CM_HMAC_SHA1_80, see libavformat/srtp.c.
+         */
+        const char* profiles = "SRTP_AES128_CM_SHA1_80";
+        if (SSL_CTX_set_tlsext_use_srtp(c->ctx, profiles)) {
+            av_log(c, AV_LOG_ERROR, "Init SSL_CTX_set_tlsext_use_srtp failed, profiles=%s, %s\n",
+                profiles, openssl_get_error(c));
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
     }
 
     /* The ssl should not be created unless the ctx has been initialized. */
