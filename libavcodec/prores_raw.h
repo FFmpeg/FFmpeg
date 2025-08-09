@@ -22,7 +22,9 @@
 #ifndef AVCODEC_PRORES_RAW_H
 #define AVCODEC_PRORES_RAW_H
 
+#include "libavutil/frame.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/pixfmt.h"
 
 #include "bytestream.h"
 #include "blockdsp.h"
