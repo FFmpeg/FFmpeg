@@ -2,33 +2,33 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
-2025-07-29 - xxxxxxxxxx - lavc 62.10.100 - smpte_436m.h
+2025-07-29 - 1c85a3832af - lavc 62.10.100 - smpte_436m.h
   Add a new public header smpte_436m.h with API for
   manipulating AV_CODEC_ID_SMPTE_436M_ANC data.
 
-2025-07-10 - xxxxxxxxxx - lavf 62.2.100
+2025-07-10 - a566fcb9dc0 - lavf 62.2.100
   mxf [de]muxer now uses AV_CODEC_ID_SMPTE_436M_ANC for
   the vbi_vanc_smpte_436M streams instead of AV_CODEC_ID_NONE.
 
-2025-07-10 - xxxxxxxxxx - lavc 62.10.100 - codec_id.h
+2025-07-10 - f4ff379baea - lavc 62.10.100 - codec_id.h
   Add AV_CODEC_ID_SMPTE_436M_ANC.
 
-2025-08-08 - xxxxxxxxxx - lavc 62.9.100 - codec_id.h
+2025-08-08 - 83b36f54108 - lavc 62.9.100 - codec_id.h
   Add AV_CODEC_ID_PRORES_RAW.
 
-2025-07-31 - xxxxxxxxxx - lavu 60.7.100 - spherical.h
+2025-07-31 - 119d127d05c - lavu 60.7.100 - spherical.h
   Add AV_SPHERICAL_PARAMETRIC_IMMERSIVE.
 
-2025-07-20 - xxxxxxxxxx - lavu 60.6.100 - attributes.h, avstring.h
+2025-07-20 - 157d3b007e9 - lavu 60.6.100 - attributes.h, avstring.h
   Add av_scanf_format() and use it on av_sscanf().
 
-2025-07-18 - xxxxxxxxxx - lavu 60.5.100 - pixfmt.h
+2025-07-18 - fbda5ffb953 - lavu 60.5.100 - pixfmt.h
   Add AV_PIX_FMT_OHCODEC.
 
-2025-07-18 - xxxxxxxxxx - lavu 60.5.100 - hwcontext.h
+2025-07-18 - fbda5ffb953 - lavu 60.5.100 - hwcontext.h
   Add AV_HWDEVICE_TYPE_OHCODEC and AVOHCodecDeviceContext.
 
-2025-07-xx - xxxxxxxxxd - lavfi 11.2.100 - avfilter.h
+2025-07-14 - b24155cae11 - lavfi 11.2.100 - avfilter.h
   Add AVFilterGraph->max_buffered_frames.
 
 2025-07-07 - eca477da52 - lavc 62.6.100 - packet.h
@@ -44,13 +44,13 @@ API changes, most recent first:
   Add AV3DReferenceDisplaysInfo and AV3DReferenceDisplay structs.
   Add av_tdrdi_alloc() and av_tdrdi_get_display().
 
-2025-05-21 - xxxxxxxxxx - lavu 60.3.100 - avassert.h
+2025-05-21 - 004cc60f0e3 - lavu 60.3.100 - avassert.h
   Add av_unreachable() and av_assume() macros.
 
-2025-02-xx - xxxxxxxxxx - lavfi 10.10.100 - avfilter.h
+2025-02-15 - e2f39671ae2 - lavfi 10.10.100 - avfilter.h
   Add avfilter_link_get_hw_frames_ctx().
 
-2025-04-21 - xxxxxxxxxx - lavu 60.2.100 - log.h
+2025-04-21 - bf1579c904a - lavu 60.2.100 - log.h
   Add AV_CLASS_CATEGORY_HWDEVICE.
 
 2025-04-16 - c818c67991 - libpostproc 59.1.100 - postprocess.h
@@ -59,110 +59,110 @@ API changes, most recent first:
 2025-04-07 - 19e9a203b7 - lavu 60.01.100 - dict.h
   Add AV_DICT_DEDUP.
 
-2025-03-17 - xxxxxxxxxx - lavu 59.60.100 - pixfmt.h
+2025-03-17 - 49af9746e8f - lavu 59.60.100 - pixfmt.h
   Add AV_PIX_FMT_GBRAP32BE and AV_PIX_FMT_GBRAP32LE.
 
-2025-03-10 - xxxxxxxxxx - lavu 59.59.100 - pixfmt.h
+2025-03-10 - 61fc9b6fee1 - lavu 59.59.100 - pixfmt.h
   Add AV_PIX_FMT_YAF16BE, AV_PIX_FMT_YAF16LE, AV_PIX_FMT_YAF32BE,
   and AV_PIX_FMT_YAF32LE.
 
-2025-03-01 - xxxxxxxxxx - lavu 59.58.100 - pixfmt.h
+2025-03-01 - 0245e9382c7 - lavu 59.58.100 - pixfmt.h
   Add AV_PIX_FMT_GRAY32BE and AV_PIX_FMT_GRAY32LE.
 
-2025-02-04 - xxxxxxxxxx - lavu 59.56.000 - pixfmt.h
+2025-02-04 - 0ef678f5c50 - lavu 59.56.000 - pixfmt.h
   Add AV_PIX_FMT_AMF_SURFACE.
 
-2025-01-09 - xxxxxxxxxx - lavu 59.55.100 - pixfmt.h
+2025-01-09 - a73760da537 - lavu 59.55.100 - pixfmt.h
   Add AV_PIX_FMT_GBRPF16BE, AV_PIX_FMT_GBRPF16LE, AV_PIX_FMT_GBRAPF16BE,
   AV_PIX_FMT_GBRAPF16LE, AV_PIX_FMT_GRAYF16BE, and AV_PIX_FMT_GRAYF16LE.
 
-2025-02-xx - xxxxxxxxxx - lavu 59.57.100 - log.h
+2025-02-16 - c79cdae3777 - lavu 59.57.100 - log.h
   Add flags AV_LOG_PRINT_TIME and AV_LOG_PRINT_DATETIME.
 
-2025-02-09 - xxxxxxxxxx - lavc 61.32.100 - codec_id.h
+2025-02-09 - 9fb806fa577 - lavc 61.32.100 - codec_id.h
   Add AV_CODEC_ID_IVTV_VBI.
 
-2025-01-25 - xxxxxxxxxx - lavu 59.56.100 - frame.h
+2025-01-25 - ea3c3b42dff - lavu 59.56.100 - frame.h
   Add AV_SIDE_DATA_PROP_CHANNEL_DEPENDENT.
 
-2025-01-25 - xxxxxxxxxx - lavfi 10.9.100 - buffersink.h
+2025-01-25 - 6707d970c04 - lavfi 10.9.100 - buffersink.h
   Add av_buffersink_get_side_data().
 
-2025-01-25 - xxxxxxxxxx - lavfi 10.8.100 - buffersrc.h
+2025-01-25 - 7a025e1cb5f - lavfi 10.8.100 - buffersrc.h
   Add AVBufferSrcParameters.side_data and AVBufferSrcParameters.nb_side_data
 
-2025-01-25 - xxxxxxxxxx - lavfi 10.7.100 - avfilter.h
+2025-01-25 - ef1cb1c9c81 - lavfi 10.7.100 - avfilter.h
   Add AVFilterLink.side_data and AVFilterLink.nb_side_data
 
-2025-01-05 - xxxxxxxxxx - lavu 59.55.100 - frame.h
+2025-01-05 - 42e72d5c8b5 - lavu 59.55.100 - frame.h
   Add AV_FRAME_SIDE_DATA_FLAG_NEW_REF.
 
-2025-01-05 - xxxxxxxxxx - lavc 61.31.100 - avcodec.h
+2025-01-05 - 19c95ecbff8 - lavc 61.31.100 - avcodec.h
   Deprecate AVCodecContext->properties.
 
-2025-01-05 - xxxxxxxxxx - lavc 61.30.100 - frame.h
+2025-01-05 - 2d91f89445d - lavc 61.30.100 - frame.h
   Add AV_FRAME_FLAG_LOSSLESS.
 
-2025-01-03 - xxxxxxxxxx - lavc 61.29.100 - codec_id.h
+2025-01-03 - f3c40826455 - lavc 61.29.100 - codec_id.h
   Add AV_CODEC_ID_JPEGXL_ANIM.
 
-2025-01-xx - xxxxxxxxxx - lavu 59.54.100 - frame.h
+2025-01-03 - da9dcaba69d - lavu 59.54.100 - frame.h
   Add AV_CH_LAYOUT_5POINT1POINT2 and AV_CHANNEL_LAYOUT_5POINT1POINT2.
 
-2024-12-xx - xxxxxxxxxx - lavu 59.53.100 - frame.h
+2024-12-23 - b88944a8aa5 - lavu 59.53.100 - frame.h
   Add av_frame_side_data_remove_by_props().
 
-2024-12-xx - xxxxxxxxxx - lavu 59.52.100 - frame.h
+2024-12-23 - 3428a8d8303 - lavu 59.52.100 - frame.h
   Add AV_SIDE_DATA_PROP_SIZE_DEPENDENT and AV_FRAME_DATA_PROP_COLOR_DEPENDENT.
 
-2024-12-xx - xxxxxxxxxx - lsws 8.13.100 - swscale.h
+2024-12-23 - 45f0a7ad338 - lsws 8.13.100 - swscale.h
   Add enum SwsIntent and SwsContext.intent.
 
-2024-12-15 - xxxxxxxxxx - lavc 61.27.100 packet.h
+2024-12-15 - 2ac34d08542 - lavc 61.27.100 packet.h
   Add av_container_fifo_alloc_avpacket().
 
-2024-12-15 - xxxxxxxxxx - lavu 59.51.100 - refstruct.h container_fifo.h
+2024-12-15 - 56ba57b6725 - lavu 59.51.100 - refstruct.h container_fifo.h
   Add a new public header refstruct.h with new API for
   reference-counted objects.
 
   Add a new public header container_fifo.h with new API for
   a FIFO of container objects (e.g. AVFrame or AVPacket).
 
-2024-12-13 - xxxxxxxxxx - lavu 59.50.100 - channel_layout.h
+2024-12-13 - 6eb4bf04e92 - lavu 59.50.100 - channel_layout.h
   Add AV_CH_LAYOUT_9POINT1POINT6 and AV_CHANNEL_LAYOUT_9POINT1POINT6.
 
-2024-12-05 - xxxxxxxxxx - lavu 59.49.100 - csp.h
+2024-12-05 - 06f084468e0 - lavu 59.49.100 - csp.h
   Add av_csp_itu_eotf() and av_csp_itu_eotf_inv().
 
-2024-12-05 - xxxxxxxxxx - lavu 59.48.100 - csp.h
+2024-12-05 - bf0a6c41111 - lavu 59.48.100 - csp.h
   Add av_csp_trc_func_inv_from_id().
 
-2024-11-25 - xxxxxxxxxx - lsws 8.12.100 - swscale.h
+2024-11-25 - 2a091d4f2ee - lsws 8.12.100 - swscale.h
   Allow using sws_frame_scale() dynamically, without first initializing the
   SwsContext. Deprecate sws_init_context(). Add sws_frame_setup() instead.
 
-2024-11-25 - xxxxxxxxxx - lsws 8.11.100 - swscale.h
+2024-11-25 - fb169640092 - lsws 8.11.100 - swscale.h
   Replace #define-based SWS_* flags by enum SwsFlags.
 
-2024-11-25 - xxxxxxxxxx - lsws 8.10.100 - swscale.h
+2024-11-25 - ed5dd675624 - lsws 8.10.100 - swscale.h
   Publicly expose struct SwsContext, enum SwsDither, and enum SwsAlphaBlend.
 
-2024-11-16 - xxxxxxxxxx - lavu 59.47.101 - frame.h
+2024-11-16 - 46cb7b8d9dc - lavu 59.47.101 - frame.h
   av_frame_get_buffer() now also aligns the data pointers according to
   the requested alignment.
 
-2024-11-13 - xxxxxxxxxx - lavu 59.47.100 - channel_layout.h
+2024-11-13 - 20af68b63a4 - lavu 59.47.100 - channel_layout.h
   Add AV_CHAN_BINAURAL_LEFT, AV_CHAN_BINAURAL_RIGHT
   Add AV_CH_BINAURAL_LEFT, AV_CH_BINAURAL_RIGHT
   Add AV_CH_LAYOUT_BINAURAL, AV_CHANNEL_LAYOUT_BINAURAL
 
-2024-10-26 - xxxxxxxxxx - lavu 59.46.100 - pixfmt.h
+2024-10-26 - e02a3b40a5e - lavu 59.46.100 - pixfmt.h
   Add AV_PIX_FMT_XV48.
 
-2024-10-23 - xxxxxxxxxx - lsws 8.9.100 - swscale.h
+2024-10-23 - b03c758600f - lsws 8.9.100 - swscale.h
   Add sws_is_noop().
 
-2024-10-23 - xxxxxxxxxx - lsws 8.8.100 - swscale.h
+2024-10-23 - 5e50a56b9c4 - lsws 8.8.100 - swscale.h
   Add frame property testing API:
     - sws_test_format()
     - sws_test_colorspace()
@@ -170,34 +170,34 @@ API changes, most recent first:
     - sws_test_transfer()
     - sws_test_frame()
 
-2024-10-23 - xxxxxxxxxx - lsws 8.7.100 - swscale.h
+2024-10-23 - 87baf9ab2c2 - lsws 8.7.100 - swscale.h
   Add sws_free_context().
 
-2024-10-23 - xxxxxxxxxx - lavu 59.45.100 - pixfmt.h
+2024-10-23 - f462ba05f54 - lavu 59.45.100 - pixfmt.h
   Add AV_PIX_FMT_Y216.
 
-2024-10-15 - xxxxxxxxxx - lavu 59.44.100 - pixfmt.h
+2024-10-15 - 2336e685657 - lavu 59.44.100 - pixfmt.h
   Add AV_PIX_FMT_RGB96 and AV_PIX_FMT_RGBA128.
 
 2024-10-14 - c993a91bea - lavu 59.43.100 - pixfmt.h
   Add AV_PIX_FMT_RGBF16.
 
-2024-10-08 - xxxxxxxxxx - lavu 59.42.100 - pixfmt.h
+2024-10-08 - 29ea34728f1 - lavu 59.42.100 - pixfmt.h
   Add AV_PIX_FMT_AYUV, AV_PIX_FMT_UYVA, AV_PIX_FMT_VYU444,
   and AV_PIX_FMT_V30X.
 
-2024-10-xx - xxxxxxxxxx - lavu 59.41.100 - log.h
+2024-10-01 - 0548ab2e425 - lavu 59.41.100 - log.h
   Add AVClass.state_flags_offset and AV_CLASS_STATE_INITIALIZED.
 
-2024-09-30 - xxxxxxxxxx - lavf 61.9.100 - avformat.h
+2024-09-30 - 50d1b89fa0d - lavf 61.9.100 - avformat.h
   Add {nb_}coded_side_data to AVStreamGroupTileGrid.
 
-2024-09-xx - xxxxxxxxxx - lavu 59
+2024-09-30 - df9b80d21a2 - lavu 59
   Deprecate av_int_list_length_for_size(), av_int_list_length(), and
   av_opt_set_int_list() without replacement. All AVOptions using these
   should be replaced with AV_OPT_TYPE_FLAG_ARRAY.
 
-2024-09-xx - xxxxxxxxxx - lavfi 10.6.100
+2024-09-30 - 1efcdbc54d9 - lavfi 10.6.100
   Buffersink now has array-type options
     - pixel_formats
     - colorspaces
