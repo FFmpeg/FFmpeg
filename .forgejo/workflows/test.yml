@@ -47,7 +47,7 @@ jobs:
           path: fate-suite
           key: fate-suite-${{ steps.fate.outputs.hash }}
       - name: Run Fate
-        run: make fate SAMPLES=$PWD/fate-suite -j$(nproc)
+        run: make fate fate-build SAMPLES=$PWD/fate-suite -j$(nproc)
   compile_only:
     strategy:
       fail-fast: false
@@ -66,3 +66,5 @@ jobs:
               --extra-libs="$FF_LIBS" --extra-ldflags="$FF_LDFLAGS" --extra-ldexeflags="$FF_LDEXEFLAGS"
       - name: Build
         run: make -j$(nproc)
+      - name: Run Fate
+        run: make -j$(nproc) fate-build
