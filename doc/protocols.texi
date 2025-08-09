@@ -2028,6 +2028,87 @@ To play back a stream from the TLS/SSL server using @command{ffplay}:
 ffplay tls://@var{hostname}:@var{port}
 @end example
 
+@section dtls
+
+Datagram Transport Layer Security (DTLS)
+
+The required syntax for a DTLS URL is:
+@example
+dtls://@var{hostname}:@var{port}
+@end example
+
+DTLS shares most options with TLS, but operates over UDP instead of TCP.
+The following parameters can be set via command line options
+(or in code via @code{AVOption}s):
+
+@table @option
+
+@item ca_file, cafile=@var{filename}
+A file containing certificate authority (CA) root certificates to treat
+as trusted. If the linked TLS library contains a default this might not
+need to be specified for verification to work, but not all libraries and
+setups have defaults built in.
+The file must be in OpenSSL PEM format.
+
+@item tls_verify=@var{1|0}
+If enabled, try to verify the peer that we are communicating with.
+Note, if using OpenSSL, this currently only makes sure that the
+peer certificate is signed by one of the root certificates in the CA
+database, but it does not validate that the certificate actually
+matches the host name we are trying to connect to.
+
+This is disabled by default since it requires a CA database to be
+provided by the caller in many cases.
+
+@item cert_file, cert=@var{filename}
+A file containing a certificate to use in the handshake with the peer.
+(When operating as server, in listen mode, this is more often required
+by the peer, while client certificates only are mandated in certain
+setups.)
+
+@item key_file, key=@var{filename}
+A file containing the private key for the certificate.
+
+@item cert_pem=@var{string}
+Certificate PEM string
+
+@item key_pem=@var{string}
+Private key PEM string
+
+@item listen=@var{1|0}
+If enabled, listen for connections on the provided port, and assume
+the server role in the handshake instead of the client role.
+
+@item mtu=@var{size}
+Set the Maximum Transmission Unit (MTU) for DTLS packets.
+
+@item use_srtp=@var{1|0}
+Enable the use_srtp DTLS extension.
+This is used in WebRTC applications to establish SRTP encryption keys
+through the DTLS handshake. Default is disabled.
+
+@item external_sock=@var{1|0}
+Use an external socket instead of creating a new one.
+This option only makes sense to pass when interacting with the code via
+API, enabling this from CLI will cause immediate failure.
+Default is disabled.
+
+@end table
+
+Example command lines:
+
+To create a DTLS server:
+
+@example
+ffmpeg -listen 1 -i dtls://@var{hostname}:@var{port} @var{output}
+@end example
+
+To create a DTLS client and send data to server:
+
+@example
+ffmpeg -i @var{input} -f @var{format} dtls://@var{hostname}:@var{port}
+@end example
+
 @section udp
 
 User Datagram Protocol.
