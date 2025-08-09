@@ -22,6 +22,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "config.h"
+
 typedef unsigned (*ff_blackdetect_fn)(const uint8_t *src, ptrdiff_t stride,
                                                    ptrdiff_t width, ptrdiff_t height,
                                                    unsigned threshold);
