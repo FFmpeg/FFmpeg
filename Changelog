@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+
+
+version 8.0:
 - Whisper filter
 - Drop support for OpenSSL < 1.1.0
 - Enable TLS peer certificate verification by default (on next major version bump)
