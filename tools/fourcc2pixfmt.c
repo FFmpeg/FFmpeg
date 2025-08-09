@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     int i, list_fourcc_pix_fmt = 0, list_pix_fmt_fourccs = 0;
     const PixelFormatTag *pix_fmt_tags = raw_pix_fmt_tags;
     const char *pix_fmt_name = NULL;
-    char c;
+    int c;
 
     if (argc == 1) {
         usage();
