@@ -1219,6 +1219,7 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
 
                 bytestream2_get_bufferu(&s->g, cblk->data + cblk->length, cblk->lengthinc[cwsno]);
                 cblk->length   += cblk->lengthinc[cwsno];
+                memset(cblk->data + cblk->length, 0, 4);
                 cblk->lengthinc[cwsno] = 0;
                 if (cblk->nb_terminationsinc) {
                     cblk->nb_terminationsinc--;
