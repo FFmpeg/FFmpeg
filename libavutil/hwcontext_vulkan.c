@@ -3986,7 +3986,7 @@ static VkImageAspectFlags plane_index_to_aspect(int plane) {
     if (plane == 2) return VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT;
     if (plane == 3) return VK_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT;
 
-    av_assert2 (false && "Invalid plane index");
+    av_assert2 (0 && "Invalid plane index");
     return VK_IMAGE_ASPECT_MEMORY_PLANE_0_BIT_EXT;
 }
 
