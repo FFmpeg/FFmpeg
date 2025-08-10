@@ -1356,6 +1356,9 @@ static int mf_close(AVCodecContext *avctx)
     if (c->async_events)
         IMFMediaEventGenerator_Release(c->async_events);
 
+    if (c->dxgiManager)
+        IMFDXGIDeviceManager_Release(c->dxgiManager);
+
 #if !HAVE_UWP
     if (c->library)
         ff_free_mf(&c->functions, &c->mft);
