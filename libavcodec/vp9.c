@@ -1679,8 +1679,6 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                   &s->s.frames[CUR_FRAME] : &s->s.ref_frames[i]);
         }
 
-        ff_cbs_fragment_reset(&s->current_frag);
-
         goto finish;
     }
 
@@ -1805,6 +1803,8 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 
 finish:
+    ff_cbs_fragment_reset(&s->current_frag);
+
     ff_progress_frame_report(&s->s.frames[CUR_FRAME].tf, INT_MAX);
     // ref frame setup
     for (int i = 0; i < 8; i++)
