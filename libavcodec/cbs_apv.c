@@ -37,33 +37,18 @@ static int cbs_apv_get_num_comp(const APVRawFrameHeader *fh)
     }
 }
 
-static void cbs_apv_derive_tile_info(APVDerivedTileInfo *ti,
+static void cbs_apv_derive_tile_info(CodedBitstreamContext *ctx,
                                      const APVRawFrameHeader *fh)
 {
+    CodedBitstreamAPVContext *priv = ctx->priv_data;
     int frame_width_in_mbs   = (fh->frame_info.frame_width  + 15) / 16;
     int frame_height_in_mbs  = (fh->frame_info.frame_height + 15) / 16;
-    int start_mb, i;
+    int tile_cols = (frame_width_in_mbs  + fh->tile_info.tile_width_in_mbs - 1)  / fh->tile_info.tile_width_in_mbs;
+    int tile_rows = (frame_height_in_mbs + fh->tile_info.tile_height_in_mbs - 1) / fh->tile_info.tile_height_in_mbs;
 
-    start_mb = 0;
-    for (i = 0; start_mb < frame_width_in_mbs; i++) {
-        ti->col_starts[i] = start_mb * APV_MB_WIDTH;
-        start_mb += fh->tile_info.tile_width_in_mbs;
-    }
-    av_assert0(i <= APV_MAX_TILE_COLS);
-    ti->col_starts[i] = frame_width_in_mbs * APV_MB_WIDTH;
-    ti->tile_cols = i;
+    av_assert0(tile_cols <= APV_MAX_TILE_COLS && tile_rows <= APV_MAX_TILE_ROWS);
 
-    start_mb = 0;
-    for (i = 0; start_mb < frame_height_in_mbs; i++) {
-        av_assert0(i < APV_MAX_TILE_ROWS);
-        ti->row_starts[i] = start_mb * APV_MB_HEIGHT;
-        start_mb += fh->tile_info.tile_height_in_mbs;
-    }
-    av_assert0(i <= APV_MAX_TILE_ROWS);
-    ti->row_starts[i] = frame_height_in_mbs * APV_MB_HEIGHT;
-    ti->tile_rows = i;
-
-    ti->num_tiles = ti->tile_cols * ti->tile_rows;
+    priv->num_tiles = tile_cols * tile_rows;
 }
 
 
