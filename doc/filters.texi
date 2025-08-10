@@ -19779,7 +19779,7 @@ Specifies which version of the stats file format to use. Details of
 each format are written below.
 Default value is 1.
 
-@item stats_add_max
+@item output_max
 Determines whether the max value is output to the stats log.
 Default value is 0.
 Requires stats_version >= 2. If this is set and stats_version < 2,
