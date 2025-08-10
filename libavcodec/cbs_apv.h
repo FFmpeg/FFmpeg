@@ -187,21 +187,11 @@ typedef struct APVRawMetadata {
 } APVRawMetadata;
 
 
-typedef struct APVDerivedTileInfo {
-    uint8_t  tile_cols;
-    uint8_t  tile_rows;
-    uint16_t num_tiles;
-    // The spec uses an extra element on the end of these arrays
-    // not corresponding to any tile.
-    uint16_t col_starts[APV_MAX_TILE_COLS + 1];
-    uint16_t row_starts[APV_MAX_TILE_ROWS + 1];
-} APVDerivedTileInfo;
-
 typedef struct CodedBitstreamAPVContext {
     int bit_depth;
     int num_comp;
 
-    APVDerivedTileInfo tile_info;
+    uint16_t num_tiles;
 } CodedBitstreamAPVContext;
 
 #endif /* AVCODEC_CBS_APV_H */
