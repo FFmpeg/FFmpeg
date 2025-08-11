@@ -52,8 +52,11 @@ typedef struct APVDecodeContext {
     CodedBitstreamFragment au;
     APVDerivedTileInfo tile_info;
 
+    AVPacket *pkt;
     AVFrame *output_frame;
     atomic_int tile_errors;
+
+    int nb_unit;
 
     uint8_t warned_additional_frames;
     uint8_t warned_unknown_pbu_types;
@@ -145,11 +148,22 @@ static av_cold int apv_decode_init(AVCodecContext *avctx)
 
     // Extradata could be set here, but is ignored by the decoder.
 
+    apv->pkt = avctx->internal->in_pkt;
     ff_apv_dsp_init(&apv->dsp);
 
     atomic_init(&apv->tile_errors, 0);
 
     return 0;
+}
+
+static void apv_decode_flush(AVCodecContext *avctx)
+{
+    APVDecodeContext *apv = avctx->priv_data;
+
+    apv->nb_unit = 0;
+    av_packet_unref(apv->pkt);
+    ff_cbs_fragment_reset(&apv->au);
+    ff_cbs_flush(apv->cbc);
 }
 
 static av_cold int apv_decode_close(AVCodecContext *avctx)
@@ -446,29 +460,20 @@ static int apv_decode_metadata(AVCodecContext *avctx, AVFrame *frame,
     return 0;
 }
 
-static int apv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
-                            int *got_frame, AVPacket *packet)
+static int apv_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 {
     APVDecodeContext      *apv = avctx->priv_data;
     CodedBitstreamFragment *au = &apv->au;
-    int err;
+    int i, err;
 
-    err = ff_cbs_read_packet(apv->cbc, au, packet);
-    if (err < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to read packet.\n");
-        goto fail;
-    }
-
-    for (int i = 0; i < au->nb_units; i++) {
+    for (i = apv->nb_unit; i < au->nb_units; i++) {
         CodedBitstreamUnit *pbu = &au->units[i];
 
         switch (pbu->type) {
         case APV_PBU_PRIMARY_FRAME:
             err = apv_decode(avctx, frame, pbu->content);
-            if (err < 0)
-                goto fail;
-            *got_frame = 1;
-            break;
+            i++;
+            goto end;
         case APV_PBU_METADATA:
             apv_decode_metadata(avctx, frame, pbu->content);
             break;
@@ -500,9 +505,49 @@ static int apv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
     }
 
-    err = packet->size;
-fail:
-    ff_cbs_fragment_reset(au);
+    err = AVERROR(EAGAIN);
+end:
+    av_assert0(i <= apv->au.nb_units);
+    apv->nb_unit = i;
+
+    if ((err < 0 && err != AVERROR(EAGAIN)) || apv->au.nb_units == i) {
+        av_packet_unref(apv->pkt);
+        ff_cbs_fragment_reset(&apv->au);
+        apv->nb_unit = 0;
+    }
+    if (!err && !frame->buf[0])
+        err = AVERROR(EAGAIN);
+
+    return err;
+}
+
+static int apv_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+    APVDecodeContext *apv = avctx->priv_data;
+    int err;
+
+    do {
+        if (!apv->au.nb_units) {
+            err = ff_decode_get_packet(avctx, apv->pkt);
+            if (err < 0)
+                return err;
+
+            err = ff_cbs_read_packet(apv->cbc, &apv->au, apv->pkt);
+            if (err < 0) {
+                ff_cbs_fragment_reset(&apv->au);
+                av_packet_unref(apv->pkt);
+                av_log(avctx, AV_LOG_ERROR, "Failed to read packet.\n");
+                return err;
+            }
+
+            apv->nb_unit = 0;
+            av_log(avctx, AV_LOG_DEBUG, "Total PBUs on this packet: %d.\n",
+                   apv->au.nb_units);
+        }
+
+        err = apv_receive_frame_internal(avctx, frame);
+    } while (err == AVERROR(EAGAIN));
+
     return err;
 }
 
@@ -513,8 +558,9 @@ const FFCodec ff_apv_decoder = {
     .p.id                  = AV_CODEC_ID_APV,
     .priv_data_size        = sizeof(APVDecodeContext),
     .init                  = apv_decode_init,
+    .flush                 = apv_decode_flush,
     .close                 = apv_decode_close,
-    FF_CODEC_DECODE_CB(apv_decode_frame),
+    FF_CODEC_RECEIVE_FRAME_CB(apv_receive_frame),
     .p.capabilities        = AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_SLICE_THREADS |
                              AV_CODEC_CAP_FRAME_THREADS,
