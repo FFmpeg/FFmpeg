@@ -62,6 +62,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/tx.h"
 #include "libavutil/version.h"
+#include "libavutil/refstruct.h"
 
 /*
  * supported tools
@@ -421,6 +422,26 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
     return layout;
 }
 
+static void copy_oc(OutputConfiguration *dst, OutputConfiguration *src)
+{
+    int i;
+
+    for (i = 0; i < src->usac.nb_elems; i++) {
+        AACUsacElemConfig *src_e = &src->usac.elems[i];
+        AACUsacElemConfig *dst_e = &dst->usac.elems[i];
+        /* dst_e->ext.pl_buf is guaranteed to be set to src_e->ext.pl_buf
+         * upon this function's return */
+        av_refstruct_replace(&dst_e->ext.pl_buf, src_e->ext.pl_buf);
+    }
+
+    /* Unref all additional buffers to close leaks */
+    for (; i < dst->usac.nb_elems; i++)
+        av_refstruct_unref(&dst->usac.elems[i].ext.pl_buf);
+
+    /* Set all other properties */
+    *dst = *src;
+}
+
 /**
  * Save current output configuration if and only if it has been locked.
  */
@@ -429,7 +450,7 @@ static int push_output_configuration(AACDecContext *ac)
     int pushed = 0;
 
     if (ac->oc[1].status == OC_LOCKED || ac->oc[0].status == OC_NONE) {
-        ac->oc[0] = ac->oc[1];
+        copy_oc(&ac->oc[0], &ac->oc[1]);
         pushed = 1;
     }
     ac->oc[1].status = OC_NONE;
@@ -443,7 +464,8 @@ static int push_output_configuration(AACDecContext *ac)
 static void pop_output_configuration(AACDecContext *ac)
 {
     if (ac->oc[1].status != OC_LOCKED && ac->oc[0].status != OC_NONE) {
-        ac->oc[1] = ac->oc[0];
+        copy_oc(&ac->oc[1], &ac->oc[0]);
+
         ac->avctx->ch_layout = ac->oc[1].ch_layout;
         ff_aac_output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
                                 ac->oc[1].status, 0);
@@ -1110,7 +1132,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
         AACUSACConfig *usac = &oc->usac;
         for (int j = 0; j < usac->nb_elems; j++) {
             AACUsacElemConfig *ec = &usac->elems[j];
-            av_freep(&ec->ext.pl_data);
+            av_refstruct_unref(&ec->ext.pl_buf);
         }
 
         av_channel_layout_uninit(&ac->oc[i].ch_layout);

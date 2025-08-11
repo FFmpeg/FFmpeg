@@ -344,7 +344,7 @@ typedef struct AACUsacElemConfig {
         uint8_t payload_frag;
         uint32_t default_len;
         uint32_t pl_data_offset;
-        uint8_t *pl_data;
+        uint8_t *pl_buf;
     } ext;
 } AACUsacElemConfig;
 
@@ -353,7 +353,7 @@ typedef struct AACUSACConfig {
     uint16_t core_frame_len;
     uint16_t stream_identifier;
 
-    AACUsacElemConfig elems[64];
+    AACUsacElemConfig elems[MAX_ELEM_ID];
     int nb_elems;
 
     struct {
