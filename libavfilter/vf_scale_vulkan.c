@@ -122,9 +122,10 @@ static const char write_444[] = {
     C(0, }                                                                      )
 };
 
-static int init_scale_shader(ScaleVulkanContext *s, FFVulkanShader *shd,
+static int init_scale_shader(AVFilterContext *ctx, FFVulkanShader *shd,
                              FFVulkanDescriptorSetBinding *desc, AVFrame *in)
 {
+    ScaleVulkanContext *s = ctx->priv;
     GLSLD(   scale_bilinear                                                  );
 
     if (s->vkctx.output_format != s->vkctx.input_format) {
@@ -179,7 +180,7 @@ static int init_scale_shader(ScaleVulkanContext *s, FFVulkanShader *shd,
 
         lcoeffs = av_csp_luma_coeffs_from_avcsp(in->colorspace);
         if (!lcoeffs) {
-            av_log(s, AV_LOG_ERROR, "Unsupported colorspace\n");
+            av_log(ctx, AV_LOG_ERROR, "Unsupported colorspace\n");
             return AVERROR(EINVAL);
         }
 
@@ -305,7 +306,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     if (debayer)
         err = init_debayer_shader(s, shd, desc, in);
     else
-        err = init_scale_shader(s, shd, desc, in);
+        err = init_scale_shader(ctx, shd, desc, in);
     if (err < 0)
         goto fail;
 
