@@ -140,7 +140,7 @@ static int config_input(AVFilterLink *inlink)
     if (!s->counter)
         return AVERROR(ENOMEM);
 
-    av_log(s, AV_LOG_VERBOSE,
+    av_log(ctx, AV_LOG_VERBOSE,
            "black_min_duration:%s pixel_black_th:%f picture_black_ratio_th:%f alpha:%d\n",
            av_ts2timestr(s->black_min_duration, &s->time_base),
            s->pixel_black_th, s->picture_black_ratio_th, s->alpha);
@@ -152,7 +152,7 @@ static void check_black_end(AVFilterContext *ctx)
     BlackDetectContext *s = ctx->priv;
 
     if ((s->black_end - s->black_start) >= s->black_min_duration) {
-        av_log(s, AV_LOG_INFO,
+        av_log(ctx, AV_LOG_INFO,
                "black_start:%s black_end:%s black_duration:%s\n",
                av_ts2timestr(s->black_start, &s->time_base),
                av_ts2timestr(s->black_end,   &s->time_base),
