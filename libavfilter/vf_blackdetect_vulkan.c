@@ -164,7 +164,7 @@ static void report_black_region(AVFilterContext *ctx, int64_t black_end)
         return;
 
     if ((black_end - s->black_start) >= s->black_min_duration_time / av_q2d(inlink->time_base)) {
-        av_log(s, AV_LOG_INFO,
+        av_log(ctx, AV_LOG_INFO,
                "black_start:%s black_end:%s black_duration:%s\n",
                av_ts2timestr(s->black_start, &inlink->time_base),
                av_ts2timestr(black_end, &inlink->time_base),
