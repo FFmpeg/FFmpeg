@@ -248,8 +248,8 @@ static av_cold int init(AVFilterContext *ctx)
     s->h = av_expr_eval(s->h_pexpr, s->var_values, s);
 
 #define CHECK_UNSET_OPT(opt)                                            \
-    if (s->opt == -1) {                                            \
-        av_log(s, AV_LOG_ERROR, "Option %s was not set.\n", #opt); \
+    if (s->opt == -1) {                                                 \
+        av_log(ctx, AV_LOG_ERROR, "Option %s was not set.\n", #opt);    \
         return AVERROR(EINVAL);                                         \
     }
     CHECK_UNSET_OPT(x);
@@ -272,12 +272,13 @@ static av_cold int init(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    DelogoContext *s = inlink->dst->priv;
+    AVFilterContext *ctx = inlink->dst;
+    DelogoContext *s = ctx->priv;
 
     /* Check whether the logo area fits in the frame */
     if (s->x + (s->band - 1) < 0 || s->x + s->w - (s->band*2 - 2) > inlink->w ||
         s->y + (s->band - 1) < 0 || s->y + s->h - (s->band*2 - 2) > inlink->h) {
-        av_log(s, AV_LOG_ERROR, "Logo area is outside of the frame.\n");
+        av_log(ctx, AV_LOG_ERROR, "Logo area is outside of the frame.\n");
         return AVERROR(EINVAL);
     }
 
@@ -287,7 +288,8 @@ static int config_input(AVFilterLink *inlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     FilterLink *inl = ff_filter_link(inlink);
-    DelogoContext *s = inlink->dst->priv;
+    AVFilterContext *ctx = inlink->dst;
+    DelogoContext *s = ctx->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     AVFrame *out;
@@ -307,7 +309,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     if (s->x + (s->band - 1) <= 0 || s->x + s->w - (s->band*2 - 2) > inlink->w ||
         s->y + (s->band - 1) <= 0 || s->y + s->h - (s->band*2 - 2) > inlink->h) {
-        av_log(s, AV_LOG_WARNING, "Logo area is outside of the frame,"
+        av_log(ctx, AV_LOG_WARNING, "Logo area is outside of the frame,"
                " auto set the area inside of the frame\n");
     }
 
