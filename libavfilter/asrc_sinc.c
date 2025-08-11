@@ -201,8 +201,9 @@ static float safe_log(float x)
     return -26;
 }
 
-static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, float phase)
+static int fir_to_phase(AVFilterContext *ctx, float **h, int *len, int *post_len, float phase)
 {
+    SincContext *s = ctx->priv;
     float *pi_wraps, *work, phase1 = (phase > 50.f ? 100.f - phase : phase) / 50.f;
     int i, work_len, begin, end, imp_peak = 0, peak = 0, ret;
     float imp_sum = 0, peak_imp_sum = 0, scale = 1.f;
@@ -313,7 +314,7 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
     }
     *post_len = phase > 50 ? peak - begin : begin + *len - (peak + 1);
 
-    av_log(s, AV_LOG_DEBUG, "%d nPI=%g peak-sum@%i=%g (val@%i=%g); len=%i post=%i (%g%%)\n",
+    av_log(ctx, AV_LOG_DEBUG, "%d nPI=%g peak-sum@%i=%g (val@%i=%g); len=%i post=%i (%g%%)\n",
            work_len, pi_wraps[work_len >> 1] / M_PI, peak, peak_imp_sum, imp_peak,
            work[imp_peak], *len, *post_len, 100.f - 100.f * *post_len / (*len - 1));
 
@@ -360,7 +361,7 @@ static int config_output(AVFilterLink *outlink)
     }
 
     if (s->phase != 50.f) {
-        ret = fir_to_phase(s, &h[longer], &n, &post_peak, s->phase);
+        ret = fir_to_phase(ctx, &h[longer], &n, &post_peak, s->phase);
         if (ret < 0)
             goto cleanup;
     } else {
