@@ -29,7 +29,7 @@ git diff --exit-code >/dev/null ||\
 git diff --cached --exit-code >/dev/null ||\
     error "Please commit local changes first"
 
-#version="12.34"
+version="8.0"
 
 merge "https://github.com/michaelni/FFmpeg.git" "libpostproc"
 
