@@ -2463,9 +2463,6 @@ redo_for_pal8:
             case SOF2:
             case SOF3:
             case SOF48:
-            case SOI:
-            case SOS:
-            case EOI:
                 break;
             default:
                 goto skip;
@@ -2541,7 +2538,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         case EOI:
 eoi_parser:
-            if (!avctx->hwaccel && avctx->skip_frame != AVDISCARD_ALL &&
+            if (!avctx->hwaccel &&
                 s->progressive && s->cur_scan && s->got_picture)
                 mjpeg_idct_scan_progressive_ac(s);
             s->cur_scan = 0;
@@ -2555,10 +2552,6 @@ eoi_parser:
                 /* if not bottom field, do not output image yet */
                 if (s->bottom_field == !s->interlace_polarity)
                     break;
-            }
-            if (avctx->skip_frame == AVDISCARD_ALL) {
-                s->got_picture = 0;
-                goto the_end_no_picture;
             }
             if (avctx->hwaccel) {
                 ret = FF_HW_SIMPLE_CALL(avctx, end_frame);
@@ -2588,10 +2581,6 @@ eoi_parser:
             s->raw_scan_buffer_size = buf_end - buf_ptr;
 
             s->cur_scan++;
-            if (avctx->skip_frame == AVDISCARD_ALL) {
-                skip_bits(&s->gb, get_bits_left(&s->gb));
-                break;
-            }
 
             if ((ret = ff_mjpeg_decode_sos(s, NULL, 0, NULL)) < 0 &&
                 (avctx->err_recognition & AV_EF_EXPLODE))
@@ -2614,6 +2603,18 @@ eoi_parser:
             av_log(avctx, AV_LOG_ERROR,
                    "mjpeg: unsupported coding type (%x)\n", start_code);
             break;
+        }
+
+        if (avctx->skip_frame == AVDISCARD_ALL) {
+            switch(start_code) {
+            case SOF0:
+            case SOF1:
+            case SOF2:
+            case SOF3:
+            case SOF48:
+                s->got_picture = 0;
+                goto the_end_no_picture;
+            }
         }
 
 skip:
