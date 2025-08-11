@@ -149,20 +149,20 @@ static int do_vmaf(FFFrameSync *fs)
 
     err = copy_picture_data(ref, &pic_ref, s->bpc);
     if (err) {
-        av_log(s, AV_LOG_ERROR, "problem during vmaf_picture_alloc.\n");
+        av_log(ctx, AV_LOG_ERROR, "problem during vmaf_picture_alloc.\n");
         return AVERROR(ENOMEM);
     }
 
     err = copy_picture_data(dist, &pic_dist, s->bpc);
     if (err) {
-        av_log(s, AV_LOG_ERROR, "problem during vmaf_picture_alloc.\n");
+        av_log(ctx, AV_LOG_ERROR, "problem during vmaf_picture_alloc.\n");
         vmaf_picture_unref(&pic_ref);
         return AVERROR(ENOMEM);
     }
 
     err = vmaf_read_pictures(s->vmaf, &pic_ref, &pic_dist, s->frame_cnt++);
     if (err) {
-        av_log(s, AV_LOG_ERROR, "problem during vmaf_read_pictures.\n");
+        av_log(ctx, AV_LOG_ERROR, "problem during vmaf_read_pictures.\n");
         return AVERROR(EINVAL);
     }
 
@@ -680,7 +680,7 @@ static int config_props_cuda(AVFilterLink *outlink)
     };
 
     if (!format_is_supported(frames_ctx->sw_format)) {
-        av_log(s, AV_LOG_ERROR,
+        av_log(ctx, AV_LOG_ERROR,
                "Unsupported input format: %s\n", desc->name);
         return AVERROR(EINVAL);
     }
@@ -776,20 +776,20 @@ static int do_vmaf_cuda(FFFrameSync* fs)
     err = copy_picture_data_cuda(s->vmaf, device_hwctx, ref, &pic_ref,
                                  frames_ctx->sw_format);
     if (err) {
-        av_log(s, AV_LOG_ERROR, "problem during copy_picture_data_cuda.\n");
+        av_log(ctx, AV_LOG_ERROR, "problem during copy_picture_data_cuda.\n");
         return AVERROR(ENOMEM);
     }
 
     err = copy_picture_data_cuda(s->vmaf, device_hwctx, dist, &pic_dist,
                                  frames_ctx->sw_format);
     if (err) {
-        av_log(s, AV_LOG_ERROR, "problem during copy_picture_data_cuda.\n");
+        av_log(ctx, AV_LOG_ERROR, "problem during copy_picture_data_cuda.\n");
         return AVERROR(ENOMEM);
     }
 
     err = vmaf_read_pictures(s->vmaf, &pic_ref, &pic_dist, s->frame_cnt++);
     if (err) {
-        av_log(s, AV_LOG_ERROR, "problem during vmaf_read_pictures.\n");
+        av_log(ctx, AV_LOG_ERROR, "problem during vmaf_read_pictures.\n");
         return AVERROR(EINVAL);
     }
 
