@@ -257,7 +257,7 @@ static int activate(AVFilterContext *ctx)
     if (!ff_outlink_frame_wanted(outlink))
         return FFERROR_NOT_READY;
     if (nb_samples <= 0) {
-        av_log(sine, AV_LOG_WARNING, "nb samples expression evaluated to %d, "
+        av_log(ctx, AV_LOG_WARNING, "nb samples expression evaluated to %d, "
                "defaulting to 1024\n", nb_samples);
         nb_samples = 1024;
     }
