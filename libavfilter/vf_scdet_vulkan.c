@@ -330,7 +330,7 @@ done:
     if (score >= s->threshold) {
         const char *pts = av_ts2timestr(in->pts, &link->time_base);
         av_dict_set(&in->metadata, "lavfi.scd.time", pts, 0);
-        av_log(s, AV_LOG_INFO, "lavfi.scd.score: %.3f, lavfi.scd.time: %s\n",
+        av_log(ctx, AV_LOG_INFO, "lavfi.scd.score: %.3f, lavfi.scd.time: %s\n",
                score, pts);
     }
 
