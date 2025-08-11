@@ -96,29 +96,30 @@ static void init_gaussian_kernel(float *kernel, float sigma, float kernel_size)
     }
 }
 
-static inline void init_kernel_size(GBlurVulkanContext *s, int *out_size)
+static inline void init_kernel_size(void *log_ctx, int *out_size)
 {
     int size = *out_size;
 
     if (!(size & 1)) {
-        av_log(s, AV_LOG_WARNING, "The kernel size should be odd\n");
+        av_log(log_ctx, AV_LOG_WARNING, "The kernel size should be odd\n");
         size++;
     }
 
     *out_size = (size >> 1) + 1;
 }
 
-static av_cold void init_gaussian_params(GBlurVulkanContext *s)
+static av_cold void init_gaussian_params(AVFilterContext *ctx)
 {
+    GBlurVulkanContext *s = ctx->priv;
     if (s->sigmaV <= 0)
         s->sigmaV = s->sigma;
 
-    init_kernel_size(s, &s->size);
+    init_kernel_size(ctx, &s->size);
 
     if (s->sizeV <= 0)
         s->sizeV = s->size;
     else
-        init_kernel_size(s, &s->sizeV);
+        init_kernel_size(ctx, &s->sizeV);
 }
 
 static int init_gblur_pipeline(GBlurVulkanContext *s,
@@ -235,7 +236,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
         },
     };
 
-    init_gaussian_params(s);
+    init_gaussian_params(ctx);
 
     {
         shd = &s->shd_hor;
