@@ -27,8 +27,6 @@
  * @example decode_filter_video.c
  */
 
-#define _XOPEN_SOURCE 600 /* for usleep */
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -38,6 +36,7 @@
 #include <libavfilter/buffersrc.h>
 #include <libavutil/mem.h>
 #include <libavutil/opt.h>
+#include <libavutil/time.h>
 
 const char *filter_descr = "scale=78:24,transpose=cclock";
 /* other way:
@@ -195,7 +194,7 @@ static void display_frame(const AVFrame *frame, AVRational time_base)
             delay = av_rescale_q(frame->pts - last_pts,
                                  time_base, AV_TIME_BASE_Q);
             if (delay > 0 && delay < 1000000)
-                usleep(delay);
+                av_usleep(delay);
         }
         last_pts = frame->pts;
     }
