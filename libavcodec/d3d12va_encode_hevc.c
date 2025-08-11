@@ -279,9 +279,8 @@ static int d3d12va_encode_hevc_init_sequence_params(AVCodecContext *avctx)
     }
 
     if (support.SupportFlags & D3D12_VIDEO_ENCODER_SUPPORT_FLAG_RECONSTRUCTED_FRAMES_REQUIRE_TEXTURE_ARRAYS) {
-        av_log(avctx, AV_LOG_ERROR, "D3D12 video encode on this device requires texture array support, "
-               "but it's not implemented.\n");
-        return AVERROR_PATCHWELCOME;
+        ctx->is_texture_array = 1;
+        av_log(avctx, AV_LOG_DEBUG, "D3D12 video encode on this device uses texture array mode.\n");
     }
 
     desc = av_pix_fmt_desc_get(base_ctx->input_frames->sw_format);

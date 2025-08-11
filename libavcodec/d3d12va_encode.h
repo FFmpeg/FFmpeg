@@ -52,6 +52,8 @@ typedef struct D3D12VAEncodePicture {
     ID3D12Resource *encoded_metadata;
     ID3D12Resource *resolved_metadata;
 
+    int            subresource_index;
+
     D3D12_VIDEO_ENCODER_PICTURE_CONTROL_CODEC_DATA pic_ctl;
 
     int             fence_value;
@@ -193,6 +195,16 @@ typedef struct D3D12VAEncodeContext {
      * Pool of (reusable) bitstream output buffers.
      */
     AVBufferPool *output_buffer_pool;
+
+    /**
+     * Flag indicates if the HW is texture array mode.
+     */
+    int is_texture_array;
+
+    /**
+     * The number of planes in the input DXGI FORMAT.
+     */
+    int plane_count;
 
     /**
      * D3D12 video encoder.

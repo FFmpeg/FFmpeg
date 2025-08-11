@@ -49,6 +49,7 @@ typedef struct D3D12VAFramesContext {
     ID3D12GraphicsCommandList *command_list;
     AVD3D12VASyncContext       sync_ctx;
     UINT                       luma_component_size;
+    int                        nb_surfaces_used;
 } D3D12VAFramesContext;
 
 typedef struct D3D12VADevicePriv {
@@ -174,7 +175,8 @@ fail:
 
 static void d3d12va_frames_uninit(AVHWFramesContext *ctx)
 {
-    D3D12VAFramesContext *s = ctx->hwctx;
+    D3D12VAFramesContext   *s     = ctx->hwctx;
+    AVD3D12VAFramesContext *hwctx = ctx->hwctx;
 
     D3D12_OBJECT_RELEASE(s->sync_ctx.fence);
     if (s->sync_ctx.event)
@@ -185,6 +187,9 @@ static void d3d12va_frames_uninit(AVHWFramesContext *ctx)
     D3D12_OBJECT_RELEASE(s->command_allocator);
     D3D12_OBJECT_RELEASE(s->command_list);
     D3D12_OBJECT_RELEASE(s->command_queue);
+
+    if (hwctx->texture_array)
+        D3D12_OBJECT_RELEASE(hwctx->texture_array);
 }
 
 static int d3d12va_frames_get_constraints(AVHWDeviceContext *ctx, const void *hwconfig, AVHWFramesConstraints *constraints)
@@ -220,12 +225,50 @@ static void free_texture(void *opaque, uint8_t *data)
 {
     AVD3D12VAFrame *frame = (AVD3D12VAFrame *)data;
 
-    D3D12_OBJECT_RELEASE(frame->texture);
+    if (!(frame->flags & AV_D3D12VA_FRAME_FLAG_TEXTURE_ARRAY))
+        D3D12_OBJECT_RELEASE(frame->texture);
+
     D3D12_OBJECT_RELEASE(frame->sync_ctx.fence);
     if (frame->sync_ctx.event)
         CloseHandle(frame->sync_ctx.event);
 
     av_freep(&data);
+}
+
+static AVBufferRef *d3d12va_pool_alloc_texture_array(AVHWFramesContext *ctx)
+{
+    AVD3D12VAFrame         *frame  = av_mallocz(sizeof(*frame));
+    D3D12VAFramesContext   *s     = ctx->hwctx;
+    AVD3D12VAFramesContext *hwctx = ctx->hwctx;
+    AVD3D12VADeviceContext *device_hwctx = ctx->device_ctx->hwctx;
+    AVBufferRef *buf;
+
+    frame->flags |= AV_D3D12VA_FRAME_FLAG_TEXTURE_ARRAY;
+
+    DX_CHECK(ID3D12Device_CreateFence(device_hwctx->device, 0, D3D12_FENCE_FLAG_NONE,
+                                      &IID_ID3D12Fence, (void **)&frame->sync_ctx.fence));
+    frame->sync_ctx.event = CreateEvent(NULL, FALSE, FALSE, NULL);
+    if (!frame->sync_ctx.event)
+        goto fail;
+
+    if (s->nb_surfaces_used >= ctx->initial_pool_size) {
+        av_log(ctx, AV_LOG_ERROR, "Static surface pool size exceeded.\n");
+        goto fail;
+    }
+
+    frame->texture = hwctx->texture_array;
+    frame->subresource_index = s->nb_surfaces_used;
+
+    buf = av_buffer_create((uint8_t *)frame, sizeof(*frame), free_texture, NULL, 0);
+
+    if (!buf)
+        goto fail;
+
+    s->nb_surfaces_used++;
+    return buf;
+fail:
+    free_texture(NULL, (uint8_t *)frame);
+    return NULL;
 }
 
 static AVBufferRef *d3d12va_pool_alloc(void *opaque, size_t size)
@@ -236,6 +279,10 @@ static AVBufferRef *d3d12va_pool_alloc(void *opaque, size_t size)
 
     AVBufferRef *buf;
     AVD3D12VAFrame *frame;
+
+    if (ctx->initial_pool_size > 0 && hwctx->flags & AV_D3D12VA_FRAME_FLAG_TEXTURE_ARRAY)
+        return d3d12va_pool_alloc_texture_array(ctx);
+
     D3D12_HEAP_PROPERTIES props = { .Type = D3D12_HEAP_TYPE_DEFAULT };
     D3D12_RESOURCE_DESC desc = {
         .Dimension        = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
@@ -247,7 +294,7 @@ static AVBufferRef *d3d12va_pool_alloc(void *opaque, size_t size)
         .Format           = hwctx->format,
         .SampleDesc       = {.Count = 1, .Quality = 0 },
         .Layout           = D3D12_TEXTURE_LAYOUT_UNKNOWN,
-        .Flags            = hwctx->flags,
+        .Flags            = hwctx->resource_flags,
     };
 
     frame = av_mallocz(sizeof(AVD3D12VAFrame));
@@ -278,6 +325,34 @@ fail:
     return NULL;
 }
 
+static int d3d12va_texture_array_init(AVHWFramesContext *ctx)
+{
+    AVD3D12VAFramesContext *hwctx        = ctx->hwctx;
+    AVD3D12VADeviceContext *device_hwctx = ctx->device_ctx->hwctx;
+
+    D3D12_HEAP_PROPERTIES props = { .Type = D3D12_HEAP_TYPE_DEFAULT };
+
+    D3D12_RESOURCE_DESC desc = {
+        .Dimension        = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+        .Alignment        = 0,
+        .Width            = ctx->width,
+        .Height           = ctx->height,
+        .DepthOrArraySize = ctx->initial_pool_size,
+        .MipLevels        = 1,
+        .Format           = hwctx->format,
+        .SampleDesc       = {.Count = 1, .Quality = 0 },
+        .Layout           = D3D12_TEXTURE_LAYOUT_UNKNOWN,
+        .Flags            = hwctx->resource_flags,
+    };
+
+    if (FAILED(ID3D12Device_CreateCommittedResource(device_hwctx->device, &props, D3D12_HEAP_FLAG_NONE, &desc,
+        D3D12_RESOURCE_STATE_COMMON, NULL, &IID_ID3D12Resource, (void **)&hwctx->texture_array))) {
+        av_log(ctx, AV_LOG_ERROR, "Could not create the texture array\n");
+        return AVERROR(EINVAL);
+    }
+    return 0;
+}
+
 static int d3d12va_frames_init(AVHWFramesContext *ctx)
 {
     AVD3D12VAFramesContext *hwctx = ctx->hwctx;
@@ -296,6 +371,12 @@ static int d3d12va_frames_init(AVHWFramesContext *ctx)
         av_log(ctx, AV_LOG_ERROR, "Unsupported pixel format: %s\n",
                av_get_pix_fmt_name(ctx->sw_format));
         return AVERROR(EINVAL);
+    }
+
+    if (ctx->initial_pool_size > 0 && hwctx->flags & AV_D3D12VA_FRAME_FLAG_TEXTURE_ARRAY) {
+        int err = d3d12va_texture_array_init(ctx);
+        if (err < 0)
+            return err;
     }
 
     ffhwframesctx(ctx)->pool_internal = av_buffer_pool_init2(sizeof(AVD3D12VAFrame),

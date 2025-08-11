@@ -100,6 +100,18 @@ typedef struct AVD3D12VASyncContext {
 } AVD3D12VASyncContext;
 
 /**
+ * Define the behaviours of frame allocation.
+ */
+typedef enum AVD3D12VAFrameFlags {
+    AV_D3D12VA_FRAME_FLAG_NONE = 0,
+
+    /**
+     * Indicates that frame data should be allocated using a texture array resource.
+     */
+    AV_D3D12VA_FRAME_FLAG_TEXTURE_ARRAY = (1 << 1),
+} AVD3D12VAFrameFlags;
+
+/**
  * @brief D3D12VA frame descriptor for pool allocation.
  *
  */
@@ -112,11 +124,25 @@ typedef struct AVD3D12VAFrame {
     ID3D12Resource *texture;
 
     /**
+     * Index of the subresource within the texture.
+     *
+     * In texture array mode, this specifies the array slice index.
+     * When texture array mode is not used, this value is always 0.
+     */
+    int subresource_index;
+
+    /**
      * The sync context for the texture
      *
      * @see: https://learn.microsoft.com/en-us/windows/win32/medfound/direct3d-12-video-overview#directx-12-fences
      */
     AVD3D12VASyncContext sync_ctx;
+
+    /**
+     * A combination of AVD3D12VAFrameFlags.
+     * Set by AVD3D12VAFramesContext.
+     */
+    AVD3D12VAFrameFlags flags;
 } AVD3D12VAFrame;
 
 /**
@@ -136,7 +162,20 @@ typedef struct AVD3D12VAFramesContext {
      *
      * @see https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_resource_flags
      */
-    D3D12_RESOURCE_FLAGS flags;
+    D3D12_RESOURCE_FLAGS resource_flags;
+
+    /**
+     * In texture array mode, the D3D12 uses the same texture array (resource)for all
+     * pictures.
+     */
+    ID3D12Resource *texture_array;
+
+    /**
+     * A combination of AVD3D12VAFrameFlags. Unless AV_D3D12VA_FRAME_FLAG_NONE is set,
+     * autodetected flags will be OR'd based on the device and frame features during
+     * av_hwframe_ctx_init().
+     */
+    AVD3D12VAFrameFlags flags;
 } AVD3D12VAFramesContext;
 
 #endif /* AVUTIL_HWCONTEXT_D3D12VA_H */

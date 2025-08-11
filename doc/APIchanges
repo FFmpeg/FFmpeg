@@ -2,6 +2,14 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
+2025-09-xx - xxxxxxxxxx - lavu 60.12.100 - hwcontext_d3d12va.h
+  Add support for texture array mode AVD3D12VAFrame.subresource_index,
+  AVD3D12VAFramesContext.texture_array
+  Add enum AVD3D12VAFrameFlags to define the behaviours of frame allocation.
+  Renanme AVD3D12VAFramesContext.flags to AVD3D12VAFramesContext.resource_flags.
+  Add flags to AVD3D12VAFramesContext
+  Add flags to AVD3D12VAFrame
+
 2025-09-xx - xxxxxxxxxx - lavfi 11.8.100 - buffersrc.h
   Add AVBufferSrcParameters.alpha_mode.
 
