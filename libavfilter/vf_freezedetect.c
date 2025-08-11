@@ -135,9 +135,9 @@ static int is_frozen(FreezeDetectContext *s, AVFrame *reference, AVFrame *frame)
     return (mafd <= s->noise);
 }
 
-static int set_meta(FreezeDetectContext *s, AVFrame *frame, const char *key, const char *value)
+static int set_meta(void *log_ctx, AVFrame *frame, const char *key, const char *value)
 {
-    av_log(s, AV_LOG_INFO, "%s: %s\n", key, value);
+    av_log(log_ctx, AV_LOG_INFO, "%s: %s\n", key, value);
     return av_dict_set(&frame->metadata, key, value, 0);
 }
 
@@ -170,10 +170,10 @@ static int activate(AVFilterContext *ctx)
             frozen = is_frozen(s, s->reference_frame, frame);
             if (duration >= s->duration) {
                 if (!s->frozen)
-                    set_meta(s, frame, "lavfi.freezedetect.freeze_start", av_ts2timestr(s->reference_frame->pts, &inlink->time_base));
+                    set_meta(ctx, frame, "lavfi.freezedetect.freeze_start", av_ts2timestr(s->reference_frame->pts, &inlink->time_base));
                 if (!frozen) {
-                    set_meta(s, frame, "lavfi.freezedetect.freeze_duration", av_ts2timestr(duration, &AV_TIME_BASE_Q));
-                    set_meta(s, frame, "lavfi.freezedetect.freeze_end", av_ts2timestr(frame->pts, &inlink->time_base));
+                    set_meta(ctx, frame, "lavfi.freezedetect.freeze_duration", av_ts2timestr(duration, &AV_TIME_BASE_Q));
+                    set_meta(ctx, frame, "lavfi.freezedetect.freeze_end", av_ts2timestr(frame->pts, &inlink->time_base));
                 }
                 s->frozen = frozen;
             }
