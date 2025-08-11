@@ -166,8 +166,9 @@ static const char *uri_table_unmap(LV2_URID_Map_Handle handle, LV2_URID urid)
     return NULL;
 }
 
-static void connect_ports(LV2Context *s, AVFrame *in, AVFrame *out)
+static void connect_ports(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
 {
+    LV2Context *s = ctx->priv;
     int ich = 0, och = 0, i;
 
     for (i = 0; i < s->nb_ports; i++) {
@@ -180,7 +181,7 @@ static void connect_ports(LV2Context *s, AVFrame *in, AVFrame *out)
             } else if (lilv_port_is_a(s->plugin, port, s->lv2_OutputPort)) {
                 lilv_instance_connect_port(s->instance, i, out->extended_data[och++]);
             } else {
-                av_log(s, AV_LOG_WARNING, "port %d neither input nor output, skipping\n", i);
+                av_log(ctx, AV_LOG_WARNING, "port %d neither input nor output, skipping\n", i);
             }
         } else if (lilv_port_is_a(s->plugin, port, s->atom_AtomPort)) {
             if (lilv_port_is_a(s->plugin, port, s->lv2_InputPort)) {
@@ -217,7 +218,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    connect_ports(s, in, out);
+    connect_ports(ctx, in, out);
 
     lilv_instance_run(s->instance, in->nb_samples);
 
@@ -245,7 +246,7 @@ static int request_frame(AVFilterLink *outlink)
     if (!out)
         return AVERROR(ENOMEM);
 
-    connect_ports(s, out, out);
+    connect_ports(ctx, out, out);
 
     lilv_instance_run(s->instance, out->nb_samples);
 
@@ -302,7 +303,7 @@ static int config_output(AVFilterLink *outlink)
 
     s->instance = lilv_plugin_instantiate(s->plugin, sample_rate, s->features);
     if (!s->instance) {
-        av_log(s, AV_LOG_ERROR, "Failed to instantiate <%s>\n", lilv_node_as_uri(lilv_plugin_get_uri(s->plugin)));
+        av_log(ctx, AV_LOG_ERROR, "Failed to instantiate <%s>\n", lilv_node_as_uri(lilv_plugin_get_uri(s->plugin)));
         return AVERROR(EINVAL);
     }
 
@@ -370,7 +371,7 @@ static int config_output(AVFilterLink *outlink)
         port = lilv_plugin_get_port_by_symbol(s->plugin, sym);
         lilv_node_free(sym);
         if (!port) {
-            av_log(s, AV_LOG_WARNING, "Unknown option: <%s>\n", str);
+            av_log(ctx, AV_LOG_WARNING, "Unknown option: <%s>\n", str);
         } else {
             index = lilv_port_get_index(s->plugin, port);
             s->controls[index] = val;
@@ -404,7 +405,7 @@ static av_cold int init(AVFilterContext *ctx)
 
     uri = lilv_new_uri(s->world, s->plugin_uri);
     if (!uri) {
-        av_log(s, AV_LOG_ERROR, "Invalid plugin URI <%s>\n", s->plugin_uri);
+        av_log(ctx, AV_LOG_ERROR, "Invalid plugin URI <%s>\n", s->plugin_uri);
         return AVERROR(EINVAL);
     }
 
@@ -414,7 +415,7 @@ static av_cold int init(AVFilterContext *ctx)
     lilv_node_free(uri);
 
     if (!plugin) {
-        av_log(s, AV_LOG_ERROR, "Plugin <%s> not found\n", s->plugin_uri);
+        av_log(ctx, AV_LOG_ERROR, "Plugin <%s> not found\n", s->plugin_uri);
         return AVERROR(EINVAL);
     }
 
@@ -549,7 +550,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     port = lilv_plugin_get_port_by_symbol(s->plugin, sym);
     lilv_node_free(sym);
     if (!port) {
-        av_log(s, AV_LOG_WARNING, "Unknown option: <%s>\n", cmd);
+        av_log(ctx, AV_LOG_WARNING, "Unknown option: <%s>\n", cmd);
     } else {
         index = lilv_port_get_index(s->plugin, port);
         s->controls[index] = atof(args);
