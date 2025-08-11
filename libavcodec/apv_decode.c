@@ -361,6 +361,9 @@ static int apv_decode(AVCodecContext *avctx, AVFrame *output,
         return err;
     }
 
+    if (avctx->skip_frame == AVDISCARD_ALL)
+        return 0;
+
     desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     av_assert0(desc);
 
@@ -564,4 +567,5 @@ const FFCodec ff_apv_decoder = {
     .p.capabilities        = AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_SLICE_THREADS |
                              AV_CODEC_CAP_FRAME_THREADS,
+    .caps_internal         = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
 };
