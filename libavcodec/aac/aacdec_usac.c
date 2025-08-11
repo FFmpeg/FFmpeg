@@ -24,11 +24,12 @@
 #include "aacdec_ac.h"
 
 #include "libavcodec/aacsbr.h"
-
 #include "libavcodec/aactab.h"
-#include "libavutil/mem.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/unary.h"
+
+#include "libavutil/mem.h"
+#include "libavutil/refstruct.h"
 
 /* Number of scalefactor bands per complex prediction band, equal to 2. */
 #define SFB_PER_PRED_BAND 2
@@ -1574,7 +1575,6 @@ static int parse_audio_preroll(AACDecContext *ac, GetBitContext *gb)
 static int parse_ext_ele(AACDecContext *ac, AACUsacElemConfig *e,
                          GetBitContext *gb)
 {
-    uint8_t *tmp;
     uint8_t pl_frag_start = 1;
     uint8_t pl_frag_end = 1;
     uint32_t len;
@@ -1601,18 +1601,26 @@ static int parse_ext_ele(AACDecContext *ac, AACUsacElemConfig *e,
     if (pl_frag_start)
         e->ext.pl_data_offset = 0;
 
-    /* If an extension starts and ends this packet, we can directly use it */
+    /* If an extension starts and ends this packet, we can directly use it below.
+     * Otherwise, we have to copy it to a buffer and accumulate it. */
     if (!(pl_frag_start && pl_frag_end)) {
-        tmp = av_realloc(e->ext.pl_data, e->ext.pl_data_offset + len);
-        if (!tmp) {
-            av_free(e->ext.pl_data);
+        /* Reallocate the data */
+        uint8_t *tmp_buf = av_refstruct_alloc_ext(e->ext.pl_data_offset + len,
+                                                  AV_REFSTRUCT_FLAG_NO_ZEROING,
+                                                  NULL, NULL);
+        if (!tmp_buf)
             return AVERROR(ENOMEM);
-        }
-        e->ext.pl_data = tmp;
+
+        /* Copy the data over only if we had saved data to begin with */
+        if (e->ext.pl_buf)
+            memcpy(tmp_buf, e->ext.pl_buf, e->ext.pl_data_offset);
+
+        av_refstruct_unref(&e->ext.pl_buf);
+        e->ext.pl_buf = tmp_buf;
 
         /* Readout data to a buffer */
         for (int i = 0; i < len; i++)
-            e->ext.pl_data[e->ext.pl_data_offset + i] = get_bits(gb, 8);
+            e->ext.pl_buf[e->ext.pl_data_offset + i] = get_bits(gb, 8);
     }
 
     e->ext.pl_data_offset += len;
@@ -1624,7 +1632,7 @@ static int parse_ext_ele(AACDecContext *ac, AACUsacElemConfig *e,
         GetBitContext *gb2 = gb;
         GetBitContext gbc;
         if (!(pl_frag_start && pl_frag_end)) {
-            ret = init_get_bits8(&gbc, e->ext.pl_data, pl_len);
+            ret = init_get_bits8(&gbc, e->ext.pl_buf, pl_len);
             if (ret < 0)
                 return ret;
 
@@ -1642,7 +1650,7 @@ static int parse_ext_ele(AACDecContext *ac, AACUsacElemConfig *e,
             /* This should never happen */
             av_assert0(0);
         }
-        av_freep(&e->ext.pl_data);
+        av_refstruct_unref(&e->ext.pl_buf);
         if (ret < 0)
             return ret;
 
