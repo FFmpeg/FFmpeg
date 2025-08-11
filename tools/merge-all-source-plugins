@@ -2,8 +2,11 @@
 
 #If a version is set then we only try merging a source plugin with matching version as a generic one could change the ABI to master HEAD
 merge_internal(){ # $1=repository, $2=refspec
-    [ -n "$version" ] && git pull --no-rebase --log --stat --commit --no-edit  $1 sourceplugin-$2-$version
-    [ -z "$version" ] && git pull --no-rebase --log --stat --commit --no-edit  $1 sourceplugin-$2
+    branch="sourceplugin-$2"
+    if [ -n "$version" ] ; then
+        branch="$branch-$version"
+    fi
+    git pull --no-rebase --log --stat --commit --no-edit "$1" "$branch"
 }
 
 unset succeeded failed version
