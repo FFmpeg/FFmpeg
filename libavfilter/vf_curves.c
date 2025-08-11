@@ -641,7 +641,7 @@ end:
 
 static int dump_curves(const char *fname, uint16_t *graph[NB_COMP + 1],
                        struct keypoint *comp_points[NB_COMP + 1],
-                       int lut_size)
+                       int lut_size, void *log_ctx)
 {
     int i;
     AVBPrint buf;
@@ -653,7 +653,7 @@ static int dump_curves(const char *fname, uint16_t *graph[NB_COMP + 1],
 
     if (!f) {
         int ret = AVERROR(errno);
-        av_log(NULL, AV_LOG_ERROR, "Cannot open file '%s' for writing: %s\n",
+        av_log(log_ctx, AV_LOG_ERROR, "Cannot open file '%s' for writing: %s\n",
                fname, av_err2str(ret));
         return ret;
     }
@@ -912,7 +912,7 @@ static int config_input(AVFilterLink *inlink)
     }
 
     if (curves->plot_filename && !curves->saved_plot) {
-        dump_curves(curves->plot_filename, curves->graph, comp_points, curves->lut_size);
+        dump_curves(curves->plot_filename, curves->graph, comp_points, curves->lut_size, ctx);
         curves->saved_plot = 1;
     }
 
