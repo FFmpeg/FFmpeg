@@ -33,6 +33,7 @@
 #include "libavutil/base64.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
+#include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
@@ -42,10 +43,12 @@
 #include "av1.h"
 #include "avcodec.h"
 #include "bsf.h"
+#include "bytestream.h"
 #include "codec_internal.h"
 #include "dovi_rpu.h"
 #include "encode.h"
 #include "internal.h"
+#include "itut35.h"
 #include "libaom.h"
 #include "packet_internal.h"
 #include "profiles.h"
@@ -325,6 +328,53 @@ static av_cold int codecctl_int(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     }
 
+    return 0;
+}
+
+static int add_hdr_plus(AVCodecContext *avctx, struct aom_image *img, const AVFrame *frame)
+{
+    // Check for HDR10+
+    AVFrameSideData *side_data =
+        av_frame_get_side_data(frame, AV_FRAME_DATA_DYNAMIC_HDR_PLUS);
+    if (!side_data)
+        return 0;
+
+    size_t payload_size;
+    AVDynamicHDRPlus *hdr_plus = (AVDynamicHDRPlus *)side_data->buf->data;
+    int res = av_dynamic_hdr_plus_to_t35(hdr_plus, NULL, &payload_size);
+    if (res < 0) {
+        log_encoder_error(avctx, "Error finding the size of HDR10+");
+        return res;
+    }
+
+    uint8_t *hdr_plus_buf;
+    // Extra bytes for the country code, provider code, provider oriented code and app id.
+    const size_t hdr_plus_buf_size = payload_size + 6;
+    hdr_plus_buf = av_malloc(hdr_plus_buf_size);
+    if (!hdr_plus_buf)
+        return AVERROR(ENOMEM);
+
+    uint8_t *payload = hdr_plus_buf;
+    // See "HDR10+ AV1 Metadata Handling Specification" v1.0.1, Section 2.1.
+    bytestream_put_byte(&payload, ITU_T_T35_COUNTRY_CODE_US);
+    bytestream_put_be16(&payload, ITU_T_T35_PROVIDER_CODE_SAMSUNG);
+    bytestream_put_be16(&payload, 0x0001); // provider_oriented_code
+    bytestream_put_byte(&payload, 0x04);   // application_identifier
+
+    res = av_dynamic_hdr_plus_to_t35(hdr_plus, &payload, &payload_size);
+    if (res < 0) {
+        av_free(hdr_plus_buf);
+        log_encoder_error(avctx, "Error encoding HDR10+ from side data");
+        return res;
+    }
+
+    res = aom_img_add_metadata(img, OBU_METADATA_TYPE_ITUT_T35,
+                               hdr_plus_buf, hdr_plus_buf_size, AOM_MIF_ANY_FRAME);
+    av_free(hdr_plus_buf);
+    if (res < 0) {
+        log_encoder_error(avctx, "Error adding HDR10+ to aom_img");
+        return res;
+    }
     return 0;
 }
 
@@ -1234,6 +1284,7 @@ static int aom_encode(AVCodecContext *avctx, AVPacket *pkt,
 
     if (frame) {
         rawimg                      = &ctx->rawimg;
+        aom_img_remove_metadata(rawimg);
         rawimg->planes[AOM_PLANE_Y] = frame->data[0];
         rawimg->planes[AOM_PLANE_U] = frame->data[1];
         rawimg->planes[AOM_PLANE_V] = frame->data[2];
@@ -1284,6 +1335,10 @@ static int aom_encode(AVCodecContext *avctx, AVPacket *pkt,
 
         if (frame->pict_type == AV_PICTURE_TYPE_I)
             flags |= AOM_EFLAG_FORCE_KF;
+
+        res = add_hdr_plus(avctx, rawimg, frame);
+        if (res < 0)
+            return res;
     }
 
     res = aom_codec_encode(&ctx->encoder, rawimg, timestamp, duration, flags);

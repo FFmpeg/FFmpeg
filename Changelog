@@ -39,6 +39,8 @@ version 8.0:
 - AV1 Vulkan encoder
 - ProRes RAW decoder
 - ProRes RAW Vulkan hwaccel
+- ffprobe -codec option
+- HDR10+ metadata passthrough when decoding/encoding with libaom-av1
 
 
 version 7.1:
