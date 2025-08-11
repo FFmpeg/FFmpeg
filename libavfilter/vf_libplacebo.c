@@ -928,7 +928,8 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         struct pl_frame dummy;
         if (in->qstatus != PL_QUEUE_OK || !in->mix.num_frames)
             continue;
-        const struct pl_frame *cur = pl_frame_mix_current(&in->mix);
+        const struct pl_frame *cur = pl_frame_mix_nearest(&in->mix);
+        av_assert1(cur);
         update_crops(ctx, in, &dummy, target_pts);
         const int x0 = roundf(FFMIN(dummy.crop.x0, dummy.crop.x1)),
                   y0 = roundf(FFMIN(dummy.crop.y0, dummy.crop.y1)),
