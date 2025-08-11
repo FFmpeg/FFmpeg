@@ -380,14 +380,15 @@ static int find_scaler(AVFilterContext *avctx,
     return AVERROR(EINVAL);
 }
 
-static int parse_custom_lut(LibplaceboContext *s)
+static int parse_custom_lut(AVFilterContext *avctx)
 {
+    LibplaceboContext *s = avctx->priv;
     int ret;
     uint8_t *lutbuf;
     size_t lutbuf_size;
 
     if ((ret = av_file_map(s->lut_filename, &lutbuf, &lutbuf_size, 0, s)) < 0) {
-        av_log(s, AV_LOG_ERROR,
+        av_log(avctx, AV_LOG_ERROR,
                "The LUT file '%s' could not be read: %s\n",
                s->lut_filename, av_err2str(ret));
         return ret;
@@ -508,7 +509,7 @@ static int update_settings(AVFilterContext *ctx)
 #else
     (void) e;
     if (av_dict_count(s->extra_opts) > 0)
-        av_log(s, AV_LOG_WARNING, "extra_opts requires libplacebo >= 6.309!\n");
+        av_log(avctx, AV_LOG_WARNING, "extra_opts requires libplacebo >= 6.309!\n");
 #endif
 
     return 0;
@@ -524,7 +525,7 @@ static int parse_shader(AVFilterContext *avctx, const void *shader, size_t len)
 
     hook = pl_mpv_user_shader_parse(s->gpu, shader, len);
     if (!hook) {
-        av_log(s, AV_LOG_ERROR, "Failed parsing custom shader!\n");
+        av_log(avctx, AV_LOG_ERROR, "Failed parsing custom shader!\n");
         return AVERROR(EINVAL);
     }
 
@@ -723,7 +724,7 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
         /* Import libavfilter vulkan context into libplacebo */
         s->vulkan = pl_vulkan_import(s->log, &import_params);
 #else
-        av_log(s, AV_LOG_ERROR, "libplacebo version %s too old to import "
+        av_log(avctx, AV_LOG_ERROR, "libplacebo version %s too old to import "
                "Vulkan device, remove it or upgrade libplacebo to >= 5.278\n",
                PL_VERSION);
         err = AVERROR_EXTERNAL;
@@ -738,7 +739,7 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
     }
 
     if (!s->vulkan) {
-        av_log(s, AV_LOG_ERROR, "Failed %s Vulkan device!\n",
+        av_log(avctx, AV_LOG_ERROR, "Failed %s Vulkan device!\n",
                hwctx ? "importing" : "creating");
         err = AVERROR_EXTERNAL;
         goto fail;
@@ -759,7 +760,7 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
     }
 
     if (s->lut_filename)
-        RET(parse_custom_lut(s));
+        RET(parse_custom_lut(avctx));
 
     /* Initialize inputs */
     s->inputs = av_calloc(s->nb_inputs, sizeof(*s->inputs));
@@ -1415,9 +1416,9 @@ static int libplacebo_config_output(AVFilterLink *outlink)
         }
 
         if (!ok) {
-            av_log(s, AV_LOG_WARNING, "Failed to create a linear texture for "
-                    "compositing multiple inputs, falling back to non-linear "
-                    "blending.\n");
+            av_log(avctx, AV_LOG_WARNING, "Failed to create a linear texture "
+                   "for compositing multiple inputs, falling back to non-linear "
+                   "blending.\n");
         }
     }
 
