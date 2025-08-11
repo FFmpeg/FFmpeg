@@ -223,7 +223,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     convert_frame(ctx, in, &ef, s->skip);
     this_badness = get_badness(&ef, &s->last_frame_e);
     new_badness = current_badness + this_badness;
-    av_log(s, AV_LOG_VERBOSE, "badness: %6d -> %6d / %6d (%3d%% - %s)\n",
+    av_log(ctx, AV_LOG_VERBOSE, "badness: %6d -> %6d / %6d (%3d%% - %s)\n",
         current_badness, new_badness, s->badness_threshold,
         100 * new_badness / s->badness_threshold, new_badness < s->badness_threshold ? "OK" : "EXCEEDED");
 
@@ -250,7 +250,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             convert_frame(ctx, s->last_frame_av, &ef, s->skip);
             this_badness = get_badness(&ef, &s->last_frame_e);
             fixed_badness = current_badness + this_badness;
-            av_log(s, AV_LOG_VERBOSE, "  fixed: %6d -> %6d / %6d (%3d%%) factor=%5.3f\n",
+            av_log(ctx, AV_LOG_VERBOSE, "  fixed: %6d -> %6d / %6d (%3d%%) factor=%5.3f\n",
                 current_badness, fixed_badness, s->badness_threshold,
                 100 * new_badness / s->badness_threshold, factor);
             s->last_frame_e = ef;
