@@ -632,7 +632,7 @@ static av_cold int init(AVFilterContext *ctx)
         s->overlap = s->bsize - 1;
 
     if (s->overlap > s->bsize - 1) {
-        av_log(s, AV_LOG_ERROR, "Overlap value can not except %d "
+        av_log(ctx, AV_LOG_ERROR, "Overlap value can not except %d "
                "with a block size of %dx%d\n",
                s->bsize - 1, s->bsize, s->bsize);
         return AVERROR(EINVAL);
