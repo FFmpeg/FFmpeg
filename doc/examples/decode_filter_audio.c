@@ -30,8 +30,6 @@
  * file to be played with ffplay.
  */
 
-#include <unistd.h>
-
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavfilter/buffersink.h>
