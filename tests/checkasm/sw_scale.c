@@ -159,7 +159,7 @@ static void check_yuv2yuv1(int accurate)
                             (int) dst0[fail_offset],
                             (int) dst1[fail_offset]);
                 }
-                if(dstW == LARGEST_INPUT_SIZE)
+                if (dstW == LARGEST_INPUT_SIZE)
                     bench_new(src_pixels, dst1, dstW, dither, offset);
             }
         }
@@ -266,7 +266,7 @@ static void check_yuv2yuvX(int accurate, int bit_depth, int dst_pix_format)
                             show_differences_16(dst0, dst1, LARGEST_INPUT_SIZE);
                         }
                     }
-                    if(dstW == LARGEST_INPUT_SIZE)
+                    if (dstW == LARGEST_INPUT_SIZE)
                         bench_new(filter, filter_sizes[fsi], src, (uint8_t*)dst1, dstW - osi, dither, osi);
 
                 }
