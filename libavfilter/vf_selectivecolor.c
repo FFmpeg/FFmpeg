@@ -146,8 +146,9 @@ static int get_blacks_scale##nbits(int r, int g, int b, int min_val, int max_val
 DECLARE_RANGE_SCALE_FUNCS(8)
 DECLARE_RANGE_SCALE_FUNCS(16)
 
-static int register_range(SelectiveColorContext *s, int range_id)
+static int register_range(AVFilterContext *ctx, int range_id)
 {
+    SelectiveColorContext *s = ctx->priv;
     const float *cmyk = s->cmyk_adjust[range_id];
 
     /* If the color range has user settings, register the color range
@@ -159,7 +160,7 @@ static int register_range(SelectiveColorContext *s, int range_id)
             cmyk[1] < -1.0 || cmyk[1] > 1.0 ||
             cmyk[2] < -1.0 || cmyk[2] > 1.0 ||
             cmyk[3] < -1.0 || cmyk[3] > 1.0) {
-            av_log(s, AV_LOG_ERROR, "Invalid %s adjustments (%g %g %g %g). "
+            av_log(ctx, AV_LOG_ERROR, "Invalid %s adjustments (%g %g %g %g). "
                    "Settings must be set in [-1;1] range\n",
                    color_names[range_id], cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
             return AVERROR(EINVAL);
@@ -205,7 +206,7 @@ static int parse_psfile(AVFilterContext *ctx, const char *fname)
 
     READ16(version);
     if (version != 1)
-        av_log(s, AV_LOG_WARNING, "Unsupported selective color file version %d, "
+        av_log(ctx, AV_LOG_WARNING, "Unsupported selective color file version %d, "
                "the settings might not be loaded properly\n", version);
 
     READ16(s->correction_method);
@@ -214,7 +215,7 @@ static int parse_psfile(AVFilterContext *ctx, const char *fname)
     for (i = 0; i < FF_ARRAY_ELEMS(s->cmyk_adjust[0]); i++) {
         READ16(val);
         if (val)
-            av_log(s, AV_LOG_WARNING, "%c value of first CMYK entry is not 0 "
+            av_log(ctx, AV_LOG_WARNING, "%c value of first CMYK entry is not 0 "
                    "but %d\n", "CMYK"[i], val);
     }
 
@@ -224,7 +225,7 @@ static int parse_psfile(AVFilterContext *ctx, const char *fname)
             READ16(val);
             s->cmyk_adjust[i][k] = val / 100.f;
         }
-        ret = register_range(s, i);
+        ret = register_range(ctx, i);
         if (ret < 0)
             goto end;
     }
@@ -265,19 +266,19 @@ static int config_input(AVFilterLink *inlink)
                 float *cmyk = s->cmyk_adjust[i];
 
                 sscanf(s->opt_cmyk_adjust[i], "%f %f %f %f", cmyk, cmyk+1, cmyk+2, cmyk+3);
-                ret = register_range(s, i);
+                ret = register_range(ctx, i);
                 if (ret < 0)
                     return ret;
             }
         }
     }
 
-    av_log(s, AV_LOG_VERBOSE, "Adjustments:%s\n", s->nb_process_ranges ? "" : " none");
+    av_log(ctx, AV_LOG_VERBOSE, "Adjustments:%s\n", s->nb_process_ranges ? "" : " none");
     for (i = 0; i < s->nb_process_ranges; i++) {
         const struct process_range *pr = &s->process_ranges[i];
         const float *cmyk = s->cmyk_adjust[pr->range_id];
 
-        av_log(s, AV_LOG_VERBOSE, "%8ss: C=%6g M=%6g Y=%6g K=%6g\n",
+        av_log(ctx, AV_LOG_VERBOSE, "%8ss: C=%6g M=%6g Y=%6g K=%6g\n",
                color_names[pr->range_id], cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
     }
 
