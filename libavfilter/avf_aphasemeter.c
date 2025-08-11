@@ -171,8 +171,9 @@ static inline void add_metadata(AVFrame *insamples, const char *key, char *value
     av_dict_set(&insamples->metadata, buf, value, 0);
 }
 
-static inline void update_mono_detection(AudioPhaseMeterContext *s, AVFrame *insamples, int mono_measurement)
+static inline void update_mono_detection(AVFilterContext *ctx, AVFrame *insamples, int mono_measurement)
 {
+    AudioPhaseMeterContext *s = ctx->priv;
     int64_t mono_duration;
     if (!s->is_mono && mono_measurement) {
         s->is_mono = 1;
@@ -184,7 +185,7 @@ static inline void update_mono_detection(AudioPhaseMeterContext *s, AVFrame *ins
         mono_duration = get_duration(s->mono_idx);
         if (mono_duration >= s->duration) {
             add_metadata(insamples, "mono_start", av_ts2timestr(s->mono_idx[0], &s->time_base));
-            av_log(s, AV_LOG_INFO, "mono_start: %s\n", av_ts2timestr(s->mono_idx[0], &s->time_base));
+            av_log(ctx, AV_LOG_INFO, "mono_start: %s\n", av_ts2timestr(s->mono_idx[0], &s->time_base));
             s->start_mono_presence = 0;
         }
     }
@@ -196,14 +197,15 @@ static inline void update_mono_detection(AudioPhaseMeterContext *s, AVFrame *ins
                 add_metadata(insamples, "mono_end", av_ts2timestr(s->mono_idx[1], &s->time_base));
                 add_metadata(insamples, "mono_duration", av_ts2timestr(mono_duration, &s->time_base));
             }
-            av_log(s, AV_LOG_INFO, "mono_end: %s | mono_duration: %s\n", av_ts2timestr(s->mono_idx[1], &s->time_base), av_ts2timestr(mono_duration, &s->time_base));
+            av_log(ctx, AV_LOG_INFO, "mono_end: %s | mono_duration: %s\n", av_ts2timestr(s->mono_idx[1], &s->time_base), av_ts2timestr(mono_duration, &s->time_base));
         }
         s->is_mono = 0;
     }
 }
 
-static inline void update_out_phase_detection(AudioPhaseMeterContext *s, AVFrame *insamples, int out_phase_measurement)
+static inline void update_out_phase_detection(AVFilterContext *ctx, AVFrame *insamples, int out_phase_measurement)
 {
+    AudioPhaseMeterContext *s = ctx->priv;
     int64_t out_phase_duration;
     if (!s->is_out_phase && out_phase_measurement) {
         s->is_out_phase = 1;
@@ -215,7 +217,7 @@ static inline void update_out_phase_detection(AudioPhaseMeterContext *s, AVFrame
         out_phase_duration = get_duration(s->out_phase_idx);
         if (out_phase_duration >= s->duration) {
             add_metadata(insamples, "out_phase_start", av_ts2timestr(s->out_phase_idx[0], &s->time_base));
-            av_log(s, AV_LOG_INFO, "out_phase_start: %s\n", av_ts2timestr(s->out_phase_idx[0], &s->time_base));
+            av_log(ctx, AV_LOG_INFO, "out_phase_start: %s\n", av_ts2timestr(s->out_phase_idx[0], &s->time_base));
             s->start_out_phase_presence = 0;
         }
     }
@@ -227,7 +229,7 @@ static inline void update_out_phase_detection(AudioPhaseMeterContext *s, AVFrame
                 add_metadata(insamples, "out_phase_end", av_ts2timestr(s->out_phase_idx[1], &s->time_base));
                 add_metadata(insamples, "out_phase_duration", av_ts2timestr(out_phase_duration, &s->time_base));
             }
-            av_log(s, AV_LOG_INFO, "out_phase_end: %s | out_phase_duration: %s\n", av_ts2timestr(s->out_phase_idx[1], &s->time_base), av_ts2timestr(out_phase_duration, &s->time_base));
+            av_log(ctx, AV_LOG_INFO, "out_phase_end: %s | out_phase_duration: %s\n", av_ts2timestr(s->out_phase_idx[1], &s->time_base), av_ts2timestr(out_phase_duration, &s->time_base));
         }
         s->is_out_phase = 0;
     }
@@ -322,8 +324,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         mono_measurement = (tolerance - fphase) < FLT_EPSILON;
         out_phase_measurement = (angle - fphase) > FLT_EPSILON;
 
-        update_mono_detection(s, in, mono_measurement);
-        update_out_phase_detection(s, in, out_phase_measurement);
+        update_mono_detection(ctx, in, mono_measurement);
+        update_out_phase_detection(ctx, in, out_phase_measurement);
     }
 
     if (s->do_video)
@@ -386,8 +388,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     AudioPhaseMeterContext *s = ctx->priv;
 
     if (s->do_phasing_detection) {
-        update_mono_detection(s, NULL, 0);
-        update_out_phase_detection(s, NULL, 0);
+        update_mono_detection(ctx, NULL, 0);
+        update_out_phase_detection(ctx, NULL, 0);
     }
     av_frame_free(&s->out);
 }
