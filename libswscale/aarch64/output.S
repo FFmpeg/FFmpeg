@@ -402,3 +402,230 @@ function ff_yuv2plane1_8_neon, export=1
         b.gt            2b                              // loop until width consumed
         ret
 endfunc
+
+function ff_yuv2nv12cX_neon_asm, export=1
+// w0 - isSwapped
+// x1 - uint8_t *chrDither
+// x2 - int16_t *chrFilter
+// x3 - int chrFilterSize
+// x4 - int16_t **chrUSrc
+// x5 - int16_t **chrVSrc
+// x6 - uint8_t *dest
+// x7 - int chrDstW
+
+        stp             x19, x20, [sp, #-32]!
+        stp             x21, x22, [sp, #16]
+
+        ld1             {v0.8b}, [x1]                   // chrDither[0..7]
+        ext             v1.8b, v0.8b, v0.8b, #3         // Rotate for V: (i+3)&7
+
+        uxtl            v0.8h, v0.8b
+        uxtl            v1.8h, v1.8b
+
+        ushll           v2.4s, v0.4h, #12               // U dither low
+        ushll2          v3.4s, v0.8h, #12               // U dither high
+        ushll           v4.4s, v1.4h, #12               // V dither low
+        ushll2          v5.4s, v1.8h, #12               // V dither high
+
+        mov             x8, #0                          // i = 0
+1:
+        cmp             w7, #16
+        blt             5f
+
+        mov             v16.16b, v2.16b                 // U acc low
+        mov             v17.16b, v3.16b                 // U acc high
+        mov             v18.16b, v4.16b                 // V acc low
+        mov             v19.16b, v5.16b                 // V acc high
+
+        mov             v20.16b, v2.16b
+        mov             v21.16b, v3.16b
+        mov             v22.16b, v4.16b
+        mov             v23.16b, v5.16b
+
+        mov             w9, w3                          // chrFilterSize counter
+        mov             x10, x2                         // chrFilter pointer
+        mov             x11, x4                         // chrUSrc base
+        mov             x12, x5                         // chrVSrc base
+
+2:
+        ldr             h6, [x10], #2                   // Load filter coefficient
+
+        ldr             x13, [x11], #8                  // chrUSrc[j]
+        ldr             x14, [x12], #8                  // chrVSrc[j]
+        add             x13, x13, x8, lsl #1            // &chrUSrc[j][i]
+        add             x14, x14, x8, lsl #1            // &chrVSrc[j][i]
+        add             x15, x13, #16
+        add             x16, x14, #16
+
+        ld1             {v24.8h}, [x13]                 // U samples 0-7
+        ld1             {v25.8h}, [x14]                 // V samples 0-7
+
+        ld1             {v26.8h}, [x15]                 // U samples 8-15
+        ld1             {v27.8h}, [x16]                 // V samples 8-15
+        subs            w9, w9, #1
+
+        smlal           v16.4s, v24.4h, v6.h[0]
+        smlal2          v17.4s, v24.8h, v6.h[0]
+        smlal           v18.4s, v25.4h, v6.h[0]
+        smlal2          v19.4s, v25.8h, v6.h[0]
+
+        smlal           v20.4s, v26.4h, v6.h[0]
+        smlal2          v21.4s, v26.8h, v6.h[0]
+        smlal           v22.4s, v27.4h, v6.h[0]
+        smlal2          v23.4s, v27.8h, v6.h[0]
+
+        b.gt            2b
+
+        sqshrun         v24.4h, v16.4s, #16             // Process and store first 8 pixels
+        sqshrun2        v24.8h, v17.4s, #16
+        sqshrun         v25.4h, v18.4s, #16
+        sqshrun2        v25.8h, v19.4s, #16
+
+        sqshrun         v26.4h, v20.4s, #16             // Process and store next 8 pixels
+        sqshrun2        v26.8h, v21.4s, #16
+        sqshrun         v27.4h, v22.4s, #16
+        sqshrun2        v27.8h, v23.4s, #16
+
+        cbz             w0, 3f
+
+        uqshrn          v28.8b, v24.8h, #3              // Storing U
+        uqshrn2         v28.16b, v26.8h, #3
+        uqshrn          v29.8b, v25.8h, #3              // Storing V
+        uqshrn2         v29.16b, v27.8h, #3
+
+        st2             {v28.16b, v29.16b}, [x6], #32
+        b               4f
+3:
+        uqshrn          v28.8b, v25.8h, #3              // Storing V
+        uqshrn2         v28.16b, v27.8h, #3
+        uqshrn          v29.8b, v24.8h, #3              // Storing U
+        uqshrn2         v29.16b, v26.8h, #3
+
+        st2             {v28.16b, v29.16b}, [x6], #32
+4:
+        subs            w7, w7, #16
+        add             x8, x8, #16
+        b.gt            1b
+
+5:
+        cmp             w7, #8
+        blt             10f
+6:
+        mov             v16.16b, v2.16b                 // U acc low
+        mov             v17.16b, v3.16b                 // U acc high
+        mov             v18.16b, v4.16b                 // V acc low
+        mov             v19.16b, v5.16b                 // V acc high
+
+        mov             w9, w3                          // chrFilterSize counter
+        mov             x10, x2                         // chrFilter pointer
+        mov             x11, x4                         // chrUSrc base
+        mov             x12, x5                         // chrVSrc base
+
+7:
+        ldr             h6, [x10], #2                   // Load filter coefficient
+
+        ldr             x13, [x11], #8                  // chrUSrc[j]
+        ldr             x14, [x12], #8                  // chrVSrc[j]
+        add             x13, x13, x8, lsl #1            // &chrUSrc[j][i]
+        add             x14, x14, x8, lsl #1            // &chrVSrc[j][i]
+
+        ld1             {v20.8h}, [x13]                 // U samples
+        ld1             {v21.8h}, [x14]                 // V samples
+        subs            w9, w9, #1
+
+        smlal           v16.4s, v20.4h, v6.h[0]
+        smlal2          v17.4s, v20.8h, v6.h[0]
+        smlal           v18.4s, v21.4h, v6.h[0]
+        smlal2          v19.4s, v21.8h, v6.h[0]
+
+        b.gt            7b
+
+        sqshrun         v26.4h, v16.4s, #16             // Final processing and store
+        sqshrun2        v26.8h, v17.4s, #16
+        sqshrun         v27.4h, v18.4s, #16
+        sqshrun2        v27.8h, v19.4s, #16
+
+        cbz             w0, 8f
+        uqshrn          v28.8b, v26.8h, #3              // Storing U
+        uqshrn          v29.8b, v27.8h, #3              // Storing V
+        st2             {v28.8b, v29.8b}, [x6], #16
+        b               9f
+8:
+        uqshrn          v28.8b, v27.8h, #3              // Storing V
+        uqshrn          v29.8b, v26.8h, #3              // Storing U
+        st2             {v28.8b, v29.8b}, [x6], #16
+9:
+        subs            w7, w7, #8
+        add             x8, x8, #8
+
+10:
+        cbz             w7, 15f                         // Scalar loop
+
+11:
+        and             x15, x8, #7
+        ldrb            w9, [x1, x15]
+        sxtw            x9, w9
+        lsl             x9, x9, #12                     // u = chrDither[i & 7] << 12;
+
+        add             x15, x8, #3
+        and             x15, x15, #7
+        ldrb            w10, [x1, x15]
+        sxtw            x10, w10
+        lsl             x10, x10, #12                   // v = chrDither[(i + 3) & 7] << 12;
+
+        mov             w11, w3                         // chrFilterSize counter
+        mov             x12, x2                         // chrFilter pointer
+        mov             x13, x4                         // chrUSrc base
+        mov             x14, x5                         // chrVSrc base
+
+12:
+        ldrsh           x16, [x12], #2
+
+        ldr             x17, [x13], #8                  // chrUSrc[j]
+        ldr             x19, [x14], #8                  // chrVSrc[j]
+        add             x17, x17, x8, lsl #1            // &chrUSrc[j][i]
+        add             x19, x19, x8, lsl #1            // &chrVSrc[j][i]
+
+        ldrsh           x20, [x17]
+        ldrsh           x21, [x19]
+
+        madd            x9, x16, x20, x9
+        madd            x10, x16, x21, x10
+
+        subs            w11, w11, #1
+        b.gt            12b
+
+        asr             x9, x9, #19                     // Process and store U and V
+        asr             x10, x10, #19
+
+        cmp             x9, #0
+        csel            x9, x9, xzr, ge
+        cmp             x10, #0
+        csel            x10, x10, xzr, ge
+
+        mov             x22, #1
+        lsl             x22, x22, #8
+        sub             x22, x22, #1
+
+        cmp             x9, x22
+        csel            x9, x22, x9, gt
+        cmp             x10, x22
+        csel            x10, x22, x10, gt
+
+        cbz             w0, 13f
+        strb            w9, [x6], #1                    // Storing U
+        strb            w10, [x6], #1                   // Storing V
+        b               14f
+13:
+        strb            w10, [x6], #1                   // Storing V
+        strb            w9, [x6], #1                    // Storing U
+
+14:
+        subs            w7, w7, #1
+        add             x8, x8, #1
+        b.gt            11b
+15:
+        ldp             x21, x22, [sp, #16]
+        ldp             x19, x20, [sp], #32
+        ret
+endfunc

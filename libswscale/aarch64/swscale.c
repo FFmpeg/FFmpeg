@@ -191,6 +191,25 @@ void ff_yuv2plane1_8_neon(
         const uint8_t *dither,
         int offset);
 
+void ff_yuv2nv12cX_neon_asm(int isSwapped, const uint8_t *chrDither,
+                            const int16_t *chrFilter, int chrFilterSize,
+                            const int16_t **chrUSrc, const int16_t **chrVSrc,
+                            uint8_t *dest, int chrDstW);
+
+static void ff_yuv2nv12cX_neon(enum AVPixelFormat dstFormat, const uint8_t *chrDither,
+                               const int16_t *chrFilter, int chrFilterSize,
+                               const int16_t **chrUSrc, const int16_t **chrVSrc,
+                               uint8_t *dest, int chrDstW)
+{
+    if (!isSwappedChroma(dstFormat)) {
+        ff_yuv2nv12cX_neon_asm(1, chrDither, chrFilter, chrFilterSize,
+                               chrUSrc, chrVSrc, dest, chrDstW);
+    } else {
+        ff_yuv2nv12cX_neon_asm(0, chrDither, chrFilter, chrFilterSize,
+                               chrUSrc, chrVSrc, dest, chrDstW);
+    }
+}
+
 #define ASSIGN_SCALE_FUNC2(hscalefn, filtersize, opt) do {              \
     if (c->srcBpc == 8) {                                               \
         if(c->dstBpc <= 14) {                                           \
@@ -300,6 +319,8 @@ av_cold void ff_sws_init_swscale_aarch64(SwsInternal *c)
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, neon);
         if (c->dstBpc == 8) {
             c->yuv2planeX = ff_yuv2planeX_8_neon;
+            if (isSemiPlanarYUV(dstFormat) && !isDataInHighBits(dstFormat))
+                c->yuv2nv12cX = ff_yuv2nv12cX_neon;
         }
 
         if (isNBPS(dstFormat) && !isSemiPlanarYUV(dstFormat) && !isDataInHighBits(dstFormat)) {
