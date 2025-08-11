@@ -227,26 +227,26 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
     /* input and output transfer will be linear */
     if (in->color_trc == AVCOL_TRC_UNSPECIFIED) {
-        av_log(s, AV_LOG_WARNING, "Untagged transfer, assuming linear light\n");
+        av_log(ctx, AV_LOG_WARNING, "Untagged transfer, assuming linear light\n");
         out->color_trc = AVCOL_TRC_LINEAR;
     } else if (in->color_trc != AVCOL_TRC_LINEAR)
-        av_log(s, AV_LOG_WARNING, "Tonemapping works on linear light only\n");
+        av_log(ctx, AV_LOG_WARNING, "Tonemapping works on linear light only\n");
 
     /* read peak from side data if not passed in */
     if (!peak) {
         peak = ff_determine_signal_peak(in);
-        av_log(s, AV_LOG_DEBUG, "Computed signal peak: %f\n", peak);
+        av_log(ctx, AV_LOG_DEBUG, "Computed signal peak: %f\n", peak);
     }
 
     /* load original color space even if pixel format is RGB to compute overbrights */
     s->coeffs = av_csp_luma_coeffs_from_avcsp(in->colorspace);
     if (s->desat > 0 && (in->colorspace == AVCOL_SPC_UNSPECIFIED || !s->coeffs)) {
         if (in->colorspace == AVCOL_SPC_UNSPECIFIED)
-            av_log(s, AV_LOG_WARNING, "Missing color space information, ");
+            av_log(ctx, AV_LOG_WARNING, "Missing color space information, ");
         else if (!s->coeffs)
-            av_log(s, AV_LOG_WARNING, "Unsupported color space '%s', ",
+            av_log(ctx, AV_LOG_WARNING, "Unsupported color space '%s', ",
                    av_color_space_name(in->colorspace));
-        av_log(s, AV_LOG_WARNING, "desaturation is disabled\n");
+        av_log(ctx, AV_LOG_WARNING, "desaturation is disabled\n");
         s->desat = 0;
     }
 
