@@ -125,6 +125,11 @@ AVIOContext *avio_alloc_context(
 
 void avio_context_free(AVIOContext **ps)
 {
+    if (ps && *ps) {
+        AVIOContext *s = *ps;
+        av_freep(&s->protocol_whitelist);
+        av_freep(&s->protocol_blacklist);
+    }
     av_freep(ps);
 }
 
