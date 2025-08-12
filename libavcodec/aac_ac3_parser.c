@@ -155,7 +155,8 @@ get_next:
                 return i;
 
             avctx->profile = hdr.object_type - 1;
-            s1->key_frame = (avctx->profile == AV_PROFILE_AAC_USAC) ? get_bits1(&gb) : 1;
+            /* ADTS does not support USAC */
+            s1->key_frame = 1;
             bit_rate = hdr.bit_rate;
 #endif
         }
