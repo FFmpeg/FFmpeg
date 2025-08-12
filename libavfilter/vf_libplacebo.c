@@ -170,8 +170,7 @@ typedef struct LibplaceboContext {
     /* input state */
     LibplaceboInput *inputs;
     int nb_inputs;
-    int64_t status_pts; ///< tracks status of most recently used input
-    int status;
+    int nb_active;
 
     /* settings */
     char *out_format_string;
@@ -768,6 +767,7 @@ static int init_vulkan(AVFilterContext *avctx, const AVVulkanDeviceContext *hwct
         return AVERROR(ENOMEM);
     for (int i = 0; i < s->nb_inputs; i++)
         RET(input_init(avctx, &s->inputs[i], i));
+    s->nb_active = s->nb_inputs;
     s->linear_rr = pl_renderer_create(s->log, s->gpu);
 
     /* fall through */
@@ -1166,11 +1166,7 @@ static int handle_input(AVFilterContext *ctx, LibplaceboInput *input)
         pl_queue_push(input->queue, NULL); /* Signal EOF to pl_queue */
         input->status = status;
         input->status_pts = pts;
-        if (!s->status || pts >= s->status_pts) {
-            /* Also propagate to output unless overwritten by later status change */
-            s->status = status;
-            s->status_pts = pts;
-        }
+        s->nb_active--;
     }
 
     return 0;
@@ -1254,8 +1250,18 @@ static int libplacebo_activate(AVFilterContext *ctx)
             for (int i = 0; i < s->nb_inputs; i++)
                 drain_input_pts(&s->inputs[i], out_pts);
             return output_frame(ctx, out_pts);
-        } else if (s->status) {
-            ff_outlink_set_status(outlink, s->status, s->status_pts);
+        } else if (s->nb_active == 0) {
+            /* Forward most recent status */
+            int status = s->inputs[0].status;
+            int64_t status_pts = s->inputs[0].status_pts;
+            for (int i = 1; i < s->nb_inputs; i++) {
+                const LibplaceboInput *in = &s->inputs[i];
+                if (in->status_pts > status_pts) {
+                    status = s->inputs[i].status;
+                    status_pts = s->inputs[i].status_pts;
+                }
+            }
+            ff_outlink_set_status(outlink, status, status_pts);
             return 0;
         }
 
