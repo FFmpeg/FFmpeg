@@ -950,22 +950,18 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         nb_visible++;
     }
 
-    /* It should be impossible to call output_frame() without at least one
-     * valid nonempty frame mix */
-    av_assert1(nb_visible > 0);
-
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out)
         return AVERROR(ENOMEM);
 
+    if (!ref)
+        goto props_done;
+
     RET(av_frame_copy_props(out, ref));
-    out->pts = pts;
     out->width = outlink->w;
     out->height = outlink->h;
     out->colorspace = outlink->colorspace;
     out->color_range = outlink->color_range;
-    if (s->fps.num)
-        out->duration = 1;
     if (s->deinterlace)
         out->flags &= ~(AV_FRAME_FLAG_INTERLACED | AV_FRAME_FLAG_TOP_FIELD_FIRST);
 
@@ -1000,6 +996,11 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         const AVRational stretch = av_div_q(ar_ref, ar_out);
         out->sample_aspect_ratio = av_mul_q(ref->sample_aspect_ratio, stretch);
     }
+
+props_done:
+    out->pts = pts;
+    if (s->fps.num)
+        out->duration = 1;
 
     /* Map, render and unmap output frame */
     if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
@@ -1069,6 +1070,9 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         target.crop = orig_target.crop = (struct pl_rect2df) {0};
         pl_render_image(s->linear_rr, &target, &orig_target, &opts->params);
         target = orig_target;
+    } else if (!ref) {
+        /* Render an empty image to clear the frame to the desired fill color */
+        pl_render_image(s->linear_rr, NULL, &target, &opts->params);
     }
 
     if (outdesc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
