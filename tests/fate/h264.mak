@@ -235,6 +235,11 @@ FATE_H264-$(call FRAMECRC, MOV H264, H264, H264_PARSER H264_MUXER H264_MP4TOANNE
 
 FATE_H264-$(call FRAMECRC, MOV H264,, H264_PARSER MOV_MUXER DTS2PTS_BSF) += fate-h264-bsf-dts2pts
 
+FATE_H264-$(call REMUX, H264, MOV_DEMUXER H264_REDUNDANT_PPS_BSF H264_DECODER H264_PARSER RAWVIDEO_ENCODER) += fate-h264-bsf-redundant-pps-mov
+FATE_H264-$(call REMUX, H264, H264_PARSER H264_REDUNDANT_PPS_BSF H264_DECODER RAWVIDEO_ENCODER) += fate-h264-bsf-redundant-pps-annexb
+FATE_H264-$(call REMUX, NUT, MOV_DEMUXER H264_REDUNDANT_PPS_BSF H264_DECODER) += fate-h264-bsf-redundant-pps-side-data
+FATE_H264-$(call REMUX, NUT, MOV_DEMUXER H264_REDUNDANT_PPS_BSF H264_DECODER SCALE_FILTER RAWVIDEO_ENCODER) += fate-h264-bsf-redundant-pps-side-data2
+
 FATE_H264-$(call FRAMECRC, MATROSKA, H264) += fate-h264-direct-bff
 FATE_H264-$(call FRAMECRC, FLV, H264, SCALE_FILTER) += fate-h264-brokensps-2580
 FATE_H264-$(call FRAMECRC, MXF, H264, PCM_S24LE_DECODER SCALE_FILTER ARESAMPLE_FILTER) += fate-h264-xavc-4389
@@ -477,6 +482,18 @@ fate-h264-dts_5frames:                            CMD = probeframes $(TARGET_SAM
 fate-h264-afd:                                    CMD = run ffprobe$(PROGSSUF)$(EXESUF) -bitexact -apply_cropping 0 \
                                                         -show_entries frame=width,height,crop_top,crop_bottom,crop_left,crop_right:frame_side_data_list:stream=width,height,coded_width,coded_height \
                                                         $(TARGET_SAMPLES)/h264/bbc2.sample.h264
+
+fate-h264-bsf-redundant-pps-mov: CMD = transcode mov $(TARGET_SAMPLES)/mov/frag_overlap.mp4 h264 "-map 0:v -c copy -bsf h264_redundant_pps"
+
+# This file has changing pic_init_qp_minus26.
+fate-h264-bsf-redundant-pps-annexb: CMD = transcode h264 $(TARGET_SAMPLES)/h264-conformance/CABA3_TOSHIBA_E.264 h264 "-map 0:v -c copy -bsf h264_redundant_pps"
+
+# These two tests test that new extradata in packet side data is properly
+# modified by h264_redundant_pps. nut is used as destination container
+# because it can store extradata updates (in its experimental mode);
+# setting -syncpoints none is a hack to use nut version 4.
+fate-h264-bsf-redundant-pps-side-data: CMD = transcode mov $(TARGET_SAMPLES)/h264/thezerotheorem-cut.mp4 nut "-map 0:v -c copy -bsf h264_redundant_pps -syncpoints none -strict experimental" "-c copy"
+fate-h264-bsf-redundant-pps-side-data2: CMD = transcode mov $(TARGET_SAMPLES)/h264/extradata-reload-multi-stsd.mov nut "-map 0:v -c copy -bsf h264_redundant_pps -syncpoints none -strict experimental"
 
 fate-h264-encparams: CMD = venc_data $(TARGET_SAMPLES)/h264-conformance/FRext/FRExt_MMCO4_Sony_B.264 0 1
 FATE_SAMPLES_DUMP_DATA += fate-h264-encparams

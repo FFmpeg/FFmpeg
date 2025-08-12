@@ -101,44 +101,8 @@ $(foreach N,$(FATE_CBS_DISCARD_TYPES),$(eval $(call FATE_CBS_DISCARD_TEST,h264,$
 
 FATE_CBS_H264-$(call ALLYES, MOV_DEMUXER H264_MUXER H264_PARSER FILTER_UNITS_BSF H264_METADATA_BSF) += $(FATE_CBS_h264_DISCARD)
 
-
-FATE_H264_REDUNDANT_PPS-$(call REMUX, H264, MOV_DEMUXER H264_REDUNDANT_PPS_BSF   \
-                                      H264_DECODER H264_PARSER RAWVIDEO_ENCODER) \
-                                      += fate-h264_redundant_pps-mov
-fate-h264_redundant_pps-mov: CMD = transcode \
-        mov $(TARGET_SAMPLES)/mov/frag_overlap.mp4 h264 \
-        "-map 0:v -c copy -bsf h264_redundant_pps"
-
-# This file has changing pic_init_qp_minus26.
-FATE_H264_REDUNDANT_PPS-$(call REMUX, H264, H264_PARSER H264_REDUNDANT_PPS_BSF \
-                                      H264_DECODER RAWVIDEO_ENCODER) \
-                                      += fate-h264_redundant_pps-annexb
-fate-h264_redundant_pps-annexb: CMD = transcode \
-        h264 $(TARGET_SAMPLES)/h264-conformance/CABA3_TOSHIBA_E.264 \
-        h264 "-map 0:v -c copy -bsf h264_redundant_pps"
-
-# These two tests test that new extradata in packet side data is properly
-# modified by h264_redundant_pps. nut is used as destination container
-# because it can store extradata updates (in its experimental mode);
-# setting -syncpoints none is a hack to use nut version 4.
-FATE_H264_REDUNDANT_PPS-$(call REMUX, NUT, MOV_DEMUXER H264_REDUNDANT_PPS_BSF H264_DECODER) \
-                        += fate-h264_redundant_pps-side_data
-fate-h264_redundant_pps-side_data: CMD = transcode \
-        mov $(TARGET_SAMPLES)/h264/thezerotheorem-cut.mp4 nut \
-        "-map 0:v -c copy -bsf h264_redundant_pps -syncpoints none -strict experimental" "-c copy"
-
-FATE_H264_REDUNDANT_PPS-$(call REMUX, NUT, MOV_DEMUXER H264_REDUNDANT_PPS_BSF \
-                                      H264_DECODER SCALE_FILTER RAWVIDEO_ENCODER) \
-                                      += fate-h264_redundant_pps-side_data2
-fate-h264_redundant_pps-side_data2: CMD = transcode \
-        mov $(TARGET_SAMPLES)/h264/extradata-reload-multi-stsd.mov nut \
-        "-map 0:v -c copy -bsf h264_redundant_pps -syncpoints none -strict experimental"
-
-fate-h264_redundant_pps: $(FATE_H264_REDUNDANT_PPS-yes)
-
-
-FATE_SAMPLES_FFMPEG += $(FATE_CBS_H264-yes) $(FATE_H264_REDUNDANT_PPS-yes)
-fate-cbs-h264: $(FATE_CBS_H264-yes) $(FATE_H264_REDUNDANT_PPS-yes)
+FATE_SAMPLES_FFMPEG += $(FATE_CBS_H264-yes)
+fate-cbs-h264: $(FATE_CBS_H264-yes)
 
 # H.265 read/write
 

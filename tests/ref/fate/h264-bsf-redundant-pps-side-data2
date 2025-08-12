@@ -1,5 +1,5 @@
-dd953f8d95d2927703ce9593a07fe2e7 *tests/data/fate/h264_redundant_pps-side_data2.nut
-5162 tests/data/fate/h264_redundant_pps-side_data2.nut
+dd953f8d95d2927703ce9593a07fe2e7 *tests/data/fate/h264-bsf-redundant-pps-side-data2.nut
+5162 tests/data/fate/h264-bsf-redundant-pps-side-data2.nut
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo

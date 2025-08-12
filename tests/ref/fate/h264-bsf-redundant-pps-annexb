@@ -1,5 +1,5 @@
-ce0890bd80342f8a3f6703f83b1c4959 *tests/data/fate/h264_redundant_pps-annexb.h264
-163967 tests/data/fate/h264_redundant_pps-annexb.h264
+ce0890bd80342f8a3f6703f83b1c4959 *tests/data/fate/h264-bsf-redundant-pps-annexb.h264
+163967 tests/data/fate/h264-bsf-redundant-pps-annexb.h264
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo

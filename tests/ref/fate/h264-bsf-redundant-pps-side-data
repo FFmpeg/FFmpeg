@@ -1,5 +1,5 @@
-92fe70291f72acf94ba56b426bbaccb0 *tests/data/fate/h264_redundant_pps-side_data.nut
-596100 tests/data/fate/h264_redundant_pps-side_data.nut
+92fe70291f72acf94ba56b426bbaccb0 *tests/data/fate/h264-bsf-redundant-pps-side-data.nut
+596100 tests/data/fate/h264-bsf-redundant-pps-side-data.nut
 #extradata 0:       34, 0x850408e3
 #tb 0: 1/48000
 #media_type 0: video
