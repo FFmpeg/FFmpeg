@@ -34,7 +34,16 @@ git diff --cached --exit-code >/dev/null ||\
 
 #version="12.34"
 
-merge "https://github.com/michaelni/FFmpeg.git" "libpostproc"
+[ $# -ne 1 ] &&\
+    error "Usage: $0 source-plugins.txt"
+
+while IFS=' ' read -r a b; do
+    case "$a" in
+        ''|'#'*) continue ;;
+    esac
+
+    merge "$a" "$b"
+done < "$1"
 
 [ -n "$version"  ] && echo version: $version
 [ -n "$succeeded" ] && echo Succeeded merging: $succeeded

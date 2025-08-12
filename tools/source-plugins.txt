@@ -1,0 +1,4 @@
+# List of source plugins
+
+# libpostproc, GPL, maintained by Michael Niedermayer
+https://github.com/michaelni/FFmpeg.git libpostproc
