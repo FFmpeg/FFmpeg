@@ -152,7 +152,8 @@ get_next:
                 ff_adts_header_parse_buf(buf, &hdr) < 0)
                 return i;
 
-            avctx->profile = hdr.object_type - 1;
+            if (avctx->profile == AV_PROFILE_UNKNOWN)
+                avctx->profile = hdr.object_type - 1;
             /* ADTS does not support USAC */
             s1->key_frame = 1;
             bit_rate = hdr.bit_rate;
