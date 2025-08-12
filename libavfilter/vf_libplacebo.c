@@ -1243,6 +1243,10 @@ static int libplacebo_activate(AVFilterContext *ctx)
             }
         }
 
+        /* In constant FPS mode, we can also output an empty frame if there is
+         * a gap in the input timeline and we still have active streams */
+        ok |= s->fps.num && s->nb_active > 0;
+
         if (retry) {
             return 0;
         } else if (ok) {
