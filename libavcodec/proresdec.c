@@ -335,6 +335,9 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
         return AVERROR_INVALIDDATA;
     }
 
+    ctx->slice_mb_width  = 1 << log2_slice_mb_width;
+    ctx->slice_mb_height = 1 << log2_slice_mb_height;
+
     ctx->mb_width  = (avctx->width  + 15) >> 4;
     if (ctx->frame_type)
         ctx->mb_height = (avctx->height + 31) >> 5;
@@ -344,7 +347,7 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
     // QT ignores the written value
     // slice_count = AV_RB16(buf + 5);
     slice_count = ctx->mb_height * ((ctx->mb_width >> log2_slice_mb_width) +
-                                    av_popcount(ctx->mb_width & (1 << log2_slice_mb_width) - 1));
+                                    av_popcount(ctx->mb_width & ctx->slice_mb_width - 1));
 
     if (ctx->slice_count != slice_count || !ctx->slices) {
         av_freep(&ctx->slices);
@@ -367,7 +370,7 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
     index_ptr = buf + hdr_size;
     data_ptr  = index_ptr + slice_count*2;
 
-    slice_mb_count = 1 << log2_slice_mb_width;
+    slice_mb_count = ctx->slice_mb_width;
     mb_x = 0;
     mb_y = 0;
 
@@ -392,7 +395,7 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
 
         mb_x += slice_mb_count;
         if (mb_x == ctx->mb_width) {
-            slice_mb_count = 1 << log2_slice_mb_width;
+            slice_mb_count = ctx->slice_mb_width;
             mb_x = 0;
             mb_y++;
         }
