@@ -21,6 +21,7 @@
 #ifndef AVCODEC_X86_VC1DSP_H
 #define AVCODEC_X86_VC1DSP_H
 
+#include "libavutil/x86/asm.h"
 #include "libavcodec/vc1dsp.h"
 
 #if HAVE_6REGS && HAVE_INLINE_ASM && HAVE_MMX_EXTERNAL
