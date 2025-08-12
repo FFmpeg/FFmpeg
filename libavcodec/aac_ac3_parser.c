@@ -147,11 +147,9 @@ get_next:
         } else {
 #if CONFIG_AAC_PARSER
             AACADTSHeaderInfo hdr;
-            GetBitContext gb;
 
-            init_get_bits8(&gb, buf, buf_size);
             if (buf_size < AV_AAC_ADTS_HEADER_SIZE ||
-                ff_adts_header_parse(&gb, &hdr) < 0)
+                ff_adts_header_parse_buf(buf, &hdr) < 0)
                 return i;
 
             avctx->profile = hdr.object_type - 1;
