@@ -303,7 +303,8 @@ static int filter_link_check_formats(void *log, AVFilterLink *link, AVFilterForm
     case AVMEDIA_TYPE_VIDEO:
         if ((ret = ff_formats_check_pixel_formats(log, cfg->formats)) < 0 ||
             (ret = ff_formats_check_color_spaces(log, cfg->color_spaces)) < 0 ||
-            (ret = ff_formats_check_color_ranges(log, cfg->color_ranges)) < 0)
+            (ret = ff_formats_check_color_ranges(log, cfg->color_ranges)) < 0 ||
+            (ret = ff_formats_check_alpha_modes(log, cfg->alpha_modes)) < 0)
             return ret;
         break;
 
@@ -418,7 +419,8 @@ static int formats_declared(AVFilterContext *f)
             return 0;
         if (f->inputs[i]->type == AVMEDIA_TYPE_VIDEO &&
             !(f->inputs[i]->outcfg.color_ranges &&
-              f->inputs[i]->outcfg.color_spaces))
+              f->inputs[i]->outcfg.color_spaces &&
+              f->inputs[i]->outcfg.alpha_modes))
             return 0;
         if (f->inputs[i]->type == AVMEDIA_TYPE_AUDIO &&
             !(f->inputs[i]->outcfg.samplerates &&
@@ -430,7 +432,8 @@ static int formats_declared(AVFilterContext *f)
             return 0;
         if (f->outputs[i]->type == AVMEDIA_TYPE_VIDEO &&
             !(f->outputs[i]->incfg.color_ranges &&
-              f->outputs[i]->incfg.color_spaces))
+              f->outputs[i]->incfg.color_spaces &&
+              f->outputs[i]->incfg.alpha_modes))
             return 0;
         if (f->outputs[i]->type == AVMEDIA_TYPE_AUDIO &&
             !(f->outputs[i]->incfg.samplerates &&
@@ -641,6 +644,10 @@ retry:
                     av_assert0( inlink->outcfg.color_ranges->refcount > 0);
                     av_assert0(outlink-> incfg.color_ranges->refcount > 0);
                     av_assert0(outlink->outcfg.color_ranges->refcount > 0);
+                    av_assert0( inlink-> incfg.alpha_modes->refcount > 0);
+                    av_assert0( inlink->outcfg.alpha_modes->refcount > 0);
+                    av_assert0(outlink-> incfg.alpha_modes->refcount > 0);
+                    av_assert0(outlink->outcfg.alpha_modes->refcount > 0);
                 } else if (outlink->type == AVMEDIA_TYPE_AUDIO) {
                     av_assert0( inlink-> incfg.samplerates->refcount > 0);
                     av_assert0( inlink->outcfg.samplerates->refcount > 0);
@@ -820,8 +827,8 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
             swfmt = AV_PIX_FMT_YUV420P;
         }
 
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(swfmt);
         if (!ff_fmt_is_regular_yuv(swfmt)) {
-            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(swfmt);
             /* These fields are explicitly documented as affecting YUV only,
              * so set them to sane values for other formats. */
             if (desc->flags & AV_PIX_FMT_FLAG_FLOAT)
@@ -855,6 +862,19 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
                 link->incfg.color_ranges->nb_formats = 1;
                 link->color_range = link->incfg.color_ranges->formats[0];
             }
+        }
+
+        if (desc->flags & AV_PIX_FMT_FLAG_ALPHA) {
+            if (!link->incfg.alpha_modes->nb_formats) {
+                av_log(link->src, AV_LOG_ERROR, "Cannot select alpha mode for"
+                       " the link between filters %s and %s.\n", link->src->name,
+                       link->dst->name);
+                return AVERROR(EINVAL);
+            }
+            link->incfg.alpha_modes->nb_formats = 1;
+            link->alpha_mode = link->incfg.alpha_modes->formats[0];
+        } else {
+            link->alpha_mode = AVALPHA_MODE_UNSPECIFIED;
         }
     } else if (link->type == AVMEDIA_TYPE_AUDIO) {
         int ret;
@@ -894,6 +914,8 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
     ff_formats_unref(&link->outcfg.color_spaces);
     ff_formats_unref(&link->incfg.color_ranges);
     ff_formats_unref(&link->outcfg.color_ranges);
+    ff_formats_unref(&link->incfg.alpha_modes);
+    ff_formats_unref(&link->outcfg.alpha_modes);
 
     return 0;
 }
@@ -946,6 +968,8 @@ static int reduce_formats_on_filter(AVFilterContext *filter)
     REDUCE_FORMATS(int,      AVFilterFormats,        color_spaces,    formats,
                    nb_formats, ff_add_format);
     REDUCE_FORMATS(int,      AVFilterFormats,        color_ranges,    formats,
+                   nb_formats, ff_add_format);
+    REDUCE_FORMATS(int,      AVFilterFormats,        alpha_modes,     formats,
                    nb_formats, ff_add_format);
 
     /* reduce channel layouts */

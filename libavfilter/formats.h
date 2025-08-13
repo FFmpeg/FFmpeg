@@ -145,6 +145,12 @@ av_warn_unused_result
 AVFilterFormats *ff_all_color_ranges(void);
 
 /**
+ * Construct an AVFilterFormats representing all possible alpha modes.
+ */
+av_warn_unused_result
+AVFilterFormats *ff_all_alpha_modes(void);
+
+/**
  * Helpers for query_formats() which set all free audio links to the same list
  * of channel layouts/sample rates. If there are no links hooked to this list,
  * the list is freed.
@@ -210,6 +216,23 @@ int ff_set_common_color_ranges_from_list(AVFilterContext *ctx,
  */
 av_warn_unused_result
 int ff_set_common_all_color_ranges(AVFilterContext *ctx);
+
+av_warn_unused_result
+int ff_set_common_alpha_modes(AVFilterContext *ctx,
+                              AVFilterFormats *alpha_modes);
+/**
+ * Equivalent to ff_set_common_alpha_modes(ctx, ff_make_format_list(alpha_modes))
+ */
+av_warn_unused_result
+int ff_set_common_alpha_modes_from_list(AVFilterContext *ctx,
+                                        const int *alpha_modes);
+
+/**
+ * Equivalent to ff_set_common_alpha_modes(ctx, ff_all_alpha_modes())
+ */
+av_warn_unused_result
+int ff_set_common_all_alpha_modes(AVFilterContext *ctx);
+
 
 /**
  * A helper for query_formats() which sets all links to the same list of
@@ -296,6 +319,23 @@ av_warn_unused_result
 int ff_set_common_all_color_ranges2(const AVFilterContext *ctx,
                                     AVFilterFormatsConfig **cfg_in,
                                     AVFilterFormatsConfig **cfg_out);
+
+av_warn_unused_result
+int ff_set_common_alpha_modes2(const AVFilterContext *ctx,
+                               AVFilterFormatsConfig **cfg_in,
+                               AVFilterFormatsConfig **cfg_out,
+                               AVFilterFormats *alpha_modes);
+
+av_warn_unused_result
+int ff_set_common_alpha_modes_from_list2(const AVFilterContext *ctx,
+                                         AVFilterFormatsConfig **cfg_in,
+                                         AVFilterFormatsConfig **cfg_out,
+                                         const int *alpha_modes);
+
+av_warn_unused_result
+int ff_set_common_all_alpha_modes2(const AVFilterContext *ctx,
+                                   AVFilterFormatsConfig **cfg_in,
+                                   AVFilterFormatsConfig **cfg_out);
 
 av_warn_unused_result
 int ff_set_common_formats2(const AVFilterContext *ctx,
@@ -465,6 +505,13 @@ int ff_formats_check_channel_layouts(void *log, const AVFilterChannelLayouts *fm
  */
 int ff_formats_check_color_spaces(void *log, const AVFilterFormats *fmts);
 int ff_formats_check_color_ranges(void *log, const AVFilterFormats *fmts);
+
+/**
+ * Check that fmts is a valid formats list for alpha modes.
+ *
+ * In particular, check for duplicates.
+ */
+int ff_formats_check_alpha_modes(void *log, const AVFilterFormats *fmts);
 
 typedef struct AVFilterFormatMerger {
     unsigned offset;
