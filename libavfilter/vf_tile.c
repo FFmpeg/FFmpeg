@@ -144,7 +144,7 @@ static int config_props(AVFilterLink *outlink)
     outlink->h = tile->h * inlink->h + total_margin_h;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     ol->frame_rate = av_mul_q(il->frame_rate, av_make_q(1, tile->nb_frames - tile->overlap));
-    ret = ff_draw_init2(&tile->draw, inlink->format, inlink->colorspace, inlink->color_range, 0);
+    ret = ff_draw_init_from_link(&tile->draw, inlink, 0);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
         return ret;

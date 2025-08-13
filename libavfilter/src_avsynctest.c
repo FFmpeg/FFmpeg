@@ -161,7 +161,7 @@ static av_cold int config_props(AVFilterLink *outlink)
     s->dir = 1;
     s->prev_intpart = INT64_MIN;
 
-    ret = ff_draw_init2(&s->draw, outlink->format, outlink->colorspace, outlink->color_range, 0);
+    ret = ff_draw_init_from_link(&s->draw, outlink, 0);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
         return ret;

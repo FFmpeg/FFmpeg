@@ -312,7 +312,7 @@ static int config_output(AVFilterLink *outlink)
 
         if (s->fillcolor_enable) {
             const AVFilterLink *inlink = ctx->inputs[0];
-            ret = ff_draw_init2(&s->draw, inlink->format, inlink->colorspace, inlink->color_range, 0);
+            ret = ff_draw_init_from_link(&s->draw, inlink, 0);
             if (ret < 0) {
                 av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
                 return ret;

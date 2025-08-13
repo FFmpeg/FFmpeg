@@ -228,7 +228,7 @@ static int config_out_props(AVFilterLink *outlink)
 
     if (tinterlace->mode == MODE_PAD) {
         uint8_t black[4] = { 0, 0, 0, 16 };
-        ret = ff_draw_init2(&tinterlace->draw, outlink->format, outlink->colorspace, outlink->color_range, 0);
+        ret = ff_draw_init_from_link(&tinterlace->draw, outlink, 0);
         if (ret < 0) {
             av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
             return ret;

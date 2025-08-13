@@ -645,7 +645,7 @@ static int qrencodesrc_config_props(AVFilterLink *outlink)
     ff_draw_color(&qr->draw, &qr->draw_foreground_color, (const uint8_t *)&qr->foreground_color);
     ff_draw_color(&qr->draw, &qr->draw_background_color, (const uint8_t *)&qr->background_color);
 
-    ret = ff_draw_init2(&qr->draw0, outlink->format, outlink->colorspace, outlink->color_range, FF_DRAW_PROCESS_ALPHA);
+    ret = ff_draw_init_from_link(&qr->draw0, outlink, FF_DRAW_PROCESS_ALPHA);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
         return ret;
@@ -743,8 +743,7 @@ static int qrencode_config_input(AVFilterLink *inlink)
 
     qr->is_source = 0;
 
-    ret = ff_draw_init2(&qr->draw, inlink->format, inlink->colorspace, inlink->color_range,
-                        FF_DRAW_PROCESS_ALPHA);
+    ret = ff_draw_init_from_link(&qr->draw, inlink, FF_DRAW_PROCESS_ALPHA);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
         return ret;
@@ -777,8 +776,7 @@ static int qrencode_config_input(AVFilterLink *inlink)
     PARSE_EXPR(rendered_qrcode_width);
     PARSE_EXPR(rendered_padded_qrcode_width);
 
-    ret = ff_draw_init2(&qr->draw, inlink->format, inlink->colorspace, inlink->color_range,
-                  FF_DRAW_PROCESS_ALPHA);
+    ret = ff_draw_init_from_link(&qr->draw, inlink,  FF_DRAW_PROCESS_ALPHA);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
         return ret;
