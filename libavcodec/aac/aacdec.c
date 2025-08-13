@@ -466,6 +466,9 @@ int ff_aac_output_configure(AACDecContext *ac,
     uint8_t id_map[TYPE_END][MAX_ELEM_ID] = {{ 0 }};
     uint8_t type_counts[TYPE_END] = { 0 };
 
+    if (get_new_frame && !ac->frame)
+        return AVERROR_INVALIDDATA;
+
     if (ac->oc[1].layout_map != layout_map) {
         memcpy(ac->oc[1].layout_map, layout_map, tags * sizeof(layout_map[0]));
         ac->oc[1].layout_map_tags = tags;
