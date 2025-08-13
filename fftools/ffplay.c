@@ -942,6 +942,11 @@ static enum AVColorSpace sdl_supported_color_spaces[] = {
     AVCOL_SPC_SMPTE170M,
 };
 
+static enum AVAlphaMode sdl_supported_alpha_modes[] = {
+    AVALPHA_MODE_UNSPECIFIED,
+    AVALPHA_MODE_STRAIGHT,
+};
+
 static void set_sdl_yuv_conversion_mode(AVFrame *frame)
 {
 #if SDL_VERSION_ATLEAST(2,0,8)
@@ -1906,6 +1911,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     par->sample_aspect_ratio = codecpar->sample_aspect_ratio;
     par->color_space         = frame->colorspace;
     par->color_range         = frame->color_range;
+    par->alpha_mode          = frame->alpha_mode;
     par->frame_rate          = fr;
     par->hw_frames_ctx = frame->hw_frames_ctx;
     ret = av_buffersrc_parameters_set(filt_src, par);
@@ -1931,6 +1937,10 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
                                 0, FF_ARRAY_ELEMS(sdl_supported_color_spaces),
                                 AV_OPT_TYPE_INT, sdl_supported_color_spaces)) < 0)
         goto fail;
+
+    if ((ret = av_opt_set_array(filt_out, "alpha_modes", AV_OPT_SEARCH_CHILDREN,
+                                0, FF_ARRAY_ELEMS(sdl_supported_alpha_modes),
+                                AV_OPT_TYPE_INT, sdl_supported_alpha_modes)) < 0)
 
     ret = avfilter_init_dict(filt_out, NULL);
     if (ret < 0)
