@@ -93,7 +93,7 @@ static int infer_size(int *width_ptr, int *height_ptr, int size)
  * @param start_index  minimum accepted value for the first index in the range
  * @return -1 if no image file could be found
  */
-static int find_image_range(AVIOContext *pb, int *pfirst_index, int *plast_index,
+static int find_image_range(int *pfirst_index, int *plast_index,
                             const char *path, int start_index, int start_index_range)
 {
     char buf[1024];
@@ -101,13 +101,8 @@ static int find_image_range(AVIOContext *pb, int *pfirst_index, int *plast_index
 
     /* find the first image */
     for (first_index = start_index; first_index < start_index + start_index_range; first_index++) {
-        if (av_get_frame_filename(buf, sizeof(buf), path, first_index) < 0) {
-            *pfirst_index =
-            *plast_index  = 1;
-            if (pb || avio_check(buf, AVIO_FLAG_READ) > 0)
-                return 0;
+        if (av_get_frame_filename(buf, sizeof(buf), path, first_index) < 0)
             return -1;
-        }
         if (avio_check(buf, AVIO_FLAG_READ) > 0)
             break;
     }
@@ -222,12 +217,17 @@ int ff_img_read_header(AVFormatContext *s1)
                 s->pattern_type = PT_SEQUENCE;
         }
         if (s->pattern_type == PT_SEQUENCE) {
-            if (find_image_range(s1->pb, &first_index, &last_index, s->path,
+            if (find_image_range(&first_index, &last_index, s->path,
                                  s->start_number, s->start_number_range) < 0) {
-                av_log(s1, AV_LOG_ERROR,
-                       "Could find no file with path '%s' and index in the range %d-%d\n",
-                       s->path, s->start_number, s->start_number + s->start_number_range - 1);
-                return AVERROR(ENOENT);
+                if (s1->pb || avio_check(s->path, AVIO_FLAG_READ) > 0) {
+                    // Fallback to normal mode
+                    s->pattern_type = PT_NONE;
+                } else {
+                    av_log(s1, AV_LOG_ERROR,
+                           "Could find no file or sequence with path '%s' and index in the range %d-%d\n",
+                           s->path, s->start_number, s->start_number + s->start_number_range - 1);
+                    return AVERROR(ENOENT);
+                }
             }
         } else if (s->pattern_type == PT_GLOB) {
 #if HAVE_GLOB
@@ -378,7 +378,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         } else {
         if (av_get_frame_filename(filename_bytes, sizeof(filename_bytes),
                                   s->path,
-                                  s->img_number) < 0 && s->img_number > 1)
+                                  s->img_number) < 0)
             return AVERROR(EIO);
         }
         for (i = 0; i < 3; i++) {
