@@ -358,6 +358,7 @@ static int config_output(AVFilterLink *outlink)
 // alpha = alpha_overlay / ( (alpha_main + alpha_overlay) - (alpha_main * alpha_overlay) )
 // (((x) << 16) - ((x) << 9) + (x)) is a faster version of: 255 * 255 * x
 // ((((x) + (y)) << 8) - ((x) + (y)) - (y) * (x)) is a faster version of: 255 * (x + y)
+// this is only needed when blending onto straight alpha main images
 #define UNPREMULTIPLY_ALPHA(x, y) ((((x) << 16) - ((x) << 9) + (x)) / ((((x) + (y)) << 8) - ((x) + (y)) - (y) * (x)))
 
 #define PTR_ADD(TYPE, ptr, byte_addend) ((TYPE*)((uint8_t*)ptr + (byte_addend)))
@@ -370,7 +371,8 @@ static int config_output(AVFilterLink *outlink)
 static av_always_inline void blend_slice_packed_rgb(AVFilterContext *ctx,
                                    AVFrame *dst, const AVFrame *src,
                                    int main_has_alpha, int x, int y,
-                                   int overlay_straight, int jobnr, int nb_jobs)
+                                   int overlay_straight, int main_straight,
+                                   int jobnr, int nb_jobs)
 {
     OverlayContext *s = ctx->priv;
     int i, imax, j, jmax;
@@ -411,7 +413,7 @@ static av_always_inline void blend_slice_packed_rgb(AVFilterContext *ctx,
 
             // if the main channel has an alpha channel, alpha has to be calculated
             // to create an un-premultiplied (straight) alpha value
-            if (main_has_alpha && alpha != 0 && alpha != 255) {
+            if (main_straight && alpha != 0 && alpha != 255) {
                 uint8_t alpha_d = d[da];
                 alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);
             }
@@ -461,7 +463,7 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
                                          int dst_w, int dst_h,                                             \
                                          int i, int hsub, int vsub,                                        \
                                          int x, int y,                                                     \
-                                         int main_has_alpha,                                               \
+                                         int main_straight,                                                \
                                          int dst_plane,                                                    \
                                          int dst_offset,                                                   \
                                          int dst_step,                                                     \
@@ -490,13 +492,13 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
                       + (yp + slice_start) * dst->linesize[dst_plane]                                      \
                       + dst_offset;                                                                        \
     const uint8_t *ap = src->data[3] + (slice_start << vsub) * src->linesize[3];                           \
-    const uint8_t *dap = main_has_alpha ? dst->data[3] + ((yp + slice_start) << vsub) * dst->linesize[3] : NULL; \
+    const uint8_t *dap = main_straight ? dst->data[3] + ((yp + slice_start) << vsub) * dst->linesize[3] : NULL; \
                                                                                                            \
     for (int j = slice_start; j < slice_end; ++j) {                                                        \
         int k = kmin;                                                                                      \
         const T  *s = (const T *)sp + k;                                                                   \
         const T  *a = (const T *)ap + (k << hsub);                                                         \
-        const T *da = main_has_alpha ? (T *)dap + ((xp + k) << hsub) : NULL;                               \
+        const T *da = main_straight ? (T *)dap + ((xp + k) << hsub) : NULL;                                \
         T *d  = (T *)(dp + (xp + k) * dst_step);                                                           \
                                                                                                            \
         if (nbits == 8 && ((vsub && j+1 < src_hp) || !vsub) && octx->blend_row[i]) {                       \
@@ -505,7 +507,7 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
                                                                                                            \
             s += c;                                                                                        \
             d  = PTR_ADD(T, d, dst_step * c);                                                              \
-            if (main_has_alpha)                                                                            \
+            if (main_straight)                                                                             \
                 da += (1 << hsub) * c;                                                                     \
             a += (1 << hsub) * c;                                                                          \
             k += c;                                                                                        \
@@ -528,7 +530,7 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
                 alpha = a[0];                                                                              \
             /* if the main channel has an alpha channel, alpha has to be calculated */                     \
             /* to create an un-premultiplied (straight) alpha value */                                     \
-            if (main_has_alpha && alpha != 0 && alpha != max) {                                            \
+            if (main_straight && alpha != 0 && alpha != max) {                                             \
                 /* average alpha for color components, improve quality */                                  \
                 uint8_t alpha_d;                                                                           \
                 if (hsub && vsub && j+1 < src_hp && k+1 < src_wp) {                                        \
@@ -566,14 +568,14 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
             }                                                                                              \
             s++;                                                                                           \
             d  = PTR_ADD(T, d, dst_step);                                                                  \
-            if (main_has_alpha)                                                                            \
+            if (main_straight)                                                                             \
                 da += 1 << hsub;                                                                           \
             a += 1 << hsub;                                                                                \
         }                                                                                                  \
         dp += dst->linesize[dst_plane];                                                                    \
         sp += src->linesize[i];                                                                            \
         ap += (1 << vsub) * src->linesize[3];                                                              \
-        if (main_has_alpha)                                                                                \
+        if (main_straight)                                                                                 \
             dap += (1 << vsub) * dst->linesize[3];                                                         \
     }                                                                                                      \
 }
@@ -584,7 +586,7 @@ DEFINE_BLEND_PLANE(16, uint16_t, 10)
 static inline void alpha_composite_##depth##_##nbits##bits(const AVFrame *src, const AVFrame *dst,         \
                                    int src_w, int src_h,                                                   \
                                    int dst_w, int dst_h,                                                   \
-                                   int x, int y,                                                           \
+                                   int x, int y, int main_straight,                                        \
                                    int jobnr, int nb_jobs)                                                 \
 {                                                                                                          \
     T alpha;          /* the amount of overlay to blend on to main */                                      \
@@ -604,7 +606,7 @@ static inline void alpha_composite_##depth##_##nbits##bits(const AVFrame *src, c
                                                                                                            \
         for (int j = jmin; j < jmax; ++j) {                                                                \
             alpha = *s;                                                                                    \
-            if (alpha != 0 && alpha != max) {                                                              \
+            if (main_straight && alpha != 0 && alpha != max) {                                             \
                 uint8_t alpha_d = *d;                                                                      \
                 alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);                                               \
             }                                                                                              \
@@ -631,7 +633,7 @@ DEFINE_ALPHA_COMPOSITE(16, uint16_t, 10)
 static av_always_inline void blend_slice_yuv_##depth##_##nbits##bits(AVFilterContext *ctx,                 \
                                              AVFrame *dst, const AVFrame *src,                             \
                                              int hsub, int vsub,                                           \
-                                             int main_has_alpha,                                           \
+                                             int main_straight,                                            \
                                              int x, int y,                                                 \
                                              int overlay_straight,                                         \
                                              int jobnr, int nb_jobs)                                       \
@@ -643,17 +645,17 @@ static av_always_inline void blend_slice_yuv_##depth##_##nbits##bits(AVFilterCon
     const int dst_h = dst->height;                                                                         \
                                                                                                            \
     blend_plane_##depth##_##nbits##bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 0, 0,       0,          \
-                x, y, main_has_alpha, s->main_desc->comp[0].plane, s->main_desc->comp[0].offset,           \
+                x, y, main_straight, s->main_desc->comp[0].plane, s->main_desc->comp[0].offset,            \
                 s->main_desc->comp[0].step, overlay_straight, 1, jobnr, nb_jobs);                          \
     blend_plane_##depth##_##nbits##bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 1, hsub, vsub,          \
-                x, y, main_has_alpha, s->main_desc->comp[1].plane, s->main_desc->comp[1].offset,           \
+                x, y, main_straight, s->main_desc->comp[1].plane, s->main_desc->comp[1].offset,            \
                 s->main_desc->comp[1].step, overlay_straight, 1, jobnr, nb_jobs);                          \
     blend_plane_##depth##_##nbits##bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 2, hsub, vsub,          \
-                x, y, main_has_alpha, s->main_desc->comp[2].plane, s->main_desc->comp[2].offset,           \
+                x, y, main_straight, s->main_desc->comp[2].plane, s->main_desc->comp[2].offset,            \
                 s->main_desc->comp[2].step, overlay_straight, 1, jobnr, nb_jobs);                          \
                                                                                                            \
-    if (main_has_alpha)                                                                                    \
-        alpha_composite_##depth##_##nbits##bits(src, dst, src_w, src_h, dst_w, dst_h, x, y,                \
+    if (s->main_has_alpha)                                                                                 \
+        alpha_composite_##depth##_##nbits##bits(src, dst, src_w, src_h, dst_w, dst_h, x, y, main_straight, \
                                                 jobnr, nb_jobs);                                           \
 }
 DEFINE_BLEND_SLICE_YUV(8, 8)
@@ -662,7 +664,7 @@ DEFINE_BLEND_SLICE_YUV(16, 10)
 static av_always_inline void blend_slice_planar_rgb(AVFilterContext *ctx,
                                                     AVFrame *dst, const AVFrame *src,
                                                     int hsub, int vsub,
-                                                    int main_has_alpha,
+                                                    int main_straight,
                                                     int x, int y,
                                                     int overlay_straight,
                                                     int jobnr,
@@ -674,73 +676,68 @@ static av_always_inline void blend_slice_planar_rgb(AVFilterContext *ctx,
     const int dst_w = dst->width;
     const int dst_h = dst->height;
 
-    blend_plane_8_8bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 0, 0,   0, x, y, main_has_alpha,
+    blend_plane_8_8bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 0, 0,   0, x, y, main_straight,
                 s->main_desc->comp[1].plane, s->main_desc->comp[1].offset, s->main_desc->comp[1].step, overlay_straight, 0,
                 jobnr, nb_jobs);
-    blend_plane_8_8bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 1, hsub, vsub, x, y, main_has_alpha,
+    blend_plane_8_8bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 1, hsub, vsub, x, y, main_straight,
                 s->main_desc->comp[2].plane, s->main_desc->comp[2].offset, s->main_desc->comp[2].step, overlay_straight, 0,
                 jobnr, nb_jobs);
-    blend_plane_8_8bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 2, hsub, vsub, x, y, main_has_alpha,
+    blend_plane_8_8bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 2, hsub, vsub, x, y, main_straight,
                 s->main_desc->comp[0].plane, s->main_desc->comp[0].offset, s->main_desc->comp[0].step, overlay_straight, 0,
                 jobnr, nb_jobs);
 
-    if (main_has_alpha)
-        alpha_composite_8_8bits(src, dst, src_w, src_h, dst_w, dst_h, x, y, jobnr, nb_jobs);
+    if (s->main_has_alpha)
+        alpha_composite_8_8bits(src, dst, src_w, src_h, dst_w, dst_h, x, y, main_straight, jobnr, nb_jobs);
 }
 
-#define DEFINE_BLEND_SLICE_PLANAR_FMT(format_, blend_slice_fn_suffix_, hsub_, vsub_, main_has_alpha_, direct_) \
+#define DEFINE_BLEND_SLICE_PLANAR_FMT_(format_, blend_slice_fn_suffix_, hsub_, vsub_, main_straight_, overlay_straight_) \
 static int blend_slice_##format_(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)           \
 {                                                                       \
     OverlayContext *s = ctx->priv;                                      \
     ThreadData *td = arg;                                               \
     blend_slice_##blend_slice_fn_suffix_(ctx, td->dst, td->src,         \
-                                         hsub_, vsub_, main_has_alpha_, \
-                                         s->x, s->y, direct_,           \
+                                         hsub_, vsub_, main_straight_,  \
+                                         s->x, s->y, overlay_straight_, \
                                          jobnr, nb_jobs);               \
     return 0;                                                           \
 }
 
-//                            FMT          FN             H  V  A  D
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuv420,      yuv_8_8bits,   1, 1, 0, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuva420,     yuv_8_8bits,   1, 1, 1, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuv420p10,   yuv_16_10bits, 1, 1, 0, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuva420p10,  yuv_16_10bits, 1, 1, 1, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuv422p10,   yuv_16_10bits, 1, 0, 0, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuva422p10,  yuv_16_10bits, 1, 0, 1, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuv422,      yuv_8_8bits,   1, 0, 0, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuva422,     yuv_8_8bits,   1, 0, 1, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuv444,      yuv_8_8bits,   0, 0, 0, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuva444,     yuv_8_8bits,   0, 0, 1, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuv444p10,   yuv_16_10bits, 0, 0, 0, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuva444p10,  yuv_16_10bits, 0, 0, 1, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(gbrp,        planar_rgb,    0, 0, 0, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(gbrap,       planar_rgb,    0, 0, 1, 1)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuv420_pm,   yuv_8_8bits,   1, 1, 0, 0)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuva420_pm,  yuv_8_8bits,   1, 1, 1, 0)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuv422_pm,   yuv_8_8bits,   1, 0, 0, 0)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuva422_pm,  yuv_8_8bits,   1, 0, 1, 0)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuv444_pm,   yuv_8_8bits,   0, 0, 0, 0)
-DEFINE_BLEND_SLICE_PLANAR_FMT(yuva444_pm,  yuv_8_8bits,   0, 0, 1, 0)
-DEFINE_BLEND_SLICE_PLANAR_FMT(gbrp_pm,     planar_rgb,    0, 0, 0, 0)
-DEFINE_BLEND_SLICE_PLANAR_FMT(gbrap_pm,    planar_rgb,    0, 0, 1, 0)
+#define DEFINE_BLEND_SLICE_PLANAR_FMT(format_, blend_slice_fn_suffix_, hsub_, vsub_) \
+DEFINE_BLEND_SLICE_PLANAR_FMT_(format_ ## _ss, blend_slice_fn_suffix_, hsub_, vsub_, 1, 1) \
+DEFINE_BLEND_SLICE_PLANAR_FMT_(format_ ## _sp, blend_slice_fn_suffix_, hsub_, vsub_, 1, 0) \
+DEFINE_BLEND_SLICE_PLANAR_FMT_(format_ ## _ps, blend_slice_fn_suffix_, hsub_, vsub_, 0, 1) \
+DEFINE_BLEND_SLICE_PLANAR_FMT_(format_ ## _pp, blend_slice_fn_suffix_, hsub_, vsub_, 0, 0)
 
-#define DEFINE_BLEND_SLICE_PACKED_FMT(format_, blend_slice_fn_suffix_, main_has_alpha_, direct_) \
+//                            FMT           FN             H  V
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv420,       yuv_8_8bits,   1, 1)
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv420p10,    yuv_16_10bits, 1, 1)
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv422p10,    yuv_16_10bits, 1, 0)
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv422,       yuv_8_8bits,   1, 0)
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv444,       yuv_8_8bits,   0, 0)
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv444p10,    yuv_16_10bits, 0, 0)
+DEFINE_BLEND_SLICE_PLANAR_FMT(gbrp,         planar_rgb,    0, 0)
+
+#define DEFINE_BLEND_SLICE_PACKED_FMT(format_, blend_slice_fn_suffix_, main_has_alpha_, main_straight_, overlay_straight_) \
 static int blend_slice_##format_(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)        \
 {                                                                       \
     OverlayContext *s = ctx->priv;                                      \
     ThreadData *td = arg;                                               \
     blend_slice_packed_##blend_slice_fn_suffix_(ctx, td->dst, td->src,  \
                                                 main_has_alpha_,        \
-                                                s->x, s->y, direct_,    \
+                                                s->x, s->y,             \
+                                                overlay_straight_,      \
+                                                main_straight_,         \
                                                 jobnr, nb_jobs);        \
     return 0;                                                           \
 }
 
-//                            FMT      FN   A  D
-DEFINE_BLEND_SLICE_PACKED_FMT(rgb,     rgb, 0, 1)
-DEFINE_BLEND_SLICE_PACKED_FMT(rgba,    rgb, 1, 1)
-DEFINE_BLEND_SLICE_PACKED_FMT(rgb_pm,  rgb, 0, 0)
-DEFINE_BLEND_SLICE_PACKED_FMT(rgba_pm, rgb, 1, 0)
+//                            FMT      FN   A  MS OS
+DEFINE_BLEND_SLICE_PACKED_FMT(rgb,     rgb, 0, 0, 1)
+DEFINE_BLEND_SLICE_PACKED_FMT(rgb_pm,  rgb, 0, 0, 0)
+DEFINE_BLEND_SLICE_PACKED_FMT(rgba_ss, rgb, 1, 1, 1)
+DEFINE_BLEND_SLICE_PACKED_FMT(rgba_sp, rgb, 1, 1, 0)
+DEFINE_BLEND_SLICE_PACKED_FMT(rgba_ps, rgb, 1, 0, 1)
+DEFINE_BLEND_SLICE_PACKED_FMT(rgba_pp, rgb, 1, 0, 0)
 
 static int config_input_main(AVFilterLink *inlink)
 {
@@ -765,113 +762,74 @@ static int init_slice_fn(AVFilterContext *ctx)
     OverlayContext *s = ctx->priv;
     const AVFilterLink *main = ctx->inputs[MAIN];
     const AVFilterLink *overlay = ctx->inputs[OVERLAY];
+    const int main_straight = s->main_has_alpha && main->alpha_mode != AVALPHA_MODE_PREMULTIPLIED;
+    const int overlay_straight = overlay->alpha_mode != AVALPHA_MODE_PREMULTIPLIED;
 
-    switch (overlay->alpha_mode) {
-    case AVALPHA_MODE_UNSPECIFIED:
-    case AVALPHA_MODE_STRAIGHT:
-        switch (s->format) {
-        case OVERLAY_FORMAT_YUV420:
-            s->blend_slice = s->main_has_alpha ? blend_slice_yuva420 : blend_slice_yuv420;
-            break;
-        case OVERLAY_FORMAT_YUV420P10:
-            s->blend_slice = s->main_has_alpha ? blend_slice_yuva420p10 : blend_slice_yuv420p10;
-            break;
-        case OVERLAY_FORMAT_YUV422:
-            s->blend_slice = s->main_has_alpha ? blend_slice_yuva422 : blend_slice_yuv422;
-            break;
-        case OVERLAY_FORMAT_YUV422P10:
-            s->blend_slice = s->main_has_alpha ? blend_slice_yuva422p10 : blend_slice_yuv422p10;
-            break;
-        case OVERLAY_FORMAT_YUV444:
-            s->blend_slice = s->main_has_alpha ? blend_slice_yuva444 : blend_slice_yuv444;
-            break;
-        case OVERLAY_FORMAT_YUV444P10:
-            s->blend_slice = s->main_has_alpha ? blend_slice_yuva444p10 : blend_slice_yuv444p10;
-            break;
-        case OVERLAY_FORMAT_RGB:
-            s->blend_slice = s->main_has_alpha ? blend_slice_rgba : blend_slice_rgb;
-            break;
-        case OVERLAY_FORMAT_GBRP:
-            s->blend_slice = s->main_has_alpha ? blend_slice_gbrap : blend_slice_gbrp;
-            break;
-        case OVERLAY_FORMAT_AUTO:
-            switch (main->format) {
-            case AV_PIX_FMT_YUVA420P:
-                s->blend_slice = blend_slice_yuva420;
-                break;
-            case AV_PIX_FMT_YUVA420P10:
-                s->blend_slice = blend_slice_yuva420p10;
-                break;
-            case AV_PIX_FMT_YUVA422P:
-                s->blend_slice = blend_slice_yuva422;
-                break;
-            case AV_PIX_FMT_YUVA422P10:
-                s->blend_slice = blend_slice_yuva422p10;
-                break;
-            case AV_PIX_FMT_YUVA444P:
-                s->blend_slice = blend_slice_yuva444;
-                break;
-            case AV_PIX_FMT_YUVA444P10:
-                s->blend_slice = blend_slice_yuva444p10;
-                break;
-            case AV_PIX_FMT_ARGB:
-            case AV_PIX_FMT_RGBA:
-            case AV_PIX_FMT_BGRA:
-            case AV_PIX_FMT_ABGR:
-                s->blend_slice = blend_slice_rgba;
-                break;
-            case AV_PIX_FMT_GBRAP:
-                s->blend_slice = blend_slice_gbrap;
-                break;
-            default:
-                av_unreachable("Invalid pixel format for overlay");
-                break;
-            }
-            break;
-        }
+    #define ASSIGN_BLEND_SLICE(format_) \
+    do {                                \
+        s->blend_slice = main_straight ? (overlay_straight ? format_##_ss : format_##_sp)  \
+                                       : (overlay_straight ? format_##_ps : format_##_pp); \
+    } while (0)
+
+    switch (s->format) {
+    case OVERLAY_FORMAT_YUV420:
+        ASSIGN_BLEND_SLICE(blend_slice_yuv420);
         break;
-
-    case AVALPHA_MODE_PREMULTIPLIED:
-        switch (s->format) {
-        case OVERLAY_FORMAT_YUV420:
-            s->blend_slice = s->main_has_alpha ? blend_slice_yuva420_pm : blend_slice_yuv420_pm;
+    case OVERLAY_FORMAT_YUV420P10:
+        ASSIGN_BLEND_SLICE(blend_slice_yuv420p10);
+        break;
+    case OVERLAY_FORMAT_YUV422:
+        ASSIGN_BLEND_SLICE(blend_slice_yuv422);
+        break;
+    case OVERLAY_FORMAT_YUV422P10:
+        ASSIGN_BLEND_SLICE(blend_slice_yuv422p10);
+        break;
+    case OVERLAY_FORMAT_YUV444:
+        ASSIGN_BLEND_SLICE(blend_slice_yuv444);
+        break;
+    case OVERLAY_FORMAT_YUV444P10:
+        ASSIGN_BLEND_SLICE(blend_slice_yuv444p10);
+        break;
+    case OVERLAY_FORMAT_RGB:
+        if (s->main_has_alpha)
+            ASSIGN_BLEND_SLICE(blend_slice_rgba);
+        else
+            s->blend_slice = overlay_straight ? blend_slice_rgb : blend_slice_rgb_pm;
+        break;
+    case OVERLAY_FORMAT_GBRP:
+        ASSIGN_BLEND_SLICE(blend_slice_gbrp);
+        break;
+    case OVERLAY_FORMAT_AUTO:
+        switch (main->format) {
+        case AV_PIX_FMT_YUVA420P:
+            ASSIGN_BLEND_SLICE(blend_slice_yuv420);
             break;
-        case OVERLAY_FORMAT_YUV422:
-            s->blend_slice = s->main_has_alpha ? blend_slice_yuva422_pm : blend_slice_yuv422_pm;
+        case AV_PIX_FMT_YUVA420P10:
+            ASSIGN_BLEND_SLICE(blend_slice_yuv420p10);
             break;
-        case OVERLAY_FORMAT_YUV444:
-            s->blend_slice = s->main_has_alpha ? blend_slice_yuva444_pm : blend_slice_yuv444_pm;
+        case AV_PIX_FMT_YUVA422P:
+            ASSIGN_BLEND_SLICE(blend_slice_yuv422);
             break;
-        case OVERLAY_FORMAT_RGB:
-            s->blend_slice = s->main_has_alpha ? blend_slice_rgba_pm : blend_slice_rgb_pm;
+        case AV_PIX_FMT_YUVA422P10:
+            ASSIGN_BLEND_SLICE(blend_slice_yuv422p10);
             break;
-        case OVERLAY_FORMAT_GBRP:
-            s->blend_slice = s->main_has_alpha ? blend_slice_gbrap_pm : blend_slice_gbrp_pm;
+        case AV_PIX_FMT_YUVA444P:
+            ASSIGN_BLEND_SLICE(blend_slice_yuv444);
             break;
-        case OVERLAY_FORMAT_AUTO:
-            switch (main->format) {
-            case AV_PIX_FMT_YUVA420P:
-                s->blend_slice = blend_slice_yuva420_pm;
-                break;
-            case AV_PIX_FMT_YUVA422P:
-                s->blend_slice = blend_slice_yuva422_pm;
-                break;
-            case AV_PIX_FMT_YUVA444P:
-                s->blend_slice = blend_slice_yuva444_pm;
-                break;
-            case AV_PIX_FMT_ARGB:
-            case AV_PIX_FMT_RGBA:
-            case AV_PIX_FMT_BGRA:
-            case AV_PIX_FMT_ABGR:
-                s->blend_slice = blend_slice_rgba_pm;
-                break;
-            case AV_PIX_FMT_GBRAP:
-                s->blend_slice = blend_slice_gbrap_pm;
-                break;
-            default:
-                av_unreachable("Invalid pixel format for overlay");
-                break;
-            }
+        case AV_PIX_FMT_YUVA444P10:
+            ASSIGN_BLEND_SLICE(blend_slice_yuv444p10);
+            break;
+        case AV_PIX_FMT_ARGB:
+        case AV_PIX_FMT_RGBA:
+        case AV_PIX_FMT_BGRA:
+        case AV_PIX_FMT_ABGR:
+            ASSIGN_BLEND_SLICE(blend_slice_rgba);
+            break;
+        case AV_PIX_FMT_GBRAP:
+            ASSIGN_BLEND_SLICE(blend_slice_gbrp);
+            break;
+        default:
+            av_unreachable("Invalid pixel format for overlay");
             break;
         }
         break;
