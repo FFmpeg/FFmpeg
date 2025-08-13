@@ -836,7 +836,7 @@ static int init_slice_fn(AVFilterContext *ctx)
     }
 
 #if ARCH_X86
-    ff_overlay_init_x86(s, s->format, main->format, overlay->alpha_mode, s->main_has_alpha);
+    ff_overlay_init_x86(ctx);
 #endif
 
     return 0;
