@@ -80,6 +80,13 @@ typedef struct FFDrawColor {
 int ff_draw_init2(FFDrawContext *draw, enum AVPixelFormat format, enum AVColorSpace csp,
                   enum AVColorRange range, unsigned flags);
 
+/**
+ * Init a draw context, taking the format, colorspace and range from the given
+ * filter link.
+ */
+int ff_draw_init_from_link(FFDrawContext *draw, const AVFilterLink *link,
+                           unsigned flags);
+
 /*
  * Legacy wrapper for ff_draw_init2.
  */

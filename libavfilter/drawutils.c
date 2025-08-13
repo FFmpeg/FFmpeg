@@ -164,6 +164,12 @@ int ff_draw_init2(FFDrawContext *draw, enum AVPixelFormat format, enum AVColorSp
     return 0;
 }
 
+int ff_draw_init_from_link(FFDrawContext *draw, const AVFilterLink *link,
+                           unsigned flags)
+{
+    return ff_draw_init2(draw, link->format, link->colorspace, link->color_range, flags);
+}
+
 int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
 {
     return ff_draw_init2(draw, format, AVCOL_SPC_UNSPECIFIED, AVCOL_RANGE_UNSPECIFIED, flags);
