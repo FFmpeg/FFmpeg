@@ -58,6 +58,7 @@
  *  - pixel_formats (array of pixel formats),
  *  - colorspaces (array of int),
  *  - colorranges (array of int),
+ *  - alphamodes (array of int),
  *  - sample_formats (array of sample formats),
  *  - samplerates (array of int),
  *  - channel_layouts (array of channel layouts)
@@ -115,6 +116,7 @@ int              av_buffersink_get_h                   (const AVFilterContext *c
 AVRational       av_buffersink_get_sample_aspect_ratio (const AVFilterContext *ctx);
 enum AVColorSpace av_buffersink_get_colorspace         (const AVFilterContext *ctx);
 enum AVColorRange av_buffersink_get_color_range        (const AVFilterContext *ctx);
+enum AVAlphaMode  av_buffersink_get_alpha_mode         (const AVFilterContext *ctx);
 
 int              av_buffersink_get_channels            (const AVFilterContext *ctx);
 int              av_buffersink_get_ch_layout           (const AVFilterContext *ctx,

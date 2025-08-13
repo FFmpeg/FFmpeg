@@ -53,6 +53,8 @@ typedef struct BufferSinkContext {
     int color_spaces_size;
     enum AVColorRange *color_ranges;    ///< list of accepted color ranges
     int color_ranges_size;
+    enum AVColorRange *alpha_modes;     ///< list of accepted alpha modes
+    int alpha_modes_size;
 #endif
 
     enum AVPixelFormat *pixel_formats;
@@ -63,6 +65,9 @@ typedef struct BufferSinkContext {
 
     int                *colorranges;
     unsigned         nb_colorranges;
+
+    int                *alphamodes;
+    unsigned         nb_alphamodes;
 
     /* only used for audio */
 #if FF_API_BUFFERSINK_OPTS
@@ -175,7 +180,7 @@ static av_cold int common_init(AVFilterContext *ctx)
         }
 
     if (ctx->input_pads[0].type == AVMEDIA_TYPE_VIDEO) {
-        if ((buf->pixel_fmts_size || buf->color_spaces_size || buf->color_ranges_size) &&
+        if ((buf->pixel_fmts_size || buf->color_spaces_size || buf->color_ranges_size || buf->alpha_modes_size) &&
             (buf->nb_pixel_formats || buf->nb_colorspaces || buf->nb_colorranges)) {
             av_log(ctx, AV_LOG_ERROR, "Cannot combine old and new format lists\n");
             return AVERROR(EINVAL);
@@ -184,6 +189,7 @@ static av_cold int common_init(AVFilterContext *ctx)
         CHECK_LIST_SIZE(pixel_fmts)
         CHECK_LIST_SIZE(color_spaces)
         CHECK_LIST_SIZE(color_ranges)
+        CHECK_LIST_SIZE(alpha_modes)
     } else {
         if ((buf->sample_fmts_size || buf->channel_layouts_str || buf->sample_rates_size) &&
             (buf->nb_sample_formats || buf->nb_samplerates || buf->nb_channel_layouts)) {
@@ -258,6 +264,7 @@ static int init_video(AVFilterContext *ctx)
     TERMINATE_ARRAY(pixel_formats, AV_PIX_FMT_NONE);
     TERMINATE_ARRAY(colorranges, -1);
     TERMINATE_ARRAY(colorspaces, -1);
+    TERMINATE_ARRAY(alphamodes, -1);
 
     return common_init(ctx);
 }
@@ -336,6 +343,7 @@ MAKE_AVFILTERLINK_ACCESSOR(int              , h                  )
 MAKE_AVFILTERLINK_ACCESSOR(AVRational       , sample_aspect_ratio)
 MAKE_AVFILTERLINK_ACCESSOR(enum AVColorSpace, colorspace)
 MAKE_AVFILTERLINK_ACCESSOR(enum AVColorRange, color_range)
+MAKE_AVFILTERLINK_ACCESSOR(enum AVAlphaMode , alpha_mode)
 
 MAKE_AVFILTERLINK_ACCESSOR(int              , sample_rate        )
 
@@ -409,6 +417,11 @@ static int vsink_query_formats(const AVFilterContext *ctx,
             if (ret < 0)
                 return ret;
         }
+        if (buf->nb_alphamodes) {
+            ret = ff_set_common_alpha_modes_from_list2(ctx, cfg_in, cfg_out, buf->alphamodes);
+            if (ret < 0)
+                return ret;
+        }
 #if FF_API_BUFFERSINK_OPTS
     } else {
     unsigned i;
@@ -436,6 +449,15 @@ static int vsink_query_formats(const AVFilterContext *ctx,
             if ((ret = ff_add_format(&formats, buf->color_ranges[i])) < 0)
                 return ret;
         if ((ret = ff_set_common_color_ranges2(ctx, cfg_in, cfg_out, formats)) < 0)
+            return ret;
+    }
+
+    if (buf->alpha_modes_size) {
+        AVFilterFormats *formats = NULL;
+        for (i = 0; i < NB_ITEMS(buf->alpha_modes); i++)
+            if ((ret = ff_add_format(&formats, buf->alpha_modes[i])) < 0)
+                return ret;
+        if ((ret = ff_set_common_alpha_modes2(ctx, cfg_in, cfg_out, formats)) < 0)
             return ret;
     }
     }
@@ -509,6 +531,7 @@ static const AVOption buffersink_options[] = {
     { "pix_fmts", "set the supported pixel formats",    OFFSET(pixel_fmts),   AV_OPT_TYPE_BINARY, .flags = FLAGS | AV_OPT_FLAG_DEPRECATED },
     { "color_spaces", "set the supported color spaces", OFFSET(color_spaces), AV_OPT_TYPE_BINARY, .flags = FLAGS | AV_OPT_FLAG_DEPRECATED },
     { "color_ranges", "set the supported color ranges", OFFSET(color_ranges), AV_OPT_TYPE_BINARY, .flags = FLAGS | AV_OPT_FLAG_DEPRECATED },
+    { "alpha_modes", "set the supported alpha modes",   OFFSET(alpha_modes),  AV_OPT_TYPE_BINARY, .flags = FLAGS | AV_OPT_FLAG_DEPRECATED },
 #endif
 
     { "pixel_formats",  "array of supported pixel formats", OFFSET(pixel_formats),
@@ -516,6 +539,8 @@ static const AVOption buffersink_options[] = {
     { "colorspaces",    "array of supported color spaces",  OFFSET(colorspaces),
         AV_OPT_TYPE_INT | AV_OPT_TYPE_FLAG_ARRAY, .max = INT_MAX, .flags = FLAGS },
     { "colorranges",    "array of supported color ranges",  OFFSET(colorranges),
+        AV_OPT_TYPE_INT | AV_OPT_TYPE_FLAG_ARRAY, .max = INT_MAX, .flags = FLAGS },
+    { "alphamodes",     "array of supported color ranges",  OFFSET(alphamodes),
         AV_OPT_TYPE_INT | AV_OPT_TYPE_FLAG_ARRAY, .max = INT_MAX, .flags = FLAGS },
 
     { NULL },
