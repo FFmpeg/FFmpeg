@@ -2074,6 +2074,20 @@ static int codec2subblock(SANMVideoContext *ctx, int cx, int cy, int blk_size)
         mx = motion_vectors[opcode][0];
         my = motion_vectors[opcode][1];
 
+        /* The original implementation of this codec precomputes a table
+         * of int16_t all motion vectors for given image width.
+         * For larger widths, starting with 762 pixels, the calculation of
+         * mv table indices 1+ and 255- overflow the int16_t, inverting the
+         * sign of the offset.  This is actively exploited in e.g. the
+         *  "jonesopn_8.snm" video of "Indiana Jones and the Infernal Machine".
+         * Therefore let the overflow happen and extract x/y components from
+         * the new value.
+         */
+        if (ctx->width > 761) {
+            index = (int16_t)(my * ctx->width + mx);
+            mx = index % ctx->width;
+            my = index / ctx->width;
+        }
         if (good_mvec(ctx, cx, cy, mx, my, blk_size)) {
             copy_block(ctx->frm0 + cx      + ctx->pitch *  cy,
                        ctx->frm2 + cx + mx + ctx->pitch * (cy + my),
