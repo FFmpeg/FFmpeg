@@ -273,7 +273,7 @@ av_warn_unused_result
 int ff_set_common_color_spaces_from_list2(const AVFilterContext *ctx,
                                           AVFilterFormatsConfig **cfg_in,
                                           AVFilterFormatsConfig **cfg_out,
-                                          const int *color_ranges);
+                                          const int *color_spaces);
 
 av_warn_unused_result
 int ff_set_common_all_color_spaces2(const AVFilterContext *ctx,
