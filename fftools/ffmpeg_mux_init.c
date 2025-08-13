@@ -917,6 +917,7 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
         .height           = enc_ctx->height,
         .color_space      = enc_ctx->colorspace,
         .color_range      = enc_ctx->color_range,
+        .alpha_mode       = enc_ctx->alpha_mode,
         .vsync_method     = vsync_method,
         .frame_rate       = ms->frame_rate,
         .max_frame_rate   = ms->max_frame_rate,
@@ -962,6 +963,11 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
         ret = avcodec_get_supported_config(enc_ctx, NULL,
                                            AV_CODEC_CONFIG_COLOR_RANGE, 0,
                                            (const void **) &opts.color_ranges, NULL);
+        if (ret < 0)
+            return ret;
+        ret = avcodec_get_supported_config(enc_ctx, NULL,
+                                           AV_CODEC_CONFIG_ALPHA_MODE, 0,
+                                           (const void **) &opts.alpha_modes, NULL);
         if (ret < 0)
             return ret;
     } else {

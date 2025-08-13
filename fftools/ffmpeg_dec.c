@@ -1635,6 +1635,7 @@ static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts,
             param_out->sample_aspect_ratio  = dp->dec_ctx->sample_aspect_ratio;
             param_out->colorspace           = dp->dec_ctx->colorspace;
             param_out->color_range          = dp->dec_ctx->color_range;
+            param_out->alpha_mode           = dp->dec_ctx->alpha_mode;
         }
 
         av_frame_side_data_free(&param_out->side_data, &param_out->nb_side_data);

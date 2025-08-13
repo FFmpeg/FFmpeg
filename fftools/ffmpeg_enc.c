@@ -274,6 +274,7 @@ int enc_open(void *opaque, const AVFrame *frame)
         enc_ctx->color_primaries        = frame->color_primaries;
         enc_ctx->color_trc              = frame->color_trc;
         enc_ctx->colorspace             = frame->colorspace;
+        enc_ctx->alpha_mode             = frame->alpha_mode;
 
         /* Video properties which are not part of filter graph negotiation */
         if (enc_ctx->chroma_sample_location == AVCHROMA_LOC_UNSPECIFIED) {
