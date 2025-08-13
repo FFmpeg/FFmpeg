@@ -151,19 +151,36 @@ static int query_formats(const AVFilterContext *ctx,
         AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
+    const static int straight_alpha[] = {
+        AVALPHA_MODE_UNSPECIFIED,
+        AVALPHA_MODE_STRAIGHT,
+        -1,
+    };
     const enum AVPixelFormat *pixel_fmts;
+    int need_straight = 0;
+    int ret;
 
     if (s->alpha) {
         if (s->black_fade)
             pixel_fmts = pix_fmts_alpha;
         else
             pixel_fmts = pix_fmts_rgba;
+        need_straight = 1;
     } else {
         if (s->black_fade)
             pixel_fmts = pix_fmts;
-        else
+        else {
             pixel_fmts = pix_fmts_rgb;
+            need_straight = 1;
+        }
     }
+
+    if (need_straight) {
+        ret = ff_set_common_alpha_modes_from_list2(ctx, cfg_in, cfg_out, straight_alpha);
+        if (ret < 0)
+            return ret;
+    }
+
     return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, pixel_fmts);
 }
 
