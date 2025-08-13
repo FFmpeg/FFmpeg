@@ -14307,6 +14307,10 @@ A '|'-separated list of color space names, such as
 A '|'-separated list of color range names, such as
 "color_ranges=tv|pc".
 
+@item alpha_modes
+A '|'-separated list of color range names, such as
+"alpha_modes=straight|premultiplied".
+
 @end table
 
 @subsection Examples
