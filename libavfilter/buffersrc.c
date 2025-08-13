@@ -52,6 +52,7 @@ typedef struct BufferSourceContext {
     enum AVPixelFormat  pix_fmt, prev_pix_fmt;
     enum AVColorSpace color_space, prev_color_space;
     enum AVColorRange color_range, prev_color_range;
+    enum AVAlphaMode  alpha_mode, prev_alpha_mode;
     AVRational        pixel_aspect;
 
     AVBufferRef *hw_frames_ctx;
@@ -69,17 +70,17 @@ typedef struct BufferSourceContext {
     int link_delta, prev_delta;
 } BufferSourceContext;
 
-#define CHECK_VIDEO_PARAM_CHANGE(s, c, width, height, format, csp, range, pts)\
+#define CHECK_VIDEO_PARAM_CHANGE(s, c, width, height, format, csp, range, alpha, pts)\
     c->link_delta = c->w != width || c->h != height || c->pix_fmt != format ||\
-                    c->color_space != csp || c->color_range != range;\
+                    c->color_space != csp || c->color_range != range || c->alpha_mode != alpha;\
     c->prev_delta = c->prev_w != width || c->prev_h != height || c->prev_pix_fmt != format ||\
-                    c->prev_color_space != csp || c->prev_color_range != range;\
+                    c->prev_color_space != csp || c->prev_color_range != range || c->prev_alpha_mode != alpha;\
     if (c->link_delta) {\
         int loglevel = c->prev_delta ? AV_LOG_WARNING : AV_LOG_DEBUG;\
         av_log(s, loglevel, "Changing video frame properties on the fly is not supported by all filters.\n");\
-        av_log(s, loglevel, "filter context - w: %d h: %d fmt: %d csp: %s range: %s, incoming frame - w: %d h: %d fmt: %d csp: %s range: %s pts_time: %s\n",\
-               c->w, c->h, c->pix_fmt, av_color_space_name(c->color_space), av_color_range_name(c->color_range),\
-               width, height, format, av_color_space_name(csp), av_color_range_name(range),\
+        av_log(s, loglevel, "filter context - w: %d h: %d fmt: %d csp: %s range: %s alpha: %s, incoming frame - w: %d h: %d fmt: %d csp: %s range: %s alpha: %s pts_time: %s\n",\
+               c->w, c->h, c->pix_fmt, av_color_space_name(c->color_space), av_color_range_name(c->color_range), av_alpha_mode_name(c->alpha_mode),\
+               width, height, format, av_color_space_name(csp), av_color_range_name(range), av_alpha_mode_name(alpha),\
                av_ts2timestr(pts, &s->outputs[0]->time_base));\
     }\
     if (c->prev_delta) {\
@@ -90,6 +91,7 @@ typedef struct BufferSourceContext {
         c->prev_pix_fmt = format;\
         c->prev_color_space = csp;\
         c->prev_color_range = range;\
+        c->prev_alpha_mode = alpha;\
     }
 
 #define CHECK_AUDIO_PARAM_CHANGE(s, c, srate, layout, format, pts)\
@@ -111,6 +113,7 @@ AVBufferSrcParameters *av_buffersrc_parameters_alloc(void)
     par->format = -1;
     par->color_range = AVCOL_RANGE_UNSPECIFIED;
     par->color_space = AVCOL_SPC_UNSPECIFIED;
+    par->alpha_mode  = AVALPHA_MODE_UNSPECIFIED;
 
     return par;
 }
@@ -145,6 +148,8 @@ int av_buffersrc_parameters_set(AVFilterContext *ctx, AVBufferSrcParameters *par
             s->color_space = s->prev_color_space = param->color_space;
         if (param->color_range != AVCOL_RANGE_UNSPECIFIED)
             s->color_range = s->prev_color_range = param->color_range;
+        if (param->alpha_mode != AVALPHA_MODE_UNSPECIFIED)
+            s->alpha_mode = s->prev_alpha_mode = param->alpha_mode;
         break;
     case AVMEDIA_TYPE_AUDIO:
         if (param->format != AV_SAMPLE_FMT_NONE) {
@@ -224,7 +229,7 @@ int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFra
         case AVMEDIA_TYPE_VIDEO:
             CHECK_VIDEO_PARAM_CHANGE(ctx, s, frame->width, frame->height,
                                      frame->format, frame->colorspace,
-                                     frame->color_range, frame->pts);
+                                     frame->color_range, frame->alpha_mode, frame->pts);
             break;
         case AVMEDIA_TYPE_AUDIO:
             /* For layouts unknown on input but known on link after negotiation. */
@@ -256,6 +261,8 @@ int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFra
         copy->colorspace = ctx->outputs[0]->colorspace;
     if (copy->color_range == AVCOL_RANGE_UNSPECIFIED)
         copy->color_range = ctx->outputs[0]->color_range;
+    if (copy->alpha_mode == AVALPHA_MODE_UNSPECIFIED)
+        copy->alpha_mode = ctx->outputs[0]->alpha_mode;
 
     ret = ff_filter_frame(ctx->outputs[0], copy);
     if (ret < 0)
@@ -303,11 +310,12 @@ static av_cold int init_video(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d pixfmt:%s tb:%d/%d fr:%d/%d sar:%d/%d csp:%s range:%s\n",
+    av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d pixfmt:%s tb:%d/%d fr:%d/%d sar:%d/%d csp:%s range:%s alpha:%s\n",
            c->w, c->h, av_get_pix_fmt_name(c->pix_fmt),
            c->time_base.num, c->time_base.den, c->frame_rate.num, c->frame_rate.den,
            c->pixel_aspect.num, c->pixel_aspect.den,
-           av_color_space_name(c->color_space), av_color_range_name(c->color_range));
+           av_color_space_name(c->color_space), av_color_range_name(c->color_range),
+           av_alpha_mode_name(c->alpha_mode));
 
     return 0;
 }
@@ -357,6 +365,11 @@ static const AVOption buffer_options[] = {
     {   "full",        NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_JPEG},         0, 0, V, .unit = "range"},
     {   "pc",          NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_JPEG},         0, 0, V, .unit = "range"},
     {   "jpeg",        NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_JPEG},         0, 0, V, .unit = "range"},
+    { "alpha_mode", "select alpha mode", OFFSET(alpha_mode), AV_OPT_TYPE_INT, {.i64=AVALPHA_MODE_UNSPECIFIED}, 0, AVCOL_RANGE_NB-1, V, .unit = "alpha"},
+    {   "unspecified", NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_UNSPECIFIED},   0, 0, V, .unit = "alpha"},
+    {   "unknown",     NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_UNSPECIFIED},   0, 0, V, .unit = "alpha"},
+    {   "straight",    NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_STRAIGHT},      0, 0, V, .unit = "alpha"},
+    {   "premultiplied", NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVALPHA_MODE_PREMULTIPLIED}, 0, 0, V, .unit = "alpha"},
     { NULL },
 };
 
@@ -442,6 +455,7 @@ static int query_formats(const AVFilterContext *ctx,
     AVFilterFormats *samplerates = NULL;
     AVFilterFormats *color_spaces = NULL;
     AVFilterFormats *color_ranges = NULL;
+    AVFilterFormats *alpha_modes = NULL;
     int ret;
 
     switch (ctx->outputs[0]->type) {
@@ -470,6 +484,17 @@ static int query_formats(const AVFilterContext *ctx,
                 }
             }
             if ((ret = ff_set_common_color_ranges2(ctx, cfg_in, cfg_out, color_ranges)) < 0)
+                return ret;
+        }
+        if (av_pix_fmt_desc_get(swfmt)->flags & AV_PIX_FMT_FLAG_ALPHA) {
+            if ((ret = ff_add_format(&alpha_modes, c->alpha_mode)) < 0)
+                return ret;
+            if (c->alpha_mode == AVALPHA_MODE_UNSPECIFIED) {
+                /* allow implicitly promoting unspecified to straight */
+                if ((ret = ff_add_format(&alpha_modes, AVALPHA_MODE_STRAIGHT)) < 0)
+                    return ret;
+            }
+            if ((ret = ff_set_common_alpha_modes2(ctx, cfg_in, cfg_out, alpha_modes)) < 0)
                 return ret;
         }
         break;

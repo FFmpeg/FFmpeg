@@ -29278,6 +29278,11 @@ A string representing the color range of the buffered video frames.
 It may be a number corresponding to a color range, or a color range
 name.
 
+@item alpha_mode
+A string representing the alpha mode of the buffered video frames.
+It may be a number corresponding to an alpha mode, or an alpha mode
+name.
+
 @item pixel_aspect, sar
 The sample (pixel) aspect ratio of the input video.
 

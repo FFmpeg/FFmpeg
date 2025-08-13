@@ -123,6 +123,11 @@ typedef struct AVBufferSrcParameters {
 
     AVFrameSideData **side_data;
     int nb_side_data;
+
+    /**
+     * Video only, the alpha mode.
+     */
+    enum AVAlphaMode alpha_mode;
 } AVBufferSrcParameters;
 
 /**
