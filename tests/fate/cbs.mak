@@ -28,6 +28,7 @@ endef
 # APV read/write
 
 FATE_CBS_APV_SAMPLES =             \
+    profile_400-10.apv             \
     profile_422-10.apv
 
 $(foreach N,$(FATE_CBS_APV_SAMPLES),$(eval $(call FATE_CBS_TEST,apv,$(basename $(N)),apv,apv/$(N),apv)))
