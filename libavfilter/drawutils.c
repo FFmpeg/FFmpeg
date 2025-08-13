@@ -94,7 +94,7 @@ int ff_fill_ayuv_map(uint8_t *ayuv_map, enum AVPixelFormat pix_fmt)
 }
 
 int ff_draw_init2(FFDrawContext *draw, enum AVPixelFormat format, enum AVColorSpace csp,
-                  enum AVColorRange range, unsigned flags)
+                  enum AVColorRange range, enum AVAlphaMode alpha, unsigned flags)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
     const AVLumaCoefficients *luma = NULL;
@@ -155,6 +155,7 @@ int ff_draw_init2(FFDrawContext *draw, enum AVPixelFormat format, enum AVColorSp
     draw->nb_planes = nb_planes;
     draw->range     = range;
     draw->csp       = csp;
+    draw->alpha     = alpha;
     draw->flags     = flags;
     if (luma)
         ff_fill_rgb2yuv_table(luma, draw->rgb2yuv);
@@ -167,12 +168,12 @@ int ff_draw_init2(FFDrawContext *draw, enum AVPixelFormat format, enum AVColorSp
 int ff_draw_init_from_link(FFDrawContext *draw, const AVFilterLink *link,
                            unsigned flags)
 {
-    return ff_draw_init2(draw, link->format, link->colorspace, link->color_range, flags);
+    return ff_draw_init2(draw, link->format, link->colorspace, link->color_range, link->alpha_mode, flags);
 }
 
 int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
 {
-    return ff_draw_init2(draw, format, AVCOL_SPC_UNSPECIFIED, AVCOL_RANGE_UNSPECIFIED, flags);
+    return ff_draw_init2(draw, format, AVCOL_SPC_UNSPECIFIED, AVCOL_RANGE_UNSPECIFIED, AVALPHA_MODE_UNSPECIFIED, flags);
 }
 
 void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4])
@@ -188,6 +189,11 @@ void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4
 
     for (int i = 0; i < 4; i++)
         rgbad[i] = color->rgba[i] / 255.;
+
+    if (draw->alpha == AVALPHA_MODE_PREMULTIPLIED) {
+        for (int i = 0; i < 3; i++)
+            rgbad[i] *= rgbad[3];
+    }
 
     if (draw->desc->flags & AV_PIX_FMT_FLAG_RGB)
         memcpy(yuvad, rgbad, sizeof(double) * 3);

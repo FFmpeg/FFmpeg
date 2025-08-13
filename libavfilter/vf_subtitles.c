@@ -189,7 +189,7 @@ static int config_input(AVFilterLink *inlink)
     ret = ff_draw_init2(&ass->draw, inlink->format,
                         ass_get_color_space(ass->track->YCbCrMatrix, inlink->colorspace),
                         ass_get_color_range(ass->track->YCbCrMatrix, inlink->color_range),
-                        ass->alpha ? FF_DRAW_PROCESS_ALPHA : 0);
+                        inlink->alpha_mode, ass->alpha ? FF_DRAW_PROCESS_ALPHA : 0);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to initialize FFDrawContext\n");
         return ret;

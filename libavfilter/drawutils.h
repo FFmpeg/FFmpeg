@@ -45,6 +45,7 @@ typedef struct FFDrawContext {
     enum AVColorRange range;
     unsigned flags;
     enum AVColorSpace csp;
+    enum AVAlphaMode alpha;
     double rgb2yuv[3][3];
 } FFDrawContext;
 
@@ -78,7 +79,7 @@ typedef struct FFDrawColor {
  * @return        0 for success, < 0 for error
  */
 int ff_draw_init2(FFDrawContext *draw, enum AVPixelFormat format, enum AVColorSpace csp,
-                  enum AVColorRange range, unsigned flags);
+                  enum AVColorRange range, enum AVAlphaMode alpha, unsigned flags);
 
 /**
  * Init a draw context, taking the format, colorspace and range from the given
