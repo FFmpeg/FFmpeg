@@ -83,6 +83,6 @@ typedef struct OverlayContext {
 } OverlayContext;
 
 void ff_overlay_init_x86(OverlayContext *s, int format, int pix_format,
-                         enum AVAlphaMode, int main_has_alpha);
+                         enum AVAlphaMode overlay_alpha, int main_has_alpha);
 
 #endif /* AVFILTER_OVERLAY_H */

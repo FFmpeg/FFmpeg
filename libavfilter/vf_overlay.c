@@ -370,7 +370,7 @@ static int config_output(AVFilterLink *outlink)
 static av_always_inline void blend_slice_packed_rgb(AVFilterContext *ctx,
                                    AVFrame *dst, const AVFrame *src,
                                    int main_has_alpha, int x, int y,
-                                   int is_straight, int jobnr, int nb_jobs)
+                                   int overlay_straight, int jobnr, int nb_jobs)
 {
     OverlayContext *s = ctx->priv;
     int i, imax, j, jmax;
@@ -427,11 +427,11 @@ static av_always_inline void blend_slice_packed_rgb(AVFilterContext *ctx,
             default:
                 // main_value = main_value * (1 - alpha) + overlay_value * alpha
                 // since alpha is in the range 0-255, the result must divided by 255
-                d[dr] = is_straight ? FAST_DIV255(d[dr] * (255 - alpha) + S[sr] * alpha) :
+                d[dr] = overlay_straight ? FAST_DIV255(d[dr] * (255 - alpha) + S[sr] * alpha) :
                         FFMIN(FAST_DIV255(d[dr] * (255 - alpha)) + S[sr], 255);
-                d[dg] = is_straight ? FAST_DIV255(d[dg] * (255 - alpha) + S[sg] * alpha) :
+                d[dg] = overlay_straight ? FAST_DIV255(d[dg] * (255 - alpha) + S[sg] * alpha) :
                         FFMIN(FAST_DIV255(d[dg] * (255 - alpha)) + S[sg], 255);
-                d[db] = is_straight ? FAST_DIV255(d[db] * (255 - alpha) + S[sb] * alpha) :
+                d[db] = overlay_straight ? FAST_DIV255(d[db] * (255 - alpha) + S[sb] * alpha) :
                         FFMIN(FAST_DIV255(d[db] * (255 - alpha)) + S[sb], 255);
             }
             if (main_has_alpha) {
@@ -465,7 +465,7 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
                                          int dst_plane,                                                    \
                                          int dst_offset,                                                   \
                                          int dst_step,                                                     \
-                                         int straight,                                                     \
+                                         int overlay_straight,                                             \
                                          int yuv,                                                          \
                                          int jobnr,                                                        \
                                          int nb_jobs)                                                      \
@@ -545,7 +545,7 @@ static av_always_inline void blend_plane_##depth##_##nbits##bits(AVFilterContext
                     alpha_d = da[0];                                                                       \
                 alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);                                               \
             }                                                                                              \
-            if (straight) {                                                                                \
+            if (overlay_straight) {                                                                        \
                 if (nbits > 8)                                                                             \
                    *d = (*d * (max - alpha) + *s * alpha) / max;                                           \
                 else                                                                                       \
@@ -633,7 +633,7 @@ static av_always_inline void blend_slice_yuv_##depth##_##nbits##bits(AVFilterCon
                                              int hsub, int vsub,                                           \
                                              int main_has_alpha,                                           \
                                              int x, int y,                                                 \
-                                             int is_straight,                                              \
+                                             int overlay_straight,                                         \
                                              int jobnr, int nb_jobs)                                       \
 {                                                                                                          \
     OverlayContext *s = ctx->priv;                                                                         \
@@ -644,13 +644,13 @@ static av_always_inline void blend_slice_yuv_##depth##_##nbits##bits(AVFilterCon
                                                                                                            \
     blend_plane_##depth##_##nbits##bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 0, 0,       0,          \
                 x, y, main_has_alpha, s->main_desc->comp[0].plane, s->main_desc->comp[0].offset,           \
-                s->main_desc->comp[0].step, is_straight, 1, jobnr, nb_jobs);                               \
+                s->main_desc->comp[0].step, overlay_straight, 1, jobnr, nb_jobs);                          \
     blend_plane_##depth##_##nbits##bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 1, hsub, vsub,          \
                 x, y, main_has_alpha, s->main_desc->comp[1].plane, s->main_desc->comp[1].offset,           \
-                s->main_desc->comp[1].step, is_straight, 1, jobnr, nb_jobs);                               \
+                s->main_desc->comp[1].step, overlay_straight, 1, jobnr, nb_jobs);                          \
     blend_plane_##depth##_##nbits##bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 2, hsub, vsub,          \
                 x, y, main_has_alpha, s->main_desc->comp[2].plane, s->main_desc->comp[2].offset,           \
-                s->main_desc->comp[2].step, is_straight, 1, jobnr, nb_jobs);                               \
+                s->main_desc->comp[2].step, overlay_straight, 1, jobnr, nb_jobs);                          \
                                                                                                            \
     if (main_has_alpha)                                                                                    \
         alpha_composite_##depth##_##nbits##bits(src, dst, src_w, src_h, dst_w, dst_h, x, y,                \
@@ -664,7 +664,7 @@ static av_always_inline void blend_slice_planar_rgb(AVFilterContext *ctx,
                                                     int hsub, int vsub,
                                                     int main_has_alpha,
                                                     int x, int y,
-                                                    int is_straight,
+                                                    int overlay_straight,
                                                     int jobnr,
                                                     int nb_jobs)
 {
@@ -675,13 +675,13 @@ static av_always_inline void blend_slice_planar_rgb(AVFilterContext *ctx,
     const int dst_h = dst->height;
 
     blend_plane_8_8bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 0, 0,   0, x, y, main_has_alpha,
-                s->main_desc->comp[1].plane, s->main_desc->comp[1].offset, s->main_desc->comp[1].step, is_straight, 0,
+                s->main_desc->comp[1].plane, s->main_desc->comp[1].offset, s->main_desc->comp[1].step, overlay_straight, 0,
                 jobnr, nb_jobs);
     blend_plane_8_8bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 1, hsub, vsub, x, y, main_has_alpha,
-                s->main_desc->comp[2].plane, s->main_desc->comp[2].offset, s->main_desc->comp[2].step, is_straight, 0,
+                s->main_desc->comp[2].plane, s->main_desc->comp[2].offset, s->main_desc->comp[2].step, overlay_straight, 0,
                 jobnr, nb_jobs);
     blend_plane_8_8bits(ctx, dst, src, src_w, src_h, dst_w, dst_h, 2, hsub, vsub, x, y, main_has_alpha,
-                s->main_desc->comp[0].plane, s->main_desc->comp[0].offset, s->main_desc->comp[0].step, is_straight, 0,
+                s->main_desc->comp[0].plane, s->main_desc->comp[0].offset, s->main_desc->comp[0].step, overlay_straight, 0,
                 jobnr, nb_jobs);
 
     if (main_has_alpha)
