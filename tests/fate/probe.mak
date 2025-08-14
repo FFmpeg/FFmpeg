@@ -18,10 +18,9 @@ fate-probe-format-codec-dts-in-wav: REF = dts
 
 FATE_PROBE_FORMAT = $(FATE_PROBE_FORMAT-yes)
 
-FATE_EXTERN-$(CONFIG_FFPROBE) += $(FATE_PROBE_FORMAT)
+FATE_SAMPLES_FFPROBE += $(FATE_PROBE_FORMAT)
 fate-probe-format: $(FATE_PROBE_FORMAT)
 
-$(FATE_PROBE_FORMAT): ffprobe$(PROGSSUF)$(EXESUF)
 $(FATE_PROBE_FORMAT): CMP = oneline
 fate-probe-format-%: CMD = probefmt $(TARGET_SAMPLES)/probe-format/$(@:fate-probe-format-%=%)
 fate-probe-format-codec-%: CMD = probecodec $(TARGET_SAMPLES)/probe-format/$(@:fate-probe-format-%=%)
