@@ -30,38 +30,16 @@
 #define BDOF_BLOCK_SIZE         16
 #define BDOF_MIN_BLOCK_SIZE     4
 
-void ff_vvc_prof_grad_filter_8x_neon(int16_t *gradient_h,
-                                     int16_t *gradient_v,
-                                     ptrdiff_t gradient_stride,
-                                     const int16_t *_src,
-                                     ptrdiff_t src_stride,
-                                     int width, int height);
-
-void ff_vvc_derive_bdof_vx_vy_8x_neon(const int16_t *_src0,
-                                      const int16_t *_src1,
-                                      int16_t *const gradient_h[2],
-                                      int16_t *const gradient_v[2],
-                                      int16_t vx[16], int16_t vy[16],
-                                      int block_h);
-void ff_vvc_derive_bdof_vx_vy_16x_neon(const int16_t *_src0,
-                                       const int16_t *_src1,
-                                       int16_t *const gradient_h[2],
-                                       int16_t *const gradient_v[2],
-                                       int16_t vx[16], int16_t vy[16],
-                                       int block_h);
 #define BIT_DEPTH 8
 #include "alf_template.c"
-#include "of_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 10
 #include "alf_template.c"
-#include "of_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 12
 #include "alf_template.c"
-#include "of_template.c"
 #undef BIT_DEPTH
 
 int ff_vvc_sad_neon(const int16_t *src0, const int16_t *src1, int dx, int dy,
@@ -120,6 +98,15 @@ DMVR_FUN(, 12)
 DMVR_FUN(hv_, 8)
 DMVR_FUN(hv_, 10)
 DMVR_FUN(hv_, 12)
+
+#define APPLY_BDOF_FUNC(bd) \
+    void ff_vvc_apply_bdof_ ## bd ## _neon(uint8_t *_dst, ptrdiff_t _dst_stride, \
+        const int16_t *_src0, const int16_t *_src1, \
+        int block_w, int block_h);
+
+APPLY_BDOF_FUNC(8)
+APPLY_BDOF_FUNC(10)
+APPLY_BDOF_FUNC(12)
 
 void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
 {
@@ -202,7 +189,7 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->inter.w_avg = vvc_w_avg_8;
         c->inter.dmvr[0][0] = ff_vvc_dmvr_8_neon;
         c->inter.dmvr[1][1] = ff_vvc_dmvr_hv_8_neon;
-        c->inter.apply_bdof = apply_bdof_8;
+        c->inter.apply_bdof = ff_vvc_apply_bdof_8_neon;
 
         c->sao.band_filter[0] = ff_h26x_sao_band_filter_8x8_8_neon;
         for (int i = 1; i < FF_ARRAY_ELEMS(c->sao.band_filter); i++)
@@ -246,7 +233,7 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->inter.avg = ff_vvc_avg_10_neon;
         c->inter.w_avg = vvc_w_avg_10;
         c->inter.dmvr[1][1] = ff_vvc_dmvr_hv_10_neon;
-        c->inter.apply_bdof = apply_bdof_10;
+        c->inter.apply_bdof = ff_vvc_apply_bdof_10_neon;
 
         c->alf.filter[LUMA] = alf_filter_luma_10_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_10_neon;
@@ -255,7 +242,7 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->inter.w_avg = vvc_w_avg_12;
         c->inter.dmvr[0][0] = ff_vvc_dmvr_12_neon;
         c->inter.dmvr[1][1] = ff_vvc_dmvr_hv_12_neon;
-        c->inter.apply_bdof = apply_bdof_12;
+        c->inter.apply_bdof = ff_vvc_apply_bdof_12_neon;
 
         c->alf.filter[LUMA] = alf_filter_luma_12_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_12_neon;

@@ -716,7 +716,93 @@ function ff_vvc_prof_grad_filter_8x_neon, export=1
 .unreq height
 endfunc
 
-.macro vvc_apply_bdof_block bit_depth
+function vvc_bdof_grad_filter_8x_neon, export=0
+        gh0             .req x0
+        gh1             .req x1
+        gv0             .req x2
+        gv1             .req x3
+        src0            .req x4
+        src1            .req x5
+        width           .req w6
+        height          .req w7
+
+1:
+        mov             x10, src0
+        mov             w11, width
+        mov             x12, gh0
+        mov             x13, gv0
+        mov             x14, src1
+        mov             x15, gh1
+        mov             x16, gv1
+2:
+        ldur            q0, [x10, #2]
+        ldur            q1, [x10, #-2]
+        ldr             q2, [x10, #(VVC_MAX_PB_SIZE << 1)]
+        ldr             q3, [x10, #-(VVC_MAX_PB_SIZE << 1)]
+        sshr            v0.8h, v0.8h, #6
+        sshr            v1.8h, v1.8h, #6
+        ldur            q4, [x14, #2]
+        ldur            q5, [x14, #-2]
+        sshr            v2.8h, v2.8h, #6
+        sshr            v3.8h, v3.8h, #6
+        ldr             q6, [x14, #(VVC_MAX_PB_SIZE << 1)]
+        ldr             q7, [x14, #-(VVC_MAX_PB_SIZE << 1)]
+        // results of gradient_h0
+        sub             v0.8h, v0.8h, v1.8h
+        // results of gradient_v0
+        sub             v2.8h, v2.8h, v3.8h
+
+        sshr            v4.8h, v4.8h, #6
+        sshr            v5.8h, v5.8h, #6
+        sshr            v6.8h, v6.8h, #6
+        sshr            v7.8h, v7.8h, #6
+        // results of gradient_h1
+        sub             v4.8h, v4.8h, v5.8h
+        // results of gradient_v1
+        sub             v6.8h, v6.8h, v7.8h
+
+        add             x10, x10, #16
+        add             x14, x14, #16
+
+        // (gradient_h0 + gradient_h1) >> 1
+        shadd           v1.8h, v0.8h, v4.8h
+        // gradient_h0 - gradient_h1
+        sub             v5.8h, v0.8h, v4.8h
+
+        subs            w11, w11, #8
+
+        // (gradient_v0 + gradient_v1) >> 1
+        shadd           v3.8h, v2.8h, v6.8h
+        // gradient_v0 - gradient_v1
+        sub             v7.8h, v2.8h, v6.8h
+
+        st1             {v1.8h}, [x12], #16
+        st1             {v5.8h}, [x15], #16
+        st1             {v3.8h}, [x13], #16
+        st1             {v7.8h}, [x16], #16
+        b.ne            2b
+
+        subs            height, height, #1
+        add             gh0, gh0, #(BDOF_BLOCK_SIZE << 1)
+        add             gv0, gv0, #(BDOF_BLOCK_SIZE << 1)
+        add             src0, src0, #(VVC_MAX_PB_SIZE << 1)
+        add             gh1, gh1, #(BDOF_BLOCK_SIZE << 1)
+        add             gv1, gv1, #(BDOF_BLOCK_SIZE << 1)
+        add             src1, src1, #(VVC_MAX_PB_SIZE << 1)
+        b.ne            1b
+        ret
+
+.unreq gh0
+.unreq gh1
+.unreq gv0
+.unreq gv1
+.unreq src0
+.unreq src1
+.unreq width
+.unreq height
+endfunc
+
+.macro vvc_apply_bdof_block_8x bit_depth
         dst             .req x0
         dst_stride      .req x1
         src0            .req x2
@@ -726,33 +812,28 @@ endfunc
         vx              .req x6
         vy              .req x7
 
-        ld1r            {v0.8h}, [vx], #2
-        ld1r            {v1.8h}, [vy], #2
-        ld1r            {v2.8h}, [vx]
-        ld1r            {v3.8h}, [vy]
-        ins             v0.d[1], v2.d[1]
-        ins             v1.d[1], v3.d[1]
-
+        ldr             w8, [sp]
         movi            v7.4s, #(1 << (14 - \bit_depth))
-        ldp             x8, x9, [gh]
-        ldp             x10, x11, [gv]
         mov             x12, #(BDOF_BLOCK_SIZE * 2)
-        mov             w13, #(BDOF_MIN_BLOCK_SIZE)
         mov             x14, #(VVC_MAX_PB_SIZE * 2)
 .if \bit_depth >= 10
         // clip pixel
         mov             w15, #((1 << \bit_depth) - 1)
         movi            v18.8h, #0
-        lsl             dst_stride, dst_stride, #1
         dup             v19.8h, w15
 .endif
+
+0:
+        ld1r            {v0.8h}, [vx], #2
+        ld1r            {v1.8h}, [vy], #2
+        ld1r            {v2.8h}, [vx]
+        ld1r            {v3.8h}, [vy]
+        mov             w13, #(BDOF_MIN_BLOCK_SIZE)
+        ins             v0.d[1], v2.d[1]
+        ins             v1.d[1], v3.d[1]
 1:
-        ld1             {v2.8h}, [x8], x12
-        ld1             {v3.8h}, [x9], x12
-        ld1             {v4.8h}, [x10], x12
-        ld1             {v5.8h}, [x11], x12
-        sub             v2.8h, v2.8h, v3.8h
-        sub             v4.8h, v4.8h, v5.8h
+        ld1             {v2.8h}, [gh], x12
+        ld1             {v4.8h}, [gv], x12
         smull           v3.4s, v0.4h, v2.4h
         smull2          v16.4s, v0.8h, v2.8h
         smlal           v3.4s, v1.4h, v4.4h
@@ -780,6 +861,11 @@ endfunc
         st1             {v5.8h}, [dst], dst_stride
 .endif
         b.ne            1b
+
+        subs            w8, w8, #(BDOF_MIN_BLOCK_SIZE)
+        add             vx, vx, #(2 * BDOF_MIN_BLOCK_SIZE - 2)
+        add             vy, vy, #(2 * BDOF_MIN_BLOCK_SIZE - 2)
+        b.ne            0b
         ret
 
 .unreq dst
@@ -792,16 +878,128 @@ endfunc
 .unreq vy
 .endm
 
-function ff_vvc_apply_bdof_block_8_neon, export=1
-        vvc_apply_bdof_block 8
+function vvc_apply_bdof_block_8x_8_neon, export=0
+        vvc_apply_bdof_block_8x 8
 endfunc
 
-function ff_vvc_apply_bdof_block_10_neon, export=1
-        vvc_apply_bdof_block 10
+function vvc_apply_bdof_block_8x_10_neon, export=0
+        vvc_apply_bdof_block_8x 10
 endfunc
 
-function ff_vvc_apply_bdof_block_12_neon, export=1
-        vvc_apply_bdof_block 12
+function vvc_apply_bdof_block_8x_12_neon, export=0
+        vvc_apply_bdof_block_8x 12
+endfunc
+
+.macro vvc_apply_bdof_block_16x bit_depth
+        dst             .req x0
+        dst_stride      .req x1
+        src0            .req x2
+        src1            .req x3
+        gh              .req x4
+        gv              .req x5
+        vx              .req x6
+        vy              .req x7
+
+        ldr             w8, [sp]
+        movi            v7.4s, #(1 << (14 - \bit_depth))
+.if \bit_depth >= 10
+        // clip pixel
+        mov             w15, #((1 << \bit_depth) - 1)
+        movi            v18.8h, #0
+        dup             v19.8h, w15
+.endif
+
+0:
+        ld1r            {v0.8h}, [vx], #2
+        ld1r            {v1.8h}, [vy], #2
+        ld1r            {v2.8h}, [vx], #2
+        ld1r            {v3.8h}, [vy], #2
+
+        mov             w13, #(BDOF_MIN_BLOCK_SIZE)
+
+        ld1r            {v20.8h}, [vx], #2
+        ld1r            {v21.8h}, [vy], #2
+        ld1r            {v22.8h}, [vx], #2
+        ld1r            {v23.8h}, [vy], #2
+
+        ins             v0.d[1], v2.d[1]
+        ins             v1.d[1], v3.d[1]
+        ins             v20.d[1], v22.d[1]
+        ins             v21.d[1], v23.d[1]
+1:
+        ldp             q2, q22, [gh], #(BDOF_BLOCK_SIZE * 2)
+        ldp             q4, q24, [gv], #(BDOF_BLOCK_SIZE * 2)
+        smull           v3.4s, v0.4h, v2.4h
+        smull2          v16.4s, v0.8h, v2.8h
+        smlal           v3.4s, v1.4h, v4.4h
+        smlal2          v16.4s, v1.8h, v4.8h
+
+        ldp             q5, q25, [src0], #(VVC_MAX_PB_SIZE * 2)
+        ldp             q6, q26, [src1], #(VVC_MAX_PB_SIZE * 2)
+
+        smull           v23.4s, v20.4h, v22.4h
+        smull2          v27.4s, v20.8h, v22.8h
+        smlal           v23.4s, v21.4h, v24.4h
+        smlal2          v27.4s, v21.8h, v24.8h
+
+        saddl           v2.4s, v5.4h, v6.4h
+        add             v2.4s, v2.4s, v7.4s
+        add             v2.4s, v2.4s, v3.4s
+        saddl2          v4.4s, v5.8h, v6.8h
+        add             v4.4s, v4.4s, v7.4s
+        add             v4.4s, v4.4s, v16.4s
+
+        saddl           v22.4s, v25.4h, v26.4h
+        add             v22.4s, v22.4s, v7.4s
+        add             v22.4s, v22.4s, v23.4s
+        saddl2          v24.4s, v25.8h, v26.8h
+        add             v24.4s, v24.4s, v7.4s
+        add             v24.4s, v24.4s, v27.4s
+
+        sqshrn          v5.4h, v2.4s, #(15 - \bit_depth)
+        sqshrn2         v5.8h, v4.4s, #(15 - \bit_depth)
+        sqshrn          v25.4h, v22.4s, #(15 - \bit_depth)
+        sqshrn2         v25.8h, v24.4s, #(15 - \bit_depth)
+
+        subs            w13, w13, #1
+.if \bit_depth == 8
+        sqxtun          v5.8b, v5.8h
+        sqxtun2         v5.16b, v25.8h
+        str             q5, [dst]
+.else
+        smin            v5.8h, v5.8h, v19.8h
+        smax            v5.8h, v5.8h, v18.8h
+        smin            v25.8h, v25.8h, v19.8h
+        smax            v25.8h, v25.8h, v18.8h
+        stp             q5, q25, [dst]
+.endif
+        add             dst, dst, dst_stride
+        b.ne            1b
+
+        subs            w8, w8, #(BDOF_MIN_BLOCK_SIZE)
+        b.ne            0b
+        ret
+
+.unreq dst
+.unreq dst_stride
+.unreq src0
+.unreq src1
+.unreq gh
+.unreq gv
+.unreq vx
+.unreq vy
+.endm
+
+function vvc_apply_bdof_block_16x_8_neon, export=0
+        vvc_apply_bdof_block_16x 8
+endfunc
+
+function vvc_apply_bdof_block_16x_10_neon, export=0
+        vvc_apply_bdof_block_16x 10
+endfunc
+
+function vvc_apply_bdof_block_16x_12_neon, export=0
+        vvc_apply_bdof_block_16x 12
 endfunc
 
 const bdof_vx_vy_8x_tbl
@@ -919,18 +1117,16 @@ endconst
  * ----------------------------------------------------------------------
  * x0: const int16_t *_src0,
  * x1: const int16_t *_src1,
- * x2: int16_t *const gradient_h[2],
- * x3: int16_t *const gradient_v[2],
+ * x2: const int16_t *gradient_h,
+ * x3: const int16_t *gradient_v,
  * x4: int16_t vx[16],
  * x5: int16_t vy[16],
  * w6: int block_h
  */
-function ff_vvc_derive_bdof_vx_vy_8x_neon, export=1
+function vvc_derive_bdof_vx_vy_8x_neon, export=0
         stp             d11, d10, [sp, #-0x20]!
         stp             d9, d8, [sp, #0x10]
 
-        ldp             x14, x13, [x2]                      // gh0, gh1
-        ldp             x10, x9, [x3]                       // gv0, gv1
         movrel          x11, bdof_vx_vy_8x_tbl
         ldr             q0, [x11]                           // table
         mvni            v2.4s, #30                          // -31, for log2
@@ -998,17 +1194,13 @@ function ff_vvc_derive_bdof_vx_vy_8x_neon, export=1
 9:
         ldr             q28, [x0]                                   // src0
         ldr             q29, [x1]                                   // src1
-        ldr             q30, [x14], #(BDOF_BLOCK_SIZE * 2)          // gh0
-        ldr             q31, [x13], #(BDOF_BLOCK_SIZE * 2)          // gh1
-        ldr             q8, [x10], #(BDOF_BLOCK_SIZE * 2)           // gv0
-        ldr             q9, [x9], #(BDOF_BLOCK_SIZE * 2)            // gv1
+        ldr             q30, [x2], #(BDOF_BLOCK_SIZE * 2)           // (gh0 + gh1) >> 1
+        ldr             q31, [x3], #(BDOF_BLOCK_SIZE * 2)           // (gv0 + gv1) >> 1
         add             x0, x0, #(VVC_MAX_PB_SIZE * 2)
         add             x1, x1, #(VVC_MAX_PB_SIZE * 2)
 
         sshr            v28.8h, v28.8h, #0x4
         sshr            v29.8h, v29.8h, #0x4
-        shadd           v30.8h, v30.8h, v31.8h                      // tmph
-        shadd           v31.8h, v8.8h, v9.8h                        // tmpv
         sub             v8.8h, v28.8h, v29.8h                       // diff
 
         abs             v28.8h, v30.8h
@@ -1067,20 +1259,18 @@ endfunc
 /*
  * x0: const int16_t *_src0,
  * x1: const int16_t *_src1,
- * x2: int16_t *const gradient_h[2],
- * x3: int16_t *const gradient_v[2],
+ * x2: const int16_t *gradient_h,
+ * x3: const int16_t *gradient_v,
  * x4: int16_t vx[16],
  * x5: int16_t vy[16],
  * w6: int block_h
  */
-function ff_vvc_derive_bdof_vx_vy_16x_neon, export=1
+function vvc_derive_bdof_vx_vy_16x_neon, export=0
         stp             d15, d14, [sp, #-0x40]!
         stp             d13, d12, [sp, #0x10]
         stp             d11, d10, [sp, #0x20]
         stp             d9, d8,   [sp, #0x30]
 
-        ldp             x8, x9, [x2]                        // gh0, gh1
-        ldp             x10, x11, [x3]                      // gv0, gv1
         movrel          x12, bdof_vx_vy_16x_tbl
         ldp             q0, q1, [x12]                       // table
         mov             w13, w6                             // y = block_h
@@ -1142,17 +1332,11 @@ function ff_vvc_derive_bdof_vx_vy_16x_neon, export=1
         sshr            v31.8h, v29.8h, #0x4
         ld1             {v8.8h, v9.8h}, [x1]                // src1
         sshr            v10.8h, v8.8h, #0x4
-        ld1             {v11.8h, v12.8h}, [x8], #32         // gh0
+        ldp             q13, q8, [x2], #32                  // (gh0 + gh1) >> 1
         sshr            v29.8h, v30.8h, #0x4
         sshr            v30.8h, v9.8h, #0x4
-        ld1             {v8.8h, v9.8h}, [x9], #32           // gh1
-        shadd           v13.8h, v11.8h, v8.8h               // (gh0 + gh1) >> 1, left half
-        ld1             {v14.8h, v15.8h}, [x10], #32        // gv0
-        ld1             {v3.8h, v4.8h}, [x11], #32          // gv1
-        shadd           v5.8h, v14.8h, v3.8h                // (gv0 + gv1) >> 1, left half
+        ldp             q5, q3, [x3], #32                   // (gv0 + gv1) >> 1
         sub             v31.8h, v31.8h, v10.8h              // diff, left half
-        shadd           v8.8h, v12.8h, v9.8h                // (gh0 + gh1) >> 1, right half
-        shadd           v3.8h, v15.8h, v4.8h                // (gv0 + gv1) >> 1, right half
         sub             v4.8h, v29.8h, v30.8h               // diff, right half
 
         abs             v29.8h, v13.8h
@@ -1219,3 +1403,129 @@ function ff_vvc_derive_bdof_vx_vy_16x_neon, export=1
         ldp             d15, d14, [sp], #0x40
         ret
 endfunc
+
+function ff_vvc_apply_bdof_10_neon, export=1
+        mov             w6, #10
+        b               0f
+endfunc
+
+function ff_vvc_apply_bdof_12_neon, export=1
+        mov             w6, #12
+        b               0f
+endfunc
+
+// int16_t gradient_buf_h[2][BDOF_BLOCK_SIZE * BDOF_BLOCK_SIZE + 2]
+// int16_t gradient_buf_v[2][BDOF_BLOCK_SIZE * BDOF_BLOCK_SIZE + 2]
+// int16_t vx[BDOF_BLOCK_SIZE], vy[BDOF_BLOCK_SIZE];
+#define APPLY_BDOF_STACK_SIZE   ((BDOF_BLOCK_SIZE * BDOF_BLOCK_SIZE + 2) * 8 + BDOF_BLOCK_SIZE * 4)
+#define GRADIENT_H0_OFFSET      2
+#define GRADIENT_H1_OFFSET      ((BDOF_BLOCK_SIZE * BDOF_BLOCK_SIZE + 2) * 2 + 2)
+#define GRADIENT_V0_OFFSET      ((BDOF_BLOCK_SIZE * BDOF_BLOCK_SIZE + 2) * 4 + 2)
+#define GRADIENT_V1_OFFSET      ((BDOF_BLOCK_SIZE * BDOF_BLOCK_SIZE + 2) * 6 + 2)
+#define VX_OFFSET               ((BDOF_BLOCK_SIZE * BDOF_BLOCK_SIZE + 2) * 8)
+#define VY_OFFSET               ((BDOF_BLOCK_SIZE * BDOF_BLOCK_SIZE + 2) * 8 + BDOF_BLOCK_SIZE * 2)
+function ff_vvc_apply_bdof_8_neon, export=1
+        mov             w6, #8
+0:
+        stp             x19, x20, [sp, #-0x40]!
+        stp             x21, x22, [sp, #0x10]
+        stp             x23, x24, [sp, #0x20]
+        stp             x25, x30, [sp, #0x30]
+
+        sub             sp, sp, #APPLY_BDOF_STACK_SIZE
+        mov             w19, w6                         // bit_depth
+        mov             x20, x0                         // dst
+        mov             x21, x1                         // dst_stride
+        mov             x22, x2                         // src0
+        mov             x23, x3                         // src1
+        mov             w24, w4                         // block_w
+        mov             w25, w5                         // block_h
+
+        // int16_t *gradient_h[2] = {&gradient_buf_h[0][1], &gradient_buf_h[1][1]};
+        add             x0, sp, #GRADIENT_H0_OFFSET
+        add             x1, sp, #GRADIENT_H1_OFFSET
+        add             x2, sp, #GRADIENT_V0_OFFSET
+        add             x3, sp, #GRADIENT_V1_OFFSET
+        mov             x4, x22
+        mov             x5, x23
+        mov             w6, w24
+        mov             w7, w25
+        bl              vvc_bdof_grad_filter_8x_neon
+
+        cmp             w24, #8
+        mov             x0, x22                         // src0
+        mov             x1, x23                         // src1
+        add             x2, sp, #GRADIENT_H0_OFFSET     // gh0
+        add             x3, sp, #GRADIENT_V0_OFFSET     // gv0
+        add             x4, sp, #VX_OFFSET              // vx
+        add             x5, sp, #VY_OFFSET              // vy
+        mov             w6, w25                         // block_h
+
+        b.gt            16f
+
+        bl              vvc_derive_bdof_vx_vy_8x_neon
+        cmp             w19, #10                        // check bitdepth
+        mov             x0, x20                         // dst
+        mov             x1, x21                         // dst_stride
+        mov             x2, x22                         // src0
+        mov             x3, x23                         // src1
+        add             x4, sp, #GRADIENT_H1_OFFSET     // gh1
+        add             x5, sp, #GRADIENT_V1_OFFSET     // gv1
+        add             x6, sp, #VX_OFFSET
+        add             x7, sp, #VY_OFFSET
+        str             w25, [sp]
+        b.eq            1f
+        b.gt            2f
+        // 8bit
+0:
+        bl              vvc_apply_bdof_block_8x_8_neon
+        b               32f
+1:
+        // 10bit
+        bl              vvc_apply_bdof_block_8x_10_neon
+        b               32f
+2:
+        // 12bit
+        bl              vvc_apply_bdof_block_8x_12_neon
+        b               32f
+16:
+        bl              vvc_derive_bdof_vx_vy_16x_neon
+
+        cmp             w19, #10                        // check bitdepth
+        mov             x0, x20                         // dst
+        mov             x1, x21                         // dst_stride
+        mov             x2, x22                         // src0
+        mov             x3, x23                         // src1
+        add             x4, sp, #GRADIENT_H1_OFFSET     // gh1
+        add             x5, sp, #GRADIENT_V1_OFFSET     // gv1
+        add             x6, sp, #VX_OFFSET
+        add             x7, sp, #VY_OFFSET
+        str             w25, [sp]
+        b.eq            17f
+        b.gt            18f
+        // 8bit
+        bl              vvc_apply_bdof_block_16x_8_neon
+        b               32f
+17:
+        // 10bit
+        bl              vvc_apply_bdof_block_16x_10_neon
+        b               32f
+18:
+        // 12bit
+        bl              vvc_apply_bdof_block_16x_12_neon
+32:
+        add             sp, sp, #APPLY_BDOF_STACK_SIZE
+        ldp             x25, x30, [sp, #0x30]
+        ldp             x23, x24, [sp, #0x20]
+        ldp             x21, x22, [sp, #0x10]
+        ldp             x19, x20, [sp], #0x40
+        ret
+endfunc
+
+#undef APPLY_BDOF_STACK_SIZE
+#undef GRADIENT_H0_OFFSET
+#undef GRADIENT_H1_OFFSET
+#undef GRADIENT_V0_OFFSET
+#undef GRADIENT_V1_OFFSET
+#undef VX_OFFSET
+#undef VY_OFFSET
