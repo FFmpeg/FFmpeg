@@ -84,27 +84,6 @@ static int infer_size(int *width_ptr, int *height_ptr, int size)
     return -1;
 }
 
-static int is_glob(const char *path)
-{
-#if HAVE_GLOB
-    size_t span = 0;
-    const char *p = path;
-
-    while (p = strchr(p, '%')) {
-        if (*(++p) == '%') {
-            ++p;
-            continue;
-        }
-        if (span = strspn(p, "*?[]{}"))
-            break;
-    }
-    /* Did we hit a glob char or get to the end? */
-    return span != 0;
-#else
-    return 0;
-#endif
-}
-
 /**
  * Get index range of image files matched by path.
  *
@@ -171,8 +150,6 @@ static int img_read_probe(const AVProbeData *p)
 {
     if (p->filename && ff_guess_image2_codec(p->filename)) {
         if (av_filename_number_test(p->filename))
-            return AVPROBE_SCORE_MAX;
-        else if (is_glob(p->filename))
             return AVPROBE_SCORE_MAX;
         else if (p->filename[strcspn(p->filename, "*?{")]) // probably PT_GLOB
             return AVPROBE_SCORE_EXTENSION + 2; // score chosen to be a tad above the image pipes
@@ -242,44 +219,9 @@ int ff_img_read_header(AVFormatContext *s1)
             if (s1->pb) {
                 s->pattern_type = PT_NONE;
             } else
-                s->pattern_type = PT_GLOB_SEQUENCE;
+                s->pattern_type = PT_SEQUENCE;
         }
-
-        if (s->pattern_type == PT_GLOB_SEQUENCE) {
-        s->use_glob = is_glob(s->path);
-        if (s->use_glob) {
-#if HAVE_GLOB
-            char *p = s->path, *q, *dup;
-            int gerr;
-#endif
-
-            av_log(s1, AV_LOG_WARNING, "Pattern type 'glob_sequence' is deprecated: "
-                   "use pattern_type 'glob' instead\n");
-#if HAVE_GLOB
-            dup = q = av_strdup(p);
-            while (*q) {
-                /* Do we have room for the next char and a \ insertion? */
-                if ((p - s->path) >= (sizeof(s->path) - 2))
-                  break;
-                if (*q == '%' && strspn(q + 1, "%*?[]{}"))
-                    ++q;
-                else if (strspn(q, "\\*?[]{}"))
-                    *p++ = '\\';
-                *p++ = *q++;
-            }
-            *p = 0;
-            av_free(dup);
-
-            gerr = glob(s->path, GLOB_NOCHECK|GLOB_BRACE|GLOB_NOMAGIC, NULL, &s->globstate);
-            if (gerr != 0) {
-                return AVERROR(ENOENT);
-            }
-            first_index = 0;
-            last_index = s->globstate.gl_pathc - 1;
-#endif
-        }
-        }
-        if ((s->pattern_type == PT_GLOB_SEQUENCE && !s->use_glob) || s->pattern_type == PT_SEQUENCE) {
+        if (s->pattern_type == PT_SEQUENCE) {
             if (find_image_range(s1->pb, &first_index, &last_index, s->path,
                                  s->start_number, s->start_number_range) < 0) {
                 av_log(s1, AV_LOG_ERROR,
@@ -303,7 +245,7 @@ int ff_img_read_header(AVFormatContext *s1)
                    "is not supported by this libavformat build\n");
             return AVERROR(ENOSYS);
 #endif
-        } else if (s->pattern_type != PT_GLOB_SEQUENCE && s->pattern_type != PT_NONE) {
+        } else if (s->pattern_type != PT_NONE) {
             av_log(s1, AV_LOG_ERROR,
                    "Unknown value '%d' for pattern_type option\n", s->pattern_type);
             return AVERROR(EINVAL);
@@ -623,7 +565,6 @@ static int img_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 #if CONFIG_IMAGE2_DEMUXER
 const AVOption ff_img_options[] = {
     { "pattern_type", "set pattern type",                    OFFSET(pattern_type), AV_OPT_TYPE_INT,    {.i64=PT_DEFAULT}, 0,       INT_MAX, DEC, .unit = "pattern_type"},
-    { "glob_sequence","select glob/sequence pattern type",   0, AV_OPT_TYPE_CONST,  {.i64=PT_GLOB_SEQUENCE}, INT_MIN, INT_MAX, DEC, .unit = "pattern_type" },
     { "glob",         "select glob pattern type",            0, AV_OPT_TYPE_CONST,  {.i64=PT_GLOB         }, INT_MIN, INT_MAX, DEC, .unit = "pattern_type" },
     { "sequence",     "select sequence pattern type",        0, AV_OPT_TYPE_CONST,  {.i64=PT_SEQUENCE     }, INT_MIN, INT_MAX, DEC, .unit = "pattern_type" },
     { "none",         "disable pattern matching",            0, AV_OPT_TYPE_CONST,  {.i64=PT_NONE         }, INT_MIN, INT_MAX, DEC, .unit = "pattern_type" },

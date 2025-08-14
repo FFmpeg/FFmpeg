@@ -31,8 +31,7 @@
 #endif
 
 enum PatternType {
-    PT_GLOB_SEQUENCE,
-    PT_GLOB,
+    PT_GLOB = 1,
     PT_SEQUENCE,
     PT_NONE,
     PT_DEFAULT

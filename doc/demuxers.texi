@@ -664,30 +664,9 @@ Select a glob wildcard pattern type.
 
 The pattern is interpreted like a @code{glob()} pattern. This is only
 selectable if libavformat was compiled with globbing support.
-
-@item glob_sequence @emph{(deprecated, will be removed)}
-Select a mixed glob wildcard/sequence pattern.
-
-If your version of libavformat was compiled with globbing support, and
-the provided pattern contains at least one glob meta character among
-@code{%*?[]@{@}} that is preceded by an unescaped "%", the pattern is
-interpreted like a @code{glob()} pattern, otherwise it is interpreted
-like a sequence pattern.
-
-All glob special characters @code{%*?[]@{@}} must be prefixed
-with "%". To escape a literal "%" you shall use "%%".
-
-For example the pattern @code{foo-%*.jpeg} will match all the
-filenames prefixed by "foo-" and terminating with ".jpeg", and
-@code{foo-%?%?%?.jpeg} will match all the filenames prefixed with
-"foo-", followed by a sequence of three characters, and terminating
-with ".jpeg".
-
-This pattern type is deprecated in favor of @var{glob} and
-@var{sequence}.
 @end table
 
-Default value is @var{glob_sequence}.
+Default value is @var{sequence}.
 @item pixel_format
 Set the pixel format of the images to read. If not specified the pixel
 format is guessed from the first image file in the sequence.
