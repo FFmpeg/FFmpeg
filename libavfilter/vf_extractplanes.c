@@ -213,6 +213,10 @@ static int query_formats(AVFilterContext *ctx)
     else
         out_pixfmts = out32le_pixfmts;
 
+    /* Splitting planes apart only makes sense for straight alpha */
+    if ((ret = ff_formats_ref(ff_make_formats_list_singleton(AVALPHA_MODE_STRAIGHT), &ctx->inputs[0]->outcfg.alpha_modes)) < 0)
+        return ret;
+
     for (i = 0; i < ctx->nb_outputs; i++)
         if ((ret = ff_formats_ref(ff_make_format_list(out_pixfmts), &ctx->outputs[i]->incfg.formats)) < 0)
             return ret;
