@@ -116,9 +116,12 @@ int av_append_packet(AVIOContext *s, AVPacket *pkt, int size)
 
 int av_filename_number_test(const char *filename)
 {
-    char buf[1024];
-    return filename &&
-           (av_get_frame_filename(buf, sizeof(buf), filename, 1) >= 0);
+    AVBPrint bp;
+
+    if (!filename)
+        return 0;
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_COUNT_ONLY);
+    return (ff_bprint_get_frame_filename(&bp, filename, 1, AV_FRAME_FILENAME_FLAGS_IGNORE_TRUNCATION) >= 0);
 }
 
 /**********************************************************/
