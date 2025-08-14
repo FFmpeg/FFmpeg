@@ -1081,6 +1081,8 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
             av_assert1(frame->format        == link->format);
             av_assert1(frame->width         == link->w);
             av_assert1(frame->height        == link->h);
+            if (av_pix_fmt_desc_get(link->format)->flags & AV_PIX_FMT_FLAG_ALPHA)
+                av_assert1(frame->alpha_mode == link->alpha_mode);
         }
 
         frame->sample_aspect_ratio = link->sample_aspect_ratio;
