@@ -520,6 +520,12 @@ static int query_formats(const AVFilterContext *ctx,
     if ((ret = ff_formats_ref(formats, &cfg_out[0]->color_ranges)) < 0)
         return ret;
 
+    if (scale->sws->alpha_blend) {
+        if ((ret = ff_formats_ref(ff_make_formats_list_singleton(AVALPHA_MODE_STRAIGHT),
+                                  &cfg_in[0]->alpha_modes)) < 0)
+            return ret;
+    }
+
     return 0;
 }
 
