@@ -53,7 +53,6 @@ libavutil/.*d3d12va.* @jianhuaw
 libavutil/eval.* @michaelni
 libavutil/iamf.* @jamrial
 libavutil/integer.* @michaelni
-libavutil/kiss99.* @michaelni
 libavutil/lfg.* @michaelni
 libavutil/lls.* @michaelni
 libavutil/md5.* @michaelni
