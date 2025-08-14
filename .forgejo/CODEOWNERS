@@ -20,9 +20,10 @@ libavcodec/.*ffv1.* @lynne @michaelni
 libavcodec/golomb.* @michaelni
 libavcodec/.*h266.* @frankplow @NuoMi @jianhuaw
 libavcodec/h26x/.* @frankplow @NuoMi @jianhuaw
-libavcodec/.*jpegxl.* @lynne
-libavcodec/.*jxl.* @lynne
+libavcodec/.*jpegxl.* @lynne @Traneptora
+libavcodec/.*jxl.* @lynne @Traneptora
 libavcodec/.*opus.* @lynne
+libavcodec/.*png.* @Traneptora
 libavcodec/.*prores.* @lynne
 libavcodec/rangecoder.* @michaelni
 libavcodec/ratecontrol.* @michaelni
@@ -45,6 +46,8 @@ libavfilter/vsrc_mandelbrot.* @michaelni
 # avformat
 # =======
 libavformat/iamf.* @jamrial
+libavformat/.*jpegxl.* @Traneptora
+libavformat/.*jxl.* @Traneptora
 
 # avutil
 # ======
