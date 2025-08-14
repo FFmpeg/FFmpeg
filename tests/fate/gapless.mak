@@ -99,20 +99,16 @@ fate-audiomatch-quicktimeX-44100-stereo-lc-m4a: CMD = audio_match $(TARGET_SAMPL
 FATE_GAPLESS = $(FATE_GAPLESS-yes)
 
 FATE_GAPLESSINFO_PROBE-$(call DEMDEC, MOV, AAC) += fate-gaplessinfo-itunes1
-fate-gaplessinfo-itunes1: ffprobe$(PROGSSUF)$(EXESUF)
 fate-gaplessinfo-itunes1: CMD = probegaplessinfo $(TARGET_SAMPLES)/cover_art/Owner-iTunes_9.0.3.15.m4a
 
 FATE_GAPLESSINFO_PROBE-$(call DEMDEC, MOV, AAC) += fate-gaplessinfo-itunes2
-fate-gaplessinfo-itunes2: ffprobe$(PROGSSUF)$(EXESUF)
 fate-gaplessinfo-itunes2: CMD = probegaplessinfo $(TARGET_SAMPLES)/gapless/102400samples_qt-lc-aac.m4a
 
 FATE_GAPLESSENC_PROBE-$(call ENCDEC, AAC, IPOD MOV, ARESAMPLE_FILTER) += fate-gaplessenc-itunes-to-ipod-aac
-fate-gaplessenc-itunes-to-ipod-aac: ffprobe$(PROGSSUF)$(EXESUF)
 fate-gaplessenc-itunes-to-ipod-aac: CMD = gaplessenc $(TARGET_SAMPLES)/gapless/102400samples_qt-lc-aac.m4a ipod aac
 
 FATE_GAPLESSENC_PROBE-$(call ENCDEC, AAC, MOV, PCM_S16LE_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-gaplessenc-pcm-to-mov-aac
 fate-gaplessenc-pcm-to-mov-aac: $(AREF)
-fate-gaplessenc-pcm-to-mov-aac: ffprobe$(PROGSSUF)$(EXESUF)
 fate-gaplessenc-pcm-to-mov-aac: CMD = gaplessenc $(AREF) mov aac
 
 FATE_GAPLESSINFO-$(CONFIG_FFPROBE) = $(FATE_GAPLESSINFO_PROBE-yes)
