@@ -2,6 +2,35 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 6.1.3:
+ libavfilter/dnn/dnn_backend_tf: Remove redundant av_freep() to avoid double free
+ avcodec/dxv: Check that we initialize op_data
+ avcodec/exr: Check for pixel type consistency in DWA
+ avcodec/libvorbisdec: avoid overflow when assinging sample rate from long to int
+ avcodec/g726: init missing sample rate
+ avformat/lrcdec: limit input timestamp range to avoid overflows
+ avcodec/scpr3: Clear clr
+ avcodec/ilbcdec: Clear cbvec when used with create_augmented_vector()
+ avcodec/jpeg2000dec: Make sure the 4 extra bytes allocated are initialized
+ avfilter/avf_showcqt: fix unbounded index when copying to fft_data
+ avcodec/aacsbr_template: Check ilb
+ avcodec/utvideodec: Set B for the width= 1 case
+ avcodec/ffv1: Clear state on alloc
+ avcodec/jpeg2000dec: implement cdef remapping during pixel format matching
+ avcodec/jpeg2000dec: move cdef default check into get_siz()
+ avcodec/exr: Check rle_raw_data and surroundings
+ avcodec/exr: Dont access outside xsize/ysize
+ examples: Add check and replace av_free() to avoid potential memory errors
+ libavcodec/tests/snowenc: Add av_free() to avoid memory leak
+ libavfilter/af_firequalizer: Add check for av_malloc_array()
+ libavcodec/videotoolbox_vp9: Move av_malloc() to avoid memory leak
+ avcodec/mpc8: init avctx->sample_rate
+ avcodec/cbs_h266_syntax_template: fix out of bounds access
+ avformat/libopenmpt: fix seeking weirdness
+ avformat/hls: add cmfv/cmfa exceptions
+ avformat/lrcdec: support arbitrary precision timestamp
+ avcodec/ffv1dec: Disable frame threading due to race condition
+ (origin/release/6.1, fforge/release/6.1) swscale/swscale_unscaled: use 8 line alignment for planarCopyWrapper with dithering
+ Update for 6.1.3
  libavcodec/tests/motion: Add check for avcodec_alloc_context3()
  avcodec/tests/avpacket: Add av_free() to avoid memory leak
  examples: Add av_freep to avoid potential memory leak
