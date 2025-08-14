@@ -61,6 +61,7 @@ OBJS-$(CONFIG_MLP_DECODER)             += x86/mlpdsp_init.o
 OBJS-$(CONFIG_MPEG4_DECODER)           += x86/mpeg4videodsp.o x86/xvididct_init.o
 OBJS-$(CONFIG_PNG_DECODER)             += x86/pngdsp_init.o
 OBJS-$(CONFIG_PRORES_DECODER)          += x86/proresdsp_init.o
+OBJS-$(CONFIG_PRORES_RAW_DECODER)      += x86/proresdsp_init.o
 OBJS-$(CONFIG_RV40_DECODER)            += x86/rv40dsp_init.o
 OBJS-$(CONFIG_SBC_ENCODER)             += x86/sbcdsp_init.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += x86/svq1enc_init.o
