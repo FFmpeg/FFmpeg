@@ -29,7 +29,7 @@ version 6.1.3:
  avformat/hls: add cmfv/cmfa exceptions
  avformat/lrcdec: support arbitrary precision timestamp
  avcodec/ffv1dec: Disable frame threading due to race condition
- (origin/release/6.1, fforge/release/6.1) swscale/swscale_unscaled: use 8 line alignment for planarCopyWrapper with dithering
+ swscale/swscale_unscaled: use 8 line alignment for planarCopyWrapper with dithering
  Update for 6.1.3
  libavcodec/tests/motion: Add check for avcodec_alloc_context3()
  avcodec/tests/avpacket: Add av_free() to avoid memory leak
