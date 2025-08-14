@@ -211,6 +211,7 @@ int av_timecode_init(AVTimecode *tc, AVRational rate, int flags, int frame_start
 int av_timecode_init_from_components(AVTimecode *tc, AVRational rate, int flags, int hh, int mm, int ss, int ff, void *log_ctx)
 {
     int ret;
+    int64_t s;
 
     memset(tc, 0, sizeof(*tc));
     tc->flags = flags;
@@ -221,7 +222,15 @@ int av_timecode_init_from_components(AVTimecode *tc, AVRational rate, int flags,
     if (ret < 0)
         return ret;
 
-    tc->start = (hh*3600 + mm*60 + ss) * tc->fps + ff;
+    s = hh*3600LL + mm*60LL + ss;
+    if (s != (int32_t)s)
+        return AVERROR(EINVAL);
+
+    s = s * tc->fps + ff;
+    if (s != (int32_t)s)
+        return AVERROR(EINVAL);
+    tc->start = s;
+
     if (tc->flags & AV_TIMECODE_FLAG_DROPFRAME) { /* adjust frame number */
         int tmins = 60*hh + mm;
         tc->start -= (tc->fps / 30 * 2) * (tmins - tmins/10);
