@@ -585,7 +585,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     int buf_size = avpkt->size;
     UtvideoContext *c = avctx->priv_data;
     int i, j;
-    const uint8_t *plane_start[5];
+    const uint8_t *plane_start[5] = {NULL};
     int plane_size, max_slice_size = 0, slice_start, slice_end, slice_size;
     int ret;
     GetByteContext gb;
