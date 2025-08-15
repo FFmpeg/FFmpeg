@@ -76,6 +76,7 @@ static void check_alpha_detect(int depth, enum AVColorRange range)
     const int p = (1 << depth) - 1;
     const int q = mpeg_max - mpeg_min;
     const int k = p * mpeg_min + q + (1 << (depth - 1));
+    int res_ref, res_new;
 
     FFColorDetectDSPContext dsp = {0};
     ff_color_detect_dsp_init(&dsp, depth, range);
@@ -114,14 +115,19 @@ static void check_alpha_detect(int depth, enum AVColorRange range)
     if (check_func(dsp.detect_alpha, "detect_alpha_%d_%s", depth, range == AVCOL_RANGE_JPEG ? "full" : "limited")) {
         /* Test increasing height, to ensure we hit the placed 0 eventually */
         for (int h = 1; h <= HEIGHT; h++) {
-            int res_ref = call_ref(luma, STRIDE, alpha, STRIDE, w, h, p, q, k);
-            int res_new = call_new(luma, STRIDE, alpha, STRIDE, w, h, p, q, k);
+            res_ref = call_ref(luma, STRIDE, alpha, STRIDE, w, h, p, q, k);
+            res_new = call_new(luma, STRIDE, alpha, STRIDE, w, h, p, q, k);
             if (res_ref != res_new)
                 fail();
         }
 
-        /* Test performance of base case without any out-of-range values */
+        /* Test base case without any out-of-range values */
         memset(alpha, 0xFF, HEIGHT * STRIDE);
+        res_ref = call_ref(luma, STRIDE, alpha, STRIDE, w, HEIGHT, p, q, k);
+        res_new = call_new(luma, STRIDE, alpha, STRIDE, w, HEIGHT, p, q, k);
+        if (res_ref != res_new)
+            fail();
+
         bench_new(luma, STRIDE, alpha, STRIDE, w, HEIGHT, p, q, k);
     }
 }
