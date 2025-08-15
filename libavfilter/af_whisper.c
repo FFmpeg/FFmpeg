@@ -215,7 +215,9 @@ static void run_transcription(AVFilterContext *ctx, AVFrame *frame, int samples)
 
     for (int i = 0; i < n_segments; ++i) {
         const char *text = whisper_full_get_segment_text(wctx->ctx_wsp, i);
-        char *text_cleaned = av_strireplace(text + 1, "[BLANK_AUDIO]", "");
+        if (av_isspace(text[0]))
+            text++;
+        char *text_cleaned = av_strireplace(text, "[BLANK_AUDIO]", "");
 
         if (av_strnlen(text_cleaned, 1) == 0) {
             av_freep(&text_cleaned);
