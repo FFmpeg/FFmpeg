@@ -168,12 +168,11 @@ static int detect_alpha(AVFilterContext *ctx, void *arg,
      *   = alpha_max * x - offset > mpeg_range * a in the below formula.
      *
      * We subtract an additional offset of (1 << (depth - 1)) to account for
-     * rounding errors in the value of `x`, and an extra safety margin of
-     * mpeg_range because vf_premultiply.c et al. add an offset of (a >> 1) & 1.
+     * rounding errors in the value of `x`.
      */
     const int alpha_max = (1 << s->depth) - 1;
     const int mpeg_range = s->mpeg_max - s->mpeg_min;
-    const int offset = alpha_max * s->mpeg_min + mpeg_range + (1 << (s->depth - 1));
+    const int offset = alpha_max * s->mpeg_min + (1 << (s->depth - 1));
 
     int ret = 0;
     for (int i = 0; i < nb_planes; i++) {

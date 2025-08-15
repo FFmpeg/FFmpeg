@@ -75,7 +75,7 @@ static void check_alpha_detect(int depth, enum AVColorRange range)
     const int mpeg_max = 235 << (depth - 8);
     const int alpha_max = (1 << depth) - 1;
     const int mpeg_range = mpeg_max - mpeg_min;
-    const int offset = alpha_max * mpeg_min + mpeg_range + (1 << (depth - 1));
+    const int offset = alpha_max * mpeg_min + (1 << (depth - 1));
     int res_ref, res_new;
 
     FFColorDetectDSPContext dsp = {0};
