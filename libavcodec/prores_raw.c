@@ -367,15 +367,15 @@ static int decode_frame(AVCodecContext *avctx,
     if ((w & 1) || (h & 1))
         return AVERROR_INVALIDDATA;
 
-    avctx->coded_width  = FFALIGN(w, 16);
-    avctx->coded_height = FFALIGN(h, 16);
-
     if (w != avctx->width || h != avctx->height) {
         av_log(avctx, AV_LOG_WARNING, "picture resolution change: %ix%i -> %ix%i\n",
                avctx->width, avctx->height, w, h);
         if ((ret = ff_set_dimensions(avctx, w, h)) < 0)
             return ret;
     }
+
+    avctx->coded_width  = FFALIGN(w, 16);
+    avctx->coded_height = FFALIGN(h, 16);
 
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_BAYER_RGGB16;
     if (pix_fmt != s->pix_fmt) {
