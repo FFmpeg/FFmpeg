@@ -26,13 +26,20 @@
 #include <libavutil/macros.h>
 #include <libavutil/pixfmt.h>
 
+enum FFAlphaDetect {
+    FF_ALPHA_NONE = -1,
+    FF_ALPHA_UNDETERMINED = 0,
+    FF_ALPHA_STRAIGHT,
+    /* No way to positively identify premultiplied alpha */
+};
+
 typedef struct FFColorDetectDSPContext {
     /* Returns 1 if an out-of-range value was detected, 0 otherwise */
     int (*detect_range)(const uint8_t *data, ptrdiff_t stride,
                         ptrdiff_t width, ptrdiff_t height,
                         int mpeg_min, int mpeg_max);
 
-    /* Returns 1 if the color value exceeds the alpha value, 0 otherwise */
+    /* Returns an FFAlphaDetect enum value */
     int (*detect_alpha)(const uint8_t *color, ptrdiff_t color_stride,
                         const uint8_t *alpha, ptrdiff_t alpha_stride,
                         ptrdiff_t width, ptrdiff_t height,
@@ -111,7 +118,7 @@ ff_detect_alpha_full_c(const uint8_t *color, ptrdiff_t color_stride,
         for (int x = 0; x < width; x++)
             cond |= color[x] > alpha[x];
         if (cond)
-            return 1;
+            return FF_ALPHA_STRAIGHT;
         color += color_stride;
         alpha += alpha_stride;
     }
@@ -129,7 +136,7 @@ ff_detect_alpha_limited_c(const uint8_t *color, ptrdiff_t color_stride,
         for (int x = 0; x < width; x++)
             cond |= p * color[x] - k > q * alpha[x];
         if (cond)
-            return 1;
+            return FF_ALPHA_STRAIGHT;
         color += color_stride;
         alpha += alpha_stride;
     }
@@ -149,7 +156,7 @@ ff_detect_alpha16_full_c(const uint8_t *color, ptrdiff_t color_stride,
         for (int x = 0; x < width; x++)
             cond |= color16[x] > alpha16[x];
         if (cond)
-            return 1;
+            return FF_ALPHA_STRAIGHT;
         color += color_stride;
         alpha += alpha_stride;
     }
@@ -167,7 +174,7 @@ ff_detect_alpha16_limited_c(const uint8_t *color, ptrdiff_t color_stride,
         const uint16_t *alpha16 = (const uint16_t *) alpha;
         for (int x = 0; x < width; x++) {
             if ((int64_t) p * color16[x] - k > (int64_t) q * alpha16[x])
-                return 1;
+                return FF_ALPHA_STRAIGHT;
         }
         color += color_stride;
         alpha += alpha_stride;
