@@ -43,7 +43,7 @@ typedef struct FFColorDetectDSPContext {
     int (*detect_alpha)(const uint8_t *color, ptrdiff_t color_stride,
                         const uint8_t *alpha, ptrdiff_t alpha_stride,
                         ptrdiff_t width, ptrdiff_t height,
-                        int p, int q, int k);
+                        int alpha_max, int mpeg_range, int offset);
 } FFColorDetectDSPContext;
 
 void ff_color_detect_dsp_init(FFColorDetectDSPContext *dsp, int depth,
@@ -111,7 +111,7 @@ static inline int
 ff_detect_alpha_full_c(const uint8_t *color, ptrdiff_t color_stride,
                        const uint8_t *alpha, ptrdiff_t alpha_stride,
                        ptrdiff_t width, ptrdiff_t height,
-                       int p, int q, int k)
+                       int alpha_max, int mpeg_range, int offset)
 {
     while (height--) {
         uint8_t cond = 0;
@@ -129,12 +129,12 @@ static inline int
 ff_detect_alpha_limited_c(const uint8_t *color, ptrdiff_t color_stride,
                           const uint8_t *alpha, ptrdiff_t alpha_stride,
                           ptrdiff_t width, ptrdiff_t height,
-                          int p, int q, int k)
+                          int alpha_max, int mpeg_range, int offset)
 {
     while (height--) {
         uint8_t cond = 0;
         for (int x = 0; x < width; x++)
-            cond |= p * color[x] - k > q * alpha[x];
+            cond |= alpha_max * color[x] - offset > mpeg_range * alpha[x];
         if (cond)
             return FF_ALPHA_STRAIGHT;
         color += color_stride;
@@ -147,7 +147,7 @@ static inline int
 ff_detect_alpha16_full_c(const uint8_t *color, ptrdiff_t color_stride,
                          const uint8_t *alpha, ptrdiff_t alpha_stride,
                          ptrdiff_t width, ptrdiff_t height,
-                         int p, int q, int k)
+                         int alpha_max, int mpeg_range, int offset)
 {
     while (height--) {
         const uint16_t *color16 = (const uint16_t *) color;
@@ -167,13 +167,13 @@ static inline int
 ff_detect_alpha16_limited_c(const uint8_t *color, ptrdiff_t color_stride,
                             const uint8_t *alpha, ptrdiff_t alpha_stride,
                             ptrdiff_t width, ptrdiff_t height,
-                            int p, int q, int k)
+                            int alpha_max, int mpeg_range, int offset)
 {
     while (height--) {
         const uint16_t *color16 = (const uint16_t *) color;
         const uint16_t *alpha16 = (const uint16_t *) alpha;
         for (int x = 0; x < width; x++) {
-            if ((int64_t) p * color16[x] - k > (int64_t) q * alpha16[x])
+            if ((int64_t) alpha_max * color16[x] - offset > (int64_t) mpeg_range * alpha16[x])
                 return FF_ALPHA_STRAIGHT;
         }
         color += color_stride;

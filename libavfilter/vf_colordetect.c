@@ -165,21 +165,22 @@ static int detect_alpha(AVFilterContext *ctx, void *arg,
      *
      * This simplifies to:
      *   (x - mpeg_min) * pixel_max > (mpeg_max - mpeg_min) * a
-     *   = P * x - K > Q * a in the below formula.
+     *   = alpha_max * x - offset > mpeg_range * a in the below formula.
      *
      * We subtract an additional offset of (1 << (depth - 1)) to account for
      * rounding errors in the value of `x`, and an extra safety margin of
-     * Q because vf_premultiply.c et al. add an offset of (a >> 1) & 1.
+     * mpeg_range because vf_premultiply.c et al. add an offset of (a >> 1) & 1.
      */
-    const int p = (1 << s->depth) - 1;
-    const int q = s->mpeg_max - s->mpeg_min;
-    const int k = p * s->mpeg_min + q + (1 << (s->depth - 1));
+    const int alpha_max = (1 << s->depth) - 1;
+    const int mpeg_range = s->mpeg_max - s->mpeg_min;
+    const int offset = alpha_max * s->mpeg_min + mpeg_range + (1 << (s->depth - 1));
 
     int ret = 0;
     for (int i = 0; i < nb_planes; i++) {
         const ptrdiff_t stride = in->linesize[i];
         ret = s->dsp.detect_alpha(in->data[i] + y_start * stride, stride,
-                                  alpha, alpha_stride, w, h_slice, p, q, k);
+                                  alpha, alpha_stride, w, h_slice, alpha_max,
+                                  mpeg_range, offset);
         if (ret) {
             atomic_store(&s->detected_alpha, ret);
             break;

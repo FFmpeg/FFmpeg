@@ -76,9 +76,9 @@ cglobal detect_alpha%1_%3, 6, 7, 6, color, color_stride, alpha, alpha_stride, wi
     add alphaq, widthq
     neg widthq
 %ifidn %3, limited
-    vpbroadcast%2 m3, r6m ; p
-    vpbroadcast%2 m4, r7m ; q
-    vpbroadcast%2 m5, r8m ; k
+    vpbroadcast%2 m3, r6m ; alpha_max
+    vpbroadcast%2 m4, r7m ; mpeg_range
+    vpbroadcast%2 m5, r8m ; offset
 %endif
 .lineloop:
     mov xq, widthq
