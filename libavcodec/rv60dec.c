@@ -308,6 +308,8 @@ static int update_dimensions_clear_info(RV60Context *s, int width, int height)
     if ((ret = av_reallocp_array(&s->blk_info, s->blk_stride * (s->cu_height << 4), sizeof(s->blk_info[0]))) < 0)
         return ret;
 
+    memset(s->pu_info, 0, s->pu_stride * (s->cu_height << 3) * sizeof(s->pu_info[0]));
+
     for (int j = 0; j < s->cu_height << 4; j++)
         for (int i = 0; i < s->cu_width << 4; i++)
             s->blk_info[j*s->blk_stride + i].mv.mvref = MVREF_NONE;
