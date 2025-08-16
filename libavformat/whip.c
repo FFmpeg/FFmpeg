@@ -70,15 +70,11 @@
 #define WHIP_US_PER_MS 1000
 
 /**
- * When sending ICE or DTLS messages, responses are received via UDP. However, the peer
- * may not be ready and return EAGAIN, in which case we should wait for a short duration
- * and retry reading.
- * For instance, if we try to read from UDP and get EAGAIN, we sleep for 5ms and retry.
- * This macro is used to limit the total duration in milliseconds (e.g., 50ms), so we
- * will try at most 5 times.
- * Keep in mind that this macro should have a minimum duration of 5 ms.
+ * If we try to read from UDP and get EAGAIN, we sleep for 5ms and retry up to 10 times.
+ * This will limit the total duration (in milliseconds, 50ms)
  */
-#define ICE_DTLS_READ_INTERVAL 50
+#define ICE_DTLS_READ_MAX_RETRY 10
+#define ICE_DTLS_READ_SLEEP_DURATION 5
 
 /* The magic cookie for Session Traversal Utilities for NAT (STUN) messages. */
 #define STUN_MAGIC_COOKIE 0x2112A442
@@ -1295,14 +1291,14 @@ next_packet:
         }
 
         /* Read the STUN or DTLS messages from peer. */
-        for (i = 0; i < ICE_DTLS_READ_INTERVAL / 5; i++) {
+        for (i = 0; i < ICE_DTLS_READ_MAX_RETRY; i++) {
             if (whip->state > WHIP_STATE_ICE_CONNECTED)
                 break;
             ret = ffurl_read(whip->udp, whip->buf, sizeof(whip->buf));
             if (ret > 0)
                 break;
             if (ret == AVERROR(EAGAIN)) {
-                av_usleep(5 * WHIP_US_PER_MS);
+                av_usleep(ICE_DTLS_READ_SLEEP_DURATION * WHIP_US_PER_MS);
                 continue;
             }
             av_log(whip, AV_LOG_ERROR, "Failed to read message\n");
