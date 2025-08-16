@@ -180,10 +180,9 @@ static int detect_alpha(AVFilterContext *ctx, void *arg,
         ret = s->dsp.detect_alpha(in->data[i] + y_start * stride, stride,
                                   alpha, alpha_stride, w, h_slice, alpha_max,
                                   mpeg_range, offset);
-        if (ret) {
-            atomic_store(&s->detected_alpha, ret);
+        ret |= atomic_fetch_or_explicit(&s->detected_alpha, ret, memory_order_relaxed);
+        if (ret == FF_ALPHA_STRAIGHT)
             break;
-        }
     }
 
     return 0;
@@ -197,7 +196,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     if (s->mode & COLOR_DETECT_COLOR_RANGE && s->detected_range == AVCOL_RANGE_UNSPECIFIED)
         ff_filter_execute(ctx, detect_range, in, NULL, nb_threads);
-    if (s->mode & COLOR_DETECT_ALPHA_MODE && s->detected_alpha == FF_ALPHA_UNDETERMINED)
+
+    if (s->mode & COLOR_DETECT_ALPHA_MODE && s->detected_alpha != FF_ALPHA_NONE &&
+        s->detected_alpha != FF_ALPHA_STRAIGHT)
         ff_filter_execute(ctx, detect_alpha, in, NULL, nb_threads);
 
     return ff_filter_frame(inlink->dst->outputs[0], in);
@@ -218,9 +219,10 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     if (s->mode & COLOR_DETECT_ALPHA_MODE) {
         av_log(ctx, AV_LOG_INFO, "  Alpha mode: %s\n",
-               s->detected_alpha == FF_ALPHA_NONE     ? "none" :
-               s->detected_alpha == FF_ALPHA_STRAIGHT ? "straight / independent"
-                                                      : "undertermined");
+               s->detected_alpha == FF_ALPHA_NONE        ? "none" :
+               s->detected_alpha == FF_ALPHA_STRAIGHT    ? "straight" :
+               s->detected_alpha == FF_ALPHA_TRANSPARENT ? "undetermined"
+                                                         : "opaque");
     }
 }
 

@@ -87,7 +87,7 @@ static void check_alpha_detect(int depth, enum AVColorRange range)
     LOCAL_ALIGNED_32(uint8_t, luma,  [HEIGHT * STRIDE]);
     LOCAL_ALIGNED_32(uint8_t, alpha, [HEIGHT * STRIDE]);
     memset(luma,  0x80, HEIGHT * STRIDE);
-    memset(alpha, 0xFF, HEIGHT * STRIDE);
+    memset(alpha, 0xF0, HEIGHT * STRIDE);
 
     /* Try and force overflow */
     if (depth > 8 && range == AVCOL_RANGE_MPEG) {

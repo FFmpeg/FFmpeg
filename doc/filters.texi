@@ -9880,7 +9880,7 @@ which indicates that this is a full range YUV source.
 @item alpha_mode
 Detect if the source contains color values above the alpha channel, which
 indicates that the alpha channel is independent (straight), rather than
-premultiplied.
+premultiplied. Also detects if the alpha plane is fully opaque or not.
 @item all
 Enable detection of all of the above properties. This is the default.
 @end table
