@@ -257,6 +257,7 @@ typedef struct WHIPContext {
      */
     char *sdp_offer;
 
+    int is_peer_ice_lite;
     uint64_t ice_tie_breaker; // random 64 bit, for ICE-CONTROLLING
     /* The ICE username and pwd from remote server. */
     char *ice_ufrag_remote;
@@ -886,6 +887,8 @@ static int parse_answer(AVFormatContext *s)
 
     for (i = 0; !avio_feof(pb); i++) {
         ff_get_chomp_line(pb, line, sizeof(line));
+        if (av_strstart(line, "a=ice-lite", &ptr))
+            whip->is_peer_ice_lite = 1;
         if (av_strstart(line, "a=ice-ufrag:", &ptr) && !whip->ice_ufrag_remote) {
             whip->ice_ufrag_remote = av_strdup(ptr);
             if (!whip->ice_ufrag_remote) {
