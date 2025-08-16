@@ -5456,10 +5456,6 @@ static int heif_add_stream(MOVContext *c, HEIFItem *item)
     if (!sc->chunk_offsets)
         goto fail;
     sc->chunk_count = 1;
-    sc->sample_sizes = av_malloc_array(1, sizeof(*sc->sample_sizes));
-    if (!sc->sample_sizes)
-        goto fail;
-    sc->sample_count = 1;
     sc->stts_data = av_malloc_array(1, sizeof(*sc->stts_data));
     if (!sc->stts_data)
         goto fail;
@@ -10471,11 +10467,13 @@ static int mov_parse_heif_items(AVFormatContext *s)
         st->codecpar->width  = item->width;
         st->codecpar->height = item->height;
 
+        sc->sample_size  = sc->stsz_sample_size = item->extent_length;
+        sc->sample_count = 1;
+
         err = sanity_checks(s, sc, item->item_id);
-        if (err || !sc->sample_count)
+        if (err)
             return AVERROR_INVALIDDATA;
 
-        sc->sample_sizes[0]  = item->extent_length;
         sc->chunk_offsets[0] = item->extent_offset + offset;
 
         if (item->item_id == mov->primary_item_id)
