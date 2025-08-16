@@ -28,6 +28,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/thread.h"
 
+#include "adpcm.h"
 #include "adpcm_data.h"
 #include "avcodec.h"
 #include "codec_internal.h"
@@ -159,6 +160,19 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
+    if (show_bits_long(&gb, 32) == MKBETAG('I','M','A','4')) {
+        int16_t *dest = (int16_t *)frame->data[0];
+        ADPCMChannelStatus cs;
+
+        skip_bits_long(&gb, 32);        /* skip the 'IMA4' tag */
+        cs.predictor = (int16_t)get_xbits_le(&gb, 16);
+        cs.step_index = av_clip(get_bits(&gb, 8), 0, 88);
+        for (int i = 0; i < samples; i++) {
+            ff_adpcm_ima_qt_expand_nibble(&cs, get_bits(&gb, 4));
+            for (int j = 0; j < channels; j++)
+                *dest++ = cs.predictor;
+        }
+    } else {
     for (chan = 0; chan < channels; chan++) {
         uint16_t *dest = (uint16_t *)frame->data[0] + chan;
         int step_index = channel_hint[chan];
@@ -199,6 +213,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
             dest += channels;
 
             step_index += step_index_tables[lookup_size - 2][lookup];
+        }
         }
     }
 
