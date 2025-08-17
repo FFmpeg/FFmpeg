@@ -10470,7 +10470,7 @@ static int mov_parse_heif_items(AVFormatContext *s)
         sc->sample_size  = sc->stsz_sample_size = item->extent_length;
         sc->sample_count = 1;
 
-        err = sanity_checks(s, sc, item->item_id);
+        err = sanity_checks(s, sc, st->index);
         if (err)
             return AVERROR_INVALIDDATA;
 
