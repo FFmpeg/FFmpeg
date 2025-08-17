@@ -38,6 +38,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/time.h"
@@ -122,7 +123,7 @@ typedef struct SegmentContext {
     int   write_empty;
 
     int use_rename;
-    char temp_list_filename[1024];
+    char *temp_list_filename;
 
     SegmentListEntry cur_entry;
     SegmentListEntry *segment_list_entries;
@@ -191,9 +192,10 @@ static int set_segment_filename(AVFormatContext *s)
     AVFormatContext *oc = seg->avf;
     size_t size;
     int ret;
-    char buf[1024];
+    AVBPrint filename;
     char *new_name;
 
+    av_bprint_init(&filename, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (seg->segment_idx_wrap)
         seg->segment_idx %= seg->segment_idx_wrap;
     if (seg->use_strftime) {
@@ -201,18 +203,22 @@ static int set_segment_filename(AVFormatContext *s)
         struct tm *tm, tmpbuf;
         time(&now0);
         tm = localtime_r(&now0, &tmpbuf);
-        if (!strftime(buf, sizeof(buf), s->url, tm)) {
-            av_log(oc, AV_LOG_ERROR, "Could not get segment filename with strftime\n");
-            return AVERROR(EINVAL);
+        av_bprint_strftime(&filename, s->url, tm);
+        if (!av_bprint_is_complete(&filename)) {
+            av_bprint_finalize(&filename, NULL);
+            return AVERROR(ENOMEM);
         }
-    } else if (av_get_frame_filename(buf, sizeof(buf),
-                                     s->url, seg->segment_idx) < 0) {
-        av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", s->url);
-        return AVERROR(EINVAL);
+    } else {
+        ret = ff_bprint_get_frame_filename(&filename, s->url, seg->segment_idx, 0);
+        if (ret < 0) {
+            av_bprint_finalize(&filename, NULL);
+            av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", s->url);
+            return ret;
+        }
     }
-    new_name = av_strdup(buf);
-    if (!new_name)
-        return AVERROR(ENOMEM);
+    ret = av_bprint_finalize(&filename, &new_name);
+    if (ret < 0)
+        return ret;
     ff_format_set_url(oc, new_name);
 
     /* copy modified name in list entry */
@@ -279,7 +285,10 @@ static int segment_list_open(AVFormatContext *s)
     SegmentContext *seg = s->priv_data;
     int ret;
 
-    snprintf(seg->temp_list_filename, sizeof(seg->temp_list_filename), seg->use_rename ? "%s.tmp" : "%s", seg->list);
+    av_freep(&seg->temp_list_filename);
+    seg->temp_list_filename = av_asprintf(seg->use_rename ? "%s.tmp" : "%s", seg->list);
+    if (!seg->temp_list_filename)
+        return AVERROR(ENOMEM);
     ret = s->io_open(s, &seg->list_pb, seg->temp_list_filename, AVIO_FLAG_WRITE, NULL);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Failed to open segment list '%s'\n", seg->list);
@@ -659,6 +668,7 @@ static void seg_free(AVFormatContext *s)
     av_freep(&seg->times);
     av_freep(&seg->frames);
     av_freep(&seg->cur_entry.filename);
+    av_freep(&seg->temp_list_filename);
 
     cur = seg->segment_list_entries;
     while (cur) {
