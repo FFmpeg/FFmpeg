@@ -1757,6 +1757,11 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
             memset(ctx->fbuf, 0, ctx->frm0_size);
     }
 
+    if (w + FFMAX(left, 0) > ctx->avctx->width || h + FFMAX(top, 0) > ctx->avctx->height) {
+        avpriv_request_sample(ctx->avctx, "overly large frame\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     switch (codec) {
     case 1:
     case 3:
