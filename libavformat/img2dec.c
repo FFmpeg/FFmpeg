@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -96,18 +97,23 @@ static int infer_size(int *width_ptr, int *height_ptr, int size)
 static int find_image_range(int *pfirst_index, int *plast_index,
                             const char *path, int start_index, int start_index_range)
 {
-    char buf[1024];
-    int range, last_index, range1, first_index;
+    int range, last_index, range1, first_index, ret;
+    AVBPrint filename;
 
+    av_bprint_init(&filename, 0, AV_BPRINT_SIZE_UNLIMITED);
     /* find the first image */
     for (first_index = start_index; first_index < start_index + start_index_range; first_index++) {
-        if (av_get_frame_filename(buf, sizeof(buf), path, first_index) < 0)
-            return -1;
-        if (avio_check(buf, AVIO_FLAG_READ) > 0)
+        av_bprint_clear(&filename);
+        ret = ff_bprint_get_frame_filename(&filename, path, first_index, 0);
+        if (ret < 0)
+            goto fail;
+        if (avio_check(filename.str, AVIO_FLAG_READ) > 0)
             break;
     }
-    if (first_index == start_index + start_index_range)
+    if (first_index == start_index + start_index_range) {
+        ret = AVERROR(EINVAL);
         goto fail;
+    }
 
     /* find the last image */
     last_index = first_index;
@@ -118,15 +124,18 @@ static int find_image_range(int *pfirst_index, int *plast_index,
                 range1 = 1;
             else
                 range1 = 2 * range;
-            if (av_get_frame_filename(buf, sizeof(buf), path,
-                                      last_index + range1) < 0)
+            av_bprint_clear(&filename);
+            ret = ff_bprint_get_frame_filename(&filename, path, last_index + range1, 0);
+            if (ret < 0)
                 goto fail;
-            if (avio_check(buf, AVIO_FLAG_READ) <= 0)
+            if (avio_check(filename.str, AVIO_FLAG_READ) <= 0)
                 break;
             range = range1;
             /* just in case... */
-            if (range >= (1 << 30))
+            if (range >= (1 << 30)) {
+                ret = AVERROR(EINVAL);
                 goto fail;
+            }
         }
         /* we are sure than image last_index + range exists */
         if (!range)
@@ -135,10 +144,10 @@ static int find_image_range(int *pfirst_index, int *plast_index,
     }
     *pfirst_index = first_index;
     *plast_index  = last_index;
-    return 0;
-
+    ret = 0;
 fail:
-    return -1;
+    av_bprint_finalize(&filename, NULL);
+    return ret;
 }
 
 static int img_read_probe(const AVProbeData *p)
