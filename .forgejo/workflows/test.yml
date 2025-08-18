@@ -10,12 +10,18 @@ jobs:
       fail-fast: false
       matrix:
         runner: [linux-amd64,linux-aarch64]
+        bits: ['64']
+        include:
+          - runner: linux-amd64
+            bits: '32'
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Configure
-        run: ./configure --enable-gpl --enable-nonfree --enable-memory-poisoning --assert-level=2
+        run: |
+          ./configure --enable-gpl --enable-nonfree --enable-memory-poisoning --assert-level=2 \
+              $([ "${{ matrix.bits }}" != "32" ] || echo --arch=x86_32 --extra-cflags=-m32 --extra-cxxflags=-m32 --extra-ldflags=-m32)
       - name: Build
         run: make -j$(nproc)
       - name: Restore Cached Fate-Suite
