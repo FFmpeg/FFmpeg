@@ -21,7 +21,10 @@ jobs:
       - name: Configure
         run: |
           ./configure --enable-gpl --enable-nonfree --enable-memory-poisoning --assert-level=2 \
-              $([ "${{ matrix.bits }}" != "32" ] || echo --arch=x86_32 --extra-cflags=-m32 --extra-cxxflags=-m32 --extra-ldflags=-m32)
+              $([ "${{ matrix.bits }}" != "32" ] || echo --arch=x86_32 --extra-cflags=-m32 --extra-cxxflags=-m32 --extra-ldflags=-m32) \
+              || CFGRES=$? && CFGRES=$?
+          cat ffbuild/config.log
+          exit $CFGRES
       - name: Build
         run: make -j$(nproc)
       - name: Restore Cached Fate-Suite
