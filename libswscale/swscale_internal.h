@@ -545,8 +545,8 @@ struct SwsInternal {
     int use_mmx_vfilter;
 
 /* pre defined color-spaces gamma */
-#define XYZ_GAMMA (2.6f)
-#define RGB_GAMMA (2.2f)
+#define XYZ_GAMMA (2.6)
+#define RGB_GAMMA (2.2)
     uint16_t *xyzgamma;
     uint16_t *rgbgamma;
     uint16_t *xyzgammainv;
