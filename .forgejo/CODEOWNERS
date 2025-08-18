@@ -12,6 +12,7 @@
 # =======
 libavcodec/.*aac.* @lynne
 libavcodec/.*ac3.* @lynne
+libavcodec/.*adpcm.* @zane
 libavcodec/.*atrac9.* @lynne
 libavcodec/.*bitpacked.* @lynne
 libavcodec/.*d3d12va.* @jianhuaw
@@ -45,9 +46,16 @@ libavfilter/vsrc_mandelbrot.* @michaelni
 
 # avformat
 # =======
+libavformat/alp.* @zane
+libavformat/amv.* @zane
+libavformat/apm.* @zane
+libavformat/argo_.* @zane
 libavformat/iamf.* @jamrial
 libavformat/.*jpegxl.* @Traneptora
 libavformat/.*jxl.* @Traneptora
+libavformat/kvag.* @zane
+libavformat/pp_bnk.* @zane
+libavformat/scd.* @zane
 
 # avutil
 # ======
