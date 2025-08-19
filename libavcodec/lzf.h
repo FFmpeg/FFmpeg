@@ -24,6 +24,6 @@
 
 #include "bytestream.h"
 
-int ff_lzf_uncompress(GetByteContext *gb, uint8_t **buf, int64_t *size);
+int ff_lzf_uncompress(GetByteContext *gb, uint8_t **buf, size_t *size, unsigned *allocated_size);
 
 #endif /* AVCODEC_LZF_H */
