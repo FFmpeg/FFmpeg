@@ -29,9 +29,15 @@ libavcodec/.*prores.* @lynne
 libavcodec/rangecoder.* @michaelni
 libavcodec/ratecontrol.* @michaelni
 libavcodec/.*siren.* @lynne
+libavcodec/smpte_436m.* @programmerjake
 libavcodec/.*vc2.* @lynne
 libavcodec/.*vvc.* @frankplow @NuoMi @jianhuaw
 
+# bitstream filters
+libavcodec/bsf/eia608_to_smpte436m.* @programmerjake
+libavcodec/bsf/smpte436m_to_eia608.* @programmerjake
+
+# architecture-specific
 libavcodec/aarch64/.* @lynne @mstorsjo
 libavcodec/arm/.* @mstorsjo
 libavcodec/ppc/.* @sean_mcg
@@ -54,6 +60,8 @@ libavformat/iamf.* @jamrial
 libavformat/.*jpegxl.* @Traneptora
 libavformat/.*jxl.* @Traneptora
 libavformat/kvag.* @zane
+libavformat/mccdec.* @programmerjake
+libavformat/mccenc.* @programmerjake
 libavformat/pp_bnk.* @zane
 libavformat/scd.* @zane
 
@@ -102,3 +110,7 @@ doc/.* @GyanD
 # ==========
 .*d3d12va.* @jianhuaw
 .*vulkan.* @lynne
+
+# tests
+# =====
+tests/ref/fate/sub-mcc.* @programmerjake
