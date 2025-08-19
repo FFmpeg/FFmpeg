@@ -42,7 +42,7 @@ typedef struct DXVContext {
     uint8_t *ctex_data;  // Compressed chroma texture
     unsigned ctex_data_size;
 
-    int64_t tex_size;    // Texture size
+    size_t tex_size;     // Texture size
     int64_t ctex_size;   // Chroma texture size
 
     uint8_t *op_data[4]; // Opcodes
@@ -828,7 +828,7 @@ static int dxv_decompress_dxt5(AVCodecContext *avctx)
 static int dxv_decompress_lzf(AVCodecContext *avctx)
 {
     DXVContext *ctx = avctx->priv_data;
-    return ff_lzf_uncompress(&ctx->gbc, &ctx->tex_data, &ctx->tex_size);
+    return ff_lzf_uncompress(&ctx->gbc, &ctx->tex_data, &ctx->tex_size, &ctx->tex_data_size);
 }
 
 static int dxv_decompress_raw(AVCodecContext *avctx)
