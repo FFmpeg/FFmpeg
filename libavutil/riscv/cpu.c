@@ -82,6 +82,7 @@ int ff_get_cpu_flags_riscv(void)
                 ret |= AV_CPU_FLAG_RV_MISALIGNED;
                 break;
             default:
+                ; /* do nothing */
         }
     }
 #elif HAVE_GETAUXVAL || HAVE_ELF_AUX_INFO
