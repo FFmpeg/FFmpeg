@@ -40,7 +40,8 @@ typedef struct NotchLCContext {
     unsigned uncompressed_size;
 
     uint8_t *lzf_buffer;
-    int64_t lzf_size;
+    size_t lzf_size;
+    unsigned lzf_alloc_size;
 
     unsigned texture_size_x;
     unsigned texture_size_y;
@@ -490,7 +491,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
         return AVERROR_PATCHWELCOME;
 
     if (s->format == 0) {
-        ret = ff_lzf_uncompress(gb, &s->lzf_buffer, &s->lzf_size);
+        ret = ff_lzf_uncompress(gb, &s->lzf_buffer, &s->lzf_size, &s->lzf_alloc_size);
         if (ret < 0)
             return ret;
 
