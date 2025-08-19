@@ -516,7 +516,7 @@ static int libjxl_receive_frame(AVCodecContext *avctx, AVFrame *frame)
                 ret = av_exif_remove_entry(avctx, &ifd, av_exif_get_tag_id("Orientation"), 0);
                 if (ret < 0)
                     av_log(avctx, AV_LOG_WARNING, "Unable to remove orientation from EXIF buffer\n");
-                ret = ff_exif_attach_ifd(avctx, ctx->frame, &ifd);
+                ret = ff_decode_exif_attach_ifd(avctx, ctx->frame, &ifd);
                 if (ret < 0)
                     av_log(avctx, AV_LOG_ERROR, "Unable to attach EXIF ifd\n");
             }

@@ -42,29 +42,13 @@ int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
                            int le, int depth, AVDictionary **metadata);
 #endif /* FF_API_OLD_EXIF */
 
-/**
- * Attach the data buffer to the frame. This is mostly a wrapper for
- * av_side_data_new_from_buffer, but it checks if the orientation tag is
- * present in the provided EXIF buffer. If it is, it zeroes it out and
- * attaches that information as an AV_FRAME_DATA_DISPLAYMATRIX instead
- * of including it in the AV_FRAME_DATA_EXIF side data buffer.
- *
- * On a success, the caller loses ownership of the data buffer. Either it is
- * unrefed, or its ownership is transferred to the frame directly. On failure,
- * the data buffer is left owned by the caller.
- */
-int ff_exif_attach_buffer(void *logctx, AVFrame *frame, AVBufferRef *data, enum AVExifHeaderMode header_mode);
-
-/**
- * Attach an already-parsed EXIF metadata struct to the frame as a side data
- * buffer. It writes the EXIF IFD into the buffer and attaches the buffer to
- * the frame.
- *
- * If the metadata struct contains an orientation tag, it will be zeroed before
- * writing, and instead, an AV_FRAME_DATA_DISPLAYMATRIX will be attached in
- * addition to the AV_FRAME_DATA_EXIF side data.
- */
-int ff_exif_attach_ifd(void *logctx, AVFrame *frame, const AVExifMetadata *ifd);
+#define MAKERNOTE_TAG          0x927c
+#define ORIENTATION_TAG        0x112
+#define EXIFIFD_TAG            0x8769
+#define IMAGE_WIDTH_TAG        0x100
+#define IMAGE_LENGTH_TAG       0x101
+#define PIXEL_X_TAG            0xa002
+#define PIXEL_Y_TAG            0xa003
 
 /**
  * Compares values in the IFD with data in the provided AVFrame and sets the values

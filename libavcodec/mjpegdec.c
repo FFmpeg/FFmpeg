@@ -2855,7 +2855,7 @@ the_end:
     }
 
     if (s->exif_metadata.entries) {
-        ret = ff_exif_attach_ifd(avctx, frame, &s->exif_metadata);
+        ret = ff_decode_exif_attach_ifd(avctx, frame, &s->exif_metadata);
         av_exif_free(&s->exif_metadata);
         if (ret < 0)
             av_log(avctx, AV_LOG_WARNING, "couldn't attach EXIF metadata\n");

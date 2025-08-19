@@ -47,6 +47,7 @@
 #include "codec_desc.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "exif_internal.h"
 #include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "internal.h"
@@ -2244,4 +2245,109 @@ void ff_decode_internal_uninit(AVCodecContext *avctx)
     DecodeContext *dc = decode_ctx(avci);
 
     av_refstruct_unref(&dc->lcevc);
+}
+
+static int attach_displaymatrix(AVCodecContext *avctx, AVFrame *frame, int orientation)
+{
+    AVFrameSideData *sd = NULL;
+    int32_t *matrix;
+    int ret;
+    /* invalid orientation */
+    if (orientation < 2 || orientation > 8)
+        return AVERROR_INVALIDDATA;
+    ret = ff_frame_new_side_data(avctx, frame, AV_FRAME_DATA_DISPLAYMATRIX, sizeof(int32_t) * 9, &sd);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame side data: %s\n", av_err2str(ret));
+        return ret;
+    }
+    if (sd) {
+        matrix = (int32_t *) sd->data;
+        ret = av_exif_orientation_to_matrix(matrix, orientation);
+    }
+
+    return ret;
+}
+
+static int exif_attach_ifd(AVCodecContext *avctx, AVFrame *frame, const AVExifMetadata *ifd, AVBufferRef *og)
+{
+    const AVExifEntry *orient = NULL;
+    AVFrameSideData *sd;
+    AVExifMetadata *cloned = NULL;
+    AVBufferRef *written = NULL;
+    int ret;
+
+    for (size_t i = 0; i < ifd->count; i++) {
+        const AVExifEntry *entry = &ifd->entries[i];
+        if (entry->id == ORIENTATION_TAG && entry->count > 0 && entry->type == AV_TIFF_SHORT) {
+            orient = entry;
+            break;
+        }
+    }
+
+    if (orient && orient->value.uint[0] > 1) {
+        av_log(avctx, AV_LOG_DEBUG, "found nontrivial EXIF orientation: %" PRIu64 "\n", orient->value.uint[0]);
+        ret = attach_displaymatrix(avctx, frame, orient->value.uint[0]);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_WARNING, "unable to attach displaymatrix from EXIF\n");
+        } else {
+            const AVExifEntry *cloned_orient;
+            cloned = av_exif_clone_ifd(ifd);
+            if (!cloned) {
+                ret = AVERROR(ENOMEM);
+                goto end;
+            }
+            // will have the same offset in the clone as in the original
+            cloned_orient = &cloned->entries[orient - ifd->entries];
+            cloned_orient->value.uint[0] = 1;
+        }
+    }
+
+    ret = av_exif_ifd_to_dict(avctx, cloned ? cloned : ifd, &frame->metadata);
+    if (ret < 0)
+        goto end;
+
+    if (cloned || !og) {
+        ret = av_exif_write(avctx, cloned ? cloned : ifd, &written, AV_EXIF_TIFF_HEADER);
+        if (ret < 0)
+            goto end;
+    }
+
+    sd = av_frame_new_side_data_from_buf(frame, AV_FRAME_DATA_EXIF, written ? written : og);
+    if (!sd) {
+        if (written)
+            av_buffer_unref(&written);
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    ret = 0;
+
+end:
+    if (og && written && ret >= 0)
+        av_buffer_unref(&og); // as though we called new_side_data on og;
+    av_exif_free(cloned);
+    av_free(cloned);
+    return ret;
+}
+
+int ff_decode_exif_attach_ifd(AVCodecContext *avctx, AVFrame *frame, const AVExifMetadata *ifd)
+{
+    return exif_attach_ifd(avctx, frame, ifd, NULL);
+}
+
+int ff_decode_exif_attach_buffer(AVCodecContext *avctx, AVFrame *frame, AVBufferRef *data,
+                                 enum AVExifHeaderMode header_mode)
+{
+    int ret;
+    AVExifMetadata ifd = { 0 };
+
+    ret = av_exif_parse_buffer(avctx, data->data, data->size, &ifd, header_mode);
+    if (ret < 0)
+        goto end;
+
+    ret = exif_attach_ifd(avctx, frame, &ifd, data);
+
+end:
+    av_exif_free(&ifd);
+    return ret;
 }

@@ -2411,7 +2411,7 @@ again:
         }
     }
 
-    ret = ff_exif_attach_ifd(avctx, p, &s->exif_meta);
+    ret = ff_decode_exif_attach_ifd(avctx, p, &s->exif_meta);
     if (ret < 0)
         av_log(avctx, AV_LOG_ERROR, "error attaching EXIF ifd: %s\n", av_err2str(ret));
 
