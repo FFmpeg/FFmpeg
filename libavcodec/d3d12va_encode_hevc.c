@@ -705,6 +705,7 @@ static int d3d12va_encode_hevc_close(AVCodecContext *avctx)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption d3d12va_encode_hevc_options[] = {
     HW_BASE_ENCODE_COMMON_OPTIONS,
+    D3D12VA_ENCODE_COMMON_OPTIONS,
     D3D12VA_ENCODE_RC_OPTIONS,
 
     { "qp", "Constant QP (for P-frames; scaled by qfactor/qoffset for I/B)",

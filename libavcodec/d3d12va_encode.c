@@ -992,6 +992,11 @@ rc_mode_found:
                 ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_QP_RANGE;
             }
 
+            if (ctx->max_frame_size > 0) {
+                cbr_ctl->MaxFrameBitSize = ctx->max_frame_size * 8;
+                ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_MAX_FRAME_SIZE;
+            }
+
             ctx->rc.ConfigParams.pConfiguration_CBR = cbr_ctl;
             break;
         }
@@ -1015,6 +1020,11 @@ rc_mode_found:
                 ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_QP_RANGE;
             }
 
+            if (ctx->max_frame_size > 0) {
+                vbr_ctl->MaxFrameBitSize = ctx->max_frame_size * 8;
+                ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_MAX_FRAME_SIZE;
+            }
+
             ctx->rc.ConfigParams.pConfiguration_VBR = vbr_ctl;
             break;
         }
@@ -1034,6 +1044,11 @@ rc_mode_found:
                 qvbr_ctl->MinQP = avctx->qmin;
                 qvbr_ctl->MaxQP = avctx->qmax;
                 ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_QP_RANGE;
+            }
+
+            if (ctx->max_frame_size > 0) {
+                qvbr_ctl->MaxFrameBitSize = ctx->max_frame_size * 8;
+                ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_MAX_FRAME_SIZE;
             }
 
             ctx->rc.ConfigParams.pConfiguration_QVBR = qvbr_ctl;

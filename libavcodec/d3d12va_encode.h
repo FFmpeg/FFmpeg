@@ -150,6 +150,11 @@ typedef struct D3D12VAEncodeContext {
     const struct D3D12VAEncodeType *codec;
 
     /**
+     * Max frame size
+     */
+    int max_frame_size;
+
+    /**
      * Explicitly set RC mode (otherwise attempt to pick from
      * available modes).
      */
@@ -316,6 +321,12 @@ int ff_d3d12va_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
 
 int ff_d3d12va_encode_init(AVCodecContext *avctx);
 int ff_d3d12va_encode_close(AVCodecContext *avctx);
+
+#define D3D12VA_ENCODE_COMMON_OPTIONS \
+    { "max_frame_size", \
+      "Maximum frame size (in bytes)",\
+      OFFSET(common.max_frame_size), AV_OPT_TYPE_INT, \
+      { .i64 = 0 }, 0, INT_MAX / 8, FLAGS }
 
 #define D3D12VA_ENCODE_RC_MODE(name, desc) \
     { #name, desc, 0, AV_OPT_TYPE_CONST, { .i64 = RC_MODE_ ## name }, \
