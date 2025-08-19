@@ -940,6 +940,8 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         }
         break;
     }
+    if (avctx->coded_height / 2 / TEXTURE_BLOCK_H < 1)
+        return AVERROR_INVALIDDATA;
 
     texdsp_ctx.slice_count  = av_clip(avctx->thread_count, 1,
                                       avctx->coded_height / TEXTURE_BLOCK_H);
