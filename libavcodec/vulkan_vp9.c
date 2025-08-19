@@ -16,7 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "vp9shared.h"
+#include "vp9dec.h"
 
 #include "vulkan_decode.h"
 
@@ -109,7 +109,9 @@ static int vk_vp9_start_frame(AVCodecContext          *avctx,
 {
     int err;
     int ref_count = 0;
-    const VP9SharedContext *s = avctx->priv_data;
+    const VP9Context *priv = avctx->priv_data;
+    const CodedBitstreamVP9Context *vp9 = priv->cbc->priv_data;
+    const VP9SharedContext *s = &priv->s;
     uint32_t frame_id_alloc_mask = 0;
 
     const VP9Frame *pic = &s->frames[CUR_FRAME];
@@ -182,15 +184,14 @@ static int vk_vp9_start_frame(AVCodecContext          *avctx,
         .update_mode_delta = 0x0,
     };
 
-    for (int i = 0; i < 2; i++)
-        ap->loop_filter.update_mode_delta |= pic->frame_header->update_mode_delta[i];
-
     for (int i = 0; i < STD_VIDEO_VP9_MAX_REF_FRAMES; i++) {
-        ap->loop_filter.loop_filter_ref_deltas[i] = pic->frame_header->loop_filter_ref_deltas[i];
+        ap->loop_filter.loop_filter_ref_deltas[i] = vp9->loop_filter_ref_deltas[i];
         ap->loop_filter.update_ref_delta |= pic->frame_header->update_ref_delta[i];
     }
-    for (int i = 0; i < STD_VIDEO_VP9_LOOP_FILTER_ADJUSTMENTS; i++)
-        ap->loop_filter.loop_filter_mode_deltas[i] = pic->frame_header->loop_filter_mode_deltas[i];
+    for (int i = 0; i < STD_VIDEO_VP9_LOOP_FILTER_ADJUSTMENTS; i++) {
+        ap->loop_filter.loop_filter_mode_deltas[i] = vp9->loop_filter_mode_deltas[i];
+        ap->loop_filter.update_mode_delta |= pic->frame_header->update_mode_delta[i];
+    }
 
     ap->segmentation = (StdVideoVP9Segmentation) {
         .flags = (StdVideoVP9SegmentationFlags) {
@@ -202,16 +203,16 @@ static int vk_vp9_start_frame(AVCodecContext          *avctx,
     };
 
     for (int i = 0; i < STD_VIDEO_VP9_MAX_SEGMENTATION_TREE_PROBS; i++)
-        ap->segmentation.segmentation_tree_probs[i] = pic->frame_header->segmentation_tree_probs[i];
+        ap->segmentation.segmentation_tree_probs[i] = vp9->segmentation_tree_probs[i];
     for (int i = 0; i < STD_VIDEO_VP9_MAX_SEGMENTATION_PRED_PROB; i++)
-        ap->segmentation.segmentation_pred_prob[i] = pic->frame_header->segmentation_pred_prob[i];
+        ap->segmentation.segmentation_pred_prob[i] = vp9->segmentation_pred_prob[i];
     for (int i = 0; i < STD_VIDEO_VP9_MAX_SEGMENTS; i++) {
         ap->segmentation.FeatureEnabled[i] = 0x0;
         for (int j = 0; j < STD_VIDEO_VP9_SEG_LVL_MAX; j++) {
-            ap->segmentation.FeatureEnabled[i] |= pic->frame_header->feature_enabled[i][j] << j;
-            ap->segmentation.FeatureData[i][j] = pic->frame_header->feature_sign[i][j] ?
-                                                 -pic->frame_header->feature_value[i][j] :
-                                                 +pic->frame_header->feature_value[i][j];
+            ap->segmentation.FeatureEnabled[i] |= vp9->feature_enabled[i][j] << j;
+            ap->segmentation.FeatureData[i][j] = vp9->feature_sign[i][j] ?
+                                                 -vp9->feature_value[i][j] :
+                                                 +vp9->feature_value[i][j];
         }
     }
 
