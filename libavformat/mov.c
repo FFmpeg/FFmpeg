@@ -51,6 +51,7 @@
 #include "libavutil/timecode.h"
 #include "libavutil/uuid.h"
 #include "libavcodec/ac3tab.h"
+#include "libavcodec/exif.h"
 #include "libavcodec/flac.h"
 #include "libavcodec/hevc/hevc.h"
 #include "libavcodec/mpegaudiodecheader.h"
@@ -9085,12 +9086,12 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
     return 0;
 }
 
-static int mov_read_iref_thmb(MOVContext *c, AVIOContext *pb, int version)
+static int mov_read_iref_cdsc(MOVContext *c, AVIOContext *pb, uint32_t type, int version)
 {
     HEIFItem *from_item = NULL;
     int entries;
     int from_item_id = version ? avio_rb32(pb) : avio_rb16(pb);
-    const HEIFItemRef ref = { MKTAG('t','h','m','b'), from_item_id };
+    const HEIFItemRef ref = { type, from_item_id };
 
     from_item = get_heif_item(c, from_item_id);
     if (!from_item) {
@@ -9103,7 +9104,8 @@ static int mov_read_iref_thmb(MOVContext *c, AVIOContext *pb, int version)
     for (int i = 0; i < entries; i++) {
         HEIFItem *item = get_heif_item(c, version ? avio_rb32(pb) : avio_rb16(pb));
         if (!item) {
-            av_log(c->fc, AV_LOG_WARNING, "Missing stream referenced by thmb item\n");
+            av_log(c->fc, AV_LOG_WARNING, "Missing stream referenced by %s item\n",
+                   av_fourcc2str(type));
             continue;
         }
 
@@ -9112,8 +9114,8 @@ static int mov_read_iref_thmb(MOVContext *c, AVIOContext *pb, int version)
             return AVERROR(ENOMEM);
     }
 
-    av_log(c->fc, AV_LOG_TRACE, "thmb: from_item_id %d, entries %d\n",
-           from_item_id, entries);
+    av_log(c->fc, AV_LOG_TRACE, "%s: from_item_id %d, entries %d\n",
+           av_fourcc2str(type), from_item_id, entries);
 
     return 0;
 }
@@ -9142,8 +9144,9 @@ static int mov_read_iref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         case MKTAG('d','i','m','g'):
             mov_read_iref_dimg(c, pb, version);
             break;
+        case MKTAG('c','d','s','c'):
         case MKTAG('t','h','m','b'):
-            mov_read_iref_thmb(c, pb, version);
+            mov_read_iref_cdsc(c, pb, type, version);
             break;
         default:
             av_log(c->fc, AV_LOG_DEBUG, "Unknown iref type %s size %"PRIu32"\n",
@@ -10308,6 +10311,86 @@ fail:
     return ret;
 }
 
+static int mov_parse_exif_item(AVFormatContext *s,
+                               AVPacketSideData **coded_side_data, int *nb_coded_side_data,
+                               const HEIFItem *ref)
+{
+    MOVContext *c = s->priv_data;
+    AVPacketSideData *sd;
+    AVExifMetadata ifd = { 0 };
+    AVExifEntry *entry = NULL;
+    AVBufferRef *buf;
+    int64_t offset = 0, pos = avio_tell(s->pb);
+    unsigned orientation_id = av_exif_get_tag_id("Orientation");
+    int err;
+
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
+        av_log(c->fc, AV_LOG_WARNING, "Exif metadata with non seekable input\n");
+        return AVERROR_PATCHWELCOME;
+    }
+    if (ref->is_idat_relative) {
+        if (!c->idat_offset) {
+            av_log(c->fc, AV_LOG_ERROR, "missing idat box required by the Exif metadata\n");
+            return AVERROR_INVALIDDATA;
+        }
+        offset = c->idat_offset;
+    }
+
+    buf = av_buffer_alloc(ref->extent_length);
+    if (!buf)
+        return AVERROR(ENOMEM);
+
+    avio_seek(s->pb, ref->extent_offset + offset, SEEK_SET);
+    err = avio_read(s->pb, buf->data, ref->extent_length);
+    if (err != ref->extent_length) {
+        if (err > 0)
+            err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
+    // HEIF spec states that Exif metadata is informative. The irot item property is
+    // the normative source of rotation information. So we remove any Orientation tag
+    // present in the Exif buffer.
+    err = av_exif_parse_buffer(s, buf->data, ref->extent_length, &ifd, AV_EXIF_T_OFF);
+    if (err < 0) {
+        av_log(s, AV_LOG_ERROR, "Unable to parse Exif metadata\n");
+        goto fail;
+    }
+
+    err = av_exif_remove_entry(s, &ifd, orientation_id, 0);
+    if (err < 0)
+        goto fail;
+    else if (!err)
+        goto finish;
+
+    av_buffer_unref(&buf);
+    err = av_exif_write(s, &ifd, &buf, AV_EXIF_T_OFF);
+    if (err < 0)
+        goto fail;
+
+finish:
+    offset = AV_RB32(buf->data) + 4;
+    if (offset >= buf->size) {
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+    sd = av_packet_side_data_new(coded_side_data, nb_coded_side_data,
+                                 AV_PKT_DATA_EXIF, buf->size - offset, 0);
+    if (!sd) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
+    memcpy(sd->data, buf->data + offset, buf->size - offset);
+
+    err = 0;
+fail:
+    av_buffer_unref(&buf);
+    av_exif_free(&ifd);
+    avio_seek(s->pb, pos, SEEK_SET);
+
+    return err;
+}
+
 static int mov_parse_tiles(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
@@ -10393,6 +10476,22 @@ static int mov_parse_tiles(AVFormatContext *s)
         if (err < 0)
             return err;
 
+        for (int j = 0; j < grid->item->nb_iref_list; j++) {
+            HEIFItem *ref = get_heif_item(mov, grid->item->iref_list[j].item_id);
+
+            av_assert0(ref);
+            switch(ref->type) {
+            case MKTAG('E','x','i','f'):
+                err = mov_parse_exif_item(s, &tile_grid->coded_side_data,
+                                             &tile_grid->nb_coded_side_data, ref);
+                if (err < 0 && (s->error_recognition & AV_EF_EXPLODE))
+                    return err;
+                break;
+            default:
+                break;
+            }
+        }
+
         /* rotation */
         if (grid->item->rotation || grid->item->hflip || grid->item->vflip) {
             err = set_display_matrix_from_item(&tile_grid->coded_side_data,
@@ -10458,6 +10557,22 @@ static int mov_parse_heif_items(AVFormatContext *s)
 
         if (item->item_id == mov->primary_item_id)
             st->disposition |= AV_DISPOSITION_DEFAULT;
+
+        for (int j = 0; j < item->nb_iref_list; j++) {
+            HEIFItem *ref = get_heif_item(mov, item->iref_list[j].item_id);
+
+            av_assert0(ref);
+            switch(ref->type) {
+            case MKTAG('E','x','i','f'):
+                err = mov_parse_exif_item(s, &st->codecpar->coded_side_data,
+                                             &st->codecpar->nb_coded_side_data, ref);
+                if (err < 0 && (s->error_recognition & AV_EF_EXPLODE))
+                    return err;
+                break;
+            default:
+                break;
+            }
+        }
 
         if (item->rotation || item->hflip || item->vflip) {
             err = set_display_matrix_from_item(&st->codecpar->coded_side_data,
