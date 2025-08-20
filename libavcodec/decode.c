@@ -2290,24 +2290,22 @@ static int exif_attach_ifd(AVCodecContext *avctx, AVFrame *frame, const AVExifMe
         if (ret < 0) {
             av_log(avctx, AV_LOG_WARNING, "unable to attach displaymatrix from EXIF\n");
         } else {
-            const AVExifEntry *cloned_orient;
             cloned = av_exif_clone_ifd(ifd);
             if (!cloned) {
                 ret = AVERROR(ENOMEM);
                 goto end;
             }
-            // will have the same offset in the clone as in the original
-            cloned_orient = &cloned->entries[orient - ifd->entries];
-            cloned_orient->value.uint[0] = 1;
+            av_exif_remove_entry(avctx, cloned, orient->id, 0);
+            ifd = cloned;
         }
     }
 
-    ret = av_exif_ifd_to_dict(avctx, cloned ? cloned : ifd, &frame->metadata);
+    ret = av_exif_ifd_to_dict(avctx, ifd, &frame->metadata);
     if (ret < 0)
         goto end;
 
     if (cloned || !og) {
-        ret = av_exif_write(avctx, cloned ? cloned : ifd, &written, AV_EXIF_TIFF_HEADER);
+        ret = av_exif_write(avctx, ifd, &written, AV_EXIF_TIFF_HEADER);
         if (ret < 0)
             goto end;
     }
