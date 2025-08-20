@@ -2096,7 +2096,7 @@ static void hls_prediction_unit(HEVCLocalContext *lc,
                                 int log2_cb_size, int partIdx, int idx)
 {
 #define POS(c_idx, x, y)                                                          \
-    &s->cur_frame->f->data[c_idx] ?                                               \
+    s->cur_frame->f->data[c_idx] ?                                                \
     &s->cur_frame->f->data[c_idx][((y) >> sps->vshift[c_idx]) * linesize[c_idx] + \
                            (((x) >> sps->hshift[c_idx]) << sps->pixel_shift)] : NULL
     const HEVCContext *const s = lc->parent;
