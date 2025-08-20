@@ -188,14 +188,14 @@ static int mov_read_mac_string(MOVContext *c, AVIOContext *pb, int len,
 }
 
 /**
- * Get the current item in the parsing process.
+ * Get the requested item.
  */
-static HEIFItem *heif_cur_item(MOVContext *c)
+static HEIFItem *get_heif_item(MOVContext *c, unsigned id)
 {
     HEIFItem *item = NULL;
 
     for (int i = 0; i < c->nb_heif_item; i++) {
-        if (!c->heif_item[i] || c->heif_item[i]->item_id != c->cur_item_id)
+        if (!c->heif_item[i] || c->heif_item[i]->item_id != id)
             continue;
 
         item = c->heif_item[i];
@@ -220,7 +220,7 @@ static AVStream *get_curr_st(MOVContext *c)
     if (c->cur_item_id == -1)
         return c->fc->streams[c->fc->nb_streams-1];
 
-    item = heif_cur_item(c);
+    item = get_heif_item(c, c->cur_item_id);
     if (item)
         st = item->st;
 
@@ -1245,7 +1245,7 @@ static int mov_read_clap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     AVRational pc_x, pc_y;
     uint64_t top, bottom, left, right;
 
-    item = heif_cur_item(c);
+    item = get_heif_item(c, c->cur_item_id);
     st = get_curr_st(c);
     if (!st)
         return 0;
@@ -2078,7 +2078,7 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     st = get_curr_st(c);
     if (!st) {
-        item = heif_cur_item(c);
+        item = get_heif_item(c, c->cur_item_id);
         if (!item)
             return 0;
     }
@@ -9087,30 +9087,33 @@ static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
 
 static int mov_read_iref_thmb(MOVContext *c, AVIOContext *pb, int version)
 {
-    int *thmb_item_id;
+    HEIFItem *from_item = NULL;
     int entries;
-    int to_item_id, from_item_id = version ? avio_rb32(pb) : avio_rb16(pb);
+    int from_item_id = version ? avio_rb32(pb) : avio_rb16(pb);
+    const HEIFItemRef ref = { MKTAG('t','h','m','b'), from_item_id };
+
+    from_item = get_heif_item(c, from_item_id);
+    if (!from_item) {
+        av_log(c->fc, AV_LOG_ERROR, "Missing stream referenced by thmb item\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     entries = avio_rb16(pb);
-    if (entries > 1) {
-        avpriv_request_sample(c->fc, "thmb in iref referencing several items");
-        return AVERROR_PATCHWELCOME;
-    }
     /* 'to' item ids */
-    to_item_id = version ? avio_rb32(pb) : avio_rb16(pb);
+    for (int i = 0; i < entries; i++) {
+        HEIFItem *item = get_heif_item(c, version ? avio_rb32(pb) : avio_rb16(pb));
+        if (!item) {
+            av_log(c->fc, AV_LOG_WARNING, "Missing stream referenced by thmb item\n");
+            continue;
+        }
 
-    if (to_item_id != c->primary_item_id)
-        return 0;
+        if (!av_dynarray2_add((void **)&item->iref_list, &item->nb_iref_list,
+                              sizeof(*item->iref_list), (const uint8_t *)&ref))
+            return AVERROR(ENOMEM);
+    }
 
-    /* Put thumnbail IDs into an array */
-    thmb_item_id = av_dynarray2_add((void **)&c->thmb_item_id, &c->nb_thmb_item,
-                                    sizeof(*c->thmb_item_id),
-                                    (const void *)&from_item_id);
-    if (!thmb_item_id)
-        return AVERROR(ENOMEM);
-
-    av_log(c->fc, AV_LOG_TRACE, "thmb: from_item_id %d, entries %d, nb_thmb: %d\n",
-           from_item_id, entries, c->nb_thmb_item);
+    av_log(c->fc, AV_LOG_TRACE, "thmb: from_item_id %d, entries %d\n",
+           from_item_id, entries);
 
     return 0;
 }
@@ -9166,7 +9169,7 @@ static int mov_read_ispe(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_log(c->fc, AV_LOG_TRACE, "ispe: item_id %d, width %u, height %u\n",
            c->cur_item_id, width, height);
 
-    item = heif_cur_item(c);
+    item = get_heif_item(c, c->cur_item_id);
     if (item) {
         item->width  = width;
         item->height = height;
@@ -9185,7 +9188,7 @@ static int mov_read_irot(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_log(c->fc, AV_LOG_TRACE, "irot: item_id %d, angle %u\n",
            c->cur_item_id, angle);
 
-    item = heif_cur_item(c);
+    item = get_heif_item(c, c->cur_item_id);
     if (item) {
         // angle * 90 specifies the angle (in anti-clockwise direction)
         // in units of degrees.
@@ -9205,7 +9208,7 @@ static int mov_read_imir(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_log(c->fc, AV_LOG_TRACE, "imir: item_id %d, axis %u\n",
            c->cur_item_id, axis);
 
-    item = heif_cur_item(c);
+    item = get_heif_item(c, c->cur_item_id);
     if (item) {
         item->hflip =  axis;
         item->vflip = !axis;
@@ -9970,6 +9973,7 @@ static int mov_read_close(AVFormatContext *s)
         if (!mov->heif_item[i])
             continue;
         av_freep(&mov->heif_item[i]->name);
+        av_freep(&mov->heif_item[i]->iref_list);
         av_freep(&mov->heif_item[i]->icc_profile);
         av_freep(&mov->heif_item[i]);
     }
@@ -9980,7 +9984,6 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&mov->heif_grid[i].tile_item_list);
     }
     av_freep(&mov->heif_grid);
-    av_freep(&mov->thmb_item_id);
 
     return 0;
 }
@@ -10429,13 +10432,6 @@ static int mov_parse_heif_items(AVFormatContext *s)
         if (!item)
             continue;
         if (!item->st) {
-            for (int j = 0; j < mov->nb_thmb_item; j++) {
-                if (item->item_id == mov->thmb_item_id[j]) {
-                    av_log(s, AV_LOG_ERROR, "HEIF thumbnail ID %d doesn't reference a stream\n",
-                           item->item_id);
-                    return AVERROR_INVALIDDATA;
-                }
-            }
             continue;
         }
         if (item->is_idat_relative) {
@@ -10587,7 +10583,6 @@ static int mov_read_header(AVFormatContext *s)
 
     mov->fc = s;
     mov->trak_index = -1;
-    mov->thmb_item_id = NULL;
     mov->primary_item_id = -1;
     mov->cur_item_id = -1;
     /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
