@@ -34,6 +34,13 @@
 #include "libavutil/frame.h"
 
 #include "exif.h"
+#include "version_major.h"
+
+#if FF_API_OLD_EXIF
+/* Used by the AVI demuxer */
+int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
+                           int le, int depth, AVDictionary **metadata);
+#endif /* FF_API_OLD_EXIF */
 
 /**
  * Attach the data buffer to the frame. This is mostly a wrapper for

@@ -223,10 +223,4 @@ int av_exif_matrix_to_orientation(const int32_t *matrix);
  */
 int av_exif_orientation_to_matrix(int32_t *matrix, int orientation);
 
-#if FF_API_OLD_EXIF
-/* Used by the AVI demuxer */
-int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
-                           int le, int depth, AVDictionary **metadata);
-#endif /* FF_API_OLD_EXIF */
-
 #endif /* AVCODEC_EXIF_H */

@@ -13,8 +13,6 @@ API changes, most recent first:
      av_exif_ifd_to_dict, av_exif_clone_ifd,
      av_exif_matrix_to_orientation,
      av_exif_orientation_to_matrix,
-  Deprecate:
-   - avpriv_exif_decode_ifd (deprecated behind FF_API_OLD_EXIF)
 
 2025-08-19 - bb90b262d6d - lavu 60.10.100 - frame.h
   Add AV_FRAME_DATA_EXIF.
