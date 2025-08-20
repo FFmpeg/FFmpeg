@@ -286,8 +286,15 @@ typedef struct MOVStreamContext {
     int iamf_stream_offset;
 } MOVStreamContext;
 
+typedef struct HEIFItemRef {
+    uint32_t type;
+    int item_id;
+} HEIFItemRef;
+
 typedef struct HEIFItem {
     AVStream *st;
+    HEIFItemRef *iref_list;
+    int nb_iref_list;
     char *name;
     int item_id;
     int64_t extent_length;
@@ -376,8 +383,6 @@ typedef struct MOVContext {
     int nb_heif_item;
     HEIFGrid *heif_grid;
     int nb_heif_grid;
-    int* thmb_item_id;
-    int nb_thmb_item;
     int64_t idat_offset;
     int interleaved_read;
 } MOVContext;
