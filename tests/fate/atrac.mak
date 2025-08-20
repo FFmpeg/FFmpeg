@@ -11,11 +11,11 @@ FATE_ATRAC1-$(call PCM, AEA, ATRAC1, ARESAMPLE_FILTER) += $(FATE_ATRAC1)
 
 FATE_ATRAC3 += fate-atrac3-1
 fate-atrac3-1: CMD = pcm -i $(TARGET_SAMPLES)/atrac3/mc_sich_at3_066_small.wav
-fate-atrac3-1: REF = $(SAMPLES)/atrac3/mc_sich_at3_066_small.pcm
+fate-atrac3-1: REF = $(SAMPLES)/atrac3/mc_sich_at3_066_small_with_band_fix.pcm
 
 FATE_ATRAC3 += fate-atrac3-2
 fate-atrac3-2: CMD = pcm -i $(TARGET_SAMPLES)/atrac3/mc_sich_at3_105_small.wav
-fate-atrac3-2: REF = $(SAMPLES)/atrac3/mc_sich_at3_105_small.pcm
+fate-atrac3-2: REF = $(SAMPLES)/atrac3/mc_sich_at3_105_small_with_band_fix.pcm
 
 FATE_ATRAC3 += fate-atrac3-3
 fate-atrac3-3: CMD = pcm -i $(TARGET_SAMPLES)/atrac3/mc_sich_at3_132_small.wav

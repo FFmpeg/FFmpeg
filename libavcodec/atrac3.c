@@ -616,7 +616,7 @@ static int decode_channel_sound_unit(ATRAC3Context *q, GetBitContext *gb,
 
     /* calculate number of used MLT/QMF bands according to the amount of coded
        spectral lines */
-    num_bands = (subband_tab[num_subbands] - 1) >> 8;
+    num_bands = (subband_tab[num_subbands + 1] - 1) >> 8;
     if (last_tonal >= 0)
         num_bands = FFMAX((last_tonal + 256) >> 8, num_bands);
 
