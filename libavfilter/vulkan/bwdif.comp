@@ -47,7 +47,7 @@ vec4 process_line(vec4 prev2[5], vec4 prev1[2], vec4 cur[4], vec4 next1[2], vec4
    vec4 temp_diff[3];
    temp_diff[0] = abs(prev2[2] - next2[2]);
    temp_diff[1] = (abs(prev1[0] - fc) + abs(prev1[1] - fe)) / 2;
-   temp_diff[1] = (abs(next1[0] - fc) + abs(next1[1] - fe)) / 2;
+   temp_diff[2] = (abs(next1[0] - fc) + abs(next1[1] - fe)) / 2;
    vec4 diff = max(temp_diff[0] / 2, max(temp_diff[1], temp_diff[2]));
    bvec4 diff_mask = equal(diff, vec4(0));
 
