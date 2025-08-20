@@ -310,6 +310,7 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type)
     case AV_PKT_DATA_LCEVC:                      return "LCEVC NAL data";
     case AV_PKT_DATA_3D_REFERENCE_DISPLAYS:      return "3D Reference Displays Info";
     case AV_PKT_DATA_RTCP_SR:                    return "RTCP Sender Report";
+    case AV_PKT_DATA_EXIF:                       return "EXIF metadata";
     }
     return NULL;
 }

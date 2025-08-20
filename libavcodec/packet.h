@@ -363,6 +363,12 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_RTCP_SR,
 
     /**
+     * Extensible image file format metadata. The payload is a buffer containing
+     * EXIF metadata, starting with either 49 49 2a 00, or 4d 4d 00 2a.
+     */
+     AV_PKT_DATA_EXIF,
+
+    /**
      * The number of side data types.
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.
