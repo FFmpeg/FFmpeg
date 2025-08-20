@@ -31,7 +31,11 @@ libavcodec/ratecontrol.* @michaelni
 libavcodec/.*siren.* @lynne
 libavcodec/smpte_436m.* @programmerjake
 libavcodec/.*vc2.* @lynne
+libavcodec/vp8.* @rbultje
+libavcodec/vp9.* @rbultje
+libavcodec/vpx.* @rbultje
 libavcodec/.*vvc.* @frankplow @NuoMi @jianhuaw
+libavcodec/wmavoice.* @rbultje
 
 # bitstream filters
 libavcodec/bsf/eia608_to_smpte436m.* @programmerjake
@@ -42,13 +46,20 @@ libavcodec/aarch64/.* @lynne @mstorsjo
 libavcodec/arm/.* @mstorsjo
 libavcodec/ppc/.* @sean_mcg
 libavcodec/x86/.* @lynne
+libavcodec/x86/vp8.* @rbultje
+libavcodec/x86/vp9.* @rbultje
+libavcodec/x86/vpx.* @rbultje
 
 # avfilter
 # =======
-libavfilter/aarch64/.* @mstorsjo
 libavfilter/af_whisper.* @vpalmisano
+libavfilter/colorspace.* @rbultje
+libavfilter/vf_colorspace.* @rbultje
 libavfilter/vf_yadif.* @michaelni
 libavfilter/vsrc_mandelbrot.* @michaelni
+
+libavfilter/aarch64/.* @mstorsjo
+libavfilter/x86/colorspace.* @rbultje
 
 # avformat
 # =======
@@ -69,6 +80,7 @@ libavformat/scd.* @zane
 # ======
 libavutil/.*crc.* @lynne @michaelni
 libavutil/.*d3d12va.* @jianhuaw
+libavutil/csp.* @rbultje
 libavutil/eval.* @michaelni
 libavutil/iamf.* @jamrial
 libavutil/integer.* @michaelni
