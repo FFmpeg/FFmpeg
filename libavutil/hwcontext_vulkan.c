@@ -2901,21 +2901,19 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
         supported_usage &= ~VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
 
     /* Image usage flags */
-    if (!hwctx->usage) {
-        hwctx->usage = supported_usage & (VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                                          VK_IMAGE_USAGE_STORAGE_BIT      |
-                                          VK_IMAGE_USAGE_SAMPLED_BIT);
+    hwctx->usage |= supported_usage & (VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                       VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                       VK_IMAGE_USAGE_STORAGE_BIT      |
+                                       VK_IMAGE_USAGE_SAMPLED_BIT);
 
-        if ((p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY) && !p->disable_host_transfer)
-            hwctx->usage |= supported_usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
+    if ((p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY) && !p->disable_host_transfer)
+        hwctx->usage |= supported_usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
 
-        /* Enables encoding of images, if supported by format and extensions */
-        if ((supported_usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) &&
-            (p->vkctx.extensions & (FF_VK_EXT_VIDEO_ENCODE_QUEUE |
-                                   FF_VK_EXT_VIDEO_MAINTENANCE_1)))
-            hwctx->usage |= VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
-    }
+    /* Enables encoding of images, if supported by format and extensions */
+    if ((supported_usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) &&
+        (p->vkctx.extensions & (FF_VK_EXT_VIDEO_ENCODE_QUEUE |
+                                FF_VK_EXT_VIDEO_MAINTENANCE_1)))
+        hwctx->usage |= VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
 
     /* Image creation flags.
      * Only fill them in automatically if the image is not going to be used as

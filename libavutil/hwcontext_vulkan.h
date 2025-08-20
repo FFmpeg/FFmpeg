@@ -218,7 +218,8 @@ typedef struct AVVulkanFramesContext {
 
     /**
      * Defines extra usage of output frames. If non-zero, all flags MUST be
-     * supported by the VkFormat. Otherwise, will use supported flags amongst:
+     * supported by the VkFormat. Regardless, frames will always have the
+     * following usage flags enabled, if supported by the format:
      * - VK_IMAGE_USAGE_SAMPLED_BIT
      * - VK_IMAGE_USAGE_STORAGE_BIT
      * - VK_IMAGE_USAGE_TRANSFER_SRC_BIT
