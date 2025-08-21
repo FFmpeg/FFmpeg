@@ -277,6 +277,7 @@ typedef struct SANMVideoContext {
     uint16_t *fbuf, *frm0, *frm1, *frm2;
     uint8_t *stored_frame;
     uint32_t fbuf_size, frm0_size, frm1_size, frm2_size;
+    uint32_t stor_size;
     uint32_t stored_frame_size;
 
     uint8_t *rle_buf;
@@ -471,9 +472,11 @@ static av_cold int init_buffers(SANMVideoContext *ctx)
     av_fast_padded_mallocz(&ctx->frm0, &ctx->frm0_size, ctx->buf_size);
     av_fast_padded_mallocz(&ctx->frm1, &ctx->frm1_size, ctx->buf_size);
     av_fast_padded_mallocz(&ctx->frm2, &ctx->frm2_size, ctx->buf_size);
-    if (!ctx->version)
+    if (!ctx->version) {
         av_fast_padded_mallocz(&ctx->stored_frame,
                               &ctx->stored_frame_size, ctx->buf_size);
+        ctx->stor_size = 0;
+    }
 
     if (!ctx->frm0 || !ctx->frm1 || !ctx->frm2 ||
         (!ctx->stored_frame && !ctx->version)) {
@@ -1660,7 +1663,8 @@ static int old_codec48(SANMVideoContext *ctx, int width, int height)
     return 0;
 }
 
-static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
+static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb,
+                             int xoff, int yoff)
 {
     uint16_t w, h, parm2;
     uint8_t codec, param;
@@ -1669,14 +1673,14 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
 
     codec = bytestream2_get_byteu(gb);
     param = bytestream2_get_byteu(gb);
-    left  = bytestream2_get_le16u(gb);
-    top   = bytestream2_get_le16u(gb);
+    left  = bytestream2_get_le16u(gb) + xoff;
+    top   = bytestream2_get_le16u(gb) + yoff;
     w     = bytestream2_get_le16u(gb);
     h     = bytestream2_get_le16u(gb);
     bytestream2_skip(gb, 2);
     parm2 = bytestream2_get_le16u(gb);
 
-    if (w < 1 || h < 1 || w > 800 || h > 600 || left > 800 || top > 600 || left + w <= 0 || top + h <= 0) {
+    if (w < 1 || h < 1 || w > 640 || h > 480 || left > 640 || top > 480 || left + w <= 0 || top + h <= 0) {
         av_log(ctx->avctx, AV_LOG_WARNING,
                "ignoring invalid fobj dimensions: c%d %d %d @ %d %d\n",
                codec, w, h, left, top);
@@ -1700,7 +1704,7 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
             if (w > xres || h > yres)
                 return AVERROR_INVALIDDATA;
             ctx->have_dimensions = 1;
-        } else if (codec == 37 || codec == 47 || codec == 48) {
+        } else if (fsc) {
             /* these codecs work on full frames, trust their dimensions */
             xres = w;
             yres = h;
@@ -1716,7 +1720,7 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
                 xres = w;
                 yres = h;
                 ctx->have_dimensions = 1;
-            } else if (((xres == 424) && (yres == 260)) ||  /* RA1 */
+            } else if (((xres == 424) && (yres == 260)) ||  /* RA2 */
                        ((xres == 320) && (yres == 200)) ||  /* ft/dig/... */
                        ((xres == 640) && (yres == 480))) {  /* ol/comi/mots... */
                 ctx->have_dimensions = 1;
@@ -1749,6 +1753,10 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
             h = ctx->height;
         }
     }
+
+    /* users of codecs>=37 are subversion 2, enforce that for STOR/FTCH */
+    if (fsc)
+        ctx->subversion = 2;
 
     /* clear the main buffer on the first fob */
     if (ctx->first_fob) {
@@ -1819,45 +1827,31 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb)
 
 static int process_ftch(SANMVideoContext *ctx, int size)
 {
-    uint8_t *sf = ctx->stored_frame;
-    int xoff, yoff, left, top, ret;
+    int xoff, yoff, ret;
     GetByteContext gb;
-    uint32_t sz;
 
     /* FTCH defines additional x/y offsets */
-    if (size != 12) {
-        if (bytestream2_get_bytes_left(&ctx->gb) < 6)
-            return AVERROR_INVALIDDATA;
+    if (size == 6) {
         bytestream2_skip(&ctx->gb, 2);
         xoff = bytestream2_get_le16u(&ctx->gb);
         yoff = bytestream2_get_le16u(&ctx->gb);
-    } else {
+    } else if (size == 12) {
         av_assert0(bytestream2_get_bytes_left(&ctx->gb) >= 12);
         bytestream2_skip(&ctx->gb, 4);
         xoff = bytestream2_get_be32u(&ctx->gb);
         yoff = bytestream2_get_be32u(&ctx->gb);
-    }
+    } else
+        return 1;
 
-    sz = *(uint32_t *)(sf + 0);
-    if ((sz > 0) && (sz <= ctx->stored_frame_size - 4)) {
-        /* add the FTCH offsets to the left/top values of the stored FOBJ */
-        left = av_le2ne16(*(int16_t *)(sf + 4 + 2));
-        top  = av_le2ne16(*(int16_t *)(sf + 4 + 4));
-        *(int16_t *)(sf + 4 + 2) = av_le2ne16(left + xoff);
-        *(int16_t *)(sf + 4 + 4) = av_le2ne16(top  + yoff);
-
+    if (ctx->stor_size > 0) {
         /* decode the stored FOBJ */
-        uint8_t *bitstream = av_malloc(sz + AV_INPUT_BUFFER_PADDING_SIZE);
+        uint8_t *bitstream = av_malloc(ctx->stor_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!bitstream)
             return AVERROR(ENOMEM);
-        memcpy(bitstream, sf + 4, sz);
-        bytestream2_init(&gb, bitstream, sz);
-        ret = process_frame_obj(ctx, &gb);
+        memcpy(bitstream, ctx->stored_frame, ctx->stor_size);
+        bytestream2_init(&gb, bitstream, ctx->stor_size);
+        ret = process_frame_obj(ctx, &gb, xoff, yoff);
         av_free(bitstream);
-
-        /* now restore the original left/top values again */
-        *(int16_t *)(sf + 4 + 2) = av_le2ne16(left);
-        *(int16_t *)(sf + 4 + 4) = av_le2ne16(top);
     } else {
         /* this happens a lot in RA1: The individual files are meant to
          * be played in sequence, with some referencing objects STORed
@@ -2350,8 +2344,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
             case MKBETAG('F', 'O', 'B', 'J'):
                 if (size < 16)
                     return AVERROR_INVALIDDATA;
-                if (ret = process_frame_obj(ctx, &ctx->gb))
+                if (ret = process_frame_obj(ctx, &ctx->gb, 0, 0)) {
                     return ret;
+                }
                 have_img = 1;
 
                 /* STOR: for ANIMv0/1 store the whole FOBJ datablock, as it
@@ -2362,12 +2357,12 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 if (to_store) {
                     to_store = 0;
                     if (ctx->subversion < 2) {
-                        if (size + 4 <= ctx->stored_frame_size) {
+                        if (size <= ctx->stored_frame_size) {
                             int pos2 = bytestream2_tell(&ctx->gb);
                             bytestream2_seek(&ctx->gb, pos, SEEK_SET);
-                            *(uint32_t *)(ctx->stored_frame) = size;
-                            bytestream2_get_bufferu(&ctx->gb, ctx->stored_frame + 4, size);
+                            bytestream2_get_bufferu(&ctx->gb, ctx->stored_frame, size);
                             bytestream2_seek(&ctx->gb, pos2, SEEK_SET);
+                            ctx->stor_size = size;
                         } else {
                             av_log(avctx, AV_LOG_ERROR, "FOBJ too large for STOR\n");
                             ret = AVERROR(ENOMEM);
