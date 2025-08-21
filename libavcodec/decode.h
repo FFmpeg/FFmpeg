@@ -230,11 +230,10 @@ enum AVExifHeaderMode;
  * attaches that information as an AV_FRAME_DATA_DISPLAYMATRIX instead
  * of including it in the AV_FRAME_DATA_EXIF side data buffer.
  *
- * On a success, the caller loses ownership of the data buffer. Either it is
- * unrefed, or its ownership is transferred to the frame directly. On failure,
- * the data buffer is left owned by the caller.
+ * *buf is ALWAYS consumed by this function and NULL written in its place, even
+ * on failure.
  */
-int ff_decode_exif_attach_buffer(AVCodecContext *avctx, AVFrame *frame, AVBufferRef *data,
+int ff_decode_exif_attach_buffer(AVCodecContext *avctx, AVFrame *frame, AVBufferRef **buf,
                                  enum AVExifHeaderMode header_mode);
 
 struct AVExifMetadata;

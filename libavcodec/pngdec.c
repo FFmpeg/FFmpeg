@@ -1753,15 +1753,12 @@ exit_loop:
     if (s->exif_data) {
         // we swap because ff_decode_exif_attach_buffer adds to p->metadata
         FFSWAP(AVDictionary *, p->metadata, s->frame_metadata);
-        ret = ff_decode_exif_attach_buffer(avctx, p, s->exif_data, AV_EXIF_TIFF_HEADER);
+        ret = ff_decode_exif_attach_buffer(avctx, p, &s->exif_data, AV_EXIF_TIFF_HEADER);
         FFSWAP(AVDictionary *, p->metadata, s->frame_metadata);
         if (ret < 0) {
             av_log(avctx, AV_LOG_WARNING, "unable to attach EXIF buffer\n");
             return ret;
         }
-        // ff_decode_exif_attach_buffer takes ownership so
-        // we do not want to call av_buffer_unref here
-        s->exif_data = NULL;
     }
 
     if (s->color_type == PNG_COLOR_TYPE_PALETTE && avctx->codec_id == AV_CODEC_ID_APNG) {

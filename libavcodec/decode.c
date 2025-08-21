@@ -2268,12 +2268,10 @@ static int attach_displaymatrix(AVCodecContext *avctx, AVFrame *frame, int orien
     return ret;
 }
 
-static int exif_attach_ifd(AVCodecContext *avctx, AVFrame *frame, const AVExifMetadata *ifd, AVBufferRef *og)
+static int exif_attach_ifd(AVCodecContext *avctx, AVFrame *frame, const AVExifMetadata *ifd, AVBufferRef **pbuf)
 {
     const AVExifEntry *orient = NULL;
-    AVFrameSideData *sd;
     AVExifMetadata *cloned = NULL;
-    AVBufferRef *written = NULL;
     int ret;
 
     for (size_t i = 0; i < ifd->count; i++) {
@@ -2305,25 +2303,21 @@ static int exif_attach_ifd(AVCodecContext *avctx, AVFrame *frame, const AVExifMe
     if (ret < 0)
         goto end;
 
-    if (cloned || !og) {
-        ret = av_exif_write(avctx, ifd, &written, AV_EXIF_TIFF_HEADER);
+    if (cloned || !*pbuf) {
+        av_buffer_unref(pbuf);
+        ret = av_exif_write(avctx, ifd, pbuf, AV_EXIF_TIFF_HEADER);
         if (ret < 0)
             goto end;
     }
 
-    sd = av_frame_new_side_data_from_buf(frame, AV_FRAME_DATA_EXIF, written ? written : og);
-    if (!sd) {
-        if (written)
-            av_buffer_unref(&written);
-        ret = AVERROR(ENOMEM);
+    ret = ff_frame_new_side_data_from_buf(avctx, frame, AV_FRAME_DATA_EXIF, pbuf);
+    if (ret < 0)
         goto end;
-    }
 
     ret = 0;
 
 end:
-    if (og && written && ret >= 0)
-        av_buffer_unref(&og); // as though we called new_side_data on og;
+    av_buffer_unref(pbuf);
     av_exif_free(cloned);
     av_free(cloned);
     return ret;
@@ -2331,22 +2325,25 @@ end:
 
 int ff_decode_exif_attach_ifd(AVCodecContext *avctx, AVFrame *frame, const AVExifMetadata *ifd)
 {
-    return exif_attach_ifd(avctx, frame, ifd, NULL);
+    AVBufferRef *dummy = NULL;
+    return exif_attach_ifd(avctx, frame, ifd, &dummy);
 }
 
-int ff_decode_exif_attach_buffer(AVCodecContext *avctx, AVFrame *frame, AVBufferRef *data,
+int ff_decode_exif_attach_buffer(AVCodecContext *avctx, AVFrame *frame, AVBufferRef **pbuf,
                                  enum AVExifHeaderMode header_mode)
 {
     int ret;
+    AVBufferRef *data = *pbuf;
     AVExifMetadata ifd = { 0 };
 
     ret = av_exif_parse_buffer(avctx, data->data, data->size, &ifd, header_mode);
     if (ret < 0)
         goto end;
 
-    ret = exif_attach_ifd(avctx, frame, &ifd, data);
+    ret = exif_attach_ifd(avctx, frame, &ifd, pbuf);
 
 end:
+    av_buffer_unref(pbuf);
     av_exif_free(&ifd);
     return ret;
 }

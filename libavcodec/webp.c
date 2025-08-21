@@ -1479,12 +1479,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
             s->has_exif = 1;
             memcpy(exif_buf->data, gb.buffer, chunk_size);
 
-            /* if this succeeds then exif_buf is either freed or transferred to the AVFrame */
-            ret = ff_decode_exif_attach_buffer(avctx, p, exif_buf, AV_EXIF_TIFF_HEADER);
-            if (ret < 0) {
+            ret = ff_decode_exif_attach_buffer(avctx, p, &exif_buf, AV_EXIF_TIFF_HEADER);
+            if (ret < 0)
                 av_log(avctx, AV_LOG_WARNING, "unable to attach EXIF buffer\n");
-                av_buffer_unref(&exif_buf);
-            }
 
 exif_end:
             bytestream2_skip(&gb, chunk_size);
