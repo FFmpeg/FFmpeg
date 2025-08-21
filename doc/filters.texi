@@ -16654,6 +16654,8 @@ No deinterlacing, weave fields together into a single frame. This is the default
 Naive bob deinterlacing, simply repeat each field line twice.
 @item yadif
 Yet another deinterlacing filter. See the @ref{yadif} filter for more details.
+@item bwdif
+Bob weaver deinterlacing filter. See the @ref{bwdif} filter for more details.
 @end table
 
 @item skip_spatial_check
