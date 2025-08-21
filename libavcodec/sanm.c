@@ -1888,7 +1888,7 @@ static int process_xpal(SANMVideoContext *ctx, int size)
             }
             *pal++ = 0xFFU << 24 | c[0] << 16 | c[1] << 8 | c[2];
         }
-    } else if (cmd == 2) {
+    } else if (cmd == 0 || cmd == 2) {
         if (size < PALETTE_DELTA * 2 + 4) {
             av_log(ctx->avctx, AV_LOG_ERROR,
                    "Incorrect palette change block size %"PRIu32".\n", size);
