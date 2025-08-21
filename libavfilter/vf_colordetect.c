@@ -236,7 +236,9 @@ av_cold void ff_color_detect_dsp_init(FFColorDetectDSPContext *dsp, int depth,
         dsp->detect_alpha = depth > 8 ? ff_detect_alpha16_limited_c : ff_detect_alpha_limited_c;
     }
 
-#if ARCH_X86
+#if ARCH_AARCH64
+    ff_color_detect_dsp_init_aarch64(dsp, depth, color_range);
+#elif ARCH_X86
     ff_color_detect_dsp_init_x86(dsp, depth, color_range);
 #endif
 }

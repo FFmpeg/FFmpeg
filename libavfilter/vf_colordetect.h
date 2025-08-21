@@ -50,6 +50,8 @@ typedef struct FFColorDetectDSPContext {
 void ff_color_detect_dsp_init(FFColorDetectDSPContext *dsp, int depth,
                               enum AVColorRange color_range);
 
+void ff_color_detect_dsp_init_aarch64(FFColorDetectDSPContext *dsp, int depth,
+                                      enum AVColorRange color_range);
 void ff_color_detect_dsp_init_x86(FFColorDetectDSPContext *dsp, int depth,
                                   enum AVColorRange color_range);
 
