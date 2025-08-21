@@ -22,9 +22,9 @@
 #include "libavfilter/vf_colordetect.h"
 #include "libavutil/mem_internal.h"
 
-#define WIDTH  256
+#define WIDTH  540
 #define HEIGHT 16
-#define STRIDE (WIDTH + 32)
+#define STRIDE FFALIGN(WIDTH, 32)
 
 static void check_range_detect(int depth)
 {
