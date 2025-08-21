@@ -206,10 +206,10 @@ static int hls_open(URLContext *h, const char *uri, int flags)
         goto fail;
     }
     av_log(h, AV_LOG_WARNING,
-           "Using the hls protocol is discouraged, please try using the "
-           "hls demuxer instead. The hls demuxer should be more complete "
-           "and work as well as the protocol implementation. (If not, "
-           "please report it.) To use the demuxer, simply use %s as url.\n",
+           "Using the hls protocol is deprecated and it will be remove in "
+           "a future release, please use the hls demuxer instead. "
+           "If encountering issues with it, please report them. "
+           "To use the demuxer, simply use %s as url.\n",
            s->playlisturl);
 
     if ((ret = parse_playlist(h, s->playlisturl)) < 0)
