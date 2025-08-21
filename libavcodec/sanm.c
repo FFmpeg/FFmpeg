@@ -1832,8 +1832,7 @@ static int process_ftch(SANMVideoContext *ctx, int size)
         xoff = bytestream2_get_le16u(&ctx->gb);
         yoff = bytestream2_get_le16u(&ctx->gb);
     } else {
-        if (bytestream2_get_bytes_left(&ctx->gb) < 12)
-            return AVERROR_INVALIDDATA;
+        av_assert0(bytestream2_get_bytes_left(&ctx->gb) >= 12);
         bytestream2_skip(&ctx->gb, 4);
         xoff = bytestream2_get_be32u(&ctx->gb);
         yoff = bytestream2_get_be32u(&ctx->gb);
