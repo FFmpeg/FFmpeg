@@ -1063,6 +1063,8 @@ static void print_pkt_side_data(AVTextFormatContext *tfc,
         print_int("crop_right",  AV_RL32(sd->data + 12));
     } else if (sd->type == AV_PKT_DATA_AFD && sd->size > 0) {
         print_int("active_format", *sd->data);
+    } else if (sd->type == AV_PKT_DATA_EXIF) {
+        print_int("size", sd->size);
     }
 }
 
