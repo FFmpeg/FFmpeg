@@ -1847,8 +1847,13 @@ static int process_ftch(SANMVideoContext *ctx, int size)
         *(int16_t *)(sf + 4 + 4) = av_le2ne16(top  + yoff);
 
         /* decode the stored FOBJ */
-        bytestream2_init(&gb, sf + 4, sz);
+        uint8_t *bitstream = av_malloc(sz + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!bitstream)
+            return AVERROR(ENOMEM);
+        memcpy(bitstream, sf + 4, sz);
+        bytestream2_init(&gb, bitstream, sz);
         ret = process_frame_obj(ctx, &gb);
+        av_free(bitstream);
 
         /* now restore the original left/top values again */
         *(int16_t *)(sf + 4 + 2) = av_le2ne16(left);
