@@ -229,19 +229,16 @@ static av_cold void uninit(AVFilterContext *ctx)
 av_cold void ff_color_detect_dsp_init(FFColorDetectDSPContext *dsp, int depth,
                                       enum AVColorRange color_range)
 {
+    dsp->detect_range = depth > 8 ? ff_detect_range16_c : ff_detect_range_c;
+    if (color_range == AVCOL_RANGE_JPEG) {
+        dsp->detect_alpha = depth > 8 ? ff_detect_alpha16_full_c : ff_detect_alpha_full_c;
+    } else {
+        dsp->detect_alpha = depth > 8 ? ff_detect_alpha16_limited_c : ff_detect_alpha_limited_c;
+    }
+
 #if ARCH_X86
     ff_color_detect_dsp_init_x86(dsp, depth, color_range);
 #endif
-
-    if (!dsp->detect_range)
-        dsp->detect_range = depth > 8 ? ff_detect_range16_c : ff_detect_range_c;
-    if (!dsp->detect_alpha) {
-        if (color_range == AVCOL_RANGE_JPEG) {
-            dsp->detect_alpha = depth > 8 ? ff_detect_alpha16_full_c : ff_detect_alpha_full_c;
-        } else {
-            dsp->detect_alpha = depth > 8 ? ff_detect_alpha16_limited_c : ff_detect_alpha_limited_c;
-        }
-    }
 }
 
 static const AVFilterPad colordetect_inputs[] = {
