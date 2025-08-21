@@ -12,30 +12,59 @@
 # =======
 libavcodec/.*aac.* @lynne
 libavcodec/.*ac3.* @lynne
-libavcodec/.*adpcm.* @zane
+libavcodec/.*adpcm.* @zane @pross
+libavcodec/anm.* @pross
+libavcodec/ansi.* @pross
 libavcodec/.*atrac9.* @lynne
+libavcodec/bink.* @pross
+libavcodec/bintext.* @pross
 libavcodec/.*bitpacked.* @lynne
 libavcodec/.*d3d12va.* @jianhuaw
 libavcodec/.*dirac.* @lynne
+libavcodec/dpx.* @pross
+libavcodec/dsd.* @pross
+libavcodec/eacmv.* @pross
+libavcodec/eaidct.* @pross
+libavcodec/eamad.* @pross
+libavcodec/eat.* @pross
 libavcodec/.*ffv1.* @lynne @michaelni
+libavcodec/g728.* @pross
+libavcodec/gem.* @pross
 libavcodec/golomb.* @michaelni
 libavcodec/.*h266.* @frankplow @NuoMi @jianhuaw
 libavcodec/h26x/.* @frankplow @NuoMi @jianhuaw
+libavcodec/iff.* @pross
 libavcodec/.*jpegxl.* @lynne @Traneptora
+libavcodec/jv.* @pross
 libavcodec/.*jxl.* @lynne @Traneptora
+libavcodec/lead.* @pross
+libavcodec/mmvideo.* @pross
+libavcodec/msp2.* @pross
+libavcodec/mvc.* @pross
 libavcodec/.*opus.* @lynne
+libavcodec/pictor.* @pross
 libavcodec/.*png.* @Traneptora
 libavcodec/.*prores.* @lynne
 libavcodec/rangecoder.* @michaelni
 libavcodec/ratecontrol.* @michaelni
+libavcodec/rv60.* @pross
+libavcodec/sgirle.* @pross
 libavcodec/.*siren.* @lynne
 libavcodec/smpte_436m.* @programmerjake
+libavcodec/svq1.* @pross
+libavcodec/svq3.* @pross
 libavcodec/.*vc2.* @lynne
-libavcodec/vp8.* @rbultje
+libavcodec/vp3.* @pross
+libavcodec/vp4.* @pross
+libavcodec/vp5.* @pross
+libavcodec/vp6.* @pross
+libavcodec/vp8.* @rbultje @pross
 libavcodec/vp9.* @rbultje
-libavcodec/vpx.* @rbultje
+libavcodec/vpx.* @rbultje @pross
+libavcodec/vqc.* @pross
 libavcodec/.*vvc.* @frankplow @NuoMi @jianhuaw
 libavcodec/wmavoice.* @rbultje
+libavcodec/wbmp.* @pross
 
 # bitstream filters
 libavcodec/bsf/eia608_to_smpte436m.* @programmerjake
@@ -65,16 +94,38 @@ libavfilter/x86/colorspace.* @rbultje
 # =======
 libavformat/alp.* @zane
 libavformat/amv.* @zane
+libavformat/anm.* @pross
 libavformat/apm.* @zane
 libavformat/argo_.* @zane
+libavformat/bink.* @pross
+libavformat/bintext.* @pross
+libavformat/caf.* @pross
+libavformat/cine.* @pross
+libavformat/dsf.* @pross
+libavformat/eacdata.* @pross
+libavformat/electronicarts.* @pross
+libavformat/filmstrip.* @pross
+libavformat/frm.* @pross
 libavformat/iamf.* @jamrial
+libavformat/ico.* @pross
+libavformat/iff.* @pross
 libavformat/.*jpegxl.* @Traneptora
+libavformat/jv.* @pross
 libavformat/.*jxl.* @Traneptora
 libavformat/kvag.* @zane
 libavformat/mccdec.* @programmerjake
 libavformat/mccenc.* @programmerjake
+libavformat/mlv.* @pross
+libavformat/mm.* @pross
+libavformat/msp.* @pross
+libavformat/mv.* @pross
 libavformat/pp_bnk.* @zane
+libavformat/rm.* @pross
+libavformat/sauce.* @pross
 libavformat/scd.* @zane
+libavformat/tty.* @pross
+libavformat/wsd.* @pross
+libavformat/wtv.* @pross
 
 # avutil
 # ======
