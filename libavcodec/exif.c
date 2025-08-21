@@ -322,12 +322,17 @@ static int exif_read_values(void *logctx, GetByteContext *gb, int le, AVExifEntr
             break;
         case AV_TIFF_UNDEFINED:
         case AV_TIFF_BYTE:
+            /* these three fields are aliased to entry->value.ptr via a union */
+            /* and entry->value.ptr will always be nonzero here */
+            av_assert0(entry->value.ubytes);
             bytestream2_get_buffer(gb, entry->value.ubytes, entry->count);
             break;
         case AV_TIFF_SBYTE:
+            av_assert0(entry->value.sbytes);
             bytestream2_get_buffer(gb, entry->value.sbytes, entry->count);
             break;
         case AV_TIFF_STRING:
+            av_assert0(entry->value.str);
             bytestream2_get_buffer(gb, entry->value.str, entry->count);
             break;
     }
@@ -471,6 +476,10 @@ static int exif_decode_tag(void *logctx, GetByteContext *gb, int le,
     av_log(logctx, AV_LOG_DEBUG, "TIFF Tag: id: 0x%04x, type: %d, count: %u, offset: %d, "
                                  "payload: %" PRIu32 "\n", entry->id, type, count, tell, payload);
 
+    /* AV_TIFF_IFD is the largest, numerically */
+    if (type > AV_TIFF_IFD)
+        return AVERROR_INVALIDDATA;
+
     is_ifd = type == AV_TIFF_IFD || ff_tis_ifd(entry->id) || entry->id == MAKERNOTE_TAG;
 
     if (is_ifd) {
@@ -539,6 +548,11 @@ static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
     entries = ff_tget_short(gb, le);
     if (bytestream2_get_bytes_left(gb) < entries * BASE_TAG_SIZE) {
         av_log(logctx, AV_LOG_ERROR, "not enough bytes remaining in EXIF buffer. entries: %" PRIu32 "\n", entries);
+        return AVERROR_INVALIDDATA;
+    }
+    if (entries > 4096) {
+        /* that is a lot of entries, probably an error */
+        av_log(logctx, AV_LOG_ERROR, "too many entries: %" PRIu32 "\n", entries);
         return AVERROR_INVALIDDATA;
     }
 
@@ -729,7 +743,12 @@ int av_exif_write(void *logctx, const AVExifMetadata *ifd, AVBufferRef **buffer,
 
     if (header_mode != AV_EXIF_ASSUME_BE && header_mode != AV_EXIF_ASSUME_LE) {
         /* these constants are be32 in both cases */
-        bytestream2_put_be32(&pb, le ? EXIF_II_LONG : EXIF_MM_LONG);
+        /* this is a #if instead of a ternary to suppress a deadcode warning */
+#if AV_HAVE_BIGENDIAN
+        bytestream2_put_be32(&pb, EXIF_MM_LONG);
+#else
+        bytestream2_put_be32(&pb, EXIF_II_LONG);
+#endif
         tput32(&pb, le, 8);
     }
 
@@ -897,10 +916,10 @@ static int exif_ifd_to_dict(void *logctx, const char *prefix, const AVExifMetada
             if (ret < 0)
                 goto end;
             ret = av_dict_set(metadata, key, value, AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
-            if (ret < 0)
-                goto end;
             key = NULL;
             value = NULL;
+            if (ret < 0)
+                goto end;
         } else {
             av_freep(&key);
         }
@@ -970,7 +989,7 @@ static int exif_attach_ifd(void *logctx, AVFrame *frame, const AVExifMetadata *i
 
     ret = av_exif_ifd_to_dict(logctx, cloned ? cloned : ifd, &frame->metadata);
     if (ret < 0)
-        return ret;
+        goto end;
 
     if (cloned || !og) {
         ret = av_exif_write(logctx, cloned ? cloned : ifd, &written, AV_EXIF_TIFF_HEADER);
