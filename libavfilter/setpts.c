@@ -199,7 +199,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     d = eval_pts(setpts, inlink, frame, frame->pts);
     frame->pts = D2TS(d);
-    frame->duration = 0;
+    if (setpts->strip_fps)
+        frame->duration = 0;
 
     av_log(inlink->dst, AV_LOG_TRACE,
             "N:%"PRId64" PTS:%s T:%f",

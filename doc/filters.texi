@@ -31911,9 +31911,9 @@ This filter accepts the following options:
 The expression which is evaluated for each frame to construct its timestamp.
 
 @item strip_fps (@emph{video only})
-Boolean option which determines if the original framerate metadata is unset.
-If set to true, be advised that a sane frame rate should be explicitly
-specified if output is sent to a constant frame rate muxer.
+Boolean option which determines if the original framerate and frame duration
+metadata is unset. If set to true, be advised that a sane frame rate should be
+explicitly specified if output is sent to a constant frame rate muxer.
 Default is @code{false}.
 
 @end table
