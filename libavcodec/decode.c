@@ -2365,8 +2365,8 @@ static int exif_attach_ifd(AVCodecContext *avctx, AVFrame *frame, const AVExifMe
         }
     }
 
-    if (orient && orient->value.uint[0] > 1) {
-        av_log(avctx, AV_LOG_DEBUG, "found nontrivial EXIF orientation: %" PRIu64 "\n", orient->value.uint[0]);
+    if (orient) {
+        av_log(avctx, AV_LOG_DEBUG, "found EXIF orientation: %" PRIu64 "\n", orient->value.uint[0]);
         ret = attach_displaymatrix(avctx, frame, orient->value.uint[0]);
         if (ret < 0) {
             av_log(avctx, AV_LOG_WARNING, "unable to attach displaymatrix from EXIF\n");
