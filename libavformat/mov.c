@@ -11299,7 +11299,8 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
 {
     MOVStreamContext *sc = st->priv_data;
     FFStream *const sti = ffstream(st);
-    int sample, time_sample, ret, next_ts, requested_sample;
+    int sample, time_sample, ret, requested_sample;
+    int64_t next_ts;
     unsigned int i;
 
     // Here we consider timestamp to be PTS, hence try to offset it so that we
