@@ -50,7 +50,7 @@ static inline void quantize_bands(int *out, const float *in, const float *scaled
 {
     for (int i = 0; i < size; i++) {
         float qc = scaled[i] * Q34;
-        int tmp = (int)FFMIN(qc + rounding, (float)maxval);
+        int tmp = (int)FFMIN((float)(qc + rounding), (float)maxval);
         if (is_signed && in[i] < 0.0f) {
             tmp = -tmp;
         }
