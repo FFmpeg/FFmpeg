@@ -7463,6 +7463,14 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
         return ret;
     memcpy(track->par->extradata, stub_header, sizeof(stub_header));
 
+    if (track->extradata == NULL) {
+        track->stsd_count     = 1;
+        track->extradata      = av_calloc(1, sizeof(*track->extradata));
+        track->extradata_size = av_calloc(1, sizeof(*track->extradata_size));
+        if (!track->extradata || !track->extradata_size)
+            return AVERROR(ENOMEM);
+    }
+
     track->extradata[0] = av_memdup(stub_header, sizeof(stub_header));
     if (!track->extradata[0])
         return AVERROR(ENOMEM);
