@@ -1239,9 +1239,12 @@ start:
         q = buf;
         for (;;) {
             ret = ffurl_read_complete(rt->rtsp_hd, &ch, 1);
+            if (ret != 1) {
+                ret = (ret < 0) ? ret : AVERROR(EIO);
+                av_log(s, AV_LOG_WARNING, "Failed reading RTSP data: %s\n", av_err2str(ret));
+                return ret;
+            }
             av_log(s, AV_LOG_TRACE, "ret=%d c=%02x [%c]\n", ret, ch, ch);
-            if (ret != 1)
-                return ret < 0 ? ret : AVERROR(EIO);
             if (ch == '\n')
                 break;
             if (ch == '$' && q == buf) {
