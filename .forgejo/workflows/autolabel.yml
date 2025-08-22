@@ -18,11 +18,11 @@ jobs:
         if: ${{ forge.event_name == 'pull_request_target' }}
         with:
           configuration-path: .forgejo/labeler/labeler.yml
-          repo-token: ${{ secrets.AUTOLABELER_TOKEN }}
+          repo-token: ${{ forge.event_name == 'pull_request_target' && secrets.AUTOLABELER_TOKEN || forge.token }}
       - name: Label by title-match
         uses: https://github.com/actions/github-script@v7
         with:
           script: |
             const script = require('.forgejo/labeler/labeler.js')
             await script({github, context})
-          github-token: ${{ secrets.AUTOLABELER_TOKEN }}
+          github-token: ${{ forge.event_name == 'pull_request_target' && secrets.AUTOLABELER_TOKEN || forge.token }}
