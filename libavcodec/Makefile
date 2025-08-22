@@ -43,6 +43,7 @@ OBJS = ac3_parser.o                                                     \
        dirac.o                                                          \
        dv_profile.o                                                     \
        encode.o                                                         \
+       exif.o                                                           \
        get_buffer.o                                                     \
        imgconvert.o                                                     \
        jni.o                                                            \
@@ -57,6 +58,7 @@ OBJS = ac3_parser.o                                                     \
        qsv_api.o                                                        \
        raw.o                                                            \
        threadprogress.o                                                 \
+       tiff_common.o                                                    \
        utils.o                                                          \
        version.o                                                        \
        vlc.o                                                            \
@@ -101,7 +103,6 @@ OBJS-$(CONFIG_DOVI_RPUDEC)             += dovi_rpu.o dovi_rpudec.o
 OBJS-$(CONFIG_DOVI_RPUENC)             += dovi_rpu.o dovi_rpuenc.o
 OBJS-$(CONFIG_ERROR_RESILIENCE)        += error_resilience.o
 OBJS-$(CONFIG_EVCPARSE)                += evc_parse.o evc_ps.o
-OBJS-$(CONFIG_EXIF)                    += exif.o tiff_common.o
 OBJS-$(CONFIG_FAANDCT)                 += faandct.o
 OBJS-$(CONFIG_FAANIDCT)                += faanidct.o
 OBJS-$(CONFIG_FDCTDSP)                 += fdctdsp.o jfdctfst.o jfdctint.o
