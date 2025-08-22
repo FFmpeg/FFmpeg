@@ -281,6 +281,7 @@ static int huff_reader_build_canonical(HuffReader *r, const uint8_t *code_length
             r->nb_symbols = 1;
             r->simple = 1;
             r->simple_symbols[0] = syms[0];
+            return 0;
         }
         // No symbols
         return AVERROR_INVALIDDATA;
