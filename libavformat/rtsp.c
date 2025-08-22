@@ -1240,6 +1240,7 @@ start:
             if (!strncmp(buf1, "RTSP/", 5)) {
                 get_word(buf1, sizeof(buf1), &p);
                 reply->status_code = atoi(buf1);
+                p += strspn(p, SPACE_CHARS);
                 av_strlcpy(reply->reason, p, sizeof(reply->reason));
             } else {
                 av_strlcpy(reply->reason, buf1, sizeof(reply->reason)); // method
