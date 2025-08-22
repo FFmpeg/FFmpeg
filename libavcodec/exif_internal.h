@@ -42,14 +42,6 @@ int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
                            int le, int depth, AVDictionary **metadata);
 #endif
 
-#define MAKERNOTE_TAG          0x927c
-#define ORIENTATION_TAG        0x112
-#define EXIFIFD_TAG            0x8769
-#define IMAGE_WIDTH_TAG        0x100
-#define IMAGE_LENGTH_TAG       0x101
-#define PIXEL_X_TAG            0xa002
-#define PIXEL_Y_TAG            0xa003
-
 /**
  * Compares values in the IFD with data in the provided AVFrame and sets the values
  * in that IFD to match the ones in that AVFrame. This is mostly useful for an

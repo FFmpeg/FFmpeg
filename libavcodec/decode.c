@@ -47,7 +47,7 @@
 #include "codec_desc.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "exif_internal.h"
+#include "exif.h"
 #include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "internal.h"
@@ -2278,7 +2278,8 @@ static int exif_attach_ifd(AVCodecContext *avctx, AVFrame *frame, const AVExifMe
 
     for (size_t i = 0; i < ifd->count; i++) {
         const AVExifEntry *entry = &ifd->entries[i];
-        if (entry->id == ORIENTATION_TAG && entry->count > 0 && entry->type == AV_TIFF_SHORT) {
+        if (entry->id == av_exif_get_tag_id("Orientation") &&
+            entry->count > 0 && entry->type == AV_TIFF_SHORT) {
             orient = entry;
             break;
         }

@@ -46,6 +46,13 @@
 #define IFD_EXTRA_SIZE         6
 
 #define EXIF_TAG_NAME_LENGTH   32
+#define MAKERNOTE_TAG          0x927c
+#define ORIENTATION_TAG        0x112
+#define EXIFIFD_TAG            0x8769
+#define IMAGE_WIDTH_TAG        0x100
+#define IMAGE_LENGTH_TAG       0x101
+#define PIXEL_X_TAG            0xa002
+#define PIXEL_Y_TAG            0xa003
 
 struct exif_tag {
     const char name[EXIF_TAG_NAME_LENGTH];
