@@ -10188,21 +10188,6 @@ static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
     tile_grid->width  = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
     tile_grid->height = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
 
-    /* ICC profile */
-    if (item->icc_profile_size) {
-        int ret = set_icc_profile_from_item(&tile_grid->coded_side_data,
-                                            &tile_grid->nb_coded_side_data, item);
-        if (ret < 0)
-            return ret;
-    }
-    /* rotation */
-    if (item->rotation || item->hflip || item->vflip) {
-        int ret = set_display_matrix_from_item(&tile_grid->coded_side_data,
-                                               &tile_grid->nb_coded_side_data, item);
-        if (ret < 0)
-            return ret;
-    }
-
     av_log(c->fc, AV_LOG_TRACE, "grid: grid_rows %d grid_cols %d output_width %d output_height %d\n",
            tile_rows, tile_cols, tile_grid->width, tile_grid->height);
 
@@ -10293,22 +10278,6 @@ static int read_image_iovl(AVFormatContext *s, const HEIFGrid *grid,
     tile_grid->coded_width  = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
     tile_grid->height       =
     tile_grid->coded_height = (flags & 1) ? avio_rb32(s->pb) : avio_rb16(s->pb);
-
-    /* rotation */
-    if (item->rotation || item->hflip || item->vflip) {
-        int ret = set_display_matrix_from_item(&tile_grid->coded_side_data,
-                                               &tile_grid->nb_coded_side_data, item);
-        if (ret < 0)
-            return ret;
-    }
-
-    /* ICC profile */
-    if (item->icc_profile_size) {
-        int ret = set_icc_profile_from_item(&tile_grid->coded_side_data,
-                                            &tile_grid->nb_coded_side_data, item);
-        if (ret < 0)
-            return ret;
-    }
 
     av_log(c->fc, AV_LOG_TRACE, "iovl: output_width %d, output_height %d\n",
            tile_grid->width, tile_grid->height);
@@ -10421,6 +10390,21 @@ static int mov_parse_tiles(AVFormatContext *s)
         if (err < 0)
             return err;
 
+        /* rotation */
+        if (grid->item->rotation || grid->item->hflip || grid->item->vflip) {
+            err = set_display_matrix_from_item(&tile_grid->coded_side_data,
+                                               &tile_grid->nb_coded_side_data, grid->item);
+            if (err < 0)
+                return err;
+        }
+
+        /* ICC profile */
+        if (grid->item->icc_profile_size) {
+            err = set_icc_profile_from_item(&tile_grid->coded_side_data,
+                                            &tile_grid->nb_coded_side_data, grid->item);
+            if (err < 0)
+                return err;
+        }
 
         if (grid->item->name)
             av_dict_set(&stg->metadata, "title", grid->item->name, 0);
