@@ -577,7 +577,7 @@ static int generate_sdp_offer(AVFormatContext *s)
         av_lfg_get(&whip->rnd));
 
     whip->audio_ssrc = av_lfg_get(&whip->rnd);
-    whip->video_ssrc = av_lfg_get(&whip->rnd);
+    whip->video_ssrc = whip->audio_ssrc + 1;
 
     whip->audio_payload_type = WHIP_RTP_PAYLOAD_TYPE_OPUS;
     whip->video_payload_type = WHIP_RTP_PAYLOAD_TYPE_H264;
