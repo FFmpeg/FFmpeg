@@ -1038,9 +1038,9 @@ static int exif_get_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int de
     return 0;
 }
 
-int av_exif_get_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int recursive, AVExifEntry **value)
+int av_exif_get_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int flags, AVExifEntry **value)
 {
-    return exif_get_entry(logctx, ifd, id, recursive ? 0 : INT_MAX, value);
+    return exif_get_entry(logctx, ifd, id, (flags & AV_EXIF_FLAG_RECURSIVE) ? 0 : INT_MAX, value);
 }
 
 int av_exif_set_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, enum AVTiffDataType type,
@@ -1127,9 +1127,9 @@ static int exif_remove_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int
     return 1 + (ifd->count - index);
 }
 
-int av_exif_remove_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int recursive)
+int av_exif_remove_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int flags)
 {
-    return exif_remove_entry(logctx, ifd, id, recursive ? 0 : INT_MAX);
+    return exif_remove_entry(logctx, ifd, id, (flags & AV_EXIF_FLAG_RECURSIVE) ? 0 : INT_MAX);
 }
 
 AVExifMetadata *av_exif_clone_ifd(const AVExifMetadata *ifd)
