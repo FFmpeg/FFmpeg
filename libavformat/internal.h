@@ -649,4 +649,16 @@ int ff_bprint_get_frame_filename(struct AVBPrint *buf, const char *path, int64_t
  */
 int ff_dict_set_timestamp(AVDictionary **dict, const char *key, int64_t timestamp);
 
+/**
+ * Set a list of query string options on an object. Only the objects own
+ * options will be set.
+ *
+ * @param obj the object to set options on
+ * @param str the query string
+ * @param allow_unknown ignore unknown query string options. This can be OK if
+ *                      nested protocols are used.
+ * @return <0 on error
+ */
+int ff_parse_opts_from_query_string(void *obj, const char *str, int allow_unkown);
+
 #endif /* AVFORMAT_INTERNAL_H */

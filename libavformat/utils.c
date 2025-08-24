@@ -24,11 +24,14 @@
 
 #include "config.h"
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/dict.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/time.h"
 #include "libavutil/time_internal.h"
 
@@ -41,6 +44,7 @@
 #include "network.h"
 #endif
 #include "os_support.h"
+#include "urldecode.h"
 
 /**
  * @file
@@ -617,4 +621,66 @@ int ff_dict_set_timestamp(AVDictionary **dict, const char *key, int64_t timestam
     } else {
         return AVERROR_EXTERNAL;
     }
+}
+
+static const AVOption* find_opt(void *obj, const char *name, size_t len)
+{
+    char decoded_name[128];
+
+    if (ff_urldecode_len(decoded_name, sizeof(decoded_name), name, len, 1) < 0)
+        return NULL;
+
+    return av_opt_find(obj, decoded_name, NULL, 0, 0);
+}
+
+int ff_parse_opts_from_query_string(void *obj, const char *str, int allow_unknown)
+{
+    const AVOption *opt;
+    char optval[512];
+    int ret;
+
+    if (*str == '?')
+        str++;
+    while (*str) {
+        size_t len = strcspn(str, "=&");
+        opt = find_opt(obj, str, len);
+        if (!opt) {
+            if (!allow_unknown) {
+                av_log(obj, AV_LOG_ERROR, "Query string option '%.*s' does not exist\n", (int)len, str);
+                return AVERROR_OPTION_NOT_FOUND;
+            }
+            av_log(obj, AV_LOG_VERBOSE, "Ignoring unknown query string option '%.*s'\n", (int)len, str);
+        }
+        str += len;
+        if (!opt) {
+            len = strcspn(str, "&");
+            str += len;
+        } else if (*str == '&' || *str == '\0') {
+            /* Check for bool options without value, e.g. "?verify".
+             * Unfortunately "listen" is a tri-state INT for some protocols so
+             * we also have to allow that for backward compatibility. */
+            if (opt->type != AV_OPT_TYPE_BOOL && strcmp(opt->name, "listen")) {
+                av_log(obj, AV_LOG_ERROR, "Non-bool query string option '%s' has no value\n", opt->name);
+                return AVERROR(EINVAL);
+            }
+            ret = av_opt_set_int(obj, opt->name, 1, 0);
+            if (ret < 0)
+                return ret;
+        } else {
+            av_assert2(*str == '=');
+            str++;
+            len = strcspn(str, "&");
+            if (ff_urldecode_len(optval, sizeof(optval), str, len, 1) < 0) {
+                av_log(obj, AV_LOG_ERROR, "Query string option '%s' value is too long\n", opt->name);
+                return AVERROR(EINVAL);
+            }
+            ret = av_opt_set(obj, opt->name, optval, 0);
+            if (ret < 0)
+                return ret;
+            str += len;
+        }
+        if (*str)
+            str++;
+    }
+    return 0;
 }
