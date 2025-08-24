@@ -695,11 +695,7 @@ int av_exif_write(void *logctx, const AVExifMetadata *ifd, AVBufferRef **buffer,
     PutByteContext pb;
     int ret, off = 0;
 
-#if AV_HAVE_BIGENDIAN
-    int le = 0;
-#else
     int le = 1;
-#endif
 
     if (*buffer)
         return AVERROR(EINVAL);
@@ -736,12 +732,8 @@ int av_exif_write(void *logctx, const AVExifMetadata *ifd, AVBufferRef **buffer,
 
     if (header_mode != AV_EXIF_ASSUME_BE && header_mode != AV_EXIF_ASSUME_LE) {
         /* these constants are be32 in both cases */
-        /* this is a #if instead of a ternary to suppress a deadcode warning */
-#if AV_HAVE_BIGENDIAN
-        bytestream2_put_be32(&pb, EXIF_MM_LONG);
-#else
+        /* le == 1 always in this case */
         bytestream2_put_be32(&pb, EXIF_II_LONG);
-#endif
         tput32(&pb, le, 8);
     }
 
