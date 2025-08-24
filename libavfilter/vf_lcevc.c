@@ -139,7 +139,7 @@ static int send_frame(AVFilterLink *inlink, AVFrame *in)
         return ret;
 
     if (sd) {
-        res = LCEVC_SendDecoderEnhancementData(lcevc->decoder, in->pts, 0, sd->data, sd->size);
+        res = LCEVC_SendDecoderEnhancementData(lcevc->decoder, in->pts, sd->data, sd->size);
         if (res == LCEVC_Again)
             return AVERROR(EAGAIN);
         else if (res != LCEVC_Success) {
@@ -148,7 +148,7 @@ static int send_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
-    res = LCEVC_SendDecoderBase(lcevc->decoder, in->pts, 0, picture, -1, in);
+    res = LCEVC_SendDecoderBase(lcevc->decoder, in->pts, picture, -1, in);
     if (res != LCEVC_Success) {
         av_log(ctx, AV_LOG_ERROR, "LCEVC_SendDecoderBase failed\n");
         LCEVC_FreePicture(lcevc->decoder, picture);

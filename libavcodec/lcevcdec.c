@@ -141,7 +141,7 @@ static int lcevc_send_frame(void *logctx, FFLCEVCFrame *frame_ctx, const AVFrame
     if (!sd)
         return 1;
 
-    res = LCEVC_SendDecoderEnhancementData(lcevc->decoder, in->pts, 0, sd->data, sd->size);
+    res = LCEVC_SendDecoderEnhancementData(lcevc->decoder, in->pts, sd->data, sd->size);
     if (res != LCEVC_Success)
         return AVERROR_EXTERNAL;
 
@@ -149,7 +149,7 @@ static int lcevc_send_frame(void *logctx, FFLCEVCFrame *frame_ctx, const AVFrame
     if (ret < 0)
         return ret;
 
-    res = LCEVC_SendDecoderBase(lcevc->decoder, in->pts, 0, picture, -1, NULL);
+    res = LCEVC_SendDecoderBase(lcevc->decoder, in->pts, picture, -1, NULL);
     if (res != LCEVC_Success)
         return AVERROR_EXTERNAL;
 
