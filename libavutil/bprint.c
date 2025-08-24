@@ -96,29 +96,6 @@ void av_bprint_init_for_buffer(AVBPrint *buf, char *buffer, unsigned size)
     *buf->str = 0;
 }
 
-void av_bprintf(AVBPrint *buf, const char *fmt, ...)
-{
-    unsigned room;
-    char *dst;
-    va_list vl;
-    int extra_len;
-
-    while (1) {
-        room = av_bprint_room(buf);
-        dst = room ? buf->str + buf->len : NULL;
-        va_start(vl, fmt);
-        extra_len = vsnprintf(dst, room, fmt, vl);
-        va_end(vl);
-        if (extra_len <= 0)
-            return;
-        if (extra_len < room)
-            break;
-        if (av_bprint_alloc(buf, extra_len))
-            break;
-    }
-    av_bprint_grow(buf, extra_len);
-}
-
 void av_vbprintf(AVBPrint *buf, const char *fmt, va_list vl_arg)
 {
     unsigned room;
@@ -140,6 +117,14 @@ void av_vbprintf(AVBPrint *buf, const char *fmt, va_list vl_arg)
             break;
     }
     av_bprint_grow(buf, extra_len);
+}
+
+void av_bprintf(AVBPrint *buf, const char *fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    av_vbprintf(buf, fmt, vl);
+    va_end(vl);
 }
 
 void av_bprint_chars(AVBPrint *buf, char c, unsigned n)
