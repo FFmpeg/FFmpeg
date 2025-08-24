@@ -299,7 +299,9 @@ External library support:
   --enable-libx264         enable H.264 encoding via x264 [no]
   --enable-libx265         enable HEVC encoding via x265 [no]
   --enable-libxeve         enable EVC encoding via libxeve [no]
+  --enable-libxeveb        enable EVC encoding via libxeve (Base profile) [no]
   --enable-libxevd         enable EVC decoding via libxevd [no]
+  --enable-libxevdb        enable EVC decoding via libxevd (Base profile) [no]
   --enable-libxavs         enable AVS encoding via xavs [no]
   --enable-libxavs2        enable AVS2 encoding via xavs2 [no]
   --enable-libxcb          enable X11 grabbing using XCB [autodetect]
@@ -1992,7 +1994,9 @@ EXTERNAL_LIBRARY_LIST="
     libvvenc
     libwebp
     libxevd
+    libxevdb
     libxeve
+    libxeveb
     libxml2
     libzimg
     libzmq
@@ -3669,8 +3673,8 @@ libx265_encoder_deps="libx265"
 libx265_encoder_select="atsc_a53 dovi_rpuenc"
 libxavs_encoder_deps="libxavs"
 libxavs2_encoder_deps="libxavs2"
-libxevd_decoder_deps="libxevd"
-libxeve_encoder_deps="libxeve"
+libxevd_decoder_deps_any="libxevd libxevdb"
+libxeve_encoder_deps_any="libxeve libxeveb"
 libxvid_encoder_deps="libxvid"
 libzvbi_teletext_decoder_deps="libzvbi"
 vapoursynth_demuxer_deps="vapoursynth"
@@ -4614,6 +4618,12 @@ enabled_all gnutls mbedtls &&
 
 enabled_all openssl mbedtls &&
     die "OpenSSL and mbedTLS must not be enabled at the same time."
+
+enabled_all libxevd libxevdb &&
+    die "libxevd and libxevdb must not be enabled at the same time."
+
+enabled_all libxeve libxeveb &&
+    die "libxeve and libxevdb must not be enabled at the same time."
 
 # Disable all the library-specific components if the library itself
 # is disabled, see AVCODEC_LIST and following _LIST variables.
@@ -7204,7 +7214,9 @@ enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get
 enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode "-lxavs $pthreads_extralibs $libm_extralibs"
 enabled libxavs2          && require_pkg_config libxavs2 "xavs2 >= 1.3.0" "stdint.h xavs2.h" xavs2_api_get
 enabled libxevd           && require_pkg_config libxevd "xevd >= 0.4.1" "xevd.h" xevd_decode
+enabled libxevdb          && require_pkg_config libxevdb "xevdb >= 0.4.1" "xevd.h" xevd_decode
 enabled libxeve           && require_pkg_config libxeve "xeve >= 0.5.1" "xeve.h" xeve_encode
+enabled libxeveb          && require_pkg_config libxeveb "xeveb >= 0.5.1" "xeve.h" xeve_encode
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled libzimg           && require_pkg_config libzimg "zimg >= 2.7.0" zimg.h zimg_get_api_version
 enabled libzmq            && require_pkg_config libzmq "libzmq >= 4.2.1" zmq.h zmq_ctx_new
