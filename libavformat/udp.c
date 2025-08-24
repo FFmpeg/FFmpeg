@@ -118,6 +118,7 @@ typedef struct UDPContext {
     int remaining_in_dg;
     char *localaddr;
     int timeout;
+    int dscp;
     struct sockaddr_storage local_addr_storage;
     char *sources;
     char *block;
@@ -142,6 +143,7 @@ static const AVOption options[] = {
     { "reuse_socket",   "explicitly allow reusing UDP sockets",            OFFSET(reuse_socket),   AV_OPT_TYPE_BOOL,   { .i64 = -1 },    -1, 1,       .flags = D|E },
     { "broadcast", "explicitly allow or disallow broadcast destination",   OFFSET(is_broadcast),   AV_OPT_TYPE_BOOL,   { .i64 = 0  },     0, 1,       E },
     { "ttl",            "Time to live (multicast only)",                   OFFSET(ttl),            AV_OPT_TYPE_INT,    { .i64 = 16 },     0, 255,     E },
+    { "dscp",           "DSCP class for outgoing packets",                 OFFSET(dscp),           AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, 63,      E },
     { "connect",        "set if connect() should be called on socket",     OFFSET(is_connected),   AV_OPT_TYPE_BOOL,   { .i64 =  0 },     0, 1,       .flags = D|E },
     { "fifo_size",      "set the UDP receiving circular buffer size, expressed as a number of packets with size of 188 bytes", OFFSET(circular_buffer_size), AV_OPT_TYPE_INT, {.i64 = 7*4096}, 0, INT_MAX, D },
     { "overrun_nonfatal", "survive in case of UDP receiving circular buffer overrun", OFFSET(overrun_nonfatal), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1,    D },
@@ -691,7 +693,7 @@ end:
 static int udp_open(URLContext *h, const char *uri, int flags)
 {
     char hostname[1024];
-    int port, udp_fd = -1, tmp, bind_ret = -1, dscp = -1;
+    int port, udp_fd = -1, tmp, bind_ret = -1;
     UDPContext *s = h->priv_data;
     int is_output;
     const char *p;
@@ -760,7 +762,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             s->is_connected = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "dscp", p)) {
-            dscp = strtol(buf, NULL, 10);
+            s->dscp = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "fifo_size", p)) {
             s->circular_buffer_size = strtol(buf, NULL, 10);
@@ -870,8 +872,8 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             av_log(h, AV_LOG_WARNING, "socket option UDPLITE_RECV_CSCOV not available");
     }
 
-    if (dscp >= 0) {
-        dscp <<= 2;
+    if (s->dscp >= 0) {
+        int dscp = s->dscp << 2;
         if (setsockopt (udp_fd, IPPROTO_IP, IP_TOS, &dscp, sizeof(dscp)) != 0) {
             ret = ff_neterrno();
             goto fail;
