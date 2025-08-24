@@ -25,6 +25,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 
+#include "internal.h"
 #include "network.h"
 #include "os_support.h"
 #include "url.h"
@@ -151,7 +152,6 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     int port, fd = -1;
     TCPContext *s = h->priv_data;
     const char *p;
-    char buf[256];
     int ret;
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
@@ -167,37 +167,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     }
     p = strchr(uri, '?');
     if (p) {
-        if (av_find_info_tag(buf, sizeof(buf), "listen", p)) {
-            char *endptr = NULL;
-            s->listen = strtol(buf, &endptr, 10);
-            /* assume if no digits were found it is a request to enable it */
-            if (buf == endptr)
-                s->listen = 1;
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "local_port", p)) {
-            av_freep(&s->local_port);
-            s->local_port = av_strdup(buf);
-            if (!s->local_port)
-                return AVERROR(ENOMEM);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "local_addr", p)) {
-            av_freep(&s->local_addr);
-            s->local_addr = av_strdup(buf);
-            if (!s->local_addr)
-                return AVERROR(ENOMEM);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "timeout", p)) {
-            s->rw_timeout = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "listen_timeout", p)) {
-            s->listen_timeout = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "tcp_nodelay", p)) {
-            s->tcp_nodelay = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "tcp_keepalive", p)) {
-            s->tcp_keepalive = strtol(buf, NULL, 10);
-        }
+        int ret = ff_parse_opts_from_query_string(s, p, 1);
+        if (ret < 0)
+            return ret;
     }
     if (s->rw_timeout >= 0) {
         s->open_timeout =
