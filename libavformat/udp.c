@@ -36,6 +36,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/log.h"
 #include "libavutil/time.h"
+#include "internal.h"
 #include "network.h"
 #include "os_support.h"
 #include "url.h"
@@ -695,7 +696,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     UDPContext *s = h->priv_data;
     int is_output;
     const char *p;
-    char buf[256];
     struct sockaddr_storage my_addr;
     socklen_t len;
     int ret;
@@ -706,87 +706,11 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     if (s->buffer_size < 0)
         s->buffer_size = is_output ? UDP_TX_BUF_SIZE : UDP_RX_BUF_SIZE;
 
-    if (s->sources) {
-        if ((ret = ff_ip_parse_sources(h, s->sources, &s->filters)) < 0)
-            goto fail;
-    }
-
-    if (s->block) {
-        if ((ret = ff_ip_parse_blocks(h, s->block, &s->filters)) < 0)
-            goto fail;
-    }
-
     p = strchr(uri, '?');
     if (p) {
-        if (av_find_info_tag(buf, sizeof(buf), "reuse", p)) {
-            char *endptr = NULL;
-            s->reuse_socket = strtol(buf, &endptr, 10);
-            /* assume if no digits were found it is a request to enable it */
-            if (buf == endptr)
-                s->reuse_socket = 1;
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "overrun_nonfatal", p)) {
-            char *endptr = NULL;
-            s->overrun_nonfatal = strtol(buf, &endptr, 10);
-            /* assume if no digits were found it is a request to enable it */
-            if (buf == endptr)
-                s->overrun_nonfatal = 1;
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "ttl", p)) {
-            s->ttl = strtol(buf, NULL, 10);
-            if (s->ttl < 0 || s->ttl > 255) {
-                av_log(h, AV_LOG_ERROR, "ttl(%d) should be in range [0,255]\n", s->ttl);
-                ret = AVERROR(EINVAL);
-                goto fail;
-            }
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "udplite_coverage", p)) {
-            s->udplite_coverage = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "localport", p)) {
-            s->local_port = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "pkt_size", p)) {
-            s->pkt_size = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "buffer_size", p)) {
-            s->buffer_size = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "connect", p)) {
-            s->is_connected = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "dscp", p)) {
-            s->dscp = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "fifo_size", p)) {
-            s->circular_buffer_size = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "bitrate", p)) {
-            s->bitrate = strtoll(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "burst_bits", p)) {
-            s->burst_bits = strtoll(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "localaddr", p)) {
-            av_freep(&s->localaddr);
-            s->localaddr = av_strdup(buf);
-            if (!s->localaddr) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "sources", p)) {
-            if ((ret = ff_ip_parse_sources(h, buf, &s->filters)) < 0)
-                goto fail;
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "block", p)) {
-            if ((ret = ff_ip_parse_blocks(h, buf, &s->filters)) < 0)
-                goto fail;
-        }
-        if (!is_output && av_find_info_tag(buf, sizeof(buf), "timeout", p))
-            s->timeout = strtol(buf, NULL, 10);
-        if (is_output && av_find_info_tag(buf, sizeof(buf), "broadcast", p))
-            s->is_broadcast = strtol(buf, NULL, 10);
+        ret = ff_parse_opts_from_query_string(s, p, 1);
+        if (ret < 0)
+            goto fail;
     }
     if (!HAVE_PTHREAD_CANCEL) {
         int64_t      optvals[] = {s->overrun_nonfatal, s->bitrate, s->circular_buffer_size};
@@ -798,6 +722,15 @@ static int udp_open(URLContext *h, const char *uri, int flags)
                        "on this build (pthread support is required)\n", optnames[i]);
         }
     }
+    if (s->sources) {
+        if ((ret = ff_ip_parse_sources(h, s->sources, &s->filters)) < 0)
+            goto fail;
+    }
+    if (s->block) {
+        if ((ret = ff_ip_parse_blocks(h, s->block, &s->filters)) < 0)
+            goto fail;
+    }
+
     /* handling needed to support options picking from both AVOption and URL */
     s->circular_buffer_size *= 188;
     if (flags & AVIO_FLAG_WRITE) {
