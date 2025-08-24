@@ -20,6 +20,8 @@ API changes, most recent first:
 2025-08-19 - bb90b262d6d - lavu 60.10.100 - frame.h
   Add AV_FRAME_DATA_EXIF.
 
+-------- 8< --------- FFmpeg 8.0 was cut here -------- 8< ---------
+
 2025-07-29 - 1c85a3832af - lavc 62.10.100 - smpte_436m.h
   Add a new public header smpte_436m.h with API for
   manipulating AV_CODEC_ID_SMPTE_436M_ANC data.
