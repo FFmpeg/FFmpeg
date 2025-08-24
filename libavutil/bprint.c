@@ -167,6 +167,7 @@ void av_bprint_strftime(AVBPrint *buf, const char *fmt, const struct tm *tm)
 {
     unsigned room;
     size_t l;
+    size_t fmt_len = strlen(fmt);
 
     if (!*fmt)
         return;
@@ -174,9 +175,18 @@ void av_bprint_strftime(AVBPrint *buf, const char *fmt, const struct tm *tm)
         room = av_bprint_room(buf);
         if (room && (l = strftime(buf->str + buf->len, room, fmt, tm)))
             break;
+
+        /* Due to the limitations of strftime() it is not possible to know if
+         * the output buffer is too small or the output is empty.
+         * However, a 256x output space requirement compared to the format
+         * string length is so unlikely we can safely assume empty output. This
+         * allows supporting possibly empty format strings like "%p". */
+        if (room >> 8 > fmt_len)
+            break;
+
         /* strftime does not tell us how much room it would need: let us
            retry with twice as much until the buffer is large enough */
-        room = !room ? strlen(fmt) + 1 :
+        room = !room ? fmt_len + 1 :
                room <= INT_MAX / 2 ? room * 2 : INT_MAX;
         if (av_bprint_alloc(buf, room)) {
             /* impossible to grow, try to manage something useful anyway */
