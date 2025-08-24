@@ -552,6 +552,10 @@ static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
     ifd->count = entries;
     av_log(logctx, AV_LOG_DEBUG, "entry count for IFD: %u\n", ifd->count);
 
+    /* empty IFD is technically legal but equivalent to no metadata present */
+    if (!ifd->count)
+        goto end;
+
     if (av_size_mult(ifd->count, sizeof(*ifd->entries), &required_size) < 0)
         return AVERROR(ENOMEM);
     temp = av_fast_realloc(ifd->entries, &ifd->size, required_size);
@@ -571,6 +575,7 @@ static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
             return ret;
     }
 
+end:
     /*
      * at the end of an IFD is an pointer to the next IFD
      * or zero if there are no more IFDs, which is usually the case
@@ -1009,7 +1014,7 @@ static int exif_get_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int de
 {
     int offset = 1;
 
-    if (!ifd || ifd->entries && !ifd->count || ifd->count && !ifd->entries || !value)
+    if (!ifd || ifd->count && !ifd->entries || !value)
         return AVERROR(EINVAL);
 
     for (size_t i = 0; i < ifd->count; i++) {
@@ -1043,7 +1048,7 @@ int av_exif_set_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, enum AVTif
     AVExifEntry *entry = NULL;
     AVExifEntry src = { 0 };
 
-    if (!ifd || ifd->entries && !ifd->count || ifd->count && !ifd->entries
+    if (!ifd || ifd->count && !ifd->entries
              || ifd_lead && !ifd_offset || !ifd_lead && ifd_offset
              || !value || ifd->count == 0xFFFFu)
         return AVERROR(EINVAL);
@@ -1089,7 +1094,7 @@ static int exif_remove_entry(void *logctx, AVExifMetadata *ifd, uint16_t id, int
     int32_t index = -1;
     int ret = 0;
 
-    if (!ifd || ifd->entries && !ifd->count || ifd->count && !ifd->entries)
+    if (!ifd || ifd->count && !ifd->entries)
         return AVERROR(EINVAL);
 
     for (size_t i = 0; i < ifd->count; i++) {
