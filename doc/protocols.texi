@@ -1554,18 +1554,13 @@ srt://@var{hostname}:@var{port}[?@var{options}]
 @end example
 
 @var{options} contains a list of &-separated options of the form
-@var{key}=@var{val}.
+@var{key}=@var{val}. Standard percent-encoding (and using the plus sign for
+space) can be used to escape keys and values.
 
-or
+Options can also can be specified via command line options (or in code via
+@code{AVOption}s).
 
-@example
-@var{options} srt://@var{hostname}:@var{port}
-@end example
-
-@var{options} contains a list of '-@var{key} @var{val}'
-options.
-
-This protocol accepts the following options.
+The list of supported options follows.
 
 @table @option
 @item connect_timeout=@var{milliseconds}
