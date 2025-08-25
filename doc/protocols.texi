@@ -1164,7 +1164,7 @@ rtp://@var{hostname}[:@var{port}][?@var{options}]
 @var{options} contains a list of &-separated options of the form
 @var{key}=@var{val}.
 
-The following URL options are supported:
+The following options are supported:
 
 @table @option
 
@@ -1174,10 +1174,12 @@ Set the TTL (Time-To-Live) value (for multicast only).
 @item rtcpport=@var{n}
 Set the remote RTCP port to @var{n}.
 
-@item localrtpport=@var{n}
+@item localport, local_rtpport, localrtpport=@var{n}
 Set the local RTP port to @var{n}.
 
-@item localrtcpport=@var{n}'
+Using the localport option name is deprecated and should not be used.
+
+@item local_rtcpport, localrtcpport=@var{n}'
 Set the local RTCP port to @var{n}.
 
 @item pkt_size=@var{n}
@@ -1199,12 +1201,6 @@ List disallowed (blocked) source IP addresses.
 @item write_to_source=0|1
 Send packets to the source address of the latest received packet (if
 set to 1) or to a default remote address (if set to 0).
-
-@item localport=@var{n}
-Set the local RTP port to @var{n}.
-
-This is a deprecated option. Instead, @option{localrtpport} should be
-used.
 
 @item localaddr=@var{addr}
 Local IP address of a network interface used for sending packets or joining
