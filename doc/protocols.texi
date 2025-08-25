@@ -1989,7 +1989,7 @@ need to be specified for verification to work, but not all libraries and
 setups have defaults built in.
 The file must be in OpenSSL PEM format.
 
-@item tls_verify=@var{1|0}
+@item tls_verify, verify=@var{1|0}
 If enabled, try to verify the peer that we are communicating with.
 Note, if using OpenSSL, this currently only makes sure that the
 peer certificate is signed by one of the root certificates in the CA
@@ -2055,7 +2055,7 @@ need to be specified for verification to work, but not all libraries and
 setups have defaults built in.
 The file must be in OpenSSL PEM format.
 
-@item tls_verify=@var{1|0}
+@item tls_verify, verify=@var{1|0}
 If enabled, try to verify the peer that we are communicating with.
 Note, if using OpenSSL, this currently only makes sure that the
 peer certificate is signed by one of the root certificates in the CA
