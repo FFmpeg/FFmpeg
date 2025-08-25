@@ -29,6 +29,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "internal.h"
 #include "rtp.h"
 #include "rtpproto.h"
 #include "url.h"
@@ -232,8 +233,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     RTPContext *s = h->priv_data;
     AVDictionary *fec_opts = NULL;
     int rtp_port;
-    char hostname[256], include_sources[1024] = "", exclude_sources[1024] = "";
-    char *sources = include_sources, *block = exclude_sources;
+    char hostname[256];
     char *fec_protocol = NULL;
     char buf[1024];
     char path[1024];
@@ -250,58 +250,17 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
 
     p = strchr(uri, '?');
     if (p) {
-        if (av_find_info_tag(buf, sizeof(buf), "ttl", p)) {
-            s->ttl = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "rtcpport", p)) {
-            s->rtcp_port = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "localport", p)) {
-            s->local_rtpport = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "localrtpport", p)) {
-            s->local_rtpport = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "localrtcpport", p)) {
-            s->local_rtcpport = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "pkt_size", p)) {
-            s->pkt_size = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "connect", p)) {
-            s->connect = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "write_to_source", p)) {
-            s->write_to_source = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "dscp", p)) {
-            s->dscp = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "timeout", p)) {
-            s->rw_timeout = strtol(buf, NULL, 10);
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "sources", p)) {
-            av_strlcpy(include_sources, buf, sizeof(include_sources));
-            ff_ip_parse_sources(h, buf, &s->filters);
-        } else {
-            ff_ip_parse_sources(h, s->sources, &s->filters);
-            sources = s->sources;
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "block", p)) {
-            av_strlcpy(exclude_sources, buf, sizeof(exclude_sources));
-            ff_ip_parse_blocks(h, buf, &s->filters);
-        } else {
-            ff_ip_parse_blocks(h, s->block, &s->filters);
-            block = s->block;
-        }
-        if (av_find_info_tag(buf, sizeof(buf), "localaddr", p)) {
-            av_freep(&s->localaddr);
-            s->localaddr = av_strdup(buf);
-            if (!s->localaddr) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-        }
+        ret = ff_parse_opts_from_query_string(s, p, 1);
+        if (ret < 0)
+            goto fail;
+    }
+    if (s->sources) {
+        if ((ret = ff_ip_parse_sources(h, s->sources, &s->filters)) < 0)
+            goto fail;
+    }
+    if (s->block) {
+        if ((ret = ff_ip_parse_blocks(h, s->block, &s->filters)) < 0)
+            goto fail;
     }
     if (s->rw_timeout >= 0)
         h->rw_timeout = s->rw_timeout;
@@ -334,6 +293,8 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     }
 
     for (i = 0; i < max_retry_count; i++) {
+        const char *sources = s->sources ? s->sources : "";
+        const char *block = s->block ? s->block : "";
         build_udp_url(s, buf, sizeof(buf),
                       hostname, s->localaddr, rtp_port, s->local_rtpport,
                       sources, block);
