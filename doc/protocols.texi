@@ -1535,7 +1535,15 @@ The accepted URL syntax is:
 sctp://@var{host}:@var{port}[?@var{options}]
 @end example
 
-The protocol accepts the following options:
+@var{options} contains a list of &-separated options of the form
+@var{key}=@var{val}. Standard percent-encoding (and using the plus sign for
+space) can be used to escape keys and values.
+
+Options can also can be specified via command line options (or in code via
+@code{AVOption}s).
+
+The list of supported options follows.
+
 @table @option
 @item listen
 If set to any value, listen for an incoming connection. Outgoing connection is done by default.
