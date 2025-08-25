@@ -587,7 +587,6 @@ end:
 }
 
 typedef struct TLSContext {
-    const AVClass *class;
     TLSShared tls_shared;
 
     char *cert_store_subject;

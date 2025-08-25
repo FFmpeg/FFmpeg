@@ -44,7 +44,6 @@ GCRY_THREAD_OPTION_PTHREAD_IMPL;
 #endif
 
 typedef struct TLSContext {
-    const AVClass *class;
     TLSShared tls_shared;
     gnutls_session_t session;
     gnutls_certificate_credentials_t cred;

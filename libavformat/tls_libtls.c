@@ -32,7 +32,6 @@
 #include <tls.h>
 
 typedef struct TLSContext {
-    const AVClass *class;
     TLSShared tls_shared;
     struct tls *ctx;
 } TLSContext;

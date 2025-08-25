@@ -35,6 +35,7 @@
 #define MAX_CERTIFICATE_SIZE 8192
 
 typedef struct TLSShared {
+    const AVClass *class;
     char *ca_file;
     int verify;
     char *cert_file;

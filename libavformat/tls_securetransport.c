@@ -43,7 +43,6 @@ SecIdentityRef SecIdentityCreate(CFAllocatorRef allocator, SecCertificateRef cer
 #define ioErr -36
 
 typedef struct TLSContext {
-    const AVClass *class;
     TLSShared tls_shared;
     SSLContextRef ssl_context;
     CFArrayRef ca_array;

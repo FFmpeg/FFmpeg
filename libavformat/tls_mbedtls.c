@@ -40,7 +40,6 @@
 #include "libavutil/avstring.h"
 
 typedef struct TLSContext {
-    const AVClass *class;
     TLSShared tls_shared;
     mbedtls_ssl_context ssl_context;
     mbedtls_ssl_config ssl_config;

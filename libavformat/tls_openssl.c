@@ -418,7 +418,6 @@ static X509 *cert_from_pem_string(const char *pem_str)
 
 
 typedef struct TLSContext {
-    const AVClass *class;
     TLSShared tls_shared;
     SSL_CTX *ctx;
     SSL *ssl;
