@@ -832,39 +832,41 @@ static int old_codec23(SANMVideoContext *ctx, GetByteContext *gb, int top, int l
 static int old_codec21(SANMVideoContext *ctx, GetByteContext *gb, int top, int left,
                        int width, int height)
 {
-    const uint32_t maxpxo = ctx->height * ctx->pitch;
+    const uint16_t mx = ctx->width, my = ctx->height, p = ctx->pitch;
     uint8_t *dst = (uint8_t *)ctx->fbuf, c;
-    int i, j, k, pc, sk, pxoff;
+    int j, y, pc, sk, ls;
 
-    dst = (uint8_t *)ctx->fbuf;
-    for (i = 0; i < height; i++) {
-        if (bytestream2_get_bytes_left(gb) < 2)
-            return 0;
-        pxoff = left + ((top + i) * ctx->pitch);
-        k = bytestream2_get_le16u(gb);
+    if (((top + height) < 0) || (top >= my) || (left + width < 0) || (left >= mx))
+        return 0;
+
+    y = top;
+    for (; (bytestream2_get_bytes_left(gb) > 2) && (height > 0) && (y < my); height--, y++) {
+        ls = bytestream2_get_le16u(gb);
+        if (y < 0) {
+            if (ls >= bytestream2_get_bytes_left(gb))
+                return 0;
+            bytestream2_skip(gb, ls);
+            continue;
+        }
         sk = 1;
-        pc = 0;
-        while (k > 0 && pc <= width) {
-            if (bytestream2_get_bytes_left(gb) < 2)
-                return AVERROR_INVALIDDATA;
+        pc = left;
+        while ((bytestream2_get_bytes_left(gb) > 1) && (ls > 1) && (pc <= (width + left))) {
             j = bytestream2_get_le16u(gb);
-            k -= 2;
+            ls -= 2;
             if (sk) {
-                pxoff += j;
-                pc += j;
+                if (pc < mx)
+                    pc += j;
             } else {
-                if (bytestream2_get_bytes_left(gb) < (j + 1))
-                    return AVERROR_INVALIDDATA;
-                do {
+                while ((bytestream2_get_bytes_left(gb) > 0) && (ls > 0) && (j >= 0)) {
                     c = bytestream2_get_byteu(gb);
-                    if (pxoff >=0 && pxoff < maxpxo) {
-                        *(dst + pxoff) = c;
+                    if ((pc >= 0) && (pc < mx)) {
+                        *(dst + (y * p) + pc) = c;
                     }
-                    pxoff++;
-                    pc++;
+                    ls--;
                     j--;
-                    k--;
-                } while (j > -1);
+                    if (pc < mx)
+                        pc++;
+                }
             }
             sk ^= 1;
         }
