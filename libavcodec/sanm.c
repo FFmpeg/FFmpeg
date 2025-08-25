@@ -766,10 +766,9 @@ static int rle_decode(SANMVideoContext *ctx, GetByteContext *gb, uint8_t *dst, c
 static int old_codec23(SANMVideoContext *ctx, GetByteContext *gb, int top, int left,
                        int width, int height, uint8_t param, uint16_t param2)
 {
-    const uint32_t maxpxo = ctx->height * ctx->pitch;
-    uint8_t *dst, lut[256], c;
-    int i, j, k, pc, sk;
-    int32_t pxoff;
+    const uint16_t mx = ctx->width, my = ctx->height, p = ctx->pitch;
+    uint8_t c, lut[256], *dst = (uint8_t *)ctx->fbuf;
+    int sk, i, j, ls, pc, y;
 
     if (ctx->subversion < 2) {
         /* Rebel Assault 1: constant offset + 0xd0 */
@@ -788,30 +787,41 @@ static int old_codec23(SANMVideoContext *ctx, GetByteContext *gb, int top, int l
     if (bytestream2_get_bytes_left(gb) < 1)
         return 0;  /* some c23 frames just set up the LUT */
 
-    dst = (uint8_t *)ctx->fbuf;
-    for (i = 0; i < height; i++) {
-        if (bytestream2_get_bytes_left(gb) < 2)
-            return 0;
-        pxoff = left + ((top + i) * ctx->pitch);
-        k = bytestream2_get_le16u(gb);
-        sk = 1;
-        pc = 0;
-        while (k > 0 && pc <= width) {
-            if (bytestream2_get_bytes_left(gb) < 1)
+    if (((top + height) < 0) || (top >= my) || (left + width < 0) || (left >= mx))
+        return 0;
+
+    if (top < 0) {
+        y = -top;
+        while (y-- && bytestream2_get_bytes_left(gb) > 1) {
+            ls = bytestream2_get_le16u(gb);
+            if (bytestream2_get_bytes_left(gb) < ls)
                 return AVERROR_INVALIDDATA;
+            bytestream2_skip(gb, ls);
+        }
+        height += top;
+        top = 0;
+    }
+
+    y = top;
+    for (; (bytestream2_get_bytes_left(gb) > 1) && (height > 0) && (y < my); height--, y++) {
+        ls = bytestream2_get_le16u(gb);
+        sk = 1;
+        pc = left;
+        while ((bytestream2_get_bytes_left(gb) > 0) && (ls > 0) && (pc <= (width + left))) {
             j = bytestream2_get_byteu(gb);
-            if (sk) {
-                pxoff += j;
-                pc += j;
-            } else {
+            ls--;
+            if (!sk) {
                 while (j--) {
-                    if (pxoff >=0 && pxoff < maxpxo) {
-                        c = *(dst + pxoff);
-                        *(dst + pxoff) = lut[c];
+                    if ((pc >= 0) && (pc < mx)) {
+                        c = *(dst + (y * p) + pc);
+                        *(dst + (y * p) + pc) = lut[c];
                     }
-                    pxoff++;
-                    pc++;
+                    if (pc < mx)
+                        pc++;
                 }
+            } else {
+                if (pc < mx)
+                    pc += j;
             }
             sk ^= 1;
         }
