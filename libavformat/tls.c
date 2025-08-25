@@ -31,41 +31,6 @@
 #include "libavutil/mem.h"
 #include "libavutil/parseutils.h"
 
-static int set_options(TLSShared *c, const char *uri)
-{
-    char buf[1024];
-    const char *p = strchr(uri, '?');
-    if (!p)
-        return 0;
-
-    if (!c->ca_file && av_find_info_tag(buf, sizeof(buf), "cafile", p)) {
-        c->ca_file = av_strdup(buf);
-        if (!c->ca_file)
-            return AVERROR(ENOMEM);
-    }
-
-    if (!c->verify && av_find_info_tag(buf, sizeof(buf), "verify", p)) {
-        char *endptr = NULL;
-        c->verify = strtol(buf, &endptr, 10);
-        if (buf == endptr)
-            c->verify = 1;
-    }
-
-    if (!c->cert_file && av_find_info_tag(buf, sizeof(buf), "cert", p)) {
-        c->cert_file = av_strdup(buf);
-        if (!c->cert_file)
-            return AVERROR(ENOMEM);
-    }
-
-    if (!c->key_file && av_find_info_tag(buf, sizeof(buf), "key", p)) {
-        c->key_file = av_strdup(buf);
-        if (!c->key_file)
-            return AVERROR(ENOMEM);
-    }
-
-    return 0;
-}
-
 int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AVDictionary **options)
 {
     int port;
@@ -77,16 +42,17 @@ int ff_tls_open_underlying(TLSShared *c, URLContext *parent, const char *uri, AV
     int use_proxy;
     int ret;
 
-    ret = set_options(c, uri);
-    if (ret < 0)
-        return ret;
+    p = strchr(uri, '?');
+    if (p) {
+        ret = ff_parse_opts_from_query_string(c, p, 1);
+        if (ret < 0)
+            return ret;
+    }
 
     if (c->listen && !c->is_dtls)
         snprintf(opts, sizeof(opts), "?listen=1");
 
     av_url_split(NULL, 0, NULL, 0, c->underlying_host, sizeof(c->underlying_host), &port, NULL, 0, uri);
-
-    p = strchr(uri, '?');
 
     if (!p) {
         p = opts;
