@@ -2967,9 +2967,18 @@ ac3_fixed_decoder_select="ac3_parser ac3dsp bswapdsp"
 ac3_encoder_select="ac3dsp audiodsp me_cmp"
 ac3_fixed_encoder_select="ac3dsp audiodsp me_cmp"
 acelp_kelvin_decoder_select="audiodsp celp_math"
+adpcm_circus_decoder_deps="lgpl_gpl"
 adpcm_g722_decoder_select="g722dsp"
 adpcm_g722_encoder_select="g722dsp"
+adpcm_ima_escape_decoder_deps="lgpl_gpl"
+adpcm_ima_hvqm2_decoder_deps="lgpl_gpl"
+adpcm_ima_hvqm4_decoder_deps="lgpl_gpl"
+adpcm_ima_magix_decoder_deps="lgpl_gpl"
+adpcm_ima_pda_decoder_deps="lgpl_gpl"
+adpcm_n64_decoder_deps="lgpl_gpl"
+adpcm_psxc_decoder_deps="lgpl_gpl"
 agm_decoder_select="idctdsp"
+ahx_decoder_deps="lgpl_gpl"
 aic_decoder_select="golomb idctdsp"
 alac_encoder_select="lpc"
 als_decoder_select="bswapdsp mpeg4audio"
@@ -3552,6 +3561,7 @@ vvc_qsv_decoder_select="vvc_mp4toannexb_bsf qsvdec"
 
 # parsers
 aac_parser_select="adts_header mpeg4audio"
+ahx_parser_deps="lgpl_gpl"
 apv_parser_select="cbs_apv"
 av1_parser_select="cbs_av1"
 evc_parser_select="evcparse"
@@ -3566,6 +3576,7 @@ vvc_parser_select="cbs_h266"
 
 # bitstream_filters
 aac_adtstoasc_bsf_select="adts_header mpeg4audio"
+ahx_to_mp2_bsf_deps="lgpl_gpl"
 av1_frame_merge_bsf_select="cbs_av1"
 av1_frame_split_bsf_select="cbs_av1"
 av1_metadata_bsf_select="cbs_av1"
@@ -4633,6 +4644,7 @@ enabled gpl && map "die_license_disabled_gpl nonfree" $EXTERNAL_LIBRARY_NONFREE_
 map "die_license_disabled nonfree" $HWACCEL_LIBRARY_NONFREE_LIST
 
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
+enabled gpl && enable lgpl_gpl # Files that are marked as LGPL but some developers prefer only building them with --enable-gpl
 
 if enabled nonfree; then
     license="nonfree and unredistributable"
