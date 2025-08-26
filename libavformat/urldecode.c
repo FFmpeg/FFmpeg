@@ -32,20 +32,10 @@
 #include "libavutil/avstring.h"
 #include "urldecode.h"
 
-char *ff_urldecode(const char *url, int decode_plus_sign)
+static size_t urldecode(char *dest, const char *url, size_t url_len, int decode_plus_sign)
 {
-    int s = 0, d = 0, url_len = 0;
+    size_t s = 0, d = 0;
     char c;
-    char *dest = NULL;
-
-    if (!url)
-        return NULL;
-
-    url_len = strlen(url) + 1;
-    dest = av_malloc(url_len);
-
-    if (!dest)
-        return NULL;
 
     while (s < url_len) {
         c = url[s++];
@@ -81,6 +71,25 @@ char *ff_urldecode(const char *url, int decode_plus_sign)
         }
 
     }
+
+    return d;
+}
+
+char *ff_urldecode(const char *url, int decode_plus_sign)
+{
+    char *dest = NULL;
+    size_t url_len;
+
+    if (!url)
+        return NULL;
+
+    url_len = strlen(url) + 1;
+    dest = av_malloc(url_len);
+
+    if (!dest)
+        return NULL;
+
+    urldecode(dest, url, url_len, decode_plus_sign);
 
     return dest;
 }
