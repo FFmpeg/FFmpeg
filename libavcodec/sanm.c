@@ -1072,14 +1072,18 @@ static int old_codec37(SANMVideoContext *ctx, int width, int height)
     ptrdiff_t stride = ctx->pitch;
     uint8_t *dst, *prev;
     int skip_run = 0;
-    int compr = bytestream2_get_byte(&ctx->gb);
-    int mvoff = bytestream2_get_byte(&ctx->gb);
-    int seq   = bytestream2_get_le16(&ctx->gb);
-    uint32_t decoded_size = bytestream2_get_le32(&ctx->gb);
+
+    if (bytestream2_get_bytes_left(&ctx->gb) < 16)
+        return AVERROR_INVALIDDATA;
+
+    int compr = bytestream2_get_byteu(&ctx->gb);
+    int mvoff = bytestream2_get_byteu(&ctx->gb);
+    int seq   = bytestream2_get_le16u(&ctx->gb);
+    uint32_t decoded_size = bytestream2_get_le32u(&ctx->gb);
     int flags;
 
     bytestream2_skip(&ctx->gb, 4);
-    flags = bytestream2_get_byte(&ctx->gb);
+    flags = bytestream2_get_byteu(&ctx->gb);
     bytestream2_skip(&ctx->gb, 3);
 
     if (decoded_size > ctx->height * stride) {
@@ -1103,10 +1107,9 @@ static int old_codec37(SANMVideoContext *ctx, int width, int height)
 
     switch (compr) {
     case 0:
-        for (i = 0; i < height; i++) {
-            bytestream2_get_buffer(&ctx->gb, dst, width);
-            dst += stride;
-        }
+        if (bytestream2_get_bytes_left(&ctx->gb) < width * height)
+            return AVERROR_INVALIDDATA;
+        bytestream2_get_bufferu(&ctx->gb, dst, width * height);
         memset(ctx->frm2, 0, ctx->height * stride);
         break;
     case 1:
@@ -1374,16 +1377,20 @@ static int old_codec47(SANMVideoContext *ctx, int width, int height)
     uint8_t *prev1 = (uint8_t *)ctx->frm1;
     uint8_t *prev2 = (uint8_t *)ctx->frm2;
     uint8_t auxcol[2];
-    int seq     = bytestream2_get_le16(&ctx->gb);
-    int compr   = bytestream2_get_byte(&ctx->gb);
-    int new_rot = bytestream2_get_byte(&ctx->gb);
-    int skip    = bytestream2_get_byte(&ctx->gb);
+
+    if (bytestream2_get_bytes_left(&ctx->gb) < 26)
+         return AVERROR_INVALIDDATA;
+
+    int seq     = bytestream2_get_le16u(&ctx->gb);
+    int compr   = bytestream2_get_byteu(&ctx->gb);
+    int new_rot = bytestream2_get_byteu(&ctx->gb);
+    int skip    = bytestream2_get_byteu(&ctx->gb);
 
     bytestream2_skip(&ctx->gb, 3);
     bytestream2_get_bufferu(&ctx->gb, ctx->c47cb, 4);
     auxcol[0] = bytestream2_get_byteu(&ctx->gb);
     auxcol[1] = bytestream2_get_byteu(&ctx->gb);
-    decoded_size = bytestream2_get_le32(&ctx->gb);
+    decoded_size = bytestream2_get_le32u(&ctx->gb);
     bytestream2_skip(&ctx->gb, 8);
 
     if (decoded_size > ctx->height * stride) {
@@ -1624,11 +1631,15 @@ static int codec48_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *db, int x
 static int old_codec48(SANMVideoContext *ctx, int width, int height)
 {
     uint8_t *dst, *prev;
-    int compr = bytestream2_get_byte(&ctx->gb);
-    int mvidx = bytestream2_get_byte(&ctx->gb);
-    int seq   = bytestream2_get_le16(&ctx->gb);
-    uint32_t decoded_size = bytestream2_get_le32(&ctx->gb);
     int i, j, flags;
+
+    if (bytestream2_get_bytes_left(&ctx->gb) < 16)
+        return AVERROR_INVALIDDATA;
+
+    int compr = bytestream2_get_byteu(&ctx->gb);
+    int mvidx = bytestream2_get_byteu(&ctx->gb);
+    int seq   = bytestream2_get_le16u(&ctx->gb);
+    uint32_t decoded_size = bytestream2_get_le32u(&ctx->gb);
 
     // all codec48 videos use 1, but just to be safe...
     if (mvidx != 1) {
@@ -1637,7 +1648,7 @@ static int old_codec48(SANMVideoContext *ctx, int width, int height)
     }
 
     bytestream2_skip(&ctx->gb, 4);
-    flags = bytestream2_get_byte(&ctx->gb);
+    flags = bytestream2_get_byteu(&ctx->gb);
     bytestream2_skip(&ctx->gb, 3);
 
     if (flags & 8) {
