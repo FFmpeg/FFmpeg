@@ -674,11 +674,9 @@ static av_cold int decode_end(AVCodecContext *avctx)
 static int old_codec4(SANMVideoContext *ctx, GetByteContext *gb, int top, int left,
                       int w, int h, uint8_t param, uint16_t param2, int codec)
 {
-    const uint16_t p = ctx->pitch;
-    const uint32_t maxpxo = ctx->height * p;
+    const uint16_t mx = ctx->width, my = ctx->height, p = ctx->pitch;
     uint8_t mask, bits, idx, *gs, *dst = (uint8_t *)ctx->fbuf;
-    int i, j, k, l, bit, ret;
-    int32_t pxoff, pxo2;
+    int i, j, k, l, bit, ret, x, y;
 
     if (ctx->c4param != param) {
         if (codec > 32)
@@ -698,8 +696,9 @@ static int old_codec4(SANMVideoContext *ctx, GetByteContext *gb, int top, int le
 
     for (j = 0; j < w; j += 4) {
         mask = bits = 0;
+        x = left + j;
         for (i = 0; i < h; i += 4) {
-            pxoff = j + left + ((top + i) * p);
+            y = top + i;
             if (param2 > 0) {
                 if (bits == 0) {
                     if (bytestream2_get_bytes_left(gb) < 1)
@@ -719,18 +718,20 @@ static int old_codec4(SANMVideoContext *ctx, GetByteContext *gb, int top, int le
             idx = bytestream2_get_byteu(gb);
             if ((bit == 0) && (idx == 0x80) && (codec != 5))
                 continue;
-
+            if ((y >= my) || ((y + 4) < 0) || ((x + 4) < 0) || (x >= mx))
+                continue;
             gs = &(ctx->c4tbl[bit][idx][0]);
-            pxo2 = pxoff;
-            for (k = 0; k < 4; k++) {
-                for (l = 0; l < 4; l++) {
-                    if (pxo2 >= 0 && pxo2 < maxpxo) {
-                        *(dst + pxo2) = *gs;
+            if ((y >= 0) && (x >= 0) && ((y + 4) < my) && ((x + 4) < mx)) {
+                for (k = 0; k < 4; k++, gs += 4)
+                    memcpy(dst + x + (y + k) * p, gs, 4);
+            } else {
+                for (k = 0; k < 4; k++) {
+                    for (l = 0; l < 4; l++, gs++) {
+                        const int yo = y + k, xo = x + l;
+                        if ((yo >= 0) && (yo < my) && (xo >= 0) && (xo < mx))
+                            *(dst + yo * p + xo) = *gs;
                     }
-                    gs++;
-                    pxo2++;
                 }
-                pxo2 = pxo2 - 4 + p;
             }
         }
     }
