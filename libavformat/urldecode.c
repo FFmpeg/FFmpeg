@@ -28,6 +28,8 @@
 
 #include <string.h>
 
+#include "libavutil/error.h"
+#include "libavutil/macros.h"
 #include "libavutil/mem.h"
 #include "libavutil/avstring.h"
 #include "urldecode.h"
@@ -92,4 +94,20 @@ char *ff_urldecode(const char *url, int decode_plus_sign)
     urldecode(dest, url, url_len, decode_plus_sign);
 
     return dest;
+}
+
+int ff_urldecode_len(char *dest, size_t dest_len, const char *url, size_t url_max_len, int decode_plus_sign)
+{
+    size_t written_bytes;
+    size_t url_len = strlen(url);
+
+    url_len = FFMIN(url_len, url_max_len);
+
+    if (dest_len <= url_len)
+        return AVERROR(EINVAL);
+
+    written_bytes = urldecode(dest, url, url_len, decode_plus_sign);
+    dest[written_bytes] = '\0';
+
+    return written_bytes;
 }

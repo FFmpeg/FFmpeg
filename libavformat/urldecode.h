@@ -19,6 +19,8 @@
 #ifndef AVFORMAT_URLDECODE_H
 #define AVFORMAT_URLDECODE_H
 
+#include <stddef.h>
+
 /**
  * Decodes an URL from its percent-encoded form back into normal
  * representation. This function returns the decoded URL in a string.
@@ -33,4 +35,20 @@
  */
 char *ff_urldecode(const char *url, int decode_plus_sign);
 
+/**
+ * Decodes an URL from its percent-encoded form back into normal
+ * representation. This function returns the decoded URL in a string.
+ * The URL to be decoded does not necessarily have to be encoded but
+ * in that case the original string is duplicated.
+ *
+ * @param dest the destination buffer.
+ * @param dest_len the maximum available space in the destination buffer.
+ *                 Must be bigger than FFMIN(strlen(url), url_max_len) to avoid
+ *                 an AVERROR(EINVAL) result
+ * @param url_max_len the maximum number of chars to read from url
+ * @param decode_plus_sign if nonzero plus sign is decoded to space
+ * @return the number of written bytes to dest excluding the zero terminator,
+ *         negative on error
+ */
+int ff_urldecode_len(char *dest, size_t dest_len, const char *url, size_t url_max_len, int decode_plus_sign);
 #endif /* AVFORMAT_URLDECODE_H */
