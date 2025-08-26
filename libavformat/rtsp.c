@@ -1385,7 +1385,7 @@ start:
  *
  * @return zero if success, nonzero otherwise
  */
-static int rtsp_send_cmd_with_content_async(AVFormatContext *s,
+int ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
                                             const char *method, const char *url,
                                             const char *headers,
                                             const unsigned char *send_content,
@@ -1445,7 +1445,7 @@ static int rtsp_send_cmd_with_content_async(AVFormatContext *s,
 int ff_rtsp_send_cmd_async(AVFormatContext *s, const char *method,
                            const char *url, const char *headers)
 {
-    return rtsp_send_cmd_with_content_async(s, method, url, headers, NULL, 0);
+    return ff_rtsp_send_cmd_with_content_async(s, method, url, headers, NULL, 0);
 }
 
 int ff_rtsp_send_cmd(AVFormatContext *s, const char *method, const char *url,
@@ -1470,7 +1470,7 @@ int ff_rtsp_send_cmd_with_content(AVFormatContext *s,
 
 retry:
     cur_auth_type = rt->auth_state.auth_type;
-    if ((ret = rtsp_send_cmd_with_content_async(s, method, url, header,
+    if ((ret = ff_rtsp_send_cmd_with_content_async(s, method, url, header,
                                                 send_content,
                                                 send_content_length)) < 0)
         return ret;

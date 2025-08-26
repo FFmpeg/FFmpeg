@@ -509,6 +509,25 @@ int ff_rtsp_send_cmd_async(AVFormatContext *s, const char *method,
                            const char *url, const char *headers);
 
 /**
+ * Send a command to the RTSP server without waiting for the reply.
+ *
+ * @param s RTSP (de)muxer context
+ * @param method the method for the request
+ * @param url the target url for the request
+ * @param headers extra header lines to include in the request
+ * @param send_content if non-null, the data to send as request body content
+ * @param send_content_length the length of the send_content data, or 0 if
+ *                            send_content is null
+ *
+ * @return zero if success, nonzero otherwise
+ */
+int ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
+                                        const char *method, const char *url,
+                                        const char *headers,
+                                        const unsigned char *send_content,
+                                        int send_content_length);
+
+/**
  * Send a command to the RTSP server and wait for the reply.
  *
  * @param s RTSP (de)muxer context
