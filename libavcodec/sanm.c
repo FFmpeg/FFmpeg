@@ -939,7 +939,6 @@ static int old_codec1(SANMVideoContext *ctx, GetByteContext *gb, int top,
             }
         }
     }
-    ctx->rotate_code = 0;
 
     return 0;
 }
@@ -1006,7 +1005,6 @@ static int old_codec31(SANMVideoContext *ctx, GetByteContext *gb, int top,
             }
         }
     }
-    ctx->rotate_code = 0;
 
     return 0;
 }
@@ -1090,8 +1088,6 @@ static int old_codec37(SANMVideoContext *ctx, int width, int height)
         decoded_size = ctx->height * stride;
         av_log(ctx->avctx, AV_LOG_WARNING, "Decoded size is too large.\n");
     }
-
-    ctx->rotate_code = 0;
 
     if (((seq & 1) || !(flags & 1)) && (compr && compr != 2)) {
         FFSWAP(uint16_t*, ctx->frm0, ctx->frm2);
@@ -1452,8 +1448,7 @@ static int old_codec47(SANMVideoContext *ctx, int width, int height)
     }
     if (seq == ctx->prev_seq + 1)
         ctx->rotate_code = new_rot;
-    else
-        ctx->rotate_code = 0;
+
     ctx->prev_seq = seq;
 
     return 0;
@@ -1707,7 +1702,7 @@ static int old_codec48(SANMVideoContext *ctx, int width, int height)
                                       "Subcodec 48 compression %d", compr);
         return AVERROR_PATCHWELCOME;
     }
-    ctx->rotate_code = 1;    // swap frm[0] and frm[2]
+    ctx->rotate_code = 1;    // swap frm0 and frm2
     ctx->prev_seq = seq;
     return 0;
 }
@@ -2512,7 +2507,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
     if (ctx->rotate_code)
         rotate_bufs(ctx, ctx->rotate_code);
-
+    ctx->rotate_code = 0;
     return pkt->size;
 }
 
