@@ -296,6 +296,7 @@ typedef struct SANMVideoContext {
     uint8_t c23lut[256];
     uint8_t c4tbl[2][256][16];
     uint16_t c4param;
+    uint8_t c47cb[4];
 } SANMVideoContext;
 
 typedef struct SANMFrameHeader {
@@ -1230,7 +1231,7 @@ static int old_codec37(SANMVideoContext *ctx, int width, int height)
 }
 
 static int process_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *prev1,
-                         uint8_t *prev2, int stride, int tbl, int size)
+                         uint8_t *prev2, int stride, int size)
 {
     int code, k, t;
     uint8_t colors[2];
@@ -1252,18 +1253,18 @@ static int process_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *prev1,
                 dst[1 + stride] = bytestream2_get_byteu(&ctx->gb);
             } else {
                 size >>= 1;
-                if (process_block(ctx, dst, prev1, prev2, stride, tbl, size))
+                if (process_block(ctx, dst, prev1, prev2, stride, size))
                     return AVERROR_INVALIDDATA;
                 if (process_block(ctx, dst + size, prev1 + size, prev2 + size,
-                                  stride, tbl, size))
+                                  stride, size))
                     return AVERROR_INVALIDDATA;
                 dst   += size * stride;
                 prev1 += size * stride;
                 prev2 += size * stride;
-                if (process_block(ctx, dst, prev1, prev2, stride, tbl, size))
+                if (process_block(ctx, dst, prev1, prev2, stride, size))
                     return AVERROR_INVALIDDATA;
                 if (process_block(ctx, dst + size, prev1 + size, prev2 + size,
-                                  stride, tbl, size))
+                                  stride, size))
                     return AVERROR_INVALIDDATA;
             }
             break;
@@ -1292,12 +1293,8 @@ static int process_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *prev1,
                 memcpy(dst + k * stride, prev1 + k * stride, size);
             break;
         default:
-            k = bytestream2_tell(&ctx->gb);
-            bytestream2_seek(&ctx->gb, tbl + (code & 7), SEEK_SET);
-            t = bytestream2_get_byte(&ctx->gb);
-            bytestream2_seek(&ctx->gb, k, SEEK_SET);
             for (k = 0; k < size; k++)
-                memset(dst + k * stride, t, size);
+                memset(dst + k * stride, ctx->c47cb[code & 3], size);
         }
     } else {
         int mx = motion_vectors[code][0];
@@ -1377,13 +1374,13 @@ static int old_codec47(SANMVideoContext *ctx, int width, int height)
     uint8_t *prev1 = (uint8_t *)ctx->frm1;
     uint8_t *prev2 = (uint8_t *)ctx->frm2;
     uint8_t auxcol[2];
-    int tbl_pos = bytestream2_tell(&ctx->gb);
     int seq     = bytestream2_get_le16(&ctx->gb);
     int compr   = bytestream2_get_byte(&ctx->gb);
     int new_rot = bytestream2_get_byte(&ctx->gb);
     int skip    = bytestream2_get_byte(&ctx->gb);
 
-    bytestream2_skip(&ctx->gb, 7);
+    bytestream2_skip(&ctx->gb, 3);
+    bytestream2_get_bufferu(&ctx->gb, ctx->c47cb, 4);
     auxcol[0] = bytestream2_get_byteu(&ctx->gb);
     auxcol[1] = bytestream2_get_byteu(&ctx->gb);
     decoded_size = bytestream2_get_le32(&ctx->gb);
@@ -1423,8 +1420,7 @@ static int old_codec47(SANMVideoContext *ctx, int width, int height)
         if (seq == ctx->prev_seq + 1) {
             for (j = 0; j < height; j += 8) {
                 for (i = 0; i < width; i += 8)
-                    if (process_block(ctx, dst + i, prev1 + i, prev2 + i, stride,
-                                      tbl_pos + 8, 8))
+                    if (process_block(ctx, dst + i, prev1 + i, prev2 + i, stride, 8))
                         return AVERROR_INVALIDDATA;
                 dst   += stride * 8;
                 prev1 += stride * 8;
