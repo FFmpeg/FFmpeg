@@ -1233,7 +1233,7 @@ static int old_codec37(SANMVideoContext *ctx, int width, int height)
     return 0;
 }
 
-static int process_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *prev1,
+static int codec47_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *prev1,
                          uint8_t *prev2, int stride, int size)
 {
     int code, k, t;
@@ -1256,17 +1256,17 @@ static int process_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *prev1,
                 dst[1 + stride] = bytestream2_get_byteu(&ctx->gb);
             } else {
                 size >>= 1;
-                if (process_block(ctx, dst, prev1, prev2, stride, size))
+                if (codec47_block(ctx, dst, prev1, prev2, stride, size))
                     return AVERROR_INVALIDDATA;
-                if (process_block(ctx, dst + size, prev1 + size, prev2 + size,
+                if (codec47_block(ctx, dst + size, prev1 + size, prev2 + size,
                                   stride, size))
                     return AVERROR_INVALIDDATA;
                 dst   += size * stride;
                 prev1 += size * stride;
                 prev2 += size * stride;
-                if (process_block(ctx, dst, prev1, prev2, stride, size))
+                if (codec47_block(ctx, dst, prev1, prev2, stride, size))
                     return AVERROR_INVALIDDATA;
-                if (process_block(ctx, dst + size, prev1 + size, prev2 + size,
+                if (codec47_block(ctx, dst + size, prev1 + size, prev2 + size,
                                   stride, size))
                     return AVERROR_INVALIDDATA;
             }
@@ -1427,7 +1427,7 @@ static int old_codec47(SANMVideoContext *ctx, int width, int height)
         if (seq == ctx->prev_seq + 1) {
             for (j = 0; j < height; j += 8) {
                 for (i = 0; i < width; i += 8)
-                    if (process_block(ctx, dst + i, prev1 + i, prev2 + i, stride, 8))
+                    if (codec47_block(ctx, dst + i, prev1 + i, prev2 + i, stride, 8))
                         return AVERROR_INVALIDDATA;
                 dst   += stride * 8;
                 prev1 += stride * 8;
