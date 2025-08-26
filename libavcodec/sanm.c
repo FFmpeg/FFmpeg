@@ -945,51 +945,62 @@ static int old_codec1(SANMVideoContext *ctx, GetByteContext *gb, int top,
 static int old_codec31(SANMVideoContext *ctx, GetByteContext *gb, int top,
                        int left, int width, int height, int p1, int opaque)
 {
-    int i, j, len, flag, code, val, end, pxoff;
-    const int maxpxo = ctx->height * ctx->pitch;
-    uint8_t *dst = (uint8_t *)ctx->fbuf;
+    const uint16_t mx = ctx->width, my = ctx->height, p = ctx->pitch;
+    uint8_t *dst = (uint8_t *)ctx->fbuf, c;
+    int j, x, y, flag, dlen, code;
 
-    for (i = 0; i < height; i++) {
-        if (bytestream2_get_bytes_left(gb) < 2)
-            return AVERROR_INVALIDDATA;
+    if (((top + height) < 0) || (top >= my) || (left + width < 0) || (left >= mx))
+            return 0;
 
-        len = bytestream2_get_le16u(gb);
-        end = bytestream2_tell(gb) + len;
-
-        pxoff = left + ((top + i) * ctx->pitch);
-        while (bytestream2_tell(gb) < end) {
-            if (bytestream2_get_bytes_left(gb) < 2)
+    if (top < 0) {
+        y = -top;
+        while (y-- && bytestream2_get_bytes_left(gb) > 1) {
+            dlen = bytestream2_get_le16u(gb);
+            if (bytestream2_get_bytes_left(gb) <= dlen)
                 return AVERROR_INVALIDDATA;
+            bytestream2_skip(gb, dlen);
+        }
+        height += top;
+        top = 0;
+    }
 
+    y = top;
+    for (; (bytestream2_get_bytes_left(gb) > 1) && (height > 0) && (y < my); height--, y++) {
+        dlen = bytestream2_get_le16u(gb);
+        x = left;
+        while (bytestream2_get_bytes_left(gb) > 1 && dlen) {
             code = bytestream2_get_byteu(gb);
+            dlen--;
             flag = code & 1;
             code = (code >> 1) + 1;
             if (flag) {
-                val = bytestream2_get_byteu(gb);
-                for (j = 0; j < code; j++) {
-                    if ((0 != (val & 0xf)) || opaque) {
-                        if (pxoff >= 0 && pxoff < maxpxo)
-                            *(dst + pxoff) = p1 + (val & 0xf);
-                    }
-                    pxoff++;
-                    if ((0 != (val >> 4)) || opaque) {
-                        if (pxoff >= 0 && pxoff < maxpxo)
-                            *(dst + pxoff) = p1 + (val >> 4);
-                    }
-                    pxoff++;
+                c = bytestream2_get_byteu(gb);
+                dlen--;
+                for (j = 0; (j < code); j++) {
+                    if ((opaque || (c & 0xf)) && (x >= 0) && (x < mx))
+                        *(dst + (y * p) + x) = p1 + (c & 0xf);
+                    if (x < mx)
+                        x++;
+                    if ((opaque || (c >> 4)) && (x >= 0) && (x < mx))
+                        *(dst + (y * p) + x) = p1 + (c >> 4);
+                    if (x < mx)
+                        x++;
                 }
             } else {
                 if (bytestream2_get_bytes_left(gb) < code)
                     return AVERROR_INVALIDDATA;
                 for (j = 0; j < code; j++) {
-                    val = bytestream2_get_byteu(gb);
-                    if ((pxoff >= 0) && (pxoff < maxpxo) && ((0 != (val & 0xf)) || opaque))
-                        *(dst + pxoff) = p1 + (val & 0xf);
-                    pxoff++;
-                    if ((pxoff >= 0) && (pxoff < maxpxo) && ((0 != (val >> 4)) || opaque))
-                        *(dst + pxoff) = p1 + (val >> 4);
-                    pxoff++;
+                    c = bytestream2_get_byteu(gb);
+                    if ((opaque || (c & 0xf)) && (x >= 0) && (x < mx))
+                        *(dst + (y * p) + x) = p1 + (c & 0xf);
+                    if (x < mx)
+                        x++;
+                    if ((opaque || (c >> 4)) && (x >= 0) && (x < mx))
+                        *(dst + (y * p) + x) = p1 + (c >> 4);
+                    if (x < mx)
+                        x++;
                 }
+                dlen -= code;
             }
         }
     }
