@@ -231,7 +231,7 @@ Error 'foo==val'
 Setting options string 'toggle=:'
 Setting entry with key 'toggle' to value ''
 Undefined constant or missing '(' in ''
-Unable to parse option value ""
+Unable to parse "toggle" option value ""
 Error 'toggle=:'
 Setting options string 'string=:'
 Setting entry with key 'string' to value ''
@@ -247,7 +247,7 @@ Error 'toggle=100'
 Setting options string 'toggle==1'
 Setting entry with key 'toggle' to value '=1'
 Undefined constant or missing '(' in '=1'
-Unable to parse option value "=1"
+Unable to parse "toggle" option value "=1"
 Error 'toggle==1'
 Setting options string 'flags=+mu-lame : num=42: toggle=0'
 Setting entry with key 'flags' to value '+mu-lame'
@@ -275,7 +275,7 @@ Setting entry with key 'size' to value 'pal'
 OK    'size=pal'
 Setting options string 'size=bogus'
 Setting entry with key 'size' to value 'bogus'
-Unable to parse option value "bogus" as image size
+Unable to parse "size" option value "bogus" as image size
 Error 'size=bogus'
 Setting options string 'pix_fmt=yuv420p'
 Setting entry with key 'pix_fmt' to value 'yuv420p'
@@ -285,7 +285,7 @@ Setting entry with key 'pix_fmt' to value '2'
 OK    'pix_fmt=2'
 Setting options string 'pix_fmt=bogus'
 Setting entry with key 'pix_fmt' to value 'bogus'
-Unable to parse option value "bogus" as pixel format
+Unable to parse "pix_fmt" option value "bogus" as pixel format
 Error 'pix_fmt=bogus'
 Setting options string 'sample_fmt=s16'
 Setting entry with key 'sample_fmt' to value 's16'
@@ -295,7 +295,7 @@ Setting entry with key 'sample_fmt' to value '2'
 OK    'sample_fmt=2'
 Setting options string 'sample_fmt=bogus'
 Setting entry with key 'sample_fmt' to value 'bogus'
-Unable to parse option value "bogus" as sample format
+Unable to parse "sample_fmt" option value "bogus" as sample format
 Error 'sample_fmt=bogus'
 Setting options string 'video_rate=pal'
 Setting entry with key 'video_rate' to value 'pal'
@@ -312,11 +312,11 @@ OK    'video_rate=30/1.001'
 Setting options string 'video_rate=bogus'
 Setting entry with key 'video_rate' to value 'bogus'
 Undefined constant or missing '(' in 'bogus'
-Unable to parse option value "bogus" as video rate
+Unable to parse "video_rate" option value "bogus" as video rate
 Error 'video_rate=bogus'
 Setting options string 'duration=bogus'
 Setting entry with key 'duration' to value 'bogus'
-Unable to parse option value "bogus" as duration
+Unable to parse "duration" option value "bogus" as duration
 Error 'duration=bogus'
 Setting options string 'duration=123.45'
 Setting entry with key 'duration' to value '123.45'
@@ -338,7 +338,7 @@ Setting entry with key 'cl' to value 'FL+FR'
 OK    'cl=FL+FR'
 Setting options string 'cl=foo'
 Setting entry with key 'cl' to value 'foo'
-Unable to parse option value "foo" as channel layout
+Unable to parse "cl" option value "foo" as channel layout
 Error 'cl=foo'
 Setting options string 'bin=boguss'
 Setting entry with key 'bin' to value 'boguss'
@@ -352,7 +352,7 @@ OK    'bin=ffff'
 Setting options string 'num=bogus'
 Setting entry with key 'num' to value 'bogus'
 Undefined constant or missing '(' in 'bogus'
-Unable to parse option value "bogus"
+Unable to parse "num" option value "bogus"
 Error 'num=bogus'
 Setting options string 'num=44'
 Setting entry with key 'num' to value '44'
@@ -374,7 +374,7 @@ Error 'num=101'
 Setting options string 'unum=bogus'
 Setting entry with key 'unum' to value 'bogus'
 Undefined constant or missing '(' in 'bogus'
-Unable to parse option value "bogus"
+Unable to parse "unum" option value "bogus"
 Error 'unum=bogus'
 Setting options string 'unum=44'
 Setting entry with key 'unum' to value '44'
@@ -396,7 +396,7 @@ Error 'unum=2147483649'
 Setting options string 'num64=bogus'
 Setting entry with key 'num64' to value 'bogus'
 Undefined constant or missing '(' in 'bogus'
-Unable to parse option value "bogus"
+Unable to parse "num64" option value "bogus"
 Error 'num64=bogus'
 Setting options string 'num64=44'
 Setting entry with key 'num64' to value '44'
@@ -421,7 +421,7 @@ Error 'num64=4294967297'
 Setting options string 'flt=bogus'
 Setting entry with key 'flt' to value 'bogus'
 Undefined constant or missing '(' in 'bogus'
-Unable to parse option value "bogus"
+Unable to parse "flt" option value "bogus"
 Error 'flt=bogus'
 Setting options string 'flt=2'
 Setting entry with key 'flt' to value '2'
@@ -440,7 +440,7 @@ Error 'flt=101'
 Setting options string 'dbl=bogus'
 Setting entry with key 'dbl' to value 'bogus'
 Undefined constant or missing '(' in 'bogus'
-Unable to parse option value "bogus"
+Unable to parse "dbl" option value "bogus"
 Error 'dbl=bogus'
 Setting options string 'dbl=2'
 Setting entry with key 'dbl' to value '2'
@@ -496,7 +496,7 @@ Error '5:size=pal:hello'
 Setting options string ':'
 Setting 'num' to value ''
 Undefined constant or missing '(' in ''
-Unable to parse option value ""
+Unable to parse "num" option value ""
 Error ':'
 Setting options string '='
 Setting '' to value ''

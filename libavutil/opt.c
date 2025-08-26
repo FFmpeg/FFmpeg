@@ -490,7 +490,7 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
                 res = av_expr_parse_and_eval(&d, i ? buf : val, const_names,
                                             const_values, NULL, NULL, NULL, NULL, NULL, 0, obj);
                 if (res < 0) {
-                    av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\"\n", val);
+                    av_log(obj, AV_LOG_ERROR, "Unable to parse \"%s\" option value \"%s\"\n", o->name, val);
                     return res;
                 }
             }
@@ -522,7 +522,7 @@ static int set_string_image_size(void *obj, const AVOption *o, const char *val, 
     }
     ret = av_parse_video_size(dst, dst + 1, val);
     if (ret < 0)
-        av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as image size\n", val);
+        av_log(obj, AV_LOG_ERROR, "Unable to parse \"%s\" option value \"%s\" as image size\n", o->name, val);
     return ret;
 }
 
@@ -530,7 +530,7 @@ static int set_string_video_rate(void *obj, const AVOption *o, const char *val, 
 {
     int ret = av_parse_video_rate(dst, val);
     if (ret < 0)
-        av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as video rate\n", val);
+        av_log(obj, AV_LOG_ERROR, "Unable to parse \"%s\" option value \"%s\" as video rate\n", o->name, val);
     return ret;
 }
 
@@ -543,7 +543,7 @@ static int set_string_color(void *obj, const AVOption *o, const char *val, uint8
     } else {
         ret = av_parse_color(dst, val, -1, obj);
         if (ret < 0)
-            av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as color\n", val);
+            av_log(obj, AV_LOG_ERROR, "Unable to parse \"%s\" option value \"%s\" as color\n", o->name, val);
         return ret;
     }
     return 0;
@@ -583,7 +583,7 @@ static int set_string_bool(void *obj, const AVOption *o, const char *val, int *d
     return 0;
 
 fail:
-    av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as boolean\n", val);
+    av_log(obj, AV_LOG_ERROR, "Unable to parse \"%s\" option value \"%s\" as boolean\n", o->name, val);
     return AVERROR(EINVAL);
 }
 
@@ -601,7 +601,7 @@ static int set_string_fmt(void *obj, const AVOption *o, const char *val, uint8_t
             fmt = strtol(val, &tail, 0);
             if (*tail || (unsigned)fmt >= fmt_nb) {
                 av_log(obj, AV_LOG_ERROR,
-                       "Unable to parse option value \"%s\" as %s\n", val, desc);
+                       "Unable to parse \"%s\" option value \"%s\" as %s\n", o->name, val, desc);
                 return AVERROR(EINVAL);
             }
         }
@@ -724,7 +724,7 @@ static int opt_set_elem(void *obj, void *target_obj, const AVOption *o,
             int64_t usecs = 0;
             if (val) {
                 if ((ret = av_parse_time(&usecs, val, 1)) < 0) {
-                    av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as duration\n", val);
+                    av_log(obj, AV_LOG_ERROR, "Unable to parse \"%s\" option value \"%s\" as duration\n", o->name, val);
                     return ret;
                 }
             }
@@ -741,7 +741,7 @@ static int opt_set_elem(void *obj, void *target_obj, const AVOption *o,
     case AV_OPT_TYPE_CHLAYOUT:
         ret = set_string_channel_layout(obj, o, val, dst);
         if (ret < 0) {
-            av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as channel layout\n", val);
+            av_log(obj, AV_LOG_ERROR, "Unable to parse \"%s\" option value \"%s\" as channel layout\n", o->name, val);
             ret = AVERROR(EINVAL);
         }
         return ret;
