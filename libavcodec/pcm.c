@@ -43,16 +43,27 @@ static av_cold int pcm_encode_init(AVCodecContext *avctx)
     avctx->frame_size = 0;
 #if !CONFIG_HARDCODED_TABLES
     switch (avctx->codec->id) {
-#define INIT_ONCE(id, name)                                                 \
-    case AV_CODEC_ID_PCM_ ## id:                                            \
-        if (CONFIG_PCM_ ## id ## _ENCODER) {                                \
-            static AVOnce init_static_once = AV_ONCE_INIT;                  \
-            ff_thread_once(&init_static_once, pcm_ ## name ## _tableinit);  \
-        }                                                                   \
-        break
-        INIT_ONCE(ALAW,  alaw);
-        INIT_ONCE(MULAW, ulaw);
-        INIT_ONCE(VIDC,  vidc);
+#if CONFIG_PCM_ALAW_ENCODER
+    case AV_CODEC_ID_PCM_ALAW: {
+        static AVOnce once_alaw = AV_ONCE_INIT;
+        ff_thread_once(&once_alaw, pcm_alaw_tableinit);
+        break;
+    }
+#endif
+#if CONFIG_PCM_MULAW_ENCODER
+    case AV_CODEC_ID_PCM_MULAW: {
+        static AVOnce once_mulaw = AV_ONCE_INIT;
+        ff_thread_once(&once_mulaw, pcm_ulaw_tableinit);
+        break;
+    }
+#endif
+#if CONFIG_PCM_VIDC_ENCODER
+    case AV_CODEC_ID_PCM_VIDC: {
+        static AVOnce once_vidc = AV_ONCE_INIT;
+        ff_thread_once(&once_vidc, pcm_vidc_tableinit);
+        break;
+    }
+#endif
     default:
         break;
     }
@@ -216,24 +227,30 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             bytestream_put_buffer(&dst, src, n * sample_size);
         }
         break;
+#if CONFIG_PCM_ALAW_DECODER || CONFIG_PCM_ALAW_ENCODER
     case AV_CODEC_ID_PCM_ALAW:
         for (; n > 0; n--) {
             v      = *samples++;
             *dst++ = linear_to_alaw[(v + 32768) >> 2];
         }
         break;
+#endif
+#if CONFIG_PCM_MULAW_DECODER || CONFIG_PCM_MULAW_ENCODER
     case AV_CODEC_ID_PCM_MULAW:
         for (; n > 0; n--) {
             v      = *samples++;
             *dst++ = linear_to_ulaw[(v + 32768) >> 2];
         }
         break;
+#endif
+#if CONFIG_PCM_VIDC_DECODER || CONFIG_PCM_VIDC_ENCODER
     case AV_CODEC_ID_PCM_VIDC:
         for (; n > 0; n--) {
             v      = *samples++;
             *dst++ = linear_to_vidc[(v + 32768) >> 2];
         }
         break;
+#endif
     default:
         return -1;
     }
@@ -329,18 +346,24 @@ static av_cold av_unused int pcm_lut_decode_init(AVCodecContext *avctx)
     switch (avctx->codec_id) {
     default:
         av_unreachable("pcm_lut_decode_init() only used with alaw, mulaw and vidc");
+#if CONFIG_PCM_ALAW_DECODER || CONFIG_PCM_ALAW_ENCODER
     case AV_CODEC_ID_PCM_ALAW:
         for (int i = 0; i < 256; i++)
             s->table[i] = alaw2linear(i);
         break;
+#endif
+#if CONFIG_PCM_MULAW_DECODER || CONFIG_PCM_MULAW_ENCODER
     case AV_CODEC_ID_PCM_MULAW:
         for (int i = 0; i < 256; i++)
             s->table[i] = ulaw2linear(i);
         break;
+#endif
+#if CONFIG_PCM_VIDC_DECODER || CONFIG_PCM_VIDC_ENCODER
     case AV_CODEC_ID_PCM_VIDC:
         for (int i = 0; i < 256; i++)
             s->table[i] = vidc2linear(i);
         break;
+#endif
     }
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
@@ -547,6 +570,9 @@ static int pcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             bytestream_get_buffer(&src, samples, n * sample_size);
         }
         break;
+#if CONFIG_PCM_ALAW_DECODER || CONFIG_PCM_ALAW_ENCODER || \
+    CONFIG_PCM_MULAW_DECODER || CONFIG_PCM_MULAW_ENCODER || \
+    CONFIG_PCM_VIDC_DECODER || CONFIG_PCM_VIDC_ENCODER
     case AV_CODEC_ID_PCM_ALAW:
     case AV_CODEC_ID_PCM_MULAW:
     case AV_CODEC_ID_PCM_VIDC: {
@@ -557,6 +583,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             *samples_16++ = lut[*src++];
         break;
     }
+#endif
     case AV_CODEC_ID_PCM_LXF:
     {
         int i;
@@ -657,7 +684,9 @@ const FFCodec ff_ ## name_ ## _decoder = {                                  \
  *       to the table in pcm_decode_init() as well. */
 //            AV_CODEC_ID_*      pcm_* name
 //                          AV_SAMPLE_FMT_*    long name                                DecodeContext   decode init func
+#if CONFIG_PCM_ALAW_DECODER || CONFIG_PCM_ALAW_ENCODER
 PCM_CODEC_EXT(ALAW,         S16, alaw,         "PCM A-law / G.711 A-law",               PCMLUTDecode,   pcm_lut_decode_init);
+#endif
 PCM_DEC_EXT  (F16LE,        FLT, f16le,        "PCM 16.8 floating point little-endian", PCMScaleDecode, pcm_scale_decode_init);
 PCM_DEC_EXT  (F24LE,        FLT, f24le,        "PCM 24.0 floating point little-endian", PCMScaleDecode, pcm_scale_decode_init);
 PCM_CODEC    (F32BE,        FLT, f32be,        "PCM 32-bit floating point big-endian");
@@ -665,7 +694,9 @@ PCM_CODEC    (F32LE,        FLT, f32le,        "PCM 32-bit floating point little
 PCM_CODEC    (F64BE,        DBL, f64be,        "PCM 64-bit floating point big-endian");
 PCM_CODEC    (F64LE,        DBL, f64le,        "PCM 64-bit floating point little-endian");
 PCM_DECODER  (LXF,          S32P,lxf,          "PCM signed 20-bit little-endian planar");
+#if CONFIG_PCM_MULAW_DECODER || CONFIG_PCM_MULAW_ENCODER
 PCM_CODEC_EXT(MULAW,        S16, mulaw,        "PCM mu-law / G.711 mu-law",             PCMLUTDecode,   pcm_lut_decode_init);
+#endif
 PCM_CODEC    (S8,           U8,  s8,           "PCM signed 8-bit");
 PCM_CODEC    (S8_PLANAR,    U8P, s8_planar,    "PCM signed 8-bit planar");
 PCM_CODEC    (S16BE,        S16, s16be,        "PCM signed 16-bit big-endian");
@@ -688,5 +719,7 @@ PCM_CODEC    (U32BE,        S32, u32be,        "PCM unsigned 32-bit big-endian")
 PCM_CODEC    (U32LE,        S32, u32le,        "PCM unsigned 32-bit little-endian");
 PCM_CODEC    (S64BE,        S64, s64be,        "PCM signed 64-bit big-endian");
 PCM_CODEC    (S64LE,        S64, s64le,        "PCM signed 64-bit little-endian");
+#if CONFIG_PCM_VIDC_DECODER || CONFIG_PCM_VIDC_ENCODER
 PCM_CODEC_EXT(VIDC,         S16, vidc,         "PCM Archimedes VIDC",                   PCMLUTDecode,   pcm_lut_decode_init);
+#endif
 PCM_DECODER  (SGA,          U8,  sga,          "PCM SGA");

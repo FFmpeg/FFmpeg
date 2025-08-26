@@ -42,6 +42,7 @@
 #define         VIDC_SEG_SHIFT   (5)
 #define         VIDC_SEG_MASK    (0xE0)
 
+#if CONFIG_PCM_ALAW_DECODER || CONFIG_PCM_ALAW_ENCODER
 /* alaw2linear() - Convert an A-law value to 16-bit linear PCM */
 static av_cold int alaw2linear(unsigned char a_val)
 {
@@ -57,7 +58,9 @@ static av_cold int alaw2linear(unsigned char a_val)
 
     return (a_val & SIGN_BIT) ? t : -t;
 }
+#endif
 
+#if CONFIG_PCM_MULAW_DECODER || CONFIG_PCM_MULAW_ENCODER
 static av_cold int ulaw2linear(unsigned char u_val)
 {
     int t;
@@ -74,7 +77,9 @@ static av_cold int ulaw2linear(unsigned char u_val)
 
     return (u_val & SIGN_BIT) ? (BIAS - t) : (t - BIAS);
 }
+#endif
 
+#if CONFIG_PCM_VIDC_DECODER || CONFIG_PCM_VIDC_ENCODER
 static av_cold int vidc2linear(unsigned char u_val)
 {
     int t;
@@ -88,6 +93,7 @@ static av_cold int vidc2linear(unsigned char u_val)
 
     return (u_val & VIDC_SIGN_BIT) ? (BIAS - t) : (t - BIAS);
 }
+#endif
 
 #if CONFIG_HARDCODED_TABLES
 #define pcm_alaw_tableinit()
@@ -96,10 +102,19 @@ static av_cold int vidc2linear(unsigned char u_val)
 #include "libavcodec/pcm_tables.h"
 #else
 /* 16384 entries per table */
+#if CONFIG_PCM_ALAW_DECODER || CONFIG_PCM_ALAW_ENCODER
 static uint8_t linear_to_alaw[16384];
+#endif
+#if CONFIG_PCM_MULAW_DECODER || CONFIG_PCM_MULAW_ENCODER
 static uint8_t linear_to_ulaw[16384];
+#endif
+#if CONFIG_PCM_VIDC_DECODER || CONFIG_PCM_VIDC_ENCODER
 static uint8_t linear_to_vidc[16384];
+#endif
 
+#if CONFIG_PCM_ALAW_DECODER  || CONFIG_PCM_ALAW_ENCODER  || \
+    CONFIG_PCM_MULAW_DECODER || CONFIG_PCM_MULAW_ENCODER || \
+    CONFIG_PCM_VIDC_DECODER  || CONFIG_PCM_VIDC_ENCODER
 static av_cold void build_xlaw_table(uint8_t *linear_to_xlaw,
                              int (*xlaw2linear)(unsigned char),
                              int mask)
@@ -123,21 +138,28 @@ static av_cold void build_xlaw_table(uint8_t *linear_to_xlaw,
     }
     linear_to_xlaw[0] = linear_to_xlaw[1];
 }
+#endif
 
+#if CONFIG_PCM_ALAW_DECODER || CONFIG_PCM_ALAW_ENCODER
 static void pcm_alaw_tableinit(void)
 {
     build_xlaw_table(linear_to_alaw, alaw2linear, 0xd5);
 }
+#endif
 
+#if CONFIG_PCM_MULAW_DECODER || CONFIG_PCM_MULAW_ENCODER
 static void pcm_ulaw_tableinit(void)
 {
     build_xlaw_table(linear_to_ulaw, ulaw2linear, 0xff);
 }
+#endif
 
+#if CONFIG_PCM_VIDC_DECODER || CONFIG_PCM_VIDC_ENCODER
 static void pcm_vidc_tableinit(void)
 {
     build_xlaw_table(linear_to_vidc, vidc2linear, 0xff);
 }
+#endif
 #endif /* CONFIG_HARDCODED_TABLES */
 
 #endif /* AVCODEC_PCM_TABLEGEN_H */
