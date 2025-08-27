@@ -327,7 +327,7 @@ addchar:
     }
     if (!percentd_found)
         goto fail;
-    if (!av_bprint_is_complete(buf))
+    if (!(flags & AV_FRAME_FILENAME_FLAGS_IGNORE_TRUNCATION) && !av_bprint_is_complete(buf))
         return AVERROR(ENOMEM);
     return 0;
 fail:
