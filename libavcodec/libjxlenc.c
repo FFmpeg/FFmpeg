@@ -394,6 +394,7 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
             ret = av_exif_write(avctx, &ifd, &exif_buffer, AV_EXIF_TIFF_HEADER);
         if (ret < 0)
             av_log(avctx, AV_LOG_WARNING, "unable to process EXIF frame data\n");
+        av_exif_free(&ifd);
     } else {
         sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX);
         if (sd)
