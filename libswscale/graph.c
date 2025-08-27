@@ -279,6 +279,7 @@ static void legacy_chr_pos(SwsGraph *graph, int *chr_pos, int override, int *war
     *chr_pos = override;
 }
 
+/* Takes over ownership of `sws` */
 static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
                                SwsPass *input, SwsPass **output)
 {
@@ -293,17 +294,19 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
     if (c->cascaded_context[0]) {
         const int num_cascaded = c->cascaded_context[2] ? 3 : 2;
         for (int i = 0; i < num_cascaded; i++) {
-            SwsContext *sub = c->cascaded_context[i];
             const int is_last = i + 1 == num_cascaded;
+
+            /* Steal cascaded context, so we can manage its lifetime independently */
+            SwsContext *sub = c->cascaded_context[i];
+            c->cascaded_context[i] = NULL;
+
             ret = init_legacy_subpass(graph, sub, input, is_last ? output : &input);
             if (ret < 0)
-                return ret;
-            /* Steal cascaded context, so we can free the parent */
-            c->cascaded_context[i] = NULL;
+                break;
         }
 
         sws_free_context(&sws);
-        return 0;
+        return ret;
     }
 
     if (sws->dither == SWS_DITHER_ED && !c->convert_unscaled)
@@ -311,20 +314,26 @@ static int init_legacy_subpass(SwsGraph *graph, SwsContext *sws,
 
     if (c->src0Alpha && !c->dst0Alpha && isALPHA(sws->dst_format)) {
         ret = pass_append(graph, AV_PIX_FMT_RGBA, src_w, src_h, &input, 1, c, run_rgb0);
-        if (ret < 0)
+        if (ret < 0) {
+            sws_free_context(&sws);
             return ret;
+        }
     }
 
     if (c->srcXYZ && !(c->dstXYZ && unscaled)) {
         ret = pass_append(graph, AV_PIX_FMT_RGB48, src_w, src_h, &input, 1, c, run_xyz2rgb);
-        if (ret < 0)
+        if (ret < 0) {
+            sws_free_context(&sws);
             return ret;
+        }
     }
 
     pass = ff_sws_graph_add_pass(graph, sws->dst_format, dst_w, dst_h, input, align, sws,
                                  c->convert_unscaled ? run_legacy_unscaled : run_legacy_swscale);
-    if (!pass)
+    if (!pass) {
+        sws_free_context(&sws);
         return AVERROR(ENOMEM);
+    }
     pass->setup = setup_legacy_swscale;
     pass->free = free_legacy_swscale;
 
@@ -444,13 +453,7 @@ static int add_legacy_sws_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
                                 brightness, contrast, saturation);
     }
 
-    ret = init_legacy_subpass(graph, sws, input, output);
-    if (ret < 0) {
-        sws_free_context(&sws);
-        return ret;
-    }
-
-    return 0;
+    return init_legacy_subpass(graph, sws, input, output);
 }
 
 /**************************
