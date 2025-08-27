@@ -1944,7 +1944,7 @@ static int process_xpal(SANMVideoContext *ctx, int size)
     return 0;
 }
 
-static int decode_0(SANMVideoContext *ctx)
+static int bl16_decode_0(SANMVideoContext *ctx)
 {
     uint16_t *frm = ctx->frm0;
     int x, y;
@@ -1959,12 +1959,6 @@ static int decode_0(SANMVideoContext *ctx)
         frm += ctx->pitch;
     }
     return 0;
-}
-
-static int decode_nop(SANMVideoContext *ctx)
-{
-    avpriv_request_sample(ctx->avctx, "Unknown/unsupported compression type");
-    return AVERROR_PATCHWELCOME;
 }
 
 static void copy_block(uint16_t *pdest, uint16_t *psrc, int block_size, ptrdiff_t pitch)
@@ -2096,7 +2090,7 @@ static int good_mvec(SANMVideoContext *ctx, int cx, int cy, int mx, int my,
     return good;
 }
 
-static int codec2subblock(SANMVideoContext *ctx, int cx, int cy, int blk_size)
+static int bl16_block(SANMVideoContext *ctx, int cx, int cy, int blk_size)
 {
     int16_t mx, my, index;
     int opcode;
@@ -2181,13 +2175,13 @@ static int codec2subblock(SANMVideoContext *ctx, int cx, int cy, int blk_size)
             opcode_0xf8(ctx, cx, cy, blk_size, ctx->pitch);
         } else {
             blk_size >>= 1;
-            if (codec2subblock(ctx, cx, cy, blk_size))
+            if (bl16_block(ctx, cx, cy, blk_size))
                 return AVERROR_INVALIDDATA;
-            if (codec2subblock(ctx, cx + blk_size, cy, blk_size))
+            if (bl16_block(ctx, cx + blk_size, cy, blk_size))
                 return AVERROR_INVALIDDATA;
-            if (codec2subblock(ctx, cx, cy + blk_size, blk_size))
+            if (bl16_block(ctx, cx, cy + blk_size, blk_size))
                 return AVERROR_INVALIDDATA;
-            if (codec2subblock(ctx, cx + blk_size, cy + blk_size, blk_size))
+            if (bl16_block(ctx, cx + blk_size, cy + blk_size, blk_size))
                 return AVERROR_INVALIDDATA;
         }
         break;
@@ -2195,31 +2189,19 @@ static int codec2subblock(SANMVideoContext *ctx, int cx, int cy, int blk_size)
     return 0;
 }
 
-static int decode_2(SANMVideoContext *ctx)
+static int bl16_decode_2(SANMVideoContext *ctx)
 {
     int cx, cy, ret;
 
     for (cy = 0; cy < ctx->aligned_height; cy += 8)
         for (cx = 0; cx < ctx->aligned_width; cx += 8)
-            if (ret = codec2subblock(ctx, cx, cy, 8))
+            if (ret = bl16_block(ctx, cx, cy, 8))
                 return ret;
 
     return 0;
 }
 
-static int decode_3(SANMVideoContext *ctx)
-{
-    memcpy(ctx->frm0, ctx->frm2, ctx->frm2_size);
-    return 0;
-}
-
-static int decode_4(SANMVideoContext *ctx)
-{
-    memcpy(ctx->frm0, ctx->frm1, ctx->frm1_size);
-    return 0;
-}
-
-static int decode_5(SANMVideoContext *ctx)
+static int bl16_decode_5(SANMVideoContext *ctx, int rle_size)
 {
 #if HAVE_BIGENDIAN
     uint16_t *frm;
@@ -2227,7 +2209,7 @@ static int decode_5(SANMVideoContext *ctx)
 #endif
     uint8_t *dst = (uint8_t*)ctx->frm0;
 
-    if (rle_decode(ctx, &ctx->gb, dst, ctx->buf_size))
+    if (rle_decode(ctx, &ctx->gb, dst, rle_size))
         return AVERROR_INVALIDDATA;
 
 #if HAVE_BIGENDIAN
@@ -2242,7 +2224,7 @@ static int decode_5(SANMVideoContext *ctx)
     return 0;
 }
 
-static int decode_6(SANMVideoContext *ctx)
+static int bl16_decode_6(SANMVideoContext *ctx)
 {
     int npixels = ctx->npixels;
     uint16_t *frm = ctx->frm0;
@@ -2257,7 +2239,7 @@ static int decode_6(SANMVideoContext *ctx)
     return 0;
 }
 
-static int decode_8(SANMVideoContext *ctx)
+static int bl16_decode_8(SANMVideoContext *ctx)
 {
     uint16_t *pdest = ctx->frm0;
     uint8_t *rsrc;
@@ -2279,53 +2261,6 @@ static int decode_8(SANMVideoContext *ctx)
     return 0;
 }
 
-typedef int (*frm_decoder)(SANMVideoContext *ctx);
-
-static const frm_decoder v1_decoders[] = {
-    decode_0, decode_nop, decode_2, decode_3, decode_4, decode_5,
-    decode_6, decode_nop, decode_8
-};
-
-static int read_frame_header(SANMVideoContext *ctx, SANMFrameHeader *hdr)
-{
-    int i, ret;
-
-    if ((ret = bytestream2_get_bytes_left(&ctx->gb)) < 560) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "Input frame too short (%d bytes).\n",
-               ret);
-        return AVERROR_INVALIDDATA;
-    }
-    bytestream2_skip(&ctx->gb, 8); // skip pad
-
-    hdr->width  = bytestream2_get_le32u(&ctx->gb);
-    hdr->height = bytestream2_get_le32u(&ctx->gb);
-
-    if (hdr->width != ctx->width || hdr->height != ctx->height) {
-        avpriv_report_missing_feature(ctx->avctx, "Variable size frames");
-        return AVERROR_PATCHWELCOME;
-    }
-
-    hdr->seq_num     = bytestream2_get_le16u(&ctx->gb);
-    hdr->codec       = bytestream2_get_byteu(&ctx->gb);
-    hdr->rotate_code = bytestream2_get_byteu(&ctx->gb);
-
-    bytestream2_skip(&ctx->gb, 4); // skip pad
-
-    for (i = 0; i < 4; i++)
-        ctx->small_codebook[i] = bytestream2_get_le16u(&ctx->gb);
-    hdr->bg_color = bytestream2_get_le16u(&ctx->gb);
-
-    bytestream2_skip(&ctx->gb, 2); // skip pad
-
-    hdr->rle_output_size = bytestream2_get_le32u(&ctx->gb);
-    for (i = 0; i < 256; i++)
-        ctx->codebook[i] = bytestream2_get_le16u(&ctx->gb);
-
-    bytestream2_skip(&ctx->gb, 8); // skip pad
-
-    return 0;
-}
-
 static void fill_frame(uint16_t *pbuf, int buf_size, uint16_t color)
 {
     if (buf_size--) {
@@ -2334,12 +2269,12 @@ static void fill_frame(uint16_t *pbuf, int buf_size, uint16_t color)
     }
 }
 
-static int copy_output(SANMVideoContext *ctx, SANMFrameHeader *hdr)
+static int copy_output(SANMVideoContext *ctx, int sanm)
 {
     uint8_t *dst;
-    const uint8_t *src = hdr ? (uint8_t *)ctx->frm0 : (uint8_t *)ctx->fbuf;
+    const uint8_t *src = sanm ? (uint8_t *)ctx->frm0 : (uint8_t *)ctx->fbuf;
     int ret, height = ctx->height;
-    ptrdiff_t dstpitch, srcpitch = ctx->pitch * (hdr ? sizeof(ctx->frm0[0]) : 1);
+    ptrdiff_t dstpitch, srcpitch = ctx->pitch * (sanm ? sizeof(ctx->frm0[0]) : 1);
 
     if ((ret = ff_get_buffer(ctx->avctx, ctx->frame, 0)) < 0)
         return ret;
@@ -2353,6 +2288,87 @@ static int copy_output(SANMVideoContext *ctx, SANMFrameHeader *hdr)
         dst += dstpitch;
     }
 
+    return 0;
+}
+
+static int decode_bl16(AVCodecContext *avctx,int *got_frame_ptr)
+{
+    SANMVideoContext *ctx = avctx->priv_data;
+    int i, ret, w, h, seq_num, codec, bg_color, rle_output_size;
+
+    if ((ret = bytestream2_get_bytes_left(&ctx->gb)) < 560) {
+        av_log(ctx->avctx, AV_LOG_ERROR, "Input frame too short (%d bytes).\n",
+               ret);
+        return AVERROR_INVALIDDATA;
+    }
+    bytestream2_skip(&ctx->gb, 8); // skip pad
+
+    w = bytestream2_get_le32u(&ctx->gb);
+    h = bytestream2_get_le32u(&ctx->gb);
+
+    if (w != ctx->width || h != ctx->height) {
+        avpriv_report_missing_feature(ctx->avctx, "Variable size frames");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    seq_num     = bytestream2_get_le16u(&ctx->gb);
+    codec       = bytestream2_get_byteu(&ctx->gb);
+    ctx->rotate_code = bytestream2_get_byteu(&ctx->gb);
+
+    bytestream2_skip(&ctx->gb, 4); // skip pad
+
+    for (i = 0; i < 4; i++)
+        ctx->small_codebook[i] = bytestream2_get_le16u(&ctx->gb);
+    bg_color = bytestream2_get_le16u(&ctx->gb);
+
+    bytestream2_skip(&ctx->gb, 2); // skip pad
+
+    rle_output_size = bytestream2_get_le32u(&ctx->gb);
+    if (rle_output_size > w * ctx->aligned_height * 2) {
+        av_log(avctx, AV_LOG_WARNING, "bl16 rle size too large, truncated: %d\n",
+               rle_output_size);
+        rle_output_size = w * ctx->aligned_height * 2;
+    }
+
+    for (i = 0; i < 256; i++)
+        ctx->codebook[i] = bytestream2_get_le16u(&ctx->gb);
+
+    bytestream2_skip(&ctx->gb, 8); // skip pad
+
+    if (seq_num == 0) {
+        ctx->frame->flags |= AV_FRAME_FLAG_KEY;
+        ctx->frame->pict_type = AV_PICTURE_TYPE_I;
+        fill_frame(ctx->frm1, ctx->npixels, bg_color);
+        fill_frame(ctx->frm2, ctx->npixels, bg_color);
+    } else {
+        ctx->frame->flags &= ~AV_FRAME_FLAG_KEY;
+        ctx->frame->pict_type = AV_PICTURE_TYPE_P;
+    }
+
+    ret = 0;
+    switch (codec) {
+    case 0: ret = bl16_decode_0(ctx); break;
+    case 2: ret = bl16_decode_2(ctx); break;
+    case 3: memcpy(ctx->frm0, ctx->frm2, ctx->frm2_size); break;
+    case 4: memcpy(ctx->frm0, ctx->frm1, ctx->frm1_size); break;
+    case 5: ret = bl16_decode_5(ctx, rle_output_size); break;
+    case 6: ret = bl16_decode_6(ctx); break;
+    case 8: ret = bl16_decode_8(ctx); break;
+    default:
+        avpriv_request_sample(ctx->avctx, "Unknown/unsupported compression type %d", codec);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    if (ret) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Subcodec %d: error decoding frame.\n", codec);
+        return ret;
+    }
+
+    if ((ret = copy_output(ctx, 1)))
+        return ret;
+
+    *got_frame_ptr = 1;
     return 0;
 }
 
@@ -2461,44 +2477,14 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
 
         if (have_img) {
-            if ((ret = copy_output(ctx, NULL)))
+            if ((ret = copy_output(ctx, 0)))
                 return ret;
             memcpy(ctx->frame->data[1], ctx->pal, 1024);
             *got_frame_ptr = 1;
         }
     } else {
-        SANMFrameHeader header;
-
-        if ((ret = read_frame_header(ctx, &header)))
+        if ((ret = decode_bl16(avctx, got_frame_ptr)))
             return ret;
-
-        ctx->rotate_code = header.rotate_code;
-        if (!header.seq_num) {
-            ctx->frame->flags |= AV_FRAME_FLAG_KEY;
-            ctx->frame->pict_type = AV_PICTURE_TYPE_I;
-            fill_frame(ctx->frm1, ctx->npixels, header.bg_color);
-            fill_frame(ctx->frm2, ctx->npixels, header.bg_color);
-        } else {
-            ctx->frame->flags &= ~AV_FRAME_FLAG_KEY;
-            ctx->frame->pict_type = AV_PICTURE_TYPE_P;
-        }
-
-        if (header.codec < FF_ARRAY_ELEMS(v1_decoders)) {
-            if ((ret = v1_decoders[header.codec](ctx))) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Subcodec %d: error decoding frame.\n", header.codec);
-                return ret;
-            }
-        } else {
-            avpriv_request_sample(avctx, "Subcodec %d", header.codec);
-            return AVERROR_PATCHWELCOME;
-        }
-
-        if ((ret = copy_output(ctx, &header)))
-            return ret;
-
-        *got_frame_ptr = 1;
-
     }
     if (ctx->rotate_code)
         rotate_bufs(ctx, ctx->rotate_code);
