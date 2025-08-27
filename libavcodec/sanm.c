@@ -1961,6 +1961,62 @@ static int bl16_decode_0(SANMVideoContext *ctx)
     return 0;
 }
 
+/* BL16 pixel interpolation function, see tgsmush.dll c690 */
+static inline uint16_t bl16_c1_avg_col(uint16_t c1, uint16_t c2)
+{
+    return (((c2 & 0x07e0) + (c1 & 0x07e0)) & 0x00fc0) |
+           (((c2 & 0xf800) + (c1 & 0xf800)) & 0x1f000) |
+           (((c2 & 0x001f) + (c1 & 0x001f))) >> 1;
+}
+
+/* Quarter-sized keyframe encoded as stream of 16bit pixel values. Interpolate
+ * missing pixels by averaging the colors of immediate neighbours.
+ * Identical to codec47_comp1() but with 16bit-pixels. tgsmush.dll c6f0
+ */
+static int bl16_decode_1(SANMVideoContext *ctx)
+{
+    uint16_t hh, hw, c1, c2, *dst1, *dst2;
+
+    if (bytestream2_get_bytes_left(&ctx->gb) < ((ctx->width * ctx->height) / 2))
+        return AVERROR_INVALIDDATA;
+
+    hh = (ctx->height + 1) >> 1;
+    dst1 = (uint16_t *)ctx->frm0 + ctx->pitch;    /* start with line 1 */
+    while (hh--) {
+        hw = (ctx->width - 1) >> 1;
+        c1 = bytestream2_get_le16u(&ctx->gb);
+        dst1[0] = c1;
+        dst1[1] = c1;
+        dst2 = dst1 + 2;
+        while (--hw) {
+            c2 = bytestream2_get_le16u(&ctx->gb);
+            *dst2++ = bl16_c1_avg_col(c1, c2);
+            *dst2++ = c2;
+            c1 = c2;
+        }
+        dst1 += ctx->pitch * 2;    /* skip to overnext line */
+    }
+    /* line 0 is a copy of line 1 */
+    memcpy(ctx->frm0, ctx->frm0 + ctx->pitch, ctx->pitch);
+
+    /* complete the skipped lines by averaging from the pixels in the lines
+     * above and below
+     */
+    dst1 = ctx->frm0 + (ctx->pitch * 2);
+    hh = (ctx->height - 1) >> 1;
+    while (hh--) {
+        hw = ctx->width;
+        dst2 = dst1;
+        while (hw--) {
+            c1 = *(dst2 - ctx->pitch);   /* pixel from line above */
+            c2 = *(dst2 + ctx->pitch);   /* pixel from line below */
+            *dst2++ = bl16_c1_avg_col(c1, c2);
+        }
+        dst1 += ctx->pitch * 2;
+    }
+    return 0;
+}
+
 static void copy_block(uint16_t *pdest, uint16_t *psrc, int block_size, ptrdiff_t pitch)
 {
     uint8_t *dst = (uint8_t *)pdest;
@@ -2239,6 +2295,55 @@ static int bl16_decode_6(SANMVideoContext *ctx)
     return 0;
 }
 
+/* Quarter-sized keyframe encoded as stream of codebook indices. Interpolate
+ * missing pixels by averaging the colors of immediate neighbours.
+ * Identical to codec47_comp1(), but without the interpolation table.
+ *  tgsmush.dll c6f0
+ */
+static int bl16_decode_7(SANMVideoContext *ctx)
+{
+    uint16_t hh, hw, c1, c2, *dst1, *dst2;
+
+    if (bytestream2_get_bytes_left(&ctx->gb) < ((ctx->width * ctx->height) / 4))
+        return AVERROR_INVALIDDATA;
+
+    hh = (ctx->height + 1) >> 1;
+    dst1 = (uint16_t *)ctx->frm0 + ctx->pitch;    /* start with line 1 */
+    while (hh--) {
+        hw = (ctx->width - 1) >> 1;
+        c1 = ctx->codebook[bytestream2_get_byteu(&ctx->gb)];
+        dst1[0] = c1;    /* leftmost 2 pixels of a row are identical */
+        dst1[1] = c1;
+        dst2 = dst1 + 2;
+        while (--hw) {
+            c2 = ctx->codebook[bytestream2_get_byteu(&ctx->gb)];
+            *dst2++ = bl16_c1_avg_col(c1, c2);
+            *dst2++ = c2;
+            c1 = c2;
+        }
+        dst1 += ctx->pitch * 2;    /* skip to overnext line */
+    }
+    /* line 0 is a copy of line 1 */
+    memcpy(ctx->frm0, ctx->frm0 + ctx->pitch, ctx->pitch);
+
+    /* complete the skipped lines by averaging from the pixels in the lines
+     * above and below.
+     */
+    dst1 = ctx->frm0 + (ctx->pitch * 2);
+    hh = (ctx->height - 1) >> 1;
+    while (hh--) {
+        hw = ctx->width;
+        dst2 = dst1;
+        while (hw--) {
+            c1 = *(dst2 - ctx->pitch);   /* pixel from line above */
+            c2 = *(dst2 + ctx->pitch);   /* pixel from line below */
+            *dst2++ = bl16_c1_avg_col(c1, c2);
+        }
+        dst1 += ctx->pitch * 2;
+    }
+    return 0;
+}
+
 static int bl16_decode_8(SANMVideoContext *ctx)
 {
     uint16_t *pdest = ctx->frm0;
@@ -2348,11 +2453,13 @@ static int decode_bl16(AVCodecContext *avctx,int *got_frame_ptr)
     ret = 0;
     switch (codec) {
     case 0: ret = bl16_decode_0(ctx); break;
+    case 1: ret = bl16_decode_1(ctx); break;
     case 2: ret = bl16_decode_2(ctx); break;
     case 3: memcpy(ctx->frm0, ctx->frm2, ctx->frm2_size); break;
     case 4: memcpy(ctx->frm0, ctx->frm1, ctx->frm1_size); break;
     case 5: ret = bl16_decode_5(ctx, rle_output_size); break;
     case 6: ret = bl16_decode_6(ctx); break;
+    case 7: ret = bl16_decode_7(ctx); break;
     case 8: ret = bl16_decode_8(ctx); break;
     default:
         avpriv_request_sample(ctx->avctx, "Unknown/unsupported compression type %d", codec);
