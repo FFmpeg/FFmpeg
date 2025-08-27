@@ -2372,116 +2372,123 @@ static int decode_bl16(AVCodecContext *avctx,int *got_frame_ptr)
     return 0;
 }
 
+static int decode_anim(AVCodecContext *avctx, int *got_frame_ptr)
+{
+    SANMVideoContext *ctx = avctx->priv_data;
+    int i, ret, to_store = 0, have_img = 0;
+
+    ctx->first_fob = 1;
+    while (bytestream2_get_bytes_left(&ctx->gb) >= 8) {
+        uint32_t sig, size;
+        int pos;
+
+        sig  = bytestream2_get_be32u(&ctx->gb);
+        size = bytestream2_get_be32u(&ctx->gb);
+        pos  = bytestream2_tell(&ctx->gb);
+
+        if (bytestream2_get_bytes_left(&ctx->gb) < size) {
+            av_log(avctx, AV_LOG_ERROR, "Incorrect chunk size %"PRIu32".\n", size);
+            break;
+        }
+        switch (sig) {
+        case MKBETAG('N', 'P', 'A', 'L'):
+            if (size != PALETTE_SIZE * 3) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Incorrect palette block size %"PRIu32".\n", size);
+                return AVERROR_INVALIDDATA;
+            }
+            for (i = 0; i < PALETTE_SIZE; i++)
+                ctx->pal[i] = 0xFFU << 24 | bytestream2_get_be24u(&ctx->gb);
+            if (ctx->subversion < 2)
+                ctx->pal[0] = 0xFFU << 24;
+            break;
+        case MKBETAG('F', 'O', 'B', 'J'):
+            if (size < 16)
+                return AVERROR_INVALIDDATA;
+            if (ret = process_frame_obj(ctx, &ctx->gb, 0, 0)) {
+                return ret;
+            }
+            have_img = 1;
+
+            /* STOR: for ANIMv0/1 store the whole FOBJ datablock, as it
+             * needs to be replayed on FTCH, since none of the codecs
+             * it uses work on the full buffer.
+             * For ANIMv2, it's enough to store the current framebuffer.
+             */
+            if (to_store) {
+                to_store = 0;
+                if (ctx->subversion < 2) {
+                    if (size <= ctx->stored_frame_size) {
+                        int pos2 = bytestream2_tell(&ctx->gb);
+                        bytestream2_seek(&ctx->gb, pos, SEEK_SET);
+                        bytestream2_get_bufferu(&ctx->gb, ctx->stored_frame, size);
+                        bytestream2_seek(&ctx->gb, pos2, SEEK_SET);
+                        ctx->stor_size = size;
+                    } else {
+                        av_log(avctx, AV_LOG_ERROR, "FOBJ too large for STOR\n");
+                        ret = AVERROR(ENOMEM);
+                    }
+                } else {
+                    memcpy(ctx->stored_frame, ctx->fbuf, ctx->buf_size);
+                }
+            }
+            break;
+        case MKBETAG('X', 'P', 'A', 'L'):
+            if (ret = process_xpal(ctx, size))
+                return ret;
+            break;
+        case MKBETAG('S', 'T', 'O', 'R'):
+            to_store = 1;
+            break;
+        case MKBETAG('F', 'T', 'C', 'H'):
+            if (ctx->subversion < 2) {
+                if (ret = process_ftch(ctx, size))
+                    return ret;
+            } else {
+                memcpy(ctx->fbuf, ctx->stored_frame, ctx->buf_size);
+            }
+            have_img = 1;
+            break;
+        default:
+            bytestream2_skip(&ctx->gb, size);
+            av_log(avctx, AV_LOG_DEBUG,
+                   "Unknown/unsupported chunk %"PRIx32".\n", sig);
+            break;
+        }
+
+        /* the sizes of chunks are usually a multiple of 2. However
+         * there are a few unaligned FOBJs in RA1 L2PLAY.ANM only (looks
+         * like a game bug) and IACT audio chunks which have odd sizes
+         * but are padded with a zero byte.
+         */
+        bytestream2_seek(&ctx->gb, pos + size, SEEK_SET);
+        if ((pos + size) & 1) {
+            if (0 != bytestream2_get_byteu(&ctx->gb))
+                bytestream2_seek(&ctx->gb, pos + size, SEEK_SET);
+        }
+    }
+
+    if (have_img) {
+        if ((ret = copy_output(ctx, 0)))
+            return ret;
+        memcpy(ctx->frame->data[1], ctx->pal, 1024);
+        *got_frame_ptr = 1;
+    }
+    return 0;
+}
+
 static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                         int *got_frame_ptr, AVPacket *pkt)
 {
     SANMVideoContext *ctx = avctx->priv_data;
-    int i, ret;
+    int ret;
 
     ctx->frame = frame;
     bytestream2_init(&ctx->gb, pkt->data, pkt->size);
 
     if (!ctx->version) {
-        int to_store = 0, have_img = 0;
-
-        ctx->first_fob = 1;
-
-        while (bytestream2_get_bytes_left(&ctx->gb) >= 8) {
-            uint32_t sig, size;
-            int pos;
-
-            sig  = bytestream2_get_be32u(&ctx->gb);
-            size = bytestream2_get_be32u(&ctx->gb);
-            pos  = bytestream2_tell(&ctx->gb);
-
-            if (bytestream2_get_bytes_left(&ctx->gb) < size) {
-                av_log(avctx, AV_LOG_ERROR, "Incorrect chunk size %"PRIu32".\n", size);
-                break;
-            }
-            switch (sig) {
-            case MKBETAG('N', 'P', 'A', 'L'):
-                if (size != PALETTE_SIZE * 3) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "Incorrect palette block size %"PRIu32".\n", size);
-                    return AVERROR_INVALIDDATA;
-                }
-                for (i = 0; i < PALETTE_SIZE; i++)
-                    ctx->pal[i] = 0xFFU << 24 | bytestream2_get_be24u(&ctx->gb);
-                if (ctx->subversion < 2)
-                    ctx->pal[0] = 0xFFU << 24;
-                break;
-            case MKBETAG('F', 'O', 'B', 'J'):
-                if (size < 16)
-                    return AVERROR_INVALIDDATA;
-                if (ret = process_frame_obj(ctx, &ctx->gb, 0, 0)) {
-                    return ret;
-                }
-                have_img = 1;
-
-                /* STOR: for ANIMv0/1 store the whole FOBJ datablock, as it
-                 * needs to be replayed on FTCH, since none of the codecs
-                 * it uses work on the full buffer.
-                 * For ANIMv2, it's enough to store the current framebuffer.
-                 */
-                if (to_store) {
-                    to_store = 0;
-                    if (ctx->subversion < 2) {
-                        if (size <= ctx->stored_frame_size) {
-                            int pos2 = bytestream2_tell(&ctx->gb);
-                            bytestream2_seek(&ctx->gb, pos, SEEK_SET);
-                            bytestream2_get_bufferu(&ctx->gb, ctx->stored_frame, size);
-                            bytestream2_seek(&ctx->gb, pos2, SEEK_SET);
-                            ctx->stor_size = size;
-                        } else {
-                            av_log(avctx, AV_LOG_ERROR, "FOBJ too large for STOR\n");
-                            ret = AVERROR(ENOMEM);
-                        }
-                    } else {
-                        memcpy(ctx->stored_frame, ctx->fbuf, ctx->buf_size);
-                    }
-                }
-                break;
-            case MKBETAG('X', 'P', 'A', 'L'):
-                if (ret = process_xpal(ctx, size))
-                    return ret;
-                break;
-            case MKBETAG('S', 'T', 'O', 'R'):
-                to_store = 1;
-                break;
-            case MKBETAG('F', 'T', 'C', 'H'):
-                if (ctx->subversion < 2) {
-                    if (ret = process_ftch(ctx, size))
-                        return ret;
-                } else {
-                    memcpy(ctx->fbuf, ctx->stored_frame, ctx->buf_size);
-                }
-                have_img = 1;
-                break;
-            default:
-                bytestream2_skip(&ctx->gb, size);
-                av_log(avctx, AV_LOG_DEBUG,
-                       "Unknown/unsupported chunk %"PRIx32".\n", sig);
-                break;
-            }
-
-            /* the sizes of chunks are usually a multiple of 2. However
-             * there are a few unaligned FOBJs in RA1 L2PLAY.ANM only (looks
-             * like a game bug) and IACT audio chunks which have odd sizes
-             * but are padded with a zero byte.
-             */
-            bytestream2_seek(&ctx->gb, pos + size, SEEK_SET);
-            if ((pos + size) & 1) {
-                if (0 != bytestream2_get_byteu(&ctx->gb))
-                    bytestream2_seek(&ctx->gb, pos + size, SEEK_SET);
-            }
-        }
-
-        if (have_img) {
-            if ((ret = copy_output(ctx, 0)))
-                return ret;
-            memcpy(ctx->frame->data[1], ctx->pal, 1024);
-            *got_frame_ptr = 1;
-        }
+        if ((ret = decode_anim(avctx, got_frame_ptr)))
+            return ret;
     } else {
         if ((ret = decode_bl16(avctx, got_frame_ptr)))
             return ret;
