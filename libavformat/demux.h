@@ -53,6 +53,16 @@ enum FFInputFormatStreamState {
      FF_INFMT_STATE_PAUSE,
  };
 
+/**
+ * Command handling options
+ * Different options influencing the behaviour of
+ * the FFInputFormat::handle_command callback.
+ */
+enum FFInputFormatCommandOption {
+    FF_INFMT_COMMAND_SUBMIT,
+    FF_INFMT_COMMAND_GET_REPLY,
+};
+
 typedef struct FFInputFormat {
     /**
      * The public AVInputFormat. See avformat.h for it.
@@ -130,9 +140,33 @@ typedef struct FFInputFormat {
                           enum FFInputFormatStreamState state);
 
     /**
-     * Currently unused.
+     * Handle demuxer commands
+     * This callback is used to either send a command to a demuxer
+     * (FF_INFMT_COMMAND_SUBMIT), or to retrieve the reply for
+     * a previously sent command (FF_INFMT_COMMAND_GET_REPLY).
+     *
+     * Demuxers implementing this must return AVERROR(ENOTSUP)
+     * if the provided \p id is not handled by the demuxer.
+     * Demuxers should return AVERROR(EAGAIN) if they can handle
+     * a specific command but are not able to at the moment.
+     * When a reply is requested that is not available yet, the
+     * demuxer should also return AVERROR(EAGAIN).
+     *
+     * Depending on \p opt, the \p data will be either a pointer
+     * to the command payload structure for the specified ID, or
+     * a pointer to the buffer for the command reply for the
+     * specified ID.
+     *
+     * When a command is submitted, before a previous reply
+     * was requested from the demuxer, the demuxer should discard
+     * the old reply.
+     *
+     * @see avformat_send_command()
+     * @see avformat_receive_command_reply()
      */
-    int (*unused)(void);
+    int (*handle_command)(struct AVFormatContext *,
+                          enum FFInputFormatCommandOption opt,
+                          enum AVFormatCommandID id, void *data);
 
     /**
      * Seek to timestamp ts.

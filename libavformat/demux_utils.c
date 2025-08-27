@@ -188,6 +188,20 @@ int av_read_pause(AVFormatContext *s)
     return AVERROR(ENOSYS);
 }
 
+int avformat_send_command(AVFormatContext *s, enum AVFormatCommandID id, void *data)
+{
+    if (ffifmt(s->iformat)->handle_command)
+        return ffifmt(s->iformat)->handle_command(s, FF_INFMT_COMMAND_SUBMIT, id, data);
+    return AVERROR(ENOSYS);
+}
+
+int avformat_receive_command_reply(AVFormatContext *s, enum AVFormatCommandID id, void **data_out)
+{
+    if (ffifmt(s->iformat)->handle_command)
+        return ffifmt(s->iformat)->handle_command(s, FF_INFMT_COMMAND_GET_REPLY, id, data_out);
+    return AVERROR(ENOSYS);
+}
+
 int ff_generate_avci_extradata(AVStream *st)
 {
     static const uint8_t avci100_1080p_extradata[] = {
