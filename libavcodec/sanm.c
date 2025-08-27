@@ -299,13 +299,6 @@ typedef struct SANMVideoContext {
     uint8_t c47cb[4];
 } SANMVideoContext;
 
-typedef struct SANMFrameHeader {
-    int seq_num, codec, rotate_code, rle_output_size;
-
-    uint16_t bg_color;
-    uint32_t width, height;
-} SANMFrameHeader;
-
 enum GlyphEdge {
     LEFT_EDGE,
     TOP_EDGE,
