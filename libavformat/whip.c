@@ -579,7 +579,7 @@ static int parse_codec(AVFormatContext *s)
  */
 static int generate_sdp_offer(AVFormatContext *s)
 {
-    int ret = 0, profile, level, profile_iop;
+    int ret = 0, profile, level, profile_iop = 0;
     const char *acodec_name = NULL, *vcodec_name = NULL;
     AVBPrint bp;
     WHIPContext *whip = s->priv_data;
@@ -647,11 +647,12 @@ static int generate_sdp_offer(AVFormatContext *s)
     }
 
     if (whip->video_par) {
-        profile_iop = profile = whip->video_par->profile;
+        profile = whip->video_par->profile;
         level = whip->video_par->level;
         if (whip->video_par->codec_id == AV_CODEC_ID_H264) {
             vcodec_name = "H264";
-            profile_iop &= AV_PROFILE_H264_CONSTRAINED;
+            profile_iop |= profile & AV_PROFILE_H264_CONSTRAINED ? 1 << 6 : 0;
+            profile_iop |= profile & AV_PROFILE_H264_INTRA ? 1 << 4 : 0;
             profile &= (~AV_PROFILE_H264_CONSTRAINED);
         }
 
