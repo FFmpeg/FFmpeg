@@ -993,7 +993,11 @@ static int exif_clone_entry(AVExifEntry *dst, const AVExifEntry *src)
             EXIF_COPY(dst->value.sbytes, src->value.sbytes);
             break;
         case AV_TIFF_STRING:
-            EXIF_COPY(dst->value.str, src->value.str);
+            dst->value.str = av_memdup(src->value.str, src->count+1);
+            if (!dst->value.str) {
+                ret = AVERROR(ENOMEM);
+                goto end;
+            }
             break;
     }
 
