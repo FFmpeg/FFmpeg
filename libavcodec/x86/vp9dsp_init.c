@@ -50,6 +50,13 @@ decl_mc_funcs(8, ssse3, int8_t, 32, 8);
 #if ARCH_X86_64
 decl_mc_funcs(16, ssse3, int8_t, 32, 8);
 decl_mc_funcs(32, avx2, int8_t, 32, 8);
+#if HAVE_AVX512ICL_EXTERNAL
+decl_subpel_asm( 4, 8, avx512icl);
+decl_subpel_asm( 8, 8, avx512icl);
+decl_subpel_asm(16, 8, avx512icl);
+decl_subpel_asm(32, 8, avx512icl);
+decl_subpel_asm(64, 8, avx512icl);
+#endif
 #endif
 
 mc_rep_funcs(16,  8,  8,  sse2, int16_t,  8, 8)
@@ -418,6 +425,11 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         dsp->itxfm_add[TX_32X32][ADST_DCT]  =
         dsp->itxfm_add[TX_32X32][DCT_ADST]  =
         dsp->itxfm_add[TX_32X32][DCT_DCT]   = ff_vp9_idct_idct_32x32_add_avx512icl;
+        init_subpel_asm(4,  4, 8, avx512icl);
+        init_subpel_asm(3,  8, 8, avx512icl);
+        init_subpel_asm(2, 16, 8, avx512icl);
+        init_subpel_asm(1, 32, 8, avx512icl);
+        init_subpel_asm(0, 64, 8, avx512icl);
     }
 #endif
 
