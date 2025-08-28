@@ -152,7 +152,7 @@ Codecs:
   adpcm.c                               Zane van Iperen
   alacenc.c                             Jaikrishnan Menon
   alsdec.c                              Thilo Borgmann, Umair Khan
-  amfenc*                               Dmitrii Ovchinnikov
+  amfdec*,amfenc*                   [2] Dmitrii Ovchinnikov
   aptx.c                                Aurelien Jacobs
   ass*                                  Aurelien Jacobs
   asv*                                  Michael Niedermayer
@@ -278,6 +278,7 @@ Codecs:
   xface                                 Stefano Sabatini
 
 Hardware acceleration:
+  amf*                              [2] Dmitrii Ovchinnikov
   dxva2*                                Hendrik Leppkes, Laurent Aimar, Steve Lhomme
   d3d11va*                              Steve Lhomme
   d3d12va*                              Wu Jianhua
