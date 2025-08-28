@@ -46,7 +46,7 @@ static int prores_raw_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     if (bytestream2_get_be32(&gb) != buf_size) /* Packet size */
         return buf_size;
 
-    if (bytestream2_get_le32(&gb) != MKTAG('p','r','r','f')) /* Frame header */
+    if (bytestream2_get_be32(&gb) != MKBETAG('p','r','r','f')) /* Frame header */
         return buf_size;
 
     int header_size = bytestream2_get_be16(&gb);

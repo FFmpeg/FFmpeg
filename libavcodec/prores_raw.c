@@ -355,7 +355,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
 
     /* ProRes RAW frame */
-    if (bytestream2_get_le32(&gb) != MKTAG('p','r','r','f'))
+    if (bytestream2_get_be32(&gb) != MKBETAG('p','r','r','f'))
         return AVERROR_INVALIDDATA;
 
     int header_len = bytestream2_get_be16(&gb);
