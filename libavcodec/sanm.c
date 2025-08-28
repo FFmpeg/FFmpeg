@@ -50,7 +50,8 @@ static const int8_t glyph8_y[GLYPH_COORD_VECT_SIZE] = {
     0, 0, 0, 0, 1, 3, 4, 6, 7, 7, 7, 7, 6, 4, 3, 1
 };
 
-static const int8_t motion_vectors[256][2] = {
+/* codec47/bl16 motion vectors */
+static const int8_t c47_mv[256][2] = {
     {   0,   0 }, {  -1, -43 }, {   6, -43 }, {  -9, -42 }, {  13, -41 },
     { -16, -40 }, {  19, -39 }, { -23, -36 }, {  26, -34 }, {  -2, -33 },
     {   4, -33 }, { -29, -32 }, {  -9, -32 }, {  11, -31 }, { -16, -29 },
@@ -104,6 +105,7 @@ static const int8_t motion_vectors[256][2] = {
     {  -6,  43 }, {   1,  43 }, {   0,   0 }, {   0,   0 }, {   0,   0 },
 };
 
+/* codec37/48 motion vector tables: 3x 510 bytes/255 x-y pairs */
 static const int8_t c37_mv[] = {
     0,   0,   1,   0,   2,   0,   3,   0,   5,   0,
     8,   0,  13,   0,  21,   0,  -1,   0,  -2,   0,
@@ -1289,8 +1291,8 @@ static int codec47_block(SANMVideoContext *ctx, uint8_t *dst, uint8_t *prev1,
                 memset(dst + k * stride, ctx->c47cb[code & 3], size);
         }
     } else {
-        int mx = motion_vectors[code][0];
-        int my = motion_vectors[code][1];
+        int mx = c47_mv[code][0];
+        int my = c47_mv[code][1];
         int index = prev2 - (const uint8_t *)ctx->frm2;
 
         av_assert2(index >= 0 && index < (ctx->buf_size >> 1));
@@ -2151,8 +2153,8 @@ static int bl16_block(SANMVideoContext *ctx, int cx, int cy, int blk_size)
 
     switch (opcode) {
     default:
-        mx = motion_vectors[opcode][0];
-        my = motion_vectors[opcode][1];
+        mx = c47_mv[opcode][0];
+        my = c47_mv[opcode][1];
 
         /* The original implementation of this codec precomputes a table
          * of int16_t all motion vectors for given image width.
