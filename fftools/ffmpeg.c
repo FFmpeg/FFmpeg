@@ -806,8 +806,6 @@ static int check_keyboard_interaction(int64_t cur_time)
 {
     int i, key;
     static int64_t last_time;
-    if (received_nb_signals)
-        return AVERROR_EXIT;
     /* read_key() returns 0 on EOF */
     if (cur_time - last_time >= 100000) {
         key =  read_key();
@@ -890,6 +888,9 @@ static int transcode(Scheduler *sch)
 
     while (!sch_wait(sch, stats_period, &transcode_ts)) {
         int64_t cur_time= av_gettime_relative();
+
+        if (received_nb_signals)
+            break;
 
         /* if 'q' pressed, exits */
         if (stdin_interaction)
