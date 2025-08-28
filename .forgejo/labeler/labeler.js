@@ -30,6 +30,7 @@ module.exports = async ({github, context}) => {
         (context.payload.action !== 'opened' && (
              context.payload.action === 'assigned' ||
              context.payload.action === 'label_updated' ||
+             context.payload.action === 'labeled' ||
              context.payload.comment) &&
          await isOrgMember(context.payload.sender.login))
     ) {
