@@ -26,6 +26,7 @@
 #include "codec_internal.h"
 #include "encode.h"
 #include "version.h"
+#include "dpx.h"
 
 typedef struct DPXContext {
     int big_endian;
@@ -178,6 +179,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     DPXContext *s = avctx->priv_data;
     int size, ret, need_align, len;
     uint8_t *buf;
+    int color_trc, color_spec;
 
 #define HEADER_SIZE 1664  /* DPX Generic header */
     if (s->bits_per_component == 10)
@@ -217,8 +219,46 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     write32(buf + 772, avctx->width);
     write32(buf + 776, avctx->height);
     buf[800] = s->descriptor;
-    buf[801] = 2; /* linear transfer */
-    buf[802] = 2; /* linear colorimetric */
+
+    switch (avctx->color_trc) {
+    case AVCOL_TRC_BT709:
+        color_trc = DPX_TRC_ITU_R_709_4;
+        break;
+    default:
+        av_log(avctx, AV_LOG_WARNING, "unsupported color transfer\n");
+    case AVCOL_TRC_UNSPECIFIED:
+        color_trc = DPX_TRC_UNSPECIFIED_VIDEO;
+        break;
+    case AVCOL_TRC_GAMMA28:
+        color_trc = DPX_TRC_ITU_R_624_4_PAL;
+        break;
+    case AVCOL_TRC_SMPTE170M:
+        color_trc = DPX_TRC_SMPTE_170;
+        break;
+    case AVCOL_TRC_LINEAR:
+        color_trc = DPX_TRC_LINEAR;
+        break;
+    }
+    buf[801] = color_trc;
+
+    switch (avctx->color_primaries) {
+    case AVCOL_PRI_BT709:
+        color_spec = DPX_COL_SPEC_ITU_R_709_4;
+        break;
+    default:
+        av_log(avctx, AV_LOG_WARNING, "unsupported colorimetric specification\n");
+    case AVCOL_PRI_UNSPECIFIED:
+        color_spec = DPX_COL_SPEC_UNSPECIFIED_VIDEO;
+        break;
+    case AVCOL_PRI_BT470BG:
+        color_spec = DPX_COL_SPEC_ITU_R_624_4_PAL;
+        break;
+    case AVCOL_PRI_SMPTE170M:
+        color_spec = DPX_COL_SPEC_SMPTE_170;
+        break;
+    }
+    buf[802] = color_spec;
+
     buf[803] = s->bits_per_component;
     write16(buf + 804, (s->bits_per_component == 10 || s->bits_per_component == 12) ?
                        1 : 0); /* packing method */
