@@ -50,13 +50,11 @@ decl_mc_funcs(8, ssse3, int8_t, 32, 8);
 #if ARCH_X86_64
 decl_mc_funcs(16, ssse3, int8_t, 32, 8);
 decl_mc_funcs(32, avx2, int8_t, 32, 8);
-#if HAVE_AVX512ICL_EXTERNAL
 decl_subpel_asm( 4, 8, avx512icl);
 decl_subpel_asm( 8, 8, avx512icl);
 decl_subpel_asm(16, 8, avx512icl);
 decl_subpel_asm(32, 8, avx512icl);
 decl_subpel_asm(64, 8, avx512icl);
-#endif
 #endif
 
 mc_rep_funcs(16,  8,  8,  sse2, int16_t,  8, 8)
