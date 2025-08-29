@@ -29614,6 +29614,165 @@ ddagrab=video_size=800x600:offset_x=100:offset_y=100
 @end example
 
 
+@section gfxcapture
+
+Capture windows or monitors using Windows.Graphics.Capture API.
+
+This source provides low overhead capture of application windows or entire monitors.
+The filter outputs hardware frames in @code{d3d11} format; use @code{hwdownload,format=}
+if system memory frames are required.
+
+The window to be captured can be selected via regular expressions on its title,
+class name or backing executable name, by explicit native handles, or by monitor
+index or explicit native handle. A window must match all provided expressions to be
+selected. The first matching window will be picked, in whatever order Windows
+returns them.
+
+Explicit handles (@option{hwnd}, @option{hmonitor}) override pattern or index
+based selection. If neither handles nor a monitor index are given, the first
+window matching the provided regular expressions is captured.
+
+This source does NOT hold a stable FPS. It returns frames at whatever rate the compositor
+provides them, only capped by the @option{max_framerate}.
+If you need a stable rate, you need to add an fps filter to drop/duplicate frames as needed.
+
+If the capture source disappears mid-capture (window closed, monitor disconnected), the filter will return EOF.
+
+This source accepts the following options:
+@table @option
+@item window_title
+ECMAScript regular expression matched against the window title. Supports a
+PCRE style @code{(?i)} prefix for case-insensitive matching.
+
+@item window_class
+As @option{window_title}, but matched against the window class name.
+
+@item window_exe
+As @option{window_title}, but matched against the executable file name of the
+window's process.
+
+@item monitor_idx
+Zero-based index of the monitor to capture.
+
+Can also be set to @code{window} to capture the monitor the selected window
+is displayed on at filter initialization time.
+
+@item hwnd
+Explicit native window handle (HWND).
+
+@item hmonitor
+Explicit native monitor handle (HMONITOR).
+
+@item capture_cursor
+Capture the mouse cursor. Enabled by default.
+
+@item capture_border
+Capture the full area of the window, including its window decorarions/border.
+Disabled by default.
+
+@item display_border
+Draw a yellow highlight border around the captured window. Disabled by default.
+
+@item max_framerate
+Maximum capture frame rate. Accepts a video rate (e.g. @code{30}, @code{60/1},
+@code{24000/1001}). The default is @code{60} FPS.
+The actual rate is the rate at which the compositor renders the window/monitor,
+capped by this option.
+
+@item width
+Force the output canvas width. If zero (default) the initial captured source
+width is used. If a negative number is provided, the width will be rounded
+down to the next multiple of that number.
+
+See @option{resize_mode}.
+
+@item height
+Force the output canvas height. If zero (default) the initial captured source
+height is used. If a negative number is provided, the height will be rounded
+down to the next multiple of that number.
+
+See @option{resize_mode}.
+
+@item crop_left
+Crop this many pixels from the left side of the captured frames.
+
+@item crop_top
+Crop this many pixels from the left side of the captured frames.
+
+@item crop_right
+Crop this many pixels from the left side of the captured frames.
+
+@item crop_bottom
+Crop this many pixels from the left side of the captured frames.
+
+@item premultiplied
+If set to 1, return frames with premultiplied alpha. Default is 0 (straight
+alpha).
+
+@item resize_mode
+Defines how the captured content is fitted into the output canvas size.
+Possible values:
+@table @samp
+@item crop
+Crop (or pad with black) to the canvas size. (default)
+@item scale
+Scale the source to fill the canvas, potentially altering aspect ratio.
+@item scale_aspect
+Scale the source to fit inside the canvas while preserving aspect ratio.
+Remaining area is filled with black.
+@end table
+
+@item scale_mode
+Scaling algorithm used when resizing is required.
+
+Possible values:
+@table @samp
+@item point
+Nearest neighbour (pixelated) scaling.
+@item bilinear
+Bilinear filtering. (default)
+@item bicubic
+Bicubic filtering. Potentially more blurry, but fewer scaling artifacts depending on contents.
+@end table
+
+@item output_fmt
+Desired output pixel format inside the D3D11 hardware frames.
+
+Possible values:
+@table @samp
+@item bgra
+@item 8bit
+8 bit BGRA output (default)
+@item x2bgr10
+@item 10bit
+10 bit BGR output
+@item rgbaf16
+@item 16bit
+16bit float RGBA output
+@end table
+
+@end table
+
+@subsection Examples
+@itemize
+@item Capture a window by title (case-insensitive) at a maximum of 60 fps:
+@example
+ffmpeg -filter_complex gfxcapture=window_text='(?i)My Application':max_framerate=60,hwdownload,format=bgra,format=yuv420p -c:v libx264 -crf 15 capture.mp4
+@end example
+
+@item Capture monitor 1 at native refresh, 10bit color depth, scale to 1920x1080 preserving aspect:
+@example
+ffmpeg -filter_complex gfxcapture=monitor_idx=1:width=1920:height=1080:resize_mode=scale_aspect:output_fmt=10bit -c:v hevc_nvenc -cq 15 capture.mp4
+@end example
+
+@item Capture a window by executable name, draw border, force point scaling, fixed 60 fps:
+@example
+ffmpeg -filter_complex gfxcapture=window_exe='^firefox.exe$':display_border=1:scale_mode=point,fps=60 -rc qvbr -qvbr_quality_level 15 -c:v h264_amf capture.mp4
+@end example
+
+@end itemize
+
+
 @section gradients
 Generate several gradients.
 

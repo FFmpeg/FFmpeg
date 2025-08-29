@@ -2516,6 +2516,8 @@ TOOLCHAIN_FEATURES="
 TYPES_LIST="
     DPI_AWARENESS_CONTEXT
     IDXGIOutput5
+    __x_ABI_CWindows_CGraphics_CCapture_CIGraphicsCaptureSession5
+    IDirect3DDxgiInterfaceAccess
     kCMVideoCodecType_HEVC
     kCMVideoCodecType_HEVCWithAlpha
     kCMVideoCodecType_VP9
@@ -3412,6 +3414,8 @@ pad_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
 sharpen_npp_filter_deps="ffnvcodec libnpp"
 
 ddagrab_filter_deps="d3d11va IDXGIOutput1 DXGI_OUTDUPL_FRAME_INFO"
+gfxcapture_filter_deps="cxx17 threads d3d11va IGraphicsCaptureItemInterop __x_ABI_CWindows_CGraphics_CCapture_CIGraphicsCaptureSession3"
+gfxcapture_filter_extralibs="-lstdc++"
 scale_d3d11_filter_deps="d3d11va"
 
 amf_deps_any="libdl LoadLibrary"
@@ -6940,6 +6944,10 @@ check_type "windows.h" "DPI_AWARENESS_CONTEXT" -D_WIN32_WINNT=0x0A00
 check_type "windows.h security.h schnlsp.h" SecPkgContext_KeyingMaterialInfo -DSECURITY_WIN32
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 check_func_headers mfapi.h MFCreateAlignedMemoryBuffer -lmfplat
+check_type "windows.h windows.graphics.capture.h" __x_ABI_CWindows_CGraphics_CCapture_CIGraphicsCaptureSession3 -D_WIN32_WINNT=0x0A00 -DWINDOWS_FOUNDATION_UNIVERSALAPICONTRACT_VERSION=0x130000 -DCOBJMACROS
+check_type "windows.h windows.graphics.capture.h" __x_ABI_CWindows_CGraphics_CCapture_CIGraphicsCaptureSession5 -D_WIN32_WINNT=0x0A00 -DWINDOWS_FOUNDATION_UNIVERSALAPICONTRACT_VERSION=0x130000 -DCOBJMACROS
+check_type "windows.h windows.graphics.capture.interop.h" IGraphicsCaptureItemInterop -D_WIN32_WINNT=0x0A00 -DWINDOWS_FOUNDATION_UNIVERSALAPICONTRACT_VERSION=0x130000 -DCOBJMACROS
+check_type "windows.h windows.graphics.directx.direct3d11.interop.h" IDirect3DDxgiInterfaceAccess -D_WIN32_WINNT=0x0A00 -DWINDOWS_FOUNDATION_UNIVERSALAPICONTRACT_VERSION=0x130000 -DCOBJMACROS
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 check_type "vdpau/vdpau.h" "VdpPictureInfoVP9"

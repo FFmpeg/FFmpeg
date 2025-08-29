@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - ffprobe -codec option
 - EXIF Metadata Parsing
+- gfxcapture: Windows.Graphics.Capture based window/monitor capture
 
 
 version 8.0:
