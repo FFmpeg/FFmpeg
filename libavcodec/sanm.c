@@ -1891,9 +1891,10 @@ static int process_ftch(SANMVideoContext *ctx, int size)
          * be played in sequence, with some referencing objects STORed
          * by previous files, e.g. the cockpit codec21 object in RA1 LVL8.
          * But spamming the log with errors is also not helpful, so
-         * here we simply ignore this case.
+         * here we simply ignore this case.  Return 1 to indicate that
+         * there was no valid image fetched.
          */
-         ret = 0;
+         ret = 1;
     }
     return ret;
 }
@@ -2532,6 +2533,7 @@ static int decode_anim(AVCodecContext *avctx, int *got_frame_ptr)
                     }
                 } else {
                     memcpy(ctx->stored_frame, ctx->fbuf, ctx->buf_size);
+                    ctx->stor_size = ctx->buf_size;
                 }
             }
             break;
@@ -2544,12 +2546,15 @@ static int decode_anim(AVCodecContext *avctx, int *got_frame_ptr)
             break;
         case MKBETAG('F', 'T', 'C', 'H'):
             if (ctx->subversion < 2) {
-                if (ret = process_ftch(ctx, size))
+                if ((ret = process_ftch(ctx, size)) < 0)
                     return ret;
+                have_img = (ret == 0) ? 1 : 0;
             } else {
-                memcpy(ctx->fbuf, ctx->stored_frame, ctx->buf_size);
+                if (ctx->stor_size > 0) {
+                    memcpy(ctx->fbuf, ctx->stored_frame, ctx->buf_size);
+                    have_img = 1;
+                }
             }
-            have_img = 1;
             break;
         default:
             bytestream2_skip(&ctx->gb, size);
