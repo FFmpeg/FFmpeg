@@ -939,17 +939,20 @@ static void set_frame_data(MIContext *mi_ctx, int alpha, AVFrame *avf_out)
                     weight_sum = ALPHA_MAX;
                 }
 
-                for (i = 0; i < pixel_refs->nb; i++) {
-                    Frame *frame = &mi_ctx->frames[pixel_refs->refs[i]];
-                    if (chroma) {
+                if (chroma) {
+                    for (i = 0; i < pixel_refs->nb; i++) {
+                        Frame *frame = &mi_ctx->frames[pixel_refs->refs[i]];
                         x_mv = (x >> mi_ctx->log2_chroma_w) + pixel_mvs->mvs[i][0] / (1 << mi_ctx->log2_chroma_w);
                         y_mv = (y >> mi_ctx->log2_chroma_h) + pixel_mvs->mvs[i][1] / (1 << mi_ctx->log2_chroma_h);
-                    } else {
+                        val += pixel_weights->weights[i] * frame->avf->data[plane][x_mv + y_mv * frame->avf->linesize[plane]];
+                    }
+                } else {
+                    for (i = 0; i < pixel_refs->nb; i++) {
+                        Frame *frame = &mi_ctx->frames[pixel_refs->refs[i]];
                         x_mv = x + pixel_mvs->mvs[i][0];
                         y_mv = y + pixel_mvs->mvs[i][1];
+                        val += pixel_weights->weights[i] * frame->avf->data[plane][x_mv + y_mv * frame->avf->linesize[plane]];
                     }
-
-                    val += pixel_weights->weights[i] * frame->avf->data[plane][x_mv + y_mv * frame->avf->linesize[plane]];
                 }
 
                 val = ROUNDED_DIV(val, weight_sum);
