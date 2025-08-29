@@ -246,7 +246,7 @@ static void run_transcription(AVFilterContext *ctx, AVFrame *frame, int samples)
             if (!av_strcasecmp(wctx->format, "srt")) {
                 buf =
                     av_asprintf
-                    ("%d\n%02ld:%02ld:%02ld.%03ld --> %02ld:%02ld:%02ld.%03ld\n%s\n\n",
+                    ("%d\n%02ld:%02ld:%02ld,%03ld --> %02ld:%02ld:%02ld,%03ld\n%s\n\n",
                      wctx->index, start_t / 3600000,
                      (start_t / 60000) % 60, (start_t / 1000) % 60,
                      start_t % 1000, end_t / 3600000, (end_t / 60000) % 60,
