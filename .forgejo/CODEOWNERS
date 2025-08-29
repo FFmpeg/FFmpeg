@@ -27,6 +27,7 @@ libavcodec/eacmv.* @pross
 libavcodec/eaidct.* @pross
 libavcodec/eamad.* @pross
 libavcodec/eat.* @pross
+libavcodec/.*exif.* @Traneptora
 libavcodec/.*ffv1.* @lynne @michaelni
 libavcodec/g728.* @pross
 libavcodec/gem.* @pross
@@ -104,6 +105,7 @@ libavformat/cine.* @pross
 libavformat/dsf.* @pross
 libavformat/eacdata.* @pross
 libavformat/electronicarts.* @pross
+libavformat/.*exif.* @Traneptora
 libavformat/filmstrip.* @pross
 libavformat/frm.* @pross
 libavformat/iamf.* @jamrial
