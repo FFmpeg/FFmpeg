@@ -918,9 +918,9 @@ static void set_frame_data(MIContext *mi_ctx, int alpha, AVFrame *avf_out)
                 int x_mv, y_mv;
                 int weight_sum = 0;
                 int i, val = 0;
-                PixelMVS *pixel_mvs = &mi_ctx->pixel_mvs[x + y * avf_out->width];
-                PixelWeights *pixel_weights = &mi_ctx->pixel_weights[x + y * avf_out->width];
-                PixelRefs *pixel_refs = &mi_ctx->pixel_refs[x + y * avf_out->width];
+                PixelMVS *pixel_mvs = &mi_ctx->pixel_mvs[x + y * width];
+                PixelWeights *pixel_weights = &mi_ctx->pixel_weights[x + y * width];
+                PixelRefs *pixel_refs = &mi_ctx->pixel_refs[x + y * width];
 
                 for (i = 0; i < pixel_refs->nb; i++)
                     weight_sum += pixel_weights->weights[i];
