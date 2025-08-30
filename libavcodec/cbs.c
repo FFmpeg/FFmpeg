@@ -231,7 +231,8 @@ static int cbs_read_fragment_content(CodedBitstreamContext *ctx,
             unit->content = NULL;
         } else if (err < 0) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Failed to read unit %d "
-                   "(type %"PRIu32").\n", i, unit->type);
+                   "(type %"PRIu32"): %s.\n",
+                   i, unit->type, av_err2str(err));
             return err;
         }
     }
