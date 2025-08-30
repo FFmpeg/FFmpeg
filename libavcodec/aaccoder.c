@@ -173,7 +173,7 @@ static av_always_inline float quantize_and_encode_band_cost_template(
             if (BT_ESC) {
                 for (int j = 0; j < 2; j++) {
                     if (ff_aac_codebook_vectors[cb-1][curidx*2+j] == 64.0f) {
-                        int coef = av_clip_uintp2(quant(fabsf(in[i+j]), Q, ROUNDING), 13);
+                        int coef = av_clip(quant(fabsf(in[i+j]), Q, ROUNDING), 16, (1 << 13) - 1);
                         int len = av_log2(coef);
 
                         put_bits(pb, len - 4 + 1, (1 << (len - 4 + 1)) - 2);
