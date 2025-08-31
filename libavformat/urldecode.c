@@ -50,7 +50,7 @@ char *ff_urldecode(const char *url, int decode_plus_sign)
     while (s < url_len) {
         c = url[s++];
 
-        if (c == '%' && s + 2 < url_len) {
+        if (c == '%' && s + 1 < url_len) {
             char c2 = url[s++];
             char c3 = url[s++];
             if (av_isxdigit(c2) && av_isxdigit(c3)) {
