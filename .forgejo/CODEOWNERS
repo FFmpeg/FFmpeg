@@ -39,9 +39,11 @@ libavcodec/.*jpegxl.* @lynne @Traneptora
 libavcodec/jv.* @pross
 libavcodec/.*jxl.* @lynne @Traneptora
 libavcodec/lead.* @pross
+libavcodec/mediacodec* @quink
 libavcodec/mmvideo.* @pross
 libavcodec/msp2.* @pross
 libavcodec/mvc.* @pross
+libavcodec/oh* @quink
 libavcodec/.*opus.* @lynne
 libavcodec/pictor.* @pross
 libavcodec/.*png.* @Traneptora
@@ -75,6 +77,7 @@ libavcodec/bsf/smpte436m_to_eia608.* @programmerjake
 libavcodec/aarch64/.* @lynne @mstorsjo
 libavcodec/arm/.* @mstorsjo
 libavcodec/ppc/.* @sean_mcg
+libavcodec/wasm/hevc/.* @quink
 libavcodec/x86/.* @lynne
 libavcodec/x86/vp8.* @rbultje
 libavcodec/x86/vp9.* @rbultje
@@ -85,6 +88,8 @@ libavcodec/x86/vpx.* @rbultje
 libavfilter/af_whisper.* @vpalmisano
 libavfilter/colorspace.* @rbultje
 libavfilter/vf_colorspace.* @rbultje
+libavfilter/vf_scale_vt.* @quink
+libavfilter/vf_transpose_vt.* @quink
 libavfilter/vf_yadif.* @michaelni
 libavfilter/vsrc_mandelbrot.* @michaelni
 
@@ -135,6 +140,8 @@ libavutil/.*crc.* @lynne @michaelni
 libavutil/.*d3d12va.* @jianhuaw
 libavutil/csp.* @rbultje
 libavutil/eval.* @michaelni
+libavutil/hwcontext_oh.* @quink
+libavutil/hwcontext_mediacodec.* @quink
 libavutil/iamf.* @jamrial
 libavutil/integer.* @michaelni
 libavutil/lfg.* @michaelni
