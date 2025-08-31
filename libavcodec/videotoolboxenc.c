@@ -1245,8 +1245,10 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
         return AVERROR_EXTERNAL;
     }
 
-    if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
-        Float32 quality = fminf(avctx->global_quality / 100.0f / FF_QP2LAMBDA, 1.0f);
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE || avctx->global_quality > 0) {
+        float factor = (avctx->flags & AV_CODEC_FLAG_QSCALE) ?
+                       FF_QP2LAMBDA * 100.0f : 100.0f;
+        Float32 quality = fminf(avctx->global_quality / factor, 1.0f);
         CFNumberRef quality_num = CFNumberCreate(kCFAllocatorDefault,
                                                  kCFNumberFloat32Type,
                                                  &quality);
