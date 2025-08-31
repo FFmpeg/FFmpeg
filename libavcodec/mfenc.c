@@ -876,6 +876,9 @@ static int mf_encv_output_adjust(AVCodecContext *avctx, IMFMediaType *type)
 
         if (c->opt_enc_scenario >= 0)
             ICodecAPI_SetValue(c->codec_api, &ff_CODECAPI_AVScenarioInfo, FF_VAL_VT_UI4(c->opt_enc_scenario));
+
+        if (avctx->flags & AV_CODEC_FLAG_LOW_DELAY)
+            ICodecAPI_SetValue(c->codec_api, &ff_CODECAPI_AVLowLatencyMode, FF_VAL_VT_UI4(1));
     }
 
     return 0;
