@@ -1185,9 +1185,7 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
     VTEncContext *vtctx = avctx->priv_data;
     SInt32       bit_rate = avctx->bit_rate;
     SInt32       max_rate = avctx->rc_max_rate;
-    Float32      quality = avctx->global_quality / FF_QP2LAMBDA;
     CFNumberRef  bit_rate_num;
-    CFNumberRef  quality_num;
     CFNumberRef  bytes_per_second;
     CFNumberRef  one_second;
     CFArrayRef   data_rate_limits;
@@ -1248,10 +1246,10 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
     }
 
     if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
-        quality = quality >= 100 ? 1.0 : quality / 100;
-        quality_num = CFNumberCreate(kCFAllocatorDefault,
-                                     kCFNumberFloat32Type,
-                                     &quality);
+        Float32 quality = fminf(avctx->global_quality / 100.0f / FF_QP2LAMBDA, 1.0f);
+        CFNumberRef quality_num = CFNumberCreate(kCFAllocatorDefault,
+                                                 kCFNumberFloat32Type,
+                                                 &quality);
         if (!quality_num) return AVERROR(ENOMEM);
 
         status = VTSessionSetProperty(vtctx->session,
