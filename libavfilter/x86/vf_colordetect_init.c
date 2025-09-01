@@ -31,11 +31,11 @@ static int FUNC_NAME(const uint8_t *src, ptrdiff_t stride,                      
 {                                                                               \
     ptrdiff_t bytes = (width << SHIFT) & ~(MMSIZE - 1);                         \
     int ret = ASM_FUNC_NAME(src, stride, bytes, height, min, max);              \
-    if (ret)                                                                    \
+    if (ret == FF_ALPHA_STRAIGHT)                                               \
         return ret;                                                             \
                                                                                 \
-    return C_FUNC_NAME(src + bytes, stride, width - (bytes >> SHIFT),           \
-                       height, min, max);                                       \
+    return ret | C_FUNC_NAME(src + bytes, stride, width - (bytes >> SHIFT),     \
+                             height, min, max);                                 \
 }
 
 #define DETECT_ALPHA_FUNC(FUNC_NAME, ASM_FUNC_NAME, C_FUNC_NAME, SHIFT, MMSIZE) \
@@ -50,11 +50,12 @@ static int FUNC_NAME(const uint8_t *color, ptrdiff_t color_stride,              
     ptrdiff_t bytes = (width << SHIFT) & ~(MMSIZE - 1);                         \
     int ret = ASM_FUNC_NAME(color, color_stride, alpha, alpha_stride,           \
                             bytes, height, p, q, k);                            \
-    if (ret)                                                                    \
+    if (ret == FF_ALPHA_STRAIGHT)                                               \
         return ret;                                                             \
                                                                                 \
-    return C_FUNC_NAME(color + bytes, color_stride, alpha + bytes, alpha_stride,\
-                       width - (bytes >> SHIFT), height, p, q, k);              \
+    return ret | C_FUNC_NAME(color + bytes, color_stride, alpha + bytes,        \
+                             alpha_stride, width - (bytes >> SHIFT), height,    \
+                             p, q, k);                                          \
 }
 
 #if HAVE_X86ASM
