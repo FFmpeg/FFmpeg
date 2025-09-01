@@ -6200,7 +6200,9 @@ probe_libc(){
             add_allcflags "-include $source_path/compat/msvcrt/snprintf.h"
         fi
         add_${pfx}cflags -U__STRICT_ANSI__
-        add_${pfx}cppflags -D__USE_MINGW_ANSI_STDIO=1
+        if ! test_${pfx}cpp_condition crtdefs.h "defined(_UCRT)"; then
+            add_${pfx}cppflags -D__USE_MINGW_ANSI_STDIO=1
+        fi
         eval test \$${pfx_no_}cc_type = "gcc" &&
             add_${pfx}cppflags -D__printf__=__gnu_printf__
         test_${pfx}cpp_condition windows.h "!defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600" &&
@@ -6213,7 +6215,9 @@ probe_libc(){
             (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
             die "ERROR: MinGW32 runtime version must be >= 3.15."
         add_${pfx}cflags -U__STRICT_ANSI__
-        add_${pfx}cppflags -D__USE_MINGW_ANSI_STDIO=1
+        if ! test_${pfx}cpp_condition crtdefs.h "defined(_UCRT)"; then
+            add_${pfx}cppflags -D__USE_MINGW_ANSI_STDIO=1
+        fi
         test_${pfx}cpp_condition _mingw.h "__MSVCRT_VERSION__ < 0x0700" &&
             add_${pfx}cppflags -D__MSVCRT_VERSION__=0x0700
         test_${pfx}cpp_condition windows.h "!defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600" &&
