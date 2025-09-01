@@ -976,6 +976,12 @@ add_objcflags(){
     append OBJCFLAGS $($objcflags_filter "$@")
 }
 
+add_allcflags(){
+    add_cflags "$@"
+    add_cxxflags "$@"
+    add_objcflags "$@"
+}
+
 add_asflags(){
     append ASFLAGS $($asflags_filter "$@")
 }
@@ -1036,6 +1042,14 @@ cc_o(){
     eval printf '%s\\n' $CC_O
 }
 
+cxx_e(){
+    eval printf '%s\\n' $CXX_E
+}
+
+cxx_o(){
+    eval printf '%s\\n' $CXX_O
+}
+
 as_o(){
     eval printf '%s\\n' $AS_O
 }
@@ -1071,14 +1085,14 @@ test_cxx(){
     log test_cxx "$@"
     cat > $TMPCPP
     log_file $TMPCPP
-    test_cmd $cxx $CPPFLAGS $CFLAGS $CXXFLAGS "$@" $CXX_C -o $TMPO $TMPCPP
+    test_cmd $cxx $CPPFLAGS $CXXFLAGS "$@" $CXX_C $(cxx_o $TMPO) $TMPCPP
 }
 
 test_objcc(){
     log test_objcc "$@"
     cat > $TMPM
     log_file $TMPM
-    test_cmd $objcc -Werror=missing-prototypes $CPPFLAGS $CFLAGS $OBJCFLAGS "$@" $OBJCC_C $(cc_o $TMPO) $TMPM
+    test_cmd $objcc -Werror=missing-prototypes $CPPFLAGS $OBJCFLAGS "$@" $OBJCC_C $(cc_o $TMPO) $TMPM
 }
 
 test_nvcc(){
@@ -1288,12 +1302,17 @@ check_cflags(){
     test_cflags "$@" && add_cflags "$@"
 }
 
-check_cxxflags(){
-    log check_cxxflags "$@"
+test_cxxflags(){
+    log test_cxxflags "$@"
     set -- $($cflags_filter "$@")
-    test_cxx "$@" <<EOF && append CXXFLAGS "$@"
+    test_cxx "$@" <<EOF
 int x;
 EOF
+}
+
+check_cxxflags(){
+    log check_cxxflags "$@"
+    test_cxxflags "$@" && add_cxxflags "$@"
 }
 
 test_objcflags(){
@@ -1307,6 +1326,14 @@ EOF
 check_objcflags(){
     log check_objcflags "$@"
     test_objcflags "$@" && add_objcflags "$@"
+}
+
+check_allcflags(){
+    allcret=0
+    check_cflags "$@" || allcret=$?
+    check_cxxflags "$@" || allcret=$?
+    check_objcflags "$@" || allcret=$?
+    return $allcret
 }
 
 test_ldflags(){
@@ -4180,7 +4207,7 @@ mandir_default='${prefix}/share/man'
 ar_default="ar"
 cc_default="gcc"
 stdc_default="c17"
-stdcxx_default="c++11"
+stdcxx_default="c++17"
 cxx_default="g++"
 host_cc_default="gcc"
 doxygen_default="doxygen"
@@ -4648,28 +4675,28 @@ test -n "$valgrind" && toolchain="valgrind-memcheck"
 add_sanitizer_flags(){
     case "$1" in
         asan)
-            add_cflags  -fsanitize=address
+            add_allcflags -fsanitize=address
             add_ldflags -fsanitize=address
         ;;
         fuzz)
-            add_cflags  -fsanitize=fuzzer-no-link
+            add_allcflags -fsanitize=fuzzer-no-link
             add_ldflags -fsanitize=fuzzer-no-link
             : "${libfuzzer_path:=-fsanitize=fuzzer}"
         ;;
         lsan)
-            add_cflags  -fsanitize=leak
+            add_allcflags -fsanitize=leak
             add_ldflags -fsanitize=leak
         ;;
         msan)
-            add_cflags  -fsanitize=memory -fsanitize-memory-track-origins
+            add_allcflags -fsanitize=memory -fsanitize-memory-track-origins
             add_ldflags -fsanitize=memory
         ;;
         tsan)
-            add_cflags  -fsanitize=thread
+            add_allcflags -fsanitize=thread
             add_ldflags -fsanitize=thread
         ;;
         usan|ubsan)
-            add_cflags  -fsanitize=undefined
+            add_allcflags -fsanitize=undefined
             add_ldflags -fsanitize=undefined
         ;;
         ?*)
@@ -4685,7 +4712,7 @@ add_sanitizers(){
     for sanitizer; do
         add_sanitizer_flags "$sanitizer"
     done
-    add_cflags -fno-omit-frame-pointer
+    add_allcflags -fno-omit-frame-pointer
 }
 
 case "$toolchain" in
@@ -4700,7 +4727,7 @@ case "$toolchain" in
         cxx_default="g++"
         # In case of tsan with gcc, PIC has to be enabled
         if [ "${toolchain#gcc-}" = "tsan" ]; then
-            add_cflags  -fPIC
+            add_allcflags -fPIC
             add_ldflags -fPIC
         fi
     ;;
@@ -4751,18 +4778,18 @@ case "$toolchain" in
         TMPDIR=.
     ;;
     gcov)
-        add_cflags  -fprofile-arcs -ftest-coverage
+        add_allcflags  -fprofile-arcs -ftest-coverage
         add_ldflags -fprofile-arcs -ftest-coverage
     ;;
     llvm-cov)
-        add_cflags -fprofile-arcs -ftest-coverage
+        add_allcflags -fprofile-arcs -ftest-coverage
         add_ldflags --coverage
     ;;
     hardened)
         add_cppflags -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
-        add_cflags   -fno-strict-overflow -fstack-protector-all
+        add_allcflags -fno-strict-overflow -fstack-protector-all
         add_ldflags  -Wl,-z,relro -Wl,-z,now
-        add_cflags   -fPIE
+        add_allcflags -fPIE
         add_ldexeflags -fPIE -pie
     ;;
     ?*)
@@ -5058,9 +5085,9 @@ probe_cc(){
     _cc=$2
     first=$3
 
-    unset _type _ident _cc_c _cc_e _cc_o _flags _cflags
+    unset _type _ident _cc_c _cc_e _cc_o _flags _cflags _cxxflags
     unset _ld_o _ldflags _ld_lib _ld_path
-    unset _depflags _DEPCMD _DEPFLAGS
+    unset _depflags _DEPCMD _DEPFLAGS _DEPCCFLAGS _DEPCXXFLAGS
     _flags_filter=echo
 
     if $_cc --version 2>&1 | grep -q '^GNU assembler'; then
@@ -5207,7 +5234,9 @@ probe_cc(){
         else
             _DEPCMD='$(DEP$(1)) $(DEP$(1)FLAGS) $($(1)DEP_FLAGS) $< 2>&1 | awk '\''/including/ { sub(/^.*file: */, ""); gsub(/\\/, "/"); if (!match($$0, / /)) print "$@:", $$0 }'\'' > $(@:.o=.d)'
         fi
-        _DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -showIncludes -Zs'
+        _DEPFLAGS='$(CPPFLAGS) -showIncludes -Zs'
+        _DEPCCFLAGS='$(CFLAGS)'
+        _DEPCXXFLAGS='$(CXXFLAGS)'
         _cflags_speed="-O2"
         _cflags_size="-O1"
         _cflags_noopt="-O1"
@@ -5223,6 +5252,7 @@ probe_cc(){
         _ld_lib='%.lib'
         _ld_path='-libpath:'
         _flags='-nologo'
+        _cxxflags='-Zc:__cplusplus -EHsc'
         disable stripping
     elif $_cc --version 2>/dev/null | grep -q ^cparser; then
         _type=cparser
@@ -5243,11 +5273,11 @@ set_ccvars(){
     eval ${1}_O=\${_cc_o-\${${1}_O}}
 
     if [ -n "$_depflags" ]; then
-        eval ${1}_DEPFLAGS=\$_depflags
+        eval "${1}_DEPFLAGS=\"\$_depflags\""
     else
-        eval ${1}DEP=\${_DEPCMD:-\$DEPCMD}
-        eval ${1}DEP_FLAGS=\${_DEPFLAGS:-\$DEPFLAGS}
-        eval DEP${1}FLAGS=\$_flags
+        eval "${1}DEP=\"\${_DEPCMD:-\$DEPCMD}\""
+        eval "${1}DEP_FLAGS=\"\${_DEPFLAGS:-\$DEPFLAGS} \${_DEP${1}FLAGS:-\$DEP${1}FLAGS}\""
+        eval "DEP${1}FLAGS=\"\$_flags\""
     fi
 }
 
@@ -5257,6 +5287,7 @@ cflags_speed=$_cflags_speed
 cflags_size=$_cflags_size
 cflags_noopt=$_cflags_noopt
 add_cflags $_flags $_cflags
+add_cxxflags $_flags $_cxxflags
 cc_ldflags=$_ldflags
 set_ccvars CC
 set_ccvars CXX
@@ -5303,8 +5334,11 @@ HOSTLD_O=${_ld_o-$HOSTLD_O}
 if [ -z "$CC_DEPFLAGS" ] && [ "$dep_cc" != "$cc" ]; then
     probe_cc depcc "$dep_cc"
     CCDEP=${_DEPCMD:-$DEPCMD}
+    CXXDEP=${CCDEP}
     CCDEP_FLAGS=${_DEPFLAGS:=$DEPFLAGS}
-    DEPCCFLAGS=$_flags
+    CXXDEP_FLAGS=${CCDEP_FLAGS}
+    DEPCCFLAGS=$_flags $_cflags
+    DEPCXXFLAGS=$_flags $_cxxflags
 fi
 
 if VSLANG=1033 $ar 2>&1 | grep -q ^Microsoft; then
@@ -5502,7 +5536,7 @@ elif enabled arm; then
             ;;
     esac
 
-    test_cflags -mfp16-format=ieee && add_cflags -mfp16-format=ieee
+    check_allcflags -mfp16-format=ieee
 
 elif enabled loongarch; then
 
@@ -5737,7 +5771,7 @@ else
 fi
 
 if [ "$cpu" != generic ]; then
-    add_cflags  $cpuflags
+    add_allcflags $cpuflags
     add_asflags $cpuflags
     test "$cc_type" = "$ld_type" && add_ldflags $cpuflags
 fi
@@ -5759,6 +5793,8 @@ add_cppflags -D_ISOC11_SOURCE
 add_cxxflags -D__STDC_CONSTANT_MACROS
 check_cxxflags_cc -std=$stdcxx ctype.h "__cplusplus >= 201103L" ||
     { check_cxxflags -std=c++11 && stdcxx="c++11" || { check_cxxflags -std=c++0x && stdcxx="c++0x"; }; }
+
+test_cxxflags_cc -std=$stdcxx ctype.h "__cplusplus >= 201703L" && enable cxx17
 
 # some compilers silently accept -std=c11, so we also need to check that the
 # version macro is defined properly
@@ -5854,7 +5890,7 @@ case $target_os in
     android)
         disable symver
         enable section_data_rel_ro
-        add_cflags -fPIE
+        add_allcflags -fPIE
         add_ldexeflags -fPIE -pie
         SLIB_INSTALL_NAME='$(SLIBNAME)'
         SLIB_INSTALL_LINKS=
@@ -5935,7 +5971,7 @@ case $target_os in
         # Workaround for Xcode 11 -fstack-check bug
         if enabled clang; then
             clang_version=$($cc -dumpversion)
-            test ${clang_version%%.*} -eq 11 && add_cflags -fno-stack-check
+            test ${clang_version%%.*} -eq 11 && add_allcflags -fno-stack-check
         fi
 
         # Xcode Clang doesn't default to -fno-common while upstream llvm.org
@@ -6154,15 +6190,17 @@ probe_libc(){
     # MinGW headers can be installed on Cygwin, so check for newlib first.
     elif test_${pfx}cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
         eval ${pfx}libc_type=newlib
-        add_${pfx}cppflags -U__STRICT_ANSI__ -D_XOPEN_SOURCE=600
+        add_${pfx}cflags -U__STRICT_ANSI__
+        add_${pfx}cppflags -D_XOPEN_SOURCE=600
     # MinGW64 is backwards compatible with MinGW32, so check for it first.
     elif test_${pfx}cpp_condition _mingw.h "defined __MINGW64_VERSION_MAJOR"; then
         eval ${pfx}libc_type=mingw64
         if test_${pfx}cpp_condition _mingw.h "__MINGW64_VERSION_MAJOR < 3"; then
             add_compat msvcrt/snprintf.o
-            add_cflags "-include $source_path/compat/msvcrt/snprintf.h"
+            add_allcflags "-include $source_path/compat/msvcrt/snprintf.h"
         fi
-        add_${pfx}cppflags -U__STRICT_ANSI__ -D__USE_MINGW_ANSI_STDIO=1
+        add_${pfx}cflags -U__STRICT_ANSI__
+        add_${pfx}cppflags -D__USE_MINGW_ANSI_STDIO=1
         eval test \$${pfx_no_}cc_type = "gcc" &&
             add_${pfx}cppflags -D__printf__=__gnu_printf__
         test_${pfx}cpp_condition windows.h "!defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600" &&
@@ -6174,7 +6212,8 @@ probe_libc(){
         test_${pfx}cpp_condition _mingw.h "__MINGW32_MAJOR_VERSION > 3 || \
             (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
             die "ERROR: MinGW32 runtime version must be >= 3.15."
-        add_${pfx}cppflags -U__STRICT_ANSI__ -D__USE_MINGW_ANSI_STDIO=1
+        add_${pfx}cflags -U__STRICT_ANSI__
+        add_${pfx}cppflags -D__USE_MINGW_ANSI_STDIO=1
         test_${pfx}cpp_condition _mingw.h "__MSVCRT_VERSION__ < 0x0700" &&
             add_${pfx}cppflags -D__MSVCRT_VERSION__=0x0700
         test_${pfx}cpp_condition windows.h "!defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600" &&
@@ -6215,8 +6254,8 @@ probe_libc(){
 #endif
 EOF
         if [ "$pfx" = "" ]; then
-            check_func strtoll || add_cflags -Dstrtoll=_strtoi64
-            check_func strtoull || add_cflags -Dstrtoull=_strtoui64
+            check_func strtoll || add_allcflags -Dstrtoll=_strtoi64
+            check_func strtoull || add_allcflags -Dstrtoull=_strtoui64
         fi
     elif test_${pfx}cpp_condition stddef.h "defined __KLIBC__"; then
         eval ${pfx}libc_type=klibc
@@ -6228,7 +6267,7 @@ EOF
     elif test_${pfx}cpp_condition sys/version.h "defined __DJGPP__"; then
         eval ${pfx}libc_type=djgpp
         add_cppflags -U__STRICT_ANSI__
-        add_cflags "-include $source_path/compat/djgpp/math.h"
+        add_allcflags "-include $source_path/compat/djgpp/math.h"
         add_compat djgpp/math.o
     fi
     test_${pfx}cc <<EOF
@@ -6266,7 +6305,7 @@ set_default libdir
 set_default $PATHS_LIST
 set_default nm
 
-disabled optimizations || enabled ossfuzz || echo "$CFLAGS" | grep -q -- '-fsanitize=' || check_cflags -fomit-frame-pointer
+disabled optimizations || enabled ossfuzz || echo "$CFLAGS" | grep -q -- '-fsanitize=' || check_allcflags -fomit-frame-pointer
 
 enable_weak_pic() {
     disabled pic && return
@@ -6276,7 +6315,7 @@ enable_weak_pic() {
     mingw*|cygwin*|win*)
         ;;
     *)
-        add_cflags -fPIC
+        add_allcflags -fPIC
         add_asflags -fPIC
         ;;
     esac
@@ -6952,13 +6991,13 @@ fi
 if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     if check_lib pthreads pthread.h pthread_join   -pthread &&
        check_lib pthreads pthread.h pthread_create -pthread; then
-        add_cflags -pthread
+        add_allcflags -pthread
     elif check_lib pthreads pthread.h pthread_join   -pthreads &&
          check_lib pthreads pthread.h pthread_create -pthreads; then
-        add_cflags -pthreads
+        add_allcflags -pthreads
     elif check_lib pthreads pthread.h pthread_join   -ldl -pthread &&
          check_lib pthreads pthread.h pthread_create -ldl -pthread; then
-        add_cflags -ldl -pthread
+        add_allcflags -ldl -pthread
     elif check_lib pthreads pthread.h pthread_join   -lpthreadGC2 &&
          check_lib pthreads pthread.h pthread_create -lpthreadGC2; then
         :
@@ -7097,7 +7136,7 @@ elif enabled libmfx; then
 #   includedir=/usr/include
 #   Cflags: -I${includedir}
 # So add -I${includedir}/mfx to CFLAGS
-      { check_pkg_config libmfx "libmfx >= 1.28 libmfx < 2.0" "mfx/mfxvideo.h" MFXInit && add_cflags -I${libmfx_incdir}/mfx; } ||
+      { check_pkg_config libmfx "libmfx >= 1.28 libmfx < 2.0" "mfx/mfxvideo.h" MFXInit && add_cppflags -I${libmfx_incdir}/mfx; } ||
       { require libmfx "mfxvideo.h mfxdefs.h" MFXInit "-llibmfx $advapi32_extralibs" &&
         { test_cpp_condition mfxdefs.h "MFX_VERSION >= 1028 && MFX_VERSION < 2000" || die "ERROR: libmfx version must be >= 1.28 and < 2.0"; }  &&
         warn "using libmfx without pkg-config"; } } &&
@@ -7108,7 +7147,7 @@ elif enabled libvpl; then
 # is extracted from "vpl >= 2.6"
     check_pkg_config libmfx "vpl >= 2.6" "mfxvideo.h mfxdispatcher.h" MFXLoad || \
             die "ERROR: libvpl >= 2.6 not found"
-    add_cflags -DMFX_DEPRECATED_OFF
+    add_cppflags -DMFX_DEPRECATED_OFF
     check_type "vpl/mfxdefs.h vpl/mfxvideo.h" "struct mfxConfigInterface"
 fi
 
@@ -7584,29 +7623,31 @@ elif enabled iconv; then
     check_func_headers iconv.h iconv || check_lib iconv iconv.h iconv -liconv
 fi
 
-enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
+enabled debug && add_allcflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
 # add some useful compiler flags if supported
-check_cflags -Wall
-check_cflags -Wdisabled-optimization
-check_cflags -Wpointer-arith
-check_cflags -Wredundant-decls
-check_cflags -Wwrite-strings
-check_cflags -Wtype-limits
-check_cflags -Wundef
+check_allcflags -Wall
+check_allcflags -Wdisabled-optimization
+check_allcflags -Wpointer-arith
+check_allcflags -Wredundant-decls
+check_allcflags -Wwrite-strings
+check_allcflags -Wtype-limits
+check_allcflags -Wundef
+check_allcflags -Wempty-body
 check_cflags -Wmissing-prototypes
 check_cflags -Wstrict-prototypes
-check_cflags -Wempty-body
 
 if enabled extra_warnings; then
-    check_cflags -Wcast-qual
-    check_cflags -Wextra
-    check_cflags -Wpedantic
+    check_allcflags -Wcast-qual
+    check_allcflags -Wextra
+    check_allcflags -Wpedantic
 fi
 
 check_disable_warning(){
     warning_flag=-W${1#-Wno-}
     test_cflags $unknown_warning_flags $warning_flag && add_cflags $1
+    test_cxxflags -Werror $unknown_warning_flags $warning_flag && add_cxxflags $1
+    test_objcflags $unknown_warning_flags $warning_flag && add_objcflags $1
 }
 
 test_cflags -Werror=unused-command-line-argument &&
@@ -7700,7 +7741,7 @@ if [ -z "$optflags" ]; then
 fi
 
 check_optflags(){
-    check_cflags "$@"
+    check_allcflags "$@"
     [ -n "$lto" ] && check_ldflags "$@"
 }
 
@@ -7734,7 +7775,7 @@ EOF
 
 if enabled icc; then
     # Just warnings, no remarks
-    check_cflags -w1
+    check_allcflags -w1
     # -wd: Disable following warnings
     # 144, 167, 556: -Wno-pointer-sign
     # 188: enumerated type mixed with another type
@@ -7745,7 +7786,7 @@ if enabled icc; then
     # 10156: ignoring option '-W'; no argument required
     # 13200: No EMMS instruction before call to function
     # 13203: No EMMS instruction before return from function
-    check_cflags -wd144,167,188,556,1292,1419,10006,10148,10156,13200,13203
+    check_allcflags -wd144,167,188,556,1292,1419,10006,10148,10156,13200,13203
     # 11030: Warning unknown option --as-needed
     # 10156: ignoring option '-export'; no argument required
     check_ldflags -wd10156,11030
@@ -7756,7 +7797,7 @@ if enabled icc; then
     if enabled x86_32; then
         icc_version=$($cc -dumpversion)
         test ${icc_version%%.*} -ge 11 &&
-            check_cflags -falign-stack=maintain-16-byte ||
+            check_cppflags -falign-stack=maintain-16-byte ||
             disable aligned_stack
     fi
 elif enabled gcc; then
@@ -7779,13 +7820,13 @@ elif enabled gcc; then
             ;;
         esac
     fi
-    check_cflags -Werror=format-security
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
-    check_cflags -Werror=return-type
-    check_cflags -Werror=vla
-    check_cflags -Wformat
-    check_cflags -fdiagnostics-color=auto
+    check_allcflags -Werror=format-security
+    check_allcflags -Werror=return-type
+    check_allcflags -Werror=vla
+    check_allcflags -Wformat
+    check_allcflags -fdiagnostics-color=auto
     enabled extra_warnings || check_disable_warning -Wno-maybe-uninitialized
     if enabled x86_32; then
         case $target_os in
@@ -7794,12 +7835,12 @@ elif enabled gcc; then
             # request GCC to try to maintain 16 byte alignment throughout
             # function calls. Library entry points that might call assembly
             # functions align the stack. (The parameter means 2^4 bytes.)
-            check_cflags -mpreferred-stack-boundary=4
+            check_allcflags -mpreferred-stack-boundary=4
             ;;
         esac
     fi
 elif enabled llvm_gcc; then
-    check_cflags -mllvm -stack-alignment=16
+    check_allcflags -mllvm -stack-alignment=16
 elif enabled clang; then
     if enabled x86_32; then
         # Clang doesn't support maintaining alignment without assuming the
@@ -7812,18 +7853,18 @@ elif enabled clang; then
             disable aligned_stack
             ;;
         *)
-            check_cflags -mllvm -stack-alignment=16
-            check_cflags -mstack-alignment=16
+            check_allcflags -mllvm -stack-alignment=16
+            check_allcflags -mstack-alignment=16
             ;;
         esac
     else
-        check_cflags -mllvm -stack-alignment=16
-        check_cflags -mstack-alignment=16
+        check_allcflags -mllvm -stack-alignment=16
+        check_allcflags -mstack-alignment=16
     fi
-    check_cflags -Qunused-arguments
-    check_cflags -Werror=implicit-function-declaration
-    check_cflags -Werror=missing-prototypes
-    check_cflags -Werror=return-type
+    check_allcflags -Qunused-arguments
+    check_allcflags -Werror=implicit-function-declaration
+    check_allcflags -Werror=missing-prototypes
+    check_allcflags -Werror=return-type
 elif enabled cparser; then
     add_cflags -Wno-missing-variable-declarations
     add_cflags -Wno-empty-statement
@@ -8267,6 +8308,8 @@ OBJCC=$objcc
 LD=$ld
 DEPCC=$dep_cc
 DEPCCFLAGS=$DEPCCFLAGS \$(CPPFLAGS)
+DEPCXX=$dep_cc
+DEPCXXFLAGS=$DEPCXXFLAGS \$(CPPFLAGS)
 DEPAS=$as
 DEPASFLAGS=$DEPASFLAGS \$(CPPFLAGS)
 X86ASM=$x86asmexe
@@ -8334,6 +8377,7 @@ EXTRA_VERSION=$extra_version
 CCDEP=$CCDEP
 CXXDEP=$CXXDEP
 CCDEP_FLAGS=$CCDEP_FLAGS
+CXXDEP_FLAGS=$CXXDEP_FLAGS
 ASDEP=$ASDEP
 ASDEP_FLAGS=$ASDEP_FLAGS
 X86ASMDEP=$X86ASMDEP

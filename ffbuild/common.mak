@@ -51,7 +51,7 @@ OBJCCFLAGS  = $(CPPFLAGS) $(CFLAGS) $(OBJCFLAGS)
 ASFLAGS    := $(CPPFLAGS) $(ASFLAGS)
 # Use PREPEND here so that later (target-dependent) additions to CPPFLAGS
 # end up in CXXFLAGS.
-$(call PREPEND,CXXFLAGS, CPPFLAGS CFLAGS)
+$(call PREPEND,CXXFLAGS, CPPFLAGS)
 X86ASMFLAGS += $(IFLAGS:%=%/) -I$(<D)/ -Pconfig.asm
 
 HOSTCCFLAGS = $(IFLAGS) $(HOSTCPPFLAGS) $(HOSTCFLAGS)
