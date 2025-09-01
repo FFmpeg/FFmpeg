@@ -566,7 +566,7 @@ static int pass_samples(AVFilterLink *inlink, AVFilterLink *outlink, unsigned nb
     return ff_filter_frame(outlink, in);
 }
 
-static int pass_crossfade(AVFilterContext *ctx)
+static int pass_crossfade(AVFilterContext *ctx, AVFilterLink *in0, AVFilterLink *in1)
 {
     AudioFadeContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -578,13 +578,13 @@ static int pass_crossfade(AVFilterContext *ctx)
         if (!out)
             return AVERROR(ENOMEM);
 
-        ret = ff_inlink_consume_samples(ctx->inputs[0], s->nb_samples, s->nb_samples, &cf[0]);
+        ret = ff_inlink_consume_samples(in0, s->nb_samples, s->nb_samples, &cf[0]);
         if (ret < 0) {
             av_frame_free(&out);
             return ret;
         }
 
-        ret = ff_inlink_consume_samples(ctx->inputs[1], s->nb_samples, s->nb_samples, &cf[1]);
+        ret = ff_inlink_consume_samples(in1, s->nb_samples, s->nb_samples, &cf[1]);
         if (ret < 0) {
             av_frame_free(&out);
             return ret;
@@ -605,7 +605,7 @@ static int pass_crossfade(AVFilterContext *ctx)
         if (!out)
             return AVERROR(ENOMEM);
 
-        ret = ff_inlink_consume_samples(ctx->inputs[0], s->nb_samples, s->nb_samples, &cf[0]);
+        ret = ff_inlink_consume_samples(in0, s->nb_samples, s->nb_samples, &cf[0]);
         if (ret < 0) {
             av_frame_free(&out);
             return ret;
@@ -625,7 +625,7 @@ static int pass_crossfade(AVFilterContext *ctx)
         if (!out)
             return AVERROR(ENOMEM);
 
-        ret = ff_inlink_consume_samples(ctx->inputs[1], s->nb_samples, s->nb_samples, &cf[1]);
+        ret = ff_inlink_consume_samples(in1, s->nb_samples, s->nb_samples, &cf[1]);
         if (ret < 0) {
             av_frame_free(&out);
             return ret;
@@ -678,7 +678,7 @@ static int activate(AVFilterContext *ctx)
         // TODO: Do some partial crossfade if not all inputs have enough duration?
         if (ff_inlink_queued_samples(ctx->inputs[0]) >= s->nb_samples &&
             ff_inlink_queued_samples(ctx->inputs[1]) >= s->nb_samples)
-            return pass_crossfade(ctx);
+            return pass_crossfade(ctx, ctx->inputs[0], ctx->inputs[1]);
     }
     // Read second input until EOF
     if (s->xfade_status == 3) {
