@@ -57,7 +57,8 @@ FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, ACROSSFADE, WAV, PCM_S16LE, PCM_
 fate-filter-acrossfade: tests/data/asynth-44100-2.wav
 fate-filter-acrossfade: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-acrossfade: SRC2 = $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
-fate-filter-acrossfade: CMD = framecrc -i $(SRC) -i $(SRC2) -filter_complex acrossfade=d=2:c1=log:c2=exp
+fate-filter-acrossfade: SRC3 = $(TARGET_SAMPLES)/audio-reference/chorusnoise_2ch_44kHz_s16.wav
+fate-filter-acrossfade: CMD = framecrc -i $(SRC) -i $(SRC2) -i $(SRC3) -filter_complex acrossfade=n=3:d=2:c1=log:c2=exp
 
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, AGATE ARESAMPLE, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-agate
 fate-filter-agate: tests/data/asynth-44100-2.wav
