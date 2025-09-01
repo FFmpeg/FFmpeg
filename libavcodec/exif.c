@@ -909,7 +909,7 @@ int av_exif_ifd_to_dict(void *logctx, const AVExifMetadata *ifd, AVDictionary **
     return exif_ifd_to_dict(logctx, "", ifd, metadata);
 }
 
-#if FF_API_OLD_EXIF
+#if LIBAVCODEC_VERSION_MAJOR < 63
 int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
                            int le, int depth, AVDictionary **metadata)
 {
@@ -924,7 +924,7 @@ int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
     av_exif_free(&ifd);
     return ret;
 }
-#endif /* FF_API_OLD_EXIF */
+#endif
 
 #define EXIF_COPY(fname, srcname) do { \
     size_t sz; \

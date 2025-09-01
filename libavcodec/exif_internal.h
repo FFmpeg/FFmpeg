@@ -36,11 +36,11 @@
 #include "exif.h"
 #include "version_major.h"
 
-#if FF_API_OLD_EXIF
+#if LIBAVCODEC_VERSION_MAJOR < 63
 /* Used by the AVI demuxer */
 int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
                            int le, int depth, AVDictionary **metadata);
-#endif /* FF_API_OLD_EXIF */
+#endif
 
 #define MAKERNOTE_TAG          0x927c
 #define ORIENTATION_TAG        0x112
