@@ -207,11 +207,8 @@ ipred_dir_tm_h_funcs(8, avx);
 ipred_dir_tm_h_funcs(16, avx);
 ipred_dir_tm_h_funcs(32, avx);
 
-ipred_func(32, v, avx);
-
-ipred_dc_funcs(32, avx2);
-ipred_func(32, h, avx2);
-ipred_func(32, tm, avx2);
+ipred_all_funcs(32, avx2);
+ipred_func(32, v, avx2);
 
 #undef ipred_func
 #undef ipred_dir_tm_h_funcs
@@ -388,7 +385,6 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
     if (EXTERNAL_AVX_FAST(cpu_flags)) {
         init_fpel_func(1, 0, 32, put, , avx);
         init_fpel_func(0, 0, 64, put, , avx);
-        init_ipred(32, avx, v, VERT);
     }
 
     if (EXTERNAL_AVX2_FAST(cpu_flags)) {
@@ -408,9 +404,8 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
             init_subpel3_32_64(1, avg, 8, avx2);
 #endif
         }
-        init_dc_ipred(32, avx2);
-        init_ipred(32, avx2, h,  HOR);
-        init_ipred(32, avx2, tm, TM_VP8);
+        init_all_ipred(32, avx2);
+        init_ipred(32, avx2, v, VERT);
     }
 
 #if ARCH_X86_64
