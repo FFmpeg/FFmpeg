@@ -23,18 +23,31 @@
 
 #include <stdint.h>
 
-#include "config.h"
+#define LUT_SIZE     (1 << 13)
 
-#if CONFIG_HARDCODED_TABLES
+#ifndef BUILD_TABLES
+#include "config.h"
+#define BUILD_TABLES !CONFIG_HARDCODED_TABLES
+#endif
+
+#if !BUILD_TABLES
 #define ff_cbrt_tableinit_fixed()
 #define ff_cbrt_tableinit()
-extern const uint32_t ff_cbrt_tab[1 << 13];
-extern const uint32_t ff_cbrt_tab_fixed[1 << 13];
+extern const uint32_t ff_cbrt_tab[LUT_SIZE];
+extern const uint32_t ff_cbrt_tab_fixed[LUT_SIZE];
 #else
 void ff_cbrt_tableinit(void);
 void ff_cbrt_tableinit_fixed(void);
-extern uint32_t ff_cbrt_tab[1 << 13];
-extern uint32_t ff_cbrt_tab_fixed[1 << 13];
+
+#define TMP_LUT_SIZE (LUT_SIZE / 2)
+
+extern union CBRT {
+    uint32_t cbrt_tab[LUT_SIZE];
+    double tmp[TMP_LUT_SIZE];
+} ff_cbrt_tab_internal, ff_cbrt_tab_internal_fixed;
+
+#define ff_cbrt_tab       ff_cbrt_tab_internal.cbrt_tab
+#define ff_cbrt_tab_fixed ff_cbrt_tab_internal_fixed.cbrt_tab
 #endif
 
 #endif
