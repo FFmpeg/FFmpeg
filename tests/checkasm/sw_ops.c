@@ -80,7 +80,7 @@ static void fill32f(float *line, int num, unsigned range)
 static void fill32(uint32_t *line, int num, unsigned range)
 {
     for (int i = 0; i < num; i++)
-        line[i] = range ? rnd() % (range + 1) : rnd();
+        line[i] = (range && range < UINT_MAX) ? rnd() % (range + 1) : rnd();
 }
 
 static void fill16(uint16_t *line, int num, unsigned range)
