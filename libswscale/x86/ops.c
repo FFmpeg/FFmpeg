@@ -130,7 +130,7 @@ static int setup_clear(const SwsOp *op, SwsOpPriv *out)
 #define DECL_SWIZZLE(EXT, X, Y, Z, W)                                           \
     DECL_ASM(U8, swizzle_##X##Y##Z##W##EXT,                                     \
         .op = SWS_OP_SWIZZLE,                                                   \
-        .swizzle = SWS_SWIZZLE( X, Y, Z, W ),                                   \
+        .swizzle.in = {X, Y, Z, W},                                             \
     );
 
 #define DECL_CONVERT(EXT, FROM, TO)                                             \
