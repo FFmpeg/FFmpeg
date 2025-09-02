@@ -88,7 +88,7 @@ static int encode_write(AVCodecContext *avctx, AVFrame *frame, FILE *fout)
         enc_pkt->stream_index = 0;
         ret = fwrite(enc_pkt->data, enc_pkt->size, 1, fout);
         av_packet_unref(enc_pkt);
-        if (ret != enc_pkt->size) {
+        if (!ret) {
             ret = AVERROR(errno);
             break;
         }
