@@ -1795,8 +1795,10 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb,
     }
 
     /* users of codecs>=37 are subversion 2, enforce that for STOR/FTCH */
-    if (fsc)
+    if (fsc && ctx->subversion < 2) {
         ctx->subversion = 2;
+        ctx->stor_size = 0;  /* invalidate existing data */
+    }
 
     /* clear the main buffer on the first fob */
     if (ctx->first_fob) {
