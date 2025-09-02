@@ -586,6 +586,7 @@ static int pass_crossfade(AVFilterContext *ctx, AVFilterLink *in0, AVFilterLink 
 
         ret = ff_inlink_consume_samples(in1, s->nb_samples, s->nb_samples, &cf[1]);
         if (ret < 0) {
+            av_frame_free(&cf[0]);
             av_frame_free(&out);
             return ret;
         }
