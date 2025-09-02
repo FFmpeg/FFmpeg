@@ -35,37 +35,53 @@
 #define CBRT(x) av_float2int((float)(x))
 #endif
 
-uint32_t AAC_RENAME(ff_cbrt_tab)[1 << 13];
+#define LUT_SIZE     (1 << 13)
+#define TMP_LUT_SIZE (LUT_SIZE/2)
+
+uint32_t AAC_RENAME(ff_cbrt_tab)[LUT_SIZE];
 
 av_cold void AAC_RENAME(ff_cbrt_tableinit)(void)
 {
-    static double cbrt_tab_dbl[1 << 13];
-        int i, j, k;
-        double cbrt_val;
+    // LUT of k^{4/3} for odd k; element idx corresponds to 2 * idx + 1.
+    static double cbrt_tab_dbl[TMP_LUT_SIZE];
 
-        for (i = 1; i < 1<<13; i++)
-            cbrt_tab_dbl[i] = 1;
+    for (int idx = 0; idx < TMP_LUT_SIZE; ++idx)
+        cbrt_tab_dbl[idx] = 1;
 
-        /* have to take care of non-squarefree numbers */
-        for (i = 2; i < 90; i++) {
-            if (cbrt_tab_dbl[i] == 1) {
-                cbrt_val = i * cbrt(i);
-                for (k = i; k < 1<<13; k *= i)
-                    for (j = k; j < 1<<13; j += k)
-                        cbrt_tab_dbl[j] *= cbrt_val;
+    /* have to take care of non-squarefree numbers; notice that sqrt(LUT_SIZE) = 90;
+     * idx == 44 corresponds to 89. */
+    for (int idx = 1; idx < 45; ++idx) {
+        if (cbrt_tab_dbl[idx] == 1) {
+            int i = 2 * idx + 1;
+            double cbrt_val = i * cbrt(i);
+            for (int k = i; k < LUT_SIZE; k *= i) {
+                // We only have to handle k, 3 * k, 5 * k,...,
+                // because only these are odd. The corresponding indices are
+                // k >> 1, (k >> 1) + k, (k >> 1) + 2 * k,...
+                for (int idx2 = k >> 1; idx2 < TMP_LUT_SIZE; idx2 += k)
+                    cbrt_tab_dbl[idx2] *= cbrt_val;
             }
         }
+    }
 
-        for (i = 91; i <= 8191; i+= 2) {
-            if (cbrt_tab_dbl[i] == 1) {
-                cbrt_val = i * cbrt(i);
-                for (j = i; j < 1<<13; j += i)
-                    cbrt_tab_dbl[j] *= cbrt_val;
-            }
+    for (int idx = 45; idx < TMP_LUT_SIZE; ++idx) {
+        if (cbrt_tab_dbl[idx] == 1) {
+            int i = 2 * idx + 1;
+            double cbrt_val = i * cbrt(i);
+            for (int idx2 = idx; idx2 < TMP_LUT_SIZE; idx2 += i)
+                cbrt_tab_dbl[idx2] *= cbrt_val;
         }
+    }
 
-        for (i = 0; i < 1<<13; i++)
-            AAC_RENAME(ff_cbrt_tab)[i] = CBRT(cbrt_tab_dbl[i]);
+    double cbrt_2 = 2 * cbrt(2);
+    for (int idx = 0; idx < TMP_LUT_SIZE; ++idx) {
+        double cbrt_val = cbrt_tab_dbl[idx];
+        for (int i = 2 * idx + 1; i < LUT_SIZE; i *= 2) {
+            AAC_RENAME(ff_cbrt_tab)[i] = CBRT(cbrt_val);
+            cbrt_val *= cbrt_2;
+        }
+    }
+    AAC_RENAME(ff_cbrt_tab)[0] = CBRT(0);
 }
 
 #endif /* AVCODEC_CBRT_TABLEGEN_H */
