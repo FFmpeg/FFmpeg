@@ -15,7 +15,7 @@ $(APITESTOBJS) $(APITESTOBJS:.o=.i): CPPFLAGS += -DTEST
 $(APITESTOBJS) $(APITESTOBJS:.o=.i): CFLAGS += -Umain
 
 $(APITESTPROGS): %$(EXESUF): %.o $(FF_DEP_LIBS)
-	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(filter %.o,$^) $(FF_EXTRALIBS) $(ELIBS)
+	$(call LINK,$(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(filter %.o,$^) $(FF_EXTRALIBS) $(ELIBS))
 
 testclean::
 	$(RM) $(addprefix $(APITESTSDIR)/,$(CLEANSUFFIXES) *-test$(EXESUF))
