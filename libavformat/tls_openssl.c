@@ -747,6 +747,13 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     int ret = 0;
     s->is_dtls = 1;
 
+    if (!c->tls_shared.external_sock) {
+        if ((ret = ff_tls_open_underlying(&c->tls_shared, h, url, options)) < 0) {
+            av_log(c, AV_LOG_ERROR, "Failed to connect %s\n", url);
+            return ret;
+        }
+    }
+
     c->ctx = SSL_CTX_new(s->listen ? DTLS_server_method() : DTLS_client_method());
     if (!c->ctx) {
         ret = AVERROR(ENOMEM);
@@ -799,13 +806,6 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
     DTLS_set_link_mtu(c->ssl, s->mtu);
     init_bio_method(h);
 
-    if (!c->tls_shared.external_sock) {
-        if ((ret = ff_tls_open_underlying(&c->tls_shared, h, url, options)) < 0) {
-            av_log(c, AV_LOG_ERROR, "Failed to connect %s\n", url);
-            return ret;
-        }
-    }
-
     /* This seems to be necessary despite explicitly setting client/server method above. */
     if (s->listen)
         SSL_set_accept_state(c->ssl);
@@ -836,6 +836,7 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
 
     ret = 0;
 fail:
+    tls_close(h);
     return ret;
 }
 

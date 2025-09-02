@@ -2052,12 +2052,19 @@ Datagram Transport Layer Security (DTLS)
 
 The required syntax for a DTLS URL is:
 @example
-dtls://@var{hostname}:@var{port}
+dtls://@var{hostname}:@var{port}[?@var{options}]
 @end example
 
+@var{options} contains a list of &-separated options of the form
+@var{key}=@var{val}. Standard percent-encoding (and using the plus sign for
+space) can be used to escape keys and values.
+
+Options can also can be specified via command line options (or in code via
+@code{AVOption}s).
+
 DTLS shares most options with TLS, but operates over UDP instead of TCP.
-The following parameters can be set via command line options
-(or in code via @code{AVOption}s):
+
+The list of supported options follows.
 
 @table @option
 
