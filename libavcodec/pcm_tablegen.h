@@ -24,6 +24,7 @@
 #define AVCODEC_PCM_TABLEGEN_H
 
 #include <stdint.h>
+#include "config_components.h"
 #include "libavutil/attributes.h"
 
 /* from g711.c by SUN microsystems (unrestricted use) */
