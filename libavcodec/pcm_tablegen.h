@@ -102,20 +102,9 @@ static av_cold int vidc2linear(unsigned char u_val)
 #define pcm_vidc_tableinit()
 #include "libavcodec/pcm_tables.h"
 #else
-/* 16384 entries per table */
-#if CONFIG_PCM_ALAW_DECODER || CONFIG_PCM_ALAW_ENCODER
-static uint8_t linear_to_alaw[16384];
-#endif
-#if CONFIG_PCM_MULAW_DECODER || CONFIG_PCM_MULAW_ENCODER
-static uint8_t linear_to_ulaw[16384];
-#endif
-#if CONFIG_PCM_VIDC_DECODER || CONFIG_PCM_VIDC_ENCODER
-static uint8_t linear_to_vidc[16384];
-#endif
 
-#if CONFIG_PCM_ALAW_DECODER  || CONFIG_PCM_ALAW_ENCODER  || \
-    CONFIG_PCM_MULAW_DECODER || CONFIG_PCM_MULAW_ENCODER || \
-    CONFIG_PCM_VIDC_DECODER  || CONFIG_PCM_VIDC_ENCODER
+#if CONFIG_PCM_ALAW_ENCODER  || CONFIG_PCM_MULAW_ENCODER || \
+    CONFIG_PCM_VIDC_ENCODER
 static av_cold void build_xlaw_table(uint8_t *linear_to_xlaw,
                              int (*xlaw2linear)(unsigned char),
                              int mask)
@@ -141,21 +130,24 @@ static av_cold void build_xlaw_table(uint8_t *linear_to_xlaw,
 }
 #endif
 
-#if CONFIG_PCM_ALAW_DECODER || CONFIG_PCM_ALAW_ENCODER
+#if CONFIG_PCM_ALAW_ENCODER
+static uint8_t linear_to_alaw[16384];
 static void pcm_alaw_tableinit(void)
 {
     build_xlaw_table(linear_to_alaw, alaw2linear, 0xd5);
 }
 #endif
 
-#if CONFIG_PCM_MULAW_DECODER || CONFIG_PCM_MULAW_ENCODER
+#if CONFIG_PCM_MULAW_ENCODER
+static uint8_t linear_to_ulaw[16384];
 static void pcm_ulaw_tableinit(void)
 {
     build_xlaw_table(linear_to_ulaw, ulaw2linear, 0xff);
 }
 #endif
 
-#if CONFIG_PCM_VIDC_DECODER || CONFIG_PCM_VIDC_ENCODER
+#if CONFIG_PCM_VIDC_ENCODER
+static uint8_t linear_to_vidc[16384];
 static void pcm_vidc_tableinit(void)
 {
     build_xlaw_table(linear_to_vidc, vidc2linear, 0xff);
