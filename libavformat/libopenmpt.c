@@ -53,11 +53,11 @@ typedef struct OpenMPTContext {
 #define A AV_OPT_FLAG_AUDIO_PARAM
 #define D AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "sample_rate", "set sample rate",    OFFSET(sample_rate), AV_OPT_TYPE_INT,            { .i64 = 48000 },               1000, INT_MAX,   A | D },
-    { "layout",      "set channel layout", OFFSET(ch_layout),   AV_OPT_TYPE_CHLAYOUT,       { .str = "stereo" },            0,    0,         A | D },
-    { "subsong",     "set subsong",        OFFSET(subsong),     AV_OPT_TYPE_INT,            { .i64 = -2 },                  -2,   INT_MAX,   A | D, .unit = "subsong"},
-    { "all",         "all",                0,                   AV_OPT_TYPE_CONST,          { .i64 = -1},                   0,    0,         A | D, .unit = "subsong" },
-    { "auto",        "auto",               0,                   AV_OPT_TYPE_CONST,          { .i64 = -2},                   0,    0,         A | D, .unit = "subsong" },
+    { "sample_rate",   "set sample rate",          OFFSET(sample_rate), AV_OPT_TYPE_INT,      { .i64 = 48000 },    1000, INT_MAX, A | D },
+    { "layout",        "set channel layout",       OFFSET(ch_layout),   AV_OPT_TYPE_CHLAYOUT, { .str = "stereo" }, 0,    0,       A | D },
+    { "subsong",       "set subsong",              OFFSET(subsong),     AV_OPT_TYPE_INT,      { .i64 = -2 },       -2,   INT_MAX, A | D, .unit = "subsong"},
+    { "all",           "all",                      0,                   AV_OPT_TYPE_CONST,    { .i64 = -1 },       0,    0,       A | D, .unit = "subsong" },
+    { "auto",          "auto",                     0,                   AV_OPT_TYPE_CONST,    { .i64 = -2 },       0,    0,       A | D, .unit = "subsong" },
     { "interpolation", "set interpolation method", OFFSET(interp),      AV_OPT_TYPE_INT,      { .i64 = 0 },        0,    INT_MAX, A | D, .unit = "interpolation"},
     { "default",       "default",                  0,                   AV_OPT_TYPE_CONST,    { .i64 = 0 },        0,    0,       A | D, .unit = "interpolation"},
     { "none",          "none",                     0,                   AV_OPT_TYPE_CONST,    { .i64 = 1 },        0,    0,       A | D, .unit = "interpolation"},
