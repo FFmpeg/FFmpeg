@@ -40,7 +40,6 @@ uint32_t AAC_RENAME(ff_cbrt_tab)[1 << 13];
 av_cold void AAC_RENAME(ff_cbrt_tableinit)(void)
 {
     static double cbrt_tab_dbl[1 << 13];
-    if (!AAC_RENAME(ff_cbrt_tab)[(1<<13) - 1]) {
         int i, j, k;
         double cbrt_val;
 
@@ -67,7 +66,6 @@ av_cold void AAC_RENAME(ff_cbrt_tableinit)(void)
 
         for (i = 0; i < 1<<13; i++)
             AAC_RENAME(ff_cbrt_tab)[i] = CBRT(cbrt_tab_dbl[i]);
-    }
 }
 
 #endif /* AVCODEC_CBRT_TABLEGEN_H */
