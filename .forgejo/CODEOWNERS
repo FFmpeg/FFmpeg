@@ -15,12 +15,14 @@ libavcodec/.*ac3.* @lynne
 libavcodec/.*adpcm.* @zane @pross
 libavcodec/anm.* @pross
 libavcodec/ansi.* @pross
+libavcodec/aom_film_grain.* @haasn
 libavcodec/.*atrac9.* @lynne
 libavcodec/bink.* @pross
 libavcodec/bintext.* @pross
 libavcodec/.*bitpacked.* @lynne
 libavcodec/.*d3d12va.* @jianhuaw
 libavcodec/.*dirac.* @lynne
+libavcodec/.*dovi_rpu.* @haasn
 libavcodec/dpx.* @pross
 libavcodec/dsd.* @pross
 libavcodec/eacmv.* @pross
@@ -34,10 +36,12 @@ libavcodec/gem.* @pross
 libavcodec/golomb.* @michaelni
 libavcodec/.*h266.* @frankplow @NuoMi @jianhuaw
 libavcodec/h26x/.* @frankplow @NuoMi @jianhuaw
+libavcodec/.*h274.* @haasn
 libavcodec/iff.* @pross
 libavcodec/.*jpegxl.* @lynne @Traneptora
 libavcodec/jv.* @pross
 libavcodec/.*jxl.* @lynne @Traneptora
+libavcodec/.*lcms2.* @haasn
 libavcodec/lead.* @pross
 libavcodec/mediacodec* @quink
 libavcodec/mmvideo.* @pross
@@ -86,15 +90,26 @@ libavcodec/x86/vpx.* @rbultje
 # avfilter
 # =======
 libavfilter/af_whisper.* @vpalmisano
+libavfilter/avfiltergraph.* @haasn
 libavfilter/colorspace.* @rbultje
+libavfilter/formats.* @haasn
+libavfilter/.*f_ebur128.* @haasn
+libavfilter/vf_blackdetect.* @haasn
+libavfilter/vf_colordetect.* @haasn
 libavfilter/vf_colorspace.* @rbultje
+libavfilter/vf_icc.* @haasn
+libavfilter/vf_libplacebo.* @haasn
+libavfilter/vf_premultiply.* @haasn
+libavfilter/vf_scale.* @haasn
 libavfilter/vf_scale_vt.* @quink
+libavfilter/vf_thumbnail.* @haasn
 libavfilter/vf_transpose_vt.* @quink
 libavfilter/vf_yadif.* @michaelni
 libavfilter/vsrc_mandelbrot.* @michaelni
 
 libavfilter/aarch64/.* @mstorsjo
 libavfilter/x86/colorspace.* @rbultje
+libavfilter/x86/scene_sad.* @haasn
 
 # avformat
 # =======
@@ -138,8 +153,10 @@ libavformat/wtv.* @pross
 # ======
 libavutil/.*crc.* @lynne @michaelni
 libavutil/.*d3d12va.* @jianhuaw
-libavutil/csp.* @rbultje
+libavutil/csp.* @rbultje @haasn
 libavutil/eval.* @michaelni
+libavutil/film_grain.* @haasn
+libavutil/dovi_meta.* @haasn
 libavutil/hwcontext_oh.* @quink
 libavutil/hwcontext_mediacodec.* @quink
 libavutil/iamf.* @jamrial
@@ -173,6 +190,11 @@ libswresample/.* @michaelni
 libswscale/aarch64/.* @mstorsjo
 libswscale/arm/.* @mstorsjo
 libswscale/ppc/.* @sean_mcg
+libswscale/.* @haasn
+
+# tools
+# =====
+fftools/ffplay_renderer.* @haasn
 
 # doc
 # ===
@@ -181,7 +203,7 @@ doc/.* @GyanD
 # Frameworks
 # ==========
 .*d3d12va.* @jianhuaw
-.*vulkan.* @lynne
+.*vulkan.* @lynne @haasn
 
 # tests
 # =====
