@@ -8175,6 +8175,7 @@ echo "perl enabled              ${perl-no}"
 echo "pod2man enabled           ${pod2man-no}"
 echo "makeinfo enabled          ${makeinfo-no}"
 echo "makeinfo supports HTML    ${makeinfo_html-no}"
+echo "experimental features     ${unstable-no}"
 echo "xmllint enabled           ${xmllint-no}"
 test -n "$random_seed" &&
     echo "random seed               ${random_seed}"
