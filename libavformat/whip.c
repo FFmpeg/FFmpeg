@@ -81,6 +81,13 @@
 #define STUN_MAGIC_COOKIE 0x2112A442
 
 /**
+ * Refer to RFC 8445 5.1.2
+ * priority = (2^24)*(type preference) + (2^8)*(local preference) + (2^0)*(256 - component ID)
+ * host candidate priority is 126 << 24 | 65535 << 8 | 255
+ */
+#define STUN_HOST_CANDIDATE_PRIORITY 126 << 24 | 65535 << 8 | 255
+
+/**
  * The DTLS content type.
  * See https://tools.ietf.org/html/rfc2246#section-6.2.1
  * change_cipher_spec(20), alert(21), handshake(22), application_data(23)
@@ -156,9 +163,11 @@
 /* STUN Attribute, comprehension-required range (0x0000-0x7FFF) */
 enum STUNAttr {
     STUN_ATTR_USERNAME                  = 0x0006, /// shared secret response/bind request
+    STUN_ATTR_PRIORITY                  = 0x0024, /// must be included in a Binding request
     STUN_ATTR_USE_CANDIDATE             = 0x0025, /// bind request
     STUN_ATTR_MESSAGE_INTEGRITY         = 0x0008, /// bind request/response
     STUN_ATTR_FINGERPRINT               = 0x8028, /// rfc5389
+    STUN_ATTR_ICE_CONTROLLING           = 0x802A, /// ICE controlling role
 };
 
 enum WHIPState {
@@ -231,6 +240,7 @@ typedef struct WHIPContext {
      */
     char *sdp_offer;
 
+    uint64_t ice_tie_breaker; // random 64 bit, for ICE-CONTROLLING
     /* The ICE username and pwd from remote server. */
     char *ice_ufrag_remote;
     char *ice_pwd_remote;
@@ -381,6 +391,13 @@ static av_cold int initialize(AVFormatContext *s)
     /* Initialize the random number generator. */
     seed = av_get_random_seed();
     av_lfg_init(&whip->rnd, seed);
+
+    /* 64 bit tie breaker for ICE-CONTROLLING (RFC 8445 16.1) */
+    ret = av_random_bytes((uint8_t *)&whip->ice_tie_breaker, sizeof(whip->ice_tie_breaker));
+    if (ret < 0) {
+        av_log(whip, AV_LOG_ERROR, "Couldn't generate random bytes for ICE tie breaker\n");
+        return ret;
+    }
 
     whip->audio_first_seq = av_lfg_get(&whip->rnd) & 0x0fff;
     whip->video_first_seq = whip->audio_first_seq + 1;
@@ -912,8 +929,8 @@ end:
  * Creates and marshals an ICE binding request packet.
  *
  * This function creates and marshals an ICE binding request packet. The function only
- * generates the username attribute and does not include goog-network-info, ice-controlling,
- * use-candidate, and priority. However, some of these attributes may be added in the future.
+ * generates the username attribute and does not include goog-network-info,
+ * use-candidate. However, some of these attributes may be added in the future.
  *
  * @param s Pointer to the AVFormatContext
  * @param buf Pointer to memory buffer to store the request packet
@@ -965,6 +982,14 @@ static int ice_create_request(AVFormatContext *s, uint8_t *buf, int buf_size, in
     /* Write the use-candidate attribute */
     avio_wb16(pb, STUN_ATTR_USE_CANDIDATE); /* attribute type use-candidate */
     avio_wb16(pb, 0); /* size of use-candidate */
+
+    avio_wb16(pb, STUN_ATTR_PRIORITY);
+    avio_wb16(pb, 4);
+    avio_wb32(pb, STUN_HOST_CANDIDATE_PRIORITY);
+
+    avio_wb16(pb, STUN_ATTR_ICE_CONTROLLING);
+    avio_wb16(pb, 8);
+    avio_wb64(pb, whip->ice_tie_breaker);
 
     /* Build and update message integrity */
     avio_wb16(pb, STUN_ATTR_MESSAGE_INTEGRITY); /* attribute type message integrity */
