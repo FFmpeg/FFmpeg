@@ -389,7 +389,7 @@ static int queue_alloc(ThreadQueue **ptq, unsigned nb_streams, unsigned queue_si
         // for frames held in queues inside the ffmpeg utility.  If this
         // can ever dynamically change then the corresponding decode
         // code needs to be updated as well.
-        av_assert0(queue_size == DEFAULT_FRAME_THREAD_QUEUE_SIZE);
+        av_assert0(queue_size <= DEFAULT_FRAME_THREAD_QUEUE_SIZE);
     }
 
     tq = tq_alloc(nb_streams, queue_size,
