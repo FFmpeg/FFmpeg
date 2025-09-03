@@ -360,7 +360,7 @@ int ff_vaapi_encode_close(AVCodecContext *avctx);
     { "max_frame_size", \
       "Maximum frame size (in bytes)",\
       OFFSET(common.max_frame_size), AV_OPT_TYPE_INT, \
-      { .i64 = 0 }, 0, INT_MAX, FLAGS }
+      { .i64 = 0 }, 0, INT_MAX / 8, FLAGS }
 
 #define VAAPI_ENCODE_RC_MODE(name, desc) \
     { #name, desc, 0, AV_OPT_TYPE_CONST, { .i64 = RC_MODE_ ## name }, \
