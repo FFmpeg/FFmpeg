@@ -865,12 +865,12 @@ static int parse_answer(AVFormatContext *s)
                 goto end;
             }
         } else if (av_strstart(line, "a=candidate:", &ptr) && !whip->ice_protocol) {
-            ptr = av_stristr(ptr, "udp");
             if (ptr && av_stristr(ptr, "host")) {
-                char protocol[17], host[129];
-                int priority, port;
-                ret = sscanf(ptr, "%16s %d %128s %d typ host", protocol, &priority, host, &port);
-                if (ret != 4) {
+                /* Refer to RFC 5245 15.1 */
+                char foundation[33], protocol[17], host[129];
+                int component_id, priority, port;
+                ret = sscanf(ptr, "%32s %d %16s %d %128s %d typ host", foundation, &component_id, protocol, &priority, host, &port);
+                if (ret != 6) {
                     av_log(whip, AV_LOG_ERROR, "Failed %d to parse line %d %s from %s\n",
                         ret, i, line, whip->sdp_answer);
                     ret = AVERROR(EIO);
