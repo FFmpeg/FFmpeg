@@ -39,6 +39,11 @@ struct AVDeviceInfoList;
  */
 #define FF_INFMT_FLAG_PREFER_CODEC_FRAMERATE                   (1 << 1)
 
+/**
+ * Automatically parse ID3v2 metadata
+ */
+#define FF_INFMT_FLAG_ID3V2_AUTO                               (1 << 2)
+
 typedef struct FFInputFormat {
     /**
      * The public AVInputFormat. See avformat.h for it.

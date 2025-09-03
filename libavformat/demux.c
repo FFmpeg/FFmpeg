@@ -215,7 +215,7 @@ static int update_stream_avctx(AVFormatContext *s)
 }
 
 static av_always_inline int is_id3v2_format(const AVInputFormat *fmt) {
-    return fmt->flags & AVFMT_FLAG_ID3V2_AUTO;
+    return ffifmt(fmt)->flags_internal & FF_INFMT_FLAG_ID3V2_AUTO;
 }
 
 int avformat_open_input(AVFormatContext **ps, const char *filename,

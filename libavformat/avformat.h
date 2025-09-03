@@ -1435,7 +1435,6 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_SORT_DTS    0x10000 ///< try to interleave outputted packets by dts (using this flag can slow demuxing down)
 #define AVFMT_FLAG_FAST_SEEK   0x80000 ///< Enable fast, but inaccurate seeks for some formats
 #define AVFMT_FLAG_AUTO_BSF   0x200000 ///< Add bitstream filters as requested by the muxer
-#define AVFMT_FLAG_ID3V2_AUTO 0x400000 ///< Automatically parse ID3v2 metadata
 
     /**
      * Maximum number of bytes read from input in order to determine stream
