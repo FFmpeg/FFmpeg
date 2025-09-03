@@ -325,15 +325,12 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     }
 
     if (id3v2_extra_meta) {
-        if (is_id3v2_format(s->iformat)) {
             if ((ret = ff_id3v2_parse_apic(s, id3v2_extra_meta)) < 0)
                 goto close;
             if ((ret = ff_id3v2_parse_chapters(s, id3v2_extra_meta)) < 0)
                 goto close;
             if ((ret = ff_id3v2_parse_priv(s, id3v2_extra_meta)) < 0)
                 goto close;
-        } else
-            av_log(s, AV_LOG_DEBUG, "demuxer does not support additional id3 data, skipping\n");
         ff_id3v2_free_extra_meta(&id3v2_extra_meta);
     }
 
