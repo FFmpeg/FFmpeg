@@ -118,4 +118,53 @@ void idct8(uint block, uint offset, uint stride)
     blocks[block][7*stride + offset] = u7;
 }
 
+void fdct8(uint block, uint offset, uint stride)
+{
+    const float c_pi = radians(180);
+    const float c_rt2 = sqrt(2.0);
+    const float c_norm = 1 / sqrt(8.0);
+    const float c_a = c_rt2 * cos(    c_pi / 16);
+    const float c_b = c_rt2 * cos(    c_pi /  8);
+    const float c_c = c_rt2 * cos(3 * c_pi / 16);
+    const float c_d = c_rt2 * cos(5 * c_pi / 16);
+    const float c_e = c_rt2 * cos(3 * c_pi /  8);
+    const float c_f = c_rt2 * cos(7 * c_pi / 16);
+
+    float u0, u1, u2, u3, u4, u5, u6, u7;
+
+    /* Input */
+    u0 = blocks[block][0*stride + offset];
+    u1 = blocks[block][1*stride + offset];
+    u2 = blocks[block][2*stride + offset];
+    u3 = blocks[block][3*stride + offset];
+    u4 = blocks[block][4*stride + offset];
+    u5 = blocks[block][5*stride + offset];
+    u6 = blocks[block][6*stride + offset];
+    u7 = blocks[block][7*stride + offset];
+
+    float X07P = u0 + u7;
+    float X16P = u1 + u6;
+    float X25P = u2 + u5;
+    float X34P = u3 + u4;
+
+    float X07M = u0 - u7;
+    float X61M = u6 - u1;
+    float X25M = u2 - u5;
+    float X43M = u4 - u3;
+
+    float X07P34PP = X07P + X34P;
+    float X07P34PM = X07P - X34P;
+    float X16P25PP = X16P + X25P;
+    float X16P25PM = X16P - X25P;
+
+    blocks[block][0*stride + offset] = c_norm * (X07P34PP + X16P25PP);
+    blocks[block][2*stride + offset] = c_norm * (c_b * X07P34PM + c_e * X16P25PM);
+    blocks[block][4*stride + offset] = c_norm * (X07P34PP - X16P25PP);
+    blocks[block][6*stride + offset] = c_norm * (c_e * X07P34PM - c_b * X16P25PM);
+    blocks[block][1*stride + offset] = c_norm * (c_a * X07M - c_c * X61M + c_d * X25M - c_f * X43M);
+    blocks[block][3*stride + offset] = c_norm * (c_c * X07M + c_f * X61M - c_a * X25M + c_d * X43M);
+    blocks[block][5*stride + offset] = c_norm * (c_d * X07M + c_a * X61M + c_f * X25M - c_c * X43M);
+    blocks[block][7*stride + offset] = c_norm * (c_f * X07M + c_d * X61M + c_c * X25M + c_a * X43M);
+}
+
 #endif /* VULKAN_DCT_H */
