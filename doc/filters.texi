@@ -577,6 +577,11 @@ The cross fade is applied for specified duration near the end of first stream.
 The filter accepts the following options:
 
 @table @option
+@item inputs, n
+Specify the number of inputs to crossfade. When crossfading multiple inputs,
+each input will be concatenated and crossfaded in sequence, similar to the
+@ref{concat filter}. Default is 2.
+
 @item nb_samples, ns
 Specify the number of samples for which the cross fade effect has to last.
 At the end of the cross fade effect the first input audio will be completely
@@ -614,6 +619,11 @@ ffmpeg -i first.flac -i second.flac -filter_complex acrossfade=d=10:c1=exp:c2=ex
 Cross fade from one input to another but without overlapping:
 @example
 ffmpeg -i first.flac -i second.flac -filter_complex acrossfade=d=10:o=0:c1=exp:c2=exp output.flac
+@end example
+
+Concatenate multiple inputs with cross fade between each:
+@example
+ffmpeg -i first.flac -i second.flac -i third.flac -filter_complex acrossfade=n=3 output.flac
 @end example
 @end itemize
 
@@ -31008,6 +31018,7 @@ bench=start,selectivecolor=reds=-.2 .12 -.49,bench=stop
 @end example
 @end itemize
 
+@anchor{concat filter}
 @section concat
 
 Concatenate audio and video streams, joining them together one after the

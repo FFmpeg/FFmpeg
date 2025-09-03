@@ -26,6 +26,7 @@
 #include "config_components.h"
 
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "audio.h"
 #include "avfilter.h"
@@ -33,6 +34,7 @@
 
 typedef struct AudioFadeContext {
     const AVClass *class;
+    int nb_inputs;
     int type;
     int curve, curve2;
     int64_t nb_samples;
@@ -43,7 +45,7 @@ typedef struct AudioFadeContext {
     double unity;
     int overlap;
     int64_t pts;
-    int xfade_status;
+    int xfade_idx;
 
     void (*fade_samples)(uint8_t **dst, uint8_t * const *src,
                          int nb_samples, int channels, int direction,
@@ -451,6 +453,8 @@ const FFFilter ff_af_afade = {
 #if CONFIG_ACROSSFADE_FILTER
 
 static const AVOption acrossfade_options[] = {
+    { "inputs",       "set number of input files to cross fade",       OFFSET(nb_inputs),    AV_OPT_TYPE_INT,    {.i64 = 2},     1, INT32_MAX, FLAGS },
+    { "n",            "set number of input files to cross fade",       OFFSET(nb_inputs),    AV_OPT_TYPE_INT,    {.i64 = 2},     1, INT32_MAX, FLAGS },
     { "nb_samples",   "set number of samples for cross fade duration", OFFSET(nb_samples),   AV_OPT_TYPE_INT64,  {.i64 = 44100}, 1, INT32_MAX/10, FLAGS },
     { "ns",           "set number of samples for cross fade duration", OFFSET(nb_samples),   AV_OPT_TYPE_INT64,  {.i64 = 44100}, 1, INT32_MAX/10, FLAGS },
     { "duration",     "set cross fade duration",                       OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0 },  0, 60000000, FLAGS },
@@ -566,18 +570,22 @@ static int pass_samples(AVFilterLink *inlink, AVFilterLink *outlink, unsigned nb
     return ff_filter_frame(outlink, in);
 }
 
-static int pass_crossfade(AVFilterContext *ctx, AVFilterLink *in0, AVFilterLink *in1)
+static int pass_crossfade(AVFilterContext *ctx, const int idx0, const int idx1)
 {
     AudioFadeContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out, *cf[2] = { NULL };
     int ret;
 
+    AVFilterLink *in0 = ctx->inputs[idx0];
+    AVFilterLink *in1 = ctx->inputs[idx1];
     int queued_samples0 = ff_inlink_queued_samples(in0);
     int queued_samples1 = ff_inlink_queued_samples(in1);
 
     /* Limit to the relevant region */
     av_assert1(queued_samples0 <= s->nb_samples);
+    if (ff_outlink_get_status(in1) && idx1 < s->nb_inputs - 1)
+        queued_samples1 /= 2; /* reserve second half for next fade-out */
     queued_samples1 = FFMIN(queued_samples1, s->nb_samples);
 
     if (s->overlap) {
@@ -586,7 +594,7 @@ static int pass_crossfade(AVFilterContext *ctx, AVFilterLink *in0, AVFilterLink 
             av_log(ctx, AV_LOG_WARNING, "Input %d duration (%d samples) "
                    "is shorter than crossfade duration (%"PRId64" samples), "
                    "crossfade will be shorter by %"PRId64" samples.\n",
-                   queued_samples0 <= queued_samples1 ? 0 : 1,
+                   queued_samples0 <= queued_samples1 ? idx0 : idx1,
                    nb_samples, s->nb_samples, s->nb_samples - nb_samples);
 
             if (queued_samples0 > nb_samples) {
@@ -628,10 +636,11 @@ static int pass_crossfade(AVFilterContext *ctx, AVFilterLink *in0, AVFilterLink 
         return ff_filter_frame(outlink, out);
     } else {
         if (queued_samples0 < s->nb_samples) {
-            av_log(ctx, AV_LOG_WARNING, "Input 0 duration (%d samples) "
+            av_log(ctx, AV_LOG_WARNING, "Input %d duration (%d samples) "
                    "is shorter than crossfade duration (%"PRId64" samples), "
                    "fade-out will be shorter by %"PRId64" samples.\n",
-                    queued_samples0, s->nb_samples, s->nb_samples - queued_samples0);
+                    idx0, queued_samples0, s->nb_samples,
+                    s->nb_samples - queued_samples0);
             if (!queued_samples0)
                 goto fade_in;
         }
@@ -658,10 +667,11 @@ static int pass_crossfade(AVFilterContext *ctx, AVFilterLink *in0, AVFilterLink 
 
     fade_in:
         if (queued_samples1 < s->nb_samples) {
-            av_log(ctx, AV_LOG_WARNING, "Input 1 duration (%d samples) "
+            av_log(ctx, AV_LOG_WARNING, "Input %d duration (%d samples) "
                    "is shorter than crossfade duration (%"PRId64" samples), "
                    "fade-in will be shorter by %"PRId64" samples.\n",
-                    queued_samples1, s->nb_samples, s->nb_samples - queued_samples1);
+                    idx1, ff_inlink_queued_samples(in1), s->nb_samples,
+                    s->nb_samples - queued_samples1);
             if (!queued_samples1)
                 return 0;
         }
@@ -689,51 +699,84 @@ static int pass_crossfade(AVFilterContext *ctx, AVFilterLink *in0, AVFilterLink 
 static int activate(AVFilterContext *ctx)
 {
     AudioFadeContext *s   = ctx->priv;
+    const int idx0        = s->xfade_idx;
+    const int idx1        = s->xfade_idx + 1;
     AVFilterLink *outlink = ctx->outputs[0];
-    int ret;
+    AVFilterLink *in0     = ctx->inputs[idx0];
 
     FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
 
-    // Read first input until EOF
-    if (s->xfade_status == 0) {
-        int queued_samples = ff_inlink_queued_samples(ctx->inputs[0]);
-        if (queued_samples > s->nb_samples) {
-            AVFrame *frame = ff_inlink_peek_frame(ctx->inputs[0], 0);
-            if (queued_samples - s->nb_samples >= frame->nb_samples)
-                return pass_frame(ctx->inputs[0], outlink, &s->pts);
-        }
-        if (ff_outlink_get_status(ctx->inputs[0])) {
-            if (queued_samples > s->nb_samples)
-                return pass_samples(ctx->inputs[0], outlink, queued_samples - s->nb_samples, &s->pts);
-            s->xfade_status = 1;
-        } else {
-            FF_FILTER_FORWARD_WANTED(outlink, ctx->inputs[0]);
-        }
-    }
-    // Read second input until enough data is ready or EOF
-    if (s->xfade_status == 1) {
-        if (ff_inlink_queued_samples(ctx->inputs[1]) >= s->nb_samples || ff_outlink_get_status(ctx->inputs[1])) {
-            s->xfade_status = 2;
-        } else {
-            FF_FILTER_FORWARD_WANTED(outlink, ctx->inputs[1]);
-        }
-    }
-    // Do crossfade
-    if (s->xfade_status == 2) {
-        ret = pass_crossfade(ctx, ctx->inputs[0], ctx->inputs[1]);
-        if (ret < 0)
-            return ret;
-        s->xfade_status = 3;
-    }
-    // Read second input until EOF
-    if (s->xfade_status == 3) {
-        if (ff_inlink_queued_frames(ctx->inputs[1]))
-            return pass_frame(ctx->inputs[1], outlink, &s->pts);
-        FF_FILTER_FORWARD_STATUS(ctx->inputs[1], outlink);
-        FF_FILTER_FORWARD_WANTED(outlink, ctx->inputs[1]);
+    if (idx0 == s->nb_inputs - 1) {
+        /* Last active input, read until EOF */
+        if (ff_inlink_queued_frames(in0))
+            return pass_frame(in0, outlink, &s->pts);
+        FF_FILTER_FORWARD_STATUS(in0, outlink);
+        FF_FILTER_FORWARD_WANTED(outlink, in0);
+        return FFERROR_NOT_READY;
     }
 
-    return FFERROR_NOT_READY;
+    AVFilterLink *in1 = ctx->inputs[idx1];
+    int queued_samples0 = ff_inlink_queued_samples(in0);
+    if (queued_samples0 > s->nb_samples) {
+        AVFrame *frame = ff_inlink_peek_frame(in0, 0);
+        if (queued_samples0 - s->nb_samples >= frame->nb_samples)
+            return pass_frame(in0, outlink, &s->pts);
+    }
+
+    /* Continue reading until EOF */
+    if (ff_outlink_get_status(in0)) {
+        if (queued_samples0 > s->nb_samples)
+            return pass_samples(in0, outlink, queued_samples0 - s->nb_samples, &s->pts);
+    } else {
+        FF_FILTER_FORWARD_WANTED(outlink, in0);
+        return FFERROR_NOT_READY;
+    }
+
+    /* At this point, in0 has reached EOF with no more samples remaining
+     * except those that we want to crossfade */
+    av_assert0(queued_samples0 <= s->nb_samples);
+    int queued_samples1 = ff_inlink_queued_samples(in1);
+
+    /* If this clip is sandwiched between two other clips, buffer at least
+     * twice the total crossfade duration to ensure that we won't reach EOF
+     * during the second fade (in which case we would shorten the fade) */
+    int needed_samples = s->nb_samples;
+    if (idx1 < s->nb_inputs - 1)
+        needed_samples *= 2;
+
+    if (queued_samples1 >= needed_samples || ff_outlink_get_status(in1)) {
+        /* The first filter may EOF before delivering any samples, in which
+         * case it's possible for pass_crossfade() to be a no-op. Just ensure
+         * the activate() function runs again after incrementing the index to
+         * ensure we correctly move on to the next input in that case. */
+        s->xfade_idx++;
+        ff_filter_set_ready(ctx, 10);
+        return pass_crossfade(ctx, idx0, idx1);
+    } else {
+        FF_FILTER_FORWARD_WANTED(outlink, in1);
+        return FFERROR_NOT_READY;
+    }
+}
+
+static av_cold int acrossfade_init(AVFilterContext *ctx)
+{
+    AudioFadeContext *s = ctx->priv;
+    int ret;
+
+    for (int i = 0; i < s->nb_inputs; i++) {
+        AVFilterPad pad = {
+            .name = av_asprintf("crossfade%d", i),
+            .type = AVMEDIA_TYPE_AUDIO,
+        };
+        if (!pad.name)
+            return AVERROR(ENOMEM);
+
+        ret = ff_append_inpad_free_name(ctx, &pad);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
 }
 
 static int acrossfade_config_output(AVFilterLink *outlink)
@@ -759,17 +802,6 @@ static int acrossfade_config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static const AVFilterPad avfilter_af_acrossfade_inputs[] = {
-    {
-        .name         = "crossfade0",
-        .type         = AVMEDIA_TYPE_AUDIO,
-    },
-    {
-        .name         = "crossfade1",
-        .type         = AVMEDIA_TYPE_AUDIO,
-    },
-};
-
 static const AVFilterPad avfilter_af_acrossfade_outputs[] = {
     {
         .name          = "default",
@@ -782,9 +814,10 @@ const FFFilter ff_af_acrossfade = {
     .p.name        = "acrossfade",
     .p.description = NULL_IF_CONFIG_SMALL("Cross fade two input audio streams."),
     .p.priv_class  = &acrossfade_class,
+    .p.flags       = AVFILTER_FLAG_DYNAMIC_INPUTS,
     .priv_size     = sizeof(AudioFadeContext),
+    .init          = acrossfade_init,
     .activate      = activate,
-    FILTER_INPUTS(avfilter_af_acrossfade_inputs),
     FILTER_OUTPUTS(avfilter_af_acrossfade_outputs),
     FILTER_SAMPLEFMTS_ARRAY(sample_fmts),
 };
