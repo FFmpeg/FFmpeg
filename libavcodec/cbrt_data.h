@@ -40,6 +40,11 @@ void ff_cbrt_tableinit(void);
 void ff_cbrt_tableinit_fixed(void);
 
 #define TMP_LUT_SIZE (LUT_SIZE / 2)
+/**
+ * Creates a LUT (of doubles) for the powers of
+ * the odd integers: tmp_lut[idx] will be set to (2 * idx + 1)^{4/3}.
+ */
+void ff_cbrt_dbl_tableinit(double tmp_lut[TMP_LUT_SIZE]);
 
 extern union CBRT {
     uint32_t cbrt_tab[LUT_SIZE];

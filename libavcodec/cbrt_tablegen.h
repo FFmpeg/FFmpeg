@@ -46,34 +46,7 @@ av_cold void AAC_RENAME(ff_cbrt_tableinit)(void)
                   "unexpected sizeofs");
     // We reuse ff_cbrt_tab_internal.tmp as a LUT (of doubles) for the roots
     // of the odd integers: tmp[idx] contains (2 * idx + 1)^{4/3}.
-
-    for (int idx = 0; idx < TMP_LUT_SIZE; ++idx)
-        AAC_RENAME(ff_cbrt_tab_internal).tmp[idx] = 1;
-
-    /* have to take care of non-squarefree numbers; notice that sqrt(LUT_SIZE) = 90;
-     * idx == 44 corresponds to 89. */
-    for (int idx = 1; idx < 45; ++idx) {
-        if (AAC_RENAME(ff_cbrt_tab_internal).tmp[idx] == 1) {
-            int i = 2 * idx + 1;
-            double cbrt_val = i * cbrt(i);
-            for (int k = i; k < LUT_SIZE; k *= i) {
-                // We only have to handle k, 3 * k, 5 * k,...,
-                // because only these are odd. The corresponding indices are
-                // k >> 1, (k >> 1) + k, (k >> 1) + 2 * k,...
-                for (int idx2 = k >> 1; idx2 < TMP_LUT_SIZE; idx2 += k)
-                    AAC_RENAME(ff_cbrt_tab_internal).tmp[idx2] *= cbrt_val;
-            }
-        }
-    }
-
-    for (int idx = 45; idx < TMP_LUT_SIZE; ++idx) {
-        if (AAC_RENAME(ff_cbrt_tab_internal).tmp[idx] == 1) {
-            int i = 2 * idx + 1;
-            double cbrt_val = i * cbrt(i);
-            for (int idx2 = idx; idx2 < TMP_LUT_SIZE; idx2 += i)
-                AAC_RENAME(ff_cbrt_tab_internal).tmp[idx2] *= cbrt_val;
-        }
-    }
+    ff_cbrt_dbl_tableinit(AAC_RENAME(ff_cbrt_tab_internal).tmp);
 
     double cbrt_2 = 2 * cbrt(2);
     for (int idx = TMP_LUT_SIZE - 1; idx >= 0; --idx) {
