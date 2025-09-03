@@ -257,7 +257,7 @@ int sch_add_mux(Scheduler *sch, SchThreadFunc func, int (*init)(void *),
 /**
  * Default size of a frame thread queue.
  */
-#define DEFAULT_FRAME_THREAD_QUEUE_SIZE 8
+#define DEFAULT_FRAME_THREAD_QUEUE_SIZE 2
 
 /**
  * Add a muxed stream for a previously added muxer.
