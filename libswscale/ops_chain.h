@@ -90,7 +90,7 @@ void ff_sws_op_chain_free(SwsOpChain *chain);
 
 /* Returns 0 on success, or a negative error code. */
 int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
-                           void (*free)(void *), SwsOpPriv priv);
+                           void (*free)(void *), const SwsOpPriv *priv);
 
 typedef struct SwsOpEntry {
     /* Kernel metadata; reduced size subset of SwsOp */

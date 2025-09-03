@@ -695,7 +695,7 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         SWS_DECL_FUNC(NAME);                                    \
         void NAME##_return(void);                               \
         ret = ff_sws_op_chain_append(chain, NAME##_return,      \
-                                     NULL, (SwsOpPriv) {0});    \
+                                     NULL, &(SwsOpPriv) {0});   \
         out->func = NAME;                                       \
     } while (0)
 
