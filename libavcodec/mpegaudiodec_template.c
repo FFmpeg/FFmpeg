@@ -1738,10 +1738,8 @@ static const int16_t chan_layout[8] = {
 static av_cold int decode_close_mp3on4(AVCodecContext * avctx)
 {
     MP3On4DecodeContext *s = avctx->priv_data;
-    int i;
 
-    for (i = 0; i < s->frames; i++)
-        av_freep(&s->mp3decctx[i]);
+    av_freep(&s->mp3decctx[0]);
 
     return 0;
 }
@@ -1777,8 +1775,8 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
     /* Init the first mp3 decoder in standard way, so that all tables get built
      * Other decoders will be initialized here copying data from the first context
      */
-    // Allocate zeroed memory for the first decoder context
-    s->mp3decctx[0] = av_mallocz(sizeof(MPADecodeContext));
+    // Allocate zeroed memory for the decoder contexts
+    s->mp3decctx[0] = av_calloc(s->frames, sizeof(*s->mp3decctx[0]));
     if (!s->mp3decctx[0])
         return AVERROR(ENOMEM);
     ret = decode_ctx_init(avctx, s->mp3decctx[0]);
@@ -1790,9 +1788,7 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
      * Each frame is 1 or 2 channels - up to 5 frames allowed
      */
     for (i = 1; i < s->frames; i++) {
-        s->mp3decctx[i] = av_mallocz(sizeof(MPADecodeContext));
-        if (!s->mp3decctx[i])
-            return AVERROR(ENOMEM);
+        s->mp3decctx[i] = s->mp3decctx[0] + i;
         s->mp3decctx[i]->adu_mode = 1;
         s->mp3decctx[i]->avctx = avctx;
         s->mp3decctx[i]->mpadsp = s->mp3decctx[0]->mpadsp;
