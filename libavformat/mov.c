@@ -10318,7 +10318,6 @@ static int mov_parse_exif_item(AVFormatContext *s,
     MOVContext *c = s->priv_data;
     AVPacketSideData *sd;
     AVExifMetadata ifd = { 0 };
-    AVExifEntry *entry = NULL;
     AVBufferRef *buf;
     int64_t offset = 0, pos = avio_tell(s->pb);
     unsigned orientation_id = av_exif_get_tag_id("Orientation");
