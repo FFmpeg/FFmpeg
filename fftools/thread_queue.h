@@ -59,6 +59,15 @@ int tq_send(ThreadQueue *tq, unsigned int stream_idx, void *data);
 void tq_send_finish(ThreadQueue *tq, unsigned int stream_idx);
 
 /**
+ * Prevent further reads from the thread queue until it is unchoked. Threads
+ * attempting to read from the queue will block, similar to when the queue is
+ * empty.
+ *
+ * @param choked 1 to choke, 0 to unchoke
+ */
+void tq_choke(ThreadQueue *tq, int choked);
+
+/**
  * Read the next item from the queue.
  *
  * @param stream_idx the index of the stream that was processed or -1 will be
