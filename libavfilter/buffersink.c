@@ -531,7 +531,6 @@ static const AVOption buffersink_options[] = {
     { "pix_fmts", "set the supported pixel formats",    OFFSET(pixel_fmts),   AV_OPT_TYPE_BINARY, .flags = FLAGS | AV_OPT_FLAG_DEPRECATED },
     { "color_spaces", "set the supported color spaces", OFFSET(color_spaces), AV_OPT_TYPE_BINARY, .flags = FLAGS | AV_OPT_FLAG_DEPRECATED },
     { "color_ranges", "set the supported color ranges", OFFSET(color_ranges), AV_OPT_TYPE_BINARY, .flags = FLAGS | AV_OPT_FLAG_DEPRECATED },
-    { "alpha_modes", "set the supported alpha modes",   OFFSET(alpha_modes),  AV_OPT_TYPE_BINARY, .flags = FLAGS | AV_OPT_FLAG_DEPRECATED },
 #endif
 
     { "pixel_formats",  "array of supported pixel formats", OFFSET(pixel_formats),
