@@ -288,7 +288,9 @@ static int drm_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
 {
     int err;
 
-    if (hwfc->sw_format != dst->format)
+    if (dst->format == AV_PIX_FMT_NONE)
+        dst->format = hwfc->sw_format;
+    else if (hwfc->sw_format != dst->format)
         return AVERROR(ENOSYS);
 
     err = drm_map_frame(hwfc, dst, src, flags);
