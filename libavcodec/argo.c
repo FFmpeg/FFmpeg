@@ -21,6 +21,7 @@
 
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 
@@ -717,7 +718,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void decode_flush(AVCodecContext *avctx)
+static av_cold void decode_flush(AVCodecContext *avctx)
 {
     ArgoContext *s = avctx->priv_data;
 

@@ -1302,7 +1302,7 @@ static int decode_packet(AVCodecContext *avctx, AVFrame *rframe,
     return (s->packet_loss) ? AVERROR_INVALIDDATA : get_bits_count(gb) >> 3;
 }
 
-static void flush(AVCodecContext *avctx)
+static av_cold void flush(AVCodecContext *avctx)
 {
     WmallDecodeCtx *s    = avctx->priv_data;
     s->packet_loss       = 1;

@@ -420,7 +420,7 @@ static av_cold int cdtoons_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void cdtoons_flush(AVCodecContext *avctx)
+static av_cold void cdtoons_flush(AVCodecContext *avctx)
 {
     CDToonsContext *c = avctx->priv_data;
 

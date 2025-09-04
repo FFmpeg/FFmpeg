@@ -25,6 +25,7 @@
 
 #include "config.h"
 #include "celp_filters.h"
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 
@@ -210,7 +211,7 @@ void ff_celp_lp_zero_synthesis_filterf(float *out, const float *filter_coeffs,
     }
 }
 
-void ff_celp_filter_init(CELPFContext *c)
+void av_cold ff_celp_filter_init(CELPFContext *c)
 {
     c->celp_lp_synthesis_filterf        = ff_celp_lp_synthesis_filterf;
     c->celp_lp_zero_synthesis_filterf   = ff_celp_lp_zero_synthesis_filterf;

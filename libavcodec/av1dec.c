@@ -20,6 +20,7 @@
 
 #include "config_components.h"
 
+#include "libavutil/attributes.h"
 #include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/film_grain_params.h"
 #include "libavutil/mastering_display_metadata.h"
@@ -1535,7 +1536,7 @@ static int av1_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     return ret;
 }
 
-static void av1_decode_flush(AVCodecContext *avctx)
+static av_cold void av1_decode_flush(AVCodecContext *avctx)
 {
     AV1DecContext *s = avctx->priv_data;
     AV1RawMetadataITUTT35 itut_t35;

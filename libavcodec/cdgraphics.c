@@ -24,6 +24,8 @@
 #include "codec_internal.h"
 #include "decode.h"
 
+#include "libavutil/attributes.h"
+
 /**
  * @file
  * @brief CD Graphics Video Decoder
@@ -367,7 +369,7 @@ static int cdg_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return avpkt->size;
 }
 
-static void cdg_decode_flush(AVCodecContext *avctx)
+static av_cold void cdg_decode_flush(AVCodecContext *avctx)
 {
     CDGraphicsContext *cc = avctx->priv_data;
 

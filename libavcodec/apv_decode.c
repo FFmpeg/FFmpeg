@@ -18,6 +18,7 @@
 
 #include <stdatomic.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
@@ -156,7 +157,7 @@ static av_cold int apv_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void apv_decode_flush(AVCodecContext *avctx)
+static av_cold void apv_decode_flush(AVCodecContext *avctx)
 {
     APVDecodeContext *apv = avctx->priv_data;
 

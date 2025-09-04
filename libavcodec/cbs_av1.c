@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixfmt.h"
@@ -1265,7 +1266,7 @@ static int cbs_av1_assemble_fragment(CodedBitstreamContext *ctx,
 #endif
 }
 
-static void cbs_av1_flush(CodedBitstreamContext *ctx)
+static av_cold void cbs_av1_flush(CodedBitstreamContext *ctx)
 {
     CodedBitstreamAV1Context *priv = ctx->priv_data;
 
@@ -1279,7 +1280,7 @@ static void cbs_av1_flush(CodedBitstreamContext *ctx)
     priv->tile_num = 0;
 }
 
-static void cbs_av1_close(CodedBitstreamContext *ctx)
+static av_cold void cbs_av1_close(CodedBitstreamContext *ctx)
 {
     CodedBitstreamAV1Context *priv = ctx->priv_data;
 

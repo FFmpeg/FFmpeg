@@ -22,6 +22,7 @@
 
 #include <inttypes.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
@@ -1729,7 +1730,7 @@ static int ape_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return !s->samples ? avpkt->size : 0;
 }
 
-static void ape_flush(AVCodecContext *avctx)
+static av_cold void ape_flush(AVCodecContext *avctx)
 {
     APEContext *s = avctx->priv_data;
     s->samples= 0;

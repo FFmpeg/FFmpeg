@@ -686,7 +686,7 @@ static av_cold int dvdsub_init(AVCodecContext *avctx)
     return 1;
 }
 
-static void dvdsub_flush(AVCodecContext *avctx)
+static av_cold void dvdsub_flush(AVCodecContext *avctx)
 {
     DVDSubContext *ctx = avctx->priv_data;
     ctx->buf_size = 0;

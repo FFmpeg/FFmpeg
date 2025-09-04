@@ -329,7 +329,7 @@ end:
     return buf_size;
 }
 
-static void vorbis_parser_close(AVCodecParserContext *ctx)
+static av_cold void vorbis_parser_close(AVCodecParserContext *ctx)
 {
     VorbisParseContext *s = ctx->priv_data;
     av_vorbis_parse_free(&s->vp);

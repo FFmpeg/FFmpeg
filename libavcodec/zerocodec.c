@@ -22,6 +22,7 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "zlib_wrapper.h"
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 
 typedef struct ZeroCodecContext {
@@ -126,7 +127,7 @@ static av_cold int zerocodec_decode_init(AVCodecContext *avctx)
     return ff_inflate_init(&zc->zstream, avctx);
 }
 
-static void zerocodec_decode_flush(AVCodecContext *avctx)
+static av_cold void zerocodec_decode_flush(AVCodecContext *avctx)
 {
     ZeroCodecContext *zc = avctx->priv_data;
 

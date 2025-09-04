@@ -30,6 +30,8 @@
 #include "codec_internal.h"
 #include "encode.h"
 
+#include "libavutil/attributes.h"
+
 typedef struct MSRLEContext {
     int curframe;
     AVFrame *last_frame;
@@ -276,7 +278,7 @@ static int msrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return av_frame_replace(s->last_frame, pict);
 }
 
-static int msrle_encode_close(AVCodecContext *avctx)
+static av_cold int msrle_encode_close(AVCodecContext *avctx)
 {
     MSRLEContext *s = avctx->priv_data;
     av_frame_free(&s->last_frame);

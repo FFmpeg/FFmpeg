@@ -29,6 +29,8 @@
 #include "codec_internal.h"
 #include "decode.h"
 
+#include "libavutil/attributes.h"
+
 typedef struct QpegContext{
     AVCodecContext *avctx;
     AVFrame *ref;
@@ -314,7 +316,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     return avpkt->size;
 }
 
-static void decode_flush(AVCodecContext *avctx){
+static av_cold void decode_flush(AVCodecContext *avctx)
+{
     QpegContext * const a = avctx->priv_data;
     int i, pal_size;
     const uint8_t *pal_src;

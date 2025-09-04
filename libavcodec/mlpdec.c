@@ -29,6 +29,7 @@
 #include <stdint.h>
 
 #include "avcodec.h"
+#include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/channel_layout.h"
@@ -1413,7 +1414,7 @@ error:
     return AVERROR_INVALIDDATA;
 }
 
-static void mlp_decode_flush(AVCodecContext *avctx)
+static av_cold void mlp_decode_flush(AVCodecContext *avctx)
 {
     MLPDecodeContext *m = avctx->priv_data;
 

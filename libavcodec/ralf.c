@@ -503,7 +503,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return avpkt->size;
 }
 
-static void decode_flush(AVCodecContext *avctx)
+static av_cold void decode_flush(AVCodecContext *avctx)
 {
     RALFContext *ctx = avctx->priv_data;
 

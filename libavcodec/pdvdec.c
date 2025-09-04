@@ -25,6 +25,8 @@
 #include "decode.h"
 #include "zlib_wrapper.h"
 
+#include "libavutil/attributes.h"
+
 #include <zlib.h>
 
 typedef struct PDVContext {
@@ -117,7 +119,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return avpkt->size;
 }
 
-static void decode_flush(AVCodecContext *avctx)
+static av_cold void decode_flush(AVCodecContext *avctx)
 {
     PDVContext *s = avctx->priv_data;
 

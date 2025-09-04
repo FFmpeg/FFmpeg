@@ -24,12 +24,13 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 
 #include "parser.h"
 
-AVCodecParserContext *av_parser_init(int codec_id)
+av_cold AVCodecParserContext *av_parser_init(int codec_id)
 {
     AVCodecParserContext *s = NULL;
     const AVCodecParser *parser;
@@ -190,7 +191,7 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
     return index;
 }
 
-void av_parser_close(AVCodecParserContext *s)
+av_cold void av_parser_close(AVCodecParserContext *s)
 {
     if (s) {
         if (s->parser->parser_close)
@@ -287,7 +288,7 @@ int ff_combine_frame(ParseContext *pc, int next,
     return 0;
 }
 
-void ff_parse_close(AVCodecParserContext *s)
+av_cold void ff_parse_close(AVCodecParserContext *s)
 {
     ParseContext *pc = s->priv_data;
 

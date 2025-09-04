@@ -24,7 +24,10 @@
  * XBM parser
  */
 
-#include "libavutil/common.h"
+#include <stdint.h>
+
+#include "libavutil/attributes.h"
+#include "libavutil/avutil.h"
 
 #include "parser.h"
 
@@ -41,7 +44,7 @@ typedef struct XBMParseContext {
 
 #define END ((';' << 8) | ('\n' << 0))
 
-static int xbm_init(AVCodecParserContext *s)
+static av_cold int xbm_init(AVCodecParserContext *s)
 {
     XBMParseContext *bpc = s->priv_data;
 

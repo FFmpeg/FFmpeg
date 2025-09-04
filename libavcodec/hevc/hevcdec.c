@@ -4187,7 +4187,7 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void hevc_decode_flush(AVCodecContext *avctx)
+static av_cold void hevc_decode_flush(AVCodecContext *avctx)
 {
     HEVCContext *s = avctx->priv_data;
     ff_hevc_flush_dpb(s);

@@ -33,6 +33,8 @@
 #include "unary.h"
 #include "videodsp.h"
 
+#include "libavutil/attributes.h"
+
 static const int8_t frame_types[4] = {AV_PICTURE_TYPE_I, AV_PICTURE_TYPE_P, AV_PICTURE_TYPE_B, AV_PICTURE_TYPE_NONE};
 
 enum CUType {
@@ -2396,7 +2398,7 @@ static int rv60_decode_frame(AVCodecContext *avctx, AVFrame * frame,
     return avpkt->size;
 }
 
-static void rv60_flush(AVCodecContext *avctx)
+static av_cold void rv60_flush(AVCodecContext *avctx)
 {
     RV60Context *s = avctx->priv_data;
 

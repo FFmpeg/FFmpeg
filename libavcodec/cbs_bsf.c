@@ -20,6 +20,8 @@
 #include "bsf_internal.h"
 #include "cbs_bsf.h"
 
+#include "libavutil/attributes.h"
+
 static int cbs_bsf_update_side_data(AVBSFContext *bsf, AVPacket *pkt)
 {
     CBSBSFContext           *ctx = bsf->priv_data;
@@ -107,7 +109,7 @@ fail:
     return err;
 }
 
-int ff_cbs_bsf_generic_init(AVBSFContext *bsf, const CBSBSFType *type)
+av_cold int ff_cbs_bsf_generic_init(AVBSFContext *bsf, const CBSBSFType *type)
 {
     CBSBSFContext           *ctx = bsf->priv_data;
     CodedBitstreamFragment *frag = &ctx->fragment;
@@ -152,7 +154,7 @@ fail:
     return err;
 }
 
-void ff_cbs_bsf_generic_close(AVBSFContext *bsf)
+av_cold void ff_cbs_bsf_generic_close(AVBSFContext *bsf)
 {
     CBSBSFContext *ctx = bsf->priv_data;
 

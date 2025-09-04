@@ -23,6 +23,7 @@
 #include "avcodec.h"
 #include "ass.h"
 #include "codec_internal.h"
+#include "libavutil/attributes.h"
 #include "libavutil/opt.h"
 
 #define SCREEN_ROWS 15
@@ -309,7 +310,7 @@ static av_cold int close_decoder(AVCodecContext *avctx)
     return 0;
 }
 
-static void flush_decoder(AVCodecContext *avctx)
+static av_cold void flush_decoder(AVCodecContext *avctx)
 {
     CCaptionSubContext *ctx = avctx->priv_data;
     ctx->screen[0].row_used = 0;

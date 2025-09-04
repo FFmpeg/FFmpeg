@@ -1411,7 +1411,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static void flush(AVCodecContext *avctx)
+static av_cold void flush(AVCodecContext *avctx)
 {
     BinkContext * const c = avctx->priv_data;
 

@@ -71,6 +71,7 @@
 #include "bytestream.h"
 #include "jpeg2000.h"
 #include "version.h"
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
@@ -580,7 +581,7 @@ static void init_quantization(Jpeg2000EncoderContext *s)
     }
 }
 
-static void init_luts(void)
+static av_cold void init_luts(void)
 {
     int i, a,
         mask = ~((1<<NMSEDEC_FRACBITS)-1);

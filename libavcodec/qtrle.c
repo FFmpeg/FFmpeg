@@ -38,6 +38,8 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 
+#include "libavutil/attributes.h"
+
 typedef struct QtrleContext {
     AVCodecContext *avctx;
     AVFrame *frame;
@@ -561,7 +563,7 @@ done:
     return avpkt->size;
 }
 
-static void qtrle_decode_flush(AVCodecContext *avctx)
+static av_cold void qtrle_decode_flush(AVCodecContext *avctx)
 {
     QtrleContext *s = avctx->priv_data;
 

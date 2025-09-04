@@ -30,6 +30,7 @@
  * @see http://www.w3.org/Graphics/GIF/spec-gif89a.txt
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/imgutils_internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -518,7 +519,7 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static int gif_encode_close(AVCodecContext *avctx)
+static av_cold int gif_encode_close(AVCodecContext *avctx)
 {
     GIFContext *s = avctx->priv_data;
 

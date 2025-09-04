@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
 #include "idctdsp.h"
@@ -68,12 +69,12 @@ static const AVClass avdct_class = {
     .version                 = LIBAVUTIL_VERSION_INT,
 };
 
-const AVClass *avcodec_dct_get_class(void)
+av_cold const AVClass *avcodec_dct_get_class(void)
 {
     return &avdct_class;
 }
 
-AVDCT *avcodec_dct_alloc(void)
+av_cold AVDCT *avcodec_dct_alloc(void)
 {
     AVDCT *dsp = av_mallocz(sizeof(AVDCT));
 
@@ -86,7 +87,7 @@ AVDCT *avcodec_dct_alloc(void)
     return dsp;
 }
 
-int avcodec_dct_init(AVDCT *dsp)
+av_cold int avcodec_dct_init(AVDCT *dsp)
 {
     AVCodecContext *avctx = avcodec_alloc_context3(NULL);
 

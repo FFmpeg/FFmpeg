@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 
 #include "av1_parse.h"
@@ -200,7 +201,7 @@ static av_cold int av1_parser_init(AVCodecParserContext *ctx)
     return 0;
 }
 
-static void av1_parser_close(AVCodecParserContext *ctx)
+static av_cold void av1_parser_close(AVCodecParserContext *ctx)
 {
     AV1ParseContext *s = ctx->priv_data;
 

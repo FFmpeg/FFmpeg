@@ -24,6 +24,7 @@
 
 #define BITSTREAM_READER_LE
 
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 
@@ -1245,7 +1246,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void decode_flush(AVCodecContext *avctx)
+static av_cold void decode_flush(AVCodecContext *avctx)
 {
     AGMContext *s = avctx->priv_data;
 

@@ -21,6 +21,7 @@
 #include "config.h"
 #include "lossless_videodsp.h"
 #include "libavcodec/mathops.h"
+#include "libavutil/attributes.h"
 
 // 0x7f7f7f7f or 0x7f7f7f7f7f7f7f7f or whatever, depending on the cpu's native arithmetic size
 #define pb_7f (~0UL / 255 * 0x7f)
@@ -110,7 +111,7 @@ static void add_gradient_pred_c(uint8_t *src, const ptrdiff_t stride, const ptrd
     }
 }
 
-void ff_llviddsp_init(LLVidDSPContext *c)
+av_cold void ff_llviddsp_init(LLVidDSPContext *c)
 {
     c->add_bytes                  = add_bytes_c;
     c->add_median_pred            = add_median_pred_c;

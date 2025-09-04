@@ -29,6 +29,7 @@
 
 #include "config_components.h"
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
@@ -474,7 +475,7 @@ void ff_h264_flush_change(H264Context *h)
     h->mmco_reset = 1;
 }
 
-static void h264_decode_flush(AVCodecContext *avctx)
+static av_cold void h264_decode_flush(AVCodecContext *avctx)
 {
     H264Context *h = avctx->priv_data;
     int i;

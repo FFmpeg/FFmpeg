@@ -587,7 +587,7 @@ static int cbs_vp9_assemble_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
-static void cbs_vp9_flush(CodedBitstreamContext *ctx)
+static av_cold void cbs_vp9_flush(CodedBitstreamContext *ctx)
 {
     CodedBitstreamVP9Context *vp9 = ctx->priv_data;
 

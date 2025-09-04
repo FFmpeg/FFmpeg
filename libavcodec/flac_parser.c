@@ -887,7 +887,7 @@ static av_cold int flac_parse_init(AVCodecParserContext *c)
     return 0;
 }
 
-static void flac_parse_close(AVCodecParserContext *c)
+static av_cold void flac_parse_close(AVCodecParserContext *c)
 {
     FLACParseContext *fpc = c->priv_data;
     FLACHeaderMarker *curr = fpc->headers, *temp;

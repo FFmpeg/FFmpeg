@@ -41,6 +41,7 @@
 #include "vp9data.h"
 #include "vp9dec.h"
 #include "vpx_rac.h"
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
@@ -1822,7 +1823,7 @@ fail:
     return ret;
 }
 
-static void vp9_decode_flush(AVCodecContext *avctx)
+static av_cold void vp9_decode_flush(AVCodecContext *avctx)
 {
     VP9Context *s = avctx->priv_data;
     int i;

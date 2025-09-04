@@ -1905,7 +1905,7 @@ static int cbs_h2645_assemble_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
-static void cbs_h264_flush(CodedBitstreamContext *ctx)
+static av_cold void cbs_h264_flush(CodedBitstreamContext *ctx)
 {
     CodedBitstreamH264Context *h264 = ctx->priv_data;
 
@@ -1919,7 +1919,7 @@ static void cbs_h264_flush(CodedBitstreamContext *ctx)
     h264->last_slice_nal_unit_type = 0;
 }
 
-static void cbs_h264_close(CodedBitstreamContext *ctx)
+static av_cold void cbs_h264_close(CodedBitstreamContext *ctx)
 {
     CodedBitstreamH264Context *h264 = ctx->priv_data;
     int i;
@@ -1932,7 +1932,7 @@ static void cbs_h264_close(CodedBitstreamContext *ctx)
         av_refstruct_unref(&h264->pps[i]);
 }
 
-static void cbs_h265_flush(CodedBitstreamContext *ctx)
+static av_cold void cbs_h265_flush(CodedBitstreamContext *ctx)
 {
     CodedBitstreamH265Context *h265 = ctx->priv_data;
 
@@ -1948,7 +1948,7 @@ static void cbs_h265_flush(CodedBitstreamContext *ctx)
     h265->active_pps = NULL;
 }
 
-static void cbs_h265_close(CodedBitstreamContext *ctx)
+static av_cold void cbs_h265_close(CodedBitstreamContext *ctx)
 {
     CodedBitstreamH265Context *h265 = ctx->priv_data;
     int i;
@@ -1963,7 +1963,7 @@ static void cbs_h265_close(CodedBitstreamContext *ctx)
         av_refstruct_unref(&h265->pps[i]);
 }
 
-static void cbs_h266_flush(CodedBitstreamContext *ctx)
+static av_cold void cbs_h266_flush(CodedBitstreamContext *ctx)
 {
     CodedBitstreamH266Context *h266 = ctx->priv_data;
 
@@ -1976,7 +1976,7 @@ static void cbs_h266_flush(CodedBitstreamContext *ctx)
     av_refstruct_unref(&h266->ph_ref);
 }
 
-static void cbs_h266_close(CodedBitstreamContext *ctx)
+static av_cold void cbs_h266_close(CodedBitstreamContext *ctx)
 {
     CodedBitstreamH266Context *h266 = ctx->priv_data;
 

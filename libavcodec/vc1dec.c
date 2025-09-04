@@ -336,7 +336,7 @@ static int vc1_decode_sprites(VC1Context *v, GetBitContext* gb)
     return 0;
 }
 
-static void vc1_sprite_flush(AVCodecContext *avctx)
+static av_cold void vc1_sprite_flush(AVCodecContext *avctx)
 {
     VC1Context *v     = avctx->priv_data;
     MpegEncContext *s = &v->s;

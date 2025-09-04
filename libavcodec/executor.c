@@ -129,7 +129,7 @@ static void *executor_worker_task(void *data)
 }
 #endif
 
-static void executor_free(FFExecutor *e, const int has_lock, const int has_cond)
+static av_cold void executor_free(FFExecutor *e, const int has_lock, const int has_cond)
 {
     if (e->thread_count) {
         //signal die
@@ -153,7 +153,7 @@ static void executor_free(FFExecutor *e, const int has_lock, const int has_cond)
     av_free(e);
 }
 
-FFExecutor* ff_executor_alloc(const FFTaskCallbacks *cb, int thread_count)
+av_cold FFExecutor* ff_executor_alloc(const FFTaskCallbacks *cb, int thread_count)
 {
     FFExecutor *e;
     int has_lock = 0, has_cond = 0;
@@ -199,7 +199,7 @@ free_executor:
     return NULL;
 }
 
-void ff_executor_free(FFExecutor **executor)
+av_cold void ff_executor_free(FFExecutor **executor)
 {
     int thread_count;
 

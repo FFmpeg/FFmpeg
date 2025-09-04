@@ -293,7 +293,7 @@ static int mpegvideo_parse(AVCodecParserContext *s,
     return next;
 }
 
-static int mpegvideo_parse_init(AVCodecParserContext *s)
+static av_cold int mpegvideo_parse_init(AVCodecParserContext *s)
 {
     s->pict_type = AV_PICTURE_TYPE_NONE; // first frame might be partial
     return 0;

@@ -379,7 +379,7 @@ static int ass_split(ASSSplitContext *ctx, const char *buf)
     return buf ? 0 : AVERROR_INVALIDDATA;
 }
 
-ASSSplitContext *ff_ass_split(const char *buf)
+av_cold ASSSplitContext *ff_ass_split(const char *buf)
 {
     ASSSplitContext *ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
@@ -467,7 +467,7 @@ ASSDialog *ff_ass_split_dialog(ASSSplitContext *ctx, const char *buf)
     return dialog;
 }
 
-void ff_ass_split_free(ASSSplitContext *ctx)
+av_cold void ff_ass_split_free(ASSSplitContext *ctx)
 {
     if (ctx) {
         int i;

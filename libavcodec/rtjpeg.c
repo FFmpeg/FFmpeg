@@ -18,6 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "get_bits.h"
 #include "rtjpeg.h"
@@ -167,7 +169,7 @@ void ff_rtjpeg_decode_init(RTJpegContext *c, int width, int height,
     c->h = height;
 }
 
-void ff_rtjpeg_init(RTJpegContext *c, struct AVCodecContext *avctx)
+av_cold void ff_rtjpeg_init(RTJpegContext *c, struct AVCodecContext *avctx)
 {
     int i;
 

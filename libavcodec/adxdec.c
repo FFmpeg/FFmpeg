@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "adx.h"
@@ -246,7 +247,7 @@ static int adx_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return buf - avpkt->data;
 }
 
-static void adx_decode_flush(AVCodecContext *avctx)
+static av_cold void adx_decode_flush(AVCodecContext *avctx)
 {
     ADXContext *c = avctx->priv_data;
     memset(c->prev, 0, sizeof(c->prev));

@@ -29,6 +29,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avutil.h"
 #include "libavutil/error.h"
 #include "libavutil/log.h"
@@ -660,7 +661,7 @@ static int h264_parse(AVCodecParserContext *s,
     return next;
 }
 
-static void h264_close(AVCodecParserContext *s)
+static av_cold void h264_close(AVCodecParserContext *s)
 {
     H264ParseContext *p = s->priv_data;
     ParseContext *pc = &p->pc;

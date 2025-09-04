@@ -97,7 +97,7 @@ static void make_lpc_coefs(float *lpc, const float *refl, int order)
         memcpy(lpc, cur, sizeof(*lpc) * order);
 }
 
-static void cng_decode_flush(AVCodecContext *avctx)
+static av_cold void cng_decode_flush(AVCodecContext *avctx)
 {
     CNGContext *p = avctx->priv_data;
     p->inited = 0;

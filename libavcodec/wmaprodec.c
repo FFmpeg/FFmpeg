@@ -88,6 +88,7 @@
 
 #include <inttypes.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/audio_fifo.h"
 #include "libavutil/mem.h"
 #include "libavutil/tx.h"
@@ -2040,7 +2041,7 @@ static av_cold int xma_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static void flush(WMAProDecodeCtx *s)
+static av_cold void flush(WMAProDecodeCtx *s)
 {
     int i;
     /** reset output buffer as a part of it is used during the windowing of a
@@ -2058,14 +2059,14 @@ static void flush(WMAProDecodeCtx *s)
  *@brief Clear decoder buffers (for seeking).
  *@param avctx codec context
  */
-static void wmapro_flush(AVCodecContext *avctx)
+static av_cold void wmapro_flush(AVCodecContext *avctx)
 {
     WMAProDecodeCtx *s = avctx->priv_data;
 
     flush(s);
 }
 
-static void xma_flush(AVCodecContext *avctx)
+static av_cold void xma_flush(AVCodecContext *avctx)
 {
     XMADecodeCtx *s = avctx->priv_data;
     int i;

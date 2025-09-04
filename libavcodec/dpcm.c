@@ -43,6 +43,8 @@
 #include "decode.h"
 #include "mathops.h"
 
+#include "libavutil/attributes.h"
+
 typedef struct DPCMContext {
     int16_t array[256];
     int sample[2];                  ///< previous sample (for SOL_DPCM and WADY_DPCM)
@@ -457,7 +459,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return avpkt->size;
 }
 
-static void dpcm_flush(AVCodecContext *avctx)
+static av_cold void dpcm_flush(AVCodecContext *avctx)
 {
     DPCMContext *s = avctx->priv_data;
 

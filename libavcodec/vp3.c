@@ -35,6 +35,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
@@ -349,7 +350,7 @@ static av_cold void free_tables(AVCodecContext *avctx)
     av_freep(&s->motion_val[1]);
 }
 
-static void vp3_decode_flush(AVCodecContext *avctx)
+static av_cold void vp3_decode_flush(AVCodecContext *avctx)
 {
     Vp3DecodeContext *s = avctx->priv_data;
 

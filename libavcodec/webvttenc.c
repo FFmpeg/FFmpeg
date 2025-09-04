@@ -187,7 +187,7 @@ static int webvtt_encode_frame(AVCodecContext *avctx,
     return s->buffer.len;
 }
 
-static int webvtt_encode_close(AVCodecContext *avctx)
+static av_cold int webvtt_encode_close(AVCodecContext *avctx)
 {
     WebVTTContext *s = avctx->priv_data;
     ff_ass_split_free(s->ass_ctx);

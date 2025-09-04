@@ -34,6 +34,7 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "msrledec.h"
+#include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
 
 typedef struct MsrleContext {
@@ -138,7 +139,7 @@ static int msrle_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     return buf_size;
 }
 
-static void msrle_decode_flush(AVCodecContext *avctx)
+static av_cold void msrle_decode_flush(AVCodecContext *avctx)
 {
     MsrleContext *s = avctx->priv_data;
 

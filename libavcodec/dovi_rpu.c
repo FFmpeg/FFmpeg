@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 
 #include "dovi_rpu.h"
@@ -39,7 +40,7 @@ void ff_dovi_ctx_unref(DOVIContext *s)
     };
 }
 
-void ff_dovi_ctx_flush(DOVIContext *s)
+av_cold void ff_dovi_ctx_flush(DOVIContext *s)
 {
     av_refstruct_unref(&s->dm);
     for (int i = 0; i < FF_ARRAY_ELEMS(s->vdr); i++)

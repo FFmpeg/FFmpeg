@@ -26,6 +26,7 @@
 
 #include "config_components.h"
 
+#include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "codec_internal.h"
@@ -106,7 +107,7 @@ static int gsm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return avctx->block_align;
 }
 
-static void gsm_flush(AVCodecContext *avctx)
+static av_cold void gsm_flush(AVCodecContext *avctx)
 {
     GSMContext *s = avctx->priv_data;
     memset(s, 0, sizeof(*s));

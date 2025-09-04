@@ -20,6 +20,8 @@
 #include "ffv1.h"
 #include "rangecoder.h"
 
+#include "libavutil/attributes.h"
+
 typedef struct FFV1ParseContext {
     FFV1Context f;
     int got_first;
@@ -70,7 +72,7 @@ static int parse(AVCodecParserContext *s,
     return buf_size;
 }
 
-static void ffv1_close(AVCodecParserContext *s)
+static av_cold void ffv1_close(AVCodecParserContext *s)
 {
     FFV1ParseContext *p = s->priv_data;
 

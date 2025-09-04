@@ -134,7 +134,7 @@ done:
     return ret;
 }
 
-static int v4l2_configure_contexts(V4L2m2mContext *s)
+static av_cold int v4l2_configure_contexts(V4L2m2mContext *s)
 {
     void *log_ctx = s->avctx;
     int ret;
@@ -261,7 +261,7 @@ static void v4l2_m2m_destroy_context(AVRefStructOpaque unused, void *context)
     av_packet_unref(&s->buf_pkt);
 }
 
-int ff_v4l2_m2m_codec_end(V4L2m2mPriv *priv)
+av_cold int ff_v4l2_m2m_codec_end(V4L2m2mPriv *priv)
 {
     V4L2m2mContext *s = priv->context;
     int ret;
@@ -287,7 +287,7 @@ int ff_v4l2_m2m_codec_end(V4L2m2mPriv *priv)
     return 0;
 }
 
-int ff_v4l2_m2m_codec_init(V4L2m2mPriv *priv)
+av_cold int ff_v4l2_m2m_codec_init(V4L2m2mPriv *priv)
 {
     int ret = AVERROR(EINVAL);
     struct dirent *entry;

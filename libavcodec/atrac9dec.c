@@ -820,7 +820,7 @@ static int atrac9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return avctx->block_align;
 }
 
-static void atrac9_decode_flush(AVCodecContext *avctx)
+static av_cold void atrac9_decode_flush(AVCodecContext *avctx)
 {
     ATRAC9Context *s = avctx->priv_data;
 

@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
@@ -62,7 +63,7 @@ typedef struct OSQContext {
     int pkt_offset;
 } OSQContext;
 
-static void osq_flush(AVCodecContext *avctx)
+static av_cold void osq_flush(AVCodecContext *avctx)
 {
     OSQContext *s = avctx->priv_data;
 

@@ -163,7 +163,7 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
     return ff_ass_add_rect2(sub, dialog, readorder, layer, style, speaker, NULL);
 }
 
-void ff_ass_decoder_flush(AVCodecContext *avctx)
+av_cold void ff_ass_decoder_flush(AVCodecContext *avctx)
 {
     FFASSDecoderContext *s = avctx->priv_data;
     if (!(avctx->flags2 & AV_CODEC_FLAG2_RO_FLUSH_NOOP))

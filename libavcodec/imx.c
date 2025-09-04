@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "avcodec.h"
 #include "bytestream.h"
@@ -158,7 +159,7 @@ static int imx_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     return avpkt->size;
 }
 
-static void imx_decode_flush(AVCodecContext *avctx)
+static av_cold void imx_decode_flush(AVCodecContext *avctx)
 {
     SimbiosisIMXContext *imx = avctx->priv_data;
 
@@ -168,7 +169,7 @@ static void imx_decode_flush(AVCodecContext *avctx)
     memset(imx->history, 0, sizeof(imx->history));
 }
 
-static int imx_decode_close(AVCodecContext *avctx)
+static av_cold int imx_decode_close(AVCodecContext *avctx)
 {
     SimbiosisIMXContext *imx = avctx->priv_data;
 
