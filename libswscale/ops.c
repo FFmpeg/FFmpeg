@@ -33,7 +33,7 @@ extern const SwsOpBackend backend_x86;
 
 const SwsOpBackend * const ff_sws_op_backends[] = {
     &backend_murder,
-#if ARCH_X86_64
+#if ARCH_X86_64 && HAVE_X86ASM
     &backend_x86,
 #endif
     &backend_c,
