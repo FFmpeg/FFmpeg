@@ -280,10 +280,9 @@ static av_cold void decode_init_static(void)
     ff_mpegaudiodec_common_init_static();
 }
 
-static av_cold int decode_init(AVCodecContext * avctx)
+static av_cold int decode_ctx_init(AVCodecContext *avctx, MPADecodeContext *s)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
-    MPADecodeContext *s = avctx->priv_data;
 
     s->avctx = avctx;
 
@@ -313,6 +312,11 @@ static av_cold int decode_init(AVCodecContext * avctx)
     ff_thread_once(&init_static_once, decode_init_static);
 
     return 0;
+}
+
+static av_cold int decode_init(AVCodecContext *avctx)
+{
+    return decode_ctx_init(avctx, avctx->priv_data);
 }
 
 #define C3 FIXHR(0.86602540378443864676/2)
@@ -1771,19 +1775,13 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
         s->syncword = 0xfff00000;
 
     /* Init the first mp3 decoder in standard way, so that all tables get built
-     * We replace avctx->priv_data with the context of the first decoder so that
-     * decode_init() does not have to be changed.
      * Other decoders will be initialized here copying data from the first context
      */
     // Allocate zeroed memory for the first decoder context
     s->mp3decctx[0] = av_mallocz(sizeof(MPADecodeContext));
     if (!s->mp3decctx[0])
         return AVERROR(ENOMEM);
-    // Put decoder context in place to make init_decode() happy
-    avctx->priv_data = s->mp3decctx[0];
-    ret = decode_init(avctx);
-    // Restore mp3on4 context pointer
-    avctx->priv_data = s;
+    ret = decode_ctx_init(avctx, s->mp3decctx[0]);
     if (ret < 0)
         return ret;
     s->mp3decctx[0]->adu_mode = 1; // Set adu mode
