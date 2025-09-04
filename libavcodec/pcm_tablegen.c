@@ -21,21 +21,27 @@
  */
 
 #include <stdlib.h>
+#include "config_components.h"
 #define CONFIG_HARDCODED_TABLES 0
 #include "pcm_tablegen.h"
 #include "tableprint.h"
 
 int main(void)
 {
-    pcm_alaw_tableinit();
-    pcm_ulaw_tableinit();
-    pcm_vidc_tableinit();
-
     write_fileheader();
 
+#if CONFIG_PCM_ALAW_ENCODER
+    pcm_alaw_tableinit();
     WRITE_ARRAY("static const", uint8_t, linear_to_alaw);
+#endif
+#if CONFIG_PCM_MULAW_ENCODER
+    pcm_ulaw_tableinit();
     WRITE_ARRAY("static const", uint8_t, linear_to_ulaw);
+#endif
+#if CONFIG_PCM_VIDC_ENCODER
+    pcm_vidc_tableinit();
     WRITE_ARRAY("static const", uint8_t, linear_to_vidc);
+#endif
 
     return 0;
 }
