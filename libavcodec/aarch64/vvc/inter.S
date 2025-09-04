@@ -393,13 +393,10 @@ function ff_vvc_dmvr_hv_8_neon, export=1
 
         movrel          x9, X(ff_vvc_inter_luma_dmvr_filters)
         add             x12, x9, mx, lsl #1
-        ldrb            w10, [x12]
-        ldrb            w11, [x12, #1]
         mov             tmp0, sp
         add             tmp1, tmp0, #(VVC_MAX_PB_SIZE * 2)
         // We know the value are positive
-        dup             v0.8h, w10                  // filter_x[0]
-        dup             v1.8h, w11                  // filter_x[1]
+        ld2r            {v0.16b, v1.16b}, [x12]
 
         add             x12, x9, my, lsl #1
         ldrb            w10, [x12]
@@ -424,14 +421,10 @@ function ff_vvc_dmvr_hv_8_neon, export=1
         // width > 16
         ldur            q5, [src, #1]
         ldr             q4, [src], #16
-        uxtl            v7.8h, v5.8b
-        uxtl2           v17.8h, v5.16b
-        uxtl            v6.8h, v4.8b
-        uxtl2           v16.8h, v4.16b
-        mul             v6.8h, v6.8h, v0.8h
-        mul             v16.8h, v16.8h, v0.8h
-        mla             v6.8h, v7.8h, v1.8h
-        mla             v16.8h, v17.8h, v1.8h
+        umull           v6.8h, v4.8b, v0.8b
+        umull2          v16.8h, v4.16b, v0.16b
+        umlal           v6.8h, v5.8b, v1.8b
+        umlal2          v16.8h, v5.16b, v1.16b
         urshr           v6.8h, v6.8h, #(8 - 6)
         urshr           v7.8h, v16.8h, #(8 - 6)
         stp             q6, q7, [x13], #32
@@ -451,10 +444,8 @@ function ff_vvc_dmvr_hv_8_neon, export=1
         // width > 8
         ldur            d5, [src, #1]
         ldr             d4, [src], #8
-        uxtl            v7.8h, v5.8b
-        uxtl            v6.8h, v4.8b
-        mul             v6.8h, v6.8h, v0.8h
-        mla             v6.8h, v7.8h, v1.8h
+        umull           v6.8h, v4.8b, v0.8b
+        umlal           v6.8h, v5.8b, v1.8b
         urshr           v6.8h, v6.8h, #(8 - 6)
         str             q6, [x13], #16
 
@@ -468,10 +459,8 @@ function ff_vvc_dmvr_hv_8_neon, export=1
 3:
         ldur            s5, [src, #1]
         ldr             s4, [src], #4
-        uxtl            v7.8h, v5.8b
-        uxtl            v6.8h, v4.8b
-        mul             v6.4h, v6.4h, v0.4h
-        mla             v6.4h, v7.4h, v1.4h
+        umull           v6.8h, v4.8b, v0.8b
+        umlal           v6.8h, v5.8b, v1.8b
         urshr           v6.4h, v6.4h, #(8 - 6)
         str             d6, [x13], #8
 
