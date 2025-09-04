@@ -1625,7 +1625,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return buf_size + skipped;
 }
 
-static void mp_flush(MPADecodeContext *ctx)
+static av_cold void mp_flush(MPADecodeContext *ctx)
 {
     memset(ctx->synth_buf, 0, sizeof(ctx->synth_buf));
     memset(ctx->mdct_buf, 0, sizeof(ctx->mdct_buf));
@@ -1633,7 +1633,7 @@ static void mp_flush(MPADecodeContext *ctx)
     ctx->dither_state = 0;
 }
 
-static void flush(AVCodecContext *avctx)
+static av_cold void flush(AVCodecContext *avctx)
 {
     mp_flush(avctx->priv_data);
 }
@@ -1799,7 +1799,7 @@ static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
 }
 
 
-static void flush_mp3on4(AVCodecContext *avctx)
+static av_cold void flush_mp3on4(AVCodecContext *avctx)
 {
     int i;
     MP3On4DecodeContext *s = avctx->priv_data;
