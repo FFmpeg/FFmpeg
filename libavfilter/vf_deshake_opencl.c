@@ -46,7 +46,7 @@
  */
 
 #include <float.h>
-#include <libavutil/lfg.h>
+#include "libavutil/lfg.h"
 #include "libavutil/opt.h"
 #include "libavutil/mem.h"
 #include "libavutil/fifo.h"

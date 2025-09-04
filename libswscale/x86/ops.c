@@ -20,8 +20,8 @@
 
 #include <float.h>
 
-#include <libavutil/avassert.h>
-#include <libavutil/mem.h>
+#include "libavutil/avassert.h"
+#include "libavutil/mem.h"
 
 #include "../ops_chain.h"
 

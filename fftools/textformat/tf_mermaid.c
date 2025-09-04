@@ -27,10 +27,9 @@
 #include "avtextformat.h"
 #include "tf_internal.h"
 #include "tf_mermaid.h"
-#include <libavutil/mem.h>
-#include <libavutil/avassert.h>
-#include <libavutil/bprint.h>
-#include <libavutil/opt.h>
+#include "libavutil/bprint.h"
+#include "libavutil/mem.h"
+#include "libavutil/opt.h"
 
 
 static const char *init_directive = ""

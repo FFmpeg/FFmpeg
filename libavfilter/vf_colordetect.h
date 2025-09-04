@@ -22,9 +22,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <libavutil/avassert.h>
-#include <libavutil/macros.h>
-#include <libavutil/pixfmt.h>
+#include "libavutil/avassert.h"
+#include "libavutil/pixfmt.h"
 
 enum FFAlphaDetect {
     FF_ALPHA_NONE         = -1,

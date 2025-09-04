@@ -19,7 +19,7 @@
  */
 
 #include "libavutil/avassert.h"
-#include <libavutil/bswap.h>
+#include "libavutil/bswap.h"
 #include "libavutil/rational.h"
 
 #include "ops.h"
