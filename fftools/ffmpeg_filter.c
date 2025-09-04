@@ -2878,6 +2878,7 @@ static const char *unknown_if_null(const char *str)
 static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
                       InputFilter *ifilter, AVFrame *frame)
 {
+    FilterGraphPriv *fgp = fgp_from_fg(fg);
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     FrameData       *fd;
     AVFrameSideData *sd;
@@ -2986,6 +2987,11 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
             if (reason.len > 1)
                 reason.str[reason.len - 2] = '\0'; // remove last comma
             av_log(fg, AV_LOG_INFO, "Reconfiguring filter graph%s%s\n", reason.len ? " because " : "", reason.str);
+        } else {
+            /* Choke all input to avoid buffering excessive frames while the
+             * initial filter graph is being configured, and before we have a
+             * preferred input */
+            sch_filter_choke_inputs(fgp->sch, fgp->sch_idx);
         }
 
         ret = configure_filtergraph(fg, fgt);

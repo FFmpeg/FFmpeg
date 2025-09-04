@@ -2510,6 +2510,18 @@ int sch_filter_command(Scheduler *sch, unsigned fg_idx, AVFrame *frame)
     return send_to_filter(sch, fg, fg->nb_inputs, frame);
 }
 
+void sch_filter_choke_inputs(Scheduler *sch, unsigned fg_idx)
+{
+    SchFilterGraph *fg;
+    av_assert0(fg_idx < sch->nb_filters);
+    fg = &sch->filters[fg_idx];
+
+    pthread_mutex_lock(&sch->schedule_lock);
+    fg->best_input = fg->nb_inputs;
+    schedule_update_locked(sch);
+    pthread_mutex_unlock(&sch->schedule_lock);
+}
+
 static int task_cleanup(Scheduler *sch, SchedulerNode node)
 {
     switch (node.type) {
