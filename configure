@@ -1445,8 +1445,8 @@ check_func_headers(){
     } | test_ld "cc" "$@" && enable $funcs && enable_sanitized $headers
 }
 
-check_class_headers_cpp(){
-    log check_class_headers_cpp "$@"
+check_class_headers_cxx(){
+    log check_class_headers_cxx "$@"
     headers=$1
     classes=$2
     shift 2
@@ -1538,14 +1538,14 @@ check_lib(){
         enable $name && eval ${name}_extralibs="\$@"
 }
 
-check_lib_cpp(){
-    log check_lib_cpp "$@"
+check_lib_cxx(){
+    log check_lib_cxx "$@"
     name="$1"
     headers="$2"
     classes="$3"
     shift 3
     disable $name
-    check_class_headers_cpp "$headers" "$classes" "$@" &&
+    check_class_headers_cxx "$headers" "$classes" "$@" &&
         enable $name && eval ${name}_extralibs="\$@"
 }
 
@@ -1716,12 +1716,12 @@ require_cc(){
     check_cc "$@" || die "ERROR: $name failed"
 }
 
-require_cpp(){
-    log require_cpp "$@"
+require_cxx(){
+    log require_cxx "$@"
     name_version="$1"
     name="${1%% *}"
     shift
-    check_lib_cpp "$name" "$@" || die "ERROR: $name_version not found"
+    check_lib_cxx "$name" "$@" || die "ERROR: $name_version not found"
 }
 
 require_headers(){
@@ -7207,7 +7207,7 @@ enabled libtensorflow     && require libtensorflow tensorflow/c/c_api.h TF_Versi
 enabled libtesseract      && require_pkg_config libtesseract tesseract tesseract/capi.h TessBaseAPICreate
 enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libtls            && require_pkg_config libtls libtls tls.h tls_configure
-enabled libtorch          && check_cxxflags -std=c++17 && require_cpp libtorch torch/torch.h "torch::Tensor" -ltorch -lc10 -ltorch_cpu -lstdc++ -lpthread
+enabled libtorch          && check_cxxflags -std=c++17 && require_cxx libtorch torch/torch.h "torch::Tensor" -ltorch -lc10 -ltorch_cpu -lstdc++ -lpthread
 enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame &&
                              { check_lib libtwolame twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
                                die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
