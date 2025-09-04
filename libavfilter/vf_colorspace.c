@@ -66,6 +66,12 @@ enum WhitepointAdaptation {
     NB_WP_ADAPT,
 };
 
+enum ClipGamutMode {
+  CLIP_GAMUT_NONE,
+  CLIP_GAMUT_RGB,
+  NB_CLIP_GAMUT,
+};
+
 static const enum AVColorTransferCharacteristic default_trc[CS_NB + 1] = {
     [CS_UNSPECIFIED] = AVCOL_TRC_UNSPECIFIED,
     [CS_BT470M]      = AVCOL_TRC_GAMMA22,
@@ -123,6 +129,7 @@ typedef struct ColorSpaceContext {
     int fast_mode;
     enum DitherMode dither;
     enum WhitepointAdaptation wp_adapt;
+    enum ClipGamutMode clip_gamut;
 
     int16_t *rgb[3];
     ptrdiff_t rgb_stride;
@@ -199,6 +206,7 @@ static int fill_gamma_table(ColorSpaceContext *s)
     double in_ialpha = 1.0 / in_alpha, in_igamma = 1.0 / in_gamma, in_idelta = 1.0 / in_delta;
     double out_alpha = s->out_txchr->alpha, out_beta = s->out_txchr->beta;
     double out_gamma = s->out_txchr->gamma, out_delta = s->out_txchr->delta;
+    int clip_gamut = s->clip_gamut == CLIP_GAMUT_RGB;
 
     s->lin_lut = av_malloc(sizeof(*s->lin_lut) * 32768 * 2);
     if (!s->lin_lut)
@@ -215,7 +223,9 @@ static int fill_gamma_table(ColorSpaceContext *s)
         } else {
             d = out_alpha * pow(v, out_gamma) - (out_alpha - 1.0);
         }
-        s->delin_lut[n] = av_clip_int16(lrint(d * 28672.0));
+        int d_rounded = lrint(d * 28672.0);
+        s->delin_lut[n] = clip_gamut ? av_clip(d_rounded, 0, 28672)
+                                     : av_clip_int16(d_rounded);
 
         // linearize
         if (v <= -in_beta * in_delta) {
@@ -225,7 +235,9 @@ static int fill_gamma_table(ColorSpaceContext *s)
         } else {
             l = pow((v + in_alpha - 1.0) * in_ialpha, in_igamma);
         }
-        s->lin_lut[n] = av_clip_int16(lrint(l * 28672.0));
+        int l_rounded = lrint(l * 28672.0);
+        s->lin_lut[n] = clip_gamut ? av_clip(l_rounded, 0, 28672)
+                                   : av_clip_int16(l_rounded);
     }
 
     return 0;
@@ -999,6 +1011,13 @@ static const AVOption colorspace_options[] = {
     ENUM("bradford", WP_ADAPT_BRADFORD, "wpadapt"),
     ENUM("vonkries", WP_ADAPT_VON_KRIES, "wpadapt"),
     ENUM("identity", WP_ADAPT_IDENTITY, "wpadapt"),
+
+    { "clipgamut",
+      "Controls how to clip out-of-gamut colors that arise as a result of colorspace conversion.",
+      OFFSET(clip_gamut), AV_OPT_TYPE_INT,  { .i64 = CLIP_GAMUT_NONE },
+      CLIP_GAMUT_NONE, NB_CLIP_GAMUT - 1, FLAGS, .unit = "clipgamut" },
+    ENUM("none", CLIP_GAMUT_NONE, "clipgamut"),
+    ENUM("rgb", CLIP_GAMUT_RGB, "clipgamut"),
 
     { "iall",       "Set all input color properties together",
       OFFSET(user_iall),   AV_OPT_TYPE_INT, { .i64 = CS_UNSPECIFIED },

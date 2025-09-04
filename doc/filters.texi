@@ -10413,6 +10413,18 @@ von Kries whitepoint adaptation
 identity whitepoint adaptation (i.e. no whitepoint adaptation)
 @end table
 
+@item clipgamut
+Controls how to clip out-of-gamut colors that arise as a result of colorspace conversion.
+
+The accepted values are:
+@table @samp
+@item none
+No clipping of out of gamut colors.
+
+@item rgb
+Clips the RGB values to the [0, 1] range when building the gamma transfer LUTs.
+@end table
+
 @item iall
 Override all input properties at once. Same accepted values as @ref{all}.
 
