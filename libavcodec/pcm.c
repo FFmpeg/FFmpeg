@@ -38,7 +38,7 @@
 #include "encode.h"
 #include "pcm_tablegen.h"
 
-static av_cold int pcm_encode_init(AVCodecContext *avctx)
+static av_cold av_unused int pcm_encode_init(AVCodecContext *avctx)
 {
     avctx->frame_size = 0;
 #if !CONFIG_HARDCODED_TABLES
@@ -104,10 +104,10 @@ static av_cold int pcm_encode_init(AVCodecContext *avctx)
         }                                                               \
     }
 
-static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
-                            const AVFrame *frame, int *got_packet_ptr)
+static av_unused int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                                      const AVFrame *frame, int *got_packet_ptr)
 {
-    int n, c, sample_size, v, ret;
+    int n, c, sample_size, ret;
     const short *samples;
     unsigned char *dst;
     const uint8_t *samples_uint8_t;
@@ -230,7 +230,7 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 #if CONFIG_PCM_ALAW_ENCODER
     case AV_CODEC_ID_PCM_ALAW:
         for (; n > 0; n--) {
-            v      = *samples++;
+            int v = *samples++;
             *dst++ = linear_to_alaw[(v + 32768) >> 2];
         }
         break;
@@ -238,7 +238,7 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 #if CONFIG_PCM_MULAW_ENCODER
     case AV_CODEC_ID_PCM_MULAW:
         for (; n > 0; n--) {
-            v      = *samples++;
+            int v = *samples++;
             *dst++ = linear_to_ulaw[(v + 32768) >> 2];
         }
         break;
@@ -246,7 +246,7 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 #if CONFIG_PCM_VIDC_ENCODER
     case AV_CODEC_ID_PCM_VIDC:
         for (; n > 0; n--) {
-            v      = *samples++;
+            int v = *samples++;
             *dst++ = linear_to_vidc[(v + 32768) >> 2];
         }
         break;
