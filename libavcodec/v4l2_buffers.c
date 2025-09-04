@@ -34,7 +34,10 @@
 #include "v4l2_buffers.h"
 #include "v4l2_m2m.h"
 
+#ifndef USEC_PER_SEC
 #define USEC_PER_SEC 1000000
+#endif
+
 static AVRational v4l2_timebase = { 1, USEC_PER_SEC };
 
 static inline V4L2m2mContext *buf_to_m2mctx(V4L2Buffer *buf)
