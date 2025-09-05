@@ -1529,6 +1529,7 @@ static int codec48_block(GetByteContext *gb, uint8_t *dst, uint8_t *db, int x, i
         for (i = 0; i < 8; i += 4) {
             for (k = 0; k < 8; k += 4) {
                 opc =  bytestream2_get_byteu(gb);
+                opc = (opc == 255) ? 0 : opc;
                 mvofs = c37_mv[opc * 2] + (c37_mv[opc * 2 + 1] * w);
                 if (c48_invalid_mv(x+k, y+i, w, aligned_height, 4, mvofs))
                     continue;
@@ -1569,6 +1570,7 @@ static int codec48_block(GetByteContext *gb, uint8_t *dst, uint8_t *db, int x, i
             for (j = 0; j < 8; j += 2) {
                 ofs = (w * i) + j;
                 opc = bytestream2_get_byteu(gb);
+                opc = (opc == 255) ? 0 : opc;
                 mvofs = c37_mv[opc * 2] + (c37_mv[opc * 2 + 1] * w);
                 if (c48_invalid_mv(x+j, y+i, w, aligned_height, 2, mvofs))
                     continue;
