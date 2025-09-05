@@ -7349,7 +7349,7 @@ enabled schannel &&
     schannel_extralibs="-lsecur32 -lncrypt -lcrypt32" ||
         disable schannel
 
-enabled schannel && check_cc dtls_protocol "windows.h security.h schnlsp.h" "int i = SP_PROT_DTLS1_X_CLIENT;" -DSECURITY_WIN32
+enabled schannel && check_cc dtls_protocol "windows.h security.h schnlsp.h" "int i = SECPKG_ATTR_DTLS_MTU;" -DSECURITY_WIN32
 
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
 enabled makeinfo \
