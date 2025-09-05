@@ -179,6 +179,7 @@ static int vc1_parse(AVCodecParserContext *s,
             // start codes if we know it contains a complete frame and
             // we've already unescaped all we need of the frame header
             vc1_extract_header(s, avctx, unesc_buffer, unesc_index);
+            unesc_index = 0;
             break;
         }
         if (unesc_index >= UNESCAPED_THRESHOLD && !start_code_found) {
