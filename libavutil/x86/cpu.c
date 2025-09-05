@@ -244,8 +244,9 @@ int ff_get_cpu_flags_x86(void)
             family == 6 && model < 23)
             rval |= AV_CPU_FLAG_SSSE3SLOW;
 
-        /* Haswell has slow gather */
-        if ((rval & AV_CPU_FLAG_AVX2) && family == 6 && model < 70)
+        /* Ice Lake and below have slow gather due to Gather Data Sampling
+         * mitigation. */
+        if ((rval & AV_CPU_FLAG_AVX2) && family == 6 && model < 143)
             rval |= AV_CPU_FLAG_SLOW_GATHER;
     }
 
