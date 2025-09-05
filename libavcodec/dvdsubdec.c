@@ -624,10 +624,10 @@ static int dvdsub_parse_extradata(AVCodecContext *avctx)
 {
     DVDSubContext *ctx = (DVDSubContext*) avctx->priv_data;
     char *dataorig, *data;
-    int ret = 1;
+    int ret;
 
     if (!avctx->extradata || !avctx->extradata_size)
-        return 1;
+        return 0;
 
     dataorig = data = av_malloc(avctx->extradata_size+1);
     if (!data)
@@ -656,6 +656,7 @@ static int dvdsub_parse_extradata(AVCodecContext *avctx)
         data += strspn(data, "\n\r");
     }
 
+    ret = 0;
 fail:
     av_free(dataorig);
     return ret;
@@ -683,7 +684,7 @@ static av_cold int dvdsub_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "\n");
     }
 
-    return 1;
+    return 0;
 }
 
 static av_cold void dvdsub_flush(AVCodecContext *avctx)
