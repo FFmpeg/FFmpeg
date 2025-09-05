@@ -2337,7 +2337,7 @@ static int attach_displaymatrix(AVCodecContext *avctx, AVFrame *frame, int orien
     int32_t *matrix;
     int ret;
     /* invalid orientation */
-    if (orientation < 2 || orientation > 8)
+    if (orientation < 1 || orientation > 8)
         return AVERROR_INVALIDDATA;
     ret = ff_frame_new_side_data(avctx, frame, AV_FRAME_DATA_DISPLAYMATRIX, sizeof(int32_t) * 9, &sd);
     if (ret < 0) {

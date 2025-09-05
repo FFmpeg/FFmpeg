@@ -43,7 +43,6 @@ TAG:0x010A=      1
 TAG:0x010D=image_small.tiff
 TAG:StripOffsets=      8,    7808,   15608,   23408,   31208,   39008,   46808,   54608
   62408
-TAG:Orientation=      1
 TAG:SamplesPerPixel=      3
 TAG:RowsPerStrip=     13
 TAG:StripByteCounts=   7800,    7800,    7800,    7800,    7800,    7800,    7800,    7800
@@ -54,7 +53,16 @@ TAG:PlanarConfiguration=      1
 TAG:ResolutionUnit=      3
 TAG:Software=ImageMagick 6.5.8-0 2010-02-09 Q16 http://www.imagemagick.org
 [SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:        65536           0           0
+00000001:            0       65536           0
+00000002:            0           0  1073741824
+
+rotation=0
+[/SIDE_DATA]
+[SIDE_DATA]
 side_data_type=EXIF metadata
-size=403
+size=391
 [/SIDE_DATA]
 [/FRAME]
