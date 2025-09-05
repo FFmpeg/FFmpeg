@@ -915,58 +915,44 @@ endfunc
         vy              .req x7
 
         ldr             w8, [sp]
-        movi            v7.4s, #(1 << (14 - \bit_depth))
         mov             x12, #(BDOF_BLOCK_SIZE * 2)
         mov             x14, #(VVC_MAX_PB_SIZE * 2)
 .if \bit_depth >= 10
         // clip pixel
         mov             w15, #((1 << \bit_depth) - 1)
-        movi            v18.8h, #0
         dup             v19.8h, w15
 .endif
 
 0:
-        ld1r            {v0.8h}, [vx], #2
-        ld1r            {v1.8h}, [vy], #2
-        ld1r            {v2.8h}, [vx]
-        ld1r            {v3.8h}, [vy]
+        ldr             s0, [vx], #(2 * BDOF_MIN_BLOCK_SIZE)
+        ldr             s1, [vy], #(2 * BDOF_MIN_BLOCK_SIZE)
         mov             w13, #(BDOF_MIN_BLOCK_SIZE)
-        ins             v0.d[1], v2.d[1]
-        ins             v1.d[1], v3.d[1]
 1:
-        ld1             {v2.8h}, [gh], x12
-        ld1             {v4.8h}, [gv], x12
-        smull           v3.4s, v0.4h, v2.4h
-        smull2          v16.4s, v0.8h, v2.8h
-        smlal           v3.4s, v1.4h, v4.4h
-        smlal2          v16.4s, v1.8h, v4.8h
-
         ld1             {v5.8h}, [src0], x14
         ld1             {v6.8h}, [src1], x14
-        saddl           v2.4s, v5.4h, v6.4h
-        add             v2.4s, v2.4s, v7.4s
-        add             v2.4s, v2.4s, v3.4s
-        saddl2          v4.4s, v5.8h, v6.8h
-        add             v4.4s, v4.4s, v7.4s
-        add             v4.4s, v4.4s, v16.4s
 
-        sqshrn          v5.4h, v2.4s, #(15 - \bit_depth)
-        sqshrn2         v5.8h, v4.4s, #(15 - \bit_depth)
+        saddl           v17.4s, v5.4h, v6.4h
+        ld1             {v4.8h}, [gv], x12
+        saddl2          v16.4s, v5.8h, v6.8h
+        ld1             {v2.8h}, [gh], x12
+        smlal           v17.4s, v4.4h, v1.h[0]
+        smlal2          v16.4s, v4.8h, v1.h[1]
+        smlal           v17.4s, v2.4h, v0.h[0]
+        smlal2          v16.4s, v2.8h, v0.h[1]
+
+        sqrshrun        v5.4h, v17.4s, #(15 - \bit_depth)
+        sqrshrun2       v5.8h, v16.4s, #(15 - \bit_depth)
         subs            w13, w13, #1
 .if \bit_depth == 8
         sqxtun          v5.8b, v5.8h
-        str             d5, [dst]
-        add             dst, dst, dst_stride
+        st1             {v5.8b}, [dst], dst_stride
 .else
         smin            v5.8h, v5.8h, v19.8h
-        smax            v5.8h, v5.8h, v18.8h
         st1             {v5.8h}, [dst], dst_stride
 .endif
         b.ne            1b
 
         subs            w8, w8, #(BDOF_MIN_BLOCK_SIZE)
-        add             vx, vx, #(2 * BDOF_MIN_BLOCK_SIZE - 2)
-        add             vy, vy, #(2 * BDOF_MIN_BLOCK_SIZE - 2)
         b.ne            0b
         ret
 
