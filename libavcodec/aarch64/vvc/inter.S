@@ -437,6 +437,67 @@ function ff_vvc_dmvr_h_8_neon, export=1
         ret
 endfunc
 
+.macro vvc_dmvr_h_10 bit_depth
+function ff_vvc_dmvr_h_\bit_depth\()_neon, export=1
+        movrel          x7, X(ff_vvc_inter_luma_dmvr_filters)
+        add             x7, x7, x4, lsl #1
+        ld2r            {v0.16b, v1.16b}, [x7]
+        uxtl            v0.8h, v0.8b
+        uxtl            v1.8h, v1.8b
+        tbz             w6, #4, 12f
+20:
+        ldur            q3, [x1, #2]
+        ldr             q2, [x1]
+        ldr             q22, [x1, #16]
+        mul             v4.8h, v0.8h, v2.8h
+        mul             v6.8h, v1.8h, v3.8h
+        ldur            q23, [x1, #18]
+        mul             v5.8h, v0.8h, v22.8h
+        ldur            d17, [x1, #34]
+        mul             v7.8h, v1.8h, v23.8h
+        uhadd           v4.8h, v4.8h, v6.8h
+        ldr             d16, [x1, #32]
+        uhadd           v5.8h, v5.8h, v7.8h
+        mul             v17.4h, v1.4h, v17.4h
+        mul             v16.4h, v0.4h, v16.4h
+        urshr           v4.8h, v4.8h, #(\bit_depth - 6 - 1)
+        urshr           v5.8h, v5.8h, #(\bit_depth - 6 - 1)
+        uhadd           v16.4h, v16.4h, v17.4h
+        urshr           v16.4h, v16.4h, #(\bit_depth - 6 - 1)
+        st1             {v4.8h, v5.8h}, [x0], #32
+        subs            w3, w3, #1
+        st1             {v16.4h}, [x0], #8
+        add             x1, x1, x2
+        add             x0, x0, #(VVC_MAX_PB_SIZE * 2 - 32 - 8)
+        b.ne            20b
+        ret
+
+12:
+        ldur            q3, [x1, #2]
+        ldr             q2, [x1]
+        mul             v4.8h, v0.8h, v2.8h
+        ldur            d17, [x1, #18]
+        mul             v6.8h, v1.8h, v3.8h
+        ldr             d16, [x1, #16]
+        uhadd           v4.8h, v4.8h, v6.8h
+        mul             v17.4h, v1.4h, v17.4h
+        mul             v16.4h, v0.4h, v16.4h
+        urshr           v4.8h, v4.8h, #(\bit_depth - 6 - 1)
+        uhadd           v16.4h, v16.4h, v17.4h
+        urshr           v16.4h, v16.4h, #(\bit_depth - 6 - 1)
+        st1             {v4.8h}, [x0], #16
+        subs            w3, w3, #1
+        st1             {v16.4h}, [x0], #8
+        add             x1, x1, x2
+        add             x0, x0, #(VVC_MAX_PB_SIZE * 2 - 16 - 8)
+        b.ne            12b
+        ret
+endfunc
+.endm
+
+vvc_dmvr_h_10 10
+vvc_dmvr_h_10 12
+
 function ff_vvc_dmvr_hv_8_neon, export=1
         tmp0            .req x7
         tmp1            .req x8

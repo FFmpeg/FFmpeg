@@ -96,6 +96,8 @@ W_AVG_FUN(12)
 DMVR_FUN(, 8)
 DMVR_FUN(, 12)
 DMVR_FUN(h_, 8)
+DMVR_FUN(h_, 10)
+DMVR_FUN(h_, 12)
 DMVR_FUN(hv_, 8)
 DMVR_FUN(hv_, 10)
 DMVR_FUN(hv_, 12)
@@ -234,6 +236,7 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
     } else if (bd == 10) {
         c->inter.avg = ff_vvc_avg_10_neon;
         c->inter.w_avg = vvc_w_avg_10;
+        c->inter.dmvr[0][1] = ff_vvc_dmvr_h_10_neon;
         c->inter.dmvr[1][1] = ff_vvc_dmvr_hv_10_neon;
         c->inter.apply_bdof = ff_vvc_apply_bdof_10_neon;
 
@@ -243,6 +246,7 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->inter.avg = ff_vvc_avg_12_neon;
         c->inter.w_avg = vvc_w_avg_12;
         c->inter.dmvr[0][0] = ff_vvc_dmvr_12_neon;
+        c->inter.dmvr[0][1] = ff_vvc_dmvr_h_12_neon;
         c->inter.dmvr[1][1] = ff_vvc_dmvr_hv_12_neon;
         c->inter.apply_bdof = ff_vvc_apply_bdof_12_neon;
 
