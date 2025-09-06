@@ -7286,15 +7286,6 @@ enabled rkmpp             && { require_pkg_config rkmpp rockchip_mpp  rockchip/r
                              }
 enabled vapoursynth       && require_headers "vapoursynth/VSScript4.h vapoursynth/VapourSynth4.h"
 
-enabled openssl            && {
-    enabled whip_muxer && {
-        $pkg_config --exists --print-errors "openssl >= 1.0.1k" ||
-        require_pkg_config openssl "openssl >= 1.0.1k" openssl/ssl.h SSL_library_init ||
-        require_pkg_config openssl "openssl >= 1.0.1k" openssl/ssl.h OPENSSL_init_ssl
-    }
-}
-
-
 if enabled gcrypt; then
     GCRYPT_CONFIG="${cross_prefix}libgcrypt-config"
     if "${GCRYPT_CONFIG}" --version > /dev/null 2>&1; then
