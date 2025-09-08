@@ -6,7 +6,7 @@ FATE_PRORES = fate-prores-422                                           \
               fate-prores-alpha_skip                                    \
               fate-prores-transparency                                  \
               fate-prores-transparency_skip                             \
-              $(if $(CONFIG_ARESAMPLE_FILTER),fate-prores-gray)         \
+              $(if $(call ALLYES, ARESAMPLE_FILTER AAC_FIXED_DECODER),fate-prores-gray) \
 
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, PRORES, SCALE_FILTER) += $(FATE_PRORES)
 fate-prores: $(FATE_PRORES)
