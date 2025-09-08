@@ -385,6 +385,62 @@ function ff_vvc_dmvr_12_neon, export=1
         ret
 endfunc
 
+function ff_vvc_dmvr_v_8_neon, export=1
+        movrel          x7, X(ff_vvc_inter_luma_dmvr_filters)
+        add             x7, x7, x5, lsl #1
+        ld2r            {v0.16b, v1.16b}, [x7]
+        tbz             w6, #4, 12f
+
+        ldr             s16, [x1, #16]
+        ld1             {v2.16b}, [x1], x2
+20:
+        ldr             s17, [x1, #16]
+        umull           v4.8h, v0.8b, v2.8b
+        umull2          v5.8h, v0.16b, v2.16b
+        ld1             {v3.16b}, [x1], x2
+        umull           v16.8h, v0.8b, v16.8b
+        umull           v6.8h, v1.8b, v3.8b
+        umull2          v7.8h, v1.16b, v3.16b
+        add             v4.8h, v4.8h, v6.8h
+        umull           v18.8h, v1.8b, v17.8b
+        add             v5.8h, v5.8h, v7.8h
+        urshr           v4.8h, v4.8h, #2
+        add             v19.4h, v16.4h, v18.4h
+        urshr           v5.8h, v5.8h, #2
+        urshr           v19.4h, v19.4h, #2
+        st1             {v4.8h, v5.8h}, [x0], #32
+        subs            w3, w3, #1
+        mov             v2.16b, v3.16b
+        st1             {v19.4h}, [x0], #8
+        mov             v16.16b, v17.16b
+        add             x0, x0, #(VVC_MAX_PB_SIZE * 2 - 32 - 8)
+        b.ne            20b
+        ret
+
+12:
+        ldr             s16, [x1, #8]
+        ld1             {v2.8b}, [x1], x2
+2:
+        ldr             s17, [x1, #8]
+        umull           v4.8h, v0.8b, v2.8b
+        ld1             {v3.8b}, [x1], x2
+        umull           v16.8h, v0.8b, v16.8b
+        umull           v6.8h, v1.8b, v3.8b
+        add             v4.8h, v4.8h, v6.8h
+        umull           v18.8h, v1.8b, v17.8b
+        srshr           v4.8h, v4.8h, #2
+        add             v19.4h, v16.4h, v18.4h
+        srshr           v19.4h, v19.4h, #2
+        st1             {v4.8h}, [x0], #16
+        subs            w3, w3, #1
+        mov             v2.16b, v3.16b
+        st1             {v19.4h}, [x0], #8
+        mov             v16.16b, v17.16b
+        add             x0, x0, #(VVC_MAX_PB_SIZE * 2 - 16 - 8)
+        b.ne            2b
+        ret
+endfunc
+
 function ff_vvc_dmvr_h_8_neon, export=1
         movrel          x7, X(ff_vvc_inter_luma_dmvr_filters)
         add             x7, x7, x4, lsl #1

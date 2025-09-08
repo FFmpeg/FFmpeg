@@ -101,6 +101,7 @@ DMVR_FUN(, 12)
 DMVR_FUN(h_, 8)
 DMVR_FUN(h_, 10)
 DMVR_FUN(h_, 12)
+DMVR_FUN(v_, 8)
 DMVR_FUN(hv_, 8)
 DMVR_FUN(hv_, 10)
 DMVR_FUN(hv_, 12)
@@ -195,6 +196,7 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->inter.w_avg = vvc_w_avg_8;
         c->inter.dmvr[0][0] = ff_vvc_dmvr_8_neon;
         c->inter.dmvr[0][1] = ff_vvc_dmvr_h_8_neon;
+        c->inter.dmvr[1][0] = ff_vvc_dmvr_v_8_neon;
         c->inter.dmvr[1][1] = ff_vvc_dmvr_hv_8_neon;
         c->inter.apply_bdof = ff_vvc_apply_bdof_8_neon;
 
