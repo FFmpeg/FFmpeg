@@ -30,6 +30,7 @@
 #include "os_support.h"
 #include "url.h"
 #include "tls.h"
+#include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 
@@ -156,6 +157,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     TLSShared *s = &c->tls_shared;
     uint16_t gnutls_flags = 0;
     int ret;
+    av_assert0(s);
 
     ff_gnutls_init();
 
@@ -261,6 +263,7 @@ static int dtls_open(URLContext *h, const char *uri, int flags, AVDictionary **o
 {
     TLSContext *c = h->priv_data;
     TLSShared *s = &c->tls_shared;
+    av_assert0(s);
     s->is_dtls = 1;
     return tls_open(h, uri, flags, options);
 }
