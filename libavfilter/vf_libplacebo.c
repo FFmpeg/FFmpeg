@@ -152,6 +152,15 @@ typedef struct LibplaceboInput {
     int status;
 } LibplaceboInput;
 
+enum fit_mode {
+    FIT_FILL,
+    FIT_CONTAIN,
+    FIT_COVER,
+    FIT_NONE,
+    FIT_SCALE_DOWN,
+    FIT_MODE_NB,
+};
+
 typedef struct LibplaceboContext {
     /* lavfi vulkan*/
     FFVulkanContext vkctx;
@@ -196,6 +205,7 @@ typedef struct LibplaceboContext {
     int force_divisible_by;
     int reset_sar;
     int normalize_sar;
+    int fit_mode;
     int apply_filmgrain;
     int apply_dovi;
     int colorspace;
@@ -543,6 +553,11 @@ static int libplacebo_init(AVFilterContext *avctx)
     LibplaceboContext *s = avctx->priv;
     const AVVulkanDeviceContext *vkhwctx = NULL;
 
+    if (s->normalize_sar && s->fit_mode != FIT_FILL) {
+        av_log(avctx, AV_LOG_WARNING, "normalize_sar has no effect when using "
+               "a fit mode other than 'fill'\n");
+    }
+
     /* Create libplacebo log context */
     s->log = pl_log_create(PL_API_VER, pl_log_params(
         .log_level = get_log_level(),
@@ -841,6 +856,7 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
 {
     FilterLink     *outl = ff_filter_link(ctx->outputs[0]);
     LibplaceboContext *s = ctx->priv;
+    const AVFilterLink *outlink = ctx->outputs[0];
     const AVFilterLink *inlink = ctx->inputs[in->idx];
     const AVFrame *ref = ref_frame(&in->mix);
 
@@ -900,10 +916,33 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
             target->crop.y0 = av_expr_eval(s->pos_y_pexpr, s->var_values, NULL);
             target->crop.x1 = target->crop.x0 + s->var_values[VAR_POS_W];
             target->crop.y1 = target->crop.y0 + s->var_values[VAR_POS_H];
-            if (s->normalize_sar) {
-                float aspect = pl_rect2df_aspect(&image->crop);
-                aspect *= av_q2d(inlink->sample_aspect_ratio);
-                pl_rect2df_aspect_set(&target->crop, aspect, s->pad_crop_ratio);
+
+            /* Effective visual crop */
+            const float w_adj = av_q2d(inlink->sample_aspect_ratio) /
+                                av_q2d(outlink->sample_aspect_ratio);
+
+            pl_rect2df fixed = image->crop;
+            pl_rect2df_stretch(&fixed, w_adj, 1.0);
+
+            switch (s->fit_mode) {
+            case FIT_FILL:
+                if (s->normalize_sar)
+                    pl_rect2df_aspect_copy(&target->crop, &fixed, s->pad_crop_ratio);
+                break;
+            case FIT_CONTAIN:
+                pl_rect2df_aspect_copy(&target->crop, &fixed, 0.0);
+                break;
+            case FIT_COVER:
+                pl_rect2df_aspect_copy(&target->crop, &fixed, 1.0);
+                break;
+            case FIT_NONE: {
+                const float sx = fabsf(pl_rect_w(fixed)) / pl_rect_w(target->crop);
+                const float sy = fabsf(pl_rect_h(fixed)) / pl_rect_h(target->crop);
+                pl_rect2df_stretch(&target->crop, sx, sy);
+                break;
+            }
+            case FIT_SCALE_DOWN:
+                pl_rect2df_aspect_fit(&target->crop, &fixed, 0.0);
             }
         }
     }
@@ -1446,7 +1485,7 @@ static int libplacebo_config_output(AVFilterLink *outlink)
     if (s->reset_sar) {
         /* SAR is normalized, or we have multiple inputs, set out to 1:1 */
         outlink->sample_aspect_ratio = (AVRational){ 1, 1 };
-    } else if (inlink->sample_aspect_ratio.num) {
+    } else if (inlink->sample_aspect_ratio.num && s->fit_mode == FIT_FILL) {
         /* This is consistent with other scale_* filters, which only
          * set the outlink SAR to be equal to the scale SAR iff the input SAR
          * was set to something nonzero */
@@ -1540,6 +1579,13 @@ static const AVOption libplacebo_options[] = {
     { "reset_sar", "force SAR normalization to 1:1 by adjusting pos_x/y/w/h", OFFSET(reset_sar), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, STATIC },
     { "normalize_sar", "like reset_sar, but pad/crop instead of stretching the video", OFFSET(normalize_sar), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, STATIC },
     { "pad_crop_ratio", "ratio between padding and cropping when normalizing SAR (0=pad, 1=crop)", OFFSET(pad_crop_ratio), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, 1.0, DYNAMIC },
+    { "fit_mode", "Content fit strategy for placing input layers in the output", OFFSET(fit_mode), AV_OPT_TYPE_INT, {.i64 = FIT_FILL }, 0, FIT_MODE_NB - 1, STATIC, .unit = "fit_mode" },
+        { "fill",       "Stretch content, ignoring aspect ratio",               0, AV_OPT_TYPE_CONST, {.i64 = FIT_FILL },       0, 0, STATIC, .unit = "fit_mode" },
+        { "contain",    "Stretch content, padding to preserve aspect",          0, AV_OPT_TYPE_CONST, {.i64 = FIT_CONTAIN },    0, 0, STATIC, .unit = "fit_mode" },
+        { "cover",      "Stretch content, cropping to preserve aspect",         0, AV_OPT_TYPE_CONST, {.i64 = FIT_COVER },      0, 0, STATIC, .unit = "fit_mode" },
+        { "none",       "Keep input unscaled, padding and cropping as needed",  0, AV_OPT_TYPE_CONST, {.i64 = FIT_NONE },       0, 0, STATIC, .unit = "fit_mode" },
+        { "place",      "Keep input unscaled, padding and cropping as needed",  0, AV_OPT_TYPE_CONST, {.i64 = FIT_NONE },       0, 0, STATIC, .unit = "fit_mode" },
+        { "scale_down", "Downscale only if larger, padding to preserve aspect", 0, AV_OPT_TYPE_CONST, {.i64 = FIT_SCALE_DOWN }, 0, 0, STATIC, .unit = "fit_mode" },
     { "fillcolor", "Background fill color", OFFSET(fillcolor), AV_OPT_TYPE_COLOR, {.str = "black@0"}, .flags = DYNAMIC },
     { "corner_rounding", "Corner rounding radius", OFFSET(corner_rounding), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 1.0, .flags = DYNAMIC },
     { "lut", "Path to custom LUT file to apply", OFFSET(lut_filename), AV_OPT_TYPE_STRING, { .str = NULL }, .flags = STATIC },

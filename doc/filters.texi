@@ -16459,7 +16459,7 @@ e.g. anamorphic video sources, are forwarded to the output pixel aspect ratio.
 @item normalize_sar
 Like @option{reset_sar}, but instead of stretching the video content to fill
 the new output aspect ratio, the content is instead padded or cropped as
-necessary.
+necessary. Mutually exclusive with @option{fit_mode}. Disabled by default.
 
 @item pad_crop_ratio
 Specifies a ratio (between @code{0.0} and @code{1.0}) between padding and
@@ -16468,6 +16468,40 @@ cropping when the input aspect ratio does not match the output aspect ratio and
 content with black borders, while a value of @code{1.0} always crops off parts
 of the content. Intermediate values are possible, leading to a mix of the two
 approaches.
+
+@item fit_mode
+Specify the content fit strategy according to a list of predefined modes.
+Determines how the input image is to be placed inside the destination crop
+rectangle (as defined by @code{pos_x/y} and @code{pos_w/h}). The names and
+their implementations are taken from the CSS 'object-fit' property. Note that
+this option is mutually exclusive with @option{normalize_sar}. Defaults to
+@code{fill}. Valid values are:
+
+@table @samp
+@item fill
+Stretch the input to the output rectangle, ignoring aspect ratio mismatches.
+Note that unless @option{reset_sar} is also enabled, the output will still
+have the correct pixel aspect ratio tagged.
+
+@item contain
+Scale the input to fit inside the output, preserving aspect ratio by padding.
+Equivalent to @option{normalize_sar} with @option{pad_crop_ratio} set to
+@code{0.0}.
+
+@item cover
+Scale the input to fill the output, preserving aspect ratio by cropping.
+Equivalent to @option{normalize_sar} with @option{pad_crop_ratio} set to
+@code{1.0}.
+
+@item none, place
+Don't scale the input. The input will be placed inside the output rectangle at
+its natural size; which may result in additional padding or cropping.
+
+@item scale_down
+Scale the input down as much as needed to fit inside the output. Equivalent
+to either @code{contain} or @code{none}, depending on whether the input is
+larger than the output or not.
+@end table
 
 @item fillcolor
 Set the color used to fill the output area not covered by the output image, for
