@@ -1368,6 +1368,18 @@ static void schedule_update_locked(Scheduler *sch)
         }
     }
 
+    // also unchoke any sources feeding into closed filter graph inputs, so
+    // that they can observe the downstream EOF
+    for (unsigned i = 0; i < sch->nb_filters; i++) {
+        SchFilterGraph *fg = &sch->filters[i];
+
+        for (unsigned j = 0; j < fg->nb_inputs; j++) {
+            SchFilterIn *fi = &fg->inputs[j];
+            if (fi->receive_finished && !fi->send_finished)
+                unchoke_for_stream(sch, fi->src);
+        }
+    }
+
     // make sure to unchoke at least one source, if still available
     for (unsigned type = 0; !have_unchoked && type < 2; type++)
         for (unsigned i = 0; i < (type ? sch->nb_filters : sch->nb_demux); i++) {
@@ -2478,6 +2490,8 @@ void sch_filter_receive_finish(Scheduler *sch, unsigned fg_idx, unsigned in_idx)
     av_assert0(in_idx < fg->nb_inputs);
     fi = &fg->inputs[in_idx];
 
+    pthread_mutex_lock(&sch->schedule_lock);
+
     if (!fi->receive_finished) {
         fi->receive_finished = 1;
         tq_receive_finish(fg->queue, in_idx);
@@ -2485,7 +2499,11 @@ void sch_filter_receive_finish(Scheduler *sch, unsigned fg_idx, unsigned in_idx)
         // close the control stream when all actual inputs are done
         if (++fg->nb_inputs_finished_receive == fg->nb_inputs)
             tq_receive_finish(fg->queue, fg->nb_inputs);
+
+        schedule_update_locked(sch);
     }
+
+    pthread_mutex_unlock(&sch->schedule_lock);
 }
 
 int sch_filter_send(Scheduler *sch, unsigned fg_idx, unsigned out_idx, AVFrame *frame)
