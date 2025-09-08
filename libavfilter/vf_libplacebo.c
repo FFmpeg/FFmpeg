@@ -1423,13 +1423,15 @@ static int libplacebo_config_output(AVFilterLink *outlink)
 
     if (s->nb_inputs > 1 && !s->disable_fbos) {
         /* Create a separate renderer and composition texture */
-        pl_fmt fmt = pl_find_fmt(s->gpu, PL_FMT_FLOAT, 4, 16, 0, PL_FMT_CAP_BLENDABLE);
+        const enum pl_fmt_caps caps = PL_FMT_CAP_BLENDABLE | PL_FMT_CAP_BLITTABLE;
+        pl_fmt fmt = pl_find_fmt(s->gpu, PL_FMT_FLOAT, 4, 16, 0, caps);
         bool ok = !!fmt;
         if (ok) {
             ok = pl_tex_recreate(s->gpu, &s->linear_tex, pl_tex_params(
                 .format     = fmt,
                 .w          = outlink->w,
                 .h          = outlink->h,
+                .blit_dst   = true,
                 .renderable = true,
                 .sampleable = true,
                 .storable   = fmt->caps & PL_FMT_CAP_STORABLE,
