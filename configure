@@ -4812,6 +4812,9 @@ if enabled cuda_nvcc; then
     if $nvcc $nvccflags_default 2>&1 | grep -qi unsupported; then
         nvccflags_default="-gencode arch=compute_60,code=sm_60 -O2"
     fi
+    if $nvcc $nvccflags_default 2>&1 | grep -qi unsupported; then
+        nvccflags_default="-gencode arch=compute_75,code=sm_75 -O2"
+    fi
 fi
 
 set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
