@@ -1018,6 +1018,7 @@ static int decoder_thread(void *arg)
 
 finish:
     dec_thread_uninit(&dt);
+    avcodec_free_context(&dp->dec_ctx);
 
     return ret;
 }
