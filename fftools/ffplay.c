@@ -1938,9 +1938,10 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
                                 AV_OPT_TYPE_INT, sdl_supported_color_spaces)) < 0)
         goto fail;
 
-    if ((ret = av_opt_set_array(filt_out, "alpha_modes", AV_OPT_SEARCH_CHILDREN,
+    if ((ret = av_opt_set_array(filt_out, "alphamodes", AV_OPT_SEARCH_CHILDREN,
                                 0, FF_ARRAY_ELEMS(sdl_supported_alpha_modes),
                                 AV_OPT_TYPE_INT, sdl_supported_alpha_modes)) < 0)
+        goto fail;
 
     ret = avfilter_init_dict(filt_out, NULL);
     if (ret < 0)
