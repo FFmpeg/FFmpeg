@@ -22,6 +22,7 @@
 #include <errno.h>
 
 #include <gnutls/gnutls.h>
+#include <gnutls/dtls.h>
 #include <gnutls/x509.h>
 
 #include "avformat.h"
@@ -100,13 +101,15 @@ static int print_tls_error(URLContext *h, int ret)
 static int tls_close(URLContext *h)
 {
     TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
     if (c->need_shutdown)
         gnutls_bye(c->session, GNUTLS_SHUT_WR);
     if (c->session)
         gnutls_deinit(c->session);
     if (c->cred)
         gnutls_certificate_free_credentials(c->cred);
-    ffurl_closep(&c->tls_shared.tcp);
+    if (!s->external_sock)
+        ffurl_closep(s->is_dtls ? &s->udp : &s->tcp);
     ff_gnutls_deinit();
     return 0;
 }
@@ -151,6 +154,7 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
 {
     TLSContext *c = h->priv_data;
     TLSShared *s = &c->tls_shared;
+    uint16_t gnutls_flags = 0;
     int ret;
 
     ff_gnutls_init();
@@ -158,7 +162,14 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     if ((ret = ff_tls_open_underlying(s, h, uri, options)) < 0)
         goto fail;
 
-    gnutls_init(&c->session, s->listen ? GNUTLS_SERVER : GNUTLS_CLIENT);
+    if (s->is_dtls)
+        gnutls_flags |= GNUTLS_DATAGRAM;
+
+    if (s->listen)
+        gnutls_flags |= GNUTLS_SERVER;
+    else
+        gnutls_flags |= GNUTLS_CLIENT;
+    gnutls_init(&c->session, gnutls_flags);
     if (!s->listen && !s->numerichost)
         gnutls_server_name_set(c->session, GNUTLS_NAME_DNS, s->host, strlen(s->host));
     gnutls_certificate_allocate_credentials(&c->cred);
@@ -190,6 +201,9 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     gnutls_transport_set_pull_function(c->session, gnutls_url_pull);
     gnutls_transport_set_push_function(c->session, gnutls_url_push);
     gnutls_transport_set_ptr(c->session, c);
+    if (s->is_dtls)
+        if (s->mtu)
+            gnutls_dtls_set_mtu(c->session, s->mtu);
     gnutls_set_default_priority(c->session);
     do {
         if (ff_check_interrupt(&h->interrupt_callback)) {
@@ -243,13 +257,23 @@ fail:
     return ret;
 }
 
+static int dtls_open(URLContext *h, const char *uri, int flags, AVDictionary **options)
+{
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
+    s->is_dtls = 1;
+    return tls_open(h, uri, flags, options);
+}
+
 static int tls_read(URLContext *h, uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
+    URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     int ret;
     // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
-    c->tls_shared.tcp->flags &= ~AVIO_FLAG_NONBLOCK;
-    c->tls_shared.tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+    uc->flags &= ~AVIO_FLAG_NONBLOCK;
+    uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
     ret = gnutls_record_recv(c->session, buf, size);
     if (ret > 0)
         return ret;
@@ -261,10 +285,12 @@ static int tls_read(URLContext *h, uint8_t *buf, int size)
 static int tls_write(URLContext *h, const uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
+    URLContext *uc = s->is_dtls ? s->udp : s->tcp;
     int ret;
     // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
-    c->tls_shared.tcp->flags &= ~AVIO_FLAG_NONBLOCK;
-    c->tls_shared.tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+    uc->flags &= ~AVIO_FLAG_NONBLOCK;
+    uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
     ret = gnutls_record_send(c->session, buf, size);
     if (ret > 0)
         return ret;
@@ -308,4 +334,24 @@ const URLProtocol ff_tls_protocol = {
     .priv_data_size = sizeof(TLSContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
     .priv_data_class = &tls_class,
+};
+
+static const AVClass dtls_class = {
+    .class_name = "dtls",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+const URLProtocol ff_dtls_protocol = {
+    .name           = "dtls",
+    .url_open2      = dtls_open,
+    .url_read       = tls_read,
+    .url_write      = tls_write,
+    .url_close      = tls_close,
+    .url_get_file_handle = tls_get_file_handle,
+    .url_get_short_seek  = tls_get_short_seek,
+    .priv_data_size = sizeof(TLSContext),
+    .flags          = URL_PROTOCOL_FLAG_NETWORK,
+    .priv_data_class = &dtls_class,
 };
