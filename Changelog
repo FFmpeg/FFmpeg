@@ -1,6 +1,153 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 7.1.2:
+ aacdec_usac: use RefStruct to track unfinished extension buffers
+ avcode: Use av_fast_realloc() in ff_lzf_uncompress()
+ avcodec/dxv: Check coded_height, to avoid invalid av_clip()
+ avcodec/aac/aacdec: dont allow ff_aac_output_configure() allocating a new frame if it has no frame
+ avformat/lrcdec: Fix fate-sub-lrc-ms-remux on x86-32
+ avcodec/sanm: Check w,h,left,top
+ avcodec/utvideodec: Clear plane_start array
+ fftools/ffmpeg_mux_init: Use 64bit for score computation in map_auto_video()
+ libavfilter/dnn/dnn_backend_tf: Remove redundant av_freep() to avoid double free
+ avcodec/dxv: Use av_fast_realloc() for op_data
+ avcodec/dxv: Use av_fast_realloc() and clear all new space
+ avcodec/dxv: Clear ctex
+ avcodec/dxv: Check that we initialize op_data
+ avcodec/exr: Check for pixel type consistency in DWA
+ avcodec/d3d12va_encode: fix label followed by a declaration warning
+ avcodec/libvorbisdec: avoid overflow when assinging sample rate from long to int
+ avcodec/g726: init missing sample rate
+ avformat/lrcdec: limit input timestamp range to avoid overflows
+ avcodec/scpr3: Clear clr
+ avcodec/ilbcdec: Clear cbvec when used with create_augmented_vector()
+ avcodec/jpeg2000dec: Make sure the 4 extra bytes allocated are initialized
+ avfilter/avf_showcqt: fix unbounded index when copying to fft_data
+ avcodec/aac/aacdec_usac: Limit sfo from noise offset to be above -200
+ avcodec/aacsbr_template: Check ilb
+ avcodec/utvideodec: Set B for the width= 1 case
+ avcodec/ffv1: Clear state on alloc
+ avcodec/jpeg2000dec: implement cdef remapping during pixel format matching
+ avcodec/jpeg2000dec: move cdef default check into get_siz()
+ avcodec/exr: Check rle_raw_data and surroundings
+ avcodec/exr: Dont access outside xsize/ysize
+ examples: Add check and replace av_free() to avoid potential memory errors
+ libavcodec/tests/snowenc: Add av_free() to avoid memory leak
+ libavfilter/af_firequalizer: Add check for av_malloc_array()
+ libavcodec/videotoolbox_vp9: Move av_malloc() to avoid memory leak
+ avcodec/mpc8: init avctx->sample_rate
+ avcodec/cbs_h266_syntax_template: fix out of bounds access
+ avformat/libopenmpt: fix seeking weirdness
+ avformat/hls: add cmfv/cmfa exceptions
+ avformat/lrcdec: support arbitrary precision timestamp
+ libavcodec/tests/motion: Add check for avcodec_alloc_context3()
+ avcodec/tests/avpacket: Add av_free() to avoid memory leak
+ examples: Add av_freep to avoid potential memory leak
+ avcodec/tests/avpacket: Add av_packet_free() to avoid memory leak
+ avcodec/fits: Clear naxis
+ avcodec/vqavideo; Check bytestream2_get_buffer() reading next_codebook_buffer
+ avcodec/lzf: Check for input space
+ avcodec/imc: Clear padding of buf16
+ avcodec/iff: Clear ham_buf
+ avcodec/cri: Check bytestream2_get_buffer() for end
+ avcodec/cri: Factor read_len out
+ avformat/dashdec: Allocate space for appended "/"
+ avcodec/mpegvideo_dec: Fix lowres=3 field select interlaced mpeg4 frame
+ avformat/mxg: clear AV_INPUT_BUFFER_PADDING_SIZE
+ avcodec/shorten: Clear the additionally allocated space on realloc
+ avformat/vqf: Ensure that comm_chunk is fully read
+ avformat/mov: make sure file_checksum is fully initialized
+ avcodec/hevc/hevcdec: Clean sao_pixel_buffer_v on allocation
+ avformat/asfdec_f: Check amount of value read
+ avcodec/jpegxl_parser: add sanity check for frame size
+ avcodec/ffv1dec: don't check chroma_planes for f->colorspace > 0
+ avcodec/ffv1dec: don't add offsets to more NULL pointers
+ avformat/concatdec: Clip duration in one more case in get_best_effort_duration()
+ avcodec/ffv1dec: Check k in get_vlc_symbol()
+ avcodec/cfhd: Check idwt_buf size before allocation
+ avcodec/ivi: Check luma/chroma mb_size
+ avfilter/vaf_spectrumsynth: don't use uninitialized variable as scale
+ avcodec/motion_est: don't add offsets to NULL pointers
+ swscale/swscale_unscaled: don't add offsets to NULL pointers
+ avcodec/ffv1dec: don't add offsets to NULL pointers
+ libavcodec/alsdec.c: Add check for av_malloc_array() and av_calloc()
+ avcodec/psd: Move frame allocation after RLE processing
+ avcodec/smacker: Move buffer allocation to later
+ fftools/cmdutils: don't try to load arguments from file if not needed
+ avcodec/opus: don't materialize buf pointer from null
+ avfilter/avfilter: fix forwarding EOF for simple API filters in filter_activate_default
+ avcodec/speexdec: consider differing frame sizes in remaining space check
+ lavc/vvc: Fix condition for using default scaling factor
+ avformat/mov: Check that sample_count is allocated in mov_parse_heif_items()
+ avformat/iff: Check nb_channels == 0 in CHNL
+ avcodec/osq: Request a coding mode 2 sample
+ avcodec/osq: Switch back to av_ceil_log2()
+ avcodec/osq: Add note about update_stats() count
+ avcodec/osq: Fix signed integer overflow in update_stats()
+ avcodec/mss2dsp: use FF_PTR_ADD to add offsets to a pointer
+ avformat/movenc: fix writing reserved bits in EC3SpecificBox
+ avcodec/hevc/hevcdec: Check num_entry_point_offsets
+ avcodec/speexdec: Pass and check remaining packets to decode functions
+ swscale/swscale_unscaled: use 8 line alignment for planarCopyWrapper with dithering
+ aacenc_tns: clamp filter direction energy measurement
+ fftools/ffmpeg_demux: don't flag timestamps as unreliable if they are generated
+ avformat/iamf_parse: prevent overreads in update_extradata
+ avformat/iamf_parse: increase PutBytes buffer when writing AAC extradata
+ avformat/matroskadec: check that channels fit in signed 32bit int
+ avcodec/takdec: Check remaining space for first predictors
+ avcodec/svq3: Check there are bits left before decompression
+ avcodec/sonic: Check num_taps
+ avformat/imf_cpl: fix indention after previous commit
+ avformat/imf_cpl: do not continue looping forever
+ avformat/mov: reject negative ELST durations
+ avformat/avidec: Ignore duplicate GAB2
+ MAINTAINERS: Add entry for samples-request
+ avcodec/h264_mb: Fix tmp_cr for arm
+ avcodec/vorbisdec: Dont treat overread as error
+ avcodec/hevc/ps: Fix dependant layer id check
+ avformat/iff: Check nb_channels == 0 in MHDR
+ tests/fate/filter-video: Fix dependancy for codecview
+ postproc/postprocess_template: fix dering with a 16x16 image
+ libpostproc: check minimum size
+ avformat/hls: Fix flash1.bogulus.cfd support
+ avformat/hls: Split allowed_segment_extensions off allowed_extensions
+ avformat/hls: Fix Youtube AAC
+ avformat/hls: add fmp4 to allowed_extensions
+ avformat/hls: Add ec3 to allowed_extensions
+ avformat/hls: Add cmfv and cmfa to allowed_extensions
+ postproc/postprocess_template: fix handling of first row of dering_C
+ postproc/postprocess_template: Fix reading uninitialized pixels in dering_C()
+ configure: Clearer documentation for "disable-safe-bitstream-reader"
+ avcodec/osq: avoid undefined negation
+ swscale/output: Fix integer overflow in yuv2gbrp_full_X_c()
+ avcodec/libtheora: fix setting keyframe_mask
+ doc: replace http/git by https urls
+ Revert "avformat/mpegts: update stream info when PMT ES stream_type changes"
+ avformat/matroska: Support JPEG2000 for demuxing
+ avformat/matroskadec: Fix VfW extradata size
+ configure: Use MSYSTEM_CARCH for default arch on msys2
+ avcodec/lcevcdec: don't try to write to output frames directly
+ avfilter/avfiltergraph: fix regression in picking channel layout
+ avformat/mpegts: update stream info when PMT ES stream_type changes
+ avcodec/libzvbi-teletextdec: change new lines to \n in ASS header
+ avformat/wavdec: increase requested probe score for codec probe
+ avcodec/h264_slice: insert LCEVC side data before get_buffer() call
+ avformat/hls: Fix get key file error
+ avcodec/bsf/h264_mp4toannexb: Fix mixed bitstream format
+ avformat/mov: Reduce seek when interleaved_read is disabled
+ avfilter/vf_setparams: Fix chroma_location being cleared
+ configure: Enable -fno-common for Darwin targets, avoid linker warnings
+ configure: Only try to use the -no_warn_duplicate_libraries flag on Darwin
+ configure: Silence Xcode warnings about duplicate libraries
+ avcodec/mediacodecdec_common: Workaround MTK broken crop implementation
+ avcodec/Makefile: include aom_film_grain.o file for h264_sei component
+ lsws/ppc/yuv2rgb_altivec: Fix build in non-VSX environments with Clang v2
+ lsws/ppc/yuv2rgb_altivec: Fix build in non-VSX environments with Clang
+ avcodec/libsvtav1: unbreak build with latest svtav1
+ fftools/ffmpeg_filter: also remove display matrix side data from buffered frames
+
+
 version 7.1.1:
  avformat/hls: Partially revert "reduce default max reload to 3"
  avformat/mov: (v4) fix get_eia608_packet
