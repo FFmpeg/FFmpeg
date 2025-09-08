@@ -40,6 +40,7 @@
 #include "internal.h"
 #include "mux.h"
 #include "network.h"
+#include "rtp.h"
 #include "srtp.h"
 #include "tls.h"
 
@@ -669,6 +670,7 @@ static int generate_sdp_offer(AVFormatContext *s)
             "a=rtcp-rsize\r\n"
             "a=rtpmap:%u %s/90000\r\n"
             "a=fmtp:%u level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=%02x%02x%02x\r\n"
+            "a=rtcp-fb%u nack\r\n"
             "a=ssrc:%u cname:FFmpeg\r\n"
             "a=ssrc:%u msid:FFmpeg video\r\n",
             whip->video_payload_type,
@@ -681,6 +683,7 @@ static int generate_sdp_offer(AVFormatContext *s)
             profile_idc,
             profile_iop,
             level,
+            whip->video_payload_type,
             whip->video_ssrc,
             whip->video_ssrc);
     }
@@ -1779,6 +1782,43 @@ end:
     return ret;
 }
 
+static void handle_nack_rtx(AVFormatContext *s, int size)
+{
+    int ret;
+    WHIPContext *whip = s->priv_data;
+    uint8_t *buf = NULL;
+    int rtcp_len, srtcp_len, header_len = 12/*RFC 4585 6.1*/;
+
+    /**
+     * Refer to RFC 3550 6.4.1
+     * The length of this RTCP packet in 32 bit words minus one,
+     * including the header and any padding.
+     */
+    rtcp_len = (AV_RB16(&whip->buf[2]) + 1) * 4;
+    if (rtcp_len <= header_len) {
+        av_log(whip, AV_LOG_WARNING, "NACK packet is broken, size: %d\n", rtcp_len);
+        goto error;
+    }
+    /* SRTCP index(4 bytes) + HMAC(SRTP_ARS128_CM_SHA1_80) 10bytes */
+    srtcp_len = rtcp_len + 4 + 10;
+    if (srtcp_len != size) {
+        av_log(whip, AV_LOG_WARNING, "NACK packet size not match, srtcp_len:%d, size:%d\n", srtcp_len, size);
+        goto error;
+    }
+    buf = av_memdup(whip->buf, srtcp_len);
+    if (!buf)
+        goto error;
+    if ((ret = ff_srtp_decrypt(&whip->srtp_recv, buf, &srtcp_len)) < 0) {
+        av_log(whip, AV_LOG_WARNING, "NACK packet decrypt failed: %d\n", ret);
+        goto error;
+    }
+    goto end;
+error:
+    av_log(whip, AV_LOG_WARNING, "Failed to handle NACK and RTX, Skip...\n");
+end:
+    av_freep(&buf);
+}
+
 static int whip_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
@@ -1808,6 +1848,19 @@ static int whip_write_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(whip, AV_LOG_ERROR, "Failed to handle DTLS message\n");
             goto end;
         }
+    }
+    if (media_is_rtcp(whip->buf, ret)) {
+        uint8_t fmt = whip->buf[0] & 0x1f;
+        uint8_t pt = whip->buf[1];
+        /**
+         * Handle RTCP NACK packet
+         * Refer to RFC 4585 6.2.1
+         * The Generic NACK message is identified by PT=RTPFB and FMT=1
+         */
+        if (pt != RTCP_RTPFB)
+            goto write_packet;
+        if (fmt == 1)
+            handle_nack_rtx(s, ret);
     }
 write_packet:
     if (whip->h264_annexb_insert_sps_pps && st->codecpar->codec_id == AV_CODEC_ID_H264) {
