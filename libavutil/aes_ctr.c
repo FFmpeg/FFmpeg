@@ -34,6 +34,7 @@
 typedef struct AVAESCTR {
     DECLARE_ALIGNED(8, uint8_t, counter)[AES_BLOCK_SIZE];
     DECLARE_ALIGNED(8, uint8_t, encrypted_counter)[AES_BLOCK_SIZE];
+    int block_offset;
     AVAES aes;
 } AVAESCTR;
 
@@ -46,11 +47,13 @@ void av_aes_ctr_set_iv(struct AVAESCTR *a, const uint8_t* iv)
 {
     memcpy(a->counter, iv, AES_CTR_IV_SIZE);
     memset(a->counter + AES_CTR_IV_SIZE, 0, sizeof(a->counter) - AES_CTR_IV_SIZE);
+    a->block_offset = 0;
 }
 
 void av_aes_ctr_set_full_iv(struct AVAESCTR *a, const uint8_t* iv)
 {
     memcpy(a->counter, iv, sizeof(a->counter));
+    a->block_offset = 0;
 }
 
 const uint8_t* av_aes_ctr_get_iv(struct AVAESCTR *a)
@@ -73,6 +76,7 @@ int av_aes_ctr_init(struct AVAESCTR *a, const uint8_t *key)
     av_aes_init(&a->aes, key, 128, 0);
 
     memset(a->counter, 0, sizeof(a->counter));
+    a->block_offset = 0;
 
     return 0;
 }
@@ -92,10 +96,21 @@ void av_aes_ctr_increment_iv(struct AVAESCTR *a)
 {
     av_aes_ctr_increment_be64(a->counter);
     memset(a->counter + AES_CTR_IV_SIZE, 0, sizeof(a->counter) - AES_CTR_IV_SIZE);
+    a->block_offset = 0;
 }
 
 void av_aes_ctr_crypt(struct AVAESCTR *a, uint8_t *dst, const uint8_t *src, int count)
 {
+    if (a->block_offset && count > 0) {
+        int left = FFMIN(count, AES_BLOCK_SIZE - a->block_offset);
+        for (int len = 0; len < left; len++)
+            dst[len] = src[len] ^ a->encrypted_counter[a->block_offset++];
+        a->block_offset &= AES_BLOCK_SIZE - 1;
+        dst += left;
+        src += left;
+        count -= left;
+    }
+
     while (count >= AES_BLOCK_SIZE) {
         av_aes_crypt(&a->aes, a->encrypted_counter, a->counter, 1, NULL, 0);
         av_aes_ctr_increment_be64(a->counter + 8);
@@ -115,6 +130,6 @@ void av_aes_ctr_crypt(struct AVAESCTR *a, uint8_t *dst, const uint8_t *src, int 
         av_aes_crypt(&a->aes, a->encrypted_counter, a->counter, 1, NULL, 0);
         av_aes_ctr_increment_be64(a->counter + 8);
         for (int len = 0; len < count; len++)
-            dst[len] = src[len] ^ a->encrypted_counter[len];
+            dst[len] = src[len] ^ a->encrypted_counter[a->block_offset++];
     }
 }
