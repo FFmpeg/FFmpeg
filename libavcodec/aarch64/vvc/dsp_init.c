@@ -30,6 +30,9 @@
 #define BDOF_BLOCK_SIZE         16
 #define BDOF_MIN_BLOCK_SIZE     4
 
+
+void ff_alf_classify_sum_neon(int *sum0, int *sum1, int16_t *grad, uint32_t gshift, uint32_t steps);
+
 #define BIT_DEPTH 8
 #include "alf_template.c"
 #undef BIT_DEPTH
@@ -203,6 +206,7 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
             c->sao.edge_filter[i] = ff_vvc_sao_edge_filter_16x16_8_neon;
         c->alf.filter[LUMA] = alf_filter_luma_8_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_8_neon;
+        c->alf.classify = alf_classify_8_neon;
 
         if (have_i8mm(cpu_flags)) {
             c->inter.put[0][1][0][1] = ff_vvc_put_qpel_h4_8_neon_i8mm;
@@ -242,6 +246,7 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
 
         c->alf.filter[LUMA] = alf_filter_luma_10_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_10_neon;
+        c->alf.classify = alf_classify_10_neon;
     } else if (bd == 12) {
         c->inter.avg = ff_vvc_avg_12_neon;
         c->inter.w_avg = vvc_w_avg_12;
@@ -252,6 +257,7 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
 
         c->alf.filter[LUMA] = alf_filter_luma_12_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_12_neon;
+        c->alf.classify = alf_classify_12_neon;
     }
 
     c->inter.sad = ff_vvc_sad_neon;
