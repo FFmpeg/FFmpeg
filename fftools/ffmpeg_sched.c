@@ -2492,6 +2492,7 @@ int sch_filter_send(Scheduler *sch, unsigned fg_idx, unsigned out_idx, AVFrame *
 {
     SchFilterGraph *fg;
     SchedulerNode  dst;
+    int ret;
 
     av_assert0(fg_idx < sch->nb_filters);
     fg = &sch->filters[fg_idx];
@@ -2499,9 +2500,16 @@ int sch_filter_send(Scheduler *sch, unsigned fg_idx, unsigned out_idx, AVFrame *
     av_assert0(out_idx < fg->nb_outputs);
     dst = fg->outputs[out_idx].dst;
 
-    return (dst.type == SCH_NODE_TYPE_ENC)                                    ?
-           send_to_enc   (sch, &sch->enc[dst.idx],                     frame) :
-           send_to_filter(sch, &sch->filters[dst.idx], dst.idx_stream, frame);
+    if (dst.type == SCH_NODE_TYPE_ENC) {
+        ret = send_to_enc(sch, &sch->enc[dst.idx], frame);
+        if (ret == AVERROR_EOF)
+            send_to_enc(sch, &sch->enc[dst.idx], NULL);
+    } else {
+        ret = send_to_filter(sch, &sch->filters[dst.idx], dst.idx_stream, frame);
+        if (ret == AVERROR_EOF)
+            send_to_filter(sch, &sch->filters[dst.idx], dst.idx_stream, NULL);
+    }
+    return ret;
 }
 
 static int filter_done(Scheduler *sch, unsigned fg_idx)
