@@ -497,7 +497,7 @@ static int amf_submit_frame(AVCodecContext *avctx, AVFrame    *frame, AMFSurface
     AMF_RESULT              res;
     int                     ret;
     int                     hw_surface = 0;
-    int                     max_b_frames = ctx->max_b_frames < 0 ? 0 : ctx->max_b_frames;
+    int                     output_delay = FFMAX(ctx->max_b_frames, 0) + ((avctx->flags & AV_CODEC_FLAG_LOW_DELAY) ? 0 : 1);
 
 // prepare surface from frame
     switch (frame->format) {
@@ -634,8 +634,8 @@ static int amf_submit_frame(AVCodecContext *avctx, AVFrame    *frame, AMFSurface
         ret = av_fifo_write(ctx->timestamp_list, &frame->pts, 1);
             if (ret < 0)
             return ret;
-        if(ctx->submitted_frame <= ctx->encoded_frame + max_b_frames + 1)
-            return AVERROR(EAGAIN); // if frame just submiited - don't poll or wait
+        if(ctx->submitted_frame <= ctx->encoded_frame + output_delay)
+            return AVERROR(EAGAIN); // too soon to poll or wait
     }
     return 0;
 }
@@ -681,7 +681,7 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
     AVFrame    *frame = av_frame_alloc();
     int         block_and_wait;
     int64_t     pts = 0;
-    int max_b_frames = ctx->max_b_frames < 0 ? 0 : ctx->max_b_frames;
+    int output_delay = FFMAX(ctx->max_b_frames, 0) + ((avctx->flags & AV_CODEC_FLAG_LOW_DELAY) ? 0 : 1);
 
     if (!ctx->encoder){
         av_frame_free(&frame);
@@ -700,7 +700,7 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
         if(ret != AVERROR_EOF){
             av_frame_free(&frame);
             if(ret == AVERROR(EAGAIN)){
-                if(ctx->submitted_frame <= ctx->encoded_frame + max_b_frames + 1) // too soon to poll
+                if(ctx->submitted_frame <= ctx->encoded_frame + output_delay) // too soon to poll
                     return ret;
             }
         }
