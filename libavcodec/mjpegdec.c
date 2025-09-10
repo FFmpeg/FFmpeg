@@ -2404,9 +2404,10 @@ redo_for_pal8:
                                           &unescaped_buf_ptr,
                                           &unescaped_buf_size);
         /* EOF */
-        if (start_code < 0) {
+        if (start_code < 0)
             break;
-        } else if (unescaped_buf_size > INT_MAX / 8) {
+
+        if (unescaped_buf_size > INT_MAX / 8) {
             av_log(avctx, AV_LOG_ERROR,
                    "MJPEG packet 0x%x too big (%d/%d), corrupt data?\n",
                    start_code, unescaped_buf_size, buf_size);
