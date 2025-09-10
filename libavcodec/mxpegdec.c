@@ -216,119 +216,117 @@ static int mxpeg_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                                           &unescaped_buf_ptr, &unescaped_buf_size);
         if (start_code < 0)
             goto the_end;
-        {
-            init_get_bits(&jpg->gb, unescaped_buf_ptr, unescaped_buf_size*8);
 
-            if (start_code >= APP0 && start_code <= APP15) {
-                mxpeg_decode_app(s, unescaped_buf_ptr, unescaped_buf_size);
-            }
+        init_get_bits(&jpg->gb, unescaped_buf_ptr, unescaped_buf_size*8);
 
-            switch (start_code) {
-            case SOI:
-                if (jpg->got_picture) //emulating EOI
-                    goto the_end;
-                break;
-            case EOI:
-                goto the_end;
-            case DQT:
-                ret = ff_mjpeg_decode_dqt(jpg);
-                if (ret < 0) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "quantization table decode error\n");
-                    return ret;
-                }
-                break;
-            case DHT:
-                ret = ff_mjpeg_decode_dht(jpg);
-                if (ret < 0) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "huffman table decode error\n");
-                    return ret;
-                }
-                break;
-            case COM:
-                ret = mxpeg_decode_com(s, unescaped_buf_ptr,
-                                       unescaped_buf_size);
-                if (ret < 0)
-                    return ret;
-                break;
-            case SOF0:
-                if (s->got_sof_data > 1) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "Multiple SOF in a frame\n");
-                    return AVERROR_INVALIDDATA;
-                }
-                ret = ff_mjpeg_decode_sof(jpg);
-                if (ret < 0) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "SOF data decode error\n");
-                    s->got_sof_data = 0;
-                    return ret;
-                }
-                if (jpg->interlaced) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "Interlaced mode not supported in MxPEG\n");
-                    s->got_sof_data = 0;
-                    return AVERROR(EINVAL);
-                }
-                s->got_sof_data ++;
-                break;
-            case SOS:
-                if (!s->got_sof_data) {
-                    av_log(avctx, AV_LOG_WARNING,
-                           "Can not process SOS without SOF data, skipping\n");
-                    break;
-                }
-                if (!jpg->got_picture) {
-                    if (jpg->first_picture) {
-                        av_log(avctx, AV_LOG_WARNING,
-                               "First picture has no SOF, skipping\n");
-                        break;
-                    }
-                    if (!s->got_mxm_bitmask){
-                        av_log(avctx, AV_LOG_WARNING,
-                               "Non-key frame has no MXM, skipping\n");
-                        break;
-                    }
-                    /* use stored SOF data to allocate current picture */
-                    av_frame_unref(jpg->picture_ptr);
-                    if ((ret = ff_get_buffer(avctx, jpg->picture_ptr,
-                                             AV_GET_BUFFER_FLAG_REF)) < 0)
-                        return ret;
-                    jpg->picture_ptr->pict_type = AV_PICTURE_TYPE_P;
-                    jpg->picture_ptr->flags &= ~AV_FRAME_FLAG_KEY;
-                    jpg->got_picture = 1;
-                } else {
-                    jpg->picture_ptr->pict_type = AV_PICTURE_TYPE_I;
-                    jpg->picture_ptr->flags |= AV_FRAME_FLAG_KEY;
-                }
-
-                if (s->got_mxm_bitmask) {
-                    AVFrame *reference_ptr = s->picture[s->picture_index ^ 1];
-                    if (mxpeg_check_dimensions(s, jpg, reference_ptr) < 0)
-                        break;
-
-                    /* allocate dummy reference picture if needed */
-                    if (!reference_ptr->data[0] &&
-                        (ret = ff_get_buffer(avctx, reference_ptr,
-                                             AV_GET_BUFFER_FLAG_REF)) < 0)
-                        return ret;
-
-                    ret = ff_mjpeg_decode_sos(jpg, s->mxm_bitmask, s->bitmask_size, reference_ptr);
-                    if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
-                        return ret;
-                } else {
-                    ret = ff_mjpeg_decode_sos(jpg, NULL, 0, NULL);
-                    if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
-                        return ret;
-                }
-
-                break;
-            }
-
-            buf_ptr += (get_bits_count(&jpg->gb)+7) >> 3;
+        if (start_code >= APP0 && start_code <= APP15) {
+            mxpeg_decode_app(s, unescaped_buf_ptr, unescaped_buf_size);
         }
 
+        switch (start_code) {
+        case SOI:
+            if (jpg->got_picture) //emulating EOI
+                goto the_end;
+            break;
+        case EOI:
+            goto the_end;
+        case DQT:
+            ret = ff_mjpeg_decode_dqt(jpg);
+            if (ret < 0) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "quantization table decode error\n");
+                return ret;
+            }
+            break;
+        case DHT:
+            ret = ff_mjpeg_decode_dht(jpg);
+            if (ret < 0) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "huffman table decode error\n");
+                return ret;
+            }
+            break;
+        case COM:
+            ret = mxpeg_decode_com(s, unescaped_buf_ptr,
+                                   unescaped_buf_size);
+            if (ret < 0)
+                return ret;
+            break;
+        case SOF0:
+            if (s->got_sof_data > 1) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Multiple SOF in a frame\n");
+                return AVERROR_INVALIDDATA;
+            }
+            ret = ff_mjpeg_decode_sof(jpg);
+            if (ret < 0) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "SOF data decode error\n");
+                s->got_sof_data = 0;
+                return ret;
+            }
+            if (jpg->interlaced) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Interlaced mode not supported in MxPEG\n");
+                s->got_sof_data = 0;
+                return AVERROR(EINVAL);
+            }
+            s->got_sof_data ++;
+            break;
+        case SOS:
+            if (!s->got_sof_data) {
+                av_log(avctx, AV_LOG_WARNING,
+                       "Can not process SOS without SOF data, skipping\n");
+                break;
+            }
+            if (!jpg->got_picture) {
+                if (jpg->first_picture) {
+                    av_log(avctx, AV_LOG_WARNING,
+                           "First picture has no SOF, skipping\n");
+                    break;
+                }
+                if (!s->got_mxm_bitmask){
+                    av_log(avctx, AV_LOG_WARNING,
+                           "Non-key frame has no MXM, skipping\n");
+                    break;
+                }
+                /* use stored SOF data to allocate current picture */
+                av_frame_unref(jpg->picture_ptr);
+                if ((ret = ff_get_buffer(avctx, jpg->picture_ptr,
+                                         AV_GET_BUFFER_FLAG_REF)) < 0)
+                    return ret;
+                jpg->picture_ptr->pict_type = AV_PICTURE_TYPE_P;
+                jpg->picture_ptr->flags &= ~AV_FRAME_FLAG_KEY;
+                jpg->got_picture = 1;
+            } else {
+                jpg->picture_ptr->pict_type = AV_PICTURE_TYPE_I;
+                jpg->picture_ptr->flags |= AV_FRAME_FLAG_KEY;
+            }
+
+            if (s->got_mxm_bitmask) {
+                AVFrame *reference_ptr = s->picture[s->picture_index ^ 1];
+                if (mxpeg_check_dimensions(s, jpg, reference_ptr) < 0)
+                    break;
+
+                /* allocate dummy reference picture if needed */
+                if (!reference_ptr->data[0] &&
+                    (ret = ff_get_buffer(avctx, reference_ptr,
+                                         AV_GET_BUFFER_FLAG_REF)) < 0)
+                    return ret;
+
+                ret = ff_mjpeg_decode_sos(jpg, s->mxm_bitmask, s->bitmask_size, reference_ptr);
+                if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+                    return ret;
+            } else {
+                ret = ff_mjpeg_decode_sos(jpg, NULL, 0, NULL);
+                if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+                    return ret;
+            }
+
+            break;
+        }
+
+        buf_ptr += (get_bits_count(&jpg->gb)+7) >> 3;
     }
 
 the_end:
