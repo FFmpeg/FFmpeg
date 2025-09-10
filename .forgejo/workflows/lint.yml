@@ -24,3 +24,5 @@ jobs:
           key: pre-commit-${{ steps.install.outputs.envhash }}
       - name: Run pre-commit CI
         run: ~/pre-commit/bin/pre-commit run -c .forgejo/pre-commit/config.yaml --show-diff-on-failure --color=always --all-files
+      - name: Check aarch64 assembly indentation
+        run: ./tools/check_arm_indent.sh
