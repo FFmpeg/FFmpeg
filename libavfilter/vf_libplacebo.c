@@ -1038,12 +1038,7 @@ props_done:
     }
 
     /* Draw first frame opaque, others with blending */
-    opts->params.blend_params = NULL;
-#if PL_API_VER >= 346
-    opts->params.background = opts->params.border = PL_CLEAR_COLOR;
-#else
-    opts->params.skip_target_clearing = false;
-#endif
+    struct pl_render_params tmp_params = opts->params;
     for (int i = 0; i < s->nb_inputs; i++) {
         LibplaceboInput *in = &s->inputs[i];
         FilterLink *il = ff_filter_link(ctx->inputs[i]);
@@ -1053,17 +1048,17 @@ props_done:
             pl_renderer_flush_cache(in->renderer);
             continue;
         }
-        opts->params.skip_caching_single_frame = high_fps;
+        tmp_params.skip_caching_single_frame = high_fps;
         update_crops(ctx, in, &target, target_pts);
-        pl_render_image_mix(in->renderer, &in->mix, &target, &opts->params);
+        pl_render_image_mix(in->renderer, &in->mix, &target, &tmp_params);
 
         /* Force straight output and set correct blend mode */
         target.repr.alpha = PL_ALPHA_INDEPENDENT;
-        opts->params.blend_params = &pl_alpha_overlay;
+        tmp_params.blend_params = &pl_alpha_overlay;
 #if PL_API_VER >= 346
-        opts->params.background = opts->params.border = PL_CLEAR_SKIP;
+        tmp_params.background = tmp_params.border = PL_CLEAR_SKIP;
 #else
-        opts->params.skip_target_clearing = true;
+        tmp_params.skip_target_clearing = true;
 #endif
     }
 
