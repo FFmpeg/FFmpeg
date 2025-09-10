@@ -2875,15 +2875,15 @@ the_end:
             AVFrameSideData *sd = NULL;
 
             if (orientation >= 2 && orientation <= 8) {
-                int32_t *matrix;
-
-                sd = av_frame_new_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX, sizeof(int32_t) * 9);
-                if (!sd) {
+                ret = ff_frame_new_side_data(avctx, frame, AV_FRAME_DATA_DISPLAYMATRIX, sizeof(int32_t) * 9, &sd);
+                if (ret < 0) {
                     av_log(avctx, AV_LOG_ERROR, "Could not allocate frame side data\n");
-                    return AVERROR(ENOMEM);
+                    return ret;
                 }
+            }
 
-                matrix = (int32_t *)sd->data;
+            if (sd) {
+                int32_t *matrix = (int32_t *)sd->data;
 
                 switch (orientation) {
                 case 2:
