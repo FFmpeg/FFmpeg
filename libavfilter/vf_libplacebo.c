@@ -1033,6 +1033,7 @@ props_done:
             .color = orig_target.color,
             .rotation = orig_target.rotation,
         };
+        target.repr.alpha     = PL_ALPHA_PREMULTIPLIED;
         target.color.transfer = PL_COLOR_TRC_LINEAR;
         use_linear_compositor = true;
     }
@@ -1052,7 +1053,8 @@ props_done:
         update_crops(ctx, in, &target, target_pts);
         pl_render_image_mix(in->renderer, &in->mix, &target, &tmp_params);
 
-        /* Force straight output and set correct blend mode */
+        /* Force straight output and set correct blend operator. This is
+         * required to get correct blending onto YUV target buffers. */
         target.repr.alpha = PL_ALPHA_INDEPENDENT;
         tmp_params.blend_params = &pl_alpha_overlay;
 #if PL_API_VER >= 346
@@ -1065,6 +1067,7 @@ props_done:
     if (use_linear_compositor) {
         /* Blit the linear intermediate image to the output frame */
         target.crop = orig_target.crop = (struct pl_rect2df) {0};
+        target.repr.alpha = PL_ALPHA_PREMULTIPLIED;
         pl_render_image(s->linear_rr, &target, &orig_target, &opts->params);
         target = orig_target;
     } else if (!ref) {
