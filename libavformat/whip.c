@@ -67,6 +67,8 @@
  */
 #define DTLS_SRTP_CHECKSUM_LEN 16
 
+#define WHIP_US_PER_MS 1000
+
 /**
  * When sending ICE or DTLS messages, responses are received via UDP. However, the peer
  * may not be ready and return EAGAIN, in which case we should wait for a short duration
@@ -1269,7 +1271,7 @@ next_packet:
             break;
 
         now = av_gettime_relative();
-        if (now - starttime >= whip->handshake_timeout * 1000) {
+        if (now - starttime >= whip->handshake_timeout * WHIP_US_PER_MS) {
             av_log(whip, AV_LOG_ERROR, "DTLS handshake timeout=%dms, cost=%.2fms, elapsed=%.2fms, state=%d\n",
                 whip->handshake_timeout, ELAPSED(starttime, now), ELAPSED(whip->whip_starttime, now), whip->state);
             ret = AVERROR(ETIMEDOUT);
@@ -1282,7 +1284,7 @@ next_packet:
             if (ret > 0)
                 break;
             if (ret == AVERROR(EAGAIN)) {
-                av_usleep(5 * 1000);
+                av_usleep(5 * WHIP_US_PER_MS);
                 continue;
             }
             av_log(whip, AV_LOG_ERROR, "Failed to read message\n");
