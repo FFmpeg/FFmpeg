@@ -134,7 +134,6 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
     init_idct(avctx);
     s->buffer_size   = 0;
     s->buffer        = NULL;
-    s->start_code    = -1;
     s->first_picture = 1;
     s->got_picture   = 0;
     s->orig_height    = avctx->coded_height;
@@ -1866,7 +1865,7 @@ static int mjpeg_decode_dri(MJpegDecodeContext *s)
     return 0;
 }
 
-static int mjpeg_decode_app(MJpegDecodeContext *s)
+static int mjpeg_decode_app(MJpegDecodeContext *s, int start_code)
 {
     int len, id, i;
 
@@ -2013,7 +2012,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     }
 
     /* JPS extension by VRex */
-    if (s->start_code == APP3 && id == AV_RB32("_JPS") && len >= 10) {
+    if (start_code == APP3 && id == AV_RB32("_JPS") && len >= 10) {
         int flags, layout, type;
         if (s->avctx->debug & FF_DEBUG_PICT_INFO)
             av_log(s->avctx, AV_LOG_INFO, "_JPSJPS_\n");
@@ -2053,7 +2052,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     }
 
     /* EXIF metadata */
-    if (s->start_code == APP1 && id == AV_RB32("Exif") && len >= 2) {
+    if (start_code == APP1 && id == AV_RB32("Exif") && len >= 2) {
         int ret;
 
         bytestream2_skipu(&s->gB, 2); // skip padding
@@ -2072,7 +2071,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     }
 
     /* Apple MJPEG-A */
-    if ((s->start_code == APP1) && (len > (0x28 - 8))) {
+    if ((start_code == APP1) && (len > (0x28 - 8))) {
         id   = bytestream2_get_be32u(&s->gB);
         len -= 4;
         /* Apple MJPEG-A */
@@ -2092,7 +2091,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         }
     }
 
-    if (s->start_code == APP2 && id == AV_RB32("ICC_") && len >= 10) {
+    if (start_code == APP2 && id == AV_RB32("ICC_") && len >= 10) {
         int id2;
         unsigned seqno;
         unsigned nummarkers;
@@ -2418,7 +2417,6 @@ redo_for_pal8:
 
         bytestream2_init(&s->gB, unescaped_buf_ptr, unescaped_buf_size);
 
-        s->start_code = start_code;
         if (avctx->debug & FF_DEBUG_STARTCODE)
             av_log(avctx, AV_LOG_DEBUG, "startcode: %X\n", start_code);
 
@@ -2428,7 +2426,7 @@ redo_for_pal8:
                    "restart marker: %d\n", start_code & 0x0f);
             /* APP fields */
         } else if (start_code >= APP0 && start_code <= APP15) {
-            if ((ret = mjpeg_decode_app(s)) < 0)
+            if ((ret = mjpeg_decode_app(s, start_code)) < 0)
                 av_log(avctx, AV_LOG_ERROR, "unable to decode APP fields: %s\n",
                        av_err2str(ret));
             /* Comment */

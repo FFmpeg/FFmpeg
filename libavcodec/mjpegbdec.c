@@ -85,7 +85,6 @@ read_header:
     av_log(avctx, AV_LOG_DEBUG, "dqt offs: 0x%"PRIx32"\n", dqt_offs);
     if (dqt_offs) {
         bytestream2_init(&s->gB, buf_ptr+dqt_offs, buf_end - (buf_ptr+dqt_offs));
-        s->start_code = DQT;
         ret = ff_mjpeg_decode_dqt(s);
         if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
             return ret;
@@ -95,7 +94,6 @@ read_header:
     av_log(avctx, AV_LOG_DEBUG, "dht offs: 0x%"PRIx32"\n", dht_offs);
     if (dht_offs) {
         bytestream2_init(&s->gB, buf_ptr+dht_offs, buf_end - (buf_ptr+dht_offs));
-        s->start_code = DHT;
         ff_mjpeg_decode_dht(s);
     }
 
@@ -103,7 +101,6 @@ read_header:
     av_log(avctx, AV_LOG_DEBUG, "sof offs: 0x%"PRIx32"\n", sof_offs);
     if (sof_offs) {
         bytestream2_init(&s->gB, buf_ptr+sof_offs, buf_end - (buf_ptr+sof_offs));
-        s->start_code = SOF0;
         if ((ret = ff_mjpeg_decode_sof(s)) < 0)
             return ret;
     }
@@ -116,7 +113,6 @@ read_header:
         bytestream2_init(&s->gB, buf_ptr+sos_offs,
                          FFMIN(field_size, buf_end - buf_ptr - sos_offs));
         s->mjpb_skiptosod = (sod_offs - sos_offs - bytestream2_peek_be16(&s->gB));
-        s->start_code = SOS;
         if (avctx->skip_frame == AVDISCARD_ALL) {
             bytestream2_skipu(&s->gB, bytestream2_get_bytes_left(&s->gB));
         } else {
