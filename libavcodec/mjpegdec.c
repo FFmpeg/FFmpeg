@@ -821,8 +821,7 @@ static inline int mjpeg_decode_dc(MJpegDecodeContext *s, int dc_index)
     code = get_vlc2(&s->gb, s->vlcs[0][dc_index].table, 9, 2);
     if (code < 0 || code > 16) {
         av_log(s->avctx, AV_LOG_WARNING,
-               "mjpeg_decode_dc: bad vlc: %d:%d (%p)\n",
-               0, dc_index, &s->vlcs[0][dc_index]);
+               "mjpeg_decode_dc: bad vlc: %d\n", dc_index);
         return 0xfffff;
     }
 
