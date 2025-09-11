@@ -820,7 +820,7 @@ static inline int mjpeg_decode_dc(MJpegDecodeContext *s, int dc_index)
     int code;
     code = get_vlc2(&s->gb, s->vlcs[0][dc_index].table, 9, 2);
     if (code < 0 || code > 16) {
-        av_log(s->avctx, AV_LOG_WARNING,
+        av_log(s->avctx, AV_LOG_ERROR,
                "mjpeg_decode_dc: bad vlc: %d\n", dc_index);
         return 0xfffff;
     }
@@ -840,7 +840,6 @@ static int decode_block(MJpegDecodeContext *s, int16_t *block, int component,
     /* DC coef */
     val = mjpeg_decode_dc(s, dc_index);
     if (val == 0xfffff) {
-        av_log(s->avctx, AV_LOG_ERROR, "error dc\n");
         return AVERROR_INVALIDDATA;
     }
     val = val * (unsigned)quant_matrix[0] + s->last_dc[component];
@@ -888,7 +887,6 @@ static int decode_dc_progressive(MJpegDecodeContext *s, int16_t *block,
     s->bdsp.clear_block(block);
     val = mjpeg_decode_dc(s, dc_index);
     if (val == 0xfffff) {
-        av_log(s->avctx, AV_LOG_ERROR, "error dc\n");
         return AVERROR_INVALIDDATA;
     }
     val = (val * (quant_matrix[0] << Al)) + s->last_dc[component];
