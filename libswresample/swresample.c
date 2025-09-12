@@ -70,8 +70,6 @@ int swr_alloc_set_opts2(struct SwrContext **ps,
     if ((ret = av_opt_set_int(s, "isr", in_sample_rate, 0)) < 0)
         goto fail;
 
-    av_opt_set_int(s, "uch", 0, 0);
-
     return 0;
 fail:
     av_log(s, AV_LOG_ERROR, "Failed to set option\n");
