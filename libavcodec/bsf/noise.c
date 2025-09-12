@@ -18,13 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdlib.h>
+#include <stddef.h>
 
 #include "bsf.h"
 #include "bsf_internal.h"
 
 #include "libavutil/log.h"
-#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/eval.h"
 
@@ -79,24 +78,22 @@ typedef struct NoiseContext {
 static int noise_init(AVBSFContext *ctx)
 {
     NoiseContext *s = ctx->priv_data;
+    const char *amount_str = s->amount_str;
     int ret;
 
-    if (!s->amount_str) {
-        s->amount_str = (!s->drop_str && !s->dropamount) ? av_strdup("-1") : av_strdup("0");
-        if (!s->amount_str)
-            return AVERROR(ENOMEM);
-    }
+    if (!amount_str)
+        amount_str = (!s->drop_str && !s->dropamount) ? "-1" : "0";
 
     if (ctx->par_in->codec_id == AV_CODEC_ID_WRAPPED_AVFRAME &&
-        strcmp(s->amount_str, "0")) {
+        strcmp(amount_str, "0")) {
         av_log(ctx, AV_LOG_ERROR, "Wrapped AVFrame noising is unsupported\n");
         return AVERROR_PATCHWELCOME;
     }
 
-    ret = av_expr_parse(&s->amount_pexpr, s->amount_str,
+    ret = av_expr_parse(&s->amount_pexpr, amount_str,
                         var_names, NULL, NULL, NULL, NULL, 0, ctx);
     if (ret < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error in parsing expr for amount: %s\n", s->amount_str);
+        av_log(ctx, AV_LOG_ERROR, "Error in parsing expr for amount: %s\n", amount_str);
         return ret;
     }
 
