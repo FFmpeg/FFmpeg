@@ -105,7 +105,7 @@ static void RENAME(mix8to2)(uint8_t *const *out_, const uint8_t *const *in_,
     }
 }
 
-static mix_any_func_type *RENAME(get_mix_any_func)(SwrContext *s)
+static mix_any_func_type *RENAME(get_mix_any_func)(const SwrContext *s)
 {
     if (  !av_channel_layout_compare(&s->out_ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO)
        && (   !av_channel_layout_compare(&s->in_ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1)
