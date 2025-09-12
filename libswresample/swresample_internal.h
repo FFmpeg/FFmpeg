@@ -167,12 +167,16 @@ struct SwrContext {
     struct Resampler const *resampler;              ///< resampler virtual function table
 
     double matrix[SWR_CH_MAX][SWR_CH_MAX];          ///< floating point rematrixing coefficients
-    float matrix_flt[SWR_CH_MAX][SWR_CH_MAX];       ///< single precision floating point rematrixing coefficients
+    union {
+        float matrix_flt[SWR_CH_MAX][SWR_CH_MAX];   ///< single precision floating point rematrixing coefficients
+                                                    ///< valid iff int_sample_fmt is AV_SAMPLE_FMT_FLTP
+        int32_t matrix32[SWR_CH_MAX][SWR_CH_MAX];   ///< 17.15 fixed point rematrixing coefficients
+                                                    ///< valid iff int_sample_fmt is != AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP
+    };
     uint8_t *native_matrix;
     uint8_t *native_one;
     uint8_t *native_simd_one;
     uint8_t *native_simd_matrix;
-    int32_t matrix32[SWR_CH_MAX][SWR_CH_MAX];       ///< 17.15 fixed point rematrixing coefficients
     uint8_t matrix_ch[SWR_CH_MAX][SWR_CH_MAX+1];    ///< Lists of input channels per output channel that have non zero rematrixing coefficients
     mix_1_1_func_type *mix_1_1_f;
     mix_1_1_func_type *mix_1_1_simd;
