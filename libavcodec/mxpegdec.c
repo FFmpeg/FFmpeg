@@ -86,7 +86,7 @@ static int mxpeg_decode_app(MXpegDecodeContext *s,
     if (buf_size < 2)
         return 0;
     len = AV_RB16(buf_ptr);
-    skip_bits(&s->jpg.gb, 8*FFMIN(len,buf_size));
+    bytestream2_skipu(&s->jpg.gB, FFMIN(len, buf_size));
 
     return 0;
 }
@@ -154,7 +154,7 @@ static int mxpeg_decode_com(MXpegDecodeContext *s,
     if (len > 14 && len <= buf_size && !strncmp(buf_ptr + 2, "MXM", 3)) {
         ret = mxpeg_decode_mxm(s, buf_ptr + 2, len - 2);
     }
-    skip_bits(&s->jpg.gb, 8*FFMIN(len,buf_size));
+    bytestream2_skipu(&s->jpg.gB, FFMIN(len, buf_size));
 
     return ret;
 }
@@ -217,7 +217,7 @@ static int mxpeg_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         if (start_code < 0)
             goto the_end;
 
-        init_get_bits(&jpg->gb, unescaped_buf_ptr, unescaped_buf_size*8);
+        bytestream2_init(&jpg->gB, unescaped_buf_ptr, unescaped_buf_size);
 
         if (start_code >= APP0 && start_code <= APP15) {
             mxpeg_decode_app(s, unescaped_buf_ptr, unescaped_buf_size);
@@ -326,7 +326,7 @@ static int mxpeg_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             break;
         }
 
-        buf_ptr += (get_bits_count(&jpg->gb)+7) >> 3;
+        buf_ptr += bytestream2_tell(&jpg->gB);
     }
 
 the_end:

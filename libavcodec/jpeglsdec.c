@@ -53,19 +53,19 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
     int id;
     int tid, wt, maxtab, i, j;
 
-    int len = get_bits(&s->gb, 16);
-    id = get_bits(&s->gb, 8);
+    int len = bytestream2_get_be16(&s->gB);
+    id = bytestream2_get_byte(&s->gB);
 
     switch (id) {
     case 1:
         if (len < 13)
             return AVERROR_INVALIDDATA;
 
-        s->maxval = get_bits(&s->gb, 16);
-        s->t1     = get_bits(&s->gb, 16);
-        s->t2     = get_bits(&s->gb, 16);
-        s->t3     = get_bits(&s->gb, 16);
-        s->reset  = get_bits(&s->gb, 16);
+        s->maxval = bytestream2_get_be16u(&s->gB);
+        s->t1     = bytestream2_get_be16u(&s->gB);
+        s->t2     = bytestream2_get_be16u(&s->gB);
+        s->t3     = bytestream2_get_be16u(&s->gB);
+        s->reset  = bytestream2_get_be16u(&s->gB);
 
         if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
             av_log(s->avctx, AV_LOG_DEBUG, "Coding parameters maxval:%d T1:%d T2:%d T3:%d reset:%d\n",
@@ -78,8 +78,8 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
     case 2:
         s->palette_index = 0;
     case 3:
-        tid= get_bits(&s->gb, 8);
-        wt = get_bits(&s->gb, 8);
+        tid= bytestream2_get_byte(&s->gB);
+        wt = bytestream2_get_byte(&s->gB);
 
         if (len < 5)
             return AVERROR_INVALIDDATA;
@@ -129,7 +129,7 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
                 uint8_t k = i << shift;
                 pal[k] = wt < 4 ? 0xFF000000 : 0;
                 for (j=0; j<wt; j++) {
-                    pal[k] |= get_bits(&s->gb, 8) << (8*(wt-j-1));
+                    pal[k] |= bytestream2_get_byte(&s->gB) << (8*(wt-j-1));
                 }
             }
             s->palette_index = i;
