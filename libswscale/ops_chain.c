@@ -234,7 +234,7 @@ int ff_sws_op_compile_tables(const SwsOpTable *const tables[], int num_tables,
     ret = ff_sws_op_chain_append(chain, best->func, best->free, &priv);
     if (ret < 0) {
         if (best->free)
-            best->free(&priv);
+            best->free(priv.ptr);
         return ret;
     }
 
