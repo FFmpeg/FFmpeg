@@ -28,6 +28,7 @@
 #include "libavutil/mem.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "hpeldsp.h"
 #include "mjpeg.h"
 #include "mjpegdec.h"
 
@@ -64,6 +65,8 @@ static av_cold int mxpeg_decode_end(AVCodecContext *avctx)
 static av_cold int mxpeg_decode_init(AVCodecContext *avctx)
 {
     MXpegDecodeContext *s = avctx->priv_data;
+
+    ff_hpeldsp_init(&s->jpg.hdsp, avctx->flags);
 
     s->picture[0] = av_frame_alloc();
     s->picture[1] = av_frame_alloc();
