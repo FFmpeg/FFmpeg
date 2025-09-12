@@ -39,12 +39,13 @@ for i in */aarch64/*.S */aarch64/*/*.S; do
         # Skip files with known (and tolerated) deviations from the tool.
         continue
     esac
-    cat $i | ./tools/indent_arm_assembly.pl > tmp.S
-    if [ -n "$apply" ]; then
-        mv tmp.S $i
-        continue
-    fi
-    if ! PAGER=cat git diff --no-index $i tmp.S; then
+    ./tools/indent_arm_assembly.pl < "$i" > tmp.S || ret=$?
+    if ! git diff --quiet --no-index "$i" tmp.S; then
+        if [ -n "$apply" ]; then
+            mv tmp.S "$i"
+        else
+            git --no-pager diff --no-index "$i" tmp.S
+        fi
         ret=1
     fi
 done
