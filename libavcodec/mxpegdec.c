@@ -179,6 +179,12 @@ static int mxpeg_check_dimensions(MXpegDecodeContext *s, MJpegDecodeContext *jpg
                 return AVERROR(EINVAL);
             }
         }
+        if (reference_ptr->width  != jpg->picture_ptr->width  ||
+            reference_ptr->height != jpg->picture_ptr->height ||
+            reference_ptr->format != jpg->picture_ptr->format) {
+            av_log(jpg->avctx, AV_LOG_ERROR, "Reference mismatching\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     return 0;

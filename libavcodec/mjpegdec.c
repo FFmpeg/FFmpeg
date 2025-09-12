@@ -1678,15 +1678,6 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
         return -1;
     }
 
-    if (reference) {
-        if (reference->width  != s->picture_ptr->width  ||
-            reference->height != s->picture_ptr->height ||
-            reference->format != s->picture_ptr->format) {
-            av_log(s->avctx, AV_LOG_ERROR, "Reference mismatching\n");
-            return AVERROR_INVALIDDATA;
-        }
-    }
-
     /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16);
     nb_components = get_bits(&s->gb, 8);
