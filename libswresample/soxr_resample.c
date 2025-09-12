@@ -123,7 +123,12 @@ static int64_t get_out_samples(struct SwrContext *s, int in_samples){
     return (int64_t)(out_samples + delayed_samples + 1 + .5);
 }
 
-struct Resampler const swri_soxr_resampler={
-    create, destroy, process, flush, NULL /* set_compensation */, get_delay,
-    invert_initial_buffer, get_out_samples
+const struct Resampler swri_soxr_resampler = {
+    .init                  = create,
+    .free                  = destroy,
+    .multiple_resample     = process,
+    .flush                 = flush,
+    .get_delay             = get_delay,
+    .invert_initial_buffer = invert_initial_buffer,
+    .get_out_samples       = get_out_samples,
 };

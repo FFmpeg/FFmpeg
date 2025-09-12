@@ -501,13 +501,13 @@ static int invert_initial_buffer(ResampleContext *c, AudioData *dst, const Audio
     return FFMAX(res, 0);
 }
 
-struct Resampler const swri_resampler={
-  resample_init,
-  resample_free,
-  multiple_resample,
-  resample_flush,
-  set_compensation,
-  get_delay,
-  invert_initial_buffer,
-  get_out_samples,
+const struct Resampler swri_resampler = {
+    .init                  = resample_init,
+    .free                  = resample_free,
+    .multiple_resample     = multiple_resample,
+    .flush                 = resample_flush,
+    .set_compensation      = set_compensation,
+    .get_delay             = get_delay,
+    .invert_initial_buffer = invert_initial_buffer,
+    .get_out_samples       = get_out_samples,
 };
