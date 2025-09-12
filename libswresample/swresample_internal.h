@@ -179,7 +179,10 @@ struct SwrContext {
         double d;
     } native_one;
     uint8_t *native_matrix;
-    uint8_t *native_simd_one;
+    union {
+        int16_t i16[2];
+        float   f;
+    } native_simd_one;
     uint8_t *native_simd_matrix;
     uint8_t matrix_ch[SWR_CH_MAX][SWR_CH_MAX+1];    ///< Lists of input channels per output channel that have non zero rematrixing coefficients
     mix_1_1_func_type *mix_1_1_f;

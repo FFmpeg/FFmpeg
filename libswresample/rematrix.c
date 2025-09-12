@@ -562,7 +562,6 @@ av_cold int swri_rematrix_init(SwrContext *s){
 av_cold void swri_rematrix_free(SwrContext *s){
     av_freep(&s->native_matrix);
     av_freep(&s->native_simd_matrix);
-    av_freep(&s->native_simd_one);
 }
 
 int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy){

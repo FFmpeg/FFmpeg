@@ -48,8 +48,7 @@ av_cold int swri_rematrix_init_x86(struct SwrContext *s){
             s->mix_2_1_simd = ff_mix_2_1_a_int16_sse2;
         }
         s->native_simd_matrix = av_calloc(num,  2 * sizeof(int16_t));
-        s->native_simd_one    = av_mallocz(2 * sizeof(int16_t));
-        if (!s->native_simd_matrix || !s->native_simd_one)
+        if (!s->native_simd_matrix)
             return AVERROR(ENOMEM);
 
         for(i=0; i<nb_out; i++){
@@ -63,8 +62,8 @@ av_cold int swri_rematrix_init_x86(struct SwrContext *s){
                     ((((int*)s->native_matrix)[i * nb_in + j]) + (1<<sh>>1)) >> sh;
             }
         }
-        ((int16_t*)s->native_simd_one)[1] = 14;
-        ((int16_t*)s->native_simd_one)[0] = 16384;
+        s->native_simd_one.i16[1] = 14;
+        s->native_simd_one.i16[0] = 16384;
     } else if(s->midbuf.fmt == AV_SAMPLE_FMT_FLTP){
         if(EXTERNAL_SSE(mm_flags)) {
             s->mix_1_1_simd = ff_mix_1_1_a_float_sse;
@@ -75,11 +74,10 @@ av_cold int swri_rematrix_init_x86(struct SwrContext *s){
             s->mix_2_1_simd = ff_mix_2_1_a_float_avx;
         }
         s->native_simd_matrix = av_calloc(num, sizeof(float));
-        s->native_simd_one = av_mallocz(sizeof(float));
-        if (!s->native_simd_matrix || !s->native_simd_one)
+        if (!s->native_simd_matrix)
             return AVERROR(ENOMEM);
         memcpy(s->native_simd_matrix, s->native_matrix, num * sizeof(float));
-        memcpy(s->native_simd_one, &s->native_one.f, sizeof(float));
+        s->native_simd_one.f = s->native_one.f;
     }
 #endif
 
