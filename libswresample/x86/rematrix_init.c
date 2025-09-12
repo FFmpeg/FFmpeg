@@ -79,7 +79,7 @@ av_cold int swri_rematrix_init_x86(struct SwrContext *s){
         if (!s->native_simd_matrix || !s->native_simd_one)
             return AVERROR(ENOMEM);
         memcpy(s->native_simd_matrix, s->native_matrix, num * sizeof(float));
-        memcpy(s->native_simd_one, s->native_one, sizeof(float));
+        memcpy(s->native_simd_one, &s->native_one.f, sizeof(float));
     }
 #endif
 

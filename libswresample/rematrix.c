@@ -466,8 +466,7 @@ av_cold int swri_rematrix_init(SwrContext *s){
     if (s->midbuf.fmt == AV_SAMPLE_FMT_S16P){
         int maxsum = 0;
         s->native_matrix = av_calloc(nb_in * nb_out, sizeof(int));
-        s->native_one    = av_mallocz(sizeof(int));
-        if (!s->native_matrix || !s->native_one)
+        if (!s->native_matrix)
             return AVERROR(ENOMEM);
         for (i = 0; i < nb_out; i++) {
             double rem = 0;
@@ -481,7 +480,7 @@ av_cold int swri_rematrix_init(SwrContext *s){
             }
             maxsum = FFMAX(maxsum, sum);
         }
-        *((int*)s->native_one) = 32768;
+        s->native_one.i = 32768;
         if (maxsum <= 32768) {
             s->mix_1_1_f = copy_s16;
             s->mix_2_1_f = sum2_s16;
@@ -493,37 +492,30 @@ av_cold int swri_rematrix_init(SwrContext *s){
         }
     }else if(s->midbuf.fmt == AV_SAMPLE_FMT_FLTP){
         s->native_matrix = av_calloc(nb_in * nb_out, sizeof(float));
-        s->native_one    = av_mallocz(sizeof(float));
-        if (!s->native_matrix || !s->native_one)
+        if (!s->native_matrix)
             return AVERROR(ENOMEM);
         for (i = 0; i < nb_out; i++)
             for (j = 0; j < nb_in; j++)
                 ((float*)s->native_matrix)[i * nb_in + j] = s->matrix[i][j];
-        *((float*)s->native_one) = 1.0;
+        s->native_one.f = 1.0;
         s->mix_1_1_f = copy_float;
         s->mix_2_1_f = sum2_float;
         s->mix_any_f = get_mix_any_func_float(s);
     }else if(s->midbuf.fmt == AV_SAMPLE_FMT_DBLP){
         s->native_matrix = av_calloc(nb_in * nb_out, sizeof(double));
-        s->native_one    = av_mallocz(sizeof(double));
-        if (!s->native_matrix || !s->native_one)
+        if (!s->native_matrix)
             return AVERROR(ENOMEM);
         for (i = 0; i < nb_out; i++)
             for (j = 0; j < nb_in; j++)
                 ((double*)s->native_matrix)[i * nb_in + j] = s->matrix[i][j];
-        *((double*)s->native_one) = 1.0;
+        s->native_one.d = 1.0;
         s->mix_1_1_f = copy_double;
         s->mix_2_1_f = sum2_double;
         s->mix_any_f = get_mix_any_func_double(s);
     }else if(s->midbuf.fmt == AV_SAMPLE_FMT_S32P){
-        s->native_one    = av_mallocz(sizeof(int));
-        if (!s->native_one)
-            return AVERROR(ENOMEM);
         s->native_matrix = av_calloc(nb_in * nb_out, sizeof(int));
-        if (!s->native_matrix) {
-            av_freep(&s->native_one);
+        if (!s->native_matrix)
             return AVERROR(ENOMEM);
-        }
         for (i = 0; i < nb_out; i++) {
             double rem = 0;
 
@@ -533,7 +525,7 @@ av_cold int swri_rematrix_init(SwrContext *s){
                 rem += target - ((int*)s->native_matrix)[i * nb_in + j];
             }
         }
-        *((int*)s->native_one) = 32768;
+        s->native_one.i = 32768;
         s->mix_1_1_f = copy_s32;
         s->mix_2_1_f = sum2_s32;
         s->mix_any_f = get_mix_any_func_s32(s);
@@ -569,7 +561,6 @@ av_cold int swri_rematrix_init(SwrContext *s){
 
 av_cold void swri_rematrix_free(SwrContext *s){
     av_freep(&s->native_matrix);
-    av_freep(&s->native_one);
     av_freep(&s->native_simd_matrix);
     av_freep(&s->native_simd_one);
 }
