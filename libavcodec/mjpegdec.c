@@ -1427,7 +1427,7 @@ static av_always_inline void mjpeg_copy_block(MJpegDecodeContext *s,
                                               int linesize, int lowres)
 {
     switch (lowres) {
-    case 0: s->hdsp.put_pixels_tab[1][0](dst, src, linesize, 8);
+    case 0: s->copy_block(dst, src, linesize, 8);
         break;
     case 1: copy_block4(dst, src, linesize, linesize, 4);
         break;

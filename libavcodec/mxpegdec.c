@@ -65,8 +65,10 @@ static av_cold int mxpeg_decode_end(AVCodecContext *avctx)
 static av_cold int mxpeg_decode_init(AVCodecContext *avctx)
 {
     MXpegDecodeContext *s = avctx->priv_data;
+    HpelDSPContext hdsp;
 
-    ff_hpeldsp_init(&s->jpg.hdsp, avctx->flags);
+    ff_hpeldsp_init(&hdsp, avctx->flags);
+    s->jpg.copy_block = hdsp.put_pixels_tab[1][0];
 
     s->picture[0] = av_frame_alloc();
     s->picture[1] = av_frame_alloc();
