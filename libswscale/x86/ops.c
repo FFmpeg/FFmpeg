@@ -206,7 +206,7 @@ static int setup_dither(const SwsOp *op, SwsOpPriv *out)
     DECL_COMMON_PATTERNS(F32, dither##SIZE##EXT,                                \
         .op    = SWS_OP_DITHER,                                                 \
         .setup = setup_dither,                                                  \
-        .free  = SIZE > 2 ? av_free : NULL,                                     \
+        .free  = (1 << SIZE) > 2 ? av_free : NULL,                              \
         .dither_size = SIZE,                                                    \
     );
 
