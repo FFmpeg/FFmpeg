@@ -210,7 +210,7 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
         }
         index = get_bits(&s->gb, 4);
         if (index >= 4)
-            return -1;
+            return AVERROR_INVALIDDATA;
         av_log(s->avctx, AV_LOG_DEBUG, "index=%d\n", index);
         /* read quant table */
         for (i = 0; i < 64; i++) {
@@ -326,7 +326,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 
     if(s->lossless && s->avctx->lowres){
         av_log(s->avctx, AV_LOG_ERROR, "lowres is not possible with lossless jpeg\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     height = get_bits(&s->gb, 16);
@@ -349,7 +349,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     nb_components = get_bits(&s->gb, 8);
     if (nb_components <= 0 ||
         nb_components > MAX_COMPONENTS)
-        return -1;
+        return AVERROR_INVALIDDATA;
     if (s->interlaced && (s->bottom_field == !s->interlace_polarity)) {
         if (nb_components != s->nb_components) {
             av_log(s->avctx, AV_LOG_ERROR,
@@ -757,8 +757,9 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         }
 
         av_frame_unref(s->picture_ptr);
-        if (ff_get_buffer(s->avctx, s->picture_ptr, AV_GET_BUFFER_FLAG_REF) < 0)
-            return -1;
+        ret = ff_get_buffer(s->avctx, s->picture_ptr, AV_GET_BUFFER_FLAG_REF);
+        if (ret < 0)
+            return ret;
         s->picture_ptr->pict_type = AV_PICTURE_TYPE_I;
         s->picture_ptr->flags |= AV_FRAME_FLAG_KEY;
         s->got_picture            = 1;
@@ -1677,7 +1678,7 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
     if (!s->got_picture) {
         av_log(s->avctx, AV_LOG_WARNING,
                 "Can not process SOS before SOF, skipping\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* XXX: verify len field validity */
