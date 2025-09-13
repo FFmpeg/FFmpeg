@@ -23,6 +23,9 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes_internal.h"
+
+FF_VISIBILITY_PUSH_HIDDEN
 extern const uint8_t ff_vvc_diag_scan_x[5][5][16 * 16];
 extern const uint8_t ff_vvc_diag_scan_y[5][5][16 * 16];
 
@@ -80,5 +83,6 @@ extern const uint8_t ff_vvc_alf_class_to_filt_map[16][25];
 extern const uint8_t ff_vvc_alf_aps_class_to_filt_map[25];
 
 const uint8_t* ff_vvc_get_mip_matrix(const int size_id, const int mode_idx);
+FF_VISIBILITY_POP_HIDDEN
 
 #endif /* AVCODEC_VVC_DATA_H */
