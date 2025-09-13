@@ -98,7 +98,7 @@ static int compile(SwsContext *ctx, SwsOpList *ops, SwsCompiledOp *out)
         .block_size = SWS_BLOCK_SIZE,
         .cpu_flags  = chain->cpu_flags,
         .priv       = chain,
-        .free       = (void (*)(void *)) ff_sws_op_chain_free,
+        .free       = ff_sws_op_chain_free_cb,
     };
     return 0;
 }

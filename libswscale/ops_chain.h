@@ -86,7 +86,11 @@ typedef struct SwsOpChain {
 } SwsOpChain;
 
 SwsOpChain *ff_sws_op_chain_alloc(void);
-void ff_sws_op_chain_free(SwsOpChain *chain);
+void ff_sws_op_chain_free_cb(void *chain);
+static inline void ff_sws_op_chain_free(SwsOpChain *chain)
+{
+    ff_sws_op_chain_free_cb(chain);
+}
 
 /* Returns 0 on success, or a negative error code. */
 int ff_sws_op_chain_append(SwsOpChain *chain, SwsFuncPtr func,
