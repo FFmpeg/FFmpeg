@@ -519,11 +519,15 @@ static int rkmpp_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         }
 
         // make sure we keep decoder full
-        if (freeslots > 1)
+        if (freeslots > 1 && !decoder->eos_reached)
             return AVERROR(EAGAIN);
     }
 
-    return rkmpp_retrieve_frame(avctx, frame);
+    do {
+        ret = rkmpp_retrieve_frame(avctx, frame);
+    } while (decoder->eos_reached && ret == AVERROR(EAGAIN));
+
+    return ret;
 }
 
 static av_cold void rkmpp_flush(AVCodecContext *avctx)
