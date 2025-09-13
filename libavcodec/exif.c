@@ -950,6 +950,8 @@ static int exif_clone_entry(AVExifEntry *dst, const AVExifEntry *src)
 {
     int ret = 0;
 
+    memset(dst, 0, sizeof(*dst));
+
     dst->count = src->count;
     dst->id = src->id;
     dst->type = src->type;
