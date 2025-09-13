@@ -1151,7 +1151,7 @@ AVExifMetadata *av_exif_clone_ifd(const AVExifMetadata *ifd)
         size_t required_size;
         if (av_size_mult(ret->count, sizeof(*ret->entries), &required_size) < 0)
             goto fail;
-        ret->entries = av_fast_realloc(NULL, &ret->size, required_size);
+        av_fast_mallocz(&ret->entries, &ret->size, required_size);
         if (!ret->entries)
             goto fail;
     }
