@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 7.1.2:
+ doc/examples/vaapi_encode: fix invalid check on fwrite
+ avcodec/librsvgdec: fix compilation with librsvg 2.50.3
+ fftools/ffmpeg: fix gracefully shutdown
  fftools/ffmpeg_demux: ensure the display_rotation option is honored
  avcodec/mjpegdec: use ff_frame_new_side_data() to export display matrix
  aacdec_usac: use RefStruct to track unfinished extension buffers
