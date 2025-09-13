@@ -257,7 +257,6 @@ static av_cold int rkmpp_init_decoder(AVCodecContext *avctx)
 
 fail:
     av_log(avctx, AV_LOG_ERROR, "Failed to initialize RKMPP decoder.\n");
-    rkmpp_close_decoder(avctx);
     return ret;
 }
 
@@ -563,7 +562,7 @@ static const AVCodecHWConfigInternal *const rkmpp_hw_configs[] = {
         .hw_configs     = rkmpp_hw_configs, \
         .bsfs           = BSFS, \
         .p.wrapper_name = "rkmpp", \
-        .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE, \
+        .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_NOT_INIT_THREADSAFE, \
     };
 
 RKMPP_DEC(h264,  AV_CODEC_ID_H264,          "h264_mp4toannexb")
