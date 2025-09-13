@@ -426,7 +426,7 @@ static void check_pack_unpack(void)
             .pack = pack,
         });
 
-        CHECK_RANGE(FMT("unpack_%s", pat), (1 << total) - 1, 1, num, type, type, {
+        CHECK_RANGE(FMT("unpack_%s", pat), UINT32_MAX >> (32 - total), 1, num, type, type, {
             .op   = SWS_OP_UNPACK,
             .type = type,
             .pack = pack,
