@@ -121,7 +121,7 @@ DECL_WRITE(write_packed, const int elems)
 }
 
 #define WRAP_READ(FUNC, ELEMS, FRAC, PACKED)                                    \
-DECL_IMPL(FUNC##ELEMS)                                                          \
+DECL_IMPL_READ(FUNC##ELEMS)                                                     \
 {                                                                               \
     CALL_READ(FUNC, ELEMS);                                                     \
     for (int i = 0; i < (PACKED ? 1 : ELEMS); i++)                              \

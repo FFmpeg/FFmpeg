@@ -110,7 +110,11 @@ typedef struct SwsOpIter {
     static SWS_FUNC void fn(NAME)(SwsOpIter *restrict iter,                     \
                                   const SwsOpImpl *restrict impl,               \
                                   block_t x, block_t y,                         \
-                                  block_t z, block_t w)                         \
+                                  block_t z, block_t w)
+
+#define DECL_IMPL_READ(NAME)                                                    \
+    static SWS_FUNC void fn(NAME)(SwsOpIter *restrict iter,                     \
+                                  const SwsOpImpl *restrict impl)
 
 /* Helper macro to call into the next continuation with a given type */
 #define CONTINUE(TYPE, ...)                                                     \
