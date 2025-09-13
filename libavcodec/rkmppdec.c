@@ -484,7 +484,6 @@ static int rkmpp_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     RKMPPDecodeContext *rk_context = avctx->priv_data;
     RKMPPDecoder *decoder = rk_context->decoder;
     int ret = MPP_NOK;
-    AVPacket pkt = {0};
     RK_S32 usedslots, freeslots;
 
     if (!decoder->eos_reached) {
@@ -497,17 +496,25 @@ static int rkmpp_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
         freeslots = INPUT_MAX_PACKETS - usedslots;
         if (freeslots > 0) {
-            ret = ff_decode_get_packet(avctx, &pkt);
-            if (ret < 0 && ret != AVERROR_EOF) {
-                return ret;
+            AVPacket *const pkt = avctx->internal->in_pkt;
+
+            if (!pkt->size) {
+                ret = ff_decode_get_packet(avctx, pkt);
+                if (ret < 0 && ret != AVERROR_EOF) {
+                    return ret;
+                }
             }
 
-            ret = rkmpp_send_packet(avctx, &pkt);
-            av_packet_unref(&pkt);
-
-            if (ret < 0) {
+            ret = rkmpp_send_packet(avctx, pkt);
+            if (ret < 0 && ret != AVERROR(EAGAIN)) {
+                av_packet_unref(pkt);
                 av_log(avctx, AV_LOG_ERROR, "Failed to send packet to decoder (code = %d)\n", ret);
                 return ret;
+            } else if (ret == AVERROR(EAGAIN)) {
+                // Input queue is full, don't queue more packet.
+                freeslots = 0;
+            } else {
+                av_packet_unref(pkt);
             }
         }
 
