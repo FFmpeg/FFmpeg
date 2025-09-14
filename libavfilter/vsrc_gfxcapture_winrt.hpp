@@ -19,6 +19,30 @@
 #ifndef AVFILTER_VSRC_GFXCAPTURE_WINRT_H
 #define AVFILTER_VSRC_GFXCAPTURE_WINRT_H
 
+extern "C" {
+#include "config.h"
+}
+
+#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0A00
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0A00
+#endif
+
+#define WINDOWS_FOUNDATION_UNIVERSALAPICONTRACT_VERSION 0x130000
+
+// work around bug in mingw double-defining IReference<unsigned char> (BYTE == boolean)
+#define ____FIReference_1_boolean_INTERFACE_DEFINED__
+
+#include <windows.h>
+#include <initguid.h>
+#include <wrl.h>
+#include <roapi.h>
+#include <windows.foundation.h>
+
+#include <atomic>
+#include <functional>
+#include <memory>
+
 // Forward-declare IDirect3DDxgiInterfaceAccess if headers too old
 #if !HAVE_IDIRECT3DDXGIINTERFACEACCESS
 namespace Windows::Graphics::DirectX::Direct3D11 {

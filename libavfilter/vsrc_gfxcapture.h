@@ -19,6 +19,10 @@
 #ifndef AVFILTER_VSRC_GFXCAPTURE_H
 #define AVFILTER_VSRC_GFXCAPTURE_H
 
+#include "libavutil/log.h"
+#include "libavutil/rational.h"
+#include "libavfilter/avfilter.h"
+
 typedef struct GfxCaptureContextCpp GfxCaptureContextCpp;
 
 enum GfxResizeMode {

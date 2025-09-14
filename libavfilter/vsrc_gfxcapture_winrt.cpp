@@ -16,24 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-extern "C" {
-#include "config.h"
-}
+#include "vsrc_gfxcapture_winrt.hpp"
+#include "vsrc_gfxcapture_shader.h"
 
-#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0A00
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0A00
-#endif
-
-#define WINDOWS_FOUNDATION_UNIVERSALAPICONTRACT_VERSION 0x130000
-
-// work around bug in mingw double-defining IReference<unsigned char> (BYTE == boolean)
-#define ____FIReference_1_boolean_INTERFACE_DEFINED__
-
-#include <windows.h>
-#include <initguid.h>
-#include <wrl.h>
-#include <roapi.h>
 #include <dwmapi.h>
 #include <d3d11.h>
 #include <d3dcompiler.h>
@@ -66,15 +51,11 @@ extern "C" {
 #include <atomic>
 #include <cinttypes>
 #include <condition_variable>
-#include <functional>
 #include <memory>
 #include <mutex>
 #include <regex>
 #include <string>
 #include <type_traits>
-
-#include "vsrc_gfxcapture_winrt.h"
-#include "vsrc_gfxcapture_shader.h"
 
 using namespace ABI::Windows::System;
 using namespace ABI::Windows::Foundation;
