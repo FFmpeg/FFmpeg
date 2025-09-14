@@ -29757,7 +29757,7 @@ Possible values:
 @itemize
 @item Capture a window by title (case-insensitive) at a maximum of 60 fps:
 @example
-ffmpeg -filter_complex gfxcapture=window_text='(?i)My Application':max_framerate=60,hwdownload,format=bgra,format=yuv420p -c:v libx264 -crf 15 capture.mp4
+ffmpeg -filter_complex gfxcapture=window_title='(?i)My Application':max_framerate=60,hwdownload,format=bgra,format=yuv420p -c:v libx264 -crf 15 capture.mp4
 @end example
 
 @item Capture monitor 1 at native refresh, 10bit color depth, scale to 1920x1080 preserving aspect:
