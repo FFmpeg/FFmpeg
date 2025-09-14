@@ -37,7 +37,6 @@ extern "C" {
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
-#include "libavutil/thread.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_d3d11va.h"
@@ -51,10 +50,12 @@ extern "C" {
 #include <atomic>
 #include <cinttypes>
 #include <condition_variable>
+#include <cwchar>
 #include <memory>
 #include <mutex>
 #include <regex>
 #include <string>
+#include <thread>
 #include <type_traits>
 
 using namespace ABI::Windows::System;
@@ -99,6 +100,9 @@ typedef struct GfxCaptureFunctions {
     hmodule_ptr_t user32_handle;
     DPI_AWARENESS_CONTEXT (WINAPI *SetThreadDpiAwarenessContext)(DPI_AWARENESS_CONTEXT dpiContext);
 
+    hmodule_ptr_t kernel32_handle;
+    HRESULT (WINAPI *SetThreadDescription)(HANDLE hThread, PCWSTR lpThreadDescription);
+
     hmodule_ptr_t d3dcompiler_handle;
     HRESULT (WINAPI *D3DCompile)(LPCVOID pSrcData, SIZE_T SrcDataSize, LPCSTR pSourceName, const D3D10_SHADER_MACRO *pDefines, ID3DInclude *pInclude,
                                  LPCSTR pEntrypoint, LPCSTR pTarget, UINT Flags1, UINT Flags2, ID3DBlob **ppCode, ID3DBlob **ppErrorMsgs);
@@ -139,13 +143,13 @@ struct GfxCaptureContextCpp {
     std::unique_ptr<GfxCaptureContextWgc> wgc;
     std::unique_ptr<GfxCaptureContextD3D> d3d;
 
-    pthread_t wgc_thread;
-    bool wgc_thread_created { false };
+    std::thread wgc_thread;
     DWORD wgc_thread_id { 0 };
     std::mutex wgc_thread_init_mutex;
     std::condition_variable wgc_thread_init_cond;
     volatile int wgc_thread_init_res { INT_MAX };
     std::recursive_mutex wgc_thread_uninit_mutex;
+    volatile int wgc_thread_res { 0 };
 
     HWND capture_hwnd { nullptr };
     HMONITOR capture_hmonitor { nullptr };
@@ -577,17 +581,16 @@ static int wgc_thread_worker(AVFilterContext *avctx)
     return msg.wParam;
 }
 
-static void *wgc_thread_entry(void *arg) noexcept
+static void wgc_thread_entry(AVFilterContext *avctx) noexcept
 {
-    AVFilterContext *avctx = static_cast<AVFilterContext*>(arg);
     GfxCaptureContext *cctx = CCTX(avctx->priv);
     GfxCaptureContextCpp *ctx = cctx->ctx;
 
     {
-        static const char name_prefix[] = "wgc_winrt@0x";
-        char thread_name[sizeof(name_prefix) + sizeof(void*) * 2];
-        snprintf(thread_name, sizeof(thread_name), "%s%" PRIxPTR, name_prefix, (uintptr_t)avctx);
-        ff_thread_setname(thread_name);
+        static const wchar_t name_prefix[] = L"wgc_winrt@0x";
+        wchar_t thread_name[FF_ARRAY_ELEMS(name_prefix) + sizeof(void*) * 2] = { 0 };
+        swprintf(thread_name, FF_ARRAY_ELEMS(thread_name), L"%s%" PRIxPTR, name_prefix, (uintptr_t)avctx);
+        ctx->fn.SetThreadDescription(GetCurrentThread(), thread_name);
 
         std::lock_guard init_lock(ctx->wgc_thread_init_mutex);
         ctx->wgc_thread_id = GetCurrentThreadId();
@@ -605,8 +608,10 @@ static void *wgc_thread_entry(void *arg) noexcept
         }
 
         ctx->wgc_thread_init_cond.notify_all();
-        if (ctx->wgc_thread_init_res < 0)
-            return (void*)(intptr_t)AVERROR(ENOSYS);
+        if (ctx->wgc_thread_init_res < 0) {
+            ctx->wgc_thread_res = ctx->wgc_thread_init_res;
+            return;
+        }
     }
 
     int ret;
@@ -626,7 +631,7 @@ static void *wgc_thread_entry(void *arg) noexcept
     std::lock_guard uninit_lock(ctx->wgc_thread_uninit_mutex);
     wgc_thread_uninit(avctx);
 
-    return (void*)(intptr_t)ret;
+    ctx->wgc_thread_res = ret;
 }
 
 /***********************************
@@ -639,16 +644,14 @@ static int stop_wgc_thread(AVFilterContext *avctx)
     GfxCaptureContextCpp *ctx = cctx->ctx;
     int ret = 0;
 
-    if (ctx->wgc_thread_created) {
+    if (ctx->wgc_thread.joinable()) {
         if (ctx->wgc_thread_id && !PostThreadMessage(ctx->wgc_thread_id, WM_WGC_THREAD_SHUTDOWN, 0, 0))
             av_log(avctx, AV_LOG_ERROR, "Failed to post shutdown message to WGC thread\n");
 
-        void *wgc_res = nullptr;
-        pthread_join(ctx->wgc_thread, &wgc_res);
-        ret = (int)(intptr_t)wgc_res;
+        ctx->wgc_thread.join();
+        ret = ctx->wgc_thread_res;
 
         ctx->wgc_thread_id = 0;
-        ctx->wgc_thread_created = false;
     }
 
     return ret;
@@ -659,7 +662,7 @@ static int start_wgc_thread(AVFilterContext *avctx)
     GfxCaptureContext *cctx = CCTX(avctx->priv);
     GfxCaptureContextCpp *ctx = cctx->ctx;
 
-    if (ctx->wgc_thread_created || ctx->wgc_thread_id) {
+    if (ctx->wgc_thread.joinable() || ctx->wgc_thread_id) {
         av_log(avctx, AV_LOG_ERROR, "Double-creation of WGC thread\n");
         return AVERROR_BUG;
     }
@@ -667,13 +670,12 @@ static int start_wgc_thread(AVFilterContext *avctx)
     std::unique_lock wgc_lock(ctx->wgc_thread_init_mutex);
     ctx->wgc_thread_init_res = INT_MAX;
 
-    int ret = pthread_create(&ctx->wgc_thread, nullptr, wgc_thread_entry, avctx);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create WGC thread\n");
-        return ret;
+    try {
+        ctx->wgc_thread = std::thread(wgc_thread_entry, avctx);
+    } catch (const std::system_error &e) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to create WGC thread: %s\n", e.what());
+        return AVERROR_EXTERNAL;
     }
-
-    ctx->wgc_thread_created = true;
 
     if (!ctx->wgc_thread_init_cond.wait_for(wgc_lock, std::chrono::seconds(1), [&]() {
         return ctx->wgc_thread_init_res != INT_MAX;
@@ -997,6 +999,7 @@ static av_cold int load_functions(AVFilterContext *avctx)
     LOAD_DLL(ctx->fn.d3d11_handle, "d3d11.dll");
     LOAD_DLL(ctx->fn.coremsg_handle, "coremessaging.dll");
     LOAD_DLL(ctx->fn.user32_handle, "user32.dll");
+    LOAD_DLL(ctx->fn.kernel32_handle, "kernel32.dll");
     LOAD_DLL(ctx->fn.d3dcompiler_handle, "d3dcompiler_47.dll");
 
     LOAD_FUNC(ctx->fn.combase_handle, RoInitialize);
@@ -1011,6 +1014,8 @@ static av_cold int load_functions(AVFilterContext *avctx)
     LOAD_FUNC(ctx->fn.coremsg_handle, CreateDispatcherQueueController);
 
     LOAD_FUNC(ctx->fn.user32_handle, SetThreadDpiAwarenessContext);
+
+    LOAD_FUNC(ctx->fn.kernel32_handle, SetThreadDescription);
 
     LOAD_FUNC(ctx->fn.d3dcompiler_handle, D3DCompile);
 
