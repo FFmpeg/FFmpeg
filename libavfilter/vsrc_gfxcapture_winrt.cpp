@@ -264,7 +264,8 @@ static int wgc_calculate_client_area(AVFilterContext *avctx)
         return AVERROR_EXTERNAL;
     }
 
-    if (!MapWindowPoints(ctx->capture_hwnd, nullptr, (POINT*)&client_rect, 2)) {
+    SetLastError(0);
+    if (!MapWindowPoints(ctx->capture_hwnd, nullptr, (POINT*)&client_rect, 2) && GetLastError()) {
         av_log(avctx, AV_LOG_ERROR, "MapWindowPoints failed\n");
         return AVERROR_EXTERNAL;
     }
