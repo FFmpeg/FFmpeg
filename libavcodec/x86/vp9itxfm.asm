@@ -463,7 +463,6 @@ IADST4_FN iadst, IADST4, iadst, IADST4, ssse3
     pmulhrsw            m7, W_11585x2_REG                   ; m7=t5
     pmulhrsw            m5, W_11585x2_REG                   ; m5=t6
     SWAP                 5,  1
-    ; merged VP9_IDCT8_1D_FINALIZE to make register-sharing w/ avx easier
     psubw               m6, m0, m3                          ; m6=t0-t7
     paddw               m3, m0                              ; m3=t0+t7
     psubw               m2, m0, m1                          ; m2=t1-t6
@@ -711,7 +710,6 @@ cglobal vp9_idct_idct_8x8_add, 4, 4, %2, dst, stride, block, eob
 
 VP9_IDCT_IDCT_8x8_ADD_XMM sse2, 12
 VP9_IDCT_IDCT_8x8_ADD_XMM ssse3, 13
-VP9_IDCT_IDCT_8x8_ADD_XMM avx, 13
 
 ;---------------------------------------------------------------------------------------------
 ; void vp9_iadst_iadst_8x8_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
@@ -885,11 +883,8 @@ IADST8_FN idct,  IDCT8,  iadst, IADST8, sse2, 15
 IADST8_FN iadst, IADST8, idct,  IDCT8,  sse2, 15
 IADST8_FN iadst, IADST8, iadst, IADST8, sse2, 15
 IADST8_FN idct,  IDCT8,  iadst, IADST8, ssse3, 16
-IADST8_FN idct,  IDCT8,  iadst, IADST8, avx, 16
 IADST8_FN iadst, IADST8, idct,  IDCT8,  ssse3, 16
-IADST8_FN iadst, IADST8, idct,  IDCT8,  avx, 16
 IADST8_FN iadst, IADST8, iadst, IADST8, ssse3, 16
-IADST8_FN iadst, IADST8, iadst, IADST8, avx, 16
 
 ;---------------------------------------------------------------------------------------------
 ; void vp9_idct_idct_16x16_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);
@@ -1427,7 +1422,6 @@ cglobal vp9_idct_idct_16x16_add, 4, 6, 16, 512, dst, stride, block, eob
 
 VP9_IDCT_IDCT_16x16_ADD_XMM sse2
 VP9_IDCT_IDCT_16x16_ADD_XMM ssse3
-VP9_IDCT_IDCT_16x16_ADD_XMM avx
 
 %macro VP9_IDCT16_YMM_1D 0
     VP9_UNPACK_MULSUB_2W_4X  1,  15, 16305,  1606, [pd_8192], 0, 4 ; t8,  t15
@@ -1894,9 +1888,6 @@ IADST16_FN iadst, IADST16, iadst, IADST16, sse2
 IADST16_FN idct,  IDCT16,  iadst, IADST16, ssse3
 IADST16_FN iadst, IADST16, idct,  IDCT16,  ssse3
 IADST16_FN iadst, IADST16, iadst, IADST16, ssse3
-IADST16_FN idct,  IDCT16,  iadst, IADST16, avx
-IADST16_FN iadst, IADST16, idct,  IDCT16,  avx
-IADST16_FN iadst, IADST16, iadst, IADST16, avx
 
 ; in: data in m[0-15] except m0/m4, which are in [blockq+0] and [blockq+128]
 ; out: m[0-15] except m6, which is in [blockq+192]
@@ -2836,4 +2827,3 @@ cglobal vp9_idct_idct_32x32_add, 0, 6 + ARCH_X86_64 * 3, 16, 2048, dst, stride, 
 
 VP9_IDCT_IDCT_32x32_ADD_XMM sse2
 VP9_IDCT_IDCT_32x32_ADD_XMM ssse3
-VP9_IDCT_IDCT_32x32_ADD_XMM avx
