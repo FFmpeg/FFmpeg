@@ -1,0 +1,64 @@
+fb7725b8ccdfb537a600d9e16697078e *tests/data/fate/jpg-exif-autorotate.image2
+90658 tests/data/fate/jpg-exif-autorotate.image2
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 300x200
+#sar 0: 1/1
+0,          0,          0,        1,    90000, 0x458a544e
+[FRAME]
+media_type=video
+stream_index=0
+key_frame=1
+pts=0
+pts_time=0.000000
+pkt_dts=0
+pkt_dts_time=0.000000
+best_effort_timestamp=0
+best_effort_timestamp_time=0.000000
+duration=1
+duration_time=0.040000
+pkt_pos=0
+pkt_size=90658
+width=300
+height=200
+crop_top=0
+crop_bottom=0
+crop_left=0
+crop_right=0
+pix_fmt=yuv420p
+sample_aspect_ratio=1:1
+pict_type=I
+interlaced_frame=0
+top_field_first=0
+lossless=0
+repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
+alpha_mode=unspecified
+TAG:0x00FE=      0
+TAG:ImageWidth=    300
+TAG:ImageLength=    200
+TAG:BitsPerSample=      8,       8,       8
+TAG:Compression=  32773
+TAG:PhotometricInterpretation=      6
+TAG:StripOffsets=      8,    8085,   16195,   24339,   32486,   40643,   48791,   56934
+  65084,   73197,   81294,   89409
+TAG:SamplesPerPixel=      3
+TAG:RowsPerStrip=     18
+TAG:StripByteCounts=   8077,    8110,    8144,    8147,    8157,    8148,    8143,    8150
+   8113,    8097,    8115,     897
+TAG:XResolution=     72:1      
+TAG:YResolution=     72:1      
+TAG:ResolutionUnit=      2
+TAG:YCbCrSubSampling=      2,       2
+TAG:ReferenceBlackWhite=     15:1      ,     235:1      ,     128:1      ,     240:1      
+    128:1      ,     240:1      
+[SIDE_DATA]
+side_data_type=EXIF metadata
+size=360
+[/SIDE_DATA]
+[/FRAME]

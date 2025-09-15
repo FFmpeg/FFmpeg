@@ -1,0 +1,63 @@
+e3f1a70f55d680145fca061e4a515133 *tests/data/fate/jpg-exif-noautorotate.image2
+93327 tests/data/fate/jpg-exif-noautorotate.image2
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 200x300
+#sar 0: 1/1
+0,          0,          0,        1,   180000, 0x4c43539a
+[FRAME]
+media_type=video
+stream_index=0
+key_frame=1
+pts=0
+pts_time=0.000000
+pkt_dts=0
+pkt_dts_time=0.000000
+best_effort_timestamp=0
+best_effort_timestamp_time=0.000000
+duration=1
+duration_time=0.040000
+pkt_pos=0
+pkt_size=93327
+width=200
+height=300
+crop_top=0
+crop_bottom=0
+crop_left=0
+crop_right=0
+pix_fmt=rgb24
+sample_aspect_ratio=1:1
+pict_type=I
+interlaced_frame=0
+top_field_first=0
+lossless=0
+repeat_pict=0
+color_range=pc
+color_space=gbr
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
+alpha_mode=unspecified
+TAG:XResolution=      1:1      
+TAG:YResolution=      1:1      
+TAG:ResolutionUnit=      1
+TAG:YCbCrPositioning=      1
+TAG:ImageWidth=    200
+TAG:ImageLength=    300
+TAG:ExifIFD/PixelXDimension=    200
+TAG:ExifIFD/PixelYDimension=    300
+[SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=EXIF metadata
+size=144
+[/SIDE_DATA]
+[/FRAME]
