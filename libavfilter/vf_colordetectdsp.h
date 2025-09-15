@@ -22,6 +22,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "config.h"
+
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/pixfmt.h"
 
@@ -45,9 +48,6 @@ typedef struct FFColorDetectDSPContext {
                         ptrdiff_t width, ptrdiff_t height,
                         int alpha_max, int mpeg_range, int offset);
 } FFColorDetectDSPContext;
-
-void ff_color_detect_dsp_init(FFColorDetectDSPContext *dsp, int depth,
-                              enum AVColorRange color_range);
 
 void ff_color_detect_dsp_init_aarch64(FFColorDetectDSPContext *dsp, int depth,
                                       enum AVColorRange color_range);
@@ -193,6 +193,24 @@ ff_detect_alpha16_limited_c(const uint8_t *color, ptrdiff_t color_stride,
         alpha += alpha_stride;
     }
     return transparent ? FF_ALPHA_TRANSPARENT : 0;
+}
+
+static av_cold inline void
+ff_color_detect_dsp_init(FFColorDetectDSPContext *dsp, int depth,
+                         enum AVColorRange color_range)
+{
+    dsp->detect_range = depth > 8 ? ff_detect_range16_c : ff_detect_range_c;
+    if (color_range == AVCOL_RANGE_JPEG) {
+        dsp->detect_alpha = depth > 8 ? ff_detect_alpha16_full_c : ff_detect_alpha_full_c;
+    } else {
+        dsp->detect_alpha = depth > 8 ? ff_detect_alpha16_limited_c : ff_detect_alpha_limited_c;
+    }
+
+#if ARCH_AARCH64
+    ff_color_detect_dsp_init_aarch64(dsp, depth, color_range);
+#elif ARCH_X86
+    ff_color_detect_dsp_init_x86(dsp, depth, color_range);
+#endif
 }
 
 #endif /* AVFILTER_COLORDETECTDSP_H */
