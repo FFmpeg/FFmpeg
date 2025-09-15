@@ -20,7 +20,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/x86/cpu.h"
-#include "libavfilter/vf_colordetect.h"
+#include "libavfilter/vf_colordetectdsp.h"
 
 #define DETECT_RANGE_FUNC(FUNC_NAME, ASM_FUNC_NAME, C_FUNC_NAME, SHIFT, MMSIZE) \
 int ASM_FUNC_NAME(const uint8_t *src, ptrdiff_t stride,                         \

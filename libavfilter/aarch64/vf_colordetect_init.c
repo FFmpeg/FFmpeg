@@ -19,7 +19,7 @@
  */
 
 #include "libavutil/aarch64/cpu.h"
-#include "libavfilter/vf_colordetect.h"
+#include "libavfilter/vf_colordetectdsp.h"
 
 int ff_detect_alpha_full_neon(const uint8_t *color, ptrdiff_t color_stride,
                               const uint8_t *alpha, ptrdiff_t alpha_stride,

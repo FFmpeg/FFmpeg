@@ -19,7 +19,7 @@
 #include <string.h>
 #include "checkasm.h"
 
-#include "libavfilter/vf_colordetect.h"
+#include "libavfilter/vf_colordetectdsp.h"
 #include "libavutil/mem_internal.h"
 
 #define WIDTH  540

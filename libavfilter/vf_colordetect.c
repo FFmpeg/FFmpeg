@@ -37,7 +37,7 @@
 #include "formats.h"
 #include "video.h"
 
-#include "vf_colordetect.h"
+#include "vf_colordetectdsp.h"
 
 enum ColorDetectMode {
     COLOR_DETECT_COLOR_RANGE = 1 << 0,

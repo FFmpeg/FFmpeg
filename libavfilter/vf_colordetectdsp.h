@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_COLORDETECT_H
-#define AVFILTER_COLORDETECT_H
+#ifndef AVFILTER_COLORDETECTDSP_H
+#define AVFILTER_COLORDETECTDSP_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -195,4 +195,4 @@ ff_detect_alpha16_limited_c(const uint8_t *color, ptrdiff_t color_stride,
     return transparent ? FF_ALPHA_TRANSPARENT : 0;
 }
 
-#endif /* AVFILTER_COLORDETECT_H */
+#endif /* AVFILTER_COLORDETECTDSP_H */
