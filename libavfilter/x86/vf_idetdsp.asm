@@ -78,7 +78,7 @@ IDET_FILTER_LINE_16BIT 8
 ;******************************************************************************
 ; SSE2 8-bit implementation that does 16-bytes at a time:
 
-INIT_XMM sse2
+%macro IDET_FILTER_LINE 0
 cglobal idet_filter_line, 4, 6, 7, a, b, c, width, index, total
     xor       indexq, indexq
     pxor      m0, m0
@@ -92,7 +92,7 @@ cglobal idet_filter_line, 4, 6, 7, a, b, c, width, index, total
     psubusb   m5, m2, m3           ; ba
 
     movu      m3, [cq + indexq*1]  ; C
-    add       indexq, 0x10
+    add       indexq, mmsize
     psubusb   m4, m2               ; ab
     CMP       indexd, widthd
 
@@ -110,3 +110,7 @@ cglobal idet_filter_line, 4, 6, 7, a, b, c, width, index, total
     paddq     m0, m1
     movd      eax, m0
     RET
+%endmacro
+
+INIT_XMM sse2
+IDET_FILTER_LINE
