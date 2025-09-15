@@ -54,6 +54,7 @@ enum TiffTags {
     TIFF_MAKE               = 0x10F,
     TIFF_MODEL              = 0x110,
     TIFF_STRIP_OFFS         = 0x111,
+    TIFF_ORIENTATION        = 0x112,
     TIFF_SAMPLES_PER_PIXEL  = 0x115,
     TIFF_ROWSPERSTRIP       = 0x116,
     TIFF_STRIP_SIZE,

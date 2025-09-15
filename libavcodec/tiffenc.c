@@ -464,6 +464,13 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ADD_ENTRY1(s, TIFF_PHOTOMETRIC, AV_TIFF_SHORT, s->photometric_interpretation);
     ADD_ENTRY(s,  TIFF_STRIP_OFFS,  AV_TIFF_LONG,  strips, s->strip_offsets);
 
+    AVFrameSideData *sd = av_frame_get_side_data(pict, AV_FRAME_DATA_DISPLAYMATRIX);
+    if (sd) {
+        int orientation = av_exif_matrix_to_orientation((int32_t *) sd->data);
+        if (orientation >= 1 && orientation <= 8)
+            ADD_ENTRY1(s, TIFF_ORIENTATION, AV_TIFF_SHORT, orientation);
+    }
+
     if (s->bpp_tab_size)
         ADD_ENTRY1(s, TIFF_SAMPLES_PER_PIXEL, AV_TIFF_SHORT, s->bpp_tab_size);
 
