@@ -283,6 +283,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *picref)
 
         av_frame_free(&idet->cur );
         av_frame_free(&idet->next);
+        idet->csp = NULL;
     }
 
     idet->prev = idet->cur;
