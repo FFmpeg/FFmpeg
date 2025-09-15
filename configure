@@ -1092,7 +1092,7 @@ test_objcc(){
     log test_objcc "$@"
     cat > $TMPM
     log_file $TMPM
-    test_cmd $objcc -Werror=missing-prototypes $CPPFLAGS $OBJCFLAGS "$@" $OBJCC_C $(cc_o $TMPO) $TMPM
+    test_cmd $objcc -Werror=missing-prototypes $CPPFLAGS $CFLAGS $OBJCFLAGS "$@" $OBJCC_C $(cc_o $TMPO) $TMPM
 }
 
 test_nvcc(){
