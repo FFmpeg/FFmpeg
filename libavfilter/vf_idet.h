@@ -71,6 +71,8 @@ typedef struct IDETContext {
     int eof;
 } IDETContext;
 
+void ff_idet_dsp_init(IDETContext *idet, int for_16b);
+
 void ff_idet_init_x86(IDETContext *idet, int for_16b);
 
 /* main fall-back for left-over */
