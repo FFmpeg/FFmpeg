@@ -419,7 +419,7 @@ Toolchain options:
   --host-os=OS             compiler host OS [$target_os]
   --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]
   --extra-cxxflags=ECFLAGS add ECFLAGS to CXXFLAGS [$CXXFLAGS]
-  --extra-objcflags=FLAGS  add FLAGS to OBJCFLAGS [$CFLAGS]
+  --extra-objcflags=FLAGS  add FLAGS to OBJCFLAGS [$OBJCFLAGS]
   --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]
   --extra-ldexeflags=ELDFLAGS add ELDFLAGS to LDEXEFLAGS [$LDEXEFLAGS]
   --extra-ldsoflags=ELDFLAGS add ELDFLAGS to LDSOFLAGS [$LDSOFLAGS]
