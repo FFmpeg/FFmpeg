@@ -290,6 +290,9 @@ static const struct {
     #if CONFIG_HFLIP_FILTER
         { "vf_hflip", checkasm_check_vf_hflip },
     #endif
+    #if CONFIG_IDET_FILTER
+        { "vf_idet", checkasm_check_idet },
+    #endif
     #if CONFIG_NLMEANS_FILTER
         { "vf_nlmeans", checkasm_check_nlmeans },
     #endif
