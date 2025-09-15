@@ -108,9 +108,11 @@ itxfm_func(idct,  iadst, 4, sse2);
 itxfm_func(iadst, idct,  4, sse2);
 itxfm_func(iadst, iadst, 4, sse2);
 itxfm_funcs(4, ssse3);
+itxfm_funcs(4, avx2);
 itxfm_funcs(8, sse2);
 itxfm_funcs(8, ssse3);
 itxfm_funcs(8, avx);
+itxfm_funcs(8, avx2);
 itxfm_funcs(16, sse2);
 itxfm_funcs(16, ssse3);
 itxfm_funcs(16, avx);
@@ -118,6 +120,7 @@ itxfm_func(idct, idct, 32, sse2);
 itxfm_func(idct, idct, 32, ssse3);
 itxfm_func(idct, idct, 32, avx);
 itxfm_func(iwht, iwht, 4, mmx);
+itxfm_func(iwht, iwht, 4, avx2);
 itxfm_funcs(16, avx2);
 itxfm_funcs(16, avx512icl);
 itxfm_func(idct, idct, 32, avx2);
@@ -392,6 +395,18 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         init_fpel_func(0, 1, 64, avg, _8, avx2);
         if (ARCH_X86_64) {
 #if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
+            dsp->itxfm_add[4 /* lossless */][DCT_DCT] =
+            dsp->itxfm_add[4 /* lossless */][ADST_DCT] =
+            dsp->itxfm_add[4 /* lossless */][DCT_ADST] =
+            dsp->itxfm_add[4 /* lossless */][ADST_ADST] = ff_vp9_iwht_iwht_4x4_add_avx2;
+            dsp->itxfm_add[TX_4X4][DCT_DCT] = ff_vp9_idct_idct_4x4_add_avx2;
+            dsp->itxfm_add[TX_4X4][ADST_DCT]  = ff_vp9_idct_iadst_4x4_add_avx2;
+            dsp->itxfm_add[TX_4X4][DCT_ADST]  = ff_vp9_iadst_idct_4x4_add_avx2;
+            dsp->itxfm_add[TX_4X4][ADST_ADST] = ff_vp9_iadst_iadst_4x4_add_avx2;
+            dsp->itxfm_add[TX_8X8][DCT_DCT] = ff_vp9_idct_idct_8x8_add_avx2;
+            dsp->itxfm_add[TX_8X8][ADST_DCT]  = ff_vp9_idct_iadst_8x8_add_avx2;
+            dsp->itxfm_add[TX_8X8][DCT_ADST]  = ff_vp9_iadst_idct_8x8_add_avx2;
+            dsp->itxfm_add[TX_8X8][ADST_ADST] = ff_vp9_iadst_iadst_8x8_add_avx2;
             dsp->itxfm_add[TX_16X16][DCT_DCT] = ff_vp9_idct_idct_16x16_add_avx2;
             dsp->itxfm_add[TX_16X16][ADST_DCT]  = ff_vp9_idct_iadst_16x16_add_avx2;
             dsp->itxfm_add[TX_16X16][DCT_ADST]  = ff_vp9_iadst_idct_16x16_add_avx2;
