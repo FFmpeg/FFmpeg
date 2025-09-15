@@ -297,10 +297,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *picref)
     if (!idet->prev)
         return 0;
 
-    if (!idet->csp)
+    if (!idet->csp) {
         idet->csp = av_pix_fmt_desc_get(link->format);
-    if (idet->csp->comp[0].depth > 8)
-        ff_idet_dsp_init(&idet->dsp, 1);
+        ff_idet_dsp_init(&idet->dsp, idet->csp->comp[0].depth > 8);
+    }
 
     if (idet->analyze_interlaced_flag) {
         if (idet->cur->flags & AV_FRAME_FLAG_INTERLACED) {
