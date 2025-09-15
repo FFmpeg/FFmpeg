@@ -39,7 +39,7 @@ SECTION .text
   paddd     %1, %2
 %endmacro
 
-%macro IDET_FILTER_LINE_16BIT 1   ; %1=increment (4 or 8 words)
+%macro IDET_FILTER_LINE_16BIT 0
 cglobal idet_filter_line_16bit, 4, 5, 8, a, b, c, width, index
     xor       indexq, indexq
 %define m_zero m1
@@ -54,7 +54,7 @@ cglobal idet_filter_line_16bit, 4, 5, 8, a, b, c, width, index
     psubusw   m5, m2, m3             ; ba
 
     movu      m4, [cq + indexq * 2]  ; C
-    add       indexq, %1
+    add       indexq, mmsize >> 1
     psubusw   m3, m2                 ; ab
     CMP       indexd, widthd
 
@@ -67,13 +67,23 @@ cglobal idet_filter_line_16bit, 4, 5, 8, a, b, c, width, index
     paddd          m_sum, m5
     jl        .loop_16bit
 
+%if mmsize > 32
+    vextracti64x4 ym1, m0, 1
+    paddq     ym0, ym1
+%endif
     HADDD     m_sum, m2
     movd      eax, m_sum
     RET
 %endmacro
 
 INIT_XMM sse2
-IDET_FILTER_LINE_16BIT 8
+IDET_FILTER_LINE_16BIT
+
+INIT_XMM avx2
+IDET_FILTER_LINE_16BIT
+
+INIT_XMM avx512icl
+IDET_FILTER_LINE_16BIT
 
 ;******************************************************************************
 ; SSE2 8-bit implementation that does 16-bytes at a time:
@@ -106,11 +116,25 @@ cglobal idet_filter_line, 4, 6, 7, a, b, c, width, index, total
     jl       .sse2_loop
 
     paddq     m0, m1
-    movhlps   m1, m0
-    paddq     m0, m1
-    movd      eax, m0
+%if mmsize > 32
+    vextracti64x4 ym1, m0, 1
+    paddq     ym0, ym1
+%endif
+%if mmsize > 16
+    vextracti128 xm1, ym0, 1
+    paddq     xm0, xm1
+%endif
+    movhlps   xm1, xm0
+    paddq     xm0, xm1
+    movd      eax, xm0
     RET
 %endmacro
 
 INIT_XMM sse2
+IDET_FILTER_LINE
+
+INIT_YMM avx2
+IDET_FILTER_LINE
+
+INIT_ZMM avx512icl
 IDET_FILTER_LINE
