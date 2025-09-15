@@ -138,7 +138,8 @@ static int detect_range(AVFilterContext *ctx, void *arg,
 
     if (s->dsp.detect_range(in->data[0] + y_start * stride, stride,
                             in->width, h_slice, s->mpeg_min, s->mpeg_max))
-        atomic_store(&s->detected_range, AVCOL_RANGE_JPEG);
+        atomic_store_explicit(&s->detected_range, AVCOL_RANGE_JPEG,
+                              memory_order_relaxed);
 
     return 0;
 }
@@ -194,11 +195,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     ColorDetectContext *s = ctx->priv;
     const int nb_threads = FFMIN(inlink->h, s->nb_threads);
 
-    if (s->mode & COLOR_DETECT_COLOR_RANGE && s->detected_range == AVCOL_RANGE_UNSPECIFIED)
+    enum AVColorRange detected_range = atomic_load_explicit(&s->detected_range, memory_order_relaxed);
+    if (s->mode & COLOR_DETECT_COLOR_RANGE && detected_range == AVCOL_RANGE_UNSPECIFIED)
         ff_filter_execute(ctx, detect_range, in, NULL, nb_threads);
 
-    if (s->mode & COLOR_DETECT_ALPHA_MODE && s->detected_alpha != FF_ALPHA_NONE &&
-        s->detected_alpha != FF_ALPHA_STRAIGHT)
+    enum FFAlphaDetect detected_alpha = atomic_load_explicit(&s->detected_alpha, memory_order_relaxed);
+    if (s->mode & COLOR_DETECT_ALPHA_MODE && detected_alpha != FF_ALPHA_NONE &&
+        detected_alpha != FF_ALPHA_STRAIGHT)
         ff_filter_execute(ctx, detect_alpha, in, NULL, nb_threads);
 
     return ff_filter_frame(inlink->dst->outputs[0], in);
@@ -212,17 +215,21 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_log(ctx, AV_LOG_INFO, "Detected color properties:\n");
     if (s->mode & COLOR_DETECT_COLOR_RANGE) {
+        enum AVColorRange detected_range = atomic_load_explicit(&s->detected_range,
+                                                                memory_order_relaxed);
         av_log(ctx, AV_LOG_INFO, "  Color range: %s\n",
-               s->detected_range == AVCOL_RANGE_JPEG ? "JPEG / full range"
-                                                     : "undetermined");
+               detected_range == AVCOL_RANGE_JPEG ? "JPEG / full range"
+                                                  : "undetermined");
     }
 
     if (s->mode & COLOR_DETECT_ALPHA_MODE) {
+        enum FFAlphaDetect detected_alpha = atomic_load_explicit(&s->detected_alpha,
+                                                                 memory_order_relaxed);
         av_log(ctx, AV_LOG_INFO, "  Alpha mode: %s\n",
-               s->detected_alpha == FF_ALPHA_NONE        ? "none" :
-               s->detected_alpha == FF_ALPHA_STRAIGHT    ? "straight" :
-               s->detected_alpha == FF_ALPHA_TRANSPARENT ? "undetermined"
-                                                         : "opaque");
+               detected_alpha == FF_ALPHA_NONE        ? "none" :
+               detected_alpha == FF_ALPHA_STRAIGHT    ? "straight" :
+               detected_alpha == FF_ALPHA_TRANSPARENT ? "undetermined"
+                                                      : "opaque");
     }
 }
 
