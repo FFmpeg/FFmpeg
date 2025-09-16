@@ -42,17 +42,20 @@ static int idet_filter_line_##KIND(const uint8_t *a, const uint8_t *b,    \
 
 
 #define FUNC_MAIN_DECL_16bit(KIND, SPAN)                                       \
-int ff_idet_filter_line_16bit_##KIND(const uint16_t *a, const uint16_t *b,     \
-                                     const uint16_t *c, int w);                \
-static int idet_filter_line_16bit_##KIND(const uint16_t *a, const uint16_t *b, \
-                                         const uint16_t *c, int w) {           \
+int ff_idet_filter_line_16bit_##KIND(const uint8_t *a, const uint8_t *b,       \
+                                     const uint8_t *c, int w);                 \
+static int idet_filter_line_16bit_##KIND(const uint8_t *a, const uint8_t *b,   \
+                                         const uint8_t *c, int w) {            \
     int sum = 0;                                                               \
     const int left_over = w & (SPAN - 1);                                      \
-    w -= left_over;                                                            \
-    if (w > 0)                                                                 \
-        sum += ff_idet_filter_line_16bit_##KIND(a, b, c, w);                   \
-    if (left_over > 0)                                                         \
-        sum += ff_idet_filter_line_c_16bit(a + w, b + w, c + w, left_over);    \
+    const int w_main = w - left_over;                                          \
+    const int offset = w_main << 1;                                            \
+    if (w_main > 0)                                                            \
+        sum += ff_idet_filter_line_16bit_##KIND(a, b, c, w_main);              \
+    if (left_over > 0) {                                                       \
+        sum += ff_idet_filter_line_c_16bit(a + offset, b + offset, c + offset, \
+                                           left_over);                         \
+    }                                                                          \
     return sum;                                                                \
 }
 
@@ -66,7 +69,7 @@ av_cold void ff_idet_dsp_init_x86(IDETDSPContext *dsp, int depth)
     const int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSE2(cpu_flags)) {
-        dsp->filter_line = depth > 8 ? (ff_idet_filter_func)idet_filter_line_16bit_sse2 : idet_filter_line_sse2;
+        dsp->filter_line = depth > 8 ? idet_filter_line_16bit_sse2 : idet_filter_line_sse2;
     }
 #endif // HAVE_X86ASM
 }

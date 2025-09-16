@@ -36,13 +36,17 @@ int ff_idet_filter_line_c(const uint8_t *a, const uint8_t *b, const uint8_t *c, 
     return ret;
 }
 
-int ff_idet_filter_line_c_16bit(const uint16_t *a, const uint16_t *b, const uint16_t *c, int w)
+int ff_idet_filter_line_c_16bit(const uint8_t *a, const uint8_t *b, const uint8_t *c, int w)
 {
     int x;
     int ret=0;
 
+    const uint16_t *a16 = (const uint16_t *) a;
+    const uint16_t *b16 = (const uint16_t *) b;
+    const uint16_t *c16 = (const uint16_t *) c;
+
     for(x=0; x<w; x++){
-        int v = (*a++ + *c++) - 2 * *b++;
+        int v = (*a16++ + *c16++) - 2 * *b16++;
         ret += FFABS(v);
     }
 
@@ -51,7 +55,7 @@ int ff_idet_filter_line_c_16bit(const uint16_t *a, const uint16_t *b, const uint
 
 void av_cold ff_idet_dsp_init(IDETDSPContext *dsp, int depth)
 {
-    dsp->filter_line = depth > 8 ? (ff_idet_filter_func)ff_idet_filter_line_c_16bit : ff_idet_filter_line_c;
+    dsp->filter_line = depth > 8 ? ff_idet_filter_line_c_16bit : ff_idet_filter_line_c;
 #if ARCH_X86
     ff_idet_dsp_init_x86(dsp, depth);
 #endif

@@ -33,6 +33,6 @@ void ff_idet_dsp_init_x86(IDETDSPContext *idet, int depth);
 
 /* main fall-back for left-over */
 int ff_idet_filter_line_c(const uint8_t *a, const uint8_t *b, const uint8_t *c, int w);
-int ff_idet_filter_line_c_16bit(const uint16_t *a, const uint16_t *b, const uint16_t *c, int w);
+int ff_idet_filter_line_c_16bit(const uint8_t *a, const uint8_t *b, const uint8_t *c, int w);
 
 #endif /* AVFILTER_IDETDSP_H */
