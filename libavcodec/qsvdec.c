@@ -202,6 +202,7 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
             MFXClose(q->internal_qs.session);
             q->internal_qs.session = NULL;
         }
+        av_refstruct_unref(&q->frames_ctx.mids);
         av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
 
         q->frames_ctx.hw_frames_ctx = av_buffer_ref(hw_frames_ref);
