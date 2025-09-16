@@ -385,4 +385,5 @@ const FFInputFormat ff_flac_demuxer = {
     .read_timestamp = flac_read_timestamp,
     .raw_codec_id   = AV_CODEC_ID_FLAC,
     .priv_data_size = sizeof(FLACDecContext),
+    .flags_internal = FF_INFMT_FLAG_ID3V2_AUTO,
 };
