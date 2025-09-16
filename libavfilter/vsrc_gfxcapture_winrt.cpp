@@ -47,7 +47,6 @@ extern "C" {
 #include "vsrc_gfxcapture.h"
 }
 
-#include <atomic>
 #include <cinttypes>
 #include <condition_variable>
 #include <cwchar>
@@ -709,13 +708,11 @@ static int run_on_wgc_thread(AVFilterContext *avctx, F &&cb)
     struct CBData {
         std::mutex mutex;
         std::condition_variable cond;
-        std::atomic<bool> done { false };
-        std::atomic<bool> cancel { false };
-        int ret = AVERROR_BUG;
+        bool done { false };
+        bool cancel { false };
+        int ret { AVERROR_BUG };
     };
     auto cbdata = std::make_shared<CBData>();
-
-    std::unique_lock cblock(cbdata->mutex);
 
     boolean res = 0;
     CHECK_HR_RET(wgctx->dispatcher_queue->TryEnqueue(
@@ -723,7 +720,7 @@ static int run_on_wgc_thread(AVFilterContext *avctx, F &&cb)
             [cb = std::forward<F>(cb), cbdata]() {
                 {
                     std::lock_guard lock(cbdata->mutex);
-                    if (cbdata->cancel.load(std::memory_order_acquire))
+                    if (cbdata->cancel)
                         return S_OK;
 
                     try {
@@ -734,7 +731,7 @@ static int run_on_wgc_thread(AVFilterContext *avctx, F &&cb)
                         cbdata->ret = AVERROR_BUG;
                     }
 
-                    cbdata->done.store(true, std::memory_order_release);
+                    cbdata->done = true;
                 }
 
                 cbdata->cond.notify_one();
@@ -745,8 +742,9 @@ static int run_on_wgc_thread(AVFilterContext *avctx, F &&cb)
         return AVERROR_EXTERNAL;
     }
 
-    if (!cbdata->cond.wait_for(cblock, std::chrono::seconds(1), [&]() { return cbdata->done.load(std::memory_order_acquire); })) {
-        cbdata->cancel.store(true, std::memory_order_release);
+    std::unique_lock cblock(cbdata->mutex);
+    if (!cbdata->cond.wait_for(cblock, std::chrono::seconds(1), [&]() { return cbdata->done; })) {
+        cbdata->cancel = true;
         av_log(avctx, AV_LOG_ERROR, "WGC thread callback timed out\n");
         return AVERROR(ETIMEDOUT);
     }
