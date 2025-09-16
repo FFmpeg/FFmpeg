@@ -16,67 +16,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_IDET_H
-#define AVFILTER_IDET_H
+#ifndef AVFILTER_IDETDSP_H
+#define AVFILTER_IDETDSP_H
 
-#include "libavutil/pixdesc.h"
-#include "avfilter.h"
-
-#define HIST_SIZE 4
+#include <stdint.h>
 
 typedef int (*ff_idet_filter_func)(const uint8_t *a, const uint8_t *b, const uint8_t *c, int w);
 
-typedef enum {
-    TFF,
-    BFF,
-    PROGRESSIVE,
-    UNDETERMINED,
-} Type;
-
-typedef enum {
-    REPEAT_NONE,
-    REPEAT_TOP,
-    REPEAT_BOTTOM,
-} RepeatedField;
-
-typedef struct IDETContext {
-    const AVClass *class;
-    float interlace_threshold;
-    float progressive_threshold;
-    float repeat_threshold;
-    float half_life;
-    uint64_t decay_coefficient;
-
-    Type last_type;
-
-    uint64_t repeats[3];
-    uint64_t prestat[4];
-    uint64_t poststat[4];
-    uint64_t total_repeats[3];
-    uint64_t total_prestat[4];
-    uint64_t total_poststat[4];
-
-    uint8_t history[HIST_SIZE];
-
-    AVFrame *cur;
-    AVFrame *next;
-    AVFrame *prev;
+typedef struct IDETDSPContext {
     ff_idet_filter_func filter_line;
+} IDETDSPContext;
 
-    int interlaced_flag_accuracy;
-    int analyze_interlaced_flag;
-    int analyze_interlaced_flag_done;
+void ff_idet_dsp_init(IDETDSPContext *idet, int for_16b);
 
-    const AVPixFmtDescriptor *csp;
-    int eof;
-} IDETContext;
-
-void ff_idet_dsp_init(IDETContext *idet, int for_16b);
-
-void ff_idet_init_x86(IDETContext *idet, int for_16b);
+void ff_idet_dsp_init_x86(IDETDSPContext *idet, int for_16b);
 
 /* main fall-back for left-over */
 int ff_idet_filter_line_c(const uint8_t *a, const uint8_t *b, const uint8_t *c, int w);
 int ff_idet_filter_line_c_16bit(const uint16_t *a, const uint16_t *b, const uint16_t *c, int w);
 
-#endif
+#endif /* AVFILTER_IDETDSP_H */

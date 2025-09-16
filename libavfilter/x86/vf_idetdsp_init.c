@@ -20,7 +20,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavfilter/vf_idet.h"
+#include "libavfilter/vf_idetdsp.h"
 
 #if HAVE_X86ASM
 
@@ -60,13 +60,13 @@ FUNC_MAIN_DECL(sse2, 16)
 FUNC_MAIN_DECL_16bit(sse2, 8)
 
 #endif
-av_cold void ff_idet_init_x86(IDETContext *idet, int for_16b)
+av_cold void ff_idet_dsp_init_x86(IDETDSPContext *dsp, int for_16b)
 {
 #if HAVE_X86ASM
     const int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSE2(cpu_flags)) {
-        idet->filter_line = for_16b ? (ff_idet_filter_func)idet_filter_line_16bit_sse2 : idet_filter_line_sse2;
+        dsp->filter_line = for_16b ? (ff_idet_filter_func)idet_filter_line_16bit_sse2 : idet_filter_line_sse2;
     }
 #endif // HAVE_X86ASM
 }
