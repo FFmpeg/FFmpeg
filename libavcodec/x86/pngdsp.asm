@@ -151,6 +151,7 @@ cglobal add_png_paeth_prediction, 5, 7, %1, dst, src, top, w, bpp, end, cntr
     dec              cntrq
     jge .bpp_loop
     POP               dstq
+    emms
     RET
 %endmacro
 
