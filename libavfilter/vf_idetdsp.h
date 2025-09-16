@@ -27,9 +27,9 @@ typedef struct IDETDSPContext {
     ff_idet_filter_func filter_line;
 } IDETDSPContext;
 
-void ff_idet_dsp_init(IDETDSPContext *idet, int for_16b);
+void ff_idet_dsp_init(IDETDSPContext *idet, int depth);
 
-void ff_idet_dsp_init_x86(IDETDSPContext *idet, int for_16b);
+void ff_idet_dsp_init_x86(IDETDSPContext *idet, int depth);
 
 /* main fall-back for left-over */
 int ff_idet_filter_line_c(const uint8_t *a, const uint8_t *b, const uint8_t *c, int w);

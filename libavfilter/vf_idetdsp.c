@@ -49,10 +49,10 @@ int ff_idet_filter_line_c_16bit(const uint16_t *a, const uint16_t *b, const uint
     return ret;
 }
 
-void av_cold ff_idet_dsp_init(IDETDSPContext *dsp, int for_16b)
+void av_cold ff_idet_dsp_init(IDETDSPContext *dsp, int depth)
 {
-    dsp->filter_line = for_16b ? (ff_idet_filter_func)ff_idet_filter_line_c_16bit : ff_idet_filter_line_c;
+    dsp->filter_line = depth > 8 ? (ff_idet_filter_func)ff_idet_filter_line_c_16bit : ff_idet_filter_line_c;
 #if ARCH_X86
-    ff_idet_dsp_init_x86(dsp, for_16b);
+    ff_idet_dsp_init_x86(dsp, depth);
 #endif
 }

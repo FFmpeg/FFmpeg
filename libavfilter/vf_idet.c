@@ -299,7 +299,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *picref)
 
     if (!idet->csp) {
         idet->csp = av_pix_fmt_desc_get(link->format);
-        ff_idet_dsp_init(&idet->dsp, idet->csp->comp[0].depth > 8);
+        ff_idet_dsp_init(&idet->dsp, idet->csp->comp[0].depth);
     }
 
     if (idet->analyze_interlaced_flag) {
@@ -429,7 +429,7 @@ static av_cold int init(AVFilterContext *ctx)
     else
         idet->decay_coefficient = PRECISION;
 
-    ff_idet_dsp_init(&idet->dsp, 0);
+    ff_idet_dsp_init(&idet->dsp, 8);
 
     return 0;
 }
