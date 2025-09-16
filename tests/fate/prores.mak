@@ -25,4 +25,7 @@ fate-prores-gray:      CMD = framecrc -flags +bitexact -c:a aac_fixed -i $(TARGE
 FATE_PRORES_METADATA_BSF += fate-prores-metadata
 fate-prores-metadata: CMD = md5 -i $(TARGET_SAMPLES)/prores/Sequence_1-Apple_ProRes_422_Proxy.mov -c:v copy -bsf:v prores_metadata=color_primaries=bt470bg:color_trc=bt709:colorspace=smpte170m -bitexact -f mov
 
+FATE_SAMPLES_FFMPEG_FFPROBE-$(call FRAMECRC, MOV, PRORES,) += fate-prores-probe
+fate-prores-probe: CMD = stream_demux mov $(TARGET_SAMPLES)/prores/Sequence_1-Apple_ProRes_422_HQ.mov "" "-c:v copy" "-show_frames"
+
 FATE_SAMPLES_FFMPEG-$(call DEMMUX, MOV, MOV, PRORES_METADATA_BSF) += $(FATE_PRORES_METADATA_BSF)
