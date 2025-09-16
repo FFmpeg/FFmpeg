@@ -2320,6 +2320,8 @@ void ff_decode_internal_sync(AVCodecContext *dst, const AVCodecContext *src)
     const DecodeContext *src_dc = decode_ctx(src->internal);
     DecodeContext *dst_dc = decode_ctx(dst->internal);
 
+    dst_dc->initial_pict_type = src_dc->initial_pict_type;
+    dst_dc->intra_only_flag   = src_dc->intra_only_flag;
     av_refstruct_replace(&dst_dc->lcevc, src_dc->lcevc);
 }
 

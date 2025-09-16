@@ -115,10 +115,6 @@ typedef struct PerThreadContext {
     int hwaccel_threadsafe;
 
     atomic_int debug_threads;       ///< Set if the FF_DEBUG_THREADS option is set.
-
-    /// The following two fields have the same semantics as the DecodeContext field
-    int intra_only_flag;
-    enum AVPictureType initial_pict_type;
 } PerThreadContext;
 
 /**
@@ -819,13 +815,6 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
 {
     AVCodecContext *copy;
     int err;
-
-    p->initial_pict_type = AV_PICTURE_TYPE_NONE;
-    if (avctx->codec_descriptor->props & AV_CODEC_PROP_INTRA_ONLY) {
-        p->intra_only_flag = AV_FRAME_FLAG_KEY;
-        if (avctx->codec_type == AVMEDIA_TYPE_VIDEO)
-            p->initial_pict_type = AV_PICTURE_TYPE_I;
-    }
 
     atomic_init(&p->state, STATE_INPUT_READY);
 
