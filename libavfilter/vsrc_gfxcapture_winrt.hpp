@@ -159,9 +159,9 @@ private:
 template<class Iface, typename... Args, typename F>
 static Microsoft::WRL::ComPtr<Iface> create_cb_handler(F&& cb_func)
 {
-    return Microsoft::WRL::ComPtr<Iface>(
-        new FFTypedCBHandler<Iface, F, Args...>(std::forward<F>(cb_func))
-    );
+    Microsoft::WRL::ComPtr<Iface> res;
+    res.Attach(new FFTypedCBHandler<Iface, F, Args...>(std::forward<F>(cb_func)));
+    return res;
 }
 
 /******************************************
