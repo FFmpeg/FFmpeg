@@ -1394,9 +1394,9 @@ static int process_frame_if_exists(AVFilterLink *outlink)
         ComPtr<ID3D11Texture2D> frame_texture;
         TimeSpan frame_time = { 0 };
 
-        ret = wgc_try_get_next_frame(avctx, capture_frame);
-        if (ret < 0)
-            return ret;
+        int res = wgc_try_get_next_frame(avctx, capture_frame);
+        if (res < 0)
+            return res;
 
         CHECK_HR_RET(capture_frame->get_SystemRelativeTime(&frame_time));
 
