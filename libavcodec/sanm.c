@@ -1190,8 +1190,16 @@ static int old_codec37(SANMVideoContext *ctx, GetByteContext *gb, int width, int
                 } else if ((flags & 4) && (code == 0xFE)) {
                     if (bytestream2_get_bytes_left(gb) < 4)
                        return AVERROR_INVALIDDATA;
-                   for (k = 0; k < 4; k++)
-                       memset(dst + i + k * stride, bytestream2_get_byteu(gb), 4);
+                    for (k = 0; k < 4; k += 2) {
+                        uint8_t c1 = bytestream2_get_byteu(gb);
+                        uint8_t c2 = bytestream2_get_byteu(gb);
+                        for (l = 0; l < 2; l++) {
+                            *(dst + i + ((k + l) * stride) + 0) = c1;
+                            *(dst + i + ((k + l) * stride) + 1) = c1;
+                            *(dst + i + ((k + l) * stride) + 2) = c2;
+                            *(dst + i + ((k + l) * stride) + 3) = c2;
+                        }
+                    }
                 } else if ((flags & 4) && (code == 0xFD)) {
                     if (bytestream2_get_bytes_left(gb) < 1)
                         return AVERROR_INVALIDDATA;
