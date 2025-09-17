@@ -1817,8 +1817,10 @@ static int whip_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret == AVERROR(EINVAL)) {
             av_log(whip, AV_LOG_WARNING, "Ignore failed to write packet=%dB, ret=%d\n", pkt->size, ret);
             ret = 0;
+        } else if (ret == AVERROR(EAGAIN)) {
+            av_log(whip, AV_LOG_ERROR, "UDP send blocked, please increase the buffer via -buffer_size\n");
         } else
-            av_log(whip, AV_LOG_ERROR, "Failed to write packet, size=%d\n", pkt->size);
+            av_log(whip, AV_LOG_ERROR, "Failed to write packet, size=%d, ret=%d\n", pkt->size, ret);
         goto end;
     }
 
