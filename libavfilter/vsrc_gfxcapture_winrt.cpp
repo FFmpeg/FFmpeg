@@ -327,7 +327,7 @@ static int wgc_setup_gfxcapture_session(AVFilterContext *avctx)
     std::unique_ptr<GfxCaptureContextWgc> &wgctx = ctx->wgc;
     int ret;
 
-    ComPtr<IDirect3D11CaptureFramePoolStatics> frame_pool_statics;
+    ComPtr<IDirect3D11CaptureFramePoolStatics2> frame_pool_statics;
     ComPtr<ID3D11Device> d3d11_device = ctx->device_hwctx->device;
     ComPtr<ID3D10Multithread> d3d10_multithread;
     ComPtr<IDXGIDevice> dxgi_device;
@@ -350,8 +350,8 @@ static int wgc_setup_gfxcapture_session(AVFilterContext *avctx)
     CHECK_HR_RET(d3d11_device.As(&dxgi_device));
     CHECK_HR_RET(ctx->fn.CreateDirect3D11DeviceFromDXGIDevice(dxgi_device.Get(), &wgctx->d3d_device));
 
-    CHECK_HR_RET(get_activation_factory<IDirect3D11CaptureFramePoolStatics>(ctx, RuntimeClass_Windows_Graphics_Capture_Direct3D11CaptureFramePool, &frame_pool_statics));
-    CHECK_HR_RET(frame_pool_statics->Create(wgctx->d3d_device.Get(), fmt, CAPTURE_POOL_SIZE, wgctx->cap_size, &wgctx->frame_pool));
+    CHECK_HR_RET(get_activation_factory<IDirect3D11CaptureFramePoolStatics2>(ctx, RuntimeClass_Windows_Graphics_Capture_Direct3D11CaptureFramePool, &frame_pool_statics));
+    CHECK_HR_RET(frame_pool_statics->CreateFreeThreaded(wgctx->d3d_device.Get(), fmt, CAPTURE_POOL_SIZE, wgctx->cap_size, &wgctx->frame_pool));
     CHECK_HR_RET(wgctx->frame_pool->CreateCaptureSession(wgctx->capture_item.Get(), &wgctx->capture_session));
 
     if (SUCCEEDED(wgctx->capture_session.As(&session2))) {
