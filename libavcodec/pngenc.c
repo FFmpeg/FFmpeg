@@ -646,6 +646,34 @@ static int add_icc_profile_size(AVCodecContext *avctx, const AVFrame *pict,
     return 0;
 }
 
+static int add_exif_profile_size(AVCodecContext *avctx, const AVFrame *pict,
+                                 uint64_t *max_packet_size)
+{
+    const AVFrameSideData *sd;
+    uint64_t new_pkt_size;
+    /* includes orientation tag */
+    const int base_exif_size = 92;
+    uint64_t estimated_exif_size;
+
+    sd = av_frame_get_side_data(pict, AV_FRAME_DATA_EXIF);
+    estimated_exif_size = sd ? sd->size : 0;
+    sd = av_frame_get_side_data(pict, AV_FRAME_DATA_DISPLAYMATRIX);
+    if (sd)
+        estimated_exif_size += base_exif_size;
+
+    if (!estimated_exif_size)
+        return 0;
+
+    /* 12 is the png chunk header size */
+    new_pkt_size = *max_packet_size + estimated_exif_size + 12;
+    if (new_pkt_size < *max_packet_size)
+        return AVERROR_INVALIDDATA;
+
+    *max_packet_size = new_pkt_size;
+
+    return 0;
+}
+
 static int encode_png(AVCodecContext *avctx, AVPacket *pkt,
                       const AVFrame *pict, int *got_packet)
 {
@@ -664,6 +692,10 @@ static int encode_png(AVCodecContext *avctx, AVPacket *pkt,
         );
     if ((ret = add_icc_profile_size(avctx, pict, &max_packet_size)))
         return ret;
+    ret = add_exif_profile_size(avctx, pict, &max_packet_size);
+    if (ret < 0)
+        return ret;
+
     ret = ff_alloc_packet(avctx, pkt, max_packet_size);
     if (ret < 0)
         return ret;
@@ -996,16 +1028,23 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
             enc_row_size +
             (4 + 12) * (((int64_t)enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) // fdAT * ceil(enc_row_size / IOBUF_SIZE)
         );
-    if ((ret = add_icc_profile_size(avctx, pict, &max_packet_size)))
-        return ret;
     if (max_packet_size > INT_MAX)
         return AVERROR(ENOMEM);
 
     if (avctx->frame_num == 0) {
         if (!pict)
             return AVERROR(EINVAL);
-
-        s->bytestream = s->extra_data = av_malloc(FF_INPUT_BUFFER_MIN_SIZE);
+        uint64_t extradata_size = FF_INPUT_BUFFER_MIN_SIZE;
+        ret = add_icc_profile_size(avctx, pict, &extradata_size);
+        if (ret < 0)
+            return ret;
+        ret = add_exif_profile_size(avctx, pict, &extradata_size);
+        if (ret < 0)
+            return ret;
+        /* the compiler will optimize this out if UINT64_MAX == SIZE_MAX */
+        if (extradata_size > SIZE_MAX)
+            return AVERROR(ENOMEM);
+        s->bytestream = s->extra_data = av_malloc(extradata_size);
         if (!s->extra_data)
             return AVERROR(ENOMEM);
 
