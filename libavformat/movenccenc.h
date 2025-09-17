@@ -91,6 +91,12 @@ int ff_mov_cenc_avc_write_nal_units(AVFormatContext *s, MOVMuxCencContext* ctx, 
 
 int ff_mov_cenc_av1_write_obus(AVFormatContext *s, MOVMuxCencContext* ctx,
                                AVIOContext *pb, const AVPacket *pkt);
+
+/**
+ * Clear subsample data. To be called for fragmented output.
+ */
+void ff_mov_cenc_flush(MOVMuxCencContext* ctx);
+
 /**
  * Write the cenc atoms that should reside inside stbl
  */

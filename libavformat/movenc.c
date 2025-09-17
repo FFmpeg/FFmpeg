@@ -6592,6 +6592,9 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
             mov_write_moof_tag(s->pb, mov, moof_tracks, mdat_size);
             mov->fragments++;
 
+            if (track->cenc.aes_ctr)
+                ff_mov_cenc_flush(&track->cenc);
+
             avio_wb32(s->pb, mdat_size + 8);
             ffio_wfourcc(s->pb, "mdat");
             mdat_start = avio_tell(s->pb);

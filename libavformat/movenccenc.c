@@ -629,6 +629,12 @@ int ff_mov_cenc_init(MOVMuxCencContext* ctx, uint8_t* encryption_key,
     return 0;
 }
 
+void ff_mov_cenc_flush(MOVMuxCencContext* ctx)
+{
+    ctx->auxiliary_info_entries = 0;
+    ctx->auxiliary_info_size    = 0;
+}
+
 void ff_mov_cenc_free(MOVMuxCencContext* ctx)
 {
     av_aes_ctr_free(ctx->aes_ctr);
