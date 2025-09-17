@@ -436,7 +436,7 @@ static int wgc_setup_gfxcapture_capture(AVFilterContext *avctx)
     return 0;
 }
 
-static int wgc_try_get_next_frame(AVFilterContext *avctx, ComPtr<IDirect3D11CaptureFrame> *capture_frame)
+static int wgc_try_get_next_frame(AVFilterContext *avctx, ComPtr<IDirect3D11CaptureFrame> &capture_frame)
 {
     GfxCaptureContext *cctx = CCTX(avctx->priv);
     GfxCaptureContextCpp *ctx = cctx->ctx;
@@ -447,11 +447,11 @@ static int wgc_try_get_next_frame(AVFilterContext *avctx, ComPtr<IDirect3D11Capt
     ComPtr<ID3D11Texture2D> frame_texture;
     SizeInt32 frame_size = { 0, 0 };
 
-    CHECK_HR_RET(wgctx->frame_pool->TryGetNextFrame(capture_frame->ReleaseAndGetAddressOf()));
-    if (!capture_frame->Get())
+    CHECK_HR_RET(wgctx->frame_pool->TryGetNextFrame(&capture_frame));
+    if (!capture_frame)
         return AVERROR(EAGAIN);
 
-    CHECK_HR_RET(capture_frame->Get()->get_ContentSize(&frame_size));
+    CHECK_HR_RET(capture_frame->get_ContentSize(&frame_size));
     if (frame_size.Width != wgctx->cap_size.Width || frame_size.Height != wgctx->cap_size.Height) {
         av_log(avctx, AV_LOG_VERBOSE, "Capture size changed to %dx%d\n", frame_size.Width, frame_size.Height);
 
@@ -1394,7 +1394,7 @@ static int process_frame_if_exists(AVFilterLink *outlink)
         ComPtr<ID3D11Texture2D> frame_texture;
         TimeSpan frame_time = { 0 };
 
-        ret = wgc_try_get_next_frame(avctx, &capture_frame);
+        ret = wgc_try_get_next_frame(avctx, capture_frame);
         if (ret < 0)
             return ret;
 
