@@ -229,7 +229,7 @@ static void wgc_stop_capture_session(AVFilterContext *avctx) noexcept
     if (wgctx->capture_session) {
         ComPtr<IClosable> closable;
         if (SUCCEEDED(wgctx->capture_session.As(&closable))) {
-            closable->Close();
+            CHECK_HR_LOG(closable->Close());
         } else {
             av_log(avctx, AV_LOG_ERROR, "Failed to get capture session IClosable interface\n");
         }
@@ -243,6 +243,11 @@ static void wgc_stop_capture_session(AVFilterContext *avctx) noexcept
             av_log(avctx, AV_LOG_ERROR, "Failed to get frame pool IClosable interface\n");
         }
     }
+
+    wgctx->capture_session.Reset();
+    wgctx->frame_pool.Reset();
+    wgctx->capture_item.Reset();
+    wgctx->d3d_device.Reset();
 }
 
 static int wgc_calculate_client_area(AVFilterContext *avctx)
@@ -557,6 +562,9 @@ static int wgc_thread_worker(AVFilterContext *avctx)
 
         if (!msg.hwnd && msg.message == WM_WGC_THREAD_SHUTDOWN) {
             av_log(avctx, AV_LOG_DEBUG, "Initializing WGC thread shutdown\n");
+
+            wgc_stop_capture_session(avctx);
+
             if (FAILED(wgctx->dispatcher_queue_controller->ShutdownQueueAsync(&async))) {
                 av_log(avctx, AV_LOG_ERROR, "Failed to shutdown dispatcher queue\n");
                 return AVERROR_EXTERNAL;
