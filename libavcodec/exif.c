@@ -477,7 +477,7 @@ static int exif_decode_tag(void *logctx, GetByteContext *gb, int le,
                                  "payload: %" PRIu32 "\n", entry->id, type, count, tell, payload);
 
     /* AV_TIFF_IFD is the largest, numerically */
-    if (type > AV_TIFF_IFD)
+    if (type > AV_TIFF_IFD || count >= INT_MAX/8U)
         return AVERROR_INVALIDDATA;
 
     is_ifd = type == AV_TIFF_IFD || ff_tis_ifd(entry->id) || entry->id == MAKERNOTE_TAG;
