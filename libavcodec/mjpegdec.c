@@ -1796,9 +1796,6 @@ next_field:
     } else if (s->lossless) {
         av_assert0(s->picture_ptr == s->picture);
         if (CONFIG_JPEGLS_DECODER && s->ls) {
-//            for () {
-//            reset_ls_coding_parameters(s, 0);
-
             if ((ret = ff_jpegls_decode_picture(s, predictor,
                                                 point_transform, ilv)) < 0)
                 return ret;
