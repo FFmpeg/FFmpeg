@@ -1016,6 +1016,11 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
     )
         return AVERROR_INVALIDDATA;
 
+    if (ac_size <= 0) {
+        avpriv_request_sample(s->avctx, "Zero ac_size");
+        return AVERROR_INVALIDDATA;
+    }
+
     if ((uint64_t)rle_raw_size > INT_MAX) {
         avpriv_request_sample(s->avctx, "Too big rle_raw_size");
         return AVERROR_INVALIDDATA;
