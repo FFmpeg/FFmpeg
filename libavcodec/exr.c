@@ -175,6 +175,9 @@ typedef struct EXRContext {
 
     int is_luma;/* 1 if there is an Y plane */
 
+#define M(chr) (1<<chr - 'A')
+    int has_channel; ///< combinatin of flags representing the channel codes A-Z
+
     GetByteContext gb;
     const uint8_t *buf;
     int buf_size;
@@ -1622,6 +1625,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
     s->is_tile            = 0;
     s->is_multipart       = 0;
     s->is_luma            = 0;
+    s->has_channel        = 0;
     s->current_part       = 0;
 
     if (bytestream2_get_bytes_left(gb) < 10) {
@@ -1725,23 +1729,26 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                 }
 
                 if (layer_match) { /* only search channel if the layer match is valid */
+                    if (strlen(ch_gb.buffer) == 1) {
+                        int ch_chr = av_toupper(*ch_gb.buffer);
+                        if (ch_chr >= 'A' && ch_chr <= 'Z')
+                            s->has_channel |= M(ch_chr);
+                        av_log(s->avctx, AV_LOG_DEBUG, "%c\n", ch_chr);
+                    }
+
                     if (!av_strcasecmp(ch_gb.buffer, "R") ||
                         !av_strcasecmp(ch_gb.buffer, "X") ||
                         !av_strcasecmp(ch_gb.buffer, "U")) {
                         channel_index = 0;
-                        s->is_luma = 0;
                     } else if (!av_strcasecmp(ch_gb.buffer, "G") ||
                                !av_strcasecmp(ch_gb.buffer, "V")) {
                         channel_index = 1;
-                        s->is_luma = 0;
                     } else if (!av_strcasecmp(ch_gb.buffer, "Y")) {
                         channel_index = 1;
-                        s->is_luma = 1;
                     } else if (!av_strcasecmp(ch_gb.buffer, "B") ||
                                !av_strcasecmp(ch_gb.buffer, "Z") ||
                                !av_strcasecmp(ch_gb.buffer, "W")) {
                         channel_index = 2;
-                        s->is_luma = 0;
                     } else if (!av_strcasecmp(ch_gb.buffer, "A")) {
                         channel_index = 3;
                     } else {
@@ -1816,6 +1823,20 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                 } else {/* Float or UINT32 */
                     s->current_channel_offset += 4;
                 }
+            }
+            if        (!((M('R') + M('G') + M('B')) & ~s->has_channel)) {
+                s->is_luma = 0;
+            } else if (!((M('X') + M('Y') + M('Z')) & ~s->has_channel)) {
+                s->is_luma = 0;
+            } else if (!((M('Y') + M('U') + M('V')) & ~s->has_channel)) {
+                s->is_luma = 0;
+            } else if (!((M('Y')                  ) & ~s->has_channel) &&
+                       !((M('R') + M('G') + M('B') + M('U') + M('V') + M('X') + M('Z')) &  s->has_channel)) {
+                s->is_luma = 1;
+            } else {
+                avpriv_request_sample(s->avctx, "Uncommon channel combination");
+                ret = AVERROR(AVERROR_PATCHWELCOME);
+                goto fail;
             }
 
             /* Check if all channels are set with an offset or if the channels
