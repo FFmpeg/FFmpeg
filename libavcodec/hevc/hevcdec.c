@@ -45,6 +45,7 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "golomb.h"
+#include "h274.h"
 #include "hevc.h"
 #include "parse.h"
 #include "hevcdec.h"
@@ -3496,8 +3497,7 @@ static int hevc_frame_end(HEVCContext *s, HEVCLayerContext *l)
             av_assert0(0);
             return AVERROR_BUG;
         case AV_FILM_GRAIN_PARAMS_H274:
-            ret = ff_h274_apply_film_grain(out->frame_grain, out->f,
-                                           &s->h274db, fgp);
+            ret = ff_h274_apply_film_grain(out->frame_grain, out->f, fgp);
             break;
         case AV_FILM_GRAIN_PARAMS_AV1:
             ret = ff_aom_apply_film_grain(out->frame_grain, out->f, fgp);

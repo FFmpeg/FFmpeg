@@ -30,10 +30,10 @@
 #include "error_resilience.h"
 #include "avcodec.h"
 #include "h264dec.h"
+#include "h274.h"
 #include "hwaccel_internal.h"
 #include "mpegutils.h"
 #include "libavutil/refstruct.h"
-#include "thread.h"
 #include "threadframe.h"
 
 void ff_h264_unref_picture(H264Picture *pic)
@@ -213,7 +213,7 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
 
         err = AVERROR_INVALIDDATA;
         if (sd) // a decoding error may have happened before the side data could be allocated
-            err = ff_h274_apply_film_grain(cur->f_grain, cur->f, &h->h274db,
+            err = ff_h274_apply_film_grain(cur->f_grain, cur->f,
                                            (AVFilmGrainParams *) sd->data);
         if (err < 0) {
             av_log(h->avctx, AV_LOG_WARNING, "Failed synthesizing film "

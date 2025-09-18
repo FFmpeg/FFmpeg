@@ -30,16 +30,6 @@
 
 #include "libavutil/film_grain_params.h"
 
-// Must be initialized to {0} prior to first usage
-typedef struct H274FilmGrainDatabase {
-    // Database of film grain patterns, lazily computed as-needed
-    int8_t db[13 /* h */][13 /* v */][64][64];
-    uint16_t residency[13 /* h */]; // bit field of v
-
-    // Temporary buffer for slice generation
-    int16_t slice_tmp[64][64];
-} H274FilmGrainDatabase;
-
 /**
  * Check whether ff_h274_apply_film_grain() supports the given parameter combination.
  *
@@ -61,7 +51,6 @@ static inline int ff_h274_film_grain_params_supported(int model_id, enum AVPixel
 // ff_h274_film_grain_params_supported() coincide with actual values
 // from the frames and params.
 int ff_h274_apply_film_grain(AVFrame *out, const AVFrame *in,
-                             H274FilmGrainDatabase *db,
                              const AVFilmGrainParams *params);
 
 typedef struct H274HashContext H274HashContext;

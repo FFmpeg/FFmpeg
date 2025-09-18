@@ -1091,8 +1091,7 @@ static int frame_end(VVCContext *s, VVCFrameContext *fc)
             av_assert0(0);
             return AVERROR_BUG;
         case AV_FILM_GRAIN_PARAMS_H274:
-            ret = ff_h274_apply_film_grain(fc->ref->frame_grain, fc->ref->frame,
-                &s->h274db, fgp);
+            ret = ff_h274_apply_film_grain(fc->ref->frame_grain, fc->ref->frame, fgp);
             if (ret < 0)
                 return ret;
             break;

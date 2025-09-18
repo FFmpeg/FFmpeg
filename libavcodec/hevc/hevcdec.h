@@ -32,9 +32,7 @@
 #include "libavcodec/bswapdsp.h"
 #include "libavcodec/cabac.h"
 #include "libavcodec/dovi_rpu.h"
-#include "libavcodec/get_bits.h"
 #include "libavcodec/h2645_parse.h"
-#include "libavcodec/h274.h"
 #include "libavcodec/progressframe.h"
 #include "libavcodec/videodsp.h"
 
@@ -537,7 +535,6 @@ typedef struct HEVCContext {
     HEVCDSPContext hevcdsp;
     VideoDSPContext vdsp;
     BswapDSPContext bdsp;
-    H274FilmGrainDatabase h274db;
 
     /** used on BE to byteswap the lines for checksumming */
     uint8_t *checksum_buf;
