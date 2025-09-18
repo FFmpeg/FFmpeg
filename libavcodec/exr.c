@@ -994,8 +994,8 @@ static int dwa_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
     int64_t version, lo_usize, lo_size;
     int64_t ac_size, dc_size, rle_usize, rle_csize, rle_raw_size;
     int64_t ac_count, dc_count, ac_compression;
-    const int dc_w = td->xsize >> 3;
-    const int dc_h = td->ysize >> 3;
+    const int dc_w = (td->xsize + 7) >> 3;
+    const int dc_h = (td->ysize + 7) >> 3;
     GetByteContext gb, agb;
     int skip, ret;
     int have_rle = 0;
@@ -1026,6 +1026,10 @@ static int dwa_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
     if ((uint64_t)rle_raw_size > INT_MAX) {
         avpriv_request_sample(s->avctx, "Too big rle_raw_size");
         return AVERROR_INVALIDDATA;
+    }
+
+    if (td->xsize % 8 || td->ysize % 8) {
+        avpriv_request_sample(s->avctx, "odd dimensions DWA");
     }
 
     bytestream2_init(&gb, src + 88, compressed_size - 88);
