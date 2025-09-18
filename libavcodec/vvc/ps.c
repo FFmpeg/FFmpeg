@@ -743,21 +743,16 @@ static int decode_pps(VVCParamSets *ps, const H266RawPPS *rpps)
     return ret;
 }
 
-static int decode_ps(VVCParamSets *ps, AVCodecContext *c, const CodedBitstreamH266Context *h266, int is_clvss)
+static int decode_ps(VVCParamSets *ps, AVCodecContext *c, const SliceContext *sc, int is_clvss)
 {
-    const H266RawPictureHeader *ph = h266->ph;
-    const H266RawPPS *rpps;
-    const H266RawSPS *rsps;
+    const H266RawSlice *sl = sc->ref;
+    const H266RawPPS *rpps = sl->pps;
+    const H266RawSPS *rsps = sl->sps;
     int ret;
 
-    if (!ph)
-        return AVERROR_INVALIDDATA;
-
-    rpps = h266->pps[ph->ph_pic_parameter_set_id];
     if (!rpps)
         return AVERROR_INVALIDDATA;
 
-    rsps = h266->sps[rpps->pps_seq_parameter_set_id];
     if (!rsps)
         return AVERROR_INVALIDDATA;
 
@@ -1005,23 +1000,23 @@ static int decode_ph(VVCFrameParamSets *fps, const H266RawPictureHeader *rph, vo
 }
 
 static int decode_frame_ps(VVCFrameParamSets *fps, const VVCParamSets *ps,
-    const CodedBitstreamH266Context *h266, const int poc_tid0, const int is_clvss)
+    const SliceContext *sc, const int poc_tid0, const int is_clvss, const VVCContext *s)
 {
-    const H266RawPictureHeader *ph = h266->ph;
-    const H266RawPPS *rpps;
+    const H266RawSlice *sl         = sc->ref;
+    const H266RawPictureHeader *ph = sl->ph;
+    const H266RawPPS *rpps         = sl->pps;
     int ret;
 
     if (!ph)
         return AVERROR_INVALIDDATA;
 
-    rpps = h266->pps[ph->ph_pic_parameter_set_id];
     if (!rpps)
         return AVERROR_INVALIDDATA;
 
     av_refstruct_replace(&fps->sps, ps->sps_list[rpps->pps_seq_parameter_set_id]);
     av_refstruct_replace(&fps->pps, ps->pps_list[rpps->pps_pic_parameter_set_id]);
 
-    ret = decode_ph(fps, ph, h266->ph_ref, poc_tid0, is_clvss);
+    ret = decode_ph(fps, ph, sl->ph_ref, poc_tid0, is_clvss);
     if (ret < 0)
         return ret;
 
@@ -1058,21 +1053,22 @@ static void decode_recovery_poc(VVCContext *s, const VVCPH *ph)
     }
 }
 
-int ff_vvc_decode_frame_ps(VVCFrameParamSets *fps, struct VVCContext *s)
+int ff_vvc_decode_frame_ps(struct VVCFrameContext *fc, struct VVCContext *s)
 {
     int ret = 0;
+    VVCFrameParamSets *fps                  = &fc->ps;
     VVCParamSets *ps                        = &s->ps;
-    const CodedBitstreamH266Context *h266   = s->cbc->priv_data;
+    const SliceContext *sc                  = fc->slices[0];
     int is_clvss;
 
     decode_recovery_flag(s);
     is_clvss = IS_CLVSS(s);
 
-    ret = decode_ps(ps, s->avctx, h266, is_clvss);
+    ret = decode_ps(ps, s->avctx, sc, is_clvss);
     if (ret < 0)
         return ret;
 
-    ret = decode_frame_ps(fps, ps, h266, s->poc_tid0, is_clvss);
+    ret = decode_frame_ps(fps, ps, sc, s->poc_tid0, is_clvss, s);
     decode_recovery_poc(s, &fps->ph);
     return ret;
 }

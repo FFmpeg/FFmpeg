@@ -848,6 +848,11 @@ typedef struct H266RawSlice {
     size_t       header_size;
     size_t       data_size;
     int          data_bit_start;
+
+    H266RawSPS           *sps;     ///< RefStruct reference to referred-to SPS
+    H266RawPPS           *pps;     ///< RefStruct reference to referred-to PPS
+    H266RawPictureHeader *ph;
+    void                 *ph_ref;  ///< RefStruct reference backing referred-to PH above
 } H266RawSlice;
 
 typedef struct H266RawSEI {
