@@ -603,7 +603,7 @@ static void wgc_thread_entry(AVFilterContext *avctx) noexcept
     {
         static const wchar_t name_prefix[] = L"wgc_winrt@0x";
         wchar_t thread_name[FF_ARRAY_ELEMS(name_prefix) + sizeof(void*) * 2] = { 0 };
-        swprintf(thread_name, FF_ARRAY_ELEMS(thread_name), L"%s%" PRIxPTR, name_prefix, (uintptr_t)avctx);
+        swprintf(thread_name, FF_ARRAY_ELEMS(thread_name), L"%ls%" PRIxPTR, name_prefix, (uintptr_t)avctx);
         ctx->fn.SetThreadDescription(GetCurrentThread(), thread_name);
 
         std::lock_guard init_lock(ctx->wgc_thread_init_mutex);
