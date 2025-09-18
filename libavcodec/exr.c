@@ -999,6 +999,11 @@ static int dwa_uncompress(const EXRContext *s, const uint8_t *src, int compresse
     if (version != 2)
         return AVERROR_INVALIDDATA;
 
+    if (s->nb_channels < 3) {
+        avpriv_request_sample(s->avctx, "Gray DWA");
+        return AVERROR_PATCHWELCOME;
+    }
+
     lo_usize = AV_RL64(src + 8);
     lo_size = AV_RL64(src + 16);
     ac_size = AV_RL64(src + 24);
