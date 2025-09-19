@@ -242,7 +242,7 @@ static int64_t get_duration(AVFormatContext *s)
 
     int64_t start_pos = avio_tell(s->pb);
     int64_t pos = -1;
-    int64_t start = 0, end = 0;
+    int64_t start = 0;
     struct tm timeinfo;
     uint8_t *buffer;
     int64_t buffer_size;
@@ -250,6 +250,7 @@ static int64_t get_duration(AVFormatContext *s)
     int64_t offset;
     unsigned date;
     int64_t size = avio_size(s->pb);
+    int64_t ret = 0;
 
     if (start_pos + 20 > size)
         return 0;
@@ -284,17 +285,12 @@ static int64_t get_duration(AVFormatContext *s)
 
     date = AV_RL32(buffer + (pos - buffer_pos) + 16);
     get_timeinfo(date, &timeinfo);
-    end = av_timegm(&timeinfo) * 1000LL;
 
-    av_freep(&buffer);
-
-    avio_seek(s->pb, start_pos, SEEK_SET);
-
-    return end - start;
+    ret = av_timegm(&timeinfo) * 1000LL - start;
 fail:
     av_freep(&buffer);
     avio_seek(s->pb, start_pos, SEEK_SET);
-    return 0;
+    return ret;
 }
 
 static int dhav_read_header(AVFormatContext *s)
