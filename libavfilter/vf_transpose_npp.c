@@ -85,6 +85,8 @@ static int npptranspose_init(AVFilterContext *ctx)
     NPPTransposeContext *s = ctx->priv;
     int i;
 
+    av_log(ctx, AV_LOG_WARNING, "The libnpp based filters are deprecated.\n");
+
     for (i = 0; i < FF_ARRAY_ELEMS(s->stages); i++) {
         s->stages[i].frame = av_frame_alloc();
         if (!s->stages[i].frame)

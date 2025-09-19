@@ -281,6 +281,8 @@ static av_cold int nppscale_init(AVFilterContext* ctx)
     NPPScaleContext* scale = ctx->priv;
     int i, ret;
 
+    av_log(ctx, AV_LOG_WARNING, "The libnpp based filters are deprecated.\n");
+
     if (!strcmp(scale->format_str, "same")) {
         scale->format = AV_PIX_FMT_NONE;
     } else {
