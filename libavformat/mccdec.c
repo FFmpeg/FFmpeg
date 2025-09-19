@@ -158,7 +158,7 @@ struct ValidTimeCodeRate {
     char        str[5];
 };
 
-static struct ValidTimeCodeRate valid_time_code_rates[] = {
+static const struct ValidTimeCodeRate valid_time_code_rates[] = {
     { .rate = { .num = 24, .den = 1 },       .str = "24"   },
     { .rate = { .num = 25, .den = 1 },       .str = "25"   },
     { .rate = { .num = 30000, .den = 1001 }, .str = "30DF" },
