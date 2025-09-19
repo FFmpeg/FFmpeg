@@ -437,9 +437,7 @@ static int mcc_init(AVFormatContext *avf)
     } else if (st->codecpar->codec_id != AV_CODEC_ID_SMPTE_436M_ANC) {
         av_log(avf,
                AV_LOG_ERROR,
-               "mcc muxer supports only codec %s or codec %s\n",
-               avcodec_get_name(AV_CODEC_ID_SMPTE_436M_ANC),
-               avcodec_get_name(AV_CODEC_ID_EIA_608));
+               "mcc muxer supports only codec smpte_436m_anc or codec eia_608\n");
         return AVERROR(EINVAL);
     }
 
