@@ -158,10 +158,6 @@ static AVRational valid_time_code_rates[] = {
 static int mcc_write_header(AVFormatContext *avf)
 {
     MCCContext *mcc = avf->priv_data;
-    if (avf->nb_streams != 1) {
-        av_log(avf, AV_LOG_ERROR, "mcc muxer supports at most one stream\n");
-        return AVERROR(EINVAL);
-    }
     avpriv_set_pts_info(avf->streams[0], 64, mcc->timecode.rate.den, mcc->timecode.rate.num);
     const char *mcc_header = mcc_header_v1;
     switch ((MCCVersion)mcc->mcc_version) {
