@@ -251,7 +251,7 @@ static int64_t get_duration(AVFormatContext *s)
     unsigned date;
     int64_t size = avio_size(s->pb);
 
-    if (start_pos + 16 > size)
+    if (start_pos + 20 > size)
         return 0;
 
     avio_skip(s->pb, 16);
@@ -279,7 +279,7 @@ static int64_t get_duration(AVFormatContext *s)
         }
     }
 
-    if (pos < buffer_pos || pos + 16 > buffer_pos + buffer_size)
+    if (pos < buffer_pos || pos + 20 > buffer_pos + buffer_size)
         goto fail;
 
     date = AV_RL32(buffer + (pos - buffer_pos) + 16);
