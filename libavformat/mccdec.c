@@ -155,7 +155,7 @@ static int time_tracker_set_time(TimeTracker *tt, const MCCTimecode *tc, void *l
 
 struct ValidTimeCodeRate {
     AVRational  rate;
-    const char *str;
+    char        str[5];
 };
 
 static struct ValidTimeCodeRate valid_time_code_rates[] = {
