@@ -2256,94 +2256,91 @@ static int mjpeg_unescape_sos(MJpegDecodeContext *s)
         const uint8_t *src = buf_ptr;
         const uint8_t *ptr = src;
         uint8_t *dst = s->buffer;
+        PutByteContext pb;
 
-        #define copy_data_segment(skip) do {       \
-            ptrdiff_t length = (ptr - src) - (skip);  \
-            if (length > 0) {                         \
-                memcpy(dst, src, length);             \
-                dst += length;                        \
-                src = ptr;                            \
-            }                                         \
-        } while (0)
+        bytestream2_init_writer(&pb, dst, buf_end - src);
 
-            while (ptr < buf_end) {
-                uint8_t x = *(ptr++);
+        while ((ptr = memchr(ptr, 0xff, buf_end - ptr))) {
+            ptr++;
+            if (ptr < buf_end) {
+                /* Copy verbatim data. */
+                ptrdiff_t length = (ptr - 1) - src;
+                if (length > 0)
+                    bytestream2_put_bufferu(&pb, src, length);
 
-                if (x == 0xff) {
-                    ptrdiff_t skip = 0;
-                    while (ptr < buf_end && x == 0xff) {
-                        x = *(ptr++);
-                        skip++;
-                    }
+                uint8_t x = *ptr++;
+                /* Discard multiple optional 0xFF fill bytes. */
+                while (x == 0xff && ptr < buf_end)
+                    x = *ptr++;
 
-                    /* 0xFF, 0xFF, ... */
-                    if (skip > 1) {
-                        copy_data_segment(skip);
-
-                        /* decrement src as it is equal to ptr after the
-                         * copy_data_segment macro and we might want to
-                         * copy the current value of x later on */
-                        src--;
-                    }
-
-                    if (x < RST0 || x > RST7) {
-                        copy_data_segment(1);
-                        if (x)
-                            break;
-                    }
+                src = ptr;
+                if (x == 0) {
+                    /* Stuffed zero byte */
+                    bytestream2_put_byteu(&pb, 0xff);
+                } else if (x >= RST0 && x <= RST7) {
+                    /* Restart marker */
+                    bytestream2_put_be16u(&pb, 0xff00 | x);
+                } else {
+                    /* Non-restart marker */
+                    goto found;
                 }
             }
-            if (src < ptr)
-                copy_data_segment(0);
-        #undef copy_data_segment
+        }
+        /* Copy remaining verbatim data. */
+        ptr = buf_end;
+        ptrdiff_t length = ptr - src;
+        if (length > 0)
+            bytestream2_put_bufferu(&pb, src, length);
 
+found:
         unescaped_buf_ptr  = s->buffer;
-        unescaped_buf_size = dst - s->buffer;
+        unescaped_buf_size = bytestream2_tell_p(&pb);
         memset(s->buffer + unescaped_buf_size, 0,
                AV_INPUT_BUFFER_PADDING_SIZE);
 
         av_log(s->avctx, AV_LOG_DEBUG, "escaping removed %td bytes\n",
-               (buf_end - buf_ptr) - (dst - s->buffer));
+               (buf_end - buf_ptr) - (unescaped_buf_size));
     } else {
         const uint8_t *src = buf_ptr;
+        const uint8_t *ptr = src;
         uint8_t *dst  = s->buffer;
-        int bit_count = 0;
-        int t = 0, b = 0;
         PutBitContext pb;
 
-        /* find marker */
-        while (src + t < buf_end) {
-            uint8_t x = src[t++];
-            if (x == 0xff) {
-                while ((src + t < buf_end) && x == 0xff)
-                    x = src[t++];
-                if (x & 0x80) {
-                    t -= FFMIN(2, t);
-                    break;
-                }
-            }
-        }
-        bit_count = t * 8;
-        init_put_bits(&pb, dst, t);
+        init_put_bits(&pb, dst, buf_end - src);
 
-        /* unescape bitstream */
-        while (b < t) {
-            uint8_t x = src[b++];
-            put_bits(&pb, 8, x);
-            if (x == 0xFF && b < t) {
-                x = src[b++];
-                if (x & 0x80) {
-                    av_log(s->avctx, AV_LOG_WARNING, "Invalid escape sequence\n");
-                    x &= 0x7f;
+        while ((ptr = memchr(ptr, 0xff, buf_end - ptr))) {
+            ptr++;
+            if (ptr < buf_end) {
+                /* Copy verbatim data. */
+                ptrdiff_t length = (ptr - 1) - src;
+                if (length > 0)
+                    ff_copy_bits(&pb, src, length * 8);
+
+                uint8_t x = *ptr++;
+                /* Discard multiple optional 0xFF fill bytes. */
+                while (x == 0xff && ptr < buf_end)
+                    x = *ptr++;
+
+                src = ptr;
+                if (!(x & 0x80)) {
+                    /* Stuffed zero bit */
+                    put_bits(&pb, 15, 0x7f80 | x);
+                } else {
+                    goto found_ls;
                 }
-                put_bits(&pb, 7, x);
-                bit_count--;
             }
         }
+        /* Copy remaining verbatim data. */
+        ptr = buf_end;
+        ptrdiff_t length = ptr - src;
+        if (length > 0)
+            ff_copy_bits(&pb, src, length * 8);
+
+found_ls:
         flush_put_bits(&pb);
 
         unescaped_buf_ptr  = dst;
-        unescaped_buf_size = (bit_count + 7) >> 3;
+        unescaped_buf_size = put_bytes_output(&pb);
         memset(s->buffer + unescaped_buf_size, 0,
                AV_INPUT_BUFFER_PADDING_SIZE);
     }
