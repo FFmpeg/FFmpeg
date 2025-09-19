@@ -122,14 +122,6 @@ static const AVRational valid_time_code_rates[] = {
 static int mcc_write_header(AVFormatContext *avf)
 {
     MCCContext *mcc = avf->priv_data;
-    switch ((MCCVersion)mcc->mcc_version) {
-    case MCC_VERSION_1:
-        if (mcc->timecode.fps == 60 && mcc->timecode.flags & AV_TIMECODE_FLAG_DROPFRAME) {
-            av_log(avf, AV_LOG_FATAL, "MCC Version 1.0 doesn't support 60DF (59.94 fps drop-frame)");
-            return AVERROR(EINVAL);
-        }
-        break;
-    }
     const char *creation_program = mcc->creation_program;
     if (!creation_program) {
         if (avf->flags & AVFMT_FLAG_BITEXACT)
@@ -421,6 +413,13 @@ static int mcc_init(AVFormatContext *avf)
     ret = av_timecode_init(&mcc->timecode, time_code_rate, timecode_flags, 0, avf);
     if (ret < 0)
         return ret;
+
+    if (mcc->mcc_version == MCC_VERSION_1) {
+        if (mcc->timecode.fps == 60 && mcc->timecode.flags & AV_TIMECODE_FLAG_DROPFRAME) {
+            av_log(avf, AV_LOG_FATAL, "MCC Version 1.0 doesn't support 60DF (59.94 fps drop-frame)");
+            return AVERROR(EINVAL);
+        }
+    }
 
     // get av_timecode to calculate how many frames are in 24hr
     ret = av_timecode_init_from_components(&twenty_four_hr, time_code_rate, timecode_flags, 24, 0, 0, 0, avf);
