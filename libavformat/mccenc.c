@@ -129,15 +129,15 @@ static int mcc_write_header(AVFormatContext *avf)
         else
             creation_program = "FFmpeg version " FFMPEG_VERSION;
     } else if (strchr(creation_program, '\n')) {
-        av_log(avf, AV_LOG_FATAL, "creation_program must not contain multiple lines of text");
+        av_log(avf, AV_LOG_FATAL, "creation_program must not contain multiple lines of text\n");
         return AVERROR(EINVAL);
     }
     if (avf->flags & AVFMT_FLAG_BITEXACT && !av_strcasecmp(mcc->creation_time, "now"))
-        av_log(avf, AV_LOG_ERROR, "creation_time must be overridden for bit-exact output");
+        av_log(avf, AV_LOG_ERROR, "creation_time must be overridden for bit-exact output\n");
     int64_t timeval = 0;
     int     ret     = av_parse_time(&timeval, mcc->creation_time, 0);
     if (ret < 0) {
-        av_log(avf, AV_LOG_FATAL, "can't parse creation_time");
+        av_log(avf, AV_LOG_FATAL, "can't parse creation_time\n");
         return ret;
     }
     struct tm tm;
@@ -326,7 +326,7 @@ static int mcc_write_packet(AVFormatContext *avf, AVPacket *pkt)
         default:
             av_log(avf,
                    AV_LOG_WARNING,
-                   "Unsupported SMPTE 436M ANC Wrapping Type %#x -- discarding ANC packet",
+                   "Unsupported SMPTE 436M ANC Wrapping Type %#x -- discarding ANC packet\n",
                    (unsigned)coded_anc.wrapping_type);
             continue;
         }
@@ -344,7 +344,7 @@ static int mcc_write_packet(AVFormatContext *avf, AVPacket *pkt)
                 av_log(avf,
                        AV_LOG_WARNING,
                        "MCC Version 1.0 doesn't support ANC packets where the field number (got %u) isn't 0 and "
-                       "line number (got %u) isn't 9: discarding ANC packet",
+                       "line number (got %u) isn't 9: discarding ANC packet\n",
                        field_number,
                        (unsigned)coded_anc.line_number);
                 continue;
@@ -416,7 +416,7 @@ static int mcc_init(AVFormatContext *avf)
 
     if (mcc->mcc_version == MCC_VERSION_1) {
         if (mcc->timecode.fps == 60 && mcc->timecode.flags & AV_TIMECODE_FLAG_DROPFRAME) {
-            av_log(avf, AV_LOG_FATAL, "MCC Version 1.0 doesn't support 60DF (59.94 fps drop-frame)");
+            av_log(avf, AV_LOG_FATAL, "MCC Version 1.0 doesn't support 60DF (59.94 fps drop-frame)\n");
             return AVERROR(EINVAL);
         }
     }
