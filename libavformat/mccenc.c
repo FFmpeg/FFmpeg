@@ -144,7 +144,7 @@ static int mcc_write_header(AVFormatContext *avf)
     if (!localtime_r((time_t[1]){ timeval / 1000000 }, &tm))
         return AVERROR(EINVAL);
     // we can't rely on having the C locale, so convert the date/time to a string ourselves:
-    static const char *const months[12] = {
+    static const char months[12][10] = {
         "January",
         "February",
         "March",
@@ -162,7 +162,7 @@ static int mcc_write_header(AVFormatContext *avf)
     av_assert0(tm.tm_mon >= 0 && tm.tm_mon < FF_ARRAY_ELEMS(months));
     const char *month = months[tm.tm_mon];
 
-    static const char *const weekdays[7] = {
+    static const char weekdays[7][10] = {
         "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
     };
     // assert that values are sane so we don't index out of bounds
