@@ -158,7 +158,6 @@ static AVRational valid_time_code_rates[] = {
 static int mcc_write_header(AVFormatContext *avf)
 {
     MCCContext *mcc = avf->priv_data;
-    avpriv_set_pts_info(avf->streams[0], 64, mcc->timecode.rate.den, mcc->timecode.rate.num);
     const char *mcc_header = mcc_header_v1;
     switch ((MCCVersion)mcc->mcc_version) {
     case MCC_VERSION_1:
