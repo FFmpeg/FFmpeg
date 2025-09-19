@@ -208,7 +208,7 @@ static int mcc_write_header(AVFormatContext *avf)
         "December",
     };
     // assert that values are sane so we don't index out of bounds
-    av_assert0(tm.tm_mon >= 0 && tm.tm_mon <= FF_ARRAY_ELEMS(months));
+    av_assert0(tm.tm_mon >= 0 && tm.tm_mon < FF_ARRAY_ELEMS(months));
     const char *month = months[tm.tm_mon];
 
     static const char *const weekdays[7] = {
