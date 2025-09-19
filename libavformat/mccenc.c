@@ -145,7 +145,7 @@ static const char mcc_header_v2[] = //
  */
 static const char mcc_ffmpeg_uuid[] = "0087C4F6-A6B4-5469-8C8E-BBF44950401D";
 
-static AVRational valid_time_code_rates[] = {
+static const AVRational valid_time_code_rates[] = {
     { .num = 24,    .den = 1    },
     { .num = 25,    .den = 1    },
     { .num = 30000, .den = 1001 },
