@@ -58,83 +58,47 @@ typedef enum MCCVersion
     MCC_VERSION_MAX = MCC_VERSION_2,
 } MCCVersion;
 
-static const char mcc_header_v1[] = //
-    "File Format=MacCaption_MCC V1.0\n"
-    "\n"
+#define MCC_HEADER                                                                                       \
+    "File Format=MacCaption_MCC V%c.0\n"                                                                 \
+    "\n"                                                                                                 \
+    "///////////////////////////////////////////////////////////////////////////////////\n"              \
+    "// Computer Prompting and Captioning Company\n"                                                     \
+    "// Ancillary Data Packet Transfer File\n"                                                           \
+    "//\n"                                                                                               \
+    "// Permission to generate this format is granted provided that\n"                                   \
+    "//   1. This ANC Transfer file format is used on an as-is basis and no warranty is given, and\n"    \
+    "//   2. This entire descriptive information text is included in a generated .mcc file.\n"           \
+    "//\n"                                                                                               \
+    "// General file format:\n"                                                                          \
+    "//   HH:MM:SS:FF(tab)[Hexadecimal ANC data in groups of 2 characters]\n"                            \
+    "//     Hexadecimal data starts with the Ancillary Data Packet DID (Data ID defined in S291M)\n"     \
+    "//       and concludes with the Check Sum following the User Data Words.\n"                         \
+    "//     Each time code line must contain at most one complete ancillary data packet.\n"              \
+    "//     To transfer additional ANC Data successive lines may contain identical time code.\n"         \
+    "//     Time Code Rate=[24, 25, 30, 30DF, 50, 60%s]\n"                                               \
+    "//\n"                                                                                               \
+    "//   ANC data bytes may be represented by one ASCII character according to the following schema:\n" \
+    "//     G  FAh 00h 00h\n"                                                                            \
+    "//     H  2 x (FAh 00h 00h)\n"                                                                      \
+    "//     I  3 x (FAh 00h 00h)\n"                                                                      \
+    "//     J  4 x (FAh 00h 00h)\n"                                                                      \
+    "//     K  5 x (FAh 00h 00h)\n"                                                                      \
+    "//     L  6 x (FAh 00h 00h)\n"                                                                      \
+    "//     M  7 x (FAh 00h 00h)\n"                                                                      \
+    "//     N  8 x (FAh 00h 00h)\n"                                                                      \
+    "//     O  9 x (FAh 00h 00h)\n"                                                                      \
+    "//     P  FBh 80h 80h\n"                                                                            \
+    "//     Q  FCh 80h 80h\n"                                                                            \
+    "//     R  FDh 80h 80h\n"                                                                            \
+    "//     S  96h 69h\n"                                                                                \
+    "//     T  61h 01h\n"                                                                                \
+    "//     U  E1h 00h 00h 00h\n"                                                                        \
+    "//     Z  00h\n"                                                                                    \
+    "//\n"                                                                                               \
     "///////////////////////////////////////////////////////////////////////////////////\n"
-    "// Computer Prompting and Captioning Company\n"
-    "// Ancillary Data Packet Transfer File\n"
-    "//\n"
-    "// Permission to generate this format is granted provided that\n"
-    "//   1. This ANC Transfer file format is used on an as-is basis and no warranty is given, and\n"
-    "//   2. This entire descriptive information text is included in a generated .mcc file.\n"
-    "//\n"
-    "// General file format:\n"
-    "//   HH:MM:SS:FF(tab)[Hexadecimal ANC data in groups of 2 characters]\n"
-    "//     Hexadecimal data starts with the Ancillary Data Packet DID (Data ID defined in S291M)\n"
-    "//       and concludes with the Check Sum following the User Data Words.\n"
-    "//     Each time code line must contain at most one complete ancillary data packet.\n"
-    "//     To transfer additional ANC Data successive lines may contain identical time code.\n"
-    "//     Time Code Rate=[24, 25, 30, 30DF, 50, 60]\n"
-    "//\n"
-    "//   ANC data bytes may be represented by one ASCII character according to the following schema:\n"
-    "//     G  FAh 00h 00h\n"
-    "//     H  2 x (FAh 00h 00h)\n"
-    "//     I  3 x (FAh 00h 00h)\n"
-    "//     J  4 x (FAh 00h 00h)\n"
-    "//     K  5 x (FAh 00h 00h)\n"
-    "//     L  6 x (FAh 00h 00h)\n"
-    "//     M  7 x (FAh 00h 00h)\n"
-    "//     N  8 x (FAh 00h 00h)\n"
-    "//     O  9 x (FAh 00h 00h)\n"
-    "//     P  FBh 80h 80h\n"
-    "//     Q  FCh 80h 80h\n"
-    "//     R  FDh 80h 80h\n"
-    "//     S  96h 69h\n"
-    "//     T  61h 01h\n"
-    "//     U  E1h 00h 00h 00h\n"
-    "//     Z  00h\n"
-    "//\n"
-    "///////////////////////////////////////////////////////////////////////////////////\n";
 
-static const char mcc_header_v2[] = //
-    "File Format=MacCaption_MCC V2.0\n"
-    "\n"
-    "///////////////////////////////////////////////////////////////////////////////////\n"
-    "// Computer Prompting and Captioning Company\n"
-    "// Ancillary Data Packet Transfer File\n"
-    "//\n"
-    "// Permission to generate this format is granted provided that\n"
-    "//   1. This ANC Transfer file format is used on an as-is basis and no warranty is given, and\n"
-    "//   2. This entire descriptive information text is included in a generated .mcc file.\n"
-    "//\n"
-    "// General file format:\n"
-    "//   HH:MM:SS:FF(tab)[Hexadecimal ANC data in groups of 2 characters]\n"
-    "//     Hexadecimal data starts with the Ancillary Data Packet DID (Data ID defined in S291M)\n"
-    "//       and concludes with the Check Sum following the User Data Words.\n"
-    "//     Each time code line must contain at most one complete ancillary data packet.\n"
-    "//     To transfer additional ANC Data successive lines may contain identical time code.\n"
-    "//     Time Code Rate=[24, 25, 30, 30DF, 50, 60, 60DF]\n"
-    "//\n"
-    "//   ANC data bytes may be represented by one ASCII character according to the following schema:\n"
-    "//     G  FAh 00h 00h\n"
-    "//     H  2 x (FAh 00h 00h)\n"
-    "//     I  3 x (FAh 00h 00h)\n"
-    "//     J  4 x (FAh 00h 00h)\n"
-    "//     K  5 x (FAh 00h 00h)\n"
-    "//     L  6 x (FAh 00h 00h)\n"
-    "//     M  7 x (FAh 00h 00h)\n"
-    "//     N  8 x (FAh 00h 00h)\n"
-    "//     O  9 x (FAh 00h 00h)\n"
-    "//     P  FBh 80h 80h\n"
-    "//     Q  FCh 80h 80h\n"
-    "//     R  FDh 80h 80h\n"
-    "//     S  96h 69h\n"
-    "//     T  61h 01h\n"
-    "//     U  E1h 00h 00h 00h\n"
-    "//     Z  00h\n"
-    "//\n"
-    "///////////////////////////////////////////////////////////////////////////////////\n";
+#define MCC_HEADER_PRINTF_ARGS(mcc_version) (mcc_version) + '0', \
+                                            (mcc_version) == MCC_VERSION_1 ? "" : ", 60DF"
 
 /**
  * generated with the bash command:
@@ -158,16 +122,12 @@ static const AVRational valid_time_code_rates[] = {
 static int mcc_write_header(AVFormatContext *avf)
 {
     MCCContext *mcc = avf->priv_data;
-    const char *mcc_header = mcc_header_v1;
     switch ((MCCVersion)mcc->mcc_version) {
     case MCC_VERSION_1:
         if (mcc->timecode.fps == 60 && mcc->timecode.flags & AV_TIMECODE_FLAG_DROPFRAME) {
             av_log(avf, AV_LOG_FATAL, "MCC Version 1.0 doesn't support 60DF (59.94 fps drop-frame)");
             return AVERROR(EINVAL);
         }
-        break;
-    case MCC_VERSION_2:
-        mcc_header = mcc_header_v2;
         break;
     }
     const char *creation_program = mcc->creation_program;
@@ -218,13 +178,13 @@ static int mcc_write_header(AVFormatContext *avf)
     const char *weekday = weekdays[tm.tm_wday];
 
     avio_printf(avf->pb,
-                "%s\n"
+                MCC_HEADER "\n"
                 "UUID=%s\n"
                 "Creation Program=%s\n"
                 "Creation Date=%s, %s %d, %d\n"
                 "Creation Time=%02d:%02d:%02d\n"
                 "Time Code Rate=%u%s\n\n",
-                mcc_header,
+                MCC_HEADER_PRINTF_ARGS(mcc->mcc_version),
                 mcc_ffmpeg_uuid,
                 creation_program,
                 weekday,
