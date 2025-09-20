@@ -282,14 +282,12 @@ static int udp_set_multicast_sources(URLContext *h,
                                      struct sockaddr_storage *sources,
                                      int nb_sources, int include)
 {
-    int i;
     if (addr->sa_family != AF_INET) {
 #if HAVE_STRUCT_GROUP_SOURCE_REQ && defined(MCAST_BLOCK_SOURCE)
         /* For IPv4 prefer the old approach, as that alone works reliably on
          * Windows and it also supports supplying the interface based on its
          * address. */
-        int i;
-        for (i = 0; i < nb_sources; i++) {
+        for (int i = 0; i < nb_sources; i++) {
             struct group_source_req mreqs;
             int level = addr->sa_family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6;
 
@@ -316,7 +314,7 @@ static int udp_set_multicast_sources(URLContext *h,
 #endif
     }
 #if HAVE_STRUCT_IP_MREQ_SOURCE && defined(IP_BLOCK_SOURCE)
-    for (i = 0; i < nb_sources; i++) {
+    for (int i = 0; i < nb_sources; i++) {
         struct ip_mreq_source mreqs;
         if (sources[i].ss_family != AF_INET) {
             av_log(h, AV_LOG_ERROR, "Source/block address %d is of incorrect protocol family\n", i + 1);
