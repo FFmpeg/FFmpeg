@@ -84,47 +84,7 @@ cglobal put_pixels8_x2, 4,5
 INIT_MMX mmxext
 PUT_PIXELS8_X2
 
-
 ; void ff_put_pixels16_x2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-%macro PUT_PIXELS_16 0
-cglobal put_pixels16_x2, 4,5
-    lea          r4, [r2*2]
-.loop:
-    mova         m0, [r1]
-    mova         m1, [r1+r2]
-    mova         m2, [r1+8]
-    mova         m3, [r1+r2+8]
-    PAVGB        m0, [r1+1]
-    PAVGB        m1, [r1+r2+1]
-    PAVGB        m2, [r1+9]
-    PAVGB        m3, [r1+r2+9]
-    mova       [r0], m0
-    mova    [r0+r2], m1
-    mova     [r0+8], m2
-    mova  [r0+r2+8], m3
-    add          r1, r4
-    add          r0, r4
-    mova         m0, [r1]
-    mova         m1, [r1+r2]
-    mova         m2, [r1+8]
-    mova         m3, [r1+r2+8]
-    PAVGB        m0, [r1+1]
-    PAVGB        m1, [r1+r2+1]
-    PAVGB        m2, [r1+9]
-    PAVGB        m3, [r1+r2+9]
-    add          r1, r4
-    mova       [r0], m0
-    mova    [r0+r2], m1
-    mova     [r0+8], m2
-    mova  [r0+r2+8], m3
-    add          r0, r4
-    sub         r3d, 4
-    jne .loop
-    RET
-%endmacro
-
-INIT_MMX mmxext
-PUT_PIXELS_16
 ; The 8_X2 macro can easily be used here
 INIT_XMM sse2
 PUT_PIXELS8_X2
