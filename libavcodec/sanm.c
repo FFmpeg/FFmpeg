@@ -1484,7 +1484,7 @@ static int c48_invalid_mv(int x, int y, const uint16_t w, int h, int blocksize, 
 }
 
 static int codec48_block(GetByteContext *gb, uint8_t *dst, uint8_t *db, int x, int y,
-                         const uint16_t w, const int aligned_height)
+                         const uint16_t w, const int aligned_height, const uint8_t *itbl)
 {
     uint8_t opc, sb[16];
     int i, j, k, l;
@@ -1500,9 +1500,28 @@ static int codec48_block(GetByteContext *gb, uint8_t *dst, uint8_t *db, int x, i
         if (bytestream2_get_bytes_left(gb) < 1)
             return 1;
 
-        opc = bytestream2_get_byteu(gb);
-        for (i = 0; i < 16; i++)
-            sb[i] = opc;
+        if (y > 0 && x > 0) {
+            sb[15] = bytestream2_get_byteu(gb);
+            sb[ 7] = itbl[(*(dst - 1*w + 7) << 8) | sb[15]];
+            sb[ 3] = itbl[(*(dst - 1*w + 7) << 8) | sb[ 7]];
+            sb[11] = itbl[(sb[15]           << 8) | sb[ 7]];
+            sb[ 1] = itbl[(*(dst + 0*w - 1) << 8) | sb[ 3]];
+            sb[ 0] = itbl[(*(dst + 0*w - 1) << 8) | sb[ 1]];
+            sb[ 2] = itbl[(sb[ 3]           << 8) | sb[ 1]];
+            sb[ 5] = itbl[(*(dst + 2*w - 1) << 8) | sb[ 7]];
+            sb[ 4] = itbl[(*(dst + 2*w - 1) << 8) | sb[ 5]];
+            sb[ 6] = itbl[(sb[ 7]           << 8) | sb[ 5]];
+            sb[ 9] = itbl[(*(dst + 3*w - 1) << 8) | sb[11]];
+            sb[ 8] = itbl[(*(dst + 3*w - 1) << 8) | sb[ 9]];
+            sb[10] = itbl[(sb[11]           << 8) | sb[ 9]];
+            sb[13] = itbl[(*(dst + 4*w - 1) << 8) | sb[15]];
+            sb[12] = itbl[(*(dst + 4*w - 1) << 8) | sb[13]];
+            sb[14] = itbl[(sb[15]           << 8) | sb[13]];
+        } else {
+           opc = bytestream2_get_byteu(gb);
+           for (i = 0; i < 16; i++)
+               sb[i] = opc;
+        }
         c48_4to8(dst, sb, w);
         break;
     case 0xFE:    // 1x 8x8 copy from deltabuf, 16bit mv from source
@@ -1525,10 +1544,25 @@ static int codec48_block(GetByteContext *gb, uint8_t *dst, uint8_t *db, int x, i
         sb[13] =  bytestream2_get_byteu(gb);
         sb[15] =  bytestream2_get_byteu(gb);
 
-        sb[0] = sb[1] = sb[4] = sb[5];
-        sb[2] = sb[3] = sb[6] = sb[7];
-        sb[8] = sb[9] = sb[12] = sb[13];
-        sb[10] = sb[11] = sb[14] = sb[15];
+        if (y > 0 && x >0) {
+            sb[ 1] = itbl[(*(dst - 1*w + 3) << 8) | sb[ 5]];
+            sb[ 3] = itbl[(*(dst - 1*w + 7) << 8) | sb[ 7]];
+            sb[ 9] = itbl[(sb[13]           << 8) | sb[ 5]];
+            sb[11] = itbl[(sb[15]           << 8) | sb[ 7]];
+            sb[ 0] = itbl[(*(dst + 0*w - 1) << 8) | sb[ 1]];
+            sb[ 2] = itbl[(sb[ 3]           << 8) | sb[ 1]];
+            sb[ 4] = itbl[(*(dst + 2*w - 1) << 8) | sb[ 5]];
+            sb[ 6] = itbl[(sb[ 7]           << 8) | sb[ 5]];
+            sb[ 8] = itbl[(*(dst + 3*w - 1) << 8) | sb[ 9]];
+            sb[10] = itbl[(sb[11]           << 8) | sb[ 9]];
+            sb[12] = itbl[(*(dst + 4*w - 1) << 8) | sb[13]];
+            sb[14] = itbl[(sb[15]           << 8) | sb[13]];
+        } else {
+            sb[ 0] = sb[ 1] = sb[ 4] = sb[ 5];
+            sb[ 2] = sb[ 3] = sb[ 6] = sb[ 7];
+            sb[ 8] = sb[ 9] = sb[12] = sb[13];
+            sb[10] = sb[11] = sb[14] = sb[15];
+        }
         c48_4to8(dst, sb, w);
         break;
     case 0xFC:    // 4x copy 4x4 block, per-block c37_mv from source
@@ -1688,7 +1722,7 @@ static int old_codec48(SANMVideoContext *ctx, GetByteContext *gb, int width, int
             for (j = 0; j < height; j += 8) {
                 for (i = 0; i < width; i += 8) {
                     if (codec48_block(gb, dst + i, prev + i, i, j, width,
-                                      ctx->aligned_height))
+                                      ctx->aligned_height, ctx->c47itbl))
                         return AVERROR_INVALIDDATA;
                 }
                 dst += width * 8;
