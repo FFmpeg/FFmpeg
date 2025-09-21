@@ -301,20 +301,6 @@ CALL_2X_PIXELS(put_no_rnd_pixels16_y2_mmx, put_no_rnd_pixels8_y2_mmx, 8)
 CALL_2X_PIXELS(avg_no_rnd_pixels16_xy2_mmx, avg_no_rnd_pixels8_xy2_mmx, 8)
 CALL_2X_PIXELS(put_no_rnd_pixels16_xy2_mmx, put_no_rnd_pixels8_xy2_mmx, 8)
 #endif
-
-/***********************************/
-/* MMX rounding */
-
-#define SET_RND  MOVQ_WTWO
-#define DEF(x, y) ff_ ## x ## _ ## y ## _mmx
-#define STATIC
-
-#include "rnd_template.c"
-
-#undef NO_AVG
-#undef DEF
-#undef SET_RND
-
 #endif /* HAVE_INLINE_ASM */
 
 

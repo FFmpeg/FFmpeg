@@ -372,11 +372,7 @@ AVG_PIXELS8_Y2
 
 ; void ff_avg_pixels16_xy2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 %macro SET_PIXELS_XY2 1
-%if cpuflag(sse2)
 cglobal %1_pixels16_xy2, 4,5,8
-%else
-cglobal %1_pixels8_xy2, 4,5
-%endif
     pxor        m7, m7
     mova        m6, [pw_2]
     movu        m0, [r1]
@@ -448,8 +444,6 @@ cglobal %1_pixels8_xy2, 4,5
     RET
 %endmacro
 
-INIT_MMX mmxext
-SET_PIXELS_XY2 avg
 INIT_XMM sse2
 SET_PIXELS_XY2 put
 SET_PIXELS_XY2 avg

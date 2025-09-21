@@ -174,26 +174,15 @@ DEFINE_FN(put, 8, ssse3)
 DEFINE_FN(put, 16, sse2)
 DEFINE_FN(put, 16, ssse3)
 
-DEFINE_FN(avg, 8, mmxext)
 DEFINE_FN(avg, 8, ssse3)
 
 DEFINE_FN(avg, 16, sse2)
 DEFINE_FN(avg, 16, ssse3)
 #endif /* HAVE_X86ASM */
 
-#if HAVE_MMX_INLINE
-DEFINE_FN(put, 8, mmx)
-#endif
-
 av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
 {
     av_unused int cpu_flags = av_get_cpu_flags();
-
-#if HAVE_MMX_INLINE
-    if (INLINE_MMX(cpu_flags)) {
-        c->put_pixels_tab[1][15] = put_rv40_qpel8_mc33_mmx;
-    }
-#endif /* HAVE_MMX_INLINE */
 
 #if HAVE_X86ASM
     if (EXTERNAL_MMX(cpu_flags)) {
@@ -201,7 +190,6 @@ av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
         c->put_chroma_pixels_tab[1] = ff_put_rv40_chroma_mc4_mmx;
     }
     if (EXTERNAL_MMXEXT(cpu_flags)) {
-        c->avg_pixels_tab[1][15]        = avg_rv40_qpel8_mc33_mmxext;
         c->avg_chroma_pixels_tab[0]     = ff_avg_rv40_chroma_mc8_mmxext;
         c->avg_chroma_pixels_tab[1]     = ff_avg_rv40_chroma_mc4_mmxext;
     }
