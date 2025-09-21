@@ -16,9 +16,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
+
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
+#include "libavutil/common.h"
 #include "libavutil/cpu.h"
+#include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/mpegvideoencdsp.h"
@@ -28,71 +32,93 @@ int ff_pix_sum16_xop(const uint8_t *pix, ptrdiff_t line_size);
 int ff_pix_norm1_sse2(const uint8_t *pix, ptrdiff_t line_size);
 
 #if HAVE_INLINE_ASM
-
-#define PHADDD(a, t)                            \
-    "movq  " #a ", " #t "               \n\t"   \
-    "psrlq    $32, " #a "               \n\t"   \
-    "paddd " #t ", " #a "               \n\t"
-
-/*
- * pmulhw:   dst[0 - 15] = (src[0 - 15] * dst[0 - 15])[16 - 31]
- * pmulhrw:  dst[0 - 15] = (src[0 - 15] * dst[0 - 15] + 0x8000)[16 - 31]
- * pmulhrsw: dst[0 - 15] = (src[0 - 15] * dst[0 - 15] + 0x4000)[15 - 30]
- */
-#define PMULHRW(x, y, s, o)                     \
-    "pmulhw " #s ", " #x "              \n\t"   \
-    "pmulhw " #s ", " #y "              \n\t"   \
-    "paddw  " #o ", " #x "              \n\t"   \
-    "paddw  " #o ", " #y "              \n\t"   \
-    "psraw      $1, " #x "              \n\t"   \
-    "psraw      $1, " #y "              \n\t"
-#define DEF(x) x ## _mmx
-#define SET_RND MOVQ_WONE
-#define SCALE_OFFSET 1
-
-#include "mpegvideoenc_qns_template.c"
-
-#undef DEF
-#undef SET_RND
-#undef SCALE_OFFSET
-#undef PMULHRW
-
-#define DEF(x) x ## _3dnow
-#define SET_RND(x)
-#define SCALE_OFFSET 0
-#define PMULHRW(x, y, s, o)                     \
-    "pmulhrw " #s ", " #x "             \n\t"   \
-    "pmulhrw " #s ", " #y "             \n\t"
-
-#include "mpegvideoenc_qns_template.c"
-
-#undef DEF
-#undef SET_RND
-#undef SCALE_OFFSET
-#undef PMULHRW
-
 #if HAVE_SSSE3_INLINE
-#undef PHADDD
-#define DEF(x) x ## _ssse3
-#define SET_RND(x)
 #define SCALE_OFFSET -1
 
-#define PHADDD(a, t)                            \
-    "pshufw $0x0E, " #a ", " #t "       \n\t"   \
-    /* faster than phaddd on core2 */           \
-    "paddd " #t ", " #a "               \n\t"
-
+/*
+ * pmulhrsw: dst[0 - 15] = (src[0 - 15] * dst[0 - 15] + 0x4000)[15 - 30]
+ */
 #define PMULHRW(x, y, s, o)                     \
     "pmulhrsw " #s ", " #x "            \n\t"   \
     "pmulhrsw " #s ", " #y "            \n\t"
 
-#include "mpegvideoenc_qns_template.c"
+#define MAX_ABS 512
 
-#undef DEF
-#undef SET_RND
-#undef SCALE_OFFSET
-#undef PMULHRW
-#undef PHADDD
+static int try_8x8basis_ssse3(const int16_t rem[64], const int16_t weight[64], const int16_t basis[64], int scale)
+{
+    x86_reg i=0;
+
+    av_assert2(FFABS(scale) < MAX_ABS);
+    scale <<= 16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT;
+
+    __asm__ volatile(
+        "pxor %%mm7, %%mm7              \n\t"
+        "movd  %4, %%mm5                \n\t"
+        "punpcklwd %%mm5, %%mm5         \n\t"
+        "punpcklwd %%mm5, %%mm5         \n\t"
+        ".p2align 4                     \n\t"
+        "1:                             \n\t"
+        "movq  (%1, %0), %%mm0          \n\t"
+        "movq  8(%1, %0), %%mm1         \n\t"
+        PMULHRW(%%mm0, %%mm1, %%mm5, %%mm6)
+        "paddw (%2, %0), %%mm0          \n\t"
+        "paddw 8(%2, %0), %%mm1         \n\t"
+        "psraw $6, %%mm0                \n\t"
+        "psraw $6, %%mm1                \n\t"
+        "pmullw (%3, %0), %%mm0         \n\t"
+        "pmullw 8(%3, %0), %%mm1        \n\t"
+        "pmaddwd %%mm0, %%mm0           \n\t"
+        "pmaddwd %%mm1, %%mm1           \n\t"
+        "paddd %%mm1, %%mm0             \n\t"
+        "psrld $4, %%mm0                \n\t"
+        "paddd %%mm0, %%mm7             \n\t"
+        "add $16, %0                    \n\t"
+        "cmp $128, %0                   \n\t" //FIXME optimize & bench
+        " jb 1b                         \n\t"
+        "pshufw $0x0E, %%mm7, %%mm6     \n\t"
+        "paddd %%mm6, %%mm7             \n\t" // faster than phaddd on core2
+        "psrld $2, %%mm7                \n\t"
+        "movd %%mm7, %0                 \n\t"
+
+        : "+r" (i)
+        : "r"(basis), "r"(rem), "r"(weight), "g"(scale)
+    );
+    return i;
+}
+
+static void add_8x8basis_ssse3(int16_t rem[64], const int16_t basis[64], int scale)
+{
+    x86_reg i=0;
+
+    if (FFABS(scale) < MAX_ABS) {
+        scale <<= 16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT;
+        __asm__ volatile(
+                "movd  %3, %%mm5        \n\t"
+                "punpcklwd %%mm5, %%mm5 \n\t"
+                "punpcklwd %%mm5, %%mm5 \n\t"
+                ".p2align 4             \n\t"
+                "1:                     \n\t"
+                "movq  (%1, %0), %%mm0  \n\t"
+                "movq  8(%1, %0), %%mm1 \n\t"
+                PMULHRW(%%mm0, %%mm1, %%mm5, %%mm6)
+                "paddw (%2, %0), %%mm0  \n\t"
+                "paddw 8(%2, %0), %%mm1 \n\t"
+                "movq %%mm0, (%2, %0)   \n\t"
+                "movq %%mm1, 8(%2, %0)  \n\t"
+                "add $16, %0            \n\t"
+                "cmp $128, %0           \n\t" // FIXME optimize & bench
+                " jb 1b                 \n\t"
+
+                : "+r" (i)
+                : "r"(basis), "r"(rem), "g"(scale)
+        );
+    } else {
+        for (i=0; i<8*8; i++) {
+            rem[i] += (basis[i]*scale + (1<<(BASIS_SHIFT - RECON_SHIFT-1)))>>(BASIS_SHIFT - RECON_SHIFT);
+        }
+    }
+}
+
 #endif /* HAVE_SSSE3_INLINE */
 
 /* Draw the edges of width 'w' of an image of size width, height */
@@ -197,21 +223,9 @@ av_cold void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
 #if HAVE_INLINE_ASM
 
     if (INLINE_MMX(cpu_flags)) {
-        if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
-            c->try_8x8basis = try_8x8basis_mmx;
-        }
-        c->add_8x8basis = add_8x8basis_mmx;
-
         if (avctx->bits_per_raw_sample <= 8) {
             c->draw_edges = draw_edges_mmx;
         }
-    }
-
-    if (INLINE_AMD3DNOW(cpu_flags)) {
-        if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
-            c->try_8x8basis = try_8x8basis_3dnow;
-        }
-        c->add_8x8basis = add_8x8basis_3dnow;
     }
 
 #if HAVE_SSSE3_INLINE
