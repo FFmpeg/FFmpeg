@@ -102,9 +102,9 @@ static int flac_read_header(AVFormatContext *s)
                 return AVERROR(ENOMEM);
             }
             ret = ffio_read_size(s->pb, buffer, metadata_size);
-            if (ret < 0) {
-                RETURN_ERROR(ret);
-            }
+            if (ret < 0)
+                goto fail;
+
             break;
         /* skip metadata block for unsupported types */
         default:
