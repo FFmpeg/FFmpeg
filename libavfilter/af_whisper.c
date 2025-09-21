@@ -251,6 +251,8 @@ static void run_transcription(AVFilterContext *ctx, AVFrame *frame, int samples)
                      (start_t / 60000) % 60, (start_t / 1000) % 60,
                      start_t % 1000, end_t / 3600000, (end_t / 60000) % 60,
                      (end_t / 1000) % 60, end_t % 1000, text_cleaned);
+
+                wctx->index++;
             } else if (!av_strcasecmp(wctx->format, "json")) {
                 buf = av_asprintf("{\"start\":%" PRId64 ",\"end\":%" PRId64 ",\"text\":\"%s\"}\n", start_t, end_t, text_cleaned);
             } else
@@ -264,8 +266,6 @@ static void run_transcription(AVFilterContext *ctx, AVFrame *frame, int samples)
 
         av_freep(&text_cleaned);
     }
-
-    wctx->index++;
 
     AVDictionary **metadata = &frame->metadata;
     if (metadata && segments_text) {
