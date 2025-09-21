@@ -96,66 +96,6 @@ INIT_MMX mmxext
 QPEL4_H_LOWPASS_OP put
 QPEL4_H_LOWPASS_OP avg
 
-%macro QPEL8_H_LOWPASS_OP 1
-cglobal %1_h264_qpel8_h_lowpass, 4,5 ; dst, src, dstStride, srcStride
-    movsxdifnidn  r2, r2d
-    movsxdifnidn  r3, r3d
-    mov          r4d, 8
-    pxor          m7, m7
-    mova          m6, [pw_5]
-.loop:
-    mova          m0, [r1]
-    mova          m2, [r1+1]
-    mova          m1, m0
-    mova          m3, m2
-    punpcklbw     m0, m7
-    punpckhbw     m1, m7
-    punpcklbw     m2, m7
-    punpckhbw     m3, m7
-    paddw         m0, m2
-    paddw         m1, m3
-    psllw         m0, 2
-    psllw         m1, 2
-    mova          m2, [r1-1]
-    mova          m4, [r1+2]
-    mova          m3, m2
-    mova          m5, m4
-    punpcklbw     m2, m7
-    punpckhbw     m3, m7
-    punpcklbw     m4, m7
-    punpckhbw     m5, m7
-    paddw         m2, m4
-    paddw         m5, m3
-    psubw         m0, m2
-    psubw         m1, m5
-    pmullw        m0, m6
-    pmullw        m1, m6
-    movd          m2, [r1-2]
-    movd          m5, [r1+7]
-    punpcklbw     m2, m7
-    punpcklbw     m5, m7
-    paddw         m2, m3
-    paddw         m4, m5
-    mova          m5, [pw_16]
-    paddw         m2, m5
-    paddw         m4, m5
-    paddw         m0, m2
-    paddw         m1, m4
-    psraw         m0, 5
-    psraw         m1, 5
-    packuswb      m0, m1
-    op_%1         m0, [r0], m4
-    add           r0, r2
-    add           r1, r3
-    dec          r4d
-    jg         .loop
-    RET
-%endmacro
-
-INIT_MMX mmxext
-QPEL8_H_LOWPASS_OP put
-QPEL8_H_LOWPASS_OP avg
-
 %macro QPEL8_H_LOWPASS_OP_XMM 1
 cglobal %1_h264_qpel8_h_lowpass, 4,5,8 ; dst, src, dstStride, srcStride
     movsxdifnidn  r2, r2d
