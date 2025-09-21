@@ -7758,7 +7758,7 @@ if enabled icc; then
     fi
 elif enabled gcc; then
     gcc_version=$($cc -dumpversion)
-    major_version=${gcc_version%%.*}
+    major_version=${gcc_version%%[!0-9]*}
     if [ $major_version -lt 13 ]; then
         # Disable tree-vectorize for GCC <13 - it has historically been buggy.
         check_optflags -fno-tree-vectorize
