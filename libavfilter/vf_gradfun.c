@@ -32,7 +32,6 @@
  * Dither it back to 8bit.
  */
 
-#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
@@ -119,7 +118,6 @@ static void filter(GradFunContext *ctx, uint8_t *dst, const uint8_t *src, int wi
         ctx->filter_line(dst + y * dst_linesize, src + y * src_linesize, dc - r / 2, width, thresh, dither[y & 7]);
         if (++y >= height) break;
     }
-    emms_c();
 }
 
 static av_cold int init(AVFilterContext *ctx)

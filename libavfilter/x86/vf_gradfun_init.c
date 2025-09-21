@@ -24,9 +24,6 @@
 #include "libavutil/x86/cpu.h"
 #include "libavfilter/gradfun.h"
 
-void ff_gradfun_filter_line_mmxext(intptr_t x, uint8_t *dst, const uint8_t *src,
-                                   const uint16_t *dc, int thresh,
-                                   const uint16_t *dithers);
 void ff_gradfun_filter_line_ssse3(intptr_t x, uint8_t *dst, const uint8_t *src,
                                   const uint16_t *dc, int thresh,
                                   const uint16_t *dithers);
@@ -39,23 +36,6 @@ void ff_gradfun_blur_line_movdqu_sse2(intptr_t x, uint16_t *buf,
                                       const uint8_t *src1, const uint8_t *src2);
 
 #if HAVE_X86ASM
-static void gradfun_filter_line_mmxext(uint8_t *dst, const uint8_t *src,
-                                       const uint16_t *dc,
-                                       int width, int thresh,
-                                       const uint16_t *dithers)
-{
-    intptr_t x;
-    if (width & 3) {
-        x = width & ~3;
-        ff_gradfun_filter_line_c(dst + x, src + x, dc + x / 2,
-                                 width - x, thresh, dithers);
-        width = x;
-    }
-    x = -width;
-    ff_gradfun_filter_line_mmxext(x, dst + width, src + width, dc + width / 2,
-                                  thresh, dithers);
-}
-
 static void gradfun_filter_line_ssse3(uint8_t *dst, const uint8_t *src, const uint16_t *dc,
                                       int width, int thresh,
                                       const uint16_t *dithers)
@@ -93,8 +73,6 @@ av_cold void ff_gradfun_init_x86(GradFunContext *gf)
 #if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
-    if (EXTERNAL_MMXEXT(cpu_flags))
-        gf->filter_line = gradfun_filter_line_mmxext;
     if (EXTERNAL_SSSE3(cpu_flags))
         gf->filter_line = gradfun_filter_line_ssse3;
 
