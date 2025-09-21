@@ -67,12 +67,10 @@ cglobal %1_pixels%2, 4,5,4
 
 INIT_MMX mmx
 OP_PIXELS put, 8
-OP_PIXELS put, 16
 
 INIT_MMX mmxext
 OP_PIXELS avg, 4
 OP_PIXELS avg, 8
-OP_PIXELS avg, 16
 
 INIT_XMM sse2
 OP_PIXELS put, 16

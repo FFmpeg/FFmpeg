@@ -79,22 +79,10 @@ void ff_avg_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, const uint8_t *src,
 void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst,
                                                 const uint8_t *src,
                                                 int dstStride, int srcStride);
-#define ff_put_no_rnd_pixels16_mmxext ff_put_pixels16_mmx
-#define ff_put_no_rnd_pixels8_mmxext ff_put_pixels8_mmx
 
 #if HAVE_X86ASM
 
-#define ff_put_pixels16_mmxext ff_put_pixels16_mmx
-#define ff_put_pixels8_mmxext  ff_put_pixels8_mmx
-
 #define QPEL_OP(OPNAME, RND, MMX)                                       \
-static void OPNAME ## qpel8_mc00_ ## MMX(uint8_t *dst,                  \
-                                         const uint8_t *src,            \
-                                         ptrdiff_t stride)              \
-{                                                                       \
-    ff_ ## OPNAME ## pixels8_ ## MMX(dst, src, stride, 8);              \
-}                                                                       \
-                                                                        \
 static void OPNAME ## qpel8_mc10_ ## MMX(uint8_t *dst,                  \
                                          const uint8_t *src,            \
                                          ptrdiff_t stride)              \
@@ -289,13 +277,6 @@ static void OPNAME ## qpel8_mc22_ ## MMX(uint8_t *dst,                  \
                                                    stride, 9);          \
     ff_ ## OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(dst, halfH,          \
                                                    stride, 8);          \
-}                                                                       \
-                                                                        \
-static void OPNAME ## qpel16_mc00_ ## MMX(uint8_t *dst,                 \
-                                          const uint8_t *src,           \
-                                          ptrdiff_t stride)             \
-{                                                                       \
-    ff_ ## OPNAME ## pixels16_ ## MMX(dst, src, stride, 16);            \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc10_ ## MMX(uint8_t *dst,                 \
@@ -504,11 +485,23 @@ QPEL_OP(put_,        _,        mmxext)
 QPEL_OP(avg_,        _,        mmxext)
 QPEL_OP(put_no_rnd_, _no_rnd_, mmxext)
 
+#define MC00(OPNAME, SIZE, EXT)                                         \
+static void OPNAME ## _qpel ## SIZE ## _mc00_ ## EXT(uint8_t *dst,      \
+                                                     const uint8_t *src,\
+                                                     ptrdiff_t stride)  \
+{                                                                       \
+    ff_ ## OPNAME ## _pixels ## SIZE ##_ ## EXT(dst, src, stride, SIZE);\
+}
+
+MC00(put,  8, mmx)
+MC00(avg,  8, mmxext)
+MC00(put, 16, sse2)
+MC00(avg, 16, sse2)
+
 #endif /* HAVE_X86ASM */
 
 #define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU, PREFIX)                          \
 do {                                                                         \
-    c->PFX ## _pixels_tab[IDX][ 0] = PREFIX ## PFX ## SIZE ## _mc00_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][ 1] = PREFIX ## PFX ## SIZE ## _mc10_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][ 2] = PREFIX ## PFX ## SIZE ## _mc20_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][ 3] = PREFIX ## PFX ## SIZE ## _mc30_ ## CPU; \
@@ -533,12 +526,20 @@ av_cold void ff_qpeldsp_init_x86(QpelDSPContext *c)
     if (X86_MMXEXT(cpu_flags)) {
 #if HAVE_MMXEXT_EXTERNAL
         SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
+        c->avg_qpel_pixels_tab[1][0] = avg_qpel8_mc00_mmxext;
         SET_QPEL_FUNCS(avg_qpel,        1,  8, mmxext, );
 
         SET_QPEL_FUNCS(put_qpel,        0, 16, mmxext, );
+        c->put_no_rnd_qpel_pixels_tab[1][0] =
+        c->put_qpel_pixels_tab[1][0] = put_qpel8_mc00_mmx;
         SET_QPEL_FUNCS(put_qpel,        1,  8, mmxext, );
         SET_QPEL_FUNCS(put_no_rnd_qpel, 0, 16, mmxext, );
         SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, mmxext, );
 #endif /* HAVE_MMXEXT_EXTERNAL */
+    }
+    if (EXTERNAL_SSE2(cpu_flags)) {
+        c->put_no_rnd_qpel_pixels_tab[0][0] =
+        c->put_qpel_pixels_tab[0][0] = put_qpel16_mc00_sse2;
+        c->avg_qpel_pixels_tab[0][0] = avg_qpel16_mc00_sse2;
     }
 }
