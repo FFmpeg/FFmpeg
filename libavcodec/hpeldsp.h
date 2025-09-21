@@ -31,11 +31,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
-/* add and put pixel (decoding) */
-// blocksizes for hpel_pixels_func are 8x4,8x8 16x8 16x16
-// h for hpel_pixels_func is limited to {width/2, width} but never larger
-// than 16 and never smaller than 4
-typedef void (*op_pixels_func)(uint8_t *block /*align width (8 or 16)*/,
+/**
+ * Average and put pixel
+ * Widths can be 16, 8, 4 or 2. For for widths 2 and 4, h is always a positive
+ * multiple of 2; otherwise, it is a positive multiple of 4.
+ */
+typedef void (*op_pixels_func)(uint8_t *block /* align width */,
                                const uint8_t *pixels /*align 1*/,
                                ptrdiff_t line_size, int h);
 
@@ -46,8 +47,8 @@ typedef struct HpelDSPContext {
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.
      * this is an array[4][4] of motion compensation functions for 4
-     * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
-     * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
+     * horizontal blocksizes (2,4,8,16) and the 4 halfpel positions<br>
+     * *pixels_tab[ 0->16xH 1->8xH 2->4xH 3->2xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination where the result is stored
      * @param pixels source
      * @param line_size number of bytes in a horizontal line of block
@@ -58,8 +59,8 @@ typedef struct HpelDSPContext {
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.
      * This is an array[4][4] of motion compensation functions for 4
-     * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
-     * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
+     * horizontal blocksizes (2,4,8,16) and the 4 halfpel positions<br>
+     * *pixels_tab[ 0->16xH 1->8xH 2->4xH 3->2xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination into which the result is averaged (a+b+1)>>1
      * @param pixels source
      * @param line_size number of bytes in a horizontal line of block
@@ -85,7 +86,7 @@ typedef struct HpelDSPContext {
      * Halfpel motion compensation with no rounding (a+b)>>1.
      * this is an array[4] of motion compensation functions for 1
      * horizontal blocksize (16) and the 4 halfpel positions<br>
-     * *pixels_tab[0][ xhalfpel + 2*yhalfpel ]
+     * *pixels_tab[ xhalfpel + 2*yhalfpel ]
      * @param block destination into which the result is averaged (a+b)>>1
      * @param pixels source
      * @param line_size number of bytes in a horizontal line of block
