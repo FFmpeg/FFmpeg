@@ -31,18 +31,20 @@
      CORE_FLAG(VFPV3)   |                       \
      CORE_FLAG(NEON))
 
-#if defined __linux__ || defined __ANDROID__
+#if defined __linux__ || defined __ANDROID__ || HAVE_ELF_AUX_INFO
 
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include "libavutil/avstring.h"
 
-#if HAVE_GETAUXVAL
+#if HAVE_GETAUXVAL || HAVE_ELF_AUX_INFO
 #include <sys/auxv.h>
 #endif
 
+#ifndef AT_HWCAP
 #define AT_HWCAP        16
+#endif
 
 /* Relevant HWCAP values from kernel headers */
 #define HWCAP_VFP       (1 << 6)
@@ -54,7 +56,7 @@
 
 static int get_auxval(uint32_t *hwcap)
 {
-#if HAVE_GETAUXVAL
+#if HAVE_GETAUXVAL || HAVE_ELF_AUX_INFO
     unsigned long ret = ff_getauxval(AT_HWCAP);
     if (ret == 0)
         return -1;
@@ -65,6 +67,7 @@ static int get_auxval(uint32_t *hwcap)
 #endif
 }
 
+#if defined __linux__ || defined __ANDROID__
 static int get_hwcap(uint32_t *hwcap)
 {
     struct { uint32_t a_type; uint32_t a_val; } auxv;
@@ -117,6 +120,7 @@ static int get_cpuinfo(uint32_t *hwcap)
     fclose(f);
     return 0;
 }
+#endif
 
 int ff_get_cpu_flags_arm(void)
 {
@@ -124,8 +128,10 @@ int ff_get_cpu_flags_arm(void)
     uint32_t hwcap;
 
     if (get_auxval(&hwcap) < 0)
+#if defined __linux__ || defined __ANDROID__
         if (get_hwcap(&hwcap) < 0)
             if (get_cpuinfo(&hwcap) < 0)
+#endif
                 return flags;
 
 #define check_cap(cap, flag) do {               \
