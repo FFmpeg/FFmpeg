@@ -744,11 +744,14 @@ static int packet_decode(DecoderPriv *dp, AVPacket *pkt, AVFrame *frame)
     while (1) {
         FrameData *fd;
         unsigned outputs_mask = 1;
+        unsigned flags = 0;
+        if (!dp->dec.frames_decoded)
+            flags |= AV_CODEC_RECEIVE_FRAME_FLAG_SYNCHRONOUS;
 
         av_frame_unref(frame);
 
         update_benchmark(NULL);
-        ret = avcodec_receive_frame(dec, frame);
+        ret = avcodec_receive_frame2(dec, frame, flags);
         update_benchmark("decode_%s %s", type_desc, dp->parent_name);
 
         if (ret == AVERROR(EAGAIN)) {
