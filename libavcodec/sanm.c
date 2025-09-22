@@ -639,6 +639,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
         // ANIM has no dimensions in the header, distrust the incoming data.
         avctx->width = avctx->height = 0;
         ctx->have_dimensions = 0;
+    } else if (avctx->width > 800 || avctx->height > 600 ||
+               avctx->width < 8 || avctx->height < 8) {
+        // BL16 valid range is 8x8 - 800x600
+        return AVERROR_INVALIDDATA;
     }
     init_sizes(ctx, avctx->width, avctx->height);
     if (init_buffers(ctx)) {
