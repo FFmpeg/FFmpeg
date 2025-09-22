@@ -635,6 +635,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = ctx->version ? AV_PIX_FMT_RGB565 : AV_PIX_FMT_PAL8;
 
+    if (!ctx->version) {
+        // ANIM has no dimensions in the header, distrust the incoming data.
+        avctx->width = avctx->height = 0;
+        ctx->have_dimensions = 0;
+    }
     init_sizes(ctx, avctx->width, avctx->height);
     if (init_buffers(ctx)) {
         av_log(avctx, AV_LOG_ERROR, "Error allocating buffers.\n");
@@ -1813,6 +1818,9 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb,
             xres = FFMAX(xres, ctx->width);
             yres = FFMAX(yres, ctx->height);
         }
+
+        if ((xres < (fsc ? 8 : 1)) || (yres < (fsc ? 8 : 1)) || (xres > 640) || (yres > 480))
+            return AVERROR_INVALIDDATA;
 
         if (ctx->width < xres || ctx->height < yres) {
             int ret = ff_set_dimensions(ctx->avctx, xres, yres);
