@@ -3953,7 +3953,7 @@ Default value is 5000.
 
 @item pkt_size @var{integer}
 Set the maximum size, in bytes, of RTP packets that send out.
-Default value is 1500.
+Default value is 1200.
 
 @item buffer_size @var{integer}
 Set the buffer size, in bytes, of underlying protocol.
