@@ -47,12 +47,12 @@
 #endif
 
 /* Relevant HWCAP values from kernel headers */
-#define HWCAP_VFP       (1 << 6)
-#define HWCAP_EDSP      (1 << 7)
-#define HWCAP_THUMBEE   (1 << 11)
-#define HWCAP_NEON      (1 << 12)
-#define HWCAP_VFPv3     (1 << 13)
-#define HWCAP_TLS       (1 << 15)
+#define HWCAP_ARM_VFP     (1 << 6)
+#define HWCAP_ARM_EDSP    (1 << 7)
+#define HWCAP_ARM_THUMBEE (1 << 11)
+#define HWCAP_ARM_NEON    (1 << 12)
+#define HWCAP_ARM_VFPv3   (1 << 13)
+#define HWCAP_ARM_TLS     (1 << 15)
 
 static int get_auxval(uint32_t *hwcap)
 {
@@ -101,19 +101,19 @@ static int get_cpuinfo(uint32_t *hwcap)
     while (fgets(buf, sizeof(buf), f)) {
         if (av_strstart(buf, "Features", NULL)) {
             if (strstr(buf, " edsp "))
-                *hwcap |= HWCAP_EDSP;
+                *hwcap |= HWCAP_ARM_EDSP;
             if (strstr(buf, " tls "))
-                *hwcap |= HWCAP_TLS;
+                *hwcap |= HWCAP_ARM_TLS;
             if (strstr(buf, " thumbee "))
-                *hwcap |= HWCAP_THUMBEE;
+                *hwcap |= HWCAP_ARM_THUMBEE;
             if (strstr(buf, " vfp "))
-                *hwcap |= HWCAP_VFP;
+                *hwcap |= HWCAP_ARM_VFP;
             if (strstr(buf, " vfpv3 "))
-                *hwcap |= HWCAP_VFPv3;
+                *hwcap |= HWCAP_ARM_VFPv3;
             if (strstr(buf, " neon ") || strstr(buf, " asimd "))
-                *hwcap |= HWCAP_NEON;
+                *hwcap |= HWCAP_ARM_NEON;
             if (strstr(buf, " fp ")) // Listed on 64 bit ARMv8 kernels
-                *hwcap |= HWCAP_VFP | HWCAP_VFPv3;
+                *hwcap |= HWCAP_ARM_VFP | HWCAP_ARM_VFPv3;
             break;
         }
     }
@@ -135,7 +135,7 @@ int ff_get_cpu_flags_arm(void)
                 return flags;
 
 #define check_cap(cap, flag) do {               \
-        if (hwcap & HWCAP_ ## cap)              \
+        if (hwcap & HWCAP_ARM_ ## cap)          \
             flags |= AV_CPU_FLAG_ ## flag;      \
     } while (0)
 
