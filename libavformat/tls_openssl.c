@@ -939,8 +939,10 @@ static int tls_write(URLContext *h, const uint8_t *buf, int size)
     uc->flags &= ~AVIO_FLAG_NONBLOCK;
     uc->flags |= h->flags & AVIO_FLAG_NONBLOCK;
 
-    if (s->is_dtls)
-        size = FFMIN(size, DTLS_get_data_mtu(c->ssl));
+    if (s->is_dtls) {
+        const size_t mtu_size = DTLS_get_data_mtu(c->ssl);
+        size = FFMIN(size, mtu_size);
+    }
 
     ret = SSL_write(c->ssl, buf, size);
     if (ret > 0)
