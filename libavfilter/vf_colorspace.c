@@ -171,7 +171,7 @@ typedef struct ColorSpaceContext {
 // FIXME I'm pretty sure gamma22/28 also have a linear toe slope, but I can't
 // find any actual tables that document their real values...
 // See http://www.13thmonkey.org/~boris/gammacorrection/ first graph why it matters
-static const struct TransferCharacteristics transfer_characteristics[AVCOL_TRC_NB] = {
+static const struct TransferCharacteristics transfer_characteristics[] = {
     [AVCOL_TRC_BT709]     = { 1.099,  0.018,  0.45, 4.5 },
     [AVCOL_TRC_GAMMA22]   = { 1.0,    0.0,    1.0 / 2.2, 0.0 },
     [AVCOL_TRC_GAMMA28]   = { 1.0,    0.0,    1.0 / 2.8, 0.0 },
@@ -189,7 +189,7 @@ static const struct TransferCharacteristics *
 {
     const struct TransferCharacteristics *coeffs;
 
-    if (trc >= AVCOL_TRC_NB)
+    if ((unsigned)trc >= FF_ARRAY_ELEMS(transfer_characteristics))
         return NULL;
     coeffs = &transfer_characteristics[trc];
     if (!coeffs->alpha)
