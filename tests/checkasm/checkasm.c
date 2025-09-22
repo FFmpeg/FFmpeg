@@ -184,6 +184,9 @@ static const struct {
         { "hevc_pel", checkasm_check_hevc_pel },
         { "hevc_sao", checkasm_check_hevc_sao },
     #endif
+    #if CONFIG_HPELDSP
+        { "hpeldsp", checkasm_check_hpeldsp },
+    #endif
     #if CONFIG_HUFFYUV_DECODER
         { "huffyuvdsp", checkasm_check_huffyuvdsp },
     #endif
