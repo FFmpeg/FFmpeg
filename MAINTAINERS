@@ -522,7 +522,7 @@ LoongArch                           [2] Shiyou Yin
 Darwin (macOS, iOS)                 [2] Marvin Scholz
 Mac OS X / PowerPC                  [0]
 Amiga / PowerPC                         Colin Ward
-Linux / PowerPC                     [1] Lauri Kasanen
+Linux / PowerPC                     [2] Sean McGovern (CC <gseanmcg@gmail.com>), Lauri Kasanen
 RISC-V                              [2] Rémi Denis-Courmont
 Windows MinGW                           Alex Beregszaszi, Ramiro Polla
 Windows Cygwin                          Victor Paesa
