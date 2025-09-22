@@ -4841,10 +4841,6 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         if (!sc->chunk_count || sc->tts_count)
             return;
 
-        ret = mov_merge_tts_data(mov, st, MOV_MERGE_CTTS);
-        if (ret < 0)
-            return;
-
         // compute total chunk count
         for (i = 0; i < sc->stsc_count; i++) {
             unsigned count, chunk_count;
@@ -4939,6 +4935,10 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 chunk_samples -= samples;
             }
         }
+
+        ret = mov_merge_tts_data(mov, st, MOV_MERGE_CTTS);
+        if (ret < 0)
+            return;
     }
 
     if (!mov->ignore_editlist && mov->advanced_editlist) {
