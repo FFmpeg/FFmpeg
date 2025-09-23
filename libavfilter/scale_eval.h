@@ -21,6 +21,13 @@
 
 #include "avfilter.h"
 
+enum {
+    SCALE_FORCE_OAR_DISABLE,
+    SCALE_FORCE_OAR_DECREASE,
+    SCALE_FORCE_OAR_INCREASE,
+    SCALE_FORCE_OAR_NB,
+};
+
 /**
  * Parse and evaluate string expressions for width and height. Upon success,
  * ff_scale_adjust_dimensions must be called with evaluated width and height

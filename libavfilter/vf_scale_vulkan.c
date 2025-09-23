@@ -389,7 +389,8 @@ static int scale_vulkan_config_output(AVFilterLink *outlink)
     if (err < 0)
         return err;
 
-    ff_scale_adjust_dimensions(inlink, &vkctx->output_width, &vkctx->output_height, 0, 1, 1.f);
+    ff_scale_adjust_dimensions(inlink, &vkctx->output_width, &vkctx->output_height,
+                               SCALE_FORCE_OAR_DISABLE, 1, 1.f);
 
     outlink->w = vkctx->output_width;
     outlink->h = vkctx->output_height;
