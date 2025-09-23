@@ -1143,8 +1143,8 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
 
     s->restart_count = s->restart_interval;
 
-    if (s->restart_interval == 0)
-        s->restart_interval = INT_MAX;
+    for (i = 0; i < 6; i++)
+        vpred[i] = 1 << (s->bits-1);
 
     if (s->bayer)
         width = s->mb_width / nb_components; /* Interleaved, width stored is the total so need to divide */
@@ -1168,11 +1168,6 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
 
         for (i = 0; i < 4; i++)
             top[i] = left[i] = topleft[i] = buffer[0][i];
-
-        if ((mb_y * s->width) % s->restart_interval == 0) {
-            for (i = 0; i < 6; i++)
-                vpred[i] = 1 << (s->bits-1);
-        }
 
         for (mb_x = 0; mb_x < width; mb_x++) {
             int modified_predictor = predictor;
