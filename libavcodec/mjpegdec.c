@@ -2210,7 +2210,6 @@ static int find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
 {
     const uint8_t *buf_ptr;
     int val;
-    int skipped = 0;
 
     buf_ptr = *pbuf_ptr;
     while ((buf_ptr = memchr(buf_ptr, 0xff, buf_end - buf_ptr))) {
@@ -2223,12 +2222,12 @@ static int find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
                 break;
             }
         }
-        skipped++;
     }
     buf_ptr = buf_end;
     val = -1;
 found:
-    ff_dlog(NULL, "find_marker skipped %d bytes\n", skipped);
+    ff_dlog(NULL, "find_marker skipped %td bytes\n",
+            (buf_ptr - *pbuf_ptr) - (val < 0 ? 0 : 2));
     *pbuf_ptr = buf_ptr;
     return val;
 }
