@@ -23,7 +23,7 @@
 SECTION_RODATA 32
 
 ; Full matrix for row transform.
-const tmatrix_row
+tmatrix_row:
     dw  64,  89,  84,  75,  64,  50,  35,  18
     dw  64, -18, -84,  50,  64, -75, -35,  89
     dw  64,  75,  35, -18, -64, -89, -84, -50
@@ -34,10 +34,10 @@ const tmatrix_row
     dw  64, -89,  84, -75,  64, -50,  35, -18
 
 ; Constant pairs for broadcast in column transform.
-const tmatrix_col_even
+tmatrix_col_even:
     dw  64,  64,  64, -64
     dw  84,  35,  35, -84
-const tmatrix_col_odd
+tmatrix_col_odd:
     dw  89,  75,  50,  18
     dw  75, -18, -89, -50
     dw  50, -89,  18,  75
