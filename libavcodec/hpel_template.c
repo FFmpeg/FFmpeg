@@ -40,9 +40,9 @@ static inline void FUNC(OPNAME ## _pixels8_l2)(uint8_t *dst,            \
         a = AV_RN4P(&src1[i * src_stride1]);                            \
         b = AV_RN4P(&src2[i * src_stride2]);                            \
         OP(*((pixel4 *) &dst[i * dst_stride]), rnd_avg_pixel4(a, b));   \
-        a = AV_RN4P(&src1[i * src_stride1 + 4 * sizeof(pixel)]);        \
-        b = AV_RN4P(&src2[i * src_stride2 + 4 * sizeof(pixel)]);        \
-        OP(*((pixel4 *) &dst[i * dst_stride + 4 * sizeof(pixel)]),      \
+        a = AV_RN4P(&src1[i * src_stride1 + 4 * (int)sizeof(pixel)]);   \
+        b = AV_RN4P(&src2[i * src_stride2 + 4 * (int)sizeof(pixel)]);   \
+        OP(*((pixel4 *) &dst[i * dst_stride + 4 * (int)sizeof(pixel)]), \
            rnd_avg_pixel4(a, b));                                       \
     }                                                                   \
 }                                                                       \
