@@ -37,6 +37,7 @@
 #include "decode.h"
 #include "hwconfig.h"
 #include "ohcodec.h"
+#include "pthread_internal.h"
 
 typedef struct OHCodecDecContext {
     AVClass *avclass;
@@ -70,7 +71,13 @@ typedef struct OHCodecDecContext {
 
     char *name;
     int allow_sw;
+    unsigned mutex_cond_cnt;
 } OHCodecDecContext;
+
+#define OFFSET(x) offsetof(OHCodecDecContext, x)
+DEFINE_OFFSET_ARRAY(OHCodecDecContext, mutex_cond, mutex_cond_cnt,
+                    (OFFSET(input_mutex), OFFSET(output_mutex)),
+                    (OFFSET(input_cond), OFFSET(output_cond)));
 
 typedef struct OHCodecBuffer {
     uint32_t index;
@@ -367,12 +374,11 @@ static av_cold int oh_decode_init(AVCodecContext *avctx)
     OHCodecDecContext *s = avctx->priv_data;
 
     // Initialize these fields first, so oh_decode_close can destroy them safely
-    ff_mutex_init(&s->input_mutex, NULL);
-    ff_cond_init(&s->input_cond, NULL);
-    ff_mutex_init(&s->output_mutex, NULL);
-    ff_cond_init(&s->output_cond, NULL);
+    int ret = ff_pthread_init(s, mutex_cond_offsets);
+    if (ret < 0)
+        return ret;
 
-    int ret = oh_decode_create(s, avctx);
+    ret = oh_decode_create(s, avctx);
     if (ret < 0)
         return ret;
     ret = oh_decode_set_format(s, avctx);
@@ -414,13 +420,11 @@ static av_cold int oh_decode_close(AVCodecContext *avctx)
 
     av_packet_unref(&s->pkt);
 
-    ff_mutex_destroy(&s->input_mutex);
-    ff_cond_destroy(&s->input_cond);
     av_fifo_freep2(&s->input_queue);
 
-    ff_mutex_destroy(&s->output_mutex);
-    ff_cond_destroy(&s->output_cond);
     av_fifo_freep2(&s->output_queue);
+
+    ff_pthread_free(s, mutex_cond_offsets);
 
     return 0;
 }
@@ -718,7 +722,6 @@ static const AVCodecHWConfigInternal *const oh_hw_configs[] = {
     NULL
 };
 
-#define OFFSET(x) offsetof(OHCodecDecContext, x)
 #define VD (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM)
 static const AVOption ohcodec_vdec_options[] = {
     {"codec_name", "Select codec by name",
