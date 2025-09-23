@@ -140,7 +140,7 @@ static int mov_write_ttml_document_from_queue(AVFormatContext *s,
             } else if (pkt->pts >= end_ts) {
                 // starts after this fragment, put back to original queue
                 ret = avpriv_packet_list_put(&track->squashed_packet_queue,
-                                             pkt, av_packet_ref,
+                                             pkt, NULL,
                                              FF_PACKETLIST_FLAG_PREPEND);
                 if (ret < 0)
                     goto cleanup;
@@ -215,6 +215,7 @@ static int mov_write_ttml_document_from_queue(AVFormatContext *s,
     ret = 0;
 
 cleanup:
+    av_packet_unref(pkt);
     while (!avpriv_packet_list_get(&back_to_queue_list, pkt)) {
         ret = avpriv_packet_list_put(&track->squashed_packet_queue,
                                      pkt, av_packet_ref,
