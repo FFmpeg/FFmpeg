@@ -161,166 +161,11 @@ static void avg_no_rnd_pixels8_xy2_mmx(uint8_t *block, const uint8_t *pixels,
         :FF_REG_a, "memory");
 }
 
-static void put_no_rnd_pixels16_x2_mmx(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    MOVQ_BFE(mm6);
-    __asm__ volatile(
-        "lea    (%3, %3), %%"FF_REG_a"  \n\t"
-        ".p2align 3                     \n\t"
-        "1:                             \n\t"
-        "movq   (%1), %%mm0             \n\t"
-        "movq   1(%1), %%mm1            \n\t"
-        "movq   (%1, %3), %%mm2         \n\t"
-        "movq   1(%1, %3), %%mm3        \n\t"
-        PAVGBP_MMX_NO_RND(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
-        "movq   %%mm4, (%2)             \n\t"
-        "movq   %%mm5, (%2, %3)         \n\t"
-        "movq   8(%1), %%mm0            \n\t"
-        "movq   9(%1), %%mm1            \n\t"
-        "movq   8(%1, %3), %%mm2        \n\t"
-        "movq   9(%1, %3), %%mm3        \n\t"
-        PAVGBP_MMX_NO_RND(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
-        "movq   %%mm4, 8(%2)            \n\t"
-        "movq   %%mm5, 8(%2, %3)        \n\t"
-        "add    %%"FF_REG_a", %1        \n\t"
-        "add    %%"FF_REG_a", %2        \n\t"
-        "movq   (%1), %%mm0             \n\t"
-        "movq   1(%1), %%mm1            \n\t"
-        "movq   (%1, %3), %%mm2         \n\t"
-        "movq   1(%1, %3), %%mm3        \n\t"
-        PAVGBP_MMX_NO_RND(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
-        "movq   %%mm4, (%2)             \n\t"
-        "movq   %%mm5, (%2, %3)         \n\t"
-        "movq   8(%1), %%mm0            \n\t"
-        "movq   9(%1), %%mm1            \n\t"
-        "movq   8(%1, %3), %%mm2        \n\t"
-        "movq   9(%1, %3), %%mm3        \n\t"
-        PAVGBP_MMX_NO_RND(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
-        "movq   %%mm4, 8(%2)            \n\t"
-        "movq   %%mm5, 8(%2, %3)        \n\t"
-        "add    %%"FF_REG_a", %1        \n\t"
-        "add    %%"FF_REG_a", %2        \n\t"
-        "subl   $4, %0                  \n\t"
-        "jnz    1b                      \n\t"
-        :"+g"(h), "+S"(pixels), "+D"(block)
-        :"r"((x86_reg)line_size)
-        :FF_REG_a, "memory");
-}
-
-static void put_no_rnd_pixels8_y2_mmx(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    MOVQ_BFE(mm6);
-    __asm__ volatile(
-        "lea (%3, %3), %%"FF_REG_a"     \n\t"
-        "movq (%1), %%mm0               \n\t"
-        ".p2align 3                     \n\t"
-        "1:                             \n\t"
-        "movq   (%1, %3), %%mm1         \n\t"
-        "movq   (%1, %%"FF_REG_a"),%%mm2\n\t"
-        PAVGBP_MMX_NO_RND(%%mm1, %%mm0, %%mm4,   %%mm2, %%mm1, %%mm5)
-        "movq   %%mm4, (%2)             \n\t"
-        "movq   %%mm5, (%2, %3)         \n\t"
-        "add    %%"FF_REG_a", %1        \n\t"
-        "add    %%"FF_REG_a", %2        \n\t"
-        "movq   (%1, %3), %%mm1         \n\t"
-        "movq   (%1, %%"FF_REG_a"),%%mm0\n\t"
-        PAVGBP_MMX_NO_RND(%%mm1, %%mm2, %%mm4,   %%mm0, %%mm1, %%mm5)
-        "movq   %%mm4, (%2)             \n\t"
-        "movq   %%mm5, (%2, %3)         \n\t"
-        "add    %%"FF_REG_a", %1        \n\t"
-        "add    %%"FF_REG_a", %2        \n\t"
-        "subl   $4, %0                  \n\t"
-        "jnz    1b                      \n\t"
-        :"+g"(h), "+S"(pixels), "+D"(block)
-        :"r"((x86_reg)line_size)
-        :FF_REG_a, "memory");
-}
-
-static void avg_no_rnd_pixels16_x2_mmx(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    MOVQ_BFE(mm6);
-        __asm__ volatile(
-            ".p2align 3                 \n\t"
-            "1:                         \n\t"
-            "movq  (%1), %%mm0          \n\t"
-            "movq  1(%1), %%mm1         \n\t"
-            "movq  (%2), %%mm3          \n\t"
-            PAVGB_MMX_NO_RND(%%mm0, %%mm1, %%mm2, %%mm6)
-            PAVGB_MMX(%%mm3, %%mm2, %%mm0, %%mm6)
-            "movq  %%mm0, (%2)          \n\t"
-            "movq  8(%1), %%mm0         \n\t"
-            "movq  9(%1), %%mm1         \n\t"
-            "movq  8(%2), %%mm3         \n\t"
-            PAVGB_MMX_NO_RND(%%mm0, %%mm1, %%mm2, %%mm6)
-            PAVGB_MMX(%%mm3, %%mm2, %%mm0, %%mm6)
-            "movq  %%mm0, 8(%2)         \n\t"
-            "add    %3, %1              \n\t"
-            "add    %3, %2              \n\t"
-            "subl   $1, %0              \n\t"
-            "jnz    1b                  \n\t"
-            :"+g"(h), "+S"(pixels), "+D"(block)
-            :"r"((x86_reg)line_size)
-            :"memory");
-}
-
-static void avg_no_rnd_pixels8_y2_mmx(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    MOVQ_BFE(mm6);
-    __asm__ volatile(
-        "lea    (%3, %3), %%"FF_REG_a"  \n\t"
-        "movq   (%1), %%mm0             \n\t"
-        ".p2align 3                     \n\t"
-        "1:                             \n\t"
-        "movq   (%1, %3), %%mm1         \n\t"
-        "movq   (%1, %%"FF_REG_a"), %%mm2 \n\t"
-        PAVGBP_MMX_NO_RND(%%mm1, %%mm0, %%mm4,   %%mm2, %%mm1, %%mm5)
-        "movq   (%2), %%mm3             \n\t"
-        PAVGB_MMX(%%mm3, %%mm4, %%mm0, %%mm6)
-        "movq   (%2, %3), %%mm3         \n\t"
-        PAVGB_MMX(%%mm3, %%mm5, %%mm1, %%mm6)
-        "movq   %%mm0, (%2)             \n\t"
-        "movq   %%mm1, (%2, %3)         \n\t"
-        "add    %%"FF_REG_a", %1        \n\t"
-        "add    %%"FF_REG_a", %2        \n\t"
-
-        "movq   (%1, %3), %%mm1         \n\t"
-        "movq   (%1, %%"FF_REG_a"), %%mm0 \n\t"
-        PAVGBP_MMX_NO_RND(%%mm1, %%mm2, %%mm4,   %%mm0, %%mm1, %%mm5)
-        "movq   (%2), %%mm3             \n\t"
-        PAVGB_MMX(%%mm3, %%mm4, %%mm2, %%mm6)
-        "movq   (%2, %3), %%mm3         \n\t"
-        PAVGB_MMX(%%mm3, %%mm5, %%mm1, %%mm6)
-        "movq   %%mm2, (%2)             \n\t"
-        "movq   %%mm1, (%2, %3)         \n\t"
-        "add    %%"FF_REG_a", %1        \n\t"
-        "add    %%"FF_REG_a", %2        \n\t"
-
-        "subl   $4, %0                  \n\t"
-        "jnz    1b                      \n\t"
-        :"+g"(h), "+S"(pixels), "+D"(block)
-        :"r"((x86_reg)line_size)
-        :FF_REG_a, "memory");
-}
-
 #if HAVE_MMX
-CALL_2X_PIXELS(avg_no_rnd_pixels16_y2_mmx, avg_no_rnd_pixels8_y2_mmx, 8)
-CALL_2X_PIXELS(put_no_rnd_pixels16_y2_mmx, put_no_rnd_pixels8_y2_mmx, 8)
-
 CALL_2X_PIXELS(avg_no_rnd_pixels16_xy2_mmx, avg_no_rnd_pixels8_xy2_mmx, 8)
 CALL_2X_PIXELS(put_no_rnd_pixels16_xy2_mmx, put_no_rnd_pixels8_xy2_mmx, 8)
 #endif
 #endif /* HAVE_INLINE_ASM */
-
-
-#if HAVE_X86ASM
-
-#define HPELDSP_AVG_PIXELS16(CPUEXT)                      \
-    CALL_2X_PIXELS(put_no_rnd_pixels16_x2 ## CPUEXT, ff_put_no_rnd_pixels8_x2 ## CPUEXT, 8) \
-    CALL_2X_PIXELS(put_no_rnd_pixels16_y2 ## CPUEXT, ff_put_no_rnd_pixels8_y2 ## CPUEXT, 8)
-
-HPELDSP_AVG_PIXELS16(_mmxext)
-
-#endif /* HAVE_X86ASM */
 
 #define SET_HPEL_FUNCS_EXT(PFX, IDX, SIZE, CPU)                             \
     if (HAVE_MMX_EXTERNAL)                                                  \
@@ -331,18 +176,11 @@ HPELDSP_AVG_PIXELS16(_mmxext)
         SET_HPEL_FUNCS_EXT(PFX, IDX, SIZE, CPU);                                \
         c->PFX ## _pixels_tab IDX [3] = PFX ## _pixels ## SIZE ## _xy2_ ## CPU; \
     } while (0)
-#define SET_HPEL_FUNCS12(PFX, IDX, SIZE, CPU)                                   \
-    do {                                                                        \
-        c->PFX ## _pixels_tab IDX [1] = PFX ## _pixels ## SIZE ## _x2_  ## CPU; \
-        c->PFX ## _pixels_tab IDX [2] = PFX ## _pixels ## SIZE ## _y2_  ## CPU; \
-    } while (0)
 
 static void hpeldsp_init_mmx(HpelDSPContext *c, int flags)
 {
 #if HAVE_MMX_INLINE
-    SET_HPEL_FUNCS12(put_no_rnd, [0], 16, mmx);
     c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_mmx;
-    SET_HPEL_FUNCS12(avg_no_rnd,  , 16, mmx);
     c->avg_no_rnd_pixels_tab[3] = avg_no_rnd_pixels16_xy2_mmx;
 #if HAVE_MMX_EXTERNAL
     c->put_pixels_tab[1][0] = ff_put_pixels8_mmx;
@@ -365,8 +203,6 @@ static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags)
     c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_exact_mmxext;
 
     if (!(flags & AV_CODEC_FLAG_BITEXACT)) {
-        c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_mmxext;
-        c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_mmxext;
         c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_mmxext;
         c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_mmxext;
     }
