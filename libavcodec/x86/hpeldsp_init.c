@@ -69,8 +69,6 @@ void ff_avg_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
 void ff_avg_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
 
-#define put_no_rnd_pixels8_mmx  ff_put_pixels8_mmx
-
 #if HAVE_INLINE_ASM
 
 /***********************************/
@@ -167,25 +165,16 @@ CALL_2X_PIXELS(put_no_rnd_pixels16_xy2_mmx, put_no_rnd_pixels8_xy2_mmx, 8)
 #endif
 #endif /* HAVE_INLINE_ASM */
 
-#define SET_HPEL_FUNCS_EXT(PFX, IDX, SIZE, CPU)                             \
-    if (HAVE_MMX_EXTERNAL)                                                  \
-        c->PFX ## _pixels_tab IDX [0] = PFX ## _pixels ## SIZE ## _ ## CPU
-
-#define SET_HPEL_FUNCS03(PFX, IDX, SIZE, CPU)                                   \
-    do {                                                                        \
-        SET_HPEL_FUNCS_EXT(PFX, IDX, SIZE, CPU);                                \
-        c->PFX ## _pixels_tab IDX [3] = PFX ## _pixels ## SIZE ## _xy2_ ## CPU; \
-    } while (0)
-
 static void hpeldsp_init_mmx(HpelDSPContext *c, int flags)
 {
 #if HAVE_MMX_INLINE
     c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_mmx;
+    c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_mmx;
     c->avg_no_rnd_pixels_tab[3] = avg_no_rnd_pixels16_xy2_mmx;
-#if HAVE_MMX_EXTERNAL
-    c->put_pixels_tab[1][0] = ff_put_pixels8_mmx;
 #endif
-    SET_HPEL_FUNCS03(put_no_rnd, [1], 8, mmx);
+#if HAVE_MMX_EXTERNAL
+    c->put_no_rnd_pixels_tab[1][0] =
+    c->put_pixels_tab[1][0] = ff_put_pixels8_mmx;
 #endif
 }
 
