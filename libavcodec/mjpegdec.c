@@ -55,6 +55,11 @@
 #include "put_bits.h"
 
 
+static int mjpeg_unescape_sos(MJpegDecodeContext *s,
+                              const uint8_t *buf_ptr, const uint8_t *buf_end,
+                              const uint8_t **unescaped_buf_ptr,
+                              size_t *unescaped_buf_size);
+
 static int init_default_huffman_tables(MJpegDecodeContext *s)
 {
     static const struct {
@@ -1762,12 +1767,9 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
 
     predictor = bytestream2_get_byteu(&s->gB);  /* JPEG Ss / lossless JPEG predictor / JPEG-LS NEAR */
     ilv = bytestream2_get_byteu(&s->gB);        /* JPEG Se / JPEG-LS ILV */
-    if(s->avctx->codec_tag != AV_RL32("CJPG")){
         uint8_t b = bytestream2_get_byteu(&s->gB);
         prev_shift      = b >> 4;   /* Ah */
         point_transform = b & 0x0F; /* Al */
-    }else
-        prev_shift = point_transform = 0;
 
     if (nb_components > 1) {
         /* interleaved stream */
@@ -1794,7 +1796,14 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
     if (s->mjpb_skiptosod)
         bytestream2_skip(&s->gB, s->mjpb_skiptosod);
 
-    ret = init_get_bits8(&s->gb, s->gB.buffer, bytestream2_get_bytes_left(&s->gB));
+    const uint8_t *unescaped_buf_ptr;
+    size_t unescaped_buf_size;
+    ret = mjpeg_unescape_sos(s, s->gB.buffer, s->gB.buffer + bytestream2_get_bytes_left(&s->gB),
+                             &unescaped_buf_ptr, &unescaped_buf_size);
+    if (ret < 0)
+        return ret;
+
+    ret = init_get_bits8(&s->gb, unescaped_buf_ptr, unescaped_buf_size);
     if (ret < 0)
         return ret;
 
@@ -2207,7 +2216,7 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
 
 /* return the 8 bit start code value and update the search
    state. Return -1 if no start code found */
-static int find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
+int ff_mjpeg_find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
 {
     const uint8_t *buf_ptr;
     int val;
@@ -2233,28 +2242,26 @@ found:
     return val;
 }
 
-int ff_mjpeg_find_marker(MJpegDecodeContext *s,
-                         const uint8_t **buf_ptr, const uint8_t *buf_end,
-                         const uint8_t **unescaped_buf_ptr,
-                         int *unescaped_buf_size)
+static int mjpeg_unescape_sos(MJpegDecodeContext *s,
+                              const uint8_t *buf_ptr, const uint8_t *buf_end,
+                              const uint8_t **unescaped_buf_ptr,
+                              size_t *unescaped_buf_size)
 {
-    int start_code;
-    start_code = find_marker(buf_ptr, buf_end);
-
-    if (start_code != SOS ||
+    if (s->avctx->codec_id == AV_CODEC_ID_MEDIA100 ||
+        s->avctx->codec_id == AV_CODEC_ID_MJPEGB ||
         s->avctx->codec_id == AV_CODEC_ID_THP) {
-        *unescaped_buf_ptr  = *buf_ptr;
-        *unescaped_buf_size = buf_end - *buf_ptr;
-        return start_code;
+        *unescaped_buf_ptr  = buf_ptr;
+        *unescaped_buf_size = buf_end - buf_ptr;
+        return 0;
     }
 
-    av_fast_padded_malloc(&s->buffer, &s->buffer_size, buf_end - *buf_ptr);
+    av_fast_padded_malloc(&s->buffer, &s->buffer_size, buf_end - buf_ptr);
     if (!s->buffer)
         return AVERROR(ENOMEM);
 
     /* unescape buffer of SOS, use special treatment for JPEG-LS */
     if (!s->ls) {
-        const uint8_t *src = *buf_ptr;
+        const uint8_t *src = buf_ptr;
         const uint8_t *ptr = src;
         uint8_t *dst = s->buffer;
 
@@ -2304,9 +2311,9 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
                AV_INPUT_BUFFER_PADDING_SIZE);
 
         av_log(s->avctx, AV_LOG_DEBUG, "escaping removed %td bytes\n",
-               (buf_end - *buf_ptr) - (dst - s->buffer));
+               (buf_end - buf_ptr) - (dst - s->buffer));
     } else {
-        const uint8_t *src = *buf_ptr;
+        const uint8_t *src = buf_ptr;
         uint8_t *dst  = s->buffer;
         int bit_count = 0;
         int t = 0, b = 0;
@@ -2349,7 +2356,7 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
                AV_INPUT_BUFFER_PADDING_SIZE);
     }
 
-    return start_code;
+    return 0;
 }
 
 static void reset_icc_profile(MJpegDecodeContext *s)
@@ -2372,9 +2379,7 @@ int ff_mjpeg_decode_frame_from_buf(AVCodecContext *avctx, AVFrame *frame,
 {
     MJpegDecodeContext *s = avctx->priv_data;
     const uint8_t *buf_end, *buf_ptr;
-    const uint8_t *unescaped_buf_ptr;
     int hshift, vshift;
-    int unescaped_buf_size;
     int start_code;
     int index;
     int ret = 0;
@@ -2396,23 +2401,22 @@ redo_for_pal8:
     buf_end = buf + buf_size;
     while (buf_ptr < buf_end) {
         /* find start next marker */
-        start_code = ff_mjpeg_find_marker(s, &buf_ptr, buf_end,
-                                          &unescaped_buf_ptr,
-                                          &unescaped_buf_size);
+        start_code = ff_mjpeg_find_marker(&buf_ptr, buf_end);
         /* EOF */
         if (start_code < 0)
             break;
 
-        if (unescaped_buf_size > INT_MAX / 8) {
+        ptrdiff_t bytes_left = buf_end - buf_ptr;
+        if (bytes_left > INT_MAX / 8) {
             av_log(avctx, AV_LOG_ERROR,
-                   "MJPEG packet 0x%x too big (%d/%d), corrupt data?\n",
-                   start_code, unescaped_buf_size, buf_size);
+                   "MJPEG packet 0x%x too big (%td/%d), corrupt data?\n",
+                   start_code, bytes_left, buf_size);
             return AVERROR_INVALIDDATA;
         }
         av_log(avctx, AV_LOG_DEBUG, "marker=%x avail_size_in_buf=%td\n",
                start_code, buf_end - buf_ptr);
 
-        bytestream2_init(&s->gB, unescaped_buf_ptr, unescaped_buf_size);
+        bytestream2_init(&s->gB, buf_ptr, bytes_left);
 
         if (avctx->debug & FF_DEBUG_STARTCODE)
             av_log(avctx, AV_LOG_DEBUG, "startcode: %X\n", start_code);

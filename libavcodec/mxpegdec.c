@@ -198,8 +198,6 @@ static int mxpeg_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     MXpegDecodeContext *s = avctx->priv_data;
     MJpegDecodeContext *jpg = &s->jpg;
     const uint8_t *buf_end, *buf_ptr;
-    const uint8_t *unescaped_buf_ptr;
-    int unescaped_buf_size;
     int start_code;
     int ret;
 
@@ -212,15 +210,15 @@ static int mxpeg_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     s->got_mxm_bitmask = 0;
     s->got_sof_data = !!s->got_sof_data;
     while (buf_ptr < buf_end) {
-        start_code = ff_mjpeg_find_marker(jpg, &buf_ptr, buf_end,
-                                          &unescaped_buf_ptr, &unescaped_buf_size);
+        start_code = ff_mjpeg_find_marker(&buf_ptr, buf_end);
         if (start_code < 0)
             goto the_end;
 
-        bytestream2_init(&jpg->gB, unescaped_buf_ptr, unescaped_buf_size);
+        int bytes_left = buf_end - buf_ptr;
+        bytestream2_init(&jpg->gB, buf_ptr, bytes_left);
 
         if (start_code >= APP0 && start_code <= APP15) {
-            mxpeg_decode_app(s, unescaped_buf_ptr, unescaped_buf_size);
+            mxpeg_decode_app(s, buf_ptr, bytes_left);
         }
 
         switch (start_code) {
@@ -247,8 +245,7 @@ static int mxpeg_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             }
             break;
         case COM:
-            ret = mxpeg_decode_com(s, unescaped_buf_ptr,
-                                   unescaped_buf_size);
+            ret = mxpeg_decode_com(s, buf_ptr, bytes_left);
             if (ret < 0)
                 return ret;
             break;
