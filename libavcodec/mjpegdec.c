@@ -2194,17 +2194,19 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
 static int find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
 {
     const uint8_t *buf_ptr;
-    unsigned int v, v2;
     int val;
     int skipped = 0;
 
     buf_ptr = *pbuf_ptr;
-    while (buf_end - buf_ptr > 1) {
-        v  = *buf_ptr++;
-        v2 = *buf_ptr;
-        if ((v == 0xff) && (v2 >= SOF0) && (v2 <= COM) && buf_ptr < buf_end) {
+    while ((buf_ptr = memchr(buf_ptr, 0xff, buf_end - buf_ptr))) {
+        buf_ptr++;
+        while (buf_ptr < buf_end) {
             val = *buf_ptr++;
-            goto found;
+            if (val != 0xff) {
+                if ((val >= SOF0) && (val <= COM))
+                    goto found;
+                break;
+            }
         }
         skipped++;
     }
