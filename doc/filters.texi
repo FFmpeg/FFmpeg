@@ -16449,7 +16449,8 @@ will be performed.
 
 @item force_original_aspect_ratio
 @item force_divisible_by
-Work the same as the identical @ref{scale} filter options.
+Work the same as the identical @ref{scale} filter options. Note that
+@option{force_divisible_by} also works with @code{fit_sense=constraint}.
 
 @item reset_sar
 If enabled, output frames will always have a pixel aspect ratio of 1:1.  If
@@ -16501,6 +16502,22 @@ its natural size; which may result in additional padding or cropping.
 Scale the input down as much as needed to fit inside the output. Equivalent
 to either @code{contain} or @code{none}, depending on whether the input is
 larger than the output or not.
+@end table
+
+@item fit_sense
+When @option{fit_mode} is in use, this option controls how the fit strategy
+is applied against the specified output resolution. Mutually exclusive with
+@option{force_original_aspect_ratio}. Valid values are:
+
+@table @samp
+@item target
+The computed output resolution is taken as the exact size of the output frame.
+This is the default behavior.
+
+@item constraint
+The computed output resolution is a size reference against which the fit mode
+is applied, enlarging or decreasing the true frame size as needed to fit the
+content.
 @end table
 
 @item fillcolor

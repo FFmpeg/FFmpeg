@@ -161,6 +161,12 @@ enum fit_mode {
     FIT_MODE_NB,
 };
 
+enum fit_sense {
+    FIT_TARGET,
+    FIT_CONSTRAINT,
+    FIT_SENSE_NB,
+};
+
 typedef struct LibplaceboContext {
     /* lavfi vulkan*/
     FFVulkanContext vkctx;
@@ -206,6 +212,7 @@ typedef struct LibplaceboContext {
     int reset_sar;
     int normalize_sar;
     int fit_mode;
+    int fit_sense;
     int apply_filmgrain;
     int apply_dovi;
     int colorspace;
@@ -1452,11 +1459,24 @@ static int libplacebo_config_output(AVFilterLink *outlink)
     double sar_in = inlink->sample_aspect_ratio.num ?
                     av_q2d(inlink->sample_aspect_ratio) : 1.0;
 
+    int force_oar = s->force_original_aspect_ratio;
+    if (!force_oar && s->fit_sense == FIT_CONSTRAINT) {
+        if (s->fit_mode == FIT_CONTAIN || s->fit_mode == FIT_SCALE_DOWN) {
+            force_oar = SCALE_FORCE_OAR_DECREASE;
+        } else if (s->fit_mode == FIT_COVER) {
+            force_oar = SCALE_FORCE_OAR_INCREASE;
+        }
+    }
+
     ff_scale_adjust_dimensions(inlink, &outlink->w, &outlink->h,
-                               s->force_original_aspect_ratio,
-                               s->force_divisible_by,
+                               force_oar, s->force_divisible_by,
                                s->reset_sar ? sar_in : 1.0);
 
+    if (s->fit_mode == FIT_SCALE_DOWN && s->fit_sense == FIT_CONSTRAINT) {
+        int w_adj = s->reset_sar ? sar_in * inlink->w : inlink->w;
+        outlink->w = FFMIN(outlink->w, w_adj);
+        outlink->h = FFMIN(outlink->h, inlink->h);
+    }
 
     if (s->nb_inputs > 1 && !s->disable_fbos) {
         /* Create a separate renderer and composition texture */
@@ -1586,6 +1606,9 @@ static const AVOption libplacebo_options[] = {
         { "none",       "Keep input unscaled, padding and cropping as needed",  0, AV_OPT_TYPE_CONST, {.i64 = FIT_NONE },       0, 0, STATIC, .unit = "fit_mode" },
         { "place",      "Keep input unscaled, padding and cropping as needed",  0, AV_OPT_TYPE_CONST, {.i64 = FIT_NONE },       0, 0, STATIC, .unit = "fit_mode" },
         { "scale_down", "Downscale only if larger, padding to preserve aspect", 0, AV_OPT_TYPE_CONST, {.i64 = FIT_SCALE_DOWN }, 0, 0, STATIC, .unit = "fit_mode" },
+    { "fit_sense", "Output size strategy (for the base layer only)", OFFSET(fit_sense), AV_OPT_TYPE_INT, {.i64 = FIT_TARGET }, 0, FIT_SENSE_NB - 1, STATIC, .unit = "fit_sense" },
+        { "target",     "Computed resolution is the exact output size",         0, AV_OPT_TYPE_CONST, {.i64 = FIT_TARGET     }, 0, 0, STATIC, .unit = "fit_sense" },
+        { "constraint", "Computed resolution constrains the output size",       0, AV_OPT_TYPE_CONST, {.i64 = FIT_CONSTRAINT }, 0, 0, STATIC, .unit = "fit_sense" },
     { "fillcolor", "Background fill color", OFFSET(fillcolor), AV_OPT_TYPE_COLOR, {.str = "black@0"}, .flags = DYNAMIC },
     { "corner_rounding", "Corner rounding radius", OFFSET(corner_rounding), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, 0.0, 1.0, .flags = DYNAMIC },
     { "lut", "Path to custom LUT file to apply", OFFSET(lut_filename), AV_OPT_TYPE_STRING, { .str = NULL }, .flags = STATIC },
