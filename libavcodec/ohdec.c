@@ -124,8 +124,11 @@ static int oh_decode_create(OHCodecDecContext *s, AVCodecContext *avctx)
 
     s->dec_ref = av_buffer_create((uint8_t *)s->dec, 0, oh_decode_release,
                                   NULL, 0);
-    if (!s->dec_ref)
+    if (!s->dec_ref) {
+        oh_decode_release(NULL, (uint8_t*)s->dec);
+        s->dec = NULL;
         return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
