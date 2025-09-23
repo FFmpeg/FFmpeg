@@ -125,12 +125,12 @@ cglobal put_no_rnd_pixels8_x2, 4,5
     RET
 
 
-%macro NO_RND_PIXELS_X2 0
+%macro NO_RND_PIXELS_X2 1
 %if cpuflag(sse2)
-cglobal put_no_rnd_pixels16_x2, 4,5,5
+cglobal %1_no_rnd_pixels16_x2, 4,5,5
 %else
 ; void ff_put_no_rnd_pixels8_x2_exact(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-cglobal put_no_rnd_pixels8_x2_exact, 4,5
+cglobal %1_no_rnd_pixels8_x2_exact, 4,5
 %endif
     lea          r4, [r2*3]
     pcmpeqb      m4, m4
@@ -147,6 +147,10 @@ cglobal put_no_rnd_pixels8_x2_exact, 4,5
     PAVGB        m2, m3
     pxor         m0, m4
     pxor         m2, m4
+%ifidn %1, avg
+    pavgb        m0, [r0]
+    pavgb        m2, [r0+r2]
+%endif
     mova       [r0], m0
     mova    [r0+r2], m2
     movu         m0, [r1+r2*2]
@@ -161,6 +165,10 @@ cglobal put_no_rnd_pixels8_x2_exact, 4,5
     PAVGB        m2, m3
     pxor         m0, m4
     pxor         m2, m4
+%ifidn %1, avg
+    pavgb        m0, [r0+r2*2]
+    pavgb        m2, [r0+r4]
+%endif
     mova  [r0+r2*2], m0
     mova    [r0+r4], m2
     lea          r1, [r1+r2*4]
@@ -171,9 +179,10 @@ cglobal put_no_rnd_pixels8_x2_exact, 4,5
 %endmacro
 
 INIT_MMX mmxext
-NO_RND_PIXELS_X2
+NO_RND_PIXELS_X2 put
 INIT_XMM sse2
-NO_RND_PIXELS_X2
+NO_RND_PIXELS_X2 avg
+NO_RND_PIXELS_X2 put
 
 ; void ff_put_pixels8_y2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 %macro PUT_PIXELS8_Y2 0
@@ -245,12 +254,12 @@ cglobal put_no_rnd_pixels8_y2, 4,5
     RET
 
 
-%macro NO_RND_PIXELS_Y2 0
+%macro NO_RND_PIXELS_Y2 1
 %if cpuflag(sse2)
-cglobal put_no_rnd_pixels16_y2, 4,5,4
+cglobal %1_no_rnd_pixels16_y2, 4,5,4
 %else
 ; void ff_put_no_rnd_pixels8_y2_exact(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-cglobal put_no_rnd_pixels8_y2_exact, 4,5
+cglobal %1_no_rnd_pixels8_y2_exact, 4,5
 %endif
     lea          r4, [r2*3]
     movu         m0, [r1]
@@ -266,6 +275,10 @@ cglobal put_no_rnd_pixels8_y2_exact, 4,5
     PAVGB        m1, m2
     pxor         m0, m3
     pxor         m1, m3
+%ifidn %1, avg
+    pavgb        m0, [r0]
+    pavgb        m1, [r0+r2]
+%endif
     mova       [r0], m0
     mova    [r0+r2], m1
     movu         m1, [r1+r2*2]
@@ -276,6 +289,10 @@ cglobal put_no_rnd_pixels8_y2_exact, 4,5
     PAVGB        m1, m0
     pxor         m2, m3
     pxor         m1, m3
+%ifidn %1, avg
+    pavgb        m2,[r0+r2*2]
+    pavgb        m1,[r0+r4]
+%endif
     mova  [r0+r2*2], m2
     mova    [r0+r4], m1
     lea          r1, [r1+r2*4]
@@ -286,9 +303,10 @@ cglobal put_no_rnd_pixels8_y2_exact, 4,5
 %endmacro
 
 INIT_MMX mmxext
-NO_RND_PIXELS_Y2
+NO_RND_PIXELS_Y2 put
 INIT_XMM sse2
-NO_RND_PIXELS_Y2
+NO_RND_PIXELS_Y2 avg
+NO_RND_PIXELS_Y2 put
 
 ; void ff_avg_pixels8_x2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 %macro AVG_PIXELS8_X2 0
