@@ -48,6 +48,8 @@ typedef struct TLSContext {
     gnutls_certificate_credentials_t cred;
     int need_shutdown;
     int io_err;
+    struct sockaddr_storage dest_addr;
+    socklen_t dest_addr_len;
 } TLSContext;
 
 static AVMutex gnutls_mutex = AV_MUTEX_INITIALIZER;
@@ -117,9 +119,23 @@ static ssize_t gnutls_url_pull(gnutls_transport_ptr_t transport,
                                void *buf, size_t len)
 {
     TLSContext *c = (TLSContext*) transport;
-    int ret = ffurl_read(c->tls_shared.tcp, buf, len);
-    if (ret >= 0)
+    TLSShared *s = &c->tls_shared;
+    URLContext *uc = s->is_dtls ? s->udp : s->tcp;
+    int ret = ffurl_read(uc, buf, len);
+    if (ret >= 0) {
+        if (s->is_dtls && s->listen && !c->dest_addr_len) {
+            int err_ret;
+
+            ff_udp_get_last_recv_addr(s->udp, &c->dest_addr, &c->dest_addr_len);
+            err_ret = ff_udp_set_remote_addr(s->udp, (struct sockaddr *)&c->dest_addr, c->dest_addr_len, 1);
+            if (err_ret < 0) {
+                av_log(c, AV_LOG_ERROR, "Failed connecting udp context\n");
+                return err_ret;
+            }
+            av_log(c, AV_LOG_TRACE, "Set UDP remote addr on UDP socket, now 'connected'\n");
+        }
         return ret;
+    }
     if (ret == AVERROR_EXIT)
         return 0;
     if (ret == AVERROR(EAGAIN)) {
@@ -135,7 +151,9 @@ static ssize_t gnutls_url_push(gnutls_transport_ptr_t transport,
                                const void *buf, size_t len)
 {
     TLSContext *c = (TLSContext*) transport;
-    int ret = ffurl_write(c->tls_shared.tcp, buf, len);
+    TLSShared *s = &c->tls_shared;
+    URLContext *uc = s->is_dtls ? s->udp : s->tcp;
+    int ret = ffurl_write(uc, buf, len);
     if (ret >= 0)
         return ret;
     if (ret == AVERROR_EXIT)
@@ -147,6 +165,32 @@ static ssize_t gnutls_url_push(gnutls_transport_ptr_t transport,
         c->io_err = ret;
     }
     return -1;
+}
+
+static int tls_handshake(URLContext *h)
+{
+    TLSContext *c = h->priv_data;
+    TLSShared *s = &c->tls_shared;
+    URLContext *uc = s->is_dtls ? s->udp : s->tcp;
+    int ret;
+
+    uc->flags &= ~AVIO_FLAG_NONBLOCK;
+
+    do {
+        if (ff_check_interrupt(&h->interrupt_callback)) {
+            ret = AVERROR_EXIT;
+            goto end;
+        }
+
+        ret = gnutls_handshake(c->session);
+        if (gnutls_error_is_fatal(ret)) {
+            ret = print_tls_error(h, ret);
+            goto end;
+        }
+    } while (ret);
+
+end:
+    return ret;
 }
 
 static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **options)
@@ -204,18 +248,9 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         if (s->mtu)
             gnutls_dtls_set_mtu(c->session, s->mtu);
     gnutls_set_default_priority(c->session);
-    do {
-        if (ff_check_interrupt(&h->interrupt_callback)) {
-            ret = AVERROR_EXIT;
-            goto fail;
-        }
-
-        ret = gnutls_handshake(c->session);
-        if (gnutls_error_is_fatal(ret)) {
-            ret = print_tls_error(h, ret);
-            goto fail;
-        }
-    } while (ret);
+    ret = tls_handshake(h);
+    if (ret < 0)
+        goto fail;
     c->need_shutdown = 1;
     if (s->verify) {
         unsigned int status, cert_list_size;
@@ -345,6 +380,7 @@ static const AVClass dtls_class = {
 const URLProtocol ff_dtls_protocol = {
     .name           = "dtls",
     .url_open2      = dtls_open,
+    .url_handshake  = tls_handshake,
     .url_read       = tls_read,
     .url_write      = tls_write,
     .url_close      = tls_close,
