@@ -254,17 +254,17 @@ static av_cold void mpegh3dadec_flush(AVCodecContext *avctx)
 }
 
 const FFCodec ff_libmpeghdec_decoder = {
-    .p.name = "libmpeghdec",
+    .p.name         = "libmpeghdec",
     CODEC_LONG_NAME("libmpeghdec (MPEG-H 3D Audio)"),
-    .p.type = AVMEDIA_TYPE_AUDIO,
-    .p.id = AV_CODEC_ID_MPEGH_3D_AUDIO,
-    .p.capabilities =
-        AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_CHANNEL_CONF,
+    .p.type         = AVMEDIA_TYPE_AUDIO,
+    .p.id           = AV_CODEC_ID_MPEGH_3D_AUDIO,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                      AV_CODEC_CAP_CHANNEL_CONF,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .priv_data_size = sizeof(MPEGH3DADecContext),
-    .init = mpegh3dadec_init,
+    .init           = mpegh3dadec_init,
     FF_CODEC_DECODE_CB(mpegh3dadec_decode_frame),
-    .close = mpegh3dadec_close,
-    .flush = mpegh3dadec_flush,
-    .caps_internal = FF_CODEC_CAP_INIT_CLEANUP,
+    .flush          = mpegh3dadec_flush,
+    .close          = mpegh3dadec_close,
     .p.wrapper_name = "libmpeghdec",
 };
