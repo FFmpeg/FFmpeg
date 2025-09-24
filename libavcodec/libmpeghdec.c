@@ -171,16 +171,13 @@ static av_cold int mpegh3dadec_init(AVCodecContext *avctx)
 
     s->decoder_buffer_size = MAX_OUTBUF_SIZE;
     s->decoder_buffer = av_malloc(s->decoder_buffer_size);
-    if (!s->decoder_buffer) {
-        mpegh3dadec_close(avctx);
+    if (!s->decoder_buffer)
         return AVERROR(ENOMEM);
-    }
 
     // initialize the decoder
     s->decoder = mpeghdecoder_init(cicp);
     if (s->decoder == NULL) {
         av_log(avctx, AV_LOG_ERROR, "MPEG-H decoder library init failed.\n");
-        mpegh3dadec_close(avctx);
         return AVERROR_EXTERNAL;
     }
 
@@ -188,7 +185,6 @@ static av_cold int mpegh3dadec_init(AVCodecContext *avctx)
         if (mpeghdecoder_setMhaConfig(s->decoder, avctx->extradata,
                                       avctx->extradata_size)) {
             av_log(avctx, AV_LOG_ERROR, "Unable to set MHA configuration\n");
-            mpegh3dadec_close(avctx);
             return AVERROR_INVALIDDATA;
         }
     }
