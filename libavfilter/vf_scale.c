@@ -951,7 +951,7 @@ static int do_scale(FFFrameSync *fs)
         goto err;
 
     av_assert0(out);
-    out->pts = av_rescale_q(fs->pts, fs->time_base, outlink->time_base);
+    out->pts = av_rescale_q_rnd(fs->pts, fs->time_base, outlink->time_base, AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX);
     return ff_filter_frame(outlink, out);
 
 err:
