@@ -225,7 +225,7 @@ static int mpegh3dadec_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return AVERROR_UNKNOWN;
     }
 
-    frame->nb_samples = avctx->frame_size = out_info.numSamplesPerChannel;
+    frame->nb_samples  = out_info.numSamplesPerChannel;
     frame->sample_rate = avctx->sample_rate = out_info.sampleRate;
     frame->pts = out_info.ticks;
     frame->time_base.num = 1;
@@ -235,7 +235,7 @@ static int mpegh3dadec_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return ret;
 
     memcpy(frame->extended_data[0], s->decoder_buffer,
-           avctx->ch_layout.nb_channels * avctx->frame_size *
+           avctx->ch_layout.nb_channels * frame->nb_samples *
            sizeof(*s->decoder_buffer) /* only AV_SAMPLE_FMT_S32 is supported */);
 
     *got_frame_ptr = 1;
