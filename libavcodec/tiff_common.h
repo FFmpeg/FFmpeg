@@ -62,18 +62,6 @@ double   ff_tget_double(GetByteContext *gb, int le);
 /** Reads a byte from the bytestream using given endianness. */
 unsigned ff_tget(GetByteContext *gb, int type, int le);
 
-/** Adds count rationals converted to a string
- *  into the metadata dictionary.
- */
-int ff_tadd_rational_metadata(int count, const char *name, const char *sep,
-                              GetByteContext *gb, int le, AVDictionary **metadata);
-
-/** Adds count longs converted to a string
- *  into the metadata dictionary.
- */
-int ff_tadd_long_metadata(int count, const char *name, const char *sep,
-                          GetByteContext *gb, int le, AVDictionary **metadata);
-
 /** Adds count doubles converted to a string
  *  into the metadata dictionary.
  */
@@ -85,12 +73,6 @@ int ff_tadd_doubles_metadata(int count, const char *name, const char *sep,
  */
 int ff_tadd_shorts_metadata(int count, const char *name, const char *sep,
                             GetByteContext *gb, int le, int is_signed, AVDictionary **metadata);
-
-/** Adds count bytes converted to a string
- *  into the metadata dictionary.
- */
-int ff_tadd_bytes_metadata(int count, const char *name, const char *sep,
-                           GetByteContext *gb, int le, int is_signed, AVDictionary **metadata);
 
 /** Adds a string of count characters
  *  into the metadata dictionary.
