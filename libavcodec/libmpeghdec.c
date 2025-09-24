@@ -247,9 +247,6 @@ static av_cold void mpegh3dadec_flush(AVCodecContext *avctx)
     MPEGH_DECODER_ERROR err;
     MPEGH3DADecContext *s = avctx->priv_data;
 
-    if (!s->decoder)
-        return;
-
     err = mpeghdecoder_flush(s->decoder);
 
     if (err != MPEGH_DEC_OK && err != MPEGH_DEC_FEED_DATA)
