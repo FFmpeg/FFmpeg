@@ -2616,6 +2616,16 @@ finish:
     fps->dropped_keyframe |= fps->last_dropped && (frame->flags & AV_FRAME_FLAG_KEY);
 }
 
+static void close_input(InputFilterPriv *ifp)
+{
+    FilterGraphPriv *fgp = fgp_from_fg(ifp->ifilter.graph);
+
+    if (!ifp->eof) {
+        sch_filter_receive_finish(fgp->sch, fgp->sch_idx, ifp->ifilter.index);
+        ifp->eof = 1;
+    }
+}
+
 static int close_output(OutputFilterPriv *ofp, FilterGraphThread *fgt)
 {
     FilterGraphPriv *fgp = fgp_from_fg(ofp->ofilter.graph);
@@ -3343,7 +3353,7 @@ static int filter_thread(void *arg)
         if (ret == AVERROR_EOF) {
             av_log(fg, AV_LOG_VERBOSE, "Input %u no longer accepts new data\n",
                    input_idx);
-            sch_filter_receive_finish(fgp->sch, fgp->sch_idx, input_idx);
+            close_input(ifp);
             continue;
         }
         if (ret < 0)
@@ -3361,6 +3371,13 @@ read_frames:
             av_log(fg, AV_LOG_ERROR, "Error sending frames to consumers: %s\n",
                    av_err2str(ret));
             goto finish;
+        }
+
+        // ensure all inputs no longer accepting data are closed
+        for (int i = 0; fgt.graph && i < fg->nb_inputs; i++) {
+            InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
+            if (av_buffersrc_get_status(ifp->ifilter.filter))
+                close_input(ifp);
         }
     }
 
