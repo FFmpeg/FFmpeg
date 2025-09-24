@@ -1503,6 +1503,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
         s->coefs_finished[c] |= 1;
     }
 
+next_field:
     for (i = 0; i < nb_components; i++)
         s->last_dc[i] = (4 << s->bits);
 
@@ -1589,6 +1590,22 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
             handle_rstn(s, nb_components);
         }
     }
+
+    if (s->interlaced &&
+        get_bits_left(&s->gb) > 32 &&
+        show_bits(&s->gb, 8) == 0xFF) {
+        GetBitContext bak = s->gb;
+        align_get_bits(&bak);
+        if (show_bits(&bak, 16) == 0xFFD1) {
+            av_log(s->avctx, AV_LOG_DEBUG, "AVRn interlaced picture marker found\n");
+            s->gb = bak;
+            skip_bits(&s->gb, 16);
+            s->bottom_field ^= 1;
+
+            goto next_field;
+        }
+    }
+
     return 0;
 }
 
@@ -1781,7 +1798,6 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
     if (ret < 0)
         return ret;
 
-next_field:
     if (s->avctx->hwaccel) {
         int bytes_to_start = bytestream2_tell(&s->gB);
         av_assert0(bytes_to_start >= 0 &&
@@ -1822,21 +1838,6 @@ next_field:
                                          prev_shift, point_transform,
                                          mb_bitmask, mb_bitmask_size, reference)) < 0)
                 return ret;
-        }
-    }
-
-    if (s->interlaced &&
-        get_bits_left(&s->gb) > 32 &&
-        show_bits(&s->gb, 8) == 0xFF) {
-        GetBitContext bak = s->gb;
-        align_get_bits(&bak);
-        if (show_bits(&bak, 16) == 0xFFD1) {
-            av_log(s->avctx, AV_LOG_DEBUG, "AVRn interlaced picture marker found\n");
-            s->gb = bak;
-            skip_bits(&s->gb, 16);
-            s->bottom_field ^= 1;
-
-            goto next_field;
         }
     }
 
