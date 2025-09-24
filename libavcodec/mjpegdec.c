@@ -1798,13 +1798,9 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
         return ret;
 
     if (s->avctx->hwaccel) {
-        int bytes_to_start = bytestream2_tell(&s->gB);
-        av_assert0(bytes_to_start >= 0 &&
-                   s->raw_scan_buffer_size >= bytes_to_start);
-
         ret = FF_HW_CALL(s->avctx, decode_slice,
-                         s->raw_scan_buffer      + bytes_to_start,
-                         s->raw_scan_buffer_size - bytes_to_start);
+                         s->raw_scan_buffer,
+                         s->raw_scan_buffer_size);
         if (ret < 0)
             return ret;
 
@@ -1840,9 +1836,13 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
         }
     }
 
+    if (s->avctx->codec_id == AV_CODEC_ID_MEDIA100 ||
+        s->avctx->codec_id == AV_CODEC_ID_MJPEGB ||
+        s->avctx->codec_id == AV_CODEC_ID_THP) {
     /* Add the amount of bits read from the unescaped image data buffer
      * into the GetByteContext. */
     bytestream2_skipu(&s->gB, (get_bits_count(&s->gb) + 7) / 8);
+    }
 
     return 0;
  out_of_range:
@@ -2239,9 +2239,37 @@ static int mjpeg_unescape_sos(MJpegDecodeContext *s)
     const uint8_t *unescaped_buf_ptr;
     size_t unescaped_buf_size;
 
+    if (s->avctx->hwaccel) {
+        /* Find size of image data buffer (including restart markers).
+         * No unescaping is performed. */
+        const uint8_t *ptr = buf_ptr;
+        while ((ptr = memchr(ptr, 0xff, buf_end - ptr))) {
+            ptr++;
+            if (ptr < buf_end) {
+                uint8_t x = *ptr++;
+                /* Discard multiple optional 0xFF fill bytes. */
+                while (x == 0xff && ptr < buf_end)
+                    x = *ptr++;
+                if (x && (x < RST0 || x > RST7)) {
+                    /* Non-restart marker */
+                    ptr -= 2;
+                    goto found_hw;
+                }
+            }
+        }
+        ptr = buf_end;
+found_hw:
+        s->raw_scan_buffer      = buf_ptr;
+        s->raw_scan_buffer_size = ptr - buf_ptr;
+        bytestream2_skipu(&s->gB, s->raw_scan_buffer_size);
+        return 0;
+    }
+
     if (s->avctx->codec_id == AV_CODEC_ID_MEDIA100 ||
         s->avctx->codec_id == AV_CODEC_ID_MJPEGB ||
         s->avctx->codec_id == AV_CODEC_ID_THP) {
+        /* The image data buffer is already unescaped. The only way to
+         * find the size of the buffer is by fully decoding it. */
         unescaped_buf_ptr  = buf_ptr;
         unescaped_buf_size = buf_end - buf_ptr;
         goto the_end;
@@ -2282,6 +2310,7 @@ static int mjpeg_unescape_sos(MJpegDecodeContext *s)
                     bytestream2_put_be16u(&pb, 0xff00 | x);
                 } else {
                     /* Non-restart marker */
+                    ptr -= 2;
                     goto found;
                 }
             }
@@ -2297,6 +2326,8 @@ found:
         unescaped_buf_size = bytestream2_tell_p(&pb);
         memset(s->buffer + unescaped_buf_size, 0,
                AV_INPUT_BUFFER_PADDING_SIZE);
+
+        bytestream2_skipu(&s->gB, ptr - buf_ptr);
 
         av_log(s->avctx, AV_LOG_DEBUG, "escaping removed %td bytes\n",
                (buf_end - buf_ptr) - (unescaped_buf_size));
@@ -2326,6 +2357,7 @@ found:
                     /* Stuffed zero bit */
                     put_bits(&pb, 15, 0x7f80 | x);
                 } else {
+                    ptr -= 2;
                     goto found_ls;
                 }
             }
@@ -2343,6 +2375,8 @@ found_ls:
         unescaped_buf_size = put_bytes_output(&pb);
         memset(s->buffer + unescaped_buf_size, 0,
                AV_INPUT_BUFFER_PADDING_SIZE);
+
+        bytestream2_skipu(&s->gB, ptr - buf_ptr);
     }
 
 the_end:
@@ -2560,9 +2594,6 @@ eoi_parser:
 
             goto the_end;
         case SOS:
-            s->raw_scan_buffer      = buf_ptr;
-            s->raw_scan_buffer_size = buf_end - buf_ptr;
-
             s->cur_scan++;
 
             if ((ret = ff_mjpeg_decode_sos(s, NULL, 0, NULL)) < 0 &&
