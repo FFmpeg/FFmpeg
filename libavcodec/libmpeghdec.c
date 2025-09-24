@@ -68,75 +68,36 @@ static av_cold int mpegh3dadec_close(AVCodecContext *avctx)
 // https://github.com/Fraunhofer-IIS/mpeghdec/wiki/MPEG-H-decoder-target-layouts
 static av_cold int channel_layout_to_cicp(const AVChannelLayout *layout)
 {
-    const AVChannelLayout layout_7point2point3 =
-        (AVChannelLayout) AV_CHANNEL_LAYOUT_MASK(
-            12, (AV_CH_LAYOUT_5POINT1POINT2 | AV_CH_SIDE_SURROUND_LEFT |
-                 AV_CH_SIDE_SURROUND_RIGHT | AV_CH_TOP_BACK_CENTER |
-                 AV_CH_LOW_FREQUENCY_2));
-    const AVChannelLayout layout_5point1point6 =
-        (AVChannelLayout) AV_CHANNEL_LAYOUT_MASK(
-            12, (AV_CH_LAYOUT_5POINT1POINT4_BACK | AV_CH_TOP_FRONT_CENTER |
-                 AV_CH_TOP_CENTER));
-    const AVChannelLayout layout_7point1point6 =
-        (AVChannelLayout) AV_CHANNEL_LAYOUT_MASK(
-            14, (AV_CH_LAYOUT_7POINT1POINT4_BACK | AV_CH_TOP_FRONT_CENTER |
-                 AV_CH_TOP_CENTER));
-
-    if (!av_channel_layout_compare(layout,
-                                   &(AVChannelLayout) AV_CHANNEL_LAYOUT_MONO)) {
-        return 1;
-    } else if (!av_channel_layout_compare(
-                   layout, &(AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO)) {
-        return 2;
-    } else if (!av_channel_layout_compare(
-                   layout, &(AVChannelLayout) AV_CHANNEL_LAYOUT_SURROUND)) {
-        return 3;
-    } else if (!av_channel_layout_compare(
-                   layout, &(AVChannelLayout) AV_CHANNEL_LAYOUT_4POINT0)) {
-        return 4;
-    } else if (!av_channel_layout_compare(
-                   layout, &(AVChannelLayout) AV_CHANNEL_LAYOUT_5POINT0)) {
-        return 5;
-    } else if (!av_channel_layout_compare(
-                   layout, &(AVChannelLayout) AV_CHANNEL_LAYOUT_5POINT1)) {
-        return 6;
-    } else if (!av_channel_layout_compare(
-                   layout, &(AVChannelLayout) AV_CHANNEL_LAYOUT_7POINT1_WIDE)) {
-        return 7;
-    } else if (!av_channel_layout_compare(
-                   layout, &(AVChannelLayout) AV_CHANNEL_LAYOUT_2_1)) {
-        return 9;
-    } else if (!av_channel_layout_compare(
-                   layout, &(AVChannelLayout) AV_CHANNEL_LAYOUT_2_2)) {
-        return 10;
-    } else if (!av_channel_layout_compare(
-                   layout, &(AVChannelLayout) AV_CHANNEL_LAYOUT_6POINT1)) {
-        return 11;
-    } else if (!av_channel_layout_compare(
-                   layout, &(AVChannelLayout) AV_CHANNEL_LAYOUT_7POINT1)) {
-        return 12;
-    } else if (!av_channel_layout_compare(
-                   layout, &(AVChannelLayout) AV_CHANNEL_LAYOUT_22POINT2)) {
-        return 13;
-    } else if (!av_channel_layout_compare(
-                   layout,
-                   &(AVChannelLayout) AV_CHANNEL_LAYOUT_5POINT1POINT2)) {
-        return 14;
-    } else if (!av_channel_layout_compare(layout, &layout_7point2point3)) {
-        return 15;
-    } else if (!av_channel_layout_compare(
-                   layout,
-                   &(AVChannelLayout) AV_CHANNEL_LAYOUT_5POINT1POINT4_BACK)) {
-        return 16;
-    } else if (!av_channel_layout_compare(layout, &layout_5point1point6)) {
-        return 17;
-    } else if (!av_channel_layout_compare(layout, &layout_7point1point6)) {
-        return 18;
-    } else if (!av_channel_layout_compare(
-                   layout,
-                   &(AVChannelLayout) AV_CHANNEL_LAYOUT_7POINT1POINT4_BACK)) {
-        return 19;
+// different from AV_CH_LAYOUT_7POINT2POINT3
+#define CH_LAYOUT_7POINT2POINT3 AV_CH_LAYOUT_5POINT1POINT2 | AV_CH_SIDE_SURROUND_LEFT | \
+                                AV_CH_SIDE_SURROUND_RIGHT | AV_CH_TOP_BACK_CENTER |     \
+                                AV_CH_LOW_FREQUENCY_2
+#define CH_LAYOUT_5POINT1POINT6 AV_CH_LAYOUT_5POINT1POINT4_BACK | \
+                                AV_CH_TOP_FRONT_CENTER | AV_CH_TOP_CENTER
+#define CH_LAYOUT_7POINT1POINT6 AV_CH_LAYOUT_7POINT1POINT4_BACK | \
+                                AV_CH_TOP_FRONT_CENTER | AV_CH_TOP_CENTER
+    static const uint64_t channel_layout_masks[] = {
+        0,
+        AV_CH_LAYOUT_MONO,               AV_CH_LAYOUT_STEREO,
+        AV_CH_LAYOUT_SURROUND,           AV_CH_LAYOUT_4POINT0,
+        AV_CH_LAYOUT_5POINT0,            AV_CH_LAYOUT_5POINT1,
+        AV_CH_LAYOUT_7POINT1_WIDE,       0,
+        AV_CH_LAYOUT_2_1,                AV_CH_LAYOUT_2_2,
+        AV_CH_LAYOUT_6POINT1,            AV_CH_LAYOUT_7POINT1,
+        AV_CH_LAYOUT_22POINT2,           AV_CH_LAYOUT_5POINT1POINT2,
+        CH_LAYOUT_7POINT2POINT3,         AV_CH_LAYOUT_5POINT1POINT4_BACK,
+        CH_LAYOUT_5POINT1POINT6,         CH_LAYOUT_7POINT1POINT6,
+        AV_CH_LAYOUT_7POINT1POINT4_BACK,
+    };
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(channel_layout_masks); ++i) {
+        if (channel_layout_masks[i]) {
+            AVChannelLayout ch_layout;
+            av_channel_layout_from_mask(&ch_layout, channel_layout_masks[i]);
+            if (!av_channel_layout_compare(layout, &ch_layout))
+                return i;
+        }
     }
+
     return 0;
 }
 
