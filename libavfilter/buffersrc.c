@@ -286,6 +286,16 @@ int av_buffersrc_close(AVFilterContext *ctx, int64_t pts, unsigned flags)
     return (flags & AV_BUFFERSRC_FLAG_PUSH) ? push_frame(ctx->graph) : 0;
 }
 
+int av_buffersrc_get_status(AVFilterContext *ctx)
+{
+    BufferSourceContext *s = ctx->priv;
+
+    if (!s->eof && ff_outlink_get_status(ctx->outputs[0]))
+        s->eof = 1;
+
+    return s->eof ? AVERROR(EOF) : 0;
+}
+
 static av_cold int init_video(AVFilterContext *ctx)
 {
     BufferSourceContext *c = ctx->priv;
