@@ -520,7 +520,6 @@ static int eb_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     headerPtr->flags         = 0;
     headerPtr->p_app_private = NULL;
     headerPtr->pts           = frame->pts;
-    headerPtr->n_tick_count  = frame->duration;
 
     switch (frame->pict_type) {
     case AV_PICTURE_TYPE_I:
@@ -637,7 +636,6 @@ static int eb_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
     pkt->size = headerPtr->n_filled_len;
     pkt->pts  = headerPtr->pts;
     pkt->dts  = headerPtr->dts;
-    pkt->duration = headerPtr->n_tick_count;
 
     switch (headerPtr->pic_type) {
     case EB_AV1_KEY_PICTURE:
