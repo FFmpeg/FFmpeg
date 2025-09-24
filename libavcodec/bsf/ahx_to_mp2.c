@@ -44,11 +44,13 @@ static int filter(AVBSFContext *ctx, AVPacket *pkt)
         return ret;
 
     if (pkt->size < 1044) {
+        int original_size = pkt->size;
         ret = av_grow_packet(pkt, 1044-pkt->size);
         if (ret < 0) {
             av_packet_unref(pkt);
             return ret;
         }
+        memset(pkt->data + original_size, 0, 1044 - original_size);
     }
 
     return 0;
