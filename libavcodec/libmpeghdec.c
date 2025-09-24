@@ -35,7 +35,6 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/frame.h"
 #include "libavutil/mem.h"
-#include "libavutil/opt.h"
 
 #include "codec_internal.h"
 #include "decode.h"
@@ -45,7 +44,6 @@
 #define MAX_OUTBUF_SIZE (sizeof(int32_t) * 24 * 3072 * (MAX_LOST_FRAMES + 1))
 
 typedef struct MPEGH3DADecContext {
-    AVClass *av_class;
     // pointer to the decoder
     HANDLE_MPEGH_DECODER_CONTEXT decoder;
 
@@ -53,13 +51,6 @@ typedef struct MPEGH3DADecContext {
     int32_t *decoder_buffer;
     int decoder_buffer_size;
 } MPEGH3DADecContext;
-
-// private class definition for ffmpeg
-static const AVClass mpegh3da_class = {
-    .class_name = "MPEG-H 3D Audio Decoder",
-    .item_name = av_default_item_name,
-    .version = LIBAVUTIL_VERSION_INT,
-};
 
 static av_cold int mpegh3dadec_close(AVCodecContext *avctx)
 {
@@ -268,7 +259,6 @@ static av_cold void mpegh3dadec_flush(AVCodecContext *avctx)
 const FFCodec ff_libmpeghdec_decoder = {
     .p.name = "libmpeghdec",
     CODEC_LONG_NAME("libmpeghdec (MPEG-H 3D Audio)"),
-    .p.priv_class = &mpegh3da_class,
     .p.type = AVMEDIA_TYPE_AUDIO,
     .p.id = AV_CODEC_ID_MPEGH_3D_AUDIO,
     .p.capabilities =
