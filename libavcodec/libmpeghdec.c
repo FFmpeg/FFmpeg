@@ -40,8 +40,8 @@
 #include "decode.h"
 
 #define MAX_LOST_FRAMES 2
-// 32-bit int * 22.2 * max framesize * (max delay frames + 1)
-#define MAX_OUTBUF_SIZE (sizeof(int32_t) * 24 * 3072 * (MAX_LOST_FRAMES + 1))
+// max framesize * (max delay frames + 1)
+#define PER_CHANNEL_OUTBUF_SIZE (3072 * (MAX_LOST_FRAMES + 1))
 
 typedef struct MPEGH3DADecContext {
     // pointer to the decoder
@@ -49,7 +49,7 @@ typedef struct MPEGH3DADecContext {
 
     // Internal values
     int32_t *decoder_buffer;
-    int decoder_buffer_size;
+    int decoder_buffer_size; ///< in samples
 } MPEGH3DADecContext;
 
 static av_cold int mpegh3dadec_close(AVCodecContext *avctx)
@@ -160,8 +160,8 @@ static av_cold int mpegh3dadec_init(AVCodecContext *avctx)
     avctx->sample_fmt = AV_SAMPLE_FMT_S32;
     avctx->sample_rate = 48000;
 
-    s->decoder_buffer_size = MAX_OUTBUF_SIZE;
-    s->decoder_buffer = av_malloc(s->decoder_buffer_size);
+    s->decoder_buffer_size = PER_CHANNEL_OUTBUF_SIZE * avctx->ch_layout.nb_channels;
+    s->decoder_buffer = av_malloc_array(s->decoder_buffer_size, sizeof(*s->decoder_buffer));
     if (!s->decoder_buffer)
         return AVERROR(ENOMEM);
 
@@ -214,7 +214,7 @@ static int mpegh3dadec_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 
     err = mpeghdecoder_getSamples(s->decoder, s->decoder_buffer,
-                                  s->decoder_buffer_size / sizeof(int32_t),
+                                  s->decoder_buffer_size,
                                   &out_info);
     if (err == MPEGH_DEC_FEED_DATA) {
         // no frames to produce at the moment
