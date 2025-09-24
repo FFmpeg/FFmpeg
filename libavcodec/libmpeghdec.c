@@ -268,7 +268,6 @@ const FFCodec ff_libmpeghdec_decoder = {
     FF_CODEC_DECODE_CB(mpegh3dadec_decode_frame),
     .close = mpegh3dadec_close,
     .flush = mpegh3dadec_flush,
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_S32),
     .caps_internal = FF_CODEC_CAP_INIT_CLEANUP,
     .p.wrapper_name = "libmpeghdec",
 };
