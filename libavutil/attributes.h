@@ -49,7 +49,7 @@
 #endif
 
 #ifndef av_always_inline
-#if AV_GCC_VERSION_AT_LEAST(3,1)
+#if AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
 #    define av_always_inline __attribute__((always_inline)) inline
 #elif defined(_MSC_VER)
 #    define av_always_inline __forceinline
@@ -68,13 +68,13 @@
 
 #if AV_HAS_STD_ATTRIBUTE(nodiscard)
 #    define av_warn_unused_result [[nodiscard]]
-#elif AV_GCC_VERSION_AT_LEAST(3,4)
+#elif AV_GCC_VERSION_AT_LEAST(3,4) || defined(__clang__)
 #    define av_warn_unused_result __attribute__((warn_unused_result))
 #else
 #    define av_warn_unused_result
 #endif
 
-#if AV_GCC_VERSION_AT_LEAST(3,1)
+#if AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
 #    define av_noinline __attribute__((noinline))
 #elif defined(_MSC_VER)
 #    define av_noinline __declspec(noinline)
@@ -108,7 +108,7 @@
 
 #if AV_HAS_STD_ATTRIBUTE(deprecated)
 #    define attribute_deprecated [[deprecated]]
-#elif AV_GCC_VERSION_AT_LEAST(3,1)
+#elif AV_GCC_VERSION_AT_LEAST(3,1) || defined(__clang__)
 #    define attribute_deprecated __attribute__((deprecated))
 #elif defined(_MSC_VER)
 #    define attribute_deprecated __declspec(deprecated)
