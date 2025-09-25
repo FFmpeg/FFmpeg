@@ -66,7 +66,9 @@
 #endif
 #endif
 
-#if AV_GCC_VERSION_AT_LEAST(3,4)
+#if AV_HAS_STD_ATTRIBUTE(nodiscard)
+#    define av_warn_unused_result [[nodiscard]]
+#elif AV_GCC_VERSION_AT_LEAST(3,4)
 #    define av_warn_unused_result __attribute__((warn_unused_result))
 #else
 #    define av_warn_unused_result
@@ -104,7 +106,9 @@
 #    define av_flatten
 #endif
 
-#if AV_GCC_VERSION_AT_LEAST(3,1)
+#if AV_HAS_STD_ATTRIBUTE(deprecated)
+#    define attribute_deprecated [[deprecated]]
+#elif AV_GCC_VERSION_AT_LEAST(3,1)
 #    define attribute_deprecated __attribute__((deprecated))
 #elif defined(_MSC_VER)
 #    define attribute_deprecated __declspec(deprecated)
@@ -135,7 +139,9 @@
 #endif
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
+#if AV_HAS_STD_ATTRIBUTE(maybe_unused)
+#    define av_unused [[maybe_unused]]
+#elif defined(__GNUC__) || defined(__clang__)
 #    define av_unused __attribute__((unused))
 #else
 #    define av_unused
@@ -174,7 +180,9 @@
 #    define av_scanf_format(fmtpos, attrpos)
 #endif
 
-#if AV_GCC_VERSION_AT_LEAST(2,5) || defined(__clang__)
+#if AV_HAS_STD_ATTRIBUTE(noreturn)
+#    define av_noreturn [[noreturn]]
+#elif AV_GCC_VERSION_AT_LEAST(2,5) || defined(__clang__)
 #    define av_noreturn __attribute__((noreturn))
 #else
 #    define av_noreturn
