@@ -87,7 +87,7 @@ static void hflip_qword_c(const uint8_t *ssrc, uint8_t *ddst, int w)
         dst[j] = src[-j];
 }
 
-static av_unused int ff_hflip_init(FlipContext *s, int step[4], int nb_planes)
+av_unused static int ff_hflip_init(FlipContext *s, int step[4], int nb_planes)
 {
     for (int i = 0; i < nb_planes; i++) {
         step[i] *= s->bayer_plus1;

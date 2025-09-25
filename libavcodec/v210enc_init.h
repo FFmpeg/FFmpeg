@@ -76,7 +76,7 @@ static void v210_planar_pack_10_c(const uint16_t *y, const uint16_t *u,
     }
 }
 
-static av_cold av_unused void ff_v210enc_init(V210EncContext *s)
+av_unused av_cold static void ff_v210enc_init(V210EncContext *s)
 {
     s->pack_line_8  = v210_planar_pack_8_c;
     s->pack_line_10 = v210_planar_pack_10_c;

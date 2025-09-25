@@ -239,7 +239,7 @@ static int vp56_rac_gets(VPXRangeCoder *c, int bits)
 }
 
 // P(7)
-static av_unused int vp56_rac_gets_nn(VPXRangeCoder *c, int bits)
+av_unused static int vp56_rac_gets_nn(VPXRangeCoder *c, int bits)
 {
     int v = vp56_rac_gets(c, 7) << 1;
     return v + !v;

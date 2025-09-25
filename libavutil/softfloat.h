@@ -241,7 +241,7 @@ static av_always_inline SoftFloat av_sqrt_sf(SoftFloat val)
  * @param s pointer to where   sine in units of (1<<30) is returned
  * @param c pointer to where cosine in units of (1<<30) is returned
  */
-static av_unused void av_sincos_sf(int a, int *s, int *c)
+av_unused static void av_sincos_sf(int a, int *s, int *c)
 {
     int idx, sign;
     int sv, cv;

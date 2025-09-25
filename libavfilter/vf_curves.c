@@ -588,7 +588,7 @@ static int parse_psfile(AVFilterContext *ctx, const char *fname)
     CurvesContext *curves = ctx->priv;
     uint8_t *buf;
     size_t size;
-    int i, ret, av_unused(version), nb_curves;
+    int i, ret, version av_unused, nb_curves;
     AVBPrint ptstr;
     static const int comp_ids[] = {3, 0, 1, 2};
 

@@ -322,7 +322,7 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->data && pkt->size >= 4) {
         MPADecodeHeader mpah;
         int ret;
-        int av_unused base;
+        av_unused int base;
         uint32_t h;
 
         h = AV_RB32(pkt->data);

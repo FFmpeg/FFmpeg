@@ -147,14 +147,14 @@ const int *sws_getCoefficients(int colorspace)
                 (dst_type *)(dst[0] + (yd)     * dstStride[0]);             \
             dst_type *dst_2 =                                               \
                 (dst_type *)(dst[0] + (yd + 1) * dstStride[0]);             \
-            dst_type av_unused *dst1_1, *dst1_2, *dst2_1, *dst2_2;          \
-            dst_type av_unused *r, *g, *b;                                  \
+            av_unused dst_type *dst1_1, *dst1_2, *dst2_1, *dst2_2;          \
+            av_unused dst_type *r, *g, *b;                                  \
             const uint8_t *py_1 = src[0] +  y       * srcStride[0];         \
             const uint8_t *py_2 = py_1   +            srcStride[0];         \
-            const uint8_t av_unused *pu_1 = src[1] + (y >> !yuv422) * srcStride[1]; \
-            const uint8_t av_unused *pv_1 = src[2] + (y >> !yuv422) * srcStride[2]; \
-            const uint8_t av_unused *pu_2, *pv_2;                           \
-            const uint8_t av_unused *pa_1, *pa_2;                           \
+            av_unused const uint8_t *pu_1 = src[1] + (y >> !yuv422) * srcStride[1]; \
+            av_unused const uint8_t *pv_1 = src[2] + (y >> !yuv422) * srcStride[2]; \
+            av_unused const uint8_t *pu_2, *pv_2;                           \
+            av_unused const uint8_t *pa_1, *pa_2;                           \
             unsigned int h_size = c->opts.dst_w >> 3;                       \
             if (nb_dst_planes > 1) {                                        \
                 dst1_1 = (dst_type *)(dst[1] + (yd)     * dstStride[1]);    \
@@ -171,7 +171,7 @@ const int *sws_getCoefficients(int colorspace)
                 pa_2 = pa_1   +     srcStride[3];                           \
             }                                                               \
             while (h_size--) {                                              \
-                int av_unused U, V, Y;                                      \
+                av_unused int U, V, Y;                                      \
 
 #define ENDYUV2RGBLINE(dst_delta, ss, alpha, yuv422, nb_dst_planes) \
     pu_1  += 4 >> ss;                               \
@@ -196,7 +196,7 @@ const int *sws_getCoefficients(int colorspace)
     }                                               \
     }                                               \
     if (c->opts.dst_w & (4 >> ss)) {                \
-        int av_unused Y, U, V;                      \
+        av_unused int Y, U, V;                      \
 
 #define ENDYUV2RGBFUNC()                            \
             }                                       \
@@ -486,7 +486,7 @@ YUV2RGBFUNC(yuv2rgb_c_1_ordered_dither, uint8_t, 0, 0, 1)
     dst_2 += 1;
     }
     if (c->opts.dst_w & 7) {
-        int av_unused Y, U, V;
+        av_unused int Y, U, V;
         int pixels_left = c->opts.dst_w & 7;
     const uint8_t *d128 = ff_dither_8x8_220[yd & 7];
     char out_1 = 0, out_2 = 0;

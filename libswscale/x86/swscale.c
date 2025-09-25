@@ -72,7 +72,7 @@ void ff_updateMMXDitherTables(SwsInternal *c, int dstY)
     int16_t *vChrFilter= c->vChrFilter;
     int32_t *lumMmxFilter= c->lumMmxFilter;
     int32_t *chrMmxFilter= c->chrMmxFilter;
-    int32_t av_unused *alpMmxFilter= c->alpMmxFilter;
+    av_unused int32_t *alpMmxFilter= c->alpMmxFilter;
     const int vLumFilterSize= c->vLumFilterSize;
     const int vChrFilterSize= c->vChrFilterSize;
     const int chrDstY= dstY>>c->chrDstVSubSample;

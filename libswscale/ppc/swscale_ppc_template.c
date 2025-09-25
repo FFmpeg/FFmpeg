@@ -47,7 +47,7 @@ static void FUNC(yuv2planeX_8_16)(const int16_t *filter, int filterSize,
     for (j = 0; j < filterSize; j++) {
         unsigned int joffset=j<<1;
         unsigned int xoffset=x<<1;
-        vector unsigned char av_unused perm;
+        av_unused vector unsigned char perm;
         vector signed short l1,vLumFilter;
         LOAD_FILTER(vLumFilter,filter);
         vLumFilter = vec_splat(vLumFilter, 0);

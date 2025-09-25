@@ -298,7 +298,7 @@ static inline void put_sbits(PutBitContext *pb, int n, int32_t value)
 /**
  * Write exactly 32 bits into a bitstream.
  */
-static void av_unused put_bits32(PutBitContext *s, uint32_t value)
+av_unused static void put_bits32(PutBitContext *s, uint32_t value)
 {
     BitBuf bit_buf;
     int bit_left;

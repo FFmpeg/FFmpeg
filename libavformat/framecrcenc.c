@@ -51,7 +51,7 @@ static int framecrc_write_header(struct AVFormatContext *s)
     return ff_framehash_write_header(s);
 }
 
-static av_unused void inline bswap(char *buf, int offset, int size)
+av_unused static void inline bswap(char *buf, int offset, int size)
 {
     if (size == 8) {
         uint64_t val = AV_RN64(buf + offset);

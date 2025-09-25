@@ -109,7 +109,7 @@ static void verti_slice_c(float *buffer, int width, int height,
                         steps, nu, boundaryscale, 1);
 }
 
-static av_unused void ff_gblur_init(GBlurContext *s)
+av_unused static void ff_gblur_init(GBlurContext *s)
 {
     s->localbuf = NULL;
     s->horiz_slice = horiz_slice_c;

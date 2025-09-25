@@ -1679,7 +1679,7 @@ static int matroska_decode_buffer(uint8_t **buf, int *buf_size,
     uint8_t *data = *buf;
     int isize = *buf_size;
     uint8_t *pkt_data = NULL;
-    uint8_t av_unused *newpktdata;
+    av_unused uint8_t *newpktdata;
     int pkt_size = isize;
     int result = 0;
     int olen;

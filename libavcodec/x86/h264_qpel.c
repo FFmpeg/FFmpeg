@@ -203,7 +203,7 @@ static void avg_h264_qpel16_mc00_sse2 (uint8_t *dst, const uint8_t *src,
 }
 
 #define H264_MC_C(OPNAME, SIZE, MMX, ALIGN) \
-static void av_unused OPNAME ## h264_qpel ## SIZE ## _mc00_ ## MMX (uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
+av_unused static void OPNAME ## h264_qpel ## SIZE ## _mc00_ ## MMX (uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     ff_ ## OPNAME ## pixels ## SIZE ## _ ## MMX(dst, src, stride, SIZE);\
 }\

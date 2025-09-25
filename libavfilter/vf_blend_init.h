@@ -159,7 +159,7 @@ DEFINE_INIT_BLEND_FUNC(14, 16)
 DEFINE_INIT_BLEND_FUNC(16, 16)
 DEFINE_INIT_BLEND_FUNC(32, 32)
 
-static av_unused void ff_blend_init(FilterParams *param, int depth)
+av_unused static void ff_blend_init(FilterParams *param, int depth)
 {
     switch (depth) {
     case 8:

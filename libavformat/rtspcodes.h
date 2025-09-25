@@ -75,7 +75,7 @@ RTSP_STATUS_VERSION              =505,
 RTSP_STATUS_UNSUPPORTED_OPTION   =551,
 };
 
-static const av_unused char * const rtsp_status_strings[] = {
+av_unused static const char * const rtsp_status_strings[] = {
 [RTSP_STATUS_CONTINUE]               ="Continue",
 [RTSP_STATUS_OK]                     ="OK",
 [RTSP_STATUS_CREATED]                ="Created",

@@ -288,7 +288,7 @@ static int opencl_check_device_extension(cl_device_id device_id,
     return found;
 }
 
-static av_unused int opencl_check_extension(AVHWDeviceContext *hwdev,
+av_unused static int opencl_check_extension(AVHWDeviceContext *hwdev,
                                             const char *name)
 {
     OpenCLDeviceContext    *priv = hwdev->hwctx;

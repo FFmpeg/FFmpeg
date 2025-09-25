@@ -462,7 +462,7 @@ static int cbs_av1_get_relative_dist(const AV1RawSequenceHeader *seq,
     return diff;
 }
 
-static av_unused size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
+av_unused static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
 {
     GetBitContext tmp = *gbc;
     size_t size = 0;

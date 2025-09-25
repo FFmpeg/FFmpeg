@@ -931,7 +931,7 @@ static void fill_decode_caches(const H264Context *h, H264SliceContext *sl, int m
 /**
  * decodes a P_SKIP or B_SKIP macroblock
  */
-static void av_unused decode_mb_skip(const H264Context *h, H264SliceContext *sl)
+av_unused static void decode_mb_skip(const H264Context *h, H264SliceContext *sl)
 {
     const int mb_xy = sl->mb_xy;
     int mb_type     = 0;

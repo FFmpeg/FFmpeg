@@ -404,7 +404,7 @@ int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, URLContext *fd,
         return 0;
     len = avio_close_dyn_buf(pb, &buf);
     if ((len > 0) && buf) {
-        int av_unused result;
+        av_unused int result;
         av_log(s->ic, AV_LOG_TRACE, "sending %d bytes of RR\n", len);
         result = ffurl_write(fd, buf, len);
         av_log(s->ic, AV_LOG_TRACE, "result from ffurl_write: %d\n", result);

@@ -669,10 +669,10 @@ static const uint8_t subpel_filters[7][6] = {
 static av_always_inline void vp8_filter_common_is4tap(uint8_t *p,
         ptrdiff_t stride)
 {
-    int av_unused p1 = p[-2 * stride];
-    int av_unused p0 = p[-1 * stride];
-    int av_unused q0 = p[ 0 * stride];
-    int av_unused q1 = p[ 1 * stride];
+    av_unused int p1 = p[-2 * stride];
+    av_unused int p0 = p[-1 * stride];
+    av_unused int q0 = p[ 0 * stride];
+    av_unused int q1 = p[ 1 * stride];
     int a, f1, f2;
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
 
@@ -694,10 +694,10 @@ static av_always_inline void vp8_filter_common_is4tap(uint8_t *p,
 static av_always_inline void vp8_filter_common_isnot4tap(uint8_t *p,
         ptrdiff_t stride)
 {
-    int av_unused p1 = p[-2 * stride];
-    int av_unused p0 = p[-1 * stride];
-    int av_unused q0 = p[ 0 * stride];
-    int av_unused q1 = p[ 1 * stride];
+    av_unused int p1 = p[-2 * stride];
+    av_unused int p0 = p[-1 * stride];
+    av_unused int q0 = p[ 0 * stride];
+    av_unused int q1 = p[ 1 * stride];
     int a, f1, f2;
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
 
@@ -721,20 +721,20 @@ static av_always_inline void vp8_filter_common_isnot4tap(uint8_t *p,
 static av_always_inline int vp8_simple_limit(uint8_t *p, ptrdiff_t stride,
         int flim)
 {
-    int av_unused p1 = p[-2 * stride];
-    int av_unused p0 = p[-1 * stride];
-    int av_unused q0 = p[ 0 * stride];
-    int av_unused q1 = p[ 1 * stride];
+    av_unused int p1 = p[-2 * stride];
+    av_unused int p0 = p[-1 * stride];
+    av_unused int q0 = p[ 0 * stride];
+    av_unused int q1 = p[ 1 * stride];
 
     return 2 * FFABS(p0 - q0) + (FFABS(p1 - q1) >> 1) <= flim;
 }
 
 static av_always_inline int hev(uint8_t *p, ptrdiff_t stride, int thresh)
 {
-    int av_unused p1 = p[-2 * stride];
-    int av_unused p0 = p[-1 * stride];
-    int av_unused q0 = p[ 0 * stride];
-    int av_unused q1 = p[ 1 * stride];
+    av_unused int p1 = p[-2 * stride];
+    av_unused int p0 = p[-1 * stride];
+    av_unused int q0 = p[ 0 * stride];
+    av_unused int q1 = p[ 1 * stride];
 
     return FFABS(p1 - p0) > thresh || FFABS(q1 - q0) > thresh;
 }
@@ -744,12 +744,12 @@ static av_always_inline void filter_mbedge(uint8_t *p, ptrdiff_t stride)
     int a0, a1, a2, w;
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
 
-    int av_unused p2 = p[-3 * stride];
-    int av_unused p1 = p[-2 * stride];
-    int av_unused p0 = p[-1 * stride];
-    int av_unused q0 = p[ 0 * stride];
-    int av_unused q1 = p[ 1 * stride];
-    int av_unused q2 = p[ 2 * stride];
+    av_unused int p2 = p[-3 * stride];
+    av_unused int p1 = p[-2 * stride];
+    av_unused int p0 = p[-1 * stride];
+    av_unused int q0 = p[ 0 * stride];
+    av_unused int q1 = p[ 1 * stride];
+    av_unused int q2 = p[ 2 * stride];
 
     w = clip_int8(p1 - q1);
     w = clip_int8(w + 3 * (q0 - p0));
@@ -769,14 +769,14 @@ static av_always_inline void filter_mbedge(uint8_t *p, ptrdiff_t stride)
 static av_always_inline int vp8_normal_limit(uint8_t *p, ptrdiff_t stride,
         int E, int I)
 {
-    int av_unused p3 = p[-4 * stride];
-    int av_unused p2 = p[-3 * stride];
-    int av_unused p1 = p[-2 * stride];
-    int av_unused p0 = p[-1 * stride];
-    int av_unused q0 = p[ 0 * stride];
-    int av_unused q1 = p[ 1 * stride];
-    int av_unused q2 = p[ 2 * stride];
-    int av_unused q3 = p[ 3 * stride];
+    av_unused int p3 = p[-4 * stride];
+    av_unused int p2 = p[-3 * stride];
+    av_unused int p1 = p[-2 * stride];
+    av_unused int p0 = p[-1 * stride];
+    av_unused int q0 = p[ 0 * stride];
+    av_unused int q1 = p[ 1 * stride];
+    av_unused int q2 = p[ 2 * stride];
+    av_unused int q3 = p[ 3 * stride];
 
     return vp8_simple_limit(p, stride, E) &&
            FFABS(p3 - p2) <= I && FFABS(p2 - p1) <= I &&

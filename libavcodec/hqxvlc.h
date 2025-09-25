@@ -1531,7 +1531,7 @@ static const VLCElem *dc_vlc[2];
                                           name ## _vlc_bits, 2, 2, 0);        \
     } while (0)
 
-static av_cold av_unused void hqx_init_static(void)
+av_unused av_cold static void hqx_init_static(void)
 {
     VLCInitState state = VLC_INIT_STATE(cbp_vlc);
     const uint8_t *lens = hqx_ac_lens;

@@ -75,7 +75,7 @@ static inline void FUNC(copy_block16)(uint8_t *dst, const uint8_t *restrict src,
 }
 
 #define H264_LOWPASS(OPNAME, OP, OP2) \
-static av_unused void FUNC(OPNAME ## h264_qpel2_h_lowpass)(uint8_t *p_dst, const uint8_t *restrict p_src, int dstStride, int srcStride)\
+av_unused static void FUNC(OPNAME ## h264_qpel2_h_lowpass)(uint8_t *p_dst, const uint8_t *restrict p_src, int dstStride, int srcStride)\
 {\
     const int h=2;\
     int i;\
@@ -92,7 +92,7 @@ static av_unused void FUNC(OPNAME ## h264_qpel2_h_lowpass)(uint8_t *p_dst, const
     }\
 }\
 \
-static av_unused void FUNC(OPNAME ## h264_qpel2_v_lowpass)(uint8_t *_dst, const uint8_t *restrict _src, int dstStride, int srcStride)\
+av_unused static void FUNC(OPNAME ## h264_qpel2_v_lowpass)(uint8_t *_dst, const uint8_t *restrict _src, int dstStride, int srcStride)\
 {\
     const int w=2;\
     int i;\
@@ -116,7 +116,7 @@ static av_unused void FUNC(OPNAME ## h264_qpel2_v_lowpass)(uint8_t *_dst, const 
     }\
 }\
 \
-static av_unused void FUNC(OPNAME ## h264_qpel2_hv_lowpass)(uint8_t *_dst, pixeltmp *tmp, const uint8_t *restrict _src, int dstStride, int tmpStride, int srcStride)\
+av_unused static void FUNC(OPNAME ## h264_qpel2_hv_lowpass)(uint8_t *_dst, pixeltmp *tmp, const uint8_t *restrict _src, int dstStride, int tmpStride, int srcStride)\
 {\
     const int h=2;\
     const int w=2;\

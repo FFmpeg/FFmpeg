@@ -898,7 +898,7 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
         int tunsync         = 0;
         int tcomp           = 0;
         int tencr           = 0;
-        unsigned long av_unused dlen;
+        av_unused unsigned long dlen;
 
         if (isv34) {
             if (avio_read(pb, tag, 4) < 4)

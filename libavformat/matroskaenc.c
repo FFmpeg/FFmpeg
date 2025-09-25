@@ -1201,7 +1201,7 @@ static int mkv_assemble_codecprivate(AVFormatContext *s, AVIOContext *dyn_cp,
                                      uint8_t **codecpriv, int *codecpriv_size,
                                      unsigned *max_payload_size)
 {
-    MatroskaMuxContext av_unused *const mkv = s->priv_data;
+    av_unused MatroskaMuxContext *const mkv = s->priv_data;
     unsigned size_to_reserve = 0;
     int ret;
 

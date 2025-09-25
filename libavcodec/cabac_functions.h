@@ -137,16 +137,16 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
 }
 #endif
 
-static int av_noinline av_unused get_cabac_noinline(CABACContext *c, uint8_t * const state){
+av_unused av_noinline static int get_cabac_noinline(CABACContext *c, uint8_t * const state){
     return get_cabac_inline(c,state);
 }
 
-static int av_unused get_cabac(CABACContext *c, uint8_t * const state){
+av_unused static int get_cabac(CABACContext *c, uint8_t * const state){
     return get_cabac_inline(c,state);
 }
 
 #ifndef get_cabac_bypass
-static int av_unused get_cabac_bypass(CABACContext *c){
+av_unused static int get_cabac_bypass(CABACContext *c){
     int range;
     c->low += c->low;
 
@@ -184,7 +184,7 @@ static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
  * @return the number of bytes read or 0 if no end
  */
 #ifndef get_cabac_terminate
-static int av_unused get_cabac_terminate(CABACContext *c){
+av_unused static int get_cabac_terminate(CABACContext *c){
     c->range -= 2;
     if(c->low < c->range<<(CABAC_BITS+1)){
         renorm_cabac_decoder_once(c);
@@ -200,7 +200,7 @@ static int av_unused get_cabac_terminate(CABACContext *c){
  * @return the address of the first skipped byte or NULL if there's less than @p n bytes left
  */
 #ifndef skip_bytes
-static av_unused const uint8_t* skip_bytes(CABACContext *c, int n) {
+av_unused static const uint8_t* skip_bytes(CABACContext *c, int n) {
     const uint8_t *ptr = c->bytestream;
 
     if (c->low & 0x1)

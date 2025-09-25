@@ -1246,7 +1246,7 @@ static int asf_read_packet_header(AVFormatContext *s)
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
     uint64_t size;
-    uint32_t av_unused seq;
+    av_unused uint32_t seq;
     unsigned char error_flags, len_flags, pay_flags;
 
     asf->packet_offset = avio_tell(pb);

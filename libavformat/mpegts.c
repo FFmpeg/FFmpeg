@@ -3331,7 +3331,7 @@ static int mpegts_read_close(AVFormatContext *s)
     return 0;
 }
 
-static av_unused int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
+av_unused static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
                               int64_t *ppos, int64_t pos_limit)
 {
     MpegTSContext *ts = s->priv_data;

@@ -389,7 +389,7 @@ static int dnn_detect_post_proc_ssd(AVFrame *frame, DNNData *output, int nb_outp
     av_strlcpy(header->source, ctx->dnnctx.model_filename, sizeof(header->source));
 
     for (int i = 0; i < proposal_count; ++i) {
-        int av_unused image_id = (int)detections[i * detect_size + 0];
+        av_unused int image_id = (int)detections[i * detect_size + 0];
         int label_id;
         float conf, x0, y0, x1, y1;
 

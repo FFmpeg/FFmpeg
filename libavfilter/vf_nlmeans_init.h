@@ -124,7 +124,7 @@ static void compute_weights_line_c(const uint32_t *const iia,
     }
 }
 
-static av_unused void ff_nlmeans_init(NLMeansDSPContext *dsp)
+av_unused static void ff_nlmeans_init(NLMeansDSPContext *dsp)
 {
     dsp->compute_safe_ssd_integral_image = compute_safe_ssd_integral_image_c;
     dsp->compute_weights_line = compute_weights_line_c;

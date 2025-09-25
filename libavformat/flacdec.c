@@ -276,7 +276,7 @@ static int flac_probe(const AVProbeData *p)
     return 0;
 }
 
-static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_index,
+av_unused static int64_t flac_read_timestamp(AVFormatContext *s, int stream_index,
                                              int64_t *ppos, int64_t pos_limit)
 {
     FLACDecContext *flac = s->priv_data;

@@ -70,7 +70,7 @@ static void dcmul_add_c(double *sum, const double *t, const double *c, ptrdiff_t
     sum[2 * n] += t[2 * n] * c[2 * n];
 }
 
-static av_unused void ff_afir_init(AudioFIRDSPContext *dsp)
+av_unused static void ff_afir_init(AudioFIRDSPContext *dsp)
 {
     dsp->fcmul_add = fcmul_add_c;
     dsp->dcmul_add = dcmul_add_c;

@@ -842,7 +842,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
     FLVContext *flv = s->priv_data;
     AMFDataType type;
     AVStream *stream, *astream, *vstream;
-    AVStream av_unused *dstream;
+    av_unused AVStream *dstream;
     AVIOContext *ioc;
     int i;
     char buffer[32];

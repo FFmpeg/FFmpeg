@@ -168,7 +168,7 @@ static inline unsigned int show_bits(GetBitContext *s, int n);
 
 #define OPEN_READER_NOSIZE(name, gb)            \
     unsigned int name ## _index = (gb)->index;  \
-    unsigned int av_unused name ## _cache
+    av_unused unsigned int name ## _cache
 
 #if UNCHECKED_BITSTREAM_READER
 #define OPEN_READER(name, gb) OPEN_READER_NOSIZE(name, gb)

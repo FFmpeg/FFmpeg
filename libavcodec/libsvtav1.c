@@ -210,7 +210,7 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
 {
     SvtContext *svt_enc = avctx->priv_data;
     const AVPixFmtDescriptor *desc;
-    const AVDictionaryEntry av_unused *en = NULL;
+    av_unused const AVDictionaryEntry *en = NULL;
 
     // Update param from options
     if (svt_enc->enc_mode >= -1)

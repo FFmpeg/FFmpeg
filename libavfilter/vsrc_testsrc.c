@@ -696,7 +696,7 @@ const FFFilter ff_vsrc_testsrc = {
 
 #endif /* CONFIG_TESTSRC_FILTER */
 
-static void av_unused set_color(TestSourceContext *s, FFDrawColor *color, uint32_t argb)
+av_unused static void set_color(TestSourceContext *s, FFDrawColor *color, uint32_t argb)
 {
     uint8_t rgba[4] = { (argb >> 16) & 0xFF,
                         (argb >>  8) & 0xFF,

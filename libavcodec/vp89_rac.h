@@ -38,7 +38,7 @@ static av_always_inline int vp89_rac_get(VPXRangeCoder *c)
     return vpx_rac_get_prob(c, 128);
 }
 
-static av_unused int vp89_rac_get_uint(VPXRangeCoder *c, int bits)
+av_unused static int vp89_rac_get_uint(VPXRangeCoder *c, int bits)
 {
     int value = 0;
 
