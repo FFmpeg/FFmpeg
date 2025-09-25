@@ -453,7 +453,7 @@ static int exif_get_makernote_offset(GetByteContext *gb)
 }
 
 static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
-                               int depth, AVExifMetadata *ifd);
+                               int depth, AVExifMetadata *ifd, int guess);
 
 static int exif_decode_tag(void *logctx, GetByteContext *gb, int le,
                            int depth, AVExifEntry *entry)
@@ -504,7 +504,7 @@ static int exif_decode_tag(void *logctx, GetByteContext *gb, int le,
                 return AVERROR(ENOMEM);
             bytestream2_get_buffer(gb, entry->ifd_lead, entry->ifd_offset);
         }
-        ret = exif_parse_ifd_list(logctx, gb, le, depth + 1, &entry->value.ifd);
+        ret = exif_parse_ifd_list(logctx, gb, le, depth + 1, &entry->value.ifd, entry->id == MAKERNOTE_TAG);
         if (ret < 0 && entry->id == MAKERNOTE_TAG) {
             /*
              * we guessed that MakerNote was an IFD
@@ -532,7 +532,7 @@ end:
 }
 
 static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
-                               int depth, AVExifMetadata *ifd)
+                               int depth, AVExifMetadata *ifd, int guess)
 {
     uint32_t entries;
     size_t required_size;
@@ -541,18 +541,21 @@ static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
     av_log(logctx, AV_LOG_DEBUG, "parsing IFD list at offset: %d\n", bytestream2_tell(gb));
 
     if (bytestream2_get_bytes_left(gb) < 2) {
-        av_log(logctx, AV_LOG_ERROR, "not enough bytes remaining in EXIF buffer: 2 required\n");
+        av_log(logctx, guess ? AV_LOG_DEBUG : AV_LOG_ERROR,
+               "not enough bytes remaining in EXIF buffer: 2 required\n");
         return AVERROR_INVALIDDATA;
     }
 
     entries = ff_tget_short(gb, le);
     if (bytestream2_get_bytes_left(gb) < entries * BASE_TAG_SIZE) {
-        av_log(logctx, AV_LOG_ERROR, "not enough bytes remaining in EXIF buffer. entries: %" PRIu32 "\n", entries);
+        av_log(logctx, guess ? AV_LOG_DEBUG : AV_LOG_ERROR,
+               "not enough bytes remaining in EXIF buffer. entries: %" PRIu32 "\n", entries);
         return AVERROR_INVALIDDATA;
     }
     if (entries > 4096) {
         /* that is a lot of entries, probably an error */
-        av_log(logctx, AV_LOG_ERROR, "too many entries: %" PRIu32 "\n", entries);
+        av_log(logctx, guess ? AV_LOG_DEBUG : AV_LOG_ERROR,
+               "too many entries: %" PRIu32 "\n", entries);
         return AVERROR_INVALIDDATA;
     }
 
@@ -811,7 +814,7 @@ int av_exif_parse_buffer(void *logctx, const uint8_t *buf, size_t size,
      * parse IFD0 here. If the return value is positive that tells us
      * there is subimage metadata, but we don't parse that IFD here
      */
-    ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, ifd);
+    ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, ifd, 0);
     if (ret < 0) {
         av_exif_free(ifd);
         av_log(logctx, AV_LOG_ERROR, "error decoding EXIF data: %s\n", av_err2str(ret));
@@ -924,7 +927,7 @@ int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
     GetByteContext gb;
     int ret;
     bytestream2_init(&gb, buf, size);
-    ret = exif_parse_ifd_list(logctx, &gb, le, depth, &ifd);
+    ret = exif_parse_ifd_list(logctx, &gb, le, depth, &ifd, 0);
     if (ret < 0)
         return ret;
     ret = av_exif_ifd_to_dict(logctx, &ifd, metadata);
