@@ -85,6 +85,13 @@ typedef struct MJpegDecodeContext {
     int xfrm;
     int adobe_transform;
 
+    /* SOS fields */
+    int nb_components_sos;
+    int Ss;
+    int Se;
+    int Ah;
+    int Al;
+
     int maxval;
     int near;         ///< near lossless bound (si 0 for lossless)
     int t1,t2,t3;

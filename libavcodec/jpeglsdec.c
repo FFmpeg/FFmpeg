@@ -352,9 +352,11 @@ static inline int ls_decode_line(JLSState *state, MJpegDecodeContext *s,
     return 0;
 }
 
-int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
-                             int point_transform, int ilv)
+int ff_jpegls_decode_picture(MJpegDecodeContext *s)
 {
+    int near = s->Ss;
+    int point_transform = s->Al;
+    int ilv = s->Se;
     int i, t = 0;
     uint8_t *zero, *last, *cur;
     JLSState *state = s->jls_state;
