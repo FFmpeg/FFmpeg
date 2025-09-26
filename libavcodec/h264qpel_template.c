@@ -75,81 +75,6 @@ static inline void FUNC(copy_block16)(uint8_t *dst, const uint8_t *restrict src,
 }
 
 #define H264_LOWPASS(OPNAME, OP, OP2) \
-av_unused static void FUNC(OPNAME ## h264_qpel2_h_lowpass)(uint8_t *p_dst, const uint8_t *restrict p_src, int dstStride, int srcStride)\
-{\
-    const int h=2;\
-    int i;\
-    pixel *dst = (pixel*)p_dst;\
-    const pixel *restrict src = (const pixel*)p_src;\
-    dstStride >>= sizeof(pixel)-1;\
-    srcStride >>= sizeof(pixel)-1;\
-    for(i=0; i<h; i++)\
-    {\
-        OP(dst[0], (src[0]+src[1])*20 - (src[-1]+src[2])*5 + (src[-2]+src[3]));\
-        OP(dst[1], (src[1]+src[2])*20 - (src[0 ]+src[3])*5 + (src[-1]+src[4]));\
-        dst+=dstStride;\
-        src+=srcStride;\
-    }\
-}\
-\
-av_unused static void FUNC(OPNAME ## h264_qpel2_v_lowpass)(uint8_t *_dst, const uint8_t *restrict _src, int dstStride, int srcStride)\
-{\
-    const int w=2;\
-    int i;\
-    pixel *dst = (pixel*)_dst;\
-    const pixel *restrict src = (const pixel*)_src;\
-    dstStride >>= sizeof(pixel)-1;\
-    srcStride >>= sizeof(pixel)-1;\
-    for(i=0; i<w; i++)\
-    {\
-        const int srcB= src[-2*srcStride];\
-        const int srcA= src[-1*srcStride];\
-        const int src0= src[0 *srcStride];\
-        const int src1= src[1 *srcStride];\
-        const int src2= src[2 *srcStride];\
-        const int src3= src[3 *srcStride];\
-        const int src4= src[4 *srcStride];\
-        OP(dst[0*dstStride], (src0+src1)*20 - (srcA+src2)*5 + (srcB+src3));\
-        OP(dst[1*dstStride], (src1+src2)*20 - (src0+src3)*5 + (srcA+src4));\
-        dst++;\
-        src++;\
-    }\
-}\
-\
-av_unused static void FUNC(OPNAME ## h264_qpel2_hv_lowpass)(uint8_t *_dst, pixeltmp *tmp, const uint8_t *restrict _src, int dstStride, int tmpStride, int srcStride)\
-{\
-    const int h=2;\
-    const int w=2;\
-    const int pad = (BIT_DEPTH == 10) ? (-10 * ((1<<BIT_DEPTH)-1)) : 0;\
-    int i;\
-    pixel *dst = (pixel*)_dst;\
-    const pixel *restrict src = (const pixel*)_src;\
-    dstStride >>= sizeof(pixel)-1;\
-    srcStride >>= sizeof(pixel)-1;\
-    src -= 2*srcStride;\
-    for(i=0; i<h+5; i++)\
-    {\
-        tmp[0]= (src[0]+src[1])*20 - (src[-1]+src[2])*5 + (src[-2]+src[3]) + pad;\
-        tmp[1]= (src[1]+src[2])*20 - (src[0 ]+src[3])*5 + (src[-1]+src[4]) + pad;\
-        tmp+=tmpStride;\
-        src+=srcStride;\
-    }\
-    tmp -= tmpStride*(h+5-2);\
-    for(i=0; i<w; i++)\
-    {\
-        const int tmpB= tmp[-2*tmpStride] - pad;\
-        const int tmpA= tmp[-1*tmpStride] - pad;\
-        const int tmp0= tmp[0 *tmpStride] - pad;\
-        const int tmp1= tmp[1 *tmpStride] - pad;\
-        const int tmp2= tmp[2 *tmpStride] - pad;\
-        const int tmp3= tmp[3 *tmpStride] - pad;\
-        const int tmp4= tmp[4 *tmpStride] - pad;\
-        OP2(dst[0*dstStride], (tmp0+tmp1)*20 - (tmpA+tmp2)*5 + (tmpB+tmp3));\
-        OP2(dst[1*dstStride], (tmp1+tmp2)*20 - (tmp0+tmp3)*5 + (tmpA+tmp4));\
-        dst++;\
-        tmp++;\
-    }\
-}\
 static void FUNC(OPNAME ## h264_qpel4_h_lowpass)(uint8_t *_dst, const uint8_t *restrict _src, int dstStride, int srcStride)\
 {\
     const int h=4;\
@@ -540,7 +465,6 @@ static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc32)(uint8_t *dst, const uint
 
 H264_LOWPASS(put_       , op_put, op2_put)
 H264_LOWPASS(avg_       , op_avg, op2_avg)
-H264_MC(put_, 2)
 H264_MC(put_, 4)
 H264_MC(put_, 8)
 H264_MC(put_, 16)
