@@ -262,6 +262,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
                                 FFMIN(frame->height, ff_filter_get_nb_threads(avctx))))
         return res;
 
+    if (!strcmp(avctx->filter->name, "chromakey"))
+        frame->alpha_mode = avctx->outputs[0]->alpha_mode;
     return ff_filter_frame(avctx->outputs[0], frame);
 }
 
@@ -291,6 +293,7 @@ static av_cold int config_output(AVFilterLink *outlink)
     }
 
     if (!strcmp(avctx->filter->name, "chromakey")) {
+        outlink->alpha_mode = AVALPHA_MODE_STRAIGHT;
         ctx->do_slice = ctx->depth <= 8 ? do_chromakey_slice : do_chromakey16_slice;
     } else {
         ctx->do_slice = ctx->depth <= 8 ? do_chromahold_slice: do_chromahold16_slice;
