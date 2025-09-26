@@ -51,17 +51,6 @@ SECTION .text
 cglobal %1_pixels4_l2, 6,6
     movsxdifnidn r3, r3d
     movsxdifnidn r4, r4d
-    test        r5d, 1
-    je        .loop
-    movd         m0, [r1]
-    movd         m1, [r2]
-    add          r1, r4
-    add          r2, 4
-    pavgb        m0, m1
-    OP           m0, [r0], m3
-    add          r0, r3
-    dec         r5d
-.loop:
     mova         m0, [r1]
     mova         m1, [r1+r4]
     lea          r1, [r1+2*r4]
@@ -72,15 +61,10 @@ cglobal %1_pixels4_l2, 6,6
     lea          r0, [r0+2*r3]
     mova         m0, [r1]
     mova         m1, [r1+r4]
-    lea          r1, [r1+2*r4]
     pavgb        m0, [r2+8]
     pavgb        m1, [r2+12]
     OP           m0, [r0], m3
     OP           m1, [r0+r3], m3
-    lea          r0, [r0+2*r3]
-    add          r2, 16
-    sub         r5d, 4
-    jne       .loop
     RET
 %endmacro
 
@@ -95,6 +79,7 @@ PIXELS4_L2 avg
 cglobal %1_pixels8_l2, 6,6
     movsxdifnidn r3, r3d
     movsxdifnidn r4, r4d
+%ifidn %1, put
     test        r5d, 1
     je        .loop
     mova         m0, [r1]
@@ -105,6 +90,7 @@ cglobal %1_pixels8_l2, 6,6
     OP           m0, [r0]
     add          r0, r3
     dec         r5d
+%endif
 .loop:
     mova         m0, [r1]
     mova         m1, [r1+r4]
@@ -139,6 +125,7 @@ PIXELS8_L2 avg
 cglobal %1_pixels16_l2, 6,6
     movsxdifnidn r3, r3d
     movsxdifnidn r4, r4d
+%ifidn %1, put
     test        r5d, 1
     je        .loop
     mova         m0, [r1]
@@ -151,6 +138,7 @@ cglobal %1_pixels16_l2, 6,6
     OP           m1, [r0+8]
     add          r0, r3
     dec         r5d
+%endif
 .loop:
     mova         m0, [r1]
     mova         m1, [r1+8]
