@@ -3065,148 +3065,6 @@ static int decode_user_data(Mpeg4DecContext *ctx, GetBitContext *gb)
     return 0;
 }
 
-static av_cold void permute_quant_matrix(uint16_t matrix[64],
-                                         const uint8_t new_perm[64],
-                                         const uint8_t old_perm[64])
-{
-    uint16_t tmp[64];
-
-    memcpy(tmp, matrix, sizeof(tmp));
-    for (int i = 0; i < 64; ++i)
-        matrix[new_perm[i]] = tmp[old_perm[i]];
-}
-
-static av_cold void switch_to_xvid_idct(AVCodecContext *const avctx,
-                                        MpegEncContext *const s)
-{
-    uint8_t old_permutation[64];
-
-    memcpy(old_permutation, s->idsp.idct_permutation, sizeof(old_permutation));
-
-    avctx->idct_algo = FF_IDCT_XVID;
-    ff_mpv_idct_init(s);
-    ff_permute_scantable(s->permutated_intra_h_scantable,
-                         s->alternate_scan ? ff_alternate_vertical_scan : ff_alternate_horizontal_scan,
-                         s->idsp.idct_permutation);
-
-    // Normal (i.e. non-studio) MPEG-4 does not use the chroma matrices.
-    permute_quant_matrix(s->inter_matrix, s->idsp.idct_permutation, old_permutation);
-    permute_quant_matrix(s->intra_matrix, s->idsp.idct_permutation, old_permutation);
-}
-
-void ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
-{
-    Mpeg4DecContext *ctx = avctx->priv_data;
-    H263DecContext *const h = &ctx->h;
-
-    if (ctx->xvid_build == -1 && ctx->divx_version == -1 && ctx->lavc_build == -1) {
-        if (h->c.codec_tag == AV_RL32("XVID") ||
-            h->c.codec_tag == AV_RL32("XVIX") ||
-            h->c.codec_tag == AV_RL32("RMP4") ||
-            h->c.codec_tag == AV_RL32("ZMP4") ||
-            h->c.codec_tag == AV_RL32("SIPP"))
-            ctx->xvid_build = 0;
-    }
-
-    if (ctx->xvid_build == -1 && ctx->divx_version == -1 && ctx->lavc_build == -1)
-        if (h->c.codec_tag == AV_RL32("DIVX") && ctx->vo_type == 0 &&
-            ctx->vol_control_parameters == 0)
-            ctx->divx_version = 400;  // divx 4
-
-    if (ctx->xvid_build >= 0 && ctx->divx_version >= 0) {
-        ctx->divx_version =
-        ctx->divx_build   = -1;
-    }
-
-    if (h->c.workaround_bugs & FF_BUG_AUTODETECT) {
-        if (h->c.codec_tag == AV_RL32("XVIX"))
-            h->c.workaround_bugs |= FF_BUG_XVID_ILACE;
-
-        if (h->c.codec_tag == AV_RL32("UMP4"))
-            h->c.workaround_bugs |= FF_BUG_UMP4;
-
-        if (ctx->divx_version >= 500 && ctx->divx_build < 1814)
-            h->c.workaround_bugs |= FF_BUG_QPEL_CHROMA;
-
-        if (ctx->divx_version > 502 && ctx->divx_build < 1814)
-            h->c.workaround_bugs |= FF_BUG_QPEL_CHROMA2;
-
-        if (ctx->xvid_build <= 3U)
-            h->padding_bug_score = 256 * 256 * 256 * 64;
-
-        if (ctx->xvid_build <= 1U)
-            h->c.workaround_bugs |= FF_BUG_QPEL_CHROMA;
-
-        if (ctx->xvid_build <= 12U)
-            h->c.workaround_bugs |= FF_BUG_EDGE;
-
-        if (ctx->xvid_build <= 32U)
-            h->c.workaround_bugs |= FF_BUG_DC_CLIP;
-
-#define SET_QPEL_FUNC(postfix1, postfix2)                           \
-    h->c.qdsp.put_        ## postfix1 = ff_put_        ## postfix2; \
-    h->c.qdsp.put_no_rnd_ ## postfix1 = ff_put_no_rnd_ ## postfix2; \
-    h->c.qdsp.avg_        ## postfix1 = ff_avg_        ## postfix2;
-
-        if (ctx->lavc_build < 4653U)
-            h->c.workaround_bugs |= FF_BUG_STD_QPEL;
-
-        if (ctx->lavc_build < 4655U)
-            h->c.workaround_bugs |= FF_BUG_DIRECT_BLOCKSIZE;
-
-        if (ctx->lavc_build < 4670U)
-            h->c.workaround_bugs |= FF_BUG_EDGE;
-
-        if (ctx->lavc_build <= 4712U)
-            h->c.workaround_bugs |= FF_BUG_DC_CLIP;
-
-        if ((ctx->lavc_build&0xFF) >= 100) {
-            if (ctx->lavc_build > 3621476 && ctx->lavc_build < 3752552 &&
-               (ctx->lavc_build < 3752037 || ctx->lavc_build > 3752191) // 3.2.1+
-            )
-                h->c.workaround_bugs |= FF_BUG_IEDGE;
-        }
-
-        if (ctx->divx_version >= 0)
-            h->c.workaround_bugs |= FF_BUG_DIRECT_BLOCKSIZE;
-        if (ctx->divx_version == 501 && ctx->divx_build == 20020416)
-            h->padding_bug_score = 256 * 256 * 256 * 64;
-
-        if (ctx->divx_version < 500U)
-            h->c.workaround_bugs |= FF_BUG_EDGE;
-
-        if (ctx->divx_version >= 0)
-            h->c.workaround_bugs |= FF_BUG_HPEL_CHROMA;
-    }
-
-    if (h->c.workaround_bugs & FF_BUG_STD_QPEL) {
-        SET_QPEL_FUNC(qpel_pixels_tab[0][5], qpel16_mc11_old_c)
-        SET_QPEL_FUNC(qpel_pixels_tab[0][7], qpel16_mc31_old_c)
-        SET_QPEL_FUNC(qpel_pixels_tab[0][9], qpel16_mc12_old_c)
-        SET_QPEL_FUNC(qpel_pixels_tab[0][11], qpel16_mc32_old_c)
-        SET_QPEL_FUNC(qpel_pixels_tab[0][13], qpel16_mc13_old_c)
-        SET_QPEL_FUNC(qpel_pixels_tab[0][15], qpel16_mc33_old_c)
-
-        SET_QPEL_FUNC(qpel_pixels_tab[1][5], qpel8_mc11_old_c)
-        SET_QPEL_FUNC(qpel_pixels_tab[1][7], qpel8_mc31_old_c)
-        SET_QPEL_FUNC(qpel_pixels_tab[1][9], qpel8_mc12_old_c)
-        SET_QPEL_FUNC(qpel_pixels_tab[1][11], qpel8_mc32_old_c)
-        SET_QPEL_FUNC(qpel_pixels_tab[1][13], qpel8_mc13_old_c)
-        SET_QPEL_FUNC(qpel_pixels_tab[1][15], qpel8_mc33_old_c)
-    }
-
-    if (avctx->debug & FF_DEBUG_BUGS)
-        av_log(h->c.avctx, AV_LOG_DEBUG,
-               "bugs: %X lavc_build:%d xvid_build:%d divx_version:%d divx_build:%d %s\n",
-               h->c.workaround_bugs, ctx->lavc_build, ctx->xvid_build,
-               ctx->divx_version, ctx->divx_build, h->divx_packed ? "p" : "");
-
-    if (CONFIG_MPEG4_DECODER && ctx->xvid_build >= 0 &&
-        avctx->idct_algo == FF_IDCT_AUTO && !h->c.studio_profile) {
-        switch_to_xvid_idct(avctx, &h->c);
-    }
-}
-
 static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
                              int parse_only)
 {
@@ -3738,6 +3596,149 @@ end:
         return decode_vop_header(ctx, gb, parse_only);
 }
 
+#if CONFIG_MPEG4_DECODER
+static av_cold void permute_quant_matrix(uint16_t matrix[64],
+                                         const uint8_t new_perm[64],
+                                         const uint8_t old_perm[64])
+{
+    uint16_t tmp[64];
+
+    memcpy(tmp, matrix, sizeof(tmp));
+    for (int i = 0; i < 64; ++i)
+        matrix[new_perm[i]] = tmp[old_perm[i]];
+}
+
+static av_cold void switch_to_xvid_idct(AVCodecContext *const avctx,
+                                        MpegEncContext *const s)
+{
+    uint8_t old_permutation[64];
+
+    memcpy(old_permutation, s->idsp.idct_permutation, sizeof(old_permutation));
+
+    avctx->idct_algo = FF_IDCT_XVID;
+    ff_mpv_idct_init(s);
+    ff_permute_scantable(s->permutated_intra_h_scantable,
+                         s->alternate_scan ? ff_alternate_vertical_scan : ff_alternate_horizontal_scan,
+                         s->idsp.idct_permutation);
+
+    // Normal (i.e. non-studio) MPEG-4 does not use the chroma matrices.
+    permute_quant_matrix(s->inter_matrix, s->idsp.idct_permutation, old_permutation);
+    permute_quant_matrix(s->intra_matrix, s->idsp.idct_permutation, old_permutation);
+}
+
+void ff_mpeg4_workaround_bugs(AVCodecContext *avctx)
+{
+    Mpeg4DecContext *ctx = avctx->priv_data;
+    H263DecContext *const h = &ctx->h;
+
+    if (ctx->xvid_build == -1 && ctx->divx_version == -1 && ctx->lavc_build == -1) {
+        if (h->c.codec_tag == AV_RL32("XVID") ||
+            h->c.codec_tag == AV_RL32("XVIX") ||
+            h->c.codec_tag == AV_RL32("RMP4") ||
+            h->c.codec_tag == AV_RL32("ZMP4") ||
+            h->c.codec_tag == AV_RL32("SIPP"))
+            ctx->xvid_build = 0;
+    }
+
+    if (ctx->xvid_build == -1 && ctx->divx_version == -1 && ctx->lavc_build == -1)
+        if (h->c.codec_tag == AV_RL32("DIVX") && ctx->vo_type == 0 &&
+            ctx->vol_control_parameters == 0)
+            ctx->divx_version = 400;  // divx 4
+
+    if (ctx->xvid_build >= 0 && ctx->divx_version >= 0) {
+        ctx->divx_version =
+        ctx->divx_build   = -1;
+    }
+
+    if (h->c.workaround_bugs & FF_BUG_AUTODETECT) {
+        if (h->c.codec_tag == AV_RL32("XVIX"))
+            h->c.workaround_bugs |= FF_BUG_XVID_ILACE;
+
+        if (h->c.codec_tag == AV_RL32("UMP4"))
+            h->c.workaround_bugs |= FF_BUG_UMP4;
+
+        if (ctx->divx_version >= 500 && ctx->divx_build < 1814)
+            h->c.workaround_bugs |= FF_BUG_QPEL_CHROMA;
+
+        if (ctx->divx_version > 502 && ctx->divx_build < 1814)
+            h->c.workaround_bugs |= FF_BUG_QPEL_CHROMA2;
+
+        if (ctx->xvid_build <= 3U)
+            h->padding_bug_score = 256 * 256 * 256 * 64;
+
+        if (ctx->xvid_build <= 1U)
+            h->c.workaround_bugs |= FF_BUG_QPEL_CHROMA;
+
+        if (ctx->xvid_build <= 12U)
+            h->c.workaround_bugs |= FF_BUG_EDGE;
+
+        if (ctx->xvid_build <= 32U)
+            h->c.workaround_bugs |= FF_BUG_DC_CLIP;
+
+#define SET_QPEL_FUNC(postfix1, postfix2)                           \
+    h->c.qdsp.put_        ## postfix1 = ff_put_        ## postfix2; \
+    h->c.qdsp.put_no_rnd_ ## postfix1 = ff_put_no_rnd_ ## postfix2; \
+    h->c.qdsp.avg_        ## postfix1 = ff_avg_        ## postfix2;
+
+        if (ctx->lavc_build < 4653U)
+            h->c.workaround_bugs |= FF_BUG_STD_QPEL;
+
+        if (ctx->lavc_build < 4655U)
+            h->c.workaround_bugs |= FF_BUG_DIRECT_BLOCKSIZE;
+
+        if (ctx->lavc_build < 4670U)
+            h->c.workaround_bugs |= FF_BUG_EDGE;
+
+        if (ctx->lavc_build <= 4712U)
+            h->c.workaround_bugs |= FF_BUG_DC_CLIP;
+
+        if ((ctx->lavc_build&0xFF) >= 100) {
+            if (ctx->lavc_build > 3621476 && ctx->lavc_build < 3752552 &&
+               (ctx->lavc_build < 3752037 || ctx->lavc_build > 3752191) // 3.2.1+
+            )
+                h->c.workaround_bugs |= FF_BUG_IEDGE;
+        }
+
+        if (ctx->divx_version >= 0)
+            h->c.workaround_bugs |= FF_BUG_DIRECT_BLOCKSIZE;
+        if (ctx->divx_version == 501 && ctx->divx_build == 20020416)
+            h->padding_bug_score = 256 * 256 * 256 * 64;
+
+        if (ctx->divx_version < 500U)
+            h->c.workaround_bugs |= FF_BUG_EDGE;
+
+        if (ctx->divx_version >= 0)
+            h->c.workaround_bugs |= FF_BUG_HPEL_CHROMA;
+    }
+
+    if (h->c.workaround_bugs & FF_BUG_STD_QPEL) {
+        SET_QPEL_FUNC(qpel_pixels_tab[0][5], qpel16_mc11_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[0][7], qpel16_mc31_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[0][9], qpel16_mc12_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[0][11], qpel16_mc32_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[0][13], qpel16_mc13_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[0][15], qpel16_mc33_old_c)
+
+        SET_QPEL_FUNC(qpel_pixels_tab[1][5], qpel8_mc11_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[1][7], qpel8_mc31_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[1][9], qpel8_mc12_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[1][11], qpel8_mc32_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[1][13], qpel8_mc13_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[1][15], qpel8_mc33_old_c)
+    }
+
+    if (avctx->debug & FF_DEBUG_BUGS)
+        av_log(h->c.avctx, AV_LOG_DEBUG,
+               "bugs: %X lavc_build:%d xvid_build:%d divx_version:%d divx_build:%d %s\n",
+               h->c.workaround_bugs, ctx->lavc_build, ctx->xvid_build,
+               ctx->divx_version, ctx->divx_build, h->divx_packed ? "p" : "");
+
+    if (ctx->xvid_build >= 0 &&
+        avctx->idct_algo == FF_IDCT_AUTO && !h->c.studio_profile) {
+        switch_to_xvid_idct(avctx, &h->c);
+    }
+}
+
 static int mpeg4_decode_picture_header(H263DecContext *const h)
 {
     Mpeg4DecContext *const ctx = h263_to_mpeg4(h);
@@ -3821,7 +3822,6 @@ int ff_mpeg4_frame_end(AVCodecContext *avctx, const AVPacket *pkt)
     return 0;
 }
 
-#if CONFIG_MPEG4_DECODER
 #if HAVE_THREADS
 static av_cold void clear_context(MpegEncContext *s)
 {
