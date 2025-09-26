@@ -53,8 +53,7 @@ typedef struct CUDABilateralContext {
 
     enum AVPixelFormat in_fmt, out_fmt;
     const AVPixFmtDescriptor *in_desc, *out_desc;
-    int in_planes, out_planes;
-    int in_plane_depths[4];
+    int in_planes;
     int in_plane_channels[4];
 
     int   window_size;
@@ -161,7 +160,6 @@ static av_cold void set_format_info(AVFilterContext *ctx, enum AVPixelFormat in_
     s->in_desc  = av_pix_fmt_desc_get(s->in_fmt);
     s->out_desc = av_pix_fmt_desc_get(s->out_fmt);
     s->in_planes  = av_pix_fmt_count_planes(s->in_fmt);
-    s->out_planes = av_pix_fmt_count_planes(s->out_fmt);
 
     // find maximum step of each component of each plane
     // For our subset of formats, this should accurately tell us how many channels CUDA needs
@@ -171,8 +169,6 @@ static av_cold void set_format_info(AVFilterContext *ctx, enum AVPixelFormat in_
         d = (s->in_desc->comp[i].depth + 7) / 8;
         p = s->in_desc->comp[i].plane;
         s->in_plane_channels[p] = FFMAX(s->in_plane_channels[p], s->in_desc->comp[i].step / d);
-
-        s->in_plane_depths[p] = s->in_desc->comp[i].depth;
     }
 }
 
