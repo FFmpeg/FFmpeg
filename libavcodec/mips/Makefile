@@ -93,7 +93,7 @@ MSA-OBJS-$(CONFIG_IDCTDSP)                += mips/idctdsp_msa.o           \
 MSA-OBJS-$(CONFIG_MPEGVIDEO)              += mips/mpegvideo_msa.o
 MSA-OBJS-$(CONFIG_MPEGVIDEOENCDSP)        += mips/mpegvideoencdsp_msa.o
 MSA-OBJS-$(CONFIG_ME_CMP)                 += mips/me_cmp_msa.o
-MSA-OBJS-$(CONFIG_VC1_DECODER)            += mips/vc1dsp_msa.o
+MSA-OBJS-$(CONFIG_VC1DSP)                 += mips/vc1dsp_msa.o
 
 MMI-OBJS                                  += mips/constants.o
 MMI-OBJS-$(CONFIG_H264DSP)                += mips/h264dsp_mmi.o
@@ -109,7 +109,7 @@ MMI-OBJS-$(CONFIG_PIXBLOCKDSP)            += mips/pixblockdsp_mmi.o
 MMI-OBJS-$(CONFIG_H264QPEL)               += mips/h264qpel_mmi.o
 MMI-OBJS-$(CONFIG_VP8_DECODER)            += mips/vp8dsp_mmi.o
 MMI-OBJS-$(CONFIG_HPELDSP)                += mips/hpeldsp_mmi.o
-MMI-OBJS-$(CONFIG_VC1_DECODER)            += mips/vc1dsp_mmi.o
+MMI-OBJS-$(CONFIG_VC1DSP)                 += mips/vc1dsp_mmi.o
 MMI-OBJS-$(CONFIG_WMV2DSP)                += mips/wmv2dsp_mmi.o
 MMI-OBJS-$(CONFIG_HEVC_DECODER)           += mips/hevcdsp_mmi.o
 MMI-OBJS-$(CONFIG_VP3DSP)                 += mips/vp3dsp_idct_mmi.o
