@@ -286,8 +286,6 @@ static int cuda_bilateral_process_internal(AVFilterContext *ctx,
                            AV_CEIL_RSHIFT(out->height, s->in_desc->log2_chroma_h),
                            out->linesize[1] >> ((s->in_plane_channels[1] > 1) ? 1 : 0),
                            s->window_size, s->sigmaS, s->sigmaR);
-    if (ret < 0)
-        goto exit;
 
 exit:
     for (i = 0; i < s->in_planes; i++)
