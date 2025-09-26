@@ -52,8 +52,7 @@ typedef struct CUDABilateralContext {
     const AVClass *class;
     AVCUDADeviceContext *hwctx;
 
-    enum AVPixelFormat in_fmt, out_fmt;
-    const AVPixFmtDescriptor *in_desc, *out_desc;
+    const AVPixFmtDescriptor *in_desc;
     int in_planes;
     int in_plane_channels[4];
 
@@ -93,17 +92,13 @@ static int format_is_supported(enum AVPixelFormat fmt)
     return 0;
 }
 
-static av_cold void set_format_info(AVFilterContext *ctx, enum AVPixelFormat in_format, enum AVPixelFormat out_format)
+static av_cold void set_format_info(AVFilterContext *ctx, enum AVPixelFormat format)
 {
     CUDABilateralContext *s = ctx->priv;
     int i, p, d;
 
-    s->in_fmt = in_format;
-    s->out_fmt = out_format;
-
-    s->in_desc  = av_pix_fmt_desc_get(s->in_fmt);
-    s->out_desc = av_pix_fmt_desc_get(s->out_fmt);
-    s->in_planes  = av_pix_fmt_count_planes(s->in_fmt);
+    s->in_desc = av_pix_fmt_desc_get(format);
+    s->in_planes = av_pix_fmt_count_planes(format);
 
     // find maximum step of each component of each plane
     // For our subset of formats, this should accurately tell us how many channels CUDA needs
@@ -134,7 +129,7 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int width, int he
         return AVERROR(ENOSYS);
     }
 
-    set_format_info(ctx, in_frames_ctx->sw_format, in_frames_ctx->sw_format);
+    set_format_info(ctx, in_frames_ctx->sw_format);
 
     outl->hw_frames_ctx = av_buffer_ref(inl->hw_frames_ctx);
     if (!outl->hw_frames_ctx)
@@ -287,8 +282,8 @@ static int cuda_bilateral_process_internal(AVFilterContext *ctx,
     ret = call_cuda_kernel(ctx, (s->in_plane_channels[1] > 1) ? s->cu_func_uv : s->cu_func,
                            tex, out,
                            out->width, out->height, out->linesize[0],
-                           AV_CEIL_RSHIFT(out->width, s->out_desc->log2_chroma_w),
-                           AV_CEIL_RSHIFT(out->height, s->out_desc->log2_chroma_h),
+                           AV_CEIL_RSHIFT(out->width, s->in_desc->log2_chroma_w),
+                           AV_CEIL_RSHIFT(out->height, s->in_desc->log2_chroma_h),
                            out->linesize[1] >> ((s->in_plane_channels[1] > 1) ? 1 : 0),
                            s->window_size, s->sigmaS, s->sigmaR);
     if (ret < 0)
