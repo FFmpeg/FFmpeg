@@ -537,9 +537,11 @@ av_cold void ff_qpeldsp_init_x86(QpelDSPContext *c)
         SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, mmxext, );
 #endif /* HAVE_MMXEXT_EXTERNAL */
     }
+#if HAVE_SSE2_EXTERNAL
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->put_no_rnd_qpel_pixels_tab[0][0] =
         c->put_qpel_pixels_tab[0][0] = put_qpel16_mc00_sse2;
         c->avg_qpel_pixels_tab[0][0] = avg_qpel16_mc00_sse2;
     }
+#endif
 }
