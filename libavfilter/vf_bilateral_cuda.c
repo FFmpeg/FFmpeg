@@ -61,8 +61,6 @@ typedef struct CUDABilateralContext {
     float sigmaS;
     float sigmaR;
 
-    AVBufferRef *frames_ctx;
-
     CUcontext   cu_ctx;
     CUmodule    cu_module;
     CUfunction  cu_func;
@@ -83,37 +81,6 @@ static av_cold void cudabilateral_uninit(AVFilterContext *ctx)
         s->cu_module = NULL;
         CHECK_CU(cu->cuCtxPopCurrent(&bilateral));
     }
-
-    av_buffer_unref(&s->frames_ctx);
-}
-
-static av_cold int init_hwframe_ctx(CUDABilateralContext *s, AVBufferRef *device_ctx, int width, int height)
-{
-    AVBufferRef *out_ref = NULL;
-    AVHWFramesContext *out_ctx;
-    int ret;
-
-    out_ref = av_hwframe_ctx_alloc(device_ctx);
-    if (!out_ref)
-        return AVERROR(ENOMEM);
-    out_ctx = (AVHWFramesContext*)out_ref->data;
-
-    out_ctx->format    = AV_PIX_FMT_CUDA;
-    out_ctx->sw_format = s->out_fmt;
-    out_ctx->width     = width;
-    out_ctx->height    = height;
-
-    ret = av_hwframe_ctx_init(out_ref);
-    if (ret < 0)
-        goto fail;
-
-    av_buffer_unref(&s->frames_ctx);
-    s->frames_ctx = out_ref;
-
-    return 0;
-fail:
-    av_buffer_unref(&out_ref);
-    return ret;
 }
 
 static int format_is_supported(enum AVPixelFormat fmt)
@@ -153,9 +120,7 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int width, int he
 {
     FilterLink         *inl = ff_filter_link(ctx->inputs[0]);
     FilterLink        *outl = ff_filter_link(ctx->outputs[0]);
-    CUDABilateralContext *s = ctx->priv;
     AVHWFramesContext *in_frames_ctx;
-    int ret;
 
     /* check that we have a hw context */
     if (!inl->hw_frames_ctx) {
@@ -171,11 +136,7 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int width, int he
 
     set_format_info(ctx, in_frames_ctx->sw_format, in_frames_ctx->sw_format);
 
-    ret = init_hwframe_ctx(s, in_frames_ctx->device_ref, width, height);
-    if (ret < 0)
-        return ret;
-
-    outl->hw_frames_ctx = av_buffer_ref(s->frames_ctx);
+    outl->hw_frames_ctx = av_buffer_ref(inl->hw_frames_ctx);
     if (!outl->hw_frames_ctx)
         return AVERROR(ENOMEM);
 
