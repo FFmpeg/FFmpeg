@@ -265,7 +265,7 @@ static av_cold int cuda_bilateral_config_props(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
 
     // the window_size makes more sense when it is odd, so add 1 if even
-    s->window_size= (s->window_size%2) ? s->window_size : s->window_size+1;
+    s->window_size |= 1;
 
     ret = cuda_bilateral_load_functions(ctx);
     if (ret < 0)
