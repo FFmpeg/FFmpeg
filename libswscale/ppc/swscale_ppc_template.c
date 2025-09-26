@@ -125,8 +125,8 @@ static void FUNC(hScale_real)(SwsInternal *c, int16_t *dst, int dstW,
     case 8:
         for (register int i = 0; i < dstW; i++) {
             register int srcPos = filterPos[i];
-            vector unsigned char src_vF, av_unused src_v0, av_unused src_v1;
-            vector unsigned char av_unused permS;
+            vector unsigned char src_vF;
+            av_unused vector unsigned char src_v0, src_v1, permS;
             vector signed short src_v, filter_v;
             vector signed int val_v, val_s;
             FIRST_LOAD(src_v0, srcPos, src, permS);
