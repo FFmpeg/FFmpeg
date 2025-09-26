@@ -32,6 +32,7 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "cuda/load_helper.h"
+#include "video.h"
 
 static const enum AVPixelFormat supported_formats[] = {
     AV_PIX_FMT_YUV420P,
@@ -61,31 +62,12 @@ typedef struct ChromakeyCUDAContext {
     float similarity;
     float blend;
 
-    AVBufferRef *frames_ctx;
-    AVFrame *frame;
-    AVFrame *tmp_frame;
-
     CUcontext cu_ctx;
     CUmodule cu_module;
     CUfunction cu_func;
     CUfunction cu_func_uv;
     CUstream cu_stream;
 } ChromakeyCUDAContext;
-
-static av_cold int cudachromakey_init(AVFilterContext *ctx)
-{
-    ChromakeyCUDAContext *s = ctx->priv;
-
-    s->frame = av_frame_alloc();
-    if (!s->frame)
-        return AVERROR(ENOMEM);
-
-    s->tmp_frame = av_frame_alloc();
-    if (!s->tmp_frame)
-        return AVERROR(ENOMEM);
-
-    return 0;
-}
 
 static av_cold void cudachromakey_uninit(AVFilterContext *ctx)
 {
@@ -101,14 +83,12 @@ static av_cold void cudachromakey_uninit(AVFilterContext *ctx)
         s->cu_module = NULL;
         CHECK_CU(cu->cuCtxPopCurrent(&context));
     }
-
-    av_frame_free(&s->frame);
-    av_buffer_unref(&s->frames_ctx);
-    av_frame_free(&s->tmp_frame);
 }
 
-static av_cold int init_hwframe_ctx(ChromakeyCUDAContext *s, AVBufferRef *device_ctx, int width, int height)
+static av_cold int init_hwframe_ctx(AVFilterContext *ctx, AVBufferRef *device_ctx, int width, int height)
 {
+    FilterLink *outl = ff_filter_link(ctx->outputs[0]);
+    ChromakeyCUDAContext *s = ctx->priv;
     AVBufferRef *out_ref = NULL;
     AVHWFramesContext *out_ctx;
     int ret;
@@ -127,13 +107,7 @@ static av_cold int init_hwframe_ctx(ChromakeyCUDAContext *s, AVBufferRef *device
     if (ret < 0)
         goto fail;
 
-    av_frame_unref(s->frame);
-    ret = av_hwframe_get_buffer(out_ref, s->frame, 0);
-    if (ret < 0)
-        goto fail;
-
-    av_buffer_unref(&s->frames_ctx);
-    s->frames_ctx = out_ref;
+    outl->hw_frames_ctx = out_ref;
 
     return 0;
 fail:
@@ -181,7 +155,6 @@ static av_cold void set_format_info(AVFilterContext *ctx, enum AVPixelFormat in_
 static av_cold int init_processing_chain(AVFilterContext *ctx, int width, int height)
 {
     FilterLink         *inl = ff_filter_link(ctx->inputs[0]);
-    FilterLink        *outl = ff_filter_link(ctx->outputs[0]);
     ChromakeyCUDAContext *s = ctx->priv;
     AVHWFramesContext *in_frames_ctx;
     int ret;
@@ -201,13 +174,15 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int width, int he
 
     set_format_info(ctx, in_frames_ctx->sw_format, AV_PIX_FMT_YUVA420P);
 
-    ret = init_hwframe_ctx(s, in_frames_ctx->device_ref, width, height);
-    if (ret < 0)
-        return ret;
-
-    outl->hw_frames_ctx = av_buffer_ref(s->frames_ctx);
-    if (!outl->hw_frames_ctx)
-        return AVERROR(ENOMEM);
+    if (in_frames_ctx->sw_format == s->out_fmt) {
+        ff_filter_link(ctx->outputs[0])->hw_frames_ctx = av_buffer_ref(inl->hw_frames_ctx);
+        if (!ff_filter_link(ctx->outputs[0])->hw_frames_ctx)
+            return AVERROR(ENOMEM);
+    } else {
+        ret = init_hwframe_ctx(ctx, in_frames_ctx->device_ref, width, height);
+        if (ret < 0)
+            return ret;
+    }
 
     return 0;
 }
@@ -386,31 +361,6 @@ exit:
     return ret;
 }
 
-static int cudachromakey_process(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
-{
-    ChromakeyCUDAContext *s = ctx->priv;
-    AVFrame *src = in;
-    int ret;
-
-    ret = cudachromakey_process_internal(ctx, s->frame, src);
-    if (ret < 0)
-        return ret;
-
-    src = s->frame;
-    ret = av_hwframe_get_buffer(src->hw_frames_ctx, s->tmp_frame, 0);
-    if (ret < 0)
-        return ret;
-
-    av_frame_move_ref(out, s->frame);
-    av_frame_move_ref(s->frame, s->tmp_frame);
-
-    ret = av_frame_copy_props(out, in);
-    if (ret < 0)
-        return ret;
-
-    return 0;
-}
-
 static int cudachromakey_filter_frame(AVFilterLink *link, AVFrame *in)
 {
     AVFilterContext *ctx    = link->dst;
@@ -418,13 +368,12 @@ static int cudachromakey_filter_frame(AVFilterLink *link, AVFrame *in)
     AVFilterLink *outlink   = ctx->outputs[0];
     CudaFunctions *cu = s->hwctx->internal->cuda_dl;
 
-    AVFrame *out   = NULL;
+    AVFrame *out;
     CUcontext context;
     int ret = 0;
 
-    out = av_frame_alloc();
-    if (!out)
-    {
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
@@ -433,9 +382,15 @@ static int cudachromakey_filter_frame(AVFilterLink *link, AVFrame *in)
     if (ret < 0)
         goto fail;
 
-    ret = cudachromakey_process(ctx, out, in);
+    ret = cudachromakey_process_internal(ctx, out, in);
+    if (ret < 0)
+        goto fail;
 
-    CHECK_CU(cu->cuCtxPopCurrent(&context));
+    ret = av_frame_copy_props(out, in);
+    if (ret < 0)
+        goto fail;
+
+    ret = CHECK_CU(cu->cuCtxPopCurrent(&context));
     if (ret < 0)
         goto fail;
 
@@ -485,10 +440,7 @@ const FFFilter ff_vf_chromakey_cuda = {
     .p.description = NULL_IF_CONFIG_SMALL("GPU accelerated chromakey filter"),
 
     .p.priv_class  = &cudachromakey_class,
-
-    .init = cudachromakey_init,
     .uninit = cudachromakey_uninit,
-
     .priv_size = sizeof(ChromakeyCUDAContext),
 
     FILTER_INPUTS(cudachromakey_inputs),
