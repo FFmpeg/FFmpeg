@@ -132,7 +132,7 @@ X86ASM-OBJS-$(CONFIG_QPELDSP)          += x86/qpeldsp.o                 \
                                           x86/qpel.o
 X86ASM-OBJS-$(CONFIG_RV34DSP)          += x86/rv34dsp.o
 X86ASM-OBJS-$(CONFIG_VC1DSP)           += x86/vc1dsp_loopfilter.o       \
-                                          x86/vc1dsp_mc.o
+                                          x86/vc1dsp_mc.o x86/fpel.o
 ifdef ARCH_X86_64
 X86ASM-OBJS-$(CONFIG_IDCTDSP)          += x86/simple_idct10.o
 else
