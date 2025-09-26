@@ -259,6 +259,7 @@ static av_cold int cudachromakey_config_props(AVFilterLink *outlink)
     s->cu_stream = s->hwctx->stream;
 
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
+    outlink->alpha_mode = AVALPHA_MODE_STRAIGHT;
 
     ret = cudachromakey_load_functions(ctx);
     if (ret < 0)
@@ -389,6 +390,7 @@ static int cudachromakey_filter_frame(AVFilterLink *link, AVFrame *in)
     ret = av_frame_copy_props(out, in);
     if (ret < 0)
         goto fail;
+    out->alpha_mode = outlink->alpha_mode;
 
     ret = CHECK_CU(cu->cuCtxPopCurrent(&context));
     if (ret < 0)
