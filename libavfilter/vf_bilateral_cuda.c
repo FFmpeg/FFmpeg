@@ -31,6 +31,7 @@
 
 #include "avfilter.h"
 #include "filters.h"
+#include "video.h"
 
 #include "cuda/load_helper.h"
 
@@ -61,8 +62,6 @@ typedef struct CUDABilateralContext {
     float sigmaR;
 
     AVBufferRef *frames_ctx;
-    AVFrame     *frame;
-    AVFrame *tmp_frame;
 
     CUcontext   cu_ctx;
     CUmodule    cu_module;
@@ -70,21 +69,6 @@ typedef struct CUDABilateralContext {
     CUfunction  cu_func_uv;
     CUstream    cu_stream;
 } CUDABilateralContext;
-
-static av_cold int cudabilateral_init(AVFilterContext *ctx)
-{
-    CUDABilateralContext *s = ctx->priv;
-
-    s->frame = av_frame_alloc();
-    if (!s->frame)
-        return AVERROR(ENOMEM);
-
-    s->tmp_frame = av_frame_alloc();
-    if (!s->tmp_frame)
-        return AVERROR(ENOMEM);
-
-    return 0;
-}
 
 static av_cold void cudabilateral_uninit(AVFilterContext *ctx)
 {
@@ -100,9 +84,7 @@ static av_cold void cudabilateral_uninit(AVFilterContext *ctx)
         CHECK_CU(cu->cuCtxPopCurrent(&bilateral));
     }
 
-    av_frame_free(&s->frame);
     av_buffer_unref(&s->frames_ctx);
-    av_frame_free(&s->tmp_frame);
 }
 
 static av_cold int init_hwframe_ctx(CUDABilateralContext *s, AVBufferRef *device_ctx, int width, int height)
@@ -122,11 +104,6 @@ static av_cold int init_hwframe_ctx(CUDABilateralContext *s, AVBufferRef *device
     out_ctx->height    = height;
 
     ret = av_hwframe_ctx_init(out_ref);
-    if (ret < 0)
-        goto fail;
-
-    av_frame_unref(s->frame);
-    ret = av_hwframe_get_buffer(out_ref, s->frame, 0);
     if (ret < 0)
         goto fail;
 
@@ -366,31 +343,6 @@ exit:
     return ret;
 }
 
-static int cuda_bilateral_process(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
-{
-    CUDABilateralContext *s = ctx->priv;
-    AVFrame *src = in;
-    int ret;
-
-    ret = cuda_bilateral_process_internal(ctx, s->frame, src);
-    if (ret < 0)
-        return ret;
-
-    src = s->frame;
-    ret = av_hwframe_get_buffer(src->hw_frames_ctx, s->tmp_frame, 0);
-    if (ret < 0)
-        return ret;
-
-    av_frame_move_ref(out, s->frame);
-    av_frame_move_ref(s->frame, s->tmp_frame);
-
-    ret = av_frame_copy_props(out, in);
-    if (ret < 0)
-        return ret;
-
-    return 0;
-}
-
 static int cuda_bilateral_filter_frame(AVFilterLink *link, AVFrame *in)
 {
     AVFilterContext       *ctx = link->dst;
@@ -398,11 +350,11 @@ static int cuda_bilateral_filter_frame(AVFilterLink *link, AVFrame *in)
     AVFilterLink      *outlink = ctx->outputs[0];
     CudaFunctions          *cu = s->hwctx->internal->cuda_dl;
 
-    AVFrame *out = NULL;
+    AVFrame *out;
     CUcontext bilateral;
     int ret = 0;
 
-    out = av_frame_alloc();
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -412,9 +364,15 @@ static int cuda_bilateral_filter_frame(AVFilterLink *link, AVFrame *in)
     if (ret < 0)
         goto fail;
 
-    ret = cuda_bilateral_process(ctx, out, in);
+    ret = cuda_bilateral_process_internal(ctx, out, in);
+    if (ret < 0)
+        goto fail;
 
-    CHECK_CU(cu->cuCtxPopCurrent(&bilateral));
+    ret = av_frame_copy_props(out, in);
+    if (ret < 0)
+        goto fail;
+
+    ret = CHECK_CU(cu->cuCtxPopCurrent(&bilateral));
     if (ret < 0)
         goto fail;
 
@@ -461,18 +419,11 @@ static const AVFilterPad cuda_bilateral_outputs[] = {
 const FFFilter ff_vf_bilateral_cuda = {
     .p.name        = "bilateral_cuda",
     .p.description = NULL_IF_CONFIG_SMALL("GPU accelerated bilateral filter"),
-
     .p.priv_class  = &cuda_bilateral_class,
-
-    .init          = cudabilateral_init,
     .uninit        = cudabilateral_uninit,
-
-    .priv_size = sizeof(CUDABilateralContext),
-
+    .priv_size     = sizeof(CUDABilateralContext),
     FILTER_INPUTS(cuda_bilateral_inputs),
     FILTER_OUTPUTS(cuda_bilateral_outputs),
-
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_CUDA),
-
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
