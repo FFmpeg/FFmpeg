@@ -220,6 +220,9 @@ static const struct {
     #if CONFIG_PIXBLOCKDSP
         { "pixblockdsp", checkasm_check_pixblockdsp },
     #endif
+    #if CONFIG_QPELDSP
+        { "qpeldsp", checkasm_check_qpeldsp },
+    #endif
     #if CONFIG_RV34DSP
         { "rv34dsp", checkasm_check_rv34dsp },
     #endif
