@@ -421,7 +421,7 @@ static void cbs_apv_free_metadata(AVRefStructOpaque unused, void *content)
     }
 }
 
-static const CodedBitstreamUnitTypeDescriptor cbs_apv_unit_types[] = {
+static CodedBitstreamUnitTypeDescriptor cbs_apv_unit_types[] = {
     {
         .nb_unit_types   = CBS_UNIT_TYPE_RANGE,
         .unit_type.range = {

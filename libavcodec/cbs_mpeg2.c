@@ -397,7 +397,7 @@ static int cbs_mpeg2_assemble_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
-static const CodedBitstreamUnitTypeDescriptor cbs_mpeg2_unit_types[] = {
+static CodedBitstreamUnitTypeDescriptor cbs_mpeg2_unit_types[] = {
     CBS_UNIT_TYPE_INTERNAL_REF(MPEG2_START_PICTURE, MPEG2RawPictureHeader,
                                extra_information_picture.extra_information),
 

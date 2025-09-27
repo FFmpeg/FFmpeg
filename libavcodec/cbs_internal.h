@@ -151,7 +151,7 @@ typedef struct CodedBitstreamType {
 
     // List of unit type descriptors for this codec.
     // Terminated by a descriptor with nb_unit_types equal to zero.
-    const CodedBitstreamUnitTypeDescriptor *unit_types;
+    CodedBitstreamUnitTypeDescriptor *unit_types;
 
     // Split frag->data into coded bitstream units, creating the
     // frag->units array.  Fill data but not content on each unit.

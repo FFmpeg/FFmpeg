@@ -417,7 +417,7 @@ static int cbs_jpeg_assemble_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
-static const CodedBitstreamUnitTypeDescriptor cbs_jpeg_unit_types[] = {
+static CodedBitstreamUnitTypeDescriptor cbs_jpeg_unit_types[] = {
     CBS_UNIT_RANGE_POD(JPEG_MARKER_SOF0, JPEG_MARKER_SOF3, JPEGRawFrameHeader),
 
     CBS_UNIT_RANGE_INTERNAL_REF(JPEG_MARKER_APPN, JPEG_MARKER_APPN + 15,

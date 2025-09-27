@@ -1997,7 +1997,7 @@ static void cbs_h264_free_sei(AVRefStructOpaque unused, void *content)
     ff_cbs_sei_free_message_list(&sei->message_list);
 }
 
-static const CodedBitstreamUnitTypeDescriptor cbs_h264_unit_types[] = {
+static CodedBitstreamUnitTypeDescriptor cbs_h264_unit_types[] = {
     CBS_UNIT_TYPE_POD(H264_NAL_SPS,     H264RawSPS),
     CBS_UNIT_TYPE_POD(H264_NAL_SPS_EXT, H264RawSPSExtension),
 
@@ -2023,7 +2023,7 @@ static void cbs_h265_free_sei(AVRefStructOpaque unused, void *content)
     ff_cbs_sei_free_message_list(&sei->message_list);
 }
 
-static const CodedBitstreamUnitTypeDescriptor cbs_h265_unit_types[] = {
+static CodedBitstreamUnitTypeDescriptor cbs_h265_unit_types[] = {
     CBS_UNIT_TYPE_INTERNAL_REF(HEVC_NAL_VPS, H265RawVPS, extension_data.data),
     CBS_UNIT_TYPE_INTERNAL_REF(HEVC_NAL_SPS, H265RawSPS, extension_data.data),
     CBS_UNIT_TYPE_INTERNAL_REF(HEVC_NAL_PPS, H265RawPPS, extension_data.data),
@@ -2060,7 +2060,7 @@ static void cbs_h266_free_sei(AVRefStructOpaque unused, void *content)
     ff_cbs_sei_free_message_list(&sei->message_list);
 }
 
-static const CodedBitstreamUnitTypeDescriptor cbs_h266_unit_types[] = {
+static CodedBitstreamUnitTypeDescriptor cbs_h266_unit_types[] = {
     CBS_UNIT_TYPE_INTERNAL_REF(VVC_DCI_NUT, H266RawDCI, extension_data.data),
     CBS_UNIT_TYPE_INTERNAL_REF(VVC_OPI_NUT, H266RawOPI, extension_data.data),
     CBS_UNIT_TYPE_INTERNAL_REF(VVC_VPS_NUT, H266RawVPS, extension_data.data),

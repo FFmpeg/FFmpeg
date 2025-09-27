@@ -594,7 +594,7 @@ static av_cold void cbs_vp9_flush(CodedBitstreamContext *ctx)
     memset(vp9->ref, 0, sizeof(vp9->ref));
 }
 
-static const CodedBitstreamUnitTypeDescriptor cbs_vp9_unit_types[] = {
+static CodedBitstreamUnitTypeDescriptor cbs_vp9_unit_types[] = {
     CBS_UNIT_TYPE_INTERNAL_REF(0, VP9RawFrame, data),
     CBS_UNIT_TYPE_END_OF_LIST
 };

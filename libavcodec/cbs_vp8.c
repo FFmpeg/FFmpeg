@@ -366,7 +366,7 @@ static int cbs_vp8_assemble_fragment(CodedBitstreamContext *ctx,
     return AVERROR_PATCHWELCOME;
 }
 
-static const CodedBitstreamUnitTypeDescriptor cbs_vp8_unit_types[] = {
+static CodedBitstreamUnitTypeDescriptor cbs_vp8_unit_types[] = {
     CBS_UNIT_TYPE_INTERNAL_REF(0, VP8RawFrame, data),
     CBS_UNIT_TYPE_END_OF_LIST,
 };
