@@ -30,15 +30,15 @@
 #define PS_MAX_AP_DELAY 5
 
 typedef struct PSDSPContext {
-    void (*add_squares)(INTFLOAT *dst, const INTFLOAT (*src)[2], int n);
-    void (*mul_pair_single)(INTFLOAT (*dst)[2], INTFLOAT (*src0)[2], INTFLOAT *src1,
+    void (*add_squares)(INTFLOAT *restrict dst, const INTFLOAT (*src)[2], int n);
+    void (*mul_pair_single)(INTFLOAT (*restrict dst)[2], INTFLOAT (*src0)[2], INTFLOAT *src1,
                             int n);
-    void (*hybrid_analysis)(INTFLOAT (*out)[2], INTFLOAT (*in)[2],
+    void (*hybrid_analysis)(INTFLOAT (*restrict out)[2], INTFLOAT (*in)[2],
                             const INTFLOAT (*filter)[8][2],
                             ptrdiff_t stride, int n);
-    void (*hybrid_analysis_ileave)(INTFLOAT (*out)[32][2], INTFLOAT L[2][38][64],
+    void (*hybrid_analysis_ileave)(INTFLOAT (*restrict out)[32][2], INTFLOAT L[2][38][64],
                                    int i, int len);
-    void (*hybrid_synthesis_deint)(INTFLOAT out[2][38][64], INTFLOAT (*in)[32][2],
+    void (*hybrid_synthesis_deint)(INTFLOAT out[2][38][64], INTFLOAT (*restrict in)[32][2],
                                    int i, int len);
     void (*decorrelate)(INTFLOAT (*out)[2], INTFLOAT (*delay)[2],
                         INTFLOAT (*ap_delay)[PS_QMF_TIME_SLOTS+PS_MAX_AP_DELAY][2],

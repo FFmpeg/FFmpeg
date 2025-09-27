@@ -26,14 +26,14 @@
 #include "libavutil/attributes.h"
 #include "libavcodec/aacpsdsp.h"
 
-void ff_ps_add_squares_sse  (float *dst, const float (*src)[2], int n);
-void ff_ps_add_squares_sse3 (float *dst, const float (*src)[2], int n);
-void ff_ps_mul_pair_single_sse (float (*dst)[2], float (*src0)[2],
+void ff_ps_add_squares_sse  (float *restrict dst, const float (*src)[2], int n);
+void ff_ps_add_squares_sse3 (float *restrict dst, const float (*src)[2], int n);
+void ff_ps_mul_pair_single_sse (float (*restrict dst)[2], float (*src0)[2],
                                 float *src1, int n);
-void ff_ps_hybrid_analysis_sse (float (*out)[2], float (*in)[2],
+void ff_ps_hybrid_analysis_sse (float (*restrict out)[2], float (*in)[2],
                                 const float (*filter)[8][2],
                                 ptrdiff_t stride, int n);
-void ff_ps_hybrid_analysis_fma3(float (*out)[2], float (*in)[2],
+void ff_ps_hybrid_analysis_fma3(float (*restrict out)[2], float (*in)[2],
                                 const float (*filter)[8][2],
                                 ptrdiff_t stride, int n);
 void ff_ps_stereo_interpolate_sse3(float (*l)[2], float (*r)[2],
@@ -42,11 +42,11 @@ void ff_ps_stereo_interpolate_sse3(float (*l)[2], float (*r)[2],
 void ff_ps_stereo_interpolate_ipdopd_sse3(float (*l)[2], float (*r)[2],
                                           float h[2][4], float h_step[2][4],
                                           int len);
-void ff_ps_hybrid_synthesis_deint_sse(float out[2][38][64], float (*in)[32][2],
+void ff_ps_hybrid_synthesis_deint_sse(float out[2][38][64], float (*restrict in)[32][2],
                                       int i, int len);
-void ff_ps_hybrid_synthesis_deint_sse4(float out[2][38][64], float (*in)[32][2],
+void ff_ps_hybrid_synthesis_deint_sse4(float out[2][38][64], float (*restrict in)[32][2],
                                        int i, int len);
-void ff_ps_hybrid_analysis_ileave_sse(float (*out)[32][2], float L[2][38][64],
+void ff_ps_hybrid_analysis_ileave_sse(float (*restrict out)[32][2], float L[2][38][64],
                                       int i, int len);
 
 av_cold void ff_psdsp_init_x86(PSDSPContext *s)
