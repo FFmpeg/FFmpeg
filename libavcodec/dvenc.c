@@ -56,7 +56,7 @@ typedef struct DVEncContext {
     AVCodecContext    *avctx;
     uint8_t           *buf;
 
-    void (*get_pixels)(int16_t *block, const uint8_t *pixels, ptrdiff_t linesize);
+    void (*get_pixels)(int16_t *restrict block, const uint8_t *pixels, ptrdiff_t linesize);
     void (*fdct[2])(int16_t *block);
 
     me_cmp_func  ildct_cmp;

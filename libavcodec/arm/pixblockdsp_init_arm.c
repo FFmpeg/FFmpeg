@@ -23,18 +23,18 @@
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/pixblockdsp.h"
 
-void ff_get_pixels_armv6(int16_t *block, const uint8_t *pixels,
+void ff_get_pixels_armv6(int16_t *restrict block, const uint8_t *pixels,
                          ptrdiff_t stride);
-void ff_diff_pixels_armv6(int16_t *block, const uint8_t *s1,
+void ff_diff_pixels_armv6(int16_t *restrict block, const uint8_t *s1,
                           const uint8_t *s2, ptrdiff_t stride);
 
-void ff_get_pixels_neon(int16_t *block, const uint8_t *pixels,
+void ff_get_pixels_neon(int16_t *restrict block, const uint8_t *pixels,
                         ptrdiff_t stride);
-void ff_get_pixels_unaligned_neon(int16_t *block, const uint8_t *pixels,
+void ff_get_pixels_unaligned_neon(int16_t *restrict block, const uint8_t *pixels,
                                   ptrdiff_t stride);
-void ff_diff_pixels_neon(int16_t *block, const uint8_t *s1,
+void ff_diff_pixels_neon(int16_t *restrict block, const uint8_t *s1,
                          const uint8_t *s2, ptrdiff_t stride);
-void ff_diff_pixels_unaligned_neon(int16_t *block, const uint8_t *s1,
+void ff_diff_pixels_unaligned_neon(int16_t *restrict block, const uint8_t *s1,
                                    const uint8_t *s2, ptrdiff_t stride);
 
 av_cold void ff_pixblockdsp_init_arm(PixblockDSPContext *c,
