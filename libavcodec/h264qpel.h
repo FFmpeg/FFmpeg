@@ -26,7 +26,7 @@
 
 typedef struct H264QpelContext {
     qpel_mc_func put_h264_qpel_pixels_tab[4][16];
-    qpel_mc_func avg_h264_qpel_pixels_tab[4][16];
+    qpel_mc_func avg_h264_qpel_pixels_tab[3][16];
 } H264QpelContext;
 
 void ff_h264qpel_init(H264QpelContext *c, int bit_depth);
