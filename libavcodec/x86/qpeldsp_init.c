@@ -33,52 +33,52 @@
 
 void ff_put_pixels8_l2_mmxext(uint8_t *dst,
                               const uint8_t *src1, const uint8_t *src2,
-                              int dstStride, int src1Stride, int h);
+                              ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
 void ff_put_no_rnd_pixels8_l2_mmxext(uint8_t *dst,
                                      const uint8_t *src1, const uint8_t *src2,
-                                     int dstStride, int src1Stride, int h);
+                                     ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
 void ff_avg_pixels8_l2_mmxext(uint8_t *dst,
                               const uint8_t *src1, const uint8_t *src2,
-                              int dstStride, int src1Stride, int h);
+                              ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
 void ff_put_pixels16_l2_mmxext(uint8_t *dst,
                                const uint8_t *src1, const uint8_t *src2,
-                               int dstStride, int src1Stride, int h);
+                               ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
 void ff_avg_pixels16_l2_mmxext(uint8_t *dst,
                                const uint8_t *src1, const uint8_t *src2,
-                               int dstStride, int src1Stride, int h);
+                               ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
 void ff_put_no_rnd_pixels16_l2_mmxext(uint8_t *dst,
                                       const uint8_t *src1, const uint8_t *src2,
-                                      int dstStride, int src1Stride, int h);
+                                      ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
 void ff_put_mpeg4_qpel16_h_lowpass_mmxext(uint8_t *dst, const uint8_t *src,
-                                          int dstStride, int srcStride, int h);
+                                          ptrdiff_t dstStride, ptrdiff_t srcStride, int h);
 void ff_avg_mpeg4_qpel16_h_lowpass_mmxext(uint8_t *dst, const uint8_t *src,
-                                          int dstStride, int srcStride, int h);
+                                          ptrdiff_t dstStride, ptrdiff_t srcStride, int h);
 void ff_put_no_rnd_mpeg4_qpel16_h_lowpass_mmxext(uint8_t *dst,
                                                  const uint8_t *src,
-                                                 int dstStride, int srcStride,
+                                                 ptrdiff_t dstStride, ptrdiff_t srcStride,
                                                  int h);
 void ff_put_mpeg4_qpel8_h_lowpass_mmxext(uint8_t *dst, const uint8_t *src,
-                                         int dstStride, int srcStride, int h);
+                                         ptrdiff_t dstStride, ptrdiff_t srcStride, int h);
 void ff_avg_mpeg4_qpel8_h_lowpass_mmxext(uint8_t *dst, const uint8_t *src,
-                                         int dstStride, int srcStride, int h);
+                                         ptrdiff_t dstStride, ptrdiff_t srcStride, int h);
 void ff_put_no_rnd_mpeg4_qpel8_h_lowpass_mmxext(uint8_t *dst,
                                                 const uint8_t *src,
-                                                int dstStride, int srcStride,
+                                                ptrdiff_t dstStride, ptrdiff_t srcStride,
                                                 int h);
 void ff_put_mpeg4_qpel16_v_lowpass_mmxext(uint8_t *dst, const uint8_t *src,
-                                          int dstStride, int srcStride);
+                                          ptrdiff_t dstStride, ptrdiff_t srcStride);
 void ff_avg_mpeg4_qpel16_v_lowpass_mmxext(uint8_t *dst, const uint8_t *src,
-                                          int dstStride, int srcStride);
+                                          ptrdiff_t dstStride, ptrdiff_t srcStride);
 void ff_put_no_rnd_mpeg4_qpel16_v_lowpass_mmxext(uint8_t *dst,
                                                  const uint8_t *src,
-                                                 int dstStride, int srcStride);
+                                                 ptrdiff_t dstStride, ptrdiff_t srcStride);
 void ff_put_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, const uint8_t *src,
-                                         int dstStride, int srcStride);
+                                         ptrdiff_t dstStride, ptrdiff_t srcStride);
 void ff_avg_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, const uint8_t *src,
-                                         int dstStride, int srcStride);
+                                         ptrdiff_t dstStride, ptrdiff_t srcStride);
 void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst,
                                                 const uint8_t *src,
-                                                int dstStride, int srcStride);
+                                                ptrdiff_t dstStride, ptrdiff_t srcStride);
 
 #if HAVE_X86ASM
 

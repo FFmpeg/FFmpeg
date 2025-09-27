@@ -31,17 +31,17 @@
 
 #if HAVE_X86ASM
 void ff_put_pixels4_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-                              int dstStride, int src1Stride, int h);
+                              ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
 void ff_avg_pixels4_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-                              int dstStride, int src1Stride, int h);
+                              ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
 void ff_put_pixels8_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-                              int dstStride, int src1Stride, int h);
+                              ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
 void ff_avg_pixels8_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-                              int dstStride, int src1Stride, int h);
+                              ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
 void ff_put_pixels16_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-                               int dstStride, int src1Stride, int h);
+                               ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
 void ff_avg_pixels16_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-                               int dstStride, int src1Stride, int h);
+                               ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
 #define ff_put_pixels8_l2_sse2  ff_put_pixels8_l2_mmxext
 #define ff_avg_pixels8_l2_sse2  ff_avg_pixels8_l2_mmxext
 #define ff_put_pixels16_l2_sse2 ff_put_pixels16_l2_mmxext

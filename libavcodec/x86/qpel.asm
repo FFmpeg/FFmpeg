@@ -45,12 +45,10 @@ SECTION .text
 %endmacro
 
 ; void ff_put/avg_pixels4_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
-;                                   int dstStride, int src1Stride, int h)
+;                                   ptrdiff_t dstStride, ptrdiff_t src1Stride, int h)
 %macro PIXELS4_L2 1
 %define OP op_%1h
 cglobal %1_pixels4_l2, 6,6
-    movsxdifnidn r3, r3d
-    movsxdifnidn r4, r4d
     mova         m0, [r1]
     mova         m1, [r1+r4]
     lea          r1, [r1+2*r4]
@@ -73,12 +71,10 @@ PIXELS4_L2 put
 PIXELS4_L2 avg
 
 ; void ff_put/avg_pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
-;                                   int dstStride, int src1Stride, int h)
+;                                   ptrdiff_t dstStride, ptrdiff_t src1Stride, int h)
 %macro PIXELS8_L2 1
 %define OP op_%1
 cglobal %1_pixels8_l2, 6,6
-    movsxdifnidn r3, r3d
-    movsxdifnidn r4, r4d
 %ifidn %1, put
     test        r5d, 1
     je        .loop
@@ -119,12 +115,10 @@ PIXELS8_L2 put
 PIXELS8_L2 avg
 
 ; void ff_put/avg_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
-;                                    int dstStride, int src1Stride, int h)
+;                                    ptrdiff_t dstStride, ptrdiff_t src1Stride, int h)
 %macro PIXELS16_L2 1
 %define OP op_%1
 cglobal %1_pixels16_l2, 6,6
-    movsxdifnidn r3, r3d
-    movsxdifnidn r4, r4d
 %ifidn %1, put
     test        r5d, 1
     je        .loop
