@@ -256,7 +256,7 @@ static inline void put_bits_no_assert(PutBitContext *s, int n, BitBuf value)
  */
 static inline void put_bits(PutBitContext *s, int n, BitBuf value)
 {
-    av_assert2(n <= 31 && value < (1UL << n));
+    av_assert2(n <= 31 && value < (BitBuf)(1U << n));
     put_bits_no_assert(s, n, value);
 }
 
@@ -265,7 +265,7 @@ static inline void put_bits_le(PutBitContext *s, int n, BitBuf value)
     BitBuf bit_buf;
     int bit_left;
 
-    av_assert2(n <= 31 && value < (1UL << n));
+    av_assert2(n <= 31 && value < (BitBuf)(1U << n));
 
     bit_buf  = s->bit_buf;
     bit_left = s->bit_left;
