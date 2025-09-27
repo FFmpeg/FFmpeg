@@ -82,6 +82,7 @@ libavcodec/bsf/smpte436m_to_eia608.* @programmerjake
 libavcodec/aarch64/.* @lynne @mstorsjo
 libavcodec/arm/.* @mstorsjo
 libavcodec/ppc/.* @sean_mcg
+libavcodec/riscv/.* @Courmisch
 libavcodec/wasm/hevc/.* @quink
 libavcodec/x86/.* @lynne
 libavcodec/x86/vp8.* @rbultje
@@ -110,6 +111,7 @@ libavfilter/vf_yadif.* @michaelni
 libavfilter/vsrc_mandelbrot.* @michaelni
 
 libavfilter/aarch64/.* @mstorsjo
+libavfilter/riscv/.* @Courmisch
 libavfilter/x86/colorspace.* @rbultje
 libavfilter/x86/scene_sad.* @haasn
 
@@ -180,6 +182,7 @@ libavutil/tx.* @lynne
 libavutil/aarch64/.* @lynne @mstorsjo
 libavutil/arm/.* @mstorsjo
 libavutil/ppc/.* @sean_mcg
+libavutil/riscv/.* @Courmisch
 libavutil/x86/.* @lynne
 
 # swresample
@@ -193,6 +196,7 @@ libswresample/.* @michaelni
 libswscale/aarch64/.* @mstorsjo
 libswscale/arm/.* @mstorsjo
 libswscale/ppc/.* @sean_mcg
+libswscale/riscv/.* @Courmisch
 libswscale/.* @haasn
 
 # tools
@@ -210,4 +214,5 @@ doc/.* @GyanD
 
 # tests
 # =====
+tests/checkasm/riscv/.* @Courmisch
 tests/ref/fate/sub-mcc.* @programmerjake
