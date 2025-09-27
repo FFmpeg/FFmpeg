@@ -53,6 +53,32 @@ SECTION .text
     mova   %2, %1
 %endmacro
 
+; void ff_put/avg_pixels4_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
+;                                   ptrdiff_t stride)
+%macro PIXELS4_L2 1
+%define OP op_%1h
+cglobal %1_pixels4_l2, 4,4
+    mova         m0, [r1]
+    mova         m1, [r1+r3]
+    lea          r1, [r1+2*r3]
+    pavgb        m0, [r2]
+    pavgb        m1, [r2+4]
+    OP           m0, [r0], m3
+    OP           m1, [r0+r3], m3
+    lea          r0, [r0+2*r3]
+    mova         m0, [r1]
+    mova         m1, [r1+r3]
+    pavgb        m0, [r2+8]
+    pavgb        m1, [r2+12]
+    OP           m0, [r0], m3
+    OP           m1, [r0+r3], m3
+    RET
+%endmacro
+
+INIT_MMX mmxext
+PIXELS4_L2 put
+PIXELS4_L2 avg
+
 %macro QPEL4_H_LOWPASS_OP 1
 cglobal %1_h264_qpel4_h_lowpass, 4,5 ; dst, src, dstStride, srcStride
     movsxdifnidn  r2, r2d
