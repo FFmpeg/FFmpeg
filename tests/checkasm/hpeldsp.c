@@ -86,9 +86,15 @@ void checkasm_check_hpeldsp(void)
                     size_t dst_offset = (rnd() % (MAX_BLOCK_SIZE / blocksize)) * blocksize;
                     size_t src_offset = rnd() % MAX_BLOCK_SIZE;
                     ptrdiff_t stride  = (rnd() % (MAX_STRIDE / blocksize) + 1) * blocksize;
-                    int h = (rnd() % (MAX_HEIGHT / h_mult) + 1) * h_mult;
                     const uint8_t *src0 = srcbuf0 + src_offset, *src1 = srcbuf1 + src_offset;
                     uint8_t *dst0 = dstbuf0 + dst_offset, *dst1 = dstbuf1 + dst_offset;
+
+                    // Always use the same height for each test, so that comparisons of benchmarks
+                    // from different instruction sets are meaningful.
+                    static int saved_heights[FF_ARRAY_ELEMS(tests)][4][4];
+                    int h = saved_heights[i][j][dxy];
+                    if (!h)
+                        saved_heights[i][j][dxy] = h = (rnd() % (MAX_HEIGHT / h_mult) + 1) * h_mult;
 
                     if (rnd() & 1) {
                         // Flip stride.
