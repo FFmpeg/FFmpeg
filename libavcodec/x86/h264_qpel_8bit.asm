@@ -25,14 +25,30 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA 32
-
 cextern pw_16
 cextern pw_5
 cextern pb_0
 
 SECTION .text
 
+; void ff_avg_pixels4_mmxext(uint8_t *block, const uint8_t *pixels,
+;                            ptrdiff_t line_size)
+INIT_MMX mmxext
+cglobal avg_pixels4, 3,4
+    lea          r3, [r2*3]
+    movh         m0, [r1]
+    movh         m1, [r1+r2]
+    movh         m2, [r1+r2*2]
+    movh         m3, [r1+r3]
+    pavgb        m0, [r0]
+    pavgb        m1, [r0+r2]
+    pavgb        m2, [r0+r2*2]
+    pavgb        m3, [r0+r3]
+    movh       [r0], m0
+    movh    [r0+r2], m1
+    movh  [r0+r2*2], m2
+    movh    [r0+r3], m3
+    RET
 
 %macro op_avgh 3
     movh   %3, %2

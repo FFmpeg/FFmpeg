@@ -63,7 +63,6 @@ INIT_MMX mmx
 OP_PIXELS put, 8
 
 INIT_MMX mmxext
-OP_PIXELS avg, 4
 OP_PIXELS avg, 8
 
 INIT_XMM sse2
