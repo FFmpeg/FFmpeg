@@ -143,15 +143,17 @@ static void libdav1d_init_params(AVCodecContext *c, const Dav1dSequenceHeader *s
         c->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
         break;
     }
-    c->colorspace = (enum AVColorSpace) seq->mtrx;
-    c->color_primaries = (enum AVColorPrimaries) seq->pri;
-    c->color_trc = (enum AVColorTransferCharacteristic) seq->trc;
-    c->color_range = seq->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+    if (seq->color_description_present) {
+        c->colorspace      = (enum AVColorSpace) seq->mtrx;
+        c->color_primaries = (enum AVColorPrimaries) seq->pri;
+        c->color_trc       = (enum AVColorTransferCharacteristic) seq->trc;
+        c->color_range     = seq->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+    }
 
     if (seq->layout == DAV1D_PIXEL_LAYOUT_I444 &&
-        seq->mtrx == DAV1D_MC_IDENTITY &&
-        seq->pri  == DAV1D_COLOR_PRI_BT709 &&
-        seq->trc  == DAV1D_TRC_SRGB)
+        c->colorspace      == AVCOL_SPC_RGB &&
+        c->color_primaries == AVCOL_PRI_BT709 &&
+        c->color_trc       == AVCOL_TRC_IEC61966_2_1)
         c->pix_fmt = pix_fmt_rgb[seq->hbd];
     else
         c->pix_fmt = pix_fmt[seq->layout][seq->hbd];
