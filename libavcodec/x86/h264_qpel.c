@@ -66,7 +66,8 @@ void ff_ ## OPNAME ## _h264_qpel4_hv_lowpass_v_mmxext(const uint8_t *src, int16_
 void ff_ ## OPNAME ## _h264_qpel4_hv_lowpass_h_mmxext(int16_t *tmp, uint8_t *dst, int dstStride);\
 void ff_ ## OPNAME ## _h264_qpel8or16_hv1_lowpass_op_sse2(const uint8_t *src, int16_t *tmp, int srcStride, int size);\
 void ff_ ## OPNAME ## _h264_qpel8or16_hv2_lowpass_op_mmxext(uint8_t *dst, int16_t *tmp, int dstStride, int h);\
-void ff_ ## OPNAME ## _h264_qpel8or16_hv2_lowpass_ssse3(uint8_t *dst, int16_t *tmp, int dstStride, int size);\
+void ff_ ## OPNAME ## _h264_qpel8_hv2_lowpass_ssse3(uint8_t *dst, int16_t *tmp, int dstStride);\
+void ff_ ## OPNAME ## _h264_qpel16_hv2_lowpass_ssse3(uint8_t *dst, int16_t *tmp, int dstStride);\
 void ff_ ## OPNAME ## _pixels4_l2_shift5_mmxext(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride);\
 void ff_ ## OPNAME ## _pixels8_l2_shift5_mmxext(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride);\
 void ff_ ## OPNAME ## _pixels16_l2_shift5_sse2(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride);\
@@ -171,6 +172,18 @@ static av_always_inline void ff_ ## OPNAME ## h264_qpel8_hv_lowpass_ ## MMX(uint
 static av_always_inline void ff_ ## OPNAME ## h264_qpel16_hv_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp, const uint8_t *src, int dstStride, int srcStride){\
     ff_ ## OPNAME ## h264_qpel8or16_hv_lowpass_ ## MMX(dst, tmp, src, dstStride, srcStride, 16);\
 }\
+
+#define SSSE3_HV2_LOWPASS_WRAPPER(OPNAME) \
+static av_always_inline void \
+ff_ ## OPNAME ## _h264_qpel8or16_hv2_lowpass_ssse3(uint8_t *dst, int16_t *tmp, int dstStride, int size) \
+{\
+    if (size == 8)\
+        ff_ ## OPNAME ## _h264_qpel8_hv2_lowpass_ssse3(dst, tmp, dstStride);\
+    else\
+        ff_ ## OPNAME ## _h264_qpel16_hv2_lowpass_ssse3(dst, tmp, dstStride);\
+}
+SSSE3_HV2_LOWPASS_WRAPPER(avg)
+SSSE3_HV2_LOWPASS_WRAPPER(put)
 
 #define ff_put_h264_qpel8_h_lowpass_l2_sse2  ff_put_h264_qpel8_h_lowpass_l2_mmxext
 #define ff_avg_h264_qpel8_h_lowpass_l2_sse2  ff_avg_h264_qpel8_h_lowpass_l2_mmxext

@@ -608,11 +608,14 @@ QPEL8OR16_HV2_LOWPASS_OP put
 QPEL8OR16_HV2_LOWPASS_OP avg
 
 %macro QPEL8OR16_HV2_LOWPASS_OP_XMM 1
-cglobal %1_h264_qpel8or16_hv2_lowpass, 4,4,8 ; dst, tmp, dstStride, size
+%ifidn %1, avg
+cglobal %1_h264_qpel8_hv2_lowpass, 3,4,7 ; dst, tmp, dstStride
+%else
+cglobal %1_h264_qpel8_hv2_lowpass, 3,4,6 ; dst, tmp, dstStride
+%endif
     movsxdifnidn  r2, r2d
-    cmp          r3d, 16
-    je         .op16
-.loop8:
+    mov          r3d, 8
+.loop:
     mova          m1, [r1+16]
     mova          m0, [r1]
     mova          m2, m1
@@ -635,13 +638,17 @@ cglobal %1_h264_qpel8or16_hv2_lowpass, 4,4,8 ; dst, tmp, dstStride, size
     paddw         m0, m2
     psraw         m0, 6
     packuswb      m0, m0
-    op_%1h        m0, [r0], m7
+    op_%1h        m0, [r0], m6
     add           r1, 48
     add           r0, r2
     dec          r3d
-    jne       .loop8
-    jmp        .done
-.op16:
+    jne        .loop
+    RET
+
+cglobal %1_h264_qpel16_hv2_lowpass, 3,4,8 ; dst, tmp, dstStride
+    movsxdifnidn  r2, r2d
+    mov          r3d, 16
+.loop:
     mova          m4, [r1+32]
     mova          m5, [r1+16]
     mova          m7, [r1]
@@ -688,8 +695,7 @@ cglobal %1_h264_qpel8or16_hv2_lowpass, 4,4,8 ; dst, tmp, dstStride, size
     add           r1, 48
     add           r0, r2
     dec          r3d
-    jne        .op16
-.done:
+    jne        .loop
     RET
 %endmacro
 
