@@ -1367,6 +1367,7 @@ static int init_encode_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
             .buf_content = "uint64_t slice_results[2048];",
         },
         { /* place holder for desc_set[3] */
+            .name       = "placeholder",
         },
     };
     if (fv->is_rgb) {
