@@ -379,17 +379,11 @@ QPEL4_V_LOWPASS_OP avg
 
 
 %macro QPEL8OR16_V_LOWPASS_OP 1
-%if cpuflag(sse2)
 cglobal %1_h264_qpel8or16_v_lowpass, 5,5,8 ; dst, src, dstStride, srcStride, h
     movsxdifnidn  r2, r2d
     movsxdifnidn  r3, r3d
     sub           r1, r3
     sub           r1, r3
-%else
-cglobal %1_h264_qpel8or16_v_lowpass_op, 5,5,8 ; dst, src, dstStride, srcStride, h
-    movsxdifnidn  r2, r2d
-    movsxdifnidn  r3, r3d
-%endif
     pxor          m7, m7
     movh          m0, [r1]
     movh          m1, [r1+r3]
@@ -503,8 +497,8 @@ INIT_MMX mmxext
 QPEL4_HV1_LOWPASS_OP put
 QPEL4_HV1_LOWPASS_OP avg
 
-%macro QPEL8OR16_HV1_LOWPASS_OP 1
-cglobal %1_h264_qpel8or16_hv1_lowpass_op, 4,4,8 ; src, tmp, srcStride, size
+INIT_XMM sse2
+cglobal put_h264_qpel8or16_hv1_lowpass_op, 4,4,8 ; src, tmp, srcStride, size
     movsxdifnidn  r2, r2d
     pxor          m7, m7
     movh          m0, [r0]
@@ -540,11 +534,6 @@ cglobal %1_h264_qpel8or16_hv1_lowpass_op, 4,4,8 ; src, tmp, srcStride, size
     FILT_HV    15*48
 .end:
     RET
-%endmacro
-
-INIT_XMM sse2
-QPEL8OR16_HV1_LOWPASS_OP put
-
 
 
 %macro QPEL8OR16_HV2_LOWPASS_OP 1
