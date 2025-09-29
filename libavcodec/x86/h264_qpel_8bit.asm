@@ -565,8 +565,7 @@ QPEL8OR16_HV1_LOWPASS_OP put
 
 
 %macro QPEL8OR16_HV2_LOWPASS_OP 1
-; unused is to match ssse3 and mmxext args
-cglobal %1_h264_qpel8or16_hv2_lowpass_op, 5,5 ; dst, tmp, dstStride, unused, h
+cglobal %1_h264_qpel8or16_hv2_lowpass_op, 4,4 ; dst, tmp, dstStride, h
     movsxdifnidn  r2, r2d
 .loop:
     mova          m0, [r1]
@@ -599,7 +598,7 @@ cglobal %1_h264_qpel8or16_hv2_lowpass_op, 5,5 ; dst, tmp, dstStride, unused, h
     op_%1         m0, [r0], m7
     add           r1, 48
     add           r0, r2
-    dec          r4d
+    dec          r3d
     jne        .loop
     RET
 %endmacro
@@ -609,10 +608,9 @@ QPEL8OR16_HV2_LOWPASS_OP put
 QPEL8OR16_HV2_LOWPASS_OP avg
 
 %macro QPEL8OR16_HV2_LOWPASS_OP_XMM 1
-cglobal %1_h264_qpel8or16_hv2_lowpass, 5,5,8 ; dst, tmp, dstStride, tmpStride, size
+cglobal %1_h264_qpel8or16_hv2_lowpass, 4,4,8 ; dst, tmp, dstStride, size
     movsxdifnidn  r2, r2d
-    movsxdifnidn  r3, r3d
-    cmp          r4d, 16
+    cmp          r3d, 16
     je         .op16
 .loop8:
     mova          m1, [r1+16]
@@ -640,7 +638,7 @@ cglobal %1_h264_qpel8or16_hv2_lowpass, 5,5,8 ; dst, tmp, dstStride, tmpStride, s
     op_%1h        m0, [r0], m7
     add           r1, 48
     add           r0, r2
-    dec          r4d
+    dec          r3d
     jne       .loop8
     jmp        .done
 .op16:
@@ -689,7 +687,7 @@ cglobal %1_h264_qpel8or16_hv2_lowpass, 5,5,8 ; dst, tmp, dstStride, tmpStride, s
     op_%1         m3, [r0], m7
     add           r1, 48
     add           r0, r2
-    dec          r4d
+    dec          r3d
     jne        .op16
 .done:
     RET
