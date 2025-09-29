@@ -50,8 +50,6 @@ typedef struct Libdav1dContext {
     int pool_size;
 
     Dav1dData data;
-    int tile_threads;
-    int frame_threads;
     int max_frame_delay;
     int apply_grain;
     int operating_point;
@@ -215,11 +213,7 @@ static av_cold int libdav1d_init(AVCodecContext *c)
 {
     Libdav1dContext *dav1d = c->priv_data;
     Dav1dSettings s;
-#if FF_DAV1D_VERSION_AT_LEAST(6,0)
     int threads = c->thread_count;
-#else
-    int threads = (c->thread_count ? c->thread_count : av_cpu_count()) * 3 / 2;
-#endif
     const AVPacketSideData *sd;
     int res;
 
@@ -240,32 +234,14 @@ static av_cold int libdav1d_init(AVCodecContext *c)
     s.all_layers = dav1d->all_layers;
     if (dav1d->operating_point >= 0)
         s.operating_point = dav1d->operating_point;
-#if FF_DAV1D_VERSION_AT_LEAST(6,2)
     s.strict_std_compliance = c->strict_std_compliance > 0;
-#endif
 
-#if FF_DAV1D_VERSION_AT_LEAST(6,0)
-    if (dav1d->frame_threads || dav1d->tile_threads)
-        s.n_threads = FFMAX(dav1d->frame_threads, dav1d->tile_threads);
-    else
-        s.n_threads = FFMIN(threads, DAV1D_MAX_THREADS);
+    s.n_threads = FFMIN(threads, DAV1D_MAX_THREADS);
     if (dav1d->max_frame_delay > 0 && (c->flags & AV_CODEC_FLAG_LOW_DELAY))
         av_log(c, AV_LOG_WARNING, "Low delay mode requested, forcing max_frame_delay 1\n");
     s.max_frame_delay = (c->flags & AV_CODEC_FLAG_LOW_DELAY) ? 1 : dav1d->max_frame_delay;
     av_log(c, AV_LOG_DEBUG, "Using %d threads, %d max_frame_delay\n",
            s.n_threads, s.max_frame_delay);
-#else
-    s.n_tile_threads = dav1d->tile_threads
-                     ? dav1d->tile_threads
-                     : FFMIN(floor(sqrt(threads)), DAV1D_MAX_TILE_THREADS);
-    s.n_frame_threads = dav1d->frame_threads
-                      ? dav1d->frame_threads
-                      : FFMIN(ceil(threads / s.n_tile_threads), DAV1D_MAX_FRAME_THREADS);
-    if (dav1d->max_frame_delay > 0)
-        s.n_frame_threads = FFMIN(s.n_frame_threads, dav1d->max_frame_delay);
-    av_log(c, AV_LOG_DEBUG, "Using %d frame threads, %d tile threads\n",
-           s.n_frame_threads, s.n_tile_threads);
-#endif
 
 #if FF_DAV1D_VERSION_AT_LEAST(6,8)
     if (c->skip_frame >= AVDISCARD_NONKEY)
@@ -465,9 +441,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     Libdav1dContext *dav1d = c->priv_data;
     Dav1dPicture pic = { 0 }, *p = &pic;
     const AVPacket *pkt;
-#if FF_DAV1D_VERSION_AT_LEAST(5,1)
     enum Dav1dEventFlags event_flags = 0;
-#endif
     int res;
 
     do {
@@ -493,12 +467,10 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     frame->linesize[1] = p->stride[1];
     frame->linesize[2] = p->stride[1];
 
-#if FF_DAV1D_VERSION_AT_LEAST(5,1)
     dav1d_get_event_flags(dav1d->c, &event_flags);
-    if (c->pix_fmt == AV_PIX_FMT_NONE ||
-        event_flags & DAV1D_EVENT_FLAG_NEW_SEQUENCE)
-#endif
-    libdav1d_init_params(c, p->seq_hdr);
+    if (c->pix_fmt == AV_PIX_FMT_NONE || event_flags & DAV1D_EVENT_FLAG_NEW_SEQUENCE)
+        libdav1d_init_params(c, p->seq_hdr);
+
     res = ff_decode_frame_props(c, frame);
     if (res < 0)
         goto fail;
@@ -677,8 +649,6 @@ static av_cold int libdav1d_close(AVCodecContext *c)
 #define OFFSET(x) offsetof(Libdav1dContext, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption libdav1d_options[] = {
-    { "tilethreads", "Tile threads", OFFSET(tile_threads), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, DAV1D_MAX_TILE_THREADS, VD | AV_OPT_FLAG_DEPRECATED },
-    { "framethreads", "Frame threads", OFFSET(frame_threads), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, DAV1D_MAX_FRAME_THREADS, VD | AV_OPT_FLAG_DEPRECATED },
     { "max_frame_delay", "Max frame delay", OFFSET(max_frame_delay), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, DAV1D_MAX_FRAME_DELAY, VD },
     { "filmgrain", "Apply Film Grain", OFFSET(apply_grain), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, VD | AV_OPT_FLAG_DEPRECATED },
     { "oppoint",  "Select an operating point of the scalable bitstream", OFFSET(operating_point), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 31, VD },
