@@ -227,8 +227,6 @@ MC00 avg
 %define OP_MOV mova
 INIT_MMX mmxext
 %1 put, 4
-INIT_XMM sse2, cache64
-%1 put, 8
 INIT_XMM ssse3, cache64
 %1 put, 8
 INIT_XMM sse2
@@ -237,8 +235,6 @@ INIT_XMM sse2
 %define OP_MOV AVG_MOV
 INIT_MMX mmxext
 %1 avg, 4
-INIT_XMM sse2, cache64
-%1 avg, 8
 INIT_XMM ssse3, cache64
 %1 avg, 8
 INIT_XMM sse2

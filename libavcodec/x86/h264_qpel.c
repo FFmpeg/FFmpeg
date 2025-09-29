@@ -384,13 +384,10 @@ LUMA_MC_4(10, mc33, mmxext)
 
 LUMA_MC_816(10, mc00, sse2)
 LUMA_MC_816(10, mc10, sse2)
-LUMA_MC_816(10, mc10, sse2_cache64)
 LUMA_MC_816(10, mc10, ssse3_cache64)
 LUMA_MC_816(10, mc20, sse2)
-LUMA_MC_816(10, mc20, sse2_cache64)
 LUMA_MC_816(10, mc20, ssse3_cache64)
 LUMA_MC_816(10, mc30, sse2)
-LUMA_MC_816(10, mc30, sse2_cache64)
 LUMA_MC_816(10, mc30, ssse3_cache64)
 LUMA_MC_816(10, mc01, sse2)
 LUMA_MC_816(10, mc11, sse2)
@@ -488,9 +485,9 @@ av_cold void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
             SET_QPEL_FUNCS(put_h264_qpel, 1,  8, 10_sse2, ff_);
             SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, 10_sse2, ff_);
             SET_QPEL_FUNCS(avg_h264_qpel, 1,  8, 10_sse2, ff_);
-            H264_QPEL_FUNCS_10(1, 0, sse2_cache64);
-            H264_QPEL_FUNCS_10(2, 0, sse2_cache64);
-            H264_QPEL_FUNCS_10(3, 0, sse2_cache64);
+            H264_QPEL_FUNCS_10(1, 0, sse2);
+            H264_QPEL_FUNCS_10(2, 0, sse2);
+            H264_QPEL_FUNCS_10(3, 0, sse2);
         }
     }
 
@@ -514,18 +511,6 @@ av_cold void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
             H264_QPEL_FUNCS_10(1, 0, ssse3_cache64);
             H264_QPEL_FUNCS_10(2, 0, ssse3_cache64);
             H264_QPEL_FUNCS_10(3, 0, ssse3_cache64);
-        }
-    }
-
-    if (EXTERNAL_AVX(cpu_flags)) {
-        /* AVX implies 64 byte cache lines without the need to avoid unaligned
-         * memory accesses that cross the boundary between two cache lines.
-         * TODO: Port X264_CPU_CACHELINE_32/64 detection from x264 to avoid
-         * having to treat SSE2 functions with such properties as AVX. */
-        if (bit_depth == 10) {
-            H264_QPEL_FUNCS_10(1, 0, sse2);
-            H264_QPEL_FUNCS_10(2, 0, sse2);
-            H264_QPEL_FUNCS_10(3, 0, sse2);
         }
     }
 #endif
