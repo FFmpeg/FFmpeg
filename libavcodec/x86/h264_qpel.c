@@ -67,9 +67,9 @@ void ff_ ## OPNAME ## _h264_qpel4_hv_lowpass_h_mmxext(int16_t *tmp, uint8_t *dst
 void ff_ ## OPNAME ## _h264_qpel8or16_hv1_lowpass_op_sse2(const uint8_t *src, int16_t *tmp, int srcStride, int size);\
 void ff_ ## OPNAME ## _h264_qpel8or16_hv2_lowpass_op_mmxext(uint8_t *dst, int16_t *tmp, int dstStride, int unused, int h);\
 void ff_ ## OPNAME ## _h264_qpel8or16_hv2_lowpass_ssse3(uint8_t *dst, int16_t *tmp, int dstStride, int tmpStride, int size);\
-void ff_ ## OPNAME ## _pixels4_l2_shift5_mmxext(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride, int src8Stride, int h);\
-void ff_ ## OPNAME ## _pixels8_l2_shift5_mmxext(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride, int src8Stride, int h);\
-void ff_ ## OPNAME ## _pixels16_l2_shift5_sse2(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride, int src8Stride, int h);\
+void ff_ ## OPNAME ## _pixels4_l2_shift5_mmxext(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride);\
+void ff_ ## OPNAME ## _pixels8_l2_shift5_mmxext(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride);\
+void ff_ ## OPNAME ## _pixels16_l2_shift5_sse2(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride);\
 
 DEF_QPEL(avg)
 DEF_QPEL(put)
@@ -309,7 +309,7 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc12_ ## MMX(uint8_t *dst, const uin
     int16_t * const halfV= (int16_t*)(temp + SIZE*SIZE);\
     av_assert2(((uintptr_t)temp & 7) == 0);\
     ff_put_h264_qpel ## SIZE ## _hv_lowpass_ ## MMX(halfHV, halfV, src, SIZE, SIZE, stride);\
-    ff_ ## OPNAME ## pixels ## SIZE ## _l2_shift5_mmxext(dst, halfV+2, halfHV, stride, SIZE, SIZE);\
+    ff_ ## OPNAME ## pixels ## SIZE ## _l2_shift5_mmxext(dst, halfV+2, halfHV, stride);\
 }\
 \
 static void OPNAME ## h264_qpel ## SIZE ## _mc32_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
@@ -319,7 +319,7 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc32_ ## MMX(uint8_t *dst, const uin
     int16_t * const halfV= (int16_t*)(temp + SIZE*SIZE);\
     av_assert2(((uintptr_t)temp & 7) == 0);\
     ff_put_h264_qpel ## SIZE ## _hv_lowpass_ ## MMX(halfHV, halfV, src, SIZE, SIZE, stride);\
-    ff_ ## OPNAME ## pixels ## SIZE ## _l2_shift5_mmxext(dst, halfV+3, halfHV, stride, SIZE, SIZE);\
+    ff_ ## OPNAME ## pixels ## SIZE ## _l2_shift5_mmxext(dst, halfV+3, halfHV, stride);\
 }\
 
 #define H264_MC(QPEL, SIZE, MMX, ALIGN)\

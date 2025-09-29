@@ -701,9 +701,8 @@ QPEL8OR16_HV2_LOWPASS_OP_XMM avg
 
 
 %macro PIXELS4_L2_SHIFT5 1
-cglobal %1_pixels4_l2_shift5,6,6 ; dst, src16, src8, dstStride, src8Stride, h
+cglobal %1_pixels4_l2_shift5,4,4 ; dst, src16, src8, dstStride
     movsxdifnidn  r3, r3d
-    movsxdifnidn  r4, r4d
     mova          m0, [r1]
     mova          m1, [r1+24]
     psraw         m0, 5
@@ -711,10 +710,9 @@ cglobal %1_pixels4_l2_shift5,6,6 ; dst, src16, src8, dstStride, src8Stride, h
     packuswb      m0, m0
     packuswb      m1, m1
     pavgb         m0, [r2]
-    pavgb         m1, [r2+r4]
+    pavgb         m1, [r2+4]
     op_%1h        m0, [r0], m4
     op_%1h        m1, [r0+r3], m5
-    lea           r2, [r2+r4*2]
     lea           r0, [r0+r3*2]
     mova          m0, [r1+48]
     mova          m1, [r1+72]
@@ -722,8 +720,8 @@ cglobal %1_pixels4_l2_shift5,6,6 ; dst, src16, src8, dstStride, src8Stride, h
     psraw         m1, 5
     packuswb      m0, m0
     packuswb      m1, m1
-    pavgb         m0, [r2]
-    pavgb         m1, [r2+r4]
+    pavgb         m0, [r2+2*4]
+    pavgb         m1, [r2+3*4]
     op_%1h        m0, [r0], m4
     op_%1h        m1, [r0+r3], m5
     RET
@@ -736,12 +734,12 @@ PIXELS4_L2_SHIFT5 avg
 
 %macro PIXELS_L2_SHIFT5 2
 %if cpuflag(sse2)
-cglobal %1_pixels%2_l2_shift5, 6, 6, 4 ; dst, src16, src8, dstStride, src8Stride, h
+cglobal %1_pixels%2_l2_shift5, 5, 5, 4 ; dst, src16, src8, dstStride
 %else
-cglobal %1_pixels%2_l2_shift5, 6, 6 ; dst, src16, src8, dstStride, src8Stride, h
+cglobal %1_pixels%2_l2_shift5, 5, 5 ; dst, src16, src8, dstStride
 %endif
     movsxdifnidn  r3, r3d
-    movsxdifnidn  r4, r4d
+    mov          r4d, %2
 .loop:
     movu          m0, [r1]
     movu          m1, [r1+%2]
@@ -754,13 +752,13 @@ cglobal %1_pixels%2_l2_shift5, 6, 6 ; dst, src16, src8, dstStride, src8Stride, h
     packuswb      m0, m1
     packuswb      m2, m3
     pavgb         m0, [r2]
-    pavgb         m2, [r2+r4]
+    pavgb         m2, [r2+%2]
     op_%1         m0, [r0], m1
     op_%1         m2, [r0+r3], m1
-    lea           r2, [r2+2*r4]
+    lea           r2, [r2+2*%2]
     add           r1, 48*2
     lea           r0, [r0+2*r3]
-    sub          r5d, 2
+    sub          r4d, 2
     jne        .loop
     RET
 %endmacro
