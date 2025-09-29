@@ -230,56 +230,39 @@ QPEL4_H_LOWPASS_L2_OP avg
 
 
 %macro QPEL8_H_LOWPASS_L2_OP 1
-cglobal %1_h264_qpel8_h_lowpass_l2, 5,6 ; dst, src, src2, dstStride, srcStride
+cglobal %1_h264_qpel8_h_lowpass_l2, 5,6,6 ; dst, src, src2, dstStride, srcStride
     movsxdifnidn  r3, r3d
     movsxdifnidn  r4, r4d
+    mova          m3, [pw_16]
     mov          r5d, 8
-    pxor          m7, m7
-    mova          m6, [pw_5]
+    pxor          m5, m5
+    mova          m4, [pw_5]
 .loop:
-    mova          m0, [r1]
-    mova          m2, [r1+1]
-    mova          m1, m0
-    mova          m3, m2
-    punpcklbw     m0, m7
-    punpckhbw     m1, m7
-    punpcklbw     m2, m7
-    punpckhbw     m3, m7
-    paddw         m0, m2
-    paddw         m1, m3
+    movh          m0, [r1]
+    movh          m1, [r1+1]
+    punpcklbw     m0, m5
+    punpcklbw     m1, m5
+    paddw         m0, m1
     psllw         m0, 2
-    psllw         m1, 2
-    mova          m2, [r1-1]
-    mova          m4, [r1+2]
-    mova          m3, m2
-    mova          m5, m4
-    punpcklbw     m2, m7
-    punpckhbw     m3, m7
-    punpcklbw     m4, m7
-    punpckhbw     m5, m7
-    paddw         m2, m4
-    paddw         m5, m3
-    psubw         m0, m2
-    psubw         m1, m5
-    pmullw        m0, m6
-    pmullw        m1, m6
-    movd          m2, [r1-2]
-    movd          m5, [r1+7]
-    punpcklbw     m2, m7
-    punpcklbw     m5, m7
-    paddw         m2, m3
-    paddw         m4, m5
-    mova          m5, [pw_16]
-    paddw         m2, m5
-    paddw         m4, m5
+    movh          m1, [r1-1]
+    movh          m2, [r1+2]
+    punpcklbw     m1, m5
+    punpcklbw     m2, m5
+    paddw         m1, m2
+    psubw         m0, m1
+    pmullw        m0, m4
+    movh          m1, [r1-2]
+    movh          m2, [r1+3]
+    punpcklbw     m1, m5
+    punpcklbw     m2, m5
+    paddw         m0, m1
     paddw         m0, m2
-    paddw         m1, m4
+    paddw         m0, m3
     psraw         m0, 5
-    psraw         m1, 5
-    mova          m4, [r2]
-    packuswb      m0, m1
-    pavgb         m0, m4
-    op_%1         m0, [r0], m4
+    packuswb      m0, m5
+    movh          m2, [r2]
+    pavgb         m0, m2
+    op_%1h        m0, [r0], m2
     add           r0, r3
     add           r1, r3
     add           r2, r4
@@ -288,7 +271,7 @@ cglobal %1_h264_qpel8_h_lowpass_l2, 5,6 ; dst, src, src2, dstStride, srcStride
     RET
 %endmacro
 
-INIT_MMX mmxext
+INIT_XMM sse2
 QPEL8_H_LOWPASS_L2_OP put
 QPEL8_H_LOWPASS_L2_OP avg
 
