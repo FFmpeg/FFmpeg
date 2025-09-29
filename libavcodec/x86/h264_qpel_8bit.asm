@@ -781,13 +781,30 @@ INIT_MMX mmxext
 PIXELS4_L2_SHIFT5 put
 PIXELS4_L2_SHIFT5 avg
 
+%macro PIXELS8_L2_SHIFT5 1
+cglobal %1_pixels8_l2_shift5, 5, 5, 3 ; dst, src16, src8, dstStride
+    movsxdifnidn  r3, r3d
+    mov          r4d, 8
+.loop:
+    movu          m0, [r1]
+    movu          m1, [r1+48]
+    psraw         m0, 5
+    psraw         m1, 5
+    packuswb      m0, m1
+    pavgb         m0, [r2]
+    pshufd        m1, m0, 0xee ; low half of m1 is high half of m0
+    op_%1h        m0, [r0], m2
+    op_%1h        m1, [r0+r3], m2
+    add           r1, 48*2
+    add           r2, 8*2
+    lea           r0, [r0+2*r3]
+    sub          r4d, 2
+    jne        .loop
+    RET
+%endmacro
 
-%macro PIXELS_L2_SHIFT5 2
-%if cpuflag(sse2)
+%macro PIXELS16_L2_SHIFT5 2
 cglobal %1_pixels%2_l2_shift5, 5, 5, 4 ; dst, src16, src8, dstStride
-%else
-cglobal %1_pixels%2_l2_shift5, 5, 5 ; dst, src16, src8, dstStride
-%endif
     movsxdifnidn  r3, r3d
     mov          r4d, %2
 .loop:
@@ -813,13 +830,12 @@ cglobal %1_pixels%2_l2_shift5, 5, 5 ; dst, src16, src8, dstStride
     RET
 %endmacro
 
-INIT_MMX mmxext
-PIXELS_L2_SHIFT5 put, 8
-PIXELS_L2_SHIFT5 avg, 8
-
 INIT_XMM sse2
-PIXELS_L2_SHIFT5 put, 16
-PIXELS_L2_SHIFT5 avg, 16
+PIXELS8_L2_SHIFT5 put
+PIXELS8_L2_SHIFT5 avg
+
+PIXELS16_L2_SHIFT5 put, 16
+PIXELS16_L2_SHIFT5 avg, 16
 
 %if ARCH_X86_64
 %macro QPEL16_H_LOWPASS_L2_OP 1
