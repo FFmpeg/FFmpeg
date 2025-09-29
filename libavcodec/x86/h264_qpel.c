@@ -59,6 +59,7 @@ void ff_ ## OPNAME ## _h264_qpel4_h_lowpass_mmxext(uint8_t *dst, const uint8_t *
 void ff_ ## OPNAME ## _h264_qpel8_h_lowpass_ssse3(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride);\
 void ff_ ## OPNAME ## _h264_qpel4_h_lowpass_l2_mmxext(uint8_t *dst, const uint8_t *src, const uint8_t *src2, int dstStride, int src2Stride);\
 void ff_ ## OPNAME ## _h264_qpel8_h_lowpass_l2_sse2(uint8_t *dst, const uint8_t *src, const uint8_t *src2, int dstStride, int src2Stride);\
+void ff_ ## OPNAME ## _h264_qpel16_h_lowpass_l2_sse2(uint8_t *dst, const uint8_t *src, const uint8_t *src2, int dstStride, int src2Stride);\
 void ff_ ## OPNAME ## _h264_qpel8_h_lowpass_l2_ssse3(uint8_t *dst, const uint8_t *src, const uint8_t *src2, int dstStride, int src2Stride);\
 void ff_ ## OPNAME ## _h264_qpel4_v_lowpass_mmxext(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride);\
 void ff_ ## OPNAME ## _h264_qpel8or16_v_lowpass_sse2(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h);\
@@ -176,9 +177,6 @@ ff_ ## OPNAME ## _h264_qpel8or16_hv2_lowpass_ssse3(uint8_t *dst, int16_t *tmp, i
 }
 SSSE3_HV2_LOWPASS_WRAPPER(avg)
 SSSE3_HV2_LOWPASS_WRAPPER(put)
-
-QPEL_H264_H16(avg_, sse2)
-QPEL_H264_H16(put_, sse2)
 
 #define ff_put_h264_qpel8_v_lowpass_ssse3  ff_put_h264_qpel8_v_lowpass_sse2
 #define ff_avg_h264_qpel8_v_lowpass_ssse3  ff_avg_h264_qpel8_v_lowpass_sse2
