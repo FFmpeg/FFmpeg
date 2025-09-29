@@ -68,7 +68,8 @@ void ff_ ## OPNAME ## _h264_qpel8or16_hv1_lowpass_op_sse2(const uint8_t *src, in
 void ff_ ## OPNAME ## _h264_qpel8or16_hv2_lowpass_op_mmxext(uint8_t *dst, int16_t *tmp, int dstStride, int unused, int h);\
 void ff_ ## OPNAME ## _h264_qpel8or16_hv2_lowpass_ssse3(uint8_t *dst, int16_t *tmp, int dstStride, int tmpStride, int size);\
 void ff_ ## OPNAME ## _pixels4_l2_shift5_mmxext(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride, int src8Stride, int h);\
-void ff_ ## OPNAME ## _pixels8_l2_shift5_mmxext(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride, int src8Stride, int h);
+void ff_ ## OPNAME ## _pixels8_l2_shift5_mmxext(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride, int src8Stride, int h);\
+void ff_ ## OPNAME ## _pixels16_l2_shift5_sse2(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride, int src8Stride, int h);\
 
 DEF_QPEL(avg)
 DEF_QPEL(put)
@@ -103,12 +104,6 @@ static av_always_inline void ff_ ## OPNAME ## h264_qpel16_h_lowpass_l2_ ## MMX(u
     src2 += 8*src2Stride;\
     ff_ ## OPNAME ## h264_qpel8_h_lowpass_l2_ ## MMX(dst  , src  , src2  , dstStride, src2Stride);\
     ff_ ## OPNAME ## h264_qpel8_h_lowpass_l2_ ## MMX(dst+8, src+8, src2+8, dstStride, src2Stride);\
-}\
-\
-static av_always_inline void ff_ ## OPNAME ## pixels16_l2_shift5_ ## MMX(uint8_t *dst, const int16_t *src16, const uint8_t *src8, int dstStride, int src8Stride, int h)\
-{\
-    ff_ ## OPNAME ## pixels8_l2_shift5_ ## MMX(dst  , src16  , src8  , dstStride, src8Stride, h);\
-    ff_ ## OPNAME ## pixels8_l2_shift5_ ## MMX(dst+8, src16+8, src8+8, dstStride, src8Stride, h);\
 }\
 
 
@@ -190,6 +185,9 @@ static av_always_inline void ff_ ## OPNAME ## h264_qpel16_hv_lowpass_ ## MMX(uin
 
 #define ff_put_h264_qpel8or16_hv2_lowpass_sse2 ff_put_h264_qpel8or16_hv2_lowpass_mmxext
 #define ff_avg_h264_qpel8or16_hv2_lowpass_sse2 ff_avg_h264_qpel8or16_hv2_lowpass_mmxext
+
+#define ff_put_pixels16_l2_shift5_mmxext ff_put_pixels16_l2_shift5_sse2
+#define ff_avg_pixels16_l2_shift5_mmxext ff_avg_pixels16_l2_shift5_sse2
 
 #define H264_MC_V_H_HV(OPNAME, SIZE, MMX, ALIGN) \
 H264_MC_V(OPNAME, SIZE, MMX, ALIGN)\

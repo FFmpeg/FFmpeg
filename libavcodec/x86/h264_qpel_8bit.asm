@@ -734,15 +734,19 @@ PIXELS4_L2_SHIFT5 put
 PIXELS4_L2_SHIFT5 avg
 
 
-%macro PIXELS8_L2_SHIFT5 1
-cglobal %1_pixels8_l2_shift5, 6, 6 ; dst, src16, src8, dstStride, src8Stride, h
+%macro PIXELS_L2_SHIFT5 2
+%if cpuflag(sse2)
+cglobal %1_pixels%2_l2_shift5, 6, 6, 4 ; dst, src16, src8, dstStride, src8Stride, h
+%else
+cglobal %1_pixels%2_l2_shift5, 6, 6 ; dst, src16, src8, dstStride, src8Stride, h
+%endif
     movsxdifnidn  r3, r3d
     movsxdifnidn  r4, r4d
 .loop:
-    mova          m0, [r1]
-    mova          m1, [r1+8]
-    mova          m2, [r1+48]
-    mova          m3, [r1+48+8]
+    movu          m0, [r1]
+    movu          m1, [r1+%2]
+    movu          m2, [r1+48]
+    movu          m3, [r1+48+%2]
     psraw         m0, 5
     psraw         m1, 5
     psraw         m2, 5
@@ -751,8 +755,8 @@ cglobal %1_pixels8_l2_shift5, 6, 6 ; dst, src16, src8, dstStride, src8Stride, h
     packuswb      m2, m3
     pavgb         m0, [r2]
     pavgb         m2, [r2+r4]
-    op_%1         m0, [r0], m4
-    op_%1         m2, [r0+r3], m5
+    op_%1         m0, [r0], m1
+    op_%1         m2, [r0+r3], m1
     lea           r2, [r2+2*r4]
     add           r1, 48*2
     lea           r0, [r0+2*r3]
@@ -762,9 +766,12 @@ cglobal %1_pixels8_l2_shift5, 6, 6 ; dst, src16, src8, dstStride, src8Stride, h
 %endmacro
 
 INIT_MMX mmxext
-PIXELS8_L2_SHIFT5 put
-PIXELS8_L2_SHIFT5 avg
+PIXELS_L2_SHIFT5 put, 8
+PIXELS_L2_SHIFT5 avg, 8
 
+INIT_XMM sse2
+PIXELS_L2_SHIFT5 put, 16
+PIXELS_L2_SHIFT5 avg, 16
 
 %if ARCH_X86_64
 %macro QPEL16_H_LOWPASS_L2_OP 1
