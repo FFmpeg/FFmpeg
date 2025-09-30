@@ -1163,6 +1163,7 @@ static int old_codec37(SANMVideoContext *ctx, GetByteContext *gb, int width, int
                     }
                 }
                 /* 4x4 block copy from prev with MV */
+                code = (code == 0xff) ? 0 : code;
                 mx = c37_mv[(mvoff * 255 + code) * 2];
                 my = c37_mv[(mvoff * 255 + code) * 2 + 1];
                 codec37_mv(dst + i, prev + i + mx + my * stride,
