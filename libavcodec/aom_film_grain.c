@@ -39,7 +39,7 @@ static inline int get_random_number(const int bits, unsigned *const state) {
     unsigned bit = ((r >> 0) ^ (r >> 1) ^ (r >> 3) ^ (r >> 12)) & 1;
     *state = (r >> 1) | (bit << 15);
 
-    return (*state >> (16 - bits)) & ((1 << bits) - 1);
+    return av_zero_extend(*state >> (16 - bits), bits);
 }
 
 static inline int round2(const int x, const uint64_t shift) {
