@@ -137,7 +137,6 @@ static int liblc3_encode(AVCodecContext *avctx, AVPacket *pkt,
     LibLC3EncContext *liblc3 = avctx->priv_data;
     int block_bytes = liblc3->block_bytes;
     int channels = avctx->ch_layout.nb_channels;
-    void *zero_frame = NULL;
     uint8_t *data_ptr;
     int ret;
 
@@ -152,24 +151,19 @@ static int liblc3_encode(AVCodecContext *avctx, AVPacket *pkt,
             return 0;
 
         liblc3->remaining_samples = 0;
-        zero_frame = av_mallocz(avctx->frame_size * sizeof(float));
-        if (!zero_frame)
-            return AVERROR(ENOMEM);
     }
 
     data_ptr = pkt->data;
     for (int ch = 0; ch < channels; ch++) {
-        const float *pcm = zero_frame ? zero_frame : frame->data[ch];
+        const float *pcm = frame ? (const float*)frame->data[ch] : (const float[]){ 0 };
+        int stride = !!frame; // use a stride of zero to send a zero frame
         int nbytes = block_bytes / channels + (ch < block_bytes % channels);
 
         lc3_encode(liblc3->encoder[ch],
-                   LC3_PCM_FORMAT_FLOAT, pcm, 1, nbytes, data_ptr);
+                   LC3_PCM_FORMAT_FLOAT, pcm, stride, nbytes, data_ptr);
 
         data_ptr += nbytes;
     }
-
-    if (zero_frame)
-        av_free(zero_frame);
 
     *got_packet_ptr = 1;
 
