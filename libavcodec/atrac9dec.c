@@ -285,7 +285,7 @@ static inline int read_scalefactors(ATRAC9Context *s, ATRAC9BlockData *b,
         for (int i = 1; i < b->band_ext_q_unit; i++) {
             int val = c->scalefactors[i - 1] + get_vlc2(gb, tab,
                                                         ATRAC9_SF_VLC_BITS, 1);
-            c->scalefactors[i] = val & ((1 << len) - 1);
+            c->scalefactors[i] = av_zero_extend(val, len);
         }
 
         for (int i = 0; i < b->band_ext_q_unit; i++)
@@ -339,7 +339,7 @@ static inline int read_scalefactors(ATRAC9Context *s, ATRAC9BlockData *b,
         for (int i = 1; i < unit_cnt; i++) {
             int val = c->scalefactors[i - 1] + get_vlc2(gb, tab,
                                                         ATRAC9_SF_VLC_BITS, 1);
-            c->scalefactors[i] = val & ((1 << len) - 1);
+            c->scalefactors[i] = av_zero_extend(val, len);
         }
 
         for (int i = 0; i < unit_cnt; i++)
