@@ -256,7 +256,7 @@ FFmpeg can make use of the Fraunhofer MPEG-H decoder library for MPEG-H 3DA deco
 
 Go to @url{https://github.com/Fraunhofer-IIS/mpeghdec} and follow the
 instructions for installing the library.
-Then pass @code{--enable-libmpeghdec} to configure to enable it.
+Then pass @code{--enable-libmpeghdec --enable-nonfree} to configure to enable it.
 
 @subsection LC3 library
 

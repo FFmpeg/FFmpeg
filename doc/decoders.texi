@@ -353,7 +353,7 @@ libmpeghdec decoder wrapper.
 libmpeghdec allows libmpeghdec to decode the MPEG-H 3D audio codec.
 Requires the presence of the libmpeghdec headers and library during
 configuration. You need to explicitly configure the build with
-@code{--enable-libmpeghdec}.
+@code{--enable-libmpeghdec --enable-nonfree}.
 
 @section libopencore-amrnb
 
