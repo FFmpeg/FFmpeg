@@ -288,7 +288,7 @@ int ff_apv_entropy_decode_block(int16_t *restrict coeff,
             // Extract the low bits.
             low_bit_count = leading_zeroes;
             low_bit_shift = 16 - (1 + 2 * leading_zeroes);
-            low_bits = (bits >> low_bit_shift) & ((1 << low_bit_count) - 1);
+            low_bits = av_zero_extend(bits >> low_bit_shift, low_bit_count);
             // Construct run code.
             run = 2 + ((1 << leading_zeroes) - 1) + low_bits;
             // Skip over the bits just used.
@@ -460,7 +460,7 @@ int ff_apv_entropy_decode_block(int16_t *restrict coeff,
             // Extract the low bits.
             low_bit_count = leading_zeroes + k_run;
             low_bit_shift = 16 - (1 + 2 * leading_zeroes + k_run);
-            low_bits = (bits >> low_bit_shift) & ((1 << low_bit_count) - 1);
+            low_bits = av_zero_extend(bits >> low_bit_shift, low_bit_count);
             // Construct run code.
             run = (2 << k_run) +
                 ((1 << leading_zeroes) - 1) * (1 << k_run) +
