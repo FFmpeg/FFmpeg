@@ -92,22 +92,18 @@ static void fn0(NAME)(const uint8_t *_top, ptrdiff_t top_linesize, \
      ptrdiff_t width, ptrdiff_t height,                       \
      FilterParams *param, SliceParams *sliceparam)            \
 {                                                                                   \
-    const PIXEL *top = (const PIXEL *)_top;                                         \
-    const PIXEL *bottom = (const PIXEL *)_bottom;                                   \
-    PIXEL *dst = (PIXEL *)_dst;                                                     \
     const float opacity = param->opacity;                                           \
                                                                                     \
-    dst_linesize /= sizeof(PIXEL);                                                  \
-    top_linesize /= sizeof(PIXEL);                                                  \
-    bottom_linesize /= sizeof(PIXEL);                                               \
-                                                                                    \
     for (int i = 0; i < height; i++) {                                              \
+        const PIXEL *top = (const PIXEL *)_top;                                     \
+        const PIXEL *bottom = (const PIXEL *)_bottom;                               \
+        PIXEL *dst = (PIXEL *)_dst;                                                 \
         for (int j = 0; j < width; j++) {                                           \
             dst[j] = top[j] + ((EXPR)-top[j]) * opacity;                            \
         }                                                                           \
-        dst += dst_linesize;                                                        \
-        top += top_linesize;                                                        \
-        bottom += bottom_linesize;                                                  \
+        _dst    += dst_linesize;                                                    \
+        _top    += top_linesize;                                                    \
+        _bottom += bottom_linesize;                                                 \
     }                                                                               \
 }
 

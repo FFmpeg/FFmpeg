@@ -82,22 +82,18 @@ static void blend_normal_##name(const uint8_t *_top, ptrdiff_t top_linesize,    
                                 ptrdiff_t width, ptrdiff_t height,                \
                                 FilterParams *param, SliceParams *sliceparam)     \
 {                                                                                 \
-    const type *top = (const type*)_top;                                          \
-    const type *bottom = (const type*)_bottom;                                    \
-    type *dst = (type*)_dst;                                                      \
     const float opacity = param->opacity;                                         \
                                                                                   \
-    dst_linesize /= sizeof(type);                                                 \
-    top_linesize /= sizeof(type);                                                 \
-    bottom_linesize /= sizeof(type);                                              \
-                                                                                  \
     for (int i = 0; i < height; i++) {                                            \
+        const type *top = (const type*)_top;                                      \
+        const type *bottom = (const type*)_bottom;                                \
+        type *dst = (type*)_dst;                                                  \
         for (int j = 0; j < width; j++) {                                         \
             dst[j] = top[j] * opacity + bottom[j] * (1.f - opacity);              \
         }                                                                         \
-        dst    += dst_linesize;                                                   \
-        top    += top_linesize;                                                   \
-        bottom += bottom_linesize;                                                \
+        _dst    += dst_linesize;                                                  \
+        _top    += top_linesize;                                                  \
+        _bottom += bottom_linesize;                                               \
     }                                                                             \
 }
 
