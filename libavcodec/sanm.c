@@ -1838,7 +1838,7 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb,
             }
         }
     } else {
-        if (((left + w > ctx->width) || (top + h > ctx->height) || (w * h > ctx->buf_size))
+        if (((w > ctx->width) || (h > ctx->height) || (w * h > ctx->buf_size))
             && (fsc || codec == 20)) {
             /* correct unexpected overly large frames: this happens
              * for instance with The Dig's sq1.san video: it has a few
