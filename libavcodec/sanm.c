@@ -268,7 +268,7 @@ typedef struct SANMVideoContext {
 
     int version, subversion, have_dimensions, first_fob;
     uint32_t pal[PALETTE_SIZE];
-    int16_t delta_pal[PALETTE_DELTA];
+    int16_t delta_pal[PALETTE_DELTA], shift_pal[PALETTE_DELTA];
 
     ptrdiff_t pitch;
     int width, height;
@@ -1968,34 +1968,40 @@ static int process_xpal(SANMVideoContext *ctx, int size)
     uint8_t c[3];
     int i, j;
 
+    if (size < 4)
+        return AVERROR_INVALIDDATA;
     bytestream2_skip(&ctx->gb, 2);
     cmd = bytestream2_get_be16(&ctx->gb);
+    size -= 4;
 
     if (cmd == 1) {
         for (i = 0; i < PALETTE_DELTA; i += 3) {
-            c[0] = (*pal >> 16) & 0xFF;
-            c[1] = (*pal >>  8) & 0xFF;
-            c[2] = (*pal >>  0) & 0xFF;
             for (j = 0; j < 3; j++) {
-                int cl = (c[j] * 129) + *dp++;
-                c[j] = av_clip_uint8(cl / 128) & 0xFF;
+                ctx->shift_pal[i + j] += dp[i + j];
+                c[j] = av_clip_uint8(ctx->shift_pal[i + j] >> 7) & 0xFFU;
             }
             *pal++ = 0xFFU << 24 | c[0] << 16 | c[1] << 8 | c[2];
         }
     } else if (cmd == 0 || cmd == 2) {
-        if (size < PALETTE_DELTA * 2 + 4) {
+        if (size < PALETTE_DELTA * 2) {
             av_log(ctx->avctx, AV_LOG_ERROR,
                    "Incorrect palette change block size %"PRIu32".\n", size);
             return AVERROR_INVALIDDATA;
         }
         for (i = 0; i < PALETTE_DELTA; i++)
             dp[i] = bytestream2_get_le16u(&ctx->gb);
+        size -= PALETTE_DELTA * 2;
 
-        if (size >= PALETTE_DELTA * 2 + 4 + PALETTE_SIZE * 3) {
+        if (size >= PALETTE_SIZE * 3) {
             for (i = 0; i < PALETTE_SIZE; i++)
                 ctx->pal[i] = 0xFFU << 24 | bytestream2_get_be24u(&ctx->gb);
             if (ctx->subversion < 2)
                 ctx->pal[0] = 0xFFU << 24;
+        }
+        for (i = 0, j = 0; i < PALETTE_DELTA; i += 3, j++) {
+            ctx->shift_pal[i + 0] = (((ctx->pal[j]) >> 16) & 0xFFU) << 7;
+            ctx->shift_pal[i + 1] = (((ctx->pal[j]) >>  8) & 0xFFU) << 7;
+            ctx->shift_pal[i + 2] = (((ctx->pal[j]) >>  0) & 0xFFU) << 7;
         }
     }
     return 0;
