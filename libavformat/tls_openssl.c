@@ -834,7 +834,7 @@ static int dtls_start(URLContext *h, const char *url, int flags, AVDictionary **
 
     av_log(c, AV_LOG_VERBOSE, "Setup ok, MTU=%d\n", c->tls_shared.mtu);
 
-    ret = 0;
+    return 0;
 fail:
     tls_close(h);
     return ret;
