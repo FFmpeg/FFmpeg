@@ -4,8 +4,8 @@ Stream ID: 0, new metadata: encoder=Lavc61.19.100 flac:title=First Stream
 Stream ID: 0, frame PTS: 0, metadata: N/A
 Stream ID: 0, packet PTS: 4608, packet DTS: 4608
 Stream ID: 0, frame PTS: 4608, metadata: N/A
-Stream ID: 0, packet PTS: 0, packet DTS: 0
+Stream ID: 0, packet PTS: 8820, packet DTS: 8820
 Stream ID: 0, new metadata: encoder=Lavc61.19.100 flac:title=Second Stream
-Stream ID: 0, frame PTS: 0, metadata: encoder=Lavc61.19.100 flac:title=Second Stream
-Stream ID: 0, packet PTS: 4608, packet DTS: 4608
-Stream ID: 0, frame PTS: 4608, metadata: N/A
+Stream ID: 0, frame PTS: 8820, metadata: encoder=Lavc61.19.100 flac:title=Second Stream
+Stream ID: 0, packet PTS: 13428, packet DTS: 13428
+Stream ID: 0, frame PTS: 13428, metadata: N/A

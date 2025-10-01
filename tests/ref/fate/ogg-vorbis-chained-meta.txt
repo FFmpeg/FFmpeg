@@ -5,10 +5,10 @@ Stream ID: 0, packet PTS: 128, packet DTS: 128
 Stream ID: 0, frame PTS: 128, metadata: N/A
 Stream ID: 0, packet PTS: 704, packet DTS: 704
 Stream ID: 0, frame PTS: 704, metadata: N/A
-Stream ID: 0, packet PTS: 0, packet DTS: 0
+Stream ID: 0, packet PTS: 1323, packet DTS: 1323
 Stream ID: 0, new metadata: encoder=Lavc61.19.100 libvorbis:title=Second Stream
-Stream ID: 0, frame PTS: 0, metadata: encoder=Lavc61.19.100 libvorbis:title=Second Stream
-Stream ID: 0, packet PTS: 128, packet DTS: 128
-Stream ID: 0, frame PTS: 128, metadata: N/A
-Stream ID: 0, packet PTS: 704, packet DTS: 704
-Stream ID: 0, frame PTS: 704, metadata: N/A
+Stream ID: 0, frame PTS: 1323, metadata: encoder=Lavc61.19.100 libvorbis:title=Second Stream
+Stream ID: 0, packet PTS: 1451, packet DTS: 1451
+Stream ID: 0, frame PTS: 1451, metadata: N/A
+Stream ID: 0, packet PTS: 2027, packet DTS: 2027
+Stream ID: 0, frame PTS: 2027, metadata: N/A

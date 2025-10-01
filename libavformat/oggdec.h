@@ -92,6 +92,7 @@ struct ogg_stream {
     int nb_header; ///< set to the number of parsed headers
     int start_trimming; ///< set the number of packets to drop from the start
     int end_trimming; ///< set the number of packets to drop from the end
+    int replace; // < set to 1 after initializing a new chained stream
     uint8_t *new_metadata;
     size_t new_metadata_size;
     uint8_t *new_extradata;

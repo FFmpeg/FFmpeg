@@ -237,8 +237,10 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, char *magic, 
     os->serial  = serial;
     os->lastpts = 0;
     os->lastdts = 0;
+    os->flags   = 0;
     os->start_trimming = 0;
     os->end_trimming = 0;
+    os->replace = 1;
 
     return i;
 }
@@ -877,6 +879,11 @@ retry:
         AV_WL32(side_data + 4, os->end_trimming);
         os->start_trimming = 0;
         os->end_trimming = 0;
+    }
+
+    if (os->replace) {
+        os->replace = 0;
+        pkt->dts = pkt->pts = AV_NOPTS_VALUE;
     }
 
     if (os->new_metadata) {

@@ -12,16 +12,16 @@ Stream ID: 0, packet PTS: 3528, packet DTS: 3528
 Stream ID: 0, frame PTS: 3528, metadata: N/A
 Stream ID: 0, packet PTS: 4488, packet DTS: 4488
 Stream ID: 0, frame PTS: 4488, metadata: N/A
-Stream ID: 0, packet PTS: -312, packet DTS: -312
+Stream ID: 0, packet PTS: 4800, packet DTS: 4800
 Stream ID: 0, new metadata: encoder=Lavc61.19.100 libopus:title=Second Stream
-Stream ID: 0, frame PTS: -312, metadata: encoder=Lavc61.19.100 libopus:title=Second Stream
-Stream ID: 0, packet PTS: 648, packet DTS: 648
-Stream ID: 0, frame PTS: 648, metadata: N/A
-Stream ID: 0, packet PTS: 1608, packet DTS: 1608
-Stream ID: 0, frame PTS: 1608, metadata: N/A
-Stream ID: 0, packet PTS: 2568, packet DTS: 2568
-Stream ID: 0, frame PTS: 2568, metadata: N/A
-Stream ID: 0, packet PTS: 3528, packet DTS: 3528
-Stream ID: 0, frame PTS: 3528, metadata: N/A
-Stream ID: 0, packet PTS: 4488, packet DTS: 4488
-Stream ID: 0, frame PTS: 4488, metadata: N/A
+Stream ID: 0, frame PTS: 4800, metadata: encoder=Lavc61.19.100 libopus:title=Second Stream
+Stream ID: 0, packet PTS: 5760, packet DTS: 5760
+Stream ID: 0, frame PTS: 5760, metadata: N/A
+Stream ID: 0, packet PTS: 6720, packet DTS: 6720
+Stream ID: 0, frame PTS: 6720, metadata: N/A
+Stream ID: 0, packet PTS: 7680, packet DTS: 7680
+Stream ID: 0, frame PTS: 7680, metadata: N/A
+Stream ID: 0, packet PTS: 8640, packet DTS: 8640
+Stream ID: 0, frame PTS: 8640, metadata: N/A
+Stream ID: 0, packet PTS: 9600, packet DTS: 9600
+Stream ID: 0, frame PTS: 9600, metadata: N/A
