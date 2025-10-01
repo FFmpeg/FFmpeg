@@ -1031,21 +1031,67 @@ static int old_codec2(SANMVideoContext *ctx, GetByteContext *gb, int top,
     return 0;
 }
 
-static int old_codec20(SANMVideoContext *ctx, GetByteContext *gb, int w, int h)
+static int old_codec20(SANMVideoContext *ctx, GetByteContext *gb, int top, int left,
+                       const int w, const int h)
 {
     uint8_t *dst = (uint8_t *)ctx->fbuf;
+    int hh = h, ww = w;
 
-    if (bytestream2_get_bytes_left(gb) < w * h)
-        return AVERROR_INVALIDDATA;
+    if (((left + w) < 0) || (left >= ctx->width) || ((top + h) < 0)
+        || (top >= ctx->height) || (w < 1) || (h < 1))
+        return 0;
 
-    if (w == ctx->pitch) {
-        bytestream2_get_bufferu(gb, dst, w * h);
+    if (top < 0) {
+        int ts = -top * w;
+        if (bytestream2_get_bytes_left(gb) < ts)
+            return AVERROR_INVALIDDATA;
+        bytestream2_skip(gb, ts);
+        hh += top;
+        top = 0;
+    }
+
+    if (hh < 1)
+        return 0;
+
+    if ((left == 0) && (w == ctx->pitch)) {
+        int ba = bytestream2_get_bytes_left(gb);    /* bytes available */
+        int bd = w * FFMIN(ctx->height - top, hh);  /* bytes drawable  */
+        ba = FFMIN(ba, bd);
+        if (ba)
+            bytestream2_get_bufferu(gb, dst + (top * ctx->pitch), ba);
     } else {
-        for (int i = 0; i < h; i++) {
-            bytestream2_get_bufferu(gb, dst, w);
-            dst += ctx->pitch;
+        if ((top + hh) >= ctx->height) {
+            hh = ctx->height - top;
+            hh = FFMIN(hh, ctx->height);
+        }
+        if (left < 0) {
+            if (bytestream2_get_bytes_left(gb) < -left)
+                return AVERROR_INVALIDDATA;
+            bytestream2_skip(gb, -left);
+            ww += left;
+            left = 0;
+        }
+        if ((left + ww) >= ctx->width) {
+            ww = ctx->width - left;
+            ww = FFMIN(ww, ctx->width);
+        }
+        if ((ww > 0) && (hh > 0)) {
+            int sz = bytestream2_get_bytes_left(gb);
+            const int d = w - ww;
+            dst += left + (top * ctx->pitch);
+            while ((hh--) && (sz >= ww)) {
+                bytestream2_get_bufferu(gb, dst, ww);
+                sz -= ww;
+                dst += ctx->pitch;
+                if (d > 0) {
+                    int c = FFMIN(d, sz);
+                    bytestream2_skip(gb, c);
+                    sz -= c;
+                }
+            }
         }
     }
+
     return 0;
 }
 
@@ -1838,8 +1884,7 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb,
             }
         }
     } else {
-        if (((w > ctx->width) || (h > ctx->height) || (w * h > ctx->buf_size))
-            && (fsc || codec == 20)) {
+        if (((w > ctx->width) || (h > ctx->height) || (w * h > ctx->buf_size)) && fsc) {
             /* correct unexpected overly large frames: this happens
              * for instance with The Dig's sq1.san video: it has a few
              * (all black) 640x480 frames halfway in, while the rest is
@@ -1877,7 +1922,7 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb,
     case 34:
         return old_codec4(ctx, gb, top, left, w, h, param, parm2, codec);
     case 20:
-        return old_codec20(ctx, gb, w, h);
+        return old_codec20(ctx, gb, top, left, w, h);
     case 21:
         return old_codec21(ctx, gb, top, left, w, h);
     case 23:
@@ -1902,22 +1947,9 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb,
         return ret;
 
     /* copy the codec37/47/48 result to main buffer */
-    if ((w == ctx->width) && (h == ctx->height)) {
-        memcpy(ctx->fbuf, ctx->frm0, ctx->fbuf_size);
-    } else {
-        const uint8_t *src = (uint8_t *)ctx->frm0;
-        const int cw = FFMIN(w, ctx->width - left);
-        const int ch = FFMIN(h, ctx->height - top);
-        if ((cw > 0) && (ch > 0) && (left >= 0) && (top >= 0)) {
-            uint8_t *dst = (uint8_t *)ctx->fbuf + left + top * ctx->pitch;
-            for (int i = 0; i < ch; i++) {
-                memcpy(dst, src, cw);
-                dst += ctx->pitch;
-                src += w;
-            }
-        }
-    }
-    return 0;
+    GetByteContext rc;
+    bytestream2_init(&rc, (const uint8_t *)ctx->frm0, w * h);
+    return old_codec20(ctx, &rc, top, left, w, h);
 }
 
 static int process_ftch(SANMVideoContext *ctx, int size)
