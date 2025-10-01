@@ -34,16 +34,21 @@
 #define MAX 255
 #define HALF 128
 #define CLIP(x) (av_clip_uint8(x))
+#define BUILD_TYPE_SPECIFIC_FUNCS
 #elif DEPTH == 32
 #define PIXEL float
 #define MAX 1.f
 #define HALF 0.5f
 #define CLIP(x) (x)
+#define BUILD_TYPE_SPECIFIC_FUNCS
 #else
 #define PIXEL uint16_t
 #define MAX ((1 << DEPTH) - 1)
 #define HALF (1 << (DEPTH - 1))
 #define CLIP(x) ((int)av_clip_uintp2(x, DEPTH))
+#if DEPTH == 16
+#define BUILD_TYPE_SPECIFIC_FUNCS
+#endif
 #endif
 
 #undef MULTIPLY
@@ -109,13 +114,10 @@ static void fn0(NAME)(const uint8_t *_top, ptrdiff_t top_linesize, \
 
 fn(addition,   FFMIN(MAX, A + B))
 fn(grainmerge, CLIP(A + B - HALF))
-fn(average,    (A + B) / 2)
-fn(subtract,   FFMAX(0, A - B))
 fn(multiply,   MULTIPLY(1, A, B))
 fn(multiply128,CLIP((A - HALF) * B / MDIV + HALF))
 fn(negation,   MAX - FFABS(MAX - A - B))
 fn(extremity,  FFABS(MAX - A - B))
-fn(difference, FFABS(A - B))
 fn(grainextract, CLIP(HALF + A - B))
 fn(screen,     SCREEN(1, A, B))
 fn(overlay,    (A < HALF) ? MULTIPLY(2, A, B) : SCREEN(2, A, B))
@@ -123,8 +125,6 @@ fn(hardlight,  (B < HALF) ? MULTIPLY(2, B, A) : SCREEN(2, B, A))
 fn(hardmix,    (A < (MAX - B)) ? 0: MAX)
 fn(heat,       (A == 0) ? 0 : MAX - FFMIN(((MAX - B) * (MAX - B)) / A, MAX))
 fn(freeze,     (B == 0) ? 0 : MAX - FFMIN(((MAX - A) * (MAX - A)) / B, MAX))
-fn(darken,     FFMIN(A, B))
-fn(lighten,    FFMAX(A, B))
 fn(divide,     CLIP(B == 0 ? MAX : MAX * A / B))
 fn(dodge,      DODGE(A, B))
 fn(burn,       BURN(A, B))
@@ -134,15 +134,24 @@ fn(pinlight,   (B < HALF) ? FFMIN(A, 2 * B) : FFMAX(A, 2 * (B - HALF)))
 fn(phoenix,    FFMIN(A, B) - FFMAX(A, B) + MAX)
 fn(reflect,    (B == MAX) ? B : FFMIN(MAX, (A * A / (MAX - B))))
 fn(glow,       (A == MAX) ? A : FFMIN(MAX, (B * B / (MAX - A))))
-fn(and,        INT2FLOAT(FLOAT2INT(A) & FLOAT2INT(B)))
-fn(or,         INT2FLOAT(FLOAT2INT(A) | FLOAT2INT(B)))
-fn(xor,        INT2FLOAT(FLOAT2INT(A) ^ FLOAT2INT(B)))
 fn(vividlight, (A < HALF) ? BURN(2 * A, B) : DODGE(2 * (A - HALF), B))
 fn(linearlight,CLIP((B < HALF) ? B + 2 * A - MAX : B + 2 * (A - HALF)))
 fn(softdifference,CLIP((A > B) ? (B == MAX) ? 0 : (A - B) * MAX / (MAX - B) : (B == 0) ? 0 : (B - A) * MAX / B))
-fn(geometric,  GEOMETRIC(A, B))
-fn(harmonic,   A == 0 && B == 0 ? 0 : 2LL * A * B / (A + B))
 fn(bleach,     (MAX - B) + (MAX - A) - MAX)
 fn(stain,      2 * MAX - A - B)
 fn(interpolate,LRINTF(MAX * (2 - cosf(A * M_PI / MAX) - cosf(B * M_PI / MAX)) * 0.25f))
 fn(hardoverlay,A == MAX ? MAX : FFMIN(MAX, MAX * B / (2 * MAX - 2 * A) * (A > HALF) + 2 * A * B / MAX * (A <= HALF)))
+
+#ifdef BUILD_TYPE_SPECIFIC_FUNCS
+fn(average,    (A + B) / 2)
+fn(subtract,   FFMAX(0, A - B))
+fn(difference, FFABS(A - B))
+fn(darken,     FFMIN(A, B))
+fn(lighten,    FFMAX(A, B))
+fn(and,        INT2FLOAT(FLOAT2INT(A) & FLOAT2INT(B)))
+fn(or,         INT2FLOAT(FLOAT2INT(A) | FLOAT2INT(B)))
+fn(xor,        INT2FLOAT(FLOAT2INT(A) ^ FLOAT2INT(B)))
+fn(geometric,  GEOMETRIC(A, B))
+fn(harmonic,   A == 0 && B == 0 ? 0 : 2LL * A * B / (A + B))
+#undef BUILD_TYPE_SPECIFIC_FUNCS
+#endif
