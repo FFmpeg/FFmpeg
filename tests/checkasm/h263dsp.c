@@ -34,7 +34,7 @@ static void check_loop_filter(char dim, filter func)
     LOCAL_ALIGNED_16(uint8_t, buf1, [32 * 32]);
     int qscale = rnd() % 32;
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *, int, int);
+    declare_func(void, uint8_t *, int, int);
 
     for (size_t y = 0; y < 32; y++)
         for (size_t x = 0; x < 32; x++)
