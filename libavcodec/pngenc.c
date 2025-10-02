@@ -195,6 +195,8 @@ static void png_filter_row(PNGEncContext *c, uint8_t *dst, int filter_type,
             dst[i] = src[i] - top[i];
         sub_png_paeth_prediction(dst + i, src + i, top + i, size - i, bpp);
         break;
+    default:
+        av_unreachable("PNG_FILTER_VALUE_MIXED can't happen here and all others are covered");
     }
 }
 
@@ -816,6 +818,9 @@ static int apng_do_inverse_blend(AVFrame *output, const AVFrame *input,
                         palette[*background] >> 24 == 0)
                         break;
                     return -1;
+
+                default:
+                    av_unreachable("Pixfmt has been checked before");
                 }
 
                 memmove(output_data, foreground, bpp);
@@ -1193,7 +1198,7 @@ static av_cold int png_enc_init(AVCodecContext *avctx)
         s->color_type = PNG_COLOR_TYPE_PALETTE;
         break;
     default:
-        return -1;
+        av_unreachable("Already checked via CODEC_PIXFMTS");
     }
     s->bits_per_pixel = ff_png_get_nb_channels(s->color_type) * s->bit_depth;
 
