@@ -3967,6 +3967,10 @@ Possible values:
 The muxer will try to set dtls active role and send the first client hello.
 @end table
 
+@item rtp_history @var{integer}
+Set the number of RTP history items to store.
+Default value is 512.
+
 @item authorization @var{string}
 The optional Bearer token for WHIP Authorization.
 

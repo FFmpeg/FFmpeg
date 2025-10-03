@@ -169,6 +169,17 @@
 #define WHIP_ICE_CONSENT_CHECK_INTERVAL 5000
 #define WHIP_ICE_CONSENT_EXPIRED_TIMER 30000
 
+/**
+ * RTP history packet size.
+ * Target is buffering 1000ms of RTP history packets.
+ *
+ * bandwidth_bps = (RTP payload bytes) * (RTP history size) * 8
+ * Assumes average RTP payload is 1184 bytes (MTU - SRTP_CHECKSUM_LEN).
+ */
+#define WHIP_RTP_HISTORY_MIN 64 /* around 0.61 Mbps */
+#define WHIP_RTP_HISTORY_DEFAULT 512 /* around 4.85 Mbps */
+#define WHIP_RTP_HISTORY_MAX 2048 /* around 19.40 Mbps */
+
 /* Calculate the elapsed time from starttime to endtime in milliseconds. */
 #define ELAPSED(starttime, endtime) ((float)(endtime - starttime) / 1000)
 
@@ -215,6 +226,12 @@ enum WHIPState {
 typedef enum WHIPFlags {
     WHIP_DTLS_ACTIVE = (1 << 0),
 } WHIPFlags;
+
+typedef struct RtpHistoryItem {
+    uint16_t seq;
+    int size;
+    uint8_t *buf;
+} RtpHistoryItem;
 
 typedef struct WHIPContext {
     AVClass *av_class;
@@ -333,6 +350,11 @@ typedef struct WHIPContext {
     /* The certificate and private key used for DTLS handshake. */
     char* cert_file;
     char* key_file;
+
+    int hist_sz;
+    RtpHistoryItem *hist;
+    uint8_t *hist_pool;
+    int hist_head;
 } WHIPContext;
 
 /**
@@ -451,6 +473,17 @@ static av_cold int initialize(AVFormatContext *s)
     if (whip->pkt_size < ideal_pkt_size)
         av_log(whip, AV_LOG_WARNING, "pkt_size=%d(<%d) is too small, may cause packet loss\n",
                whip->pkt_size, ideal_pkt_size);
+
+    whip->hist = av_calloc(whip->hist_sz, sizeof(*whip->hist));
+    if (!whip->hist)
+        return AVERROR(ENOMEM);
+
+    whip->hist_pool = av_calloc(whip->hist_sz, whip->pkt_size - DTLS_SRTP_CHECKSUM_LEN);
+    if (!whip->hist_pool)
+        return AVERROR(ENOMEM);
+
+    for (int i = 0; i < whip->hist_sz; i++)
+        whip->hist[i].buf = whip->hist_pool + i * (whip->pkt_size - DTLS_SRTP_CHECKSUM_LEN);
 
     if (whip->state < WHIP_STATE_INIT)
         whip->state = WHIP_STATE_INIT;
@@ -1476,6 +1509,28 @@ end:
     return ret;
 }
 
+static int rtp_history_store(WHIPContext *whip, const uint8_t *buf, int size)
+{
+    uint16_t seq = AV_RB16(buf + 2);
+    uint32_t pos = ((uint32_t)seq - (uint32_t)whip->video_first_seq) % (uint32_t)whip->hist_sz;
+    RtpHistoryItem *it = &whip->hist[pos];
+    if (size > whip->pkt_size - DTLS_SRTP_CHECKSUM_LEN)
+        return AVERROR_INVALIDDATA;
+    memcpy(it->buf, buf, size);
+    it->size = size;
+    it->seq = seq;
+
+    whip->hist_head = ++pos;
+    return 0;
+}
+
+static const RtpHistoryItem *rtp_history_find(WHIPContext *whip, uint16_t seq)
+{
+    uint32_t pos = ((uint32_t)seq - (uint32_t)whip->video_first_seq) % (uint32_t)whip->hist_sz;
+    const RtpHistoryItem *it = &whip->hist[pos];
+    return it->seq == seq ? it : NULL;
+}
+
 /**
  * Callback triggered by the RTP muxer when it creates and sends out an RTP packet.
  *
@@ -1510,6 +1565,12 @@ static int on_rtp_write_packet(void *opaque, const uint8_t *buf, int buf_size)
     if (cipher_size <= 0 || cipher_size < buf_size) {
         av_log(whip, AV_LOG_WARNING, "Failed to encrypt packet=%dB, cipher=%dB\n", buf_size, cipher_size);
         return 0;
+    }
+
+    if (is_video) {
+        ret = rtp_history_store(whip, buf, buf_size);
+        if (ret < 0)
+            return ret;
     }
 
     ret = ffurl_write(whip->udp, whip->buf, cipher_size);
@@ -1981,6 +2042,8 @@ static av_cold void whip_deinit(AVFormatContext *s)
         s->streams[i]->priv_data = NULL;
     }
 
+    av_freep(&whip->hist_pool);
+    av_freep(&whip->hist);
     av_freep(&whip->sdp_offer);
     av_freep(&whip->sdp_answer);
     av_freep(&whip->whip_resource_url);
@@ -2028,6 +2091,7 @@ static const AVOption options[] = {
     { "ts_buffer_size",     "The buffer size, in bytes, of underlying protocol",        OFFSET(ts_buffer_size),        AV_OPT_TYPE_INT,    { .i64 = -1 },      -1, INT_MAX, ENC },
     { "whip_flags",         "Set flags affecting WHIP connection behavior",             OFFSET(flags),              AV_OPT_TYPE_FLAGS,  { .i64 = 0},         0, UINT_MAX, ENC, .unit = "flags" },
     { "dtls_active",        "Set dtls role as active",                                  0,                          AV_OPT_TYPE_CONST,  { .i64 = WHIP_DTLS_ACTIVE}, 0, UINT_MAX, ENC, .unit = "flags" },
+    { "rtp_history",        "The number of RTP history items to store",                 OFFSET(hist_sz),            AV_OPT_TYPE_INT,    { .i64 = WHIP_RTP_HISTORY_DEFAULT }, WHIP_RTP_HISTORY_MIN, WHIP_RTP_HISTORY_MAX, ENC },
     { "authorization",      "The optional Bearer token for WHIP Authorization",         OFFSET(authorization),      AV_OPT_TYPE_STRING, { .str = NULL },     0,       0, ENC },
     { "cert_file",          "The optional certificate file path for DTLS",              OFFSET(cert_file),          AV_OPT_TYPE_STRING, { .str = NULL },     0,       0, ENC },
     { "key_file",           "The optional private key file path for DTLS",              OFFSET(key_file),      AV_OPT_TYPE_STRING, { .str = NULL },     0,       0, ENC },
