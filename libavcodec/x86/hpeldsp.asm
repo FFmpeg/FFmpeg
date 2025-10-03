@@ -29,6 +29,7 @@
 
 SECTION_RODATA
 cextern pb_1
+cextern pw_1
 cextern pw_2
 pb_interleave16: db 0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15
 pb_interleave8:  db 0, 4, 1, 5, 2, 6, 3, 7
@@ -407,10 +408,10 @@ AVG_PIXELS8_Y2
 
 
 ; void ff_avg_pixels16_xy2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-%macro SET_PIXELS_XY2 1
-cglobal %1_pixels16_xy2, 4,5,8
+%macro SET_PIXELS_XY2 2-3
+cglobal %1%3_pixels16_xy2, 4,5,8
     pxor        m7, m7
-    mova        m6, [pw_2]
+    mova        m6, [%2]
     movu        m0, [r1]
     movu        m4, [r1+1]
     mova        m1, m0
@@ -481,8 +482,10 @@ cglobal %1_pixels16_xy2, 4,5,8
 %endmacro
 
 INIT_XMM sse2
-SET_PIXELS_XY2 put
-SET_PIXELS_XY2 avg
+SET_PIXELS_XY2 put, pw_2
+SET_PIXELS_XY2 avg, pw_2
+SET_PIXELS_XY2 put, pw_1, _no_rnd
+SET_PIXELS_XY2 avg, pw_1, _no_rnd
 
 %macro SSSE3_PIXELS_XY2 1-2
 %if %0 == 2 ; sse2
