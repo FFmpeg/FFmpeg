@@ -407,6 +407,60 @@ INIT_XMM sse2
 AVG_PIXELS8_Y2
 
 
+; void ff_put_no_rnd_pixels8_xy2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
+%macro SET_PIXELS8_XY2 2-3
+cglobal %1%3_pixels8_xy2, 4,5,5
+    mova        m4, [pb_1]
+    mova        m3, [%2]
+    movh        m0, [r1]
+    movh        m2, [r1+1]
+    punpcklbw   m2, m0
+    pmaddubsw   m2, m4
+    xor         r4, r4
+    add         r1, r2
+.loop:
+    movh        m0, [r1+r4]
+    movh        m1, [r1+r4+1]
+    punpcklbw   m0, m1
+    pmaddubsw   m0, m4
+    paddusw     m2, m3
+    paddusw     m2, m0
+    psrlw       m2, 2
+%ifidn %1, avg
+    movh        m1, [r0+r4]
+    packuswb    m2, m2
+    pavgb       m2, m1
+%else
+    packuswb    m2, m2
+%endif
+    movh   [r0+r4], m2
+    add         r4, r2
+
+    movh        m1, [r1+r4]
+    movh        m2, [r1+r4+1]
+    punpcklbw   m2, m1
+    pmaddubsw   m2, m4
+    paddusw     m0, m3
+    paddusw     m0, m2
+    psrlw       m0, 2
+%ifidn %1, avg
+    movh        m1, [r0+r4]
+    packuswb    m0, m0
+    pavgb       m0, m1
+%else
+    packuswb    m0, m0
+%endif
+    movh   [r0+r4], m0
+    add         r4, r2
+    sub        r3d, 2
+    jnz .loop
+    RET
+%endmacro
+
+INIT_XMM ssse3
+SET_PIXELS8_XY2 put, pw_1, _no_rnd
+
+
 ; void ff_avg_pixels16_xy2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 %macro SET_PIXELS_XY2 2-3
 cglobal %1%3_pixels16_xy2, 4,5,8
