@@ -1761,10 +1761,8 @@ static int old_codec48(SANMVideoContext *ctx, GetByteContext *gb, int width, int
     dst  = (uint8_t*)ctx->frm0;
     prev = (uint8_t*)ctx->frm2;
 
-    if (!seq) {
-        ctx->prev_seq = -1;
-        memset(prev, 0, ctx->frm0_size);
-    }
+    if (seq == 0)
+        memset(ctx->frm2, 0, ctx->frm2_size);
 
     switch (compr) {
     case 0:
@@ -1782,7 +1780,12 @@ static int old_codec48(SANMVideoContext *ctx, GetByteContext *gb, int width, int
             return AVERROR_INVALIDDATA;
         break;
     case 3:
-        if (seq == ctx->prev_seq + 1) {
+        if ((seq == 0) || (seq == ctx->prev_seq + 1)) {
+            if ((seq & 1) || ((flags & 1) == 0) || (flags & 0x10)) {
+                FFSWAP(uint16_t*, ctx->frm0, ctx->frm2);
+                dst  = (uint8_t*)ctx->frm0;
+                prev = (uint8_t*)ctx->frm2;
+            }
             for (j = 0; j < height; j += 8) {
                 for (i = 0; i < width; i += 8) {
                     if (codec48_block(gb, dst + i, prev + i, i, j, width,
@@ -1806,7 +1809,6 @@ static int old_codec48(SANMVideoContext *ctx, GetByteContext *gb, int width, int
                                       "Subcodec 48 compression %d", compr);
         return AVERROR_PATCHWELCOME;
     }
-    ctx->rotate_code = 1;    // swap frm0 and frm2
     ctx->prev_seq = seq;
     return 0;
 }
