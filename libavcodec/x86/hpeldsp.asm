@@ -32,7 +32,6 @@ cextern pb_1
 cextern pw_1
 cextern pw_2
 pb_interleave16: db 0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15
-pb_interleave8:  db 0, 4, 1, 5, 2, 6, 3, 7
 
 cextern pw_8192
 
@@ -423,9 +422,14 @@ cglobal %1%3_pixels8_xy2, 4,5,5
     movh        m1, [r1+r4+1]
     punpcklbw   m0, m1
     pmaddubsw   m0, m4
+%ifidn %3, _no_rnd
     paddusw     m2, m3
     paddusw     m2, m0
     psrlw       m2, 2
+%else
+    paddusw     m2, m0
+    pmulhrsw    m2, [pw_8192]
+%endif
 %ifidn %1, avg
     movh        m1, [r0+r4]
     packuswb    m2, m2
@@ -440,9 +444,14 @@ cglobal %1%3_pixels8_xy2, 4,5,5
     movh        m2, [r1+r4+1]
     punpcklbw   m2, m1
     pmaddubsw   m2, m4
+%ifidn %3, _no_rnd
     paddusw     m0, m3
     paddusw     m0, m2
     psrlw       m0, 2
+%else
+    paddusw     m0, m2
+    pmulhrsw    m0, [pw_8192]
+%endif
 %ifidn %1, avg
     movh        m1, [r0+r4]
     packuswb    m0, m0
@@ -459,6 +468,8 @@ cglobal %1%3_pixels8_xy2, 4,5,5
 
 INIT_XMM ssse3
 SET_PIXELS8_XY2 put, pw_1, _no_rnd
+SET_PIXELS8_XY2 avg, pw_8192
+SET_PIXELS8_XY2 put, pw_8192
 
 
 ; void ff_avg_pixels16_xy2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
@@ -542,13 +553,8 @@ SET_PIXELS_XY2 put, pw_1, _no_rnd
 SET_PIXELS_XY2 avg, pw_1, _no_rnd
 
 %macro SSSE3_PIXELS_XY2 1-2
-%if %0 == 2 ; sse2
 cglobal %1_pixels16_xy2, 4,5,%2
     mova        m4, [pb_interleave16]
-%else
-cglobal %1_pixels8_xy2, 4,5
-    mova        m4, [pb_interleave8]
-%endif
     mova        m5, [pb_1]
     movu        m0, [r1]
     movu        m1, [r1+1]
@@ -601,9 +607,6 @@ cglobal %1_pixels8_xy2, 4,5
     RET
 %endmacro
 
-INIT_MMX ssse3
-SSSE3_PIXELS_XY2 put
-SSSE3_PIXELS_XY2 avg
 INIT_XMM ssse3
 SSSE3_PIXELS_XY2 put, 6
 SSSE3_PIXELS_XY2 avg, 7
