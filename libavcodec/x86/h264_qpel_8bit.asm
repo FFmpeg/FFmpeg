@@ -387,8 +387,12 @@ QPEL8_H_LOWPASS_L2_OP_XMM avg
 
 ; All functions that call this are required to have function arguments of
 ; dst, src, dstStride, srcStride
-%macro FILT_V 1
+%macro FILT_V 1-2
+%ifnidn %2, last
     mova      m6, m2
+%else
+    SWAP       6, 2
+%endif
     movh      m5, [r1]
     paddw     m6, m3
     psllw     m6, 2
@@ -403,7 +407,9 @@ QPEL8_H_LOWPASS_L2_OP_XMM avg
     psraw     m6, 5
     packuswb  m6, m6
     op_%1h    m6, [r0], m0 ; 1
+%ifnidn %2, last
     add       r0, r2
+%endif
     SWAP       0, 1, 2, 3, 4, 5
 %endmacro
 
@@ -428,7 +434,7 @@ cglobal %1_h264_qpel4_v_lowpass, 4,4 ; dst, src, dstStride, srcStride
     FILT_V        %1
     FILT_V        %1
     FILT_V        %1
-    FILT_V        %1
+    FILT_V        %1, last
     RET
 %endmacro
 
@@ -473,7 +479,7 @@ cglobal %1_h264_qpel8or16_v_lowpass, 5,5,8 ; dst, src, dstStride, srcStride, h
     FILT_V        %1
     FILT_V        %1
     FILT_V        %1
-    FILT_V        %1
+    FILT_V        %1, last
 .end:
     RET
 %endmacro
@@ -485,8 +491,12 @@ QPEL8OR16_V_LOWPASS_OP avg
 
 ; All functions that use this are required to have args:
 ; src, tmp, srcSize
-%macro FILT_HV 1 ; offset
+%macro FILT_HV 1-2 ; offset, last
+%ifnidn %2, last
     mova           m6, m2
+%else
+    SWAP            2, 6
+%endif
     movh           m5, [r0]
     paddw          m6, m3
     psllw          m6, 2
@@ -496,7 +506,9 @@ QPEL8OR16_V_LOWPASS_OP avg
     punpcklbw      m5, m7
     pmullw         m6, [pw_5]
     paddw          m0, m5
+%ifnidn %2, last
     add            r0, r2
+%endif
     paddw          m6, m0
     mova      [r1+%1], m6
     SWAP            0, 1, 2, 3, 4, 5
@@ -524,7 +536,7 @@ cglobal put_h264_qpel4_hv_lowpass_v, 3,5 ; src, tmp, srcStride
     FILT_HV       0*24
     FILT_HV       1*24
     FILT_HV       2*24
-    FILT_HV       3*24
+    FILT_HV       3*24, last
     add           r3, 4
     add           r1, 8
     mov           r0, r3
@@ -595,7 +607,7 @@ cglobal put_h264_qpel8or16_hv1_lowpass_op, 4,4,8 ; src, tmp, srcStride, size
     FILT_HV    12*48
     FILT_HV    13*48
     FILT_HV    14*48
-    FILT_HV    15*48
+    FILT_HV    15*48, last
 .end:
     RET
 
