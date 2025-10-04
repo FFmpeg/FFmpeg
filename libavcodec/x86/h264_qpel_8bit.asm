@@ -502,8 +502,8 @@ QPEL8OR16_V_LOWPASS_OP avg
     SWAP            0, 1, 2, 3, 4, 5
 %endmacro
 
-%macro QPEL4_HV1_LOWPASS_OP 1
-cglobal %1_h264_qpel4_hv_lowpass_v, 3,3 ; src, tmp, srcStride
+INIT_MMX mmxext
+cglobal put_h264_qpel4_hv_lowpass_v, 3,3 ; src, tmp, srcStride
     pxor          m7, m7
     movh          m0, [r0]
     movh          m1, [r0+r2]
@@ -524,6 +524,7 @@ cglobal %1_h264_qpel4_hv_lowpass_v, 3,3 ; src, tmp, srcStride
     FILT_HV       3*24
     RET
 
+%macro QPEL4_HV1_LOWPASS_OP 1
 cglobal %1_h264_qpel4_hv_lowpass_h, 3,4 ; tmp, dst, dstStride
     mov          r3d, 4
 .loop:
