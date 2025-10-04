@@ -183,13 +183,13 @@
 
 #ifdef __MINGW_PRINTF_FORMAT
 #    define AV_PRINTF_FMT __MINGW_PRINTF_FORMAT
-#elif defined(__GNUC__) || defined(__clang__)
+#elif defined(__has_attribute) && __has_attribute(format)
 #    define AV_PRINTF_FMT __printf__
 #endif
 
 #ifdef __MINGW_SCANF_FORMAT
 #    define AV_SCANF_FMT __MINGW_SCANF_FORMAT
-#elif defined(__GNUC__) || defined(__clang__)
+#elif defined(__has_attribute) && __has_attribute(format)
 #    define AV_SCANF_FMT __scanf__
 #endif
 
