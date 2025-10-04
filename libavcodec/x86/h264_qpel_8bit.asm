@@ -611,28 +611,45 @@ cglobal put_h264_qpel8or16_hv1_lowpass_op, 4,4,8 ; src, tmp, srcStride, size
 .end:
     RET
 
-
-%macro QPEL8OR16_HV2_LOWPASS_OP 1
-cglobal %1_h264_qpel8or16_hv2_lowpass_op, 4,4,6 ; dst, tmp, dstStride, h
-.loop:
-    mova          m0, [r1]
-    movu          m1, [r1+2]
-    movu          m3, [r1+10]
-    movu          m4, [r1+8]
-    movu          m2, [r1+4]
-    movu          m5, [r1+6]
-    paddw         m0, m3
+%macro HV2_LOWPASS 2
+    mova          %1, [r1+%2]
+    movu          m1, [r1+2+%2]
+    movu          m3, [r1+10+%2]
+    movu          m4, [r1+8+%2]
+    movu          m2, [r1+4+%2]
+    paddw         %1, m3
+    movu          m3, [r1+6+%2]
     paddw         m1, m4
-    psubw         m0, m1
-    psraw         m0, 2
-    paddw         m2, m5
-    psubw         m0, m1
-    paddsw        m0, m2
-    psraw         m0, 2
-    paddw         m0, m2
-    psraw         m0, 6
+    psubw         %1, m1
+    psraw         %1, 2
+    paddw         m2, m3
+    psubw         %1, m1
+    paddsw        %1, m2
+    psraw         %1, 2
+    paddw         %1, m2
+    psraw         %1, 6
+%endmacro
+
+%macro QPEL8AND16_HV2_LOWPASS_OP 1
+cglobal %1_h264_qpel8_hv2_lowpass, 3,4,6 ; dst, tmp, dstStride
+    mov          r3d, 8
+.loop:
+    HV2_LOWPASS   m0, 0
     packuswb      m0, m0
-    op_%1h        m0, [r0], m5
+    op_%1h        m0, [r0], m3
+    add           r1, 48
+    add           r0, r2
+    dec          r3d
+    jne        .loop
+    RET
+
+cglobal %1_h264_qpel16_hv2_lowpass, 3,4,6 ; dst, tmp, dstStride
+    mov          r3d, 16
+.loop:
+    HV2_LOWPASS   m0, 0
+    HV2_LOWPASS   m5, 16
+    packuswb      m0, m5
+    op_%1         m0, [r0], m3
     add           r1, 48
     add           r0, r2
     dec          r3d
@@ -641,8 +658,8 @@ cglobal %1_h264_qpel8or16_hv2_lowpass_op, 4,4,6 ; dst, tmp, dstStride, h
 %endmacro
 
 INIT_XMM sse2
-QPEL8OR16_HV2_LOWPASS_OP put
-QPEL8OR16_HV2_LOWPASS_OP avg
+QPEL8AND16_HV2_LOWPASS_OP put
+QPEL8AND16_HV2_LOWPASS_OP avg
 
 %macro QPEL8OR16_HV2_LOWPASS_OP_XMM 1
 cglobal %1_h264_qpel8_hv2_lowpass, 3,4,6 ; dst, tmp, dstStride

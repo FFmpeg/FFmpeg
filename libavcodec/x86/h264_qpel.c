@@ -65,7 +65,8 @@ void ff_ ## OPNAME ## _h264_qpel4_v_lowpass_mmxext(uint8_t *dst, const uint8_t *
 void ff_ ## OPNAME ## _h264_qpel8or16_v_lowpass_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride, int h);\
 void ff_ ## OPNAME ## _h264_qpel4_hv_lowpass_h_mmxext(int16_t *tmp, uint8_t *dst, ptrdiff_t dstStride);\
 void ff_ ## OPNAME ## _h264_qpel8or16_hv1_lowpass_op_sse2(const uint8_t *src, int16_t *tmp, ptrdiff_t srcStride, int size);\
-void ff_ ## OPNAME ## _h264_qpel8or16_hv2_lowpass_op_sse2(uint8_t *dst, int16_t *tmp, ptrdiff_t dstStride, int h);\
+void ff_ ## OPNAME ## _h264_qpel8_hv2_lowpass_sse2(uint8_t *dst, int16_t *tmp, ptrdiff_t dstStride);\
+void ff_ ## OPNAME ## _h264_qpel16_hv2_lowpass_sse2(uint8_t *dst, int16_t *tmp, ptrdiff_t dstStride);\
 void ff_ ## OPNAME ## _h264_qpel8_hv2_lowpass_ssse3(uint8_t *dst, int16_t *tmp, ptrdiff_t dstStride);\
 void ff_ ## OPNAME ## _h264_qpel16_hv2_lowpass_ssse3(uint8_t *dst, int16_t *tmp, ptrdiff_t dstStride);\
 void ff_ ## OPNAME ## _pixels4_l2_shift5_mmxext(uint8_t *dst, const int16_t *src16, const uint8_t *src8, ptrdiff_t dstStride);\
@@ -83,16 +84,6 @@ static av_always_inline void OPNAME ## h264_qpel4_hv_lowpass_ ## MMX(uint8_t *ds
     src -= 2*srcStride+2;\
     ff_put_h264_qpel4_hv_lowpass_v_mmxext(src, tmp, srcStride);\
     ff_ ## OPNAME ## h264_qpel4_hv_lowpass_h_mmxext(tmp, dst, dstStride);\
-}\
-\
-static av_always_inline void ff_ ## OPNAME ## h264_qpel8or16_hv2_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp, ptrdiff_t dstStride, int size)\
-{\
-    int w = size>>4;\
-    do{\
-    ff_ ## OPNAME ## h264_qpel8or16_hv2_lowpass_op_sse2(dst, tmp, dstStride, size);\
-    tmp += 8;\
-    dst += 8;\
-    }while(w--);\
 }\
 
 #define QPEL_H264_H16(OPNAME, EXT) \
@@ -156,39 +147,21 @@ static av_always_inline void put_h264_qpel8or16_hv1_lowpass_sse2(int16_t *tmp,
 }
 
 #define QPEL_H264_HV_XMM(OPNAME, OP, MMX)\
-static av_always_inline void OPNAME ## h264_qpel8or16_hv_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride, int size)\
-{\
-    put_h264_qpel8or16_hv1_lowpass_sse2(tmp, src, srcStride, size);\
-    ff_ ## OPNAME ## h264_qpel8or16_hv2_lowpass_ ## MMX(dst, tmp, dstStride, size);\
-}\
 static av_always_inline void OPNAME ## h264_qpel8_hv_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride)\
 {\
-    OPNAME ## h264_qpel8or16_hv_lowpass_ ## MMX(dst, tmp, src, dstStride, srcStride, 8);\
+    put_h264_qpel8or16_hv1_lowpass_sse2(tmp, src, srcStride, 8);\
+    ff_ ## OPNAME ## h264_qpel8_hv2_lowpass_ ## MMX(dst, tmp, dstStride);\
 }\
 static av_always_inline void OPNAME ## h264_qpel16_hv_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride)\
 {\
-    OPNAME ## h264_qpel8or16_hv_lowpass_ ## MMX(dst, tmp, src, dstStride, srcStride, 16);\
+    put_h264_qpel8or16_hv1_lowpass_sse2(tmp, src, srcStride, 16);\
+    ff_ ## OPNAME ## h264_qpel16_hv2_lowpass_ ## MMX(dst, tmp, dstStride);\
 }\
-
-#define SSSE3_HV2_LOWPASS_WRAPPER(OPNAME) \
-static av_always_inline void \
-ff_ ## OPNAME ## _h264_qpel8or16_hv2_lowpass_ssse3(uint8_t *dst, int16_t *tmp, ptrdiff_t dstStride, int size) \
-{\
-    if (size == 8)\
-        ff_ ## OPNAME ## _h264_qpel8_hv2_lowpass_ssse3(dst, tmp, dstStride);\
-    else\
-        ff_ ## OPNAME ## _h264_qpel16_hv2_lowpass_ssse3(dst, tmp, dstStride);\
-}
-SSSE3_HV2_LOWPASS_WRAPPER(avg)
-SSSE3_HV2_LOWPASS_WRAPPER(put)
 
 #define ff_put_h264_qpel8_v_lowpass_ssse3  ff_put_h264_qpel8_v_lowpass_sse2
 #define ff_avg_h264_qpel8_v_lowpass_ssse3  ff_avg_h264_qpel8_v_lowpass_sse2
 #define ff_put_h264_qpel16_v_lowpass_ssse3 ff_put_h264_qpel16_v_lowpass_sse2
 #define ff_avg_h264_qpel16_v_lowpass_ssse3 ff_avg_h264_qpel16_v_lowpass_sse2
-
-#define ff_put_h264_qpel8or16_hv2_lowpass_sse2 ff_put_h264_qpel8or16_hv2_lowpass_mmxext
-#define ff_avg_h264_qpel8or16_hv2_lowpass_sse2 ff_avg_h264_qpel8or16_hv2_lowpass_mmxext
 
 #define ff_put_pixels4_l2_shift5_sse2 ff_put_pixels4_l2_shift5_mmxext
 #define ff_avg_pixels4_l2_shift5_sse2 ff_avg_pixels4_l2_shift5_mmxext
