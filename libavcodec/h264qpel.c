@@ -26,65 +26,6 @@
 #define pixeltmp int16_t
 #define BIT_DEPTH 8
 #include "h264qpel_template.c"
-
-static void put_h264_qpel2_h_lowpass_8(uint8_t *dst, const uint8_t *restrict src, int dstStride, int srcStride)
-{
-    const int h = 2;
-    for (int i = 0; i < h; ++i) {
-        dst[0] = av_clip_uint8(((src[0]+src[1])*20 - (src[-1]+src[2])*5 + (src[-2]+src[3]) + 16) >> 5);
-        dst[1] = av_clip_uint8(((src[1]+src[2])*20 - (src[0 ]+src[3])*5 + (src[-1]+src[4]) + 16) >> 5);
-        dst += dstStride;
-        src += srcStride;
-    }
-}
-
-static void put_h264_qpel2_v_lowpass_8(uint8_t *dst, const uint8_t *restrict src, int dstStride, int srcStride)
-{
-    const int w = 2;
-    for (int i = 0; i < w; ++i) {
-        const int srcB = src[-2*srcStride];
-        const int srcA = src[-1*srcStride];
-        const int src0 = src[0 *srcStride];
-        const int src1 = src[1 *srcStride];
-        const int src2 = src[2 *srcStride];
-        const int src3 = src[3 *srcStride];
-        const int src4 = src[4 *srcStride];
-        dst[0*dstStride] = av_clip_uint8(((src0+src1)*20 - (srcA+src2)*5 + (srcB+src3) + 16) >> 5);
-        dst[1*dstStride] = av_clip_uint8(((src1+src2)*20 - (src0+src3)*5 + (srcA+src4) + 16) >> 5);
-        dst++;
-        src++;
-    }
-}
-
-static void put_h264_qpel2_hv_lowpass_8(uint8_t *dst, pixeltmp *tmp, const uint8_t *restrict src, int dstStride, int tmpStride, int srcStride)
-{
-    const int h = 2;
-    const int w = 2;
-    src -= 2*srcStride;
-    for (int i = 0; i < h + 5; ++i) {
-        tmp[0] = (src[0]+src[1])*20 - (src[-1]+src[2])*5 + (src[-2]+src[3]);
-        tmp[1] = (src[1]+src[2])*20 - (src[0 ]+src[3])*5 + (src[-1]+src[4]);
-        tmp += tmpStride;
-        src += srcStride;
-    }
-    tmp -= tmpStride*(h+5-2);
-    for (int i = 0; i < w; ++i) {
-        const int tmpB = tmp[-2*tmpStride];
-        const int tmpA = tmp[-1*tmpStride];
-        const int tmp0 = tmp[0 *tmpStride];
-        const int tmp1 = tmp[1 *tmpStride];
-        const int tmp2 = tmp[2 *tmpStride];
-        const int tmp3 = tmp[3 *tmpStride];
-        const int tmp4 = tmp[4 *tmpStride];
-        dst[0*dstStride] = av_clip_uint8(((tmp0+tmp1)*20 - (tmpA+tmp2)*5 + (tmpB+tmp3) + 512) >> 10);
-        dst[1*dstStride] = av_clip_uint8(((tmp1+tmp2)*20 - (tmp0+tmp3)*5 + (tmpA+tmp4) + 512) >> 10);
-        dst++;
-        tmp++;
-    }
-}
-
-H264_MC(put_, 2)
-
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 9
@@ -140,7 +81,6 @@ av_cold void ff_h264qpel_init(H264QpelContext *c, int bit_depth)
     switch (bit_depth) {
     default:
         SET_QPEL(8);
-        dspfunc2(put_h264_qpel, 3,  2, 8); // only used by Snow
         break;
     case 9:
         SET_QPEL(9);

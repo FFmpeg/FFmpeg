@@ -66,7 +66,7 @@ static inline void FUNCC(OPNAME ## _pixels8)(uint8_t *block,            \
         block  += line_size;                                            \
     }                                                                   \
 }                                                                       \
-                                                                        \
+av_unused                                                               \
 CALL_2X_PIXELS(FUNCC(OPNAME ## _pixels16),                              \
                FUNCC(OPNAME ## _pixels8),                               \
                8 * sizeof(pixel))

@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
+
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/thread.h"
@@ -26,6 +28,91 @@
 #include "snow.h"
 #include "snowdata.h"
 
+#define pixeltmp int16_t
+#define BIT_DEPTH 8
+#define SNOW
+#include "h264qpel_template.c"
+
+static void put_snow_qpel2_h_lowpass_8(uint8_t *dst, const uint8_t *restrict src, int dstStride, int srcStride)
+{
+    const int h = 2;
+    for (int i = 0; i < h; ++i) {
+        dst[0] = av_clip_uint8(((src[0]+src[1])*20 - (src[-1]+src[2])*5 + (src[-2]+src[3]) + 16) >> 5);
+        dst[1] = av_clip_uint8(((src[1]+src[2])*20 - (src[0 ]+src[3])*5 + (src[-1]+src[4]) + 16) >> 5);
+        dst += dstStride;
+        src += srcStride;
+    }
+}
+
+static void put_snow_qpel2_v_lowpass_8(uint8_t *dst, const uint8_t *restrict src, int dstStride, int srcStride)
+{
+    const int w = 2;
+    for (int i = 0; i < w; ++i) {
+        const int srcB = src[-2*srcStride];
+        const int srcA = src[-1*srcStride];
+        const int src0 = src[0 *srcStride];
+        const int src1 = src[1 *srcStride];
+        const int src2 = src[2 *srcStride];
+        const int src3 = src[3 *srcStride];
+        const int src4 = src[4 *srcStride];
+        dst[0*dstStride] = av_clip_uint8(((src0+src1)*20 - (srcA+src2)*5 + (srcB+src3) + 16) >> 5);
+        dst[1*dstStride] = av_clip_uint8(((src1+src2)*20 - (src0+src3)*5 + (srcA+src4) + 16) >> 5);
+        dst++;
+        src++;
+    }
+}
+
+static void put_snow_qpel2_hv_lowpass_8(uint8_t *dst, pixeltmp *tmp, const uint8_t *restrict src, int dstStride, int tmpStride, int srcStride)
+{
+    const int h = 2;
+    const int w = 2;
+    src -= 2*srcStride;
+    for (int i = 0; i < h + 5; ++i) {
+        tmp[0] = (src[0]+src[1])*20 - (src[-1]+src[2])*5 + (src[-2]+src[3]);
+        tmp[1] = (src[1]+src[2])*20 - (src[0 ]+src[3])*5 + (src[-1]+src[4]);
+        tmp += tmpStride;
+        src += srcStride;
+    }
+    tmp -= tmpStride*(h+5-2);
+    for (int i = 0; i < w; ++i) {
+        const int tmpB = tmp[-2*tmpStride];
+        const int tmpA = tmp[-1*tmpStride];
+        const int tmp0 = tmp[0 *tmpStride];
+        const int tmp1 = tmp[1 *tmpStride];
+        const int tmp2 = tmp[2 *tmpStride];
+        const int tmp3 = tmp[3 *tmpStride];
+        const int tmp4 = tmp[4 *tmpStride];
+        dst[0*dstStride] = av_clip_uint8(((tmp0+tmp1)*20 - (tmpA+tmp2)*5 + (tmpB+tmp3) + 512) >> 10);
+        dst[1*dstStride] = av_clip_uint8(((tmp1+tmp2)*20 - (tmp0+tmp3)*5 + (tmpA+tmp4) + 512) >> 10);
+        dst++;
+        tmp++;
+    }
+}
+
+H264_MC(put_, snow, 2)
+
+static av_cold void init_qpel(SnowContext *const s)
+{
+    static_assert(offsetof(H264QpelContext, put_h264_qpel_pixels_tab) == 0,
+                  "put_h264_qpel_pixels_tab not at start of H264QpelContext");
+    ff_h264qpel_init(&s->h264qpel, 8);
+    s->put_snow_qpel_pixels_tab[3][0]  = put_snow_qpel2_mc00_8_c;
+    s->put_snow_qpel_pixels_tab[3][1]  = put_snow_qpel2_mc10_8_c;
+    s->put_snow_qpel_pixels_tab[3][2]  = put_snow_qpel2_mc20_8_c;
+    s->put_snow_qpel_pixels_tab[3][3]  = put_snow_qpel2_mc30_8_c;
+    s->put_snow_qpel_pixels_tab[3][4]  = put_snow_qpel2_mc01_8_c;
+    s->put_snow_qpel_pixels_tab[3][5]  = put_snow_qpel2_mc11_8_c;
+    s->put_snow_qpel_pixels_tab[3][6]  = put_snow_qpel2_mc21_8_c;
+    s->put_snow_qpel_pixels_tab[3][7]  = put_snow_qpel2_mc31_8_c;
+    s->put_snow_qpel_pixels_tab[3][8]  = put_snow_qpel2_mc02_8_c;
+    s->put_snow_qpel_pixels_tab[3][9]  = put_snow_qpel2_mc12_8_c;
+    s->put_snow_qpel_pixels_tab[3][10] = put_snow_qpel2_mc22_8_c;
+    s->put_snow_qpel_pixels_tab[3][11] = put_snow_qpel2_mc32_8_c;
+    s->put_snow_qpel_pixels_tab[3][12] = put_snow_qpel2_mc03_8_c;
+    s->put_snow_qpel_pixels_tab[3][13] = put_snow_qpel2_mc13_8_c;
+    s->put_snow_qpel_pixels_tab[3][14] = put_snow_qpel2_mc23_8_c;
+    s->put_snow_qpel_pixels_tab[3][15] = put_snow_qpel2_mc33_8_c;
+}
 
 void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
                               int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8){
@@ -354,18 +441,18 @@ void ff_snow_pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, ptrdiff_t st
         else if(b_w==32){
             int y;
             for(y=0; y<b_h; y+=16){
-                s->h264qpel.put_h264_qpel_pixels_tab[0][dy+(dx>>2)](dst + y*stride, src + 3 + (y+3)*stride,stride);
-                s->h264qpel.put_h264_qpel_pixels_tab[0][dy+(dx>>2)](dst + 16 + y*stride, src + 19 + (y+3)*stride,stride);
+                s->put_snow_qpel_pixels_tab[0][dy+(dx>>2)](dst + y*stride, src + 3 + (y+3)*stride,stride);
+                s->put_snow_qpel_pixels_tab[0][dy+(dx>>2)](dst + 16 + y*stride, src + 19 + (y+3)*stride,stride);
             }
         }else if(b_w==b_h)
-            s->h264qpel.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst,src + 3 + 3*stride,stride);
+            s->put_snow_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst,src + 3 + 3*stride,stride);
         else if(b_w==2*b_h){
-            s->h264qpel.put_h264_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst    ,src + 3       + 3*stride,stride);
-            s->h264qpel.put_h264_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst+b_h,src + 3 + b_h + 3*stride,stride);
+            s->put_snow_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst    ,src + 3       + 3*stride,stride);
+            s->put_snow_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst+b_h,src + 3 + b_h + 3*stride,stride);
         }else{
             av_assert2(2*b_w==b_h);
-            s->h264qpel.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst           ,src + 3 + 3*stride           ,stride);
-            s->h264qpel.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst+b_w*stride,src + 3 + 3*stride+b_w*stride,stride);
+            s->put_snow_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst           ,src + 3 + 3*stride           ,stride);
+            s->put_snow_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst+b_w*stride,src + 3 + 3*stride+b_w*stride,stride);
         }
     }
 }
@@ -404,7 +491,8 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
 
     ff_videodsp_init(&s->vdsp, 8);
     ff_dwt_init(&s->dwt);
-    ff_h264qpel_init(&s->h264qpel, 8);
+
+    init_qpel(s);
 
 #define mcfh(dx,dy)\
     s->hdsp.put_pixels_tab       [0][dy/4+dx/8]=\
