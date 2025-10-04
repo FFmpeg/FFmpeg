@@ -22,9 +22,9 @@
 #include "libavcodec/dcadsp.h"
 
 #define LFE_FIR_FLOAT_FUNC(opt)                                               \
-void ff_lfe_fir0_float_##opt(float *pcm_samples, int32_t *lfe_samples,         \
+void ff_lfe_fir0_float_##opt(float *pcm_samples, const int32_t *lfe_samples,   \
                              const float *filter_coeff, ptrdiff_t npcmblocks); \
-void ff_lfe_fir1_float_##opt(float *pcm_samples, int32_t *lfe_samples,         \
+void ff_lfe_fir1_float_##opt(float *pcm_samples, const int32_t *lfe_samples,   \
                              const float *filter_coeff, ptrdiff_t npcmblocks);
 
 LFE_FIR_FLOAT_FUNC(sse2)

@@ -54,7 +54,7 @@ static void decode_joint_c(int32_t **dst, int32_t **src,
     }
 }
 
-static void lfe_fir_float_c(float *pcm_samples, int32_t *lfe_samples,
+static void lfe_fir_float_c(float *pcm_samples, const int32_t *lfe_samples,
                             const float *filter_coeff, ptrdiff_t npcmblocks,
                             int dec_select)
 {
@@ -84,13 +84,13 @@ static void lfe_fir_float_c(float *pcm_samples, int32_t *lfe_samples,
     }
 }
 
-static void lfe_fir0_float_c(float *pcm_samples, int32_t *lfe_samples,
+static void lfe_fir0_float_c(float *pcm_samples, const int32_t *lfe_samples,
                              const float *filter_coeff, ptrdiff_t npcmblocks)
 {
     lfe_fir_float_c(pcm_samples, lfe_samples, filter_coeff, npcmblocks, 0);
 }
 
-static void lfe_fir1_float_c(float *pcm_samples, int32_t *lfe_samples,
+static void lfe_fir1_float_c(float *pcm_samples, const int32_t *lfe_samples,
                              const float *filter_coeff, ptrdiff_t npcmblocks)
 {
     lfe_fir_float_c(pcm_samples, lfe_samples, filter_coeff, npcmblocks, 1);
@@ -193,7 +193,7 @@ static void sub_qmf64_float_c(SynthFilterContext *synth,
     }
 }
 
-static void lfe_fir_fixed_c(int32_t *pcm_samples, int32_t *lfe_samples,
+static void lfe_fir_fixed_c(int32_t *pcm_samples, const int32_t *lfe_samples,
                             const int32_t *filter_coeff, ptrdiff_t npcmblocks)
 {
     // Select decimation factor

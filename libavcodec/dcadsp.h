@@ -40,7 +40,7 @@ typedef struct DCADSPContext {
                          ptrdiff_t sb_start, ptrdiff_t sb_end,
                          ptrdiff_t ofs, ptrdiff_t len);
 
-    void (*lfe_fir_float[2])(float *pcm_samples, int32_t *lfe_samples,
+    void (*lfe_fir_float[2])(float *pcm_samples, const int32_t *lfe_samples,
                              const float *filter_coeff, ptrdiff_t npcmblocks);
 
     void (*lfe_x96_float)(float *dst, const float *src,
@@ -56,7 +56,7 @@ typedef struct DCADSPContext {
                              const float *filter_coeff, ptrdiff_t npcmblocks,
                              float scale);
 
-    void (*lfe_fir_fixed)(int32_t *pcm_samples, int32_t *lfe_samples,
+    void (*lfe_fir_fixed)(int32_t *pcm_samples, const int32_t *lfe_samples,
                           const int32_t *filter_coeff, ptrdiff_t npcmblocks);
 
     void (*lfe_x96_fixed)(int32_t *dst, const int32_t *src,
