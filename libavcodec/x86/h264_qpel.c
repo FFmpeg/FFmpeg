@@ -80,14 +80,8 @@ DEF_QPEL(put)
 #define QPEL_H264(OPNAME, OP, MMX)\
 static av_always_inline void OPNAME ## h264_qpel4_hv_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride)\
 {\
-    int w=3;\
     src -= 2*srcStride+2;\
-    while(w--){\
-        ff_put_h264_qpel4_hv_lowpass_v_mmxext(src, tmp, srcStride);\
-        tmp += 4;\
-        src += 4;\
-    }\
-    tmp -= 3*4;\
+    ff_put_h264_qpel4_hv_lowpass_v_mmxext(src, tmp, srcStride);\
     ff_ ## OPNAME ## h264_qpel4_hv_lowpass_h_mmxext(tmp, dst, dstStride);\
 }\
 \
