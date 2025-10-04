@@ -634,11 +634,7 @@ QPEL8OR16_HV2_LOWPASS_OP put
 QPEL8OR16_HV2_LOWPASS_OP avg
 
 %macro QPEL8OR16_HV2_LOWPASS_OP_XMM 1
-%ifidn %1, avg
-cglobal %1_h264_qpel8_hv2_lowpass, 3,4,7 ; dst, tmp, dstStride
-%else
 cglobal %1_h264_qpel8_hv2_lowpass, 3,4,6 ; dst, tmp, dstStride
-%endif
     mov          r3d, 8
 .loop:
     mova          m1, [r1+16]
@@ -663,7 +659,7 @@ cglobal %1_h264_qpel8_hv2_lowpass, 3,4,6 ; dst, tmp, dstStride
     paddw         m0, m2
     psraw         m0, 6
     packuswb      m0, m0
-    op_%1h        m0, [r0], m6
+    op_%1h        m0, [r0], m5
     add           r1, 48
     add           r0, r2
     dec          r3d
