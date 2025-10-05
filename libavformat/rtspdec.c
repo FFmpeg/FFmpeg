@@ -676,9 +676,11 @@ static int rtsp_read_command_reply(AVFormatContext *s, enum AVFormatCommandID id
         return AVERROR(ENOMEM);
 
     RTSPMessageHeader reply;
-    int ret = ff_rtsp_read_reply(s, &reply, &res->body, 0, "SET_PARAMETER");
+    int ret = ff_rtsp_read_reply(s, &reply, &res->body, 1, "SET_PARAMETER");
     if (ret < 0)
         return ret;
+    if (ret == 1)
+        return AVERROR(EAGAIN);
 
     res->status_code = reply.status_code;
     res->body_len = reply.content_length;
