@@ -286,6 +286,9 @@ typedef struct RTSPState {
     /** The last reply of the server to a RTSP command */
     char last_reply[2048]; /* XXX: allocate ? */
 
+    /** Indicates if a packet is pending to be read (useful for interleaved reads) */
+    int pending_packet;
+
     /** RTSPStream->transport_priv of the last stream that we read a
      * packet from */
     void *cur_transport_priv;

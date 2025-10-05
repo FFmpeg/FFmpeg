@@ -1200,6 +1200,7 @@ int ff_rtsp_skip_packet(AVFormatContext *s)
     int ret, len, len1;
     uint8_t buf[MAX_URL_SIZE];
 
+    rt->pending_packet = 0;
     ret = ffurl_read_complete(rt->rtsp_hd, buf, 3);
     if (ret != 3)
         return ret < 0 ? ret : AVERROR(EIO);
@@ -1232,6 +1233,18 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
     int ret, content_length, line_count, request;
     unsigned char *content;
 
+    // If we returned on pending packet last time,
+    // do not try to read again, as it would corrupt
+    // the state due to the already consumed '$'.
+    if (rt->pending_packet) {
+        if (return_on_interleaved_data)
+            return 1;
+
+        ret = ff_rtsp_skip_packet(s);
+        if (ret < 0)
+            return ret;
+    }
+
 start:
     line_count = 0;
     request = 0;
@@ -1254,6 +1267,7 @@ start:
                 break;
             if (ch == '$' && q == buf) {
                 if (return_on_interleaved_data) {
+                    rt->pending_packet = 1;
                     return 1;
                 } else {
                     ret = ff_rtsp_skip_packet(s);
