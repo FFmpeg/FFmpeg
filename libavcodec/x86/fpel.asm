@@ -35,7 +35,12 @@ SECTION .text
 %define LOAD movu
 %define SAVE mova
 %endif
+cglobal %1_pixels%2x%2, 3,5,4
+    mov         r3d, %2
+    jmp         %1_pixels%2_after_prologue
+
 cglobal %1_pixels%2, 4,5,4
+%1_pixels%2_after_prologue:
     lea          r4, [r2*3]
 .loop:
     LOAD         m0, [r1]

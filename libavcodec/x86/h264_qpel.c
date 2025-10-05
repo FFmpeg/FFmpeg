@@ -163,23 +163,6 @@ H264_MC_V(OPNAME, SIZE, MMX, ALIGN, SHIFT5_EXT)\
 H264_MC_H(OPNAME, SIZE, MMX, ALIGN, SHIFT5_EXT)\
 H264_MC_HV(OPNAME, SIZE, MMX, ALIGN, SHIFT5_EXT)\
 
-static void put_h264_qpel16_mc00_sse2 (uint8_t *dst, const uint8_t *src,
-                                       ptrdiff_t stride)
-{
-    ff_put_pixels16_sse2(dst, src, stride, 16);
-}
-static void avg_h264_qpel16_mc00_sse2 (uint8_t *dst, const uint8_t *src,
-                                       ptrdiff_t stride)
-{
-    ff_avg_pixels16_sse2(dst, src, stride, 16);
-}
-
-static void avg_h264_qpel8_mc00_mmxext(uint8_t *dst, const uint8_t *src,
-                                       ptrdiff_t stride)
-{
-    ff_avg_pixels8_mmxext(dst, src, stride, 8);
-}
-
 #define H264_MC_H(OPNAME, SIZE, MMX, ALIGN, UNUSED) \
 static void OPNAME ## h264_qpel ## SIZE ## _mc10_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
@@ -424,7 +407,7 @@ av_cold void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         if (!high_bit_depth) {
             SET_QPEL_FUNCS_1PP(put_h264_qpel, 2,  4, mmxext, );
-            c->avg_h264_qpel_pixels_tab[1][0] = avg_h264_qpel8_mc00_mmxext;
+            c->avg_h264_qpel_pixels_tab[1][0] = ff_avg_pixels8x8_mmxext;
             SET_QPEL_FUNCS_1PP(avg_h264_qpel, 2,  4, mmxext, );
             c->avg_h264_qpel_pixels_tab[2][0] = ff_avg_pixels4_mmxext;
         } else if (bit_depth == 10) {
@@ -447,8 +430,8 @@ av_cold void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
             H264_QPEL_FUNCS(3, 1, sse2);
             H264_QPEL_FUNCS(3, 2, sse2);
             H264_QPEL_FUNCS(3, 3, sse2);
-            c->put_h264_qpel_pixels_tab[0][0] = put_h264_qpel16_mc00_sse2;
-            c->avg_h264_qpel_pixels_tab[0][0] = avg_h264_qpel16_mc00_sse2;
+            c->put_h264_qpel_pixels_tab[0][0] = ff_put_pixels16x16_sse2;
+            c->avg_h264_qpel_pixels_tab[0][0] = ff_avg_pixels16x16_sse2;
         }
 
         if (bit_depth == 10) {

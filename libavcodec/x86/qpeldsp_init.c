@@ -489,19 +489,6 @@ QPEL_OP(put_,        _,        mmxext, PASSTHROUGH)
 QPEL_OP(avg_,        _,        mmxext, STRIP_HEIGHT)
 QPEL_OP(put_no_rnd_, _no_rnd_, mmxext, PASSTHROUGH)
 
-#define MC00(OPNAME, SIZE, EXT)                                         \
-static void OPNAME ## _qpel ## SIZE ## _mc00_ ## EXT(uint8_t *dst,      \
-                                                     const uint8_t *src,\
-                                                     ptrdiff_t stride)  \
-{                                                                       \
-    ff_ ## OPNAME ## _pixels ## SIZE ##_ ## EXT(dst, src, stride, SIZE);\
-}
-
-MC00(put,  8, mmx)
-MC00(avg,  8, mmxext)
-MC00(put, 16, sse2)
-MC00(avg, 16, sse2)
-
 #endif /* HAVE_X86ASM */
 
 #define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU, PREFIX)                          \
@@ -530,12 +517,12 @@ av_cold void ff_qpeldsp_init_x86(QpelDSPContext *c)
     if (X86_MMXEXT(cpu_flags)) {
 #if HAVE_MMXEXT_EXTERNAL
         SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
-        c->avg_qpel_pixels_tab[1][0] = avg_qpel8_mc00_mmxext;
+        c->avg_qpel_pixels_tab[1][0] = ff_avg_pixels8x8_mmxext;
         SET_QPEL_FUNCS(avg_qpel,        1,  8, mmxext, );
 
         SET_QPEL_FUNCS(put_qpel,        0, 16, mmxext, );
         c->put_no_rnd_qpel_pixels_tab[1][0] =
-        c->put_qpel_pixels_tab[1][0] = put_qpel8_mc00_mmx;
+        c->put_qpel_pixels_tab[1][0] = ff_put_pixels8x8_mmx;
         SET_QPEL_FUNCS(put_qpel,        1,  8, mmxext, );
         SET_QPEL_FUNCS(put_no_rnd_qpel, 0, 16, mmxext, );
         SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, mmxext, );
@@ -544,8 +531,8 @@ av_cold void ff_qpeldsp_init_x86(QpelDSPContext *c)
 #if HAVE_SSE2_EXTERNAL
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->put_no_rnd_qpel_pixels_tab[0][0] =
-        c->put_qpel_pixels_tab[0][0] = put_qpel16_mc00_sse2;
-        c->avg_qpel_pixels_tab[0][0] = avg_qpel16_mc00_sse2;
+        c->put_qpel_pixels_tab[0][0] = ff_put_pixels16x16_sse2;
+        c->avg_qpel_pixels_tab[0][0] = ff_avg_pixels16x16_sse2;
     }
 #endif
 }

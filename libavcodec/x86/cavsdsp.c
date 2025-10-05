@@ -46,36 +46,10 @@ static void cavs_idct8_add_sse2(uint8_t *dst, int16_t *block, ptrdiff_t stride)
 
 #endif /* HAVE_SSE2_EXTERNAL */
 
-#if HAVE_MMX_EXTERNAL
-static void put_cavs_qpel8_mc00_mmx(uint8_t *dst, const uint8_t *src,
-                                    ptrdiff_t stride)
-{
-    ff_put_pixels8_mmx(dst, src, stride, 8);
-}
-
-static void avg_cavs_qpel8_mc00_mmxext(uint8_t *dst, const uint8_t *src,
-                                       ptrdiff_t stride)
-{
-    ff_avg_pixels8_mmxext(dst, src, stride, 8);
-}
-
-static void put_cavs_qpel16_mc00_sse2(uint8_t *dst, const uint8_t *src,
-                                      ptrdiff_t stride)
-{
-    ff_put_pixels16_sse2(dst, src, stride, 16);
-}
-
-static void avg_cavs_qpel16_mc00_sse2(uint8_t *dst, const uint8_t *src,
-                                      ptrdiff_t stride)
-{
-    ff_avg_pixels16_sse2(dst, src, stride, 16);
-}
-#endif
-
 static av_cold void cavsdsp_init_mmx(CAVSDSPContext *c)
 {
 #if HAVE_MMX_EXTERNAL
-    c->put_cavs_qpel_pixels_tab[1][0] = put_cavs_qpel8_mc00_mmx;
+    c->put_cavs_qpel_pixels_tab[1][0] = ff_put_pixels8x8_mmx;
 #endif /* HAVE_MMX_EXTERNAL */
 }
 
@@ -129,12 +103,12 @@ av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c)
 
 #if HAVE_MMX_EXTERNAL
     if (EXTERNAL_MMXEXT(cpu_flags)) {
-        c->avg_cavs_qpel_pixels_tab[1][0] = avg_cavs_qpel8_mc00_mmxext;
+        c->avg_cavs_qpel_pixels_tab[1][0] = ff_avg_pixels8x8_mmxext;
     }
 #endif
 #if HAVE_SSE2_EXTERNAL
     if (EXTERNAL_SSE2(cpu_flags)) {
-        c->put_cavs_qpel_pixels_tab[0][ 0] = put_cavs_qpel16_mc00_sse2;
+        c->put_cavs_qpel_pixels_tab[0][ 0] = ff_put_pixels16x16_sse2;
         c->put_cavs_qpel_pixels_tab[0][ 2] = put_cavs_qpel16_mc20_sse2;
         c->put_cavs_qpel_pixels_tab[0][ 4] = put_cavs_qpel16_mc01_sse2;
         c->put_cavs_qpel_pixels_tab[0][ 8] = put_cavs_qpel16_mc02_sse2;
@@ -144,7 +118,7 @@ av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c)
         c->put_cavs_qpel_pixels_tab[1][ 8] = ff_put_cavs_qpel8_mc02_sse2;
         c->put_cavs_qpel_pixels_tab[1][12] = ff_put_cavs_qpel8_mc03_sse2;
 
-        c->avg_cavs_qpel_pixels_tab[0][ 0] = avg_cavs_qpel16_mc00_sse2;
+        c->avg_cavs_qpel_pixels_tab[0][ 0] = ff_avg_pixels16x16_sse2;
         c->avg_cavs_qpel_pixels_tab[0][ 2] = avg_cavs_qpel16_mc20_sse2;
         c->avg_cavs_qpel_pixels_tab[0][ 4] = avg_cavs_qpel16_mc01_sse2;
         c->avg_cavs_qpel_pixels_tab[0][ 8] = avg_cavs_qpel16_mc02_sse2;
