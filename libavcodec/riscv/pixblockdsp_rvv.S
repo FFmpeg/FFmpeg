@@ -33,17 +33,22 @@ endfunc
 
 func ff_get_pixels_unaligned_8_rvv, zve32x
         lpad    0
+        li      t2, 8
         vsetivli     zero, 8, e8, mf2, ta, ma
-        vlsseg8e8.v  v16, (a1), a2
+1:
+        add     t1, a1, a2
+        vle8.v  v16, (a1)
+        addi    t0, a0, 2 * 8
+        vle8.v  v17, (t1)
+        addi    t2, t2, -2
         vwcvtu.x.x.v v8, v16
         vwcvtu.x.x.v v9, v17
-        vwcvtu.x.x.v v10, v18
-        vwcvtu.x.x.v v11, v19
-        vwcvtu.x.x.v v12, v20
-        vwcvtu.x.x.v v13, v21
-        vwcvtu.x.x.v v14, v22
-        vwcvtu.x.x.v v15, v23
-        vsseg8e16.v  v8, (a0)
+        vse16.v v8, (a0)
+        add     a1, t1, a2
+        vse16.v v9, (t0)
+        addi    a0, t0, 2 * 8
+        bnez    t2, 1b
+
         ret
 endfunc
 
