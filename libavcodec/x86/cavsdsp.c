@@ -373,12 +373,34 @@ CAVS_MC(avg_, 16, mmxext)
 #if HAVE_SSE2_EXTERNAL
 #define DEF_QPEL(OPNAME) \
     void ff_ ## OPNAME ## _cavs_qpel8_mc20_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t stride);     \
+    void ff_ ## OPNAME ## _cavs_qpel8_mc02_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t stride);     \
+    void ff_ ## OPNAME ## _cavs_qpel8_mc03_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t stride);     \
     void ff_ ## OPNAME ## _cavs_qpel8_h_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t stride, int h); \
+    void ff_ ## OPNAME ## _cavs_qpel8_v2_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t stride, int h);\
+    void ff_ ## OPNAME ## _cavs_qpel8_v3_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t stride, int h);\
 
 DEF_QPEL(put)
 DEF_QPEL(avg)
 
 #define QPEL_CAVS_XMM(OPNAME, XMM) \
+static void OPNAME ## _cavs_qpel16_mc02_ ## XMM(uint8_t *dst, const uint8_t *src, ptrdiff_t stride) \
+{                                                                                                   \
+    ff_ ## OPNAME ## _cavs_qpel8_v2_ ## XMM(dst,     src,     stride, 16);                          \
+    ff_ ## OPNAME ## _cavs_qpel8_v2_ ## XMM(dst + 8, src + 8, stride, 16);                          \
+}                                                                                                   \
+static void OPNAME ## _cavs_qpel16_mc03_ ## XMM(uint8_t *dst, const uint8_t *src, ptrdiff_t stride) \
+{                                                                                                   \
+    ff_ ## OPNAME ## _cavs_qpel8_v3_ ## XMM(dst,     src,     stride, 16);                          \
+    ff_ ## OPNAME ## _cavs_qpel8_v3_ ## XMM(dst + 8, src + 8, stride, 16);                          \
+}                                                                                                   \
+static void OPNAME ## _cavs_qpel8_mc01_ ## XMM(uint8_t *dst, const uint8_t *src, ptrdiff_t stride)  \
+{                                                                                                   \
+    ff_ ## OPNAME ## _cavs_qpel8_mc03_ ## XMM(dst + 7 * stride, src + 8 * stride, -stride);         \
+}                                                                                                   \
+static void OPNAME ## _cavs_qpel16_mc01_ ## XMM(uint8_t *dst, const uint8_t *src, ptrdiff_t stride) \
+{                                                                                                   \
+    OPNAME ## _cavs_qpel16_mc03_ ## XMM(dst + 15 * stride, src + 16 * stride, -stride);             \
+}                                                                                                   \
 static void OPNAME ## _cavs_qpel16_mc20_ ## XMM(uint8_t *dst, const uint8_t *src, ptrdiff_t stride) \
 {                                                                                                   \
     ff_ ## OPNAME ## _cavs_qpel8_h_ ## XMM(dst,     src,     stride, 16);                           \
@@ -413,11 +435,23 @@ av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c)
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->put_cavs_qpel_pixels_tab[0][ 0] = put_cavs_qpel16_mc00_sse2;
         c->put_cavs_qpel_pixels_tab[0][ 2] = put_cavs_qpel16_mc20_sse2;
+        c->put_cavs_qpel_pixels_tab[0][ 4] = put_cavs_qpel16_mc01_sse2;
+        c->put_cavs_qpel_pixels_tab[0][ 8] = put_cavs_qpel16_mc02_sse2;
+        c->put_cavs_qpel_pixels_tab[0][12] = put_cavs_qpel16_mc03_sse2;
         c->put_cavs_qpel_pixels_tab[1][ 2] = ff_put_cavs_qpel8_mc20_sse2;
+        c->put_cavs_qpel_pixels_tab[1][ 4] = put_cavs_qpel8_mc01_sse2;
+        c->put_cavs_qpel_pixels_tab[1][ 8] = ff_put_cavs_qpel8_mc02_sse2;
+        c->put_cavs_qpel_pixels_tab[1][12] = ff_put_cavs_qpel8_mc03_sse2;
 
         c->avg_cavs_qpel_pixels_tab[0][ 0] = avg_cavs_qpel16_mc00_sse2;
         c->avg_cavs_qpel_pixels_tab[0][ 2] = avg_cavs_qpel16_mc20_sse2;
+        c->avg_cavs_qpel_pixels_tab[0][ 4] = avg_cavs_qpel16_mc01_sse2;
+        c->avg_cavs_qpel_pixels_tab[0][ 8] = avg_cavs_qpel16_mc02_sse2;
+        c->avg_cavs_qpel_pixels_tab[0][12] = avg_cavs_qpel16_mc03_sse2;
         c->avg_cavs_qpel_pixels_tab[1][ 2] = ff_avg_cavs_qpel8_mc20_sse2;
+        c->avg_cavs_qpel_pixels_tab[1][ 4] = avg_cavs_qpel8_mc01_sse2;
+        c->avg_cavs_qpel_pixels_tab[1][ 8] = ff_avg_cavs_qpel8_mc02_sse2;
+        c->avg_cavs_qpel_pixels_tab[1][12] = ff_avg_cavs_qpel8_mc03_sse2;
 
         c->cavs_idct8_add = cavs_idct8_add_sse2;
         c->idct_perm      = FF_IDCT_PERM_TRANSPOSE;

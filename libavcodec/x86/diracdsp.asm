@@ -21,11 +21,11 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
-pw_7: times 8 dw 7
 convert_to_unsigned_10bit: times 4 dd 0x200
 clip_10bit:                times 8 dw 0x3ff
 
 cextern pw_3
+cextern pw_7
 cextern pw_16
 cextern pw_32
 cextern pb_80
