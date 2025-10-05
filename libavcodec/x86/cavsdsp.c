@@ -53,6 +53,7 @@ static void cavs_idct8_add_sse2(uint8_t *dst, int16_t *block, ptrdiff_t stride)
 
 DECLARE_ASM_CONST(8, uint64_t, pw_42) = 0x002A002A002A002AULL;
 DECLARE_ASM_CONST(8, uint64_t, pw_96) = 0x0060006000600060ULL;
+DECLARE_ASM_CONST(8, uint64_t, pw_4160) = 0x1040104010401040ULL;
 
 /*****************************************************************************
  *
@@ -61,7 +62,7 @@ DECLARE_ASM_CONST(8, uint64_t, pw_96) = 0x0060006000600060ULL;
  ****************************************************************************/
 
 /* vertical filter [-1 -2 96 42 -7  0]  */
-#define QPEL_CAVSV1(A,B,C,D,E,F,OP,ADD, MUL1, MUL2) \
+#define QPEL_CAVSV1(A,B,C,D,E,F,OP,ADD, SUB, MUL1, MUL2) \
         "movd (%0), "#F"            \n\t"\
         "movq "#C", %%mm6           \n\t"\
         "pmullw "MANGLE(MUL1)", %%mm6\n\t"\
@@ -80,13 +81,14 @@ DECLARE_ASM_CONST(8, uint64_t, pw_96) = 0x0060006000600060ULL;
         "psraw $1, "#B"             \n\t"\
         "psubw "#A", %%mm6          \n\t"\
         "paddw "MANGLE(ADD)", %%mm6 \n\t"\
-        "psraw $7, %%mm6            \n\t"\
+        "psrlw $7, %%mm6            \n\t"\
+        "psubw "MANGLE(SUB)", %%mm6 \n\t"\
         "packuswb %%mm6, %%mm6      \n\t"\
         OP(%%mm6, (%1), A, d)            \
         "add %3, %1                 \n\t"
 
 /* vertical filter [ 0 -1  5  5 -1  0]  */
-#define QPEL_CAVSV2(A,B,C,D,E,F,OP,ADD, MUL1, MUL2) \
+#define QPEL_CAVSV2(A,B,C,D,E,F,OP,ADD, SUB, MUL1, MUL2) \
         "movd (%0), "#F"            \n\t"\
         "movq "#C", %%mm6           \n\t"\
         "paddw "#D", %%mm6          \n\t"\
@@ -102,7 +104,7 @@ DECLARE_ASM_CONST(8, uint64_t, pw_96) = 0x0060006000600060ULL;
         "add %3, %1                 \n\t"
 
 /* vertical filter [ 0 -7 42 96 -2 -1]  */
-#define QPEL_CAVSV3(A,B,C,D,E,F,OP,ADD, MUL1, MUL2) \
+#define QPEL_CAVSV3(A,B,C,D,E,F,OP,ADD, SUB, MUL1, MUL2) \
         "movd (%0), "#F"            \n\t"\
         "movq "#C", %%mm6           \n\t"\
         "pmullw "MANGLE(MUL2)", %%mm6\n\t"\
@@ -121,13 +123,14 @@ DECLARE_ASM_CONST(8, uint64_t, pw_96) = 0x0060006000600060ULL;
         "psraw $1, "#E"             \n\t"\
         "psubw "#F", %%mm6          \n\t"\
         "paddw "MANGLE(ADD)", %%mm6 \n\t"\
-        "psraw $7, %%mm6            \n\t"\
+        "psrlw $7, %%mm6            \n\t"\
+        "psubw "MANGLE(SUB)", %%mm6 \n\t"\
         "packuswb %%mm6, %%mm6      \n\t"\
         OP(%%mm6, (%1), A, d)            \
         "add %3, %1                 \n\t"
 
 
-#define QPEL_CAVSVNUM(VOP,OP,ADD,MUL1,MUL2)\
+#define QPEL_CAVSVNUM(VOP,OP,ADD,SUB,MUL1,MUL2)\
     int w= 2;\
     src -= 2*srcStride;\
     \
@@ -149,34 +152,34 @@ DECLARE_ASM_CONST(8, uint64_t, pw_96) = 0x0060006000600060ULL;
         "punpcklbw %%mm7, %%mm2     \n\t"\
         "punpcklbw %%mm7, %%mm3     \n\t"\
         "punpcklbw %%mm7, %%mm4     \n\t"\
-        VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, ADD, MUL1, MUL2)\
-        VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, ADD, MUL1, MUL2)\
-        VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, ADD, MUL1, MUL2)\
-        VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, ADD, MUL1, MUL2)\
-        VOP(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP, ADD, MUL1, MUL2)\
-        VOP(%%mm5, %%mm0, %%mm1, %%mm2, %%mm3, %%mm4, OP, ADD, MUL1, MUL2)\
-        VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, ADD, MUL1, MUL2)\
-        VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, ADD, MUL1, MUL2)\
+        VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, ADD, SUB, MUL1, MUL2)\
+        VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, ADD, SUB, MUL1, MUL2)\
+        VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, ADD, SUB, MUL1, MUL2)\
+        VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, ADD, SUB, MUL1, MUL2)\
+        VOP(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP, ADD, SUB, MUL1, MUL2)\
+        VOP(%%mm5, %%mm0, %%mm1, %%mm2, %%mm3, %%mm4, OP, ADD, SUB, MUL1, MUL2)\
+        VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, ADD, SUB, MUL1, MUL2)\
+        VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, ADD, SUB, MUL1, MUL2)\
         \
         : "+a"(src), "+c"(dst)\
         : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride)\
-          NAMED_CONSTRAINTS_ADD(ADD,MUL1,MUL2)\
+          NAMED_CONSTRAINTS_ADD(ADD,SUB,MUL1,MUL2)\
         : "memory"\
      );\
      if(h==16){\
         __asm__ volatile(\
-            VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, ADD, MUL1, MUL2)\
-            VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, ADD, MUL1, MUL2)\
-            VOP(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP, ADD, MUL1, MUL2)\
-            VOP(%%mm5, %%mm0, %%mm1, %%mm2, %%mm3, %%mm4, OP, ADD, MUL1, MUL2)\
-            VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, ADD, MUL1, MUL2)\
-            VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, ADD, MUL1, MUL2)\
-            VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, ADD, MUL1, MUL2)\
-            VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, ADD, MUL1, MUL2)\
+            VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, ADD, SUB, MUL1, MUL2)\
+            VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, ADD, SUB, MUL1, MUL2)\
+            VOP(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP, ADD, SUB, MUL1, MUL2)\
+            VOP(%%mm5, %%mm0, %%mm1, %%mm2, %%mm3, %%mm4, OP, ADD, SUB, MUL1, MUL2)\
+            VOP(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP, ADD, SUB, MUL1, MUL2)\
+            VOP(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP, ADD, SUB, MUL1, MUL2)\
+            VOP(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP, ADD, SUB, MUL1, MUL2)\
+            VOP(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP, ADD, SUB, MUL1, MUL2)\
             \
            : "+a"(src), "+c"(dst)\
            : "S"((x86_reg)srcStride), "r"((x86_reg)dstStride)\
-             NAMED_CONSTRAINTS_ADD(ADD,MUL1,MUL2)\
+             NAMED_CONSTRAINTS_ADD(ADD,SUB,MUL1,MUL2)\
            : "memory"\
         );\
      }\
@@ -236,17 +239,17 @@ static void OPNAME ## cavs_qpel8_h_ ## MMX(uint8_t *dst, const uint8_t *src, ptr
 \
 static inline void OPNAME ## cavs_qpel8or16_v1_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride, int h)\
 {                                                                       \
-  QPEL_CAVSVNUM(QPEL_CAVSV1,OP,ff_pw_64,pw_96,pw_42)      \
+  QPEL_CAVSVNUM(QPEL_CAVSV1,OP,pw_4160,ff_pw_32,pw_96,pw_42)      \
 }\
 \
 static inline void OPNAME ## cavs_qpel8or16_v2_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride, int h)\
 {                                                                       \
-  QPEL_CAVSVNUM(QPEL_CAVSV2,OP,ff_pw_4,ff_pw_5,pw_42)        \
+  QPEL_CAVSVNUM(QPEL_CAVSV2,OP,ff_pw_4,ff_pw_4,ff_pw_5,pw_42)        \
 }\
 \
 static inline void OPNAME ## cavs_qpel8or16_v3_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride, int h)\
 {                                                                       \
-  QPEL_CAVSVNUM(QPEL_CAVSV3,OP,ff_pw_64,pw_96,pw_42)      \
+  QPEL_CAVSVNUM(QPEL_CAVSV3,OP,pw_4160,ff_pw_32,pw_96,pw_42)      \
 }\
 \
 static void OPNAME ## cavs_qpel8_v1_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride)\
