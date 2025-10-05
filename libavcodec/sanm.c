@@ -285,8 +285,6 @@ typedef struct SANMVideoContext {
     uint8_t *rle_buf;
     unsigned int rle_buf_size;
 
-    int rotate_code;
-
     long npixels, buf_size;
 
     uint16_t codebook[256];
@@ -1624,8 +1622,8 @@ static int old_codec47(SANMVideoContext *ctx, GetByteContext *gb, int top, int l
     blt_solid((uint8_t*)ctx->fbuf, (uint8_t*)ctx->frm0, left, top, 0, 0, width,
               height, width, ctx->pitch, ctx->height, width * height);
 
-    if (seq == ctx->prev_seq + 1)
-        ctx->rotate_code = new_rot;
+    if ((seq == ctx->prev_seq + 1) && new_rot)
+        rotate_bufs(ctx, new_rot);
 
     ctx->prev_seq = seq;
 
@@ -2633,7 +2631,7 @@ static int copy_output(SANMVideoContext *ctx, int sanm)
 static int decode_bl16(AVCodecContext *avctx,int *got_frame_ptr)
 {
     SANMVideoContext *ctx = avctx->priv_data;
-    int i, ret, w, h, seq_num, codec, bg_color, rle_output_size;
+    int i, ret, w, h, seq_num, codec, bg_color, rle_output_size, rcode;
 
     if ((ret = bytestream2_get_bytes_left(&ctx->gb)) < 560) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Input frame too short (%d bytes).\n",
@@ -2652,7 +2650,7 @@ static int decode_bl16(AVCodecContext *avctx,int *got_frame_ptr)
 
     seq_num     = bytestream2_get_le16u(&ctx->gb);
     codec       = bytestream2_get_byteu(&ctx->gb);
-    ctx->rotate_code = bytestream2_get_byteu(&ctx->gb);
+    rcode       = bytestream2_get_byteu(&ctx->gb);
 
     bytestream2_skip(&ctx->gb, 4); // skip pad
 
@@ -2706,7 +2704,10 @@ static int decode_bl16(AVCodecContext *avctx,int *got_frame_ptr)
         return ret;
     }
 
-    if ((ret = copy_output(ctx, 1)))
+    ret = copy_output(ctx, 1);
+    if (rcode)
+        rotate_bufs(ctx, rcode);
+    if (ret)
         return ret;
 
     *got_frame_ptr = 1;
@@ -2839,9 +2840,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         if ((ret = decode_bl16(avctx, got_frame_ptr)))
             return ret;
     }
-    if (ctx->rotate_code)
-        rotate_bufs(ctx, ctx->rotate_code);
-    ctx->rotate_code = 0;
     return pkt->size;
 }
 
