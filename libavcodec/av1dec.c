@@ -774,11 +774,13 @@ static int set_context_with_sequence(AVCodecContext *avctx,
     avctx->profile = seq->seq_profile;
     avctx->level = seq->seq_level_idx[0];
 
-    avctx->color_range =
-        seq->color_config.color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
-    avctx->color_primaries = seq->color_config.color_primaries;
-    avctx->colorspace = seq->color_config.matrix_coefficients;
-    avctx->color_trc = seq->color_config.transfer_characteristics;
+    if (seq->color_config.color_description_present_flag) {
+        avctx->color_range =
+            seq->color_config.color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+        avctx->color_primaries = seq->color_config.color_primaries;
+        avctx->colorspace = seq->color_config.matrix_coefficients;
+        avctx->color_trc = seq->color_config.transfer_characteristics;
+    }
 
     switch (seq->color_config.chroma_sample_position) {
     case AV1_CSP_VERTICAL:
