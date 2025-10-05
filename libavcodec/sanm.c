@@ -1031,66 +1031,169 @@ static int old_codec2(SANMVideoContext *ctx, GetByteContext *gb, int top,
     return 0;
 }
 
-static int old_codec20(SANMVideoContext *ctx, GetByteContext *gb, int top, int left,
-                       const int w, const int h)
+static void blt_solid(uint8_t *dst, const uint8_t *src, int16_t left, int16_t top,
+                      uint16_t srcxoff, uint16_t srcyoff, uint16_t srcwidth,
+                      uint16_t srcheight, const uint16_t srcpitch, const uint16_t dstpitch,
+                      const uint16_t dstheight, int32_t size)
 {
-    uint8_t *dst = (uint8_t *)ctx->fbuf;
-    int hh = h, ww = w;
-
-    if (((left + w) < 0) || (left >= ctx->width) || ((top + h) < 0)
-        || (top >= ctx->height) || (w < 1) || (h < 1))
-        return 0;
+    if ((srcwidth < 1) || (srcheight < 1) || (size < 1))
+        return;
 
     if (top < 0) {
-        int ts = -top * w;
-        if (bytestream2_get_bytes_left(gb) < ts)
-            return AVERROR_INVALIDDATA;
-        bytestream2_skip(gb, ts);
-        hh += top;
+        if (-top >= srcheight)
+            return;
+        srcyoff -= top;
+        srcheight += top;
+        size += (srcpitch * top);
         top = 0;
     }
 
-    if (hh < 1)
-        return 0;
-
-    if ((left == 0) && (w == ctx->pitch)) {
-        int ba = bytestream2_get_bytes_left(gb);    /* bytes available */
-        int bd = w * FFMIN(ctx->height - top, hh);  /* bytes drawable  */
-        ba = FFMIN(ba, bd);
-        if (ba)
-            bytestream2_get_bufferu(gb, dst + (top * ctx->pitch), ba);
-    } else {
-        if ((top + hh) >= ctx->height) {
-            hh = ctx->height - top;
-            hh = FFMIN(hh, ctx->height);
-        }
-        if (left < 0) {
-            if (bytestream2_get_bytes_left(gb) < -left)
-                return AVERROR_INVALIDDATA;
-            bytestream2_skip(gb, -left);
-            ww += left;
-            left = 0;
-        }
-        if ((left + ww) >= ctx->width) {
-            ww = ctx->width - left;
-            ww = FFMIN(ww, ctx->width);
-        }
-        if ((ww > 0) && (hh > 0)) {
-            int sz = bytestream2_get_bytes_left(gb);
-            const int d = w - ww;
-            dst += left + (top * ctx->pitch);
-            while ((hh--) && (sz >= ww)) {
-                bytestream2_get_bufferu(gb, dst, ww);
-                sz -= ww;
-                dst += ctx->pitch;
-                if (d > 0) {
-                    int c = FFMIN(d, sz);
-                    bytestream2_skip(gb, c);
-                    sz -= c;
-                }
-            }
-        }
+    if ((top + srcheight) > dstheight) {
+        int clip = (top + srcheight) - dstheight;
+        if (clip >= srcheight)
+            return;
+        srcheight -= clip;
     }
+
+    if (left < 0) {
+        if (-left >= srcwidth)
+            return;
+        srcxoff -= left;
+        srcwidth += left;
+        size += left;
+        left = 0;
+    }
+
+    if (left + srcwidth > dstpitch) {
+        int clip = (left + srcwidth) - dstpitch;
+        if (clip >= srcwidth)
+            return;
+        srcwidth -= clip;
+    }
+
+    src += ((uintptr_t)srcyoff * srcpitch) + srcxoff;
+    dst += ((uintptr_t)top * dstpitch) + left;
+    while ((srcheight--) && (size >= srcwidth)) {
+        memcpy(dst, src, srcwidth);
+        src += srcpitch;
+        dst += dstpitch;
+        size -= srcpitch;
+    }
+    if ((size > 0) && (size < srcwidth) && (srcheight > 0))
+        memcpy(dst, src, size);
+}
+
+static void blt_mask(uint8_t *dst, const uint8_t *src, int16_t left, int16_t top,
+                     uint16_t srcxoff, uint16_t srcyoff, uint16_t srcwidth,
+                     uint16_t srcheight, const uint16_t srcpitch, const uint16_t dstpitch,
+                     const uint16_t dstheight, int32_t size, const uint8_t skipcolor)
+{
+    if ((srcwidth < 1) || (srcheight < 1) || (size < 1))
+        return;
+
+    if (top < 0) {
+        if (-top >= srcheight)
+            return;
+        srcyoff -= top;
+        srcheight += top;
+        size += (srcpitch * top);
+        top = 0;
+    }
+
+    if ((top + srcheight) > dstheight) {
+        int clip = (top + srcheight) - dstheight;
+        if (clip >= srcheight)
+            return;
+        srcheight -= clip;
+    }
+
+    if (left < 0) {
+        if (-left >= srcwidth)
+            return;
+        srcxoff -= left;
+        srcwidth += left;
+        size += left;
+        left = 0;
+    }
+
+    if (left + srcwidth > dstpitch) {
+        int clip = (left + srcwidth) - dstpitch;
+        if (clip >= srcwidth)
+            return;
+        srcwidth -= clip;
+    }
+
+    src += ((uintptr_t)srcyoff * srcpitch) + srcxoff;
+    dst += ((uintptr_t)top * dstpitch) + left;
+    for (int i = 0; (size > 0) && (i < srcheight); i++) {
+        for (int j = 0; (size > 0) && (j < srcwidth); j++, size--) {
+            if (src[j] != skipcolor)
+                dst[j] = src[j];
+        }
+        src += srcpitch;
+        dst += dstpitch;
+    }
+}
+
+static void blt_ipol(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
+                     int16_t left, int16_t top, uint16_t srcxoff, uint16_t srcyoff,
+                     uint16_t srcwidth, uint16_t srcheight, const uint16_t srcpitch,
+                     const uint16_t dstpitch, const uint16_t dstheight, int32_t size,
+                     const uint8_t *itbl)
+{
+    if ((srcwidth < 1) || (srcheight < 1) || (size < 1))
+        return;
+
+    if (top < 0) {
+        if (-top >= srcheight)
+            return;
+        srcyoff -= top;
+        srcheight += top;
+        size += (srcpitch * top);
+        top = 0;
+    }
+
+    if ((top + srcheight) > dstheight) {
+        int clip = (top + srcheight) - dstheight;
+        if (clip >= srcheight)
+            return;
+        srcheight -= clip;
+    }
+
+    if (left < 0) {
+        if (-left >= srcwidth)
+            return;
+        srcxoff -= left;
+        srcwidth += left;
+        size += left;
+        left = 0;
+    }
+
+    if (left + srcwidth > dstpitch) {
+        int clip = (left + srcwidth) - dstpitch;
+        if (clip >= srcwidth)
+            return;
+        srcwidth -= clip;
+    }
+
+    src1 += ((uintptr_t)srcyoff * srcpitch) + srcxoff;
+    src2 += ((uintptr_t)srcyoff * srcpitch) + srcxoff;
+    dst += ((uintptr_t)top * dstpitch) + left;
+    for (int i = 0; (size > 0) && (i < srcheight); i++) {
+        for (int j = 0; (size > 0) && (j < srcwidth); j++, size--) {
+            dst[j] = itbl[(src1[j] << 8) | src2[j]];
+        }
+        src1 += srcpitch;
+        src2 += srcpitch;
+        dst += dstpitch;
+    }
+}
+
+static int old_codec20(SANMVideoContext *ctx, GetByteContext *gb, int top, int left,
+                       const int w, const int h)
+{
+    blt_solid((uint8_t*)ctx->fbuf, gb->buffer, left, top, 0, 0, w, h, w, ctx->pitch,
+              ctx->height, FFMIN(bytestream2_get_bytes_left(gb), w * h));
 
     return 0;
 }
@@ -1114,7 +1217,8 @@ static inline void codec37_mv(uint8_t *dst, const uint8_t *src,
     }
 }
 
-static int old_codec37(SANMVideoContext *ctx, GetByteContext *gb, int width, int height)
+static int old_codec37(SANMVideoContext *ctx, GetByteContext *gb, int top, int left,
+                       int width, int height)
 {
     int i, j, k, l, t, run, len, code, skip, mx, my;
     uint8_t *dst, *prev;
@@ -1288,6 +1392,13 @@ static int old_codec37(SANMVideoContext *ctx, GetByteContext *gb, int width, int
         return AVERROR_PATCHWELCOME;
     }
 
+    if ((flags & 2) == 0) {
+        blt_solid((uint8_t*)ctx->fbuf, (uint8_t*)ctx->frm0, left, top, 0, 0, width,
+                  height, width, ctx->pitch, ctx->height, width * height);
+    } else {
+        blt_mask((uint8_t*)ctx->fbuf, (uint8_t*)ctx->frm0, left, top, 0, 0, width,
+                 height, width, ctx->pitch, ctx->height, width * height, 0);
+    }
     return 0;
 }
 
@@ -1426,7 +1537,8 @@ static void codec47_comp1(GetByteContext *gb, uint8_t *dst_in, int width,
     }
 }
 
-static int old_codec47(SANMVideoContext *ctx, GetByteContext *gb, int width, int height)
+static int old_codec47(SANMVideoContext *ctx, GetByteContext *gb, int top, int left,
+                       int width, int height)
 {
     uint32_t decoded_size;
     int i, j;
@@ -1508,6 +1620,10 @@ static int old_codec47(SANMVideoContext *ctx, GetByteContext *gb, int width, int
                                       "Subcodec 47 compression %d", compr);
         return AVERROR_PATCHWELCOME;
     }
+
+    blt_solid((uint8_t*)ctx->fbuf, (uint8_t*)ctx->frm0, left, top, 0, 0, width,
+              height, width, ctx->pitch, ctx->height, width * height);
+
     if (seq == ctx->prev_seq + 1)
         ctx->rotate_code = new_rot;
 
@@ -1721,7 +1837,8 @@ static int codec48_block(GetByteContext *gb, uint8_t *dst, uint8_t *db, int x, i
     return 0;
 }
 
-static int old_codec48(SANMVideoContext *ctx, GetByteContext *gb, int width, int height)
+static int old_codec48(SANMVideoContext *ctx, GetByteContext *gb, int top, int left,
+                       int width, int height)
 {
     uint8_t *dst, *prev;
     int i, j, flags, ah;
@@ -1802,14 +1919,32 @@ static int old_codec48(SANMVideoContext *ctx, GetByteContext *gb, int width, int
             return AVERROR_INVALIDDATA;
         codec47_comp1(gb, dst, width, height, width, ctx->c47itbl);
         break;
-    case 6:      // in some videos of "Star Wars - Making Magic", ignored.
+    case 6:      /* this is a "stub" frame that follows a frame with flag 0x10 set. */
         break;
     default:
         avpriv_report_missing_feature(ctx->avctx,
                                       "Subcodec 48 compression %d", compr);
         return AVERROR_PATCHWELCOME;
     }
+
     ctx->prev_seq = seq;
+    if ((flags & 2) == 0) {
+        if (flags & 0x10) {
+            /* generate an artificial frame from the 2 buffers.  This will be
+             * followed up immediately with a codec48 compression 6 frame, which
+             * will then blit the actual decoding result (frm0) to the main buffer.
+             */
+            blt_ipol((uint8_t*)ctx->fbuf, (uint8_t*)ctx->frm0, (uint8_t*)ctx->frm2,
+                     left, top, 0, 0, width, height, width, ctx->pitch, ctx->height,
+                     width * height, ctx->c47itbl);
+            return 0;
+        }
+        blt_solid((uint8_t*)ctx->fbuf, (uint8_t*)ctx->frm0, left, top, 0, 0, width,
+                  height, width, ctx->pitch, ctx->height, width * height);
+    } else {
+        blt_mask((uint8_t*)ctx->fbuf, (uint8_t*)ctx->frm0, left, top, 0, 0, width,
+                 height, width, ctx->pitch, ctx->height, width * height, 0);
+    }
     return 0;
 }
 
@@ -1819,7 +1954,7 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb,
     uint16_t w, h, parm2;
     uint8_t codec, param;
     int16_t left, top;
-    int fsc, sote, ret;
+    int fsc, sote;
 
     codec = bytestream2_get_byteu(gb);
     param = bytestream2_get_byteu(gb);
@@ -1941,25 +2076,19 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb,
     case 32:
         return old_codec31(ctx, gb, top, left, w, h, param, (codec == 32));
     case 37:
-        ret = old_codec37(ctx, gb, w, h); break;
+        return old_codec37(ctx, gb, top, left, w, h); break;
     case 45:
         return 0;
     case 47:
-        ret = old_codec47(ctx, gb, w, h); break;
+        return old_codec47(ctx, gb, top, left, w, h); break;
     case 48:
-        ret = old_codec48(ctx, gb, w, h); break;
+        return old_codec48(ctx, gb, top, left, w, h); break;
     default:
         avpriv_request_sample(ctx->avctx, "Subcodec %d", codec);
         ctx->frame->flags |= AV_FRAME_FLAG_CORRUPT;
-        return 0;
+        break;
     }
-    if (ret)
-        return ret;
-
-    /* copy the codec37/47/48 result to main buffer */
-    GetByteContext rc;
-    bytestream2_init(&rc, (const uint8_t *)ctx->frm0, w * h);
-    return old_codec20(ctx, &rc, top, left, w, h);
+    return 0;
 }
 
 static int process_ftch(SANMVideoContext *ctx, int size)
