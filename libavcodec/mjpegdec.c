@@ -208,6 +208,8 @@ int ff_mjpeg_decode_dqt(MJpegDecodeContext *s)
             av_log(s->avctx, AV_LOG_ERROR, "dqt: invalid precision\n");
             return AVERROR_INVALIDDATA;
         }
+        if (len < (1 + 64 * (1+pr)))
+            return AVERROR_INVALIDDATA;
         index = get_bits(&s->gb, 4);
         if (index >= 4)
             return AVERROR_INVALIDDATA;
