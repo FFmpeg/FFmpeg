@@ -893,7 +893,8 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
 
         seq = ((CodedBitstreamAV1Context *)(s->cbc->priv_data))->sequence_header;
         if (!seq) {
-            av_log(avctx, AV_LOG_WARNING, "No sequence header available.\n");
+            if (!(avctx->extradata[0] & 0x80))
+                av_log(avctx, AV_LOG_WARNING, "No sequence header available in extradata.\n");
             goto end;
         }
 
