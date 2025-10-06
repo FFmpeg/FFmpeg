@@ -25,7 +25,9 @@
 #include "bswap.h"
 #include "crc.h"
 #include "error.h"
-#if ARCH_X86
+#if ARCH_AARCH64
+#include "libavutil/aarch64/crc.h"
+#elif ARCH_X86
 #include "libavutil/x86/crc.h"
 #endif
 
@@ -386,7 +388,11 @@ const AVCRC *av_crc_get_table(AVCRCId crc_id)
         return NULL;
 // Check for arch-specific extensions first to avoid initializing
 // ordinary CRC tables unnecessarily.
-#if ARCH_X86
+#if ARCH_AARCH64
+    const AVCRC *table = ff_crc_get_table_aarch64(crc_id);
+    if (table)
+        return table;
+#elif ARCH_X86
     const AVCRC *table = ff_crc_get_table_x86(crc_id);
     if (table)
         return table;
@@ -412,7 +418,9 @@ uint32_t av_crc(const AVCRC *ctx, uint32_t crc,
                 const uint8_t *buffer, size_t length)
 {
     if (ctx[0]) {
-#if ARCH_X86
+#if ARCH_AARCH64
+        return ff_crc_aarch64(ctx, crc, buffer, length);
+#elif ARCH_X86
         return ff_crc_x86(ctx, crc, buffer, length);
 #endif
     }
