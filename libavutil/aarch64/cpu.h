@@ -25,6 +25,7 @@
 #define have_armv8(flags) CPUEXT(flags, ARMV8)
 #define have_neon(flags) CPUEXT(flags, NEON)
 #define have_vfp(flags)  CPUEXT(flags, VFP)
+#define have_arm_crc(flags) CPUEXT(flags, ARM_CRC)
 #define have_dotprod(flags) CPUEXT(flags, DOTPROD)
 #define have_i8mm(flags)    CPUEXT(flags, I8MM)
 #define have_sve(flags)     CPUEXT(flags, SVE)

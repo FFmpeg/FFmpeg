@@ -370,6 +370,7 @@ static const struct {
     { "SVE",      "sve",      AV_CPU_FLAG_SVE },
     { "SVE2",     "sve2",     AV_CPU_FLAG_SVE2 },
     { "SME",      "sme",      AV_CPU_FLAG_SME },
+    { "CRC",      "crc",      AV_CPU_FLAG_ARM_CRC },
 #elif ARCH_ARM
     { "ARMV5TE",  "armv5te",  AV_CPU_FLAG_ARMV5TE },
     { "ARMV6",    "armv6",    AV_CPU_FLAG_ARMV6 },

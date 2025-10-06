@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <sys/auxv.h>
 
+#define HWCAP_AARCH64_CRC32   (1 << 7)
 #define HWCAP_AARCH64_ASIMDDP (1 << 20)
 #define HWCAP_AARCH64_SVE     (1 << 22)
 #define HWCAP2_AARCH64_SVE2   (1 << 1)
@@ -37,6 +38,8 @@ static int detect_flags(void)
     unsigned long hwcap = ff_getauxval(AT_HWCAP);
     unsigned long hwcap2 = ff_getauxval(AT_HWCAP2);
 
+    if (hwcap & HWCAP_AARCH64_CRC32)
+        flags |= AV_CPU_FLAG_ARM_CRC;
     if (hwcap & HWCAP_AARCH64_ASIMDDP)
         flags |= AV_CPU_FLAG_DOTPROD;
     if (hwcap & HWCAP_AARCH64_SVE)
@@ -72,6 +75,8 @@ static int detect_flags(void)
         flags |= AV_CPU_FLAG_I8MM;
     if (have_feature("hw.optional.arm.FEAT_SME"))
         flags |= AV_CPU_FLAG_SME;
+    if (have_feature("hw.optional.armv8_crc32"))
+        flags |= AV_CPU_FLAG_ARM_CRC;
 
     return flags;
 }
@@ -120,6 +125,10 @@ static int detect_flags(void)
 static int detect_flags(void)
 {
     int flags = 0;
+#ifdef PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE
+    if (IsProcessorFeaturePresent(PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE))
+        flags |= AV_CPU_FLAG_ARM_CRC;
+#endif
 #ifdef PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE
     if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
         flags |= AV_CPU_FLAG_DOTPROD;
