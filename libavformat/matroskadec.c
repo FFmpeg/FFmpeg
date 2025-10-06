@@ -3168,11 +3168,20 @@ static int matroska_parse_tracks(AVFormatContext *s)
                     track->default_duration = default_duration;
                 }
             }
-            if (track->video.pixel_cropl >= INT_MAX - track->video.pixel_cropr ||
+            int has_dimensions = track->video.pixel_width || track->video.pixel_height;
+            if ((matroska->ctx->strict_std_compliance >= FF_COMPLIANCE_STRICT &&
+                 (!track->video.pixel_width || !track->video.pixel_height)) ||
+                (track->video.pixel_cropl >= INT_MAX - track->video.pixel_cropr ||
                 track->video.pixel_cropt >= INT_MAX - track->video.pixel_cropb ||
-                (track->video.pixel_cropl + track->video.pixel_cropr) >= track->video.pixel_width ||
-                (track->video.pixel_cropt + track->video.pixel_cropb) >= track->video.pixel_height)
+                (track->video.pixel_cropl + track->video.pixel_cropr) >= track->video.pixel_width  + !has_dimensions ||
+                (track->video.pixel_cropt + track->video.pixel_cropb) >= track->video.pixel_height + !has_dimensions)) {
+                av_log(matroska->ctx, AV_LOG_ERROR,
+                       "Invalid coded dimensions %"PRId64"x%"PRId64" [%"PRId64", %"PRId64", %"PRId64", %"PRId64"].\n",
+                       track->video.pixel_width, track->video.pixel_height,
+                       track->video.pixel_cropl, track->video.pixel_cropr,
+                       track->video.pixel_cropt, track->video.pixel_cropb);
                 return AVERROR_INVALIDDATA;
+            }
             track->video.cropped_width  = track->video.pixel_width  -
                                           track->video.pixel_cropl  - track->video.pixel_cropr;
             track->video.cropped_height = track->video.pixel_height -
