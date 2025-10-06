@@ -261,6 +261,7 @@ typedef struct LibplaceboContext {
     float saturation;
     float hue;
     float gamma;
+    float temperature;
 
     /* pl_peak_detect_params */
     int peakdetect;
@@ -446,6 +447,8 @@ static int update_settings(AVFilterContext *ctx)
         .saturation = s->saturation,
         .hue = s->hue,
         .gamma = s->gamma,
+        // libplacebo uses a normalized/relative scale for CCT
+        .temperature = (s->temperature - 6500.0) / 3500.0,
     };
 
     opts->peak_detect_params = *pl_peak_detect_params(
@@ -1723,6 +1726,7 @@ static const AVOption libplacebo_options[] = {
     { "saturation", "Saturation gain", OFFSET(saturation), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 0.0, 16.0, DYNAMIC },
     { "hue", "Hue shift", OFFSET(hue), AV_OPT_TYPE_FLOAT, {.dbl = 0.0}, -M_PI, M_PI, DYNAMIC },
     { "gamma", "Gamma adjustment", OFFSET(gamma), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 0.0, 16.0, DYNAMIC },
+    { "temperature", "Color temperature adjustment (kelvin)", OFFSET(temperature), AV_OPT_TYPE_FLOAT, {.dbl = 6500.0}, 1667.0, 25000.0, DYNAMIC },
 
     { "peak_detect", "Enable dynamic peak detection for HDR tone-mapping", OFFSET(peakdetect), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, DYNAMIC },
     { "smoothing_period", "Peak detection smoothing period", OFFSET(smoothing), AV_OPT_TYPE_FLOAT, {.dbl = 100.0}, 0.0, 1000.0, DYNAMIC },

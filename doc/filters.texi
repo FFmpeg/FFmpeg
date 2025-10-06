@@ -16795,6 +16795,11 @@ coefficients for RGB inputs.
 @item gamma
 Gamma adjustment, between @code{0.0} and @code{16.0}. Defaults to @code{1.0}.
 
+@item temperature
+Color temperature adjustment. Lower values make the output warmer/redder,
+down to @code{1667}, while higher values make the output cooler/bluer, up to
+@code{25000}. Defaults to @code{6500} (neutral white).
+
 @item cones
 Cone model to use for color blindness simulation. Accepts any combination of
 @code{l}, @code{m} and @code{s}. Here are some examples:
