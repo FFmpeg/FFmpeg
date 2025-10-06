@@ -1013,7 +1013,7 @@ static void fcb_search(G723_1_ChannelContext *p, int16_t *impulse_resp,
     int pulse_cnt = pulses[index];
     int i;
 
-    optim.min_err = 1 << 30;
+    optim.min_err = 1LL << 31;
     get_fcb_param(&optim, impulse_resp, buf, pulse_cnt, SUBFRAME_LEN);
 
     if (p->pitch_lag[index >> 1] < SUBFRAME_LEN - 2) {
