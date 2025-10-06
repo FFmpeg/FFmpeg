@@ -108,7 +108,7 @@ typedef struct HFParam {
  * Optimized fixed codebook excitation parameters
  */
 typedef struct FCBParam {
-    int min_err;
+    int64_t min_err;
     int amp_index;
     int grid_index;
     int dirac_train;
