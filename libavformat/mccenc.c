@@ -23,6 +23,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "mux.h"
+#include "version.h"
 
 #include "libavcodec/codec_id.h"
 #include "libavcodec/smpte_436m.h"
@@ -30,7 +31,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/error.h"
-#include "libavutil/ffversion.h"
 #include "libavutil/log.h"
 #include "libavutil/macros.h"
 #include "libavutil/opt.h"
@@ -125,9 +125,9 @@ static int mcc_write_header(AVFormatContext *avf)
     const char *creation_program = mcc->creation_program;
     if (!creation_program) {
         if (avf->flags & AVFMT_FLAG_BITEXACT)
-            creation_program = "FFmpeg";
+            creation_program = "Lavf";
         else
-            creation_program = "FFmpeg version " FFMPEG_VERSION;
+            creation_program = LIBAVFORMAT_IDENT;
     } else if (strchr(creation_program, '\n')) {
         av_log(avf, AV_LOG_FATAL, "creation_program must not contain multiple lines of text\n");
         return AVERROR(EINVAL);
