@@ -235,6 +235,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, HEVCLayerContext *l, int poc)
                             s->layers[0].cur_frame - s->layers[0].DPB : -1;
 
     no_output = !IS_IRAP(s) && (s->poc < s->recovery_poc) &&
+                HEVC_IS_RECOVERING(s) &&
                 !(s->avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) &&
                 !(s->avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL);
     if (s->sh.pic_output_flag && !no_output)
