@@ -3484,6 +3484,7 @@ h264_qsv_decoder_select="h264_mp4toannexb_bsf qsvdec"
 h264_qsv_encoder_select="atsc_a53 qsvenc"
 h264_rkmpp_decoder_deps="rkmpp"
 h264_rkmpp_decoder_select="h264_mp4toannexb_bsf"
+h264_rkmpp_encoder_deps="rkmpp"
 h264_vaapi_encoder_select="atsc_a53 cbs_h264 vaapi_encode"
 h264_vulkan_encoder_select="atsc_a53 cbs_h264 vulkan_encode"
 h264_v4l2m2m_decoder_deps="v4l2_m2m h264_v4l2_m2m"
@@ -3508,6 +3509,7 @@ hevc_qsv_decoder_select="hevc_mp4toannexb_bsf qsvdec"
 hevc_qsv_encoder_select="hevcparse qsvenc"
 hevc_rkmpp_decoder_deps="rkmpp"
 hevc_rkmpp_decoder_select="hevc_mp4toannexb_bsf"
+hevc_rkmpp_encoder_deps="rkmpp"
 hevc_vaapi_encoder_deps="VAEncPictureParameterBufferHEVC"
 hevc_vaapi_encoder_select="atsc_a53 cbs_h265 vaapi_encode"
 hevc_vulkan_encoder_select="atsc_a53 cbs_h265 vulkan_encode"
@@ -7366,7 +7368,7 @@ enabled openssl           && { { check_pkg_config openssl "openssl >= 3.0.0" ope
                                check_lib openssl openssl/ssl.h DTLS_get_data_mtu -lssl -lcrypto -lws2_32 -lgdi32 ||
                                die "ERROR: openssl (>= 1.1.1) not found"; }
 enabled pocketsphinx      && require_pkg_config pocketsphinx pocketsphinx pocketsphinx/pocketsphinx.h ps_init
-enabled rkmpp             && { require_pkg_config rkmpp "rockchip_mpp >= 1.3.7" rockchip/rk_mpi.h mpp_create &&
+enabled rkmpp             && { require_pkg_config rkmpp "rockchip_mpp >= 1.3.8" "rockchip/rk_mpi.h rockchip/mpp_buffer.h" "mpp_create mpp_buffer_sync_begin_f" &&
                                { enabled libdrm ||
                                  die "ERROR: rkmpp requires --enable-libdrm"; }
                              }

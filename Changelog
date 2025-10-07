@@ -13,6 +13,7 @@ version <next>:
 - D3D12 AV1 encoder
 - ProRes Vulkan hwaccel
 - DPX Vulkan hwaccel
+- Rockchip H.264/HEVC hardware encoder
 
 
 version 8.0:
