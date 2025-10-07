@@ -321,8 +321,6 @@ static void dct_unquantize_mpeg2_intra_mmx(const MPVContext *s,
         block0 = block[0] * s->c_dc_scale;
     quant_matrix = s->intra_matrix;
 __asm__ volatile(
-                "pcmpeqw %%mm7, %%mm7           \n\t"
-                "psrlw $15, %%mm7               \n\t"
                 "movd %2, %%mm6                 \n\t"
                 "packssdw %%mm6, %%mm6          \n\t"
                 "packssdw %%mm6, %%mm6          \n\t"
@@ -335,30 +333,18 @@ __asm__ volatile(
                 "movq 8(%1, %%"FF_REG_a"), %%mm5\n\t"
                 "pmullw %%mm6, %%mm4            \n\t" // q=qscale*quant_matrix[i]
                 "pmullw %%mm6, %%mm5            \n\t" // q=qscale*quant_matrix[i]
-                "pxor %%mm2, %%mm2              \n\t"
-                "pxor %%mm3, %%mm3              \n\t"
-                "pcmpgtw %%mm0, %%mm2           \n\t" // block[i] < 0 ? -1 : 0
-                "pcmpgtw %%mm1, %%mm3           \n\t" // block[i] < 0 ? -1 : 0
-                "pxor %%mm2, %%mm0              \n\t"
-                "pxor %%mm3, %%mm1              \n\t"
-                "psubw %%mm2, %%mm0             \n\t" // abs(block[i])
-                "psubw %%mm3, %%mm1             \n\t" // abs(block[i])
-                "pmullw %%mm4, %%mm0            \n\t" // abs(block[i])*q
-                "pmullw %%mm5, %%mm1            \n\t" // abs(block[i])*q
-                "pxor %%mm4, %%mm4              \n\t"
-                "pxor %%mm5, %%mm5              \n\t" // FIXME slow
-                "pcmpeqw (%0, %%"FF_REG_a"), %%mm4 \n\t" // block[i] == 0 ? -1 : 0
-                "pcmpeqw 8(%0, %%"FF_REG_a"), %%mm5\n\t" // block[i] == 0 ? -1 : 0
-                "psraw $4, %%mm0                \n\t"
-                "psraw $4, %%mm1                \n\t"
-                "pxor %%mm2, %%mm0              \n\t"
-                "pxor %%mm3, %%mm1              \n\t"
-                "psubw %%mm2, %%mm0             \n\t"
-                "psubw %%mm3, %%mm1             \n\t"
-                "pandn %%mm0, %%mm4             \n\t"
-                "pandn %%mm1, %%mm5             \n\t"
-                "movq %%mm4, (%0, %%"FF_REG_a") \n\t"
-                "movq %%mm5, 8(%0, %%"FF_REG_a")\n\t"
+                "movq %%mm0, %%mm2              \n\t"
+                "movq %%mm1, %%mm3              \n\t"
+                "psrlw $12, %%mm2               \n\t" // block[i] < 0 ? 0xf : 0
+                "psrlw $12, %%mm3               \n\t" // (block[i] is in the -2048..2047 range)
+                "pmullw %%mm4, %%mm0            \n\t" // block[i]*q
+                "pmullw %%mm5, %%mm1            \n\t" // block[i]*q
+                "paddw %%mm2, %%mm0             \n\t" // bias negative block[i]
+                "paddw %%mm3, %%mm1             \n\t" // so that a right-shift
+                "psraw $4, %%mm0                \n\t" // is equivalent to divide
+                "psraw $4, %%mm1                \n\t" // with rounding towards zero
+                "movq %%mm0, (%0, %%"FF_REG_a") \n\t"
+                "movq %%mm1, 8(%0, %%"FF_REG_a")\n\t"
 
                 "add $16, %%"FF_REG_a"          \n\t"
                 "jng 1b                         \n\t"
