@@ -6451,10 +6451,10 @@ if enabled aarch64; then
         # also had a bug (https://github.com/llvm/llvm-project/issues/32220)
         # causing a plain ".arch <level>" to not have any effect unless it
         # had an extra "+<feature>" included - but it was activated on the next
-        # ".arch_extension" directive. Check if we can include "+crc" as dummy
+        # ".arch_extension" directive. Check if we can include "+fp" as dummy
         # feature to make the .arch directive behave as expected and take
         # effect right away.
-        check_arch_level "${as_arch_level}+crc"
+        check_arch_level "${as_arch_level}+fp"
     fi
 
     enabled armv8 && check_insn armv8 'prfm   pldl1strm, [x0]'
