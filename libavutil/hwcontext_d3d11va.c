@@ -290,6 +290,9 @@ static int d3d11va_frames_init(AVHWFramesContext *ctx)
         return AVERROR(EINVAL);
     }
 
+    hwctx->BindFlags |= device_hwctx->BindFlags;
+    hwctx->MiscFlags |= device_hwctx->MiscFlags;
+
     ctx->initial_pool_size = FFMIN(ctx->initial_pool_size, MAX_ARRAY_SIZE);
 
     texDesc = (D3D11_TEXTURE2D_DESC){
@@ -709,6 +712,18 @@ static int d3d11va_device_create(AVHWDeviceContext *ctx, const char *device,
         }
     }
 #endif
+
+    if (av_dict_get(opts, "SHADER", NULL, 0))
+        device_hwctx->BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+
+    if (av_dict_get(opts, "UAV", NULL, 0))
+        device_hwctx->BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
+
+    if (av_dict_get(opts, "RTV", NULL, 0))
+        device_hwctx->BindFlags |= D3D11_BIND_RENDER_TARGET;
+
+    if (av_dict_get(opts, "SHARED", NULL, 0))
+        device_hwctx->MiscFlags |= D3D11_RESOURCE_MISC_SHARED;
 
     return 0;
 }

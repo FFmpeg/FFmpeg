@@ -94,6 +94,20 @@ typedef struct AVD3D11VADeviceContext {
     void (*lock)(void *lock_ctx);
     void (*unlock)(void *lock_ctx);
     void *lock_ctx;
+    /**
+     * D3D11_TEXTURE2D_DESC.BindFlags to be applied to D3D11 resources allocated
+     * for frames using this device context.
+     *
+     * It applies globally to all AVD3D11VAFramesContext allocated from this device context.
+     */
+    UINT BindFlags;
+    /**
+     * D3D11_TEXTURE2D_DESC.MiscFlags to be applied to D3D11 resources allocated
+     * for frames using this device context.
+     *
+     * It applies globally to all AVD3D11VAFramesContext allocated from this device context.
+     */
+    UINT MiscFlags;
 } AVD3D11VADeviceContext;
 
 /**

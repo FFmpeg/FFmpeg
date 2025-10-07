@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
+2026-01-xx - xxxxxxxxxx - lavu 60.24.100 - hwcontext_d3d11va.h
+  Add BindFlags and MiscFlags to AVD3D11VADeviceContext
+
 2026-01-04 - xxxxxxxxxx - lavu 60.23.100 - cpu.h
   Add AV_CPU_FLAG_ARM_CRC.
 
