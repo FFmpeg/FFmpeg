@@ -215,12 +215,15 @@ static int decode_slice(H263DecContext *const h)
         return ret;
     }
 
+#if CONFIG_MPEG4_DECODER
     if (h->partitioned_frame) {
         const int qscale = h->c.qscale;
 
-        if (CONFIG_MPEG4_DECODER && h->c.codec_id == AV_CODEC_ID_MPEG4)
-            if ((ret = ff_mpeg4_decode_partitions(h)) < 0)
-                return ret;
+        av_assert1(h->c.codec_id == AV_CODEC_ID_MPEG4);
+
+        ret = ff_mpeg4_decode_partitions(h);
+        if (ret < 0)
+            return ret;
 
         /* restore variables which were modified */
         h->c.first_slice_line = 1;
@@ -228,6 +231,7 @@ static int decode_slice(H263DecContext *const h)
         h->c.mb_y             = h->c.resync_mb_y;
         ff_set_qscale(&h->c, qscale);
     }
+#endif
 
     for (; h->c.mb_y < h->c.mb_height; h->c.mb_y++) {
         /* per-row end of slice checks */
