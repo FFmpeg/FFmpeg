@@ -853,6 +853,21 @@ static int d3d12va_encode_init_rate_control(AVCodecContext *avctx)
     int fr_num, fr_den;
     const D3D12VAEncodeRCMode *rc_mode;
 
+#define SET_QP_RANGE(ctl) do { \
+        if (avctx->qmin > 0 || avctx->qmax > 0) { \
+            ctl->MinQP = avctx->qmin; \
+            ctl->MaxQP = avctx->qmax; \
+            ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_QP_RANGE; \
+        } \
+    } while(0)
+
+#define SET_MAX_FRAME_SIZE(ctl) do { \
+        if (ctx->max_frame_size > 0) { \
+            ctl->MaxFrameBitSize = ctx->max_frame_size * 8; \
+            ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_MAX_FRAME_SIZE; \
+        } \
+    } while(0)
+
     // Rate control mode selection:
     // * If the user has set a mode explicitly with the rc_mode option,
     //   use it and fail if it is not available.
@@ -1053,16 +1068,8 @@ rc_mode_found:
             cbr_ctl->InitialVBVFullness = hrd_initial_buffer_fullness;
             ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_VBV_SIZES;
 
-            if (avctx->qmin > 0 || avctx->qmax > 0) {
-                cbr_ctl->MinQP = avctx->qmin;
-                cbr_ctl->MaxQP = avctx->qmax;
-                ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_QP_RANGE;
-            }
-
-            if (ctx->max_frame_size > 0) {
-                cbr_ctl->MaxFrameBitSize = ctx->max_frame_size * 8;
-                ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_MAX_FRAME_SIZE;
-            }
+            SET_QP_RANGE(cbr_ctl);
+            SET_MAX_FRAME_SIZE(cbr_ctl);
 
             ctx->rc.ConfigParams.pConfiguration_CBR = cbr_ctl;
             break;
@@ -1081,16 +1088,8 @@ rc_mode_found:
             vbr_ctl->InitialVBVFullness = hrd_initial_buffer_fullness;
             ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_VBV_SIZES;
 
-            if (avctx->qmin > 0 || avctx->qmax > 0) {
-                vbr_ctl->MinQP = avctx->qmin;
-                vbr_ctl->MaxQP = avctx->qmax;
-                ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_QP_RANGE;
-            }
-
-            if (ctx->max_frame_size > 0) {
-                vbr_ctl->MaxFrameBitSize = ctx->max_frame_size * 8;
-                ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_MAX_FRAME_SIZE;
-            }
+            SET_QP_RANGE(vbr_ctl);
+            SET_MAX_FRAME_SIZE(vbr_ctl);
 
             ctx->rc.ConfigParams.pConfiguration_VBR = vbr_ctl;
             break;
@@ -1107,16 +1106,8 @@ rc_mode_found:
             qvbr_ctl->PeakBitRate           = rc_peak_bitrate;
             qvbr_ctl->ConstantQualityTarget = rc_quality;
 
-            if (avctx->qmin > 0 || avctx->qmax > 0) {
-                qvbr_ctl->MinQP = avctx->qmin;
-                qvbr_ctl->MaxQP = avctx->qmax;
-                ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_QP_RANGE;
-            }
-
-            if (ctx->max_frame_size > 0) {
-                qvbr_ctl->MaxFrameBitSize = ctx->max_frame_size * 8;
-                ctx->rc.Flags |= D3D12_VIDEO_ENCODER_RATE_CONTROL_FLAG_ENABLE_MAX_FRAME_SIZE;
-            }
+            SET_QP_RANGE(qvbr_ctl);
+            SET_MAX_FRAME_SIZE(qvbr_ctl);
 
             ctx->rc.ConfigParams.pConfiguration_QVBR = qvbr_ctl;
             break;
