@@ -57,7 +57,6 @@
 
 static void mjpeg_find_raw_scan_data(MJpegDecodeContext *s,
                                      const uint8_t **pbuf_ptr, size_t *pbuf_size);
-static int mjpeg_unescape_sos(MJpegDecodeContext *s);
 
 static int init_default_huffman_tables(MJpegDecodeContext *s)
 {
@@ -1076,40 +1075,6 @@ static int decode_block_refinement(MJpegDecodeContext *s, int16_t *block,
 #undef REFINE_BIT
 #undef ZERO_RUN
 
-static int handle_rstn(MJpegDecodeContext *s, int nb_components)
-{
-    int i;
-    int reset = 0;
-
-    if (s->restart_interval) {
-        s->restart_count--;
-        if(s->restart_count == 0 && s->avctx->codec_id == AV_CODEC_ID_THP){
-            align_get_bits(&s->gb);
-            for (i = 0; i < nb_components; i++) /* reset dc */
-                s->last_dc[i] = (4 << s->bits);
-        }
-
-        i = 8 + ((-get_bits_count(&s->gb)) & 7);
-        /* skip RSTn */
-        if (s->restart_count == 0) {
-            if(   show_bits(&s->gb, i) == (1 << i) - 1
-               || show_bits(&s->gb, i) == 0xFF) {
-                int pos = get_bits_count(&s->gb);
-                align_get_bits(&s->gb);
-                while (get_bits_left(&s->gb) >= 8 && show_bits(&s->gb, 8) == 0xFF)
-                    skip_bits(&s->gb, 8);
-                if (get_bits_left(&s->gb) >= 8 && (get_bits(&s->gb, 8) & 0xF8) == 0xD0) {
-                    for (i = 0; i < nb_components; i++) /* reset dc */
-                        s->last_dc[i] = (4 << s->bits);
-                    reset = 1;
-                } else
-                    skip_bits_long(&s->gb, pos - get_bits_count(&s->gb));
-            }
-        }
-    }
-    return reset;
-}
-
 /* Handles 1 to 4 components */
 static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
 {
@@ -1141,8 +1106,6 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
     }
 
 
-    s->restart_count = s->restart_interval;
-
     for (i = 0; i < 6; i++)
         vpred[i] = 1 << (s->bits-1);
 
@@ -1160,6 +1123,8 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
     for (i = 0; i < 4; i++)
         buffer[0][i] = 1 << (s->bits - 1);
 
+    s->restart_count = -1;
+
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         uint8_t *ptr = s->picture_ptr->data[0] + (linesize * mb_y);
 
@@ -1171,9 +1136,12 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
 
         for (mb_x = 0; mb_x < width; mb_x++) {
             int modified_predictor = predictor;
+            int restart;
 
-            if (s->restart_interval && !s->restart_count){
-                s->restart_count = s->restart_interval;
+            ret = ff_mjpeg_handle_restart(s, &restart);
+            if (ret < 0)
+                return ret;
+            if (restart) {
                 resync_mb_x = mb_x;
                 resync_mb_y = mb_y;
                 for(i=0; i<4; i++)
@@ -1209,11 +1177,6 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
 
                 left[i] = buffer[mb_x][i] =
                     mask & (pred + (unsigned)(dc * (1 << point_transform)));
-            }
-
-            if (s->restart_interval && !--s->restart_count) {
-                align_get_bits(&s->gb);
-                skip_bits(&s->gb, 16); /* skip RSTn */
             }
         }
         if (s->rct && s->nb_components == 4) {
@@ -1299,10 +1262,15 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s)
 
     av_assert0(nb_components>=1 && nb_components<=4);
 
+    s->restart_count = -1;
+
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
-            if (s->restart_interval && !s->restart_count){
-                s->restart_count = s->restart_interval;
+            int restart;
+            ret = ff_mjpeg_handle_restart(s, &restart);
+            if (ret < 0)
+                return ret;
+            if (restart) {
                 resync_mb_x = mb_x;
                 resync_mb_y = mb_y;
             }
@@ -1434,10 +1402,6 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s)
                     }
                 }
             }
-            if (s->restart_interval && !--s->restart_count) {
-                align_get_bits(&s->gb);
-                skip_bits(&s->gb, 16); /* skip RSTn */
-            }
         }
     }
     return 0;
@@ -1487,6 +1451,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s)
     int linesize[MAX_COMPONENTS];
     GetBitContext mb_bitmask_gb = {0}; // initialize to silence gcc warning
     int bytes_per_pixel = 1 + (s->bits > 8);
+    int ret;
 
     if (s->avctx->codec_id == AV_CODEC_ID_MXPEG) {
         mb_bitmask = s->mb_bitmask;
@@ -1500,8 +1465,6 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s)
         }
         init_get_bits(&mb_bitmask_gb, mb_bitmask, s->mb_width * s->mb_height);
     }
-
-    s->restart_count = 0;
 
     av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt, &chroma_h_shift,
                                      &chroma_v_shift);
@@ -1517,15 +1480,31 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s)
     }
 
 next_field:
-    for (i = 0; i < nb_components; i++)
-        s->last_dc[i] = (4 << s->bits);
+    s->restart_count = -1;
 
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
             const int copy_mb = mb_bitmask && !get_bits1(&mb_bitmask_gb);
+            int restart;
 
-            if (s->restart_interval && !s->restart_count)
-                s->restart_count = s->restart_interval;
+            if (s->avctx->codec_id == AV_CODEC_ID_THP) {
+                if (s->restart_count < 0) {
+                    ret = ff_mjpeg_unescape_sos(s);
+                    if (ret < 0)
+                        return ret;
+                }
+                restart = ff_mjpeg_should_restart(s);
+                if (restart)
+                    align_get_bits(&s->gb);
+            } else {
+                ret = ff_mjpeg_handle_restart(s, &restart);
+                if (ret < 0)
+                    return ret;
+            }
+            if (restart) {
+                for (i = 0; i < nb_components; i++)
+                    s->last_dc[i] = (4 << s->bits);
+            }
 
             if (get_bits_left(&s->gb) < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "overread %d\n",
@@ -1599,24 +1578,18 @@ next_field:
                     }
                 }
             }
-
-            handle_rstn(s, nb_components);
         }
     }
 
     if (s->interlaced &&
-        get_bits_left(&s->gb) > 32 &&
-        show_bits(&s->gb, 8) == 0xFF) {
-        GetBitContext bak = s->gb;
-        align_get_bits(&bak);
-        if (show_bits(&bak, 16) == 0xFFD1) {
+        bytestream2_get_bytes_left(&s->gB) > 2 &&
+        bytestream2_tell(&s->gB) > 2 &&
+        s->gB.buffer[-2] == 0xFF &&
+        s->gB.buffer[-1] == 0xD1) {
             av_log(s->avctx, AV_LOG_DEBUG, "AVRn interlaced picture marker found\n");
-            s->gb = bak;
-            skip_bits(&s->gb, 16);
             s->bottom_field ^= 1;
 
             goto next_field;
-        }
     }
 
     return 0;
@@ -1643,7 +1616,7 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s)
     // Ss and Se are parameters telling start and end coefficients
     s->coefs_finished[c] |= (2ULL << Se) - (1ULL << Ss);
 
-    s->restart_count = 0;
+    s->restart_count = -1;
 
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         int block_idx    = mb_y * s->block_stride[c];
@@ -1651,8 +1624,12 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s)
         uint8_t *last_nnz    = &s->last_nnz[c][block_idx];
         for (mb_x = 0; mb_x < s->mb_width; mb_x++, block++, last_nnz++) {
                 int ret;
-                if (s->restart_interval && !s->restart_count)
-                    s->restart_count = s->restart_interval;
+                int restart;
+                ret = ff_mjpeg_handle_restart(s, &restart);
+                if (ret < 0)
+                    return ret;
+                if (restart)
+                    EOBRUN = 0;
 
                 if (Ah)
                     ret = decode_block_refinement(s, *block, last_nnz, s->ac_index[0],
@@ -1668,9 +1645,6 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s)
                            "error y=%d x=%d\n", mb_y, mb_x);
                     return AVERROR_INVALIDDATA;
                 }
-
-            if (handle_rstn(s, 0))
-                EOBRUN = 0;
         }
     }
     return 0;
@@ -1816,12 +1790,12 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s)
             return ret;
 
     } else {
-        ret = mjpeg_unescape_sos(s);
-        if (ret < 0)
-            return ret;
     if (s->lossless) {
         av_assert0(s->picture_ptr == s->picture);
         if (CONFIG_JPEGLS_DECODER && s->ls) {
+            ret = ff_mjpeg_unescape_sos(s);
+            if (ret < 0)
+                return ret;
             if ((ret = ff_jpegls_decode_picture(s)) < 0)
                 return ret;
         } else {
@@ -1864,7 +1838,6 @@ static int mjpeg_decode_dri(MJpegDecodeContext *s)
     if (bytestream2_get_be16u(&s->gB) != 4)
         return AVERROR_INVALIDDATA;
     s->restart_interval = bytestream2_get_be16u(&s->gB);
-    s->restart_count    = 0;
     av_log(s->avctx, AV_LOG_DEBUG, "restart interval: %d\n",
            s->restart_interval);
 
@@ -2271,7 +2244,7 @@ found_hw:
     bytestream2_skipu(&s->gB, *pbuf_size);
 }
 
-static int mjpeg_unescape_sos(MJpegDecodeContext *s)
+int ff_mjpeg_unescape_sos(MJpegDecodeContext *s)
 {
     const uint8_t *buf_ptr = s->gB.buffer;
     const uint8_t *buf_end = buf_ptr + bytestream2_get_bytes_left(&s->gB);
@@ -2320,7 +2293,7 @@ static int mjpeg_unescape_sos(MJpegDecodeContext *s)
                     bytestream2_put_byteu(&pb, 0xff);
                 } else if (x >= RST0 && x <= RST7) {
                     /* Restart marker */
-                    bytestream2_put_be16u(&pb, 0xff00 | x);
+                    goto found;
                 } else {
                     /* Non-restart marker */
                     ptr -= 2;
@@ -2502,7 +2475,6 @@ redo_for_pal8:
         switch (start_code) {
         case SOI:
             s->restart_interval = 0;
-            s->restart_count    = 0;
             s->raw_image_buffer      = buf_ptr;
             s->raw_image_buffer_size = buf_end - buf_ptr;
             /* nothing to do on SOI */

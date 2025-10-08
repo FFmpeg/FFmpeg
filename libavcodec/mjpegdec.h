@@ -191,5 +191,35 @@ int ff_mjpeg_decode_dht(MJpegDecodeContext *s);
 int ff_mjpeg_decode_sof(MJpegDecodeContext *s);
 int ff_mjpeg_decode_sos(MJpegDecodeContext *s);
 int ff_mjpeg_find_marker(const uint8_t **buf_ptr, const uint8_t *buf_end);
+int ff_mjpeg_unescape_sos(MJpegDecodeContext *s);
+
+static inline int ff_mjpeg_should_restart(MJpegDecodeContext *s)
+{
+    int restart = 0;
+    if (s->restart_interval) {
+        if (s->restart_count <= 0) {
+            s->restart_count = s->restart_interval;
+            restart = 1;
+        }
+        s->restart_count--;
+    } else {
+        if (s->restart_count < 0) {
+            s->restart_count = 0;
+            restart = 1;
+        }
+    }
+    return restart;
+}
+
+static inline int ff_mjpeg_handle_restart(MJpegDecodeContext *s, int *restart)
+{
+    *restart = ff_mjpeg_should_restart(s);
+    if (*restart) {
+        int ret = ff_mjpeg_unescape_sos(s);
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
+}
 
 #endif /* AVCODEC_MJPEGDEC_H */

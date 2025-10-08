@@ -61,7 +61,6 @@ static int mjpegb_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 read_header:
     /* reset on every SOI */
     s->restart_interval = 0;
-    s->restart_count = 0;
     s->mjpb_skiptosod = 0;
 
     if ((ret = init_get_bits8(&hgb, buf_ptr, /*buf_size*/(buf_end - buf_ptr))) < 0)
