@@ -240,9 +240,11 @@ int ff_h263_resync(H263DecContext *const h)
 
     if (show_bits(&h->gb, 16) ==0) {
         pos = get_bits_count(&h->gb);
-        if(CONFIG_MPEG4_DECODER && h->c.codec_id==AV_CODEC_ID_MPEG4)
+#if CONFIG_MPEG4_DECODER
+        if (h->c.codec_id == AV_CODEC_ID_MPEG4)
             ret = ff_mpeg4_decode_video_packet_header(h);
         else
+#endif
             ret = h263_decode_gob_header(h);
         if(ret>=0)
             return pos;
@@ -257,9 +259,11 @@ int ff_h263_resync(H263DecContext *const h)
             GetBitContext bak = h->gb;
 
             pos = get_bits_count(&h->gb);
-            if(CONFIG_MPEG4_DECODER && h->c.codec_id==AV_CODEC_ID_MPEG4)
+#if CONFIG_MPEG4_DECODER
+            if (h->c.codec_id == AV_CODEC_ID_MPEG4)
                 ret = ff_mpeg4_decode_video_packet_header(h);
             else
+#endif
                 ret = h263_decode_gob_header(h);
             if(ret>=0)
                 return pos;
