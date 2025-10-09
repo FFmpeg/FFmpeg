@@ -217,6 +217,8 @@ static int decode_nal_sei_3d_reference_displays_info(HEVCSEITDRDI *s, GetBitCont
     }
     s->three_dimensional_reference_displays_extension_flag = get_bits1(gb);
 
+    s->present = 1;
+
     return 0;
 }
 
