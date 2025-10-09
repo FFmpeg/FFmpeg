@@ -26,7 +26,7 @@
 #include "libavcodec/vp3dsp.h"
 #include "vp3dsp_mips.h"
 
-av_cold void ff_vp3dsp_init_mips(VP3DSPContext *c, int flags)
+av_cold void ff_vp3dsp_init_mips(VP3DSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 

@@ -53,11 +53,11 @@ void ff_vp3dsp_h_loop_filter_12(uint8_t *first_pixel, ptrdiff_t stride, int *bou
 void ff_vp3dsp_idct10_put(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 void ff_vp3dsp_idct10_add(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 
-void ff_vp3dsp_init(VP3DSPContext *c, int flags);
-void ff_vp3dsp_init_arm(VP3DSPContext *c, int flags);
-void ff_vp3dsp_init_ppc(VP3DSPContext *c, int flags);
-void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags);
-void ff_vp3dsp_init_mips(VP3DSPContext *c, int flags);
+void ff_vp3dsp_init(VP3DSPContext *c);
+void ff_vp3dsp_init_arm(VP3DSPContext *c);
+void ff_vp3dsp_init_ppc(VP3DSPContext *c);
+void ff_vp3dsp_init_x86(VP3DSPContext *c);
+void ff_vp3dsp_init_mips(VP3DSPContext *c);
 
 void ff_vp3dsp_set_bounding_values(int * bound_values_array, int filter_limit);
 

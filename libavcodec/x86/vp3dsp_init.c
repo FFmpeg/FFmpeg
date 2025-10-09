@@ -40,7 +40,7 @@ void ff_put_vp_no_rnd_pixels8_l2_mmx(uint8_t *dst, const uint8_t *a,
                                      const uint8_t *b, ptrdiff_t stride,
                                      int h);
 
-av_cold void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags)
+av_cold void ff_vp3dsp_init_x86(VP3DSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 

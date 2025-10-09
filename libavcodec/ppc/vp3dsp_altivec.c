@@ -192,7 +192,7 @@ static void vp3_idct_add_altivec(uint8_t *dst, ptrdiff_t stride, int16_t block[6
 
 #endif /* HAVE_ALTIVEC */
 
-av_cold void ff_vp3dsp_init_ppc(VP3DSPContext *c, int flags)
+av_cold void ff_vp3dsp_init_ppc(VP3DSPContext *c)
 {
 #if HAVE_ALTIVEC
     if (!PPC_ALTIVEC(av_get_cpu_flags()))

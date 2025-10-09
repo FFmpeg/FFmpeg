@@ -23,7 +23,6 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/macros.h"
 #include "libavutil/mem_internal.h"
-#include "libavcodec/avcodec.h"
 #include "libavcodec/vp3dsp.h"
 
 enum {
@@ -74,7 +73,7 @@ static void vp3_check_loop_filter(void)
     };
     declare_func(void, uint8_t *src, ptrdiff_t stride, int *bounding_values);
 
-    ff_vp3dsp_init(&vp3dsp, AV_CODEC_FLAG_BITEXACT);
+    ff_vp3dsp_init(&vp3dsp);
 
     int filter_limit = rnd() % 128;
 

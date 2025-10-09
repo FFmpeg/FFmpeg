@@ -2385,7 +2385,7 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
     ff_hpeldsp_init(&s->hdsp, avctx->flags | AV_CODEC_FLAG_BITEXACT);
     ff_videodsp_init(&s->vdsp, 8);
-    ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
+    ff_vp3dsp_init(&s->vp3dsp);
 
     for (int i = 0; i < 64; i++) {
 #define TRANSPOSE(x) (((x) >> 3) | (((x) & 7) << 3))
