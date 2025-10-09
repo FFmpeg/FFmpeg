@@ -1172,11 +1172,6 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
         for (mb_x = 0; mb_x < width; mb_x++) {
             int modified_predictor = predictor;
 
-            if (get_bits_left(&s->gb) < 1) {
-                av_log(s->avctx, AV_LOG_ERROR, "bitstream end in rgb_scan\n");
-                return AVERROR_INVALIDDATA;
-            }
-
             if (s->restart_interval && !s->restart_count){
                 s->restart_count = s->restart_interval;
                 resync_mb_x = mb_x;
@@ -1184,6 +1179,12 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s)
                 for(i=0; i<4; i++)
                     top[i] = left[i]= topleft[i]= 1 << (s->bits - 1);
             }
+
+            if (get_bits_left(&s->gb) < 1) {
+                av_log(s->avctx, AV_LOG_ERROR, "bitstream end in rgb_scan\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             if (mb_y == resync_mb_y || mb_y == resync_mb_y+1 && mb_x < resync_mb_x || !mb_x)
                 modified_predictor = 1;
 
@@ -1300,14 +1301,15 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s)
 
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
-            if (get_bits_left(&s->gb) < 1) {
-                av_log(s->avctx, AV_LOG_ERROR, "bitstream end in yuv_scan\n");
-                return AVERROR_INVALIDDATA;
-            }
             if (s->restart_interval && !s->restart_count){
                 s->restart_count = s->restart_interval;
                 resync_mb_x = mb_x;
                 resync_mb_y = mb_y;
+            }
+
+            if (get_bits_left(&s->gb) < 1) {
+                av_log(s->avctx, AV_LOG_ERROR, "bitstream end in yuv_scan\n");
+                return AVERROR_INVALIDDATA;
             }
 
             if(!mb_x || mb_y == resync_mb_y || mb_y == resync_mb_y+1 && mb_x < resync_mb_x || s->interlaced){
