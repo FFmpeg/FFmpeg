@@ -1952,7 +1952,7 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb,
     uint16_t w, h, parm2;
     uint8_t codec, param;
     int16_t left, top;
-    int fsc, sote;
+    int fsc;
 
     codec = bytestream2_get_byteu(gb);
     param = bytestream2_get_byteu(gb);
@@ -1973,9 +1973,11 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb,
     /* codecs with their own buffers */
     fsc = (codec == 37 || codec == 47 || codec == 48);
 
-    /* special case for "Shadows of the Empire" videos */
-    sote = ((w == 640) && (h == 272) && (codec == 47));
-    if (sote)
+    /* special case for "Shadows of the Empire" videos: they have top=60
+     * at all frames to vertically center the video in the 640x480 game
+     * window, but we don't need that.
+     */
+    if ((w == 640) && (h == 272) && (top == 60) && (codec == 47))
         left = top = 0;
 
     if (!ctx->have_dimensions) {
@@ -1996,16 +1998,11 @@ static int process_frame_obj(SANMVideoContext *ctx, GetByteContext *gb,
             /* detect common sizes */
             xres = w + left;
             yres = h + top;
-            if (sote) {
-                /* SotE: has top=60 at all times to center video
-                 * inside the 640x480 game window
-                 */
-                xres = w;
-                yres = h;
-                ctx->have_dimensions = 1;
-            } else if (((xres == 424) && (yres == 260)) ||  /* RA2 */
-                       ((xres == 320) && (yres == 200)) ||  /* ft/dig/... */
-                       ((xres == 640) && (yres == 480))) {  /* ol/comi/mots... */
+            if (((xres == 424) && (yres == 260)) ||  /* RA2     */
+                ((xres == 320) && (yres == 200)) ||  /* FT/Dig  */
+                ((xres == 640) && (yres == 272)) ||  /* SotE    */
+                ((xres == 640) && (yres == 350)) ||  /* MotS    */
+                ((xres == 640) && (yres == 480))) {
                 ctx->have_dimensions = 1;
             }
 
@@ -2394,8 +2391,8 @@ static int bl16_block(SANMVideoContext *ctx, int cx, int cy, int blk_size)
         my = c47_mv[opcode][1];
 
         /* The original implementation of this codec precomputes a table
-         * of int16_t all motion vectors for given image width.
-         * For larger widths, starting with 762 pixels, the calculation of
+         * of int16_t of all motion vectors a for given image width.
+         * For widths starting at 762 pixels, the calculation of
          * mv table indices 1+ and 255- overflow the int16_t, inverting the
          * sign of the offset.  This is actively exploited in e.g. the
          *  "jonesopn_8.snm" video of "Indiana Jones and the Infernal Machine".
@@ -2810,8 +2807,8 @@ static int decode_anim(AVCodecContext *avctx, int *got_frame_ptr)
          */
         bytestream2_seek(&ctx->gb, pos + size, SEEK_SET);
         if ((pos + size) & 1) {
-            if (0 != bytestream2_get_byteu(&ctx->gb))
-                bytestream2_seek(&ctx->gb, pos + size, SEEK_SET);
+            if (bytestream2_peek_byte(&ctx->gb) == 0)
+                bytestream2_skip(&ctx->gb, 1);
         }
     }
 
