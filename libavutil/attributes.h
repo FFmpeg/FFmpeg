@@ -40,6 +40,12 @@
 #    define AV_HAS_BUILTIN(x) 0
 #endif
 
+#ifdef __has_attribute
+#    define AV_HAS_ATTRIBUTE(x) __has_attribute(x)
+#else
+#    define AV_HAS_ATTRIBUTE(x) 0
+#endif
+
 #if defined(__cplusplus) && defined(__has_cpp_attribute)
 #    define AV_HAS_STD_ATTRIBUTE(x) __has_cpp_attribute(x)
 #elif !defined(__cplusplus) && defined(__has_c_attribute)
@@ -183,13 +189,13 @@
 
 #ifdef __MINGW_PRINTF_FORMAT
 #    define AV_PRINTF_FMT __MINGW_PRINTF_FORMAT
-#elif defined(__has_attribute) && __has_attribute(format)
+#elif AV_HAS_ATTRIBUTE(format)
 #    define AV_PRINTF_FMT __printf__
 #endif
 
 #ifdef __MINGW_SCANF_FORMAT
 #    define AV_SCANF_FMT __MINGW_SCANF_FORMAT
-#elif defined(__has_attribute) && __has_attribute(format)
+#elif AV_HAS_ATTRIBUTE(format)
 #    define AV_SCANF_FMT __scanf__
 #endif
 
