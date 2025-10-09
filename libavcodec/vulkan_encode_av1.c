@@ -605,7 +605,7 @@ static int init_profile(AVCodecContext *avctx,
                                    enc->tile_cols, framerate);
         if (level) {
             av_log(avctx, AV_LOG_VERBOSE, "Using level %s.\n", level->name);
-            enc->seq_level_idx = ff_vk_av1_level_to_vk(level->level_idx);
+            enc->seq_level_idx = level->level_idx;
         } else {
             av_log(avctx, AV_LOG_VERBOSE, "Stream will not conform to "
                    "any normal level, using level 7.3 by default.\n");
