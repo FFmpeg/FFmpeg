@@ -18,12 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/avcodec.h"
 #include "libavcodec/vp3dsp.h"
 
 void ff_vp3_idct_put_sse2(uint8_t *dest, ptrdiff_t stride, int16_t *block);
@@ -31,10 +31,10 @@ void ff_vp3_idct_add_sse2(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 
 void ff_vp3_idct_dc_add_mmxext(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 
-void ff_vp3_v_loop_filter_mmxext(uint8_t *src, ptrdiff_t stride,
-                                 int *bounding_values);
-void ff_vp3_h_loop_filter_mmxext(uint8_t *src, ptrdiff_t stride,
-                                 int *bounding_values);
+void ff_vp3_v_loop_filter_sse2(uint8_t *src, ptrdiff_t stride,
+                               int *bounding_values);
+void ff_vp3_h_loop_filter_sse2(uint8_t *src, ptrdiff_t stride,
+                               int *bounding_values);
 
 void ff_put_vp_no_rnd_pixels8_l2_mmx(uint8_t *dst, const uint8_t *a,
                                      const uint8_t *b, ptrdiff_t stride,
@@ -50,15 +50,13 @@ av_cold void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags)
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         c->idct_dc_add = ff_vp3_idct_dc_add_mmxext;
-
-        if (!(flags & AV_CODEC_FLAG_BITEXACT)) {
-            c->v_loop_filter = c->v_loop_filter_unaligned = ff_vp3_v_loop_filter_mmxext;
-            c->h_loop_filter = c->h_loop_filter_unaligned = ff_vp3_h_loop_filter_mmxext;
-        }
     }
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->idct_put  = ff_vp3_idct_put_sse2;
         c->idct_add  = ff_vp3_idct_add_sse2;
+
+        c->v_loop_filter = c->v_loop_filter_unaligned = ff_vp3_v_loop_filter_sse2;
+        c->h_loop_filter = c->h_loop_filter_unaligned = ff_vp3_h_loop_filter_sse2;
     }
 }

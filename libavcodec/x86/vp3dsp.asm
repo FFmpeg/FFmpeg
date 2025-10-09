@@ -33,113 +33,125 @@ vp3_idct_data: times 8 dw 64277
                times 8 dw 25080
                times 8 dw 12785
 
-pb_7:  times 8 db 0x07
-pb_1F: times 8 db 0x1f
-pb_81: times 8 db 0x81
-
-cextern pb_1
-cextern pb_3
 cextern pb_80
 cextern pb_FE
 
+cextern pw_4
 cextern pw_8
 
 SECTION .text
 
-; this is off by one or two for some cases when filter_limit is greater than 63
-; in:  p0 in mm6, p1 in mm4, p2 in mm2, p3 in mm1
-; out: p1 in mm4, p2 in mm3
+; in:  p0 in m5, p1 in m4, p2 in m2, p3 in m1, all unpacked;
+;      m0 must be zeroed
+; out: p1 in m4, p2 in m2
 %macro VP3_LOOP_FILTER 0
-    movq          m7, m6
-    pand          m6, [pb_7]    ; p0&7
-    psrlw         m7, 3
-    pand          m7, [pb_1F]   ; p0>>3
-    movq          m3, m2        ; p2
-    pxor          m2, m4
-    pand          m2, [pb_1]    ; (p2^p1)&1
-    movq          m5, m2
-    paddb         m2, m2
-    paddb         m2, m5        ; 3*(p2^p1)&1
-    paddb         m2, m6        ; extra bits lost in shifts
-    pcmpeqb       m0, m0
-    pxor          m1, m0        ; 255 - p3
-    pavgb         m1, m2        ; (256 - p3 + extrabits) >> 1
-    pxor          m0, m4        ; 255 - p1
-    pavgb         m0, m3        ; (256 + p2-p1) >> 1
-    paddb         m1, [pb_3]
-    pavgb         m1, m0        ; 128+2+(   p2-p1  - p3) >> 2
-    pavgb         m1, m0        ; 128+1+(3*(p2-p1) - p3) >> 3
-    paddusb       m7, m1        ; d+128+1
-    movq          m6, [pb_81]
-    psubusb       m6, m7
-    psubusb       m7, [pb_81]
+    psubw         m5, m1
+    mova          m3, m2
+    paddw         m5, [pw_4]
+    psubw         m3, m4
+    mova          m1, m3
+    paddw         m1, m5
+    mova          m5, [r2+516]  ; 2 * filter limit
+    paddw         m3, m3
+    paddw         m3, m1
+    psraw         m3, 3
 
-    movq          m5, [r2+516]  ; flim
-    pminub        m6, m5
-    pminub        m7, m5
-    movq          m0, m6
-    movq          m1, m7
-    paddb         m6, m6
-    paddb         m7, m7
-    pminub        m6, m5
-    pminub        m7, m5
-    psubb         m6, m0
-    psubb         m7, m1
-    paddusb       m4, m7
-    psubusb       m4, m6
-    psubusb       m3, m7
-    paddusb       m3, m6
+    ; We use that clamp(2clamp(x,2f),2f)-clamp(x,2f)
+    ; (with f = filter limit and clamping to the interval [-f,f])
+    ; gives the desired filter value
+    psubw         m0, m5
+    pminsw        m3, m5
+    pmaxsw        m3, m0
+    mova          m1, m3
+    paddw         m1, m1
+    pminsw        m1, m5
+    pmaxsw        m1, m0
+    psubw         m1, m3
+    psubw         m2, m1
+    paddw         m4, m1
+
+    packuswb      m4, m4
+    packuswb      m2, m2
 %endmacro
 
 %macro STORE_4_WORDS 1
+%if ARCH_X86_64
+    movq          r2, %1
+    mov  [r0     -1], r2w
+    shr           r2, 16
+    mov  [r0+r1  -1], r2w
+    shr           r2, 16
+%else
     movd         r2d, %1
     mov  [r0     -1], r2w
     psrlq         %1, 32
-    shr           r2, 16
+    shr          r2d, 16
     mov  [r0+r1  -1], r2w
     movd         r2d, %1
+%endif
     mov  [r0+r1*2-1], r2w
-    shr           r2, 16
+    shr          r2d, 16
     mov  [r0+r3  -1], r2w
 %endmacro
 
-INIT_MMX mmxext
-cglobal vp3_v_loop_filter, 3, 4
-    mov           r3, r1
+INIT_XMM sse2
+cglobal vp3_v_loop_filter, 3, 3, 6
+    movq          m1, [r0+r1  ]
     neg           r1
-    movq          m6, [r0+r1*2]
-    movq          m4, [r0+r1  ]
     movq          m2, [r0     ]
-    movq          m1, [r0+r3  ]
+    movq          m4, [r0+r1  ]
+    movq          m5, [r0+r1*2]
+
+    pxor          m0, m0
+    punpcklbw     m1, m0
+    punpcklbw     m2, m0
+    punpcklbw     m4, m0
+    punpcklbw     m5, m0
 
     VP3_LOOP_FILTER
 
     movq     [r0+r1], m4
-    movq     [r0   ], m3
+    movq     [r0   ], m2
     RET
 
-cglobal vp3_h_loop_filter, 3, 4
+%macro TRANSPOSE4x4 1
+    movd         %1, [r0     -2]
+    movd         m2, [r0+r1  -2]
+    movd         m3, [r0+r1*2-2]
+    movd         m4, [r0+r3  -2]
+    punpcklbw    %1, m2
+    punpcklbw    m3, m4
+    punpcklwd    %1, m3
+%endmacro
+
+INIT_XMM sse2
+cglobal vp3_h_loop_filter, 3, 4, 6
     lea           r3, [r1*3]
 
-    movd          m6, [r0     -2]
-    movd          m4, [r0+r1  -2]
-    movd          m2, [r0+r1*2-2]
-    movd          m1, [r0+r3  -2]
-    lea           r0, [r0+r1*4  ]
-    punpcklbw     m6, [r0     -2]
-    punpcklbw     m4, [r0+r1  -2]
-    punpcklbw     m2, [r0+r1*2-2]
-    punpcklbw     m1, [r0+r3  -2]
+    TRANSPOSE4x4  m5
+    lea           r0, [r0+r1*4]
+    TRANSPOSE4x4  m0
+    mova          m2, m5
+    punpckldq     m5, m0
+    punpckhdq     m2, m0
+    pxor          m0, m0
+    mova          m4, m5
+    punpcklbw     m5, m0
+    punpckhbw     m4, m0
+    mova          m1, m2
+    punpcklbw     m2, m0
+    punpckhbw     m1, m0
+
+    VP3_LOOP_FILTER
+
+    punpcklbw     m4, m2
+    mova          m2, m4
+    punpckhqdq    m2, m2
+
+    STORE_4_WORDS m2
     sub           r0, r3
     sub           r0, r1
-
-    TRANSPOSE4x4B  6, 4, 2, 1, 0
-    VP3_LOOP_FILTER
-    SBUTTERFLY    bw, 4, 3, 5
-
     STORE_4_WORDS m4
-    lea           r0, [r0+r1*4  ]
-    STORE_4_WORDS m3
     RET
 
 %macro PAVGB_NO_RND 0

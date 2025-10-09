@@ -55,7 +55,7 @@ static void vp3_check_loop_filter(void)
     DECLARE_ALIGNED(8, uint8_t, hor_buf1)[HORIZONTAL_BUF_SIZE];
     DECLARE_ALIGNED(8, uint8_t, ver_buf0)[VERTICAL_BUF_SIZE];
     DECLARE_ALIGNED(8, uint8_t, ver_buf1)[VERTICAL_BUF_SIZE];
-    DECLARE_ALIGNED(8, int, bounding_values_array)[256 + 2];
+    DECLARE_ALIGNED(16, int, bounding_values_array)[256 + 4];
     int *const bounding_values = bounding_values_array + 127;
     VP3DSPContext vp3dsp;
     static const struct {
@@ -72,7 +72,7 @@ static void vp3_check_loop_filter(void)
         { TEST(v_loop_filter),           2, 1, 0, 7, 8, 0 },
         { TEST(h_loop_filter),           0, 7, 2, 1, 8, 1 },
     };
-    declare_func_emms(AV_CPU_FLAG_MMXEXT, void, uint8_t *src, ptrdiff_t stride, int *bounding_values);
+    declare_func(void, uint8_t *src, ptrdiff_t stride, int *bounding_values);
 
     ff_vp3dsp_init(&vp3dsp, AV_CODEC_FLAG_BITEXACT);
 
