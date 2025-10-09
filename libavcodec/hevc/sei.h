@@ -127,6 +127,7 @@ int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
  */
 static inline void ff_hevc_reset_sei(HEVCSEI *sei)
 {
+    sei->timecode.present = 0;
     sei->tdrdi.present = 0;
     ff_h2645_sei_reset(&sei->common);
 }
