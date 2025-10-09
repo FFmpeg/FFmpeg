@@ -28,6 +28,7 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/h264qpel.h"
 #include "fpel.h"
+#include "qpel.h"
 
 #if HAVE_X86ASM
 void ff_avg_pixels4_mmxext(uint8_t *dst, const uint8_t *src, ptrdiff_t stride);
@@ -35,14 +36,6 @@ void ff_put_pixels4_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *
                               ptrdiff_t stride);
 void ff_avg_pixels4_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
                               ptrdiff_t stride);
-void ff_put_pixels8_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-                              ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
-void ff_avg_pixels8_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-                              ptrdiff_t dstStride, ptrdiff_t src1Stride);
-void ff_put_pixels16_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-                               ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
-void ff_avg_pixels16_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-                               ptrdiff_t dstStride, ptrdiff_t src1Stride);
 #define ff_put_pixels4_l2_mmxext(dst, src1, src2, dststride, src1stride, h) \
     ff_put_pixels4_l2_mmxext((dst), (src1), (src2), (dststride))
 #define ff_avg_pixels4_l2_mmxext(dst, src1, src2, dststride, src1stride, h) \

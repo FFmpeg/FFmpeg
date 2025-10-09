@@ -27,25 +27,13 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/pixels.h"
 #include "libavcodec/qpeldsp.h"
 #include "fpel.h"
+#include "qpel.h"
 
-void ff_put_pixels8_l2_mmxext(uint8_t *dst,
-                              const uint8_t *src1, const uint8_t *src2,
-                              ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
 void ff_put_no_rnd_pixels8_l2_mmxext(uint8_t *dst,
                                      const uint8_t *src1, const uint8_t *src2,
                                      ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
-void ff_avg_pixels8_l2_mmxext(uint8_t *dst,
-                              const uint8_t *src1, const uint8_t *src2,
-                              ptrdiff_t dstStride, ptrdiff_t src1Stride);
-void ff_put_pixels16_l2_mmxext(uint8_t *dst,
-                               const uint8_t *src1, const uint8_t *src2,
-                               ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
-void ff_avg_pixels16_l2_mmxext(uint8_t *dst,
-                               const uint8_t *src1, const uint8_t *src2,
-                               ptrdiff_t dstStride, ptrdiff_t src1Stride);
 void ff_put_no_rnd_pixels16_l2_mmxext(uint8_t *dst,
                                       const uint8_t *src1, const uint8_t *src2,
                                       ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
