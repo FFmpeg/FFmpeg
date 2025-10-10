@@ -251,6 +251,9 @@ static const struct {
     #if CONFIG_VC1DSP
         { "vc1dsp", checkasm_check_vc1dsp },
     #endif
+    #if CONFIG_VP3DSP
+        { "vp3dsp", checkasm_check_vp3dsp },
+    #endif
     #if CONFIG_VP8DSP
         { "vp8dsp", checkasm_check_vp8dsp },
     #endif

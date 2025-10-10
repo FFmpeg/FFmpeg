@@ -22,6 +22,7 @@ AVCODECOBJS-$(CONFIG_ME_CMP)            += motion.o
 AVCODECOBJS-$(CONFIG_MPEGVIDEOENCDSP)   += mpegvideoencdsp.o
 AVCODECOBJS-$(CONFIG_QPELDSP)           += qpeldsp.o
 AVCODECOBJS-$(CONFIG_VC1DSP)            += vc1dsp.o
+AVCODECOBJS-$(CONFIG_VP3DSP)            += vp3dsp.o
 AVCODECOBJS-$(CONFIG_VP8DSP)            += vp8dsp.o
 AVCODECOBJS-$(CONFIG_VIDEODSP)          += videodsp.o
 
