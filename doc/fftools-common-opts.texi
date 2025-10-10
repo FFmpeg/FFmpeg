@@ -98,7 +98,7 @@ These options are shared amongst the ff* tools.
 
 @table @option
 
-@item -L
+@item -L, -license
 Show license.
 
 @item -h, -?, -help, --help [@var{arg}]

@@ -198,6 +198,7 @@ int opt_cpucount(void *optctx, const char *opt, const char *arg);
 
 #define CMDUTILS_COMMON_OPTIONS                                                                                         \
     { "L",            OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_license },     "show license" },                          \
+    { "license",      OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_license },     "show license" },                          \
     { "h",            OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_help },        "show help", "topic" },                    \
     { "?",            OPT_TYPE_FUNC, OPT_EXIT | OPT_EXPERT, { .func_arg = show_help },        "show help", "topic" },                    \
     { "help",         OPT_TYPE_FUNC, OPT_EXIT | OPT_EXPERT, { .func_arg = show_help },        "show help", "topic" },                    \
