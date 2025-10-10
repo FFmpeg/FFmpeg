@@ -1205,11 +1205,12 @@ check_arch_level(){
     enabled tested_arch_level && as_arch_level="$level"
 }
 
-check_archext_insn(){
-    log check_archext_insn "$@"
+check_archext_name_insn(){
+    log check_archext_name_insn "$@"
     feature="$1"
-    instr="$2"
-    instr2="$3"
+    archext="$2"
+    instr="$3"
+    instr2="$4"
     # Check if the assembly is accepted in inline assembly.
     check_inline_asm ${feature}_inline "\"$instr \n\t $instr2\""
     # We don't check if the instruction is supported out of the box by the
@@ -1220,9 +1221,9 @@ check_archext_insn(){
 
     enabled as_arch_directive && arch_directive=".arch $as_arch_level" || arch_directive=""
 
-    # Test if the assembler supports the .arch_extension $feature directive.
-    arch_extension_directive=".arch_extension $feature"
-    test_as <<EOF && enable as_archext_${feature}_directive || arch_extension_directive=""
+    # Test if the assembler supports the .arch_extension $archext directive.
+    arch_extension_directive=".arch_extension $archext"
+    test_as <<EOF && enable as_archext_${archext}_directive || arch_extension_directive=""
 $arch_directive
 $arch_extension_directive
 EOF
@@ -1235,6 +1236,14 @@ $arch_extension_directive
 $instr
 $instr2
 EOF
+}
+
+check_archext_insn(){
+    log check_archext_insn "$@"
+    feature="$1"
+    instr="$2"
+    instr2="$3"
+    check_archext_name_insn "$feature" "$feature" "$instr" "$instr2"
 }
 
 check_x86asm(){
