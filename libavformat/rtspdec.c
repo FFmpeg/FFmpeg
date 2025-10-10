@@ -650,6 +650,10 @@ static int rtsp_submit_command(struct AVFormatContext *s, enum AVFormatCommandID
     RTSPState *rt = s->priv_data;
     AVRTSPCommandRequest *req = data;
 
+    if (rt->state == RTSP_STATE_IDLE)
+        // Not ready to send a SET_PARAMETERS command yet
+        return AVERROR(EAGAIN);
+
     av_log(s, AV_LOG_DEBUG, "Sending SET_PARAMETER command to %s\n", rt->control_uri);
     char *headers = dict_to_headers(req->headers);
 
