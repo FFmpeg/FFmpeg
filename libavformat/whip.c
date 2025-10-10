@@ -1260,7 +1260,7 @@ static int ice_dtls_handshake(AVFormatContext *s)
     WHIPContext *whip = s->priv_data;
     int is_dtls_active = whip->flags & WHIP_DTLS_ACTIVE;
     AVDictionary *opts = NULL;
-    char buf[256], *cert_buf = NULL, *key_buf = NULL;
+    char buf[256];
 
     if (whip->state < WHIP_STATE_UDP_CONNECTED || !whip->udp) {
         av_log(whip, AV_LOG_ERROR, "UDP not connected, state=%d, udp=%p\n", whip->state, whip->udp);
@@ -1380,10 +1380,6 @@ next_packet:
     }
 
 end:
-    if (cert_buf)
-        av_free(cert_buf);
-    if (key_buf)
-        av_free(key_buf);
     return ret;
 }
 
