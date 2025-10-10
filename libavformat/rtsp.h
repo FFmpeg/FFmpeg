@@ -286,6 +286,25 @@ typedef struct RTSPState {
     /** The last reply of the server to a RTSP command */
     char last_reply[2048]; /* XXX: allocate ? */
 
+    /**
+     * Stored message context
+     * This is used to store the last reply marked to be
+     * stored with ::ff_rtsp_send_cmd_with_content_async_stored
+     * as well as accompanying state to know when to store
+     * a reply and if a reply has been stored yet.
+     */
+    struct {
+        /**
+         * Sequence number of the reply to be stored
+         * -1 if we are not waiting to store any message
+         */
+        int expected_seq;
+        /** Last stored reply message from the RTSP server */
+        RTSPMessageHeader *header;
+        /** Last stored reply message body from the RTSP server */
+        unsigned char *body;
+    } stored_msg;
+
     /** Indicates if a packet is pending to be read (useful for interleaved reads) */
     int pending_packet;
 
@@ -531,6 +550,30 @@ int ff_rtsp_send_cmd_with_content_async(AVFormatContext *s,
                                         int send_content_length);
 
 /**
+ * Send a command to the RTSP server, storing the reply on future reads
+ *
+ * Sends a command to the server, without waiting for the reply and
+ * marking the request as awaiting a response, which will be stored
+ * when it is encountered during future read operations and should
+ * be retrieved with ::ff_rtsp_read_reply_async_stored.
+ *
+ * @param s RTSP (de)muxer context
+ * @param method the method for the request
+ * @param url the target url for the request
+ * @param headers extra header lines to include in the request
+ * @param send_content if non-null, the data to send as request body content
+ * @param send_content_length the length of the send_content data, or 0 if
+ *                            send_content is null
+ *
+ * @return zero if success, nonzero otherwise
+ */
+int ff_rtsp_send_cmd_with_content_async_stored(AVFormatContext *s,
+                                               const char *method, const char *url,
+                                               const char *headers,
+                                               const unsigned char *send_content,
+                                               int send_content_length);
+
+/**
  * Send a command to the RTSP server and wait for the reply.
  *
  * @param s RTSP (de)muxer context
@@ -589,6 +632,28 @@ int ff_rtsp_send_cmd(AVFormatContext *s, const char *method,
 int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
                        unsigned char **content_ptr,
                        int return_on_interleaved_data, const char *method);
+
+/**
+ * Retrieve a previously stored RTSP reply message from the server.
+ *
+ * Retrieves a reply for a message sent with
+ * ::ff_rtsp_send_cmd_with_content_async_stored previously.
+ * If more than one message was received, this function will only
+ * return the last one and intermediate messages are discarded.
+ *
+ * Both reply and content must be ::av_free'd by the caller.
+ *
+ * @param s             RTSP (de)muxer context
+ * @param reply         Pointer where the RTSP message header will be stored
+ * @param content_ptr   Pointer where the RTSP message body, if any, will
+ *                      be stored (length is in reply)
+ *
+ * @return 0 on success, AVERROR(EAGAIN) if no reply was received yet,
+ *         other AVERROR for any other errors.
+ */
+int ff_rtsp_read_reply_async_stored(AVFormatContext *s, RTSPMessageHeader **reply,
+                                    unsigned char **content_ptr);
+
 
 /**
  * Skip a RTP/TCP interleaved packet.
