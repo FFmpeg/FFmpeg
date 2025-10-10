@@ -653,8 +653,8 @@ static int rtsp_submit_command(struct AVFormatContext *s, enum AVFormatCommandID
     av_log(s, AV_LOG_DEBUG, "Sending SET_PARAMETER command to %s\n", rt->control_uri);
     char *headers = dict_to_headers(req->headers);
 
-    int ret = ff_rtsp_send_cmd_with_content_async(s, "SET_PARAMETER", rt->control_uri,
-        headers, req->body, req->body_len);
+    int ret = ff_rtsp_send_cmd_with_content_async_stored(s, "SET_PARAMETER",
+        rt->control_uri, headers, req->body, req->body_len);
     av_free(headers);
 
     if (ret != 0)
@@ -667,7 +667,6 @@ static int rtsp_read_command_reply(AVFormatContext *s, enum AVFormatCommandID id
 {
     if (id != AVFORMAT_COMMAND_RTSP_SET_PARAMETER)
         return AVERROR(ENOTSUP);
-
     if (!data_out)
         return AVERROR(EINVAL);
 
@@ -675,19 +674,19 @@ static int rtsp_read_command_reply(AVFormatContext *s, enum AVFormatCommandID id
     if (!res)
         return AVERROR(ENOMEM);
 
-    RTSPMessageHeader reply;
-    int ret = ff_rtsp_read_reply(s, &reply, &res->body, 1, "SET_PARAMETER");
+    RTSPMessageHeader *reply;
+    int ret = ff_rtsp_read_reply_async_stored(s, &reply, &res->body);
     if (ret < 0)
         return ret;
-    if (ret == 1)
-        return AVERROR(EAGAIN);
 
-    res->status_code = reply.status_code;
-    res->body_len = reply.content_length;
+    res->status_code = reply->status_code;
+    res->body_len = reply->content_length;
 
-    res->reason = av_strdup(reply.reason);
+    res->reason = av_strdup(reply->reason);
     if (!res->reason) {
+        av_free(res->body);
         av_free(res);
+        av_free(reply);
         return AVERROR(ENOMEM);
     }
 
