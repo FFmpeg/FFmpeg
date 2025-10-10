@@ -293,7 +293,6 @@ QPEL_H264_HV_XMM(avg_, sse2)
 QPEL_H264_H_XMM(put_, ssse3)
 QPEL_H264_H_XMM(avg_, ssse3)
 QPEL_H264_V_XMM(put_, ssse3, sse2)
-QPEL_H264_V_XMM(avg_, ssse3, sse2)
 QPEL_H264_HV_XMM(put_, ssse3)
 QPEL_H264_HV_XMM(avg_, ssse3)
 
