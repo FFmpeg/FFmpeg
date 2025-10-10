@@ -211,9 +211,14 @@ enum WHIPState {
     WHIP_STATE_FAILED,
 };
 
+typedef enum WHIPFlags {
+    WHIP_DTLS_ACTIVE = (1 << 0),
+} WHIPFlags;
+
 typedef struct WHIPContext {
     AVClass *av_class;
 
+    uint32_t flags;
     /* The state of the RTC connection. */
     enum WHIPState state;
 
@@ -599,6 +604,7 @@ static int generate_sdp_offer(AVFormatContext *s)
     const char *acodec_name = NULL, *vcodec_name = NULL;
     AVBPrint bp;
     WHIPContext *whip = s->priv_data;
+    int is_dtls_active = whip->flags & WHIP_DTLS_ACTIVE;
 
     /* To prevent a crash during cleanup, always initialize it. */
     av_bprint_init(&bp, 1, MAX_SDP_SIZE);
@@ -644,7 +650,7 @@ static int generate_sdp_offer(AVFormatContext *s)
             "a=ice-ufrag:%s\r\n"
             "a=ice-pwd:%s\r\n"
             "a=fingerprint:sha-256 %s\r\n"
-            "a=setup:passive\r\n"
+            "a=setup:%s\r\n"
             "a=mid:0\r\n"
             "a=sendonly\r\n"
             "a=msid:FFmpeg audio\r\n"
@@ -656,6 +662,7 @@ static int generate_sdp_offer(AVFormatContext *s)
             whip->ice_ufrag_local,
             whip->ice_pwd_local,
             whip->dtls_fingerprint,
+            is_dtls_active ? "active" : "passive",
             whip->audio_payload_type,
             acodec_name,
             whip->audio_par->sample_rate,
@@ -679,7 +686,7 @@ static int generate_sdp_offer(AVFormatContext *s)
             "a=ice-ufrag:%s\r\n"
             "a=ice-pwd:%s\r\n"
             "a=fingerprint:sha-256 %s\r\n"
-            "a=setup:passive\r\n"
+            "a=setup:%s\r\n"
             "a=mid:1\r\n"
             "a=sendonly\r\n"
             "a=msid:FFmpeg video\r\n"
@@ -698,6 +705,7 @@ static int generate_sdp_offer(AVFormatContext *s)
             whip->ice_ufrag_local,
             whip->ice_pwd_local,
             whip->dtls_fingerprint,
+            is_dtls_active ? "active" : "passive",
             whip->video_payload_type,
             vcodec_name,
             whip->video_payload_type,
@@ -1250,6 +1258,7 @@ static int ice_dtls_handshake(AVFormatContext *s)
     int ret = 0, size, i;
     int64_t starttime = av_gettime_relative(), now;
     WHIPContext *whip = s->priv_data;
+    int is_dtls_active = whip->flags & WHIP_DTLS_ACTIVE;
     AVDictionary *opts = NULL;
     char buf[256], *cert_buf = NULL, *key_buf = NULL;
 
@@ -1301,6 +1310,8 @@ next_packet:
                 av_usleep(ICE_DTLS_READ_SLEEP_DURATION * WHIP_US_PER_MS);
                 continue;
             }
+            if (is_dtls_active)
+                break;
             av_log(whip, AV_LOG_ERROR, "Failed to read message\n");
             goto end;
         }
@@ -1328,7 +1339,7 @@ next_packet:
                     av_dict_set(&opts, "key_pem", whip->key_buf, 0);
                 av_dict_set_int(&opts, "external_sock", 1, 0);
                 av_dict_set_int(&opts, "use_srtp", 1, 0);
-                av_dict_set_int(&opts, "listen", 1, 0);
+                av_dict_set_int(&opts, "listen", is_dtls_active ? 0 : 1, 0);
                 /* If got the first binding response, start DTLS handshake. */
                 ret = ffurl_open_whitelist(&whip->dtls_uc, buf, AVIO_FLAG_READ_WRITE, &s->interrupt_callback,
                     &opts, s->protocol_whitelist, s->protocol_blacklist, NULL);
@@ -1347,8 +1358,8 @@ next_packet:
             goto next_packet;
         }
 
-        /* If got any DTLS messages, handle it. */
-        if (is_dtls_packet(whip->buf, ret)) {
+        /* Handle DTLS handshake */
+        if (is_dtls_packet(whip->buf, ret) || is_dtls_active) {
             /* Start consent timer when ICE selected */
             whip->whip_last_consent_tx_time = whip->whip_last_consent_rx_time = av_gettime_relative();
             whip->state = WHIP_STATE_ICE_CONNECTED;
@@ -1397,6 +1408,10 @@ static int setup_srtp(AVFormatContext *s)
      */
     const char* suite = "SRTP_AES128_CM_HMAC_SHA1_80";
     WHIPContext *whip = s->priv_data;
+    int is_dtls_active = whip->flags & WHIP_DTLS_ACTIVE;
+    char *cp = is_dtls_active ? send_key : recv_key;
+    char *sp = is_dtls_active ? recv_key : send_key;
+
     ret = ff_dtls_export_materials(whip->dtls_uc, whip->dtls_srtp_materials, sizeof(whip->dtls_srtp_materials));
     if (ret < 0)
         goto end;
@@ -1411,13 +1426,11 @@ static int setup_srtp(AVFormatContext *s)
     char *client_salt = server_key + DTLS_SRTP_KEY_LEN;
     char *server_salt = client_salt + DTLS_SRTP_SALT_LEN;
 
-    /* As DTLS server, the recv key is client master key plus salt. */
-    memcpy(recv_key, client_key, DTLS_SRTP_KEY_LEN);
-    memcpy(recv_key + DTLS_SRTP_KEY_LEN, client_salt, DTLS_SRTP_SALT_LEN);
+    memcpy(cp, client_key, DTLS_SRTP_KEY_LEN);
+    memcpy(cp + DTLS_SRTP_KEY_LEN, client_salt, DTLS_SRTP_SALT_LEN);
 
-    /* As DTLS server, the send key is server master key plus salt. */
-    memcpy(send_key, server_key, DTLS_SRTP_KEY_LEN);
-    memcpy(send_key + DTLS_SRTP_KEY_LEN, server_salt, DTLS_SRTP_SALT_LEN);
+    memcpy(sp, server_key, DTLS_SRTP_KEY_LEN);
+    memcpy(sp + DTLS_SRTP_KEY_LEN, server_salt, DTLS_SRTP_SALT_LEN);
 
     /* Setup SRTP context for outgoing packets */
     if (!av_base64_encode(buf, sizeof(buf), send_key, sizeof(send_key))) {
@@ -2024,6 +2037,8 @@ static const AVOption options[] = {
     { "handshake_timeout",  "Timeout in milliseconds for ICE and DTLS handshake.",      OFFSET(handshake_timeout),  AV_OPT_TYPE_INT,    { .i64 = 5000 },    -1, INT_MAX, ENC },
     { "pkt_size",           "The maximum size, in bytes, of RTP packets that send out", OFFSET(pkt_size),           AV_OPT_TYPE_INT,    { .i64 = 1200 },    -1, INT_MAX, ENC },
     { "buffer_size",        "The buffer size, in bytes, of underlying protocol",        OFFSET(buffer_size),        AV_OPT_TYPE_INT,    { .i64 = -1 },      -1, INT_MAX, ENC },
+    { "whip_flags",         "Set flags affecting WHIP connection behavior",             OFFSET(flags),              AV_OPT_TYPE_FLAGS,  { .i64 = 0},         0, UINT_MAX, ENC, .unit = "flags" },
+    { "dtls_active",        "Set dtls role as active",                                  0,                          AV_OPT_TYPE_CONST,  { .i64 = WHIP_DTLS_ACTIVE}, 0, UINT_MAX, ENC, .unit = "flags" },
     { "authorization",      "The optional Bearer token for WHIP Authorization",         OFFSET(authorization),      AV_OPT_TYPE_STRING, { .str = NULL },     0,       0, ENC },
     { "cert_file",          "The optional certificate file path for DTLS",              OFFSET(cert_file),          AV_OPT_TYPE_STRING, { .str = NULL },     0,       0, ENC },
     { "key_file",           "The optional private key file path for DTLS",              OFFSET(key_file),      AV_OPT_TYPE_STRING, { .str = NULL },     0,       0, ENC },

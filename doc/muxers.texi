@@ -3959,6 +3959,14 @@ Default value is 1200.
 Set the buffer size, in bytes, of underlying protocol.
 Default value is -1(auto). The UDP auto selects a reasonable value.
 
+@item whip_flags @var{flags}
+Possible values:
+
+@table @samp
+@item dtls_active
+The muxer will try to set dtls active role and send the first client hello.
+@end table
+
 @item authorization @var{string}
 The optional Bearer token for WHIP Authorization.
 
