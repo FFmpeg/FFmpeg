@@ -1499,7 +1499,7 @@ retry:
         goto retry;
 
     if (reply->status_code > 400){
-        av_log(s, AV_LOG_ERROR, "method %s failed: %d%s\n",
+        av_log(s, AV_LOG_ERROR, "method %s failed: %d (%s)\n",
                method,
                reply->status_code,
                reply->reason);
