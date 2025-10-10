@@ -2031,7 +2031,7 @@ static int vp4_mc_loop_filter(Vp3DecodeContext *s, int plane, int motion_x, int 
              plane_height);
 
 #define safe_loop_filter(name, ptr, stride, bounding_values) \
-    if ((uintptr_t)(ptr) & 7) \
+    if (VP3_LOOP_FILTER_NO_UNALIGNED_SUPPORT && (uintptr_t)(ptr) & 7) \
         s->vp3dsp.name##_unaligned(ptr, stride, bounding_values); \
     else \
         s->vp3dsp.name(ptr, stride, bounding_values);

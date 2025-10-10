@@ -68,8 +68,8 @@ static void vp3_check_loop_filter(void)
 #define TEST(NAME) .name = #NAME, .offset = offsetof(VP3DSPContext, NAME)
         { TEST(v_loop_filter_unaligned), 2, 1, 0, 7, 1, 0 },
         { TEST(h_loop_filter_unaligned), 0, 7, 2, 1, 1, 1 },
-        { TEST(v_loop_filter),           2, 1, 0, 7, 8, 0 },
-        { TEST(h_loop_filter),           0, 7, 2, 1, 8, 1 },
+        { TEST(v_loop_filter),           2, 1, 0, 7, VP3_LOOP_FILTER_NO_UNALIGNED_SUPPORT ? 8 : 1, 0 },
+        { TEST(h_loop_filter),           0, 7, 2, 1, VP3_LOOP_FILTER_NO_UNALIGNED_SUPPORT ? 8 : 1, 1 },
     };
     declare_func(void, uint8_t *src, ptrdiff_t stride, int *bounding_values);
 

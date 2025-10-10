@@ -22,6 +22,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// If this is one, {v,h}_loop_filter expect src to be aligned on eight bytes;
+// otherwise they don't have any alignment requirements for src.
+#define VP3_LOOP_FILTER_NO_UNALIGNED_SUPPORT (ARCH_ARM || ARCH_MIPS)
+
 typedef struct VP3DSPContext {
     /**
      * Copy 8xH pixels from source to destination buffer using a bilinear
