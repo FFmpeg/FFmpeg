@@ -143,7 +143,7 @@ av_cold void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (INLINE_MMX(cpu_flags))
+    if (EXTERNAL_MMX(cpu_flags))
         hpeldsp_init_mmx(c, flags);
 
     if (EXTERNAL_MMXEXT(cpu_flags))
