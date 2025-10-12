@@ -16,19 +16,47 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 
+#include "libavcodec/mathops.h"
 #include "libavcodec/mpegvideoencdsp.h"
 
 #include "checkasm.h"
 
-#define randomize_buffers(buf, size)      \
-    do {                                  \
-        for (int j = 0; j < size; j += 4) \
-            AV_WN32(buf + j, rnd());      \
+#define randomize_buffers(buf, size)        \
+    do {                                    \
+        for (int j = 0; j < size; j += 4)   \
+            AV_WN32((char*)buf + j, rnd()); \
     } while (0)
+
+#define randomize_buffer_clipped(buf, min, max)          \
+    do {                                                 \
+        for (size_t j = 0; j < FF_ARRAY_ELEMS(buf); ++j) \
+            buf[j] = rnd() % (max - min + 1) + min;      \
+    } while (0)
+
+static void check_add_8x8basis(MpegvideoEncDSPContext *c)
+{
+    declare_func_emms(AV_CPU_FLAG_SSSE3, void, int16_t rem[64], const int16_t basis[64], int scale);
+    if (check_func(c->add_8x8basis, "add_8x8basis")) {
+        // FIXME: What are the actual ranges for these values?
+        int scale = sign_extend(rnd(), 12);
+        int16_t rem1[64];
+        int16_t rem2[64];
+        int16_t basis[64];
+
+        randomize_buffer_clipped(basis, -15760, 15760);
+        randomize_buffers(rem1, sizeof(rem1));
+        memcpy(rem2, rem1, sizeof(rem2));
+        call_ref(rem1, basis, scale);
+        call_new(rem2, basis, scale);
+        if (memcmp(rem1, rem2, sizeof(rem1)))
+            fail();
+        bench_new(rem1, basis, scale);
+    }
+}
 
 static void check_pix_sum(MpegvideoEncDSPContext *c)
 {
@@ -144,4 +172,6 @@ void checkasm_check_mpegvideoencdsp(void)
     report("pix_norm1");
     check_draw_edges(&c);
     report("draw_edges");
+    check_add_8x8basis(&c);
+    report("add_8x8basis");
 }
