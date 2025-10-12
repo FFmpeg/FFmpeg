@@ -90,7 +90,7 @@ static void add_8x8basis_ssse3(int16_t rem[64], const int16_t basis[64], int sca
 {
     x86_reg i=0;
 
-    if (FFABS(scale) < MAX_ABS) {
+    if (FFABS(scale) < 1024) {
         scale <<= 16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT;
         __asm__ volatile(
                 "movd  %3, %%mm5        \n\t"
