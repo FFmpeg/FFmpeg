@@ -31,7 +31,6 @@
  * ported by Clément Bœsch for FFmpeg.
  */
 
-#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
@@ -425,7 +424,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 filter(s, out->data[1], in->data[1], out->linesize[1], in->linesize[1], cw,        ch,        qp_table, qp_stride, 0, depth);
                 filter(s, out->data[2], in->data[2], out->linesize[2], in->linesize[2], cw,        ch,        qp_table, qp_stride, 0, depth);
             }
-            emms_c();
         }
     }
 
