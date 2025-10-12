@@ -22,157 +22,89 @@
 
 SECTION .text
 
-INIT_MMX mmx
-cglobal pullup_filter_diff, 3, 5, 8, first, second, size
+INIT_XMM sse2
+cglobal pullup_filter_diff, 3, 4, 3, first, second, size
     mov        r3, 4
-    pxor       m4, m4
-    pxor       m7, m7
+    pxor       m2, m2
 
 .loop:
     movq       m0, [firstq]
-    movq       m2, [firstq]
     add        firstq, sizeq
     movq       m1, [secondq]
     add        secondq, sizeq
-    psubusb    m2, m1
-    psubusb    m1, m0
-    movq       m0, m2
-    movq       m3, m1
-    punpcklbw  m0, m7
-    punpcklbw  m1, m7
-    punpckhbw  m2, m7
-    punpckhbw  m3, m7
-    paddw      m4, m0
-    paddw      m4, m1
-    paddw      m4, m2
-    paddw      m4, m3
+    psadbw     m0, m1
+    paddw      m2, m0
 
     dec        r3
     jnz .loop
 
-    movq       m3, m4
-    punpcklwd  m4, m7
-    punpckhwd  m3, m7
-    paddd      m3, m4
-    movd      eax, m3
-    psrlq      m3, 32
-    movd      r4d, m3
-    add       eax, r4d
+    movd      eax, m2
     RET
 
-INIT_MMX mmx
-cglobal pullup_filter_comb, 3, 5, 8, first, second, size
-    mov        r3, 4
+INIT_XMM ssse3
+cglobal pullup_filter_comb, 3, 5, 7, first, second, size
+    movq       m0, [firstq]
+    sub   secondq, sizeq
+    movq       m1, [secondq]
     pxor       m6, m6
-    pxor       m7, m7
-    sub        secondq, sizeq
+    punpcklbw  m0, m6
+    punpcklbw  m1, m6
+    add    firstq, sizeq
+    add   secondq, sizeq
+    pxor       m5, m5
+    mov        r3, 4
 
 .loop:
-    movq       m0, [firstq]
-    movq       m1, [secondq]
-    punpcklbw  m0, m7
-    movq       m2, [secondq+sizeq]
-    punpcklbw  m1, m7
-    punpcklbw  m2, m7
-    paddw      m0, m0
-    paddw      m1, m2
-    movq       m2, m0
-    psubusw    m0, m1
-    psubusw    m1, m2
-    paddw      m6, m0
-    paddw      m6, m1
+    movq       m2, [firstq]
+    movq       m3, [secondq]
+    add    firstq, sizeq
+    add   secondq, sizeq
+    punpcklbw  m2, m6
+    punpcklbw  m3, m6
+    mova       m4, m0
 
-    movq       m0, [firstq]
-    movq       m1, [secondq]
-    punpckhbw  m0, m7
-    movq       m2, [secondq+sizeq]
-    punpckhbw  m1, m7
-    punpckhbw  m2, m7
     paddw      m0, m0
-    paddw      m1, m2
-    movq       m2, m0
-    psubusw    m0, m1
-    psubusw    m1, m2
-    paddw      m6, m0
-    paddw      m6, m1
+    paddw      m1, m3
+    psubw      m0, m1
+    pabsw      m0, m0
+    paddw      m5, m0
 
-    movq       m0, [secondq+sizeq]
-    movq       m1, [firstq]
-    punpcklbw  m0, m7
-    movq       m2, [firstq+sizeq]
-    punpcklbw  m1, m7
-    punpcklbw  m2, m7
-    paddw      m0, m0
-    paddw      m1, m2
-    movq       m2, m0
-    psubusw    m0, m1
-    psubusw    m1, m2
-    paddw      m6, m0
-    paddw      m6, m1
+    mova       m1, m3
+    paddw      m4, m2
+    paddw      m3, m3
+    psubw      m3, m4
+    pabsw      m3, m3
+    paddw      m5, m3
+    mova       m2, m0
 
-    movq       m0, [secondq+sizeq]
-    movq       m1, [firstq]
-    punpckhbw  m0, m7
-    movq       m2, [firstq+sizeq]
-    punpckhbw  m1, m7
-    punpckhbw  m2, m7
-    paddw      m0, m0
-    paddw      m1, m2
-    movq       m2, m0
-    psubusw    m0, m1
-    psubusw    m1, m2
-    paddw      m6, m0
-    paddw      m6, m1
-
-    add        firstq, sizeq
-    add        secondq, sizeq
     dec        r3
     jnz .loop
 
-    movq       m5, m6
-    punpcklwd  m6, m7
-    punpckhwd  m5, m7
-    paddd      m5, m6
-    movd      eax, m5
-    psrlq      m5, 32
-    movd      r4d, m5
-    add       eax, r4d
+    movq       m0, m5
+    punpcklwd  m5, m6
+    punpckhwd  m0, m6
+    paddd      m0, m5
+    pshufd     m5, m0, 0xE
+    paddd      m0, m5
+    pshufd     m5, m0, 0x1
+    paddd      m0, m5
+    movd      eax, m0
     RET
 
-INIT_MMX mmx
-cglobal pullup_filter_var, 3, 5, 8, first, second, size
-    mov        r3, 3
-    pxor       m4, m4
-    pxor       m7, m7
-
-.loop:
+INIT_XMM sse2
+cglobal pullup_filter_var, 3, 3, 3, first, second, size
     movq       m0, [firstq]
-    movq       m2, [firstq]
-    movq       m1, [firstq+sizeq]
     add        firstq, sizeq
-    psubusb    m2, m1
-    psubusb    m1, m0
-    movq       m0, m2
-    movq       m3, m1
-    punpcklbw  m0, m7
-    punpcklbw  m1, m7
-    punpckhbw  m2, m7
-    punpckhbw  m3, m7
-    paddw      m4, m0
-    paddw      m4, m1
-    paddw      m4, m2
-    paddw      m4, m3
-
-    dec        r3
-    jnz .loop
-
-    movq       m3, m4
-    punpcklwd  m4, m7
-    punpckhwd  m3, m7
-    paddd      m3, m4
-    movd      eax, m3
-    psrlq      m3, 32
-    movd      r4d, m3
-    add       eax, r4d
+    movq       m1, [firstq]
+    pxor       m2, m2
+    psadbw     m0, m1
+    paddw      m2, m0
+    movq       m0, [firstq+sizeq]
+    psadbw     m1, m0
+    paddw      m2, m1
+    movq       m1, [firstq+2*sizeq]
+    psadbw     m0, m1
+    paddw      m2, m0
+    movd      eax, m2
     shl       eax, 2
     RET
