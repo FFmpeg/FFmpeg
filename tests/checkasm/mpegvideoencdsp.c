@@ -39,13 +39,13 @@
 
 static void check_add_8x8basis(MpegvideoEncDSPContext *c)
 {
-    declare_func_emms(AV_CPU_FLAG_SSSE3, void, int16_t rem[64], const int16_t basis[64], int scale);
+    declare_func(void, int16_t rem[64], const int16_t basis[64], int scale);
     if (check_func(c->add_8x8basis, "add_8x8basis")) {
         // FIXME: What are the actual ranges for these values?
         int scale = sign_extend(rnd(), 12);
-        int16_t rem1[64];
-        int16_t rem2[64];
-        int16_t basis[64];
+        DECLARE_ALIGNED(16, int16_t, rem1)[64];
+        DECLARE_ALIGNED(16, int16_t, rem2)[64];
+        DECLARE_ALIGNED(16, int16_t, basis)[64];
 
         randomize_buffer_clipped(basis, -15760, 15760);
         randomize_buffers(rem1, sizeof(rem1));

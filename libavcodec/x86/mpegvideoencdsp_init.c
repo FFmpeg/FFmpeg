@@ -35,13 +35,6 @@ int ff_pix_norm1_sse2(const uint8_t *pix, ptrdiff_t line_size);
 #if HAVE_SSSE3_INLINE
 #define SCALE_OFFSET -1
 
-/*
- * pmulhrsw: dst[0 - 15] = (src[0 - 15] * dst[0 - 15] + 0x4000)[15 - 30]
- */
-#define PMULHRW(x, y, s, o)                     \
-    "pmulhrsw " #s ", " #x "            \n\t"   \
-    "pmulhrsw " #s ", " #y "            \n\t"
-
 #define MAX_ABS 512
 
 static int try_8x8basis_ssse3(const int16_t rem[64], const int16_t weight[64], const int16_t basis[64], int scale)
@@ -52,36 +45,39 @@ static int try_8x8basis_ssse3(const int16_t rem[64], const int16_t weight[64], c
     scale <<= 16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT;
 
     __asm__ volatile(
-        "pxor %%mm7, %%mm7              \n\t"
-        "movd  %4, %%mm5                \n\t"
-        "punpcklwd %%mm5, %%mm5         \n\t"
-        "punpcklwd %%mm5, %%mm5         \n\t"
-        ".p2align 4                     \n\t"
-        "1:                             \n\t"
-        "movq  (%1, %0), %%mm0          \n\t"
-        "movq  8(%1, %0), %%mm1         \n\t"
-        PMULHRW(%%mm0, %%mm1, %%mm5, %%mm6)
-        "paddw (%2, %0), %%mm0          \n\t"
-        "paddw 8(%2, %0), %%mm1         \n\t"
-        "psraw $6, %%mm0                \n\t"
-        "psraw $6, %%mm1                \n\t"
-        "pmullw (%3, %0), %%mm0         \n\t"
-        "pmullw 8(%3, %0), %%mm1        \n\t"
-        "pmaddwd %%mm0, %%mm0           \n\t"
-        "pmaddwd %%mm1, %%mm1           \n\t"
-        "paddd %%mm1, %%mm0             \n\t"
-        "psrld $4, %%mm0                \n\t"
-        "paddd %%mm0, %%mm7             \n\t"
-        "add $16, %0                    \n\t"
-        "cmp $128, %0                   \n\t" //FIXME optimize & bench
-        " jb 1b                         \n\t"
-        "pshufw $0x0E, %%mm7, %%mm6     \n\t"
-        "paddd %%mm6, %%mm7             \n\t" // faster than phaddd on core2
-        "psrld $2, %%mm7                \n\t"
-        "movd %%mm7, %0                 \n\t"
-
+        "pxor            %%xmm2, %%xmm2     \n\t"
+        "movd                %4, %%xmm3     \n\t"
+        "punpcklwd       %%xmm3, %%xmm3     \n\t"
+        "pshufd      $0, %%xmm3, %%xmm3     \n\t"
+        ".p2align 4                         \n\t"
+        "1:                                 \n\t"
+        "movdqa        (%1, %0), %%xmm0     \n\t"
+        "movdqa      16(%1, %0), %%xmm1     \n\t"
+        "pmulhrsw        %%xmm3, %%xmm0     \n\t"
+        "pmulhrsw        %%xmm3, %%xmm1     \n\t"
+        "paddw         (%2, %0), %%xmm0     \n\t"
+        "paddw       16(%2, %0), %%xmm1     \n\t"
+        "psraw               $6, %%xmm0     \n\t"
+        "psraw               $6, %%xmm1     \n\t"
+        "pmullw        (%3, %0), %%xmm0     \n\t"
+        "pmullw      16(%3, %0), %%xmm1     \n\t"
+        "pmaddwd         %%xmm0, %%xmm0     \n\t"
+        "pmaddwd         %%xmm1, %%xmm1     \n\t"
+        "paddd           %%xmm1, %%xmm0     \n\t"
+        "psrld               $4, %%xmm0     \n\t"
+        "paddd           %%xmm0, %%xmm2     \n\t"
+        "add                $32, %0         \n\t"
+        "cmp               $128, %0         \n\t" //FIXME optimize & bench
+        " jb                 1b             \n\t"
+        "pshufd   $0x0E, %%xmm2, %%xmm0     \n\t"
+        "paddd           %%xmm0, %%xmm2     \n\t"
+        "pshufd   $0x01, %%xmm2, %%xmm0     \n\t"
+        "paddd           %%xmm0, %%xmm2     \n\t"
+        "psrld               $2, %%xmm2     \n\t"
+        "movd            %%xmm2, %0         \n\t"
         : "+r" (i)
         : "r"(basis), "r"(rem), "r"(weight), "g"(scale)
+        XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2", "%xmm3")
     );
     return i;
 }
@@ -93,24 +89,25 @@ static void add_8x8basis_ssse3(int16_t rem[64], const int16_t basis[64], int sca
     if (FFABS(scale) < 1024) {
         scale <<= 16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT;
         __asm__ volatile(
-                "movd  %3, %%mm5        \n\t"
-                "punpcklwd %%mm5, %%mm5 \n\t"
-                "punpcklwd %%mm5, %%mm5 \n\t"
-                ".p2align 4             \n\t"
-                "1:                     \n\t"
-                "movq  (%1, %0), %%mm0  \n\t"
-                "movq  8(%1, %0), %%mm1 \n\t"
-                PMULHRW(%%mm0, %%mm1, %%mm5, %%mm6)
-                "paddw (%2, %0), %%mm0  \n\t"
-                "paddw 8(%2, %0), %%mm1 \n\t"
-                "movq %%mm0, (%2, %0)   \n\t"
-                "movq %%mm1, 8(%2, %0)  \n\t"
-                "add $16, %0            \n\t"
-                "cmp $128, %0           \n\t" // FIXME optimize & bench
-                " jb 1b                 \n\t"
-
+                "movd                %3, %%xmm2     \n\t"
+                "punpcklwd       %%xmm2, %%xmm2     \n\t"
+                "pshufd      $0, %%xmm2, %%xmm2     \n\t"
+                ".p2align 4                         \n\t"
+                "1:                                 \n\t"
+                "movdqa        (%1, %0), %%xmm0     \n\t"
+                "movdqa      16(%1, %0), %%xmm1     \n\t"
+                "pmulhrsw        %%xmm2, %%xmm0     \n\t"
+                "pmulhrsw        %%xmm2, %%xmm1     \n\t"
+                "paddw         (%2, %0), %%xmm0     \n\t"
+                "paddw       16(%2, %0), %%xmm1     \n\t"
+                "movdqa          %%xmm0, (%2, %0)   \n\t"
+                "movdqa          %%xmm1, 16(%2, %0) \n\t"
+                "add                $32, %0         \n\t"
+                "cmp               $128, %0         \n\t" // FIXME optimize & bench
+                " jb                 1b             \n\t"
                 : "+r" (i)
                 : "r"(basis), "r"(rem), "g"(scale)
+                XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2")
         );
     } else {
         for (i=0; i<8*8; i++) {

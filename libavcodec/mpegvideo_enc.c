@@ -2296,7 +2296,7 @@ static av_always_inline void encode_mb_internal(MPVEncContext *const s,
  * and neither of these encoders currently supports 444. */
 #define INTERLACED_DCT(s) ((chroma_format == CHROMA_420 || chroma_format == CHROMA_422) && \
                            (s)->c.avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT)
-    int16_t weight[12][64];
+    DECLARE_ALIGNED(16, int16_t, weight)[12][64];
     int16_t orig[12][64];
     const int mb_x = s->c.mb_x;
     const int mb_y = s->c.mb_y;
@@ -4293,7 +4293,7 @@ static int dct_quantize_trellis_c(MPVEncContext *const s,
     return last_non_zero;
 }
 
-static int16_t basis[64][64];
+static DECLARE_ALIGNED(16, int16_t, basis)[64][64];
 
 static void build_basis(uint8_t *perm){
     int i, j, x, y;
@@ -4317,7 +4317,7 @@ static void build_basis(uint8_t *perm){
 static int dct_quantize_refine(MPVEncContext *const s, //FIXME breaks denoise?
                         int16_t *block, int16_t *weight, int16_t *orig,
                         int n, int qscale){
-    int16_t rem[64];
+    DECLARE_ALIGNED(16, int16_t, rem)[64];
     LOCAL_ALIGNED_16(int16_t, d1, [64]);
     const uint8_t *scantable;
     const uint8_t *perm_scantable;
