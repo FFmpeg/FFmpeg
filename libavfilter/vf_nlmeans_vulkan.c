@@ -824,7 +824,7 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     FFVkExecContext *exec;
     VkImageView in_views[AV_NUM_DATA_POINTERS];
     VkImageView out_views[AV_NUM_DATA_POINTERS];
-    VkImageMemoryBarrier2 img_bar[2];
+    VkImageMemoryBarrier2 img_bar[8];
     int nb_img_bar = 0;
     VkBufferMemoryBarrier2 buf_bar[2];
     int nb_buf_bar = 0;
