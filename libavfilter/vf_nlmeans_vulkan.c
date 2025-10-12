@@ -34,6 +34,8 @@
 #define TYPE_BLOCK_SIZE (TYPE_SIZE * TYPE_BLOCK_ELEMS)
 #define WG_SIZE 32
 
+#undef isinf
+
 typedef struct NLMeansVulkanContext {
     FFVulkanContext vkctx;
 
@@ -70,6 +72,7 @@ typedef struct NLMeansVulkanContext {
 typedef struct IntegralPushData {
     uint32_t width[4];
     uint32_t height[4];
+    float    strength[4];
     uint32_t comp_off[4];
     uint32_t comp_plane[4];
     VkDeviceAddress integral_base;
@@ -99,6 +102,7 @@ static void shared_shd_def(FFVulkanShader *shd) {
     GLSLC(0, layout(push_constant, std430) uniform pushConstants {            );
     GLSLC(1,     uvec4 width;                                                 );
     GLSLC(1,     uvec4 height;                                                );
+    GLSLC(1,     vec4 strength;                                               );
     GLSLC(1,     uvec4 comp_off;                                              );
     GLSLC(1,     uvec4 comp_plane;                                            );
     GLSLC(1,     DataBuffer integral_base;                                    );
@@ -154,6 +158,9 @@ static av_cold int init_integral_pipeline(FFVulkanContext *vkctx, FFVkExecPool *
     GLSLC(0,                                                                     );
     GLSLC(1,     uint comp_idx = uint(gl_WorkGroupID.y);                         );
     GLSLC(1,     uint invoc_idx = uint(gl_WorkGroupID.z);                        );
+    GLSLC(0,                                                                     );
+    GLSLC(1,     if (isinf(strength[comp_idx]))                                  );
+    GLSLC(2,         return;                                                     );
     GLSLC(0,                                                                     );
     GLSLC(1,     offset = integral_size * (invoc_idx * nb_components + comp_idx); );
     GLSLC(1,     integral_data = DataBuffer(uint64_t(integral_base) + offset);   );
@@ -236,6 +243,9 @@ static av_cold int init_integral_pipeline(FFVulkanContext *vkctx, FFVkExecPool *
     GLSLC(0,                                                                     );
     GLSLC(1,     uint comp_idx = uint(gl_WorkGroupID.y);                         );
     GLSLC(1,     uint invoc_idx = uint(gl_WorkGroupID.z);                        );
+    GLSLC(0,                                                                     );
+    GLSLC(1,     if (isinf(strength[comp_idx]))                                  );
+    GLSLC(2,         return;                                                     );
     GLSLC(0,                                                                     );
     GLSLC(1,     offset = integral_size * (invoc_idx * nb_components + comp_idx); );
     GLSLC(1,     integral_data = DataBuffer(uint64_t(integral_base) + offset);   );
@@ -389,6 +399,7 @@ static av_cold int init_weights_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
     GLSLC(1,     ivec2 pos;                                                      );
     GLSLC(1,     ivec2 pos_off;                                                  );
     GLSLC(1,     int p;                                                          );
+    GLSLC(1,     float s;                                                        );
     GLSLC(0,                                                                     );
     GLSLC(1,     DataBuffer integral_data;                                       );
     GLSLF(1,     ivec2 offs[%i];                                                 ,TYPE_ELEMS);
@@ -404,7 +415,8 @@ static av_cold int init_weights_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
     GLSLC(1,     c_off = comp_off[comp_idx];                                     );
     GLSLC(1,     c_plane = comp_plane[comp_idx];                                 );
     GLSLC(1,     p = patch_size[comp_idx];                                       );
-    GLSLC(1,     if (pos.y < p || pos.y >= height[c_plane] - p || pos.x < p || pos.x >= width[c_plane] - p) );
+    GLSLC(1,     s = strength[comp_idx];                                         );
+    GLSLC(1,     if (pos.y < p || pos.y >= height[c_plane] - p || pos.x < p || pos.x >= width[c_plane] - p || isinf(s)) );
     GLSLC(2,         return;                                                     );
     GLSLC(0,                                                                     );
     GLSLC(1,     offset = integral_size * (invoc_idx * nb_components + comp_idx); );
@@ -444,7 +456,7 @@ static av_cold int init_weights_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
     GLSLC(1,         d = dst.v[pos.x + p];                                       );
     GLSLC(0,                                                                     );
     GLSLC(1,         patch_diff = d + a - b - c;                                 );
-    GLSLC(1,         w = exp(patch_diff * strength[comp_idx]);                   );
+    GLSLC(1,         w = exp(patch_diff * s);                                    );
     GLSLC(1,         w_sum = w[0] + w[1] + w[2] + w[3];                          );
     GLSLC(1,         sum = dot(w, src * 255);                                    );
     GLSLC(0,                                                                     );
@@ -622,7 +634,7 @@ static av_cold int init_filter(AVFilterContext *ctx)
     }
 
     for (int i = 0; i < 4; i++) {
-        double str = (s->opts.sc[i] > 1.0) ? s->opts.sc[i] : s->opts.s;
+        double str = !isnan(s->opts.sc[i]) ? s->opts.sc[i] : s->opts.s;
         int ps = (s->opts.pc[i] ? s->opts.pc[i] : s->opts.p);
         str  = 10.0f*str;
         str *= -str;
@@ -969,6 +981,7 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
         IntegralPushData pd = {
             { plane_widths[0], plane_widths[1], plane_widths[2], plane_widths[3] },
             { plane_heights[0], plane_heights[1], plane_heights[2], plane_heights[3] },
+            { s->strength[0], s->strength[1], s->strength[2], s->strength[3], },
             { comp_offs[0], comp_offs[1], comp_offs[2], comp_offs[3] },
             { comp_planes[0], comp_planes[1], comp_planes[2], comp_planes[3] },
             integral_vk->address,
@@ -1159,15 +1172,15 @@ static void nlmeans_vulkan_uninit(AVFilterContext *avctx)
 #define OFFSET(x) offsetof(NLMeansVulkanContext, x)
 #define FLAGS (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 static const AVOption nlmeans_vulkan_options[] = {
-    { "s",  "denoising strength for all components", OFFSET(opts.s), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 1.0, 100.0, FLAGS },
+    { "s",  "denoising strength for all components", OFFSET(opts.s), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 0.0, 100.0, FLAGS },
     { "p",  "patch size for all components", OFFSET(opts.p), AV_OPT_TYPE_INT, { .i64 = 3*2+1 }, 0, 99, FLAGS },
     { "r",  "research window radius", OFFSET(opts.r), AV_OPT_TYPE_INT, { .i64 = 7*2+1 }, 0, 99, FLAGS },
     { "t",  "parallelism", OFFSET(opts.t), AV_OPT_TYPE_INT, { .i64 = 8 }, 1, 64, FLAGS },
 
-    { "s1", "denoising strength for component 1", OFFSET(opts.sc[0]), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 1.0, 100.0, FLAGS },
-    { "s2", "denoising strength for component 2", OFFSET(opts.sc[1]), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 1.0, 100.0, FLAGS },
-    { "s3", "denoising strength for component 3", OFFSET(opts.sc[2]), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 1.0, 100.0, FLAGS },
-    { "s4", "denoising strength for component 4", OFFSET(opts.sc[3]), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 1.0, 100.0, FLAGS },
+    { "s1", "denoising strength for component 1", OFFSET(opts.sc[0]), AV_OPT_TYPE_DOUBLE, { .dbl = NAN }, 0.0, 100.0, FLAGS },
+    { "s2", "denoising strength for component 2", OFFSET(opts.sc[1]), AV_OPT_TYPE_DOUBLE, { .dbl = NAN }, 0.0, 100.0, FLAGS },
+    { "s3", "denoising strength for component 3", OFFSET(opts.sc[2]), AV_OPT_TYPE_DOUBLE, { .dbl = NAN }, 0.0, 100.0, FLAGS },
+    { "s4", "denoising strength for component 4", OFFSET(opts.sc[3]), AV_OPT_TYPE_DOUBLE, { .dbl = NAN }, 0.0, 100.0, FLAGS },
 
     { "p1", "patch size for component 1", OFFSET(opts.pc[0]), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 99, FLAGS },
     { "p2", "patch size for component 2", OFFSET(opts.pc[1]), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 99, FLAGS },
