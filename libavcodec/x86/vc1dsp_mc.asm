@@ -194,7 +194,6 @@ HOR_16B_SHIFT2 OP_AVG, avg
 %endif ; HAVE_MMX_INLINE
 
 %macro INV_TRANS_INIT 0
-    movsxdifnidn linesizeq, linesized
     movd       m0, blockd
     SPLATW     m0, m0
     pxor       m1, m1
