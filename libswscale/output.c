@@ -943,7 +943,7 @@ yuv2ya16_X_c_template(SwsContext *c, const int16_t *lumFilter,
         int A = 0xffff;
 
         for (j = 0; j < lumFilterSize; j++)
-            Y += lumSrc[j][i] * lumFilter[j];
+            Y += lumSrc[j][i] * (unsigned)lumFilter[j];
 
         Y >>= 15;
         Y += (1<<3) + 0x8000;
@@ -952,7 +952,7 @@ yuv2ya16_X_c_template(SwsContext *c, const int16_t *lumFilter,
         if (hasAlpha) {
             A = -0x40000000 + (1<<14);
             for (j = 0; j < lumFilterSize; j++)
-                A += alpSrc[j][i] * lumFilter[j];
+                A += alpSrc[j][i] * (unsigned)lumFilter[j];
 
             A >>= 15;
             A += 0x8000;
