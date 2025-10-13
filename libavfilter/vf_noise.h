@@ -50,7 +50,10 @@ typedef struct NoiseContext {
     int nb_planes;
     int bytewidth[4];
     int height[4];
-    FilterParams all;
+    struct {
+        int seed, strength;
+        unsigned flags;
+    } all;
     FilterParams param[4];
     void (*line_noise)(uint8_t *dst, const uint8_t *src, const int8_t *noise, int len, int shift);
     void (*line_noise_avg)(uint8_t *dst, const uint8_t *src, int len, const int8_t * const *shift);
