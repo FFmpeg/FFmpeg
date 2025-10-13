@@ -261,6 +261,7 @@ static int h264_filter(AVBSFContext *ctx)
 
             if (!sps) {
                 av_log(ctx, AV_LOG_ERROR, "No active SPS for a slice\n");
+                ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
             // Initialize the SPS struct with the fields ff_h264_init_poc() cares about
