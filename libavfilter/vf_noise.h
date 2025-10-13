@@ -40,7 +40,7 @@ typedef struct FilterParams {
     AVLFG lfg;
     int seed;
     int8_t *noise;
-    int8_t *prev_shift[MAX_RES][3];
+    const int8_t *prev_shift[MAX_RES][3];
     int rand_shift[MAX_RES];
     int rand_shift_init;
 } FilterParams;

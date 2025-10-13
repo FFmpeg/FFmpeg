@@ -213,7 +213,7 @@ static void noise(uint8_t *dst, const uint8_t *src,
             int shift = p->rand_shift[ix];
 
             if (flags & NOISE_AVERAGED) {
-                n->line_noise_avg(dst + x, src + x, w, (const int8_t**)p->prev_shift[ix]);
+                n->line_noise_avg(dst + x, src + x, w, p->prev_shift[ix]);
                 p->prev_shift[ix][shift % 3] = noise + shift;
             } else {
                 n->line_noise(dst + x, src + x, noise, w, shift);
