@@ -50,6 +50,7 @@ typedef struct NoiseContext {
     int nb_planes;
     int bytewidth[4];
     int height[4];
+    int slice_threading_impossible;
     struct {
         int seed, strength;
         unsigned flags;

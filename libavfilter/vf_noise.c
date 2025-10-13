@@ -271,12 +271,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
                 fp->rand_shift[i] = av_lfg_get(&fp->lfg) & (MAX_SHIFT - 1);
             }
             fp->rand_shift_init = 1;
+            if (fp->flags & NOISE_AVERAGED && outlink->h > MAX_RES)
+                n->slice_threading_impossible = 1;
         }
     }
 
     td.in = inpicref; td.out = out;
     ff_filter_execute(ctx, filter_slice, &td, NULL,
-                      FFMIN(n->height[0], ff_filter_get_nb_threads(ctx)));
+                      n->slice_threading_impossible ? 1 :
+                          FFMIN(n->height[0], ff_filter_get_nb_threads(ctx)));
     emms_c();
 
     if (inpicref != out)
