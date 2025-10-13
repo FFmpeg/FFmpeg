@@ -485,11 +485,10 @@ static int dts2pts_filter(AVBSFContext *ctx, AVPacket *out)
                 av_packet_unref(out);
                 return ret;
             }
-            if (!ret)
-                av_log(ctx, AV_LOG_DEBUG, "Queueing frame for POC %d, GOP %d, dts %"PRId64", "
-                                          "generated from POC %d, GOP %d, dts %"PRId64", duration %"PRId64"\n",
-                       frame.poc, frame.gop, out->pts,
-                       poc_node->poc, poc_node->gop, poc_node->dts, poc_node->duration);
+            av_log(ctx, AV_LOG_DEBUG, "Queueing frame for POC %d, GOP %d, dts %"PRId64", "
+                                      "generated from POC %d, GOP %d, dts %"PRId64", duration %"PRId64"\n",
+                   frame.poc, frame.gop, out->pts,
+                   poc_node->poc, poc_node->gop, poc_node->dts, poc_node->duration);
         } else
             av_log(ctx, AV_LOG_WARNING, "No timestamp for POC %d in tree\n", frame.poc);
     } else
