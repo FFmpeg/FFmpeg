@@ -24,7 +24,6 @@
  * noise generator
  */
 
-#include "libavutil/emms.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
@@ -280,7 +279,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     ff_filter_execute(ctx, filter_slice, &td, NULL,
                       n->slice_threading_impossible ? 1 :
                           FFMIN(n->height[0], ff_filter_get_nb_threads(ctx)));
-    emms_c();
 
     if (inpicref != out)
         av_frame_free(&inpicref);

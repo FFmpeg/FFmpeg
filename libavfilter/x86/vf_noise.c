@@ -26,78 +26,81 @@
 
 #if HAVE_INLINE_ASM
 #if HAVE_6REGS
-static void line_noise_avg_mmx(uint8_t *dst, const uint8_t *src,
-                                      int len, const int8_t * const *shift)
+static void line_noise_avg_sse2(uint8_t *dst, const uint8_t *src,
+                                int len, const int8_t * const *shift)
 {
-    x86_reg mmx_len = len & (~7);
+    x86_reg xmm_len = len & (~15);
 
     __asm__ volatile(
-            "mov %5, %%"FF_REG_a"           \n\t"
-            "pxor   %%mm4, %%mm4            \n\t"
-            ".p2align 4                     \n\t"
-            "1:                             \n\t"
-            "movq (%1, %%"FF_REG_a"), %%mm1 \n\t"
-            "movq (%0, %%"FF_REG_a"), %%mm0 \n\t"
-            "paddb (%2, %%"FF_REG_a"), %%mm1\n\t"
-            "paddb (%3, %%"FF_REG_a"), %%mm1\n\t"
-            "movq %%mm4, %%mm5              \n\t"
-            "pcmpgtb %%mm0, %%mm5           \n\t"
-            "movq %%mm0, %%mm6              \n\t"
-            "movq %%mm0, %%mm2              \n\t"
-            "punpcklbw %%mm5, %%mm0         \n\t"
-            "punpckhbw %%mm5, %%mm2         \n\t"
-            "movq %%mm4, %%mm5              \n\t"
-            "pcmpgtb %%mm1, %%mm5           \n\t"
-            "movq %%mm1, %%mm3              \n\t"
-            "punpcklbw %%mm5, %%mm1         \n\t"
-            "punpckhbw %%mm5, %%mm3         \n\t"
-            "pmullw %%mm0, %%mm1            \n\t"
-            "pmullw %%mm2, %%mm3            \n\t"
-            "psraw $7, %%mm1                \n\t"
-            "psraw $7, %%mm3                \n\t"
-            "packsswb %%mm3, %%mm1          \n\t"
-            "paddb %%mm6, %%mm1             \n\t"
-            "movq %%mm1, (%4, %%"FF_REG_a") \n\t"
-            "add $8, %%"FF_REG_a"           \n\t"
+            "mov                    %5, %%"FF_REG_a"       \n\t"
+            "pxor               %%xmm4, %%xmm4             \n\t"
+            ".p2align 4                                    \n\t"
+            "1:                                            \n\t"
+            "movdqu (%1, %%"FF_REG_a"), %%xmm1             \n\t"
+            "movdqu (%2, %%"FF_REG_a"), %%xmm2             \n\t"
+            "movdqu (%3, %%"FF_REG_a"), %%xmm3             \n\t"
+            "movdqa (%0, %%"FF_REG_a"), %%xmm0             \n\t"
+            "paddb              %%xmm2, %%xmm1             \n\t"
+            "paddb              %%xmm3, %%xmm1             \n\t"
+            "movdqa             %%xmm4, %%xmm5             \n\t"
+            "pcmpgtb            %%xmm0, %%xmm5             \n\t"
+            "movdqa             %%xmm0, %%xmm6             \n\t"
+            "movdqa             %%xmm0, %%xmm2             \n\t"
+            "punpcklbw          %%xmm5, %%xmm0             \n\t"
+            "punpckhbw          %%xmm5, %%xmm2             \n\t"
+            "movdqa             %%xmm4, %%xmm5             \n\t"
+            "pcmpgtb            %%xmm1, %%xmm5             \n\t"
+            "movdqa             %%xmm1, %%xmm3             \n\t"
+            "punpcklbw          %%xmm5, %%xmm1             \n\t"
+            "punpckhbw          %%xmm5, %%xmm3             \n\t"
+            "pmullw             %%xmm0, %%xmm1             \n\t"
+            "pmullw             %%xmm2, %%xmm3             \n\t"
+            "psraw                  $7, %%xmm1             \n\t"
+            "psraw                  $7, %%xmm3             \n\t"
+            "packsswb           %%xmm3, %%xmm1             \n\t"
+            "paddb              %%xmm6, %%xmm1             \n\t"
+            "movdqa             %%xmm1, (%4, %%"FF_REG_a") \n\t"
+            "add                   $16, %%"FF_REG_a"       \n\t"
             " js 1b                         \n\t"
-            :: "r" (src+mmx_len), "r" (shift[0]+mmx_len), "r" (shift[1]+mmx_len), "r" (shift[2]+mmx_len),
-               "r" (dst+mmx_len), "g" (-mmx_len)
-            : "%"FF_REG_a
+            :: "r" (src+xmm_len), "r" (shift[0]+xmm_len), "r" (shift[1]+xmm_len), "r" (shift[2]+xmm_len),
+               "r" (dst+xmm_len), "g" (-xmm_len)
+            : XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3",
+                           "%xmm4", "%xmm5", "%xmm6",) "%"FF_REG_a
         );
 
-    if (mmx_len != len){
-        const int8_t *shift2[3] = { shift[0]+mmx_len, shift[1]+mmx_len, shift[2]+mmx_len };
-        ff_line_noise_avg_c(dst+mmx_len, src+mmx_len, len-mmx_len, shift2);
+    if (xmm_len != len){
+        const int8_t *shift2[3] = { shift[0]+xmm_len, shift[1]+xmm_len, shift[2]+xmm_len };
+        ff_line_noise_avg_c(dst + xmm_len, src + xmm_len, len - xmm_len, shift2);
     }
 }
 #endif /* HAVE_6REGS */
 
-static void line_noise_mmxext(uint8_t *dst, const uint8_t *src,
-                              const int8_t *noise, int len, int shift)
+static void line_noise_sse2(uint8_t *dst, const uint8_t *src,
+                            const int8_t *noise, int len, int shift)
 {
-    x86_reg mmx_len = len & (~7);
+    x86_reg xmm_len = len & (~15);
     noise += shift;
 
     __asm__ volatile(
-            "mov %3, %%"FF_REG_a"             \n\t"
-            "pcmpeqb %%mm7, %%mm7             \n\t"
-            "psllw $15, %%mm7                 \n\t"
-            "packsswb %%mm7, %%mm7            \n\t"
-            ".p2align 4                       \n\t"
-            "1:                               \n\t"
-            "movq (%0, %%"FF_REG_a"), %%mm0   \n\t"
-            "movq (%1, %%"FF_REG_a"), %%mm1   \n\t"
-            "pxor %%mm7, %%mm0                \n\t"
-            "paddsb %%mm1, %%mm0              \n\t"
-            "pxor %%mm7, %%mm0                \n\t"
-            "movntq %%mm0, (%2, %%"FF_REG_a") \n\t"
-            "add $8, %%"FF_REG_a"             \n\t"
-            " js 1b                           \n\t"
-            :: "r" (src+mmx_len), "r" (noise+mmx_len), "r" (dst+mmx_len), "g" (-mmx_len)
-            : "%"FF_REG_a
+            "mov                    %3, %%"FF_REG_a"       \n\t"
+            "pcmpeqb            %%xmm2, %%xmm2             \n\t"
+            "psllw                 $15, %%xmm2             \n\t"
+            "packsswb           %%xmm2, %%xmm2             \n\t"
+            ".p2align 4                                    \n\t"
+            "1:                                            \n\t"
+            "movdqa (%0, %%"FF_REG_a"), %%xmm0             \n\t"
+            "movdqu (%1, %%"FF_REG_a"), %%xmm1             \n\t"
+            "pxor               %%xmm2, %%xmm0             \n\t"
+            "paddsb             %%xmm1, %%xmm0             \n\t"
+            "pxor               %%xmm2, %%xmm0             \n\t"
+            "movntdq            %%xmm0, (%2, %%"FF_REG_a") \n\t"
+            "add                   $16, %%"FF_REG_a"       \n\t"
+            " js                    1b                     \n\t"
+            :: "r" (src+xmm_len), "r" (noise+xmm_len), "r" (dst+xmm_len), "g" (-xmm_len)
+            : XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2",) "%"FF_REG_a
             );
-    if (mmx_len != len)
-        ff_line_noise_c(dst+mmx_len, src+mmx_len, noise+mmx_len, len-mmx_len, 0);
+    if (xmm_len != len)
+        ff_line_noise_c(dst+xmm_len, src + xmm_len, noise + xmm_len, len - xmm_len, 0);
 }
 #endif /* HAVE_INLINE_ASM */
 
@@ -106,13 +109,11 @@ av_cold void ff_noise_init_x86(NoiseContext *n)
 #if HAVE_INLINE_ASM
     int cpu_flags = av_get_cpu_flags();
 
-    if (INLINE_MMX(cpu_flags)) {
+    if (INLINE_SSE2(cpu_flags)) {
 #if HAVE_6REGS
-        n->line_noise_avg = line_noise_avg_mmx;
+        n->line_noise_avg = line_noise_avg_sse2;
 #endif
-    }
-    if (INLINE_MMXEXT(cpu_flags)) {
-        n->line_noise     = line_noise_mmxext;
+        n->line_noise     = line_noise_sse2;
     }
 #endif
 }
