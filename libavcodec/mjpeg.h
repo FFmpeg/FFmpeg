@@ -100,7 +100,7 @@ enum JpegMarker {
     JPG4  = 0xf4,
     JPG5  = 0xf5,
     JPG6  = 0xf6,
-    SOF48 = 0xf7,       ///< JPEG-LS
+    SOF55 = 0xf7,       ///< JPEG-LS
     LSE   = 0xf8,       ///< JPEG-LS extension parameters
     JPG9  = 0xf9,
     JPG10 = 0xfa,

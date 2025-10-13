@@ -373,7 +373,7 @@ static int encode_picture_ls(AVCodecContext *avctx, AVPacket *pkt,
 
     /* write our own JPEG header, can't use mjpeg_picture_header */
     put_marker_byteu(&pb, SOI);
-    put_marker_byteu(&pb, SOF48);
+    put_marker_byteu(&pb, SOF55);
     bytestream2_put_be16u(&pb, 8 + comps * 3); // header size depends on components
     bytestream2_put_byteu(&pb, (avctx->pix_fmt == AV_PIX_FMT_GRAY16) ? 16 : 8);  // bpp
     bytestream2_put_be16u(&pb, avctx->height);
