@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
+2025-10-xx - xxxxxxxxxx - lavu 60.14.100 - csp.h
+  Add av_csp_approximate_eotf_gamma().
+
 2025-08-xx - xxxxxxxxxx - lavf 62.6.100 - oggparsevorbis.h oggparseopus.h oggparseflac.h
   Drop header packets from secondary chained ogg/{flac, opus, vorbis} streams
   from demuxer output.

@@ -157,6 +157,27 @@ double av_csp_approximate_trc_gamma(enum AVColorTransferCharacteristic trc)
     return 0.0;
 }
 
+static const double approximate_eotf_gamma[AVCOL_TRC_NB] = {
+    [AVCOL_TRC_BT709] = 2.2,
+    [AVCOL_TRC_SMPTE170M] = 2.2,
+    [AVCOL_TRC_SMPTE240M] = 2.2,
+    [AVCOL_TRC_BT1361_ECG] = 2.2,
+    [AVCOL_TRC_BT2020_10] = 2.2,
+    [AVCOL_TRC_BT2020_12] = 2.2,
+    [AVCOL_TRC_GAMMA22] = 2.2,
+    [AVCOL_TRC_IEC61966_2_1] = 2.2,
+    [AVCOL_TRC_GAMMA28] = 2.8,
+    [AVCOL_TRC_LINEAR] = 1.0,
+    [AVCOL_TRC_SMPTE428] = 2.6,
+};
+
+double av_csp_approximate_eotf_gamma(enum AVColorTransferCharacteristic trc)
+{
+    if ((unsigned)trc >= AVCOL_TRC_NB)
+        return 0.0;
+    return approximate_eotf_gamma[trc];
+}
+
 #define BT709_alpha 1.099296826809442
 #define BT709_beta 0.018053968510807
 

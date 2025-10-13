@@ -134,6 +134,22 @@ enum AVColorPrimaries av_csp_primaries_id_from_desc(const AVColorPrimariesDesc *
 double av_csp_approximate_trc_gamma(enum AVColorTransferCharacteristic trc);
 
 /**
+ * Determine a suitable EOTF 'gamma' value to match the supplied
+ * AVColorTransferCharacteristic.
+ *
+ * This function returns the gamma value (exponent) for a simple pure power
+ * function approximation of the supplied AVColorTransferCharacteristic, or 0.
+ * if no reasonable approximation exists.
+ *
+ * EOTF(v) = (L_w - L_b) * v^gamma + L_b
+ *
+ * @return Will return an approximation to the simple gamma function matching
+ *         the supplied Transfer Characteristic EOTF, Will return 0.0 for any
+ *         we cannot reasonably match against.
+ */
+double av_csp_approximate_eotf_gamma(enum AVColorTransferCharacteristic trc);
+
+/**
  * Determine the function needed to apply the given
  * AVColorTransferCharacteristic to linear input.
  *
