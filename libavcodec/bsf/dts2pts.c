@@ -23,6 +23,8 @@
  * Derive PTS by reordering DTS from supported streams
  */
 
+#include <stdbool.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/fifo.h"
 #include "libavutil/mem.h"
@@ -32,8 +34,10 @@
 #include "bsf_internal.h"
 #include "cbs.h"
 #include "cbs_h264.h"
+#include "cbs_h265.h"
 #include "h264_parse.h"
 #include "h264_ps.h"
+#include "hevc/ps.h"
 #include "libavutil/refstruct.h"
 
 typedef struct DTS2PTSNode {
@@ -59,6 +63,12 @@ typedef struct DTS2PTSH264Context {
     int picture_structure;
 } DTS2PTSH264Context;
 
+typedef struct DTS2PTSHEVCContext {
+    int gop;
+    int poc_tid0;
+    int highest_poc;
+} DTS2PTSHEVCContext;
+
 typedef struct DTS2PTSContext {
     struct AVTreeNode *root;
     AVFifo *fifo;
@@ -75,6 +85,7 @@ typedef struct DTS2PTSContext {
 
     union {
         DTS2PTSH264Context h264;
+        DTS2PTSHEVCContext hevc;
     } u;
 
     int nb_frame;
@@ -363,6 +374,176 @@ static void h264_flush(AVBSFContext *ctx)
     h264->last_poc = h264->highest_poc = INT_MIN;
 }
 
+static int hevc_init(AVBSFContext *ctx)
+{
+    DTS2PTSContext *s = ctx->priv_data;
+    DTS2PTSHEVCContext *hevc = &s->u.hevc;
+
+    hevc->gop = -1;
+    hevc->poc_tid0 = 0;
+    hevc->highest_poc = INT_MIN;
+    s->nb_frame = -ctx->par_in->video_delay;
+
+    return 0;
+}
+
+static void hevc_flush(AVBSFContext *ctx)
+{
+    hevc_init(ctx);
+}
+
+static int hevc_init_nb_frame(AVBSFContext *ctx, int poc)
+{
+    DTS2PTSContext *s = ctx->priv_data;
+    const CodedBitstreamH265Context *cbs_hevc = s->cbc->priv_data;
+    const H265RawVPS *vps = cbs_hevc->active_vps;
+
+    if (!vps)
+        return AVERROR_INVALIDDATA;
+
+    int latency = vps->vps_max_num_reorder_pics[0];
+    if (vps->vps_max_latency_increase_plus1[0])
+        latency += vps->vps_max_latency_increase_plus1[0] - 1;
+
+    s->nb_frame = poc - latency;
+    av_log(ctx, AV_LOG_DEBUG, "Latency %d, poc %d, nb_frame %d\n",
+           latency, poc, s->nb_frame);
+
+    return 0;
+}
+
+static int same_gop(void *opaque, void *elem)
+{
+    DTS2PTSNode *node = elem;
+    int gop = ((int *)opaque)[1];
+    return FFDIFFSIGN(gop, node->gop);
+}
+
+static int hevc_queue_frame(AVBSFContext *ctx, AVPacket *pkt, int poc, bool *queued)
+{
+    DTS2PTSContext *s = ctx->priv_data;
+    DTS2PTSHEVCContext *hevc = &s->u.hevc;
+    int ret;
+
+    if (hevc->gop == -1) {
+        ret = hevc_init_nb_frame(ctx, poc);
+        if (ret < 0)
+            return ret;
+        hevc->gop = s->gop;
+    }
+
+    hevc->highest_poc = FFMAX(hevc->highest_poc, poc);
+    if (s->nb_frame > hevc->highest_poc) {
+        s->nb_frame = 0;
+        s->gop = (s->gop + 1) % s->fifo_size;
+        hevc->highest_poc = poc;
+    }
+
+    if (poc < s->nb_frame && hevc->gop == s->gop) {
+        int tmp[] = {s->nb_frame - poc, s->gop};
+
+        s->nb_frame -= tmp[0];
+        av_tree_enumerate(s->root, tmp, same_gop, dec_poc);
+    }
+
+    ret = alloc_and_insert_node(ctx, pkt->dts, pkt->duration, s->nb_frame, 1, s->gop);
+    if (ret < 0)
+        return ret;
+
+    av_log(ctx, AV_LOG_DEBUG, "Queueing frame with POC %d, GOP %d, nb_frame %d, dts %"PRId64"\n",
+           poc, s->gop, s->nb_frame, pkt->dts);
+    s->nb_frame++;
+
+    DTS2PTSFrame frame = {
+            .pkt = pkt,
+            .poc = poc,
+            .poc_diff = 1,
+            .gop = s->gop,
+    };
+    ret = av_fifo_write(s->fifo, &frame, 1);
+    if (ret < 0)
+        return ret;
+
+    *queued = true;
+
+    return 0;
+}
+
+static int hevc_filter(AVBSFContext *ctx)
+{
+    DTS2PTSContext *s = ctx->priv_data;
+    DTS2PTSHEVCContext *hevc = &s->u.hevc;
+    CodedBitstreamFragment *au = &s->au;
+    AVPacket *in;
+    bool queued = 0;
+    int ret = ff_bsf_get_packet(ctx, &in);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_cbs_read_packet(s->cbc, au, in);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_WARNING, "Failed to parse access unit.\n");
+        goto fail;
+    }
+
+    for (int i = 0; i < au->nb_units; i++) {
+        CodedBitstreamUnit *unit = &au->units[i];
+        CodedBitstreamUnitType type = unit->type;
+
+        bool is_slice = type <= HEVC_NAL_RASL_R || (type >= HEVC_NAL_BLA_W_LP &&
+                                                    type <= HEVC_NAL_CRA_NUT);
+        if (!is_slice)
+            continue;
+
+        const H265RawSliceHeader *slice = unit->content;
+        if (!slice->first_slice_segment_in_pic_flag)
+            continue;
+
+        const CodedBitstreamH265Context *cbs_hevc = s->cbc->priv_data;
+        const H265RawSPS *sps = cbs_hevc->active_sps;
+        if (!sps) {
+            av_log(ctx, AV_LOG_ERROR, "No active SPS for a slice\n");
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+
+        int poc;
+        if (type == HEVC_NAL_IDR_W_RADL || type == HEVC_NAL_IDR_N_LP) {
+            poc = 0;
+            hevc->gop = (hevc->gop + 1) % s->fifo_size;
+        } else {
+            unsigned log2_max_poc_lsb = sps->log2_max_pic_order_cnt_lsb_minus4 + 4;
+            int poc_lsb = slice->slice_pic_order_cnt_lsb;
+
+            poc = ff_hevc_compute_poc2(log2_max_poc_lsb, hevc->poc_tid0, poc_lsb, type);
+        }
+
+        if (slice->nal_unit_header.nuh_temporal_id_plus1 == 1 &&
+            type != HEVC_NAL_TRAIL_N && type != HEVC_NAL_TSA_N &&
+            type != HEVC_NAL_STSA_N && type != HEVC_NAL_RADL_N &&
+            type != HEVC_NAL_RASL_N && type != HEVC_NAL_RADL_R &&
+            type != HEVC_NAL_RASL_R) {
+            hevc->poc_tid0 = poc;
+        }
+
+        ret = hevc_queue_frame(ctx, in, poc, &queued);
+        if (ret < 0)
+            goto fail;
+        break;
+    }
+
+    if (!queued) {
+        av_log(ctx, AV_LOG_ERROR, "No slices in access unit\n");
+        ret = AVERROR_INVALIDDATA;
+    }
+
+fail:
+    ff_cbs_fragment_reset(au);
+    if (!queued)
+        av_packet_free(&in);
+    return ret;
+}
+
 // Core functions
 static const struct {
     enum AVCodecID id;
@@ -372,6 +553,7 @@ static const struct {
     size_t fifo_size;
 } func_tab[] = {
     { AV_CODEC_ID_H264, h264_init, h264_filter, h264_flush, H264_MAX_DPB_FRAMES * 2 * 2 },
+    { AV_CODEC_ID_HEVC, hevc_init, hevc_filter, hevc_flush, HEVC_MAX_DPB_SIZE * 2 },
 };
 
 static int dts2pts_init(AVBSFContext *ctx)
@@ -536,6 +718,7 @@ static void dts2pts_close(AVBSFContext *ctx)
 
 static const enum AVCodecID dts2pts_codec_ids[] = {
     AV_CODEC_ID_H264,
+    AV_CODEC_ID_HEVC,
     AV_CODEC_ID_NONE,
 };
 
