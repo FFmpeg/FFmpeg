@@ -2443,9 +2443,9 @@ void ff_hevc_ps_uninit(HEVCParamSets *ps)
         av_refstruct_unref(&ps->pps_list[i]);
 }
 
-int ff_hevc_compute_poc(const HEVCSPS *sps, int pocTid0, int poc_lsb, int nal_unit_type)
+int ff_hevc_compute_poc2(unsigned log2_max_poc_lsb, int pocTid0, int poc_lsb, int nal_unit_type)
 {
-    int max_poc_lsb  = 1 << sps->log2_max_poc_lsb;
+    int max_poc_lsb  = 1 << log2_max_poc_lsb;
     int prev_poc_lsb = pocTid0 % max_poc_lsb;
     int prev_poc_msb = pocTid0 - prev_poc_lsb;
     int poc_msb;

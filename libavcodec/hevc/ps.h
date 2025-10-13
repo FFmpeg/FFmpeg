@@ -546,6 +546,11 @@ int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
 /**
  * Compute POC of the current frame and return it.
  */
-int ff_hevc_compute_poc(const HEVCSPS *sps, int pocTid0, int poc_lsb, int nal_unit_type);
+int ff_hevc_compute_poc2(unsigned log2_max_poc_lsb, int pocTid0, int poc_lsb, int nal_unit_type);
+
+static inline int ff_hevc_compute_poc(const HEVCSPS *sps, int pocTid0, int poc_lsb, int nal_unit_type)
+{
+    return ff_hevc_compute_poc2(sps->log2_max_poc_lsb, pocTid0, poc_lsb, nal_unit_type);
+}
 
 #endif /* AVCODEC_HEVC_PS_H */
