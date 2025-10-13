@@ -46,22 +46,16 @@ int ff_sad16_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                   ptrdiff_t stride, int h);
 int ff_sad8_x2_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                       ptrdiff_t stride, int h);
-int ff_sad16_x2_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
-                       ptrdiff_t stride, int h);
 int ff_sad16_x2_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                      ptrdiff_t stride, int h);
 int ff_sad8_y2_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                       ptrdiff_t stride, int h);
-int ff_sad16_y2_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
-                       ptrdiff_t stride, int h);
 int ff_sad16_y2_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                      ptrdiff_t stride, int h);
 int ff_sad8_approx_xy2_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                               ptrdiff_t stride, int h);
 int ff_sad8_xy2_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                      ptrdiff_t stride, int h);
-int ff_sad16_approx_xy2_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
-                               ptrdiff_t stride, int h);
 int ff_sad16_approx_xy2_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                              ptrdiff_t stride, int h);
 int ff_sad16_xy2_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
@@ -144,9 +138,6 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->sad[0] = ff_sad16_mmxext;
         c->sad[1] = ff_sad8_mmxext;
 
-        c->pix_abs[0][0] = ff_sad16_mmxext;
-        c->pix_abs[0][1] = ff_sad16_x2_mmxext;
-        c->pix_abs[0][2] = ff_sad16_y2_mmxext;
         c->pix_abs[1][0] = ff_sad8_mmxext;
         c->pix_abs[1][1] = ff_sad8_x2_mmxext;
         c->pix_abs[1][2] = ff_sad8_y2_mmxext;
@@ -155,7 +146,6 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->vsad[5] = ff_vsad_intra8_mmxext;
 
         if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
-            c->pix_abs[0][3] = ff_sad16_approx_xy2_mmxext;
             c->pix_abs[1][3] = ff_sad8_approx_xy2_mmxext;
 
             c->vsad[0] = ff_vsad16_approx_mmxext;
@@ -167,6 +157,9 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->sse[0] = ff_sse16_sse2;
         c->sum_abs_dctelem   = ff_sum_abs_dctelem_sse2;
 
+        c->pix_abs[0][0] = ff_sad16_sse2;
+        c->pix_abs[0][1] = ff_sad16_x2_sse2;
+        c->pix_abs[0][2] = ff_sad16_y2_sse2;
         c->pix_abs[0][3] = ff_sad16_xy2_sse2;
 
 #if HAVE_ALIGNED_STACK
@@ -175,18 +168,16 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
 #endif
         if (!(cpu_flags & AV_CPU_FLAG_SSE2SLOW) && avctx->codec_id != AV_CODEC_ID_SNOW) {
             c->sad[0]        = ff_sad16_sse2;
-            c->pix_abs[0][0] = ff_sad16_sse2;
-            c->pix_abs[0][1] = ff_sad16_x2_sse2;
-            c->pix_abs[0][2] = ff_sad16_y2_sse2;
 
             c->vsad[4]       = ff_vsad_intra16_sse2;
             if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
-                c->pix_abs[0][3] = ff_sad16_approx_xy2_sse2;
                 c->vsad[0]       = ff_vsad16_approx_sse2;
             }
         }
         if (avctx->flags & AV_CODEC_FLAG_BITEXACT) {
             c->pix_abs[1][3] = ff_sad8_xy2_sse2;
+        } else {
+            c->pix_abs[0][3] = ff_sad16_approx_xy2_sse2;
         }
     }
 

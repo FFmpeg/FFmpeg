@@ -539,16 +539,6 @@ cglobal sad%1_x2, 5, 5, 5, v, pix1, pix2, stride, h
     psadbw    m0, [pix1q]
     psadbw    m2, [pix1q+strideq]
     paddw     m0, m2
-%if %1 != mmsize
-    movu      m1, [pix2q+8]
-    movu      m2, [pix2q+strideq+8]
-    pavgb     m1, [pix2q+9]
-    pavgb     m2, [pix2q+strideq+9]
-    psadbw    m1, [pix1q+8]
-    psadbw    m2, [pix1q+strideq+8]
-    paddw     m0, m1
-    paddw     m0, m2
-%endif
     sub       hd, 2
 
 align 16
@@ -570,16 +560,6 @@ align 16
     psadbw    m2, [pix1q+strideq]
     paddw     m0, m1
     paddw     m0, m2
-%if %1 != mmsize
-    movu      m1, [pix2q+8]
-    movu      m2, [pix2q+strideq+8]
-    pavgb     m1, [pix2q+9]
-    pavgb     m2, [pix2q+strideq+9]
-    psadbw    m1, [pix1q+8]
-    psadbw    m2, [pix1q+strideq+8]
-    paddw     m0, m1
-    paddw     m0, m2
-%endif
     sub       hd, 2
     jg .loop
 %if mmsize == 16
@@ -592,7 +572,6 @@ align 16
 
 INIT_MMX mmxext
 SAD_X2 8
-SAD_X2 16
 INIT_XMM sse2
 SAD_X2 16
 
@@ -611,18 +590,6 @@ cglobal sad%1_y2, 5, 5, 4, v, pix1, pix2, stride, h
     psadbw    m0, [pix1q+strideq]
     paddw     m0, m1
     mova      m1, m3
-%if %1 != mmsize
-    movu      m4, [pix2q+8]
-    movu      m5, [pix2q+strideq+8]
-    movu      m6, [pix2q+2*strideq+8]
-    pavgb     m4, m5
-    pavgb     m5, m6
-    psadbw    m4, [pix1q+8]
-    psadbw    m5, [pix1q+strideq+8]
-    paddw     m0, m4
-    paddw     m0, m5
-    mova      m4, m6
-%endif
     add    pix2q, strideq
     sub       hd, 2
 
@@ -639,17 +606,6 @@ align 16
     paddw     m0, m1
     paddw     m0, m2
     mova      m1, m3
-%if %1 != mmsize
-    movu      m5, [pix2q+8]
-    movu      m6, [pix2q+strideq+8]
-    pavgb     m4, m5
-    pavgb     m5, m6
-    psadbw    m4, [pix1q+8]
-    psadbw    m5, [pix1q+strideq+8]
-    paddw     m0, m4
-    paddw     m0, m5
-    mova      m4, m6
-%endif
     sub       hd, 2
     jg .loop
 %if mmsize == 16
@@ -662,7 +618,6 @@ align 16
 
 INIT_MMX mmxext
 SAD_Y2 8
-SAD_Y2 16
 INIT_XMM sse2
 SAD_Y2 16
 
@@ -791,22 +746,6 @@ cglobal sad%1_approx_xy2, 5, 5, 7, v, pix1, pix2, stride, h
     psadbw    m0, [pix1q+strideq]
     paddw     m0, m1
     mova      m1, m3
-%if %1 != mmsize
-    movu      m5, [pix2q+8]
-    movu      m6, [pix2q+strideq+8]
-    movu      m7, [pix2q+2*strideq+8]
-    pavgb     m5, [pix2q+1+8]
-    pavgb     m6, [pix2q+strideq+1+8]
-    pavgb     m7, [pix2q+2*strideq+1+8]
-    psubusb   m6, m4
-    pavgb     m5, m6
-    pavgb     m6, m7
-    psadbw    m5, [pix1q+8]
-    psadbw    m6, [pix1q+strideq+8]
-    paddw     m0, m5
-    paddw     m0, m6
-    mova      m5, m7
-%endif
     add    pix2q, strideq
     sub       hd, 2
 
@@ -833,20 +772,6 @@ align 16
     paddw     m0, m1
     paddw     m0, m2
     mova      m1, m3
-%if %1 != mmsize
-    movu      m6, [pix2q+8]
-    movu      m7, [pix2q+strideq+8]
-    pavgb     m6, [pix2q+8+1]
-    pavgb     m7, [pix2q+strideq+8+1]
-    psubusb   m6, m4
-    pavgb     m5, m6
-    pavgb     m6, m7
-    psadbw    m5, [pix1q+8]
-    psadbw    m6, [pix1q+strideq+8]
-    paddw     m0, m5
-    paddw     m0, m6
-    mova      m5, m7
-%endif
     sub       hd, 2
     jg .loop
 %if mmsize == 16
@@ -859,7 +784,6 @@ align 16
 
 INIT_MMX mmxext
 SAD_APPROX_XY2 8
-SAD_APPROX_XY2 16
 INIT_XMM sse2
 SAD_APPROX_XY2 16
 
