@@ -323,7 +323,7 @@ static int png_get_chrm(enum AVColorPrimaries prim,  uint8_t *buf)
 
 static int png_get_gama(enum AVColorTransferCharacteristic trc, uint8_t *buf)
 {
-    double gamma = av_csp_approximate_trc_gamma(trc);
+    double gamma = av_csp_approximate_eotf_gamma(trc);
     if (gamma <= 1e-6)
         return 0;
 

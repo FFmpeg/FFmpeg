@@ -2523,7 +2523,7 @@ static int mov_write_gama_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
 {
     uint32_t gama = 0;
     if (gamma <= 0.0)
-        gamma = av_csp_approximate_trc_gamma(track->par->color_trc);
+        gamma = av_csp_approximate_eotf_gamma(track->par->color_trc);
     av_log(s, AV_LOG_DEBUG, "gamma value %g\n", gamma);
 
     if (gamma > 1e-6) {
