@@ -23,10 +23,9 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA
-
 cextern pb_1
 cextern pb_80
+cextern pw_2
 
 SECTION .text
 
@@ -666,6 +665,102 @@ SAD_Y2 8
 SAD_Y2 16
 INIT_XMM sse2
 SAD_Y2 16
+
+;------------------------------------------------------------------------------------------
+;int ff_sad_xy2_<opt>(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2, ptrdiff_t stride, int h);
+;------------------------------------------------------------------------------------------
+
+;%1 = 8/16, %2 = aligned mov, %3 = unaligned mov
+%macro SAD_XY2 3
+cglobal sad%1_xy2, 5, 5, mmsize == 16 ? 8 + ARCH_X86_64 : 7, v, pix1, pix2, stride, h
+    mov%3     m2, [pix2q]
+    mov%3     m3, [pix2q+1]
+%if %1 == mmsize
+%if ARCH_X86_64
+    mova      m8, [pw_2]
+    %define PW_2 m8
+%else
+    %define PW_2 [pw_2]
+%endif
+%else ; %1 != mmsize
+    mova      m6, [pw_2]
+    %define PW_2 m6
+%endif
+    pxor      m1, m1
+    add    pix2q, strideq
+%if %1 != mmsize/2
+    mova      m6, m2
+    mova      m7, m3
+    punpckhbw m6, m1
+    punpckhbw m7, m1
+    paddw     m6, m7
+%endif
+    punpcklbw m2, m1
+    punpcklbw m3, m1
+    paddw     m2, m3
+    mova      m0, m1
+
+.loop:
+    mov%3     m3, [pix2q]
+    mov%3     m4, [pix2q+1]
+%if %1 != mmsize/2
+    mova      m5, m3
+    mova      m7, m4
+    punpckhbw m5, m1
+    punpckhbw m7, m1
+    paddw     m7, m5
+    paddw     m7, PW_2
+    paddw     m6, m7
+    psraw     m6, 2
+%endif
+    mov%2     m5, [pix1q]
+    punpcklbw m3, m1
+    punpcklbw m4, m1
+    paddw     m3, m4
+    paddw     m3, PW_2
+    paddw     m2, m3
+    psraw     m2, 2
+    packuswb  m2, m6
+    psadbw    m2, m5
+    paddw     m0, m2
+
+    mov%3     m2, [pix2q+strideq]
+    mov%3     m4, [pix2q+strideq+1]
+%if %1 != mmsize/2
+    mova      m5, m2
+    mova      m6, m4
+    punpckhbw m5, m1
+    punpckhbw m6, m1
+    paddw     m6, m5
+    paddw     m7, m6
+    psraw     m7, 2
+%endif
+    mov%2     m5, [pix1q+strideq]
+    punpcklbw m2, m1
+    punpcklbw m4, m1
+    paddw     m2, m4
+    paddw     m3, m2
+    psraw     m3, 2
+    packuswb  m3, m7
+    psadbw    m3, m5
+    paddw     m0, m3
+
+    sub       hd, 2
+    lea    pix1q, [pix1q+2*strideq]
+    lea    pix2q, [pix2q+2*strideq]
+    jnz    .loop
+
+%if %1 == 16
+    movhlps   m1, m0
+    paddw     m0, m1
+%endif
+    movd     eax, m0
+    RET
+%endmacro
+
+INIT_XMM sse2
+SAD_XY2  8, h, h
+SAD_XY2 16, a, u
 
 ;-------------------------------------------------------------------------------------------
 ;int ff_sad_approx_xy2_<opt>(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2, ptrdiff_t stride, int h);

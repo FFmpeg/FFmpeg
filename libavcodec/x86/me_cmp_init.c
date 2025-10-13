@@ -24,8 +24,6 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
-#include "libavutil/mem_internal.h"
-#include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/me_cmp.h"
 #include "libavcodec/mpegvideoenc.h"
@@ -60,10 +58,14 @@ int ff_sad16_y2_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                      ptrdiff_t stride, int h);
 int ff_sad8_approx_xy2_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                               ptrdiff_t stride, int h);
+int ff_sad8_xy2_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+                     ptrdiff_t stride, int h);
 int ff_sad16_approx_xy2_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                                ptrdiff_t stride, int h);
 int ff_sad16_approx_xy2_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                              ptrdiff_t stride, int h);
+int ff_sad16_xy2_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+                      ptrdiff_t stride, int h);
 int ff_vsad_intra8_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                           ptrdiff_t stride, int h);
 int ff_vsad_intra16_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
@@ -121,126 +123,9 @@ static int nsse8_mmx(MPVEncContext *c, const uint8_t *pix1, const uint8_t *pix2,
 
 #endif /* HAVE_X86ASM */
 
-#if HAVE_INLINE_ASM
-
-DECLARE_ASM_CONST(8, uint64_t, round_tab)[3] = {
-    0x0000000000000000ULL,
-    0x0001000100010001ULL,
-    0x0002000200020002ULL,
-};
-
-static inline void sad8_4_mmx(const uint8_t *blk1, const uint8_t *blk2,
-                              ptrdiff_t stride, int h)
-{
-    x86_reg len = -stride * h;
-    __asm__ volatile (
-        "movq  (%1, %%"FF_REG_a"), %%mm0\n\t"
-        "movq 1(%1, %%"FF_REG_a"), %%mm2\n\t"
-        "movq %%mm0, %%mm1              \n\t"
-        "movq %%mm2, %%mm3              \n\t"
-        "punpcklbw %%mm7, %%mm0         \n\t"
-        "punpckhbw %%mm7, %%mm1         \n\t"
-        "punpcklbw %%mm7, %%mm2         \n\t"
-        "punpckhbw %%mm7, %%mm3         \n\t"
-        "paddw %%mm2, %%mm0             \n\t"
-        "paddw %%mm3, %%mm1             \n\t"
-        ".p2align 4                     \n\t"
-        "1:                             \n\t"
-        "movq  (%2, %%"FF_REG_a"), %%mm2\n\t"
-        "movq 1(%2, %%"FF_REG_a"), %%mm4\n\t"
-        "movq %%mm2, %%mm3              \n\t"
-        "movq %%mm4, %%mm5              \n\t"
-        "punpcklbw %%mm7, %%mm2         \n\t"
-        "punpckhbw %%mm7, %%mm3         \n\t"
-        "punpcklbw %%mm7, %%mm4         \n\t"
-        "punpckhbw %%mm7, %%mm5         \n\t"
-        "paddw %%mm4, %%mm2             \n\t"
-        "paddw %%mm5, %%mm3             \n\t"
-        "movq %5, %%mm5                 \n\t"
-        "paddw %%mm2, %%mm0             \n\t"
-        "paddw %%mm3, %%mm1             \n\t"
-        "paddw %%mm5, %%mm0             \n\t"
-        "paddw %%mm5, %%mm1             \n\t"
-        "movq (%3, %%"FF_REG_a"), %%mm4 \n\t"
-        "movq (%3, %%"FF_REG_a"), %%mm5 \n\t"
-        "psrlw $2, %%mm0                \n\t"
-        "psrlw $2, %%mm1                \n\t"
-        "packuswb %%mm1, %%mm0          \n\t"
-        "psubusb %%mm0, %%mm4           \n\t"
-        "psubusb %%mm5, %%mm0           \n\t"
-        "por %%mm4, %%mm0               \n\t"
-        "movq %%mm0, %%mm4              \n\t"
-        "punpcklbw %%mm7, %%mm0         \n\t"
-        "punpckhbw %%mm7, %%mm4         \n\t"
-        "paddw %%mm0, %%mm6             \n\t"
-        "paddw %%mm4, %%mm6             \n\t"
-        "movq  %%mm2, %%mm0             \n\t"
-        "movq  %%mm3, %%mm1             \n\t"
-        "add %4, %%"FF_REG_a"           \n\t"
-        " js 1b                         \n\t"
-        : "+a" (len)
-        : "r" (blk1 - len), "r" (blk1 - len + stride), "r" (blk2 - len),
-          "r" (stride), "m" (round_tab[2]));
-}
-
-static inline int sum_mmx(void)
-{
-    int ret;
-    __asm__ volatile (
-        "movq %%mm6, %%mm0              \n\t"
-        "psrlq $32, %%mm6               \n\t"
-        "paddw %%mm0, %%mm6             \n\t"
-        "movq %%mm6, %%mm0              \n\t"
-        "psrlq $16, %%mm6               \n\t"
-        "paddw %%mm0, %%mm6             \n\t"
-        "movd %%mm6, %0                 \n\t"
-        : "=r" (ret));
-    return ret & 0xFFFF;
-}
-
-#define PIX_SADXY(suf)                                                  \
-static int sad8_xy2_ ## suf(MPVEncContext *v, const uint8_t *blk2,      \
-                            const uint8_t *blk1, ptrdiff_t stride, int h) \
-{                                                                       \
-    __asm__ volatile (                                                  \
-        "pxor %%mm7, %%mm7     \n\t"                                    \
-        "pxor %%mm6, %%mm6     \n\t"                                    \
-        ::);                                                            \
-                                                                        \
-    sad8_4_ ## suf(blk1, blk2, stride, h);                              \
-                                                                        \
-    return sum_ ## suf();                                               \
-}                                                                       \
-                                                                        \
-static int sad16_xy2_ ## suf(MPVEncContext *v, const uint8_t *blk2,     \
-                             const uint8_t *blk1, ptrdiff_t stride, int h) \
-{                                                                       \
-    __asm__ volatile (                                                  \
-        "pxor %%mm7, %%mm7     \n\t"                                    \
-        "pxor %%mm6, %%mm6     \n\t"                                    \
-        ::);                                                            \
-                                                                        \
-    sad8_4_ ## suf(blk1,     blk2,     stride, h);                      \
-    sad8_4_ ## suf(blk1 + 8, blk2 + 8, stride, h);                      \
-                                                                        \
-    return sum_ ## suf();                                               \
-}                                                                       \
-
-PIX_SADXY(mmx)
-
-#endif /* HAVE_INLINE_ASM */
-
 av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
 {
     int cpu_flags = av_get_cpu_flags();
-
-#if HAVE_INLINE_ASM
-    if (INLINE_MMX(cpu_flags)) {
-        c->pix_abs[0][3] = sad16_xy2_mmx;
-        c->pix_abs[1][3] = sad8_xy2_mmx;
-    }
-
-#endif /* HAVE_INLINE_ASM */
 
     if (EXTERNAL_MMX(cpu_flags)) {
         c->sse[1]            = ff_sse8_mmx;
@@ -282,6 +167,8 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->sse[0] = ff_sse16_sse2;
         c->sum_abs_dctelem   = ff_sum_abs_dctelem_sse2;
 
+        c->pix_abs[0][3] = ff_sad16_xy2_sse2;
+
 #if HAVE_ALIGNED_STACK
         c->hadamard8_diff[0] = ff_hadamard8_diff16_sse2;
         c->hadamard8_diff[1] = ff_hadamard8_diff_sse2;
@@ -297,6 +184,9 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
                 c->pix_abs[0][3] = ff_sad16_approx_xy2_sse2;
                 c->vsad[0]       = ff_vsad16_approx_sse2;
             }
+        }
+        if (avctx->flags & AV_CODEC_FLAG_BITEXACT) {
+            c->pix_abs[1][3] = ff_sad8_xy2_sse2;
         }
     }
 
