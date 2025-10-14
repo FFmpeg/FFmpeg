@@ -6390,8 +6390,10 @@ static int mov_finish_fragment(MOVMuxContext *mov, MOVTrack *track,
     if (mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED) {
         for (i = 0; i < track->entry; i++)
             track->cluster[i].pos += ref_pos + track->data_offset;
-        if (track->cluster_written == 0 && !(mov->flags & FF_MOV_FLAG_EMPTY_MOOV)) {
-            // First flush. If this was a case of not using empty moov, reset chunking.
+        if (track->cluster_written == 0) {
+            // First flush. Chunking for this fragment may already have been
+            // done, either if we didn't use empty_moov, or if we did use
+            // delay_moov. In either case, reset chunking here.
             for (i = 0; i < track->entry; i++) {
                 track->cluster[i].chunkNum = 0;
                 track->cluster[i].samples_in_chunk = track->cluster[i].entries;
