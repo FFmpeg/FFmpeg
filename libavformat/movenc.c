@@ -8610,7 +8610,7 @@ static int mov_write_trailer(AVFormatContext *s)
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT) ||
         mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED) {
         if (mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED) {
-            mov_flush_fragment(s, 1);
+            mov_auto_flush_fragment(s, 1);
             mov->mdat_size = avio_tell(pb) - mov->mdat_pos - 8;
             for (i = 0; i < mov->nb_tracks; i++) {
                 MOVTrack *track = &mov->tracks[i];
