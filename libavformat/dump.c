@@ -367,11 +367,11 @@ static void dump_content_light_metadata(void *ctx, const AVPacketSideData *sd,
            metadata->MaxCLL, metadata->MaxFALL);
 }
 
-static void dump_ambient_viewing_environment_metadata(void *ctx, const AVPacketSideData *sd)
+static void dump_ambient_viewing_environment_metadata(void *ctx, const AVPacketSideData *sd, int log_level)
 {
     const AVAmbientViewingEnvironment *ambient =
         (const AVAmbientViewingEnvironment *)sd->data;
-    av_log(ctx, AV_LOG_INFO,
+    av_log(ctx, log_level,
            "ambient_illuminance=%f, ambient_light_x=%f, ambient_light_y=%f",
            av_q2d(ambient->ambient_illuminance),
            av_q2d(ambient->ambient_light_x),
@@ -445,12 +445,12 @@ static void dump_s12m_timecode(void *ctx, AVRational avg_frame_rate, const AVPac
     }
 }
 
-static void dump_cropping(void *ctx, const AVPacketSideData *sd)
+static void dump_cropping(void *ctx, const AVPacketSideData *sd, int log_level)
 {
     uint32_t top, bottom, left, right;
 
     if (sd->size < sizeof(uint32_t) * 4) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data\n");
+        av_log(ctx, log_level, "invalid data\n");
         return;
     }
 
@@ -459,15 +459,15 @@ static void dump_cropping(void *ctx, const AVPacketSideData *sd)
     left   = AV_RL32(sd->data +  8);
     right  = AV_RL32(sd->data + 12);
 
-    av_log(ctx, AV_LOG_INFO, "%d/%d/%d/%d", left, right, top, bottom);
+    av_log(ctx, log_level, "%d/%d/%d/%d", left, right, top, bottom);
 }
 
-static void dump_tdrdi(void *ctx, const AVPacketSideData *sd)
+static void dump_tdrdi(void *ctx, const AVPacketSideData *sd, int log_level)
 {
     const AV3DReferenceDisplaysInfo *tdrdi =
         (const AV3DReferenceDisplaysInfo *)sd->data;
 
-    av_log(ctx, AV_LOG_INFO, "number of reference displays: %u", tdrdi->num_ref_displays);
+    av_log(ctx, log_level, "number of reference displays: %u", tdrdi->num_ref_displays);
 }
 
 static void dump_sidedata(void *ctx, const AVPacketSideData *side_data, int nb_side_data,
@@ -485,7 +485,7 @@ static void dump_sidedata(void *ctx, const AVPacketSideData *side_data, int nb_s
 
         av_log(ctx, log_level, "%s  ", indent);
         if (name)
-            av_log(ctx, AV_LOG_INFO, "%s: ", name);
+            av_log(ctx, log_level, "%s: ", name);
         switch (sd->type) {
         case AV_PKT_DATA_PARAM_CHANGE:
             dump_paramchange(ctx, sd, log_level);
@@ -526,13 +526,13 @@ static void dump_sidedata(void *ctx, const AVPacketSideData *side_data, int nb_s
             dump_s12m_timecode(ctx, avg_frame_rate, sd, log_level);
             break;
         case AV_PKT_DATA_AMBIENT_VIEWING_ENVIRONMENT:
-            dump_ambient_viewing_environment_metadata(ctx, sd);
+            dump_ambient_viewing_environment_metadata(ctx, sd, log_level);
             break;
         case AV_PKT_DATA_FRAME_CROPPING:
-            dump_cropping(ctx, sd);
+            dump_cropping(ctx, sd, log_level);
             break;
         case AV_PKT_DATA_3D_REFERENCE_DISPLAYS:
-            dump_tdrdi(ctx, sd);
+            dump_tdrdi(ctx, sd, log_level);
             break;
         default:
             if (name)
@@ -678,7 +678,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (st->start_time != AV_NOPTS_VALUE && st->start_time != 0 && st->time_base.den && st->time_base.num) {
         const double stream_start = av_q2d(st->time_base) * st->start_time;
-        av_log(NULL, AV_LOG_INFO, ", start %.6f", stream_start);
+        av_log(NULL, log_level, ", start %.6f", stream_start);
     }
 
     dump_disposition(st->disposition, log_level);
