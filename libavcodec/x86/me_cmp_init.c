@@ -40,10 +40,10 @@ int ff_hf_noise8_mmx(const uint8_t *pix1, ptrdiff_t stride, int h);
 int ff_hf_noise16_mmx(const uint8_t *pix1, ptrdiff_t stride, int h);
 int ff_sad8_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                    ptrdiff_t stride, int h);
-int ff_sad16_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
-                    ptrdiff_t stride, int h);
 int ff_sad16_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                   ptrdiff_t stride, int h);
+int ff_sad16u_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+                   ptrdiff_t stride, int h);
 int ff_sad8_x2_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                       ptrdiff_t stride, int h);
 int ff_sad16_x2_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
@@ -62,16 +62,16 @@ int ff_sad16_xy2_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2
                       ptrdiff_t stride, int h);
 int ff_vsad_intra8_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                           ptrdiff_t stride, int h);
-int ff_vsad_intra16_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
-                           ptrdiff_t stride, int h);
 int ff_vsad_intra16_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                          ptrdiff_t stride, int h);
+int ff_vsad_intra16u_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+                          ptrdiff_t stride, int h);
 int ff_vsad8_approx_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                     ptrdiff_t stride, int h);
-int ff_vsad16_approx_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
-                     ptrdiff_t stride, int h);
 int ff_vsad16_approx_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                    ptrdiff_t stride, int h);
+int ff_vsad16u_approx_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+                           ptrdiff_t stride, int h);
 
 #define hadamard_func(cpu)                                                       \
     int ff_hadamard8_diff_ ## cpu(MPVEncContext *s, const uint8_t *src1,         \
@@ -135,20 +135,17 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->hadamard8_diff[1] = ff_hadamard8_diff_mmxext;
 #endif
 
-        c->sad[0] = ff_sad16_mmxext;
         c->sad[1] = ff_sad8_mmxext;
 
         c->pix_abs[1][0] = ff_sad8_mmxext;
         c->pix_abs[1][1] = ff_sad8_x2_mmxext;
         c->pix_abs[1][2] = ff_sad8_y2_mmxext;
 
-        c->vsad[4] = ff_vsad_intra16_mmxext;
         c->vsad[5] = ff_vsad_intra8_mmxext;
 
         if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
             c->pix_abs[1][3] = ff_sad8_approx_xy2_mmxext;
 
-            c->vsad[0] = ff_vsad16_approx_mmxext;
             c->vsad[1] = ff_vsad8_approx_mmxext;
         }
     }
@@ -166,12 +163,21 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->hadamard8_diff[0] = ff_hadamard8_diff16_sse2;
         c->hadamard8_diff[1] = ff_hadamard8_diff_sse2;
 #endif
-        if (!(cpu_flags & AV_CPU_FLAG_SSE2SLOW) && avctx->codec_id != AV_CODEC_ID_SNOW) {
+        if (avctx->codec_id != AV_CODEC_ID_SNOW) {
             c->sad[0]        = ff_sad16_sse2;
 
             c->vsad[4]       = ff_vsad_intra16_sse2;
             if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
                 c->vsad[0]       = ff_vsad16_approx_sse2;
+            }
+        } else {
+            // Snow does not abide by the alignment requirements
+            // of blk1, so we use special versions without them for it.
+            c->sad[0]        = ff_sad16u_sse2;
+
+            c->vsad[4]       = ff_vsad_intra16u_sse2;
+            if (!(avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
+                c->vsad[0]       = ff_vsad16u_approx_sse2;
             }
         }
         if (avctx->flags & AV_CODEC_FLAG_BITEXACT) {

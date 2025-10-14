@@ -32,7 +32,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
-#include "libavutil/emms.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
@@ -945,8 +944,6 @@ static void ac3_process_exponents(AC3EncodeContext *s)
     compute_exp_strategy(s);
 
     encode_exponents(s);
-
-    emms_c();
 }
 
 
