@@ -73,7 +73,7 @@ static void vc1_h_loop_filter16_sse4(uint8_t *src, ptrdiff_t stride, int pq)
         ff_ ## OP ## pixels ## DEPTH ## INSN(dst, src, stride, DEPTH);     \
     }
 
-DECLARE_FUNCTION(put_,  8, _mmx)
+DECLARE_FUNCTION(put_,  8, _sse2)
 DECLARE_FUNCTION(avg_,  8, _mmxext)
 DECLARE_FUNCTION(put_, 16, _sse2)
 DECLARE_FUNCTION(avg_, 16, _sse2)
@@ -125,7 +125,6 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
     if (EXTERNAL_MMX(cpu_flags)) {
         dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = ff_put_vc1_chroma_mc8_nornd_mmx;
 
-        dsp->put_vc1_mspel_pixels_tab[1][0]      = put_vc1_mspel_mc00_8_mmx;
     }
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         ASSIGN_LF4(mmxext);
@@ -142,6 +141,7 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         ASSIGN_LF816(sse2);
 
         dsp->put_vc1_mspel_pixels_tab[0][0]      = put_vc1_mspel_mc00_16_sse2;
+        dsp->put_vc1_mspel_pixels_tab[1][0]      = put_vc1_mspel_mc00_8_sse2;
         dsp->avg_vc1_mspel_pixels_tab[0][0]      = avg_vc1_mspel_mc00_16_sse2;
     }
     if (EXTERNAL_SSSE3(cpu_flags)) {

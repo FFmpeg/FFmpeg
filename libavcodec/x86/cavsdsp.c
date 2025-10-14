@@ -46,13 +46,6 @@ static void cavs_idct8_add_sse2(uint8_t *dst, int16_t *block, ptrdiff_t stride)
 
 #endif /* HAVE_SSE2_EXTERNAL */
 
-static av_cold void cavsdsp_init_mmx(CAVSDSPContext *c)
-{
-#if HAVE_MMX_EXTERNAL
-    c->put_cavs_qpel_pixels_tab[1][0] = ff_put_pixels8x8_mmx;
-#endif /* HAVE_MMX_EXTERNAL */
-}
-
 #if HAVE_SSE2_EXTERNAL
 #define DEF_QPEL(OPNAME) \
     void ff_ ## OPNAME ## _cavs_qpel8_mc20_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t stride);     \
@@ -98,9 +91,6 @@ av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c)
 {
     av_unused int cpu_flags = av_get_cpu_flags();
 
-    if (X86_MMX(cpu_flags))
-        cavsdsp_init_mmx(c);
-
 #if HAVE_MMX_EXTERNAL
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         c->avg_cavs_qpel_pixels_tab[1][0] = ff_avg_pixels8x8_mmxext;
@@ -113,6 +103,7 @@ av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c)
         c->put_cavs_qpel_pixels_tab[0][ 4] = put_cavs_qpel16_mc01_sse2;
         c->put_cavs_qpel_pixels_tab[0][ 8] = put_cavs_qpel16_mc02_sse2;
         c->put_cavs_qpel_pixels_tab[0][12] = put_cavs_qpel16_mc03_sse2;
+        c->put_cavs_qpel_pixels_tab[1][ 0] = ff_put_pixels8x8_sse2;
         c->put_cavs_qpel_pixels_tab[1][ 2] = ff_put_cavs_qpel8_mc20_sse2;
         c->put_cavs_qpel_pixels_tab[1][ 4] = put_cavs_qpel8_mc01_sse2;
         c->put_cavs_qpel_pixels_tab[1][ 8] = ff_put_cavs_qpel8_mc02_sse2;
