@@ -323,7 +323,7 @@ static void check_inv_trans_adding(void)
             call_new(inv_trans_out1 + 24 + 8, 24, inv_trans_in1);
             if (memcmp(inv_trans_out0, inv_trans_out1, 10 * 24))
                 fail();
-            bench_new(inv_trans_out1 + 24 + 8, 24, inv_trans_in1 + 8);
+            bench_new(inv_trans_out1 + 24 + 8, 24, inv_trans_in1);
             av_free(coeffs);
         }
     }
