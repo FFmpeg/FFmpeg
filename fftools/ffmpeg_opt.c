@@ -1189,7 +1189,7 @@ static int opt_filter_complex_script(void *optctx, const char *opt, const char *
     char *graph_desc;
     int ret;
 
-    graph_desc = file_read(arg);
+    graph_desc = read_file_to_string(arg);
     if (!graph_desc)
         return AVERROR(EINVAL);
 

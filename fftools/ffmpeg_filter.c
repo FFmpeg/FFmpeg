@@ -507,7 +507,7 @@ static int filter_opt_apply(void *logctx, AVFilterContext *f,
         ret = av_opt_set_bin(f, key, data, len, AV_OPT_SEARCH_CHILDREN);
         av_freep(&data);
     } else {
-        char *data = file_read(val);
+        char *data = read_file_to_string(val);
         if (!data) {
             ret = AVERROR(EIO);
             goto err_load;

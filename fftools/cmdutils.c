@@ -263,7 +263,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
             return AVERROR(EINVAL);
         }
 
-        arg_allocated = file_read(arg);
+        arg_allocated = read_file_to_string(arg);
         if (!arg_allocated) {
             av_log(NULL, AV_LOG_FATAL,
                    "Error reading the value for option '%s' from file: %s\n",
@@ -1498,7 +1498,7 @@ double get_rotation(const int32_t *displaymatrix)
 }
 
 /* read file contents into a string */
-char *file_read(const char *filename)
+char *read_file_to_string(const char *filename)
 {
     AVIOContext *pb      = NULL;
     int ret = avio_open(&pb, filename, AVIO_FLAG_READ);
