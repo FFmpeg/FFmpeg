@@ -34,9 +34,6 @@
 #define TYPE_BLOCK_SIZE (TYPE_SIZE * TYPE_BLOCK_ELEMS)
 #define WG_SIZE 32
 
-// prevent macro expansion in GLSL
-#undef isinf
-
 typedef struct NLMeansVulkanContext {
     FFVulkanContext vkctx;
 
@@ -160,7 +157,7 @@ static av_cold int init_integral_pipeline(FFVulkanContext *vkctx, FFVkExecPool *
     GLSLC(1,     uint comp_idx = uint(gl_WorkGroupID.y);                         );
     GLSLC(1,     uint invoc_idx = uint(gl_WorkGroupID.z);                        );
     GLSLC(0,                                                                     );
-    GLSLC(1,     if (isinf(strength[comp_idx]))                                  );
+    GLSLC(1,     if (strength[comp_idx] == 0.0)                                  );
     GLSLC(2,         return;                                                     );
     GLSLC(0,                                                                     );
     GLSLC(1,     offset = integral_size * (invoc_idx * nb_components + comp_idx); );
@@ -245,7 +242,7 @@ static av_cold int init_integral_pipeline(FFVulkanContext *vkctx, FFVkExecPool *
     GLSLC(1,     uint comp_idx = uint(gl_WorkGroupID.y);                         );
     GLSLC(1,     uint invoc_idx = uint(gl_WorkGroupID.z);                        );
     GLSLC(0,                                                                     );
-    GLSLC(1,     if (isinf(strength[comp_idx]))                                  );
+    GLSLC(1,     if (strength[comp_idx] == 0.0)                                  );
     GLSLC(2,         return;                                                     );
     GLSLC(0,                                                                     );
     GLSLC(1,     offset = integral_size * (invoc_idx * nb_components + comp_idx); );
@@ -417,7 +414,7 @@ static av_cold int init_weights_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
     GLSLC(1,     c_plane = comp_plane[comp_idx];                                 );
     GLSLC(1,     p = patch_size[comp_idx];                                       );
     GLSLC(1,     s = strength[comp_idx];                                         );
-    GLSLC(1,     if (isinf(s) || pos.x < p || pos.y < p || pos.x >= width[c_plane] - p || pos.y >= height[c_plane] - p) );
+    GLSLC(1,     if (s == 0.0 || pos.x < p || pos.y < p || pos.x >= width[c_plane] - p || pos.y >= height[c_plane] - p) );
     GLSLC(2,         return;                                                     );
     GLSLC(0,                                                                     );
     GLSLC(1,     offset = integral_size * (invoc_idx * nb_components + comp_idx); );
@@ -635,12 +632,16 @@ static av_cold int init_filter(AVFilterContext *ctx)
     }
 
     for (int i = 0; i < 4; i++) {
-        double str = s->opts.sc[i] != -1.0 ? s->opts.sc[i] : s->opts.s;
+        double str = !isnan(s->opts.sc[i]) ? s->opts.sc[i] : s->opts.s;
         int ps = (s->opts.pc[i] ? s->opts.pc[i] : s->opts.p);
-        str  = 10.0f*str;
-        str *= -str;
-        str  = 255.0*255.0 / str;
-        s->strength[i] = str;
+        if (str == 0.0) {
+            s->strength[i] = 0.0;
+        } else {
+            str  = 10.0f*str;
+            str *= -str;
+            str  = 255.0*255.0 / str;
+            s->strength[i] = str;
+        }
         if (!(ps & 1)) {
             ps |= 1;
             av_log(ctx, AV_LOG_WARNING, "Patch size should be odd, setting to %i",
@@ -1178,10 +1179,10 @@ static const AVOption nlmeans_vulkan_options[] = {
     { "r",  "research window size", OFFSET(opts.r), AV_OPT_TYPE_INT, { .i64 = 7*2+1 }, 0, 99, FLAGS },
     { "t",  "parallelism", OFFSET(opts.t), AV_OPT_TYPE_INT, { .i64 = 8 }, 1, 64, FLAGS },
 
-    { "s1", "denoising strength for component 1", OFFSET(opts.sc[0]), AV_OPT_TYPE_DOUBLE, { .dbl = -1.0 }, 0.0, 100.0, FLAGS },
-    { "s2", "denoising strength for component 2", OFFSET(opts.sc[1]), AV_OPT_TYPE_DOUBLE, { .dbl = -1.0 }, 0.0, 100.0, FLAGS },
-    { "s3", "denoising strength for component 3", OFFSET(opts.sc[2]), AV_OPT_TYPE_DOUBLE, { .dbl = -1.0 }, 0.0, 100.0, FLAGS },
-    { "s4", "denoising strength for component 4", OFFSET(opts.sc[3]), AV_OPT_TYPE_DOUBLE, { .dbl = -1.0 }, 0.0, 100.0, FLAGS },
+    { "s1", "denoising strength for component 1", OFFSET(opts.sc[0]), AV_OPT_TYPE_DOUBLE, { .dbl = NAN }, 0.0, 100.0, FLAGS },
+    { "s2", "denoising strength for component 2", OFFSET(opts.sc[1]), AV_OPT_TYPE_DOUBLE, { .dbl = NAN }, 0.0, 100.0, FLAGS },
+    { "s3", "denoising strength for component 3", OFFSET(opts.sc[2]), AV_OPT_TYPE_DOUBLE, { .dbl = NAN }, 0.0, 100.0, FLAGS },
+    { "s4", "denoising strength for component 4", OFFSET(opts.sc[3]), AV_OPT_TYPE_DOUBLE, { .dbl = NAN }, 0.0, 100.0, FLAGS },
 
     { "p1", "patch size for component 1", OFFSET(opts.pc[0]), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 99, FLAGS },
     { "p2", "patch size for component 2", OFFSET(opts.pc[1]), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 99, FLAGS },
