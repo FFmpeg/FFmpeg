@@ -169,7 +169,6 @@ cglobal vc1_%2_hor_16b_shift2, 4, 5, 0, dst, stride, src, rnd, h
     LOAD_ROUNDER_MMX rndd
     mova               m5, [pw_9]
     mova               m6, [pw_128]
-    pxor               m0, m0
 
 .loop:
     mova               m1, [srcq + 2 * 0]
