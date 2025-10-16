@@ -1140,8 +1140,9 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
         }
     }
 
-    frames_ctx->width  = avctx->coded_width;
-    frames_ctx->height = avctx->coded_height;
+    const AVPixFmtDescriptor *pdesc = av_pix_fmt_desc_get(frames_ctx->sw_format);
+    frames_ctx->width  = FFALIGN(avctx->coded_width, 1 << pdesc->log2_chroma_w);
+    frames_ctx->height = FFALIGN(avctx->coded_height, 1 << pdesc->log2_chroma_h);
     frames_ctx->format = AV_PIX_FMT_VULKAN;
 
     hwfc->format[0]    = vkfmt;
@@ -1348,8 +1349,8 @@ int ff_vk_decode_init(AVCodecContext *avctx)
         dpb_frames = (AVHWFramesContext *)ctx->common.dpb_hwfc_ref->data;
         dpb_frames->format    = s->frames->format;
         dpb_frames->sw_format = s->frames->sw_format;
-        dpb_frames->width     = avctx->coded_width;
-        dpb_frames->height    = avctx->coded_height;
+        dpb_frames->width     = s->frames->width;
+        dpb_frames->height    = s->frames->height;
 
         dpb_hwfc = dpb_frames->hwctx;
         dpb_hwfc->create_pnext = (void *)ff_vk_find_struct(ctx->s.hwfc->create_pnext,
