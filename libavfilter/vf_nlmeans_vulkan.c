@@ -1175,7 +1175,7 @@ static void nlmeans_vulkan_uninit(AVFilterContext *avctx)
 static const AVOption nlmeans_vulkan_options[] = {
     { "s",  "denoising strength for all components", OFFSET(opts.s), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 0.0, 100.0, FLAGS },
     { "p",  "patch size for all components", OFFSET(opts.p), AV_OPT_TYPE_INT, { .i64 = 3*2+1 }, 0, 99, FLAGS },
-    { "r",  "research window radius", OFFSET(opts.r), AV_OPT_TYPE_INT, { .i64 = 7*2+1 }, 0, 99, FLAGS },
+    { "r",  "research window size", OFFSET(opts.r), AV_OPT_TYPE_INT, { .i64 = 7*2+1 }, 0, 99, FLAGS },
     { "t",  "parallelism", OFFSET(opts.t), AV_OPT_TYPE_INT, { .i64 = 8 }, 1, 64, FLAGS },
 
     { "s1", "denoising strength for component 1", OFFSET(opts.sc[0]), AV_OPT_TYPE_DOUBLE, { .dbl = -1.0 }, 0.0, 100.0, FLAGS },

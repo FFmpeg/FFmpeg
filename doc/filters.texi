@@ -29101,7 +29101,7 @@ The filter accepts the following options.
 
 @table @option
 @item s
-Set denoising strength for all components. Default is 1.0. Must be in range [1.0, 100.0].
+Set denoising strength for all components. Default is 1.0. Must be in range [0.0, 100.0].
 
 @item p
 Set patch size for all planes. Default is 7. Must be odd number in range [0, 99].
@@ -29110,17 +29110,16 @@ Set patch size for all planes. Default is 7. Must be odd number in range [0, 99]
 Set research size. Default is 15. Must be odd number in range [0, 99].
 
 @item t
-Set parallelism. Default is 36. Must be a number in the range [1, 168].
-Larger values may speed up processing, at the cost of more VRAM.
-Lower values will slow it down, reducing VRAM usage.
-Only supported on GPUs with atomic float operations (RDNA3+, Ampere+).
+Set parallelism. Default is 8. Must be a number in the range [1, 64].
+Larger values will use more VRAM but may not result in greater speed.
+The optimal value is hardware and input dependent.
 
 @item s0
 @item s1
 @item s2
 @item s3
-Set denoising strength for a specific component. Default is @var{1}, equal to @option{s}.
-Must be odd number in range [1, 100].
+Set denoising strength for a specific component. Default is @var{1.0}, equal to @option{s}.
+Must be in range [0.0, 100.0]. 0.0 disables denoising in that component.
 
 @item p0
 @item p1
