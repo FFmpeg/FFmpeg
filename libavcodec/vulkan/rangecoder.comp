@@ -31,6 +31,19 @@ struct RangeCoder {
     uint8_t outstanding_byte;
 };
 
+void rac_init(out RangeCoder r, u8buf data, uint buf_size)
+{
+    r.bytestream_start = uint64_t(data);
+    r.bytestream = uint64_t(data);
+    r.bytestream_end = uint64_t(data) + buf_size;
+    r.low = 0;
+    r.range = 0xFF00;
+    r.outstanding_count = uint16_t(0);
+    r.outstanding_byte = uint8_t(0xFF);
+}
+
+#if !defined(DECODE)
+
 #ifdef FULL_RENORM
 /* Full renorm version that can handle outstanding_byte == 0xFF */
 void renorm_encoder(inout RangeCoder c)
@@ -165,16 +178,7 @@ uint32_t rac_terminate(inout RangeCoder c)
     return uint32_t(uint64_t(c.bytestream) - uint64_t(c.bytestream_start));
 }
 
-void rac_init(out RangeCoder r, u8buf data, uint buf_size)
-{
-    r.bytestream_start = uint64_t(data);
-    r.bytestream = uint64_t(data);
-    r.bytestream_end = uint64_t(data) + buf_size;
-    r.low = 0;
-    r.range = 0xFF00;
-    r.outstanding_count = uint16_t(0);
-    r.outstanding_byte = uint8_t(0xFF);
-}
+#else
 
 /* Decoder */
 uint overread = 0;
@@ -239,3 +243,5 @@ bool get_rac_equi(inout RangeCoder c)
 {
     return get_rac_internal(c, c.range >> 1);
 }
+
+#endif
