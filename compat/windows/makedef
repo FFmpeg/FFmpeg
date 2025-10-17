@@ -48,7 +48,13 @@ trap 'rm -f -- $libname' EXIT
 if [ -n "$AR" ]; then
     $AR rcs ${libname} $@ >/dev/null
 else
-    lib.exe -out:${libname} $@ >/dev/null
+    machine_flag=""
+    case "$LDFLAGS" in
+    *"machine:arm64ec"*)
+        machine_flag="-machine:arm64ec"
+        ;;
+    esac
+    lib.exe ${machine_flag} -out:${libname} $@ >/dev/null
 fi
 if [ $? != 0 ]; then
     echo "Could not create temporary library." >&2
@@ -106,12 +112,21 @@ if [ -n "$NM" ]; then
               grep -v : |
               grep -v ^$ |
               cut -d' ' -f3 |
-              sed -e "s/^${prefix}//")
+              sed -e "s/^${prefix}//" -e "s/^#//" |
+              grep -v '\$entry_thunk' |
+              grep -v '\$exit_thunk')
 else
-    dump=$(dumpbin.exe -linkermember:1 ${libname} |
-              sed -e '/public symbols/,$!d' -e '/^ \{1,\}Summary/,$d' -e "s/ \{1,\}${prefix}/ /" -e 's/ \{1,\}/ /g' |
+    member=1
+    case "$LDFLAGS" in
+    *"machine:arm64ec"*)
+        member=32
+        ;;
+    esac
+    dump=$(dumpbin.exe -linkermember:${member} ${libname} |
+              sed -e '/public symbols/,$!d' -e '/^ \{1,\}Summary/,$d' -e 's/^[[:space:]]*[0-9A-Fa-f]\{1,\}[[:space:]]\{1,\}//' -e "s/^${prefix}//" -e 's/^#//' |
               tail -n +2 |
-              cut -d' ' -f3)
+              grep -v '\$entry_thunk' |
+              grep -v '\$exit_thunk')
 fi
 
 rm ${libname}
