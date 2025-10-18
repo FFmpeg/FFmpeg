@@ -158,6 +158,10 @@ unsigned stream_specifier_match(const StreamSpecifier *ss,
                                 const AVFormatContext *s, const AVStream *st,
                                 void *logctx);
 
+unsigned stream_group_specifier_match(const StreamSpecifier *ss,
+                                      const AVFormatContext *s, const AVStreamGroup *stg,
+                                      void *logctx);
+
 void stream_specifier_uninit(StreamSpecifier *ss);
 
 typedef struct SpecifierOpt {

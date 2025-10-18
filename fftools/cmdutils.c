@@ -1350,6 +1350,77 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
     return ret;
 }
 
+unsigned stream_group_specifier_match(const StreamSpecifier *ss,
+                                      const AVFormatContext *s, const AVStreamGroup *stg,
+                                      void *logctx)
+{
+    int start_stream_group = 0, nb_stream_groups;
+    int nb_matched = 0;
+
+    if (ss->idx >= 0)
+        return 0;
+
+    switch (ss->stream_list) {
+    case STREAM_LIST_STREAM_ID:
+    case STREAM_LIST_ALL:
+    case STREAM_LIST_PROGRAM:
+        return 0;
+    case STREAM_LIST_GROUP_ID:
+        // <n-th> stream with given ID makes no sense and should be impossible to request
+        av_assert0(ss->idx < 0);
+        // return early if we know for sure the stream does not match
+        if (stg->id != ss->list_id)
+            return 0;
+        start_stream_group = stg->index;
+        nb_stream_groups   = stg->index + 1;
+        break;
+    case STREAM_LIST_GROUP_IDX:
+        start_stream_group = ss->list_id >= 0 ? 0 : stg->index;
+        nb_stream_groups   = stg->index + 1;
+        break;
+    default: av_assert0(0);
+    }
+
+    for (int i = start_stream_group; i < nb_stream_groups; i++) {
+        const AVStreamGroup *candidate = s->stream_groups[i];
+
+        if (ss->meta_key) {
+            const AVDictionaryEntry *tag = av_dict_get(candidate->metadata,
+                                                       ss->meta_key, NULL, 0);
+
+            if (!tag)
+                continue;
+            if (ss->meta_val && strcmp(tag->value, ss->meta_val))
+                continue;
+        }
+
+        if (ss->usable_only) {
+            switch (candidate->type) {
+            case AV_STREAM_GROUP_PARAMS_TILE_GRID: {
+                const AVStreamGroupTileGrid *tg = candidate->params.tile_grid;
+                if (!tg->coded_width || !tg->coded_height || !tg->nb_tiles ||
+                    !tg->width       || !tg->height       || !tg->nb_tiles)
+                    continue;
+                break;
+            }
+            default:
+                continue;
+            }
+        }
+
+        if (ss->disposition &&
+            (candidate->disposition & ss->disposition) != ss->disposition)
+            continue;
+
+        if (stg == candidate)
+            return ss->list_id < 0 || ss->list_id == nb_matched;
+
+        nb_matched++;
+    }
+
+    return 0;
+}
+
 int filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_id,
                       AVFormatContext *s, AVStream *st, const AVCodec *codec,
                       AVDictionary **dst, AVDictionary **opts_used)

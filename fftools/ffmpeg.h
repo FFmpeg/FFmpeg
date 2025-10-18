@@ -136,6 +136,7 @@ typedef struct StreamMap {
     int disabled;           /* 1 is this mapping is disabled by a negative map */
     int file_index;
     int stream_index;
+    int group_index;
     char *linklabel;       /* name of an output link, for mapping lavfi outputs */
 
     ViewSpecifier vs;
@@ -931,6 +932,15 @@ void opt_match_per_stream_int64(void *logctx, const SpecifierOptList *sol,
                                 AVFormatContext *fc, AVStream *st, int64_t *out);
 void opt_match_per_stream_dbl(void *logctx, const SpecifierOptList *sol,
                               AVFormatContext *fc, AVStream *st, double *out);
+
+void opt_match_per_stream_group_str(void *logctx, const SpecifierOptList *sol,
+                                    AVFormatContext *fc, AVStreamGroup *stg, const char **out);
+void opt_match_per_stream_group_int(void *logctx, const SpecifierOptList *sol,
+                                    AVFormatContext *fc, AVStreamGroup *stg, int *out);
+void opt_match_per_stream_group_int64(void *logctx, const SpecifierOptList *sol,
+                                      AVFormatContext *fc, AVStreamGroup *stg, int64_t *out);
+void opt_match_per_stream_group_dbl(void *logctx, const SpecifierOptList *sol,
+                                    AVFormatContext *fc, AVStreamGroup *stg, double *out);
 
 int view_specifier_parse(const char **pspec, ViewSpecifier *vs);
 
