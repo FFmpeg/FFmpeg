@@ -2129,7 +2129,8 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
     for (int i = 0; i < frame->nb_side_data; i++) {
         const AVSideDataDescriptor *desc = av_frame_side_data_desc(frame->side_data[i]->type);
 
-        if (!(desc->props & AV_SIDE_DATA_PROP_GLOBAL))
+        if (!(desc->props & AV_SIDE_DATA_PROP_GLOBAL) ||
+            frame->side_data[i]->type == AV_FRAME_DATA_DISPLAYMATRIX)
             continue;
 
         ret = av_frame_side_data_clone(&ifp->side_data,
@@ -2502,15 +2503,16 @@ static int close_output(OutputFilterPriv *ofp, FilterGraphThread *fgt)
             if (ret < 0)
                 return ret;
         }
-        av_frame_side_data_free(&frame->side_data, &frame->nb_side_data);
-        ret = clone_side_data(&frame->side_data, &frame->nb_side_data,
-                              ofp->side_data, ofp->nb_side_data, 0);
-        if (ret < 0)
-            return ret;
 
         fd = frame_data(frame);
         if (!fd)
             return AVERROR(ENOMEM);
+
+        av_frame_side_data_free(&fd->side_data, &fd->nb_side_data);
+        ret = clone_side_data(&fd->side_data, &fd->nb_side_data,
+                              ofp->side_data, ofp->nb_side_data, 0);
+        if (ret < 0)
+            return ret;
 
         fd->frame_rate_filter = ofp->fps.framerate;
 
@@ -2664,6 +2666,14 @@ static int fg_output_step(OutputFilterPriv *ofp, FilterGraphThread *fgt,
     if (!fd) {
         av_frame_unref(frame);
         return AVERROR(ENOMEM);
+    }
+
+    av_frame_side_data_free(&fd->side_data, &fd->nb_side_data);
+    if (!fgt->got_frame) {
+        ret = clone_side_data(&fd->side_data, &fd->nb_side_data,
+                              ofp->side_data, ofp->nb_side_data, 0);
+        if (ret < 0)
+            return ret;
     }
 
     fd->wallclock[LATENCY_PROBE_FILTER_POST] = av_gettime_relative();

@@ -205,19 +205,10 @@ int enc_open(void *opaque, const AVFrame *frame)
         av_assert0(frame->opaque_ref);
         fd = (FrameData*)frame->opaque_ref->data;
 
-        for (int i = 0; i < frame->nb_side_data; i++) {
-            const AVSideDataDescriptor *desc = av_frame_side_data_desc(frame->side_data[i]->type);
-
-            if (!(desc->props & AV_SIDE_DATA_PROP_GLOBAL))
-                continue;
-
-            ret = av_frame_side_data_clone(&enc_ctx->decoded_side_data,
-                                           &enc_ctx->nb_decoded_side_data,
-                                           frame->side_data[i],
-                                           AV_FRAME_SIDE_DATA_FLAG_UNIQUE);
-            if (ret < 0)
-                return ret;
-        }
+        ret = clone_side_data(&enc_ctx->decoded_side_data, &enc_ctx->nb_decoded_side_data,
+                              fd->side_data, fd->nb_side_data, AV_FRAME_SIDE_DATA_FLAG_UNIQUE);
+        if (ret < 0)
+            return ret;
     }
 
     if (ist)

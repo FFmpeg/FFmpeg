@@ -400,6 +400,7 @@ static void frame_data_free(void *opaque, uint8_t *data)
 {
     FrameData *fd = (FrameData *)data;
 
+    av_frame_side_data_free(&fd->side_data, &fd->nb_side_data);
     avcodec_parameters_free(&fd->par_enc);
 
     av_free(data);
@@ -429,6 +430,8 @@ static int frame_data_ensure(AVBufferRef **dst, int writable)
 
             memcpy(fd, fd_src, sizeof(*fd));
             fd->par_enc = NULL;
+            fd->side_data = NULL;
+            fd->nb_side_data = 0;
 
             if (fd_src->par_enc) {
                 int ret = 0;
@@ -437,6 +440,16 @@ static int frame_data_ensure(AVBufferRef **dst, int writable)
                 ret = fd->par_enc ?
                       avcodec_parameters_copy(fd->par_enc, fd_src->par_enc) :
                       AVERROR(ENOMEM);
+                if (ret < 0) {
+                    av_buffer_unref(dst);
+                    av_buffer_unref(&src);
+                    return ret;
+                }
+            }
+
+            if (fd_src->nb_side_data) {
+                int ret = clone_side_data(&fd->side_data, &fd->nb_side_data,
+                                          fd_src->side_data, fd_src->nb_side_data, 0);
                 if (ret < 0) {
                     av_buffer_unref(dst);
                     av_buffer_unref(&src);
