@@ -405,6 +405,9 @@ static int task_start(SchTask *task)
 {
     int ret;
 
+    if (!task->parent)
+        return 0;
+
     av_log(task->func_arg, AV_LOG_VERBOSE, "Starting thread...\n");
 
     av_assert0(!task->thread_running);
@@ -452,6 +455,23 @@ static int64_t trailing_dts(const Scheduler *sch, int count_finished)
     }
 
     return min_dts == INT64_MAX ? AV_NOPTS_VALUE : min_dts;
+}
+
+void sch_remove_filtergraph(Scheduler *sch, int idx)
+{
+    SchFilterGraph *fg = &sch->filters[idx];
+
+    av_assert0(!fg->task.thread_running);
+    memset(&fg->task, 0, sizeof(fg->task));
+
+    tq_free(&fg->queue);
+
+    av_freep(&fg->inputs);
+    fg->nb_inputs = 0;
+    av_freep(&fg->outputs);
+    fg->nb_outputs = 0;
+
+    fg->task_exited = 1;
 }
 
 void sch_free(Scheduler **psch)
@@ -2629,6 +2649,9 @@ static int task_stop(Scheduler *sch, SchTask *task)
 {
     int ret;
     void *thread_ret;
+
+    if (!task->parent)
+        return 0;
 
     if (!task->thread_running)
         return task_cleanup(sch, task->node);

@@ -205,6 +205,8 @@ int sch_add_dec_output(Scheduler *sch, unsigned dec_idx);
 int sch_add_filtergraph(Scheduler *sch, unsigned nb_inputs, unsigned nb_outputs,
                         SchThreadFunc func, void *ctx);
 
+void sch_remove_filtergraph(Scheduler *sch, int idx);
+
 /**
  * Add a muxer to the scheduler.
  *
