@@ -1,0 +1,100 @@
+// Script to test how drawvg instructions are translated to cairo functions,
+// for `make fate-filter-drawvg-interpreter`.
+
+// Comments.
+lineargrad 0 0 1 1
+colorstop 0 red // after a statement
+colorstop
+    1 // in the middle of a statement
+    blue
+
+
+// Constants.
+setlinejoin miter
+setlinecap round
+
+// if/repeat
+M 0 0
+repeat 10 {
+    if (eq(i,3)) { break }
+    l (i) (i)
+}
+
+// User variables.
+setvar foo -1
+setvar bar -2
+lineto foo (bar)
+
+// Print
+print 1 foo (bar - 2)
+
+// State
+save
+restore
+
+// Transformation matrix.
+scale 1
+scalexy 2 3
+translate 4 5
+rotate 6
+resetmatrix
+
+// Basic shapes
+rect 1 2 3 4
+circle 1 2 3
+roundedrect 100 100 400 400 50
+
+// Sources
+setcolor #abcdef
+stroke
+
+lineargrad 0 1 2 3
+colorstop 0 red 1 blue
+stroke
+
+radialgrad 1 2 3 4 5 6
+repeat 2 { colorstop (i/10) black ((i+1)/10) white }
+stroke
+
+// Curves. The next line should be compatible with SVG's <path>.
+M 10,50 Q 25,25 40,50 t 30,0 30,0 c 20 50 40 -50 100 0
+
+// Preserve
+preserve fill
+preserve eofill
+preserve stroke
+preserve clip
+
+// Fill/clip
+fill eofill
+clip eoclip
+
+// Dashes
+setdash 1 2 3
+setdashoffset 4
+resetdash
+
+// Procedures
+setvar a -1
+setvar b -2
+proc f2 a b { M a b break call invalid }
+proc f1 a { call f2 a 2 }
+proc f0 { call f1 1 }
+call f0
+l a b
+
+// Colors
+setrgba 0.1 0.2 0.3 0.4 fill
+sethsla 100 0.2 0.3 0.4 fill
+
+defrgba c0 0.5 0.6 0.7 0.8
+defhsla c1 200 0.7 0.8 0.9
+
+setcolor c0 fill
+setcolor c1 fill
+
+// Frame metadata
+getmetadata md0 m.a
+getmetadata md1 m.b
+getmetadata md2 m.c
+l md0 (md1 + 1) md2 0

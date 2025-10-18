@@ -452,6 +452,13 @@ fate-filter-fps-down-eof-pass: CMD = framecrc -lavfi testsrc2=r=7:d=3.5,fps=3:eo
 fate-filter-fps-start-drop: CMD = framecrc -lavfi testsrc2=r=7:d=3.5,fps=3:start_time=1.5
 fate-filter-fps-start-fill: CMD = framecrc -lavfi testsrc2=r=7:d=1.5,setpts=PTS+14,fps=3:start_time=1.5
 
+DRAWVG_SCRIPT_ALL = $(SRC_PATH)/tests/ref/lavf/drawvg.all
+
+FATE_FILTER-$(CONFIG_DRAWVG_FILTER) += fate-filter-drawvg-interpreter
+fate-filter-drawvg-interpreter: $(DRAWVG_SCRIPT_ALL)
+fate-filter-drawvg-interpreter: libavfilter/tests/drawvg$(EXESUF)
+fate-filter-drawvg-interpreter: CMD = run libavfilter/tests/drawvg$(EXESUF) $(DRAWVG_SCRIPT_ALL)
+
 FATE_FILTER_SAMPLES-$(call FILTERDEMDEC, FPS SCALE, MOV, QTRLE) += fate-filter-fps-cfr fate-filter-fps
 fate-filter-fps-cfr: CMD = framecrc -auto_conversion_filters -i $(TARGET_SAMPLES)/qtrle/apple-animation-variable-fps-bug.mov -r 30 -fps_mode cfr -pix_fmt yuv420p
 fate-filter-fps:     CMD = framecrc -auto_conversion_filters -i $(TARGET_SAMPLES)/qtrle/apple-animation-variable-fps-bug.mov -vf fps=30 -pix_fmt yuv420p
@@ -601,6 +608,11 @@ fate-filter-tiltandshift: CMD = framecrc -c:v pgmyuv -i $(SRC) -flags +bitexact 
 fate-filter-tiltandshift-410: CMD = framecrc -c:v pgmyuv -i $(SRC) -flags +bitexact -vf scale=sws_flags=+accurate_rnd+bitexact,format=yuv410p,tiltandshift
 fate-filter-tiltandshift-422: CMD = framecrc -c:v pgmyuv -i $(SRC) -flags +bitexact -vf scale=sws_flags=+accurate_rnd+bitexact,format=yuv422p,tiltandshift
 fate-filter-tiltandshift-444: CMD = framecrc -c:v pgmyuv -i $(SRC) -flags +bitexact -vf scale=sws_flags=+accurate_rnd+bitexact,format=yuv444p,tiltandshift
+
+DRAWVG_SCRIPT_LINES = $(SRC_PATH)/tests/ref/lavf/drawvg.lines
+FATE_FILTER_VSYNTH_VIDEO_FILTER-$(CONFIG_DRAWVG_FILTER) += fate-filter-drawvg-video
+fate-filter-drawvg-video: $(DRAWVG_SCRIPT_LINES)
+fate-filter-drawvg-video: CMD = video_filter scale,format=bgr0,drawvg=file=$(DRAWVG_SCRIPT_LINES)
 
 tests/pixfmts.mak: TAG = GEN
 tests/pixfmts.mak: ffmpeg$(PROGSSUF)$(EXESUF) | tests

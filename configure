@@ -200,6 +200,7 @@ External library support:
   --disable-avfoundation   disable Apple AVFoundation framework [autodetect]
   --enable-avisynth        enable reading of AviSynth script files [no]
   --disable-bzlib          disable bzlib [autodetect]
+  --enable-cairo           enable cairo [no]
   --disable-coreimage      disable Apple CoreImage framework [autodetect]
   --enable-chromaprint     enable audio fingerprinting with chromaprint [no]
   --enable-frei0r          enable frei0r video filtering [no]
@@ -1949,6 +1950,7 @@ EXTERNAL_LIBRARY_LIST="
     $EXTERNAL_LIBRARY_NONFREE_LIST
     $EXTERNAL_LIBRARY_VERSION3_LIST
     $EXTERNAL_LIBRARY_GPLV3_LIST
+    cairo
     chromaprint
     gcrypt
     gnutls
@@ -4003,6 +4005,7 @@ dnn_detect_filter_select="dnn"
 dnn_processing_filter_select="dnn"
 drawtext_filter_deps="libfreetype libharfbuzz"
 drawtext_filter_suggest="libfontconfig libfribidi"
+drawvg_filter_deps="cairo"
 elbg_filter_deps="avcodec"
 eq_filter_deps="gpl"
 erosion_opencl_filter_deps="opencl"
@@ -7082,6 +7085,7 @@ done
 enabled avisynth          && { require_headers "avisynth/avisynth_c.h avisynth/avs/version.h" &&
                                { test_cpp_condition avisynth/avs/version.h "AVS_MAJOR_VER >= 3 && AVS_MINOR_VER >= 7 && AVS_BUGFIX_VER >= 3 || AVS_MAJOR_VER >= 3 && AVS_MINOR_VER > 7 || AVS_MAJOR_VER > 3" ||
                                  die "ERROR: AviSynth+ header version must be >= 3.7.3"; } }
+enabled cairo             && require_pkg_config cairo cairo "cairo.h" cairo_create
 enabled cuda_nvcc         && { check_nvcc cuda_nvcc || die "ERROR: failed checking for nvcc."; }
 enabled chromaprint       && { check_pkg_config chromaprint libchromaprint "chromaprint.h" chromaprint_get_version ||
                                require chromaprint chromaprint.h chromaprint_get_version -lchromaprint; }

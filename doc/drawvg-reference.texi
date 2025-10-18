@@ -1,0 +1,2772 @@
+@documentencoding UTF-8
+
+@settitle drawvg - Language Reference
+@titlepage
+@center @titlefont{drawvg - Language Reference}
+@end titlepage
+
+@top
+
+@contents
+
+@macro codeexample {block}
+@cartouche Example
+\block\
+@end cartouche
+@end macro
+
+@macro vgscmd {name}
+@ref{cmd_\name\,,@code{\name\}}
+@end macro
+
+@chapter Introduction
+
+drawvg (@emph{draw vector graphics}) is a language to draw
+two-dimensional graphics on top of video frames. It is not intended to
+be used as a general-purpose language. Since its scope is limited, it
+prioritizes being concise and easy to use.
+
+For example, using the
+@uref{https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API,Canvas
+API} we can render a triangle running this code in a Web browser:
+
+@example
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+ctx.beginPath();
+ctx.moveTo(125, 50);
+ctx.lineTo(100, 100);
+ctx.lineTo(150, 100);
+ctx.closePath();
+ctx.stroke();
+@end example
+
+The same triangle can be written with this drawvg script:
+
+@example
+moveto 125 50
+lineto 100 100 150 100
+closepath
+stroke
+@end example
+
+It can be shortened using the aliases for @vgscmd{moveto}, @vgscmd{lineto},
+and @vgscmd{closepath}:
+
+@example
+M 125 50
+L 100 100 150 100
+Z
+stroke
+@end example
+
+Both newlines (@code{U+000A}) and spaces (@code{U+0020}) can be used
+interchangeably as delimiters, so multiple commands can appear on the
+same line:
+
+@example
+M 125 50 L 100 100 150 100 Z
+stroke
+@end example
+
+@macro ffexprs
+@ref{Expression Evaluation,,FFmpeg expressions,ffmpeg-utils}
+@end macro
+
+Finally, drawvg can use @ffexprs{} and frame metadata in command arguments. In
+this example, we are using the variables @var{w} (frame width) and @var{h}
+(frame height) to create a circle in the middle of the frame.
+
+@example
+circle (w / 2) (h / 2) (w / 3)
+stroke
+@end example
+
+Many commands are a direct equivalent to a function in the
+@uref{https://www.cairographics.org/,Cairo graphics library}. For such
+commands, the reference below provides a link to the related Cairo
+documentation.
+
+@chapter Syntax
+
+@macro svgpathlink
+@uref{https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/path,SVG's @code{<path>}}
+@end macro
+
+The syntax is heavily inspired by languages like
+@uref{https://imagemagick.org/script/magick-vector-graphics.php,Magick
+Vector Graphics}, or @svgpathlink{}. Many command names are taken from
+@uref{https://en.wikipedia.org/wiki/PostScript,PostScript}.
+
+@section Structure
+
+A drawvg script consists of a series of commands to describe 2D
+graphics.
+
+A command is an identifier (like @vgscmd{setcolor} or @vgscmd{lineto})
+followed by its arguments. Each item in the code (command name,
+arguments, etc.) is separated by any of the following characters:
+
+@itemize
+@item Space (@code{' '})
+@item Comma (@code{','})
+@item Newline (@code{'\n'})
+@item Tabs (@code{'\t'})
+@item Return (@code{'\r'})
+@end itemize
+
+The beginning of the item indicates how it will be interpreted:
+
+@table @r
+@item @code{//}
+Comment
+@item @code{0}, @dots{}, @code{9}, @code{+}, @code{-}
+Number literal
+@item @code{(}
+Expression
+@item @code{@{}, @code{@}}
+Block delimiters
+@item Anything else
+Name of a command, a color, etc.
+@end table
+
+@section Comments
+
+Comments start with two slashes (@code{//}), and stop at the end of the
+line (either a @code{\n}, or the end of the script).
+
+@example
+circle 100 100 50 // this is ignored
+fill
+
+// this is also ignored
+@end example
+
+@code{//} must appear after a space, or at the beginning of the line. If
+@code{//} is preceded by any non-blank character, the parser will
+consider @code{//} as part of the previous item.
+
+For example, in this script:
+
+@example
+circle 10 10 50// something
+@end example
+
+The parser throws an error because it tries to parse @code{50//} as a
+number literal.
+
+@section Commands
+
+The way commands are parsed is inspired by @svgpathlink{}:
+
+@itemize
+@item
+Every command in the script starts with its name, and it is followed by
+zero or more arguments.
+
+@item
+There are no explicit delimiters between commands or arguments.
+
+Most programming languages expect characters like parenthesis, commas,
+or semicolons, to separate items. For example:
+
+@example
+moveto(10, 10); lineto(20, 30);
+@end example
+
+The equivalent in drawvg is:
+
+@example
+moveto 10 10 lineto 20 30
+@end example
+
+@item
+If the command has no arguments (like @vgscmd{closepath} or
+@vgscmd{stroke}), the next command starts at the next item.
+
+@end itemize
+
+@codeexample{
+In the next script there are 4 different commands:
+
+@example
+newpath rect 10 20 30 40 setcolor teal fill
+@end example
+
+@enumerate
+@item
+@vgscmd{newpath} requires no arguments.
+
+@item
+@vgscmd{rect} requires 4 arguments, so it takes the next 4 numbers.
+
+@item
+@vgscmd{setcolor} requires 1 argument, so it takes the word @code{teal}.
+
+@item
+@vgscmd{fill} requires no arguments.
+@end enumerate
+}
+
+@subsection Single-Letter Aliases
+
+Most commands in @svgpathlink{} are also present in drawvg. For some of them,
+there is an alias to a longer name:
+
+@itemize
+@item @vgscmd{curveto} for @vgscmd{C}.
+@item @vgscmd{rcurveto} for @vgscmd{c}.
+@item @vgscmd{lineto} for @vgscmd{L}.
+@item @vgscmd{rlineto} for @vgscmd{l}.
+@item @vgscmd{moveto} for @vgscmd{M}.
+@item @vgscmd{rmoveto} for @vgscmd{m}.
+@item @vgscmd{closepath} for @vgscmd{Z}, @vgscmd{z}.
+@end itemize
+
+Other commands only exist in a single-letter form:
+
+@itemize
+@item @vgscmd{H}, @vgscmd{h}
+@item @vgscmd{Q}, @vgscmd{q}
+@item @vgscmd{S}, @vgscmd{s}
+@item @vgscmd{V}, @vgscmd{v}
+@item @vgscmd{T}, @vgscmd{t}
+@end itemize
+
+This makes it possible to use a path in SVG to create the same shape in
+a drawvg script.
+
+@anchor{implicit commands}
+@subsection Implicit Commands
+
+For many commands, the name can be omitted when it is used multiple
+times in successive calls.
+
+In the reference below, these commands has a @emph{Can be Implicit} note
+in their signature.
+
+@codeexample {
+For example, in this script:
+
+@example
+M 50 50
+l 10 10
+l 10 -10
+l 10 10
+l 10 -10
+l 10 10
+stroke
+@end example
+
+After the first call to @vgscmd{l} (alias to @vgscmd{rlineto}), the command
+can be executed without the name, so it can be written as:
+
+@example
+M 50 50
+l 10 10 10 -10 10 10 10 -10 10 10
+stroke
+@end example
+}
+
+To reuse the same command (@vgscmd{l}, in the previous example), the
+parser checks if the item after the last argument is a numeric value,
+like a number literal or a FFmpeg expression.
+
+@codeexample{
+In this example:
+
+@example
+l 10 20 30 40 stroke
+@end example
+
+@vgscmd{l} requires 2 arguments, and can be implicit, so the parser
+performs this operation:
+
+@enumerate
+
+@item
+Takes the two next items (@code{10} and @code{20}) and emits the first
+instruction.
+
+@item
+Checks if the item after @code{20} is a numeric value. Since it is
+@code{30}, it takes @code{30} and @code{40} and emits the second
+instruction (@code{l 30 40}).
+
+@item
+Checks if the next item after @code{40} is a numeric value, but it is a
+command (@vgscmd{stroke}), so it stops reusing @vgscmd{l}.
+
+@end enumerate
+}
+
+This is another feature taken from @svgpathlink{}. An important difference with
+SVG is that the separator between items is always required. In SVG, it can be
+omitted in some cases. For example, the expression @code{m1-2} is equivalent to
+@code{m 1 -2} in SVG, but a syntax error in drawvg.
+
+@section Arguments
+
+Most commands expect numeric arguments, like number literals, variable
+names, or expressions.
+
+@vgscmd{setcolor} and @vgscmd{colorstop} expect a color.
+
+@vgscmd{setlinecap} and @vgscmd{setlinejoin} expect a constant value.
+
+@subsection Number Literals
+
+A number literal is an item in the script that represents a constant
+value. Any item that starts with a decimal digit (between @code{0} and
+@code{9}), a @code{-} or a @code{+}, is interpreted as a number literal.
+
+The value is parsed with
+@uref{https://ffmpeg.org/doxygen/trunk/eval_8c.html#a7d21905c92ee5af0bb529d2daf8cb7c3,@code{av_strtod}}.
+It supports the prefix @code{0x} to write a value with hexadecimal
+digits, and
+@uref{https://ffmpeg.org/ffmpeg-utils.html#:~:text=The%20evaluator%20also%20recognizes%20the%20International%20System%20unit%20prefixes,many
+units} (like @code{K} or @code{GiB}).
+
+In the next example, all literals represent the same value:
+
+@example
+10000
+1e4
+10K
+0x2710
+@end example
+
+@subsection Expressions
+
+@ffexprs{} can be used as arguments for any command that expects a numeric
+argument. The expression must be enclosed in parenthesis.
+
+@codeexample {
+The variables @var{w} and @var{h} represent the width and height of the
+frame. We can compute the center of the frame by dividing them by @code{2}:
+
+@example
+M (w / 2) (h / 2)
+@end example
+
+They can also contain parenthesis (to group operations, to call functions,
+etc):
+
+@example
+moveto
+    ((w + 10) / 2)      // x
+    (h / (2 * cos(t)))  // y
+@end example
+}
+
+The variables @var{n} and @var{t} can be used to compute a value that changes
+over time.
+
+@codeexample {
+To draw a circle oscillating from left to right, we can use an
+expression based on @code{sin(t)} for the @code{x} coordinate:
+
+@example
+circle
+    (w / 2 + sin(2 * t) * w / 4)  // x
+    (h / 2)                       // y
+    (w / 5)                       // radius
+
+stroke
+@end example
+}
+
+Expressions can be split in multiple lines, but they can't contain
+comments within them.
+
+@example
+moveto   // This is a comment.
+    (w   // This is part of the expression, not a comment.
+     + h)
+@end example
+
+@subsection Variable Names
+
+When an expression is only a reference to a variable, the parenthesis
+can be omitted, and the item is just the variable name.
+
+@codeexample {
+The next 3 expressions are equivalent: in all cases, they create a
+rectangle covering the whole frame.
+
+@example
+rect (0) (0) (w) (h)
+
+rect 0 0 w h
+
+rect (0) 0 (w) h
+@end example
+}
+
+It is possible to create a variable with the same name of a command, and
+then use it as an argument. In the previous example, the item @var{h} is a
+reference to a variable (frame height), but in other contexts it may be
+a command (@vgscmd{h}).
+
+For @ref{implicit commands}, the parser prioritizes
+commands over variable names when it has to determine if the command is
+reused.
+
+@codeexample {
+In this example, the variable @var{c} is used as the first argument in two
+calls to @vgscmd{l}. However, only the first one is valid, because in the
+second call the parser recognizes @vgscmd{c} as a command.
+
+@example
+setvar c 5
+l c 10 c 15
+@end example
+
+This issue can be fixed by surrounding the start of the second call with
+parenthesis:
+
+@example
+setvar c 5
+l c 10 (c) 15
+@end example
+}
+
+@anchor{Colors}
+@subsection Colors
+
+The color to stroke and to fill paths can be set with @vgscmd{setcolor}.
+Its argument has the same syntax for colors in FFmpeg:
+
+@itemize
+@item
+A @ref{Color,,predefined color name,ffmpeg-utils}.
+
+@item
+In @code{#RRGGBB} format.
+
+@item
+Optionally, an @code{@@a} suffix can be added to set the alpha value,
+where @code{a} is a number between @code{0} and @code{1}.
+@end itemize
+
+The color can be a variable name. In that case, its value is interpreted
+as a @code{0xRRGGBBAA} code.
+
+@example
+circle 75 100 50
+setcolor #FF0000
+fill
+
+circle 125 100 50
+setvar CustomGreen 0x90EEAAFF
+setcolor CustomGreen
+fill
+
+circle 175 100 50
+setcolor blue@@0.5
+fill
+@end example
+
+The commands @vgscmd{setrgba} and @vgscmd{sethsla} allow setting colors
+using expressions.
+
+@vgscmd{defrgba} and @vgscmd{defhsla} compute the color and store it in a
+variable.
+
+@subsection Constants
+
+The argument for @vgscmd{setlinecap} and @vgscmd{setlinejoin} is an
+identifier referring to a constant value.
+
+@example
+setlinecap round
+@end example
+
+@chapter Guide
+
+@section Paths
+
+A path is a complex shape, composed by lines and curves, that can be
+used to fill a region, to stroke an outline, or to establish a clip
+region.
+
+In order to draw anything on top of a video frame, first we have to
+define a path, and then use @vgscmd{stroke} or @vgscmd{fill}.
+
+The
+@uref{https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorials/SVG_from_scratch/Paths,tutorial
+on paths in MDN} is a good introduction to the topic. It is focused on
+@svgpathlink{}, but the same concepts can be applied in drawvg.
+
+@anchor{current point}
+@subsection Current Point
+
+Some commands require a @emph{current point}. Initially, the
+@emph{current point} is set to
+@uref{https://en.wikipedia.org/wiki/NaN,@code{NaN}}. It is initialized
+with @vgscmd{M} or @vgscmd{moveto}. Other commands, like @vgscmd{lineto} or
+@vgscmd{curveto}, updates the @emph{current point} to the new end of the
+shape.
+
+The @emph{current point} can be cleared with @vgscmd{newpath}. Commands
+that clear the path, like @vgscmd{stroke} or @vgscmd{fill}, also clear the
+@emph{current point}.
+
+@codeexample {
+@vgscmd{rlineto} uses coordinates relative to the @emph{current point}.
+
+Given this script:
+
+@example
+moveto 20 100
+rlineto 150 -90
+rlineto -50 200
+closepath
+stroke
+@end example
+
+These are the coordinates of the @emph{current point} after executing
+each command:
+
+@multitable @columnfractions .5 .5
+@headitem Command @tab Current Point
+@item @code{moveto 20 100} @tab @code{20, 100}
+@item @code{rlineto 150 -90} @tab @code{170, 10}
+@item @code{rlineto -10 50} @tab @code{140, 210}
+@item @code{closepath} @tab @code{20, 100}
+@end multitable
+
+The same script can be written with single-letter aliases:
+
+@example
+M 20 100 l 150 -90 -50 200 z stroke
+@end example
+}
+
+@subsection Defining a Shape
+
+A path is defined by adding lines, curves, or basic shapes.
+
+@itemize
+@item Basic shapes
+
+@itemize
+@item @vgscmd{circle}
+@item @vgscmd{ellipse}
+@item @vgscmd{rect}
+@item @vgscmd{roundedrect}
+@end itemize
+
+@item
+Lines
+@itemize
+@item @vgscmd{M}, @vgscmd{moveto}
+@item @vgscmd{m}, @vgscmd{rmoveto}
+@item @vgscmd{H}, @vgscmd{h}
+@item @vgscmd{V}, @vgscmd{v}
+@item @vgscmd{L}, @vgscmd{lineto}
+@item @vgscmd{l}, @vgscmd{rlineto}
+@item @vgscmd{Z}, @vgscmd{z}, @vgscmd{closepath}
+@end itemize
+
+@item
+Curves
+@itemize
+@item @vgscmd{arc}, @vgscmd{arcn}
+@item @vgscmd{C}, @vgscmd{curveto},
+@item @vgscmd{c}, @vgscmd{rcurveto}
+@item @vgscmd{Q}, @vgscmd{q}
+@item @vgscmd{S}, @vgscmd{s}
+@item @vgscmd{T}, @vgscmd{t}
+@end itemize
+
+@end itemize
+
+Single-letter commands are taken from @svgpathlink{}.
+
+@anchor{fill rules}
+@subsection Fill
+
+The region within the shape defined by a path can be filled with
+@vgscmd{fill} or @vgscmd{eofill}. Each command uses a different
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#cairo-fill-rule-t,fill
+rule}:
+
+@itemize
+@item
+@vgscmd{fill} uses the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#CAIRO-FILL-RULE-WINDING:CAPS,winding
+rule}, also known as
+@uref{https://en.wikipedia.org/wiki/Nonzero-rule,nonzero rule}.
+@item
+@vgscmd{eofill} uses the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#CAIRO-FILL-RULE-EVEN-ODD:CAPS,even--odd
+rule}.
+@end itemize
+
+@codeexample{
+This script shows the difference between the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#CAIRO-FILL-RULE-WINDING:CAPS,winding}
+and
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#CAIRO-FILL-RULE-EVEN-ODD:CAPS,even--odd}
+rules:
+
+@example
+rect 50 10 100 60
+circle 150 70 40
+setcolor seagreen
+fill
+
+rect 50 130 100 60
+circle 150 190 40
+setcolor skyblue
+eofill
+@end example
+}
+
+@subsection Stroke
+
+@vgscmd{stroke} draws a line around the shape defined by the path. The
+stroke can be configured with different commands:
+
+@itemize
+@item @vgscmd{setdash}
+@item @vgscmd{setdashoffset}
+@item @vgscmd{setlinecap}
+@item @vgscmd{setlinejoin}
+@item @vgscmd{setlinewidth}
+@item @vgscmd{resetdash}
+@end itemize
+
+@codeexample{
+This example use @vgscmd{setdashoffset} to animate the stroke:
+
+@example
+moveto 0 0
+lineto w h
+
+setlinecap round
+setdash 50 50
+setlinewidth 20
+setdashoffset (hypot(w, h) * t / -3)
+setcolor seagreen
+
+stroke
+@end example
+}
+
+@subsection Clip
+
+A @uref{https://en.wikipedia.org/wiki/Clipping_(computer_graphics),clip
+region} can be established with @vgscmd{clip} and @vgscmd{eoclip}.
+
+If there is an active clip region, the new clip region will be the
+intersection between the existing one and the path. @vgscmd{resetclip}
+reset the clip region to the whole frame.
+
+@vgscmd{eoclip} uses the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#CAIRO-FILL-RULE-EVEN-ODD:CAPS,even--odd
+rule} to compute the clip region.
+
+@codeexample{
+@example
+rect 50 50 100 200
+clip
+
+circle 30 30 150
+setcolor seagreen
+fill
+
+// Draw outside the clip region.
+resetclip
+circle 30 30 150
+setlinewidth 3
+setcolor skyblue
+stroke
+@end example
+}
+
+@subsection Preserving Paths
+
+The path is cleared after any operation on it, like @vgscmd{fill} or
+@vgscmd{stroke}. To reuse the same path in multiple operations,
+@vgscmd{preserve} must be called before them.
+
+@codeexample{
+In this example, each path is used twice.
+
+@example
+circle 120 120 50
+setcolor seagreen
+preserve stroke
+clip
+
+circle 100 100 50
+setcolor skyblue
+preserve fill
+setcolor tomato
+stroke
+@end example
+}
+
+@section Variables
+
+A drawvg can use some variables, provided by the interpreter, to compute
+values in @ffexprs{}:
+
+@table @var
+@item cx
+X coordinate of the @ref{current point}.
+
+@item cy
+Y coordinate of the @ref{current point}.
+
+@item w
+Width, in pixels, of the frame.
+
+@item h
+Height, in pixels, of the frame.
+
+@item i
+The loop counter in repeat blocks.
+
+@item n
+Frame number.
+
+@item t
+Timestamp, in seconds.
+
+@item ts
+Timestamp, in seconds, of the first frame.
+
+@item duration
+Duration, in seconds, of the frame.
+@end table
+
+@anchor{User Variables}
+@subsection User Variables
+
+New variables can be created with the @vgscmd{setvar} command. It
+associates a name with a numeric value.
+
+The name must follow these rules:
+
+@itemize
+@item
+It must start with an ASCII letter or an underscore (@code{_}).
+
+@item
+It can contain only ASCII letters, underscores, and digits.
+
+@item
+It must not match the name of a variable provided by the interpreter
+(like @var{w} or @var{t}).
+@end itemize
+
+The same variable can be assigned multiple times.
+
+@codeexample{
+In this example, the result of an expression is stored in a variable
+with the name @var{progress}. Then, it is used for the @var{x} and
+@var{width} arguments of @vgscmd{rect}.
+
+@example
+setvar progress (w * (pow(mod(t / 2 + 0.5, 1), 2.5)))
+
+rect ((w - progress) / 2) 0 progress h
+
+setcolor darkblue
+fill
+@end example
+}
+
+Currently, a script can contain only 20 different variable names, but
+this limit can be modified in the future.
+
+@anchor{current pattern}
+@section Patterns
+
+The pattern for fill and stroke operations can be either a solid color,
+or a gradient.
+
+@itemize
+@item Solid colors.
+
+@itemize
+@item @vgscmd{setcolor}
+@item @vgscmd{sethsla}
+@item @vgscmd{setrgba}
+@end itemize
+
+@item Gradients.
+
+@itemize
+@item @vgscmd{lineargrad}
+@item @vgscmd{radialgrad}
+@end itemize
+
+@end itemize
+
+The pattern is not cleared after being used in a fill or stroke
+operation, but it is replaced by any command that sets a new pattern.
+
+@subsection Gradients
+
+To configure a gradient, first call to @vgscmd{lineargrad} or
+@vgscmd{radialgrad}, and then add color stops by calling @vgscmd{colorstop}
+for each stop.
+
+@codeexample{
+In this example, the whole frame is filled with a linear gradient:
+
+@example
+lineargrad 0 0 w h
+colorstop 0 skyblue
+colorstop 1 darkblue
+
+rect 0 0 w h
+fill
+@end example
+
+In this example, a radial gradient is used to simulate a sphere:
+
+@example
+radialgrad 90 90 5 120 120 100
+colorstop 0.0 #90DDFF
+colorstop 0.9 #000030
+colorstop 1.0 #000000
+
+rect 0 0 w h
+fill
+@end example
+}
+
+@subsection Variables
+
+@vgscmd{setcolor} and @vgscmd{colorstop} accept a variable name as the
+argument. When a variable is used, its value is interpreted as a
+@code{0xRRGGBBAA} code.
+
+@codeexample{
+@example
+// Use color #1020FF, alpha = 50%
+setvar someblue 0x1020FF7F
+
+setcolor someblue
+
+rect 30 30 120 120
+fill
+
+rect 90 90 120 120
+fill
+@end example
+}
+
+If a variable has the same name of a @ref{Color,,known color,ffmpeg-utils}, the
+variable has preference, and will be used instead of the predefined color.
+
+@codeexample{
+@example
+setcolor teal
+rect 30 30 120 120
+fill
+
+setvar teal 0x70AAAAFF  // Now, `teal` is #70AAAA
+setcolor teal
+rect 90 90 120 120
+fill
+@end example
+}
+
+@vgscmd{defrgba} and @vgscmd{defhsla} compute the @code{0xRRGGBBAA} value
+for a color given its color components:
+
+@itemize
+@item
+For @vgscmd{defrgba}: @emph{red}, @emph{green}, @emph{blue}, and
+@emph{alpha}.
+
+@item
+For @vgscmd{defhsla}: @emph{hue}, @emph{saturation}, @emph{lightness}, and
+@emph{alpha}.
+@end itemize
+
+Each color component must be in range @code{0} to @code{1}, except
+@emph{hue}, which is @code{0} to @code{360}.
+
+@codeexample{
+@example
+defrgba colorA 1 0.5 0.25 1     // colorA = RGB(255, 127, 63)
+defhsla colorB 200 0.75 0.25 1  // colorB = HSL(200, 75%, 25%)
+
+rect 0 0 (w / 2) h
+setcolor colorA
+fill
+
+rect (w / 2) 0 (w / 2) h
+setcolor colorB
+fill
+@end example
+}
+
+@anchor{transformation matrix}
+@section Transformations
+
+The coordinates for each command can be scaled, rotated, and translated,
+by using the following commands:
+
+@itemize
+@item @vgscmd{rotate}
+@item @vgscmd{scale}
+@item @vgscmd{scalexy}
+@item @vgscmd{translate}
+@end itemize
+
+The transformations are applied when the command is executed. They have
+no effect on the existing path, only on the new segments added to it.
+
+They are done by updating the
+@uref{https://www.cairographics.org/manual/cairo-Transformations.html,current
+transformation matrix} in the Cairo context. To reset the matrix to its
+original state, before any transformation, use @vgscmd{resetmatrix}.
+
+The transform origin for scale and rotation is initially at @code{0, 0},
+but it can be adjusted with @vgscmd{translate}.
+
+@codeexample{
+@example
+// Map (0, 0) as the center of the frame.
+translate (w / 2) (h / 2)
+
+// Scale the space as if the frame is 1x1 pixel.
+scalexy w h
+
+// Draw multiple lines with the same arguments,
+// but each one on a different rotation.
+repeat 10 @{
+    rotate (PI / 10)
+    M -0.25 0
+    H 0.25
+@}
+
+// Reset transformations, so the scale does not
+// affect stroke.
+resetmatrix
+
+stroke
+@end example
+}
+
+@anchor{State Stack}
+@section State Stack
+
+The state of a drawvg script contains all parameters used for drawing
+operations, like the current color, the transformation matrix, the
+stroke configuration, etc.
+
+The @vgscmd{save} command pushes a snapshot of the state to an internal
+stack. Later, @vgscmd{restore} pops the latest snapshot from the stack,
+and uses it as the new state.
+
+The parameters that can be saved and restored are:
+
+@itemize
+@item
+Pattern for stroke and fill operations.
+
+@itemize
+@item @vgscmd{lineargrad}
+@item @vgscmd{radialgrad}
+@item @vgscmd{setrgba}
+@item @vgscmd{setcolor}
+@item @vgscmd{sethsla}
+@end itemize
+
+@item Transformation matrix.
+
+@itemize
+@item @vgscmd{resetmatrix}
+@item @vgscmd{rotate}
+@item @vgscmd{scale}
+@item @vgscmd{scalexy}
+@item @vgscmd{translate}
+@end itemize
+
+@item Stroke configuration.
+
+@itemize
+@item @vgscmd{setdash}
+@item @vgscmd{setdashoffset}
+@item @vgscmd{setlinecap}
+@item @vgscmd{setlinejoin}
+@item @vgscmd{setlinewidth}
+@end itemize
+
+@item
+Clip region
+
+@itemize
+@item @vgscmd{clip}
+@item @vgscmd{resetclip}
+@end itemize
+
+@end itemize
+
+@anchor{Frame Metadata}
+@section Frame Metadata
+
+Some FFmpeg filters add metadata to frames. The command
+@vgscmd{getmetadata} can read metadata items containing a numeric value,
+and store it in a variable that can be used for command arguments.
+
+@codeexample{
+The @code{cropdetect} filter computes the parameters to remove empty
+regions around the video. These parameters are accessible in the
+@code{lavfi.cropdetect} keys of the frame metadata.
+
+@example
+// Get metadata from cropdetect filter and store it
+// in `cd*` variables.
+getmetadata cdx lavfi.cropdetect.x
+getmetadata cdy lavfi.cropdetect.y
+getmetadata cdw lavfi.cropdetect.w
+getmetadata cdh lavfi.cropdetect.h
+
+rect cdx cdy cdw cdh
+setcolor yellow@@0.5
+setlinewidth 10
+stroke
+@end example
+
+To test the script, copy it to a @code{drawcropdetect.vgs} file, and
+then execute a command like this:
+
+@example
+ffplay -i example-video.webm -vf 'cropdetect, drawvg=file=drawcropdetect.vgs'
+@end example
+}
+
+@section @code{if} / @code{repeat} Statements
+
+There is limited support for control flow statements: only @vgscmd{if} and
+@vgscmd{repeat}.
+
+Both commands receive two arguments: an expression and a block.
+
+@example
+if (condition) @{
+    // commands
+@}
+
+repeat (count) @{
+    // commands
+@}
+@end example
+
+@vgscmd{if} executes its block if the result of @code{(condition)} is not
+zero.
+
+@vgscmd{repeat} executes its block the number of times specified by
+@code{(count)}. In each iteration, the variable @var{i} is used as a
+@uref{https://en.wikipedia.org/wiki/For_loop#Loop_counters,loop
+counter}.
+
+If the result of the expression is not a finite number (like
+@uref{https://en.wikipedia.org/wiki/NaN,@code{NaN}}) the block is not
+executed.
+
+@anchor{comp-operators}
+@subsection Comparison and Logical Operators
+
+@ffexprs{} only supports arithmetic operators (like @code{+} for addition).
+Comparison operators (like @code{!=}) are supported via functions, while
+logical operators (like @code{&&} for @code{AND}) can be emulated with
+arithmetic operations.
+
+@multitable @columnfractions .5 .5
+@headitem Expression @tab FFmpeg Equivalent
+@item @code{x = y} @tab @code{eq(x, y)}
+@item @code{x < y} @tab @code{lt(x, y)}
+@item @code{x > y} @tab @code{gt(x, y)}
+@item @code{x ≤ y} @tab @code{lte(x, y)}
+@item @code{x ≥ y} @tab @code{gte(x, y)}
+@item @code{a ≤ x ≤ b} @tab @code{between(x, a, b)}
+@end multitable
+
+Logical operators can be emulated with multiplication (for @code{AND}),
+or addition (for @code{OR}):
+
+@multitable @columnfractions .5 .5
+@headitem Expression @tab FFmpeg Equivalent
+@item @code{x OR y} @tab @code{x + y}
+@item @code{x AND y} @tab @code{x * y}
+@end multitable
+
+@codeexample{
+In other programming languages, a code like this:
+
+@example
+if (x > y && z != 1) @{
+    // …
+@}
+@end example
+
+Can be written for drawvg like this:
+
+@example
+if (gt(x, y) * not(eq(z, 1))) @{
+    // …
+@}
+@end example
+}
+
+@subsection Early Exit
+@vgscmd{break} causes a @vgscmd{repeat} loop to be terminated immediately.
+
+If it is executed outside a @vgscmd{repeat} block, it terminates the whole
+script, or the current procedure.
+
+@codeexample{
+In this example, we are using the @ref{func-randomg,@code{randomg}} function
+to draw a line with random segments.
+
+The loop can be executed @code{500} times, but it is interrupted if the X
+coordinate of the @ref{current point} (@var{cx}) exceeds the frame width
+(@var{w}). The @ref{current point} is updated after each call to
+@vgscmd{rlineto}.
+
+@example
+moveto 0 0
+
+repeat 500 @{
+    rlineto
+        (randomg(0) * 15)
+        (randomg(0) * 20)
+
+    if (gt(cx, w)) @{
+        break
+    @}
+@}
+
+stroke
+@end example
+}
+
+@anchor{Procedures}
+@section Procedures
+
+A procedure is a name associated with a block that can be executed
+multiple times. It can take between 0 and 6 parameters.
+
+@vgscmd{proc} is used to set the parameter names and the block for a
+procedure:
+
+@example
+proc p0 @{
+    // …
+@}
+
+proc p1 param1 param2 @{
+    // …
+@}
+@end example
+
+Inside the block, the arguments can be accessed as regular variables:
+
+@example
+proc square center_x center_y side @{
+    rect
+        (center_x - side / 2) (center_y - side / 2)
+        side side
+@}
+@end example
+
+@vgscmd{call} executes the block assigned to the procedure name. It
+requires the name of the procedure, and the value for each parameter
+defined in the call to @vgscmd{proc}.
+
+@example
+call p0
+
+call p1 1 2
+
+call square (w / 2) (h / 2) (w / t)
+@end example
+
+@codeexample{
+In this example, the procedure @code{zigzag} draws multiple lines from
+the @ref{current point}.
+
+@example
+setvar len (w / 10)
+setlinewidth 5
+
+proc zigzag @{
+    repeat 10 @{
+        l len len len (-len)
+    @}
+
+    stroke
+@}
+
+setcolor #40C0FF
+M 0 60
+call zigzag
+
+setcolor #00AABB
+M 0 120
+call zigzag
+
+setcolor #20F0B7
+M 0 180
+call zigzag
+@end example
+
+The color and the Y coordinate of the starting point can be sent as
+procedure arguments:
+
+@example
+setvar len (w / 10)
+setlinewidth 5
+
+proc zigzag color y @{
+    setcolor color
+
+    M 0 y
+    repeat 10 @{
+        l len len len (-len)
+    @}
+
+    stroke
+@}
+
+call zigzag 0x40C0FFFF 60
+call zigzag 0x00AABBFF 120
+call zigzag 0x20F0B7FF 180
+@end example
+}
+
+When the procedure returns, the value of the variable for each argument
+is restored to the value it had before calling the procedure. Changes in
+other variables (with @vgscmd{setvar}, @vgscmd{getmetadata}, @vgscmd{defhsla},
+and @vgscmd{defrgba}) are preserved.
+
+@codeexample{
+In the next example, the variable @var{A} has the value @code{0} before
+calling the procedure @var{P}. During the execution of @var{P},
+@code{A} is @code{1}, but after it, @var{A} is @code{0} again.
+
+@example
+setvar A 0
+
+proc P A @{
+    print A
+@}
+
+print A
+call P 1
+print A
+@end example
+
+It writes the following messages:
+
+@verbatim
+[7:7] A = 0.000
+[4:8] A = 1.000
+[9:7] A = 0.000
+@end verbatim
+}
+
+@vgscmd{break} causes the script to leave the current procedure, similar
+to the
+@uref{https://en.wikipedia.org/wiki/Return_statement,@code{return}
+statement} in other programming languages, unless it is called within a
+@vgscmd{repeat} loop.
+
+The body of the procedure must be defined with @vgscmd{proc} @emph{before}
+using @vgscmd{call}.
+
+@codeexample{
+In this example, when the procedure @code{notyet} is called, its body
+has not yet defined, so the execution fails with the error
+@code{Missing body for procedure 'notyet'}.
+
+@example
+call notyet
+
+proc notyet @{
+    // ...
+@}
+@end example
+}
+
+A procedure can be redefined by other calls to @vgscmd{proc} with the same
+name. In such case, @vgscmd{call} invokes the last assigned block.
+
+@codeexample{
+In this example, the procedure @code{example} has two different blocks.
+
+@example
+proc example @{
+    // block1
+@}
+
+call example    // executes block1
+
+proc example @{
+    // block2
+@}
+
+call example    // executes block2
+@end example
+}
+
+@section Functions in Expressions
+
+There are some functions specific to drawvg available in @ffexprs{}.
+
+@subsection Function @code{p}
+
+@code{p(x, y)} returns the color of the pixel at coordinates
+@code{x, y}, as a @code{0xRRGGBBAA} value. This value can be assigned to
+a variable, which can be used later as the argument for @vgscmd{setcolor}.
+
+If the coordinates are outside the frame, or any of the arguments is not
+a finite number (like
+@uref{https://en.wikipedia.org/wiki/NaN,@code{NaN}}), the function
+returns @code{NaN}.
+
+The @ref{transformation matrix} is applied to the
+arguments. To use the original frame coordinates, call
+@vgscmd{resetmatrix} between @vgscmd{save} and @vgscmd{restore}:
+
+@example
+save
+resetmatrix
+setvar pixel (p(0, 0))    // top-left pixel of the frame.
+restore
+
+setcolor pixel
+@end example
+
+Bitwise operations can be used to extract individual color components:
+
+@example
+setvar pixel (p(x, y))
+
+if (not(isnan(pixel))) @{
+    setvar px_red   (pixel / 0x1000000)
+    setvar px_green (bitand(pixel / 0x10000, 0xFF))
+    setvar px_blue  (bitand(pixel / 0x100, 0xFF))
+    setvar px_alpha (bitand(pixel, 0xFF))
+@}
+@end example
+
+@subsection Function @code{pathlen}
+
+@code{pathlen(n)} computes the length of the current path, by adding the
+length of each line segment returned by
+@uref{https://www.cairographics.org/manual/cairo-Paths.html#cairo-copy-path-flat,@code{cairo_copy_path_flat}}.
+
+The function expects an argument @var{n}, as the maximum number of line
+segments to add to the length, or @code{0} to add all segments.
+
+@codeexample{
+In this example, @code{pathlen} is used to animate the stroke of a
+spiral, in a 5 seconds loop.
+
+@example
+M (w / 2) (h / 2)
+
+setvar a -1
+repeat 16 @{
+    rcurveto
+        (a * 2 / 3) 0
+        (a * 2 / 3) (a)
+        0 (a)
+
+    setvar a (-sgn(a) * (abs(a) + 10))
+@}
+
+setlinewidth 3
+setdash
+    (pathlen(0) * (1 - mod(t / 5, 1)))
+    1e6
+
+setcolor teal
+stroke
+@end example
+}
+
+@anchor{func-randomg}
+@subsection Function @code{randomg}
+
+@code{randomg(idx)} is similar to the @code{random(idx)} function,
+available in @ffexprs{}, but its state is global to the frame, instead
+of specific to each expression.
+
+To understand the difference, we need to dive into how
+@code{random(idx)} works inside a drawvg script.
+
+First, each expression in FFmpeg has a set of 10 internal variables,
+which can be written with @code{st(idx, value)}, and can be read with
+@code{ld(idx)}. @var{idx} is a value between @code{0} and @code{9}.
+These variables are initialized to @code{0}.
+
+When a drawvg script is parsed, each expression is compiled with
+@uref{https://ffmpeg.org/doxygen/8.0/eval_8h.html#ad3bf8f3330d1fd139de2ca156c313f34,@code{av_expr_parse}},
+from @uref{https://ffmpeg.org/libavutil.html,libavutil}, and these
+compiled expressions are reused for every frame. The changes in the
+internal variables (with @code{st(idx, value)}) are visible between
+frames, but they are not shared between expressions.
+
+@codeexample{
+In this example, the expression for the X coordinate updates its
+internal variable @code{0} in every frame:
+
+@example
+circle
+    (st(0, mod(ld(0) + 15, w))) // X
+    120                         // Y
+    (ld(0) + 20)                // radius
+
+fill
+@end example
+
+@code{st(idx, value)} returns the updated value, so it can be used as
+the result of the expression.
+
+The radius is not affected because its internal variable (from
+@code{ld(0)}) is not updated by the other expression.
+
+Also, note that this example is just to show how internal variables are
+kept between frames. A better approach to create this animation is to
+use the variables n or t:
+
+@example
+circle (mod(n * 15, w)) 120 20
+fill
+@end example
+}
+
+The function @code{random(idx)} returns a
+@uref{https://en.wikipedia.org/wiki/Pseudorandom_number_generator,pseudorandom}
+value between @code{0} and @code{1}. @var{idx} is the internal variable
+that is used both as the seed and to keep the state of the number
+generator.
+
+@codeexample{
+The next example uses @code{random(0)} to generate a random value for
+the center of a circle:
+
+@example
+circle
+    (random(0) * w)
+    (random(0) * h)
+    10
+
+fill
+@end example
+
+The circle in every frame is at a different position, but always on the
+diagonal line of the frame. This happens because the values for the
+coordinates X and Y are identical, since both number generators use the
+same seed.
+
+To distribute the circles over the whole frame we need different seeds
+for each expression. This can be achieved by writing a non-zero value
+(like @code{0xF0F0}) to the internal variable of one of expressions, but
+only when its value is @code{0}:
+
+@example
+circle
+    (random(0) * w)
+    (st(0, if(ld(0), ld(0), 0xF0F0)); random(0) * h)
+    10
+
+fill
+@end example
+
+This approach is only useful if we need completely different positions
+in each frame. In the next example, random values are used to distribute
+many circles over the frame, but the position is fixed. The only change
+over time is the fill color:
+
+@example
+repeat 20 @{
+    circle
+        (st(0, i + 1e5); random(0) * w)
+        (st(0, i + 1e10); random(0) * h)
+        10
+@}
+
+sethsla (t * 60) 0.5 0.5 1
+preserve fill
+
+setcolor black@@0.5
+setlinewidth 1
+stroke
+@end example
+
+This is achieved by using a precomputed state before calling @code{random(0)}.
+The variable @var{i}, updated by @vgscmd{repeat}, is needed to compute
+different states in each iteration.
+}
+
+The @code{randomg(idx)} function, which is specific to drawvg scripts,
+is similar to @code{random(idx)}, but intended to solve the previous
+problems:
+
+@itemize
+@item All frames have the same seed.
+@item The state is shared between expressions.
+@end itemize
+
+The parameter @var{idx} has two uses:
+
+@itemize
+@item
+The last two bits are the index of an internal state, so it is possible
+to have 4 different number generators.
+
+@item
+The first call to @code{randomg} with a specific index will use the
+argument as the seed for the number generator in that index.
+@end itemize
+
+In a script like this:
+
+@example
+M (randomg(0xFF1)) (randomg(0xFF0))
+l (randomg(0xAA1)) (randomg(0xFF0))
+@end example
+
+There are 4 calls to @code{randomg}:
+
+@enumerate
+@item
+The first call, with the argument @code{0xFF1}, uses the internal state
+at index @code{1} (because @code{0xFF1} modulo @code{4} is @code{1}).
+
+Since this is the first use of that index, the number generator is
+initialized with the seed @code{0xFF1}.
+
+@item
+The second call has the same behaviour: it initializes the state at
+index @code{0} with the value @code{0xFF0}.
+
+@item
+The third call has the argument @code{0xAA1}, and it uses index
+@code{1}. Since that state is already initialized (with the seed
+@code{0xFF1}), the value @code{0xAA1} is ignored, and it returns the
+next number.
+
+@end enumerate
+
+@codeexample{
+This example renders a simple rain animation, moving lines from top to
+bottom.
+
+@code{randomg} is used to distribute the lines over the frame, and to
+apply different speeds to each one.
+
+@example
+rect 0 0 w h
+setcolor midnightblue
+fill
+
+setcolor white
+
+repeat 50 @{
+    setvar offset (t * (randomg(0) + 1))
+
+    moveto
+        (mod(randomg(0) + offset / 6, 1) * w)
+        (mod(randomg(0) + offset, 1) * h)
+
+    rlineto 6 36
+
+    setlinewidth (randomg(1) / 2 + 0.2)
+    stroke
+@}
+@end example
+}
+
+@section Tracing with @code{print}
+
+It is possible to trace the execution of a drawvg script by printing the
+value of an expression, either with the @vgscmd{print} command, or with
+the print function.
+
+In both cases, the values are written to the FFmpeg log.
+
+Printing expressions may have a noticeable impact on the performance, so
+it is preferable to use it only when necessary.
+
+@subsection Function print
+
+The function @code{print(t)} writes the value of t, and returns its
+argument.
+
+@codeexample{
+Given a line line this:
+
+@example
+M (sin(2 * PI * t) * w) 0
+@end example
+
+We can see the values of @code{sin(2 * PI * t)} by surrounding it with a
+call to @code{print()}:
+
+@example
+M (print(sin(2 * PI * t)) * w) 0
+@end example
+
+Executing this script with a 1 second / 8 FPS video shows the expected
+values for the sine function.
+
+@verbatim
+$ ffmpeg \
+    -f lavfi \
+    -i 'color=r=8:d=1, drawvg=M (print(sin(2 * PI * t)) * w) 0' \
+    -f null /dev/null \
+  |& grep 'Eval @'
+
+[Eval @ 0x7f500f502d20] 0.000000
+[Eval @ 0x7f4ff784b420] 0.707107
+[Eval @ 0x7f4ff784ba20] 1.000000
+[Eval @ 0x7f4ff784c020] 0.707107
+[Eval @ 0x7f4ff784c620] 0.000000
+[Eval @ 0x7f4ff784cc20] -0.707107
+[Eval @ 0x7f4ff784d220] -1.000000
+[Eval @ 0x7f4ff784d820] -0.707107
+@end verbatim
+}
+
+@anchor{Command print}
+@subsection Command @code{print}
+
+The command @vgscmd{print} accepts an arbitrary number of arguments, and
+for each one it writes:
+
+@itemize
+@item
+The source location (line and column).
+@item
+The source code of the expression.
+@item
+The result of evaluating the expression.
+@end itemize
+
+When there are multiple expressions, they are separated by the @code{|}
+character.
+
+@codeexample{
+The next script prints the position of the @ref{current point} after the
+@vgscmd{l} command:
+
+@example
+M 10 20
+l 100 100
+print cx cy
+stroke
+@end example
+
+For each frame, it produces this output:
+
+@verbatim
+[3:7] cx = 110.000000 | [3:10] cy = 120.000000
+@end verbatim
+
+The next example prints the values of @code{random(0)}:
+
+@verbatim
+$ ffmpeg \
+    -f lavfi \
+    -i 'color=r=8:d=1, drawvg=print (random(0))' \
+    -f null /dev/null \
+  |& grep 'drawvg @'
+
+[drawvg @ 0x50a000000180] [1:7] (random(0)) = 0.229731
+[drawvg @ 0x50a000000180] [1:7] (random(0)) = 0.959813
+[drawvg @ 0x50a000000180] [1:7] (random(0)) = 0.071676
+[drawvg @ 0x50a000000180] [1:7] (random(0)) = 0.044600
+[drawvg @ 0x50a000000180] [1:7] (random(0)) = 0.134127
+[drawvg @ 0x50a000000180] [1:7] (random(0)) = 0.320513
+[drawvg @ 0x50a000000180] [1:7] (random(0)) = 0.857675
+[drawvg @ 0x50a000000180] [1:7] (random(0)) = 0.562456
+@end verbatim
+}
+
+@chapter Commands
+
+@macro signature {sig}
+@b{@code{\sig\}}
+@end macro
+
+@macro signatureimpl {sig}
+@signature{\sig\} @ @ @ --- @ref{implicit commands,@i{Can be implicit}}
+@end macro
+
+@anchor{cmd_arc}
+@section @code{arc}
+
+@signatureimpl{arc @var{xc} @var{yc} @var{radius} @var{angle1} @var{angle2}}
+
+Adds a circular arc of the given @var{radius} to the current path. The
+arc is centered at @var{xc, yc}, begins at @var{angle1} and proceeds
+in the direction of increasing angles to end at @var{angle2}.
+
+If there is a @ref{current point}, a line is added from it to the beginning of
+the arc. If this is not desired, use @vgscmd{newpath} before @vgscmd{arc} to clear
+the @ref{current point}.
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-Paths.html#cairo-arc,@code{cairo_arc}}
+function for more details.
+
+@codeexample{
+@example
+arc 120 120 60 0 (3 * PI / 2)
+stroke
+@end example
+}
+
+@anchor{cmd_arcn}
+@section @code{arcn}
+
+@signatureimpl{arcn @var{xc} @var{yc} @var{radius} @var{angle1} @var{angle2}}
+
+Similar to @vgscmd{arc}, but it differs in the direction of the arc
+between the two angles.
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-Paths.html#cairo-arc-negative,@code{cairo_arc_negative}}
+function for more details.
+
+@codeexample{
+In this example, both @vgscmd{arc} and @vgscmd{arcn} have the same angles,
+but they render different arcs:
+
+@example
+arc  120  90 60 (PI / 2) 0
+
+newpath
+arcn 120 150 60 (PI / 2) 0
+
+stroke
+@end example
+}
+
+@vgscmd{newpath} is needed to prevent a line between the two arcs.
+
+@anchor{cmd_break}
+@section @code{break}
+
+@signature{break}
+
+@vgscmd{break} terminates the execution of the innermost block, either a
+@vgscmd{repeat} loop or a procedure.
+
+If it is used outside of a @vgscmd{repeat} / @vgscmd{proc} block, it
+terminates the script for the current frame.
+
+@anchor{cmd_call}
+@section @code{call}
+
+@signature{call @var{name} @var{args}*}
+
+Invokes a procedure defined by @vgscmd{proc}.
+
+See the @ref{Procedures} section above for more details.
+
+@anchor{cmd_circle}
+@section @code{circle}
+
+@signatureimpl{circle @var{xc} @var{yc} @var{radius}}
+
+Adds a circle of the given @var{radius} to the current path. The circle
+is centered at @var{xc, yc}. The @ref{current point} is cleared before and
+after adding the circle.
+
+This is a convenience wrapper for @vgscmd{arc}. A call to @vgscmd{circle} is
+equivalent to:
+
+@example
+newpath
+arc xc yc radius (0) (2 * PI)
+newpath
+@end example
+
+@anchor{cmd_clip}
+@anchor{cmd_eoclip}
+@section @code{clip}, @code{eoclip}
+
+@signature{clip, eoclip}
+
+Establishes a new clip region by intersecting the current clip region
+with the current path as it would be filled by @vgscmd{fill} or
+@vgscmd{eofill}.
+
+@vgscmd{eoclip} uses the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#CAIRO-FILL-RULE-EVEN-ODD:CAPS,even--odd
+rule}. See @ref{fill rules} for more details.
+
+The path is cleared after updating the clip region, unless the
+@vgscmd{preserve} command is used before @vgscmd{clip} or @vgscmd{eoclip}.
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#cairo-clip,@code{cairo_clip}}
+function for more details.
+
+@anchor{cmd_Z}
+@anchor{cmd_z}
+@anchor{cmd_closepath}
+@section @code{Z}, @code{z}, @code{closepath}
+
+@signature{Z, z, closepath}
+
+Adds a line segment to the path from the @ref{current point} to the beginning
+of the current sub-path, and closes this sub-path. The beginning is set by any
+of the @emph{move} commands (@vgscmd{M}, @vgscmd{m}, @vgscmd{moveto},
+@vgscmd{rmoveto}).
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-Paths.html#cairo-close-path,@code{cairo_close_path}}
+function for more details.
+
+@anchor{cmd_colorstop}
+@section @code{colorstop}
+
+@signatureimpl{colorstop @var{offset} @var{color}}
+
+Adds a color stop to a gradient pattern.
+
+@var{offset} is a value between @code{0} and @code{1}, and it specifies
+the location along the gradient's control vector.
+
+This command must be executed after @vgscmd{lineargrad} or
+@vgscmd{radialgrad}.
+
+Color stops can be added in any number of calls to @vgscmd{colorstop}. In
+the next example, the 3 blocks define the same gradient:
+
+@example
+// 1
+colorstop 0.0 red
+colorstop 0.5 green
+colorstop 1.0 blue
+
+// 2
+colorstop 0 red 0.5 green
+colorstop 1 blue
+
+// 3
+colorstop 0 red 0.5 green 1 blue
+@end example
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-cairo-pattern-t.html#cairo-pattern-add-color-stop-rgba,@code{cairo_pattern_add_color_stop_rgba}}
+function for more details.
+
+@codeexample{
+In this example, color stops are added in a @vgscmd{repeat} loop.
+
+@example
+lineargrad 0 0 w h
+
+repeat 6 @{
+    defhsla s (i * 60) 0.8 0.5 1
+    colorstop (i / 5) s
+@}
+
+rect 0 0 w h
+fill
+@end example
+
+It is possible to avoid transitions between color stops by repeating the
+same color in two stops:
+
+@example
+lineargrad 0 0 w h
+
+repeat 6 @{
+    defhsla s (i * 60) 0.8 0.5 1
+    colorstop (i / 5) s
+    colorstop ((i + 1) / 5) s
+@}
+
+rect 0 0 w h
+fill
+@end example
+}
+
+@anchor{cmd_C}
+@anchor{cmd_curveto}
+@section @code{C}, @code{curveto}
+
+@signatureimpl{C, curveto @var{x1} @var{y1} @var{x2} @var{y2} @var{x} @var{y}}
+
+Draw a cubic Bézier curve from the @ref{current point} to the @emph{end point}
+specified by @var{x, y}. The @emph{start control point} is specified by
+@var{x1, y1} and the @emph{end control point} is specified by @var{x2, y2}.
+
+@macro mdncubicbeziercurve
+@uref{https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/d#cubic_b%C3%A9zier_curve,Cubic Bézier Curve on MDN}
+@end macro
+
+@macro mdntutorialcurve
+@uref{https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorials/SVG_from_scratch/Paths#curve_commands,Curve Commands section of the Paths tutorial on MDN}
+@end macro
+
+The behaviour is identical to the @vgscmd{C} command in @svgpathlink{}. For more
+details, see @mdncubicbeziercurve{}, and the @mdntutorialcurve{}.
+
+@codeexample{
+@example
+moveto 20 20
+
+curveto
+    0 (h / 2)           // start control point
+    w (h / 2)           // end control point
+    (w - 20) (h - 20)   // end point
+
+stroke
+@end example
+}
+
+@anchor{cmd_c}
+@anchor{cmd_rcurveto}
+@section @code{c}, @code{rcurveto}
+
+@signatureimpl{c, rcurveto @var{dx1} @var{dy1} @var{dx2} @var{dy2} @var{dx} @var{dy}}
+
+Like @vgscmd{curveto}, but the coordinates are relative to the @ref{current
+point}.
+
+@anchor{cmd_defhsla}
+@section @code{defhsla}
+
+@signature{defhsla varname @var{h} @var{s} @var{l} @var{a}}
+
+Similar to @vgscmd{sethsla}, but instead of establishing the color for
+stroke and fill operations, the computed color is stored as a
+@code{0xRRGGBBAA} value in the variable @var{varname}.
+
+@var{varname} can then be used as a color for @vgscmd{setcolor} and
+@vgscmd{colorstop}.
+
+See @vgscmd{sethsla} for more details on how the color is computed.
+
+@anchor{cmd_defrgba}
+@section @code{defrgba}
+
+@signature{defrgba varname @var{r} @var{g} @var{b} @var{a}}
+
+Computes a color from the @emph{red}, @emph{green}, @emph{blue}, and
+@emph{alpha} components, and assigns it to the variable @var{varname}
+as a @code{0xRRGGBBAA} value.
+
+All components are values between @code{0} and @code{1}. Values outside
+that range are clamped to it.
+
+@anchor{cmd_ellipse}
+@section @code{ellipse}
+
+@signatureimpl{ellipse @var{cx} @var{cy} @var{rx} @var{ry}}
+
+Adds an ellipse to the current path. Similar to @vgscmd{circle}, but it is
+possible to use different radius for both axes.
+
+@codeexample{
+@verbatim
+ellipse 120 120 75 50
+stroke
+@end verbatim
+}
+
+@anchor{cmd_fill}
+@anchor{cmd_eofill}
+@section @code{fill}, @code{eofill}
+
+@signature{fill, eofill}
+
+Fill the current path, using the @ref{current pattern} (either
+a solid color or a gradient).
+
+@vgscmd{eofill} uses the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#CAIRO-FILL-RULE-EVEN-ODD:CAPS,even--odd
+rule}. See @ref{fill rules} for more details.
+
+The path is cleared after the operation, unless the @vgscmd{preserve}
+command is used before @vgscmd{fill} or @vgscmd{eofill}.
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#cairo-fill,@code{cairo_fill}}
+function for more details.
+
+@anchor{cmd_getmetadata}
+@section @code{getmetadata}
+
+@signature{getmetadata @var{varname} @var{key}}
+
+Get the value of a metadata entry created by another filter, and assign
+it to the variable @var{varname}.
+
+If there is no metadata entry for @var{key}, or its value is not a
+number, @var{varname} is set to
+@uref{https://en.wikipedia.org/wiki/NaN,@code{NaN}}.
+
+See the @ref{Frame Metadata} section above for an
+example.
+
+@anchor{cmd_H}
+@anchor{cmd_h}
+@section @code{H}, @code{h}
+
+@signatureimpl{H, h @var{x}}
+
+Draw a horizontal line from the @ref{current point} to x.
+
+The coordinate for @vgscmd{H} is absolute, and for @vgscmd{h} it is relative
+to the @ref{current point}.
+
+@anchor{cmd_if}
+@section @code{if}
+
+@signature{if @var{condition} @{ @var{block} @}}
+
+Executes a block if the value of @var{condition} is not zero, and a
+finite number (unlike
+@uref{https://en.wikipedia.org/wiki/NaN,@code{NaN}}).
+
+See the @ref{comp-operators,Comparison and Logical Operators} section
+above for more details on how to write conditional expressions.
+
+@anchor{cmd_lineargrad}
+@section @code{lineargrad}
+
+@signature{lineargrad @var{x0} @var{y0} @var{x1} @var{y1}}
+
+Set the @ref{current pattern} to a new linear gradient, along
+the line from the coordinates @var{x0, y0} to @var{x1, y1}.
+
+This gradient can be used for stroke and fill operations.
+
+Use @vgscmd{colorstop} to set the color for each position in the gradient.
+
+@anchor{cmd_L}
+@anchor{cmd_lineto}
+@section @code{L}, @code{lineto}
+
+@signatureimpl{L, lineto @var{x} @var{y}}
+
+Draw a line from the @ref{current point} to the coordinates at @var{x, y}.
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-Paths.html#cairo-line-to,@code{cairo_line_to}}
+function for more details.
+
+@anchor{cmd_l}
+@anchor{cmd_rlineto}
+@section @code{l}, @code{rlineto}
+
+@signatureimpl{l, rlineto @var{dx} @var{dy}}
+
+Like @vgscmd{lineto}, but the coordinates are relative to the @ref{current
+point}.
+
+@anchor{cmd_M}
+@anchor{cmd_moveto}
+@section @code{M}, @code{moveto}
+
+@signatureimpl{M, moveto @var{x} @var{y}}
+
+Begin a new sub-path, and set the @ref{current point} to @var{x, y}.
+
+@anchor{cmd_m}
+@anchor{cmd_rmoveto}
+@section @code{m}, @code{rmoveto}
+
+@signatureimpl{m, rmoveto @var{dx} @var{dy}}
+
+Like @vgscmd{moveto}, but the coordinates are relative to the @ref{current
+point}.
+
+@anchor{cmd_newpath}
+@section @code{newpath}
+
+@signature{newpath}
+
+Begin a new sub-path. Like @vgscmd{moveto}, but there is no
+@ref{current point} after it.
+
+@codeexample{
+In the next example, @vgscmd{newpath} is used in the path on the right to
+prevent the line connecting both arcs.
+
+@verbatim
+setlinewidth 3
+
+setcolor skyblue
+arcn 70 90 20 0 (PI)
+arc 70 150 20 0 (PI)
+stroke
+
+setcolor seagreen
+arcn 170 90 20 0 (PI)
+newpath
+arc 170 150 20 0 (PI)
+stroke
+@end verbatim
+}
+
+@anchor{cmd_preserve}
+@section @code{preserve}
+
+@signature{preserve}
+
+Indicates that the next operation to fill, stroke, or clip, must
+preserve the path, so the same path can be used in multiple operations.
+
+It has effect on these commands:
+
+@itemize
+@item @vgscmd{clip}
+@item @vgscmd{eoclip}
+@item @vgscmd{eofill}
+@item @vgscmd{fill}
+@item @vgscmd{stroke}
+@end itemize
+
+The script can contain any command between @vgscmd{preserve} and the
+associated operation. This allows modifying other properties, like the
+current color.
+
+@codeexample{
+In this example, the same path is used for both @vgscmd{fill} and
+@vgscmd{stroke}, but with different colors.
+
+@verbatim
+circle (w / 2) (h / 2) (w / 3)
+
+setcolor skyblue
+preserve fill
+
+setlinewidth 10
+setcolor seagreen
+stroke
+@end verbatim
+}
+
+@vgscmd{preserve} can be called multiple times, if the same path has to be
+used in 3 or more operations.
+
+@codeexample{
+In this example, the path created by @vgscmd{circle} is used by
+@vgscmd{fill}, @vgscmd{stroke}, and @vgscmd{clip}. After @vgscmd{clip}, the
+path is cleared.
+
+@verbatim
+circle 100 100 50
+
+preserve fill
+preserve stroke
+clip
+@end verbatim
+}
+
+@anchor{cmd_print}
+@section @code{print}
+
+@signatureimpl{print @var{expr}}
+
+Print its arguments to the FFmpeg log.
+
+See the @ref{Command print} section above for more details.
+
+@anchor{cmd_proc}
+@section @code{proc}
+
+@signature{proc @var{name} @var{params}* @{ @var{block} @}}
+
+Assign the block and the parameters for the procedure @var{name}. The
+procedure can be called multiple times with the @vgscmd{call} command.
+
+See the @ref{Procedures} section above for more details.
+
+@anchor{cmd_Q}
+@section @code{Q}
+
+@signature{Q x1 y1 @var{x} @var{y}}
+
+Draw a quadratic Bézier curve from the @ref{current point} to the @emph{end
+point} specified by @var{x, y}. The @emph{control point} is specified by
+@var{x1, y1}.
+
+@macro mdnquadbeziercurve
+@uref{https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/d#quadratic_b%C3%A9zier_curve,Quadratic Bézier curve on MDN}
+@end macro
+
+The behaviour is identical to the @code{Q} command in @svgpathlink{}. For more
+details, see @mdnquadbeziercurve{}, and the @mdntutorialcurve{}.
+
+@codeexample{
+@verbatim
+moveto 20 20
+
+Q
+    0 h                 // control point
+    (w - 20) (h - 20)   // end point
+
+stroke
+@end verbatim
+}
+
+@anchor{cmd_q}
+@section @code{q}
+
+@signature{q @var{dx1} @var{dy1} @var{dx} @var{dy}}
+
+Like @vgscmd{Q}, but the coordinates are relative to the @ref{current point}.
+
+@anchor{cmd_radialgrad}
+@section @code{radialgrad}
+
+@signature{radialgrad @var{cx0} @var{cy0} @var{radius0} @var{cx1} @var{cy1} @var{radius1}}
+
+Creates a new radial gradient between the two circles defined by
+@var{cx0 cy0 radius0} and @var{cx1 cy1 radius1}. Each set of arguments
+is the coordinates of the center and the radius.
+
+This gradient can be used for stroke and fill operations.
+
+Use @vgscmd{colorstop} to set the color for each position in the gradient.
+
+@codeexample{
+The animation in the next example shows how the two circles defined in
+the @vgscmd{radialgrad} arguments interact with each other.
+
+The red circle represent the circle for the @var{cx0 cy0 radius0}
+arguments, and the yellow circle is the one for the
+@var{cx1 cy1 radius1} arguments.
+
+@verbatim
+setvar cx0 (mod(t * 30, w))
+setvar cy0 120
+setvar radius0 20
+
+setvar cx1 120
+setvar cy1 120
+setvar radius1 70
+
+radialgrad
+    cx0 cy0 radius0
+    cx1 cy1 radius1
+
+colorstop
+    0 lightblue
+    1 darkblue
+
+// Fill the frame with the gradient.
+rect 0 0 w h
+fill
+
+// Draw inner circle.
+circle cx0 cy0 radius0
+setcolor red
+stroke
+
+// Draw outer circle.
+circle cx1 cy1 radius1
+setcolor yellow
+stroke
+@end verbatim
+}
+
+@anchor{cmd_rect}
+@section @code{rect}
+
+@signature{rect @var{x} @var{y} @var{width} @var{height}}
+
+Adds a rectangle of the given size (@var{width} × @var{height}), at
+position @var{x, y}, to the current path. The @ref{current point} is cleared
+before and after adding the rectangle.
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-Paths.html#cairo-rectangle,@code{cairo_rectangle}}
+function for more details.
+
+@anchor{cmd_repeat}
+@section @code{repeat}
+
+@signature{repeat @var{count} @{ @var{block} @}}
+
+Executes a block the number of times indicated by @var{count}.
+
+In each iteration, the variable @var{i} is used as a
+@uref{https://en.wikipedia.org/wiki/For_loop#Loop_counters,loop
+counter}. It takes the values from @code{0} to @code{count - 1}. When
+the loop is terminated, the variable is restored to the value before
+starting the loop.
+
+If @var{count} is less than @code{1}, or it is not a finite number
+(like @uref{https://en.wikipedia.org/wiki/NaN,@code{NaN}}), the block is
+not executed.
+
+@anchor{cmd_resetclip}
+@section @code{resetclip}
+
+@signature{resetclip}
+
+Reset the current clip region to its original state, covering the whole
+frame.
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#cairo-reset-clip,@code{cairo_reset_clip}}
+function for more details.
+
+@anchor{cmd_resetdash}
+@section @code{resetdash}
+
+@signature{resetdash}
+
+Disable the dash pattern to be used by @vgscmd{stroke}. This reverts any
+change made by @vgscmd{setdash} and @vgscmd{setdashoffset}.
+
+It calls
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#cairo-set-dash,@code{cairo_set_dash}}
+with @code{num_dashes} set to @code{0}.
+
+@anchor{cmd_resetmatrix}
+@section @code{resetmatrix}
+
+@signature{resetmatrix}
+
+Resets the current @ref{transformation matrix}.
+
+@anchor{cmd_restore}
+@section @code{restore}
+
+@signature{restore}
+
+Restores the state saved by a preceding call to @vgscmd{save}.
+
+For more details, see the @ref{State Stack} section above, and the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#cairo-restore,@code{cairo_restore}}
+function.
+
+@anchor{cmd_rotate}
+@section @code{rotate}
+
+@signature{rotate @var{angle}}
+
+Modifies the current @ref{transformation matrix} by rotating the user-space
+axes by @var{angle} radians.
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-Transformations.html#cairo-rotate,@code{cairo_rotate}}
+function for more details.
+
+@codeexample{
+In this example:
+
+@itemize
+@item @vgscmd{scalexy} maps the coordinates to a 1x1 frame.
+@item @vgscmd{translate} put @code{0, 0} at the center of the frame.
+@item @vgscmd{rotate} rotates 45°.
+@item
+@vgscmd{resetmatrix} reverts the transformations before @vgscmd{stroke}, so the
+line width is not affected by the scale.
+@end itemize
+
+@verbatim
+scalexy w h
+translate 0.5 0.5
+rotate (PI / 4)
+rect -0.25 -0.25 0.5 0.5
+resetmatrix
+stroke
+@end verbatim
+}
+
+@anchor{cmd_roundedrect}
+@section @code{roundedrect}
+
+@signatureimpl{roundedrect @var{x} @var{y} @var{width} @var{height} @var{radius}}
+
+Like @vgscmd{rect}, but a circular arc is used for the corners.
+
+@codeexample{
+The next example shows the same rectangle, with different values for the
+corner radius.
+
+The radius is computed by multiplying @var{i} (the
+@uref{https://en.wikipedia.org/wiki/For_loop#Loop_counters,loop counter}) by
+@code{4.5}. This number is chosen to make the last shape a perfect circle.
+
+@example
+repeat 9 @{
+    roundedrect
+        (mod(i, 3) * 80 + 5)     // x
+        (floor(i / 3) * 80 + 5)  // y
+        70 70                    // size
+        (i * 4.5)                // radius
+@}
+
+stroke
+@end example
+}
+
+@anchor{cmd_save}
+@section @code{save}
+
+@signature{save}
+
+Saves a copy of the current state on an internal stack. This copy can be
+restored later with @vgscmd{restore}.
+
+For more details, see the @ref{State Stack} section above, and the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#cairo-save,@code{cairo_save}}
+function.
+
+@anchor{cmd_scale}
+@section @code{scale}
+
+@signature{scale @var{sxy}}
+
+Similar to @vgscmd{scalexy}, but the same value is used for both axes. It
+is equivalent to:
+
+@signature{scalexy @var{sxy} @var{sxy}}
+
+@anchor{cmd_scalexy}
+@section @code{scalexy}
+
+@signature{scalexy @var{sx} @var{sy}}
+
+Modifies the current @ref{transformation matrix} by scaling the X and Y
+user-space axes by @var{sx} and @var{sy} respectively.
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-Transformations.html#cairo-scale,@code{cairo_scale}}
+function for more details.
+
+See @vgscmd{rotate} for an example on combining multiple transformations.
+
+@anchor{cmd_setcolor}
+@section @code{setcolor}
+
+@signature{setcolor @var{color}}
+
+Set a solid color as the @ref{current pattern} for stroke and fill operations
+
+See the @ref{Colors} section above for more details.
+
+@anchor{cmd_setdash}
+@section @code{setdash}
+
+@signatureimpl{setdash @var{length}}
+
+Sets the dash pattern to be used by @vgscmd{stroke}.
+
+Each call to @vgscmd{setdash} adds a length to the pattern, alternating
+between @emph{on} and @emph{off} portions of the stroke.
+
+After a call to @vgscmd{setdash}, @vgscmd{resetdash} is needed either to
+create a new pattern, or to discard the current one.
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#cairo-set-dash,@code{cairo_set_dash}}
+function for more details.
+
+@anchor{cmd_setdashoffset}
+@section @code{setdashoffset}
+
+@signature{setdashoffset @var{offset}}
+
+Set the offset into the dash pattern at which the stroke should start.
+
+@vgscmd{setdash} must be called @emph{before} @vgscmd{setdashoffset}.
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#cairo-set-dash,@code{cairo_set_dash}}
+function for more details.
+
+@codeexample{
+The next animation shows the effect of @vgscmd{setdashoffset} when its
+argument changes over time.
+
+@verbatim
+scalexy w h
+M 0.5 1
+curveto 0 0.5, 1 0.5, 0.5 0
+resetmatrix
+
+setdash 20 5 // 20 on, 5 off
+setdashoffset (t * 100)
+
+setlinewidth 20
+stroke
+@end verbatim
+}
+
+@anchor{cmd_sethsla}
+@section @code{sethsla}
+
+@signature{sethsla @var{h} @var{s} @var{l} @var{a}}
+
+Set the @ref{current pattern} to a solid color, given the @emph{hue},
+@emph{saturation}, and @emph{lightness}, and @emph{alpha} components.
+
+h is the @emph{hue}, a value between @code{0} and @code{359}. Negative
+values are clamped to @code{0}, and values greater than @code{359} are
+interpreted as modulo 360.
+
+s (@emph{saturation}), l (@emph{lightness}), and a (@emph{alpha}), are
+values between @code{0} and @code{1}.
+
+The conversion to RGB is implemented according to the
+@uref{https://en.wikipedia.org/wiki/HSL_and_HSV#HSL_to_RGB,formulae from
+Wikipedia}.
+
+@anchor{cmd_setlinecap}
+@section @code{setlinecap}
+
+@signature{setlinecap @var{cap}}
+
+Set the current line cap style, which determines the shape used to draw
+the end points of lines.
+
+@var{cap} must be one of the following names:
+
+@itemize
+@item @code{butt}
+@item @code{round}
+@item @code{square}
+@end itemize
+
+It calls to
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#cairo-set-line-cap,@code{cairo_set_line_cap}}
+to set the line cap style.
+
+@codeexample{
+This example draws 3 lines with the same length, each one with a
+different line cap style:
+
+@verbatim
+setlinewidth 40
+
+setlinecap butt
+setcolor tomato
+M 60 40 v 100 stroke
+
+setlinecap round
+setcolor seagreen
+M 120 40 v 100 stroke
+
+setlinecap square
+setcolor skyblue
+M 180 40 v 100 stroke
+
+M 20 40 H 220 m 0 100 H 20
+setcolor black@0.5
+setlinewidth 2
+stroke
+@end verbatim
+}
+
+@anchor{cmd_setlinejoin}
+@section @code{setlinejoin}
+
+@signature{setlinejoin @var{join}}
+
+Sets the current line join style, which determines the shape used to
+join two line segments.
+
+@var{join} must be one of the following names:
+
+@itemize
+@item @code{bevel}
+@item @code{miter}
+@item @code{round}
+@end itemize
+
+It calls to
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#cairo-set-line-join,@code{cairo_set_line_join}}
+to set the line join style.
+
+@codeexample{
+This example draws 3 lines with the same length, each one with a
+different line join style:
+
+@verbatim
+setlinewidth 30
+
+setlinejoin bevel
+setcolor tomato
+M 70 20 l 50 50 50 -50 stroke
+
+setlinejoin miter
+setcolor seagreen
+M 70 90 l 50 50 50 -50 stroke
+
+setlinejoin round
+setcolor skyblue
+M 70 160 l 50 50 50 -50 stroke
+@end verbatim
+}
+
+@anchor{cmd_setlinewidth}
+@section @code{setlinewidth}
+
+@signature{setlinewidth @var{width}}
+
+Set the line width for @vgscmd{stroke}.
+
+@var{width} is affected by the @ref{transformation matrix}.
+
+To specify a width that is not affected by other transformations,
+@vgscmd{resetmatrix} can be used between @vgscmd{save} / @vgscmd{restore}:
+
+@verbatim
+save
+
+resetmatrix
+setlinewidth 1
+stroke
+
+// Restore matrix after stroke.
+restore
+@end verbatim
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#cairo-set-line-width,@code{cairo_set_line_width}}
+function for more details.
+
+@anchor{cmd_setrgba}
+@section @code{setrgba}
+
+@signature{setrgba @var{r} @var{g} @var{b} @var{a}}
+
+Set the @ref{current pattern} to a solid color, given the
+@emph{red}, @emph{green}, @emph{blue}, and @emph{alpha} components.
+
+All components are values between @code{0} and @code{1}. Values outside
+that range are clamped to it.
+
+@anchor{cmd_setvar}
+@section @code{setvar}
+
+@signature{setvar @var{varname} @var{value}}
+
+Set the variable @var{varname} to @var{value}.
+
+See the @ref{User Variables} section above for more details.
+
+@anchor{cmd_stroke}
+@section @code{stroke}
+
+@signature{stroke}
+
+Strokes the current path according to the current line width, line join,
+line cap, and dash settings.
+
+The path is cleared after the operation, unless the @vgscmd{preserve}
+command is used before @vgscmd{stroke}.
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-cairo-t.html#cairo-stroke,@code{cairo_stroke}}
+function for more details.
+
+@anchor{cmd_S}
+@anchor{cmd_s}
+@section @code{S}, @code{s}
+
+@signatureimpl{S, s @var{x2} @var{y2} @var{x} @var{y}}
+
+Draw a smooth cubic Bézier curve from the @ref{current point} to the @emph{end
+point} specified by @var{x, y}. The @emph{end control point} is specified by
+@var{x2, y2}.
+
+The @emph{start control point} is the reflection of the @emph{end
+control point} of the previous curve command about the @emph{current
+point}.
+
+The behaviour is identical to the @code{S} command in @svgpathlink{}. For more
+details, see @mdncubicbeziercurve{}, and the @mdntutorialcurve{}.
+
+@vgscmd{s} is like @vgscmd{S}, but the coordinates are relative to the @ref{current
+point}.
+
+@codeexample{
+@example
+M 20 120
+
+c 25 -50, 25 50, 50 0
+
+repeat 3 @{
+    s 20 50, 50 0
+@}
+
+stroke
+@end example
+}
+
+@anchor{cmd_translate}
+@section @code{translate}
+
+@signature{translate @var{tx} @var{ty}}
+
+Modifies the current @ref{transformation matrix} by
+translating the user-space origin by @var{tx, ty}.
+
+See the documentation of the
+@uref{https://www.cairographics.org/manual/cairo-Transformations.html#cairo-translate,@code{cairo_translate}}
+function for more details.
+
+@anchor{cmd_T}
+@anchor{cmd_t}
+@section @code{T}, @code{t}
+
+@signatureimpl{T, t @var{x} @var{y}}
+
+Draw a smooth quadratic Bézier curve from the @ref{current point} to the
+@emph{end point} specified by @var{x, y}.
+
+The @emph{control point} is the reflection of the @emph{control point}
+of the previous curve command about the @emph{current point}.
+
+The behaviour is identical to the @code{T} command in @svgpathlink{}. For more
+details, see @mdnquadbeziercurve{}, and the @mdntutorialcurve{}.
+
+@vgscmd{t} is like @vgscmd{T}, but the coordinates are relative to the
+@ref{current point}.
+
+@codeexample{
+@example
+M 20 120
+
+q 10 -20, 20 0
+
+repeat 9 @{
+    t 20 0
+@}
+
+stroke
+@end example
+}
+
+@anchor{cmd_V}
+@anchor{cmd_v}
+@section @code{V}, @code{v}
+
+@signatureimpl{V, v @var{y}}
+
+Draw a vertical line from the @ref{current point} to y.
+
+The coordinate for @vgscmd{V} is absolute, and for @vgscmd{v} it is relative
+to the @ref{current point}.
+
+@bye

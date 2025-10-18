@@ -1,0 +1,10 @@
+// Render a square, for `make fate-filter-drawvg-video`.
+
+M 10 10
+l 0 10
+h 10
+v -10
+h -10
+z
+setcolor blue
+stroke

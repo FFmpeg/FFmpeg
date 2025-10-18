@@ -272,6 +272,7 @@ extern const FFFilter ff_vf_drawbox;
 extern const FFFilter ff_vf_drawgraph;
 extern const FFFilter ff_vf_drawgrid;
 extern const FFFilter ff_vf_drawtext;
+extern const FFFilter ff_vf_drawvg;
 extern const FFFilter ff_vf_edgedetect;
 extern const FFFilter ff_vf_elbg;
 extern const FFFilter ff_vf_entropy;

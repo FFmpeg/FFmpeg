@@ -298,6 +298,7 @@ OBJS-$(CONFIG_DRAWBOX_FILTER)                += vf_drawbox.o
 OBJS-$(CONFIG_DRAWGRAPH_FILTER)              += f_drawgraph.o
 OBJS-$(CONFIG_DRAWGRID_FILTER)               += vf_drawbox.o
 OBJS-$(CONFIG_DRAWTEXT_FILTER)               += vf_drawtext.o textutils.o
+OBJS-$(CONFIG_DRAWVG_FILTER)                 += vf_drawvg.o textutils.o
 OBJS-$(CONFIG_EDGEDETECT_FILTER)             += vf_edgedetect.o edge_common.o
 OBJS-$(CONFIG_ELBG_FILTER)                   += vf_elbg.o
 OBJS-$(CONFIG_ENTROPY_FILTER)                += vf_entropy.o
@@ -680,6 +681,10 @@ SKIPHEADERS-$(CONFIG_VULKAN)                 += vulkan_filter.h
 
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats integral
+
+ifdef CONFIG_DRAWVG_FILTER
+TESTPROGS += drawvg
+endif
 
 TOOLS-$(CONFIG_LIBZMQ) += zmqsend
 

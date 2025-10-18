@@ -100,6 +100,7 @@ libavfilter/.*f_ebur128.* @haasn
 libavfilter/vf_blackdetect.* @haasn
 libavfilter/vf_colordetect.* @haasn
 libavfilter/vf_colorspace.* @rbultje
+libavfilter/.*drawvg.* @ayosec
 libavfilter/vf_icc.* @haasn
 libavfilter/vf_libplacebo.* @haasn
 libavfilter/vf_premultiply.* @haasn
@@ -215,4 +216,5 @@ doc/.* @GyanD
 # tests
 # =====
 tests/checkasm/riscv/.* @Courmisch
+tests/ref/.*drawvg.* @ayosec
 tests/ref/fate/sub-mcc.* @programmerjake

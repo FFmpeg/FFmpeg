@@ -28,6 +28,7 @@ HTMLPAGES   = $(AVPROGS-yes:%=doc/%.html) $(AVPROGS-yes:%=doc/%-all.html) $(COMP
               doc/mailing-list-faq.html                                 \
               doc/nut.html                                              \
               doc/platform.html                                         \
+              doc/drawvg-reference.html                                 \
               $(SRC_PATH)/doc/bootstrap.min.css                         \
               $(SRC_PATH)/doc/style.min.css                             \
               $(SRC_PATH)/doc/default.css                               \

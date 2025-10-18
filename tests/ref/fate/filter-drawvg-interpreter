@@ -1,0 +1,130 @@
+check_sorted_cmds_array: 0 failures
+
+--- check_script: drawvg.all
+cairo_set_line_join 0
+cairo_set_line_cap 1
+cairo_move_to 0.0 0.0
+cairo_rel_line_to 0.0 0.0
+cairo_rel_line_to 1.0 1.0
+cairo_rel_line_to 2.0 2.0
+cairo_line_to -1.0 -2.0
+av_log[32]: [29:7] 1 = 1.000000 | [29:9] foo = -1.000000 | [29:13] (bar - 2) = -4.000000
+cairo_set_source lineargrad(0.0 0.0 1.0 1.0) 0.0/#ff0000ff 1.0/#0000ffff
+cairo_save
+cairo_restore
+cairo_scale 1.0 1.0
+cairo_scale 2.0 3.0
+cairo_translate 4.0 5.0
+cairo_rotate 6.0
+cairo_identity_matrix
+cairo_rectangle 1.0 2.0 3.0 4.0
+cairo_save
+cairo_translate 1.0 2.0
+cairo_new_sub_path
+cairo_arc 0.0 0.0 3.0 0.0 6.3
+cairo_close_path
+cairo_new_sub_path
+cairo_restore
+cairo_new_sub_path
+cairo_arc 150.0 150.0 50.0 3.1 4.7
+cairo_arc 450.0 150.0 50.0 4.7 6.3
+cairo_arc 450.0 450.0 50.0 0.0 1.6
+cairo_arc 150.0 450.0 50.0 1.6 3.1
+cairo_close_path
+cairo_set_source #abcdefff
+cairo_stroke
+cairo_set_source lineargrad(0.0 1.0 2.0 3.0) 0.0/#ff0000ff 1.0/#0000ffff
+cairo_stroke
+cairo_set_source radialgrad(1.0 2.0 3.0 4.0 5.0 6.0) 0.0/#000000ff 0.1/#ffffffff 0.1/#000000ff 0.2/#ffffffff
+cairo_stroke
+cairo_move_to 10.0 50.0
+cairo_curve_to 20.0 33.3 30.0 33.3 40.0 50.0
+cairo_curve_to 50.0 66.7 60.0 66.7 70.0 50.0
+cairo_curve_to 80.0 33.3 90.0 33.3 100.0 50.0
+cairo_curve_to 120.0 100.0 140.0 0.0 200.0 50.0
+cairo_set_fill_rule 0
+cairo_fill_preserve
+cairo_set_fill_rule 1
+cairo_fill_preserve
+cairo_stroke_preserve
+cairo_set_fill_rule 0
+cairo_clip_preserve
+cairo_set_fill_rule 0
+cairo_fill
+cairo_set_fill_rule 1
+cairo_fill
+cairo_set_fill_rule 0
+cairo_clip
+cairo_set_fill_rule 1
+cairo_clip
+cairo_set_dash [ -1.0 1.0 ] -2.0
+cairo_set_dash [ -1.0 2.0 ] -2.0
+cairo_set_dash [ -1.0 3.0 ] -2.0
+cairo_set_dash [ -1.0 ] 4.0
+cairo_set_dash [ ] 0.0
+cairo_move_to 1.0 2.0
+cairo_rel_line_to -1.0 -2.0
+cairo_set_source #19334c66
+cairo_set_fill_rule 0
+cairo_fill
+cairo_set_source #475b3d66
+cairo_set_fill_rule 0
+cairo_fill
+cairo_set_source #7f99b2cc
+cairo_set_fill_rule 0
+cairo_fill
+cairo_set_source #a8d7efe5
+cairo_set_fill_rule 0
+cairo_fill
+cairo_rel_line_to 1.0 3.0
+cairo_rel_line_to nan 0.0
+
+--- check_script: M 0 (1*(t+1)
+av_log[16]: Invalid token '(' at line 1, column 5: Unmatched parenthesis.
+check_script: vgs_parse = -22
+
+--- check_script: save invalid 1 2
+av_log[16]: Invalid token 'invalid' at line 1, column 6: Expected command.
+check_script: vgs_parse = -22
+
+--- check_script: setlinecap unknown m 10 20
+av_log[16]: Invalid token 'unknown' at line 1, column 12: Expected one of 'butt' 'round' 'square'.
+check_script: vgs_parse = -22
+
+--- check_script: M 0 1 2
+av_log[16]: Invalid token '<EOF>' at line 1, column 8: Expected numeric argument.
+check_script: vgs_parse = -22
+
+--- check_script: setvar ba^d 0
+av_log[16]: Invalid token 'ba^d' at line 1, column 8: Invalid variable name.
+check_script: vgs_parse = -22
+
+--- check_script: setvar cx 0
+av_log[16]: Invalid token 'cx' at line 1, column 8: Reserved variable name.
+check_script: vgs_parse = -22
+
+--- check_script:  setvar v0 0 setvar v1 1 setvar v2 2 setvar v3 3 setvar v4 4 setvar v5 5 setvar v6 6 setvar v7 7 setvar v8 8 setvar v9 9 setvar v10 10 setvar v11 11 setvar v12 12 setvar v13 13 setvar v14 14 setvar v15 15 setvar v16 16 setvar v17 17 setvar v18 18 setvar v19 19 M (v0) (v19) 1 (unknown_var)
+av_log[16]: Undefined constant or missing '(' in 'unknown_var)'
+av_log[16]: Invalid token '(unknown_var)' at line 1, column 277: Invalid expression.
+check_script: vgs_parse = -22
+
+--- check_script:  setvar v1 0 setvar v2 1 setvar v3 2 setvar v4 3 setvar v5 4 setvar v6 5 setvar v7 6 setvar v8 7 setvar v9 8 setvar v10 9 setvar v11 10 setvar v12 11 setvar v13 12 setvar v14 13 setvar v15 14 setvar v16 15 setvar v17 16 setvar v18 17 setvar v19 18 setvar v20 19 setvar v21 20
+av_log[16]: Invalid token 'v21' at line 1, column 270: Too many user variables. Can define up to 20 variables.
+check_script: vgs_parse = -22
+
+--- check_script: call a
+av_log[16]: Missing body for procedure 'a'
+
+--- check_script: proc a { call b } call a
+av_log[16]: Missing body for procedure 'b'
+
+--- check_script: proc p0 a1 a2 a3 a4 a5 a6 a7 a8 { break }
+av_log[16]: Invalid token 'a7' at line 1, column 27: Too many parameters. Limit is 6
+check_script: vgs_parse = -22
+
+--- check_script: proc p0 a1 a2 { break } call p0 break
+av_log[16]: Procedure expects 2 arguments, but received 0.
+--- check_script: proc p0 a1 a2 { break } call p0 1 2 3
+av_log[16]: Procedure expects 2 arguments, but received 3.
+--- check_script: M 0 (1 + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n + n)
+cairo_move_to 0.0 101.0
