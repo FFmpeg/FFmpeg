@@ -815,3 +815,53 @@ int avcodec_get_supported_config(const AVCodecContext *avctx, const AVCodec *cod
         return ff_default_get_supported_config(avctx, codec, config, flags, out, out_num);
     }
 }
+
+int av_packet_side_data_from_frame(AVPacketSideData **psd, int *pnb_sd,
+                                   const AVFrameSideData *src, unsigned int flags)
+{
+    AVPacketSideData *sd = NULL;
+
+    for (unsigned j = 0; ff_sd_global_map[j].packet < AV_PKT_DATA_NB; j++) {
+        if (ff_sd_global_map[j].frame != src->type)
+            continue;
+
+        sd = av_packet_side_data_new(psd, pnb_sd, ff_sd_global_map[j].packet,
+                                     src->size, 0);
+
+        if (!sd)
+            return AVERROR(ENOMEM);
+
+        memcpy(sd->data, src->data, src->size);
+        break;
+    }
+
+    if (!sd)
+        return AVERROR(EINVAL);
+
+    return 0;
+}
+
+int av_packet_side_data_to_frame(AVFrameSideData ***psd, int *pnb_sd,
+                                 const AVPacketSideData *src, unsigned int flags)
+{
+    AVFrameSideData *sd = NULL;
+
+    for (unsigned j = 0; ff_sd_global_map[j].packet < AV_PKT_DATA_NB; j++) {
+        if (ff_sd_global_map[j].packet != src->type)
+            continue;
+
+        sd = av_frame_side_data_new(psd, pnb_sd, ff_sd_global_map[j].frame,
+                                    src->size, flags);
+
+        if (!sd)
+            return AVERROR(ENOMEM);
+
+        memcpy(sd->data, src->data, src->size);
+        break;
+    }
+
+    if (!sd)
+        return AVERROR(EINVAL);
+
+    return 0;
+}
