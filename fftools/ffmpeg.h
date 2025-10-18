@@ -492,6 +492,17 @@ typedef struct InputStream {
     int                nb_filters;
 } InputStream;
 
+typedef struct InputStreamGroup {
+    const AVClass        *class;
+
+    /* parent source */
+    struct InputFile     *file;
+
+    int                   index;
+
+    AVStreamGroup        *stg;
+} InputStreamGroup;
+
 typedef struct InputFile {
     const AVClass   *class;
 
@@ -513,6 +524,10 @@ typedef struct InputFile {
      * if new streams appear dynamically during demuxing */
     InputStream    **streams;
     int           nb_streams;
+
+    /* stream groups that ffmpeg is aware of; */
+    InputStreamGroup **stream_groups;
+    int           nb_stream_groups;
 } InputFile;
 
 enum forced_keyframes_const {

@@ -104,6 +104,13 @@ typedef struct DemuxStream {
     int64_t                  lag;
 } DemuxStream;
 
+typedef struct DemuxStreamGroup {
+    InputStreamGroup         istg;
+
+    // name used for logging
+    char                     log_name[32];
+} DemuxStreamGroup;
+
 typedef struct Demuxer {
     InputFile             f;
 
@@ -886,6 +893,16 @@ static void ist_free(InputStream **pist)
     av_freep(pist);
 }
 
+static void istg_free(InputStreamGroup **pistg)
+{
+    InputStreamGroup *istg = *pistg;
+
+    if (!istg)
+        return;
+
+    av_freep(pistg);
+}
+
 void ifile_close(InputFile **pf)
 {
     InputFile *f = *pf;
@@ -900,6 +917,10 @@ void ifile_close(InputFile **pf)
     for (int i = 0; i < f->nb_streams; i++)
         ist_free(&f->streams[i]);
     av_freep(&f->streams);
+
+    for (int i = 0; i < f->nb_stream_groups; i++)
+        istg_free(&f->stream_groups[i]);
+    av_freep(&f->stream_groups);
 
     avformat_close_input(&f->ctx);
 
@@ -1586,6 +1607,51 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
     return 0;
 }
 
+static const char *input_stream_group_item_name(void *obj)
+{
+    const DemuxStreamGroup *dsg = obj;
+
+    return dsg->log_name;
+}
+
+static const AVClass input_stream_group_class = {
+    .class_name = "InputStreamGroup",
+    .version    = LIBAVUTIL_VERSION_INT,
+    .item_name  = input_stream_group_item_name,
+    .category   = AV_CLASS_CATEGORY_DEMUXER,
+};
+
+static DemuxStreamGroup *demux_stream_group_alloc(Demuxer *d, AVStreamGroup *stg)
+{
+    InputFile    *f = &d->f;
+    DemuxStreamGroup *dsg;
+
+    dsg = allocate_array_elem(&f->stream_groups, sizeof(*dsg), &f->nb_stream_groups);
+    if (!dsg)
+        return NULL;
+
+    dsg->istg.stg        = stg;
+    dsg->istg.file       = f;
+    dsg->istg.index      = stg->index;
+    dsg->istg.class      = &input_stream_group_class;
+
+    snprintf(dsg->log_name, sizeof(dsg->log_name), "istg#%d:%d/%s",
+             d->f.index, stg->index, avformat_stream_group_name(stg->type));
+
+    return dsg;
+}
+
+static int istg_add(const OptionsContext *o, Demuxer *d, AVStreamGroup *stg)
+{
+    DemuxStreamGroup *dsg;
+
+    dsg = demux_stream_group_alloc(d, stg);
+    if (!dsg)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
 static int dump_attachment(InputStream *ist, const char *filename)
 {
     AVStream *st = ist->st;
@@ -1952,6 +2018,13 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
             av_dict_free(&opts_used);
             return ret;
         }
+    }
+
+    /* Add all the stream groups from the given input file to the demuxer */
+    for (int i = 0; i < ic->nb_stream_groups; i++) {
+        ret = istg_add(o, d, ic->stream_groups[i]);
+        if (ret < 0)
+            return ret;
     }
 
     /* dump the file content */
