@@ -403,6 +403,11 @@ typedef struct FilterGraph {
     OutputFilter **outputs;
     int         nb_outputs;
 
+    // true when the filtergraph is created internally for
+    // purposes like stream group merging. Meant to be freed
+    // if unbound.
+    int                 is_internal;
+
     const char      *graph_desc;
     struct AVBPrint graph_print_buf;
 } FilterGraph;

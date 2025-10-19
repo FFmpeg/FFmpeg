@@ -193,6 +193,8 @@ typedef struct OutputFilterPriv {
     void                   *log_parent;
     char                    log_name[32];
 
+    int                     needed;
+
     /* desired output stream properties */
     int                     format;
     int                     width, height;
@@ -813,7 +815,7 @@ int ofilter_bind_enc(OutputFilter *ofilter, unsigned sched_idx_enc,
     av_assert0(!opts->enc ||
                ofilter->type == opts->enc->type);
 
-    ofilter->bound = 1;
+    ofp->needed = ofilter->bound = 1;
     av_freep(&ofilter->linklabel);
 
     ofp->flags        = opts->flags;
@@ -924,7 +926,7 @@ static int ofilter_bind_ifilter(OutputFilter *ofilter, InputFilterPriv *ifp,
     av_assert0(!ofilter->bound);
     av_assert0(ofilter->type == ifp->ifilter.type);
 
-    ofilter->bound = 1;
+    ofp->needed = ofilter->bound = 1;
     av_freep(&ofilter->linklabel);
 
     ofilter->output_name = av_strdup(opts->name);
@@ -1264,7 +1266,7 @@ int fg_create_simple(FilterGraph **pfg,
     return 0;
 }
 
-static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
+static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter, int commit)
 {
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     InputStream *ist = NULL;
@@ -1315,15 +1317,20 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
 
                 if (!ofilter->bound && ofilter->linklabel &&
                     !strcmp(ofilter->linklabel, ifilter->linklabel)) {
+                    if (commit) {
                     av_log(fg, AV_LOG_VERBOSE,
                            "Binding input with label '%s' to filtergraph output %d:%d\n",
                            ifilter->linklabel, i, j);
 
                     ret = ifilter_bind_fg(ifp, fg_src, j);
-                    if (ret < 0)
+                    if (ret < 0) {
                         av_log(fg, AV_LOG_ERROR, "Error binding filtergraph input %s\n",
                                ifilter->linklabel);
                     return ret;
+                    }
+                    } else
+                        ofp_from_ofilter(ofilter)->needed = 1;
+                    return 0;
                 }
             }
         }
@@ -1371,6 +1378,7 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
         }
         ist = input_files[file_idx]->streams[st->index];
 
+        if (commit)
         av_log(fg, AV_LOG_VERBOSE,
                "Binding input with label '%s' to input stream %d:%d\n",
                ifilter->linklabel, ist->file->index, ist->index);
@@ -1384,12 +1392,14 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
             return AVERROR(EINVAL);
         }
 
+        if (commit)
         av_log(fg, AV_LOG_VERBOSE,
                "Binding unlabeled input %d to input stream %d:%d\n",
                ifilter->index, ist->file->index, ist->index);
     }
     av_assert0(ist);
 
+    if (commit) {
     ret = ifilter_bind_ist(ifilter, ist, &vs);
     if (ret < 0) {
         av_log(fg, AV_LOG_ERROR,
@@ -1397,11 +1407,12 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
                ifilter->name);
         return ret;
     }
+    }
 
     return 0;
 }
 
-static int bind_inputs(FilterGraph *fg)
+static int bind_inputs(FilterGraph *fg, int commit)
 {
     // bind filtergraph inputs to input streams or other filtergraphs
     for (int i = 0; i < fg->nb_inputs; i++) {
@@ -1411,7 +1422,7 @@ static int bind_inputs(FilterGraph *fg)
         if (ifp->bound)
             continue;
 
-        ret = fg_complex_bind_input(fg, &ifp->ifilter);
+        ret = fg_complex_bind_input(fg, &ifp->ifilter, commit);
         if (ret < 0)
             return ret;
     }
@@ -1424,25 +1435,47 @@ int fg_finalise_bindings(void)
     int ret;
 
     for (int i = 0; i < nb_filtergraphs; i++) {
-        ret = bind_inputs(filtergraphs[i]);
+        ret = bind_inputs(filtergraphs[i], 0);
         if (ret < 0)
             return ret;
     }
 
     // check that all outputs were bound
-    for (int i = 0; i < nb_filtergraphs; i++) {
+    for (int i = nb_filtergraphs - 1; i >= 0; i--) {
         FilterGraph *fg = filtergraphs[i];
+        FilterGraphPriv *fgp = fgp_from_fg(filtergraphs[i]);
 
         for (int j = 0; j < fg->nb_outputs; j++) {
             OutputFilter *output = fg->outputs[j];
-            if (!output->bound) {
-                av_log(fg, AV_LOG_FATAL,
-                       "Filter '%s' has output %d (%s) unconnected\n",
+            if (!ofp_from_ofilter(output)->needed) {
+                if (!fg->is_internal) {
+                    av_log(fg, AV_LOG_FATAL,
+                           "Filter '%s' has output %d (%s) unconnected\n",
+                           output->name, j,
+                           output->linklabel ? (const char *)output->linklabel : "unlabeled");
+                    return AVERROR(EINVAL);
+                }
+
+                av_log(fg, AV_LOG_DEBUG,
+                       "Internal filter '%s' has output %d (%s) unconnected. Removing graph\n",
                        output->name, j,
                        output->linklabel ? (const char *)output->linklabel : "unlabeled");
-                return AVERROR(EINVAL);
+                sch_remove_filtergraph(fgp->sch, fgp->sch_idx);
+                fg_free(&filtergraphs[i]);
+                nb_filtergraphs--;
+                if (nb_filtergraphs > 0)
+                    memmove(&filtergraphs[i],
+                            &filtergraphs[i + 1],
+                            (nb_filtergraphs - i) * sizeof(*filtergraphs));
+                break;
             }
         }
+    }
+
+    for (int i = 0; i < nb_filtergraphs; i++) {
+        ret = bind_inputs(filtergraphs[i], 1);
+        if (ret < 0)
+            return ret;
     }
 
     return 0;
