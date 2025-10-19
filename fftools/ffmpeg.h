@@ -500,6 +500,7 @@ typedef struct InputStreamGroup {
 
     int                   index;
 
+    FilterGraph          *fg;
     AVStreamGroup        *stg;
 } InputStreamGroup;
 
