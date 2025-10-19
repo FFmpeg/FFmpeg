@@ -726,7 +726,6 @@ static int frame_context_setup(VVCFrameContext *fc, VVCContext *s)
     }
 
     if (IS_IDR(s)) {
-        s->seq_decode = (s->seq_decode + 1) & 0xff;
         ff_vvc_clear_refs(fc);
     }
 

@@ -279,12 +279,14 @@ fail:
 
 static int decode_sps(VVCParamSets *ps, AVCodecContext *c, const H266RawSPS *rsps, int is_clvss)
 {
+    VVCContext *s           = c->priv_data;
     const int sps_id        = rsps->sps_seq_parameter_set_id;
     const VVCSPS *old_sps   = ps->sps_list[sps_id];
     const VVCSPS *sps;
 
     if (is_clvss) {
         ps->sps_id_used = 0;
+        s->seq_decode = (s->seq_decode + 1) & 0xff;
     }
 
     if (old_sps) {
