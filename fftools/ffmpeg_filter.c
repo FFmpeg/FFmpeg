@@ -1383,6 +1383,33 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter, int comm
                    "Binding input with label '%s' to input stream %d:%d\n",
                    ifilter->linklabel, ist->file->index, ist->index);
     } else {
+        // try finding an unbound filtergraph output
+        for (int i = 0; i < nb_filtergraphs; i++) {
+            FilterGraph *fg_src = filtergraphs[i];
+
+            if (fg == fg_src)
+                continue;
+
+            for (int j = 0; j < fg_src->nb_outputs; j++) {
+                OutputFilter *ofilter = fg_src->outputs[j];
+
+                if (!ofilter->bound) {
+                    if (commit) {
+                        av_log(fg, AV_LOG_VERBOSE,
+                               "Binding unlabeled filtergraph input to filtergraph output %d:%d\n", i, j);
+
+                        ret = ifilter_bind_fg(ifp, fg_src, j);
+                        if (ret < 0) {
+                            av_log(fg, AV_LOG_ERROR, "Error binding filtergraph input %d:%d\n", i, j);
+                            return ret;
+                        }
+                    } else
+                        ofp_from_ofilter(ofilter)->needed = 1;
+                    return 0;
+                }
+            }
+        }
+
         ist = ist_find_unused(type);
         if (!ist) {
             av_log(fg, AV_LOG_FATAL,
