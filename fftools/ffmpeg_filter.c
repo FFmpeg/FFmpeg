@@ -1318,16 +1318,16 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter, int comm
                 if (!ofilter->bound && ofilter->linklabel &&
                     !strcmp(ofilter->linklabel, ifilter->linklabel)) {
                     if (commit) {
-                    av_log(fg, AV_LOG_VERBOSE,
-                           "Binding input with label '%s' to filtergraph output %d:%d\n",
-                           ifilter->linklabel, i, j);
+                        av_log(fg, AV_LOG_VERBOSE,
+                               "Binding input with label '%s' to filtergraph output %d:%d\n",
+                               ifilter->linklabel, i, j);
 
-                    ret = ifilter_bind_fg(ifp, fg_src, j);
-                    if (ret < 0) {
-                        av_log(fg, AV_LOG_ERROR, "Error binding filtergraph input %s\n",
-                               ifilter->linklabel);
-                    return ret;
-                    }
+                        ret = ifilter_bind_fg(ifp, fg_src, j);
+                        if (ret < 0) {
+                            av_log(fg, AV_LOG_ERROR, "Error binding filtergraph input %s\n",
+                                   ifilter->linklabel);
+                            return ret;
+                        }
                     } else
                         ofp_from_ofilter(ofilter)->needed = 1;
                     return 0;
@@ -1379,9 +1379,9 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter, int comm
         ist = input_files[file_idx]->streams[st->index];
 
         if (commit)
-        av_log(fg, AV_LOG_VERBOSE,
-               "Binding input with label '%s' to input stream %d:%d\n",
-               ifilter->linklabel, ist->file->index, ist->index);
+            av_log(fg, AV_LOG_VERBOSE,
+                   "Binding input with label '%s' to input stream %d:%d\n",
+                   ifilter->linklabel, ist->file->index, ist->index);
     } else {
         ist = ist_find_unused(type);
         if (!ist) {
@@ -1393,20 +1393,20 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter, int comm
         }
 
         if (commit)
-        av_log(fg, AV_LOG_VERBOSE,
-               "Binding unlabeled input %d to input stream %d:%d\n",
-               ifilter->index, ist->file->index, ist->index);
+            av_log(fg, AV_LOG_VERBOSE,
+                   "Binding unlabeled input %d to input stream %d:%d\n",
+                   ifilter->index, ist->file->index, ist->index);
     }
     av_assert0(ist);
 
     if (commit) {
-    ret = ifilter_bind_ist(ifilter, ist, &vs);
-    if (ret < 0) {
-        av_log(fg, AV_LOG_ERROR,
-               "Error binding an input stream to complex filtergraph input %s.\n",
-               ifilter->name);
-        return ret;
-    }
+        ret = ifilter_bind_ist(ifilter, ist, &vs);
+        if (ret < 0) {
+            av_log(fg, AV_LOG_ERROR,
+                   "Error binding an input stream to complex filtergraph input %s.\n",
+                   ifilter->name);
+            return ret;
+        }
     }
 
     return 0;
