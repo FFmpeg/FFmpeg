@@ -1772,6 +1772,11 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     dev_info.pNext = p->feats.device.pNext;
     dev_info.pEnabledFeatures = &p->feats.device.features;
 
+    /* Limit queues to a given number if needed */
+    opt_d = av_dict_get(opts, "limit_queues", NULL, 0);
+    if (opt_d)
+        p->limit_queues = strtol(opt_d->value, NULL, 10);
+
     /* Setup enabled queue families */
     if ((err = setup_queue_families(ctx, &dev_info)))
         goto end;
@@ -1798,11 +1803,6 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     opt_d = av_dict_get(opts, "linear_images", NULL, 0);
     if (opt_d)
         p->use_linear_images = strtol(opt_d->value, NULL, 10);
-
-    /* Limit queues to a given number if needed */
-    opt_d = av_dict_get(opts, "limit_queues", NULL, 0);
-    if (opt_d)
-        p->limit_queues = strtol(opt_d->value, NULL, 10);
 
     /* The disable_multiplane argument takes precedent over the option */
     p->disable_multiplane = disable_multiplane;
