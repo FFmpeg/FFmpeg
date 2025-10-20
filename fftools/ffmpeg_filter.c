@@ -204,6 +204,11 @@ typedef struct OutputFilterPriv {
     enum AVColorRange       color_range;
     enum AVAlphaMode        alpha_mode;
 
+    unsigned                crop_top;
+    unsigned                crop_bottom;
+    unsigned                crop_left;
+    unsigned                crop_right;
+
     AVFrameSideData       **side_data;
     int                     nb_side_data;
 
@@ -227,6 +232,8 @@ typedef struct OutputFilterPriv {
     const enum AVColorSpace *color_spaces;
     const enum AVColorRange *color_ranges;
     const enum AVAlphaMode *alpha_modes;
+
+    int32_t                 displaymatrix[9];
 
     AVRational              enc_timebase;
     int64_t                 trim_start_us;
@@ -818,7 +825,7 @@ int ofilter_bind_enc(OutputFilter *ofilter, unsigned sched_idx_enc,
     ofp->needed = ofilter->bound = 1;
     av_freep(&ofilter->linklabel);
 
-    ofp->flags        = opts->flags;
+    ofp->flags       |= opts->flags;
     ofp->ts_offset    = opts->ts_offset;
     ofp->enc_timebase = opts->output_tb;
 
@@ -1078,7 +1085,8 @@ static const AVClass fg_class = {
     .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
-int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
+int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch,
+              const OutputFilterOptions *opts)
 {
     FilterGraphPriv *fgp;
     FilterGraph      *fg;
@@ -1175,11 +1183,13 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
         const enum AVMediaType type = avfilter_pad_get_type(cur->filter_ctx->output_pads,
                                                             cur->pad_idx);
         OutputFilter *const ofilter = ofilter_alloc(fg, type);
+        OutputFilterPriv *ofp;
 
         if (!ofilter) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
+        ofp = ofp_from_ofilter(ofilter);
 
         ofilter->linklabel = cur->name;
         cur->name          = NULL;
@@ -1188,6 +1198,25 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
         if (!ofilter->name) {
             ret = AVERROR(ENOMEM);
             goto fail;
+        }
+
+        // opts should only be needed in this function to fill fields from filtergraphs
+        // whose output is meant to be treated as if it was stream, e.g. merged HEIF
+        // tile groups.
+        if (opts) {
+            ofp->flags        = opts->flags;
+            ofp->side_data    = opts->side_data;
+            ofp->nb_side_data = opts->nb_side_data;
+
+            ofp->crop_top     = opts->crop_top;
+            ofp->crop_bottom  = opts->crop_bottom;
+            ofp->crop_left    = opts->crop_left;
+            ofp->crop_right   = opts->crop_right;
+
+            const AVFrameSideData *sd = av_frame_side_data_get(ofp->side_data, ofp->nb_side_data,
+                                                               AV_FRAME_DATA_DISPLAYMATRIX);
+            if (sd)
+                memcpy(ofp->displaymatrix, sd->data, sizeof(ofp->displaymatrix));
         }
     }
 
@@ -1225,7 +1254,7 @@ int fg_create_simple(FilterGraph **pfg,
     FilterGraphPriv *fgp;
     int ret;
 
-    ret = fg_create(pfg, graph_desc, sch);
+    ret = fg_create(pfg, graph_desc, sch, NULL);
     if (ret < 0)
         return ret;
     fg  = *pfg;
@@ -1602,6 +1631,53 @@ static int configure_output_video_filter(FilterGraphPriv *fgp, AVFilterGraph *gr
 
     if (ret < 0)
         return ret;
+
+    if (ofp->flags & OFILTER_FLAG_CROP) {
+        char crop_buf[64];
+        snprintf(crop_buf, sizeof(crop_buf), "w=iw-%u-%u:h=ih-%u-%u:x=%u:y=%u",
+                 ofp->crop_left, ofp->crop_right,
+                 ofp->crop_top,  ofp->crop_bottom,
+                 ofp->crop_left, ofp->crop_top);
+        ret = insert_filter(&last_filter, &pad_idx, "crop", crop_buf);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (ofp->flags & OFILTER_FLAG_AUTOROTATE) {
+        int32_t *displaymatrix = ofp->displaymatrix;
+        double theta;
+
+        theta = get_rotation(displaymatrix);
+
+        if (fabs(theta - 90) < 1.0) {
+            ret = insert_filter(&last_filter, &pad_idx, "transpose",
+                                displaymatrix[3] > 0 ? "cclock_flip" : "clock");
+        } else if (fabs(theta - 180) < 1.0) {
+            if (displaymatrix[0] < 0) {
+                ret = insert_filter(&last_filter, &pad_idx, "hflip", NULL);
+                if (ret < 0)
+                    return ret;
+            }
+            if (displaymatrix[4] < 0) {
+                ret = insert_filter(&last_filter, &pad_idx, "vflip", NULL);
+            }
+        } else if (fabs(theta - 270) < 1.0) {
+            ret = insert_filter(&last_filter, &pad_idx, "transpose",
+                                displaymatrix[3] < 0 ? "clock_flip" : "cclock");
+        } else if (fabs(theta) > 1.0) {
+            char rotate_buf[64];
+            snprintf(rotate_buf, sizeof(rotate_buf), "%f*PI/180", theta);
+            ret = insert_filter(&last_filter, &pad_idx, "rotate", rotate_buf);
+        } else if (fabs(theta) < 1.0) {
+            if (displaymatrix && displaymatrix[4] < 0) {
+                ret = insert_filter(&last_filter, &pad_idx, "vflip", NULL);
+            }
+        }
+        if (ret < 0)
+            return ret;
+
+        av_frame_side_data_remove(&ofp->side_data, &ofp->nb_side_data, AV_FRAME_DATA_DISPLAYMATRIX);
+    }
 
     if ((ofp->width || ofp->height) && (ofp->flags & OFILTER_FLAG_AUTOSCALE)) {
         char args[255];
@@ -2100,12 +2176,11 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
         ret = av_buffersink_get_ch_layout(sink, &ofp->ch_layout);
         if (ret < 0)
             goto fail;
-        av_frame_side_data_free(&ofp->side_data, &ofp->nb_side_data);
         sd = av_buffersink_get_side_data(sink, &nb_sd);
         if (nb_sd)
             for (int j = 0; j < nb_sd; j++) {
                 ret = av_frame_side_data_clone(&ofp->side_data, &ofp->nb_side_data,
-                                               sd[j], 0);
+                                               sd[j], AV_FRAME_SIDE_DATA_FLAG_REPLACE);
                 if (ret < 0) {
                     av_frame_side_data_free(&ofp->side_data, &ofp->nb_side_data);
                     goto fail;

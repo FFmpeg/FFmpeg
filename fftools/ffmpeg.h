@@ -300,6 +300,8 @@ enum OFilterFlags {
     // produce 24-bit audio
     OFILTER_FLAG_AUDIO_24BIT        = (1 << 1),
     OFILTER_FLAG_AUTOSCALE          = (1 << 2),
+    OFILTER_FLAG_AUTOROTATE         = (1 << 3),
+    OFILTER_FLAG_CROP               = (1 << 4),
 };
 
 typedef struct OutputFilterOptions {
@@ -333,6 +335,11 @@ typedef struct OutputFilterOptions {
     enum AVColorRange   color_range;
     enum AVAlphaMode    alpha_mode;
 
+    unsigned            crop_top;
+    unsigned            crop_bottom;
+    unsigned            crop_left;
+    unsigned            crop_right;
+
     enum VideoSyncMethod vsync_method;
     AVRational           frame_rate;
     AVRational           max_frame_rate;
@@ -347,6 +354,9 @@ typedef struct OutputFilterOptions {
     const enum AVColorSpace  *color_spaces;
     const enum AVColorRange  *color_ranges;
     const enum AVAlphaMode   *alpha_modes;
+
+    AVFrameSideData   **side_data;
+    int                 nb_side_data;
 
     // for simple filtergraphs only, view specifier passed
     // along to the decoder
@@ -827,7 +837,8 @@ int ofilter_bind_enc(OutputFilter *ofilter,
  * @param graph_desc Graph description; an av_malloc()ed string, filtergraph
  *                   takes ownership of it.
  */
-int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch);
+int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch,
+              const OutputFilterOptions *opts);
 
 void fg_free(FilterGraph **pfg);
 
