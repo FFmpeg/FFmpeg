@@ -1630,6 +1630,12 @@ static int map_auto_video(Muxer *mux, const OptionsContext *o)
             }
 
             switch (istg->stg->type) {
+            case AV_STREAM_GROUP_PARAMS_TILE_GRID: {
+                const AVStreamGroupTileGrid *tg = istg->stg->params.tile_grid;
+                score += tg->width * (int64_t)tg->height
+                           + 5000000*!!(istg->stg->disposition & AV_DISPOSITION_DEFAULT);
+                break;
+            }
             default:
                 continue;
             }

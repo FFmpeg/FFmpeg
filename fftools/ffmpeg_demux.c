@@ -1641,13 +1641,101 @@ static DemuxStreamGroup *demux_stream_group_alloc(Demuxer *d, AVStreamGroup *stg
     return dsg;
 }
 
+static int istg_parse_tile_grid(const OptionsContext *o, Demuxer *d, InputStreamGroup *istg)
+{
+    InputFile *f = &d->f;
+    AVFormatContext *ic = d->f.ctx;
+    AVStreamGroup *stg = istg->stg;
+    const AVStreamGroupTileGrid *tg = stg->params.tile_grid;
+    OutputFilterOptions opts;
+    AVBPrint bp;
+    char *graph_str;
+    int autorotate = 1;
+    const char *apply_cropping = NULL;
+    int  ret;
+
+    if (tg->nb_tiles == 1)
+        return 0;
+
+    memset(&opts, 0, sizeof(opts));
+
+    opt_match_per_stream_group_int(istg, &o->autorotate, ic, stg, &autorotate);
+    if (autorotate)
+        opts.flags |= OFILTER_FLAG_AUTOROTATE;
+
+    opts.flags |= OFILTER_FLAG_CROP;
+    opt_match_per_stream_group_str(istg, &o->apply_cropping, ic, stg, &apply_cropping);
+    if (apply_cropping) {
+        char *p;
+        int crop = strtol(apply_cropping, &p, 0);
+        if (*p)
+            return AVERROR(EINVAL);
+        if (!crop)
+            opts.flags &= ~OFILTER_FLAG_CROP;
+    }
+
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
+    for (int i = 0; i < tg->nb_tiles; i++)
+        av_bprintf(&bp, "[%d:g:%d:%d]", f->index, stg->index, tg->offsets[i].idx);
+    av_bprintf(&bp, "xstack=inputs=%d:layout=", tg->nb_tiles);
+    for (int i = 0; i < tg->nb_tiles - 1; i++)
+        av_bprintf(&bp, "%d_%d|", tg->offsets[i].horizontal,
+                                  tg->offsets[i].vertical);
+    av_bprintf(&bp, "%d_%d:fill=0x%02X%02X%02X@0x%02X", tg->offsets[tg->nb_tiles - 1].horizontal,
+                                                        tg->offsets[tg->nb_tiles - 1].vertical,
+                                                        tg->background[0], tg->background[1],
+                                                        tg->background[2], tg->background[3]);
+    av_bprintf(&bp, "[%d:g:%d]", f->index, stg->index);
+    ret = av_bprint_finalize(&bp, &graph_str);
+    if (ret < 0)
+        return ret;
+
+    if (tg->coded_width != tg->width || tg->coded_height != tg->height) {
+        opts.crop_top    = tg->vertical_offset;
+        opts.crop_bottom = tg->coded_height - tg->height - tg->vertical_offset;
+        opts.crop_left   = tg->horizontal_offset;
+        opts.crop_right  = tg->coded_width - tg->width - tg->horizontal_offset;
+    }
+
+    for (int i = 0; i < tg->nb_coded_side_data; i++) {
+        const AVPacketSideData *sd = &tg->coded_side_data[i];
+
+        ret = av_packet_side_data_to_frame(&opts.side_data, &opts.nb_side_data, sd, 0);
+        if (ret < 0 && ret != AVERROR(EINVAL))
+            return ret;
+    }
+
+    ret = fg_create(NULL, graph_str, d->sch, &opts);
+    if (ret < 0)
+        return ret;
+
+    istg->fg = filtergraphs[nb_filtergraphs-1];
+    istg->fg->is_internal = 1;
+
+    return 0;
+}
+
 static int istg_add(const OptionsContext *o, Demuxer *d, AVStreamGroup *stg)
 {
     DemuxStreamGroup *dsg;
+    InputStreamGroup *istg;
+    int ret;
 
     dsg = demux_stream_group_alloc(d, stg);
     if (!dsg)
         return AVERROR(ENOMEM);
+
+    istg = &dsg->istg;
+
+    switch (stg->type) {
+    case AV_STREAM_GROUP_PARAMS_TILE_GRID:
+        ret = istg_parse_tile_grid(o, d, istg);
+        if (ret < 0)
+            return ret;
+        break;
+    default:
+        break;
+    }
 
     return 0;
 }
