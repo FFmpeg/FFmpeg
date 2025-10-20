@@ -1007,7 +1007,7 @@ static int decoder_thread(void *arg)
         ret = 0;
 
         err_rate = (dp->dec.frames_decoded || dp->dec.decode_errors) ?
-                   dp->dec.decode_errors / (dp->dec.frames_decoded + dp->dec.decode_errors) : 0.f;
+                   (float)dp->dec.decode_errors / (dp->dec.frames_decoded + dp->dec.decode_errors) : 0.f;
         if (err_rate > max_error_rate) {
             av_log(dp, AV_LOG_FATAL, "Decode error rate %g exceeds maximum %g\n",
                    err_rate, max_error_rate);
