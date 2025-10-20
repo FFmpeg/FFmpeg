@@ -138,7 +138,12 @@ static int liblc3_encode(AVCodecContext *avctx, AVPacket *pkt,
     int block_bytes = liblc3->block_bytes;
     int channels = avctx->ch_layout.nb_channels;
     uint8_t *data_ptr;
+    size_t sample_size;
+    int is_planar;
     int ret;
+
+    is_planar = av_sample_fmt_is_planar(avctx->sample_fmt);
+    sample_size = av_get_bytes_per_sample(avctx->sample_fmt);
 
     if ((ret = ff_get_encode_buffer(avctx, pkt, block_bytes, 0)) < 0)
         return ret;
@@ -155,9 +160,14 @@ static int liblc3_encode(AVCodecContext *avctx, AVPacket *pkt,
 
     data_ptr = pkt->data;
     for (int ch = 0; ch < channels; ch++) {
-        const float *pcm = frame ? (const float*)frame->data[ch] : (const float[]){ 0 };
-        int stride = !!frame; // use a stride of zero to send a zero frame
         int nbytes = block_bytes / channels + (ch < block_bytes % channels);
+
+        const void *pcm = frame ?
+                    (is_planar ? frame->data[ch] :
+                    frame->data[0] + ch * sample_size) :
+                    (const void *)(const float[]){ 0 };
+
+        int stride = frame ? (is_planar ? 1 : channels) : 0;
 
         lc3_encode(liblc3->encoder[ch],
                    LC3_PCM_FORMAT_FLOAT, pcm, stride, nbytes, data_ptr);
@@ -198,7 +208,7 @@ const FFCodec ff_liblc3_encoder = {
     .p.priv_class   = &class,
     .p.wrapper_name = "liblc3",
     CODEC_SAMPLERATES(96000, 48000, 32000, 24000, 16000, 8000),
-    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP),
+    CODEC_SAMPLEFMTS(AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_FLT),
     .priv_data_size = sizeof(LibLC3EncContext),
     .init           = liblc3_encode_init,
     .close          = liblc3_encode_close,
