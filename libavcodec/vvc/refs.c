@@ -450,7 +450,8 @@ static int add_candidate_ref(VVCContext *s, VVCFrameContext *fc, RefPicList *lis
 
     if (!IS_CVSS(s)) {
         const bool ref_corrupt = !ref || (ref->flags & VVC_FRAME_FLAG_CORRUPT);
-        const bool recovering  = s->no_output_before_recovery_flag && !GDR_IS_RECOVERED(s);
+        const bool recovering  = s->no_output_before_recovery_flag &&
+            (IS_RASL(s) || !GDR_IS_RECOVERED(s));
 
         if (ref_corrupt && !recovering) {
             if (!(s->avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) &&
