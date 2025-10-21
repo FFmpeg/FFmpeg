@@ -42,7 +42,7 @@ static int try_8x8basis_ssse3(const int16_t rem[64], const int16_t weight[64], c
     x86_reg i=0;
 
     av_assert2(FFABS(scale) < MAX_ABS);
-    scale <<= 16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT;
+    scale *= 1 << (16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT);
 
     __asm__ volatile(
         "pxor            %%xmm2, %%xmm2     \n\t"
@@ -87,7 +87,7 @@ static void add_8x8basis_ssse3(int16_t rem[64], const int16_t basis[64], int sca
     x86_reg i=0;
 
     if (FFABS(scale) < 1024) {
-        scale <<= 16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT;
+        scale *= 1 << (16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT);
         __asm__ volatile(
                 "movd                %3, %%xmm2     \n\t"
                 "punpcklwd       %%xmm2, %%xmm2     \n\t"
