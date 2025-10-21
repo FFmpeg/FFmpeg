@@ -1,4 +1,4 @@
-9a89f73cb2e305c15dda99c99c39b9d1 *tests/data/fate/vsynth1-huffyuv.avi
-8876474 tests/data/fate/vsynth1-huffyuv.avi
+0469244ace79ef728c60f87b2554426a *tests/data/fate/vsynth1-huffyuv.avi
+6861194 tests/data/fate/vsynth1-huffyuv.avi
 c5ccac874dbf808e9088bc3107860042 *tests/data/fate/vsynth1-huffyuv.out.rawvideo
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200

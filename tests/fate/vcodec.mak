@@ -185,7 +185,7 @@ fate-vsynth%-ffv1-2pass10:       ENCOPTS = -coder range_tab -context 1 -pix_fmt 
 FATE_VCODEC-$(call ENCDEC, FFVHUFF, AVI) += ffvhuff
 FATE_VCODEC_SCALE-$(call ENCDEC, FFVHUFF, AVI) += ffvhuff444 ffvhuff420p12 ffvhuff422p10left ffvhuff444p16
 fate-vsynth%-ffvhuff444:         ENCOPTS = -c:v ffvhuff -pix_fmt yuv444p
-fate-vsynth%-ffvhuff420p12:      ENCOPTS = -c:v ffvhuff -pix_fmt yuv420p12le
+fate-vsynth%-ffvhuff420p12:      ENCOPTS = -c:v ffvhuff -pix_fmt yuv420p12le -pred median
 fate-vsynth%-ffvhuff422p10left:  ENCOPTS = -c:v ffvhuff -pix_fmt yuv422p10le -pred left
 fate-vsynth%-ffvhuff444p16:      ENCOPTS = -c:v ffvhuff -pix_fmt yuv444p16le -pred plane
 
@@ -216,6 +216,7 @@ fate-vsynth%-h263p:              ENCOPTS = -qscale 2 -flags +aic -umv 1 -aiv 1 -
 
 FATE_VCODEC_SCALE-$(call ENCDEC, HUFFYUV, AVI) += huffyuv huffyuvbgr24 huffyuvbgra
 fate-vsynth%-huffyuv:            ENCOPTS = -c:v huffyuv -pix_fmt yuv422p -sws_flags neighbor
+fate-vsynth1-huffyuv:            ENCOPTS = -c:v huffyuv -pix_fmt yuv422p -sws_flags neighbor -pred median
 fate-vsynth%-huffyuv:            DECOPTS = -sws_flags neighbor
 fate-vsynth%-huffyuvbgr24:       ENCOPTS = -c:v huffyuv -pix_fmt rgb24 -sws_flags neighbor
 fate-vsynth%-huffyuvbgr24:       DECOPTS = -sws_flags neighbor
