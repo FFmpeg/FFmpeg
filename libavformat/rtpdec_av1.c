@@ -329,6 +329,8 @@ static int av1_handle_packet(AVFormatContext *ctx, PayloadContext *data,
             num_lebs = write_leb(pkt->data + pktpos, obu_payload_size);
             data->frag_lebs_res = num_lebs;
             pktpos += num_lebs;
+        } else if (!is_frag_cont) {
+            data->frag_lebs_res = 0;
         }
         // copy verbatim or without above header size patch
         memcpy(pkt->data + pktpos, buf_ptr, obu_payload_size);
@@ -339,35 +341,32 @@ static int av1_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         // if we were handling a fragmented packet and this was the last
         // fragment, correct OBU size field
         if (data->frag_obu_size && (rem_pkt_size || !is_last_fragmented)) {
-            uint32_t final_obu_size = data->frag_obu_size + obu_size - data->frag_header_size;
-            uint8_t *lebptr = pkt->data + data->frag_pkt_leb_pos;
-            num_lebs = calc_leb_size(final_obu_size);
+            if (data->frag_lebs_res) {
+                uint32_t final_obu_size = data->frag_obu_size + obu_size - data->frag_header_size;
+                uint8_t *lebptr = pkt->data + data->frag_pkt_leb_pos;
+                num_lebs = calc_leb_size(final_obu_size);
 
-            // check if we had allocated enough LEB bytes in header,
-            // otherwise make some extra space
-            if (num_lebs > data->frag_lebs_res) {
-                int extra_bytes = num_lebs - data->frag_lebs_res;
-                if ((result = av_grow_packet(pkt, extra_bytes)) < 0)
-                    return result;
-                // update pointer in case buffer address changed
-                lebptr = pkt->data + data->frag_pkt_leb_pos;
-                // move existing data for OBU back a bit
-                memmove(lebptr + extra_bytes, lebptr,
-                        pkt->size - extra_bytes - data->frag_pkt_leb_pos);
-                // move pktpos further down for following OBUs in same packet.
-                pktpos += extra_bytes;
+                // check if we had allocated enough LEB bytes in header,
+                // otherwise make some extra space
+                if (num_lebs > data->frag_lebs_res) {
+                    int extra_bytes = num_lebs - data->frag_lebs_res;
+                    if ((result = av_grow_packet(pkt, extra_bytes)) < 0)
+                        return result;
+                    // update pointer in case buffer address changed
+                    lebptr = pkt->data + data->frag_pkt_leb_pos;
+                    // move existing data for OBU back a bit
+                    memmove(lebptr + extra_bytes, lebptr,
+                            pkt->size - extra_bytes - data->frag_pkt_leb_pos);
+                    // move pktpos further down for following OBUs in same packet.
+                    pktpos += extra_bytes;
+                }
+
+                // update OBU size field
+                write_leb(lebptr, final_obu_size);
             }
-
-            // update OBU size field
-            write_leb(lebptr, final_obu_size);
-
             data->frag_obu_size = 0; // signal end of fragment
         } else if (is_last_fragmented && !rem_pkt_size) {
-            // add to total OBU size, so we can fix that in OBU header
-            // (but only if the OBU size was missing!)
-            if (needs_size_field || data->frag_obu_size) {
-                data->frag_obu_size += obu_size;
-            }
+            data->frag_obu_size += obu_size;
             // fragment not yet finished!
             result = -1;
         }
