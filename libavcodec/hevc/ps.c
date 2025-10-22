@@ -238,7 +238,6 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
 static int decode_profile_tier_level(GetBitContext *gb, AVCodecContext *avctx,
                                       PTLCommon *ptl)
 {
-    const char *profile_name = NULL;
     int i;
 
     if (get_bits_left(gb) < 2+1+5 + 32 + 4 + 43 + 1)
@@ -249,14 +248,15 @@ static int decode_profile_tier_level(GetBitContext *gb, AVCodecContext *avctx,
     ptl->profile_idc   = get_bits(gb, 5);
 
 #if !CONFIG_SMALL
+    const char *profile_name = NULL;
     for (int i = 0; ff_hevc_profiles[i].profile != AV_PROFILE_UNKNOWN; i++)
         if (ff_hevc_profiles[i].profile == ptl->profile_idc) {
             profile_name = ff_hevc_profiles[i].name;
             break;
         }
-#endif
     av_log(avctx, profile_name ? AV_LOG_DEBUG : AV_LOG_WARNING,
            "%s profile bitstream\n", profile_name ? profile_name : "Unknown");
+#endif
 
     for (i = 0; i < 32; i++) {
         ptl->profile_compatibility_flag[i] = get_bits1(gb);
