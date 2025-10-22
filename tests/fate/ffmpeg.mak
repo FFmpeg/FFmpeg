@@ -267,3 +267,16 @@ FATE_FFMPEG-$(call ENCDEC2, MPEG2VIDEO, FFV1, NUT, HSTACK_FILTER PIPE_PROTOCOL F
 # test matching by stream disposition
 fate-ffmpeg-spec-disposition: CMD = framecrc -i $(TARGET_SAMPLES)/mpegts/pmtchange.ts -map '0:disp:visual_impaired+descriptions:1' -c copy
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MPEGTS,,) += fate-ffmpeg-spec-disposition
+
+# test heif image merging using internally defined filtegraphs
+# picking the stream group if not mapping any specific stream
+fate-ffmpeg-heif-merge: CMD = framecrc -i $(TARGET_SAMPLES)/heif-conformance/C007.heic
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER) += fate-ffmpeg-heif-merge
+
+# mapping the stream group
+fate-ffmpeg-heif-merge-mapped: CMD = framecrc -i $(TARGET_SAMPLES)/heif-conformance/C007.heic -map '[0:g:0]'
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER) += fate-ffmpeg-heif-merge-mapped
+
+# binding the internal filtegraph with a caller defined filtergraph
+fate-ffmpeg-heif-merge-filtergraph: CMD = framecrc -i $(TARGET_SAMPLES)/heif-conformance/C007.heic -filter_complex "sws_flags=+accurate_rnd+bitexact\;[0:g:0]scale=w=1280:h=720[out]" -map "[out]"
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER SCALE_FILTER) += fate-ffmpeg-heif-merge-filtergraph
