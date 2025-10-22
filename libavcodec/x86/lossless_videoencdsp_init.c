@@ -49,9 +49,13 @@ static void sub_median_pred_mmxext(uint8_t *dst, const uint8_t *src1,
     __asm__ volatile (
         "movq  (%1, %0), %%mm0          \n\t" // LT
         "psllq $8, %%mm0                \n\t"
+        "movq  (%2, %0), %%mm2          \n\t" // L
+        "psllq $8, %%mm2                \n\t"
+        "jmp 2f                         \n\t"
         "1:                             \n\t"
-        "movq  (%1, %0), %%mm1          \n\t" // T
         "movq  -1(%2, %0), %%mm2        \n\t" // L
+        "2:                             \n\t"
+        "movq  (%1, %0), %%mm1          \n\t" // T
         "movq  (%2, %0), %%mm3          \n\t" // X
         "movq %%mm2, %%mm4              \n\t" // L
         "psubb %%mm0, %%mm2             \n\t"
