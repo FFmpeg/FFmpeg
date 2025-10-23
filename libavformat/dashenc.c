@@ -42,8 +42,6 @@
 
 #include "libavcodec/avcodec.h"
 
-#include "av1.h"
-#include "avc.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "hlsplaylist.h"
@@ -51,11 +49,9 @@
 #include "http.h"
 #endif
 #include "internal.h"
-#include "isom.h"
 #include "mux.h"
 #include "os_support.h"
 #include "url.h"
-#include "vpcc.h"
 #include "dash.h"
 
 typedef enum {
@@ -206,18 +202,6 @@ typedef struct DASHContext {
     int64_t update_period;
 } DASHContext;
 
-static const struct codec_string {
-    enum AVCodecID id;
-    const char str[8];
-} codecs[] = {
-    { AV_CODEC_ID_VP8, "vp8" },
-    { AV_CODEC_ID_VP9, "vp9" },
-    { AV_CODEC_ID_VORBIS, "vorbis" },
-    { AV_CODEC_ID_OPUS, "opus" },
-    { AV_CODEC_ID_FLAC, "flac" },
-    { AV_CODEC_ID_NONE }
-};
-
 static int dashenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
                            AVDictionary **options) {
     DASHContext *c = s->priv_data;
@@ -325,117 +309,6 @@ static int init_segment_types(AVFormatContext *s)
     }
 
     return 0;
-}
-
-static void set_vp9_codec_str(AVFormatContext *s, AVCodecParameters *par,
-                              AVRational *frame_rate, char *str, int size) {
-    VPCC vpcc;
-    int ret = ff_isom_get_vpcc_features(s, par, NULL, 0, frame_rate, &vpcc);
-    if (ret == 0) {
-        av_strlcatf(str, size, "vp09.%02d.%02d.%02d",
-                    vpcc.profile, vpcc.level, vpcc.bitdepth);
-    } else {
-        // Default to just vp9 in case of error while finding out profile or level
-        av_log(s, AV_LOG_WARNING, "Could not find VP9 profile and/or level\n");
-        av_strlcpy(str, "vp9", size);
-    }
-    return;
-}
-
-static void set_codec_str(AVFormatContext *s, AVCodecParameters *par,
-                          AVRational *frame_rate, char *str, int size)
-{
-    const AVCodecTag *tags[2] = { NULL, NULL };
-    uint32_t tag;
-    int i;
-
-    // common Webm codecs are not part of RFC 6381
-    for (i = 0; codecs[i].id != AV_CODEC_ID_NONE; i++)
-        if (codecs[i].id == par->codec_id) {
-            if (codecs[i].id == AV_CODEC_ID_VP9) {
-                set_vp9_codec_str(s, par, frame_rate, str, size);
-            } else {
-                av_strlcpy(str, codecs[i].str, size);
-            }
-            return;
-        }
-
-    // for codecs part of RFC 6381
-    if (par->codec_type == AVMEDIA_TYPE_VIDEO)
-        tags[0] = ff_codec_movvideo_tags;
-    else if (par->codec_type == AVMEDIA_TYPE_AUDIO)
-        tags[0] = ff_codec_movaudio_tags;
-    else
-        return;
-
-    tag = par->codec_tag;
-    if (!tag)
-        tag = av_codec_get_tag(tags, par->codec_id);
-    if (!tag)
-        return;
-    if (size < 5)
-        return;
-
-    AV_WL32(str, tag);
-    str[4] = '\0';
-    if (!strcmp(str, "mp4a") || !strcmp(str, "mp4v")) {
-        uint32_t oti;
-        tags[0] = ff_mp4_obj_type;
-        oti = av_codec_get_tag(tags, par->codec_id);
-        if (oti)
-            av_strlcatf(str, size, ".%02"PRIx32, oti);
-        else
-            return;
-
-        if (tag == MKTAG('m', 'p', '4', 'a')) {
-            if (par->extradata_size >= 2) {
-                int aot = par->extradata[0] >> 3;
-                if (aot == 31)
-                    aot = ((AV_RB16(par->extradata) >> 5) & 0x3f) + 32;
-                av_strlcatf(str, size, ".%d", aot);
-            }
-        } else if (tag == MKTAG('m', 'p', '4', 'v')) {
-            // Unimplemented, should output ProfileLevelIndication as a decimal number
-            av_log(s, AV_LOG_WARNING, "Incomplete RFC 6381 codec string for mp4v\n");
-        }
-    } else if (!strcmp(str, "avc1")) {
-        uint8_t *tmpbuf = NULL;
-        uint8_t *extradata = par->extradata;
-        int extradata_size = par->extradata_size;
-        if (!extradata_size)
-            return;
-        if (extradata[0] != 1) {
-            AVIOContext *pb;
-            if (avio_open_dyn_buf(&pb) < 0)
-                return;
-            if (ff_isom_write_avcc(pb, extradata, extradata_size) < 0) {
-                ffio_free_dyn_buf(&pb);
-                return;
-            }
-            extradata_size = avio_close_dyn_buf(pb, &extradata);
-            tmpbuf = extradata;
-        }
-
-        if (extradata_size >= 4)
-            av_strlcatf(str, size, ".%02x%02x%02x",
-                        extradata[1], extradata[2], extradata[3]);
-        av_free(tmpbuf);
-    } else if (!strcmp(str, "av01")) {
-        AV1SequenceParameters seq;
-        if (!par->extradata_size)
-            return;
-        if (ff_av1_parse_seq_header(&seq, par->extradata, par->extradata_size) < 0)
-            return;
-
-        av_strlcatf(str, size, ".%01u.%02u%s.%02u",
-                    seq.profile, seq.level, seq.tier ? "H" : "M", seq.bitdepth);
-        if (seq.color_description_present_flag)
-            av_strlcatf(str, size, ".%01u.%01u%01u%01u.%02u.%02u.%02u.%01u",
-                        seq.monochrome,
-                        seq.chroma_subsampling_x, seq.chroma_subsampling_y, seq.chroma_sample_position,
-                        seq.color_primaries, seq.transfer_characteristics, seq.matrix_coefficients,
-                        seq.color_range);
-    }
 }
 
 static int flush_dynbuf(DASHContext *c, OutputStream *os, int *range_length)
@@ -1701,8 +1574,8 @@ static int dash_init(AVFormatContext *s)
             c->has_video = 1;
         }
 
-        set_codec_str(s, st->codecpar, &st->avg_frame_rate, os->codec_str,
-                      sizeof(os->codec_str));
+        ff_make_codec_str(s, st->codecpar, &st->avg_frame_rate, os->codec_str,
+                          sizeof(os->codec_str));
         os->first_pts = AV_NOPTS_VALUE;
         os->max_pts = AV_NOPTS_VALUE;
         os->last_dts = AV_NOPTS_VALUE;
@@ -1838,7 +1711,7 @@ static int update_stream_extradata(AVFormatContext *s, OutputStream *os,
 
     memcpy(par->extradata, extradata, extradata_size);
 
-    set_codec_str(s, par, frame_rate, os->codec_str, sizeof(os->codec_str));
+    ff_make_codec_str(s, par, frame_rate, os->codec_str, sizeof(os->codec_str));
 
     return 0;
 }

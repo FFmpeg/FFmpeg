@@ -44,13 +44,11 @@
 
 #include "avformat.h"
 #include "avio_internal.h"
-#include "avc.h"
 #if CONFIG_HTTP_PROTOCOL
 #include "http.h"
 #endif
 #include "hlsplaylist.h"
 #include "internal.h"
-#include "nal.h"
 #include "mux.h"
 #include "os_support.h"
 #include "url.h"
@@ -358,118 +356,10 @@ static void write_codec_attr(AVStream *st, VariantStream *vs)
     if (vs->attr_status == CODEC_ATTRIBUTE_WILL_NOT_BE_WRITTEN)
         return;
 
-    if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
-        uint8_t *data = st->codecpar->extradata;
-        if (data) {
-            const uint8_t *p;
-
-            if (AV_RB32(data) == 0x01 && (data[4] & 0x1F) == 7)
-                p = &data[5];
-            else if (AV_RB24(data) == 0x01 && (data[3] & 0x1F) == 7)
-                p = &data[4];
-            else if (data[0] == 0x01)  /* avcC */
-                p = &data[1];
-            else
-                goto fail;
-            snprintf(attr, sizeof(attr),
-                     "avc1.%02x%02x%02x", p[0], p[1], p[2]);
-        } else {
-            goto fail;
-        }
-    } else if (st->codecpar->codec_id == AV_CODEC_ID_HEVC) {
-        uint8_t *data = st->codecpar->extradata;
-        int profile = AV_PROFILE_UNKNOWN;
-        uint32_t profile_compatibility = AV_PROFILE_UNKNOWN;
-        char tier = 0;
-        int level = AV_LEVEL_UNKNOWN;
-        char constraints[8] = "";
-
-        if (st->codecpar->profile != AV_PROFILE_UNKNOWN)
-            profile = st->codecpar->profile;
-        if (st->codecpar->level != AV_LEVEL_UNKNOWN)
-            level = st->codecpar->level;
-
-        /* check the boundary of data which from current position is small than extradata_size */
-        while (data && (data - st->codecpar->extradata + 19) < st->codecpar->extradata_size) {
-            /* get HEVC SPS NAL and seek to profile_tier_level */
-            if (!(data[0] | data[1] | data[2]) && data[3] == 1 && ((data[4] & 0x7E) == 0x42)) {
-                uint8_t *rbsp_buf;
-                int remain_size = 0;
-                int rbsp_size = 0;
-                uint32_t profile_compatibility_flags = 0;
-                uint8_t high_nibble = 0;
-                /* skip start code + nalu header */
-                data += 6;
-                /* process by reference General NAL unit syntax */
-                remain_size = st->codecpar->extradata_size - (data - st->codecpar->extradata);
-                rbsp_buf = ff_nal_unit_extract_rbsp(data, remain_size, &rbsp_size, 0);
-                if (!rbsp_buf)
-                    return;
-                if (rbsp_size < 13) {
-                    av_freep(&rbsp_buf);
-                    break;
-                }
-                /* skip sps_video_parameter_set_id   u(4),
-                 *      sps_max_sub_layers_minus1    u(3),
-                 *  and sps_temporal_id_nesting_flag u(1)
-                 *
-                 * TIER represents the general_tier_flag, with 'L' indicating the flag is 0,
-                 * and 'H' indicating the flag is 1
-                 */
-                tier = (rbsp_buf[1] & 0x20) == 0 ? 'L' : 'H';
-                profile = rbsp_buf[1] & 0x1f;
-                /* PROFILE_COMPATIBILITY is general_profile_compatibility_flags, but in reverse bit order,
-                 * in a hexadecimal representation (leading zeroes may be omitted).
-                 */
-                profile_compatibility_flags = AV_RB32(rbsp_buf + 2);
-                /* revise these bits to get the profile compatibility value */
-                profile_compatibility_flags = ((profile_compatibility_flags & 0x55555555U) << 1) | ((profile_compatibility_flags >> 1) & 0x55555555U);
-                profile_compatibility_flags = ((profile_compatibility_flags & 0x33333333U) << 2) | ((profile_compatibility_flags >> 2) & 0x33333333U);
-                profile_compatibility_flags = ((profile_compatibility_flags & 0x0F0F0F0FU) << 4) | ((profile_compatibility_flags >> 4) & 0x0F0F0F0FU);
-                profile_compatibility_flags = ((profile_compatibility_flags & 0x00FF00FFU) << 8) | ((profile_compatibility_flags >> 8) & 0x00FF00FFU);
-                profile_compatibility = (profile_compatibility_flags << 16) | (profile_compatibility_flags >> 16);
-                /* skip 8 + 8 + 32
-                 * CONSTRAINTS is a hexadecimal representation of the general_constraint_indicator_flags.
-                 * each byte is separated by a '.', and trailing zero bytes may be omitted.
-                 * drop the trailing zero bytes refer to ISO/IEC14496-15.
-                 */
-                high_nibble = rbsp_buf[7] >> 4;
-                snprintf(constraints, sizeof(constraints),
-                         high_nibble ? "%02x.%x" : "%02x",
-                         rbsp_buf[6], high_nibble);
-                /* skip 8 + 8 + 32 + 4 + 43 + 1 bit */
-                level = rbsp_buf[12];
-                av_freep(&rbsp_buf);
-                break;
-            }
-            data++;
-        }
-        if (st->codecpar->codec_tag == MKTAG('h','v','c','1') &&
-            profile != AV_PROFILE_UNKNOWN &&
-            profile_compatibility != AV_PROFILE_UNKNOWN &&
-            tier != 0 &&
-            level != AV_LEVEL_UNKNOWN &&
-            constraints[0] != '\0') {
-            snprintf(attr, sizeof(attr), "%s.%d.%x.%c%d.%s", av_fourcc2str(st->codecpar->codec_tag), profile, profile_compatibility, tier, level, constraints);
-        } else
-            goto fail;
-    } else if (st->codecpar->codec_id == AV_CODEC_ID_MP2) {
-        snprintf(attr, sizeof(attr), "mp4a.40.33");
-    } else if (st->codecpar->codec_id == AV_CODEC_ID_MP3) {
-        snprintf(attr, sizeof(attr), "mp4a.40.34");
-    } else if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
-        if (st->codecpar->profile != AV_PROFILE_UNKNOWN)
-            snprintf(attr, sizeof(attr), "mp4a.40.%d", st->codecpar->profile+1);
-        else
-            // This is for backward compatibility with the previous implementation.
-            snprintf(attr, sizeof(attr), "mp4a.40.2");
-    } else if (st->codecpar->codec_id == AV_CODEC_ID_AC3) {
-        snprintf(attr, sizeof(attr), "ac-3");
-    } else if (st->codecpar->codec_id == AV_CODEC_ID_EAC3) {
-        snprintf(attr, sizeof(attr), "ec-3");
-    } else {
+    if (ff_make_codec_str(vs->avf, st->codecpar, &st->avg_frame_rate,
+                          attr, sizeof(attr)) < 0)
         goto fail;
-    }
+
     // Don't write the same attribute multiple times
     if (!av_stristr(vs->codec_attr, attr)) {
         snprintf(vs->codec_attr + codec_strlen,
