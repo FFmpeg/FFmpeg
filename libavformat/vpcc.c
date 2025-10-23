@@ -35,7 +35,7 @@ enum VPX_CHROMA_SUBSAMPLING
     VPX_SUBSAMPLING_444 = 3,
 };
 
-static int get_vpx_chroma_subsampling(AVFormatContext *s,
+static int get_vpx_chroma_subsampling(void *logctx,
                                       enum AVPixelFormat pixel_format,
                                       enum AVChromaLocation chroma_location)
 {
@@ -51,15 +51,15 @@ static int get_vpx_chroma_subsampling(AVFormatContext *s,
             return VPX_SUBSAMPLING_444;
         }
     }
-    av_log(s, AV_LOG_ERROR, "Unsupported pixel format (%d)\n", pixel_format);
+    av_log(logctx, AV_LOG_ERROR, "Unsupported pixel format (%d)\n", pixel_format);
     return -1;
 }
 
-static int get_bit_depth(AVFormatContext *s, enum AVPixelFormat pixel_format)
+static int get_bit_depth(void *logctx, enum AVPixelFormat pixel_format)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pixel_format);
     if (desc == NULL) {
-        av_log(s, AV_LOG_ERROR, "Unsupported pixel format (%d)\n",
+        av_log(logctx, AV_LOG_ERROR, "Unsupported pixel format (%d)\n",
                pixel_format);
         return -1;
     }
@@ -150,16 +150,16 @@ static void parse_bitstream(GetBitContext *gb, int *profile, int *bit_depth) {
     *bit_depth = *profile <= 1 ? 8 : 10 + get_bits1(gb) * 2;
 }
 
-int ff_isom_get_vpcc_features(AVFormatContext *s, AVCodecParameters *par,
+int ff_isom_get_vpcc_features(void *logctx, AVCodecParameters *par,
                               const uint8_t *data, int len,
                               AVRational *frame_rate, VPCC *vpcc)
 {
     int profile = par->profile;
     int level = par->level == AV_LEVEL_UNKNOWN ?
         get_vp9_level(par, frame_rate) : par->level;
-    int bit_depth = get_bit_depth(s, par->format);
+    int bit_depth = get_bit_depth(logctx, par->format);
     int vpx_chroma_subsampling =
-        get_vpx_chroma_subsampling(s, par->format, par->chroma_location);
+        get_vpx_chroma_subsampling(logctx, par->format, par->chroma_location);
     int vpx_video_full_range_flag =
         get_vpx_video_full_range_flag(par->color_range);
 
@@ -186,7 +186,7 @@ int ff_isom_get_vpcc_features(AVFormatContext *s, AVCodecParameters *par,
     }
 
     if (profile == AV_PROFILE_UNKNOWN || !bit_depth)
-        av_log(s, AV_LOG_WARNING, "VP9 profile and/or bit depth not set or could not be derived\n");
+        av_log(logctx, AV_LOG_WARNING, "VP9 profile and/or bit depth not set or could not be derived\n");
 
     vpcc->profile            = profile;
     vpcc->level              = level;
@@ -197,14 +197,14 @@ int ff_isom_get_vpcc_features(AVFormatContext *s, AVCodecParameters *par,
     return 0;
 }
 
-int ff_isom_write_vpcc(AVFormatContext *s, AVIOContext *pb,
+int ff_isom_write_vpcc(void *logctx, AVIOContext *pb,
                        const uint8_t *data, int len,
                        AVCodecParameters *par)
 {
     VPCC vpcc;
     int ret;
 
-    ret = ff_isom_get_vpcc_features(s, par, data, len, NULL, &vpcc);
+    ret = ff_isom_get_vpcc_features(logctx, par, data, len, NULL, &vpcc);
     if (ret < 0)
         return ret;
 
