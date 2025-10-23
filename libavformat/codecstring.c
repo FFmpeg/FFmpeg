@@ -220,3 +220,9 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
     }
     return 0;
 }
+
+int av_mime_codec_str(const AVCodecParameters *par,
+                      AVRational frame_rate, struct AVBPrint *out)
+{
+    return ff_make_codec_str(NULL, par, &frame_rate, out);
+}
