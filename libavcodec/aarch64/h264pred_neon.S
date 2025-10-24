@@ -489,10 +489,10 @@ function ff_pred16x16_plane_neon_10, export=1
         mul             v2.8h,  v2.8h,  v0.8h
         mul             v3.8h,  v3.8h,  v0.8h
         addp            v2.8h,  v2.8h,  v3.8h
-        addp            v2.8h,  v2.8h,  v2.8h
-        addp            v2.4h,  v2.4h,  v2.4h
-        sshll           v3.4s,  v2.4h,  #2
-        saddw           v2.4s,  v3.4s,  v2.4h
+        saddlp          v2.4s,  v2.8h
+        addp            v2.4s,  v2.4s,  v2.4s
+        shl             v3.4s,  v2.4s,  #2
+        add             v2.4s,  v3.4s,  v2.4s
         rshrn           v4.4h,  v2.4s,  #6
         trn2            v5.4h,  v4.4h,  v4.4h
         add             v2.4h,  v4.4h,  v5.4h
@@ -506,14 +506,13 @@ function ff_pred16x16_plane_neon_10, export=1
         sxtl            v6.4s,  v5.4h          // c
 
         mov             v0.h[0],  wzr
-        mul             v0.8h,  v0.8h,  v4.h[0]
         dup             v16.4s, v2.s[0]
         dup             v17.4s, v2.s[0]
         dup             v2.8h,  v4.h[0]        // b
         dup             v3.4s,  v6.s[0]        // c
         sshll           v2.4s,  v2.4h,  #3     // b * 8
-        saddw           v16.4s, v16.4s, v0.4h
-        saddw2          v17.4s, v17.4s, v0.8h
+        smlal           v16.4s, v0.4h, v4.h[0]
+        smlal2          v17.4s, v0.8h, v4.h[0]
         sub             v3.4s,  v3.4s,  v2.4s
 
         mov             w3,      #16
