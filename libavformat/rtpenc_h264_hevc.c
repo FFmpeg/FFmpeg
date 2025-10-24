@@ -196,6 +196,9 @@ void ff_rtp_send_h264_hevc(AVFormatContext *s1, const uint8_t *buf1, int size)
             r1 = ff_nal_mp4_find_startcode(r, end, s->nal_length_size);
             if (!r1)
                 r1 = end;
+            // Check that the last is not truncated
+            if (r1 - r < s->nal_length_size)
+                break;
             r += s->nal_length_size;
         } else {
             while (!*(r++));
