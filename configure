@@ -452,8 +452,6 @@ Optimization options (experts only):
   --disable-altivec        disable AltiVec optimizations
   --disable-vsx            disable VSX optimizations
   --disable-power8         disable POWER8 optimizations
-  --disable-amd3dnow       disable 3DNow! optimizations
-  --disable-amd3dnowext    disable 3DNow! extended optimizations
   --disable-mmx            disable MMX optimizations
   --disable-mmxext         disable MMXEXT optimizations
   --disable-sse            disable SSE optimizations
@@ -2861,8 +2859,6 @@ simd128_deps="wasm"
 x86_64_select="i686"
 x86_64_suggest="fast_cmov"
 
-amd3dnow_deps="mmx"
-amd3dnowext_deps="amd3dnow"
 i686_deps="x86"
 mmx_deps="x86"
 mmxext_deps="mmx"
@@ -8177,8 +8173,6 @@ if enabled x86; then
     echo "x86 assembler             ${x86asmexe}"
     echo "MMX enabled               ${mmx-no}"
     echo "MMXEXT enabled            ${mmxext-no}"
-    echo "3DNow! enabled            ${amd3dnow-no}"
-    echo "3DNow! extended enabled   ${amd3dnowext-no}"
     echo "SSE enabled               ${sse-no}"
     echo "SSSE3 enabled             ${ssse3-no}"
     echo "AESNI enabled             ${aesni-no}"
