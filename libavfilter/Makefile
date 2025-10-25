@@ -682,9 +682,7 @@ SKIPHEADERS-$(CONFIG_VULKAN)                 += vulkan_filter.h
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats integral
 
-ifdef CONFIG_DRAWVG_FILTER
-TESTPROGS += drawvg
-endif
+TESTPROGS-$(CONFIG_DRAWVG_FILTER) += drawvg
 
 TOOLS-$(CONFIG_LIBZMQ) += zmqsend
 
