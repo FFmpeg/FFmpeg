@@ -6536,7 +6536,8 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
             mov->tracks[i].data_offset = pos + moov_size + 8;
 
         avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_HEADER);
-        if (mov->flags & FF_MOV_FLAG_DELAY_MOOV)
+        if (mov->flags & FF_MOV_FLAG_DELAY_MOOV &&
+            !(mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED))
             mov_write_identification(s->pb, s);
         if ((ret = mov_write_moov_tag(s->pb, mov, s)) < 0)
             return ret;
@@ -8413,7 +8414,8 @@ static int mov_write_header(AVFormatContext *s)
         }
     }
 
-    if (!(mov->flags & FF_MOV_FLAG_DELAY_MOOV)) {
+    if (!(mov->flags & FF_MOV_FLAG_DELAY_MOOV) ||
+        (mov->flags & FF_MOV_FLAG_HYBRID_FRAGMENTED)) {
         if ((ret = mov_write_identification(pb, s)) < 0)
             return ret;
     }
