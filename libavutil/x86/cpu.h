@@ -22,11 +22,6 @@
 #include "libavutil/cpu.h"
 #include "libavutil/cpu_internal.h"
 
-#define AV_CPU_FLAG_AMD3DNOW    AV_CPU_FLAG_3DNOW
-#define AV_CPU_FLAG_AMD3DNOWEXT AV_CPU_FLAG_3DNOWEXT
-
-#define X86_AMD3DNOW(flags)         CPUEXT(flags, AMD3DNOW)
-#define X86_AMD3DNOWEXT(flags)      CPUEXT(flags, AMD3DNOWEXT)
 #define X86_MMX(flags)              CPUEXT(flags, MMX)
 #define X86_MMXEXT(flags)           CPUEXT(flags, MMXEXT)
 #define X86_SSE(flags)              CPUEXT(flags, SSE)
@@ -51,8 +46,6 @@
 #define X86_AESNI(flags)            CPUEXT(flags, AESNI)
 #define X86_AVX512(flags)           CPUEXT(flags, AVX512)
 
-#define EXTERNAL_AMD3DNOW(flags)    CPUEXT_SUFFIX(flags, _EXTERNAL, AMD3DNOW)
-#define EXTERNAL_AMD3DNOWEXT(flags) CPUEXT_SUFFIX(flags, _EXTERNAL, AMD3DNOWEXT)
 #define EXTERNAL_MMX(flags)         CPUEXT_SUFFIX(flags, _EXTERNAL, MMX)
 #define EXTERNAL_MMXEXT(flags)      CPUEXT_SUFFIX(flags, _EXTERNAL, MMXEXT)
 #define EXTERNAL_SSE(flags)         CPUEXT_SUFFIX(flags, _EXTERNAL, SSE)
@@ -82,8 +75,6 @@
 #define EXTERNAL_AVX512(flags)      CPUEXT_SUFFIX(flags, _EXTERNAL, AVX512)
 #define EXTERNAL_AVX512ICL(flags)   CPUEXT_SUFFIX(flags, _EXTERNAL, AVX512ICL)
 
-#define INLINE_AMD3DNOW(flags)      CPUEXT_SUFFIX(flags, _INLINE, AMD3DNOW)
-#define INLINE_AMD3DNOWEXT(flags)   CPUEXT_SUFFIX(flags, _INLINE, AMD3DNOWEXT)
 #define INLINE_MMX(flags)           CPUEXT_SUFFIX(flags, _INLINE, MMX)
 #define INLINE_MMXEXT(flags)        CPUEXT_SUFFIX(flags, _INLINE, MMXEXT)
 #define INLINE_SSE(flags)           CPUEXT_SUFFIX(flags, _INLINE, SSE)
