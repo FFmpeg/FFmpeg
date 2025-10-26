@@ -159,6 +159,10 @@ static const LegacyFormatEntry legacy_format_entries[] = {
     [AV_PIX_FMT_YUV420P12LE]    = { 1, 1 },
     [AV_PIX_FMT_YUV420P14BE]    = { 1, 1 },
     [AV_PIX_FMT_YUV420P14LE]    = { 1, 1 },
+    [AV_PIX_FMT_YUV420P10MSBBE] = { 1, 1 },
+    [AV_PIX_FMT_YUV420P10MSBLE] = { 1, 1 },
+    [AV_PIX_FMT_YUV420P12MSBBE] = { 1, 1 },
+    [AV_PIX_FMT_YUV420P12MSBLE] = { 1, 1 },
     [AV_PIX_FMT_YUV422P9BE]     = { 1, 1 },
     [AV_PIX_FMT_YUV422P9LE]     = { 1, 1 },
     [AV_PIX_FMT_YUV422P10BE]    = { 1, 1 },
@@ -167,6 +171,10 @@ static const LegacyFormatEntry legacy_format_entries[] = {
     [AV_PIX_FMT_YUV422P12LE]    = { 1, 1 },
     [AV_PIX_FMT_YUV422P14BE]    = { 1, 1 },
     [AV_PIX_FMT_YUV422P14LE]    = { 1, 1 },
+    [AV_PIX_FMT_YUV422P10MSBBE] = { 1, 1 },
+    [AV_PIX_FMT_YUV422P10MSBLE] = { 1, 1 },
+    [AV_PIX_FMT_YUV422P12MSBBE] = { 1, 1 },
+    [AV_PIX_FMT_YUV422P12MSBLE] = { 1, 1 },
     [AV_PIX_FMT_YUV444P9BE]     = { 1, 1 },
     [AV_PIX_FMT_YUV444P9LE]     = { 1, 1 },
     [AV_PIX_FMT_YUV444P10BE]    = { 1, 1 },
@@ -741,6 +749,10 @@ static int fmt_shift(enum AVPixelFormat fmt)
     case AV_PIX_FMT_P210LE:
     case AV_PIX_FMT_Y210BE:
     case AV_PIX_FMT_Y210LE:
+    case AV_PIX_FMT_YUV420P10MSBBE:
+    case AV_PIX_FMT_YUV420P10MSBLE:
+    case AV_PIX_FMT_YUV422P10MSBBE:
+    case AV_PIX_FMT_YUV422P10MSBLE:
     case AV_PIX_FMT_YUV444P10MSBBE:
     case AV_PIX_FMT_YUV444P10MSBLE:
     case AV_PIX_FMT_GBRP10MSBBE:
@@ -756,6 +768,10 @@ static int fmt_shift(enum AVPixelFormat fmt)
     case AV_PIX_FMT_XV36LE:
     case AV_PIX_FMT_XYZ12BE:
     case AV_PIX_FMT_XYZ12LE:
+    case AV_PIX_FMT_YUV420P12MSBBE:
+    case AV_PIX_FMT_YUV420P12MSBLE:
+    case AV_PIX_FMT_YUV422P12MSBBE:
+    case AV_PIX_FMT_YUV422P12MSBLE:
     case AV_PIX_FMT_YUV444P12MSBBE:
     case AV_PIX_FMT_YUV444P12MSBLE:
     case AV_PIX_FMT_GBRP12MSBBE:

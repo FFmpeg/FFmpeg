@@ -122,8 +122,12 @@ yuv411p             e4a040e0e786c4dae07d9d3f90a54905
 yuv422p             16ce67249c6ce7ef57a433646ad6dfc1
 yuv422p10be         62ae323dcc41aabf8ff6ecc53b119ce8
 yuv422p10le         60b20ad8c01ad7ea774ce1d74d8932ba
+yuv422p10msbbe      7b79dbcb696575ab55717e2a5d2eb223
+yuv422p10msble      b182fe96adaa08f5b1fa55a0efea76fe
 yuv422p12be         7bcb3e28323dbf566512b5b8a1d33380
 yuv422p12le         5877624df10122dd51c173f814bd5414
+yuv422p12msbbe      478e1a8ef5703e1a1eca438a9387446e
+yuv422p12msble      3000948ea9fe3975f21108b3effef999
 yuv422p14be         8bd7bfb0b35d68000ba57af66958ef2d
 yuv422p14le         471c7528e3da240d0a40f33548cbfbab
 yuv422p16be         8c193a8b6064e2379b2fb211cd2e6e37
