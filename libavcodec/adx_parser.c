@@ -25,9 +25,9 @@
  * Splits packets into individual blocks.
  */
 
-#include "libavutil/intreadwrite.h"
 #include "parser.h"
 #include "adx.h"
+#include "parser_internal.h"
 
 typedef struct ADXParseContext {
     ParseContext pc;
@@ -99,7 +99,7 @@ static int adx_parse(AVCodecParserContext *s1,
 }
 
 const AVCodecParser ff_adx_parser = {
-    .codec_ids      = { AV_CODEC_ID_ADPCM_ADX },
+    PARSER_CODEC_LIST(AV_CODEC_ID_ADPCM_ADX),
     .priv_data_size = sizeof(ADXParseContext),
     .parser_parse   = adx_parse,
     .parser_close   = ff_parse_close,

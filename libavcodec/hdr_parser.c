@@ -26,6 +26,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "parser.h"
+#include "parser_internal.h"
 
 typedef struct HDRParseContext {
     ParseContext pc;
@@ -72,7 +73,7 @@ static int hdr_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_hdr_parser = {
-    .codec_ids      = { AV_CODEC_ID_RADIANCE_HDR },
+    PARSER_CODEC_LIST(AV_CODEC_ID_RADIANCE_HDR),
     .priv_data_size = sizeof(HDRParseContext),
     .parser_parse   = hdr_parse,
     .parser_close   = ff_parse_close,

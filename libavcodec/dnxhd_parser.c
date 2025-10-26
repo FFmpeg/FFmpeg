@@ -26,6 +26,7 @@
 
 #include "parser.h"
 #include "dnxhddata.h"
+#include "parser_internal.h"
 
 typedef struct {
     ParseContext pc;
@@ -139,7 +140,7 @@ static int dnxhd_parse(AVCodecParserContext *s,
 }
 
 const AVCodecParser ff_dnxhd_parser = {
-    .codec_ids      = { AV_CODEC_ID_DNXHD },
+    PARSER_CODEC_LIST(AV_CODEC_ID_DNXHD),
     .priv_data_size = sizeof(DNXHDParserContext),
     .parser_parse   = dnxhd_parse,
     .parser_close   = ff_parse_close,

@@ -31,6 +31,7 @@
 #include "ac3_parser_internal.h"
 #include "aac_ac3_parser.h"
 #include "get_bits.h"
+#include "parser_internal.h"
 
 
 #define AC3_HEADER_SIZE 7
@@ -478,7 +479,7 @@ static av_cold int ac3_parse_init(AVCodecParserContext *s1)
 
 
 const AVCodecParser ff_ac3_parser = {
-    .codec_ids      = { AV_CODEC_ID_AC3, AV_CODEC_ID_EAC3 },
+    PARSER_CODEC_LIST(AV_CODEC_ID_AC3, AV_CODEC_ID_EAC3),
     .priv_data_size = sizeof(AACAC3ParseContext),
     .parser_init    = ac3_parse_init,
     .parser_parse   = ff_aac_ac3_parse,

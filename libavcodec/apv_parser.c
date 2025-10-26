@@ -23,6 +23,7 @@
 #include "apv.h"
 #include "cbs.h"
 #include "cbs_apv.h"
+#include "parser_internal.h"
 
 typedef struct APVParseContext {
     CodedBitstreamContext *cbc;
@@ -141,7 +142,7 @@ static av_cold void close(AVCodecParserContext *s)
 }
 
 const AVCodecParser ff_apv_parser = {
-    .codec_ids    = { AV_CODEC_ID_APV },
+    PARSER_CODEC_LIST(AV_CODEC_ID_APV),
     .priv_data_size = sizeof(APVParseContext),
     .parser_init  = init,
     .parser_parse = parse,

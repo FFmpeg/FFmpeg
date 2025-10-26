@@ -25,6 +25,7 @@
  */
 
 #include "parser.h"
+#include "parser_internal.h"
 
 /* Whether frame is jp2 file or codestream
 */
@@ -212,7 +213,7 @@ static int jpeg2000_parse(AVCodecParserContext *s,
 }
 
 const AVCodecParser ff_jpeg2000_parser = {
-    .codec_ids      = { AV_CODEC_ID_JPEG2000 },
+    PARSER_CODEC_LIST(AV_CODEC_ID_JPEG2000),
     .priv_data_size = sizeof(JPEG2000ParserContext),
     .parser_parse   = jpeg2000_parse,
     .parser_close   = ff_parse_close,

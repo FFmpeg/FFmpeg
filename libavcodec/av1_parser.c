@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "cbs.h"
 #include "cbs_av1.h"
+#include "parser_internal.h"
 
 typedef struct AV1ParseContext {
     CodedBitstreamContext *cbc;
@@ -210,7 +211,7 @@ static av_cold void av1_parser_close(AVCodecParserContext *ctx)
 }
 
 const AVCodecParser ff_av1_parser = {
-    .codec_ids      = { AV_CODEC_ID_AV1 },
+    PARSER_CODEC_LIST(AV_CODEC_ID_AV1),
     .priv_data_size = sizeof(AV1ParseContext),
     .parser_init    = av1_parser_init,
     .parser_close   = av1_parser_close,

@@ -25,6 +25,7 @@
  */
 
 #include "parser.h"
+#include "parser_internal.h"
 #include "png.h"
 
 typedef struct PNGParseContext {
@@ -111,7 +112,7 @@ flush:
 }
 
 const AVCodecParser ff_png_parser = {
-    .codec_ids      = { AV_CODEC_ID_PNG },
+    PARSER_CODEC_LIST(AV_CODEC_ID_PNG),
     .priv_data_size = sizeof(PNGParseContext),
     .parser_parse   = png_parse,
     .parser_close   = ff_parse_close,

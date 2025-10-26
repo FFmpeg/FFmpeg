@@ -22,6 +22,7 @@
 
 #include "parser.h"
 #include "mpegaudiodecheader.h"
+#include "parser_internal.h"
 #include "libavutil/common.h"
 #include "libavformat/apetag.h" // for APE tag.
 #include "libavformat/id3v1.h" // for ID3v1_TAG_SIZE
@@ -137,7 +138,8 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
 
 
 const AVCodecParser ff_mpegaudio_parser = {
-    .codec_ids      = { AV_CODEC_ID_MP1, AV_CODEC_ID_MP2, AV_CODEC_ID_MP3, AV_CODEC_ID_MP3ADU },
+    PARSER_CODEC_LIST(AV_CODEC_ID_MP1, AV_CODEC_ID_MP2,
+                      AV_CODEC_ID_MP3, AV_CODEC_ID_MP3ADU),
     .priv_data_size = sizeof(MpegAudioParseContext),
     .parser_parse   = mpegaudio_parse,
     .parser_close   = ff_parse_close,

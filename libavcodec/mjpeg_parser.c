@@ -27,6 +27,7 @@
  */
 
 #include "parser.h"
+#include "parser_internal.h"
 
 typedef struct MJPEGParserContext{
     ParseContext pc;
@@ -129,7 +130,7 @@ static int jpeg_parse(AVCodecParserContext *s,
 
 
 const AVCodecParser ff_mjpeg_parser = {
-    .codec_ids      = { AV_CODEC_ID_MJPEG, AV_CODEC_ID_JPEGLS },
+    PARSER_CODEC_LIST(AV_CODEC_ID_MJPEG, AV_CODEC_ID_JPEGLS),
     .priv_data_size = sizeof(MJPEGParserContext),
     .parser_parse   = jpeg_parse,
     .parser_close   = ff_parse_close,

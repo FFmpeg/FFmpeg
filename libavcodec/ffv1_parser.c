@@ -18,6 +18,7 @@
 
 #include "avcodec.h"
 #include "ffv1.h"
+#include "parser_internal.h"
 #include "rangecoder.h"
 
 #include "libavutil/attributes.h"
@@ -81,7 +82,7 @@ static av_cold void ffv1_close(AVCodecParserContext *s)
 }
 
 const AVCodecParser ff_ffv1_parser = {
-    .codec_ids    = { AV_CODEC_ID_FFV1 },
+    PARSER_CODEC_LIST(AV_CODEC_ID_FFV1),
     .priv_data_size = sizeof(FFV1ParseContext),
     .parser_parse = parse,
     .parser_close = ffv1_close,

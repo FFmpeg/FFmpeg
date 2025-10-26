@@ -22,6 +22,7 @@
  */
 
 #include "parser.h"
+#include "parser_internal.h"
 
 typedef struct SiprParserContext{
     ParseContext pc;
@@ -67,7 +68,7 @@ static int sipr_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_sipr_parser = {
-    .codec_ids      = { AV_CODEC_ID_SIPR },
+    PARSER_CODEC_LIST(AV_CODEC_ID_SIPR),
     .priv_data_size = sizeof(SiprParserContext),
     .parser_parse   = sipr_parse,
     .parser_close   = ff_parse_close,

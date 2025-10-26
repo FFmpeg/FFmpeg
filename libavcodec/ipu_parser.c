@@ -25,6 +25,7 @@
  */
 
 #include "parser.h"
+#include "parser_internal.h"
 
 typedef struct IPUParseContext {
     ParseContext pc;
@@ -70,7 +71,7 @@ static int ipu_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_ipu_parser = {
-    .codec_ids      = { AV_CODEC_ID_IPU },
+    PARSER_CODEC_LIST(AV_CODEC_ID_IPU),
     .priv_data_size = sizeof(IPUParseContext),
     .parser_parse   = ipu_parse,
     .parser_close   = ff_parse_close,

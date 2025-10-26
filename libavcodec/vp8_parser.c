@@ -19,6 +19,7 @@
 #include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
+#include "parser_internal.h"
 
 static int parse(AVCodecParserContext *s,
                  AVCodecContext *avctx,
@@ -74,6 +75,6 @@ static int parse(AVCodecParserContext *s,
 }
 
 const AVCodecParser ff_vp8_parser = {
-    .codec_ids    = { AV_CODEC_ID_VP8 },
+    PARSER_CODEC_LIST(AV_CODEC_ID_VP8),
     .parser_parse = parse,
 };

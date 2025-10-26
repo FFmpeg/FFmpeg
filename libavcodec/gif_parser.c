@@ -26,6 +26,7 @@
 
 #include "gif.h"
 #include "parser.h"
+#include "parser_internal.h"
 
 typedef enum GIFParseStates {
     GIF_HEADER = 1,
@@ -201,7 +202,7 @@ static int gif_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_gif_parser = {
-    .codec_ids      = { AV_CODEC_ID_GIF },
+    PARSER_CODEC_LIST(AV_CODEC_ID_GIF),
     .priv_data_size = sizeof(GIFParseContext),
     .parser_parse   = gif_parse,
     .parser_close   = ff_parse_close,

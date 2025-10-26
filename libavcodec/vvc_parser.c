@@ -24,6 +24,7 @@
 #include "cbs.h"
 #include "cbs_h266.h"
 #include "parser.h"
+#include "parser_internal.h"
 
 #define START_CODE 0x000001 ///< start_code_prefix_one_3bytes
 #define IS_IDR(nut)   (nut == VVC_IDR_W_RADL || nut == VVC_IDR_N_LP)
@@ -506,7 +507,7 @@ static av_cold void vvc_parser_close(AVCodecParserContext *s)
 }
 
 const AVCodecParser ff_vvc_parser = {
-    .codec_ids      = { AV_CODEC_ID_VVC },
+    PARSER_CODEC_LIST(AV_CODEC_ID_VVC),
     .priv_data_size = sizeof(VVCParserContext),
     .parser_init    = vvc_parser_init,
     .parser_close   = vvc_parser_close,

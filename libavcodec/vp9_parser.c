@@ -23,6 +23,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
+#include "parser_internal.h"
 
 static int parse(AVCodecParserContext *ctx,
                  AVCodecContext *avctx,
@@ -64,6 +65,6 @@ static int parse(AVCodecParserContext *ctx,
 }
 
 const AVCodecParser ff_vp9_parser = {
-    .codec_ids      = { AV_CODEC_ID_VP9 },
+    PARSER_CODEC_LIST(AV_CODEC_ID_VP9),
     .parser_parse   = parse,
 };

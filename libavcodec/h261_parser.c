@@ -26,6 +26,7 @@
  */
 
 #include "parser.h"
+#include "parser_internal.h"
 
 static int h261_find_frame_end(ParseContext *pc, AVCodecContext *avctx,
                                const uint8_t *buf, int buf_size)
@@ -87,7 +88,7 @@ static int h261_parse(AVCodecParserContext *s,
 }
 
 const AVCodecParser ff_h261_parser = {
-    .codec_ids      = { AV_CODEC_ID_H261 },
+    PARSER_CODEC_LIST(AV_CODEC_ID_H261),
     .priv_data_size = sizeof(ParseContext),
     .parser_parse   = h261_parse,
     .parser_close   = ff_parse_close,

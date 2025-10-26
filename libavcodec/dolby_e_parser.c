@@ -21,6 +21,7 @@
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "dolby_e.h"
+#include "parser_internal.h"
 
 typedef struct DBEParseContext {
     DBEContext dectx;
@@ -66,7 +67,7 @@ end:
 }
 
 const AVCodecParser ff_dolby_e_parser = {
-    .codec_ids      = { AV_CODEC_ID_DOLBY_E },
+    PARSER_CODEC_LIST(AV_CODEC_ID_DOLBY_E),
     .priv_data_size = sizeof(DBEParseContext),
     .parser_parse   = dolby_e_parse,
 };

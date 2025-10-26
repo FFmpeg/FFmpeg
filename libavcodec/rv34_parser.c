@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "parser_internal.h"
 #include "libavutil/intreadwrite.h"
 
 typedef struct RV34ParseContext {
@@ -76,7 +77,7 @@ static int rv34_parse(AVCodecParserContext *s,
 }
 
 const AVCodecParser ff_rv34_parser = {
-    .codec_ids      = { AV_CODEC_ID_RV30, AV_CODEC_ID_RV40 },
+    PARSER_CODEC_LIST(AV_CODEC_ID_RV30, AV_CODEC_ID_RV40),
     .priv_data_size = sizeof(RV34ParseContext),
     .parser_parse   = rv34_parse,
 };

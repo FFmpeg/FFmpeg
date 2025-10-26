@@ -27,6 +27,7 @@
 
 #include "parser.h"
 #include "g729.h"
+#include "parser_internal.h"
 
 typedef struct G729ParseContext {
     ParseContext pc;
@@ -85,7 +86,7 @@ static int g729_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_g729_parser = {
-    .codec_ids      = { AV_CODEC_ID_G729, AV_CODEC_ID_ACELP_KELVIN },
+    PARSER_CODEC_LIST(AV_CODEC_ID_G729, AV_CODEC_ID_ACELP_KELVIN),
     .priv_data_size = sizeof(G729ParseContext),
     .parser_parse   = g729_parse,
     .parser_close   = ff_parse_close,

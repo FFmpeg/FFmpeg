@@ -31,6 +31,7 @@
 #include "parser.h"
 #include "mlp_parse.h"
 #include "mlp.h"
+#include "parser_internal.h"
 
 typedef struct MLPParseContext
 {
@@ -205,7 +206,7 @@ lost_sync:
 }
 
 const AVCodecParser ff_mlp_parser = {
-    .codec_ids      = { AV_CODEC_ID_MLP, AV_CODEC_ID_TRUEHD },
+    PARSER_CODEC_LIST(AV_CODEC_ID_MLP, AV_CODEC_ID_TRUEHD),
     .priv_data_size = sizeof(MLPParseContext),
     .parser_init    = mlp_init,
     .parser_parse   = mlp_parse,

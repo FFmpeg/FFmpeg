@@ -25,6 +25,7 @@
 
 #include "avcodec.h"
 #include "dvaudio.h"
+#include "parser_internal.h"
 
 static int dvaudio_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
                         const uint8_t **poutbuf, int *poutbuf_size,
@@ -41,6 +42,6 @@ static int dvaudio_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_dvaudio_parser = {
-    .codec_ids      = { AV_CODEC_ID_DVAUDIO },
+    PARSER_CODEC_LIST(AV_CODEC_ID_DVAUDIO),
     .parser_parse   = dvaudio_parse,
 };

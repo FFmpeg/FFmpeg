@@ -26,6 +26,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "parser.h"
+#include "parser_internal.h"
 #include "xwd.h"
 
 typedef struct XWDParseContext {
@@ -96,7 +97,7 @@ static int xwd_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_xwd_parser = {
-    .codec_ids      = { AV_CODEC_ID_XWD },
+    PARSER_CODEC_LIST(AV_CODEC_ID_XWD),
     .priv_data_size = sizeof(XWDParseContext),
     .parser_parse   = xwd_parse,
     .parser_close   = ff_parse_close,

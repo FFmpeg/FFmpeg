@@ -28,6 +28,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "parser.h"
+#include "parser_internal.h"
 #include "vc1.h"
 #include "get_bits.h"
 #include "vc1dsp.h"
@@ -272,7 +273,7 @@ static av_cold int vc1_parse_init(AVCodecParserContext *s)
 }
 
 const AVCodecParser ff_vc1_parser = {
-    .codec_ids      = { AV_CODEC_ID_VC1 },
+    PARSER_CODEC_LIST(AV_CODEC_ID_VC1),
     .priv_data_size = sizeof(VC1ParseContext),
     .parser_init    = vc1_parse_init,
     .parser_parse   = vc1_parse,

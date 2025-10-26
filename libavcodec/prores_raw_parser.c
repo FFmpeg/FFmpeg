@@ -20,6 +20,7 @@
 
 #include "parser.h"
 #include "bytestream.h"
+#include "parser_internal.h"
 
 static int prores_raw_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                             const uint8_t **poutbuf, int *poutbuf_size,
@@ -97,6 +98,6 @@ static int prores_raw_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_prores_raw_parser = {
-    .codec_ids      = { AV_CODEC_ID_PRORES_RAW },
+    PARSER_CODEC_LIST(AV_CODEC_ID_PRORES_RAW),
     .parser_parse   = prores_raw_parse,
 };

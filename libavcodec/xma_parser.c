@@ -22,6 +22,7 @@
  */
 
 #include "avcodec.h"
+#include "parser_internal.h"
 
 typedef struct XMAParserContext{
     int skip_packets;
@@ -56,7 +57,7 @@ static int xma_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_xma_parser = {
-    .codec_ids      = { AV_CODEC_ID_XMA2 },
+    PARSER_CODEC_LIST(AV_CODEC_ID_XMA2),
     .priv_data_size = sizeof(XMAParserContext),
     .parser_parse   = xma_parse,
 };

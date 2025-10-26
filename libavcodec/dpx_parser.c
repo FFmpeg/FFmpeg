@@ -28,6 +28,7 @@
 #include "libavutil/common.h"
 
 #include "parser.h"
+#include "parser_internal.h"
 
 typedef struct DPXParseContext {
     ParseContext pc;
@@ -109,7 +110,7 @@ flush:
 }
 
 const AVCodecParser ff_dpx_parser = {
-    .codec_ids      = { AV_CODEC_ID_DPX },
+    PARSER_CODEC_LIST(AV_CODEC_ID_DPX),
     .priv_data_size = sizeof(DPXParseContext),
     .parser_parse   = dpx_parse,
     .parser_close   = ff_parse_close,

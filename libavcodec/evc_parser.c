@@ -24,6 +24,7 @@
 #include "bytestream.h"
 #include "evc.h"
 #include "evc_parse.h"
+#include "parser_internal.h"
 
 #include "libavutil/attributes.h"
 
@@ -372,7 +373,7 @@ static av_cold void evc_parser_close(AVCodecParserContext *s)
 }
 
 const AVCodecParser ff_evc_parser = {
-    .codec_ids      = { AV_CODEC_ID_EVC },
+    PARSER_CODEC_LIST(AV_CODEC_ID_EVC),
     .priv_data_size = sizeof(EVCParserContext),
     .parser_parse   = evc_parse,
     .parser_close   = evc_parser_close,

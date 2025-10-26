@@ -23,6 +23,7 @@
 #include "avs2.h"
 #include "get_bits.h"
 #include "parser.h"
+#include "parser_internal.h"
 
 static int avs2_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
 {
@@ -190,7 +191,7 @@ static int avs2_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_avs2_parser = {
-    .codec_ids      = { AV_CODEC_ID_AVS2 },
+    PARSER_CODEC_LIST(AV_CODEC_ID_AVS2),
     .priv_data_size = sizeof(ParseContext),
     .parser_parse   = avs2_parse,
     .parser_close   = ff_parse_close,

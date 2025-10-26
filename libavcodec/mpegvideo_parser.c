@@ -25,6 +25,7 @@
 #include "parser.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
+#include "parser_internal.h"
 #include "startcode.h"
 
 struct MpvParseContext {
@@ -300,7 +301,7 @@ static av_cold int mpegvideo_parse_init(AVCodecParserContext *s)
 }
 
 const AVCodecParser ff_mpegvideo_parser = {
-    .codec_ids      = { AV_CODEC_ID_MPEG1VIDEO, AV_CODEC_ID_MPEG2VIDEO },
+    PARSER_CODEC_LIST(AV_CODEC_ID_MPEG1VIDEO, AV_CODEC_ID_MPEG2VIDEO),
     .priv_data_size = sizeof(struct MpvParseContext),
     .parser_init    = mpegvideo_parse_init,
     .parser_parse   = mpegvideo_parse,

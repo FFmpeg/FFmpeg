@@ -30,6 +30,7 @@
 #include "libavutil/avutil.h"
 
 #include "parser.h"
+#include "parser_internal.h"
 
 typedef struct XBMParseContext {
     ParseContext pc;
@@ -101,7 +102,7 @@ static int xbm_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_xbm_parser = {
-    .codec_ids      = { AV_CODEC_ID_XBM },
+    PARSER_CODEC_LIST(AV_CODEC_ID_XBM),
     .priv_data_size = sizeof(XBMParseContext),
     .parser_init    = xbm_init,
     .parser_parse   = xbm_parse,

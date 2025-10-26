@@ -24,6 +24,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
+#include "parser_internal.h"
 
 /* parser definition */
 typedef struct DVDSubParseContext {
@@ -85,7 +86,7 @@ static av_cold void dvdsub_parse_close(AVCodecParserContext *s)
 }
 
 const AVCodecParser ff_dvdsub_parser = {
-    .codec_ids      = { AV_CODEC_ID_DVD_SUBTITLE },
+    PARSER_CODEC_LIST(AV_CODEC_ID_DVD_SUBTITLE),
     .priv_data_size = sizeof(DVDSubParseContext),
     .parser_parse   = dvdsub_parse,
     .parser_close   = dvdsub_parse_close,

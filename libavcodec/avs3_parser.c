@@ -24,6 +24,7 @@
 #include "avs3.h"
 #include "get_bits.h"
 #include "parser.h"
+#include "parser_internal.h"
 
 static int avs3_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
 {
@@ -173,7 +174,7 @@ static int avs3_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_avs3_parser = {
-    .codec_ids      = { AV_CODEC_ID_AVS3 },
+    PARSER_CODEC_LIST(AV_CODEC_ID_AVS3),
     .priv_data_size = sizeof(ParseContext),
     .parser_parse   = avs3_parse,
     .parser_close   = ff_parse_close,

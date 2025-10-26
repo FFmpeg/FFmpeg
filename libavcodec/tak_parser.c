@@ -27,6 +27,7 @@
 #define CACHED_BITSTREAM_READER !ARCH_X86_32
 #define BITSTREAM_READER_LE
 #include "parser.h"
+#include "parser_internal.h"
 #include "tak.h"
 
 typedef struct TAKParseContext {
@@ -124,7 +125,7 @@ fail:
 }
 
 const AVCodecParser ff_tak_parser = {
-    .codec_ids      = { AV_CODEC_ID_TAK },
+    PARSER_CODEC_LIST(AV_CODEC_ID_TAK),
     .priv_data_size = sizeof(TAKParseContext),
     .parser_parse   = tak_parse,
     .parser_close   = ff_parse_close,

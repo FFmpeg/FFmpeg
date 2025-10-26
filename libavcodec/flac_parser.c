@@ -36,6 +36,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/mem.h"
 #include "flac_parse.h"
+#include "parser_internal.h"
 
 /** maximum number of adjacent headers that compare CRCs against each other   */
 #define FLAC_MAX_SEQUENTIAL_HEADERS 4
@@ -903,7 +904,7 @@ static av_cold void flac_parse_close(AVCodecParserContext *c)
 }
 
 const AVCodecParser ff_flac_parser = {
-    .codec_ids      = { AV_CODEC_ID_FLAC },
+    PARSER_CODEC_LIST(AV_CODEC_ID_FLAC),
     .priv_data_size = sizeof(FLACParseContext),
     .parser_init    = flac_parse_init,
     .parser_parse   = flac_parse,

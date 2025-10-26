@@ -29,6 +29,7 @@
 #include "dca_syncwords.h"
 #include "get_bits.h"
 #include "parser.h"
+#include "parser_internal.h"
 
 typedef struct DCAParseContext {
     ParseContext pc;
@@ -344,7 +345,7 @@ static int dca_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_dca_parser = {
-    .codec_ids      = { AV_CODEC_ID_DTS },
+    PARSER_CODEC_LIST(AV_CODEC_ID_DTS),
     .priv_data_size = sizeof(DCAParseContext),
     .parser_init    = dca_parse_init,
     .parser_parse   = dca_parse,

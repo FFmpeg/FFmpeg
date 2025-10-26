@@ -27,6 +27,7 @@
 #include "libavutil/common.h"
 
 #include "parser.h"
+#include "parser_internal.h"
 
 typedef struct WebPParseContext {
     ParseContext pc;
@@ -105,7 +106,7 @@ flush:
 }
 
 const AVCodecParser ff_webp_parser = {
-    .codec_ids      = { AV_CODEC_ID_WEBP },
+    PARSER_CODEC_LIST(AV_CODEC_ID_WEBP),
     .priv_data_size = sizeof(WebPParseContext),
     .parser_parse   = webp_parse,
     .parser_close   = ff_parse_close,

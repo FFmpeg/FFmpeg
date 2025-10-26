@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 #include "parser.h"
+#include "parser_internal.h"
 
 #define LATM_HEADER     0x56e000        // 0x2b7 (11 bits)
 #define LATM_MASK       0xFFE000        // top 11 bits
@@ -105,7 +106,7 @@ static int latm_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
 }
 
 const AVCodecParser ff_aac_latm_parser = {
-    .codec_ids      = { AV_CODEC_ID_AAC_LATM },
+    PARSER_CODEC_LIST(AV_CODEC_ID_AAC_LATM),
     .priv_data_size = sizeof(LATMParseContext),
     .parser_parse   = latm_parse,
     .parser_close   = ff_parse_close

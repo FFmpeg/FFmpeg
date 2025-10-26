@@ -49,6 +49,7 @@
 #include "mpegutils.h"
 #include "parser.h"
 #include "libavutil/refstruct.h"
+#include "parser_internal.h"
 #include "startcode.h"
 
 typedef struct H264ParseContext {
@@ -683,7 +684,7 @@ static av_cold int init(AVCodecParserContext *s)
 }
 
 const AVCodecParser ff_h264_parser = {
-    .codec_ids      = { AV_CODEC_ID_H264 },
+    PARSER_CODEC_LIST(AV_CODEC_ID_H264),
     .priv_data_size = sizeof(H264ParseContext),
     .parser_init    = init,
     .parser_parse   = h264_parse,
