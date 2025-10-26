@@ -353,7 +353,7 @@ static void hevc_parser_close(AVCodecParserContext *s)
     av_freep(&ctx->pc.buffer);
 }
 
-const AVCodecParser ff_hevc_parser = {
+const FFCodecParser ff_hevc_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_HEVC),
     .priv_data_size = sizeof(HEVCParserContext),
     .parser_parse   = hevc_parse,

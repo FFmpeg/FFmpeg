@@ -56,7 +56,7 @@ static int xma_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
     return buf_size;
 }
 
-const AVCodecParser ff_xma_parser = {
+const FFCodecParser ff_xma_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_XMA2),
     .priv_data_size = sizeof(XMAParserContext),
     .parser_parse   = xma_parse,

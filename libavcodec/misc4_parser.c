@@ -74,7 +74,7 @@ static int misc4_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     return next;
 }
 
-const AVCodecParser ff_misc4_parser = {
+const FFCodecParser ff_misc4_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_MISC4),
     .priv_data_size = sizeof(MISC4Context),
     .parser_parse   = misc4_parse,

@@ -506,7 +506,7 @@ static av_cold void vvc_parser_close(AVCodecParserContext *s)
     av_freep(&ctx->pc.buffer);
 }
 
-const AVCodecParser ff_vvc_parser = {
+const FFCodecParser ff_vvc_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_VVC),
     .priv_data_size = sizeof(VVCParserContext),
     .parser_init    = vvc_parser_init,

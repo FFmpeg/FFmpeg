@@ -106,7 +106,7 @@ flush:
     return next;
 }
 
-const AVCodecParser ff_bmp_parser = {
+const FFCodecParser ff_bmp_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_BMP),
     .priv_data_size = sizeof(BMPParseContext),
     .parser_parse   = bmp_parse,

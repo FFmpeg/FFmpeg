@@ -903,7 +903,7 @@ static av_cold void flac_parse_close(AVCodecParserContext *c)
     av_freep(&fpc->wrap_buf);
 }
 
-const AVCodecParser ff_flac_parser = {
+const FFCodecParser ff_flac_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_FLAC),
     .priv_data_size = sizeof(FLACParseContext),
     .parser_init    = flac_parse_init,

@@ -97,7 +97,7 @@ static int ftr_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     return next;
 }
 
-const AVCodecParser ff_ftr_parser = {
+const FFCodecParser ff_ftr_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_FTR),
     .priv_data_size = sizeof(FTRParseContext),
     .parser_parse   = ftr_parse,

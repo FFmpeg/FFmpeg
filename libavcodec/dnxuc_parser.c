@@ -82,7 +82,7 @@ static int dnxuc_parse(AVCodecParserContext *s,
     return next;
 }
 
-const AVCodecParser ff_dnxuc_parser = {
+const FFCodecParser ff_dnxuc_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_DNXUC),
     .priv_data_size = sizeof(DNxUcParseContext),
     .parser_parse   = dnxuc_parse,

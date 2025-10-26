@@ -210,7 +210,7 @@ static av_cold void av1_parser_close(AVCodecParserContext *ctx)
     ff_cbs_close(&s->cbc);
 }
 
-const AVCodecParser ff_av1_parser = {
+const FFCodecParser ff_av1_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_AV1),
     .priv_data_size = sizeof(AV1ParseContext),
     .parser_init    = av1_parser_init,

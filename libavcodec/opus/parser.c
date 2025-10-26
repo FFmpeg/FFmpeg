@@ -214,7 +214,7 @@ fail:
     return buf_size;
 }
 
-const AVCodecParser ff_opus_parser = {
+const FFCodecParser ff_opus_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_OPUS),
     .priv_data_size = sizeof(OpusParserContext),
     .parser_parse   = opus_parse,

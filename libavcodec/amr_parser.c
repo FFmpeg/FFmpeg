@@ -123,7 +123,7 @@ static int amr_parse(AVCodecParserContext *s1,
     return next;
 }
 
-const AVCodecParser ff_amr_parser = {
+const FFCodecParser ff_amr_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_AMR_NB, AV_CODEC_ID_AMR_WB),
     .priv_data_size = sizeof(AMRParseContext),
     .parser_init    = amr_parse_init,

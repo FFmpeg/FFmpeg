@@ -124,7 +124,7 @@ fail:
     return buf_size + consumed;
 }
 
-const AVCodecParser ff_tak_parser = {
+const FFCodecParser ff_tak_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_TAK),
     .priv_data_size = sizeof(TAKParseContext),
     .parser_parse   = tak_parse,

@@ -1546,7 +1546,7 @@ flush:
     return next;
 }
 
-const AVCodecParser ff_jpegxl_parser = {
+const FFCodecParser ff_jpegxl_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_JPEGXL, AV_CODEC_ID_JPEGXL_ANIM),
     .priv_data_size = sizeof(JXLParseContext),
     .parser_parse   = jpegxl_parse,

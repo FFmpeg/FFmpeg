@@ -134,7 +134,7 @@ end:
     return next;
 }
 
-const AVCodecParser ff_pnm_parser = {
+const FFCodecParser ff_pnm_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_PGM, AV_CODEC_ID_PGMYUV, AV_CODEC_ID_PPM,
                       AV_CODEC_ID_PBM, AV_CODEC_ID_PAM, AV_CODEC_ID_PFM,
                       AV_CODEC_ID_PHM),

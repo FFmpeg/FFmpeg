@@ -137,7 +137,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
 }
 
 
-const AVCodecParser ff_mpegaudio_parser = {
+const FFCodecParser ff_mpegaudio_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_MP1, AV_CODEC_ID_MP2,
                       AV_CODEC_ID_MP3, AV_CODEC_ID_MP3ADU),
     .priv_data_size = sizeof(MpegAudioParseContext),

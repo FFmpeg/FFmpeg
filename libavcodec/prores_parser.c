@@ -123,7 +123,7 @@ static int parse(AVCodecParserContext *s,
     return buf_size;
 }
 
-const AVCodecParser ff_prores_parser = {
+const FFCodecParser ff_prores_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_PRORES),
     .parser_parse = parse,
 };

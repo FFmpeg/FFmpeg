@@ -4398,7 +4398,7 @@ CODEC_LIST="
     $ENCODER_LIST
     $DECODER_LIST
 "
-PARSER_LIST=$(find_things_extern parser AVCodecParser libavcodec/parsers.c)
+PARSER_LIST=$(find_things_extern parser FFCodecParser libavcodec/parsers.c)
 BSF_LIST=$(find_things_extern bsf FFBitStreamFilter libavcodec/bitstream_filters.c)
 HWACCEL_LIST=$(find_things_extern hwaccel FFHWAccel libavcodec/hwaccels.h)
 PROTOCOL_LIST=$(find_things_extern protocol URLProtocol libavformat/protocols.c)
@@ -8595,7 +8595,7 @@ print_enabled_components(){
 
 print_enabled_components libavfilter/filter_list.c FFFilter filter_list $FILTER_LIST
 print_enabled_components libavcodec/codec_list.c FFCodec codec_list $CODEC_LIST
-print_enabled_components libavcodec/parser_list.c AVCodecParser parser_list $PARSER_LIST
+print_enabled_components libavcodec/parser_list.c FFCodecParser parser_list $PARSER_LIST
 print_enabled_components libavcodec/bsf_list.c FFBitStreamFilter bitstream_filters $BSF_LIST
 print_enabled_components libavformat/demuxer_list.c FFInputFormat demuxer_list $DEMUXER_LIST
 print_enabled_components libavformat/muxer_list.c FFOutputFormat muxer_list $MUXER_LIST

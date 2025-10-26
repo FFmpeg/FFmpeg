@@ -54,7 +54,7 @@ static int cook_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
     return buf_size;
 }
 
-const AVCodecParser ff_cook_parser = {
+const FFCodecParser ff_cook_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_COOK),
     .priv_data_size = sizeof(CookParseContext),
     .parser_parse   = cook_parse,

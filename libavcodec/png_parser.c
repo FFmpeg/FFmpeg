@@ -111,7 +111,7 @@ flush:
     return next;
 }
 
-const AVCodecParser ff_png_parser = {
+const FFCodecParser ff_png_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_PNG),
     .priv_data_size = sizeof(PNGParseContext),
     .parser_parse   = png_parse,

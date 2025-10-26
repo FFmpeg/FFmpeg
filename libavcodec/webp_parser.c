@@ -105,7 +105,7 @@ flush:
     return next;
 }
 
-const AVCodecParser ff_webp_parser = {
+const FFCodecParser ff_webp_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_WEBP),
     .priv_data_size = sizeof(WebPParseContext),
     .parser_parse   = webp_parse,

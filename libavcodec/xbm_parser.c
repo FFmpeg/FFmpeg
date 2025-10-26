@@ -101,7 +101,7 @@ static int xbm_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     return next;
 }
 
-const AVCodecParser ff_xbm_parser = {
+const FFCodecParser ff_xbm_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_XBM),
     .priv_data_size = sizeof(XBMParseContext),
     .parser_init    = xbm_init,

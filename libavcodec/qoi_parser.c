@@ -70,7 +70,7 @@ static int qoi_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     return next;
 }
 
-const AVCodecParser ff_qoi_parser = {
+const FFCodecParser ff_qoi_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_QOI),
     .priv_data_size = sizeof(QOIParseContext),
     .parser_parse   = qoi_parse,
