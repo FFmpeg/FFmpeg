@@ -193,6 +193,6 @@ static int avs2_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 const FFCodecParser ff_avs2_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_AVS2),
     .priv_data_size = sizeof(ParseContext),
-    .parser_parse   = avs2_parse,
-    .parser_close   = ff_parse_close,
+    .parse          = avs2_parse,
+    .close          = ff_parse_close,
 };

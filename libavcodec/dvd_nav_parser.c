@@ -111,6 +111,6 @@ static int dvd_nav_parse(AVCodecParserContext *s,
 const FFCodecParser ff_dvd_nav_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_DVD_NAV),
     .priv_data_size = sizeof(DVDNavParseContext),
-    .parser_init    = dvd_nav_parse_init,
-    .parser_parse   = dvd_nav_parse,
+    .init           = dvd_nav_parse_init,
+    .parse          = dvd_nav_parse,
 };

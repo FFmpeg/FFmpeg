@@ -278,6 +278,6 @@ static av_cold void dirac_parse_close(AVCodecParserContext *s)
 const FFCodecParser ff_dirac_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_DIRAC),
     .priv_data_size = sizeof(DiracParseContext),
-    .parser_parse   = dirac_parse,
-    .parser_close   = dirac_parse_close,
+    .parse          = dirac_parse,
+    .close          = dirac_parse_close,
 };

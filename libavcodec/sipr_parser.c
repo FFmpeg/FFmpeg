@@ -70,6 +70,6 @@ static int sipr_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
 const FFCodecParser ff_sipr_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_SIPR),
     .priv_data_size = sizeof(SiprParserContext),
-    .parser_parse   = sipr_parse,
-    .parser_close   = ff_parse_close,
+    .parse          = sipr_parse,
+    .close          = ff_parse_close,
 };

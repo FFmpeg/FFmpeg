@@ -75,6 +75,6 @@ static int hdr_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 const FFCodecParser ff_hdr_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_RADIANCE_HDR),
     .priv_data_size = sizeof(HDRParseContext),
-    .parser_parse   = hdr_parse,
-    .parser_close   = ff_parse_close,
+    .parse          = hdr_parse,
+    .close          = ff_parse_close,
 };

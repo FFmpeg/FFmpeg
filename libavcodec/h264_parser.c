@@ -686,7 +686,7 @@ static av_cold int init(AVCodecParserContext *s)
 const FFCodecParser ff_h264_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_H264),
     .priv_data_size = sizeof(H264ParseContext),
-    .parser_init    = init,
-    .parser_parse   = h264_parse,
-    .parser_close   = h264_close,
+    .init           = init,
+    .parse          = h264_parse,
+    .close          = h264_close,
 };

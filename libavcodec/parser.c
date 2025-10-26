@@ -65,8 +65,8 @@ found:
         goto err_out;
     s->fetch_timestamp=1;
     s->pict_type = AV_PICTURE_TYPE_I;
-    if (ffparser->parser_init) {
-        ret = ffparser->parser_init(s);
+    if (ffparser->init) {
+        ret = ffparser->init(s);
         if (ret != 0)
             goto err_out;
     }
@@ -164,8 +164,8 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
         ff_fetch_timestamp(s, 0, 0, 0);
     }
     /* WARNING: the returned index can be negative */
-    index = ffcodecparser(s->parser)->parser_parse(s, avctx, (const uint8_t **) poutbuf,
-                                                   poutbuf_size, buf, buf_size);
+    index = ffcodecparser(s->parser)->parse(s, avctx, (const uint8_t **) poutbuf,
+                                            poutbuf_size, buf, buf_size);
     av_assert0(index > -0x20000000); // The API does not allow returning AVERROR codes
 #define FILL(name) if(s->name > 0 && avctx->name <= 0) avctx->name = s->name
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -197,8 +197,8 @@ int av_parser_parse2(AVCodecParserContext *s, AVCodecContext *avctx,
 av_cold void av_parser_close(AVCodecParserContext *s)
 {
     if (s) {
-        if (ffcodecparser(s->parser)->parser_close)
-            ffcodecparser(s->parser)->parser_close(s);
+        if (ffcodecparser(s->parser)->close)
+            ffcodecparser(s->parser)->close(s);
         av_freep(&s->priv_data);
         av_free(s);
     }

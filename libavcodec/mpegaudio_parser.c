@@ -141,6 +141,6 @@ const FFCodecParser ff_mpegaudio_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_MP1, AV_CODEC_ID_MP2,
                       AV_CODEC_ID_MP3, AV_CODEC_ID_MP3ADU),
     .priv_data_size = sizeof(MpegAudioParseContext),
-    .parser_parse   = mpegaudio_parse,
-    .parser_close   = ff_parse_close,
+    .parse          = mpegaudio_parse,
+    .close          = ff_parse_close,
 };

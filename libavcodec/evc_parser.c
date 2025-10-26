@@ -375,6 +375,6 @@ static av_cold void evc_parser_close(AVCodecParserContext *s)
 const FFCodecParser ff_evc_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_EVC),
     .priv_data_size = sizeof(EVCParserContext),
-    .parser_parse   = evc_parse,
-    .parser_close   = evc_parser_close,
+    .parse          = evc_parse,
+    .close          = evc_parser_close,
 };

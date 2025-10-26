@@ -88,6 +88,6 @@ static av_cold void dvdsub_parse_close(AVCodecParserContext *s)
 const FFCodecParser ff_dvdsub_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_DVD_SUBTITLE),
     .priv_data_size = sizeof(DVDSubParseContext),
-    .parser_parse   = dvdsub_parse,
-    .parser_close   = dvdsub_parse_close,
+    .parse          = dvdsub_parse,
+    .close          = dvdsub_parse_close,
 };

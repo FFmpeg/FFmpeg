@@ -303,7 +303,7 @@ static av_cold int mpegvideo_parse_init(AVCodecParserContext *s)
 const FFCodecParser ff_mpegvideo_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_MPEG1VIDEO, AV_CODEC_ID_MPEG2VIDEO),
     .priv_data_size = sizeof(struct MpvParseContext),
-    .parser_init    = mpegvideo_parse_init,
-    .parser_parse   = mpegvideo_parse,
-    .parser_close   = ff_parse_close,
+    .init           = mpegvideo_parse_init,
+    .parse          = mpegvideo_parse,
+    .close          = ff_parse_close,
 };

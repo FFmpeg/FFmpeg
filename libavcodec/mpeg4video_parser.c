@@ -159,7 +159,7 @@ static int mpeg4video_parse(AVCodecParserContext *s,
 const FFCodecParser ff_mpeg4video_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_MPEG4),
     .priv_data_size = sizeof(struct Mp4vParseContext),
-    .parser_init    = mpeg4video_parse_init,
-    .parser_parse   = mpeg4video_parse,
-    .parser_close   = ff_parse_close,
+    .init           = mpeg4video_parse_init,
+    .parse          = mpeg4video_parse,
+    .close          = ff_parse_close,
 };

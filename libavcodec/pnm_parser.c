@@ -139,6 +139,6 @@ const FFCodecParser ff_pnm_parser = {
                       AV_CODEC_ID_PBM, AV_CODEC_ID_PAM, AV_CODEC_ID_PFM,
                       AV_CODEC_ID_PHM),
     .priv_data_size = sizeof(PNMParseContext),
-    .parser_parse   = pnm_parse,
-    .parser_close   = ff_parse_close,
+    .parse          = pnm_parse,
+    .close          = ff_parse_close,
 };

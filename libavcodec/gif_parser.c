@@ -204,6 +204,6 @@ static int gif_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 const FFCodecParser ff_gif_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_GIF),
     .priv_data_size = sizeof(GIFParseContext),
-    .parser_parse   = gif_parse,
-    .parser_close   = ff_parse_close,
+    .parse          = gif_parse,
+    .close          = ff_parse_close,
 };

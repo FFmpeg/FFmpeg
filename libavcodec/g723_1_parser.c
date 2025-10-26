@@ -56,6 +56,6 @@ static int g723_1_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
 const FFCodecParser ff_g723_1_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_G723_1),
     .priv_data_size = sizeof(G723_1ParseContext),
-    .parser_parse   = g723_1_parse,
-    .parser_close   = ff_parse_close,
+    .parse          = g723_1_parse,
+    .close          = ff_parse_close,
 };

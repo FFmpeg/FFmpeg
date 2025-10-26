@@ -104,7 +104,7 @@ static int xbm_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 const FFCodecParser ff_xbm_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_XBM),
     .priv_data_size = sizeof(XBMParseContext),
-    .parser_init    = xbm_init,
-    .parser_parse   = xbm_parse,
-    .parser_close   = ff_parse_close,
+    .init           = xbm_init,
+    .parse          = xbm_parse,
+    .close          = ff_parse_close,
 };

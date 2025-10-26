@@ -88,6 +88,6 @@ static int g729_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
 const FFCodecParser ff_g729_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_G729, AV_CODEC_ID_ACELP_KELVIN),
     .priv_data_size = sizeof(G729ParseContext),
-    .parser_parse   = g729_parse,
-    .parser_close   = ff_parse_close,
+    .parse          = g729_parse,
+    .close          = ff_parse_close,
 };

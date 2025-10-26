@@ -99,5 +99,5 @@ static int prores_raw_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 
 const FFCodecParser ff_prores_raw_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_PRORES_RAW),
-    .parser_parse   = prores_raw_parse,
+    .parse          = prores_raw_parse,
 };

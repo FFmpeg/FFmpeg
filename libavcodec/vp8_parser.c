@@ -76,5 +76,5 @@ static int parse(AVCodecParserContext *s,
 
 const FFCodecParser ff_vp8_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_VP8),
-    .parser_parse = parse,
+    .parse        = parse,
 };

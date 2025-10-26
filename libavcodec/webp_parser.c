@@ -108,6 +108,6 @@ flush:
 const FFCodecParser ff_webp_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_WEBP),
     .priv_data_size = sizeof(WebPParseContext),
-    .parser_parse   = webp_parse,
-    .parser_close   = ff_parse_close,
+    .parse          = webp_parse,
+    .close          = ff_parse_close,
 };

@@ -906,7 +906,7 @@ static av_cold void flac_parse_close(AVCodecParserContext *c)
 const FFCodecParser ff_flac_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_FLAC),
     .priv_data_size = sizeof(FLACParseContext),
-    .parser_init    = flac_parse_init,
-    .parser_parse   = flac_parse,
-    .parser_close   = flac_parse_close,
+    .init           = flac_parse_init,
+    .parse          = flac_parse,
+    .close          = flac_parse_close,
 };

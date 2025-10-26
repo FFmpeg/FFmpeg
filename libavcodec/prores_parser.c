@@ -125,5 +125,5 @@ static int parse(AVCodecParserContext *s,
 
 const FFCodecParser ff_prores_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_PRORES),
-    .parser_parse = parse,
+    .parse        = parse,
 };

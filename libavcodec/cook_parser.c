@@ -57,5 +57,5 @@ static int cook_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
 const FFCodecParser ff_cook_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_COOK),
     .priv_data_size = sizeof(CookParseContext),
-    .parser_parse   = cook_parse,
+    .parse          = cook_parse,
 };

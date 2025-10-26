@@ -30,12 +30,12 @@ typedef union FFCodecParser {
     struct {
         int codec_ids[7]; /* several codec IDs are permitted */
         int priv_data_size;
-        int (*parser_init)(AVCodecParserContext *s);
-        int (*parser_parse)(AVCodecParserContext *s,
-                            AVCodecContext *avctx,
-                            const uint8_t **poutbuf, int *poutbuf_size,
-                            const uint8_t *buf, int buf_size);
-        void (*parser_close)(AVCodecParserContext *s);
+        int (*init)(AVCodecParserContext *s);
+        int (*parse)(AVCodecParserContext *s,
+                     AVCodecContext *avctx,
+                     const uint8_t **poutbuf, int *poutbuf_size,
+                     const uint8_t *buf, int buf_size);
+        void (*close)(AVCodecParserContext *s);
         int (*split)(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
     };
     AVCodecParser p;
@@ -43,12 +43,12 @@ typedef union FFCodecParser {
 typedef struct FFCodecParser {
     AVCodecParser p;
     unsigned priv_data_size;
-    int (*parser_init)(AVCodecParserContext *s);
-    int (*parser_parse)(AVCodecParserContext *s,
-                        AVCodecContext *avctx,
-                        const uint8_t **poutbuf, int *poutbuf_size,
-                        const uint8_t *buf, int buf_size);
-    void (*parser_close)(AVCodecParserContext *s);
+    int (*init)(AVCodecParserContext *s);
+    int (*parse)(AVCodecParserContext *s,
+                 AVCodecContext *avctx,
+                 const uint8_t **poutbuf, int *poutbuf_size,
+                 const uint8_t *buf, int buf_size);
+    void (*close)(AVCodecParserContext *s);
 #endif
 } FFCodecParser;
 

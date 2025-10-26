@@ -127,6 +127,6 @@ fail:
 const FFCodecParser ff_tak_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_TAK),
     .priv_data_size = sizeof(TAKParseContext),
-    .parser_parse   = tak_parse,
-    .parser_close   = ff_parse_close,
+    .parse          = tak_parse,
+    .close          = ff_parse_close,
 };

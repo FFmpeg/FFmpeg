@@ -24,13 +24,13 @@
 #if FF_API_PARSER_PRIVATE
 #include <assert.h>
 #include <stddef.h>
-#define CHECK_OFFSET(field) static_assert(offsetof(FFCodecParser, field) == offsetof(FFCodecParser, p.field), "Wrong offsets")
-CHECK_OFFSET(codec_ids);
-CHECK_OFFSET(priv_data_size);
-CHECK_OFFSET(parser_init);
-CHECK_OFFSET(parser_parse);
-CHECK_OFFSET(parser_close);
-CHECK_OFFSET(split);
+#define CHECK_OFFSET(field, public_prefix) static_assert(offsetof(FFCodecParser, field) == offsetof(FFCodecParser, p.public_prefix ## field), "Wrong offsets")
+CHECK_OFFSET(codec_ids,);
+CHECK_OFFSET(priv_data_size,);
+CHECK_OFFSET(init, parser_);
+CHECK_OFFSET(parse, parser_);
+CHECK_OFFSET(close, parser_);
+CHECK_OFFSET(split,);
 #endif
 
 extern const FFCodecParser ff_aac_parser;

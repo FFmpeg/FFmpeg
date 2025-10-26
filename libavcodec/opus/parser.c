@@ -217,6 +217,6 @@ fail:
 const FFCodecParser ff_opus_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_OPUS),
     .priv_data_size = sizeof(OpusParserContext),
-    .parser_parse   = opus_parse,
-    .parser_close   = ff_parse_close
+    .parse          = opus_parse,
+    .close          = ff_parse_close
 };

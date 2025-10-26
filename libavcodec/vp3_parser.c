@@ -39,5 +39,5 @@ static int parse(AVCodecParserContext *s,
 const FFCodecParser ff_vp3_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_THEORA, AV_CODEC_ID_VP3,
                       AV_CODEC_ID_VP6, AV_CODEC_ID_VP6F, AV_CODEC_ID_VP6A),
-    .parser_parse = parse,
+    .parse        = parse,
 };

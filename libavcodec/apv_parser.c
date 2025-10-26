@@ -144,7 +144,7 @@ static av_cold void close(AVCodecParserContext *s)
 const FFCodecParser ff_apv_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_APV),
     .priv_data_size = sizeof(APVParseContext),
-    .parser_init  = init,
-    .parser_parse = parse,
-    .parser_close = close,
+    .init           = init,
+    .parse          = parse,
+    .close          = close,
 };
