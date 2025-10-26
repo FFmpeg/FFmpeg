@@ -1684,14 +1684,14 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
     case AV_PIX_FMT_GBRP12:
     case AV_PIX_FMT_GBRP14:
     case AV_PIX_FMT_GBRP16:
-    case AV_PIX_FMT_YUV420P10:
-    case AV_PIX_FMT_YUV420P12:
+    case AV_PIX_FMT_YUV420P10MSB:
+    case AV_PIX_FMT_YUV420P12MSB:
     case AV_PIX_FMT_YUV420P16:
-    case AV_PIX_FMT_YUV422P10:
-    case AV_PIX_FMT_YUV422P12:
+    case AV_PIX_FMT_YUV422P10MSB:
+    case AV_PIX_FMT_YUV422P12MSB:
     case AV_PIX_FMT_YUV422P16:
-    case AV_PIX_FMT_YUV444P10:
-    case AV_PIX_FMT_YUV444P12:
+    case AV_PIX_FMT_YUV444P10MSB:
+    case AV_PIX_FMT_YUV444P12MSB:
     case AV_PIX_FMT_YUV444P16:
     case AV_PIX_FMT_YUVA420P10:
     case AV_PIX_FMT_YUVA420P16:
