@@ -23,7 +23,7 @@
  * Determines the duration for each packet.
  */
 
-#include "parser.h"
+#include "avcodec.h"
 #include "dvaudio.h"
 
 static int dvaudio_parse(AVCodecParserContext *s1, AVCodecContext *avctx,

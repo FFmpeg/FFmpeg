@@ -21,7 +21,7 @@
  * XMA2 audio parser
  */
 
-#include "parser.h"
+#include "avcodec.h"
 
 typedef struct XMAParserContext{
     int skip_packets;

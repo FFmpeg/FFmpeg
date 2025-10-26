@@ -21,9 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intreadwrite.h"
-#include "libavcodec/get_bits.h"
-#include "parser.h"
+#include "avcodec.h"
+#include "get_bits.h"
 
 static int parse(AVCodecParserContext *ctx,
                  AVCodecContext *avctx,
