@@ -499,6 +499,11 @@ enum AVPixelFormat {
 
     AV_PIX_FMT_OHCODEC, /// hardware decoding through openharmony
 
+    AV_PIX_FMT_GRAY10MSBBE,   ///<        Y        , 10bpp, lowest bits zero, big-endian
+    AV_PIX_FMT_GRAY10MSBLE,   ///<        Y        , 10bpp, lowest bits zero, little-endian
+    AV_PIX_FMT_GRAY12MSBBE,   ///<        Y        , 12bpp, lowest bits zero, big-endian
+    AV_PIX_FMT_GRAY12MSBLE,   ///<        Y        , 12bpp, lowest bits zero, little-endian
+
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
@@ -551,6 +556,8 @@ enum AVPixelFormat {
 #define AV_PIX_FMT_YUV422P16 AV_PIX_FMT_NE(YUV422P16BE, YUV422P16LE)
 #define AV_PIX_FMT_YUV444P16 AV_PIX_FMT_NE(YUV444P16BE, YUV444P16LE)
 
+#define AV_PIX_FMT_GRAY10MSB AV_PIX_FMT_NE(GRAY10MSBBE, GRAY10MSBLE)
+#define AV_PIX_FMT_GRAY12MSB AV_PIX_FMT_NE(GRAY12MSBBE, GRAY12MSBLE)
 #define AV_PIX_FMT_YUV444P10MSB AV_PIX_FMT_NE(YUV444P10MSBBE, YUV444P10MSBLE)
 #define AV_PIX_FMT_YUV444P12MSB AV_PIX_FMT_NE(YUV444P12MSBBE, YUV444P12MSBLE)
 

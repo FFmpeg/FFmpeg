@@ -306,6 +306,10 @@ gbrp10msbbe     planes: 3, linesizes: 128 128 128   0, plane_sizes:  6144  6144 
 gbrp10msble     planes: 3, linesizes: 128 128 128   0, plane_sizes:  6144  6144  6144     0, plane_offsets:  6144  6144     0, total_size: 18432
 gbrp12msbbe     planes: 3, linesizes: 128 128 128   0, plane_sizes:  6144  6144  6144     0, plane_offsets:  6144  6144     0, total_size: 18432
 gbrp12msble     planes: 3, linesizes: 128 128 128   0, plane_sizes:  6144  6144  6144     0, plane_offsets:  6144  6144     0, total_size: 18432
+gray10msbbe     planes: 1, linesizes: 128   0   0   0, plane_sizes:  6144     0     0     0, plane_offsets:     0     0     0, total_size: 6144
+gray10msble     planes: 1, linesizes: 128   0   0   0, plane_sizes:  6144     0     0     0, plane_offsets:     0     0     0, total_size: 6144
+gray12msbbe     planes: 1, linesizes: 128   0   0   0, plane_sizes:  6144     0     0     0, plane_offsets:     0     0     0, total_size: 6144
+gray12msble     planes: 1, linesizes: 128   0   0   0, plane_sizes:  6144     0     0     0, plane_offsets:     0     0     0, total_size: 6144
 
 image_fill_black tests
 yuv420p         total_size:   4608,  black_unknown_crc: 0xd00f6cc6,  black_tv_crc: 0xd00f6cc6,  black_pc_crc: 0x234969af
@@ -559,3 +563,7 @@ gbrp10msbbe     total_size:  18432,  black_unknown_crc: 0x00000000,  black_tv_cr
 gbrp10msble     total_size:  18432,  black_unknown_crc: 0x00000000,  black_tv_crc: 0x00000000,  black_pc_crc: 0x00000000
 gbrp12msbbe     total_size:  18432,  black_unknown_crc: 0x00000000,  black_tv_crc: 0x00000000,  black_pc_crc: 0x00000000
 gbrp12msble     total_size:  18432,  black_unknown_crc: 0x00000000,  black_tv_crc: 0x00000000,  black_pc_crc: 0x00000000
+gray10msbbe     total_size:   6144,  black_unknown_crc: 0x02d4a26f,  black_tv_crc: 0x02d4a26f,  black_pc_crc: 0x00000000
+gray10msble     total_size:   6144,  black_unknown_crc: 0xb93165c3,  black_tv_crc: 0xb93165c3,  black_pc_crc: 0x00000000
+gray12msbbe     total_size:   6144,  black_unknown_crc: 0x02d4a26f,  black_tv_crc: 0x02d4a26f,  black_pc_crc: 0x00000000
+gray12msble     total_size:   6144,  black_unknown_crc: 0xb93165c3,  black_tv_crc: 0xb93165c3,  black_pc_crc: 0x00000000

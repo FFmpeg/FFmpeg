@@ -73,8 +73,12 @@ isNBPS:
   gbrp9le
   gray10be
   gray10le
+  gray10msbbe
+  gray10msble
   gray12be
   gray12le
+  gray12msbbe
+  gray12msble
   gray14be
   gray14le
   gray9be
@@ -186,7 +190,9 @@ isBE:
   gbrpf16be
   gbrpf32be
   gray10be
+  gray10msbbe
   gray12be
+  gray12msbbe
   gray14be
   gray16be
   gray32be
@@ -625,8 +631,12 @@ Gray:
   gray
   gray10be
   gray10le
+  gray10msbbe
+  gray10msble
   gray12be
   gray12le
+  gray12msbbe
+  gray12msble
   gray14be
   gray14le
   gray16be
@@ -1225,6 +1235,10 @@ DataInHighBits:
   gbrp10msble
   gbrp12msbbe
   gbrp12msble
+  gray10msbbe
+  gray10msble
+  gray12msbbe
+  gray12msble
   p010be
   p010le
   p012be
