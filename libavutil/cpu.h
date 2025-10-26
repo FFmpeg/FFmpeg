@@ -47,6 +47,7 @@
 #define AV_CPU_FLAG_SSE4         0x0100 ///< Penryn SSE4.1 functions
 #define AV_CPU_FLAG_SSE42        0x0200 ///< Nehalem SSE4.2 functions
 #define AV_CPU_FLAG_AESNI       0x80000 ///< Advanced Encryption Standard functions
+#define AV_CPU_FLAG_CLMUL      0x400000 ///< Carry-less Multiplication instruction
 #define AV_CPU_FLAG_AVX          0x4000 ///< AVX functions: requires OS support even if YMM registers aren't used
 #define AV_CPU_FLAG_AVXSLOW   0x8000000 ///< AVX supported, but slow when using YMM registers (e.g. Bulldozer)
 #define AV_CPU_FLAG_XOP          0x0400 ///< Bulldozer XOP functions

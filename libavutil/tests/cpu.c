@@ -89,6 +89,7 @@ static const struct {
     { AV_CPU_FLAG_BMI1,      "bmi1"       },
     { AV_CPU_FLAG_BMI2,      "bmi2"       },
     { AV_CPU_FLAG_AESNI,     "aesni"      },
+    { AV_CPU_FLAG_CLMUL,     "clmul"      },
     { AV_CPU_FLAG_AVX512,    "avx512"     },
     { AV_CPU_FLAG_AVX512ICL, "avx512icl"  },
     { AV_CPU_FLAG_SLOW_GATHER, "slowgather" },
