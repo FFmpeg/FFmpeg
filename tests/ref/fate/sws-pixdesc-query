@@ -115,16 +115,24 @@ isNBPS:
   y212le
   yuv420p10be
   yuv420p10le
+  yuv420p10msbbe
+  yuv420p10msble
   yuv420p12be
   yuv420p12le
+  yuv420p12msbbe
+  yuv420p12msble
   yuv420p14be
   yuv420p14le
   yuv420p9be
   yuv420p9le
   yuv422p10be
   yuv422p10le
+  yuv422p10msbbe
+  yuv422p10msble
   yuv422p12be
   yuv422p12le
+  yuv422p12msbbe
+  yuv422p12msble
   yuv422p14be
   yuv422p14le
   yuv422p9be
@@ -234,12 +242,16 @@ isBE:
   yaf16be
   yaf32be
   yuv420p10be
+  yuv420p10msbbe
   yuv420p12be
+  yuv420p12msbbe
   yuv420p14be
   yuv420p16be
   yuv420p9be
   yuv422p10be
+  yuv422p10msbbe
   yuv422p12be
+  yuv422p12msbbe
   yuv422p14be
   yuv422p16be
   yuv422p9be
@@ -327,8 +339,12 @@ isYUV:
   yuv420p
   yuv420p10be
   yuv420p10le
+  yuv420p10msbbe
+  yuv420p10msble
   yuv420p12be
   yuv420p12le
+  yuv420p12msbbe
+  yuv420p12msble
   yuv420p14be
   yuv420p14le
   yuv420p16be
@@ -338,8 +354,12 @@ isYUV:
   yuv422p
   yuv422p10be
   yuv422p10le
+  yuv422p10msbbe
+  yuv422p10msble
   yuv422p12be
   yuv422p12le
+  yuv422p12msbbe
+  yuv422p12msble
   yuv422p14be
   yuv422p14le
   yuv422p16be
@@ -430,8 +450,12 @@ isPlanarYUV:
   yuv420p
   yuv420p10be
   yuv420p10le
+  yuv420p10msbbe
+  yuv420p10msble
   yuv420p12be
   yuv420p12le
+  yuv420p12msbbe
+  yuv420p12msble
   yuv420p14be
   yuv420p14le
   yuv420p16be
@@ -441,8 +465,12 @@ isPlanarYUV:
   yuv422p
   yuv422p10be
   yuv422p10le
+  yuv422p10msbbe
+  yuv422p10msble
   yuv422p12be
   yuv422p12le
+  yuv422p12msbbe
+  yuv422p12msble
   yuv422p14be
   yuv422p14le
   yuv422p16be
@@ -1050,8 +1078,12 @@ Planar:
   yuv420p
   yuv420p10be
   yuv420p10le
+  yuv420p10msbbe
+  yuv420p10msble
   yuv420p12be
   yuv420p12le
+  yuv420p12msbbe
+  yuv420p12msble
   yuv420p14be
   yuv420p14le
   yuv420p16be
@@ -1061,8 +1093,12 @@ Planar:
   yuv422p
   yuv422p10be
   yuv422p10le
+  yuv422p10msbbe
+  yuv422p10msble
   yuv422p12be
   yuv422p12le
+  yuv422p12msbbe
+  yuv422p12msble
   yuv422p14be
   yuv422p14le
   yuv422p16be
@@ -1259,6 +1295,14 @@ DataInHighBits:
   y210le
   y212be
   y212le
+  yuv420p10msbbe
+  yuv420p10msble
+  yuv420p12msbbe
+  yuv420p12msble
+  yuv422p10msbbe
+  yuv422p10msble
+  yuv422p12msbbe
+  yuv422p12msble
   yuv444p10msbbe
   yuv444p10msble
   yuv444p12msbbe
