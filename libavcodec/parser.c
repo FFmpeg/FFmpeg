@@ -31,7 +31,11 @@
 #include "parser.h"
 #include "parser_internal.h"
 
+#if FF_API_PARSER_CODECID
 av_cold AVCodecParserContext *av_parser_init(int codec_id)
+#else
+av_cold AVCodecParserContext *av_parser_init(enum AVCodecID codec_id)
+#endif
 {
     AVCodecParserContext *s = NULL;
     const AVCodecParser *parser;

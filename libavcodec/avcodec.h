@@ -2732,7 +2732,11 @@ typedef struct AVCodecParserContext {
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {
+#if FF_API_PARSER_CODECID
     int codec_ids[7]; /* several codec IDs are permitted */
+#else
+    enum AVCodecID codec_ids[7]; /* several codec IDs are permitted */
+#endif
 #if FF_API_PARSER_PRIVATE
     /*****************************************************************
      * All fields below this line are not part of the public API. They
@@ -2770,7 +2774,11 @@ typedef struct AVCodecParser {
  */
 const AVCodecParser *av_parser_iterate(void **opaque);
 
+#if FF_API_PARSER_CODECID
 AVCodecParserContext *av_parser_init(int codec_id);
+#else
+AVCodecParserContext *av_parser_init(enum AVCodecID codec_id);
+#endif
 
 /**
  * Parse a packet.

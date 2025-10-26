@@ -28,7 +28,11 @@
 #if FF_API_PARSER_PRIVATE
 typedef union FFCodecParser {
     struct {
+#if FF_API_PARSER_CODECID
         int codec_ids[7]; /* several codec IDs are permitted */
+#else
+        enum AVCodecID codec_ids[7]; /* several codec IDs are permitted */
+#endif
         int priv_data_size;
         int (*init)(AVCodecParserContext *s);
         int (*parse)(AVCodecParserContext *s,
