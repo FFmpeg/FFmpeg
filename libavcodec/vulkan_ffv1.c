@@ -447,8 +447,7 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
 
 
     /* For some reason the C FFv1 encoder/decoder treats these differently */
-    if (sw_format == AV_PIX_FMT_GBRP10MSB || sw_format == AV_PIX_FMT_GBRP12MSB ||
-        sw_format == AV_PIX_FMT_GBRP14)
+    if (sw_format == AV_PIX_FMT_GBRP10MSB || sw_format == AV_PIX_FMT_GBRP12MSB)
         memcpy(pd.fmt_lut, (int [4]) { 2, 1, 0, 3 }, 4*sizeof(int));
     else if (sw_format == AV_PIX_FMT_X2BGR10)
         memcpy(pd.fmt_lut, (int [4]) { 0, 2, 1, 3 }, 4*sizeof(int));
