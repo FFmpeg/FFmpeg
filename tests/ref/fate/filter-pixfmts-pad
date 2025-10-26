@@ -22,7 +22,9 @@ gbrp16le            a6156d1a37e05ee621b2a343fb158bd6
 gbrp9le             9e827f438e081d334a6cae7e282698b0
 gray                2b9652a8b136316fada371d03ee252bc
 gray10le            47fb6bf7784e8bd70b49f417b2fa28b0
+gray10msble         925e45f177945f1e899ef3a3d90675bd
 gray12le            3bf76ed4fa5ba0955ab1157e20b26ef4
+gray12msble         7f949f0284ebc73ff33319cd692276dc
 gray14le            c3750188ede607e733065b7f3b17f548
 gray16le            4347c5ca559a06948c1e7e7c2f06657d
 gray9le             99f825e62d5786901dba9abc88878ffb

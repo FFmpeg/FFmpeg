@@ -91,6 +91,10 @@ static const LegacyFormatEntry legacy_format_entries[] = {
     [AV_PIX_FMT_GRAY14LE]       = { 1, 1 },
     [AV_PIX_FMT_GRAY16BE]       = { 1, 1 },
     [AV_PIX_FMT_GRAY16LE]       = { 1, 1 },
+    [AV_PIX_FMT_GRAY10MSBBE]    = { 1, 1 },
+    [AV_PIX_FMT_GRAY10MSBLE]    = { 1, 1 },
+    [AV_PIX_FMT_GRAY12MSBBE]    = { 1, 1 },
+    [AV_PIX_FMT_GRAY12MSBLE]    = { 1, 1 },
     [AV_PIX_FMT_YUV440P]        = { 1, 1 },
     [AV_PIX_FMT_YUVJ440P]       = { 1, 1 },
     [AV_PIX_FMT_YUV440P10LE]    = { 1, 1 },
@@ -979,6 +983,10 @@ static int fmt_read_write(enum AVPixelFormat fmt, SwsReadWriteOp *rw_op,
     case AV_PIX_FMT_GRAY14LE:
     case AV_PIX_FMT_GRAY16BE:
     case AV_PIX_FMT_GRAY16LE:
+    case AV_PIX_FMT_GRAY10MSBBE:
+    case AV_PIX_FMT_GRAY10MSBLE:
+    case AV_PIX_FMT_GRAY12MSBBE:
+    case AV_PIX_FMT_GRAY12MSBLE:
     //case AV_PIX_FMT_GRAYF16BE: TODO
     //case AV_PIX_FMT_GRAYF16LE:
     //case AV_PIX_FMT_YAF16BE:

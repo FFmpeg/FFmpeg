@@ -2469,15 +2469,19 @@ av_cold void ff_sws_init_input_funcs(SwsInternal *c,
         *alpToYV12 = bswap16Y_c;
         break;
 #endif
+    case AV_PIX_FMT_GRAY10MSBLE:
     case AV_PIX_FMT_YUV444P10MSBLE:
         *lumToYV12 = shf16_10LEToY_c;
         break;
+    case AV_PIX_FMT_GRAY12MSBLE:
     case AV_PIX_FMT_YUV444P12MSBLE:
         *lumToYV12 = shf16_12LEToY_c;
         break;
+    case AV_PIX_FMT_GRAY10MSBBE:
     case AV_PIX_FMT_YUV444P10MSBBE:
         *lumToYV12 = shf16_10BEToY_c;
         break;
+    case AV_PIX_FMT_GRAY12MSBBE:
     case AV_PIX_FMT_YUV444P12MSBBE:
         *lumToYV12 = shf16_12BEToY_c;
         break;
