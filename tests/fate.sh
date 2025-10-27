@@ -95,7 +95,7 @@ fate()(
 )
 
 clean(){
-    rm -rf ${build} ${inst}
+    test "$skip_clean" = "yes" || rm -rf ${build} ${inst}
 }
 
 report(){
