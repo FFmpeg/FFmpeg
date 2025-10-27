@@ -1299,10 +1299,6 @@ next_packet:
             if (whip->state < WHIP_STATE_ICE_CONNECTED) {
                 if (whip->is_peer_ice_lite)
                     whip->state = WHIP_STATE_ICE_CONNECTED;
-                whip->whip_ice_time = av_gettime_relative();
-                av_log(whip, AV_LOG_VERBOSE, "ICE STUN ok, state=%d, url=udp://%s:%d, location=%s, username=%s:%s, res=%dB, elapsed=%.2fms\n",
-                    whip->state, whip->ice_host, whip->ice_port, whip->whip_resource_url ? whip->whip_resource_url : "",
-                    whip->ice_ufrag_remote, whip->ice_ufrag_local, ret, ELAPSED(whip->whip_starttime, av_gettime_relative()));
 
                 ff_url_join(buf, sizeof(buf), "dtls", NULL, whip->ice_host, whip->ice_port, NULL);
                 av_dict_set_int(&opts, "mtu", whip->pkt_size, 0);
@@ -1338,9 +1334,13 @@ next_packet:
 
         /* Handle DTLS handshake */
         if (is_dtls_packet(whip->buf, ret) || is_dtls_active) {
+            whip->whip_ice_time = av_gettime_relative();
             /* Start consent timer when ICE selected */
-            whip->whip_last_consent_tx_time = whip->whip_last_consent_rx_time = av_gettime_relative();
+            whip->whip_last_consent_tx_time = whip->whip_last_consent_rx_time = whip->whip_ice_time;
             whip->state = WHIP_STATE_ICE_CONNECTED;
+            av_log(whip, AV_LOG_VERBOSE, "ICE STUN ok, state=%d, url=udp://%s:%d, location=%s, username=%s:%s, res=%dB, elapsed=%.2fms\n",
+                whip->state, whip->ice_host, whip->ice_port, whip->whip_resource_url ? whip->whip_resource_url : "",
+                whip->ice_ufrag_remote, whip->ice_ufrag_local, ret, ELAPSED(whip->whip_starttime, whip->whip_ice_time));
             ret = ffurl_handshake(whip->dtls_uc);
             if (ret < 0) {
                 whip->state = WHIP_STATE_FAILED;
