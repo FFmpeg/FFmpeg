@@ -14,7 +14,7 @@ libavcodec/.*aac.* @lynne
 libavcodec/.*ac3.* @lynne
 libavcodec/.*adpcm.* @zane @pross
 libavcodec/anm.* @pross
-libavcodec/amf.* @OvchinnikovDmitrii
+libavcodec/amf.* @OvchinnikovDmitrii @ArazIusubov
 libavcodec/ansi.* @pross
 libavcodec/aom_film_grain.* @haasn
 libavcodec/.*atrac9.* @lynne
@@ -92,7 +92,7 @@ libavcodec/x86/vpx.* @rbultje
 # avfilter
 # =======
 libavfilter/af_whisper.* @vpalmisano
-libavfilter/.*_amf* @OvchinnikovDmitrii
+libavfilter/.*_amf* @OvchinnikovDmitrii @ArazIusubov
 libavfilter/avfiltergraph.* @haasn
 libavfilter/colorspace.* @rbultje
 libavfilter/formats.* @haasn
@@ -156,7 +156,7 @@ libavformat/wtv.* @pross
 
 # avutil
 # ======
-libavutil/.*_amf* @OvchinnikovDmitrii
+libavutil/.*_amf* @OvchinnikovDmitrii @ArazIusubov
 libavutil/.*crc.* @lynne @michaelni
 libavutil/.*d3d12va.* @jianhuaw @tong1wu
 libavutil/csp.* @rbultje @haasn
