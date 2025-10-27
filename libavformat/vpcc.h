@@ -53,10 +53,10 @@ typedef struct VPCC {
  */
 int ff_isom_write_vpcc(void *logctx, AVIOContext *pb,
                        const uint8_t *data, int len,
-                       AVCodecParameters *par);
+                       const AVCodecParameters *par);
 
-int ff_isom_get_vpcc_features(void *logctx, AVCodecParameters *par,
+int ff_isom_get_vpcc_features(void *logctx, const AVCodecParameters *par,
                               const uint8_t *data, int len,
-                              AVRational *frame_rate, VPCC *vpcc);
+                              const AVRational *frame_rate, VPCC *vpcc);
 
 #endif /* AVFORMAT_VPCC_H */

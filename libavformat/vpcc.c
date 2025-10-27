@@ -72,7 +72,9 @@ static int get_vpx_video_full_range_flag(enum AVColorRange color_range)
 }
 
 // Find approximate VP9 level based on the Luma's Sample rate and Picture size.
-static int get_vp9_level(AVCodecParameters *par, AVRational *frame_rate) {
+static int get_vp9_level(const AVCodecParameters *par,
+                         const AVRational *frame_rate)
+{
     int picture_size = par->width * par->height;
     int64_t sample_rate;
 
@@ -150,9 +152,9 @@ static void parse_bitstream(GetBitContext *gb, int *profile, int *bit_depth) {
     *bit_depth = *profile <= 1 ? 8 : 10 + get_bits1(gb) * 2;
 }
 
-int ff_isom_get_vpcc_features(void *logctx, AVCodecParameters *par,
+int ff_isom_get_vpcc_features(void *logctx, const AVCodecParameters *par,
                               const uint8_t *data, int len,
-                              AVRational *frame_rate, VPCC *vpcc)
+                              const AVRational *frame_rate, VPCC *vpcc)
 {
     int profile = par->profile;
     int level = par->level == AV_LEVEL_UNKNOWN ?
@@ -199,7 +201,7 @@ int ff_isom_get_vpcc_features(void *logctx, AVCodecParameters *par,
 
 int ff_isom_write_vpcc(void *logctx, AVIOContext *pb,
                        const uint8_t *data, int len,
-                       AVCodecParameters *par)
+                       const AVCodecParameters *par)
 {
     VPCC vpcc;
     int ret;
