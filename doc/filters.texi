@@ -13056,7 +13056,9 @@ Draw vector graphics on top of video frames, by executing a script written in
 a custom language called VGS (@emph{Vector Graphics Script}).
 
 The documentation for the language can be found in
-@ref{,,drawvg - Language Reference,drawvg-reference}.
+@ref{,,drawvg - Language Reference,drawvg-reference}. A version of this reference
+with rendered examples can be found at the
+@uref{https://ayosec.github.io/ffmpeg-drawvg/playground/docs/langref.html, author's site}.
 
 Graphics are rendered using the @uref{https://cairographics.org/,cario 2D
 graphics library}.
