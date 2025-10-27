@@ -167,7 +167,6 @@ int attribute_align_arg av_buffersink_get_samples(AVFilterContext *ctx,
 static av_cold int common_init(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
-    int ret = 0;
 
 #if FF_API_BUFFERSINK_OPTS
 
@@ -224,13 +223,11 @@ static av_cold int common_init(AVFilterContext *ctx)
                        sizeof(*buf->channel_layouts) * 2);
                 buf->nb_channel_layouts++;
 
-                ret = av_channel_layout_from_string(&buf->channel_layouts[buf->nb_channel_layouts - 1], cur);
+                int ret = av_channel_layout_from_string(&buf->channel_layouts[buf->nb_channel_layouts - 1], cur);
                 if (ret < 0) {
                     av_log(ctx, AV_LOG_ERROR, "Error parsing channel layout: %s.\n", cur);
                     return ret;
                 }
-                if (ret < 0)
-                    return ret;
 
                 cur = next;
             }
