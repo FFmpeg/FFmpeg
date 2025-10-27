@@ -1361,6 +1361,7 @@ static int dash_init(AVFormatContext *s)
         AVStream *st;
         AVDictionary *opts = NULL;
         char filename[1024];
+        AVBPrint buffer;
 
         os->bit_rate = s->streams[i]->codecpar->bit_rate;
         if (!os->bit_rate) {
@@ -1574,8 +1575,8 @@ static int dash_init(AVFormatContext *s)
             c->has_video = 1;
         }
 
-        ff_make_codec_str(s, st->codecpar, &st->avg_frame_rate, os->codec_str,
-                          sizeof(os->codec_str));
+        av_bprint_init_for_buffer(&buffer, os->codec_str, sizeof(os->codec_str));
+        ff_make_codec_str(s, st->codecpar, &st->avg_frame_rate, &buffer);
         os->first_pts = AV_NOPTS_VALUE;
         os->max_pts = AV_NOPTS_VALUE;
         os->last_dts = AV_NOPTS_VALUE;
@@ -1697,6 +1698,7 @@ static int update_stream_extradata(AVFormatContext *s, OutputStream *os,
     uint8_t *extradata;
     size_t extradata_size;
     int ret;
+    AVBPrint buffer;
 
     if (par->extradata_size)
         return 0;
@@ -1711,7 +1713,8 @@ static int update_stream_extradata(AVFormatContext *s, OutputStream *os,
 
     memcpy(par->extradata, extradata, extradata_size);
 
-    ff_make_codec_str(s, par, frame_rate, os->codec_str, sizeof(os->codec_str));
+    av_bprint_init_for_buffer(&buffer, os->codec_str, sizeof(os->codec_str));
+    ff_make_codec_str(s, par, frame_rate, &buffer);
 
     return 0;
 }

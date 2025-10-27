@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/rational.h"
@@ -44,36 +45,32 @@ static const struct codec_string {
 };
 
 static void set_vp9_codec_str(void *logctx, const AVCodecParameters *par,
-                              const AVRational *frame_rate, char *str, int size) {
+                              const AVRational *frame_rate, AVBPrint *out)
+{
     VPCC vpcc;
     int ret = ff_isom_get_vpcc_features(logctx, par, NULL, 0, frame_rate, &vpcc);
     if (ret == 0) {
-        snprintf(str, size, "vp09.%02d.%02d.%02d",
-                 vpcc.profile, vpcc.level, vpcc.bitdepth);
+        av_bprintf(out, "vp09.%02d.%02d.%02d",
+                   vpcc.profile, vpcc.level, vpcc.bitdepth);
     } else {
         // Default to just vp9 in case of error while finding out profile or level
         av_log(logctx, AV_LOG_WARNING, "Could not find VP9 profile and/or level\n");
-        av_strlcpy(str, "vp9", size);
+        av_bprintf(out, "vp9");
     }
 }
 
 int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
-                      const AVRational *frame_rate, char *str, size_t size)
+                      const AVRational *frame_rate, struct AVBPrint *out)
 {
     int i;
-
-    if (size < 5)
-        return AVERROR(EINVAL);
-
-    str[0] = '\0';
 
     // common Webm codecs are not part of RFC 6381
     for (i = 0; codecs[i].id != AV_CODEC_ID_NONE; i++)
         if (codecs[i].id == par->codec_id) {
             if (codecs[i].id == AV_CODEC_ID_VP9) {
-                set_vp9_codec_str(logctx, par, frame_rate, str, size);
+                set_vp9_codec_str(logctx, par, frame_rate, out);
             } else {
-                av_strlcpy(str, codecs[i].str, size);
+                av_bprintf(out, "%s", codecs[i].str);
             }
             return 0;
         }
@@ -92,8 +89,7 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
                 p = &data[1];
             else
                 return AVERROR(EINVAL);
-            snprintf(str, size,
-                     "avc1.%02x%02x%02x", p[0], p[1], p[2]);
+            av_bprintf(out, "avc1.%02x%02x%02x", p[0], p[1], p[2]);
         } else {
             return AVERROR(EINVAL);
         }
@@ -172,7 +168,9 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
             tier != 0 &&
             level != AV_LEVEL_UNKNOWN &&
             constraints[0] != '\0') {
-            snprintf(str, size, "%s.%d.%x.%c%d.%s", av_fourcc2str(par->codec_tag), profile, profile_compatibility, tier, level, constraints);
+            av_bprintf(out, "%s.%d.%x.%c%d.%s",
+                       av_fourcc2str(par->codec_tag), profile,
+                       profile_compatibility, tier, level, constraints);
         } else
             return AVERROR(EINVAL);
     } else if (par->codec_id == AV_CODEC_ID_AV1) {
@@ -184,23 +182,23 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
         if ((err = ff_av1_parse_seq_header(&seq, par->extradata, par->extradata_size)) < 0)
             return err;
 
-        snprintf(str, size, "av01.%01u.%02u%s.%02u",
+        av_bprintf(out, "av01.%01u.%02u%s.%02u",
                     seq.profile, seq.level, seq.tier ? "H" : "M", seq.bitdepth);
         if (seq.color_description_present_flag)
-            av_strlcatf(str, size, ".%01u.%01u%01u%01u.%02u.%02u.%02u.%01u",
-                        seq.monochrome,
-                        seq.chroma_subsampling_x, seq.chroma_subsampling_y, seq.chroma_sample_position,
-                        seq.color_primaries, seq.transfer_characteristics, seq.matrix_coefficients,
-                        seq.color_range);
+            av_bprintf(out, ".%01u.%01u%01u%01u.%02u.%02u.%02u.%01u",
+                       seq.monochrome,
+                       seq.chroma_subsampling_x, seq.chroma_subsampling_y, seq.chroma_sample_position,
+                       seq.color_primaries, seq.transfer_characteristics, seq.matrix_coefficients,
+                       seq.color_range);
     } else if (par->codec_id == AV_CODEC_ID_MPEG4) {
         // RFC 6381
-        snprintf(str, size, "mp4v.20");
+        av_bprintf(out, "mp4v.20");
         // Unimplemented, should output ProfileLevelIndication as a decimal number
         av_log(logctx, AV_LOG_WARNING, "Incomplete RFC 6381 codec string for mp4v\n");
     } else if (par->codec_id == AV_CODEC_ID_MP2) {
-        snprintf(str, size, "mp4a.40.33");
+        av_bprintf(out, "mp4a.40.33");
     } else if (par->codec_id == AV_CODEC_ID_MP3) {
-        snprintf(str, size, "mp4a.40.34");
+        av_bprintf(out, "mp4a.40.34");
     } else if (par->codec_id == AV_CODEC_ID_AAC) {
         // RFC 6381
         int aot = 2;
@@ -210,11 +208,11 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
                 aot = ((AV_RB16(par->extradata) >> 5) & 0x3f) + 32;
         } else if (par->profile != AV_PROFILE_UNKNOWN)
             aot = par->profile + 1;
-        snprintf(str, size, "mp4a.40.%d", aot);
+        av_bprintf(out, "mp4a.40.%d", aot);
     } else if (par->codec_id == AV_CODEC_ID_AC3) {
-        snprintf(str, size, "ac-3");
+        av_bprintf(out, "ac-3");
     } else if (par->codec_id == AV_CODEC_ID_EAC3) {
-        snprintf(str, size, "ec-3");
+        av_bprintf(out, "ec-3");
     } else {
         return AVERROR(EINVAL);
     }

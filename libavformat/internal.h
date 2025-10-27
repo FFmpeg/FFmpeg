@@ -673,6 +673,6 @@ int ff_parse_opts_from_query_string(void *obj, const char *str, int allow_unkown
  * @return <0 on error
  */
 int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
-                      const AVRational *frame_rate, char *str, size_t size);
+                      const AVRational *frame_rate, struct AVBPrint *out);
 
 #endif /* AVFORMAT_INTERNAL_H */
