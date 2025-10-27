@@ -167,7 +167,6 @@ static int d3d12va_encode_h264_init_sequence_params(AVCodecContext *avctx)
     AVD3D12VAFramesContext    *hwctx = base_ctx->input_frames->hwctx;
     H264RawSPS                *sps  = &priv->units.raw_sps;
     H264RawPPS                *pps  = &priv->units.raw_pps;
-    H264RawVUI                *vui  = &sps->vui;
     D3D12_VIDEO_ENCODER_PROFILE_H264 profile = D3D12_VIDEO_ENCODER_PROFILE_H264_MAIN;
     D3D12_VIDEO_ENCODER_LEVELS_H264 level = { 0 };
     const AVPixFmtDescriptor *desc;
@@ -341,7 +340,6 @@ static int d3d12va_encode_h264_configure(AVCodecContext *avctx)
 static int d3d12va_encode_h264_set_level(AVCodecContext *avctx)
 {
     D3D12VAEncodeContext        *ctx = avctx->priv_data;
-    D3D12VAEncodeH264Context    *priv = avctx->priv_data;
     int i;
 
     ctx->level.DataSize = sizeof(D3D12_VIDEO_ENCODER_LEVELS_H264);
