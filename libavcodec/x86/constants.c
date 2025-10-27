@@ -20,7 +20,6 @@
 
 #include "libavutil/mem_internal.h"
 #include "libavutil/x86/asm.h" // for xmm_reg
-#include "constants.h"
 
 DECLARE_ALIGNED(32, const ymm_reg,  ff_pw_1)    = { 0x0001000100010001ULL, 0x0001000100010001ULL,
                                                     0x0001000100010001ULL, 0x0001000100010001ULL };
