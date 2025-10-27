@@ -382,15 +382,39 @@ static av_cold int certificate_key_init(AVFormatContext *s)
 
 static av_cold int dtls_initialize(AVFormatContext *s)
 {
+    int ret = 0;
     WHIPContext *whip = s->priv_data;
+    int is_dtls_active = whip->flags & WHIP_DTLS_ACTIVE;
+    AVDictionary *opts = NULL;
+    char buf[256];
+
+    ff_url_join(buf, sizeof(buf), "dtls", NULL, whip->ice_host, whip->ice_port, NULL);
+    av_dict_set_int(&opts, "mtu", whip->pkt_size, 0);
+    if (whip->cert_file) {
+        av_dict_set(&opts, "cert_file", whip->cert_file, 0);
+    } else
+        av_dict_set(&opts, "cert_pem", whip->cert_buf, 0);
+
+    if (whip->key_file) {
+        av_dict_set(&opts, "key_file", whip->key_file, 0);
+    } else
+        av_dict_set(&opts, "key_pem", whip->key_buf, 0);
+    av_dict_set_int(&opts, "external_sock", 1, 0);
+    av_dict_set_int(&opts, "use_srtp", 1, 0);
+    av_dict_set_int(&opts, "listen", is_dtls_active ? 0 : 1, 0);
+    ret = ffurl_open_whitelist(&whip->dtls_uc, buf, AVIO_FLAG_READ_WRITE, &s->interrupt_callback,
+        &opts, s->protocol_whitelist, s->protocol_blacklist, NULL);
+    av_dict_free(&opts);
+    if (ret < 0)
+        goto end;
     /* reuse the udp created by whip */
     ff_tls_set_external_socket(whip->dtls_uc, whip->udp);
 
     /* Make the socket non-blocking */
     ff_socket_nonblock(ffurl_get_file_handle(whip->dtls_uc), 1);
     whip->dtls_uc->flags |= AVIO_FLAG_NONBLOCK;
-
-    return 0;
+end:
+    return ret;
 }
 
 /**
@@ -1237,8 +1261,6 @@ static int ice_dtls_handshake(AVFormatContext *s)
     int64_t starttime = av_gettime_relative(), now;
     WHIPContext *whip = s->priv_data;
     int is_dtls_active = whip->flags & WHIP_DTLS_ACTIVE;
-    AVDictionary *opts = NULL;
-    char buf[256];
 
     if (whip->state < WHIP_STATE_UDP_CONNECTED || !whip->udp) {
         av_log(whip, AV_LOG_ERROR, "UDP not connected, state=%d, udp=%p\n", whip->state, whip->udp);
@@ -1300,26 +1322,6 @@ next_packet:
                 if (whip->is_peer_ice_lite)
                     whip->state = WHIP_STATE_ICE_CONNECTED;
 
-                ff_url_join(buf, sizeof(buf), "dtls", NULL, whip->ice_host, whip->ice_port, NULL);
-                av_dict_set_int(&opts, "mtu", whip->pkt_size, 0);
-                if (whip->cert_file) {
-                    av_dict_set(&opts, "cert_file", whip->cert_file, 0);
-                } else
-                    av_dict_set(&opts, "cert_pem", whip->cert_buf, 0);
-
-                if (whip->key_file) {
-                    av_dict_set(&opts, "key_file", whip->key_file, 0);
-                } else
-                    av_dict_set(&opts, "key_pem", whip->key_buf, 0);
-                av_dict_set_int(&opts, "external_sock", 1, 0);
-                av_dict_set_int(&opts, "use_srtp", 1, 0);
-                av_dict_set_int(&opts, "listen", is_dtls_active ? 0 : 1, 0);
-                /* If got the first binding response, start DTLS handshake. */
-                ret = ffurl_open_whitelist(&whip->dtls_uc, buf, AVIO_FLAG_READ_WRITE, &s->interrupt_callback,
-                    &opts, s->protocol_whitelist, s->protocol_blacklist, NULL);
-                av_dict_free(&opts);
-                if (ret < 0)
-                    goto end;
                 dtls_initialize(s);
             }
             goto next_packet;
