@@ -1511,7 +1511,7 @@ int ff_d3d12va_encode_init(AVCodecContext *avctx)
     format_info.Format = ((AVD3D12VAFramesContext *)base_ctx->input_frames->hwctx)->format;
     if (FAILED(ID3D12VideoDevice_CheckFeatureSupport(ctx->hwctx->device, D3D12_FEATURE_FORMAT_INFO,
         &format_info, sizeof(format_info)))) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to query format plane count: 0x%x\n", hr);
+        av_log(avctx, AV_LOG_ERROR, "Failed to query format plane count: %#lx\n", hr);
         err = AVERROR_EXTERNAL;
         goto fail;
     }
