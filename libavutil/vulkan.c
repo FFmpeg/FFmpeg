@@ -1534,7 +1534,7 @@ int ff_vk_mt_is_np_rgb(enum AVPixelFormat pix_fmt)
         pix_fmt == AV_PIX_FMT_RGBA64 || pix_fmt == AV_PIX_FMT_RGB565 ||
         pix_fmt == AV_PIX_FMT_BGR565 || pix_fmt == AV_PIX_FMT_BGR0   ||
         pix_fmt == AV_PIX_FMT_0BGR   || pix_fmt == AV_PIX_FMT_RGB0   ||
-        pix_fmt == AV_PIX_FMT_GBRP10  || pix_fmt == AV_PIX_FMT_GBRP12 ||
+        pix_fmt == AV_PIX_FMT_GBRP10MSB  || pix_fmt == AV_PIX_FMT_GBRP12MSB ||
         pix_fmt == AV_PIX_FMT_GBRP14  || pix_fmt == AV_PIX_FMT_GBRP16 ||
         pix_fmt == AV_PIX_FMT_GBRAP   || pix_fmt == AV_PIX_FMT_GBRAP10 ||
         pix_fmt == AV_PIX_FMT_GBRAP12 || pix_fmt == AV_PIX_FMT_GBRAP14 ||
@@ -1557,8 +1557,8 @@ void ff_vk_set_perm(enum AVPixelFormat pix_fmt, int lut[4], int inv)
     case AV_PIX_FMT_GBRAP12:
     case AV_PIX_FMT_GBRAP14:
     case AV_PIX_FMT_GBRAP16:
-    case AV_PIX_FMT_GBRP10:
-    case AV_PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRP10MSB:
+    case AV_PIX_FMT_GBRP12MSB:
     case AV_PIX_FMT_GBRP14:
     case AV_PIX_FMT_GBRP16:
     case AV_PIX_FMT_GBRPF32:
@@ -1680,8 +1680,8 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pix_fmt,
     case AV_PIX_FMT_GBRAP12:
     case AV_PIX_FMT_GBRAP14:
     case AV_PIX_FMT_GBRAP16:
-    case AV_PIX_FMT_GBRP10:
-    case AV_PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRP10MSB:
+    case AV_PIX_FMT_GBRP12MSB:
     case AV_PIX_FMT_GBRP14:
     case AV_PIX_FMT_GBRP16:
     case AV_PIX_FMT_YUV420P10MSB:
