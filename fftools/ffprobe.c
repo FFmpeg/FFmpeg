@@ -1776,6 +1776,10 @@ static int show_stream(AVTextFormatContext *tfc, AVFormatContext *fmt_ctx, int s
     print_str("codec_tag_string",    av_fourcc2str(par->codec_tag));
     print_fmt("codec_tag", "0x%04"PRIx32, par->codec_tag);
 
+    av_bprint_clear(&pbuf);
+    if (!av_mime_codec_str(par, stream->avg_frame_rate, &pbuf))
+        print_str("mime_codec_string", pbuf.str);
+
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
         print_int("width",        par->width);
