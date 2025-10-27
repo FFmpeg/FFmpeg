@@ -405,8 +405,10 @@ static av_cold int dtls_initialize(AVFormatContext *s)
     ret = ffurl_open_whitelist(&whip->dtls_uc, buf, AVIO_FLAG_READ_WRITE, &s->interrupt_callback,
         &opts, s->protocol_whitelist, s->protocol_blacklist, NULL);
     av_dict_free(&opts);
-    if (ret < 0)
+    if (ret < 0) {
+        av_log(whip, AV_LOG_ERROR, "Failed to open DTLS url:%s\n", buf);
         goto end;
+    }
     /* reuse the udp created by whip */
     ff_tls_set_external_socket(whip->dtls_uc, whip->udp);
 
@@ -1321,8 +1323,6 @@ next_packet:
             if (whip->state < WHIP_STATE_ICE_CONNECTED) {
                 if (whip->is_peer_ice_lite)
                     whip->state = WHIP_STATE_ICE_CONNECTED;
-
-                dtls_initialize(s);
             }
             goto next_packet;
         }
@@ -1343,10 +1343,14 @@ next_packet:
             av_log(whip, AV_LOG_VERBOSE, "ICE STUN ok, state=%d, url=udp://%s:%d, location=%s, username=%s:%s, res=%dB, elapsed=%.2fms\n",
                 whip->state, whip->ice_host, whip->ice_port, whip->whip_resource_url ? whip->whip_resource_url : "",
                 whip->ice_ufrag_remote, whip->ice_ufrag_local, ret, ELAPSED(whip->whip_starttime, whip->whip_ice_time));
+
+            ret = dtls_initialize(s);
+            if (ret < 0)
+                goto end;
             ret = ffurl_handshake(whip->dtls_uc);
             if (ret < 0) {
                 whip->state = WHIP_STATE_FAILED;
-                av_log(whip, AV_LOG_VERBOSE, "DTLS session failed\n");
+                av_log(whip, AV_LOG_ERROR, "DTLS session failed\n");
                 goto end;
             }
             if (!ret) {
