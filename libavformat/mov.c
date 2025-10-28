@@ -6872,8 +6872,13 @@ static int mov_read_vexu_proj(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
     }
 
-    avio_skip(pb, 1); // version
-    avio_skip(pb, 3); // flags
+     // version and flags, only support (0, 0)
+    unsigned n = avio_rl32(pb);
+    if (n != 0) {
+        av_log(c->fc, AV_LOG_ERROR, "prji version %u, flag %u are not supported\n",
+               n & 0xFF, n >> 8);
+        return AVERROR_PATCHWELCOME;
+    }
 
     tag = avio_rl32(pb);
     switch (tag) {
