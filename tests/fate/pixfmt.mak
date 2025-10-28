@@ -66,6 +66,8 @@ PIXFMT_EXT_LIST =      $(PIXFMT_8_LIST) \
                         yuv440p10be     \
                         yuv444p10le     \
                         yuv444p10be     \
+                        yuv444p10msble  \
+                        yuv444p10msbbe  \
                         y210le          \
                         p010le          \
                         p010be          \
@@ -89,6 +91,8 @@ PIXFMT_EXT_LIST =      $(PIXFMT_8_LIST) \
                         yuv440p12be     \
                         yuv444p12le     \
                         yuv444p12be     \
+                        yuv444p12msble  \
+                        yuv444p12msbbe  \
                         y212le          \
                         p012le          \
                         p012be          \
