@@ -917,6 +917,7 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
             sh->short_term_ref_pic_set_size     = 0;
             sh->short_term_rps                  = NULL;
             sh->long_term_ref_pic_set_size      = 0;
+            sh->long_term_rps.nb_refs           = 0;
             sh->slice_temporal_mvp_enabled_flag = 0;
         }
 
