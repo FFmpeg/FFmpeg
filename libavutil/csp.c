@@ -87,16 +87,21 @@ static const AVColorPrimariesDesc color_primaries[AVCOL_PRI_NB] = {
     [AVCOL_PRI_JEDEC_P22] = { WP_D65, { { AVR(0.630), AVR(0.340) }, { AVR(0.295), AVR(0.605) }, { AVR(0.155), AVR(0.077) } } },
 };
 
+static const AVColorPrimariesDesc color_primaries_ext[AVCOL_PRI_EXT_NB -
+                                                      AVCOL_PRI_EXT_BASE] = {
+    [AVCOL_PRI_V_GAMUT - AVCOL_PRI_EXT_BASE] = { WP_D65, { { AVR(0.730), AVR(0.280) }, { AVR(0.165), AVR(0.840) }, { AVR(0.100), AVR(-0.030) } } },
+};
+
 const AVColorPrimariesDesc *av_csp_primaries_desc_from_id(enum AVColorPrimaries prm)
 {
-    const AVColorPrimariesDesc *p;
-
-    if ((unsigned)prm >= AVCOL_PRI_NB)
-        return NULL;
-    p = &color_primaries[prm];
+    const AVColorPrimariesDesc *p = NULL;
+    if ((unsigned)prm < AVCOL_PRI_NB)
+        p = &color_primaries[prm];
+    else if (((unsigned)prm >= AVCOL_PRI_EXT_BASE) &&
+             ((unsigned)prm < AVCOL_PRI_EXT_NB))
+        p = &color_primaries_ext[prm - AVCOL_PRI_EXT_BASE];
     if (!p->prim.r.x.num)
         return NULL;
-
     return p;
 }
 
