@@ -303,6 +303,11 @@ FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, SCALE_FILTER CONCAT_PROTOCOL) += fate-hev
 fate-hevc-mv-position: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/multiview.mov -map 0:v:vpos:left -map 0:v:vpos:right
 FATE_HEVC-$(call FRAMECRC, MOV, HEVC) += fate-hevc-mv-position
 
+# The sample is from PICO VR. It use long term ref.
+# Check long term ref being reset in IDR frame.
+fate-hevc-mv-ltr: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/pico-mv-hevc.mp4 -map 0:vidx:1
+FATE_HEVC-$(call FRAMECRC, MOV, HEVC) += fate-hevc-mv-ltr
+
 fate-hevc-alpha: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/alpha.mp4
 FATE_HEVC-$(call FRAMECRC, MOV, HEVC) += fate-hevc-alpha
 
