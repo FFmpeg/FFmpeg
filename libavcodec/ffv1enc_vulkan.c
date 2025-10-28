@@ -1289,7 +1289,8 @@ static int init_encode_shader(AVCodecContext *avctx, FFVkSPIRVCompiler *spv)
     uint8_t *spv_data;
     size_t spv_len;
     void *spv_opaque = NULL;
-    int use_cached_reader = fv->ctx.ac != AC_GOLOMB_RICE;
+    int use_cached_reader = fv->ctx.ac != AC_GOLOMB_RICE &&
+                            fv->s.driver_props.driverID == VK_DRIVER_ID_MESA_RADV;
 
     RET(ff_vk_shader_init(&fv->s, shd, "ffv1_enc",
                           VK_SHADER_STAGE_COMPUTE_BIT,
