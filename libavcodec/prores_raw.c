@@ -334,6 +334,9 @@ static int decode_frame(AVCodecContext *avctx,
     DECLARE_ALIGNED(32, uint8_t, qmat)[64];
     memset(qmat, 1, 64);
 
+    if (avctx->skip_frame >= AVDISCARD_ALL)
+        return avpkt->size;
+
     switch (avctx->codec_tag) {
     case 0:
         break;
