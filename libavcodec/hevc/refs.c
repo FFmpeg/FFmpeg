@@ -626,10 +626,8 @@ int ff_hevc_frame_nb_refs(const SliceHeader *sh, const HEVCPPS *pps,
             ret += !!(rps->used & (1 << i));
     }
 
-    if (long_rps) {
-        for (i = 0; i < long_rps->nb_refs; i++)
-            ret += !!long_rps->used[i];
-    }
+    for (i = 0; i < long_rps->nb_refs; i++)
+        ret += !!long_rps->used[i];
 
     if (sh->inter_layer_pred) {
         av_assert0(pps->sps->vps->num_direct_ref_layers[layer_idx] < 2);
