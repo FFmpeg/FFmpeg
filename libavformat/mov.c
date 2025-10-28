@@ -6668,7 +6668,8 @@ static int mov_read_pack(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 // This means value will be set in another layer
                 break;
             default:
-                av_log(c->fc, AV_LOG_WARNING, "Unknown tag in pkin: 0x%08X\n", tag);
+                av_log(c->fc, AV_LOG_WARNING, "Unknown tag in pkin: %s\n",
+                       av_fourcc2str(tag));
                 avio_skip(pb, size - 8);
                 break;
             }
@@ -6676,7 +6677,8 @@ static int mov_read_pack(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             break;
         }
         default:
-            av_log(c->fc, AV_LOG_WARNING, "Unknown tag in pack: 0x%08X\n", tag);
+            av_log(c->fc, AV_LOG_WARNING, "Unknown tag in pack: %s\n",
+                   av_fourcc2str(tag));
             avio_skip(pb, size - 8);
             break;
         }
@@ -6868,7 +6870,8 @@ static int mov_read_vexu_proj(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     tag = avio_rl32(pb);
     if (tag != MKTAG('p','r','j','i')) {
-        av_log(c->fc, AV_LOG_ERROR, "Invalid child box of proj box: 0x%08X\n", tag);
+        av_log(c->fc, AV_LOG_ERROR, "Invalid child box of proj box: %s\n",
+               av_fourcc2str(tag));
         return AVERROR_INVALIDDATA;
     }
 
@@ -6898,7 +6901,7 @@ static int mov_read_vexu_proj(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         projection = AV_SPHERICAL_PARAMETRIC_IMMERSIVE;
         break;
     default:
-        av_log(c->fc, AV_LOG_ERROR, "Invalid projection type in prji box: 0x%08X\n", tag);
+        av_log(c->fc, AV_LOG_ERROR, "Invalid projection type in prji box: %s\n", av_fourcc2str(tag));
         return AVERROR_INVALIDDATA;
     }
 
@@ -7011,7 +7014,8 @@ static int mov_read_eyes(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
             subtag = avio_rl32(pb);
             if (subtag != MKTAG('b','l','i','n')) {
-                av_log(c->fc, AV_LOG_ERROR, "Expected blin box, got 0x%08X\n", subtag);
+                av_log(c->fc, AV_LOG_ERROR, "Expected blin box, got %s\n",
+                       av_fourcc2str(subtag));
                 return AVERROR_INVALIDDATA;
             }
 
@@ -7039,7 +7043,8 @@ static int mov_read_eyes(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
             subtag = avio_rl32(pb);
             if (subtag != MKTAG('d','a','d','j')) {
-                av_log(c->fc, AV_LOG_ERROR, "Expected dadj box, got 0x%08X\n", subtag);
+                av_log(c->fc, AV_LOG_ERROR, "Expected dadj box, got %s\n",
+                       av_fourcc2str(subtag));
                 return AVERROR_INVALIDDATA;
             }
 
@@ -7054,7 +7059,8 @@ static int mov_read_eyes(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             break;
         }
         default:
-            av_log(c->fc, AV_LOG_WARNING, "Unknown tag in eyes: 0x%08X\n", tag);
+            av_log(c->fc, AV_LOG_WARNING, "Unknown tag in eyes: %s\n",
+                   av_fourcc2str(tag));
             avio_skip(pb, size - 8);
             break;
         }
@@ -7131,7 +7137,8 @@ static int mov_read_vexu(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             break;
         }
         default:
-            av_log(c->fc, AV_LOG_WARNING, "Unknown tag in vexu: 0x%08X\n", tag);
+            av_log(c->fc, AV_LOG_WARNING, "Unknown tag in vexu: %s\n",
+                   av_fourcc2str(tag));
             avio_skip(pb, size - 8);
             break;
         }
