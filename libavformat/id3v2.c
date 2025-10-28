@@ -268,7 +268,7 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
 
     case ID3v2_ENCODING_UTF16BOM:
         if ((left -= 2) < 0) {
-            av_log(s, AV_LOG_ERROR, "Cannot read BOM value, input too short\n");
+            av_log(s, AV_LOG_ERROR, "Cannot read BOM value, input too short %d\n", left);
             ffio_free_dyn_buf(&dynbuf);
             *dst = NULL;
             return AVERROR_INVALIDDATA;
@@ -279,6 +279,11 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
             get = avio_rl16;
         case 0xfeff:
             break;
+        case 0: // empty string without bom
+            ffio_free_dyn_buf(&dynbuf);
+            *dst = NULL;
+            *maxread = left;
+            return 0;
         default:
             av_log(s, AV_LOG_ERROR, "Incorrect BOM value: 0x%x\n", bom);
             ffio_free_dyn_buf(&dynbuf);
