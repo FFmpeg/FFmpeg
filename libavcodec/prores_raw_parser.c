@@ -61,7 +61,23 @@ static int prores_raw_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     }
 
     /* Vendor header (e.g. "peac" for Panasonic or "atm0" for Atmos) */
-    bytestream2_skip(&gb, 4);
+    switch (bytestream2_get_be32(&gb)) {
+    case MKBETAG('p','e','a','c'):
+        /* Internal recording from a Panasonic camera, V-Log */
+        avctx->color_primaries = AVCOL_PRI_V_GAMUT;
+        avctx->color_trc = AVCOL_TRC_V_LOG;
+        break;
+    case MKBETAG('a','t','m','0'):
+        /* External recording from an Atomos recorder. Cameras universally
+         * record in their own native log curve internally, but linearize it
+         * when outputting RAW externally */
+        avctx->color_primaries = AVCOL_PRI_UNSPECIFIED;
+        avctx->color_trc = AVCOL_TRC_LINEAR;
+        break;
+    default:
+        avctx->color_trc = AVCOL_TRC_UNSPECIFIED;
+        break;
+    };
 
     s->width = bytestream2_get_be16(&gb);
     s->height = bytestream2_get_be16(&gb);
