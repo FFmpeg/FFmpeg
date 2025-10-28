@@ -699,7 +699,12 @@ enum AVColorTransferCharacteristic {
     AVCOL_TRC_SMPTE428     = 17, ///< SMPTE ST 428-1
     AVCOL_TRC_SMPTEST428_1 = AVCOL_TRC_SMPTE428,
     AVCOL_TRC_ARIB_STD_B67 = 18, ///< ARIB STD-B67, known as "Hybrid log-gamma"
-    AVCOL_TRC_NB                 ///< Not part of ABI
+    AVCOL_TRC_NB,                ///< Not part of ABI
+
+    /* The following entries are not part of H.273, but custom extensions */
+    AVCOL_TRC_EXT_BASE     = 256,
+    AVCOL_TRC_V_LOG        = AVCOL_TRC_EXT_BASE,
+    AVCOL_TRC_EXT_NB             ///< Not part of ABI
 };
 
 /**

@@ -3452,6 +3452,10 @@ static const char * const color_transfer_names[] = {
     [AVCOL_TRC_ARIB_STD_B67] = "arib-std-b67",
 };
 
+static const char * const color_transfer_names_ext[] = {
+    [AVCOL_TRC_V_LOG - AVCOL_TRC_EXT_BASE] = "vlog",
+};
+
 static const char * const color_space_names[] = {
     [AVCOL_SPC_RGB] = "gbr",
     [AVCOL_SPC_BT709] = "bt709",
@@ -3939,8 +3943,12 @@ int av_color_primaries_from_name(const char *name)
 
 const char *av_color_transfer_name(enum AVColorTransferCharacteristic transfer)
 {
-    return (unsigned) transfer < AVCOL_TRC_NB ?
-        color_transfer_names[transfer] : NULL;
+    if ((unsigned)transfer < AVCOL_TRC_NB)
+        return color_transfer_names[transfer];
+    else if (((unsigned)transfer >= AVCOL_TRC_EXT_BASE) &&
+             ((unsigned)transfer < AVCOL_TRC_EXT_NB))
+        return color_transfer_names_ext[transfer - AVCOL_TRC_EXT_BASE];
+    return NULL;
 }
 
 int av_color_transfer_from_name(const char *name)
@@ -3953,6 +3961,14 @@ int av_color_transfer_from_name(const char *name)
 
         if (av_strstart(name, color_transfer_names[i], NULL))
             return i;
+    }
+
+    for (i = 0; i < FF_ARRAY_ELEMS(color_transfer_names_ext); i++) {
+        if (!color_transfer_names_ext[i])
+            continue;
+
+        if (av_strstart(name, color_transfer_names_ext[i], NULL))
+            return AVCOL_TRC_EXT_BASE + i;
     }
 
     return AVERROR(EINVAL);

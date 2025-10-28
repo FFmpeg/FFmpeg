@@ -146,14 +146,17 @@ static const double approximate_gamma[AVCOL_TRC_NB] = {
     [AVCOL_TRC_SMPTE428] = 2.6,
 };
 
+static const double approximate_gamma_ext[AVCOL_TRC_EXT_NB -
+                                          AVCOL_TRC_EXT_BASE] = {
+    [AVCOL_TRC_V_LOG - AVCOL_TRC_EXT_BASE] = 2.2,
+};
+
 double av_csp_approximate_trc_gamma(enum AVColorTransferCharacteristic trc)
 {
-    double gamma;
-    if ((unsigned)trc >= AVCOL_TRC_NB)
-        return 0.0;
-    gamma = approximate_gamma[trc];
-    if (gamma > 0)
-        return gamma;
+    if (trc < AVCOL_TRC_NB)
+        return approximate_gamma[trc];
+    else if ((trc >= AVCOL_TRC_EXT_BASE) && (trc < AVCOL_TRC_EXT_NB))
+        return approximate_gamma_ext[trc - AVCOL_TRC_EXT_BASE];
     return 0.0;
 }
 
@@ -171,11 +174,19 @@ static const double approximate_eotf_gamma[AVCOL_TRC_NB] = {
     [AVCOL_TRC_SMPTE428] = 2.6,
 };
 
+static const double approximate_eotf_gamma_ext[AVCOL_TRC_EXT_NB -
+                                               AVCOL_TRC_EXT_BASE] = {
+    [AVCOL_TRC_V_LOG - AVCOL_TRC_EXT_BASE] = 2.2,
+};
+
 double av_csp_approximate_eotf_gamma(enum AVColorTransferCharacteristic trc)
 {
-    if ((unsigned)trc >= AVCOL_TRC_NB)
-        return 0.0;
-    return approximate_eotf_gamma[trc];
+    if ((unsigned)trc < AVCOL_TRC_NB)
+        return approximate_eotf_gamma[trc];
+    else if (((unsigned)trc >= AVCOL_TRC_EXT_BASE) &&
+             ((unsigned)trc < AVCOL_TRC_EXT_NB))
+        return approximate_eotf_gamma_ext[trc - AVCOL_TRC_EXT_BASE];
+    return 0.0;
 }
 
 #define BT709_alpha 1.099296826809442
@@ -399,6 +410,32 @@ static double trc_arib_std_b67_inv(double E)
         (E <= 0.5 ? E * E / 3.0 : (exp((E - c) / a) + b) / 12.0);
 }
 
+#define VLOG_c1 0.01
+#define VLOG_c2 0.181
+#define VLOG_b  0.00873
+#define VLOG_c  0.241514
+#define VLOG_d  0.598206
+
+static double trc_v_log(double E)
+{
+    const double c1 = VLOG_c1;
+    const double b = VLOG_b;
+    const double c = VLOG_c;
+    const double d = VLOG_d;
+    return (E < c1) ? (5.6 * E + 0.125) :
+        (c * log10(E + b) + d);
+}
+
+static double trc_v_log_inv(double E)
+{
+    const double c2 = VLOG_c2;
+    const double b = VLOG_b;
+    const double c = VLOG_c;
+    const double d = VLOG_d;
+    return (E < c2) ? (E - 0.125) / 5.6 :
+        (pow(10.0, ((E - d) / c)) - b);
+}
+
 static const av_csp_trc_function trc_funcs[AVCOL_TRC_NB] = {
     [AVCOL_TRC_BT709] = trc_bt709,
     [AVCOL_TRC_GAMMA22] = trc_gamma22,
@@ -418,11 +455,19 @@ static const av_csp_trc_function trc_funcs[AVCOL_TRC_NB] = {
     [AVCOL_TRC_ARIB_STD_B67] = trc_arib_std_b67,
 };
 
+static const av_csp_trc_function trc_funcs_ext[AVCOL_TRC_EXT_NB -
+                                               AVCOL_TRC_EXT_BASE] = {
+    [AVCOL_TRC_V_LOG - AVCOL_TRC_EXT_BASE] = trc_v_log,
+};
+
 av_csp_trc_function av_csp_trc_func_from_id(enum AVColorTransferCharacteristic trc)
 {
-    if ((unsigned)trc >= AVCOL_TRC_NB)
-        return NULL;
-    return trc_funcs[trc];
+    if ((unsigned)trc < AVCOL_TRC_NB)
+        return trc_funcs[trc];
+    else if (((unsigned)trc >= AVCOL_TRC_EXT_BASE) &&
+             ((unsigned)trc < AVCOL_TRC_EXT_NB))
+        return trc_funcs_ext[trc - AVCOL_TRC_EXT_BASE];
+    return NULL;
 }
 
 static const av_csp_trc_function trc_inv_funcs[AVCOL_TRC_NB] = {
@@ -444,11 +489,19 @@ static const av_csp_trc_function trc_inv_funcs[AVCOL_TRC_NB] = {
     [AVCOL_TRC_ARIB_STD_B67] = trc_arib_std_b67_inv,
 };
 
+static const av_csp_trc_function trc_inv_funcs_ext[AVCOL_TRC_EXT_NB -
+                                                   AVCOL_TRC_EXT_BASE] = {
+    [AVCOL_TRC_V_LOG - AVCOL_TRC_EXT_BASE] = trc_v_log_inv,
+};
+
 av_csp_trc_function av_csp_trc_func_inv_from_id(enum AVColorTransferCharacteristic trc)
 {
-    if ((unsigned)trc >= AVCOL_TRC_NB)
-        return NULL;
-    return trc_inv_funcs[trc];
+    if ((unsigned)trc < AVCOL_TRC_NB)
+        return trc_inv_funcs[trc];
+    else if (((unsigned)trc >= AVCOL_TRC_EXT_BASE) &&
+             ((unsigned)trc < AVCOL_TRC_EXT_NB))
+        return trc_inv_funcs_ext[trc - AVCOL_TRC_EXT_BASE];
+    return NULL;
 }
 
 static void eotf_linear(const double Lw, const double Lb, double E[3])

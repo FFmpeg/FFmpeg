@@ -57,7 +57,10 @@ int main(int argc, char *argv[])
         15123.4567, 19845.88923, 98678.4231, 99999.899998
     };
 
-    for (enum AVColorTransferCharacteristic trc = 0; trc < AVCOL_TRC_NB; trc++) {
+    for (enum AVColorTransferCharacteristic trc = 0; trc < AVCOL_TRC_EXT_NB; trc++) {
+        if (trc == AVCOL_TRC_NB)
+            trc = AVCOL_TRC_EXT_BASE;
+
         av_csp_trc_function func = av_csp_trc_func_from_id(trc);
         av_csp_trc_function func_inv = av_csp_trc_func_inv_from_id(trc);
         const char *name = av_color_transfer_name(trc);
@@ -77,7 +80,10 @@ int main(int argc, char *argv[])
         }
     }
 
-    for (enum AVColorTransferCharacteristic trc = 0; trc < AVCOL_TRC_NB; trc++) {
+    for (enum AVColorTransferCharacteristic trc = 0; trc < AVCOL_TRC_EXT_NB; trc++) {
+        if (trc == AVCOL_TRC_NB)
+            trc = AVCOL_TRC_EXT_BASE;
+
         av_csp_eotf_function eotf = av_csp_itu_eotf(trc);
         av_csp_eotf_function eotf_inv = av_csp_itu_eotf_inv(trc);
         const char *trc_name = av_color_transfer_name(trc);
