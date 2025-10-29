@@ -832,8 +832,11 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     if(s->avctx->flags & AV_CODEC_FLAG_LOW_DELAY)
         s->low_delay = 1;
 
+    if (buf_size >= 4 && AV_RB32(&buf[buf_size-4]) == VC1_CODE_ENDOFSEQ)
+        buf_size -= 4;
+
     /* no supplementary picture */
-    if (buf_size == 0 || (buf_size == 4 && AV_RB32(buf) == VC1_CODE_ENDOFSEQ)) {
+    if (buf_size == 0) {
         /* special case for last picture */
         if (s->low_delay == 0 && s->next_pic.ptr) {
             if ((ret = av_frame_ref(pict, s->next_pic.ptr->f)) < 0)
