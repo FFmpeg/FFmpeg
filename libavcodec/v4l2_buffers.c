@@ -26,9 +26,11 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <poll.h>
 #include "libavcodec/avcodec.h"
 #include "libavutil/attributes.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/refstruct.h"
 #include "v4l2_context.h"
@@ -360,14 +362,133 @@ static int v4l2_buffer_buf_to_swframe(AVFrame *frame, V4L2Buffer *avbuf)
     return 0;
 }
 
+/**
+ * Copy a software frame into one contiguous V4L2 memory plane while keeping
+ * the visible frame geometry separate from the driver-aligned storage layout.
+ */
+static int v4l2_buffer_swframe_to_single_buffer(const AVFrame *frame,
+                                                V4L2Buffer *out,
+                                                uint32_t pixel_format,
+                                                unsigned int width,
+                                                unsigned int height,
+                                                unsigned int bytesperline,
+                                                unsigned int sizeimage)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+    uint8_t *dst_data[4];
+    int active_linesizes[4], storage_linesizes[4];
+    int dst_linesizes[4] = { 0 };
+    int i, layout_size, planes_nb = 0, ret;
+    size_t length = out->plane_info[0].length;
+
+    if (!desc || out->num_planes < 1 ||
+        frame->width <= 0 || frame->height <= 0 ||
+        width > INT_MAX || height > INT_MAX || bytesperline > INT_MAX ||
+        frame->width > width || frame->height > height)
+        return AVERROR(EINVAL);
+
+    /* Active linesizes describe pixels; storage linesizes include alignment. */
+    ret = av_image_fill_linesizes(active_linesizes, frame->format,
+                                  frame->width);
+    if (ret < 0)
+        return ret;
+
+    ret = av_image_fill_linesizes(storage_linesizes, frame->format, width);
+    if (ret < 0)
+        return ret;
+
+    for (i = 0; i < desc->nb_components; i++)
+        planes_nb = FFMAX(planes_nb, desc->comp[i].plane + 1);
+
+    if (!bytesperline)
+        bytesperline = storage_linesizes[0];
+
+    if (bytesperline < storage_linesizes[0])
+        return AVERROR(EINVAL);
+
+    if (planes_nb == 1) {
+        dst_linesizes[0] = bytesperline;
+    } else {
+        /*
+         * The supported contiguous multi-plane formats have 8-bit luma, so
+         * bytesperline is also the padded luma width used to derive chroma
+         * strides.
+         */
+        if (storage_linesizes[0] != width)
+            return AVERROR(EINVAL);
+
+        ret = av_image_fill_linesizes(dst_linesizes, frame->format,
+                                      bytesperline);
+        if (ret < 0 || dst_linesizes[0] != bytesperline)
+            return ret < 0 ? ret : AVERROR(EINVAL);
+    }
+
+    /* Storage height determines plane offsets; only visible rows are copied. */
+    layout_size = av_image_fill_pointers(dst_data, frame->format, height,
+                                         out->plane_info[0].mm_addr,
+                                         dst_linesizes);
+    if (layout_size < 0)
+        return layout_size;
+
+    /* Reject the complete layout before any write can exceed driver storage. */
+    if ((size_t)layout_size > length ||
+        (sizeimage && (size_t)layout_size > sizeimage))
+        return AVERROR(EINVAL);
+
+    /* av_image_copy2() requires each active row to fit both line strides. */
+    for (i = 0; i < planes_nb; i++) {
+        int64_t src_linesize = frame->linesize[i];
+
+        if (src_linesize < 0)
+            src_linesize = -src_linesize;
+
+        if (!frame->data[i] || !dst_data[i] ||
+            src_linesize < active_linesizes[i] ||
+            dst_linesizes[i] < active_linesizes[i])
+            return AVERROR(EINVAL);
+    }
+
+    /* AVFrame stores Y, U, V while YVU formats place V before U. */
+    switch (pixel_format) {
+    case V4L2_PIX_FMT_YVU410:
+    case V4L2_PIX_FMT_YVU420:
+        FFSWAP(uint8_t *, dst_data[1], dst_data[2]);
+        break;
+    }
+
+    /* Copy visible pixels only; aligned rows and columns remain padding. */
+    av_image_copy2(dst_data, dst_linesizes, frame->data, frame->linesize,
+                   frame->format, frame->width, frame->height);
+
+    if (V4L2_TYPE_IS_MULTIPLANAR(out->buf.type)) {
+        out->planes[0].bytesused = layout_size;
+        out->planes[0].length = length;
+    } else {
+        out->buf.bytesused = layout_size;
+        out->buf.length = length;
+    }
+
+    return 0;
+}
+
 static int v4l2_buffer_swframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
 {
     int i, ret;
     struct v4l2_format fmt = out->context->format;
     int pixel_format = V4L2_TYPE_IS_MULTIPLANAR(fmt.type) ?
                        fmt.fmt.pix_mp.pixelformat : fmt.fmt.pix.pixelformat;
+    int width        = V4L2_TYPE_IS_MULTIPLANAR(fmt.type) ?
+                         fmt.fmt.pix_mp.width : fmt.fmt.pix.width;
     int height       = V4L2_TYPE_IS_MULTIPLANAR(fmt.type) ?
                        fmt.fmt.pix_mp.height : fmt.fmt.pix.height;
+    int bytesperline = V4L2_TYPE_IS_MULTIPLANAR(fmt.type) ?
+                                (fmt.fmt.pix_mp.num_planes ?
+                                 fmt.fmt.pix_mp.plane_fmt[0].bytesperline : 0) :
+                                fmt.fmt.pix.bytesperline;
+    int sizeimage    = V4L2_TYPE_IS_MULTIPLANAR(fmt.type) ?
+                                (fmt.fmt.pix_mp.num_planes ?
+                                 fmt.fmt.pix_mp.plane_fmt[0].sizeimage : 0) :
+                                 fmt.fmt.pix.sizeimage;
     int is_planar_format = 0;
 
     switch (pixel_format) {
@@ -394,27 +515,11 @@ static int v4l2_buffer_swframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
         is_planar_format = 1;
     }
 
-    if (!is_planar_format) {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
-        int planes_nb = 0;
-        int offset = 0;
-
-        for (i = 0; i < desc->nb_components; i++)
-            planes_nb = FFMAX(planes_nb, desc->comp[i].plane + 1);
-
-        for (i = 0; i < planes_nb; i++) {
-            int size, h = height;
-            if (i == 1 || i == 2) {
-                h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
-            }
-            size = frame->linesize[i] * h;
-            ret = v4l2_bufref_to_buf(out, 0, frame->data[i], size, offset);
-            if (ret)
-                return ret;
-            offset += size;
-        }
-        return 0;
-    }
+    if (!is_planar_format)
+        return v4l2_buffer_swframe_to_single_buffer(frame, out,
+                                                    pixel_format, width,
+                                                    height, bytesperline,
+                                                    sizeimage);
 
     for (i = 0; i < out->num_planes; i++) {
         ret = v4l2_bufref_to_buf(out, i, frame->buf[i]->data, frame->buf[i]->size, 0);
