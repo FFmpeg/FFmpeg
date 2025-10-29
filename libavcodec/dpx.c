@@ -837,7 +837,12 @@ const FFCodec ff_dpx_decoder = {
     .close          = decode_end,
     UPDATE_THREAD_CONTEXT(update_thread_context),
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
+                      FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
+#if CONFIG_DPX_VULKAN_HWACCEL
+        HWACCEL_VULKAN(dpx),
+#endif
         NULL
     },
 };

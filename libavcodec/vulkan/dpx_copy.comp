@@ -1,0 +1,51 @@
+/*
+ * Copyright (c) 2025 Lynne <dev@lynne.ee>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+TYPE read_data(uint off)
+{
+#ifdef BIG_ENDIAN
+    return TYPE_REVERSE(data[off]);
+#else
+    return data[off];
+#endif
+}
+
+void main(void)
+{
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+    if (!IS_WITHIN(pos, imageSize(dst[0])))
+        return;
+
+    uint offs = (pos.y*imageSize(dst[0]).x + pos.x)*COMPONENTS;
+#if NB_IMAGES == 1
+    TYPE_VEC val;
+    for (int i = 0; i < COMPONENTS; i++)
+        val[i] = read_data(offs + i);
+    val >>= SHIFT;
+    imageStore(dst[0], pos, val);
+#else
+    const ivec4 fmt_lut = ivec4(2, 0, 1, 3);
+    for (int i = 0; i < COMPONENTS; i++) {
+        TYPE val = read_data(offs + i);
+        val >>= SHIFT;
+        imageStore(dst[fmt_lut[i]], pos, TYPE_VEC(val));
+    }
+#endif
+}
