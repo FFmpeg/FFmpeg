@@ -32,13 +32,11 @@ cextern pw_20
 
 SECTION .text
 
-; void ff_put_no_rnd_pixels8_l2(uint8_t *dst, uint8_t *src1, uint8_t *src2,
-;                               ptrdiff_t dstStride, ptrdiff_t src1Stride, int h)
 %macro PUT_NO_RND_PIXELS8_L2 0
-cglobal put_no_rnd_pixels8_l2, 6,6
+; void ff_put_no_rnd_pixels8x9_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
+;                                 ptrdiff_t dstStride, ptrdiff_t src1Stride)
+cglobal put_no_rnd_pixels8x9_l2, 5,6
     pcmpeqb      m6, m6
-    test        r5d, 1
-    je .loop
     mova         m0, [r1]
     mova         m1, [r2]
     add          r1, r4
@@ -49,7 +47,14 @@ cglobal put_no_rnd_pixels8_l2, 6,6
     pxor         m0, m6
     mova       [r0], m0
     add          r0, r3
-    dec r5d
+    jmp          put_no_rnd_pixels8x8_after_prologue_ %+ cpuname
+
+; void ff_put_no_rnd_pixels8x8_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
+;                                 ptrdiff_t dstStride, ptrdiff_t src1Stride)
+cglobal put_no_rnd_pixels8x8_l2, 5,6
+    pcmpeqb      m6, m6
+put_no_rnd_pixels8x8_after_prologue_ %+ cpuname:
+    mov         r5d, 8
 .loop:
     mova         m0, [r1]
     add          r1, r4
@@ -97,13 +102,11 @@ INIT_MMX mmxext
 PUT_NO_RND_PIXELS8_L2
 
 
-; void ff_put_no_rnd_pixels16_l2(uint8_t *dst, uint8_t *src1, uint8_t *src2,
-;                                ptrdiff_t dstStride, ptrdiff_t src1Stride, int h)
+; void ff_put_no_rnd_pixels16x17_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
+;                                   ptrdiff_t dstStride, ptrdiff_t src1Stride)
 %macro PUT_NO_RND_PIXELS16_l2 0
-cglobal put_no_rnd_pixels16_l2, 6,6
+cglobal put_no_rnd_pixels16x17_l2, 5,6
     pcmpeqb      m6, m6
-    test        r5d, 1
-    je .loop
     mova         m0, [r1]
     mova         m1, [r1+8]
     mova         m2, [r2]
@@ -121,7 +124,14 @@ cglobal put_no_rnd_pixels16_l2, 6,6
     mova       [r0], m0
     mova     [r0+8], m1
     add          r0, r3
-    dec r5d
+    jmp          put_no_rnd_pixels16x16_after_prologue_ %+ cpuname
+
+; void ff_put_no_rnd_pixels16x16_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
+;                                   ptrdiff_t dstStride, ptrdiff_t src1Stride)
+cglobal put_no_rnd_pixels16x16_l2, 5,6
+    pcmpeqb      m6, m6
+put_no_rnd_pixels16x16_after_prologue_ %+ cpuname:
+    mov         r5d, 16
 .loop:
     mova         m0, [r1]
     mova         m1, [r1+8]

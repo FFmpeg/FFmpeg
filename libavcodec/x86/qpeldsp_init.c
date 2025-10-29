@@ -31,12 +31,24 @@
 #include "fpel.h"
 #include "qpel.h"
 
-void ff_put_no_rnd_pixels8_l2_mmxext(uint8_t *dst,
-                                     const uint8_t *src1, const uint8_t *src2,
-                                     ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
-void ff_put_no_rnd_pixels16_l2_mmxext(uint8_t *dst,
-                                      const uint8_t *src1, const uint8_t *src2,
-                                      ptrdiff_t dstStride, ptrdiff_t src1Stride, int h);
+void ff_put_pixels8x9_l2_mmxext(uint8_t *dst,
+                                const uint8_t *src1, const uint8_t *src2,
+                                ptrdiff_t dstStride, ptrdiff_t src1Stride);
+void ff_put_pixels16x17_l2_mmxext(uint8_t *dst,
+                                  const uint8_t *src1, const uint8_t *src2,
+                                  ptrdiff_t dstStride, ptrdiff_t src1Stride);
+void ff_put_no_rnd_pixels8x8_l2_mmxext(uint8_t *dst,
+                                       const uint8_t *src1, const uint8_t *src2,
+                                       ptrdiff_t dstStride, ptrdiff_t src1Stride);
+void ff_put_no_rnd_pixels8x9_l2_mmxext(uint8_t *dst,
+                                       const uint8_t *src1, const uint8_t *src2,
+                                       ptrdiff_t dstStride, ptrdiff_t src1Stride);
+void ff_put_no_rnd_pixels16x16_l2_mmxext(uint8_t *dst,
+                                         const uint8_t *src1, const uint8_t *src2,
+                                         ptrdiff_t dstStride, ptrdiff_t src1Stride);
+void ff_put_no_rnd_pixels16x17_l2_mmxext(uint8_t *dst,
+                                         const uint8_t *src1, const uint8_t *src2,
+                                         ptrdiff_t dstStride, ptrdiff_t src1Stride);
 void ff_put_mpeg4_qpel16_h_lowpass_mmxext(uint8_t *dst, const uint8_t *src,
                                           ptrdiff_t dstStride, ptrdiff_t srcStride, int h);
 void ff_avg_mpeg4_qpel16_h_lowpass_mmxext(uint8_t *dst, const uint8_t *src,
@@ -70,7 +82,7 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst,
 
 #if HAVE_X86ASM
 
-#define QPEL_OP(OPNAME, RND, MMX, ARG)                                  \
+#define QPEL_OP(OPNAME, RND, MMX)                                       \
 static void OPNAME ## qpel8_mc10_ ## MMX(uint8_t *dst,                  \
                                          const uint8_t *src,            \
                                          ptrdiff_t stride)              \
@@ -79,8 +91,8 @@ static void OPNAME ## qpel8_mc10_ ## MMX(uint8_t *dst,                  \
     uint8_t *const half = (uint8_t *) temp;                             \
     ff_put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(half, src, 8,        \
                                                    stride, 8);          \
-    ff_ ## OPNAME ## pixels8_l2_ ## MMX(ARG(dst, src, half,             \
-                                            stride, stride, 8));        \
+    ff_ ## OPNAME ## pixels8x8_l2_ ## MMX(dst, src, half,               \
+                                          stride, stride);              \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc20_ ## MMX(uint8_t *dst,                  \
@@ -99,8 +111,8 @@ static void OPNAME ## qpel8_mc30_ ## MMX(uint8_t *dst,                  \
     uint8_t *const half = (uint8_t *) temp;                             \
     ff_put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(half, src, 8,        \
                                                    stride, 8);          \
-    ff_ ## OPNAME ## pixels8_l2_ ## MMX(ARG(dst, src + 1, half,         \
-                                            stride, stride, 8));        \
+    ff_ ## OPNAME ## pixels8x8_l2_ ## MMX(dst, src + 1, half,           \
+                                          stride, stride);              \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc01_ ## MMX(uint8_t *dst,                  \
@@ -111,8 +123,8 @@ static void OPNAME ## qpel8_mc01_ ## MMX(uint8_t *dst,                  \
     uint8_t *const half = (uint8_t *) temp;                             \
     ff_put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(half, src,           \
                                                    8, stride);          \
-    ff_ ## OPNAME ## pixels8_l2_ ## MMX(ARG(dst, src, half,             \
-                                            stride, stride, 8));        \
+    ff_ ## OPNAME ## pixels8x8_l2_ ## MMX(dst, src, half,               \
+                                          stride, stride);              \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc02_ ## MMX(uint8_t *dst,                  \
@@ -131,8 +143,8 @@ static void OPNAME ## qpel8_mc03_ ## MMX(uint8_t *dst,                  \
     uint8_t *const half = (uint8_t *) temp;                             \
     ff_put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(half, src,           \
                                                    8, stride);          \
-    ff_ ## OPNAME ## pixels8_l2_ ## MMX(ARG(dst, src + stride, half,    \
-                                            stride, stride, 8));        \
+    ff_ ## OPNAME ## pixels8x8_l2_ ## MMX(dst, src + stride, half,      \
+                                          stride, stride);              \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc11_ ## MMX(uint8_t *dst,                  \
@@ -144,11 +156,11 @@ static void OPNAME ## qpel8_mc11_ ## MMX(uint8_t *dst,                  \
     uint8_t *const halfHV = (uint8_t *) half;                           \
     ff_put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8,       \
                                                    stride, 9);          \
-    ff_put ## RND ## pixels8_l2_ ## MMX(halfH, src, halfH, 8,           \
-                                        stride, 9);                     \
+    ff_put ## RND ## pixels8x9_l2_ ## MMX(halfH, src, halfH, 8,         \
+                                          stride);                      \
     ff_put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfHV, halfH, 8, 8);\
-    ff_ ## OPNAME ## pixels8_l2_ ## MMX(ARG(dst, halfH, halfHV,         \
-                                            stride, 8, 8));             \
+    ff_ ## OPNAME ## pixels8x8_l2_ ## MMX(dst, halfH, halfHV,           \
+                                          stride, 8);                   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc31_ ## MMX(uint8_t *dst,                  \
@@ -160,11 +172,11 @@ static void OPNAME ## qpel8_mc31_ ## MMX(uint8_t *dst,                  \
     uint8_t *const halfHV = (uint8_t *) half;                           \
     ff_put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8,       \
                                                    stride, 9);          \
-    ff_put ## RND ## pixels8_l2_ ## MMX(halfH, src + 1, halfH, 8,       \
-                                        stride, 9);                     \
+    ff_put ## RND ## pixels8x9_l2_ ## MMX(halfH, src + 1, halfH, 8,     \
+                                          stride);                      \
     ff_put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfHV, halfH, 8, 8);\
-    ff_ ## OPNAME ## pixels8_l2_ ## MMX(ARG(dst, halfH, halfHV,         \
-                                            stride, 8, 8));             \
+    ff_ ## OPNAME ## pixels8x8_l2_ ## MMX(dst, halfH, halfHV,           \
+                                          stride, 8);                   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc13_ ## MMX(uint8_t *dst,                  \
@@ -176,11 +188,11 @@ static void OPNAME ## qpel8_mc13_ ## MMX(uint8_t *dst,                  \
     uint8_t *const halfHV = (uint8_t *) half;                           \
     ff_put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8,       \
                                                    stride, 9);          \
-    ff_put ## RND ## pixels8_l2_ ## MMX(halfH, src, halfH, 8,           \
-                                        stride, 9);                     \
+    ff_put ## RND ## pixels8x9_l2_ ## MMX(halfH, src, halfH, 8,         \
+                                          stride);                      \
     ff_put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfHV, halfH, 8, 8);\
-    ff_ ## OPNAME ## pixels8_l2_ ## MMX(ARG(dst, halfH + 8, halfHV,     \
-                                            stride, 8, 8));             \
+    ff_ ## OPNAME ## pixels8x8_l2_ ## MMX(dst, halfH + 8, halfHV,       \
+                                          stride, 8);                   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc33_ ## MMX(uint8_t *dst,                  \
@@ -192,11 +204,11 @@ static void OPNAME ## qpel8_mc33_ ## MMX(uint8_t *dst,                  \
     uint8_t *const halfHV = (uint8_t *) half;                           \
     ff_put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8,       \
                                                    stride, 9);          \
-    ff_put ## RND ## pixels8_l2_ ## MMX(halfH, src + 1, halfH, 8,       \
-                                        stride, 9);                     \
+    ff_put ## RND ## pixels8x9_l2_ ## MMX(halfH, src + 1, halfH, 8,     \
+                                          stride);                      \
     ff_put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfHV, halfH, 8, 8);\
-    ff_ ## OPNAME ## pixels8_l2_ ## MMX(ARG(dst, halfH + 8, halfHV,     \
-                                            stride, 8, 8));             \
+    ff_ ## OPNAME ## pixels8x8_l2_ ## MMX(dst, halfH + 8, halfHV,       \
+                                          stride, 8);                   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc21_ ## MMX(uint8_t *dst,                  \
@@ -209,8 +221,8 @@ static void OPNAME ## qpel8_mc21_ ## MMX(uint8_t *dst,                  \
     ff_put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8,       \
                                                    stride, 9);          \
     ff_put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfHV, halfH, 8, 8);\
-    ff_ ## OPNAME ## pixels8_l2_ ## MMX(ARG(dst, halfH, halfHV,         \
-                                            stride, 8, 8));             \
+    ff_ ## OPNAME ## pixels8x8_l2_ ## MMX(dst, halfH, halfHV,           \
+                                          stride, 8);                   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc23_ ## MMX(uint8_t *dst,                  \
@@ -223,8 +235,8 @@ static void OPNAME ## qpel8_mc23_ ## MMX(uint8_t *dst,                  \
     ff_put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8,       \
                                                    stride, 9);          \
     ff_put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfHV, halfH, 8, 8);\
-    ff_ ## OPNAME ## pixels8_l2_ ## MMX(ARG(dst, halfH + 8, halfHV,     \
-                                            stride, 8, 8));             \
+    ff_ ## OPNAME ## pixels8x8_l2_ ## MMX(dst, halfH + 8, halfHV,       \
+                                          stride, 8);                   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc12_ ## MMX(uint8_t *dst,                  \
@@ -235,8 +247,8 @@ static void OPNAME ## qpel8_mc12_ ## MMX(uint8_t *dst,                  \
     uint8_t *const halfH = (uint8_t *) half;                            \
     ff_put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8,       \
                                                    stride, 9);          \
-    ff_put ## RND ## pixels8_l2_ ## MMX(halfH, src, halfH,              \
-                                        8, stride, 9);                  \
+    ff_put ## RND ## pixels8x9_l2_ ## MMX(halfH, src, halfH,            \
+                                          8, stride);                   \
     ff_ ## OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(dst, halfH,          \
                                                    stride, 8);          \
 }                                                                       \
@@ -249,8 +261,8 @@ static void OPNAME ## qpel8_mc32_ ## MMX(uint8_t *dst,                  \
     uint8_t *const halfH = (uint8_t *) half;                            \
     ff_put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8,       \
                                                    stride, 9);          \
-    ff_put ## RND ## pixels8_l2_ ## MMX(halfH, src + 1, halfH, 8,       \
-                                        stride, 9);                     \
+    ff_put ## RND ## pixels8x9_l2_ ## MMX(halfH, src + 1, halfH, 8,     \
+                                          stride);                      \
     ff_ ## OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(dst, halfH,          \
                                                    stride, 8);          \
 }                                                                       \
@@ -275,8 +287,8 @@ static void OPNAME ## qpel16_mc10_ ## MMX(uint8_t *dst,                 \
     uint8_t *const half = (uint8_t *) temp;                             \
     ff_put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(half, src, 16,      \
                                                     stride, 16);        \
-    ff_ ## OPNAME ## pixels16_l2_ ## MMX(ARG(dst, src, half,            \
-                                             stride, stride, 16));      \
+    ff_ ## OPNAME ## pixels16x16_l2_ ## MMX(dst, src, half,             \
+                                            stride, stride);            \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc20_ ## MMX(uint8_t *dst,                 \
@@ -295,8 +307,8 @@ static void OPNAME ## qpel16_mc30_ ## MMX(uint8_t *dst,                 \
     uint8_t *const half = (uint8_t*) temp;                              \
     ff_put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(half, src, 16,      \
                                                     stride, 16);        \
-    ff_ ## OPNAME ## pixels16_l2_ ## MMX(ARG(dst, src + 1, half,        \
-                                             stride, stride, 16));      \
+    ff_ ## OPNAME ## pixels16x16_l2_ ## MMX(dst, src + 1, half,         \
+                                            stride, stride);            \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc01_ ## MMX(uint8_t *dst,                 \
@@ -307,8 +319,8 @@ static void OPNAME ## qpel16_mc01_ ## MMX(uint8_t *dst,                 \
     uint8_t *const half = (uint8_t *) temp;                             \
     ff_put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(half, src, 16,      \
                                                     stride);            \
-    ff_ ## OPNAME ## pixels16_l2_ ## MMX(ARG(dst, src, half,            \
-                                             stride, stride, 16));      \
+    ff_ ## OPNAME ## pixels16x16_l2_ ## MMX(dst, src, half,             \
+                                            stride, stride);            \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc02_ ## MMX(uint8_t *dst,                 \
@@ -327,8 +339,8 @@ static void OPNAME ## qpel16_mc03_ ## MMX(uint8_t *dst,                 \
     uint8_t *const half = (uint8_t *) temp;                             \
     ff_put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(half, src, 16,      \
                                                     stride);            \
-    ff_ ## OPNAME ## pixels16_l2_ ## MMX(ARG(dst, src+stride, half,     \
-                                             stride, stride, 16));      \
+    ff_ ## OPNAME ## pixels16x16_l2_ ## MMX(dst, src+stride, half,      \
+                                            stride, stride);            \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc11_ ## MMX(uint8_t *dst,                 \
@@ -340,12 +352,12 @@ static void OPNAME ## qpel16_mc11_ ## MMX(uint8_t *dst,                 \
     uint8_t *const halfHV = (uint8_t *) half;                           \
     ff_put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16,     \
                                                     stride, 17);        \
-    ff_put ## RND ## pixels16_l2_ ## MMX(halfH, src, halfH, 16,         \
-                                         stride, 17);                   \
+    ff_put ## RND ## pixels16x17_l2_ ## MMX(halfH, src, halfH, 16,      \
+                                            stride);                    \
     ff_put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfHV, halfH,      \
                                                     16, 16);            \
-    ff_ ## OPNAME ## pixels16_l2_ ## MMX(ARG(dst, halfH, halfHV,        \
-                                             stride, 16, 16));          \
+    ff_ ## OPNAME ## pixels16x16_l2_ ## MMX(dst, halfH, halfHV,         \
+                                            stride, 16);                \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc31_ ## MMX(uint8_t *dst,                 \
@@ -357,12 +369,12 @@ static void OPNAME ## qpel16_mc31_ ## MMX(uint8_t *dst,                 \
     uint8_t *const halfHV = (uint8_t *) half;                           \
     ff_put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16,     \
                                                     stride, 17);        \
-    ff_put ## RND ## pixels16_l2_ ## MMX(halfH, src + 1, halfH, 16,     \
-                                         stride, 17);                   \
+    ff_put ## RND ## pixels16x17_l2_ ## MMX(halfH, src + 1, halfH, 16,  \
+                                            stride);                    \
     ff_put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfHV, halfH,      \
                                                     16, 16);            \
-    ff_ ## OPNAME ## pixels16_l2_ ## MMX(ARG(dst, halfH, halfHV,        \
-                                             stride, 16, 16));          \
+    ff_ ## OPNAME ## pixels16x16_l2_ ## MMX(dst, halfH, halfHV,         \
+                                            stride, 16);                \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc13_ ## MMX(uint8_t *dst,                 \
@@ -374,12 +386,12 @@ static void OPNAME ## qpel16_mc13_ ## MMX(uint8_t *dst,                 \
     uint8_t *const halfHV = (uint8_t *) half;                           \
     ff_put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16,     \
                                                     stride, 17);        \
-    ff_put ## RND ## pixels16_l2_ ## MMX(halfH, src, halfH, 16,         \
-                                         stride, 17);                   \
+    ff_put ## RND ## pixels16x17_l2_ ## MMX(halfH, src, halfH, 16,      \
+                                            stride);                    \
     ff_put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfHV, halfH,      \
                                                     16, 16);            \
-    ff_ ## OPNAME ## pixels16_l2_ ## MMX(ARG(dst, halfH + 16, halfHV,   \
-                                             stride, 16, 16));          \
+    ff_ ## OPNAME ## pixels16x16_l2_ ## MMX(dst, halfH + 16, halfHV,    \
+                                            stride, 16);                \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc33_ ## MMX(uint8_t *dst,                 \
@@ -391,12 +403,12 @@ static void OPNAME ## qpel16_mc33_ ## MMX(uint8_t *dst,                 \
     uint8_t *const halfHV = (uint8_t *) half;                           \
     ff_put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16,     \
                                                     stride, 17);        \
-    ff_put ## RND ## pixels16_l2_ ## MMX(halfH, src + 1, halfH, 16,     \
-                                         stride, 17);                   \
+    ff_put ## RND ## pixels16x17_l2_ ## MMX(halfH, src + 1, halfH, 16,  \
+                                            stride);                    \
     ff_put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfHV, halfH,      \
                                                     16, 16);            \
-    ff_ ## OPNAME ## pixels16_l2_ ## MMX(ARG(dst, halfH + 16, halfHV,   \
-                                             stride, 16, 16));          \
+    ff_ ## OPNAME ## pixels16x16_l2_ ## MMX(dst, halfH + 16, halfHV,    \
+                                            stride, 16);                \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc21_ ## MMX(uint8_t *dst,                 \
@@ -410,8 +422,8 @@ static void OPNAME ## qpel16_mc21_ ## MMX(uint8_t *dst,                 \
                                                     stride, 17);        \
     ff_put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfHV, halfH,      \
                                                     16, 16);            \
-    ff_ ## OPNAME ## pixels16_l2_ ## MMX(ARG(dst, halfH, halfHV,        \
-                                             stride, 16, 16));          \
+    ff_ ## OPNAME ## pixels16x16_l2_ ## MMX(dst, halfH, halfHV,         \
+                                            stride, 16);                \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc23_ ## MMX(uint8_t *dst,                 \
@@ -425,8 +437,8 @@ static void OPNAME ## qpel16_mc23_ ## MMX(uint8_t *dst,                 \
                                                     stride, 17);        \
     ff_put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfHV, halfH,      \
                                                     16, 16);            \
-    ff_ ## OPNAME ## pixels16_l2_ ## MMX(ARG(dst, halfH + 16, halfHV,   \
-                                             stride, 16, 16));          \
+    ff_ ## OPNAME ## pixels16x16_l2_ ## MMX(dst, halfH + 16, halfHV,    \
+                                            stride, 16);                \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc12_ ## MMX(uint8_t *dst,                 \
@@ -437,8 +449,8 @@ static void OPNAME ## qpel16_mc12_ ## MMX(uint8_t *dst,                 \
     uint8_t *const halfH = (uint8_t *) half;                            \
     ff_put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16,     \
                                                     stride, 17);        \
-    ff_put ## RND ## pixels16_l2_ ## MMX(halfH, src, halfH, 16,         \
-                                         stride, 17);                   \
+    ff_put ## RND ## pixels16x17_l2_ ## MMX(halfH, src, halfH, 16,      \
+                                            stride);                    \
     ff_ ## OPNAME ## mpeg4_qpel16_v_lowpass_ ## MMX(dst, halfH,         \
                                                     stride, 16);        \
 }                                                                       \
@@ -451,8 +463,8 @@ static void OPNAME ## qpel16_mc32_ ## MMX(uint8_t *dst,                 \
     uint8_t *const halfH = (uint8_t *) half;                            \
     ff_put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16,     \
                                                     stride, 17);        \
-    ff_put ## RND ## pixels16_l2_ ## MMX(halfH, src + 1, halfH, 16,     \
-                                         stride, 17);                   \
+    ff_put ## RND ## pixels16x17_l2_ ## MMX(halfH, src + 1, halfH, 16,  \
+                                            stride);                    \
     ff_ ## OPNAME ## mpeg4_qpel16_v_lowpass_ ## MMX(dst, halfH,         \
                                                     stride, 16);        \
 }                                                                       \
@@ -469,13 +481,9 @@ static void OPNAME ## qpel16_mc22_ ## MMX(uint8_t *dst,                 \
                                                     stride, 16);        \
 }
 
-#define PASSTHROUGH(...) __VA_ARGS__
-#define STRIP_HEIGHT(dst, src1, src2, dststride, srcstride, height) \
-    (dst), (src1), (src2), (dststride), (srcstride)
-
-QPEL_OP(put_,        _,        mmxext, PASSTHROUGH)
-QPEL_OP(avg_,        _,        mmxext, STRIP_HEIGHT)
-QPEL_OP(put_no_rnd_, _no_rnd_, mmxext, PASSTHROUGH)
+QPEL_OP(put_,        _,        mmxext)
+QPEL_OP(avg_,        _,        mmxext)
+QPEL_OP(put_no_rnd_, _no_rnd_, mmxext)
 
 #endif /* HAVE_X86ASM */
 

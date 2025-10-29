@@ -69,11 +69,11 @@ cglobal avg_pixels4, 3,4
     mova   %2, %1
 %endmacro
 
-; void ff_put/avg_pixels4_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-;                                   ptrdiff_t stride)
+; void ff_put/avg_pixels4x4_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
+;                                     ptrdiff_t stride)
 %macro PIXELS4_L2 1
 %define OP op_%1h
-cglobal %1_pixels4_l2, 4,4
+cglobal %1_pixels4x4_l2, 4,4
     mova         m0, [r1]
     mova         m1, [r1+r3]
     lea          r1, [r1+2*r3]
