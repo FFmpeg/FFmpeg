@@ -69,7 +69,7 @@ static void check_idct_dc(HEVCDSPContext *h, int bit_depth)
     for (i = 2; i <= 5; i++) {
         int block_size = 1 << i;
         int size = block_size * block_size;
-        declare_func_emms(AV_CPU_FLAG_MMXEXT, void, int16_t *coeffs);
+        declare_func(void, int16_t *coeffs);
 
         randomize_buffers(coeffs0, size);
         memcpy(coeffs1, coeffs0, sizeof(*coeffs0) * size);

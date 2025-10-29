@@ -65,7 +65,7 @@ void ff_hevc_idct_ ## W ## _dc_8_ ## opt(int16_t *coeffs); \
 void ff_hevc_idct_ ## W ## _dc_10_ ## opt(int16_t *coeffs); \
 void ff_hevc_idct_ ## W ## _dc_12_ ## opt(int16_t *coeffs)
 
-IDCT_DC_FUNCS(4x4,   mmxext);
+IDCT_DC_FUNCS(4x4,   sse2);
 IDCT_DC_FUNCS(8x8,   sse2);
 IDCT_DC_FUNCS(16x16, sse2);
 IDCT_DC_FUNCS(32x32, sse2);
@@ -816,8 +816,6 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
     if (bit_depth == 8) {
         if (EXTERNAL_MMXEXT(cpu_flags)) {
-            c->idct_dc[0] = ff_hevc_idct_4x4_dc_8_mmxext;
-
             c->add_residual[0] = ff_hevc_add_residual_4_8_mmxext;
         }
         if (EXTERNAL_SSE2(cpu_flags)) {
@@ -832,6 +830,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             }
             SAO_BAND_INIT(8, sse2);
 
+            c->idct_dc[0] = ff_hevc_idct_4x4_dc_8_sse2;
             c->idct_dc[1] = ff_hevc_idct_8x8_dc_8_sse2;
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_8_sse2;
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_8_sse2;
@@ -998,7 +997,6 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
     } else if (bit_depth == 10) {
         if (EXTERNAL_MMXEXT(cpu_flags)) {
             c->add_residual[0] = ff_hevc_add_residual_4_10_mmxext;
-            c->idct_dc[0] = ff_hevc_idct_4x4_dc_10_mmxext;
         }
         if (EXTERNAL_SSE2(cpu_flags)) {
             c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_10_sse2;
@@ -1013,6 +1011,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             SAO_BAND_INIT(10, sse2);
             SAO_EDGE_INIT(10, sse2);
 
+            c->idct_dc[0] = ff_hevc_idct_4x4_dc_10_sse2;
             c->idct_dc[1] = ff_hevc_idct_8x8_dc_10_sse2;
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_10_sse2;
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_10_sse2;
@@ -1218,9 +1217,6 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
         }
 #endif /* HAVE_AVX2_EXTERNAL */
     } else if (bit_depth == 12) {
-        if (EXTERNAL_MMXEXT(cpu_flags)) {
-            c->idct_dc[0] = ff_hevc_idct_4x4_dc_12_mmxext;
-        }
         if (EXTERNAL_SSE2(cpu_flags)) {
             c->hevc_v_loop_filter_chroma = ff_hevc_v_loop_filter_chroma_12_sse2;
             c->hevc_h_loop_filter_chroma = ff_hevc_h_loop_filter_chroma_12_sse2;
@@ -1231,6 +1227,7 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
             SAO_BAND_INIT(12, sse2);
             SAO_EDGE_INIT(12, sse2);
 
+            c->idct_dc[0] = ff_hevc_idct_4x4_dc_12_sse2;
             c->idct_dc[1] = ff_hevc_idct_8x8_dc_12_sse2;
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_12_sse2;
             c->idct_dc[3] = ff_hevc_idct_32x32_dc_12_sse2;
