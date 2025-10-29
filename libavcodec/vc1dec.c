@@ -468,9 +468,6 @@ av_cold int ff_vc1_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    ff_permute_scantable(s->intra_scantable.permutated, ff_wmv1_scantable[1],
-                         s->idsp.idct_permutation);
-
     ret = vc1_decode_init_alloc_tables(v);
     if (ret < 0) {
         vc1_decode_reset(avctx);
