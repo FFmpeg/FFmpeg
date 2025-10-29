@@ -34,53 +34,58 @@ SECTION .text
     mova   %2, %1
 %endmacro
 
-%macro PIXELS8_L2 1
+%macro PIXELS_L2 2-3 ; avg vs put, size, size+1
 %define OP op_%1
 %ifidn %1, put
+%if notcpuflag(sse2) ; SSE2 currently only uses 16x16
 ; void ff_put_pixels8x9_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 ;                                 ptrdiff_t dstStride, ptrdiff_t src1Stride)
-cglobal put_pixels8x9_l2, 5,6
-    mova         m0, [r1]
-    mova         m1, [r2]
+cglobal put_pixels%2x%3_l2, 5,6,2
+    movu         m0, [r1]
+    pavgb        m0, [r2]
     add          r1, r4
-    add          r2, 8
-    pavgb        m0, m1
+    add          r2, mmsize
     OP           m0, [r0]
     add          r0, r3
     ; FIXME: avoid jump if prologue is empty
-    jmp          %1_pixels8x8_after_prologue_ %+ cpuname
+    jmp          %1_pixels%2x%2_after_prologue_ %+ cpuname
+%endif
 %endif
 ; void ff_avg/put_pixels8x8_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 ;                                     ptrdiff_t dstStride, ptrdiff_t src1Stride)
-cglobal %1_pixels8x8_l2, 5,6
-%1_pixels8x8_after_prologue_ %+ cpuname:
-    mov         r5d, 8
+cglobal %1_pixels%2x%2_l2, 5,6,2
+%1_pixels%2x%2_after_prologue_ %+ cpuname:
+    mov         r5d, %2
 .loop:
-    mova         m0, [r1]
-    mova         m1, [r1+r4]
+    movu         m0, [r1]
+    movu         m1, [r1+r4]
     lea          r1, [r1+2*r4]
     pavgb        m0, [r2]
-    pavgb        m1, [r2+8]
+    pavgb        m1, [r2+mmsize]
     OP           m0, [r0]
     OP           m1, [r0+r3]
     lea          r0, [r0+2*r3]
-    mova         m0, [r1]
-    mova         m1, [r1+r4]
+    movu         m0, [r1]
+    movu         m1, [r1+r4]
     lea          r1, [r1+2*r4]
-    pavgb        m0, [r2+16]
-    pavgb        m1, [r2+24]
+    pavgb        m0, [r2+2*mmsize]
+    pavgb        m1, [r2+3*mmsize]
     OP           m0, [r0]
     OP           m1, [r0+r3]
     lea          r0, [r0+2*r3]
-    add          r2, 32
+    add          r2, 4*mmsize
     sub         r5d, 4
     jne       .loop
     RET
 %endmacro
 
 INIT_MMX mmxext
-PIXELS8_L2 put
-PIXELS8_L2 avg
+PIXELS_L2 put, 8, 9
+PIXELS_L2 avg, 8
+
+INIT_XMM sse2
+PIXELS_L2 put, 16, 17
+PIXELS_L2 avg, 16
 
 %macro PIXELS16_L2 1
 %define OP op_%1
