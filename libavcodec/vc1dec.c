@@ -1366,12 +1366,7 @@ image:
     }
 
 end:
-    av_free(buf2);
-    for (i = 0; i < n_slices; i++)
-        av_free(slices[i].buf);
-    av_free(slices);
-    return buf_size;
-
+    ret = buf_size;
 err:
     av_free(buf2);
     for (i = 0; i < n_slices; i++)
