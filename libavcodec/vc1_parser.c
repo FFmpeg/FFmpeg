@@ -216,7 +216,8 @@ static int vc1_parse(AVCodecParserContext *s,
                 if (!pic_found && (b == (VC1_CODE_FRAME & 0xFF) || b == (VC1_CODE_FIELD & 0xFF))) {
                     pic_found = 1;
                 }
-                else if (pic_found && b != (VC1_CODE_FIELD & 0xFF) && b != (VC1_CODE_SLICE & 0xFF)) {
+                else if (pic_found && b != (VC1_CODE_FIELD & 0xFF) && b != (VC1_CODE_SLICE & 0xFF)
+                                   && b != (VC1_CODE_ENDOFSEQ & 0xFF)) {
                     next = i - 4;
                     pic_found = b == (VC1_CODE_FRAME & 0xFF);
                     break;
