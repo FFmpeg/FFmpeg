@@ -29,6 +29,11 @@
 #include "decode.h"
 #include "dpx.h"
 
+#include "thread.h"
+#include "hwconfig.h"
+#include "hwaccel_internal.h"
+#include "config_components.h"
+
 static unsigned int read16(const uint8_t **ptr, int is_big)
 {
     unsigned int temp;
@@ -257,11 +262,26 @@ static void unpack_frame(AVCodecContext *avctx, AVFrame *p, const uint8_t *buf,
     }
 }
 
+static enum AVPixelFormat get_pixel_format(AVCodecContext *avctx,
+                                           enum AVPixelFormat pix_fmt)
+{
+    enum AVPixelFormat pix_fmts[] = {
+#if CONFIG_DPX_VULKAN_HWACCEL
+        AV_PIX_FMT_VULKAN,
+#endif
+        pix_fmt,
+        AV_PIX_FMT_NONE,
+    };
+
+    return ff_get_format(avctx, pix_fmts);
+}
+
 static int decode_frame(AVCodecContext *avctx, AVFrame *p,
                         int *got_frame, AVPacket *avpkt)
 {
     DPXDecContext *dpx = avctx->priv_data;
 
+    enum AVPixelFormat pix_fmt;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     uint32_t header_version, version = 0;
@@ -631,101 +651,111 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     case 4080:
     case 6081:
     case 6080:
-        avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+        pix_fmt = AV_PIX_FMT_GRAY8;
         break;
     case 6121:
     case 6120:
-        avctx->pix_fmt = AV_PIX_FMT_GRAY12;
+        pix_fmt = AV_PIX_FMT_GRAY12;
         break;
     case 1320:
     case 2320:
     case 3320:
     case 4320:
     case 6320:
-        avctx->pix_fmt = AV_PIX_FMT_GRAYF32LE;
+        pix_fmt = AV_PIX_FMT_GRAYF32LE;
         break;
     case 1321:
     case 2321:
     case 3321:
     case 4321:
     case 6321:
-        avctx->pix_fmt = AV_PIX_FMT_GRAYF32BE;
+        pix_fmt = AV_PIX_FMT_GRAYF32BE;
         break;
     case 50081:
     case 50080:
-        avctx->pix_fmt = AV_PIX_FMT_RGB24;
+        pix_fmt = AV_PIX_FMT_RGB24;
         break;
     case 52081:
     case 52080:
-        avctx->pix_fmt = AV_PIX_FMT_ABGR;
+        pix_fmt = AV_PIX_FMT_ABGR;
         break;
     case 51081:
     case 51080:
-        avctx->pix_fmt = AV_PIX_FMT_RGBA;
+        pix_fmt = AV_PIX_FMT_RGBA;
         break;
     case 50100:
     case 50101:
-        avctx->pix_fmt = AV_PIX_FMT_GBRP10;
+        pix_fmt = AV_PIX_FMT_GBRP10;
         break;
     case 51100:
     case 51101:
-        avctx->pix_fmt = AV_PIX_FMT_GBRAP10;
+        pix_fmt = AV_PIX_FMT_GBRAP10;
         break;
     case 50120:
     case 50121:
-        avctx->pix_fmt = AV_PIX_FMT_GBRP12;
+        pix_fmt = AV_PIX_FMT_GBRP12;
         break;
     case 51120:
     case 51121:
-        avctx->pix_fmt = AV_PIX_FMT_GBRAP12;
+        pix_fmt = AV_PIX_FMT_GBRAP12;
         break;
     case 6100:
     case 6101:
-        avctx->pix_fmt = AV_PIX_FMT_GRAY10;
+        pix_fmt = AV_PIX_FMT_GRAY10;
         break;
     case 6161:
-        avctx->pix_fmt = AV_PIX_FMT_GRAY16BE;
+        pix_fmt = AV_PIX_FMT_GRAY16BE;
         break;
     case 6160:
-        avctx->pix_fmt = AV_PIX_FMT_GRAY16LE;
+        pix_fmt = AV_PIX_FMT_GRAY16LE;
         break;
     case 50161:
-        avctx->pix_fmt = AV_PIX_FMT_RGB48BE;
+        pix_fmt = AV_PIX_FMT_RGB48BE;
         break;
     case 50160:
-        avctx->pix_fmt = AV_PIX_FMT_RGB48LE;
+        pix_fmt = AV_PIX_FMT_RGB48LE;
         break;
     case 51161:
-        avctx->pix_fmt = AV_PIX_FMT_RGBA64BE;
+        pix_fmt = AV_PIX_FMT_RGBA64BE;
         break;
     case 51160:
-        avctx->pix_fmt = AV_PIX_FMT_RGBA64LE;
+        pix_fmt = AV_PIX_FMT_RGBA64LE;
         break;
     case 50320:
-        avctx->pix_fmt = AV_PIX_FMT_GBRPF32LE;
+        pix_fmt = AV_PIX_FMT_GBRPF32LE;
         break;
     case 50321:
-        avctx->pix_fmt = AV_PIX_FMT_GBRPF32BE;
+        pix_fmt = AV_PIX_FMT_GBRPF32BE;
         break;
     case 51320:
-        avctx->pix_fmt = AV_PIX_FMT_GBRAPF32LE;
+        pix_fmt = AV_PIX_FMT_GBRAPF32LE;
         break;
     case 51321:
-        avctx->pix_fmt = AV_PIX_FMT_GBRAPF32BE;
+        pix_fmt = AV_PIX_FMT_GBRAPF32BE;
         break;
     case 100081:
-        avctx->pix_fmt = AV_PIX_FMT_UYVY422;
+        pix_fmt = AV_PIX_FMT_UYVY422;
         break;
     case 102081:
-        avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+        pix_fmt = AV_PIX_FMT_YUV444P;
         break;
     case 103081:
-        avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
+        pix_fmt = AV_PIX_FMT_YUVA444P;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported format %d\n",
                1000 * descriptor + 10 * avctx->bits_per_raw_sample + dpx->endian);
         return AVERROR_PATCHWELCOME;
+    }
+
+    if (pix_fmt != dpx->pix_fmt) {
+        dpx->pix_fmt = pix_fmt;
+
+        ret = get_pixel_format(avctx, pix_fmt);
+        if (ret < 0)
+            return ret;
+
+        avctx->pix_fmt = ret;
     }
 
     ff_set_sar(avctx, avctx->sample_aspect_ratio);
@@ -737,11 +767,63 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     buf =  avpkt->data + offset;
     dpx->frame = p;
 
-    unpack_frame(avctx, p, buf, dpx->components, dpx->endian);
+    /* Start */
+    if (avctx->hwaccel) {
+        const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
+
+        ret = ff_hwaccel_frame_priv_alloc(avctx, &dpx->hwaccel_picture_private);
+        if (ret < 0)
+            return ret;
+
+        ret = hwaccel->start_frame(avctx, avpkt->buf, buf, avpkt->size - offset);
+        if (ret < 0)
+            return ret;
+
+        ret = hwaccel->decode_slice(avctx, buf, avpkt->size - offset);
+        if (ret < 0)
+            return ret;
+
+        ret = hwaccel->end_frame(avctx);
+        if (ret < 0)
+            return ret;
+
+        av_refstruct_unref(&dpx->hwaccel_picture_private);
+    } else {
+        unpack_frame(avctx, p, buf, dpx->components, dpx->endian);
+    }
+
+    p->pict_type = AV_PICTURE_TYPE_I;
+    p->flags    |= AV_FRAME_FLAG_KEY;
 
     *got_frame = 1;
 
     return buf_size;
+}
+
+#if HAVE_THREADS
+static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
+{
+    DPXDecContext *ssrc = src->priv_data;
+    DPXDecContext *sdst = dst->priv_data;
+
+    sdst->pix_fmt = ssrc->pix_fmt;
+
+    return 0;
+}
+#endif
+
+static av_cold int decode_end(AVCodecContext *avctx)
+{
+    DPXDecContext *dpx = avctx->priv_data;
+    av_refstruct_unref(&dpx->hwaccel_picture_private);
+    return 0;
+}
+
+static av_cold int decode_init(AVCodecContext *avctx)
+{
+    DPXDecContext *dpx = avctx->priv_data;
+    dpx->pix_fmt = AV_PIX_FMT_NONE;
+    return 0;
 }
 
 const FFCodec ff_dpx_decoder = {
@@ -751,5 +833,11 @@ const FFCodec ff_dpx_decoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DPX,
     FF_CODEC_DECODE_CB(decode_frame),
-    .p.capabilities = AV_CODEC_CAP_DR1,
+    .init           = decode_init,
+    .close          = decode_end,
+    UPDATE_THREAD_CONTEXT(update_thread_context),
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .hw_configs     = (const AVCodecHWConfigInternal *const []) {
+        NULL
+    },
 };

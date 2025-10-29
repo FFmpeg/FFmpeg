@@ -23,6 +23,7 @@
 #define AVCODEC_DPX_H
 
 #include "libavutil/frame.h"
+#include "libavutil/pixfmt.h"
 
 enum DPX_TRC {
     DPX_TRC_USER_DEFINED       = 0,
@@ -58,6 +59,8 @@ enum DPX_COL_SPEC {
 
 typedef struct DPXDecContext {
     AVFrame *frame;
+    void *hwaccel_picture_private;
+    enum AVPixelFormat pix_fmt;
 
     int packing;
     int stride;
