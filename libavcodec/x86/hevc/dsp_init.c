@@ -877,10 +877,6 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth)
 
             c->idct[0] = ff_hevc_idct_4x4_8_avx;
             c->idct[1] = ff_hevc_idct_8x8_8_avx;
-
-            c->add_residual[1] = ff_hevc_add_residual_8_8_avx;
-            c->add_residual[2] = ff_hevc_add_residual_16_8_avx;
-            c->add_residual[3] = ff_hevc_add_residual_32_8_avx;
         }
         if (EXTERNAL_AVX2(cpu_flags)) {
             c->sao_band_filter[0] = ff_hevc_sao_band_filter_8_8_avx2;

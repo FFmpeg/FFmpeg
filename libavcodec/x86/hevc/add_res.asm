@@ -117,7 +117,7 @@ cglobal hevc_add_residual_4_8, 3, 3, 6
 %endmacro
 
 
-%macro TRANSFORM_ADD_8 0
+INIT_XMM sse2
 ; void ff_hevc_add_residual_8_8_<opt>(uint8_t *dst, const int16_t *res, ptrdiff_t stride)
 cglobal hevc_add_residual_8_8, 3, 4, 8
     pxor              m4, m4
@@ -154,12 +154,7 @@ cglobal hevc_add_residual_32_8, 3, 5, 7
     dec                r4d
     jg .loop
     RET
-%endmacro
 
-INIT_XMM sse2
-TRANSFORM_ADD_8
-INIT_XMM avx
-TRANSFORM_ADD_8
 
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
