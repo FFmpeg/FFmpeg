@@ -157,6 +157,13 @@ static int handle_chunk_size(URLContext *s, RTMPPacket *pkt);
 static int handle_window_ack_size(URLContext *s, RTMPPacket *pkt);
 static int handle_set_peer_bw(URLContext *s, RTMPPacket *pkt);
 
+static size_t zstrlen(const char *c)
+{
+    if(c)
+        return strlen(c);
+    return 0;
+}
+
 static int add_tracked_method(RTMPContext *rt, const char *name, int id)
 {
     int err;
@@ -321,7 +328,15 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
     int ret;
 
     if ((ret = ff_rtmp_packet_create(&pkt, RTMP_SYSTEM_CHANNEL, RTMP_PT_INVOKE,
-                                     0, 4096 + APP_MAX_LENGTH)) < 0)
+                                     0, 4096 + APP_MAX_LENGTH
+                                     + strlen(rt->auth_params) + strlen(rt->flashver)
+                                     + zstrlen(rt->swfurl)
+                                     + zstrlen(rt->swfverify)
+                                     + zstrlen(rt->tcurl)
+                                     + zstrlen(rt->auth_params)
+                                     + zstrlen(rt->pageurl)
+                                     + zstrlen(rt->conn)*3
+                                     )) < 0)
         return ret;
 
     p = pkt.data;
@@ -1865,7 +1880,8 @@ static int write_status(URLContext *s, RTMPPacket *pkt,
 
     if ((ret = ff_rtmp_packet_create(&spkt, RTMP_SYSTEM_CHANNEL,
                                      RTMP_PT_INVOKE, 0,
-                                     RTMP_PKTDATA_DEFAULT_SIZE)) < 0) {
+                                     RTMP_PKTDATA_DEFAULT_SIZE
+                                     + strlen(status))) < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to create response packet\n");
         return ret;
     }
