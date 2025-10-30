@@ -55,8 +55,8 @@ typedef int (*rv40_loop_filter_strength_func)(uint8_t *src, ptrdiff_t stride,
                                               int *p1, int *q1);
 
 typedef struct RV34DSPContext {
-    qpel_mc_func put_pixels_tab[4][16];
-    qpel_mc_func avg_pixels_tab[4][16];
+    qpel_mc_func put_pixels_tab[2][16];
+    qpel_mc_func avg_pixels_tab[2][16];
     h264_chroma_mc_func put_chroma_pixels_tab[3];
     h264_chroma_mc_func avg_chroma_pixels_tab[3];
     /**
