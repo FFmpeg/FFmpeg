@@ -2859,6 +2859,12 @@ reconnect:
                     "FMLE/3.0 (compatible; %s)", LIBAVFORMAT_IDENT);
         }
     }
+    if (   strlen(rt->flashver) > FLASHVER_MAX_LENGTH
+        || strlen(rt->tcurl   ) >    TCURL_MAX_LENGTH
+    ) {
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
 
     rt->receive_report_size = 1048576;
     rt->bytes_read = 0;
