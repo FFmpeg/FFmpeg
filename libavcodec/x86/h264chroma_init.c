@@ -24,16 +24,6 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/h264chroma.h"
 
-void ff_put_h264_chroma_mc8_rnd_mmx  (uint8_t *dst, const uint8_t *src,
-                                      ptrdiff_t stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc8_rnd_mmxext(uint8_t *dst, const uint8_t *src,
-                                       ptrdiff_t stride, int h, int x, int y);
-
-void ff_put_h264_chroma_mc4_mmx      (uint8_t *dst, const uint8_t *src,
-                                      ptrdiff_t stride, int h, int x, int y);
-void ff_avg_h264_chroma_mc4_mmxext   (uint8_t *dst, const uint8_t *src,
-                                      ptrdiff_t stride, int h, int x, int y);
-
 void ff_put_h264_chroma_mc2_mmxext   (uint8_t *dst, const uint8_t *src,
                                       ptrdiff_t stride, int h, int x, int y);
 void ff_avg_h264_chroma_mc2_mmxext   (uint8_t *dst, const uint8_t *src,
@@ -68,14 +58,7 @@ av_cold void ff_h264chroma_init_x86(H264ChromaContext *c, int bit_depth)
     int high_bit_depth = bit_depth > 8;
     int cpu_flags      = av_get_cpu_flags();
 
-    if (EXTERNAL_MMX(cpu_flags) && !high_bit_depth) {
-        c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_rnd_mmx;
-        c->put_h264_chroma_pixels_tab[1] = ff_put_h264_chroma_mc4_mmx;
-    }
-
     if (EXTERNAL_MMXEXT(cpu_flags) && !high_bit_depth) {
-        c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_rnd_mmxext;
-        c->avg_h264_chroma_pixels_tab[1] = ff_avg_h264_chroma_mc4_mmxext;
         c->avg_h264_chroma_pixels_tab[2] = ff_avg_h264_chroma_mc2_mmxext;
         c->put_h264_chroma_pixels_tab[2] = ff_put_h264_chroma_mc2_mmxext;
     }

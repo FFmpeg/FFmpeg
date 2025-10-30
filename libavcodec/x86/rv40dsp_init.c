@@ -40,16 +40,6 @@ static void op##_rv40_qpel##size##_mc33_##insn(uint8_t *dst, const uint8_t *src,
 }
 
 #if HAVE_X86ASM
-void ff_put_rv40_chroma_mc8_mmx  (uint8_t *dst, const uint8_t *src,
-                                  ptrdiff_t stride, int h, int x, int y);
-void ff_avg_rv40_chroma_mc8_mmxext(uint8_t *dst, const uint8_t *src,
-                                   ptrdiff_t stride, int h, int x, int y);
-
-void ff_put_rv40_chroma_mc4_mmx  (uint8_t *dst, const uint8_t *src,
-                                  ptrdiff_t stride, int h, int x, int y);
-void ff_avg_rv40_chroma_mc4_mmxext(uint8_t *dst, const uint8_t *src,
-                                   ptrdiff_t stride, int h, int x, int y);
-
 #define DECLARE_WEIGHT(opt) \
 void ff_rv40_weight_func_rnd_16_##opt(uint8_t *dst, uint8_t *src1, uint8_t *src2, \
                                       int w1, int w2, ptrdiff_t stride); \
@@ -191,14 +181,6 @@ av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
     av_unused int cpu_flags = av_get_cpu_flags();
 
 #if HAVE_X86ASM
-    if (EXTERNAL_MMX(cpu_flags)) {
-        c->put_chroma_pixels_tab[0] = ff_put_rv40_chroma_mc8_mmx;
-        c->put_chroma_pixels_tab[1] = ff_put_rv40_chroma_mc4_mmx;
-    }
-    if (EXTERNAL_MMXEXT(cpu_flags)) {
-        c->avg_chroma_pixels_tab[0]     = ff_avg_rv40_chroma_mc8_mmxext;
-        c->avg_chroma_pixels_tab[1]     = ff_avg_rv40_chroma_mc4_mmxext;
-    }
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->put_pixels_tab[0][15]        = put_rv40_qpel16_mc33_sse2;
         c->avg_pixels_tab[0][15]        = avg_rv40_qpel16_mc33_sse2;

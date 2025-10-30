@@ -80,10 +80,6 @@ DECLARE_FUNCTION(avg_, 16, _sse2)
 
 #endif /* HAVE_X86ASM */
 
-void ff_put_vc1_chroma_mc8_nornd_mmx  (uint8_t *dst, const uint8_t *src,
-                                       ptrdiff_t stride, int h, int x, int y);
-void ff_avg_vc1_chroma_mc8_nornd_mmxext(uint8_t *dst, const uint8_t *src,
-                                        ptrdiff_t stride, int h, int x, int y);
 void ff_put_vc1_chroma_mc8_nornd_ssse3(uint8_t *dst, const uint8_t *src,
                                        ptrdiff_t stride, int h, int x, int y);
 void ff_avg_vc1_chroma_mc8_nornd_ssse3(uint8_t *dst, const uint8_t *src,
@@ -122,13 +118,8 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_ ## EXT
 
 #if HAVE_X86ASM
-    if (EXTERNAL_MMX(cpu_flags)) {
-        dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = ff_put_vc1_chroma_mc8_nornd_mmx;
-
-    }
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         ASSIGN_LF4(mmxext);
-        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_nornd_mmxext;
 
         dsp->avg_vc1_mspel_pixels_tab[1][0]      = avg_vc1_mspel_mc00_8_mmxext;
 
