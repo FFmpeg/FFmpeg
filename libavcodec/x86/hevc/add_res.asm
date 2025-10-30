@@ -27,9 +27,9 @@ cextern pw_1023
 %define max_pixels_10 pw_1023
 
 ; the add_res macros and functions were largely inspired by h264_idct.asm from the x264 project
-%macro ADD_RES_MMX_4_8 0
-    mova              m0, [r1]
-    mova              m2, [r1+8]
+%macro ADD_RES_MMX_4_8 1
+    mova              m0, [r1+%1]
+    mova              m2, [r1+%1+8]
 
     movd              m1, [r0]
     movd              m3, [r0+r2]
@@ -50,27 +50,26 @@ INIT_MMX mmxext
 ; void ff_hevc_add_residual_4_8_mmxext(uint8_t *dst, const int16_t *res, ptrdiff_t stride)
 cglobal hevc_add_residual_4_8, 3, 3, 6
     pxor              m4, m4
-    ADD_RES_MMX_4_8
-    add               r1, 16
+    ADD_RES_MMX_4_8    0
     lea               r0, [r0+r2*2]
-    ADD_RES_MMX_4_8
+    ADD_RES_MMX_4_8   16
     RET
 
-%macro ADD_RES_SSE_8_8 0
+%macro ADD_RES_SSE_8_8 1
     movq              m0, [r0]
     movq              m1, [r0+r2]
     punpcklbw         m0, m4
     punpcklbw         m1, m4
-    paddsw            m0, [r1]
-    paddsw            m1, [r1+16]
+    paddsw            m0, [r1+%1]
+    paddsw            m1, [r1+%1+16]
     packuswb          m0, m1
 
     movq              m2, [r0+r2*2]
     movq              m3, [r0+r3]
     punpcklbw         m2, m4
     punpcklbw         m3, m4
-    paddsw            m2, [r1+32]
-    paddsw            m3, [r1+48]
+    paddsw            m2, [r1+%1+32]
+    paddsw            m3, [r1+%1+48]
     packuswb          m2, m3
 
     movq            [r0], m0
@@ -124,10 +123,9 @@ INIT_XMM sse2
 cglobal hevc_add_residual_8_8, 3, 4, 5
     pxor              m4, m4
     lea               r3, [r2*3]
-    ADD_RES_SSE_8_8
-    add               r1, 64
+    ADD_RES_SSE_8_8    0
     lea               r0, [r0+r2*4]
-    ADD_RES_SSE_8_8
+    ADD_RES_SSE_8_8   64
     RET
 
 ; void ff_hevc_add_residual_16_8_<opt>(uint8_t *dst, const int16_t *res, ptrdiff_t stride)
@@ -292,9 +290,8 @@ cglobal hevc_add_residual_4_10, 3, 3, 6
     pxor              m2, m2
     mova              m3, [max_pixels_10]
     ADD_RES_MMX_4_10  r0, r2, r1
-    add               r1, 16
     lea               r0, [r0+2*r2]
-    ADD_RES_MMX_4_10  r0, r2, r1
+    ADD_RES_MMX_4_10  r0, r2, r1+16
     RET
 
 INIT_XMM sse2
@@ -305,8 +302,7 @@ cglobal hevc_add_residual_8_10, 3, 4, 6
 
     ADD_RES_SSE_8_10  r0, r2, r3, r1
     lea               r0, [r0+r2*4]
-    add               r1, 64
-    ADD_RES_SSE_8_10  r0, r2, r3, r1
+    ADD_RES_SSE_8_10  r0, r2, r3, r1+64
     RET
 
 cglobal hevc_add_residual_16_10, 3, 5, 6
