@@ -33,8 +33,10 @@ void ff_compute_weights_line_avx2(const uint32_t *const iia,
 
 av_cold void ff_nlmeans_init_x86(NLMeansDSPContext *dsp)
 {
+#if ARCH_X86_64
     int cpu_flags = av_get_cpu_flags();
 
-    if (ARCH_X86_64 && EXTERNAL_AVX2_FAST(cpu_flags))
+    if (EXTERNAL_AVX2_FAST(cpu_flags))
         dsp->compute_weights_line = ff_compute_weights_line_avx2;
+#endif
 }

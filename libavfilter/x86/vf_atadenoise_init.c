@@ -36,15 +36,17 @@ void ff_atadenoise_filter_row8_serial_sse4(const uint8_t *src, uint8_t *dst,
 
 av_cold void ff_atadenoise_init_x86(ATADenoiseDSPContext *dsp, int depth, int algorithm, const float *sigma)
 {
+#if ARCH_X86_64
     int cpu_flags = av_get_cpu_flags();
 
     for (int p = 0; p < 4; p++) {
-        if (ARCH_X86_64 && EXTERNAL_SSE4(cpu_flags) && depth <= 8 && algorithm == PARALLEL && sigma[p] == INT16_MAX) {
+        if (EXTERNAL_SSE4(cpu_flags) && depth <= 8 && algorithm == PARALLEL && sigma[p] == INT16_MAX) {
             dsp->filter_row[p] = ff_atadenoise_filter_row8_sse4;
         }
 
-        if (ARCH_X86_64 && EXTERNAL_SSE4(cpu_flags) && depth <= 8 && algorithm == SERIAL && sigma[p] == INT16_MAX) {
+        if (EXTERNAL_SSE4(cpu_flags) && depth <= 8 && algorithm == SERIAL && sigma[p] == INT16_MAX) {
             dsp->filter_row[p] = ff_atadenoise_filter_row8_serial_sse4;
         }
     }
+#endif
 }

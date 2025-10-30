@@ -83,8 +83,8 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
         }
 #endif
 
-        if (ARCH_X86_64 &&
-            !high_bit_depth &&
+#if ARCH_X86_64
+        if (!high_bit_depth &&
             avctx->lowres == 0 &&
             (avctx->idct_algo == FF_IDCT_AUTO ||
                 avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
@@ -95,9 +95,11 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
                 c->idct_add  = ff_simple_idct8_add_sse2;
                 c->perm_type = FF_IDCT_PERM_TRANSPOSE;
         }
+#endif
     }
 
-    if (ARCH_X86_64 && avctx->lowres == 0) {
+#if ARCH_X86_64
+    if (avctx->lowres == 0) {
         if (EXTERNAL_AVX(cpu_flags) &&
             !high_bit_depth &&
             (avctx->idct_algo == FF_IDCT_AUTO ||
@@ -147,4 +149,5 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
             }
         }
     }
+#endif
 }
