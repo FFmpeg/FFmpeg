@@ -428,7 +428,7 @@ cglobal %1%3_pixels8_xy2, 4,5,5
     psrlw       m2, 2
 %else
     paddusw     m2, m0
-    pmulhrsw    m2, [pw_8192]
+    pmulhrsw    m2, m3
 %endif
 %ifidn %1, avg
     movh        m1, [r0+r4]
@@ -450,7 +450,7 @@ cglobal %1%3_pixels8_xy2, 4,5,5
     psrlw       m0, 2
 %else
     paddusw     m0, m2
-    pmulhrsw    m0, [pw_8192]
+    pmulhrsw    m0, m3
 %endif
 %ifidn %1, avg
     movh        m1, [r0+r4]
