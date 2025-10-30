@@ -54,8 +54,8 @@ cglobal put_pixels8_x2, 4,5
     pavgb        m0, m2
     pavgb        m1, m3
 %else
-    PAVGB        m0, [r1]
-    PAVGB        m1, [r1+r2]
+    pavgb        m0, [r1]
+    pavgb        m1, [r1+r2]
 %endif
     mova       [r0], m0
     mova    [r0+r2], m1
@@ -69,8 +69,8 @@ cglobal put_pixels8_x2, 4,5
     pavgb        m0, m2
     pavgb        m1, m3
 %else
-    PAVGB        m0, [r1]
-    PAVGB        m1, [r1+r2]
+    pavgb        m0, [r1]
+    pavgb        m1, [r1+r2]
 %endif
     add          r1, r4
     mova       [r0], m0
@@ -103,8 +103,8 @@ cglobal put_no_rnd_pixels8_x2, 4,5
     add          r1, r4
     psubusb      m0, m6
     psubusb      m2, m6
-    PAVGB        m0, m1
-    PAVGB        m2, m3
+    pavgb        m0, m1
+    pavgb        m2, m3
     mova       [r0], m0
     mova    [r0+r2], m2
     mova         m0, [r1]
@@ -115,8 +115,8 @@ cglobal put_no_rnd_pixels8_x2, 4,5
     add          r1, r4
     psubusb      m0, m6
     psubusb      m2, m6
-    PAVGB        m0, m1
-    PAVGB        m2, m3
+    pavgb        m0, m1
+    pavgb        m2, m3
     mova       [r0], m0
     mova    [r0+r2], m2
     add          r0, r4
@@ -143,8 +143,8 @@ cglobal %1_no_rnd_pixels8_x2_exact, 4,5
     pxor         m2, m4
     pxor         m1, m4
     pxor         m3, m4
-    PAVGB        m0, m1
-    PAVGB        m2, m3
+    pavgb        m0, m1
+    pavgb        m2, m3
     pxor         m0, m4
     pxor         m2, m4
 %ifidn %1, avg
@@ -161,8 +161,8 @@ cglobal %1_no_rnd_pixels8_x2_exact, 4,5
     pxor         m1, m4
     pxor         m2, m4
     pxor         m3, m4
-    PAVGB        m0, m1
-    PAVGB        m2, m3
+    pavgb        m0, m1
+    pavgb        m2, m3
     pxor         m0, m4
     pxor         m2, m4
 %ifidn %1, avg
@@ -198,16 +198,16 @@ cglobal put_pixels8_y2, 4,5
     movu         m1, [r1+r2]
     movu         m2, [r1+r4]
     add          r1, r4
-    PAVGB        m0, m1
-    PAVGB        m1, m2
+    pavgb        m0, m1
+    pavgb        m1, m2
     mova    [r0+r2], m0
     mova    [r0+r4], m1
     movu         m1, [r1+r2]
     movu         m0, [r1+r4]
     add          r0, r4
     add          r1, r4
-    PAVGB        m2, m1
-    PAVGB        m1, m0
+    pavgb        m2, m1
+    pavgb        m1, m0
     mova    [r0+r2], m2
     mova    [r0+r4], m1
     add          r0, r4
@@ -235,8 +235,8 @@ cglobal put_no_rnd_pixels8_y2, 4,5
     mova         m2, [r1+r4]
     add          r1, r4
     psubusb      m1, m6
-    PAVGB        m0, m1
-    PAVGB        m1, m2
+    pavgb        m0, m1
+    pavgb        m1, m2
     mova    [r0+r2], m0
     mova    [r0+r4], m1
     mova         m1, [r1+r2]
@@ -244,8 +244,8 @@ cglobal put_no_rnd_pixels8_y2, 4,5
     add          r0, r4
     add          r1, r4
     psubusb      m1, m6
-    PAVGB        m2, m1
-    PAVGB        m1, m0
+    pavgb        m2, m1
+    pavgb        m1, m0
     mova    [r0+r2], m2
     mova    [r0+r4], m1
     add          r0, r4
@@ -271,8 +271,8 @@ cglobal %1_no_rnd_pixels8_y2_exact, 4,5
     movu         m2, [r1+r2]
     pxor         m1, m3
     pxor         m2, m3
-    PAVGB        m0, m1
-    PAVGB        m1, m2
+    pavgb        m0, m1
+    pavgb        m1, m2
     pxor         m0, m3
     pxor         m1, m3
 %ifidn %1, avg
@@ -285,8 +285,8 @@ cglobal %1_no_rnd_pixels8_y2_exact, 4,5
     movu         m0, [r1+r4]
     pxor         m1, m3
     pxor         m0, m3
-    PAVGB        m2, m1
-    PAVGB        m1, m0
+    pavgb        m2, m1
+    pavgb        m1, m0
     pxor         m2, m3
     pxor         m1, m3
 %ifidn %1, avg
@@ -325,11 +325,11 @@ cglobal avg_pixels8_x2, 4,5
     pavgb        m0, m1
     pavgb        m2, m3
 %else
-    PAVGB        m0, [r1+1], m3, m5
-    PAVGB        m2, [r1+r2+1], m4, m5
+    pavgb        m0, [r1+1]
+    pavgb        m2, [r1+r2+1]
 %endif
-    PAVGB        m0, [r0], m3, m5
-    PAVGB        m2, [r0+r2], m4, m5
+    pavgb        m0, [r0]
+    pavgb        m2, [r0+r2]
     add          r1, r4
     mova       [r0], m0
     mova    [r0+r2], m2
@@ -341,13 +341,13 @@ cglobal avg_pixels8_x2, 4,5
     pavgb        m0, m1
     pavgb        m2, m3
 %else
-    PAVGB        m0, [r1+1], m3, m5
-    PAVGB        m2, [r1+r2+1], m4, m5
+    pavgb        m0, [r1+1]
+    pavgb        m2, [r1+r2+1]
 %endif
     add          r0, r4
     add          r1, r4
-    PAVGB        m0, [r0], m3, m5
-    PAVGB        m2, [r0+r2], m4, m5
+    pavgb        m0, [r0]
+    pavgb        m2, [r0+r2]
     mova       [r0], m0
     mova    [r0+r2], m2
     add          r0, r4
@@ -377,20 +377,20 @@ cglobal avg_pixels8_y2, 4,5
     movu         m1, [r1+r2]
     movu         m2, [r1+r4]
     add          r1, r4
-    PAVGB        m0, m1
-    PAVGB        m1, m2
-    PAVGB        m0, [r0+r2]
-    PAVGB        m1, [r0+r4]
+    pavgb        m0, m1
+    pavgb        m1, m2
+    pavgb        m0, [r0+r2]
+    pavgb        m1, [r0+r4]
     mova    [r0+r2], m0
     mova    [r0+r4], m1
     movu         m1, [r1+r2]
     movu         m0, [r1+r4]
-    PAVGB        m2, m1
-    PAVGB        m1, m0
+    pavgb        m2, m1
+    pavgb        m1, m0
     add          r0, r4
     add          r1, r4
-    PAVGB        m2, [r0+r2]
-    PAVGB        m1, [r0+r4]
+    pavgb        m2, [r0+r2]
+    pavgb        m1, [r0+r4]
     mova    [r0+r2], m2
     mova    [r0+r4], m1
     add          r0, r4
@@ -509,7 +509,7 @@ cglobal %1%3_pixels16_xy2, 4,5,8
 %ifidn %1, avg
     mova        m3, [r0+r4]
     packuswb    m4, m5
-    PAVGB       m4, m3
+    pavgb       m4, m3
 %else
     packuswb    m4, m5
 %endif
@@ -535,7 +535,7 @@ cglobal %1%3_pixels16_xy2, 4,5,8
 %ifidn %1, avg
     mova        m3, [r0+r4]
     packuswb    m0, m1
-    PAVGB       m0, m3
+    pavgb       m0, m3
 %else
     packuswb    m0, m1
 %endif
