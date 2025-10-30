@@ -423,11 +423,11 @@ cglobal %1%3_pixels8_xy2, 4,5,5
     punpcklbw   m0, m1
     pmaddubsw   m0, m4
 %ifidn %3, _no_rnd
-    paddusw     m2, m3
-    paddusw     m2, m0
+    paddw       m2, m3
+    paddw       m2, m0
     psrlw       m2, 2
 %else
-    paddusw     m2, m0
+    paddw       m2, m0
     pmulhrsw    m2, m3
 %endif
 %ifidn %1, avg
@@ -445,11 +445,11 @@ cglobal %1%3_pixels8_xy2, 4,5,5
     punpcklbw   m2, m1
     pmaddubsw   m2, m4
 %ifidn %3, _no_rnd
-    paddusw     m0, m3
-    paddusw     m0, m2
+    paddw       m0, m3
+    paddw       m0, m2
     psrlw       m0, 2
 %else
-    paddusw     m0, m2
+    paddw       m0, m2
     pmulhrsw    m0, m3
 %endif
 %ifidn %1, avg
@@ -485,8 +485,8 @@ cglobal %1%3_pixels16_xy2, 4,5,8
     punpcklbw   m4, m7
     punpckhbw   m1, m7
     punpckhbw   m5, m7
-    paddusw     m4, m0
-    paddusw     m5, m1
+    paddw       m4, m0
+    paddw       m5, m1
     xor         r4, r4
     add         r1, r2
 .loop:
@@ -498,12 +498,12 @@ cglobal %1%3_pixels16_xy2, 4,5,8
     punpcklbw   m2, m7
     punpckhbw   m1, m7
     punpckhbw   m3, m7
-    paddusw     m0, m2
-    paddusw     m1, m3
-    paddusw     m4, m6
-    paddusw     m5, m6
-    paddusw     m4, m0
-    paddusw     m5, m1
+    paddw       m0, m2
+    paddw       m1, m3
+    paddw       m4, m6
+    paddw       m5, m6
+    paddw       m4, m0
+    paddw       m5, m1
     psrlw       m4, 2
     psrlw       m5, 2
 %ifidn %1, avg
@@ -524,12 +524,12 @@ cglobal %1%3_pixels16_xy2, 4,5,8
     punpcklbw   m4, m7
     punpckhbw   m3, m7
     punpckhbw   m5, m7
-    paddusw     m4, m2
-    paddusw     m5, m3
-    paddusw     m0, m6
-    paddusw     m1, m6
-    paddusw     m0, m4
-    paddusw     m1, m5
+    paddw       m4, m2
+    paddw       m5, m3
+    paddw       m0, m6
+    paddw       m1, m6
+    paddw       m0, m4
+    paddw       m1, m5
     psrlw       m0, 2
     psrlw       m1, 2
 %ifidn %1, avg
@@ -567,8 +567,8 @@ cglobal %1_pixels16_xy2, 4,5,%2
     movu        m3, [r1+r4+1]
     pmaddubsw   m2, m5
     pmaddubsw   m3, m5
-    paddusw     m0, m2
-    paddusw     m1, m3
+    paddw       m0, m2
+    paddw       m1, m3
     pmulhrsw    m0, [pw_8192]
     pmulhrsw    m1, [pw_8192]
 %ifidn %1, avg
@@ -587,8 +587,8 @@ cglobal %1_pixels16_xy2, 4,5,%2
     movu        m1, [r1+r4+1]
     pmaddubsw   m0, m5
     pmaddubsw   m1, m5
-    paddusw     m2, m0
-    paddusw     m3, m1
+    paddw       m2, m0
+    paddw       m3, m1
     pmulhrsw    m2, [pw_8192]
     pmulhrsw    m3, [pw_8192]
 %ifidn %1, avg
