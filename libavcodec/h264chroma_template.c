@@ -26,40 +26,6 @@
 #include "bit_depth_template.c"
 
 #define H264_CHROMA_MC(OPNAME, OP)\
-static void FUNCC(OPNAME ## h264_chroma_mc1)(uint8_t *_dst /*align 8*/, const uint8_t *_src /*align 1*/, ptrdiff_t stride, int h, int x, int y){\
-    pixel *dst = (pixel*)_dst;\
-    const pixel *src = (const pixel*)_src;\
-    const int A=(8-x)*(8-y);\
-    const int B=(  x)*(8-y);\
-    const int C=(8-x)*(  y);\
-    const int D=(  x)*(  y);\
-    int i;\
-    stride >>= sizeof(pixel)-1;\
-    \
-    av_assert2(x<8 && y<8 && x>=0 && y>=0);\
-\
-    if(D){\
-        for(i=0; i<h; i++){\
-            OP(dst[0], (A*src[0] + B*src[1] + C*src[stride+0] + D*src[stride+1]));\
-            dst+= stride;\
-            src+= stride;\
-        }\
-    } else if (B + C) {\
-        const int E= B+C;\
-        const int step= C ? stride : 1;\
-        for(i=0; i<h; i++){\
-            OP(dst[0], (A*src[0] + E*src[step+0]));\
-            dst+= stride;\
-            src+= stride;\
-        }\
-    } else {\
-        for(i=0; i<h; i++){\
-            OP(dst[0], (A*src[0]));\
-            dst+= stride;\
-            src+= stride;\
-        }\
-    }\
-}\
 static void FUNCC(OPNAME ## h264_chroma_mc2)(uint8_t *_dst /*align 8*/, const uint8_t *_src /*align 1*/, ptrdiff_t stride, int h, int x, int y)\
 {\
     pixel *dst = (pixel*)_dst;\

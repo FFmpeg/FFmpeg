@@ -44,6 +44,45 @@
 #include "threadprogress.h"
 #include "wmv2dec.h"
 
+#define H264_CHROMA_MC(OPNAME, OP)\
+static void OPNAME ## h264_chroma_mc1(uint8_t *dst /*align 8*/, const uint8_t *src /*align 1*/, ptrdiff_t stride, int h, int x, int y)\
+{\
+    const int A = (8-x) * (8-y);\
+    const int B = (  x) * (8-y);\
+    const int C = (8-x) * (  y);\
+    const int D = (  x) * (  y);\
+    \
+    av_assert2(x < 8 && y < 8 && x >= 0 && y >= 0);\
+\
+    if (D) {\
+        for (int i = 0; i < h; ++i) {\
+            OP(dst[0], (A*src[0] + B*src[1] + C*src[stride+0] + D*src[stride+1]));\
+            dst += stride;\
+            src += stride;\
+        }\
+    } else if (B + C) {\
+        const int E    = B + C;\
+        const int step = C ? stride : 1;\
+        for (int i = 0; i < h; ++i) {\
+            OP(dst[0], (A*src[0] + E*src[step+0]));\
+            dst += stride;\
+            src += stride;\
+        }\
+    } else {\
+        for (int i = 0; i < h; ++i) {\
+            OP(dst[0], (A*src[0]));\
+            dst += stride;\
+            src += stride;\
+        }\
+    }\
+}\
+
+#define op_avg(a, b) a = (((a)+(((b) + 32)>>6)+1)>>1)
+#define op_put(a, b) a = (((b) + 32)>>6)
+
+H264_CHROMA_MC(put_, op_put)
+H264_CHROMA_MC(avg_, op_avg)
+
 av_cold int ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
 {
     enum ThreadingStatus thread_status;
@@ -62,6 +101,8 @@ av_cold int ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
     ff_mpv_idct_init(s);
 
     ff_h264chroma_init(&s->h264chroma, 8); //for lowres
+    s->h264chroma.avg_h264_chroma_pixels_tab[3] = avg_h264_chroma_mc1;
+    s->h264chroma.put_h264_chroma_pixels_tab[3] = put_h264_chroma_mc1;
 
     if (s->picture_pool)  // VC-1 can call this multiple times
         return 0;

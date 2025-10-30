@@ -51,7 +51,7 @@ static void check_chroma_mc(void)
     for (int bit_depth = 8; bit_depth <= 10; bit_depth++) {
         ff_h264chroma_init(&h, bit_depth);
         randomize_buffers(bit_depth);
-        for (int size = 0; size < 4; size++) {
+        for (int size = 0; size < 3; size++) {
 
 #define CHECK_CHROMA_MC(name)                                                                             \
             do {                                                                                          \
