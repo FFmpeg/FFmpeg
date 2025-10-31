@@ -543,6 +543,7 @@ static void *circular_buffer_task_rx( void *_URLContext)
     }
     while(1) {
         UDPQueuedPacketHeader pkt_header;
+        pkt_header.addr_len = sizeof(pkt_header.addr);
 
         pthread_mutex_unlock(&s->mutex);
         /* Blocking operations are always cancellation points;
