@@ -127,7 +127,7 @@ static int rfc4175_parse_fmtp(AVFormatContext *s, AVStream *stream,
         data->width = atoi(value);
     else if (!strncmp(attr, "height", 6))
         data->height = atoi(value);
-    else if (!strncmp(attr, "sampling", 8))
+    else if (data->sampling == NULL && !strncmp(attr, "sampling", 8))
         data->sampling = av_strdup(value);
     else if (!strncmp(attr, "depth", 5))
         data->depth = atoi(value);
