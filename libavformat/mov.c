@@ -392,6 +392,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return mov_metadata_loci(c, pb, atom.size);
     case MKTAG( 'm','a','n','u'): key = "make"; break;
     case MKTAG( 'm','o','d','l'): key = "model"; break;
+    case MKTAG( 'n','a','m','e'): key = "name"; break;
     case MKTAG( 'p','c','s','t'): key = "podcast";
         parse = mov_metadata_int8_no_padding; break;
     case MKTAG( 'p','g','a','p'): key = "gapless_playback";
