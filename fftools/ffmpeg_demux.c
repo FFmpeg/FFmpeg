@@ -1702,17 +1702,22 @@ static int istg_parse_tile_grid(const OptionsContext *o, Demuxer *d, InputStream
 
         ret = av_packet_side_data_to_frame(&opts.side_data, &opts.nb_side_data, sd, 0);
         if (ret < 0 && ret != AVERROR(EINVAL))
-            return ret;
+            goto fail;
     }
 
     ret = fg_create(NULL, &graph_str, d->sch, &opts);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     istg->fg = filtergraphs[nb_filtergraphs-1];
     istg->fg->is_internal = 1;
 
-    return 0;
+    ret = 0;
+fail:
+    if (ret < 0)
+        av_freep(&graph_str);
+
+    return ret;
 }
 
 static int istg_add(const OptionsContext *o, Demuxer *d, AVStreamGroup *stg)
