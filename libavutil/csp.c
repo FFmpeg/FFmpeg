@@ -100,7 +100,7 @@ const AVColorPrimariesDesc *av_csp_primaries_desc_from_id(enum AVColorPrimaries 
     else if (((unsigned)prm >= AVCOL_PRI_EXT_BASE) &&
              ((unsigned)prm < AVCOL_PRI_EXT_NB))
         p = &color_primaries_ext[prm - AVCOL_PRI_EXT_BASE];
-    if (!p->prim.r.x.num)
+    if (!p || !p->prim.r.x.num)
         return NULL;
     return p;
 }
