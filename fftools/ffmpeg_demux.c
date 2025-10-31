@@ -1705,7 +1705,7 @@ static int istg_parse_tile_grid(const OptionsContext *o, Demuxer *d, InputStream
             return ret;
     }
 
-    ret = fg_create(NULL, graph_str, d->sch, &opts);
+    ret = fg_create(NULL, &graph_str, d->sch, &opts);
     if (ret < 0)
         return ret;
 

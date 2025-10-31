@@ -1496,7 +1496,7 @@ int ffmpeg_parse_options(int argc, char **argv, Scheduler *sch)
 
     /* create complex filtergraphs */
     for (int i = 0; i < go.nb_filtergraphs; i++) {
-        ret = fg_create(NULL, go.filtergraphs[i], sch, NULL);
+        ret = fg_create(NULL, &go.filtergraphs[i], sch, NULL);
         go.filtergraphs[i] = NULL;
         if (ret < 0)
             goto fail;

@@ -1085,7 +1085,7 @@ static const AVClass fg_class = {
     .category   = AV_CLASS_CATEGORY_FILTER,
 };
 
-int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch,
+int fg_create(FilterGraph **pfg, char **graph_desc, Scheduler *sch,
               const OutputFilterOptions *opts)
 {
     FilterGraphPriv *fgp;
@@ -1097,7 +1097,7 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch,
 
     fgp = av_mallocz(sizeof(*fgp));
     if (!fgp) {
-        av_freep(&graph_desc);
+        av_freep(graph_desc);
         return AVERROR(ENOMEM);
     }
     fg = &fgp->fg;
@@ -1108,7 +1108,7 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch,
     } else {
         ret = av_dynarray_add_nofree(&filtergraphs, &nb_filtergraphs, fgp);
         if (ret < 0) {
-            av_freep(&graph_desc);
+            av_freep(graph_desc);
             av_freep(&fgp);
             return ret;
         }
@@ -1117,10 +1117,12 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch,
     }
 
     fg->class       = &fg_class;
-    fg->graph_desc  = graph_desc;
+    fg->graph_desc  = *graph_desc;
     fgp->disable_conversions = !auto_conversion_filters;
     fgp->nb_threads          = -1;
     fgp->sch                 = sch;
+
+    *graph_desc = NULL;
 
     snprintf(fgp->log_name, sizeof(fgp->log_name), "fc#%d", fg->index);
 
@@ -1245,7 +1247,7 @@ fail:
 
 int fg_create_simple(FilterGraph **pfg,
                      InputStream *ist,
-                     char *graph_desc,
+                     char **graph_desc,
                      Scheduler *sch, unsigned sched_idx_enc,
                      const OutputFilterOptions *opts)
 {
@@ -1270,7 +1272,7 @@ int fg_create_simple(FilterGraph **pfg,
                "to have exactly 1 input and 1 output. "
                "However, it had %d input(s) and %d output(s). Please adjust, "
                "or use a complex filtergraph (-filter_complex) instead.\n",
-               graph_desc, fg->nb_inputs, fg->nb_outputs);
+               *graph_desc, fg->nb_inputs, fg->nb_outputs);
         return AVERROR(EINVAL);
     }
     if (fg->outputs[0]->type != type) {

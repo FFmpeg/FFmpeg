@@ -811,7 +811,7 @@ int parse_and_set_vsync(const char *arg, enum VideoSyncMethod *vsync_var, int fi
 int filtergraph_is_simple(const FilterGraph *fg);
 int fg_create_simple(FilterGraph **pfg,
                      InputStream *ist,
-                     char *graph_desc,
+                     char **graph_desc,
                      Scheduler *sch, unsigned sched_idx_enc,
                      const OutputFilterOptions *opts);
 int fg_finalise_bindings(void);
@@ -834,10 +834,10 @@ int ofilter_bind_enc(OutputFilter *ofilter,
 /**
  * Create a new filtergraph in the global filtergraph list.
  *
- * @param graph_desc Graph description; an av_malloc()ed string, filtergraph
+ * @param graph_desc Pointer to graph description; an av_malloc()ed string, filtergraph
  *                   takes ownership of it.
  */
-int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch,
+int fg_create(FilterGraph **pfg, char **graph_desc, Scheduler *sch,
               const OutputFilterOptions *opts);
 
 void fg_free(FilterGraph **pfg);
