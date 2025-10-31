@@ -1592,8 +1592,8 @@ static int create_rtp_muxer(AVFormatContext *s)
          * therefore, we deactivate the extradata detection for the RTP muxer.
          */
         if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_H264) {
-            av_freep(&rtp_ctx->streams[i]->codecpar->extradata);
-            rtp_ctx->streams[i]->codecpar->extradata_size = 0;
+            av_freep(&rtp_ctx->streams[0]->codecpar->extradata);
+            rtp_ctx->streams[0]->codecpar->extradata_size = 0;
         }
 
         buffer = av_malloc(buffer_size);
