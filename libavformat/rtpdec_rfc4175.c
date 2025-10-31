@@ -24,6 +24,7 @@
 #include "avio_internal.h"
 #include "rtpdec_formats.h"
 #include "libavutil/avstring.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 
 struct PayloadContext {
@@ -104,6 +105,9 @@ static int rfc4175_parse_sdp_line(AVFormatContext *s, int st_index,
         if (ret < 0)
             return ret;
 
+        ret = av_image_check_size(data->width, data->height, 0, s);
+        if (ret < 0)
+            return ret;
 
         if (!data->sampling || !data->depth || !data->width || !data->height)
             return -1;
@@ -204,6 +208,9 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
 
         if (length > payload_len)
             length = payload_len;
+
+        if (line >= data->height)
+            return AVERROR_INVALIDDATA;
 
         /* prevent ill-formed packets to write after buffer's end */
         copy_offset = (line * data->width + offset) * data->pgroup / data->xinc;
