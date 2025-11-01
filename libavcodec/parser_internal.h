@@ -67,9 +67,9 @@ static inline const FFCodecParser *ffcodecparser(const AVCodecParser *parser)
 #define CHECK_FOR_TOO_MANY_IDS(...) AV_JOIN(EIGTH_ARG(__VA_ARGS__, NO, NO, NO, NO, NO, NO, NO, NO), _FAIL)
 
 // For compatibility with MSVC's old, spec-incompliant preprocessor.
-#define PASSTHROUGH(...) __VA_ARGS__
+#define FF_MSVC_EXPAND(...) __VA_ARGS__
 #define FIRST_SEVEN2(a,b,c,d,e,f,g,...) a,b,c,d,e,f,g
-#define FIRST_SEVEN(...) PASSTHROUGH(FIRST_SEVEN2(__VA_ARGS__))
+#define FIRST_SEVEN(...) FF_MSVC_EXPAND(FIRST_SEVEN2(__VA_ARGS__))
 #define TIMES_SEVEN(a) a,a,a,a,a,a,a
 
 #if FF_API_PARSER_PRIVATE
