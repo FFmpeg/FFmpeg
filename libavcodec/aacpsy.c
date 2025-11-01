@@ -97,7 +97,7 @@ enum {
 #define AAC_BLOCK_SIZE_LONG 1024    ///< long block size
 #define AAC_BLOCK_SIZE_SHORT 128    ///< short block size
 #define AAC_NUM_BLOCKS_SHORT 8      ///< number of blocks in a short sequence
-#define PSY_LAME_NUM_SUBBLOCKS 3    ///< Number of sub-blocks in each short block
+#define PSY_LAME_NUM_SUBBLOCKS 2    ///< Number of sub-blocks in each short block
 
 /**
  * @}
@@ -133,6 +133,7 @@ typedef struct AacPsyChannel{
     float attack_threshold;              ///< attack threshold for this channel
     float prev_energy_subshort[AAC_NUM_BLOCKS_SHORT * PSY_LAME_NUM_SUBBLOCKS];
     int   prev_attack;                   ///< attack value for the last short block in the previous sequence
+    int   next_attack0_zero;          ///< whether attack[0] of the next frame is zero
 }AacPsyChannel;
 
 /**
@@ -181,19 +182,19 @@ typedef struct PsyLamePreset {
 static const PsyLamePreset psy_abr_map[] = {
 /* TODO: Tuning. These were taken from LAME. */
 /* kbps/ch st_lrm   */
-    {  8,  6.60},
-    { 16,  6.60},
-    { 24,  6.60},
-    { 32,  6.60},
-    { 40,  6.60},
-    { 48,  6.60},
-    { 56,  6.60},
-    { 64,  6.40},
-    { 80,  6.00},
-    { 96,  5.60},
-    {112,  5.20},
-    {128,  5.20},
-    {160,  5.20}
+    {  8,  7.60},
+    { 16,  7.60},
+    { 24,  7.60},
+    { 32,  7.60},
+    { 40,  7.60},
+    { 48,  7.60},
+    { 56,  7.60},
+    { 64,  7.40},
+    { 80,  7.00},
+    { 96,  6.60},
+    {112,  6.20},
+    {128,  6.20},
+    {160,  6.20}
 };
 
 /**
@@ -900,8 +901,8 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
         /* Calculate the energies of each sub-shortblock */
         for (i = 0; i < PSY_LAME_NUM_SUBBLOCKS; i++) {
             energy_subshort[i] = pch->prev_energy_subshort[i + ((AAC_NUM_BLOCKS_SHORT - 1) * PSY_LAME_NUM_SUBBLOCKS)];
-            assert(pch->prev_energy_subshort[i + ((AAC_NUM_BLOCKS_SHORT - 2) * PSY_LAME_NUM_SUBBLOCKS + 1)] > 0);
-            attack_intensity[i] = energy_subshort[i] / pch->prev_energy_subshort[i + ((AAC_NUM_BLOCKS_SHORT - 2) * PSY_LAME_NUM_SUBBLOCKS + 1)];
+            assert(pch->prev_energy_subshort[i + ((AAC_NUM_BLOCKS_SHORT - 1) * PSY_LAME_NUM_SUBBLOCKS - 2)] > 0);
+            attack_intensity[i] = energy_subshort[i] / pch->prev_energy_subshort[i + ((AAC_NUM_BLOCKS_SHORT - 1) * PSY_LAME_NUM_SUBBLOCKS - 2)];
             energy_short[0] += energy_subshort[i];
         }
 
@@ -912,17 +913,12 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
                 p = FFMAX(p, fabsf(*pf));
             pch->prev_energy_subshort[i] = energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS] = p;
             energy_short[1 + i / PSY_LAME_NUM_SUBBLOCKS] += p;
-            /* NOTE: The indexes below are [i + 3 - 2] in the LAME source.
-             *       Obviously the 3 and 2 have some significance, or this would be just [i + 1]
-             *       (which is what we use here). What the 3 stands for is ambiguous, as it is both
-             *       number of short blocks, and the number of sub-short blocks.
-             *       It seems that LAME is comparing each sub-block to sub-block + 1 in the
-             *       previous block.
-             */
-            if (p > energy_subshort[i + 1])
-                p = p / energy_subshort[i + 1];
-            else if (energy_subshort[i + 1] > p * 10.0f)
-                p = energy_subshort[i + 1] / (p * 10.0f);
+            
+            /* NOTE: The indexes below are [i + 3 - 2] in the LAME source. Compare each sub-block to sub-block - 2 */
+            if (p > energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS - 2])
+                p = p / energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS - 2];
+            else if (energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS - 2] > p * 10.0f)
+                p = energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS - 2] / (p * 10.0f);
             else
                 p = 0.0;
             attack_intensity[i + PSY_LAME_NUM_SUBBLOCKS] = p;
@@ -943,7 +939,7 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
             const float v = energy_short[i];
             const float m = FFMAX(u, v);
             if (m < 40000) {                          /* (2) */
-                if (u < 1.7f * v && v < 1.7f * u) {   /* (1) */
+                if (u < 2.3f * v && v < 2.3f * u) {   /* (1) */
                     if (i == 1 && attacks[0] < attacks[i])
                         attacks[0] = 0;
                     attacks[i] = 0;
@@ -951,13 +947,19 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
             }
             att_sum += attacks[i];
         }
+		if (pch->next_attack0_zero)
+            attacks[0] = 0;
+		if (attacks[AAC_NUM_BLOCKS_SHORT] == 0)
+            pch->next_attack0_zero = 1;
+        else
+			pch->next_attack0_zero = 0;
 
         if (attacks[0] <= pch->prev_attack)
             attacks[0] = 0;
 
         att_sum += attacks[0];
-        /* 3 below indicates the previous attack happened in the last sub-block of the previous sequence */
-        if (pch->prev_attack == 3 || att_sum) {
+		/* If the previous attack happened in the last sub-block of the previous sequence, or if there's a new attack, use short window */
+        if (pch->prev_attack == PSY_LAME_NUM_SUBBLOCKS || att_sum) {
             uselongblock = 0;
 
             for (i = 1; i < AAC_NUM_BLOCKS_SHORT + 1; i++)
@@ -1007,7 +1009,7 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
     }
     pch->next_grouping = window_grouping[grouping];
 
-    pch->prev_attack = attacks[8];
+    pch->prev_attack = attacks[AAC_NUM_BLOCKS_SHORT - 1];
 
     return wi;
 }
