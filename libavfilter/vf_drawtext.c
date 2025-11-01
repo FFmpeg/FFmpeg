@@ -1011,7 +1011,7 @@ static av_cold int init(AVFilterContext *ctx)
             av_log(ctx, AV_LOG_WARNING, "Multiple texts provided, will use text_source only\n");
             av_free(s->text);
         }
-        s->text = av_mallocz(AV_DETECTION_BBOX_LABEL_NAME_MAX_SIZE *
+        s->text = av_mallocz((AV_DETECTION_BBOX_LABEL_NAME_MAX_SIZE + 1) *
                              (AV_NUM_DETECTION_BBOX_CLASSIFY + 1));
         if (!s->text)
             return AVERROR(ENOMEM);
