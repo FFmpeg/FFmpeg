@@ -913,7 +913,6 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
                 p = FFMAX(p, fabsf(*pf));
             pch->prev_energy_subshort[i] = energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS] = p;
             energy_short[1 + i / PSY_LAME_NUM_SUBBLOCKS] += p;
-            
             /* NOTE: The indexes below are [i + 3 - 2] in the LAME source. Compare each sub-block to sub-block - 2 */
             if (p > energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS - 2])
                 p = p / energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS - 2];
