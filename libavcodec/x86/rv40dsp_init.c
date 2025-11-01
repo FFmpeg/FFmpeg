@@ -178,6 +178,12 @@ DEFINE_FN(avg, 8, ssse3)
 
 DEFINE_FN(avg, 16, sse2)
 DEFINE_FN(avg, 16, ssse3)
+
+#define CHROMA_MC_FUNC(OP, SIZE, XMM) \
+void ff_rv40_ ## OP ## _chroma_mc ## SIZE ## _ ## XMM(uint8_t *dst, const uint8_t *src,      \
+                                                      ptrdiff_t stride, int h, int x, int y);\
+    c->OP ## _chroma_pixels_tab[SIZE == 4] = ff_rv40_ ## OP ## _chroma_mc ## SIZE ## _ ## XMM
+
 #endif /* HAVE_X86ASM */
 
 av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
@@ -204,6 +210,10 @@ av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
         QPEL_MC_SET(avg_, _sse2)
     }
     if (EXTERNAL_SSSE3(cpu_flags)) {
+        CHROMA_MC_FUNC(put, 8, ssse3);
+        CHROMA_MC_FUNC(put, 4, ssse3);
+        CHROMA_MC_FUNC(avg, 8, ssse3);
+        CHROMA_MC_FUNC(avg, 4, ssse3);
         c->put_pixels_tab[0][15]        = put_rv40_qpel16_mc33_ssse3;
         c->put_pixels_tab[1][15]        = put_rv40_qpel8_mc33_ssse3;
         c->avg_pixels_tab[0][15]        = avg_rv40_qpel16_mc33_ssse3;

@@ -24,6 +24,7 @@
  * RV40 decoder motion compensation functions
  */
 
+#include "libavutil/attributes_internal.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "h264qpel.h"
@@ -283,7 +284,7 @@ static void avg_rv40_qpel8_mc33_c(uint8_t *dst, const uint8_t *src, ptrdiff_t st
     avg_pixels8_xy2_8_c(dst, src, stride, 8);
 }
 
-static const int rv40_bias[4][4] = {
+attribute_visibility_hidden const int ff_rv40_bias[4][4] = {
     {  0, 16, 32, 16 },
     { 32, 28, 32, 28 },
     {  0, 32, 16, 32 },
@@ -300,7 +301,7 @@ static void OPNAME ## rv40_chroma_mc4_c(uint8_t *dst /*align 8*/,\
     const int C = (8-x) * (  y);\
     const int D = (  x) * (  y);\
     int i;\
-    int bias = rv40_bias[y>>1][x>>1];\
+    int bias = ff_rv40_bias[y>>1][x>>1];\
     \
     av_assert2(x<8 && y<8 && x>=0 && y>=0);\
 \
@@ -336,7 +337,7 @@ static void OPNAME ## rv40_chroma_mc8_c(uint8_t *dst/*align 8*/,\
     const int C = (8-x) * (  y);\
     const int D = (  x) * (  y);\
     int i;\
-    int bias = rv40_bias[y>>1][x>>1];\
+    int bias = ff_rv40_bias[y>>1][x>>1];\
     \
     av_assert2(x<8 && y<8 && x>=0 && y>=0);\
 \

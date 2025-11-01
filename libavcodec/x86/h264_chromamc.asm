@@ -20,6 +20,7 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
+%include "config_components.asm"
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
@@ -63,6 +64,8 @@ cextern pw_8
 pw_28: times 8 dw 28
 cextern pw_32
 cextern pw_64
+
+cextern rv40_bias
 
 SECTION .text
 
@@ -447,11 +450,12 @@ chroma_mc4_mmx_func avg, rv40
 chroma_mc2_mmx_func avg, h264
 
 %macro chroma_mc8_ssse3_func 2-3
-cglobal %1_%2_chroma_mc8%3, 6, 7, 8
+cglobal %1_%2_chroma_mc8%3, 6, 7+UNIX64, 8
     mov          r6d, r5d
     or           r6d, r4d
     jne .at_least_one_non_zero
     ; mx == 0 AND my == 0 - no filter needed
+..@%1_%2_chroma_mc8_no_filter_ %+ cpuname:
     mv0_pixels_mc8
     RET
 
@@ -462,6 +466,8 @@ cglobal %1_%2_chroma_mc8%3, 6, 7, 8
     je .mx_is_zero
 
     ; general case, bilinear
+    movdqa        m5, [rnd_2d_%2]
+..@%1_%2_chroma_mc8_both_nonzero_ %+ cpuname:
     mov          r6d, r4d
     shl          r4d, 8
     sub           r4, r6
@@ -473,7 +479,6 @@ cglobal %1_%2_chroma_mc8%3, 6, 7, 8
 
     movd          m7, r6d
     movd          m6, r4d
-    movdqa        m5, [rnd_2d_%2]
     movq          m0, [r1  ]
     movq          m1, [r1+1]
     pshuflw       m7, m7, 0
@@ -517,12 +522,13 @@ cglobal %1_%2_chroma_mc8%3, 6, 7, 8
     RET
 
 .my_is_zero:
+    movdqa        m6, [rnd_1d_%2]
+..@%1_%2_chroma_mc8_my_zero_ %+ cpuname:
     mov          r5d, r4d
     shl          r4d, 8
     add           r4, 8
     sub           r4, r5          ; 255*x+8 = x<<8 | (8-x)
     movd          m7, r4d
-    movdqa        m6, [rnd_1d_%2]
     pshuflw       m7, m7, 0
     movlhps       m7, m7
 
@@ -554,12 +560,13 @@ cglobal %1_%2_chroma_mc8%3, 6, 7, 8
     RET
 
 .mx_is_zero:
+    movdqa        m6, [rnd_1d_%2]
+..@%1_%2_chroma_mc8_mx_zero_ %+ cpuname:
     mov          r4d, r5d
     shl          r5d, 8
     add           r5, 8
     sub           r5, r4          ; 255*y+8 = y<<8 | (8-y)
     movd          m7, r5d
-    movdqa        m6, [rnd_1d_%2]
     pshuflw       m7, m7, 0
     movlhps       m7, m7
 
@@ -592,7 +599,9 @@ cglobal %1_%2_chroma_mc8%3, 6, 7, 8
 %endmacro
 
 %macro chroma_mc4_ssse3_func 2
-cglobal %1_%2_chroma_mc4, 6, 7, 0
+cglobal %1_%2_chroma_mc4, 6, 7+UNIX64, 0
+    movq          m5, [pw_32]
+..@%1_%2_chroma_mc4_after_init_ %+ cpuname:
     mov           r6, r4
     shl          r4d, 8
     sub          r4d, r6d
@@ -604,7 +613,6 @@ cglobal %1_%2_chroma_mc4, 6, 7, 0
 
     movd          m7, r6d
     movd          m6, r4d
-    movq          m5, [pw_32]
     movd          m0, [r1  ]
     pshufw        m7, m7, 0
     punpcklbw     m0, [r1+1]
@@ -641,16 +649,79 @@ cglobal %1_%2_chroma_mc4, 6, 7, 0
     RET
 %endmacro
 
+%macro rv40_get_bias 1 ; dst reg
+%if !PIC || UNIX64
+    ; on UNIX64 we have enough volatile registers
+%if PIC && UNIX64
+    lea           r7, [rv40_bias]
+%endif
+    mov          r6d, r5d
+    and          r6d, 6         ; &~1 for mx/my=[0,7]
+    lea          r6d, [r6d*4+r4d]
+    sar          r6d, 1
+%if PIC && UNIX64
+    movd          %1, [r7+4*r6]
+%else
+    movd          %1, [rv40_bias+4*r6]
+%endif
+%else  ; PIC && !UNIX64, de facto WIN64
+    lea           r6, [rv40_bias]
+%ifidn r5d, r5m ; always false for currently supported calling conventions
+    push          r5
+%endif
+    and          r5d, 6         ; &~1 for mx/my=[0,7]
+    lea          r5d, [r5d*4+r4d]
+    sar          r5d, 1
+    movd          %1, [r6+4*r5]
+%ifidn r5d, r5m
+    pop           r5
+%else
+    mov          r5d, r5m
+%endif
+%endif
+    SPLATW        %1, %1
+%endmacro
+
+%macro rv40_chroma_mc8_func 1 ; put vs avg
+%if CONFIG_RV40_DECODER
+    cglobal rv40_%1_chroma_mc8, 6, 7+UNIX64, 8
+    mov          r6d, r5d
+    or           r6d, r4d
+    jz           ..@%1_h264_chroma_mc8_no_filter_ %+ cpuname
+    rv40_get_bias m5
+    ; the bilinear code expects bias in m5, the one-dimensional code in m6
+    mova          m6, m5
+    psraw         m6, 3
+    test         r5d, r5d
+    je           ..@%1_h264_chroma_mc8_my_zero_ %+ cpuname
+    test         r4d, r4d
+    je           ..@%1_h264_chroma_mc8_mx_zero_ %+ cpuname
+    jmp          ..@%1_h264_chroma_mc8_both_nonzero_ %+ cpuname
+%endif
+%endmacro
+
+%macro rv40_chroma_mc4_func 1 ; put vs avg
+%if CONFIG_RV40_DECODER
+    cglobal rv40_%1_chroma_mc4, 6, 7+UNIX64, 0
+    rv40_get_bias m5
+    jmp           ..@%1_h264_chroma_mc4_after_init_ %+ cpuname
+%endif
+%endmacro
+
 %define CHROMAMC_AVG NOTHING
 INIT_XMM ssse3
 chroma_mc8_ssse3_func put, h264, _rnd
 chroma_mc8_ssse3_func put, vc1,  _nornd
+rv40_chroma_mc8_func put
 INIT_MMX ssse3
 chroma_mc4_ssse3_func put, h264
+rv40_chroma_mc4_func put
 
 %define CHROMAMC_AVG DIRECT_AVG
 INIT_XMM ssse3
 chroma_mc8_ssse3_func avg, h264, _rnd
 chroma_mc8_ssse3_func avg, vc1,  _nornd
+rv40_chroma_mc8_func avg
 INIT_MMX ssse3
 chroma_mc4_ssse3_func avg, h264
+rv40_chroma_mc4_func avg
