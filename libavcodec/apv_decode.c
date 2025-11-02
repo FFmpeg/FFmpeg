@@ -27,42 +27,15 @@
 
 #include "apv.h"
 #include "apv_decode.h"
-#include "apv_dsp.h"
 #include "avcodec.h"
-#include "cbs.h"
 #include "cbs_apv.h"
 #include "codec_internal.h"
 #include "decode.h"
 #include "internal.h"
 #include "thread.h"
-
-
-typedef struct APVDerivedTileInfo {
-    uint8_t  tile_cols;
-    uint8_t  tile_rows;
-    uint16_t num_tiles;
-    // The spec uses an extra element on the end of these arrays
-    // not corresponding to any tile.
-    uint16_t col_starts[APV_MAX_TILE_COLS + 1];
-    uint16_t row_starts[APV_MAX_TILE_ROWS + 1];
-} APVDerivedTileInfo;
-
-typedef struct APVDecodeContext {
-    CodedBitstreamContext *cbc;
-    APVDSPContext dsp;
-
-    CodedBitstreamFragment au;
-    APVDerivedTileInfo tile_info;
-
-    AVPacket *pkt;
-    AVFrame *output_frame;
-    atomic_int tile_errors;
-
-    int nb_unit;
-
-    uint8_t warned_additional_frames;
-    uint8_t warned_unknown_pbu_types;
-} APVDecodeContext;
+#include "hwconfig.h"
+#include "hwaccel_internal.h"
+#include "config_components.h"
 
 static const enum AVPixelFormat apv_format_table[5][4] = {
     { AV_PIX_FMT_GRAY10,     AV_PIX_FMT_GRAY12,     AV_PIX_FMT_GRAY14,    AV_PIX_FMT_GRAY16     },
@@ -74,10 +47,25 @@ static const enum AVPixelFormat apv_format_table[5][4] = {
 
 static APVVLCLUT decode_lut;
 
+static enum AVPixelFormat get_pixel_format(AVCodecContext *avctx,
+                                           enum AVPixelFormat pix_fmt)
+{
+    enum AVPixelFormat pix_fmts[] = {
+        pix_fmt,
+        AV_PIX_FMT_NONE,
+    };
+
+    return ff_get_format(avctx, pix_fmts);
+}
+
 static int apv_decode_check_format(AVCodecContext *avctx,
                                    const APVRawFrameHeader *header)
 {
     int err, bit_depth;
+    enum AVPixelFormat pix_fmt;
+    int coded_width = FFALIGN(header->frame_info.frame_width, 16);
+    int coded_height = FFALIGN(header->frame_info.frame_height, 16);
+    APVDecodeContext *apv = avctx->priv_data;
 
     avctx->profile = header->frame_info.profile_idc;
     avctx->level   = header->frame_info.level_idc;
@@ -88,23 +76,34 @@ static int apv_decode_check_format(AVCodecContext *avctx,
         avpriv_request_sample(avctx, "Bit depth %d", bit_depth);
         return AVERROR_PATCHWELCOME;
     }
-    avctx->pix_fmt =
-        apv_format_table[header->frame_info.chroma_format_idc][(bit_depth - 10) >> 1];
 
-    if (avctx->pix_fmt == AV_PIX_FMT_NONE) {
+    pix_fmt = apv_format_table[header->frame_info.chroma_format_idc][(bit_depth - 10) >> 1];
+    if (pix_fmt == AV_PIX_FMT_NONE) {
         avpriv_request_sample(avctx, "YUVA444P14");
         return AVERROR_PATCHWELCOME;
     }
 
-    err = ff_set_dimensions(avctx,
-                            FFALIGN(header->frame_info.frame_width,  16),
-                            FFALIGN(header->frame_info.frame_height, 16));
-    if (err < 0) {
-        // Unsupported frame size.
-        return err;
+    if (avctx->coded_width != coded_width ||
+        avctx->coded_height != coded_height) {
+        err = ff_set_dimensions(avctx, coded_width, coded_height);
+        if (err < 0) {
+            // Unsupported frame size.
+            return err;
+        }
     }
+
     avctx->width  = header->frame_info.frame_width;
     avctx->height = header->frame_info.frame_height;
+
+    if (pix_fmt != apv->pix_fmt) {
+        apv->pix_fmt = pix_fmt;
+
+        err = get_pixel_format(avctx, pix_fmt);
+        if (err < 0)
+            return err;
+
+        avctx->pix_fmt = err;
+    }
 
     avctx->sample_aspect_ratio = (AVRational){ 1, 1 };
 
@@ -137,6 +136,8 @@ static av_cold int apv_decode_init(AVCodecContext *avctx)
 {
     APVDecodeContext *apv = avctx->priv_data;
     int err;
+
+    apv->pix_fmt = AV_PIX_FMT_NONE;
 
     ff_thread_once(&apv_entropy_once, apv_entropy_build_decode_lut);
 
@@ -217,7 +218,7 @@ static int apv_decode_tile_component(AVCodecContext *avctx, void *data,
     int comp_index = job % apv_cbc->num_comp;
 
     const AVPixFmtDescriptor *pix_fmt_desc =
-        av_pix_fmt_desc_get(avctx->pix_fmt);
+        av_pix_fmt_desc_get(apv->pix_fmt);
 
     int sub_w_shift = comp_index == 0 ? 0 : pix_fmt_desc->log2_chroma_w;
     int sub_h_shift = comp_index == 0 ? 0 : pix_fmt_desc->log2_chroma_h;
@@ -367,7 +368,7 @@ static int apv_decode(AVCodecContext *avctx, AVFrame *output,
     if (avctx->skip_frame == AVDISCARD_ALL)
         return 0;
 
-    desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+    desc = av_pix_fmt_desc_get(apv->pix_fmt);
     av_assert0(desc);
 
     err = ff_thread_get_buffer(avctx, output, 0);
@@ -379,22 +380,51 @@ static int apv_decode(AVCodecContext *avctx, AVFrame *output,
 
     apv_derive_tile_info(tile_info, &input->frame_header);
 
-    // Each component within a tile is independent of every other,
-    // so we can decode all in parallel.
-    job_count = tile_info->num_tiles * desc->nb_components;
+    if (avctx->hwaccel) {
+        const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
 
-    avctx->execute2(avctx, apv_decode_tile_component,
-                    input, NULL, job_count);
+        err = ff_hwaccel_frame_priv_alloc(avctx, &apv->hwaccel_picture_private);
+        if (err < 0)
+            return err;
 
-    err = atomic_load_explicit(&apv->tile_errors, memory_order_relaxed);
-    if (err > 0) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Decode errors in %d tile components.\n", err);
-        if (avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) {
-            // Output the frame anyway.
-            output->flags |= AV_FRAME_FLAG_CORRUPT;
-        } else {
-            return AVERROR_INVALIDDATA;
+        err = hwaccel->start_frame(avctx, apv->pkt->buf,
+                                   apv->pkt->data, apv->pkt->size);
+        if (err < 0)
+            return err;
+
+        for (int j = 0; j < desc->nb_components; j++) {
+            for (int i = 0; i < tile_info->num_tiles; i++) {
+                APVRawTile *tile = &input->tile[i];
+                err = hwaccel->decode_slice(avctx, tile->tile_data[j],
+                                            tile->tile_header.tile_data_size[j]);
+                if (err < 0)
+                    return err;
+            }
+        }
+
+        err = hwaccel->end_frame(avctx);
+        if (err < 0)
+            return err;
+
+        av_refstruct_unref(&apv->hwaccel_picture_private);
+    } else {
+        // Each component within a tile is independent of every other,
+        // so we can decode all in parallel.
+        job_count = tile_info->num_tiles * desc->nb_components;
+
+        avctx->execute2(avctx, apv_decode_tile_component,
+                        input, NULL, job_count);
+
+        err = atomic_load_explicit(&apv->tile_errors, memory_order_relaxed);
+        if (err > 0) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Decode errors in %d tile components.\n", err);
+            if (avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) {
+                // Output the frame anyway.
+                output->flags |= AV_FRAME_FLAG_CORRUPT;
+            } else {
+                return AVERROR_INVALIDDATA;
+            }
         }
     }
 
@@ -571,4 +601,7 @@ const FFCodec ff_apv_decoder = {
                              AV_CODEC_CAP_SLICE_THREADS |
                              AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal         = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
+    .hw_configs     = (const AVCodecHWConfigInternal *const []) {
+        NULL
+    },
 };

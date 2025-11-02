@@ -20,11 +20,14 @@
 #define AVCODEC_APV_DECODE_H
 
 #include <stdint.h>
+#include <stdatomic.h>
 
 #include "apv.h"
-#include "avcodec.h"
-#include "get_bits.h"
+#include "apv_dsp.h"
 
+#include "cbs.h"
+#include "get_bits.h"
+#include "libavutil/frame.h"
 
 // Number of bits in the entropy look-up tables.
 // It may be desirable to tune this per-architecture, as a larger LUT
@@ -81,6 +84,34 @@ typedef struct APVEntropyState {
     uint8_t prev_k_level;
 } APVEntropyState;
 
+typedef struct APVDerivedTileInfo {
+    uint8_t  tile_cols;
+    uint8_t  tile_rows;
+    uint16_t num_tiles;
+    // The spec uses an extra element on the end of these arrays
+    // not corresponding to any tile.
+    uint16_t col_starts[APV_MAX_TILE_COLS + 1];
+    uint16_t row_starts[APV_MAX_TILE_ROWS + 1];
+} APVDerivedTileInfo;
+
+typedef struct APVDecodeContext {
+    CodedBitstreamContext *cbc;
+    APVDSPContext dsp;
+
+    CodedBitstreamFragment au;
+    APVDerivedTileInfo tile_info;
+
+    AVPacket *pkt;
+    AVFrame *output_frame;
+    void *hwaccel_picture_private;
+    atomic_int tile_errors;
+
+    enum AVPixelFormat pix_fmt;
+    int nb_unit;
+
+    uint8_t warned_additional_frames;
+    uint8_t warned_unknown_pbu_types;
+} APVDecodeContext;
 
 /**
  * Build the decoder VLC look-up tables.
