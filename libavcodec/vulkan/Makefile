@@ -1,6 +1,9 @@
 clean::
 	$(RM) $(CLEANSUFFIXES:%=libavcodec/vulkan/%)
 
+OBJS-$(CONFIG_APV_VULKAN_HWACCEL) += vulkan/apv_decode.comp.spv.o \
+                                     vulkan/apv_idct.comp.spv.o
+
 OBJS-$(CONFIG_FFV1_VULKAN_ENCODER) += vulkan/ffv1_enc_setup.comp.spv.o \
                                       vulkan/ffv1_enc_reset.comp.spv.o \
                                       vulkan/ffv1_enc_reset_golomb.comp.spv.o \

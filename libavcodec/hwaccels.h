@@ -19,6 +19,7 @@
 #ifndef AVCODEC_HWACCELS_H
 #define AVCODEC_HWACCELS_H
 
+extern const struct FFHWAccel ff_apv_vulkan_hwaccel;
 extern const struct FFHWAccel ff_av1_d3d11va_hwaccel;
 extern const struct FFHWAccel ff_av1_d3d11va2_hwaccel;
 extern const struct FFHWAccel ff_av1_d3d12va_hwaccel;

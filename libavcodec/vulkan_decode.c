@@ -28,6 +28,7 @@
 #define DECODER_IS_SDR(codec_id) \
     (((codec_id) == AV_CODEC_ID_FFV1) || \
      ((codec_id) == AV_CODEC_ID_DPX) || \
+     ((codec_id) == AV_CODEC_ID_APV) || \
      ((codec_id) == AV_CODEC_ID_PRORES_RAW) || \
      ((codec_id) == AV_CODEC_ID_PRORES))
 
@@ -55,6 +56,9 @@ extern const FFVulkanDecodeDescriptor ff_vk_dec_prores_desc;
 #if CONFIG_DPX_VULKAN_HWACCEL
 extern const FFVulkanDecodeDescriptor ff_vk_dec_dpx_desc;
 #endif
+#if CONFIG_APV_VULKAN_HWACCEL
+extern const FFVulkanDecodeDescriptor ff_vk_dec_apv_desc;
+#endif
 
 static const FFVulkanDecodeDescriptor *dec_descs[] = {
 #if CONFIG_H264_VULKAN_HWACCEL
@@ -80,6 +84,9 @@ static const FFVulkanDecodeDescriptor *dec_descs[] = {
 #endif
 #if CONFIG_DPX_VULKAN_HWACCEL
     &ff_vk_dec_dpx_desc,
+#endif
+#if CONFIG_APV_VULKAN_HWACCEL
+    &ff_vk_dec_apv_desc,
 #endif
 };
 

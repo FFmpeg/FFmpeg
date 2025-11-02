@@ -3403,6 +3403,8 @@ videotoolbox_hwaccel_extralibs="-framework QuartzCore"
 vulkan_deps="threads"
 vulkan_deps_any="libdl LoadLibrary"
 
+apv_vulkan_hwaccel_deps="vulkan spirv_compiler"
+apv_vulkan_hwaccel_select="apv_decoder"
 av1_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_AV1"
 av1_d3d11va_hwaccel_select="av1_decoder"
 av1_d3d11va2_hwaccel_deps="d3d11va DXVA_PicParams_AV1"

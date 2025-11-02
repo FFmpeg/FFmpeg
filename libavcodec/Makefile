@@ -1047,6 +1047,7 @@ OBJS-$(CONFIG_VIDEOTOOLBOX)               += videotoolbox.o
 OBJS-$(CONFIG_VDPAU)                      += vdpau.o
 OBJS-$(CONFIG_VULKAN)                     += vulkan.o vulkan_video.o
 
+OBJS-$(CONFIG_APV_VULKAN_HWACCEL)         += vulkan_decode.o vulkan_apv.o
 OBJS-$(CONFIG_AV1_D3D11VA_HWACCEL)        += dxva2_av1.o
 OBJS-$(CONFIG_AV1_DXVA2_HWACCEL)          += dxva2_av1.o
 OBJS-$(CONFIG_AV1_D3D12VA_HWACCEL)        += dxva2_av1.o d3d12va_av1.o

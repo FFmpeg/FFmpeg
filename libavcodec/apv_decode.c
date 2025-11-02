@@ -51,6 +51,9 @@ static enum AVPixelFormat get_pixel_format(AVCodecContext *avctx,
                                            enum AVPixelFormat pix_fmt)
 {
     enum AVPixelFormat pix_fmts[] = {
+#if CONFIG_APV_VULKAN_HWACCEL
+        AV_PIX_FMT_VULKAN,
+#endif
         pix_fmt,
         AV_PIX_FMT_NONE,
     };
@@ -603,6 +606,9 @@ const FFCodec ff_apv_decoder = {
                              AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal         = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
+#if CONFIG_APV_VULKAN_HWACCEL
+        HWACCEL_VULKAN(apv),
+#endif
         NULL
     },
 };
