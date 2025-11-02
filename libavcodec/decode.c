@@ -92,12 +92,14 @@ typedef struct DecodeContext {
      */
     uint64_t side_data_pref_mask;
 
+#if CONFIG_LIBLCEVC_DEC
     struct {
         FFLCEVCContext *ctx;
         int frame;
         int width;
         int height;
     } lcevc;
+#endif
 } DecodeContext;
 
 static DecodeContext *decode_ctx(AVCodecInternal *avci)
@@ -1659,6 +1661,7 @@ int ff_attach_decode_data(AVFrame *frame)
 
 static void update_frame_props(AVCodecContext *avctx, AVFrame *frame)
 {
+#if CONFIG_LIBLCEVC_DEC
     AVCodecInternal    *avci = avctx->internal;
     DecodeContext        *dc = decode_ctx(avci);
 
@@ -1671,10 +1674,12 @@ static void update_frame_props(AVCodecContext *avctx, AVFrame *frame)
         frame->width  = frame->width  * 2 / FFMAX(frame->sample_aspect_ratio.den, 1);
         frame->height = frame->height * 2 / FFMAX(frame->sample_aspect_ratio.num, 1);
     }
+#endif
 }
 
 static int attach_post_process_data(AVCodecContext *avctx, AVFrame *frame)
 {
+#if CONFIG_LIBLCEVC_DEC
     AVCodecInternal    *avci = avctx->internal;
     DecodeContext        *dc = decode_ctx(avci);
 
@@ -1714,6 +1719,7 @@ static int attach_post_process_data(AVCodecContext *avctx, AVFrame *frame)
         fdd->post_process = ff_lcevc_process;
     }
     dc->lcevc.frame = 0;
+#endif
 
     return 0;
 }
@@ -2087,9 +2093,11 @@ int ff_decode_preinit(AVCodecContext *avctx)
 
     if (!(avctx->export_side_data & AV_CODEC_EXPORT_DATA_ENHANCEMENTS)) {
         if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+#if CONFIG_LIBLCEVC_DEC
             ret = ff_lcevc_alloc(&dc->lcevc.ctx);
             if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
                 return ret;
+#endif
         }
     }
 
@@ -2335,13 +2343,17 @@ void ff_decode_internal_sync(AVCodecContext *dst, const AVCodecContext *src)
 
     dst_dc->initial_pict_type = src_dc->initial_pict_type;
     dst_dc->intra_only_flag   = src_dc->intra_only_flag;
+#if CONFIG_LIBLCEVC_DEC
     ff_refstruct_replace(&dst_dc->lcevc.ctx, src_dc->lcevc.ctx);
+#endif
 }
 
 void ff_decode_internal_uninit(AVCodecContext *avctx)
 {
+#if CONFIG_LIBLCEVC_DEC
     AVCodecInternal *avci = avctx->internal;
     DecodeContext *dc = decode_ctx(avci);
 
     ff_refstruct_unref(&dc->lcevc.ctx);
+#endif
 }

@@ -16,8 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config_components.h"
-
 #include "libavutil/avassert.h"
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
@@ -26,7 +24,6 @@
 #include "decode.h"
 #include "lcevcdec.h"
 
-#if CONFIG_LIBLCEVC_DEC
 static LCEVC_ColorFormat map_format(int format)
 {
     switch (format) {
@@ -255,11 +252,9 @@ static void lcevc_free(FFRefStructOpaque unused, void *obj)
         LCEVC_DestroyDecoder(lcevc->decoder);
     memset(lcevc, 0, sizeof(*lcevc));
 }
-#endif
 
 static int lcevc_init(FFLCEVCContext *lcevc, void *logctx)
 {
-#if CONFIG_LIBLCEVC_DEC
     LCEVC_AccelContextHandle dummy = { 0 };
     const int32_t event = LCEVC_Log;
 
@@ -278,7 +273,6 @@ static int lcevc_init(FFLCEVCContext *lcevc, void *logctx)
         return AVERROR_EXTERNAL;
     }
 
-#endif
     lcevc->initialized = 1;
 
     return 0;
@@ -297,7 +291,6 @@ int ff_lcevc_process(void *logctx, AVFrame *frame)
             return ret;
     }
 
-#if CONFIG_LIBLCEVC_DEC
     av_assert0(frame_ctx->frame);
 
 
@@ -310,7 +303,6 @@ int ff_lcevc_process(void *logctx, AVFrame *frame)
         return ret;
 
     av_frame_remove_side_data(frame, AV_FRAME_DATA_LCEVC);
-#endif
 
     return 0;
 }
@@ -318,11 +310,9 @@ int ff_lcevc_process(void *logctx, AVFrame *frame)
 int ff_lcevc_alloc(FFLCEVCContext **plcevc)
 {
     FFLCEVCContext *lcevc = NULL;
-#if CONFIG_LIBLCEVC_DEC
     lcevc = ff_refstruct_alloc_ext(sizeof(*lcevc), 0, NULL, lcevc_free);
     if (!lcevc)
         return AVERROR(ENOMEM);
-#endif
     *plcevc = lcevc;
     return 0;
 }
