@@ -23,9 +23,14 @@
 
 %include "libavutil/x86/x86util.asm"
 
+SECTION_RODATA
+
 cextern pb_1
 cextern pb_80
 cextern pw_2
+
+pb_unpack1: db 0, 0xFF, 1, 0xFF, 2, 0xFF, 3, 0xFF, 4, 0xFF, 5, 0xFF, 6, 0xFF, 0xFF, 0xFF
+pb_unpack2: db 1, 0xFF, 2, 0xFF, 3, 0xFF, 4, 0xFF, 5, 0xFF, 6, 0xFF, 7, 0xFF, 0xFF, 0xFF
 
 SECTION .text
 
@@ -403,19 +408,16 @@ INIT_XMM ssse3
 SUM_ABS_DCTELEM 6, 2
 
 ;------------------------------------------------------------------------------
-; int ff_hf_noise*_mmx(const uint8_t *pix1, ptrdiff_t lsize, int h)
+; int ff_hf_noise*_ssse3(const uint8_t *pix1, ptrdiff_t lsize, int h)
 ;------------------------------------------------------------------------------
-; %1 = 8/16. %2-5=m#
-%macro HF_NOISE_PART1 5
-    mova      m%2, [pix1q]
-%if %1 == 8
+; %1 = 8/16, %2-5=m#, %6 = src
+%macro HF_NOISE_PART1 6
+%if %1 == mmsize
+    movu      m%2, [%6]
     mova      m%3, m%2
-    psllq     m%2, 8
-    psrlq     m%3, 8
-    psrlq     m%2, 8
-%else
-    mova      m%3, [pix1q+1]
-%endif
+    pslldq    m%2, 1
+    psrldq    m%3, 1
+    psrldq    m%2, 1
     mova      m%4, m%2
     mova      m%5, m%3
     punpcklbw m%2, m7
@@ -424,57 +426,65 @@ SUM_ABS_DCTELEM 6, 2
     punpckhbw m%5, m7
     psubw     m%2, m%3
     psubw     m%4, m%5
+%else
+    movh      m%2, [%6]
+    pshufb    m%3, m%2, m5
+    pshufb    m%2, m%2, m4
+    psubw     m%2, m%3
+%endif
 %endmacro
 
-; %1-2 = m#
-%macro HF_NOISE_PART2 4
-    psubw     m%1, m%3
-    psubw     m%2, m%4
-    pxor       m3, m3
-    pxor       m1, m1
-    pcmpgtw    m3, m%1
-    pcmpgtw    m1, m%2
-    pxor      m%1, m3
-    pxor      m%2, m1
-    psubw     m%1, m3
-    psubw     m%2, m1
-    paddw     m%2, m%1
-    paddw      m6, m%2
+; %1 = 8/16, %2-5 = m#
+%macro HF_NOISE_PART2 5
+%if %1 == mmsize
+    psubw     m%2, m%3
+    psubw     m%4, m%5
+    pabsw     m%2, m%2
+    pabsw     m%4, m%4
+    paddw     m%2, m%4
+%else
+    psubw     m%2, m%3
+    pabsw     m%2, m%2
+%endif
+    paddw      m0, m%2
 %endmacro
 
 ; %1 = 8/16
 %macro HF_NOISE 1
-cglobal hf_noise%1, 3,3,0, pix1, lsize, h
+cglobal hf_noise%1, 3,3,(%1 == 8) ? 6 : 8, pix1, lsize, h
+%if %1 == 8
+    mova       m4, [pb_unpack1]
+    mova       m5, [pb_unpack2]
+%else
+    pxor       m4, m4
+%endif
     sub        hd, 2
-    pxor       m7, m7
-    pxor       m6, m6
-    HF_NOISE_PART1 %1, 0, 1, 2, 3
-    add     pix1q, lsizeq
-    HF_NOISE_PART1 %1, 4, 1, 5, 3
-    HF_NOISE_PART2     0, 2, 4, 5
-    add     pix1q, lsizeq
+    pxor       m0, m0
+    HF_NOISE_PART1 %1, 1, 2, 5, 7, pix1q
+    HF_NOISE_PART1 %1, 3, 2, 6, 7, pix1q+lsizeq
+    lea     pix1q, [pix1q+2*lsizeq]
+    HF_NOISE_PART2 %1, 1, 3, 5, 6
 .loop:
-    HF_NOISE_PART1 %1, 0, 1, 2, 3
-    HF_NOISE_PART2     4, 5, 0, 2
-    add     pix1q, lsizeq
-    HF_NOISE_PART1 %1, 4, 1, 5, 3
-    HF_NOISE_PART2     0, 2, 4, 5
-    add     pix1q, lsizeq
+    HF_NOISE_PART1 %1, 1, 2, 5, 7, pix1q
+    HF_NOISE_PART2 %1, 3, 1, 6, 5
+    HF_NOISE_PART1 %1, 3, 2, 6, 7, pix1q+lsizeq
+    lea     pix1q, [pix1q+2*lsizeq]
+    HF_NOISE_PART2 %1, 1, 3, 5, 6
     sub        hd, 2
         jne .loop
 
-    mova       m0, m6
-    punpcklwd  m0, m7
-    punpckhwd  m6, m7
-    paddd      m6, m0
-    mova       m0, m6
-    psrlq      m6, 32
-    paddd      m0, m6
-    movd      eax, m0   ; eax = result of hf_noise8;
+%if %1 == 8
+    pxor       m4, m4
+%endif
+    movhlps    m1, m0
+    paddw      m0, m1
+    punpcklwd  m0, m4
+    HADDD      m0, m1
+    movd      eax, m0   ; eax = result of hf_noise;
     RET                 ; return eax;
 %endmacro
 
-INIT_MMX mmx
+INIT_XMM ssse3
 HF_NOISE 8
 HF_NOISE 16
 

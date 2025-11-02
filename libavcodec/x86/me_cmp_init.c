@@ -38,8 +38,8 @@ int ff_sse16_mmx(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                  ptrdiff_t stride, int h);
 int ff_sse16_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                   ptrdiff_t stride, int h);
-int ff_hf_noise8_mmx(const uint8_t *pix1, ptrdiff_t stride, int h);
-int ff_hf_noise16_mmx(const uint8_t *pix1, ptrdiff_t stride, int h);
+int ff_hf_noise8_ssse3(const uint8_t *pix1, ptrdiff_t stride, int h);
+int ff_hf_noise16_ssse3(const uint8_t *pix1, ptrdiff_t stride, int h);
 int ff_sad8_mmxext(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                    ptrdiff_t stride, int h);
 int ff_sad16_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
@@ -86,17 +86,12 @@ hadamard_func(sse2)
 hadamard_func(ssse3)
 
 #if HAVE_X86ASM
-static int nsse16_mmx(MPVEncContext *c, const uint8_t *pix1, const uint8_t *pix2,
-                      ptrdiff_t stride, int h)
+static int nsse16_ssse3(MPVEncContext *c, const uint8_t *pix1, const uint8_t *pix2,
+                        ptrdiff_t stride, int h)
 {
-    int score1, score2;
-
-    if (c)
-        score1 = c->sse_cmp[0](c, pix1, pix2, stride, h);
-    else
-        score1 = ff_sse16_mmx(c, pix1, pix2, stride, h);
-    score2 = ff_hf_noise16_mmx(pix1, stride, h) + ff_hf_noise8_mmx(pix1+8, stride, h)
-           - ff_hf_noise16_mmx(pix2, stride, h) - ff_hf_noise8_mmx(pix2+8, stride, h);
+    int score1 = ff_sse16_sse2(c, pix1, pix2, stride, h);
+    int score2 = ff_hf_noise16_ssse3(pix1, stride, h) -
+                 ff_hf_noise16_ssse3(pix2, stride, h);
 
     if (c)
         return score1 + FFABS(score2) * c->c.avctx->nsse_weight;
@@ -104,12 +99,12 @@ static int nsse16_mmx(MPVEncContext *c, const uint8_t *pix1, const uint8_t *pix2
         return score1 + FFABS(score2) * 8;
 }
 
-static int nsse8_mmx(MPVEncContext *c, const uint8_t *pix1, const uint8_t *pix2,
-                     ptrdiff_t stride, int h)
+static int nsse8_ssse3(MPVEncContext *c, const uint8_t *pix1, const uint8_t *pix2,
+                       ptrdiff_t stride, int h)
 {
-    int score1 = ff_sse8_mmx(c, pix1, pix2, stride, h);
-    int score2 = ff_hf_noise8_mmx(pix1, stride, h) -
-                 ff_hf_noise8_mmx(pix2, stride, h);
+    int score1 = ff_sse8_sse2(c, pix1, pix2, stride, h);
+    int score2 = ff_hf_noise8_ssse3(pix1, stride, h) -
+                 ff_hf_noise8_ssse3(pix2, stride, h);
 
     if (c)
         return score1 + FFABS(score2) * c->c.avctx->nsse_weight;
@@ -121,14 +116,11 @@ static int nsse8_mmx(MPVEncContext *c, const uint8_t *pix1, const uint8_t *pix2,
 
 av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
 {
+#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMX(cpu_flags)) {
         c->sse[1]            = ff_sse8_mmx;
-#if HAVE_X86ASM
-        c->nsse[0]           = nsse16_mmx;
-        c->nsse[1]           = nsse8_mmx;
-#endif
     }
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
@@ -191,10 +183,14 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
     }
 
     if (EXTERNAL_SSSE3(cpu_flags)) {
+        c->nsse[0]           = nsse16_ssse3;
+        c->nsse[1]           = nsse8_ssse3;
+
         c->sum_abs_dctelem   = ff_sum_abs_dctelem_ssse3;
 #if HAVE_ALIGNED_STACK
         c->hadamard8_diff[0] = ff_hadamard8_diff16_ssse3;
         c->hadamard8_diff[1] = ff_hadamard8_diff_ssse3;
 #endif
     }
+#endif
 }
