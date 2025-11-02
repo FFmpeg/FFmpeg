@@ -723,14 +723,12 @@ int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *fr
         if (codec->type != (allowed_type))                                  \
             return AVERROR(EINVAL);                                         \
         *out_configs = (field);                                             \
-        if (out_num_configs) {                                              \
             for (int i = 0;; i++) {                                         \
                 if (!(field) || !memcmp(&(field)[i], &end, sizeof(end))) {  \
                     *out_num_configs = i;                                   \
                     break;                                                  \
                 }                                                           \
             }                                                               \
-        }                                                                   \
         return 0;                                                           \
     } while (0)
 
@@ -779,14 +777,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (codec->type != AVMEDIA_TYPE_VIDEO)
             return AVERROR(EINVAL);
         *out_configs = color_range_table[ffcodec(codec)->color_ranges];
-        if (out_num_configs)
-            *out_num_configs = av_popcount(ffcodec(codec)->color_ranges);
+        *out_num_configs = av_popcount(ffcodec(codec)->color_ranges);
         return 0;
 
     case AV_CODEC_CONFIG_COLOR_SPACE:
         *out_configs = NULL;
-        if (out_num_configs)
-            *out_num_configs = 0;
+        *out_num_configs = 0;
         return 0;
 
     case AV_CODEC_CONFIG_ALPHA_MODE:
