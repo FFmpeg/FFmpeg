@@ -58,9 +58,6 @@
  * replace low energy non zero bands */
 #define NOISE_LAMBDA_REPLACE 1.948f
 
-/* Bitrate threshold (in bits/sec/channel) above which PNS is disabled. */
-#define PNS_BITRATE_LIMIT 64000.0f
-
 #include "libavcodec/aaccoder_trellis.h"
 
 typedef float (*quantize_and_encode_band_func)(struct AACEncContext *s, PutBitContext *pb,
@@ -516,7 +513,6 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
         ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
         : (avctx->bit_rate / avctx->ch_layout.nb_channels);
 
-	int pns_at_low_bitrate = frame_bit_rate < PNS_BITRATE_LIMIT;
     frame_bit_rate *= 1.15f;
 
     if (avctx->cutoff > 0) {
@@ -540,7 +536,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
             const int start = wstart+sce->ics.swb_offset[g];
             const float freq = (start-wstart)*freq_mult;
             const float freq_boost = FFMAX(0.88f*freq/NOISE_LOW_LIMIT, 1.0f);
-            if (!pns_at_low_bitrate || freq < NOISE_LOW_LIMIT || (start-wstart) >= cutoff) {
+            if (freq < NOISE_LOW_LIMIT || (start-wstart) >= cutoff) {
                 if (!sce->zeroes[w*16+g])
                     prev_sf = sce->sf_idx[w*16+g];
                 continue;
@@ -653,7 +649,6 @@ static void mark_pns(AACEncContext *s, AVCodecContext *avctx, SingleChannelEleme
         ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
         : (avctx->bit_rate / avctx->ch_layout.nb_channels);
 
-	int pns_at_low_bitrate = frame_bit_rate < PNS_BITRATE_LIMIT;
     frame_bit_rate *= 1.15f;
 
     if (avctx->cutoff > 0) {
@@ -672,7 +667,7 @@ static void mark_pns(AACEncContext *s, AVCodecContext *avctx, SingleChannelEleme
             const int start = sce->ics.swb_offset[g];
             const float freq = start*freq_mult;
             const float freq_boost = FFMAX(0.88f*freq/NOISE_LOW_LIMIT, 1.0f);
-            if (!pns_at_low_bitrate || freq < NOISE_LOW_LIMIT || start >= cutoff) {
+            if (freq < NOISE_LOW_LIMIT || start >= cutoff) {
                 sce->can_pns[w*16+g] = 0;
                 continue;
             }
