@@ -281,11 +281,25 @@ HADAMARD8_DIFF 9
 ;               ptrdiff_t line_size, int h)
 
 %macro SUM_SQUARED_ERRORS 1
-cglobal sse%1, 5,5,8, v, pix1, pix2, lsize, h
+cglobal sse%1, 5,5,%1 < mmsize ? 6 : 8, v, pix1, pix2, lsize, h
     pxor      m0, m0         ; mm0 = 0
     pxor      m5, m5         ; m5 holds the sum
 
 .next2lines: ; FIXME why are these unaligned movs? pix1[] is aligned
+%if %1 < mmsize
+    movh      m1, [pix1q]
+    movh      m2, [pix2q]
+    movh      m3, [pix1q+lsizeq]
+    movh      m4, [pix2q+lsizeq]
+    punpcklbw m1, m0
+    punpcklbw m2, m0
+    punpcklbw m3, m0
+    punpcklbw m4, m0
+    psubw     m1, m2
+    psubw     m3, m4
+    pmaddwd   m1, m1
+    pmaddwd   m3, m3
+%else
     movu      m1, [pix1q]    ; m1 = pix1[0][0-15], [0-7] for mmx
     movu      m2, [pix2q]    ; m2 = pix2[0][0-15], [0-7] for mmx
 %if %1 == mmsize
@@ -325,10 +339,11 @@ cglobal sse%1, 5,5,8, v, pix1, pix2, lsize, h
 
     paddd     m1, m2
     paddd     m3, m4
+%endif
     paddd     m5, m1
     paddd     m5, m3
 
-%if %1 == mmsize
+%if %1 <= mmsize
     lea    pix1q, [pix1q + 2*lsizeq]
     lea    pix2q, [pix2q + 2*lsizeq]
     sub       hd, 2
@@ -351,6 +366,7 @@ INIT_MMX mmx
 SUM_SQUARED_ERRORS 16
 
 INIT_XMM sse2
+SUM_SQUARED_ERRORS 8
 SUM_SQUARED_ERRORS 16
 
 ;-----------------------------------------------
