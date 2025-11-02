@@ -742,12 +742,12 @@ static int pxr24_uncompress(const EXRContext *s, const uint8_t *src,
                 break;
             case EXR_UINT:
                 ptr[0] = in;
-                ptr[1] = ptr[0] + s->xdelta;
-                ptr[2] = ptr[1] + s->xdelta;
-                ptr[3] = ptr[2] + s->xdelta;
-                in     = ptr[3] + s->xdelta;
+                ptr[1] = ptr[0] + td->xsize;
+                ptr[2] = ptr[1] + td->xsize;
+                ptr[3] = ptr[2] + td->xsize;
+                in     = ptr[3] + td->xsize;
 
-                for (j = 0; j < s->xdelta; ++j) {
+                for (j = 0; j < td->xsize; ++j) {
                     uint32_t diff = ((uint32_t)*(ptr[0]++) << 24) |
                     (*(ptr[1]++) << 16) |
                     (*(ptr[2]++) << 8 ) |
