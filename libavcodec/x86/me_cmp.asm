@@ -282,9 +282,6 @@ HADAMARD8_DIFF 9
 
 %macro SUM_SQUARED_ERRORS 1
 cglobal sse%1, 5,5,8, v, pix1, pix2, lsize, h
-%if %1 == mmsize
-    shr       hd, 1
-%endif
     pxor      m0, m0         ; mm0 = 0
     pxor      m7, m7         ; mm7 holds the sum
 
@@ -334,11 +331,12 @@ cglobal sse%1, 5,5,8, v, pix1, pix2, lsize, h
 %if %1 == mmsize
     lea    pix1q, [pix1q + 2*lsizeq]
     lea    pix2q, [pix2q + 2*lsizeq]
+    sub       hd, 2
 %else
     add    pix1q, lsizeq
     add    pix2q, lsizeq
-%endif
     dec       hd
+%endif
     jnz .next2lines
 
     HADDD     m7, m1
