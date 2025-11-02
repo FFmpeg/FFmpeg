@@ -520,7 +520,6 @@ cglobal put_vp_no_rnd_pixels8_l2, 5, 6, 0, dst, src1, src2, stride, h, stride3
 %endmacro
 
 %macro VP3_IDCT 1
-%if mmsize == 16
 %define I(x) [%1+16*x]
 %define O(x) [%1+16*x]
 %define C(x) [vp3_idct_data+16*(x-1)]
@@ -538,37 +537,6 @@ cglobal put_vp_no_rnd_pixels8_l2, 5, 6, 0, dst, src1, src2, stride, h, stride3
 %define ADD(x)   paddsw x, [pw_8]
         VP3_1D_IDCT_SSE2
         PUT_BLOCK 0, 1, 2, 3, 4, 5, 6, 7
-%else ; mmsize == 8
-    ; eax = quantized input
-    ; ebx = dequantizer matrix
-    ; ecx = IDCT constants
-    ;  M(I) = ecx + MaskOffset(0) + I * 8
-    ;  C(I) = ecx + CosineOffset(32) + (I-1) * 8
-    ; edx = output
-    ; r0..r7 = mm0..mm7
-%define OC_8 [pw_8]
-%define C(x) [vp3_idct_data+16*(x-1)]
-
-    ; at this point, function has completed dequantization + dezigzag +
-    ; partial transposition; now do the idct itself
-%define I(x) [%1+16*x]
-%define J(x) [%1+16*x]
-    RowIDCT
-    Transpose
-
-%define I(x) [%1+16*x+8]
-%define J(x) [%1+16*x+8]
-    RowIDCT
-    Transpose
-
-%define I(x) [%1+16* x]
-%define J(x) [%1+16*(x-4)+8]
-    ColumnIDCT
-
-%define I(x) [%1+16* x   +64]
-%define J(x) [%1+16*(x-4)+72]
-    ColumnIDCT
-%endif ; mmsize == 16/8
 %endmacro
 
 %macro vp3_idct_funcs 0
