@@ -1962,7 +1962,7 @@ static av_cold void progress_frame_pool_free_entry_cb(AVRefStructOpaque opaque, 
     av_frame_free(&progress->f);
 }
 
-int ff_decode_preinit(AVCodecContext *avctx)
+av_cold int ff_decode_preinit(AVCodecContext *avctx)
 {
     AVCodecInternal *avci = avctx->internal;
     DecodeContext     *dc = decode_ctx(avci);
@@ -2296,7 +2296,7 @@ int ff_hwaccel_frame_priv_alloc(AVCodecContext *avctx, void **hwaccel_picture_pr
     return 0;
 }
 
-void ff_decode_flush_buffers(AVCodecContext *avctx)
+av_cold void ff_decode_flush_buffers(AVCodecContext *avctx)
 {
     AVCodecInternal *avci = avctx->internal;
     DecodeContext     *dc = decode_ctx(avci);
@@ -2314,12 +2314,12 @@ void ff_decode_flush_buffers(AVCodecContext *avctx)
     dc->draining_started   = 0;
 }
 
-AVCodecInternal *ff_decode_internal_alloc(void)
+av_cold AVCodecInternal *ff_decode_internal_alloc(void)
 {
     return av_mallocz(sizeof(DecodeContext));
 }
 
-void ff_decode_internal_sync(AVCodecContext *dst, const AVCodecContext *src)
+av_cold void ff_decode_internal_sync(AVCodecContext *dst, const AVCodecContext *src)
 {
     const DecodeContext *src_dc = decode_ctx(src->internal);
     DecodeContext *dst_dc = decode_ctx(dst->internal);
@@ -2329,7 +2329,7 @@ void ff_decode_internal_sync(AVCodecContext *dst, const AVCodecContext *src)
     av_refstruct_replace(&dst_dc->lcevc.ctx, src_dc->lcevc.ctx);
 }
 
-void ff_decode_internal_uninit(AVCodecContext *avctx)
+av_cold void ff_decode_internal_uninit(AVCodecContext *avctx)
 {
     AVCodecInternal *avci = avctx->internal;
     DecodeContext *dc = decode_ctx(avci);
