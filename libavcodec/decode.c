@@ -2084,9 +2084,11 @@ int ff_decode_preinit(AVCodecContext *avctx)
         return ret;
 
     if (!(avctx->export_side_data & AV_CODEC_EXPORT_DATA_ENHANCEMENTS)) {
-        ret = ff_lcevc_alloc(&dc->lcevc);
-        if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
-            return ret;
+        if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+            ret = ff_lcevc_alloc(&dc->lcevc);
+            if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+                return ret;
+        }
     }
 
 #if FF_API_DROPCHANGED
