@@ -37,47 +37,77 @@ void put_px(uint tex_idx, ivec2 pos, uint v)
 #endif
 }
 
+const float idct_8x8_scales[] = {
+    0.353553390593274f, // cos(4 * pi/16) / 2
+    0.490392640201615f, // cos(1 * pi/16) / 2
+    0.461939766255643f, // cos(2 * pi/16) / 2
+    0.415734806151273f, // cos(3 * pi/16) / 2
+    0.353553390593274f, // cos(4 * pi/16) / 2
+    0.277785116509801f, // cos(5 * pi/16) / 2
+    0.191341716182545f, // cos(6 * pi/16) / 2
+    0.097545161008064f, // cos(7 * pi/16) / 2
+};
+
 /* 7.4 Inverse Transform */
 void idct(uint block, uint offset, uint stride)
 {
-    float c0 = blocks[block][0*stride + offset];
-    float c1 = blocks[block][1*stride + offset];
-    float c2 = blocks[block][2*stride + offset];
-    float c3 = blocks[block][3*stride + offset];
-    float c4 = blocks[block][4*stride + offset];
-    float c5 = blocks[block][5*stride + offset];
-    float c6 = blocks[block][6*stride + offset];
-    float c7 = blocks[block][7*stride + offset];
+    float t0, t1, t2, t3, t4, t5, t6, t7, u8;
+    float u0, u1, u2, u3, u4, u5, u6, u7;
 
-    float tmp1 = c6 * 1.4142134189605712891 + (c2 - c6);
-    float tmp2 = c6 * 1.4142134189605712891 - (c2 - c6);
+    /* Input */
+    t0 = blocks[block][0*stride + offset];
+    u4 = blocks[block][1*stride + offset];
+    t2 = blocks[block][2*stride + offset];
+    u6 = blocks[block][3*stride + offset];
+    t1 = blocks[block][4*stride + offset];
+    u5 = blocks[block][5*stride + offset];
+    t3 = blocks[block][6*stride + offset];
+    u7 = blocks[block][7*stride + offset];
 
-    float a1 = (c0 + c4) * 0.35355341434478759766 + tmp1 * 0.46193981170654296875;
-    float a4 = (c0 + c4) * 0.35355341434478759766 - tmp1 * 0.46193981170654296875;
+    /* Embedded scaled inverse 4-point Type-II DCT */
+    u0 = t0 + t1;
+    u1 = t0 - t1;
+    u3 = t2 + t3;
+    u2 = (t2 - t3)*(1.4142135623730950488016887242097f) - u3;
+    t0 = u0 + u3;
+    t3 = u0 - u3;
+    t1 = u1 + u2;
+    t2 = u1 - u2;
 
-    float a3 = (c0 - c4) * 0.35355341434478759766 + tmp2 * 0.19134169816970825195;
-    float a2 = (c0 - c4) * 0.35355341434478759766 - tmp2 * 0.19134169816970825195;
+    /* Embedded scaled inverse 4-point Type-IV DST */
+    t5 = u5 + u6;
+    t6 = u5 - u6;
+    t7 = u4 + u7;
+    t4 = u4 - u7;
+    u7 = t7 + t5;
+    u5 = (t7 - t5)*(1.4142135623730950488016887242097f);
+    u8 = (t4 + t6)*(1.8477590650225735122563663787936f);
+    u4 = u8 - t4*(1.0823922002923939687994464107328f);
+    u6 = u8 - t6*(2.6131259297527530557132863468544f);
+    t7 = u7;
+    t6 = t7 - u6;
+    t5 = t6 + u5;
+    t4 = t5 - u4;
 
-    float tmp3 = (c3 - c5) * 0.70710682868957519531 + c7;
-    float tmp4 = (c3 - c5) * 0.70710682868957519531 - c7;
+    /* Butterflies */
+    u0 = t0 + t7;
+    u7 = t0 - t7;
+    u6 = t1 + t6;
+    u1 = t1 - t6;
+    u2 = t2 + t5;
+    u5 = t2 - t5;
+    u4 = t3 + t4;
+    u3 = t3 - t4;
 
-    float tmp5 = (c5 - c7) *  1.4142134189605712891 + (c5 - c7) + (c1 - c3);
-    float tmp6 = (c5 - c7) * -1.4142134189605712891 + (c5 - c7) + (c1 - c3);
-
-    float m1 = tmp3 *  2.6131260395050048828 + tmp5;
-    float m4 = tmp3 * -2.6131260395050048828 + tmp5;
-
-    float m2 = tmp4 *  1.0823919773101806641 + tmp6;
-    float m3 = tmp4 * -1.0823919773101806641 + tmp6;
-
-    blocks[block][0*stride + offset] = m1 *  0.49039259552955627441  + a1;
-    blocks[block][7*stride + offset] = m1 * -0.49039259552955627441  + a1;
-    blocks[block][1*stride + offset] = m2 *  0.41573479771614074707  + a2;
-    blocks[block][6*stride + offset] = m2 * -0.41573479771614074707  + a2;
-    blocks[block][2*stride + offset] = m3 *  0.27778509259223937988  + a3;
-    blocks[block][5*stride + offset] = m3 * -0.27778509259223937988  + a3;
-    blocks[block][3*stride + offset] = m4 *  0.097545139491558074951 + a4;
-    blocks[block][4*stride + offset] = m4 * -0.097545139491558074951 + a4;
+    /* Output */
+    blocks[block][0*stride + offset] = u0;
+    blocks[block][1*stride + offset] = u1;
+    blocks[block][2*stride + offset] = u2;
+    blocks[block][3*stride + offset] = u3;
+    blocks[block][4*stride + offset] = u4;
+    blocks[block][5*stride + offset] = u5;
+    blocks[block][6*stride + offset] = u6;
+    blocks[block][7*stride + offset] = u7;
 }
 
 void main(void)
@@ -90,7 +120,7 @@ void main(void)
     /* Coalesced load of DCT coeffs in shared memory, inverse quantization */
     if (act) {
         /**
-         * According to spec indexing an array in push constant memory with
+         * According to the VK spec indexing an array in push constant memory with
          * a non-dynamically uniform value is illegal ($15.9.1 in v1.4.326),
          * so copy the whole matrix locally.
          */
@@ -101,8 +131,9 @@ void main(void)
         int qscale = qidx > 128 ? (qidx - 96) << 2 : qidx;
 
         [[unroll]] for (uint i = 0; i < 8; ++i) {
-            int v = sign_extend(int(get_px(comp, ivec2(gid.x, (gid.y << 3) + i))), 16);
-            blocks[block][i * 9 + idx] = float(v * qscale * int(qmat[(i << 3) + idx]));
+            int   c = sign_extend(int(get_px(comp, ivec2(gid.x, (gid.y << 3) + i))), 16);
+            float v = float(c * qscale * int(qmat[(i << 3) + idx]));
+            blocks[block][i * 9 + idx] = v * idct_8x8_scales[idx] * idct_8x8_scales[i];
         }
     }
 
@@ -121,7 +152,7 @@ void main(void)
     barrier();
     if (act) {
         [[unroll]] for (uint i = 0; i < 8; ++i) {
-            float v = blocks[block][i * 9 + idx] * fact + off;
+            float v = round(blocks[block][i * 9 + idx] * fact + off);
             put_px(comp, ivec2(gid.x, (gid.y << 3) + i), clamp(int(v), 0, maxv));
         }
     }
