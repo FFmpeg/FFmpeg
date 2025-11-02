@@ -401,7 +401,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         dst->hwaccel_flags = src->hwaccel_flags;
 
         av_refstruct_replace(&dst->internal->pool, src->internal->pool);
-        ff_decode_internal_sync(dst, src);
     }
 
     if (for_user) {
