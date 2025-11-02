@@ -2334,6 +2334,7 @@ av_cold void ff_decode_internal_sync(AVCodecContext *dst, const AVCodecContext *
 
     dst_dc->initial_pict_type = src_dc->initial_pict_type;
     dst_dc->intra_only_flag   = src_dc->intra_only_flag;
+    dst_dc->side_data_pref_mask = src_dc->side_data_pref_mask;
 #if CONFIG_LIBLCEVC_DEC
     av_refstruct_replace(&dst_dc->lcevc.ctx, src_dc->lcevc.ctx);
 #endif
