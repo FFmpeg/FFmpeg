@@ -283,7 +283,7 @@ HADAMARD8_DIFF 9
 %macro SUM_SQUARED_ERRORS 1
 cglobal sse%1, 5,5,8, v, pix1, pix2, lsize, h
     pxor      m0, m0         ; mm0 = 0
-    pxor      m7, m7         ; mm7 holds the sum
+    pxor      m5, m5         ; m5 holds the sum
 
 .next2lines: ; FIXME why are these unaligned movs? pix1[] is aligned
     movu      m1, [pix1q]    ; m1 = pix1[0][0-15], [0-7] for mmx
@@ -299,12 +299,12 @@ cglobal sse%1, 5,5,8, v, pix1, pix2, lsize, h
     ; todo: mm1-mm2, mm3-mm4
     ; algo: subtract mm1 from mm2 with saturation and vice versa
     ;       OR the result to get the absolute difference
-    mova      m5, m1
-    mova      m6, m3
+    mova      m6, m1
+    mova      m7, m3
     psubusb   m1, m2
     psubusb   m3, m4
-    psubusb   m2, m5
-    psubusb   m4, m6
+    psubusb   m2, m6
+    psubusb   m4, m7
 
     por       m2, m1
     por       m4, m3
@@ -325,8 +325,8 @@ cglobal sse%1, 5,5,8, v, pix1, pix2, lsize, h
 
     paddd     m1, m2
     paddd     m3, m4
-    paddd     m7, m1
-    paddd     m7, m3
+    paddd     m5, m1
+    paddd     m5, m3
 
 %if %1 == mmsize
     lea    pix1q, [pix1q + 2*lsizeq]
@@ -339,8 +339,8 @@ cglobal sse%1, 5,5,8, v, pix1, pix2, lsize, h
 %endif
     jnz .next2lines
 
-    HADDD     m7, m1
-    movd     eax, m7         ; return value
+    HADDD     m5, m1
+    movd     eax, m5         ; return value
     RET
 %endmacro
 
