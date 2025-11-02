@@ -30,11 +30,7 @@
 
 int ff_sum_abs_dctelem_sse2(const int16_t *block);
 int ff_sum_abs_dctelem_ssse3(const int16_t *block);
-int ff_sse8_mmx(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
-                ptrdiff_t stride, int h);
 int ff_sse8_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
-                 ptrdiff_t stride, int h);
-int ff_sse16_mmx(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                  ptrdiff_t stride, int h);
 int ff_sse16_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                   ptrdiff_t stride, int h);
@@ -118,10 +114,6 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
 {
 #if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
-
-    if (EXTERNAL_MMX(cpu_flags)) {
-        c->sse[1]            = ff_sse8_mmx;
-    }
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
 #if !HAVE_ALIGNED_STACK

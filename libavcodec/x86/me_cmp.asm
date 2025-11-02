@@ -282,8 +282,8 @@ INIT_XMM ssse3
 %define ABS_SUM_8x8 ABS_SUM_8x8_64
 HADAMARD8_DIFF 9
 
-; int ff_sse*_*(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
-;               ptrdiff_t line_size, int h)
+; int ff_sse*_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+;                  ptrdiff_t line_size, int h)
 
 %macro SUM_SQUARED_ERRORS 1
 cglobal sse%1, 5,5,%1 < mmsize ? 6 : 8, v, pix1, pix2, lsize, h
@@ -305,15 +305,10 @@ cglobal sse%1, 5,5,%1 < mmsize ? 6 : 8, v, pix1, pix2, lsize, h
     pmaddwd   m1, m1
     pmaddwd   m3, m3
 %else
-    movu      m1, [pix1q]    ; m1 = pix1[0][0-15], [0-7] for mmx
-    movu      m2, [pix2q]    ; m2 = pix2[0][0-15], [0-7] for mmx
-%if %1 == mmsize
-    movu      m3, [pix1q+lsizeq] ; m3 = pix1[1][0-15], [0-7] for mmx
-    movu      m4, [pix2q+lsizeq] ; m4 = pix2[1][0-15], [0-7] for mmx
-%else  ; %1 / 2 == mmsize; mmx only
-    mova      m3, [pix1q+8]  ; m3 = pix1[0][8-15]
-    mova      m4, [pix2q+8]  ; m4 = pix2[0][8-15]
-%endif
+    movu      m1, [pix1q]        ; m1 = pix1[0][0-15]
+    movu      m2, [pix2q]        ; m2 = pix2[0][0-15]
+    movu      m3, [pix1q+lsizeq] ; m3 = pix1[1][0-15]
+    movu      m4, [pix2q+lsizeq] ; m4 = pix2[1][0-15]
 
     ; todo: mm1-mm2, mm3-mm4
     ; algo: subtract mm1 from mm2 with saturation and vice versa
@@ -348,27 +343,15 @@ cglobal sse%1, 5,5,%1 < mmsize ? 6 : 8, v, pix1, pix2, lsize, h
     paddd     m5, m1
     paddd     m5, m3
 
-%if %1 <= mmsize
     lea    pix1q, [pix1q + 2*lsizeq]
     lea    pix2q, [pix2q + 2*lsizeq]
     sub       hd, 2
-%else
-    add    pix1q, lsizeq
-    add    pix2q, lsizeq
-    dec       hd
-%endif
     jnz .next2lines
 
     HADDD     m5, m1
     movd     eax, m5         ; return value
     RET
 %endmacro
-
-INIT_MMX mmx
-SUM_SQUARED_ERRORS 8
-
-INIT_MMX mmx
-SUM_SQUARED_ERRORS 16
 
 INIT_XMM sse2
 SUM_SQUARED_ERRORS 8
