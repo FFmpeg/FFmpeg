@@ -36,6 +36,7 @@
 /ffprobe
 /config.asm
 /config.h
+/config_components.asm
 /config_components.h
 /coverage.info
 /lcov/
