@@ -185,6 +185,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 codec2->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS)
                 ERR("Decoder %s is marked as setting pkt_dts when it doesn't have"
                     "any effect\n");
+FF_DISABLE_DEPRECATION_WARNINGS
+            if (codec->type == AVMEDIA_TYPE_VIDEO && (codec->pix_fmts || codec->supported_framerates))
+                ERR("Decoder %s sets pix_fmts or supported_framerates.\n");
+FF_ENABLE_DEPRECATION_WARNINGS
         }
         if (priv_data_size_wrong(codec2))
             ERR_EXT("Private context of codec %s is impossibly-sized (size %d).",
