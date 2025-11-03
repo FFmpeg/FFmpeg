@@ -602,6 +602,8 @@ static int generate_sdp_offer(AVFormatContext *s)
 {
     int ret = 0, profile_idc = 0, level, profile_iop = 0;
     const char *acodec_name = NULL, *vcodec_name = NULL;
+    char bundle[4];
+    int bundle_index = 0;
     AVBPrint bp;
     WHIPContext *whip = s->priv_data;
     int is_dtls_active = whip->flags & WHIP_DTLS_ACTIVE;
@@ -629,16 +631,27 @@ static int generate_sdp_offer(AVFormatContext *s)
     whip->video_payload_type = WHIP_RTP_PAYLOAD_TYPE_H264;
     whip->video_rtx_payload_type = WHIP_RTP_PAYLOAD_TYPE_VIDEO_RTX;
 
+    if (whip->audio_par) {
+        bundle[bundle_index++] = '0';
+        bundle[bundle_index++] = ' ';
+    }
+    if (whip->video_par) {
+        bundle[bundle_index++] = '1';
+        bundle[bundle_index++] = ' ';
+    }
+    bundle[bundle_index - 1] = '\0';
+
     av_bprintf(&bp, ""
         "v=0\r\n"
         "o=FFmpeg %s 2 IN IP4 %s\r\n"
         "s=FFmpegPublishSession\r\n"
         "t=0 0\r\n"
-        "a=group:BUNDLE 0 1\r\n"
+        "a=group:BUNDLE %s\r\n"
         "a=extmap-allow-mixed\r\n"
         "a=msid-semantic: WMS\r\n",
         WHIP_SDP_SESSION_ID,
-        WHIP_SDP_CREATOR_IP);
+        WHIP_SDP_CREATOR_IP,
+        bundle);
 
     if (whip->audio_par) {
         if (whip->audio_par->codec_id == AV_CODEC_ID_OPUS)
