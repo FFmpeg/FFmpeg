@@ -17,6 +17,7 @@
  */
 
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "libavcodec/codec.h"
 #include "libavcodec/codec_desc.h"
 #include "libavcodec/codec_internal.h"
@@ -55,6 +56,30 @@ static int priv_data_size_wrong(const FFCodec *codec)
     return 0;
 }
 
+#define ARRAY_CHECK(field, var, type, is_sentinel, check, sentinel_check) \
+do {                                                                      \
+    const type *ptr = codec->field;                                       \
+    if (!ptr)                                                             \
+        break;                                                            \
+    type var = *ptr;                                                      \
+    if (is_sentinel) {                                                    \
+        ERR("Codec %s sets " #field ", but without valid elements.\n");   \
+        break;                                                            \
+    }                                                                     \
+    do {                                                                  \
+        if (!(check)) {                                                   \
+            ERR("Codec's %s " #field " array contains invalid element\n");\
+            break;                                                        \
+        }                                                                 \
+        ++ptr;                                                            \
+        var = *ptr;                                                       \
+    } while (!(is_sentinel));                                             \
+    if (!(sentinel_check)) {                                              \
+        ERR("Codec's %s " #field " array has malformed sentinel\n");      \
+        break;                                                            \
+    }                                                                     \
+} while (0)
+
 int main(void){
     void *iter = NULL;
     const AVCodec *codec = NULL;
@@ -86,6 +111,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                        AV_CODEC_CAP_CHANNEL_CONF     |
                                        AV_CODEC_CAP_VARIABLE_FRAME_SIZE))
                 ERR("Non-audio codec %s has audio-only capabilities set\n");
+        } else {
+FF_DISABLE_DEPRECATION_WARNINGS
+            ARRAY_CHECK(supported_samplerates, sample_rate, int, sample_rate == 0,
+                        sample_rate > 0, 1);
+            ARRAY_CHECK(sample_fmts, sample_fmt, enum AVSampleFormat, sample_fmt == AV_SAMPLE_FMT_NONE,
+                        (unsigned)sample_fmt < AV_SAMPLE_FMT_NB, 1);
+            static const AVChannelLayout zero_channel_layout = { 0 };
+            ARRAY_CHECK(ch_layouts, ch_layout, AVChannelLayout, ch_layout.nb_channels == 0,
+                        av_channel_layout_check(&ch_layout), !memcmp(ptr, &zero_channel_layout, sizeof(ch_layout)));
+FF_ENABLE_DEPRECATION_WARNINGS
         }
         if (codec->type != AVMEDIA_TYPE_VIDEO) {
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -146,6 +181,11 @@ FF_DISABLE_DEPRECATION_WARNINGS
                     av_log(NULL, AV_LOG_FATAL, "Encoder %s is missing the sample_fmts field\n", codec->name);
                     ret = 1;
                 }
+            } else if (codec->type == AVMEDIA_TYPE_VIDEO) {
+                ARRAY_CHECK(pix_fmts, pix_fmt, enum AVPixelFormat, pix_fmt == AV_PIX_FMT_NONE,
+                            av_pix_fmt_desc_get(pix_fmt), 1);
+                ARRAY_CHECK(supported_framerates, framerate, AVRational, framerate.num == 0,
+                            framerate.num > 0 && framerate.den > 0, framerate.den == 0);
 FF_ENABLE_DEPRECATION_WARNINGS
             }
             if (codec2->caps_internal & (FF_CODEC_CAP_USES_PROGRESSFRAMES |
