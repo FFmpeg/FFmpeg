@@ -38,6 +38,8 @@
 #include "qpeldsp.h"
 #include "videodsp.h"
 
+#include "libavutil/mem_internal.h"
+
 #define MAX_THREADS 32
 
 /**
@@ -202,10 +204,10 @@ typedef struct MpegEncContext {
     int *mb_index2xy;        ///< mb_index -> mb_x + mb_y*mb_stride
 
     /** matrix transmitted in the bitstream */
-    uint16_t intra_matrix[64];
-    uint16_t chroma_intra_matrix[64];
-    uint16_t inter_matrix[64];
-    uint16_t chroma_inter_matrix[64];
+    DECLARE_ALIGNED(16, uint16_t, intra_matrix)[64];
+    DECLARE_ALIGNED(16, uint16_t, chroma_intra_matrix)[64];
+    DECLARE_ALIGNED(16, uint16_t, inter_matrix)[64];
+    DECLARE_ALIGNED(16, uint16_t, chroma_inter_matrix)[64];
 
     /* error concealment / resync */
     int resync_mb_x;                 ///< x position of last resync marker

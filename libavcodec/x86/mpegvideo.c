@@ -138,10 +138,9 @@ __asm__ volatile(
                 : XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3", "%xmm4", "%xmm5",) "memory"
         );
 }
-#endif
 
-static void dct_unquantize_mpeg1_intra_mmx(const MPVContext *s,
-                                           int16_t *block, int n, int qscale)
+static void dct_unquantize_mpeg1_intra_ssse3(const MPVContext *s,
+                                             int16_t *block, int n, int qscale)
 {
     x86_reg nCoeffs;
     const uint16_t *quant_matrix;
@@ -159,59 +158,45 @@ static void dct_unquantize_mpeg1_intra_mmx(const MPVContext *s,
     quant_matrix = s->intra_matrix;
     x86_reg offset = -2 * nCoeffs;
 __asm__ volatile(
-                "pcmpeqw %%mm7, %%mm7           \n\t"
-                "psrlw $15, %%mm7               \n\t"
-                "movd %3, %%mm6                 \n\t"
-                "packssdw %%mm6, %%mm6          \n\t"
-                "packssdw %%mm6, %%mm6          \n\t"
-                ".p2align 4                     \n\t"
-                "1:                             \n\t"
-                "movq (%1, %0), %%mm0           \n\t"
-                "movq 8(%1, %0), %%mm1          \n\t"
-                "movq (%2, %0), %%mm4           \n\t"
-                "movq 8(%2, %0), %%mm5          \n\t"
-                "pmullw %%mm6, %%mm4            \n\t" // q=qscale*quant_matrix[i]
-                "pmullw %%mm6, %%mm5            \n\t" // q=qscale*quant_matrix[i]
-                "pxor %%mm2, %%mm2              \n\t"
-                "pxor %%mm3, %%mm3              \n\t"
-                "pcmpgtw %%mm0, %%mm2           \n\t" // block[i] < 0 ? -1 : 0
-                "pcmpgtw %%mm1, %%mm3           \n\t" // block[i] < 0 ? -1 : 0
-                "pxor %%mm2, %%mm0              \n\t"
-                "pxor %%mm3, %%mm1              \n\t"
-                "psubw %%mm2, %%mm0             \n\t" // abs(block[i])
-                "psubw %%mm3, %%mm1             \n\t" // abs(block[i])
-                "pmullw %%mm4, %%mm0            \n\t" // abs(block[i])*q
-                "pmullw %%mm5, %%mm1            \n\t" // abs(block[i])*q
-                "pxor %%mm4, %%mm4              \n\t"
-                "pxor %%mm5, %%mm5              \n\t" // FIXME slow
-                "pcmpeqw (%1, %0), %%mm4        \n\t" // block[i] == 0 ? -1 : 0
-                "pcmpeqw 8(%1, %0), %%mm5       \n\t" // block[i] == 0 ? -1 : 0
-                "psraw $3, %%mm0                \n\t"
-                "psraw $3, %%mm1                \n\t"
-                "psubw %%mm7, %%mm0             \n\t"
-                "psubw %%mm7, %%mm1             \n\t"
-                "por %%mm7, %%mm0               \n\t"
-                "por %%mm7, %%mm1               \n\t"
-                "pxor %%mm2, %%mm0              \n\t"
-                "pxor %%mm3, %%mm1              \n\t"
-                "psubw %%mm2, %%mm0             \n\t"
-                "psubw %%mm3, %%mm1             \n\t"
-                "pandn %%mm0, %%mm4             \n\t"
-                "pandn %%mm1, %%mm5             \n\t"
-                "movq %%mm4, (%1, %0)           \n\t"
-                "movq %%mm5, 8(%1, %0)          \n\t"
+                "movd           %3, %%xmm6     \n\t"
+                "pcmpeqw    %%xmm7, %%xmm7     \n\t"
+                "psrlw         $15, %%xmm7     \n\t"
+                SPLATW(xmm6)
+                ".p2align 4                    \n\t"
+                "1:                            \n\t"
+                "movdqa   (%2, %0), %%xmm4     \n\t"
+                "movdqa 16(%2, %0), %%xmm5     \n\t"
+                "movdqa   (%1, %0), %%xmm0     \n\t"
+                "movdqa 16(%1, %0), %%xmm1     \n\t"
+                "pmullw     %%xmm6, %%xmm4     \n\t" // q=qscale*quant_matrix[i]
+                "pmullw     %%xmm6, %%xmm5     \n\t" // q=qscale*quant_matrix[i]
+                "pabsw      %%xmm0, %%xmm2     \n\t" // abs(block[i])
+                "pabsw      %%xmm1, %%xmm3     \n\t" // abs(block[i])
+                "pmullw     %%xmm4, %%xmm2     \n\t" // abs(block[i])*q
+                "pmullw     %%xmm5, %%xmm3     \n\t" // abs(block[i])*q
+                "psraw          $3, %%xmm2     \n\t"
+                "psraw          $3, %%xmm3     \n\t"
+                "psubw      %%xmm7, %%xmm2     \n\t"
+                "psubw      %%xmm7, %%xmm3     \n\t"
+                "por        %%xmm7, %%xmm2     \n\t"
+                "por        %%xmm7, %%xmm3     \n\t"
+                "psignw     %%xmm0, %%xmm2     \n\t"
+                "psignw     %%xmm1, %%xmm3     \n\t"
+                "movdqa     %%xmm2, (%1, %0)   \n\t"
+                "movdqa     %%xmm3, 16(%1, %0) \n\t"
 
-                "add $16, %0                    \n\t"
-                "js 1b                          \n\t"
+                "add           $32, %0         \n\t"
+                "js 1b                         \n\t"
                 : "+r" (offset)
                 : "r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "rm" (qscale)
-                : "memory"
+                : XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3", "%xmm4", "%xmm5", "%xmm6", "%xmm7",)
+                  "memory"
         );
     block[0]= block0;
 }
 
-static void dct_unquantize_mpeg1_inter_mmx(const MPVContext *s,
-                                           int16_t *block, int n, int qscale)
+static void dct_unquantize_mpeg1_inter_ssse3(const MPVContext *s,
+                                             int16_t *block, int n, int qscale)
 {
     x86_reg nCoeffs;
     const uint16_t *quant_matrix;
@@ -223,59 +208,47 @@ static void dct_unquantize_mpeg1_inter_mmx(const MPVContext *s,
         quant_matrix = s->inter_matrix;
     x86_reg offset = -2 * nCoeffs;
 __asm__ volatile(
-                "pcmpeqw %%mm7, %%mm7           \n\t"
-                "psrlw $15, %%mm7               \n\t"
-                "movd %3, %%mm6                 \n\t"
-                "packssdw %%mm6, %%mm6          \n\t"
-                "packssdw %%mm6, %%mm6          \n\t"
-                ".p2align 4                     \n\t"
-                "1:                             \n\t"
-                "movq (%1, %0), %%mm0           \n\t"
-                "movq 8(%1, %0), %%mm1          \n\t"
-                "movq (%2, %0), %%mm4           \n\t"
-                "movq 8(%2, %0), %%mm5          \n\t"
-                "pmullw %%mm6, %%mm4            \n\t" // q=qscale*quant_matrix[i]
-                "pmullw %%mm6, %%mm5            \n\t" // q=qscale*quant_matrix[i]
-                "pxor %%mm2, %%mm2              \n\t"
-                "pxor %%mm3, %%mm3              \n\t"
-                "pcmpgtw %%mm0, %%mm2           \n\t" // block[i] < 0 ? -1 : 0
-                "pcmpgtw %%mm1, %%mm3           \n\t" // block[i] < 0 ? -1 : 0
-                "pxor %%mm2, %%mm0              \n\t"
-                "pxor %%mm3, %%mm1              \n\t"
-                "psubw %%mm2, %%mm0             \n\t" // abs(block[i])
-                "psubw %%mm3, %%mm1             \n\t" // abs(block[i])
-                "paddw %%mm0, %%mm0             \n\t" // abs(block[i])*2
-                "paddw %%mm1, %%mm1             \n\t" // abs(block[i])*2
-                "paddw %%mm7, %%mm0             \n\t" // abs(block[i])*2 + 1
-                "paddw %%mm7, %%mm1             \n\t" // abs(block[i])*2 + 1
-                "pmullw %%mm4, %%mm0            \n\t" // (abs(block[i])*2 + 1)*q
-                "pmullw %%mm5, %%mm1            \n\t" // (abs(block[i])*2 + 1)*q
-                "pxor %%mm4, %%mm4              \n\t"
-                "pxor %%mm5, %%mm5              \n\t" // FIXME slow
-                "pcmpeqw (%1, %0), %%mm4        \n\t" // block[i] == 0 ? -1 : 0
-                "pcmpeqw 8(%1, %0), %%mm5       \n\t" // block[i] == 0 ? -1 : 0
-                "psraw $4, %%mm0                \n\t"
-                "psraw $4, %%mm1                \n\t"
-                "psubw %%mm7, %%mm0             \n\t"
-                "psubw %%mm7, %%mm1             \n\t"
-                "por %%mm7, %%mm0               \n\t"
-                "por %%mm7, %%mm1               \n\t"
-                "pxor %%mm2, %%mm0              \n\t"
-                "pxor %%mm3, %%mm1              \n\t"
-                "psubw %%mm2, %%mm0             \n\t"
-                "psubw %%mm3, %%mm1             \n\t"
-                "pandn %%mm0, %%mm4             \n\t"
-                "pandn %%mm1, %%mm5             \n\t"
-                "movq %%mm4, (%1, %0)           \n\t"
-                "movq %%mm5, 8(%1, %0)          \n\t"
+                "movd           %3, %%xmm6     \n\t"
+                "pcmpeqw    %%xmm7, %%xmm7     \n\t"
+                "psrlw         $15, %%xmm7     \n\t"
+                SPLATW(xmm6)
+                ".p2align 4                    \n\t"
+                "1:                            \n\t"
+                "movdqa   (%2, %0), %%xmm4     \n\t"
+                "movdqa 16(%2, %0), %%xmm5     \n\t"
+                "movdqa   (%1, %0), %%xmm0     \n\t"
+                "movdqa 16(%1, %0), %%xmm1     \n\t"
+                "pmullw     %%xmm6, %%xmm4     \n\t" // q=qscale*quant_matrix[i]
+                "pmullw     %%xmm6, %%xmm5     \n\t" // q=qscale*quant_matrix[i]
+                "pabsw      %%xmm0, %%xmm2     \n\t" // abs(block[i])
+                "pabsw      %%xmm1, %%xmm3     \n\t" // abs(block[i])
+                "paddw      %%xmm2, %%xmm2     \n\t" // abs(block[i])*2
+                "paddw      %%xmm3, %%xmm3     \n\t" // abs(block[i])*2
+                "paddw      %%xmm7, %%xmm2     \n\t" // abs(block[i])*2 + 1
+                "paddw      %%xmm7, %%xmm3     \n\t" // abs(block[i])*2 + 1
+                "pmullw     %%xmm4, %%xmm2     \n\t" // (abs(block[i])*2 + 1)*q
+                "pmullw     %%xmm5, %%xmm3     \n\t" // (abs(block[i])*2 + 1)*q
+                "psraw          $4, %%xmm2     \n\t"
+                "psraw          $4, %%xmm3     \n\t"
+                "psubw      %%xmm7, %%xmm2     \n\t"
+                "psubw      %%xmm7, %%xmm3     \n\t"
+                "por        %%xmm7, %%xmm2     \n\t"
+                "por        %%xmm7, %%xmm3     \n\t"
+                "psignw     %%xmm0, %%xmm2     \n\t"
+                "psignw     %%xmm1, %%xmm3     \n\t"
+                "movdqa     %%xmm2, (%1, %0)   \n\t"
+                "movdqa     %%xmm3, 16(%1, %0) \n\t"
 
-                "add $16, %0                    \n\t"
-                "js 1b                          \n\t"
+                "add           $32, %0         \n\t"
+                "js 1b                         \n\t"
                 : "+r" (offset)
                 : "r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "rm" (qscale)
-                : "memory"
+                : XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3", "%xmm4", "%xmm5", "%xmm6", "%xmm7",)
+                  "memory"
         );
 }
+
+#endif /* HAVE_SSSE3_INLINE */
 
 static void dct_unquantize_mpeg2_intra_mmx(const MPVContext *s,
                                            int16_t *block, int n, int qscale)
@@ -417,8 +390,6 @@ av_cold void ff_mpv_unquantize_init_x86(MPVUnquantDSPContext *s, int bitexact)
     int cpu_flags = av_get_cpu_flags();
 
     if (INLINE_MMX(cpu_flags)) {
-        s->dct_unquantize_mpeg1_intra = dct_unquantize_mpeg1_intra_mmx;
-        s->dct_unquantize_mpeg1_inter = dct_unquantize_mpeg1_inter_mmx;
         if (!bitexact)
             s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_mmx;
         s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_mmx;
@@ -427,6 +398,8 @@ av_cold void ff_mpv_unquantize_init_x86(MPVUnquantDSPContext *s, int bitexact)
     if (INLINE_SSSE3(cpu_flags)) {
         s->dct_unquantize_h263_intra  = dct_unquantize_h263_intra_ssse3;
         s->dct_unquantize_h263_inter  = dct_unquantize_h263_inter_ssse3;
+        s->dct_unquantize_mpeg1_intra = dct_unquantize_mpeg1_intra_ssse3;
+        s->dct_unquantize_mpeg1_inter = dct_unquantize_mpeg1_inter_ssse3;
     }
 #endif /* HAVE_SSSE3_INLINE */
 #endif /* HAVE_MMX_INLINE */
