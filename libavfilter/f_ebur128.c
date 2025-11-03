@@ -657,7 +657,7 @@ double ff_ebur128_find_peak_c(double *restrict ch_peaks, const int nb_channels,
     for (int ch = 0; ch < nb_channels; ch++) {
         double ch_peak = ch_peaks[ch];
         for (int i = 0; i < nb_samples; i++) {
-            const double sample = fabs(samples[i * nb_channels]);
+            const double sample = fabs(samples[i * nb_channels + ch]);
             ch_peak = FFMAX(ch_peak, sample);
         }
         maxpeak = FFMAX(maxpeak, ch_peak);
