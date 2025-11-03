@@ -23,6 +23,8 @@
  * AVCodecContext functions for libavcodec
  */
 
+#include <assert.h>
+
 #include "config.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
@@ -30,7 +32,6 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/emms.h"
-#include "libavutil/fifo.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -41,12 +42,10 @@
 #include "codec_desc.h"
 #include "codec_internal.h"
 #include "decode.h"
-#include "encode.h"
 #include "frame_thread_encoder.h"
 #include "hwconfig.h"
 #include "internal.h"
 #include "libavutil/refstruct.h"
-#include "thread.h"
 
 /**
  * Maximum size in bytes of extradata.
@@ -737,7 +736,17 @@ static const enum AVColorRange color_range_tab[] = {
     AVCOL_RANGE_MPEG, AVCOL_RANGE_UNSPECIFIED,
 };
 
-static const uint8_t color_range_offsets[] = {
+static const enum AVAlphaMode alpha_mode_tab[] = {
+    AVALPHA_MODE_PREMULTIPLIED, AVALPHA_MODE_STRAIGHT, AVALPHA_MODE_UNSPECIFIED,
+    AVALPHA_MODE_PREMULTIPLIED, AVALPHA_MODE_UNSPECIFIED
+};
+
+static_assert((int)AVCOL_RANGE_MPEG == (int)AVALPHA_MODE_PREMULTIPLIED, "unexpected enum values");
+static_assert((int)AVCOL_RANGE_JPEG == (int)AVALPHA_MODE_STRAIGHT, "unexpected enum values");
+static_assert(AVCOL_RANGE_UNSPECIFIED == 0 && AVALPHA_MODE_UNSPECIFIED == 0, "unexpected enum values");
+static_assert(AVCOL_RANGE_NB == 3 && AVALPHA_MODE_NB == 3, "unexpected enum values");
+
+static const uint8_t offset_tab[] = {
     [AVCOL_RANGE_MPEG] = 3,
     [AVCOL_RANGE_JPEG] = 1,
     [AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG] = 0,
@@ -771,7 +780,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             return AVERROR(EINVAL);
         unsigned color_ranges = codec2->color_ranges;
         if (color_ranges)
-            *out_configs = color_range_tab + color_range_offsets[color_ranges];
+            *out_configs = color_range_tab + offset_tab[color_ranges];
         else
             *out_configs = NULL;
         *out_num_configs = av_popcount(color_ranges);
@@ -783,7 +792,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return 0;
 
     case AV_CODEC_CONFIG_ALPHA_MODE:
-        WRAP_CONFIG(AVMEDIA_TYPE_VIDEO, codec2->alpha_modes, enum AVAlphaMode, AVALPHA_MODE_UNSPECIFIED);
+        if (codec->type != AVMEDIA_TYPE_VIDEO)
+            return AVERROR(EINVAL);
+        unsigned alpha_modes = codec2->alpha_modes;
+        if (alpha_modes)
+            *out_configs = alpha_mode_tab + offset_tab[alpha_modes];
+        else
+            *out_configs = NULL;
+        *out_num_configs = av_popcount(alpha_modes);
+        return 0;
 
     default:
         return AVERROR(EINVAL);

@@ -133,7 +133,7 @@ typedef struct FFCodec {
     /**
      * Internal codec capabilities FF_CODEC_CAP_*.
      */
-    unsigned caps_internal:26;
+    unsigned caps_internal:24;
 
     /**
      * Is this a decoder?
@@ -147,16 +147,17 @@ typedef struct FFCodec {
     unsigned color_ranges:2;
 
     /**
+     * This field determines the alpha modes supported by an encoder.
+     * Should be set to a bitmask of AVALPHA_MODE_PREMULTIPLIED and AVALPHA_MODE_STRAIGHT.
+     */
+    unsigned alpha_modes:2;
+
+    /**
      * This field determines the type of the codec (decoder/encoder)
      * and also the exact callback cb implemented by the codec.
      * cb_type uses enum FFCodecType values.
      */
     unsigned cb_type:3;
-
-    /**
-     * This field determines the alpha modes supported by an encoder.
-     */
-    const enum AVAlphaMode *alpha_modes;
 
     int priv_data_size;
     /**

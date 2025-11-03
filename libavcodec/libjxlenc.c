@@ -793,9 +793,7 @@ const FFCodec ff_libjxl_encoder = {
                         FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_INIT_CLEANUP |
                         FF_CODEC_CAP_ICC_PROFILES,
     CODEC_PIXFMTS_ARRAY(libjxl_supported_pixfmts),
-    .alpha_modes    = (const enum AVAlphaMode[]) {
-        AVALPHA_MODE_STRAIGHT, AVALPHA_MODE_PREMULTIPLIED, AVALPHA_MODE_UNSPECIFIED
-    },
+    .alpha_modes      = AVALPHA_MODE_STRAIGHT | AVALPHA_MODE_PREMULTIPLIED,
     .p.priv_class     = &libjxl_encode_class,
     .p.wrapper_name   = "libjxl",
 };
@@ -816,9 +814,7 @@ const FFCodec ff_libjxl_anim_encoder = {
                         FF_CODEC_CAP_AUTO_THREADS | FF_CODEC_CAP_INIT_CLEANUP |
                         FF_CODEC_CAP_ICC_PROFILES,
     CODEC_PIXFMTS_ARRAY(libjxl_supported_pixfmts),
-    .alpha_modes    = (const enum AVAlphaMode[]) {
-        AVALPHA_MODE_STRAIGHT, AVALPHA_MODE_PREMULTIPLIED, AVALPHA_MODE_UNSPECIFIED
-    },
+    .alpha_modes      = AVALPHA_MODE_STRAIGHT | AVALPHA_MODE_PREMULTIPLIED,
     .p.priv_class     = &libjxl_encode_class,
     .p.wrapper_name   = "libjxl",
 };
