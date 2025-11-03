@@ -89,7 +89,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
         if (codec->type != AVMEDIA_TYPE_VIDEO) {
 FF_DISABLE_DEPRECATION_WARNINGS
-            if (codec->pix_fmts || codec->supported_framerates)
+            if (codec->pix_fmts || codec->supported_framerates ||
+                codec2->color_ranges || codec2->alpha_modes)
                 ERR("Non-video codec %s has video-only fields set\n");
 FF_ENABLE_DEPRECATION_WARNINGS
             if (codec2->caps_internal & FF_CODEC_CAP_EXPORTS_CROPPING)
