@@ -732,22 +732,15 @@ int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *fr
         return 0;                                                           \
     } while (0)
 
-static const enum AVColorRange color_range_jpeg[] = {
-    AVCOL_RANGE_JPEG, AVCOL_RANGE_UNSPECIFIED
+static const enum AVColorRange color_range_tab[] = {
+    AVCOL_RANGE_MPEG, AVCOL_RANGE_JPEG, AVCOL_RANGE_UNSPECIFIED,
+    AVCOL_RANGE_MPEG, AVCOL_RANGE_UNSPECIFIED,
 };
 
-static const enum AVColorRange color_range_mpeg[] = {
-    AVCOL_RANGE_MPEG, AVCOL_RANGE_UNSPECIFIED
-};
-
-static const enum AVColorRange color_range_all[] = {
-    AVCOL_RANGE_MPEG, AVCOL_RANGE_JPEG, AVCOL_RANGE_UNSPECIFIED
-};
-
-static const enum AVColorRange *color_range_table[] = {
-    [AVCOL_RANGE_MPEG] = color_range_mpeg,
-    [AVCOL_RANGE_JPEG] = color_range_jpeg,
-    [AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG] = color_range_all,
+static const uint8_t color_range_offsets[] = {
+    [AVCOL_RANGE_MPEG] = 3,
+    [AVCOL_RANGE_JPEG] = 1,
+    [AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG] = 0,
 };
 
 int ff_default_get_supported_config(const AVCodecContext *avctx,
@@ -776,8 +769,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
     case AV_CODEC_CONFIG_COLOR_RANGE:
         if (codec->type != AVMEDIA_TYPE_VIDEO)
             return AVERROR(EINVAL);
-        *out_configs = color_range_table[ffcodec(codec)->color_ranges];
-        *out_num_configs = av_popcount(ffcodec(codec)->color_ranges);
+        unsigned color_ranges = codec2->color_ranges;
+        if (color_ranges)
+            *out_configs = color_range_tab + color_range_offsets[color_ranges];
+        else
+            *out_configs = NULL;
+        *out_num_configs = av_popcount(color_ranges);
         return 0;
 
     case AV_CODEC_CONFIG_COLOR_SPACE:
