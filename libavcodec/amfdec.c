@@ -44,14 +44,6 @@
 //will be in public headers soon
 #define AMF_VIDEO_DECODER_OUTPUT_FORMAT                L"OutputDecodeFormat"
 
-const enum AVPixelFormat amf_dec_pix_fmts[] = {
-    AV_PIX_FMT_NV12,
-    AV_PIX_FMT_P010,
-    AV_PIX_FMT_P012,
-    AV_PIX_FMT_AMF_SURFACE,
-    AV_PIX_FMT_NONE
-};
-
 static const AVCodecHWConfigInternal *const amf_hw_configs[] = {
     &(const AVCodecHWConfigInternal) {
         .public = {
@@ -716,7 +708,6 @@ const FFCodec ff_##x##_amf_decoder = { \
     .bsfs           = bsf_name, \
     .p.capabilities = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \
     .p.priv_class   = &amf_decode_class, \
-    CODEC_PIXFMTS_ARRAY(amf_dec_pix_fmts), \
     .hw_configs     = amf_hw_configs, \
     .p.wrapper_name = "amf", \
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE, \
