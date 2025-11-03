@@ -376,6 +376,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         dst->bits_per_raw_sample = src->bits_per_raw_sample;
         dst->color_primaries     = src->color_primaries;
 
+        dst->alpha_mode  = src->alpha_mode;
+
         dst->color_trc   = src->color_trc;
         dst->colorspace  = src->colorspace;
         dst->color_range = src->color_range;
