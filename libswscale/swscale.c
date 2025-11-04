@@ -581,7 +581,8 @@ static void solve_range_convert(uint16_t src_min, uint16_t src_max,
     int total_shift = mult_shift + src_shift;
     *coeff = AV_CEIL_RSHIFT(((uint64_t) dst_range << total_shift) / src_range, src_shift);
     *offset = ((int64_t) dst_max << total_shift) -
-              ((int64_t) src_max << src_shift) * *coeff;
+              ((int64_t) src_max << src_shift) * *coeff +
+              (1U << (mult_shift - 1));
 }
 
 static void init_range_convert_constants(SwsInternal *c)
