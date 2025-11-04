@@ -697,7 +697,7 @@ static int init_setup_shader(FFV1Context *f, FFVulkanContext *s,
             .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
             .mem_quali   = "readonly",
-            .buf_content = "uint32_t slice_offsets",
+            .buf_content = "u32vec2 slice_offsets",
             .buf_elems   = 2*f->max_slice_count,
         },
         {

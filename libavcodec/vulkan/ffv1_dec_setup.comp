@@ -114,8 +114,8 @@ void main(void)
 {
     const uint slice_idx = gl_WorkGroupID.y*gl_NumWorkGroups.x + gl_WorkGroupID.x;
 
-    u8buf bs = u8buf(slice_data + slice_offsets[2*slice_idx + 0]);
-    uint32_t slice_size = slice_offsets[2*slice_idx + 1];
+    u8buf bs = u8buf(slice_data + slice_offsets[slice_idx].x);
+    uint32_t slice_size = slice_offsets[slice_idx].y;
 
     rac_init_dec(slice_ctx[slice_idx].c,
                  bs, slice_size);
