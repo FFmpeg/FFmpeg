@@ -1,11 +1,11 @@
-0fd5facf5235c64ddc984bbd83db6b89 *tests/data/fate/jpg-exif-rotation-override.image2
+e91d7401ba21087b06683672b0cdabd3 *tests/data/fate/jpg-exif-rotation-override.image2
 90688 tests/data/fate/jpg-exif-rotation-override.image2
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo
 #dimensions 0: 200x300
 #sar 0: 1/1
-0,          0,          0,        1,    90000, 0x157a544e
+0,          0,          0,        1,    90000, 0x373a5584
 [FRAME]
 media_type=video
 stream_index=0

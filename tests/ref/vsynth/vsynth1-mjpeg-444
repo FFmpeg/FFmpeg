@@ -1,4 +1,4 @@
-6df1ef3c72846b43b7bbaaed6272e433 *tests/data/fate/vsynth1-mjpeg-444.avi
-1831046 tests/data/fate/vsynth1-mjpeg-444.avi
-c51ee467d03242dfc1e4536b0485d00f *tests/data/fate/vsynth1-mjpeg-444.out.rawvideo
+8dc11023199b3cfa614947479feff644 *tests/data/fate/vsynth1-mjpeg-444.avi
+1831038 tests/data/fate/vsynth1-mjpeg-444.avi
+c2fcb1f3db1bb718bdbd8c95515a4802 *tests/data/fate/vsynth1-mjpeg-444.out.rawvideo
 stddev:    7.37 PSNR: 30.77 MAXDIFF:   63 bytes:  7603200/  7603200

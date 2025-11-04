@@ -1,4 +1,4 @@
-af1ed7a7536b2a84e8b91b2bbbfa4f9c *tests/data/fate/vsynth1-mjpeg-trell-huffman.avi
-1360828 tests/data/fate/vsynth1-mjpeg-trell-huffman.avi
-548de4f6098cbc3d8b65574bb93faf09 *tests/data/fate/vsynth1-mjpeg-trell-huffman.out.rawvideo
+54a5c01ac434f03ece746c3b9d1f884c *tests/data/fate/vsynth1-mjpeg-trell-huffman.avi
+1360778 tests/data/fate/vsynth1-mjpeg-trell-huffman.avi
+06da9b894bb0fac32ec9a2985cc34b4d *tests/data/fate/vsynth1-mjpeg-trell-huffman.out.rawvideo
 stddev:    7.67 PSNR: 30.42 MAXDIFF:   62 bytes:  7603200/  7603200

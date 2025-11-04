@@ -1,11 +1,11 @@
-fb7725b8ccdfb537a600d9e16697078e *tests/data/fate/jpg-exif-autorotate.image2
+91c8b8fb4ed6aeaa7eeb241508fee8c2 *tests/data/fate/jpg-exif-autorotate.image2
 90658 tests/data/fate/jpg-exif-autorotate.image2
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo
 #dimensions 0: 300x200
 #sar 0: 1/1
-0,          0,          0,        1,    90000, 0x458a544e
+0,          0,          0,        1,    90000, 0x85315584
 [FRAME]
 media_type=video
 stream_index=0
