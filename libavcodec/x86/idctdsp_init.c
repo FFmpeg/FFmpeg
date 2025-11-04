@@ -65,18 +65,6 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
 {
     int cpu_flags = av_get_cpu_flags();
 
-#if ARCH_X86_32
-    if (EXTERNAL_MMX(cpu_flags)) {
-        if (!high_bit_depth &&
-            avctx->lowres == 0 &&
-            (avctx->idct_algo == FF_IDCT_AUTO ||
-                avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
-                avctx->idct_algo == FF_IDCT_SIMPLEMMX)) {
-                c->idct      = ff_simple_idct_mmx;
-        }
-    }
-#endif
-
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_sse2;
         c->put_pixels_clamped        = ff_put_pixels_clamped_sse2;
@@ -88,6 +76,7 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
             (avctx->idct_algo == FF_IDCT_AUTO ||
                 avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
                 avctx->idct_algo == FF_IDCT_SIMPLEMMX)) {
+                c->idct      = ff_simple_idct_mmx;
                 c->idct_put  = ff_simple_idct_put_sse2;
                 c->idct_add  = ff_simple_idct_add_sse2;
                 c->perm_type = FF_IDCT_PERM_SIMPLE;
