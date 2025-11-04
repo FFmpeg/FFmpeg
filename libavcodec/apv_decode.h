@@ -113,6 +113,8 @@ typedef struct APVDecodeContext {
     uint8_t warned_unknown_pbu_types;
 } APVDecodeContext;
 
+extern APVVLCLUT ff_apv_decode_lut;
+
 /**
  * Build the decoder VLC look-up tables.
  */

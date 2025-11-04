@@ -45,7 +45,7 @@ static const enum AVPixelFormat apv_format_table[5][4] = {
     { AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_NONE,      AV_PIX_FMT_YUVA444P16 },
 };
 
-static APVVLCLUT decode_lut;
+APVVLCLUT ff_apv_decode_lut;
 
 static enum AVPixelFormat get_pixel_format(AVCodecContext *avctx,
                                            enum AVPixelFormat pix_fmt)
@@ -129,7 +129,7 @@ static AVOnce apv_entropy_once = AV_ONCE_INIT;
 
 static av_cold void apv_entropy_build_decode_lut(void)
 {
-    ff_apv_entropy_build_decode_lut(&decode_lut);
+    ff_apv_entropy_build_decode_lut(&ff_apv_decode_lut);
 }
 
 static av_cold int apv_decode_init(AVCodecContext *avctx)
@@ -248,7 +248,7 @@ static int apv_decode_tile_component(AVCodecContext *avctx, void *data,
 
     APVEntropyState entropy_state = {
         .log_ctx           = avctx,
-        .decode_lut        = &decode_lut,
+        .decode_lut        = &ff_apv_decode_lut,
         .prev_dc           = 0,
         .prev_k_dc         = 5,
         .prev_k_level      = 0,
