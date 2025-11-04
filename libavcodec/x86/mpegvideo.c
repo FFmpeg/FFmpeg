@@ -28,7 +28,7 @@
 #include "libavcodec/mpegvideodata.h"
 #include "libavcodec/mpegvideo_unquantize.h"
 
-#if HAVE_MMX_INLINE
+#if HAVE_SSE2_INLINE
 
 #define SPLATW(reg) "punpcklwd    %%" #reg ", %%" #reg "\n\t" \
                     "pshufd   $0, %%" #reg ", %%" #reg "\n\t"
@@ -250,8 +250,8 @@ __asm__ volatile(
 
 #endif /* HAVE_SSSE3_INLINE */
 
-static void dct_unquantize_mpeg2_intra_mmx(const MPVContext *s,
-                                           int16_t *block, int n, int qscale)
+static void dct_unquantize_mpeg2_intra_sse2(const MPVContext *s,
+                                            int16_t *block, int n, int qscale)
 {
     x86_reg nCoeffs;
     const uint16_t *quant_matrix;
@@ -271,35 +271,35 @@ static void dct_unquantize_mpeg2_intra_mmx(const MPVContext *s,
     quant_matrix = s->intra_matrix;
     x86_reg offset = -2 * nCoeffs;
 __asm__ volatile(
-                "movd %3, %%mm6                 \n\t"
-                "packssdw %%mm6, %%mm6          \n\t"
-                "packssdw %%mm6, %%mm6          \n\t"
-                ".p2align 4                     \n\t"
-                "1:                             \n\t"
-                "movq (%1, %0), %%mm0           \n\t"
-                "movq 8(%1, %0), %%mm1          \n\t"
-                "movq (%2, %0), %%mm4           \n\t"
-                "movq 8(%2, %0), %%mm5          \n\t"
-                "pmullw %%mm6, %%mm4            \n\t" // q=qscale*quant_matrix[i]
-                "pmullw %%mm6, %%mm5            \n\t" // q=qscale*quant_matrix[i]
-                "movq %%mm0, %%mm2              \n\t"
-                "movq %%mm1, %%mm3              \n\t"
-                "psrlw $12, %%mm2               \n\t" // block[i] < 0 ? 0xf : 0
-                "psrlw $12, %%mm3               \n\t" // (block[i] is in the -2048..2047 range)
-                "pmullw %%mm4, %%mm0            \n\t" // block[i]*q
-                "pmullw %%mm5, %%mm1            \n\t" // block[i]*q
-                "paddw %%mm2, %%mm0             \n\t" // bias negative block[i]
-                "paddw %%mm3, %%mm1             \n\t" // so that a right-shift
-                "psraw $4, %%mm0                \n\t" // is equivalent to divide
-                "psraw $4, %%mm1                \n\t" // with rounding towards zero
-                "movq %%mm0, (%1, %0)           \n\t"
-                "movq %%mm1, 8(%1, %0)          \n\t"
+                "movd           %3, %%xmm6     \n\t"
+                SPLATW(xmm6)
+                ".p2align 4                    \n\t"
+                "1:                            \n\t"
+                "movdqa   (%1, %0), %%xmm0     \n\t"
+                "movdqa 16(%1, %0), %%xmm1     \n\t"
+                "movdqa   (%2, %0), %%xmm4     \n\t"
+                "movdqa 16(%2, %0), %%xmm5     \n\t"
+                "pmullw     %%xmm6, %%xmm4     \n\t" // q=qscale*quant_matrix[i]
+                "pmullw     %%xmm6, %%xmm5     \n\t" // q=qscale*quant_matrix[i]
+                "movdqa     %%xmm0, %%xmm2     \n\t"
+                "movdqa     %%xmm1, %%xmm3     \n\t"
+                "psrlw         $12, %%xmm2     \n\t" // block[i] < 0 ? 0xf : 0
+                "psrlw         $12, %%xmm3     \n\t" // (block[i] is in the -2048..2047 range)
+                "pmullw     %%xmm4, %%xmm0     \n\t" // block[i]*q
+                "pmullw     %%xmm5, %%xmm1     \n\t" // block[i]*q
+                "paddw      %%xmm2, %%xmm0     \n\t" // bias negative block[i]
+                "paddw      %%xmm3, %%xmm1     \n\t" // so that a right-shift
+                "psraw          $4, %%xmm0     \n\t" // is equivalent to divide
+                "psraw          $4, %%xmm1     \n\t" // with rounding towards zero
+                "movdqa     %%xmm0, (%1, %0)   \n\t"
+                "movdqa     %%xmm1, 16(%1, %0) \n\t"
 
-                "add $16, %0                    \n\t"
-                "jng 1b                         \n\t"
+                "add           $32, %0         \n\t"
+                "jng 1b                        \n\t"
                 : "+r" (offset)
                 : "r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "rm" (qscale)
-                : "memory"
+                : XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3", "%xmm4", "%xmm5", "%xmm6",)
+                  "memory"
         );
     block[0]= block0;
         //Note, we do not do mismatch control for intra as errors cannot accumulate
@@ -371,16 +371,16 @@ __asm__ volatile(
 }
 
 #endif /* HAVE_SSSE3_INLINE */
-#endif /* HAVE_MMX_INLINE */
+#endif /* HAVE_SSE2_INLINE */
 
 av_cold void ff_mpv_unquantize_init_x86(MPVUnquantDSPContext *s, int bitexact)
 {
-#if HAVE_MMX_INLINE
+#if HAVE_SSE2_INLINE
     int cpu_flags = av_get_cpu_flags();
 
-    if (INLINE_MMX(cpu_flags)) {
+    if (INLINE_SSE2(cpu_flags)) {
         if (!bitexact)
-            s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_mmx;
+            s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_sse2;
     }
 #if HAVE_SSSE3_INLINE
     if (INLINE_SSSE3(cpu_flags)) {
@@ -391,5 +391,5 @@ av_cold void ff_mpv_unquantize_init_x86(MPVUnquantDSPContext *s, int bitexact)
         s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_ssse3;
     }
 #endif /* HAVE_SSSE3_INLINE */
-#endif /* HAVE_MMX_INLINE */
+#endif /* HAVE_SSE2_INLINE */
 }

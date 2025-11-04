@@ -215,7 +215,7 @@ void checkasm_check_mpegvideo_unquantize(void)
     int q_scale_type = rnd() & 1;
 
     ff_mpv_unquantize_init(&unquant_dsp_ctx, 1 /* bitexact */, q_scale_type);
-    declare_func_emms(AV_CPU_FLAG_MMX, void, MPVContext *s, int16_t *block, int n, int qscale);
+    declare_func(void, MPVContext *s, int16_t *block, int n, int qscale);
 
     for (size_t i = 0; i < FF_ARRAY_ELEMS(tests); ++i) {
         void (*func)(MPVContext *s, int16_t *block, int n, int qscale) =
