@@ -913,6 +913,7 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
                 p = FFMAX(p, fabsf(*pf));
             pch->prev_energy_subshort[i] = energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS] = p;
             energy_short[1 + i / PSY_LAME_NUM_SUBBLOCKS] += p;
+
             /* NOTE: The indexes below are [i + 3 - 2] in the LAME source. Compare each sub-block to sub-block - 2 */
             if (p > energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS - 2])
                 p = p / energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS - 2];
@@ -920,6 +921,7 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
                 p = energy_subshort[i + PSY_LAME_NUM_SUBBLOCKS - 2] / (p * 10.0f);
             else
                 p = 0.0;
+
             attack_intensity[i + PSY_LAME_NUM_SUBBLOCKS] = p;
         }
 
@@ -946,18 +948,18 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
             }
             att_sum += attacks[i];
         }
-		if (pch->next_attack0_zero)
+
+        if (pch->next_attack0_zero)
             attacks[0] = 0;
-		if (attacks[AAC_NUM_BLOCKS_SHORT] == 0)
-            pch->next_attack0_zero = 1;
-        else
-			pch->next_attack0_zero = 0;
+        pch->next_attack0_zero = !attacks[AAC_NUM_BLOCKS_SHORT];
 
         if (attacks[0] <= pch->prev_attack)
             attacks[0] = 0;
 
         att_sum += attacks[0];
-		/* If the previous attack happened in the last sub-block of the previous sequence, or if there's a new attack, use short window */
+
+        /* If the previous attack happened in the last sub-block of the previous sequence,
+         * or if there's a new attack, use short window */
         if (pch->prev_attack == PSY_LAME_NUM_SUBBLOCKS || att_sum) {
             uselongblock = 0;
 
