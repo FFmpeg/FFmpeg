@@ -6066,16 +6066,17 @@ case $target_os in
         ;;
     win32|win64)
         disable symver
+        LIBSUF=".lib"
         if enabled shared; then
             # Cannot build both shared and static libs with MSVC or icl.
             disable static
+            LIBSUF="-static.lib"
         fi
         ! enabled small && test_cmd $windres --version && enable gnu_windres
         enabled x86_32 && check_ldflags -LARGEADDRESSAWARE
         add_cppflags -DWIN32_LEAN_AND_MEAN
         shlibdir_default="$bindir_default"
         LIBPREF=""
-        LIBSUF=".lib"
         SLIBPREF=""
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
