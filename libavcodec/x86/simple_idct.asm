@@ -1,5 +1,5 @@
 ;
-; Simple IDCT MMX
+; Simple IDCT SSE2
 ;
 ; Copyright (c) 2001, 2002 Michael Niedermayer <michaelni@gmx.at>
 ;
@@ -30,8 +30,8 @@ SECTION_RODATA
 %if ARCH_X86_32
 cextern pb_80
 
+d40000: dd 4 << 16, 0 ; must be 16-byte aligned
 wm1010: dw 0, 0xffff, 0, 0xffff
-d40000: dd 4 << 16, 0
 
 ; 23170.475006
 ; 22725.260826
@@ -57,650 +57,675 @@ d40000: dd 4 << 16, 0
 coeffs:
     dw 1 << (ROW_SHIFT - 1), 0
     dw 1 << (ROW_SHIFT - 1), 0
+    dw 1 << (ROW_SHIFT - 1), 0
+    dw 1 << (ROW_SHIFT - 1), 0
+    dw 1 << (ROW_SHIFT - 1), 1
+    dw 1 << (ROW_SHIFT - 1), 0
     dw 1 << (ROW_SHIFT - 1), 1
     dw 1 << (ROW_SHIFT - 1), 0
 
-    dw C4,  C4,  C4,  C4
-    dw C4, -C4,  C4, -C4
+    dw C4,  C4,  C4,  C4, C4,  C4,  C4,  C4
+    dw C4, -C4,  C4, -C4, C4, -C4,  C4, -C4
 
-    dw C2,  C6,  C2,  C6
-    dw C6, -C2,  C6, -C2
+    dw C2,  C6,  C2,  C6, C2,  C6,  C2,  C6
+    dw C6, -C2,  C6, -C2, C6, -C2,  C6, -C2
 
-    dw C1,  C3,  C1,  C3
-    dw C5,  C7,  C5,  C7
+    dw C1,  C3,  C1,  C3, C1,  C3,  C1,  C3
+    dw C5,  C7,  C5,  C7, C5,  C7,  C5,  C7
 
-    dw C3, -C7,  C3, -C7
-    dw -C1, -C5, -C1, -C5
+    dw  C3, -C7,  C3, -C7,  C3, -C7,  C3, -C7
+    dw -C1, -C5, -C1, -C5, -C1, -C5, -C1, -C5
 
-    dw C5, -C1,  C5, -C1
-    dw C7,  C3,  C7,  C3
+    dw C5, -C1,  C5, -C1, C5, -C1,  C5, -C1
+    dw C7,  C3,  C7,  C3, C7,  C3,  C7,  C3
 
-    dw C7, -C5,  C7, -C5
-    dw C3, -C1,  C3, -C1
+    dw C7, -C5,  C7, -C5, C7, -C5,  C7, -C5
+    dw C3, -C1,  C3, -C1, C3, -C1,  C3, -C1
 
 SECTION .text
 
 %macro DC_COND_IDCT 7
-    movq            mm0, [blockq + %1]  ; R4     R0      r4      r0
-    movq            mm1, [blockq + %2]  ; R6     R2      r6      r2
-    movq            mm2, [blockq + %3]  ; R3     R1      r3      r1
-    movq            mm3, [blockq + %4]  ; R7     R5      r7      r5
-    movq            mm4, [wm1010]
-    pand            mm4, mm0
-    por             mm4, mm1
-    por             mm4, mm2
-    por             mm4, mm3
-    packssdw        mm4, mm4
-    movd            t0d, mm4
+    movq             m0, [blockq + %1]  ; R4     R0      r4      r0
+    movq             m1, [blockq + %2]  ; R6     R2      r6      r2
+    movq             m2, [blockq + %3]  ; R3     R1      r3      r1
+    movq             m3, [blockq + %4]  ; R7     R5      r7      r5
+    movq             m4, [wm1010]
+    pand             m4, m0
+    por              m4, m1
+    por              m4, m2
+    por              m4, m3
+    packssdw         m4, m4
+    movd            t0d, m4
     or              t0d, t0d
     jz              %%1
-    movq            mm4, [coeffs + 16]  ; C4     C4      C4      C4
-    pmaddwd         mm4, mm0            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm5, [coeffs + 24]  ; -C4    C4      -C4     C4
-    pmaddwd         mm0, mm5            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm5, [coeffs + 32]  ; C6     C2      C6      C2
-    pmaddwd         mm5, mm1            ; C6R6+C2R2      C6r6+C2r2
-    movq            mm6, [coeffs + 40]  ; -C2    C6      -C2     C6
-    pmaddwd         mm1, mm6            ; -C2R6+C6R2     -C2r6+C6r2
-    movq            mm7, [coeffs + 48]  ; C3     C1      C3      C1
-    pmaddwd         mm7, mm2            ; C3R3+C1R1      C3r3+C1r1
-    paddd           mm4, [coeffs + 8]
-    movq            mm6, mm4            ; C4R4+C4R0      C4r4+C4r0
-    paddd           mm4, mm5            ; A0             a0
-    psubd           mm6, mm5            ; A3             a3
-    movq            mm5, [coeffs + 56]  ; C7     C5      C7      C5
-    pmaddwd         mm5, mm3            ; C7R7+C5R5      C7r7+C5r5
-    paddd           mm0, [coeffs + 8]
-    paddd           mm1, mm0            ; A1             a1
-    paddd           mm0, mm0
-    psubd           mm0, mm1            ; A2             a2
-    pmaddwd         mm2, [coeffs + 64]  ; -C7R3+C3R1     -C7r3+C3r1
-    paddd           mm7, mm5            ; B0             b0
-    movq            mm5, [coeffs + 72]  ; -C5    -C1     -C5     -C1
-    pmaddwd         mm5, mm3            ; -C5R7-C1R5     -C5r7-C1r5
-    paddd           mm7, mm4            ; A0+B0          a0+b0
-    paddd           mm4, mm4            ; 2A0            2a0
-    psubd           mm4, mm7            ; A0-B0          a0-b0
-    paddd           mm5, mm2            ; B1             b1
-    psrad           mm7, %7
-    psrad           mm4, %7
-    movq            mm2, mm1            ; A1             a1
-    paddd           mm1, mm5            ; A1+B1          a1+b1
-    psubd           mm2, mm5            ; A1-B1          a1-b1
-    psrad           mm1, %7
-    psrad           mm2, %7
-    packssdw        mm7, mm1            ; A1+B1  a1+b1   A0+B0   a0+b0
-    packssdw        mm2, mm4            ; A0-B0  a0-b0   A1-B1   a1-b1
-    movq           [%5], mm7
-    movq            mm1, [blockq + %3]  ; R3     R1      r3      r1
-    movq            mm4, [coeffs + 80]  ; -C1    C5      -C1     C5
-    movq      [24 + %5], mm2
-    pmaddwd         mm4, mm1            ; -C1R3+C5R1     -C1r3+C5r1
-    movq            mm7, [coeffs + 88]  ; C3     C7      C3      C7
-    pmaddwd         mm1, [coeffs + 96]  ; -C5R3+C7R1     -C5r3+C7r1
-    pmaddwd         mm7, mm3            ; C3R7+C7R5      C3r7+C7r5
-    movq            mm2, mm0            ; A2             a2
-    pmaddwd         mm3, [coeffs + 104] ; -C1R7+C3R5     -C1r7+C3r5
-    paddd           mm4, mm7            ; B2             b2
-    paddd           mm2, mm4            ; A2+B2          a2+b2
-    psubd           mm0, mm4            ; a2-B2          a2-b2
-    psrad           mm2, %7
-    psrad           mm0, %7
-    movq            mm4, mm6            ; A3             a3
-    paddd           mm3, mm1            ; B3             b3
-    paddd           mm6, mm3            ; A3+B3          a3+b3
-    psubd           mm4, mm3            ; a3-B3          a3-b3
-    psrad           mm6, %7
-    packssdw        mm2, mm6            ; A3+B3  a3+b3   A2+B2   a2+b2
-    movq       [8 + %5], mm2
-    psrad           mm4, %7
-    packssdw        mm4, mm0            ; A2-B2  a2-b2   A3-B3   a3-b3
-    movq      [16 + %5], mm4
+    movq             m4, [coeffs + 32]  ; C4     C4      C4      C4
+    pmaddwd          m4, m0             ; C4R4+C4R0      C4r4+C4r0
+    movq             m5, [coeffs + 48]  ; -C4    C4      -C4     C4
+    pmaddwd          m0, m5             ; -C4R4+C4R0     -C4r4+C4r0
+    movq             m5, [coeffs + 64]  ; C6     C2      C6      C2
+    pmaddwd          m5, m1             ; C6R6+C2R2      C6r6+C2r2
+    movq             m6, [coeffs + 80]  ; -C2    C6      -C2     C6
+    pmaddwd          m1, m6             ; -C2R6+C6R2     -C2r6+C6r2
+    movq             m7, [coeffs + 96]  ; C3     C1      C3      C1
+    pmaddwd          m7, m2             ; C3R3+C1R1      C3r3+C1r1
+    paddd            m4, [coeffs + 16]
+    movq             m6, m4             ; C4R4+C4R0      C4r4+C4r0
+    paddd            m4, m5             ; A0             a0
+    psubd            m6, m5             ; A3             a3
+    movq             m5, [coeffs + 112] ; C7     C5      C7      C5
+    pmaddwd          m5, m3             ; C7R7+C5R5      C7r7+C5r5
+    paddd            m0, [coeffs + 16]
+    paddd            m1, m0             ; A1             a1
+    paddd            m0, m0
+    psubd            m0, m1             ; A2             a2
+    pmaddwd          m2, [coeffs + 128] ; -C7R3+C3R1     -C7r3+C3r1
+    paddd            m7, m5             ; B0             b0
+    movq             m5, [coeffs + 144] ; -C5    -C1     -C5     -C1
+    pmaddwd          m5, m3             ; -C5R7-C1R5     -C5r7-C1r5
+    paddd            m7, m4             ; A0+B0          a0+b0
+    paddd            m4, m4             ; 2A0            2a0
+    psubd            m4, m7             ; A0-B0          a0-b0
+    paddd            m5, m2             ; B1             b1
+    psrad            m7, %7
+    psrad            m4, %7
+    movq             m2, m1             ; A1             a1
+    paddd            m1, m5             ; A1+B1          a1+b1
+    psubd            m2, m5             ; A1-B1          a1-b1
+    psrad            m1, %7
+    psrad            m2, %7
+    packssdw         m7, m1             ; A1+B1  a1+b1   A0+B0   a0+b0
+    pshufd           m7, m7, 0xD8
+    packssdw         m2, m4             ; A0-B0  a0-b0   A1-B1   a1-b1
+    pshufd           m2, m2, 0xD8
+    movq           [%5], m7
+    movq             m1, [blockq + %3]  ; R3     R1      r3      r1
+    movq             m4, [coeffs + 160] ; -C1    C5      -C1     C5
+    movq      [24 + %5], m2
+    pmaddwd          m4, m1             ; -C1R3+C5R1     -C1r3+C5r1
+    movq             m7, [coeffs + 176] ; C3     C7      C3      C7
+    pmaddwd          m1, [coeffs + 192] ; -C5R3+C7R1     -C5r3+C7r1
+    pmaddwd          m7, m3             ; C3R7+C7R5      C3r7+C7r5
+    movq             m2, m0             ; A2             a2
+    pmaddwd          m3, [coeffs + 208] ; -C1R7+C3R5     -C1r7+C3r5
+    paddd            m4, m7             ; B2             b2
+    paddd            m2, m4             ; A2+B2          a2+b2
+    psubd            m0, m4             ; a2-B2          a2-b2
+    psrad            m2, %7
+    psrad            m0, %7
+    movq             m4, m6             ; A3             a3
+    paddd            m3, m1             ; B3             b3
+    paddd            m6, m3             ; A3+B3          a3+b3
+    psubd            m4, m3             ; a3-B3          a3-b3
+    psrad            m6, %7
+    packssdw         m2, m6             ; A3+B3  a3+b3   A2+B2   a2+b2
+    pshufd           m2, m2, 0xD8
+    movq       [8 + %5], m2
+    psrad            m4, %7
+    packssdw         m4, m0             ; A2-B2  a2-b2   A3-B3   a3-b3
+    pshufd           m4, m4, 0xD8
+    movq      [16 + %5], m4
     jmp             %%2
 %%1:
-    pslld           mm0, 16
-    paddd           mm0, [d40000]
-    psrad           mm0, 13
-    packssdw        mm0, mm0
-    movq           [%5], mm0
-    movq       [8 + %5], mm0
-    movq      [16 + %5], mm0
-    movq      [24 + %5], mm0
+    pslld            m0, 16
+    ; d40000 is only eight bytes long, so this will clobber
+    ; the upper half of m0 with wm1010. It doesn't matter due to pshufd below.
+    paddd            m0, [d40000]
+    psrad            m0, 13
+    packssdw         m0, m0
+    pshufd           m0, m0, 0x0
+    mova           [%5], m0
+    mova      [16 + %5], m0
 %%2:
 %endmacro
 
 %macro Z_COND_IDCT 8
-    movq            mm0, [blockq + %1]  ; R4     R0      r4      r0
-    movq            mm1, [blockq + %2]  ; R6     R2      r6      r2
-    movq            mm2, [blockq + %3]  ; R3     R1      r3      r1
-    movq            mm3, [blockq + %4]  ; R7     R5      r7      r5
-    movq            mm4, mm0
-    por             mm4, mm1
-    por             mm4, mm2
-    por             mm4, mm3
-    packssdw        mm4, mm4
-    movd            t0d, mm4
+    movq             m0, [blockq + %1]  ; R4     R0      r4      r0
+    movq             m1, [blockq + %2]  ; R6     R2      r6      r2
+    movq             m2, [blockq + %3]  ; R3     R1      r3      r1
+    movq             m3, [blockq + %4]  ; R7     R5      r7      r5
+    movq             m4, m0
+    por              m4, m1
+    por              m4, m2
+    por              m4, m3
+    packssdw         m4, m4
+    movd            t0d, m4
     or              t0d, t0d
     jz               %8
-    movq            mm4, [coeffs + 16]  ; C4     C4      C4      C4
-    pmaddwd         mm4, mm0            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm5, [coeffs + 24]  ; -C4    C4      -C4     C4
-    pmaddwd         mm0, mm5            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm5, [coeffs + 32]  ; C6     C2      C6      C2
-    pmaddwd         mm5, mm1            ; C6R6+C2R2      C6r6+C2r2
-    movq            mm6, [coeffs + 40]  ; -C2    C6      -C2     C6
-    pmaddwd         mm1, mm6            ; -C2R6+C6R2     -C2r6+C6r2
-    movq            mm7, [coeffs + 48]  ; C3     C1      C3      C1
-    pmaddwd         mm7, mm2            ; C3R3+C1R1      C3r3+C1r1
-    paddd           mm4, [coeffs]
-    movq            mm6, mm4            ; C4R4+C4R0      C4r4+C4r0
-    paddd           mm4, mm5            ; A0             a0
-    psubd           mm6, mm5            ; A3             a3
-    movq            mm5, [coeffs + 56]  ; C7     C5      C7      C5
-    pmaddwd         mm5, mm3            ; C7R7+C5R5      C7r7+C5r5
-    paddd           mm0, [coeffs]
-    paddd           mm1, mm0            ; A1             a1
-    paddd           mm0, mm0
-    psubd           mm0, mm1            ; A2             a2
-    pmaddwd         mm2, [coeffs + 64]  ; -C7R3+C3R1     -C7r3+C3r1
-    paddd           mm7, mm5            ; B0             b0
-    movq            mm5, [coeffs + 72]  ; -C5    -C1     -C5     -C1
-    pmaddwd         mm5, mm3            ; -C5R7-C1R5     -C5r7-C1r5
-    paddd           mm7, mm4            ; A0+B0          a0+b0
-    paddd           mm4, mm4            ; 2A0            2a0
-    psubd           mm4, mm7            ; A0-B0          a0-b0
-    paddd           mm5, mm2            ; B1             b1
-    psrad           mm7, %7
-    psrad           mm4, %7
-    movq            mm2, mm1            ; A1             a1
-    paddd           mm1, mm5            ; A1+B1          a1+b1
-    psubd           mm2, mm5            ; A1-B1          a1-b1
-    psrad           mm1, %7
-    psrad           mm2, %7
-    packssdw        mm7, mm1            ; A1+B1  a1+b1   A0+B0   a0+b0
-    packssdw        mm2, mm4            ; A0-B0  a0-b0   A1-B1   a1-b1
-    movq           [%5], mm7
-    movq            mm1, [blockq + %3]  ; R3     R1      r3      r1
-    movq            mm4, [coeffs + 80]  ; -C1    C5      -C1     C5
-    movq      [24 + %5], mm2
-    pmaddwd         mm4, mm1            ; -C1R3+C5R1     -C1r3+C5r1
-    movq            mm7, [coeffs + 88]  ; C3     C7      C3      C7
-    pmaddwd         mm1, [coeffs + 96]  ; -C5R3+C7R1     -C5r3+C7r1
-    pmaddwd         mm7, mm3            ; C3R7+C7R5      C3r7+C7r5
-    movq            mm2, mm0            ; A2             a2
-    pmaddwd         mm3, [coeffs + 104] ; -C1R7+C3R5     -C1r7+C3r5
-    paddd           mm4, mm7            ; B2             b2
-    paddd           mm2, mm4            ; A2+B2          a2+b2
-    psubd           mm0, mm4            ; a2-B2          a2-b2
-    psrad           mm2, %7
-    psrad           mm0, %7
-    movq            mm4, mm6            ; A3             a3
-    paddd           mm3, mm1            ; B3             b3
-    paddd           mm6, mm3            ; A3+B3          a3+b3
-    psubd           mm4, mm3            ; a3-B3          a3-b3
-    psrad           mm6, %7
-    packssdw        mm2, mm6            ; A3+B3  a3+b3   A2+B2   a2+b2
-    movq       [8 + %5], mm2
-    psrad           mm4, %7
-    packssdw        mm4, mm0            ; A2-B2  a2-b2   A3-B3   a3-b3
-    movq      [16 + %5], mm4
+    movq             m4, [coeffs + 32]  ; C4     C4      C4      C4
+    pmaddwd          m4, m0             ; C4R4+C4R0      C4r4+C4r0
+    movq             m5, [coeffs + 48]  ; -C4    C4      -C4     C4
+    pmaddwd          m0, m5             ; -C4R4+C4R0     -C4r4+C4r0
+    movq             m5, [coeffs + 64]  ; C6     C2      C6      C2
+    pmaddwd          m5, m1             ; C6R6+C2R2      C6r6+C2r2
+    movq             m6, [coeffs + 80]  ; -C2    C6      -C2     C6
+    pmaddwd          m1, m6             ; -C2R6+C6R2     -C2r6+C6r2
+    movq             m7, [coeffs + 96]  ; C3     C1      C3      C1
+    pmaddwd          m7, m2             ; C3R3+C1R1      C3r3+C1r1
+    paddd            m4, [coeffs]
+    movq             m6, m4             ; C4R4+C4R0      C4r4+C4r0
+    paddd            m4, m5             ; A0             a0
+    psubd            m6, m5             ; A3             a3
+    movq             m5, [coeffs + 112] ; C7     C5      C7      C5
+    pmaddwd          m5, m3             ; C7R7+C5R5      C7r7+C5r5
+    paddd            m0, [coeffs]
+    paddd            m1, m0             ; A1             a1
+    paddd            m0, m0
+    psubd            m0, m1             ; A2             a2
+    pmaddwd          m2, [coeffs + 128] ; -C7R3+C3R1     -C7r3+C3r1
+    paddd            m7, m5             ; B0             b0
+    movq             m5, [coeffs + 144] ; -C5    -C1     -C5     -C1
+    pmaddwd          m5, m3             ; -C5R7-C1R5     -C5r7-C1r5
+    paddd            m7, m4             ; A0+B0          a0+b0
+    paddd            m4, m4             ; 2A0            2a0
+    psubd            m4, m7             ; A0-B0          a0-b0
+    paddd            m5, m2             ; B1             b1
+    psrad            m7, %7
+    psrad            m4, %7
+    movq             m2, m1             ; A1             a1
+    paddd            m1, m5             ; A1+B1          a1+b1
+    psubd            m2, m5             ; A1-B1          a1-b1
+    psrad            m1, %7
+    psrad            m2, %7
+    packssdw         m7, m1             ; A1+B1  a1+b1   A0+B0   a0+b0
+    pshufd           m7, m7, 0xD8
+    packssdw         m2, m4             ; A0-B0  a0-b0   A1-B1   a1-b1
+    pshufd           m2, m2, 0xD8
+    movq           [%5], m7
+    movq             m1, [blockq + %3]  ; R3     R1      r3      r1
+    movq             m4, [coeffs + 160] ; -C1    C5      -C1     C5
+    movq      [24 + %5], m2
+    pmaddwd          m4, m1             ; -C1R3+C5R1     -C1r3+C5r1
+    movq             m7, [coeffs + 176] ; C3     C7      C3      C7
+    pmaddwd          m1, [coeffs + 192] ; -C5R3+C7R1     -C5r3+C7r1
+    pmaddwd          m7, m3             ; C3R7+C7R5      C3r7+C7r5
+    movq             m2, m0             ; A2             a2
+    pmaddwd          m3, [coeffs + 208] ; -C1R7+C3R5     -C1r7+C3r5
+    paddd            m4, m7             ; B2             b2
+    paddd            m2, m4             ; A2+B2          a2+b2
+    psubd            m0, m4             ; a2-B2          a2-b2
+    psrad            m2, %7
+    psrad            m0, %7
+    movq             m4, m6             ; A3             a3
+    paddd            m3, m1             ; B3             b3
+    paddd            m6, m3             ; A3+B3          a3+b3
+    psubd            m4, m3             ; a3-B3          a3-b3
+    psrad            m6, %7
+    packssdw         m2, m6             ; A3+B3  a3+b3   A2+B2   a2+b2
+    pshufd           m2, m2, 0xD8
+    movq       [8 + %5], m2
+    psrad            m4, %7
+    packssdw         m4, m0             ; A2-B2  a2-b2   A3-B3   a3-b3
+    pshufd           m4, m4, 0xD8
+    movq      [16 + %5], m4
 %endmacro
 
 %macro IDCT1 6
-    movq            mm0, %1             ; R4     R0      r4      r0
-    movq            mm1, %2             ; R6     R2      r6      r2
-    movq            mm2, %3             ; R3     R1      r3      r1
-    movq            mm3, %4             ; R7     R5      r7      r5
-    movq            mm4, [coeffs + 16]  ; C4     C4      C4      C4
-    pmaddwd         mm4, mm0            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm5, [coeffs + 24]  ; -C4    C4      -C4     C4
-    pmaddwd         mm0, mm5            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm5, [coeffs + 32]  ; C6     C2      C6      C2
-    pmaddwd         mm5, mm1            ; C6R6+C2R2      C6r6+C2r2
-    movq            mm6, [coeffs + 40]  ; -C2    C6      -C2     C6
-    pmaddwd         mm1, mm6            ; -C2R6+C6R2     -C2r6+C6r2
-    movq            mm6, mm4            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm7, [coeffs + 48]  ; C3     C1      C3      C1
-    pmaddwd         mm7, mm2            ; C3R3+C1R1      C3r3+C1r1
-    paddd           mm4, mm5            ; A0             a0
-    psubd           mm6, mm5            ; A3             a3
-    movq            mm5, mm0            ; -C4R4+C4R0     -C4r4+C4r0
-    paddd           mm0, mm1            ; A1             a1
-    psubd           mm5, mm1            ; A2             a2
-    movq            mm1, [coeffs + 56]  ; C7     C5      C7      C5
-    pmaddwd         mm1, mm3            ; C7R7+C5R5      C7r7+C5r5
-    pmaddwd         mm2, [coeffs + 64]  ; -C7R3+C3R1     -C7r3+C3r1
-    paddd           mm7, mm1            ; B0             b0
-    movq            mm1, [coeffs + 72]  ; -C5    -C1     -C5     -C1
-    pmaddwd         mm1, mm3            ; -C5R7-C1R5     -C5r7-C1r5
-    paddd           mm7, mm4            ; A0+B0          a0+b0
-    paddd           mm4, mm4            ; 2A0            2a0
-    psubd           mm4, mm7            ; A0-B0          a0-b0
-    paddd           mm1, mm2            ; B1             b1
-    psrad           mm7, %6
-    psrad           mm4, %6
-    movq            mm2, mm0            ; A1             a1
-    paddd           mm0, mm1            ; A1+B1          a1+b1
-    psubd           mm2, mm1            ; A1-B1          a1-b1
-    psrad           mm0, %6
-    psrad           mm2, %6
-    packssdw        mm7, mm7            ; A0+B0  a0+b0
-    movd           [%5], mm7
-    packssdw        mm0, mm0            ; A1+B1  a1+b1
-    movd      [16 + %5], mm0
-    packssdw        mm2, mm2            ; A1-B1  a1-b1
-    movd      [96 + %5], mm2
-    packssdw        mm4, mm4            ; A0-B0  a0-b0
-    movd     [112 + %5], mm4
-    movq            mm0, %3             ; R3     R1      r3      r1
-    movq            mm4, [coeffs + 80]  ; -C1    C5      -C1     C5
-    pmaddwd         mm4, mm0            ; -C1R3+C5R1     -C1r3+C5r1
-    movq            mm7, [coeffs + 88]  ; C3     C7      C3      C7
-    pmaddwd         mm0, [coeffs + 96]  ; -C5R3+C7R1     -C5r3+C7r1
-    pmaddwd         mm7, mm3            ; C3R7+C7R5      C3r7+C7r5
-    movq            mm2, mm5            ; A2             a2
-    pmaddwd         mm3, [coeffs + 104] ; -C1R7+C3R5     -C1r7+C3r5
-    paddd           mm4, mm7            ; B2             b2
-    paddd           mm2, mm4            ; A2+B2          a2+b2
-    psubd           mm5, mm4            ; a2-B2          a2-b2
-    psrad           mm2, %6
-    psrad           mm5, %6
-    movq            mm4, mm6            ; A3             a3
-    paddd           mm3, mm0            ; B3             b3
-    paddd           mm6, mm3            ; A3+B3          a3+b3
-    psubd           mm4, mm3            ; a3-B3          a3-b3
-    psrad           mm6, %6
-    psrad           mm4, %6
-    packssdw        mm2, mm2            ; A2+B2  a2+b2
-    packssdw        mm6, mm6            ; A3+B3  a3+b3
-    movd      [32 + %5], mm2
-    packssdw        mm4, mm4            ; A3-B3  a3-b3
-    packssdw        mm5, mm5            ; A2-B2  a2-b2
-    movd      [48 + %5], mm6
-    movd      [64 + %5], mm4
-    movd      [80 + %5], mm5
+    mova             m0, %1             ; R4     R0      r4      r0
+    mova             m1, %2             ; R6     R2      r6      r2
+    mova             m2, %3             ; R3     R1      r3      r1
+    mova             m3, %4             ; R7     R5      r7      r5
+    mova             m4, [coeffs + 32]  ; C4     C4      C4      C4
+    pmaddwd          m4, m0             ; C4R4+C4R0      C4r4+C4r0
+    mova             m5, [coeffs + 48]  ; -C4    C4      -C4     C4
+    pmaddwd          m0, m5             ; -C4R4+C4R0     -C4r4+C4r0
+    mova             m5, [coeffs + 64]  ; C6     C2      C6      C2
+    pmaddwd          m5, m1             ; C6R6+C2R2      C6r6+C2r2
+    mova             m6, [coeffs + 80]  ; -C2    C6      -C2     C6
+    pmaddwd          m1, m6             ; -C2R6+C6R2     -C2r6+C6r2
+    mova             m6, m4             ; C4R4+C4R0      C4r4+C4r0
+    mova             m7, [coeffs + 96]  ; C3     C1      C3      C1
+    pmaddwd          m7, m2             ; C3R3+C1R1      C3r3+C1r1
+    paddd            m4, m5             ; A0             a0
+    psubd            m6, m5             ; A3             a3
+    mova             m5, m0             ; -C4R4+C4R0     -C4r4+C4r0
+    paddd            m0, m1             ; A1             a1
+    psubd            m5, m1             ; A2             a2
+    mova             m1, [coeffs + 112] ; C7     C5      C7      C5
+    pmaddwd          m1, m3             ; C7R7+C5R5      C7r7+C5r5
+    pmaddwd          m2, [coeffs + 128] ; -C7R3+C3R1     -C7r3+C3r1
+    paddd            m7, m1             ; B0             b0
+    mova             m1, [coeffs + 144] ; -C5    -C1     -C5     -C1
+    pmaddwd          m1, m3             ; -C5R7-C1R5     -C5r7-C1r5
+    paddd            m7, m4             ; A0+B0          a0+b0
+    paddd            m4, m4             ; 2A0            2a0
+    psubd            m4, m7             ; A0-B0          a0-b0
+    paddd            m1, m2             ; B1             b1
+    psrad            m7, %6
+    psrad            m4, %6
+    mova             m2, m0             ; A1             a1
+    paddd            m0, m1             ; A1+B1          a1+b1
+    psubd            m2, m1             ; A1-B1          a1-b1
+    psrad            m0, %6
+    psrad            m2, %6
+    packssdw         m7, m7             ; A0+B0  a0+b0
+    movq           [%5], m7
+    packssdw         m0, m0             ; A1+B1  a1+b1
+    movq      [16 + %5], m0
+    packssdw         m2, m2             ; A1-B1  a1-b1
+    movq      [96 + %5], m2
+    packssdw         m4, m4             ; A0-B0  a0-b0
+    movq     [112 + %5], m4
+    mova             m0, %3             ; R3     R1      r3      r1
+    mova             m4, [coeffs + 160] ; -C1    C5      -C1     C5
+    pmaddwd          m4, m0             ; -C1R3+C5R1     -C1r3+C5r1
+    mova             m7, [coeffs + 176] ; C3     C7      C3      C7
+    pmaddwd          m0, [coeffs + 192] ; -C5R3+C7R1     -C5r3+C7r1
+    pmaddwd          m7, m3             ; C3R7+C7R5      C3r7+C7r5
+    mova             m2, m5             ; A2             a2
+    pmaddwd          m3, [coeffs + 208] ; -C1R7+C3R5     -C1r7+C3r5
+    paddd            m4, m7             ; B2             b2
+    paddd            m2, m4             ; A2+B2          a2+b2
+    psubd            m5, m4             ; a2-B2          a2-b2
+    psrad            m2, %6
+    psrad            m5, %6
+    mova             m4, m6             ; A3             a3
+    paddd            m3, m0             ; B3             b3
+    paddd            m6, m3             ; A3+B3          a3+b3
+    psubd            m4, m3             ; a3-B3          a3-b3
+    psrad            m6, %6
+    psrad            m4, %6
+    packssdw         m2, m2             ; A2+B2  a2+b2
+    packssdw         m6, m6             ; A3+B3  a3+b3
+    movq      [32 + %5], m2
+    packssdw         m4, m4             ; A3-B3  a3-b3
+    packssdw         m5, m5             ; A2-B2  a2-b2
+    movq      [48 + %5], m6
+    movq      [64 + %5], m4
+    movq      [80 + %5], m5
 %endmacro
 
 %macro IDCT2 6
-    movq            mm0, %1             ; R4     R0      r4      r0
-    movq            mm1, %2             ; R6     R2      r6      r2
-    movq            mm3, %4             ; R7     R5      r7      r5
-    movq            mm4, [coeffs + 16]  ; C4     C4      C4      C4
-    pmaddwd         mm4, mm0            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm5, [coeffs + 24]  ; -C4    C4      -C4     C4
-    pmaddwd         mm0, mm5            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm5, [coeffs + 32]  ; C6     C2      C6      C2
-    pmaddwd         mm5, mm1            ; C6R6+C2R2      C6r6+C2r2
-    movq            mm6, [coeffs + 40]  ; -C2    C6      -C2     C6
-    pmaddwd         mm1, mm6            ; -C2R6+C6R2     -C2r6+C6r2
-    movq            mm6, mm4            ; C4R4+C4R0      C4r4+C4r0
-    paddd           mm4, mm5            ; A0             a0
-    psubd           mm6, mm5            ; A3             a3
-    movq            mm5, mm0            ; -C4R4+C4R0     -C4r4+C4r0
-    paddd           mm0, mm1            ; A1             a1
-    psubd           mm5, mm1            ; A2             a2
-    movq            mm1, [coeffs + 56]  ; C7     C5      C7      C5
-    pmaddwd         mm1, mm3            ; C7R7+C5R5      C7r7+C5r5
-    movq            mm7, [coeffs + 72]  ; -C5    -C1     -C5     -C1
-    pmaddwd         mm7, mm3            ; -C5R7-C1R5     -C5r7-C1r5
-    paddd           mm1, mm4            ; A0+B0          a0+b0
-    paddd           mm4, mm4            ; 2A0            2a0
-    psubd           mm4, mm1            ; A0-B0          a0-b0
-    psrad           mm1, %6
-    psrad           mm4, %6
-    movq            mm2, mm0            ; A1             a1
-    paddd           mm0, mm7            ; A1+B1          a1+b1
-    psubd           mm2, mm7            ; A1-B1          a1-b1
-    psrad           mm0, %6
-    psrad           mm2, %6
-    packssdw        mm1, mm1            ; A0+B0  a0+b0
-    movd           [%5], mm1
-    packssdw        mm0, mm0            ; A1+B1  a1+b1
-    movd      [16 + %5], mm0
-    packssdw        mm2, mm2            ; A1-B1  a1-b1
-    movd      [96 + %5], mm2
-    packssdw        mm4, mm4            ; A0-B0  a0-b0
-    movd     [112 + %5], mm4
-    movq            mm1, [coeffs + 88]  ; C3     C7      C3      C7
-    pmaddwd         mm1, mm3            ; C3R7+C7R5      C3r7+C7r5
-    movq            mm2, mm5            ; A2             a2
-    pmaddwd         mm3, [coeffs + 104] ; -C1R7+C3R5     -C1r7+C3r5
-    paddd           mm2, mm1            ; A2+B2          a2+b2
-    psubd           mm5, mm1            ; a2-B2          a2-b2
-    psrad           mm2, %6
-    psrad           mm5, %6
-    movq            mm1, mm6            ; A3             a3
-    paddd           mm6, mm3            ; A3+B3          a3+b3
-    psubd           mm1, mm3            ; a3-B3          a3-b3
-    psrad           mm6, %6
-    psrad           mm1, %6
-    packssdw        mm2, mm2            ; A2+B2  a2+b2
-    packssdw        mm6, mm6            ; A3+B3  a3+b3
-    movd      [32 + %5], mm2
-    packssdw        mm1, mm1            ; A3-B3  a3-b3
-    packssdw        mm5, mm5            ; A2-B2  a2-b2
-    movd      [48 + %5], mm6
-    movd      [64 + %5], mm1
-    movd      [80 + %5], mm5
+    mova             m0, %1             ; R4     R0      r4      r0
+    mova             m1, %2             ; R6     R2      r6      r2
+    mova             m3, %4             ; R7     R5      r7      r5
+    mova             m4, [coeffs + 32]  ; C4     C4      C4      C4
+    pmaddwd          m4, m0             ; C4R4+C4R0      C4r4+C4r0
+    mova             m5, [coeffs + 48]  ; -C4    C4      -C4     C4
+    pmaddwd          m0, m5             ; -C4R4+C4R0     -C4r4+C4r0
+    mova             m5, [coeffs + 64]  ; C6     C2      C6      C2
+    pmaddwd          m5, m1             ; C6R6+C2R2      C6r6+C2r2
+    mova             m6, [coeffs + 80]  ; -C2    C6      -C2     C6
+    pmaddwd          m1, m6             ; -C2R6+C6R2     -C2r6+C6r2
+    mova             m6, m4             ; C4R4+C4R0      C4r4+C4r0
+    paddd            m4, m5             ; A0             a0
+    psubd            m6, m5             ; A3             a3
+    mova             m5, m0             ; -C4R4+C4R0     -C4r4+C4r0
+    paddd            m0, m1             ; A1             a1
+    psubd            m5, m1             ; A2             a2
+    mova             m1, [coeffs + 112] ; C7     C5      C7      C5
+    pmaddwd          m1, m3             ; C7R7+C5R5      C7r7+C5r5
+    mova             m7, [coeffs + 144] ; -C5    -C1     -C5     -C1
+    pmaddwd          m7, m3             ; -C5R7-C1R5     -C5r7-C1r5
+    paddd            m1, m4             ; A0+B0          a0+b0
+    paddd            m4, m4             ; 2A0            2a0
+    psubd            m4, m1             ; A0-B0          a0-b0
+    psrad            m1, %6
+    psrad            m4, %6
+    mova             m2, m0             ; A1             a1
+    paddd            m0, m7             ; A1+B1          a1+b1
+    psubd            m2, m7             ; A1-B1          a1-b1
+    psrad            m0, %6
+    psrad            m2, %6
+    packssdw         m1, m1             ; A0+B0  a0+b0
+    movq           [%5], m1
+    packssdw         m0, m0             ; A1+B1  a1+b1
+    movq      [16 + %5], m0
+    packssdw         m2, m2             ; A1-B1  a1-b1
+    movq      [96 + %5], m2
+    packssdw         m4, m4             ; A0-B0  a0-b0
+    movq     [112 + %5], m4
+    mova             m1, [coeffs + 176] ; C3     C7      C3      C7
+    pmaddwd          m1, m3             ; C3R7+C7R5      C3r7+C7r5
+    mova             m2, m5             ; A2             a2
+    pmaddwd          m3, [coeffs + 208] ; -C1R7+C3R5     -C1r7+C3r5
+    paddd            m2, m1             ; A2+B2          a2+b2
+    psubd            m5, m1             ; a2-B2          a2-b2
+    psrad            m2, %6
+    psrad            m5, %6
+    mova             m1, m6             ; A3             a3
+    paddd            m6, m3             ; A3+B3          a3+b3
+    psubd            m1, m3             ; a3-B3          a3-b3
+    psrad            m6, %6
+    psrad            m1, %6
+    packssdw         m2, m2             ; A2+B2  a2+b2
+    packssdw         m6, m6             ; A3+B3  a3+b3
+    movq      [32 + %5], m2
+    packssdw         m1, m1             ; A3-B3  a3-b3
+    packssdw         m5, m5             ; A2-B2  a2-b2
+    movq      [48 + %5], m6
+    movq      [64 + %5], m1
+    movq      [80 + %5], m5
 %endmacro
 
 %macro IDCT3 6
-    movq            mm0, %1             ; R4     R0      r4      r0
-    movq            mm3, %4             ; R7     R5      r7      r5
-    movq            mm4, [coeffs + 16]  ; C4     C4      C4      C4
-    pmaddwd         mm4, mm0            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm5, [coeffs + 24]  ; -C4    C4      -C4     C4
-    pmaddwd         mm0, mm5            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm6, mm4            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm5, mm0            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm1, [coeffs + 56]  ; C7     C5      C7      C5
-    pmaddwd         mm1, mm3            ; C7R7+C5R5      C7r7+C5r5
-    movq            mm7, [coeffs + 72]  ; -C5    -C1     -C5     -C1
-    pmaddwd         mm7, mm3            ; -C5R7-C1R5     -C5r7-C1r5
-    paddd           mm1, mm4            ; A0+B0          a0+b0
-    paddd           mm4, mm4            ; 2A0            2a0
-    psubd           mm4, mm1            ; A0-B0          a0-b0
-    psrad           mm1, %6
-    psrad           mm4, %6
-    movq            mm2, mm0            ; A1             a1
-    paddd           mm0, mm7            ; A1+B1          a1+b1
-    psubd           mm2, mm7            ; A1-B1          a1-b1
-    psrad           mm0, %6
-    psrad           mm2, %6
-    packssdw        mm1, mm1            ; A0+B0  a0+b0
-    movd           [%5], mm1
-    packssdw        mm0, mm0            ; A1+B1  a1+b1
-    movd      [16 + %5], mm0
-    packssdw        mm2, mm2            ; A1-B1  a1-b1
-    movd      [96 + %5], mm2
-    packssdw        mm4, mm4            ; A0-B0  a0-b0
-    movd     [112 + %5], mm4
-    movq            mm1, [coeffs + 88]  ; C3     C7      C3      C7
-    pmaddwd         mm1, mm3            ; C3R7+C7R5      C3r7+C7r5
-    movq            mm2, mm5            ; A2             a2
-    pmaddwd         mm3, [coeffs + 104] ; -C1R7+C3R5     -C1r7+C3r5
-    paddd           mm2, mm1            ; A2+B2          a2+b2
-    psubd           mm5, mm1            ; a2-B2          a2-b2
-    psrad           mm2, %6
-    psrad           mm5, %6
-    movq            mm1, mm6            ; A3             a3
-    paddd           mm6, mm3            ; A3+B3          a3+b3
-    psubd           mm1, mm3            ; a3-B3          a3-b3
-    psrad           mm6, %6
-    psrad           mm1, %6
-    packssdw        mm2, mm2            ; A2+B2  a2+b2
-    packssdw        mm6, mm6            ; A3+B3  a3+b3
-    movd      [32 + %5], mm2
-    packssdw        mm1, mm1            ; A3-B3  a3-b3
-    packssdw        mm5, mm5            ; A2-B2  a2-b2
-    movd      [48 + %5], mm6
-    movd      [64 + %5], mm1
-    movd      [80 + %5], mm5
+    mova             m0, %1             ; R4     R0      r4      r0
+    mova             m3, %4             ; R7     R5      r7      r5
+    mova             m4, [coeffs + 32]  ; C4     C4      C4      C4
+    pmaddwd          m4, m0             ; C4R4+C4R0      C4r4+C4r0
+    mova             m5, [coeffs + 48]  ; -C4    C4      -C4     C4
+    pmaddwd          m0, m5             ; -C4R4+C4R0     -C4r4+C4r0
+    mova             m6, m4             ; C4R4+C4R0      C4r4+C4r0
+    mova             m5, m0             ; -C4R4+C4R0     -C4r4+C4r0
+    mova             m1, [coeffs + 112] ; C7     C5      C7      C5
+    pmaddwd          m1, m3             ; C7R7+C5R5      C7r7+C5r5
+    mova             m7, [coeffs + 144] ; -C5    -C1     -C5     -C1
+    pmaddwd          m7, m3             ; -C5R7-C1R5     -C5r7-C1r5
+    paddd            m1, m4             ; A0+B0          a0+b0
+    paddd            m4, m4             ; 2A0            2a0
+    psubd            m4, m1             ; A0-B0          a0-b0
+    psrad            m1, %6
+    psrad            m4, %6
+    mova             m2, m0             ; A1             a1
+    paddd            m0, m7             ; A1+B1          a1+b1
+    psubd            m2, m7             ; A1-B1          a1-b1
+    psrad            m0, %6
+    psrad            m2, %6
+    packssdw         m1, m1             ; A0+B0  a0+b0
+    movq           [%5], m1
+    packssdw         m0, m0             ; A1+B1  a1+b1
+    movq      [16 + %5], m0
+    packssdw         m2, m2             ; A1-B1  a1-b1
+    movq      [96 + %5], m2
+    packssdw         m4, m4             ; A0-B0  a0-b0
+    movq     [112 + %5], m4
+    mova             m1, [coeffs + 176] ; C3     C7      C3      C7
+    pmaddwd          m1, m3             ; C3R7+C7R5      C3r7+C7r5
+    mova             m2, m5             ; A2             a2
+    pmaddwd          m3, [coeffs + 208] ; -C1R7+C3R5     -C1r7+C3r5
+    paddd            m2, m1             ; A2+B2          a2+b2
+    psubd            m5, m1             ; a2-B2          a2-b2
+    psrad            m2, %6
+    psrad            m5, %6
+    mova             m1, m6             ; A3             a3
+    paddd            m6, m3             ; A3+B3          a3+b3
+    psubd            m1, m3             ; a3-B3          a3-b3
+    psrad            m6, %6
+    psrad            m1, %6
+    packssdw         m2, m2             ; A2+B2  a2+b2
+    packssdw         m6, m6             ; A3+B3  a3+b3
+    movq      [32 + %5], m2
+    packssdw         m1, m1             ; A3-B3  a3-b3
+    packssdw         m5, m5             ; A2-B2  a2-b2
+    movq      [48 + %5], m6
+    movq      [64 + %5], m1
+    movq      [80 + %5], m5
 %endmacro
 
 %macro IDCT4 6
-    movq            mm0, %1             ; R4     R0      r4      r0
-    movq            mm2, %3             ; R3     R1      r3      r1
-    movq            mm3, %4             ; R7     R5      r7      r5
-    movq            mm4, [coeffs + 16]  ; C4     C4      C4      C4
-    pmaddwd         mm4, mm0            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm5, [coeffs + 24]  ; -C4    C4      -C4     C4
-    pmaddwd         mm0, mm5            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm6, mm4            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm7, [coeffs + 48]  ; C3     C1      C3      C1
-    pmaddwd         mm7, mm2            ; C3R3+C1R1      C3r3+C1r1
-    movq            mm5, mm0            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm1, [coeffs + 56]  ; C7     C5      C7      C5
-    pmaddwd         mm1, mm3            ; C7R7+C5R5      C7r7+C5r5
-    pmaddwd         mm2, [coeffs + 64]  ; -C7R3+C3R1     -C7r3+C3r1
-    paddd           mm7, mm1            ; B0             b0
-    movq            mm1, [coeffs + 72]  ; -C5    -C1     -C5     -C1
-    pmaddwd         mm1, mm3            ; -C5R7-C1R5     -C5r7-C1r5
-    paddd           mm7, mm4            ; A0+B0          a0+b0
-    paddd           mm4, mm4            ; 2A0            2a0
-    psubd           mm4, mm7            ; A0-B0          a0-b0
-    paddd           mm1, mm2            ; B1             b1
-    psrad           mm7, %6
-    psrad           mm4, %6
-    movq            mm2, mm0            ; A1             a1
-    paddd           mm0, mm1            ; A1+B1          a1+b1
-    psubd           mm2, mm1            ; A1-B1          a1-b1
-    psrad           mm0, %6
-    psrad           mm2, %6
-    packssdw        mm7, mm7            ; A0+B0  a0+b0
-    movd           [%5], mm7
-    packssdw        mm0, mm0            ; A1+B1  a1+b1
-    movd      [16 + %5], mm0
-    packssdw        mm2, mm2            ; A1-B1  a1-b1
-    movd      [96 + %5], mm2
-    packssdw        mm4, mm4            ; A0-B0  a0-b0
-    movd     [112 + %5], mm4
-    movq            mm0, %3             ; R3     R1      r3      r1
-    movq            mm4, [coeffs + 80]  ; -C1    C5      -C1     C5
-    pmaddwd         mm4, mm0            ; -C1R3+C5R1     -C1r3+C5r1
-    movq            mm7, [coeffs + 88]  ; C3     C7      C3      C7
-    pmaddwd         mm0, [coeffs + 96]  ; -C5R3+C7R1     -C5r3+C7r1
-    pmaddwd         mm7, mm3            ; C3R7+C7R5      C3r7+C7r5
-    movq            mm2, mm5            ; A2             a2
-    pmaddwd         mm3, [coeffs + 104] ; -C1R7+C3R5     -C1r7+C3r5
-    paddd           mm4, mm7            ; B2             b2
-    paddd           mm2, mm4            ; A2+B2          a2+b2
-    psubd           mm5, mm4            ; a2-B2          a2-b2
-    psrad           mm2, %6
-    psrad           mm5, %6
-    movq            mm4, mm6            ; A3             a3
-    paddd           mm3, mm0            ; B3             b3
-    paddd           mm6, mm3            ; A3+B3          a3+b3
-    psubd           mm4, mm3            ; a3-B3          a3-b3
-    psrad           mm6, %6
-    psrad           mm4, %6
-    packssdw        mm2, mm2            ; A2+B2  a2+b2
-    packssdw        mm6, mm6            ; A3+B3  a3+b3
-    movd      [32 + %5], mm2
-    packssdw        mm4, mm4            ; A3-B3  a3-b3
-    packssdw        mm5, mm5            ; A2-B2  a2-b2
-    movd      [48 + %5], mm6
-    movd      [64 + %5], mm4
-    movd      [80 + %5], mm5
+    mova             m0, %1             ; R4     R0      r4      r0
+    mova             m2, %3             ; R3     R1      r3      r1
+    mova             m3, %4             ; R7     R5      r7      r5
+    mova             m4, [coeffs + 32]  ; C4     C4      C4      C4
+    pmaddwd          m4, m0             ; C4R4+C4R0      C4r4+C4r0
+    mova             m5, [coeffs + 48]  ; -C4    C4      -C4     C4
+    pmaddwd          m0, m5             ; -C4R4+C4R0     -C4r4+C4r0
+    mova             m6, m4             ; C4R4+C4R0      C4r4+C4r0
+    mova             m7, [coeffs + 96]  ; C3     C1      C3      C1
+    pmaddwd          m7, m2             ; C3R3+C1R1      C3r3+C1r1
+    mova             m5, m0             ; -C4R4+C4R0     -C4r4+C4r0
+    mova             m1, [coeffs + 112] ; C7     C5      C7      C5
+    pmaddwd          m1, m3             ; C7R7+C5R5      C7r7+C5r5
+    pmaddwd          m2, [coeffs + 128] ; -C7R3+C3R1     -C7r3+C3r1
+    paddd            m7, m1             ; B0             b0
+    mova             m1, [coeffs + 144] ; -C5    -C1     -C5     -C1
+    pmaddwd          m1, m3             ; -C5R7-C1R5     -C5r7-C1r5
+    paddd            m7, m4             ; A0+B0          a0+b0
+    paddd            m4, m4             ; 2A0            2a0
+    psubd            m4, m7             ; A0-B0          a0-b0
+    paddd            m1, m2             ; B1             b1
+    psrad            m7, %6
+    psrad            m4, %6
+    mova             m2, m0             ; A1             a1
+    paddd            m0, m1             ; A1+B1          a1+b1
+    psubd            m2, m1             ; A1-B1          a1-b1
+    psrad            m0, %6
+    psrad            m2, %6
+    packssdw         m7, m7             ; A0+B0  a0+b0
+    movq           [%5], m7
+    packssdw         m0, m0             ; A1+B1  a1+b1
+    movq      [16 + %5], m0
+    packssdw         m2, m2             ; A1-B1  a1-b1
+    movq      [96 + %5], m2
+    packssdw         m4, m4             ; A0-B0  a0-b0
+    movq     [112 + %5], m4
+    mova             m0, %3             ; R3     R1      r3      r1
+    mova             m4, [coeffs + 160] ; -C1    C5      -C1     C5
+    pmaddwd          m4, m0             ; -C1R3+C5R1     -C1r3+C5r1
+    mova             m7, [coeffs + 176] ; C3     C7      C3      C7
+    pmaddwd          m0, [coeffs + 192] ; -C5R3+C7R1     -C5r3+C7r1
+    pmaddwd          m7, m3             ; C3R7+C7R5      C3r7+C7r5
+    mova             m2, m5             ; A2             a2
+    pmaddwd          m3, [coeffs + 208] ; -C1R7+C3R5     -C1r7+C3r5
+    paddd            m4, m7             ; B2             b2
+    paddd            m2, m4             ; A2+B2          a2+b2
+    psubd            m5, m4             ; a2-B2          a2-b2
+    psrad            m2, %6
+    psrad            m5, %6
+    mova             m4, m6             ; A3             a3
+    paddd            m3, m0             ; B3             b3
+    paddd            m6, m3             ; A3+B3          a3+b3
+    psubd            m4, m3             ; a3-B3          a3-b3
+    psrad            m6, %6
+    psrad            m4, %6
+    packssdw         m2, m2             ; A2+B2  a2+b2
+    packssdw         m6, m6             ; A3+B3  a3+b3
+    movq      [32 + %5], m2
+    packssdw         m4, m4             ; A3-B3  a3-b3
+    packssdw         m5, m5             ; A2-B2  a2-b2
+    movq      [48 + %5], m6
+    movq      [64 + %5], m4
+    movq      [80 + %5], m5
 %endmacro
 
 %macro IDCT5 6
-    movq            mm0, %1             ; R4     R0      r4      r0
-    movq            mm2, %3             ; R3     R1      r3      r1
-    movq            mm4, [coeffs + 16]  ; C4     C4      C4      C4
-    pmaddwd         mm4, mm0            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm5, [coeffs + 24]  ; -C4    C4      -C4     C4
-    pmaddwd         mm0, mm5            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm6, mm4            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm7, [coeffs + 48]  ; C3     C1      C3      C1
-    pmaddwd         mm7, mm2            ; C3R3+C1R1      C3r3+C1r1
-    movq            mm5, mm0            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm3, [coeffs + 64]
-    pmaddwd         mm3, mm2            ; -C7R3+C3R1     -C7r3+C3r1
-    paddd           mm7, mm4            ; A0+B0          a0+b0
-    paddd           mm4, mm4            ; 2A0            2a0
-    psubd           mm4, mm7            ; A0-B0          a0-b0
-    psrad           mm7, %6
-    psrad           mm4, %6
-    movq            mm1, mm0            ; A1             a1
-    paddd           mm0, mm3            ; A1+B1          a1+b1
-    psubd           mm1, mm3            ; A1-B1          a1-b1
-    psrad           mm0, %6
-    psrad           mm1, %6
-    packssdw        mm7, mm7            ; A0+B0  a0+b0
-    movd           [%5], mm7
-    packssdw        mm0, mm0            ; A1+B1  a1+b1
-    movd      [16 + %5], mm0
-    packssdw        mm1, mm1            ; A1-B1  a1-b1
-    movd      [96 + %5], mm1
-    packssdw        mm4, mm4            ; A0-B0  a0-b0
-    movd     [112 + %5], mm4
-    movq            mm4, [coeffs + 80]  ; -C1    C5      -C1     C5
-    pmaddwd         mm4, mm2            ; -C1R3+C5R1     -C1r3+C5r1
-    pmaddwd         mm2, [coeffs + 96]  ; -C5R3+C7R1     -C5r3+C7r1
-    movq            mm1, mm5            ; A2             a2
-    paddd           mm1, mm4            ; A2+B2          a2+b2
-    psubd           mm5, mm4            ; a2-B2          a2-b2
-    psrad           mm1, %6
-    psrad           mm5, %6
-    movq            mm4, mm6            ; A3             a3
-    paddd           mm6, mm2            ; A3+B3          a3+b3
-    psubd           mm4, mm2            ; a3-B3          a3-b3
-    psrad           mm6, %6
-    psrad           mm4, %6
-    packssdw        mm1, mm1            ; A2+B2  a2+b2
-    packssdw        mm6, mm6            ; A3+B3  a3+b3
-    movd      [32 + %5], mm1
-    packssdw        mm4, mm4            ; A3-B3  a3-b3
-    packssdw        mm5, mm5            ; A2-B2  a2-b2
-    movd      [48 + %5], mm6
-    movd      [64 + %5], mm4
-    movd      [80 + %5], mm5
+    mova             m0, %1             ; R4     R0      r4      r0
+    mova             m2, %3             ; R3     R1      r3      r1
+    mova             m4, [coeffs + 32]  ; C4     C4      C4      C4
+    pmaddwd          m4, m0             ; C4R4+C4R0      C4r4+C4r0
+    mova             m5, [coeffs + 48]  ; -C4    C4      -C4     C4
+    pmaddwd          m0, m5             ; -C4R4+C4R0     -C4r4+C4r0
+    mova             m6, m4             ; C4R4+C4R0      C4r4+C4r0
+    mova             m7, [coeffs + 96]  ; C3     C1      C3      C1
+    pmaddwd          m7, m2             ; C3R3+C1R1      C3r3+C1r1
+    mova             m5, m0             ; -C4R4+C4R0     -C4r4+C4r0
+    mova             m3, [coeffs + 128]
+    pmaddwd          m3, m2             ; -C7R3+C3R1     -C7r3+C3r1
+    paddd            m7, m4             ; A0+B0          a0+b0
+    paddd            m4, m4             ; 2A0            2a0
+    psubd            m4, m7             ; A0-B0          a0-b0
+    psrad            m7, %6
+    psrad            m4, %6
+    mova             m1, m0             ; A1             a1
+    paddd            m0, m3             ; A1+B1          a1+b1
+    psubd            m1, m3             ; A1-B1          a1-b1
+    psrad            m0, %6
+    psrad            m1, %6
+    packssdw         m7, m7             ; A0+B0  a0+b0
+    movq           [%5], m7
+    packssdw         m0, m0             ; A1+B1  a1+b1
+    movq      [16 + %5], m0
+    packssdw         m1, m1             ; A1-B1  a1-b1
+    movq      [96 + %5], m1
+    packssdw         m4, m4             ; A0-B0  a0-b0
+    movq     [112 + %5], m4
+    mova             m4, [coeffs + 160] ; -C1    C5      -C1     C5
+    pmaddwd          m4, m2             ; -C1R3+C5R1     -C1r3+C5r1
+    pmaddwd          m2, [coeffs + 192] ; -C5R3+C7R1     -C5r3+C7r1
+    mova             m1, m5             ; A2             a2
+    paddd            m1, m4             ; A2+B2          a2+b2
+    psubd            m5, m4             ; a2-B2          a2-b2
+    psrad            m1, %6
+    psrad            m5, %6
+    mova             m4, m6             ; A3             a3
+    paddd            m6, m2             ; A3+B3          a3+b3
+    psubd            m4, m2             ; a3-B3          a3-b3
+    psrad            m6, %6
+    psrad            m4, %6
+    packssdw         m1, m1             ; A2+B2  a2+b2
+    packssdw         m6, m6             ; A3+B3  a3+b3
+    movq      [32 + %5], m1
+    packssdw         m4, m4             ; A3-B3  a3-b3
+    packssdw         m5, m5             ; A2-B2  a2-b2
+    movq      [48 + %5], m6
+    movq      [64 + %5], m4
+    movq      [80 + %5], m5
 %endmacro
 
 %macro IDCT6 6
-    movq            mm0, [%1]           ; R4     R0      r4      r0
-    movq            mm1, [%2]           ; R6     R2      r6      r2
-    movq            mm4, [coeffs + 16]  ; C4     C4      C4      C4
-    pmaddwd         mm4, mm0            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm5, [coeffs + 24]  ; -C4    C4      -C4     C4
-    pmaddwd         mm0, mm5            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm5, [coeffs + 32]  ; C6     C2      C6      C2
-    pmaddwd         mm5, mm1            ; C6R6+C2R2      C6r6+C2r2
-    movq            mm6, [coeffs + 40]  ; -C2    C6      -C2     C6
-    pmaddwd         mm1, mm6            ; -C2R6+C6R2     -C2r6+C6r2
-    movq            mm6, mm4            ; C4R4+C4R0      C4r4+C4r0
-    paddd           mm4, mm5            ; A0             a0
-    psubd           mm6, mm5            ; A3             a3
-    movq            mm5, mm0            ; -C4R4+C4R0     -C4r4+C4r0
-    paddd           mm0, mm1            ; A1             a1
-    psubd           mm5, mm1            ; A2             a2
-    movq            mm2, [8 + %1]       ; R4     R0      r4      r0
-    movq            mm3, [8 + %2]       ; R6     R2      r6      r2
-    movq            mm1, [coeffs + 16]  ; C4     C4      C4      C4
-    pmaddwd         mm1, mm2            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm7, [coeffs + 24]  ; -C4    C4      -C4     C4
-    pmaddwd         mm2, mm7            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm7, [coeffs + 32]  ; C6     C2      C6      C2
-    pmaddwd         mm7, mm3            ; C6R6+C2R2      C6r6+C2r2
-    pmaddwd         mm3, [coeffs + 40]  ; -C2R6+C6R2     -C2r6+C6r2
-    paddd           mm7, mm1            ; A0             a0
-    paddd           mm1, mm1            ; 2C0            2c0
-    psubd           mm1, mm7            ; A3             a3
-    paddd           mm3, mm2            ; A1             a1
-    paddd           mm2, mm2            ; 2C1            2c1
-    psubd           mm2, mm3            ; A2             a2
-    psrad           mm4, %6
-    psrad           mm7, %6
-    psrad           mm3, %6
-    packssdw        mm4, mm7            ; A0     a0
-    movq           [%5], mm4
-    psrad           mm0, %6
-    packssdw        mm0, mm3            ; A1     a1
-    movq      [16 + %5], mm0
-    movq      [96 + %5], mm0
-    movq     [112 + %5], mm4
-    psrad           mm5, %6
-    psrad           mm6, %6
-    psrad           mm2, %6
-    packssdw        mm5, mm2            ; A2-B2  a2-b2
-    movq      [32 + %5], mm5
-    psrad           mm1, %6
-    packssdw        mm6, mm1            ; A3+B3  a3+b3
-    movq      [48 + %5], mm6
-    movq      [64 + %5], mm6
-    movq      [80 + %5], mm5
+    movq             m0, [%1]           ; R4     R0      r4      r0
+    movhps           m0, [%1 + 16]
+    movq             m1, [%2]           ; R6     R2      r6      r2
+    movhps           m1, [%2 + 16]
+    mova             m4, [coeffs + 32]  ; C4     C4      C4      C4
+    pmaddwd          m4, m0             ; C4R4+C4R0      C4r4+C4r0
+    mova             m5, [coeffs + 48]  ; -C4    C4      -C4     C4
+    pmaddwd          m0, m5             ; -C4R4+C4R0     -C4r4+C4r0
+    mova             m5, [coeffs + 64]  ; C6     C2      C6      C2
+    pmaddwd          m5, m1             ; C6R6+C2R2      C6r6+C2r2
+    mova             m6, [coeffs + 80]  ; -C2    C6      -C2     C6
+    pmaddwd          m1, m6             ; -C2R6+C6R2     -C2r6+C6r2
+    mova             m6, m4             ; C4R4+C4R0      C4r4+C4r0
+    paddd            m4, m5             ; A0             a0
+    psubd            m6, m5             ; A3             a3
+    mova             m5, m0             ; -C4R4+C4R0     -C4r4+C4r0
+    paddd            m0, m1             ; A1             a1
+    psubd            m5, m1             ; A2             a2
+    movq             m2, [%1 + 8]       ; R4     R0      r4      r0
+    movhps           m2, [%1 + 24]
+    movq             m3, [%2 + 8]       ; R6     R2      r6      r2
+    movhps           m3, [%2 + 24]
+    mova             m1, [coeffs + 32]  ; C4     C4      C4      C4
+    pmaddwd          m1, m2             ; C4R4+C4R0      C4r4+C4r0
+    mova             m7, [coeffs + 48]  ; -C4    C4      -C4     C4
+    pmaddwd          m2, m7             ; -C4R4+C4R0     -C4r4+C4r0
+    mova             m7, [coeffs + 64]  ; C6     C2      C6      C2
+    pmaddwd          m7, m3             ; C6R6+C2R2      C6r6+C2r2
+    pmaddwd          m3, [coeffs + 80]  ; -C2R6+C6R2     -C2r6+C6r2
+    paddd            m7, m1             ; A0             a0
+    paddd            m1, m1             ; 2C0            2c0
+    psubd            m1, m7             ; A3             a3
+    paddd            m3, m2             ; A1             a1
+    paddd            m2, m2             ; 2C1            2c1
+    psubd            m2, m3             ; A2             a2
+    psrad            m4, %6
+    psrad            m7, %6
+    psrad            m3, %6
+    packssdw         m4, m7             ; A0     a0
+    pshufd           m4, m4, 0xD8
+    mova           [%5], m4
+    psrad            m0, %6
+    packssdw         m0, m3             ; A1     a1
+    pshufd           m0, m0, 0xD8
+    mova      [16 + %5], m0
+    mova      [96 + %5], m0
+    mova     [112 + %5], m4
+    psrad            m5, %6
+    psrad            m6, %6
+    psrad            m2, %6
+    packssdw         m5, m2             ; A2-B2  a2-b2
+    pshufd           m5, m5, 0xD8
+    mova      [32 + %5], m5
+    psrad            m1, %6
+    packssdw         m6, m1             ; A3+B3  a3+b3
+    pshufd           m6, m6, 0xD8
+    mova      [48 + %5], m6
+    mova      [64 + %5], m6
+    mova      [80 + %5], m5
 %endmacro
 
 %macro IDCT7 6
-    movq            mm0, %1             ; R4     R0      r4      r0
-    movq            mm1, %2             ; R6     R2      r6      r2
-    movq            mm2, %3             ; R3     R1      r3      r1
-    movq            mm4, [coeffs + 16]  ; C4     C4      C4      C4
-    pmaddwd         mm4, mm0            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm5, [coeffs + 24]  ; -C4    C4      -C4     C4
-    pmaddwd         mm0, mm5            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm5, [coeffs + 32]  ; C6     C2      C6      C2
-    pmaddwd         mm5, mm1            ; C6R6+C2R2      C6r6+C2r2
-    movq            mm6, [coeffs + 40]  ; -C2    C6      -C2     C6
-    pmaddwd         mm1, mm6            ; -C2R6+C6R2     -C2r6+C6r2
-    movq            mm6, mm4            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm7, [coeffs + 48]  ; C3     C1      C3      C1
-    pmaddwd         mm7, mm2            ; C3R3+C1R1      C3r3+C1r1
-    paddd           mm4, mm5            ; A0             a0
-    psubd           mm6, mm5            ; A3             a3
-    movq            mm5, mm0            ; -C4R4+C4R0     -C4r4+C4r0
-    paddd           mm0, mm1            ; A1             a1
-    psubd           mm5, mm1            ; A2             a2
-    movq            mm1, [coeffs + 64]
-    pmaddwd         mm1, mm2            ; -C7R3+C3R1     -C7r3+C3r1
-    paddd           mm7, mm4            ; A0+B0          a0+b0
-    paddd           mm4, mm4            ; 2A0            2a0
-    psubd           mm4, mm7            ; A0-B0          a0-b0
-    psrad           mm7, %6
-    psrad           mm4, %6
-    movq            mm3, mm0            ; A1             a1
-    paddd           mm0, mm1            ; A1+B1          a1+b1
-    psubd           mm3, mm1            ; A1-B1          a1-b1
-    psrad           mm0, %6
-    psrad           mm3, %6
-    packssdw        mm7, mm7            ; A0+B0  a0+b0
-    movd           [%5], mm7
-    packssdw        mm0, mm0            ; A1+B1  a1+b1
-    movd      [16 + %5], mm0
-    packssdw        mm3, mm3            ; A1-B1  a1-b1
-    movd      [96 + %5], mm3
-    packssdw        mm4, mm4            ; A0-B0  a0-b0
-    movd     [112 + %5], mm4
-    movq            mm4, [coeffs + 80]  ; -C1    C5      -C1     C5
-    pmaddwd         mm4, mm2            ; -C1R3+C5R1     -C1r3+C5r1
-    pmaddwd         mm2, [coeffs + 96]  ; -C5R3+C7R1     -C5r3+C7r1
-    movq            mm3, mm5            ; A2             a2
-    paddd           mm3, mm4            ; A2+B2          a2+b2
-    psubd           mm5, mm4            ; a2-B2          a2-b2
-    psrad           mm3, %6
-    psrad           mm5, %6
-    movq            mm4, mm6            ; A3             a3
-    paddd           mm6, mm2            ; A3+B3          a3+b3
-    psubd           mm4, mm2            ; a3-B3          a3-b3
-    psrad           mm6, %6
-    packssdw        mm3, mm3            ; A2+B2  a2+b2
-    movd      [32 + %5], mm3
-    psrad           mm4, %6
-    packssdw        mm6, mm6            ; A3+B3  a3+b3
-    movd      [48 + %5], mm6
-    packssdw        mm4, mm4            ; A3-B3  a3-b3
-    packssdw        mm5, mm5            ; A2-B2  a2-b2
-    movd      [64 + %5], mm4
-    movd      [80 + %5], mm5
+    mova             m0, %1             ; R4     R0      r4      r0
+    mova             m1, %2             ; R6     R2      r6      r2
+    mova             m2, %3             ; R3     R1      r3      r1
+    mova             m4, [coeffs + 32]  ; C4     C4      C4      C4
+    pmaddwd          m4, m0             ; C4R4+C4R0      C4r4+C4r0
+    mova             m5, [coeffs + 48]  ; -C4    C4      -C4     C4
+    pmaddwd          m0, m5             ; -C4R4+C4R0     -C4r4+C4r0
+    mova             m5, [coeffs + 64]  ; C6     C2      C6      C2
+    pmaddwd          m5, m1             ; C6R6+C2R2      C6r6+C2r2
+    mova             m6, [coeffs + 80]  ; -C2    C6      -C2     C6
+    pmaddwd          m1, m6             ; -C2R6+C6R2     -C2r6+C6r2
+    mova             m6, m4             ; C4R4+C4R0      C4r4+C4r0
+    mova             m7, [coeffs + 96]  ; C3     C1      C3      C1
+    pmaddwd          m7, m2             ; C3R3+C1R1      C3r3+C1r1
+    paddd            m4, m5             ; A0             a0
+    psubd            m6, m5             ; A3             a3
+    mova             m5, m0             ; -C4R4+C4R0     -C4r4+C4r0
+    paddd            m0, m1             ; A1             a1
+    psubd            m5, m1             ; A2             a2
+    mova             m1, [coeffs + 128]
+    pmaddwd          m1, m2             ; -C7R3+C3R1     -C7r3+C3r1
+    paddd            m7, m4             ; A0+B0          a0+b0
+    paddd            m4, m4             ; 2A0            2a0
+    psubd            m4, m7             ; A0-B0          a0-b0
+    psrad            m7, %6
+    psrad            m4, %6
+    mova             m3, m0             ; A1             a1
+    paddd            m0, m1             ; A1+B1          a1+b1
+    psubd            m3, m1             ; A1-B1          a1-b1
+    psrad            m0, %6
+    psrad            m3, %6
+    packssdw         m7, m7             ; A0+B0  a0+b0
+    movq           [%5], m7
+    packssdw         m0, m0             ; A1+B1  a1+b1
+    movq      [16 + %5], m0
+    packssdw         m3, m3             ; A1-B1  a1-b1
+    movq      [96 + %5], m3
+    packssdw         m4, m4             ; A0-B0  a0-b0
+    movq     [112 + %5], m4
+    mova             m4, [coeffs + 160] ; -C1    C5      -C1     C5
+    pmaddwd          m4, m2             ; -C1R3+C5R1     -C1r3+C5r1
+    pmaddwd          m2, [coeffs + 192] ; -C5R3+C7R1     -C5r3+C7r1
+    mova             m3, m5             ; A2             a2
+    paddd            m3, m4             ; A2+B2          a2+b2
+    psubd            m5, m4             ; a2-B2          a2-b2
+    psrad            m3, %6
+    psrad            m5, %6
+    mova             m4, m6             ; A3             a3
+    paddd            m6, m2             ; A3+B3          a3+b3
+    psubd            m4, m2             ; a3-B3          a3-b3
+    psrad            m6, %6
+    packssdw         m3, m3             ; A2+B2  a2+b2
+    movq      [32 + %5], m3
+    psrad            m4, %6
+    packssdw         m6, m6             ; A3+B3  a3+b3
+    movq      [48 + %5], m6
+    packssdw         m4, m4             ; A3-B3  a3-b3
+    packssdw         m5, m5             ; A2-B2  a2-b2
+    movq      [64 + %5], m4
+    movq      [80 + %5], m5
 %endmacro
 
 %macro IDCT8 6
-    movq            mm0, [%1]           ; R4     R0      r4      r0
-    movq            mm4, [coeffs + 16]  ; C4     C4      C4      C4
-    pmaddwd         mm4, mm0            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm5, [coeffs + 24]  ; -C4    C4      -C4     C4
-    pmaddwd         mm0, mm5            ; -C4R4+C4R0     -C4r4+C4r0
-    psrad           mm4, %6
-    psrad           mm0, %6
-    movq            mm2, [8 + %1]       ; R4     R0      r4      r0
-    movq            mm1, [coeffs + 16]  ; C4     C4      C4      C4
-    pmaddwd         mm1, mm2            ; C4R4+C4R0      C4r4+C4r0
-    movq            mm7, [coeffs + 24]  ; -C4    C4      -C4     C4
-    pmaddwd         mm2, mm7            ; -C4R4+C4R0     -C4r4+C4r0
-    movq            mm7, [coeffs + 32]  ; C6     C2      C6      C2
-    psrad           mm1, %6
-    packssdw        mm4, mm1            ; A0     a0
-    movq           [%5], mm4
-    psrad           mm2, %6
-    packssdw        mm0, mm2            ; A1     a1
-    movq      [16 + %5], mm0
-    movq      [96 + %5], mm0
-    movq     [112 + %5], mm4
-    movq      [32 + %5], mm0
-    movq      [48 + %5], mm4
-    movq      [64 + %5], mm4
-    movq      [80 + %5], mm0
+    movq             m0, [%1]           ; R4     R0      r4      r0
+    movhps           m0, [%1 + 16]
+    mova             m4, [coeffs + 32]  ; C4     C4      C4      C4
+    pmaddwd          m4, m0             ; C4R4+C4R0      C4r4+C4r0
+    mova             m5, [coeffs + 48]  ; -C4    C4      -C4     C4
+    pmaddwd          m0, m5             ; -C4R4+C4R0     -C4r4+C4r0
+    psrad            m4, %6
+    psrad            m0, %6
+    movq             m2, [%1 + 8]       ; R4     R0      r4      r0
+    movhps           m2, [%1 + 24]
+    mova             m1, [coeffs + 32]  ; C4     C4      C4      C4
+    pmaddwd          m1, m2             ; C4R4+C4R0      C4r4+C4r0
+    mova             m7, [coeffs + 48]  ; -C4    C4      -C4     C4
+    pmaddwd          m2, m7             ; -C4R4+C4R0     -C4r4+C4r0
+    mova             m7, [coeffs + 64]  ; C6     C2      C6      C2
+    psrad            m1, %6
+    packssdw         m4, m1             ; A0     a0
+    pshufd           m4, m4, 0xD8
+    mova           [%5], m4
+    psrad            m2, %6
+    packssdw         m0, m2             ; A1     a1
+    pshufd           m0, m0, 0xD8
+    mova      [16 + %5], m0
+    mova      [96 + %5], m0
+    mova     [112 + %5], m4
+    mova      [32 + %5], m0
+    mova      [48 + %5], m4
+    mova      [64 + %5], m4
+    mova      [80 + %5], m0
 %endmacro
 
 %macro IDCT 0
@@ -710,9 +735,7 @@ SECTION .text
     Z_COND_IDCT  96, 104, 112, 120, rsp + 96, null, 11, %%1
 
     IDCT1 [rsp +  0], [rsp + 64], [rsp + 32], [rsp +  96], blockq +  0, 20
-    IDCT1 [rsp +  8], [rsp + 72], [rsp + 40], [rsp + 104], blockq +  4, 20
     IDCT1 [rsp + 16], [rsp + 80], [rsp + 48], [rsp + 112], blockq +  8, 20
-    IDCT1 [rsp + 24], [rsp + 88], [rsp + 56], [rsp + 120], blockq + 12, 20
     jmp %%9
 
     ALIGN 16
@@ -721,9 +744,7 @@ SECTION .text
     Z_COND_IDCT 96, 104, 112, 120, rsp + 96, null, 11, %%5
 
     IDCT2 [rsp +  0], [rsp + 64], [rsp + 32], [rsp +  96], blockq +  0, 20
-    IDCT2 [rsp +  8], [rsp + 72], [rsp + 40], [rsp + 104], blockq +  4, 20
     IDCT2 [rsp + 16], [rsp + 80], [rsp + 48], [rsp + 112], blockq +  8, 20
-    IDCT2 [rsp + 24], [rsp + 88], [rsp + 56], [rsp + 120], blockq + 12, 20
     jmp %%9
 
     ALIGN 16
@@ -731,9 +752,7 @@ SECTION .text
     Z_COND_IDCT 96, 104, 112, 120, rsp + 96, null, 11, %%7
 
     IDCT3 [rsp +  0], [rsp + 64], [rsp + 32], [rsp +  96], blockq +  0, 20
-    IDCT3 [rsp +  8], [rsp + 72], [rsp + 40], [rsp + 104], blockq +  4, 20
     IDCT3 [rsp + 16], [rsp + 80], [rsp + 48], [rsp + 112], blockq +  8, 20
-    IDCT3 [rsp + 24], [rsp + 88], [rsp + 56], [rsp + 120], blockq + 12, 20
     jmp %%9
 
     ALIGN 16
@@ -741,41 +760,33 @@ SECTION .text
     Z_COND_IDCT 96, 104, 112, 120, rsp + 96, null, 11, %%3
 
     IDCT4 [rsp +  0], [rsp + 64], [rsp + 32], [rsp +  96], blockq +  0, 20
-    IDCT4 [rsp +  8], [rsp + 72], [rsp + 40], [rsp + 104], blockq +  4, 20
     IDCT4 [rsp + 16], [rsp + 80], [rsp + 48], [rsp + 112], blockq +  8, 20
-    IDCT4 [rsp + 24], [rsp + 88], [rsp + 56], [rsp + 120], blockq + 12, 20
     jmp %%9
 
     ALIGN 16
     %%3:
 
     IDCT5 [rsp +  0], [rsp + 64], [rsp + 32], [rsp +  96], blockq +  0, 20
-    IDCT5 [rsp +  8], [rsp + 72], [rsp + 40], [rsp + 104], blockq +  4, 20
     IDCT5 [rsp + 16], [rsp + 80], [rsp + 48], [rsp + 112], blockq +  8, 20
-    IDCT5 [rsp + 24], [rsp + 88], [rsp + 56], [rsp + 120], blockq + 12, 20
     jmp %%9
 
     ALIGN 16
     %%5:
 
     IDCT6 rsp +  0, rsp + 64, rsp + 32, rsp +  96, blockq +  0, 20
-    IDCT6 rsp + 16, rsp + 80, rsp + 48, rsp + 112, blockq +  8, 20
     jmp %%9
 
     ALIGN 16
     %%1:
 
     IDCT7 [rsp +  0], [rsp + 64], [rsp + 32], [rsp +  96], blockq +  0, 20
-    IDCT7 [rsp +  8], [rsp + 72], [rsp + 40], [rsp + 104], blockq +  4, 20
     IDCT7 [rsp + 16], [rsp + 80], [rsp + 48], [rsp + 112], blockq +  8, 20
-    IDCT7 [rsp + 24], [rsp + 88], [rsp + 56], [rsp + 120], blockq + 12, 20
     jmp %%9
 
     ALIGN 16
     %%7:
 
     IDCT8 rsp +  0, rsp + 64, rsp + 32, rsp +  96, blockq +  0, 20
-    IDCT8 rsp + 16, rsp + 80, rsp + 48, rsp + 112, blockq +  8, 20
 
     %%9:
 %endmacro
@@ -805,14 +816,11 @@ SECTION .text
     movhps     [pixelsq+lsizeq], m0
 %endmacro
 
-INIT_MMX mmx
+INIT_XMM sse2
 
 cglobal simple_idct, 1, 2, 8, 128, block, t0
     IDCT
-    emms
 RET
-
-INIT_XMM sse2
 
 cglobal simple_idct_put, 3, 5, 8, 128, pixels, lsize, block, lsize3, t0
     IDCT

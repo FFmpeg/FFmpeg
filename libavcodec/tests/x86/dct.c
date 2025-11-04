@@ -90,7 +90,7 @@ static const struct algo idct_tab_arch[] = {
 #endif
 #else
 #if HAVE_SSE2_EXTERNAL
-    { "SIMPLE-SSE2",   ff_simple_idct_mmx,  FF_IDCT_PERM_SIMPLE, AV_CPU_FLAG_SSE2},
+    { "SIMPLE-SSE2",   ff_simple_idct_sse2,  FF_IDCT_PERM_SIMPLE, AV_CPU_FLAG_SSE2},
 #endif
 #endif
 #endif

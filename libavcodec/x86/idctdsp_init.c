@@ -76,7 +76,7 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
             (avctx->idct_algo == FF_IDCT_AUTO ||
                 avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
                 avctx->idct_algo == FF_IDCT_SIMPLEMMX)) {
-                c->idct      = ff_simple_idct_mmx;
+                c->idct      = ff_simple_idct_sse2;
                 c->idct_put  = ff_simple_idct_put_sse2;
                 c->idct_add  = ff_simple_idct_add_sse2;
                 c->perm_type = FF_IDCT_PERM_SIMPLE;
