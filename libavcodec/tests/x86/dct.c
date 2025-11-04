@@ -88,6 +88,10 @@ static const struct algo idct_tab_arch[] = {
     { "SIMPLE10-AVX",   ff_simple_idct10_avx,  FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_AVX},
     { "SIMPLE12-AVX",   ff_simple_idct12_avx,  FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_AVX,  1 },
 #endif
+#else
+#if HAVE_SSE2_EXTERNAL
+    { "SIMPLE-SSE2",   ff_simple_idct_mmx,  FF_IDCT_PERM_SIMPLE, AV_CPU_FLAG_SSE2},
+#endif
 #endif
 #endif
     { 0 }
