@@ -375,6 +375,7 @@ static int apv_decode(AVCodecContext *avctx, AVFrame *output,
     if (err < 0)
         return err;
 
+    apv->cur_raw_frame = input;
     apv->output_frame = output;
     atomic_store_explicit(&apv->tile_errors, 0, memory_order_relaxed);
 

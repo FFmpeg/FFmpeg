@@ -24,6 +24,7 @@
 
 #include "apv.h"
 #include "apv_dsp.h"
+#include "cbs_apv.h"
 
 #include "cbs.h"
 #include "get_bits.h"
@@ -100,6 +101,7 @@ typedef struct APVDecodeContext {
 
     CodedBitstreamFragment au;
     APVDerivedTileInfo tile_info;
+    APVRawFrame *cur_raw_frame;
 
     AVPacket *pkt;
     AVFrame *output_frame;
