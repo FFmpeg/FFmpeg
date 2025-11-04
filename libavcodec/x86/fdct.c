@@ -44,10 +44,6 @@
 // constants for the forward DCT
 // -----------------------------
 //
-// Be sure to check that your compiler is aligning all constants to QWORD
-// (8-byte) memory boundaries!  Otherwise the unaligned memory access will
-// severely stall MMX execution.
-//
 //////////////////////////////////////////////////////////////////////
 
 #define BITS_FRW_ACC   3 //; 2 or 3 for accuracy
