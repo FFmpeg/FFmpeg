@@ -423,14 +423,8 @@ cglobal %1_mpeg4_qpel16_v_lowpass, 4, 6, 0, 544
     jne .looph
 
 
-    ; NOTE: r1 CHANGES VALUES: r1 -> 4 - 14*dstStride
     mov         r4d, 4
-    mov          r1, 4
-    neg          r2
-    lea          r1, [r1+r2*8]
-    lea          r1, [r1+r2*4]
-    lea          r1, [r1+r2*2]
-    neg          r2
+    mov          r1, r0
     mov          r5, rsp
 .loopv:
     pxor         m7, m7
@@ -438,6 +432,7 @@ cglobal %1_mpeg4_qpel16_v_lowpass, 4, 6, 0, 544
     mova         m1, [r5+ 0x8]
     mova         m2, [r5+0x10]
     mova         m3, [r5+0x18]
+    add          r1, 4
     QPEL_V_LOW [r5+0x10], [r5+ 0x8], [r5+ 0x0], [r5+0x20], [r0]
     QPEL_V_LOW [r5+ 0x8], [r5+ 0x0], [r5+ 0x0], [r5+0x28], [r0+r2]
     lea    r0, [r0+r2*2]
@@ -463,7 +458,7 @@ cglobal %1_mpeg4_qpel16_v_lowpass, 4, 6, 0, 544
     QPEL_V_LOW [r5+0x60], [r5+0x68], [r5+0x70], [r5+0x70], [r0+r2]
 
     add    r5, 0x88
-    add    r0, r1
+    mov    r0, r1
     dec r4d
     jne .loopv
     RET
@@ -510,13 +505,8 @@ cglobal %1_mpeg4_qpel8_v_lowpass, 4, 6, 0, 288
     jne .looph
 
 
-    ; NOTE: r1 CHANGES VALUES: r1 -> 4 - 6*dstStride
     mov         r4d, 2
-    mov          r1, 4
-    neg          r2
-    lea          r1, [r1+r2*4]
-    lea          r1, [r1+r2*2]
-    neg          r2
+    mov          r1, r0
     mov          r5, rsp
 .loopv:
     pxor         m7, m7
@@ -537,7 +527,7 @@ cglobal %1_mpeg4_qpel8_v_lowpass, 4, 6, 0, 288
     QPEL_V_LOW [r5+0x20], [r5+0x28], [r5+0x30], [r5+0x30], [r0+r2]
 
     add    r5, 0x48
-    add    r0, r1
+    lea    r0, [r1+4]
     dec r4d
     jne .loopv
     RET
