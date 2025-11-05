@@ -166,18 +166,22 @@ static inline unsigned int show_bits(GetBitContext *s, int n);
 
 #define MIN_CACHE_BITS 25
 
+#define OPEN_READER_NOSIZE_NOCACHE(name, gb)    \
+    unsigned int name ## _index = (gb)->index
+
 #define OPEN_READER_NOSIZE(name, gb)            \
-    unsigned int name ## _index = (gb)->index;  \
-    av_unused unsigned int name ## _cache
+    OPEN_READER_NOSIZE_NOCACHE(name, gb);       \
+    unsigned int name ## _cache
 
 #if UNCHECKED_BITSTREAM_READER
 #define OPEN_READER(name, gb) OPEN_READER_NOSIZE(name, gb)
-
+#define OPEN_READER_SIZE(name, gb) ((void)0)
 #define BITS_AVAILABLE(name, gb) 1
 #else
+#define OPEN_READER_SIZE(name, gb) unsigned int name ## _size_plus8 = (gb)->size_in_bits_plus8
 #define OPEN_READER(name, gb)                   \
     OPEN_READER_NOSIZE(name, gb);               \
-    unsigned int name ## _size_plus8 = (gb)->size_in_bits_plus8
+    OPEN_READER_SIZE(name, gb)
 
 #define BITS_AVAILABLE(name, gb) name ## _index < name ## _size_plus8
 #endif
@@ -378,7 +382,8 @@ static inline unsigned int show_bits(GetBitContext *s, int n)
 
 static inline void skip_bits(GetBitContext *s, int n)
 {
-    OPEN_READER(re, s);
+    OPEN_READER_NOSIZE_NOCACHE(re, s);
+    OPEN_READER_SIZE(re, s);
     LAST_SKIP_BITS(re, s, n);
     CLOSE_READER(re, s);
 }
