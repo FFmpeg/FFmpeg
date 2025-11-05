@@ -507,11 +507,15 @@ static int read_header(FFV1Context *f, RangeCoder *c)
     if (ret < 0)
         return ret;
 
-    if (f->configured_pix_fmt != f->pix_fmt) {
+    if (f->configured_pix_fmt != f->pix_fmt ||
+        f->configured_width != f->avctx->width ||
+        f->configured_height != f->avctx->height) {
         f->avctx->pix_fmt = get_pixel_format(f);
         if (f->avctx->pix_fmt < 0)
             return AVERROR(EINVAL);
         f->configured_pix_fmt = f->pix_fmt;
+        f->configured_width = f->avctx->width;
+        f->configured_height = f->avctx->height;
     }
 
     ff_dlog(f->avctx, "%d %d %d\n",
