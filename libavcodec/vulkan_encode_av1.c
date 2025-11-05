@@ -1081,7 +1081,7 @@ static int write_extra_headers(AVCodecContext *avctx,
     VulkanEncodeAV1Picture  *ap = base_pic->codec_priv;
     CodedBitstreamFragment *obu = &enc->current_access_unit;
 
-    if (ap->units_needed & AV_FRAME_DATA_MASTERING_DISPLAY_METADATA) {
+    if (ap->units_needed & UNIT_MASTERING_DISPLAY) {
         err = vulkan_encode_av1_add_obu(avctx, obu,
                                         AV1_OBU_METADATA,
                                         &enc->meta_mastering_obu);
