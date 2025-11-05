@@ -250,7 +250,7 @@ void term_init(void)
 /* read a key without blocking */
 static int read_key(void)
 {
-    unsigned char ch;
+    unsigned char ch = -1;
 #if HAVE_TERMIOS_H
     int n = 1;
     struct timeval tv;
@@ -297,7 +297,7 @@ static int read_key(void)
     if(kbhit())
         return(getch());
 #endif
-    return -1;
+    return ch;
 }
 
 static int decode_interrupt_cb(void *ctx)
