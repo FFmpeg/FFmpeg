@@ -2548,9 +2548,10 @@ print:
                 GLSLA("%s", desc[i].buf_content);
             }
             GLSLA("\n}");
-        } else if (desc[i].elems > 0) {
-            GLSLA("[%i]", desc[i].elems);
         }
+
+        if (desc[i].elems > 0)
+            GLSLA("[%i]", desc[i].elems);
 
         GLSLA(";");
         GLSLA("\n");
