@@ -33,7 +33,6 @@
 #include "config_components.h"
 
 #include "libavutil/attributes.h"
-#include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
@@ -1824,7 +1823,6 @@ next_field:
         }
     }
 
-    emms_c();
     return 0;
  out_of_range:
     av_log(s->avctx, AV_LOG_ERROR, "decode_sos: ac/dc index out of range\n");

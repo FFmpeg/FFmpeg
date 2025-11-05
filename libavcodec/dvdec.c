@@ -36,7 +36,6 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/emms.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
@@ -682,8 +681,6 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     s->buf = buf;
     avctx->execute(avctx, dv_decode_video_segment, s->work_chunks, NULL,
                    dv_work_pool_size(s->sys), sizeof(DVwork_chunk));
-
-    emms_c();
 
     /* return image */
     *got_frame = 1;
