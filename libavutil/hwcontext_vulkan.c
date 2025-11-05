@@ -1439,14 +1439,14 @@ static inline int pick_queue_family(VkQueueFamilyProperties2 *qf, uint32_t num_q
 
 static inline int pick_video_queue_family(VkQueueFamilyProperties2 *qf,
                                           VkQueueFamilyVideoPropertiesKHR *qf_vid, uint32_t num_qf,
-                                          VkVideoCodecOperationFlagBitsKHR flags)
+                                          VkVideoCodecOperationFlagsKHR flags)
 {
     int index = -1;
     uint32_t min_score = UINT32_MAX;
 
     for (int i = 0; i < num_qf; i++) {
-        const VkQueueFlagBits qflags = qf[i].queueFamilyProperties.queueFlags;
-        const VkQueueFlagBits vflags = qf_vid[i].videoCodecOperations;
+        const VkQueueFlags qflags = qf[i].queueFamilyProperties.queueFlags;
+        const VkVideoCodecOperationFlagsKHR vflags = qf_vid[i].videoCodecOperations;
 
         if (!(qflags & (VK_QUEUE_VIDEO_ENCODE_BIT_KHR | VK_QUEUE_VIDEO_DECODE_BIT_KHR)))
             continue;
@@ -2675,7 +2675,7 @@ fail:
 /* Checks if an export flag is enabled, and if it is ORs it with *iexp */
 static void try_export_flags(AVHWFramesContext *hwfc,
                              VkExternalMemoryHandleTypeFlags *comp_handle_types,
-                             VkExternalMemoryHandleTypeFlagBits *iexp,
+                             VkExternalMemoryHandleTypeFlags *iexp,
                              VkExternalMemoryHandleTypeFlagBits exp)
 {
     VkResult ret;
@@ -2846,7 +2846,7 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
     AVVulkanFramesContext *hwctx = &fp->p;
     VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
     AVVulkanDeviceContext *dev_hwctx = &p->p;
-    VkImageUsageFlagBits supported_usage;
+    VkImageUsageFlags supported_usage;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
     const struct FFVkFormatEntry *fmt;
     int disable_multiplane = p->disable_multiplane ||
