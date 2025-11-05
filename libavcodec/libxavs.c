@@ -20,7 +20,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <stdint.h>
@@ -29,7 +28,6 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"
-#include "packet_internal.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -201,7 +199,7 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
         pkt->flags |= AV_PKT_FLAG_KEY;
     }
 
-    ff_side_data_set_encoder_stats(pkt, (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA, NULL, 0, pict_type);
+    ff_encode_add_stats_side_data(pkt, (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA, NULL, 0, pict_type);
 
     x4->out_frame_count++;
     *got_packet = ret;

@@ -41,7 +41,6 @@
 #include "codec_internal.h"
 #include "encode.h"
 #include "mpegutils.h"
-#include "packet_internal.h"
 
 #if HAVE_UNISTD_H
 #include <unistd.h>
@@ -831,7 +830,7 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         else
             pict_type = AV_PICTURE_TYPE_I;
 
-        ff_side_data_set_encoder_stats(pkt, xvid_enc_stats.quant * FF_QP2LAMBDA, NULL, 0, pict_type);
+        ff_encode_add_stats_side_data(pkt, xvid_enc_stats.quant * FF_QP2LAMBDA, NULL, 0, pict_type);
 
         if (xvid_enc_frame.out_flags & XVID_KEYFRAME) {
             pkt->flags  |= AV_PKT_FLAG_KEY;

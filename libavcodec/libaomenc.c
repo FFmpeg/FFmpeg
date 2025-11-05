@@ -31,7 +31,6 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/base64.h"
-#include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/imgutils.h"
@@ -50,7 +49,6 @@
 #include "internal.h"
 #include "itut35.h"
 #include "libaom.h"
-#include "packet_internal.h"
 #include "profiles.h"
 
 /*
@@ -1109,8 +1107,8 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
         pict_type = AV_PICTURE_TYPE_P;
     }
 
-    ff_side_data_set_encoder_stats(pkt, 0, cx_frame->sse + 1,
-                                   cx_frame->have_sse ? 3 : 0, pict_type);
+    ff_encode_add_stats_side_data(pkt, 0, cx_frame->sse + 1,
+                                  cx_frame->have_sse ? 3 : 0, pict_type);
 
     if (cx_frame->have_sse) {
         int i;

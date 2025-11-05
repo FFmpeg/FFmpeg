@@ -74,7 +74,6 @@
 #include "internal.h"
 #include "bytestream.h"
 #include "rv10enc.h"
-#include "packet_internal.h"
 #include "libavutil/refstruct.h"
 #include <limits.h>
 #include "sp5x.h"
@@ -2040,10 +2039,10 @@ vbv_retry:
 
         for (int i = 0; i < MPV_MAX_PLANES; i++)
             avctx->error[i] += s->encoding_error[i];
-        ff_side_data_set_encoder_stats(pkt, s->c.cur_pic.ptr->f->quality,
-                                       s->encoding_error,
-                                       (avctx->flags&AV_CODEC_FLAG_PSNR) ? MPV_MAX_PLANES : 0,
-                                       s->c.pict_type);
+        ff_encode_add_stats_side_data(pkt, s->c.cur_pic.ptr->f->quality,
+                                      s->encoding_error,
+                                      (avctx->flags&AV_CODEC_FLAG_PSNR) ? MPV_MAX_PLANES : 0,
+                                      s->c.pict_type);
 
         if (avctx->flags & AV_CODEC_FLAG_PASS1)
             assert(put_bits_count(&s->pb) == m->header_bits + s->mv_bits +

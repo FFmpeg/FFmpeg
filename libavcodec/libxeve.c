@@ -22,7 +22,6 @@
  */
 
 #include <float.h>
-#include <stdlib.h>
 
 #include <xeve.h>
 
@@ -32,13 +31,9 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
-#include "libavutil/time.h"
 #include "libavutil/cpu.h"
-#include "libavutil/avstring.h"
 
 #include "avcodec.h"
-#include "internal.h"
-#include "packet_internal.h"
 #include "codec_internal.h"
 #include "profiles.h"
 #include "encode.h"
@@ -504,7 +499,7 @@ static int libxeve_encode(AVCodecContext *avctx, AVPacket *avpkt,
                     return AVERROR_INVALIDDATA;
                 }
 
-                ff_side_data_set_encoder_stats(avpkt, xectx->stat.qp * FF_QP2LAMBDA, NULL, 0, av_pic_type);
+                ff_encode_add_stats_side_data(avpkt, xectx->stat.qp * FF_QP2LAMBDA, NULL, 0, av_pic_type);
 
                 *got_packet = 1;
             }

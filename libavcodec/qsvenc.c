@@ -37,8 +37,6 @@
 
 #include "avcodec.h"
 #include "encode.h"
-#include "internal.h"
-#include "packet_internal.h"
 #include "qsv.h"
 #include "qsv_internal.h"
 #include "qsvenc.h"
@@ -2689,7 +2687,7 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
         if (avctx->codec_id == AV_CODEC_ID_H264) {
             enc_buf = qpkt.bs->ExtParam;
             enc_info = (mfxExtAVCEncodedFrameInfo *)(*enc_buf);
-            ff_side_data_set_encoder_stats(&qpkt.pkt,
+            ff_encode_add_stats_side_data(&qpkt.pkt,
                 enc_info->QP * FF_QP2LAMBDA, NULL, 0, pict_type);
             av_freep(&enc_info);
             av_freep(&enc_buf);

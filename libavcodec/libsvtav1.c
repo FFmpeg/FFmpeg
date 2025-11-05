@@ -38,7 +38,6 @@
 #include "codec_internal.h"
 #include "dovi_rpu.h"
 #include "encode.h"
-#include "packet_internal.h"
 #include "avcodec.h"
 #include "profiles.h"
 
@@ -660,7 +659,7 @@ static int eb_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
         svt_enc->eos_flag = EOS_RECEIVED;
 #endif
 
-    ff_side_data_set_encoder_stats(pkt, headerPtr->qp * FF_QP2LAMBDA, NULL, 0, pict_type);
+    ff_encode_add_stats_side_data(pkt, headerPtr->qp * FF_QP2LAMBDA, NULL, 0, pict_type);
 
     svt_av1_enc_release_out_buffer(&headerPtr);
 

@@ -43,7 +43,6 @@
 #include "codec_desc.h"
 #include "encode.h"
 #include "internal.h"
-#include "packet_internal.h"
 
 #define CHECK_CU(x) FF_CUDA_CHECK_DL(avctx, dl_fn->cuda_dl, x)
 
@@ -2789,7 +2788,7 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
         goto error;
     }
 
-    ff_side_data_set_encoder_stats(pkt,
+    ff_encode_add_stats_side_data(pkt,
         (lock_params.frameAvgQP - 1) * FF_QP2LAMBDA, NULL, 0, pict_type);
 
     res = nvenc_set_timestamp(avctx, &lock_params, pkt);

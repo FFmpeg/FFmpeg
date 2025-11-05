@@ -38,7 +38,6 @@
 #include "codec_internal.h"
 #include "dovi_rpu.h"
 #include "encode.h"
-#include "packet_internal.h"
 #include "atsc_a53.h"
 #include "sei.h"
 
@@ -894,7 +893,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 #endif
         pkt->flags |= AV_PKT_FLAG_DISPOSABLE;
 
-    ff_side_data_set_encoder_stats(pkt, x265pic_out->frameData.qp * FF_QP2LAMBDA, NULL, 0, pict_type);
+    ff_encode_add_stats_side_data(pkt, x265pic_out->frameData.qp * FF_QP2LAMBDA, NULL, 0, pict_type);
 
     if (x265pic_out->userData) {
         int idx = (int)(intptr_t)x265pic_out->userData - 1;

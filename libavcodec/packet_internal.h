@@ -70,8 +70,6 @@ int avpriv_packet_list_get(PacketList *list, AVPacket *pkt);
  */
 void avpriv_packet_list_free(PacketList *list);
 
-int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, int error_count, int pict_type);
-
 int ff_side_data_set_prft(AVPacket *pkt, int64_t timestamp);
 
 #endif // AVCODEC_PACKET_INTERNAL_H

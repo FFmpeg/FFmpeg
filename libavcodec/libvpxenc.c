@@ -36,7 +36,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libvpx.h"
-#include "packet_internal.h"
 #include "profiles.h"
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
@@ -1343,8 +1342,8 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
     ret = vpx_codec_control(&ctx->encoder, VP8E_GET_LAST_QUANTIZER_64, &quality);
     if (ret != VPX_CODEC_OK)
         quality = 0;
-    ff_side_data_set_encoder_stats(pkt, quality * FF_QP2LAMBDA, cx_frame->sse + 1,
-                                   cx_frame->have_sse ? 3 : 0, pict_type);
+    ff_encode_add_stats_side_data(pkt, quality * FF_QP2LAMBDA, cx_frame->sse + 1,
+                                  cx_frame->have_sse ? 3 : 0, pict_type);
 
     if (cx_frame->have_sse) {
         /* Beware of the Y/U/V/all order! */

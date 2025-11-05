@@ -38,7 +38,6 @@
 #include "h263enc.h"
 #include "internal.h"
 #include "mpegutils.h"
-#include "packet_internal.h"
 #include "put_bits.h"
 #include "svq1.h"
 #include "svq1encdsp.h"
@@ -645,7 +644,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->pict_type = AV_PICTURE_TYPE_I;
     s->quality = pict->quality;
 
-    ff_side_data_set_encoder_stats(pkt, pict->quality, NULL, 0, s->pict_type);
+    ff_encode_add_stats_side_data(pkt, pict->quality, NULL, 0, s->pict_type);
 
     init_put_bits(&pb, pkt->data, pkt->size);
     svq1_write_header(s, &pb, s->pict_type);

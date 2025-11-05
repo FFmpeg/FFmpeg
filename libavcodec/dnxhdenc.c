@@ -38,7 +38,6 @@
 #include "mpegvideo.h"
 #include "mpegvideoenc.h"
 #include "pixblockdsp.h"
-#include "packet_internal.h"
 #include "profiles.h"
 #include "dnxhdenc.h"
 
@@ -1300,7 +1299,7 @@ encode_coding_unit:
         goto encode_coding_unit;
     }
 
-    ff_side_data_set_encoder_stats(pkt, ctx->qscale * FF_QP2LAMBDA, NULL, 0, AV_PICTURE_TYPE_I);
+    ff_encode_add_stats_side_data(pkt, ctx->qscale * FF_QP2LAMBDA, NULL, 0, AV_PICTURE_TYPE_I);
 
     *got_packet = 1;
     return 0;

@@ -38,7 +38,6 @@
 #include "apv.h"
 #include "codec_internal.h"
 #include "encode.h"
-#include "packet_internal.h"
 #include "profiles.h"
 
 #define MAX_BS_BUF   (128 * 1024 * 1024)
@@ -409,7 +408,7 @@ static int liboapve_encode(AVCodecContext *avctx, AVPacket *avpkt,
         avpkt->flags |= AV_PKT_FLAG_KEY;
 
         if (cdsc->param[FRM_IDX].qp)
-            ff_side_data_set_encoder_stats(avpkt, cdsc->param[FRM_IDX].qp * FF_QP2LAMBDA, NULL, 0, AV_PICTURE_TYPE_I);
+            ff_encode_add_stats_side_data(avpkt, cdsc->param[FRM_IDX].qp * FF_QP2LAMBDA, NULL, 0, AV_PICTURE_TYPE_I);
 
         *got_packet = 1;
     }

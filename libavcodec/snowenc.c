@@ -30,7 +30,6 @@
 #include "encode.h"
 #include "internal.h" //For AVCodecInternal.recon_frame
 #include "me_cmp.h"
-#include "packet_internal.h"
 #include "qpeldsp.h"
 #include "snow_dwt.h"
 #include "snow.h"
@@ -2060,10 +2059,10 @@ redo_frame:
 
     emms_c();
 
-    ff_side_data_set_encoder_stats(pkt, s->current_picture->quality,
-                                   enc->encoding_error,
-                                   (s->avctx->flags&AV_CODEC_FLAG_PSNR) ? SNOW_MAX_PLANES : 0,
-                                   s->current_picture->pict_type);
+    ff_encode_add_stats_side_data(pkt, s->current_picture->quality,
+                                  enc->encoding_error,
+                                  (s->avctx->flags&AV_CODEC_FLAG_PSNR) ? SNOW_MAX_PLANES : 0,
+                                  s->current_picture->pict_type);
     if (s->avctx->flags & AV_CODEC_FLAG_RECON_FRAME) {
         av_frame_replace(avci->recon_frame, s->current_picture);
     }
