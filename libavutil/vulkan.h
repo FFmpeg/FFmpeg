@@ -524,6 +524,13 @@ int ff_vk_create_buf(FFVulkanContext *s, FFVkBuffer *buf, size_t size,
                      VkBufferUsageFlags usage, VkMemoryPropertyFlagBits flags);
 
 /**
+ * Flush or invalidate a single buffer, with a given size and offset.
+ */
+int ff_vk_flush_buffer(FFVulkanContext *s, FFVkBuffer *buf,
+                       size_t offset, size_t mem_size,
+                       int flush);
+
+/**
  * Buffer management code.
  */
 int ff_vk_map_buffers(FFVulkanContext *s, FFVkBuffer **buf, uint8_t *mem[],

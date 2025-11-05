@@ -4237,28 +4237,9 @@ static int copy_buffer_data(AVHWFramesContext *hwfc, AVBufferRef *buf,
                             AVFrame *swf, VkBufferImageCopy *region,
                             int planes, int upload)
 {
-    VkResult ret;
+    int err;
     VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
-    FFVulkanFunctions *vk = &p->vkctx.vkfn;
-    AVVulkanDeviceContext *hwctx = &p->p;
-
     FFVkBuffer *vkbuf = (FFVkBuffer *)buf->data;
-
-    const VkMappedMemoryRange flush_info = {
-        .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-        .memory = vkbuf->mem,
-        .size   = VK_WHOLE_SIZE,
-    };
-
-    if (!upload && !(vkbuf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-        ret = vk->InvalidateMappedMemoryRanges(hwctx->act_dev, 1,
-                                               &flush_info);
-        if (ret != VK_SUCCESS) {
-            av_log(hwfc, AV_LOG_ERROR, "Failed to invalidate buffer data: %s\n",
-                   ff_vk_ret2str(ret));
-            return AVERROR_EXTERNAL;
-        }
-    }
 
     if (upload) {
         for (int i = 0; i < planes; i++)
@@ -4268,7 +4249,21 @@ static int copy_buffer_data(AVHWFramesContext *hwfc, AVBufferRef *buf,
                                 swf->linesize[i],
                                 swf->linesize[i],
                                 region[i].imageExtent.height);
+
+        err = ff_vk_flush_buffer(&p->vkctx, vkbuf, 0, VK_WHOLE_SIZE, 1);
+        if (err != VK_SUCCESS) {
+            av_log(hwfc, AV_LOG_ERROR, "Failed to flush buffer data: %s\n",
+                   av_err2str(err));
+            return AVERROR_EXTERNAL;
+        }
     } else {
+        err = ff_vk_flush_buffer(&p->vkctx, vkbuf, 0, VK_WHOLE_SIZE, 0);
+        if (err != VK_SUCCESS) {
+            av_log(hwfc, AV_LOG_ERROR, "Failed to invalidate buffer data: %s\n",
+                   av_err2str(err));
+            return AVERROR_EXTERNAL;
+        }
+
         for (int i = 0; i < planes; i++)
             av_image_copy_plane(swf->data[i],
                                 swf->linesize[i],
@@ -4276,16 +4271,6 @@ static int copy_buffer_data(AVHWFramesContext *hwfc, AVBufferRef *buf,
                                 region[i].bufferRowLength,
                                 swf->linesize[i],
                                 region[i].imageExtent.height);
-    }
-
-    if (upload && !(vkbuf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-        ret = vk->FlushMappedMemoryRanges(hwctx->act_dev, 1,
-                                          &flush_info);
-        if (ret != VK_SUCCESS) {
-            av_log(hwfc, AV_LOG_ERROR, "Failed to flush buffer data: %s\n",
-                   ff_vk_ret2str(ret));
-            return AVERROR_EXTERNAL;
-        }
     }
 
     return 0;
