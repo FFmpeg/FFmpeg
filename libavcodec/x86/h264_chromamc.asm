@@ -276,51 +276,57 @@ cglobal %1_%2_chroma_mc8%3, 6, 7+UNIX64, 8
 %endmacro
 
 %macro chroma_mc4_ssse3_func 2
-cglobal %1_%2_chroma_mc4, 6, 7+UNIX64, 0
-    movq          m5, [pw_32]
+cglobal %1_%2_chroma_mc4, 6, 7+UNIX64, 8
+    mova          m5, [pw_32]
 ..@%1_%2_chroma_mc4_after_init_ %+ cpuname:
-    mov           r6, r4
+    mov          r6d, r4d
     shl          r4d, 8
-    sub          r4d, r6d
-    mov           r6, 8
-    add          r4d, 8           ; x*288+8
-    sub          r6d, r5d
-    imul         r6d, r4d         ; (8-y)*(x*255+8) = (8-y)*x<<8 | (8-y)*(8-x)
-    imul         r4d, r5d         ;    y *(x*255+8) =    y *x<<8 |    y *(8-x)
+    movd          m0, [r1]
+    sub          r6d, 8
+    sub          r4d, r6d         ; x << 8 | (8-x)
+    mov          r6d, r5d
+    shl          r5d, 16
+    movd          m1, [r1+1]
+    sub          r6d, 8
+    sub          r5d, r6d         ; y << 16 | (8-y)
+    imul         r4d, r5d         ; xy << 24 | (8-x)y << 16 | x(8-y) << 8 | (8-x)(8-y)
+    add           r1, r2
 
-    movd          m7, r6d
-    movd          m6, r4d
-    movd          m0, [r1  ]
-    pshufw        m7, m7, 0
-    punpcklbw     m0, [r1+1]
-    pshufw        m6, m6, 0
+    movd          m6, r4d         ; ABCD
+    punpcklwd     m6, m6          ; ABABCDCD
+    pshufd        m7, m6, 0x55    ; CDCDCDCDCDCDCDCD
+    punpcklbw     m0, m1
+    pshufd        m6, m6, 0x0     ; ABABABABABABABAB
 
 .next2rows:
-    movd          m1, [r1+r2*1  ]
-    movd          m3, [r1+r2*2  ]
-    punpcklbw     m1, [r1+r2*1+1]
-    punpcklbw     m3, [r1+r2*2+1]
-    lea           r1, [r1+r2*2]
-    movq          m2, m1
-    movq          m4, m3
-    pmaddubsw     m0, m7
-    pmaddubsw     m1, m6
-    pmaddubsw     m2, m7
-    pmaddubsw     m3, m6
+    movd          m1, [r1]
+    movd          m2, [r1+1]
+    movd          m3, [r1+r2]
+    movd          m4, [r1+r2+1]
+    punpcklbw     m1, m2
+    punpcklqdq    m0, m1
+    pmaddubsw     m0, m6
+    punpcklbw     m3, m4
+    punpcklqdq    m1, m3
+    pmaddubsw     m1, m7
+%ifidn %1, avg
+    movd          m2, [r0]
+    movd          m4, [r0+r2]
+%endif
     paddw         m0, m5
-    paddw         m2, m5
-    paddw         m1, m0
-    paddw         m3, m2
-    psrlw         m1, 6
-    movq          m0, m4
-    psrlw         m3, 6
-    packuswb      m1, m1
-    packuswb      m3, m3
-    CHROMAMC_AVG  m1, [r0  ]
-    CHROMAMC_AVG  m3, [r0+r2]
-    movd     [r0   ], m1
-    movd     [r0+r2], m3
+    lea           r1, [r1+r2*2]
+    paddw         m0, m1
+    psrlw         m0, 6
+    packuswb      m0, m0
+    pshufd        m1, m0, 0x1
+%ifidn %1, avg
+    pavgb         m0, m2
+    pavgb         m1, m4
+%endif
     sub          r3d, 2
+    movd        [r0], m0
+    movd     [r0+r2], m1
+    mova          m0, m3
     lea           r0, [r0+r2*2]
     jg .next2rows
     RET
@@ -379,26 +385,23 @@ cglobal %1_%2_chroma_mc4, 6, 7+UNIX64, 0
 
 %macro rv40_chroma_mc4_func 1 ; put vs avg
 %if CONFIG_RV40_DECODER
-    cglobal rv40_%1_chroma_mc4, 6, 7+UNIX64, 0
+    cglobal rv40_%1_chroma_mc4, 6, 7+UNIX64, 8
     rv40_get_bias m5
     jmp           ..@%1_h264_chroma_mc4_after_init_ %+ cpuname
 %endif
 %endmacro
 
-%define CHROMAMC_AVG NOTHING
 INIT_XMM ssse3
+%define CHROMAMC_AVG NOTHING
 chroma_mc8_ssse3_func put, h264, _rnd
 chroma_mc8_ssse3_func put, vc1,  _nornd
 rv40_chroma_mc8_func put
-INIT_MMX ssse3
 chroma_mc4_ssse3_func put, h264
 rv40_chroma_mc4_func put
 
 %define CHROMAMC_AVG DIRECT_AVG
-INIT_XMM ssse3
 chroma_mc8_ssse3_func avg, h264, _rnd
 chroma_mc8_ssse3_func avg, vc1,  _nornd
 rv40_chroma_mc8_func avg
-INIT_MMX ssse3
 chroma_mc4_ssse3_func avg, h264
 rv40_chroma_mc4_func avg
