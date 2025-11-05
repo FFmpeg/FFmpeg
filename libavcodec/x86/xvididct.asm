@@ -24,7 +24,7 @@
 ;
 ; More details at http://skal.planet-d.net/coding/dct.html
 ;
-; =======     MMX and XMM forward discrete cosine transform     =======
+; ===========     XMM forward discrete cosine transform     ===========
 ;
 ; Copyright(C) 2001 Peter Ross <pross@xvid.org>
 ;
@@ -67,7 +67,6 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
-; Similar to tg_1_16 in MMX code
 tan1:   times 8 dw 13036
 tan2:   times 8 dw 27146
 tan3:   times 8 dw 43790
@@ -91,7 +90,6 @@ iTab4:  dw 0x4b42, 0x6254, 0xb4be, 0x9dac, 0x4b42, 0xd746, 0x4b42, 0xd746
         dw 0x3b21, 0x14c3, 0x587e, 0xeb3d, 0x14c3, 0x587e, 0x14c3, 0xc4df
         dw 0x6862, 0x587e, 0x979e, 0xc4df, 0x3b21, 0x979e, 0x587e, 0x979e
 
-; Similar to rounder_0 in MMX code
 ; 4 first similar, then: 4*8->6*16  5*8->4*16  6/7*8->5*16
 walkenIdctRounders: times 4 dd 65536
                     times 4 dd  3597
@@ -99,7 +97,6 @@ walkenIdctRounders: times 4 dd 65536
                     times 4 dd  1203
                     times 4 dd   120
                     times 4 dd   512
-                    times 2 dd     0
 
 SECTION .text
 
