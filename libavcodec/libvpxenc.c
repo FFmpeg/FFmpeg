@@ -1323,7 +1323,7 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
     VPxContext *ctx = avctx->priv_data;
     int ret = ff_get_encode_buffer(avctx, pkt, cx_frame->sz, 0);
     uint8_t *side_data;
-    int pict_type;
+    enum AVPictureType pict_type;
     int quality;
 
     if (ret < 0)

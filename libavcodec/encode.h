@@ -85,7 +85,7 @@ int ff_encode_encode_cb(AVCodecContext *avctx, AVPacket *avpkt,
 AVCPBProperties *ff_encode_add_cpb_side_data(AVCodecContext *avctx);
 
 int ff_encode_add_stats_side_data(AVPacket *pkt, int quality, const int64_t error[],
-                                  int error_count, int pict_type);
+                                  int error_count, enum AVPictureType pict_type);
 
 /**
  * Rescale from sample rate to AVCodecContext.time_base.

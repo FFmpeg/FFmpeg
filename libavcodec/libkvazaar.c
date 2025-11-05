@@ -172,7 +172,6 @@ static int libkvazaar_encode(AVCodecContext *avctx,
     kvz_data_chunk *data_out = NULL;
     uint32_t len_out = 0;
     int retval = 0;
-    int pict_type;
 
     *got_packet_ptr = 0;
 
@@ -266,6 +265,7 @@ static int libkvazaar_encode(AVCodecContext *avctx,
             avpkt->flags |= AV_PKT_FLAG_KEY;
         }
 
+        enum AVPictureType pict_type;
         switch (frame_info.slice_type) {
         case KVZ_SLICE_I:
             pict_type = AV_PICTURE_TYPE_I;

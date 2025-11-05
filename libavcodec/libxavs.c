@@ -126,7 +126,6 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
     xavs_nal_t *nal;
     int nnal, i, ret;
     xavs_picture_t pic_out;
-    int pict_type;
 
     x4->pic.img.i_csp   = XAVS_CSP_I420;
     x4->pic.img.i_plane = 3;
@@ -177,6 +176,7 @@ static int XAVS_frame(AVCodecContext *avctx, AVPacket *pkt,
     } else
         pkt->dts = pkt->pts;
 
+    enum AVPictureType pict_type;
     switch (pic_out.i_type) {
     case XAVS_TYPE_IDR:
     case XAVS_TYPE_I:

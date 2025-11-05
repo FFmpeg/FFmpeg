@@ -817,7 +817,7 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (xerr > 0) {
-        int pict_type;
+        enum AVPictureType pict_type;
 
         *got_packet = 1;
 

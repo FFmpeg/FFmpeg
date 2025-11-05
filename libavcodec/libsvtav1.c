@@ -590,7 +590,7 @@ static int eb_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
     AVFrame *frame = svt_enc->frame;
     EbErrorType svt_ret;
     AVBufferRef *ref;
-    int ret = 0, pict_type;
+    int ret = 0;
 
     if (svt_enc->eos_flag == EOS_RECEIVED)
         return AVERROR_EOF;
@@ -636,6 +636,7 @@ static int eb_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
     pkt->pts  = headerPtr->pts;
     pkt->dts  = headerPtr->dts;
 
+    enum AVPictureType pict_type;
     switch (headerPtr->pic_type) {
     case EB_AV1_KEY_PICTURE:
         pkt->flags |= AV_PKT_FLAG_KEY;

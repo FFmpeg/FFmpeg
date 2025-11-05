@@ -613,7 +613,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     x264_nal_t *nal;
     int nnal, ret;
     x264_picture_t pic_out = {0}, *pic_in;
-    int pict_type;
+    enum AVPictureType pict_type;
     int64_t wallclock = 0;
     X264Opaque *out_opaque;
 

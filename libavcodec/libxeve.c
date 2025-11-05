@@ -467,8 +467,6 @@ static int libxeve_encode(AVCodecContext *avctx, AVPacket *avpkt,
             *got_packet = 0;
             return 0;
         } else if (ret == XEVE_OK) {
-            int av_pic_type;
-
             if (xectx->stat.write > 0) {
 
                 ret = ff_get_encode_buffer(avctx, avpkt, xectx->stat.write, 0);
@@ -483,6 +481,7 @@ static int libxeve_encode(AVCodecContext *avctx, AVPacket *avpkt,
                 avpkt->pts = xectx->bitb.ts[XEVE_TS_PTS];
                 avpkt->dts = xectx->bitb.ts[XEVE_TS_DTS];
 
+                enum AVPictureType av_pic_type;
                 switch(xectx->stat.stype) {
                 case XEVE_ST_I:
                     av_pic_type = AV_PICTURE_TYPE_I;

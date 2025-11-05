@@ -693,7 +693,6 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     x265_nal *nal;
     x265_sei *sei;
     uint8_t *dst;
-    int pict_type;
     int payload = 0;
     int nnal;
     int ret;
@@ -869,6 +868,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     pkt->pts = x265pic_out->pts;
     pkt->dts = x265pic_out->dts;
 
+    enum AVPictureType pict_type;
     switch (x265pic_out->sliceType) {
     case X265_TYPE_IDR:
     case X265_TYPE_I:
