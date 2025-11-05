@@ -773,7 +773,6 @@ unsigned ff_dxva2_get_surface_index(const AVCodecContext *avctx,
                                     int curr)
 {
     void *surface = get_surface(avctx, frame);
-    unsigned i;
 
 #if CONFIG_D3D12VA
     if (avctx->pix_fmt == AV_PIX_FMT_D3D12) {
@@ -790,7 +789,7 @@ unsigned ff_dxva2_get_surface_index(const AVCodecContext *avctx,
     }
 #endif
 #if CONFIG_DXVA2
-    for (i = 0; i < DXVA_CONTEXT_COUNT(avctx, ctx); i++) {
+    for (unsigned i = 0; i < DXVA_CONTEXT_COUNT(avctx, ctx); i++) {
         if (avctx->pix_fmt == AV_PIX_FMT_DXVA2_VLD && ctx->dxva2.surface[i] == surface)
             return i;
     }
