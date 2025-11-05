@@ -37,7 +37,6 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/common.h"
-#include "libavutil/emms.h"
 #include "libavutil/internal.h"
 #include "libavutil/lfg.h"
 #include "libavutil/mem_internal.h"
@@ -212,7 +211,6 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
         permute(block, block1, dct->perm_type);
 
         dct->func(block);
-        emms_c();
 
         if (!strcmp(dct->name, "IJG-AAN-INT")) {
             for (i = 0; i < 64; i++) {
@@ -287,7 +285,6 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
             memcpy(block, block1, sizeof(block));
             dct->func(block);
         }
-        emms_c();
         it1 += NB_ITS_SPEED;
         ti1 = av_gettime_relative() - ti;
     } while (ti1 < 1000000);
@@ -449,7 +446,6 @@ static void idct248_error(const char *name,
                 block[i] = block1[i];
             idct248_put(img_dest, 8, block);
         }
-        emms_c();
         it1 += NB_ITS_SPEED;
         ti1 = av_gettime_relative() - ti;
     } while (ti1 < 1000000);
