@@ -614,6 +614,6 @@ typedef struct AVFilterNegotiation {
     const AVFilterFormatsMerger *mergers;
 } AVFilterNegotiation;
 
-const AVFilterNegotiation *ff_filter_get_negotiation(AVFilterLink *link);
+const AVFilterNegotiation *ff_filter_get_negotiation(const AVFilterLink *link);
 
 #endif /* AVFILTER_FORMATS_H */

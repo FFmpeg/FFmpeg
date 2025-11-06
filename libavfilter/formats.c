@@ -452,7 +452,7 @@ static const AVFilterNegotiation negotiate_audio = {
     .mergers = mergers_audio,
 };
 
-const AVFilterNegotiation *ff_filter_get_negotiation(AVFilterLink *link)
+const AVFilterNegotiation *ff_filter_get_negotiation(const AVFilterLink *link)
 {
     switch (link->type) {
     case AVMEDIA_TYPE_VIDEO: return &negotiate_video;
