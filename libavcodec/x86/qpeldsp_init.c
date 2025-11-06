@@ -241,7 +241,7 @@ static void OPNAME ## qpel8_mc12_ ## MMX(uint8_t *dst,                  \
                                          const uint8_t *src,            \
                                          ptrdiff_t stride)              \
 {                                                                       \
-    uint64_t half[8 + 9];                                               \
+    uint64_t half[9];                                                   \
     uint8_t *const halfH = (uint8_t *) half;                            \
     ff_put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8,       \
                                                    stride, 9);          \
@@ -255,7 +255,7 @@ static void OPNAME ## qpel8_mc32_ ## MMX(uint8_t *dst,                  \
                                          const uint8_t *src,            \
                                          ptrdiff_t stride)              \
 {                                                                       \
-    uint64_t half[8 + 9];                                               \
+    uint64_t half[9];                                                   \
     uint8_t *const halfH = (uint8_t *) half;                            \
     ff_put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8,       \
                                                    stride, 9);          \
