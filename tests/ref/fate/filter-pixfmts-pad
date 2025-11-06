@@ -57,17 +57,13 @@ yuv410p             cb871dcc1e84a7ef1d21f9237b88cf6e
 yuv411p             aec2c1740de9a62db0d41f4dda9121b0
 yuv420p             4398e408fc35436ce4b20468946f58b6
 yuv420p10le         a7d29bbe4e103fc0fb62b465f9540efa
-yuv420p10msble      c2811b855eccc728160bd4881708186f
 yuv420p12le         dafaf94e8d16cd846623dcaba0bc81b3
-yuv420p12msble      c2811b855eccc728160bd4881708186f
 yuv420p14le         ec80062819bc67f8866ba5105d8378ad
 yuv420p16le         83e437e3d6b7418c4163c24d41e199fa
 yuv420p9le          98a3bede99321386b9abab7926a9f553
 yuv422p             e43d68568d9f782908ba56bf1e09d5d5
 yuv422p10le         e3ec30aacff6c8abf6fe035a195ccd26
-yuv422p10msble      c5e38f841a7c5e4483f8eec19065574f
 yuv422p12le         921b8d532cf5d0eca4ab0fe9c6d4fef5
-yuv422p12msble      4bcd7f0ab997b8300a01d06b31eba0db
 yuv422p14le         dc41548f336883e9fd9664f329bd2a0c
 yuv422p16le         04c87d2fd42cba290a4d4099760e3ee4
 yuv422p9le          994a41c11610075c7b0c466f738f49e7
