@@ -264,12 +264,8 @@ MACRO(avg,,                SIZE, SIZEP1, HXMM, VXMM, HVXMM, L2) \
 MACRO(put_no_rnd, no_rnd_, SIZE, SIZEP1, HXMM, VXMM, HVXMM, L2)
 
 QPEL3(QPEL_H,   8,  9, mmxext, mmxext, mmxext, mmxext)
-QPEL3(QPEL_V,   8,  9, mmxext, mmxext, mmxext, mmxext)
-QPEL3(QPEL_HV,  8,  9, mmxext, mmxext, mmxext, mmxext)
 
 QPEL3(QPEL_H,  16, 17, mmxext, mmxext, mmxext, mmxext)
-QPEL3(QPEL_V,  16, 17, mmxext, mmxext, mmxext, mmxext)
-QPEL3(QPEL_HV, 16, 17, mmxext, mmxext, mmxext, mmxext)
 
 QPEL3(QPEL_V,   8,  9, ssse3, sse2, ssse3, mmxext)
 QPEL3(QPEL_HV,  8,  9, mmxext, sse2, sse2, mmxext)
@@ -283,6 +279,11 @@ QPEL3(QPEL_HV, 16, 17, mmxext, sse2, sse2, mmxext)
     SET_QPEL_FUNC(avg,        X, Y, SIZE, CPU, PREFIX); \
     SET_QPEL_FUNC(put,        X, Y, SIZE, CPU, PREFIX); \
     SET_QPEL_FUNC(put_no_rnd, X, Y, SIZE, CPU, PREFIX)
+
+#define SET_H_QPEL_FUNCS(SIZE, CPU, PREFIX)   \
+    SET_QPEL_FUNCS3(1, 0, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNCS3(2, 0, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNCS3(3, 0, SIZE, CPU, PREFIX)
 
 #define SET_V_QPEL_FUNCS(SIZE, CPU, PREFIX)   \
     SET_QPEL_FUNCS3(0, 1, SIZE, CPU, PREFIX); \
@@ -300,39 +301,15 @@ QPEL3(QPEL_HV, 16, 17, mmxext, sse2, sse2, mmxext)
     SET_QPEL_FUNCS3(3, 2, SIZE, CPU, PREFIX); \
     SET_QPEL_FUNCS3(3, 3, SIZE, CPU, PREFIX)
 
-#define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU, PREFIX)                          \
-do {                                                                         \
-    c->PFX ## _pixels_tab[IDX][ 1] = PREFIX ## PFX ## SIZE ## _mc10_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][ 2] = PREFIX ## PFX ## SIZE ## _mc20_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][ 3] = PREFIX ## PFX ## SIZE ## _mc30_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][ 4] = PREFIX ## PFX ## SIZE ## _mc01_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][ 5] = PREFIX ## PFX ## SIZE ## _mc11_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][ 6] = PREFIX ## PFX ## SIZE ## _mc21_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][ 7] = PREFIX ## PFX ## SIZE ## _mc31_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][ 8] = PREFIX ## PFX ## SIZE ## _mc02_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][ 9] = PREFIX ## PFX ## SIZE ## _mc12_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][10] = PREFIX ## PFX ## SIZE ## _mc22_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][11] = PREFIX ## PFX ## SIZE ## _mc32_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][12] = PREFIX ## PFX ## SIZE ## _mc03_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][13] = PREFIX ## PFX ## SIZE ## _mc13_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][14] = PREFIX ## PFX ## SIZE ## _mc23_ ## CPU; \
-    c->PFX ## _pixels_tab[IDX][15] = PREFIX ## PFX ## SIZE ## _mc33_ ## CPU; \
-} while (0)
-
 av_cold void ff_qpeldsp_init_x86(QpelDSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 
     if (X86_MMXEXT(cpu_flags)) {
 #if HAVE_MMXEXT_EXTERNAL
-        SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
         c->avg_qpel_pixels_tab[1][0] = ff_avg_pixels8x8_mmxext;
-        SET_QPEL_FUNCS(avg_qpel,        1,  8, mmxext, );
-
-        SET_QPEL_FUNCS(put_qpel,        0, 16, mmxext, );
-        SET_QPEL_FUNCS(put_qpel,        1,  8, mmxext, );
-        SET_QPEL_FUNCS(put_no_rnd_qpel, 0, 16, mmxext, );
-        SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, mmxext, );
+        SET_H_QPEL_FUNCS(16, mmxext,);
+        SET_H_QPEL_FUNCS(8, mmxext,);
 #endif /* HAVE_MMXEXT_EXTERNAL */
     }
 #if HAVE_SSE2_EXTERNAL

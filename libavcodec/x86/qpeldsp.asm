@@ -408,23 +408,10 @@ cglobal %1_mpeg4_qpel16_v_lowpass, 4, 6, 7, 544
 .looph:
     movu         m0, [r1]
     mova         m1, m0
-%if mmsize == 8
-    mova         m2, [r1+8]
-    mova         m3, [r1+8]
-    punpcklbw    m0, m4
-    punpckhbw    m1, m4
-    punpcklbw    m2, m4
-    punpckhbw    m3, m4
-    mova       [r5], m0
-    mova  [r5+0x88], m1
-    mova [r5+0x110], m2
-    mova [r5+0x198], m3
-%else
     punpcklbw    m0, m4
     punpckhbw    m1, m4
     mova       [r5], m0
     mova [r5+0x110], m1
-%endif
     add          r1, r3
     add          r5, mmsize
     dec r4d
@@ -481,19 +468,6 @@ cglobal %1_mpeg4_qpel16_v_lowpass, 4, 6, 7, 544
     movh  %1, %2
 %endmacro
 
-INIT_MMX mmxext
-%define PW_ROUND pw_16
-%define OP_MOV PUT_OPH
-MPEG4_QPEL16_V_LOWPASS put
-%define PW_ROUND pw_16
-%define OP_MOV AVG_OPH
-MPEG4_QPEL16_V_LOWPASS avg
-%define PW_ROUND pw_15
-%define OP_MOV PUT_OPH
-MPEG4_QPEL16_V_LOWPASS put_no_rnd
-
-
-
 %macro MPEG4_QPEL8_V_LOWPASS 1
 cglobal %1_mpeg4_qpel8_v_lowpass, 4, 6, 7, 144
     mov         r4d, 9
@@ -502,31 +476,14 @@ cglobal %1_mpeg4_qpel8_v_lowpass, 4, 6, 7, 144
 .looph:
     movq         m0, [r1]
     add          r1, r3
-%if mmsize == 8
-    mova         m1, m0
-    punpcklbw    m0, m2
-    punpckhbw    m1, m2
-    mova       [r5], m0
-    mova  [r5+0x48], m1
-%else
     punpcklbw    m0, m2
     mova       [r5], m0
-%endif
     add          r5, mmsize
     dec r4d
     jne .looph
 
 
-%if mmsize == 8
-    mov         r4d, 2
-    mov          r1, r0
-    mov          r5, rsp
-.loopv:
-%define R5 r5
-%else
 %define R5 rsp
-%endif
-
     mova         m0, [R5+0 * mmsize]
     mova         m1, [R5+1 * mmsize]
     mova         m2, [R5+2 * mmsize]
@@ -543,25 +500,8 @@ cglobal %1_mpeg4_qpel8_v_lowpass, 4, 6, 7, 144
     QPEL_V_LOW [R5+3*mmsize], [R5+4*mmsize], [R5+5*mmsize], [R5+7*mmsize], [r0]
     QPEL_V_LOW [R5+4*mmsize], [R5+5*mmsize], [R5+6*mmsize], [R5+6*mmsize], [r0+r2]
 
-%if mmsize == 8
-    add    r5, 0x48
-    lea    r0, [r1+4]
-    dec r4d
-    jne .loopv
-%endif
     RET
 %endmacro
-
-INIT_MMX mmxext
-%define PW_ROUND pw_16
-%define OP_MOV PUT_OPH
-MPEG4_QPEL8_V_LOWPASS put
-%define PW_ROUND pw_16
-%define OP_MOV AVG_OPH
-MPEG4_QPEL8_V_LOWPASS avg
-%define PW_ROUND pw_15
-%define OP_MOV PUT_OPH
-MPEG4_QPEL8_V_LOWPASS put_no_rnd
 
 INIT_XMM sse2
 %define PW_ROUND pw_16
