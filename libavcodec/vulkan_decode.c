@@ -1116,7 +1116,6 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
         /* Vulkan's formats are all LSB-padded */
         case AV_PIX_FMT_GRAY10: frames_ctx->sw_format = AV_PIX_FMT_GRAY10MSB; break;
         case AV_PIX_FMT_GRAY12: frames_ctx->sw_format = AV_PIX_FMT_GRAY12MSB; break;
-        case AV_PIX_FMT_GBRP12: frames_ctx->sw_format = AV_PIX_FMT_GBRP12MSB; break;
         case AV_PIX_FMT_YUV420P10: frames_ctx->sw_format = AV_PIX_FMT_YUV420P10MSB; break;
         case AV_PIX_FMT_YUV420P12: frames_ctx->sw_format = AV_PIX_FMT_YUV420P12MSB; break;
         case AV_PIX_FMT_YUV422P10: frames_ctx->sw_format = AV_PIX_FMT_YUV422P10MSB; break;
