@@ -692,7 +692,8 @@ retry:
                         av_log(log_ctx, AV_LOG_ERROR,
                                "Impossible to convert between the formats supported by the filter "
                                "'%s' and the filter '%s'\n", link->src->name, link->dst->name);
-                        print_link_formats(log_ctx, AV_LOG_ERROR, link, &m, 1);
+                        print_link_formats(log_ctx, AV_LOG_ERROR, inlink,  &m, 1);
+                        print_link_formats(log_ctx, AV_LOG_ERROR, outlink, &m, 1);
                         return AVERROR(ENOSYS);
                     } else {
                         count_merged += 2;
