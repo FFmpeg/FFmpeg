@@ -516,6 +516,7 @@ int ff_formats_check_alpha_modes(void *log, const AVFilterFormats *fmts);
 struct AVBPrint;
 
 typedef struct AVFilterFormatMerger {
+    const char *name;
     unsigned offset;
     int (*merge)(void *a, void *b);
     int (*can_merge)(const void *a, const void *b);
