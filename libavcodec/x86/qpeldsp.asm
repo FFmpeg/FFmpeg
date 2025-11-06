@@ -26,9 +26,9 @@
 SECTION_RODATA
 
 cextern pw_3
-pw_15: times 4 dw 15
+pw_15: times 8 dw 15
 cextern pw_16
-pw_20: times 4 dw 20
+pw_20: times 8 dw 20
 
 
 SECTION .text
@@ -396,68 +396,75 @@ MPEG4_QPEL8_H_LOWPASS put_no_rnd
     paddw      m5, m4
     psraw      m5, 5
     packuswb   m5, m5
-    OP_MOV     %5, m5, m7
+    OP_MOV     %5, m5, m4
     SWAP 0,1,2,3
 %endmacro
 
 %macro MPEG4_QPEL16_V_LOWPASS 1
-cglobal %1_mpeg4_qpel16_v_lowpass, 4, 6, 0, 544
+cglobal %1_mpeg4_qpel16_v_lowpass, 4, 6, 7, 544
     mov         r4d, 17
     mov          r5, rsp
-    pxor         m7, m7
+    pxor         m4, m4
 .looph:
-    mova         m0, [r1]
-    mova         m1, [r1]
+    movu         m0, [r1]
+    mova         m1, m0
+%if mmsize == 8
     mova         m2, [r1+8]
     mova         m3, [r1+8]
-    punpcklbw    m0, m7
-    punpckhbw    m1, m7
-    punpcklbw    m2, m7
-    punpckhbw    m3, m7
+    punpcklbw    m0, m4
+    punpckhbw    m1, m4
+    punpcklbw    m2, m4
+    punpckhbw    m3, m4
     mova       [r5], m0
     mova  [r5+0x88], m1
     mova [r5+0x110], m2
     mova [r5+0x198], m3
-    add          r5, 8
+%else
+    punpcklbw    m0, m4
+    punpckhbw    m1, m4
+    mova       [r5], m0
+    mova [r5+0x110], m1
+%endif
     add          r1, r3
+    add          r5, mmsize
     dec r4d
     jne .looph
 
 
-    mov         r4d, 4
+    mov         r4d, 16/(mmsize/2)
     mov          r1, r0
     mov          r5, rsp
 .loopv:
-    mova         m0, [r5+ 0x0]
-    mova         m1, [r5+ 0x8]
-    mova         m2, [r5+0x10]
-    mova         m3, [r5+0x18]
-    add          r1, 4
-    QPEL_V_LOW [r5+0x10], [r5+ 0x8], [r5+ 0x0], [r5+0x20], [r0]
-    QPEL_V_LOW [r5+ 0x8], [r5+ 0x0], [r5+ 0x0], [r5+0x28], [r0+r2]
+    mova         m0, [r5+0 * mmsize]
+    mova         m1, [r5+1 * mmsize]
+    mova         m2, [r5+2 * mmsize]
+    mova         m3, [r5+3 * mmsize]
+    add          r1, mmsize/2
+    QPEL_V_LOW [r5+2*mmsize],  [r5+1*mmsize],  [r5+0*mmsize],  [r5+4*mmsize],  [r0]
+    QPEL_V_LOW [r5+1*mmsize],  [r5+0*mmsize],  [r5+0*mmsize],  [r5+5*mmsize],  [r0+r2]
     lea    r0, [r0+r2*2]
-    QPEL_V_LOW [r5+ 0x0], [r5+ 0x0], [r5+ 0x8], [r5+0x30], [r0]
-    QPEL_V_LOW [r5+ 0x0], [r5+ 0x8], [r5+0x10], [r5+0x38], [r0+r2]
+    QPEL_V_LOW [r5+0*mmsize],  [r5+0*mmsize],  [r5+1*mmsize],  [r5+6*mmsize],  [r0]
+    QPEL_V_LOW [r5+0*mmsize],  [r5+1*mmsize],  [r5+2*mmsize],  [r5+7*mmsize],  [r0+r2]
     lea    r0, [r0+r2*2]
-    QPEL_V_LOW [r5+ 0x8], [r5+0x10], [r5+0x18], [r5+0x40], [r0]
-    QPEL_V_LOW [r5+0x10], [r5+0x18], [r5+0x20], [r5+0x48], [r0+r2]
+    QPEL_V_LOW [r5+1*mmsize],  [r5+2*mmsize],  [r5+3*mmsize],  [r5+8*mmsize],  [r0]
+    QPEL_V_LOW [r5+2*mmsize],  [r5+3*mmsize],  [r5+4*mmsize],  [r5+9*mmsize],  [r0+r2]
     lea    r0, [r0+r2*2]
-    QPEL_V_LOW [r5+0x18], [r5+0x20], [r5+0x28], [r5+0x50], [r0]
-    QPEL_V_LOW [r5+0x20], [r5+0x28], [r5+0x30], [r5+0x58], [r0+r2]
+    QPEL_V_LOW [r5+3*mmsize],  [r5+4*mmsize],  [r5+5*mmsize],  [r5+10*mmsize], [r0]
+    QPEL_V_LOW [r5+4*mmsize],  [r5+5*mmsize],  [r5+6*mmsize],  [r5+11*mmsize], [r0+r2]
     lea    r0, [r0+r2*2]
-    QPEL_V_LOW [r5+0x28], [r5+0x30], [r5+0x38], [r5+0x60], [r0]
-    QPEL_V_LOW [r5+0x30], [r5+0x38], [r5+0x40], [r5+0x68], [r0+r2]
+    QPEL_V_LOW [r5+5*mmsize],  [r5+6*mmsize],  [r5+7*mmsize],  [r5+12*mmsize], [r0]
+    QPEL_V_LOW [r5+6*mmsize],  [r5+7*mmsize],  [r5+8*mmsize],  [r5+13*mmsize], [r0+r2]
     lea    r0, [r0+r2*2]
-    QPEL_V_LOW [r5+0x38], [r5+0x40], [r5+0x48], [r5+0x70], [r0]
-    QPEL_V_LOW [r5+0x40], [r5+0x48], [r5+0x50], [r5+0x78], [r0+r2]
+    QPEL_V_LOW [r5+7*mmsize],  [r5+8*mmsize],  [r5+ 9*mmsize], [r5+14*mmsize], [r0]
+    QPEL_V_LOW [r5+8*mmsize],  [r5+9*mmsize],  [r5+10*mmsize], [r5+15*mmsize], [r0+r2]
     lea    r0, [r0+r2*2]
-    QPEL_V_LOW [r5+0x48], [r5+0x50], [r5+0x58], [r5+0x80], [r0]
-    QPEL_V_LOW [r5+0x50], [r5+0x58], [r5+0x60], [r5+0x80], [r0+r2]
+    QPEL_V_LOW [r5+ 9*mmsize], [r5+10*mmsize], [r5+11*mmsize], [r5+16*mmsize], [r0]
+    QPEL_V_LOW [r5+10*mmsize], [r5+11*mmsize], [r5+12*mmsize], [r5+16*mmsize], [r0+r2]
     lea    r0, [r0+r2*2]
-    QPEL_V_LOW [r5+0x58], [r5+0x60], [r5+0x68], [r5+0x78], [r0]
-    QPEL_V_LOW [r5+0x60], [r5+0x68], [r5+0x70], [r5+0x70], [r0+r2]
+    QPEL_V_LOW [r5+11*mmsize], [r5+12*mmsize], [r5+13*mmsize], [r5+15*mmsize], [r0]
+    QPEL_V_LOW [r5+12*mmsize], [r5+13*mmsize], [r5+14*mmsize], [r5+14*mmsize], [r0+r2]
 
-    add    r5, 0x88
+    add    r5, 17*mmsize
     mov    r0, r1
     dec r4d
     jne .loopv
@@ -488,47 +495,60 @@ MPEG4_QPEL16_V_LOWPASS put_no_rnd
 
 
 %macro MPEG4_QPEL8_V_LOWPASS 1
-cglobal %1_mpeg4_qpel8_v_lowpass, 4, 6, 0, 144
+cglobal %1_mpeg4_qpel8_v_lowpass, 4, 6, 7, 144
     mov         r4d, 9
     mov          r5, rsp
-    pxor         m7, m7
+    pxor         m2, m2
 .looph:
-    mova         m0, [r1]
-    mova         m1, [r1]
-    punpcklbw    m0, m7
-    punpckhbw    m1, m7
+    movq         m0, [r1]
+    add          r1, r3
+%if mmsize == 8
+    mova         m1, m0
+    punpcklbw    m0, m2
+    punpckhbw    m1, m2
     mova       [r5], m0
     mova  [r5+0x48], m1
-    add          r5, 8
-    add          r1, r3
+%else
+    punpcklbw    m0, m2
+    mova       [r5], m0
+%endif
+    add          r5, mmsize
     dec r4d
     jne .looph
 
 
+%if mmsize == 8
     mov         r4d, 2
     mov          r1, r0
     mov          r5, rsp
 .loopv:
-    mova         m0, [r5+ 0x0]
-    mova         m1, [r5+ 0x8]
-    mova         m2, [r5+0x10]
-    mova         m3, [r5+0x18]
-    QPEL_V_LOW [r5+0x10], [r5+ 0x8], [r5+ 0x0], [r5+0x20], [r0]
-    QPEL_V_LOW [r5+ 0x8], [r5+ 0x0], [r5+ 0x0], [r5+0x28], [r0+r2]
-    lea    r0, [r0+r2*2]
-    QPEL_V_LOW [r5+ 0x0], [r5+ 0x0], [r5+ 0x8], [r5+0x30], [r0]
-    QPEL_V_LOW [r5+ 0x0], [r5+ 0x8], [r5+0x10], [r5+0x38], [r0+r2]
-    lea    r0, [r0+r2*2]
-    QPEL_V_LOW [r5+ 0x8], [r5+0x10], [r5+0x18], [r5+0x40], [r0]
-    QPEL_V_LOW [r5+0x10], [r5+0x18], [r5+0x20], [r5+0x40], [r0+r2]
-    lea    r0, [r0+r2*2]
-    QPEL_V_LOW [r5+0x18], [r5+0x20], [r5+0x28], [r5+0x38], [r0]
-    QPEL_V_LOW [r5+0x20], [r5+0x28], [r5+0x30], [r5+0x30], [r0+r2]
+%define R5 r5
+%else
+%define R5 rsp
+%endif
 
+    mova         m0, [R5+0 * mmsize]
+    mova         m1, [R5+1 * mmsize]
+    mova         m2, [R5+2 * mmsize]
+    mova         m3, [R5+3 * mmsize]
+    QPEL_V_LOW [R5+2*mmsize], [R5+1*mmsize], [R5+0*mmsize], [R5+4*mmsize], [r0]
+    QPEL_V_LOW [R5+1*mmsize], [R5+0*mmsize], [R5+0*mmsize], [R5+5*mmsize], [r0+r2]
+    lea    r0, [r0+r2*2]
+    QPEL_V_LOW [R5+0*mmsize], [R5+0*mmsize], [R5+1*mmsize], [R5+6*mmsize], [r0]
+    QPEL_V_LOW [R5+0*mmsize], [R5+1*mmsize], [R5+2*mmsize], [R5+7*mmsize], [r0+r2]
+    lea    r0, [r0+r2*2]
+    QPEL_V_LOW [R5+1*mmsize], [R5+2*mmsize], [R5+3*mmsize], [R5+8*mmsize], [r0]
+    QPEL_V_LOW [R5+2*mmsize], [R5+3*mmsize], [R5+4*mmsize], [R5+8*mmsize], [r0+r2]
+    lea    r0, [r0+r2*2]
+    QPEL_V_LOW [R5+3*mmsize], [R5+4*mmsize], [R5+5*mmsize], [R5+7*mmsize], [r0]
+    QPEL_V_LOW [R5+4*mmsize], [R5+5*mmsize], [R5+6*mmsize], [R5+6*mmsize], [r0+r2]
+
+%if mmsize == 8
     add    r5, 0x48
     lea    r0, [r1+4]
     dec r4d
     jne .loopv
+%endif
     RET
 %endmacro
 
@@ -541,4 +561,18 @@ MPEG4_QPEL8_V_LOWPASS put
 MPEG4_QPEL8_V_LOWPASS avg
 %define PW_ROUND pw_15
 %define OP_MOV PUT_OPH
+MPEG4_QPEL8_V_LOWPASS put_no_rnd
+
+INIT_XMM sse2
+%define PW_ROUND pw_16
+%define OP_MOV PUT_OPH
+MPEG4_QPEL16_V_LOWPASS put
+MPEG4_QPEL8_V_LOWPASS put
+%define PW_ROUND pw_16
+%define OP_MOV AVG_OPH
+MPEG4_QPEL16_V_LOWPASS avg
+MPEG4_QPEL8_V_LOWPASS avg
+%define PW_ROUND pw_15
+%define OP_MOV PUT_OPH
+MPEG4_QPEL16_V_LOWPASS put_no_rnd
 MPEG4_QPEL8_V_LOWPASS put_no_rnd

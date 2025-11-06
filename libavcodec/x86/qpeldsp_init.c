@@ -271,6 +271,35 @@ QPEL3(QPEL_H,  16, 17, mmxext, mmxext, mmxext, mmxext)
 QPEL3(QPEL_V,  16, 17, mmxext, mmxext, mmxext, mmxext)
 QPEL3(QPEL_HV, 16, 17, mmxext, mmxext, mmxext, mmxext)
 
+QPEL3(QPEL_V,   8,  9, ssse3, sse2, ssse3, mmxext)
+QPEL3(QPEL_HV,  8,  9, mmxext, sse2, sse2, mmxext)
+QPEL3(QPEL_V,  16, 17, ssse3, sse2, ssse3, mmxext)
+QPEL3(QPEL_HV, 16, 17, mmxext, sse2, sse2, mmxext)
+
+#define SET_QPEL_FUNC(OP, X, Y, SIZE, CPU, PREFIX) \
+    c->OP ## _qpel_pixels_tab[SIZE == 8][X+4*Y] = PREFIX ## OP ## _qpel ## SIZE ## _mc ## X ## Y ## _ ## CPU
+
+#define SET_QPEL_FUNCS3(X, Y, SIZE, CPU, PREFIX)        \
+    SET_QPEL_FUNC(avg,        X, Y, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNC(put,        X, Y, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNC(put_no_rnd, X, Y, SIZE, CPU, PREFIX)
+
+#define SET_V_QPEL_FUNCS(SIZE, CPU, PREFIX)   \
+    SET_QPEL_FUNCS3(0, 1, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNCS3(0, 2, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNCS3(0, 3, SIZE, CPU, PREFIX)
+
+#define SET_HV_QPEL_FUNCS(SIZE, CPU, PREFIX)  \
+    SET_QPEL_FUNCS3(1, 1, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNCS3(1, 2, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNCS3(1, 3, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNCS3(2, 1, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNCS3(2, 2, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNCS3(2, 3, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNCS3(3, 1, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNCS3(3, 2, SIZE, CPU, PREFIX); \
+    SET_QPEL_FUNCS3(3, 3, SIZE, CPU, PREFIX)
+
 #define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU, PREFIX)                          \
 do {                                                                         \
     c->PFX ## _pixels_tab[IDX][ 1] = PREFIX ## PFX ## SIZE ## _mc10_ ## CPU; \
@@ -313,6 +342,11 @@ av_cold void ff_qpeldsp_init_x86(QpelDSPContext *c)
         c->put_no_rnd_qpel_pixels_tab[1][0] =
         c->put_qpel_pixels_tab[1][0] = ff_put_pixels8x8_sse2;
         c->avg_qpel_pixels_tab[0][0] = ff_avg_pixels16x16_sse2;
+
+        SET_V_QPEL_FUNCS (16, sse2,);
+        SET_HV_QPEL_FUNCS(16, sse2,);
+        SET_V_QPEL_FUNCS (8,  sse2,);
+        SET_HV_QPEL_FUNCS(8,  sse2,);
     }
 #endif
 }
