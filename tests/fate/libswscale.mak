@@ -31,6 +31,11 @@ fate-sws-yuv-range: CMD = framecrc \
   -frames 1 \
   -vf scale=in_color_matrix=bt601:in_range=limited:out_color_matrix=bt601:out_range=full:flags=+accurate_rnd+bitexact
 
+# This self-check currently fails for legacy swscale, so pass SWS_UNSTABLE to use the new code
+FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-unscaled
+fate-sws-unscaled: libswscale/tests/swscale$(EXESUF)
+fate-sws-unscaled: CMD = run libswscale/tests/swscale$(EXESUF) -unscaled 1 -flags 0x100000 -v 16
+
 FATE_LIBSWSCALE += $(FATE_LIBSWSCALE-yes)
 FATE_LIBSWSCALE_SAMPLES += $(FATE_LIBSWSCALE_SAMPLES-yes)
 FATE-$(CONFIG_SWSCALE) += $(FATE_LIBSWSCALE)
