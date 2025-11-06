@@ -427,7 +427,6 @@ cglobal %1_mpeg4_qpel16_v_lowpass, 4, 6, 0, 544
     mov          r1, r0
     mov          r5, rsp
 .loopv:
-    pxor         m7, m7
     mova         m0, [r5+ 0x0]
     mova         m1, [r5+ 0x8]
     mova         m2, [r5+0x10]
@@ -509,7 +508,6 @@ cglobal %1_mpeg4_qpel8_v_lowpass, 4, 6, 0, 288
     mov          r1, r0
     mov          r5, rsp
 .loopv:
-    pxor         m7, m7
     mova         m0, [r5+ 0x0]
     mova         m1, [r5+ 0x8]
     mova         m2, [r5+0x10]
