@@ -1113,9 +1113,6 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
         hwfc->create_pnext = &prof->profile_list;
     } else {
         switch (frames_ctx->sw_format) {
-        /* Vulkan's formats are all LSB-padded */
-        case AV_PIX_FMT_GRAY10: frames_ctx->sw_format = AV_PIX_FMT_GRAY10MSB; break;
-        case AV_PIX_FMT_GRAY12: frames_ctx->sw_format = AV_PIX_FMT_GRAY12MSB; break;
         case AV_PIX_FMT_GBRAP16:
             /* This should be more efficient for downloading and using */
             frames_ctx->sw_format = AV_PIX_FMT_RGBA64;
