@@ -51,12 +51,8 @@ gbrpf32le           64722b723252d359858136cb00079636
 gray                57fd8e6e00f6be8752726005974cce1b
 gray10be            711bc331a8ed5c48e2e8872d3df7f890
 gray10le            61591241c1f83d3076e0fa6b801adb99
-gray10msbbe         2257c72ca7d6bd683a83a07ac454e2ed
-gray10msble         cd87525d365d1a12cb1661c3619cc929
 gray12be            718af16226ee969af743ae8ccbbf0613
 gray12le            b655b51e52c39ee9deedbd7b2a1fa2cc
-gray12msbbe         89910422cd91527d3b76f67eb41505e6
-gray12msble         f21838de4af768110ed67f9646d542f4
 gray14be            6a3661d546ab53c2c0a891128c809f1f
 gray14le            cfccfc0c493ea01c07e6b8571dc4ca29
 gray16be            3f9a4ee6683542a840a8767c4da2158a
