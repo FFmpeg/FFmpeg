@@ -243,7 +243,8 @@ static int run_rct_search(AVCodecContext *avctx, FFVkExecContext *exec,
     };
 
     if (avctx->sw_pix_fmt == AV_PIX_FMT_GBRP10MSB ||
-        avctx->sw_pix_fmt == AV_PIX_FMT_GBRP12MSB)
+        avctx->sw_pix_fmt == AV_PIX_FMT_GBRP12MSB ||
+        avctx->sw_pix_fmt == AV_PIX_FMT_GBRP14)
         memcpy(pd.fmt_lut, (int [4]) { 2, 1, 0, 3 }, 4*sizeof(int));
     else
         ff_vk_set_perm(avctx->sw_pix_fmt, pd.fmt_lut, 1);
@@ -503,7 +504,8 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
 
     /* For some reason the C FFv1 encoder/decoder treats these differently */
     if (avctx->sw_pix_fmt == AV_PIX_FMT_GBRP10MSB ||
-        avctx->sw_pix_fmt == AV_PIX_FMT_GBRP12MSB)
+        avctx->sw_pix_fmt == AV_PIX_FMT_GBRP12MSB ||
+        avctx->sw_pix_fmt == AV_PIX_FMT_GBRP14)
         memcpy(pd.fmt_lut, (int [4]) { 2, 1, 0, 3 }, 4*sizeof(int));
     else
         ff_vk_set_perm(avctx->sw_pix_fmt, pd.fmt_lut, 1);
