@@ -110,14 +110,14 @@ void main(void)
     idct(block, idx, 9);
 
     float fact = 1.0f / (1 << (12 - depth)), off = 1 << (depth - 1);
-    int maxv = (1 << depth) - 1, shift = 16 - depth;
+    int maxv = (1 << depth) - 1;
 
     /* 7.5.1 Color Component Samples. Rescale, clamp and write back to global memory */
     barrier();
     if (act) {
         [[unroll]] for (uint i = 0; i < 8; ++i) {
             float v = blocks[block][i * 9 + idx] * fact + off;
-            put_px(comp, ivec2(gid.x, (gid.y << 3) | i), clamp(int(v), 0, maxv) << shift);
+            put_px(comp, ivec2(gid.x, (gid.y << 3) | i), clamp(int(v), 0, maxv));
         }
     }
 }
