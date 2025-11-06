@@ -757,6 +757,8 @@ static int fmt_shift(enum AVPixelFormat fmt)
     case AV_PIX_FMT_YUV444P10MSBLE:
     case AV_PIX_FMT_GBRP10MSBBE:
     case AV_PIX_FMT_GBRP10MSBLE:
+    case AV_PIX_FMT_GRAY10MSBBE:
+    case AV_PIX_FMT_GRAY10MSBLE:
         return 6;
     case AV_PIX_FMT_P012BE:
     case AV_PIX_FMT_P012LE:
@@ -776,6 +778,8 @@ static int fmt_shift(enum AVPixelFormat fmt)
     case AV_PIX_FMT_YUV444P12MSBLE:
     case AV_PIX_FMT_GBRP12MSBBE:
     case AV_PIX_FMT_GBRP12MSBLE:
+    case AV_PIX_FMT_GRAY12MSBBE:
+    case AV_PIX_FMT_GRAY12MSBLE:
         return 4;
     }
 
