@@ -23,11 +23,13 @@
 
 %include "libavutil/x86/x86util.asm"
 
+SECTION_RODATA
+
 cextern pb_1
 cextern pw_3
-cextern pw_15
+pw_15: times 4 dw 15
 cextern pw_16
-cextern pw_20
+pw_20: times 4 dw 20
 
 
 SECTION .text
