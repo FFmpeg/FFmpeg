@@ -443,44 +443,33 @@ static int formats_declared(AVFilterContext *f)
     return 1;
 }
 
-static void print_formats(void *log_ctx, int level, enum AVMediaType type,
-                          const AVFilterFormats *formats)
-{
-    AVBPrint bp;
-    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
-
-    switch (type) {
-    case AVMEDIA_TYPE_VIDEO:
-        for (unsigned i = 0; i < formats->nb_formats; i++)
-            av_bprintf(&bp, "%s%s", bp.len ? " " : "", av_get_pix_fmt_name(formats->formats[i]));
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        for (unsigned i = 0; i < formats->nb_formats; i++)
-            av_bprintf(&bp, "%s%s", bp.len ? " " : "", av_get_sample_fmt_name(formats->formats[i]));
-        break;
-    default:
-        av_bprintf(&bp, "(unknown)");
-        break;
-    }
-
-    if (av_bprint_is_complete(&bp)) {
-        av_log(log_ctx, level, "%s\n", bp.str);
-    } else {
-        av_log(log_ctx, level, "(out of memory)\n");
-    }
-    av_bprint_finalize(&bp, NULL);
-}
-
 static void print_link_formats(void *log_ctx, int level, const AVFilterLink *l)
 {
     if (av_log_get_level() < level)
         return;
 
-    av_log(log_ctx, level, "Link '%s.%s' -> '%s.%s':\n"
-                           "  src: ", l->src->name, l->srcpad->name, l->dst->name, l->dstpad->name);
-    print_formats(log_ctx, level, l->type, l->incfg.formats);
-    av_log(log_ctx, level, "  dst: ");
-    print_formats(log_ctx, level, l->type, l->outcfg.formats);
+    AVBPrint bp;
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
+
+    av_log(log_ctx, level, "Link '%s.%s' -> '%s.%s':\n",
+           l->src->name, l->srcpad->name, l->dst->name, l->dstpad->name);
+
+    const AVFilterNegotiation *neg = ff_filter_get_negotiation(l);
+    for (unsigned i = 0; i < neg->nb_mergers; i++) {
+        const AVFilterFormatsMerger *m = &neg->mergers[i];
+        av_log(log_ctx, level, "  %s:\n", m->name);
+        m->print_list(&bp, FF_FIELD_AT(void *, m->offset, l->incfg));
+        if (av_bprint_is_complete(&bp))
+            av_log(log_ctx, level, "    src: %s\n", bp.str);
+        av_bprint_clear(&bp);
+
+        m->print_list(&bp, FF_FIELD_AT(void *, m->offset, l->outcfg));
+        if (av_bprint_is_complete(&bp))
+            av_log(log_ctx, level, "    dst: %s\n", bp.str);
+        av_bprint_clear(&bp);
+    }
+
+    av_bprint_finalize(&bp, NULL);
 }
 
 static void print_filter_formats(void *log_ctx, int level, const AVFilterContext *f)
@@ -488,15 +477,39 @@ static void print_filter_formats(void *log_ctx, int level, const AVFilterContext
     if (av_log_get_level() < level)
         return;
 
+    AVBPrint bp;
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
+
     av_log(log_ctx, level, "Filter '%s' formats:\n", f->name);
     for (int i = 0; i < f->nb_inputs; i++) {
-        av_log(log_ctx, level, "  in[%d] '%s': ", i, f->input_pads[i].name);
-        print_formats(log_ctx, level, f->inputs[i]->type, f->inputs[i]->outcfg.formats);
+        const AVFilterLink *in = f->inputs[i];
+        const AVFilterNegotiation *neg = ff_filter_get_negotiation(in);
+        av_log(log_ctx, level, "  in[%d] '%s':", i, f->input_pads[i].name);
+
+        for (unsigned i = 0; i < neg->nb_mergers; i++) {
+            const AVFilterFormatsMerger *m = &neg->mergers[i];
+            m->print_list(&bp, FF_FIELD_AT(void *, m->offset, in->outcfg));
+            if (av_bprint_is_complete(&bp))
+                av_log(log_ctx, level, "    %s: %s", m->name, bp.str);
+            av_bprint_clear(&bp);
+        }
     }
+
     for (int i = 0; i < f->nb_outputs; i++) {
-        av_log(log_ctx, level, "  out[%d] '%s': ", i, f->output_pads[i].name);
-        print_formats(log_ctx, level, f->outputs[i]->type, f->outputs[i]->incfg.formats);
+        const AVFilterLink *out = f->outputs[i];
+        const AVFilterNegotiation *neg = ff_filter_get_negotiation(out);
+        av_log(log_ctx, level, "  out[%d] '%s':", i, f->output_pads[i].name);
+
+        for (unsigned i = 0; i < neg->nb_mergers; i++) {
+            const AVFilterFormatsMerger *m = &neg->mergers[i];
+            m->print_list(&bp, FF_FIELD_AT(void *, m->offset, out->incfg));
+            if (av_bprint_is_complete(&bp))
+                av_log(log_ctx, level, "    %s: %s", m->name, bp.str);
+            av_bprint_clear(&bp);
+        }
     }
+
+    av_bprint_finalize(&bp, NULL);
 }
 
 /**
