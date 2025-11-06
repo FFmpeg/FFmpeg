@@ -443,7 +443,9 @@ static int formats_declared(AVFilterContext *f)
     return 1;
 }
 
-static void print_link_formats(void *log_ctx, int level, const AVFilterLink *l)
+static void print_link_formats(void *log_ctx, int level, const AVFilterLink *l,
+                               const AVFilterFormatsMerger *mergers[],
+                               int nb_mergers)
 {
     if (av_log_get_level() < level)
         return;
@@ -454,9 +456,8 @@ static void print_link_formats(void *log_ctx, int level, const AVFilterLink *l)
     av_log(log_ctx, level, "Link '%s.%s' -> '%s.%s':\n",
            l->src->name, l->srcpad->name, l->dst->name, l->dstpad->name);
 
-    const AVFilterNegotiation *neg = ff_filter_get_negotiation(l);
-    for (unsigned i = 0; i < neg->nb_mergers; i++) {
-        const AVFilterFormatsMerger *m = &neg->mergers[i];
+    for (unsigned i = 0; i < nb_mergers; i++) {
+        const AVFilterFormatsMerger *m = mergers[i];
         av_log(log_ctx, level, "  %s:\n", m->name);
         m->print_list(&bp, FF_FIELD_AT(void *, m->offset, l->incfg));
         if (av_bprint_is_complete(&bp))
@@ -554,8 +555,9 @@ retry:
             AVFilterLink *link = filter->inputs[j];
             const AVFilterNegotiation *neg;
             AVFilterContext *conv[4];
+            const AVFilterFormatsMerger *mergers[4]; /* triggered mergers */
             const char *conv_filters[4], *conv_opts[4] = {0};
-            unsigned neg_step, num_conv = 0;
+            unsigned neg_step, num_conv = 0, num_mergers = 0;
 
             if (!link)
                 continue;
@@ -578,6 +580,8 @@ retry:
                             conv_opts[num_conv] = FF_FIELD_AT(char *, m->conversion_opts_offset, *graph);
                         num_conv++;
                     }
+                    av_assert1(num_mergers < FF_ARRAY_ELEMS(mergers));
+                    mergers[num_mergers++] = m;
                 }
             }
             for (neg_step = 0; neg_step < neg->nb_mergers; neg_step++) {
@@ -594,6 +598,7 @@ retry:
                     if (ret < 0)
                         return ret;
                     if (!ret) {
+                        mergers[num_mergers++] = m;
                         conv_filters[num_conv] = m->conversion_filter;
                         if (m->conversion_opts_offset)
                             conv_opts[num_conv] = FF_FIELD_AT(char *, m->conversion_opts_offset, *graph);
@@ -616,7 +621,7 @@ retry:
                            "The filters '%s' and '%s' do not have a common format "
                            "and automatic conversion is disabled.\n",
                            link->src->name, link->dst->name);
-                    print_link_formats(log_ctx, AV_LOG_ERROR, link);
+                    print_link_formats(log_ctx, AV_LOG_ERROR, link, mergers, num_mergers);
                     return AVERROR(EINVAL);
                 }
 
@@ -624,7 +629,7 @@ retry:
                     av_log(log_ctx, AV_LOG_ERROR,
                            "'%s' filter not present, cannot convert formats.\n",
                            conv_filters[k]);
-                    print_link_formats(log_ctx, AV_LOG_ERROR, link);
+                    print_link_formats(log_ctx, AV_LOG_ERROR, link, mergers, num_mergers);
                     return AVERROR(EINVAL);
                 }
                 snprintf(inst_name, sizeof(inst_name), "auto_%s_%d",
@@ -687,7 +692,7 @@ retry:
                         av_log(log_ctx, AV_LOG_ERROR,
                                "Impossible to convert between the formats supported by the filter "
                                "'%s' and the filter '%s'\n", link->src->name, link->dst->name);
-                        print_link_formats(log_ctx, AV_LOG_ERROR, link);
+                        print_link_formats(log_ctx, AV_LOG_ERROR, link, &m, 1);
                         return AVERROR(ENOSYS);
                     } else {
                         count_merged += 2;
