@@ -17,11 +17,6 @@ API changes, most recent first:
   Add AVCOL_TRC_EXT_BASE, AVCOL_TRC_V_LOG,
   AVCOL_PRI_EXT_BASE and AVCOL_PRI_V_GAMUT.
 
-2025-10-xx - xxxxxxxxxx - lavu 60.15.100 - pixfmt.h
-  Add AV_PIX_FMT_GRAY10MSB, AV_PIX_FMT_GRAY12MSB,
-  AV_PIX_FMT_YUV420P10MSB, AV_PIX_FMT_YUV420P12MSB,
-  AV_PIX_FMT_YUV422P10MSB, AV_PIX_FMT_YUV422P12MSB.
-
 2025-10-xx - xxxxxxxxxx - lavu 60.14.100 - csp.h
   Add av_csp_approximate_eotf_gamma().
 
