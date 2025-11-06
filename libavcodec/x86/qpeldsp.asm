@@ -488,7 +488,7 @@ MPEG4_QPEL16_V_LOWPASS put_no_rnd
 
 
 %macro MPEG4_QPEL8_V_LOWPASS 1
-cglobal %1_mpeg4_qpel8_v_lowpass, 4, 6, 0, 288
+cglobal %1_mpeg4_qpel8_v_lowpass, 4, 6, 0, 144
     mov         r4d, 9
     mov          r5, rsp
     pxor         m7, m7
