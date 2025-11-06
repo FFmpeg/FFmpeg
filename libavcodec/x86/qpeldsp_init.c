@@ -35,9 +35,9 @@
 void ff_put_pixels8x9_l2_mmxext(uint8_t *dst,
                                 const uint8_t *src1, const uint8_t *src2,
                                 ptrdiff_t dstStride, ptrdiff_t src1Stride);
-void ff_put_pixels16x17_l2_mmxext(uint8_t *dst,
-                                  const uint8_t *src1, const uint8_t *src2,
-                                  ptrdiff_t dstStride, ptrdiff_t src1Stride);
+void ff_put_pixels16x17_l2_sse2(uint8_t *dst,
+                                const uint8_t *src1, const uint8_t *src2,
+                                ptrdiff_t dstStride, ptrdiff_t src1Stride);
 void ff_put_no_rnd_pixels8x8_l2_mmxext(uint8_t *dst,
                                        const uint8_t *src1, const uint8_t *src2,
                                        ptrdiff_t dstStride, ptrdiff_t src1Stride);
@@ -47,9 +47,12 @@ void ff_put_no_rnd_pixels8x9_l2_mmxext(uint8_t *dst,
 void ff_put_no_rnd_pixels16x16_l2_mmxext(uint8_t *dst,
                                          const uint8_t *src1, const uint8_t *src2,
                                          ptrdiff_t dstStride, ptrdiff_t src1Stride);
-void ff_put_no_rnd_pixels16x17_l2_mmxext(uint8_t *dst,
-                                         const uint8_t *src1, const uint8_t *src2,
-                                         ptrdiff_t dstStride, ptrdiff_t src1Stride);
+void ff_put_no_rnd_pixels16x16_l2_sse2(uint8_t *dst,
+                                       const uint8_t *src1, const uint8_t *src2,
+                                       ptrdiff_t dstStride, ptrdiff_t src1Stride);
+void ff_put_no_rnd_pixels16x17_l2_sse2(uint8_t *dst,
+                                       const uint8_t *src1, const uint8_t *src2,
+                                       ptrdiff_t dstStride, ptrdiff_t src1Stride);
 
 #define QPEL_H(OPNAME, RND, SIZE, UNUSED1, XMM, UNUSED2, UNUSED3, L2)                   \
 void ff_ ## OPNAME ## _mpeg4_qpel ## SIZE ## _h_lowpass_ ## XMM (uint8_t *dst,          \
@@ -269,8 +272,8 @@ QPEL3(QPEL_H,  16, 17, mmxext, mmxext, mmxext, mmxext)
 
 QPEL3(QPEL_V,   8,  9, ssse3, sse2, ssse3, mmxext)
 QPEL3(QPEL_HV,  8,  9, mmxext, sse2, sse2, mmxext)
-QPEL3(QPEL_V,  16, 17, ssse3, sse2, ssse3, mmxext)
-QPEL3(QPEL_HV, 16, 17, mmxext, sse2, sse2, mmxext)
+QPEL3(QPEL_V,  16, 17, ssse3, sse2, ssse3, sse2)
+QPEL3(QPEL_HV, 16, 17, mmxext, sse2, sse2, sse2)
 
 #define SET_QPEL_FUNC(OP, X, Y, SIZE, CPU, PREFIX) \
     c->OP ## _qpel_pixels_tab[SIZE == 8][X+4*Y] = PREFIX ## OP ## _qpel ## SIZE ## _mc ## X ## Y ## _ ## CPU

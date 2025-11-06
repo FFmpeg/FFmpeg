@@ -37,7 +37,6 @@ SECTION .text
 %macro PIXELS_L2 2-3 ; avg vs put, size, size+1
 %define OP op_%1
 %ifidn %1, put
-%if notcpuflag(sse2) ; SSE2 currently only uses 16x16
 ; void ff_put_pixels8x9_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 ;                                 ptrdiff_t dstStride, ptrdiff_t src1Stride)
 cglobal put_pixels%2x%3_l2, 5,6,2
@@ -49,7 +48,6 @@ cglobal put_pixels%2x%3_l2, 5,6,2
     add          r0, r3
     ; FIXME: avoid jump if prologue is empty
     jmp          %1_pixels%2x%2_after_prologue_ %+ cpuname
-%endif
 %endif
 ; void ff_avg/put_pixels8x8_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 ;                                     ptrdiff_t dstStride, ptrdiff_t src1Stride)
@@ -89,22 +87,6 @@ PIXELS_L2 avg, 16
 
 %macro PIXELS16_L2 1
 %define OP op_%1
-%ifidn %1, put
-; void ff_put_pixels16x17_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
-;                                   ptrdiff_t dstStride, ptrdiff_t src1Stride)
-cglobal put_pixels16x17_l2, 5,6
-    mova         m0, [r1]
-    mova         m1, [r1+8]
-    pavgb        m0, [r2]
-    pavgb        m1, [r2+8]
-    add          r1, r4
-    add          r2, 16
-    OP           m0, [r0]
-    OP           m1, [r0+8]
-    add          r0, r3
-    ; FIXME: avoid jump if prologue is empty
-    jmp          %1_pixels16x16_after_prologue_ %+ cpuname
-%endif
 ; void ff_avg/put_pixels16x16_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 ;                                       ptrdiff_t dstStride, ptrdiff_t src1Stride)
 cglobal %1_pixels16x16_l2, 5,6
