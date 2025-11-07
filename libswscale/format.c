@@ -546,7 +546,8 @@ int sws_test_colorspace(enum AVColorSpace csp, int output)
 
 int sws_test_primaries(enum AVColorPrimaries prim, int output)
 {
-    return prim > AVCOL_PRI_RESERVED0 && prim < AVCOL_PRI_NB &&
+    return ((prim > AVCOL_PRI_RESERVED0 && prim < AVCOL_PRI_NB) ||
+            (prim >= AVCOL_PRI_EXT_BASE && prim < AVCOL_PRI_EXT_NB)) &&
            prim != AVCOL_PRI_RESERVED;
 }
 
