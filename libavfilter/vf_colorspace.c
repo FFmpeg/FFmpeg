@@ -950,7 +950,7 @@ static const AVOption colorspace_options[] = {
 
     { "primaries",  "Output color primaries",
       OFFSET(user_prm),   AV_OPT_TYPE_INT, { .i64 = AVCOL_PRI_UNSPECIFIED },
-      AVCOL_PRI_RESERVED0, AVCOL_PRI_NB - 1, FLAGS, .unit = "prm" },
+      AVCOL_PRI_RESERVED0, AVCOL_PRI_EXT_NB - 1, FLAGS, .unit = "prm" },
     ENUM("bt709",        AVCOL_PRI_BT709,      "prm"),
     ENUM("bt470m",       AVCOL_PRI_BT470M,     "prm"),
     ENUM("bt470bg",      AVCOL_PRI_BT470BG,    "prm"),
@@ -963,10 +963,11 @@ static const AVOption colorspace_options[] = {
     ENUM("bt2020",       AVCOL_PRI_BT2020,     "prm"),
     ENUM("jedec-p22",    AVCOL_PRI_JEDEC_P22,  "prm"),
     ENUM("ebu3213",      AVCOL_PRI_EBU3213,    "prm"),
+    ENUM("vgamut",       AVCOL_PRI_V_GAMUT,    "prm"),
 
     { "trc",        "Output transfer characteristics",
       OFFSET(user_trc),   AV_OPT_TYPE_INT, { .i64 = AVCOL_TRC_UNSPECIFIED },
-      AVCOL_TRC_RESERVED0, AVCOL_TRC_NB - 1, FLAGS, .unit = "trc" },
+      AVCOL_TRC_RESERVED0, AVCOL_TRC_EXT_NB - 1, FLAGS, .unit = "trc" },
     ENUM("bt709",        AVCOL_TRC_BT709,        "trc"),
     ENUM("bt470m",       AVCOL_TRC_GAMMA22,      "trc"),
     ENUM("gamma22",      AVCOL_TRC_GAMMA22,      "trc"),
@@ -981,6 +982,7 @@ static const AVOption colorspace_options[] = {
     ENUM("iec61966-2-4", AVCOL_TRC_IEC61966_2_4, "trc"),
     ENUM("bt2020-10",    AVCOL_TRC_BT2020_10,    "trc"),
     ENUM("bt2020-12",    AVCOL_TRC_BT2020_12,    "trc"),
+    ENUM("vlog",         AVCOL_TRC_V_LOG,        "trc"),
 
     { "format",   "Output pixel format",
       OFFSET(user_format), AV_OPT_TYPE_INT,  { .i64 = AV_PIX_FMT_NONE },
@@ -1030,10 +1032,10 @@ static const AVOption colorspace_options[] = {
       AVCOL_RANGE_UNSPECIFIED, AVCOL_RANGE_NB - 1, FLAGS, .unit = "rng" },
     { "iprimaries", "Input color primaries",
       OFFSET(user_iprm),  AV_OPT_TYPE_INT, { .i64 = AVCOL_PRI_UNSPECIFIED },
-      AVCOL_PRI_RESERVED0, AVCOL_PRI_NB - 1, FLAGS, .unit = "prm" },
+      AVCOL_PRI_RESERVED0, AVCOL_PRI_EXT_NB - 1, FLAGS, .unit = "prm" },
     { "itrc",       "Input transfer characteristics",
       OFFSET(user_itrc),  AV_OPT_TYPE_INT, { .i64 = AVCOL_TRC_UNSPECIFIED },
-      AVCOL_TRC_RESERVED0, AVCOL_TRC_NB - 1, FLAGS, .unit = "trc" },
+      AVCOL_TRC_RESERVED0, AVCOL_TRC_EXT_NB - 1, FLAGS, .unit = "trc" },
 
     { NULL }
 };
