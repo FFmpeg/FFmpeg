@@ -59,7 +59,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int16_t get_value(GetBitContext *gb, int16_t codebook)
+static uint16_t get_value(GetBitContext *gb, int16_t codebook)
 {
     const int16_t switch_bits = codebook >> 8;
     const int16_t rice_order  = codebook & 0xf;
@@ -83,6 +83,8 @@ static int16_t get_value(GetBitContext *gb, int16_t codebook)
     }
 
     bits = exp_order + (q << 1) - switch_bits;
+    if (bits > 32)
+        return 0; // we do not return a negative error code so that we dont produce out of range values on errors
     skip_bits_long(gb, bits);
     return (b >> (32 - bits)) +
            ((switch_bits + 1) << rice_order) -
@@ -145,7 +147,7 @@ static int decode_comp(AVCodecContext *avctx, TileContext *tile,
     int16_t dc_add = 0;
     int16_t dc_codebook;
 
-    int16_t ac, rn, ln;
+    uint16_t ac, rn, ln;
     int16_t ac_codebook = 49;
     int16_t rn_codebook = 0;
     int16_t ln_codebook = 66;
