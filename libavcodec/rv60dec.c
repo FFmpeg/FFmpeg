@@ -2265,7 +2265,7 @@ static int decode_slice(AVCodecContext *avctx, void *tdata, int cu_y, int thread
             ff_thread_progress_await(&s->progress[cu_y - 1], cu_x + 2);
 
         qp = s->qp + read_qp_offset(&gb, s->qp_off_type);
-        if (qp < 0) {
+        if (qp < 0 || qp >= 64) {
             ret = AVERROR_INVALIDDATA;
             break;
         }
