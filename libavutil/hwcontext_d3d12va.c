@@ -314,7 +314,7 @@ static AVBufferRef *d3d12va_pool_alloc(void *opaque, size_t size)
     if (!frame->sync_ctx.event)
         goto fail;
 
-    buf = av_buffer_create((uint8_t *)frame, sizeof(frame), free_texture, NULL, 0);
+    buf = av_buffer_create((uint8_t *)frame, sizeof(*frame), free_texture, NULL, 0);
     if (!buf)
         goto fail;
 
