@@ -22,9 +22,9 @@
 void put_px(uint tex_idx, ivec2 pos, uint v)
 {
 #ifndef INTERLACED
-    imageStore(dst[tex_idx], pos, uvec4(v));
+    imageStore(dst[tex_idx], pos, uvec4(uint16_t(v)));
 #else
-    imageStore(dst[tex_idx], ivec2(pos.x, (pos.y << 1) + bottom_field), uvec4(v));
+    imageStore(dst[tex_idx], ivec2(pos.x, (pos.y << 1) + bottom_field), uvec4(uint16_t(v)));
 #endif
 }
 
@@ -57,7 +57,7 @@ uint decode_codeword(inout GetBitContext gb, int codebook)
     }
 }
 
-void decode_comp(in GetBitContext gb, uvec2 mb_pos, uint mb_count, uint qscale)
+void decode_comp(in GetBitContext gb, uvec2 mb_pos, uint mb_count)
 {
     uvec3 gid = gl_GlobalInvocationID;
     uint is_luma = uint(gid.z == 0);
@@ -70,7 +70,7 @@ void decode_comp(in GetBitContext gb, uvec2 mb_pos, uint mb_count, uint qscale)
     {
         /* First coeff */
         uint c = to_signed(decode_codeword(gb, 0x650));
-        put_px(gid.z, base_pos, c * qscale & 0xffff);
+        put_px(gid.z, base_pos, c);
 
         /**
          * Table 9, encoded as (last_rice_q << 0) | (krice or kexp << 4) | ((kexp or kexp + 1) << 8)
@@ -89,7 +89,7 @@ void decode_comp(in GetBitContext gb, uvec2 mb_pos, uint mb_count, uint qscale)
             int s = int(prev_dc_diff) >> 31;
             c += prev_dc_diff = (to_signed(cw) ^ s) - s;
 
-            put_px(gid.z, base_pos + pos_to_block(i, is_luma), c * qscale & 0xffff);
+            put_px(gid.z, base_pos + pos_to_block(i, is_luma), c);
         }
     }
 
@@ -152,7 +152,7 @@ void decode_comp(in GetBitContext gb, uvec2 mb_pos, uint mb_count, uint qscale)
             ivec2 bpos = ivec2(scan & 0xf, scan >> 4);
 
             uint c = ((level + 1) ^ -s) + s;
-            put_px(gid.z, base_pos + spos + bpos, c * qscale & 0xffff);
+            put_px(gid.z, base_pos + spos + bpos, c);
         }
     }
 }
@@ -218,7 +218,7 @@ void decode_alpha(in GetBitContext gb, uvec2 mb_pos, uint mb_count)
          */
         uint val = (alpha << alpha_rescale_lshift) | (alpha >> alpha_rescale_rshift);
         for (uint end = pos + run; pos < end; ++pos)
-            put_px(3, base_pos + ivec2(pos & block_mask, pos >> block_shift), val & 0xffff);
+            put_px(3, base_pos + ivec2(pos & block_mask, pos >> block_shift), val);
     }
 }
 
@@ -235,13 +235,8 @@ void main(void)
     u8buf bs = u8buf(slice_data + slice_off);
 
     /* Decode slice header */
-    uint hdr_size, y_size, u_size, v_size, a_size;
-    hdr_size = bs[0].v >> 3;
-
-    /* Table 15 */
-    uint qidx   = clamp(bs[1].v, 1, 224),
-         qscale = qidx > 128 ? (qidx - 96) << 2 : qidx;
-
+    uint hdr_size, qidx, y_size, u_size, v_size, a_size;
+    hdr_size = bs[0].v >> 3, qidx = clamp(bs[1].v, 1, 224);
     y_size = (uint(bs[2].v) << 8) | bs[3].v;
     u_size = (uint(bs[4].v) << 8) | bs[5].v;
 
@@ -308,10 +303,17 @@ void main(void)
     uint mb_count = 1 << log2_width;
 
     if (gid.z < 3) {
-        /* Color entropy decoding, inverse scanning, first part of inverse quantization */
-        decode_comp(gb, uvec2(mb_x, mb_y), mb_count, qscale);
+        /* Color entropy decoding, inverse scanning */
+        decode_comp(gb, uvec2(mb_x, mb_y), mb_count);
     } else {
         /* Alpha entropy decoding */
         decode_alpha(gb, uvec2(mb_x, mb_y), mb_count);
+    }
+
+    /* Forward the quantization index to the IDCT shader */
+    if (gid.z == 0) {
+        uint base = mb_y * mb_width + mb_x;
+        for (uint i = 0; i < mb_count; ++i)
+            quant_idx[base + i] = uint8_t(qidx);
     }
 }
