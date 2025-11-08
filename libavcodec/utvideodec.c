@@ -457,7 +457,7 @@ static void restore_median_planar_il(UtvideoContext *c, uint8_t *src, ptrdiff_t 
         // second line - first element has top prediction, the rest uses median
         C        = bsrc[-stride2];
         bsrc[0] += C;
-        A        = bsrc[0];
+        A = B    = bsrc[0];
         for (i = 1; i < FFMIN(width, 16); i++) { /* scalar loop (DSP need align 16) */
             B        = bsrc[i - stride2];
             bsrc[i] += mid_pred(A, B, (uint8_t)(A + B - C));
