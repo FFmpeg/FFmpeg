@@ -720,14 +720,13 @@ int attribute_align_arg swr_convert(struct SwrContext *s,
 {
     AudioData * in= &s->in;
     AudioData *out= &s->out;
-    av_unused int max_output;
 
     if (!swr_is_initialized(s)) {
         av_log(s, AV_LOG_ERROR, "Context has not been initialized\n");
         return AVERROR(EINVAL);
     }
 #if defined(ASSERT_LEVEL) && ASSERT_LEVEL >1
-    max_output = swr_get_out_samples(s, in_count);
+    int max_output = swr_get_out_samples(s, in_count);
 #endif
 
     while(s->drop_output > 0){
