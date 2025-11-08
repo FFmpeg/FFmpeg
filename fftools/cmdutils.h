@@ -549,4 +549,12 @@ int check_avoptions(AVDictionary *m);
 
 int cmdutils_isalnum(char c);
 
+/**
+ * This does the same as libavformat/dump.c corresponding function
+ * and should probably be kept in sync when the other one changes.
+ */
+void dump_dictionary(void *ctx, const AVDictionary *m,
+                     const char *name, const char *indent,
+                     int log_level);
+
 #endif /* FFTOOLS_CMDUTILS_H */

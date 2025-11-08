@@ -2843,6 +2843,7 @@ static int read_thread(void *arg)
     int st_index[AVMEDIA_TYPE_NB];
     AVPacket *pkt = NULL;
     int64_t stream_start_time;
+    char metadata_description[96];
     int pkt_in_play_range = 0;
     const AVDictionaryEntry *t;
     SDL_mutex *wait_mutex = SDL_CreateMutex();
@@ -2950,8 +2951,10 @@ static int read_thread(void *arg)
 
     is->realtime = is_realtime(ic);
 
-    if (show_status)
+    if (show_status) {
+        fprintf(stderr, "\x1b[2K\r");
         av_dump_format(ic, 0, is->filename, 0);
+    }
 
     for (i = 0; i < ic->nb_streams; i++) {
         AVStream *st = ic->streams[i];
@@ -2960,6 +2963,9 @@ static int read_thread(void *arg)
         if (type >= 0 && wanted_stream_spec[type] && st_index[type] == -1)
             if (avformat_match_stream_specifier(ic, st, wanted_stream_spec[type]) > 0)
                 st_index[type] = i;
+        // Clear all pre-existing metadata update flags to avoid printing
+        // initial metadata as update.
+        st->event_flags &= ~AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
     }
     for (i = 0; i < AVMEDIA_TYPE_NB; i++) {
         if (wanted_stream_spec[i] && st_index[i] == -1) {
@@ -3128,6 +3134,19 @@ static int read_thread(void *arg)
         } else {
             is->eof = 0;
         }
+
+        if (show_status && ic->streams[pkt->stream_index]->event_flags &
+            AVSTREAM_EVENT_FLAG_METADATA_UPDATED) {
+            fprintf(stderr, "\x1b[2K\r");
+            snprintf(metadata_description,
+                     sizeof(metadata_description),
+                     "\r  New metadata for stream %d",
+                     pkt->stream_index);
+            dump_dictionary(NULL, ic->streams[pkt->stream_index]->metadata,
+                               metadata_description, "    ", AV_LOG_INFO);
+        }
+        ic->streams[pkt->stream_index]->event_flags &= ~AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
+
         /* check if packet is in play range specified by user, then queue, otherwise discard */
         stream_start_time = ic->streams[pkt->stream_index]->start_time;
         pkt_ts = pkt->pts == AV_NOPTS_VALUE ? pkt->dts : pkt->pts;

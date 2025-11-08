@@ -1613,3 +1613,28 @@ int check_avoptions(AVDictionary *m)
 
     return 0;
 }
+
+void dump_dictionary(void *ctx, const AVDictionary *m,
+                     const char *name, const char *indent,
+                     int log_level)
+{
+    const AVDictionaryEntry *tag = NULL;
+
+    if (!m)
+        return;
+
+    av_log(ctx, log_level, "%s%s:\n", indent, name);
+    while ((tag = av_dict_iterate(m, tag))) {
+        const char *p = tag->value;
+        av_log(ctx, log_level, "%s  %-16s: ", indent, tag->key);
+        while (*p) {
+            size_t len = strcspn(p, "\x8\xa\xb\xc\xd");
+            av_log(ctx, log_level, "%.*s", (int)(FFMIN(255, len)), p);
+            p += len;
+            if (*p == 0xd) av_log(ctx, log_level, " ");
+            if (*p == 0xa) av_log(ctx, log_level, "\n%s  %-16s: ", indent, "");
+            if (*p) p++;
+        }
+        av_log(ctx, log_level, "\n");
+    }
+}
