@@ -3411,7 +3411,6 @@ fail:
         ff_hevc_unref_frame(l->cur_frame, ~0);
     l->cur_frame = NULL;
     s->cur_frame = s->collocated_ref = NULL;
-    s->slice_initialized = 0;
     return ret;
 }
 
@@ -3544,9 +3543,11 @@ static int decode_slice(HEVCContext *s, unsigned nal_idx, GetBitContext *gb)
         return 0;
 
     ret = hls_slice_header(&s->sh, s, gb);
+    // Once hls_slice_header has been called, the context is inconsistent with the slice header
+    // until the context is reinitialized according to the contents of the new slice header
+    // at the start of decode_slice_data.
+    s->slice_initialized = 0;
     if (ret < 0) {
-        // hls_slice_header() does not cleanup on failure thus the state now is inconsistent so we cannot use it on dependent slices
-        s->slice_initialized = 0;
         return ret;
     }
 
