@@ -175,7 +175,7 @@ typedef struct EXRContext {
     int is_luma;/* 1 if there is an Y plane */
 
 #define M(chr) (1<<chr - 'A')
-    int has_channel; ///< combinatin of flags representing the channel codes A-Z
+    int has_channel; ///< combination of flags representing the channel codes A-Z
 
     GetByteContext gb;
     const uint8_t *buf;
