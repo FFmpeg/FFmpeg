@@ -2349,7 +2349,6 @@ HEADERS_LIST="
     linux_dma_buf_h
     linux_perf_event_h
     malloc_h
-    opencv2_core_core_c_h
     poll_h
     pthread_np_h
     sys_hwprobe_h
@@ -7203,10 +7202,8 @@ enabled libnpp            && { test_cpp_condition "$(cd "$source_path"; pwd)/lib
                                die "ERROR: libnpp support is deprecated, version 13.0 and up are not supported"; }
 enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
-enabled libopencv         && { check_headers opencv2/core/core_c.h &&
-                               { check_pkg_config libopencv opencv opencv2/core/core_c.h cvCreateImageHeader ||
-                                 require libopencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
-                               require_pkg_config libopencv opencv opencv/cxcore.h cvCreateImageHeader; }
+enabled libopencv         && { check_pkg_config libopencv opencv4 opencv2/core/core_c.h cvCreateImageHeader ||
+                               require libopencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; }
 enabled libopenh264       && require_pkg_config libopenh264 "openh264 >= 1.3.0" wels/codec_api.h WelsGetCodecVersion
 enabled libopenjpeg       && { check_pkg_config libopenjpeg "libopenjp2 >= 2.1.0" openjpeg.h opj_version ||
                                { require_pkg_config libopenjpeg "libopenjp2 >= 2.1.0" openjpeg.h opj_version -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } }
