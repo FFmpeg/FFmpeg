@@ -22,6 +22,7 @@
 # define _GNU_SOURCE
 #endif
 #include "libavutil/cpu.h"
+#include "libavutil/riscv/cpu.h"
 #include "libavutil/cpu_internal.h"
 #include "libavutil/macros.h"
 #include "libavutil/log.h"
@@ -64,6 +65,21 @@ int ff_get_cpu_flags_riscv(void)
         if (pairs[1].value & RISCV_HWPROBE_IMA_V)
             ret |= AV_CPU_FLAG_RVV_I32 | AV_CPU_FLAG_RVV_I64
                  | AV_CPU_FLAG_RVV_F32 | AV_CPU_FLAG_RVV_F64;
+#ifdef RISCV_HWPROBE_EXT_ZVE32X
+        else if ((pairs[1].value & RISCV_HWPROBE_EXT_ZVE32X) &&
+                 ff_get_rv_vlenb() >= 16) { // runtime detect assumes 128+ bits
+            ret |= AV_CPU_FLAG_RVV_I32;
+
+            if (pairs[1].value & RISCV_HWPROBE_EXT_ZVE32F)
+                ret |= AV_CPU_FLAG_RVV_F32;
+            if (pairs[1].value & RISCV_HWPROBE_EXT_ZVE64X) {
+                ret |= AV_CPU_FLAG_RVV_I64;
+
+                if (pairs[1].value & RISCV_HWPROBE_EXT_ZVE64D)
+                    ret |= AV_CPU_FLAG_RVV_F64;
+            }
+        }
+#endif
 #endif
 #ifdef RISCV_HWPROBE_EXT_ZBB
         if (pairs[1].value & RISCV_HWPROBE_EXT_ZBB)
