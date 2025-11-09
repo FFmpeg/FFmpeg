@@ -69,14 +69,19 @@ av_cold void ff_h264dsp_init(H264DSPContext *c, const int bit_depth,
 #undef FUNC
 #define FUNC(a, depth) a ## _ ## depth ## _c
 
-#define ADDPX_DSP(depth) \
+#define SET_PIXSIZE_FUNCS(depth) \
+    c->h264_luma_dc_dequant_idct= FUNC(ff_h264_luma_dc_dequant_idct, depth);\
+    if (chroma_format_idc <= 1)\
+        c->h264_chroma_dc_dequant_idct= FUNC(ff_h264_chroma_dc_dequant_idct, depth);\
+    else\
+        c->h264_chroma_dc_dequant_idct= FUNC(ff_h264_chroma422_dc_dequant_idct, depth);\
     c->h264_add_pixels4_clear = FUNC(ff_h264_add_pixels4, depth);\
     c->h264_add_pixels8_clear = FUNC(ff_h264_add_pixels8, depth)
 
     if (bit_depth > 8 && bit_depth <= 16) {
-        ADDPX_DSP(16);
+        SET_PIXSIZE_FUNCS(16);
     } else {
-        ADDPX_DSP(8);
+        SET_PIXSIZE_FUNCS(8);
     }
 
 #define H264_DSP(depth) \
@@ -91,11 +96,6 @@ av_cold void ff_h264dsp_init(H264DSPContext *c, const int bit_depth,
     else\
         c->h264_idct_add8  = FUNC(ff_h264_idct_add8_422, depth);\
     c->h264_idct_add16intra= FUNC(ff_h264_idct_add16intra, depth);\
-    c->h264_luma_dc_dequant_idct= FUNC(ff_h264_luma_dc_dequant_idct, depth);\
-    if (chroma_format_idc <= 1)\
-        c->h264_chroma_dc_dequant_idct= FUNC(ff_h264_chroma_dc_dequant_idct, depth);\
-    else\
-        c->h264_chroma_dc_dequant_idct= FUNC(ff_h264_chroma422_dc_dequant_idct, depth);\
 \
     c->weight_h264_pixels_tab[0]= FUNC(weight_h264_pixels16, depth);\
     c->weight_h264_pixels_tab[1]= FUNC(weight_h264_pixels8, depth);\

@@ -244,11 +244,13 @@ void FUNCC(ff_h264_idct_add8_422)(uint8_t **dest, const int *block_offset, int16
     }
 }
 
+#if BIT_DEPTH == 8 || BIT_DEPTH == 9
 /**
  * IDCT transforms the 16 dc values and dequantizes them.
  * @param qmul quantization parameter
  */
-void FUNCC(ff_h264_luma_dc_dequant_idct)(int16_t *_output, int16_t *_input, int qmul){
+void FUNCC2(ff_h264_luma_dc_dequant_idct)(int16_t *_output, int16_t *_input, int qmul)
+{
 #define stride 16
     int i;
     int temp[16];
@@ -283,7 +285,8 @@ void FUNCC(ff_h264_luma_dc_dequant_idct)(int16_t *_output, int16_t *_input, int 
 #undef stride
 }
 
-void FUNCC(ff_h264_chroma422_dc_dequant_idct)(int16_t *_block, int qmul){
+void FUNCC2(ff_h264_chroma422_dc_dequant_idct)(int16_t *_block, int qmul)
+{
     const int stride= 16*2;
     const int xStride= 16;
     int i;
@@ -310,7 +313,8 @@ void FUNCC(ff_h264_chroma422_dc_dequant_idct)(int16_t *_block, int qmul){
     }
 }
 
-void FUNCC(ff_h264_chroma_dc_dequant_idct)(int16_t *_block, int qmul){
+void FUNCC2(ff_h264_chroma_dc_dequant_idct)(int16_t *_block, int qmul)
+{
     const int stride= 16*2;
     const int xStride= 16;
     SUINT a,b,c,d,e;
@@ -331,3 +335,4 @@ void FUNCC(ff_h264_chroma_dc_dequant_idct)(int16_t *_block, int qmul){
     block[stride*1 + xStride*0]= (int)((a-c)*qmul) >> 7;
     block[stride*1 + xStride*1]= (int)((e-b)*qmul) >> 7;
 }
+#endif
