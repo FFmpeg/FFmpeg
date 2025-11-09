@@ -118,6 +118,145 @@ static uint16_t read12in32(const uint8_t **ptr, uint32_t *lbuf,
     }
 }
 
+static void unpack_frame(AVCodecContext *avctx, AVFrame *p, const uint8_t *buf,
+                         int elements, int endian)
+{
+    int i, x, y;
+    DPXDecContext *dpx = avctx->priv_data;
+
+    uint8_t *ptr[AV_NUM_DATA_POINTERS];
+    unsigned int rgbBuffer = 0;
+    int n_datum = 0;
+
+    for (i=0; i<AV_NUM_DATA_POINTERS; i++)
+        ptr[i] = p->data[i];
+
+    switch (avctx->bits_per_raw_sample) {
+    case 10:
+        for (x = 0; x < avctx->height; x++) {
+            uint16_t *dst[4] = {(uint16_t*)ptr[0],
+                                (uint16_t*)ptr[1],
+                                (uint16_t*)ptr[2],
+                                (uint16_t*)ptr[3]};
+            int shift = elements > 1 ? dpx->packing == 1 ? 22 : 20 : dpx->packing == 1 ? 2 : 0;
+            for (y = 0; y < avctx->width; y++) {
+                if (elements >= 3)
+                    *dst[2]++ = read10in32(&buf, &rgbBuffer,
+                                           &n_datum, endian, shift);
+                if (elements == 1)
+                    *dst[0]++ = read10in32_gray(&buf, &rgbBuffer,
+                                                &n_datum, endian, shift);
+                else
+                    *dst[0]++ = read10in32(&buf, &rgbBuffer,
+                                           &n_datum, endian, shift);
+                if (elements >= 2)
+                    *dst[1]++ = read10in32(&buf, &rgbBuffer,
+                                           &n_datum, endian, shift);
+                if (elements == 4)
+                    *dst[3]++ =
+                    read10in32(&buf, &rgbBuffer,
+                               &n_datum, endian, shift);
+            }
+            if (!dpx->unpadded_10bit)
+                n_datum = 0;
+            for (i = 0; i < elements; i++)
+                ptr[i] += p->linesize[i];
+        }
+        break;
+    case 12:
+        for (x = 0; x < avctx->height; x++) {
+            uint16_t *dst[4] = {(uint16_t*)ptr[0],
+                                (uint16_t*)ptr[1],
+                                (uint16_t*)ptr[2],
+                                (uint16_t*)ptr[3]};
+            int shift = dpx->packing == 1 ? 4 : 0;
+            for (y = 0; y < avctx->width; y++) {
+                if (dpx->packing) {
+                    if (elements >= 3)
+                        *dst[2]++ = read16(&buf, endian) >> shift & 0xFFF;
+                    *dst[0]++ = read16(&buf, endian) >> shift & 0xFFF;
+                    if (elements >= 2)
+                        *dst[1]++ = read16(&buf, endian) >> shift & 0xFFF;
+                    if (elements == 4)
+                        *dst[3]++ = read16(&buf, endian) >> shift & 0xFFF;
+                } else {
+                    if (elements >= 3)
+                        *dst[2]++ = read12in32(&buf, &rgbBuffer,
+                                               &n_datum, endian);
+                    *dst[0]++ = read12in32(&buf, &rgbBuffer,
+                                           &n_datum, endian);
+                    if (elements >= 2)
+                        *dst[1]++ = read12in32(&buf, &rgbBuffer,
+                                               &n_datum, endian);
+                    if (elements == 4)
+                        *dst[3]++ = read12in32(&buf, &rgbBuffer,
+                                               &n_datum, endian);
+                }
+            }
+            n_datum = 0;
+            for (i = 0; i < elements; i++)
+                ptr[i] += p->linesize[i];
+            // Jump to next aligned position
+            buf += dpx->need_align;
+        }
+        break;
+    case 32:
+        if (elements == 1) {
+            av_image_copy_plane(ptr[0], p->linesize[0],
+                                buf, dpx->stride,
+                                elements * avctx->width * 4, avctx->height);
+        } else {
+            for (y = 0; y < avctx->height; y++) {
+                ptr[0] = p->data[0] + y * p->linesize[0];
+                ptr[1] = p->data[1] + y * p->linesize[1];
+                ptr[2] = p->data[2] + y * p->linesize[2];
+                ptr[3] = p->data[3] + y * p->linesize[3];
+                for (x = 0; x < avctx->width; x++) {
+                    AV_WN32(ptr[2], AV_RN32(buf));
+                    AV_WN32(ptr[0], AV_RN32(buf + 4));
+                    AV_WN32(ptr[1], AV_RN32(buf + 8));
+                    if (avctx->pix_fmt == AV_PIX_FMT_GBRAPF32BE ||
+                        avctx->pix_fmt == AV_PIX_FMT_GBRAPF32LE) {
+                        AV_WN32(ptr[3], AV_RN32(buf + 12));
+                        buf += 4;
+                        ptr[3] += 4;
+                    }
+
+                    buf += 12;
+                    ptr[2] += 4;
+                    ptr[0] += 4;
+                    ptr[1] += 4;
+                }
+            }
+        }
+        break;
+    case 16:
+        elements *= 2;
+    case 8:
+        if (   avctx->pix_fmt == AV_PIX_FMT_YUVA444P
+            || avctx->pix_fmt == AV_PIX_FMT_YUV444P) {
+            for (x = 0; x < avctx->height; x++) {
+                ptr[0] = p->data[0] + x * p->linesize[0];
+                ptr[1] = p->data[1] + x * p->linesize[1];
+                ptr[2] = p->data[2] + x * p->linesize[2];
+                ptr[3] = p->data[3] + x * p->linesize[3];
+                for (y = 0; y < avctx->width; y++) {
+                    *ptr[1]++ = *buf++;
+                    *ptr[0]++ = *buf++;
+                    *ptr[2]++ = *buf++;
+                    if (avctx->pix_fmt == AV_PIX_FMT_YUVA444P)
+                        *ptr[3]++ = *buf++;
+                }
+            }
+        } else {
+        av_image_copy_plane(ptr[0], p->linesize[0],
+                            buf, dpx->stride,
+                            elements * avctx->width, avctx->height);
+        }
+        break;
+    }
+}
+
 static int decode_frame(AVCodecContext *avctx, AVFrame *p,
                         int *got_frame, AVPacket *avpkt)
 {
@@ -125,20 +264,16 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    uint8_t *ptr[AV_NUM_DATA_POINTERS];
     uint32_t header_version, version = 0;
     char creator[101] = { 0 };
     char input_device[33] = { 0 };
 
     unsigned int offset;
     int magic_num;
-    int x, y, i, j, ret;
+    int i, j, ret;
     int w, h, descriptor;
     int yuv, color_trc, color_spec;
     int encoding;
-
-    unsigned int rgbBuffer = 0;
-    int n_datum = 0;
 
     if (avpkt->size <= 1634) {
         av_log(avctx, AV_LOG_ERROR, "Packet too small for DPX header\n");
@@ -602,135 +737,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     buf =  avpkt->data + offset;
     dpx->frame = p;
 
-    int elements = dpx->components;
-    int endian = dpx->endian;
-    for (i=0; i<AV_NUM_DATA_POINTERS; i++)
-        ptr[i] = p->data[i];
-
-    switch (avctx->bits_per_raw_sample) {
-    case 10:
-        for (x = 0; x < avctx->height; x++) {
-            uint16_t *dst[4] = {(uint16_t*)ptr[0],
-                                (uint16_t*)ptr[1],
-                                (uint16_t*)ptr[2],
-                                (uint16_t*)ptr[3]};
-            int shift = elements > 1 ? dpx->packing == 1 ? 22 : 20 : dpx->packing == 1 ? 2 : 0;
-            for (y = 0; y < avctx->width; y++) {
-                if (elements >= 3)
-                    *dst[2]++ = read10in32(&buf, &rgbBuffer,
-                                           &n_datum, endian, shift);
-                if (elements == 1)
-                    *dst[0]++ = read10in32_gray(&buf, &rgbBuffer,
-                                                &n_datum, endian, shift);
-                else
-                    *dst[0]++ = read10in32(&buf, &rgbBuffer,
-                                           &n_datum, endian, shift);
-                if (elements >= 2)
-                    *dst[1]++ = read10in32(&buf, &rgbBuffer,
-                                           &n_datum, endian, shift);
-                if (elements == 4)
-                    *dst[3]++ =
-                    read10in32(&buf, &rgbBuffer,
-                               &n_datum, endian, shift);
-            }
-            if (!dpx->unpadded_10bit)
-                n_datum = 0;
-            for (i = 0; i < elements; i++)
-                ptr[i] += p->linesize[i];
-        }
-        break;
-    case 12:
-        for (x = 0; x < avctx->height; x++) {
-            uint16_t *dst[4] = {(uint16_t*)ptr[0],
-                                (uint16_t*)ptr[1],
-                                (uint16_t*)ptr[2],
-                                (uint16_t*)ptr[3]};
-            int shift = dpx->packing == 1 ? 4 : 0;
-            for (y = 0; y < avctx->width; y++) {
-                if (dpx->packing) {
-                    if (elements >= 3)
-                        *dst[2]++ = read16(&buf, endian) >> shift & 0xFFF;
-                    *dst[0]++ = read16(&buf, endian) >> shift & 0xFFF;
-                    if (elements >= 2)
-                        *dst[1]++ = read16(&buf, endian) >> shift & 0xFFF;
-                    if (elements == 4)
-                        *dst[3]++ = read16(&buf, endian) >> shift & 0xFFF;
-                } else {
-                    if (elements >= 3)
-                        *dst[2]++ = read12in32(&buf, &rgbBuffer,
-                                               &n_datum, endian);
-                    *dst[0]++ = read12in32(&buf, &rgbBuffer,
-                                           &n_datum, endian);
-                    if (elements >= 2)
-                        *dst[1]++ = read12in32(&buf, &rgbBuffer,
-                                               &n_datum, endian);
-                    if (elements == 4)
-                        *dst[3]++ = read12in32(&buf, &rgbBuffer,
-                                               &n_datum, endian);
-                }
-            }
-            n_datum = 0;
-            for (i = 0; i < elements; i++)
-                ptr[i] += p->linesize[i];
-            // Jump to next aligned position
-            buf += dpx->need_align;
-        }
-        break;
-    case 32:
-        if (elements == 1) {
-            av_image_copy_plane(ptr[0], p->linesize[0],
-                                buf, dpx->stride,
-                                elements * avctx->width * 4, avctx->height);
-        } else {
-            for (y = 0; y < avctx->height; y++) {
-                ptr[0] = p->data[0] + y * p->linesize[0];
-                ptr[1] = p->data[1] + y * p->linesize[1];
-                ptr[2] = p->data[2] + y * p->linesize[2];
-                ptr[3] = p->data[3] + y * p->linesize[3];
-                for (x = 0; x < avctx->width; x++) {
-                    AV_WN32(ptr[2], AV_RN32(buf));
-                    AV_WN32(ptr[0], AV_RN32(buf + 4));
-                    AV_WN32(ptr[1], AV_RN32(buf + 8));
-                    if (avctx->pix_fmt == AV_PIX_FMT_GBRAPF32BE ||
-                        avctx->pix_fmt == AV_PIX_FMT_GBRAPF32LE) {
-                        AV_WN32(ptr[3], AV_RN32(buf + 12));
-                        buf += 4;
-                        ptr[3] += 4;
-                    }
-
-                    buf += 12;
-                    ptr[2] += 4;
-                    ptr[0] += 4;
-                    ptr[1] += 4;
-                }
-            }
-        }
-        break;
-    case 16:
-        elements *= 2;
-    case 8:
-        if (   avctx->pix_fmt == AV_PIX_FMT_YUVA444P
-            || avctx->pix_fmt == AV_PIX_FMT_YUV444P) {
-            for (x = 0; x < avctx->height; x++) {
-                ptr[0] = p->data[0] + x * p->linesize[0];
-                ptr[1] = p->data[1] + x * p->linesize[1];
-                ptr[2] = p->data[2] + x * p->linesize[2];
-                ptr[3] = p->data[3] + x * p->linesize[3];
-                for (y = 0; y < avctx->width; y++) {
-                    *ptr[1]++ = *buf++;
-                    *ptr[0]++ = *buf++;
-                    *ptr[2]++ = *buf++;
-                    if (avctx->pix_fmt == AV_PIX_FMT_YUVA444P)
-                        *ptr[3]++ = *buf++;
-                }
-            }
-        } else {
-        av_image_copy_plane(ptr[0], p->linesize[0],
-                            buf, dpx->stride,
-                            elements * avctx->width, avctx->height);
-        }
-        break;
-    }
+    unpack_frame(avctx, p, buf, dpx->components, dpx->endian);
 
     *got_frame = 1;
 
