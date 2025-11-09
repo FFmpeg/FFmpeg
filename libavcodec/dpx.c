@@ -121,6 +121,8 @@ static uint16_t read12in32(const uint8_t **ptr, uint32_t *lbuf,
 static int decode_frame(AVCodecContext *avctx, AVFrame *p,
                         int *got_frame, AVPacket *avpkt)
 {
+    DPXDecContext *dpx = avctx->priv_data;
+
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     uint8_t *ptr[AV_NUM_DATA_POINTERS];
@@ -129,11 +131,11 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     char input_device[33] = { 0 };
 
     unsigned int offset;
-    int magic_num, endian;
-    int x, y, stride, i, j, ret;
-    int w, h, bits_per_color, descriptor, elements, packing;
+    int magic_num;
+    int x, y, i, j, ret;
+    int w, h, descriptor;
     int yuv, color_trc, color_spec;
-    int encoding, need_align = 0, unpadded_10bit = 0;
+    int encoding;
 
     unsigned int rgbBuffer = 0;
     int n_datum = 0;
@@ -149,15 +151,15 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     /* Check if the files "magic number" is "SDPX" which means it uses
      * big-endian or XPDS which is for little-endian files */
     if (magic_num == AV_RL32("SDPX")) {
-        endian = 0;
+        dpx->endian = 0;
     } else if (magic_num == AV_RB32("SDPX")) {
-        endian = 1;
+        dpx->endian = 1;
     } else {
         av_log(avctx, AV_LOG_ERROR, "DPX marker not found\n");
         return AVERROR_INVALIDDATA;
     }
 
-    offset = read32(&buf, endian);
+    offset = read32(&buf, dpx->endian);
     if (avpkt->size <= offset) {
         av_log(avctx, AV_LOG_ERROR, "Invalid data start offset\n");
         return AVERROR_INVALIDDATA;
@@ -174,7 +176,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     // Check encryption
     buf = avpkt->data + 660;
-    ret = read32(&buf, endian);
+    ret = read32(&buf, dpx->endian);
     if (ret != 0xFFFFFFFF) {
         avpriv_report_missing_feature(avctx, "Encryption");
         av_log(avctx, AV_LOG_WARNING, "The image is encrypted and may "
@@ -183,8 +185,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     // Need to end in 0x304 offset from start of file
     buf = avpkt->data + 0x304;
-    w = read32(&buf, endian);
-    h = read32(&buf, endian);
+    w = read32(&buf, dpx->endian);
+    h = read32(&buf, dpx->endian);
 
     if ((ret = ff_set_dimensions(avctx, w, h)) < 0)
         return ret;
@@ -197,23 +199,22 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     // Need to end in 0x323 to read the bits per color
     buf += 3;
-    avctx->bits_per_raw_sample =
-    bits_per_color = buf[0];
+    avctx->bits_per_raw_sample = buf[0];
     buf++;
-    packing = read16(&buf, endian);
-    encoding = read16(&buf, endian);
+    dpx->packing = read16(&buf, dpx->endian);
+    encoding = read16(&buf, dpx->endian);
 
     if (encoding) {
         avpriv_report_missing_feature(avctx, "Encoding %d", encoding);
         return AVERROR_PATCHWELCOME;
     }
 
-    if (bits_per_color > 31)
+    if (avctx->bits_per_raw_sample > 31)
         return AVERROR_INVALIDDATA;
 
     buf += 820;
-    avctx->sample_aspect_ratio.num = read32(&buf, endian);
-    avctx->sample_aspect_ratio.den = read32(&buf, endian);
+    avctx->sample_aspect_ratio.num = read32(&buf, dpx->endian);
+    avctx->sample_aspect_ratio.den = read32(&buf, dpx->endian);
     if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0)
         av_reduce(&avctx->sample_aspect_ratio.num, &avctx->sample_aspect_ratio.den,
                    avctx->sample_aspect_ratio.num,  avctx->sample_aspect_ratio.den,
@@ -224,7 +225,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     /* preferred frame rate from Motion-picture film header */
     if (offset >= 1724 + 4) {
         buf = avpkt->data + 1724;
-        i = read32(&buf, endian);
+        i = read32(&buf, dpx->endian);
         if(i && i != 0xFFFFFFFF) {
             AVRational q = av_d2q(av_int2float(i), 4096);
             if (q.num > 0 && q.den > 0)
@@ -236,7 +237,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     if (offset >= 1940 + 4 &&
         !(avctx->framerate.num && avctx->framerate.den)) {
         buf = avpkt->data + 1940;
-        i = read32(&buf, endian);
+        i = read32(&buf, dpx->endian);
         if(i && i != 0xFFFFFFFF) {
             AVRational q = av_d2q(av_int2float(i), 4096);
             if (q.num > 0 && q.den > 0)
@@ -253,7 +254,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
         buf = avpkt->data + 1920;
         // read32 to native endian, av_bswap32 to opposite of native for
         // compatibility with av_timecode_make_smpte_tc_string2 etc
-        tc = av_bswap32(read32(&buf, endian));
+        tc = av_bswap32(read32(&buf, dpx->endian));
 
         if (i != 0xFFFFFFFF) {
             AVFrameSideData *tcside;
@@ -277,21 +278,21 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     /* color range from television header */
     if (offset >= 1964 + 4) {
         buf = avpkt->data + 1952;
-        i = read32(&buf, endian);
+        i = read32(&buf, dpx->endian);
 
         buf = avpkt->data + 1964;
-        j = read32(&buf, endian);
+        j = read32(&buf, dpx->endian);
 
         if (i != 0xFFFFFFFF && j != 0xFFFFFFFF) {
             float minCV, maxCV;
             minCV = av_int2float(i);
             maxCV = av_int2float(j);
-            if (bits_per_color >= 1 &&
-                minCV == 0.0f && maxCV == ((1U<<bits_per_color) - 1)) {
+            if (avctx->bits_per_raw_sample >= 1 &&
+                minCV == 0.0f && maxCV == ((1U<<avctx->bits_per_raw_sample) - 1)) {
                 avctx->color_range = AVCOL_RANGE_JPEG;
-            } else if (bits_per_color >= 8 &&
-                       minCV == (1  <<(bits_per_color - 4)) &&
-                       maxCV == (235<<(bits_per_color - 8))) {
+            } else if (avctx->bits_per_raw_sample >= 8 &&
+                       minCV == (1  <<(avctx->bits_per_raw_sample - 4)) &&
+                       maxCV == (235<<(avctx->bits_per_raw_sample - 8))) {
                 avctx->color_range = AVCOL_RANGE_MPEG;
             }
         }
@@ -303,28 +304,28 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     case 3:  // B
     case 4:  // A
     case 6:  // Y
-        elements = 1;
+        dpx->components = 1;
         yuv = 1;
         break;
     case 50: // RGB
-        elements = 3;
+        dpx->components = 3;
         yuv = 0;
         break;
     case 52: // ABGR
     case 51: // RGBA
-        elements = 4;
+        dpx->components = 4;
         yuv = 0;
         break;
     case 100: // UYVY422
-        elements = 2;
+        dpx->components = 2;
         yuv = 1;
         break;
     case 102: // UYV444
-        elements = 3;
+        dpx->components = 3;
         yuv = 1;
         break;
     case 103: // UYVA4444
-        elements = 4;
+        dpx->components = 4;
         yuv = 1;
         break;
     default:
@@ -332,40 +333,40 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
         return AVERROR_PATCHWELCOME;
     }
 
-    switch (bits_per_color) {
+    switch (avctx->bits_per_raw_sample) {
     case 8:
-        stride = avctx->width * elements;
+        dpx->stride = avctx->width * dpx->components;
         break;
     case 10:
-        if (!packing) {
+        if (!dpx->packing) {
             av_log(avctx, AV_LOG_ERROR, "Packing to 32bit required\n");
             return -1;
         }
-        stride = (avctx->width * elements + 2) / 3 * 4;
+        dpx->stride = (avctx->width * dpx->components + 2) / 3 * 4;
         break;
     case 12:
-        stride = avctx->width * elements;
-        if (packing) {
-            stride *= 2;
+        dpx->stride = avctx->width * dpx->components;
+        if (dpx->packing) {
+            dpx->stride *= 2;
         } else {
-            stride *= 3;
-            if (stride % 8) {
-                stride /= 8;
-                stride++;
-                stride *= 8;
+            dpx->stride *= 3;
+            if (dpx->stride % 8) {
+                dpx->stride /= 8;
+                dpx->stride++;
+                dpx->stride *= 8;
             }
-            stride /= 2;
+            dpx->stride /= 2;
         }
         break;
     case 16:
-        stride = 2 * avctx->width * elements;
+        dpx->stride = 2 * avctx->width * dpx->components;
         break;
     case 32:
-        stride = 4 * avctx->width * elements;
+        dpx->stride = 4 * avctx->width * dpx->components;
         break;
     case 1:
     case 64:
-        avpriv_report_missing_feature(avctx, "Depth %d", bits_per_color);
+        avpriv_report_missing_feature(avctx, "Depth %d", avctx->bits_per_raw_sample);
         return AVERROR_PATCHWELCOME;
     default:
         return AVERROR_INVALIDDATA;
@@ -458,8 +459,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     // Some devices do not pad 10bit samples to whole 32bit words per row
     if (!memcmp(input_device, "Scanity", 7) ||
         !memcmp(creator, "Lasergraphics Inc.", 18)) {
-        if (bits_per_color == 10)
-            unpadded_10bit = 1;
+        if (avctx->bits_per_raw_sample == 10)
+            dpx->unpadded_10bit = 1;
     }
 
     // Table 3c: Runs will always break at scan line boundaries. Packing
@@ -467,24 +468,24 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
     // Unfortunately, the encoder produced invalid files, so attempt
     // to detect it
     // Also handle special case with unpadded content
-    need_align = FFALIGN(stride, 4);
-    if (need_align*avctx->height + (int64_t)offset > avpkt->size &&
-        (!unpadded_10bit || (avctx->width * avctx->height * elements + 2) / 3 * 4 + (int64_t)offset > avpkt->size)) {
+    dpx->need_align = FFALIGN(dpx->stride, 4);
+    if (dpx->need_align*avctx->height + (int64_t)offset > avpkt->size &&
+        (!dpx->unpadded_10bit || (avctx->width * avctx->height * dpx->components + 2) / 3 * 4 + (int64_t)offset > avpkt->size)) {
         // Alignment seems unappliable, try without
-        if (stride*avctx->height + (int64_t)offset > avpkt->size || unpadded_10bit) {
+        if (dpx->stride*avctx->height + (int64_t)offset > avpkt->size || dpx->unpadded_10bit) {
             av_log(avctx, AV_LOG_ERROR, "Overread buffer. Invalid header?\n");
             return AVERROR_INVALIDDATA;
         } else {
             av_log(avctx, AV_LOG_INFO, "Decoding DPX without scanline "
                    "alignment.\n");
-            need_align = 0;
+            dpx->need_align = 0;
         }
     } else {
-        need_align -= stride;
-        stride = FFALIGN(stride, 4);
+        dpx->need_align -= dpx->stride;
+        dpx->stride = FFALIGN(dpx->stride, 4);
     }
 
-    switch (1000 * descriptor + 10 * bits_per_color + endian) {
+    switch (1000 * descriptor + 10 * avctx->bits_per_raw_sample + dpx->endian) {
     case 1081:
     case 1080:
     case 2081:
@@ -588,7 +589,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported format %d\n",
-               1000 * descriptor + 10 * bits_per_color + endian);
+               1000 * descriptor + 10 * avctx->bits_per_raw_sample + dpx->endian);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -599,18 +600,21 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     // Move pointer to offset from start of file
     buf =  avpkt->data + offset;
+    dpx->frame = p;
 
+    int elements = dpx->components;
+    int endian = dpx->endian;
     for (i=0; i<AV_NUM_DATA_POINTERS; i++)
         ptr[i] = p->data[i];
 
-    switch (bits_per_color) {
+    switch (avctx->bits_per_raw_sample) {
     case 10:
         for (x = 0; x < avctx->height; x++) {
             uint16_t *dst[4] = {(uint16_t*)ptr[0],
                                 (uint16_t*)ptr[1],
                                 (uint16_t*)ptr[2],
                                 (uint16_t*)ptr[3]};
-            int shift = elements > 1 ? packing == 1 ? 22 : 20 : packing == 1 ? 2 : 0;
+            int shift = elements > 1 ? dpx->packing == 1 ? 22 : 20 : dpx->packing == 1 ? 2 : 0;
             for (y = 0; y < avctx->width; y++) {
                 if (elements >= 3)
                     *dst[2]++ = read10in32(&buf, &rgbBuffer,
@@ -629,7 +633,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
                     read10in32(&buf, &rgbBuffer,
                                &n_datum, endian, shift);
             }
-            if (!unpadded_10bit)
+            if (!dpx->unpadded_10bit)
                 n_datum = 0;
             for (i = 0; i < elements; i++)
                 ptr[i] += p->linesize[i];
@@ -641,9 +645,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
                                 (uint16_t*)ptr[1],
                                 (uint16_t*)ptr[2],
                                 (uint16_t*)ptr[3]};
-            int shift = packing == 1 ? 4 : 0;
+            int shift = dpx->packing == 1 ? 4 : 0;
             for (y = 0; y < avctx->width; y++) {
-                if (packing) {
+                if (dpx->packing) {
                     if (elements >= 3)
                         *dst[2]++ = read16(&buf, endian) >> shift & 0xFFF;
                     *dst[0]++ = read16(&buf, endian) >> shift & 0xFFF;
@@ -669,13 +673,13 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
             for (i = 0; i < elements; i++)
                 ptr[i] += p->linesize[i];
             // Jump to next aligned position
-            buf += need_align;
+            buf += dpx->need_align;
         }
         break;
     case 32:
         if (elements == 1) {
             av_image_copy_plane(ptr[0], p->linesize[0],
-                                buf, stride,
+                                buf, dpx->stride,
                                 elements * avctx->width * 4, avctx->height);
         } else {
             for (y = 0; y < avctx->height; y++) {
@@ -722,7 +726,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
             }
         } else {
         av_image_copy_plane(ptr[0], p->linesize[0],
-                            buf, stride,
+                            buf, dpx->stride,
                             elements * avctx->width, avctx->height);
         }
         break;
@@ -736,6 +740,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 const FFCodec ff_dpx_decoder = {
     .p.name         = "dpx",
     CODEC_LONG_NAME("DPX (Digital Picture Exchange) image"),
+    .priv_data_size = sizeof(DPXDecContext),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_DPX,
     FF_CODEC_DECODE_CB(decode_frame),
