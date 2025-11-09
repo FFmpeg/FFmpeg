@@ -43,11 +43,13 @@
 #   undef FUNCC
 #   undef av_clip_pixel
 #   undef PIXEL_SPLAT_X4
+#   undef PIXELSIZE
 #else
 #   define AVCODEC_BIT_DEPTH_TEMPLATE_C
 #endif
 
 #if BIT_DEPTH > 8
+#   define PIXELSIZE 16
 #   define pixel  uint16_t
 #   define pixel2 uint32_t
 #   define pixel4 uint64_t
@@ -76,6 +78,7 @@
 #   define av_clip_pixel(a) av_clip_uintp2(a, BIT_DEPTH)
 #   define CLIP(a)          av_clip_uintp2(a, BIT_DEPTH)
 #else
+#   define PIXELSIZE 8
 #   define pixel  uint8_t
 #   define pixel2 uint16_t
 #   define pixel4 uint32_t
@@ -100,6 +103,7 @@
 #define FUNC2(a, b, c)  FUNC3(a, b, c)
 #define FUNC(a)  FUNC2(a, BIT_DEPTH,)
 #define FUNCC(a) FUNC2(a, BIT_DEPTH, _c)
+#define FUNCC2(a) FUNC2(a, PIXELSIZE, _c)
 #define FUNC4(a, b, c)  a ## _int ## b ## _ ## c ## bit
 #define FUNC5(a, b, c)  FUNC4(a, b, c)
 #define FUNC6(a)  FUNC5(a, IN_IDCT_DEPTH, BIT_DEPTH)
