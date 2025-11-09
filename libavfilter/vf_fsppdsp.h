@@ -20,56 +20,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef AVFILTER_FSPP_H
-#define AVFILTER_FSPP_H
+#ifndef AVFILTER_FSPPDSP_H
+#define AVFILTER_FSPPDSP_H
 
-#include "libavutil/video_enc_params.h"
-#include "avfilter.h"
+#include <stddef.h>
+#include <stdint.h>
 
-#define BLOCKSZ 12
-#define MAX_LEVEL 5
+#include "config.h"
 
-#define DCTSIZE 8
-#define DCTSIZE_S "8"
+#include "libavutil/attributes_internal.h"
 
-#define FIX(x,s)  ((x) * (1 << s) + 0.5)
-
-#define MULTIPLY16H(x,k)   (((x) * (k)) >> 16)
-#define THRESHOLD(r,x,t)                         \
-    if(((unsigned)((x) + t)) > t * 2) r = (x);   \
-    else r = 0;
-#define DESCALE(x,n)  (((x) + (1 << ((n) - 1))) >> n)
-
-typedef int32_t int_simd16_t;
-static const int16_t FIX_0_382683433   = FIX(0.382683433, 14);
-static const int16_t FIX_0_541196100   = FIX(0.541196100, 14);
-static const int16_t FIX_0_707106781   = FIX(M_SQRT1_2  , 14);
-static const int16_t FIX_1_306562965   = FIX(1.306562965, 14);
-static const int16_t FIX_1_414213562_A = FIX(M_SQRT2    , 14);
-static const int16_t FIX_1_847759065   = FIX(1.847759065, 13);
-static const int16_t FIX_2_613125930   = FIX(-2.613125930, 13);
-static const int16_t FIX_1_414213562   = FIX(M_SQRT2    , 13);
-static const int16_t FIX_1_082392200   = FIX(1.082392200, 13);
-
-typedef struct FSPPContext {
-    AVClass *class;
-    uint64_t threshold_mtx_noq[8 * 2];
-    uint64_t threshold_mtx[8 * 2];        //used in both C & MMX (& later SSE2) versions
-
-    int log2_count;
-    int strength;
-    int hsub;
-    int vsub;
-    int temp_stride;
-    int qp;
-    enum AVVideoEncParamsType qscale_type;
-    int prev_q;
-    uint8_t *src;
-    int16_t *temp;
-    int8_t  *non_b_qp_table;
-    int non_b_qp_stride;
-    int use_bframe_qp;
-
+typedef struct FSPPDSPContext {
     void (*store_slice)(uint8_t *dst, int16_t *src,
                         ptrdiff_t dst_stride, ptrdiff_t src_stride,
                         ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);
@@ -88,9 +49,35 @@ typedef struct FSPPContext {
 
     void (*row_fdct)(int16_t *data, const uint8_t *pixels,
                      ptrdiff_t line_size, int cnt);
+} FSPPDSPContext;
 
-} FSPPContext;
+FF_VISIBILITY_PUSH_HIDDEN
+void ff_store_slice_c(uint8_t *dst, int16_t *src,
+                      ptrdiff_t dst_stride, ptrdiff_t src_stride,
+                      ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);
+void ff_store_slice2_c(uint8_t *dst, int16_t *src,
+                       ptrdiff_t dst_stride, ptrdiff_t src_stride,
+                       ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);
+void ff_mul_thrmat_c(int16_t *thr_adr_noq, int16_t *thr_adr, int q);
+void ff_column_fidct_c(int16_t *thr_adr, int16_t *data, int16_t *output, int cnt);
+void ff_row_idct_c(int16_t *workspace, int16_t *output_adr, ptrdiff_t output_stride, int cnt);
+void ff_row_fdct_c(int16_t *data, const uint8_t *pixels, ptrdiff_t line_size, int cnt);
 
-void ff_fspp_init_x86(FSPPContext *fspp);
+void ff_fsppdsp_init_x86(FSPPDSPContext *fspp);
+FF_VISIBILITY_POP_HIDDEN
 
-#endif /* AVFILTER_FSPP_H */
+static inline void ff_fsppdsp_init(FSPPDSPContext *fspp)
+{
+    fspp->store_slice  = ff_store_slice_c;
+    fspp->store_slice2 = ff_store_slice2_c;
+    fspp->mul_thrmat   = ff_mul_thrmat_c;
+    fspp->column_fidct = ff_column_fidct_c;
+    fspp->row_idct     = ff_row_idct_c;
+    fspp->row_fdct     = ff_row_fdct_c;
+
+#if ARCH_X86
+    ff_fsppdsp_init_x86(fspp);
+#endif
+}
+
+#endif /* AVFILTER_FSPPDSP_H */
