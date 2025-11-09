@@ -311,6 +311,7 @@ static int update_dimensions_clear_info(RV60Context *s, int width, int height)
         return ret;
 
     memset(s->pu_info, 0, s->pu_stride * (s->cu_height << 3) * sizeof(s->pu_info[0]));
+    memset(s->blk_info, 0, s->blk_stride * (s->cu_height << 4) * sizeof(s->blk_info[0]));
 
     for (int j = 0; j < s->cu_height << 4; j++)
         for (int i = 0; i < s->cu_width << 4; i++)
