@@ -52,6 +52,8 @@ typedef struct FSPPDSPContext {
 } FSPPDSPContext;
 
 FF_VISIBILITY_PUSH_HIDDEN
+extern const uint8_t ff_fspp_dither[8][8];
+
 void ff_store_slice_c(uint8_t *dst, int16_t *src,
                       ptrdiff_t dst_stride, ptrdiff_t src_stride,
                       ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);

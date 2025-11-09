@@ -51,7 +51,7 @@ enum {
     FIX_1_082392200   = FIX(1.082392200, 13),
 };
 
-DECLARE_ALIGNED(32, static const uint8_t, dither)[8][8] = {
+DECLARE_ALIGNED(8, const uint8_t, ff_fspp_dither)[8][8] = {
     {  0,  48,  12,  60,   3,  51,  15,  63, },
     { 32,  16,  44,  28,  35,  19,  47,  31, },
     {  8,  56,   4,  52,  11,  59,   7,  55, },
@@ -74,7 +74,7 @@ void ff_store_slice_c(uint8_t *dst, int16_t *src,
     dst[x + pos] = temp;
 
     for (int y = 0; y < height; y++) {
-        const uint8_t *d = dither[y];
+        const uint8_t *d = ff_fspp_dither[y];
         for (int x = 0; x < width; x += 8) {
             int temp;
             STORE(0);
@@ -103,7 +103,7 @@ void ff_store_slice2_c(uint8_t *dst, int16_t *src,
     dst[x + pos] = temp;
 
     for (int y = 0; y < height; y++) {
-        const uint8_t *d = dither[y];
+        const uint8_t *d = ff_fspp_dither[y];
         for (int x = 0; x < width; x += 8) {
             int temp;
             STORE2(0);

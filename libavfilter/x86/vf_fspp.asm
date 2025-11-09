@@ -25,10 +25,7 @@
 
 SECTION_RODATA
 
-pb_dither: db 0,  48,  12,  60,   3,  51,  15,  63, 32,  16,  44,  28,  35,  19,  47,  31, \
-              8,  56,   4,  52,  11,  59,   7,  55, 40,  24,  36,  20,  43,  27,  39,  23, \
-              2,  50,  14,  62,   1,  49,  13,  61, 34,  18,  46,  30,  33,  17,  45,  29, \
-             10,  58,   6,  54,   9,  57,   5,  53, 42,  26,  38,  22,  41,  25,  37,  21
+cextern fspp_dither
 pw_187E: times 4 dw 0x187E ; FIX64(0.382683433, 14)
 pw_22A3: times 4 dw 0x22A3 ; FIX64(1.082392200, 13)
 pw_2D41: times 4 dw 0x2D41 ; FIX64(1.414213562, 13)
@@ -73,7 +70,7 @@ cglobal store_slice, 2, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
     sub       tmp2q, widthq
     movd      m2, ditherd ; log2_scale
     add       tmp2q, tmp2q
-    lea       ditherq, [pb_dither]
+    lea       ditherq, [fspp_dither]
     mov       src_strideq, tmp2q
     shl       tmpq, 4
     lea       dither_heightq, [ditherq+dither_heightq*8]
@@ -139,7 +136,7 @@ cglobal store_slice2, 0, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
     sub       tmp2q, widthq
     movd      m2, ditherd ; log2_scale
     add       tmp2q, tmp2q
-    lea       ditherq, [pb_dither]
+    lea       ditherq, [fspp_dither]
     mov       src_strideq, tmp2q
     shl       tmpq, 5
     lea       dither_heightq, [ditherq+dither_heightq*8]
