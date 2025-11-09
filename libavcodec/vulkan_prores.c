@@ -258,11 +258,10 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
                                   VK_IMAGE_LAYOUT_GENERAL,
                                   VK_NULL_HANDLE);
 
+    ff_vk_exec_bind_shader(&ctx->s, exec, &shaders->reset);
     ff_vk_shader_update_push_const(&ctx->s, exec, &shaders->reset,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
                                    0, sizeof(pd), &pd);
-
-    ff_vk_exec_bind_shader(&ctx->s, exec, &shaders->reset);
 
     vk->CmdDispatch(exec->buf, pr->mb_width << 1, pr->mb_height << 1, 1);
 
@@ -300,11 +299,10 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
                                   VK_IMAGE_LAYOUT_GENERAL,
                                   VK_NULL_HANDLE);
 
+    ff_vk_exec_bind_shader(&ctx->s, exec, &shaders->vld);
     ff_vk_shader_update_push_const(&ctx->s, exec, &shaders->vld,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
                                    0, sizeof(pd), &pd);
-
-    ff_vk_exec_bind_shader(&ctx->s, exec, &shaders->vld);
 
     vk->CmdDispatch(exec->buf, AV_CEIL_RSHIFT(pr->slice_count / pr->mb_height, 3), AV_CEIL_RSHIFT(pr->mb_height, 3),
                     3 + !!pr->alpha_info);
@@ -354,7 +352,6 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
                                   VK_NULL_HANDLE);
 
     ff_vk_exec_bind_shader(&ctx->s, exec, &shaders->idct);
-
     ff_vk_shader_update_push_const(&ctx->s, exec, &shaders->idct,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
                                    0, sizeof(pd), &pd);
