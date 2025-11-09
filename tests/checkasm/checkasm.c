@@ -297,6 +297,9 @@ static const struct {
     #if CONFIG_EQ_FILTER
         { "vf_eq", checkasm_check_vf_eq },
     #endif
+    #if CONFIG_FSPP_FILTER
+        { "vf_fspp", checkasm_check_vf_fspp },
+    #endif
     #if CONFIG_GBLUR_FILTER
         { "vf_gblur", checkasm_check_vf_gblur },
     #endif

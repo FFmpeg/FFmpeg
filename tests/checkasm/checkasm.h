@@ -148,6 +148,7 @@ void checkasm_check_v210enc(void);
 void checkasm_check_vc1dsp(void);
 void checkasm_check_vf_bwdif(void);
 void checkasm_check_vf_eq(void);
+void checkasm_check_vf_fspp(void);
 void checkasm_check_vf_gblur(void);
 void checkasm_check_vf_hflip(void);
 void checkasm_check_vf_threshold(void);
