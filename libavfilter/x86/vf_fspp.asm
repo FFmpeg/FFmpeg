@@ -177,59 +177,36 @@ cglobal store_slice2, 0, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
     jl .loop_height
     RET
 
-;void ff_mul_thrmat_mmx(int16_t *thr_adr_noq, int16_t *thr_adr, int q);
-cglobal mul_thrmat, 3, 3, 0, thrn, thr, q
-    movd      m7, qd
-    movq      m0, [thrnq]
-    punpcklwd m7, m7
-    movq      m1, [thrnq+8]
-    punpckldq m7, m7
-    pmullw    m0, m7
-    movq      m2, [thrnq+8*2]
-    pmullw    m1, m7
-    movq      m3, [thrnq+8*3]
-    pmullw    m2, m7
-    movq      [thrq], m0
-    movq      m4, [thrnq+8*4]
-    pmullw    m3, m7
-    movq      [thrq+8], m1
-    movq      m5, [thrnq+8*5]
-    pmullw    m4, m7
-    movq      [thrq+8*2], m2
-    movq      m6, [thrnq+8*6]
-    pmullw    m5, m7
-    movq      [thrq+8*3], m3
-    movq      m0, [thrnq+8*7]
-    pmullw    m6, m7
-    movq      [thrq+8*4], m4
-    movq      m1, [thrnq+8*7+8]
-    pmullw    m0, m7
-    movq      [thrq+8*5], m5
-    movq      m2, [thrnq+8*7+8*2]
-    pmullw    m1, m7
-    movq      [thrq+8*6], m6
-    movq      m3, [thrnq+8*7+8*3]
-    pmullw    m2, m7
-    movq      [thrq+8*7], m0
-    movq      m4, [thrnq+8*7+8*4]
-    pmullw    m3, m7
-    movq      [thrq+8*7+8], m1
-    movq      m5, [thrnq+8*7+8*5]
-    pmullw    m4, m7
-    movq      [thrq+8*7+8*2], m2
-    movq      m6, [thrnq+8*7+8*6]
-    pmullw    m5, m7
-    movq      [thrq+8*7+8*3], m3
-    movq      m0, [thrnq+14*8]
-    pmullw    m6, m7
-    movq      [thrq+8*7+8*4], m4
-    movq      m1, [thrnq+14*8+8]
-    pmullw    m0, m7
-    movq      [thrq+8*7+8*5], m5
-    pmullw    m1, m7
-    movq      [thrq+8*7+8*6], m6
-    movq      [thrq+14*8], m0
-    movq      [thrq+14*8+8], m1
+;void ff_mul_thrmat_sse2(int16_t *thr_adr_noq, int16_t *thr_adr, int q);
+INIT_XMM sse2
+cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
+    movd      m4, qd
+    mova      m0, [thrnq]
+    punpcklwd m4, m4
+    mova      m1, [thrnq+16]
+    pshufd    m4, m4, 0
+    pmullw    m0, m4
+    mova      m2, [thrnq+16*2]
+    pmullw    m1, m4
+    mova      m3, [thrnq+16*3]
+    pmullw    m2, m4
+    mova      [thrq], m0
+    mova      m0, [thrnq+16*4]
+    pmullw    m3, m4
+    mova      [thrq+16], m1
+    mova      m1, [thrnq+16*5]
+    pmullw    m0, m4
+    mova      [thrq+16*2], m2
+    mova      m2, [thrnq+16*6]
+    pmullw    m1, m4
+    mova      [thrq+16*3], m3
+    mova      m3, [thrnq+16*7]
+    pmullw    m2, m4
+    mova      [thrq+16*4], m0
+    pmullw    m3, m4
+    mova      [thrq+16*5], m1
+    mova      [thrq+16*6], m2
+    mova      [thrq+16*7], m3
     RET
 
 %macro COLUMN_FDCT 1-3 0, 0
@@ -457,6 +434,7 @@ cglobal mul_thrmat, 3, 3, 0, thrn, thr, q
     add       outq, 8+%1
 %endmacro
 
+INIT_MMX mmx
 ;void ff_column_fidct_mmx(int16_t *thr_adr, int16_t *data, int16_t *output, int cnt);
 cglobal column_fidct, 4, 5, 0, 32, thr, src, out, cnt, tmp
 .fdct1:

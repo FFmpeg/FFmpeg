@@ -54,8 +54,6 @@
 
 typedef struct FSPPContext {
     const struct AVClass *class;
-    uint64_t threshold_mtx_noq[8 * 2];
-    uint64_t threshold_mtx[8 * 2];        //used in both C & MMX (& later SSE2) versions
 
     int log2_count;
     int strength;
@@ -72,6 +70,9 @@ typedef struct FSPPContext {
     int use_bframe_qp;
 
     FSPPDSPContext dsp;
+
+    DECLARE_ALIGNED(16, uint64_t, threshold_mtx_noq)[8 * 2];
+    DECLARE_ALIGNED(16, uint64_t, threshold_mtx)[8 * 2];
 } FSPPContext;
 
 

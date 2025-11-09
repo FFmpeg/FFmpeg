@@ -39,7 +39,8 @@ typedef struct FSPPDSPContext {
                          ptrdiff_t dst_stride, ptrdiff_t src_stride,
                          ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);
 
-    void (*mul_thrmat)(int16_t *thr_adr_noq, int16_t *thr_adr, int q);
+    void (*mul_thrmat)(int16_t *thr_adr_noq /* align 16 */,
+                       int16_t *thr_adr /* align 16 */, int q);
 
     void (*column_fidct)(int16_t *thr_adr, int16_t *data,
                          int16_t *output, int cnt);

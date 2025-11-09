@@ -18,6 +18,7 @@
 
 #include "checkasm.h"
 #include "libavfilter/vf_fsppdsp.h"
+#include "libavutil/mem_internal.h"
 
 #define randomize_buffers(buf)                           \
     do {                                                 \
@@ -29,10 +30,11 @@
 static void check_mul_thrmat(void)
 {
     FSPPDSPContext fspp;
-    int16_t src[64];
-    int16_t dst_ref[64], dst_new[64];
+    DECLARE_ALIGNED(16, int16_t, src)[64];
+    DECLARE_ALIGNED(16, int16_t, dst_ref)[64];
+    DECLARE_ALIGNED(16, int16_t, dst_new)[64];
     const int q = (uint8_t)rnd();
-    declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t *thr_adr_noq, int16_t *thr_adr, int q);
+    declare_func(void, int16_t *thr_adr_noq, int16_t *thr_adr, int q);
 
     ff_fsppdsp_init(&fspp);
 
