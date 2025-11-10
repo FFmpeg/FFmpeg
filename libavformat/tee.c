@@ -167,6 +167,8 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     if ((ret = ff_tee_parse_slave_options(avf, slave, &options, &filename)) < 0)
         return ret;
 
+    tee_slave->on_fail = DEFAULT_SLAVE_FAILURE_POLICY;
+
 #define CONSUME_OPTION(option, field, action) do {                      \
         AVDictionaryEntry *en = av_dict_get(options, option, NULL, 0);  \
         if (en) {                                                       \
