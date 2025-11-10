@@ -29,6 +29,7 @@
 #include "libavutil/hwcontext_d3d12va_internal.h"
 #include "libavutil/hwcontext_d3d12va.h"
 
+#include "config_components.h"
 #include "avcodec.h"
 #include "d3d12va_encode.h"
 #include "encode.h"
@@ -144,6 +145,12 @@ static int d3d12va_encode_create_metadata_buffers(AVCodecContext *avctx,
 {
     D3D12VAEncodeContext *ctx = avctx->priv_data;
     int width = sizeof(D3D12_VIDEO_ENCODER_OUTPUT_METADATA) + sizeof(D3D12_VIDEO_ENCODER_FRAME_SUBREGION_METADATA);
+#if CONFIG_AV1_D3D12VA_ENCODER
+    if (ctx->codec->d3d12_codec == D3D12_VIDEO_ENCODER_CODEC_AV1) {
+        width += sizeof(D3D12_VIDEO_ENCODER_AV1_PICTURE_CONTROL_SUBREGIONS_LAYOUT_DATA_TILES)
+            + sizeof(D3D12_VIDEO_ENCODER_AV1_POST_ENCODE_VALUES);
+    }
+#endif
     D3D12_HEAP_PROPERTIES encoded_meta_props = { .Type = D3D12_HEAP_TYPE_DEFAULT }, resolved_meta_props;
     D3D12_HEAP_TYPE resolved_heap_type = D3D12_HEAP_TYPE_READBACK;
     HRESULT hr;
@@ -211,7 +218,7 @@ static int d3d12va_encode_issue(AVCodecContext *avctx,
             .RateControl = ctx->rc,
             .PictureTargetResolution = ctx->resolution,
             .SelectedLayoutMode = D3D12_VIDEO_ENCODER_FRAME_SUBREGION_LAYOUT_MODE_FULL_FRAME,
-            .FrameSubregionsLayoutData = { 0 },
+            .FrameSubregionsLayoutData = ctx->subregions_layout,
             .CodecGopSequence = ctx->gop,
         },
         .pInputFrame = pic->input_surface->texture,
@@ -732,16 +739,21 @@ end:
 static int d3d12va_encode_output(AVCodecContext *avctx,
                                  FFHWBaseEncodePicture *base_pic, AVPacket *pkt)
 {
+    D3D12VAEncodeContext       *ctx = avctx->priv_data;
     FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
-    D3D12VAEncodePicture *pic = base_pic->priv;
-    AVPacket *pkt_ptr = pkt;
-    int err;
+    D3D12VAEncodePicture       *pic = base_pic->priv;
+    AVPacket               *pkt_ptr = pkt;
+    int                         err = 0;
 
     err = d3d12va_encode_wait(avctx, base_pic);
     if (err < 0)
         return err;
 
-    err = d3d12va_encode_get_coded_data(avctx, pic, pkt);
+    if (ctx->codec->get_coded_data)
+        err = ctx->codec->get_coded_data(avctx, pic, pkt);
+    else
+        err = d3d12va_encode_get_coded_data(avctx, pic, pkt);
+
     if (err < 0)
         return err;
 
@@ -1129,6 +1141,9 @@ static int d3d12va_encode_init_gop_structure(AVCodecContext *avctx)
     union {
         D3D12_VIDEO_ENCODER_CODEC_PICTURE_CONTROL_SUPPORT_H264 h264;
         D3D12_VIDEO_ENCODER_CODEC_PICTURE_CONTROL_SUPPORT_HEVC hevc;
+#if CONFIG_AV1_D3D12VA_ENCODER
+        D3D12_VIDEO_ENCODER_CODEC_AV1_PICTURE_CONTROL_SUPPORT  av1;
+#endif
     } codec_support;
 
     support.NodeIndex = 0;
@@ -1146,6 +1161,13 @@ static int d3d12va_encode_init_gop_structure(AVCodecContext *avctx)
             support.PictureSupport.pHEVCSupport = &codec_support.hevc;
             break;
 
+#if CONFIG_AV1_D3D12VA_ENCODER
+            case D3D12_VIDEO_ENCODER_CODEC_AV1:
+            memset(&codec_support.av1, 0, sizeof(codec_support.av1));
+            support.PictureSupport.DataSize = sizeof(codec_support.av1);
+            support.PictureSupport.pAV1Support = &codec_support.av1;
+            break;
+#endif
         default:
             av_assert0(0);
     }
@@ -1171,6 +1193,13 @@ static int d3d12va_encode_init_gop_structure(AVCodecContext *avctx)
                 ref_l1 = support.PictureSupport.pHEVCSupport->MaxL1ReferencesForB;
                 break;
 
+#if CONFIG_AV1_D3D12VA_ENCODER
+            case D3D12_VIDEO_ENCODER_CODEC_AV1:
+                ref_l0 = support.PictureSupport.pAV1Support->MaxUniqueReferencesPerFrame;
+                // AV1 doesn't use traditional L1 references like H.264/HEVC
+                ref_l1 = 0;
+                break;
+#endif
             default:
                 av_assert0(0);
         }
@@ -1520,6 +1549,12 @@ int ff_d3d12va_encode_init(AVCodecContext *avctx)
     err = d3d12va_encode_set_profile(avctx);
     if (err < 0)
         goto fail;
+
+    if (ctx->codec->set_tile) {
+        err = ctx->codec->set_tile(avctx);
+        if (err < 0)
+            goto fail;
+    }
 
     err = d3d12va_encode_init_rate_control(avctx);
     if (err < 0)

@@ -10,6 +10,7 @@ version <next>:
 - D3D12 H.264 encoder
 - drawvg filter via libcairo
 - ffmpeg CLI tiled HEIF support
+- D3D12 AV1 encoder
 
 
 version 8.0:
