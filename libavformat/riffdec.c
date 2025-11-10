@@ -149,6 +149,20 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
             parse_waveformatex(s, pb, par);
             cbSize -= 22;
             size   -= 22;
+        } else if (cbSize >= 12 && id == 0x1610) { /* HEAACWAVEFORMAT */
+            int wPayloadType = avio_rl16(pb);
+            if (wPayloadType == 3)
+                par->codec_id = AV_CODEC_ID_AAC_LATM;
+            avio_skip(pb, 2); // wAudioProfileLevelIndication
+            int wStructType = avio_rl16(pb);
+            if (wStructType) {
+                avpriv_report_missing_feature(s, "HEAACWAVEINFO wStructType \"%d\"", wStructType);
+                return AVERROR_PATCHWELCOME;
+            }
+            avio_skip(pb, 2); // wReserved1
+            avio_skip(pb, 4); // dwReserved2
+            cbSize -= 12;
+            size   -= 12;
         }
         if (cbSize > 0) {
             ret = ff_get_extradata(s, par, pb, cbSize);
