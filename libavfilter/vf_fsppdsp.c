@@ -24,6 +24,7 @@
 
 #include "vf_fsppdsp.h"
 
+#include "libavutil/common.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem_internal.h"
 
@@ -70,7 +71,7 @@ void ff_store_slice_c(uint8_t *dst, int16_t *src,
 #define STORE(pos)                                                             \
     temp = (src[x + pos] + (d[pos] >> log2_scale)) >> (6 - log2_scale);        \
     src[x + pos] = src[x + pos - 8 * src_stride] = 0;                          \
-    if (temp & 0x100) temp = ~(temp >> 31);                                    \
+    temp = av_clip_uint8(temp);                                                \
     dst[x + pos] = temp;
 
     for (int y = 0; y < height; y++) {
@@ -99,7 +100,7 @@ void ff_store_slice2_c(uint8_t *dst, int16_t *src,
 #define STORE2(pos)                                                                                       \
     temp = (src[x + pos] + src[x + pos + 16 * src_stride] + (d[pos] >> log2_scale)) >> (6 - log2_scale);  \
     src[x + pos + 16 * src_stride] = 0;                                                                   \
-    if (temp & 0x100) temp = ~(temp >> 31);                                                               \
+    temp = av_clip_uint8(temp);                                                                           \
     dst[x + pos] = temp;
 
     for (int y = 0; y < height; y++) {
