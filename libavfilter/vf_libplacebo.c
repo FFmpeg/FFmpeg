@@ -913,14 +913,6 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
         image->crop.x1 = image->crop.x0 + s->var_values[VAR_CROP_W];
         image->crop.y1 = image->crop.y0 + s->var_values[VAR_CROP_H];
 
-        const pl_rotation rot_total = image->rotation - target->rotation;
-        if ((rot_total + PL_ROTATION_360) % PL_ROTATION_180 == PL_ROTATION_90) {
-            /* Libplacebo expects the input crop relative to the actual frame
-             * dimensions, so un-transpose them here */
-            FFSWAP(float, image->crop.x0, image->crop.y0);
-            FFSWAP(float, image->crop.x1, image->crop.y1);
-        }
-
         if (src == ref) {
             /* Only update the target crop once, for the 'reference' frame */
             target->crop.x0 = av_expr_eval(s->pos_x_pexpr, s->var_values, NULL);
@@ -954,6 +946,14 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
             }
             case FIT_SCALE_DOWN:
                 pl_rect2df_aspect_fit(&target->crop, &fixed, 0.0);
+            }
+
+            const pl_rotation rot_total = image->rotation - target->rotation;
+            if ((rot_total + PL_ROTATION_360) % PL_ROTATION_180 == PL_ROTATION_90) {
+                /* Libplacebo expects the input crop relative to the actual frame
+                 * dimensions, so un-transpose them here */
+                FFSWAP(float, image->crop.x0, image->crop.y0);
+                FFSWAP(float, image->crop.x1, image->crop.y1);
             }
         }
     }
