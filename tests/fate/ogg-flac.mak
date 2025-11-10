@@ -2,10 +2,6 @@ FATE_OGG_FLAC += fate-ogg-flac-chained-meta
 fate-ogg-flac-chained-meta: REF = $(SRC_PATH)/tests/ref/fate/ogg-flac-chained-meta.txt
 fate-ogg-flac-chained-meta: CMD = run $(APITESTSDIR)/api-dump-stream-meta-test$(EXESUF) $(TARGET_SAMPLES)/ogg-flac/chained-meta.ogg
 
-FATE_OGG_FLAC += fate-ogg-flac-copy-chained-meta
-fate-ogg-flac-copy-chained-meta: REF = $(SRC_PATH)/tests/ref/fate/ogg-flac-chained-meta.txt
-fate-ogg-flac-copy-chained-meta: CMD = run $(FFMPEG) -nostdin -hide_banner -loglevel quiet -i $(TARGET_SAMPLES)/ogg-flac/chained-meta.ogg -c copy -f ogg - | $(APITESTSDIR)/api-dump-stream-meta-test$(EXESUF) /dev/stdin
-
 FATE_OGG_FLAC-$(call DEMDEC, OGG, FLAC, FLAC_PARSER) += $(FATE_OGG_FLAC)
 
 FATE_SAMPLES_DUMP_STREAM_META += $(FATE_OGG_FLAC-yes)
