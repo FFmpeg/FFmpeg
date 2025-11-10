@@ -928,10 +928,13 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
             /* Effective visual crop */
             double sar_in = q2d_fallback(inlink->sample_aspect_ratio, 1.0);
             double sar_out = q2d_fallback(outlink->sample_aspect_ratio, 1.0);
-            const float w_adj = sar_in / sar_out;
+
+            pl_rotation rot_total = PL_ROTATION_360 + image->rotation - target->rotation;
+            if (rot_total % PL_ROTATION_180 == PL_ROTATION_90)
+                sar_in = 1.0 / sar_in;
 
             pl_rect2df fixed = image->crop;
-            pl_rect2df_stretch(&fixed, w_adj, 1.0);
+            pl_rect2df_stretch(&fixed, sar_in / sar_out, 1.0);
 
             switch (s->fit_mode) {
             case FIT_FILL:
@@ -954,8 +957,7 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
                 pl_rect2df_aspect_fit(&target->crop, &fixed, 0.0);
             }
 
-            const pl_rotation rot_total = image->rotation - target->rotation;
-            if ((rot_total + PL_ROTATION_360) % PL_ROTATION_180 == PL_ROTATION_90) {
+            if (rot_total % PL_ROTATION_180 == PL_ROTATION_90) {
                 /* Libplacebo expects the input crop relative to the actual frame
                  * dimensions, so un-transpose them here */
                 FFSWAP(float, image->crop.x0, image->crop.y0);
