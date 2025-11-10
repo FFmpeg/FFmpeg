@@ -64,7 +64,7 @@ DECLARE_ALIGNED(8, const uint8_t, ff_fspp_dither)[8][8] = {
 };
 
 //This func reads from 1 slice, 1 and clears 0 & 1
-void ff_store_slice_c(uint8_t *dst, int16_t *src,
+void ff_store_slice_c(uint8_t *restrict dst, int16_t *restrict src,
                       ptrdiff_t dst_stride, ptrdiff_t src_stride,
                       ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale)
 {
@@ -93,7 +93,7 @@ void ff_store_slice_c(uint8_t *dst, int16_t *src,
 }
 
 //This func reads from 2 slices, 0 & 2  and clears 2-nd
-void ff_store_slice2_c(uint8_t *dst, int16_t *src,
+void ff_store_slice2_c(uint8_t *restrict dst, int16_t *restrict src,
                        ptrdiff_t dst_stride, ptrdiff_t src_stride,
                        ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale)
 {
@@ -121,13 +121,14 @@ void ff_store_slice2_c(uint8_t *dst, int16_t *src,
     }
 }
 
-void ff_mul_thrmat_c(int16_t *thr_adr_noq, int16_t *thr_adr, int q)
+void ff_mul_thrmat_c(int16_t *restrict thr_adr_noq, int16_t *restrict thr_adr, int q)
 {
     for (int a = 0; a < 64; a++)
         thr_adr[a] = q * thr_adr_noq[a];
 }
 
-void ff_column_fidct_c(int16_t *thr_adr, int16_t *data, int16_t *output, int cnt)
+void ff_column_fidct_c(int16_t *restrict thr_adr, int16_t *restrict data,
+                       int16_t *restrict output, int cnt)
 {
     int_simd16_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     int_simd16_t tmp10, tmp11, tmp12, tmp13;
@@ -249,7 +250,8 @@ void ff_column_fidct_c(int16_t *thr_adr, int16_t *data, int16_t *output, int cnt
     }
 }
 
-void ff_row_idct_c(int16_t *workspace, int16_t *output_adr, ptrdiff_t output_stride, int cnt)
+void ff_row_idct_c(int16_t *restrict workspace, int16_t *restrict output_adr,
+                   ptrdiff_t output_stride, int cnt)
 {
     int_simd16_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     int_simd16_t tmp10, tmp11, tmp12, tmp13;
@@ -311,7 +313,8 @@ void ff_row_idct_c(int16_t *workspace, int16_t *output_adr, ptrdiff_t output_str
     }
 }
 
-void ff_row_fdct_c(int16_t *data, const uint8_t *pixels, ptrdiff_t line_size, int cnt)
+void ff_row_fdct_c(int16_t *restrict data, const uint8_t *restrict pixels,
+                   ptrdiff_t line_size, int cnt)
 {
     int_simd16_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     int_simd16_t tmp10, tmp11, tmp12, tmp13;

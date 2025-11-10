@@ -31,40 +31,43 @@
 #include "libavutil/attributes_internal.h"
 
 typedef struct FSPPDSPContext {
-    void (*store_slice)(uint8_t *dst, int16_t *src /* align 16 */,
+    void (*store_slice)(uint8_t *restrict dst, int16_t *restrict src /* align 16 */,
                         ptrdiff_t dst_stride, ptrdiff_t src_stride,
                         ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);
 
-    void (*store_slice2)(uint8_t *dst, int16_t *src /* align 16 */,
+    void (*store_slice2)(uint8_t *restrict dst, int16_t *restrict src /* align 16 */,
                          ptrdiff_t dst_stride, ptrdiff_t src_stride,
                          ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);
 
-    void (*mul_thrmat)(int16_t *thr_adr_noq /* align 16 */,
-                       int16_t *thr_adr /* align 16 */, int q);
+    void (*mul_thrmat)(int16_t *restrict thr_adr_noq /* align 16 */,
+                       int16_t *restrict thr_adr /* align 16 */, int q);
 
-    void (*column_fidct)(int16_t *thr_adr, int16_t *data,
-                         int16_t *output, int cnt);
+    void (*column_fidct)(int16_t *restrict thr_adr, int16_t *data,
+                         int16_t *restrict output, int cnt);
 
-    void (*row_idct)(int16_t *workspace, int16_t *output_adr,
+    void (*row_idct)(int16_t *restrict workspace, int16_t *restrict output_adr,
                      ptrdiff_t output_stride, int cnt);
 
-    void (*row_fdct)(int16_t *data, const uint8_t *pixels,
+    void (*row_fdct)(int16_t *restrict data, const uint8_t *restrict pixels,
                      ptrdiff_t line_size, int cnt);
 } FSPPDSPContext;
 
 FF_VISIBILITY_PUSH_HIDDEN
 extern const uint8_t ff_fspp_dither[8][8];
 
-void ff_store_slice_c(uint8_t *dst, int16_t *src,
+void ff_store_slice_c(uint8_t *restrict dst, int16_t *restrict src,
                       ptrdiff_t dst_stride, ptrdiff_t src_stride,
                       ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);
-void ff_store_slice2_c(uint8_t *dst, int16_t *src,
+void ff_store_slice2_c(uint8_t *restrict dst, int16_t *restrict src,
                        ptrdiff_t dst_stride, ptrdiff_t src_stride,
                        ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);
-void ff_mul_thrmat_c(int16_t *thr_adr_noq, int16_t *thr_adr, int q);
-void ff_column_fidct_c(int16_t *thr_adr, int16_t *data, int16_t *output, int cnt);
-void ff_row_idct_c(int16_t *workspace, int16_t *output_adr, ptrdiff_t output_stride, int cnt);
-void ff_row_fdct_c(int16_t *data, const uint8_t *pixels, ptrdiff_t line_size, int cnt);
+void ff_mul_thrmat_c(int16_t *restrict thr_adr_noq, int16_t *restrict thr_adr, int q);
+void ff_column_fidct_c(int16_t *restrict thr_adr, int16_t *restrict data,
+                       int16_t *restrict output, int cnt);
+void ff_row_idct_c(int16_t *restrict workspace, int16_t *restrict output_adr,
+                   ptrdiff_t output_stride, int cnt);
+void ff_row_fdct_c(int16_t *restrict data, const uint8_t *restrict pixels,
+                   ptrdiff_t line_size, int cnt);
 
 void ff_fsppdsp_init_x86(FSPPDSPContext *fspp);
 FF_VISIBILITY_POP_HIDDEN
