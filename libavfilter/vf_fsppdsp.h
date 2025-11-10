@@ -31,11 +31,11 @@
 #include "libavutil/attributes_internal.h"
 
 typedef struct FSPPDSPContext {
-    void (*store_slice)(uint8_t *dst, int16_t *src,
+    void (*store_slice)(uint8_t *dst, int16_t *src /* align 16 */,
                         ptrdiff_t dst_stride, ptrdiff_t src_stride,
                         ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);
 
-    void (*store_slice2)(uint8_t *dst, int16_t *src,
+    void (*store_slice2)(uint8_t *dst, int16_t *src /* align 16 */,
                          ptrdiff_t dst_stride, ptrdiff_t src_stride,
                          ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);
 

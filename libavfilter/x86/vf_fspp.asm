@@ -43,15 +43,15 @@ SECTION .text
 
 %define DCTSIZE 8
 
-INIT_MMX mmx
+INIT_XMM sse2
 
-;void ff_store_slice_mmx(uint8_t *dst, int16_t *src,
-;                        ptrdiff_t dst_stride, ptrdiff_t src_stride,
-;                        ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale)
+;void ff_store_slice_sse2(uint8_t *dst, int16_t *src,
+;                         ptrdiff_t dst_stride, ptrdiff_t src_stride,
+;                         ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale)
 %if ARCH_X86_64
-cglobal store_slice, 7, 9, 0, dst, src, dst_stride, src_stride, width, dither_height, dither, tmp, tmp2
+cglobal store_slice, 7, 9, 5, dst, src, dst_stride, src_stride, width, dither_height, dither, tmp, tmp2
 %else
-cglobal store_slice, 2, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
+cglobal store_slice, 2, 7, 5, dst, src, width, dither_height, dither, tmp, tmp2
 %define dst_strideq r2m
 %define src_strideq r3m
     mov       widthq, r4m
@@ -62,7 +62,7 @@ cglobal store_slice, 2, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
     mov       tmpq, src_strideq
     and       widthq, ~7
     sub       dst_strideq, widthq
-    movd      m5, ditherd ; log2_scale
+    movd      m4, ditherd ; log2_scale
     xor       ditherq, -1 ; log2_scale
     mov       tmp2q, tmpq
     add       ditherq, 7 ; log2_scale
@@ -74,29 +74,21 @@ cglobal store_slice, 2, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
     mov       src_strideq, tmp2q
     shl       tmpq, 4
     lea       dither_heightq, [ditherq+dither_heightq*8]
-    pxor      m7, m7
+    pxor      m1, m1
 
 .loop_height:
     movq      m3, [ditherq]
-    movq      m4, m3
-    punpcklbw m3, m7
-    punpckhbw m4, m7
+    punpcklbw m3, m1
     mov       tmp2q, widthq
-    psraw     m3, m5
-    psraw     m4, m5
+    psraw     m3, m4
 
 .loop_width:
-    movq      [srcq+tmpq], m7
-    movq      m0, [srcq]
-    movq      m1, [srcq+8]
-    movq      [srcq+tmpq+8], m7
+    mova      m0, [srcq]
+    mova      [srcq+tmpq], m1
     paddw     m0, m3
-    paddw     m1, m4
-    movq      [srcq], m7
+    mova      [srcq], m1
     psraw     m0, m2
-    psraw     m1, m2
-    movq      [srcq+8], m7
-    packuswb  m0, m1
+    packuswb  m0, m0
     add       srcq, 16
     movq      [dstq], m0
     add       dstq, 8
@@ -110,13 +102,13 @@ cglobal store_slice, 2, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
     jl .loop_height
     RET
 
-;void ff_store_slice2_mmx(uint8_t *dst, int16_t *src,
-;                         ptrdiff_t dst_stride, ptrdiff_t src_stride,
-;                         ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale)
+;void ff_store_slice2_sse2(uint8_t *dst, int16_t *src,
+;                          ptrdiff_t dst_stride, ptrdiff_t src_stride,
+;                          ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale)
 %if ARCH_X86_64
-cglobal store_slice2, 7, 9, 0, dst, src, dst_stride, src_stride, width, dither_height, dither, tmp, tmp2
+cglobal store_slice2, 7, 9, 5, dst, src, dst_stride, src_stride, width, dither_height, dither, tmp, tmp2
 %else
-cglobal store_slice2, 0, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
+cglobal store_slice2, 0, 7, 5, dst, src, width, dither_height, dither, tmp, tmp2
 %define dst_strideq r2m
 %define src_strideq r3m
     mov       dstq, dstm
@@ -129,7 +121,7 @@ cglobal store_slice2, 0, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
     mov       tmpq, src_strideq
     and       widthq, ~7
     sub       dst_strideq, widthq
-    movd      m5, ditherd ; log2_scale
+    movd      m4, ditherd ; log2_scale
     xor       ditherq, -1 ; log2_scale
     mov       tmp2q, tmpq
     add       ditherq, 7 ; log2_scale
@@ -140,30 +132,21 @@ cglobal store_slice2, 0, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
     mov       src_strideq, tmp2q
     shl       tmpq, 5
     lea       dither_heightq, [ditherq+dither_heightq*8]
-    pxor      m7, m7
+    pxor      m1, m1
 
 .loop_height:
     movq      m3, [ditherq]
-    movq      m4, m3
-    punpcklbw m3, m7
-    punpckhbw m4, m7
+    punpcklbw m3, m1
     mov       tmp2q,widthq
-    psraw     m3, m5
-    psraw     m4, m5
+    psraw     m3, m4
 
 .loop_width:
-    movq      m0, [srcq]
-    movq      m1, [srcq+8]
+    mova      m0, [srcq]
     paddw     m0, m3
     paddw     m0, [srcq+tmpq]
-    paddw     m1, m4
-    movq      m6, [srcq+tmpq+8]
-    movq      [srcq+tmpq], m7
+    mova      [srcq+tmpq], m1
     psraw     m0, m2
-    paddw     m1, m6
-    movq      [srcq+tmpq+8], m7
-    psraw     m1, m2
-    packuswb  m0, m1
+    packuswb  m0, m0
     movq      [dstq], m0
     add       srcq, 16
     add       dstq, 8
@@ -178,7 +161,6 @@ cglobal store_slice2, 0, 7, 0, dst, src, width, dither_height, dither, tmp, tmp2
     RET
 
 ;void ff_mul_thrmat_sse2(int16_t *thr_adr_noq, int16_t *thr_adr, int q);
-INIT_XMM sse2
 cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
     movd      m4, qd
     mova      m0, [thrnq]
