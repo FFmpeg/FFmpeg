@@ -173,7 +173,7 @@
     __m256i shuf3 = {0x1E0F0E1C0D0C1A0B, 0x0101010101010101,                        \
                      0x1E0F0E1C0D0C1A0B, 0x0101010101010101};                       \
     YUV2RGB_LOAD_COE                                                                \
-    y      = (c->opts.dst_w + 7) & ~7;                                              \
+    y      = c->opts.dst_w;                                                         \
     h_size = y >> 4;                                                                \
     res    = y & 15;                                                                \
                                                                                     \
@@ -199,7 +199,7 @@
     __m256i a = __lasx_xvldi(0xFF);                                                 \
                                                                                     \
     YUV2RGB_LOAD_COE                                                                \
-    y      = (c->opts.dst_w + 7) & ~7;                                              \
+    y      = c->opts.dst_w;                                                         \
     h_size = y >> 4;                                                                \
     res    = y & 15;                                                                \
                                                                                     \
@@ -215,7 +215,7 @@
         const uint8_t *pv   = src[2] +   (y >> vshift) * srcStride[2];              \
         for(x = 0; x < h_size; x++) {                                               \
 
-#define DEALYUV2RGBREMAIN                                                           \
+#define DEALYUV2RGBLINE                                                             \
             py_1 += 16;                                                             \
             py_2 += 16;                                                             \
             pu += 8;                                                                \
@@ -223,9 +223,40 @@
             image1 += 48;                                                           \
             image2 += 48;                                                           \
         }                                                                           \
-        if (res) {                                                                  \
+        if (res & 8) {                                                              \
 
-#define DEALYUV2RGBREMAIN32                                                         \
+#define DEALYUV2RGBLINERES                                                          \
+            py_1 += 8;                                                              \
+            py_2 += 8;                                                              \
+            pu += 4;                                                                \
+            pv += 4;                                                                \
+            image1 += 24;                                                           \
+            image2 += 24;                                                           \
+            res -= 8 ;                                                              \
+        }                                                                           \
+        if (res) {
+
+#define ENDYUV2RGBLINE(rgb_l, rgb_h, image_1, image_2)                              \
+        if (res == 6) {                                                             \
+            __lasx_xvstelm_d(rgb_l, image_1, 0, 0);                                 \
+            __lasx_xvstelm_d(rgb_l, image_1, 8, 1);                                 \
+            __lasx_xvstelm_h(rgb_h, image_1, 16, 0);                                \
+            __lasx_xvstelm_d(rgb_l, image_2, 0, 2);                                 \
+            __lasx_xvstelm_d(rgb_l, image_2, 8, 3);                                 \
+            __lasx_xvstelm_h(rgb_h, image_2, 16, 8);                                \
+        } else if (res == 4) {                                                      \
+            __lasx_xvstelm_d(rgb_l, image_1, 0, 0);                                 \
+            __lasx_xvstelm_w(rgb_l, image_1, 8, 2);                                 \
+            __lasx_xvstelm_d(rgb_l, image_2, 0, 2);                                 \
+            __lasx_xvstelm_w(rgb_l, image_2, 8, 6);                                 \
+        } else if (res == 2) {                                                      \
+            __lasx_xvstelm_w(rgb_l, image_1, 0, 0);                                 \
+            __lasx_xvstelm_h(rgb_l, image_1, 4, 2);                                 \
+            __lasx_xvstelm_w(rgb_l, image_2, 0, 4);                                 \
+            __lasx_xvstelm_h(rgb_l, image_2, 4, 10);                                \
+        }
+
+#define DEALYUV2RGBLINE32                                                           \
             py_1 += 16;                                                             \
             py_2 += 16;                                                             \
             pu += 8;                                                                \
@@ -233,7 +264,36 @@
             image1 += 16;                                                           \
             image2 += 16;                                                           \
         }                                                                           \
-        if (res) {                                                                  \
+        if (res & 8) {                                                              \
+
+#define DEALYUV2RGBLINERES32                                                        \
+            py_1 += 8;                                                              \
+            py_2 += 8;                                                              \
+            pu += 4;                                                                \
+            pv += 4;                                                                \
+            image1 += 8;                                                            \
+            image2 += 8;                                                            \
+            res -= 8;                                                               \
+        }                                                                           \
+        if (res) {
+
+#define ENDYUV2RGBLINE32(rgb_l, rgb_h, image_1, image_2)                            \
+        if (res == 6) {                                                             \
+            __lasx_xvstelm_d(rgb_l, image_1, 0, 0);                                 \
+            __lasx_xvstelm_d(rgb_l, image_1, 8, 1);                                 \
+            __lasx_xvstelm_d(rgb_l, image_1, 16, 2);                                \
+            __lasx_xvstelm_d(rgb_h, image_2, 0, 0);                                 \
+            __lasx_xvstelm_d(rgb_h, image_2, 8, 1);                                 \
+            __lasx_xvstelm_d(rgb_h, image_2, 16, 2);                                \
+        } else if (res == 4) {                                                      \
+            __lasx_xvstelm_d(rgb_l, image_1, 0, 0);                                 \
+            __lasx_xvstelm_d(rgb_l, image_1, 8, 1);                                 \
+            __lasx_xvstelm_d(rgb_h, image_2, 0, 0);                                 \
+            __lasx_xvstelm_d(rgb_h, image_2, 8, 1);                                 \
+        } else if (res == 2) {                                                      \
+            __lasx_xvstelm_d(rgb_l, image_1, 0, 0);                                 \
+            __lasx_xvstelm_d(rgb_h, image_2, 0, 0);                                 \
+        }
 
 
 #define END_FUNC()                          \
@@ -249,10 +309,14 @@ YUV2RGBFUNC(yuv420_rgb24_lasx, uint8_t, 0)
     RGB_PACK(r2, g2, b2, rgb2_l, rgb2_h);
     RGB_STORE(rgb1_l, rgb1_h, image1);
     RGB_STORE(rgb2_l, rgb2_h, image2);
-    DEALYUV2RGBREMAIN
+    DEALYUV2RGBLINE
     YUV2RGB_RES
     RGB_PACK(r1, g1, b1, rgb1_l, rgb1_h);
     RGB_STORE_RES(rgb1_l, rgb1_h, image1, image2);
+    DEALYUV2RGBLINERES
+    YUV2RGB_RES
+    RGB_PACK(r1, g1, b1, rgb1_l, rgb1_h);
+    ENDYUV2RGBLINE(rgb1_l, rgb1_h, image1, image2);
     END_FUNC()
 
 YUV2RGBFUNC(yuv420_bgr24_lasx, uint8_t, 0)
@@ -262,10 +326,14 @@ YUV2RGBFUNC(yuv420_bgr24_lasx, uint8_t, 0)
     RGB_PACK(b2, g2, r2, rgb2_l, rgb2_h);
     RGB_STORE(rgb1_l, rgb1_h, image1);
     RGB_STORE(rgb2_l, rgb2_h, image2);
-    DEALYUV2RGBREMAIN
+    DEALYUV2RGBLINE
     YUV2RGB_RES
     RGB_PACK(b1, g1, r1, rgb1_l, rgb1_h);
     RGB_STORE_RES(rgb1_l, rgb1_h, image1, image2);
+    DEALYUV2RGBLINERES
+    YUV2RGB_RES
+    RGB_PACK(b1, g1, r1, rgb1_l, rgb1_h);
+    ENDYUV2RGBLINE(rgb1_l, rgb1_h, image1, image2);
     END_FUNC()
 
 YUV2RGBFUNC32(yuv420_rgba32_lasx, uint32_t, 0)
@@ -275,10 +343,14 @@ YUV2RGBFUNC32(yuv420_rgba32_lasx, uint32_t, 0)
     RGB32_PACK(r2, g2, b2, a, rgb2_l, rgb2_h);
     RGB32_STORE(rgb1_l, rgb1_h, image1);
     RGB32_STORE(rgb2_l, rgb2_h, image2);
-    DEALYUV2RGBREMAIN32
+    DEALYUV2RGBLINE32
     YUV2RGB_RES
     RGB32_PACK(r1, g1, b1, a, rgb1_l, rgb1_h);
     RGB32_STORE_RES(rgb1_l, rgb1_h, image1, image2);
+    DEALYUV2RGBLINERES32
+    YUV2RGB_RES
+    RGB32_PACK(r1, g1, b1, a, rgb1_l, rgb1_h);
+    ENDYUV2RGBLINE32(rgb1_l, rgb1_h, image1, image2);
     END_FUNC()
 
 YUV2RGBFUNC32(yuv420_bgra32_lasx, uint32_t, 0)
@@ -288,10 +360,14 @@ YUV2RGBFUNC32(yuv420_bgra32_lasx, uint32_t, 0)
     RGB32_PACK(b2, g2, r2, a, rgb2_l, rgb2_h);
     RGB32_STORE(rgb1_l, rgb1_h, image1);
     RGB32_STORE(rgb2_l, rgb2_h, image2);
-    DEALYUV2RGBREMAIN32
+    DEALYUV2RGBLINE32
     YUV2RGB_RES
     RGB32_PACK(b1, g1, r1, a, rgb1_l, rgb1_h);
     RGB32_STORE_RES(rgb1_l, rgb1_h, image1, image2);
+    DEALYUV2RGBLINERES32
+    YUV2RGB_RES
+    RGB32_PACK(b1, g1, r1, a, rgb1_l, rgb1_h);
+    ENDYUV2RGBLINE32(rgb1_l, rgb1_h, image1, image2);
     END_FUNC()
 
 YUV2RGBFUNC32(yuv420_argb32_lasx, uint32_t, 0)
@@ -301,10 +377,14 @@ YUV2RGBFUNC32(yuv420_argb32_lasx, uint32_t, 0)
     RGB32_PACK(a, r2, g2, b2, rgb2_l, rgb2_h);
     RGB32_STORE(rgb1_l, rgb1_h, image1);
     RGB32_STORE(rgb2_l, rgb2_h, image2);
-    DEALYUV2RGBREMAIN32
+    DEALYUV2RGBLINE32
     YUV2RGB_RES
     RGB32_PACK(a, r1, g1, b1, rgb1_l, rgb1_h);
     RGB32_STORE_RES(rgb1_l, rgb1_h, image1, image2);
+    DEALYUV2RGBLINERES32
+    YUV2RGB_RES
+    RGB32_PACK(a, r1, g1, b1, rgb1_l, rgb1_h);
+    ENDYUV2RGBLINE32(rgb1_l, rgb1_h, image1, image2);
     END_FUNC()
 
 YUV2RGBFUNC32(yuv420_abgr32_lasx, uint32_t, 0)
@@ -314,8 +394,12 @@ YUV2RGBFUNC32(yuv420_abgr32_lasx, uint32_t, 0)
     RGB32_PACK(a, b2, g2, r2, rgb2_l, rgb2_h);
     RGB32_STORE(rgb1_l, rgb1_h, image1);
     RGB32_STORE(rgb2_l, rgb2_h, image2);
-    DEALYUV2RGBREMAIN32
+    DEALYUV2RGBLINE32
     YUV2RGB_RES
     RGB32_PACK(a, b1, g1, r1, rgb1_l, rgb1_h);
     RGB32_STORE_RES(rgb1_l, rgb1_h, image1, image2);
+    DEALYUV2RGBLINERES32
+    YUV2RGB_RES
+    RGB32_PACK(a, b1, g1, r1, rgb1_l, rgb1_h);
+    ENDYUV2RGBLINE32(rgb1_l, rgb1_h, image1, image2);
     END_FUNC()
