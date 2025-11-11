@@ -212,9 +212,10 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
     RET(ff_vk_exec_mirror_sem_value(&ctx->s, exec, &vp->sem, &vp->sem_value,
                                     pr->frame));
 
-    RET(ff_vk_exec_add_dep_buf(&ctx->s, exec,
-                               (AVBufferRef *[]){ vp->slices_buf, pp->metadata_buf, },
-                               2, 0));
+    RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &vp->slices_buf, 1, 0));
+    vp->slices_buf = NULL;
+    RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &pp->metadata_buf, 1, 0));
+    pp->metadata_buf = NULL;
 
     /* Transfer ownership to the exec context */
     vp->slices_buf = pp->metadata_buf = NULL;
@@ -572,8 +573,12 @@ static void vk_prores_free_frame_priv(AVRefStructOpaque _hwctx, void *data)
 {
     AVHWDeviceContext    *dev_ctx = _hwctx.nc;
     ProresVulkanDecodePicture *pp = data;
+    FFVulkanDecodePicture *vp = &pp->vp;
 
     ff_vk_decode_free_frame(dev_ctx, &pp->vp);
+
+    av_buffer_unref(&vp->slices_buf);
+    av_buffer_unref(&pp->metadata_buf);
 }
 
 const FFHWAccel ff_prores_vulkan_hwaccel = {
