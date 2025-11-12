@@ -492,6 +492,8 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             memcpy(s->palette, palette, AVPALETTE_SIZE);
             s->transparent_index = get_palette_transparency_index(palette);
             s->palette_loaded = 1;
+            if (s->use_global_palette)
+                palette = NULL;
         } else if (!memcmp(s->palette, palette, AVPALETTE_SIZE)) {
             palette = NULL;
         }
