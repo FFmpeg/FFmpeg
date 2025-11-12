@@ -27,10 +27,13 @@ SECTION_RODATA
 
 cextern fspp_dither
 pw_187E: times 4 dw 0x187E ; FIX64(0.382683433, 14)
+pw_61F8: times 4 dw 0x61F8 ; 4*FIX(0.382683433, 14)
 pw_22A3: times 4 dw 0x22A3 ; FIX64(1.082392200, 13)
+pw_4546: times 4 dw 0x4546 ; 2*FIX(1.082392200, 13)
 pw_2D41: times 4 dw 0x2D41 ; FIX64(1.414213562, 13)
 pw_539F: times 4 dw 0x539F ; FIX64(1.306562965, 14)
 pw_5A82: times 4 dw 0x5A82 ; FIX64(1.414213562, 14)
+pw_7642: times 4 dw 0x7642 ; 2*FIX(1.847759065, 13)
 pw_3B21: times 4 dw 0x3B21 ; FIX64(1.847759065, 13)
 pw_AC62: times 4 dw 0xAC62 ; FIX64(-2.613125930, 13)
 pw_4:    times 4 dw 4
@@ -211,12 +214,12 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
     psubw     m2, m6
     paddw     m7, m1
     movq      m6, [thrq+4*16+%2]
-    psllw     m7, 2
+    psllw     m7, 1
     psubw     m5, [thrq+%2]
     psubw     m2, m6
     paddusw   m5, [thrq+%2]
     paddusw   m2, m6
-    pmulhw    m7, [pw_2D41]
+    pmulhw    m7, [pw_5A82]
     paddw     m5, [thrq+%2]
     paddw     m2, m6
     psubusw   m5, [thrq+%2]
@@ -261,15 +264,14 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
     paddw     m4, m0
     movq      m7, m3
     psubw     m3, m4
-    psllw     m3, 2
-    psllw     m7, 2
-    pmulhw    m3, [pw_187E]
+    psllw     m7, 1
+    pmulhw    m3, [pw_61F8]
     psllw     m4, 2
-    pmulhw    m7, [pw_22A3]
-    psllw     m2, 2
+    pmulhw    m7, [pw_4546]
+    psllw     m2, 1
     pmulhw    m4, [pw_539F]
     paddw     m5, m1
-    pmulhw    m2, [pw_2D41]
+    pmulhw    m2, [pw_5A82]
     psubw     m6, m1
     paddw     m7, m3
     movq      [rsp+8], m5
@@ -313,11 +315,10 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
     jnz %1
     movq      m4, [rsp]
     psraw     m3, m0, 2
-    psllw     m0, 1
     mova      m5, [outq+DCTSIZE*0*2]
-    pmulhw    m1, m0, [pw_3B21]
-    pmulhw    m2, m0, [pw_22A3]
-    pmulhw    m0, [pw_2D41]
+    pmulhw    m1, m0, [pw_7642]
+    pmulhw    m2, m0, [pw_4546]
+    pmulhw    m0, [pw_5A82]
     paddw     m5, m4
     movq      m6, [rsp+8]
     psubw     m2, m1
@@ -360,23 +361,20 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
 %macro COLUMN_IDCT 0-1 0
     movq      m3, m5
     psubw     m5, m1
-    psllw     m5, 1
     paddw     m3, m1
     movq      m2, m0
     psubw     m0, m6
-    movq      m1, m5
-    psllw     m0, 1
+    psllw     m1, m5, 1
     pmulhw    m1, [pw_AC62]
     paddw     m5, m0
-    pmulhw    m5, [pw_3B21]
+    pmulhw    m5, [pw_7642]
     paddw     m2, m6
-    pmulhw    m0, [pw_22A3]
+    pmulhw    m0, [pw_4546]
     movq      m7, m2
     movq      m4, [rsp]
     psubw     m2, m3
-    psllw     m2, 1
     paddw     m7, m3
-    pmulhw    m2, [pw_2D41]
+    pmulhw    m2, [pw_5A82]
     movq      m6, m4
     psraw     m7, 2
     paddw     m4, [outq]
