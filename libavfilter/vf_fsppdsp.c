@@ -121,13 +121,13 @@ void ff_store_slice2_c(uint8_t *restrict dst, int16_t *restrict src,
     }
 }
 
-void ff_mul_thrmat_c(int16_t *restrict thr_adr_noq, int16_t *restrict thr_adr, int q)
+void ff_mul_thrmat_c(const int16_t *restrict thr_adr_noq, int16_t *restrict thr_adr, int q)
 {
     for (int a = 0; a < 64; a++)
         thr_adr[a] = q * thr_adr_noq[a];
 }
 
-void ff_column_fidct_c(int16_t *restrict thr_adr, int16_t *restrict data,
+void ff_column_fidct_c(const int16_t *restrict thr_adr, const int16_t *restrict data,
                        int16_t *restrict output, int cnt)
 {
     int_simd16_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
@@ -135,28 +135,26 @@ void ff_column_fidct_c(int16_t *restrict thr_adr, int16_t *restrict data,
     int_simd16_t z1,z2,z3,z4,z5, z10, z11, z12, z13;
     int_simd16_t d0, d1, d2, d3, d4, d5, d6, d7;
 
-    int16_t *dataptr;
     int16_t *wsptr;
     int16_t *threshold;
 
-    dataptr = data;
     wsptr = output;
 
     for (; cnt > 0; cnt -= 2) { //start positions
         threshold = (int16_t *)thr_adr;//threshold_mtx
         for (int ctr = DCTSIZE; ctr > 0; ctr--) {
             // Process columns from input, add to output.
-            tmp0 = dataptr[DCTSIZE * 0] + dataptr[DCTSIZE * 7];
-            tmp7 = dataptr[DCTSIZE * 0] - dataptr[DCTSIZE * 7];
+            tmp0 = data[DCTSIZE * 0] + data[DCTSIZE * 7];
+            tmp7 = data[DCTSIZE * 0] - data[DCTSIZE * 7];
 
-            tmp1 = dataptr[DCTSIZE * 1] + dataptr[DCTSIZE * 6];
-            tmp6 = dataptr[DCTSIZE * 1] - dataptr[DCTSIZE * 6];
+            tmp1 = data[DCTSIZE * 1] + data[DCTSIZE * 6];
+            tmp6 = data[DCTSIZE * 1] - data[DCTSIZE * 6];
 
-            tmp2 = dataptr[DCTSIZE * 2] + dataptr[DCTSIZE * 5];
-            tmp5 = dataptr[DCTSIZE * 2] - dataptr[DCTSIZE * 5];
+            tmp2 = data[DCTSIZE * 2] + data[DCTSIZE * 5];
+            tmp5 = data[DCTSIZE * 2] - data[DCTSIZE * 5];
 
-            tmp3 = dataptr[DCTSIZE * 3] + dataptr[DCTSIZE * 4];
-            tmp4 = dataptr[DCTSIZE * 3] - dataptr[DCTSIZE * 4];
+            tmp3 = data[DCTSIZE * 3] + data[DCTSIZE * 4];
+            tmp4 = data[DCTSIZE * 3] - data[DCTSIZE * 4];
 
             // Even part of FDCT
 
@@ -241,26 +239,24 @@ void ff_column_fidct_c(int16_t *restrict thr_adr, int16_t *restrict data,
             wsptr[DCTSIZE * 6]  =  (tmp1 - tmp6);
             wsptr[DCTSIZE * 7]  =  (tmp0 - tmp7);
             //
-            dataptr++; //next column
+            data++; //next column
             wsptr++;
             threshold++;
         }
-        dataptr += 8; //skip each second start pos
+        data  += 8; //skip each second start pos
         wsptr   += 8;
     }
 }
 
-void ff_row_idct_c(int16_t *restrict workspace, int16_t *restrict output_adr,
+void ff_row_idct_c(const int16_t *restrict wsptr, int16_t *restrict output_adr,
                    ptrdiff_t output_stride, int cnt)
 {
     int_simd16_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     int_simd16_t tmp10, tmp11, tmp12, tmp13;
     int_simd16_t z5, z10, z11, z12, z13;
     int16_t *outptr;
-    int16_t *wsptr;
 
     cnt *= 4;
-    wsptr = workspace;
     outptr = output_adr;
     for (; cnt > 0; cnt--) {
         // Even part

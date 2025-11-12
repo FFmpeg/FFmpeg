@@ -116,7 +116,7 @@ static void check_mul_thrmat(void)
     DECLARE_ALIGNED(16, int16_t, dst_ref)[64];
     DECLARE_ALIGNED(16, int16_t, dst_new)[64];
     const int q = (uint8_t)rnd();
-    declare_func(void, int16_t *thr_adr_noq, int16_t *thr_adr, int q);
+    declare_func(void, const int16_t *thr_adr_noq, int16_t *thr_adr, int q);
 
     ff_fsppdsp_init(&fspp);
 
@@ -136,7 +136,7 @@ static void check_column_fidct(void)
         NB_BLOCKS = 8, ///< arbitrary
     };
     FSPPDSPContext fspp;
-    declare_func(void, int16_t *thr_adr, int16_t *data,
+    declare_func(void, const int16_t *thr_adr, const int16_t *data,
                        int16_t *output, int cnt);
 
     ff_fsppdsp_init(&fspp);

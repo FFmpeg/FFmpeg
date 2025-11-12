@@ -39,13 +39,13 @@ typedef struct FSPPDSPContext {
                          ptrdiff_t dst_stride, ptrdiff_t src_stride,
                          ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);
 
-    void (*mul_thrmat)(int16_t *restrict thr_adr_noq /* align 16 */,
+    void (*mul_thrmat)(const int16_t *restrict thr_adr_noq /* align 16 */,
                        int16_t *restrict thr_adr /* align 16 */, int q);
 
-    void (*column_fidct)(int16_t *restrict thr_adr, int16_t *data,
+    void (*column_fidct)(const int16_t *restrict thr_adr, const int16_t *restrict data,
                          int16_t *restrict output, int cnt);
 
-    void (*row_idct)(int16_t *restrict workspace, int16_t *restrict output_adr,
+    void (*row_idct)(const int16_t *restrict workspace, int16_t *restrict output_adr,
                      ptrdiff_t output_stride, int cnt);
 
     void (*row_fdct)(int16_t *restrict data, const uint8_t *restrict pixels,
@@ -61,10 +61,10 @@ void ff_store_slice_c(uint8_t *restrict dst, int16_t *restrict src,
 void ff_store_slice2_c(uint8_t *restrict dst, int16_t *restrict src,
                        ptrdiff_t dst_stride, ptrdiff_t src_stride,
                        ptrdiff_t width, ptrdiff_t height, ptrdiff_t log2_scale);
-void ff_mul_thrmat_c(int16_t *restrict thr_adr_noq, int16_t *restrict thr_adr, int q);
-void ff_column_fidct_c(int16_t *restrict thr_adr, int16_t *restrict data,
+void ff_mul_thrmat_c(const int16_t *restrict thr_adr_noq, int16_t *restrict thr_adr, int q);
+void ff_column_fidct_c(const int16_t *restrict thr_adr, const int16_t *restrict data,
                        int16_t *restrict output, int cnt);
-void ff_row_idct_c(int16_t *restrict workspace, int16_t *restrict output_adr,
+void ff_row_idct_c(const int16_t *restrict workspace, int16_t *restrict output_adr,
                    ptrdiff_t output_stride, int cnt);
 void ff_row_fdct_c(int16_t *restrict data, const uint8_t *restrict pixels,
                    ptrdiff_t line_size, int cnt);
