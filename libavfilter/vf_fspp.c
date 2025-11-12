@@ -114,9 +114,9 @@ static void filter(FSPPContext *p, uint8_t *dst, uint8_t *src,
     const int qpsh = 4 - p->hsub * !is_luma;
     const int qpsv = 4 - p->vsub * !is_luma;
 
-    DECLARE_ALIGNED(32, int32_t, block_align)[4 * 8 * BLOCKSZ + 4 * 8 * BLOCKSZ];
-    int16_t *block  = (int16_t *)block_align;
-    int16_t *block3 = (int16_t *)(block_align + 4 * 8 * BLOCKSZ);
+    DECLARE_ALIGNED(16, int16_t, block_align)[8 * 8 * BLOCKSZ + 8 * 8 * BLOCKSZ];
+    int16_t *block  = block_align;
+    int16_t *block3 = block_align + 8 * 8 * BLOCKSZ;
 
     memset(block3, 0, 4 * 8 * BLOCKSZ);
 
