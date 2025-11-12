@@ -64,7 +64,7 @@ static void store_slice_sse2(uint8_t *dst, const int16_t *src,
     }
 }
 
-#endif /* HAVE_MMX_INLINE */
+#endif /* HAVE_SSE2_INLINE */
 
 av_cold void ff_spp_init_x86(SPPContext *s)
 {
