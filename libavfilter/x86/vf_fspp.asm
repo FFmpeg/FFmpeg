@@ -33,9 +33,6 @@ pw_539F: times 4 dw 0x539F ; FIX64(1.306562965, 14)
 pw_5A82: times 4 dw 0x5A82 ; FIX64(1.414213562, 14)
 pw_3B21: times 4 dw 0x3B21 ; FIX64(1.847759065, 13)
 pw_AC62: times 4 dw 0xAC62 ; FIX64(-2.613125930, 13)
-pw_3642: times 4 dw 0x3642 ; FIX64(0.847759065, 14)
-pw_2441: times 4 dw 0x2441 ; FIX64(0.566454497, 14)
-pw_0CBB: times 4 dw 0x0CBB ; FIX64(0.198912367, 14)
 pw_4:    times 4 dw 4
 pw_2:    times 4 dw 2
 
@@ -315,31 +312,34 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
     or        tmpd, tmpd
     jnz %1
     movq      m4, [rsp]
-    movq      m1, m0
-    pmulhw    m0, [pw_3642]
-    movq      m2, m1
-    movq      m5, [outq+DCTSIZE*0*2]
-    movq      m3, m2
-    pmulhw    m1, [pw_2441]
+    psraw     m3, m0, 2
+    psllw     m0, 1
+    mova      m5, [outq+DCTSIZE*0*2]
+    pmulhw    m1, m0, [pw_3B21]
+    pmulhw    m2, m0, [pw_22A3]
+    pmulhw    m0, [pw_2D41]
     paddw     m5, m4
     movq      m6, [rsp+8]
-    psraw     m3, 2
-    pmulhw    m2, [pw_0CBB]
+    psubw     m2, m1
     psubw     m4, m3
     movq      m7, [outq+DCTSIZE*1*2]
     paddw     m5, m3
-    movq      [outq+DCTSIZE*7*2], m4
+    psubw     m1, m3
+    mova      [outq+DCTSIZE*7*2], m4
+    psubw     m0, m1
+    paddw     m2, m0
+    mova      [outq+DCTSIZE*0*2], m5
     paddw     m7, m6
     movq      m3, [rsp+8*2]
-    psubw     m6, m0
+    psubw     m6, m1
     movq      m4, [outq+DCTSIZE*2*2]
-    paddw     m7, m0
+    paddw     m7, m1
     movq      [outq], m5
     paddw     m4, m3
     movq      [outq+DCTSIZE*6*2], m6
-    psubw     m3, m1
+    psubw     m3, m0
     movq      m5, [outq+DCTSIZE*5*2]
-    paddw     m4, m1
+    paddw     m4, m0
     movq      m6, [outq+DCTSIZE*3*2]
     paddw     m5, m3
     movq      m0, [rsp+8*3]
@@ -347,9 +347,9 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
     movq      [outq+DCTSIZE*1*2], m7
     paddw     m6, m0
     movq      [outq+DCTSIZE*2*2], m4
-    psubw     m0, m2
+    paddw     m0, m2
     movq      m7, [outq+DCTSIZE*4*2]
-    paddw     m6, m2
+    psubw     m6, m2
     movq      [outq+DCTSIZE*5*2], m5
     paddw     m7, m0
     movq      [outq+DCTSIZE*3*2], m6
