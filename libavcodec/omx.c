@@ -688,6 +688,11 @@ static av_cold int omx_encode_init(AVCodecContext *avctx)
             buffer = get_buffer(&s->output_mutex, &s->output_cond,
                                 &s->num_done_out_buffers, s->done_out_buffers, 1);
             if (buffer->nFlags & OMX_BUFFERFLAG_CODECCONFIG) {
+                if (buffer->nFilledLen > INT32_MAX - AV_INPUT_BUFFER_PADDING_SIZE - avctx->extradata_size) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
+
                 if ((ret = av_reallocp(&avctx->extradata, avctx->extradata_size + buffer->nFilledLen + AV_INPUT_BUFFER_PADDING_SIZE)) < 0) {
                     avctx->extradata_size = 0;
                     goto fail;
