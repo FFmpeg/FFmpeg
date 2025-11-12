@@ -210,35 +210,47 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
     paddw     m6, m2
     psubw     m7, m2
     mova      m2, m5
+%if ARCH_X86_64
+    mova      m8, [thrq]
+%define THRQ m8
+%else
+%define THRQ [thrq]
+%endif
     paddw     m5, m6
     psubw     m2, m6
     paddw     m7, m1
     mova      m6, [thrq+4*16]
     psllw     m7, 1
-    psubw     m5, [thrq]
+    psubw     m5, THRQ
     psubw     m2, m6
-    paddusw   m5, [thrq]
+    paddusw   m5, THRQ
     paddusw   m2, m6
-    pmulhw    m7, [pw_5A82]
-    paddw     m5, [thrq]
+    pmulhw    m7, SQRT2
+    paddw     m5, THRQ
     paddw     m2, m6
-    psubusw   m5, [thrq]
+    psubusw   m5, THRQ
     psubusw   m2, m6
     paddw     m5, [pw_2]
     mova      m6, m2
     paddw     m2, m5
+%if ARCH_X86_64
+    mova      m8, [thrq+2*16]
+%define THRQ m8
+%else
+%define THRQ [thrq+2*16]
+%endif
     psubw     m5, m6
     mova      m6, m1
     paddw     m1, m7
-    psubw     m1, [thrq+2*16]
+    psubw     m1, THRQ
     psubw     m6, m7
     mova      m7, [thrq+6*16]
     psraw     m5, 2
-    paddusw   m1, [thrq+2*16]
+    paddusw   m1, THRQ
     psubw     m6, m7
-    paddw     m1, [thrq+2*16]
+    paddw     m1, THRQ
     paddusw   m6, m7
-    psubusw   m1, [thrq+2*16]
+    psubusw   m1, THRQ
     paddw     m6, m7
     psubw     m3, [srcq+DCTSIZE*4*2]
     psubusw   m6, m7
@@ -250,15 +262,15 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
     paddw     m6, m7
     psraw     m6, 2
     mova      m7, m2
-    pmulhw    m1, [pw_5A82]
+    pmulhw    m1, SQRT2
     paddw     m2, m6
-    mova   [rsp], m2
+    mova    tmp0, m2
     psubw     m7, m6
     mova      m2, [srcq+DCTSIZE*2*2]
     psubw     m1, m6
     psubw     m2, [srcq+DCTSIZE*5*2]
     mova      m6, m5
-    mova      [rsp+16*3], m7
+    mova    tmp3, m7
     paddw     m3, m2
     paddw     m2, m4
     paddw     m4, m0
@@ -272,14 +284,14 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
     psllw     m2, 1
     pmulhw    m4, [pw_539F]
     paddw     m5, m1
-    pmulhw    m2, [pw_5A82]
+    pmulhw    m2, SQRT2
     psubw     m6, m1
     paddw     m7, m3
-    mova      [rsp+16], m5
+    mova    tmp1, m5
     paddw     m4, m3
     mova      m3, [thrq+3*16]
     mova      m1, m0
-    mova      [rsp+16*2], m6
+    mova    tmp2, m6
     psubw     m1, m2
     paddw     m0, m2
     mova      m5, m1
@@ -319,14 +331,14 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
 %endif
     or      tmpq, tmpq
     jnz %1
-    mova      m4, [rsp]
+    mova      m4, tmp0
     psraw     m3, m0, 2
     mova      m5, [outq+DCTSIZE*0*2]
     pmulhw    m1, m0, [pw_7642]
     pmulhw    m2, m0, [pw_4546]
-    pmulhw    m0, [pw_5A82]
+    pmulhw    m0, SQRT2
     paddw     m5, m4
-    mova      m6, [rsp+16]
+    mova      m6, tmp1
     psubw     m2, m1
     psubw     m4, m3
     mova      m7, [outq+DCTSIZE*1*2]
@@ -337,7 +349,7 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
     paddw     m2, m0
     mova      [outq+DCTSIZE*0*2], m5
     paddw     m7, m6
-    mova      m3, [rsp+16*2]
+    mova      m3, tmp2
     psubw     m6, m1
     mova      m4, [outq+DCTSIZE*2*2]
     paddw     m7, m1
@@ -349,7 +361,7 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
     paddw     m4, m0
     mova      m6, [outq+DCTSIZE*3*2]
     paddw     m5, m3
-    mova      m0, [rsp+16*3]
+    mova      m0, tmp3
     mova      [outq+DCTSIZE*1*2], m7
     paddw     m6, m0
     mova      [outq+DCTSIZE*2*2], m4
@@ -376,23 +388,23 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
     paddw     m2, m6
     pmulhw    m0, [pw_4546]
     mova      m7, m2
-    mova      m4, [rsp]
+    mova      m4, tmp0
     psubw     m2, m3
     paddw     m7, m3
-    pmulhw    m2, [pw_5A82]
+    pmulhw    m2, SQRT2
     mova      m6, m4
     psraw     m7, 2
     paddw     m4, [outq]
     psubw     m6, m7
-    mova      m3, [rsp+16]
+    mova      m3, tmp1
     paddw     m4, m7
     mova      [outq+DCTSIZE*7*2], m6
     paddw     m1, m5
     mova  [outq], m4
     psubw     m1, m7
-    mova      m7, [rsp+16*2]
+    mova      m7, tmp2
     psubw     m0, m5
-    mova      m6, [rsp+16*3]
+    mova      m6, tmp3
     mova      m5, m3
     paddw     m3, [outq+DCTSIZE*1*2]
     psubw     m5, m1
@@ -419,7 +431,21 @@ cglobal mul_thrmat, 3, 3, 5, thrn, thr, q
 %endmacro
 
 ;void ff_column_fidct_sse2(int16_t *thr_adr, int16_t *data, int16_t *output, int cnt);
-cglobal column_fidct, 4, 5, 8, 64, thr, src, out, cnt, tmp
+cglobal column_fidct, 4, 5, 8+5*ARCH_X86_64, 64*!ARCH_X86_64, thr, src, out, cnt, tmp
+%if ARCH_X86_64
+    %define tmp0 m8
+    %define tmp1 m9
+    %define tmp2 m10
+    %define tmp3 m11
+    %define SQRT2 m12
+    mova     m12, [pw_5A82]
+%else
+    %define tmp0 [rsp]
+    %define tmp1 [rsp+16]
+    %define tmp2 [rsp+2*16]
+    %define tmp3 [rsp+3*16]
+    %define SQRT2 [pw_5A82]
+%endif
 .fdct:
     COLUMN_FDCT .idct
     sub    cntd, 2
