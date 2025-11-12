@@ -200,6 +200,18 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
                par->codec_tag != 0x0001 /* PCM */ ||
                riff_extradata - riff_extradata_start) {
         /* WAVEFORMATEX */
+        if (par->codec_tag == 0x1610) {
+            /* HEAACWAVEFORMAT */
+            avio_wl16(pb, par->extradata_size + 12); /* cbSize */
+            avio_wl16(pb, !par->extradata_size); // wPayloadType, 0 = Raw, 1 = ADTS
+            avio_wl16(pb, 0xFE); // wAudioProfileLevelIndication, 0xFE = unspecified
+            avio_wl16(pb, 0); // wStructType, 0 = AudioSpecificConfig()
+            avio_wl16(pb, 0); // wReserved1
+            avio_wl32(pb, 0); // dwReserved2
+        } else if (par->codec_tag == 0xFF && !par->extradata_size) {
+            av_log(s, AV_LOG_ERROR, "ADTS is only supported with codec tag 0x1610\n");
+            return AVERROR(EINVAL);
+        } else
         avio_wl16(pb, riff_extradata - riff_extradata_start); /* cbSize */
     } /* else PCMWAVEFORMAT */
     avio_write(pb, riff_extradata_start, riff_extradata - riff_extradata_start);
