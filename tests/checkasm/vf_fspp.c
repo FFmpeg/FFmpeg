@@ -136,8 +136,8 @@ static void check_column_fidct(void)
         NB_BLOCKS = 8, ///< arbitrary
     };
     FSPPDSPContext fspp;
-    declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t *thr_adr, int16_t *data,
-                      int16_t *output, int cnt);
+    declare_func(void, int16_t *thr_adr, int16_t *data,
+                       int16_t *output, int cnt);
 
     ff_fsppdsp_init(&fspp);
 
