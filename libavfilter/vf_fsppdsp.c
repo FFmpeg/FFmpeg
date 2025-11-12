@@ -34,7 +34,7 @@
 
 #define MULTIPLY16H(x,k)   (((x) * (k)) >> 16)
 #define THRESHOLD(r,x,t)                         \
-    if(((unsigned)((x) + t)) > t * 2) r = (x);   \
+    if (((unsigned)((x) + t)) >= t * 2) r = (x); \
     else r = 0;
 #define DESCALE(x,n)  (((x) + (1 << ((n) - 1))) >> n)
 
