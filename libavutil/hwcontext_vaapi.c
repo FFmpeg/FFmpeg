@@ -195,12 +195,17 @@ static const VAAPIFormatDescriptor *
 }
 
 static const VAAPIFormatDescriptor *
-    vaapi_format_from_pix_fmt(enum AVPixelFormat pix_fmt)
+    vaapi_format_from_pix_fmt(enum AVPixelFormat pix_fmt, const VAAPIFormatDescriptor *prev)
 {
-    int i;
-    for (i = 0; i < FF_ARRAY_ELEMS(vaapi_format_map); i++)
-        if (vaapi_format_map[i].pix_fmt == pix_fmt)
-            return &vaapi_format_map[i];
+    const VAAPIFormatDescriptor *end = &vaapi_format_map[FF_ARRAY_ELEMS(vaapi_format_map)];
+    if (!prev)
+        prev = vaapi_format_map;
+    else
+        prev++;
+
+    for (; prev < end; prev++)
+        if (prev->pix_fmt == pix_fmt)
+            return prev;
     return NULL;
 }
 
@@ -214,27 +219,37 @@ static enum AVPixelFormat vaapi_pix_fmt_from_fourcc(unsigned int fourcc)
         return AV_PIX_FMT_NONE;
 }
 
+static int vaapi_get_img_desc_and_format(AVHWDeviceContext *hwdev,
+                                  enum AVPixelFormat pix_fmt,
+                                  const VAAPIFormatDescriptor **_desc,
+                                  VAImageFormat **image_format)
+{
+    VAAPIDeviceContext *ctx = hwdev->hwctx;
+    const VAAPIFormatDescriptor *desc = NULL;
+    int i;
+
+    while ((desc = vaapi_format_from_pix_fmt(pix_fmt, desc))) {
+        for (i = 0; i < ctx->nb_formats; i++) {
+            if (ctx->formats[i].fourcc == desc->fourcc) {
+                if (_desc)
+                    *_desc = desc;
+                if (image_format)
+                    *image_format = &ctx->formats[i].image_format;
+                return 0;
+            }
+        }
+    }
+
+    return AVERROR(ENOSYS);
+}
+
 static int vaapi_get_image_format(AVHWDeviceContext *hwdev,
                                   enum AVPixelFormat pix_fmt,
                                   VAImageFormat **image_format)
 {
-    VAAPIDeviceContext *ctx = hwdev->hwctx;
-    const VAAPIFormatDescriptor *desc;
-    int i;
-
-    desc = vaapi_format_from_pix_fmt(pix_fmt);
-    if (!desc || !image_format)
-        goto fail;
-
-    for (i = 0; i < ctx->nb_formats; i++) {
-        if (ctx->formats[i].fourcc == desc->fourcc) {
-            *image_format = &ctx->formats[i].image_format;
-            return 0;
-        }
-    }
-
-fail:
-    return AVERROR(ENOSYS);
+    if (!image_format)
+        return AVERROR(EINVAL);
+    return vaapi_get_img_desc_and_format(hwdev, pix_fmt, NULL, image_format);
 }
 
 static int vaapi_frames_get_constraints(AVHWDeviceContext *hwdev,
@@ -562,19 +577,23 @@ static int vaapi_frames_init(AVHWFramesContext *hwfc)
     VAAPIFramesContext     *ctx = hwfc->hwctx;
     AVVAAPIFramesContext  *avfc = &ctx->p;
     AVVAAPIDeviceContext *hwctx = hwfc->device_ctx->hwctx;
-    const VAAPIFormatDescriptor *desc;
-    VAImageFormat *expected_format;
+    const VAAPIFormatDescriptor *desc = NULL;
+    VAImageFormat *expected_format = NULL;
     AVBufferRef *test_surface = NULL;
     VASurfaceID test_surface_id;
     VAImage test_image;
     VAStatus vas;
     int err, i;
 
-    desc = vaapi_format_from_pix_fmt(hwfc->sw_format);
-    if (!desc) {
-        av_log(hwfc, AV_LOG_ERROR, "Unsupported format: %s.\n",
-               av_get_pix_fmt_name(hwfc->sw_format));
-        return AVERROR(EINVAL);
+    err = vaapi_get_img_desc_and_format(hwfc->device_ctx, hwfc->sw_format,
+                                        &desc, &expected_format);
+    if (err < 0) {
+        // Use a relaxed check when pool exist. It can be an external pool.
+        if (!hwfc->pool || !vaapi_format_from_pix_fmt(hwfc->sw_format, NULL)) {
+            av_log(hwfc, AV_LOG_ERROR, "Unsupported format: %s.\n",
+                   av_get_pix_fmt_name(hwfc->sw_format));
+            return AVERROR(EINVAL);
+        }
     }
 
     if (!hwfc->pool) {
@@ -673,10 +692,7 @@ static int vaapi_frames_init(AVHWFramesContext *hwfc)
     test_surface_id = (VASurfaceID)(uintptr_t)test_surface->data;
 
     ctx->derive_works = 0;
-
-    err = vaapi_get_image_format(hwfc->device_ctx,
-                                 hwfc->sw_format, &expected_format);
-    if (err == 0) {
+    if (expected_format) {
         vas = vaDeriveImage(hwctx->display, test_surface_id, &test_image);
         if (vas == VA_STATUS_SUCCESS) {
             if (expected_format->fourcc == test_image.format.fourcc) {
