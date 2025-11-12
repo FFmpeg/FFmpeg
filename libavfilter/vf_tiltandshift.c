@@ -25,6 +25,8 @@
 
 #include <string.h>
 
+#include "libavutil/avassert.h"
+#include "libavutil/fifo.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -63,37 +65,12 @@ typedef struct TiltandshiftContext {
     uint8_t *black_buffers[4];
     int black_linesizes[4];
 
-    /* list containing all input frames */
-    size_t input_size;
-    AVFrame *input;
+    /* FIFO containing all input frames */
+    AVFifo *input;
     AVFrame *prev;
 
     const AVPixFmtDescriptor *desc;
 } TiltandshiftContext;
-
-static int list_add_frame(TiltandshiftContext *s, AVFrame *frame)
-{
-    if (s->input == NULL) {
-        s->input = frame;
-    } else {
-        AVFrame *head = s->input;
-        while (head->opaque)
-            head = head->opaque;
-        head->opaque = frame;
-    }
-    s->input_size++;
-    return 0;
-}
-
-static void list_remove_head(TiltandshiftContext *s)
-{
-    AVFrame *head = s->input;
-    if (head) {
-        s->input = head->opaque;
-        av_frame_free(&head);
-    }
-    s->input_size--;
-}
 
 static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P,
@@ -103,11 +80,30 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
+static av_cold int init(AVFilterContext *ctx)
+{
+    TiltandshiftContext *s = ctx->priv;
+
+    s->input = av_fifo_alloc2(32, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
+    if (!s->input)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     TiltandshiftContext *s = ctx->priv;
-    while (s->input)
-        list_remove_head(s);
+
+    if (s->input) {
+        AVFrame *frame;
+
+        while (av_fifo_read(s->input, &frame, 1) >= 0)
+            av_frame_free(&frame);
+
+        av_fifo_freep2(&s->input);
+    }
+
     av_freep(&s->black_buffers);
 }
 
@@ -192,6 +188,7 @@ static int output_frame(AVFilterLink *outlink)
     TiltandshiftContext *s = outlink->src->priv;
     AVFrame *head;
     int ret;
+    int nb_buffered;
 
     int ncol = 0;
     AVFrame *dst = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -206,20 +203,23 @@ static int output_frame(AVFilterLink *outlink)
                         ncol, 0);
     }
 
-    head = s->input;
+    nb_buffered = av_fifo_can_read(s->input);
+    av_assert0(nb_buffered);
     // copy a column from each input frame
-    for ( ; ncol < s->input_size; ncol++) {
-        AVFrame *src = head;
+    for (int in_idx = 0; ncol < nb_buffered; ncol++) {
+        AVFrame *src;
+
+        av_fifo_peek(s->input, &src, 1, in_idx);
 
         copy_column(outlink, dst->data, dst->linesize,
                     (const uint8_t **)src->data, src->linesize,
                     ncol, s->tilt);
 
         // keep track of the last known frame in case we need it below
-        s->prev = head;
+        s->prev = src;
         // advance to the next frame unless we have to hold it
         if (s->hold <= ncol)
-            head = head->opaque;
+            in_idx++;
     }
 
     // pad any remaining space with black or last frame
@@ -236,14 +236,14 @@ static int output_frame(AVFilterLink *outlink)
     }
 
     // set correct timestamps and props as long as there is proper input
-    ret = av_frame_copy_props(dst, s->input);
+    av_fifo_read(s->input, &head, 1);
+    ret = av_frame_copy_props(dst, head);
+    av_frame_free(&head);
     if (ret < 0) {
         av_frame_free(&dst);
         return ret;
     }
 
-    // discard frame at the top of the list since it has been fully processed
-    list_remove_head(s);
     // and it is safe to reduce the hold value (even if unused)
     s->hold--;
 
@@ -257,16 +257,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterContext *ctx = outlink->src;
     TiltandshiftContext *s = inlink->dst->priv;
+    int ret;
 
-    int ret = list_add_frame(s, frame);
+    ret = av_fifo_write(s->input, &frame, 1);
     if (ret < 0) {
+        av_frame_free(&frame);
         return ret;
     }
 
     // load up enough frames to fill a frame and keep the queue filled on subsequent
     // calls, until we receive EOF, and then we either pad or end
-    if (!s->eof_recv && s->input_size < outlink->w - s->pad) {
-        av_log(ctx, AV_LOG_DEBUG, "Not enough frames in the list (%zu/%d), waiting for more.\n", s->input_size, outlink->w - s->pad);
+    if (!s->eof_recv &&
+        av_fifo_can_read(s->input) < outlink->w - s->pad) {
+        av_log(ctx, AV_LOG_DEBUG,
+               "Not enough frames in the list (%zu/%d), waiting for more.\n",
+               av_fifo_can_read(s->input), outlink->w - s->pad);
         return 0;
     }
 
@@ -277,11 +282,13 @@ static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     TiltandshiftContext *s = ctx->priv;
+    size_t nb_buffered = av_fifo_can_read(s->input);
     int ret;
 
     // signal job finished when list is empty or when padding is either
     // limited or disabled and eof was received
-    if ((s->input_size <= 0 || s->input_size == outlink->w - s->pad || s->end == TILT_NONE) && s->eof_recv) {
+    if ((nb_buffered <= 0 || nb_buffered == outlink->w - s->pad ||
+         s->end == TILT_NONE) && s->eof_recv) {
         return AVERROR_EOF;
     }
 
@@ -293,8 +300,9 @@ static int request_frame(AVFilterLink *outlink)
     }
 
     if (s->eof_recv) {
-        while (s->input_size) {
-            av_log(ctx, AV_LOG_DEBUG, "Emptying buffers (%zu/%d).\n", s->input_size, outlink->w - s->pad);
+        while (av_fifo_can_read(s->input)) {
+            av_log(ctx, AV_LOG_DEBUG, "Emptying buffers (%zu/%d).\n",
+                   av_fifo_can_read(s->input), outlink->w - s->pad);
             ret = output_frame(outlink);
             if (ret < 0) {
                 return ret;
@@ -361,6 +369,7 @@ const FFFilter ff_vf_tiltandshift = {
     .p.description = NULL_IF_CONFIG_SMALL("Generate a tilt-and-shift'd video."),
     .p.priv_class  = &tiltandshift_class,
     .priv_size     = sizeof(TiltandshiftContext),
+    .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(tiltandshift_inputs),
     FILTER_OUTPUTS(tiltandshift_outputs),
