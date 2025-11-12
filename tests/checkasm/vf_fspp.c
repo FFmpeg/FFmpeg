@@ -36,6 +36,12 @@
             buf[j] = buf2[j] = sign_extend(rnd(), nb_bits); \
     } while (0)
 
+#define randomize_buffer_range(buf, min, max)               \
+    do {                                                    \
+        for (size_t j = 0; j < FF_ARRAY_ELEMS(buf); ++j)    \
+            buf[j] = min + rnd() % (max - min + 1);         \
+    } while (0)
+
 static void check_store_slice(void)
 {
     enum {
@@ -124,8 +130,41 @@ static void check_mul_thrmat(void)
     }
 }
 
+static void check_column_fidct(void)
+{
+    enum {
+        NB_BLOCKS = 8, ///< arbitrary
+    };
+    FSPPDSPContext fspp;
+    declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t *thr_adr, int16_t *data,
+                      int16_t *output, int cnt);
+
+    ff_fsppdsp_init(&fspp);
+
+    if (check_func(fspp.column_fidct, "column_fidct")) {
+        DECLARE_ALIGNED(16, int16_t, threshold)[64];
+        DECLARE_ALIGNED(16, int16_t, src)[8*(8*NB_BLOCKS + 6)];
+        DECLARE_ALIGNED(16, int16_t, dst_new)[8*(8*NB_BLOCKS + 6)];
+        DECLARE_ALIGNED(16, int16_t, dst_ref)[8*(8*NB_BLOCKS + 6)];
+
+        randomize_buffer_range(threshold, 0, INT16_MAX);
+        randomize_buffer_range(src, -1284, 1284);
+        randomize_buffers(dst_new);
+        memcpy(dst_ref, dst_new, sizeof(dst_ref));
+
+        call_ref(threshold, src, dst_ref, NB_BLOCKS * 8);
+        call_new(threshold, src, dst_new, NB_BLOCKS * 8);
+
+        if (memcmp(dst_new, dst_ref, sizeof(dst_new)))
+            fail();
+
+        bench_new(threshold, src, dst_new, NB_BLOCKS * 8);
+    }
+}
+
 void checkasm_check_vf_fspp(void)
 {
     check_store_slice();
     check_mul_thrmat();
+    check_column_fidct();
 }
