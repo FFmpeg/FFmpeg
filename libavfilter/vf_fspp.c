@@ -92,14 +92,16 @@ static const short custom_threshold[64] = {
 // values (296) can't be too high
 // -it causes too big quant dependence
 // or maybe overflow(check), which results in some flashing
-     71, 296, 295, 237,  71,  40,  38,  19,
-    245, 193, 185, 121, 102,  73,  53,  27,
-    158, 129, 141, 107,  97,  73,  50,  26,
-    102, 116, 109,  98,  82,  66,  45,  23,
-     71,  94,  95,  81,  70,  56,  38,  20,
-     56,  77,  74,  66,  56,  44,  30,  15,
-     38,  53,  50,  45,  38,  30,  21,  11,
-     20,  27,  26,  23,  20,  15,  11,   5
+// reorder coefficients to the order in which columns are processed
+#define REORDER(a,b,c,d,e,f,g,h) c, g, a, e, f, d, b, h
+    REORDER( 71, 296, 295, 237,  71,  40,  38,  19),
+    REORDER(245, 193, 185, 121, 102,  73,  53,  27),
+    REORDER(158, 129, 141, 107,  97,  73,  50,  26),
+    REORDER(102, 116, 109,  98,  82,  66,  45,  23),
+    REORDER( 71,  94,  95,  81,  70,  56,  38,  20),
+    REORDER( 56,  77,  74,  66,  56,  44,  30,  15),
+    REORDER( 38,  53,  50,  45,  38,  30,  21,  11),
+    REORDER( 20,  27,  26,  23,  20,  15,  11,   5)
 };
 
 static void filter(FSPPContext *p, uint8_t *dst, uint8_t *src,
@@ -244,25 +246,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     int qp_stride = 0;
     int8_t *qp_table = NULL;
-    int i, bias;
     int ret = 0;
-    int custom_threshold_m[64];
 
-    bias = (1 << 4) + fspp->strength;
-
-    for (i = 0; i < 64; i++) //FIXME: tune custom_threshold[] and remove this !
-        custom_threshold_m[i] = (int)(custom_threshold[i] * (bias / 71.0) + 0.5);
-
-    for (int i = 0; i < 64; i += 8) {
-        fspp->threshold_mtx_noq[i + 0] = custom_threshold_m[i + 2];
-        fspp->threshold_mtx_noq[i + 1] = custom_threshold_m[i + 6];
-        fspp->threshold_mtx_noq[i + 2] = custom_threshold_m[i + 0];
-        fspp->threshold_mtx_noq[i + 3] = custom_threshold_m[i + 4];
-        fspp->threshold_mtx_noq[i + 4] = custom_threshold_m[i + 5];
-        fspp->threshold_mtx_noq[i + 5] = custom_threshold_m[i + 3];
-        fspp->threshold_mtx_noq[i + 6] = custom_threshold_m[i + 1];
-        fspp->threshold_mtx_noq[i + 7] = custom_threshold_m[i + 7];
-    }
+    //FIXME: tune custom_threshold[] and remove this !
+    for (int i = 0, bias = (1 << 4) + fspp->strength; i < 64; ++i)
+        fspp->threshold_mtx_noq[i] = (int)(custom_threshold[i] * (bias / 71.0) + 0.5);
 
     if (fspp->qp) {
         fspp->prev_q = fspp->qp;
