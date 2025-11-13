@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
+2025-11-16 - xxxxxxxxxx - lavu 60.18.100 - cpu.h
+  Deprecate AV_CPU_FLAG_FORCE without replacement.
+
 2025-11-01 - xxxxxxxxxx - lavc 62.19.100 - avcodec.h
   Schedule AVCodecParser and av_parser_init() to use enum AVCodecID
   for codec ids on the next major version bump.

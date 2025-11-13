@@ -24,7 +24,9 @@
 #include <stddef.h>
 #include "version.h"
 
-#define AV_CPU_FLAG_FORCE    0x80000000 /* force usage of selected flags (OR) */
+#if FF_API_CPU_FLAG_FORCE
+#define AV_CPU_FLAG_FORCE    0x80000000 /* @deprecated, should not be used */
+#endif
 
     /* lower 16 bits - CPU features */
 #define AV_CPU_FLAG_MMX          0x0001 ///< standard MMX
