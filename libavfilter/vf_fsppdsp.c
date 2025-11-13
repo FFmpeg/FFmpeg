@@ -165,7 +165,7 @@ void ff_column_fidct_c(const int16_t *restrict thr_adr, const int16_t *restrict 
             d0 = tmp10 + tmp11;
             d4 = tmp10 - tmp11;
 
-            z1 = MULTIPLY16H((tmp12 + tmp13) << 2, FIX_0_707106781);
+            z1 = MULTIPLY16H(tmp12 + tmp13, FIX_0_707106781 << 2);
             d2 = tmp13 + z1;
             d6 = tmp13 - z1;
 
@@ -193,10 +193,10 @@ void ff_column_fidct_c(const int16_t *restrict thr_adr, const int16_t *restrict 
             tmp11 = tmp5 + tmp6;
             tmp12 = tmp6 + tmp7;
 
-            z5 = MULTIPLY16H((tmp10 - tmp12) << 2, FIX_0_382683433);
-            z2 = MULTIPLY16H(tmp10 << 2, FIX_0_541196100) + z5;
-            z4 = MULTIPLY16H(tmp12 << 2, FIX_1_306562965) + z5;
-            z3 = MULTIPLY16H(tmp11 << 2, FIX_0_707106781);
+            z5 = MULTIPLY16H(tmp10 - tmp12, FIX_0_382683433 << 2);
+            z2 = MULTIPLY16H(tmp10, FIX_0_541196100 << 2) + z5;
+            z4 = MULTIPLY16H(tmp12, FIX_1_306562965 << 2) + z5;
+            z3 = MULTIPLY16H(tmp11, FIX_0_707106781 << 2);
 
             z11 = tmp7 + z3;
             z13 = tmp7 - z3;
@@ -215,15 +215,15 @@ void ff_column_fidct_c(const int16_t *restrict thr_adr, const int16_t *restrict 
 
             //Simd version uses here a shortcut for the tmp5,tmp6,tmp7 == 0
             z13 = tmp6 + tmp5;
-            z10 = (tmp6 - tmp5) << 1;
+            z10 = (tmp6 - tmp5) * 2;
             z11 = tmp4 + tmp7;
-            z12 = (tmp4 - tmp7) << 1;
+            z12 = (tmp4 - tmp7) * 2;
 
             tmp7  = (z11 + z13) >> 2; //+2 !
-            tmp11 = MULTIPLY16H((z11 - z13) << 1, FIX_1_414213562);
-            z5    = MULTIPLY16H(z10 + z12,        FIX_1_847759065);
-            tmp10 = MULTIPLY16H(z12,              FIX_1_082392200) - z5;
-            tmp12 = MULTIPLY16H(z10,              FIX_2_613125930) + z5; // - !!
+            tmp11 = MULTIPLY16H(z11 - z13, FIX_1_414213562 << 1);
+            z5    = MULTIPLY16H(z10 + z12, FIX_1_847759065);
+            tmp10 = MULTIPLY16H(z12,       FIX_1_082392200) - z5;
+            tmp12 = MULTIPLY16H(z10,       FIX_2_613125930) + z5; // - !!
 
             tmp6 = tmp12 - tmp7;
             tmp5 = tmp11 - tmp6;
@@ -264,7 +264,7 @@ void ff_row_idct_c(const int16_t *restrict wsptr, int16_t *restrict output_adr,
         tmp11 = wsptr[2] -  wsptr[3];
 
         tmp13 = wsptr[0] +  wsptr[1];
-        tmp12 = (MULTIPLY16H(wsptr[0] - wsptr[1], FIX_1_414213562_A) << 2) - tmp13;//this shift order to avoid overflow
+        tmp12 = (MULTIPLY16H(wsptr[0] - wsptr[1], FIX_1_414213562_A) * 4) - tmp13;//this shift order to avoid overflow
 
         tmp0 = tmp10 + tmp13; //->temps
         tmp3 = tmp10 - tmp13; //->temps
@@ -289,9 +289,9 @@ void ff_row_idct_c(const int16_t *restrict wsptr, int16_t *restrict output_adr,
         tmp10 = MULTIPLY16H(z12,       FIX_1_082392200) - z5;
         tmp12 = MULTIPLY16H(z10,       FIX_2_613125930) + z5; // - FIX_
 
-        tmp6 = (tmp12 << 3) - tmp7;
-        tmp5 = (tmp11 << 3) - tmp6;
-        tmp4 = (tmp10 << 3) + tmp5;
+        tmp6 = tmp12 * 8 - tmp7;
+        tmp5 = tmp11 * 8 - tmp6;
+        tmp4 = tmp10 * 8 + tmp5;
 
         // Final output stage: descale and write column
         outptr[0 * output_stride] += DESCALE(tmp0 + tmp7, 3);
@@ -342,20 +342,20 @@ void ff_row_fdct_c(int16_t *restrict data, const uint8_t *restrict pixels,
         dataptr[2] = tmp10 + tmp11;
         dataptr[3] = tmp10 - tmp11;
 
-        z1 = MULTIPLY16H((tmp12 + tmp13) << 2, FIX_0_707106781);
+        z1 = MULTIPLY16H(tmp12 + tmp13, FIX_0_707106781 << 2);
         dataptr[0] = tmp13 + z1;
         dataptr[1] = tmp13 - z1;
 
         // Odd part
 
-        tmp10 = (tmp4 + tmp5) << 2;
-        tmp11 = (tmp5 + tmp6) << 2;
-        tmp12 = (tmp6 + tmp7) << 2;
+        tmp10 = tmp4 + tmp5;
+        tmp11 = tmp5 + tmp6;
+        tmp12 = tmp6 + tmp7;
 
-        z5 = MULTIPLY16H(tmp10 - tmp12, FIX_0_382683433);
-        z2 = MULTIPLY16H(tmp10,         FIX_0_541196100) + z5;
-        z4 = MULTIPLY16H(tmp12,         FIX_1_306562965) + z5;
-        z3 = MULTIPLY16H(tmp11,         FIX_0_707106781);
+        z5 = MULTIPLY16H(tmp10 - tmp12, FIX_0_382683433 << 2);
+        z2 = MULTIPLY16H(tmp10,         FIX_0_541196100 << 2) + z5;
+        z4 = MULTIPLY16H(tmp12,         FIX_1_306562965 << 2) + z5;
+        z3 = MULTIPLY16H(tmp11,         FIX_0_707106781 << 2);
 
         z11 = tmp7 + z3;
         z13 = tmp7 - z3;
