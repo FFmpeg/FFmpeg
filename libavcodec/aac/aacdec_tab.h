@@ -50,6 +50,33 @@ extern const uint8_t ff_aac_channel_layout_map[16][16][3];
 extern const int16_t ff_aac_channel_map[3][4][6];
 
 extern const AVChannelLayout ff_aac_ch_layout[];
+
+extern const int16_t ff_aac_hcod_firstband_CLD[30][2];
+extern const int16_t ff_aac_hcod1D_CLD[2 /* DT_/DF_ */][30][2];
+extern const int16_t ff_aac_hcod2D_CLD_03[2 /* _TP/_FP */ ][2 /* DT_/DF_ */ ][15][2];
+extern const int16_t ff_aac_hcod2D_CLD_05[2 /* _TP/_FP */ ][2 /* DT_/DF_ */ ][35][2];
+extern const int16_t ff_aac_hcod2D_CLD_07[2 /* _TP/_FP */ ][2 /* DT_/DF_ */ ][63][2];
+extern const int16_t ff_aac_hcod2D_CLD_09[2 /* _TP/_FP */ ][2 /* DT_/DF_ */ ][99][2];
+
+extern const int16_t ff_aac_hcod_firstband_ICC[7][2];
+extern const int16_t ff_aac_hcod1D_ICC[7][2];
+extern const int16_t ff_aac_hcod2D_ICC_01[2 /* _TP/_FP */ ][2 /* DT_/DF_ */ ][3][2];
+extern const int16_t ff_aac_hcod2D_ICC_03[2 /* _TP/_FP */ ][2 /* DT_/DF_ */ ][15][2];
+extern const int16_t ff_aac_hcod2D_ICC_05[2 /* _TP/_FP */ ][2 /* DT_/DF_ */ ][35][2];
+extern const int16_t ff_aac_hcod2D_ICC_07[2 /* _TP/_FP */ ][2 /* DT_/DF_ */ ][63][2];
+
+extern const int16_t ff_aac_hcod_firstband_IPD[7][2];
+extern const int16_t ff_aac_hcod1D_IPD[2 /* DF, DT */ ][7][2];
+extern const int16_t ff_aac_hcod2D_IPD_01[2 /* _TP/_FP */ ][2 /* DT_/DF_ */ ][3][2];
+extern const int16_t ff_aac_hcod2D_IPD_03[2 /* _TP/_FP */ ][2 /* DT_/DF_ */ ][15][2];
+extern const int16_t ff_aac_hcod2D_IPD_05[2 /* _TP/_FP */ ][2 /* DT_/DF_ */ ][35][2];
+extern const int16_t ff_aac_hcod2D_IPD_07[2 /* _TP/_FP */ ][2 /* DT_/DF_ */ ][63][2];
+
+extern const int16_t ff_aac_hcod_lav_idx[3][2];
+
+extern const int16_t ff_aac_hcod2D_reshape[39][2];
+
+extern const uint8_t ff_aac_lav_tab_XXX[3][4];
 FF_VISIBILITY_POP_HIDDEN
 
 #endif /* AVCODEC_AAC_AACDEC_TAB_H */
