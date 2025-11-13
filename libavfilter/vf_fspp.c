@@ -37,6 +37,7 @@
 
 #include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
@@ -71,8 +72,8 @@ typedef struct FSPPContext {
 
     FSPPDSPContext dsp;
 
-    DECLARE_ALIGNED(16, uint64_t, threshold_mtx_noq)[8 * 2];
-    DECLARE_ALIGNED(16, uint64_t, threshold_mtx)[8 * 2];
+    DECLARE_ALIGNED(16, int16_t, threshold_mtx_noq)[8 * 8];
+    DECLARE_ALIGNED(16, int16_t, threshold_mtx)[8 * 8];
 } FSPPContext;
 
 
@@ -154,7 +155,7 @@ static void filter(FSPPContext *p, uint8_t *dst, uint8_t *src,
             p->dsp.row_fdct(block + 8 * 8, p->src + y * stride + 8 + x0 + 2 - (y&1), stride, 2 * (BLOCKSZ - 1));
 
             if (p->qp)
-                p->dsp.column_fidct((int16_t *)(&p->threshold_mtx[0]), block + 0 * 8, block3 + 0 * 8, 8 * (BLOCKSZ - 1)); //yes, this is a HOTSPOT
+                p->dsp.column_fidct(p->threshold_mtx, block + 0 * 8, block3 + 0 * 8, 8 * (BLOCKSZ - 1)); //yes, this is a HOTSPOT
             else
                 for (x = 0; x < 8 * (BLOCKSZ - 1); x += 8) {
                     t = x + x0 - 2;                    //correct t=x+x0-2-(y&1), but its the same
@@ -164,8 +165,11 @@ static void filter(FSPPContext *p, uint8_t *dst, uint8_t *src,
                     t = qp_store[qy + (t >> qpsh)];
                     t = ff_norm_qscale(t, p->qscale_type);
 
-                    if (t != p->prev_q) p->prev_q = t, p->dsp.mul_thrmat((int16_t *)(&p->threshold_mtx_noq[0]), (int16_t *)(&p->threshold_mtx[0]), t);
-                    p->dsp.column_fidct((int16_t *)(&p->threshold_mtx[0]), block + x * 8, block3 + x * 8, 8); //yes, this is a HOTSPOT
+                    if (t != p->prev_q) {
+                        p->prev_q = t;
+                        p->dsp.mul_thrmat(p->threshold_mtx_noq, p->threshold_mtx, t);
+                    }
+                    p->dsp.column_fidct(p->threshold_mtx, block + x * 8, block3 + x * 8, 8); //yes, this is a HOTSPOT
                 }
             p->dsp.row_idct(block3 + 0 * 8, p->temp + (y & 15) * stride + x0 + 2 - (y & 1), stride, 2 * (BLOCKSZ - 1));
             memmove(block,  block  + (BLOCKSZ - 1) * 64, 8 * 8 * sizeof(int16_t)); //cycling
@@ -176,7 +180,7 @@ static void filter(FSPPContext *p, uint8_t *dst, uint8_t *src,
         if (es > 8)
             p->dsp.row_fdct(block + 8 * 8, p->src + y * stride + 8 + x0 + 2 - (y & 1), stride, (es - 4) >> 2);
 
-        p->dsp.column_fidct((int16_t *)(&p->threshold_mtx[0]), block, block3, es&(~1));
+        p->dsp.column_fidct(p->threshold_mtx, block, block3, es&(~1));
         if (es > 3)
             p->dsp.row_idct(block3 + 0 * 8, p->temp + (y & 15) * stride + x0 + 2 - (y & 1), stride, es >> 2);
 
@@ -251,19 +255,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         custom_threshold_m[i] = (int)(custom_threshold[i] * (bias / 71.0) + 0.5);
 
     for (i = 0; i < 8; i++) {
-        fspp->threshold_mtx_noq[2 * i] = (uint64_t)custom_threshold_m[i * 8 + 2]
+        AV_WN64A(&fspp->threshold_mtx_noq[8 * i], (uint64_t)custom_threshold_m[i * 8 + 2]
                                       |(((uint64_t)custom_threshold_m[i * 8 + 6]) << 16)
                                       |(((uint64_t)custom_threshold_m[i * 8 + 0]) << 32)
-                                      |(((uint64_t)custom_threshold_m[i * 8 + 4]) << 48);
+                                      |(((uint64_t)custom_threshold_m[i * 8 + 4]) << 48));
 
-        fspp->threshold_mtx_noq[2 * i + 1] = (uint64_t)custom_threshold_m[i * 8 + 5]
+        AV_WN64A(&fspp->threshold_mtx_noq[8 * i + 4], (uint64_t)custom_threshold_m[i * 8 + 5]
                                           |(((uint64_t)custom_threshold_m[i * 8 + 3]) << 16)
                                           |(((uint64_t)custom_threshold_m[i * 8 + 1]) << 32)
-                                          |(((uint64_t)custom_threshold_m[i * 8 + 7]) << 48);
+                                          |(((uint64_t)custom_threshold_m[i * 8 + 7]) << 48));
     }
 
-    if (fspp->qp)
-        fspp->prev_q = fspp->qp, fspp->dsp.mul_thrmat((int16_t *)(&fspp->threshold_mtx_noq[0]), (int16_t *)(&fspp->threshold_mtx[0]), fspp->qp);
+    if (fspp->qp) {
+        fspp->prev_q = fspp->qp;
+        fspp->dsp.mul_thrmat(fspp->threshold_mtx_noq, fspp->threshold_mtx, fspp->qp);
+    }
 
     /* if we are not in a constant user quantizer mode and we don't want to use
      * the quantizers from the B-frames (B-frames often have a higher QP), we
