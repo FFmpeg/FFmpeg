@@ -42,41 +42,52 @@ targets and variables.
 
 @chapter Using FATE from your FFmpeg source directory
 
-If you want to run FATE on your machine you need to have the samples
-in place. You can get the samples via the build target fate-rsync.
-Use this command from the top-level source directory:
+If you want to run FATE on your machine, FFmpeg needs to be configured first.
+You may specify the location of samples during configuration by adding the
+argument @code{--samples=/path/to/fate-suite}.
 
 @example
-make fate-rsync SAMPLES=fate-suite/
-make fate       SAMPLES=fate-suite/
+./configure --enable-somelib --samples=/path/to/fate-suite
 @end example
 
-The above commands set the samples location by passing a makefile
-variable via command line. It is also possible to set the samples
-location at source configuration time by invoking configure with
-@option{--samples=<path to the samples directory>}. Afterwards you can
-invoke the makefile targets without setting the @var{SAMPLES} makefile
-variable. This is illustrated by the following commands:
+After successful configuration, you need to add and/or update the samples in place:
 
 @example
-./configure --samples=fate-suite/
 make fate-rsync
+@end example
+
+Now you are ready to run FATE:
+
+@example
 make fate
 @end example
 
-Yet another way to tell FATE about the location of the sample
-directory is by making sure the environment variable FATE_SAMPLES
-contains the path to your samples directory. This can be achieved
-by e.g. putting that variable in your shell profile or by setting
-it in your interactive session.
+See @ref{makefile variables} for a list of arguments that can be added.
+
+If you did not set the samples path during configuration, or if you wish to
+override it just before starting FATE, you can do so in one of two ways.
+
+Either by setting a make variable:
 
 @example
-FATE_SAMPLES=fate-suite/ make fate
+make fate-rsync SAMPLES=/path/to/fate-suite
+make fate       SAMPLES=/path/to/fate-suite
 @end example
+
+or by prepending an environment variable:
+
+@example
+FATE_SAMPLES=/path/to/fate-suite make fate-rsync
+FATE_SAMPLES=/path/to/fate-suite make fate
+@end example
+
+This variable can also be set in your shell profile to make it permanent.
 
 @float NOTE
 Do not put a '~' character in the samples path to indicate a home
 directory. Because of shell nuances, this will cause FATE to fail.
+Also, on Windows the path has to be relative to the build path
+which in this case is the FFmpeg source directory.
 @end float
 
 Beware that some assertions are disabled by default, so mind setting
@@ -220,6 +231,7 @@ Run the FATE test suite (requires the fate-suite dataset).
 @end table
 
 @section Makefile variables
+@anchor {makefile variables}
 
 @table @env
 @item V
