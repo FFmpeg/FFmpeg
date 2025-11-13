@@ -1218,7 +1218,7 @@ static void unchoke_downstream(Scheduler *sch, SchedulerNode *dst)
         } else {
             // ensure that this filter graph is not stuck waiting for
             // input from a different upstream demuxer
-            unchoke_for_stream(sch, fg->inputs[fg->best_input].src);
+            unchoke_for_stream(sch, fg->inputs[fg->best_input].src_sched);
         }
         break;
     default:
