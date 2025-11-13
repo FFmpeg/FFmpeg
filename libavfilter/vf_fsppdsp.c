@@ -136,12 +136,11 @@ void ff_column_fidct_c(const int16_t *restrict thr_adr, const int16_t *restrict 
     int_simd16_t d0, d1, d2, d3, d4, d5, d6, d7;
 
     int16_t *wsptr;
-    int16_t *threshold;
 
     wsptr = output;
 
     for (; cnt > 0; cnt -= 2) { //start positions
-        threshold = (int16_t *)thr_adr;//threshold_mtx
+        const int16_t *threshold = thr_adr;//threshold_mtx
         for (int ctr = DCTSIZE; ctr > 0; ctr--) {
             // Process columns from input, add to output.
             tmp0 = data[DCTSIZE * 0] + data[DCTSIZE * 7];
