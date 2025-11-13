@@ -38,7 +38,7 @@ const FFVulkanDecodeDescriptor ff_vk_dec_prores_raw_desc = {
 typedef struct ProResRAWVulkanDecodePicture {
     FFVulkanDecodePicture vp;
 
-    AVBufferRef *tile_data;
+    AVBufferRef *frame_data_buf;
     uint32_t nb_tiles;
 } ProResRAWVulkanDecodePicture;
 
@@ -46,11 +46,10 @@ typedef struct ProResRAWVulkanDecodeContext {
     FFVulkanShader decode;
     FFVulkanShader idct;
 
-    AVBufferPool *tile_data_pool;
+    AVBufferPool *frame_data_pool;
 } ProResRAWVulkanDecodeContext;
 
 typedef struct DecodePushData {
-    VkDeviceAddress tile_data;
     VkDeviceAddress pkt_data;
     int32_t frame_size[2];
     int32_t tile_size[2];
@@ -85,8 +84,8 @@ static int vk_prores_raw_start_frame(AVCodecContext          *avctx,
                               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 
     /* Allocate tile data */
-    err = ff_vk_get_pooled_buffer(&ctx->s, &prv->tile_data_pool,
-                                  &pp->tile_data,
+    err = ff_vk_get_pooled_buffer(&ctx->s, &prv->frame_data_pool,
+                                  &pp->frame_data_buf,
                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                   NULL, prr->nb_tiles*sizeof(TileData),
@@ -113,8 +112,8 @@ static int vk_prores_raw_decode_slice(AVCodecContext *avctx,
     ProResRAWVulkanDecodePicture *pp = prr->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &pp->vp;
 
-    FFVkBuffer *tile_data_buf = (FFVkBuffer *)pp->tile_data->data;
-    TileData *td = (TileData *)tile_data_buf->mapped_mem;
+    FFVkBuffer *frame_data_buf = (FFVkBuffer *)pp->frame_data_buf->data;
+    TileData *td = (TileData *)frame_data_buf->mapped_mem;
     FFVkBuffer *slices_buf = vp->slices_buf ? (FFVkBuffer *)vp->slices_buf->data : NULL;
 
     td[pp->nb_tiles].pos[0] = prr->tiles[pp->nb_tiles].x;
@@ -150,7 +149,7 @@ static int vk_prores_raw_end_frame(AVCodecContext *avctx)
     FFVulkanDecodePicture *vp = &pp->vp;
 
     FFVkBuffer *slices_buf = (FFVkBuffer *)vp->slices_buf->data;
-    FFVkBuffer *tile_data = (FFVkBuffer *)pp->tile_data->data;
+    FFVkBuffer *frame_data_buf = (FFVkBuffer *)pp->frame_data_buf->data;
 
     VkImageMemoryBarrier2 img_bar[8];
     int nb_img_bar = 0;
@@ -168,8 +167,8 @@ static int vk_prores_raw_end_frame(AVCodecContext *avctx)
     if (err < 0)
         return err;
 
-    RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &pp->tile_data, 1, 0));
-    pp->tile_data = NULL;
+    RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &pp->frame_data_buf, 1, 0));
+    pp->frame_data_buf = NULL;
     RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &vp->slices_buf, 1, 0));
     vp->slices_buf = NULL;
 
@@ -220,12 +219,16 @@ static int vk_prores_raw_end_frame(AVCodecContext *avctx)
                                   0, 0,
                                   VK_IMAGE_LAYOUT_GENERAL,
                                   VK_NULL_HANDLE);
+    ff_vk_shader_update_desc_buffer(&ctx->s, exec, decode_shader,
+                                    0, 1, 0,
+                                    frame_data_buf,
+                                    0, prr->nb_tiles*sizeof(TileData),
+                                    VK_FORMAT_UNDEFINED);
 
     ff_vk_exec_bind_shader(&ctx->s, exec, decode_shader);
 
     /* Update push data */
     DecodePushData pd_decode = (DecodePushData) {
-        .tile_data = tile_data->address,
         .pkt_data = slices_buf->address,
         .frame_size[0] = avctx->width,
         .frame_size[1] = avctx->height,
@@ -253,6 +256,11 @@ static int vk_prores_raw_end_frame(AVCodecContext *avctx)
                                   0, 0,
                                   VK_IMAGE_LAYOUT_GENERAL,
                                   VK_NULL_HANDLE);
+    ff_vk_shader_update_desc_buffer(&ctx->s, exec, idct_shader,
+                                    0, 1, 0,
+                                    frame_data_buf,
+                                    0, prr->nb_tiles*sizeof(TileData),
+                                    VK_FORMAT_UNDEFINED);
     ff_vk_exec_bind_shader(&ctx->s, exec, idct_shader);
     ff_vk_shader_update_push_const(&ctx->s, exec, idct_shader,
                                    VK_SHADER_STAGE_COMPUTE_BIT,
@@ -284,14 +292,13 @@ static int add_common_data(AVCodecContext *avctx, FFVulkanContext *s,
     /* Common codec header */
     GLSLD(ff_source_common_comp);
 
-    GLSLC(0, layout(buffer_reference, buffer_reference_align = 16) buffer TileData { );
+    GLSLC(0, struct TileData {                                                       );
     GLSLC(1,    ivec2 pos;                                                           );
     GLSLC(1,    uint offset;                                                         );
     GLSLC(1,    uint size;                                                           );
     GLSLC(0, };                                                                      );
     GLSLC(0,                                                                         );
     GLSLC(0, layout(push_constant, scalar) uniform pushConstants {                   );
-    GLSLC(1,    TileData tile_data;                                                  );
     GLSLC(1,    u8buf pkt_data;                                                      );
     GLSLC(1,    ivec2 frame_size;                                                    );
     GLSLC(1,    ivec2 tile_size;                                                     );
@@ -312,9 +319,17 @@ static int add_common_data(AVCodecContext *avctx, FFVulkanContext *s,
             .dimensions = 2,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
         },
+        {
+            .name        = "frame_data_buf",
+            .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
+            .mem_layout  = "scalar",
+            .mem_quali   = "readonly",
+            .buf_content = "TileData tile_data[];",
+        },
     };
 
-    return ff_vk_shader_add_descriptor_set(s, shd, desc_set, 1, 0, 0);
+    return ff_vk_shader_add_descriptor_set(s, shd, desc_set, 2, 0, 0);
 }
 
 static int init_decode_shader(AVCodecContext *avctx, FFVulkanContext *s,
@@ -392,7 +407,7 @@ static void vk_decode_prores_raw_uninit(FFVulkanDecodeShared *ctx)
     ff_vk_shader_free(&ctx->s, &fv->decode);
     ff_vk_shader_free(&ctx->s, &fv->idct);
 
-    av_buffer_pool_uninit(&fv->tile_data_pool);
+    av_buffer_pool_uninit(&fv->frame_data_pool);
 
     av_freep(&fv);
 }
@@ -442,6 +457,8 @@ static void vk_prores_raw_free_frame_priv(AVRefStructOpaque _hwctx, void *data)
     FFVulkanDecodePicture *vp = &pp->vp;
 
     ff_vk_decode_free_frame(dev_ctx, vp);
+
+    av_buffer_unref(&pp->frame_data_buf);
 }
 
 const FFHWAccel ff_prores_raw_vulkan_hwaccel = {
