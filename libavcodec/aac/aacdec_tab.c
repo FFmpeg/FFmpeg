@@ -258,16 +258,32 @@ static const int8_t sbr_vlc_offsets[10] = {
     -60, -60, -24, -24, -31, -31, -12, -12, -31, -12
 };
 
+
 const VLCElem *ff_aac_sbr_vlc[10];
 
-static av_cold void aacdec_common_init(void)
+static av_cold void init_sbr_tables(void)
 {
-    static VLCElem vlc_buf[(304 + 270 + 550 + 300 + 328 +
-                            294 + 306 + 268 + 510 + 366 + 462) +
-                           (1098 + 1092 + 768 + 1026 + 1058 +
+    static VLCElem vlc_buf[(1098 + 1092 + 768 + 1026 + 1058 +
                             1052 +  544 + 544 +  592 + 512)];
     VLCInitState state = VLC_INIT_STATE(vlc_buf);
     const uint8_t (*tab)[2] = sbr_huffman_tab;
+
+    // SBR VLC table initialization
+    for (int i = 0; i < FF_ARRAY_ELEMS(ff_aac_sbr_vlc); i++) {
+        ff_aac_sbr_vlc[i] =
+            ff_vlc_init_tables_from_lengths(&state, 9, sbr_huffman_nb_codes[i],
+                                            &tab[0][1], 2,
+                                            &tab[0][0], 2, 1,
+                                            sbr_vlc_offsets[i], 0);
+        tab += sbr_huffman_nb_codes[i];
+    }
+}
+
+static av_cold void init_base_tables(void)
+{
+    static VLCElem vlc_buf[(304 + 270 + 550 + 300 + 328 +
+                            294 + 306 + 268 + 510 + 366 + 462)];
+    VLCInitState state = VLC_INIT_STATE(vlc_buf);
 
     for (unsigned i = 0; i < 11; i++) {
 #define TAB_WRAP_SIZE(name) name[i], sizeof(name[i][0]), sizeof(name[i][0])
@@ -287,17 +303,12 @@ static av_cold void aacdec_common_init(void)
                           ff_aac_scalefactor_code,
                           sizeof(ff_aac_scalefactor_code[0]),
                           sizeof(ff_aac_scalefactor_code[0]), 0);
+}
 
-    // SBR VLC table initialization
-    for (int i = 0; i < FF_ARRAY_ELEMS(ff_aac_sbr_vlc); i++) {
-        ff_aac_sbr_vlc[i] =
-            ff_vlc_init_tables_from_lengths(&state, 9, sbr_huffman_nb_codes[i],
-                                            &tab[0][1], 2,
-                                            &tab[0][0], 2, 1,
-                                            sbr_vlc_offsets[i], 0);
-        tab += sbr_huffman_nb_codes[i];
-    }
-
+static av_cold void aacdec_common_init(void)
+{
+    init_base_tables();
+    init_sbr_tables();
     ff_ps_init_common();
 }
 
