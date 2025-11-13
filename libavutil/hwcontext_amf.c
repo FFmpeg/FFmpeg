@@ -39,6 +39,7 @@
 #include "pixdesc.h"
 #include "pixfmt.h"
 #include "imgutils.h"
+#include "thread.h"
 #include "libavutil/avassert.h"
 #include <AMF/core/Surface.h>
 #include <AMF/core/Trace.h>
@@ -49,6 +50,15 @@
 #endif
 #define FFMPEG_AMF_WRITER_ID L"ffmpeg_amf"
 
+static void amf_lock_default(void *opaque)
+{
+    ff_mutex_lock((AVMutex*)opaque);
+}
+
+static void amf_unlock_default(void *opaque)
+{
+    ff_mutex_unlock((AVMutex*)opaque);
+}
 
 typedef struct AmfTraceWriter {
     AMFTraceWriterVtbl *vtblp;
@@ -352,7 +362,7 @@ static int amf_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
 
 static void amf_device_uninit(AVHWDeviceContext *device_ctx)
 {
-    AVAMFDeviceContext      *amf_ctx = device_ctx->hwctx;
+    AVAMFDeviceContext *amf_ctx = device_ctx->hwctx;
     AMF_RESULT          res = AMF_NOT_INITIALIZED;
     AMFTrace           *trace;
 
@@ -377,8 +387,14 @@ static void amf_device_uninit(AVHWDeviceContext *device_ctx)
         amf_writer_free(amf_ctx->trace_writer);
     }
 
+    if (amf_ctx->lock_ctx == amf_lock_default) {
+        ff_mutex_destroy((AVMutex*)amf_ctx->lock_ctx);
+        av_freep(&amf_ctx->lock_ctx);
+        amf_ctx->lock = NULL;
+        amf_ctx->unlock = NULL;
+    }
+
     amf_ctx->version = 0;
-    ff_mutex_destroy(&amf_ctx->mutex);
 }
 
 static int amf_device_init(AVHWDeviceContext *ctx)
@@ -386,6 +402,16 @@ static int amf_device_init(AVHWDeviceContext *ctx)
     AVAMFDeviceContext *amf_ctx = ctx->hwctx;
     AMFContext1 *context1 = NULL;
     AMF_RESULT res;
+
+    if (!amf_ctx->lock) {
+        amf_ctx->lock_ctx = av_mallocz(sizeof(AVMutex));
+        if (!amf_ctx->lock_ctx) {
+            return AVERROR(ENOMEM);
+        }
+        ff_mutex_init((AVMutex*)amf_ctx->lock_ctx, NULL);
+        amf_ctx->lock   = amf_lock_default;
+        amf_ctx->unlock = amf_unlock_default;
+    }
 
 #ifdef _WIN32
     res = amf_ctx->context->pVtbl->InitDX11(amf_ctx->context, NULL, AMF_DX11_1);
@@ -415,7 +441,7 @@ static int amf_device_init(AVHWDeviceContext *ctx)
         }
      }
 #endif
-    ff_mutex_init(&amf_ctx->mutex, NULL);
+
     return 0;
 }
 

@@ -564,9 +564,11 @@ static int amf_submit_frame_locked(AVCodecContext *avctx, AVFrame *frame, AMFSur
     AVHWDeviceContext     *hw_device_ctx = (AVHWDeviceContext*)ctx->device_ctx_ref->data;
     AVAMFDeviceContext    *amf_device_ctx = (AVAMFDeviceContext *)hw_device_ctx->hwctx;
 
-    ff_mutex_lock(&amf_device_ctx->mutex);
+    if (amf_device_ctx->lock)
+        amf_device_ctx->lock(amf_device_ctx->lock_ctx);
     ret = amf_submit_frame(avctx, frame, surface_resubmit);
-    ff_mutex_unlock(&amf_device_ctx->mutex);
+    if (amf_device_ctx->unlock)
+        amf_device_ctx->unlock(amf_device_ctx->lock_ctx);
 
     return ret;
 }
