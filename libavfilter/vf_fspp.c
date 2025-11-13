@@ -37,7 +37,6 @@
 
 #include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
@@ -254,16 +253,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (i = 0; i < 64; i++) //FIXME: tune custom_threshold[] and remove this !
         custom_threshold_m[i] = (int)(custom_threshold[i] * (bias / 71.0) + 0.5);
 
-    for (i = 0; i < 8; i++) {
-        AV_WN64A(&fspp->threshold_mtx_noq[8 * i], (uint64_t)custom_threshold_m[i * 8 + 2]
-                                      |(((uint64_t)custom_threshold_m[i * 8 + 6]) << 16)
-                                      |(((uint64_t)custom_threshold_m[i * 8 + 0]) << 32)
-                                      |(((uint64_t)custom_threshold_m[i * 8 + 4]) << 48));
-
-        AV_WN64A(&fspp->threshold_mtx_noq[8 * i + 4], (uint64_t)custom_threshold_m[i * 8 + 5]
-                                          |(((uint64_t)custom_threshold_m[i * 8 + 3]) << 16)
-                                          |(((uint64_t)custom_threshold_m[i * 8 + 1]) << 32)
-                                          |(((uint64_t)custom_threshold_m[i * 8 + 7]) << 48));
+    for (int i = 0; i < 64; i += 8) {
+        fspp->threshold_mtx_noq[i + 0] = custom_threshold_m[i + 2];
+        fspp->threshold_mtx_noq[i + 1] = custom_threshold_m[i + 6];
+        fspp->threshold_mtx_noq[i + 2] = custom_threshold_m[i + 0];
+        fspp->threshold_mtx_noq[i + 3] = custom_threshold_m[i + 4];
+        fspp->threshold_mtx_noq[i + 4] = custom_threshold_m[i + 5];
+        fspp->threshold_mtx_noq[i + 5] = custom_threshold_m[i + 3];
+        fspp->threshold_mtx_noq[i + 6] = custom_threshold_m[i + 1];
+        fspp->threshold_mtx_noq[i + 7] = custom_threshold_m[i + 7];
     }
 
     if (fspp->qp) {
