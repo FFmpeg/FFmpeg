@@ -43,7 +43,6 @@
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     ProResRAWContext *s = avctx->priv_data;
-    uint8_t idct_permutation[64];
 
     avctx->bits_per_raw_sample = 12;
     avctx->color_primaries = AVCOL_PRI_UNSPECIFIED;
@@ -55,10 +54,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_blockdsp_init(&s->bdsp);
     ff_proresdsp_init(&s->prodsp, avctx->bits_per_raw_sample);
 
-    ff_init_scantable_permutation(idct_permutation,
-                                  s->prodsp.idct_permutation_type);
-
-    ff_permute_scantable(s->scan, ff_prores_interlaced_scan, idct_permutation);
+    ff_permute_scantable(s->scan, ff_prores_interlaced_scan, s->prodsp.idct_permutation);
 
     return 0;
 }
