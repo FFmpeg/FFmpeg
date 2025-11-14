@@ -1670,7 +1670,6 @@ static int measure_text(AVFilterContext *ctx, TextMetrics *metrics)
     DrawTextContext *s = ctx->priv;
     char *text = s->expanded_text.str;
     char *textdup = NULL, *start = NULL;
-    int num_chars = 0;
     int width64 = 0, w64 = 0;
     int cur_min_y64 = 0, first_max_y64 = -32000;
     int first_min_x64 = 32000, last_max_x64 = -32000;
@@ -1733,7 +1732,7 @@ continue_on_failed2:
             TextLine *cur_line = &s->lines[line_count];
             HarfbuzzData *hb = &cur_line->hb_data;
             cur_line->cluster_offset = line_offset;
-            ret = shape_text_hb(s, hb, start, num_chars);
+            ret = shape_text_hb(s, hb, start, p - start);
             if (ret != 0) {
                 goto done;
             }
@@ -1791,14 +1790,12 @@ continue_on_failed2:
             if (w64 > width64) {
                 width64 = w64;
             }
-            num_chars = -1;
             start = p;
             ++line_count;
             line_offset = i + 1;
         }
 
         if (code == 0) break;
-        ++num_chars;
     }
 
     metrics->line_height64 = s->face->size->metrics.height;
