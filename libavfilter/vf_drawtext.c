@@ -1394,7 +1394,7 @@ static int measure_text(AVFilterContext *ctx, TextMetrics *metrics)
 {
     DrawTextContext *s = ctx->priv;
     char *text = s->expanded_text.str;
-    char *textdup = NULL, *start = NULL;
+    char *textdup = NULL;
     int width64 = 0, w64 = 0;
     int cur_min_y64 = 0, first_max_y64 = -32000;
     int first_min_x64 = 32000, last_max_x64 = -32000;
@@ -1404,7 +1404,7 @@ static int measure_text(AVFilterContext *ctx, TextMetrics *metrics)
     Glyph *glyph = NULL;
 
     int i, tab_idx = 0, last_tab_idx = 0, line_offset = 0;
-    char* p;
+    uint8_t *start, *p;
     int ret = 0;
 
     // Count the lines and the tab characters
