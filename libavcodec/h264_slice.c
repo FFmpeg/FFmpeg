@@ -1150,7 +1150,7 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
         if (flush_changes)
             ff_h264_flush_change(h);
 
-        if ((ret = get_pixel_format(h, 1)) < 0)
+        if ((ret = get_pixel_format(h, must_reinit || needs_reinit)) < 0)
             return ret;
         h->avctx->pix_fmt = ret;
 
