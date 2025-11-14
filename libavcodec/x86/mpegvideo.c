@@ -30,8 +30,8 @@
 
 #if HAVE_MMX_INLINE
 
-static void dct_unquantize_h263_intra_mmx(MpegEncContext *s,
-                                  int16_t *block, int n, int qscale)
+static void dct_unquantize_h263_intra_mmx(const MPVContext *s,
+                                          int16_t *block, int n, int qscale)
 {
     x86_reg level, qmul, qadd, nCoeffs;
 
@@ -105,8 +105,8 @@ __asm__ volatile(
 }
 
 
-static void dct_unquantize_h263_inter_mmx(MpegEncContext *s,
-                                  int16_t *block, int n, int qscale)
+static void dct_unquantize_h263_inter_mmx(const MPVContext *s,
+                                          int16_t *block, int n, int qscale)
 {
     x86_reg qmul, qadd, nCoeffs;
 
@@ -166,8 +166,8 @@ __asm__ volatile(
         );
 }
 
-static void dct_unquantize_mpeg1_intra_mmx(MpegEncContext *s,
-                                     int16_t *block, int n, int qscale)
+static void dct_unquantize_mpeg1_intra_mmx(const MPVContext *s,
+                                           int16_t *block, int n, int qscale)
 {
     x86_reg nCoeffs;
     const uint16_t *quant_matrix;
@@ -235,8 +235,8 @@ __asm__ volatile(
     block[0]= block0;
 }
 
-static void dct_unquantize_mpeg1_inter_mmx(MpegEncContext *s,
-                                     int16_t *block, int n, int qscale)
+static void dct_unquantize_mpeg1_inter_mmx(const MPVContext *s,
+                                           int16_t *block, int n, int qscale)
 {
     x86_reg nCoeffs;
     const uint16_t *quant_matrix;
@@ -301,8 +301,8 @@ __asm__ volatile(
         );
 }
 
-static void dct_unquantize_mpeg2_intra_mmx(MpegEncContext *s,
-                                     int16_t *block, int n, int qscale)
+static void dct_unquantize_mpeg2_intra_mmx(const MPVContext *s,
+                                           int16_t *block, int n, int qscale)
 {
     x86_reg nCoeffs;
     const uint16_t *quant_matrix;
@@ -369,8 +369,8 @@ __asm__ volatile(
         //Note, we do not do mismatch control for intra as errors cannot accumulate
 }
 
-static void dct_unquantize_mpeg2_inter_mmx(MpegEncContext *s,
-                                     int16_t *block, int n, int qscale)
+static void dct_unquantize_mpeg2_inter_mmx(const MPVContext *s,
+                                           int16_t *block, int n, int qscale)
 {
     x86_reg nCoeffs;
     const uint16_t *quant_matrix;

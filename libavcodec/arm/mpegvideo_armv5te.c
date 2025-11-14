@@ -50,8 +50,8 @@ static inline void dct_unquantize_h263_helper_c(int16_t *block, int qmul, int qa
 }
 #endif
 
-static void dct_unquantize_h263_intra_armv5te(MpegEncContext *s,
-                                  int16_t *block, int n, int qscale)
+static void dct_unquantize_h263_intra_armv5te(const MPVContext *s,
+                                              int16_t *block, int n, int qscale)
 {
     int level, qmul, qadd;
     int nCoeffs;
@@ -79,8 +79,8 @@ static void dct_unquantize_h263_intra_armv5te(MpegEncContext *s,
     block[0] = level;
 }
 
-static void dct_unquantize_h263_inter_armv5te(MpegEncContext *s,
-                                  int16_t *block, int n, int qscale)
+static void dct_unquantize_h263_inter_armv5te(const MPVContext *s,
+                                              int16_t *block, int n, int qscale)
 {
     int qmul, qadd;
     int nCoeffs;

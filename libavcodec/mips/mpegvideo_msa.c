@@ -194,7 +194,7 @@ static int32_t mpeg2_dct_unquantize_inter_msa(int16_t *block,
     return sum_res;
 }
 
-void ff_dct_unquantize_h263_intra_msa(MpegEncContext *s,
+void ff_dct_unquantize_h263_intra_msa(const MPVContext *s,
                                       int16_t *block, int32_t index,
                                       int32_t qscale)
 {
@@ -219,7 +219,7 @@ void ff_dct_unquantize_h263_intra_msa(MpegEncContext *s,
     h263_dct_unquantize_msa(block, qmul, qadd, nCoeffs, 1);
 }
 
-void ff_dct_unquantize_h263_inter_msa(MpegEncContext *s,
+void ff_dct_unquantize_h263_inter_msa(const MPVContext *s,
                                       int16_t *block, int32_t index,
                                       int32_t qscale)
 {
@@ -236,7 +236,7 @@ void ff_dct_unquantize_h263_inter_msa(MpegEncContext *s,
     h263_dct_unquantize_msa(block, qmul, qadd, nCoeffs, 0);
 }
 
-void ff_dct_unquantize_mpeg2_inter_msa(MpegEncContext *s,
+void ff_dct_unquantize_mpeg2_inter_msa(const MPVContext *s,
                                        int16_t *block, int32_t index,
                                        int32_t qscale)
 {

@@ -57,6 +57,8 @@ enum OutputFormat {
     FMT_SPEEDHQ,
 };
 
+typedef struct MpegEncContext MPVContext;
+
 /**
  * MpegEncContext.
  */
@@ -271,10 +273,10 @@ typedef struct MpegEncContext {
     int interlaced_dct;
     int first_field;         ///< is 1 for the first field of a field picture 0 otherwise
 
-    void (*dct_unquantize_intra)(struct MpegEncContext *s, // unquantizer to use (MPEG-4 can use both)
-                           int16_t *block/*align 16*/, int n, int qscale);
-    void (*dct_unquantize_inter)(struct MpegEncContext *s, // unquantizer to use (MPEG-4 can use both)
-                           int16_t *block/*align 16*/, int n, int qscale);
+    void (*dct_unquantize_intra)(const MPVContext *s, // unquantizer to use (MPEG-4 can use both)
+                                 int16_t *block/*align 16*/, int n, int qscale);
+    void (*dct_unquantize_inter)(const MPVContext *s, // unquantizer to use (MPEG-4 can use both)
+                                 int16_t *block/*align 16*/, int n, int qscale);
 
     /* flag to indicate a reinitialization is required, e.g. after
      * a frame size change */
@@ -285,8 +287,6 @@ typedef struct MpegEncContext {
 
     ERContext er;
 } MpegEncContext;
-
-typedef MpegEncContext MPVContext;
 
 /**
  * Set the given MpegEncContext to common defaults (same for encoding

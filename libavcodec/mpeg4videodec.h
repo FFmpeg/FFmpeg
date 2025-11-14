@@ -93,11 +93,11 @@ typedef struct Mpeg4DecContext {
 
     Mpeg4VideoDSPContext mdsp;
 
-    void (*dct_unquantize_mpeg2_inter)(MpegEncContext *s,
+    void (*dct_unquantize_mpeg2_inter)(const MPVContext *s,
                                        int16_t *block, int n, int qscale);
-    void (*dct_unquantize_mpeg2_intra)(MpegEncContext *s,
+    void (*dct_unquantize_mpeg2_intra)(const MPVContext *s,
                                        int16_t *block, int n, int qscale);
-    void (*dct_unquantize_h263_intra)(MpegEncContext *s,
+    void (*dct_unquantize_h263_intra)(const MPVContext *s,
                                       int16_t *block, int n, int qscale);
 
     union {

@@ -84,7 +84,7 @@ static void inline ff_dct_unquantize_h263_neon(int qscale, int qadd, int nCoeffs
     vst1_s16(block, d0s16);
 }
 
-static void dct_unquantize_h263_inter_neon(MpegEncContext *s, int16_t *block,
+static void dct_unquantize_h263_inter_neon(const MPVContext *s, int16_t *block,
                                            int n, int qscale)
 {
     int nCoeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
@@ -93,7 +93,7 @@ static void dct_unquantize_h263_inter_neon(MpegEncContext *s, int16_t *block,
     ff_dct_unquantize_h263_neon(qscale, qadd, nCoeffs + 1, block);
 }
 
-static void dct_unquantize_h263_intra_neon(MpegEncContext *s, int16_t *block,
+static void dct_unquantize_h263_intra_neon(const MPVContext *s, int16_t *block,
                                            int n, int qscale)
 {
     int qadd;
