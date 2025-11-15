@@ -299,8 +299,6 @@ typedef struct WHIPContext {
      */
     uint8_t dtls_srtp_materials[(DTLS_SRTP_KEY_LEN + DTLS_SRTP_SALT_LEN) * 2];
 
-    char ssl_error_message[256];
-
     /* TODO: Use AVIOContext instead of URLContext */
     URLContext *dtls_uc;
 
