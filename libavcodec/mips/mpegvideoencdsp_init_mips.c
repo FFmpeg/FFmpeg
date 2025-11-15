@@ -23,11 +23,16 @@
 #include "libavcodec/bit_depth_template.c"
 #include "libavcodec/mpegvideoencdsp.h"
 #include "h263dsp_mips.h"
+#include "mpegvideo_mips.h"
 
 av_cold void ff_mpegvideoencdsp_init_mips(MpegvideoEncDSPContext *c,
                                           AVCodecContext *avctx)
 {
     int cpu_flags = av_get_cpu_flags();
+
+    if (have_mmi(cpu_flags)) {
+        c->denoise_dct = ff_denoise_dct_mmi;
+    }
 
     if (have_msa(cpu_flags)) {
 #if BIT_DEPTH == 8

@@ -30,6 +30,9 @@
 #define EDGE_BOTTOM 2
 
 typedef struct MpegvideoEncDSPContext {
+    void (*denoise_dct)(int16_t block[64], int dct_error_sum[64],
+                        const uint16_t dct_offset[64]);
+
     int (*try_8x8basis)(const int16_t rem[64], const int16_t weight[64],
                         const int16_t basis[64], int scale);
     void (*add_8x8basis)(int16_t rem[64], const int16_t basis[64], int scale);

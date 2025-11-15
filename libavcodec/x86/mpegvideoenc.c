@@ -57,22 +57,6 @@ DECLARE_ALIGNED(16, static const uint16_t, inv_zigzag_direct16)[64] = {
 
 #endif /* HAVE_6REGS */
 
-#if HAVE_SSE2_EXTERNAL
-void ff_mpv_denoise_dct_sse2(int16_t block[64], int dct_error_sum[64],
-                             const uint16_t dct_offset[64]);
-
-static void denoise_dct_sse2(MPVEncContext *const s, int16_t block[])
-{
-    const int intra = s->c.mb_intra;
-    int *sum= s->dct_error_sum[intra];
-    uint16_t *offset= s->dct_offset[intra];
-
-    s->dct_count[intra]++;
-
-    ff_mpv_denoise_dct_sse2(block, sum, offset);
-}
-#endif /* HAVE_SSE2_EXTERNAL */
-
 av_cold void ff_dct_encode_init_x86(MPVEncContext *const s)
 {
     const int dct_algo = s->c.avctx->dct_algo;
@@ -83,9 +67,6 @@ av_cold void ff_dct_encode_init_x86(MPVEncContext *const s)
         if (INLINE_SSE2(cpu_flags)) {
 #if HAVE_6REGS
             s->dct_quantize = dct_quantize_sse2;
-#endif
-#if HAVE_SSE2_EXTERNAL
-            s->denoise_dct  = denoise_dct_sse2;
 #endif
         }
 #if HAVE_6REGS && HAVE_SSSE3_INLINE

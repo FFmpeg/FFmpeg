@@ -86,7 +86,6 @@
 static int encode_picture(MPVMainEncContext *const s, const AVPacket *pkt);
 static int dct_quantize_refine(MPVEncContext *const s, int16_t *block, int16_t *weight, int16_t *orig, int n, int qscale);
 static int sse_mb(MPVEncContext *const s);
-static void denoise_dct_c(MPVEncContext *const s, int16_t *block);
 static int dct_quantize_c(MPVEncContext *const s,
                           int16_t *block, int n,
                           int qscale, int *overflow);
@@ -300,11 +299,8 @@ static av_cold void mpv_encode_defaults(MPVMainEncContext *const m)
 av_cold void ff_dct_encode_init(MPVEncContext *const s)
 {
     s->dct_quantize = dct_quantize_c;
-    s->denoise_dct  = denoise_dct_c;
 
-#if ARCH_MIPS
-    ff_mpvenc_dct_init_mips(s);
-#elif ARCH_X86
+#if ARCH_X86
     ff_dct_encode_init_x86(s);
 #endif
 
@@ -3955,29 +3951,14 @@ static int encode_picture(MPVMainEncContext *const m, const AVPacket *pkt)
     return 0;
 }
 
-static void denoise_dct_c(MPVEncContext *const s, int16_t *block)
+static inline void denoise_dct(MPVEncContext *const s, int16_t block[])
 {
+    if (!s->dct_error_sum)
+        return;
+
     const int intra = s->c.mb_intra;
-    int i;
-
     s->dct_count[intra]++;
-
-    for(i=0; i<64; i++){
-        int level= block[i];
-
-        if(level){
-            if(level>0){
-                s->dct_error_sum[intra][i] += level;
-                level -= s->dct_offset[intra][i];
-                if(level<0) level=0;
-            }else{
-                s->dct_error_sum[intra][i] -= level;
-                level += s->dct_offset[intra][i];
-                if(level>0) level=0;
-            }
-            block[i]= level;
-        }
-    }
+    s->mpvencdsp.denoise_dct(block, s->dct_error_sum[intra], s->dct_offset[intra]);
 }
 
 static int dct_quantize_trellis_c(MPVEncContext *const s,
@@ -4009,8 +3990,8 @@ static int dct_quantize_trellis_c(MPVEncContext *const s,
 
     s->fdsp.fdct(block);
 
-    if(s->dct_error_sum)
-        s->denoise_dct(s, block);
+    denoise_dct(s, block);
+
     qmul= qscale*16;
     qadd= ((qscale-1)|1)*8;
 
@@ -4678,8 +4659,7 @@ static int dct_quantize_c(MPVEncContext *const s,
 
     s->fdsp.fdct(block);
 
-    if(s->dct_error_sum)
-        s->denoise_dct(s, block);
+    denoise_dct(s, block);
 
     if (s->c.mb_intra) {
         scantable = s->c.intra_scantable.scantable;

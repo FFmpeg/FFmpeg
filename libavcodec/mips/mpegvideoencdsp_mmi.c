@@ -25,16 +25,11 @@
 #include "mpegvideo_mips.h"
 #include "libavutil/mips/mmiutils.h"
 
-void ff_denoise_dct_mmi(MPVEncContext *s, int16_t *block)
+void ff_denoise_dct_mmi(int16_t block[64], int sum[64], const uint16_t offset[64])
 {
-    const int intra = s->c.mb_intra;
-    int *sum = s->dct_error_sum[intra];
-    uint16_t *offset = s->dct_offset[intra];
     double ftmp[8];
     mips_reg addr[1];
     DECLARE_VAR_ALL64;
-
-    s->dct_count[intra]++;
 
     __asm__ volatile(
         "pxor       %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"

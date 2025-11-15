@@ -76,8 +76,11 @@ static int RENAME(dct_quantize)(MPVEncContext *const s,
     //s->fdct (block);
     ff_fdct_sse2(block); // cannot be anything else ...
 
-    if(s->dct_error_sum)
-        s->denoise_dct(s, block);
+    if (s->dct_error_sum) {
+        const int intra = s->c.mb_intra;
+        s->dct_count[intra]++;
+        s->mpvencdsp.denoise_dct(block, s->dct_error_sum[intra], s->dct_offset[intra]);
+    }
 
     if (s->c.mb_intra) {
         int dummy;

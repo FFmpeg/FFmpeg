@@ -123,7 +123,6 @@ typedef struct MPVEncContext {
     uint16_t (*q_inter_matrix16)[2][64];
 
     /* noise reduction */
-    void (*denoise_dct)(struct MPVEncContext *s, int16_t *block);
     int (*dct_error_sum)[64];
     int dct_count[2];
     uint16_t (*dct_offset)[64];
@@ -397,7 +396,6 @@ int ff_mpv_reallocate_putbitbuffer(MPVEncContext *s, size_t threshold, size_t si
 void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix);
 
 void ff_dct_encode_init(MPVEncContext *s);
-void ff_mpvenc_dct_init_mips(MPVEncContext *s);
 void ff_dct_encode_init_x86(MPVEncContext *s);
 
 void ff_convert_matrix(MPVEncContext *s, int (*qmat)[64], uint16_t (*qmat16)[2][64],

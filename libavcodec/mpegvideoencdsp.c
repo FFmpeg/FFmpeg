@@ -28,6 +28,29 @@
 #include "mathops.h"
 #include "mpegvideoencdsp.h"
 
+static void denoise_dct_c(int16_t block[64], int dct_error_sum[64],
+                          const uint16_t dct_offset[64])
+{
+    for (int i = 0; i < 64; ++i) {
+        int level = block[i];
+
+        if (level) {
+            if (level > 0) {
+                dct_error_sum[i] += level;
+                level -= dct_offset[i];
+                if (level < 0)
+                    level = 0;
+            } else {
+                dct_error_sum[i] -= level;
+                level += dct_offset[i];
+                if (level > 0)
+                    level = 0;
+            }
+            block[i] = level;
+        }
+    }
+}
+
 static int try_8x8basis_c(const int16_t rem[64], const int16_t weight[64],
                           const int16_t basis[64], int scale)
 {
@@ -253,6 +276,8 @@ static void shrink88(uint8_t *dst, ptrdiff_t dst_wrap,
 av_cold void ff_mpegvideoencdsp_init(MpegvideoEncDSPContext *c,
                                      AVCodecContext *avctx)
 {
+    c->denoise_dct  = denoise_dct_c;
+
     c->try_8x8basis = try_8x8basis_c;
     c->add_8x8basis = add_8x8basis_c;
 
