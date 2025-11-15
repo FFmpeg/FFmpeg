@@ -117,7 +117,7 @@ static int RENAME(dct_quantize)(MPVEncContext *const s,
         __asm__ volatile(
             "movd %%"FF_REG_a", %%xmm3          \n\t" // last_non_zero_p1
             SPREADW("%%xmm3")
-            "pxor  %%xmm7, %%xmm7               \n\t" // 0
+            "pxor  %%xmm2, %%xmm2               \n\t" // 0
             "pxor  %%xmm4, %%xmm4               \n\t" // 0
             "movdqa  (%2), %%xmm5               \n\t" // qmat[0]
             "pxor  %%xmm6, %%xmm6               \n\t"
@@ -132,9 +132,9 @@ static int RENAME(dct_quantize)(MPVEncContext *const s,
             "por     %%xmm0, %%xmm4             \n\t"
             RESTORE_SIGN("%%xmm1", "%%xmm0")          // out=((ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16)*sign(block[i])
             "movdqa  %%xmm0, (%5, %%"FF_REG_a") \n\t"
-            "pcmpeqw %%xmm7, %%xmm0             \n\t" // out==0 ? 0xFF : 0x00
+            "pcmpeqw %%xmm2, %%xmm0             \n\t" // out==0 ? 0xFF : 0x00
             "movdqa  (%4, %%"FF_REG_a"), %%xmm1 \n\t"
-            "movdqa  %%xmm7, (%1, %%"FF_REG_a") \n\t" // 0
+            "movdqa  %%xmm2, (%1, %%"FF_REG_a") \n\t" // 0
             "pandn   %%xmm1, %%xmm0             \n\t"
             "pmaxsw  %%xmm0, %%xmm3             \n\t"
             "add        $16, %%"FF_REG_a"       \n\t"
@@ -146,13 +146,13 @@ static int RENAME(dct_quantize)(MPVEncContext *const s,
             : "r" (block+64), "r" (qmat), "r" (bias),
               "r" (inv_zigzag_direct16 + 64), "r" (temp_block + 64)
               XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2", "%xmm3",
-                                "%xmm4", "%xmm5", "%xmm6", "%xmm7")
+                                "%xmm4", "%xmm5", "%xmm6")
         );
     }else{ // FMT_H263
         __asm__ volatile(
             "movd %%"FF_REG_a", %%xmm3          \n\t" // last_non_zero_p1
             SPREADW("%%xmm3")
-            "pxor %%xmm7, %%xmm7                \n\t" // 0
+            "pxor %%xmm2, %%xmm2                \n\t" // 0
             "pxor %%xmm4, %%xmm4                \n\t" // 0
             "mov $-128, %%"FF_REG_a"            \n\t"
             ".p2align 4                         \n\t"
@@ -166,9 +166,9 @@ static int RENAME(dct_quantize)(MPVEncContext *const s,
             "por     %%xmm0, %%xmm4             \n\t"
             RESTORE_SIGN("%%xmm1", "%%xmm0")          // out=((ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16)*sign(block[i])
             "movdqa  %%xmm0, (%5, %%"FF_REG_a") \n\t"
-            "pcmpeqw %%xmm7, %%xmm0             \n\t" // out==0 ? 0xFF : 0x00
+            "pcmpeqw %%xmm2, %%xmm0             \n\t" // out==0 ? 0xFF : 0x00
             "movdqa  (%4, %%"FF_REG_a"), %%xmm1 \n\t"
-            "movdqa  %%xmm7, (%1, %%"FF_REG_a") \n\t" // 0
+            "movdqa  %%xmm2, (%1, %%"FF_REG_a") \n\t" // 0
             "pandn   %%xmm1, %%xmm0             \n\t"
             "pmaxsw  %%xmm0, %%xmm3             \n\t"
             "add        $16, %%"FF_REG_a"       \n\t"
@@ -180,7 +180,7 @@ static int RENAME(dct_quantize)(MPVEncContext *const s,
             : "r" (block+64), "r" (qmat+64), "r" (bias+64),
               "r" (inv_zigzag_direct16 + 64), "r" (temp_block + 64)
               XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2", "%xmm3",
-                                "%xmm4", "%xmm5", "%xmm6", "%xmm7")
+                                "%xmm4", "%xmm5", "%xmm6")
         );
     }
     __asm__ volatile(
