@@ -123,16 +123,14 @@ av_cold void ff_dct_encode_init_x86(MPVEncContext *const s)
     const int dct_algo = s->c.avctx->dct_algo;
 
     if (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX) {
-#if HAVE_MMX_INLINE
-        int cpu_flags = av_get_cpu_flags();
 #if HAVE_SSE2_INLINE
+        int cpu_flags = av_get_cpu_flags();
         if (INLINE_SSE2(cpu_flags)) {
 #if HAVE_6REGS
             s->dct_quantize = dct_quantize_sse2;
 #endif
             s->denoise_dct  = denoise_dct_sse2;
         }
-#endif
 #if HAVE_6REGS && HAVE_SSSE3_INLINE
         if (INLINE_SSSE3(cpu_flags))
             s->dct_quantize = dct_quantize_ssse3;
