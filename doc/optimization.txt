@@ -5,7 +5,7 @@ What to optimize:
 -----------------
 If you plan to do non-x86 architecture specific optimizations (SIMD normally),
 then take a look in the x86/ directory, as most important functions are
-already optimized for MMX.
+already optimized for x86.
 
 If you want to do x86 optimizations then you can either try to fine-tune the
 stuff in the x86 directory or find some other functions in the C source to
