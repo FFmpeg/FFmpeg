@@ -68,7 +68,7 @@ static void denoise_dct_sse2(MPVEncContext *const s, int16_t block[])
     s->dct_count[intra]++;
 
     __asm__ volatile(
-        "pxor %%xmm7, %%xmm7                    \n\t"
+        "pxor %%xmm6, %%xmm6                    \n\t"
         "1:                                     \n\t"
         "pxor %%xmm0, %%xmm0                    \n\t"
         "pxor %%xmm1, %%xmm1                    \n\t"
@@ -90,18 +90,18 @@ static void denoise_dct_sse2(MPVEncContext *const s, int16_t block[])
         "psubw %%xmm1, %%xmm3                   \n\t"
         "movdqa %%xmm2, (%0)                    \n\t"
         "movdqa %%xmm3, 16(%0)                  \n\t"
-        "movdqa %%xmm4, %%xmm6                  \n\t"
+        "movdqa %%xmm4, %%xmm2                  \n\t"
         "movdqa %%xmm5, %%xmm0                  \n\t"
-        "punpcklwd %%xmm7, %%xmm4               \n\t"
-        "punpckhwd %%xmm7, %%xmm6               \n\t"
-        "punpcklwd %%xmm7, %%xmm5               \n\t"
-        "punpckhwd %%xmm7, %%xmm0               \n\t"
+        "punpcklwd %%xmm6, %%xmm4               \n\t"
+        "punpckhwd %%xmm6, %%xmm2               \n\t"
+        "punpcklwd %%xmm6, %%xmm5               \n\t"
+        "punpckhwd %%xmm6, %%xmm0               \n\t"
         "paddd (%1), %%xmm4                     \n\t"
-        "paddd 16(%1), %%xmm6                   \n\t"
+        "paddd 16(%1), %%xmm2                   \n\t"
         "paddd 32(%1), %%xmm5                   \n\t"
         "paddd 48(%1), %%xmm0                   \n\t"
         "movdqa %%xmm4, (%1)                    \n\t"
-        "movdqa %%xmm6, 16(%1)                  \n\t"
+        "movdqa %%xmm2, 16(%1)                  \n\t"
         "movdqa %%xmm5, 32(%1)                  \n\t"
         "movdqa %%xmm0, 48(%1)                  \n\t"
         "add $32, %0                            \n\t"
@@ -112,7 +112,7 @@ static void denoise_dct_sse2(MPVEncContext *const s, int16_t block[])
         : "+r" (block), "+r" (sum), "+r" (offset)
         : "r"(block+64)
           XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2", "%xmm3",
-                            "%xmm4", "%xmm5", "%xmm6", "%xmm7")
+                            "%xmm4", "%xmm5", "%xmm6")
     );
 }
 #endif /* HAVE_SSE2_INLINE */
