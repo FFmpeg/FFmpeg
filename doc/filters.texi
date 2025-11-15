@@ -21471,27 +21471,6 @@ If the specified expression is not valid, it is kept at its current
 value.
 @end table
 
-@section scale_vt
-
-Scale and convert the color parameters using VTPixelTransferSession.
-
-The filter accepts the following options:
-@table @option
-@item w
-@item h
-Set the output video dimension expression. Default value is the input dimension.
-
-@item color_matrix
-Set the output colorspace matrix.
-
-@item color_primaries
-Set the output color primaries.
-
-@item color_transfer
-Set the output transfer characteristics.
-
-@end table
-
 @section scharr
 Apply scharr operator to input video stream.
 
@@ -28920,6 +28899,106 @@ drawbox=x=-t:y=0.5*(ih-iw/2.4)-t:w=iw+t*2:h=iw/2.4+t*2:t=2:c=red
 
 @c man end VAAPI VIDEO FILTERS
 
+@chapter VideoToolbox Video Filters
+@c man begin VIDEOTOOLBOX VIDEO FILTERS
+
+Below is a description of the currently available VideoToolbox video filters.
+
+VideoToolbox filter depends on VideoToolbox framework, and is auto detected
+when building ffmpeg for an Apple platform such as macOS. Add
+@code{--enable-videotoolbox} to configure if autodetect is disabled.
+
+@section scale_vt
+
+Scale and convert the color parameters using VTPixelTransferSession.
+
+The filter accepts the following options:
+@table @option
+@item w
+@item h
+Set the output video dimension expression. Default value is the input dimension.
+
+@item color_matrix
+Set the output colorspace matrix.
+
+@item color_primaries
+Set the output color primaries.
+
+@item color_transfer
+Set the output transfer characteristics.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Perform HDR to SDR conversion, and scale to half size of input
+@example
+ffmpeg -hwaccel videotoolbox \
+        -hwaccel_output_format videotoolbox_vld \
+        -i hdr.mov \
+        -c:v hevc_videotoolbox \
+        -profile:v main \
+        -b:v 3M \
+        -vf scale_vt=w=iw/2:h=ih/2:color_matrix=bt709:color_primaries=bt709:color_transfer=bt709 \
+        -c:a copy \
+        -tag:v hvc1 \
+        sdr.mp4
+@end example
+
+@end itemize
+
+@section transpose_vt
+
+Transpose rows with columns in the input video and optionally flip it.
+For more in depth examples see the @ref{transpose} video filter, which shares mostly the same options.
+
+It accepts the following parameters:
+
+@table @option
+
+@item dir
+Specify the transposition direction.
+
+Can assume the following values:
+@table @samp
+@item cclock_flip
+Rotate by 90 degrees counterclockwise and vertically flip. (default)
+
+@item clock
+Rotate by 90 degrees clockwise.
+
+@item cclock
+Rotate by 90 degrees counterclockwise.
+
+@item clock_flip
+Rotate by 90 degrees clockwise and vertically flip.
+
+@item hflip
+Flip the input video horizontally.
+
+@item vflip
+Flip the input video vertically.
+
+@end table
+
+@item passthrough
+Do not apply the transposition if the input geometry matches the one
+specified by the specified value. It accepts the following values:
+@table @samp
+@item none
+Always apply transposition. (default)
+@item portrait
+Preserve portrait geometry (when @var{height} >= @var{width}).
+@item landscape
+Preserve landscape geometry (when @var{width} >= @var{height}).
+@end table
+
+@end table
+
+@c man end VIDEOTOOLBOX VIDEO FILTERS
+
 @chapter Vulkan Video Filters
 @c man begin VULKAN VIDEO FILTERS
 
@@ -29221,54 +29300,6 @@ Default value is @code{0}.
 @item y
 Set the y coordinate of the overlaid video on the main video.
 Default value is @code{0}.
-
-@end table
-
-@section transpose_vt
-
-Transpose rows with columns in the input video and optionally flip it.
-For more in depth examples see the @ref{transpose} video filter, which shares mostly the same options.
-
-It accepts the following parameters:
-
-@table @option
-
-@item dir
-Specify the transposition direction.
-
-Can assume the following values:
-@table @samp
-@item cclock_flip
-Rotate by 90 degrees counterclockwise and vertically flip. (default)
-
-@item clock
-Rotate by 90 degrees clockwise.
-
-@item cclock
-Rotate by 90 degrees counterclockwise.
-
-@item clock_flip
-Rotate by 90 degrees clockwise and vertically flip.
-
-@item hflip
-Flip the input video horizontally.
-
-@item vflip
-Flip the input video vertically.
-
-@end table
-
-@item passthrough
-Do not apply the transposition if the input geometry matches the one
-specified by the specified value. It accepts the following values:
-@table @samp
-@item none
-Always apply transposition. (default)
-@item portrait
-Preserve portrait geometry (when @var{height} >= @var{width}).
-@item landscape
-Preserve landscape geometry (when @var{width} >= @var{height}).
-@end table
 
 @end table
 
