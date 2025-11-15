@@ -37,6 +37,37 @@
             buf[j] = rnd() % (max - min + 1) + min;      \
     } while (0)
 
+static void check_denoise_dct(MpegvideoEncDSPContext *c)
+{
+    declare_func(void, int16_t block[64], int dct_error_sum[64],
+                       const uint16_t dct_offset[64]);
+
+    if (check_func(c->denoise_dct, "denoise_dct")) {
+        DECLARE_ALIGNED(16, int16_t, block_ref)[64];
+        DECLARE_ALIGNED(16, int16_t, block_new)[64];
+        DECLARE_ALIGNED(16, int, dct_error_sum_ref)[64];
+        DECLARE_ALIGNED(16, int, dct_error_sum_new)[64];
+        DECLARE_ALIGNED(16, uint16_t, dct_offset)[64];
+
+        for (size_t i = 0; i < FF_ARRAY_ELEMS(block_ref); ++i) {
+            unsigned random = rnd();
+            block_ref[i] = random & (1 << 16) ? random : 0;
+        }
+        randomize_buffers(dct_offset, sizeof(dct_offset));
+        randomize_buffer_clipped(dct_error_sum_ref, 0, (1 << 24) - 1);
+        memcpy(block_new, block_ref, sizeof(block_new));
+        memcpy(dct_error_sum_new, dct_error_sum_ref, sizeof(dct_error_sum_ref));
+
+        call_ref(block_ref, dct_error_sum_ref, dct_offset);
+        call_new(block_new, dct_error_sum_new, dct_offset);
+        if (memcmp(block_ref, block_new, sizeof(block_ref)) ||
+            memcmp(dct_error_sum_new, dct_error_sum_ref, sizeof(dct_error_sum_new)))
+            fail();
+
+        bench_new(block_new, dct_error_sum_new, dct_offset);
+    }
+}
+
 static void check_add_8x8basis(MpegvideoEncDSPContext *c)
 {
     declare_func(void, int16_t rem[64], const int16_t basis[64], int scale);
@@ -166,6 +197,8 @@ void checkasm_check_mpegvideoencdsp(void)
 
     ff_mpegvideoencdsp_init(&c, &avctx);
 
+    check_denoise_dct(&c);
+    report("denoise_dct");
     check_pix_sum(&c);
     report("pix_sum");
     check_pix_norm1(&c);
