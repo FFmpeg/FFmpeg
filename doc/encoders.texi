@@ -3413,9 +3413,8 @@ Maximum quantization parameter for B frame.
 
 @section MediaFoundation
 
-This provides wrappers to encoders (both audio and video) in the
-MediaFoundation framework. It supports both software and hardware encoders
-through the following codecs:
+The following wrappers for encoders in the MediaFoundation framework are
+available:
 
 @itemize
 @item h264_mf
@@ -3423,15 +3422,17 @@ through the following codecs:
 @item av1_mf
 @end itemize
 
+These support both software and hardware encoding.
+
 Video encoders can take input in either of nv12 or yuv420p form
 (some encoders support both, some support only either - in practice,
 nv12 is the safer choice, especially among HW encoders).
 
-Hardware-accelerated encoding is supported via D3D11, including hardware
+Hardware-accelerated encoding requires D3D11, including hardware
 scaling capabilities through the scale_d3d11 filter.
 
 To list all available options for the MediaFoundation encoders, use:
-@command{ffmpeg -h encoder=h264_mf}
+@command{ffmpeg -h encoder=<encoder>} e.g. @command{ffmpeg -h encoder=h264_mf}
 
 @subsection Options
 
@@ -3498,14 +3499,9 @@ Hardware-accelerated decoding with hardware encoding:
 ffmpeg -hwaccel d3d11va -i input.mp4 -c:v h264_mf -hw_encoding 1 output.mp4
 @end example
 
-Hardware-accelerated decoding and encoding with scaling:
+Hardware-accelerated decoding, HW scaling and encoding with quality setting:
 @example
-ffmpeg -hwaccel d3d11va -hwaccel_output_format d3d11 -i input.mp4 -c:v h264_mf -hw_encoding 1 -vf scale_d3d11=1920:1080 output.mp4
-@end example
-
-Hardware decoding and encoding with quality setting:
-@example
-ffmpeg -hwaccel d3d11va -hwaccel_output_format d3d11 -i input.mp4 -c:v hevc_mf -hw_encoding 1 -quality 80 output.mp4
+ffmpeg -hwaccel d3d11va -hwaccel_output_format d3d11 -i input.mp4 -vf scale_d3d11=1920:1080 -c:v hevc_mf -hw_encoding 1 -quality 80 output.mp4
 @end example
 
 @section Microsoft RLE
