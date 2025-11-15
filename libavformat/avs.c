@@ -26,6 +26,7 @@
  */
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "voc.h"
 
@@ -113,10 +114,9 @@ avs_read_video_packet(AVFormatContext * s, AVPacket * pkt,
     pkt->data[palette_size + 1] = type;
     pkt->data[palette_size + 2] = size & 0xFF;
     pkt->data[palette_size + 3] = (size >> 8) & 0xFF;
-    ret = avio_read(s->pb, pkt->data + palette_size + 4, size - 4) + 4;
-    if (ret < size) {
-        return AVERROR(EIO);
-    }
+    ret = ffio_read_size(s->pb, pkt->data + palette_size + 4, size - 4) + 4;
+    if (ret < 0)
+        return ret;
 
     pkt->size = ret + palette_size;
     pkt->stream_index = avs->st_video->index;
@@ -168,7 +168,7 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
     while (1) {
         if (avs->remaining_frame_size <= 0) {
             if (!avio_rl16(s->pb))    /* found EOF */
-                return AVERROR(EIO);
+                return AVERROR_INVALIDDATA;
             avs->remaining_frame_size = avio_rl16(s->pb) - 4;
         }
 
@@ -184,9 +184,9 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
             case AVS_PALETTE:
                 if (size - 4 > sizeof(palette))
                     return AVERROR_INVALIDDATA;
-                ret = avio_read(s->pb, palette, size - 4);
-                if (ret < size - 4)
-                    return AVERROR(EIO);
+                ret = ffio_read_size(s->pb, palette, size - 4);
+                if (ret < 0)
+                    return ret;
                 palette_size = size;
                 break;
 

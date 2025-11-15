@@ -24,6 +24,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "mux.h"
@@ -90,10 +91,8 @@ static int alp_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = avio_read(s->pb, hdr->adpcm, sizeof(hdr->adpcm))) < 0)
+    if ((ret = ffio_read_size(s->pb, hdr->adpcm, sizeof(hdr->adpcm))) < 0)
         return ret;
-    else if (ret != sizeof(hdr->adpcm))
-        return AVERROR(EIO);
 
     if (strncmp("ADPCM", hdr->adpcm, sizeof(hdr->adpcm)) != 0)
         return AVERROR_INVALIDDATA;

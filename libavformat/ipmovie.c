@@ -639,9 +639,8 @@ static int ipmovie_read_header(AVFormatContext *s)
 
     /* peek ahead to the next chunk-- if it is an init audio chunk, process
      * it; if it is the first video chunk, this is a silent file */
-    if (avio_read(pb, chunk_preamble, CHUNK_PREAMBLE_SIZE) !=
-        CHUNK_PREAMBLE_SIZE)
-        return AVERROR(EIO);
+    if ((ret = ffio_read_size(pb, chunk_preamble, CHUNK_PREAMBLE_SIZE)) < 0)
+        return ret;
     chunk_type = AV_RL16(&chunk_preamble[2]);
     avio_seek(pb, -CHUNK_PREAMBLE_SIZE, SEEK_CUR);
 
@@ -688,7 +687,7 @@ static int ipmovie_read_packet(AVFormatContext *s,
         if (ret == CHUNK_BAD)
             ret = AVERROR_INVALIDDATA;
         else if (ret == CHUNK_EOF)
-            ret = AVERROR(EIO);
+            ret = AVERROR_INVALIDDATA;
         else if (ret == CHUNK_NOMEM)
             ret = AVERROR(ENOMEM);
         else if (ret == CHUNK_END || ret == CHUNK_SHUTDOWN)

@@ -24,6 +24,7 @@
 #include "libavcodec/bytestream.h"
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 
@@ -76,9 +77,9 @@ static int hca_read_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-    ret = avio_read(pb, par->extradata + 8, par->extradata_size - 8 - 10);
-    if (ret < par->extradata_size - 8 - 10)
-        return AVERROR(EIO);
+    ret = ffio_read_size(pb, par->extradata + 8, par->extradata_size - 8 - 10);
+    if (ret < 0)
+        return AVERROR_INVALIDDATA;
     AV_WL32(par->extradata, MKTAG('H', 'C', 'A', 0));
     AV_WB16(par->extradata + 4, version);
     AV_WB16(par->extradata + 6, data_offset);

@@ -60,7 +60,7 @@ static int64_t get_tag(AVIOContext *pb, uint32_t * tag)
     int64_t size;
 
     if (avio_feof(pb))
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
 
     *tag = avio_rl32(pb);
     size = avio_rb32(pb);

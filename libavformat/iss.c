@@ -136,7 +136,7 @@ static int iss_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret = av_get_packet(s->pb, pkt, iss->packet_size);
 
     if(ret != iss->packet_size)
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
 
     pkt->stream_index = 0;
     pkt->pts = avio_tell(s->pb) - iss->sample_start_pos;

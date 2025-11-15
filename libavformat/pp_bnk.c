@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
@@ -117,10 +118,8 @@ static int pp_bnk_read_header(AVFormatContext *s)
     uint8_t buf[FFMAX(PP_BNK_FILE_HEADER_SIZE, PP_BNK_TRACK_SIZE)];
     PPBnkHeader hdr;
 
-    if ((ret = avio_read(s->pb, buf, PP_BNK_FILE_HEADER_SIZE)) < 0)
+    if ((ret = ffio_read_size(s->pb, buf, PP_BNK_FILE_HEADER_SIZE)) < 0)
         return ret;
-    else if (ret != PP_BNK_FILE_HEADER_SIZE)
-        return AVERROR(EIO);
 
     pp_bnk_parse_header(&hdr, buf);
 
@@ -246,7 +245,7 @@ static int pp_bnk_read_packet(AVFormatContext *s, AVPacket *pkt)
         if ((ret = avio_seek(s->pb, trk->data_offset + trk->bytes_read, SEEK_SET)) < 0)
             return ret;
         else if (ret != trk->data_offset + trk->bytes_read)
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
 
         size = FFMIN(trk->data_size - trk->bytes_read, PP_BNK_MAX_READ_SIZE);
 

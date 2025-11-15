@@ -69,7 +69,7 @@ static int nc_read_packet(AVFormatContext *s, AVPacket *pkt)
     uint32_t state=-1;
     while (state != NC_VIDEO_FLAG) {
         if (avio_feof(s->pb))
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         state = (state<<8) + avio_r8(s->pb);
     }
 
@@ -84,7 +84,7 @@ static int nc_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = av_get_packet(s->pb, pkt, size);
     if (ret != size) {
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     }
 
     pkt->stream_index = 0;

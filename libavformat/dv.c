@@ -33,6 +33,7 @@
 
 #include <time.h>
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "libavcodec/dv_profile.h"
@@ -576,6 +577,7 @@ static int dv_read_header(AVFormatContext *s)
 {
     unsigned state, marker_pos = 0;
     RawDVContext *c = s->priv_data;
+    int64_t ret64;
     int ret;
 
     if ((ret = dv_init_demux(s, &c->dv_demux)) < 0)
@@ -598,10 +600,10 @@ static int dv_read_header(AVFormatContext *s)
     }
     AV_WB32(c->buf, state);
 
-    if (avio_read(s->pb, c->buf + 4, DV_PROFILE_BYTES - 4) != DV_PROFILE_BYTES - 4 ||
-        avio_seek(s->pb, -DV_PROFILE_BYTES, SEEK_CUR) < 0) {
-        return AVERROR(EIO);
-    }
+    if ((ret = ffio_read_size(s->pb, c->buf + 4, DV_PROFILE_BYTES - 4)) < 0)
+        return ret;
+    if ((ret64 = avio_seek(s->pb, -DV_PROFILE_BYTES, SEEK_CUR)) < 0)
+        return (int)ret64;
 
     c->dv_demux.sys = av_dv_frame_profile(c->dv_demux.sys,
                                            c->buf,
@@ -633,13 +635,13 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
         int ret;
         int64_t pos = avio_tell(s->pb);
         if (!c->dv_demux.sys)
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         size = c->dv_demux.sys->frame_size;
         ret = avio_read(s->pb, c->buf, size);
         if (ret < 0) {
             return ret;
         } else if (ret == 0) {
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         }
 
         size = avpriv_dv_produce_packet(&c->dv_demux, pkt, c->buf, size, pos);

@@ -39,7 +39,7 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, size, w, h, unk1, unk2;
 
     if (avio_rl32(s->pb) != MKTAG('M', 'J', 'P', 'G'))
-        return AVERROR(EIO); // FIXME
+        return AVERROR_INVALIDDATA; // FIXME
 
     size = avio_rl32(s->pb);
 

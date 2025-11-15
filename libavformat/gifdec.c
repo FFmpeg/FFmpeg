@@ -118,6 +118,7 @@ static int gif_read_header(AVFormatContext *s)
     AVStream        *st;
     int type, width, height, ret, n, flags;
     int64_t nb_frames = 0, duration = 0, pos;
+    int64_t ret64;
 
     if ((ret = resync(pb)) < 0)
         return ret;
@@ -215,8 +216,9 @@ static int gif_read_header(AVFormatContext *s)
 
 skip:
     /* jump to start because gif decoder needs header data too */
-    if (avio_seek(pb, pos - 6, SEEK_SET) != pos - 6)
-        return AVERROR(EIO);
+    ret64 = avio_seek(pb, pos - 6, SEEK_SET);
+    if (ret64 < 0)
+        return (int)ret64;
 
     /* GIF format operates with time in "hundredths of second",
      * therefore timebase is 1/100 */

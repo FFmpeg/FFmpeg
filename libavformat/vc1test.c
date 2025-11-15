@@ -108,7 +108,7 @@ static int vc1t_read_packet(AVFormatContext *s,
         keyframe = 1;
     pts = avio_rl32(pb);
     if(av_get_packet(pb, pkt, frame_size) < 0)
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     if(s->streams[0]->time_base.den == 1000)
         pkt->pts = pts;
     pkt->flags |= keyframe ? AV_PKT_FLAG_KEY : 0;

@@ -232,7 +232,7 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
         } else {
             int pktsize = av_get_packet(s->pb, pkt, c->sndsize - 4);
             if (pktsize < 0)
-                return AVERROR(EIO);
+                return AVERROR_INVALIDDATA;
             pkt->stream_index = 1;
             pkt->duration     = pktsize;
             c->curstrm        = 0;
@@ -246,7 +246,7 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (!pktsize)
             return AVERROR_EOF;
         if (pktsize <= 0)
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         pkt->duration = pktsize;
     }
     return pkt->size;

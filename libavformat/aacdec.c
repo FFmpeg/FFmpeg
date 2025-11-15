@@ -175,7 +175,7 @@ retry:
         return ret;
 
     if (ret < ADTS_HEADER_SIZE)
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
 
     if ((AV_RB16(pkt->data) >> 4) != 0xfff) {
         // Parse all the ID3 headers between frames
@@ -184,7 +184,7 @@ retry:
         av_assert2(append > 0);
         ret = av_append_packet(s->pb, pkt, append);
         if (ret != append)
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         if (!ff_id3v2_match(pkt->data, ID3v2_DEFAULT_MAGIC)) {
             av_packet_unref(pkt);
             ret = adts_aac_resync(s);

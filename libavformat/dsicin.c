@@ -153,7 +153,7 @@ static int cin_read_frame_header(CinDemuxContext *cin, AVIOContext *pb) {
     hdr->audio_frame_size = avio_rl32(pb);
 
     if (avio_feof(pb) || pb->error)
-        return AVERROR(EIO);
+        return pb->error ? pb->error : AVERROR_INVALIDDATA;
 
     if (avio_rl32(pb) != 0xAA55AA55)
         return AVERROR_INVALIDDATA;

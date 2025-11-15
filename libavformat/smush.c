@@ -235,7 +235,7 @@ static int smush_read_packet(AVFormatContext *ctx, AVPacket *pkt)
             if (size < 13)
                 return AVERROR_INVALIDDATA;
             if (av_get_packet(pb, pkt, size) < 13)
-                return AVERROR(EIO);
+                return AVERROR_INVALIDDATA;
 
             pkt->stream_index = smush->audio_stream_index;
             pkt->flags       |= AV_PKT_FLAG_KEY;

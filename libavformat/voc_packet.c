@@ -53,7 +53,7 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
         if (!voc->remaining_size) {
             int64_t filesize;
             if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
-                return AVERROR(EIO);
+                return AVERROR(ENOSYS);
             filesize = avio_size(pb);
             if (filesize - avio_tell(pb) > INT_MAX)
                 return AVERROR_INVALIDDATA;

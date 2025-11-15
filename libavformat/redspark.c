@@ -141,7 +141,7 @@ static int redspark_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = av_get_packet(s->pb, pkt, size);
     if (ret != size) {
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     }
 
     pkt->duration = 14;

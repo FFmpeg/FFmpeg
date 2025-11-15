@@ -112,7 +112,7 @@ static int pdv_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
 
     if (p->current_frame >= sti->nb_index_entries)
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
 
     pos   = sti->index_entries[p->current_frame].pos;
     flags = sti->index_entries[p->current_frame].flags;

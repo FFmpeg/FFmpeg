@@ -75,7 +75,7 @@ static int adx_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_shrink_packet(pkt, size);
         pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
     } else if (ret < size) {
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     } else {
         size = ret;
     }

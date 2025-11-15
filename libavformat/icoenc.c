@@ -122,7 +122,7 @@ static int ico_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (ico->current_image >= ico->nb_images) {
         av_log(s, AV_LOG_ERROR, "ICO already contains %d images\n", ico->current_image);
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     }
 
     image = &ico->images[ico->current_image++];

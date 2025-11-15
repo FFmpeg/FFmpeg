@@ -23,6 +23,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "riff.h"
@@ -170,7 +171,7 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
         ret = av_get_packet(s->pb, pkt, size);
         pkt->stream_index = 1;
         if(ret != size)
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         c->bytes_left -= size;
         c->wavpos = avio_tell(s->pb);
         return 0;
@@ -214,10 +215,9 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (ret < 0)
                 return ret;
             memcpy(pkt->data + pal_size, buf, DXA_EXTRA_SIZE);
-            ret = avio_read(s->pb, pkt->data + DXA_EXTRA_SIZE + pal_size, size);
-            if(ret != size){
-                return AVERROR(EIO);
-            }
+            ret = ffio_read_size(s->pb, pkt->data + DXA_EXTRA_SIZE + pal_size, size);
+            if (ret < 0)
+                return ret;
             if(pal_size) memcpy(pkt->data, pal, pal_size);
             pkt->stream_index = 0;
             c->frames--;

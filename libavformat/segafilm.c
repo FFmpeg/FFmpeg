@@ -30,6 +30,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 
@@ -95,20 +96,21 @@ static int film_read_header(AVFormatContext *s)
     unsigned int data_offset;
     unsigned int audio_frame_counter;
     unsigned int video_frame_counter;
+    int ret;
 
     film->sample_table = NULL;
 
     /* load the main FILM header */
-    if (avio_read(pb, scratch, 16) != 16)
-        return AVERROR(EIO);
+    if ((ret = ffio_read_size(pb, scratch, 16)) < 0)
+        return ret;
     data_offset = AV_RB32(&scratch[4]);
     film->version = AV_RB32(&scratch[8]);
 
     /* load the FDSC chunk */
     if (film->version == 0) {
         /* special case for Lemmings .film files; 20-byte header */
-        if (avio_read(pb, scratch, 20) != 20)
-            return AVERROR(EIO);
+        if ((ret = ffio_read_size(pb, scratch, 20)) < 0)
+            return ret;
         /* make some assumptions about the audio parameters */
         film->audio_type = AV_CODEC_ID_PCM_S8;
         film->audio_samplerate = 22050;
@@ -116,8 +118,8 @@ static int film_read_header(AVFormatContext *s)
         film->audio_bits = 8;
     } else {
         /* normal Saturn .cpk files; 32-byte header */
-        if (avio_read(pb, scratch, 32) != 32)
-            return AVERROR(EIO);
+        if ((ret = ffio_read_size(pb, scratch, 32)) < 0)
+            return ret;
         film->audio_samplerate = AV_RB16(&scratch[24]);
         film->audio_channels = scratch[21];
         film->audio_bits = scratch[22];
@@ -196,8 +198,8 @@ static int film_read_header(AVFormatContext *s)
     }
 
     /* load the sample table */
-    if (avio_read(pb, scratch, 16) != 16)
-        return AVERROR(EIO);
+    if ((ret = ffio_read_size(pb, scratch, 16)) < 0)
+        return ret;
     if (AV_RB32(&scratch[0]) != STAB_TAG)
         return AVERROR_INVALIDDATA;
     film->base_clock = AV_RB32(&scratch[8]);
@@ -217,8 +219,8 @@ static int film_read_header(AVFormatContext *s)
     audio_frame_counter = video_frame_counter = 0;
     for (i = 0; i < film->sample_count; i++) {
         /* load the next sample record and transfer it to an internal struct */
-        if (avio_read(pb, scratch, 16) != 16)
-            return AVERROR(EIO);
+        if ((ret = ffio_read_size(pb, scratch, 16)) < 0)
+            return ret;
         film->sample_table[i].sample_offset =
             data_offset + AV_RB32(&scratch[0]);
         film->sample_table[i].sample_size = AV_RB32(&scratch[4]);
@@ -294,7 +296,7 @@ static int film_read_packet(AVFormatContext *s,
 
     ret = av_get_packet(pb, pkt, sample->sample_size);
     if (ret != sample->sample_size)
-        ret = AVERROR(EIO);
+        ret = AVERROR_INVALIDDATA;
 
     pkt->stream_index = sample->stream;
     pkt->dts = sample->pts;

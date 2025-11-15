@@ -194,9 +194,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                 goto fail;
             }
         }
-        if (s->io_open(s, &pb[i], tmp[i] ? tmp[i] : filename.str, AVIO_FLAG_WRITE, &options) < 0) {
+        if ((ret = s->io_open(s, &pb[i], tmp[i] ? tmp[i] : filename.str, AVIO_FLAG_WRITE, &options)) < 0) {
             av_log(s, AV_LOG_ERROR, "Could not open file : %s\n", tmp[i] ? tmp[i] : filename.str);
-            ret = AVERROR(EIO);
             goto fail;
         }
         if (options) {

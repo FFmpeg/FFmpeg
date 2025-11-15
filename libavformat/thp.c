@@ -193,7 +193,7 @@ static int thp_read_packet(AVFormatContext *s,
         if (ret < 0)
             return ret;
         if (ret != size) {
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         }
 
         pkt->stream_index = thp->video_stream_index;
@@ -202,7 +202,7 @@ static int thp_read_packet(AVFormatContext *s,
         if (ret < 0)
             return ret;
         if (ret != thp->audiosize) {
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         }
 
         pkt->stream_index = thp->audio_stream_index;

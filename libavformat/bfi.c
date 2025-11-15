@@ -131,7 +131,7 @@ static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
         uint32_t state = 0;
         while(state != MKTAG('S','A','V','I')){
             if (avio_feof(pb))
-                return AVERROR(EIO);
+                return AVERROR_INVALIDDATA;
             state = 256*state + avio_r8(pb);
         }
         /* Now that the chunk's location is confirmed, we proceed... */

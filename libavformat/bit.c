@@ -22,6 +22,7 @@
 #include "config_components.h"
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "mux.h"
@@ -93,11 +94,9 @@ static int read_packet(AVFormatContext *s,
     if(packet_size > MAX_FRAME_SIZE)
         return AVERROR_INVALIDDATA;
 
-    ret = avio_read(pb, (uint8_t*)buf, (8 * packet_size) * sizeof(uint16_t));
+    ret = ffio_read_size(pb, (uint8_t*)buf, (8 * packet_size) * sizeof(uint16_t));
     if(ret<0)
         return ret;
-    if(ret != 8 * packet_size * sizeof(uint16_t))
-        return AVERROR(EIO);
 
     if ((ret = av_new_packet(pkt, packet_size)) < 0)
         return ret;

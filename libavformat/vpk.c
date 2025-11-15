@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 
@@ -94,10 +95,10 @@ static int vpk_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0)
             return ret;
         for (i = 0; i < par->ch_layout.nb_channels; i++) {
-            ret = avio_read(s->pb, pkt->data + i * size, size);
+            ret = ffio_read_size(s->pb, pkt->data + i * size, size);
             avio_skip(s->pb, skip);
-            if (ret != size) {
-                return AVERROR(EIO);
+            if (ret < 0) {
+                return ret;
             }
         }
         pkt->pos = pos;

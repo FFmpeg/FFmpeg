@@ -138,8 +138,8 @@ static int wsvqa_read_header(AVFormatContext *s)
     /* there are 0 or more chunks before the FINF chunk; iterate until
      * FINF has been skipped and the file will be ready to be demuxed */
     do {
-        if (avio_read(pb, scratch, VQA_PREAMBLE_SIZE) != VQA_PREAMBLE_SIZE)
-            return AVERROR(EIO);
+        if ((ret = ffio_read_size(pb, scratch, VQA_PREAMBLE_SIZE)) < 0)
+            return ret;
         chunk_tag = AV_RB32(&scratch[0]);
         chunk_size = AV_RB32(&scratch[4]);
 
@@ -211,7 +211,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
 
             ret= av_get_packet(pb, pkt, chunk_size);
             if (ret<0)
-                return AVERROR(EIO);
+                return AVERROR_INVALIDDATA;
 
             switch (chunk_type) {
             case SND0_TAG:
@@ -272,20 +272,20 @@ static int wsvqa_read_packet(AVFormatContext *s,
                 /* if a new codebook is available inside an earlier a VQFL chunk then
                  * append it to 'pkt' */
                 if (wsvqa->vqfl_chunk_size > 0) {
-                    int64_t current_pos = pkt->pos;
+                    int64_t ret64, current_pos = pkt->pos;
 
-                    if (avio_seek(pb, wsvqa->vqfl_chunk_pos, SEEK_SET) < 0)
-                        return AVERROR(EIO);
+                    if ((ret64 = avio_seek(pb, wsvqa->vqfl_chunk_pos, SEEK_SET)) < 0)
+                        return (int)ret64;
 
                     /* the decoder expects chunks to be 16-bit aligned */
                     if (wsvqa->vqfl_chunk_size % 2 == 1)
                         wsvqa->vqfl_chunk_size++;
 
                     if (av_append_packet(pb, pkt, wsvqa->vqfl_chunk_size) < 0)
-                        return AVERROR(EIO);
+                        return AVERROR_INVALIDDATA;
 
-                    if (avio_seek(pb, current_pos, SEEK_SET) < 0)
-                        return AVERROR(EIO);
+                    if ((ret64 = avio_seek(pb, current_pos, SEEK_SET)) < 0)
+                        return (int)ret64;
 
                     wsvqa->vqfl_chunk_pos = 0;
                     wsvqa->vqfl_chunk_size = 0;

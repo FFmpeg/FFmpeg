@@ -34,6 +34,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 
@@ -97,8 +98,8 @@ static int flic_read_header(AVFormatContext *s)
     flic->frame_number = 0;
 
     /* load the whole header and pull out the width and height */
-    if (avio_read(pb, header, FLIC_HEADER_SIZE) != FLIC_HEADER_SIZE)
-        return AVERROR(EIO);
+    if ((ret = ffio_read_size(pb, header, FLIC_HEADER_SIZE)) < 0)
+        return ret;
 
     magic_number = AV_RL16(&header[4]);
     speed = AV_RL32(&header[0x10]);
@@ -131,9 +132,9 @@ static int flic_read_header(AVFormatContext *s)
     memcpy(st->codecpar->extradata, header, FLIC_HEADER_SIZE);
 
     /* peek at the preamble to detect TFTD videos - they seem to always start with an audio chunk */
-    if (avio_read(pb, preamble, FLIC_PREAMBLE_SIZE) != FLIC_PREAMBLE_SIZE) {
+    if ((ret = ffio_read_size(pb, preamble, FLIC_PREAMBLE_SIZE)) < 0) {
         av_log(s, AV_LOG_ERROR, "Failed to peek at preamble\n");
-        return AVERROR(EIO);
+        return ret;
     }
 
     avio_seek(pb, -FLIC_PREAMBLE_SIZE, SEEK_CUR);
@@ -206,11 +207,8 @@ static int flic_read_packet(AVFormatContext *s,
 
     while (!packet_read && !avio_feof(pb)) {
 
-        if ((ret = avio_read(pb, preamble, FLIC_PREAMBLE_SIZE)) !=
-            FLIC_PREAMBLE_SIZE) {
-            ret = AVERROR(EIO);
+        if ((ret = ffio_read_size(pb, preamble, FLIC_PREAMBLE_SIZE)) < 0)
             break;
-        }
 
         size = AV_RL32(&preamble[0]);
         magic = AV_RL16(&preamble[4]);
@@ -222,11 +220,8 @@ static int flic_read_packet(AVFormatContext *s,
             pkt->stream_index = flic->video_stream_index;
             pkt->pos = pos;
             memcpy(pkt->data, preamble, FLIC_PREAMBLE_SIZE);
-            ret = avio_read(pb, pkt->data + FLIC_PREAMBLE_SIZE,
+            ret = ffio_read_size(pb, pkt->data + FLIC_PREAMBLE_SIZE,
                 size - FLIC_PREAMBLE_SIZE);
-            if (ret != size - FLIC_PREAMBLE_SIZE) {
-                ret = AVERROR(EIO);
-            }
             pkt->flags = flic->frame_number == 0 ? AV_PKT_FLAG_KEY : 0;
             pkt->pts = flic->frame_number;
             if (flic->frame_number == 0)
@@ -243,12 +238,10 @@ static int flic_read_packet(AVFormatContext *s,
             pkt->stream_index = flic->audio_stream_index;
             pkt->pos = pos;
             pkt->flags = AV_PKT_FLAG_KEY;
-            ret = avio_read(pb, pkt->data, size);
+            ret = ffio_read_size(pb, pkt->data, size);
 
-            if (ret != size) {
-                ret = AVERROR(EIO);
+            if (ret < 0)
                 break;
-            }
 
             packet_read = 1;
         } else {

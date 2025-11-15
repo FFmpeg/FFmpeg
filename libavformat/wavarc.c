@@ -71,8 +71,8 @@ static int wavarc_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     id = avio_rl32(pb);
     w->data_end = avio_tell(pb);
-    if (avio_read(pb, data, sizeof(data)) != sizeof(data))
-        return AVERROR(EIO);
+    if ((ret = ffio_read_size(pb, data, sizeof(data))) < 0)
+        return ret;
     w->data_end += 16LL + AV_RL32(data + 4);
     fmt_len = AV_RL32(data + 32);
     if (fmt_len < 12)

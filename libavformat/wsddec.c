@@ -24,6 +24,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/timecode.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "rawdec.h"
 
@@ -73,6 +74,7 @@ static int wsd_to_av_channel_layoyt(AVFormatContext *s, int bit)
 static int get_metadata(AVFormatContext *s, const char *const tag, const unsigned size)
 {
     uint8_t *buf;
+    int ret;
     if (!(size + 1))
         return AVERROR(ENOMEM);
 
@@ -80,9 +82,9 @@ static int get_metadata(AVFormatContext *s, const char *const tag, const unsigne
     if (!buf)
         return AVERROR(ENOMEM);
 
-    if (avio_read(s->pb, buf, size) != size) {
+    if ((ret = avio_read(s->pb, buf, size)) < 0) {
         av_free(buf);
-        return AVERROR(EIO);
+        return ret;
     }
 
     if (empty_string(buf, size)) {

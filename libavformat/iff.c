@@ -37,6 +37,7 @@
 #include "libavutil/mem.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "id3v2.h"
 #include "internal.h"
@@ -135,13 +136,14 @@ static int get_metadata(AVFormatContext *s,
                         const unsigned data_size)
 {
     uint8_t *buf = ((data_size + 1) == 0) ? NULL : av_malloc(data_size + 1);
+    int res;
 
     if (!buf)
         return AVERROR(ENOMEM);
 
-    if (avio_read(s->pb, buf, data_size) != data_size) {
+    if ((res = ffio_read_size(s->pb, buf, data_size)) < 0) {
         av_free(buf);
-        return AVERROR(EIO);
+        return res;
     }
     buf[data_size] = 0;
     av_dict_set(&s->metadata, tag, buf, AV_DICT_DONT_STRDUP_VAL);
@@ -563,10 +565,10 @@ static int iff_read_header(AVFormatContext *s)
                                      data_size + IFF_EXTRA_VIDEO_SIZE);
             if (res < 0)
                 return res;
-            if (avio_read(pb, stv->codecpar->extradata + IFF_EXTRA_VIDEO_SIZE, data_size) < 0) {
+            if ((res = avio_read(pb, stv->codecpar->extradata + IFF_EXTRA_VIDEO_SIZE, data_size)) < 0) {
                 av_freep(&stv->codecpar->extradata);
                 stv->codecpar->extradata_size = 0;
-                return AVERROR(EIO);
+                return res;
             }
             break;
 

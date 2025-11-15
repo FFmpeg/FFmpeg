@@ -537,7 +537,7 @@ static int ea_read_header(AVFormatContext *s)
     AVStream *st;
 
     if (process_ea_header(s)<=0)
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
 
     if (init_video_stream(s, &ea->video) || init_video_stream(s, &ea->alpha))
         return AVERROR(ENOMEM);

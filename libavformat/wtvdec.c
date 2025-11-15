@@ -761,7 +761,7 @@ static int recover(WtvContext *wtv, uint64_t broken_pos)
             return 0;
          }
      }
-     return AVERROR(EIO);
+     return AVERROR_INVALIDDATA;
 }
 
 /**

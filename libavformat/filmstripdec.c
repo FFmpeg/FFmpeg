@@ -43,7 +43,7 @@ static int read_header(AVFormatContext *s)
     AVStream *st;
 
     if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
-        return AVERROR(EIO);
+        return AVERROR(ENOSYS);
 
     avio_seek(pb, avio_size(pb) - 36, SEEK_SET);
     if (avio_rb32(pb) != RAND_TAG) {

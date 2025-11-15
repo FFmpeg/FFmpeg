@@ -105,7 +105,7 @@ static int read_header(AVFormatContext *s)
     if (version <= 4) {
         // version <= 4 needs to use the file size to calculate the offsets
         if (file_size < 0) {
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         }
         if (file_size - data_size > UINT32_MAX)
             return AVERROR_INVALIDDATA;

@@ -25,6 +25,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "mux.h"
@@ -139,10 +140,8 @@ static int argo_cvg_read_checksum(AVIOContext *pb, const ArgoCVGHeader *cvg, uin
         return ret;
 
     /* NB: Not using avio_rl32() because no error checking. */
-    if ((ret = avio_read(pb, buf, sizeof(buf))) < 0)
+    if ((ret = ffio_read_size(pb, buf, sizeof(buf))) < 0)
         return ret;
-    else if (ret != sizeof(buf))
-        return AVERROR(EIO);
 
     if ((ret = avio_seek(pb, ARGO_CVG_HEADER_SIZE, SEEK_SET)) < 0)
         return ret;
@@ -163,10 +162,8 @@ static int argo_cvg_read_header(AVFormatContext *s)
     if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
 
-    if ((ret = avio_read(s->pb, buf, ARGO_CVG_HEADER_SIZE)) < 0)
+    if ((ret = ffio_read_size(s->pb, buf, ARGO_CVG_HEADER_SIZE)) < 0)
         return ret;
-    else if (ret != ARGO_CVG_HEADER_SIZE)
-        return AVERROR(EIO);
 
     ctx->header.size   = AV_RL32(buf + 0);
     ctx->header.loop   = AV_RL32(buf + 4);

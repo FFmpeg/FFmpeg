@@ -400,13 +400,13 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
                 !s->loop &&
                 !s->split_planes) {
                 f[i] = s1->pb;
-            } else if (s1->io_open(s1, &f[i], filename.str, AVIO_FLAG_READ, NULL) < 0) {
+            } else if ((res = s1->io_open(s1, &f[i], filename.str, AVIO_FLAG_READ, NULL)) < 0) {
                 if (i >= 1)
                     break;
                 av_log(s1, AV_LOG_ERROR, "Could not open file : %s\n",
                        filename.str);
                 av_bprint_finalize(&filename, NULL);
-                return AVERROR(EIO);
+                return res;
             }
             size[i] = avio_size(f[i]);
 
@@ -466,7 +466,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         struct stat img_stat;
         av_assert0(!s->is_pipe); // The ts_from_file option is not supported by piped input demuxers
         if (stat(filename.str, &img_stat)) {
-            res = AVERROR(EIO);
+            res = AVERROR(errno);
             goto fail;
         }
         pkt->pts = (int64_t)img_stat.st_mtime;

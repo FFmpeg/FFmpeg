@@ -93,9 +93,9 @@ static int qoa_read_packet(AVFormatContext *s, AVPacket *pkt)
         return ret;
 
     memcpy(pkt->data, hdr, sizeof(hdr));
-    ret = avio_read(pb, pkt->data + sizeof(hdr), size - sizeof(hdr));
-    if (ret != size - sizeof(hdr))
-        return AVERROR(EIO);
+    ret = ffio_read_size(pb, pkt->data + sizeof(hdr), size - sizeof(hdr));
+    if (ret < 0)
+        return ret;
     pkt->stream_index = 0;
     pkt->pos = pos;
     pkt->duration = duration;

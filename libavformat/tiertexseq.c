@@ -27,6 +27,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/mem.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 
@@ -109,6 +110,7 @@ static int seq_init_frame_buffers(SeqDemuxContext *seq, AVIOContext *pb)
 static int seq_fill_buffer(SeqDemuxContext *seq, AVIOContext *pb, int buffer_num, unsigned int data_offs, int data_size)
 {
     TiertexSeqFrameBuffer *seq_buffer;
+    int ret;
 
     if (buffer_num >= SEQ_NUM_FRAME_BUFFERS)
         return AVERROR_INVALIDDATA;
@@ -118,8 +120,8 @@ static int seq_fill_buffer(SeqDemuxContext *seq, AVIOContext *pb, int buffer_num
         return AVERROR_INVALIDDATA;
 
     avio_seek(pb, seq->current_frame_offs + data_offs, SEEK_SET);
-    if (avio_read(pb, seq_buffer->data + seq_buffer->fill_size, data_size) != data_size)
-        return AVERROR(EIO);
+    if ((ret = ffio_read_size(pb, seq_buffer->data + seq_buffer->fill_size, data_size)) < 0)
+        return ret;
 
     seq_buffer->fill_size += data_size;
     return 0;
@@ -273,10 +275,11 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             pkt->data[0] = 0;
             if (seq->current_pal_data_size) {
+                int ret;
                 pkt->data[0] |= 1;
                 avio_seek(pb, seq->current_frame_offs + seq->current_pal_data_offs, SEEK_SET);
-                if (avio_read(pb, &pkt->data[1], seq->current_pal_data_size) != seq->current_pal_data_size)
-                    return AVERROR(EIO);
+                if ((ret = ffio_read_size(pb, &pkt->data[1], seq->current_pal_data_size)) < 0)
+                    return ret;
             }
             if (seq->current_video_data_size) {
                 pkt->data[0] |= 2;
@@ -295,7 +298,7 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* audio packet */
     if (seq->current_audio_data_offs == 0) /* end of data reached */
-        return AVERROR(EIO);
+        return AVERROR_EOF;
 
     avio_seek(pb, seq->current_frame_offs + seq->current_audio_data_offs, SEEK_SET);
     rc = av_get_packet(pb, pkt, seq->current_audio_data_size);

@@ -282,7 +282,7 @@ static int yuv4_init(AVFormatContext *s)
                "gray9, gray10, gray12 "
                "and gray16 pixel formats. "
                "Use -pix_fmt to select one.\n");
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     }
 
     return 0;

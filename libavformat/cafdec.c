@@ -28,6 +28,7 @@
 #include <inttypes.h>
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "isom.h"
@@ -142,9 +143,9 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             avio_skip(pb, size);
             return AVERROR_INVALIDDATA;
         }
-        if (avio_read(pb, preamble, ALAC_PREAMBLE) != ALAC_PREAMBLE) {
+        if ((ret = ffio_read_size(pb, preamble, ALAC_PREAMBLE)) < 0) {
             av_log(s, AV_LOG_ERROR, "failed to read preamble\n");
-            return AVERROR_INVALIDDATA;
+            return ret;
         }
 
         if ((ret = ff_alloc_extradata(st->codecpar, ALAC_HEADER)) < 0)
@@ -443,7 +444,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         if (!left)
             return AVERROR_EOF;
         if (left < 0)
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
     }
 
     pkt_frames = caf->frames_per_packet;
@@ -461,12 +462,12 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt_size   = caf->num_bytes - sti->index_entries[caf->packet_cnt].pos;
             pkt_frames = st->duration   - sti->index_entries[caf->packet_cnt].timestamp;
         } else {
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         }
     }
 
     if (pkt_size == 0 || pkt_frames == 0 || pkt_size > left)
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
 
     res = av_get_packet(pb, pkt, pkt_size);
     if (res < 0)

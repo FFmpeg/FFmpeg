@@ -33,6 +33,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/mem.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 
@@ -141,9 +142,9 @@ static int wc3_read_header(AVFormatContext *s)
             buffer = av_malloc(size+1);
             if (!buffer)
                 return AVERROR(ENOMEM);
-            if ((ret = avio_read(pb, buffer, size)) != size) {
+            if ((ret = ffio_read_size(pb, buffer, size)) < 0) {
                 av_freep(&buffer);
-                return AVERROR(EIO);
+                return ret;
             }
             buffer[size] = 0;
             av_dict_set(&s->metadata, "title", buffer,
@@ -172,7 +173,7 @@ static int wc3_read_header(AVFormatContext *s)
         /* chunk sizes are 16-bit aligned */
         size = (avio_rb32(pb) + 1) & (~1);
         if (avio_feof(pb))
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
 
     } while (fourcc_tag != BRCH_TAG);
 
@@ -223,7 +224,7 @@ static int wc3_read_packet(AVFormatContext *s,
         /* chunk sizes are 16-bit aligned */
         size = (avio_rb32(pb) + 1) & (~1);
         if (avio_feof(pb))
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
 
         switch (fourcc_tag) {
 
@@ -252,9 +253,9 @@ static int wc3_read_packet(AVFormatContext *s,
 
         case TEXT_TAG:
             /* subtitle chunk */
-            if ((unsigned)size > sizeof(text) || (ret = avio_read(pb, text, size)) != size)
-                ret = AVERROR(EIO);
-            else {
+            if ((unsigned)size > sizeof(text))
+                ret = AVERROR_INVALIDDATA;
+            else if ((ret = ffio_read_size(pb, text, size)) == size) {
                 int i = 0;
                 av_log (s, AV_LOG_DEBUG, "Subtitle time!\n");
                 if (i >= size || av_strnlen(&text[i + 1], size - i - 1) >= size - i - 1)

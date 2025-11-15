@@ -120,13 +120,13 @@ static int read_header(AVFormatContext *s)
 
     if (vst->duration > 1000000) {
         av_log(s, AV_LOG_ERROR, "invalid header: more than 1000000 frames\n");
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     }
 
     if (avio_rl32(pb) > bink->file_size) {
         av_log(s, AV_LOG_ERROR,
                "invalid header: largest frame size greater than file size\n");
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     }
 
     avio_skip(pb, 4);
@@ -140,7 +140,7 @@ static int read_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR,
                "invalid header: invalid fps (%"PRIu32"/%"PRIu32")\n",
                fps_num, fps_den);
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     }
     avpriv_set_pts_info(vst, 64, fps_den, fps_num);
     vst->avg_frame_rate = av_inv_q(vst->time_base);
@@ -162,7 +162,7 @@ static int read_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR,
                "invalid header: more than "AV_STRINGIFY(BINK_MAX_AUDIO_TRACKS)" audio tracks (%"PRIu32")\n",
                bink->num_audio_tracks);
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     }
 
     signature = (vst->codecpar->codec_tag & 0xFFFFFF);
@@ -217,7 +217,7 @@ static int read_header(AVFormatContext *s)
 
         if (next_pos <= pos) {
             av_log(s, AV_LOG_ERROR, "invalid frame index table\n");
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         }
         if ((ret = av_add_index_entry(vst, pos, i, next_pos - pos, 0,
                                       keyframe ? AVINDEX_KEYFRAME : 0)) < 0)
@@ -253,7 +253,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_ERROR,
                    "could not find index entry for frame %"PRId64"\n",
                    bink->video_pts);
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         }
 
         bink->remain_packet_size = sti->index_entries[index_entry].size;
@@ -267,7 +267,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_ERROR,
                    "frame %"PRId64": audio size in header (%"PRIu32") > size of packet left (%"PRIu32")\n",
                    bink->video_pts, audio_size, bink->remain_packet_size);
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         }
         bink->remain_packet_size -= 4 + audio_size;
         bink->current_track++;

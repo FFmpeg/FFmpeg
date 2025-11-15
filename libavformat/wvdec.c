@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "apetag.h"
@@ -295,9 +296,9 @@ static int wv_read_packet(AVFormatContext *s, AVPacket *pkt)
     if ((ret = av_new_packet(pkt, wc->header.blocksize + WV_HEADER_SIZE)) < 0)
         return ret;
     memcpy(pkt->data, wc->block_header, WV_HEADER_SIZE);
-    ret = avio_read(s->pb, pkt->data + WV_HEADER_SIZE, wc->header.blocksize);
-    if (ret != wc->header.blocksize) {
-        return AVERROR(EIO);
+    ret = ffio_read_size(s->pb, pkt->data + WV_HEADER_SIZE, wc->header.blocksize);
+    if (ret < 0) {
+        return ret;
     }
     while (!(wc->header.flags & WV_FLAG_FINAL_BLOCK)) {
         if ((ret = wv_read_block_header(s, s->pb)) < 0) {

@@ -569,7 +569,7 @@ static int rm_read_header(AVFormatContext *s)
         /* very old .ra format */
         return rm_read_header_old(s);
     } else if (tag != MKTAG('.', 'R', 'M', 'F') && tag != MKTAG('.', 'R', 'M', 'P')) {
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     }
 
     tag_size = avio_rb32(pb);
@@ -1064,7 +1064,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (avio_feof(s->pb))
                 return AVERROR_EOF;
             if (len <= 0)
-                return AVERROR(EIO);
+                return AVERROR_INVALIDDATA;
 
             res = ff_rm_parse_packet (s, s->pb, st, st->priv_data, len, pkt,
                                       &seq, flags, timestamp);
@@ -1410,7 +1410,7 @@ static int ivr_read_packet(AVFormatContext *s, AVPacket *pkt)
                 }
             } else {
                 av_log(s, AV_LOG_ERROR, "Unsupported opcode=%d at %"PRIX64"\n", opcode, avio_tell(pb) - 1);
-                return AVERROR(EIO);
+                return AVERROR_INVALIDDATA;
             }
         }
 

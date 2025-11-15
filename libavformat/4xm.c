@@ -32,6 +32,7 @@
 #include "libavutil/mem.h"
 #include "libavcodec/internal.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 
@@ -239,9 +240,10 @@ static int fourxm_read_header(AVFormatContext *s)
     header = av_malloc(header_size);
     if (!header)
         return AVERROR(ENOMEM);
-    if (avio_read(pb, header, header_size) != header_size) {
+    ret = ffio_read_size(pb, header, header_size);
+    if (ret < 0) {
         av_free(header);
-        return AVERROR(EIO);
+        return ret;
     }
 
     /* take the lazy approach and search for any and all vtrk and strk chunks */
@@ -312,7 +314,7 @@ static int fourxm_read_packet(AVFormatContext *s,
         fourcc_tag = AV_RL32(&header[0]);
         size       = AV_RL32(&header[4]);
         if (avio_feof(pb))
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         switch (fourcc_tag) {
         case LIST_TAG:
             /* this is a good time to bump the video pts */

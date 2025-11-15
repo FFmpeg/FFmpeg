@@ -489,7 +489,7 @@ static int mv_read_packet(AVFormatContext *avctx, AVPacket *pkt)
             avio_skip(pb, index->pos - pos);
         else if (index->pos < pos) {
             if (!(pb->seekable & AVIO_SEEKABLE_NORMAL))
-                return AVERROR(EIO);
+                return AVERROR(ENOSYS);
             ret = avio_seek(pb, index->pos, SEEK_SET);
             if (ret < 0)
                 return ret;
@@ -531,7 +531,7 @@ static int mv_read_seek(AVFormatContext *avctx, int stream_index,
         return AVERROR(ENOSYS);
 
     if (!(avctx->pb->seekable & AVIO_SEEKABLE_NORMAL))
-        return AVERROR(EIO);
+        return AVERROR(ENOSYS);
 
     frame = av_index_search_timestamp(st, timestamp, flags);
     if (frame < 0)

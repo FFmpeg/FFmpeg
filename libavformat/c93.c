@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "voc.h"
@@ -157,9 +158,9 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->data[0] = 0;
     pkt->size = datasize + 1;
 
-    ret = avio_read(pb, pkt->data + 1, datasize);
-    if (ret < datasize) {
-        return AVERROR(EIO);
+    ret = ffio_read_size(pb, pkt->data + 1, datasize);
+    if (ret < 0) {
+        return ret;
     }
 
     datasize = avio_rl16(pb); /* palette size */
@@ -169,9 +170,9 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR_INVALIDDATA;
         }
         pkt->data[0] |= C93_HAS_PALETTE;
-        ret = avio_read(pb, pkt->data + pkt->size, datasize);
-        if (ret < datasize) {
-            return AVERROR(EIO);
+        ret = ffio_read_size(pb, pkt->data + pkt->size, datasize);
+        if (ret < 0) {
+            return ret;
         }
         pkt->size += 768;
     }

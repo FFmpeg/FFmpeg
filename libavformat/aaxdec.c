@@ -345,9 +345,10 @@ static int aax_read_packet(AVFormatContext *s, AVPacket *pkt)
             extradata = av_malloc(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!extradata)
                 return AVERROR(ENOMEM);
-            if (avio_read(pb, extradata, extradata_size) != extradata_size) {
+            ret = ffio_read_size(pb, extradata, extradata_size);
+            if (ret < 0) {
                 av_free(extradata);
-                return AVERROR(EIO);
+                return ret;
             }
             memset(extradata + extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         }
@@ -356,7 +357,7 @@ static int aax_read_packet(AVFormatContext *s, AVPacket *pkt)
     ret = av_get_packet(pb, pkt, size);
     if (ret != size) {
         av_free(extradata);
-        return ret < 0 ? ret : AVERROR(EIO);
+        return ret < 0 ? ret : AVERROR_INVALIDDATA;
     }
     pkt->duration = 1;
     pkt->stream_index = 0;

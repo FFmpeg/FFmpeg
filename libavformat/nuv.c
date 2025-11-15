@@ -320,7 +320,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    return AVERROR(EIO);
+    return AVERROR_INVALIDDATA;
 }
 
 /**

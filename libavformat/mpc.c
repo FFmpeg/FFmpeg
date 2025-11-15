@@ -171,7 +171,7 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
     if(c->curbits)
         avio_seek(s->pb, -4, SEEK_CUR);
     if(ret < size){
-        return ret < 0 ? ret : AVERROR(EIO);
+        return ret < 0 ? ret : AVERROR_INVALIDDATA;
     }
     pkt->size = ret + 4;
 

@@ -89,7 +89,7 @@ static int dfa_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
 
     if (av_get_packet(pb, pkt, 12) != 12)
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     while (!avio_feof(pb)) {
         if (!first) {
             ret = av_append_packet(pb, pkt, 12);
@@ -101,7 +101,7 @@ static int dfa_read_packet(AVFormatContext *s, AVPacket *pkt)
         frame_size = AV_RL32(pkt->data + pkt->size - 8);
         if (frame_size > INT_MAX - 4) {
             av_log(s, AV_LOG_ERROR, "Too large chunk size: %"PRIu32"\n", frame_size);
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         }
         if (AV_RL32(pkt->data + pkt->size - 12) == MKTAG('E', 'O', 'F', 'R')) {
             if (frame_size) {

@@ -548,7 +548,7 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     index = av_index_search_timestamp(st, mlv->pts, AVSEEK_FLAG_ANY);
     if (index < 0) {
         av_log(avctx, AV_LOG_ERROR, "could not find index entry for frame %"PRId64"\n", mlv->pts);
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
     }
 
     pb = mlv->pb[sti->index_entries[index].size];
@@ -611,7 +611,7 @@ static int read_seek(AVFormatContext *avctx, int stream_index, int64_t timestamp
         return AVERROR(ENOSYS);
 
     if (!(avctx->pb->seekable & AVIO_SEEKABLE_NORMAL))
-        return AVERROR(EIO);
+        return AVERROR(ENOSYS);
 
     mlv->pts = timestamp;
     return 0;

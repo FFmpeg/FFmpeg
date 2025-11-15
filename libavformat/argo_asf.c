@@ -24,6 +24,7 @@
 
 #include "libavutil/avstring.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "mux.h"
@@ -188,10 +189,8 @@ static int argo_asf_read_header(AVFormatContext *s)
     if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
 
-    if ((ret = avio_read(pb, buf, ASF_FILE_HEADER_SIZE)) < 0)
+    if ((ret = ffio_read_size(pb, buf, ASF_FILE_HEADER_SIZE)) < 0)
         return ret;
-    else if (ret != ASF_FILE_HEADER_SIZE)
-        return AVERROR(EIO);
 
     ff_argo_asf_parse_file_header(&asf->fhdr, buf);
 
@@ -205,10 +204,8 @@ static int argo_asf_read_header(AVFormatContext *s)
     if ((ret = avio_skip(pb, asf->fhdr.chunk_offset - ASF_FILE_HEADER_SIZE)) < 0)
         return ret;
 
-    if ((ret = avio_read(pb, buf, ASF_CHUNK_HEADER_SIZE)) < 0)
+    if ((ret = ffio_read_size(pb, buf, ASF_CHUNK_HEADER_SIZE)) < 0)
         return ret;
-    else if (ret != ASF_CHUNK_HEADER_SIZE)
-        return AVERROR(EIO);
 
     ff_argo_asf_parse_chunk_header(&asf->ckhdr, buf);
 

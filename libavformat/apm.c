@@ -23,6 +23,7 @@
 #include "config_components.h"
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "mux.h"
@@ -153,10 +154,8 @@ static int apm_read_header(AVFormatContext *s)
                                  (int64_t)par->sample_rate *
                                  par->bits_per_coded_sample;
 
-    if ((ret = avio_read(s->pb, buf, APM_FILE_EXTRADATA_SIZE)) < 0)
+    if ((ret = ffio_read_size(s->pb, buf, APM_FILE_EXTRADATA_SIZE)) < 0)
         return ret;
-    else if (ret != APM_FILE_EXTRADATA_SIZE)
-        return AVERROR(EIO);
 
     apm_parse_extradata(&extradata, buf);
 

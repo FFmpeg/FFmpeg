@@ -31,6 +31,7 @@
 #include "libavutil/mem.h"
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "internal.h"
 #include "riff.h"
@@ -273,8 +274,8 @@ static int xmv_process_packet_header(AVFormatContext *s)
 
     /* Packet video header */
 
-    if (avio_read(pb, data, 8) != 8)
-        return AVERROR(EIO);
+    if ((ret = ffio_read_size(pb, data, 8)) < 0)
+        return ret;
 
     xmv->video.data_size     = AV_RL32(data) & 0x007FFFFF;
 
@@ -325,8 +326,8 @@ static int xmv_process_packet_header(AVFormatContext *s)
     for (audio_track = 0; audio_track < xmv->audio_track_count; audio_track++) {
         XMVAudioPacket *packet = &xmv->audio[audio_track];
 
-        if (avio_read(pb, data, 4) != 4)
-            return AVERROR(EIO);
+        if ((ret = ffio_read_size(pb, data, 4)) < 0)
+            return ret;
 
         if (!packet->created) {
             AVStream *ast = avformat_new_stream(s, NULL);
@@ -417,12 +418,12 @@ static int xmv_fetch_new_packet(AVFormatContext *s)
     /* Seek to it */
     xmv->this_packet_offset = xmv->next_packet_offset;
     if (avio_seek(pb, xmv->this_packet_offset, SEEK_SET) != xmv->this_packet_offset)
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
 
     /* Update the size */
     xmv->this_packet_size = xmv->next_packet_size;
     if (xmv->this_packet_size < (12 + xmv->audio_track_count * 4))
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
 
     /* Process the header */
     result = xmv_process_packet_header(s);
@@ -448,7 +449,7 @@ static int xmv_fetch_audio_packet(AVFormatContext *s,
 
     /* Seek to it */
     if (avio_seek(pb, audio->data_offset, SEEK_SET) != audio->data_offset)
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
 
     if ((xmv->video.current_frame + 1) < xmv->video.frame_count)
         /* Not the last frame, get at most frame_size bytes. */
@@ -495,7 +496,7 @@ static int xmv_fetch_video_packet(AVFormatContext *s,
 
     /* Seek to it */
     if (avio_seek(pb, video->data_offset, SEEK_SET) != video->data_offset)
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
 
     /* Read the frame header */
     frame_header = avio_rl32(pb);
@@ -504,7 +505,7 @@ static int xmv_fetch_video_packet(AVFormatContext *s,
     frame_timestamp = (frame_header >> 17);
 
     if ((frame_size + 4) > video->data_size)
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
 
     /* Get the packet data */
     result = av_get_packet(pb, pkt, frame_size);

@@ -267,7 +267,7 @@ static int idcin_read_packet(AVFormatContext *s,
     if (idcin->next_chunk_is_video) {
         command = avio_rl32(pb);
         if (command == 2) {
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         } else if (command == 1) {
             /* trigger a palette change */
             ret = avio_read(pb, palette_buffer, 768);
@@ -275,7 +275,7 @@ static int idcin_read_packet(AVFormatContext *s,
                 return ret;
             } else if (ret != 768) {
                 av_log(s, AV_LOG_ERROR, "incomplete packet\n");
-                return AVERROR(EIO);
+                return AVERROR_INVALIDDATA;
             }
             /* scale the palette as necessary */
             palette_scale = 2;
@@ -312,7 +312,7 @@ static int idcin_read_packet(AVFormatContext *s,
             return ret;
         else if (ret != chunk_size) {
             av_log(s, AV_LOG_ERROR, "incomplete packet\n");
-            return AVERROR(EIO);
+            return AVERROR_INVALIDDATA;
         }
         if (command == 1) {
             uint8_t *pal;
