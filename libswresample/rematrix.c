@@ -552,7 +552,7 @@ av_cold int swri_rematrix_init(SwrContext *s){
         s->matrix_ch[i][0]= ch_in;
     }
 
-#if ARCH_X86 && HAVE_X86ASM && HAVE_MMX
+#if ARCH_X86 && HAVE_X86ASM
     return swri_rematrix_init_x86(s);
 #endif
 

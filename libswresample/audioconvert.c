@@ -176,7 +176,7 @@ AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
         }
     }
 
-#if ARCH_X86 && HAVE_X86ASM && HAVE_MMX
+#if ARCH_X86 && HAVE_X86ASM
     swri_audio_convert_init_x86(ctx, out_fmt, in_fmt, channels);
 #elif ARCH_ARM
     swri_audio_convert_init_arm(ctx, out_fmt, in_fmt, channels);
