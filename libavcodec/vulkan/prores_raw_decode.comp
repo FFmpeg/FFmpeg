@@ -206,12 +206,13 @@ void main(void)
 
     uint64_t pkt_offset = uint64_t(pkt_data) + td.offset;
     u8vec2buf hdr_data = u8vec2buf(pkt_offset);
+    int header_len = hdr_data[0].v.x >> 3;
 
     ivec4 size = ivec4(td.size,
                        pack16(hdr_data[2].v.yx),
                        pack16(hdr_data[1].v.yx),
                        pack16(hdr_data[3].v.yx));
-    size[0] = size[0] - size[1] - size[2] - size[3] - 8;
+    size[0] = size[0] - size[1] - size[2] - size[3] - header_len;
     if (expectEXT(size[0] < 0, false))
         return;
 
@@ -224,7 +225,7 @@ void main(void)
                                     0,
                                     size[2] + size[1]);
 
-    init_get_bits(gb, u8buf(pkt_offset + 8 + comp_offset[COMP_ID]),
+    init_get_bits(gb, u8buf(pkt_offset + header_len + comp_offset[COMP_ID]),
                   size[COMP_ID]);
 
     read_dc_vals(offs, nb_blocks);
