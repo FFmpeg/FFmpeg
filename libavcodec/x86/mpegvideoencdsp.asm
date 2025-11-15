@@ -24,6 +24,52 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION .text
+
+INIT_XMM sse2
+cglobal mpv_denoise_dct, 3, 4, 7, block, sum, offset
+    pxor            m6, m6
+    lea             r3, [sumq+256]
+.loop:
+    mova            m2, [blockq]
+    mova            m3, [blockq+16]
+    mova            m0, m6
+    mova            m1, m6
+    pcmpgtw         m0, m2
+    pcmpgtw         m1, m3
+    pxor            m2, m0
+    pxor            m3, m1
+    psubw           m2, m0
+    psubw           m3, m1
+    psubusw         m4, m2, [offsetq]
+    psubusw         m5, m3, [offsetq+16]
+    pxor            m4, m0
+    pxor            m5, m1
+    add        offsetq, 32
+    psubw           m4, m0
+    psubw           m5, m1
+    mova      [blockq], m4
+    mova   [blockq+16], m5
+    mova            m0, m2
+    mova            m1, m3
+    add         blockq, 32
+    punpcklwd       m0, m6
+    punpckhwd       m2, m6
+    punpcklwd       m1, m6
+    punpckhwd       m3, m6
+    paddd           m0, [sumq]
+    paddd           m2, [sumq+16]
+    paddd           m1, [sumq+32]
+    paddd           m3, [sumq+48]
+    mova        [sumq], m0
+    mova     [sumq+16], m2
+    mova     [sumq+32], m1
+    mova     [sumq+48], m3
+    add           sumq, 64
+    cmp           sumq, r3
+    jb           .loop
+    RET
+
+
 ; int ff_pix_sum16(const uint8_t *pix, ptrdiff_t line_size)
 ; %1 = number of loops
 ; %2 = number of GPRs used

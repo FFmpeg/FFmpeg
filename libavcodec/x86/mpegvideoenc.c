@@ -57,8 +57,10 @@ DECLARE_ALIGNED(16, static const uint16_t, inv_zigzag_direct16)[64] = {
 
 #endif /* HAVE_6REGS */
 
-#if HAVE_INLINE_ASM
-#if HAVE_SSE2_INLINE
+#if HAVE_SSE2_EXTERNAL
+void ff_mpv_denoise_dct_sse2(int16_t block[64], int dct_error_sum[64],
+                             const uint16_t dct_offset[64]);
+
 static void denoise_dct_sse2(MPVEncContext *const s, int16_t block[])
 {
     const int intra = s->c.mb_intra;
@@ -67,56 +69,9 @@ static void denoise_dct_sse2(MPVEncContext *const s, int16_t block[])
 
     s->dct_count[intra]++;
 
-    __asm__ volatile(
-        "pxor %%xmm6, %%xmm6                    \n\t"
-        "1:                                     \n\t"
-        "pxor %%xmm0, %%xmm0                    \n\t"
-        "pxor %%xmm1, %%xmm1                    \n\t"
-        "movdqa (%0), %%xmm2                    \n\t"
-        "movdqa 16(%0), %%xmm3                  \n\t"
-        "pcmpgtw %%xmm2, %%xmm0                 \n\t"
-        "pcmpgtw %%xmm3, %%xmm1                 \n\t"
-        "pxor %%xmm0, %%xmm2                    \n\t"
-        "pxor %%xmm1, %%xmm3                    \n\t"
-        "psubw %%xmm0, %%xmm2                   \n\t"
-        "psubw %%xmm1, %%xmm3                   \n\t"
-        "movdqa %%xmm2, %%xmm4                  \n\t"
-        "movdqa %%xmm3, %%xmm5                  \n\t"
-        "psubusw (%2), %%xmm2                   \n\t"
-        "psubusw 16(%2), %%xmm3                 \n\t"
-        "pxor %%xmm0, %%xmm2                    \n\t"
-        "pxor %%xmm1, %%xmm3                    \n\t"
-        "psubw %%xmm0, %%xmm2                   \n\t"
-        "psubw %%xmm1, %%xmm3                   \n\t"
-        "movdqa %%xmm2, (%0)                    \n\t"
-        "movdqa %%xmm3, 16(%0)                  \n\t"
-        "movdqa %%xmm4, %%xmm2                  \n\t"
-        "movdqa %%xmm5, %%xmm0                  \n\t"
-        "punpcklwd %%xmm6, %%xmm4               \n\t"
-        "punpckhwd %%xmm6, %%xmm2               \n\t"
-        "punpcklwd %%xmm6, %%xmm5               \n\t"
-        "punpckhwd %%xmm6, %%xmm0               \n\t"
-        "paddd (%1), %%xmm4                     \n\t"
-        "paddd 16(%1), %%xmm2                   \n\t"
-        "paddd 32(%1), %%xmm5                   \n\t"
-        "paddd 48(%1), %%xmm0                   \n\t"
-        "movdqa %%xmm4, (%1)                    \n\t"
-        "movdqa %%xmm2, 16(%1)                  \n\t"
-        "movdqa %%xmm5, 32(%1)                  \n\t"
-        "movdqa %%xmm0, 48(%1)                  \n\t"
-        "add $32, %0                            \n\t"
-        "add $64, %1                            \n\t"
-        "add $32, %2                            \n\t"
-        "cmp %3, %0                             \n\t"
-            " jb 1b                             \n\t"
-        : "+r" (block), "+r" (sum), "+r" (offset)
-        : "r"(block+64)
-          XMM_CLOBBERS_ONLY("%xmm0", "%xmm1", "%xmm2", "%xmm3",
-                            "%xmm4", "%xmm5", "%xmm6")
-    );
+    ff_mpv_denoise_dct_sse2(block, sum, offset);
 }
-#endif /* HAVE_SSE2_INLINE */
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_SSE2_EXTERNAL */
 
 av_cold void ff_dct_encode_init_x86(MPVEncContext *const s)
 {
@@ -129,7 +84,9 @@ av_cold void ff_dct_encode_init_x86(MPVEncContext *const s)
 #if HAVE_6REGS
             s->dct_quantize = dct_quantize_sse2;
 #endif
+#if HAVE_SSE2_EXTERNAL
             s->denoise_dct  = denoise_dct_sse2;
+#endif
         }
 #if HAVE_6REGS && HAVE_SSSE3_INLINE
         if (INLINE_SSSE3(cpu_flags))
