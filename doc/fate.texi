@@ -65,7 +65,7 @@ make fate
 See @ref{makefile variables} for a list of arguments that can be added.
 
 If you did not set the samples path during configuration, or if you wish to
-override it just before starting FATE, you can do so in one of two ways.
+override it just before starting FATE, you can do so in one of three ways.
 
 Either by setting a make variable:
 
@@ -74,7 +74,15 @@ make fate-rsync SAMPLES=/path/to/fate-suite
 make fate       SAMPLES=/path/to/fate-suite
 @end example
 
-or by prepending an environment variable:
+or by setting an environment variable for the current session:
+
+@example
+export FATE_SAMPLES=/path/to/fate-suite
+make fate-rsync
+make fate
+@end example
+
+or in isolation for a single command by prepending it:
 
 @example
 FATE_SAMPLES=/path/to/fate-suite make fate-rsync
