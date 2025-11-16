@@ -375,6 +375,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         if (!in2)
             goto fail;
         av_frame_copy(in2, in);
+        if (av_frame_copy_props(in2, in) < 0) {
+            av_frame_free(&in2);
+            goto fail;
+        }
         av_frame_free(&in);
         in = in2;
     }
