@@ -6675,13 +6675,14 @@ EOF
         ;;
     esac
 
+    check_cc intrinsics_sse2 emmintrin.h "__m128i test = _mm_setzero_si128()"
+
 elif enabled loongarch; then
     enabled lsx && check_inline_asm lsx '"vadd.b $vr0, $vr1, $vr2"' '-mlsx' && append LSXFLAGS '-mlsx'
     enabled lasx && check_inline_asm lasx '"xvadd.b $xr0, $xr1, $xr2"' '-mlasx' && append LASXFLAGS '-mlasx'
 fi
 
 check_cc intrinsics_neon arm_neon.h "int16x8_t test = vdupq_n_s16(0)"
-check_cc intrinsics_sse2 emmintrin.h "__m128i test = _mm_setzero_si128()"
 
 check_ldflags -Wl,--as-needed
 check_ldflags -Wl,-z,noexecstack
