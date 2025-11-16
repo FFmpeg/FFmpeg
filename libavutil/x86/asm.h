@@ -38,8 +38,7 @@ typedef struct ymm_reg { uint64_t a, b, c, d; } ymm_reg;
 #    define FF_PTR_SIZE "8"
 typedef int64_t x86_reg;
 
-/* FF_REG_SP is defined in Solaris sys headers, so use FF_REG_sp */
-#    define FF_REG_sp "rsp"
+#    define FF_REG_SP "rsp"
 #    define FF_REG_BP "rbp"
 #    define FF_REGBP   rbp
 #    define FF_REGa    rax
@@ -60,7 +59,7 @@ typedef int64_t x86_reg;
 #    define FF_PTR_SIZE "4"
 typedef int32_t x86_reg;
 
-#    define FF_REG_sp "esp"
+#    define FF_REG_SP "esp"
 #    define FF_REG_BP "ebp"
 #    define FF_REGBP   ebp
 #    define FF_REGa    eax
