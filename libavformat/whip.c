@@ -336,11 +336,15 @@ typedef struct WHIPContext {
 /**
  * Whether the packet is a DTLS packet.
  */
-static int is_dtls_packet(uint8_t *b, int size) {
-    uint16_t version = AV_RB16(&b[1]);
-    return size > DTLS_RECORD_LAYER_HEADER_LEN &&
-        b[0] >= DTLS_CONTENT_TYPE_CHANGE_CIPHER_SPEC &&
-        (version == DTLS_VERSION_10 || version == DTLS_VERSION_12);
+static int is_dtls_packet(uint8_t *b, int size)
+{
+    int ret = 0;
+    if (size > DTLS_RECORD_LAYER_HEADER_LEN) {
+        uint16_t version = AV_RB16(&b[1]);
+        ret = b[0] >= DTLS_CONTENT_TYPE_CHANGE_CIPHER_SPEC &&
+            (version == DTLS_VERSION_10 || version == DTLS_VERSION_12);
+    }
+    return ret;
 }
 
 
