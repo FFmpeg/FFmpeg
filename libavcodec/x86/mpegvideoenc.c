@@ -39,8 +39,6 @@ DECLARE_ALIGNED(16, static const uint16_t, inv_zigzag_direct16)[64] = {
     36, 37, 49, 50, 58, 59, 63, 64,
 };
 
-#if HAVE_6REGS
-
 #if HAVE_SSE2_INLINE
 #define COMPILE_TEMPLATE_SSSE3  0
 #define RENAME(a)      a ## _sse2
@@ -55,8 +53,6 @@ DECLARE_ALIGNED(16, static const uint16_t, inv_zigzag_direct16)[64] = {
 #include "mpegvideoenc_template.c"
 #endif /* HAVE_SSSE3_INLINE */
 
-#endif /* HAVE_6REGS */
-
 av_cold void ff_dct_encode_init_x86(MPVEncContext *const s)
 {
     const int dct_algo = s->c.avctx->dct_algo;
@@ -65,11 +61,9 @@ av_cold void ff_dct_encode_init_x86(MPVEncContext *const s)
 #if HAVE_SSE2_INLINE
         int cpu_flags = av_get_cpu_flags();
         if (INLINE_SSE2(cpu_flags)) {
-#if HAVE_6REGS
             s->dct_quantize = dct_quantize_sse2;
-#endif
         }
-#if HAVE_6REGS && HAVE_SSSE3_INLINE
+#if HAVE_SSSE3_INLINE
         if (INLINE_SSSE3(cpu_flags))
             s->dct_quantize = dct_quantize_ssse3;
 #endif
