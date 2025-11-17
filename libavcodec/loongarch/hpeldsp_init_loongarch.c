@@ -45,6 +45,6 @@ void ff_hpeldsp_init_loongarch(HpelDSPContext *c, int flags)
         c->put_no_rnd_pixels_tab[1][0] = ff_put_pixels8_8_lasx;
         c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_8_lasx;
         c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_8_lasx;
-        c->put_no_rnd_pixels_tab[1][3] = ff_put_no_rnd_pixels8_xy2_8_lasx;
+        c->put_no_rnd_pixels_tab[1][3] = ff_put_no_rnd_pixels8_xy2_8_lsx;
     }
 }
