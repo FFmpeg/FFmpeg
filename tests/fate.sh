@@ -55,13 +55,17 @@ configure()(
         ${cross_prefix:+--cross-prefix="$cross_prefix"}                 \
         ${as:+--as="$as"}                                               \
         ${cc:+--cc="$cc"}                                               \
+        ${cxx:+--cxx="$cxx"}                                            \
         ${ld:+--ld="$ld"}                                               \
+        ${nm:+--nm="$nm"}                                               \
         ${target_os:+--target-os="$target_os"}                          \
         ${sysroot:+--sysroot="$sysroot"}                                \
         ${target_exec:+--target-exec="$target_exec"}                    \
         ${target_path:+--target-path="$target_path"}                    \
         ${target_samples:+--target-samples="$target_samples"}           \
         ${extra_cflags:+--extra-cflags="$extra_cflags"}                 \
+        ${extra_cxxflags:+--extra-cxxflags="$extra_cxxflags"}           \
+        ${extra_objcflags:+--extra-objcflags="$extra_objcflags"}        \
         ${extra_ldflags:+--extra-ldflags="$extra_ldflags"}              \
         ${extra_libs:+--extra-libs="$extra_libs"}                       \
         ${extra_conf}
