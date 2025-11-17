@@ -504,6 +504,7 @@ const FFFilter ff_af_aselect = {
     .p.flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
     .init        = aselect_init,
     .uninit      = uninit,
+    .activate      = activate,
     .priv_size   = sizeof(SelectContext),
     FILTER_INPUTS(avfilter_af_aselect_inputs),
 };
