@@ -36,6 +36,10 @@
 #define TNS_MAX_ORDER 20
 #define MAX_LTP_LONG_SFB 40
 
+#define MPS_MAX_PARAM_SETS 9
+#define MPS_MAX_PARAM_BANDS 28
+#define MPS_MAX_TIME_SLOTS 16 /* 64 in non-AAC MPEG Surround */
+
 enum RawDataBlockType {
     TYPE_SCE,
     TYPE_CPE,

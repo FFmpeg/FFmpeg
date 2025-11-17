@@ -43,6 +43,7 @@
 #include "libavcodec/mpeg4audio.h"
 
 #include "aacdec_ac.h"
+#include "aacdec_usac_mps212.h"
 
 typedef struct AACDecContext AACDecContext;
 
@@ -229,6 +230,33 @@ typedef struct SingleChannelElement {
     };
 } SingleChannelElement;
 
+typedef struct AACUsacMPSData {
+    /* Framing */
+    int framing_type;
+    int nb_param_sets;
+    int param_sets[MPS_MAX_PARAM_SETS];
+
+    /* OTT */
+    AACMPSLosslessData ott[MPS_ELE_NB];
+    int ott_idx[MPS_ELE_NB][MPS_MAX_PARAM_SETS][MPS_MAX_PARAM_BANDS];
+    bool opd_smoothing_mode;
+
+    /* SMG */
+    int smooth_mode[MPS_MAX_PARAM_SETS];
+    int smooth_time[MPS_MAX_PARAM_SETS];
+    int freq_res_stride_smg[MPS_MAX_PARAM_SETS];
+    bool smg_data[MPS_MAX_PARAM_SETS][MPS_MAX_PARAM_BANDS];
+
+    /* TSD */
+    bool tsd_enable;
+    bool temp_shape_enable;
+    bool temp_shape_enable_ch[2];
+    int16_t temp_shape_data[MPS_MAX_TIME_SLOTS];
+
+    int tsd_num_tr_slots;
+    int tsd_phase_data[64];
+} AACUsacMPSData;
+
 typedef struct AACUsacStereo {
     uint8_t common_window;
     uint8_t common_tw;
@@ -243,6 +271,8 @@ typedef struct AACUsacStereo {
     uint8_t complex_coef;
 
     uint8_t pred_used[128];
+
+    AACUsacMPSData mps;
 
     INTFLOAT_ALIGNED_UNION(32, alpha_q_re, 1024);
     INTFLOAT_ALIGNED_UNION(32, alpha_q_im, 1024);
@@ -332,6 +362,7 @@ typedef struct AACUsacElemConfig {
         uint8_t high_rate_mode : 1; /* bsHighRateMode */
         uint8_t phase_coding : 1; /* bsPhaseCoding */
 
+        uint8_t otts_bands_phase_present; /* bsOttBandsPhasePresent */
         uint8_t otts_bands_phase; /* bsOttBandsPhase */
         uint8_t residual_coding; /* bsResidualCoding */
         uint8_t residual_bands; /* bsResidualBands */

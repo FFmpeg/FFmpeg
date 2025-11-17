@@ -31,6 +31,8 @@
 #include "libavutil/mem.h"
 #include "libavutil/refstruct.h"
 
+#include "aacdec_usac_mps212.h"
+
 /* Number of scalefactor bands per complex prediction band, equal to 2. */
 #define SFB_PER_PRED_BAND 2
 
@@ -219,12 +221,15 @@ static int decode_usac_element_pair(AACDecContext *ac,
         e->mps.high_rate_mode = get_bits1(gb); /* bsHighRateMode */
         e->mps.phase_coding = get_bits1(gb); /* bsPhaseCoding */
 
-        if (get_bits1(gb)) /* bsOttBandsPhasePresent */
+        e->mps.otts_bands_phase_present = get_bits1(gb);
+        if (e->mps.otts_bands_phase_present) /* bsOttBandsPhasePresent */
             e->mps.otts_bands_phase = get_bits(gb, 5); /* bsOttBandsPhase */
 
         e->mps.residual_coding = e->stereo_config_index >= 2; /* bsResidualCoding */
         if (e->mps.residual_coding) {
             e->mps.residual_bands = get_bits(gb, 5); /* bsResidualBands */
+            e->mps.otts_bands_phase = FFMAX(e->mps.otts_bands_phase,
+                                            e->mps.residual_bands);
             e->mps.pseudo_lr = get_bits1(gb); /* bsPseudoLr */
         }
         if (e->mps.temp_shape_config == 2)
@@ -1343,6 +1348,164 @@ static void spectrum_decode(AACDecContext *ac, AACUSACConfig *usac,
     }
 }
 
+static const uint8_t mps_fr_nb_bands[8] = {
+    255 /* Reserved */, 28, 20, 14, 10, 7, 5, 4,
+};
+
+static const uint8_t mps_fr_stride_smg[4] = {
+    1, 2, 5, 28,
+};
+
+static void decode_tsd(GetBitContext *gb, int *data,
+                       int nb_tr_slots, int nb_slots)
+{
+    int nb_bits = av_log2(nb_slots / (nb_tr_slots + 1));
+    int s = get_bits(gb, nb_bits);
+    for (int k = 0; k < nb_slots; k++)
+        data[k]=0;
+
+    int p = nb_tr_slots + 1;
+    for (int k = nb_slots - 1; k >= 0; k--) {
+        if (p > k) {
+            for (; k >= 0; k--)
+                data[k] = 1;
+            break;
+        }
+        int64_t c = k - p + 1;
+        for (int h = 2; h <= p; h++) {
+            c *= k - p + h;
+            c /= h;
+        }
+        if (s >= (int)c) { /* c is long long for up to 32 slots */
+            s -= c;
+            data[k] = 1;
+            p--;
+            if (!p)
+                break;
+        }
+    }
+}
+
+static int parse_mps212(AACDecContext *ac, AACUSACConfig *usac,
+                        AACUsacMPSData *mps, AACUsacElemConfig *ec,
+                        GetBitContext *gb, int frame_indep_flag)
+{
+    int err;
+    int nb_bands = mps_fr_nb_bands[ec->mps.freq_res];
+
+    /* Framing info */
+    mps->framing_type = 0;
+    mps->nb_param_sets = 2;
+    if (ec->mps.high_rate_mode) {
+        mps->framing_type = get_bits1(gb);
+        mps->nb_param_sets = get_bits(gb, 3) + 1;
+    }
+    int param_slot_bits = usac->core_sbr_frame_len_idx == 4 ? 6 : 5;
+    int nb_time_slots = usac->core_sbr_frame_len_idx == 4 ? 64 : 32;
+
+    if (mps->framing_type)
+        for (int i = 0; i < mps->nb_param_sets; i++)
+            mps->param_sets[i] = get_bits(gb, param_slot_bits);
+
+    int indep = frame_indep_flag;
+    if (!frame_indep_flag)
+        indep = get_bits1(gb);
+
+    int extend_frame = mps->param_sets[mps->nb_param_sets - 1] !=
+                       (nb_time_slots - 1);
+
+    /* CLD */
+    err = ff_aac_ec_data_dec(gb, &mps->ott[MPS_CLD], MPS_CLD,
+                             0, 0, nb_bands,
+                             indep, indep, mps->nb_param_sets);
+    if (err < 0) {
+        av_log(ac->avctx, AV_LOG_ERROR, "Error parsing OTT CLD data!\n");
+        return err;
+    }
+    ff_aac_map_index_data(&mps->ott[MPS_CLD], MPS_CLD, mps->ott_idx[MPS_CLD],
+                          0, 0, nb_bands, mps->nb_param_sets,
+                          mps->param_sets, extend_frame);
+
+    /* ICC */
+    err = ff_aac_ec_data_dec(gb, &mps->ott[MPS_ICC], MPS_ICC, 0, 0, nb_bands,
+                             indep, indep, mps->nb_param_sets);
+    if (err < 0) {
+        av_log(ac->avctx, AV_LOG_ERROR, "Error parsing OTT ICC data!\n");
+        return err;
+    }
+    ff_aac_map_index_data(&mps->ott[MPS_ICC], MPS_ICC, mps->ott_idx[MPS_ICC],
+                          0, 0, nb_bands, mps->nb_param_sets,
+                          mps->param_sets, extend_frame);
+
+    /* IPD */
+    if (ec->mps.phase_coding) {
+        if (get_bits1(gb)) {
+            mps->opd_smoothing_mode = get_bits1(gb);
+            err = ff_aac_ec_data_dec(gb, &mps->ott[MPS_IPD], MPS_IPD, 0, 0,
+                                     ec->mps.otts_bands_phase,
+                                     indep, indep, mps->nb_param_sets);
+            ff_aac_map_index_data(&mps->ott[MPS_IPD], MPS_IPD, mps->ott_idx[MPS_IPD],
+                                  0, 0, nb_bands, mps->nb_param_sets,
+                                  mps->param_sets, extend_frame);
+            if (err < 0) {
+                av_log(ac->avctx, AV_LOG_ERROR, "Error parsing OTT IPD data!\n");
+                return err;
+            }
+        }
+    }
+
+    /* SMG data */
+    memset(mps->smooth_mode, 0, sizeof(mps->smooth_mode));
+    if (ec->mps.high_rate_mode) {
+        for (int i = 0; i < mps->nb_param_sets; i++) {
+            mps->smooth_mode[i] = get_bits(gb, 2);
+            if (mps->smooth_mode[i] >= 2)
+                mps->smooth_time[i] = get_bits(gb, 2);
+            if (mps->smooth_mode[i] >= 3) {
+                mps->freq_res_stride_smg[i] = get_bits(gb, 2);
+                int nb_data_bands = (nb_bands - 1);
+                nb_data_bands /= (mps_fr_stride_smg[mps->freq_res_stride_smg[i]] + 1);
+                for (int j = 0; j < nb_data_bands; j++)
+                    mps->smg_data[i][j] = get_bits1(gb);
+            }
+        }
+    }
+
+    /* Temp shape data */
+    mps->tsd_enable = 0;
+    if (ec->mps.temp_shape_config == 3) {
+        mps->tsd_enable = get_bits1(gb);
+    } else if (ec->mps.temp_shape_config) {
+        mps->temp_shape_enable = get_bits1(gb);
+        if (mps->temp_shape_enable) {
+            for (int i = 0; i < 2; i++)
+                mps->temp_shape_enable_ch[i] = get_bits1(gb);
+            if (ec->mps.temp_shape_config == 2) {
+                err = ff_aac_huff_dec_reshape(gb, mps->temp_shape_data, 16);
+                if (err < 0) {
+                    av_log(ac->avctx, AV_LOG_ERROR,
+                           "Error parsing TSD reshape data!\n");
+                    return err;
+                }
+            }
+        }
+    }
+
+    /* TSD data */
+    if (mps->tsd_enable) {
+        mps->tsd_num_tr_slots = get_bits(gb, param_slot_bits - 1);
+        int tsd_pos[64];
+        decode_tsd(gb, tsd_pos, mps->tsd_num_tr_slots, nb_time_slots);
+        for (int i = 0; i < nb_time_slots; i++) {
+            mps->tsd_phase_data[i] = 0;
+            if (tsd_pos[i])
+                mps->tsd_phase_data[i] = get_bits(gb, 3);
+        }
+    }
+
+    return 0;
+}
+
 static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
                                   AACUsacElemConfig *ec, ChannelElement *che,
                                   GetBitContext *gb, int indep_flag, int nb_channels)
@@ -1464,7 +1627,8 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
         if (get_bits1(gb)) { /* fac_data_present */
             const uint16_t len_8 = usac->core_frame_len / 8;
             const uint16_t len_16 = usac->core_frame_len / 16;
-            const uint16_t fac_len = ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE ? len_16 : len_8;
+            const uint16_t fac_len = ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE ?
+                                     len_16 : len_8;
             ret = ff_aac_parse_fac_data(ue, gb, 1, fac_len);
             if (ret < 0)
                 return ret;
@@ -1483,8 +1647,9 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
     }
 
     if (ec->stereo_config_index) {
-        avpriv_report_missing_feature(ac->avctx, "AAC USAC Mps212");
-        return AVERROR_PATCHWELCOME;
+        ret = parse_mps212(ac, usac, &us->mps, ec, gb, indep_flag);
+        if (ret < 0)
+            return ret;
     }
 
     spectrum_decode(ac, usac, che, core_nb_channels);
