@@ -36,4 +36,12 @@ static inline void ff_mpeg1_encode_init(MPVEncContext *s)
     s->c.c_dc_scale_table = ff_mpeg12_dc_scale_table[s->c.intra_dc_precision];
 }
 
+static inline void ff_mpeg1_clean_buffers(MPVEncContext *s)
+{
+    s->c.last_dc[0] = 128 << s->c.intra_dc_precision;
+    s->c.last_dc[1] = s->c.last_dc[0];
+    s->c.last_dc[2] = s->c.last_dc[0];
+    memset(s->c.last_mv, 0, sizeof(s->c.last_mv));
+}
+
 #endif /* AVCODEC_MPEG12ENC_H */

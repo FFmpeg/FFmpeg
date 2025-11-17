@@ -30,8 +30,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/thread.h"
 
-#include "mpegvideo.h"
-#include "mpeg12codecs.h"
 #include "mpeg12data.h"
 #include "mpeg12dec.h"
 #include "mpegutils.h"
@@ -120,14 +118,6 @@ av_cold void ff_init_2d_vlc_rl(const uint16_t table_vlc[][2], RL_VLC_ELEM rl_vlc
         rl_vlc[i].level = level;
         rl_vlc[i].run   = run;
     }
-}
-
-void ff_mpeg1_clean_buffers(MpegEncContext *s)
-{
-    s->last_dc[0] = 1 << (7 + s->intra_dc_precision);
-    s->last_dc[1] = s->last_dc[0];
-    s->last_dc[2] = s->last_dc[0];
-    memset(s->last_mv, 0, sizeof(s->last_mv));
 }
 
 

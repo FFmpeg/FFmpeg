@@ -47,7 +47,6 @@
 #include "avcodec.h"
 #include "encode.h"
 #include "idctdsp.h"
-#include "mpeg12codecs.h"
 #include "mpeg12data.h"
 #include "mpeg12enc.h"
 #include "mpegvideo.h"
@@ -3144,7 +3143,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     case AV_CODEC_ID_MPEG2VIDEO:
                         if (CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER) {
                             ff_mpeg1_encode_slice_header(s);
-                            ff_mpeg1_clean_buffers(&s->c);
+                            ff_mpeg1_clean_buffers(s);
                         }
                     break;
 #if CONFIG_H263P_ENCODER

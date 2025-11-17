@@ -50,7 +50,6 @@
 #include "idctdsp.h"
 #include "mpeg_er.h"
 #include "mpeg12.h"
-#include "mpeg12codecs.h"
 #include "mpeg12data.h"
 #include "mpeg12dec.h"
 #include "mpegutils.h"
@@ -1375,7 +1374,6 @@ static int mpeg_decode_slice(Mpeg12SliceContext *const s, int mb_y,
     if (s->c.codec_id != AV_CODEC_ID_MPEG1VIDEO && s->c.mb_height > 2800/16)
         skip_bits(&s->gb, 3);
 
-    ff_mpeg1_clean_buffers(&s->c);
     s->c.interlaced_dct = 0;
 
     s->c.qscale = mpeg_get_qscale(&s->gb, s->c.q_scale_type);
@@ -1454,6 +1452,11 @@ static int mpeg_decode_slice(Mpeg12SliceContext *const s, int mb_y,
                    s->c.repeat_first_field, s->c.chroma_420_type ? "420" : "");
         }
     }
+
+    s->c.last_dc[0] = 128 << s->c.intra_dc_precision;
+    s->c.last_dc[1] = s->c.last_dc[0];
+    s->c.last_dc[2] = s->c.last_dc[0];
+    memset(s->c.last_mv, 0, sizeof(s->c.last_mv));
 
     for (int mb_skip_run = 0;;) {
         ret = mpeg_decode_mb(s, &mb_skip_run);
