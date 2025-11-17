@@ -279,7 +279,7 @@ int ff_mjpeg_encode_stuffing(MPVEncContext *const s)
 
 fail:
     for (int i = 0; i < 3; i++)
-        s->c.last_dc[i] = 128 << s->c.intra_dc_precision;
+        s->last_dc[i] = 128 << s->c.intra_dc_precision;
 
     return ret;
 }
@@ -371,11 +371,11 @@ static void record_block(MPVEncContext *const s, int16_t block[], int n)
     component = (n <= 3 ? 0 : (n&1) + 1);
     table_id = (n <= 3 ? 0 : 1);
     dc = block[0]; /* overflow is impossible */
-    val = dc - s->c.last_dc[component];
+    val = dc - s->last_dc[component];
 
     mjpeg_encode_coef(m, table_id, val, 0);
 
-    s->c.last_dc[component] = dc;
+    s->last_dc[component] = dc;
 
     /* AC coefs */
 
@@ -415,7 +415,7 @@ static void encode_block(MPVEncContext *const s, int16_t block[], int n)
     /* DC coef */
     component = (n <= 3 ? 0 : (n&1) + 1);
     dc = block[0]; /* overflow is impossible */
-    val = dc - s->c.last_dc[component];
+    val = dc - s->last_dc[component];
     if (n < 4) {
         ff_mjpeg_encode_dc(&s->pb, val, m->huff_size_dc_luminance, m->huff_code_dc_luminance);
         huff_size_ac = m->huff_size_ac_luminance;
@@ -425,7 +425,7 @@ static void encode_block(MPVEncContext *const s, int16_t block[], int n)
         huff_size_ac = m->huff_size_ac_chrominance;
         huff_code_ac = m->huff_code_ac_chrominance;
     }
-    s->c.last_dc[component] = dc;
+    s->last_dc[component] = dc;
 
     /* AC coefs */
 

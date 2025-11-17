@@ -172,9 +172,9 @@ static void encode_block(MPVEncContext *const s, const int16_t block[], int n)
     /* DC coef */
     component = (n <= 3 ? 0 : (n&1) + 1);
     dc = block[0]; /* overflow is impossible */
-    val = s->c.last_dc[component] - dc;  /* opposite of most codecs */
+    val = s->last_dc[component] - dc;  /* opposite of most codecs */
     encode_dc(&s->pb, val, component);
-    s->c.last_dc[component] = dc;
+    s->last_dc[component] = dc;
 
     /* now quantify & encode AC coefs */
     last_non_zero = 0;

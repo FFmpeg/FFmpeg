@@ -129,11 +129,11 @@ static int rv10_decode_picture_header(H263DecContext *const h)
     if (h->c.pict_type == AV_PICTURE_TYPE_I) {
         if (h->rv10_version == 3) {
             /* specific MPEG like DC coding not used */
-            h->c.last_dc[0] = get_bits(&h->gb, 8);
-            h->c.last_dc[1] = get_bits(&h->gb, 8);
-            h->c.last_dc[2] = get_bits(&h->gb, 8);
-            ff_dlog(h->c.avctx, "DC:%d %d %d\n", h->c.last_dc[0],
-                    h->c.last_dc[1], h->c.last_dc[2]);
+            h->last_dc[0] = get_bits(&h->gb, 8);
+            h->last_dc[1] = get_bits(&h->gb, 8);
+            h->last_dc[2] = get_bits(&h->gb, 8);
+            ff_dlog(h->c.avctx, "DC:%d %d %d\n", h->last_dc[0],
+                    h->last_dc[1], h->last_dc[2]);
         }
     }
     /* if multiple packets per frame are sent, the position at which

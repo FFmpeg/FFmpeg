@@ -133,7 +133,6 @@ typedef struct MpegEncContext {
      */
     MPVWorkPicture cur_pic;
 
-    int last_dc[3];                ///< last DC values for MPEG-1
     int16_t *dc_val_base;
     const uint8_t *y_dc_scale_table;     ///< qscale -> y_dc_scale table
     const uint8_t *c_dc_scale_table;     ///< qscale -> c_dc_scale table

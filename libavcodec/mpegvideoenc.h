@@ -138,6 +138,7 @@ typedef struct MPVEncContext {
     int last_bits; ///< temp var used for calculating the above vars
 
     int mb_skip_run;
+    int last_dc[3];                ///< last DC values
 
     /* H.263 specific */
     int gob_index;

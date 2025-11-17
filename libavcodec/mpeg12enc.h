@@ -38,9 +38,9 @@ static inline void ff_mpeg1_encode_init(MPVEncContext *s)
 
 static inline void ff_mpeg1_clean_buffers(MPVEncContext *s)
 {
-    s->c.last_dc[0] = 128 << s->c.intra_dc_precision;
-    s->c.last_dc[1] = s->c.last_dc[0];
-    s->c.last_dc[2] = s->c.last_dc[0];
+    s->last_dc[0] = 128 << s->c.intra_dc_precision;
+    s->last_dc[1] = s->last_dc[0];
+    s->last_dc[2] = s->last_dc[0];
     memset(s->c.last_mv, 0, sizeof(s->c.last_mv));
 }
 

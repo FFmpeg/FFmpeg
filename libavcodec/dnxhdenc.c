@@ -575,8 +575,8 @@ void dnxhd_encode_block(PutBitContext *pb, DNXHDEncContext *ctx,
     int last_non_zero = 0;
     int slevel, i, j;
 
-    dnxhd_encode_dc(pb, ctx, block[0] - ctx->m.c.last_dc[n]);
-    ctx->m.c.last_dc[n] = block[0];
+    dnxhd_encode_dc(pb, ctx, block[0] - ctx->m.last_dc[n]);
+    ctx->m.last_dc[n] = block[0];
 
     for (i = 1; i <= last_index; i++) {
         j = ctx->m.c.intra_scantable.permutated[i];
@@ -822,9 +822,9 @@ static int dnxhd_calc_bits_thread(AVCodecContext *avctx, void *arg,
     LOCAL_ALIGNED_16(int16_t, block, [64]);
     ctx = ctx->thread[threadnr];
 
-    ctx->m.c.last_dc[0] =
-    ctx->m.c.last_dc[1] =
-    ctx->m.c.last_dc[2] = 1 << (ctx->bit_depth + 2);
+    ctx->m.last_dc[0] =
+    ctx->m.last_dc[1] =
+    ctx->m.last_dc[2] = 1 << (ctx->bit_depth + 2);
 
     for (int mb_x = 0; mb_x < ctx->m.c.mb_width; mb_x++) {
         unsigned mb = mb_y * ctx->m.c.mb_width + mb_x;
@@ -846,7 +846,7 @@ static int dnxhd_calc_bits_thread(AVCodecContext *avctx, void *arg,
                                              qscale, &overflow);
             ac_bits   += dnxhd_calc_ac_bits(ctx, block, last_index);
 
-            diff = block[0] - ctx->m.c.last_dc[n];
+            diff = block[0] - ctx->m.last_dc[n];
             if (diff < 0)
                 nbits = av_log2_16bit(-2 * diff);
             else
@@ -855,7 +855,7 @@ static int dnxhd_calc_bits_thread(AVCodecContext *avctx, void *arg,
             av_assert1(nbits < ctx->bit_depth + 4);
             dc_bits += ctx->cid_table->dc_bits[nbits] + nbits;
 
-            ctx->m.c.last_dc[n] = block[0];
+            ctx->m.last_dc[n] = block[0];
 
             if (avctx->mb_decision == FF_MB_DECISION_RD || !RC_VARIANCE) {
                 dnxhd_unquantize_c(ctx, block, i, qscale, last_index);
@@ -880,9 +880,9 @@ static int dnxhd_encode_thread(AVCodecContext *avctx, void *arg,
     init_put_bits(pb, (uint8_t *)arg + ctx->data_offset + ctx->slice_offs[jobnr],
                   ctx->slice_size[jobnr]);
 
-    ctx->m.c.last_dc[0] =
-    ctx->m.c.last_dc[1] =
-    ctx->m.c.last_dc[2] = 1 << (ctx->bit_depth + 2);
+    ctx->m.last_dc[0] =
+    ctx->m.last_dc[1] =
+    ctx->m.last_dc[2] = 1 << (ctx->bit_depth + 2);
     for (int mb_x = 0; mb_x < ctx->m.c.mb_width; mb_x++) {
         unsigned mb = mb_y * ctx->m.c.mb_width + mb_x;
         int qscale = ctx->mb_qscale[mb];

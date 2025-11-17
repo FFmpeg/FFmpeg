@@ -79,6 +79,9 @@ typedef struct H263DecContext {
     /* MSMPEG4 specific */
     int slice_height;           ///< in macroblocks
 
+    /* MPEG-4 (Studio Profile), MSMPEG4 and RV10 specific */
+    int last_dc[3];             ///< last DC values, used by MPEG4, MSMPEG4V1, RV10
+
     /* RV10 specific */
     int rv10_version; ///< RV10 version: 0 or 3
     int rv10_first_dc_coded[3];

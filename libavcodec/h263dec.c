@@ -247,9 +247,9 @@ static int decode_slice(H263DecContext *const h)
         }
 
         if (h->c.msmpeg4_version == MSMP4_V1) {
-            h->c.last_dc[0] =
-            h->c.last_dc[1] =
-            h->c.last_dc[2] = 128;
+            h->last_dc[0] =
+            h->last_dc[1] =
+            h->last_dc[2] = 128;
         }
 
         ff_init_block_index(&h->c);

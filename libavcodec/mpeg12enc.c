@@ -589,9 +589,9 @@ static void mpeg1_encode_block(MPVEncContext *const s, const int16_t block[], in
     if (s->c.mb_intra) {
         component = (n <= 3 ? 0 : (n & 1) + 1);
         dc        = block[0];                   /* overflow is impossible */
-        diff      = dc - s->c.last_dc[component];
+        diff      = dc - s->last_dc[component];
         encode_dc(s, diff, component);
-        s->c.last_dc[component] = dc;
+        s->last_dc[component] = dc;
         i = 1;
         if (s->c.intra_vlc_format)
             table_vlc = ff_mpeg2_vlc_table;
@@ -936,7 +936,7 @@ static void mpeg12_encode_mb(MPVEncContext *const s, int16_t block[][64],
                              int motion_x, int motion_y)
 {
     if (!s->c.mb_intra)
-        s->c.last_dc[0] = s->c.last_dc[1] = s->c.last_dc[2] = 128 << s->c.intra_dc_precision;
+        s->last_dc[0] = s->last_dc[1] = s->last_dc[2] = 128 << s->c.intra_dc_precision;
     if (s->c.chroma_format == CHROMA_420)
         mpeg1_encode_mb_internal(s, block, motion_x, motion_y, 6, 1);
     else

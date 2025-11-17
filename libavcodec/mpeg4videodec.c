@@ -794,11 +794,11 @@ int ff_mpeg4_decode_video_packet_header(H263DecContext *const h)
 
 static void reset_studio_dc_predictors(Mpeg4DecContext *const ctx)
 {
-    MPVContext *const s = &ctx->h.c;
+    H263DecContext *const h = &ctx->h;
     /* Reset DC Predictors */
-    s->last_dc[0] =
-    s->last_dc[1] =
-    s->last_dc[2] = 1 << (s->avctx->bits_per_raw_sample + ctx->dct_precision + s->intra_dc_precision - 1);
+    h->last_dc[0] =
+    h->last_dc[1] =
+    h->last_dc[2] = 1 << (h->c.avctx->bits_per_raw_sample + ctx->dct_precision + h->c.intra_dc_precision - 1);
 }
 
 /**
@@ -2196,12 +2196,12 @@ static int mpeg4_decode_studio_block(Mpeg4DecContext *const ctx, int32_t block[6
 
     }
 
-    h->c.last_dc[cc] += dct_diff;
+    h->last_dc[cc] += dct_diff;
 
     if (ctx->mpeg_quant)
-        block[0] = h->c.last_dc[cc] * (8 >> h->c.intra_dc_precision);
+        block[0] = h->last_dc[cc] * (8 >> h->c.intra_dc_precision);
     else
-        block[0] = h->c.last_dc[cc] * (8 >> h->c.intra_dc_precision) * (8 >> ctx->dct_precision);
+        block[0] = h->last_dc[cc] * (8 >> h->c.intra_dc_precision) * (8 >> ctx->dct_precision);
     /* TODO: support mpeg_quant for AC coefficients */
 
     block[0] = av_clip(block[0], min, max);
@@ -2283,7 +2283,7 @@ static int mpeg4_decode_dpcm_macroblock(Mpeg4DecContext *const ctx,
         av_log(h->c.avctx, AV_LOG_ERROR, "Forbidden block_mean\n");
         return AVERROR_INVALIDDATA;
     }
-    h->c.last_dc[n] = block_mean * (1 << (ctx->dct_precision + h->c.intra_dc_precision));
+    h->last_dc[n] = block_mean * (1 << (ctx->dct_precision + h->c.intra_dc_precision));
 
     rice_parameter = get_bits(&h->gb, 4);
     if (rice_parameter == 0) {

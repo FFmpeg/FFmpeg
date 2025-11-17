@@ -2639,13 +2639,13 @@ typedef struct MBBackup {
         int mv[2][4][2];
         int last_mv[2][2][2];
         int mv_type, mv_dir;
-        int last_dc[3];
         int mb_intra, mb_skipped;
         int qscale;
         int block_last_index[8];
         int interlaced_dct;
     } c;
     int mb_skip_run;
+    int last_dc[3];
     int mv_bits, i_tex_bits, p_tex_bits, i_count, misc_bits, last_bits;
     int dquant;
     int esc3_level_length;
@@ -2663,7 +2663,7 @@ static inline void BEFORE ##_context_before_encode(DST_TYPE *const d,       \
     /* MPEG-1 */                                                            \
     d->mb_skip_run = s->mb_skip_run;                                        \
     for (int i = 0; i < 3; i++)                                             \
-        d->c.last_dc[i] = s->c.last_dc[i];                                  \
+        d->last_dc[i] = s->last_dc[i];                                      \
                                                                             \
     /* statistics */                                                        \
     d->mv_bits    = s->mv_bits;                                             \
@@ -2691,7 +2691,7 @@ static inline void AFTER ## _context_after_encode(DST_TYPE *const d,        \
     /* MPEG-1 */                                                            \
     d->mb_skip_run = s->mb_skip_run;                                        \
     for (int i = 0; i < 3; i++)                                             \
-        d->c.last_dc[i] = s->c.last_dc[i];                                  \
+        d->last_dc[i] = s->last_dc[i];                                      \
                                                                             \
     /* statistics */                                                        \
     d->mv_bits    = s->mv_bits;                                             \
@@ -3009,14 +3009,14 @@ static int encode_thread(AVCodecContext *c, void *arg){
     for(i=0; i<3; i++){
         /* init last dc values */
         /* note: quant matrix value (8) is implied here */
-        s->c.last_dc[i] = 128 << s->c.intra_dc_precision;
+        s->last_dc[i] = 128 << s->c.intra_dc_precision;
 
         s->encoding_error[i] = 0;
     }
     if (s->c.codec_id == AV_CODEC_ID_AMV) {
-        s->c.last_dc[0] = 128 * 8 / 13;
-        s->c.last_dc[1] = 128 * 8 / 14;
-        s->c.last_dc[2] = 128 * 8 / 14;
+        s->last_dc[0] = 128 * 8 / 13;
+        s->last_dc[1] = 128 * 8 / 14;
+        s->last_dc[2] = 128 * 8 / 14;
 #if CONFIG_MPEG4_ENCODER
     } else if (s->partitioned_frame) {
         av_assert1(s->c.codec_id == AV_CODEC_ID_MPEG4);
@@ -3039,7 +3039,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
             mb_y = ff_speedhq_mb_y_order_to_mb(mb_y_order, s->c.mb_height, &first_in_slice);
             if (first_in_slice && mb_y_order != s->c.start_mb_y)
                 ff_speedhq_end_slice(s);
-            s->c.last_dc[0] = s->c.last_dc[1] = s->c.last_dc[2] = 1024 << s->c.intra_dc_precision;
+            s->last_dc[0] = s->last_dc[1] = s->last_dc[2] = 1024 << s->c.intra_dc_precision;
         } else {
             mb_y = mb_y_order;
         }

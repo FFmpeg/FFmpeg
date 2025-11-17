@@ -48,7 +48,7 @@
 
 static const VLCElem *mv_tables[2];
 
-static inline int msmpeg4v1_pred_dc(MpegEncContext * s, int n,
+static inline int msmpeg4v1_pred_dc(H263DecContext *const h, int n,
                                     int32_t **dc_val_ptr)
 {
     int i;
@@ -59,8 +59,8 @@ static inline int msmpeg4v1_pred_dc(MpegEncContext * s, int n,
         i= n-3;
     }
 
-    *dc_val_ptr= &s->last_dc[i];
-    return s->last_dc[i];
+    *dc_val_ptr= &h->last_dc[i];
+    return h->last_dc[i];
 }
 
 /****************************************/
@@ -588,7 +588,7 @@ static int msmpeg4_decode_dc(MSMP4DecContext *const ms, int n, int *dir_ptr)
 
     if (h->c.msmpeg4_version == MSMP4_V1) {
         int32_t *dc_val;
-        pred = msmpeg4v1_pred_dc(&h->c, n, &dc_val);
+        pred = msmpeg4v1_pred_dc(h, n, &dc_val);
         level += pred;
 
         /* update predictor */
