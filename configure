@@ -4968,6 +4968,7 @@ armasm_flags(){
             # Filter out MSVC cl.exe options from cflags that shouldn't
             # be passed to gas-preprocessor
             -M[TD]*)                                            ;;
+            -guard:signret)                                     ;;
             *)                  echo $flag                      ;;
         esac
    done
