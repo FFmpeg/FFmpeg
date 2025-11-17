@@ -245,6 +245,10 @@ static int activate(AVFilterContext *ctx)
     }
 
     if (!s->feed || ctx->is_disabled) {
+        if (!ctx->is_disabled && ff_outlink_frame_wanted(ctx->outputs[1])) {
+            ff_inlink_request_frame(ctx->inputs[0]);
+            return 0;
+        }
         if (ff_outlink_frame_wanted(ctx->outputs[0])) {
             ff_inlink_request_frame(ctx->inputs[0]);
             if (!ctx->is_disabled)
