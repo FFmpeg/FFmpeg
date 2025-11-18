@@ -189,7 +189,7 @@ static int opus_parse(AVCodecParserContext *ctx, AVCodecContext *avctx,
     if (ctx->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         next = buf_size;
 
-        if (set_frame_duration(ctx, avctx, buf, buf_size) < 0)
+        if (buf_size && set_frame_duration(ctx, avctx, buf, buf_size) < 0)
             goto fail;
     } else {
         next = opus_find_frame_end(ctx, avctx, buf, buf_size, &header_len);
