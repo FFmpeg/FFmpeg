@@ -39,17 +39,29 @@
 #include "cuda/load_helper.h"
 #include "vf_scale_cuda.h"
 
-static const enum AVPixelFormat supported_formats[] = {
-    AV_PIX_FMT_YUV420P,
-    AV_PIX_FMT_NV12,
-    AV_PIX_FMT_YUV444P,
-    AV_PIX_FMT_P010,
-    AV_PIX_FMT_P016,
-    AV_PIX_FMT_YUV444P16,
-    AV_PIX_FMT_0RGB32,
-    AV_PIX_FMT_0BGR32,
-    AV_PIX_FMT_RGB32,
-    AV_PIX_FMT_BGR32,
+struct format_entry {
+    enum AVPixelFormat format;
+    char name[13];
+};
+
+static const struct format_entry supported_formats[] = {
+    {AV_PIX_FMT_YUV420P,  "planar8"},
+    {AV_PIX_FMT_YUV422P,  "planar8"},
+    {AV_PIX_FMT_YUV444P,  "planar8"},
+    {AV_PIX_FMT_YUV420P10,"planar10"},
+    {AV_PIX_FMT_YUV422P10,"planar10"},
+    {AV_PIX_FMT_YUV444P10,"planar10"},
+    {AV_PIX_FMT_YUV444P16,"planar16"},
+    {AV_PIX_FMT_NV12,     "semiplanar8"},
+    {AV_PIX_FMT_NV16,     "semiplanar8"},
+    {AV_PIX_FMT_P010,     "semiplanar10"},
+    {AV_PIX_FMT_P210,     "semiplanar10"},
+    {AV_PIX_FMT_P016,     "semiplanar16"},
+    {AV_PIX_FMT_P216,     "semiplanar16"},
+    {AV_PIX_FMT_0RGB32,   "bgr0"},
+    {AV_PIX_FMT_0BGR32,   "rgb0"},
+    {AV_PIX_FMT_RGB32,    "bgra"},
+    {AV_PIX_FMT_BGR32,    "rgba"},
 };
 
 #define DIV_UP(a, b) ( ((a) + (b) - 1) / (b) )
@@ -184,12 +196,18 @@ fail:
 
 static int format_is_supported(enum AVPixelFormat fmt)
 {
-    int i;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(supported_formats); i++)
-        if (supported_formats[i] == fmt)
+    for (int i = 0; i < FF_ARRAY_ELEMS(supported_formats); i++)
+        if (supported_formats[i].format == fmt)
             return 1;
     return 0;
+}
+
+static const char* get_format_name(enum AVPixelFormat fmt)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(supported_formats); i++)
+        if (supported_formats[i].format == fmt)
+            return supported_formats[i].name;
+    return NULL;
 }
 
 static av_cold void set_format_info(AVFilterContext *ctx, enum AVPixelFormat in_format, enum AVPixelFormat out_format)
@@ -284,8 +302,8 @@ static av_cold int cudascale_load_functions(AVFilterContext *ctx)
     char buf[128];
     int ret;
 
-    const char *in_fmt_name = av_get_pix_fmt_name(s->in_fmt);
-    const char *out_fmt_name = av_get_pix_fmt_name(s->out_fmt);
+    const char *in_fmt_name = get_format_name(s->in_fmt);
+    const char *out_fmt_name = get_format_name(s->out_fmt);
 
     const char *function_infix = "";
 
@@ -335,11 +353,13 @@ static av_cold int cudascale_load_functions(AVFilterContext *ctx)
         ret = AVERROR(ENOSYS);
         goto fail;
     }
+    av_log(ctx, AV_LOG_DEBUG, "Luma filter: %s (%s -> %s)\n", buf, av_get_pix_fmt_name(s->in_fmt), av_get_pix_fmt_name(s->out_fmt));
 
     snprintf(buf, sizeof(buf), "Subsample_%s_%s_%s_uv", function_infix, in_fmt_name, out_fmt_name);
     ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_uv, s->cu_module, buf));
     if (ret < 0)
         goto fail;
+    av_log(ctx, AV_LOG_DEBUG, "Chroma filter: %s (%s -> %s)\n", buf, av_get_pix_fmt_name(s->in_fmt), av_get_pix_fmt_name(s->out_fmt));
 
 fail:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
@@ -416,26 +436,35 @@ fail:
 
 static int call_resize_kernel(AVFilterContext *ctx, CUfunction func,
                               CUtexObject src_tex[4], int src_left, int src_top, int src_width, int src_height,
-                              AVFrame *out_frame, int dst_width, int dst_height, int dst_pitch)
+                              AVFrame *out_frame, int dst_width, int dst_height, int dst_pitch, int mpeg_range)
 {
     CUDAScaleContext *s = ctx->priv;
     CudaFunctions *cu = s->hwctx->internal->cuda_dl;
 
-    CUdeviceptr dst_devptr[4] = {
-        (CUdeviceptr)out_frame->data[0], (CUdeviceptr)out_frame->data[1],
-        (CUdeviceptr)out_frame->data[2], (CUdeviceptr)out_frame->data[3]
+    CUDAScaleKernelParams params = {
+        .src_tex = {src_tex[0], src_tex[1], src_tex[2], src_tex[3]},
+        .dst = {
+            (CUdeviceptr)out_frame->data[0],
+            (CUdeviceptr)out_frame->data[1],
+            (CUdeviceptr)out_frame->data[2],
+            (CUdeviceptr)out_frame->data[3]
+        },
+        .dst_width = dst_width,
+        .dst_height = dst_height,
+        .dst_pitch = dst_pitch,
+        .src_left = src_left,
+        .src_top = src_top,
+        .src_width = src_width,
+        .src_height = src_height,
+        .param = s->param,
+        .mpeg_range = mpeg_range
     };
 
-    void *args_uchar[] = {
-        &src_tex[0], &src_tex[1], &src_tex[2], &src_tex[3],
-        &dst_devptr[0], &dst_devptr[1], &dst_devptr[2], &dst_devptr[3],
-        &dst_width, &dst_height, &dst_pitch,
-        &src_left, &src_top, &src_width, &src_height, &s->param
-    };
+    void *args[] = { &params };
 
     return CHECK_CU(cu->cuLaunchKernel(func,
                                        DIV_UP(dst_width, BLOCKX), DIV_UP(dst_height, BLOCKY), 1,
-                                       BLOCKX, BLOCKY, 1, 0, s->cu_stream, args_uchar, NULL));
+                                       BLOCKX, BLOCKY, 1, 0, s->cu_stream, args, NULL));
 }
 
 static int scalecuda_resize(AVFilterContext *ctx,
@@ -445,6 +474,7 @@ static int scalecuda_resize(AVFilterContext *ctx,
     CudaFunctions *cu = s->hwctx->internal->cuda_dl;
     CUcontext dummy, cuda_ctx = s->hwctx->cuda_ctx;
     int i, ret;
+    int mpeg_range = in->color_range != AVCOL_RANGE_JPEG;
 
     CUtexObject tex[4] = { 0, 0, 0, 0 };
 
@@ -489,7 +519,7 @@ static int scalecuda_resize(AVFilterContext *ctx,
     // scale primary plane(s). Usually Y (and A), or single plane of RGB frames.
     ret = call_resize_kernel(ctx, s->cu_func,
                              tex, in->crop_left, in->crop_top, crop_width, crop_height,
-                             out, out->width, out->height, out->linesize[0]);
+                             out, out->width, out->height, out->linesize[0], mpeg_range);
     if (ret < 0)
         goto exit;
 
@@ -503,7 +533,7 @@ static int scalecuda_resize(AVFilterContext *ctx,
                                  out,
                                  AV_CEIL_RSHIFT(out->width, s->out_desc->log2_chroma_w),
                                  AV_CEIL_RSHIFT(out->height, s->out_desc->log2_chroma_h),
-                                 out->linesize[1]);
+                                 out->linesize[1], mpeg_range);
         if (ret < 0)
             goto exit;
     }
