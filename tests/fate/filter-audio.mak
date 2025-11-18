@@ -259,6 +259,11 @@ fate-filter-aresample: CMD = pcm -analyzeduration 10000000 -i $(SRC) -af aresamp
 fate-filter-aresample: CMP = oneoff
 fate-filter-aresample: REF = $(SAMPLES)/nellymoser/nellymoser-discont.pcm
 
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, ASELECT, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-aselect
+fate-filter-aselect: tests/data/asynth-44100-2.wav
+fate-filter-aselect: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-aselect: CMD = framecrc -i $(SRC) -af "aselect=gte(t\,1)*lt(t\,2)"
+
 FATE_ATRIM += fate-filter-atrim-duration
 fate-filter-atrim-duration: CMD = framecrc -i $(SRC) -af atrim=start=0.1:duration=0.01
 FATE_ATRIM += fate-filter-atrim-mixed
