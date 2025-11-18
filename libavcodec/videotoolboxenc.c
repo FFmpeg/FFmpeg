@@ -2414,12 +2414,8 @@ static int copy_avframe_to_pixel_buffer(AVCodecContext   *avctx,
 
     status = CVPixelBufferLockBaseAddress(cv_img, 0);
     if (status) {
-        av_log(
-            avctx,
-            AV_LOG_ERROR,
-            "Error: Could not lock base address of CVPixelBuffer: %d.\n",
-            status
-        );
+        av_log(avctx, AV_LOG_ERROR, "Could not lock base address of CVPixelBuffer: %d.\n", status);
+        return AVERROR_EXTERNAL;
     }
 
     if (CVPixelBufferIsPlanar(cv_img)) {
@@ -2481,7 +2477,7 @@ static int copy_avframe_to_pixel_buffer(AVCodecContext   *avctx,
 
     status = CVPixelBufferUnlockBaseAddress(cv_img, 0);
     if (status) {
-        av_log(avctx, AV_LOG_ERROR, "Error: Could not unlock CVPixelBuffer base address: %d.\n", status);
+        av_log(avctx, AV_LOG_ERROR, "Could not unlock CVPixelBuffer base address: %d.\n", status);
         return AVERROR_EXTERNAL;
     }
 
