@@ -442,9 +442,9 @@ Muxers/Demuxers:
   nsvdec.c                              Francois Revol
   nut*                                  Michael Niedermayer
   nuv.c                                 Reimar Doeffinger
-  oggdec.c, oggdec.h                    David Conrad
-  oggenc.c                              Baptiste Coudurier
-  oggparse*.c                           David Conrad
+  oggdec.c, oggdec.h                    David Conrad, Romain Beauxis
+  oggenc.c                              Baptiste Coudurier, Romain Beauxis
+  oggparse*.c                           David Conrad, Romain Beauxis
   oma.c                                 Maxim Poliakovski
   pp_bnk.c                              Zane van Iperen
   psxstr.c                              Mike Melanson
