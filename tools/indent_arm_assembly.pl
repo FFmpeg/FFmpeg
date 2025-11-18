@@ -32,8 +32,11 @@
 # - Optionally align operand columns vertically according to their
 #   maximum width (accommodating for e.g. x0 vs x10, or v0.8b vs v16.16b).
 #
-# The input code is passed to stdin, and the reformatted code is written
-# on stdout.
+# The script can be executed as "indent_arm_assembly.pl file [outfile]".
+# If no outfile is specified, the given file is overwritten in place.
+#
+# Alternatively, the if no file parameters are given, the script reads input
+# code on stdin, and outputs the reformatted code on stdout.
 
 use strict;
 
@@ -41,6 +44,8 @@ my $indent_operands = 0;
 my $instr_indent = 8;
 my $operand_indent = 24;
 my $match_indent = 0;
+my $file;
+my $outfile;
 
 while (@ARGV) {
     my $opt = shift;
@@ -54,7 +59,13 @@ while (@ARGV) {
     } elsif ($opt eq "-match-indent") {
         $match_indent = 1;
     } else {
-        die "Unrecognized parameter $opt\n";
+        if (!$file) {
+            $file = $opt;
+        } elsif (!$outfile) {
+            $outfile = $opt;
+        } else {
+            die "Unrecognized parameter $opt\n";
+        }
     }
 }
 
@@ -130,7 +141,26 @@ sub columns {
     return indentcolumns($rest, 3);
 }
 
-while (<STDIN>) {
+my $in;
+my $out;
+my $tempfile;
+
+if ($file) {
+    open(INPUT, "$file") or die "Unable to open $file: $!";
+    $in = *INPUT;
+    if ($outfile) {
+        open(OUTPUT, ">$outfile") or die "Unable to open $outfile: $!";
+    } else {
+        $tempfile = "$file.tmp";
+        open(OUTPUT, ">$tempfile") or die "Unable to open $tempfile: $!";
+    }
+    $out = *OUTPUT;
+} else {
+    $in = *STDIN;
+    $out = *STDOUT;
+}
+
+while (<$in>) {
     # Trim off trailing whitespace.
     chomp;
     if (/^([\.\w\d]+:)?(\s+)([\w\\][\w\\\.]*)(?:(\s+)(.*)|$)/) {
@@ -201,5 +231,13 @@ while (<STDIN>) {
             $_ = $label . $indent . $instr . $operand_space . $rest;
         }
     }
-    print $_ . "\n";
+    print $out $_ . "\n";
+}
+
+if ($file) {
+    close(INPUT);
+    close(OUTPUT);
+}
+if ($tempfile) {
+    rename($tempfile, $file);
 }
