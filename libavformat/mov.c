@@ -6228,7 +6228,8 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             }
         }
 
-        c->frag_index.complete = 1;
+        if (offadd == 0)
+            c->frag_index.complete = 1;
     }
 
     return 0;
