@@ -279,12 +279,20 @@ typedef struct AVDOVIDmLevel11 {
     uint8_t content_type;
     uint8_t whitepoint;
     uint8_t reference_mode_flag;
+#if FF_API_DOVI_L11_INVALID_PROPS
+    attribute_deprecated
     uint8_t sharpness;
+    attribute_deprecated
     uint8_t noise_reduction;
+    attribute_deprecated
     uint8_t mpeg_noise_reduction;
+    attribute_deprecated
     uint8_t frame_rate_conversion;
+    attribute_deprecated
     uint8_t brightness;
+    attribute_deprecated
     uint8_t color;
+#endif
 } AVDOVIDmLevel11;
 
 typedef struct AVDOVIDmLevel254 {
