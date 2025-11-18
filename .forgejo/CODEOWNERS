@@ -62,6 +62,7 @@ libavcodec/smpte_436m.* @programmerjake
 libavcodec/svq1.* @pross
 libavcodec/svq3.* @pross
 libavcodec/.*vc2.* @lynne
+libavcodec/videotoolbox.* @ePirat
 libavcodec/vp3.* @pross
 libavcodec/vp4.* @pross
 libavcodec/vp5.* @pross
@@ -134,6 +135,7 @@ libavformat/.*exif.* @Traneptora
 libavformat/filmstrip.* @pross
 libavformat/frm.* @pross
 libavformat/iamf.* @jamrial
+libavformat/icecast.c @ePirat
 libavformat/ico.* @pross
 libavformat/iff.* @pross
 libavformat/.*jpegxl.* @Traneptora
@@ -165,6 +167,7 @@ libavutil/film_grain.* @haasn
 libavutil/dovi_meta.* @haasn
 libavutil/hwcontext_oh.* @quink
 libavutil/hwcontext_mediacodec.* @quink
+libavutil/hwcontext_videotoolbox.* @ePirat
 libavutil/iamf.* @jamrial
 libavutil/integer.* @michaelni
 libavutil/lfg.* @michaelni
