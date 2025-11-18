@@ -18,29 +18,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <VideoToolbox/VideoToolbox.h>
-#include <CoreVideo/CoreVideo.h>
-#include <CoreMedia/CoreMedia.h>
-#include <TargetConditionals.h>
 #include <Availability.h>
-#include "avcodec.h"
+#include <CoreMedia/CoreMedia.h>
+#include <CoreVideo/CoreVideo.h>
+#include <dlfcn.h>
+#include <pthread.h>
+#include <TargetConditionals.h>
+#include <VideoToolbox/VideoToolbox.h>
+
+#include "libavutil/avassert.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
-#include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
-#include "libavutil/imgutils.h"
-#include "libavcodec/avcodec.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/hwcontext_videotoolbox.h"
-#include "codec_internal.h"
-#include "internal.h"
-#include <pthread.h>
+
 #include "atsc_a53.h"
+#include "codec_internal.h"
 #include "encode.h"
 #include "h264.h"
 #include "h264_sei.h"
 #include "hwconfig.h"
-#include <dlfcn.h>
+#include "internal.h"
 
 #if !HAVE_KCMVIDEOCODECTYPE_HEVC
 enum { kCMVideoCodecType_HEVC = 'hvc1' };
