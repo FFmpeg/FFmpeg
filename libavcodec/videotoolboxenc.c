@@ -28,6 +28,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/imgutils.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/hwcontext_videotoolbox.h"
@@ -2328,89 +2329,20 @@ static int vtenc_cm_to_avpacket(
     return 0;
 }
 
-/*
- * contiguous_buf_size is 0 if not contiguous, and the size of the buffer
- * containing all planes if so.
- */
-static int get_cv_pixel_info(
-    AVCodecContext *avctx,
-    const AVFrame  *frame,
-    int            *color,
-    int            *plane_count,
-    size_t         *widths,
-    size_t         *heights,
-    size_t         *strides,
-    size_t         *contiguous_buf_size)
-{
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
-    VTEncContext *vtctx = avctx->priv_data;
-    int av_format       = frame->format;
-    int av_color_range  = avctx->color_range;
-    int i;
-    int range_guessed;
-    int status;
-
-    if (!desc)
-        return AVERROR(EINVAL);
-
-    status = get_cv_pixel_format(avctx, av_format, av_color_range, color, &range_guessed);
-    if (status)
-        return status;
-
-    if (range_guessed) {
-        if (!vtctx->warned_color_range) {
-            vtctx->warned_color_range = true;
-            av_log(avctx,
-                   AV_LOG_WARNING,
-                   "Color range not set for %s. Using MPEG range.\n",
-                   av_get_pix_fmt_name(av_format));
-        }
-    }
-
-    *plane_count = av_pix_fmt_count_planes(avctx->pix_fmt);
-
-    for (i = 0; i < desc->nb_components; i++) {
-        int p = desc->comp[i].plane;
-        bool hasAlpha = (desc->flags & AV_PIX_FMT_FLAG_ALPHA);
-        bool isAlpha = hasAlpha && (p + 1 == *plane_count);
-        bool isChroma = (p != 0) && !isAlpha;
-        int shiftw = isChroma ? desc->log2_chroma_w : 0;
-        int shifth = isChroma ? desc->log2_chroma_h : 0;
-        widths[p]  = (avctx->width  + ((1 << shiftw) >> 1)) >> shiftw;
-        heights[p] = (avctx->height + ((1 << shifth) >> 1)) >> shifth;
-        strides[p] = frame->linesize[p];
-    }
-
-    *contiguous_buf_size = 0;
-    for (i = 0; i < *plane_count; i++) {
-        if (i < *plane_count - 1 &&
-            frame->data[i] + strides[i] * heights[i] != frame->data[i + 1]) {
-            *contiguous_buf_size = 0;
-            break;
-        }
-
-        *contiguous_buf_size += strides[i] * heights[i];
-    }
-
-    return 0;
-}
-
-//Not used on OSX - frame is never copied.
 static int copy_avframe_to_pixel_buffer(AVCodecContext   *avctx,
                                         const AVFrame    *frame,
-                                        CVPixelBufferRef cv_img,
-                                        const size_t     *plane_strides,
-                                        const size_t     *plane_rows)
+                                        CVPixelBufferRef cv_img)
 {
-    int i, j;
-    size_t plane_count;
     int status;
-    int rows;
-    int src_stride;
-    int dst_stride;
-    uint8_t *src_addr;
-    uint8_t *dst_addr;
-    size_t copy_bytes;
+
+    int num_planes = av_pix_fmt_count_planes(frame->format);
+    size_t num_cv_plane = CVPixelBufferIsPlanar(cv_img) ?
+                          CVPixelBufferGetPlaneCount(cv_img) : 1;
+    if (num_planes != num_cv_plane) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Different number of planes in AVFrame and CVPixelBuffer.\n");
+        return AVERROR_BUG;
+    }
 
     status = CVPixelBufferLockBaseAddress(cv_img, 0);
     if (status) {
@@ -2418,62 +2350,14 @@ static int copy_avframe_to_pixel_buffer(AVCodecContext   *avctx,
         return AVERROR_EXTERNAL;
     }
 
-    if (CVPixelBufferIsPlanar(cv_img)) {
-        plane_count = CVPixelBufferGetPlaneCount(cv_img);
-        for (i = 0; frame->data[i]; i++) {
-            if (i == plane_count) {
-                CVPixelBufferUnlockBaseAddress(cv_img, 0);
-                av_log(avctx,
-                    AV_LOG_ERROR,
-                    "Error: different number of planes in AVFrame and CVPixelBuffer.\n"
-                );
-
-                return AVERROR_EXTERNAL;
-            }
-
-            dst_addr = (uint8_t*)CVPixelBufferGetBaseAddressOfPlane(cv_img, i);
-            src_addr = (uint8_t*)frame->data[i];
-            dst_stride = CVPixelBufferGetBytesPerRowOfPlane(cv_img, i);
-            src_stride = plane_strides[i];
-            rows = plane_rows[i];
-
-            if (dst_stride == src_stride) {
-                memcpy(dst_addr, src_addr, src_stride * rows);
-            } else {
-                copy_bytes = dst_stride < src_stride ? dst_stride : src_stride;
-
-                for (j = 0; j < rows; j++) {
-                    memcpy(dst_addr + j * dst_stride, src_addr + j * src_stride, copy_bytes);
-                }
-            }
-        }
-    } else {
-        if (frame->data[1]) {
-            CVPixelBufferUnlockBaseAddress(cv_img, 0);
-            av_log(avctx,
-                AV_LOG_ERROR,
-                "Error: different number of planes in AVFrame and non-planar CVPixelBuffer.\n"
-            );
-
-            return AVERROR_EXTERNAL;
-        }
-
-        dst_addr = (uint8_t*)CVPixelBufferGetBaseAddress(cv_img);
-        src_addr = (uint8_t*)frame->data[0];
-        dst_stride = CVPixelBufferGetBytesPerRow(cv_img);
-        src_stride = plane_strides[0];
-        rows = plane_rows[0];
-
-        if (dst_stride == src_stride) {
-            memcpy(dst_addr, src_addr, src_stride * rows);
-        } else {
-            copy_bytes = dst_stride < src_stride ? dst_stride : src_stride;
-
-            for (j = 0; j < rows; j++) {
-                memcpy(dst_addr + j * dst_stride, src_addr + j * src_stride, copy_bytes);
-            }
-        }
+    int dst_stride[4] = {0};
+    uint8_t *dst_addr[4] = {0};
+    for (int i = 0; i < num_planes; i++) {
+        dst_addr[i] = (uint8_t*)CVPixelBufferGetBaseAddressOfPlane(cv_img, i);
+        dst_stride[i] = CVPixelBufferGetBytesPerRowOfPlane(cv_img, i);
     }
+    av_image_copy2(dst_addr, dst_stride, frame->data, frame->linesize,
+                   frame->format, frame->width, frame->height);
 
     status = CVPixelBufferUnlockBaseAddress(cv_img, 0);
     if (status) {
@@ -2489,13 +2373,7 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
                                   CVPixelBufferRef *cv_img,
                                   BufNode          *node)
 {
-    int plane_count;
-    int color;
-    size_t widths [AV_NUM_DATA_POINTERS];
-    size_t heights[AV_NUM_DATA_POINTERS];
-    size_t strides[AV_NUM_DATA_POINTERS];
     int status;
-    size_t contiguous_buf_size;
     CVPixelBufferPoolRef pix_buf_pool;
     VTEncContext* vtctx = avctx->priv_data;
 
@@ -2515,32 +2393,20 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
         return 0;
     }
 
-    memset(widths,  0, sizeof(widths));
-    memset(heights, 0, sizeof(heights));
-    memset(strides, 0, sizeof(strides));
-
-    status = get_cv_pixel_info(
-        avctx,
-        frame,
-        &color,
-        &plane_count,
-        widths,
-        heights,
-        strides,
-        &contiguous_buf_size
-    );
-
+    int range_guessed;
+    status = get_cv_pixel_format(avctx, frame->format, avctx->color_range,
+                                 &(int) {0}, &range_guessed);
     if (status) {
-        av_log(
-            avctx,
-            AV_LOG_ERROR,
-            "Error: Cannot convert format %d color_range %d: %d\n",
-            frame->format,
-            frame->color_range,
-            status
-        );
-
+        av_log(avctx, AV_LOG_ERROR, "Cannot convert format %d color_range %d: %d\n",
+            frame->format, frame->color_range, status);
         return status;
+    }
+    if (range_guessed) {
+        if (!vtctx->warned_color_range) {
+            vtctx->warned_color_range = true;
+            av_log(avctx, AV_LOG_WARNING, "Color range not set for %s. Using MPEG range.\n",
+                   av_get_pix_fmt_name(frame->format));
+        }
     }
 
     pix_buf_pool = VTCompressionSessionGetPixelBufferPool(vtctx->session);
@@ -2578,7 +2444,7 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
         return AVERROR_EXTERNAL;
     }
 
-    status = copy_avframe_to_pixel_buffer(avctx, frame, *cv_img, strides, heights);
+    status = copy_avframe_to_pixel_buffer(avctx, frame, *cv_img);
     if (status) {
         CFRelease(*cv_img);
         *cv_img = NULL;
