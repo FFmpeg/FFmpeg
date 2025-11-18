@@ -667,7 +667,7 @@ static int copy_param_sets(
 
         next_offset = offset + sizeof(start_code) + ps_size;
         if (dst_size < next_offset) {
-            av_log(avctx, AV_LOG_ERROR, "Error: buffer too small for parameter sets.\n");
+            av_log(avctx, AV_LOG_ERROR, "Buffer too small for parameter sets.\n");
             return AVERROR_BUFFER_TOO_SMALL;
         }
 
@@ -1205,7 +1205,7 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
                                             session);
 
     if (status || !vtctx->session) {
-        av_log(avctx, AV_LOG_ERROR, "Error: cannot create compression session: %d\n", status);
+        av_log(avctx, AV_LOG_ERROR, "Cannot create compression session: %d\n", status);
 
 #if !TARGET_OS_IPHONE
         if (!vtctx->allow_sw) {
@@ -1241,7 +1241,7 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
         return status;
 
     if (avctx->flags & AV_CODEC_FLAG_QSCALE && !vtenc_qscale_enabled()) {
-        av_log(avctx, AV_LOG_ERROR, "Error: -q:v qscale not available for encoder. Use -b:v bitrate instead.\n");
+        av_log(avctx, AV_LOG_ERROR, "-q:v qscale not available for encoder. Use -b:v bitrate instead.\n");
         return AVERROR_EXTERNAL;
     }
 
@@ -1269,7 +1269,7 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
                                           compat_keys.kVTCompressionPropertyKey_ConstantBitRate,
                                           bit_rate_num);
             if (status == kVTPropertyNotSupportedErr) {
-                av_log(avctx, AV_LOG_ERROR, "Error: -constant_bit_rate true is not supported by the encoder.\n");
+                av_log(avctx, AV_LOG_ERROR, "-constant_bit_rate true is not supported by the encoder.\n");
                 return AVERROR_EXTERNAL;
             }
         } else {
@@ -1625,7 +1625,7 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
 
     status = VTCompressionSessionPrepareToEncodeFrames(vtctx->session);
     if (status) {
-        av_log(avctx, AV_LOG_ERROR, "Error: cannot prepare encoder: %d\n", status);
+        av_log(avctx, AV_LOG_ERROR, "Cannot prepare encoder: %d\n", status);
         return AVERROR_EXTERNAL;
     }
 
@@ -1644,7 +1644,7 @@ static int vtenc_configure_encoder(AVCodecContext *avctx)
 
     codec_type = get_cm_codec_type(avctx, vtctx->profile, vtctx->alpha_quality);
     if (!codec_type) {
-        av_log(avctx, AV_LOG_ERROR, "Error: no mapping for AVCodecID %d\n", avctx->codec_id);
+        av_log(avctx, AV_LOG_ERROR, "No mapping for AVCodecID %d\n", avctx->codec_id);
         return AVERROR(EINVAL);
     }
 
@@ -2513,7 +2513,7 @@ static int vtenc_send_frame(AVCodecContext *avctx,
     );
 
     if (status) {
-        av_log(avctx, AV_LOG_ERROR, "Error: cannot encode frame: %d\n", status);
+        av_log(avctx, AV_LOG_ERROR, "Cannot encode frame: %d\n", status);
         status = AVERROR_EXTERNAL;
         // Not necessary, just in case new code put after here
         goto out;
