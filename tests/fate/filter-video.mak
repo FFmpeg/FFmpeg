@@ -20,6 +20,11 @@ fate-filter-bwdif10: CMD = framecrc -ec 0 -flags bitexact -idct simple -i $(TARG
 
 FATE_FILTER_SAMPLES-yes += $(FATE_BWDIF-yes)
 
+FATE_FEEDBACK-$(call FILTERDEMDEC, FEEDBACK YADIF, MPEGTS, MPEG2VIDEO) += fate-filter-feedback-yadif
+fate-filter-feedback-yadif: CMD = framecrc -ec 0 -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -frames:v 30 -vf "[in][yadifin]feedback=x=0:y=0:w=100:h=100[out][yadifout];[yadifout]yadif[yadifin]"
+
+FATE_FILTER_SAMPLES-yes += $(FATE_FEEDBACK-yes)
+
 FATE_YADIF-$(call FILTERDEMDEC, YADIF, MPEGTS, MPEG2VIDEO) += fate-filter-yadif-mode0 fate-filter-yadif-mode1
 fate-filter-yadif-mode0: CMD = framecrc -ec 0 -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -frames:v 30 -vf yadif=0
 fate-filter-yadif-mode1: CMD = framecrc -ec 0 -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -frames:v 59 -vf yadif=1
@@ -169,6 +174,9 @@ fate-filter-yuvtestsrc-xv48: CMD = framecrc -lavfi yuvtestsrc=rate=5:duration=1,
 FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC FORMAT CONCAT SCALE, LAVFI_INDEV FILE_PROTOCOL) += fate-filter-lavd-scalenorm
 fate-filter-lavd-scalenorm: tests/data/filtergraphs/scalenorm
 fate-filter-lavd-scalenorm: CMD = framecrc -f lavfi -graph_file $(TARGET_PATH)/tests/data/filtergraphs/scalenorm -i dummy
+
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FEEDBACK HFLIP) += fate-filter-feedback-hflip
+fate-filter-feedback-hflip: CMD = framecrc -f lavfi -i testsrc2=d=1 -vf "[in][hflipin]feedback=x=0:y=0:w=100:h=100[out][hflipout];[hflipout]hflip[hflipin]"
 
 FATE_FILTER-$(call FILTERFRAMECRC, FRAMERATE TESTSRC2) += fate-filter-framerate-up fate-filter-framerate-down
 fate-filter-framerate-up: CMD = framecrc -lavfi testsrc2=r=2:d=10,framerate=fps=10 -t 1
