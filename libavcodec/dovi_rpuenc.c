@@ -546,12 +546,8 @@ static void generate_ext_v2(PutBitContext *pb, const AVDOVIDmData *dm)
         put_bits(pb, 4, dm->l11.whitepoint);
         put_bits(pb, 1, dm->l11.reference_mode_flag);
         put_bits(pb, 3, 0); /* reserved */
-        put_bits(pb, 2, dm->l11.sharpness);
-        put_bits(pb, 2, dm->l11.noise_reduction);
-        put_bits(pb, 2, dm->l11.mpeg_noise_reduction);
-        put_bits(pb, 2, dm->l11.frame_rate_conversion);
-        put_bits(pb, 2, dm->l11.brightness);
-        put_bits(pb, 2, dm->l11.color);
+        put_bits(pb, 8, 0); /* reserved */
+        put_bits(pb, 8, 0); /* reserved */
         break;
     case 254:
         put_bits(pb, 8, dm->l254.dm_mode);

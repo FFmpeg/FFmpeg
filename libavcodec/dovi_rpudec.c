@@ -261,12 +261,8 @@ static int parse_ext_v2(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm,
         dm->l11.whitepoint = get_bits(gb, 4);
         dm->l11.reference_mode_flag = get_bits1(gb);
         skip_bits(gb, 3); /* reserved */
-        dm->l11.sharpness = get_bits(gb, 2);
-        dm->l11.noise_reduction = get_bits(gb, 2);
-        dm->l11.mpeg_noise_reduction = get_bits(gb, 2);
-        dm->l11.frame_rate_conversion = get_bits(gb, 2);
-        dm->l11.brightness = get_bits(gb, 2);
-        dm->l11.color = get_bits(gb, 2);
+        skip_bits(gb, 8); /* reserved */
+        skip_bits(gb, 8); /* reserved */
         break;
     case 254:
         dm->l254.dm_mode = get_bits(gb, 8);
