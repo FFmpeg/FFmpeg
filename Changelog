@@ -2,6 +2,80 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
+version 8.0.1:
+ avfilter/vf_drawtext: Account for bbox text seperator
+ avcodec/mediacodecdec_common: Check that the input to mediacodec_wrap_sw_audio_buffer() contains channel * sample_size
+ avcodec/rv60dec: Clear blk_info
+ avformat/whip: Fix rtp_ctx->streams access
+ avcodec/utvideodec: Set B for the width= 1 case in restore_median_planar_il()
+ avcodec/osq: Fix 32bit sample overflow
+ avformat/rtpdec_rfc4175: Only change PayloadContext on success
+ avformat/rtpdec_rfc4175: Check dimensions
+ avformat/rtpdec_rfc4175: Fix memleak of sampling
+ avformat/http: Fix off by 1 error
+ avcodec/exr: spelling
+ avcodec/rv60dec: add upper bound check for qp
+ avcodec/exr: use tile dimensions in pxr24 UINT case
+ avcodec/exr: Simple check for available channels
+ avformat/sctp: Check size in sctp_write()
+ avformat/rtmpproto: consider command line argument lengths
+ avformat/rtmpproto_ Check tcurl and flashver length
+ avcodec/g723_1enc: Make min_err 64bit
+ avcodec/vlc: Clear val8/16 in vlc_multi_gen() by av_mallocz()
+ avformat/rtpenc_h264_hevc: Check space for nal_length_size in ff_rtp_send_h264_hevc()
+ avcodec/ffv1enc: Consider variation in slice sizes
+ libavcodec/cbs_apv_syntax_template: limit tile to 2gb
+ swscale/output: Fix unsigned cast position in  yuv2*
+ swscale/output: Fix integer overflow in yuv2ya16_X_c_template()
+ avcodec/exr: Check that DWA has 3 channels
+ avcodec/exr: check ac_size
+ avcodec/exr: Round dc_w/h up
+ avcodec/mjpegdec: Explain buf_size/width/height check
+ configure: strip non numeric trailer from gcc version
+ avformat/dhav: Fix off by length of read element error
+ avformat/aviobuf: Keep checksum_ptr consistent in avio_seek()
+ doc/examples/vaapi_encode: fix invalid check on fwrite
+ avcodec/librsvgdec: fix compilation with librsvg 2.50.3
+ avcodec/mfenc: fix memory leak with D3D11 input surfaces
+ swscale/graph: fix double-free when legacy pass fails initializing
+ libavformat/udp: Fix call to recvfrom(2)
+ avfilter/f_ebur128: Fix incorrect ebur128 peak calculation.
+ avformat/udp: fix warning about unused varible
+ avdevice/lavfi: stop setting deprecated buffersink options
+ configure: unbreak glslang build
+ swscale/range_convert: fix truncation bias in range conversion
+ lavc/aarch64: Fix addp overflow in ff_pred16x16_plane_neon_10
+ avcodec/mlpdec: don't depend on context channel layout when setting substream masks
+ avformat/demux: pass new extradata to the parser
+ avfilter/af_whisper: fix srt index
+ avfilter/af_whisper: fix int64 printf format
+ avfilter/af_whisper: fix srt file format
+ avfilter/whisper: correct option formatting
+ avfilter/af_whisper: fix broken output for multibyte character
+ avformat/rtsp: fix leading space in RTSP reason
+ avformat/rtsp: do not log invalid values
+ avformat/http: Handle IPv6 Zone ID in hostname
+ avformat/dump: fix log level passed to av_log when printing stream group side data
+ avcodec/hevc/sei: don't attempt to use stale values in HEVCSEITDRDI
+ avcodec/hevc/sei: prevent storing a potentially bogus num_ref_displays value in HEVCSEITDRDI
+ avcodec/hevc/refs: don't unconditionally discard non-IRAP frames if no IRAP frame was seen before
+ libavutil/arm: Rename the HWCAP defines
+ libavutil/arm: Make use of elf_aux_info() on FreeBSD/OpenBSD
+ fftools/ffmpeg: fix gracefully shutdown
+ avcodec/decode: sync initial_pict_type and intra_only_flag with thread worker's avctx
+ avcodec/x86/pngdsp: add missing emms at the end of add_png_paeth_prediction
+ avcodec/videotoolboxenc: ensure bitrate is set in low_delay mode
+ avcodec/videotoolboxenc: allow low latency RC with HEVC
+ avcodec/videotoolboxenc: support global_quality without qscale
+ avcodec/videotoolboxenc: fix the loss of precision when calculating quality
+ fftools/ffmpeg_demux: ensure the display_rotation option is honored
+ avcodec/mjpegdec: use ff_frame_new_side_data() to export display matrix
+ avutil/tests/aes_ctr: extend the test to cover payloads smaller than a block
+ avutil/aes_ctr: reintroduce the block offset state
+ avfilter/vf_lcevc: support LCEVCdec version 4
+ avcodec/lcevcdec: support LCEVCdec version 4
+ movenc: ensure chapters track extradata is not null and populated
+
 version 8.0:
 - Whisper filter
 - Drop support for OpenSSL < 1.1.0
