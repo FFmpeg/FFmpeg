@@ -392,16 +392,16 @@ static av_cold int codecctl_intp(AVCodecContext *avctx,
     int width = -30;
     int res;
 
-    snprintf(buf, sizeof(buf), "%s:", ctlidstr[id]);
-    av_log(avctx, AV_LOG_DEBUG, "  %*s%d\n", width, buf, *ptr);
-
     res = aom_codec_control(&ctx->encoder, id, ptr);
     if (res != AOM_CODEC_OK) {
-        snprintf(buf, sizeof(buf), "Failed to set %s codec control",
+        snprintf(buf, sizeof(buf), "Failed to get %s codec control",
                  ctlidstr[id]);
         log_encoder_error(avctx, buf);
         return AVERROR(EINVAL);
     }
+
+    snprintf(buf, sizeof(buf), "%s:", ctlidstr[id]);
+    av_log(avctx, AV_LOG_DEBUG, "  %*s%d\n", width, buf, *ptr);
 
     return 0;
 }
