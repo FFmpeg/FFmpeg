@@ -277,6 +277,11 @@ typedef struct D3D12VAEncodeContext {
      */
     UINT intra_refresh_frame_index;
 
+    /**
+     * Motion estimation precision mode
+     */
+    D3D12_VIDEO_ENCODER_MOTION_ESTIMATION_PRECISION_MODE me_precision;
+
 } D3D12VAEncodeContext;
 
 typedef struct D3D12VAEncodeType {
@@ -362,6 +367,24 @@ int ff_d3d12va_encode_close(AVCodecContext *avctx);
     { #name, desc, 0, AV_OPT_TYPE_CONST, { .i64 = D3D12_VIDEO_ENCODER_INTRA_REFRESH_MODE_ ## mode }, \
       0, 0, FLAGS, .unit = "intra_refresh_mode" }
 
+#if CONFIG_D3D12VA_ME_PRECISION_EIGHTH_PIXEL
+#define D3D12_VIDEO_ENCODER_MOTION_ESTIMATION_PRECISION_MODE_MAX_VALUE D3D12_VIDEO_ENCODER_MOTION_ESTIMATION_PRECISION_MODE_EIGHTH_PIXEL
+#else
+#define D3D12_VIDEO_ENCODER_MOTION_ESTIMATION_PRECISION_MODE_MAX_VALUE D3D12_VIDEO_ENCODER_MOTION_ESTIMATION_PRECISION_MODE_QUARTER_PIXEL
+#endif
+
+#define D3D12VA_ENCODE_ME_PRECISION_MODE(name, mode, desc) \
+    { #name, #desc " pixel precision", 0, AV_OPT_TYPE_CONST, \
+      { .i64 = D3D12_VIDEO_ENCODER_MOTION_ESTIMATION_PRECISION_MODE_ ## mode }, \
+      0, 0, FLAGS, .unit = "me_precision" }
+
+#if CONFIG_D3D12VA_ME_PRECISION_EIGHTH_PIXEL
+#define FFPP_D3D12VA_ME_PRECISION_EIGHTH_PIXEL \
+    , D3D12VA_ENCODE_ME_PRECISION_MODE(eighth_pixel, EIGHTH_PIXEL, Eighth)
+#else
+#define FFPP_D3D12VA_ME_PRECISION_EIGHTH_PIXEL
+#endif
+
 #define D3D12VA_ENCODE_COMMON_OPTIONS \
     { "max_frame_size", \
       "Maximum frame size (in bytes)",\
@@ -378,7 +401,20 @@ int ff_d3d12va_encode_close(AVCodecContext *avctx);
     { "intra_refresh_duration", \
       "Number of frames over which to spread intra refresh (0 = GOP size)", \
       OFFSET(common.intra_refresh.IntraRefreshDuration), AV_OPT_TYPE_INT, \
-      { .i64 = 0 }, 0, INT_MAX, FLAGS }
+      { .i64 = 0 }, 0, INT_MAX, FLAGS }, \
+    { "me_precision", "Motion estimation precision mode", \
+      OFFSET(common.me_precision), AV_OPT_TYPE_INT, \
+      { .i64 = D3D12_VIDEO_ENCODER_MOTION_ESTIMATION_PRECISION_MODE_MAXIMUM }, \
+      D3D12_VIDEO_ENCODER_MOTION_ESTIMATION_PRECISION_MODE_MAXIMUM, \
+      D3D12_VIDEO_ENCODER_MOTION_ESTIMATION_PRECISION_MODE_MAX_VALUE, \
+      FLAGS, .unit = "me_precision" }, \
+    { "maximum", "Maximum (best quality, slowest)", 0, AV_OPT_TYPE_CONST, \
+      { .i64 = D3D12_VIDEO_ENCODER_MOTION_ESTIMATION_PRECISION_MODE_MAXIMUM }, \
+      0, 0, FLAGS, .unit = "me_precision" }, \
+    D3D12VA_ENCODE_ME_PRECISION_MODE(full_pixel, FULL_PIXEL, Full), \
+    D3D12VA_ENCODE_ME_PRECISION_MODE(half_pixel, HALF_PIXEL, Half), \
+    D3D12VA_ENCODE_ME_PRECISION_MODE(quarter_pixel, QUARTER_PIXEL, Quarter) \
+    FFPP_D3D12VA_ME_PRECISION_EIGHTH_PIXEL
 
 #define D3D12VA_ENCODE_RC_MODE(name, desc) \
     { #name, desc, 0, AV_OPT_TYPE_CONST, { .i64 = RC_MODE_ ## name }, \

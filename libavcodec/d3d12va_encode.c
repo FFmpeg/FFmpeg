@@ -1143,6 +1143,91 @@ rc_mode_found:
     return 0;
 }
 
+static int d3d12va_encode_init_motion_estimation_precision(AVCodecContext *avctx)
+{
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+    D3D12VAEncodeContext       *ctx = avctx->priv_data;
+    AVD3D12VAFramesContext   *hwctx = base_ctx->input_frames->hwctx;
+    HRESULT hr;
+
+    if (ctx->me_precision == D3D12_VIDEO_ENCODER_MOTION_ESTIMATION_PRECISION_MODE_MAXIMUM)
+        return 0;
+
+    D3D12_VIDEO_ENCODER_PROFILE_DESC      profile = { 0 };
+    D3D12_VIDEO_ENCODER_PROFILE_H264 h264_profile = D3D12_VIDEO_ENCODER_PROFILE_H264_MAIN;
+    D3D12_VIDEO_ENCODER_PROFILE_HEVC hevc_profile = D3D12_VIDEO_ENCODER_PROFILE_HEVC_MAIN;
+#if CONFIG_AV1_D3D12VA_ENCODER
+    D3D12_VIDEO_ENCODER_AV1_PROFILE   av1_profile = D3D12_VIDEO_ENCODER_AV1_PROFILE_MAIN;
+#endif
+
+    D3D12_VIDEO_ENCODER_LEVEL_SETTING                    level = { 0 };
+    D3D12_VIDEO_ENCODER_LEVELS_H264                 h264_level = { 0 };
+    D3D12_VIDEO_ENCODER_LEVEL_TIER_CONSTRAINTS_HEVC hevc_level = { 0 };
+#if CONFIG_AV1_D3D12VA_ENCODER
+    D3D12_VIDEO_ENCODER_AV1_LEVEL_TIER_CONSTRAINTS   av1_level = { 0 };
+#endif
+
+    switch (ctx->codec->d3d12_codec) {
+        case D3D12_VIDEO_ENCODER_CODEC_H264:
+            profile.DataSize        = sizeof(D3D12_VIDEO_ENCODER_PROFILE_H264);
+            profile.pH264Profile    = &h264_profile;
+            level.DataSize          = sizeof(D3D12_VIDEO_ENCODER_LEVELS_H264);
+            level.pH264LevelSetting = &h264_level;
+            break;
+        case D3D12_VIDEO_ENCODER_CODEC_HEVC:
+            profile.DataSize        = sizeof(D3D12_VIDEO_ENCODER_PROFILE_HEVC);
+            profile.pHEVCProfile    = &hevc_profile;
+            level.DataSize          = sizeof(D3D12_VIDEO_ENCODER_LEVEL_TIER_CONSTRAINTS_HEVC);
+            level.pHEVCLevelSetting = &hevc_level;
+            break;
+#if CONFIG_AV1_D3D12VA_ENCODER
+        case D3D12_VIDEO_ENCODER_CODEC_AV1:
+            profile.DataSize        = sizeof(D3D12_VIDEO_ENCODER_AV1_PROFILE);
+            profile.pAV1Profile     = &av1_profile;
+            level.DataSize          = sizeof(D3D12_VIDEO_ENCODER_AV1_LEVEL_TIER_CONSTRAINTS);
+            level.pAV1LevelSetting  = &av1_level;
+            break;
+#endif
+        default:
+            av_assert0(0);
+    }
+
+    D3D12_FEATURE_DATA_VIDEO_ENCODER_SUPPORT support = {
+        .NodeIndex                   = 0,
+        .Codec                       = ctx->codec->d3d12_codec,
+        .InputFormat                 = hwctx->format,
+        .RateControl                 = ctx->rc,
+        .IntraRefresh                = D3D12_VIDEO_ENCODER_INTRA_REFRESH_MODE_NONE,
+        .SubregionFrameEncoding      = D3D12_VIDEO_ENCODER_FRAME_SUBREGION_LAYOUT_MODE_FULL_FRAME,
+        .ResolutionsListCount        = 1,
+        .pResolutionList             = &ctx->resolution,
+        .CodecGopSequence            = ctx->gop,
+        .MaxReferenceFramesInDPB     = MAX_DPB_SIZE - 1,
+        .CodecConfiguration          = ctx->codec_conf,
+        .SuggestedProfile            = profile,
+        .SuggestedLevel              = level,
+        .pResolutionDependentSupport = &ctx->res_limits,
+    };
+
+    hr = ID3D12VideoDevice3_CheckFeatureSupport(ctx->video_device3, D3D12_FEATURE_VIDEO_ENCODER_SUPPORT,
+                                                &support, sizeof(support));
+    if (FAILED(hr)) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to check encoder support for motion estimation.\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (!(support.SupportFlags & D3D12_VIDEO_ENCODER_SUPPORT_FLAG_MOTION_ESTIMATION_PRECISION_MODE_LIMIT_AVAILABLE)) {
+        av_log(avctx, AV_LOG_ERROR, "Hardware does not support motion estimation "
+            "precision mode limits.\n");
+        return AVERROR(ENOTSUP);
+    }
+
+    av_log(avctx, AV_LOG_VERBOSE, "Hardware supports motion estimation "
+        "precision mode limits.\n");
+
+    return 0;
+}
+
 static int d3d12va_encode_init_gop_structure(AVCodecContext *avctx)
 {
     FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
@@ -1322,7 +1407,7 @@ static int d3d12va_create_encoder(AVCodecContext *avctx)
         .EncodeProfile                = ctx->profile->d3d12_profile,
         .InputFormat                  = frames_hwctx->format,
         .CodecConfiguration           = ctx->codec_conf,
-        .MaxMotionEstimationPrecision = D3D12_VIDEO_ENCODER_MOTION_ESTIMATION_PRECISION_MODE_MAXIMUM,
+        .MaxMotionEstimationPrecision = ctx->me_precision,
     };
 
     hr = ID3D12VideoDevice3_CreateVideoEncoder(ctx->video_device3, &desc, &IID_ID3D12VideoEncoder,
@@ -1680,6 +1765,10 @@ int ff_d3d12va_encode_init(AVCodecContext *avctx)
         if (err < 0)
             goto fail;
     }
+
+    err = d3d12va_encode_init_motion_estimation_precision(avctx);
+    if (err < 0)
+        goto fail;
 
     if (ctx->codec->init_sequence_params) {
         err = ctx->codec->init_sequence_params(avctx);
