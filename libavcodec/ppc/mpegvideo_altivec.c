@@ -43,30 +43,30 @@
 static av_always_inline
 void dct_unquantize_h263_altivec(int16_t *block, int nb_coeffs, int qadd, int qmul)
 {
-        register const vector signed short vczero = (const vector signed short)vec_splat_s16(0);
-        DECLARE_ALIGNED(16, short, qmul8) = qmul;
-        DECLARE_ALIGNED(16, short, qadd8) = qadd;
-        register vector signed short blockv, qmulv, qaddv, nqaddv, temp1;
-        register vector bool short blockv_null, blockv_neg;
+    register const vector signed short vczero = (const vector signed short)vec_splat_s16(0);
+    DECLARE_ALIGNED(16, short, qmul8) = qmul;
+    DECLARE_ALIGNED(16, short, qadd8) = qadd;
+    register vector signed short blockv, qmulv, qaddv, nqaddv, temp1;
+    register vector bool short blockv_null, blockv_neg;
 
-        qmulv = vec_splat((vec_s16)vec_lde(0, &qmul8), 0);
-        qaddv = vec_splat((vec_s16)vec_lde(0, &qadd8), 0);
-        nqaddv = vec_sub(vczero, qaddv);
+    qmulv = vec_splat((vec_s16)vec_lde(0, &qmul8), 0);
+    qaddv = vec_splat((vec_s16)vec_lde(0, &qadd8), 0);
+    nqaddv = vec_sub(vczero, qaddv);
 
-        // vectorize all the 16 bytes-aligned blocks
-        // of 8 elements
-        for (register int j = 0; j <= nb_coeffs; j += 8) {
-            blockv = vec_ld(j << 1, block);
-            blockv_neg = vec_cmplt(blockv, vczero);
-            blockv_null = vec_cmpeq(blockv, vczero);
-            // choose between +qadd or -qadd as the third operand
-            temp1 = vec_sel(qaddv, nqaddv, blockv_neg);
-            // multiply & add (block{i,i+7} * qmul [+-] qadd)
-            temp1 = vec_mladd(blockv, qmulv, temp1);
-            // put 0 where block[{i,i+7} used to have 0
-            blockv = vec_sel(temp1, blockv, blockv_null);
-            vec_st(blockv, j << 1, block);
-        }
+    // vectorize all the 16 bytes-aligned blocks
+    // of 8 elements
+    for (register int j = 0; j <= nb_coeffs; j += 8) {
+        blockv = vec_ld(j << 1, block);
+        blockv_neg = vec_cmplt(blockv, vczero);
+        blockv_null = vec_cmpeq(blockv, vczero);
+        // choose between +qadd or -qadd as the third operand
+        temp1 = vec_sel(qaddv, nqaddv, blockv_neg);
+        // multiply & add (block{i,i+7} * qmul [+-] qadd)
+        temp1 = vec_mladd(blockv, qmulv, temp1);
+        // put 0 where block[{i,i+7} used to have 0
+        blockv = vec_sel(temp1, blockv, blockv_null);
+        vec_st(blockv, j << 1, block);
+    }
 }
 
 static void dct_unquantize_h263_intra_altivec(const MPVContext *s,
