@@ -1,6 +1,42 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 7.1.3:
+ avfilter/vf_drawtext: Account for bbox text seperator
+ avcodec/mediacodecdec_common: Check that the input to mediacodec_wrap_sw_audio_buffer() contains channel * sample_size
+ avcodec/utvideodec: Set B for the width= 1 case in restore_median_planar_il()
+ avcodec/osq: Fix 32bit sample overflow
+ avformat/rtpdec_rfc4175: Only change PayloadContext on success
+ avformat/rtpdec_rfc4175: Check dimensions
+ avformat/rtpdec_rfc4175: Fix memleak of sampling
+ avformat/http: Fix off by 1 error
+ avcodec/exr: spelling
+ avcodec/exr: use tile dimensions in pxr24 UINT case
+ avcodec/exr: Simple check for available channels
+ avformat/sctp: Check size in sctp_write()
+ avformat/rtmpproto: consider command line argument lengths
+ avformat/rtmpproto_ Check tcurl and flashver length
+ avcodec/g723_1enc: Make min_err 64bit
+ avcodec/vlc: Clear val8/16 in vlc_multi_gen() by av_mallocz()
+ avformat/rtpenc_h264_hevc: Check space for nal_length_size in ff_rtp_send_h264_hevc()
+ swscale/output: Fix integer overflow in yuv2ya16_X_c_template()
+ avcodec/hevc/sei: prevent storing a potentially bogus num_ref_displays value in HEVCSEITDRDI
+ avcodec/exr: Check that DWA has 3 channels
+ avcodec/exr: check ac_size
+ avcodec/exr: Round dc_w/h up
+ avcodec/mjpegdec: Explain buf_size/width/height check
+ avformat/aviobuf: Keep checksum_ptr consistent in avio_seek()
+ fftools/ffmpeg_sched: prevent demuxers from getting stuck
+ lavc/aarch64: Fix addp overflow in ff_pred16x16_plane_neon_10
+ avcodec/mlpdec: don't depend on context channel layout when setting substream masks
+ avformat/demux: pass new extradata to the parser
+ avcodec/svq1enc: restrict Altivec acceleration to big-endian POWER configurations
+ libavutil/arm: Rename the HWCAP defines
+ libavutil/arm: Make use of elf_aux_info() on FreeBSD/OpenBSD
+ avcodec/decode: sync initial_pict_type and intra_only_flag with thread worker's avctx
+ avcodec/x86/pngdsp: add missing emms at the end of add_png_paeth_prediction
+
+
 version 7.1.2:
  doc/examples/vaapi_encode: fix invalid check on fwrite
  avcodec/librsvgdec: fix compilation with librsvg 2.50.3
