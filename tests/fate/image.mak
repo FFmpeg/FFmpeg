@@ -444,7 +444,7 @@ FATE_PSD-$(call DEMDEC, IMAGE2, PSD, SCALE_FILTER) += fate-psd-$(1)
 fate-psd-$(1): CMD = framecrc -i $(TARGET_SAMPLES)/psd/lena-$(1).psd -sws_flags +accurate_rnd+bitexact -pix_fmt rgb24 -vf scale
 endef
 
-PSD_COLORSPACES = gray8 gray16 rgb24 rgb48 rgba rgba64 ya8 ya16
+PSD_COLORSPACES = gray8 gray16 rgb24 rgb48 rgba rgbxx rgba64 ya8 ya16
 $(foreach CLSP,$(PSD_COLORSPACES),$(eval $(call FATE_IMGSUITE_PSD,$(CLSP))))
 
 FATE_PSD += fate-psd-lena-127x127-rgb24
