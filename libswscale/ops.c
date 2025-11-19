@@ -93,21 +93,6 @@ bool ff_sws_pixel_type_is_int(SwsPixelType type)
     return false;
 }
 
-SwsPixelType ff_sws_pixel_type_to_uint(SwsPixelType type)
-{
-    if (!type)
-        return type;
-
-    switch (ff_sws_pixel_type_size(type)) {
-    case 8:  return SWS_PIXEL_U8;
-    case 16: return SWS_PIXEL_U16;
-    case 32: return SWS_PIXEL_U32;
-    }
-
-    av_unreachable("Invalid pixel type!");
-    return SWS_PIXEL_NONE;
-}
-
 /* biased towards `a` */
 static AVRational av_min_q(AVRational a, AVRational b)
 {
