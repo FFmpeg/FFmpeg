@@ -2,6 +2,10 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 7.1.3:
+ avutil/common: cast GET_BYTE/GET_16BIT returned value
+ avfilter/vf_drawtext: fix call GET_UTF8 with invalid argument
+ avfilter/vf_drawtext: fix incorrect text length
+ avformat/avformat: also clear FFFormatContext packet queue when closing a muxer
  avfilter/vf_drawtext: Account for bbox text seperator
  avcodec/mediacodecdec_common: Check that the input to mediacodec_wrap_sw_audio_buffer() contains channel * sample_size
  avcodec/utvideodec: Set B for the width= 1 case in restore_median_planar_il()
