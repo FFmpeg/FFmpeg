@@ -3,6 +3,10 @@ releases are sorted from youngest to oldest.
 
 
 version 8.0.1:
+ avutil/common: cast GET_BYTE/GET_16BIT returned value
+ avfilter/vf_drawtext: fix call GET_UTF8 with invalid argument
+ avfilter/vf_drawtext: fix incorrect text length
+ Update for 8.0.1
  avfilter/vf_drawtext: Account for bbox text seperator
  avcodec/mediacodecdec_common: Check that the input to mediacodec_wrap_sw_audio_buffer() contains channel * sample_size
  avcodec/rv60dec: Clear blk_info
