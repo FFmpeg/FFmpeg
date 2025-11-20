@@ -412,7 +412,7 @@ static int xmv_fetch_new_packet(AVFormatContext *s)
     AVIOContext     *pb  = s->pb;
     int result;
 
-    if (xmv->this_packet_offset == xmv->next_packet_offset)
+    if (xmv->next_packet_size == 0)
         return AVERROR_EOF;
 
     /* Seek to it */
