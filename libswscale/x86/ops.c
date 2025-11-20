@@ -616,8 +616,8 @@ static void normalize_clear(SwsOp *op)
         if (!op->c.q4[i].den)
             continue;
         switch (ff_sws_pixel_type_size(op->type)) {
-        case 1: c.u32 = 0x1010101 * priv.u8[i]; break;
-        case 2: c.u32 = priv.u16[i] << 16 | priv.u16[i]; break;
+        case 1: c.u32 = 0x1010101U * priv.u8[i]; break;
+        case 2: c.u32 = (uint32_t)priv.u16[i] << 16 | priv.u16[i]; break;
         case 4: c.u32 = priv.u32[i]; break;
         }
 
