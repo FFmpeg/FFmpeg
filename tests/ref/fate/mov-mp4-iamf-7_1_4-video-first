@@ -207,7 +207,6 @@ DISPOSITION:still_image=0
 DISPOSITION:multilayer=0
 TAG:language=und
 TAG:handler_name=SoundHandler
-TAG:vendor_id=[0][0][0][0]
 [STREAM]
 index=1
 id=0x2
@@ -465,7 +464,6 @@ DISPOSITION:still_image=0
 DISPOSITION:multilayer=0
 TAG:language=und
 TAG:handler_name=SoundHandler
-TAG:vendor_id=[0][0][0][0]
 [STREAM]
 index=1
 id=0x2

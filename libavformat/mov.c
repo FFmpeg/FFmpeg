@@ -2678,12 +2678,18 @@ static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
      * read in ff_mov_read_stsd_entries() */
     stsd_start = avio_tell(pb) - 16;
 
+    if (c->isom) {
+        avio_skip(pb, 2);  /* pre_defined */
+        avio_skip(pb, 2);  /* reserved */
+        avio_skip(pb, 12); /* pre_defined */
+    } else {
     avio_rb16(pb); /* version */
     avio_rb16(pb); /* revision level */
     id = avio_rl32(pb); /* vendor */
     av_dict_set(&st->metadata, "vendor_id", av_fourcc2str(id), 0);
     avio_rb32(pb); /* temporal quality */
     avio_rb32(pb); /* spatial quality */
+    }
 
     st->codecpar->width  = avio_rb16(pb); /* width */
     st->codecpar->height = avio_rb16(pb); /* height */
@@ -2733,9 +2739,13 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
     AVDictionaryEntry *compatible_brands = av_dict_get(c->fc->metadata, "compatible_brands", NULL, AV_DICT_MATCH_CASE);
     int channel_count;
 
+    if (c->isom)
+        avio_skip(pb, 6); /* reserved */
+    else {
     avio_rb16(pb); /* revision level */
     id = avio_rl32(pb); /* vendor */
     av_dict_set(&st->metadata, "vendor_id", av_fourcc2str(id), 0);
+    }
 
     channel_count = avio_rb16(pb);
 
