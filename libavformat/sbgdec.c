@@ -905,7 +905,6 @@ static int expand_timestamps(void *log, struct sbg_script *s)
         av_log(log, AV_LOG_WARNING,
                "Scripts with mixed absolute and relative timestamps can give "
                "unexpected results (pause, seeking, time zone change).\n");
-#undef time
         time(&now0);
         tm = localtime_r(&now0, &tmpbuf);
         now = tm ? tm->tm_hour * 3600 + tm->tm_min * 60 + tm->tm_sec :

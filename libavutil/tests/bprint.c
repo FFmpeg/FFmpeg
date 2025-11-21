@@ -21,8 +21,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/bprint.c"
 
-#undef printf
-
 static void bprint_pascal(AVBPrint *b, unsigned size)
 {
     unsigned i, j;

@@ -32,8 +32,6 @@
 #include "libavutil/bprint.h"
 #include "libavutil/time_internal.h"
 
-#undef time
-
 static int insert_text(AVBPrint *dst, const char *in, const char *arg)
 {
     av_bprintf(dst, "%s", arg);

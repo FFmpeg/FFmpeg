@@ -120,7 +120,6 @@ int avpriv_tempfile(const char *prefix, char **filename, int log_offset, void *l
     if(!ptr)
         ptr= tempnam(".", prefix);
     *filename = av_strdup(ptr);
-#undef free
     free(ptr);
 #else
     return AVERROR(ENOSYS);

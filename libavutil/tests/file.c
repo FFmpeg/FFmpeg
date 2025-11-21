@@ -18,8 +18,6 @@
 
 #include "libavutil/file.c"
 
-#undef printf
-
 int main(void)
 {
     uint8_t *buf;

@@ -20,7 +20,6 @@
 #include "libavutil/crc.h"
 #include "libavutil/mem.h"
 
-#undef printf
 static int check_image_fill(enum AVPixelFormat pix_fmt, int w, int h) {
     uint8_t *data[4];
     size_t sizes[4];

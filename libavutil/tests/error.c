@@ -18,8 +18,6 @@
 
 #include "libavutil/error.c"
 
-#undef printf
-
 int main(void)
 {
     int i;

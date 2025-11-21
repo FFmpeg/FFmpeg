@@ -29,9 +29,6 @@
 #include "libavcodec/raw.h"
 #include "libavcodec/raw_pix_fmt_tags.h"
 
-#undef printf
-#undef fprintf
-
 #if !HAVE_GETOPT
 #include "compat/getopt.c"
 #endif

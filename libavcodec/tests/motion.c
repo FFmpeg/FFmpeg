@@ -36,8 +36,6 @@
 #include "libavutil/mem.h"
 #include "libavutil/time.h"
 
-#undef printf
-
 #define WIDTH 64
 #define HEIGHT 64
 

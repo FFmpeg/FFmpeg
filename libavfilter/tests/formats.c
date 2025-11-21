@@ -22,8 +22,6 @@
 #include "libavfilter/audio.h"
 #include "libavfilter/formats.c"
 
-#undef printf
-
 const int64_t avfilter_all_channel_layouts[] = {
     AV_CH_FRONT_CENTER,
     AV_CH_FRONT_CENTER|AV_CH_LOW_FREQUENCY,
