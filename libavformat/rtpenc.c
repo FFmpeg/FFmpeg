@@ -679,9 +679,15 @@ static int rtp_write_trailer(AVFormatContext *s1)
      * be NULL here even if it was successfully allocated at the start. */
     if (s1->pb && (s->flags & FF_RTP_FLAG_SEND_BYE))
         rtcp_send_sr(s1, ff_ntp_time(), 1);
-    av_freep(&s->buf);
 
     return 0;
+}
+
+static void rtp_deinit(AVFormatContext *s1)
+{
+    RTPMuxContext *s = s1->priv_data;
+
+    av_freep(&s->buf);
 }
 
 const FFOutputFormat ff_rtp_muxer = {
@@ -693,6 +699,7 @@ const FFOutputFormat ff_rtp_muxer = {
     .write_header      = rtp_write_header,
     .write_packet      = rtp_write_packet,
     .write_trailer     = rtp_write_trailer,
+    .deinit            = rtp_deinit,
     .p.priv_class      = &rtp_muxer_class,
     .p.flags           = AVFMT_NODIMENSIONS | AVFMT_TS_NONSTRICT,
 };
