@@ -1,5 +1,5 @@
-90c54a00ad8662c3eb93150791fa8328 *tests/data/fate/matroska-alac-remux.matroska
-1293824 tests/data/fate/matroska-alac-remux.matroska
+6075eb35f53692596194f3b0175cb184 *tests/data/fate/matroska-alac-remux.matroska
+1293794 tests/data/fate/matroska-alac-remux.matroska
 #extradata 0:       36, 0x562b05d8
 #tb 0: 1/1000
 #media_type 0: audio
