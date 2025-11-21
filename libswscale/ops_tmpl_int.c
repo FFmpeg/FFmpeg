@@ -287,10 +287,10 @@ DECL_PATTERN(expand32)
 
     SWS_LOOP
     for (int i = 0; i < SWS_BLOCK_SIZE; i++) {
-        x32[i] = x[i] << 24 | x[i] << 16 | x[i] << 8 | x[i];
-        y32[i] = y[i] << 24 | y[i] << 16 | y[i] << 8 | y[i];
-        z32[i] = z[i] << 24 | z[i] << 16 | z[i] << 8 | z[i];
-        w32[i] = w[i] << 24 | w[i] << 16 | w[i] << 8 | w[i];
+        x32[i] = (uint32_t)x[i] << 24 | x[i] << 16 | x[i] << 8 | x[i];
+        y32[i] = (uint32_t)y[i] << 24 | y[i] << 16 | y[i] << 8 | y[i];
+        z32[i] = (uint32_t)z[i] << 24 | z[i] << 16 | z[i] << 8 | z[i];
+        w32[i] = (uint32_t)w[i] << 24 | w[i] << 16 | w[i] << 8 | w[i];
     }
 
     CONTINUE(u32block_t, x32, y32, z32, w32);
