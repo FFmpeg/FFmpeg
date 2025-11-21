@@ -6,8 +6,7 @@ version 8.0.1:
  avutil/common: cast GET_BYTE/GET_16BIT returned value
  avfilter/vf_drawtext: fix call GET_UTF8 with invalid argument
  avfilter/vf_drawtext: fix incorrect text length
- Update for 8.0.1
- avfilter/vf_drawtext: Account for bbox text seperator
+ avfilter/vf_drawtext: Account for bbox text separator
  avcodec/mediacodecdec_common: Check that the input to mediacodec_wrap_sw_audio_buffer() contains channel * sample_size
  avcodec/rv60dec: Clear blk_info
  avformat/whip: Fix rtp_ctx->streams access
@@ -44,7 +43,7 @@ version 8.0.1:
  swscale/graph: fix double-free when legacy pass fails initializing
  libavformat/udp: Fix call to recvfrom(2)
  avfilter/f_ebur128: Fix incorrect ebur128 peak calculation.
- avformat/udp: fix warning about unused varible
+ avformat/udp: fix warning about unused variable
  avdevice/lavfi: stop setting deprecated buffersink options
  configure: unbreak glslang build
  swscale/range_convert: fix truncation bias in range conversion
