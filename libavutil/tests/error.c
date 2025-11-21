@@ -18,13 +18,22 @@
 
 #include "libavutil/error.c"
 
+static const char *const tag_list[] = {
+#define ERROR_TAG(CODE, DESC) #CODE,
+#define ERROR_TAG2(CODE, CODE2, DESC) #CODE,
+    AVERROR_LIST(ERROR_TAG, ERROR_TAG2)
+#if !HAVE_STRERROR_R
+    STRERROR_LIST(ERROR_TAG)
+#endif
+};
+
 int main(void)
 {
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(error_entries); i++) {
-        const struct error_entry *entry = &error_entries[i];
-        printf("%d: %s [%s]\n", entry->num, av_err2str(entry->num), entry->tag);
+        const struct ErrorEntry *entry = &error_entries[i];
+        printf("%d: %s [%s]\n", entry->num, av_err2str(entry->num), tag_list[i]);
     }
 
     for (i = 0; i < 256; i++) {

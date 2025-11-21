@@ -25,109 +25,128 @@
 #include "error.h"
 #include "macros.h"
 
-struct error_entry {
-    int num;
-    const char *tag;
-    const char *str;
+#define AVERROR_INPUT_AND_OUTPUT_CHANGED (AVERROR_INPUT_CHANGED | AVERROR_OUTPUT_CHANGED)
+
+#define AVERROR_LIST(E, E2)                                                                     \
+    E(BSF_NOT_FOUND,            "Bitstream filter not found")                                   \
+    E(BUG,                      "Internal bug, should not have happened")                       \
+    E2(BUG2, BUG,               "Internal bug, should not have happened")                       \
+    E(BUFFER_TOO_SMALL,         "Buffer too small")                                             \
+    E(DECODER_NOT_FOUND,        "Decoder not found")                                            \
+    E(DEMUXER_NOT_FOUND,        "Demuxer not found")                                            \
+    E(ENCODER_NOT_FOUND,        "Encoder not found")                                            \
+    E(EOF,                      "End of file")                                                  \
+    E(EXIT,                     "Immediate exit requested")                                     \
+    E(EXTERNAL,                 "Generic error in an external library")                         \
+    E(FILTER_NOT_FOUND,         "Filter not found")                                             \
+    E(INPUT_CHANGED,            "Input changed")                                                \
+    E(INVALIDDATA,              "Invalid data found when processing input")                     \
+    E(MUXER_NOT_FOUND,          "Muxer not found")                                              \
+    E(OPTION_NOT_FOUND,         "Option not found")                                             \
+    E(OUTPUT_CHANGED,           "Output changed")                                               \
+    E(PATCHWELCOME,             "Not yet implemented in FFmpeg, patches welcome")               \
+    E(PROTOCOL_NOT_FOUND,       "Protocol not found")                                           \
+    E(STREAM_NOT_FOUND,         "Stream not found")                                             \
+    E(UNKNOWN,                  "Unknown error occurred")                                       \
+    E(EXPERIMENTAL,             "Experimental feature")                                         \
+    E(INPUT_AND_OUTPUT_CHANGED, "Input and output changed")                                     \
+    E(HTTP_BAD_REQUEST,         "Server returned 400 Bad Request")                              \
+    E(HTTP_UNAUTHORIZED,        "Server returned 401 Unauthorized (authorization failed)")      \
+    E(HTTP_FORBIDDEN,           "Server returned 403 Forbidden (access denied)")                \
+    E(HTTP_NOT_FOUND,           "Server returned 404 Not Found")                                \
+    E(HTTP_TOO_MANY_REQUESTS,   "Server returned 429 Too Many Requests")                        \
+    E(HTTP_OTHER_4XX,           "Server returned 4XX Client Error, but not one of 40{0,1,3,4}") \
+    E(HTTP_SERVER_ERROR,        "Server returned 5XX Server Error reply")                       \
+
+#define STRERROR_LIST(E)                                                     \
+    E(E2BIG,             "Argument list too long")                           \
+    E(EACCES,            "Permission denied")                                \
+    E(EAGAIN,            "Resource temporarily unavailable")                 \
+    E(EBADF,             "Bad file descriptor")                              \
+    E(EBUSY,             "Device or resource busy")                          \
+    E(ECHILD,            "No child processes")                               \
+    E(EDEADLK,           "Resource deadlock avoided")                        \
+    E(EDOM,              "Numerical argument out of domain")                 \
+    E(EEXIST,            "File exists")                                      \
+    E(EFAULT,            "Bad address")                                      \
+    E(EFBIG,             "File too large")                                   \
+    E(EILSEQ,            "Illegal byte sequence")                            \
+    E(EINTR,             "Interrupted system call")                          \
+    E(EINVAL,            "Invalid argument")                                 \
+    E(EIO,               "I/O error")                                        \
+    E(EISDIR,            "Is a directory")                                   \
+    E(EMFILE,            "Too many open files")                              \
+    E(EMLINK,            "Too many links")                                   \
+    E(ENAMETOOLONG,      "File name too long")                               \
+    E(ENFILE,            "Too many open files in system")                    \
+    E(ENODEV,            "No such device")                                   \
+    E(ENOENT,            "No such file or directory")                        \
+    E(ENOEXEC,           "Exec format error")                                \
+    E(ENOLCK,            "No locks available")                               \
+    E(ENOMEM,            "Cannot allocate memory")                           \
+    E(ENOSPC,            "No space left on device")                          \
+    E(ENOSYS,            "Function not implemented")                         \
+    E(ENOTDIR,           "Not a directory")                                  \
+    E(ENOTEMPTY,         "Directory not empty")                              \
+    E(ENOTTY,            "Inappropriate I/O control operation")              \
+    E(ENXIO,             "No such device or address")                        \
+    E(EPERM,             "Operation not permitted")                          \
+    E(EPIPE,             "Broken pipe")                                      \
+    E(ERANGE,            "Result too large")                                 \
+    E(EROFS,             "Read-only file system")                            \
+    E(ESPIPE,            "Illegal seek")                                     \
+    E(ESRCH,             "No such process")                                  \
+    E(EXDEV,             "Cross-device link")                                \
+
+enum {
+#define OFFSET(CODE, DESC)     \
+    ERROR_ ## CODE ## _OFFSET, \
+    ERROR_ ## CODE ## _END_OFFSET = ERROR_ ## CODE ## _OFFSET + sizeof(DESC) - 1,
+#define NOTHING(CODE, CODE2, DESC)
+    AVERROR_LIST(OFFSET, NOTHING)
+#if !HAVE_STRERROR_R
+    STRERROR_LIST(OFFSET)
+#endif
+    ERROR_LIST_SIZE
 };
 
-#define ERROR_TAG(tag) AVERROR_##tag, #tag
-#define EERROR_TAG(tag) AVERROR(tag), #tag
-#define AVERROR_INPUT_AND_OUTPUT_CHANGED (AVERROR_INPUT_CHANGED | AVERROR_OUTPUT_CHANGED)
-static const struct error_entry error_entries[] = {
-    { ERROR_TAG(BSF_NOT_FOUND),      "Bitstream filter not found"                     },
-    { ERROR_TAG(BUG),                "Internal bug, should not have happened"         },
-    { ERROR_TAG(BUG2),               "Internal bug, should not have happened"         },
-    { ERROR_TAG(BUFFER_TOO_SMALL),   "Buffer too small"                               },
-    { ERROR_TAG(DECODER_NOT_FOUND),  "Decoder not found"                              },
-    { ERROR_TAG(DEMUXER_NOT_FOUND),  "Demuxer not found"                              },
-    { ERROR_TAG(ENCODER_NOT_FOUND),  "Encoder not found"                              },
-    { ERROR_TAG(EOF),                "End of file"                                    },
-    { ERROR_TAG(EXIT),               "Immediate exit requested"                       },
-    { ERROR_TAG(EXTERNAL),           "Generic error in an external library"           },
-    { ERROR_TAG(FILTER_NOT_FOUND),   "Filter not found"                               },
-    { ERROR_TAG(INPUT_CHANGED),      "Input changed"                                  },
-    { ERROR_TAG(INVALIDDATA),        "Invalid data found when processing input"       },
-    { ERROR_TAG(MUXER_NOT_FOUND),    "Muxer not found"                                },
-    { ERROR_TAG(OPTION_NOT_FOUND),   "Option not found"                               },
-    { ERROR_TAG(OUTPUT_CHANGED),     "Output changed"                                 },
-    { ERROR_TAG(PATCHWELCOME),       "Not yet implemented in FFmpeg, patches welcome" },
-    { ERROR_TAG(PROTOCOL_NOT_FOUND), "Protocol not found"                             },
-    { ERROR_TAG(STREAM_NOT_FOUND),   "Stream not found"                               },
-    { ERROR_TAG(UNKNOWN),            "Unknown error occurred"                         },
-    { ERROR_TAG(EXPERIMENTAL),       "Experimental feature"                           },
-    { ERROR_TAG(INPUT_AND_OUTPUT_CHANGED), "Input and output changed"                 },
-    { ERROR_TAG(HTTP_BAD_REQUEST),   "Server returned 400 Bad Request"         },
-    { ERROR_TAG(HTTP_UNAUTHORIZED),  "Server returned 401 Unauthorized (authorization failed)" },
-    { ERROR_TAG(HTTP_FORBIDDEN),     "Server returned 403 Forbidden (access denied)" },
-    { ERROR_TAG(HTTP_NOT_FOUND),     "Server returned 404 Not Found"           },
-    { ERROR_TAG(HTTP_TOO_MANY_REQUESTS), "Server returned 429 Too Many Requests"      },
-    { ERROR_TAG(HTTP_OTHER_4XX),     "Server returned 4XX Client Error, but not one of 40{0,1,3,4}" },
-    { ERROR_TAG(HTTP_SERVER_ERROR),  "Server returned 5XX Server Error reply" },
+#define STRING(CODE, DESC) DESC "\0"
+static const char error_stringtable[ERROR_LIST_SIZE] =
+    AVERROR_LIST(STRING, NOTHING)
 #if !HAVE_STRERROR_R
-    { EERROR_TAG(E2BIG),             "Argument list too long" },
-    { EERROR_TAG(EACCES),            "Permission denied" },
-    { EERROR_TAG(EAGAIN),            "Resource temporarily unavailable" },
-    { EERROR_TAG(EBADF),             "Bad file descriptor" },
-    { EERROR_TAG(EBUSY),             "Device or resource busy" },
-    { EERROR_TAG(ECHILD),            "No child processes" },
-    { EERROR_TAG(EDEADLK),           "Resource deadlock avoided" },
-    { EERROR_TAG(EDOM),              "Numerical argument out of domain" },
-    { EERROR_TAG(EEXIST),            "File exists" },
-    { EERROR_TAG(EFAULT),            "Bad address" },
-    { EERROR_TAG(EFBIG),             "File too large" },
-    { EERROR_TAG(EILSEQ),            "Illegal byte sequence" },
-    { EERROR_TAG(EINTR),             "Interrupted system call" },
-    { EERROR_TAG(EINVAL),            "Invalid argument" },
-    { EERROR_TAG(EIO),               "I/O error" },
-    { EERROR_TAG(EISDIR),            "Is a directory" },
-    { EERROR_TAG(EMFILE),            "Too many open files" },
-    { EERROR_TAG(EMLINK),            "Too many links" },
-    { EERROR_TAG(ENAMETOOLONG),      "File name too long" },
-    { EERROR_TAG(ENFILE),            "Too many open files in system" },
-    { EERROR_TAG(ENODEV),            "No such device" },
-    { EERROR_TAG(ENOENT),            "No such file or directory" },
-    { EERROR_TAG(ENOEXEC),           "Exec format error" },
-    { EERROR_TAG(ENOLCK),            "No locks available" },
-    { EERROR_TAG(ENOMEM),            "Cannot allocate memory" },
-    { EERROR_TAG(ENOSPC),            "No space left on device" },
-    { EERROR_TAG(ENOSYS),            "Function not implemented" },
-    { EERROR_TAG(ENOTDIR),           "Not a directory" },
-    { EERROR_TAG(ENOTEMPTY),         "Directory not empty" },
-    { EERROR_TAG(ENOTTY),            "Inappropriate I/O control operation" },
-    { EERROR_TAG(ENXIO),             "No such device or address" },
-    { EERROR_TAG(EPERM),             "Operation not permitted" },
-    { EERROR_TAG(EPIPE),             "Broken pipe" },
-    { EERROR_TAG(ERANGE),            "Result too large" },
-    { EERROR_TAG(EROFS),             "Read-only file system" },
-    { EERROR_TAG(ESPIPE),            "Illegal seek" },
-    { EERROR_TAG(ESRCH),             "No such process" },
-    { EERROR_TAG(EXDEV),             "Cross-device link" },
+    STRERROR_LIST(STRING)
+#endif
+;
+
+static const struct ErrorEntry {
+    int num;
+    unsigned offset;
+} error_entries[] = {
+#define ENTRY(CODE, DESC) { .num = AVERROR_ ## CODE, .offset = ERROR_ ## CODE ## _OFFSET },
+#define ENTRY2(CODE, CODE2, DESC) { .num = AVERROR_ ## CODE, .offset = ERROR_ ## CODE2 ## _OFFSET },
+    AVERROR_LIST(ENTRY, ENTRY2)
+#if !HAVE_STRERROR_R
+#undef ENTRY
+#define ENTRY(CODE, DESC) { .num = AVERROR(CODE), .offset = ERROR_ ## CODE ## _OFFSET },
+    STRERROR_LIST(ENTRY)
 #endif
 };
 
 int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
 {
-    int ret = 0, i;
-    const struct error_entry *entry = NULL;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(error_entries); i++) {
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(error_entries); ++i) {
         if (errnum == error_entries[i].num) {
-            entry = &error_entries[i];
-            break;
+            av_strlcpy(errbuf, error_stringtable + error_entries[i].offset, errbuf_size);
+            return 0;
         }
     }
-    if (entry) {
-        av_strlcpy(errbuf, entry->str, errbuf_size);
-    } else {
 #if HAVE_STRERROR_R
-        ret = AVERROR(strerror_r(AVUNERROR(errnum), errbuf, errbuf_size));
+    int ret = AVERROR(strerror_r(AVUNERROR(errnum), errbuf, errbuf_size));
 #else
-        ret = -1;
+    int ret = -1;
 #endif
-        if (ret < 0)
-            snprintf(errbuf, errbuf_size, "Error number %d occurred", errnum);
-    }
+    if (ret < 0)
+        snprintf(errbuf, errbuf_size, "Error number %d occurred", errnum);
 
     return ret;
 }
