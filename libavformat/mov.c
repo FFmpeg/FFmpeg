@@ -1075,6 +1075,40 @@ fail:
 }
 #endif
 
+static int mov_read_srat(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    int32_t sample_rate;
+
+    if (atom.size < 8 || c->fc->nb_streams < 1)
+        return 0;
+
+    st = c->fc->streams[c->fc->nb_streams-1];
+    if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
+        av_log(c->fc, AV_LOG_WARNING, "'srat' within non-audio sample entry, skip\n");
+        return 0;
+    }
+
+    if (!c->isom) {
+        av_log(c->fc, AV_LOG_WARNING, "'srat' within non-isom, skip\n");
+        return 0;
+    }
+
+    avio_skip(pb, 4); // version+flags
+    sample_rate = avio_rb32(pb);
+    if (sample_rate > 0) {
+        av_log(c->fc, AV_LOG_DEBUG,
+               "overwrite sample rate from %d to %d by 'srat'\n",
+               st->codecpar->sample_rate, sample_rate);
+        st->codecpar->sample_rate = sample_rate;
+    } else {
+        av_log(c->fc, AV_LOG_WARNING,
+               "ignore invalid sample rate %d in 'srat'\n", sample_rate);
+    }
+
+    return 0;
+}
+
 static int mov_read_dec3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -9489,6 +9523,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 #if CONFIG_IAMFDEC
 { MKTAG('i','a','c','b'), mov_read_iacb },
 #endif
+{ MKTAG('s','r','a','t'), mov_read_srat },
 { 0, NULL }
 };
 
