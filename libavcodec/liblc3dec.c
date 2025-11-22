@@ -43,14 +43,6 @@ static av_cold int liblc3_decode_init(AVCodecContext *avctx)
     int ep_mode;
     unsigned decoder_size;
 
-    static const struct {
-        enum AVSampleFormat av_format;
-        enum lc3_pcm_format lc3_format;
-    } format_map[] = {
-        { AV_SAMPLE_FMT_FLT,  LC3_PCM_FORMAT_FLOAT },
-        { AV_SAMPLE_FMT_FLTP, LC3_PCM_FORMAT_FLOAT },
-    };
-
     if (avctx->extradata_size < 6)
         return AVERROR_INVALIDDATA;
     if (channels < 0 || channels > DECODER_MAX_CHANNELS) {
@@ -90,15 +82,8 @@ static av_cold int liblc3_decode_init(AVCodecContext *avctx)
             (char *)liblc3->decoder_mem + ch * decoder_size);
     }
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
-    if (avctx->request_sample_fmt != AV_SAMPLE_FMT_NONE) {
-        for (int i = 0; i < FF_ARRAY_ELEMS(format_map); i++) {
-            if (format_map[i].av_format == avctx->request_sample_fmt) {
-                avctx->sample_fmt = avctx->request_sample_fmt;
-                break;
-            }
-        }
-    }
+    avctx->sample_fmt = avctx->request_sample_fmt == AV_SAMPLE_FMT_FLT ?
+                            AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_FLTP;
 
     avctx->delay = lc3_hr_delay_samples(
         liblc3->hr_mode, liblc3->frame_us, liblc3->srate_hz);
