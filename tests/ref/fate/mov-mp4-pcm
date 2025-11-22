@@ -1,27 +1,27 @@
-0c6802135e9eb442201c0c1b001259d6 *tests/data/fate/mov-mp4-pcm.mp4
-10587977 tests/data/fate/mov-mp4-pcm.mp4
-#tb 0: 1/44100
+531c4a3389a66d305fb247691f4b14ab *tests/data/fate/mov-mp4-pcm.mp4
+23044177 tests/data/fate/mov-mp4-pcm.mp4
+#tb 0: 1/96000
 #media_type 0: audio
 #codec_id 0: pcm_s16le
-#sample_rate 0: 44100
+#sample_rate 0: 96000
 #channel_layout_name 0: mono
-#tb 1: 1/44100
+#tb 1: 1/96000
 #media_type 1: audio
 #codec_id 1: pcm_s16le
-#sample_rate 1: 44100
+#sample_rate 1: 96000
 #channel_layout_name 1: stereo
-#tb 2: 1/44100
+#tb 2: 1/96000
 #media_type 2: audio
 #codec_id 2: pcm_s16le
-#sample_rate 2: 44100
+#sample_rate 2: 96000
 #channel_layout_name 2: 2.1
-#tb 3: 1/44100
+#tb 3: 1/96000
 #media_type 3: audio
 #codec_id 3: pcm_s16le
-#sample_rate 3: 44100
+#sample_rate 3: 96000
 #channel_layout_name 3: 5.1
-#tb 4: 1/44100
+#tb 4: 1/96000
 #media_type 4: audio
 #codec_id 4: pcm_s16le
-#sample_rate 4: 44100
+#sample_rate 4: 96000
 #channel_layout_name 4: 7.1

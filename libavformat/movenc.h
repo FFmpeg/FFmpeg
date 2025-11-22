@@ -86,6 +86,7 @@ typedef struct MOVFragmentInfo {
 
 typedef struct MOVTrack {
     int         mode;
+    int         entry_version;
     int         entry, entry_written;
     unsigned    timescale;
     uint64_t    time;
