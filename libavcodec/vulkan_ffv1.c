@@ -59,11 +59,11 @@ typedef struct FFv1VulkanDecodePicture {
 } FFv1VulkanDecodePicture;
 
 typedef struct FFv1VulkanDecodeContext {
-    AVBufferRef *intermediate_frames_ref[2]; /* 16/32 bit */
+    AVBufferRef *intermediate_frames_ref;
 
     FFVulkanShader setup;
-    FFVulkanShader reset[2]; /* AC/Golomb */
-    FFVulkanShader decode[2][2][2]; /* 16/32 bit, AC/Golomb, Normal/RGB */
+    FFVulkanShader reset;
+    FFVulkanShader decode;
 
     FFVkBuffer rangecoder_static_buf;
     FFVkBuffer quant_buf;
@@ -239,7 +239,7 @@ static int vk_ffv1_start_frame(AVCodecContext          *avctx,
         if (!vp->dpb_frame)
             return AVERROR(ENOMEM);
 
-        err = av_hwframe_get_buffer(fv->intermediate_frames_ref[f->use32bit],
+        err = av_hwframe_get_buffer(fv->intermediate_frames_ref,
                                     vp->dpb_frame, 0);
         if (err < 0)
             return err;
@@ -472,7 +472,7 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
     }
 
     /* Reset shader */
-    reset_shader = &fv->reset[f->ac == AC_GOLOMB_RICE];
+    reset_shader = &fv->reset;
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, reset_shader,
                                     1, 0, 0,
                                     slice_state,
@@ -525,7 +525,7 @@ static int vk_ffv1_end_frame(AVCodecContext *avctx)
                     f->plane_count);
 
     /* Decode */
-    decode_shader = &fv->decode[f->use32bit][f->ac == AC_GOLOMB_RICE][is_rgb];
+    decode_shader = &fv->decode;
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, decode_shader,
                                     1, 0, 0,
                                     slice_state,
@@ -821,7 +821,7 @@ static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
                               FFVulkanShader *shd,
                               AVHWFramesContext *dec_frames_ctx,
                               AVHWFramesContext *out_frames_ctx,
-                              int use32bit, int ac, int rgb)
+                              int ac, int rgb)
 {
     int err;
     FFVulkanDescriptorSetBinding *desc_set;
@@ -829,6 +829,7 @@ static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
     uint8_t *spv_data;
     size_t spv_len;
     void *spv_opaque = NULL;
+
     int use_cached_reader = ac != AC_GOLOMB_RICE &&
                             s->driver_props.driverID == VK_DRIVER_ID_MESA_RADV;
 
@@ -877,7 +878,7 @@ static int init_decode_shader(FFV1Context *f, FFVulkanContext *s,
 
     RET(ff_vk_shader_add_descriptor_set(s, shd, desc_set, 2, 1, 0));
 
-    define_shared_code(shd, use32bit);
+    define_shared_code(shd, f->use32bit);
     if (ac == AC_GOLOMB_RICE)
         GLSLD(ff_source_ffv1_vlc_comp);
 
@@ -973,18 +974,11 @@ static void vk_decode_ffv1_uninit(FFVulkanDecodeShared *ctx)
 {
     FFv1VulkanDecodeContext *fv = ctx->sd_ctx;
 
+    av_buffer_unref(&fv->intermediate_frames_ref);
+
     ff_vk_shader_free(&ctx->s, &fv->setup);
-
-    for (int i = 0; i < 2; i++) /* 16/32 bit */
-        av_buffer_unref(&fv->intermediate_frames_ref[i]);
-
-    for (int i = 0; i < 2; i++) /* AC/Golomb */
-        ff_vk_shader_free(&ctx->s, &fv->reset[i]);
-
-    for (int i = 0; i < 2; i++) /* 16/32 bit */
-        for (int j = 0; j < 2; j++) /* AC/Golomb */
-            for (int k = 0; k < 2; k++) /* Normal/RGB */
-                ff_vk_shader_free(&ctx->s, &fv->decode[i][j][k]);
+    ff_vk_shader_free(&ctx->s, &fv->reset);
+    ff_vk_shader_free(&ctx->s, &fv->decode);
 
     ff_vk_free_buf(&ctx->s, &fv->quant_buf);
     ff_vk_free_buf(&ctx->s, &fv->rangecoder_static_buf);
@@ -1029,38 +1023,33 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
 
     ctx->sd_ctx_free = &vk_decode_ffv1_uninit;
 
+    AVHWFramesContext *hwfc = (AVHWFramesContext *)avctx->hw_frames_ctx->data;
+    AVHWFramesContext *dctx = hwfc;
+    enum AVPixelFormat sw_format = hwfc->sw_format;
+    int is_rgb = !(f->colorspace == 0 && sw_format != AV_PIX_FMT_YA8) &&
+                 !(sw_format == AV_PIX_FMT_YA8);
+
     /* Intermediate frame pool for RCT */
-    for (int i = 0; i < 2; i++) { /* 16/32 bit */
-        RET(init_indirect(avctx, &ctx->s, &fv->intermediate_frames_ref[i],
-                          i ? AV_PIX_FMT_GBRAP32 : AV_PIX_FMT_GBRAP16));
+    if (is_rgb) {
+        RET(init_indirect(avctx, &ctx->s, &fv->intermediate_frames_ref,
+                          f->use32bit ? AV_PIX_FMT_GBRAP32 : AV_PIX_FMT_GBRAP16));
+        dctx = (AVHWFramesContext *)fv->intermediate_frames_ref->data;
     }
 
     /* Setup shader */
     RET(init_setup_shader(f, &ctx->s, &ctx->exec_pool, spv, &fv->setup));
 
-    /* Reset shaders */
-    for (int i = 0; i < 2; i++) { /* AC/Golomb */
-        RET(init_reset_shader(f, &ctx->s, &ctx->exec_pool,
-                              spv, &fv->reset[i], !i ? AC_RANGE_CUSTOM_TAB : 0));
-    }
+    /* Reset shader */
+    RET(init_reset_shader(f, &ctx->s, &ctx->exec_pool,
+                          spv, &fv->reset, f->ac));
 
     /* Decode shaders */
-    for (int i = 0; i < 2; i++) { /* 16/32 bit */
-        for (int j = 0; j < 2; j++) { /* AC/Golomb */
-            for (int k = 0; k < 2; k++) { /* Normal/RGB */
-                AVHWFramesContext *dec_frames_ctx;
-                dec_frames_ctx = k ? (AVHWFramesContext *)fv->intermediate_frames_ref[i]->data :
-                                     (AVHWFramesContext *)avctx->hw_frames_ctx->data;
-                RET(init_decode_shader(f, &ctx->s, &ctx->exec_pool,
-                                       spv, &fv->decode[i][j][k],
-                                       dec_frames_ctx,
-                                       (AVHWFramesContext *)avctx->hw_frames_ctx->data,
-                                       i,
-                                       !j ? AC_RANGE_CUSTOM_TAB : AC_GOLOMB_RICE,
-                                       k));
-            }
-        }
-    }
+    RET(init_decode_shader(f, &ctx->s, &ctx->exec_pool,
+                           spv, &fv->decode,
+                           dctx,
+                           hwfc,
+                           f->ac,
+                           is_rgb));
 
     /* Range coder data */
     RET(ff_ffv1_vk_init_state_transition_data(&ctx->s,
@@ -1090,22 +1079,16 @@ static int vk_decode_ffv1_init(AVCodecContext *avctx)
                                         VK_FORMAT_UNDEFINED));
 
     /* Update decode global descriptors */
-    for (int i = 0; i < 2; i++) { /* 16/32 bit */
-        for (int j = 0; j < 2; j++) { /* AC/Golomb */
-            for (int k = 0; k < 2; k++) { /* Normal/RGB */
-                RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
-                                                    &fv->decode[i][j][k], 0, 0, 0,
-                                                    &fv->rangecoder_static_buf,
-                                                    0, fv->rangecoder_static_buf.size,
-                                                    VK_FORMAT_UNDEFINED));
-                RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
-                                                    &fv->decode[i][j][k], 0, 1, 0,
-                                                    &fv->quant_buf,
-                                                    0, fv->quant_buf.size,
-                                                    VK_FORMAT_UNDEFINED));
-            }
-        }
-    }
+    RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
+                                        &fv->decode, 0, 0, 0,
+                                        &fv->rangecoder_static_buf,
+                                        0, fv->rangecoder_static_buf.size,
+                                        VK_FORMAT_UNDEFINED));
+    RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
+                                        &fv->decode, 0, 1, 0,
+                                        &fv->quant_buf,
+                                        0, fv->quant_buf.size,
+                                        VK_FORMAT_UNDEFINED));
 
 fail:
     spv->uninit(&spv);
