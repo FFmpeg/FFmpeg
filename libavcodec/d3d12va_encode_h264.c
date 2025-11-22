@@ -178,7 +178,7 @@ static int d3d12va_encode_h264_init_sequence_params(AVCodecContext *avctx)
         .Codec                            = D3D12_VIDEO_ENCODER_CODEC_H264,
         .InputFormat                      = hwctx->format,
         .RateControl                      = ctx->rc,
-        .IntraRefresh                     = D3D12_VIDEO_ENCODER_INTRA_REFRESH_MODE_NONE,
+        .IntraRefresh                     = ctx->intra_refresh.Mode,
         .SubregionFrameEncoding           = D3D12_VIDEO_ENCODER_FRAME_SUBREGION_LAYOUT_MODE_FULL_FRAME,
         .ResolutionsListCount             = 1,
         .pResolutionList                  = &ctx->resolution,

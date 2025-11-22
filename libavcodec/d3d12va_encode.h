@@ -266,6 +266,17 @@ typedef struct D3D12VAEncodeContext {
     D3D12_VIDEO_ENCODER_LEVEL_SETTING level;
 
     D3D12_VIDEO_ENCODER_PICTURE_CONTROL_SUBREGIONS_LAYOUT_DATA subregions_layout;
+
+    /**
+     * Intra refresh configuration
+     */
+    D3D12_VIDEO_ENCODER_INTRA_REFRESH intra_refresh;
+
+    /**
+     * Current frame index within intra refresh cycle
+     */
+    UINT intra_refresh_frame_index;
+
 } D3D12VAEncodeContext;
 
 typedef struct D3D12VAEncodeType {
@@ -347,11 +358,27 @@ int ff_d3d12va_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
 int ff_d3d12va_encode_init(AVCodecContext *avctx);
 int ff_d3d12va_encode_close(AVCodecContext *avctx);
 
+#define D3D12VA_ENCODE_INTRA_REFRESH_MODE(name, mode, desc) \
+    { #name, desc, 0, AV_OPT_TYPE_CONST, { .i64 = D3D12_VIDEO_ENCODER_INTRA_REFRESH_MODE_ ## mode }, \
+      0, 0, FLAGS, .unit = "intra_refresh_mode" }
+
 #define D3D12VA_ENCODE_COMMON_OPTIONS \
     { "max_frame_size", \
       "Maximum frame size (in bytes)",\
       OFFSET(common.max_frame_size), AV_OPT_TYPE_INT, \
-      { .i64 = 0 }, 0, INT_MAX / 8, FLAGS }
+      { .i64 = 0 }, 0, INT_MAX / 8, FLAGS }, \
+    { "intra_refresh_mode", \
+      "Set intra refresh mode", \
+      OFFSET(common.intra_refresh.Mode), AV_OPT_TYPE_INT, \
+      { .i64 = D3D12_VIDEO_ENCODER_INTRA_REFRESH_MODE_NONE }, \
+      D3D12_VIDEO_ENCODER_INTRA_REFRESH_MODE_NONE, \
+      D3D12_VIDEO_ENCODER_INTRA_REFRESH_MODE_ROW_BASED, FLAGS, .unit = "intra_refresh_mode" }, \
+    D3D12VA_ENCODE_INTRA_REFRESH_MODE(none, NONE, "Disable intra refresh"), \
+    D3D12VA_ENCODE_INTRA_REFRESH_MODE(row_based, ROW_BASED, "Row-based intra refresh"), \
+    { "intra_refresh_duration", \
+      "Number of frames over which to spread intra refresh (0 = GOP size)", \
+      OFFSET(common.intra_refresh.IntraRefreshDuration), AV_OPT_TYPE_INT, \
+      { .i64 = 0 }, 0, INT_MAX, FLAGS }
 
 #define D3D12VA_ENCODE_RC_MODE(name, desc) \
     { #name, desc, 0, AV_OPT_TYPE_CONST, { .i64 = RC_MODE_ ## name }, \
