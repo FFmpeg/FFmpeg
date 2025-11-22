@@ -1146,7 +1146,6 @@ static void vk_ffv1_free_frame_priv(AVRefStructOpaque _hwctx, void *data)
                    i, status, crc_res);
     }
 
-    av_buffer_unref(&vp->slices_buf);
     av_buffer_unref(&fp->slice_state);
     av_buffer_unref(&fp->slice_offset_buf);
     av_buffer_unref(&fp->slice_status_buf);
