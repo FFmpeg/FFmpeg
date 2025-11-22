@@ -7312,7 +7312,8 @@ enabled mbedtls           && { check_pkg_config mbedtls mbedtls mbedtls/x509_crt
                                check_pkg_config mbedtls mbedtls mbedtls/ssl.h mbedtls_ssl_init ||
                                check_lib mbedtls mbedtls/ssl.h mbedtls_ssl_init -lmbedtls -lmbedx509 -lmbedcrypto ||
                                die "ERROR: mbedTLS not found"; }
-enabled mediacodec        && { enabled jni || die "ERROR: mediacodec requires --enable-jni"; }
+enabled mediacodec        && { enabled jni || die "ERROR: mediacodec requires --enable-jni"; } &&
+                               add_compat android/binder.o
 enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||
                                { ! enabled cross_compile &&
                                  add_cflags -isystem/opt/vc/include/ -isystem/opt/vc/include/interface/vmcs_host/linux -isystem/opt/vc/include/interface/vcos/pthreads -fgnu89-inline &&

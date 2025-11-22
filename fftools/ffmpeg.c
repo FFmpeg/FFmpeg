@@ -78,6 +78,9 @@
 #include "libavdevice/avdevice.h"
 
 #include "cmdutils.h"
+#if CONFIG_MEDIACODEC
+#include "compat/android/binder.h"
+#endif
 #include "ffmpeg.h"
 #include "ffmpeg_sched.h"
 #include "ffmpeg_utils.h"
@@ -1018,6 +1021,10 @@ int main(int argc, char **argv)
         ret = 1;
         goto finish;
     }
+
+#if CONFIG_MEDIACODEC
+    android_binder_threadpool_init_if_required();
+#endif
 
     current_time = ti = get_benchmark_time_stamps();
     ret = transcode(sch);
