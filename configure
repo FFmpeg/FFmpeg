@@ -1927,7 +1927,6 @@ EXTERNAL_LIBRARY_NONFREE_LIST="
     decklink
     libfdk_aac
     libmpeghdec
-    libtls
 "
 
 EXTERNAL_LIBRARY_VERSION3_LIST="
@@ -2014,6 +2013,7 @@ EXTERNAL_LIBRARY_LIST="
     libtensorflow
     libtesseract
     libtheora
+    libtls
     libtorch
     libtwolame
     libuavs3d
@@ -7244,7 +7244,8 @@ enabled libsvtav1         && require_pkg_config libsvtav1 "SvtAv1Enc >= 0.9.0" E
 enabled libtensorflow     && require libtensorflow tensorflow/c/c_api.h TF_Version -ltensorflow
 enabled libtesseract      && require_pkg_config libtesseract tesseract tesseract/capi.h TessBaseAPICreate
 enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
-enabled libtls            && require_pkg_config libtls libtls tls.h tls_configure
+enabled libtls            && require_pkg_config libtls libtls tls.h tls_configure &&
+                             { enabled gpl && ! enabled nonfree && die "ERROR: LibreSSL is incompatible with the gpl"; }
 enabled libtorch          && check_cxxflags -std=c++17 && require_cxx libtorch torch/torch.h "torch::Tensor" -ltorch -lc10 -ltorch_cpu -lstdc++ -lpthread
 enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame &&
                              { check_lib libtwolame twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
