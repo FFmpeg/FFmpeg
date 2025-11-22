@@ -138,12 +138,7 @@ static int liblc3_encode(AVCodecContext *avctx, AVPacket *pkt,
     int block_bytes = liblc3->block_bytes;
     int channels = avctx->ch_layout.nb_channels;
     uint8_t *data_ptr;
-    size_t sample_size;
-    int is_planar;
     int ret;
-
-    is_planar = av_sample_fmt_is_planar(avctx->sample_fmt);
-    sample_size = av_get_bytes_per_sample(avctx->sample_fmt);
 
     if ((ret = ff_get_encode_buffer(avctx, pkt, block_bytes, 0)) < 0)
         return ret;
@@ -158,14 +153,16 @@ static int liblc3_encode(AVCodecContext *avctx, AVPacket *pkt,
         liblc3->remaining_samples = 0;
     }
 
+    int is_planar = avctx->sample_fmt == AV_SAMPLE_FMT_FLTP;
+
     data_ptr = pkt->data;
     for (int ch = 0; ch < channels; ch++) {
         int nbytes = block_bytes / channels + (ch < block_bytes % channels);
 
-        const void *pcm = frame ?
-                    (is_planar ? frame->data[ch] :
-                    frame->data[0] + ch * sample_size) :
-                    (const void *)(const float[]){ 0 };
+        const float *pcm = frame ?
+                    (is_planar ? (const float*)frame->data[ch] :
+                    (const float*)frame->data[0] + ch) :
+                    (const float[]){ 0 };
 
         int stride = frame ? (is_planar ? 1 : channels) : 0;
 

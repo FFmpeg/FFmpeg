@@ -123,8 +123,6 @@ static int liblc3_decode(AVCodecContext *avctx, AVFrame *frame,
     int channels = avctx->ch_layout.nb_channels;
     uint8_t *in = avpkt->data;
     int block_bytes, ret;
-    size_t sample_size;
-    int is_planar;
 
     frame->nb_samples = av_rescale(
         liblc3->frame_us, liblc3->srate_hz, 1000*1000);
@@ -132,13 +130,12 @@ static int liblc3_decode(AVCodecContext *avctx, AVFrame *frame,
         return ret;
 
     block_bytes = avpkt->size;
-    is_planar = av_sample_fmt_is_planar(avctx->sample_fmt);
-    sample_size = av_get_bytes_per_sample(avctx->sample_fmt);
+    int is_planar = avctx->sample_fmt == AV_SAMPLE_FMT_FLTP;
 
     for (int ch = 0; ch < channels; ch++) {
         int nbytes = block_bytes / channels + (ch < block_bytes % channels);
-        void *pcm_data = is_planar ? frame->extended_data[ch] :
-                                frame->extended_data[0] + ch * sample_size;
+        float *pcm_data = is_planar ? (float*)frame->extended_data[ch] :
+                                      (float*)frame->extended_data[0] + ch;
         int stride = is_planar ? 1 : channels;
 
         ret = lc3_decode(liblc3->decoder[ch], in, nbytes,
