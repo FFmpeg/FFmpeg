@@ -7405,8 +7405,8 @@ fi
 if enabled decklink; then
     case $target_os in
         mingw32*|mingw64*|win32|win64)
-            decklink_outdev_extralibs="$decklink_outdev_extralibs -lole32 -loleaut32"
-            decklink_indev_extralibs="$decklink_indev_extralibs -lole32 -loleaut32"
+            decklink_outdev_extralibs="$decklink_outdev_extralibs -lole32 -luuid -loleaut32"
+            decklink_indev_extralibs="$decklink_indev_extralibs -lole32 -luuid -loleaut32"
             ;;
     esac
 fi

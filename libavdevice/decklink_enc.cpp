@@ -47,6 +47,16 @@ extern "C" {
 #include "libklvanc/pixels.h"
 #endif
 
+#ifdef _WIN32
+#include <guiddef.h>
+#else
+/* There is no guiddef.h in Linux builds, so we provide our own IsEqualIID() */
+static bool IsEqualIID(REFIID riid1, REFIID riid2)
+{
+    return memcmp(&riid1, &riid2, sizeof(REFIID)) == 0;
+}
+#endif
+
 /* DeckLink callback class declaration */
 class decklink_frame : public IDeckLinkVideoFrame
 {
@@ -111,7 +121,21 @@ public:
         _ancillary->AddRef();
         return S_OK;
     }
-    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, LPVOID *ppv) { return E_NOINTERFACE; }
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppv)
+    {
+        if (IsEqualIID(riid, IID_IUnknown)) {
+            *ppv = static_cast<IUnknown*>(this);
+        } else if (IsEqualIID(riid, IID_IDeckLinkVideoFrame)) {
+            *ppv = static_cast<IDeckLinkVideoFrame*>(this);
+        } else {
+            *ppv = NULL;
+            return E_NOINTERFACE;
+        }
+
+        AddRef();
+        return S_OK;
+    }
+
     virtual ULONG   STDMETHODCALLTYPE AddRef(void)                            { return ++_refs; }
     virtual ULONG   STDMETHODCALLTYPE Release(void)
     {
