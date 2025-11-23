@@ -509,13 +509,15 @@ static int read_header(FFV1Context *f, RangeCoder *c)
 
     if (f->configured_pix_fmt != f->pix_fmt ||
         f->configured_width != f->avctx->width ||
-        f->configured_height != f->avctx->height) {
+        f->configured_height != f->avctx->height ||
+        f->configured_ac != f->ac) {
         f->avctx->pix_fmt = get_pixel_format(f);
         if (f->avctx->pix_fmt < 0)
             return AVERROR(EINVAL);
         f->configured_pix_fmt = f->pix_fmt;
         f->configured_width = f->avctx->width;
         f->configured_height = f->avctx->height;
+        f->configured_ac = f->ac;
     }
 
     ff_dlog(f->avctx, "%d %d %d\n",
@@ -921,6 +923,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     fdst->colorspace          = fsrc->colorspace;
     fdst->pix_fmt             = fsrc->pix_fmt;
     fdst->configured_pix_fmt  = fsrc->configured_pix_fmt;
+    fdst->configured_ac       = fsrc->configured_ac;
 
     fdst->ec                  = fsrc->ec;
     fdst->intra               = fsrc->intra;
