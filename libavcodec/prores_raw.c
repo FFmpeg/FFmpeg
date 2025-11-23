@@ -327,8 +327,8 @@ static int decode_frame(AVCodecContext *avctx,
                         AVFrame *frame, int *got_frame_ptr,
                         AVPacket *avpkt)
 {
-    int ret, dimensions_changed = 0;
     ProResRAWContext *s = avctx->priv_data;
+    int ret, dimensions_changed = 0, old_version = s->version;
     DECLARE_ALIGNED(32, uint8_t, qmat)[64];
     memset(qmat, 1, 64);
 
@@ -395,7 +395,8 @@ static int decode_frame(AVCodecContext *avctx,
     avctx->coded_height = FFALIGN(h, 16);
 
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_BAYER_RGGB16;
-    if (pix_fmt != s->pix_fmt || dimensions_changed) {
+    if (pix_fmt != s->pix_fmt || dimensions_changed ||
+        s->version != old_version) {
         s->pix_fmt = pix_fmt;
 
         ret = get_pixel_format(avctx, pix_fmt);
@@ -525,6 +526,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     ProResRAWContext *rdst = dst->priv_data;
 
     rdst->pix_fmt = rsrc->pix_fmt;
+    rdst->version = rsrc->version;
 
     return 0;
 }
