@@ -42,7 +42,7 @@ typedef struct ProResRAWVulkanDecodePicture {
 } ProResRAWVulkanDecodePicture;
 
 typedef struct ProResRAWVulkanDecodeContext {
-    FFVulkanShader decode[2];
+    FFVulkanShader decode;
 
     AVBufferPool *tile_data_pool;
 
@@ -187,7 +187,7 @@ static int vk_prores_raw_end_frame(AVCodecContext *avctx)
     });
     nb_img_bar = 0;
 
-    FFVulkanShader *decode_shader = &prv->decode[prr->version];
+    FFVulkanShader *decode_shader = &prv->decode;
     ff_vk_shader_update_img_array(&ctx->s, exec, decode_shader,
                                   prr->frame, vp->view.out,
                                   0, 0,
@@ -346,8 +346,7 @@ static void vk_decode_prores_raw_uninit(FFVulkanDecodeShared *ctx)
 {
     ProResRAWVulkanDecodeContext *fv = ctx->sd_ctx;
 
-    ff_vk_shader_free(&ctx->s, &fv->decode[0]);
-    ff_vk_shader_free(&ctx->s, &fv->decode[1]);
+    ff_vk_shader_free(&ctx->s, &fv->decode);
 
     ff_vk_free_buf(&ctx->s, &fv->uniform_buf);
 
@@ -359,8 +358,8 @@ static void vk_decode_prores_raw_uninit(FFVulkanDecodeShared *ctx)
 static int vk_decode_prores_raw_init(AVCodecContext *avctx)
 {
     int err;
-    ProResRAWContext *prr = avctx->priv_data;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
+    ProResRAWContext *prr = avctx->priv_data;
 
     FFVkSPIRVCompiler *spv = ff_vk_spirv_init();
     if (!spv) {
@@ -382,8 +381,8 @@ static int vk_decode_prores_raw_init(AVCodecContext *avctx)
     ctx->sd_ctx_free = &vk_decode_prores_raw_uninit;
 
     /* Setup decode shader */
-    RET(init_decode_shader(prr, &ctx->s, &ctx->exec_pool, spv, &prv->decode[0], 0));
-    RET(init_decode_shader(prr, &ctx->s, &ctx->exec_pool, spv, &prv->decode[1], 1));
+    RET(init_decode_shader(prr, &ctx->s, &ctx->exec_pool, spv, &prv->decode,
+                           prr->version));
 
     /* Size in bytes of each codebook table */
     size_t cb_size[5] = {
@@ -447,24 +446,22 @@ static int vk_decode_prores_raw_init(AVCodecContext *avctx)
     RET(ff_vk_unmap_buffer(&ctx->s, &prv->uniform_buf, 1));
 
     /* Done; update descriptors */
-    for (int i = 0; i < 2; i++) {
+    RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
+                                        &prv->decode, 1, 0, 0,
+                                        &prv->uniform_buf,
+                                        0, 64*sizeof(float),
+                                        VK_FORMAT_UNDEFINED));
+    RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
+                                        &prv->decode, 1, 1, 0,
+                                        &prv->uniform_buf,
+                                        64*sizeof(float), 64*sizeof(uint8_t),
+                                        VK_FORMAT_UNDEFINED));
+    for (int j = 0; j < 4; j++)
         RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
-                                            &prv->decode[i], 1, 0, 0,
+                                            &prv->decode, 1, 2 + j, 0,
                                             &prv->uniform_buf,
-                                            0, 64*sizeof(float),
+                                            cb_offset[j], cb_size[j],
                                             VK_FORMAT_UNDEFINED));
-        RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
-                                            &prv->decode[i], 1, 1, 0,
-                                            &prv->uniform_buf,
-                                            64*sizeof(float), 64*sizeof(uint8_t),
-                                            VK_FORMAT_UNDEFINED));
-        for (int j = 0; j < 4; j++)
-            RET(ff_vk_shader_update_desc_buffer(&ctx->s, &ctx->exec_pool.contexts[0],
-                                                &prv->decode[i], 1, 2 + j, 0,
-                                                &prv->uniform_buf,
-                                                cb_offset[j], cb_size[j],
-                                                VK_FORMAT_UNDEFINED));
-    }
 
 fail:
     spv->uninit(&spv);
