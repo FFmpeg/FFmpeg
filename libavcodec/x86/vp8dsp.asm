@@ -166,6 +166,7 @@ cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 8, dst, dststride, src, srcstride, h
     pmaddubsw m0, m5
     pmaddubsw m1, m6
     pmaddubsw m2, m7
+    add     srcq, srcstrideq
     paddsw    m0, m1
     paddsw    m0, m2
     pmulhrsw  m0, [pw_256]
@@ -174,7 +175,6 @@ cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 8, dst, dststride, src, srcstride, h
 
     ; go to next line
     add     dstq, dststrideq
-    add     srcq, srcstrideq
     dec  heightd            ; next row
     jg .nextrow
     RET
@@ -197,6 +197,7 @@ cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, h
     pshufb    m1, m4
     pmaddubsw m0, m5
     pmaddubsw m1, m6
+    add     srcq, srcstrideq
     paddsw    m0, m1
     pmulhrsw  m0, m2
     packuswb  m0, m0
@@ -204,7 +205,6 @@ cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, h
 
     ; go to next line
     add     dstq, dststrideq
-    add     srcq, srcstrideq
     dec  heightd            ; next row
     jg .nextrow
     RET
@@ -234,6 +234,7 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     punpcklbw m2, m3
     pmaddubsw m4, m5
     pmaddubsw m2, m6
+    add      srcq, srcstrideq
     paddsw    m4, m2
     mova      m2, m3
     pmulhrsw  m4, m7
@@ -242,7 +243,6 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
 
     ; go to next line
     add      dstq, dststrideq
-    add      srcq, srcstrideq
     dec   heightd                          ; next row
     jg .nextrow
     RET
@@ -275,6 +275,7 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     pmaddubsw m6, [myq-48]
     pmaddubsw m1, [myq-32]
     pmaddubsw m7, [myq-16]
+    add      srcq, srcstrideq
     paddsw    m6, m1
     paddsw    m6, m7
     mova      m1, m2
@@ -287,7 +288,6 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
 
     ; go to next line
     add      dstq, dststrideq
-    add      srcq, srcstrideq
     dec   heightd                          ; next row
     jg .nextrow
     RET
@@ -331,6 +331,7 @@ cglobal put_vp8_epel8_h4, 6, 6 + npicregs, 10, dst, dststride, src, srcstride, h
     pmullw    m2, [mxq+32]
     pmullw    m3, [mxq+48]
 %endif
+    add     srcq, srcstrideq
     paddsw    m0, m1
     paddsw    m2, m3
     paddsw    m0, m2
@@ -341,7 +342,6 @@ cglobal put_vp8_epel8_h4, 6, 6 + npicregs, 10, dst, dststride, src, srcstride, h
 
     ; go to next line
     add     dstq, dststrideq
-    add     srcq, srcstrideq
     dec  heightd            ; next row
     jg .nextrow
     RET
@@ -392,6 +392,7 @@ cglobal put_vp8_epel8_h6, 6, 6 + npicregs, 14, dst, dststride, src, srcstride, h
     pmullw    m4, [mxq+64]
     pmullw    m5, [mxq+80]
 %endif
+    add     srcq, srcstrideq
     paddsw    m1, m4
     paddsw    m0, m5
     paddsw    m1, m2
@@ -404,7 +405,6 @@ cglobal put_vp8_epel8_h6, 6, 6 + npicregs, 14, dst, dststride, src, srcstride, h
 
     ; go to next line
     add     dstq, dststrideq
-    add     srcq, srcstrideq
     dec  heightd            ; next row
     jg .nextrow
     RET
@@ -446,6 +446,7 @@ cglobal put_vp8_epel8_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picre
     paddsw    m4, m1
     mova      m1, m2
     pmullw    m2, [myq+32]
+    add     srcq, srcstrideq
     paddsw    m4, m2
     mova      m2, m3
 
@@ -457,7 +458,6 @@ cglobal put_vp8_epel8_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picre
 
     ; go to next line
     add     dstq, dststrideq
-    add     srcq, srcstrideq
     dec  heightd                           ; next row
     jg .nextrow
     RET
@@ -507,6 +507,7 @@ cglobal put_vp8_epel8_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picre
     paddsw    m6, m2
     mova      m2, m3
     pmullw    m3, [myq+48]
+    add     srcq, srcstrideq
     paddsw    m6, m3
     mova      m3, m4
     mova      m4, m5
@@ -521,7 +522,6 @@ cglobal put_vp8_epel8_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picre
 
     ; go to next line
     add     dstq, dststrideq
-    add     srcq, srcstrideq
     dec  heightd                           ; next row
     jg .nextrow
     RET
@@ -543,6 +543,7 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 5, dst, dststride, src, srcstride, height, p
     punpcklbw m1, m2
     pmaddubsw m0, m3
     pmaddubsw m1, m3
+    lea     srcq, [srcq+srcstrideq*2]
     psraw     m0, 2
     psraw     m1, 2
     pavgw     m0, m4
@@ -579,6 +580,7 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 7, dst, dststride, src, srcstride, height, p
     pmullw    m1, m5
     pmullw    m2, m4
     pmullw    m3, m5
+    lea     srcq, [srcq+srcstrideq*2]
     paddsw    m0, m1
     paddsw    m2, m3
     psraw     m0, 2
@@ -591,7 +593,6 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 7, dst, dststride, src, srcstride, height, p
 %endif ; cpuflag(ssse3)
 
     lea     dstq, [dstq+dststrideq*2]
-    lea     srcq, [srcq+srcstrideq*2]
     sub  heightd, 2
     jg .nextrow
     RET
@@ -612,6 +613,7 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 5, dst, dststride, src, srcstride
     pshufb    m1, m2
     pmaddubsw m0, m3
     pmaddubsw m1, m3
+    lea     srcq, [srcq+srcstrideq*2]
     psraw     m0, 2
     psraw     m1, 2
     pavgw     m0, m4
@@ -649,6 +651,7 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 7, dst, dststride, src, srcstride
     pmullw    m1, m5
     pmullw    m2, m4
     pmullw    m3, m5
+    lea     srcq, [srcq+srcstrideq*2]
     paddsw    m0, m1
     paddsw    m2, m3
     psraw     m0, 2
@@ -661,7 +664,6 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 7, dst, dststride, src, srcstride
 %endif ; cpuflag(ssse3)
 
     lea     dstq, [dstq+dststrideq*2]
-    lea     srcq, [srcq+srcstrideq*2]
     sub  heightd, 2
     jg .nextrow
     RET
