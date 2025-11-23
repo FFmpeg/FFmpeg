@@ -535,8 +535,8 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 5, dst, dststride, src, srcstride, height, p
 %endif
     pxor      m4, m4
     mova      m3, [bilinear_filter_vb+myq-16]
-.nextrow:
     movh      m0, [srcq+srcstrideq*0]
+.nextrow:
     movh      m1, [srcq+srcstrideq*1]
     movh      m2, [srcq+srcstrideq*2]
     punpcklbw m0, m1
@@ -558,6 +558,7 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 5, dst, dststride, src, srcstride, height, p
     movh   [dstq+dststrideq*0], m0
     movhps [dstq+dststrideq*1], m0
 %endif
+    mova      m0, m2
 %else ; cpuflag(ssse3)
 cglobal put_vp8_bilinear%1_v, 7, 7, 7, dst, dststride, src, srcstride, height, picreg, my
     shl      myd, 4
