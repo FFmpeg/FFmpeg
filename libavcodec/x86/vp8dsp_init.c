@@ -105,16 +105,6 @@ static void ff_put_vp8_ ## FILTERTYPE ## 16_ ## TAPTYPE ## _ ## OPT( \
     ff_put_vp8_ ## FILTERTYPE ## 8_ ## TAPTYPE ## _ ## OPT( \
         dst + 8, dststride, src + 8, srcstride, height, mx, my); \
 }
-#define TAP_W8(OPT, FILTERTYPE, TAPTYPE) \
-static void ff_put_vp8_ ## FILTERTYPE ## 8_ ## TAPTYPE ## _ ## OPT( \
-    uint8_t *dst,  ptrdiff_t dststride, uint8_t *src, \
-    ptrdiff_t srcstride, int height, int mx, int my) \
-{ \
-    ff_put_vp8_ ## FILTERTYPE ## 4_ ## TAPTYPE ## _ ## OPT( \
-        dst,     dststride, src,     srcstride, height, mx, my); \
-    ff_put_vp8_ ## FILTERTYPE ## 4_ ## TAPTYPE ## _ ## OPT( \
-        dst + 4, dststride, src + 4, srcstride, height, mx, my); \
-}
 
 TAP_W16(sse2,  epel, h6)
 TAP_W16(sse2,  epel, v6)
