@@ -676,14 +676,22 @@ FILTER_BILINEAR 4
 INIT_XMM ssse3
 FILTER_BILINEAR 8
 
-INIT_MMX mmx
-cglobal put_vp8_pixels8, 5, 5, 0, dst, dststride, src, srcstride, height
+INIT_XMM sse2
+cglobal put_vp8_pixels8, 5, 5+2*ARCH_X86_64, 2, dst, dststride, src, srcstride, height
 .nextrow:
-    movq    mm0, [srcq+srcstrideq*0]
-    movq    mm1, [srcq+srcstrideq*1]
+%if ARCH_X86_64
+    mov     r5q, [srcq+srcstrideq*0]
+    mov     r6q, [srcq+srcstrideq*1]
     lea    srcq, [srcq+srcstrideq*2]
-    movq [dstq+dststrideq*0], mm0
-    movq [dstq+dststrideq*1], mm1
+    mov [dstq+dststrideq*0], r5q
+    mov [dstq+dststrideq*1], r6q
+%else
+    movq     m0, [srcq+srcstrideq*0]
+    movq     m1, [srcq+srcstrideq*1]
+    lea    srcq, [srcq+srcstrideq*2]
+    movq [dstq+dststrideq*0], m0
+    movq [dstq+dststrideq*1], m1
+%endif
     lea    dstq, [dstq+dststrideq*2]
     sub heightd, 2
     jg .nextrow
