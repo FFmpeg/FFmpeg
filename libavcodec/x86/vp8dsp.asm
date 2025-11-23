@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* VP8 MMXEXT optimizations
+;* VP8 ASM optimizations
 ;* Copyright (c) 2010 Ronald S. Bultje <rsbultje@gmail.com>
 ;* Copyright (c) 2010 Fiona Glaser <fiona@x264.com>
 ;*
@@ -23,25 +23,6 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
-
-fourtap_filter_hw_m: times 4 dw  -6, 123
-                     times 4 dw  12,  -1
-                     times 4 dw  -9,  93
-                     times 4 dw  50,  -6
-                     times 4 dw  -6,  50
-                     times 4 dw  93,  -9
-                     times 4 dw  -1,  12
-                     times 4 dw 123,  -6
-
-sixtap_filter_hw_m:  times 4 dw   2, -11
-                     times 4 dw 108,  36
-                     times 4 dw  -8,   1
-                     times 4 dw   3, -16
-                     times 4 dw  77,  77
-                     times 4 dw -16,   3
-                     times 4 dw   1,  -8
-                     times 4 dw  36, 108
-                     times 4 dw -11,   2
 
 fourtap_filter_hb_m: times 8 db  -6, 123
                      times 8 db  12,  -1
@@ -115,8 +96,6 @@ bilinear_filter_vb_m: times 8 db 7, 1
                       times 8 db 1, 7
 
 %if PIC
-%define fourtap_filter_hw  picregq
-%define sixtap_filter_hw   picregq
 %define fourtap_filter_hb  picregq
 %define sixtap_filter_hb   picregq
 %define fourtap_filter_v   picregq
@@ -125,8 +104,6 @@ bilinear_filter_vb_m: times 8 db 7, 1
 %define bilinear_filter_vb picregq
 %define npicregs 1
 %else
-%define fourtap_filter_hw  fourtap_filter_hw_m
-%define sixtap_filter_hw   sixtap_filter_hw_m
 %define fourtap_filter_hb  fourtap_filter_hb_m
 %define sixtap_filter_hb   sixtap_filter_hb_m
 %define fourtap_filter_v   fourtap_filter_v_m
@@ -322,112 +299,6 @@ FILTER_SSSE3 4
 INIT_XMM ssse3
 FILTER_SSSE3 8
 
-; 4x4 block, H-only 4-tap filter
-INIT_MMX mmxext
-cglobal put_vp8_epel4_h4, 6, 6 + npicregs, 0, dst, dststride, src, srcstride, height, mx, picreg
-    shl       mxd, 4
-%if PIC
-    lea   picregq, [fourtap_filter_hw_m]
-%endif
-    movq      mm4, [fourtap_filter_hw+mxq-16] ; set up 4tap filter in words
-    movq      mm5, [fourtap_filter_hw+mxq]
-    movq      mm7, [pw_64]
-    pxor      mm6, mm6
-
-.nextrow:
-    movq      mm1, [srcq-1]                ; (ABCDEFGH) load 8 horizontal pixels
-
-    ; first set of 2 pixels
-    movq      mm2, mm1                     ; byte ABCD..
-    punpcklbw mm1, mm6                     ; byte->word ABCD
-    pshufw    mm0, mm2, 9                  ; byte CDEF..
-    punpcklbw mm0, mm6                     ; byte->word CDEF
-    pshufw    mm3, mm1, 0x94               ; word ABBC
-    pshufw    mm1, mm0, 0x94               ; word CDDE
-    pmaddwd   mm3, mm4                     ; multiply 2px with F0/F1
-    movq      mm0, mm1                     ; backup for second set of pixels
-    pmaddwd   mm1, mm5                     ; multiply 2px with F2/F3
-    paddd     mm3, mm1                     ; finish 1st 2px
-
-    ; second set of 2 pixels, use backup of above
-    punpckhbw mm2, mm6                     ; byte->word EFGH
-    pmaddwd   mm0, mm4                     ; multiply backed up 2px with F0/F1
-    pshufw    mm1, mm2, 0x94               ; word EFFG
-    pmaddwd   mm1, mm5                     ; multiply 2px with F2/F3
-    paddd     mm0, mm1                     ; finish 2nd 2px
-
-    ; merge two sets of 2 pixels into one set of 4, round/clip/store
-    packssdw  mm3, mm0                     ; merge dword->word (4px)
-    paddsw    mm3, mm7                     ; rounding
-    psraw     mm3, 7
-    packuswb  mm3, mm6                     ; clip and word->bytes
-    movd   [dstq], mm3                     ; store
-
-    ; go to next line
-    add      dstq, dststrideq
-    add      srcq, srcstrideq
-    dec   heightd                          ; next row
-    jg .nextrow
-    RET
-
-; 4x4 block, H-only 6-tap filter
-INIT_MMX mmxext
-cglobal put_vp8_epel4_h6, 6, 6 + npicregs, 0, dst, dststride, src, srcstride, height, mx, picreg
-    lea       mxd, [mxq*3]
-%if PIC
-    lea   picregq, [sixtap_filter_hw_m]
-%endif
-    movq      mm4, [sixtap_filter_hw+mxq*8-48] ; set up 4tap filter in words
-    movq      mm5, [sixtap_filter_hw+mxq*8-32]
-    movq      mm6, [sixtap_filter_hw+mxq*8-16]
-    movq      mm7, [pw_64]
-    pxor      mm3, mm3
-
-.nextrow:
-    movq      mm1, [srcq-2]                ; (ABCDEFGH) load 8 horizontal pixels
-
-    ; first set of 2 pixels
-    movq      mm2, mm1                     ; byte ABCD..
-    punpcklbw mm1, mm3                     ; byte->word ABCD
-    pshufw    mm0, mm2, 0x9                ; byte CDEF..
-    punpckhbw mm2, mm3                     ; byte->word EFGH
-    punpcklbw mm0, mm3                     ; byte->word CDEF
-    pshufw    mm1, mm1, 0x94               ; word ABBC
-    pshufw    mm2, mm2, 0x94               ; word EFFG
-    pmaddwd   mm1, mm4                     ; multiply 2px with F0/F1
-    pshufw    mm3, mm0, 0x94               ; word CDDE
-    movq      mm0, mm3                     ; backup for second set of pixels
-    pmaddwd   mm3, mm5                     ; multiply 2px with F2/F3
-    paddd     mm1, mm3                     ; add to 1st 2px cache
-    movq      mm3, mm2                     ; backup for second set of pixels
-    pmaddwd   mm2, mm6                     ; multiply 2px with F4/F5
-    paddd     mm1, mm2                     ; finish 1st 2px
-
-    ; second set of 2 pixels, use backup of above
-    movd      mm2, [srcq+3]                ; byte FGHI (prevent overreads)
-    pmaddwd   mm0, mm4                     ; multiply 1st backed up 2px with F0/F1
-    pmaddwd   mm3, mm5                     ; multiply 2nd backed up 2px with F2/F3
-    paddd     mm0, mm3                     ; add to 2nd 2px cache
-    pxor      mm3, mm3
-    punpcklbw mm2, mm3                     ; byte->word FGHI
-    pshufw    mm2, mm2, 0xE9               ; word GHHI
-    pmaddwd   mm2, mm6                     ; multiply 2px with F4/F5
-    paddd     mm0, mm2                     ; finish 2nd 2px
-
-    ; merge two sets of 2 pixels into one set of 4, round/clip/store
-    packssdw  mm1, mm0                     ; merge dword->word (4px)
-    paddsw    mm1, mm7                     ; rounding
-    psraw     mm1, 7
-    packuswb  mm1, mm3                     ; clip and word->bytes
-    movd   [dstq], mm1                     ; store
-
-    ; go to next line
-    add      dstq, dststrideq
-    add      srcq, srcstrideq
-    dec   heightd                          ; next row
-    jg .nextrow
-    RET
-
 INIT_XMM sse2
 cglobal put_vp8_epel8_h4, 6, 6 + npicregs, 10, dst, dststride, src, srcstride, height, mx, picreg
     shl      mxd, 5
@@ -539,9 +410,9 @@ cglobal put_vp8_epel8_h6, 6, 6 + npicregs, 14, dst, dststride, src, srcstride, h
     jg .nextrow
     RET
 
-%macro FILTER_V 1
+INIT_XMM sse2
 ; 4x4 block, V-only 4-tap filter
-cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
+cglobal put_vp8_epel8_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     shl      myd, 5
 %if PIC
     lea  picregq, [fourtap_filter_v_m]
@@ -594,7 +465,7 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
 
 
 ; 4x4 block, V-only 6-tap filter
-cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
+cglobal put_vp8_epel8_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     shl      myd, 4
     lea      myq, [myq*3]
 %if PIC
@@ -656,12 +527,6 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     dec  heightd                           ; next row
     jg .nextrow
     RET
-%endmacro
-
-INIT_MMX mmxext
-FILTER_V 4
-INIT_XMM sse2
-FILTER_V 8
 
 %macro FILTER_BILINEAR 1
 %if cpuflag(ssse3)
@@ -722,16 +587,9 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 7, dst, dststride, src, srcstride, height, p
     psraw     m2, 2
     pavgw     m0, m6
     pavgw     m2, m6
-%if mmsize == 8
-    packuswb  m0, m0
-    packuswb  m2, m2
-    movh   [dstq+dststrideq*0], m0
-    movh   [dstq+dststrideq*1], m2
-%else
     packuswb  m0, m2
     movh   [dstq+dststrideq*0], m0
     movhps [dstq+dststrideq*1], m0
-%endif
 %endif ; cpuflag(ssse3)
 
     lea     dstq, [dstq+dststrideq*2]
@@ -799,16 +657,9 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 7, dst, dststride, src, srcstride
     psraw     m2, 2
     pavgw     m0, m6
     pavgw     m2, m6
-%if mmsize == 8
-    packuswb  m0, m0
-    packuswb  m2, m2
-    movh   [dstq+dststrideq*0], m0
-    movh   [dstq+dststrideq*1], m2
-%else
     packuswb  m0, m2
     movh   [dstq+dststrideq*0], m0
     movhps [dstq+dststrideq*1], m0
-%endif
 %endif ; cpuflag(ssse3)
 
     lea     dstq, [dstq+dststrideq*2]
@@ -818,8 +669,6 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 7, dst, dststride, src, srcstride
     RET
 %endmacro
 
-INIT_MMX mmxext
-FILTER_BILINEAR 4
 INIT_XMM sse2
 FILTER_BILINEAR 8
 INIT_MMX ssse3

@@ -29,19 +29,6 @@
 /*
  * MC functions
  */
-void ff_put_vp8_epel4_h4_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                const uint8_t *src, ptrdiff_t srcstride,
-                                int height, int mx, int my);
-void ff_put_vp8_epel4_h6_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                const uint8_t *src, ptrdiff_t srcstride,
-                                int height, int mx, int my);
-void ff_put_vp8_epel4_v4_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                const uint8_t *src, ptrdiff_t srcstride,
-                                int height, int mx, int my);
-void ff_put_vp8_epel4_v6_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                const uint8_t *src, ptrdiff_t srcstride,
-                                int height, int mx, int my);
-
 void ff_put_vp8_epel8_h4_sse2  (uint8_t *dst, ptrdiff_t dststride,
                                 const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
@@ -80,9 +67,6 @@ void ff_put_vp8_epel8_v6_ssse3 (uint8_t *dst, ptrdiff_t dststride,
                                 const uint8_t *src, ptrdiff_t srcstride,
                                 int height, int mx, int my);
 
-void ff_put_vp8_bilinear4_h_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                   const uint8_t *src, ptrdiff_t srcstride,
-                                   int height, int mx, int my);
 void ff_put_vp8_bilinear8_h_sse2  (uint8_t *dst, ptrdiff_t dststride,
                                    const uint8_t *src, ptrdiff_t srcstride,
                                    int height, int mx, int my);
@@ -93,9 +77,6 @@ void ff_put_vp8_bilinear8_h_ssse3 (uint8_t *dst, ptrdiff_t dststride,
                                    const uint8_t *src, ptrdiff_t srcstride,
                                    int height, int mx, int my);
 
-void ff_put_vp8_bilinear4_v_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                   const uint8_t *src, ptrdiff_t srcstride,
-                                   int height, int mx, int my);
 void ff_put_vp8_bilinear8_v_sse2  (uint8_t *dst, ptrdiff_t dststride,
                                    const uint8_t *src, ptrdiff_t srcstride,
                                    int height, int mx, int my);
@@ -159,14 +140,6 @@ static void ff_put_vp8_epel ## SIZE ## _h ## TAPNUMX ## v ## TAPNUMY ## _ ## OPT
         dst, dststride, tmpptr, SIZE,      height,               mx, my); \
 }
 
-#define HVTAPMMX(x, y) \
-HVTAP(mmxext, 8, x, y,  4,  8)
-
-HVTAPMMX(4, 4)
-HVTAPMMX(4, 6)
-HVTAPMMX(6, 4)
-HVTAPMMX(6, 6)
-
 #define HVTAPSSE2(x, y, w) \
 HVTAP(sse2,  16, x, y, w, 16) \
 HVTAP(ssse3, 16, x, y, w, 16)
@@ -194,7 +167,6 @@ static void ff_put_vp8_bilinear ## SIZE ## _hv_ ## OPT( \
         dst, dststride, tmp, SIZE,      height,     mx, my); \
 }
 
-HVBILIN(mmxext,  8,  4,  8)
 HVBILIN(sse2,  8,  8, 16)
 HVBILIN(sse2,  8, 16, 16)
 HVBILIN(ssse3, 8,  4,  8)
@@ -285,13 +257,6 @@ av_cold void ff_vp78dsp_init_x86(VP8DSPContext *c)
         c->put_vp8_bilinear_pixels_tab[1][0][0] = ff_put_vp8_pixels8_mmx;
     }
 
-    /* note that 4-tap width=16 functions are missing because w=16
-     * is only used for luma, and luma is always a copy or sixtap. */
-    if (EXTERNAL_MMXEXT(cpu_flags)) {
-        VP8_MC_FUNC(2, 4, mmxext);
-        VP8_BILINEAR_MC_FUNC(2, 4, mmxext);
-    }
-
     if (EXTERNAL_SSE(cpu_flags)) {
         c->put_vp8_epel_pixels_tab[0][0][0]     =
         c->put_vp8_bilinear_pixels_tab[0][0][0] = ff_put_vp8_pixels16_sse;
@@ -304,6 +269,8 @@ av_cold void ff_vp78dsp_init_x86(VP8DSPContext *c)
         VP8_BILINEAR_MC_FUNC(1, 8, sse2);
     }
 
+    /* note that 4-tap width=16 functions are missing because w=16
+     * is only used for luma, and luma is always a copy or sixtap. */
     if (EXTERNAL_SSSE3(cpu_flags)) {
         VP8_LUMA_MC_FUNC(0, 16, ssse3);
         VP8_MC_FUNC(1, 8, ssse3);
