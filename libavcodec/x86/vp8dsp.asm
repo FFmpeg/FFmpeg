@@ -33,6 +33,15 @@ fourtap_filter_hb_m: times 8 db  -6, 123
                      times 8 db  -1,  12
                      times 8 db 123,  -6
 
+fourtap_filter_b_m:  times 8 db  -6,  12
+                     times 8 db 123,  -1
+                     times 8 db  -9,  50
+                     times 8 db  93,  -6
+                     times 8 db  -6,  93
+                     times 8 db  50,  -9
+                     times 8 db  -1, 123
+                     times 8 db  12,  -6
+
 sixtap_filter_hb_m:  times 8 db   2,   1
                      times 8 db -11, 108
                      times 8 db  36,  -8
@@ -42,6 +51,16 @@ sixtap_filter_hb_m:  times 8 db   2,   1
                      times 8 db   1,   2
                      times 8 db  -8,  36
                      times 8 db 108, -11
+
+sixtap_filter_b_m:   times 8 db   2,  36
+                     times 8 db -11,  -8
+                     times 8 db 108,   1
+                     times 8 db   3,  77
+                     times 8 db -16, -16
+                     times 8 db  77,   3
+                     times 8 db   1, 108
+                     times 8 db  -8, -11
+                     times 8 db  36,   2
 
 fourtap_filter_v_m:  times 8 dw  -6
                      times 8 dw 123
@@ -97,7 +116,9 @@ bilinear_filter_vb_m: times 8 db 7, 1
 
 %if PIC
 %define fourtap_filter_hb  picregq
+%define fourtap_filter_b   picregq
 %define sixtap_filter_hb   picregq
+%define sixtap_filter_b    picregq
 %define fourtap_filter_v   picregq
 %define sixtap_filter_v    picregq
 %define bilinear_filter_vw picregq
@@ -105,7 +126,9 @@ bilinear_filter_vb_m: times 8 db 7, 1
 %define npicregs 1
 %else
 %define fourtap_filter_hb  fourtap_filter_hb_m
+%define fourtap_filter_b   fourtap_filter_b_m
 %define sixtap_filter_hb   sixtap_filter_hb_m
+%define sixtap_filter_b    sixtap_filter_b_m
 %define fourtap_filter_v   fourtap_filter_v_m
 %define sixtap_filter_v    sixtap_filter_v_m
 %define bilinear_filter_vw bilinear_filter_vw_m
@@ -212,10 +235,10 @@ cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, h
 cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     shl      myd, 4
 %if PIC
-    lea  picregq, [fourtap_filter_hb_m]
+    lea  picregq, [fourtap_filter_b_m]
 %endif
-    mova      m5, [fourtap_filter_hb+myq-16]
-    mova      m6, [fourtap_filter_hb+myq]
+    mova      m5, [fourtap_filter_b+myq-16]
+    mova      m6, [fourtap_filter_b+myq]
     mova      m7, [pw_256]
 
     ; read 3 lines
@@ -224,21 +247,20 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     movh      m0, [srcq+picregq]
     movh      m1, [srcq]
     movh      m2, [srcq+srcstrideq]
+    punpcklbw m0, m2
 
 .nextrow:
     movh      m3, [srcq+2*srcstrideq]      ; read new row
-    mova      m4, m0
+    pmaddubsw m0, m5
+    punpcklbw m1, m3
+    pmaddubsw m4, m1, m6
+    add     srcq, srcstrideq
+    paddsw    m4, m0
     mova      m0, m1
-    punpcklbw m4, m1
-    mova      m1, m2
-    punpcklbw m2, m3
-    pmaddubsw m4, m5
-    pmaddubsw m2, m6
-    add      srcq, srcstrideq
-    paddsw    m4, m2
-    mova      m2, m3
     pmulhrsw  m4, m7
+    mova      m1, m2
     packuswb  m4, m4
+    mova      m2, m3
     movh  [dstq], m4
 
     ; go to next line
@@ -250,9 +272,9 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
 cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     lea      myd, [myq*3]
 %if PIC
-    lea  picregq, [sixtap_filter_hb_m]
+    lea  picregq, [sixtap_filter_b_m]
 %endif
-    lea      myq, [sixtap_filter_hb+myq*8]
+    lea      myq, [sixtap_filter_b+myq*8]
 
     ; read 5 lines
     mov  picregq, srcstrideq
@@ -263,20 +285,18 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     movh      m3, [srcq+srcstrideq]
     movh      m4, [srcq+2*srcstrideq]
     lea     srcq, [srcq+srcstrideq*2]
+    punpcklbw m0, m3
+    punpcklbw m1, m4
 
 .nextrow:
     movh      m5, [srcq+srcstrideq]      ; read new row
-    mova      m6, m0
-    punpcklbw m6, m5
+    pmaddubsw m0, [myq-48]
+    punpcklbw m2, m5
+    pmaddubsw m6, m1, [myq-32]
+    pmaddubsw m7, m2, [myq-16]
+    add     srcq, srcstrideq
+    paddw     m6, m0
     mova      m0, m1
-    punpcklbw m1, m2
-    mova      m7, m3
-    punpcklbw m7, m4
-    pmaddubsw m6, [myq-48]
-    pmaddubsw m1, [myq-32]
-    pmaddubsw m7, [myq-16]
-    add      srcq, srcstrideq
-    paddsw    m6, m1
     paddsw    m6, m7
     mova      m1, m2
     mova      m2, m3
