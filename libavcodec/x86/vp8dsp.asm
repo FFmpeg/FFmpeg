@@ -162,6 +162,12 @@ SECTION .text
 ;-------------------------------------------------------------------------------
 
 %macro FILTER_SSSE3 1
+%if %1 == 4
+%define MOV movd
+%else
+%define MOV movq
+%endif
+
 cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 8, dst, dststride, src, srcstride, height, mx, picreg
     lea      mxd, [mxq*3]
     mova      m3, [filter_h6_shuf2]
@@ -269,6 +275,7 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     jg .nextrow
     RET
 
+INIT_XMM ssse3
 cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     lea      myd, [myq*3]
 %if PIC
@@ -279,14 +286,44 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     ; read 5 lines
     mov  picregq, srcstrideq
     neg  picregq
-    movh      m0, [srcq+2*picregq]
-    movh      m1, [srcq+picregq]
-    movh      m2, [srcq]
-    movh      m3, [srcq+srcstrideq]
-    movh      m4, [srcq+2*srcstrideq]
+    MOV       m0, [srcq+2*picregq]
+    MOV       m1, [srcq+picregq]
+    MOV       m2, [srcq]
+    MOV       m3, [srcq+srcstrideq]
+    MOV       m4, [srcq+2*srcstrideq]
     lea     srcq, [srcq+srcstrideq*2]
     punpcklbw m0, m3
     punpcklbw m1, m4
+%if %1 == 4
+    punpcklqdq m0, m1
+
+.next2rows:
+    movd       m5, [srcq+srcstrideq]
+    movd       m6, [srcq+2*srcstrideq]
+    pmaddubsw  m0, [myq-48]
+    punpcklbw  m2, m5
+    punpcklqdq m1, m2
+    pmaddubsw  m1, [myq-32]
+    punpcklbw  m3, m6
+    punpcklqdq m2, m3
+    paddw      m0, m1
+    pmaddubsw  m1, m2, [myq-16]
+    lea      srcq, [srcq+2*srcstrideq]
+    paddsw     m1, m0
+    mova       m0, m2
+    pmulhrsw   m1, [pw_256]
+    mova       m2, m4
+    packuswb   m1, m1
+    movd   [dstq], m1
+    mova       m4, m6
+    psrldq     m1, 4
+    movd [dstq+dststrideq], m1
+    lea      dstq, [dstq+2*dststrideq]
+    mova       m1, m3
+    mova       m3, m5
+    sub   heightd, 2
+    jg .next2rows
+%else
 
 .nextrow:
     movh      m5, [srcq+srcstrideq]      ; read new row
@@ -310,6 +347,7 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     add      dstq, dststrideq
     dec   heightd                          ; next row
     jg .nextrow
+%endif
     RET
 %endmacro
 
