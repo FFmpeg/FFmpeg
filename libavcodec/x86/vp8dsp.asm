@@ -219,11 +219,11 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     mova      m7, [pw_256]
 
     ; read 3 lines
-    sub     srcq, srcstrideq
-    movh      m0, [srcq]
-    movh      m1, [srcq+  srcstrideq]
-    movh      m2, [srcq+2*srcstrideq]
-    add     srcq, srcstrideq
+    mov  picregq, srcstrideq
+    neg  picregq
+    movh      m0, [srcq+picregq]
+    movh      m1, [srcq]
+    movh      m2, [srcq+srcstrideq]
 
 .nextrow:
     movh      m3, [srcq+2*srcstrideq]      ; read new row
@@ -255,18 +255,17 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     lea      myq, [sixtap_filter_hb+myq*8]
 
     ; read 5 lines
-    sub     srcq, srcstrideq
-    sub     srcq, srcstrideq
-    movh      m0, [srcq]
-    movh      m1, [srcq+srcstrideq]
-    movh      m2, [srcq+srcstrideq*2]
+    mov  picregq, srcstrideq
+    neg  picregq
+    movh      m0, [srcq+2*picregq]
+    movh      m1, [srcq+picregq]
+    movh      m2, [srcq]
+    movh      m3, [srcq+srcstrideq]
+    movh      m4, [srcq+2*srcstrideq]
     lea     srcq, [srcq+srcstrideq*2]
-    add     srcq, srcstrideq
-    movh      m3, [srcq]
-    movh      m4, [srcq+srcstrideq]
 
 .nextrow:
-    movh      m5, [srcq+2*srcstrideq]      ; read new row
+    movh      m5, [srcq+srcstrideq]      ; read new row
     mova      m6, m0
     punpcklbw m6, m5
     mova      m0, m1
@@ -475,15 +474,14 @@ cglobal put_vp8_epel8_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picre
     pxor      m7, m7
 
     ; read 5 lines
-    sub     srcq, srcstrideq
-    sub     srcq, srcstrideq
-    movh      m0, [srcq]
-    movh      m1, [srcq+srcstrideq]
-    movh      m2, [srcq+srcstrideq*2]
+    mov  picregq, srcstrideq
+    neg  picregq
+    movh      m0, [srcq+2*picregq]
+    movh      m1, [srcq+picregq]
+    movh      m2, [srcq]
+    movh      m3, [srcq+srcstrideq]
+    movh      m4, [srcq+2*srcstrideq]
     lea     srcq, [srcq+srcstrideq*2]
-    add     srcq, srcstrideq
-    movh      m3, [srcq]
-    movh      m4, [srcq+srcstrideq]
     punpcklbw m0, m7
     punpcklbw m1, m7
     punpcklbw m2, m7
@@ -499,7 +497,7 @@ cglobal put_vp8_epel8_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picre
     paddsw    m6, m5
 
     ; then calculate positive taps
-    movh      m5, [srcq+2*srcstrideq]      ; read new row
+    movh      m5, [srcq+srcstrideq]      ; read new row
     punpcklbw m5, m7
     pmullw    m0, [myq+0]
     paddsw    m6, m0
