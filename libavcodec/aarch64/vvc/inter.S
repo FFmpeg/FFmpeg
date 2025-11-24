@@ -1713,3 +1713,122 @@ endfunc
 #undef GRADIENT_V1_OFFSET
 #undef VX_OFFSET
 #undef VY_OFFSET
+
+#define VVC_MAX_PB_SIZE 128
+
+.macro put_luma_h_x8_vector_filter shift
+        // 8 bytes from hf loaded to v0.8h
+        // 32 bytes from _src loaded to v20.8h & v21.8h where v21.8h is loaded for shift to v1.8h,..,v6.8h,v17.8h
+        // v24.4h & v25.4h are output vectors to store
+        ext             v1.16b, v20.16b, v21.16b, #2
+        ext             v2.16b, v20.16b, v21.16b, #4
+        ext             v3.16b, v20.16b, v21.16b, #6
+        ext             v4.16b, v20.16b, v21.16b, #8
+        ext             v5.16b, v20.16b, v21.16b, #10
+        ext             v6.16b, v20.16b, v21.16b, #12
+        ext             v17.16b, v20.16b, v21.16b, #14
+        smull           v24.4s, v20.4h, v0.h[0]
+        smull2          v25.4s, v20.8h, v0.h[0]
+        smlal           v24.4s, v1.4h, v0.h[1]
+        smlal2          v25.4s, v1.8h, v0.h[1]
+        smlal           v24.4s, v2.4h, v0.h[2]
+        smlal2          v25.4s, v2.8h, v0.h[2]
+        smlal           v24.4s, v3.4h, v0.h[3]
+        smlal2          v25.4s, v3.8h, v0.h[3]
+        smlal           v24.4s, v4.4h, v0.h[4]
+        smlal2          v25.4s, v4.8h, v0.h[4]
+        smlal           v24.4s, v5.4h, v0.h[5]
+        smlal2          v25.4s, v5.8h, v0.h[5]
+        smlal           v24.4s, v6.4h, v0.h[6]
+        smlal2          v25.4s, v6.8h, v0.h[6]
+        smlal           v24.4s, v17.4h, v0.h[7]
+        smlal2          v25.4s, v17.8h, v0.h[7]
+        sqshrn          v24.4h, v24.4s, #(\shift)
+        sqshrn          v25.4h, v25.4s, #(\shift)
+.endm
+
+.macro put_luma_h8_xx_neon shift
+        mov             x9, #(VVC_MAX_PB_SIZE * 2)
+        ld1             {v0.8b}, [x4]
+        sub             x1, x1, #6
+        sxtl            v0.8h, v0.8b
+1:
+        ld1             {v20.8h, v21.8h}, [x1], x2
+        put_luma_h_x8_vector_filter \shift
+        subs            w3, w3, #1
+        st1             {v24.4h, v25.4h}, [x0], x9
+        b.gt            1b
+        ret
+.endm
+
+.macro put_luma_h16_xx_neon shift
+        mov             x9, #(VVC_MAX_PB_SIZE * 2)
+        ld1             {v0.8b}, [x4]
+        sub             x9, x9, #16
+        sub             x1, x1, #6
+        sxtl            v0.8h, v0.8b
+1:
+        ld1             {v20.8h, v21.8h, v22.8h}, [x1], x2
+        put_luma_h_x8_vector_filter \shift
+        mov             v20.16b, v21.16b
+        mov             v21.16b, v22.16b
+        st1             {v24.4h, v25.4h}, [x0], #16
+        put_luma_h_x8_vector_filter \shift
+        subs            w3, w3, #1
+        st1             {v24.4h, v25.4h}, [x0], x9
+        b.gt            1b
+        ret
+.endm
+
+.macro put_luma_h_x16_xx_neon shift
+        mov             x9, #(VVC_MAX_PB_SIZE * 2)
+        ld1             {v0.8b}, [x4]
+        sub             x9, x9, w6, uxtw #1
+        sub             x2, x2, w6, uxtw #1
+        sxtl            v0.8h, v0.8b
+        sub             x1, x1, #6
+        sub             x2, x2, #16
+1:
+        ld1             {v20.8h}, [x1], #16
+        mov             w8, w6
+2:
+        ld1             {v21.8h, v22.8h}, [x1], #32
+        put_luma_h_x8_vector_filter \shift
+        mov             v20.16b, v21.16b
+        mov             v21.16b, v22.16b
+        st1             {v24.4h, v25.4h}, [x0], #16
+        put_luma_h_x8_vector_filter \shift
+        mov             v20.16b, v21.16b
+        subs            w8, w8, #16
+        st1             {v24.4h, v25.4h}, [x0], #16
+        b.gt            2b
+        subs            w3, w3, #1
+        add             x0, x0, x9
+        add             x1, x1, x2
+        b.gt            1b
+        ret
+.endm
+
+function ff_vvc_put_luma_h8_10_neon, export=1
+        put_luma_h8_xx_neon 2
+endfunc
+
+function ff_vvc_put_luma_h8_12_neon, export=1
+        put_luma_h8_xx_neon 4
+endfunc
+
+function ff_vvc_put_luma_h16_10_neon, export=1
+        put_luma_h16_xx_neon 2
+endfunc
+
+function ff_vvc_put_luma_h16_12_neon, export=1
+        put_luma_h16_xx_neon 4
+endfunc
+
+function ff_vvc_put_luma_h_x16_10_neon, export=1
+        put_luma_h_x16_xx_neon 2
+endfunc
+
+function ff_vvc_put_luma_h_x16_12_neon, export=1
+        put_luma_h_x16_xx_neon 4
+endfunc

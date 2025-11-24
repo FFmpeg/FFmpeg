@@ -30,6 +30,18 @@
 #define BDOF_BLOCK_SIZE         16
 #define BDOF_MIN_BLOCK_SIZE     4
 
+void ff_vvc_put_luma_h8_10_neon(int16_t *dst, const uint8_t *_src, const ptrdiff_t _src_stride,
+                                const int height, const int8_t *hf, const int8_t *vf, const int width);
+void ff_vvc_put_luma_h16_10_neon(int16_t *dst, const uint8_t *_src, const ptrdiff_t _src_stride,
+                                 const int height, const int8_t *hf, const int8_t *vf, const int width);
+void ff_vvc_put_luma_h_x16_10_neon(int16_t *dst, const uint8_t *_src, const ptrdiff_t _src_stride,
+                                   const int height, const int8_t *hf, const int8_t *vf, const int width);
+void ff_vvc_put_luma_h8_12_neon(int16_t *dst, const uint8_t *_src, const ptrdiff_t _src_stride,
+                                const int height, const int8_t *hf, const int8_t *vf, const int width);
+void ff_vvc_put_luma_h16_12_neon(int16_t *dst, const uint8_t *_src, const ptrdiff_t _src_stride,
+                                 const int height, const int8_t *hf, const int8_t *vf, const int width);
+void ff_vvc_put_luma_h_x16_12_neon(int16_t *dst, const uint8_t *_src, const ptrdiff_t _src_stride,
+                                   const int height, const int8_t *hf, const int8_t *vf, const int width);
 
 void ff_alf_classify_sum_neon(int *sum0, int *sum1, int16_t *grad, uint32_t gshift, uint32_t steps);
 
@@ -245,6 +257,11 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->inter.dmvr[0][1] = ff_vvc_dmvr_h_10_neon;
         c->inter.dmvr[1][1] = ff_vvc_dmvr_hv_10_neon;
         c->inter.apply_bdof = ff_vvc_apply_bdof_10_neon;
+        c->inter.put[0][2][0][1] = ff_vvc_put_luma_h8_10_neon;
+        c->inter.put[0][3][0][1] = ff_vvc_put_luma_h16_10_neon;
+        c->inter.put[0][4][0][1] =
+        c->inter.put[0][5][0][1] =
+        c->inter.put[0][6][0][1] = ff_vvc_put_luma_h_x16_10_neon;
 
         c->alf.filter[LUMA] = alf_filter_luma_10_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_10_neon;
@@ -256,6 +273,11 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->inter.dmvr[0][1] = ff_vvc_dmvr_h_12_neon;
         c->inter.dmvr[1][1] = ff_vvc_dmvr_hv_12_neon;
         c->inter.apply_bdof = ff_vvc_apply_bdof_12_neon;
+        c->inter.put[0][2][0][1] = ff_vvc_put_luma_h8_12_neon;
+        c->inter.put[0][3][0][1] = ff_vvc_put_luma_h16_12_neon;
+        c->inter.put[0][4][0][1] =
+        c->inter.put[0][5][0][1] =
+        c->inter.put[0][6][0][1] = ff_vvc_put_luma_h_x16_12_neon;
 
         c->alf.filter[LUMA] = alf_filter_luma_12_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_12_neon;
