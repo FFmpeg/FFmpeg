@@ -38,7 +38,6 @@ void ff_vp6_filter_diag4_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
 void ff_vp5dsp_init(VP56DSPContext *s);
 void ff_vp6dsp_init(VP56DSPContext *s);
 
-void ff_vp6dsp_init_arm(VP56DSPContext *s);
 void ff_vp6dsp_init_x86(VP56DSPContext *s);
 
 #endif /* AVCODEC_VP56DSP_H */
