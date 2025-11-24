@@ -325,9 +325,9 @@ static void vp56_deblock_filter(VP56Context *s, uint8_t *yuv,
                                 ptrdiff_t stride, int dx, int dy)
 {
     if (s->avctx->codec->id == AV_CODEC_ID_VP5) {
-    int t = ff_vp56_filter_threshold[s->quantizer];
-    if (dx)  s->vp56dsp.edge_filter_hor(yuv +         10-dx , stride, t);
-    if (dy)  s->vp56dsp.edge_filter_ver(yuv + stride*(10-dy), stride, t);
+        int t = ff_vp56_filter_threshold[s->quantizer];
+        if (dx)  s->vp56dsp.edge_filter_hor(yuv +         10-dx , stride, t);
+        if (dy)  s->vp56dsp.edge_filter_ver(yuv + stride*(10-dy), stride, t);
     } else {
         int * bounding_values = s->bounding_values_array + 127;
         if (dx)
