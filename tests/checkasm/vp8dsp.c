@@ -510,7 +510,8 @@ static void checkasm_check_vp78dsp(VP8DSPContext *d, bool is_vp7)
 
 void checkasm_check_vp8dsp(void)
 {
-    VP8DSPContext d;
+    // Needs to be zeroed because not all size 16 epel functions exist.
+    VP8DSPContext d = { 0 };
 
     ff_vp78dsp_init(&d);
     check_mc(&d);
