@@ -238,6 +238,7 @@ cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, h
     jg .nextrow
     RET
 
+INIT_XMM ssse3
 cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     shl      myd, 4
 %if PIC
@@ -250,13 +251,38 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     ; read 3 lines
     mov  picregq, srcstrideq
     neg  picregq
-    movh      m0, [srcq+picregq]
-    movh      m1, [srcq]
-    movh      m2, [srcq+srcstrideq]
+    MOV       m0, [srcq+picregq]
+    MOV       m1, [srcq]
+    MOV       m2, [srcq+srcstrideq]
+    lea     srcq, [srcq+2*srcstrideq]
     punpcklbw m0, m2
 
+%if %1 == 4
+.next2rows:
+    movd       m3, [srcq]
+    movd       m4, [srcq+srcstrideq]
+    punpcklbw  m1, m3
+    punpcklqdq m0, m1
+    punpcklbw  m2, m4
+    pmaddubsw  m0, m5
+    punpcklqdq m1, m2
+    pmaddubsw  m1, m6
+    lea     srcq, [srcq+2*srcstrideq]
+    paddsw     m1, m0
+    pmulhrsw   m1, m7
+    mova       m0, m2
+    packuswb   m1, m1
+    movd   [dstq], m1
+    mova       m2, m4
+    psrldq     m1, 4
+    movd [dstq+dststrideq], m1
+    mova       m1, m3
+    lea      dstq, [dstq+2*dststrideq]
+    sub   heightd, 2
+    jg .next2rows
+%else
 .nextrow:
-    movh      m3, [srcq+2*srcstrideq]      ; read new row
+    movh      m3, [srcq]      ; read new row
     pmaddubsw m0, m5
     punpcklbw m1, m3
     pmaddubsw m4, m1, m6
@@ -273,9 +299,9 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     add      dstq, dststrideq
     dec   heightd                          ; next row
     jg .nextrow
+%endif
     RET
 
-INIT_XMM ssse3
 cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     lea      myd, [myq*3]
 %if PIC
