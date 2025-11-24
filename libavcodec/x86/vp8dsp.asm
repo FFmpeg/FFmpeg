@@ -24,6 +24,15 @@
 
 SECTION_RODATA
 
+fourtap_filter4_b_m: times 4 db  -6, 123
+                     times 4 db  12,  -1
+                     times 4 db  -9,  93
+                     times 4 db  50,  -6
+                     times 4 db  -6,  50
+                     times 4 db  93,  -9
+                     times 4 db  -1,  12
+                     times 4 db 123,  -6
+
 fourtap_filter_hb_m: times 8 db  -6, 123
                      times 8 db  12,  -1
                      times 8 db  -9,  93
@@ -117,6 +126,7 @@ bilinear_filter_vb_m: times 8 db 7, 1
 %if PIC
 %define fourtap_filter_hb  picregq
 %define fourtap_filter_b   picregq
+%define fourtap_filter4_b  picregq
 %define sixtap_filter_hb   picregq
 %define sixtap_filter_b    picregq
 %define fourtap_filter_v   picregq
@@ -127,6 +137,7 @@ bilinear_filter_vb_m: times 8 db 7, 1
 %else
 %define fourtap_filter_hb  fourtap_filter_hb_m
 %define fourtap_filter_b   fourtap_filter_b_m
+%define fourtap_filter4_b  fourtap_filter4_b_m
 %define sixtap_filter_hb   sixtap_filter_hb_m
 %define sixtap_filter_b    sixtap_filter_b_m
 %define fourtap_filter_v   fourtap_filter_v_m
@@ -136,6 +147,7 @@ bilinear_filter_vb_m: times 8 db 7, 1
 %define npicregs 0
 %endif
 
+filter4_h4_shuf: db 0, 1, 1, 2, 2, 3, 3, 4, 2, 3, 3,  4, 4,  5, 5,  6
 filter_h2_shuf:  db 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,  6, 6,  7,  7,  8
 filter_h4_shuf:  db 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7,  8, 8,  9,  9, 10
 
@@ -208,9 +220,11 @@ cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 8, dst, dststride, src, srcstride, h
     jg .nextrow
     RET
 
-cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, height, mx, picreg
-    shl      mxd, 4
+INIT_XMM ssse3
+cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 6+!!(%1 == 8), dst, dststride, src, srcstride, height, mx, picreg
     mova      m2, [pw_256]
+%if %1 == 8
+    shl      mxd, 4
     mova      m3, [filter_h2_shuf]
     mova      m4, [filter_h4_shuf]
 %if PIC
@@ -218,19 +232,34 @@ cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, h
 %endif
     mova      m5, [fourtap_filter_hb+mxq-16] ; set up 4tap filter in bytes
     mova      m6, [fourtap_filter_hb+mxq]
+%else
+    shl      mxd, 3
+    mova      m3, [filter4_h4_shuf]
+%if PIC
+    lea  picregq, [fourtap_filter4_b_m]
+%endif
+    mova      m5, [fourtap_filter4_b+mxq-8]
+%endif
 
 .nextrow:
+%if %1 == 4
+    movq      m0, [srcq-1]
+    pshufb    m0, m3
+    pmaddubsw m0, m5
+    movhlps   m1, m0
+%else
     movu      m0, [srcq-1]
     mova      m1, m0
     pshufb    m0, m3
     pshufb    m1, m4
     pmaddubsw m0, m5
     pmaddubsw m1, m6
+%endif
     add     srcq, srcstrideq
     paddsw    m0, m1
     pmulhrsw  m0, m2
     packuswb  m0, m0
-    movh  [dstq], m0        ; store
+    MOV   [dstq], m0        ; store
 
     ; go to next line
     add     dstq, dststrideq
@@ -238,7 +267,6 @@ cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, h
     jg .nextrow
     RET
 
-INIT_XMM ssse3
 cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     shl      myd, 4
 %if PIC
