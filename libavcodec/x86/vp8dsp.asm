@@ -43,15 +43,6 @@ sixtap_filter4_hb_m: times 8 db   2, -11
                      times 4 db  36, -11
                      times 4 db 108,   2
 
-fourtap_filter_hb_m: times 8 db  -6, 123
-                     times 8 db  12,  -1
-                     times 8 db  -9,  93
-                     times 8 db  50,  -6
-                     times 8 db  -6,  50
-                     times 8 db  93,  -9
-                     times 8 db  -1,  12
-                     times 8 db 123,  -6
-
 fourtap_filter_b_m:  times 8 db  -6,  12
                      times 8 db 123,  -1
                      times 8 db  -9,  50
@@ -60,16 +51,6 @@ fourtap_filter_b_m:  times 8 db  -6,  12
                      times 8 db  50,  -9
                      times 8 db  -1, 123
                      times 8 db  12,  -6
-
-sixtap_filter_hb_m:  times 8 db   2,   1
-                     times 8 db -11, 108
-                     times 8 db  36,  -8
-                     times 8 db   3,   3
-                     times 8 db -16,  77
-                     times 8 db  77, -16
-                     times 8 db   1,   2
-                     times 8 db  -8,  36
-                     times 8 db 108, -11
 
 sixtap_filter_b_m:   times 8 db   2,  36
                      times 8 db -11,  -8
@@ -134,10 +115,8 @@ bilinear_filter_vb_m: times 8 db 7, 1
                       times 8 db 1, 7
 
 %if PIC
-%define fourtap_filter_hb  picregq
 %define fourtap_filter_b   picregq
 %define fourtap_filter4_b  picregq
-%define sixtap_filter_hb   picregq
 %define sixtap_filter_b    picregq
 %define sixtap_filter4_hb  picregq
 %define fourtap_filter_v   picregq
@@ -146,10 +125,8 @@ bilinear_filter_vb_m: times 8 db 7, 1
 %define bilinear_filter_vb picregq
 %define npicregs 1
 %else
-%define fourtap_filter_hb  fourtap_filter_hb_m
 %define fourtap_filter_b   fourtap_filter_b_m
 %define fourtap_filter4_b  fourtap_filter4_b_m
-%define sixtap_filter_hb   sixtap_filter_hb_m
 %define sixtap_filter_b    sixtap_filter_b_m
 %define sixtap_filter4_hb  sixtap_filter4_hb_m
 %define fourtap_filter_v   fourtap_filter_v_m
@@ -161,12 +138,15 @@ bilinear_filter_vb_m: times 8 db 7, 1
 
 filter4_h4_shuf: db 0, 1, 1, 2, 2, 3, 3, 4, 2, 3, 3,  4, 4,  5, 5,  6
 filter4_h6_shuf: db 1, 3, 2, 4, 3, 5, 4, 6, 2, 4, 3,  5, 4,  6, 5,  7
-filter_h2_shuf:  db 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,  6, 6,  7,  7,  8
-filter_h4_shuf:  db 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7,  8, 8,  9,  9, 10
 
-filter_h6_shuf1: db 0, 5, 1, 6, 2, 7, 3, 8, 4, 9, 5, 10, 6, 11,  7, 12
-filter_h6_shuf2: db 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,  7, 7,  8,  8,  9
-filter_h6_shuf3: db 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8,  9, 9, 10, 10, 11
+filter_h4_shuf1: db 0, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5,  7, 6,  8, 7,  9
+filter_h4_shuf2: db 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6,  8, 7,  9, 8, 10
+
+filter_h6_shuf1: db 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 5,  8, 6,  9, 7, 10
+filter_h6_shuf2: db 1, 4, 2, 5, 3, 6, 4, 7, 5, 8, 6,  9, 7, 10, 8, 11
+filter_h6_shuf3: db 2, 5, 3, 6, 4, 7, 5, 8, 6, 9, 7, 10, 8, 11, 9, 12
+
+filter_h2_shuf:  db 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,  6, 6,  7, 7,  8
 
 pw_20091: times 4 dw 20091
 pw_17734: times 4 dw 17734
@@ -207,11 +187,11 @@ cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 6+2*(%1==8), dst, dststride, src, sr
     mova      m3, [filter_h6_shuf2]
     mova      m4, [filter_h6_shuf3]
 %if PIC
-    lea  picregq, [sixtap_filter_hb_m]
+    lea  picregq, [sixtap_filter_b_m]
 %endif
-    mova      m5, [sixtap_filter_hb+mxq*8-48] ; set up 6tap filter in bytes
-    mova      m6, [sixtap_filter_hb+mxq*8-32]
-    mova      m7, [sixtap_filter_hb+mxq*8-16]
+    mova      m5, [sixtap_filter_b+mxq*8-48] ; set up 6tap filter in bytes
+    mova      m6, [sixtap_filter_b+mxq*8-32]
+    mova      m7, [sixtap_filter_b+mxq*8-16]
 %endif
 
 .nextrow:
@@ -252,13 +232,13 @@ cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 6+!!(%1 == 8), dst, dststride, src, 
     mova      m2, [pw_256]
 %if %1 == 8
     shl      mxd, 4
-    mova      m3, [filter_h2_shuf]
-    mova      m4, [filter_h4_shuf]
+    mova      m3, [filter_h4_shuf1]
+    mova      m4, [filter_h4_shuf2]
 %if PIC
-    lea  picregq, [fourtap_filter_hb_m]
+    lea  picregq, [fourtap_filter_b_m]
 %endif
-    mova      m5, [fourtap_filter_hb+mxq-16] ; set up 4tap filter in bytes
-    mova      m6, [fourtap_filter_hb+mxq]
+    mova      m5, [fourtap_filter_b+mxq-16] ; set up 4tap filter in bytes
+    mova      m6, [fourtap_filter_b+mxq]
 %else
     shl      mxd, 3
     mova      m3, [filter4_h4_shuf]
