@@ -450,10 +450,10 @@ cglobal put_vp8_epel8_h4, 6, 6 + npicregs, 10, dst, dststride, src, srcstride, h
     pmullw    m3, [mxq+48]
 %endif
     add     srcq, srcstrideq
-    paddsw    m0, m1
-    paddsw    m2, m3
+    paddw     m0, m1
+    paddw     m2, m3
+    paddw     m0, m4
     paddsw    m0, m2
-    paddsw    m0, m4
     psraw     m0, 7
     packuswb  m0, m7
     movh  [dstq], m0        ; store
@@ -511,12 +511,12 @@ cglobal put_vp8_epel8_h6, 6, 6 + npicregs, 14, dst, dststride, src, srcstride, h
     pmullw    m5, [mxq+80]
 %endif
     add     srcq, srcstrideq
-    paddsw    m1, m4
-    paddsw    m0, m5
-    paddsw    m1, m2
-    paddsw    m0, m3
+    paddw     m1, m4
+    paddw     m0, m5
+    paddw     m1, m2
+    paddw     m0, m3
+    paddw     m1, m6
     paddsw    m0, m1
-    paddsw    m0, m6
     psraw     m0, 7
     packuswb  m0, m7
     movh  [dstq], m0        ; store
@@ -556,20 +556,20 @@ cglobal put_vp8_epel8_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picre
     mova      m3, m4
     pmullw    m0, [myq+0]
     pmullw    m4, m5
-    paddsw    m4, m0
+    paddw     m4, m0
 
     ; then calculate positive taps
     mova      m0, m1
     pmullw    m1, [myq+16]
-    paddsw    m4, m1
+    paddw     m4, m1
     mova      m1, m2
     pmullw    m2, [myq+32]
+    paddw     m4, m6
     add     srcq, srcstrideq
     paddsw    m4, m2
     mova      m2, m3
 
     ; round/clip/store
-    paddsw    m4, m6
     psraw     m4, 7
     packuswb  m4, m7
     movh  [dstq], m4
@@ -612,17 +612,18 @@ cglobal put_vp8_epel8_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picre
     pmullw    m5, [myq+16]
     mova      m6, m4
     pmullw    m6, [myq+64]
-    paddsw    m6, m5
+    paddw     m6, m5
 
     ; then calculate positive taps
     movh      m5, [srcq+srcstrideq]      ; read new row
     punpcklbw m5, m7
     pmullw    m0, [myq+0]
-    paddsw    m6, m0
+    paddw     m6, [pw_64]
+    paddw     m6, m0
     mova      m0, m1
     mova      m1, m2
     pmullw    m2, [myq+32]
-    paddsw    m6, m2
+    paddw     m6, m2
     mova      m2, m3
     pmullw    m3, [myq+48]
     add     srcq, srcstrideq
@@ -633,7 +634,6 @@ cglobal put_vp8_epel8_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picre
     paddsw    m6, m5
 
     ; round/clip/store
-    paddsw    m6, [pw_64]
     psraw     m6, 7
     packuswb  m6, m7
     movh  [dstq], m6
@@ -700,8 +700,8 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 7, dst, dststride, src, srcstride, height, p
     pmullw    m2, m4
     pmullw    m3, m5
     lea     srcq, [srcq+srcstrideq*2]
-    paddsw    m0, m1
-    paddsw    m2, m3
+    paddw     m0, m1
+    paddw     m2, m3
     psraw     m0, 2
     psraw     m2, 2
     pavgw     m0, m6
@@ -771,8 +771,8 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 7, dst, dststride, src, srcstride
     pmullw    m2, m4
     pmullw    m3, m5
     lea     srcq, [srcq+srcstrideq*2]
-    paddsw    m0, m1
-    paddsw    m2, m3
+    paddw     m0, m1
+    paddw     m2, m3
     psraw     m0, 2
     psraw     m2, 2
     pavgw     m0, m6
