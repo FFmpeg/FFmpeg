@@ -1619,8 +1619,11 @@ static int create_rtp_muxer(AVFormatContext *s)
         ELAPSED(whip->whip_dtls_time,   whip->whip_srtp_time));
 
 end:
-    if (rtp_ctx)
+    if (rtp_ctx) {
+        if (!rtp_ctx->pb)
+            av_freep(&buffer);
         avio_context_free(&rtp_ctx->pb);
+    }
     avformat_free_context(rtp_ctx);
     av_dict_free(&opts);
     return ret;
