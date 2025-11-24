@@ -456,6 +456,8 @@ static void mermaid_print_section_footer(AVTextFormatContext *tfc)
 
     } else if ((section->flags & AV_TEXTFORMAT_SECTION_FLAG_IS_SUBGRAPH)) {
 
+        mermaid_subgraph_complete_start(mmc, tfc, tfc->level);
+
         MM_INDENT();
         writer_put_str(tfc, "end\n");
 
