@@ -182,7 +182,6 @@ OBJS-$(CONFIG_AV1_AMF_DECODER)         += amfdec.o
 OBJS-$(CONFIG_VC1DSP)                  += vc1dsp.o
 OBJS-$(CONFIG_VIDEODSP)                += videodsp.o
 OBJS-$(CONFIG_VP3DSP)                  += vp3dsp.o
-OBJS-$(CONFIG_VP56DSP)                 += vp56dsp.o
 OBJS-$(CONFIG_VP8DSP)                  += vp8dsp.o
 OBJS-$(CONFIG_V4L2_M2M)                += v4l2_m2m.o v4l2_context.o v4l2_buffers.o v4l2_fmt.o
 OBJS-$(CONFIG_WMA_FREQS)               += wma_freqs.o
@@ -806,7 +805,8 @@ OBJS-$(CONFIG_VORBIS_DECODER)          += vorbisdec.o vorbisdsp.o vorbis.o \
 OBJS-$(CONFIG_VORBIS_ENCODER)          += vorbisenc.o vorbis.o \
                                           vorbis_data.o
 OBJS-$(CONFIG_VP3_DECODER)             += vp3.o jpegquanttables.o
-OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o vpx_rac.o
+OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o \
+                                          vp5dsp.o vpx_rac.o
 OBJS-$(CONFIG_VP6_DECODER)             += vp6.o vp56.o vp56data.o \
                                           vp6dsp.o vpx_rac.o
 OBJS-$(CONFIG_VP7_DECODER)             += vp8.o vp8data.o vpx_rac.o

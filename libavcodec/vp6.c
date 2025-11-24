@@ -641,7 +641,7 @@ static void vp6_filter(VP56Context *s, uint8_t *dst, uint8_t *src,
             vp6_filter_hv4(dst, src+offset1, stride, stride,
                            vp6_block_copy_filter[select][y8]);
         } else {
-            s->vp56dsp.vp6_filter_diag4(dst, src+offset1+((mv.x^mv.y)>>31), stride,
+            s->vp6dsp.vp6_filter_diag4(dst, src+offset1+((mv.x^mv.y)>>31), stride,
                              vp6_block_copy_filter[select][x8],
                              vp6_block_copy_filter[select][y8]);
         }
@@ -661,7 +661,7 @@ static av_cold int vp6_decode_init_context(AVCodecContext *avctx,
     if (ret < 0)
         return ret;
 
-    ff_vp6dsp_init(&s->vp56dsp);
+    ff_vp6dsp_init(&s->vp6dsp);
 
     s->deblock_filtering = 0;
     s->vp56_coord_div = vp6_coord_div;

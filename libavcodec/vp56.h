@@ -118,7 +118,10 @@ struct vp56_context {
     HpelDSPContext hdsp;
     VideoDSPContext vdsp;
     VP3DSPContext vp3dsp;
-    VP56DSPContext vp56dsp;
+    union {
+        VP5DSPContext vp5dsp;
+        VP6DSPContext vp6dsp;
+    };
     uint8_t idct_scantable[64];
     AVFrame *frames[4];
     uint8_t *edge_emu_buffer_alloc;

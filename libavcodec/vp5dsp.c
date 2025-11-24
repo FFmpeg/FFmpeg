@@ -21,8 +21,6 @@
 
 #include <stdint.h>
 
-#include "config.h"
-#include "config_components.h"
 #include "libavutil/attributes.h"
 #include "vp56dsp.h"
 #include "libavutil/common.h"
@@ -43,7 +41,6 @@ static void pfx ## _edge_filter_ ## suf(uint8_t *yuv, ptrdiff_t stride, \
     }                                                                   \
 }
 
-#if CONFIG_VP5_DECODER
 /* Gives very similar result than the vp6 version except in a few cases */
 static int vp5_adjust(int v, int t)
 {
@@ -65,20 +62,8 @@ static int vp5_adjust(int v, int t)
 VP56_EDGE_FILTER(vp5, hor, 1, stride)
 VP56_EDGE_FILTER(vp5, ver, stride, 1)
 
-av_cold void ff_vp5dsp_init(VP56DSPContext *s)
+av_cold void ff_vp5dsp_init(VP5DSPContext *s)
 {
     s->edge_filter_hor = vp5_edge_filter_hor;
     s->edge_filter_ver = vp5_edge_filter_ver;
 }
-#endif /* CONFIG_VP5_DECODER */
-
-#if CONFIG_VP6_DECODER
-av_cold void ff_vp6dsp_init(VP56DSPContext *s)
-{
-    s->vp6_filter_diag4 = ff_vp6_filter_diag4_c;
-
-#if ARCH_X86
-    ff_vp6dsp_init_x86(s);
-#endif
-}
-#endif /* CONFIG_VP6_DECODER */

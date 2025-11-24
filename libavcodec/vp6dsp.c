@@ -27,8 +27,8 @@
 #include "vp56dsp.h"
 
 
-void ff_vp6_filter_diag4_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
-                           const int16_t *h_weights, const int16_t *v_weights)
+static void vp6_filter_diag4_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+                               const int16_t *h_weights, const int16_t *v_weights)
 {
     int x, y;
     int tmp[8*11];
@@ -58,4 +58,13 @@ void ff_vp6_filter_diag4_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
         dst += stride;
         t += 8;
     }
+}
+
+av_cold void ff_vp6dsp_init(VP6DSPContext *s)
+{
+    s->vp6_filter_diag4 = vp6_filter_diag4_c;
+
+#if ARCH_X86
+    ff_vp6dsp_init_x86(s);
+#endif
 }
