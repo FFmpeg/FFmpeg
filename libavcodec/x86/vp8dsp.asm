@@ -33,6 +33,16 @@ fourtap_filter4_b_m: times 4 db  -6, 123
                      times 4 db  -1,  12
                      times 4 db 123,  -6
 
+sixtap_filter4_hb_m: times 8 db   2, -11
+                     times 4 db 108,  -8
+                     times 4 db  36,   1
+                     times 8 db   3, -16
+                     times 4 db  77, -16
+                     times 4 db  77,   3
+                     times 8 db   1,  -8
+                     times 4 db  36, -11
+                     times 4 db 108,   2
+
 fourtap_filter_hb_m: times 8 db  -6, 123
                      times 8 db  12,  -1
                      times 8 db  -9,  93
@@ -129,6 +139,7 @@ bilinear_filter_vb_m: times 8 db 7, 1
 %define fourtap_filter4_b  picregq
 %define sixtap_filter_hb   picregq
 %define sixtap_filter_b    picregq
+%define sixtap_filter4_hb  picregq
 %define fourtap_filter_v   picregq
 %define sixtap_filter_v    picregq
 %define bilinear_filter_vw picregq
@@ -140,6 +151,7 @@ bilinear_filter_vb_m: times 8 db 7, 1
 %define fourtap_filter4_b  fourtap_filter4_b_m
 %define sixtap_filter_hb   sixtap_filter_hb_m
 %define sixtap_filter_b    sixtap_filter_b_m
+%define sixtap_filter4_hb  sixtap_filter4_hb_m
 %define fourtap_filter_v   fourtap_filter_v_m
 %define sixtap_filter_v    sixtap_filter_v_m
 %define bilinear_filter_vw bilinear_filter_vw_m
@@ -148,6 +160,7 @@ bilinear_filter_vb_m: times 8 db 7, 1
 %endif
 
 filter4_h4_shuf: db 0, 1, 1, 2, 2, 3, 3, 4, 2, 3, 3,  4, 4,  5, 5,  6
+filter4_h6_shuf: db 1, 3, 2, 4, 3, 5, 4, 6, 2, 4, 3,  5, 4,  6, 5,  7
 filter_h2_shuf:  db 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,  6, 6,  7,  7,  8
 filter_h4_shuf:  db 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7,  8, 8,  9,  9, 10
 
@@ -180,7 +193,16 @@ SECTION .text
 %define MOV movq
 %endif
 
-cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 8, dst, dststride, src, srcstride, height, mx, picreg
+cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 6+2*(%1==8), dst, dststride, src, srcstride, height, mx, picreg
+%if %1 == 4
+    mova      m3, [filter4_h6_shuf]
+%if PIC
+    lea  picregq, [sixtap_filter4_hb_m]
+%endif
+    shl      mxd, 4
+    mova      m4, [sixtap_filter4_hb+mxq-32]
+    mova      m5, [sixtap_filter4_hb+mxq-16]
+%else
     lea      mxd, [mxq*3]
     mova      m3, [filter_h6_shuf2]
     mova      m4, [filter_h6_shuf3]
@@ -190,29 +212,35 @@ cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 8, dst, dststride, src, srcstride, h
     mova      m5, [sixtap_filter_hb+mxq*8-48] ; set up 6tap filter in bytes
     mova      m6, [sixtap_filter_hb+mxq*8-32]
     mova      m7, [sixtap_filter_hb+mxq*8-16]
+%endif
 
 .nextrow:
+%if %1 == 4
+    ; we need nine bytes, so two loads
+    movq      m1, [srcq-1]
+    movq      m0, [srcq-2]
+    punpcklbw m0, m1
+    pshufb    m1, m3
+    pmaddubsw m1, m5
+    pmaddubsw m0, m4
+    movhlps   m2, m1
+%else
     movu      m0, [srcq-2]
     mova      m1, m0
     mova      m2, m0
-%if mmsize == 8
-; For epel4, we need 9 bytes, but only 8 get loaded; to compensate, do the
-; shuffle with a memory operand
-    punpcklbw m0, [srcq+3]
-%else
     pshufb    m0, [filter_h6_shuf1]
-%endif
     pshufb    m1, m3
     pshufb    m2, m4
     pmaddubsw m0, m5
     pmaddubsw m1, m6
     pmaddubsw m2, m7
+%endif
     add     srcq, srcstrideq
-    paddsw    m0, m1
+    paddw     m0, m1
     paddsw    m0, m2
     pmulhrsw  m0, [pw_256]
     packuswb  m0, m0
-    movh  [dstq], m0        ; store
+    MOV   [dstq], m0        ; store
 
     ; go to next line
     add     dstq, dststrideq
@@ -220,7 +248,6 @@ cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 8, dst, dststride, src, srcstride, h
     jg .nextrow
     RET
 
-INIT_XMM ssse3
 cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 6+!!(%1 == 8), dst, dststride, src, srcstride, height, mx, picreg
     mova      m2, [pw_256]
 %if %1 == 8
@@ -405,9 +432,8 @@ cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picr
     RET
 %endmacro
 
-INIT_MMX ssse3
-FILTER_SSSE3 4
 INIT_XMM ssse3
+FILTER_SSSE3 4
 FILTER_SSSE3 8
 
 INIT_XMM sse2
