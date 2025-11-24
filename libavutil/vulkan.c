@@ -2043,11 +2043,11 @@ fail:
 
 void ff_vk_frame_barrier(FFVulkanContext *s, FFVkExecContext *e,
                          AVFrame *pic, VkImageMemoryBarrier2 *bar, int *nb_bar,
-                         VkPipelineStageFlags src_stage,
-                         VkPipelineStageFlags dst_stage,
-                         VkAccessFlagBits     new_access,
-                         VkImageLayout        new_layout,
-                         uint32_t             new_qf)
+                         VkPipelineStageFlags2 src_stage,
+                         VkPipelineStageFlags2 dst_stage,
+                         VkAccessFlagBits2     new_access,
+                         VkImageLayout         new_layout,
+                         uint32_t              new_qf)
 {
     int found = -1;
     AVVkFrame *vkf = (AVVkFrame *)pic->data[0];
