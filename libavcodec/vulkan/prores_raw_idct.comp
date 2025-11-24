@@ -141,11 +141,14 @@ void main(void)
     const uint w = min(tile_size.x, frame_size.x - td.pos.x) / 2;
     const uint nb_blocks = w / 8;
 
+    /* We have to do non-uniform access, so copy it */
+    uint8_t qmat_buf[64] = qmat;
+
     [[unroll]]
     for (uint i = gl_LocalInvocationID.x; i < 64; i += gl_WorkGroupSize.x) {
         int16_t v = int16_t(imageLoad(dst, offs + 2*ivec2(BLOCK_ID*8, 0) + scan[i])[0]);
         blocks[BLOCK_ID][COMP_ID*64 + i] = (v / 16384.0) *
-                                           (float(qmat[i]) / 295.0) *
+                                           (float(qmat_buf[i]) / 295.0) *
                                            idct_scale[i] * qscale;
     }
 
