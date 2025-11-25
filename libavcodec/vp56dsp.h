@@ -30,7 +30,7 @@ typedef struct VP5DSPContext {
 } VP5DSPContext;
 
 typedef struct VP6DSPContext {
-    void (*vp6_filter_diag4)(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
+    void (*vp6_filter_diag4)(uint8_t *dst, const uint8_t *src, ptrdiff_t stride,
                              const int16_t *h_weights,const int16_t *v_weights);
 } VP6DSPContext;
 
