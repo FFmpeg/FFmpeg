@@ -26504,6 +26504,7 @@ Possible values are:
 @item bicubic
 @item spline16
 @item spline36
+@item spline64
 @item lanczos
 @end table
 
