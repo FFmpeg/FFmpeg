@@ -10,14 +10,14 @@ jobs:
       fail-fast: false
       matrix:
         runner: [linux-aarch64]
-        shared: ['false']
+        shared: ['static']
         bits: ['64']
         include:
           - runner: linux-amd64
-            shared: 'false'
+            shared: 'static'
             bits: '32'
           - runner: linux-amd64
-            shared: 'true'
+            shared: 'shared'
             bits: '64'
     runs-on: ${{ matrix.runner }}
     steps:
@@ -27,7 +27,7 @@ jobs:
         run: |
           ./configure --enable-gpl --enable-nonfree --enable-memory-poisoning --assert-level=2 \
               $([ "${{ matrix.bits }}" != "32" ] || echo --arch=x86_32 --extra-cflags=-m32 --extra-cxxflags=-m32 --extra-ldflags=-m32) \
-              $([ "${{ matrix.shared }}" != "true" ] || echo --enable-shared --disable-static) \
+              $([ "${{ matrix.shared }}" != "shared" ] || echo --enable-shared --disable-static) \
               || CFGRES=$? && CFGRES=$?
           cat ffbuild/config.log
           exit $CFGRES
