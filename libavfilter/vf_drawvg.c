@@ -1981,7 +1981,7 @@ static int vgs_eval(
                 b = numerics[3];
             }
 
-            #define C(v, o) ((uint32_t)(av_clipd(v, 0, 1) * 255) << o)
+            #define C(v, o) ((uint32_t)lround(av_clipd(v, 0, 1) * 255) << o)
 
             state->vars[user_var] = (double)(
                 C(r, 24)

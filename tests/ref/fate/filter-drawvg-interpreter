@@ -64,16 +64,16 @@ cairo_set_dash [ -1.0 ] 4.0
 cairo_set_dash [ ] 0.0
 cairo_move_to 1.0 2.0
 cairo_rel_line_to -1.0 -2.0
-cairo_set_source #19334c66
+cairo_set_source #1a334d66
 cairo_set_fill_rule 0
 cairo_fill
-cairo_set_source #475b3d66
+cairo_set_source #475c3d66
 cairo_set_fill_rule 0
 cairo_fill
-cairo_set_source #7f99b2cc
+cairo_set_source #8099b3cc
 cairo_set_fill_rule 0
 cairo_fill
-cairo_set_source #a8d7efe5
+cairo_set_source #a8d8f0e6
 cairo_set_fill_rule 0
 cairo_fill
 cairo_rel_line_to 1.0 3.0

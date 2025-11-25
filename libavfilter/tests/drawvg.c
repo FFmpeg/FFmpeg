@@ -167,7 +167,7 @@ void cairo_set_source(cairo_t *cr, cairo_pattern_t *source) {
     printf("%s", __func__);
 
 #define PRINT_COLOR(prefix) \
-    printf(prefix "#%02x%02x%02x%02x", (int)(r*255), (int)(g*255), (int)(b*255), (int)(a*255))
+    printf(prefix "#%02lx%02lx%02lx%02lx", lround(r*255), lround(g*255), lround(b*255), lround(a*255))
 
     switch (cairo_pattern_get_type(source)) {
     case CAIRO_PATTERN_TYPE_SOLID:
