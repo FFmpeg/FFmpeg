@@ -96,7 +96,7 @@ static int vk_prores_raw_start_frame(AVCodecContext          *avctx,
 
     /* Prepare frame to be used */
     err = ff_vk_decode_prepare_frame_sdr(dec, prr->frame, vp, 1,
-                                         FF_VK_REP_INT, 0);
+                                         FF_VK_REP_NATIVE, 0);
     if (err < 0)
         return err;
 
@@ -314,7 +314,7 @@ static int add_common_data(AVCodecContext *avctx, FFVulkanContext *s,
             .name       = "dst",
             .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
             .mem_layout = ff_vk_shader_rep_fmt(dec_frames_ctx->sw_format,
-                                               FF_VK_REP_INT),
+                                               FF_VK_REP_NATIVE),
             .mem_quali  = writeonly ? "writeonly" : NULL,
             .dimensions = 2,
             .stages     = VK_SHADER_STAGE_COMPUTE_BIT,

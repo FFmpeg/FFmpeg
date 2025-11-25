@@ -101,7 +101,8 @@ int16_t get_value(int16_t codebook)
 
 void store_val(ivec2 offs, int blk, int c, int16_t v)
 {
-    imageStore(dst, offs + 2*ivec2(blk*8 + (c & 7), c >> 3), ivec4(v));
+    imageStore(dst, offs + 2*ivec2(blk*8 + (c & 7), c >> 3),
+               ivec4(v & 0xFFFF));
 }
 
 void read_dc_vals(ivec2 offs, int nb_blocks)

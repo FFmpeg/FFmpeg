@@ -135,7 +135,7 @@ void main(void)
 
     uint64_t pkt_offset = uint64_t(pkt_data) + td.offset;
     u8vec2buf hdr_data = u8vec2buf(pkt_offset);
-    float qscale = float(pack16(hdr_data[0].v.yx)) / 2.0f;
+    int qscale = pack16(hdr_data[0].v.yx);
 
     const ivec2 offs = td.pos + ivec2(COMP_ID & 1, COMP_ID >> 1);
     const uint w = min(tile_size.x, frame_size.x - td.pos.x) / 2;
@@ -146,10 +146,11 @@ void main(void)
 
     [[unroll]]
     for (uint i = gl_LocalInvocationID.x; i < 64; i += gl_WorkGroupSize.x) {
-        int16_t v = int16_t(imageLoad(dst, offs + 2*ivec2(BLOCK_ID*8, 0) + scan[i])[0]);
-        blocks[BLOCK_ID][COMP_ID*64 + i] = (v / 16384.0) *
-                                           (float(qmat_buf[i]) / 295.0) *
-                                           idct_scale[i] * qscale;
+        int v = int(imageLoad(dst, offs + 2*ivec2(BLOCK_ID*8, 0) + scan[i])[0]);
+        float vf = float(sign_extend(v, 16)) / 32768.0;
+        vf *= qmat_buf[i] * qscale;
+        blocks[BLOCK_ID][COMP_ID*64 + i] = (vf / (64*4.56)) *
+                                           idct_scale[i];
     }
 
     barrier();
@@ -163,7 +164,9 @@ void main(void)
     barrier();
     [[unroll]]
     for (uint i = gl_LocalInvocationID.x; i < 64; i += gl_WorkGroupSize.x) {
-        int v = int(round(blocks[BLOCK_ID][COMP_ID*64 + i]*16384.0));
+        int v = int(round(blocks[BLOCK_ID][COMP_ID*64 + i]*4095.0));
+        v = clamp(v, 0, 4095);
+        v <<= 4;
         imageStore(dst,
                    offs + 2*ivec2(BLOCK_ID*8 + (i & 7), i >> 3),
                    ivec4(v));
