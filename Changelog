@@ -11,6 +11,7 @@ version <next>:
 - drawvg filter via libcairo
 - ffmpeg CLI tiled HEIF support
 - D3D12 AV1 encoder
+- ProRes Vulkan hwaccel
 
 
 version 8.0:
