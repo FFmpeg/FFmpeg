@@ -1,5 +1,5 @@
 ;******************************************************************************
-;* MMX/SSE2-optimized functions for the VP6 decoder
+;* SSE2-optimized functions for the VP6 decoder
 ;* Copyright (C) 2009  Sebastien Lucas <sebastien.lucas@gmail.com>
 ;* Copyright (C) 2009  Zuxy Meng <zuxy.meng@gmail.com>
 ;*
