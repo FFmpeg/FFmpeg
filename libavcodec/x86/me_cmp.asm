@@ -152,23 +152,11 @@ SECTION .text
 %endmacro
 
 %macro hadamard8_16_wrapper 2
-cglobal hadamard8_diff, 4, 4, %1
-%ifndef m8
-    %assign pad %2*mmsize-(4+stack_offset&(mmsize-1))
-    SUB            rsp, pad
-%endif
+cglobal hadamard8_diff, 4, 4, %1, %2*mmsize
     call hadamard8x8_diff %+ SUFFIX
-%ifndef m8
-    ADD            rsp, pad
-%endif
     RET
 
-cglobal hadamard8_diff16, 5, 6, %1
-%ifndef m8
-    %assign pad %2*mmsize-(4+stack_offset&(mmsize-1))
-    SUB            rsp, pad
-%endif
-
+cglobal hadamard8_diff16, 5, 6, %1, %2*mmsize
     call hadamard8x8_diff %+ SUFFIX
     mov            r5d, eax
 
@@ -192,9 +180,6 @@ cglobal hadamard8_diff16, 5, 6, %1
 
 .done:
     mov            eax, r5d
-%ifndef m8
-    ADD            rsp, pad
-%endif
     RET
 %endmacro
 
@@ -215,7 +200,7 @@ hadamard8x8_diff %+ SUFFIX:
     and                         eax, 0xFFFF
     ret
 
-hadamard8_16_wrapper %1, 3
+hadamard8_16_wrapper %1, 2*ARCH_X86_32
 %elif cpuflag(mmx)
 ALIGN 16
 ; int ff_hadamard8_diff_ ## cpu(MPVEncContext *s, const uint8_t *src1,
@@ -261,7 +246,7 @@ hadamard8x8_diff %+ SUFFIX:
     and                         rax, 0xFFFF
     ret
 
-hadamard8_16_wrapper 0, 14
+hadamard8_16_wrapper 0, 13
 %endif
 %endmacro
 

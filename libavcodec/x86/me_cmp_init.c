@@ -146,10 +146,8 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->pix_abs[0][2] = ff_sad16_y2_sse2;
         c->pix_abs[0][3] = ff_sad16_xy2_sse2;
 
-#if HAVE_ALIGNED_STACK
         c->hadamard8_diff[0] = ff_hadamard8_diff16_sse2;
         c->hadamard8_diff[1] = ff_hadamard8_diff_sse2;
-#endif
         if (avctx->codec_id != AV_CODEC_ID_SNOW) {
             c->sad[0]        = ff_sad16_sse2;
 
@@ -179,10 +177,8 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->nsse[1]           = nsse8_ssse3;
 
         c->sum_abs_dctelem   = ff_sum_abs_dctelem_ssse3;
-#if HAVE_ALIGNED_STACK
         c->hadamard8_diff[0] = ff_hadamard8_diff16_ssse3;
         c->hadamard8_diff[1] = ff_hadamard8_diff_ssse3;
-#endif
     }
 #endif
 }
