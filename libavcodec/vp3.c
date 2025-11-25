@@ -2528,10 +2528,8 @@ static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *
 
     // copy previous frame data
     ref_frames(s, s1);
-    if (!s1->current_frame.f ||
-        s->width != s1->width || s->height != s1->height) {
+    if (!s1->current_frame.f)
         return -1;
-    }
 
     if (s != s1) {
         s->keyframe = s1->keyframe;
