@@ -49,14 +49,11 @@ SECTION .text
 %endmacro
 
 %macro SPLAT4REGS 0
-    pshuflw      m4, m3, 0x0
-    pshuflw      m5, m3, 0x55
-    pshuflw      m6, m3, 0xAA
-    pshuflw      m3, m3, 0xFF
-    punpcklqdq   m4, m4
-    punpcklqdq   m5, m5
-    punpcklqdq   m6, m6
-    punpcklqdq   m3, m3
+    punpcklwd    m3, m3
+    pshufd       m4, m3, 0x0
+    pshufd       m5, m3, 0x55
+    pshufd       m6, m3, 0xAA
+    pshufd       m3, m3, 0xFF
 %endmacro
 
 ; void ff_vp6_filter_diag4_<opt>(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
