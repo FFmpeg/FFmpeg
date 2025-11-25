@@ -62,11 +62,7 @@ SECTION .text
 ; void ff_vp6_filter_diag4_<opt>(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
 ;                                const int16_t h_weight[4], const int16_t v_weights[4])
 INIT_XMM sse2
-cglobal vp6_filter_diag4, 5, 7, 8
-    mov          r5, rsp         ; backup stack pointer
-    and         rsp, ~(mmsize-1) ; align stack
-    sub         rsp, 8*11
-
+cglobal vp6_filter_diag4, 5, 6, 8, -8*11
     sub          r1, r2
 
     pxor         m7, m7
@@ -74,25 +70,24 @@ cglobal vp6_filter_diag4, 5, 7, 8
     SPLAT4REGS
 
     mov          r3, rsp
-    mov          r6, 11
+    mov         r5d, 11
 .nextrow:
     DIAG4        r1, -1, 0, 1, 2, r3
     add          r3, 8
     add          r1, r2
-    dec          r6
+    dec         r5d
     jnz .nextrow
 
     movq         m3, [r4]
     SPLAT4REGS
 
     lea          r3, [rsp+8]
-    mov          r6, 8
+    mov         r1d, 8
 .nextcol:
     DIAG4        r3, -8, 0, 8, 16, r0
     add          r3, 8
     add          r0, r2
-    dec          r6
+    dec         r1d
     jnz .nextcol
 
-    mov         rsp, r5          ; restore stack pointer
     RET
