@@ -27,7 +27,10 @@
 
 #include "parser.h"
 #include "cavs.h"
+#include "get_bits.h"
+#include "mpeg12data.h"
 #include "parser_internal.h"
+#include "startcode.h"
 
 
 /**
@@ -73,6 +76,85 @@ static int cavs_find_frame_end(ParseContext *pc, const uint8_t *buf,
     return END_NOT_FOUND;
 }
 
+static int parse_seq_header(AVCodecParserContext *s, AVCodecContext *avctx,
+                            GetBitContext *gb)
+{
+    int frame_rate_code;
+    int width, height;
+    int mb_width, mb_height;
+
+    skip_bits(gb, 8); // profile
+    skip_bits(gb, 8); // level
+    skip_bits1(gb);   // progressive sequence
+
+    width  = get_bits(gb, 14);
+    height = get_bits(gb, 14);
+    if (width <= 0 || height <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Dimensions invalid\n");
+        return AVERROR_INVALIDDATA;
+    }
+    mb_width  = (width  + 15) >> 4;
+    mb_height = (height + 15) >> 4;
+
+    skip_bits(gb, 2); // chroma format
+    skip_bits(gb, 3); // sample_precision
+    skip_bits(gb, 4); // aspect_ratio
+    frame_rate_code = get_bits(gb, 4);
+    if (frame_rate_code == 0 || frame_rate_code > 13) {
+        av_log(avctx, AV_LOG_WARNING,
+               "frame_rate_code %d is invalid\n", frame_rate_code);
+        frame_rate_code = 1;
+    }
+
+    skip_bits(gb, 18); // bit_rate_lower
+    skip_bits1(gb);    // marker_bit
+    skip_bits(gb, 12); // bit_rate_upper
+    skip_bits1(gb);    // low_delay
+
+    s->width  = width;
+    s->height = height;
+    s->coded_width  = 16 * mb_width;
+    s->coded_height = 16 * mb_height;
+    avctx->framerate = ff_mpeg12_frame_rate_tab[frame_rate_code];
+
+    return 0;
+}
+
+static int cavs_parse_frame(AVCodecParserContext *s, AVCodecContext *avctx,
+                            const uint8_t *buf, int buf_size)
+{
+    GetBitContext gb;
+    const uint8_t *buf_end;
+    const uint8_t *buf_ptr;
+    uint32_t stc = -1;
+
+    s->key_frame = 0;
+    s->pict_type = AV_PICTURE_TYPE_NONE;
+
+    if (buf_size == 0)
+        return 0;
+
+    buf_ptr = buf;
+    buf_end = buf + buf_size;
+    for (;;) {
+        buf_ptr = avpriv_find_start_code(buf_ptr, buf_end, &stc);
+        if ((stc & 0xFFFFFE00) || buf_ptr == buf_end)
+            return 0;
+        switch (stc) {
+        case CAVS_START_CODE:
+            init_get_bits8(&gb, buf_ptr, buf_end - buf_ptr);
+            parse_seq_header(s, avctx, &gb);
+            break;
+        case PIC_I_START_CODE:
+            s->key_frame = 1;
+            s->pict_type = AV_PICTURE_TYPE_I;
+            break;
+        default:
+            break;
+        }
+    }
+}
+
 static int cavsvideo_parse(AVCodecParserContext *s,
                            AVCodecContext *avctx,
                            const uint8_t **poutbuf, int *poutbuf_size,
@@ -92,6 +174,9 @@ static int cavsvideo_parse(AVCodecParserContext *s,
             return buf_size;
         }
     }
+
+    cavs_parse_frame(s, avctx, buf, buf_size);
+
     *poutbuf = buf;
     *poutbuf_size = buf_size;
     return next;
