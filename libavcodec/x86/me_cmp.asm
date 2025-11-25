@@ -112,7 +112,6 @@ SECTION .text
 ; about 100k on extreme inputs. But that's very unlikely to occur in natural video,
 ; and it's even more unlikely to not have any alternative mvs/modes with lower cost.
 %macro HSUM 3
-%if cpuflag(sse2)
     movhlps         %2, %1
     paddusw         %1, %2
     pshuflw         %2, %1, 0xE
@@ -120,35 +119,6 @@ SECTION .text
     pshuflw         %2, %1, 0x1
     paddusw         %1, %2
     movd            %3, %1
-%elif cpuflag(mmxext)
-    pshufw          %2, %1, 0xE
-    paddusw         %1, %2
-    pshufw          %2, %1, 0x1
-    paddusw         %1, %2
-    movd            %3, %1
-%elif cpuflag(mmx)
-    mova            %2, %1
-    psrlq           %1, 32
-    paddusw         %1, %2
-    mova            %2, %1
-    psrlq           %1, 16
-    paddusw         %1, %2
-    movd            %3, %1
-%endif
-%endmacro
-
-%macro STORE4 5
-    mova [%1+mmsize*0], %2
-    mova [%1+mmsize*1], %3
-    mova [%1+mmsize*2], %4
-    mova [%1+mmsize*3], %5
-%endmacro
-
-%macro LOAD4 5
-    mova            %2, [%1+mmsize*0]
-    mova            %3, [%1+mmsize*1]
-    mova            %4, [%1+mmsize*2]
-    mova            %5, [%1+mmsize*3]
 %endmacro
 
 %macro hadamard8_16_wrapper 2
@@ -183,8 +153,10 @@ cglobal hadamard8_diff16, 5, 6, %1, %2*mmsize
     RET
 %endmacro
 
-%macro HADAMARD8_DIFF 0-1
-%if cpuflag(sse2)
+%macro HADAMARD8_DIFF 1
+; r1, r2 and r3 are not clobbered in this function, so 16x16 can
+; simply call this 2x2x (and that's why we access rsp+gprsize
+; everywhere, which is rsp of calling function)
 hadamard8x8_diff %+ SUFFIX:
     lea                          r0, [r3*3]
     DIFF_PIXELS_8                r1, r2,  0, r3, r0, rsp+gprsize
@@ -201,59 +173,7 @@ hadamard8x8_diff %+ SUFFIX:
     ret
 
 hadamard8_16_wrapper %1, 2*ARCH_X86_32
-%elif cpuflag(mmx)
-ALIGN 16
-; int ff_hadamard8_diff_ ## cpu(MPVEncContext *s, const uint8_t *src1,
-;                               const uint8_t *src2, ptrdiff_t stride, int h)
-; r0 = void *s = unused, int h = unused (always 8)
-; note how r1, r2 and r3 are not clobbered in this function, so 16x16
-; can simply call this 2x2x (and that's why we access rsp+gprsize
-; everywhere, which is rsp of calling func
-hadamard8x8_diff %+ SUFFIX:
-    lea                          r0, [r3*3]
-
-    ; first 4x8 pixels
-    DIFF_PIXELS_8                r1, r2,  0, r3, r0, rsp+gprsize+0x60
-    HADAMARD8
-    mova         [rsp+gprsize+0x60], m7
-    TRANSPOSE4x4W                 0,  1,  2,  3,  7
-    STORE4              rsp+gprsize, m0, m1, m2, m3
-    mova                         m7, [rsp+gprsize+0x60]
-    TRANSPOSE4x4W                 4,  5,  6,  7,  0
-    STORE4         rsp+gprsize+0x40, m4, m5, m6, m7
-
-    ; second 4x8 pixels
-    DIFF_PIXELS_8                r1, r2,  4, r3, r0, rsp+gprsize+0x60
-    HADAMARD8
-    mova         [rsp+gprsize+0x60], m7
-    TRANSPOSE4x4W                 0,  1,  2,  3,  7
-    STORE4         rsp+gprsize+0x20, m0, m1, m2, m3
-    mova                         m7, [rsp+gprsize+0x60]
-    TRANSPOSE4x4W                 4,  5,  6,  7,  0
-
-    LOAD4          rsp+gprsize+0x40, m0, m1, m2, m3
-    HADAMARD8
-    ABS_SUM_8x8_32 rsp+gprsize+0x60
-    mova         [rsp+gprsize+0x60], m0
-
-    LOAD4          rsp+gprsize     , m0, m1, m2, m3
-    LOAD4          rsp+gprsize+0x20, m4, m5, m6, m7
-    HADAMARD8
-    ABS_SUM_8x8_32 rsp+gprsize
-    paddusw                      m0, [rsp+gprsize+0x60]
-
-    HSUM                         m0, m1, eax
-    and                         rax, 0xFFFF
-    ret
-
-hadamard8_16_wrapper 0, 13
-%endif
 %endmacro
-
-%if HAVE_ALIGNED_STACK == 0
-INIT_MMX mmxext
-HADAMARD8_DIFF
-%endif
 
 INIT_XMM sse2
 %if ARCH_X86_64

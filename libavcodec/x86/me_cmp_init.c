@@ -77,7 +77,6 @@ int ff_vsad16u_approx_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t 
     int ff_hadamard8_diff16_ ## cpu(MPVEncContext *s, const uint8_t *src1,       \
                                     const uint8_t *src2, ptrdiff_t stride, int h);
 
-hadamard_func(mmxext)
 hadamard_func(sse2)
 hadamard_func(ssse3)
 
@@ -116,11 +115,6 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
-#if !HAVE_ALIGNED_STACK
-        c->hadamard8_diff[0] = ff_hadamard8_diff16_mmxext;
-        c->hadamard8_diff[1] = ff_hadamard8_diff_mmxext;
-#endif
-
         c->sad[1] = ff_sad8_mmxext;
 
         c->pix_abs[1][0] = ff_sad8_mmxext;
