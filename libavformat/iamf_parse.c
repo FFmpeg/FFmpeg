@@ -480,6 +480,9 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
             av_channel_layout_copy(&layer->ch_layout, &ch_layout);
     }
 
+    if (k != audio_element->nb_substreams)
+        return AVERROR_INVALIDDATA;
+
     return 0;
 }
 
