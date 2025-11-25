@@ -38,11 +38,11 @@ SECTION .text
     movq          m2, [%1+%5]
     punpcklbw     m1, m7
     punpcklbw     m2, m7
+    paddw         m0, [pw_64]    ; Add 64
     pmullw        m1, m6         ; src[x+8 ] * biweight [2]
     pmullw        m2, m3         ; src[x+16] * biweight [3]
     paddw         m1, m2
     paddsw        m0, m1
-    paddsw        m0, [pw_64]    ; Add 64
     psraw         m0, 7
     packuswb      m0, m0
     movq        [%6], m0
