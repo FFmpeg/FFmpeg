@@ -12,6 +12,7 @@ version <next>:
 - ffmpeg CLI tiled HEIF support
 - D3D12 AV1 encoder
 - ProRes Vulkan hwaccel
+- DPX Vulkan hwaccel
 
 
 version 8.0:
