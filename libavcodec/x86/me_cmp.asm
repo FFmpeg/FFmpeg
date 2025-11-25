@@ -121,12 +121,8 @@ SECTION .text
     movd            %3, %1
 %endmacro
 
-%macro hadamard8_16_wrapper 2
-cglobal hadamard8_diff, 4, 4, %1, %2*mmsize
-    call hadamard8x8_diff %+ SUFFIX
-    RET
-
-cglobal hadamard8_diff16, 5, 6, %1, %2*mmsize
+%macro HADAMARD8_DIFF 1
+cglobal hadamard8_diff16, 5, 6, %1, 2*mmsize*ARCH_X86_32
     call hadamard8x8_diff %+ SUFFIX
     mov            r5d, eax
 
@@ -151,9 +147,10 @@ cglobal hadamard8_diff16, 5, 6, %1, %2*mmsize
 .done:
     mov            eax, r5d
     RET
-%endmacro
 
-%macro HADAMARD8_DIFF 1
+cglobal hadamard8_diff, 4, 4, %1, 2*mmsize*ARCH_X86_32
+    TAIL_CALL hadamard8x8_diff %+ SUFFIX, 0
+
 ; r1, r2 and r3 are not clobbered in this function, so 16x16 can
 ; simply call this 2x2x (and that's why we access rsp+gprsize
 ; everywhere, which is rsp of calling function)
@@ -171,8 +168,6 @@ hadamard8x8_diff %+ SUFFIX:
     HSUM                        m0, m1, eax
     and                         eax, 0xFFFF
     ret
-
-hadamard8_16_wrapper %1, 2*ARCH_X86_32
 %endmacro
 
 INIT_XMM sse2
