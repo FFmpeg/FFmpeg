@@ -406,6 +406,9 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
                                                           .nb_channels = substream_count +
                                                                          coupled_substream_count };
 
+        if (i && ch_layout.nb_channels <= audio_element->element->layers[i-1]->ch_layout.nb_channels)
+            return AVERROR_INVALIDDATA;
+
         for (int j = 0; j < substream_count; j++) {
             IAMFSubStream *substream = &audio_element->substreams[k++];
 
