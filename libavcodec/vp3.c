@@ -217,7 +217,6 @@ typedef struct Vp3DecodeContext {
 
     int qps[3];
     int nqps;
-    int last_qps[3];
 
     int superblock_count;
     int y_superblock_width;
@@ -2551,7 +2550,6 @@ static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *
 
         if (qps_changed) {
             memcpy(s->qps,      s1->qps,      sizeof(s->qps));
-            memcpy(s->last_qps, s1->last_qps, sizeof(s->last_qps));
             s->nqps = s1->nqps;
         }
     }
@@ -2618,8 +2616,10 @@ static int vp3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     }
     if (!s->theora)
         skip_bits(&gb, 1);
+
+    int last_qps[3];
     for (int i = 0; i < 3; i++)
-        s->last_qps[i] = s->qps[i];
+        last_qps[i] = s->qps[i];
 
     s->nqps = 0;
     do {
@@ -2636,13 +2636,13 @@ static int vp3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                           avctx->skip_loop_filter >= (s->keyframe ? AVDISCARD_ALL
                                                                   : AVDISCARD_NONKEY);
 
-    if (s->qps[0] != s->last_qps[0])
+    if (s->qps[0] != last_qps[0])
         init_loop_filter(s);
 
     for (int i = 0; i < s->nqps; i++)
         // reinit all dequantizers if the first one changed, because
         // the DC of the first quantizer must be used for all matrices
-        if (s->qps[i] != s->last_qps[i] || s->qps[0] != s->last_qps[0])
+        if (s->qps[i] != last_qps[i] || s->qps[0] != last_qps[0])
             init_dequantizer(s, i);
 
     if (avctx->skip_frame >= AVDISCARD_NONKEY && !s->keyframe)
