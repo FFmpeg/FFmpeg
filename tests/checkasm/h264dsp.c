@@ -336,7 +336,7 @@ static void check_idct_dequant(void)
     LOCAL_ALIGNED_16(int32_t, dst1_32, [16 * 16]);
     H264DSPContext h;
     int bit_depth, i, qmul;
-    declare_func_emms(AV_CPU_FLAG_MMX | AV_CPU_FLAG_SSE2, void, int16_t *output, int16_t *input, int qmul);
+    declare_func(void, int16_t *output, int16_t *input, int qmul);
 
     qmul = rnd() % 4096;
 

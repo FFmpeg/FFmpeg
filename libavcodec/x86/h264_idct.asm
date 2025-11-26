@@ -578,27 +578,23 @@ RET
 %endmacro
 
 %macro DEQUANT 1
-    movd      xmm4, t3d
-    movq      xmm5, [pw_1]
-    pshufd    xmm4, xmm4, 0
-    movq2dq   xmm0, m0
-    movq2dq   xmm1, m1
-    movq2dq   xmm2, m2
-    movq2dq   xmm3, m3
-    punpcklwd xmm0, xmm5
-    punpcklwd xmm1, xmm5
-    punpcklwd xmm2, xmm5
-    punpcklwd xmm3, xmm5
-    pmaddwd   xmm0, xmm4
-    pmaddwd   xmm1, xmm4
-    pmaddwd   xmm2, xmm4
-    pmaddwd   xmm3, xmm4
-    psrad     xmm0, %1
-    psrad     xmm1, %1
-    psrad     xmm2, %1
-    psrad     xmm3, %1
-    packssdw  xmm0, xmm1
-    packssdw  xmm2, xmm3
+    movd        m4, t3d
+    movq        m5, [pw_1]
+    pshufd      m4, m4, 0
+    punpcklwd   m0, m5
+    punpcklwd   m1, m5
+    punpcklwd   m2, m5
+    punpcklwd   m3, m5
+    pmaddwd     m0, m4
+    pmaddwd     m1, m4
+    pmaddwd     m2, m4
+    pmaddwd     m3, m4
+    psrad       m0, %1
+    psrad       m1, %1
+    psrad       m2, %1
+    psrad       m3, %1
+    packssdw    m0, m1
+    packssdw    m2, m3
 %endmacro
 
 %macro STORE_WORDS 9
@@ -625,19 +621,25 @@ RET
 
 %macro DEQUANT_STORE 1
     DEQUANT     %1
-    STORE_WORDS xmm0,  0,  1,  4,  5,  2,  3,  6,  7
-    STORE_WORDS xmm2,  8,  9, 12, 13, 10, 11, 14, 15
+    STORE_WORDS m0,  0,  1,  4,  5,  2,  3,  6,  7
+    STORE_WORDS m2,  8,  9, 12, 13, 10, 11, 14, 15
 %endmacro
 
 INIT_XMM sse2
 cglobal h264_luma_dc_dequant_idct, 3, 4, 7
-INIT_MMX cpuname
     movq        m3, [r1+24]
     movq        m2, [r1+16]
     movq        m1, [r1+ 8]
     movq        m0, [r1+ 0]
     WALSH4_1D    0,1,2,3,4
-    TRANSPOSE4x4W 0,1,2,3,4
+    punpcklwd   m0, m1
+    punpcklwd   m2, m3
+    mova        m4, m0
+    punpckldq   m0, m2
+    punpckhdq   m4, m2
+    movhlps     m1, m0
+    movhlps     m3, m4
+    SWAP 2, 4
     WALSH4_1D    0,1,2,3,4
 
 ; shift, tmp, output, qmul
@@ -665,8 +667,8 @@ INIT_MMX cpuname
     inc        t1d
     shr        t3d, t0b
     sub        t1d, t0d
-    movd      xmm6, t1d
-    DEQUANT_STORE xmm6
+    movd        m6, t1d
+    DEQUANT_STORE m6
     RET
 
 %ifdef __NASM_VER__
