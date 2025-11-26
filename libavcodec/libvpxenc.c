@@ -352,6 +352,13 @@ static av_cold void fifo_free(AVFifo **fifo)
     av_fifo_freep2(fifo);
 }
 
+static int encoder_can_drop_frames(AVCodecContext *avctx)
+{
+    VPxContext *ctx = avctx->priv_data;
+
+    return (ctx->drop_threshold > 0) || (ctx->screen_content_mode == 2);
+}
+
 static int frame_data_submit(AVCodecContext *avctx, AVFifo *fifo,
                              const AVFrame *frame)
 {
@@ -383,6 +390,18 @@ static int frame_data_submit(AVCodecContext *avctx, AVFifo *fifo,
     }
 
     ret = av_fifo_write(fifo, &fd, 1);
+    if (ret == AVERROR(ENOSPC)) {
+        FrameData fd2;
+
+        av_log(avctx, AV_LOG_WARNING, "FIFO full, will drop a front element\n");
+
+        ret = av_fifo_read(fifo, &fd2, 1);
+        if (ret >= 0) {
+            frame_data_uninit(&fd2);
+            ret = av_fifo_write(fifo, &fd, 1);
+        }
+    }
+
     if (ret < 0)
         goto fail;
 
@@ -398,13 +417,25 @@ static int frame_data_apply(AVCodecContext *avctx, AVFifo *fifo, AVPacket *pkt)
     uint8_t *data;
     int ret = 0;
 
-    if (av_fifo_peek(fifo, &fd, 1, 0) < 0)
-        return 0;
-    if (fd.pts != pkt->pts) {
-        av_log(avctx, AV_LOG_WARNING,
-               "Mismatching timestamps: libvpx %"PRId64" queued %"PRId64"; "
-               "this is a bug, please report it\n", pkt->pts, fd.pts);
-        goto skip;
+    while (1) {
+        if (av_fifo_peek(fifo, &fd, 1, 0) < 0)
+            return 0;
+
+        if (fd.pts == pkt->pts) {
+            break;
+        }
+
+        if (!encoder_can_drop_frames(avctx)) {
+            av_log(avctx, AV_LOG_WARNING,
+                   "Mismatching timestamps: libvpx %"PRId64" queued %"PRId64"; "
+                   "this is a bug, please report it\n", pkt->pts, fd.pts);
+            goto skip;
+        }
+
+        av_log(avctx, AV_LOG_DEBUG, "Dropped frame with pts %"PRId64"\n",
+               fd.pts);
+        av_fifo_drain2(fifo, 1);
+        frame_data_uninit(&fd);
     }
 
     pkt->duration = fd.duration;
