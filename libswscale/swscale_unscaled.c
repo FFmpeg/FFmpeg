@@ -2685,6 +2685,8 @@ void ff_get_unscaled_swscale(SwsInternal *c)
         }
     }
 
+    ff_sws_init_xyzdsp(c);
+
 #if ARCH_PPC
     ff_get_unscaled_swscale_ppc(c);
 #elif ARCH_ARM

@@ -719,36 +719,37 @@ static av_cold void init_xyz_tables(void)
     }
 }
 
-static int fill_xyztables(SwsInternal *c)
+av_cold int ff_sws_fill_xyztables(SwsInternal *c)
 {
-    static const int16_t xyz2rgb_matrix[3][4] = {
+    static const int16_t xyz2rgb_matrix[3][3] = {
         {13270, -6295, -2041},
         {-3969,  7682,   170},
         {  228,  -835,  4329} };
-    static const int16_t rgb2xyz_matrix[3][4] = {
+    static const int16_t rgb2xyz_matrix[3][3] = {
         {1689, 1464,  739},
         { 871, 2929,  296},
         {  79,  488, 3891} };
 
-    if (c->xyzgamma)
+    if (c->xyz2rgb.gamma.in)
         return 0;
 
-    memcpy(c->xyz2rgb_matrix, xyz2rgb_matrix, sizeof(c->xyz2rgb_matrix));
-    memcpy(c->rgb2xyz_matrix, rgb2xyz_matrix, sizeof(c->rgb2xyz_matrix));
+    memcpy(c->xyz2rgb.mat, xyz2rgb_matrix, sizeof(c->xyz2rgb.mat));
+    memcpy(c->rgb2xyz.mat, rgb2xyz_matrix, sizeof(c->rgb2xyz.mat));
 
 #if CONFIG_SMALL
-    c->xyzgamma = av_malloc(sizeof(uint16_t) * 2 * (4096 + 65536));
-    if (!c->xyzgamma)
+    c->xyz2rgb.gamma.in = av_malloc(sizeof(uint16_t) * 2 * (4096 + 65536));
+    if (!c->xyz2rgb.gamma.in)
         return AVERROR(ENOMEM);
-    c->rgbgammainv = c->xyzgamma + 4096;
-    c->rgbgamma = c->rgbgammainv + 4096;
-    c->xyzgammainv = c->rgbgamma + 65536;
-    init_xyz_tables(c->xyzgamma, c->xyzgammainv, c->rgbgamma, c->rgbgammainv);
+    c->rgb2xyz.gamma.in  = c->xyz2rgb.gamma.in  + 4096;
+    c->xyz2rgb.gamma.out = c->rgb2xyz.gamma.in  + 4096;
+    c->rgb2xyz.gamma.out = c->xyz2rgb.gamma.out + 65536;
+    init_xyz_tables(c->xyz2rgb.gamma.in,  c->rgb2xyz.gamma.out,
+                    c->xyz2rgb.gamma.out, c->rgb2xyz.gamma.in);
 #else
-    c->xyzgamma = xyzgamma_tab;
-    c->rgbgamma = rgbgamma_tab;
-    c->xyzgammainv = xyzgammainv_tab;
-    c->rgbgammainv = rgbgammainv_tab;
+    c->xyz2rgb.gamma.in  = xyzgamma_tab;
+    c->xyz2rgb.gamma.out = rgbgamma_tab;
+    c->rgb2xyz.gamma.in  = rgbgammainv_tab;
+    c->rgb2xyz.gamma.out = xyzgammainv_tab;
 
     static AVOnce xyz_init_static_once = AV_ONCE_INIT;
     ff_thread_once(&xyz_init_static_once, init_xyz_tables);
@@ -822,7 +823,7 @@ static int handle_formats(SwsContext *sws)
     c->srcXYZ    |= handle_xyz(&sws->src_format);
     c->dstXYZ    |= handle_xyz(&sws->dst_format);
     if (c->srcXYZ || c->dstXYZ)
-        return fill_xyztables(c);
+        return ff_sws_fill_xyztables(c);
     else
         return 0;
 }
@@ -2312,7 +2313,7 @@ void sws_freeContext(SwsContext *sws)
     av_freep(&c->gamma);
     av_freep(&c->inv_gamma);
 #if CONFIG_SMALL
-    av_freep(&c->xyzgamma);
+    av_freep(&c->xyz2rgb.gamma.in);
 #endif
 
     av_freep(&c->rgb0_scratch);

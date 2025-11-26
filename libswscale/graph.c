@@ -142,7 +142,8 @@ static void run_rgb0(const SwsImg *out, const SwsImg *in, int y, int h,
 static void run_xyz2rgb(const SwsImg *out, const SwsImg *in, int y, int h,
                         const SwsPass *pass)
 {
-    ff_xyz12Torgb48(pass->priv, out->data[0] + y * out->linesize[0], out->linesize[0],
+    const SwsInternal *c = pass->priv;
+    c->xyz12Torgb48(c, out->data[0] + y * out->linesize[0], out->linesize[0],
                     in->data[0] + y * in->linesize[0], in->linesize[0],
                     pass->width, h);
 }
@@ -150,7 +151,8 @@ static void run_xyz2rgb(const SwsImg *out, const SwsImg *in, int y, int h,
 static void run_rgb2xyz(const SwsImg *out, const SwsImg *in, int y, int h,
                         const SwsPass *pass)
 {
-    ff_rgb48Toxyz12(pass->priv, out->data[0] + y * out->linesize[0], out->linesize[0],
+    const SwsInternal *c = pass->priv;
+    c->rgb48Toxyz12(c, out->data[0] + y * out->linesize[0], out->linesize[0],
                     in->data[0] + y * in->linesize[0], in->linesize[0],
                     pass->width, h);
 }

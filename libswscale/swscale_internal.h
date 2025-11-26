@@ -93,6 +93,19 @@ typedef int (*SwsFunc)(SwsInternal *c, const uint8_t *const src[],
                        const int srcStride[], int srcSliceY, int srcSliceH,
                        uint8_t *const dst[], const int dstStride[]);
 
+typedef void (*SwsColorFunc)(const SwsInternal *c, uint8_t *dst, int dst_stride,
+                             const uint8_t *src, int src_stride, int w, int h);
+
+typedef struct SwsLuts {
+    uint16_t *in;
+    uint16_t *out;
+} SwsLuts;
+
+typedef struct SwsColorXform {
+    SwsLuts gamma;
+    int16_t mat[3][3];
+} SwsColorXform;
+
 /**
  * Write one line of horizontally scaled data to planar output
  * without any additional vertical scaling (or point-scaling).
@@ -547,12 +560,10 @@ struct SwsInternal {
 /* pre defined color-spaces gamma */
 #define XYZ_GAMMA (2.6)
 #define RGB_GAMMA (2.2)
-    uint16_t *xyzgamma;
-    uint16_t *rgbgamma;
-    uint16_t *xyzgammainv;
-    uint16_t *rgbgammainv;
-    int16_t xyz2rgb_matrix[3][4];
-    int16_t rgb2xyz_matrix[3][4];
+    SwsColorFunc  xyz12Torgb48;
+    SwsColorFunc  rgb48Toxyz12;
+    SwsColorXform xyz2rgb;
+    SwsColorXform rgb2xyz;
 
     /* function pointers for swscale() */
     yuv2planar1_fn yuv2plane1;
@@ -719,6 +730,9 @@ av_cold void ff_sws_init_range_convert_aarch64(SwsInternal *c);
 av_cold void ff_sws_init_range_convert_loongarch(SwsInternal *c);
 av_cold void ff_sws_init_range_convert_riscv(SwsInternal *c);
 av_cold void ff_sws_init_range_convert_x86(SwsInternal *c);
+
+av_cold void ff_sws_init_xyzdsp(SwsInternal *c);
+av_cold int ff_sws_fill_xyztables(SwsInternal *c);
 
 SwsFunc ff_yuv2rgb_init_x86(SwsInternal *c);
 SwsFunc ff_yuv2rgb_init_ppc(SwsInternal *c);
@@ -1042,12 +1056,6 @@ int ff_sws_alphablendaway(SwsInternal *c, const uint8_t *const src[],
 void ff_copyPlane(const uint8_t *src, int srcStride,
                   int srcSliceY, int srcSliceH, int width,
                   uint8_t *dst, int dstStride);
-
-void ff_xyz12Torgb48(const SwsInternal *c, uint8_t *dst, int dst_stride,
-                     const uint8_t *src, int src_stride, int w, int h);
-
-void ff_rgb48Toxyz12(const SwsInternal *c, uint8_t *dst, int dst_stride,
-                     const uint8_t *src, int src_stride, int w, int h);
 
 static inline void fillPlane16(uint8_t *plane, int stride, int width, int height, int y,
                                int alpha, int bits, const int big_endian)
