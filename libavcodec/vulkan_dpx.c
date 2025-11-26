@@ -50,9 +50,9 @@ typedef struct DecodePushData {
     int padded_10bit;
 } DecodePushData;
 
-static int host_upoad_image(AVCodecContext *avctx,
-                            FFVulkanDecodeContext *dec, DPXDecContext *dpx,
-                            const uint8_t *src, uint32_t size)
+static int host_upload_image(AVCodecContext *avctx,
+                             FFVulkanDecodeContext *dec, DPXDecContext *dpx,
+                             const uint8_t *src, uint32_t size)
 {
     int err;
     VkImage temp;
@@ -163,7 +163,7 @@ static int vk_dpx_start_frame(AVCodecContext          *avctx,
     FFVulkanDecodePicture *vp = &pp->vp;
 
     if (ctx->s.extensions & FF_VK_EXT_HOST_IMAGE_COPY)
-        host_upoad_image(avctx, dec, dpx, buffer, size);
+        host_upload_image(avctx, dec, dpx, buffer, size);
 
     /* Host map the frame data if supported */
     if (!vp->slices_buf &&
