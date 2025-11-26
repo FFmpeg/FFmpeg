@@ -2082,9 +2082,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     /* Re-query device capabilities, in case the device was created externally */
     vk->GetPhysicalDeviceMemoryProperties(hwctx->phys_dev, &p->mprops);
 
-    /* Only use host image transfers if ReBAR is enabled */
-    p->disable_host_transfer = !vulkan_device_has_rebar(ctx);
-
 end:
     av_free(qf_vid);
     av_free(qf);
@@ -2915,19 +2912,14 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
             return err;
     }
 
-    /* Nvidia is violating the spec because they thought no one would use this. */
-    if (p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY &&
-        (((fmt->nb_images == 1) && (fmt->vk_planes > 1)) ||
-         (av_pix_fmt_desc_get(hwfc->sw_format)->nb_components == 1)))
-        supported_usage &= ~VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
-
     /* Image usage flags */
     hwctx->usage |= supported_usage & (VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                                        VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
                                        VK_IMAGE_USAGE_STORAGE_BIT      |
                                        VK_IMAGE_USAGE_SAMPLED_BIT);
 
-    if ((p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY) && !p->disable_host_transfer)
+    if (p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY &&
+        !(p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY))
         hwctx->usage |= supported_usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
 
     /* Enables encoding of images, if supported by format and extensions */
@@ -4481,7 +4473,8 @@ static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
     if (swf->width > hwfc->width || swf->height > hwfc->height)
         return AVERROR(EINVAL);
 
-    if (hwctx->usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT)
+    if (hwctx->usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT &&
+        !(p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY))
         return vulkan_transfer_host(hwfc, hwf, swf, upload);
 
     for (int i = 0; i < av_pix_fmt_count_planes(swf->format); i++) {
