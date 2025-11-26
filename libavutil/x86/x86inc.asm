@@ -609,7 +609,7 @@ DECLARE_REG 14, R13, 120
     RESET_STACK_STATE
 %endmacro
 
-%define has_epilogue regs_used > 7 || stack_size > 0 || vzeroupper_required || xmm_regs_used > 6+high_mm_regs
+%define has_epilogue (regs_used > 7 || stack_size > 0 || vzeroupper_required || xmm_regs_used > 6+high_mm_regs)
 
 %macro RET 0
     WIN64_RESTORE_XMM_INTERNAL
@@ -658,7 +658,7 @@ DECLARE_REG 14, R13, 72
     %endif
 %endmacro
 
-%define has_epilogue regs_used > 9 || stack_size > 0 || vzeroupper_required
+%define has_epilogue (regs_used > 9 || stack_size > 0 || vzeroupper_required)
 
 %macro RET 0
     %if stack_size_padded > 0
@@ -722,7 +722,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
     %endif
 %endmacro
 
-%define has_epilogue regs_used > 3 || stack_size > 0 || vzeroupper_required
+%define has_epilogue (regs_used > 3 || stack_size > 0 || vzeroupper_required)
 
 %macro RET 0
     %if stack_size_padded > 0
