@@ -55,7 +55,7 @@ cextern pw_1
 
 SECTION .text
 
-; %1=uint8_t *dst, %2=int16_t *block, %3=int stride
+; %1=uint8_t *dst, %2=int16_t *block, %3=ptrdiff_t stride
 %macro IDCT4_ADD 3
     ; Load dct coeffs
     movq         m0, [%2]
@@ -145,7 +145,7 @@ SECTION .text
     IDCT8_1D   [%1], [%1+ 64]
 %endmacro
 
-; %1=uint8_t *dst, %2=int16_t *block, %3=int stride
+; %1=uint8_t *dst, %2=int16_t *block, %3=ptrdiff_t stride
 %macro IDCT8_ADD_SSE 4
     IDCT8_1D_FULL %2
 %if ARCH_X86_64
@@ -317,7 +317,6 @@ INIT_XMM cpuname
 
 INIT_MMX mmx
 h264_idct_add8_mmx_plane:
-    movsxdifnidn r3, r3d
 .nextblock:
     movzx        r6, byte [scan8+r5]
     movzx        r6, byte [r4+r6]
@@ -372,9 +371,8 @@ cglobal h264_idct_add8_422_8, 5, 8 + npicregs, 0, dst1, block_offset, block, str
 
     RET ; TODO: check rep ret after a function call
 
-; r0 = uint8_t *dst, r2 = int16_t *block, r3 = int stride, r6=clobbered
+; r0 = uint8_t *dst, r2 = int16_t *block, r3 = ptrdiff_t stride, r6=clobbered
 h264_idct_dc_add8_mmxext:
-    movsxdifnidn r3, r3d
     movd         m0, [r2   ]          ;  0 0 X D
     mov word [r2+ 0], 0
     punpcklwd    m0, [r2+32]          ;  x X d D
@@ -393,9 +391,8 @@ h264_idct_dc_add8_mmxext:
 
 ALIGN 16
 INIT_XMM sse2
-; r0 = uint8_t *dst (clobbered), r2 = int16_t *block, r3 = int stride
+; r0 = uint8_t *dst (clobbered), r2 = int16_t *block, r3 = ptrdiff_t stride
 h264_add8x4_idct_sse2:
-    movsxdifnidn r3, r3d
     movq   m0, [r2+ 0]
     movq   m1, [r2+ 8]
     movq   m2, [r2+16]
