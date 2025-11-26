@@ -1,6 +1,39 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 5.1.8:
+ avutil/common: cast GET_BYTE/GET_16BIT returned value
+ avfilter/vf_drawtext: Account for bbox text seperator
+ avcodec/utvideodec: Set B for the width= 1 case in restore_median_planar_il()
+ avformat/rtpdec_rfc4175: Only change PayloadContext on success
+ avformat/rtpdec_rfc4175: Check dimensions
+ avformat/rtpdec_rfc4175: Fix memleak of sampling
+ avformat/http: Fix off by 1 error
+ avcodec/exr: spelling
+ avcodec/exr: use tile dimensions in pxr24 UINT case
+ avcodec/exr: Simple check for available channels
+ avformat/sctp: Check size in sctp_write()
+ avformat/rtmpproto: consider command line argument lengths
+ avformat/rtmpproto_ Check tcurl and flashver length
+ avcodec/g723_1enc: Make min_err 64bit
+ avformat/rtpenc_h264_hevc: Check space for nal_length_size in ff_rtp_send_h264_hevc()
+ swscale/output: Fix integer overflow in yuv2ya16_X_c_template()
+ avcodec/exr: Check that DWA has 3 channels
+ avcodec/exr: check ac_size
+ avcodec/exr: Round dc_w/h up
+ avcodec/mjpegdec: Explain buf_size/width/height check
+ avformat/avidec: Fix integer overflow iff ULONG_MAX < INT64_MAX
+ fftools/ffmpeg_mux_init: Fix double-free on error
+ avformat/aviobuf: Keep checksum_ptr consistent in avio_seek()
+ aacenc_tns: clamp filter direction energy measurement
+ avcodec/dxv: Check coded_height, to avoid invalid av_clip()
+ avcodec/aac/aacdec: dont allow ff_aac_output_configure() allocating a new frame if it has no frame
+ avformat/lrcdec: Fix fate-sub-lrc-ms-remux on x86-32
+ avcodec/sanm: Check w,h,left,top
+ avcodec/utvideodec: Clear plane_start array
+ lavc/aarch64: Fix addp overflow in ff_pred16x16_plane_neon_10
+ avcodec/x86/pngdsp: add missing emms at the end of add_png_paeth_prediction
+
 
 version 5.1.7:
  avcodec/exr: Check rle_raw_data and surroundings
