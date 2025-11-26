@@ -592,36 +592,58 @@ RET
     psrad       m1, %1
     psrad       m2, %1
     psrad       m3, %1
-    packssdw    m0, m1
-    packssdw    m2, m3
 %endmacro
 
-%macro STORE_WORDS 9
-    movd  t0d, %1
-    psrldq  %1, 4
-    movd  t1d, %1
-    psrldq  %1, 4
-    mov [t2+%2*32], t0w
-    mov [t2+%4*32], t1w
-    shr   t0d, 16
-    shr   t1d, 16
+%macro STORE_WORDS 10
+%if ARCH_X86_64
+    movq        t0, %1
+    movq        t1, %2
+    psrldq      %1, 8
+    psrldq      %2, 8
     mov [t2+%3*32], t0w
-    mov [t2+%5*32], t1w
-    movd  t0d, %1
-    psrldq  %1, 4
-    movd  t1d, %1
-    mov [t2+%6*32], t0w
+    mov [t2+%7*32], t1w
+    shr         t0, 32
+    shr         t1, 32
+    mov [t2+%4*32], t0w
     mov [t2+%8*32], t1w
-    shr   t0d, 16
-    shr   t1d, 16
-    mov [t2+%7*32], t0w
+    movq        t0, %1
+    movq        t1, %2
+    mov [t2+%5*32], t0w
     mov [t2+%9*32], t1w
+    shr         t0, 32
+    shr         t1, 32
+    mov [t2+%6*32], t0w
+    mov [t2+%10*32], t1w
+%else
+    movd       t0d, %1
+    movd       t1d, %2
+    psrldq      %1, 4
+    psrldq      %2, 4
+    mov [t2+%3*32], t0w
+    mov [t2+%7*32], t1w
+    movd       t0d, %1
+    movd       t1d, %2
+    psrldq      %1, 4
+    psrldq      %2, 4
+    mov [t2+%4*32], t0w
+    mov [t2+%8*32], t1w
+    movd       t0d, %1
+    movd       t1d, %2
+    psrldq      %1, 4
+    psrldq      %2, 4
+    mov [t2+%5*32], t0w
+    mov [t2+%9*32], t1w
+    movd       t0d, %1
+    movd       t1d, %2
+    mov [t2+%6*32], t0w
+    mov [t2+%10*32], t1w
+%endif
 %endmacro
 
 %macro DEQUANT_STORE 1
     DEQUANT     %1
-    STORE_WORDS m0,  0,  1,  4,  5,  2,  3,  6,  7
-    STORE_WORDS m2,  8,  9, 12, 13, 10, 11, 14, 15
+    STORE_WORDS m0, m1,  0,  1,  4,  5,  2,  3,  6,  7
+    STORE_WORDS m2, m3,  8,  9, 12, 13, 10, 11, 14, 15
 %endmacro
 
 INIT_XMM sse2
