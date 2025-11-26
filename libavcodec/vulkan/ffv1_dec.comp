@@ -214,6 +214,9 @@ void writeout_rgb(in SliceContext sc, ivec2 sp, int w, int y, bool apply_rct)
 
         if (expectEXT(apply_rct, true))
             pix = transform_sample(pix, sc.slice_rct_coef);
+        else
+            pix = ivec4(pix[fmt_lut[0]], pix[fmt_lut[1]],
+                        pix[fmt_lut[2]], pix[fmt_lut[3]]);
 
         imageStore(dst[0], pos, pix);
         if (planar_rgb != 0) {
