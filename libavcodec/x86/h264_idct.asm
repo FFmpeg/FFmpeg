@@ -316,29 +316,6 @@ INIT_XMM cpuname
     RET
 
 INIT_MMX mmx
-h264_idct_add8_mmx_plane:
-.nextblock:
-    movzx        r6, byte [scan8+r5]
-    movzx        r6, byte [r4+r6]
-    or          r6w, word [r2]
-    test         r6, r6
-    jz .skipblock
-%if ARCH_X86_64
-    mov         r0d, dword [r1+r5*4]
-    add          r0, [dst2q]
-%else
-    mov          r0, r1m ; XXX r1m here is actually r0m of the calling func
-    mov          r0, [r0]
-    add          r0, dword [r1+r5*4]
-%endif
-    IDCT4_ADD    r0, r2, r3
-.skipblock:
-    inc          r5
-    add          r2, 32
-    test         r5, 3
-    jnz .nextblock
-    rep ret
-
 cglobal h264_idct_add8_422_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
 ; dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
     movsxdifnidn r3, r3d
@@ -367,9 +344,31 @@ cglobal h264_idct_add8_422_8, 5, 8 + npicregs, 0, dst1, block_offset, block, str
 
     call         h264_idct_add8_mmx_plane
     add r5, 4
-    call         h264_idct_add8_mmx_plane
+    TAIL_CALL    h264_idct_add8_mmx_plane, 0
 
-    RET ; TODO: check rep ret after a function call
+h264_idct_add8_mmx_plane:
+.nextblock:
+    movzx       r6d, byte [scan8+r5]
+    movzx       r6d, byte [r4+r6]
+    or          r6w, word [r2]
+    test        r6d, r6d
+    jz .skipblock
+%if ARCH_X86_64
+    mov         r0d, dword [r1+r5*4]
+    add          r0, [dst2q]
+%else
+    mov          r0, r1m ; XXX r1m here is actually r0m of the calling func
+    mov          r0, [r0]
+    add          r0, dword [r1+r5*4]
+%endif
+    IDCT4_ADD    r0, r2, r3
+.skipblock:
+    inc         r5d
+    add          r2, 32
+    test        r5d, 3
+    jnz .nextblock
+    rep ret
+
 
 ; r0 = uint8_t *dst, r2 = int16_t *block, r3 = ptrdiff_t stride, r6=clobbered
 h264_idct_dc_add8_mmxext:
