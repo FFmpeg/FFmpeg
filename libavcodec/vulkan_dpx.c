@@ -102,7 +102,8 @@ static int host_upload_image(AVCodecContext *avctx,
                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                   NULL, size,
-                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     if (err < 0)
         return err;
 
