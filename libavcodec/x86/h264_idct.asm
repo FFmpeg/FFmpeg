@@ -145,61 +145,6 @@ SECTION .text
     IDCT8_1D   [%1], [%1+ 64]
 %endmacro
 
-; %1=int16_t *block, %2=int16_t *dstblock
-%macro IDCT8_ADD_MMX_START 2
-    IDCT8_1D_FULL %1
-    mova       [%1], m7
-    TRANSPOSE4x4W 0, 1, 2, 3, 7
-    mova         m7, [%1]
-    mova    [%2   ], m0
-    mova    [%2+16], m1
-    mova    [%2+32], m2
-    mova    [%2+48], m3
-    TRANSPOSE4x4W 4, 5, 6, 7, 3
-    mova    [%2+ 8], m4
-    mova    [%2+24], m5
-    mova    [%2+40], m6
-    mova    [%2+56], m7
-%endmacro
-
-; %1=uint8_t *dst, %2=int16_t *block, %3=int stride
-%macro IDCT8_ADD_MMX_END 3-4
-    IDCT8_1D_FULL %2
-    mova    [%2   ], m5
-    mova    [%2+16], m6
-    mova    [%2+32], m7
-
-    pxor         m7, m7
-%if %0 == 4
-    movq   [%4+  0], m7
-    movq   [%4+  8], m7
-    movq   [%4+ 16], m7
-    movq   [%4+ 24], m7
-    movq   [%4+ 32], m7
-    movq   [%4+ 40], m7
-    movq   [%4+ 48], m7
-    movq   [%4+ 56], m7
-    movq   [%4+ 64], m7
-    movq   [%4+ 72], m7
-    movq   [%4+ 80], m7
-    movq   [%4+ 88], m7
-    movq   [%4+ 96], m7
-    movq   [%4+104], m7
-    movq   [%4+112], m7
-    movq   [%4+120], m7
-%endif
-    STORE_DIFFx2 m0, m1, m5, m6, m7, 6, %1, %3
-    lea          %1, [%1+%3*2]
-    STORE_DIFFx2 m2, m3, m5, m6, m7, 6, %1, %3
-    mova         m0, [%2   ]
-    mova         m1, [%2+16]
-    mova         m2, [%2+32]
-    lea          %1, [%1+%3*2]
-    STORE_DIFFx2 m4, m0, m5, m6, m7, 6, %1, %3
-    lea          %1, [%1+%3*2]
-    STORE_DIFFx2 m1, m2, m5, m6, m7, 6, %1, %3
-%endmacro
-
 ; %1=uint8_t *dst, %2=int16_t *block, %3=int stride
 %macro IDCT8_ADD_SSE 4
     IDCT8_1D_FULL %2
@@ -612,7 +557,7 @@ cglobal h264_idct_add8_8, 5, 7 + ARCH_X86_64, 8
     add8_sse2_cycle 3, 0x64
 RET
 
-;void ff_h264_luma_dc_dequant_idct_mmx(int16_t *output, int16_t *input, int qmul)
+;void ff_h264_luma_dc_dequant_idct_sse2(int16_t *output, int16_t *input, int qmul)
 
 %macro WALSH4_1D 5
     SUMSUB_BADC w, %4, %3, %2, %1, %5
@@ -620,8 +565,7 @@ RET
     SWAP %1, %4, %3
 %endmacro
 
-%macro DEQUANT 1-3
-%if cpuflag(sse2)
+%macro DEQUANT 1
     movd      xmm4, t3d
     movq      xmm5, [pw_1]
     pshufd    xmm4, xmm4, 0
@@ -643,31 +587,9 @@ RET
     psrad     xmm3, %1
     packssdw  xmm0, xmm1
     packssdw  xmm2, xmm3
-%else
-    mova        m7, [pw_1]
-    mova        m4, %1
-    punpcklwd   %1, m7
-    punpckhwd   m4, m7
-    mova        m5, %2
-    punpcklwd   %2, m7
-    punpckhwd   m5, m7
-    movd        m7, t3d
-    punpckldq   m7, m7
-    pmaddwd     %1, m7
-    pmaddwd     %2, m7
-    pmaddwd     m4, m7
-    pmaddwd     m5, m7
-    psrad       %1, %3
-    psrad       %2, %3
-    psrad       m4, %3
-    psrad       m5, %3
-    packssdw    %1, m4
-    packssdw    %2, m5
-%endif
 %endmacro
 
-%macro STORE_WORDS 5-9
-%if cpuflag(sse)
+%macro STORE_WORDS 9
     movd  t0d, %1
     psrldq  %1, 4
     movd  t1d, %1
@@ -687,33 +609,12 @@ RET
     shr   t1d, 16
     mov [t2+%7*32], t0w
     mov [t2+%9*32], t1w
-%else
-    movd  t0d, %1
-    psrlq  %1, 32
-    movd  t1d, %1
-    mov [t2+%2*32], t0w
-    mov [t2+%4*32], t1w
-    shr   t0d, 16
-    shr   t1d, 16
-    mov [t2+%3*32], t0w
-    mov [t2+%5*32], t1w
-%endif
 %endmacro
 
 %macro DEQUANT_STORE 1
-%if cpuflag(sse2)
     DEQUANT     %1
     STORE_WORDS xmm0,  0,  1,  4,  5,  2,  3,  6,  7
     STORE_WORDS xmm2,  8,  9, 12, 13, 10, 11, 14, 15
-%else
-    DEQUANT     m0, m1, %1
-    STORE_WORDS m0,  0,  1,  4,  5
-    STORE_WORDS m1,  2,  3,  6,  7
-
-    DEQUANT     m2, m3, %1
-    STORE_WORDS m2,  8,  9, 12, 13
-    STORE_WORDS m3, 10, 11, 14, 15
-%endif
 %endmacro
 
 INIT_XMM sse2
