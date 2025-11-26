@@ -55,6 +55,19 @@ cextern pw_1
 
 SECTION .text
 
+; %1=callee, %2=dst to jump to if tail call is impossible (can be empty,
+; then no jmp is performed), %3=current iteration, %4=last iteration
+%macro TAIL_CALL_IF_LAST 4
+%if (%3 == %4) && !has_epilogue
+    jmp         %1
+%else
+    call        %1
+    %ifnempty %2
+        jmp      %2
+    %endif
+%endif
+%endmacro
+
 ; %1=uint8_t *dst, %2=int16_t *block, %3=ptrdiff_t stride
 %macro IDCT4_ADD 3
     ; Load dct coeffs
@@ -424,7 +437,7 @@ h264_add8x4_idct_sse2:
 %else
     add         r0, r0m
 %endif
-    call        h264_add8x4_idct_sse2
+    TAIL_CALL_IF_LAST h264_add8x4_idct_sse2, , %1, 7
 .cycle%1end:
 %if %1 < 7
     add         r2, 64
@@ -461,8 +474,7 @@ RET
 %else
     add         r0, r0m
 %endif
-    call        h264_add8x4_idct_sse2
-    jmp .cycle%1end
+    TAIL_CALL_IF_LAST h264_add8x4_idct_sse2, .cycle%1end, %1, 7
 .try%1dc:
     movsx       r0, word [r2   ]
     or         r0w, word [r2+32]
@@ -473,7 +485,7 @@ RET
 %else
     add         r0, r0m
 %endif
-    call        h264_idct_dc_add8_mmxext
+    TAIL_CALL_IF_LAST h264_idct_dc_add8_mmxext, , %1, 7
 .cycle%1end:
 %if %1 < 7
     add         r2, 64
@@ -510,8 +522,7 @@ RET
     mov         r0, [r0]
     add         r0, dword [r1+(%1&1)*8+64*(1+(%1>>1))]
 %endif
-    call        h264_add8x4_idct_sse2
-    jmp .cycle%1end
+    TAIL_CALL_IF_LAST h264_add8x4_idct_sse2, .cycle%1end, %1, 3
 .try%1dc:
     movsx       r0, word [r2   ]
     or         r0w, word [r2+32]
@@ -524,7 +535,7 @@ RET
     mov         r0, [r0]
     add         r0, dword [r1+(%1&1)*8+64*(1+(%1>>1))]
 %endif
-    call        h264_idct_dc_add8_mmxext
+    TAIL_CALL_IF_LAST h264_idct_dc_add8_mmxext, , %1, 3
 .cycle%1end:
 %if %1 == 1
     add         r2, 384+64
