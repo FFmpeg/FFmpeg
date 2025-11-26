@@ -330,6 +330,7 @@ static const struct {
     { "sw_range_convert", checkasm_check_sw_range_convert },
     { "sw_rgb", checkasm_check_sw_rgb },
     { "sw_scale", checkasm_check_sw_scale },
+    { "sw_xyz2rgb", checkasm_check_sw_xyz2rgb },
     { "sw_yuv2rgb", checkasm_check_sw_yuv2rgb },
     { "sw_yuv2yuv", checkasm_check_sw_yuv2yuv },
     { "sw_ops", checkasm_check_sw_ops },

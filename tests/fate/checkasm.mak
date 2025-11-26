@@ -55,6 +55,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-sw_range_convert                          \
                 fate-checkasm-sw_rgb                                    \
                 fate-checkasm-sw_scale                                  \
+                fate-checkasm-sw_xyz2rgb                                \
                 fate-checkasm-sw_yuv2rgb                                \
                 fate-checkasm-sw_yuv2yuv                                \
                 fate-checkasm-takdsp                                    \
