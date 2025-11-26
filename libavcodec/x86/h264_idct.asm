@@ -51,7 +51,6 @@ scan8_mem: db  4+ 1*8, 5+ 1*8, 4+ 2*8, 5+ 2*8
 %endif
 
 cextern pw_32
-cextern pw_1
 
 SECTION .text
 
@@ -577,9 +576,9 @@ RET
     SWAP %1, %4, %3
 %endmacro
 
+; requires m5 to contain pw_1
 %macro DEQUANT 1
     movd        m4, t3d
-    movq        m5, [pw_1]
     pshufd      m4, m4, 0
     punpcklwd   m0, m5
     punpcklwd   m1, m5
@@ -635,6 +634,7 @@ cglobal h264_luma_dc_dequant_idct, 3, 4, 7
     punpcklwd   m0, m1
     punpcklwd   m2, m3
     mova        m4, m0
+    pcmpeqw     m5, m5
     punpckldq   m0, m2
     punpckhdq   m4, m2
     movhlps     m1, m0
@@ -652,6 +652,7 @@ cglobal h264_luma_dc_dequant_idct, 3, 4, 7
 %else
     DECLARE_REG_TMP 1,3,0,2
 %endif
+    psrlw       m5, 15
 
     cmp        t3d, 32767
     jg .big_qmul
