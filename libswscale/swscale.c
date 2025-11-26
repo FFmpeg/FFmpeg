@@ -861,6 +861,10 @@ av_cold void ff_sws_init_xyzdsp(SwsInternal *c)
 {
     c->xyz12Torgb48 = xyz12Torgb48_c;
     c->rgb48Toxyz12 = rgb48Toxyz12_c;
+
+#if ARCH_AARCH64
+    ff_sws_init_xyzdsp_aarch64(c);
+#endif
 }
 
 void ff_update_palette(SwsInternal *c, const uint32_t *pal)

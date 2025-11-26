@@ -21,6 +21,35 @@
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 #include "libavutil/aarch64/cpu.h"
+#include "asm-offsets.h"
+
+#define SIZEOF_MEMBER(type, member) \
+    sizeof(((type*)0)->member)
+
+static_assert(offsetof(SwsLuts, in)  == SL_IN,  "struct layout mismatch");
+static_assert(offsetof(SwsLuts, out) == SL_OUT, "struct layout mismatch");
+
+static_assert(offsetof(SwsColorXform, gamma) == SCX_GAMMA,
+              "struct layout mismatch");
+static_assert(offsetof(SwsColorXform, mat) == SCX_MAT,
+              "struct layout mismatch");
+
+static_assert(offsetof(SwsColorXform, mat) +
+              2 * SIZEOF_MEMBER(SwsColorXform, mat[0]) +
+              2 * SIZEOF_MEMBER(SwsColorXform, mat[0][0]) == SCX_MAT_22,
+              "struct layout mismatch");
+
+void ff_xyz12Torgb48le_neon_asm(const SwsColorXform *c, uint8_t *dst,
+                                int dst_stride, const uint8_t *src,
+                                int src_stride, int w, int h);
+
+static void xyz12Torgb48le_neon(const SwsInternal *c, uint8_t *dst,
+                                int dst_stride, const uint8_t *src,
+                                int src_stride, int w, int h)
+{
+    ff_xyz12Torgb48le_neon_asm(&c->xyz2rgb, dst, dst_stride, src, src_stride,
+                               w, h);
+}
 
 void ff_hscale16to15_4_neon_asm(int shift, int16_t *_dst, int dstW,
                       const uint8_t *_src, const int16_t *filter,
@@ -303,6 +332,17 @@ av_cold void ff_sws_init_range_convert_aarch64(SwsInternal *c)
                 c->lumConvertRange = ff_lumRangeToJpeg16_neon;
                 c->chrConvertRange = ff_chrRangeToJpeg16_neon;
             }
+        }
+    }
+}
+
+av_cold void ff_sws_init_xyzdsp_aarch64(SwsInternal *c)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_neon(cpu_flags)) {
+        if (!isBE(c->opts.src_format)) {
+            c->xyz12Torgb48 = xyz12Torgb48le_neon;
         }
     }
 }

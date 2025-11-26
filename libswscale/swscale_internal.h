@@ -732,6 +732,8 @@ av_cold void ff_sws_init_range_convert_riscv(SwsInternal *c);
 av_cold void ff_sws_init_range_convert_x86(SwsInternal *c);
 
 av_cold void ff_sws_init_xyzdsp(SwsInternal *c);
+av_cold void ff_sws_init_xyzdsp_aarch64(SwsInternal *c);
+
 av_cold int ff_sws_fill_xyztables(SwsInternal *c);
 
 SwsFunc ff_yuv2rgb_init_x86(SwsInternal *c);
