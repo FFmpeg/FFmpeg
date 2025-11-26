@@ -1600,6 +1600,12 @@ void ff_vk_set_perm(enum AVPixelFormat pix_fmt, int lut[4], int inv)
         lut[2] = 0;
         lut[3] = 3;
         break;
+    case AV_PIX_FMT_X2BGR10:
+        lut[0] = 0;
+        lut[1] = 2;
+        lut[2] = 1;
+        lut[3] = 3;
+        break;
     default:
         lut[0] = 0;
         lut[1] = 1;
