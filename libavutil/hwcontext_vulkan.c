@@ -2465,7 +2465,42 @@ enum PrepMode {
     PREP_MODE_ENCODING_DPB,
 };
 
-static int prepare_frame(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
+static void switch_new_props(enum PrepMode pmode, VkImageLayout *new_layout,
+                             VkAccessFlags2 *new_access)
+{
+    switch (pmode) {
+    case PREP_MODE_GENERAL:
+        *new_layout = VK_IMAGE_LAYOUT_GENERAL;
+        *new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
+    case PREP_MODE_WRITE:
+        *new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        *new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
+    case PREP_MODE_EXTERNAL_IMPORT:
+        *new_layout = VK_IMAGE_LAYOUT_GENERAL;
+        *new_access = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        break;
+    case PREP_MODE_EXTERNAL_EXPORT:
+        *new_layout = VK_IMAGE_LAYOUT_GENERAL;
+        *new_access = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        break;
+    case PREP_MODE_DECODING_DST:
+        *new_layout = VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR;
+        *new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
+    case PREP_MODE_DECODING_DPB:
+        *new_layout = VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR;
+        *new_access = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
+    case PREP_MODE_ENCODING_DPB:
+        *new_layout = VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR;
+        *new_access = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
+    }
+}
+
+static int switch_layout(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
                          AVVkFrame *frame, enum PrepMode pmode)
 {
     int err;
@@ -2474,10 +2509,16 @@ static int prepare_frame(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
     VkImageMemoryBarrier2 img_bar[AV_NUM_DATA_POINTERS];
     int nb_img_bar = 0;
 
-    uint32_t dst_qf = p->nb_img_qfs > 1 ? VK_QUEUE_FAMILY_IGNORED : p->img_qfs[0];
     VkImageLayout new_layout;
     VkAccessFlags2 new_access;
+    switch_new_props(pmode, &new_layout, &new_access);
+
+    uint32_t dst_qf = p->nb_img_qfs > 1 ? VK_QUEUE_FAMILY_IGNORED : p->img_qfs[0];
     VkPipelineStageFlagBits2 src_stage = VK_PIPELINE_STAGE_2_NONE;
+    if (pmode == PREP_MODE_EXTERNAL_EXPORT) {
+        dst_qf     = VK_QUEUE_FAMILY_EXTERNAL_KHR;
+        src_stage  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+    }
 
     /* This is dirty - but it works. The vulkan.c dependency system doesn't
      * free non-refcounted frames, and non-refcounted hardware frames cannot
@@ -2501,39 +2542,6 @@ static int prepare_frame(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
     if (err < 0)
         return err;
 
-    switch (pmode) {
-    case PREP_MODE_GENERAL:
-        new_layout = VK_IMAGE_LAYOUT_GENERAL;
-        new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
-        break;
-    case PREP_MODE_WRITE:
-        new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
-        break;
-    case PREP_MODE_EXTERNAL_IMPORT:
-        new_layout = VK_IMAGE_LAYOUT_GENERAL;
-        new_access = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-        break;
-    case PREP_MODE_EXTERNAL_EXPORT:
-        new_layout = VK_IMAGE_LAYOUT_GENERAL;
-        new_access = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-        dst_qf     = VK_QUEUE_FAMILY_EXTERNAL_KHR;
-        src_stage  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-        break;
-    case PREP_MODE_DECODING_DST:
-        new_layout = VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR;
-        new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
-        break;
-    case PREP_MODE_DECODING_DPB:
-        new_layout = VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR;
-        new_access = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-        break;
-    case PREP_MODE_ENCODING_DPB:
-        new_layout = VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR;
-        new_access = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-        break;
-    }
-
     ff_vk_frame_barrier(&p->vkctx, exec, &tmp_frame, img_bar, &nb_img_bar,
                         src_stage,
                         VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
@@ -2553,6 +2561,67 @@ static int prepare_frame(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
     ff_vk_exec_discard_deps(&p->vkctx, exec);
 
     return 0;
+}
+
+static int switch_layout_host(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
+                              AVVkFrame *frame, enum PrepMode pmode)
+{
+    VkResult ret;
+    VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
+    VkHostImageLayoutTransitionInfo layout_change[AV_NUM_DATA_POINTERS];
+    int nb_images = ff_vk_count_images(frame);
+
+    VkImageLayout new_layout;
+    VkAccessFlags2 new_access;
+    switch_new_props(pmode, &new_layout, &new_access);
+
+    int i;
+    for (i = 0; i < p->vkctx.host_image_props.copyDstLayoutCount; i++) {
+        if (p->vkctx.host_image_props.pCopyDstLayouts[i] == new_layout)
+            break;
+    }
+    if (i == p->vkctx.host_image_props.copyDstLayoutCount)
+        return AVERROR(ENOTSUP);
+
+    for (i = 0; i < nb_images; i++) {
+        layout_change[i] = (VkHostImageLayoutTransitionInfo) {
+            .sType = VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO,
+            .image = frame->img[i],
+            .oldLayout = frame->layout[i],
+            .newLayout = new_layout,
+            .subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .subresourceRange.layerCount = 1,
+            .subresourceRange.levelCount = 1,
+        };
+        frame->layout[i] = new_layout;
+    }
+
+    ret = vk->TransitionImageLayoutEXT(p->vkctx.hwctx->act_dev,
+                                       nb_images, layout_change);
+    if (ret != VK_SUCCESS) {
+        av_log(hwfc, AV_LOG_ERROR, "Unable to prepare frame: %s\n",
+               ff_vk_ret2str(ret));
+        return AVERROR_EXTERNAL;
+    }
+
+    return 0;
+}
+
+static int prepare_frame(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
+                         AVVkFrame *frame, enum PrepMode pmode)
+{
+    int err = 0;
+    AVVulkanFramesContext *hwfc_vk = hwfc->hwctx;
+    if (hwfc_vk->usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT &&
+        (pmode != PREP_MODE_EXTERNAL_EXPORT) &&
+        (pmode != PREP_MODE_EXTERNAL_IMPORT))
+        err = switch_layout_host(hwfc, ectx, frame, pmode);
+
+    if (err != AVERROR(ENOTSUP))
+        return err;
+
+    return switch_layout(hwfc, ectx, frame, pmode);
 }
 
 static inline void get_plane_wh(uint32_t *w, uint32_t *h, enum AVPixelFormat format,
