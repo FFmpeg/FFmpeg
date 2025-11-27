@@ -113,7 +113,7 @@ void ff_vvc_dsp_init(VVCDSPContext *vvcdsp, int bit_depth)
     ff_vvc_dsp_init_aarch64(vvcdsp, bit_depth);
 #elif ARCH_RISCV
     ff_vvc_dsp_init_riscv(vvcdsp, bit_depth);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_vvc_dsp_init_x86(vvcdsp, bit_depth);
 #endif
 }

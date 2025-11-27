@@ -190,7 +190,6 @@ H264_BIWEIGHT_10_SSE(4,  10)
 av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                                  const int chroma_format_idc)
 {
-#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMXEXT(cpu_flags) && chroma_format_idc <= 1)
@@ -363,5 +362,4 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
 #endif /* HAVE_ALIGNED_STACK */
         }
     }
-#endif
 }

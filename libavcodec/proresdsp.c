@@ -149,7 +149,7 @@ av_cold void ff_proresdsp_init(ProresDSPContext *dsp, int bits_per_raw_sample)
         dsp->idct_permutation_type = FF_IDCT_PERM_NONE;
     }
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_proresdsp_init_x86(dsp, bits_per_raw_sample);
 #endif
 

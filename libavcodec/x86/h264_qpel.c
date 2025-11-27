@@ -30,7 +30,6 @@
 #include "fpel.h"
 #include "qpel.h"
 
-#if HAVE_X86ASM
 void ff_avg_pixels4_mmxext(uint8_t *dst, const uint8_t *src, ptrdiff_t stride);
 void ff_put_pixels4x4_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
                                 ptrdiff_t stride);
@@ -344,8 +343,6 @@ LUMA_MC_816(10, mc13, sse2)
 LUMA_MC_816(10, mc23, sse2)
 LUMA_MC_816(10, mc33, sse2)
 
-#endif /* HAVE_X86ASM */
-
 #define SET_QPEL_FUNCS_1PP(PFX, IDX, SIZE, CPU, PREFIX)                      \
     do {                                                                     \
     c->PFX ## _pixels_tab[IDX][ 1] = PREFIX ## PFX ## SIZE ## _mc10_ ## CPU; \
@@ -388,7 +385,6 @@ LUMA_MC_816(10, mc33, sse2)
 
 av_cold void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
 {
-#if HAVE_X86ASM
     int high_bit_depth = bit_depth > 8;
     int cpu_flags = av_get_cpu_flags();
 
@@ -455,5 +451,4 @@ av_cold void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
             H264_QPEL_FUNCS_10(3, 0, ssse3_cache64);
         }
     }
-#endif
 }

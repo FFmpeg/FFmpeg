@@ -62,7 +62,6 @@ DECORRELATE_IFUNCS(32,  avx);
 
 av_cold void ff_flacdsp_init_x86(FLACDSPContext *c, enum AVSampleFormat fmt, int channels)
 {
-#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSE2(cpu_flags)) {
@@ -127,5 +126,4 @@ av_cold void ff_flacdsp_init_x86(FLACDSPContext *c, enum AVSampleFormat fmt, int
     if (EXTERNAL_XOP(cpu_flags)) {
         c->lpc32 = ff_flac_lpc_32_xop;
     }
-#endif /* HAVE_X86ASM */
 }

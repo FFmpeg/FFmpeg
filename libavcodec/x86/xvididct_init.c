@@ -16,7 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
@@ -27,7 +26,6 @@
 
 av_cold void ff_xvid_idct_init_x86(IDCTDSPContext *c)
 {
-#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSE2(cpu_flags)) {
@@ -36,5 +34,4 @@ av_cold void ff_xvid_idct_init_x86(IDCTDSPContext *c)
         c->idct      = ff_xvid_idct_sse2;
         c->perm_type = FF_IDCT_PERM_SSE2;
     }
-#endif /* HAVE_X86ASM */
 }

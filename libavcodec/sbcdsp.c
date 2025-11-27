@@ -382,7 +382,7 @@ av_cold void ff_sbcdsp_init(SBCDSPContext *s)
 
 #if ARCH_ARM
     ff_sbcdsp_init_arm(s);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_sbcdsp_init_x86(s);
 #endif
 }

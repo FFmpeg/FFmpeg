@@ -32,7 +32,6 @@ extern void ff_v210_planar_unpack_avx512icl(const uint32_t *src, uint16_t *y, ui
 
 av_cold void ff_v210_x86_init(V210DecContext *s)
 {
-#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (s->aligned_input) {
@@ -71,5 +70,4 @@ av_cold void ff_v210_x86_init(V210DecContext *s)
             s->unpack_frame = ff_v210_planar_unpack_avx512icl;
 #endif
     }
-#endif // HAVE_X86ASM
 }

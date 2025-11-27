@@ -1363,7 +1363,7 @@ const FFCodec ff_dnxhd_encoder = {
 
 void ff_dnxhdenc_init(DNXHDEncContext *ctx)
 {
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_dnxhdenc_init_x86(ctx);
 #endif
 }

@@ -83,7 +83,7 @@ av_unused av_cold static void ff_v210enc_init(V210EncContext *s)
     s->sample_factor_8  = 2;
     s->sample_factor_10 = 1;
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_v210enc_init_x86(s);
 #endif
 }

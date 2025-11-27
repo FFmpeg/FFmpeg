@@ -52,7 +52,6 @@ static void vc1_h_loop_filter16_ ## EXT(uint8_t *src, ptrdiff_t stride, int pq) 
     ff_vc1_h_loop_filter8_ ## EXT(src+8*stride, stride, pq); \
 }
 
-#if HAVE_X86ASM
 LOOP_FILTER4(mmxext)
 LOOP_FILTER816(sse2)
 LOOP_FILTER4(ssse3)
@@ -77,8 +76,6 @@ DECLARE_FUNCTION(put_,  8, _sse2)
 DECLARE_FUNCTION(avg_,  8, _mmxext)
 DECLARE_FUNCTION(put_, 16, _sse2)
 DECLARE_FUNCTION(avg_, 16, _sse2)
-
-#endif /* HAVE_X86ASM */
 
 void ff_put_vc1_chroma_mc8_nornd_ssse3(uint8_t *dst, const uint8_t *src,
                                        ptrdiff_t stride, int h, int x, int y);
@@ -117,7 +114,6 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         dsp->vc1_v_loop_filter16 = vc1_v_loop_filter16_ ## EXT; \
         dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_ ## EXT
 
-#if HAVE_X86ASM
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         ASSIGN_LF4(mmxext);
 
@@ -145,5 +141,4 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_sse4;
         dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_sse4;
     }
-#endif /* HAVE_X86ASM */
 }

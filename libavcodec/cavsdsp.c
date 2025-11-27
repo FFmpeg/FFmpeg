@@ -577,7 +577,7 @@ av_cold void ff_cavsdsp_init(CAVSDSPContext* c)
     c->cavs_idct8_add = cavs_idct8_add_c;
     c->idct_perm = FF_IDCT_PERM_NONE;
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_cavsdsp_init_x86(c);
 #endif
 }

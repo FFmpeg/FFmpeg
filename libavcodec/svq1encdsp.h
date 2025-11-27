@@ -52,7 +52,7 @@ static inline void ff_svq1enc_init(SVQ1EncDSPContext *c)
     ff_svq1enc_init_ppc(c);
 #elif ARCH_RISCV
     ff_svq1enc_init_riscv(c);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_svq1enc_init_x86(c);
 #endif
 }

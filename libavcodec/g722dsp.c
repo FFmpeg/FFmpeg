@@ -73,7 +73,7 @@ av_cold void ff_g722dsp_init(G722DSPContext *c)
     ff_g722dsp_init_arm(c);
 #elif ARCH_RISCV
     ff_g722dsp_init_riscv(c);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_g722dsp_init_x86(c);
 #endif
 }

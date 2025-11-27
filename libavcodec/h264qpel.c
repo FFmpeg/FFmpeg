@@ -104,7 +104,7 @@ av_cold void ff_h264qpel_init(H264QpelContext *c, int bit_depth)
     ff_h264qpel_init_ppc(c, bit_depth);
 #elif ARCH_RISCV
     ff_h264qpel_init_riscv(c, bit_depth);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_h264qpel_init_x86(c, bit_depth);
 #elif ARCH_MIPS
     ff_h264qpel_init_mips(c, bit_depth);

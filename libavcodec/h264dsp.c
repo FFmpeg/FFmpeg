@@ -160,7 +160,7 @@ av_cold void ff_h264dsp_init(H264DSPContext *c, const int bit_depth,
     ff_h264dsp_init_ppc(c, bit_depth, chroma_format_idc);
 #elif ARCH_RISCV
     ff_h264dsp_init_riscv(c, bit_depth, chroma_format_idc);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_h264dsp_init_x86(c, bit_depth, chroma_format_idc);
 #elif ARCH_MIPS
     ff_h264dsp_init_mips(c, bit_depth, chroma_format_idc);

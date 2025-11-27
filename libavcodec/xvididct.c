@@ -336,7 +336,7 @@ av_cold void ff_xvid_idct_init(IDCTDSPContext *c)
     c->idct      = ff_xvid_idct;
     c->perm_type = FF_IDCT_PERM_NONE;
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_xvid_idct_init_x86(c);
 #elif ARCH_MIPS
     ff_xvid_idct_init_mips(c);

@@ -27,12 +27,12 @@ void ff_flac_enc_lpc_16_sse4(int32_t *, const int32_t *, int, int, const int32_t
 
 av_cold void ff_flacencdsp_init_x86(FLACEncDSPContext *c)
 {
-#if HAVE_X86ASM && CONFIG_GPL
+#if CONFIG_GPL
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSE4(cpu_flags)) {
         if (CONFIG_GPL)
             c->lpc16_encode = ff_flac_enc_lpc_16_sse4;
     }
-#endif /* HAVE_X86ASM */
+#endif /* CONFIG_GPL */
 }

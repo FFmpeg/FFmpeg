@@ -53,7 +53,7 @@ av_cold void ff_bswapdsp_init(BswapDSPContext *c)
 
 #if ARCH_RISCV
     ff_bswapdsp_init_riscv(c);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_bswapdsp_init_x86(c);
 #endif
 }

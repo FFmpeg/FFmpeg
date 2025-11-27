@@ -65,7 +65,7 @@ static inline void ff_aacenc_dsp_init(AACEncDSPContext *s)
 
 #if ARCH_RISCV
     ff_aacenc_dsp_init_riscv(s);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_aacenc_dsp_init_x86(s);
 #elif ARCH_AARCH64
     ff_aacenc_dsp_init_aarch64(s);

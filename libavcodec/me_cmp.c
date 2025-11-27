@@ -1019,7 +1019,7 @@ av_cold void ff_me_cmp_init(MECmpContext *c, AVCodecContext *avctx)
     ff_me_cmp_init_ppc(c, avctx);
 #elif ARCH_RISCV
     ff_me_cmp_init_riscv(c, avctx);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_me_cmp_init_x86(c, avctx);
 #elif ARCH_MIPS
     ff_me_cmp_init_mips(c, avctx);

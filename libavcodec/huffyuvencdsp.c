@@ -89,7 +89,7 @@ av_cold void ff_huffyuvencdsp_init(HuffYUVEncDSPContext *c, enum AVPixelFormat p
     c->diff_int16           = diff_int16_c;
     c->sub_hfyu_median_pred_int16 = sub_hfyu_median_pred_int16_c;
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_huffyuvencdsp_init_x86(c, pix_fmt);
 #endif
 }

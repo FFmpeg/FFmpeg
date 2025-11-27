@@ -34,7 +34,7 @@ av_cold void ff_flacencdsp_init(FLACEncDSPContext *c)
     c->lpc16_encode = flac_lpc_encode_c_16;
     c->lpc32_encode = flac_lpc_encode_c_32;
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_flacencdsp_init_x86(c);
 #endif
 }

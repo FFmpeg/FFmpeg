@@ -34,8 +34,6 @@ void ff_put_signed_rect_clamped_10_sse4(uint8_t *dst, int dst_stride, const uint
 
 void ff_dequant_subband_32_sse4(uint8_t *src, uint8_t *dst, ptrdiff_t stride, const int qf, const int qs, int tot_v, int tot_h);
 
-#if HAVE_X86ASM
-
 #define HPEL_FILTER(MMSIZE, EXT)                                                             \
     void ff_dirac_hpel_filter_v_ ## EXT(uint8_t *, const uint8_t *, int, int);               \
     void ff_dirac_hpel_filter_h_ ## EXT(uint8_t *, const uint8_t *, int);                    \
@@ -81,11 +79,8 @@ DIRAC_PIXOP(avg, sse2)
 
 HPEL_FILTER(16, sse2)
 
-#endif // HAVE_X86ASM
-
 void ff_diracdsp_init_x86(DiracDSPContext* c)
 {
-#if HAVE_X86ASM
     int mm_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSE2(mm_flags)) {
@@ -107,5 +102,4 @@ void ff_diracdsp_init_x86(DiracDSPContext* c)
         c->dequant_subband[1]         = ff_dequant_subband_32_sse4;
         c->put_signed_rect_clamped[1] = ff_put_signed_rect_clamped_10_sse4;
     }
-#endif // HAVE_X86ASM
 }

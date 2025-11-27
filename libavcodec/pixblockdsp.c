@@ -108,7 +108,7 @@ av_cold void ff_pixblockdsp_init(PixblockDSPContext *c, int bits_per_raw_sample)
     ff_pixblockdsp_init_ppc(c, high_bit_depth);
 #elif ARCH_RISCV
     ff_pixblockdsp_init_riscv(c, high_bit_depth);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_pixblockdsp_init_x86(c, high_bit_depth);
 #elif ARCH_MIPS
     ff_pixblockdsp_init_mips(c, high_bit_depth);

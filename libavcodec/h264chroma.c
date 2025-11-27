@@ -50,7 +50,7 @@ av_cold void ff_h264chroma_init(H264ChromaContext *c, int bit_depth)
     ff_h264chroma_init_arm(c, bit_depth);
 #elif ARCH_PPC
     ff_h264chroma_init_ppc(c, bit_depth);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_h264chroma_init_x86(c, bit_depth);
 #elif ARCH_MIPS
     ff_h264chroma_init_mips(c, bit_depth);

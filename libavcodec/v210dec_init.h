@@ -54,7 +54,7 @@ static void v210_planar_unpack_c(const uint32_t *src, uint16_t *y, uint16_t *u, 
 av_unused static av_cold void ff_v210dec_init(V210DecContext *s)
 {
     s->unpack_frame = v210_planar_unpack_c;
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_v210_x86_init(s);
 #endif
 }

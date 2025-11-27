@@ -228,7 +228,7 @@ av_cold void AAC_RENAME(ff_psdsp_init)(PSDSPContext *s)
     ff_psdsp_init_aarch64(s);
 #elif ARCH_RISCV
     ff_psdsp_init_riscv(s);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_psdsp_init_x86(s);
 #endif
 #endif /* !USE_FIXED */

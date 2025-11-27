@@ -41,7 +41,7 @@ av_cold void ff_init_scantable_permutation(uint8_t *idct_permutation,
 {
     int i;
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     if (ff_init_scantable_permutation_x86(idct_permutation,
                                           perm_type))
         return;
@@ -301,7 +301,7 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
     ff_idctdsp_init_ppc(c, avctx, high_bit_depth);
 #elif ARCH_RISCV
     ff_idctdsp_init_riscv(c, avctx, high_bit_depth);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_idctdsp_init_x86(c, avctx, high_bit_depth);
 #elif ARCH_MIPS
     ff_idctdsp_init_mips(c, avctx, high_bit_depth);

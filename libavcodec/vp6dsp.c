@@ -64,7 +64,7 @@ av_cold void ff_vp6dsp_init(VP6DSPContext *s)
 {
     s->vp6_filter_diag4 = vp6_filter_diag4_c;
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_vp6dsp_init_x86(s);
 #endif
 }

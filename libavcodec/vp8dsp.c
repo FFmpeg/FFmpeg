@@ -683,7 +683,7 @@ av_cold void ff_vp78dsp_init(VP8DSPContext *dsp)
     ff_vp78dsp_init_ppc(dsp);
 #elif ARCH_RISCV
     ff_vp78dsp_init_riscv(dsp);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_vp78dsp_init_x86(dsp);
 #endif
 }
@@ -750,7 +750,7 @@ av_cold void ff_vp8dsp_init(VP8DSPContext *dsp)
     ff_vp8dsp_init_arm(dsp);
 #elif ARCH_RISCV
     ff_vp8dsp_init_riscv(dsp);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_vp8dsp_init_x86(dsp);
 #elif ARCH_MIPS
     ff_vp8dsp_init_mips(dsp);

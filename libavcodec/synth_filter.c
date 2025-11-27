@@ -180,7 +180,7 @@ av_cold void ff_synth_filter_init(SynthFilterContext *c)
     ff_synth_filter_init_aarch64(c);
 #elif ARCH_ARM
     ff_synth_filter_init_arm(c);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_synth_filter_init_x86(c);
 #endif
 }

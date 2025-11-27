@@ -140,7 +140,7 @@ av_cold void ff_rv34dsp_init(RV34DSPContext *c)
     ff_rv34dsp_init_arm(c);
 #elif ARCH_RISCV
     ff_rv34dsp_init_riscv(c);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_rv34dsp_init_x86(c);
 #endif
 }

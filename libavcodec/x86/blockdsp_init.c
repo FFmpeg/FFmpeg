@@ -36,7 +36,6 @@ void ff_fill_block_tab_8_avx2(uint8_t *block, uint8_t value, ptrdiff_t line_size
 
 av_cold void ff_blockdsp_init_x86(BlockDSPContext *c)
 {
-#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSE(cpu_flags)) {
@@ -55,5 +54,4 @@ av_cold void ff_blockdsp_init_x86(BlockDSPContext *c)
         c->fill_block_tab[0] = ff_fill_block_tab_16_avx2;
         c->fill_block_tab[1] = ff_fill_block_tab_8_avx2;
     }
-#endif /* HAVE_X86ASM */
 }

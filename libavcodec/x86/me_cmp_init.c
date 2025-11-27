@@ -80,7 +80,6 @@ int ff_vsad16u_approx_sse2(MPVEncContext *v, const uint8_t *pix1, const uint8_t 
 hadamard_func(sse2)
 hadamard_func(ssse3)
 
-#if HAVE_X86ASM
 static int nsse16_ssse3(MPVEncContext *c, const uint8_t *pix1, const uint8_t *pix2,
                         ptrdiff_t stride, int h)
 {
@@ -107,11 +106,8 @@ static int nsse8_ssse3(MPVEncContext *c, const uint8_t *pix1, const uint8_t *pix
         return score1 + FFABS(score2) * 8;
 }
 
-#endif /* HAVE_X86ASM */
-
 av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
 {
-#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
@@ -174,5 +170,4 @@ av_cold void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx)
         c->hadamard8_diff[0] = ff_hadamard8_diff16_ssse3;
         c->hadamard8_diff[1] = ff_hadamard8_diff_ssse3;
     }
-#endif
 }

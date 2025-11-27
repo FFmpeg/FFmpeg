@@ -360,7 +360,7 @@ av_cold void ff_hpeldsp_init(HpelDSPContext *c, int flags)
     ff_hpeldsp_init_arm(c, flags);
 #elif ARCH_PPC
     ff_hpeldsp_init_ppc(c, flags);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_hpeldsp_init_x86(c, flags);
 #elif ARCH_MIPS
     ff_hpeldsp_init_mips(c, flags);

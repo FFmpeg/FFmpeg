@@ -79,7 +79,7 @@ av_cold void ff_utvideodsp_init(UTVideoDSPContext *c)
 
 #if ARCH_RISCV
     ff_utvideodsp_init_riscv(c);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_utvideodsp_init_x86(c);
 #endif
 }

@@ -98,7 +98,7 @@ av_cold void ff_jpeg2000dsp_init(Jpeg2000DSPContext *c)
 
 #if ARCH_RISCV
     ff_jpeg2000dsp_init_riscv(c);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_jpeg2000dsp_init_x86(c);
 #endif
 }

@@ -112,7 +112,7 @@ av_cold void ff_cfhddsp_init(CFHDDSPContext *c, int depth, int bayer)
     else
         c->horiz_filter_clip = horiz_filter_clip;
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_cfhddsp_init_x86(c, depth, bayer);
 #endif
 }

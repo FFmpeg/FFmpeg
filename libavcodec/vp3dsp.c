@@ -459,7 +459,7 @@ av_cold void ff_vp3dsp_init(VP3DSPContext *c)
     ff_vp3dsp_init_arm(c);
 #elif ARCH_PPC
     ff_vp3dsp_init_ppc(c);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_vp3dsp_init_x86(c);
 #elif ARCH_MIPS
     ff_vp3dsp_init_mips(c);

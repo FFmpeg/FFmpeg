@@ -62,7 +62,7 @@ av_cold void ff_opus_dsp_init(OpusDSP *ctx)
     ff_opus_dsp_init_aarch64(ctx);
 #elif ARCH_RISCV
     ff_opus_dsp_init_riscv(ctx);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_opus_dsp_init_x86(ctx);
 #endif
 }

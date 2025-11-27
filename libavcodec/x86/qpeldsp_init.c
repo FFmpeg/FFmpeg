@@ -80,8 +80,6 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst,
                                                 const uint8_t *src,
                                                 ptrdiff_t dstStride, ptrdiff_t srcStride);
 
-#if HAVE_X86ASM
-
 #define QPEL_OP(OPNAME, RND, MMX)                                       \
 static void OPNAME ## qpel8_mc10_ ## MMX(uint8_t *dst,                  \
                                          const uint8_t *src,            \
@@ -484,8 +482,6 @@ static void OPNAME ## qpel16_mc22_ ## MMX(uint8_t *dst,                 \
 QPEL_OP(put_,        _,        mmxext)
 QPEL_OP(avg_,        _,        mmxext)
 QPEL_OP(put_no_rnd_, _no_rnd_, mmxext)
-
-#endif /* HAVE_X86ASM */
 
 #define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU, PREFIX)                          \
 do {                                                                         \

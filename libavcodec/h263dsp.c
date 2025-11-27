@@ -121,7 +121,7 @@ av_cold void ff_h263dsp_init(H263DSPContext *ctx)
 
 #if ARCH_RISCV
     ff_h263dsp_init_riscv(ctx);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_h263dsp_init_x86(ctx);
 #elif ARCH_MIPS
     ff_h263dsp_init_mips(ctx);
