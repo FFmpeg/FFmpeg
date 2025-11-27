@@ -68,7 +68,7 @@ void swri_resample_dsp_init(ResampleContext *c)
         break;
     }
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     swri_resample_dsp_x86_init(c);
 #elif ARCH_ARM
     swri_resample_dsp_arm_init(c);

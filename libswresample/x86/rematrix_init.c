@@ -32,7 +32,6 @@ D(float, avx)
 D(int16, sse2)
 
 av_cold int swri_rematrix_init_x86(struct SwrContext *s){
-#if HAVE_X86ASM
     int mm_flags = av_get_cpu_flags();
     int nb_in  = s->used_ch_layout.nb_channels;
     int nb_out = s->out.ch_count;
@@ -79,7 +78,6 @@ av_cold int swri_rematrix_init_x86(struct SwrContext *s){
         memcpy(s->native_simd_matrix, s->native_matrix, num * sizeof(float));
         s->native_simd_one.f = s->native_one.f;
     }
-#endif
 
     return 0;
 }
