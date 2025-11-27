@@ -165,7 +165,7 @@ AVFixedDSPContext * avpriv_alloc_fixed_dsp(int bit_exact)
 
 #if ARCH_RISCV
     ff_fixed_dsp_init_riscv(fdsp);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_fixed_dsp_init_x86(fdsp);
 #endif
 

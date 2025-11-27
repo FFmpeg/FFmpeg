@@ -237,7 +237,7 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
 
     a->rounds = rounds;
     a->crypt = decrypt ? aes_decrypt : aes_encrypt;
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_init_aes_x86(a, decrypt);
 #endif
 

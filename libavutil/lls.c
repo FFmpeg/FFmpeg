@@ -114,7 +114,7 @@ av_cold void avpriv_init_lls(LLSModel *m, int indep_count)
     m->evaluate_lls = evaluate_lls;
 #if ARCH_RISCV
     ff_init_lls_riscv(m);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_init_lls_x86(m);
 #endif
 }
