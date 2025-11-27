@@ -33818,10 +33818,41 @@ data in the frame.
 @end table
 
 @item type
-Set side data type used with all modes. Must be set for @code{select} mode. For
-the list of frame side data types, refer to the @code{AVFrameSideDataType} enum
-in @file{libavutil/frame.h}. For example, to choose
-@code{AV_FRAME_DATA_PANSCAN} side data, you must specify @code{PANSCAN}.
+Set side data type used with all modes. Must be set for @code{select} mode.
+
+Possible values are:
+
+@table @samp
+@item PANSCAN
+@item A53_CC
+@item STEREO3D
+@item MATRIXENCODING
+@item DOWNMIX_INFO
+@item REPLAYGAIN
+@item DISPLAYMATRIX
+@item AFD
+@item MOTION_VECTORS
+@item SKIP_SAMPLES
+@item AUDIO_SERVICE_TYPE
+@item MASTERING_DISPLAY_METADATA
+@item GOP_TIMECODE
+@item SPHERICAL
+@item CONTENT_LIGHT_LEVEL
+@item ICC_PROFILE
+@item S12M_TIMECODE
+@item DYNAMIC_HDR_PLUS
+@item REGIONS_OF_INTEREST
+@item VIDEO_ENC_PARAMS
+@item SEI_UNREGISTERED
+@item FILM_GRAIN_PARAMS
+@item DETECTION_BOUNDING_BOXES
+@item DETECTION_BBOXES
+@item DOVI_RPU_BUFFER
+@item DOVI_METADATA
+@item DYNAMIC_HDR_VIVID
+@item AMBIENT_VIEWING_ENVIRONMENT
+@item VIDEO_HINT
+@end table
 
 @end table
 
