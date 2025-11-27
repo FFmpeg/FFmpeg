@@ -18,7 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
@@ -35,7 +34,6 @@ void ff_gradfun_blur_line_movdqu_sse2(intptr_t x, uint16_t *buf,
                                       const uint16_t *buf1, uint16_t *dc,
                                       const uint8_t *src1, const uint8_t *src2);
 
-#if HAVE_X86ASM
 static void gradfun_filter_line_ssse3(uint8_t *dst, const uint8_t *src, const uint16_t *dc,
                                       int width, int thresh,
                                       const uint16_t *dithers)
@@ -66,11 +64,9 @@ static void gradfun_blur_line_sse2(uint16_t *dc, uint16_t *buf, const uint16_t *
                                          dc + width, src + width * 2,
                                          src + width * 2 + src_linesize);
 }
-#endif /* HAVE_X86ASM */
 
 av_cold void ff_gradfun_init_x86(GradFunContext *gf)
 {
-#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSSE3(cpu_flags))
@@ -78,5 +74,4 @@ av_cold void ff_gradfun_init_x86(GradFunContext *gf)
 
     if (EXTERNAL_SSE2(cpu_flags))
         gf->blur_line = gradfun_blur_line_sse2;
-#endif /* HAVE_X86ASM */
 }

@@ -1415,7 +1415,7 @@ static int config_output(AVFilterLink *outlink)
         s->update_sono = update_sono_yuv;
     }
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_showcqt_init_x86(s);
 #endif
 

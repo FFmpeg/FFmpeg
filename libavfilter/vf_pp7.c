@@ -305,7 +305,7 @@ static int config_input(AVFilterLink *inlink)
 
     pp7->dctB = dctB_c;
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_pp7_init_x86(pp7);
 #endif
 

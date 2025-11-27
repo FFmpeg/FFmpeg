@@ -500,7 +500,7 @@ static int config_input(AVFilterLink *inlink)
         }
     }
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM && CONFIG_GPL
     ff_removegrain_init_x86(s);
 #endif
 

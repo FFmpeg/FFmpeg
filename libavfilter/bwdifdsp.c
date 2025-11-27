@@ -218,7 +218,7 @@ av_cold void ff_bwdif_init_filter_line(BWDIFDSPContext *s, int bit_depth)
         s->filter_edge  = ff_bwdif_filter_edge_c;
     }
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_bwdif_init_x86(s, bit_depth);
 #elif ARCH_AARCH64
     ff_bwdif_init_aarch64(s, bit_depth);

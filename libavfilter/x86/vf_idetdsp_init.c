@@ -18,11 +18,8 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
-#include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavfilter/vf_idetdsp.h"
-
-#if HAVE_X86ASM
 
 /* declares main callable idet_filter_line_sse2() */
 #define FUNC_MAIN_DECL(KIND, SPAN)                                        \
@@ -68,10 +65,8 @@ FUNC_MAIN_DECL_16bit(avx2, 16)
 FUNC_MAIN_DECL(avx512icl, 64)
 FUNC_MAIN_DECL_16bit(avx512icl, 32)
 
-#endif
 av_cold void ff_idet_dsp_init_x86(IDETDSPContext *dsp, int depth)
 {
-#if HAVE_X86ASM
     const int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSE2(cpu_flags)) {
@@ -83,5 +78,4 @@ av_cold void ff_idet_dsp_init_x86(IDETDSPContext *dsp, int depth)
     if (EXTERNAL_AVX512ICL(cpu_flags)) {
         dsp->filter_line = depth > 8 ? idet_filter_line_16bit_avx512icl : idet_filter_line_avx512icl;
     }
-#endif // HAVE_X86ASM
 }

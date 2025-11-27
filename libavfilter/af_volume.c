@@ -236,7 +236,7 @@ static av_cold void volume_init(VolumeContext *vol)
         break;
     }
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_volume_init_x86(vol);
 #endif
 }

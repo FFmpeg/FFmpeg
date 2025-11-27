@@ -289,7 +289,7 @@ static int config_output(AVFilterLink *outlink)
         s->filter_edges = filter_edges;
     }
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_yadif_init_x86(s);
 #endif
 

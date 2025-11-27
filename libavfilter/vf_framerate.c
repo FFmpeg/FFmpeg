@@ -262,7 +262,7 @@ void ff_framerate_init(FrameRateContext *s)
         s->blend_factor_max = 1 << BLEND_FACTOR_DEPTH(16);
         s->blend = blend_frames16_c;
     }
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_framerate_init_x86(s);
 #endif
 }

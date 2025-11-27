@@ -143,7 +143,7 @@ void ff_colorspacedsp_init(ColorSpaceDSPContext *dsp)
 
     dsp->multiply3x3 = multiply3x3_c;
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_colorspacedsp_x86_init(dsp);
 #endif
 }

@@ -481,7 +481,7 @@ static int config_input_ref(AVFilterLink *inlink)
     s->ssim_plane = desc->comp[0].depth > 8 ? ssim_plane_16bit : ssim_plane;
     s->dsp.ssim_4x4_line = ssim_4x4xn_8bit;
     s->dsp.ssim_end_line = ssim_endn_8bit;
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_ssim_init_x86(&s->dsp);
 #endif
 

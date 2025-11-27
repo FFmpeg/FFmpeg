@@ -77,7 +77,7 @@ av_unused static void ff_afir_init(AudioFIRDSPContext *dsp)
 
 #if ARCH_RISCV
     ff_afir_init_riscv(dsp);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_afir_init_x86(dsp);
 #endif
 }

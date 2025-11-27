@@ -130,7 +130,7 @@ static av_cold int init(AVFilterContext *ctx)
     s->blur_line   = ff_gradfun_blur_line_c;
     s->filter_line = ff_gradfun_filter_line_c;
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_gradfun_init_x86(s);
 #endif
 

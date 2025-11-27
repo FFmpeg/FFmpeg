@@ -59,7 +59,7 @@ void ff_scene_sad_c(SCENE_SAD_PARAMS)
 ff_scene_sad_fn ff_scene_sad_get_fn(int depth)
 {
     ff_scene_sad_fn sad = NULL;
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     sad = ff_scene_sad_get_fn_x86(depth);
 #endif
     if (!sad) {

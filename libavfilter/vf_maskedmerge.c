@@ -201,7 +201,7 @@ static int config_input(AVFilterLink *inlink)
     else
         s->maskedmerge = maskedmerge32;
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_maskedmerge_init_x86(s);
 #endif
 

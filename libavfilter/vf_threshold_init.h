@@ -84,7 +84,7 @@ av_unused static void ff_threshold_init(ThresholdContext *s)
         s->bpc = 2;
     }
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_threshold_init_x86(s);
 #endif
 }

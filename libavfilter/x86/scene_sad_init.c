@@ -52,7 +52,6 @@ static void FUNC_NAME(SCENE_SAD_PARAMS) {                                     \
     *sum += sad[0];                                                           \
 }
 
-#if HAVE_X86ASM
 SCENE_SAD_FUNC(scene_sad_sse2, ff_scene_sad8_sse2, 16)
 #if HAVE_AVX2_EXTERNAL
 SCENE_SAD_FUNC(scene_sad_avx2,     ff_scene_sad8_avx2,  32)
@@ -62,11 +61,9 @@ SCENE_SAD16_FUNC(scene_sad16_avx2, ff_scene_sad16_avx2, 32)
 SCENE_SAD_FUNC(scene_sad_avx512,     ff_scene_sad8_avx512,  64)
 SCENE_SAD16_FUNC(scene_sad16_avx512, ff_scene_sad16_avx512, 64)
 #endif
-#endif
 
 ff_scene_sad_fn ff_scene_sad_get_fn_x86(int depth)
 {
-#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
     if (depth <= 8) {
 #if HAVE_AVX512_EXTERNAL
@@ -89,6 +86,5 @@ ff_scene_sad_fn ff_scene_sad_get_fn_x86(int depth)
             return scene_sad16_avx2;
 #endif
     }
-#endif
     return NULL;
 }

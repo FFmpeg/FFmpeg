@@ -237,7 +237,7 @@ static int config_props_output(AVFilterLink *outlink)
         }
     }
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     for (int i = 0; i < 4; i++) {
         TransVtable *v = &s->vtables[i];
 

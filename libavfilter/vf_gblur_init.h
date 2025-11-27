@@ -115,7 +115,7 @@ av_unused static void ff_gblur_init(GBlurContext *s)
     s->horiz_slice = horiz_slice_c;
     s->verti_slice = verti_slice_c;
     s->postscale_slice = postscale_c;
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_gblur_init_x86(s);
 #endif
 }

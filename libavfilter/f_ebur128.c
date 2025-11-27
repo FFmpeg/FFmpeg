@@ -502,7 +502,7 @@ static int config_audio_output(AVFilterLink *outlink)
             return AVERROR(ENOMEM);
     }
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_ebur128_init_x86(&ebur128->dsp, nb_channels);
 #endif
     return 0;

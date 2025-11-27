@@ -61,7 +61,7 @@ static unsigned count_pixels16_c(const uint8_t *src, ptrdiff_t stride,
 static inline ff_blackdetect_fn ff_blackdetect_get_fn(int depth)
 {
     ff_blackdetect_fn fn = NULL;
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     fn = ff_blackdetect_get_fn_x86(depth);
 #endif
 

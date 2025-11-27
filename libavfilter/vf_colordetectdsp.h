@@ -208,7 +208,7 @@ ff_color_detect_dsp_init(FFColorDetectDSPContext *dsp, int depth,
 
 #if ARCH_AARCH64
     ff_color_detect_dsp_init_aarch64(dsp, depth, color_range);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_color_detect_dsp_init_x86(dsp, depth, color_range);
 #endif
 }

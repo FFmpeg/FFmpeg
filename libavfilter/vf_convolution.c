@@ -800,7 +800,7 @@ static int param_init(AVFilterContext *ctx)
                     s->filter[p] = filter16_7x7;
             }
         }
-#if CONFIG_CONVOLUTION_FILTER && ARCH_X86_64
+#if CONFIG_CONVOLUTION_FILTER && ARCH_X86_64 && HAVE_X86ASM
         ff_convolution_init_x86(s);
 #endif
     } else if (!strcmp(ctx->filter->name, "prewitt")) {

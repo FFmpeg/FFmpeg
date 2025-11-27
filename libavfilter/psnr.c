@@ -58,7 +58,7 @@ static uint64_t sse_line_16bit(const uint8_t *_main_line, const uint8_t *_ref_li
 void ff_psnr_init(PSNRDSPContext *dsp, int bpp)
 {
     dsp->sse_line = bpp > 8 ? sse_line_16bit : sse_line_8bit;
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_psnr_init_x86(dsp, bpp);
 #endif
 }

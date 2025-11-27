@@ -190,7 +190,7 @@ av_unused static void ff_blend_init(FilterParams *param, int depth)
             param->blend = depth > 8 ? depth > 16 ? blend_copybottom_32 : blend_copybottom_16 : blend_copybottom_8;
     }
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_blend_init_x86(param, depth);
 #endif
 }

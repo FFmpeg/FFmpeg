@@ -132,7 +132,7 @@ static inline void ff_sobel_init(ConvolutionContext *s, int depth, int nb_planes
     if (s->depth > 8)
         for (int i = 0; i < 4; i++)
             s->filter[i] = filter16_sobel;
-#if ARCH_X86_64
+#if ARCH_X86_64 && HAVE_X86ASM
     ff_sobel_init_x86(s, depth, nb_planes);
 #endif
 }

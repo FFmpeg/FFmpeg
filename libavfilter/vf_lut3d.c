@@ -1152,7 +1152,7 @@ static int config_input(AVFilterLink *inlink)
         av_assert0(0);
     }
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_lut3d_init_x86(lut3d, desc);
 #endif
 

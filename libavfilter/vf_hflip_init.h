@@ -102,7 +102,7 @@ av_unused static int ff_hflip_init(FlipContext *s, int step[4], int nb_planes)
             return AVERROR_BUG;
         }
     }
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_hflip_init_x86(s, step, nb_planes);
 #endif
 

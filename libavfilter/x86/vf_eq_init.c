@@ -28,7 +28,6 @@
 extern void ff_process_one_line_sse2(const uint8_t *src, uint8_t *dst, short contrast,
                                      short brightness, int w);
 
-#if HAVE_X86ASM
 static void process_sse2(EQParameters *param, uint8_t *dst, int dst_stride,
                          const uint8_t *src, int src_stride, int w, int h)
 {
@@ -42,14 +41,11 @@ static void process_sse2(EQParameters *param, uint8_t *dst, int dst_stride,
         dst += dst_stride;
     }
 }
-#endif
 
 av_cold void ff_eq_init_x86(EQContext *eq)
 {
-#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
     if (EXTERNAL_SSE2(cpu_flags)) {
         eq->process = process_sse2;
     }
-#endif
 }

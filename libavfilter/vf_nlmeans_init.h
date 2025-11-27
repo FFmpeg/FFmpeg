@@ -131,7 +131,7 @@ av_unused static void ff_nlmeans_init(NLMeansDSPContext *dsp)
 
 #if ARCH_AARCH64
     ff_nlmeans_init_aarch64(dsp);
-#elif ARCH_X86
+#elif ARCH_X86 && HAVE_X86ASM
     ff_nlmeans_init_x86(dsp);
 #endif
 }

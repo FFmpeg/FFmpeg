@@ -835,7 +835,7 @@ static int init_slice_fn(AVFilterContext *ctx)
         break;
     }
 
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
     ff_overlay_init_x86(ctx);
 #endif
 

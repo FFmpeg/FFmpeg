@@ -286,7 +286,7 @@ static int config_out_props(AVFilterLink *outlink)
             tinterlace->lowpass_line = lowpass_line_complex_c_16;
         else
             tinterlace->lowpass_line = lowpass_line_complex_c;
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
         ff_tinterlace_init_x86(tinterlace);
 #endif
     } else if (tinterlace->flags & TINTERLACE_FLAG_VLPF) {
@@ -294,7 +294,7 @@ static int config_out_props(AVFilterLink *outlink)
             tinterlace->lowpass_line = lowpass_line_c_16;
         else
             tinterlace->lowpass_line = lowpass_line_c;
-#if ARCH_X86
+#if ARCH_X86 && HAVE_X86ASM
         ff_tinterlace_init_x86(tinterlace);
 #endif
     }
