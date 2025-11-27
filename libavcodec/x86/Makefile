@@ -65,6 +65,8 @@ X86ASM-OBJS-$(CONFIG_PRORES_DECODER)   += x86/proresdsp_init.o
 X86ASM-OBJS-$(CONFIG_PRORES_RAW_DECODER) += x86/proresdsp_init.o
 X86ASM-OBJS-$(CONFIG_RV40_DECODER)     += x86/rv40dsp_init.o
 X86ASM-OBJS-$(CONFIG_SBC_ENCODER)      += x86/sbcdsp_init.o
+OBJS-$(CONFIG_SNOW_DECODER)            += x86/snowdsp.o
+OBJS-$(CONFIG_SNOW_ENCODER)            += x86/snowdsp.o
 X86ASM-OBJS-$(CONFIG_SVQ1_ENCODER)     += x86/svq1enc_init.o
 X86ASM-OBJS-$(CONFIG_TAK_DECODER)      += x86/takdsp_init.o
 OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp_init.o
@@ -80,11 +82,6 @@ X86ASM-OBJS-$(CONFIG_VP9_DECODER)      += x86/vp9dsp_init.o            \
                                           x86/vp9dsp_init_12bpp.o      \
                                           x86/vp9dsp_init_16bpp.o
 
-
-# GCC inline assembly optimizations
-# decoders/encoders
-MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp.o
-MMX-OBJS-$(CONFIG_SNOW_ENCODER)        += x86/snowdsp.o
 
 # subsystems
 X86ASM-OBJS-$(CONFIG_AC3DSP)           += x86/ac3dsp.o                  \

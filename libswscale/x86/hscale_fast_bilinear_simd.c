@@ -27,7 +27,6 @@
 #define RET 0xC3 // near return opcode for x86
 #define PREFETCH "prefetchnta"
 
-#if HAVE_INLINE_ASM
 av_cold int ff_init_hscaler_mmxext(int dstW, int xInc, uint8_t *filterCode,
                                        int16_t *filter, int32_t *filterPos,
                                        int numSplits)
@@ -358,4 +357,3 @@ void ff_hcscale_fast_mmxext(SwsInternal *c, int16_t *dst1, int16_t *dst2,
         dst2[i] = src2[srcW-1]*128;
     }
 }
-#endif //HAVE_INLINE_ASM
