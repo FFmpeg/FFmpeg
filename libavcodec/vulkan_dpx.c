@@ -137,7 +137,7 @@ static int host_upload_image(AVCodecContext *avctx,
     };
     VkCopyMemoryToImageInfo copy_info = {
         .sType = VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO,
-        .flags = VK_HOST_IMAGE_COPY_MEMCPY_BIT_EXT,
+        .flags = VK_HOST_IMAGE_COPY_MEMCPY_EXT,
         .dstImage = temp,
         .dstImageLayout = VK_IMAGE_LAYOUT_GENERAL,
         .regionCount = 1,
