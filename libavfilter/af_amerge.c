@@ -63,6 +63,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->in);
 }
 
+#define INLAYOUT(ctx, i) (&(ctx)->inputs[i]->incfg.channel_layouts->channel_layouts[0])
+
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVSampleFormat packed_sample_fmts[] = {
@@ -74,10 +76,11 @@ static int query_formats(AVFilterContext *ctx)
         AV_SAMPLE_FMT_NONE
     };
     AMergeContext *s = ctx->priv;
-    AVChannelLayout *inlayout[SWR_CH_MAX] = { NULL }, outlayout = { 0 };
+    AVChannelLayout outlayout = { 0 };
     uint64_t outmask = 0;
     AVFilterChannelLayouts *layouts;
     int i, ret, nb_ch = 0;
+    int native_layout_routes[SWR_CH_MAX] = { 0 };
 
     for (i = 0; i < s->nb_inputs; i++) {
         if (!ctx->inputs[i]->incfg.channel_layouts ||
@@ -86,51 +89,47 @@ static int query_formats(AVFilterContext *ctx)
                    "No channel layout for input %d\n", i + 1);
             return AVERROR(EAGAIN);
         }
-        inlayout[i] = &ctx->inputs[i]->incfg.channel_layouts->channel_layouts[0];
         if (ctx->inputs[i]->incfg.channel_layouts->nb_channel_layouts > 1) {
             char buf[256];
-            av_channel_layout_describe(inlayout[i], buf, sizeof(buf));
+            av_channel_layout_describe(INLAYOUT(ctx, i), buf, sizeof(buf));
             av_log(ctx, AV_LOG_INFO, "Using \"%s\" for input %d\n", buf, i + 1);
         }
-        s->in[i].nb_ch = inlayout[i]->nb_channels;
-        for (int j = 0; j < s->in[i].nb_ch; j++) {
-            enum AVChannel id = av_channel_layout_channel_from_index(inlayout[i], j);
-            if (id >= 0 && id < 64)
-                outmask |= (1ULL << id);
-        }
+        s->in[i].nb_ch = INLAYOUT(ctx, i)->nb_channels;
         nb_ch += s->in[i].nb_ch;
     }
     if (nb_ch > SWR_CH_MAX) {
         av_log(ctx, AV_LOG_ERROR, "Too many channels (max %d)\n", SWR_CH_MAX);
         return AVERROR(EINVAL);
     }
+    for (int i = 0, ch_idx = 0; i < s->nb_inputs; i++) {
+        for (int j = 0; j < s->in[i].nb_ch; j++) {
+            enum AVChannel id = av_channel_layout_channel_from_index(INLAYOUT(ctx, i), j);
+            if (id >= 0 && id < 64) {
+                outmask |= (1ULL << id);
+                native_layout_routes[id] = ch_idx;
+            }
+            s->route[ch_idx] = ch_idx;
+            ch_idx++;
+        }
+    }
     if (av_popcount64(outmask) != nb_ch) {
         av_log(ctx, AV_LOG_WARNING,
                "Input channel layouts overlap: "
                "output layout will be determined by the number of distinct input channels\n");
-        for (i = 0; i < nb_ch; i++)
-            s->route[i] = i;
         av_channel_layout_default(&outlayout, nb_ch);
         if (!KNOWN(&outlayout) && nb_ch)
             av_channel_layout_from_mask(&outlayout, 0xFFFFFFFFFFFFFFFFULL >> (64 - nb_ch));
     } else {
-        int *route[SWR_CH_MAX];
-        int c, out_ch_number = 0;
-
+        for (int c = 0, ch_idx = 0; c < 64; c++)
+            if ((1ULL << c) & outmask)
+                s->route[native_layout_routes[c]] = ch_idx++;
         av_channel_layout_from_mask(&outlayout, outmask);
-        route[0] = s->route;
-        for (i = 1; i < s->nb_inputs; i++)
-            route[i] = route[i - 1] + s->in[i - 1].nb_ch;
-        for (c = 0; c < 64; c++)
-            for (i = 0; i < s->nb_inputs; i++)
-                if (av_channel_layout_index_from_channel(inlayout[i], c) >= 0)
-                    *(route[i]++) = out_ch_number++;
     }
     if ((ret = ff_set_common_formats_from_list(ctx, packed_sample_fmts)) < 0)
         return ret;
     for (i = 0; i < s->nb_inputs; i++) {
         layouts = NULL;
-        if ((ret = ff_add_channel_layout(&layouts, inlayout[i])) < 0)
+        if ((ret = ff_add_channel_layout(&layouts, INLAYOUT(ctx, i))) < 0)
             return ret;
         if ((ret = ff_channel_layouts_ref(layouts, &ctx->inputs[i]->outcfg.channel_layouts)) < 0)
             return ret;
