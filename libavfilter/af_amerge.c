@@ -135,21 +135,21 @@ static int query_formats(AVFilterContext *ctx)
     }
     switch (s->layout_mode) {
     case LM_LEGACY:
-    av_channel_layout_uninit(&outlayout);
-    if (av_popcount64(outmask) != nb_ch) {
-        av_log(ctx, AV_LOG_WARNING,
-               "Input channel layouts overlap: "
-               "output layout will be determined by the number of distinct input channels\n");
-        av_channel_layout_default(&outlayout, nb_ch);
-        if (!KNOWN(&outlayout) && nb_ch)
-            av_channel_layout_from_mask(&outlayout, 0xFFFFFFFFFFFFFFFFULL >> (64 - nb_ch));
-    } else {
-        for (int c = 0, ch_idx = 0; c < 64; c++)
-            if ((1ULL << c) & outmask)
-                s->route[native_layout_routes[c]] = ch_idx++;
-        av_channel_layout_from_mask(&outlayout, outmask);
-    }
-    break;
+        av_channel_layout_uninit(&outlayout);
+        if (av_popcount64(outmask) != nb_ch) {
+            av_log(ctx, AV_LOG_WARNING,
+                   "Input channel layouts overlap: "
+                   "output layout will be determined by the number of distinct input channels\n");
+            av_channel_layout_default(&outlayout, nb_ch);
+            if (!KNOWN(&outlayout) && nb_ch)
+                av_channel_layout_from_mask(&outlayout, 0xFFFFFFFFFFFFFFFFULL >> (64 - nb_ch));
+        } else {
+            for (int c = 0, ch_idx = 0; c < 64; c++)
+                if ((1ULL << c) & outmask)
+                    s->route[native_layout_routes[c]] = ch_idx++;
+            av_channel_layout_from_mask(&outlayout, outmask);
+        }
+        break;
     case LM_RESET:
         av_channel_layout_uninit(&outlayout);
         outlayout.order = AV_CHANNEL_ORDER_UNSPEC;
