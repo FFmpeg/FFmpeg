@@ -1665,6 +1665,7 @@ Force video tag/fourcc. This is an alias for @code{-tag:v}.
 @item -force_key_frames[:@var{stream_specifier}] @var{time}[,@var{time}...] (@emph{output,per-stream})
 @item -force_key_frames[:@var{stream_specifier}] expr:@var{expr} (@emph{output,per-stream})
 @item -force_key_frames[:@var{stream_specifier}] source (@emph{output,per-stream})
+@item -force_key_frames[:@var{stream_specifier}] scd_metadata (@emph{output,per-stream})
 
 @var{force_key_frames} can take arguments of the following form:
 
@@ -1727,6 +1728,14 @@ If the argument is @code{source}, ffmpeg will force a key frame if
 the current frame being encoded is marked as a key frame in its source.
 In cases where this particular source frame has to be dropped,
 enforce the next available frame to become a key frame instead.
+
+@item scd_metadata
+If the argument is @code{scd_metadata}, ffmpeg will force a key frame if
+the current frame contains a metadata entry with the key @code{lavfi.scd.time}.
+The metadata can be added by filters like @code{scdet} and @code{scdet_vulkan}.
+Avoid inserting filters that duplicate frames after @code{scdet}, as this can
+cause duplicate metadata for multiple frames and repeated insertion of key
+frames.
 
 @end table
 

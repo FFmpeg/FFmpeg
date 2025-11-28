@@ -602,6 +602,8 @@ enum {
 #if FFMPEG_OPT_FORCE_KF_SOURCE_NO_DROP
     KF_FORCE_SOURCE_NO_DROP = 2,
 #endif
+    // force keyframe if lavfi.scd.time metadata is set
+    KF_FORCE_SCD_METADATA = 3,
 };
 
 typedef struct KeyframeForceCtx {

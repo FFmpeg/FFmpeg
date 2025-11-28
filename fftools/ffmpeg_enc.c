@@ -768,6 +768,9 @@ static enum AVPictureType forced_kf_apply(void *logctx, KeyframeForceCtx *kf,
         }
     } else if (kf->type == KF_FORCE_SOURCE && (frame->flags & AV_FRAME_FLAG_KEY)) {
         goto force_keyframe;
+    } else if (kf->type == KF_FORCE_SCD_METADATA &&
+               av_dict_get(frame->metadata, "lavfi.scd.time", NULL, 0)) {
+        goto force_keyframe;
     }
 
     return AV_PICTURE_TYPE_NONE;
