@@ -28,5 +28,6 @@
 #define BLOCK_LAST_INDEX         0x10
 #define H263_AIC                 0x40
 #define INTER_SCANTAB_RASTER_END 0x88
+#define INTRA_SCANTAB_RASTER_END 0x10c
 
 #endif /* AVCODEC_ARM_ASM_OFFSETS_H */

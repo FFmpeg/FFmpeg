@@ -77,7 +77,7 @@ function ff_dct_unquantize_h263_intra_neon, export=1
         push            {r4-r6,lr}
         add             r12, r0,  #BLOCK_LAST_INDEX
         ldr             r6,  [r0, #AC_PRED]
-        add             lr,  r0,  #INTER_SCANTAB_RASTER_END
+        add             lr,  r0,  #INTRA_SCANTAB_RASTER_END
         cmp             r6,  #0
         it              ne
         movne           r12, #63

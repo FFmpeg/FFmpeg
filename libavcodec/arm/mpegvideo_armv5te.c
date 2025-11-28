@@ -73,7 +73,7 @@ static void dct_unquantize_h263_intra_armv5te(const MPVContext *s,
     if(s->ac_pred)
         nCoeffs=63;
     else
-        nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
+        nCoeffs = s->intra_scantable.raster_end[s->block_last_index[n]];
 
     ff_dct_unquantize_h263_armv5te(block, qmul, qadd, nCoeffs + 1);
     block[0] = level;

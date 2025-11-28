@@ -112,7 +112,7 @@ static void dct_unquantize_h263_intra_neon(const MPVContext *s, int16_t *block,
     if (s->ac_pred) {
         nCoeffs = 63;
     } else {
-        nCoeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
+        nCoeffs = s->intra_scantable.raster_end[s->block_last_index[n]];
         if (nCoeffs <= 0)
             return;
     }

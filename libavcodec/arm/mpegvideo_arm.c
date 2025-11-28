@@ -38,6 +38,8 @@ CHECK_OFFSET(MpegEncContext, ac_pred,          AC_PRED);
 CHECK_OFFSET(MpegEncContext, block_last_index, BLOCK_LAST_INDEX);
 CHECK_OFFSET(MpegEncContext, inter_scantable.raster_end,
              INTER_SCANTAB_RASTER_END);
+CHECK_OFFSET(MpegEncContext, intra_scantable.raster_end,
+             INTRA_SCANTAB_RASTER_END);
 CHECK_OFFSET(MpegEncContext, h263_aic,         H263_AIC);
 #endif
 

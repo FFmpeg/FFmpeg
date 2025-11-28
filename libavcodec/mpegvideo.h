@@ -72,11 +72,11 @@ typedef struct MpegEncContext {
 
     /* scantables */
     ScanTable inter_scantable; ///< if inter == intra then intra should be used to reduce the cache usage
+    ScanTable intra_scantable;
 
     /* WARNING: changes above this line require updates to hardcoded
      *          offsets used in ASM. */
 
-    ScanTable intra_scantable;
     uint8_t permutated_intra_h_scantable[64];
     uint8_t permutated_intra_v_scantable[64];
 
