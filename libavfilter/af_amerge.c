@@ -23,6 +23,7 @@
  * Audio merging filter
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
@@ -43,14 +44,27 @@ typedef struct AMergeContext {
     struct amerge_input {
         int nb_ch;         /**< number of channels for the input */
     } *in;
+    int layout_mode;       /**< the method for determining the output channel layout */
 } AMergeContext;
 
 #define OFFSET(x) offsetof(AMergeContext, x)
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
+enum LayoutModes {
+    LM_LEGACY,
+    LM_RESET,
+    LM_NORMAL,
+    NB_LAYOUTMODES
+};
+
 static const AVOption amerge_options[] = {
     { "inputs", "specify the number of inputs", OFFSET(nb_inputs),
       AV_OPT_TYPE_INT, { .i64 = 2 }, 1, SWR_CH_MAX, FLAGS },
+    { "layout_mode",   "method used to determine the output channel layout", OFFSET(layout_mode),
+      AV_OPT_TYPE_INT, { .i64 = LM_LEGACY }, 0, NB_LAYOUTMODES - 1, FLAGS, .unit = "layout_mode"},
+        { "legacy",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = LM_LEGACY   }, 0, 0, FLAGS, .unit = "layout_mode" },
+        { "reset",    NULL, 0, AV_OPT_TYPE_CONST, {.i64 = LM_RESET    }, 0, 0, FLAGS, .unit = "layout_mode" },
+        { "normal",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = LM_NORMAL   }, 0, 0, FLAGS, .unit = "layout_mode" },
     { NULL }
 };
 
@@ -101,9 +115,16 @@ static int query_formats(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_ERROR, "Too many channels (max %d)\n", SWR_CH_MAX);
         return AVERROR(EINVAL);
     }
+    ret = av_channel_layout_custom_init(&outlayout, nb_ch);
+    if (ret < 0)
+        return ret;
     for (int i = 0, ch_idx = 0; i < s->nb_inputs; i++) {
         for (int j = 0; j < s->in[i].nb_ch; j++) {
             enum AVChannel id = av_channel_layout_channel_from_index(INLAYOUT(ctx, i), j);
+            if (INLAYOUT(ctx, i)->order == AV_CHANNEL_ORDER_CUSTOM)
+                outlayout.u.map[ch_idx] = INLAYOUT(ctx, i)->u.map[j];
+            else
+                outlayout.u.map[ch_idx].id = (id == AV_CHAN_NONE ? AV_CHAN_UNKNOWN : id);
             if (id >= 0 && id < 64) {
                 outmask |= (1ULL << id);
                 native_layout_routes[id] = ch_idx;
@@ -112,6 +133,9 @@ static int query_formats(AVFilterContext *ctx)
             ch_idx++;
         }
     }
+    switch (s->layout_mode) {
+    case LM_LEGACY:
+    av_channel_layout_uninit(&outlayout);
     if (av_popcount64(outmask) != nb_ch) {
         av_log(ctx, AV_LOG_WARNING,
                "Input channel layouts overlap: "
@@ -125,22 +149,39 @@ static int query_formats(AVFilterContext *ctx)
                 s->route[native_layout_routes[c]] = ch_idx++;
         av_channel_layout_from_mask(&outlayout, outmask);
     }
+    break;
+    case LM_RESET:
+        av_channel_layout_uninit(&outlayout);
+        outlayout.order = AV_CHANNEL_ORDER_UNSPEC;
+        outlayout.nb_channels = nb_ch;
+        break;
+    case LM_NORMAL:
+        ret = av_channel_layout_retype(&outlayout, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
+        if (ret < 0)
+            goto out;
+        break;
+    default:
+        av_unreachable("Invalid layout_mode");
+    }
     if ((ret = ff_set_common_formats_from_list(ctx, packed_sample_fmts)) < 0)
-        return ret;
+        goto out;
     for (i = 0; i < s->nb_inputs; i++) {
         layouts = NULL;
         if ((ret = ff_add_channel_layout(&layouts, INLAYOUT(ctx, i))) < 0)
-            return ret;
+            goto out;
         if ((ret = ff_channel_layouts_ref(layouts, &ctx->inputs[i]->outcfg.channel_layouts)) < 0)
-            return ret;
+            goto out;
     }
     layouts = NULL;
     if ((ret = ff_add_channel_layout(&layouts, &outlayout)) < 0)
-        return ret;
+        goto out;
     if ((ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->incfg.channel_layouts)) < 0)
-        return ret;
+        goto out;
 
-    return ff_set_common_all_samplerates(ctx);
+    ret = ff_set_common_all_samplerates(ctx);
+out:
+    av_channel_layout_uninit(&outlayout);
+    return ret;
 }
 
 static int config_output(AVFilterLink *outlink)
