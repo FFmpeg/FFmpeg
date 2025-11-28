@@ -19,6 +19,7 @@ AVCODECOBJS-$(CONFIG_LLVIDDSP)          += llviddsp.o
 AVCODECOBJS-$(CONFIG_LLVIDENCDSP)       += llviddspenc.o
 AVCODECOBJS-$(CONFIG_LPC)               += lpc.o
 AVCODECOBJS-$(CONFIG_ME_CMP)            += motion.o
+AVCODECOBJS-$(CONFIG_MPEGVIDEO)         += mpegvideo_unquantize.o
 AVCODECOBJS-$(CONFIG_MPEGVIDEOENCDSP)   += mpegvideoencdsp.o
 AVCODECOBJS-$(CONFIG_QPELDSP)           += qpeldsp.o
 AVCODECOBJS-$(CONFIG_VC1DSP)            += vc1dsp.o

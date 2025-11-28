@@ -215,6 +215,9 @@ static const struct {
     #if CONFIG_ME_CMP
         { "motion", checkasm_check_motion },
     #endif
+    #if CONFIG_MPEGVIDEO
+        { "mpegvideo_unquantize", checkasm_check_mpegvideo_unquantize },
+    #endif
     #if CONFIG_MPEGVIDEOENCDSP
         { "mpegvideoencdsp", checkasm_check_mpegvideoencdsp },
     #endif
