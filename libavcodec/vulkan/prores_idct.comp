@@ -37,19 +37,27 @@ void put_px(uint tex_idx, ivec2 pos, uint v)
 #endif
 }
 
-const float idct_8x8_scales[] = {
-    0.353553390593274f, // cos(4 * pi/16) / 2
-    0.490392640201615f, // cos(1 * pi/16) / 2
-    0.461939766255643f, // cos(2 * pi/16) / 2
-    0.415734806151273f, // cos(3 * pi/16) / 2
-    0.353553390593274f, // cos(4 * pi/16) / 2
-    0.277785116509801f, // cos(5 * pi/16) / 2
-    0.191341716182545f, // cos(6 * pi/16) / 2
-    0.097545161008064f, // cos(7 * pi/16) / 2
+const float idct_scale[64] = {
+    0.1250000000000000, 0.1733799806652684, 0.1633203706095471, 0.1469844503024199,
+    0.1250000000000000, 0.0982118697983878, 0.0676495125182746, 0.0344874224103679,
+    0.1733799806652684, 0.2404849415639108, 0.2265318615882219, 0.2038732892122293,
+    0.1733799806652684, 0.1362237766939547, 0.0938325693794663, 0.0478354290456362,
+    0.1633203706095471, 0.2265318615882219, 0.2133883476483184, 0.1920444391778541,
+    0.1633203706095471, 0.1283199917898342, 0.0883883476483185, 0.0450599888754343,
+    0.1469844503024199, 0.2038732892122293, 0.1920444391778541, 0.1728354290456362,
+    0.1469844503024199, 0.1154849415639109, 0.0795474112858021, 0.0405529186026822,
+    0.1250000000000000, 0.1733799806652684, 0.1633203706095471, 0.1469844503024199,
+    0.1250000000000000, 0.0982118697983878, 0.0676495125182746, 0.0344874224103679,
+    0.0982118697983878, 0.1362237766939547, 0.1283199917898342, 0.1154849415639109,
+    0.0982118697983878, 0.0771645709543638, 0.0531518809229535, 0.0270965939155924,
+    0.0676495125182746, 0.0938325693794663, 0.0883883476483185, 0.0795474112858021,
+    0.0676495125182746, 0.0531518809229535, 0.0366116523516816, 0.0186644585125857,
+    0.0344874224103679, 0.0478354290456362, 0.0450599888754343, 0.0405529186026822,
+    0.0344874224103679, 0.0270965939155924, 0.0186644585125857, 0.0095150584360892,
 };
 
 /* 7.4 Inverse Transform */
-void idct(uint block, uint offset, uint stride)
+void idct8(uint block, uint offset, uint stride)
 {
     float t0, t1, t2, t3, t4, t5, t6, t7, u8;
     float u0, u1, u2, u3, u4, u5, u6, u7;
@@ -117,6 +125,12 @@ void main(void)
     uint chroma_shift = comp != 0 ? log2_chroma_w : 0;
     bool act = gid.x < mb_width << (4 - chroma_shift);
 
+    /**
+     * Normalize coefficients to [-1, 1] for increased precision during the iDCT.
+     * DCT coeffs have the range of a 12-bit signed integer (7.4 Inverse Transform).
+     */
+    const float norm = 1.0f / (1 << 11);
+
     /* Coalesced load of DCT coeffs in shared memory, inverse quantization */
     if (act) {
         /**
@@ -131,28 +145,31 @@ void main(void)
         int qscale = qidx > 128 ? (qidx - 96) << 2 : qidx;
 
         [[unroll]] for (uint i = 0; i < 8; ++i) {
+            uint cidx = (i << 3) + idx;
             int   c = sign_extend(int(get_px(comp, ivec2(gid.x, (gid.y << 3) + i))), 16);
-            float v = float(c * qscale * int(qmat[(i << 3) + idx]));
-            blocks[block][i * 9 + idx] = v * idct_8x8_scales[idx] * idct_8x8_scales[i];
+            float v = float(c * qscale * int(qmat[cidx])) * norm;
+            blocks[block][i * 9 + idx] = v * idct_scale[cidx];
         }
     }
 
-    /* Row-wise iDCT */
-    barrier();
-    idct(block, idx * 9, 1);
-
     /* Column-wise iDCT */
+    idct8(block, idx, 9);
     barrier();
-    idct(block, idx, 9);
 
-    float fact = 1.0f / (1 << (12 - depth)), off = 1 << (depth - 1);
+    /* Remap [-1, 1] to [0, 2] to remove a per-element addition in the output loop */
+    blocks[block][idx * 9] += 1.0f;
+
+    /* Row-wise iDCT */
+    idct8(block, idx * 9, 1);
+    barrier();
+
+    float fact = 1 << (depth - 1);
     int maxv = (1 << depth) - 1;
 
     /* 7.5.1 Color Component Samples. Rescale, clamp and write back to global memory */
-    barrier();
     if (act) {
         [[unroll]] for (uint i = 0; i < 8; ++i) {
-            float v = round(blocks[block][i * 9 + idx] * fact + off);
+            float v = round(blocks[block][i * 9 + idx] * fact);
             put_px(comp, ivec2(gid.x, (gid.y << 3) + i), clamp(int(v), 0, maxv));
         }
     }
