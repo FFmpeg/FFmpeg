@@ -24,6 +24,12 @@
 #include <stdio.h>
 #include <mysofa.h>
 
+#ifdef _WIN32
+#include <direct.h>
+#undef mkdir
+#define mkdir(a, b) _mkdir(a)
+#endif
+
 int main(int argc, char **argv)
 {
     struct MYSOFA_HRTF *hrtf;
