@@ -33,6 +33,20 @@
 #include "mpegvideodata.h"
 #include "mpegvideo_unquantize.h"
 
+av_cold void ff_init_scantable(const uint8_t *permutation, ScanTable *st,
+                               const uint8_t *src_scantable)
+{
+    st->scantable = src_scantable;
+
+    for (int i = 0, end = -1; i < 64; i++) {
+        int j = src_scantable[i];
+        st->permutated[i] = permutation[j];
+        if (permutation[j] > end)
+            end = permutation[j];
+        st->raster_end[i] = end;
+    }
+}
+
 static void dct_unquantize_mpeg1_intra_c(const MPVContext *s,
                                          int16_t *block, int n, int qscale)
 {

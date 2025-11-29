@@ -42,7 +42,6 @@
 #include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mpegvideodata.h"
-#include "mpegvideo_unquantize.h"
 #include "libavutil/refstruct.h"
 
 
@@ -76,20 +75,6 @@ static av_cold void dsp_init(MpegEncContext *s)
             s->hdsp.put_pixels_tab[1][i] = gray8;
             s->hdsp.put_no_rnd_pixels_tab[1][i] = gray8;
         }
-    }
-}
-
-av_cold void ff_init_scantable(const uint8_t *permutation, ScanTable *st,
-                               const uint8_t *src_scantable)
-{
-    st->scantable = src_scantable;
-
-    for (int i = 0, end = -1; i < 64; i++) {
-        int j = src_scantable[i];
-        st->permutated[i] = permutation[j];
-        if (permutation[j] > end)
-            end = permutation[j];
-        st->raster_end[i] = end;
     }
 }
 
