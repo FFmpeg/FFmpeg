@@ -32,7 +32,7 @@ OBJS-$(CONFIG_H264CHROMA) += riscv/h264_chroma_init_riscv.o
 RVV-OBJS-$(CONFIG_H264CHROMA) += riscv/h264_mc_chroma.o
 OBJS-$(CONFIG_H264DSP) += riscv/h264dsp_init.o
 RVV-OBJS-$(CONFIG_H264DSP) += riscv/h264addpx_rvv.o riscv/h264dsp_rvv.o \
-                              riscv/h264idct_rvv.o
+                              riscv/h264idct_rvv.o riscv/h264idct_dequant_rvv.o
 OBJS-$(CONFIG_H264QPEL) += riscv/h264qpel_init.o
 RVV-OBJS-$(CONFIG_H264QPEL) += riscv/h264qpel_rvv.o
 OBJS-$(CONFIG_HEVC_DECODER) += riscv/hevcdsp_init.o

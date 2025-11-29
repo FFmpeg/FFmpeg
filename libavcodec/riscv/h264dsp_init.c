@@ -80,7 +80,8 @@ void ff_h264_idct4_add8_##depth##_rvv(uint8_t **d, const int *soffset, \
                                       const uint8_t nnzc[5 * 8]); \
 void ff_h264_idct4_add8_422_##depth##_rvv(uint8_t **d, const int *soffset, \
                                           int16_t *s, int stride, \
-                                          const uint8_t nnzc[5 * 8]);
+                                          const uint8_t nnzc[5 * 8]); \
+void ff_h264_luma_dc_dequant_idct_##depth##_rvv(int16_t *d, int16_t *s, int q);
 
 IDCT_DEPTH(8)
 IDCT_DEPTH(9)
@@ -174,6 +175,10 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
                     dsp->h264_idct_add8   = ff_h264_idct4_add8_422_8_rvv;
 #  endif
             }
+
+            dsp->h264_luma_dc_dequant_idct =
+                ff_h264_luma_dc_dequant_idct_8_rvv;
+
             if (flags & AV_CPU_FLAG_RVV_I64) {
                 dsp->h264_add_pixels8_clear = ff_h264_add_pixels8_8_rvv;
                 if (flags & AV_CPU_FLAG_RVB)
