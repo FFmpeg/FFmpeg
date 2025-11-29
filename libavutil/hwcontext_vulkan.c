@@ -3418,7 +3418,7 @@ fail:
 }
 
 static int vulkan_map_from_drm_frame_sync(AVHWFramesContext *hwfc, AVFrame *dst,
-                                          const AVFrame *src, int flags)
+                                          const AVDRMFrameDescriptor *desc, int flags)
 {
     int err;
     VkResult ret;
@@ -3427,8 +3427,6 @@ static int vulkan_map_from_drm_frame_sync(AVHWFramesContext *hwfc, AVFrame *dst,
     VulkanFramesPriv *fp = hwfc->hwctx;
     AVVulkanDeviceContext *hwctx = &p->p;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
-
-    const AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor *)src->data[0];
 
 #ifdef DMA_BUF_IOCTL_EXPORT_SYNC_FILE
     if (p->vkctx.extensions & FF_VK_EXT_EXTERNAL_FD_SEM) {
@@ -3549,6 +3547,7 @@ static int vulkan_map_from_drm(AVHWFramesContext *hwfc, AVFrame *dst,
 {
     int err = 0;
     AVVkFrame *f;
+    const AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor *)src->data[0];
 
     if ((err = vulkan_map_from_drm_frame_desc(hwfc, &f, src, flags)))
         return err;
@@ -3563,7 +3562,7 @@ static int vulkan_map_from_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     if (err < 0)
         goto fail;
 
-    err = vulkan_map_from_drm_frame_sync(hwfc, dst, src, flags);
+    err = vulkan_map_from_drm_frame_sync(hwfc, dst, desc, flags);
     if (err < 0)
         return err;
 
@@ -3966,6 +3965,10 @@ typedef struct VulkanDRMMapping {
 static void vulkan_unmap_to_drm(AVHWFramesContext *hwfc, HWMapDescriptor *hwmap)
 {
     AVDRMFrameDescriptor *drm_desc = hwmap->priv;
+
+    /* on unmap from DRM, make sure to import sync objects so that we are sync'd with any work that was
+     * done on the buffer while exported. We don't know if who used the dmabuf did reads or writes, so protect against both */
+    vulkan_map_from_drm_frame_sync(hwfc, hwmap->source, drm_desc, AV_HWFRAME_MAP_READ | AV_HWFRAME_MAP_WRITE);
 
     for (int i = 0; i < drm_desc->nb_objects; i++)
         close(drm_desc->objects[i].fd);
