@@ -42,6 +42,10 @@ layout(buffer_reference, buffer_reference_align = 4) buffer u32vec2buf {
     u32vec2 v;
 };
 
+layout(buffer_reference, buffer_reference_align = 4) buffer u32vec4buf {
+    u32vec4 v;
+};
+
 layout(buffer_reference, buffer_reference_align = 8) buffer u64buf {
     uint64_t v;
 };
@@ -198,8 +202,12 @@ struct GetBitContext {
     uint64_t bits;
     int bits_valid;
     int size_in_bits;
+#ifdef GET_BITS_SMEM
+    int cur_smem_pos;
+#endif
 };
 
+#ifndef GET_BITS_SMEM
 #define LOAD64()                                       \
     {                                                  \
         u8vec4buf ptr = u8vec4buf(gb.buf);             \
@@ -218,6 +226,40 @@ struct GetBitContext {
         gb.bits = uint64_t(rf) << (32 - gb.bits_valid) | gb.bits; \
         gb.bits_valid += 32;                                      \
     }
+#else /* GET_BITS_SMEM */
+shared u32vec4 gb_storage[gl_WorkGroupSize.x*gl_WorkGroupSize.y*gl_WorkGroupSize.z];
+
+#define FILL_SMEM()                                      \
+    {                                                    \
+        u32vec4buf ptr = u32vec4buf(gb.buf);             \
+        gb_storage[gl_LocalInvocationIndex] = ptr[0].v;  \
+        gb.cur_smem_pos = 0;                             \
+    }
+
+#define LOAD64()                                                    \
+    {                                                               \
+        gb.bits = 0;                                                \
+        gb.bits_valid = 0;                                          \
+        u8buf ptr = u8buf(gb.buf);                                  \
+        for (uint i = 0; i < ((4 - uint(gb.buf_start)) & 3); ++i) { \
+            gb.bits |= uint64_t(ptr[i].v) << (56 - i * 8);          \
+            gb.bits_valid += 8;                                     \
+            gb.buf += 1;                                            \
+        }                                                           \
+        FILL_SMEM();                                                \
+    }
+
+#define RELOAD32()                                                         \
+    {                                                                      \
+        if (gb.cur_smem_pos >= 4)                                          \
+            FILL_SMEM();                                                   \
+        uint v = gb_storage[gl_LocalInvocationIndex][gb.cur_smem_pos];     \
+        gb.buf += 4;                                                       \
+        gb.bits = uint64_t(reverse4(v)) << (32 - gb.bits_valid) | gb.bits; \
+        gb.bits_valid += 32;                                               \
+        gb.cur_smem_pos += 1;                                              \
+    }
+#endif /* GET_BITS_SMEM */
 
 void init_get_bits(inout GetBitContext gb, u8buf data, int len)
 {
