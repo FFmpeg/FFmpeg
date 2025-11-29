@@ -39,12 +39,7 @@ static void inline ff_dct_unquantize_h263_neon(int qscale, int qadd, int nCoeffs
 {
     int16x8_t q0s16, q2s16, q3s16, q8s16, q10s16, q11s16, q13s16;
     int16x8_t q14s16, q15s16, qzs16;
-    int16x4_t d0s16, d2s16, d3s16, dzs16;
     uint16x8_t q1u16, q9u16;
-    uint16x4_t d1u16;
-
-    dzs16 = vdup_n_s16(0);
-    qzs16 = vdupq_n_s16(0);
 
     q15s16 = vdupq_n_s16(qscale << 1);
     q14s16 = vdupq_n_s16(qadd);
@@ -73,15 +68,14 @@ static void inline ff_dct_unquantize_h263_neon(int qscale, int qadd, int nCoeffs
     if (nCoeffs <= 0)
         return;
 
-    d0s16 = vld1_s16(block);
-    d3s16 = vreinterpret_s16_u16(vclt_s16(d0s16, dzs16));
-    d1u16 = vceq_s16(d0s16, dzs16);
-    d2s16 = vmul_s16(d0s16, vget_high_s16(q15s16));
-    d3s16 = vbsl_s16(vreinterpret_u16_s16(d3s16),
-                     vget_high_s16(q13s16), vget_high_s16(q14s16));
-    d2s16 = vadd_s16(d2s16, d3s16);
-    d0s16 = vbsl_s16(d1u16, d0s16, d2s16);
-    vst1_s16(block, d0s16);
+    q0s16 = vld1q_s16(block);
+    q3s16 = vreinterpretq_s16_u16(vcltq_s16(q0s16, qzs16));
+    q1u16 = vceqq_s16(q0s16, qzs16);
+    q2s16 = vmulq_s16(q0s16, q15s16);
+    q3s16 = vbslq_s16(vreinterpretq_u16_s16(q3s16), q13s16, q14s16);
+    q2s16 = vaddq_s16(q2s16, q3s16);
+    q0s16 = vbslq_s16(q1u16, q0s16, q2s16);
+    vst1q_s16(block, q0s16);
 }
 
 static void dct_unquantize_h263_inter_neon(const MPVContext *s, int16_t *block,

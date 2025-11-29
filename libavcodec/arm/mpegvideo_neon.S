@@ -36,7 +36,7 @@ function ff_dct_unquantize_h263_neon, export=1
         vdup.16         q15, r0                 @ qmul
         vdup.16         q14, r2                 @ qadd
         vneg.s16        q13, q14
-        cmp             r3,  #4
+        cmp             r3,  #8
         mov             r0,  r1
         ble             2f
 1:
@@ -62,14 +62,14 @@ function ff_dct_unquantize_h263_neon, export=1
         cmp             r3,  #8
         bgt             1b
 2:
-        vld1.16         {d0},     [r0,:64]
-        vclt.s16        d3,  d0,  #0
-        vceq.s16        d1,  d0,  #0
-        vmul.s16        d2,  d0,  d30
-        vbsl            d3,  d26, d28
-        vadd.s16        d2,  d2,  d3
-        vbif            d0,  d2,  d1
-        vst1.16         {d0},     [r1,:64]
+        vld1.16         {q0},     [r0,:128]
+        vclt.s16        q3,  q0,  #0
+        vceq.s16        q1,  q0,  #0
+        vmul.s16        q2,  q0,  q15
+        vbsl            q3,  q13, q14
+        vadd.s16        q2,  q2,  q3
+        vbif            q0,  q2,  q1
+        vst1.16         {q0},     [r1,:128]
         bx              lr
 endfunc
 
