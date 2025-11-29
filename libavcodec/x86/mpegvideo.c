@@ -33,9 +33,8 @@
 static void dct_unquantize_h263_intra_mmx(const MPVContext *s,
                                           int16_t *block, int n, int qscale)
 {
-    x86_reg level, qmul, qadd, nCoeffs;
-
-    qmul = qscale << 1;
+    x86_reg qmul = (unsigned)qscale << 1;
+    int level, qadd;
 
     av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
 
@@ -49,16 +48,15 @@ static void dct_unquantize_h263_intra_mmx(const MPVContext *s,
         qadd = 0;
         level= block[0];
     }
-    if(s->ac_pred)
-        nCoeffs=63;
-    else
-        nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
+    x86_reg offset = s->ac_pred ? 63 << 1 : s->intra_scantable.raster_end[s->block_last_index[n]] << 1;
 
 __asm__ volatile(
-                "movd %1, %%mm6                 \n\t" //qmul
+                "movd          %k1, %%mm6       \n\t" //qmul
+                "lea      (%2, %0), %1          \n\t"
+                "neg            %0              \n\t"
                 "packssdw %%mm6, %%mm6          \n\t"
                 "packssdw %%mm6, %%mm6          \n\t"
-                "movd %2, %%mm5                 \n\t" //qadd
+                "movd           %3, %%mm5       \n\t" //qadd
                 "pxor %%mm7, %%mm7              \n\t"
                 "packssdw %%mm5, %%mm5          \n\t"
                 "packssdw %%mm5, %%mm5          \n\t"
@@ -66,14 +64,14 @@ __asm__ volatile(
                 "pxor %%mm4, %%mm4              \n\t"
                 ".p2align 4                     \n\t"
                 "1:                             \n\t"
-                "movq (%0, %3), %%mm0           \n\t"
-                "movq 8(%0, %3), %%mm1          \n\t"
+                "movq     (%1, %0), %%mm0       \n\t"
+                "movq    8(%1, %0), %%mm1       \n\t"
 
                 "pmullw %%mm6, %%mm0            \n\t"
                 "pmullw %%mm6, %%mm1            \n\t"
 
-                "movq (%0, %3), %%mm2           \n\t"
-                "movq 8(%0, %3), %%mm3          \n\t"
+                "movq     (%1, %0), %%mm2       \n\t"
+                "movq    8(%1, %0), %%mm3       \n\t"
 
                 "pcmpgtw %%mm4, %%mm2           \n\t" // block[i] < 0 ? -1 : 0
                 "pcmpgtw %%mm4, %%mm3           \n\t" // block[i] < 0 ? -1 : 0
@@ -93,12 +91,13 @@ __asm__ volatile(
                 "pandn %%mm2, %%mm0             \n\t"
                 "pandn %%mm3, %%mm1             \n\t"
 
-                "movq %%mm0, (%0, %3)           \n\t"
-                "movq %%mm1, 8(%0, %3)          \n\t"
+                "movq        %%mm0, (%1, %0)    \n\t"
+                "movq        %%mm1, 8(%1, %0)   \n\t"
 
-                "add $16, %3                    \n\t"
+                "add           $16, %0          \n\t"
                 "jng 1b                         \n\t"
-                ::"r" (block+nCoeffs), "rm"(qmul), "rm" (qadd), "r" (2*(-nCoeffs))
+                : "+r"(offset), "+r"(qmul)
+                : "r" (block), "rm" (qadd)
                 : "memory"
         );
         block[0]= level;
@@ -108,20 +107,20 @@ __asm__ volatile(
 static void dct_unquantize_h263_inter_mmx(const MPVContext *s,
                                           int16_t *block, int n, int qscale)
 {
-    x86_reg qmul, qadd, nCoeffs;
-
-    qmul = qscale << 1;
-    qadd = (qscale - 1) | 1;
+    int qmul = qscale << 1;
+    int qadd = (qscale - 1) | 1;
 
     av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
 
-    nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
+    x86_reg offset = s->inter_scantable.raster_end[s->block_last_index[n]] << 1;
 
 __asm__ volatile(
-                "movd %1, %%mm6                 \n\t" //qmul
+                "movd           %2, %%mm6       \n\t" //qmul
                 "packssdw %%mm6, %%mm6          \n\t"
                 "packssdw %%mm6, %%mm6          \n\t"
-                "movd %2, %%mm5                 \n\t" //qadd
+                "movd           %3, %%mm5       \n\t" //qadd
+                "add            %1, %0          \n\t"
+                "neg            %1              \n\t"
                 "pxor %%mm7, %%mm7              \n\t"
                 "packssdw %%mm5, %%mm5          \n\t"
                 "packssdw %%mm5, %%mm5          \n\t"
@@ -129,14 +128,14 @@ __asm__ volatile(
                 "pxor %%mm4, %%mm4              \n\t"
                 ".p2align 4                     \n\t"
                 "1:                             \n\t"
-                "movq (%0, %3), %%mm0           \n\t"
-                "movq 8(%0, %3), %%mm1          \n\t"
+                "movq     (%0, %1), %%mm0       \n\t"
+                "movq    8(%0, %1), %%mm1       \n\t"
 
                 "pmullw %%mm6, %%mm0            \n\t"
                 "pmullw %%mm6, %%mm1            \n\t"
 
-                "movq (%0, %3), %%mm2           \n\t"
-                "movq 8(%0, %3), %%mm3          \n\t"
+                "movq     (%0, %1), %%mm2       \n\t"
+                "movq    8(%0, %1), %%mm3       \n\t"
 
                 "pcmpgtw %%mm4, %%mm2           \n\t" // block[i] < 0 ? -1 : 0
                 "pcmpgtw %%mm4, %%mm3           \n\t" // block[i] < 0 ? -1 : 0
@@ -156,12 +155,13 @@ __asm__ volatile(
                 "pandn %%mm2, %%mm0             \n\t"
                 "pandn %%mm3, %%mm1             \n\t"
 
-                "movq %%mm0, (%0, %3)           \n\t"
-                "movq %%mm1, 8(%0, %3)          \n\t"
+                "movq        %%mm0, (%0, %1)    \n\t"
+                "movq        %%mm1, 8(%0, %1)   \n\t"
 
-                "add $16, %3                    \n\t"
+                "add           $16, %1          \n\t"
                 "jng 1b                         \n\t"
-                ::"r" (block+nCoeffs), "rm"(qmul), "rm" (qadd), "r" (2*(-nCoeffs))
+                : "+r" (block), "+r" (offset)
+                : "rm"(qmul), "rm" (qadd)
                 : "memory"
         );
 }
