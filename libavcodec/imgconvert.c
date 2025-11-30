@@ -45,4 +45,3 @@ enum AVPixelFormat avcodec_find_best_pix_fmt_of_list(const enum AVPixelFormat *p
         *loss_ptr = loss;
     return best;
 }
-

@@ -155,41 +155,41 @@ endconst
         // void put_hevc_qpel_h(int16_t *dst,
         //                      uint8_t *_src, ptrdiff_t _srcstride,
         //                      int height, intptr_t mx, intptr_t my, int width)
-        dst        .req x0
-        dststride  .req x7
-        src        .req x1
-        srcstride  .req x2
-        height     .req x3
-        heightw    .req w3
-        mx         .req x4
-        width      .req w6
+        dst             .req x0
+        dststride       .req x7
+        src             .req x1
+        srcstride       .req x2
+        height          .req x3
+        heightw         .req w3
+        mx              .req x4
+        width           .req w6
 .endif
 .ifc \type, qpel_uni
         // void put_hevc_qpel_uni_h(uint8_t *_dst,  ptrdiff_t _dststride,
         //                          uint8_t *_src, ptrdiff_t _srcstride,
         //                          int height, intptr_t mx, intptr_t my, int width)
-        dst        .req x0
-        dststride  .req x1
-        src        .req x2
-        srcstride  .req x3
-        height     .req x4
-        heightw    .req w4
-        mx         .req x5
-        width      .req w7
+        dst             .req x0
+        dststride       .req x1
+        src             .req x2
+        srcstride       .req x3
+        height          .req x4
+        heightw         .req w4
+        mx              .req x5
+        width           .req w7
 .endif
 .ifc \type, qpel_bi
         // void put_hevc_qpel_bi_h(uint8_t *_dst, ptrdiff_t _dststride,
         //                         uint8_t *_src, ptrdiff_t _srcstride,
         //                         int16_t *src2, int height, intptr_t mx,
         //                         intptr_t my, int width)
-        dst        .req x0
-        dststride  .req x1
-        src        .req x2
-        srcstride  .req x3
-        height     .req x5
-        heightw    .req w5
-        mx         .req x6
-        width      .req w8
+        dst             .req x0
+        dststride       .req x1
+        src             .req x2
+        srcstride       .req x3
+        height          .req x5
+        heightw         .req w5
+        mx              .req x6
+        width           .req w8
 .endif
 
 .ifc \type, qpel
@@ -1295,7 +1295,7 @@ function ff_hevc_put_hevc_qpel_uni_v4_8_neon, export=1
 .endm
 1:      calc_all
 .purgem calc
-2: ret
+2:      ret
 endfunc
 
 function ff_hevc_put_hevc_qpel_uni_v6_8_neon, export=1
@@ -1324,7 +1324,7 @@ function ff_hevc_put_hevc_qpel_uni_v6_8_neon, export=1
 .endm
 1:      calc_all
 .purgem calc
-2: ret
+2:      ret
 endfunc
 
 function ff_hevc_put_hevc_qpel_uni_v8_8_neon, export=1
@@ -1351,7 +1351,7 @@ function ff_hevc_put_hevc_qpel_uni_v8_8_neon, export=1
 .endm
 1:      calc_all
 .purgem calc
-2: ret
+2:      ret
 endfunc
 
 function ff_hevc_put_hevc_qpel_uni_v12_8_neon, export=1
@@ -3038,7 +3038,7 @@ function ff_hevc_put_hevc_qpel_uni_w_h8_8_neon_i8mm, export=1
         zip1            v2.2d, v2.2d, v3.2d
         zip1            v4.2d, v4.2d, v5.2d
         zip1            v6.2d, v6.2d, v7.2d
-        QPEL_UNI_W_H_CALC  v0, v2, v4, v6,  v18, v19, v20, v21
+        QPEL_UNI_W_H_CALC v0, v2, v4, v6,  v18, v19, v20, v21
         sqxtn           v18.4h, v18.4s
         sqxtn2          v18.8h, v20.4s
         sqxtun          v18.8b, v18.8h
@@ -3067,7 +3067,7 @@ function ff_hevc_put_hevc_qpel_uni_w_h12_8_neon_i8mm, export=1
         zip1            v21.2d, v6.2d, v7.2d
         zip2            v22.2d, v16.2d, v1.2d
         zip2            v23.2d, v2.2d, v3.2d
-        QPEL_UNI_W_H_CALC  v18, v19, v20, v21, v0, v2, v4, v6
+        QPEL_UNI_W_H_CALC v18, v19, v20, v21, v0, v2, v4, v6
         QPEL_UNI_W_H_CALC_HALF v22, v23, v24, v25
         sqxtn           v0.4h, v0.4s
         sqxtn2          v0.8h, v4.4s
@@ -3095,8 +3095,8 @@ function ff_hevc_put_hevc_qpel_uni_w_h16_8_neon_i8mm, export=1
         ext             v5.16b, v16.16b, v17.16b, #5
         ext             v6.16b, v16.16b, v17.16b, #6
         ext             v7.16b, v16.16b, v17.16b, #7
-        QPEL_UNI_W_H_CALC  v16, v2, v1, v3, v18, v19, v20, v21   // v18: 0, 8, 2, 10 v20: 1, 9, 3, 11
-        QPEL_UNI_W_H_CALC  v4, v6, v5, v7, v22, v23, v24, v25    // v22: 4, 12, 6, 14 v24: 5, 13, 7, 15
+        QPEL_UNI_W_H_CALC v16, v2, v1, v3, v18, v19, v20, v21   // v18: 0, 8, 2, 10 v20: 1, 9, 3, 11
+        QPEL_UNI_W_H_CALC v4, v6, v5, v7, v22, v23, v24, v25    // v22: 4, 12, 6, 14 v24: 5, 13, 7, 15
         sqxtn           v0.4h, v18.4s
         sqxtn2          v0.8h, v22.4s
         sqxtn           v1.4h, v20.4s
@@ -3123,8 +3123,8 @@ function ff_hevc_put_hevc_qpel_uni_w_h24_8_neon_i8mm, export=1
         ext             v5.16b, v16.16b, v17.16b, #5
         ext             v6.16b, v16.16b, v17.16b, #6
         ext             v7.16b, v16.16b, v17.16b, #7
-        QPEL_UNI_W_H_CALC  v16, v2, v1, v3, v18, v19, v20, v21
-        QPEL_UNI_W_H_CALC  v4, v6, v5, v7, v22, v23, v24, v25
+        QPEL_UNI_W_H_CALC v16, v2, v1, v3, v18, v19, v20, v21
+        QPEL_UNI_W_H_CALC v4, v6, v5, v7, v22, v23, v24, v25
         sqxtn           v18.4h, v18.4s
         sqxtn2          v18.8h, v22.4s
         sqxtn           v19.4h, v20.4s
@@ -3144,7 +3144,7 @@ function ff_hevc_put_hevc_qpel_uni_w_h24_8_neon_i8mm, export=1
         zip1            v2.2d, v2.2d, v3.2d
         zip1            v4.2d, v4.2d, v5.2d
         zip1            v6.2d, v6.2d, v7.2d
-        QPEL_UNI_W_H_CALC  v0, v2, v4, v6, v18, v19, v20, v21
+        QPEL_UNI_W_H_CALC v0, v2, v4, v6, v18, v19, v20, v21
         sqxtn           v18.4h, v18.4s
         sqxtn2          v18.8h, v20.4s
         sqxtun          v27.8b, v18.8h
@@ -3168,8 +3168,8 @@ function ff_hevc_put_hevc_qpel_uni_w_h32_8_neon_i8mm, export=1
         ext             v5.16b, v16.16b, v17.16b, #5
         ext             v6.16b, v16.16b, v17.16b, #6
         ext             v7.16b, v16.16b, v17.16b, #7
-        QPEL_UNI_W_H_CALC  v16, v2, v1, v3, v0, v19, v20, v21
-        QPEL_UNI_W_H_CALC  v4, v6, v5, v7, v22, v23, v24, v25
+        QPEL_UNI_W_H_CALC v16, v2, v1, v3, v0, v19, v20, v21
+        QPEL_UNI_W_H_CALC v4, v6, v5, v7, v22, v23, v24, v25
         sqxtn           v0.4h, v0.4s
         sqxtn2          v0.8h, v22.4s
         sqxtn           v19.4h, v20.4s
@@ -3185,8 +3185,8 @@ function ff_hevc_put_hevc_qpel_uni_w_h32_8_neon_i8mm, export=1
         ext             v5.16b, v17.16b, v18.16b, #5
         ext             v6.16b, v17.16b, v18.16b, #6
         ext             v7.16b, v17.16b, v18.16b, #7
-        QPEL_UNI_W_H_CALC  v17, v2, v1, v3, v0, v19, v20, v21
-        QPEL_UNI_W_H_CALC  v4, v6, v5, v7, v22, v23, v24, v25
+        QPEL_UNI_W_H_CALC v17, v2, v1, v3, v0, v19, v20, v21
+        QPEL_UNI_W_H_CALC v4, v6, v5, v7, v22, v23, v24, v25
         sqxtn           v0.4h, v0.4s
         sqxtn2          v0.8h, v22.4s
         sqxtn           v19.4h, v20.4s
@@ -3212,8 +3212,8 @@ function ff_hevc_put_hevc_qpel_uni_w_h48_8_neon_i8mm, export=1
         ext             v5.16b, v16.16b, v17.16b, #5
         ext             v6.16b, v16.16b, v17.16b, #6
         ext             v7.16b, v16.16b, v17.16b, #7
-        QPEL_UNI_W_H_CALC  v16, v2, v1, v3, v20, v24, v21, v0
-        QPEL_UNI_W_H_CALC  v4, v6, v5, v7, v22, v24, v23, v0
+        QPEL_UNI_W_H_CALC v16, v2, v1, v3, v20, v24, v21, v0
+        QPEL_UNI_W_H_CALC v4, v6, v5, v7, v22, v24, v23, v0
         sqxtn           v20.4h, v20.4s
         sqxtn2          v20.8h, v22.4s
         sqxtn           v21.4h, v21.4s
@@ -3229,8 +3229,8 @@ function ff_hevc_put_hevc_qpel_uni_w_h48_8_neon_i8mm, export=1
         ext             v5.16b, v17.16b, v18.16b, #5
         ext             v6.16b, v17.16b, v18.16b, #6
         ext             v7.16b, v17.16b, v18.16b, #7
-        QPEL_UNI_W_H_CALC  v17, v2, v1, v3, v20, v24, v21, v0
-        QPEL_UNI_W_H_CALC  v4, v6, v5, v7, v22, v24, v23, v0
+        QPEL_UNI_W_H_CALC v17, v2, v1, v3, v20, v24, v21, v0
+        QPEL_UNI_W_H_CALC v4, v6, v5, v7, v22, v24, v23, v0
         sqxtn           v20.4h, v20.4s
         sqxtn2          v20.8h, v22.4s
         sqxtn           v21.4h, v21.4s
@@ -3246,8 +3246,8 @@ function ff_hevc_put_hevc_qpel_uni_w_h48_8_neon_i8mm, export=1
         ext             v5.16b, v18.16b, v19.16b, #5
         ext             v6.16b, v18.16b, v19.16b, #6
         ext             v7.16b, v18.16b, v19.16b, #7
-        QPEL_UNI_W_H_CALC  v18, v2, v1, v3, v20, v24, v21, v0
-        QPEL_UNI_W_H_CALC  v4, v6, v5, v7, v22, v24, v23, v0
+        QPEL_UNI_W_H_CALC v18, v2, v1, v3, v20, v24, v21, v0
+        QPEL_UNI_W_H_CALC v4, v6, v5, v7, v22, v24, v23, v0
         sqxtn           v20.4h, v20.4s
         sqxtn2          v20.8h, v22.4s
         sqxtn           v21.4h, v21.4s
@@ -3276,8 +3276,8 @@ function ff_hevc_put_hevc_qpel_uni_w_h64_8_neon_i8mm, export=1
         ext             v5.16b, v16.16b, v17.16b, #5
         ext             v6.16b, v16.16b, v17.16b, #6
         ext             v7.16b, v16.16b, v17.16b, #7
-        QPEL_UNI_W_H_CALC  v16, v2, v1, v3, v20, v24, v21, v0
-        QPEL_UNI_W_H_CALC  v4, v6, v5, v7, v22, v24, v23, v0
+        QPEL_UNI_W_H_CALC v16, v2, v1, v3, v20, v24, v21, v0
+        QPEL_UNI_W_H_CALC v4, v6, v5, v7, v22, v24, v23, v0
         sqxtn           v20.4h, v20.4s
         sqxtn2          v20.8h, v22.4s
         sqxtn           v21.4h, v21.4s
@@ -3293,8 +3293,8 @@ function ff_hevc_put_hevc_qpel_uni_w_h64_8_neon_i8mm, export=1
         ext             v5.16b, v17.16b, v18.16b, #5
         ext             v6.16b, v17.16b, v18.16b, #6
         ext             v7.16b, v17.16b, v18.16b, #7
-        QPEL_UNI_W_H_CALC  v17, v2, v1, v3, v20, v24, v21, v0
-        QPEL_UNI_W_H_CALC  v4, v6, v5, v7, v22, v24, v23, v0
+        QPEL_UNI_W_H_CALC v17, v2, v1, v3, v20, v24, v21, v0
+        QPEL_UNI_W_H_CALC v4, v6, v5, v7, v22, v24, v23, v0
         sqxtn           v20.4h, v20.4s
         sqxtn2          v20.8h, v22.4s
         sqxtn           v21.4h, v21.4s
@@ -3310,8 +3310,8 @@ function ff_hevc_put_hevc_qpel_uni_w_h64_8_neon_i8mm, export=1
         ext             v5.16b, v18.16b, v19.16b, #5
         ext             v6.16b, v18.16b, v19.16b, #6
         ext             v7.16b, v18.16b, v19.16b, #7
-        QPEL_UNI_W_H_CALC  v18, v2, v1, v3, v20, v24, v21, v0
-        QPEL_UNI_W_H_CALC  v4, v6, v5, v7, v22, v24, v23, v0
+        QPEL_UNI_W_H_CALC v18, v2, v1, v3, v20, v24, v21, v0
+        QPEL_UNI_W_H_CALC v4, v6, v5, v7, v22, v24, v23, v0
         ld1             {v0.16b}, [x2], x3
         sqxtn           v20.4h, v20.4s
         sqxtn2          v20.8h, v22.4s
@@ -3328,8 +3328,8 @@ function ff_hevc_put_hevc_qpel_uni_w_h64_8_neon_i8mm, export=1
         ext             v5.16b, v19.16b, v0.16b, #5
         ext             v6.16b, v19.16b, v0.16b, #6
         ext             v7.16b, v19.16b, v0.16b, #7
-        QPEL_UNI_W_H_CALC  v19, v2, v1, v3, v20, v24, v21, v0
-        QPEL_UNI_W_H_CALC  v4, v6, v5, v7, v22, v24, v23, v0
+        QPEL_UNI_W_H_CALC v19, v2, v1, v3, v20, v24, v21, v0
+        QPEL_UNI_W_H_CALC v4, v6, v5, v7, v22, v24, v23, v0
         sqxtn           v20.4h, v20.4s
         sqxtn2          v20.8h, v22.4s
         sqxtn           v21.4h, v21.4s

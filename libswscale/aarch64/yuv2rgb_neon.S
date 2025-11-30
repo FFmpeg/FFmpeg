@@ -43,7 +43,7 @@
 .endm
 
 .macro load_args_nv21
-    load_args_nv12
+        load_args_nv12
 .endm
 
 .macro load_args_yuv420p
@@ -96,7 +96,7 @@
 .endm
 
 .macro load_chroma_yuv422p
-    load_chroma_yuv420p
+        load_chroma_yuv420p
 .endm
 
 .macro increment_nv12
@@ -106,7 +106,7 @@
 .endm
 
 .macro increment_nv21
-    increment_nv12
+        increment_nv12
 .endm
 
 .macro increment_yuv420p
@@ -141,13 +141,13 @@
 
 .macro declare_func ifmt ofmt
 function ff_\ifmt\()_to_\ofmt\()_neon, export=1
-    load_args_\ifmt
+        load_args_\ifmt
         mov             w9, w1
 1:
         mov             w8, w0                                          // w8 = width
 2:
         movi            v5.8h, #4, lsl #8                               // 128 * (1<<3)
-    load_chroma_\ifmt
+        load_chroma_\ifmt
         sub             v18.8h, v18.8h, v5.8h                           // U*(1<<3) - 128*(1<<3)
         sub             v19.8h, v19.8h, v5.8h                           // V*(1<<3) - 128*(1<<3)
         sqdmulh         v20.8h, v19.8h, v1.h[0]                         // V * v2r            (R)
@@ -191,11 +191,11 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
         b.gt            2b
         add             x2, x2, w3, sxtw                                // dst  += padding
         add             x4, x4, w5, sxtw                                // srcY += paddingY
-    increment_\ifmt
+        increment_\ifmt
         subs            w1, w1, #1                                      // height -= 1
         b.gt            1b
         mov             w0, w9
-    ret
+        ret
 endfunc
 .endm
 

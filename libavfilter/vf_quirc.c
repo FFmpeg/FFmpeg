@@ -180,4 +180,3 @@ const AVFilter ff_vf_quirc = {
     .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC |
                    AVFILTER_FLAG_METADATA_ONLY,
 };
-
