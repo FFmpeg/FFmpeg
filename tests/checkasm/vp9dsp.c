@@ -47,7 +47,7 @@ static const uint32_t pixel_mask[3] = { 0xffffffff, 0x03ff03ff, 0x0fff0fff };
         }                                                          \
     } while (0)
 
-static void check_ipred(void)
+void checkasm_check_vp9_ipred(void)
 {
     LOCAL_ALIGNED_32(uint8_t, a_buf, [64 * 2]);
     uint8_t *a = &a_buf[32 * 2];
@@ -308,7 +308,7 @@ static int is_zero(const int16_t *c, int sz)
 
 #define SIZEOF_COEF (2 * ((bit_depth + 7) / 8))
 
-static void check_itxfm(void)
+void checkasm_check_vp9_itxfm(void)
 {
     LOCAL_ALIGNED_64(uint8_t, src, [32 * 32 * 2]);
     LOCAL_ALIGNED_64(uint8_t, dst, [32 * 32 * 2]);
@@ -449,7 +449,7 @@ static void randomize_loopfilter_buffers(int bidx, int lineoff, int str,
         randomize_loopfilter_buffers(bidx, lineoff, str, bit_depth, dir, \
                                      E, F, H, I, buf0, buf1)
 
-static void check_loopfilter(void)
+void checkasm_check_vp9_loopfilter(void)
 {
     LOCAL_ALIGNED_32(uint8_t, base0, [32 + 16 * 16 * 2]);
     LOCAL_ALIGNED_32(uint8_t, base1, [32 + 16 * 16 * 2]);
@@ -556,7 +556,7 @@ static void check_loopfilter(void)
         }                                                 \
     } while (0)
 
-static void check_mc(void)
+void checkasm_check_vp9_mc(void)
 {
     LOCAL_ALIGNED_64(uint8_t, buf, [72 * 72 * 2]);
     LOCAL_ALIGNED_64(uint8_t, dst0, [64 * 64 * 2]);
@@ -626,8 +626,8 @@ static void check_mc(void)
 
 void checkasm_check_vp9dsp(void)
 {
-    check_ipred();
-    check_itxfm();
-    check_loopfilter();
-    check_mc();
+    checkasm_check_vp9_ipred();
+    checkasm_check_vp9_itxfm();
+    checkasm_check_vp9_loopfilter();
+    checkasm_check_vp9_mc();
 }
