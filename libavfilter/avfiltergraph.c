@@ -570,7 +570,7 @@ retry:
                 void *b = FF_FIELD_AT(void *, m->offset, link->outcfg);
                 if (a && b && a != b && !m->can_merge(a, b)) {
                     for (k = 0; k < num_conv; k++) {
-                        if (conv_filters[k] == m->conversion_filter)
+                        if (!strcmp(conv_filters[k], m->conversion_filter))
                             break;
                     }
                     if (k == num_conv) {
@@ -683,7 +683,7 @@ retry:
 
                 for (neg_step = 0; neg_step < neg->nb_mergers; neg_step++) {
                     const AVFilterFormatsMerger *m = &neg->mergers[neg_step];
-                    if (m->conversion_filter != conv_filters[k])
+                    if (strcmp(m->conversion_filter, conv_filters[k]))
                         continue;
                     if ((ret = MERGE(m,  inlink)) <= 0 ||
                         (ret = MERGE(m, outlink)) <= 0) {
