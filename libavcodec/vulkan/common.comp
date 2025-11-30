@@ -201,7 +201,6 @@ struct GetBitContext {
 
     uint64_t bits;
     int bits_valid;
-    int size_in_bits;
 #ifdef GET_BITS_SMEM
     int cur_smem_pos;
 #endif
@@ -265,7 +264,6 @@ void init_get_bits(inout GetBitContext gb, u8buf data, int len)
 {
     gb.buf = gb.buf_start = uint64_t(data);
     gb.buf_end = uint64_t(data) + len;
-    gb.size_in_bits = len * 8;
 
     /* Preload */
     LOAD64()
@@ -320,5 +318,5 @@ int tell_bits(in GetBitContext gb)
 
 int left_bits(in GetBitContext gb)
 {
-    return gb.size_in_bits - int(gb.buf - gb.buf_start) * 8 + gb.bits_valid;
+    return int(gb.buf_end - gb.buf) * 8 + gb.bits_valid;
 }
