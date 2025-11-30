@@ -154,15 +154,14 @@ lpf_funcs(88, 16, avx);
 void ff_vp9_ipred_##type##_##size##x##size##_##opt(uint8_t *dst, ptrdiff_t stride, \
                                                    const uint8_t *l, const uint8_t *a)
 
+ipred_func(4, hd, mmxext);
+ipred_func(4, vl, mmxext);
 ipred_func(8, v, mmx);
 
 #define ipred_dc_funcs(size, opt) \
 ipred_func(size, dc, opt); \
 ipred_func(size, dc_left, opt); \
 ipred_func(size, dc_top, opt)
-
-ipred_dc_funcs(4, mmxext);
-ipred_dc_funcs(8, mmxext);
 
 #define ipred_dir_tm_funcs(size, opt) \
 ipred_func(size, tm, opt); \
@@ -172,8 +171,6 @@ ipred_func(size, hd, opt); \
 ipred_func(size, hu, opt); \
 ipred_func(size, vl, opt); \
 ipred_func(size, vr, opt)
-
-ipred_dir_tm_funcs(4, mmxext);
 
 ipred_func(16, v, sse);
 ipred_func(32, v, sse);
@@ -288,9 +285,8 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         init_fpel_func(4, 1,  4, avg, _8, mmxext);
         init_fpel_func(3, 1,  8, avg, _8, mmxext);
         dsp->itxfm_add[TX_4X4][DCT_DCT] = ff_vp9_idct_idct_4x4_add_mmxext;
-        init_dc_ipred(4, mmxext);
-        init_dc_ipred(8, mmxext);
-        init_dir_tm_ipred(4, mmxext);
+        dsp->intra_pred[TX_4X4][HOR_DOWN_PRED] = ff_vp9_ipred_hd_4x4_mmxext;
+        dsp->intra_pred[TX_4X4][VERT_LEFT_PRED] = ff_vp9_ipred_vl_4x4_mmxext;
     }
 
     if (EXTERNAL_SSE(cpu_flags)) {
