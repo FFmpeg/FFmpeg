@@ -9,13 +9,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [linux-amd64,linux-aarch64]
+        runner: [linux-aarch64]
+        shared: ['static']
+        bits: ['64']
+        include:
+          - runner: linux-amd64
+            shared: 'static'
+            bits: '32'
+          - runner: linux-amd64
+            shared: 'shared'
+            bits: '64'
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Configure
-        run: ./configure --enable-gpl --enable-nonfree --enable-memory-poisoning --assert-level=2
+        run: |
+          ./configure --enable-gpl --enable-nonfree --enable-memory-poisoning --assert-level=2 \
+              $([ "${{ matrix.bits }}" != "32" ] || echo --arch=x86_32 --extra-cflags=-m32 --extra-cxxflags=-m32 --extra-ldflags=-m32) \
+              $([ "${{ matrix.shared }}" != "shared" ] || echo --enable-shared --disable-static) \
+              || CFGRES=$? && CFGRES=$?
+          cat ffbuild/config.log
+          exit $CFGRES
       - name: Build
         run: make -j$(nproc)
       - name: Restore Cached Fate-Suite
@@ -30,7 +45,7 @@ jobs:
         id: fate
         run: |
           make fate-rsync SAMPLES=$PWD/fate-suite
-          echo "hash=$(find fate-suite -type f | sort | sha256sum | cut -d' ' -f1)" >> $FORGEJO_OUTPUT
+          echo "hash=$(find fate-suite -type f -printf "%P %s %T@\n" | sort | sha256sum | cut -d' ' -f1)" >> $FORGEJO_OUTPUT
       - name: Cache Fate-Suite
         uses: actions/cache/save@v4
         if: ${{ format('fate-suite-{0}', steps.fate.outputs.hash) != steps.cache.outputs.cache-matched-key }}
@@ -38,7 +53,7 @@ jobs:
           path: fate-suite
           key: fate-suite-${{ steps.fate.outputs.hash }}
       - name: Run Fate
-        run: make fate SAMPLES=$PWD/fate-suite -j$(nproc)
+        run: LD_LIBRARY_PATH="$(printf "%s:" "$PWD"/lib*)$PWD" make fate fate-build SAMPLES=$PWD/fate-suite -j$(nproc)
   compile_only:
     strategy:
       fail-fast: false
@@ -57,3 +72,5 @@ jobs:
               --extra-libs="$FF_LIBS" --extra-ldflags="$FF_LDFLAGS" --extra-ldexeflags="$FF_LDEXEFLAGS"
       - name: Build
         run: make -j$(nproc)
+      - name: Run Fate
+        run: make -j$(nproc) fate-build

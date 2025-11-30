@@ -18,6 +18,14 @@ repos:
     - id: fix-byte-order-marker
     - id: mixed-line-ending
     - id: trailing-whitespace
+- repo: local
+  hooks:
+    - id: aarch64-asm-indent
+      name: fix aarch64 assembly indentation
+      files: ^.*/aarch64/.*\.S$
+      language: script
+      entry: ./tools/check_arm_indent.sh --apply
+      pass_filenames: false
 - repo: https://github.com/codespell-project/codespell
   rev: v2.4.1
   hooks:
