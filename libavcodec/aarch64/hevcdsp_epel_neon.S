@@ -2290,7 +2290,7 @@ function ff_hevc_put_hevc_epel_uni_w_v24_8_neon, export=1
         subs            w4, w4, #1
         add             x2, x2, x3
         EPEL_UNI_W_V16_CALC v4, v5, v16, v18, v20, v22, v24, v25, v26, v27
-        EPEL_UNI_W_V8_CALC  v6, v17, v19, v21, v23, v24, v25
+        EPEL_UNI_W_V8_CALC v6, v17, v19, v21, v23, v24, v25
         str             q4, [x0]
         str             d6, [x0, #16]
         add             x0, x0, x1
@@ -2299,7 +2299,7 @@ function ff_hevc_put_hevc_epel_uni_w_v24_8_neon, export=1
         subs            w4, w4, #1
         add             x2, x2, x3
         EPEL_UNI_W_V16_CALC v4, v5, v18, v20, v22, v16, v24, v25, v26, v27
-        EPEL_UNI_W_V8_CALC  v6, v19, v21, v23, v17, v24, v25
+        EPEL_UNI_W_V8_CALC v6, v19, v21, v23, v17, v24, v25
         str             q4, [x0]
         str             d6, [x0, #16]
         add             x0, x0, x1
@@ -2308,7 +2308,7 @@ function ff_hevc_put_hevc_epel_uni_w_v24_8_neon, export=1
         subs            w4, w4, #1
         add             x2, x2, x3
         EPEL_UNI_W_V16_CALC v4, v5, v20, v22, v16, v18,  v24, v25, v26, v27
-        EPEL_UNI_W_V8_CALC  v6, v21, v23, v17, v19, v24, v25
+        EPEL_UNI_W_V8_CALC v6, v21, v23, v17, v19, v24, v25
         str             q4, [x0]
         str             d6, [x0, #16]
         add             x0, x0, x1
@@ -2317,7 +2317,7 @@ function ff_hevc_put_hevc_epel_uni_w_v24_8_neon, export=1
         subs            w4, w4, #1
         add             x2, x2, x3
         EPEL_UNI_W_V16_CALC v4, v5, v22, v16, v18, v20, v24, v25, v26, v27
-        EPEL_UNI_W_V8_CALC  v6, v23, v17, v19, v21, v24, v25
+        EPEL_UNI_W_V8_CALC v6, v23, v17, v19, v21, v24, v25
         str             q4, [x0]
         str             d6, [x0, #16]
         add             x0, x0, x1

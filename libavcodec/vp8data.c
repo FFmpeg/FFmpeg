@@ -39,4 +39,3 @@ const uint8_t *const ff_vp8_dct_cat_prob[] = {
     vp8_dct_cat5_prob,
     vp8_dct_cat6_prob,
 };
-

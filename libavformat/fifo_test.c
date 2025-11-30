@@ -154,4 +154,3 @@ const FFOutputFormat ff_fifo_test_muxer = {
 #endif
     .flags_internal = FF_FMT_ALLOW_FLUSH,
 };
-
