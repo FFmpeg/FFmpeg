@@ -75,6 +75,12 @@ fate-filter-amerge: tests/data/asynth-44100-1.wav
 fate-filter-amerge: SRC = $(TARGET_PATH)/tests/data/asynth-44100-1.wav
 fate-filter-amerge: CMD = framecrc -i $(SRC) -i $(SRC) -filter_complex "[0:a][1:a]amerge=inputs=2[aout]" -map "[aout]"
 
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, AMERGE, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-amerge-mode
+fate-filter-amerge-mode: tests/data/asynth-44100-1.wav
+fate-filter-amerge-mode: SRC = $(TARGET_PATH)/tests/data/asynth-44100-1.wav
+fate-filter-amerge-mode: CMD = framecrc -channel_layout FL -i $(SRC) -ss 0.1 -channel_layout FR -i $(SRC) -ss 0.2 -i $(SRC) -ss 0.3 -i $(SRC) -ss 0.4 -i $(SRC) -ss 0.5 -i $(SRC) \
+                               -filter_complex "[1:a][0:a]amerge[tmp1];[2:a][3:a]amerge=layout_mode=reset[tmp2];[tmp1][tmp2][4:a][5:a]amerge=inputs=4:layout_mode=normal[aout]" -map "[aout]"
+
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, APAD, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-apad
 fate-filter-apad: tests/data/asynth-44100-2.wav
 fate-filter-apad: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
