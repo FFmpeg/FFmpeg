@@ -44,7 +44,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#if ARCH_X86_32
+#if defined(__i386__) || defined(_M_IX86)
 #include <setjmp.h>
 typedef jmp_buf checkasm_context;
 #define checkasm_save_context() checkasm_handle_signal(setjmp(checkasm_context_buf))
