@@ -496,12 +496,84 @@ INIT_XMM sse2
 filter_sse2_v_fn put
 filter_sse2_v_fn avg
 
-%macro filter_v_fn 1
-%assign %%px mmsize/2
+%macro filter4_v_fn 1
 %if ARCH_X86_64
-cglobal vp9_%1_8tap_1d_v_ %+ %%px %+ _8, 6, 8, 11, dst, dstride, src, sstride, h, filtery, src4, sstride3
+cglobal vp9_%1_8tap_1d_v_4_8, 6, 7, 8, dst, dstride, src, sstride, h, filtery, sstride3
 %else
-cglobal vp9_%1_8tap_1d_v_ %+ %%px %+ _8, 4, 7, 11, dst, dstride, src, sstride, filtery, src4, sstride3
+cglobal vp9_%1_8tap_1d_v_4_8, 4, 5, 8, dst, dstride, src, sstride, filtery
+%define hd r4mp
+%define sstride3q filteryq
+%endif
+    lea  sstride3q, [sstrideq*3]
+    sub       srcq, sstride3q
+    movd        m0, [srcq]
+    movd        m1, [srcq+sstrideq]
+    movd        m2, [srcq+sstrideq*2]
+    movd        m3, [srcq+sstride3q]
+    lea       srcq, [srcq+sstrideq*4]
+    movd        m4, [srcq]
+    movd        m5, [srcq+sstrideq]
+    punpcklbw   m0, m1
+    punpcklbw   m1, m2
+    punpcklbw   m2, m3
+    punpcklbw   m3, m4
+    punpcklqdq  m0, m1
+    movd        m1, [srcq+sstrideq*2]
+    add       srcq, sstride3q
+%if ARCH_X86_32
+    mov   filteryq, r5mp
+%endif
+    punpcklqdq  m2, m3
+    punpcklbw   m4, m5
+    punpcklbw   m5, m1
+    punpcklqdq  m4, m5
+.loop:
+    pmaddubsw   m0, [filteryq]
+    movd        m3, [srcq]
+    movd        m5, [srcq+sstrideq]
+    pmaddubsw   m7, m4, [filteryq+64]
+    pmaddubsw   m6, m2, [filteryq+32]
+    punpcklbw   m1, m3
+    punpcklbw   m3, m5
+    punpcklqdq  m1, m3
+    pmaddubsw   m3, m1, [filteryq+96]
+    paddw       m0, [pw_64]
+    lea       srcq, [srcq+2*sstrideq]
+    paddw       m7, m0
+    mova        m0, m2
+    mova        m2, m4
+%ifidn %1, avg
+    movd        m4, [dstq]
+%endif
+    paddw       m6, m3
+%ifidn %1, avg
+    movd        m3, [dstq+dstrideq]
+%endif
+    paddsw      m6, m7
+    psraw       m6, 7
+    packuswb    m6, m6
+    pshuflw     m7, m6, 0xE
+%ifidn %1, avg
+    pavgb       m6, m4
+%endif
+    movd    [dstq], m6
+    mova        m4, m1
+%ifidn %1, avg
+    pavgb       m7, m3
+%endif
+    movd [dstq+dstrideq], m7
+    lea       dstq, [dstq+2*dstrideq]
+    mova        m1, m5
+    sub         hd, 2
+    jg .loop
+    RET
+%endmacro
+
+%macro filter_v_fn 1
+%if ARCH_X86_64
+cglobal vp9_%1_8tap_1d_v_8_8, 6, 8, 11, dst, dstride, src, sstride, h, filtery, src4, sstride3
+%else
+cglobal vp9_%1_8tap_1d_v_8_8, 4, 7, 11, dst, dstride, src, sstride, filtery, src4, sstride3
     mov   filteryq, r5mp
 %define hd r4mp
 %endif
@@ -510,7 +582,7 @@ cglobal vp9_%1_8tap_1d_v_ %+ %%px %+ _8, 4, 7, 11, dst, dstride, src, sstride, f
     lea      src4q, [srcq+sstrideq]
     sub       srcq, sstride3q
     mova        m7, [filteryq+ 0]
-%if ARCH_X86_64 && mmsize > 8
+%if ARCH_X86_64
     mova        m8, [filteryq+32]
     mova        m9, [filteryq+64]
     mova       m10, [filteryq+96]
@@ -533,7 +605,7 @@ cglobal vp9_%1_8tap_1d_v_ %+ %%px %+ _8, 4, 7, 11, dst, dstride, src, sstride, f
     punpcklbw   m4, m5
     punpcklbw   m1, m3
     pmaddubsw   m0, m7
-%if ARCH_X86_64 && mmsize > 8
+%if ARCH_X86_64
     pmaddubsw   m2, m8
     pmaddubsw   m4, m9
     pmaddubsw   m1, m10
@@ -560,9 +632,9 @@ cglobal vp9_%1_8tap_1d_v_ %+ %%px %+ _8, 4, 7, 11, dst, dstride, src, sstride, f
     RET
 %endmacro
 
-INIT_MMX ssse3
-filter_v_fn put
-filter_v_fn avg
+INIT_XMM ssse3
+filter4_v_fn put
+filter4_v_fn avg
 
 INIT_XMM ssse3
 filter_v_fn put
