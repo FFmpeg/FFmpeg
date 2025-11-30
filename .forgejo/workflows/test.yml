@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - master
+      - release/8.0
   pull_request:
 
 jobs:
