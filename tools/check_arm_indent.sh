@@ -34,6 +34,9 @@ fi
 ret=0
 
 for i in */aarch64/*.S */aarch64/*/*.S; do
+    if ! [ -f "$i" ]; then
+        continue
+    fi
     case $i in
         libavcodec/aarch64/h264idct_neon.S|libavcodec/aarch64/h26x/epel_neon.S|libavcodec/aarch64/h26x/qpel_neon.S|libavcodec/aarch64/vc1dsp_neon.S)
         # Skip files with known (and tolerated) deviations from the tool.
