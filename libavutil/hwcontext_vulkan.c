@@ -4458,7 +4458,7 @@ static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
         }
     } else {
         VkImageToMemoryCopyEXT region_info = {
-            .sType = VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT,
+            .sType = VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY_EXT,
             .imageSubresource = {
                 .layerCount = 1,
             },
