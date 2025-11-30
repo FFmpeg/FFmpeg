@@ -778,4 +778,3 @@ static const FFCodecDefault mp2_defaults[] = {
     { "b", "0" },
     { NULL },
 };
-

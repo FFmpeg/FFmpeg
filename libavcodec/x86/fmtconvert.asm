@@ -85,4 +85,3 @@ cglobal int32_to_float_fmul_array8, 5, 5, 5, c, dst, src, mul, len
 
 INIT_XMM sse2
 INT32_TO_FLOAT_FMUL_ARRAY8
-

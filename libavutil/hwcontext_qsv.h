@@ -84,4 +84,3 @@ typedef struct AVQSVFramesContext {
 } AVQSVFramesContext;
 
 #endif /* AVUTIL_HWCONTEXT_QSV_H */
-

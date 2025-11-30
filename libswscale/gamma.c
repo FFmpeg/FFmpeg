@@ -70,4 +70,3 @@ int ff_init_gamma_convert(SwsFilterDescriptor *desc, SwsSlice * src, uint16_t *t
 
     return 0;
 }
-

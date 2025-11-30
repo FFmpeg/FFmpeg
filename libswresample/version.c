@@ -43,4 +43,3 @@ const char *swresample_license(void)
 #define LICENSE_PREFIX "libswresample license: "
     return &LICENSE_PREFIX FFMPEG_LICENSE[sizeof(LICENSE_PREFIX) - 1];
 }
-

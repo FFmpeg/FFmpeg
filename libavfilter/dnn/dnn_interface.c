@@ -137,4 +137,3 @@ const AVClass *ff_dnn_child_class_iterate_with_mask(void **iter, uint32_t backen
 
     return NULL;
 }
-

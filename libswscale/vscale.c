@@ -319,5 +319,3 @@ void ff_init_vscale_pfn(SwsContext *c,
             lumCtx->pfn.yuv2anyX = yuv2anyX;
     }
 }
-
-

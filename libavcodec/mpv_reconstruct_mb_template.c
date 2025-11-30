@@ -282,4 +282,3 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
         }
     }
 }
-

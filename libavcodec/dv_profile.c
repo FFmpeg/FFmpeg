@@ -337,4 +337,3 @@ const AVDVProfile *av_dv_codec_profile2(int width, int height,
 
     return p;
 }
-

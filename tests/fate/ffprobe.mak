@@ -25,4 +25,3 @@ FATE_FFPROBE-$(call FILTERDEMDECENCMUX, AEVALSRC TESTSRC ARESAMPLE, FFMETADATA, 
                                         += $(FFPROBE_TEST_FILE_TESTS-yes)
 
 fate-ffprobe: $(FATE_FFPROBE-yes)
-

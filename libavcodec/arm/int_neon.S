@@ -48,4 +48,3 @@ function ff_scalarproduct_int16_neon, export=1
         vmov.32         r0,  d3[0]
         bx              lr
 endfunc
-
