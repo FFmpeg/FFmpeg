@@ -197,6 +197,12 @@ TAG:ExifIFD/ExposureMode=      0
 TAG:ExifIFD/WhiteBalance=      0
 TAG:ExifIFD/DigitalZoomRatio=   4000:4000   
 TAG:ExifIFD/SceneCaptureType=      0
+TAG:IFD1/Compression=      6
+TAG:IFD1/XResolution=    180:1      
+TAG:IFD1/YResolution=    180:1      
+TAG:IFD1/ResolutionUnit=      2
+TAG:IFD1/JPEGInterchangeFormat=   5108
+TAG:IFD1/JPEGInterchangeFormatLength=   4214
 [SIDE_DATA]
 side_data_type=3x3 displaymatrix
 displaymatrix=
@@ -208,6 +214,6 @@ rotation=0
 [/SIDE_DATA]
 [SIDE_DATA]
 side_data_type=EXIF metadata
-size=3285
+size=3379
 [/SIDE_DATA]
 [/FRAME]

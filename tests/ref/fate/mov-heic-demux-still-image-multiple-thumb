@@ -1895,9 +1895,27 @@ TAG:ExifIFD/0xA434=LUMIX S 24-60/F2.8
 TAG:0x9006=  39936
 TAG:0x9007=  65536
 TAG:0x9008= 272401
+TAG:IFD1/Compression=      6
+TAG:IFD1/StripOffsets= 106496
+TAG:IFD1/Orientation=      1
+TAG:IFD1/XResolution=    180:1      
+TAG:IFD1/YResolution=    180:1      
+TAG:IFD1/ResolutionUnit=      2
+TAG:IFD1/JPEGInterchangeFormat= 106496
+TAG:IFD1/JPEGInterchangeFormatLength=  20480
+TAG:IFD1/YCbCrPositioning=      2
+TAG:IFD2/Compression=      6
+TAG:IFD2/StripOffsets= 126976
+TAG:IFD2/Orientation=      1
+TAG:IFD2/XResolution=    180:1      
+TAG:IFD2/YResolution=    180:1      
+TAG:IFD2/ResolutionUnit=      2
+TAG:IFD2/JPEGInterchangeFormat= 126976
+TAG:IFD2/JPEGInterchangeFormatLength= 858544
+TAG:IFD2/YCbCrPositioning=      2
 [SIDE_DATA]
 side_data_type=EXIF metadata
-size=30308
+size=30568
 [/SIDE_DATA]
 [SIDE_DATA]
 side_data_type=H.26[45] User Data Unregistered SEI message
@@ -1927,7 +1945,7 @@ DISPOSITION:still_image=0
 DISPOSITION:multilayer=0
 [SIDE_DATA]
 side_data_type=EXIF metadata
-size=30308
+size=30568
 [/SIDE_DATA]
 [/STREAM]
 [STREAM]
