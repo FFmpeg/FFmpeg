@@ -223,49 +223,28 @@ cglobal vp9_iwht_iwht_4x4_add, 3, 3, 0, dst, stride, block, eob
     VP9_STORE_2X         2,  3,  6,  7,  4
 %endmacro
 
-%macro IDCT_4x4_FN 1
-INIT_MMX %1
+INIT_MMX ssse3
 cglobal vp9_idct_idct_4x4_add, 4, 4, 0, dst, stride, block, eob
 
-%if cpuflag(ssse3)
     cmp eobd, 4 ; 2x2 or smaller
     jg .idctfull
 
     cmp eobd, 1 ; faster path for when only DC is set
     jne .idct2x2
-%else
-    cmp eobd, 1
-    jg .idctfull
-%endif
 
-%if cpuflag(ssse3)
     movd                m0, [blockq]
     mova                m5, [pw_11585x2]
     pmulhrsw            m0, m5
     pmulhrsw            m0, m5
-%else
-    DEFINE_ARGS dst, stride, block, coef
-    movsx            coefd, word [blockq]
-    imul             coefd, 11585
-    add              coefd, 8192
-    sar              coefd, 14
-    imul             coefd, 11585
-    add              coefd, (8 << 14) + 8192
-    sar              coefd, 14 + 4
-    movd                m0, coefd
-%endif
     pshufw              m0, m0, 0
     pxor                m4, m4
     movh          [blockq], m4
-%if cpuflag(ssse3)
     pmulhrsw            m0, [pw_2048]       ; (x*2048 + (1<<14))>>15 <=> (x+8)>>4
-%endif
     VP9_STORE_2X         0,  0,  6,  7,  4
     lea               dstq, [dstq+2*strideq]
     VP9_STORE_2X         0,  0,  6,  7,  4
     RET
 
-%if cpuflag(ssse3)
 ; faster path for when only top left 2x2 block is set
 .idct2x2:
     movd                m0, [blockq+0]
@@ -285,16 +264,13 @@ cglobal vp9_idct_idct_4x4_add, 4, 4, 0, dst, stride, block, eob
     movh       [blockq+ 8], m4
     VP9_IDCT4_WRITEOUT
     RET
-%endif
 
 .idctfull: ; generic full 4x4 idct/idct
     mova                m0, [blockq+ 0]
     mova                m1, [blockq+ 8]
     mova                m2, [blockq+16]
     mova                m3, [blockq+24]
-%if cpuflag(ssse3)
     mova                m6, [pw_11585x2]
-%endif
     mova                m7, [pd_8192]       ; rounding
     VP9_IDCT4_1D
     TRANSPOSE4x4W  0, 1, 2, 3, 4
@@ -306,10 +282,6 @@ cglobal vp9_idct_idct_4x4_add, 4, 4, 0, dst, stride, block, eob
     mova       [blockq+24], m4
     VP9_IDCT4_WRITEOUT
     RET
-%endmacro
-
-IDCT_4x4_FN mmxext
-IDCT_4x4_FN ssse3
 
 ;-------------------------------------------------------------------------------------------
 ; void vp9_iadst_iadst_4x4_add_<opt>(uint8_t *dst, ptrdiff_t stride, int16_t *block, int eob);

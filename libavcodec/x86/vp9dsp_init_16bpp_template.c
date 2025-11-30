@@ -123,7 +123,6 @@ decl_ipred_fns(tm, BPC, mmxext, sse2);
 
 decl_itxfm_func(iwht, iwht, 4, BPC, mmxext);
 #if BPC == 10
-decl_itxfm_func(idct,  idct,  4, BPC, mmxext);
 decl_itxfm_funcs(4, BPC, ssse3);
 decl_itxfm_funcs(16, BPC, avx512icl);
 decl_itxfm_func(idct,  idct, 32, BPC, avx512icl);
@@ -184,9 +183,6 @@ av_cold void INIT_FUNC(VP9DSPContext *dsp, int bitexact)
         init_ipred_func(tm, TM_VP8, 4, BPC, mmxext);
         if (!bitexact) {
             init_itx_func_one(4 /* lossless */, iwht, iwht, 4, BPC, mmxext);
-#if BPC == 10
-            init_itx_func(TX_4X4, DCT_DCT, idct, idct, 4, 10, mmxext);
-#endif
         }
     }
 

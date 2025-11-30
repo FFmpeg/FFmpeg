@@ -243,29 +243,21 @@ IWHT4_FN 12, 4095
 ; 4x4 coefficients are 5+depth+sign bits, so for 10bpp, everything still fits
 ; in 15+1 words without additional effort, since the coefficients are 15bpp.
 
-%macro IDCT4_10_FN 0
+INIT_MMX ssse3
 cglobal vp9_idct_idct_4x4_add_10, 4, 4, 8, dst, stride, block, eob
     cmp               eobd, 1
     jg .idctfull
 
     ; dc-only
     pxor                m4, m4
-%if cpuflag(ssse3)
     movd                m0, [blockq]
     movd          [blockq], m4
     mova                m5, [pw_11585x2]
     pmulhrsw            m0, m5
     pmulhrsw            m0, m5
-%else
-    DEFINE_ARGS dst, stride, block, coef
-    DC_ONLY              4, m4
-    movd                m0, coefd
-%endif
     pshufw              m0, m0, 0
     mova                m5, [pw_1023]
-%if cpuflag(ssse3)
     pmulhrsw            m0, [pw_2048]       ; (x*2048 + (1<<14))>>15 <=> (x+8)>>4
-%endif
     VP9_STORE_2X         0,  0,  6,  7,  4,  5
     lea               dstq, [dstq+2*strideq]
     VP9_STORE_2X         0,  0,  6,  7,  4,  5
@@ -281,9 +273,7 @@ cglobal vp9_idct_idct_4x4_add_10, 4, 4, 8, dst, stride, block, eob
     packssdw            m2, [blockq+2*16+8]
     packssdw            m3, [blockq+3*16+8]
 
-%if cpuflag(ssse3)
     mova                m6, [pw_11585x2]
-%endif
     mova                m7, [pd_8192]       ; rounding
     VP9_IDCT4_1D
     TRANSPOSE4x4W  0, 1, 2, 3, 4
@@ -293,12 +283,6 @@ cglobal vp9_idct_idct_4x4_add_10, 4, 4, 8, dst, stride, block, eob
     ZERO_BLOCK      blockq, 16, 4, m4
     VP9_IDCT4_WRITEOUT
     RET
-%endmacro
-
-INIT_MMX mmxext
-IDCT4_10_FN
-INIT_MMX ssse3
-IDCT4_10_FN
 
 %macro IADST4_FN 4
 cglobal vp9_%1_%3_4x4_add_10, 3, 3, 0, dst, stride, block, eob

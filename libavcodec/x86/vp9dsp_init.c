@@ -101,7 +101,6 @@ itxfm_func(iadst, idct,  size, opt); \
 itxfm_func(idct,  iadst, size, opt); \
 itxfm_func(iadst, iadst, size, opt)
 
-itxfm_func(idct,  idct,  4, mmxext);
 itxfm_func(idct,  iadst, 4, sse2);
 itxfm_func(iadst, idct,  4, sse2);
 itxfm_func(iadst, iadst, 4, sse2);
@@ -284,7 +283,6 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         dsp->loop_filter_8[1][1] = ff_vp9_loop_filter_v_8_8_mmxext;
         init_fpel_func(4, 1,  4, avg, _8, mmxext);
         init_fpel_func(3, 1,  8, avg, _8, mmxext);
-        dsp->itxfm_add[TX_4X4][DCT_DCT] = ff_vp9_idct_idct_4x4_add_mmxext;
         dsp->intra_pred[TX_4X4][HOR_DOWN_PRED] = ff_vp9_ipred_hd_4x4_mmxext;
         dsp->intra_pred[TX_4X4][VERT_LEFT_PRED] = ff_vp9_ipred_vl_4x4_mmxext;
     }
