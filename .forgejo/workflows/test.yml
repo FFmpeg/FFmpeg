@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - release/4.4
+      - release/4.3
   pull_request:
 
 jobs:
@@ -58,7 +58,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: ["ghcr.io/btbn/ffmpeg-builds/win64-gpl:latest"]
+        image: ["ghcr.io/btbn/ffmpeg-builds/win64-gpl-4.3:latest"]
     runs-on: linux-amd64
     container: ${{ matrix.image }}
     steps:
