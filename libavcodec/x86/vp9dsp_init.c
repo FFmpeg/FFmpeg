@@ -41,7 +41,6 @@ decl_fpel_func(put, 64,   , avx);
 decl_fpel_func(avg, 32, _8, avx2);
 decl_fpel_func(avg, 64, _8, avx2);
 
-decl_mc_funcs(4, mmxext, int16_t, 8, 8);
 decl_mc_funcs(8, sse2, int16_t,  8, 8);
 decl_mc_funcs(4, ssse3, int8_t, 32, 8);
 decl_mc_funcs(8, ssse3, int8_t, 32, 8);
@@ -70,10 +69,11 @@ mc_rep_funcs(64, 32, 32, avx2,  int8_t,  32, 8)
 extern const int8_t ff_filters_ssse3[3][15][4][32];
 extern const int16_t ff_filters_sse2[3][15][8][8];
 
-filters_8tap_2d_fn2(put, 16, 8, 1, mmxext, sse2, sse2)
-filters_8tap_2d_fn2(avg, 16, 8, 1, mmxext, sse2, sse2)
-filters_8tap_2d_fn2(put, 16, 8, 1, ssse3, ssse3, ssse3)
-filters_8tap_2d_fn2(avg, 16, 8, 1, ssse3, ssse3, ssse3)
+filters_8tap_2d_fn2(put, 16, 8, 1, sse2, sse2)
+filters_8tap_2d_fn2(avg, 16, 8, 1, sse2, sse2)
+filters_8tap_2d_fn3(put, 16, 8, 1, ssse3, ssse3)
+filters_8tap_2d_fn3(avg, 16, 8, 1, ssse3, ssse3)
+
 #if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
 filters_8tap_2d_fn(put, 64, 32, 8, 1, avx2, ssse3)
 filters_8tap_2d_fn(put, 32, 32, 8, 1, avx2, ssse3)
@@ -81,10 +81,10 @@ filters_8tap_2d_fn(avg, 64, 32, 8, 1, avx2, ssse3)
 filters_8tap_2d_fn(avg, 32, 32, 8, 1, avx2, ssse3)
 #endif
 
-filters_8tap_1d_fn3(put, 8, mmxext, sse2, sse2)
-filters_8tap_1d_fn3(avg, 8, mmxext, sse2, sse2)
-filters_8tap_1d_fn3(put, 8, ssse3, ssse3, ssse3)
-filters_8tap_1d_fn3(avg, 8, ssse3, ssse3, ssse3)
+filters_8tap_1d_fn3(put, 8, sse2, sse2)
+filters_8tap_1d_fn3(avg, 8, sse2, sse2)
+filters_8tap_1d_fn4(put, 8, ssse3, ssse3)
+filters_8tap_1d_fn4(avg, 8, ssse3, ssse3)
 #if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
 filters_8tap_1d_fn2(put, 64, 8, avx2, ssse3)
 filters_8tap_1d_fn2(put, 32, 8, avx2, ssse3)
@@ -285,8 +285,6 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp, int bpp, int bitexact)
         dsp->loop_filter_8[0][1] = ff_vp9_loop_filter_v_4_8_mmxext;
         dsp->loop_filter_8[1][0] = ff_vp9_loop_filter_h_8_8_mmxext;
         dsp->loop_filter_8[1][1] = ff_vp9_loop_filter_v_8_8_mmxext;
-        init_subpel2(4, 0, 4, put, 8, mmxext);
-        init_subpel2(4, 1, 4, avg, 8, mmxext);
         init_fpel_func(4, 1,  4, avg, _8, mmxext);
         init_fpel_func(3, 1,  8, avg, _8, mmxext);
         dsp->itxfm_add[TX_4X4][DCT_DCT] = ff_vp9_idct_idct_4x4_add_mmxext;

@@ -205,7 +205,7 @@ cglobal vp9_%1_8tap_1d_h_ %+ %%px %+ _8, 6, 6, 15, dst, dstride, src, sstride, h
     pxor        m5, m5
     mova        m6, [pw_64]
     mova        m7, [filteryq+  0]
-%if ARCH_X86_64 && mmsize > 8
+%if ARCH_X86_64
     mova        m8, [filteryq+ 16]
     mova        m9, [filteryq+ 32]
     mova       m10, [filteryq+ 48]
@@ -226,7 +226,7 @@ cglobal vp9_%1_8tap_1d_h_ %+ %%px %+ _8, 6, 6, 15, dst, dstride, src, sstride, h
     punpcklbw   m3, m5
     punpcklbw   m4, m5
     pmullw      m0, m7
-%if ARCH_X86_64 && mmsize > 8
+%if ARCH_X86_64
     pmullw      m1, m8
     pmullw      m2, m9
     pmullw      m3, m10
@@ -247,7 +247,7 @@ cglobal vp9_%1_8tap_1d_h_ %+ %%px %+ _8, 6, 6, 15, dst, dstride, src, sstride, h
     punpcklbw   m1, m5
     punpcklbw   m3, m5
     punpcklbw   m4, m5
-%if ARCH_X86_64 && mmsize > 8
+%if ARCH_X86_64
     pmullw      m1, m12
     pmullw      m3, m13
     pmullw      m4, m14
@@ -275,10 +275,6 @@ cglobal vp9_%1_8tap_1d_h_ %+ %%px %+ _8, 6, 6, 15, dst, dstride, src, sstride, h
     jg .loop
     RET
 %endmacro
-
-INIT_MMX mmxext
-filter_sse2_h_fn put
-filter_sse2_h_fn avg
 
 INIT_XMM sse2
 filter_sse2_h_fn put
@@ -421,7 +417,7 @@ cglobal vp9_%1_8tap_1d_v_ %+ %%px %+ _8, 4, 7, 15, dst, dstride, src, sstride, f
     lea      src4q, [srcq+sstrideq]
     sub       srcq, sstride3q
     mova        m7, [filteryq+  0]
-%if ARCH_X86_64 && mmsize > 8
+%ifdef m8
     mova        m8, [filteryq+ 16]
     mova        m9, [filteryq+ 32]
     mova       m10, [filteryq+ 48]
@@ -446,7 +442,7 @@ cglobal vp9_%1_8tap_1d_v_ %+ %%px %+ _8, 4, 7, 15, dst, dstride, src, sstride, f
     punpcklbw   m3, m5
     punpcklbw   m4, m5
     pmullw      m0, m7
-%if ARCH_X86_64 && mmsize > 8
+%ifdef m8
     pmullw      m1, m8
     pmullw      m2, m9
     pmullw      m3, m10
@@ -467,7 +463,7 @@ cglobal vp9_%1_8tap_1d_v_ %+ %%px %+ _8, 4, 7, 15, dst, dstride, src, sstride, f
     punpcklbw   m1, m5
     punpcklbw   m3, m5
     punpcklbw   m4, m5
-%if ARCH_X86_64 && mmsize > 8
+%ifdef m8
     pmullw      m1, m12
     pmullw      m3, m13
     pmullw      m4, m14
@@ -495,10 +491,6 @@ cglobal vp9_%1_8tap_1d_v_ %+ %%px %+ _8, 4, 7, 15, dst, dstride, src, sstride, f
     jg .loop
     RET
 %endmacro
-
-INIT_MMX mmxext
-filter_sse2_v_fn put
-filter_sse2_v_fn avg
 
 INIT_XMM sse2
 filter_sse2_v_fn put

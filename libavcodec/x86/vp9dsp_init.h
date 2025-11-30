@@ -107,12 +107,15 @@ filter_8tap_1d_fn(op, sz, FILTER_8TAP_SMOOTH,  f_opt, smooth,  dir, dvar, bpp, o
 filters_8tap_1d_fn(op, sz, h, mx, bpp, opt, f_opt) \
 filters_8tap_1d_fn(op, sz, v, my, bpp, opt, f_opt)
 
-#define filters_8tap_1d_fn3(op, bpp, opt4, opt8, f_opt) \
+#define filters_8tap_1d_fn3(op, bpp, opt8, f_opt) \
 filters_8tap_1d_fn2(op, 64, bpp, opt8, f_opt) \
 filters_8tap_1d_fn2(op, 32, bpp, opt8, f_opt) \
 filters_8tap_1d_fn2(op, 16, bpp, opt8, f_opt) \
 filters_8tap_1d_fn2(op, 8, bpp, opt8, f_opt) \
-filters_8tap_1d_fn2(op, 4, bpp, opt4, f_opt)
+
+#define filters_8tap_1d_fn4(op, bpp, opt, f_opt) \
+filters_8tap_1d_fn3(op, bpp, opt, f_opt) \
+filters_8tap_1d_fn2(op, 4, bpp, opt, f_opt) \
 
 #define filter_8tap_2d_fn(op, sz, f, f_opt, fname, align, bpp, bytes, opt) \
 static void op##_8tap_##fname##_##sz##hv_##bpp##_##opt(uint8_t *dst, ptrdiff_t dst_stride, \
@@ -133,12 +136,15 @@ filter_8tap_2d_fn(op, sz, FILTER_8TAP_REGULAR, f_opt, regular, align, bpp, bytes
 filter_8tap_2d_fn(op, sz, FILTER_8TAP_SHARP,   f_opt, sharp, align, bpp, bytes, opt) \
 filter_8tap_2d_fn(op, sz, FILTER_8TAP_SMOOTH,  f_opt, smooth, align, bpp, bytes, opt)
 
-#define filters_8tap_2d_fn2(op, align, bpp, bytes, opt4, opt8, f_opt) \
+#define filters_8tap_2d_fn2(op, align, bpp, bytes, opt8, f_opt) \
 filters_8tap_2d_fn(op, 64, align, bpp, bytes, opt8, f_opt) \
 filters_8tap_2d_fn(op, 32, align, bpp, bytes, opt8, f_opt) \
 filters_8tap_2d_fn(op, 16, align, bpp, bytes, opt8, f_opt) \
 filters_8tap_2d_fn(op, 8, align, bpp, bytes, opt8, f_opt) \
-filters_8tap_2d_fn(op, 4, align, bpp, bytes, opt4, f_opt)
+
+#define filters_8tap_2d_fn3(op, align, bpp, bytes, opt, f_opt) \
+filters_8tap_2d_fn2(op, align, bpp, bytes, opt, f_opt) \
+filters_8tap_2d_fn(op, 4, align, bpp, bytes, opt, f_opt)
 
 #define init_fpel_func(idx1, idx2, sz, type, bpp, opt) \
     dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][0][0] = \

@@ -40,8 +40,8 @@ mc_rep_funcs(32, 16, 32, avx2, int16_t, 16, BPC)
 mc_rep_funcs(64, 32, 64, avx2, int16_t, 16, BPC)
 #endif
 
-filters_8tap_2d_fn2(put, 16, BPC, 2, sse2, sse2, 16bpp)
-filters_8tap_2d_fn2(avg, 16, BPC, 2, sse2, sse2, 16bpp)
+filters_8tap_2d_fn3(put, 16, BPC, 2, sse2, 16bpp)
+filters_8tap_2d_fn3(avg, 16, BPC, 2, sse2, 16bpp)
 #if HAVE_AVX2_EXTERNAL
 filters_8tap_2d_fn(put, 64, 32, BPC, 2, avx2, 16bpp)
 filters_8tap_2d_fn(avg, 64, 32, BPC, 2, avx2, 16bpp)
@@ -51,8 +51,8 @@ filters_8tap_2d_fn(put, 16, 32, BPC, 2, avx2, 16bpp)
 filters_8tap_2d_fn(avg, 16, 32, BPC, 2, avx2, 16bpp)
 #endif
 
-filters_8tap_1d_fn3(put, BPC, sse2, sse2, 16bpp)
-filters_8tap_1d_fn3(avg, BPC, sse2, sse2, 16bpp)
+filters_8tap_1d_fn4(put, BPC, sse2, 16bpp)
+filters_8tap_1d_fn4(avg, BPC, sse2, 16bpp)
 #if HAVE_AVX2_EXTERNAL
 filters_8tap_1d_fn2(put, 64, BPC, avx2, 16bpp)
 filters_8tap_1d_fn2(avg, 64, BPC, avx2, 16bpp)
