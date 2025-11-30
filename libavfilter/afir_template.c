@@ -388,5 +388,3 @@ static int fn(fir_quantum)(AVFilterContext *ctx, AVFrame *out, int ch, int offse
 
     return 0;
 }
-
-

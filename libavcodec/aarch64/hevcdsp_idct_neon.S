@@ -38,10 +38,10 @@ const trans, align=4
 endconst
 
 .macro clip10 in1, in2, c1, c2
-        smax        \in1, \in1, \c1
-        smax        \in2, \in2, \c1
-        smin        \in1, \in1, \c2
-        smin        \in2, \in2, \c2
+        smax            \in1, \in1, \c1
+        smax            \in2, \in2, \c1
+        smin            \in1, \in1, \c2
+        smin            \in2, \in2, \c2
 .endm
 
 function ff_hevc_add_residual_4x4_8_neon, export=1
@@ -50,13 +50,13 @@ function ff_hevc_add_residual_4x4_8_neon, export=1
         ld1             {v2.s}[1], [x0], x2
         ld1             {v2.s}[2], [x0], x2
         ld1             {v2.s}[3], [x0], x2
-        sub              x0,  x0,  x2, lsl #2
-        uxtl             v6.8h,  v2.8b
-        uxtl2            v7.8h,  v2.16b
-        sqadd            v0.8h,  v0.8h, v6.8h
-        sqadd            v1.8h,  v1.8h, v7.8h
-        sqxtun           v0.8b,  v0.8h
-        sqxtun2          v0.16b, v1.8h
+        sub             x0,  x0,  x2, lsl #2
+        uxtl            v6.8h,  v2.8b
+        uxtl2           v7.8h,  v2.16b
+        sqadd           v0.8h,  v0.8h, v6.8h
+        sqadd           v1.8h,  v1.8h, v7.8h
+        sqxtun          v0.8b,  v0.8h
+        sqxtun2         v0.16b, v1.8h
         st1             {v0.s}[0], [x0], x2
         st1             {v0.s}[1], [x0], x2
         st1             {v0.s}[2], [x0], x2
@@ -70,12 +70,12 @@ function ff_hevc_add_residual_4x4_10_neon, export=1
         ld1             {v2.d}[0], [x12], x2
         ld1             {v2.d}[1], [x12], x2
         ld1             {v3.d}[0], [x12], x2
-        sqadd            v0.8h, v0.8h, v2.8h
+        sqadd           v0.8h, v0.8h, v2.8h
         ld1             {v3.d}[1], [x12], x2
-        movi             v4.8h, #0
-        sqadd            v1.8h, v1.8h, v3.8h
-        mvni             v5.8h, #0xFC, lsl #8 // movi #0x3FF
-        clip10           v0.8h, v1.8h, v4.8h, v5.8h
+        movi            v4.8h, #0
+        sqadd           v1.8h, v1.8h, v3.8h
+        mvni            v5.8h, #0xFC, lsl #8 // movi #0x3FF
+        clip10          v0.8h, v1.8h, v4.8h, v5.8h
         st1             {v0.d}[0],  [x0], x2
         st1             {v0.d}[1],  [x0], x2
         st1             {v1.d}[0],  [x0], x2
@@ -85,48 +85,48 @@ endfunc
 
 function ff_hevc_add_residual_8x8_8_neon, export=1
         add             x12,  x0, x2
-        add              x2,  x2, x2
-        mov              x3,  #8
-1:      subs             x3,  x3, #2
+        add             x2,  x2, x2
+        mov             x3,  #8
+1:      subs            x3,  x3, #2
         ld1             {v2.d}[0],     [x0]
         ld1             {v2.d}[1],    [x12]
-        uxtl             v3.8h,  v2.8b
+        uxtl            v3.8h,  v2.8b
         ld1             {v0.8h-v1.8h}, [x1], #32
-        uxtl2            v2.8h,  v2.16b
-        sqadd            v0.8h,  v0.8h,   v3.8h
-        sqadd            v1.8h,  v1.8h,   v2.8h
-        sqxtun           v0.8b,  v0.8h
-        sqxtun2          v0.16b, v1.8h
+        uxtl2           v2.8h,  v2.16b
+        sqadd           v0.8h,  v0.8h,   v3.8h
+        sqadd           v1.8h,  v1.8h,   v2.8h
+        sqxtun          v0.8b,  v0.8h
+        sqxtun2         v0.16b, v1.8h
         st1             {v0.d}[0],     [x0], x2
         st1             {v0.d}[1],    [x12], x2
-        bne              1b
+        bne             1b
         ret
 endfunc
 
 function ff_hevc_add_residual_8x8_10_neon, export=1
         add             x12,  x0, x2
-        add              x2,  x2, x2
-        mov              x3,  #8
-        movi             v4.8h, #0
-        mvni             v5.8h, #0xFC, lsl #8 // movi #0x3FF
-1:      subs             x3,  x3, #2
+        add             x2,  x2, x2
+        mov             x3,  #8
+        movi            v4.8h, #0
+        mvni            v5.8h, #0xFC, lsl #8 // movi #0x3FF
+1:      subs            x3,  x3, #2
         ld1             {v0.8h-v1.8h}, [x1], #32
         ld1             {v2.8h},       [x0]
-        sqadd            v0.8h, v0.8h, v2.8h
+        sqadd           v0.8h, v0.8h, v2.8h
         ld1             {v3.8h},      [x12]
-        sqadd            v1.8h, v1.8h, v3.8h
-        clip10           v0.8h, v1.8h, v4.8h, v5.8h
+        sqadd           v1.8h, v1.8h, v3.8h
+        clip10          v0.8h, v1.8h, v4.8h, v5.8h
         st1             {v0.8h},       [x0], x2
         st1             {v1.8h},      [x12], x2
-        bne              1b
+        bne             1b
         ret
 endfunc
 
 function ff_hevc_add_residual_16x16_8_neon, export=1
-        mov              x3,  #16
+        mov             x3,  #16
         add             x12, x0, x2
-        add              x2,  x2, x2
-1:      subs             x3,  x3, #2
+        add             x2,  x2, x2
+1:      subs            x3,  x3, #2
         ld1             {v16.16b},     [x0]
         ld1             {v0.8h-v3.8h}, [x1], #64
         ld1             {v19.16b},    [x12]
@@ -134,47 +134,47 @@ function ff_hevc_add_residual_16x16_8_neon, export=1
         uxtl2           v18.8h, v16.16b
         uxtl            v20.8h, v19.8b
         uxtl2           v21.8h, v19.16b
-        sqadd            v0.8h,  v0.8h, v17.8h
-        sqadd            v1.8h,  v1.8h, v18.8h
-        sqadd            v2.8h,  v2.8h, v20.8h
-        sqadd            v3.8h,  v3.8h, v21.8h
-        sqxtun           v0.8b,  v0.8h
+        sqadd           v0.8h,  v0.8h, v17.8h
+        sqadd           v1.8h,  v1.8h, v18.8h
+        sqadd           v2.8h,  v2.8h, v20.8h
+        sqadd           v3.8h,  v3.8h, v21.8h
+        sqxtun          v0.8b,  v0.8h
         sqxtun2         v0.16b,  v1.8h
-        sqxtun           v1.8b,  v2.8h
+        sqxtun          v1.8b,  v2.8h
         sqxtun2         v1.16b,  v3.8h
         st1             {v0.16b},     [x0], x2
         st1             {v1.16b},    [x12], x2
-        bne              1b
+        bne             1b
         ret
 endfunc
 
 function ff_hevc_add_residual_16x16_10_neon, export=1
-        mov              x3,  #16
+        mov             x3,  #16
         movi            v20.8h, #0
         mvni            v21.8h, #0xFC, lsl #8 // movi #0x3FF
         add             x12,  x0, x2
-        add              x2,  x2, x2
-1:      subs             x3,  x3, #2
+        add             x2,  x2, x2
+1:      subs            x3,  x3, #2
         ld1             {v16.8h-v17.8h}, [x0]
         ld1             {v0.8h-v3.8h},  [x1], #64
-        sqadd            v0.8h, v0.8h, v16.8h
+        sqadd           v0.8h, v0.8h, v16.8h
         ld1             {v18.8h-v19.8h}, [x12]
-        sqadd            v1.8h, v1.8h, v17.8h
-        sqadd            v2.8h, v2.8h, v18.8h
-        sqadd            v3.8h, v3.8h, v19.8h
-        clip10           v0.8h, v1.8h, v20.8h, v21.8h
-        clip10           v2.8h, v3.8h, v20.8h, v21.8h
+        sqadd           v1.8h, v1.8h, v17.8h
+        sqadd           v2.8h, v2.8h, v18.8h
+        sqadd           v3.8h, v3.8h, v19.8h
+        clip10          v0.8h, v1.8h, v20.8h, v21.8h
+        clip10          v2.8h, v3.8h, v20.8h, v21.8h
         st1             {v0.8h-v1.8h},   [x0], x2
         st1             {v2.8h-v3.8h},  [x12], x2
-        bne              1b
+        bne             1b
         ret
 endfunc
 
 function ff_hevc_add_residual_32x32_8_neon, export=1
         add             x12,  x0, x2
-        add              x2,  x2, x2
-        mov              x3,  #32
-1:      subs             x3,  x3, #2
+        add             x2,  x2, x2
+        mov             x3,  #32
+1:      subs            x3,  x3, #2
         ld1             {v20.16b, v21.16b}, [x0]
         uxtl            v16.8h,  v20.8b
         uxtl2           v17.8h,  v20.16b
@@ -187,43 +187,43 @@ function ff_hevc_add_residual_32x32_8_neon, export=1
         uxtl2           v21.8h,  v22.16b
         uxtl            v22.8h,  v23.8b
         uxtl2           v23.8h,  v23.16b
-        sqadd            v0.8h,  v0.8h,  v16.8h
-        sqadd            v1.8h,  v1.8h,  v17.8h
-        sqadd            v2.8h,  v2.8h,  v18.8h
-        sqadd            v3.8h,  v3.8h,  v19.8h
-        sqadd            v4.8h,  v4.8h,  v20.8h
-        sqadd            v5.8h,  v5.8h,  v21.8h
-        sqadd            v6.8h,  v6.8h,  v22.8h
-        sqadd            v7.8h,  v7.8h,  v23.8h
-        sqxtun           v0.8b,  v0.8h
+        sqadd           v0.8h,  v0.8h,  v16.8h
+        sqadd           v1.8h,  v1.8h,  v17.8h
+        sqadd           v2.8h,  v2.8h,  v18.8h
+        sqadd           v3.8h,  v3.8h,  v19.8h
+        sqadd           v4.8h,  v4.8h,  v20.8h
+        sqadd           v5.8h,  v5.8h,  v21.8h
+        sqadd           v6.8h,  v6.8h,  v22.8h
+        sqadd           v7.8h,  v7.8h,  v23.8h
+        sqxtun          v0.8b,  v0.8h
         sqxtun2         v0.16b,  v1.8h
-        sqxtun           v1.8b,  v2.8h
+        sqxtun          v1.8b,  v2.8h
         sqxtun2         v1.16b,  v3.8h
-        sqxtun           v2.8b,  v4.8h
+        sqxtun          v2.8b,  v4.8h
         sqxtun2         v2.16b,  v5.8h
         st1             {v0.16b, v1.16b},  [x0], x2
-        sqxtun           v3.8b,  v6.8h
+        sqxtun          v3.8b,  v6.8h
         sqxtun2         v3.16b,  v7.8h
         st1             {v2.16b, v3.16b}, [x12], x2
-        bne              1b
+        bne             1b
         ret
 endfunc
 
 function ff_hevc_add_residual_32x32_10_neon, export=1
-        mov              x3,  #32
+        mov             x3,  #32
         movi            v20.8h, #0
         mvni            v21.8h, #0xFC, lsl #8 // movi #0x3FF
-1:      subs             x3,  x3, #1
+1:      subs            x3,  x3, #1
         ld1             {v0.8h-v3.8h},   [x1], #64
         ld1             {v16.8h-v19.8h}, [x0]
-        sqadd            v0.8h, v0.8h, v16.8h
-        sqadd            v1.8h, v1.8h, v17.8h
-        sqadd            v2.8h, v2.8h, v18.8h
-        sqadd            v3.8h, v3.8h, v19.8h
-        clip10           v0.8h, v1.8h, v20.8h, v21.8h
-        clip10           v2.8h, v3.8h, v20.8h, v21.8h
+        sqadd           v0.8h, v0.8h, v16.8h
+        sqadd           v1.8h, v1.8h, v17.8h
+        sqadd           v2.8h, v2.8h, v18.8h
+        sqadd           v3.8h, v3.8h, v19.8h
+        clip10          v0.8h, v1.8h, v20.8h, v21.8h
+        clip10          v2.8h, v3.8h, v20.8h, v21.8h
         st1             {v0.8h-v3.8h},   [x0], x2
-        bne              1b
+        bne             1b
         ret
 endfunc
 
@@ -246,19 +246,19 @@ endfunc
 
 // uses and clobbers v28-v31 as temp registers
 .macro tr_4x4_8 in0, in1, in2, in3, out0, out1, out2, out3, p1, p2
-         sshll\p1       v28.4s, \in0, #6
-         mov            v29.16b, v28.16b
-         smull\p1       v30.4s, \in1, v0.h[1]
-         smull\p1       v31.4s, \in1, v0.h[3]
-         smlal\p2       v28.4s, \in2, v0.h[0] //e0
-         smlsl\p2       v29.4s, \in2, v0.h[0] //e1
-         smlal\p2       v30.4s, \in3, v0.h[3] //o0
-         smlsl\p2       v31.4s, \in3, v0.h[1] //o1
+        sshll\p1        v28.4s, \in0, #6
+        mov             v29.16b, v28.16b
+        smull\p1        v30.4s, \in1, v0.h[1]
+        smull\p1        v31.4s, \in1, v0.h[3]
+        smlal\p2        v28.4s, \in2, v0.h[0] //e0
+        smlsl\p2        v29.4s, \in2, v0.h[0] //e1
+        smlal\p2        v30.4s, \in3, v0.h[3] //o0
+        smlsl\p2        v31.4s, \in3, v0.h[1] //o1
 
-         add            \out0, v28.4s, v30.4s
-         add            \out1, v29.4s, v31.4s
-         sub            \out2, v29.4s, v31.4s
-         sub            \out3, v28.4s, v30.4s
+        add             \out0, v28.4s, v30.4s
+        add             \out1, v29.4s, v31.4s
+        sub             \out2, v29.4s, v31.4s
+        sub             \out3, v28.4s, v30.4s
 .endm
 
 .macro transpose8_4x4 r0, r1, r2, r3
@@ -325,11 +325,11 @@ endfunc
 .macro idct_8x8 bitdepth
 function ff_hevc_idct_8x8_\bitdepth\()_neon, export=1
 //x0 - coeffs
-        mov              x1,  x0
+        mov             x1,  x0
         ld1             {v16.8h-v19.8h}, [x1], #64
         ld1             {v20.8h-v23.8h}, [x1]
 
-        movrel           x1, trans
+        movrel          x1, trans
         ld1             {v0.8h}, [x1]
 
         tr_8x4          7, v16,.4h, v17,.4h, v18,.4h, v19,.4h, v20,.4h, v21,.4h, v22,.4h, v23,.4h
@@ -342,7 +342,7 @@ function ff_hevc_idct_8x8_\bitdepth\()_neon, export=1
 
         transpose_8x8   v16, v17, v18, v19, v20, v21, v22, v23
 
-        mov              x1,  x0
+        mov             x1,  x0
         st1             {v16.8h-v19.8h}, [x1], #64
         st1             {v20.8h-v23.8h}, [x1]
 
@@ -351,8 +351,8 @@ endfunc
 .endm
 
 .macro butterfly e, o, tmp_p, tmp_m
-        add        \tmp_p, \e, \o
-        sub        \tmp_m, \e, \o
+        add             \tmp_p, \e, \o
+        sub             \tmp_m, \e, \o
 .endm
 
 .macro tr16_8x4 in0, in1, in2, in3, offset
@@ -381,7 +381,7 @@ endfunc
         butterfly       v25.4s, v29.4s, v17.4s, v22.4s
         butterfly       v26.4s, v30.4s, v18.4s, v21.4s
         butterfly       v27.4s, v31.4s, v19.4s, v20.4s
-        add              x4,  sp,  #\offset
+        add             x4,  sp,  #\offset
         st1             {v16.4s-v19.4s}, [x4], #64
         st1             {v20.4s-v23.4s}, [x4]
 .endm
@@ -398,14 +398,14 @@ endfunc
 .endm
 
 .macro add_member in, t0, t1, t2, t3, t4, t5, t6, t7, op0, op1, op2, op3, op4, op5, op6, op7, p
-        sum_sub v21.4s, \in, \t0, \op0, \p
-        sum_sub v22.4s, \in, \t1, \op1, \p
-        sum_sub v23.4s, \in, \t2, \op2, \p
-        sum_sub v24.4s, \in, \t3, \op3, \p
-        sum_sub v25.4s, \in, \t4, \op4, \p
-        sum_sub v26.4s, \in, \t5, \op5, \p
-        sum_sub v27.4s, \in, \t6, \op6, \p
-        sum_sub v28.4s, \in, \t7, \op7, \p
+        sum_sub         v21.4s, \in, \t0, \op0, \p
+        sum_sub         v22.4s, \in, \t1, \op1, \p
+        sum_sub         v23.4s, \in, \t2, \op2, \p
+        sum_sub         v24.4s, \in, \t3, \op3, \p
+        sum_sub         v25.4s, \in, \t4, \op4, \p
+        sum_sub         v26.4s, \in, \t5, \op5, \p
+        sum_sub         v27.4s, \in, \t6, \op6, \p
+        sum_sub         v28.4s, \in, \t7, \op7, \p
 .endm
 
 .macro butterfly16 in0, in1, in2, in3, in4, in5, in6, in7
@@ -473,20 +473,20 @@ endfunc
 
 .macro tr_16x4 name, shift, offset, step
 function func_tr_16x4_\name
-        mov              x1,  x5
-        add              x3,  x5, #(\step * 64)
-        mov              x2,  #(\step * 128)
+        mov             x1,  x5
+        add             x3,  x5, #(\step * 64)
+        mov             x2,  #(\step * 128)
         load16          v16.d, v17.d, v18.d, v19.d
-        movrel           x1,  trans
+        movrel          x1,  trans
         ld1             {v0.8h}, [x1]
 
         tr16_8x4        v16, v17, v18, v19, \offset
 
-        add              x1,  x5, #(\step * 32)
-        add              x3,  x5, #(\step * 3 *32)
-        mov              x2,  #(\step * 128)
+        add             x1,  x5, #(\step * 32)
+        add             x3,  x5, #(\step * 3 *32)
+        mov             x2,  #(\step * 128)
         load16          v20.d, v17.d, v18.d, v19.d
-        movrel           x1, trans, 16
+        movrel          x1, trans, 16
         ld1             {v1.8h}, [x1]
         smull           v21.4s, v20.4h, v1.h[0]
         smull           v22.4s, v20.4h, v1.h[1]
@@ -505,16 +505,16 @@ function func_tr_16x4_\name
         add_member      v19.4h, v1.h[6], v1.h[3], v1.h[0], v1.h[2], v1.h[5], v1.h[7], v1.h[4], v1.h[1], +, -, +, -, +, +, -, +
         add_member      v19.8h, v1.h[7], v1.h[6], v1.h[5], v1.h[4], v1.h[3], v1.h[2], v1.h[1], v1.h[0], +, -, +, -, +, -, +, -, 2
 
-        add              x4, sp, #\offset
+        add             x4, sp, #\offset
         ld1             {v16.4s-v19.4s}, [x4], #64
 
         butterfly16     v16.4s, v21.4s, v17.4s, v22.4s, v18.4s, v23.4s, v19.4s, v24.4s
         scale           v29, v30, v31, v24, v20.4s, v16.4s, v21.4s, v17.4s, v22.4s, v18.4s, v23.4s, v19.4s, \shift
         transpose16_4x4_2 v29, v30, v31, v24
-        mov              x1,  x6
-        add              x3,  x6, #(24 +3*32)
-        mov              x2, #32
-        mov              x4, #-32
+        mov             x1,  x6
+        add             x3,  x6, #(24 +3*32)
+        mov             x2, #32
+        mov             x4, #-32
         store16         v29.d, v30.d, v31.d, v24.d, x4
 
         add             x4, sp, #(\offset + 64)
@@ -523,10 +523,10 @@ function func_tr_16x4_\name
         scale           v29, v30, v31, v20, v20.4s, v16.4s, v25.4s, v17.4s, v26.4s, v18.4s, v27.4s, v19.4s, \shift
         transpose16_4x4_2 v29, v30, v31, v20
 
-        add              x1,  x6, #8
-        add              x3,  x6, #(16 + 3 * 32)
-        mov              x2, #32
-        mov              x4, #-32
+        add             x1,  x6, #8
+        add             x3,  x6, #(16 + 3 * 32)
+        mov             x2, #32
+        mov             x4, #-32
         store16         v29.d, v30.d, v31.d, v20.d, x4
 
         ret
@@ -539,21 +539,21 @@ function ff_hevc_idct_16x16_\bitdepth\()_neon, export=1
         mov             x15, x30
 
         // allocate a temp buffer
-        sub              sp,  sp,  #640
+        sub             sp,  sp,  #640
 
 .irp i, 0, 1, 2, 3
-        add              x5,  x0, #(8 * \i)
-        add              x6,  sp, #(8 * \i * 16)
+        add             x5,  x0, #(8 * \i)
+        add             x6,  sp, #(8 * \i * 16)
         bl              func_tr_16x4_firstpass
 .endr
 
 .irp i, 0, 1, 2, 3
-        add              x5,  sp, #(8 * \i)
-        add              x6,  x0, #(8 * \i * 16)
+        add             x5,  sp, #(8 * \i)
+        add             x6,  x0, #(8 * \i * 16)
         bl              func_tr_16x4_secondpass_\bitdepth
 .endr
 
-        add              sp,  sp,  #640
+        add             sp,  sp,  #640
 
         mov             x30, x15
         ret
@@ -573,35 +573,35 @@ idct_16x16 10
 // void ff_hevc_idct_NxN_dc_DEPTH_neon(int16_t *coeffs)
 .macro idct_dc size, bitdepth
 function ff_hevc_idct_\size\()x\size\()_dc_\bitdepth\()_neon, export=1
-        ld1r         {v4.8h}, [x0]
-        srshr         v4.8h,  v4.8h,  #1
-        srshr         v0.8h,  v4.8h,  #(14 - \bitdepth)
-        srshr         v1.8h,  v4.8h,  #(14 - \bitdepth)
+        ld1r            {v4.8h}, [x0]
+        srshr           v4.8h,  v4.8h,  #1
+        srshr           v0.8h,  v4.8h,  #(14 - \bitdepth)
+        srshr           v1.8h,  v4.8h,  #(14 - \bitdepth)
 .if \size > 4
-        srshr         v2.8h,  v4.8h,  #(14 - \bitdepth)
-        srshr         v3.8h,  v4.8h,  #(14 - \bitdepth)
+        srshr           v2.8h,  v4.8h,  #(14 - \bitdepth)
+        srshr           v3.8h,  v4.8h,  #(14 - \bitdepth)
 .if \size > 16 /* dc 32x32 */
-        mov              x2,  #4
+        mov             x2,  #4
 1:
-        subs             x2,  x2, #1
+        subs            x2,  x2, #1
 .endif
         add             x12,  x0, #64
         mov             x13,  #128
 .if \size > 8 /* dc 16x16 */
-        st1            {v0.8h-v3.8h},  [x0], x13
-        st1            {v0.8h-v3.8h}, [x12], x13
-        st1            {v0.8h-v3.8h},  [x0], x13
-        st1            {v0.8h-v3.8h}, [x12], x13
-        st1            {v0.8h-v3.8h},  [x0], x13
-        st1            {v0.8h-v3.8h}, [x12], x13
+        st1             {v0.8h-v3.8h},  [x0], x13
+        st1             {v0.8h-v3.8h}, [x12], x13
+        st1             {v0.8h-v3.8h},  [x0], x13
+        st1             {v0.8h-v3.8h}, [x12], x13
+        st1             {v0.8h-v3.8h},  [x0], x13
+        st1             {v0.8h-v3.8h}, [x12], x13
 .endif /* dc 8x8 */
-        st1            {v0.8h-v3.8h},  [x0], x13
-        st1            {v0.8h-v3.8h}, [x12], x13
+        st1             {v0.8h-v3.8h},  [x0], x13
+        st1             {v0.8h-v3.8h}, [x12], x13
 .if \size > 16 /* dc 32x32 */
         bne             1b
 .endif
 .else /* dc 4x4 */
-        st1            {v0.8h-v1.8h},  [x0]
+        st1             {v0.8h-v1.8h},  [x0]
 .endif
         ret
 endfunc

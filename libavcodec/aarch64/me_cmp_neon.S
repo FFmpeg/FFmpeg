@@ -27,7 +27,7 @@ function ff_pix_abs16_neon, export=1
         // x3           ptrdiff_t stride
         // w4           int h
         cmp             w4, #4                      // if h < 4, jump to completion section
-        movi            v18.4S, #0                  // clear result accumulator
+        movi            v18.4s, #0                  // clear result accumulator
         b.lt            2f
 1:
         ld1             {v0.16b}, [x1], x3          // load pix1

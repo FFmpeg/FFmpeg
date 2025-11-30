@@ -857,5 +857,3 @@ av_cold void ff_dwt_init(SnowDWTContext *c)
     ff_dwt_init_x86(c);
 #endif
 }
-
-

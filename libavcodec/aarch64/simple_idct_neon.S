@@ -54,7 +54,7 @@ endconst
         prfm            pldl1keep, [\data]
         mov             x10, x30
         movrel          x3, idct_coeff_neon
-        ld1             {v0.2D}, [x3]
+        ld1             {v0.2d}, [x3]
 .endm
 
 .macro idct_end
@@ -74,146 +74,146 @@ endconst
 .endm
 
 .macro idct_col4_top y1, y2, y3, y4, i, l
-        smull\i         v7.4S,  \y3\l, z2
-        smull\i         v16.4S, \y3\l, z6
-        smull\i         v17.4S, \y2\l, z1
-        add             v19.4S, v23.4S, v7.4S
-        smull\i         v18.4S, \y2\l, z3
-        add             v20.4S, v23.4S, v16.4S
-        smull\i         v5.4S,  \y2\l, z5
-        sub             v21.4S, v23.4S, v16.4S
-        smull\i         v6.4S,  \y2\l, z7
-        sub             v22.4S, v23.4S, v7.4S
+        smull\i         v7.4s,  \y3\l, z2
+        smull\i         v16.4s, \y3\l, z6
+        smull\i         v17.4s, \y2\l, z1
+        add             v19.4s, v23.4s, v7.4s
+        smull\i         v18.4s, \y2\l, z3
+        add             v20.4s, v23.4s, v16.4s
+        smull\i         v5.4s,  \y2\l, z5
+        sub             v21.4s, v23.4s, v16.4s
+        smull\i         v6.4s,  \y2\l, z7
+        sub             v22.4s, v23.4s, v7.4s
 
-        smlal\i         v17.4S, \y4\l, z3
-        smlsl\i         v18.4S, \y4\l, z7
-        smlsl\i         v5.4S,  \y4\l, z1
-        smlsl\i         v6.4S,  \y4\l, z5
+        smlal\i         v17.4s, \y4\l, z3
+        smlsl\i         v18.4s, \y4\l, z7
+        smlsl\i         v5.4s,  \y4\l, z1
+        smlsl\i         v6.4s,  \y4\l, z5
 .endm
 
 .macro idct_row4_neon y1, y2, y3, y4, pass
-        ld1             {\y1\().2D,\y2\().2D}, [x2], #32
-        movi            v23.4S, #1<<2, lsl #8
-        orr             v5.16B, \y1\().16B, \y2\().16B
-        ld1             {\y3\().2D,\y4\().2D}, [x2], #32
-        orr             v6.16B, \y3\().16B, \y4\().16B
-        orr             v5.16B, v5.16B, v6.16B
-        mov             x3, v5.D[1]
-        smlal           v23.4S, \y1\().4H, z4
+        ld1             {\y1\().2d,\y2\().2d}, [x2], #32
+        movi            v23.4s, #1<<2, lsl #8
+        orr             v5.16b, \y1\().16b, \y2\().16b
+        ld1             {\y3\().2d,\y4\().2d}, [x2], #32
+        orr             v6.16b, \y3\().16b, \y4\().16b
+        orr             v5.16b, v5.16b, v6.16b
+        mov             x3, v5.d[1]
+        smlal           v23.4s, \y1\().4h, z4
 
-        idct_col4_top   \y1, \y2, \y3, \y4, 1, .4H
+        idct_col4_top   \y1, \y2, \y3, \y4, 1, .4h
 
         cmp             x3, #0
         b.eq            \pass\()f
 
-        smull2          v7.4S, \y1\().8H, z4
-        smlal2          v17.4S, \y2\().8H, z5
-        smlsl2          v18.4S, \y2\().8H, z1
-        smull2          v16.4S, \y3\().8H, z2
-        smlal2          v5.4S, \y2\().8H, z7
-        add             v19.4S, v19.4S, v7.4S
-        sub             v20.4S, v20.4S, v7.4S
-        sub             v21.4S, v21.4S, v7.4S
-        add             v22.4S, v22.4S, v7.4S
-        smlal2          v6.4S, \y2\().8H, z3
-        smull2          v7.4S, \y3\().8H, z6
-        smlal2          v17.4S, \y4\().8H, z7
-        smlsl2          v18.4S, \y4\().8H, z5
-        smlal2          v5.4S, \y4\().8H, z3
-        smlsl2          v6.4S, \y4\().8H, z1
-        add             v19.4S, v19.4S, v7.4S
-        sub             v20.4S, v20.4S, v16.4S
-        add             v21.4S, v21.4S, v16.4S
-        sub             v22.4S, v22.4S, v7.4S
+        smull2          v7.4s, \y1\().8h, z4
+        smlal2          v17.4s, \y2\().8h, z5
+        smlsl2          v18.4s, \y2\().8h, z1
+        smull2          v16.4s, \y3\().8h, z2
+        smlal2          v5.4s, \y2\().8h, z7
+        add             v19.4s, v19.4s, v7.4s
+        sub             v20.4s, v20.4s, v7.4s
+        sub             v21.4s, v21.4s, v7.4s
+        add             v22.4s, v22.4s, v7.4s
+        smlal2          v6.4s, \y2\().8h, z3
+        smull2          v7.4s, \y3\().8h, z6
+        smlal2          v17.4s, \y4\().8h, z7
+        smlsl2          v18.4s, \y4\().8h, z5
+        smlal2          v5.4s, \y4\().8h, z3
+        smlsl2          v6.4s, \y4\().8h, z1
+        add             v19.4s, v19.4s, v7.4s
+        sub             v20.4s, v20.4s, v16.4s
+        add             v21.4s, v21.4s, v16.4s
+        sub             v22.4s, v22.4s, v7.4s
 
 \pass:  add             \y3\().4S, v19.4S, v17.4S
-        add             \y4\().4S, v20.4S, v18.4S
-        shrn            \y1\().4H, \y3\().4S, #ROW_SHIFT
-        shrn            \y2\().4H, \y4\().4S, #ROW_SHIFT
-        add             v7.4S, v21.4S, v5.4S
-        add             v16.4S, v22.4S, v6.4S
-        shrn            \y3\().4H, v7.4S, #ROW_SHIFT
-        shrn            \y4\().4H, v16.4S, #ROW_SHIFT
-        sub             v22.4S, v22.4S, v6.4S
-        sub             v19.4S, v19.4S, v17.4S
-        sub             v21.4S, v21.4S, v5.4S
-        shrn2           \y1\().8H, v22.4S, #ROW_SHIFT
-        sub             v20.4S, v20.4S, v18.4S
-        shrn2           \y2\().8H, v21.4S, #ROW_SHIFT
-        shrn2           \y3\().8H, v20.4S, #ROW_SHIFT
-        shrn2           \y4\().8H, v19.4S, #ROW_SHIFT
+        add             \y4\().4s, v20.4s, v18.4s
+        shrn            \y1\().4h, \y3\().4s, #ROW_SHIFT
+        shrn            \y2\().4h, \y4\().4s, #ROW_SHIFT
+        add             v7.4s, v21.4s, v5.4s
+        add             v16.4s, v22.4s, v6.4s
+        shrn            \y3\().4h, v7.4s, #ROW_SHIFT
+        shrn            \y4\().4h, v16.4s, #ROW_SHIFT
+        sub             v22.4s, v22.4s, v6.4s
+        sub             v19.4s, v19.4s, v17.4s
+        sub             v21.4s, v21.4s, v5.4s
+        shrn2           \y1\().8h, v22.4s, #ROW_SHIFT
+        sub             v20.4s, v20.4s, v18.4s
+        shrn2           \y2\().8h, v21.4s, #ROW_SHIFT
+        shrn2           \y3\().8h, v20.4s, #ROW_SHIFT
+        shrn2           \y4\().8h, v19.4s, #ROW_SHIFT
 
-        trn1            v16.8H, \y1\().8H, \y2\().8H
-        trn2            v17.8H, \y1\().8H, \y2\().8H
-        trn1            v18.8H, \y3\().8H, \y4\().8H
-        trn2            v19.8H, \y3\().8H, \y4\().8H
-        trn1            \y1\().4S, v16.4S, v18.4S
-        trn1            \y2\().4S, v17.4S, v19.4S
-        trn2            \y3\().4S, v16.4S, v18.4S
-        trn2            \y4\().4S, v17.4S, v19.4S
+        trn1            v16.8h, \y1\().8h, \y2\().8h
+        trn2            v17.8h, \y1\().8h, \y2\().8h
+        trn1            v18.8h, \y3\().8h, \y4\().8h
+        trn2            v19.8h, \y3\().8h, \y4\().8h
+        trn1            \y1\().4s, v16.4s, v18.4s
+        trn1            \y2\().4s, v17.4s, v19.4s
+        trn2            \y3\().4s, v16.4s, v18.4s
+        trn2            \y4\().4s, v17.4s, v19.4s
 .endm
 
 .macro declare_idct_col4_neon i, l
 function idct_col4_neon\i
-        dup             v23.4H, z4c
+        dup             v23.4h, z4c
 .if \i == 1
-        add             v23.4H, v23.4H, v24.4H
+        add             v23.4h, v23.4h, v24.4h
 .else
-        mov             v5.D[0], v24.D[1]
-        add             v23.4H, v23.4H, v5.4H
+        mov             v5.d[0], v24.d[1]
+        add             v23.4h, v23.4h, v5.4h
 .endif
-        smull           v23.4S, v23.4H, z4
+        smull           v23.4s, v23.4h, z4
 
         idct_col4_top   v24, v25, v26, v27, \i, \l
 
-        mov             x4, v28.D[\i - 1]
-        mov             x5, v29.D[\i - 1]
+        mov             x4, v28.d[\i - 1]
+        mov             x5, v29.d[\i - 1]
         cmp             x4, #0
         b.eq            1f
 
-        smull\i         v7.4S,  v28\l,  z4
-        add             v19.4S, v19.4S, v7.4S
-        sub             v20.4S, v20.4S, v7.4S
-        sub             v21.4S, v21.4S, v7.4S
-        add             v22.4S, v22.4S, v7.4S
+        smull\i         v7.4s,  v28\l,  z4
+        add             v19.4s, v19.4s, v7.4s
+        sub             v20.4s, v20.4s, v7.4s
+        sub             v21.4s, v21.4s, v7.4s
+        add             v22.4s, v22.4s, v7.4s
 
-1:      mov             x4, v30.D[\i - 1]
+1:      mov             x4, v30.d[\i - 1]
         cmp             x5, #0
         b.eq            2f
 
-        smlal\i         v17.4S, v29\l, z5
-        smlsl\i         v18.4S, v29\l, z1
-        smlal\i         v5.4S,  v29\l, z7
-        smlal\i         v6.4S,  v29\l, z3
+        smlal\i         v17.4s, v29\l, z5
+        smlsl\i         v18.4s, v29\l, z1
+        smlal\i         v5.4s,  v29\l, z7
+        smlal\i         v6.4s,  v29\l, z3
 
-2:      mov             x5, v31.D[\i - 1]
+2:      mov             x5, v31.d[\i - 1]
         cmp             x4, #0
         b.eq            3f
 
-        smull\i         v7.4S,  v30\l, z6
-        smull\i         v16.4S, v30\l, z2
-        add             v19.4S, v19.4S, v7.4S
-        sub             v22.4S, v22.4S, v7.4S
-        sub             v20.4S, v20.4S, v16.4S
-        add             v21.4S, v21.4S, v16.4S
+        smull\i         v7.4s,  v30\l, z6
+        smull\i         v16.4s, v30\l, z2
+        add             v19.4s, v19.4s, v7.4s
+        sub             v22.4s, v22.4s, v7.4s
+        sub             v20.4s, v20.4s, v16.4s
+        add             v21.4s, v21.4s, v16.4s
 
 3:      cmp             x5, #0
         b.eq            4f
 
-        smlal\i         v17.4S, v31\l, z7
-        smlsl\i         v18.4S, v31\l, z5
-        smlal\i         v5.4S,  v31\l, z3
-        smlsl\i         v6.4S,  v31\l, z1
+        smlal\i         v17.4s, v31\l, z7
+        smlsl\i         v18.4s, v31\l, z5
+        smlal\i         v5.4s,  v31\l, z3
+        smlsl\i         v6.4s,  v31\l, z1
 
-4:      addhn           v7.4H, v19.4S, v17.4S
-        addhn2          v7.8H, v20.4S, v18.4S
-        subhn           v18.4H, v20.4S, v18.4S
-        subhn2          v18.8H, v19.4S, v17.4S
+4:      addhn           v7.4h, v19.4s, v17.4s
+        addhn2          v7.8h, v20.4s, v18.4s
+        subhn           v18.4h, v20.4s, v18.4s
+        subhn2          v18.8h, v19.4s, v17.4s
 
-        addhn           v16.4H, v21.4S, v5.4S
-        addhn2          v16.8H, v22.4S, v6.4S
-        subhn           v17.4H, v22.4S, v6.4S
-        subhn2          v17.8H, v21.4S, v5.4S
+        addhn           v16.4h, v21.4s, v5.4s
+        addhn2          v16.8h, v22.4s, v6.4s
+        subhn           v17.4h, v22.4s, v6.4s
+        subhn2          v17.8h, v21.4s, v5.4s
 
         ret
 endfunc
@@ -229,33 +229,33 @@ function ff_simple_idct_put_neon, export=1
         idct_row4_neon  v28, v29, v30, v31, 2
         bl              idct_col4_neon1
 
-        sqshrun         v1.8B,  v7.8H, #COL_SHIFT-16
-        sqshrun2        v1.16B, v16.8H, #COL_SHIFT-16
-        sqshrun         v3.8B,  v17.8H, #COL_SHIFT-16
-        sqshrun2        v3.16B, v18.8H, #COL_SHIFT-16
+        sqshrun         v1.8b,  v7.8h, #COL_SHIFT-16
+        sqshrun2        v1.16b, v16.8h, #COL_SHIFT-16
+        sqshrun         v3.8b,  v17.8h, #COL_SHIFT-16
+        sqshrun2        v3.16b, v18.8h, #COL_SHIFT-16
 
         bl              idct_col4_neon2
 
-        sqshrun         v2.8B,  v7.8H, #COL_SHIFT-16
-        sqshrun2        v2.16B, v16.8H, #COL_SHIFT-16
-        sqshrun         v4.8B,  v17.8H, #COL_SHIFT-16
-        sqshrun2        v4.16B, v18.8H, #COL_SHIFT-16
+        sqshrun         v2.8b,  v7.8h, #COL_SHIFT-16
+        sqshrun2        v2.16b, v16.8h, #COL_SHIFT-16
+        sqshrun         v4.8b,  v17.8h, #COL_SHIFT-16
+        sqshrun2        v4.16b, v18.8h, #COL_SHIFT-16
 
-        zip1            v16.4S, v1.4S, v2.4S
-        zip2            v17.4S, v1.4S, v2.4S
+        zip1            v16.4s, v1.4s, v2.4s
+        zip2            v17.4s, v1.4s, v2.4s
 
-        st1             {v16.D}[0], [x0], x1
-        st1             {v16.D}[1], [x0], x1
+        st1             {v16.d}[0], [x0], x1
+        st1             {v16.d}[1], [x0], x1
 
-        zip1            v18.4S, v3.4S, v4.4S
-        zip2            v19.4S, v3.4S, v4.4S
+        zip1            v18.4s, v3.4s, v4.4s
+        zip2            v19.4s, v3.4s, v4.4s
 
-        st1             {v17.D}[0], [x0], x1
-        st1             {v17.D}[1], [x0], x1
-        st1             {v18.D}[0], [x0], x1
-        st1             {v18.D}[1], [x0], x1
-        st1             {v19.D}[0], [x0], x1
-        st1             {v19.D}[1], [x0], x1
+        st1             {v17.d}[0], [x0], x1
+        st1             {v17.d}[1], [x0], x1
+        st1             {v18.d}[0], [x0], x1
+        st1             {v18.d}[1], [x0], x1
+        st1             {v19.d}[0], [x0], x1
+        st1             {v19.d}[1], [x0], x1
 
         idct_end
 endfunc
@@ -267,59 +267,59 @@ function ff_simple_idct_add_neon, export=1
         idct_row4_neon  v28, v29, v30, v31, 2
         bl              idct_col4_neon1
 
-        sshr            v1.8H, v7.8H, #COL_SHIFT-16
-        sshr            v2.8H, v16.8H, #COL_SHIFT-16
-        sshr            v3.8H, v17.8H, #COL_SHIFT-16
-        sshr            v4.8H, v18.8H, #COL_SHIFT-16
+        sshr            v1.8h, v7.8h, #COL_SHIFT-16
+        sshr            v2.8h, v16.8h, #COL_SHIFT-16
+        sshr            v3.8h, v17.8h, #COL_SHIFT-16
+        sshr            v4.8h, v18.8h, #COL_SHIFT-16
 
         bl              idct_col4_neon2
 
-        sshr            v7.8H, v7.8H, #COL_SHIFT-16
-        sshr            v16.8H, v16.8H, #COL_SHIFT-16
-        sshr            v17.8H, v17.8H, #COL_SHIFT-16
-        sshr            v18.8H, v18.8H, #COL_SHIFT-16
+        sshr            v7.8h, v7.8h, #COL_SHIFT-16
+        sshr            v16.8h, v16.8h, #COL_SHIFT-16
+        sshr            v17.8h, v17.8h, #COL_SHIFT-16
+        sshr            v18.8h, v18.8h, #COL_SHIFT-16
 
         mov             x9,  x0
-        ld1             {v19.D}[0], [x0], x1
-        zip1            v23.2D, v1.2D, v7.2D
-        zip2            v24.2D, v1.2D, v7.2D
-        ld1             {v19.D}[1], [x0], x1
-        zip1            v25.2D, v2.2D, v16.2D
-        zip2            v26.2D, v2.2D, v16.2D
-        ld1             {v20.D}[0], [x0], x1
-        zip1            v27.2D, v3.2D, v17.2D
-        zip2            v28.2D, v3.2D, v17.2D
-        ld1             {v20.D}[1], [x0], x1
-        zip1            v29.2D, v4.2D, v18.2D
-        zip2            v30.2D, v4.2D, v18.2D
-        ld1             {v21.D}[0], [x0], x1
-        uaddw           v23.8H, v23.8H, v19.8B
-        uaddw2          v24.8H, v24.8H, v19.16B
-        ld1             {v21.D}[1], [x0], x1
-        sqxtun          v23.8B, v23.8H
-        sqxtun2         v23.16B, v24.8H
-        ld1             {v22.D}[0], [x0], x1
-        uaddw           v24.8H, v25.8H, v20.8B
-        uaddw2          v25.8H, v26.8H, v20.16B
-        ld1             {v22.D}[1], [x0], x1
-        sqxtun          v24.8B, v24.8H
-        sqxtun2         v24.16B, v25.8H
-        st1             {v23.D}[0], [x9], x1
-        uaddw           v25.8H, v27.8H, v21.8B
-        uaddw2          v26.8H, v28.8H, v21.16B
-        st1             {v23.D}[1], [x9], x1
-        sqxtun          v25.8B, v25.8H
-        sqxtun2         v25.16B, v26.8H
-        st1             {v24.D}[0], [x9], x1
-        uaddw           v26.8H, v29.8H, v22.8B
-        uaddw2          v27.8H, v30.8H, v22.16B
-        st1             {v24.D}[1], [x9], x1
-        sqxtun          v26.8B, v26.8H
-        sqxtun2         v26.16B, v27.8H
-        st1             {v25.D}[0], [x9], x1
-        st1             {v25.D}[1], [x9], x1
-        st1             {v26.D}[0], [x9], x1
-        st1             {v26.D}[1], [x9], x1
+        ld1             {v19.d}[0], [x0], x1
+        zip1            v23.2d, v1.2d, v7.2d
+        zip2            v24.2d, v1.2d, v7.2d
+        ld1             {v19.d}[1], [x0], x1
+        zip1            v25.2d, v2.2d, v16.2d
+        zip2            v26.2d, v2.2d, v16.2d
+        ld1             {v20.d}[0], [x0], x1
+        zip1            v27.2d, v3.2d, v17.2d
+        zip2            v28.2d, v3.2d, v17.2d
+        ld1             {v20.d}[1], [x0], x1
+        zip1            v29.2d, v4.2d, v18.2d
+        zip2            v30.2d, v4.2d, v18.2d
+        ld1             {v21.d}[0], [x0], x1
+        uaddw           v23.8h, v23.8h, v19.8b
+        uaddw2          v24.8h, v24.8h, v19.16b
+        ld1             {v21.d}[1], [x0], x1
+        sqxtun          v23.8b, v23.8h
+        sqxtun2         v23.16b, v24.8h
+        ld1             {v22.d}[0], [x0], x1
+        uaddw           v24.8h, v25.8h, v20.8b
+        uaddw2          v25.8h, v26.8h, v20.16b
+        ld1             {v22.d}[1], [x0], x1
+        sqxtun          v24.8b, v24.8h
+        sqxtun2         v24.16b, v25.8h
+        st1             {v23.d}[0], [x9], x1
+        uaddw           v25.8h, v27.8h, v21.8b
+        uaddw2          v26.8h, v28.8h, v21.16b
+        st1             {v23.d}[1], [x9], x1
+        sqxtun          v25.8b, v25.8h
+        sqxtun2         v25.16b, v26.8h
+        st1             {v24.d}[0], [x9], x1
+        uaddw           v26.8h, v29.8h, v22.8b
+        uaddw2          v27.8h, v30.8h, v22.16b
+        st1             {v24.d}[1], [x9], x1
+        sqxtun          v26.8b, v26.8h
+        sqxtun2         v26.16b, v27.8h
+        st1             {v25.d}[0], [x9], x1
+        st1             {v25.d}[1], [x9], x1
+        st1             {v26.d}[0], [x9], x1
+        st1             {v26.d}[1], [x9], x1
 
         idct_end
 endfunc
@@ -333,30 +333,30 @@ function ff_simple_idct_neon, export=1
         sub             x2, x2, #128
         bl              idct_col4_neon1
 
-        sshr            v1.8H, v7.8H, #COL_SHIFT-16
-        sshr            v2.8H, v16.8H, #COL_SHIFT-16
-        sshr            v3.8H, v17.8H, #COL_SHIFT-16
-        sshr            v4.8H, v18.8H, #COL_SHIFT-16
+        sshr            v1.8h, v7.8h, #COL_SHIFT-16
+        sshr            v2.8h, v16.8h, #COL_SHIFT-16
+        sshr            v3.8h, v17.8h, #COL_SHIFT-16
+        sshr            v4.8h, v18.8h, #COL_SHIFT-16
 
         bl              idct_col4_neon2
 
-        sshr            v7.8H, v7.8H, #COL_SHIFT-16
-        sshr            v16.8H, v16.8H, #COL_SHIFT-16
-        sshr            v17.8H, v17.8H, #COL_SHIFT-16
-        sshr            v18.8H, v18.8H, #COL_SHIFT-16
+        sshr            v7.8h, v7.8h, #COL_SHIFT-16
+        sshr            v16.8h, v16.8h, #COL_SHIFT-16
+        sshr            v17.8h, v17.8h, #COL_SHIFT-16
+        sshr            v18.8h, v18.8h, #COL_SHIFT-16
 
-        zip1            v23.2D, v1.2D, v7.2D
-        zip2            v24.2D, v1.2D, v7.2D
-        st1             {v23.2D,v24.2D}, [x2], #32
-        zip1            v25.2D, v2.2D, v16.2D
-        zip2            v26.2D, v2.2D, v16.2D
-        st1             {v25.2D,v26.2D}, [x2], #32
-        zip1            v27.2D, v3.2D, v17.2D
-        zip2            v28.2D, v3.2D, v17.2D
-        st1             {v27.2D,v28.2D}, [x2], #32
-        zip1            v29.2D, v4.2D, v18.2D
-        zip2            v30.2D, v4.2D, v18.2D
-        st1             {v29.2D,v30.2D}, [x2], #32
+        zip1            v23.2d, v1.2d, v7.2d
+        zip2            v24.2d, v1.2d, v7.2d
+        st1             {v23.2d,v24.2d}, [x2], #32
+        zip1            v25.2d, v2.2d, v16.2d
+        zip2            v26.2d, v2.2d, v16.2d
+        st1             {v25.2d,v26.2d}, [x2], #32
+        zip1            v27.2d, v3.2d, v17.2d
+        zip2            v28.2d, v3.2d, v17.2d
+        st1             {v27.2d,v28.2d}, [x2], #32
+        zip1            v29.2d, v4.2d, v18.2d
+        zip2            v30.2d, v4.2d, v18.2d
+        st1             {v29.2d,v30.2d}, [x2], #32
 
         idct_end
 endfunc

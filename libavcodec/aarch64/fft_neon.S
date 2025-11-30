@@ -359,18 +359,18 @@ function fft\n\()_neon, align=6
 endfunc
 .endm
 
-        def_fft    32,    16,     8
-        def_fft    64,    32,    16
-        def_fft   128,    64,    32
-        def_fft   256,   128,    64
-        def_fft   512,   256,   128
-        def_fft  1024,   512,   256
-        def_fft  2048,  1024,   512
-        def_fft  4096,  2048,  1024
-        def_fft  8192,  4096,  2048
-        def_fft 16384,  8192,  4096
-        def_fft 32768, 16384,  8192
-        def_fft 65536, 32768, 16384
+        def_fft         32,    16,     8
+        def_fft         64,    32,    16
+        def_fft         128,    64,    32
+        def_fft         256,   128,    64
+        def_fft         512,   256,   128
+        def_fft         1024,   512,   256
+        def_fft         2048,  1024,   512
+        def_fft         4096,  2048,  1024
+        def_fft         8192,  4096,  2048
+        def_fft         16384,  8192,  4096
+        def_fft         32768, 16384,  8192
+        def_fft         65536, 32768, 16384
 
 function ff_fft_calc_neon, export=1
         prfm            pldl1keep, [x1]

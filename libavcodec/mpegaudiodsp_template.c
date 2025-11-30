@@ -369,4 +369,3 @@ void RENAME(ff_imdct36_blocks)(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in,
         out++;
     }
 }
-

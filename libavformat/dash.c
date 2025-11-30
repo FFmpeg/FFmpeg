@@ -152,5 +152,3 @@ void ff_dash_fill_tmpl_params(char *dst, size_t buffer_size,
         t_cur = t_next;
     }
 }
-
-

@@ -38,11 +38,11 @@ function ff_\type\()_\codec\()_chroma_mc8_neon, export=1
         lsl             w9,  w9,  #3
         lsl             w10, w10, #1
         add             w9,  w9,  w10
-        add             x6,  x6,  w9, UXTW
-        ld1r            {v22.8H}, [x6]
+        add             x6,  x6,  w9, uxtw
+        ld1r            {v22.8h}, [x6]
   .endif
   .ifc \codec,vc1
-        movi            v22.8H,   #28
+        movi            v22.8h,   #28
   .endif
         mul             w7,  w4,  w5
         lsl             w14, w5,  #3
@@ -55,139 +55,139 @@ function ff_\type\()_\codec\()_chroma_mc8_neon, export=1
         add             w4,  w4,  #64
         b.eq            2f
 
-        dup             v0.8B,  w4
-        dup             v1.8B,  w12
-        ld1             {v4.8B, v5.8B}, [x1], x2
-        dup             v2.8B,  w6
-        dup             v3.8B,  w7
-        ext             v5.8B,  v4.8B,  v5.8B,  #1
-1:      ld1             {v6.8B, v7.8B}, [x1], x2
-        umull           v16.8H, v4.8B,  v0.8B
-        umlal           v16.8H, v5.8B,  v1.8B
-        ext             v7.8B,  v6.8B,  v7.8B,  #1
-        ld1             {v4.8B, v5.8B}, [x1], x2
-        umlal           v16.8H, v6.8B,  v2.8B
+        dup             v0.8b,  w4
+        dup             v1.8b,  w12
+        ld1             {v4.8b, v5.8b}, [x1], x2
+        dup             v2.8b,  w6
+        dup             v3.8b,  w7
+        ext             v5.8b,  v4.8b,  v5.8b,  #1
+1:      ld1             {v6.8b, v7.8b}, [x1], x2
+        umull           v16.8h, v4.8b,  v0.8b
+        umlal           v16.8h, v5.8b,  v1.8b
+        ext             v7.8b,  v6.8b,  v7.8b,  #1
+        ld1             {v4.8b, v5.8b}, [x1], x2
+        umlal           v16.8h, v6.8b,  v2.8b
         prfm            pldl1strm, [x1]
-        ext             v5.8B,  v4.8B,  v5.8B,  #1
-        umlal           v16.8H, v7.8B,  v3.8B
-        umull           v17.8H, v6.8B,  v0.8B
+        ext             v5.8b,  v4.8b,  v5.8b,  #1
+        umlal           v16.8h, v7.8b,  v3.8b
+        umull           v17.8h, v6.8b,  v0.8b
         subs            w3,  w3,  #2
-        umlal           v17.8H, v7.8B, v1.8B
-        umlal           v17.8H, v4.8B, v2.8B
-        umlal           v17.8H, v5.8B, v3.8B
+        umlal           v17.8h, v7.8b, v1.8b
+        umlal           v17.8h, v4.8b, v2.8b
+        umlal           v17.8h, v5.8b, v3.8b
         prfm            pldl1strm, [x1, x2]
   .ifc \codec,h264
-        rshrn           v16.8B, v16.8H, #6
-        rshrn           v17.8B, v17.8H, #6
+        rshrn           v16.8b, v16.8h, #6
+        rshrn           v17.8b, v17.8h, #6
   .else
-        add             v16.8H, v16.8H, v22.8H
-        add             v17.8H, v17.8H, v22.8H
-        shrn            v16.8B, v16.8H, #6
-        shrn            v17.8B, v17.8H, #6
+        add             v16.8h, v16.8h, v22.8h
+        add             v17.8h, v17.8h, v22.8h
+        shrn            v16.8b, v16.8h, #6
+        shrn            v17.8b, v17.8h, #6
   .endif
   .ifc \type,avg
-        ld1             {v20.8B}, [x8], x2
-        ld1             {v21.8B}, [x8], x2
-        urhadd          v16.8B, v16.8B, v20.8B
-        urhadd          v17.8B, v17.8B, v21.8B
+        ld1             {v20.8b}, [x8], x2
+        ld1             {v21.8b}, [x8], x2
+        urhadd          v16.8b, v16.8b, v20.8b
+        urhadd          v17.8b, v17.8b, v21.8b
   .endif
-        st1             {v16.8B}, [x0], x2
-        st1             {v17.8B}, [x0], x2
+        st1             {v16.8b}, [x0], x2
+        st1             {v17.8b}, [x0], x2
         b.gt            1b
         ret
 
 2:      adds            w12, w12, w6
-        dup             v0.8B, w4
+        dup             v0.8b, w4
         b.eq            5f
         tst             w6,  w6
-        dup             v1.8B, w12
+        dup             v1.8b, w12
         b.eq            4f
 
-        ld1             {v4.8B}, [x1], x2
-3:      ld1             {v6.8B}, [x1], x2
-        umull           v16.8H, v4.8B,  v0.8B
-        umlal           v16.8H, v6.8B,  v1.8B
-        ld1             {v4.8B}, [x1], x2
-        umull           v17.8H, v6.8B,  v0.8B
-        umlal           v17.8H, v4.8B,  v1.8B
+        ld1             {v4.8b}, [x1], x2
+3:      ld1             {v6.8b}, [x1], x2
+        umull           v16.8h, v4.8b,  v0.8b
+        umlal           v16.8h, v6.8b,  v1.8b
+        ld1             {v4.8b}, [x1], x2
+        umull           v17.8h, v6.8b,  v0.8b
+        umlal           v17.8h, v4.8b,  v1.8b
         prfm            pldl1strm, [x1]
   .ifc \codec,h264
-        rshrn           v16.8B, v16.8H, #6
-        rshrn           v17.8B, v17.8H, #6
+        rshrn           v16.8b, v16.8h, #6
+        rshrn           v17.8b, v17.8h, #6
   .else
-        add             v16.8H, v16.8H, v22.8H
-        add             v17.8H, v17.8H, v22.8H
-        shrn            v16.8B, v16.8H, #6
-        shrn            v17.8B, v17.8H, #6
+        add             v16.8h, v16.8h, v22.8h
+        add             v17.8h, v17.8h, v22.8h
+        shrn            v16.8b, v16.8h, #6
+        shrn            v17.8b, v17.8h, #6
   .endif
         prfm            pldl1strm, [x1, x2]
   .ifc \type,avg
-        ld1             {v20.8B}, [x8], x2
-        ld1             {v21.8B}, [x8], x2
-        urhadd          v16.8B, v16.8B, v20.8B
-        urhadd          v17.8B, v17.8B, v21.8B
+        ld1             {v20.8b}, [x8], x2
+        ld1             {v21.8b}, [x8], x2
+        urhadd          v16.8b, v16.8b, v20.8b
+        urhadd          v17.8b, v17.8b, v21.8b
   .endif
         subs            w3,  w3,  #2
-        st1             {v16.8B}, [x0], x2
-        st1             {v17.8B}, [x0], x2
+        st1             {v16.8b}, [x0], x2
+        st1             {v17.8b}, [x0], x2
         b.gt            3b
         ret
 
-4:      ld1             {v4.8B, v5.8B}, [x1], x2
-        ld1             {v6.8B, v7.8B}, [x1], x2
-        ext             v5.8B,  v4.8B,  v5.8B,  #1
-        ext             v7.8B,  v6.8B,  v7.8B,  #1
+4:      ld1             {v4.8b, v5.8b}, [x1], x2
+        ld1             {v6.8b, v7.8b}, [x1], x2
+        ext             v5.8b,  v4.8b,  v5.8b,  #1
+        ext             v7.8b,  v6.8b,  v7.8b,  #1
         prfm            pldl1strm, [x1]
         subs            w3,  w3,  #2
-        umull           v16.8H, v4.8B, v0.8B
-        umlal           v16.8H, v5.8B, v1.8B
-        umull           v17.8H, v6.8B, v0.8B
-        umlal           v17.8H, v7.8B, v1.8B
+        umull           v16.8h, v4.8b, v0.8b
+        umlal           v16.8h, v5.8b, v1.8b
+        umull           v17.8h, v6.8b, v0.8b
+        umlal           v17.8h, v7.8b, v1.8b
         prfm            pldl1strm, [x1, x2]
   .ifc \codec,h264
-        rshrn           v16.8B, v16.8H, #6
-        rshrn           v17.8B, v17.8H, #6
+        rshrn           v16.8b, v16.8h, #6
+        rshrn           v17.8b, v17.8h, #6
   .else
-        add             v16.8H, v16.8H, v22.8H
-        add             v17.8H, v17.8H, v22.8H
-        shrn            v16.8B, v16.8H, #6
-        shrn            v17.8B, v17.8H, #6
+        add             v16.8h, v16.8h, v22.8h
+        add             v17.8h, v17.8h, v22.8h
+        shrn            v16.8b, v16.8h, #6
+        shrn            v17.8b, v17.8h, #6
   .endif
   .ifc \type,avg
-        ld1             {v20.8B}, [x8], x2
-        ld1             {v21.8B}, [x8], x2
-        urhadd          v16.8B, v16.8B, v20.8B
-        urhadd          v17.8B, v17.8B, v21.8B
+        ld1             {v20.8b}, [x8], x2
+        ld1             {v21.8b}, [x8], x2
+        urhadd          v16.8b, v16.8b, v20.8b
+        urhadd          v17.8b, v17.8b, v21.8b
   .endif
-        st1             {v16.8B}, [x0], x2
-        st1             {v17.8B}, [x0], x2
+        st1             {v16.8b}, [x0], x2
+        st1             {v17.8b}, [x0], x2
         b.gt            4b
         ret
 
-5:      ld1             {v4.8B}, [x1], x2
-        ld1             {v5.8B}, [x1], x2
+5:      ld1             {v4.8b}, [x1], x2
+        ld1             {v5.8b}, [x1], x2
         prfm            pldl1strm, [x1]
         subs            w3,  w3,  #2
-        umull           v16.8H, v4.8B, v0.8B
-        umull           v17.8H, v5.8B, v0.8B
+        umull           v16.8h, v4.8b, v0.8b
+        umull           v17.8h, v5.8b, v0.8b
         prfm            pldl1strm, [x1, x2]
   .ifc \codec,h264
-        rshrn           v16.8B, v16.8H, #6
-        rshrn           v17.8B, v17.8H, #6
+        rshrn           v16.8b, v16.8h, #6
+        rshrn           v17.8b, v17.8h, #6
   .else
-        add             v16.8H, v16.8H, v22.8H
-        add             v17.8H, v17.8H, v22.8H
-        shrn            v16.8B, v16.8H, #6
-        shrn            v17.8B, v17.8H, #6
+        add             v16.8h, v16.8h, v22.8h
+        add             v17.8h, v17.8h, v22.8h
+        shrn            v16.8b, v16.8h, #6
+        shrn            v17.8b, v17.8h, #6
   .endif
   .ifc \type,avg
-        ld1             {v20.8B}, [x8], x2
-        ld1             {v21.8B}, [x8], x2
-        urhadd          v16.8B, v16.8B, v20.8B
-        urhadd          v17.8B, v17.8B, v21.8B
+        ld1             {v20.8b}, [x8], x2
+        ld1             {v21.8b}, [x8], x2
+        urhadd          v16.8b, v16.8b, v20.8b
+        urhadd          v17.8b, v17.8b, v21.8b
   .endif
-        st1             {v16.8B}, [x0], x2
-        st1             {v17.8B}, [x0], x2
+        st1             {v16.8b}, [x0], x2
+        st1             {v17.8b}, [x0], x2
         b.gt            5b
         ret
 endfunc
@@ -208,11 +208,11 @@ function ff_\type\()_\codec\()_chroma_mc4_neon, export=1
         lsl             w9,  w9,  #3
         lsl             w10, w10, #1
         add             w9,  w9,  w10
-        add             x6,  x6,  w9, UXTW
-        ld1r            {v22.8H}, [x6]
+        add             x6,  x6,  w9, uxtw
+        ld1r            {v22.8h}, [x6]
   .endif
   .ifc \codec,vc1
-        movi            v22.8H,   #28
+        movi            v22.8h,   #28
   .endif
         mul             w7,  w4,  w5
         lsl             w14, w5,  #3
@@ -225,133 +225,133 @@ function ff_\type\()_\codec\()_chroma_mc4_neon, export=1
         add             w4,  w4,  #64
         b.eq            2f
 
-        dup             v24.8B,  w4
-        dup             v25.8B,  w12
-        ld1             {v4.8B}, [x1], x2
-        dup             v26.8B,  w6
-        dup             v27.8B,  w7
-        ext             v5.8B,  v4.8B,  v5.8B, #1
-        trn1            v0.2S,  v24.2S, v25.2S
-        trn1            v2.2S,  v26.2S, v27.2S
-        trn1            v4.2S,  v4.2S,  v5.2S
-1:      ld1             {v6.8B}, [x1], x2
-        ext             v7.8B,  v6.8B,  v7.8B, #1
-        trn1            v6.2S,  v6.2S,  v7.2S
-        umull           v18.8H, v4.8B,  v0.8B
-        umlal           v18.8H, v6.8B,  v2.8B
-        ld1             {v4.8B}, [x1], x2
-        ext             v5.8B,  v4.8B,  v5.8B, #1
-        trn1            v4.2S,  v4.2S,  v5.2S
+        dup             v24.8b,  w4
+        dup             v25.8b,  w12
+        ld1             {v4.8b}, [x1], x2
+        dup             v26.8b,  w6
+        dup             v27.8b,  w7
+        ext             v5.8b,  v4.8b,  v5.8b, #1
+        trn1            v0.2s,  v24.2s, v25.2s
+        trn1            v2.2s,  v26.2s, v27.2s
+        trn1            v4.2s,  v4.2s,  v5.2s
+1:      ld1             {v6.8b}, [x1], x2
+        ext             v7.8b,  v6.8b,  v7.8b, #1
+        trn1            v6.2s,  v6.2s,  v7.2s
+        umull           v18.8h, v4.8b,  v0.8b
+        umlal           v18.8h, v6.8b,  v2.8b
+        ld1             {v4.8b}, [x1], x2
+        ext             v5.8b,  v4.8b,  v5.8b, #1
+        trn1            v4.2s,  v4.2s,  v5.2s
         prfm            pldl1strm, [x1]
-        umull           v19.8H, v6.8B,  v0.8B
-        umlal           v19.8H, v4.8B,  v2.8B
-        trn1            v30.2D, v18.2D, v19.2D
-        trn2            v31.2D, v18.2D, v19.2D
-        add             v18.8H, v30.8H, v31.8H
+        umull           v19.8h, v6.8b,  v0.8b
+        umlal           v19.8h, v4.8b,  v2.8b
+        trn1            v30.2d, v18.2d, v19.2d
+        trn2            v31.2d, v18.2d, v19.2d
+        add             v18.8h, v30.8h, v31.8h
   .ifc \codec,h264
-        rshrn           v16.8B, v18.8H, #6
+        rshrn           v16.8b, v18.8h, #6
   .else
-        add             v18.8H, v18.8H, v22.8H
-        shrn            v16.8B, v18.8H, #6
+        add             v18.8h, v18.8h, v22.8h
+        shrn            v16.8b, v18.8h, #6
   .endif
         subs            w3,  w3,  #2
         prfm            pldl1strm, [x1, x2]
   .ifc \type,avg
-        ld1             {v20.S}[0], [x8], x2
-        ld1             {v20.S}[1], [x8], x2
-        urhadd          v16.8B, v16.8B, v20.8B
+        ld1             {v20.s}[0], [x8], x2
+        ld1             {v20.s}[1], [x8], x2
+        urhadd          v16.8b, v16.8b, v20.8b
   .endif
-        st1             {v16.S}[0], [x0], x2
-        st1             {v16.S}[1], [x0], x2
+        st1             {v16.s}[0], [x0], x2
+        st1             {v16.s}[1], [x0], x2
         b.gt            1b
         ret
 
 2:      adds            w12, w12, w6
-        dup             v30.8B, w4
+        dup             v30.8b, w4
         b.eq            5f
         tst             w6,  w6
-        dup             v31.8B, w12
-        trn1            v0.2S,  v30.2S, v31.2S
-        trn2            v1.2S,  v30.2S, v31.2S
+        dup             v31.8b, w12
+        trn1            v0.2s,  v30.2s, v31.2s
+        trn2            v1.2s,  v30.2s, v31.2s
         b.eq            4f
 
-        ext             v1.8B,  v0.8B,  v1.8B, #4
-        ld1             {v4.S}[0], [x1], x2
-3:      ld1             {v4.S}[1], [x1], x2
-        umull           v18.8H, v4.8B,  v0.8B
-        ld1             {v4.S}[0], [x1], x2
-        umull           v19.8H, v4.8B,  v1.8B
-        trn1            v30.2D, v18.2D, v19.2D
-        trn2            v31.2D, v18.2D, v19.2D
-        add             v18.8H, v30.8H, v31.8H
+        ext             v1.8b,  v0.8b,  v1.8b, #4
+        ld1             {v4.s}[0], [x1], x2
+3:      ld1             {v4.s}[1], [x1], x2
+        umull           v18.8h, v4.8b,  v0.8b
+        ld1             {v4.s}[0], [x1], x2
+        umull           v19.8h, v4.8b,  v1.8b
+        trn1            v30.2d, v18.2d, v19.2d
+        trn2            v31.2d, v18.2d, v19.2d
+        add             v18.8h, v30.8h, v31.8h
         prfm            pldl1strm, [x1]
   .ifc \codec,h264
-        rshrn           v16.8B, v18.8H, #6
+        rshrn           v16.8b, v18.8h, #6
   .else
-        add             v18.8H, v18.8H, v22.8H
-        shrn            v16.8B, v18.8H, #6
+        add             v18.8h, v18.8h, v22.8h
+        shrn            v16.8b, v18.8h, #6
   .endif
   .ifc \type,avg
-        ld1             {v20.S}[0], [x8], x2
-        ld1             {v20.S}[1], [x8], x2
-        urhadd          v16.8B, v16.8B, v20.8B
+        ld1             {v20.s}[0], [x8], x2
+        ld1             {v20.s}[1], [x8], x2
+        urhadd          v16.8b, v16.8b, v20.8b
   .endif
         subs            w3,  w3,  #2
         prfm            pldl1strm, [x1, x2]
-        st1             {v16.S}[0], [x0], x2
-        st1             {v16.S}[1], [x0], x2
+        st1             {v16.s}[0], [x0], x2
+        st1             {v16.s}[1], [x0], x2
         b.gt            3b
         ret
 
-4:      ld1             {v4.8B}, [x1], x2
-        ld1             {v6.8B}, [x1], x2
-        ext             v5.8B,  v4.8B,  v5.8B, #1
-        ext             v7.8B,  v6.8B,  v7.8B, #1
-        trn1            v4.2S,  v4.2S,  v5.2S
-        trn1            v6.2S,  v6.2S,  v7.2S
-        umull           v18.8H, v4.8B,  v0.8B
-        umull           v19.8H, v6.8B,  v0.8B
+4:      ld1             {v4.8b}, [x1], x2
+        ld1             {v6.8b}, [x1], x2
+        ext             v5.8b,  v4.8b,  v5.8b, #1
+        ext             v7.8b,  v6.8b,  v7.8b, #1
+        trn1            v4.2s,  v4.2s,  v5.2s
+        trn1            v6.2s,  v6.2s,  v7.2s
+        umull           v18.8h, v4.8b,  v0.8b
+        umull           v19.8h, v6.8b,  v0.8b
         subs            w3,  w3,  #2
-        trn1            v30.2D, v18.2D, v19.2D
-        trn2            v31.2D, v18.2D, v19.2D
-        add             v18.8H, v30.8H, v31.8H
+        trn1            v30.2d, v18.2d, v19.2d
+        trn2            v31.2d, v18.2d, v19.2d
+        add             v18.8h, v30.8h, v31.8h
         prfm            pldl1strm, [x1]
   .ifc \codec,h264
-        rshrn           v16.8B, v18.8H, #6
+        rshrn           v16.8b, v18.8h, #6
   .else
-        add             v18.8H, v18.8H, v22.8H
-        shrn            v16.8B, v18.8H, #6
+        add             v18.8h, v18.8h, v22.8h
+        shrn            v16.8b, v18.8h, #6
   .endif
   .ifc \type,avg
-        ld1             {v20.S}[0], [x8], x2
-        ld1             {v20.S}[1], [x8], x2
-        urhadd          v16.8B, v16.8B, v20.8B
+        ld1             {v20.s}[0], [x8], x2
+        ld1             {v20.s}[1], [x8], x2
+        urhadd          v16.8b, v16.8b, v20.8b
   .endif
         prfm            pldl1strm, [x1]
-        st1             {v16.S}[0], [x0], x2
-        st1             {v16.S}[1], [x0], x2
+        st1             {v16.s}[0], [x0], x2
+        st1             {v16.s}[1], [x0], x2
         b.gt            4b
         ret
 
-5:      ld1             {v4.S}[0], [x1], x2
-        ld1             {v4.S}[1], [x1], x2
-        umull           v18.8H, v4.8B,  v30.8B
+5:      ld1             {v4.s}[0], [x1], x2
+        ld1             {v4.s}[1], [x1], x2
+        umull           v18.8h, v4.8b,  v30.8b
         subs            w3,  w3,  #2
         prfm            pldl1strm, [x1]
   .ifc \codec,h264
-        rshrn           v16.8B, v18.8H, #6
+        rshrn           v16.8b, v18.8h, #6
   .else
-        add             v18.8H, v18.8H, v22.8H
-        shrn            v16.8B, v18.8H, #6
+        add             v18.8h, v18.8h, v22.8h
+        shrn            v16.8b, v18.8h, #6
   .endif
   .ifc \type,avg
-        ld1             {v20.S}[0], [x8], x2
-        ld1             {v20.S}[1], [x8], x2
-        urhadd          v16.8B, v16.8B, v20.8B
+        ld1             {v20.s}[0], [x8], x2
+        ld1             {v20.s}[1], [x8], x2
+        urhadd          v16.8b, v16.8b, v20.8b
   .endif
         prfm            pldl1strm, [x1]
-        st1             {v16.S}[0], [x0], x2
-        st1             {v16.S}[1], [x0], x2
+        st1             {v16.s}[0], [x0], x2
+        st1             {v16.s}[1], [x0], x2
         b.gt            5b
         ret
 endfunc
@@ -372,51 +372,51 @@ function ff_\type\()_h264_chroma_mc2_neon, export=1
         sub             w4,  w7,  w13
         sub             w4,  w4,  w14
         add             w4,  w4,  #64
-        dup             v0.8B,  w4
-        dup             v2.8B,  w12
-        dup             v1.8B,  w6
-        dup             v3.8B,  w7
-        trn1            v0.4H,  v0.4H,  v2.4H
-        trn1            v1.4H,  v1.4H,  v3.4H
+        dup             v0.8b,  w4
+        dup             v2.8b,  w12
+        dup             v1.8b,  w6
+        dup             v3.8b,  w7
+        trn1            v0.4h,  v0.4h,  v2.4h
+        trn1            v1.4h,  v1.4h,  v3.4h
 1:
-        ld1             {v4.S}[0],  [x1], x2
-        ld1             {v4.S}[1],  [x1], x2
-        rev64           v5.2S,  v4.2S
-        ld1             {v5.S}[1],  [x1]
-        ext             v6.8B,  v4.8B,  v5.8B,  #1
-        ext             v7.8B,  v5.8B,  v4.8B,  #1
-        trn1            v4.4H,  v4.4H,  v6.4H
-        trn1            v5.4H,  v5.4H,  v7.4H
-        umull           v16.8H, v4.8B,  v0.8B
-        umlal           v16.8H, v5.8B,  v1.8B
+        ld1             {v4.s}[0],  [x1], x2
+        ld1             {v4.s}[1],  [x1], x2
+        rev64           v5.2s,  v4.2s
+        ld1             {v5.s}[1],  [x1]
+        ext             v6.8b,  v4.8b,  v5.8b,  #1
+        ext             v7.8b,  v5.8b,  v4.8b,  #1
+        trn1            v4.4h,  v4.4h,  v6.4h
+        trn1            v5.4h,  v5.4h,  v7.4h
+        umull           v16.8h, v4.8b,  v0.8b
+        umlal           v16.8h, v5.8b,  v1.8b
   .ifc \type,avg
-        ld1             {v18.H}[0], [x0], x2
-        ld1             {v18.H}[2], [x0]
+        ld1             {v18.h}[0], [x0], x2
+        ld1             {v18.h}[2], [x0]
         sub             x0,  x0,  x2
   .endif
-        rev64           v17.4S, v16.4S
-        add             v16.8H, v16.8H, v17.8H
-        rshrn           v16.8B, v16.8H, #6
+        rev64           v17.4s, v16.4s
+        add             v16.8h, v16.8h, v17.8h
+        rshrn           v16.8b, v16.8h, #6
   .ifc \type,avg
-        urhadd          v16.8B, v16.8B, v18.8B
+        urhadd          v16.8b, v16.8b, v18.8b
   .endif
-        st1             {v16.H}[0], [x0], x2
-        st1             {v16.H}[2], [x0], x2
+        st1             {v16.h}[0], [x0], x2
+        st1             {v16.h}[2], [x0], x2
         subs            w3,  w3,  #2
         b.gt            1b
         ret
 
 2:
-        ld1             {v16.H}[0], [x1], x2
-        ld1             {v16.H}[1], [x1], x2
+        ld1             {v16.h}[0], [x1], x2
+        ld1             {v16.h}[1], [x1], x2
   .ifc \type,avg
-        ld1             {v18.H}[0], [x0], x2
-        ld1             {v18.H}[1], [x0]
+        ld1             {v18.h}[0], [x0], x2
+        ld1             {v18.h}[1], [x0]
         sub             x0,  x0,  x2
-        urhadd          v16.8B, v16.8B, v18.8B
+        urhadd          v16.8b, v16.8b, v18.8b
   .endif
-        st1             {v16.H}[0], [x0], x2
-        st1             {v16.H}[1], [x0], x2
+        st1             {v16.h}[0], [x0], x2
+        st1             {v16.h}[1], [x0], x2
         subs            w3,  w3,  #2
         b.gt            2b
         ret
