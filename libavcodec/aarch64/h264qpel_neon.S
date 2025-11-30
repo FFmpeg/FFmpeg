@@ -27,114 +27,114 @@
 .macro  lowpass_const   r
         movz            \r, #20, lsl #16
         movk            \r, #5
-        mov             v6.S[0], \r
+        mov             v6.s[0], \r
 .endm
 
 //trashes v0-v5
 .macro  lowpass_8       r0,  r1,  r2,  r3,  d0,  d1,  narrow=1
-        ext             v2.8B,      \r0\().8B, \r1\().8B, #2
-        ext             v3.8B,      \r0\().8B, \r1\().8B, #3
-        uaddl           v2.8H,      v2.8B,     v3.8B
-        ext             v4.8B,      \r0\().8B, \r1\().8B, #1
-        ext             v5.8B,      \r0\().8B, \r1\().8B, #4
-        uaddl           v4.8H,      v4.8B,     v5.8B
-        ext             v1.8B,      \r0\().8B, \r1\().8B, #5
-        uaddl           \d0\().8H,  \r0\().8B, v1.8B
-        ext             v0.8B,      \r2\().8B, \r3\().8B, #2
-        mla             \d0\().8H,  v2.8H,     v6.H[1]
-        ext             v1.8B,      \r2\().8B, \r3\().8B, #3
-        uaddl           v0.8H,      v0.8B,     v1.8B
-        ext             v1.8B,      \r2\().8B, \r3\().8B, #1
-        mls             \d0\().8H,  v4.8H,     v6.H[0]
-        ext             v3.8B,      \r2\().8B, \r3\().8B, #4
-        uaddl           v1.8H,      v1.8B,     v3.8B
-        ext             v2.8B,      \r2\().8B, \r3\().8B, #5
-        uaddl           \d1\().8H,  \r2\().8B, v2.8B
-        mla             \d1\().8H,  v0.8H,     v6.H[1]
-        mls             \d1\().8H,  v1.8H,     v6.H[0]
+        ext             v2.8b,      \r0\().8b, \r1\().8b, #2
+        ext             v3.8b,      \r0\().8b, \r1\().8b, #3
+        uaddl           v2.8h,      v2.8b,     v3.8b
+        ext             v4.8b,      \r0\().8b, \r1\().8b, #1
+        ext             v5.8b,      \r0\().8b, \r1\().8b, #4
+        uaddl           v4.8h,      v4.8b,     v5.8b
+        ext             v1.8b,      \r0\().8b, \r1\().8b, #5
+        uaddl           \d0\().8h,  \r0\().8b, v1.8b
+        ext             v0.8b,      \r2\().8b, \r3\().8b, #2
+        mla             \d0\().8h,  v2.8h,     v6.h[1]
+        ext             v1.8b,      \r2\().8b, \r3\().8b, #3
+        uaddl           v0.8h,      v0.8b,     v1.8b
+        ext             v1.8b,      \r2\().8b, \r3\().8b, #1
+        mls             \d0\().8h,  v4.8h,     v6.h[0]
+        ext             v3.8b,      \r2\().8b, \r3\().8b, #4
+        uaddl           v1.8h,      v1.8b,     v3.8b
+        ext             v2.8b,      \r2\().8b, \r3\().8b, #5
+        uaddl           \d1\().8h,  \r2\().8b, v2.8b
+        mla             \d1\().8h,  v0.8h,     v6.h[1]
+        mls             \d1\().8h,  v1.8h,     v6.h[0]
   .if \narrow
-        sqrshrun        \d0\().8B,  \d0\().8H, #5
-        sqrshrun        \d1\().8B,  \d1\().8H, #5
+        sqrshrun        \d0\().8b,  \d0\().8h, #5
+        sqrshrun        \d1\().8b,  \d1\().8h, #5
   .endif
 .endm
 
 //trashes v0-v5, v7, v30-v31
 .macro  lowpass_8H      r0,  r1
-        ext             v0.16B,     \r0\().16B, \r0\().16B, #2
-        ext             v1.16B,     \r0\().16B, \r0\().16B, #3
-        uaddl           v0.8H,      v0.8B,      v1.8B
-        ext             v2.16B,     \r0\().16B, \r0\().16B, #1
-        ext             v3.16B,     \r0\().16B, \r0\().16B, #4
-        uaddl           v2.8H,      v2.8B,      v3.8B
-        ext             v30.16B,    \r0\().16B, \r0\().16B, #5
-        uaddl           \r0\().8H,  \r0\().8B,  v30.8B
-        ext             v4.16B,     \r1\().16B, \r1\().16B, #2
-        mla             \r0\().8H,  v0.8H,      v6.H[1]
-        ext             v5.16B,     \r1\().16B, \r1\().16B, #3
-        uaddl           v4.8H,      v4.8B,      v5.8B
-        ext             v7.16B,     \r1\().16B, \r1\().16B, #1
-        mls             \r0\().8H,  v2.8H,      v6.H[0]
-        ext             v0.16B,     \r1\().16B, \r1\().16B, #4
-        uaddl           v7.8H,      v7.8B,      v0.8B
-        ext             v31.16B,    \r1\().16B, \r1\().16B, #5
-        uaddl           \r1\().8H,  \r1\().8B,  v31.8B
-        mla             \r1\().8H,  v4.8H,      v6.H[1]
-        mls             \r1\().8H,  v7.8H,      v6.H[0]
+        ext             v0.16b,     \r0\().16b, \r0\().16b, #2
+        ext             v1.16b,     \r0\().16b, \r0\().16b, #3
+        uaddl           v0.8h,      v0.8b,      v1.8b
+        ext             v2.16b,     \r0\().16b, \r0\().16b, #1
+        ext             v3.16b,     \r0\().16b, \r0\().16b, #4
+        uaddl           v2.8h,      v2.8b,      v3.8b
+        ext             v30.16b,    \r0\().16b, \r0\().16b, #5
+        uaddl           \r0\().8h,  \r0\().8b,  v30.8b
+        ext             v4.16b,     \r1\().16b, \r1\().16b, #2
+        mla             \r0\().8h,  v0.8h,      v6.h[1]
+        ext             v5.16b,     \r1\().16b, \r1\().16b, #3
+        uaddl           v4.8h,      v4.8b,      v5.8b
+        ext             v7.16b,     \r1\().16b, \r1\().16b, #1
+        mls             \r0\().8h,  v2.8h,      v6.h[0]
+        ext             v0.16b,     \r1\().16b, \r1\().16b, #4
+        uaddl           v7.8h,      v7.8b,      v0.8b
+        ext             v31.16b,    \r1\().16b, \r1\().16b, #5
+        uaddl           \r1\().8h,  \r1\().8b,  v31.8b
+        mla             \r1\().8h,  v4.8h,      v6.h[1]
+        mls             \r1\().8h,  v7.8h,      v6.h[0]
 .endm
 
 // trashes v2-v5, v30
 .macro  lowpass_8_1     r0,  r1,  d0,  narrow=1
-        ext             v2.8B,     \r0\().8B, \r1\().8B, #2
-        ext             v3.8B,     \r0\().8B, \r1\().8B, #3
-        uaddl           v2.8H,     v2.8B,     v3.8B
-        ext             v4.8B,     \r0\().8B, \r1\().8B, #1
-        ext             v5.8B,     \r0\().8B, \r1\().8B, #4
-        uaddl           v4.8H,     v4.8B,     v5.8B
-        ext             v30.8B,    \r0\().8B, \r1\().8B, #5
-        uaddl           \d0\().8H, \r0\().8B, v30.8B
-        mla             \d0\().8H, v2.8H,     v6.H[1]
-        mls             \d0\().8H, v4.8H,     v6.H[0]
+        ext             v2.8b,     \r0\().8b, \r1\().8b, #2
+        ext             v3.8b,     \r0\().8b, \r1\().8b, #3
+        uaddl           v2.8h,     v2.8b,     v3.8b
+        ext             v4.8b,     \r0\().8b, \r1\().8b, #1
+        ext             v5.8b,     \r0\().8b, \r1\().8b, #4
+        uaddl           v4.8h,     v4.8b,     v5.8b
+        ext             v30.8b,    \r0\().8b, \r1\().8b, #5
+        uaddl           \d0\().8h, \r0\().8b, v30.8b
+        mla             \d0\().8h, v2.8h,     v6.h[1]
+        mls             \d0\().8h, v4.8h,     v6.h[0]
   .if \narrow
-        sqrshrun        \d0\().8B, \d0\().8H, #5
+        sqrshrun        \d0\().8b, \d0\().8h, #5
   .endif
 .endm
 
 // trashed v0-v7
 .macro  lowpass_8.16    r0,  r1,  r2
-        ext             v1.16B,     \r0\().16B, \r1\().16B, #4
-        ext             v0.16B,     \r0\().16B, \r1\().16B, #6
-        saddl           v5.4S,      v1.4H,      v0.4H
-        ext             v2.16B,     \r0\().16B, \r1\().16B, #2
-        saddl2          v1.4S,      v1.8H,      v0.8H
-        ext             v3.16B,     \r0\().16B, \r1\().16B, #8
-        saddl           v6.4S,      v2.4H,      v3.4H
-        ext             \r1\().16B, \r0\().16B, \r1\().16B, #10
-        saddl2          v2.4S,      v2.8H,      v3.8H
-        saddl           v0.4S,      \r0\().4H,  \r1\().4H
-        saddl2          v4.4S,      \r0\().8H,  \r1\().8H
+        ext             v1.16b,     \r0\().16b, \r1\().16b, #4
+        ext             v0.16b,     \r0\().16b, \r1\().16b, #6
+        saddl           v5.4s,      v1.4h,      v0.4h
+        ext             v2.16b,     \r0\().16b, \r1\().16b, #2
+        saddl2          v1.4s,      v1.8h,      v0.8h
+        ext             v3.16b,     \r0\().16b, \r1\().16b, #8
+        saddl           v6.4s,      v2.4h,      v3.4h
+        ext             \r1\().16b, \r0\().16b, \r1\().16b, #10
+        saddl2          v2.4s,      v2.8h,      v3.8h
+        saddl           v0.4s,      \r0\().4h,  \r1\().4h
+        saddl2          v4.4s,      \r0\().8h,  \r1\().8h
 
-        shl             v3.4S,  v5.4S,  #4
-        shl             v5.4S,  v5.4S,  #2
-        shl             v7.4S,  v6.4S,  #2
-        add             v5.4S,  v5.4S,  v3.4S
-        add             v6.4S,  v6.4S,  v7.4S
+        shl             v3.4s,  v5.4s,  #4
+        shl             v5.4s,  v5.4s,  #2
+        shl             v7.4s,  v6.4s,  #2
+        add             v5.4s,  v5.4s,  v3.4s
+        add             v6.4s,  v6.4s,  v7.4s
 
-        shl             v3.4S,  v1.4S,  #4
-        shl             v1.4S,  v1.4S,  #2
-        shl             v7.4S,  v2.4S,  #2
-        add             v1.4S,  v1.4S,  v3.4S
-        add             v2.4S,  v2.4S,  v7.4S
+        shl             v3.4s,  v1.4s,  #4
+        shl             v1.4s,  v1.4s,  #2
+        shl             v7.4s,  v2.4s,  #2
+        add             v1.4s,  v1.4s,  v3.4s
+        add             v2.4s,  v2.4s,  v7.4s
 
-        add             v5.4S,  v5.4S,  v0.4S
-        sub             v5.4S,  v5.4S,  v6.4S
+        add             v5.4s,  v5.4s,  v0.4s
+        sub             v5.4s,  v5.4s,  v6.4s
 
-        add             v1.4S,  v1.4S,  v4.4S
-        sub             v1.4S,  v1.4S,  v2.4S
+        add             v1.4s,  v1.4s,  v4.4s
+        sub             v1.4s,  v1.4s,  v2.4s
 
-        rshrn           v5.4H,  v5.4S,  #10
-        rshrn2          v5.8H,  v1.4S,  #10
+        rshrn           v5.4h,  v5.4s,  #10
+        rshrn2          v5.8h,  v1.4s,  #10
 
-        sqxtun          \r2\().8B,  v5.8H
+        sqxtun          \r2\().8b,  v5.8h
 .endm
 
 function put_h264_qpel16_h_lowpass_neon_packed
@@ -163,19 +163,19 @@ function \type\()_h264_qpel16_h_lowpass_neon
 endfunc
 
 function \type\()_h264_qpel8_h_lowpass_neon
-1:      ld1             {v28.8B, v29.8B}, [x1], x2
-        ld1             {v16.8B, v17.8B}, [x1], x2
+1:      ld1             {v28.8b, v29.8b}, [x1], x2
+        ld1             {v16.8b, v17.8b}, [x1], x2
         subs            x12, x12, #2
         lowpass_8       v28, v29, v16, v17, v28, v16
   .ifc \type,avg
-        ld1             {v2.8B},    [x0], x3
-        urhadd          v28.8B, v28.8B,  v2.8B
-        ld1             {v3.8B},    [x0]
-        urhadd          v16.8B, v16.8B, v3.8B
+        ld1             {v2.8b},    [x0], x3
+        urhadd          v28.8b, v28.8b,  v2.8b
+        ld1             {v3.8b},    [x0]
+        urhadd          v16.8b, v16.8b, v3.8b
         sub             x0,  x0,  x3
   .endif
-        st1             {v28.8B},    [x0], x3
-        st1             {v16.8B},    [x0], x3
+        st1             {v28.8b},    [x0], x3
+        st1             {v16.8b},    [x0], x3
         b.ne            1b
         ret
 endfunc
@@ -200,23 +200,23 @@ function \type\()_h264_qpel16_h_lowpass_l2_neon
 endfunc
 
 function \type\()_h264_qpel8_h_lowpass_l2_neon
-1:      ld1             {v26.8B, v27.8B}, [x1], x2
-        ld1             {v16.8B, v17.8B}, [x1], x2
-        ld1             {v28.8B},     [x3], x2
-        ld1             {v29.8B},     [x3], x2
+1:      ld1             {v26.8b, v27.8b}, [x1], x2
+        ld1             {v16.8b, v17.8b}, [x1], x2
+        ld1             {v28.8b},     [x3], x2
+        ld1             {v29.8b},     [x3], x2
         subs            x12, x12, #2
         lowpass_8       v26, v27, v16, v17, v26, v27
-        urhadd          v26.8B, v26.8B, v28.8B
-        urhadd          v27.8B, v27.8B, v29.8B
+        urhadd          v26.8b, v26.8b, v28.8b
+        urhadd          v27.8b, v27.8b, v29.8b
   .ifc \type,avg
-        ld1             {v2.8B},      [x0], x2
-        urhadd          v26.8B, v26.8B, v2.8B
-        ld1             {v3.8B},      [x0]
-        urhadd          v27.8B, v27.8B, v3.8B
+        ld1             {v2.8b},      [x0], x2
+        urhadd          v26.8b, v26.8b, v2.8b
+        ld1             {v3.8b},      [x0]
+        urhadd          v27.8b, v27.8b, v3.8b
         sub             x0,  x0,  x2
   .endif
-        st1             {v26.8B},     [x0], x2
-        st1             {v27.8B},     [x0], x2
+        st1             {v26.8b},     [x0], x2
+        st1             {v27.8b},     [x0], x2
         b.ne            1b
         ret
 endfunc
@@ -257,19 +257,19 @@ function \type\()_h264_qpel16_v_lowpass_neon
 endfunc
 
 function \type\()_h264_qpel8_v_lowpass_neon
-        ld1             {v16.8B}, [x1], x3
-        ld1             {v18.8B}, [x1], x3
-        ld1             {v20.8B}, [x1], x3
-        ld1             {v22.8B}, [x1], x3
-        ld1             {v24.8B}, [x1], x3
-        ld1             {v26.8B}, [x1], x3
-        ld1             {v28.8B}, [x1], x3
-        ld1             {v30.8B}, [x1], x3
-        ld1             {v17.8B}, [x1], x3
-        ld1             {v19.8B}, [x1], x3
-        ld1             {v21.8B}, [x1], x3
-        ld1             {v23.8B}, [x1], x3
-        ld1             {v25.8B}, [x1]
+        ld1             {v16.8b}, [x1], x3
+        ld1             {v18.8b}, [x1], x3
+        ld1             {v20.8b}, [x1], x3
+        ld1             {v22.8b}, [x1], x3
+        ld1             {v24.8b}, [x1], x3
+        ld1             {v26.8b}, [x1], x3
+        ld1             {v28.8b}, [x1], x3
+        ld1             {v30.8b}, [x1], x3
+        ld1             {v17.8b}, [x1], x3
+        ld1             {v19.8b}, [x1], x3
+        ld1             {v21.8b}, [x1], x3
+        ld1             {v23.8b}, [x1], x3
+        ld1             {v25.8b}, [x1]
 
         transpose_8x8B  v16, v18, v20, v22, v24, v26, v28, v30, v0,  v1
         transpose_8x8B  v17, v19, v21, v23, v25, v27, v29, v31, v0,  v1
@@ -280,33 +280,33 @@ function \type\()_h264_qpel8_v_lowpass_neon
         transpose_8x8B  v16, v17, v18, v19, v20, v21, v22, v23, v0,  v1
 
   .ifc \type,avg
-        ld1             {v24.8B},  [x0], x2
-        urhadd          v16.8B, v16.8B, v24.8B
-        ld1             {v25.8B}, [x0], x2
-        urhadd          v17.8B, v17.8B, v25.8B
-        ld1             {v26.8B}, [x0], x2
-        urhadd          v18.8B, v18.8B, v26.8B
-        ld1             {v27.8B}, [x0], x2
-        urhadd          v19.8B, v19.8B, v27.8B
-        ld1             {v28.8B}, [x0], x2
-        urhadd          v20.8B, v20.8B, v28.8B
-        ld1             {v29.8B}, [x0], x2
-        urhadd          v21.8B, v21.8B, v29.8B
-        ld1             {v30.8B}, [x0], x2
-        urhadd          v22.8B, v22.8B, v30.8B
-        ld1             {v31.8B}, [x0], x2
-        urhadd          v23.8B, v23.8B, v31.8B
+        ld1             {v24.8b},  [x0], x2
+        urhadd          v16.8b, v16.8b, v24.8b
+        ld1             {v25.8b}, [x0], x2
+        urhadd          v17.8b, v17.8b, v25.8b
+        ld1             {v26.8b}, [x0], x2
+        urhadd          v18.8b, v18.8b, v26.8b
+        ld1             {v27.8b}, [x0], x2
+        urhadd          v19.8b, v19.8b, v27.8b
+        ld1             {v28.8b}, [x0], x2
+        urhadd          v20.8b, v20.8b, v28.8b
+        ld1             {v29.8b}, [x0], x2
+        urhadd          v21.8b, v21.8b, v29.8b
+        ld1             {v30.8b}, [x0], x2
+        urhadd          v22.8b, v22.8b, v30.8b
+        ld1             {v31.8b}, [x0], x2
+        urhadd          v23.8b, v23.8b, v31.8b
         sub             x0,  x0,  x2,  lsl #3
   .endif
 
-        st1             {v16.8B}, [x0], x2
-        st1             {v17.8B}, [x0], x2
-        st1             {v18.8B}, [x0], x2
-        st1             {v19.8B}, [x0], x2
-        st1             {v20.8B}, [x0], x2
-        st1             {v21.8B}, [x0], x2
-        st1             {v22.8B}, [x0], x2
-        st1             {v23.8B}, [x0], x2
+        st1             {v16.8b}, [x0], x2
+        st1             {v17.8b}, [x0], x2
+        st1             {v18.8b}, [x0], x2
+        st1             {v19.8b}, [x0], x2
+        st1             {v20.8b}, [x0], x2
+        st1             {v21.8b}, [x0], x2
+        st1             {v22.8b}, [x0], x2
+        st1             {v23.8b}, [x0], x2
 
         ret
 endfunc
@@ -334,19 +334,19 @@ function \type\()_h264_qpel16_v_lowpass_l2_neon
 endfunc
 
 function \type\()_h264_qpel8_v_lowpass_l2_neon
-        ld1             {v16.8B}, [x1], x3
-        ld1             {v18.8B}, [x1], x3
-        ld1             {v20.8B}, [x1], x3
-        ld1             {v22.8B}, [x1], x3
-        ld1             {v24.8B}, [x1], x3
-        ld1             {v26.8B}, [x1], x3
-        ld1             {v28.8B}, [x1], x3
-        ld1             {v30.8B}, [x1], x3
-        ld1             {v17.8B}, [x1], x3
-        ld1             {v19.8B}, [x1], x3
-        ld1             {v21.8B}, [x1], x3
-        ld1             {v23.8B}, [x1], x3
-        ld1             {v25.8B}, [x1]
+        ld1             {v16.8b}, [x1], x3
+        ld1             {v18.8b}, [x1], x3
+        ld1             {v20.8b}, [x1], x3
+        ld1             {v22.8b}, [x1], x3
+        ld1             {v24.8b}, [x1], x3
+        ld1             {v26.8b}, [x1], x3
+        ld1             {v28.8b}, [x1], x3
+        ld1             {v30.8b}, [x1], x3
+        ld1             {v17.8b}, [x1], x3
+        ld1             {v19.8b}, [x1], x3
+        ld1             {v21.8b}, [x1], x3
+        ld1             {v23.8b}, [x1], x3
+        ld1             {v25.8b}, [x1]
 
         transpose_8x8B  v16, v18, v20, v22, v24, v26, v28, v30, v0,  v1
         transpose_8x8B  v17, v19, v21, v23, v25, v27, v29, v31, v0,  v1
@@ -356,51 +356,51 @@ function \type\()_h264_qpel8_v_lowpass_l2_neon
         lowpass_8       v28, v29, v30, v31, v22, v23
         transpose_8x8B  v16, v17, v18, v19, v20, v21, v22, v23, v0,  v1
 
-        ld1             {v24.8B},  [x12], x2
-        ld1             {v25.8B},  [x12], x2
-        ld1             {v26.8B},  [x12], x2
-        ld1             {v27.8B},  [x12], x2
-        ld1             {v28.8B},  [x12], x2
-        urhadd          v16.8B, v24.8B, v16.8B
-        urhadd          v17.8B, v25.8B, v17.8B
-        ld1             {v29.8B},  [x12], x2
-        urhadd          v18.8B, v26.8B, v18.8B
-        urhadd          v19.8B, v27.8B, v19.8B
-        ld1             {v30.8B}, [x12], x2
-        urhadd          v20.8B, v28.8B, v20.8B
-        urhadd          v21.8B, v29.8B, v21.8B
-        ld1             {v31.8B}, [x12], x2
-        urhadd          v22.8B, v30.8B, v22.8B
-        urhadd          v23.8B, v31.8B, v23.8B
+        ld1             {v24.8b},  [x12], x2
+        ld1             {v25.8b},  [x12], x2
+        ld1             {v26.8b},  [x12], x2
+        ld1             {v27.8b},  [x12], x2
+        ld1             {v28.8b},  [x12], x2
+        urhadd          v16.8b, v24.8b, v16.8b
+        urhadd          v17.8b, v25.8b, v17.8b
+        ld1             {v29.8b},  [x12], x2
+        urhadd          v18.8b, v26.8b, v18.8b
+        urhadd          v19.8b, v27.8b, v19.8b
+        ld1             {v30.8b}, [x12], x2
+        urhadd          v20.8b, v28.8b, v20.8b
+        urhadd          v21.8b, v29.8b, v21.8b
+        ld1             {v31.8b}, [x12], x2
+        urhadd          v22.8b, v30.8b, v22.8b
+        urhadd          v23.8b, v31.8b, v23.8b
 
   .ifc \type,avg
-        ld1             {v24.8B}, [x0], x3
-        urhadd          v16.8B, v16.8B, v24.8B
-        ld1             {v25.8B}, [x0], x3
-        urhadd          v17.8B, v17.8B, v25.8B
-        ld1             {v26.8B}, [x0], x3
-        urhadd          v18.8B, v18.8B, v26.8B
-        ld1             {v27.8B}, [x0], x3
-        urhadd          v19.8B, v19.8B, v27.8B
-        ld1             {v28.8B}, [x0], x3
-        urhadd          v20.8B, v20.8B, v28.8B
-        ld1             {v29.8B}, [x0], x3
-        urhadd          v21.8B, v21.8B, v29.8B
-        ld1             {v30.8B}, [x0], x3
-        urhadd          v22.8B, v22.8B, v30.8B
-        ld1             {v31.8B}, [x0], x3
-        urhadd          v23.8B, v23.8B, v31.8B
+        ld1             {v24.8b}, [x0], x3
+        urhadd          v16.8b, v16.8b, v24.8b
+        ld1             {v25.8b}, [x0], x3
+        urhadd          v17.8b, v17.8b, v25.8b
+        ld1             {v26.8b}, [x0], x3
+        urhadd          v18.8b, v18.8b, v26.8b
+        ld1             {v27.8b}, [x0], x3
+        urhadd          v19.8b, v19.8b, v27.8b
+        ld1             {v28.8b}, [x0], x3
+        urhadd          v20.8b, v20.8b, v28.8b
+        ld1             {v29.8b}, [x0], x3
+        urhadd          v21.8b, v21.8b, v29.8b
+        ld1             {v30.8b}, [x0], x3
+        urhadd          v22.8b, v22.8b, v30.8b
+        ld1             {v31.8b}, [x0], x3
+        urhadd          v23.8b, v23.8b, v31.8b
         sub             x0,  x0,  x3,  lsl #3
   .endif
 
-        st1             {v16.8B}, [x0], x3
-        st1             {v17.8B}, [x0], x3
-        st1             {v18.8B}, [x0], x3
-        st1             {v19.8B}, [x0], x3
-        st1             {v20.8B}, [x0], x3
-        st1             {v21.8B}, [x0], x3
-        st1             {v22.8B}, [x0], x3
-        st1             {v23.8B}, [x0], x3
+        st1             {v16.8b}, [x0], x3
+        st1             {v17.8b}, [x0], x3
+        st1             {v18.8b}, [x0], x3
+        st1             {v19.8b}, [x0], x3
+        st1             {v20.8b}, [x0], x3
+        st1             {v21.8b}, [x0], x3
+        st1             {v22.8b}, [x0], x3
+        st1             {v23.8b}, [x0], x3
 
         ret
 endfunc
@@ -411,19 +411,19 @@ endfunc
 
 function put_h264_qpel8_hv_lowpass_neon_top
         lowpass_const   w12
-        ld1             {v16.8H}, [x1], x3
-        ld1             {v17.8H}, [x1], x3
-        ld1             {v18.8H}, [x1], x3
-        ld1             {v19.8H}, [x1], x3
-        ld1             {v20.8H}, [x1], x3
-        ld1             {v21.8H}, [x1], x3
-        ld1             {v22.8H}, [x1], x3
-        ld1             {v23.8H}, [x1], x3
-        ld1             {v24.8H}, [x1], x3
-        ld1             {v25.8H}, [x1], x3
-        ld1             {v26.8H}, [x1], x3
-        ld1             {v27.8H}, [x1], x3
-        ld1             {v28.8H}, [x1]
+        ld1             {v16.8h}, [x1], x3
+        ld1             {v17.8h}, [x1], x3
+        ld1             {v18.8h}, [x1], x3
+        ld1             {v19.8h}, [x1], x3
+        ld1             {v20.8h}, [x1], x3
+        ld1             {v21.8h}, [x1], x3
+        ld1             {v22.8h}, [x1], x3
+        ld1             {v23.8h}, [x1], x3
+        ld1             {v24.8h}, [x1], x3
+        ld1             {v25.8h}, [x1], x3
+        ld1             {v26.8h}, [x1], x3
+        ld1             {v27.8h}, [x1], x3
+        ld1             {v28.8h}, [x1]
         lowpass_8H      v16, v17
         lowpass_8H      v18, v19
         lowpass_8H      v20, v21
@@ -447,7 +447,7 @@ function put_h264_qpel8_hv_lowpass_neon_top
         lowpass_8.16    v22, v30, v22
         lowpass_8.16    v23, v31, v23
 
-        transpose_8x8B v16, v17, v18, v19, v20, v21, v22, v23, v0,  v1
+        transpose_8x8B  v16, v17, v18, v19, v20, v21, v22, v23, v0,  v1
 
         ret
 endfunc
@@ -457,33 +457,33 @@ function \type\()_h264_qpel8_hv_lowpass_neon
         mov             x10, x30
         bl              put_h264_qpel8_hv_lowpass_neon_top
   .ifc \type,avg
-        ld1             {v0.8B},      [x0], x2
-        urhadd          v16.8B, v16.8B, v0.8B
-        ld1             {v1.8B},      [x0], x2
-        urhadd          v17.8B, v17.8B, v1.8B
-        ld1             {v2.8B},      [x0], x2
-        urhadd          v18.8B, v18.8B, v2.8B
-        ld1             {v3.8B},      [x0], x2
-        urhadd          v19.8B, v19.8B, v3.8B
-        ld1             {v4.8B},      [x0], x2
-        urhadd          v20.8B, v20.8B, v4.8B
-        ld1             {v5.8B},      [x0], x2
-        urhadd          v21.8B, v21.8B, v5.8B
-        ld1             {v6.8B},      [x0], x2
-        urhadd          v22.8B, v22.8B, v6.8B
-        ld1             {v7.8B},      [x0], x2
-        urhadd          v23.8B, v23.8B, v7.8B
+        ld1             {v0.8b},      [x0], x2
+        urhadd          v16.8b, v16.8b, v0.8b
+        ld1             {v1.8b},      [x0], x2
+        urhadd          v17.8b, v17.8b, v1.8b
+        ld1             {v2.8b},      [x0], x2
+        urhadd          v18.8b, v18.8b, v2.8b
+        ld1             {v3.8b},      [x0], x2
+        urhadd          v19.8b, v19.8b, v3.8b
+        ld1             {v4.8b},      [x0], x2
+        urhadd          v20.8b, v20.8b, v4.8b
+        ld1             {v5.8b},      [x0], x2
+        urhadd          v21.8b, v21.8b, v5.8b
+        ld1             {v6.8b},      [x0], x2
+        urhadd          v22.8b, v22.8b, v6.8b
+        ld1             {v7.8b},      [x0], x2
+        urhadd          v23.8b, v23.8b, v7.8b
         sub             x0,  x0,  x2,  lsl #3
   .endif
 
-        st1             {v16.8B},     [x0], x2
-        st1             {v17.8B},     [x0], x2
-        st1             {v18.8B},     [x0], x2
-        st1             {v19.8B},     [x0], x2
-        st1             {v20.8B},     [x0], x2
-        st1             {v21.8B},     [x0], x2
-        st1             {v22.8B},     [x0], x2
-        st1             {v23.8B},     [x0], x2
+        st1             {v16.8b},     [x0], x2
+        st1             {v17.8b},     [x0], x2
+        st1             {v18.8b},     [x0], x2
+        st1             {v19.8b},     [x0], x2
+        st1             {v20.8b},     [x0], x2
+        st1             {v21.8b},     [x0], x2
+        st1             {v22.8b},     [x0], x2
+        st1             {v23.8b},     [x0], x2
 
         ret             x10
 endfunc
@@ -497,45 +497,45 @@ function \type\()_h264_qpel8_hv_lowpass_l2_neon
         mov             x10, x30
         bl              put_h264_qpel8_hv_lowpass_neon_top
 
-        ld1             {v0.8B, v1.8B},  [x2], #16
-        ld1             {v2.8B, v3.8B},  [x2], #16
-        urhadd          v0.8B,  v0.8B,  v16.8B
-        urhadd          v1.8B,  v1.8B,  v17.8B
-        ld1             {v4.8B, v5.8B},  [x2], #16
-        urhadd          v2.8B,  v2.8B,  v18.8B
-        urhadd          v3.8B,  v3.8B,  v19.8B
-        ld1             {v6.8B, v7.8B},  [x2], #16
-        urhadd          v4.8B,  v4.8B,  v20.8B
-        urhadd          v5.8B,  v5.8B,  v21.8B
-        urhadd          v6.8B,  v6.8B,  v22.8B
-        urhadd          v7.8B,  v7.8B,  v23.8B
+        ld1             {v0.8b, v1.8b},  [x2], #16
+        ld1             {v2.8b, v3.8b},  [x2], #16
+        urhadd          v0.8b,  v0.8b,  v16.8b
+        urhadd          v1.8b,  v1.8b,  v17.8b
+        ld1             {v4.8b, v5.8b},  [x2], #16
+        urhadd          v2.8b,  v2.8b,  v18.8b
+        urhadd          v3.8b,  v3.8b,  v19.8b
+        ld1             {v6.8b, v7.8b},  [x2], #16
+        urhadd          v4.8b,  v4.8b,  v20.8b
+        urhadd          v5.8b,  v5.8b,  v21.8b
+        urhadd          v6.8b,  v6.8b,  v22.8b
+        urhadd          v7.8b,  v7.8b,  v23.8b
   .ifc \type,avg
-        ld1             {v16.8B},     [x0], x3
-        urhadd          v0.8B,  v0.8B,  v16.8B
-        ld1             {v17.8B},     [x0], x3
-        urhadd          v1.8B,  v1.8B,  v17.8B
-        ld1             {v18.8B},     [x0], x3
-        urhadd          v2.8B,  v2.8B,  v18.8B
-        ld1             {v19.8B},     [x0], x3
-        urhadd          v3.8B,  v3.8B,  v19.8B
-        ld1             {v20.8B},     [x0], x3
-        urhadd          v4.8B,  v4.8B,  v20.8B
-        ld1             {v21.8B},     [x0], x3
-        urhadd          v5.8B,  v5.8B,  v21.8B
-        ld1             {v22.8B},     [x0], x3
-        urhadd          v6.8B,  v6.8B,  v22.8B
-        ld1             {v23.8B},     [x0], x3
-        urhadd          v7.8B,  v7.8B,  v23.8B
+        ld1             {v16.8b},     [x0], x3
+        urhadd          v0.8b,  v0.8b,  v16.8b
+        ld1             {v17.8b},     [x0], x3
+        urhadd          v1.8b,  v1.8b,  v17.8b
+        ld1             {v18.8b},     [x0], x3
+        urhadd          v2.8b,  v2.8b,  v18.8b
+        ld1             {v19.8b},     [x0], x3
+        urhadd          v3.8b,  v3.8b,  v19.8b
+        ld1             {v20.8b},     [x0], x3
+        urhadd          v4.8b,  v4.8b,  v20.8b
+        ld1             {v21.8b},     [x0], x3
+        urhadd          v5.8b,  v5.8b,  v21.8b
+        ld1             {v22.8b},     [x0], x3
+        urhadd          v6.8b,  v6.8b,  v22.8b
+        ld1             {v23.8b},     [x0], x3
+        urhadd          v7.8b,  v7.8b,  v23.8b
         sub             x0,  x0,  x3,  lsl #3
   .endif
-        st1             {v0.8B},      [x0], x3
-        st1             {v1.8B},      [x0], x3
-        st1             {v2.8B},      [x0], x3
-        st1             {v3.8B},      [x0], x3
-        st1             {v4.8B},      [x0], x3
-        st1             {v5.8B},      [x0], x3
-        st1             {v6.8B},      [x0], x3
-        st1             {v7.8B},      [x0], x3
+        st1             {v0.8b},      [x0], x3
+        st1             {v1.8b},      [x0], x3
+        st1             {v2.8b},      [x0], x3
+        st1             {v3.8b},      [x0], x3
+        st1             {v4.8b},      [x0], x3
+        st1             {v5.8b},      [x0], x3
+        st1             {v6.8b},      [x0], x3
+        st1             {v7.8b},      [x0], x3
 
         ret             x10
 endfunc
@@ -579,8 +579,8 @@ function \type\()_h264_qpel16_hv_lowpass_l2_neon
 endfunc
 .endm
 
-        h264_qpel16_hv put
-        h264_qpel16_hv avg
+        h264_qpel16_hv  put
+        h264_qpel16_hv  avg
 
 .macro  h264_qpel8      type
 function ff_\type\()_h264_qpel8_mc10_neon, export=1
@@ -758,8 +758,8 @@ function ff_\type\()_h264_qpel8_mc33_neon, export=1
 endfunc
 .endm
 
-        h264_qpel8 put
-        h264_qpel8 avg
+        h264_qpel8      put
+        h264_qpel8      avg
 
 .macro  h264_qpel16     type
 function ff_\type\()_h264_qpel16_mc10_neon, export=1
@@ -930,5 +930,5 @@ function ff_\type\()_h264_qpel16_mc33_neon, export=1
 endfunc
 .endm
 
-        h264_qpel16 put
-        h264_qpel16 avg
+        h264_qpel16     put
+        h264_qpel16     avg

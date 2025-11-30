@@ -393,5 +393,3 @@ AVInputFormat ff_mpjpeg_demuxer = {
     .priv_class        = &mpjpeg_demuxer_class,
     .flags             = AVFMT_NOTIMESTAMPS,
 };
-
-

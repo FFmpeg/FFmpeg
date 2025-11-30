@@ -50,4 +50,3 @@ static inline int RENAME(get_context)(PlaneContext *p, TYPE *src,
                p->quant_table[1][(LT - T) & 0xFF] +
                p->quant_table[2][(T - RT) & 0xFF];
 }
-

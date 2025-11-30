@@ -91,4 +91,3 @@ AVInputFormat ff_truehd_demuxer = {
     .priv_class     = &truehd_demuxer_class,
 };
 #endif
-
