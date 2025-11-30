@@ -201,4 +201,3 @@ static int RENAME(encode_rgb_frame)(FFV1Context *s, const uint8_t *src[4],
     }
     return 0;
 }
-

@@ -42,41 +42,41 @@ endconst
         // void put_hevc_qpel_h(int16_t *dst,
         //                      uint8_t *_src, ptrdiff_t _srcstride,
         //                      int height, intptr_t mx, intptr_t my, int width)
-        dst        .req x0
-        dststride  .req x7
-        src        .req x1
-        srcstride  .req x2
-        height     .req x3
-        heightw    .req w3
-        mx         .req x4
-        width      .req w6
+        dst             .req x0
+        dststride       .req x7
+        src             .req x1
+        srcstride       .req x2
+        height          .req x3
+        heightw         .req w3
+        mx              .req x4
+        width           .req w6
 .endif
 .ifc \type, qpel_uni
         // void put_hevc_qpel_uni_h(uint8_t *_dst,  ptrdiff_t _dststride,
         //                          uint8_t *_src, ptrdiff_t _srcstride,
         //                          int height, intptr_t mx, intptr_t my, int width)
-        dst        .req x0
-        dststride  .req x1
-        src        .req x2
-        srcstride  .req x3
-        height     .req x4
-        heightw    .req w4
-        mx         .req x5
-        width      .req w7
+        dst             .req x0
+        dststride       .req x1
+        src             .req x2
+        srcstride       .req x3
+        height          .req x4
+        heightw         .req w4
+        mx              .req x5
+        width           .req w7
 .endif
 .ifc \type, qpel_bi
         // void put_hevc_qpel_bi_h(uint8_t *_dst, ptrdiff_t _dststride,
         //                         uint8_t *_src, ptrdiff_t _srcstride,
         //                         int16_t *src2, int height, intptr_t mx,
         //                         intptr_t my, int width)
-        dst        .req x0
-        dststride  .req x1
-        src        .req x2
-        srcstride  .req x3
-        height     .req x5
-        heightw    .req w5
-        mx         .req x6
-        width      .req w8
+        dst             .req x0
+        dststride       .req x1
+        src             .req x2
+        srcstride       .req x3
+        height          .req x5
+        heightw         .req w5
+        mx              .req x6
+        width           .req w8
 .endif
 
 .ifc \type, qpel

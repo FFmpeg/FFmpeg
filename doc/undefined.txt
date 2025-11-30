@@ -44,4 +44,3 @@ a+b*c;
 here the reader knows that a,b,c are meant to be signed integers but for C
 standard compliance / to avoid undefined behavior they are stored in unsigned
 ints.
-

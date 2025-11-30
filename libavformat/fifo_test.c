@@ -149,4 +149,3 @@ const FFOutputFormat ff_fifo_test_muxer = {
     .p.priv_class   = &failing_muxer_class,
     .p.flags        = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
 };
-

@@ -466,4 +466,3 @@ fail:
     av_channel_layout_uninit(&layout);
     return ret;
 }
-

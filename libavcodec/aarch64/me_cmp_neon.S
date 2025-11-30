@@ -1099,7 +1099,7 @@ function vsse_intra16_neon, export=1
         cbnz            w4, 2b
 
 3:
-        add             v16.4s, v16.4s, v17.4S
+        add             v16.4s, v16.4s, v17.4s
         uaddlv          d17, v16.4s
         fmov            w0, s17
 

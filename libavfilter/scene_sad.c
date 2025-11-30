@@ -70,4 +70,3 @@ ff_scene_sad_fn ff_scene_sad_get_fn(int depth)
     }
     return sad;
 }
-
