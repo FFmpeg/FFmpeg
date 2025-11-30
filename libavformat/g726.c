@@ -95,4 +95,3 @@ const AVInputFormat ff_g726le_demuxer = {
     .raw_codec_id   = AV_CODEC_ID_ADPCM_G726LE,
 };
 #endif
-

@@ -856,5 +856,3 @@ av_cold void ff_dwt_init(SnowDWTContext *c)
     if (HAVE_MMX)
         ff_dwt_init_x86(c);
 }
-
-

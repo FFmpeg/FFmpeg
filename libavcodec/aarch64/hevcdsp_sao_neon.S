@@ -30,20 +30,20 @@
 //                      int width, int height)
 function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         sub             sp,  sp, #64
-        stp            xzr, xzr, [sp]
-        stp            xzr, xzr, [sp, #16]
-        stp            xzr, xzr, [sp, #32]
-        stp            xzr, xzr, [sp, #48]
+        stp             xzr, xzr, [sp]
+        stp             xzr, xzr, [sp, #16]
+        stp             xzr, xzr, [sp, #32]
+        stp             xzr, xzr, [sp, #48]
         mov             w8,  #4
 0:
         ldrsh           x9, [x4,  x8, lsl #1] // x9 = sao_offset_val[k+1]
         subs            w8,  w8,  #1
-        add            w10,  w8,  w5 // x10 = k + sao_left_class
-        and            w10, w10, #0x1F
+        add             w10,  w8,  w5 // x10 = k + sao_left_class
+        and             w10, w10, #0x1F
         strh            w9, [sp, x10, lsl #1]
         bne             0b
-        ld1            {v16.16b-v19.16b}, [sp], #64
-        movi           v20.8h,   #1
+        ld1             {v16.16b-v19.16b}, [sp], #64
+        movi            v20.8h,   #1
 1:      // beginning of line
         mov             w8,  w6
 2:
@@ -56,7 +56,7 @@ function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         // +----------------------------------->
         //    i-0     i-1     i-2     i-3
         // dst[x] = av_clip_pixel(src[x] + offset_table[src[x] >> shift]);
-        ld1            {v2.8b}, [x1]
+        ld1             {v2.8b}, [x1]
         // load src[x]
         uxtl            v0.8h,  v2.8b
         // >> shift
@@ -68,13 +68,13 @@ function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         // shift insert index to upper byte
         sli             v1.8h,  v3.8h, #8
         // table
-        tbx            v2.16b, {v16.16b-v19.16b}, v1.16b
+        tbx             v2.16b, {v16.16b-v19.16b}, v1.16b
         // src[x] + table
         add             v1.8h,  v0.8h, v2.8h
         // clip + narrow
         sqxtun          v4.8b,  v1.8h
         // store
-        st1            {v4.8b}, [x0]
+        st1             {v4.8b}, [x0]
         // done 8 pixels
         subs            w8, w8,  #8
         bne             2b

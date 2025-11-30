@@ -9,4 +9,3 @@ file      %SRCFILE%
 inpoint   00:00.20
 outpoint  00:00.40
 file_packet_meta dummy 1
-

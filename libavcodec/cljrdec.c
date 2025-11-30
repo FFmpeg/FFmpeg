@@ -92,4 +92,3 @@ const AVCodec ff_cljr_decoder = {
     .capabilities   = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
-

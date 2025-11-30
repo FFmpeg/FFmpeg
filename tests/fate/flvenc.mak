@@ -7,5 +7,3 @@ tests/data/add_keyframe_index.flv: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 FATE_AFILTER-$(call ALLYES, FLV_MUXER FLV_DEMUXER AVDEVICE TESTSRC_FILTER LAVFI_INDEV FLV_ENCODER) += fate-flv-add_keyframe_index
 fate-flv-add_keyframe_index: tests/data/add_keyframe_index.flv
 fate-flv-add_keyframe_index: CMD = ffmetadata -flags +bitexact -i $(TARGET_PATH)/tests/data/add_keyframe_index.flv
-
-

@@ -148,4 +148,3 @@ const AVOutputFormat ff_fifo_test_muxer = {
     .priv_class     = &failing_muxer_class,
     .flags          = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
 };
-
