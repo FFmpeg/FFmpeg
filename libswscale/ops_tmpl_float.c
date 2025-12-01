@@ -56,6 +56,11 @@ DECL_SETUP(setup_dither)
     if (!matrix)
         return AVERROR(ENOMEM);
 
+    static_assert(sizeof(out->ptr) <= sizeof(uint8_t[8]), ">8 byte pointers not supported");
+    uint8_t *offset = &out->u8[8];
+    for (int i = 0; i < 4; i++)
+        offset[i] = op->dither.y_offset[i];
+
     for (int y = 0; y < size; y++) {
         for (int x = 0; x < size; x++)
             matrix[y * width + x] = av_q2pixel(op->dither.matrix[y * size + x]);
@@ -69,12 +74,13 @@ DECL_SETUP(setup_dither)
 DECL_FUNC(dither, const int size_log2)
 {
     const pixel_t *restrict matrix = impl->priv.ptr;
+    const uint8_t *offset = &impl->priv.u8[8];
     const int mask = (1 << size_log2) - 1;
     const int y_line = iter->y;
-    const int row0 = (y_line +  0) & mask;
-    const int row1 = (y_line +  3) & mask;
-    const int row2 = (y_line +  2) & mask;
-    const int row3 = (y_line +  5) & mask;
+    const int row0 = (y_line + offset[0]) & mask;
+    const int row1 = (y_line + offset[1]) & mask;
+    const int row2 = (y_line + offset[2]) & mask;
+    const int row3 = (y_line + offset[3]) & mask;
     const int size = 1 << size_log2;
     const int width = FFMAX(size, SWS_BLOCK_SIZE);
     const int base = iter->x & ~(SWS_BLOCK_SIZE - 1) & (size - 1);
