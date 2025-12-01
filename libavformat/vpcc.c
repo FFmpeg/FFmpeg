@@ -51,7 +51,8 @@ static int get_vpx_chroma_subsampling(void *logctx,
             return VPX_SUBSAMPLING_444;
         }
     }
-    av_log(logctx, AV_LOG_ERROR, "Unsupported pixel format (%d)\n", pixel_format);
+    if (logctx)
+        av_log(logctx, AV_LOG_ERROR, "Unsupported pixel format (%d)\n", pixel_format);
     return -1;
 }
 
@@ -59,8 +60,9 @@ static int get_bit_depth(void *logctx, enum AVPixelFormat pixel_format)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pixel_format);
     if (desc == NULL) {
-        av_log(logctx, AV_LOG_ERROR, "Unsupported pixel format (%d)\n",
-               pixel_format);
+        if (logctx)
+            av_log(logctx, AV_LOG_ERROR, "Unsupported pixel format (%d)\n",
+                   pixel_format);
         return -1;
     }
     return desc->comp[0].depth;
@@ -187,7 +189,7 @@ int ff_isom_get_vpcc_features(void *logctx, const AVCodecParameters *par,
         }
     }
 
-    if (profile == AV_PROFILE_UNKNOWN || !bit_depth)
+    if ((profile == AV_PROFILE_UNKNOWN || !bit_depth) && logctx)
         av_log(logctx, AV_LOG_WARNING, "VP9 profile and/or bit depth not set or could not be derived\n");
 
     vpcc->profile            = profile;

@@ -54,7 +54,8 @@ static void set_vp9_codec_str(void *logctx, const AVCodecParameters *par,
                    vpcc.profile, vpcc.level, vpcc.bitdepth);
     } else {
         // Default to just vp9 in case of error while finding out profile or level
-        av_log(logctx, AV_LOG_WARNING, "Could not find VP9 profile and/or level\n");
+        if (logctx)
+            av_log(logctx, AV_LOG_WARNING, "Could not find VP9 profile and/or level\n");
         av_bprintf(out, "vp9");
     }
 }
@@ -194,7 +195,8 @@ int ff_make_codec_str(void *logctx, const AVCodecParameters *par,
         // RFC 6381
         av_bprintf(out, "mp4v.20");
         // Unimplemented, should output ProfileLevelIndication as a decimal number
-        av_log(logctx, AV_LOG_WARNING, "Incomplete RFC 6381 codec string for mp4v\n");
+        if (logctx)
+            av_log(logctx, AV_LOG_WARNING, "Incomplete RFC 6381 codec string for mp4v\n");
     } else if (par->codec_id == AV_CODEC_ID_MP2) {
         av_bprintf(out, "mp4a.40.33");
     } else if (par->codec_id == AV_CODEC_ID_MP3) {
