@@ -1,6 +1,86 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.4.7:
+ avutil/common: cast GET_BYTE/GET_16BIT returned value
+ avcodec/utvideodec: Set B for the width= 1 case in restore_median_planar_il()
+ avformat/rtpdec_rfc4175: Only change PayloadContext on success
+ avformat/rtpdec_rfc4175: Check dimensions
+ avformat/rtpdec_rfc4175: Fix memleak of sampling
+ avformat/http: Fix off by 1 error
+ avcodec/exr: spelling
+ avcodec/exr: use tile dimensions in pxr24 UINT case
+ avcodec/exr: Simple check for available channels
+ avformat/sctp: Check size in sctp_write()
+ avformat/rtmpproto: consider command line argument lengths
+ avformat/rtmpproto_ Check tcurl and flashver length
+ avcodec/g723_1enc: Make min_err 64bit
+ avformat/rtpenc_h264_hevc: Check space for nal_length_size in ff_rtp_send_h264_hevc()
+ swscale/output: Fix integer overflow in yuv2ya16_X_c_template()
+ avcodec/exr: Check that DWA has 3 channels
+ avcodec/exr: check ac_size
+ avcodec/exr: Round dc_w/h up
+ avcodec/mjpegdec: Explain buf_size/width/height check
+ fftools/ffmpeg_mux_init: Fix double-free on error
+ avformat/avidec: Fix integer overflow iff ULONG_MAX < INT64_MAX
+ avformat/aviobuf: Keep checksum_ptr consistent in avio_seek()
+ aacenc_tns: clamp filter direction energy measurement
+ avcodec/dxv: Check coded_height, to avoid invalid av_clip()
+ avcodec/aac/aacdec: dont allow ff_aac_output_configure() allocating a new frame if it has no frame
+ avformat/lrcdec: Fix fate-sub-lrc-ms-remux on x86-32
+ avcodec/sanm: Check w,h,left,top
+ avcodec/utvideodec: Clear plane_start array
+ avcodec/dxv: Check that we initialize op_data
+ avcodec/exr: Check for pixel type consistency in DWA
+ avcodec/g726: init missing sample rate
+ avformat/lrcdec: limit input timestamp range to avoid overflows
+ avcodec/scpr3: Clear clr
+ avcodec/ilbcdec: Clear cbvec when used with create_augmented_vector()
+ avcodec/jpeg2000dec: Make sure the 4 extra bytes allocated are initialized
+ avfilter/avf_showcqt: fix unbounded index when copying to fft_data
+ avcodec/aacsbr_template: Check ilb
+ avcodec/utvideodec: Set B for the width= 1 case
+ avcodec/ffv1: Clear state on alloc
+ avcodec/jpeg2000dec: implement cdef remapping during pixel format matching
+ avcodec/jpeg2000dec: move cdef default check into get_siz()
+ avcodec/exr: Check rle_raw_data and surroundings
+ avcodec/exr: Dont access outside xsize/ysize
+ examples: Add check and replace av_free() to avoid potential memory errors
+ libavcodec/tests/snowenc: Add av_free() to avoid memory leak
+ avcodec/mpc8: init avctx->sample_rate
+ avformat/hls: add cmfv/cmfa exceptions
+ avformat/lrcdec: support arbitrary precision timestamp
+ avcodec/ffv1dec: Disable frame threading due to race condition
+ libavcodec/tests/motion: Add check for avcodec_alloc_context3()
+ avcodec/tests/avpacket: Add av_free() to avoid memory leak
+ examples: Add av_freep to avoid potential memory leak
+ avcodec/tests/avpacket: Add av_packet_free() to avoid memory leak
+ avcodec/fits: Clear naxis
+ avcodec/vqavideo; Check bytestream2_get_buffer() reading next_codebook_buffer
+ avcodec/lzf: Check for input space
+ avcodec/imc: Clear padding of buf16
+ avcodec/cri: Check bytestream2_get_buffer() for end
+ avcodec/cri: Factor read_len out
+ avformat/dashdec: Allocate space for appended "/"
+ avformat/mxg: clear AV_INPUT_BUFFER_PADDING_SIZE
+ avformat/mov: make sure file_checksum is fully initialized
+ avformat/asfdec_f: Check amount of value read
+ avformat/concatdec: Clip duration in one more case in get_best_effort_duration()
+ avcodec/ffv1dec: Check k in get_vlc_symbol()
+ avcodec/cfhd: Check idwt_buf size before allocation
+ avcodec/ivi: Check luma/chroma mb_size
+ avcodec/motion_est: don't add offsets to NULL pointers
+ swscale/swscale_unscaled: don't add offsets to NULL pointers
+ avcodec/psd: Move frame allocation after RLE processing
+ avcodec/smacker: Move buffer allocation to later
+ avcodec/opus: don't materialize buf pointer from null
+ avformat/iff: Check nb_channels == 0 in CHNL
+ avcodec/mss2dsp: use FF_PTR_ADD to add offsets to a pointer
+ avformat/hls: check return value of new_init_section()
+ avcodec/rkmppdec: Fix double-free on error
+ avcodec/ppc/vp8dsp_altivec: Fix out-of-bounds access
+ avcodec/x86/pngdsp: add missing emms at the end of add_png_paeth_prediction
+
 version 4.4.6:
  avcodec/takdec: Check remaining space for first predictors
  avcodec/svq3: Check there are bits left before decompression
