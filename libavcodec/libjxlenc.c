@@ -325,7 +325,7 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
     LibJxlEncodeContext *ctx = avctx->priv_data;
     AVFrameSideData *sd;
     int32_t *matrix = (int32_t[9]){ 0 };
-    int ret = 0;
+    int ret = 0, have_matrix = 0;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(frame->format);
     JxlBasicInfo info;
     JxlPixelFormat *jxl_fmt = &ctx->jxl_fmt;
@@ -383,6 +383,11 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
     /* bitexact lossless requires there to be no XYB transform */
     info.uses_original_profile = ctx->distance == 0.0 || !ctx->xyb;
 
+    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX);
+    if (sd) {
+        matrix = (int32_t *) sd->data;
+        have_matrix = 1;
+    }
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_EXIF);
     if (sd) {
         AVExifMetadata ifd = { 0 };
@@ -393,24 +398,25 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
             ret = ff_exif_sanitize_ifd(avctx, frame, &ifd);
         if (ret >= 0)
             ret = av_exif_get_entry(avctx, &ifd, tag, 0, &orient);
-        if (ret >= 0 && orient && orient->value.uint[0] >= 1 && orient->value.uint[0] <= 8) {
-            av_exif_orientation_to_matrix(matrix, orient->value.uint[0]);
+        if (ret >= 0 && orient) {
+            if (!have_matrix && orient->value.uint[0] >= 1 && orient->value.uint[0] <= 8) {
+                av_exif_orientation_to_matrix(matrix, orient->value.uint[0]);
+                have_matrix = 1;
+            }
+            /* pop the orientation tag anyway, because it only creates */
+            /* ambiguity with the codestream orientation taking precdence */
             ret = av_exif_remove_entry(avctx, &ifd, tag, 0);
-        } else {
-            av_exif_orientation_to_matrix(matrix, 1);
         }
         if (ret >= 0)
             ret = av_exif_write(avctx, &ifd, &exif_buffer, AV_EXIF_TIFF_HEADER);
         if (ret < 0)
             av_log(avctx, AV_LOG_WARNING, "unable to process EXIF frame data\n");
         av_exif_free(&ifd);
-    } else {
-        sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX);
-        if (sd)
-            matrix = (int32_t *) sd->data;
-        else
-            av_exif_orientation_to_matrix(matrix, 1);
     }
+
+    /* use identity matrix as default */
+    if (!have_matrix)
+        av_exif_orientation_to_matrix(matrix, 1);
 
     /* av_display_matrix_flip is a right-multipilcation */
     /* i.e. flip is applied before the previous matrix */
