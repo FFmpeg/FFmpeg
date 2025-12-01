@@ -59,6 +59,7 @@ typedef struct LibJxlEncodeContext {
     uint8_t *buffer;
     size_t buffer_size;
     JxlPixelFormat jxl_fmt;
+    AVBufferRef *exif_buffer;
 
     /* animation stuff */
     AVFrame *frame;
@@ -316,6 +317,40 @@ static int libjxl_populate_colorspace(AVCodecContext *avctx, const AVFrame *fram
     return 0;
 }
 
+static int libjxl_add_boxes(AVCodecContext *avctx)
+{
+    LibJxlEncodeContext *ctx = avctx->priv_data;
+    JxlEncoderStatus jret = JXL_ENC_SUCCESS;
+    int ret = 0, opened = 0;
+
+    /* no boxes need to be added */
+    if (!ctx->exif_buffer)
+        goto end;
+
+    jret = JxlEncoderUseBoxes(ctx->encoder);
+    if (jret != JXL_ENC_SUCCESS) {
+        av_log(avctx, AV_LOG_WARNING, "Could not enable UseBoxes\n");
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
+    opened = 1;
+
+    jret = JxlEncoderAddBox(ctx->encoder, "Exif", ctx->exif_buffer->data, ctx->exif_buffer->size, JXL_TRUE);
+    if (jret != JXL_ENC_SUCCESS)
+        jret = JxlEncoderAddBox(ctx->encoder, "Exif", ctx->exif_buffer->data, ctx->exif_buffer->size, JXL_FALSE);
+    if (jret != JXL_ENC_SUCCESS) {
+        av_log(avctx, AV_LOG_WARNING, "Failed to add Exif box\n");
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
+
+end:
+    if (opened)
+        JxlEncoderCloseBoxes(ctx->encoder);
+
+    return ret;
+}
+
 /**
  * Sends metadata to libjxl based on the first frame of the stream, such as pixel format,
  * orientation, bit depth, and that sort of thing.
@@ -332,7 +367,6 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
     JxlPixelFormat *jxl_fmt = &ctx->jxl_fmt;
     int bits_per_sample;
     int orientation;
-    AVBufferRef *exif_buffer = NULL;
 #if JPEGXL_NUMERIC_VERSION >= JPEGXL_COMPUTE_NUMERIC_VERSION(0, 8, 0)
     JxlBitDepth jxl_bit_depth;
 #endif
@@ -409,7 +443,7 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
             ret = av_exif_remove_entry(avctx, &ifd, tag, 0);
         }
         if (ret >= 0)
-            ret = av_exif_write(avctx, &ifd, &exif_buffer, AV_EXIF_TIFF_HEADER);
+            ret = av_exif_write(avctx, &ifd, &ctx->exif_buffer, AV_EXIF_T_OFF);
         if (ret < 0)
             av_log(avctx, AV_LOG_WARNING, "unable to process EXIF frame data\n");
         av_exif_free(&ifd);
@@ -484,12 +518,6 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
         av_log(avctx, AV_LOG_WARNING, "Failed to set JxlBitDepth\n");
 #endif
 
-    if (exif_buffer) {
-        jret = JxlEncoderUseBoxes(ctx->encoder);
-        if (jret != JXL_ENC_SUCCESS)
-            av_log(avctx, AV_LOG_WARNING, "Couldn't enable UseBoxes\n");
-    }
-
     /* depending on basic info, level 10 might
      * be required instead of level 5 */
     if (JxlEncoderGetRequiredCodestreamLevel(ctx->encoder) > 5) {
@@ -498,8 +526,10 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
             av_log(avctx, AV_LOG_WARNING, "Could not increase codestream level\n");
     }
 
+    libjxl_add_boxes(avctx);
+
 end:
-    av_buffer_unref(&exif_buffer);
+    av_buffer_unref(&ctx->exif_buffer);
     return ret;
 }
 
