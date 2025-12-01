@@ -1168,7 +1168,7 @@ int ff_vk_map_buffers(FFVulkanContext *s, FFVkBuffer **buf, uint8_t *mem[],
 }
 
 int ff_vk_flush_buffer(FFVulkanContext *s, FFVkBuffer *buf,
-                       size_t offset, size_t mem_size,
+                       VkDeviceSize offset, VkDeviceSize mem_size,
                        int flush)
 {
     VkResult ret;

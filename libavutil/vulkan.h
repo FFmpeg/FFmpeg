@@ -527,7 +527,7 @@ int ff_vk_create_buf(FFVulkanContext *s, FFVkBuffer *buf, size_t size,
  * Flush or invalidate a single buffer, with a given size and offset.
  */
 int ff_vk_flush_buffer(FFVulkanContext *s, FFVkBuffer *buf,
-                       size_t offset, size_t mem_size,
+                       VkDeviceSize offset, VkDeviceSize mem_size,
                        int flush);
 
 /**
