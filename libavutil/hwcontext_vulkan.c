@@ -4382,6 +4382,7 @@ static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
 
     AVVkFrame *hwf_vk = (AVVkFrame *)hwf->data[0];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(swf->format);
     const int planes = av_pix_fmt_count_planes(swf->format);
     const int nb_images = ff_vk_count_images(hwf_vk);
 
@@ -4474,7 +4475,7 @@ static int vulkan_transfer_host(AVHWFramesContext *hwfc, AVFrame *hwf,
             get_plane_wh(&p_w, &p_h, swf->format, swf->width, swf->height, i);
 
             region_info.pHostPointer = swf->data[i];
-            region_info.memoryRowLength = swf->linesize[i];
+            region_info.memoryRowLength = swf->linesize[i] / desc->comp[i].step;
             region_info.imageSubresource.aspectMask = ff_vk_aspect_flag(hwf, i);
             region_info.imageExtent = (VkExtent3D){ p_w, p_h, 1 };
             copy_info.srcImage = hwf_vk->img[img_idx];
