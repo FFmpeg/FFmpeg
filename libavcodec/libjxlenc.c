@@ -326,6 +326,7 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
     AVFrameSideData *sd;
     int32_t *matrix = (int32_t[9]){ 0 };
     int ret = 0, have_matrix = 0;
+    JxlEncoderStatus jret = JXL_ENC_SUCCESS;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(frame->format);
     JxlBasicInfo info;
     JxlPixelFormat *jxl_fmt = &ctx->jxl_fmt;
@@ -445,7 +446,8 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
         info.animation.tps_denominator = avctx->time_base.num;
     }
 
-    if (JxlEncoderSetBasicInfo(ctx->encoder, &info) != JXL_ENC_SUCCESS) {
+    jret = JxlEncoderSetBasicInfo(ctx->encoder, &info);
+    if (jret != JXL_ENC_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to set JxlBasicInfo\n");
         ret = AVERROR_EXTERNAL;
         goto end;
@@ -457,36 +459,42 @@ static int libjxl_preprocess_stream(AVCodecContext *avctx, const AVFrame *frame,
         extra_info.bits_per_sample = info.alpha_bits;
         extra_info.exponent_bits_per_sample = info.alpha_exponent_bits;
         extra_info.alpha_premultiplied = info.alpha_premultiplied;
-
-        if (JxlEncoderSetExtraChannelInfo(ctx->encoder, 0, &extra_info) != JXL_ENC_SUCCESS) {
+        jret = JxlEncoderSetExtraChannelInfo(ctx->encoder, 0, &extra_info);
+        if (jret != JXL_ENC_SUCCESS) {
             av_log(avctx, AV_LOG_ERROR, "Failed to set JxlExtraChannelInfo for alpha!\n");
-            return AVERROR_EXTERNAL;
+            ret = AVERROR_EXTERNAL;
+            goto end;
         }
     }
 
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_ICC_PROFILE);
-    if (sd && sd->size && JxlEncoderSetICCProfile(ctx->encoder, sd->data, sd->size) != JXL_ENC_SUCCESS) {
-        av_log(avctx, AV_LOG_WARNING, "Could not set ICC Profile\n");
-        sd = NULL;
+    if (sd && sd->size) {
+        jret = JxlEncoderSetICCProfile(ctx->encoder, sd->data, sd->size);
+        if (jret != JXL_ENC_SUCCESS)
+            av_log(avctx, AV_LOG_WARNING, "Could not set ICC Profile\n");
     }
 
-    if (!sd || !sd->size)
+    /* jret != JXL_ENC_SUCCESS means fallthrough from above */
+    if (!sd || !sd->size || jret != JXL_ENC_SUCCESS)
         libjxl_populate_colorspace(avctx, frame, pix_desc, &info);
 
 #if JPEGXL_NUMERIC_VERSION >= JPEGXL_COMPUTE_NUMERIC_VERSION(0, 8, 0)
-    if (JxlEncoderSetFrameBitDepth(ctx->options, &jxl_bit_depth) != JXL_ENC_SUCCESS)
+    jret = JxlEncoderSetFrameBitDepth(ctx->options, &jxl_bit_depth);
+    if (jret != JXL_ENC_SUCCESS)
         av_log(avctx, AV_LOG_WARNING, "Failed to set JxlBitDepth\n");
 #endif
 
     if (exif_buffer) {
-        if (JxlEncoderUseBoxes(ctx->encoder) != JXL_ENC_SUCCESS)
+        jret = JxlEncoderUseBoxes(ctx->encoder);
+        if (jret != JXL_ENC_SUCCESS)
             av_log(avctx, AV_LOG_WARNING, "Couldn't enable UseBoxes\n");
     }
 
     /* depending on basic info, level 10 might
      * be required instead of level 5 */
     if (JxlEncoderGetRequiredCodestreamLevel(ctx->encoder) > 5) {
-        if (JxlEncoderSetCodestreamLevel(ctx->encoder, 10) != JXL_ENC_SUCCESS)
+        jret = JxlEncoderSetCodestreamLevel(ctx->encoder, 10);
+        if (jret != JXL_ENC_SUCCESS)
             av_log(avctx, AV_LOG_WARNING, "Could not increase codestream level\n");
     }
 
