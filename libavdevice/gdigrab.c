@@ -279,7 +279,7 @@ gdigrab_read_header(AVFormatContext *s1)
         char *p;
         name = filename + 5;
 
-        hwnd = (HWND) strtoull(name, &p, 0);
+        hwnd = (HWND)(intptr_t) strtoull(name, &p, 0);
 
         if (p == NULL || p == name || p[0] != '\0')
         {
