@@ -1512,7 +1512,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             ADPCMChannelStatus *cs = &c->status[i];
             cs->predictor = samples_p[i][0] = sign_extend(bytestream2_get_le16u(&gb), 16);
 
-            cs->step_index = sign_extend(bytestream2_get_le16u(&gb), 16);
+            cs->step_index = bytestream2_get_byteu(&gb);
+            bytestream2_skipu(&gb, 1);
             if (cs->step_index > 88u){
                 av_log(avctx, AV_LOG_ERROR, "ERROR: step_index[%d] = %i\n",
                        i, cs->step_index);
