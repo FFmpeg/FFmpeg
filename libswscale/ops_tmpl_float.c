@@ -44,7 +44,7 @@
 DECL_SETUP(setup_dither)
 {
     const int size = 1 << op->dither.size_log2;
-    if (!size) {
+    if (size == 1) {
         /* We special case this value */
         av_assert1(!av_cmp_q(op->dither.matrix[0], av_make_q(1, 2)));
         out->ptr = NULL;
