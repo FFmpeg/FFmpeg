@@ -17,6 +17,7 @@ version <next>:
 - Add vf_scale_d3d12 filter
 - JPEG-XS parser
 - JPEG-XS decoder and encoder through libsvtjpegxs
+- JPEG-XS raw bitstream muxer and demuxer
 
 
 version 8.0:

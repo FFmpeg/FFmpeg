@@ -92,6 +92,7 @@
     TAG(GEM,             timg     ) \
     TAG(VBN,             vbn      ) \
     TAG(JPEGXL,          jxl      ) \
+    TAG(JPEGXS,          jxs      ) \
     TAG(QOI,             qoi      ) \
     TAG(RADIANCE_HDR,    hdr      ) \
     TAG(WBMP,            wbmp     ) \

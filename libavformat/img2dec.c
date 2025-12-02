@@ -824,6 +824,15 @@ static int jpegxl_probe(const AVProbeData *p)
     return 0;
 }
 
+static int jpegxs_probe(const AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+
+    if (AV_RB32(b) == 0xff10ff50)
+         return AVPROBE_SCORE_EXTENSION + 1;
+    return 0;
+}
+
 static int pcx_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
@@ -1204,6 +1213,7 @@ IMAGEAUTO_DEMUXER(gif,       GIF)
 IMAGEAUTO_DEMUXER_EXT(hdr,   RADIANCE_HDR, HDR)
 IMAGEAUTO_DEMUXER_EXT(j2k,   JPEG2000, J2K)
 IMAGEAUTO_DEMUXER_EXT(jpeg,  MJPEG, JPEG)
+IMAGEAUTO_DEMUXER(jpegxs,    JPEGXS)
 IMAGEAUTO_DEMUXER(jpegls,    JPEGLS)
 IMAGEAUTO_DEMUXER(jpegxl,    JPEGXL)
 IMAGEAUTO_DEMUXER(pam,       PAM)
