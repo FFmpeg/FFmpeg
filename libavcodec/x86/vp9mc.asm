@@ -114,6 +114,9 @@ FILTER sse2
 ; int16_t ff_filters_16bpp[3][15][4][16]
 FILTER 16bpp
 
+filter4_h_perm0: db 0, 1, 1, 2, 2, 3, 3, 4, 2, 3, 3, 4, 4, 5, 5, 6
+filter4_h_perm1: db 1, 2, 2, 3, 3, 4, 4, 5, 3, 4, 4, 5, 5, 6, 6, 7
+
 %if HAVE_AVX512ICL_EXTERNAL && ARCH_X86_64
 ALIGN 64
 spel_h_perm16:  db  0,  1,  2,  3,  1,  2,  3,  4,  2,  3,  4,  5,  3,  4,  5,  6
@@ -280,12 +283,51 @@ INIT_XMM sse2
 filter_sse2_h_fn put
 filter_sse2_h_fn avg
 
+%macro filter4_h_fn 2
+cglobal vp9_%1_8tap_1d_h_4_8, 6, 6, %2, dst, dstride, src, sstride, h, filtery
+    mova        m2, [filter4_h_perm0]
+    mova        m3, [filter4_h_perm1]
+    pcmpeqw     m4, m4
+    movu        m5, [filteryq+24]
+    movu        m6, [filteryq+88]
+    psllw       m4, 6   ; pw_m64
+.loop:
+    movq        m0, [srcq-3]
+    movq        m1, [srcq+0]
+    pshufb      m0, m2
+    pshufb      m1, m3
+    pmaddubsw   m0, m5
+    pmaddubsw   m1, m6
+%ifidn %1, avg
+    movd        m7, [dstq]
+%endif
+    add       srcq, sstrideq
+    paddw       m0, m1
+    movhlps     m1, m0
+    psubw       m0, m4
+    paddsw      m0, m1
+    psraw       m0, 7
+    packuswb    m0, m0
+%ifidn %1, avg
+    pavgb       m0, m7
+%endif
+    movd    [dstq], m0
+    add       dstq, dstrideq
+    sub         hd, 1
+    jg .loop
+    RET
+%endmacro
+
+INIT_XMM ssse3
+filter4_h_fn put, 7
+filter4_h_fn avg, 8
+
 %macro filter_h_fn 1
 %assign %%px mmsize/2
 cglobal vp9_%1_8tap_1d_h_ %+ %%px %+ _8, 6, 6, 11, dst, dstride, src, sstride, h, filtery
     mova        m6, [pw_256]
     mova        m7, [filteryq+ 0]
-%if ARCH_X86_64 && mmsize > 8
+%ifdef m8
     mova        m8, [filteryq+32]
     mova        m9, [filteryq+64]
     mova       m10, [filteryq+96]
@@ -305,7 +347,7 @@ cglobal vp9_%1_8tap_1d_h_ %+ %%px %+ _8, 6, 6, 11, dst, dstride, src, sstride, h
     punpcklbw   m4, m5
     punpcklbw   m1, m3
     pmaddubsw   m0, m7
-%if ARCH_X86_64 && mmsize > 8
+%ifdef m8
     pmaddubsw   m2, m8
     pmaddubsw   m4, m9
     pmaddubsw   m1, m10
@@ -331,10 +373,6 @@ cglobal vp9_%1_8tap_1d_h_ %+ %%px %+ _8, 6, 6, 11, dst, dstride, src, sstride, h
     jg .loop
     RET
 %endmacro
-
-INIT_MMX ssse3
-filter_h_fn put
-filter_h_fn avg
 
 INIT_XMM ssse3
 filter_h_fn put
