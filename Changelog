@@ -15,6 +15,7 @@ version <next>:
 - DPX Vulkan hwaccel
 - Rockchip H.264/HEVC hardware encoder
 - Add vf_scale_d3d12 filter
+- JPEG-XS parser
 
 
 version 8.0:

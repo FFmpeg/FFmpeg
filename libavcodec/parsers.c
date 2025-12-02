@@ -77,6 +77,7 @@ extern const FFCodecParser ff_hdr_parser;
 extern const FFCodecParser ff_ipu_parser;
 extern const FFCodecParser ff_jpeg2000_parser;
 extern const FFCodecParser ff_jpegxl_parser;
+extern const FFCodecParser ff_jpegxs_parser;
 extern const FFCodecParser ff_misc4_parser;
 extern const FFCodecParser ff_mjpeg_parser;
 extern const FFCodecParser ff_mlp_parser;
