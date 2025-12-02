@@ -537,7 +537,14 @@ func ff_put_vp8_epel\len\()_h\hsize\()v\vsize\()_rvv, zve32x, zba
 endfunc
 .endm
 
-.irp len,16,8,4
+# Only the sixtaps versions are used for epel16.
+epel 16 6 h
+epel 16 6 v
+#if __riscv_xlen <= 64
+epel_hv 16 6 6
+#endif
+
+.irp len,8,4
 epel \len 6 h
 epel \len 4 h
 epel \len 6 v
