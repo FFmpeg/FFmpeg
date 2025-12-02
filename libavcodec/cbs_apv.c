@@ -201,7 +201,7 @@ static int cbs_apv_split_fragment(CodedBitstreamContext *ctx,
 
         if (size < 8) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid PBU: "
-                   "fragment too short (%"SIZE_SPECIFIER" bytes).\n",
+                   "fragment too short (%zu bytes).\n",
                    size);
             err = AVERROR_INVALIDDATA;
             goto fail;

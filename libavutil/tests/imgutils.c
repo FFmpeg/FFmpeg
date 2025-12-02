@@ -44,13 +44,13 @@ static int check_image_fill(enum AVPixelFormat pix_fmt, int w, int h) {
     // Test the output of av_image_fill_plane_sizes()
     printf(", plane_sizes:");
     for (i = 0; i < 4; i++)
-        printf(" %5"SIZE_SPECIFIER, sizes[i]);
+        printf(" %5zu", sizes[i]);
     // Test the output of av_image_fill_pointers()
     for (i = 0; i < 3 && data[i + 1]; i++)
         offsets[i] = data[i + 1] - data[i];
     printf(", plane_offsets:");
     for (i = 0; i < 3; i++)
-        printf(" %5"PTRDIFF_SPECIFIER, offsets[i]);
+        printf(" %5td", offsets[i]);
     printf(", total_size: %d", total_size);
 
     return 0;

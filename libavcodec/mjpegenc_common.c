@@ -145,7 +145,7 @@ int ff_mjpeg_add_icc_profile_size(AVCodecContext *avctx, const AVFrame *frame,
         return 0;
 
     if (sd->size > ICC_MAX_CHUNKS * ICC_CHUNK_SIZE) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot store %"SIZE_SPECIFIER" byte ICC "
+        av_log(avctx, AV_LOG_ERROR, "Cannot store %zu byte ICC "
                "profile: too large for JPEG\n",
                sd->size);
         return AVERROR_INVALIDDATA;

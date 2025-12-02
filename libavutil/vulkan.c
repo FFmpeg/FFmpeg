@@ -1066,7 +1066,7 @@ int ff_vk_create_buf(FFVulkanContext *s, FFVkBuffer *buf, size_t size,
         .pNext = &ded_req,
     };
 
-    av_log(s, AV_LOG_DEBUG, "Creating a buffer of %"SIZE_SPECIFIER" bytes, "
+    av_log(s, AV_LOG_DEBUG, "Creating a buffer of %zu bytes, "
                             "usage: 0x%x, flags: 0x%x\n",
            size, usage, flags);
 

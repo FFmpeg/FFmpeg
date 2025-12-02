@@ -170,7 +170,7 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
                 side_data_crc = 0;
             }
 
-            av_strlcatf(buf, sizeof(buf), ", %s, %8"SIZE_SPECIFIER", 0x%08"PRIx32,
+            av_strlcatf(buf, sizeof(buf), ", %s, %8zu, 0x%08"PRIx32,
                         av_packet_side_data_name(sd->type), sd->size, side_data_crc);
         }
     }

@@ -121,7 +121,7 @@ static int hap_compress_frame(AVCodecContext *avctx, uint8_t *dst)
         /* If there is no gain from snappy, just use the raw texture. */
         if (chunk->compressed_size >= chunk->uncompressed_size) {
             av_log(avctx, AV_LOG_VERBOSE,
-                   "Snappy buffer bigger than uncompressed (%"SIZE_SPECIFIER" >= %"SIZE_SPECIFIER" bytes).\n",
+                   "Snappy buffer bigger than uncompressed (%zu >= %zu bytes).\n",
                    chunk->compressed_size, chunk->uncompressed_size);
             memcpy(chunk_dst, chunk_src, chunk->uncompressed_size);
             chunk->compressor = HAP_COMP_NONE;

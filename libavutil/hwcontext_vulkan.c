@@ -1890,7 +1890,7 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
     av_log(ctx, AV_LOG_VERBOSE, "Alignments:\n");
     av_log(ctx, AV_LOG_VERBOSE, "    optimalBufferCopyRowPitchAlignment: %"PRIu64"\n",
            p->props.properties.limits.optimalBufferCopyRowPitchAlignment);
-    av_log(ctx, AV_LOG_VERBOSE, "    minMemoryMapAlignment:              %"SIZE_SPECIFIER"\n",
+    av_log(ctx, AV_LOG_VERBOSE, "    minMemoryMapAlignment:              %zu\n",
            p->props.properties.limits.minMemoryMapAlignment);
     av_log(ctx, AV_LOG_VERBOSE, "    nonCoherentAtomSize:                %"PRIu64"\n",
            p->props.properties.limits.nonCoherentAtomSize);

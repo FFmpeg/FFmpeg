@@ -306,7 +306,7 @@ static int framehash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
             } else
                 av_hash_update(c->hashes[0], pkt->side_data[i].data, pkt->side_data[i].size);
             snprintf(buf, sizeof(buf) - (AV_HASH_MAX_SIZE * 2 + 1),
-                     ", %8"SIZE_SPECIFIER", ", pkt->side_data[i].size);
+                     ", %8zu, ", pkt->side_data[i].size);
             len = strlen(buf);
             av_hash_final_hex(c->hashes[0], buf + len, sizeof(buf) - len);
             avio_write(s->pb, buf, strlen(buf));

@@ -182,8 +182,7 @@ static int neighbor_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
             if (err < 0)
                 goto fail;
 
-            av_log(avctx, AV_LOG_DEBUG, "Run kernel on plane %d "
-                   "(%"SIZE_SPECIFIER"x%"SIZE_SPECIFIER").\n",
+            av_log(avctx, AV_LOG_DEBUG, "Run kernel on plane %d (%zux%zu).\n",
                    p, global_work[0], global_work[1]);
 
             cle = clEnqueueNDRangeKernel(ctx->command_queue, ctx->kernel, 2, NULL,

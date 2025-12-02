@@ -411,7 +411,7 @@ static int dvdsub_encode(AVCodecContext *avctx,
     qq = outbuf;
     bytestream_put_be16(&qq, q - outbuf);
 
-    av_log(NULL, AV_LOG_DEBUG, "subtitle_packet size=%"PTRDIFF_SPECIFIER"\n", q - outbuf);
+    av_log(NULL, AV_LOG_DEBUG, "subtitle_packet size=%td\n", q - outbuf);
     ret = q - outbuf;
 
 fail:

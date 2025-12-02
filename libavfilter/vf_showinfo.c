@@ -87,8 +87,7 @@ static void dump_spherical(AVFilterContext *ctx, AVFrame *frame, const AVFrameSi
         size_t l, t, r, b;
         av_spherical_tile_bounds(spherical, frame->width, frame->height,
                                  &l, &t, &r, &b);
-        av_log(ctx, AV_LOG_INFO,
-               "[%"SIZE_SPECIFIER", %"SIZE_SPECIFIER", %"SIZE_SPECIFIER", %"SIZE_SPECIFIER"] ",
+        av_log(ctx, AV_LOG_INFO, "[%zu, %zu, %zu, %zu] ",
                l, t, r, b);
     } else if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
         av_log(ctx, AV_LOG_INFO, "[pad %"PRIu32"] ", spherical->padding);
@@ -426,8 +425,8 @@ static void dump_sei_unregistered_metadata(AVFilterContext *ctx, const AVFrameSi
     ShowInfoContext *s = ctx->priv;
 
     if (sd->size < AV_UUID_LEN) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data(%"SIZE_SPECIFIER" < "
-               "UUID(%d-bytes))\n", sd->size, AV_UUID_LEN);
+        av_log(ctx, AV_LOG_ERROR, "invalid data (%zu < UUID(%d-bytes))\n",
+               sd->size, AV_UUID_LEN);
         return;
     }
 
@@ -874,11 +873,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             break;
         default:
             if (name)
-                av_log(ctx, AV_LOG_INFO,
-                       "(%"SIZE_SPECIFIER" bytes)", sd->size);
+                av_log(ctx, AV_LOG_INFO, "(%zu bytes)", sd->size);
             else
                 av_log(ctx, AV_LOG_WARNING, "unknown side data type %d "
-                       "(%"SIZE_SPECIFIER" bytes)", sd->type, sd->size);
+                       "(%zu bytes)", sd->type, sd->size);
             break;
         }
 

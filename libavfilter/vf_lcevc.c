@@ -110,7 +110,7 @@ static int alloc_base_frame(AVFilterLink *inlink, const AVFrame *in,
     desc.matrixCoefficients = (LCEVC_MatrixCoefficients)in->colorspace;
     desc.transferCharacteristics = (LCEVC_TransferCharacteristics)in->color_trc;
     av_log(ctx, AV_LOG_DEBUG, "in  PTS %"PRId64", %dx%d, "
-                              "%"SIZE_SPECIFIER"/%"SIZE_SPECIFIER"/%"SIZE_SPECIFIER"/%"SIZE_SPECIFIER", "
+                              "%zu/%zu/%zu/%zu, "
                               "SAR %d:%d\n",
            in->pts, in->width, in->height,
            in->crop_top, in->crop_bottom, in->crop_left, in->crop_right,
@@ -234,7 +234,7 @@ static int generate_output(AVFilterLink *inlink, AVFrame *out)
     out->height = outlink->h = desc.height + out->crop_top + out->crop_bottom;
 
     av_log(ctx, AV_LOG_DEBUG, "out PTS %"PRId64", %dx%d, "
-                              "%"SIZE_SPECIFIER"/%"SIZE_SPECIFIER"/%"SIZE_SPECIFIER"/%"SIZE_SPECIFIER", "
+                              "%zu/%zu/%zu/%zu, "
                               "SAR %d:%d, "
                               "hasEnhancement %d, enhanced %d\n",
            out->pts, out->width, out->height,

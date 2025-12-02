@@ -415,7 +415,7 @@ static int cbs_vp9_split_fragment(CodedBitstreamContext *ctx,
         }
         if (pos + index_size != frag->data_size) {
             av_log(ctx->log_ctx, AV_LOG_WARNING, "Extra padding at "
-                   "end of superframe: %"SIZE_SPECIFIER" bytes.\n",
+                   "end of superframe: %zu bytes.\n",
                    frag->data_size - (pos + index_size));
         }
 

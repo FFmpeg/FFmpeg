@@ -406,7 +406,7 @@ static int d3d12va_encode_av1_get_coded_data(AVCodecContext *avctx,
     av_log(avctx, AV_LOG_DEBUG, "Tile group extra size: %d bytes.\n", tile_group_extra_size);
 
     total_size += (pic->header_size + tile_group_extra_size + av1_pic_hd_size);
-    av_log(avctx, AV_LOG_DEBUG, "Output buffer size %"SIZE_SPECIFIER"\n", total_size);
+    av_log(avctx, AV_LOG_DEBUG, "Output buffer size %zu\n", total_size);
 
     hr = ID3D12Resource_Map(pic->output_buffer, 0, NULL, (void **)&mapped_data);
     if (FAILED(hr)) {

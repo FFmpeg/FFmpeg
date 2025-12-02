@@ -485,7 +485,7 @@ static void read_geobtag(AVFormatContext *s, AVIOContext *pb, int taglen,
 
     new_extra = av_mallocz(sizeof(ID3v2ExtraMeta));
     if (!new_extra) {
-        av_log(s, AV_LOG_ERROR, "Failed to alloc %"SIZE_SPECIFIER" bytes\n",
+        av_log(s, AV_LOG_ERROR, "Failed to alloc %zu bytes\n",
                sizeof(ID3v2ExtraMeta));
         return;
     }

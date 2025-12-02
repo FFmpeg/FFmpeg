@@ -2281,7 +2281,7 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
         memset(s->buffer + *unescaped_buf_size, 0,
                AV_INPUT_BUFFER_PADDING_SIZE);
 
-        av_log(s->avctx, AV_LOG_DEBUG, "escaping removed %"PTRDIFF_SPECIFIER" bytes\n",
+        av_log(s->avctx, AV_LOG_DEBUG, "escaping removed %td bytes\n",
                (buf_end - *buf_ptr) - (dst - s->buffer));
     } else if (start_code == SOS && s->ls) {
         const uint8_t *src = *buf_ptr;
@@ -2389,7 +2389,7 @@ redo_for_pal8:
                    start_code, unescaped_buf_size, buf_size);
             return AVERROR_INVALIDDATA;
         }
-        av_log(avctx, AV_LOG_DEBUG, "marker=%x avail_size_in_buf=%"PTRDIFF_SPECIFIER"\n",
+        av_log(avctx, AV_LOG_DEBUG, "marker=%x avail_size_in_buf=%td\n",
                start_code, buf_end - buf_ptr);
 
         ret = init_get_bits8(&s->gb, unescaped_buf_ptr, unescaped_buf_size);
@@ -2859,7 +2859,7 @@ the_end:
     }
 
 the_end_no_picture:
-    av_log(avctx, AV_LOG_DEBUG, "decode frame unused %"PTRDIFF_SPECIFIER" bytes\n",
+    av_log(avctx, AV_LOG_DEBUG, "decode frame unused %td bytes\n",
            buf_end - buf_ptr);
     return buf_ptr - buf;
 }

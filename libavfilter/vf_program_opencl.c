@@ -145,8 +145,7 @@ static int program_opencl_run(AVFilterContext *avctx)
         if (err < 0)
             goto fail;
 
-        av_log(avctx, AV_LOG_DEBUG, "Run kernel on plane %d "
-               "(%"SIZE_SPECIFIER"x%"SIZE_SPECIFIER").\n",
+        av_log(avctx, AV_LOG_DEBUG, "Run kernel on plane %d (%zux%zu).\n",
                plane, global_work[0], global_work[1]);
 
         cle = clEnqueueNDRangeKernel(ctx->command_queue, ctx->kernel, 2, NULL,

@@ -634,7 +634,7 @@ static int vk_av1_end_frame(AVCodecContext *avctx)
         rav[i] = ap->ref_src[i]->f;
     }
 
-    av_log(avctx, AV_LOG_DEBUG, "Decoding frame, %"SIZE_SPECIFIER" bytes, %i tiles\n",
+    av_log(avctx, AV_LOG_DEBUG, "Decoding frame, %zu bytes, %i tiles\n",
            vp->slices_size, ap->av1_pic_info.tileCount);
 
     return ff_vk_decode_frame(avctx, pic->f, vp, rav, rvp);

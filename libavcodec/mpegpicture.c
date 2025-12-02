@@ -186,7 +186,7 @@ int ff_mpv_pic_check_linesize(void *logctx, const AVFrame *f,
     if ((linesize   &&   linesize != f->linesize[0]) ||
         (uvlinesize && uvlinesize != f->linesize[1])) {
         av_log(logctx, AV_LOG_ERROR, "Stride change unsupported: "
-               "linesize=%"PTRDIFF_SPECIFIER"/%d uvlinesize=%"PTRDIFF_SPECIFIER"/%d)\n",
+               "linesize=%td/%d uvlinesize=%td/%d)\n",
                linesize,   f->linesize[0],
                uvlinesize, f->linesize[1]);
         return AVERROR_PATCHWELCOME;

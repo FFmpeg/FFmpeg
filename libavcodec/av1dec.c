@@ -1450,7 +1450,7 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
             break;
         default:
             av_log(avctx, AV_LOG_DEBUG,
-                   "Unknown obu type: %d (%"SIZE_SPECIFIER" bits).\n",
+                   "Unknown obu type: %d (%zu bits).\n",
                    unit->type, unit->data_size);
         }
 

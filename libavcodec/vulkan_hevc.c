@@ -921,7 +921,7 @@ static int vk_hevc_end_frame(AVCodecContext *avctx)
         rvp[i] = &rfhp->vp;
     }
 
-    av_log(avctx, AV_LOG_DEBUG, "Decoding frame, %"SIZE_SPECIFIER" bytes, %i slices\n",
+    av_log(avctx, AV_LOG_DEBUG, "Decoding frame, %zu bytes, %i slices\n",
            vp->slices_size, hp->h265_pic_info.sliceSegmentCount);
 
     return ff_vk_decode_frame(avctx, pic->f, vp, rav, rvp);

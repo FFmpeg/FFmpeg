@@ -747,8 +747,8 @@ static int apply_cropping(AVCodecContext *avctx, AVFrame *frame)
         (frame->crop_top + frame->crop_bottom) >= frame->height) {
         av_log(avctx, AV_LOG_WARNING,
                "Invalid cropping information set by a decoder: "
-               "%"SIZE_SPECIFIER"/%"SIZE_SPECIFIER"/%"SIZE_SPECIFIER"/%"SIZE_SPECIFIER" "
-               "(frame size %dx%d). This is a bug, please report it\n",
+               "%zu/%zu/%zu/%zu (frame size %dx%d). "
+               "This is a bug, please report it\n",
                frame->crop_left, frame->crop_right, frame->crop_top, frame->crop_bottom,
                frame->width, frame->height);
         frame->crop_left   = 0;
@@ -2270,7 +2270,7 @@ int ff_copy_palette(void *dst, const AVPacket *src, void *logctx)
         return 1;
     } else if (pal) {
         av_log(logctx, AV_LOG_ERROR,
-               "Palette size %"SIZE_SPECIFIER" is wrong\n", size);
+               "Palette size %zu is wrong\n", size);
     }
     return 0;
 }

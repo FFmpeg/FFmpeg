@@ -234,7 +234,7 @@ parse_packed_headers(AVFormatContext *s,
 
     if (packed_headers_end - packed_headers < 9) {
         av_log(s, AV_LOG_ERROR,
-               "Invalid %"PTRDIFF_SPECIFIER" byte packed header.",
+               "Invalid %td byte packed header.",
                packed_headers_end - packed_headers);
         return AVERROR_INVALIDDATA;
     }
@@ -255,7 +255,7 @@ parse_packed_headers(AVFormatContext *s,
     if (packed_headers_end - packed_headers != length ||
         length1 > length || length2 > length - length1) {
         av_log(s, AV_LOG_ERROR,
-               "Bad packed header lengths (%d,%d,%"PTRDIFF_SPECIFIER",%u)\n", length1,
+               "Bad packed header lengths (%d,%d,%td,%u)\n", length1,
                length2, packed_headers_end - packed_headers, length);
         return AVERROR_INVALIDDATA;
     }

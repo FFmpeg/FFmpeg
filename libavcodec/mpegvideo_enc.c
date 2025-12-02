@@ -1365,7 +1365,7 @@ static int load_input_picture(MPVMainEncContext *const m, const AVFrame *pic_arg
         if (s->c.linesize & (STRIDE_ALIGN-1))
             direct = 0;
 
-        ff_dlog(s->c.avctx, "%d %d %"PTRDIFF_SPECIFIER" %"PTRDIFF_SPECIFIER"\n", pic_arg->linesize[0],
+        ff_dlog(s->c.avctx, "%d %d %td %td\n", pic_arg->linesize[0],
                 pic_arg->linesize[1], s->c.linesize, s->c.uvlinesize);
 
         pic = av_refstruct_pool_get(s->c.picture_pool);

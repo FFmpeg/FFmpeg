@@ -715,7 +715,7 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
     pps->data_size = get_bits_bytesize(gb, 1);
     if (pps->data_size > sizeof(pps->data)) {
         av_log(avctx, AV_LOG_DEBUG, "Truncating likely oversized PPS "
-               "(%"SIZE_SPECIFIER" > %"SIZE_SPECIFIER")\n",
+               "(%zu > %zu)\n",
                pps->data_size, sizeof(pps->data));
         pps->data_size = sizeof(pps->data);
     }

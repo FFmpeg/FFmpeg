@@ -47,7 +47,7 @@ static int sup_write_packet(AVFormatContext *s, AVPacket *pkt)
         size_t len = AV_RB16(data + 1) + 3;
 
         if (len > size) {
-            av_log(s, AV_LOG_ERROR, "Not enough data, skipping %"SIZE_SPECIFIER" bytes\n",
+            av_log(s, AV_LOG_ERROR, "Not enough data, skipping %zu bytes\n",
                    size);
             return AVERROR_INVALIDDATA;
         }
@@ -64,7 +64,7 @@ static int sup_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (size > 0) {
-        av_log(s, AV_LOG_ERROR, "Skipping %"SIZE_SPECIFIER" bytes after last segment in frame\n",
+        av_log(s, AV_LOG_ERROR, "Skipping %zu bytes after last segment in frame\n",
                size);
         return AVERROR_INVALIDDATA;
     }

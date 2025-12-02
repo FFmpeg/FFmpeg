@@ -402,9 +402,7 @@ static void dump_spherical(void *ctx, int w, int h,
         size_t l, t, r, b;
         av_spherical_tile_bounds(spherical, w, h,
                                  &l, &t, &r, &b);
-        av_log(ctx, log_level,
-               "[%"SIZE_SPECIFIER", %"SIZE_SPECIFIER", %"SIZE_SPECIFIER", %"SIZE_SPECIFIER"] ",
-               l, t, r, b);
+        av_log(ctx, log_level, "[%zu, %zu, %zu, %zu] ", l, t, r, b);
     } else if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
         av_log(ctx, log_level, "[pad %"PRIu32"] ", spherical->padding);
     }
@@ -536,11 +534,10 @@ static void dump_sidedata(void *ctx, const AVPacketSideData *side_data, int nb_s
             break;
         default:
             if (name)
-                av_log(ctx, log_level,
-                       "(%"SIZE_SPECIFIER" bytes)", sd->size);
+                av_log(ctx, log_level, "(%zu bytes)", sd->size);
             else
                 av_log(ctx, log_level, "unknown side data type %d "
-                       "(%"SIZE_SPECIFIER" bytes)", sd->type, sd->size);
+                       "(%zu bytes)", sd->type, sd->size);
             break;
         }
 

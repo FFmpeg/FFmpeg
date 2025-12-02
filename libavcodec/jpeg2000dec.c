@@ -1476,7 +1476,7 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                 }
                 if (tmp_length > cblk->data_allocated) {
                     avpriv_request_sample(s->avctx,
-                                        "Block with lengthinc greater than %"SIZE_SPECIFIER"",
+                                        "Block with lengthinc greater than %zu",
                                         cblk->data_allocated);
                     return AVERROR_PATCHWELCOME;
                 }
@@ -2071,7 +2071,7 @@ static int decode_cblk(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *cod
                 return AVERROR_INVALIDDATA;
             }
             if (FFABS(cblk->data + cblk->data_start[term_cnt + 1] - 2 - t1->mqc.bp) > 0) {
-                av_log(s->avctx, AV_LOG_WARNING, "Mid mismatch %"PTRDIFF_SPECIFIER" in pass %d of %d\n",
+                av_log(s->avctx, AV_LOG_WARNING, "Mid mismatch %td in pass %d of %d\n",
                     cblk->data + cblk->data_start[term_cnt + 1] - 2 - t1->mqc.bp,
                     pass_cnt, cblk->npasses);
             }
@@ -2088,7 +2088,7 @@ static int decode_cblk(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *cod
     }
 
     if (cblk->data + cblk->length - 2 > t1->mqc.bp) {
-        av_log(s->avctx, AV_LOG_WARNING, "End mismatch %"PTRDIFF_SPECIFIER"\n",
+        av_log(s->avctx, AV_LOG_WARNING, "End mismatch %td\n",
                cblk->data + cblk->length - 2 - t1->mqc.bp);
     }
 

@@ -177,7 +177,7 @@ static int hq_decode_frame(HQContext *ctx, AVFrame *pic, GetByteContext *gbc,
             slice_off[slice] >= slice_off[slice + 1] ||
             slice_off[slice + 1] > data_size) {
             av_log(ctx->avctx, AV_LOG_ERROR,
-                   "Invalid slice size %"SIZE_SPECIFIER".\n", data_size);
+                   "Invalid slice size %zu.\n", data_size);
             break;
         }
         init_get_bits(&gb, src + slice_off[slice],
@@ -304,7 +304,7 @@ static int hqa_decode_frame(HQContext *ctx, AVFrame *pic, GetByteContext *gbc, s
             slice_off[slice] >= slice_off[slice + 1] ||
             slice_off[slice + 1] > data_size) {
             av_log(ctx->avctx, AV_LOG_ERROR,
-                   "Invalid slice size %"SIZE_SPECIFIER".\n", data_size);
+                   "Invalid slice size %zu.\n", data_size);
             break;
         }
         init_get_bits(&gb, src + slice_off[slice],

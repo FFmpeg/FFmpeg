@@ -193,7 +193,7 @@ static int parse_multipart_header(AVIOContext *pb,
         if (log_ctx)
         av_log(log_ctx,
             AV_LOG_ERROR,
-            "Expected boundary '%s' not found, instead found a line of %"SIZE_SPECIFIER" bytes\n",
+            "Expected boundary '%s' not found, instead found a line of %zu bytes\n",
             expected_boundary,
             strlen(line));
 

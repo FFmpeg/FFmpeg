@@ -242,7 +242,7 @@ static av_cold void dump_enc_cfg(AVCodecContext *avctx,
            width, "g_lag_in_frames:",   cfg->g_lag_in_frames);
     av_log(avctx, level, "rate control settings\n"
            "  %*s%u\n  %*s%u\n  %*s%u\n  %*s%u\n"
-           "  %*s%d\n  %*s%p(%"SIZE_SPECIFIER")\n  %*s%u\n",
+           "  %*s%d\n  %*s%p(%zu)\n  %*s%u\n",
            width, "rc_dropframe_thresh:",   cfg->rc_dropframe_thresh,
            width, "rc_resize_allowed:",     cfg->rc_resize_allowed,
            width, "rc_resize_up_thresh:",   cfg->rc_resize_up_thresh,
@@ -1117,7 +1117,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         ret = av_reallocp(&ctx->twopass_stats.buf, ctx->twopass_stats.sz);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Stat buffer alloc (%"SIZE_SPECIFIER" bytes) failed\n",
+                   "Stat buffer alloc (%zu bytes) failed\n",
                    ctx->twopass_stats.sz);
             ctx->twopass_stats.sz = 0;
             return ret;
@@ -1423,7 +1423,7 @@ static int queue_frames(AVCodecContext *avctx, struct vpx_codec_ctx *encoder,
 
                 if (!cx_frame->buf) {
                     av_log(avctx, AV_LOG_ERROR,
-                           "Data buffer alloc (%"SIZE_SPECIFIER" bytes) failed\n",
+                           "Data buffer alloc (%zu bytes) failed\n",
                            cx_frame->sz);
                     av_freep(&cx_frame);
                     return AVERROR(ENOMEM);

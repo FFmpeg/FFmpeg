@@ -27,7 +27,7 @@ static void print_entries(const AVFrameSideData **sd, const int nb_sd)
     for (int i = 0; i < nb_sd; i++) {
         const AVFrameSideData *entry = sd[i];
 
-        printf("sd %d (size %"SIZE_SPECIFIER"), %s",
+        printf("sd %d (size %zu), %s",
                i, entry->size, av_frame_side_data_name(entry->type));
 
         if (entry->type != AV_FRAME_DATA_SEI_UNREGISTERED) {

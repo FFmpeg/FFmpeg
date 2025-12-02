@@ -481,7 +481,7 @@ static int mpeg1_encode_picture_header(MPVMainEncContext *const m)
                 put_bits(&s->pb, 8, 0xff);                  // marker_bits
             } else {
                 av_log(s->c.avctx, AV_LOG_WARNING,
-                    "Closed Caption size (%"SIZE_SPECIFIER") can not exceed "
+                    "Closed Caption size (%zu) can not exceed "
                     "93 bytes and must be a multiple of 3\n", side_data->size);
             }
         }

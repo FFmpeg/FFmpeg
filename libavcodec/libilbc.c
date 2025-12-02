@@ -99,8 +99,7 @@ static int ilbc_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 #if LIBILBC_VERSION_MAJOR < 3
         av_log(avctx, AV_LOG_ERROR, "iLBC frame too short (%u, should be %u)\n",
 #else
-        av_log(avctx, AV_LOG_ERROR, "iLBC frame too short (%u, should be "
-                                    "%"SIZE_SPECIFIER")\n",
+        av_log(avctx, AV_LOG_ERROR, "iLBC frame too short (%u, should be %zu)\n",
 #endif
                buf_size, s->decoder.no_of_bytes);
         return AVERROR_INVALIDDATA;

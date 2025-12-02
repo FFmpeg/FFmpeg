@@ -376,7 +376,7 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
         if (ret < 0) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Unable to allocate a "
                    "sufficiently large write buffer (last attempt "
-                   "%"SIZE_SPECIFIER" bytes).\n", ctx->write_buffer_size);
+                   "%zu bytes).\n", ctx->write_buffer_size);
             return ret;
         }
     }
