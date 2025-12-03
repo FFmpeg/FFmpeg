@@ -183,7 +183,9 @@ IF W,   mulps mw2, m8
         lea tmp0q, %2
         and tmp0q, (1 << %1) - 1
         shl tmp0q, %1+2
-%if %1 == 2
+%if %1 == 1
+        vbroadcastsd   %4, [%3 + tmp0q]
+%elif %1 == 2
         VBROADCASTI128 %4, [%3 + tmp0q]
 %else
         mova %4, [%3 + tmp0q]
@@ -209,23 +211,12 @@ op dither%1
         %define DY DX
         %define DZ DX
         %define DW DX
-%elif %1 == 1
-        ; 2x2 matrix, only sign of y matters
-        mov tmp0d, yd
-        and tmp0d, 1
-        shl tmp0d, 3
-    %if X || Z
-        ; dither matrix is stored directly in the private data
-        vbroadcastsd DX, [implq + SwsOpImpl.priv + tmp0q]
-    %endif
-    %if Y || W
-        xor tmp0d, 8
-        vbroadcastsd DY, [implq + SwsOpImpl.priv + tmp0q]
-    %endif
-        %define DZ DX
-        %define DW DY
 %else
-        ; matrix is at least 4x4, load all four channels with custom offset
+        ; load all four channels with custom offset
+        ;
+        ; note that for 2x2, we would only need to look at the sign of `y`, but
+        ; this special case is ignored for simplicity reasons (and because
+        ; the current upstream format code never generates matrices that small)
     %if (4 << %1) > mmsize
         %define DX2 m12
         %define DY2 m13

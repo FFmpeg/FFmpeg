@@ -184,17 +184,19 @@ static int setup_shift(const SwsOp *op, SwsOpPriv *out)
         .setup = ff_sws_setup_q,                                                \
     );
 
-/* 2x2 matrix fits inside SwsOpPriv directly; save an indirect in this case */
-static_assert(sizeof(SwsOpPriv) >= sizeof(float[2][2]), "2x2 dither matrix too large");
 static int setup_dither(const SwsOp *op, SwsOpPriv *out)
 {
-    const int size = 1 << op->dither.size_log2;
-    float *matrix = out->f32;
-    if (size > 2) {
-        matrix = out->ptr = av_mallocz(size * size * sizeof(*matrix));
-        if (!matrix)
-            return AVERROR(ENOMEM);
+    /* 1x1 matrix / single constant */
+    if (!op->dither.size_log2) {
+        const AVRational k = op->dither.matrix[0];
+        out->f32[0] = (float) k.num / k.den;
+        return 0;
     }
+
+    const int size = 1 << op->dither.size_log2;
+    float *matrix = out->ptr = av_mallocz(size * size * sizeof(*matrix));
+    if (!matrix)
+        return AVERROR(ENOMEM);
 
     for (int i = 0; i < size * size; i++)
         matrix[i] = (float) op->dither.matrix[i].num / op->dither.matrix[i].den;
@@ -206,7 +208,7 @@ static int setup_dither(const SwsOp *op, SwsOpPriv *out)
     DECL_COMMON_PATTERNS(F32, dither##SIZE##EXT,                                \
         .op    = SWS_OP_DITHER,                                                 \
         .setup = setup_dither,                                                  \
-        .free  = (1 << SIZE) > 2 ? av_free : NULL,                              \
+        .free  = (SIZE) ? av_free : NULL,                                       \
         .dither_size = SIZE,                                                    \
     );
 
