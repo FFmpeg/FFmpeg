@@ -164,6 +164,12 @@ static av_cold int che_configure(AACDecContext *ac,
         }
     } else {
         if (ac->che[type][id]) {
+            for (int i = 0; i < FF_ARRAY_ELEMS(ac->tag_che_map); i++) {
+                for (int j = 0; j < MAX_ELEM_ID; j++) {
+                    if (ac->tag_che_map[i][j] == ac->che[type][id])
+                        ac->tag_che_map[i][j] = NULL;
+                }
+            }
             ac->proc.sbr_ctx_close(ac->che[type][id]);
         }
         av_freep(&ac->che[type][id]);
