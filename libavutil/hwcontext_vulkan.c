@@ -2586,7 +2586,7 @@ static int switch_layout_host(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
 
     for (i = 0; i < nb_images; i++) {
         layout_change[i] = (VkHostImageLayoutTransitionInfoEXT) {
-            .sType = VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO,
+            .sType = VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT,
             .image = frame->img[i],
             .oldLayout = frame->layout[i],
             .newLayout = new_layout,
