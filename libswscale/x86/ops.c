@@ -194,12 +194,26 @@ static int setup_dither(const SwsOp *op, SwsOpPriv *out)
     }
 
     const int size = 1 << op->dither.size_log2;
-    float *matrix = out->ptr = av_mallocz(size * size * sizeof(*matrix));
+    int max_offset = 0;
+    for (int i = 0; i < 4; i++) {
+        const int offset = op->dither.y_offset[i] & (size - 1);
+        max_offset = FFMAX(max_offset, offset);
+    }
+
+    /* Allocate extra rows to allow over-reading for row offsets. Note that
+     * max_offset is currently never larger than 5, so the extra space needed
+     * for this over-allocation is bounded by 5 * size * sizeof(float),
+     * typically 320 bytes for a 16x16 dither matrix. */
+    const int stride = size * sizeof(float);
+    const int num_rows = size + max_offset;
+    float *matrix = out->ptr = av_mallocz(num_rows * stride);
     if (!matrix)
         return AVERROR(ENOMEM);
 
     for (int i = 0; i < size * size; i++)
         matrix[i] = (float) op->dither.matrix[i].num / op->dither.matrix[i].den;
+
+    memcpy(&matrix[size * size], matrix, max_offset * stride);
 
     return 0;
 }
