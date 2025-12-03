@@ -360,7 +360,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
 
     int header_len = bytestream2_get_be16(&gb);
-    if (header_len < 62)
+    if (header_len < 62 || bytestream2_get_bytes_left(&gb) < header_len - 2)
         return AVERROR_INVALIDDATA;
 
     GetByteContext gb_hdr;
