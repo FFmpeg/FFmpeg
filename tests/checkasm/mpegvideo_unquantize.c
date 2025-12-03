@@ -215,11 +215,11 @@ void checkasm_check_mpegvideo_unquantize(void)
     int q_scale_type = rnd() & 1;
 
     ff_mpv_unquantize_init(&unquant_dsp_ctx, 1 /* bitexact */, q_scale_type);
-    declare_func(void, MPVContext *s, int16_t *block, int n, int qscale);
+    declare_func(void, const MPVContext *s, int16_t *block, int n, int qscale);
 
     for (size_t i = 0; i < FF_ARRAY_ELEMS(tests); ++i) {
-        void (*func)(MPVContext *s, int16_t *block, int n, int qscale) =
-            *(void (**)(MPVContext *, int16_t *, int, int))((char*)&unquant_dsp_ctx + tests[i].offset);
+        void (*func)(const MPVContext *s, int16_t *block, int n, int qscale) =
+            *(void (**)(const MPVContext *, int16_t *, int, int))((char*)&unquant_dsp_ctx + tests[i].offset);
         if (check_func(func, "%s", tests[i].name)) {
             MPVContext new, ref;
             DECLARE_ALIGNED(16, int16_t, block_new)[64];
