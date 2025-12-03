@@ -245,6 +245,9 @@ endstruc
 %define tmp0d   r4d
 %define tmp1d   r5d
 
+%define tmp0w   r4w
+%define tmp1w   r5w
+
 ; Registers for plane pointers; put at the end (and in ascending plane order)
 ; so that we can avoid reserving them when not necessary
 %define out0q   r6q

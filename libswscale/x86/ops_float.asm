@@ -179,10 +179,8 @@ IF W,   mulps mw2, m8
         CONTINUE tmp0q
 %endmacro
 
-%macro load_dither_row 5 ; size_log2, y, addr, out, out2
-        lea tmp0q, %2
-        and tmp0q, (1 << %1) - 1
-        shl tmp0q, %1+2
+%macro load_dither_row 5 ; size_log2, comp_idx, addr, out, out2
+        mov tmp0w, [implq + SwsOpImpl.priv + (4 + %2) * 2] ; priv.u16[4 + i]
 %if %1 == 1
         vbroadcastsd   %4, [%3 + tmp0q]
 %elif %1 == 2
@@ -225,6 +223,11 @@ op dither%1
     %endif
         ; dither matrix is stored indirectly at the private data address
         mov tmp1q, [implq + SwsOpImpl.priv]
+        ; add y offset
+        mov tmp0d, yd
+        and tmp0d, (1 << %1) - 1
+        shl tmp0d, %1 + 2 ; * sizeof(float)
+        add tmp1q, tmp0q
     %if (4 << %1) > 2 * mmsize
         ; need to add in x offset
         mov tmp0d, bxd
@@ -232,10 +235,10 @@ op dither%1
         and tmp0d, (4 << %1) - 1
         add tmp1q, tmp0q
     %endif
-IF X,   load_dither_row %1, [yd + 0], tmp1q, DX, DX2
-IF Y,   load_dither_row %1, [yd + 3], tmp1q, DY, DY2
-IF Z,   load_dither_row %1, [yd + 2], tmp1q, DZ, DZ2
-IF W,   load_dither_row %1, [yd + 5], tmp1q, DW, DW2
+IF X,   load_dither_row %1, 0, tmp1q, DX, DX2
+IF Y,   load_dither_row %1, 1, tmp1q, DY, DY2
+IF Z,   load_dither_row %1, 2, tmp1q, DZ, DZ2
+IF W,   load_dither_row %1, 3, tmp1q, DW, DW2
 %endif
         LOAD_CONT tmp0q
 IF X,   addps mx, DX

@@ -215,6 +215,13 @@ static int setup_dither(const SwsOp *op, SwsOpPriv *out)
 
     memcpy(&matrix[size * size], matrix, max_offset * stride);
 
+    /* Store relative pointer offset to each row inside extra space */
+    static_assert(sizeof(out->ptr) <= sizeof(uint16_t[4]), ">8 byte pointers not supported");
+    assert(max_offset * stride <= UINT16_MAX);
+    uint16_t *offset = &out->u16[4];
+    for (int i = 0; i < 4; i++)
+        offset[i] = (op->dither.y_offset[i] & (size - 1)) * stride;
+
     return 0;
 }
 
