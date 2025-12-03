@@ -2569,7 +2569,7 @@ static int switch_layout_host(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
     VkResult ret;
     VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
-    VkHostImageLayoutTransitionInfo layout_change[AV_NUM_DATA_POINTERS];
+    VkHostImageLayoutTransitionInfoEXT layout_change[AV_NUM_DATA_POINTERS];
     int nb_images = ff_vk_count_images(frame);
 
     VkImageLayout new_layout;
@@ -2585,7 +2585,7 @@ static int switch_layout_host(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
         return AVERROR(ENOTSUP);
 
     for (i = 0; i < nb_images; i++) {
-        layout_change[i] = (VkHostImageLayoutTransitionInfo) {
+        layout_change[i] = (VkHostImageLayoutTransitionInfoEXT) {
             .sType = VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO,
             .image = frame->img[i],
             .oldLayout = frame->layout[i],
