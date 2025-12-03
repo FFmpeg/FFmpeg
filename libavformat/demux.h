@@ -44,6 +44,15 @@ struct AVDeviceInfoList;
  */
 #define FF_INFMT_FLAG_ID3V2_AUTO                               (1 << 2)
 
+/**
+ * Input format stream state
+ * The stream states to be used for FFInputFormat::read_set_state
+ */
+enum FFInputFormatStreamState {
+     FF_INFMT_STATE_PLAY,
+     FF_INFMT_STATE_PAUSE,
+ };
+
 typedef struct FFInputFormat {
     /**
      * The public AVInputFormat. See avformat.h for it.
@@ -114,16 +123,16 @@ typedef struct FFInputFormat {
                               int64_t *pos, int64_t pos_limit);
 
     /**
-     * Start/resume playing - only meaningful if using a network-based format
+     * Change the stream state - only meaningful if using a network-based format
      * (RTSP).
      */
-    int (*read_play)(struct AVFormatContext *);
+    int (*read_set_state)(struct AVFormatContext *,
+                          enum FFInputFormatStreamState state);
 
     /**
-     * Pause playing - only meaningful if using a network-based format
-     * (RTSP).
+     * Currently unused.
      */
-    int (*read_pause)(struct AVFormatContext *);
+    int (*unused)(void);
 
     /**
      * Seek to timestamp ts.

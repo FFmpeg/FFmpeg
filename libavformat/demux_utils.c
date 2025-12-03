@@ -172,8 +172,8 @@ int ff_add_param_change(AVPacket *pkt, int32_t channels,
 
 int av_read_play(AVFormatContext *s)
 {
-    if (ffifmt(s->iformat)->read_play)
-        return ffifmt(s->iformat)->read_play(s);
+    if (ffifmt(s->iformat)->read_set_state)
+        return ffifmt(s->iformat)->read_set_state(s, FF_INFMT_STATE_PLAY);
     if (s->pb)
         return avio_pause(s->pb, 0);
     return AVERROR(ENOSYS);
@@ -181,8 +181,8 @@ int av_read_play(AVFormatContext *s)
 
 int av_read_pause(AVFormatContext *s)
 {
-    if (ffifmt(s->iformat)->read_pause)
-        return ffifmt(s->iformat)->read_pause(s);
+    if (ffifmt(s->iformat)->read_set_state)
+        return ffifmt(s->iformat)->read_set_state(s, FF_INFMT_STATE_PAUSE);
     if (s->pb)
         return avio_pause(s->pb, 1);
     return AVERROR(ENOSYS);

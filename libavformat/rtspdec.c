@@ -611,6 +611,19 @@ static int rtsp_read_pause(AVFormatContext *s)
     return 0;
 }
 
+static int rtsp_read_set_state(AVFormatContext *s,
+                               enum FFInputFormatStreamState state)
+{
+    switch (state) {
+        case FF_INFMT_STATE_PLAY:
+            return rtsp_read_play(s);
+        case FF_INFMT_STATE_PAUSE:
+            return rtsp_read_pause(s);
+        default:
+            return AVERROR(ENOTSUP);
+    }
+}
+
 int ff_rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply)
 {
     RTSPState *rt = s->priv_data;
@@ -1005,6 +1018,5 @@ const FFInputFormat ff_rtsp_demuxer = {
     .read_packet    = rtsp_read_packet,
     .read_close     = rtsp_read_close,
     .read_seek      = rtsp_read_seek,
-    .read_play      = rtsp_read_play,
-    .read_pause     = rtsp_read_pause,
+    .read_set_state = rtsp_read_set_state,
 };
