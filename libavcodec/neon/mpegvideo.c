@@ -41,6 +41,8 @@ static void inline ff_dct_unquantize_h263_neon(int qscale, int qadd, int nCoeffs
     int16x8_t q14s16, q15s16, qzs16;
     uint16x8_t q1u16, q9u16;
 
+    qzs16 = vdupq_n_s16(0);
+
     q15s16 = vdupq_n_s16(qscale << 1);
     q14s16 = vdupq_n_s16(qadd);
     q13s16 = vnegq_s16(q14s16);
