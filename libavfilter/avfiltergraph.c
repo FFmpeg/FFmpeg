@@ -485,13 +485,13 @@ static void print_filter_formats(void *log_ctx, int level, const AVFilterContext
     for (int i = 0; i < f->nb_inputs; i++) {
         const AVFilterLink *in = f->inputs[i];
         const AVFilterNegotiation *neg = ff_filter_get_negotiation(in);
-        av_log(log_ctx, level, "  in[%d] '%s':", i, f->input_pads[i].name);
+        av_log(log_ctx, level, "  in[%d] '%s':\n", i, f->input_pads[i].name);
 
         for (unsigned i = 0; i < neg->nb_mergers; i++) {
             const AVFilterFormatsMerger *m = &neg->mergers[i];
             m->print_list(&bp, FF_FIELD_AT(void *, m->offset, in->outcfg));
             if (av_bprint_is_complete(&bp))
-                av_log(log_ctx, level, "    %s: %s", m->name, bp.str);
+                av_log(log_ctx, level, "    %s: %s\n", m->name, bp.str);
             av_bprint_clear(&bp);
         }
     }
@@ -499,13 +499,13 @@ static void print_filter_formats(void *log_ctx, int level, const AVFilterContext
     for (int i = 0; i < f->nb_outputs; i++) {
         const AVFilterLink *out = f->outputs[i];
         const AVFilterNegotiation *neg = ff_filter_get_negotiation(out);
-        av_log(log_ctx, level, "  out[%d] '%s':", i, f->output_pads[i].name);
+        av_log(log_ctx, level, "  out[%d] '%s':\n", i, f->output_pads[i].name);
 
         for (unsigned i = 0; i < neg->nb_mergers; i++) {
             const AVFilterFormatsMerger *m = &neg->mergers[i];
             m->print_list(&bp, FF_FIELD_AT(void *, m->offset, out->incfg));
             if (av_bprint_is_complete(&bp))
-                av_log(log_ctx, level, "    %s: %s", m->name, bp.str);
+                av_log(log_ctx, level, "    %s: %s\n", m->name, bp.str);
             av_bprint_clear(&bp);
         }
     }
