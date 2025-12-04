@@ -2271,6 +2271,10 @@ The following parameters can be set via command line options
 Timeout in ms.
 @item listen
 Create the Unix socket in listening mode.
+@item pkt_size
+Maximum packet size for packet-oriented sockets (SOCK_DGRAM and
+SOCK_SEQPACKET). If greater than zero, this value is used as
+@code{max_packet_size}. Ignored for SOCK_STREAM. Default is @code{0}.
 @end table
 
 @section zmq
