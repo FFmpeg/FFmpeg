@@ -31,20 +31,76 @@
             return ret;                                                        \
     } while (0)
 
-/* Returns true for operations that are independent per channel. These can
- * usually be commuted freely other such operations. */
-static bool op_type_is_independent(SwsOpType op)
+/**
+ * Try to commute a clear op with the next operation. Makes any adjustments
+ * to the operations as needed, but does not perform the actual commutation.
+ *
+ * Returns whether successful.
+ */
+static bool op_commute_clear(SwsOp *op, SwsOp *next)
 {
-    switch (op) {
-    case SWS_OP_SWAP_BYTES:
+    av_assert1(op->op == SWS_OP_CLEAR);
+    switch (next->op) {
+    case SWS_OP_CONVERT:
+        op->type = next->convert.to;
+        /* fall through */
     case SWS_OP_LSHIFT:
     case SWS_OP_RSHIFT:
-    case SWS_OP_CONVERT:
     case SWS_OP_DITHER:
     case SWS_OP_MIN:
     case SWS_OP_MAX:
     case SWS_OP_SCALE:
+    case SWS_OP_CLEAR:
+    case SWS_OP_READ:
+    case SWS_OP_SWIZZLE:
+        ff_sws_apply_op_q(next, op->c.q4);
         return true;
+    case SWS_OP_INVALID:
+    case SWS_OP_SWAP_BYTES:
+    case SWS_OP_WRITE:
+    case SWS_OP_LINEAR:
+    case SWS_OP_PACK:
+    case SWS_OP_UNPACK:
+        return false;
+    case SWS_OP_TYPE_NB:
+        break;
+    }
+
+    av_unreachable("Invalid operation type!");
+    return false;
+}
+
+ /**
+  * Try to commute a swizzle op with the next operation. Makes any adjustments
+  * to the operations as needed, but does not perform the actual commutation.
+  *
+  * Returns whether successful.
+  */
+static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
+{
+    av_assert1(op->op == SWS_OP_SWIZZLE);
+    switch (next->op) {
+    case SWS_OP_CONVERT:
+        op->type = next->convert.to;
+        /* fall through */
+    case SWS_OP_SWAP_BYTES:
+    case SWS_OP_LSHIFT:
+    case SWS_OP_RSHIFT:
+    case SWS_OP_DITHER:
+    case SWS_OP_SCALE:
+        return true;
+
+    /* Operations with per-channel coefficients need to be un-swizzled */
+    case SWS_OP_MIN:
+    case SWS_OP_MAX: {
+        const SwsConst c = next->c;
+        for (int i = 0; i < 4; i++) {
+            if (!next->comps.unused[i])
+                next->c.q4[op->swizzle.in[i]] = c.q4[i];
+        }
+        return true;
+    }
+
     case SWS_OP_INVALID:
     case SWS_OP_READ:
     case SWS_OP_WRITE:
@@ -523,12 +579,7 @@ retry:
 
             /* Prefer to clear as late as possible, to avoid doing
              * redundant work */
-            if ((op_type_is_independent(next->op) && next->op != SWS_OP_SWAP_BYTES) ||
-                next->op == SWS_OP_SWIZZLE)
-            {
-                if (next->op == SWS_OP_CONVERT)
-                    op->type = next->convert.to;
-                ff_sws_apply_op_q(next, op->c.q4);
+            if (op_commute_clear(op, next)) {
                 FFSWAP(SwsOp, *op, *next);
                 goto retry;
             }
@@ -562,17 +613,7 @@ retry:
             }
 
             /* Try to push swizzles with duplicates towards the output */
-            if (has_duplicates && op_type_is_independent(next->op)) {
-                if (next->op == SWS_OP_CONVERT)
-                    op->type = next->convert.to;
-                if (next->op == SWS_OP_MIN || next->op == SWS_OP_MAX) {
-                    /* Un-swizzle the next operation */
-                    const SwsConst c = next->c;
-                    for (int i = 0; i < 4; i++) {
-                        if (!next->comps.unused[i])
-                            next->c.q4[op->swizzle.in[i]] = c.q4[i];
-                    }
-                }
+            if (has_duplicates && op_commute_swizzle(op, next)) {
                 FFSWAP(SwsOp, *op, *next);
                 goto retry;
             }
