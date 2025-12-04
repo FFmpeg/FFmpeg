@@ -124,8 +124,12 @@ ivec2 get_pred(readonly uimage2D pred, ivec2 sp, ivec2 off,
         }
         base += quant_table[quant_table_idx][3][(cur2 - cur) & MAX_QUANT_TABLE_MASK];
 
+#if RGB_LINECACHE == 2
         /* top-2 became current upon swap */
         TYPE top2 = TYPE(imageLoad(pred, sp + LADDR(off))[comp]);
+#else
+        TYPE top2 = TYPE(imageLoad(pred, sp + LADDR(off + ivec2(0, -2)))[comp]);
+#endif
         base += quant_table[quant_table_idx][4][(top2 - top[1]) & MAX_QUANT_TABLE_MASK];
     }
 
