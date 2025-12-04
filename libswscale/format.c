@@ -630,6 +630,10 @@ static SwsPixelType fmt_pixel_type(enum AVPixelFormat fmt)
 
 static SwsSwizzleOp fmt_swizzle(enum AVPixelFormat fmt)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+    if (desc->nb_components == 2) /* YA formats */
+        return (SwsSwizzleOp) {{ .x = 0, 3, 1, 2 }};
+
     switch (fmt) {
     case AV_PIX_FMT_ARGB:
     case AV_PIX_FMT_0RGB:
@@ -663,10 +667,6 @@ static SwsSwizzleOp fmt_swizzle(enum AVPixelFormat fmt)
     case AV_PIX_FMT_X2BGR10LE:
     case AV_PIX_FMT_X2BGR10BE:
         return (SwsSwizzleOp) {{ .x = 3, 2, 1, 0 }};
-    case AV_PIX_FMT_YA8:
-    case AV_PIX_FMT_YA16BE:
-    case AV_PIX_FMT_YA16LE:
-        return (SwsSwizzleOp) {{ .x = 0, 3, 1, 2 }};
     case AV_PIX_FMT_XV30BE:
     case AV_PIX_FMT_XV30LE:
         return (SwsSwizzleOp) {{ .x = 3, 2, 0, 1 }};
