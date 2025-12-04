@@ -7867,8 +7867,11 @@ static int mov_init_iamf_track(AVFormatContext *s)
         default:
             av_assert0(0);
         }
-        if (ret < 0)
+        if (ret < 0) {
+            ff_iamf_uninit_context(iamf);
+            av_free(iamf);
             return ret;
+        }
     }
 
     track = &mov->tracks[first_iamf_idx];
