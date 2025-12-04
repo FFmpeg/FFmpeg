@@ -44,8 +44,11 @@ i16vec4 parse_packed_in_32(ivec2 pos, int stride)
 #else
 i16vec4 parse_packed_in_32(ivec2 pos, int stride)
 {
-    uint line_off = pos.y*(stride*BITS_PER_COMP*COMPONENTS +
-                           (need_align << 3));
+    uint line_size = stride*BITS_PER_COMP*COMPONENTS;
+    line_size += line_size & 31;
+    line_size += need_align << 3;
+
+    uint line_off = pos.y*line_size;
     uint pix_off = pos.x*BITS_PER_COMP*COMPONENTS;
 
     uint off = (line_off + pix_off >> 5);

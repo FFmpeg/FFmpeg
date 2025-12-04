@@ -402,9 +402,7 @@ static int vk_decode_dpx_init(AVCodecContext *avctx)
 
     switch (dpx->pix_fmt) {
     case AV_PIX_FMT_GRAY10:
-    case AV_PIX_FMT_GRAY12:
     case AV_PIX_FMT_GBRAP10:
-    case AV_PIX_FMT_GBRAP12:
     case AV_PIX_FMT_UYVY422:
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_YUVA444P:
