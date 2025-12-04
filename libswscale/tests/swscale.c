@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024      Nikles Haas
+ * Copyright (C) 2024      Niklas Haas
  * Copyright (C) 2003-2011 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
