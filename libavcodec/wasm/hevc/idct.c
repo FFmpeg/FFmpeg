@@ -279,7 +279,7 @@ void ff_hevc_idct_8x8_10_simd128(int16_t *coeffs, int col_limit)
     x1 += x2;                                   \
     x3 += x2;                                   \
 
-#define bufferfly(e, o, p, m)   \
+#define butterfly(e, o, p, m)   \
     p = wasm_i32x4_add(e, o);   \
     m = wasm_i32x4_sub(e, o);   \
 
@@ -309,10 +309,10 @@ static void tr16_8x4(v128_t in0, v128_t in1, v128_t in2, v128_t in3,
     v30 = wasm_i32x4_add(v30, wasm_i32x4_extmul_high_i16x8(in3, trans[5]));
     v31 = wasm_i32x4_sub(v31, wasm_i32x4_extmul_high_i16x8(in3, trans[4]));
 
-    bufferfly(v24, v28, v16, v23);
-    bufferfly(v25, v29, v17, v22);
-    bufferfly(v26, v30, v18, v21);
-    bufferfly(v27, v31, v19, v20);
+    butterfly(v24, v28, v16, v23);
+    butterfly(v25, v29, v17, v22);
+    butterfly(v26, v30, v18, v21);
+    butterfly(v27, v31, v19, v20);
 
     sp += offset;
     wasm_v128_store(sp, v16); sp += 16;
