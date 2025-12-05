@@ -3430,6 +3430,7 @@ ddagrab_filter_deps="d3d11va IDXGIOutput1 DXGI_OUTDUPL_FRAME_INFO"
 gfxcapture_filter_deps="cxx17 threads d3d11va IGraphicsCaptureItemInterop __x_ABI_CWindows_CGraphics_CCapture_CIGraphicsCaptureSession3"
 gfxcapture_filter_extralibs="-lstdc++"
 scale_d3d11_filter_deps="d3d11va"
+scale_d3d12_filter_deps="d3d12va ID3D12VideoProcessor"
 
 amf_deps_any="libdl LoadLibrary"
 nvenc_deps="ffnvcodec"
@@ -6962,6 +6963,7 @@ check_type "windows.h d3d11.h" "ID3D11VideoContext"
 check_type "windows.h d3d12.h" "ID3D12Device"
 check_type "windows.h d3d12video.h" "ID3D12VideoDecoder"
 check_type "windows.h d3d12video.h" "ID3D12VideoEncoder"
+check_type "windows.h d3d12video.h" "ID3D12VideoProcessor"
 test_code cc "windows.h d3d12video.h" "D3D12_FEATURE_VIDEO feature = D3D12_FEATURE_VIDEO_ENCODER_CODEC" && \
 test_code cc "windows.h d3d12video.h" "D3D12_FEATURE_DATA_VIDEO_ENCODER_RESOURCE_REQUIREMENTS req" && enable d3d12_encoder_feature
 test_code cc "windows.h d3d12video.h" "D3D12_VIDEO_ENCODER_CODEC c = D3D12_VIDEO_ENCODER_CODEC_AV1; (void)c;" && enable d3d12va_av1_headers
