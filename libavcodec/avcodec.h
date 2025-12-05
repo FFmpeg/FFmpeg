@@ -416,6 +416,14 @@ typedef struct RcOverride{
 #define AV_GET_ENCODE_BUFFER_FLAG_REF (1 << 0)
 
 /**
+ * The decoder will bypass frame threading and return the next frame as soon as
+ * possible. Note that this may deliver frames earlier than the advertised
+ * `AVCodecContext.delay`. No effect when frame threading is disabled, or on
+ * encoding.
+ */
+#define AV_CODEC_RECEIVE_FRAME_FLAG_SYNCHRONOUS (1 << 0)
+
+/**
  * main external API structure.
  * New fields can be added to the end with minor version bumps.
  * Removal, reordering and changes to existing fields require a major
@@ -2360,6 +2368,7 @@ int avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt);
  *              frame (depending on the decoder type) allocated by the
  *              codec. Note that the function will always call
  *              av_frame_unref(frame) before doing anything else.
+ * @param flags Combination of AV_CODEC_RECEIVE_FRAME_FLAG_* flags.
  *
  * @retval 0                success, a frame was returned
  * @retval AVERROR(EAGAIN)  output is not available in this state - user must
@@ -2369,6 +2378,11 @@ int avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt);
  * @retval AVERROR(EINVAL)  codec not opened, or it is an encoder without the
  *                          @ref AV_CODEC_FLAG_RECON_FRAME flag enabled
  * @retval "other negative error code" legitimate decoding errors
+ */
+int avcodec_receive_frame2(AVCodecContext *avctx, AVFrame *frame, unsigned flags);
+
+/**
+ * Alias for `avcodec_receive_frame2(avctx, frame, 0)`.
  */
 int avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame);
 

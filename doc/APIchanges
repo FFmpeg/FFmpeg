@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2025-03-28
 
 API changes, most recent first:
 
+2025-12-xx - xxxxxxxxxx - lavc 62.22.100 - avcodec.h
+  Add avcodec_receive_frame2().
+  Add AV_CODEC_RECEIVE_FRAME_FLAG_SYNCHRONOUS.
+
 2025-09-xx - xxxxxxxxxx - lavfi 11.10.100 - buffersrc.h
   Add av_buffersrc_get_status().
 
