@@ -787,6 +787,15 @@ static int fmt_read_write(enum AVPixelFormat fmt, SwsReadWriteOp *rw_op,
     if (!desc)
         return AVERROR(EINVAL);
 
+    /* No support for subsampled formats at the moment */
+    if (desc->log2_chroma_w || desc->log2_chroma_h)
+        return AVERROR(ENOTSUP);
+
+    /* No support for semi-planar formats at the moment */
+    if (desc->flags & AV_PIX_FMT_FLAG_PLANAR &&
+        av_pix_fmt_count_planes(fmt) < desc->nb_components)
+        return AVERROR(ENOTSUP);
+
     *pixel_type = fmt_pixel_type(fmt);
     if (!*pixel_type)
         return AVERROR(ENOTSUP);
