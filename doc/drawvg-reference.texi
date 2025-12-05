@@ -450,29 +450,34 @@ Optionally, an @code{@@a} suffix can be added to set the alpha value,
 where @code{a} is a number between @code{0} and @code{1}.
 @end itemize
 
-The color can be a variable name. In that case, its value is interpreted
-as a @code{0xRRGGBBAA} code.
-
 @example
-circle 75 100 50
+circle 70 70 60
 setcolor #FF0000
 fill
 
-circle 125 100 50
-setvar CustomGreen 0x90EEAAFF
-setcolor CustomGreen
-fill
-
-circle 175 100 50
+circle 170 170 60
 setcolor blue@@0.5
 fill
 @end example
 
-The commands @vgscmd{setrgba} and @vgscmd{sethsla} allow setting colors
-using expressions.
+The color can be a variable name. In that case, it must be assigned with
+@vgscmd{defrgba}, @vgscmd{defhsla}, or @vgscmd{setvar} and a color.
 
-@vgscmd{defrgba} and @vgscmd{defhsla} compute the color and store it in a
-variable.
+@example
+circle 70 70 60
+setvar CustomGreen #22FF44
+setcolor CustomGreen
+fill
+
+circle 170 170 60
+defhsla CustomBlue 200 0.7 0.5 1
+setcolor CustomBlue
+fill
+@end example
+
+The commands @vgscmd{setrgba} and @vgscmd{sethsla} allow setting colors using
+expressions. Similar to @vgscmd{defrgba} and @vgscmd{defhsla}, but with no
+intermediate variable.
 
 @subsection Constants
 
@@ -845,13 +850,13 @@ fill
 @subsection Variables
 
 @vgscmd{setcolor} and @vgscmd{colorstop} accept a variable name as the
-argument. When a variable is used, its value is interpreted as a
-@code{0xRRGGBBAA} code.
+argument. The variable must be assigned with @vgscmd{defrgba},
+@vgscmd{defhsla}, or @vgscmd{setvar} and a color.
 
 @codeexample{
 @example
 // Use color #1020FF, alpha = 50%
-setvar someblue 0x1020FF7F
+setvar someblue #1020FF@@0.5
 
 setcolor someblue
 
@@ -872,15 +877,15 @@ setcolor teal
 rect 30 30 120 120
 fill
 
-setvar teal 0x70AAAAFF  // Now, `teal` is #70AAAA
-setcolor teal
+setvar teal #70AAAA
+setcolor teal         // Use the new color for `teal`.
 rect 90 90 120 120
 fill
 @end example
 }
 
-@vgscmd{defrgba} and @vgscmd{defhsla} compute the @code{0xRRGGBBAA} value
-for a color given its color components:
+@vgscmd{defrgba} and @vgscmd{defhsla} assign a color to a variable, by providing
+an expression for each color component:
 
 @itemize
 @item
@@ -1241,9 +1246,9 @@ proc zigzag color y @{
     stroke
 @}
 
-call zigzag 0x40C0FFFF 60
-call zigzag 0x00AABBFF 120
-call zigzag 0x20F0B7FF 180
+call zigzag #40C0FF 60
+call zigzag #00AABB 120
+call zigzag #20F0B7 180
 @end example
 }
 
@@ -1328,9 +1333,26 @@ There are some functions specific to drawvg available in @ffexprs{}.
 
 @subsection Function @code{p}
 
-@code{p(x, y)} returns the color of the pixel at coordinates
-@code{x, y}, as a @code{0xRRGGBBAA} value. This value can be assigned to
-a variable, which can be used later as the argument for @vgscmd{setcolor}.
+@code{p(x, y)} returns the color of the pixel at coordinates @code{x, y}, as a
+@code{0xRRGGBBAA} value. It can be assigned to a variable, so the color can be
+available for @vgscmd{setcolor} and @vgscmd{colorstop} commands.
+
+If a single expression contains multiple calls to the function, it must return
+the value of the last call in order to use it as a color.
+
+@codeexample{
+In this example, the first call to @code{p(0, 0)} is stored in the variable
+@var{0} of the expression. Then, the same expression makes a second call to
+@code{p(1, 1)}, and finally it returns the value in the variable @var{0}.
+
+@example
+setvar pixel (st(0, p(0, 0)); p(1, 1); ld(0))
+@end example
+
+Since the result of the expression is not the last call to @code{p}, the
+variable @var{pixel} can not be used as a color, but it still can be used as
+a numeric @code{0xRRGGBBAA} value.
+}
 
 If the coordinates are outside the frame, or any of the arguments is not
 a finite number (like
@@ -1951,8 +1973,8 @@ point}.
 @signature{defhsla varname @var{h} @var{s} @var{l} @var{a}}
 
 Similar to @vgscmd{sethsla}, but instead of establishing the color for
-stroke and fill operations, the computed color is stored as a
-@code{0xRRGGBBAA} value in the variable @var{varname}.
+stroke and fill operations, the computed color is assigned to the
+variable @var{varname}.
 
 @var{varname} can then be used as a color for @vgscmd{setcolor} and
 @vgscmd{colorstop}.
@@ -1965,8 +1987,7 @@ See @vgscmd{sethsla} for more details on how the color is computed.
 @signature{defrgba varname @var{r} @var{g} @var{b} @var{a}}
 
 Computes a color from the @emph{red}, @emph{green}, @emph{blue}, and
-@emph{alpha} components, and assigns it to the variable @var{varname}
-as a @code{0xRRGGBBAA} value.
+@emph{alpha} components, and assigns it to the variable @var{varname}.
 
 All components are values between @code{0} and @code{1}. Values outside
 that range are clamped to it.
