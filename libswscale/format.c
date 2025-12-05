@@ -771,13 +771,13 @@ static int cmp_comp(const void *a, const void *b) {
     return ca->offset - cb->offset;
 }
 
-static SwsSwizzleOp fmt_swizzle(enum AVPixelFormat fmt)
+static int fmt_analyze_regular(const AVPixFmtDescriptor *desc, SwsReadWriteOp *rw_op,
+                               SwsSwizzleOp *swizzle, int *shift)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
     if (desc->nb_components == 2) {
         /* YA formats */
-        return SWS_SWIZZLE(0, 3, 1, 2);
-    } else if (is_regular_fmt(fmt)) {
+        *swizzle = SWS_SWIZZLE(0, 3, 1, 2);
+    } else {
         /* Sort by increasing component order */
         struct comp sorted[4] = { {0}, {1}, {2}, {3} };
         for (int i = 0; i < desc->nb_components; i++) {
@@ -790,11 +790,64 @@ static SwsSwizzleOp fmt_swizzle(enum AVPixelFormat fmt)
         SwsSwizzleOp swiz = SWS_SWIZZLE(0, 1, 2, 3);
         for (int i = 0; i < desc->nb_components; i++)
             swiz.in[i] = sorted[i].index;
-        return swiz;
+        *swizzle = swiz;
     }
 
-    /* This function is only ever called if fmt_read_write() already passes */
-    return fmt_info_irregular(fmt).swizzle;
+    *shift = desc->comp[0].shift;
+    *rw_op = (SwsReadWriteOp) {
+        .elems  = desc->nb_components,
+        .packed = desc->nb_components > 1 && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR),
+    };
+    return 0;
+}
+
+static int fmt_analyze(enum AVPixelFormat fmt, SwsReadWriteOp *rw_op,
+                       SwsPackOp *pack_op, SwsSwizzleOp *swizzle, int *shift,
+                       SwsPixelType *pixel_type, SwsPixelType *raw_type)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+    if (!desc)
+        return AVERROR(EINVAL);
+
+    /* No support for subsampled formats at the moment */
+    if (desc->log2_chroma_w || desc->log2_chroma_h)
+        return AVERROR(ENOTSUP);
+
+    /* No support for semi-planar formats at the moment */
+    if (desc->flags & AV_PIX_FMT_FLAG_PLANAR &&
+        av_pix_fmt_count_planes(fmt) < desc->nb_components)
+        return AVERROR(ENOTSUP);
+
+    *pixel_type = *raw_type = fmt_pixel_type(fmt);
+    if (!*pixel_type)
+        return AVERROR(ENOTSUP);
+
+    if (is_regular_fmt(fmt)) {
+        *pack_op = (SwsPackOp) {0};
+        return fmt_analyze_regular(desc, rw_op, swizzle, shift);
+    }
+
+    FmtInfo info = fmt_info_irregular(fmt);
+    if (!info.rw.elems)
+        return AVERROR(ENOTSUP);
+
+    *rw_op   = info.rw;
+    *pack_op = info.pack;
+    *swizzle = info.swizzle;
+    *shift   = info.shift;
+
+    if (info.pack.pattern[0]) {
+        const int sum = info.pack.pattern[0] + info.pack.pattern[1] +
+                        info.pack.pattern[2] + info.pack.pattern[3];
+        if (sum > 16)
+            *raw_type = SWS_PIXEL_U32;
+        else if (sum > 8)
+            *raw_type = SWS_PIXEL_U16;
+        else
+            *raw_type = SWS_PIXEL_U8;
+    }
+
+    return 0;
 }
 
 static SwsSwizzleOp swizzle_inv(SwsSwizzleOp swiz) {
@@ -805,18 +858,6 @@ static SwsSwizzleOp swizzle_inv(SwsSwizzleOp swiz) {
     out[swiz.z] = 2;
     out[swiz.w] = 3;
     return (SwsSwizzleOp) {{ .x = out[0], out[1], out[2], out[3] }};
-}
-
-/* Shift factor for MSB aligned formats */
-static int fmt_shift(enum AVPixelFormat fmt)
-{
-    if (is_regular_fmt(fmt)) {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-        return desc->comp[0].shift;
-    }
-
-    /* This function is only ever called if fmt_read_write() already passes */
-    return fmt_info_irregular(fmt).shift;
 }
 
 /**
@@ -842,56 +883,6 @@ static SwsConst fmt_clear(enum AVPixelFormat fmt)
     return c;
 }
 
-static int fmt_read_write(enum AVPixelFormat fmt, SwsReadWriteOp *rw_op,
-                          SwsPackOp *pack_op, SwsPixelType *pixel_type)
-{
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-    if (!desc)
-        return AVERROR(EINVAL);
-
-    /* No support for subsampled formats at the moment */
-    if (desc->log2_chroma_w || desc->log2_chroma_h)
-        return AVERROR(ENOTSUP);
-
-    /* No support for semi-planar formats at the moment */
-    if (desc->flags & AV_PIX_FMT_FLAG_PLANAR &&
-        av_pix_fmt_count_planes(fmt) < desc->nb_components)
-        return AVERROR(ENOTSUP);
-
-    *pixel_type = fmt_pixel_type(fmt);
-    if (!*pixel_type)
-        return AVERROR(ENOTSUP);
-
-    if (is_regular_fmt(fmt)) {
-        *pack_op = (SwsPackOp) {0};
-        *rw_op = (SwsReadWriteOp) {
-            .elems  = desc->nb_components,
-            .packed = desc->nb_components > 1 && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR),
-        };
-        return 0;
-    }
-
-    FmtInfo info = fmt_info_irregular(fmt);
-    if (!info.rw.elems)
-        return AVERROR(ENOTSUP);
-
-    *pack_op = info.pack;
-    *rw_op   = info.rw;
-    return 0;
-}
-
-static SwsPixelType get_packed_type(SwsPackOp pack)
-{
-    const int sum = pack.pattern[0] + pack.pattern[1] +
-                    pack.pattern[2] + pack.pattern[3];
-    if (sum > 16)
-        return SWS_PIXEL_U32;
-    else if (sum > 8)
-        return SWS_PIXEL_U16;
-    else
-        return SWS_PIXEL_U8;
-}
-
 #if HAVE_BIGENDIAN
 #  define NATIVE_ENDIAN_FLAG AV_PIX_FMT_FLAG_BE
 #else
@@ -901,15 +892,14 @@ static SwsPixelType get_packed_type(SwsPackOp pack)
 int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-    SwsPixelType pixel_type;
+    SwsPixelType pixel_type, raw_type;
     SwsReadWriteOp rw_op;
+    SwsSwizzleOp swizzle;
     SwsPackOp unpack;
+    int shift;
 
-    RET(fmt_read_write(fmt, &rw_op, &unpack, &pixel_type));
-
-    SwsPixelType raw_type = pixel_type;
-    if (unpack.pattern[0])
-        raw_type = get_packed_type(unpack);
+    RET(fmt_analyze(fmt, &rw_op, &unpack, &swizzle, &shift,
+                    &pixel_type, &raw_type));
 
     /* TODO: handle subsampled or semipacked input formats */
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
@@ -942,13 +932,13 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
         .op      = SWS_OP_SWIZZLE,
         .type    = pixel_type,
-        .swizzle = swizzle_inv(fmt_swizzle(fmt)),
+        .swizzle = swizzle_inv(swizzle),
     }));
 
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
         .op   = SWS_OP_RSHIFT,
         .type = pixel_type,
-        .c.u  = fmt_shift(fmt),
+        .c.u  = shift,
     }));
 
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
@@ -963,20 +953,19 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
 int ff_sws_encode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-    SwsPixelType pixel_type;
+    SwsPixelType pixel_type, raw_type;
     SwsReadWriteOp rw_op;
+    SwsSwizzleOp swizzle;
     SwsPackOp pack;
+    int shift;
 
-    RET(fmt_read_write(fmt, &rw_op, &pack, &pixel_type));
-
-    SwsPixelType raw_type = pixel_type;
-    if (pack.pattern[0])
-        raw_type = get_packed_type(pack);
+    RET(fmt_analyze(fmt, &rw_op, &pack, &swizzle, &shift,
+                    &pixel_type, &raw_type));
 
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
         .op   = SWS_OP_LSHIFT,
         .type = pixel_type,
-        .c.u  = fmt_shift(fmt),
+        .c.u  = shift,
     }));
 
     if (rw_op.elems > desc->nb_components) {
@@ -992,7 +981,7 @@ int ff_sws_encode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
         .op      = SWS_OP_SWIZZLE,
         .type    = pixel_type,
-        .swizzle = fmt_swizzle(fmt),
+        .swizzle = swizzle,
     }));
 
     if (pack.pattern[0]) {
@@ -1021,6 +1010,7 @@ int ff_sws_encode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
         .type = raw_type,
         .rw   = rw_op,
     }));
+
     return 0;
 }
 
