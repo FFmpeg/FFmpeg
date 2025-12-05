@@ -742,36 +742,19 @@ static SwsSwizzleOp swizzle_inv(SwsSwizzleOp swiz) {
 /* Shift factor for MSB aligned formats */
 static int fmt_shift(enum AVPixelFormat fmt)
 {
-    switch (fmt) {
-    case AV_PIX_FMT_P010BE:
-    case AV_PIX_FMT_P010LE:
-    case AV_PIX_FMT_P210BE:
-    case AV_PIX_FMT_P210LE:
-    case AV_PIX_FMT_Y210BE:
-    case AV_PIX_FMT_Y210LE:
-    case AV_PIX_FMT_YUV444P10MSBBE:
-    case AV_PIX_FMT_YUV444P10MSBLE:
-    case AV_PIX_FMT_GBRP10MSBBE:
-    case AV_PIX_FMT_GBRP10MSBLE:
-        return 6;
-    case AV_PIX_FMT_P012BE:
-    case AV_PIX_FMT_P012LE:
-    case AV_PIX_FMT_P212BE:
-    case AV_PIX_FMT_P212LE:
-    case AV_PIX_FMT_P412BE:
-    case AV_PIX_FMT_P412LE:
-    case AV_PIX_FMT_XV36BE:
-    case AV_PIX_FMT_XV36LE:
-    case AV_PIX_FMT_XYZ12BE:
-    case AV_PIX_FMT_XYZ12LE:
-    case AV_PIX_FMT_YUV444P12MSBBE:
-    case AV_PIX_FMT_YUV444P12MSBLE:
-    case AV_PIX_FMT_GBRP12MSBBE:
-    case AV_PIX_FMT_GBRP12MSBLE:
-        return 4;
+    if (is_regular_fmt(fmt)) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+        return desc->comp[0].shift;
     }
 
-    return 0;
+    switch (fmt) {
+    case AV_PIX_FMT_XV36BE:
+    case AV_PIX_FMT_XV36LE:
+        return 4;
+    default:
+        /* Sub-byte irregular formats are always handled by SWS_OP_(UN)PACK */
+        return 0;
+    }
 }
 
 /**
