@@ -616,12 +616,13 @@ static SwsPixelType fmt_pixel_type(enum AVPixelFormat fmt)
     if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) {
         switch (bits) {
         case 32: return SWS_PIXEL_F32;
+        /* TODO: no support for 16-bit float yet */
         }
     } else {
         switch (bits) {
         case  8: return SWS_PIXEL_U8;
         case 16: return SWS_PIXEL_U16;
-        case 32: return SWS_PIXEL_U32;
+        /* TODO: AVRational cannot represent UINT32_MAX */
         }
     }
 
