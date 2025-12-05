@@ -972,7 +972,7 @@ static int vgs_parse_statement(
 
                 if (vgs_token_is_string(&token, parser->var_names[i])) {
                     arg.type = ARG_COLOR_VAR;
-                    arg.variable = i;
+                    arg.variable = i - VAR_U0;
                     break;
                 }
             }
@@ -1333,6 +1333,9 @@ fail:
 /// Number of different states for the `randomg` function.
 #define RANDOM_STATES 4
 
+/// Cairo requires each color component to be a double.
+typedef double cairo_color[4];
+
 /// Block assigned to a procedure by a call to the `proc` command.
 struct VGSProcedure {
     const struct VGSProgram *program;
@@ -1374,6 +1377,9 @@ struct VGSEvalState {
     /// Some variables (like `cx` or `cy`) are written before
     /// executing each statement.
     double vars[VAR_COUNT];
+
+    /// Colors stored in variables.
+    cairo_color color_vars[USER_VAR_COUNT];
 
     /// State for each index available for the `randomg` function.
     FFSFC64 random_state[RANDOM_STATES];
@@ -1551,8 +1557,12 @@ static int vgs_eval_state_init(
             return AVERROR(ENOMEM);
     }
 
-    for (int i = 0; i < VAR_COUNT; i++)
+    for (int i = 0; i < FF_ARRAY_ELEMS(state->vars); i++)
         state->vars[i] = NAN;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(state->color_vars); i++)
+        for (int j = 0; j < FF_ARRAY_ELEMS(state->color_vars[i]); j++)
+            state->color_vars[i][j] = NAN;
 
     return 0;
 }
@@ -1802,7 +1812,7 @@ static int vgs_eval(
         } while(0)
 
     double numerics[MAX_COMMAND_PARAMS];
-    double colors[MAX_COMMAND_PARAMS][4];
+    cairo_color colors[MAX_COMMAND_PARAMS];
 
     double cx, cy; // Current point.
 
@@ -1828,24 +1838,16 @@ static int vgs_eval(
 
         // Compute arguments.
         for (int arg = 0; arg < statement->args_count; arg++) {
-            uint8_t color[4];
-
             const struct VGSArgument *a = &statement->args[arg];
 
             switch (a->type) {
             case ARG_COLOR:
-            case ARG_COLOR_VAR:
-                if (a->type == ARG_COLOR) {
-                    memcpy(color, a->color, sizeof(color));
-                } else {
-                    uint32_t c = av_be2ne32((uint32_t)state->vars[a->variable]);
-                    memcpy(color, &c, sizeof(color));
-                }
+                for (int i = 0; i < FF_ARRAY_ELEMS(colors[arg]); i++)
+                    colors[arg][i] = ((double)a->color[i]) / 255.0;
+                break;
 
-                colors[arg][0] = (double)(color[0]) / 255.0,
-                colors[arg][1] = (double)(color[1]) / 255.0,
-                colors[arg][2] = (double)(color[2]) / 255.0,
-                colors[arg][3] = (double)(color[3]) / 255.0;
+            case ARG_COLOR_VAR:
+                memcpy(&colors[arg], &state->color_vars[a->variable], sizeof(cairo_color));
                 break;
 
             case ARG_EXPR:
@@ -1981,16 +1983,11 @@ static int vgs_eval(
                 b = numerics[3];
             }
 
-            #define C(v, o) ((uint32_t)lround(av_clipd(v, 0, 1) * 255) << o)
-
-            state->vars[user_var] = (double)(
-                C(r, 24)
-                | C(g, 16)
-                | C(b, 8)
-                | C(numerics[4], 0)
-            );
-
-            #undef C
+            double *const color_var = state->color_vars[user_var - VAR_U0];
+            color_var[0] = r;
+            color_var[1] = g;
+            color_var[2] = b;
+            color_var[3] = numerics[4];
 
             break;
         }
