@@ -26,6 +26,7 @@
  */
 
 #include <cairo.h>
+#include <stdbool.h>
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
@@ -220,6 +221,7 @@ struct VGSParameter {
         PARAM_END,
         PARAM_MAY_REPEAT,
         PARAM_NUMERIC,
+        PARAM_NUMERIC_COLOR,
         PARAM_NUMERIC_METADATA,
         PARAM_PROC_ARGS,
         PARAM_PROC_NAME,
@@ -328,7 +330,7 @@ static const struct VGSCommandSpec vgs_commands[] = {
     { "setlinejoin",    CMD_SET_LINE_JOIN,    L(C(vgs_consts_line_join)) },
     { "setlinewidth",   CMD_SET_LINE_WIDTH,   L(N) },
     { "setrgba",        CMD_SET_RGBA,         L(N, N, N, N) },
-    { "setvar",         CMD_SET_VAR,          L(V, N) },
+    { "setvar",         CMD_SET_VAR,          L(V, { PARAM_NUMERIC_COLOR }) },
     { "stroke",         CMD_STROKE,           NONE },
     { "t",              CMD_T_CURVE_TO_REL,   R(N, N) },
     { "translate",      CMD_TRANSLATE,        L(N, N) },
@@ -405,6 +407,22 @@ static int vgs_cmd_change_path(enum VGSCommand cmd) {
         return 1;
     }
 }
+
+
+/// Colors in cairo are defined by 4 values, between 0 and 1. Computed colors
+/// (either by #RRGGBB expressions, or by commands like `defhsla`) are stored
+/// in the values that will be sent to Cairo.
+typedef double cairo_color[4];
+
+static av_always_inline void color_copy(cairo_color *dest, const cairo_color *src) {
+    memcpy(dest, src, sizeof(cairo_color));
+}
+
+static av_always_inline void color_reset(cairo_color *const dest) {
+    for (int i = 0; i < FF_ARRAY_ELEMS(*dest); i++)
+        (*dest)[i] = NAN;
+}
+
 
 /*
  * == VGS Parser ==
@@ -631,7 +649,6 @@ next_token:
 struct VGSArgument {
     enum {
         ARG_COLOR = 1,
-        ARG_COLOR_VAR,
         ARG_CONST,
         ARG_EXPR,
         ARG_LITERAL,
@@ -642,7 +659,7 @@ struct VGSArgument {
     } type;
 
     union {
-        uint8_t color[4];
+        cairo_color *color;
         int constant;
         AVExpr *expr;
         double literal;
@@ -686,6 +703,10 @@ static void vgs_statement_free(struct VGSStatement *stm) {
         struct VGSArgument *arg = &stm->args[j];
 
         switch (arg->type) {
+        case ARG_COLOR:
+            av_freep(&arg->color);
+            break;
+
         case ARG_EXPR:
             av_expr_free(arg->expr);
             break;
@@ -720,6 +741,32 @@ static void vgs_free(struct VGSProgram *program) {
     }
 }
 
+static int vgs_parse_color(
+    void *log_ctx,
+    struct VGSArgument *arg,
+    const struct VGSParser *parser,
+    const struct VGSParserToken *token
+) {
+    uint8_t color[4];
+
+    const int ret = av_parse_color(color, token->lexeme, token->length, log_ctx);
+    if (ret != 0) {
+        vgs_log_invalid_token(log_ctx, parser, token, "Expected color.");
+        return ret;
+    }
+
+    arg->type = ARG_COLOR;
+    arg->color = av_malloc(sizeof(cairo_color));
+
+    if (arg->color == NULL)
+        return AVERROR(ENOMEM);
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(*arg->color); i++)
+        (*arg->color)[i] = (double)color[i] / 255.0;
+
+    return 0;
+}
+
 /// Consume the next argument as a numeric value, and store it in `arg`.
 ///
 /// Return `0` on success, and a negative `AVERROR` code on failure.
@@ -727,7 +774,8 @@ static int vgs_parse_numeric_argument(
     void *log_ctx,
     struct VGSParser *parser,
     struct VGSArgument *arg,
-    int metadata
+    int metadata,
+    bool accept_colors
 ) {
     int ret;
     char stack_buf[64];
@@ -783,6 +831,14 @@ static int vgs_parse_numeric_argument(
         break;
 
     case TOKEN_WORD:
+        // If the token starts with `#` it is parsed as a color. If not, it
+        // must be a variable.
+
+        if (accept_colors && lexeme[0] == '#') {
+            ret = vgs_parse_color(log_ctx, arg, parser, &token);
+            break;
+        }
+
         ret = 1;
         for (int i = 0; i < VAR_COUNT; i++) {
             const char *var = parser->var_names[i];
@@ -825,9 +881,13 @@ static int vgs_parse_numeric_argument(
     return ret;
 }
 
-/// Check if the next token is a numeric value, so the last command must be
-/// repeated.
-static int vgs_parser_can_repeat_cmd(void *log_ctx, struct VGSParser *parser) {
+/// Check if the next token is a numeric value (or a color, if `accept_colors`
+/// is true), so the last command must be repeated.
+static int vgs_parser_can_repeat_cmd(
+    void *log_ctx,
+    struct VGSParser *parser,
+    bool accept_colors
+) {
     struct VGSParserToken token = { 0 };
 
     const int ret = vgs_parser_next_token(log_ctx, parser, &token, 0);
@@ -842,11 +902,16 @@ static int vgs_parser_can_repeat_cmd(void *log_ctx, struct VGSParser *parser) {
 
     case TOKEN_WORD:
         // If the next token is a word, it will be considered to repeat
-        // the command only if it is a variable, and there is not
-        // known command with the same name.
+        // the command only if it is a variable, and there is no known
+        // command with the same name.
+        //
+        // Color expressions are also valid if `accept_colors` is true.
 
         if (vgs_get_command(token.lexeme, token.length) != NULL)
             return 1;
+
+        if (accept_colors && token.lexeme[0] == '#')
+            return 0;
 
         for (int i = 0; i < VAR_COUNT; i++) {
             const char *var = parser->var_names[i];
@@ -925,7 +990,7 @@ static int vgs_parse_statement(
             // to append it to the current statement.
 
             if (statement.args_count < MAX_COMMAND_PARAMS
-                && vgs_parser_can_repeat_cmd(log_ctx, parser) == 0
+                && vgs_parser_can_repeat_cmd(log_ctx, parser, false) == 0
             ) {
                 param--;
             } else {
@@ -949,7 +1014,7 @@ static int vgs_parse_statement(
 
             // May repeat if the next token is numeric.
             if (param->type != PARAM_END
-                && vgs_parser_can_repeat_cmd(log_ctx, parser) == 0
+                && vgs_parser_can_repeat_cmd(log_ctx, parser, false) == 0
             ) {
                 param = &decl->params[0];
                 statement.args = NULL;
@@ -971,20 +1036,18 @@ static int vgs_parse_statement(
                     break;
 
                 if (vgs_token_is_string(&token, parser->var_names[i])) {
-                    arg.type = ARG_COLOR_VAR;
-                    arg.variable = i - VAR_U0;
+                    arg.type = ARG_VARIABLE;
+                    arg.variable = i;
                     break;
                 }
             }
 
-            if (arg.type == ARG_COLOR_VAR)
+            if (arg.type == ARG_VARIABLE)
                 break;
 
-            ret = av_parse_color(arg.color, token.lexeme, token.length, log_ctx);
-            if (ret != 0) {
-                vgs_log_invalid_token(log_ctx, parser, &token, "Expected color.");
+            ret = vgs_parse_color(log_ctx, &arg, parser, &token);
+            if (ret != 0)
                 FAIL(EINVAL);
-            }
 
             break;
 
@@ -1023,7 +1086,7 @@ static int vgs_parse_statement(
         }
 
         case PARAM_PROC_ARGS:
-            if (vgs_parser_can_repeat_cmd(log_ctx, parser) != 0) {
+            if (vgs_parser_can_repeat_cmd(log_ctx, parser, true) != 0) {
                 // No more arguments. Jump to next parameter.
                 param++;
                 continue;
@@ -1038,12 +1101,14 @@ static int vgs_parse_statement(
             /* fallthrough */
 
         case PARAM_NUMERIC:
+        case PARAM_NUMERIC_COLOR:
         case PARAM_NUMERIC_METADATA:
             ret = vgs_parse_numeric_argument(
                 log_ctx,
                 parser,
                 &arg,
-                param->type == PARAM_NUMERIC_METADATA
+                param->type == PARAM_NUMERIC_METADATA,
+                param->type == PARAM_NUMERIC_COLOR || param->type == PARAM_PROC_ARGS
             );
 
             if (ret != 0)
@@ -1333,9 +1398,6 @@ fail:
 /// Number of different states for the `randomg` function.
 #define RANDOM_STATES 4
 
-/// Cairo requires each color component to be a double.
-typedef double cairo_color[4];
-
 /// Block assigned to a procedure by a call to the `proc` command.
 struct VGSProcedure {
     const struct VGSProgram *program;
@@ -1561,8 +1623,7 @@ static int vgs_eval_state_init(
         state->vars[i] = NAN;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(state->color_vars); i++)
-        for (int j = 0; j < FF_ARRAY_ELEMS(state->color_vars[i]); j++)
-            state->color_vars[i][j] = NAN;
+        color_reset(&state->color_vars[i]);
 
     return 0;
 }
@@ -1842,12 +1903,8 @@ static int vgs_eval(
 
             switch (a->type) {
             case ARG_COLOR:
-                for (int i = 0; i < FF_ARRAY_ELEMS(colors[arg]); i++)
-                    colors[arg][i] = ((double)a->color[i]) / 255.0;
-                break;
-
-            case ARG_COLOR_VAR:
-                memcpy(&colors[arg], &state->color_vars[a->variable], sizeof(cairo_color));
+                numerics[arg] = NAN;
+                color_copy(&colors[arg], a->color);
                 break;
 
             case ARG_EXPR:
@@ -1861,6 +1918,12 @@ static int vgs_eval(
             case ARG_VARIABLE:
                 av_assert0(a->variable < VAR_COUNT);
                 numerics[arg] = state->vars[a->variable];
+
+                if (a->variable >= VAR_U0)
+                    color_copy(&colors[arg], &state->color_vars[a->variable - VAR_U0]);
+                else
+                    color_reset(&colors[arg]);
+
                 break;
 
             default:
@@ -2165,26 +2228,38 @@ static int vgs_eval(
                 av_log(state->log_ctx, AV_LOG_ERROR,
                     "Missing body for procedure '%s'\n", proc_name);
             } else {
-                int ret;
                 double current_vars[MAX_PROC_ARGS] = { 0 };
+                cairo_color current_color_vars[MAX_PROC_ARGS];
 
                 // Set variables for the procedure arguments
                 for (int i = 0; i < proc_args; i++) {
                     const int var = proc->args[i];
-                    if (var != -1) {
-                        current_vars[i] = state->vars[var];
-                        state->vars[var] = numerics[i + 1];
-                    }
+                    if (var == -1)
+                        continue;
+
+                    const int color_var = var - VAR_U0;
+
+                    // Assign both color and numeric values.
+
+                    current_vars[i] = state->vars[var];
+                    color_copy(&current_color_vars[i], &state->color_vars[color_var]);
+
+                    state->vars[var] = numerics[i + 1];
+                    color_copy(&state->color_vars[color_var], &colors[i + 1]);
                 }
 
-                ret = vgs_eval(state, proc->program);
+                const int ret = vgs_eval(state, proc->program);
 
                 // Restore variable values.
                 for (int i = 0; i < proc_args; i++) {
                     const int var = proc->args[i];
-                    if (var != -1) {
-                        state->vars[var] = current_vars[i];
-                    }
+                    if (var == -1)
+                        continue;
+
+                    const int color_var = var - VAR_U0;
+
+                    color_copy(&state->color_vars[color_var], &current_color_vars[i]);
+                    state->vars[var] = current_vars[i];
                 }
 
                 if (ret != 0)
@@ -2399,9 +2474,11 @@ static int vgs_eval(
             ASSERT_ARGS(2);
 
             const int user_var = statement->args[0].constant;
-
             av_assert0(user_var >= VAR_U0 && user_var < (VAR_U0 + USER_VAR_COUNT));
+
+            color_copy(&state->color_vars[user_var - VAR_U0], &colors[1]);
             state->vars[user_var] = numerics[1];
+
             break;
         }
 

@@ -93,6 +93,18 @@ defhsla c1 200 0.7 0.8 0.9
 setcolor c0 fill
 setcolor c1 fill
 
+// Colors as arguments for setvar/call.
+setvar color0 #123456
+setvar color1 #abcdef@0.4
+setvar color2 color1
+setvar a 123
+
+setcolor color2 stroke
+setcolor color0 stroke
+proc f3 a0 a1 a2 { setcolor a1 stroke print a0 a2 }
+call f3 1 color1 a
+call f3 -1 #50A0F0@0.2 (-a)
+
 // Frame metadata
 getmetadata md0 m.a
 getmetadata md1 m.b

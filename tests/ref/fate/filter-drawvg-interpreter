@@ -76,6 +76,16 @@ cairo_fill
 cairo_set_source #a8d8f0e6
 cairo_set_fill_rule 0
 cairo_fill
+cairo_set_source #abcdef66
+cairo_stroke
+cairo_set_source #123456ff
+cairo_stroke
+cairo_set_source #abcdef66
+cairo_stroke
+av_log[32]: [104:45] a0 = 1.000000 | [104:48] a2 = 123.000000
+cairo_set_source #50a0f033
+cairo_stroke
+av_log[32]: [104:45] a0 = -1.000000 | [104:48] a2 = -123.000000
 cairo_rel_line_to 1.0 3.0
 cairo_rel_line_to nan 0.0
 
