@@ -58,7 +58,7 @@ static void check_xyz12Torgb48le(void)
     LOCAL_ALIGNED_8(uint16_t, dst_ref, [3 * MAX_LINE_SIZE * NUM_LINES]);
     LOCAL_ALIGNED_8(uint16_t, dst_new, [3 * MAX_LINE_SIZE * NUM_LINES]);
 
-    declare_func(void, const SwsContext *, uint8_t *, int, const uint8_t *,
+    declare_func(void, const SwsInternal *, uint8_t *, int, const uint8_t *,
                  int, int, int);
 
     SwsInternal c;
@@ -80,16 +80,16 @@ static void check_xyz12Torgb48le(void)
                 memset(dst_new, 0xFE,
                        3 * sizeof(uint16_t) * MAX_LINE_SIZE * NUM_LINES);
 
-                call_ref((const SwsContext*)&c, (uint8_t *)dst_ref, dst_stride,
+                call_ref(&c, (uint8_t *)dst_ref, dst_stride,
                          (const uint8_t *)src, src_stride, width, height);
-                call_new((const SwsContext*)&c, (uint8_t *)dst_new, dst_stride,
+                call_new(&c, (uint8_t *)dst_new, dst_stride,
                          (const uint8_t *)src, src_stride, width, height);
 
                 checkasm_check(uint16_t, dst_ref, dst_stride, dst_new,
                                dst_stride, width, height, "dst_rgb");
 
                 if (!(width & 3) && height == NUM_LINES) {
-                    bench_new((const SwsContext*)&c, (uint8_t *)dst_new,
+                    bench_new(&c, (uint8_t *)dst_new,
                               dst_stride, (const uint8_t *)src, src_stride,
                               width, height);
                 }
