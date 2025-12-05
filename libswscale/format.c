@@ -655,6 +655,107 @@ static int is_regular_fmt(enum AVPixelFormat fmt)
     return total_bits == step * 8;
 }
 
+typedef struct FmtInfo {
+    SwsReadWriteOp rw;
+    SwsSwizzleOp   swizzle;
+    SwsPackOp      pack;
+    int            shift;
+} FmtInfo;
+
+#define BITSTREAM_FMT(SWIZ, FRAC, PACKED, ...) (FmtInfo) {      \
+    .rw = { .elems = 1, .frac = FRAC, .packed = PACKED },       \
+    .swizzle = SWIZ,                                            \
+    __VA_ARGS__                                                 \
+}
+
+#define SUBPACKED_FMT(SWIZ, ...) (FmtInfo) {                    \
+    .rw = { .elems = 1, .packed = true },                       \
+    .swizzle = SWIZ,                                            \
+    .pack.pattern = {__VA_ARGS__},                              \
+}
+
+#define PACKED_FMT(SWIZ, N, ...) (FmtInfo) {                    \
+    .rw = { .elems = N, .packed = (N) > 1 },                    \
+    .swizzle = SWIZ,                                            \
+    __VA_ARGS__                                                 \
+}
+
+#define RGBA SWS_SWIZZLE(0, 1, 2, 3)
+#define BGRA SWS_SWIZZLE(2, 1, 0, 3)
+#define ARGB SWS_SWIZZLE(3, 0, 1, 2)
+#define ABGR SWS_SWIZZLE(3, 2, 1, 0)
+#define AVYU SWS_SWIZZLE(3, 2, 0, 1)
+#define VYUA SWS_SWIZZLE(2, 0, 1, 3)
+#define UYVA SWS_SWIZZLE(1, 0, 2, 3)
+#define VUYA BGRA
+
+static FmtInfo fmt_info_irregular(enum AVPixelFormat fmt)
+{
+    switch (fmt) {
+    /* Bitstream formats */
+    case AV_PIX_FMT_MONOWHITE:
+    case AV_PIX_FMT_MONOBLACK:
+        return BITSTREAM_FMT(RGBA, 3, false);
+    case AV_PIX_FMT_RGB4: return BITSTREAM_FMT(RGBA, 1, true, .pack = {{ 1, 2, 1 }});
+    case AV_PIX_FMT_BGR4: return BITSTREAM_FMT(BGRA, 1, true, .pack = {{ 1, 2, 1 }});
+
+    /* Sub-packed 8-bit aligned formats */
+    case AV_PIX_FMT_RGB4_BYTE:  return SUBPACKED_FMT(RGBA, 1, 2, 1);
+    case AV_PIX_FMT_BGR4_BYTE:  return SUBPACKED_FMT(BGRA, 1, 2, 1);
+    case AV_PIX_FMT_RGB8:       return SUBPACKED_FMT(RGBA, 3, 3, 2);
+    case AV_PIX_FMT_BGR8:       return SUBPACKED_FMT(BGRA, 2, 3, 3);
+
+    /* Sub-packed 16-bit aligned formats */
+    case AV_PIX_FMT_RGB565LE:
+    case AV_PIX_FMT_RGB565BE:
+        return SUBPACKED_FMT(RGBA, 5, 6, 5);
+    case AV_PIX_FMT_BGR565LE:
+    case AV_PIX_FMT_BGR565BE:
+        return SUBPACKED_FMT(BGRA, 5, 6, 5);
+    case AV_PIX_FMT_RGB555LE:
+    case AV_PIX_FMT_RGB555BE:
+        return SUBPACKED_FMT(RGBA, 5, 5, 5);
+    case AV_PIX_FMT_BGR555LE:
+    case AV_PIX_FMT_BGR555BE:
+        return SUBPACKED_FMT(BGRA, 5, 5, 5);
+    case AV_PIX_FMT_RGB444LE:
+    case AV_PIX_FMT_RGB444BE:
+        return SUBPACKED_FMT(RGBA, 4, 4, 4);
+    case AV_PIX_FMT_BGR444LE:
+    case AV_PIX_FMT_BGR444BE:
+        return SUBPACKED_FMT(BGRA, 4, 4, 4);
+
+    /* Sub-packed 32-bit aligned formats */
+    case AV_PIX_FMT_X2RGB10LE:
+    case AV_PIX_FMT_X2RGB10BE:
+        return SUBPACKED_FMT(ARGB, 2, 10, 10, 10);
+    case AV_PIX_FMT_X2BGR10LE:
+    case AV_PIX_FMT_X2BGR10BE:
+        return SUBPACKED_FMT(ABGR, 2, 10, 10, 10);
+    case AV_PIX_FMT_XV30LE:
+    case AV_PIX_FMT_XV30BE:
+        return SUBPACKED_FMT(AVYU, 2, 10, 10, 10);
+    case AV_PIX_FMT_V30XLE:
+    case AV_PIX_FMT_V30XBE:
+        return SUBPACKED_FMT(VYUA, 10, 10, 10, 2);
+
+    /* 3-component formats with extra padding */
+    case AV_PIX_FMT_RGB0:   return PACKED_FMT(RGBA, 4);
+    case AV_PIX_FMT_BGR0:   return PACKED_FMT(BGRA, 4);
+    case AV_PIX_FMT_0RGB:   return PACKED_FMT(ARGB, 4);
+    case AV_PIX_FMT_0BGR:   return PACKED_FMT(ABGR, 4);
+    case AV_PIX_FMT_VUYX:   return PACKED_FMT(VUYA, 4);
+    case AV_PIX_FMT_XV36LE:
+    case AV_PIX_FMT_XV36BE:
+        return PACKED_FMT(UYVA, 4, .shift = 4);
+    case AV_PIX_FMT_XV48LE:
+    case AV_PIX_FMT_XV48BE:
+        return PACKED_FMT(UYVA, 4);
+    }
+
+    return (FmtInfo) {0};
+}
+
 struct comp {
     int index;
     int plane;
@@ -692,41 +793,8 @@ static SwsSwizzleOp fmt_swizzle(enum AVPixelFormat fmt)
         return swiz;
     }
 
-    switch (fmt) {
-    case AV_PIX_FMT_0RGB:
-    case AV_PIX_FMT_X2RGB10LE:
-    case AV_PIX_FMT_X2RGB10BE:
-        return (SwsSwizzleOp) {{ .x = 3, 0, 1, 2 }};
-    case AV_PIX_FMT_BGR8:
-    case AV_PIX_FMT_BGR4:
-    case AV_PIX_FMT_BGR4_BYTE:
-    case AV_PIX_FMT_BGR565BE:
-    case AV_PIX_FMT_BGR565LE:
-    case AV_PIX_FMT_BGR555BE:
-    case AV_PIX_FMT_BGR555LE:
-    case AV_PIX_FMT_BGR444BE:
-    case AV_PIX_FMT_BGR444LE:
-    case AV_PIX_FMT_BGR0:
-    case AV_PIX_FMT_VUYX:
-        return (SwsSwizzleOp) {{ .x = 2, 1, 0, 3 }};
-    case AV_PIX_FMT_0BGR:
-    case AV_PIX_FMT_X2BGR10LE:
-    case AV_PIX_FMT_X2BGR10BE:
-        return (SwsSwizzleOp) {{ .x = 3, 2, 1, 0 }};
-    case AV_PIX_FMT_XV30BE:
-    case AV_PIX_FMT_XV30LE:
-        return (SwsSwizzleOp) {{ .x = 3, 2, 0, 1 }};
-    case AV_PIX_FMT_V30XBE:
-    case AV_PIX_FMT_V30XLE:
-        return (SwsSwizzleOp) {{ .x = 2, 0, 1, 3 }};
-    case AV_PIX_FMT_XV36BE:
-    case AV_PIX_FMT_XV36LE:
-    case AV_PIX_FMT_XV48BE:
-    case AV_PIX_FMT_XV48LE:
-        return (SwsSwizzleOp) {{ .x = 1, 0, 2, 3 }};
-    default:
-        return (SwsSwizzleOp) {{ .x = 0, 1, 2, 3 }};
-    }
+    /* This function is only ever called if fmt_read_write() already passes */
+    return fmt_info_irregular(fmt).swizzle;
 }
 
 static SwsSwizzleOp swizzle_inv(SwsSwizzleOp swiz) {
@@ -747,14 +815,8 @@ static int fmt_shift(enum AVPixelFormat fmt)
         return desc->comp[0].shift;
     }
 
-    switch (fmt) {
-    case AV_PIX_FMT_XV36BE:
-    case AV_PIX_FMT_XV36LE:
-        return 4;
-    default:
-        /* Sub-byte irregular formats are always handled by SWS_OP_(UN)PACK */
-        return 0;
-    }
+    /* This function is only ever called if fmt_read_write() already passes */
+    return fmt_info_irregular(fmt).shift;
 }
 
 /**
@@ -809,93 +871,13 @@ static int fmt_read_write(enum AVPixelFormat fmt, SwsReadWriteOp *rw_op,
         return 0;
     }
 
-    switch (fmt) {
-    /* Packed bitstream formats */
-    case AV_PIX_FMT_MONOWHITE:
-    case AV_PIX_FMT_MONOBLACK:
-        *pack_op = (SwsPackOp) {0};
-        *rw_op = (SwsReadWriteOp) {
-            .elems = 1,
-            .frac  = 3,
-        };
-        return 0;
-    case AV_PIX_FMT_RGB4:
-    case AV_PIX_FMT_BGR4:
-        *pack_op = (SwsPackOp) {{ 1, 2, 1 }};
-        *rw_op = (SwsReadWriteOp) {
-            .elems = 1,
-            .packed = true,
-            .frac  = 1,
-        };
-        return 0;
-    /* Packed 8-bit aligned formats */
-    case AV_PIX_FMT_RGB4_BYTE:
-    case AV_PIX_FMT_BGR4_BYTE:
-        *pack_op = (SwsPackOp) {{ 1, 2, 1 }};
-        *rw_op = (SwsReadWriteOp) { .elems = 1, .packed = true };
-        return 0;
-    case AV_PIX_FMT_BGR8:
-        *pack_op = (SwsPackOp) {{ 2, 3, 3 }};
-        *rw_op = (SwsReadWriteOp) { .elems = 1, .packed = true };
-        return 0;
-    case AV_PIX_FMT_RGB8:
-        *pack_op = (SwsPackOp) {{ 3, 3, 2 }};
-        *rw_op = (SwsReadWriteOp) { .elems = 1, .packed = true };
-        return 0;
+    FmtInfo info = fmt_info_irregular(fmt);
+    if (!info.rw.elems)
+        return AVERROR(ENOTSUP);
 
-    /* Packed 16-bit aligned formats */
-    case AV_PIX_FMT_RGB565BE:
-    case AV_PIX_FMT_RGB565LE:
-    case AV_PIX_FMT_BGR565BE:
-    case AV_PIX_FMT_BGR565LE:
-        *pack_op = (SwsPackOp) {{ 5, 6, 5 }};
-        *rw_op = (SwsReadWriteOp) { .elems = 1, .packed = true };
-        return 0;
-    case AV_PIX_FMT_RGB555BE:
-    case AV_PIX_FMT_RGB555LE:
-    case AV_PIX_FMT_BGR555BE:
-    case AV_PIX_FMT_BGR555LE:
-        *pack_op = (SwsPackOp) {{ 5, 5, 5 }};
-        *rw_op = (SwsReadWriteOp) { .elems = 1, .packed = true };
-        return 0;
-    case AV_PIX_FMT_RGB444BE:
-    case AV_PIX_FMT_RGB444LE:
-    case AV_PIX_FMT_BGR444BE:
-    case AV_PIX_FMT_BGR444LE:
-        *pack_op = (SwsPackOp) {{ 4, 4, 4 }};
-        *rw_op = (SwsReadWriteOp) { .elems = 1, .packed = true };
-        return 0;
-    /* Packed 32-bit aligned 4:4:4 formats */
-    case AV_PIX_FMT_X2RGB10BE:
-    case AV_PIX_FMT_X2RGB10LE:
-    case AV_PIX_FMT_X2BGR10BE:
-    case AV_PIX_FMT_X2BGR10LE:
-    case AV_PIX_FMT_XV30BE:
-    case AV_PIX_FMT_XV30LE:
-        *pack_op = (SwsPackOp) {{ 2, 10, 10, 10 }};
-        *rw_op = (SwsReadWriteOp) { .elems = 1, .packed = true };
-        return 0;
-    case AV_PIX_FMT_V30XBE:
-    case AV_PIX_FMT_V30XLE:
-        *pack_op = (SwsPackOp) {{ 10, 10, 10, 2 }};
-        *rw_op = (SwsReadWriteOp) { .elems = 1, .packed = true };
-        return 0;
-    /* 3 component formats with one channel ignored */
-    case AV_PIX_FMT_RGB0:
-    case AV_PIX_FMT_BGR0:
-    case AV_PIX_FMT_0RGB:
-    case AV_PIX_FMT_0BGR:
-    case AV_PIX_FMT_XV36BE:
-    case AV_PIX_FMT_XV36LE:
-    case AV_PIX_FMT_XV48BE:
-    case AV_PIX_FMT_XV48LE:
-    case AV_PIX_FMT_VUYX:
-        *pack_op = (SwsPackOp) {0};
-        *rw_op = (SwsReadWriteOp) { .elems = 4, .packed = true };
-        return 0;
-    }
-
-    return AVERROR(ENOTSUP);
+    *pack_op = info.pack;
+    *rw_op   = info.rw;
+    return 0;
 }
 
 static SwsPixelType get_packed_type(SwsPackOp pack)
