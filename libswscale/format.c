@@ -788,11 +788,15 @@ static SwsConst fmt_clear(enum AVPixelFormat fmt)
 }
 
 static int fmt_read_write(enum AVPixelFormat fmt, SwsReadWriteOp *rw_op,
-                          SwsPackOp *pack_op)
+                          SwsPackOp *pack_op, SwsPixelType *pixel_type)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
     if (!desc)
         return AVERROR(EINVAL);
+
+    *pixel_type = fmt_pixel_type(fmt);
+    if (!*pixel_type)
+        return AVERROR(ENOTSUP);
 
     switch (fmt) {
     case AV_PIX_FMT_NONE:
@@ -1024,12 +1028,13 @@ static SwsPixelType get_packed_type(SwsPackOp pack)
 int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-    SwsPixelType pixel_type = fmt_pixel_type(fmt);
-    SwsPixelType raw_type = pixel_type;
+    SwsPixelType pixel_type;
     SwsReadWriteOp rw_op;
     SwsPackOp unpack;
 
-    RET(fmt_read_write(fmt, &rw_op, &unpack));
+    RET(fmt_read_write(fmt, &rw_op, &unpack, &pixel_type));
+
+    SwsPixelType raw_type = pixel_type;
     if (unpack.pattern[0])
         raw_type = get_packed_type(unpack);
 
@@ -1085,12 +1090,13 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
 int ff_sws_encode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-    SwsPixelType pixel_type = fmt_pixel_type(fmt);
-    SwsPixelType raw_type = pixel_type;
+    SwsPixelType pixel_type;
     SwsReadWriteOp rw_op;
     SwsPackOp pack;
 
-    RET(fmt_read_write(fmt, &rw_op, &pack));
+    RET(fmt_read_write(fmt, &rw_op, &pack, &pixel_type));
+
+    SwsPixelType raw_type = pixel_type;
     if (pack.pattern[0])
         raw_type = get_packed_type(pack);
 
