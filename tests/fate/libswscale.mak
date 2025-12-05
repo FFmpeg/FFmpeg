@@ -36,6 +36,10 @@ FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-unscaled
 fate-sws-unscaled: libswscale/tests/swscale$(EXESUF)
 fate-sws-unscaled: CMD = run libswscale/tests/swscale$(EXESUF) -unscaled 1 -flags 0x100000 -v 16
 
+FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-ops-list
+fate-sws-ops-list: libswscale/tests/sws_ops$(EXESUF)
+fate-sws-ops-list: CMD = run libswscale/tests/sws_ops$(EXESUF) | do_md5sum | cut -d" " -f1
+
 FATE_LIBSWSCALE += $(FATE_LIBSWSCALE-yes)
 FATE_LIBSWSCALE_SAMPLES += $(FATE_LIBSWSCALE_SAMPLES-yes)
 FATE-$(CONFIG_SWSCALE) += $(FATE_LIBSWSCALE)
