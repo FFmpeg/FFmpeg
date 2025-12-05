@@ -1216,6 +1216,7 @@ static SwsLinearOp fmt_decode_range(const SwsFormat fmt, bool *incomplete)
 
     /* Invert main diagonal + offset: x = s * y + k  ==>  y = (x - k) / s */
     for (int i = 0; i < 4; i++) {
+        av_assert1(c.m[i][i].num);
         c.m[i][i] = av_inv_q(c.m[i][i]);
         c.m[i][4] = av_mul_q(c.m[i][4], av_neg_q(c.m[i][i]));
     }
