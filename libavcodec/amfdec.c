@@ -274,15 +274,16 @@ static int amf_decode_init(AVCodecContext *avctx)
     if (!ctx->in_pkt)
         return AVERROR(ENOMEM);
 
-    if  (avctx->hw_device_ctx && !avctx->hw_frames_ctx) {
+    if  (avctx->hw_device_ctx) {
         AVHWDeviceContext   *hwdev_ctx;
         hwdev_ctx = (AVHWDeviceContext*)avctx->hw_device_ctx->data;
         if (hwdev_ctx->type == AV_HWDEVICE_TYPE_AMF)
         {
             ctx->device_ctx_ref = av_buffer_ref(avctx->hw_device_ctx);
-            avctx->hw_frames_ctx = av_hwframe_ctx_alloc(avctx->hw_device_ctx);
-
-            AMF_GOTO_FAIL_IF_FALSE(avctx, !!avctx->hw_frames_ctx, AVERROR(ENOMEM), "av_hwframe_ctx_alloc failed\n");
+            if (!avctx->hw_frames_ctx) {
+                avctx->hw_frames_ctx = av_hwframe_ctx_alloc(avctx->hw_device_ctx);
+                AMF_GOTO_FAIL_IF_FALSE(avctx, !!avctx->hw_frames_ctx, AVERROR(ENOMEM), "av_hwframe_ctx_alloc failed\n");
+            }
         } else {
             ret = av_hwdevice_ctx_create_derived(&ctx->device_ctx_ref, AV_HWDEVICE_TYPE_AMF, avctx->hw_device_ctx, 0);
             AMF_GOTO_FAIL_IF_FALSE(avctx, ret == 0, ret, "Failed to create derived AMF device context: %s\n", av_err2str(ret));
