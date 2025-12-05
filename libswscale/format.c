@@ -800,11 +800,16 @@ static int fmt_read_write(enum AVPixelFormat fmt, SwsReadWriteOp *rw_op,
     if (!*pixel_type)
         return AVERROR(ENOTSUP);
 
-    switch (fmt) {
-    case AV_PIX_FMT_NONE:
-    case AV_PIX_FMT_NB:
-        break;
+    if (is_regular_fmt(fmt)) {
+        *pack_op = (SwsPackOp) {0};
+        *rw_op = (SwsReadWriteOp) {
+            .elems  = desc->nb_components,
+            .packed = desc->nb_components > 1 && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR),
+        };
+        return 0;
+    }
 
+    switch (fmt) {
     /* Packed bitstream formats */
     case AV_PIX_FMT_MONOWHITE:
     case AV_PIX_FMT_MONOBLACK:
@@ -887,122 +892,6 @@ static int fmt_read_write(enum AVPixelFormat fmt, SwsReadWriteOp *rw_op,
     case AV_PIX_FMT_VUYX:
         *pack_op = (SwsPackOp) {0};
         *rw_op = (SwsReadWriteOp) { .elems = 4, .packed = true };
-        return 0;
-    /* Unpacked byte-aligned 4:4:4 formats */
-    case AV_PIX_FMT_YUV444P:
-    case AV_PIX_FMT_YUVJ444P:
-    case AV_PIX_FMT_YUV444P9BE:
-    case AV_PIX_FMT_YUV444P9LE:
-    case AV_PIX_FMT_YUV444P10BE:
-    case AV_PIX_FMT_YUV444P10LE:
-    case AV_PIX_FMT_YUV444P12BE:
-    case AV_PIX_FMT_YUV444P12LE:
-    case AV_PIX_FMT_YUV444P14BE:
-    case AV_PIX_FMT_YUV444P14LE:
-    case AV_PIX_FMT_YUV444P16BE:
-    case AV_PIX_FMT_YUV444P16LE:
-    case AV_PIX_FMT_YUV444P10MSBBE:
-    case AV_PIX_FMT_YUV444P10MSBLE:
-    case AV_PIX_FMT_YUV444P12MSBBE:
-    case AV_PIX_FMT_YUV444P12MSBLE:
-    case AV_PIX_FMT_YUVA444P:
-    case AV_PIX_FMT_YUVA444P9BE:
-    case AV_PIX_FMT_YUVA444P9LE:
-    case AV_PIX_FMT_YUVA444P10BE:
-    case AV_PIX_FMT_YUVA444P10LE:
-    case AV_PIX_FMT_YUVA444P12BE:
-    case AV_PIX_FMT_YUVA444P12LE:
-    case AV_PIX_FMT_YUVA444P16BE:
-    case AV_PIX_FMT_YUVA444P16LE:
-    case AV_PIX_FMT_AYUV:
-    case AV_PIX_FMT_UYVA:
-    case AV_PIX_FMT_VYU444:
-    case AV_PIX_FMT_AYUV64BE:
-    case AV_PIX_FMT_AYUV64LE:
-    case AV_PIX_FMT_VUYA:
-    case AV_PIX_FMT_RGB24:
-    case AV_PIX_FMT_BGR24:
-    case AV_PIX_FMT_RGB48BE:
-    case AV_PIX_FMT_RGB48LE:
-    case AV_PIX_FMT_BGR48BE:
-    case AV_PIX_FMT_BGR48LE:
-    //case AV_PIX_FMT_RGB96BE: TODO: AVRational can't fit 2^32-1
-    //case AV_PIX_FMT_RGB96LE:
-    //case AV_PIX_FMT_RGBF16BE: TODO: no support for float16 currently
-    //case AV_PIX_FMT_RGBF16LE:
-    case AV_PIX_FMT_RGBF32BE:
-    case AV_PIX_FMT_RGBF32LE:
-    case AV_PIX_FMT_ARGB:
-    case AV_PIX_FMT_RGBA:
-    case AV_PIX_FMT_ABGR:
-    case AV_PIX_FMT_BGRA:
-    case AV_PIX_FMT_RGBA64BE:
-    case AV_PIX_FMT_RGBA64LE:
-    case AV_PIX_FMT_BGRA64BE:
-    case AV_PIX_FMT_BGRA64LE:
-    //case AV_PIX_FMT_RGBA128BE: TODO: AVRational can't fit 2^32-1
-    //case AV_PIX_FMT_RGBA128LE:
-    case AV_PIX_FMT_RGBAF32BE:
-    case AV_PIX_FMT_RGBAF32LE:
-    case AV_PIX_FMT_GBRP:
-    case AV_PIX_FMT_GBRP9BE:
-    case AV_PIX_FMT_GBRP9LE:
-    case AV_PIX_FMT_GBRP10BE:
-    case AV_PIX_FMT_GBRP10LE:
-    case AV_PIX_FMT_GBRP12BE:
-    case AV_PIX_FMT_GBRP12LE:
-    case AV_PIX_FMT_GBRP14BE:
-    case AV_PIX_FMT_GBRP14LE:
-    case AV_PIX_FMT_GBRP16BE:
-    case AV_PIX_FMT_GBRP16LE:
-    //case AV_PIX_FMT_GBRPF16BE: TODO
-    //case AV_PIX_FMT_GBRPF16LE:
-    case AV_PIX_FMT_GBRP10MSBBE:
-    case AV_PIX_FMT_GBRP10MSBLE:
-    case AV_PIX_FMT_GBRP12MSBBE:
-    case AV_PIX_FMT_GBRP12MSBLE:
-    case AV_PIX_FMT_GBRPF32BE:
-    case AV_PIX_FMT_GBRPF32LE:
-    case AV_PIX_FMT_GBRAP:
-    case AV_PIX_FMT_GBRAP10BE:
-    case AV_PIX_FMT_GBRAP10LE:
-    case AV_PIX_FMT_GBRAP12BE:
-    case AV_PIX_FMT_GBRAP12LE:
-    case AV_PIX_FMT_GBRAP14BE:
-    case AV_PIX_FMT_GBRAP14LE:
-    case AV_PIX_FMT_GBRAP16BE:
-    case AV_PIX_FMT_GBRAP16LE:
-    //case AV_PIX_FMT_GBRAPF16BE: TODO
-    //case AV_PIX_FMT_GBRAPF16LE:
-    case AV_PIX_FMT_GBRAPF32BE:
-    case AV_PIX_FMT_GBRAPF32LE:
-    case AV_PIX_FMT_GRAY8:
-    case AV_PIX_FMT_GRAY9BE:
-    case AV_PIX_FMT_GRAY9LE:
-    case AV_PIX_FMT_GRAY10BE:
-    case AV_PIX_FMT_GRAY10LE:
-    case AV_PIX_FMT_GRAY12BE:
-    case AV_PIX_FMT_GRAY12LE:
-    case AV_PIX_FMT_GRAY14BE:
-    case AV_PIX_FMT_GRAY14LE:
-    case AV_PIX_FMT_GRAY16BE:
-    case AV_PIX_FMT_GRAY16LE:
-    //case AV_PIX_FMT_GRAYF16BE: TODO
-    //case AV_PIX_FMT_GRAYF16LE:
-    //case AV_PIX_FMT_YAF16BE:
-    //case AV_PIX_FMT_YAF16LE:
-    case AV_PIX_FMT_GRAYF32BE:
-    case AV_PIX_FMT_GRAYF32LE:
-    case AV_PIX_FMT_YAF32BE:
-    case AV_PIX_FMT_YAF32LE:
-    case AV_PIX_FMT_YA8:
-    case AV_PIX_FMT_YA16LE:
-    case AV_PIX_FMT_YA16BE:
-        *pack_op = (SwsPackOp) {0};
-        *rw_op = (SwsReadWriteOp) {
-            .elems  = desc->nb_components,
-            .packed = desc->nb_components > 1 && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR),
-        };
         return 0;
     }
 
