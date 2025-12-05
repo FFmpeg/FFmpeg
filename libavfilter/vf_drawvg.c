@@ -1443,6 +1443,12 @@ struct VGSEvalState {
     /// Colors stored in variables.
     cairo_color color_vars[USER_VAR_COUNT];
 
+    /// Track last color read by the `p()` function.
+    struct {
+        double numeric;
+        uint8_t components[4];
+    } last_fn_p_color;
+
     /// State for each index available for the `randomg` function.
     FFSFC64 random_state[RANDOM_STATES];
 
@@ -1555,7 +1561,7 @@ static double vgs_fn_randomg(void *data, double arg) {
 ///
 /// If the coordinates are outside the frame, return NAN.
 static double vgs_fn_p(void* data, double x0, double y0) {
-    const struct VGSEvalState *state = (struct VGSEvalState *)data;
+    struct VGSEvalState *state = (struct VGSEvalState *)data;
     const AVFrame *frame = state->frame;
 
     if (frame == NULL || !isfinite(x0) || !isfinite(y0))
@@ -1575,8 +1581,6 @@ static double vgs_fn_p(void* data, double x0, double y0) {
 
     for (int c = 0; c < desc->nb_components; c++) {
         uint32_t pixel;
-        const int depth = desc->comp[c].depth;
-
         av_read_image_line2(
             &pixel,
             (void*)frame->data,
@@ -1589,14 +1593,35 @@ static double vgs_fn_p(void* data, double x0, double y0) {
             4  // dst_element_size
         );
 
-        if (depth != 8) {
+        const int depth = desc->comp[c].depth;
+        if (depth != 8)
             pixel = pixel * 255 / ((1 << depth) - 1);
-        }
 
         color[c] = pixel;
     }
 
-    return color[0] << 24 | color[1] << 16 | color[2] << 8 | color[3];
+    // A common use-case of `p()` is to store its result in a variable, so it
+    // can be used later with commands like `setcolor` or `colorstop`:
+    //
+    //     setvar pixel (p(0, 0))
+    //     ...
+    //     setcolor pixel
+    //
+    // Since we can't pass custom values through `av_expr_eval`, we store the
+    // color in the `VGSEvalState` instance. Then, when a variable is assigned
+    // in `setvar`, it checks if the value is the same as the output of `p()`.
+    // In such case, it copies the color components to the slot in `color_vars`.
+    //
+    // This solution is far from perfect, but it works in all the documented
+    // use-cases.
+
+    const double num = color[0] << 24 | color[1] << 16 | color[2] << 8 | color[3];
+
+    state->last_fn_p_color.numeric = num;
+    for (int i = 0; i < FF_ARRAY_ELEMS(color); i++)
+        state->last_fn_p_color.components[i] = (uint8_t)color[i];
+
+    return num;
 }
 
 static int vgs_eval_state_init(
@@ -1609,7 +1634,9 @@ static int vgs_eval_state_init(
 
     state->log_ctx = log_ctx;
     state->frame = frame;
+
     state->rcp.status = RCP_NONE;
+    state->last_fn_p_color.numeric = NAN;
 
     if (program->proc_names != NULL) {
         state->procedures = av_calloc(sizeof(struct VGSProcedure), program->proc_names_count);
@@ -2476,8 +2503,16 @@ static int vgs_eval(
             const int user_var = statement->args[0].constant;
             av_assert0(user_var >= VAR_U0 && user_var < (VAR_U0 + USER_VAR_COUNT));
 
-            color_copy(&state->color_vars[user_var - VAR_U0], &colors[1]);
             state->vars[user_var] = numerics[1];
+
+            // Take the color from `p()`, if any.
+            cairo_color *color = &state->color_vars[user_var - VAR_U0];
+            if (state->last_fn_p_color.numeric == numerics[1]) {
+                for (int i = 0; i < FF_ARRAY_ELEMS(*color); i++)
+                    (*color)[i] = state->last_fn_p_color.components[i] / 255.0;
+            } else {
+                color_copy(color, &colors[1]);
+            }
 
             break;
         }
