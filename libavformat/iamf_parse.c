@@ -347,6 +347,41 @@ static int update_extradata(AVCodecParameters *codecpar)
     return 0;
 }
 
+static int parse_coupled_substream(AVChannelLayout *out, AVChannelLayout *in, int n)
+{
+    if (in->u.mask & AV_CH_LAYOUT_STEREO) {
+        out->u.map[n++].id = AV_CHAN_FRONT_LEFT;
+        out->u.map[n++].id = AV_CHAN_FRONT_RIGHT;
+        in->u.mask &= ~AV_CH_LAYOUT_STEREO;
+    } else if (in->u.mask & (AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER)) {
+        out->u.map[n++].id = AV_CHAN_FRONT_LEFT_OF_CENTER;
+        out->u.map[n++].id = AV_CHAN_FRONT_RIGHT_OF_CENTER;
+        in->u.mask &= ~(AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER);
+    } else if (in->u.mask & (AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT)) {
+        out->u.map[n++].id = AV_CHAN_SIDE_LEFT;
+        out->u.map[n++].id = AV_CHAN_SIDE_RIGHT;
+        in->u.mask &= ~(AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT);
+    } else if (in->u.mask & (AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT)) {
+        out->u.map[n++].id = AV_CHAN_BACK_LEFT;
+        out->u.map[n++].id = AV_CHAN_BACK_RIGHT;
+        in->u.mask &= ~(AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT);
+    } else if (in->u.mask & (AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_FRONT_RIGHT)) {
+        out->u.map[n++].id = AV_CHAN_TOP_FRONT_LEFT;
+        out->u.map[n++].id = AV_CHAN_TOP_FRONT_RIGHT;
+        in->u.mask &= ~(AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_FRONT_RIGHT);
+    } else if (in->u.mask & (AV_CH_TOP_SIDE_LEFT|AV_CH_TOP_SIDE_RIGHT)) {
+        out->u.map[n++].id = AV_CHAN_TOP_SIDE_LEFT;
+        out->u.map[n++].id = AV_CHAN_TOP_SIDE_RIGHT;
+        in->u.mask &= ~(AV_CH_TOP_SIDE_LEFT|AV_CH_TOP_SIDE_RIGHT);
+    } else if (in->u.mask & (AV_CH_TOP_BACK_LEFT|AV_CH_TOP_BACK_RIGHT)) {
+        out->u.map[n++].id = AV_CHAN_TOP_BACK_LEFT;
+        out->u.map[n++].id = AV_CHAN_TOP_BACK_RIGHT;
+        in->u.mask &= ~(AV_CH_TOP_BACK_LEFT|AV_CH_TOP_BACK_RIGHT);
+    }
+
+    return n;
+}
+
 static int scalable_channel_layout_config(void *s, AVIOContext *pb,
                                           IAMFAudioElement *audio_element,
                                           const IAMFCodecConfig *codec_config)
@@ -395,12 +430,19 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
 
         if (!i && loudspeaker_layout == 15)
             expanded_loudspeaker_layout = avio_r8(pb);
-        if (expanded_loudspeaker_layout > 0 && expanded_loudspeaker_layout < 13) {
+        if (expanded_loudspeaker_layout >= 0 && expanded_loudspeaker_layout < 13) {
             av_channel_layout_copy(&ch_layout, &ff_iamf_expanded_scalable_ch_layouts[expanded_loudspeaker_layout]);
         } else if (loudspeaker_layout < 10) {
             av_channel_layout_copy(&ch_layout, &ff_iamf_scalable_ch_layouts[loudspeaker_layout]);
-            if (i)
-                ch_layout.u.mask &= ~av_channel_layout_subset(&audio_element->element->layers[i-1]->ch_layout, UINT64_MAX);
+            if (i) {
+                uint64_t mask = av_channel_layout_subset(&audio_element->element->layers[i-1]->ch_layout, UINT64_MAX);
+                // When the first layer is Mono, the second layer may not have the C channel (e.g. Stereo)
+                if (audio_element->element->layers[i-1]->ch_layout.nb_channels == 1)
+                    n--;
+                else if ((ch_layout.u.mask & mask) != mask)
+                    return AVERROR_INVALIDDATA;
+                ch_layout.u.mask &= ~mask;
+            }
         } else
             ch_layout = (AVChannelLayout){ .order = AV_CHANNEL_ORDER_UNSPEC,
                                                           .nb_channels = substream_count +
@@ -430,38 +472,11 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
 
             coupled_substream_count = audio_element->layers[i].coupled_substream_count;
             while (coupled_substream_count--) {
-                if (ch_layout.u.mask & AV_CH_LAYOUT_STEREO) {
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_FRONT_LEFT;
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_FRONT_RIGHT;
-                    ch_layout.u.mask &= ~AV_CH_LAYOUT_STEREO;
-                } else if (ch_layout.u.mask & (AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER)) {
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_FRONT_LEFT_OF_CENTER;
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_FRONT_RIGHT_OF_CENTER;
-                    ch_layout.u.mask &= ~(AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER);
-                } else if (ch_layout.u.mask & (AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT)) {
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_SIDE_LEFT;
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_SIDE_RIGHT;
-                    ch_layout.u.mask &= ~(AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT);
-                } else if (ch_layout.u.mask & (AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT)) {
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_BACK_LEFT;
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_BACK_RIGHT;
-                    ch_layout.u.mask &= ~(AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT);
-                } else if (ch_layout.u.mask & (AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_FRONT_RIGHT)) {
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_TOP_FRONT_LEFT;
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_TOP_FRONT_RIGHT;
-                    ch_layout.u.mask &= ~(AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_FRONT_RIGHT);
-                } else if (ch_layout.u.mask & (AV_CH_TOP_SIDE_LEFT|AV_CH_TOP_SIDE_RIGHT)) {
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_TOP_SIDE_LEFT;
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_TOP_SIDE_RIGHT;
-                    ch_layout.u.mask &= ~(AV_CH_TOP_SIDE_LEFT|AV_CH_TOP_SIDE_RIGHT);
-                } else if (ch_layout.u.mask & (AV_CH_TOP_BACK_LEFT|AV_CH_TOP_BACK_RIGHT)) {
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_TOP_BACK_LEFT;
-                    layer->ch_layout.u.map[n++].id = AV_CHAN_TOP_BACK_RIGHT;
-                    ch_layout.u.mask &= ~(AV_CH_TOP_BACK_LEFT|AV_CH_TOP_BACK_RIGHT);
-                }
+                n = parse_coupled_substream(&layer->ch_layout, &ch_layout, n);
             }
 
             substream_count -= audio_element->layers[i].coupled_substream_count;
+            n = parse_coupled_substream(&layer->ch_layout, &ch_layout, n); // In case the first layer is Mono
             while (substream_count--) {
                 if (ch_layout.u.mask & AV_CH_FRONT_CENTER) {
                     layer->ch_layout.u.map[n++].id = AV_CHAN_FRONT_CENTER;
