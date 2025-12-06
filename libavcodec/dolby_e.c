@@ -845,6 +845,7 @@ static int parse_indices(DBEContext *s, DBEChannel *c)
     return 0;
 }
 
+#define MIN_MANTISSAS 800
 static int parse_mantissas(DBEContext *s, DBEChannel *c)
 {
     DBEGroup *g;
@@ -885,6 +886,13 @@ static int parse_mantissas(DBEContext *s, DBEChannel *c)
                     }
                 }
             } else {
+                if (i == c->nb_groups - 1
+                    && count * size1 > get_bits_left(&s->gb)
+                    && get_bits_left(&s->gb) >= 0
+                    && (int)(mnt - c->mantissas) >= MIN_MANTISSAS) {
+                    av_log(s->avctx, AV_LOG_WARNING, "Truncated mantissas @%d, highest frequencies not recoverable\n", (int)(mnt - c->mantissas));
+                    break;
+                }
                 for (k = 0; k < count; k++)
                     mnt[k] = get_sbits(&s->gb, size1) * scale;
             }
