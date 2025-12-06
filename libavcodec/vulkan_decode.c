@@ -1088,7 +1088,6 @@ static void free_profile_data(AVHWFramesContext *hwfc)
 
 int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
 {
-    VkFormat vkfmt = VK_FORMAT_UNDEFINED;
     int err, dedicated_dpb;
     AVHWFramesContext *frames_ctx = (AVHWFramesContext*)hw_frames_ctx->data;
     AVVulkanFramesContext *hwfc = frames_ctx->hwctx;
@@ -1107,7 +1106,8 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
             return AVERROR(ENOMEM);
 
         err = vulkan_decode_get_profile(avctx, hw_frames_ctx,
-                                        &frames_ctx->sw_format, &vkfmt,
+                                        &frames_ctx->sw_format,
+                                        &hwfc->format[0],
                                         prof, &dedicated_dpb);
         if (err < 0) {
             av_free(prof);
@@ -1119,6 +1119,7 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
 
         hwfc->create_pnext = &prof->profile_list;
     } else {
+        hwfc->format[0] = VK_FORMAT_UNDEFINED;
         switch (frames_ctx->sw_format) {
         case AV_PIX_FMT_GBRAP16:
             /* This should be more efficient for downloading and using */
@@ -1141,6 +1142,20 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
             /* mpv has issues with bgr0 mapping, so just remap it */
             frames_ctx->sw_format = AV_PIX_FMT_RGB0;
             break;
+        case AV_PIX_FMT_YUVA422P10: /* ProRes needs to clear the input image, which is not possible on YUV formats */
+        case AV_PIX_FMT_YUVA444P10:
+        case AV_PIX_FMT_YUVA422P12:
+        case AV_PIX_FMT_YUVA444P12:
+            hwfc->format[3] = VK_FORMAT_R16_UNORM;
+            /* fallthrough */
+        case AV_PIX_FMT_YUV422P10:
+        case AV_PIX_FMT_YUV444P10:
+        case AV_PIX_FMT_YUV422P12:
+        case AV_PIX_FMT_YUV444P12:
+            hwfc->format[0] = VK_FORMAT_R16_UNORM;
+            hwfc->format[1] = VK_FORMAT_R16_UNORM;
+            hwfc->format[2] = VK_FORMAT_R16_UNORM;
+            break;
         default:
             break;
         }
@@ -1151,11 +1166,10 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
     frames_ctx->height = FFALIGN(avctx->coded_height, 1 << pdesc->log2_chroma_h);
     frames_ctx->format = AV_PIX_FMT_VULKAN;
 
-    hwfc->format[0]    = vkfmt;
-    hwfc->tiling       = VK_IMAGE_TILING_OPTIMAL;
-    hwfc->usage        = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                         VK_IMAGE_USAGE_STORAGE_BIT      |
-                         VK_IMAGE_USAGE_SAMPLED_BIT;
+    hwfc->tiling = VK_IMAGE_TILING_OPTIMAL;
+    hwfc->usage  = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                   VK_IMAGE_USAGE_STORAGE_BIT      |
+                   VK_IMAGE_USAGE_SAMPLED_BIT;
 
     if (prof) {
         FFVulkanDecodeShared *ctx;

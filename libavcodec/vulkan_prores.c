@@ -24,7 +24,6 @@
 #include "libavutil/vulkan_spirv.h"
 
 extern const char *ff_source_common_comp;
-extern const char *ff_source_prores_reset_comp;
 extern const char *ff_source_prores_vld_comp;
 extern const char *ff_source_prores_idct_comp;
 
@@ -46,7 +45,6 @@ typedef struct ProresVulkanDecodePicture {
 } ProresVulkanDecodePicture;
 
 typedef struct ProresVulkanDecodeContext {
-    FFVulkanShader reset;
     FFVulkanShader vld;
     FFVulkanShader idct;
 
@@ -157,12 +155,14 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
     ProresVulkanDecodeContext *pv = ctx->sd_ctx;
     ProresVulkanDecodePicture *pp = pr->hwaccel_picture_private;
     FFVulkanDecodePicture     *vp = &pp->vp;
+    AVFrame                    *f = pr->frame;
+    AVVkFrame                *vkf = (AVVkFrame *)f->data[0];
 
     ProresVkParameters pd;
     FFVkBuffer *slice_data, *metadata;
     VkImageMemoryBarrier2 img_bar[AV_NUM_DATA_POINTERS];
     VkBufferMemoryBarrier2 buf_bar[2];
-    int nb_img_bar = 0, nb_buf_bar = 0, err;
+    int nb_img_bar = 0, nb_buf_bar = 0, nb_imgs, i, err;
     const AVPixFmtDescriptor *pix_desc;
 
     if (!pp->slice_num)
@@ -199,12 +199,11 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
     RET(ff_vk_exec_start(&ctx->s, exec));
 
     /* Prepare deps */
-    RET(ff_vk_exec_add_dep_frame(&ctx->s, exec, pr->frame,
+    RET(ff_vk_exec_add_dep_frame(&ctx->s, exec, f,
                                  VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                                  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT));
 
-    RET(ff_vk_exec_mirror_sem_value(&ctx->s, exec, &vp->sem, &vp->sem_value,
-                                    pr->frame));
+    RET(ff_vk_exec_mirror_sem_value(&ctx->s, exec, &vp->sem, &vp->sem_value, f));
 
     /* Transfer ownership to the exec context */
     RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &vp->slices_buf, 1, 0));
@@ -212,11 +211,47 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
     RET(ff_vk_exec_add_dep_buf(&ctx->s, exec, &pp->metadata_buf, 1, 0));
     pp->metadata_buf = NULL;
 
-    /* Input barrier */
-    ff_vk_frame_barrier(&ctx->s, exec, pr->frame, img_bar, &nb_img_bar,
-                        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+    vkf->layout[0] = VK_IMAGE_LAYOUT_UNDEFINED;
+    vkf->access[0] = VK_ACCESS_2_NONE;
+
+    nb_imgs = ff_vk_count_images(vkf);
+
+    if (pr->first_field) {
+        /* Input barrier */
+        ff_vk_frame_barrier(&ctx->s, exec, f, img_bar, &nb_img_bar,
+                            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                            VK_PIPELINE_STAGE_2_CLEAR_BIT,
+                            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                            VK_IMAGE_LAYOUT_GENERAL,
+                            VK_QUEUE_FAMILY_IGNORED);
+
+        vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
+            .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .pBufferMemoryBarriers    = buf_bar,
+            .bufferMemoryBarrierCount = nb_buf_bar,
+            .pImageMemoryBarriers     = img_bar,
+            .imageMemoryBarrierCount  = nb_img_bar,
+        });
+        nb_img_bar = nb_buf_bar = 0;
+
+        /* Clear the input image since the vld shader does sparse writes, except for alpha */
+        for (i = 0; i < FFMIN(nb_imgs, 3); ++i) {
+            vk->CmdClearColorImage(exec->buf, vkf->img[i],
+                                   VK_IMAGE_LAYOUT_GENERAL,
+                                   &((VkClearColorValue) { 0 }),
+                                   1, &((VkImageSubresourceRange) {
+                                       .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                       .levelCount = 1,
+                                       .layerCount = 1,
+                                   }));
+        }
+    }
+
+    /* Input barrier, or synchronization between clear and vld shader */
+    ff_vk_frame_barrier(&ctx->s, exec, f, img_bar, &nb_img_bar,
+                        pr->first_field ? VK_PIPELINE_STAGE_2_CLEAR_BIT : VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                         VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+                        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
                         VK_IMAGE_LAYOUT_GENERAL,
                         VK_QUEUE_FAMILY_IGNORED);
 
@@ -244,37 +279,6 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
     });
     nb_img_bar = nb_buf_bar = 0;
 
-    /* Reset */
-    ff_vk_shader_update_img_array(&ctx->s, exec, &pv->reset,
-                                  pr->frame, vp->view.out,
-                                  0, 0,
-                                  VK_IMAGE_LAYOUT_GENERAL,
-                                  VK_NULL_HANDLE);
-
-    ff_vk_exec_bind_shader(&ctx->s, exec, &pv->reset);
-    ff_vk_shader_update_push_const(&ctx->s, exec, &pv->reset,
-                                   VK_SHADER_STAGE_COMPUTE_BIT,
-                                   0, sizeof(pd), &pd);
-
-    vk->CmdDispatch(exec->buf, pr->mb_width << 1, pr->mb_height << 1, 1);
-
-    /* Input frame barrier after reset */
-    ff_vk_frame_barrier(&ctx->s, exec, pr->frame, img_bar, &nb_img_bar,
-                        VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                        VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                        VK_ACCESS_SHADER_WRITE_BIT,
-                        VK_IMAGE_LAYOUT_GENERAL,
-                        VK_QUEUE_FAMILY_IGNORED);
-
-    vk->CmdPipelineBarrier2(exec->buf, &(VkDependencyInfo) {
-        .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .pBufferMemoryBarriers    = buf_bar,
-        .bufferMemoryBarrierCount = nb_buf_bar,
-        .pImageMemoryBarriers     = img_bar,
-        .imageMemoryBarrierCount  = nb_img_bar,
-    });
-    nb_img_bar = nb_buf_bar = 0;
-
     /* Entropy decode */
     ff_vk_shader_update_desc_buffer(&ctx->s, exec, &pv->vld,
                                     0, 0, 0,
@@ -287,7 +291,7 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
                                     pp->mb_params_sz,
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_img_array(&ctx->s, exec, &pv->vld,
-                                  pr->frame, vp->view.out,
+                                  f, vp->view.out,
                                   0, 2,
                                   VK_IMAGE_LAYOUT_GENERAL,
                                   VK_NULL_HANDLE);
@@ -301,7 +305,7 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
                     3 + !!pr->alpha_info);
 
     /* Synchronize vld and idct shaders */
-    ff_vk_frame_barrier(&ctx->s, exec, pr->frame, img_bar, &nb_img_bar,
+    ff_vk_frame_barrier(&ctx->s, exec, f, img_bar, &nb_img_bar,
                         VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                         VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
                         VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
@@ -339,7 +343,7 @@ static int vk_prores_end_frame(AVCodecContext *avctx)
                                     pp->mb_params_sz,
                                     VK_FORMAT_UNDEFINED);
     ff_vk_shader_update_img_array(&ctx->s, exec, &pv->idct,
-                                  pr->frame, vp->view.out,
+                                  f, vp->view.out,
                                   0, 1,
                                   VK_IMAGE_LAYOUT_GENERAL,
                                   VK_NULL_HANDLE);
@@ -434,7 +438,6 @@ static void vk_decode_prores_uninit(FFVulkanDecodeShared *ctx)
 {
     ProresVulkanDecodeContext *pv = ctx->sd_ctx;
 
-    ff_vk_shader_free(&ctx->s, &pv->reset);
     ff_vk_shader_free(&ctx->s, &pv->vld);
     ff_vk_shader_free(&ctx->s, &pv->idct);
 
@@ -477,22 +480,6 @@ static int vk_decode_prores_init(AVCodecContext *avctx)
     out_frames_ctx = (AVHWFramesContext *)avctx->hw_frames_ctx->data;
 
     ctx->sd_ctx_free = vk_decode_prores_uninit;
-
-    desc_set = (FFVulkanDescriptorSetBinding []) {
-        {
-            .name       = "dst",
-            .type       = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .dimensions = 2,
-            .mem_layout = ff_vk_shader_rep_fmt(out_frames_ctx->sw_format,
-            FF_VK_REP_NATIVE),
-            .mem_quali  = "writeonly",
-            .elems      = av_pix_fmt_count_planes(out_frames_ctx->sw_format),
-            .stages     = VK_SHADER_STAGE_COMPUTE_BIT,
-        },
-    };
-    RET(init_shader(avctx, &ctx->s, &ctx->exec_pool, spv, &pv->reset,
-                    "prores_dec_reset", "main", desc_set, 1,
-                    ff_source_prores_reset_comp, 0x080801, pr->frame_type != 0));
 
     desc_set = (FFVulkanDescriptorSetBinding []) {
         {
