@@ -418,7 +418,8 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
         substream_count = avio_r8(pb);
         coupled_substream_count = avio_r8(pb);
 
-        if (substream_count + k > audio_element->nb_substreams)
+        if (!substream_count || coupled_substream_count > substream_count ||
+            substream_count + k > audio_element->nb_substreams)
             return AVERROR_INVALIDDATA;
 
         audio_element->layers[i].substream_count         = substream_count;
@@ -428,8 +429,14 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
             layer->output_gain = av_make_q(sign_extend(avio_rb16(pb), 16), 1 << 8);
         }
 
-        if (!i && loudspeaker_layout == 15)
+        if (loudspeaker_layout == 15) {
+            if (i) {
+                av_log(s, AV_LOG_ERROR, "expanded_loudspeaker_layout set with more than one layer in Audio Element #%d\n",
+                       audio_element->audio_element_id);
+                return AVERROR_INVALIDDATA;
+            }
             expanded_loudspeaker_layout = avio_r8(pb);
+        }
         if (expanded_loudspeaker_layout >= 0 && expanded_loudspeaker_layout < 13) {
             av_channel_layout_copy(&ch_layout, &ff_iamf_expanded_scalable_ch_layouts[expanded_loudspeaker_layout]);
         } else if (loudspeaker_layout < 10) {
@@ -487,6 +494,9 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
                     ch_layout.u.mask &= ~AV_CH_LOW_FREQUENCY;
                 }
             }
+
+            if (n != ch_layout.nb_channels)
+                return AVERROR_INVALIDDATA;
 
             ret = av_channel_layout_retype(&layer->ch_layout, AV_CHANNEL_ORDER_NATIVE, 0);
             if (ret < 0 && ret != AVERROR(ENOSYS))
