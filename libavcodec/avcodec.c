@@ -705,7 +705,7 @@ int avcodec_is_open(AVCodecContext *s)
     return !!s->internal;
 }
 
-int attribute_align_arg avcodec_receive_frame2(AVCodecContext *avctx,
+int attribute_align_arg avcodec_receive_frame_flags(AVCodecContext *avctx,
                                                AVFrame *frame, unsigned flags)
 {
     av_frame_unref(frame);
@@ -720,7 +720,7 @@ int attribute_align_arg avcodec_receive_frame2(AVCodecContext *avctx,
 
 int avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 {
-    return avcodec_receive_frame2(avctx, frame, 0);
+    return avcodec_receive_frame_flags(avctx, frame, 0);
 }
 
 #define WRAP_CONFIG(allowed_type, field, var, field_type, sentinel_check)   \

@@ -2379,10 +2379,10 @@ int avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt);
  *                          @ref AV_CODEC_FLAG_RECON_FRAME flag enabled
  * @retval "other negative error code" legitimate decoding errors
  */
-int avcodec_receive_frame2(AVCodecContext *avctx, AVFrame *frame, unsigned flags);
+int avcodec_receive_frame_flags(AVCodecContext *avctx, AVFrame *frame, unsigned flags);
 
 /**
- * Alias for `avcodec_receive_frame2(avctx, frame, 0)`.
+ * Alias for `avcodec_receive_frame_flags(avctx, frame, 0)`.
  */
 int avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame);
 

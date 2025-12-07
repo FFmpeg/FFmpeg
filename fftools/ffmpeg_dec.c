@@ -751,7 +751,7 @@ static int packet_decode(DecoderPriv *dp, AVPacket *pkt, AVFrame *frame)
         av_frame_unref(frame);
 
         update_benchmark(NULL);
-        ret = avcodec_receive_frame2(dec, frame, flags);
+        ret = avcodec_receive_frame_flags(dec, frame, flags);
         update_benchmark("decode_%s %s", type_desc, dp->parent_name);
 
         if (ret == AVERROR(EAGAIN)) {
