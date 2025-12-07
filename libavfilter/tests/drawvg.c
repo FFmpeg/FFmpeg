@@ -16,6 +16,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+
+// Prevent the `dllimport` attribute in the functions declared by Cairo when
+// the test is built on a Windows machine.
+//
+// This is needed to avoid the "redeclared without dllimport attribute after
+// being referenced with dll linkage" warnings on every function redefined by
+// the `MOCK_FN_n` macros below.
+#define CAIRO_WIN32_STATIC_BUILD
+
 #include <cairo.h>
 #include <stdarg.h>
 #include <stdio.h>
