@@ -218,7 +218,7 @@ fail:
 
 #if !HAVE_THREADS
 #define ff_thread_get_packet(avctx, pkt) (AVERROR_BUG)
-#define ff_thread_receive_frame(avctx, frame) (AVERROR_BUG)
+#define ff_thread_receive_frame(avctx, frame, flags) (AVERROR_BUG)
 #endif
 
 static int decode_get_packet(AVCodecContext *avctx, AVPacket *pkt)
