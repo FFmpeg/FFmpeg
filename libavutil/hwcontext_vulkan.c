@@ -693,6 +693,34 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_KHR_VIDEO_DECODE_AV1_EXTENSION_NAME,                 FF_VK_EXT_VIDEO_DECODE_AV1       },
 };
 
+const char **av_vk_get_optional_instance_extensions(int *count)
+{
+    const char **exts = av_malloc_array(sizeof(*exts),
+                                        FF_ARRAY_ELEMS(optional_instance_exts));
+    if (!exts)
+        return NULL;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(optional_instance_exts); i++)
+        exts[i] = optional_instance_exts[i].name;
+
+    *count = FF_ARRAY_ELEMS(optional_instance_exts);
+    return exts;
+}
+
+const char **av_vk_get_optional_device_extensions(int *count)
+{
+    const char **exts = av_malloc_array(sizeof(*exts),
+                                        FF_ARRAY_ELEMS(optional_device_exts));
+    if (!exts)
+        return NULL;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(optional_device_exts); i++)
+        exts[i] = optional_device_exts[i].name;
+
+    *count = FF_ARRAY_ELEMS(optional_device_exts);
+    return exts;
+}
+
 static VkBool32 VKAPI_CALL vk_dbg_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
                                            VkDebugUtilsMessageTypeFlagsEXT messageType,
                                            const VkDebugUtilsMessengerCallbackDataEXT *data,
