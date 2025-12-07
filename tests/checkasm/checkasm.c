@@ -390,8 +390,6 @@ static const struct {
 #elif ARCH_X86
     { "MMX",        "mmx",       AV_CPU_FLAG_MMX|AV_CPU_FLAG_CMOV },
     { "MMXEXT",     "mmxext",    AV_CPU_FLAG_MMXEXT },
-    { "3DNOW",      "3dnow",     AV_CPU_FLAG_3DNOW },
-    { "3DNOWEXT",   "3dnowext",  AV_CPU_FLAG_3DNOWEXT },
     { "SSE",        "sse",       AV_CPU_FLAG_SSE },
     { "SSE2",       "sse2",      AV_CPU_FLAG_SSE2|AV_CPU_FLAG_SSE2SLOW },
     { "SSE3",       "sse3",      AV_CPU_FLAG_SSE3|AV_CPU_FLAG_SSE3SLOW },
