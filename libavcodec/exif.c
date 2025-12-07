@@ -511,7 +511,6 @@ static int exif_decode_tag(void *logctx, GetByteContext *gb, int le,
              * but we were probably incorrect at this
              * point so we try again as a binary blob
              */
-            av_exif_free(&entry->value.ifd);
             av_log(logctx, AV_LOG_DEBUG, "unrecognized MakerNote IFD, retrying as blob\n");
             is_ifd = 0;
         }
@@ -537,41 +536,50 @@ static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
     uint32_t entries;
     size_t required_size;
     void *temp;
+    int ret = 0;
 
     av_log(logctx, AV_LOG_DEBUG, "parsing IFD list at offset: %d\n", bytestream2_tell(gb));
 
     if (bytestream2_get_bytes_left(gb) < 2) {
         av_log(logctx, guess ? AV_LOG_DEBUG : AV_LOG_ERROR,
                "not enough bytes remaining in EXIF buffer: 2 required\n");
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto end;
     }
 
     entries = ff_tget_short(gb, le);
     if (bytestream2_get_bytes_left(gb) < entries * BASE_TAG_SIZE) {
         av_log(logctx, guess ? AV_LOG_DEBUG : AV_LOG_ERROR,
                "not enough bytes remaining in EXIF buffer. entries: %" PRIu32 "\n", entries);
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto end;
     }
     if (entries > 4096) {
         /* that is a lot of entries, probably an error */
         av_log(logctx, guess ? AV_LOG_DEBUG : AV_LOG_ERROR,
                "too many entries: %" PRIu32 "\n", entries);
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto end;
     }
 
     ifd->count = entries;
     av_log(logctx, AV_LOG_DEBUG, "entry count for IFD: %u\n", ifd->count);
 
     /* empty IFD is technically legal but equivalent to no metadata present */
-    if (!ifd->count)
+    if (!ifd->count) {
+        ret = 0;
         goto end;
+    }
 
-    if (av_size_mult(ifd->count, sizeof(*ifd->entries), &required_size) < 0)
-        return AVERROR(ENOMEM);
+    if (av_size_mult(ifd->count, sizeof(*ifd->entries), &required_size) < 0) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
     temp = av_fast_realloc(ifd->entries, &ifd->size, required_size);
     if (!temp) {
         av_freep(&ifd->entries);
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto end;
     }
     ifd->entries = temp;
 
@@ -580,17 +588,29 @@ static int exif_parse_ifd_list(void *logctx, GetByteContext *gb, int le,
     memset(ifd->entries, 0, required_size);
 
     for (uint32_t i = 0; i < entries; i++) {
-        int ret = exif_decode_tag(logctx, gb, le, depth, &ifd->entries[i]);
+        ret = exif_decode_tag(logctx, gb, le, depth, &ifd->entries[i]);
         if (ret < 0)
-            return ret;
+            goto end;
     }
 
 end:
+    if (ret < 0) {
+        av_exif_free(ifd);
+        return ret;
+    }
     /*
      * at the end of an IFD is an pointer to the next IFD
      * or zero if there are no more IFDs, which is usually the case
      */
-    return ff_tget_long(gb, le);
+    ret = ff_tget_long(gb, le);
+
+    /* overflow */
+    if (ret < 0) {
+        ret = AVERROR_INVALIDDATA;
+        av_exif_free(ifd);
+    }
+
+    return ret;
 }
 
 /*
@@ -816,7 +836,6 @@ int av_exif_parse_buffer(void *logctx, const uint8_t *buf, size_t size,
      */
     ret = exif_parse_ifd_list(logctx, &gbytes, le, 0, ifd, 0);
     if (ret < 0) {
-        av_exif_free(ifd);
         av_log(logctx, AV_LOG_ERROR, "error decoding EXIF data: %s\n", av_err2str(ret));
         return ret;
     }
