@@ -11,7 +11,8 @@ module.exports = async ({github, context}) => {
       'avutil': 'avutil',
       'swresample': 'swresample',
       'swscale': 'swscale',
-      'fftools': 'CLI'
+      'fftools': 'CLI',
+      'vulkan': 'vulkan'
     };
 
     async function isOrgMember(username) {

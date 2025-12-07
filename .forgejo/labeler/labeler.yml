@@ -29,3 +29,7 @@ swscale:
 CLI:
   - changed-files:
     - any-glob-to-any-file: 'fftools/**'
+
+vulkan:
+  - changed-files:
+    - any-glob-to-any-file: '**/*vulkan*'
