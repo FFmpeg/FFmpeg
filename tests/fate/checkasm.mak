@@ -10,6 +10,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-blockdsp                                  \
                 fate-checkasm-bswapdsp                                  \
                 fate-checkasm-cavsdsp                                   \
+                fate-checkasm-crc                                       \
                 fate-checkasm-dcadsp                                    \
                 fate-checkasm-diracdsp                                  \
                 fate-checkasm-exrdsp                                    \

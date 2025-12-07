@@ -344,6 +344,7 @@ static const struct {
 #endif
 #if CONFIG_AVUTIL
         { "aes",       checkasm_check_aes },
+        { "crc",       checkasm_check_crc },
         { "fixed_dsp", checkasm_check_fixed_dsp },
         { "float_dsp", checkasm_check_float_dsp },
         { "lls",       checkasm_check_lls },
