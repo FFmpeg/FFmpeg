@@ -104,36 +104,6 @@ static void vk_log_cb(void *log_priv, enum pl_log_level level,
         av_log(log_priv, level_map[level], "%s\n", msg);
 }
 
-// Should keep sync with optional_device_exts inside hwcontext_vulkan.c
-static const char *optional_device_exts[] = {
-    /* Misc or required by other extensions */
-    VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
-    VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
-    VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME,
-    VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME,
-    VK_EXT_PHYSICAL_DEVICE_DRM_EXTENSION_NAME,
-    VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME,
-    VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME,
-
-    /* Imports/exports */
-    VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
-    VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME,
-    VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME,
-    VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME,
-#ifdef _WIN32
-    VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
-    VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME,
-#endif
-
-    /* Video encoding/decoding */
-    VK_KHR_VIDEO_QUEUE_EXTENSION_NAME,
-    VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME,
-    VK_KHR_VIDEO_DECODE_H264_EXTENSION_NAME,
-    VK_KHR_VIDEO_DECODE_H265_EXTENSION_NAME,
-    "VK_MESA_video_decode_av1",
-};
-
 static inline int enable_debug(const AVDictionary *opt)
 {
     AVDictionaryEntry *entry = av_dict_get(opt, "debug", NULL, 0);
@@ -374,6 +344,8 @@ static int create_vk_by_placebo(VkRenderer *renderer,
     int decode_index;
     int decode_count;
     int ret;
+    const char **dev_exts;
+    int num_dev_exts;
 
     ctx->get_proc_addr = SDL_Vulkan_GetVkGetInstanceProcAddr();
 
@@ -388,16 +360,21 @@ static int create_vk_by_placebo(VkRenderer *renderer,
     }
     ctx->inst = ctx->placebo_instance->instance;
 
+    dev_exts = av_vk_get_optional_device_extensions(&num_dev_exts);
+    if (!dev_exts)
+        return AVERROR(ENOMEM);
+
     ctx->placebo_vulkan = pl_vulkan_create(ctx->vk_log, pl_vulkan_params(
             .instance = ctx->placebo_instance->instance,
             .get_proc_addr = ctx->placebo_instance->get_proc_addr,
             .surface = ctx->vk_surface,
             .allow_software = false,
-            .opt_extensions = optional_device_exts,
-            .num_opt_extensions = FF_ARRAY_ELEMS(optional_device_exts),
+            .opt_extensions = dev_exts,
+            .num_opt_extensions = num_dev_exts,
             .extra_queues = VK_QUEUE_VIDEO_DECODE_BIT_KHR,
             .device_name = select_device(opt),
     ));
+    av_free(dev_exts);
     if (!ctx->placebo_vulkan)
         return AVERROR_EXTERNAL;
     ctx->hw_device_ref = av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_VULKAN);
