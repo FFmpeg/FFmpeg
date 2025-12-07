@@ -4,6 +4,7 @@ EMMS_OBJS_$(HAVE_MMX_INLINE)_$(HAVE_MMX_EXTERNAL)_$(HAVE_MM_EMPTY) = x86/emms.o
 
 X86ASM-OBJS += x86/aes.o x86/aes_init.o                                 \
                x86/cpuid.o                                              \
+               x86/crc.o                                                \
                $(EMMS_OBJS__yes_)                                       \
                x86/fixed_dsp.o x86/fixed_dsp_init.o                     \
                x86/float_dsp.o x86/float_dsp_init.o                     \

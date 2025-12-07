@@ -25,6 +25,9 @@
 #include "bswap.h"
 #include "crc.h"
 #include "error.h"
+#if ARCH_X86
+#include "libavutil/x86/crc.h"
+#endif
 
 #if CONFIG_HARDCODED_TABLES
 static const AVCRC av_crc_table[AV_CRC_MAX][257] = {
@@ -348,6 +351,12 @@ int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size)
     if (ctx_size != sizeof(AVCRC) * 257 && ctx_size != sizeof(AVCRC) * 1024)
         return AVERROR(EINVAL);
 
+#if ARCH_X86
+    int done = ff_crc_init_x86(ctx, le, bits, poly, ctx_size);
+    if (done)
+        return 0;
+#endif
+
     for (i = 0; i < 256; i++) {
         if (le) {
             for (c = i, j = 0; j < 8; j++)
@@ -375,6 +384,14 @@ const AVCRC *av_crc_get_table(AVCRCId crc_id)
 {
     if ((unsigned)crc_id >= AV_CRC_MAX)
         return NULL;
+// Check for arch-specific extensions first to avoid initializing
+// ordinary CRC tables unnecessarily.
+#if ARCH_X86
+    const AVCRC *table = ff_crc_get_table_x86(crc_id);
+    if (table)
+        return table;
+#endif
+
 #if !CONFIG_HARDCODED_TABLES
     switch (crc_id) {
     case AV_CRC_8_ATM:      CRC_INIT_TABLE_ONCE(AV_CRC_8_ATM); break;
@@ -394,6 +411,13 @@ const AVCRC *av_crc_get_table(AVCRCId crc_id)
 uint32_t av_crc(const AVCRC *ctx, uint32_t crc,
                 const uint8_t *buffer, size_t length)
 {
+    if (ctx[0]) {
+#if ARCH_X86
+        return ff_crc_x86(ctx, crc, buffer, length);
+#endif
+    }
+    av_assert2(ctx[0] == 0);
+
     const uint8_t *end = buffer + length;
 
 #if !CONFIG_SMALL

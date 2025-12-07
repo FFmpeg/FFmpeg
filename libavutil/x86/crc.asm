@@ -138,6 +138,7 @@ SECTION .text
 %endmacro
 
 %macro CRC 1
+%define CTX r0+4
 ;-----------------------------------------------------------------------------------------------
 ; ff_crc[_le]_clmul(const uint8_t *ctx, uint32_t crc, const uint8_t *buffer, size_t length
 ;-----------------------------------------------------------------------------------------------
@@ -177,7 +178,7 @@ cglobal crc,    4, 6, 7+4*ARCH_X86_64, 0x10
     mov    r4, 64
     cmp    r3, 128
     jb    .reduce_4x_to_1
-    movu   m4, [r0]
+    movu   m4, [CTX]
 
 .fold_4x_loop:
         movu        m6, [r2 + r4 +  0]
@@ -200,7 +201,7 @@ cglobal crc,    4, 6, 7+4*ARCH_X86_64, 0x10
         jbe        .fold_4x_loop
 
 .reduce_4x_to_1:
-    movu        m4, [r0 + 16]
+    movu        m4, [CTX + 16]
     FOLD_SINGLE m5, m1, m4, m3
     FOLD_SINGLE m5, m1, m4, m2
     FOLD_SINGLE m5, m1, m4, m0
@@ -245,10 +246,10 @@ cglobal crc,    4, 6, 7+4*ARCH_X86_64, 0x10
     FOLD_SINGLE m5, m1, m4, m2
 
 .reduce_128_to_64:
-    movu           m4, [r0 + 32]
+    movu           m4, [CTX + 32]
     FOLD_128_TO_64 %1, m1, m4, m5
 .reduce_64_to_32:
-    movu           m4, [r0 + 48]
+    movu           m4, [CTX + 48]
     FOLD_64_TO_32  %1, m1, m4, m5
     RET
 
@@ -261,7 +262,7 @@ cglobal crc,    4, 6, 7+4*ARCH_X86_64, 0x10
     pshufb m1, m10
 %endif
     mov    r4, 16
-    movu   m4, [r0 + 16]
+    movu   m4, [CTX + 16]
     jmp   .fold_1x_pre
 
 .less_than_16bytes:
