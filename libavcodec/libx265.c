@@ -770,7 +770,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 sei_payload = &sei->payloads[sei->numPayloads];
                 sei_payload->payload = sei_data;
                 sei_payload->payloadSize = sei_size;
-                sei_payload->payloadType = SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35;
+                sei_payload->payloadType = (SEIPayloadType)SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35;
                 sei->numPayloads++;
             }
         }
@@ -801,7 +801,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 }
                 sei_payload->payloadSize = side_data->size;
                 /* Equal to libx265 USER_DATA_UNREGISTERED */
-                sei_payload->payloadType = SEI_TYPE_USER_DATA_UNREGISTERED;
+                sei_payload->payloadType = (SEIPayloadType)SEI_TYPE_USER_DATA_UNREGISTERED;
                 sei->numPayloads++;
             }
         }
