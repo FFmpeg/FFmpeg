@@ -992,9 +992,7 @@ static int d3d12va_encode_av1_init_picture_params(AVCodecContext *avctx,
             d3d12va_pic->pic_ctl.pAV1PicData->ReferenceIndices[i] = fh->ref_frame_idx[i];
     }
 
-    int ret = av_fifo_write(priv->picture_header_list, &priv->units.raw_frame_header, 1);
-
-    return 0;
+    return av_fifo_write(priv->picture_header_list, &priv->units.raw_frame_header, 1);
 }
 
 
