@@ -88,7 +88,6 @@ static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
     case SWS_OP_SWAP_BYTES:
     case SWS_OP_LSHIFT:
     case SWS_OP_RSHIFT:
-    case SWS_OP_DITHER:
     case SWS_OP_SCALE:
         return true;
 
@@ -111,6 +110,20 @@ static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
             if (seen[j] && av_cmp_q(next->c.q4[j], c.q4[i]))
                 return false;
             next->c.q4[j] = c.q4[i];
+            seen[j] = true;
+        }
+        return true;
+    }
+
+    case SWS_OP_DITHER: {
+        const SwsDitherOp d = next->dither;
+        for (int i = 0; i < 4; i++) {
+            if (next->comps.unused[i])
+                continue;
+            const int j = op->swizzle.in[i];
+            if (seen[j] && next->dither.y_offset[j] != d.y_offset[i])
+                return false;
+            next->dither.y_offset[j] = d.y_offset[i];
             seen[j] = true;
         }
         return true;
