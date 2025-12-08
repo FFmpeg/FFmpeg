@@ -205,7 +205,7 @@ static int parse_iplconvkernel(IplConvKernel **kernel, char *buf, void *log_ctx)
     int cols = 0, rows = 0, anchor_x = 0, anchor_y = 0, shape = CV_SHAPE_RECT;
     int *values = NULL, ret = 0;
 
-    sscanf(buf, "%dx%d+%dx%d/%32[^=]=%127s", &cols, &rows, &anchor_x, &anchor_y, shape_str, shape_filename);
+    sscanf(buf, "%dx%d+%dx%d/%31[^=]=%127s", &cols, &rows, &anchor_x, &anchor_y, shape_str, shape_filename);
 
     if      (!strcmp(shape_str, "rect"   )) shape = CV_SHAPE_RECT;
     else if (!strcmp(shape_str, "cross"  )) shape = CV_SHAPE_CROSS;
