@@ -69,6 +69,9 @@ static int neighbor_opencl_init(AVFilterContext *avctx)
         kernel_name = "erosion_global";
     } else if (!strcmp(avctx->filter->name, "dilation_opencl")){
         kernel_name = "dilation_global";
+    } else {
+        err = AVERROR_BUG;
+        goto fail;
     }
     ctx->kernel = clCreateKernel(ctx->ocf.program, kernel_name, &cle);
     CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to create "
