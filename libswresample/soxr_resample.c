@@ -72,7 +72,7 @@ static int flush(struct SwrContext *s){
     soxr_process((soxr_t)s->resample, NULL, 0, NULL, NULL, 0, NULL);
 
     {
-        float f;
+        float f = 0;
         size_t idone, odone;
         soxr_process((soxr_t)s->resample, &f, 0, &idone, &f, 0, &odone);
         s->delayed_samples_fixup -= soxr_delay((soxr_t)s->resample);
