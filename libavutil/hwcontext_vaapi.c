@@ -1715,7 +1715,7 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
     VAAPIDevicePriv *priv;
     VADisplay display = NULL;
     const AVDictionaryEntry *ent;
-    int try_drm, try_x11, try_win32, try_all;
+    int try_drm, try_x11, try_win32, try_all av_unused;
 
     priv = av_mallocz(sizeof(*priv));
     if (!priv)
