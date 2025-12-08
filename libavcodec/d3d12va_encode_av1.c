@@ -346,8 +346,6 @@ fail:
 static int d3d12va_encode_av1_get_buffer_size(AVCodecContext *avctx,
                                               D3D12VAEncodePicture *pic, size_t *size)
 {
-    D3D12VAEncodeContext                                    *ctx = avctx->priv_data;
-    D3D12_VIDEO_ENCODER_OUTPUT_METADATA                    *meta = NULL;
     D3D12_VIDEO_ENCODER_FRAME_SUBREGION_METADATA *subregion_meta = NULL;
     uint8_t                                                *data = NULL;
     HRESULT                                                   hr = S_OK;
@@ -383,7 +381,6 @@ static int d3d12va_encode_av1_get_coded_data(AVCodecContext *avctx,
     size_t    av1_pic_hd_size = 0;
     int tile_group_extra_size = 0;
     size_t            bit_len = 0;
-    D3D12VAEncodeContext *ctx = avctx->priv_data;
 
     char pic_hd_data[MAX_PARAM_BUFFER_SIZE] = { 0 };
 
