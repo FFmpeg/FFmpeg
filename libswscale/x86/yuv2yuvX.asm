@@ -54,8 +54,8 @@ cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
     jz                   .offset
 
     ; offset != 0 path.
-    psrlq                m5, m3, $18
-    psllq                m3, m3, $28
+    psrlq                m5, m3, 0x18
+    psllq                m3, m3, 0x28
     por                  m3, m3, m5
 
 .offset:
@@ -94,7 +94,7 @@ cglobal yuv2yuvX, 7, 7, 8, filter, filterSize, src, dest, dstW, dither, offset
     paddw                m6, m6, m2
     paddw                m1, m1, m5
 %endif
-    add                  filterSizeq, $10
+    add                  filterSizeq, 0x10
     mov                  srcq, [filterSizeq]
     test                 srcq, srcq
     jnz                  .loop
