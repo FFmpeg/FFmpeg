@@ -22,6 +22,11 @@
 #include "libswscale/ops.h"
 #include "libswscale/format.h"
 
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#endif
+
 static int run_test(SwsContext *const ctx, AVFrame *frame,
                     const AVPixFmtDescriptor *const src_desc,
                     const AVPixFmtDescriptor *const dst_desc)
@@ -72,6 +77,10 @@ static void log_stdout(void *avcl, int level, const char *fmt, va_list vl)
 int main(int argc, char **argv)
 {
     int ret = 1;
+
+#ifdef _WIN32
+    _setmode(_fileno(stdout), _O_BINARY);
+#endif
 
     SwsContext *ctx = sws_alloc_context();
     AVFrame *frame = av_frame_alloc();
