@@ -478,6 +478,7 @@ Optimization options (experts only):
   --disable-i8mm           disable I8MM optimizations
   --disable-sve            disable SVE optimizations
   --disable-sve2           disable SVE2 optimizations
+  --disable-sme            disable SME optimizations
   --disable-inline-asm     disable use of inline assembly
   --disable-x86asm         disable use of standalone x86 assembly
   --disable-mipsdsp        disable MIPS DSP ASE R1 optimizations
@@ -2224,6 +2225,7 @@ ARCH_EXT_LIST_ARM="
     setend
     sve
     sve2
+    sme
 "
 
 ARCH_EXT_LIST_MIPS="
@@ -2491,6 +2493,7 @@ TOOLCHAIN_FEATURES="
     as_archext_i8mm_directive
     as_archext_sve_directive
     as_archext_sve2_directive
+    as_archext_sme_directive
     as_dn_directive
     as_fpu_directive
     as_func
@@ -2823,6 +2826,7 @@ dotprod_deps="aarch64 neon"
 i8mm_deps="aarch64 neon"
 sve_deps="aarch64 neon"
 sve2_deps="aarch64 neon sve"
+sme_deps="aarch64 neon sve sve2"
 
 map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
 
@@ -6447,11 +6451,12 @@ if enabled aarch64; then
     # internal assembler in clang 3.3 does not support this instruction
     enabled neon && check_insn neon 'ext   v0.8B, v0.8B, v1.8B, #1'
 
-    archext_list="dotprod i8mm sve sve2"
+    archext_list="dotprod i8mm sve sve2 sme"
     enabled dotprod && check_archext_insn dotprod 'udot v0.4s, v0.16b, v0.16b'
     enabled i8mm    && check_archext_insn i8mm    'usdot v0.4s, v0.16b, v0.16b'
     enabled sve     && check_archext_insn sve     'whilelt p0.s, x0, x1'
     enabled sve2    && check_archext_insn sve2    'sqrdmulh z0.s, z0.s, z0.s'
+    enabled sme     && check_archext_insn sme     'smstop'
 
     # Disable the main feature (e.g. HAVE_NEON) if neither inline nor external
     # assembly support the feature out of the box. Skip this for the features
@@ -8211,6 +8216,7 @@ if enabled aarch64; then
     echo "I8MM enabled              ${i8mm-no}"
     echo "SVE enabled               ${sve-no}"
     echo "SVE2 enabled              ${sve2-no}"
+    echo "SME enabled               ${sme-no}"
 fi
 if enabled arm; then
     echo "ARMv5TE enabled           ${armv5te-no}"

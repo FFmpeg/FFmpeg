@@ -72,10 +72,19 @@
 #define DISABLE_SVE2
 #endif
 
+#if HAVE_AS_ARCHEXT_SME_DIRECTIVE
+#define ENABLE_SME   .arch_extension sme
+#define DISABLE_SME  .arch_extension nosme
+#else
+#define ENABLE_SME
+#define DISABLE_SME
+#endif
+
 DISABLE_DOTPROD
 DISABLE_I8MM
 DISABLE_SVE
 DISABLE_SVE2
+DISABLE_SME
 
 
 /* Support macros for

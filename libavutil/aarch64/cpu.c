@@ -28,6 +28,7 @@
 #define HWCAP_AARCH64_SVE     (1 << 22)
 #define HWCAP2_AARCH64_SVE2   (1 << 1)
 #define HWCAP2_AARCH64_I8MM   (1 << 13)
+#define HWCAP2_AARCH64_SME    (1 << 23)
 
 static int detect_flags(void)
 {
@@ -44,6 +45,8 @@ static int detect_flags(void)
         flags |= AV_CPU_FLAG_SVE2;
     if (hwcap2 & HWCAP2_AARCH64_I8MM)
         flags |= AV_CPU_FLAG_I8MM;
+    if (hwcap & HWCAP2_AARCH64_SME)
+        flags |= AV_CPU_FLAG_SME;
 
     return flags;
 }
@@ -67,6 +70,8 @@ static int detect_flags(void)
         flags |= AV_CPU_FLAG_DOTPROD;
     if (have_feature("hw.optional.arm.FEAT_I8MM"))
         flags |= AV_CPU_FLAG_I8MM;
+    if (have_feature("hw.optional.arm.FEAT_SME"))
+        flags |= AV_CPU_FLAG_SME;
 
     return flags;
 }
@@ -134,6 +139,10 @@ static int detect_flags(void)
     if (IsProcessorFeaturePresent(PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE))
         flags |= AV_CPU_FLAG_SVE2;
 #endif
+#ifdef PF_ARM_SME_INSTRUCTIONS_AVAILABLE
+    if (IsProcessorFeaturePresent(PF_ARM_SME_INSTRUCTIONS_AVAILABLE))
+        flags |= AV_CPU_FLAG_SME;
+#endif
     return flags;
 }
 #else
@@ -161,6 +170,9 @@ int ff_get_cpu_flags_aarch64(void)
 #endif
 #ifdef __ARM_FEATURE_SVE2
     flags |= AV_CPU_FLAG_SVE2;
+#endif
+#ifdef __ARM_FEATURE_SME
+    flags |= AV_CPU_FLAG_SME;
 #endif
 
     flags |= detect_flags();

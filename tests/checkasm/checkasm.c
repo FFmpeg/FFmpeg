@@ -362,6 +362,7 @@ static const struct {
     { "I8MM",     "i8mm",     AV_CPU_FLAG_I8MM },
     { "SVE",      "sve",      AV_CPU_FLAG_SVE },
     { "SVE2",     "sve2",     AV_CPU_FLAG_SVE2 },
+    { "SME",      "sme",      AV_CPU_FLAG_SME },
 #elif ARCH_ARM
     { "ARMV5TE",  "armv5te",  AV_CPU_FLAG_ARMV5TE },
     { "ARMV6",    "armv6",    AV_CPU_FLAG_ARMV6 },
@@ -1039,7 +1040,13 @@ int main(int argc, char *argv[])
     if (have_sve(av_get_cpu_flags()))
         snprintf(arch_info_buf, sizeof(arch_info_buf),
                  "SVE %d bits, ", 8 * ff_aarch64_sve_length());
-#elif ARCH_RISCV && HAVE_RVV
+#endif
+#if ARCH_AARCH64 && HAVE_SME
+    if (have_sme(av_get_cpu_flags()))
+        snprintf(arch_info_buf, sizeof(arch_info_buf),
+                 "SME %d bits, ", 8 * ff_aarch64_sme_length());
+#endif
+#if ARCH_RISCV && HAVE_RVV
     if (av_get_cpu_flags() & AV_CPU_FLAG_RVV_I32)
         snprintf(arch_info_buf, sizeof (arch_info_buf),
                  "%zu-bit vectors, ", 8 * ff_get_rv_vlenb());
