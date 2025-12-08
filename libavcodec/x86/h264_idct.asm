@@ -695,7 +695,7 @@ cglobal h264_luma_dc_dequant_idct, 3, 4, 7
     RET
 
 %ifdef __NASM_VER__
-%if __NASM_MAJOR__ >= 2 && __NASM_MINOR__ >= 4
+%if __NASM_MAJOR__ > 2 || (__NASM_MAJOR__ == 2 && __NASM_MINOR__ >= 4)
 %unmacro STORE_DIFFx2 8 ; remove macro from x86util.asm but yasm doesn't have this yet
 %endif
 %endif
