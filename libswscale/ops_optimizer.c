@@ -78,6 +78,8 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
   */
 static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
 {
+    bool seen[4] = {0};
+
     av_assert1(op->op == SWS_OP_SWIZZLE);
     switch (next->op) {
     case SWS_OP_CONVERT:
@@ -90,13 +92,26 @@ static bool op_commute_swizzle(SwsOp *op, SwsOp *next)
     case SWS_OP_SCALE:
         return true;
 
-    /* Operations with per-channel coefficients need to be un-swizzled */
+    /**
+     * We can commute per-channel ops only if the per-channel constants are the
+     * same for all duplicated channels; e.g.:
+     *   SWIZZLE {0, 0, 0, 3}
+     *   NEXT    {x, x, x, w}
+     * ->
+     *   NEXT    {x, _, _, w}
+     *   SWIZZLE {0, 0, 0, 3}
+     */
     case SWS_OP_MIN:
     case SWS_OP_MAX: {
         const SwsConst c = next->c;
         for (int i = 0; i < 4; i++) {
-            if (!next->comps.unused[i])
-                next->c.q4[op->swizzle.in[i]] = c.q4[i];
+            if (next->comps.unused[i])
+                continue;
+            const int j = op->swizzle.in[i];
+            if (seen[j] && av_cmp_q(next->c.q4[j], c.q4[i]))
+                return false;
+            next->c.q4[j] = c.q4[i];
+            seen[j] = true;
         }
         return true;
     }
