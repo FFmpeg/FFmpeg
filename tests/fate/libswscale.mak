@@ -34,7 +34,7 @@ fate-sws-yuv-range: CMD = framecrc \
 # This self-check currently fails for legacy swscale, so pass SWS_UNSTABLE to use the new code
 FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-unscaled
 fate-sws-unscaled: libswscale/tests/swscale$(EXESUF)
-fate-sws-unscaled: CMD = run libswscale/tests/swscale$(EXESUF) -unscaled 1 -flags 0x100000 -v 16
+fate-sws-unscaled: CMD = run libswscale/tests/swscale$(EXESUF) -unscaled 1 -flags unstable -v 16
 
 FATE_LIBSWSCALE-$(CONFIG_UNSTABLE) += fate-sws-ops-list
 fate-sws-ops-list: libswscale/tests/sws_ops$(EXESUF)

@@ -509,6 +509,11 @@ int main(int argc, char **argv)
     AVLFG rand;
     int ret = -1;
 
+    const AVClass *sws_class = sws_get_class();
+    const AVOption *flags_opt = av_opt_find(&sws_class, "sws_flags", NULL, 0,
+                                            AV_OPT_SEARCH_FAKE_OBJ);
+    av_assert0(flags_opt);
+
     for (int i = 1; i < argc; i += 2) {
         if (!strcmp(argv[i], "-help") || !strcmp(argv[i], "--help")) {
             fprintf(stderr,
@@ -576,7 +581,11 @@ int main(int argc, char **argv)
             opts.w = 1920;
             opts.h = 1080;
         } else if (!strcmp(argv[i], "-flags")) {
-            opts.flags = strtol(argv[i + 1], NULL, 0);
+            ret = av_opt_eval_flags(&sws_class, flags_opt, argv[i + 1], &opts.flags);
+            if (ret < 0) {
+                fprintf(stderr, "invalid flags %s\n", argv[i + 1]);
+                goto error;
+            }
         } else if (!strcmp(argv[i], "-dither")) {
             opts.dither = atoi(argv[i + 1]);
         } else if (!strcmp(argv[i], "-unscaled")) {
