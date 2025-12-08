@@ -97,7 +97,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_READ:
             for (int i = 0; i < op->rw.elems; i++) {
                 if (ff_sws_pixel_type_is_int(op->type)) {
-                    int bits = 8 * ff_sws_pixel_type_size(op->type);
+                    int bits = 8 * ff_sws_pixel_type_size(op->type) >> op->rw.frac;
                     if (!op->rw.packed && ops->src.desc) {
                         /* Use legal value range from pixdesc if available;
                          * we don't need to do this for packed formats because
