@@ -502,7 +502,7 @@ static int add_convert_pass(SwsGraph *graph, SwsFormat src, SwsFormat dst,
     ret = ff_sws_decode_colors(ctx, type, ops, src, &graph->incomplete);
     if (ret < 0)
         goto fail;
-    ret = ff_sws_encode_colors(ctx, type, ops, dst, &graph->incomplete);
+    ret = ff_sws_encode_colors(ctx, type, ops, src, dst, &graph->incomplete);
     if (ret < 0)
         goto fail;
     ret = ff_sws_encode_pixfmt(ops, dst.format);

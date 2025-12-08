@@ -1157,15 +1157,16 @@ static bool trc_is_hdr(enum AVColorTransferCharacteristic trc)
 }
 
 static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
-                      const SwsPixelType type, const SwsFormat fmt)
+                      const SwsPixelType type,
+                      const SwsFormat src, const SwsFormat dst)
 {
     SwsDither mode = ctx->dither;
     SwsDitherOp dither;
 
     if (mode == SWS_DITHER_AUTO) {
         /* Visual threshold of perception: 12 bits for SDR, 14 bits for HDR */
-        const int jnd_bits = trc_is_hdr(fmt.color.trc) ? 14 : 12;
-        const int bpc = fmt.desc->comp[0].depth;
+        const int jnd_bits = trc_is_hdr(dst.color.trc) ? 14 : 12;
+        const int bpc = dst.desc->comp[0].depth;
         mode = bpc >= jnd_bits ? SWS_DITHER_NONE : SWS_DITHER_BAYER;
     }
 
@@ -1319,11 +1320,12 @@ int ff_sws_decode_colors(SwsContext *ctx, SwsPixelType type,
 }
 
 int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type,
-                         SwsOpList *ops, const SwsFormat fmt, bool *incomplete)
+                         SwsOpList *ops, const SwsFormat src,
+                         const SwsFormat dst, bool *incomplete)
 {
-    const AVLumaCoefficients *c = av_csp_luma_coeffs_from_avcsp(fmt.csp);
+    const AVLumaCoefficients *c = av_csp_luma_coeffs_from_avcsp(dst.csp);
 
-    switch (fmt.csp) {
+    switch (dst.csp) {
     case AVCOL_SPC_RGB:
         break;
     case AVCOL_SPC_UNSPECIFIED:
@@ -1386,20 +1388,20 @@ int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type,
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
         .type = type,
         .op   = SWS_OP_LINEAR,
-        .lin  = fmt_encode_range(fmt, incomplete),
+        .lin  = fmt_encode_range(dst, incomplete),
     }));
 
-    if (!(fmt.desc->flags & AV_PIX_FMT_FLAG_FLOAT)) {
+    if (!(dst.desc->flags & AV_PIX_FMT_FLAG_FLOAT)) {
         SwsConst range = {0};
 
-        const bool is_ya = fmt.desc->nb_components == 2;
-        for (int i = 0; i < fmt.desc->nb_components; i++) {
+        const bool is_ya = dst.desc->nb_components == 2;
+        for (int i = 0; i < dst.desc->nb_components; i++) {
             /* Clamp to legal pixel range */
             const int idx = i * (is_ya ? 3 : 1);
-            range.q4[idx] = Q((1 << fmt.desc->comp[i].depth) - 1);
+            range.q4[idx] = Q((1 << dst.desc->comp[i].depth) - 1);
         }
 
-        RET(fmt_dither(ctx, ops, type, fmt));
+        RET(fmt_dither(ctx, ops, type, src, dst));
         RET(ff_sws_op_list_append(ops, &(SwsOp) {
             .op   = SWS_OP_MAX,
             .type = type,
@@ -1416,7 +1418,7 @@ int ff_sws_encode_colors(SwsContext *ctx, SwsPixelType type,
     return ff_sws_op_list_append(ops, &(SwsOp) {
         .type       = type,
         .op         = SWS_OP_CONVERT,
-        .convert.to = fmt_pixel_type(fmt.format),
+        .convert.to = fmt_pixel_type(dst.format),
     });
 }
 

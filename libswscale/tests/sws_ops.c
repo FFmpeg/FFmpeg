@@ -48,7 +48,7 @@ static int run_test(SwsContext *const ctx, AVFrame *frame,
         goto fail;
     if (ff_sws_decode_colors(ctx, SWS_PIXEL_F32, ops, src, &incomplete) < 0)
         goto fail;
-    if (ff_sws_encode_colors(ctx, SWS_PIXEL_F32, ops, dst, &incomplete) < 0)
+    if (ff_sws_encode_colors(ctx, SWS_PIXEL_F32, ops, src, dst, &incomplete) < 0)
         goto fail;
     if (ff_sws_encode_pixfmt(ops, dst.format) < 0)
         goto fail;
