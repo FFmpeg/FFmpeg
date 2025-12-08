@@ -371,6 +371,9 @@ int ff_d3d12va_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
 int ff_d3d12va_encode_init(AVCodecContext *avctx);
 int ff_d3d12va_encode_close(AVCodecContext *avctx);
 
+void ff_d3d12va_encode_check_encoder_feature_flags(void *log_ctx,
+                                                   D3D12_VIDEO_ENCODER_VALIDATION_FLAGS flags);
+
 #define D3D12VA_ENCODE_INTRA_REFRESH_MODE(name, mode, desc) \
     { #name, desc, 0, AV_OPT_TYPE_CONST, { .i64 = D3D12_VIDEO_ENCODER_INTRA_REFRESH_MODE_ ## mode }, \
       0, 0, FLAGS, .unit = "intra_refresh_mode" }

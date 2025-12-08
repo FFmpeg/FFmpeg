@@ -39,6 +39,29 @@ const AVCodecHWConfigInternal *const ff_d3d12va_encode_hw_configs[] = {
     NULL,
 };
 
+void ff_d3d12va_encode_check_encoder_feature_flags(void *log_ctx,
+                                                   D3D12_VIDEO_ENCODER_VALIDATION_FLAGS flags)
+{
+    if (flags & D3D12_VIDEO_ENCODER_VALIDATION_FLAG_CODEC_NOT_SUPPORTED)
+        av_log(log_ctx, AV_LOG_ERROR, "  - Codec not supported\n");
+    if (flags & D3D12_VIDEO_ENCODER_VALIDATION_FLAG_INPUT_FORMAT_NOT_SUPPORTED)
+        av_log(log_ctx, AV_LOG_ERROR, "  - Input format not supported\n");
+    if (flags & D3D12_VIDEO_ENCODER_VALIDATION_FLAG_CODEC_CONFIGURATION_NOT_SUPPORTED)
+        av_log(log_ctx, AV_LOG_ERROR, "  - Codec configuration not supported\n");
+    if (flags & D3D12_VIDEO_ENCODER_VALIDATION_FLAG_RATE_CONTROL_MODE_NOT_SUPPORTED)
+        av_log(log_ctx, AV_LOG_ERROR, "  - Rate control mode not supported\n");
+    if (flags & D3D12_VIDEO_ENCODER_VALIDATION_FLAG_RATE_CONTROL_CONFIGURATION_NOT_SUPPORTED)
+        av_log(log_ctx, AV_LOG_ERROR, "  - Rate control configuration not supported\n");
+    if (flags & D3D12_VIDEO_ENCODER_VALIDATION_FLAG_INTRA_REFRESH_MODE_NOT_SUPPORTED)
+        av_log(log_ctx, AV_LOG_ERROR, "  - Intra refresh mode not supported\n");
+    if (flags & D3D12_VIDEO_ENCODER_VALIDATION_FLAG_SUBREGION_LAYOUT_MODE_NOT_SUPPORTED)
+        av_log(log_ctx, AV_LOG_ERROR, "  - Subregion layout mode not supported\n");
+    if (flags & D3D12_VIDEO_ENCODER_VALIDATION_FLAG_RESOLUTION_NOT_SUPPORTED_IN_LIST)
+        av_log(log_ctx, AV_LOG_ERROR, "  - Resolution not supported\n");
+    if (flags & D3D12_VIDEO_ENCODER_VALIDATION_FLAG_GOP_STRUCTURE_NOT_SUPPORTED)
+        av_log(log_ctx, AV_LOG_ERROR, "  - GOP structure not supported\n");
+}
+
 static int d3d12va_fence_completion(AVD3D12VASyncContext *psync_ctx)
 {
     uint64_t completion = ID3D12Fence_GetCompletedValue(psync_ctx->fence);

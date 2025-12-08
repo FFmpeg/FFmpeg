@@ -580,8 +580,9 @@ static int d3d12va_encode_av1_init_sequence_params(AVCodecContext *avctx)
     }
 
     if (!(support.SupportFlags & D3D12_VIDEO_ENCODER_SUPPORT_FLAG_GENERAL_SUPPORT_OK)) {
-        av_log(avctx, AV_LOG_ERROR, "Driver does not support some request D3D12VA AV1 features. %#x\n",
+        av_log(avctx, AV_LOG_ERROR, "Driver does not support requested features. ValidationFlags: %#x\n",
                support.ValidationFlags);
+        ff_d3d12va_encode_check_encoder_feature_flags(avctx, support.ValidationFlags);
         return AVERROR(EINVAL);
     }
 
