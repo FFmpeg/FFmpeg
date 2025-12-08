@@ -425,7 +425,7 @@ static int d3d12va_encode_av1_get_coded_data(AVCodecContext *avctx,
     memcpy(ptr, pic_hd_data, av1_pic_hd_size);
     ptr += av1_pic_hd_size;
     total_size -= av1_pic_hd_size;
-    av_log(avctx, AV_LOG_DEBUG, "AV1 total_size after write picture header: %d.\n", total_size);
+    av_log(avctx, AV_LOG_DEBUG, "AV1 total_size after write picture header: %zu.\n", total_size);
 
     total_size -= tile_group_extra_size;
     err = d3d12va_encode_av1_write_tile_group(avctx, mapped_data, total_size, ptr, &bit_len);
