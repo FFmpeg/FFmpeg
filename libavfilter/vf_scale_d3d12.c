@@ -155,8 +155,6 @@ static DXGI_COLOR_SPACE_TYPE get_dxgi_colorspace(enum AVColorSpace colorspace, e
 
 static AVRational get_input_framerate(AVFilterContext *ctx, AVFilterLink *inlink, AVFrame *in)
 {
-    int64_t duration_scaled;
-    int64_t time_base_den;
     AVRational framerate = {0, 0};
 
     if (in->duration > 0 && inlink->time_base.num > 0 && inlink->time_base.den > 0) {
@@ -164,13 +162,9 @@ static AVRational get_input_framerate(AVFilterContext *ctx, AVFilterLink *inlink
         * Calculate framerate from frame duration and timebase
         * framerate = 1 / (duration * timebase)
         */
-        duration_scaled = in->duration * inlink->time_base.num;
-        time_base_den = inlink->time_base.den;
-        framerate.num = time_base_den;
-        framerate.den = duration_scaled;
-        /* Reduce the fraction */
         av_reduce(&framerate.num, &framerate.den,
-                 framerate.num, framerate.den, INT_MAX);
+                  inlink->time_base.den, in->duration * inlink->time_base.num,
+                  INT_MAX);
     } else if (inlink->time_base.num > 0 && inlink->time_base.den > 0) {
         /* Estimate from timebase (inverse of timebase is often the framerate) */
         framerate.num = inlink->time_base.den;
