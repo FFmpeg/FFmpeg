@@ -22,6 +22,7 @@
 #include "config_components.h"
 
 #include "libavutil/avstring.h"
+#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
@@ -624,6 +625,88 @@ static int rtsp_read_set_state(AVFormatContext *s,
     }
 }
 
+static char *dict_to_headers(AVDictionary *headers)
+{
+    char *buf;
+    AVBPrint bprint;
+    av_bprint_init(&bprint, 0, AV_BPRINT_SIZE_UNLIMITED);
+
+    const AVDictionaryEntry *header = NULL;
+    while ((header = av_dict_iterate(headers, header))) {
+        av_bprintf(&bprint, "%s: %s\r\n", header->key, header->value);
+    }
+
+    av_bprint_finalize(&bprint, &buf);
+    return buf;
+}
+
+static int rtsp_submit_command(struct AVFormatContext *s, enum AVFormatCommandID id, void *data)
+{
+    if (id != AVFORMAT_COMMAND_RTSP_SET_PARAMETER)
+        return AVERROR(ENOTSUP);
+    if (!data)
+        return AVERROR(EINVAL);
+
+    RTSPState *rt = s->priv_data;
+    AVRTSPCommandRequest *req = data;
+
+    av_log(s, AV_LOG_DEBUG, "Sending SET_PARAMETER command to %s\n", rt->control_uri);
+    char *headers = dict_to_headers(req->headers);
+
+    int ret = ff_rtsp_send_cmd_with_content_async(s, "SET_PARAMETER", rt->control_uri,
+        headers, req->body, req->body_len);
+    av_free(headers);
+
+    if (ret != 0)
+        av_log(s, AV_LOG_ERROR, "Failure sending SET_PARAMETER command: %s\n", av_err2str(ret));
+
+    return ret;
+}
+
+static int rtsp_read_command_reply(AVFormatContext *s, enum AVFormatCommandID id, void **data_out)
+{
+    if (id != AVFORMAT_COMMAND_RTSP_SET_PARAMETER)
+        return AVERROR(ENOTSUP);
+
+    if (!data_out)
+        return AVERROR(EINVAL);
+
+    AVRTSPResponse *res = av_malloc(sizeof(*res));
+    if (!res)
+        return AVERROR(ENOMEM);
+
+    RTSPMessageHeader reply;
+    int ret = ff_rtsp_read_reply(s, &reply, &res->body, 0, "SET_PARAMETER");
+    if (ret < 0)
+        return ret;
+
+    res->status_code = reply.status_code;
+    res->body_len = reply.content_length;
+
+    res->reason = av_strdup(reply.reason);
+    if (!res->reason) {
+        av_free(res);
+        return AVERROR(ENOMEM);
+    }
+
+    *data_out = res;
+    return 0;
+}
+
+static int rtsp_handle_command(struct AVFormatContext *s,
+    enum FFInputFormatCommandOption opt,
+    enum AVFormatCommandID id, void *data)
+{
+    switch (opt) {
+        case FF_INFMT_COMMAND_SUBMIT:
+        return rtsp_submit_command(s, id, data);
+        case FF_INFMT_COMMAND_GET_REPLY:
+        return rtsp_read_command_reply(s, id, data);
+        default:
+        av_unreachable("Invalid command option");
+    }
+}
+
 int ff_rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply)
 {
     RTSPState *rt = s->priv_data;
@@ -1019,4 +1102,5 @@ const FFInputFormat ff_rtsp_demuxer = {
     .read_close     = rtsp_read_close,
     .read_seek      = rtsp_read_seek,
     .read_set_state = rtsp_read_set_state,
+    .handle_command = rtsp_handle_command,
 };
