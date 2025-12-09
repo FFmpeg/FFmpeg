@@ -133,6 +133,15 @@ static VVCFrame *alloc_frame(VVCContext *s, VVCFrameContext *fc)
         frame->sps = av_refstruct_ref_c(fc->ps.sps);
         frame->pps = av_refstruct_ref_c(fc->ps.pps);
 
+        // Add LCEVC SEI metadata here, as it's needed in get_buffer()
+        if (fc->sei.common.lcevc.info) {
+            HEVCSEILCEVC *lcevc = &fc->sei.common.lcevc;
+            ret = ff_frame_new_side_data_from_buf(s->avctx, frame->frame,
+                                                  AV_FRAME_DATA_LCEVC, &lcevc->info);
+            if (ret < 0)
+                goto fail;
+        }
+
         ret = ff_thread_get_buffer(s->avctx, frame->frame, AV_GET_BUFFER_FLAG_REF);
         if (ret < 0)
             return NULL;

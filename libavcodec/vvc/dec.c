@@ -807,10 +807,10 @@ static int frame_start(VVCContext *s, VVCFrameContext *fc, SliceContext *sc)
     if (!s->temporal_id && !ph->r->ph_non_ref_pic_flag && !(IS_RASL(s) || IS_RADL(s)))
         s->poc_tid0 = ph->poc;
 
+    decode_prefix_sei(fc, s);
+
     if ((ret = ff_vvc_set_new_ref(s, fc, &fc->frame)) < 0)
         goto fail;
-
-    decode_prefix_sei(fc, s);
 
     ret = set_side_data(s, fc);
     if (ret < 0)
@@ -1225,6 +1225,7 @@ static av_cold void vvc_decode_flush(AVCodecContext *avctx)
 
     if (s->fcs) {
         VVCFrameContext *last = get_frame_context(s, s->fcs, s->nb_frames - 1);
+        ff_vvc_sei_reset(&last->sei);
         ff_vvc_flush_dpb(last);
     }
 
