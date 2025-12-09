@@ -1162,11 +1162,11 @@ static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
 {
     SwsDither mode = ctx->dither;
     SwsDitherOp dither;
+    const int bpc = dst.desc->comp[0].depth;
 
     if (mode == SWS_DITHER_AUTO) {
         /* Visual threshold of perception: 12 bits for SDR, 14 bits for HDR */
         const int jnd_bits = trc_is_hdr(dst.color.trc) ? 14 : 12;
-        const int bpc = dst.desc->comp[0].depth;
         mode = bpc >= jnd_bits ? SWS_DITHER_NONE : SWS_DITHER_BAYER;
     }
 
@@ -1202,6 +1202,21 @@ static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
         const int offsets_16x16[4] = {0, 3, 2, 5};
         for (int i = 0; i < 4; i++)
             dither.y_offset[i] = offsets_16x16[i];
+
+        if (src.desc->nb_components < 3 && bpc >= 8) {
+            /**
+             * For high-bit-depth sources without chroma, use same matrix
+             * offset for all color channels. This prevents introducing color
+             * noise in grayscale images; and also allows optimizing the dither
+             * operation. Skipped for low bit depth (<8 bpc) as the loss in
+             * PSNR, from the inability to diffuse error among all three
+             * channels, can be substantial.
+             *
+             * This shifts: { X, Y, Z, W } -> { X, X, X, Y }
+             */
+            dither.y_offset[3] = dither.y_offset[1];
+            dither.y_offset[1] = dither.y_offset[2] = dither.y_offset[0];
+        }
 
         return ff_sws_op_list_append(ops, &(SwsOp) {
             .op     = SWS_OP_DITHER,
