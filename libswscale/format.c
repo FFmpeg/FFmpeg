@@ -1195,6 +1195,13 @@ static int fmt_dither(SwsContext *ctx, SwsOpList *ops,
         dither.matrix = generate_bayer_matrix(dither.size_log2);
         if (!dither.matrix)
             return AVERROR(ENOMEM);
+
+        /* Brute-forced offsets; minimizes quantization error across a 16x16
+         * bayer dither pattern for standard RGBA and YUVA pixel formats */
+        const int offsets_16x16[4] = {0, 3, 2, 5};
+        for (int i = 0; i < 4; i++)
+            dither.y_offset[i] = offsets_16x16[i];
+
         return ff_sws_op_list_append(ops, &(SwsOp) {
             .op     = SWS_OP_DITHER,
             .type   = type,

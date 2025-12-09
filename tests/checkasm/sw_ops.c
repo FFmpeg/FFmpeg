@@ -624,6 +624,7 @@ static void check_dither(void)
         /* Test all sizes up to 256x256 */
         for (int size_log2 = 0; size_log2 <= 8; size_log2++) {
             const int size = 1 << size_log2;
+            const int mask = size - 1;
             AVRational *matrix = av_refstruct_allocz(size * size * sizeof(*matrix));
             if (!matrix) {
                 fail();
@@ -641,7 +642,8 @@ static void check_dither(void)
                 .op = SWS_OP_DITHER,
                 .type = t,
                 .dither.size_log2 = size_log2,
-                .dither.matrix = matrix,
+                .dither.matrix    = matrix,
+                .dither.y_offset  = {0, 3 & mask, 2 & mask, 5 & mask},
             });
 
             av_refstruct_unref(&matrix);

@@ -460,8 +460,10 @@ void ff_sws_op_list_print(void *log, int lev, const SwsOpList *ops)
                    op->convert.expand ? " (expand)" : "");
             break;
         case SWS_OP_DITHER:
-            av_log(log, lev, "%-20s: %dx%d matrix\n", "SWS_OP_DITHER",
-                    1 << op->dither.size_log2, 1 << op->dither.size_log2);
+            av_log(log, lev, "%-20s: %dx%d matrix + {%d %d %d %d}\n", "SWS_OP_DITHER",
+                    1 << op->dither.size_log2, 1 << op->dither.size_log2,
+                    op->dither.y_offset[0], op->dither.y_offset[1],
+                    op->dither.y_offset[2], op->dither.y_offset[3]);
             break;
         case SWS_OP_MIN:
             av_log(log, lev, "%-20s: x <= {%s %s %s %s}\n", "SWS_OP_MIN",

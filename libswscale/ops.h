@@ -132,6 +132,7 @@ typedef struct SwsConvertOp {
 typedef struct SwsDitherOp {
     AVRational *matrix; /* tightly packed dither matrix (refstruct) */
     int size_log2; /* size (in bits) of the dither matrix */
+    uint8_t y_offset[4]; /* row offset for each component */
 } SwsDitherOp;
 
 typedef struct SwsLinearOp {
