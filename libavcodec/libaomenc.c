@@ -303,11 +303,7 @@ static av_cold void free_frame_list(struct FrameListData *list)
 }
 
 static av_cold int codecctl_int(AVCodecContext *avctx,
-#ifdef UENUM1BYTE
-                                aome_enc_control_id id,
-#else
                                 enum aome_enc_control_id id,
-#endif
                                 int val)
 {
     AOMContext *ctx = avctx->priv_data;
@@ -380,11 +376,7 @@ static int add_hdr_plus(AVCodecContext *avctx, struct aom_image *img, const AVFr
     defined(AOM_CTRL_AV1E_GET_SEQ_LEVEL_IDX) && \
     defined(AOM_CTRL_AV1E_GET_TARGET_SEQ_LEVEL_IDX)
 static av_cold int codecctl_intp(AVCodecContext *avctx,
-#ifdef UENUM1BYTE
-                                 aome_enc_control_id id,
-#else
                                  enum aome_enc_control_id id,
-#endif
                                  int* ptr)
 {
     AOMContext *ctx = avctx->priv_data;
@@ -408,11 +400,7 @@ static av_cold int codecctl_intp(AVCodecContext *avctx,
 #endif
 
 static av_cold int codecctl_imgp(AVCodecContext *avctx,
-#ifdef UENUM1BYTE
-                                 aome_enc_control_id id,
-#else
                                  enum aome_enc_control_id id,
-#endif
                                  struct aom_image *img)
 {
     AOMContext *ctx = avctx->priv_data;
