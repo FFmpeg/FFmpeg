@@ -22,6 +22,7 @@
 
 #include "sei.h"
 #include "dec.h"
+#include "libavcodec/bytestream.h"
 #include "libavutil/refstruct.h"
 
 static int decode_film_grain_characteristics(H2645SEIFilmGrainCharacteristics *h, const SEIRawFilmGrainCharacteristics *s, const VVCFrameContext *fc)
@@ -176,6 +177,27 @@ static int decode_mastering_display_colour_volume(H2645SEIMasteringDisplay *h, c
     return 0;
 }
 
+static int decode_user_data_registered_itu_t_t35(H2645SEI *sei, const SEIRawUserDataRegistered *s,
+                                                 const VVCFrameContext *fc)
+{
+    GetByteContext gbc;
+    int offset = (s->itu_t_t35_country_code == 0xff) + 1;
+
+    bytestream2_init(&gbc, s->data_ref, s->data_length + offset);
+    return ff_h2645_sei_message_decode(sei, SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35,
+                                       AV_CODEC_ID_VVC, NULL, &gbc, fc->log_ctx);
+}
+
+static int decode_user_data_uregistered(H2645SEI *sei, const SEIRawUserDataUnregistered *s,
+                                        const VVCFrameContext *fc)
+{
+    GetByteContext gbc;
+
+    bytestream2_init(&gbc, s->data_ref, s->data_length + 16);
+    return ff_h2645_sei_message_decode(sei, SEI_TYPE_USER_DATA_UNREGISTERED,
+                                       AV_CODEC_ID_VVC, NULL, &gbc, fc->log_ctx);
+}
+
 int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameContext *fc)
 {
     H2645SEI *c  = &s->common;
@@ -219,6 +241,14 @@ int ff_vvc_sei_decode(VVCSEI *s, const H266RawSEI *sei, const struct VVCFrameCon
 
         case SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
             ret = decode_mastering_display_colour_volume(&s->common.mastering_display, payload);
+            break;
+
+        case SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
+            ret = decode_user_data_registered_itu_t_t35(&s->common, payload, fc);
+            break;
+
+        case SEI_TYPE_USER_DATA_UNREGISTERED:
+            ret = decode_user_data_uregistered(&s->common, payload, fc);
             break;
 
         default:
