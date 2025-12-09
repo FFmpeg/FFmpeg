@@ -33,13 +33,15 @@ typedef struct SEIRawFillerPayload {
 typedef struct SEIRawUserDataRegistered {
     uint8_t      itu_t_t35_country_code;
     uint8_t      itu_t_t35_country_code_extension_byte;
-    uint8_t     *data; ///< RefStruct reference
+    uint8_t     *data;
+    uint8_t     *data_ref; ///< RefStruct reference
     size_t       data_length;
 } SEIRawUserDataRegistered;
 
 typedef struct SEIRawUserDataUnregistered {
     uint8_t      uuid_iso_iec_11578[16];
-    uint8_t     *data; ///< RefStruct reference
+    uint8_t     *data;
+    uint8_t     *data_ref; ///< RefStruct reference
     size_t       data_length;
 } SEIRawUserDataUnregistered;
 

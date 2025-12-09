@@ -28,13 +28,13 @@
 static void cbs_free_user_data_registered(AVRefStructOpaque unused, void *obj)
 {
     SEIRawUserDataRegistered *udr = obj;
-    av_refstruct_unref(&udr->data);
+    av_refstruct_unref(&udr->data_ref);
 }
 
 static void cbs_free_user_data_unregistered(AVRefStructOpaque unused, void *obj)
 {
     SEIRawUserDataUnregistered *udu = obj;
-    av_refstruct_unref(&udu->data);
+    av_refstruct_unref(&udu->data_ref);
 }
 
 int ff_cbs_sei_alloc_message_payload(SEIRawMessage *message,

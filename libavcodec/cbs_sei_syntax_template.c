@@ -57,9 +57,16 @@ SEI_FUNC(user_data_registered, (CodedBitstreamContext *ctx, RWContext *rw,
         return AVERROR_INVALIDDATA;
     }
     current->data_length = state->payload_size - i;
-#endif
 
+    allocate(current->data_ref, state->payload_size);
+    current->data = current->data_ref;
+
+    *current->data++ = current->itu_t_t35_country_code;
+    if (current->itu_t_t35_country_code == 0xff)
+        *current->data++ = current->itu_t_t35_country_code_extension_byte;
+#else
     allocate(current->data, current->data_length);
+#endif
     for (j = 0; j < current->data_length; j++)
         xu(8, itu_t_t35_payload_byte[], current->data[j], 0x00, 0xff, 1, i + j);
 
@@ -86,7 +93,13 @@ SEI_FUNC(user_data_unregistered, (CodedBitstreamContext *ctx, RWContext *rw,
     for (i = 0; i < 16; i++)
         us(8, uuid_iso_iec_11578[i], 0x00, 0xff, 1, i);
 
+#ifdef READ
+    allocate(current->data_ref, state->payload_size);
+    memcpy(current->data_ref, current->uuid_iso_iec_11578, sizeof(current->uuid_iso_iec_11578));
+    current->data = current->data_ref + 16;
+#else
     allocate(current->data, current->data_length);
+#endif
 
     for (i = 0; i < current->data_length; i++)
         xu(8, user_data_payload_byte[i], current->data[i], 0x00, 0xff, 1, i);
