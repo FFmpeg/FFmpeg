@@ -36,6 +36,7 @@
 #include "config_components.h"
 
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
 #include "libavutil/ffmath.h"
 
 #include "avcodec.h"
@@ -453,6 +454,8 @@ static int wma_decode_block(WMACodecContext *s)
     float mdct_norm;
     AVTXContext *mdct;
     av_tx_fn mdct_fn;
+
+    av_assert2(channels <= MAX_CHANNELS);
 
 #ifdef TRACE
     ff_tlog(s->avctx, "***decode_block: %d:%d\n",
