@@ -143,6 +143,45 @@ DIFF_BYTES_PROLOGUE
 %undef i
 %endif
 
+;--------------------------------------------------------------------------------------------------
+;void sub_median_pred(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
+;                     intptr_t w, int *left, int *left_top)
+;--------------------------------------------------------------------------------------------------
+
+INIT_XMM sse2
+cglobal sub_median_pred, 6, 7, 6, dst, src1, src2, w, l, lt
+    movu          m0, [src1q]       ; LT
+    movu          m4, [src2q]       ; L
+    movd          m1, [ltq]         ; LT
+    movd          m3, [lq]          ; L
+    xor          r6d, r6d
+    pslldq        m0, 1
+    pslldq        m4, 1
+    por           m0, m1            ; LT
+    por           m4, m3            ; L
+    jmp .first_iteration
+.loop:
+    movu          m4, [src2q+r6q-1] ; L
+    movu          m0, [src1q+r6q-1] ; LT
+.first_iteration:
+    movu          m1, [src1q+r6q]   ; T
+    movu          m3, [src2q+r6q]   ; X
+    psubb         m2, m4, m0        ; L - LT
+    paddb         m2, m1            ; L + T - LT
+    pmaxub        m5, m4, m1        ; max(T, L)
+    pminub        m1, m4            ; min(T, L)
+    pminub        m5, m2
+    pmaxub        m5, m1
+    psubb         m3, m5            ; dst - pred
+    movu  [dstq+r6q], m3
+    add          r6d, 16
+    cmp          r6d, wd
+    jb         .loop
+    movzx      src1d, BYTE [src1q+wq-1]
+    movzx      src2d, BYTE [src2q+wq-1]
+    mov        [ltq], src1d
+    mov         [lq], src2d
+    RET
 
 ;--------------------------------------------------------------------------------------------------
 ;void sub_left_predict(uint8_t *dst, const uint8_t *src, ptrdiff_t stride, ptrdiff_t width, int height)
