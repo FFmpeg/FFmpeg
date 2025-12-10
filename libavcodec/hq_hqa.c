@@ -168,7 +168,7 @@ static int hq_decode_frame(HQContext *ctx, AVFrame *pic, GetByteContext *gbc,
         slice_off[i] = bytestream2_get_be24u(gbc) - 4;
 
     next_off = 0;
-    const uint8_t *perm = profile->perm_tab;
+    const uint8_t *perm = hq_perms + profile->tab_offset;
     for (slice = 0; slice < profile->num_slices; slice++) {
         start_off = next_off;
         next_off  = profile->tab_h * (slice + 1) / profile->num_slices;
