@@ -36,7 +36,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-llauddsp                                  \
                 fate-checkasm-lls                                       \
                 fate-checkasm-llviddsp                                  \
-                fate-checkasm-llviddspenc                               \
+                fate-checkasm-llvidencdsp                               \
                 fate-checkasm-lpc                                       \
                 fate-checkasm-motion                                    \
                 fate-checkasm-mpegvideo_unquantize                      \

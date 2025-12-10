@@ -120,7 +120,7 @@ void checkasm_check_jpeg2000dsp(void);
 void checkasm_check_llauddsp(void);
 void checkasm_check_lls(void);
 void checkasm_check_llviddsp(void);
-void checkasm_check_llviddspenc(void);
+void checkasm_check_llvidencdsp(void);
 void checkasm_check_lpc(void);
 void checkasm_check_motion(void);
 void checkasm_check_mpegvideo_unquantize(void);

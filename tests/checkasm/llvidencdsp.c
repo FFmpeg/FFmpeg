@@ -135,7 +135,7 @@ static void check_sub_left_pred(LLVidEncDSPContext *c)
     }
 }
 
-void checkasm_check_llviddspenc(void)
+void checkasm_check_llvidencdsp(void)
 {
     LLVidEncDSPContext c;
     ff_llvidencdsp_init(&c);

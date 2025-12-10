@@ -207,7 +207,7 @@ static const struct {
         { "llviddsp", checkasm_check_llviddsp },
     #endif
     #if CONFIG_LLVIDENCDSP
-        { "llviddspenc", checkasm_check_llviddspenc },
+        { "llvidencdsp", checkasm_check_llvidencdsp },
     #endif
     #if CONFIG_LPC
         { "lpc", checkasm_check_lpc },
