@@ -1793,9 +1793,6 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s)
     if (s->lossless) {
         av_assert0(s->picture_ptr == s->picture);
         if (CONFIG_JPEGLS_DECODER && s->ls) {
-            ret = ff_mjpeg_unescape_sos(s);
-            if (ret < 0)
-                return ret;
             if ((ret = ff_jpegls_decode_picture(s)) < 0)
                 return ret;
         } else {
@@ -2342,7 +2339,11 @@ found:
                 if (!(x & 0x80)) {
                     /* Stuffed zero bit */
                     put_bits(&pb, 15, 0x7f80 | x);
+                } else if (x >= RST0 && x <= RST7) {
+                    /* Restart marker */
+                    goto found_ls;
                 } else {
+                    /* Non-restart marker */
                     ptr -= 2;
                     goto found_ls;
                 }
