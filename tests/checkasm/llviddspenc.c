@@ -28,11 +28,12 @@
 
 #include "checkasm.h"
 
-#define randomize_buffers(buf, size)      \
-    do {                                  \
-        int j;                            \
-        for (j = 0; j < size; j+=4)       \
-            AV_WN32(buf + j, rnd());      \
+#define randomize_buffers(buf, size)              \
+    do {                                          \
+        for (size_t j = 0; j < size & ~3; j += 4) \
+            AV_WN32(buf + j, rnd());              \
+        for (size_t j = 0; j < size; ++j)         \
+            buf[j] = rnd();                       \
     } while (0)
 
 static const struct {uint8_t w, h, s;} planes[] = {
@@ -73,6 +74,39 @@ static void check_diff_bytes(LLVidEncDSPContext *c)
     }
 }
 
+static void check_sub_median_pred(LLVidEncDSPContext *c)
+{
+    enum {
+        BUF_SIZE = MAX_STRIDE + 15 /* to test misalignment */
+    };
+    uint8_t dst_ref[BUF_SIZE], dst_new[BUF_SIZE];
+    uint8_t src1[BUF_SIZE], src2[BUF_SIZE];
+
+    declare_func_emms(AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, const uint8_t *src1,
+                      const uint8_t *src2, intptr_t w,
+                      int *left, int *left_top);
+
+    if (check_func(c->sub_median_pred, "sub_median_pred")) {
+        size_t width  = 1 + rnd() % MAX_STRIDE;
+        size_t offset = rnd() & 0xF;
+        int left_ref = rnd() & 0xFF, top_ref = rnd() & 0xFF;
+        int left_new = left_ref, top_new = top_ref;
+
+        memset(dst_ref, 0, sizeof(dst_ref));
+        memset(dst_new, 0, sizeof(dst_new));
+
+        randomize_buffers(src1, sizeof(src1));
+        randomize_buffers(src2, sizeof(src2));
+
+        call_ref(dst_ref + offset, src1 + offset, src2 + offset, width, &left_ref, &top_ref);
+        call_new(dst_new + offset, src1 + offset, src2 + offset, width, &left_new, &top_new);
+        if (left_new != left_ref || top_ref != top_new ||
+            memcmp(dst_ref, dst_new, width + offset))
+            fail();
+        bench_new(dst_new, src1, src2, MAX_STRIDE, &left_new, &top_new);
+    }
+}
+
 static void check_sub_left_pred(LLVidEncDSPContext *c)
 {
     int i;
@@ -108,6 +142,9 @@ void checkasm_check_llviddspenc(void)
 
     check_diff_bytes(&c);
     report("diff_bytes");
+
+    check_sub_median_pred(&c);
+    report("sub_median_pred");
 
     check_sub_left_pred(&c);
     report("sub_left_predict");
