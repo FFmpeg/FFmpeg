@@ -41,7 +41,7 @@ void ff_sub_left_predict_avx(uint8_t *dst, const uint8_t *src,
 
 av_cold void ff_llvidencdsp_init_x86(LLVidEncDSPContext *c)
 {
-    av_unused int cpu_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->sub_median_pred = ff_sub_median_pred_sse2;
