@@ -640,9 +640,10 @@ static int amf_decode_frame(AVCodecContext *avctx, struct AVFrame *frame)
                 return AVERROR(EINVAL);
             }
             res = ctx->decoder->pVtbl->GetProperty(ctx->decoder, AMF_VIDEO_DECODER_OUTPUT_FORMAT, &format_var);
-            if (res == AMF_OK) {
-                res = amf_init_frames_context(avctx, av_amf_to_av_format(format_var.int64Value), avctx->coded_width, avctx->coded_height);
+            if (res != AMF_OK) {
+                return AVERROR(EINVAL);
             }
+            int ret = amf_init_frames_context(avctx, av_amf_to_av_format(format_var.int64Value), avctx->coded_width, avctx->coded_height);
 
             if (res < 0)
                 return AVERROR(EINVAL);

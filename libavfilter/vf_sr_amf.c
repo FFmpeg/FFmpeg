@@ -180,6 +180,5 @@ FFFilter ff_vf_sr_amf = {
     FILTER_INPUTS(amf_filter_inputs),
     FILTER_OUTPUTS(amf_filter_outputs),
     FILTER_QUERY_FUNC(&amf_filter_query_formats),
-    FILTER_SINGLE_PIXFMT(AV_PIX_FMT_AMF_SURFACE),
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

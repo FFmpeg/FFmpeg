@@ -101,8 +101,11 @@ int amf_filter_filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     if (data_out) {
         AMFGuid guid = IID_AMFSurface();
-        data_out->pVtbl->QueryInterface(data_out, &guid, (void**)&surface_out); // query for buffer interface
+        res = data_out->pVtbl->QueryInterface(data_out, &guid, (void**)&surface_out); // query for buffer interface
         data_out->pVtbl->Release(data_out);
+        AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "QueryInterface(IID_AMFSurface) failed with error %d\n", res);
+    } else {
+        return AVERROR(EAGAIN);
     }
 
     out = amf_amfsurface_to_avframe(avctx, surface_out);
