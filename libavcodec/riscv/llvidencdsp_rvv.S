@@ -36,3 +36,30 @@ func ff_llvidenc_diff_bytes_rvv, zve32x
 
         ret
 endfunc
+
+func ff_llvidenc_sub_left_predict_rvv, zve32x
+        lpad    0
+        li      a5, -0x80
+        sub     a2, a2, a3
+1:
+        mv      t3, a3
+        addi    a4, a4, -1
+2:
+        vsetvli t0, t3, e8, m8, ta, ma
+        vle8.v  v16, (a1)
+        sub     t3, t3, t0
+        vle8.v  v8, (a0)
+        add     a1, a1, t0
+        vslide1up.vx    v24, v16, a5
+        vadd.vv v8, v8, v16
+        lb      a5, -1(a1)
+        vsub.vv v8, v8, v24
+        vse8.v  v8, (a0)
+        add     a0, a0, t0
+        bnez    t3, 2b
+
+        add     a1, a1, a2
+        bnez    a4, 1b
+
+        ret
+endfunc

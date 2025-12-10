@@ -26,6 +26,9 @@
 
 void ff_llvidenc_diff_bytes_rvv(uint8_t *dst, const uint8_t *src1,
                                 const uint8_t *src2, intptr_t w);
+void ff_llvidenc_sub_left_predict_rvv(uint8_t *dst, const uint8_t *src,
+                                      ptrdiff_t stride, ptrdiff_t width,
+                                      int height);
 
 av_cold void ff_llvidencdsp_init_riscv(LLVidEncDSPContext *c)
 {
@@ -34,6 +37,7 @@ av_cold void ff_llvidencdsp_init_riscv(LLVidEncDSPContext *c)
 
     if (flags & AV_CPU_FLAG_RVV_I32) {
         c->diff_bytes = ff_llvidenc_diff_bytes_rvv;
+        c->sub_left_predict = ff_llvidenc_sub_left_predict_rvv;
     }
 #endif
 }
