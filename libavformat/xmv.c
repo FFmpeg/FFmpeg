@@ -85,7 +85,6 @@ typedef struct XMVAudioPacket {
     uint64_t bit_rate;        ///< Bits of compressed data per second.
     uint16_t flags;           ///< Flags
     unsigned block_align;     ///< Bytes per compressed block.
-    uint16_t block_samples;   ///< Decompressed samples per compressed block.
 
     enum AVCodecID codec_id; ///< The codec ID of the compression scheme.
 
@@ -93,8 +92,6 @@ typedef struct XMVAudioPacket {
     uint64_t data_offset; ///< The offset of the audio data within the file.
 
     uint32_t frame_size; ///< Number of bytes to put into an audio frame.
-
-    uint64_t block_count; ///< Running counter of decompressed audio block.
 } XMVAudioPacket;
 
 /** Context for demuxing an XMV file. */
@@ -195,14 +192,12 @@ static int xmv_read_header(AVFormatContext *s)
                                 packet->sample_rate *
                                 packet->channels;
         packet->block_align   = XMV_BLOCK_ALIGN_SIZE * packet->channels;
-        packet->block_samples = 64;
         packet->codec_id      = ff_wav_codec_get_id(packet->compression,
                                                     packet->bits_per_sample);
 
         packet->stream_index = -1;
 
         packet->frame_size  = 0;
-        packet->block_count = 0;
 
         /* TODO: ADPCM'd 5.1 sound is encoded in three separate streams.
          *       Those need to be interleaved to a proper 5.1 stream. */
@@ -343,7 +338,7 @@ static int xmv_process_packet_header(AVFormatContext *s)
             ast->codecpar->bit_rate              = packet->bit_rate;
             ast->codecpar->block_align           = 36 * packet->channels;
 
-            avpriv_set_pts_info(ast, 32, packet->block_samples, packet->sample_rate);
+            avpriv_set_pts_info(ast, 32, 1, packet->sample_rate);
 
             packet->stream_index = ast->index;
 
@@ -444,7 +439,6 @@ static int xmv_fetch_audio_packet(AVFormatContext *s,
     XMVAudioPacket  *audio = &xmv->audio[stream];
 
     uint32_t data_size;
-    uint32_t block_count;
     int result;
 
     /* Seek to it */
@@ -464,16 +458,6 @@ static int xmv_fetch_audio_packet(AVFormatContext *s,
         return result;
 
     pkt->stream_index = audio->stream_index;
-
-    /* Calculate the PTS */
-
-    block_count = data_size / audio->block_align;
-
-    pkt->duration = block_count;
-    pkt->pts      = audio->block_count;
-    pkt->dts      = AV_NOPTS_VALUE;
-
-    audio->block_count += block_count;
 
     /* Advance offset */
     audio->data_size   -= data_size;
