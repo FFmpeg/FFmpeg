@@ -137,7 +137,7 @@ static int hq_decode_frame(HQContext *ctx, AVFrame *pic, GetByteContext *gbc,
 {
     const HQProfile *profile;
     GetBitContext gb;
-    const uint8_t *perm, *src = gbc->buffer;
+    const uint8_t *src = gbc->buffer;
     uint32_t slice_off[21];
     int slice, start_off, next_off, i, ret;
 
@@ -168,10 +168,10 @@ static int hq_decode_frame(HQContext *ctx, AVFrame *pic, GetByteContext *gbc,
         slice_off[i] = bytestream2_get_be24u(gbc) - 4;
 
     next_off = 0;
+    const uint8_t *perm = profile->perm_tab;
     for (slice = 0; slice < profile->num_slices; slice++) {
         start_off = next_off;
         next_off  = profile->tab_h * (slice + 1) / profile->num_slices;
-        perm = profile->perm_tab + start_off * profile->tab_w * 2;
 
         if (slice_off[slice] < (profile->num_slices + 1) * 3 ||
             slice_off[slice] >= slice_off[slice + 1] ||
