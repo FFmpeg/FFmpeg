@@ -432,7 +432,6 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         width  = s->width * stride;
         cur   += off;
         for (i = 0; i < s->height; i++) {
-            int ret;
             if (s->bits <= 8) {
                 ret = ls_decode_line(state, s, last, cur, t, width, stride, off, 8);
                 t = last[0];
@@ -458,7 +457,6 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         memset(cur, 0, s->picture_ptr->linesize[0]);
         width = s->width * stride;
         for (i = 0; i < s->height; i++) {
-            int ret;
             for (j = 0; j < stride; j++) {
                 ret = ls_decode_line(state, s, last + j, cur + j,
                                Rc[j], width, stride, j, 8);
