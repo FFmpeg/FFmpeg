@@ -54,6 +54,7 @@ static void sub_median_pred_mmxext(uint8_t *dst, const uint8_t *src1,
         "jmp 2f                         \n\t"
         "1:                             \n\t"
         "movq  -1(%2, %0), %%mm2        \n\t" // L
+        "movq -1(%1, %0), %%mm0         \n\t" // LT
         "2:                             \n\t"
         "movq  (%1, %0), %%mm1          \n\t" // T
         "movq  (%2, %0), %%mm3          \n\t" // X
@@ -68,7 +69,6 @@ static void sub_median_pred_mmxext(uint8_t *dst, const uint8_t *src1,
         "psubb %%mm4, %%mm3             \n\t" // dst - pred
         "movq %%mm3, (%3, %0)           \n\t"
         "add $8, %0                     \n\t"
-        "movq -1(%1, %0), %%mm0         \n\t" // LT
         "cmp %4, %0                     \n\t"
         " jb 1b                         \n\t"
         : "+r" (i)
