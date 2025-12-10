@@ -82,9 +82,9 @@ static void check_sub_median_pred(LLVidEncDSPContext *c)
     uint8_t dst_ref[BUF_SIZE], dst_new[BUF_SIZE];
     uint8_t src1[BUF_SIZE], src2[BUF_SIZE];
 
-    declare_func_emms(AV_CPU_FLAG_MMXEXT, void, uint8_t *dst, const uint8_t *src1,
-                      const uint8_t *src2, intptr_t w,
-                      int *left, int *left_top);
+    declare_func(void, uint8_t *dst, const uint8_t *src1,
+                 const uint8_t *src2, intptr_t w,
+                 int *left, int *left_top);
 
     if (check_func(c->sub_median_pred, "sub_median_pred")) {
         size_t width  = 1 + rnd() % MAX_STRIDE;

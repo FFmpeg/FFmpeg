@@ -37,42 +37,44 @@ void ff_diff_bytes_avx2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 void ff_sub_left_predict_avx(uint8_t *dst, const uint8_t *src,
                             ptrdiff_t stride, ptrdiff_t width, int height);
 
-#if HAVE_INLINE_ASM
+#if HAVE_SSE2_INLINE
 
-static void sub_median_pred_mmxext(uint8_t *dst, const uint8_t *src1,
-                                   const uint8_t *src2, intptr_t w,
-                                   int *left, int *left_top)
+static void sub_median_pred_sse2(uint8_t *dst, const uint8_t *src1,
+                                 const uint8_t *src2, intptr_t w,
+                                 int *left, int *left_top)
 {
     x86_reg i = 0;
     uint8_t l, lt;
 
     __asm__ volatile (
-        "movq  (%1, %0), %%mm0          \n\t" // LT
-        "psllq $8, %%mm0                \n\t"
-        "movq  (%2, %0), %%mm2          \n\t" // L
-        "psllq $8, %%mm2                \n\t"
-        "jmp 2f                         \n\t"
-        "1:                             \n\t"
-        "movq  -1(%2, %0), %%mm2        \n\t" // L
-        "movq -1(%1, %0), %%mm0         \n\t" // LT
-        "2:                             \n\t"
-        "movq  (%1, %0), %%mm1          \n\t" // T
-        "movq  (%2, %0), %%mm3          \n\t" // X
-        "movq %%mm2, %%mm4              \n\t" // L
-        "psubb %%mm0, %%mm2             \n\t"
-        "paddb %%mm1, %%mm2             \n\t" // L + T - LT
-        "movq %%mm4, %%mm5              \n\t" // L
-        "pmaxub %%mm1, %%mm4            \n\t" // max(T, L)
-        "pminub %%mm5, %%mm1            \n\t" // min(T, L)
-        "pminub %%mm2, %%mm4            \n\t"
-        "pmaxub %%mm1, %%mm4            \n\t"
-        "psubb %%mm4, %%mm3             \n\t" // dst - pred
-        "movq %%mm3, (%3, %0)           \n\t"
-        "add $8, %0                     \n\t"
-        "cmp %4, %0                     \n\t"
-        " jb 1b                         \n\t"
+        "movdqu  (%1, %0), %%xmm0    \n\t" // LT
+        "movdqu  (%2, %0), %%xmm2    \n\t" // L
+        "pslldq        $1, %%xmm0    \n\t"
+        "pslldq        $1, %%xmm2    \n\t"
+        "jmp 2f                      \n\t"
+        "1:                          \n\t"
+        "movdqu -1(%2, %0), %%xmm2   \n\t" // L
+        "movdqu -1(%1, %0), %%xmm0   \n\t" // LT
+        "2:                          \n\t"
+        "movdqu  (%1, %0), %%xmm1    \n\t" // T
+        "movdqu  (%2, %0), %%xmm3    \n\t" // X
+        "movdqa    %%xmm2, %%xmm4    \n\t" // L
+        "psubb     %%xmm0, %%xmm2    \n\t"
+        "paddb     %%xmm1, %%xmm2    \n\t" // L + T - LT
+        "movdqa    %%xmm4, %%xmm5    \n\t" // L
+        "pmaxub    %%xmm1, %%xmm4    \n\t" // max(T, L)
+        "pminub    %%xmm5, %%xmm1    \n\t" // min(T, L)
+        "pminub    %%xmm2, %%xmm4    \n\t"
+        "pmaxub    %%xmm1, %%xmm4    \n\t"
+        "psubb     %%xmm4, %%xmm3    \n\t" // dst - pred
+        "movdqu    %%xmm3, (%3, %0)  \n\t"
+        "add          $16, %0        \n\t"
+        "cmp           %4, %0        \n\t"
+        " jb 1b                      \n\t"
         : "+r" (i)
-        : "r" (src1), "r" (src2), "r" (dst), "r" ((x86_reg) w));
+        : "r" (src1), "r" (src2), "r" (dst), "r" ((x86_reg) w)
+        : XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3", "%xmm4", "%xmm5",) "memory"
+    );
 
     l  = *left;
     lt = *left_top;
@@ -89,11 +91,11 @@ av_cold void ff_llvidencdsp_init_x86(LLVidEncDSPContext *c)
 {
     av_unused int cpu_flags = av_get_cpu_flags();
 
-#if HAVE_INLINE_ASM
-    if (INLINE_MMXEXT(cpu_flags)) {
-        c->sub_median_pred = sub_median_pred_mmxext;
+#if HAVE_SSE2_INLINE
+    if (INLINE_SSE2(cpu_flags)) {
+        c->sub_median_pred = sub_median_pred_sse2;
     }
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_SSE2_INLINE */
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->diff_bytes = ff_diff_bytes_sse2;
