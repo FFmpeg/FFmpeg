@@ -53,7 +53,10 @@ jobs:
           path: fate-suite
           key: fate-suite-${{ steps.fate.outputs.hash }}
       - name: Run Fate
-        run: LD_LIBRARY_PATH="$(printf "%s:" "$PWD"/lib*)$PWD" make fate fate-build SAMPLES="$PWD/fate-suite" -j$(nproc)
+        run: |
+          LD_LIBRARY_PATH="$(printf "%s:" "$PWD"/lib*)$PWD" make fate fate-build SAMPLES="$PWD/fate-suite" -j$(nproc) || FATERES=$?
+          find . -name "*.err" -exec printf '::group::%s\n' {} \; -exec cat {} \; -exec printf '::endgroup::\n' \;
+          exit ${FATERES:-0}
   run_fate_full:
     strategy:
       fail-fast: false
@@ -97,4 +100,11 @@ jobs:
           path: fate-suite
           key: fate-suite-${{ steps.fate.outputs.hash }}
       - name: Run Fate
-        run: LD_LIBRARY_PATH="$(printf "%s:" "$PWD"/lib*)$PWD" make fate fate-build SAMPLES="$PWD/fate-suite" -j$(nproc)
+        run: |
+          if [[ "${{ matrix.target_exec }}" == "wine" ]]; then
+            export WINEDEBUG=-all
+            export FREI0R_PATH="$(winepath -w "$FREI0R_PATH")"
+          fi
+          LD_LIBRARY_PATH="$(printf "%s:" "$PWD"/lib*)$PWD" make fate fate-build SAMPLES="$PWD/fate-suite" -j$(nproc) || FATERES=$?
+          find . -name "*.err" -exec printf '::group::%s\n' {} \; -exec cat {} \; -exec printf '::endgroup::\n' \;
+          exit ${FATERES:-0}
