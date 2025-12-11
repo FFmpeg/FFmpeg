@@ -142,7 +142,8 @@ static int cavs_parse_frame(AVCodecParserContext *s, AVCodecContext *avctx,
             return 0;
         switch (stc) {
         case CAVS_START_CODE:
-            init_get_bits8(&gb, buf_ptr, buf_end - buf_ptr);
+            if (init_get_bits8(&gb, buf_ptr, buf_end - buf_ptr) < 0)
+                return 0;
             parse_seq_header(s, avctx, &gb);
             break;
         case PIC_I_START_CODE:
