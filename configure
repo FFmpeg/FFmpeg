@@ -1207,8 +1207,9 @@ check_archext_insn(){
     log check_archext_insn "$@"
     feature="$1"
     instr="$2"
+    instr2="$3"
     # Check if the assembly is accepted in inline assembly.
-    check_inline_asm ${feature}_inline "\"$instr\""
+    check_inline_asm ${feature}_inline "\"$instr \n\t $instr2\""
     # We don't check if the instruction is supported out of the box by the
     # external assembler (we don't try to set ${feature}_external) as we don't
     # need to use these instructions in non-runtime detected codepaths.
@@ -1230,6 +1231,7 @@ EOF
 $arch_directive
 $arch_extension_directive
 $instr
+$instr2
 EOF
 }
 
@@ -6454,7 +6456,7 @@ if enabled aarch64; then
     enabled i8mm    && check_archext_insn i8mm    'usdot v0.4s, v0.16b, v0.16b'
     enabled sve     && check_archext_insn sve     'whilelt p0.s, x0, x1'
     enabled sve2    && check_archext_insn sve2    'sqrdmulh z0.s, z0.s, z0.s'
-    enabled sme     && check_archext_insn sme     'smstop'
+    enabled sme     && check_archext_insn sme     'smstart' 'cntb x0'
 
     # Disable the main feature (e.g. HAVE_NEON) if neither inline nor external
     # assembly support the feature out of the box. Skip this for the features
