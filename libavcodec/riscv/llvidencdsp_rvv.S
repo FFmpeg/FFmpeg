@@ -37,6 +37,37 @@ func ff_llvidenc_diff_bytes_rvv, zve32x
         ret
 endfunc
 
+func ff_llvidenc_sub_median_pred_rvv, zve32x
+        lpad    0
+        lw      t4, (a4)
+        lw      t5, (a5)
+1:
+        vsetvli t3, a3, e8, m4, ta, ma
+        vle8.v  v16, (a1)            # src1
+        sub     a3, a3, t3
+        vle8.v  v24, (a2)            # src2
+        add     a1, t3, a1
+        vslide1up.vx    v20, v16, t5 # lt
+        add     a2, t3, a2
+        vslide1up.vx    v28, v24, t4 # l
+        lbu     t5, -1(a1)
+        vsub.vv     v20, v16, v20
+        lbu     t4, -1(a2)
+        vmaxu.vv    v8, v28, v16
+        vadd.vv     v20, v28, v20    # l + src1 - lt
+        vminu.vv    v12, v28, v16
+        vminu.vv    v8, v8, v20
+        vmaxu.vv    v8, v12, v8      # mid_pred(...)
+        vsub.vv     v8, v24, v8
+        vse8.v  v8, (a0)
+        add     a0, t3, a0
+        bnez    a3, 1b
+
+        sw      t4, (a4)
+        sw      t5, (a5)
+        ret
+endfunc
+
 func ff_llvidenc_sub_left_predict_rvv, zve32x
         lpad    0
         li      a5, -0x80
