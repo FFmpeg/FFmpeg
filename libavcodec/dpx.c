@@ -237,6 +237,7 @@ static void unpack_frame(AVCodecContext *avctx, AVFrame *p, const uint8_t *buf,
         break;
     case 16:
         elements *= 2;
+    // fall-through
     case 8:
         if (   avctx->pix_fmt == AV_PIX_FMT_YUVA444P
             || avctx->pix_fmt == AV_PIX_FMT_YUV444P) {
