@@ -45,7 +45,7 @@ static int detect_flags(void)
         flags |= AV_CPU_FLAG_SVE2;
     if (hwcap2 & HWCAP2_AARCH64_I8MM)
         flags |= AV_CPU_FLAG_I8MM;
-    if (hwcap & HWCAP2_AARCH64_SME)
+    if (hwcap2 & HWCAP2_AARCH64_SME)
         flags |= AV_CPU_FLAG_SME;
 
     return flags;
