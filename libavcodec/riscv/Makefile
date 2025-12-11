@@ -46,6 +46,7 @@ RVV-OBJS-$(CONFIG_LLAUDDSP) += riscv/llauddsp_rvv.o
 OBJS-$(CONFIG_LLVIDDSP) += riscv/llviddsp_init.o
 RVV-OBJS-$(CONFIG_LLVIDDSP) += riscv/llviddsp_rvv.o
 OBJS-$(CONFIG_LLVIDENCDSP) += riscv/llvidencdsp_init.o
+RV-OBJS-$(CONFIG_LLVIDDSP) += riscv/llvidencdsp_rvb.o
 RVV-OBJS-$(CONFIG_LLVIDENCDSP) += riscv/llvidencdsp_rvv.o
 OBJS-$(CONFIG_LPC) += riscv/lpc_init.o
 RVV-OBJS-$(CONFIG_LPC) += riscv/lpc_rvv.o

@@ -24,6 +24,12 @@
 #include "libavutil/cpu.h"
 #include "libavcodec/lossless_videoencdsp.h"
 
+#include "libavcodec/mathops.h"
+#include <sys/param.h>
+
+void ff_llvidenc_sub_median_pred_rvb(uint8_t *dst, const uint8_t *src1,
+                                     const uint8_t *src2, intptr_t w,
+                                     int *left, int *left_top);
 void ff_llvidenc_diff_bytes_rvv(uint8_t *dst, const uint8_t *src1,
                                 const uint8_t *src2, intptr_t w);
 void ff_llvidenc_sub_left_predict_rvv(uint8_t *dst, const uint8_t *src,
@@ -32,12 +38,17 @@ void ff_llvidenc_sub_left_predict_rvv(uint8_t *dst, const uint8_t *src,
 
 av_cold void ff_llvidencdsp_init_riscv(LLVidEncDSPContext *c)
 {
-#if HAVE_RVV
+#if HAVE_RV
     int flags = av_get_cpu_flags();
 
+    if (flags & AV_CPU_FLAG_RVB_BASIC)
+        c->sub_median_pred = ff_llvidenc_sub_median_pred_rvb;
+
+#if HAVE_RVV
     if (flags & AV_CPU_FLAG_RVV_I32) {
         c->diff_bytes = ff_llvidenc_diff_bytes_rvv;
         c->sub_left_predict = ff_llvidenc_sub_left_predict_rvv;
     }
+#endif
 #endif
 }
