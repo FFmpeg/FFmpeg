@@ -79,12 +79,10 @@ func ff_llvidenc_sub_left_predict_rvv, zve32x
         vsetvli t0, t3, e8, m8, ta, ma
         vle8.v  v16, (a1)
         sub     t3, t3, t0
-        vle8.v  v8, (a0)
-        add     a1, a1, t0
         vslide1up.vx    v24, v16, a5
-        vadd.vv v8, v8, v16
+        add     a1, a1, t0
+        vsub.vv v8, v16, v24
         lb      a5, -1(a1)
-        vsub.vv v8, v8, v24
         vse8.v  v8, (a0)
         add     a0, a0, t0
         bnez    t3, 2b
