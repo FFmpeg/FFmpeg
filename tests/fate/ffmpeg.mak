@@ -126,6 +126,11 @@ fate-ffmpeg-fix_sub_duration_heartbeat: CMD = fmtstdout srt -fix_sub_duration \
   -c:v mpeg2video -b:v 2M -g 30 -sc_threshold 1000000000 \
   -c:s srt \
   -f null -
+# FIXME: disabling comparison against reference as after ffmpeg multithreading
+#        went in, this test started depending on how far the input side
+#        progressed compared to how quickly the output encoded packets,
+#        causing spurious failures on the CI.
+fate-ffmpeg-fix_sub_duration_heartbeat: CMP = null
 
 # FIXME: the integer AAC decoder does not produce the same output on all platforms
 # so until that is fixed we use the volume filter to silence the data
