@@ -109,29 +109,25 @@ static void check_sub_median_pred(LLVidEncDSPContext *c)
 
 static void check_sub_left_pred(LLVidEncDSPContext *c)
 {
-    int i;
     LOCAL_ALIGNED_32(uint8_t, dst0, [MAX_STRIDE * MAX_HEIGHT]);
     LOCAL_ALIGNED_32(uint8_t, dst1, [MAX_STRIDE * MAX_HEIGHT]);
-    LOCAL_ALIGNED_32(uint8_t, src0, [MAX_STRIDE * MAX_HEIGHT]);
-    LOCAL_ALIGNED_32(uint8_t, src1, [MAX_STRIDE * MAX_HEIGHT]);
+    LOCAL_ALIGNED_32(uint8_t, src, [MAX_STRIDE * MAX_HEIGHT]);
 
     declare_func(void, uint8_t *dst, const uint8_t *src,
                  ptrdiff_t stride, ptrdiff_t width, int height);
 
-    memset(dst0, 0, MAX_STRIDE * MAX_HEIGHT);
-    memset(dst1, 0, MAX_STRIDE * MAX_HEIGHT);
-    randomize_buffers(src0, MAX_STRIDE * MAX_HEIGHT);
-    memcpy(src1, src0, MAX_STRIDE * MAX_HEIGHT);
-
     if (check_func(c->sub_left_predict, "sub_left_predict")) {
-        for (i = 0; i < 5; i ++) {
-            call_ref(dst0, src0, planes[i].s, planes[i].w, planes[i].h);
-            call_new(dst1, src1, planes[i].s, planes[i].w, planes[i].h);
+        randomize_buffers(src, MAX_STRIDE * MAX_HEIGHT);
+
+        for (size_t i = 0; i < FF_ARRAY_ELEMS(planes); i ++) {
+            memset(dst0, 0, MAX_STRIDE * MAX_HEIGHT);
+            memset(dst1, 0, MAX_STRIDE * MAX_HEIGHT);
+            call_ref(dst0, src, planes[i].s, planes[i].w, planes[i].h);
+            call_new(dst1, src, planes[i].s, planes[i].w, planes[i].h);
             if (memcmp(dst0, dst1, planes[i].w * planes[i].h))
                 fail();
-            break;
         }
-        bench_new(dst1, src0, planes[4].s, planes[4].w, planes[4].h);
+        bench_new(dst1, src, planes[4].s, planes[4].w, planes[4].h);
     }
 }
 
