@@ -103,7 +103,7 @@ static int vmd_read_header(AVFormatContext *s)
 
     /* fetch the main header, including the 2 header length bytes */
     avio_seek(pb, 0, SEEK_SET);
-    if ((ret = ffio_read_size(pb, vmd->vmd_header, VMD_HEADER_SIZE) < 0))
+    if ((ret = ffio_read_size(pb, vmd->vmd_header, VMD_HEADER_SIZE)) < 0)
         return ret;
 
     width = AV_RL16(&vmd->vmd_header[12]);
