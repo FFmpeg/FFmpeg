@@ -175,7 +175,7 @@ FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC FORMAT CONCAT SCALE, LAVFI_INDEV FILE
 fate-filter-lavd-scalenorm: tests/data/filtergraphs/scalenorm
 fate-filter-lavd-scalenorm: CMD = framecrc -f lavfi -graph_file $(TARGET_PATH)/tests/data/filtergraphs/scalenorm -i dummy
 
-FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FEEDBACK HFLIP) += fate-filter-feedback-hflip
+FATE_FILTER-$(call FILTERFRAMECRC, TESTSRC2 FEEDBACK HFLIP, LAVFI_INDEV) += fate-filter-feedback-hflip
 fate-filter-feedback-hflip: CMD = framecrc -f lavfi -i testsrc2=d=1 -vf "[in][hflipin]feedback=x=0:y=0:w=100:h=100[out][hflipout];[hflipout]hflip[hflipin]"
 
 FATE_FILTER-$(call FILTERFRAMECRC, FRAMERATE TESTSRC2) += fate-filter-framerate-up fate-filter-framerate-down
