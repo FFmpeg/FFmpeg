@@ -51,7 +51,7 @@ i16vec4 parse_packed_in_32(ivec2 pos, int stride)
     uint line_off = pos.y*line_size;
     uint pix_off = pos.x*BITS_PER_COMP*COMPONENTS;
 
-    uint off = (line_off + pix_off >> 5);
+    uint off = (line_off + pix_off) >> 5;
     uint bit = pix_off & 0x1f;
 
     uint32_t d0 = read_data(off + 0);
