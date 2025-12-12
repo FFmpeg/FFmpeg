@@ -869,6 +869,12 @@ av_cold void ff_sws_init_xyzdsp(SwsInternal *c)
 
 void ff_update_palette(SwsInternal *c, const uint32_t *pal)
 {
+    uint32_t *rgb2yuv = c->input_rgb2yuv_table;
+
+    int32_t ry = rgb2yuv[RY_IDX], gy = rgb2yuv[GY_IDX], by = rgb2yuv[BY_IDX];
+    int32_t ru = rgb2yuv[RU_IDX], gu = rgb2yuv[GU_IDX], bu = rgb2yuv[BU_IDX];
+    int32_t rv = rgb2yuv[RV_IDX], gv = rgb2yuv[GV_IDX], bv = rgb2yuv[BV_IDX];
+
     for (int i = 0; i < 256; i++) {
         int r, g, b, y, u, v, a = 0xff;
         if (c->opts.src_format == AV_PIX_FMT_PAL8) {
@@ -897,20 +903,11 @@ void ff_update_palette(SwsInternal *c, const uint32_t *pal)
             g = ((i >> 1) & 3) * 85;
             r = ( i       & 1) * 255;
         }
-#define RGB2YUV_SHIFT 15
-#define BY ( (int) (0.114 * 219 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
-#define BV (-(int) (0.081 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
-#define BU ( (int) (0.500 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
-#define GY ( (int) (0.587 * 219 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
-#define GV (-(int) (0.419 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
-#define GU (-(int) (0.331 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
-#define RY ( (int) (0.299 * 219 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
-#define RV ( (int) (0.500 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
-#define RU (-(int) (0.169 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5))
 
-        y = av_clip_uint8((RY * r + GY * g + BY * b + ( 33 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
-        u = av_clip_uint8((RU * r + GU * g + BU * b + (257 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
-        v = av_clip_uint8((RV * r + GV * g + BV * b + (257 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
+        y = av_clip_uint8((ry * r + gy * g + by * b + ( 33 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
+        u = av_clip_uint8((ru * r + gu * g + bu * b + (257 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
+        v = av_clip_uint8((rv * r + gv * g + bv * b + (257 << (RGB2YUV_SHIFT - 1))) >> RGB2YUV_SHIFT);
+
         c->pal_yuv[i]= y + (u<<8) + (v<<16) + ((unsigned)a<<24);
 
         switch (c->opts.dst_format) {
