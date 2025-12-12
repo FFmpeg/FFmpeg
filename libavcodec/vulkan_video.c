@@ -398,8 +398,10 @@ av_cold int ff_vk_video_common_init(AVCodecContext *avctx, FFVulkanContext *s,
     /* Create session */
     ret = vk->CreateVideoSessionKHR(s->hwctx->act_dev, session_create,
                                     s->hwctx->alloc, &common->session);
-    if (ret != VK_SUCCESS)
-        return AVERROR_EXTERNAL;
+    if (ret != VK_SUCCESS) {
+        err = AVERROR_EXTERNAL;
+        goto fail;
+    }
 
     /* Get memory requirements */
     ret = vk->GetVideoSessionMemoryRequirementsKHR(s->hwctx->act_dev,
