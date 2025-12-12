@@ -340,13 +340,6 @@ static int scale_d3d11_config_props(AVFilterLink *outlink)
         return AVERROR(EINVAL);
     }
 
-    ///< Propagate hw_frames_ctx to output
-    outl->hw_frames_ctx = av_buffer_ref(inl->hw_frames_ctx);
-    if (!outl->hw_frames_ctx) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to propagate hw_frames_ctx to output\n");
-        return AVERROR(ENOMEM);
-    }
-
     ///< Initialize filter's hardware device context
     if (!s->hw_device_ctx) {
         AVHWFramesContext *in_frames_ctx = (AVHWFramesContext *)inl->hw_frames_ctx->data;
@@ -394,6 +387,7 @@ static int scale_d3d11_config_props(AVFilterLink *outlink)
         return ret;
     }
 
+    ///< Propagate hw_frames_ctx to output
     outl->hw_frames_ctx = av_buffer_ref(s->hw_frames_ctx_out);
     if (!outl->hw_frames_ctx)
         return AVERROR(ENOMEM);
