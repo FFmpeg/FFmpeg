@@ -365,7 +365,6 @@ const FFHWAccel ff_vp9_vulkan_hwaccel = {
     .frame_priv_data_size  = sizeof(VP9VulkanDecodePicture),
     .init                  = &ff_vk_decode_init,
     .update_thread_context = &ff_vk_update_thread_context,
-    .flush                 = &ff_vk_decode_flush,
     .uninit                = &ff_vk_decode_uninit,
     .frame_params          = &ff_vk_frame_params,
     .priv_data_size        = sizeof(FFVulkanDecodeContext),

@@ -567,7 +567,6 @@ const FFHWAccel ff_prores_vulkan_hwaccel = {
     .init                  = &vk_decode_prores_init,
     .update_thread_context = &ff_vk_update_thread_context,
     .decode_params         = &ff_vk_params_invalidate,
-    .flush                 = &ff_vk_decode_flush,
     .uninit                = &ff_vk_decode_uninit,
     .frame_params          = &ff_vk_frame_params,
     .priv_data_size        = sizeof(FFVulkanDecodeContext),
