@@ -33,7 +33,11 @@ void main(void)
     if (!IS_WITHIN(pos, imageSize(dst[0])))
         return;
 
-    uint offs = (pos.y*imageSize(dst[0]).x + pos.x)*COMPONENTS;
+    uint linesize;
+    linesize = align(imageSize(dst[0]).x*BITS_PER_COMP*COMPONENTS, 32);
+    linesize >>= BITS_LOG2;
+
+    uint offs = pos.y*linesize + pos.x*COMPONENTS;
 #if NB_IMAGES == 1
     TYPE_VEC val;
     for (int i = 0; i < COMPONENTS; i++)

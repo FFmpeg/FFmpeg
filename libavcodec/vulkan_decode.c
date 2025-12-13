@@ -1175,14 +1175,6 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
             /* This should be more efficient for downloading and using */
             frames_ctx->sw_format = AV_PIX_FMT_RGBA64;
             break;
-        case AV_PIX_FMT_RGB48LE:
-        case AV_PIX_FMT_RGB48BE: /* DPX outputs RGB48BE, so we need both */
-            /* Almost nothing supports native 3-component RGB */
-            frames_ctx->sw_format = AV_PIX_FMT_GBRP16;
-            break;
-        case AV_PIX_FMT_RGBA64BE: /* DPX again, fix for little-endian systems */
-            frames_ctx->sw_format = AV_PIX_FMT_RGBA64;
-            break;
         case AV_PIX_FMT_GBRP10:
             /* This saves memory bandwidth when downloading */
             frames_ctx->sw_format = AV_PIX_FMT_X2BGR10;
@@ -1192,7 +1184,13 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
             /* mpv has issues with bgr0 mapping, so just remap it */
             frames_ctx->sw_format = AV_PIX_FMT_RGB0;
             break;
-        case AV_PIX_FMT_YUVA422P10: /* ProRes needs to clear the input image, which is not possible on YUV formats */
+        /* DPX endian mismatch remappings */
+        case AV_PIX_FMT_RGB48LE:
+        case AV_PIX_FMT_RGB48BE: frames_ctx->sw_format = AV_PIX_FMT_GBRP16; break;
+        case AV_PIX_FMT_RGBA64BE: frames_ctx->sw_format = AV_PIX_FMT_RGBA64; break;
+        case AV_PIX_FMT_GRAY16BE: frames_ctx->sw_format = AV_PIX_FMT_GRAY16; break;
+        /* ProRes needs to clear the input image, which is not possible on YUV formats */
+        case AV_PIX_FMT_YUVA422P10:
         case AV_PIX_FMT_YUVA444P10:
         case AV_PIX_FMT_YUVA422P12:
         case AV_PIX_FMT_YUVA444P12:

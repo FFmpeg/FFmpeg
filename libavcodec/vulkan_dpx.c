@@ -353,10 +353,11 @@ static int init_shader(AVCodecContext *avctx, FFVulkanContext *s,
     };
     RET(ff_vk_shader_add_descriptor_set(s, shd, desc_set, 2, 0, 0));
 
-    if (dpx->endian)
+    if (dpx->endian && bits > 8)
         GLSLC(0, #define BIG_ENDIAN                                           );
     GLSLF(0, #define COMPONENTS (%i)                          ,dpx->components);
     GLSLF(0, #define BITS_PER_COMP (%i)                                  ,bits);
+    GLSLF(0, #define BITS_LOG2 (%i)                             ,av_log2(bits));
     GLSLF(0, #define NB_IMAGES (%i)                                    ,planes);
     if (unpack) {
         if (bits == 10)
