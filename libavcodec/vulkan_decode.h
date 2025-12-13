@@ -46,8 +46,6 @@ typedef struct FFVulkanDecodeShared {
     VkVideoCapabilitiesKHR caps;
     VkVideoDecodeCapabilitiesKHR dec_caps;
 
-    VkVideoSessionParametersKHR empty_session_params;
-
     /* Software-defined decoder context */
     void *sd_ctx;
     void (*sd_ctx_free)(struct FFVulkanDecodeShared *ctx);
@@ -175,11 +173,6 @@ int ff_vk_get_decode_buffer(FFVulkanDecodeContext *ctx, AVBufferRef **buf,
  */
 int ff_vk_decode_create_params(AVBufferRef **par_ref, void *logctx, FFVulkanDecodeShared *ctx,
                                const VkVideoSessionParametersCreateInfoKHR *session_params_create);
-
-/**
- * Flush decoder.
- */
-void ff_vk_decode_flush(AVCodecContext *avctx);
 
 /**
  * Free decoder.
