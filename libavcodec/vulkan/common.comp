@@ -65,6 +65,9 @@ layout(buffer_reference, buffer_reference_align = 8) buffer u64buf {
 #define mid_pred(a, b, c) \
     max(min((a), (b)), min(max((a), (b)), (c)))
 
+#define ceil_rshift(a, b) \
+    (-((-(a)) >> (b)))
+
 /* TODO: optimize */
 uint align(uint src, uint a)
 {

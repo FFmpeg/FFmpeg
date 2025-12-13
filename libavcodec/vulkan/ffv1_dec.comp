@@ -63,7 +63,7 @@ void decode_line_pcm(inout SliceContext sc, ivec2 sp, int w, int y, int p, int b
 
 #ifndef RGB
     if (p > 0 && p < 3) {
-        w >>= chroma_shift.x;
+        w = ceil_rshift(w, chroma_shift.x);
         sp >>= chroma_shift;
     }
 #endif
@@ -83,7 +83,7 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
 {
 #ifndef RGB
     if (p > 0 && p < 3) {
-        w >>= chroma_shift.x;
+        w = ceil_rshift(w, chroma_shift.x);
         sp >>= chroma_shift;
     }
 #endif
@@ -125,7 +125,7 @@ void decode_line(inout SliceContext sc, ivec2 sp, int w,
 {
 #ifndef RGB
     if (p > 0 && p < 3) {
-        w >>= chroma_shift.x;
+        w = ceil_rshift(w, chroma_shift.x);
         sp >>= chroma_shift;
     }
 #endif
@@ -249,7 +249,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
         for (int p = 0; p < planes; p++) {
             int h = sc.slice_dim.y;
             if (p > 0 && p < 3)
-                h >>= chroma_shift.y;
+                h = ceil_rshift(h, chroma_shift.y);
 
             for (int y = 0; y < h; y++)
                 decode_line_pcm(sc, sp, w, y, p, bits);
@@ -274,7 +274,7 @@ void decode_slice(inout SliceContext sc, const uint slice_idx)
         for (int p = 0; p < planes; p++) {
             int h = sc.slice_dim.y;
             if (p > 0 && p < 3)
-                h >>= chroma_shift.y;
+                h = ceil_rshift(h, chroma_shift.y);
 
             int run_index = 0;
             for (int y = 0; y < h; y++)
