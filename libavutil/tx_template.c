@@ -45,10 +45,6 @@
     SR_TABLE(32768)    \
     SR_TABLE(65536)    \
     SR_TABLE(131072)   \
-    SR_TABLE(262144)   \
-    SR_TABLE(524288)   \
-    SR_TABLE(1048576)   \
-    SR_TABLE(2097152)   \
 
 #define SR_TABLE(len) \
     TABLE_DEF(len, len/4 + 1);
@@ -724,10 +720,6 @@ DECL_SR_CODELET(16384,8192,4096)
 DECL_SR_CODELET(32768,16384,8192)
 DECL_SR_CODELET(65536,32768,16384)
 DECL_SR_CODELET(131072,65536,32768)
-DECL_SR_CODELET(262144,131072,65536)
-DECL_SR_CODELET(524288,262144,131072)
-DECL_SR_CODELET(1048576,524288,262144)
-DECL_SR_CODELET(2097152,1048576,524288)
 
 static av_cold int TX_NAME(ff_tx_fft_init)(AVTXContext *s,
                                            const FFTXCodelet *cd,
@@ -2160,10 +2152,6 @@ const FFTXCodelet * const TX_NAME(ff_tx_codelet_list)[] = {
     &TX_NAME(ff_tx_fft32768_ns_def),
     &TX_NAME(ff_tx_fft65536_ns_def),
     &TX_NAME(ff_tx_fft131072_ns_def),
-    &TX_NAME(ff_tx_fft262144_ns_def),
-    &TX_NAME(ff_tx_fft524288_ns_def),
-    &TX_NAME(ff_tx_fft1048576_ns_def),
-    &TX_NAME(ff_tx_fft2097152_ns_def),
 
     /* Prime factor codelets */
     &TX_NAME(ff_tx_fft3_ns_def),
