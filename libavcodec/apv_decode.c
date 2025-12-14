@@ -310,7 +310,7 @@ static int apv_decode_tile_component(AVCodecContext *avctx, void *data,
         }
     }
 
-    av_log(avctx, AV_LOG_DEBUG,
+    av_log(avctx, AV_LOG_TRACE,
            "Decoded tile %d component %d: %dx%d MBs starting at (%d,%d)\n",
            tile_index, comp_index, tile_mb_width, tile_mb_height,
            tile_start_x, tile_start_y);
