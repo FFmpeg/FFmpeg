@@ -25,6 +25,7 @@
 
 #include <SvtJpegxsEnc.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/imgutils.h"
@@ -113,62 +114,61 @@ static av_cold int svt_jpegxs_enc_free(AVCodecContext* avctx) {
     return 0;
 }
 
-static int set_pix_fmt(AVCodecContext* avctx, svt_jpeg_xs_encoder_api_t *encoder)
+static void set_pix_fmt(AVCodecContext *avctx, svt_jpeg_xs_encoder_api_t *encoder)
 {
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
         encoder->input_bit_depth = 8;
         encoder->colour_format = COLOUR_FORMAT_PLANAR_YUV420;
-        return 0;
+        return;
     case AV_PIX_FMT_YUV422P:
         encoder->input_bit_depth = 8;
         encoder->colour_format = COLOUR_FORMAT_PLANAR_YUV422;
-        return 0;
+        return;
     case AV_PIX_FMT_YUV444P:
         encoder->input_bit_depth = 8;
         encoder->colour_format = COLOUR_FORMAT_PLANAR_YUV444_OR_RGB;
-        return 0;
+        return;
     case AV_PIX_FMT_YUV420P10LE:
         encoder->input_bit_depth = 10;
         encoder->colour_format = COLOUR_FORMAT_PLANAR_YUV420;
-        return 0;
+        return;
     case AV_PIX_FMT_YUV422P10LE:
         encoder->input_bit_depth = 10;
         encoder->colour_format = COLOUR_FORMAT_PLANAR_YUV422;
-        return 0;
+        return;
     case AV_PIX_FMT_YUV444P10LE:
         encoder->input_bit_depth = 10;
         encoder->colour_format = COLOUR_FORMAT_PLANAR_YUV444_OR_RGB;
-        return 0;
+        return;
     case AV_PIX_FMT_YUV420P12LE:
         encoder->input_bit_depth = 12;
         encoder->colour_format = COLOUR_FORMAT_PLANAR_YUV420;
-        return 0;
+        return;
     case AV_PIX_FMT_YUV422P12LE:
         encoder->input_bit_depth = 12;
         encoder->colour_format = COLOUR_FORMAT_PLANAR_YUV422;
-        return 0;
+        return;
     case AV_PIX_FMT_YUV444P12LE:
         encoder->input_bit_depth = 12;
         encoder->colour_format = COLOUR_FORMAT_PLANAR_YUV444_OR_RGB;
-        return 0;
+        return;
     case AV_PIX_FMT_YUV420P14LE:
         encoder->input_bit_depth = 14;
         encoder->colour_format = COLOUR_FORMAT_PLANAR_YUV420;
-        return 0;
+        return;
     case AV_PIX_FMT_YUV422P14LE:
         encoder->input_bit_depth = 14;
         encoder->colour_format = COLOUR_FORMAT_PLANAR_YUV422;
-        return 0;
+        return;
     case AV_PIX_FMT_YUV444P14LE:
         encoder->input_bit_depth = 14;
         encoder->colour_format = COLOUR_FORMAT_PLANAR_YUV444_OR_RGB;
-        return 0;
+        return;
     default:
+        av_unreachable("Already checked via CODEC_PIXFMTS_ARRAY");
         break;
     }
-    av_log(avctx, AV_LOG_ERROR, "Unsupported pixel format.\n");
-    return AVERROR_INVALIDDATA;
 }
 
 static av_cold int svt_jpegxs_enc_init(AVCodecContext* avctx) {
