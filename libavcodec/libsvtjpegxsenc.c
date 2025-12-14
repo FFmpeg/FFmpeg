@@ -192,13 +192,16 @@ static av_cold int svt_jpegxs_enc_init(AVCodecContext* avctx) {
     svt_enc->encoder.verbose = log_level < AV_LOG_DEBUG ? VERBOSE_ERRORS :
                                   log_level == AV_LOG_DEBUG ? VERBOSE_SYSTEM_INFO : VERBOSE_WARNINGS;
 
-    if (avctx->bit_rate <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "bitrate can't be 0\n");
-        return AVERROR(EINVAL);
-    }
     if (avctx->framerate.num <= 0 || avctx->framerate.den <= 0) {
         av_log(avctx, AV_LOG_ERROR, "framerate must be set\n");
         return AVERROR(EINVAL);
+    }
+    if (avctx->bit_rate == 0) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+        // default to a 1.5 compression ratio
+        avctx->bit_rate = (int64_t)avctx->width * avctx->height *
+                          (av_get_bits_per_pixel(desc) * 2 / 3) * av_q2d(avctx->framerate);
+        av_log(avctx, AV_LOG_WARNING, "No bitrate set, defaulting to %"PRId64"\n", avctx->bit_rate);
     }
 
     av_reduce(&bpp.num, &bpp.den, avctx->bit_rate, (int64_t)avctx->width * avctx->height, INT_MAX);
@@ -249,6 +252,11 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
+static const FFCodecDefault svt_jpegxs_defaults[] = {
+    { "b", "0" },
+    { NULL },
+};
+
 #define OFFSET(x) offsetof(SvtJpegXsEncodeContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption svtjpegxs_enc_options[] = {
@@ -284,6 +292,7 @@ const FFCodec ff_libsvtjpegxs_encoder = {
     .priv_data_size = sizeof(SvtJpegXsEncodeContext),
     .init           = svt_jpegxs_enc_init,
     .close          = svt_jpegxs_enc_free,
+    .defaults       = svt_jpegxs_defaults,
     FF_CODEC_ENCODE_CB(svt_jpegxs_enc_encode),
     .p.capabilities = AV_CODEC_CAP_OTHER_THREADS | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
