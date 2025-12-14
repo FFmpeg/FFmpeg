@@ -102,7 +102,6 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
     int ret;
     svt_jpeg_xs_frame_t dec_input;
     svt_jpeg_xs_frame_t dec_output;
-    uint32_t pixel_size;
 
     if (!svt_dec->decoder_initialized) {
         err = svt_jpeg_xs_decoder_get_single_frame_size_with_proxy(
@@ -179,11 +178,10 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
     if (ret < 0)
         return ret;
 
-    pixel_size = svt_dec->config.bit_depth <= 8 ? 1 : 2;
-
+    unsigned pixel_shift = svt_dec->config.bit_depth <= 8 ? 0 : 1;
     for (int comp = 0; comp < svt_dec->config.components_num; comp++) {
         dec_input.image.data_yuv[comp] = picture->data[comp];
-        dec_input.image.stride[comp] = picture->linesize[comp]/pixel_size;
+        dec_input.image.stride[comp] = picture->linesize[comp] >> pixel_shift;
         dec_input.image.alloc_size[comp] = picture->linesize[comp] * svt_dec->config.components[comp].height;
     }
 
