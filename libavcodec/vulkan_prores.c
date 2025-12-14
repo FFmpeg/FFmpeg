@@ -405,7 +405,7 @@ static int init_shader(AVCodecContext *avctx, FFVulkanContext *s,
                           local_size >> 16 & 0xff, local_size >> 8 & 0xff, local_size >> 0 & 0xff,
                           0));
 
-    av_bprintf(&shd->src, "#define GET_BITS_SMEM\n");
+    av_bprintf(&shd->src, "#define GET_BITS_SMEM %d\n", 4);
 
     if (interlaced)
         av_bprintf(&shd->src, "#define INTERLACED\n");
