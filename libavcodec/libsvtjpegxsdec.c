@@ -37,7 +37,6 @@
 #include "profiles.h"
 
 typedef struct SvtJpegXsDecodeContext {
-    AVClass* class;
     svt_jpeg_xs_image_config_t config;
     svt_jpeg_xs_decoder_api_t decoder;
     svt_jpeg_xs_frame_t input;
@@ -197,9 +196,9 @@ static av_cold int svt_jpegxs_dec_init(AVCodecContext* avctx)
     svt_dec->decoder.verbose = log_level < AV_LOG_DEBUG ? VERBOSE_ERRORS :
                                   log_level == AV_LOG_DEBUG ? VERBOSE_SYSTEM_INFO : VERBOSE_WARNINGS;
 
-    if (svt_dec->proxy_mode == 1)
+    if (avctx->lowres == 1)
         svt_dec->decoder.proxy_mode = proxy_mode_half;
-    else if (svt_dec->proxy_mode == 2)
+    else if (avctx->lowres == 2)
         svt_dec->decoder.proxy_mode = proxy_mode_quarter;
     else
         svt_dec->decoder.proxy_mode = proxy_mode_full;
@@ -210,23 +209,6 @@ static av_cold int svt_jpegxs_dec_init(AVCodecContext* avctx)
 
     return 0;
 }
-
-#define OFFSET(x) offsetof(SvtJpegXsDecodeContext, x)
-#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
-static const AVOption svtjpegxs_dec_options[] = {
-    { "proxy_mode", "Resolution scaling mode", OFFSET(proxy_mode), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 2, VE, .unit = "proxy_mode" },
-      { "full",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 0}, INT_MIN, INT_MAX, VE, .unit = "proxy_mode" },
-      { "half",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1}, INT_MIN, INT_MAX, VE, .unit = "proxy_mode" },
-      { "quarter",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 2}, INT_MIN, INT_MAX, VE, .unit = "proxy_mode" },
-    {NULL},
-};
-
-static const AVClass svtjpegxs_dec_class = {
-    .class_name = "libsvtjpegxsdec",
-    .item_name = av_default_item_name,
-    .option = svtjpegxs_dec_options,
-    .version = LIBAVUTIL_VERSION_INT,
-};
 
 const FFCodec ff_libsvtjpegxs_decoder = {
     .p.name         = "libsvtjpegxs",
@@ -241,6 +223,6 @@ const FFCodec ff_libsvtjpegxs_decoder = {
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
                       FF_CODEC_CAP_AUTO_THREADS,
+    .p.max_lowres   = 2,
     .p.wrapper_name = "libsvtjpegxs",
-    .p.priv_class = &svtjpegxs_dec_class,
 };
