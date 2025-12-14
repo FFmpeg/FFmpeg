@@ -61,7 +61,6 @@ static int svt_jpegxs_enc_encode(AVCodecContext* avctx, AVPacket* pkt,
     svt_jpeg_xs_frame_t enc_output;
 
     SvtJxsErrorType_t err = SvtJxsErrorNone;
-    uint32_t pixel_size = svt_enc->encoder.input_bit_depth <= 8 ? 1 : 2;
 
     int ret = ff_get_encode_buffer(avctx, pkt, svt_enc->bitstream_frame_size, 0);
     if (ret < 0)
@@ -71,11 +70,12 @@ static int svt_jpegxs_enc_encode(AVCodecContext* avctx, AVPacket* pkt,
     out_buf->allocation_size = pkt->size;// output bitstream size
     out_buf->used_size = 0;
 
+    unsigned pixel_shift = svt_enc->encoder.input_bit_depth <= 8 ? 0 : 1;
     for (int comp = 0; comp < 3; comp++) {
         // svt-jpegxs require stride in pixel's not in bytes, this means that for 10 bit-depth, stride is half the linesize
-        in_buf->stride[comp]     = frame->linesize[comp] / pixel_size;
+        in_buf->stride[comp]     = frame->linesize[comp] >> pixel_shift;
         in_buf->data_yuv[comp]   = frame->data[comp];
-        in_buf->alloc_size[comp] = in_buf->stride[comp] * svt_enc->encoder.source_height * pixel_size;
+        in_buf->alloc_size[comp] = frame->linesize[comp] * svt_enc->encoder.source_height;
     }
 
     enc_input.user_prv_ctx_ptr = pkt;
