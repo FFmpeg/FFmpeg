@@ -237,12 +237,9 @@ static av_cold int svt_jpegxs_dec_init(AVCodecContext* avctx)
 {
     SvtJpegXsDecodeContext* svt_dec = avctx->priv_data;
 
-    if (av_log_get_level() < AV_LOG_DEBUG)
-        svt_dec->decoder.verbose = VERBOSE_ERRORS;
-    else if (av_log_get_level() == AV_LOG_DEBUG)
-        svt_dec->decoder.verbose = VERBOSE_SYSTEM_INFO;
-    else
-        svt_dec->decoder.verbose = VERBOSE_WARNINGS;
+    int log_level = av_log_get_level();
+    svt_dec->decoder.verbose = log_level < AV_LOG_DEBUG ? VERBOSE_ERRORS :
+                                  log_level == AV_LOG_DEBUG ? VERBOSE_SYSTEM_INFO : VERBOSE_WARNINGS;
 
     if (svt_dec->proxy_mode == 1)
         svt_dec->decoder.proxy_mode = proxy_mode_half;

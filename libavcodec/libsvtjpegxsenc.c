@@ -189,12 +189,9 @@ static av_cold int svt_jpegxs_enc_init(AVCodecContext* avctx) {
 
     svt_enc->encoder.threads_num = FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 64);
 
-    if (av_log_get_level() < AV_LOG_DEBUG)
-        svt_enc->encoder.verbose = VERBOSE_ERRORS;
-    else if (av_log_get_level() == AV_LOG_DEBUG)
-        svt_enc->encoder.verbose = VERBOSE_SYSTEM_INFO;
-    else
-        svt_enc->encoder.verbose = VERBOSE_WARNINGS;
+    int log_level = av_log_get_level();
+    svt_enc->encoder.verbose = log_level < AV_LOG_DEBUG ? VERBOSE_ERRORS :
+                                  log_level == AV_LOG_DEBUG ? VERBOSE_SYSTEM_INFO : VERBOSE_WARNINGS;
 
     if (avctx->bit_rate <= 0) {
         av_log(avctx, AV_LOG_ERROR, "bitrate can't be 0\n");
