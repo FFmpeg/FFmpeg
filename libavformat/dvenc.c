@@ -493,6 +493,7 @@ const FFOutputFormat ff_dv_muxer = {
     .priv_data_size    = sizeof(DVMuxContext),
     .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
     .p.video_codec     = AV_CODEC_ID_DVVIDEO,
+    .flags_internal    = FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_header      = dv_write_header,
     .write_packet      = dv_write_packet,
     .deinit            = dv_deinit,
