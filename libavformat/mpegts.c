@@ -1035,6 +1035,13 @@ static int new_pes_packet(PESContext *pes, AVPacket *pkt)
         pkt->size >= 8 && memcmp(pkt->data + 4, "jxes", 4) == 0)
     {
         uint32_t header_size = AV_RB32(pkt->data);
+        if (header_size > pkt->size) {
+            av_log(pes->stream, AV_LOG_WARNING,
+                   "Invalid JPEG-XS header size %"PRIu32" > packet size %d\n",
+                   header_size, pkt->size);
+            pes->flags |= AV_PKT_FLAG_CORRUPT;
+            return AVERROR_INVALIDDATA;
+        }
         pkt->data += header_size;
         pkt->size -= header_size;
     }
