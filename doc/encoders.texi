@@ -1996,6 +1996,49 @@ by ":". See the SVT-AV1 encoder user guide for a list of accepted parameters.
 
 @end table
 
+@section libsvtav1
+
+SVT-JPEG-XS encoder wrapper.
+
+Requires the presence of the SVT-JPEG-XS headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-libsvtjpegxs}.
+
+@subsection Options
+
+@table @option
+@item decomp_v
+Set vertical decomposition level
+@item decomp_h
+Set horizontal decomposition level
+
+@item quantization
+Set the quantization algorithm.
+@table @samp
+@item deadzone
+@item uniform
+@end table
+
+@item coding-signs
+Enable Signs handling strategy
+@table @samp
+@item disable
+@item fast
+@item full
+@end table
+
+@item coding-sigf
+Enable Significance coding
+
+@item coding-vpred
+Enable Vertical Prediction coding
+@table @samp
+@item disable
+@item no_residuals
+@item no_coeffs
+@end table
+
+@end table
+
 @section libjxl
 
 libjxl JPEG XL encoder wrapper.

@@ -819,6 +819,7 @@ following image formats are supported:
     @tab Progressive JPEG is not supported.
 @item JPEG 2000    @tab X @tab X
 @item JPEG-LS      @tab X @tab X
+@item JPEG-XS      @tab E @tab E
 @item LJPEG        @tab X @tab
     @tab Lossless JPEG
 @item Media 100    @tab   @tab X
