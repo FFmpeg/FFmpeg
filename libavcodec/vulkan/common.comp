@@ -229,13 +229,15 @@ struct GetBitContext {
         gb.bits_valid += 32;                                      \
     }
 #else /* GET_BITS_SMEM */
-shared u32vec4 gb_storage[gl_WorkGroupSize.x*gl_WorkGroupSize.y*gl_WorkGroupSize.z];
+shared u32vec4 gb_storage[gl_WorkGroupSize.x*gl_WorkGroupSize.y*gl_WorkGroupSize.z*GET_BITS_SMEM];
 
-#define FILL_SMEM()                                      \
-    {                                                    \
-        u32vec4buf ptr = u32vec4buf(gb.buf);             \
-        gb_storage[gl_LocalInvocationIndex] = ptr[0].v;  \
-        gb.cur_smem_pos = 0;                             \
+#define FILL_SMEM()                                                             \
+    {                                                                           \
+        u32vec4buf ptr = u32vec4buf(gb.buf);                                    \
+        [[unroll]]                                                              \
+        for (uint i = 0; i < GET_BITS_SMEM; ++i)                                \
+            gb_storage[gl_LocalInvocationIndex * GET_BITS_SMEM + i] = ptr[i].v; \
+        gb.cur_smem_pos = 0;                                                    \
     }
 
 #define LOAD64()                                                    \
@@ -251,15 +253,16 @@ shared u32vec4 gb_storage[gl_WorkGroupSize.x*gl_WorkGroupSize.y*gl_WorkGroupSize
         FILL_SMEM();                                                \
     }
 
-#define RELOAD32()                                                         \
-    {                                                                      \
-        if (gb.cur_smem_pos >= 4)                                          \
-            FILL_SMEM();                                                   \
-        uint v = gb_storage[gl_LocalInvocationIndex][gb.cur_smem_pos];     \
-        gb.buf += 4;                                                       \
-        gb.bits = uint64_t(reverse4(v)) << (32 - gb.bits_valid) | gb.bits; \
-        gb.bits_valid += 32;                                               \
-        gb.cur_smem_pos += 1;                                              \
+#define RELOAD32()                                                                                  \
+    {                                                                                               \
+        if (gb.cur_smem_pos >= 4*GET_BITS_SMEM)                                                     \
+            FILL_SMEM();                                                                            \
+        u32vec4 vec = gb_storage[gl_LocalInvocationIndex * GET_BITS_SMEM + (gb.cur_smem_pos >> 2)]; \
+        uint v = vec[gb.cur_smem_pos & 3];                                                          \
+        gb.buf += 4;                                                                                \
+        gb.bits = uint64_t(reverse4(v)) << (32 - gb.bits_valid) | gb.bits;                          \
+        gb.bits_valid += 32;                                                                        \
+        gb.cur_smem_pos += 1;                                                                       \
     }
 #endif /* GET_BITS_SMEM */
 
