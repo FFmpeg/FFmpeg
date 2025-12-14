@@ -42,12 +42,7 @@ typedef struct SvtJpegXsDecodeContext {
     svt_jpeg_xs_decoder_api_t decoder;
     uint32_t decoder_initialized;
 
-    /*0- AVPacket* avpkt have full frame*/
-    /*1- AVPacket* avpkt have chunk of frame, need another buffer to merge packets*/
-    uint32_t chunk_decoding;
     uint32_t frame_size;
-    uint32_t buffer_filled_len;
-    uint8_t* bitstream_buffer;
     int proxy_mode;
 } SvtJpegXsDecodeContext;
 
@@ -111,17 +106,12 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
             return err;
         }
         if (avpkt->size < svt_dec->frame_size) {
-            svt_dec->chunk_decoding = 1;
-            svt_dec->bitstream_buffer = av_malloc(svt_dec->frame_size);
-            if (!svt_dec->bitstream_buffer) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to allocate svt_dec->bitstream_buffer.\n");
-                return AVERROR(ENOMEM);
-            }
-            av_log(avctx, AV_LOG_DEBUG, "svt_jpegxs_dec_decode, bitstream_size=%d, chunk = %d\n", svt_dec->frame_size, avpkt->size);
+            av_log(avctx, AV_LOG_ERROR, "Not enough data in a packet.\n");
+            return AVERROR(EINVAL);
         }
         if (avpkt->size > svt_dec->frame_size) {
             av_log(avctx, AV_LOG_ERROR, "Single packet have data for more than one frame.\n");
-            return AVERROR_EXTERNAL;
+            return AVERROR(EINVAL);
         }
 
         err = svt_jpeg_xs_decoder_init(SVT_JPEGXS_API_VER_MAJOR, SVT_JPEGXS_API_VER_MINOR,
@@ -149,29 +139,9 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
     if (avctx->skip_frame == AVDISCARD_ALL)
         return 0;
 
-    if (svt_dec->chunk_decoding) {
-        uint8_t* bitstrream_addr = svt_dec->bitstream_buffer + svt_dec->buffer_filled_len;
-        int bytes_to_copy = avpkt->size;
-        //Do not copy more data than allocation
-        if ((bytes_to_copy + svt_dec->buffer_filled_len) > svt_dec->frame_size) {
-            bytes_to_copy = svt_dec->frame_size - svt_dec->buffer_filled_len;
-        }
-
-        memcpy(bitstrream_addr, avpkt->data, bytes_to_copy);
-        svt_dec->buffer_filled_len += avpkt->size;
-        if (svt_dec->buffer_filled_len >= svt_dec->frame_size) {
-            dec_input.bitstream.buffer = svt_dec->bitstream_buffer;
-            dec_input.bitstream.allocation_size = svt_dec->frame_size;
-            dec_input.bitstream.used_size = svt_dec->frame_size;
-        } else {
-            *got_frame = 0;
-            return avpkt->size;
-        }
-    } else {
         dec_input.bitstream.buffer = avpkt->data;
         dec_input.bitstream.allocation_size = avpkt->size;
         dec_input.bitstream.used_size = avpkt->size;
-    }
     dec_input.user_prv_ctx_ptr = avpkt;
 
     ret = ff_get_buffer(avctx, picture, 0);
@@ -206,16 +176,6 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
         return AVERROR_EXTERNAL;
     }
 
-    //Copy leftover from AVPacket if it contain data from two frames
-    if (svt_dec->chunk_decoding) {
-        int bytes_to_copy = svt_dec->buffer_filled_len % svt_dec->frame_size;
-        int packet_offset = avpkt->size - bytes_to_copy;
-        uint8_t* packet_addr = avpkt->data + packet_offset;
-
-        memcpy(svt_dec->bitstream_buffer, packet_addr, bytes_to_copy);
-        svt_dec->buffer_filled_len = bytes_to_copy;
-    }
-
     *got_frame = 1;
 
     return avpkt->size;
@@ -226,7 +186,6 @@ static av_cold int svt_jpegxs_dec_free(AVCodecContext* avctx)
     SvtJpegXsDecodeContext* svt_dec = avctx->priv_data;
 
     svt_jpeg_xs_decoder_close(&svt_dec->decoder);
-    av_freep(&svt_dec->bitstream_buffer);
 
     return 0;
 }
