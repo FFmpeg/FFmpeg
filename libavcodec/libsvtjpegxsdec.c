@@ -46,43 +46,43 @@ typedef struct SvtJpegXsDecodeContext {
     int proxy_mode;
 } SvtJpegXsDecodeContext;
 
-static int set_pix_fmt(AVCodecContext* avctx, const svt_jpeg_xs_image_config_t *config)
+static int set_pix_fmt(void *logctx, const svt_jpeg_xs_image_config_t *config)
 {
-    int ret = 0;
+    int ret = AVERROR_BUG;
 
     switch (config->format) {
     case COLOUR_FORMAT_PLANAR_YUV420:
         if (config->bit_depth == 8)
-            avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+            return AV_PIX_FMT_YUV420P;
         else if (config->bit_depth == 10)
-            avctx->pix_fmt = AV_PIX_FMT_YUV420P10LE;
+            return AV_PIX_FMT_YUV420P10LE;
         else if (config->bit_depth == 12)
-            avctx->pix_fmt = AV_PIX_FMT_YUV420P12LE;
+            return AV_PIX_FMT_YUV420P12LE;
         else
-            avctx->pix_fmt = AV_PIX_FMT_YUV420P14LE;
+            return AV_PIX_FMT_YUV420P14LE;
         break;
     case COLOUR_FORMAT_PLANAR_YUV422:
         if (config->bit_depth == 8)
-            avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+            return AV_PIX_FMT_YUV422P;
         else if (config->bit_depth == 10)
-            avctx->pix_fmt = AV_PIX_FMT_YUV422P10LE;
+            return AV_PIX_FMT_YUV422P10LE;
         else if (config->bit_depth == 12)
-            avctx->pix_fmt = AV_PIX_FMT_YUV422P12LE;
+            return AV_PIX_FMT_YUV422P12LE;
         else
-            avctx->pix_fmt = AV_PIX_FMT_YUV422P14LE;
+            return AV_PIX_FMT_YUV422P14LE;
         break;
     case COLOUR_FORMAT_PLANAR_YUV444_OR_RGB:
         if (config->bit_depth == 8)
-            avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+            return AV_PIX_FMT_YUV444P;
         else if (config->bit_depth == 10)
-            avctx->pix_fmt = AV_PIX_FMT_YUV444P10LE;
+            return AV_PIX_FMT_YUV444P10LE;
         else if (config->bit_depth == 12)
-            avctx->pix_fmt = AV_PIX_FMT_YUV444P12LE;
+            return AV_PIX_FMT_YUV444P12LE;
         else
-            avctx->pix_fmt = AV_PIX_FMT_YUV444P14LE;
+            return AV_PIX_FMT_YUV444P14LE;
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Unsupported pixel format.\n");
+        av_log(logctx, AV_LOG_ERROR, "Unsupported pixel format.\n");
         ret = AVERROR_INVALIDDATA;
         break;
     }
@@ -98,9 +98,8 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
     svt_jpeg_xs_frame_t dec_input;
     svt_jpeg_xs_frame_t dec_output;
 
-    if (!svt_dec->decoder_initialized) {
         err = svt_jpeg_xs_decoder_get_single_frame_size_with_proxy(
-            avpkt->data, avpkt->size, NULL, &svt_dec->frame_size, 1 /*quick search*/, svt_dec->decoder.proxy_mode);
+            avpkt->data, avpkt->size, &svt_dec->config, &svt_dec->frame_size, 1 /*quick search*/, svt_dec->decoder.proxy_mode);
         if (err) {
             av_log(avctx, AV_LOG_ERROR, "svt_jpeg_xs_decoder_get_single_frame_size_with_proxy failed, err=%d\n", err);
             return err;
@@ -114,6 +113,14 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
             return AVERROR(EINVAL);
         }
 
+    ret = set_pix_fmt(avctx, &svt_dec->config);
+    if (ret < 0)
+        return ret;
+
+    if (!svt_dec->decoder_initialized || ret != avctx->pix_fmt ||
+        avctx->width != svt_dec->config.width || avctx->height != svt_dec->config.height) {
+        if (svt_dec->decoder_initialized)
+            svt_jpeg_xs_decoder_close(&svt_dec->decoder);
         err = svt_jpeg_xs_decoder_init(SVT_JPEGXS_API_VER_MAJOR, SVT_JPEGXS_API_VER_MINOR,
                                        &svt_dec->decoder, avpkt->data, avpkt->size, &svt_dec->config);
         if (err) {
@@ -121,11 +128,7 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
             return err;
         }
 
-        ret = set_pix_fmt(avctx, &svt_dec->config);
-        if (ret < 0) {
-            av_log(avctx, AV_LOG_ERROR, "set_pix_fmt failed, err=%d\n", ret);
-            return ret;
-        }
+        avctx->pix_fmt = ret;
 
         ret = ff_set_dimensions(avctx, svt_dec->config.width, svt_dec->config.height);
         if (ret < 0) {
@@ -162,10 +165,6 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
     }
 
     err = svt_jpeg_xs_decoder_get_frame(&svt_dec->decoder, &dec_output, 1 /*blocking*/);
-    if (err == SvtJxsErrorDecoderConfigChange) {
-        av_log(avctx, AV_LOG_ERROR, "svt_jpeg_xs_decoder_get_frame return SvtJxsErrorDecoderConfigChange\n");
-        return AVERROR_INPUT_CHANGED;
-    }
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "svt_jpeg_xs_decoder_get_frame failed, err=%d\n", err);
         return err;
