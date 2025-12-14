@@ -248,7 +248,8 @@ static av_cold int svt_jpegxs_dec_init(AVCodecContext* avctx)
     else
         svt_dec->decoder.proxy_mode = proxy_mode_full;
 
-    svt_dec->decoder.threads_num = FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 64);
+    int thread_count = avctx->thread_count ? avctx->thread_count : av_cpu_count();
+    svt_dec->decoder.threads_num = FFMIN(thread_count, 64);
     svt_dec->decoder.use_cpu_flags = CPU_FLAGS_ALL;
 
     return 0;

@@ -187,7 +187,8 @@ static av_cold int svt_jpegxs_enc_init(AVCodecContext* avctx) {
 
     set_pix_fmt(avctx, &svt_enc->encoder);
 
-    svt_enc->encoder.threads_num = FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 64);
+    int thread_count = avctx->thread_count ? avctx->thread_count : av_cpu_count();
+    svt_enc->encoder.threads_num = FFMIN(thread_count, 64);
 
     int log_level = av_log_get_level();
     svt_enc->encoder.verbose = log_level < AV_LOG_DEBUG ? VERBOSE_ERRORS :
