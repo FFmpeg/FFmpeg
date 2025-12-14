@@ -42,7 +42,6 @@ typedef struct SvtJpegXsDecodeContext {
     svt_jpeg_xs_decoder_api_t decoder;
     uint32_t decoder_initialized;
 
-    uint32_t frame_size;
     int proxy_mode;
 } SvtJpegXsDecodeContext;
 
@@ -94,24 +93,25 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
 {
     SvtJpegXsDecodeContext* svt_dec = avctx->priv_data;
     SvtJxsErrorType_t err = SvtJxsErrorNone;
+    uint32_t frame_size;
     int ret;
     svt_jpeg_xs_frame_t dec_input;
     svt_jpeg_xs_frame_t dec_output;
 
-        err = svt_jpeg_xs_decoder_get_single_frame_size_with_proxy(
-            avpkt->data, avpkt->size, &svt_dec->config, &svt_dec->frame_size, 1 /*quick search*/, svt_dec->decoder.proxy_mode);
-        if (err) {
-            av_log(avctx, AV_LOG_ERROR, "svt_jpeg_xs_decoder_get_single_frame_size_with_proxy failed, err=%d\n", err);
-            return err;
-        }
-        if (avpkt->size < svt_dec->frame_size) {
-            av_log(avctx, AV_LOG_ERROR, "Not enough data in a packet.\n");
-            return AVERROR(EINVAL);
-        }
-        if (avpkt->size > svt_dec->frame_size) {
-            av_log(avctx, AV_LOG_ERROR, "Single packet have data for more than one frame.\n");
-            return AVERROR(EINVAL);
-        }
+    err = svt_jpeg_xs_decoder_get_single_frame_size_with_proxy(
+        avpkt->data, avpkt->size, &svt_dec->config, &frame_size, 1 /*quick search*/, svt_dec->decoder.proxy_mode);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "svt_jpeg_xs_decoder_get_single_frame_size_with_proxy failed, err=%d\n", err);
+        return err;
+    }
+    if (avpkt->size < frame_size) {
+        av_log(avctx, AV_LOG_ERROR, "Not enough data in a packet.\n");
+        return AVERROR(EINVAL);
+    }
+    if (avpkt->size > frame_size) {
+        av_log(avctx, AV_LOG_ERROR, "Single packet have data for more than one frame.\n");
+        return AVERROR(EINVAL);
+    }
 
     ret = set_pix_fmt(avctx, &svt_dec->config);
     if (ret < 0)
@@ -142,9 +142,9 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
     if (avctx->skip_frame == AVDISCARD_ALL)
         return 0;
 
-        dec_input.bitstream.buffer = avpkt->data;
-        dec_input.bitstream.allocation_size = avpkt->size;
-        dec_input.bitstream.used_size = avpkt->size;
+    dec_input.bitstream.buffer = avpkt->data;
+    dec_input.bitstream.allocation_size = avpkt->size;
+    dec_input.bitstream.used_size = avpkt->size;
     dec_input.user_prv_ctx_ptr = avpkt;
 
     ret = ff_get_buffer(avctx, picture, 0);
