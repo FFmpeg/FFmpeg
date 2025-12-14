@@ -40,6 +40,8 @@ typedef struct SvtJpegXsDecodeContext {
     AVClass* class;
     svt_jpeg_xs_image_config_t config;
     svt_jpeg_xs_decoder_api_t decoder;
+    svt_jpeg_xs_frame_t input;
+    svt_jpeg_xs_frame_t output;
     uint32_t decoder_initialized;
 
     int proxy_mode;
@@ -95,8 +97,6 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
     SvtJxsErrorType_t err = SvtJxsErrorNone;
     uint32_t frame_size;
     int ret;
-    svt_jpeg_xs_frame_t dec_input;
-    svt_jpeg_xs_frame_t dec_output;
 
     err = svt_jpeg_xs_decoder_get_single_frame_size_with_proxy(
         avpkt->data, avpkt->size, &svt_dec->config, &frame_size, 1 /*quick search*/, svt_dec->decoder.proxy_mode);
@@ -142,10 +142,10 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
     if (avctx->skip_frame == AVDISCARD_ALL)
         return 0;
 
-    dec_input.bitstream.buffer = avpkt->data;
-    dec_input.bitstream.allocation_size = avpkt->size;
-    dec_input.bitstream.used_size = avpkt->size;
-    dec_input.user_prv_ctx_ptr = avpkt;
+    svt_dec->input.bitstream.buffer = avpkt->data;
+    svt_dec->input.bitstream.allocation_size = avpkt->size;
+    svt_dec->input.bitstream.used_size = avpkt->size;
+    svt_dec->input.user_prv_ctx_ptr = avpkt;
 
     ret = ff_get_buffer(avctx, picture, 0);
     if (ret < 0)
@@ -153,24 +153,24 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
 
     unsigned pixel_shift = svt_dec->config.bit_depth <= 8 ? 0 : 1;
     for (int comp = 0; comp < svt_dec->config.components_num; comp++) {
-        dec_input.image.data_yuv[comp] = picture->data[comp];
-        dec_input.image.stride[comp] = picture->linesize[comp] >> pixel_shift;
-        dec_input.image.alloc_size[comp] = picture->linesize[comp] * svt_dec->config.components[comp].height;
+        svt_dec->input.image.data_yuv[comp] = picture->data[comp];
+        svt_dec->input.image.stride[comp] = picture->linesize[comp] >> pixel_shift;
+        svt_dec->input.image.alloc_size[comp] = picture->linesize[comp] * svt_dec->config.components[comp].height;
     }
 
-    err = svt_jpeg_xs_decoder_send_frame(&svt_dec->decoder, &dec_input, 1 /*blocking*/);
+    err = svt_jpeg_xs_decoder_send_frame(&svt_dec->decoder, &svt_dec->input, 1 /*blocking*/);
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "svt_jpeg_xs_decoder_send_frame failed, err=%d\n", err);
         return err;
     }
 
-    err = svt_jpeg_xs_decoder_get_frame(&svt_dec->decoder, &dec_output, 1 /*blocking*/);
+    err = svt_jpeg_xs_decoder_get_frame(&svt_dec->decoder, &svt_dec->output, 1 /*blocking*/);
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "svt_jpeg_xs_decoder_get_frame failed, err=%d\n", err);
         return err;
     }
 
-    if (dec_output.user_prv_ctx_ptr != avpkt) {
+    if (svt_dec->output.user_prv_ctx_ptr != avpkt) {
         av_log(avctx, AV_LOG_ERROR, "Returned different user_prv_ctx_ptr than expected\n");
         return AVERROR_EXTERNAL;
     }
