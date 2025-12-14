@@ -101,7 +101,7 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
         avpkt->data, avpkt->size, &svt_dec->config, &frame_size, 1 /*quick search*/, svt_dec->decoder.proxy_mode);
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "svt_jpeg_xs_decoder_get_single_frame_size_with_proxy failed, err=%d\n", err);
-        return err;
+        return AVERROR_EXTERNAL;
     }
     if (avpkt->size < frame_size) {
         av_log(avctx, AV_LOG_ERROR, "Not enough data in a packet.\n");
@@ -124,7 +124,7 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
                                        &svt_dec->decoder, avpkt->data, avpkt->size, &svt_dec->config);
         if (err) {
             av_log(avctx, AV_LOG_ERROR, "svt_jpeg_xs_decoder_init failed, err=%d\n", err);
-            return err;
+            return AVERROR_EXTERNAL;
         }
 
         avctx->pix_fmt = ret;
@@ -160,13 +160,13 @@ static int svt_jpegxs_dec_decode(AVCodecContext* avctx, AVFrame* picture, int* g
     err = svt_jpeg_xs_decoder_send_frame(&svt_dec->decoder, &svt_dec->input, 1 /*blocking*/);
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "svt_jpeg_xs_decoder_send_frame failed, err=%d\n", err);
-        return err;
+        return AVERROR_EXTERNAL;
     }
 
     err = svt_jpeg_xs_decoder_get_frame(&svt_dec->decoder, &svt_dec->output, 1 /*blocking*/);
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "svt_jpeg_xs_decoder_get_frame failed, err=%d\n", err);
-        return err;
+        return AVERROR_EXTERNAL;
     }
 
     if (svt_dec->output.user_prv_ctx_ptr != avpkt) {
