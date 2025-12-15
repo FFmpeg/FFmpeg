@@ -27,6 +27,9 @@
 unsigned ff_count_pixels_8_rvv(const uint8_t *src, ptrdiff_t stride,
                                ptrdiff_t width, ptrdiff_t height,
                                unsigned threshold);
+unsigned ff_count_pixels_16_rvv(const uint8_t *src, ptrdiff_t stride,
+                                ptrdiff_t width, ptrdiff_t height,
+                                unsigned threshold);
 
 ff_blackdetect_fn ff_blackdetect_get_fn_riscv(int depth)
 {
@@ -36,6 +39,8 @@ ff_blackdetect_fn ff_blackdetect_get_fn_riscv(int depth)
     if (flags & AV_CPU_FLAG_RVV_I32) {
         if (depth <= 8)
             return ff_count_pixels_8_rvv;
+        if ((flags & AV_CPU_FLAG_RVB) && (depth <= 16))
+            return ff_count_pixels_16_rvv;
     }
 #endif
     return NULL;

@@ -43,3 +43,28 @@ func ff_count_pixels_8_rvv, zve32x
         mv      a0, a5
         ret
 endfunc
+
+func ff_count_pixels_16_rvv, zve32x, zba
+        lpad    0
+        slli    t2, a2, 1
+        mv      a5, zero
+        sub     a1, a1, t2
+1:
+        mv      t2, a2
+        addi    a3, a3, -1
+2:
+        vsetvli t1, t2, e16, m8, ta, ma
+        vle16.v v8, (a0)
+        sub     t2, t2, t1
+        vmsleu.vx   v0, v8, a4
+        sh1add  a0, t1, a0
+        vcpop.m t3, v0
+        add     a5, t3, a5
+        bnez    t2, 2b
+
+        add     a0, a0, a1
+        bnez    a3, 1b
+
+        mv      a0, a5
+        ret
+endfunc
