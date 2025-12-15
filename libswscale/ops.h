@@ -230,8 +230,8 @@ typedef struct SwsOpList {
     SwsOp *ops;
     int num_ops;
 
-    /* Metadata associated with this operation list */
-    SwsFormat src, dst; /* if set; may inform the optimizer about e.g value ranges */
+    /* Purely informative metadata associated with this operation list */
+    SwsFormat src, dst;
 } SwsOpList;
 
 SwsOpList *ff_sws_op_list_alloc(void);
