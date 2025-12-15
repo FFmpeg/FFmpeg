@@ -158,9 +158,8 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
     }
     case SWS_OP_RSHIFT: {
         av_assert1(ff_sws_pixel_type_is_int(op->type));
-        AVRational mult = Q(1 << op->c.u);
         for (int i = 0; i < 4; i++)
-            x[i] = x[i].den ? av_div_q(x[i], mult) : x[i];
+            x[i] = x[i].den ? Q((x[i].num / x[i].den) >> op->c.u) : x[i];
         return;
     }
     case SWS_OP_SWIZZLE: {
