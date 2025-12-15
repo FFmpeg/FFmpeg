@@ -501,7 +501,7 @@ retry:
     ff_sws_op_list_update_comps(ops);
 
     /* Apply all in-place optimizations (that do not re-order the list) */
-    for (int n = 0; n < ops->num_ops;) {
+    for (int n = 0; n < ops->num_ops; n++) {
         SwsOp dummy = {0};
         SwsOp *op = &ops->ops[n];
         SwsOp *prev = n ? &ops->ops[n - 1] : &dummy;
@@ -797,9 +797,6 @@ retry:
             break;
         }
         }
-
-        /* No optimization triggered, move on to next operation */
-        n++;
     }
 
     /* Push clears to the back to void any unused components */
