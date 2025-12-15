@@ -114,21 +114,24 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
     case SWS_OP_WRITE:
         return;
     case SWS_OP_UNPACK: {
-        unsigned val = x[0].num;
+        av_assert1(ff_sws_pixel_type_is_int(op->type));
         ff_sws_pack_op_decode(op, mask, shift);
+        unsigned val = x[0].num;
         for (int i = 0; i < 4; i++)
             x[i] = Q((val >> shift[i]) & mask[i]);
         return;
     }
     case SWS_OP_PACK: {
-        unsigned val = 0;
+        av_assert1(ff_sws_pixel_type_is_int(op->type));
         ff_sws_pack_op_decode(op, mask, shift);
+        unsigned val = 0;
         for (int i = 0; i < 4; i++)
             val |= (x[i].num & mask[i]) << shift[i];
         x[0] = Q(val);
         return;
     }
     case SWS_OP_SWAP_BYTES:
+        av_assert1(ff_sws_pixel_type_is_int(op->type));
         switch (ff_sws_pixel_type_size(op->type)) {
         case 2:
             for (int i = 0; i < 4; i++)
@@ -147,12 +150,14 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
         }
         return;
     case SWS_OP_LSHIFT: {
+        av_assert1(ff_sws_pixel_type_is_int(op->type));
         AVRational mult = Q(1 << op->c.u);
         for (int i = 0; i < 4; i++)
             x[i] = x[i].den ? av_mul_q(x[i], mult) : x[i];
         return;
     }
     case SWS_OP_RSHIFT: {
+        av_assert1(ff_sws_pixel_type_is_int(op->type));
         AVRational mult = Q(1 << op->c.u);
         for (int i = 0; i < 4; i++)
             x[i] = x[i].den ? av_div_q(x[i], mult) : x[i];
@@ -175,6 +180,7 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
         }
         return;
     case SWS_OP_DITHER:
+        av_assert1(!ff_sws_pixel_type_is_int(op->type));
         for (int i = 0; i < 4; i++)
             x[i] = x[i].den ? av_add_q(x[i], av_make_q(1, 2)) : x[i];
         return;
@@ -187,6 +193,7 @@ void ff_sws_apply_op_q(const SwsOp *op, AVRational x[4])
             x[i] = av_max_q(x[i], op->c.q4[i]);
         return;
     case SWS_OP_LINEAR: {
+        av_assert1(!ff_sws_pixel_type_is_int(op->type));
         const AVRational orig[4] = { x[0], x[1], x[2], x[3] };
         for (int i = 0; i < 4; i++) {
             AVRational sum = op->lin.m[i][4];
