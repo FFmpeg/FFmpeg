@@ -16,19 +16,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/mem.h"
+
 #include "bytestream.h"
 #include "get_bits.h"
 #include "jpegxs.h"
 #include "parser.h"
 #include "parser_internal.h"
 
+typedef struct JPEGXSParseContext {
+    ParseContext pc;
+
+    int eoc_found;
+} JPEGXSParseContext;
+
 /**
  * Find the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
  */
-static int jpegxs_find_frame_end(ParseContext *pc, const uint8_t *buf,
+static int jpegxs_find_frame_end(JPEGXSParseContext *jpegxs, const uint8_t *buf,
                                  int buf_size)
 {
+    ParseContext *pc = &jpegxs->pc;
     int pic_found, i = 0;
     uint32_t state;
 
@@ -46,15 +55,41 @@ static int jpegxs_find_frame_end(ParseContext *pc, const uint8_t *buf,
         }
     }
 
-    if (pic_found) {
-        if (buf_size == 0)
-            return 0;
+    if (buf_size == 0) {
+        if (jpegxs->eoc_found) {
+            pc->frame_start_found = jpegxs->eoc_found = 0;
+            pc->state = -1;
+        }
+        return 0;
+    }
+
+    while (pic_found && i < buf_size) {
+        if (jpegxs->eoc_found) {
+            for(; i < buf_size; i++) {
+                state = (state << 8) | buf[i];
+                if ((state >> 16) == JPEGXS_MARKER_EOC) {
+                    if ((uint16_t)state == JPEGXS_MARKER_SOC) {
+                        // New image
+                        pc->frame_start_found = jpegxs->eoc_found = 0;
+                        pc->state = -1;
+                        return i - 1;
+                    } else {
+                        // False positive
+                        i++;
+                        jpegxs->eoc_found = 0;
+                        break;
+                    }
+                }
+            }
+        }
+
         for(; i < buf_size; i++) {
             state = (state << 8) | buf[i];
             if ((uint16_t)state == JPEGXS_MARKER_EOC) {
-                pc->frame_start_found = 0;
-                pc->state = -1;
-                return i + 1;
+                // EOC candidate
+                i++;
+                jpegxs->eoc_found = 1;
+                break;
             }
         }
     }
@@ -181,10 +216,11 @@ static int jpegxsvideo_parse(AVCodecParserContext *s,
                              const uint8_t **poutbuf, int *poutbuf_size,
                              const uint8_t *buf, int buf_size)
 {
-    ParseContext *pc = s->priv_data;
+    JPEGXSParseContext *jpegxs = s->priv_data;
+    ParseContext *pc = &jpegxs->pc;
     int next;
 
-    next = jpegxs_find_frame_end(pc, buf, buf_size);
+    next = jpegxs_find_frame_end(jpegxs, buf, buf_size);
 
     if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
         *poutbuf = NULL;
@@ -199,9 +235,17 @@ static int jpegxsvideo_parse(AVCodecParserContext *s,
     return next;
 }
 
+static av_cold void jpegxsparse_close(AVCodecParserContext *s)
+{
+    JPEGXSParseContext *jpegxs = s->priv_data;
+    ParseContext *pc = &jpegxs->pc;
+
+    av_freep(&pc->buffer);
+}
+
 const FFCodecParser ff_jpegxs_parser = {
     PARSER_CODEC_LIST(AV_CODEC_ID_JPEGXS),
-    .priv_data_size = sizeof(ParseContext),
+    .priv_data_size = sizeof(JPEGXSParseContext),
     .parse          = jpegxsvideo_parse,
-    .close          = ff_parse_close,
+    .close          = jpegxsparse_close,
 };
