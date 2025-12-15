@@ -50,7 +50,6 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
     case SWS_OP_MIN:
     case SWS_OP_MAX:
     case SWS_OP_SCALE:
-    case SWS_OP_CLEAR:
     case SWS_OP_READ:
     case SWS_OP_SWIZZLE:
         ff_sws_apply_op_q(next, op->c.q4);
@@ -61,6 +60,7 @@ static bool op_commute_clear(SwsOp *op, SwsOp *next)
     case SWS_OP_LINEAR:
     case SWS_OP_PACK:
     case SWS_OP_UNPACK:
+    case SWS_OP_CLEAR:
         return false;
     case SWS_OP_TYPE_NB:
         break;
