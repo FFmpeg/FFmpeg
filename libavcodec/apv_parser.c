@@ -18,14 +18,18 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
+#include "libavutil/mem.h"
 
 #include "avcodec.h"
 #include "apv.h"
 #include "cbs.h"
 #include "cbs_apv.h"
+#include "parser.h"
 #include "parser_internal.h"
 
 typedef struct APVParseContext {
+    ParseContext pc;
+
     CodedBitstreamContext *cbc;
     CodedBitstreamFragment au;
 } APVParseContext;
@@ -37,6 +41,48 @@ static const enum AVPixelFormat apv_format_table[5][5] = {
     { AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV444P10,  AV_PIX_FMT_YUV444P12,  AV_PIX_FMT_GRAY14, AV_PIX_FMT_YUV444P16 },
     { AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_YUVA444P16 },
 };
+
+static int find_frame_end(APVParseContext *p, const uint8_t *buf, int buf_size)
+{
+    ParseContext *pc = &p->pc;
+    int pic_found, i = 0;
+    uint32_t state;
+
+    pic_found = pc->frame_start_found;
+    state = pc->state;
+
+    if (buf_size == 0) {
+        pc->frame_start_found = 0;
+        pc->state = -1;
+        return 0;
+    }
+
+    if (!pic_found) {
+        for (; i < buf_size; i++) {
+            state = (state << 8) | buf[i];
+            if (state == APV_SIGNATURE) {
+                i++;
+                pic_found = 1;
+                break;
+            }
+        }
+    }
+
+    if (pic_found) {
+        for(; i < buf_size; i++) {
+            state = (state << 8) | buf[i];
+            if (state == APV_SIGNATURE) {
+                pc->frame_start_found = 0;
+                pc->state = -1;
+                return i - 3;
+            }
+        }
+    }
+
+    pc->frame_start_found = pic_found;
+    pc->state = state;
+    return END_NOT_FOUND;
+}
 
 static void dummy_free(void *opaque, uint8_t *data)
 {
@@ -51,15 +97,30 @@ static int parse(AVCodecParserContext *s,
     APVParseContext *p = s->priv_data;
     CodedBitstreamFragment *au = &p->au;
     AVBufferRef *ref = NULL;
-    int ret;
+    int next, ret;
+
+    if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
+        next = buf_size;
+    } else {
+        next = find_frame_end(p, buf, buf_size);
+
+        if (ff_combine_frame(&p->pc, next, &buf, &buf_size) < 0) {
+            *poutbuf      = NULL;
+            *poutbuf_size = 0;
+            return buf_size;
+        }
+    }
 
     *poutbuf      = buf;
     *poutbuf_size = buf_size;
 
+    if (!buf_size)
+        return 0;
+
     ref = av_buffer_create((uint8_t *)buf, buf_size, dummy_free,
                            (void *)buf, AV_BUFFER_FLAG_READONLY);
     if (!ref)
-        return buf_size;
+        return next;
 
     p->cbc->log_ctx = avctx;
 
@@ -111,7 +172,7 @@ end:
     av_buffer_unref(&ref);
     p->cbc->log_ctx = NULL;
 
-    return buf_size;
+    return next;
 }
 
 static const CodedBitstreamUnitType decompose_unit_types[] = {
@@ -136,7 +197,9 @@ static av_cold int init(AVCodecParserContext *s)
 static av_cold void close(AVCodecParserContext *s)
 {
     APVParseContext *p = s->priv_data;
+    ParseContext *pc = &p->pc;
 
+    av_freep(&pc->buffer);
     ff_cbs_fragment_free(&p->au);
     ff_cbs_close(&p->cbc);
 }
