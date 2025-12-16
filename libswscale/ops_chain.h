@@ -127,7 +127,7 @@ typedef struct SwsOpTable {
 
 /**
  * "Compile" a single op by looking it up in a list of fixed size op tables.
- * See `op_match` in `ops.c` for details on how the matching works.
+ * See `op_match` in `ops_chain.c` for details on how the matching works.
  *
  * Returns 0, AVERROR(EAGAIN), or a negative error code.
  */
