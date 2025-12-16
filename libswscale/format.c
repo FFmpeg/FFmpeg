@@ -935,11 +935,13 @@ int ff_sws_decode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
         .swizzle = swizzle_inv(swizzle),
     }));
 
-    RET(ff_sws_op_list_append(ops, &(SwsOp) {
-        .op   = SWS_OP_RSHIFT,
-        .type = pixel_type,
-        .c.u  = shift,
-    }));
+    if (shift) {
+        RET(ff_sws_op_list_append(ops, &(SwsOp) {
+            .op   = SWS_OP_RSHIFT,
+            .type = pixel_type,
+            .c.u  = shift,
+        }));
+    }
 
     RET(ff_sws_op_list_append(ops, &(SwsOp) {
         .op   = SWS_OP_CLEAR,
@@ -962,11 +964,13 @@ int ff_sws_encode_pixfmt(SwsOpList *ops, enum AVPixelFormat fmt)
     RET(fmt_analyze(fmt, &rw_op, &pack, &swizzle, &shift,
                     &pixel_type, &raw_type));
 
-    RET(ff_sws_op_list_append(ops, &(SwsOp) {
-        .op   = SWS_OP_LSHIFT,
-        .type = pixel_type,
-        .c.u  = shift,
-    }));
+    if (shift) {
+        RET(ff_sws_op_list_append(ops, &(SwsOp) {
+            .op   = SWS_OP_LSHIFT,
+            .type = pixel_type,
+            .c.u  = shift,
+        }));
+    }
 
     if (rw_op.elems > desc->nb_components) {
         /* Format writes unused alpha channel, clear it explicitly for sanity */
