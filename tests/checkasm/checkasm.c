@@ -1049,8 +1049,8 @@ int main(int argc, char *argv[])
 #endif
 #if ARCH_AARCH64 && HAVE_SME
     if (have_sme(av_get_cpu_flags()))
-        snprintf(arch_info_buf, sizeof(arch_info_buf),
-                 "SME %d bits, ", 8 * ff_aarch64_sme_length());
+        av_strlcatf(arch_info_buf, sizeof(arch_info_buf),
+                    "SME %d bits, ", 8 * ff_aarch64_sme_length());
 #endif
 #if ARCH_RISCV && HAVE_RVV
     if (av_get_cpu_flags() & AV_CPU_FLAG_RVV_I32)
