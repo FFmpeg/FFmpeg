@@ -43,26 +43,28 @@ bool ff_sws_pixel_type_is_int(SwsPixelType type) av_const;
 typedef enum SwsOpType {
     SWS_OP_INVALID = 0,
 
-    /* Input/output handling */
+    /* Defined for all types; but implemented for integers only */
     SWS_OP_READ,            /* gather raw pixels from planes */
     SWS_OP_WRITE,           /* write raw pixels to planes */
     SWS_OP_SWAP_BYTES,      /* swap byte order (for differing endianness) */
+    SWS_OP_SWIZZLE,         /* rearrange channel order, or duplicate channels */
+
+    /* Bit manipulation operations. Defined for integers only. */
     SWS_OP_UNPACK,          /* split tightly packed data into components */
     SWS_OP_PACK,            /* compress components into tightly packed data */
-
-    /* Pixel manipulation */
-    SWS_OP_CLEAR,           /* clear pixel values */
     SWS_OP_LSHIFT,          /* logical left shift of raw pixel values by (u8) */
     SWS_OP_RSHIFT,          /* right shift of raw pixel values by (u8) */
-    SWS_OP_SWIZZLE,         /* rearrange channel order, or duplicate channels */
-    SWS_OP_CONVERT,         /* convert (cast) between formats */
-    SWS_OP_DITHER,          /* add dithering noise */
 
-    /* Arithmetic operations */
-    SWS_OP_LINEAR,          /* generalized linear affine transform */
-    SWS_OP_SCALE,           /* multiplication by scalar (q) */
+    /* Generic arithmetic. Defined and implemented for all types */
+    SWS_OP_CLEAR,           /* clear pixel values */
+    SWS_OP_CONVERT,         /* convert (cast) between formats */
     SWS_OP_MIN,             /* numeric minimum (q4) */
     SWS_OP_MAX,             /* numeric maximum (q4) */
+    SWS_OP_SCALE,           /* multiplication by scalar (q) */
+
+    /* Floating-point only arithmetic operations. */
+    SWS_OP_LINEAR,          /* generalized linear affine transform */
+    SWS_OP_DITHER,          /* add dithering noise */
 
     SWS_OP_TYPE_NB,
 } SwsOpType;
