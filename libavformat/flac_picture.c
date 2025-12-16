@@ -23,6 +23,7 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/png.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "flac_picture.h"
 #include "id3v2.h"
@@ -158,8 +159,9 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t **bufp, int buf_size,
             // If truncation was detected copy all data from block and
             // read missing bytes not included in the block size.
             bytestream2_get_bufferu(&g, data->data, left);
-            if (avio_read(s->pb, data->data + len - trunclen, trunclen) < trunclen)
-                RETURN_ERROR(AVERROR_INVALIDDATA);
+            ret = ffio_read_size(s->pb, data->data + len - trunclen, trunclen);
+            if (ret < 0)
+                goto fail;
         }
     }
     memset(data->data + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
