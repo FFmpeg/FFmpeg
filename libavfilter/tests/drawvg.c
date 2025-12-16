@@ -278,7 +278,7 @@ static void check_script(int is_file, const char* source) {
     state.metadata = metadata;
     state.cairo_ctx = &cairo_ctx;
 
-    ret = vgs_eval(&state, &program);
+    ret = vgs_eval(&state, &program, 0);
     vgs_eval_state_free(&state);
 
     if (ret != 0)
