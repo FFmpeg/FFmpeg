@@ -20,17 +20,6 @@
 #include "libavutil/lls.h"
 #include "checkasm.h"
 
-#define randomize_buffer(buf)                  \
-do {                                           \
-    double bmg[2], stddev = 10.0;              \
-                                               \
-    for (size_t i = 0; i < MAX_VARS_ALIGN; i += 2) { \
-        av_bmg_get(&checkasm_lfg, bmg);        \
-        buf[i]     = bmg[0] * stddev;          \
-        buf[i + 1] = bmg[1] * stddev;          \
-    }                                          \
-} while(0);
-
 static void test_update(LLSModel *lls, const double *var)
 {
     double refcovar[MAX_VARS][MAX_VARS];
@@ -91,8 +80,8 @@ void checkasm_check_lls(void)
         LLSModel lls;
 
         avpriv_init_lls(&lls, counts[i]);
-        randomize_buffer(var);
-        randomize_buffer(param);
+        randomize_stddev_dbl(var, MAX_VARS_ALIGN, 10.0);
+        randomize_stddev_dbl(param, MAX_VARS_ALIGN, 10.0);
 
         if (check_func(lls.update_lls, "update_lls_%d", counts[i]))
             test_update(&lls, var);

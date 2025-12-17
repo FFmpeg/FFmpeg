@@ -26,17 +26,6 @@
 
 #define LEN 512
 
-#define randomize_buffer(buf)                 \
-do {                                          \
-    double bmg[2], stddev = 10.0, mean = 0.0; \
-                                              \
-    for (int i = 0; i < LEN; i += 2) {        \
-        av_bmg_get(&checkasm_lfg, bmg);       \
-        buf[i]     = bmg[0] * stddev + mean;  \
-        buf[i + 1] = bmg[1] * stddev + mean;  \
-    }                                         \
-} while(0);
-
 static void test_inverse_coupling(void)
 {
     LOCAL_ALIGNED_16(float, src0,  [LEN]);
@@ -49,8 +38,8 @@ static void test_inverse_coupling(void)
     declare_func(void, float *restrict mag, float *restrict ang,
                  ptrdiff_t blocksize);
 
-    randomize_buffer(src0);
-    randomize_buffer(src1);
+    randomize_stddev(src0, LEN, 10.0);
+    randomize_stddev(src1, LEN, 10.0);
 
     memcpy(cdst,  src0, LEN * sizeof(*src0));
     memcpy(cdst1, src1, LEN * sizeof(*src1));

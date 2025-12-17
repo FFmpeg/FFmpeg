@@ -28,18 +28,6 @@
 
 #define LEN 256
 
-#define randomize_buffer(buf)                 \
-do {                                          \
-    int i;                                    \
-    double bmg[2], stddev = 10.0, mean = 0.0; \
-                                              \
-    for (i = 0; i < BUF_SIZE; i += 2) {        \
-        av_bmg_get(&checkasm_lfg, bmg);       \
-        buf[i]     = bmg[0] * stddev + mean;  \
-        buf[i + 1] = bmg[1] * stddev + mean;  \
-    }                                         \
-} while(0);
-
 static void test_fcmul_add(AudioFIRDSPContext *fir)
 {
 #define BUF_SIZE LEN*2+8
@@ -47,9 +35,9 @@ static void test_fcmul_add(AudioFIRDSPContext *fir)
     LOCAL_ALIGNED_32(float, src1, [BUF_SIZE]);
     LOCAL_ALIGNED_32(float, src2, [BUF_SIZE]);
 
-    randomize_buffer(src0);
-    randomize_buffer(src1);
-    randomize_buffer(src2);
+    randomize_stddev(src0, BUF_SIZE, 10.0);
+    randomize_stddev(src1, BUF_SIZE, 10.0);
+    randomize_stddev(src2, BUF_SIZE, 10.0);
 
     if (check_func(fir->fcmul_add, "fcmul_add")) {
         LOCAL_ALIGNED_32(float, cdst, [BUF_SIZE]);
@@ -97,9 +85,9 @@ static void test_dcmul_add(AudioFIRDSPContext *fir)
     LOCAL_ALIGNED_32(double, src1, [BUF_SIZE]);
     LOCAL_ALIGNED_32(double, src2, [BUF_SIZE]);
 
-    randomize_buffer(src0);
-    randomize_buffer(src1);
-    randomize_buffer(src2);
+    randomize_stddev_dbl(src0, BUF_SIZE, 10.0);
+    randomize_stddev_dbl(src1, BUF_SIZE, 10.0);
+    randomize_stddev_dbl(src2, BUF_SIZE, 10.0);
 
     if (check_func(fir->dcmul_add, "dcmul_add")) {
         LOCAL_ALIGNED_32(double, cdst, [BUF_SIZE]);

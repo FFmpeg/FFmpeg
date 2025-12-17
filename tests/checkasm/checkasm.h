@@ -515,4 +515,15 @@ int checkasm_check_float_ulp(const char *file, int line,
                              buf2 ## _16, stride2,            \
                              __VA_ARGS__))
 
+#define randomize_stddev(buf, size, stddev) \
+do {                                        \
+    double bmg[2];                          \
+    for (int i = 0; i < size; i += 2) {     \
+        av_bmg_get(&checkasm_lfg, bmg);     \
+        (buf)[i]     = bmg[0] * (stddev);   \
+        (buf)[i + 1] = bmg[1] * (stddev);   \
+    }                                       \
+} while (0);
+#define randomize_stddev_dbl(...) randomize_stddev(__VA_ARGS__)
+
 #endif /* TESTS_CHECKASM_CHECKASM_H */
