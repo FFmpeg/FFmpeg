@@ -88,7 +88,8 @@ const FFOutputFormat ff_sup_muxer = {
     .p.audio_codec    = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_HDMV_PGS_SUBTITLE,
     .p.flags          = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
-    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                        FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .init             = sup_init,
     .write_packet   = sup_write_packet,
 };
