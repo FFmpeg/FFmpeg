@@ -2055,6 +2055,7 @@ const FFOutputFormat ff_whip_muxer = {
     .p.video_codec      = AV_CODEC_ID_H264,
     .p.flags            = AVFMT_GLOBALHEADER | AVFMT_NOFILE | AVFMT_EXPERIMENTAL,
     .p.priv_class       = &whip_muxer_class,
+    .flags_internal     = FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .priv_data_size     = sizeof(WHIPContext),
     .init               = whip_init,
     .write_packet       = whip_write_packet,
