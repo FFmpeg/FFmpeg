@@ -1996,7 +1996,7 @@ by ":". See the SVT-AV1 encoder user guide for a list of accepted parameters.
 
 @end table
 
-@section libsvtav1
+@section libsvtjpegxs
 
 SVT-JPEG-XS encoder wrapper.
 

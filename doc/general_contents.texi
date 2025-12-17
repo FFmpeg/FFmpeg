@@ -303,6 +303,15 @@ Go to @url{https://gitlab.com/AOMediaCodec/SVT-AV1/} and follow the instructions
 for installing the library. Then pass @code{--enable-libsvtav1} to configure to
 enable it.
 
+@section SVT-JPEG-XS
+
+FFmpeg can make use of the Scalable Video Technology for JPEG-XS library for JPEG-XS
+decoding and encoding.
+
+Go to @url{https://github.com/OpenVisualCloud/SVT-JPEG-XS} and follow the instructions
+for installing the library. Then pass @code{--enable-libsvtjpegxs} to configure to
+enable it.
+
 @section TwoLAME
 
 FFmpeg can make use of the TwoLAME library for MP2 encoding.
@@ -820,6 +829,7 @@ following image formats are supported:
 @item JPEG 2000    @tab X @tab X
 @item JPEG-LS      @tab X @tab X
 @item JPEG-XS      @tab E @tab E
+    @tab Supported through external library libsvtjpegxs
 @item LJPEG        @tab X @tab
     @tab Lossless JPEG
 @item Media 100    @tab   @tab X
