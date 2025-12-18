@@ -730,6 +730,11 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
                                                      AV_OPT_SEARCH_CHILDREN) > 0)
                     av_opt_set(video_enc, "stats", logfilename,
                                AV_OPT_SEARCH_CHILDREN);
+            } else if (!strcmp(video_enc->codec->name, "libx265")) {
+                if (av_opt_is_set_to_default_by_name(video_enc, "x265-stats",
+                                                     AV_OPT_SEARCH_CHILDREN) > 0)
+                    av_opt_set(video_enc, "x265-stats", logfilename,
+                               AV_OPT_SEARCH_CHILDREN);
             } else {
                 if (video_enc->flags & AV_CODEC_FLAG_PASS2) {
                     char  *logbuffer = read_file_to_string(logfilename);
