@@ -32,7 +32,7 @@
 typedef struct RawVideoDemuxerContext {
     const AVClass *class;     /**< Class for private options. */
     int width, height;        /**< Integers describing video size, set by a private option. */
-    char *pixel_format;       /**< Set by a private option. */
+    enum AVPixelFormat pix_fmt;
     AVRational framerate;     /**< AVRational describing framerate, set by a private option. */
 } RawVideoDemuxerContext;
 
@@ -42,7 +42,7 @@ typedef struct RawVideoDemuxerContext {
 static int rawvideo_read_header(AVFormatContext *ctx)
 {
     RawVideoDemuxerContext *s = ctx->priv_data;
-    enum AVPixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt = s->pix_fmt;
     AVStream *st;
     int packet_size;
     int ret;
@@ -54,16 +54,6 @@ static int rawvideo_read_header(AVFormatContext *ctx)
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
 
     st->codecpar->codec_id = ffifmt(ctx->iformat)->raw_codec_id;
-
-    if ((ffifmt(ctx->iformat)->raw_codec_id != AV_CODEC_ID_V210) &&
-        (ffifmt(ctx->iformat)->raw_codec_id != AV_CODEC_ID_V210X)) {
-        if ((pix_fmt = av_get_pix_fmt(s->pixel_format)) == AV_PIX_FMT_NONE) {
-            av_log(ctx, AV_LOG_ERROR, "No such pixel format: %s.\n",
-                    s->pixel_format);
-            return AVERROR(EINVAL);
-        }
-    }
-
     avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
 
     ret = av_image_check_size(s->width, s->height, 0, ctx);
@@ -92,7 +82,7 @@ static int rawvideo_read_header(AVFormatContext *ctx)
             st->codecpar->codec_id = AV_CODEC_ID_RAWVIDEO;
         } else {
             av_log(ctx, AV_LOG_ERROR, "unsupported format: %s for bitpacked.\n",
-                    s->pixel_format);
+                    desc->name);
             return AVERROR(EINVAL);
         }
         st->codecpar->codec_tag = tag;
@@ -137,7 +127,7 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption rawvideo_options[] = {
     /* pixel_format is not used by the v210 demuxers. */
-    { "pixel_format", "set pixel format", OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = "yuv420p"}, 0, 0, DEC },
+    { "pixel_format", "set pixel format", OFFSET(pix_fmt), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_YUV420P}, AV_PIX_FMT_YUV420P, INT_MAX, DEC },
     { "video_size", "set frame size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
     { "framerate", "set frame rate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC },
     { NULL },
