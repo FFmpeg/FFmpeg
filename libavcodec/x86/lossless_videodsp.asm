@@ -234,7 +234,7 @@ ADD_BYTES
     pshufb  m1, m4
     paddw   m1, m2
     paddw   m0, m1
-    pand    m0, m7
+    pand    m0, m6
     mov%1   [dstq+wq], m0
     add     wq, mmsize
     jl %%.loop
@@ -253,14 +253,14 @@ ADD_BYTES
 ; int add_left_pred_int16(uint16_t *dst, const uint16_t *src, unsigned mask, int w, int left)
 ;---------------------------------------------------------------------------------------------
 INIT_XMM ssse3
-cglobal add_left_pred_int16_unaligned, 4,4,8, dst, src, mask, w, left
+cglobal add_left_pred_int16_unaligned, 4,4,7, dst, src, mask, w, left
     mova    m5, [pb_ef]
     mova    m4, [pb_zzzzzzzz67676767]
     mova    m3, [pb_zzzz2323zzzzabab]
     movd    m0, leftm
+    movd    m6, maskm
     pslldq  m0, 14
-    movd    m7, maskm
-    SPLATW  m7 ,m7
+    SPLATW  m6, m6
     test    srcq, 15
     jnz .src_unaligned
     test    dstq, 15
