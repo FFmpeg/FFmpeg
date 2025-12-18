@@ -21,6 +21,8 @@
 
 #include "config_components.h"
 
+#include <stdbool.h>
+
 #include "libavutil/imgutils.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
@@ -34,6 +36,18 @@ typedef struct RawVideoDemuxerContext {
     int width, height;        /**< Integers describing video size, set by a private option. */
     enum AVPixelFormat pix_fmt;
     AVRational framerate;     /**< AVRational describing framerate, set by a private option. */
+
+    bool has_padding;
+    /* We could derive linesize[1 to N] from linesize[0] for multiplane formats,
+     * but having users explicitly specify linesize for each plane can reduce
+     * unexpected results and support more use cases.
+     */
+    int *linesize;
+    unsigned nb_linesize;
+    // with padding
+    size_t frame_size;
+    // linesize without padding
+    int raw_bytes[4];
 } RawVideoDemuxerContext;
 
 // v210 frame width is padded to multiples of 48
@@ -62,6 +76,37 @@ static int rawvideo_read_header(AVFormatContext *ctx)
 
     st->codecpar->width  = s->width;
     st->codecpar->height = s->height;
+
+    if (s->nb_linesize) {
+        int n = av_pix_fmt_count_planes(pix_fmt);
+        if (s->nb_linesize != n) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid number of stride %u, "
+                   "pixel format has %d plane\n",
+                   s->nb_linesize, n);
+            return AVERROR(EINVAL);
+        }
+
+        ret = av_image_fill_linesizes(s->raw_bytes, pix_fmt, s->width);
+        if (ret < 0)
+            return ret;
+
+        size_t linesize[4] = {0};
+        for (int i = 0; i < n; i++) {
+            if (s->linesize[i] < s->raw_bytes[i]) {
+                av_log(ctx, AV_LOG_ERROR, "Invalid stride %u of plane %d, "
+                       "minimum required size is %d for width %d\n",
+                       s->linesize[i], i, s->raw_bytes[i], s->width);
+                return AVERROR(EINVAL);
+            }
+            if (s->linesize[i] > s->raw_bytes[i])
+                s->has_padding = true;
+            linesize[i] = s->linesize[i];
+        }
+
+        size_t plane_size[4] = {0};
+        av_image_fill_plane_sizes(plane_size, pix_fmt, s->height, linesize);
+        s->frame_size = plane_size[0] + plane_size[1] + plane_size[2] + plane_size[3];
+    }
 
     if (ffifmt(ctx->iformat)->raw_codec_id == AV_CODEC_ID_BITPACKED) {
         unsigned int pgroup; /* size of the pixel group in bytes */
@@ -110,24 +155,66 @@ static int rawvideo_read_header(AVFormatContext *ctx)
 }
 
 
-static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
+static int rawvideo_read_packet(AVFormatContext *ctx, AVPacket *pkt)
 {
     int ret;
+    RawVideoDemuxerContext *s = ctx->priv_data;
 
-    ret = av_get_packet(s->pb, pkt, s->packet_size);
-    pkt->pts = pkt->dts = pkt->pos / s->packet_size;
+    if (!s->has_padding) {
+        ret = av_get_packet(ctx->pb, pkt, ctx->packet_size);
+        if (ret < 0)
+            return ret;
+        pkt->pts = pkt->dts = pkt->pos / ctx->packet_size;
 
-    pkt->stream_index = 0;
+        return 0;
+    }
+
+    ret = av_new_packet(pkt, ctx->packet_size);
     if (ret < 0)
         return ret;
+
+    pkt->pos = avio_tell(ctx->pb);
+    pkt->pts = pkt->dts = pkt->pos / s->frame_size;
+
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->pix_fmt);
+    uint8_t *p = pkt->data;
+    for (int i = 0; i < s->nb_linesize; i++) {
+        int shift = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
+        int h = AV_CEIL_RSHIFT(s->height, shift);
+        int skip_bytes = s->linesize[i] - s->raw_bytes[i];
+
+        for (int j = 0; j < h; j++) {
+            ret = avio_read(ctx->pb, p, s->raw_bytes[i]);
+            if (ret != s->raw_bytes[i]) {
+                if (ret < 0 && ret != AVERROR_EOF)
+                    return ret;
+
+                if (ret == AVERROR_EOF && p == pkt->data)
+                    return AVERROR_EOF;
+
+                memset(p, 0, pkt->size - (p - pkt->data));
+                pkt->flags |= AV_PKT_FLAG_CORRUPT;
+
+                return 0;
+            }
+
+            p += s->raw_bytes[i];
+            avio_skip(ctx->pb, skip_bytes);
+        }
+    }
+
     return 0;
 }
 
 #define OFFSET(x) offsetof(RawVideoDemuxerContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption rawvideo_options[] = {
+    // Only supported by rawvideo demuxer
+    {"stride", "frame line size in bytes", OFFSET(linesize), AV_OPT_TYPE_INT | AV_OPT_TYPE_FLAG_ARRAY, {.arr = NULL}, 0, INT_MAX, DEC },
+#define BITPACKED_OPTION_OFFSET 1   // skip stride option
     /* pixel_format is not used by the v210 demuxers. */
     { "pixel_format", "set pixel format", OFFSET(pix_fmt), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_YUV420P}, AV_PIX_FMT_YUV420P, INT_MAX, DEC },
+#define V210_OPTION_OFFSET 2       // skip stride and pixel_format option
     { "video_size", "set frame size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
     { "framerate", "set frame rate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC },
     { NULL },
@@ -155,7 +242,7 @@ const FFInputFormat ff_rawvideo_demuxer = {
 static const AVClass bitpacked_demuxer_class = {
     .class_name = "bitpacked demuxer",
     .item_name  = av_default_item_name,
-    .option     = rawvideo_options,
+    .option     = &rawvideo_options[BITPACKED_OPTION_OFFSET],
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -176,7 +263,7 @@ const FFInputFormat ff_bitpacked_demuxer = {
 static const AVClass v210_demuxer_class = {
     .class_name = "v210(x) demuxer",
     .item_name  = av_default_item_name,
-    .option     = rawvideo_options + 1,
+    .option     = &rawvideo_options[V210_OPTION_OFFSET],
     .version    = LIBAVUTIL_VERSION_INT,
 };
 

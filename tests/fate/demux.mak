@@ -136,6 +136,12 @@ fate-pva-demux: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/pva/PVA_test-pa
 FATE_SAMPLES_DEMUX-$(call CRC, QCP) += fate-qcp-demux
 fate-qcp-demux: CMD = crc -i $(TARGET_SAMPLES)/qcp/0036580847.QCP -c:a copy
 
+FATE_SAMPLES_DEMUX-$(call FRAMECRC, RAWVIDEO, RAWVIDEO) += fate-rawvideo-rgb-demux
+fate-rawvideo-rgb-demux: CMD = framecrc -f rawvideo -pixel_format rgb24 -video_size 160x500 -stride 512 -i $(TARGET_SAMPLES)/hevc/two_first_slice.mp4
+
+FATE_SAMPLES_DEMUX-$(call FRAMECRC, RAWVIDEO, RAWVIDEO) += fate-rawvideo-yuv-demux
+fate-rawvideo-yuv-demux: CMD = framecrc -f rawvideo -pixel_format yuv420p -video_size 250x500 -stride 256,128,128 -i $(TARGET_SAMPLES)/hevc/two_first_slice.mp4
+
 FATE_SAMPLES_DEMUX-$(call FRAMECRC, R3D, JPEG2000 PCM_S32BE) += fate-redcode-demux
 fate-redcode-demux: CMD = framecrc -i $(TARGET_SAMPLES)/r3d/4MB-sample.r3d -c:v copy -c:a copy
 

@@ -1035,6 +1035,11 @@ Set input video frame rate. Default value is 25.
 @item pixel_format
 Set the input video pixel format. Default value is @code{yuv420p}.
 
+@item stride
+Set frame line size in bytes, only required if there are extra padding.
+For multiplane formats, @option{stride} is a list of line size for each
+plane.
+
 @item video_size
 Set the input video size. This value must be specified explicitly.
 @end table
@@ -1045,6 +1050,13 @@ size of @code{320x240}, and a frame rate of 10 images per second, use
 the command:
 @example
 ffplay -f rawvideo -pixel_format rgb24 -video_size 320x240 -framerate 10 input.raw
+@end example
+
+Read a rawvideo with @command{ffplay}, assuming a pixel format of @code{yuv420p},
+a video size of @code{1080x1920}, has 8 bytes of padding in each line of Y plane,
+and 4 bytes of padding with UV plane,
+@example
+ffplay -f rawvideo -pixel_format yuv420p -video_size 1080x1920 -stride 1088,544,544 input.raw
 @end example
 
 @anchor{rcwtdec}
