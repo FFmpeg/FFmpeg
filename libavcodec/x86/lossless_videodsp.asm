@@ -151,6 +151,7 @@ cglobal add_left_pred_unaligned, 3,3,7, dst, src, w, left
     VBROADCASTI128    m3, [pb_zz11zz55zz99zzdd]
     movd    xm0, leftm
     pslldq  xm0, 15
+%if notcpuflag(avx2)
     test    srcq, mmsize - 1
     jnz .src_unaligned
     test    dstq, mmsize - 1
@@ -159,6 +160,7 @@ cglobal add_left_pred_unaligned, 3,3,7, dst, src, w, left
 .dst_unaligned:
     ADD_LEFT_LOOP u, a
 .src_unaligned:
+%endif
     ADD_LEFT_LOOP u, u
 %endmacro
 
