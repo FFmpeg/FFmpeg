@@ -27,9 +27,8 @@ SECTION_RODATA
 
 cextern pb_15
 pb_zzzzzzzz77777777: times 8 db -1
-pb_7: times 8 db 7
+                     times 8 db 7
 pb_ef: times 8 db 14,15
-pb_67: times 8 db  6, 7
 pb_zzzz3333zzzzbbbb: db -1,-1,-1,-1,3,3,3,3,-1,-1,-1,-1,11,11,11,11
 pb_zz11zz55zz99zzdd: db -1,-1,1,1,-1,-1,5,5,-1,-1,9,9,-1,-1,13,13
 pb_zzzz2323zzzzabab: db -1,-1,-1,-1, 2, 3, 2, 3,-1,-1,-1,-1,10,11,10,11
@@ -119,10 +118,8 @@ cglobal add_median_pred, 6,6,8, dst, top, diff, w, left, left_top
     paddb   m1, m2
     pshufb  m2, m1, m4
     paddb   m1, m2
-%if mmsize >= 16
     pshufb  m2, m1, m6
     paddb   m1, m2
-%endif
     paddb   xm0, xm1
 %if %1
     mova    [dstq+wq], xm0
@@ -160,16 +157,6 @@ cglobal add_median_pred, 6,6,8, dst, top, diff, w, left, left_top
 ;------------------------------------------------------------------------------
 ; int ff_add_left_pred(uint8_t *dst, const uint8_t *src, int w, int left)
 ;------------------------------------------------------------------------------
-INIT_MMX ssse3
-cglobal add_left_pred, 3,3,7, dst, src, w, left
-.skip_prologue:
-    mova    m5, [pb_7]
-    mova    m4, [pb_zzzz3333zzzzbbbb]
-    mova    m3, [pb_zz11zz55zz99zzdd]
-    movd    m0, leftm
-    psllq   m0, 56
-    ADD_LEFT_LOOP 1, 1
-
 %macro ADD_LEFT_PRED_UNALIGNED 0
 cglobal add_left_pred_unaligned, 3,3,7, dst, src, w, left
     mova    xm5, [pb_15]
@@ -255,11 +242,9 @@ ADD_BYTES
     pshufb  m1, m3
     paddw   m1, m2
     pshufb  m0, m5
-%if mmsize == 16
     mova    m2, m1
     pshufb  m1, m4
     paddw   m1, m2
-%endif
     paddw   m0, m1
     pand    m0, m7
 %ifidn %1, a
@@ -284,17 +269,6 @@ ADD_BYTES
 ;---------------------------------------------------------------------------------------------
 ; int add_left_pred_int16(uint16_t *dst, const uint16_t *src, unsigned mask, int w, int left)
 ;---------------------------------------------------------------------------------------------
-INIT_MMX ssse3
-cglobal add_left_pred_int16, 4,4,8, dst, src, mask, w, left
-.skip_prologue:
-    mova    m5, [pb_67]
-    mova    m3, [pb_zzzz2323zzzzabab]
-    movd    m0, leftm
-    psllq   m0, 48
-    movd    m7, maskm
-    SPLATW  m7 ,m7
-    ADD_HFYU_LEFT_LOOP_INT16 a, a
-
 INIT_XMM ssse3
 cglobal add_left_pred_int16_unaligned, 4,4,8, dst, src, mask, w, left
     mova    m5, [pb_ef]
