@@ -101,17 +101,13 @@ cglobal add_median_pred, 6,6,8, dst, top, diff, w, left, left_top
     RET
 
 
-%macro ADD_LEFT_LOOP 2 ; %1 = dst_is_aligned, %2 = src_is_aligned
+%macro ADD_LEFT_LOOP 2 ; %1 = dst alignment (a/u), %2 = src alignment (a/u)
     add     srcq, wq
     add     dstq, wq
     neg     wq
 %%.loop:
     pshufb  xm0, xm5
-%if %2
-    mova    m1, [srcq+wq]
-%else
-    movu    m1, [srcq+wq]
-%endif
+    mov%2   m1, [srcq+wq]
     psllw   m2, m1, 8
     paddb   m1, m2
     pshufb  m2, m1, m3
@@ -121,24 +117,14 @@ cglobal add_median_pred, 6,6,8, dst, top, diff, w, left, left_top
     pshufb  m2, m1, m6
     paddb   m1, m2
     paddb   xm0, xm1
-%if %1
-    mova    [dstq+wq], xm0
-%else
-    movq    [dstq+wq], xm0
-    movhps  [dstq+wq+8], xm0
-%endif
+    mov%1   [dstq+wq], xm0
 
 %if mmsize == 32
     vextracti128    xm2, m1, 1 ; get second lane of the ymm
     pshufb          xm0, xm5   ; set alls val to last val of the first lane
     paddb           xm0, xm2
 ;store val
-%if %1
-    mova    [dstq+wq+16], xm0
-%else;
-    movq    [dstq+wq+16], xm0
-    movhps  [dstq+wq+16+8], xm0
-%endif
+    mov%1   [dstq+wq+16], xm0
 %endif
     add     wq, mmsize
     jl %%.loop
@@ -169,11 +155,11 @@ cglobal add_left_pred_unaligned, 3,3,7, dst, src, w, left
     jnz .src_unaligned
     test    dstq, mmsize - 1
     jnz .dst_unaligned
-    ADD_LEFT_LOOP 1, 1
+    ADD_LEFT_LOOP a, a
 .dst_unaligned:
-    ADD_LEFT_LOOP 0, 1
+    ADD_LEFT_LOOP u, a
 .src_unaligned:
-    ADD_LEFT_LOOP 0, 0
+    ADD_LEFT_LOOP u, u
 %endmacro
 
 INIT_XMM ssse3
@@ -247,12 +233,7 @@ ADD_BYTES
     paddw   m1, m2
     paddw   m0, m1
     pand    m0, m7
-%ifidn %1, a
-    mova    [dstq+wq], m0
-%else
-    movq    [dstq+wq], m0
-    movhps  [dstq+wq+8], m0
-%endif
+    mov%1   [dstq+wq], m0
     add     wq, mmsize
     jl %%.loop
     mov     eax, mmsize-1
