@@ -24,6 +24,7 @@
 #include "libavutil/vulkan_spirv.h"
 
 extern const char *ff_source_common_comp;
+extern const char *ff_source_dct_comp;
 extern const char *ff_source_prores_vld_comp;
 extern const char *ff_source_prores_idct_comp;
 
@@ -510,6 +511,9 @@ static int init_idct_shader(AVCodecContext *avctx, FFVulkanContext *s,
         },
     };
     RET(ff_vk_shader_add_descriptor_set(s, shd, desc_set, 2, 0, 0));
+
+    GLSLC(0, #define NB_BLOCKS 4*2);
+    GLSLD(ff_source_dct_comp);
 
     GLSLD(ff_source_prores_idct_comp);
 

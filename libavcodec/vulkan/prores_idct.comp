@@ -16,9 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* Two macroblocks, padded to avoid bank conflicts */
-shared float blocks[4*2][8*(8+1)];
-
 uint get_px(uint tex_idx, ivec2 pos)
 {
 #ifndef INTERLACED
@@ -35,87 +32,6 @@ void put_px(uint tex_idx, ivec2 pos, uint v)
 #else
     imageStore(dst[tex_idx], ivec2(pos.x, (pos.y << 1) + bottom_field), uvec4(v));
 #endif
-}
-
-const float idct_scale[64] = {
-    0.1250000000000000, 0.1733799806652684, 0.1633203706095471, 0.1469844503024199,
-    0.1250000000000000, 0.0982118697983878, 0.0676495125182746, 0.0344874224103679,
-    0.1733799806652684, 0.2404849415639108, 0.2265318615882219, 0.2038732892122293,
-    0.1733799806652684, 0.1362237766939547, 0.0938325693794663, 0.0478354290456362,
-    0.1633203706095471, 0.2265318615882219, 0.2133883476483184, 0.1920444391778541,
-    0.1633203706095471, 0.1283199917898342, 0.0883883476483185, 0.0450599888754343,
-    0.1469844503024199, 0.2038732892122293, 0.1920444391778541, 0.1728354290456362,
-    0.1469844503024199, 0.1154849415639109, 0.0795474112858021, 0.0405529186026822,
-    0.1250000000000000, 0.1733799806652684, 0.1633203706095471, 0.1469844503024199,
-    0.1250000000000000, 0.0982118697983878, 0.0676495125182746, 0.0344874224103679,
-    0.0982118697983878, 0.1362237766939547, 0.1283199917898342, 0.1154849415639109,
-    0.0982118697983878, 0.0771645709543638, 0.0531518809229535, 0.0270965939155924,
-    0.0676495125182746, 0.0938325693794663, 0.0883883476483185, 0.0795474112858021,
-    0.0676495125182746, 0.0531518809229535, 0.0366116523516816, 0.0186644585125857,
-    0.0344874224103679, 0.0478354290456362, 0.0450599888754343, 0.0405529186026822,
-    0.0344874224103679, 0.0270965939155924, 0.0186644585125857, 0.0095150584360892,
-};
-
-/* 7.4 Inverse Transform */
-void idct8(uint block, uint offset, uint stride)
-{
-    float t0, t1, t2, t3, t4, t5, t6, t7, u8;
-    float u0, u1, u2, u3, u4, u5, u6, u7;
-
-    /* Input */
-    t0 = blocks[block][0*stride + offset];
-    u4 = blocks[block][1*stride + offset];
-    t2 = blocks[block][2*stride + offset];
-    u6 = blocks[block][3*stride + offset];
-    t1 = blocks[block][4*stride + offset];
-    u5 = blocks[block][5*stride + offset];
-    t3 = blocks[block][6*stride + offset];
-    u7 = blocks[block][7*stride + offset];
-
-    /* Embedded scaled inverse 4-point Type-II DCT */
-    u0 = t0 + t1;
-    u1 = t0 - t1;
-    u3 = t2 + t3;
-    u2 = (t2 - t3)*(1.4142135623730950488016887242097f) - u3;
-    t0 = u0 + u3;
-    t3 = u0 - u3;
-    t1 = u1 + u2;
-    t2 = u1 - u2;
-
-    /* Embedded scaled inverse 4-point Type-IV DST */
-    t5 = u5 + u6;
-    t6 = u5 - u6;
-    t7 = u4 + u7;
-    t4 = u4 - u7;
-    u7 = t7 + t5;
-    u5 = (t7 - t5)*(1.4142135623730950488016887242097f);
-    u8 = (t4 + t6)*(1.8477590650225735122563663787936f);
-    u4 = u8 - t4*(1.0823922002923939687994464107328f);
-    u6 = u8 - t6*(2.6131259297527530557132863468544f);
-    t7 = u7;
-    t6 = t7 - u6;
-    t5 = t6 + u5;
-    t4 = t5 - u4;
-
-    /* Butterflies */
-    u0 = t0 + t7;
-    u7 = t0 - t7;
-    u6 = t1 + t6;
-    u1 = t1 - t6;
-    u2 = t2 + t5;
-    u5 = t2 - t5;
-    u4 = t3 + t4;
-    u3 = t3 - t4;
-
-    /* Output */
-    blocks[block][0*stride + offset] = u0;
-    blocks[block][1*stride + offset] = u1;
-    blocks[block][2*stride + offset] = u2;
-    blocks[block][3*stride + offset] = u3;
-    blocks[block][4*stride + offset] = u4;
-    blocks[block][5*stride + offset] = u5;
-    blocks[block][6*stride + offset] = u6;
-    blocks[block][7*stride + offset] = u7;
 }
 
 void main(void)

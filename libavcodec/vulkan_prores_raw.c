@@ -26,6 +26,7 @@
 #include "libavutil/mem.h"
 
 extern const char *ff_source_common_comp;
+extern const char *ff_source_dct_comp;
 extern const char *ff_source_prores_raw_decode_comp;
 extern const char *ff_source_prores_raw_idct_comp;
 
@@ -384,6 +385,10 @@ static int init_idct_shader(AVCodecContext *avctx, FFVulkanContext *s,
                           0));
 
     RET(add_common_data(avctx, s, shd, 0));
+
+    GLSLC(0, #define NB_BLOCKS 16);
+    GLSLC(0, #define NB_COMPONENTS 4);
+    GLSLD(ff_source_dct_comp);
 
     GLSLD(ff_source_prores_raw_idct_comp);
 
