@@ -56,11 +56,11 @@ static void check_add_bytes(LLVidDSPContext *c, int width)
         fail();
 
 
-        call_ref(dst0, src0, width);
-        call_new(dst1, src1, width);
-        if (memcmp(dst0, dst1, width))
-            fail();
-        bench_new(dst1, src1, width);
+    call_ref(dst0, src0, width);
+    call_new(dst1, src1, width);
+    if (memcmp(dst0, dst1, width))
+        fail();
+    bench_new(dst1, src1, width);
 
     av_free(src0);
     av_free(src1);
@@ -89,11 +89,11 @@ static void check_add_median_pred(LLVidDSPContext *c, int width) {
     b1 = b0;
 
 
-        call_ref(dst0, src0, diff0, width, &a0, &b0);
-        call_new(dst1, src1, diff1, width, &a1, &b1);
-        if (memcmp(dst0, dst1, width) || (a0 != a1) || (b0 != b1))
-            fail();
-        bench_new(dst1, src1, diff1, width, &a1, &b1);
+    call_ref(dst0, src0, diff0, width, &a0, &b0);
+    call_new(dst1, src1, diff1, width, &a1, &b1);
+    if (memcmp(dst0, dst1, width) || (a0 != a1) || (b0 != b1))
+        fail();
+    bench_new(dst1, src1, diff1, width, &a1, &b1);
 
     av_free(src0);
     av_free(src1);
@@ -117,12 +117,11 @@ static void check_add_left_pred(LLVidDSPContext *c, int width, int acc)
     if (!dst0 || !dst1)
         fail();
 
-        res0 = call_ref(dst0, src0, width, acc);
-        res1 = call_new(dst1, src1, width, acc);
-        if ((res0 & 0xFF) != (res1 & 0xFF)||\
-            memcmp(dst0, dst1, width))
-            fail();
-        bench_new(dst1, src1, width, acc);
+    res0 = call_ref(dst0, src0, width, acc);
+    res1 = call_new(dst1, src1, width, acc);
+    if ((res0 & 0xFF) != (res1 & 0xFF) || memcmp(dst0, dst1, width))
+        fail();
+    bench_new(dst1, src1, width, acc);
 
     av_free(src0);
     av_free(src1);
@@ -144,12 +143,11 @@ static void check_add_left_pred_16(LLVidDSPContext *c, unsigned mask, int width,
     if (!dst0 || !dst1)
         fail();
 
-        res0 = call_ref(dst0, src0, mask, width, acc);
-        res1 = call_new(dst1, src1, mask, width, acc);
-        if ((res0 &0xFFFF) != (res1 &0xFFFF)||\
-            memcmp(dst0, dst1, width))
-            fail();
-        bench_new(dst1, src1, mask, width, acc);
+    res0 = call_ref(dst0, src0, mask, width, acc);
+    res1 = call_new(dst1, src1, mask, width, acc);
+    if ((res0 &0xFFFF) != (res1 &0xFFFF)|| memcmp(dst0, dst1, width))
+        fail();
+    bench_new(dst1, src1, mask, width, acc);
 
     av_free(src0);
     av_free(src1);
@@ -170,13 +168,13 @@ static void check_add_gradient_pred(LLVidDSPContext *c, int w) {
 
     init_buffer(src0, src1, uint8_t, src_size);
 
-        call_ref(src0 + stride + 32, stride, w);
-        call_new(src1 + stride + 32, stride, w);
-        if (memcmp(src0, src1, stride)||/* previous line doesn't change */
-            memcmp(src0+stride, src1 + stride, w + 32)) {
-            fail();
-        }
-        bench_new(src1 + stride + 32, stride, w);
+    call_ref(src0 + stride + 32, stride, w);
+    call_new(src1 + stride + 32, stride, w);
+    if (memcmp(src0, src1, stride)||/* previous line doesn't change */
+        memcmp(src0+stride, src1 + stride, w + 32)) {
+        fail();
+    }
+    bench_new(src1 + stride + 32, stride, w);
 
     av_free(src0);
     av_free(src1);
