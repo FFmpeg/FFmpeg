@@ -3621,6 +3621,7 @@ vp9_vaapi_encoder_select="vaapi_encode"
 vp9_qsv_encoder_deps="libmfx MFX_CODEC_VP9"
 vp9_qsv_encoder_select="qsvenc"
 vp9_v4l2m2m_decoder_deps="v4l2_m2m vp9_v4l2_m2m"
+amf_capture_filter_deps="amf"
 vvc_qsv_decoder_select="vvc_mp4toannexb_bsf qsvdec"
 
 # parsers
