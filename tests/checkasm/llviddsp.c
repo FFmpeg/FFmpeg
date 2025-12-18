@@ -56,13 +56,11 @@ static void check_add_bytes(LLVidDSPContext *c, int width)
         fail();
 
 
-    if (check_func(c->add_bytes, "add_bytes")) {
         call_ref(dst0, src0, width);
         call_new(dst1, src1, width);
         if (memcmp(dst0, dst1, width))
             fail();
         bench_new(dst1, src1, width);
-    }
 
     av_free(src0);
     av_free(src1);
@@ -91,13 +89,11 @@ static void check_add_median_pred(LLVidDSPContext *c, int width) {
     b1 = b0;
 
 
-    if (check_func(c->add_median_pred, "add_median_pred")) {
         call_ref(dst0, src0, diff0, width, &a0, &b0);
         call_new(dst1, src1, diff1, width, &a1, &b1);
         if (memcmp(dst0, dst1, width) || (a0 != a1) || (b0 != b1))
             fail();
         bench_new(dst1, src1, diff1, width, &a1, &b1);
-    }
 
     av_free(src0);
     av_free(src1);
@@ -107,7 +103,7 @@ static void check_add_median_pred(LLVidDSPContext *c, int width) {
     av_free(dst1);
 }
 
-static void check_add_left_pred(LLVidDSPContext *c, int width, int acc, const char * report)
+static void check_add_left_pred(LLVidDSPContext *c, int width, int acc)
 {
     int res0, res1;
     uint8_t *dst0 = av_mallocz(width);
@@ -121,14 +117,12 @@ static void check_add_left_pred(LLVidDSPContext *c, int width, int acc, const ch
     if (!dst0 || !dst1)
         fail();
 
-    if (check_func(c->add_left_pred, "%s", report)) {
         res0 = call_ref(dst0, src0, width, acc);
         res1 = call_new(dst1, src1, width, acc);
         if ((res0 & 0xFF) != (res1 & 0xFF)||\
             memcmp(dst0, dst1, width))
             fail();
         bench_new(dst1, src1, width, acc);
-    }
 
     av_free(src0);
     av_free(src1);
@@ -136,7 +130,7 @@ static void check_add_left_pred(LLVidDSPContext *c, int width, int acc, const ch
     av_free(dst1);
 }
 
-static void check_add_left_pred_16(LLVidDSPContext *c, unsigned mask, int width, unsigned acc, const char * report)
+static void check_add_left_pred_16(LLVidDSPContext *c, unsigned mask, int width, unsigned acc)
 {
     int res0, res1;
     uint16_t *dst0 = av_calloc(width, sizeof(*dst0));
@@ -150,14 +144,12 @@ static void check_add_left_pred_16(LLVidDSPContext *c, unsigned mask, int width,
     if (!dst0 || !dst1)
         fail();
 
-    if (check_func(c->add_left_pred_int16, "%s", report)) {
         res0 = call_ref(dst0, src0, mask, width, acc);
         res1 = call_new(dst1, src1, mask, width, acc);
         if ((res0 &0xFFFF) != (res1 &0xFFFF)||\
             memcmp(dst0, dst1, width))
             fail();
         bench_new(dst1, src1, mask, width, acc);
-    }
 
     av_free(src0);
     av_free(src1);
@@ -178,7 +170,6 @@ static void check_add_gradient_pred(LLVidDSPContext *c, int w) {
 
     init_buffer(src0, src1, uint8_t, src_size);
 
-    if (check_func(c->add_gradient_pred, "add_gradient_pred")) {
         call_ref(src0 + stride + 32, stride, w);
         call_new(src1 + stride + 32, stride, w);
         if (memcmp(src0, src1, stride)||/* previous line doesn't change */
@@ -186,7 +177,6 @@ static void check_add_gradient_pred(LLVidDSPContext *c, int w) {
             fail();
         }
         bench_new(src1 + stride + 32, stride, w);
-    }
 
     av_free(src0);
     av_free(src1);
@@ -204,21 +194,27 @@ void checkasm_check_llviddsp(void)
 
     ff_llviddsp_init(&c);
 
-    check_add_bytes(&c, width);
+    if (check_func(c.add_bytes, "add_bytes"))
+        check_add_bytes(&c, width);
     report("add_bytes");
 
-    check_add_median_pred(&c, width);
+    if (check_func(c.add_median_pred, "add_median_pred"))
+        check_add_median_pred(&c, width);
     report("add_median_pred");
 
-    check_add_left_pred(&c, width, 0, "add_left_pred_zero");
+    if (check_func(c.add_left_pred, "add_left_pred_zero"))
+        check_add_left_pred(&c, width, 0);
     report("add_left_pred_zero");
 
-    check_add_left_pred(&c, width, accRnd, "add_left_pred_rnd_acc");
+    if (check_func(c.add_left_pred, "add_left_pred_rnd_acc"))
+        check_add_left_pred(&c, width, accRnd);
     report("add_left_pred_rnd_acc");
 
-    check_add_left_pred_16(&c, 255, width, accRnd, "add_left_pred_int16");
+    if (check_func(c.add_left_pred_int16, "add_left_pred_int16"))
+        check_add_left_pred_16(&c, 255, width, accRnd);
     report("add_left_pred_int16");
 
-    check_add_gradient_pred(&c, width);
+    if (check_func(c.add_gradient_pred, "add_gradient_pred"))
+        check_add_gradient_pred(&c, width);
     report("add_gradient_pred");
 }
