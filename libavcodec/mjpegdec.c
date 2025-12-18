@@ -824,15 +824,21 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 
     if (s->avctx->hwaccel) {
         const FFHWAccel *hwaccel = ffhwaccel(s->avctx->hwaccel);
-        s->hwaccel_picture_private =
-            av_mallocz(hwaccel->frame_priv_data_size);
-        if (!s->hwaccel_picture_private)
-            return AVERROR(ENOMEM);
+
+        /* A previous frame may have been aborted before its end_frame call,
+         * leaving the private data behind. */
+        av_refstruct_unref(&s->hwaccel_picture_private);
+
+        ret = ff_hwaccel_frame_priv_alloc(s->avctx, &s->hwaccel_picture_private);
+        if (ret < 0)
+            return ret;
 
         ret = hwaccel->start_frame(s->avctx, NULL, s->raw_image_buffer,
                                    s->raw_image_buffer_size);
-        if (ret < 0)
+        if (ret < 0) {
+            av_refstruct_unref(&s->hwaccel_picture_private);
             return ret;
+        }
     }
 
     return 0;
@@ -2582,7 +2588,7 @@ eoi_parser:
                 if (ret < 0)
                     return ret;
 
-                av_freep(&s->hwaccel_picture_private);
+                av_refstruct_unref(&s->hwaccel_picture_private);
             }
             if ((ret = av_frame_ref(frame, s->picture_ptr)) < 0)
                 return ret;
@@ -2965,7 +2971,7 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
 
     reset_icc_profile(s);
 
-    av_freep(&s->hwaccel_picture_private);
+    av_refstruct_unref(&s->hwaccel_picture_private);
     av_freep(&s->jls_state);
 
     return 0;
@@ -2975,6 +2981,8 @@ static av_cold void decode_flush(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
     s->got_picture = 0;
+
+    av_refstruct_unref(&s->hwaccel_picture_private);
 
     s->smv_next_frame = 0;
     av_frame_unref(s->smv_frame);
