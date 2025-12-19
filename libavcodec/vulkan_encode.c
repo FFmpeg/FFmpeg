@@ -182,7 +182,7 @@ static int vulkan_encode_issue(AVCodecContext *avctx,
                                   VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR,
                                   &ctx->profile_list, max_pkt_size,
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                  VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+                                  ctx->s.host_cached_flag);
     if (err < 0)
         return err;
 

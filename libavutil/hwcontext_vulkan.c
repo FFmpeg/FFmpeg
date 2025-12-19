@@ -4348,7 +4348,7 @@ static int get_plane_buf(AVHWFramesContext *hwfc, AVBufferRef **dst,
     err = ff_vk_get_pooled_buffer(&p->vkctx, &fp->tmp, dst, buf_usage,
                                   NULL, buf_offset,
                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                  VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+                                  p->vkctx.host_cached_flag);
     if (err < 0)
         return err;
 

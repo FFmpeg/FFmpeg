@@ -365,9 +365,8 @@ static int vulkan_encode_ffv1_submit_frame(AVCodecContext *avctx,
                                 NULL, maxsize,
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 (maxsize < fv->max_heap_size ?
-                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0x0) |
-                                (!(fv->s.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY) ?
-                                 VK_MEMORY_PROPERTY_HOST_CACHED_BIT : 0x0)));
+                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT :
+                                 fv->s.host_cached_flag)));
     out_data_buf = (FFVkBuffer *)fd->out_data_ref->data;
     ff_vk_exec_add_dep_buf(&fv->s, exec, &fd->out_data_ref, 1, 1);
 
