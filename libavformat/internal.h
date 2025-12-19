@@ -664,12 +664,12 @@ int ff_parse_opts_from_query_string(void *obj, const char *str, int allow_unkown
 /**
  * Make a RFC 4281/6381 like string describing a codec.
  *
- * @param logctx a context for potential log messages
+ * @param logctx a context for potential log messages; if NULL, nothing is
+ *               logged
  * @param par pointer to an AVCodecParameters struct describing the codec
  * @param frame_rate an optional pointer to AVRational for the frame rate,
  *                   for deciding the right profile for video codecs
- * @param str the output string buffer
- * @param size the size of the string pointed to by str
+ * @param out the AVBPrint to write the output to
  * @return <0 on error
  */
 int ff_make_codec_str(void *logctx, const AVCodecParameters *par,

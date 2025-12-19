@@ -2898,8 +2898,7 @@ struct AVBPrint;
  * @param frame_rate an AVRational for the frame rate, for deciding the
  *                   right profile for video codecs. Pass an invalid
  *                   AVRational (1/0) to indicate that it is unknown.
- * @param str the output string buffer
- * @param size the size of the string pointed to by str
+ * @param out the AVBPrint to write the output to
  * @return <0 on error
  */
 int av_mime_codec_str(const AVCodecParameters *par,
