@@ -1982,6 +1982,7 @@ static av_cold void whip_deinit(AVFormatContext *s)
     ff_srtp_free(&whip->srtp_recv);
     ffurl_close(whip->dtls_uc);
     ffurl_closep(&whip->udp);
+    av_freep(&whip->dtls_fingerprint);
 }
 
 static int whip_check_bitstream(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
