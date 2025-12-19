@@ -2756,6 +2756,10 @@ int sch_stop(Scheduler *sch, int64_t *finish_ts)
 
     atomic_store(&sch->terminate, 1);
 
+    // Ensure no other thread is currently in schedule_update_locked while
+    // we are choking all demuxers
+    pthread_mutex_lock(&sch->schedule_lock);
+
     for (unsigned type = 0; type < 2; type++)
         for (unsigned i = 0; i < (type ? sch->nb_demux : sch->nb_filters); i++) {
             SchWaiter *w = type ? &sch->demux[i].waiter : &sch->filters[i].waiter;
@@ -2763,6 +2767,8 @@ int sch_stop(Scheduler *sch, int64_t *finish_ts)
             if (type)
                 choke_demux(sch, i, 0); // unfreeze to allow draining
         }
+
+    pthread_mutex_unlock(&sch->schedule_lock);
 
     for (unsigned i = 0; i < sch->nb_demux; i++) {
         SchDemux *d = &sch->demux[i];
