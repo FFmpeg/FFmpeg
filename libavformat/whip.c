@@ -523,10 +523,6 @@ static int parse_codec(AVFormatContext *s)
         AVCodecParameters *par = s->streams[i]->codecpar;
         switch (par->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            if (whip->video_par) {
-                av_log(whip, AV_LOG_ERROR, "Only one video stream is supported by RTC\n");
-                return AVERROR(EINVAL);
-            }
             whip->video_par = par;
 
             if (par->video_delay > 0) {
@@ -549,10 +545,6 @@ static int parse_codec(AVFormatContext *s)
             }
             break;
         case AVMEDIA_TYPE_AUDIO:
-            if (whip->audio_par) {
-                av_log(whip, AV_LOG_ERROR, "Only one audio stream is supported by RTC\n");
-                return AVERROR(EINVAL);
-            }
             whip->audio_par = par;
 
             if (par->ch_layout.nb_channels != 2) {
@@ -2040,7 +2032,7 @@ const FFOutputFormat ff_whip_muxer = {
     .p.subtitle_codec   = AV_CODEC_ID_NONE,
     .p.flags            = AVFMT_GLOBALHEADER | AVFMT_NOFILE | AVFMT_EXPERIMENTAL,
     .p.priv_class       = &whip_muxer_class,
-    .flags_internal     = FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
+    .flags_internal     = FF_OFMT_FLAG_ONLY_DEFAULT_CODECS | FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .priv_data_size     = sizeof(WHIPContext),
     .init               = whip_init,
     .write_packet       = whip_write_packet,
