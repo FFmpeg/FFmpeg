@@ -4759,7 +4759,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 
         if (!multiple_edits && !mov->advanced_editlist &&
             st->codecpar->codec_id == AV_CODEC_ID_AAC && start_time > 0)
-            sc->start_pad = start_time;
+            sc->start_pad = av_rescale_q(start_time, st->time_base,
+                    (AVRational){1, st->codecpar->sample_rate});
     }
 
     /* only use old uncompressed audio chunk demuxing when stts specifies it */
