@@ -19,10 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/avcodec.h"
-#include "libavcodec/codec_desc.h"
 #include "libavcodec/h264.h"
 #include "libavcodec/startcode.h"
+#include "libavutil/avassert.h"
 #include "libavutil/base64.h"
 #include "libavutil/bprint.h"
 #include "libavutil/crc.h"
@@ -522,7 +521,6 @@ static int parse_codec(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         AVCodecParameters *par = s->streams[i]->codecpar;
-        const AVCodecDescriptor *desc = avcodec_descriptor_get(par->codec_id);
         switch (par->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             if (whip->video_par) {
@@ -530,12 +528,6 @@ static int parse_codec(AVFormatContext *s)
                 return AVERROR(EINVAL);
             }
             whip->video_par = par;
-
-            if (par->codec_id != AV_CODEC_ID_H264) {
-                av_log(whip, AV_LOG_ERROR, "Unsupported video codec %s by RTC, choose h264\n",
-                       desc ? desc->name : "unknown");
-                return AVERROR_PATCHWELCOME;
-            }
 
             if (par->video_delay > 0) {
                 av_log(whip, AV_LOG_ERROR, "Unsupported B frames by RTC\n");
@@ -563,12 +555,6 @@ static int parse_codec(AVFormatContext *s)
             }
             whip->audio_par = par;
 
-            if (par->codec_id != AV_CODEC_ID_OPUS) {
-                av_log(whip, AV_LOG_ERROR, "Unsupported audio codec %s by RTC, choose opus\n",
-                    desc ? desc->name : "unknown");
-                return AVERROR_PATCHWELCOME;
-            }
-
             if (par->ch_layout.nb_channels != 2) {
                 av_log(whip, AV_LOG_ERROR, "Unsupported audio channels %d by RTC, choose stereo\n",
                     par->ch_layout.nb_channels);
@@ -581,9 +567,7 @@ static int parse_codec(AVFormatContext *s)
             }
             break;
         default:
-            av_log(whip, AV_LOG_ERROR, "Codec type '%s' for stream %d is not supported by RTC\n",
-                   av_get_media_type_string(par->codec_type), i);
-            return AVERROR_PATCHWELCOME;
+            av_unreachable("already checked via FF_OFMT flags");
         }
     }
 
@@ -2053,6 +2037,7 @@ const FFOutputFormat ff_whip_muxer = {
     .p.long_name        = NULL_IF_CONFIG_SMALL("WHIP(WebRTC-HTTP ingestion protocol) muxer"),
     .p.audio_codec      = AV_CODEC_ID_OPUS,
     .p.video_codec      = AV_CODEC_ID_H264,
+    .p.subtitle_codec   = AV_CODEC_ID_NONE,
     .p.flags            = AVFMT_GLOBALHEADER | AVFMT_NOFILE | AVFMT_EXPERIMENTAL,
     .p.priv_class       = &whip_muxer_class,
     .flags_internal     = FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
