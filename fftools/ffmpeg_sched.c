@@ -247,7 +247,7 @@ typedef struct SchFilterGraph {
 
     SchFilterIn        *inputs;
     unsigned         nb_inputs;
-    atomic_uint      nb_inputs_finished_send;
+    unsigned         nb_inputs_finished_send;
     unsigned         nb_inputs_finished_receive;
 
     SchFilterOut       *outputs;
@@ -2304,7 +2304,7 @@ static int send_to_filter(Scheduler *sch, SchFilterGraph *fg,
         tq_send_finish(fg->queue, in_idx);
 
         // close the control stream when all actual inputs are done
-        if (atomic_fetch_add(&fg->nb_inputs_finished_send, 1) == fg->nb_inputs - 1)
+        if (++fg->nb_inputs_finished_send == fg->nb_inputs)
             tq_send_finish(fg->queue, fg->nb_inputs);
 
         schedule_update_locked(sch);
