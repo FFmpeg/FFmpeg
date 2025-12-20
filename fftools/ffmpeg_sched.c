@@ -2297,6 +2297,8 @@ static int send_to_filter(Scheduler *sch, SchFilterGraph *fg,
     if (frame)
         return tq_send(fg->queue, in_idx, frame);
 
+    pthread_mutex_lock(&sch->schedule_lock);
+
     if (!fg->inputs[in_idx].send_finished) {
         fg->inputs[in_idx].send_finished = 1;
         tq_send_finish(fg->queue, in_idx);
@@ -2304,7 +2306,11 @@ static int send_to_filter(Scheduler *sch, SchFilterGraph *fg,
         // close the control stream when all actual inputs are done
         if (atomic_fetch_add(&fg->nb_inputs_finished_send, 1) == fg->nb_inputs - 1)
             tq_send_finish(fg->queue, fg->nb_inputs);
+
+        schedule_update_locked(sch);
     }
+
+    pthread_mutex_unlock(&sch->schedule_lock);
     return 0;
 }
 
