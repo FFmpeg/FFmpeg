@@ -48,6 +48,9 @@
 #endif
 .endm
 
+#define XSZ            (__riscv_xlen / 8)
+#define STACK_ALIGN(x) (((x) + 15) & ~15)
+
         /* output is unclipped; clobbers v26-v31 plus t0 and t02 */
 .macro lowpass_h         vdst, src
         addi             t4, \src, 3
@@ -380,12 +383,12 @@ func ff_\op\()_h264_qpel\size\()_\case\()_\ext, zve32x
         lpad             0
         vsetivli         zero, \size, e8, \lmul, ta, ma
         csrwi            vxrm, 0
-        addi             sp, sp, (-(__riscv_xlen >> 2))
+        addi             sp, sp, -STACK_ALIGN(2 * XSZ + \size * \size)
         li               a4, \size
         li               t6, 20
         li               a7, -5
-        sx               a0, 0(sp)
-        sx               a1, (__riscv_xlen >> 3)(sp)
+        sx               a0,    (sp)
+        sx               a1, XSZ(sp)
     .ifc \off1, a2
         add              a1, a1, \off1
     .elseif \off1
@@ -394,18 +397,18 @@ func ff_\op\()_h264_qpel\size\()_\case\()_\ext, zve32x
         mv               a3, a2
     .ifc \op, avg
         // Use temporary array on stack for the first pass
-        addi             a0, sp, -(\size * \size)
+        addi             a0, sp, 2 * XSZ
         li               a2, \size
     .endif
         jal              t0, ff_put_h264_qpel_\dir1\()_lowpass_\lmul
-        lx               a0, 0(sp)
-        lx               a1, (__riscv_xlen >> 3)(sp)
+        lx               a0,    (sp)
+        lx               a1, XSZ(sp)
     .ifc \op, put
         // Directly reuse the first pass output buffer
         mv               a5, a0
         mv               a6, a2
     .else
-        addi             a5, sp, -(\size * \size)
+        addi             a5, sp, 2 * XSZ
         li               a6, \size
         mv               a2, a3
     .endif
@@ -414,7 +417,7 @@ func ff_\op\()_h264_qpel\size\()_\case\()_\ext, zve32x
     .endif
         li               a4, \size
         mv               t0, ra
-        addi             sp, sp, 16
+        addi             sp, sp, STACK_ALIGN(2 * XSZ + \size * \size)
         j                ff_\op\()_h264_qpel_\dir2\()_lowpass_\lmul\()_l2
 endfunc
 .endm
