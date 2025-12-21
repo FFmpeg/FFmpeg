@@ -279,7 +279,7 @@ NOHWD   addi    sp, sp, 16
         ret
 endfunc
 
-func ff_scalarproduct_double_rvv, zve64f, zba
+func ff_scalarproduct_double_rvv, zve64d, zba
         lpad    0
         vsetvli      t0, zero, e64, m8, ta, ma
         vmv.v.x      v8, zero
@@ -297,6 +297,14 @@ func ff_scalarproduct_double_rvv, zve64f, zba
         vsetvli      t0, zero, e64, m8, ta, ma
         vfredusum.vs v0, v8, v0
         vfmv.f.s     fa0, v0
+#if __riscv_xlen >= 64
 NOHWD   fmv.x.w      a0, fa0
+#else
+NOHWD   addi    sp, sp, -16
+NOHWD   fsd     fa0, (sp)
+NOHWD   lw      a0,  (sp)
+NOHWD   lw      a1, 4(sp)
+NOHWD   addi    sp, sp, 16
+#endif
         ret
 endfunc
