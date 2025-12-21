@@ -197,8 +197,14 @@ func ff_scalarproduct_fixed_rvv, zve64x, zba
 
         vsetvli t0, zero, e64, m8, ta, ma
         vredsum.vs v0, v8, v0
+#if __riscv_xlen >= 64
         vmv.x.s a0, v0
         srai    a0, a0, 31
+#else
+        vsetivli    zero, 1, e32, mf2, ta, ma
+        vnsra.wi    v1, v0, 31
+        vmv.x.s a0, v1
+#endif
         ret
 endfunc
 
