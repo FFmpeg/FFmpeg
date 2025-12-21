@@ -256,7 +256,7 @@ static void run_transcription(AVFilterContext *ctx, AVFrame *frame, int samples)
             } else if (!av_strcasecmp(wctx->format, "json")) {
                 buf = av_asprintf("{\"start\":%" PRId64 ",\"end\":%" PRId64 ",\"text\":\"%s\"}\n", start_t, end_t, text_cleaned);
             } else
-                buf = av_strdup(text_cleaned);
+                buf = av_asprintf("%s\n", text_cleaned);
 
             if (buf) {
                 avio_write(wctx->avio_context, buf, strlen(buf));
