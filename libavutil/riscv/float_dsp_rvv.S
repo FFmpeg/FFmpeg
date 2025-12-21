@@ -256,15 +256,16 @@ endfunc
 func ff_vector_dmul_scalar_rvv, zve64d, zba
         lpad    0
 #if __riscv_xlen >= 64
-NOHWD   fmv.d.x  fa0, a2
+NOHWD   fmv.d.x fa0, a2
+NOHWD   mv      a2, a3
 #else
 NOHWD   addi    sp, sp, -16
-NOHWD   sw      a0, 0(sp)
-NOHWD   sw      a1, 4(sp)
+NOHWD   sw      a2, 0(sp)
+NOHWD   sw      a3, 4(sp)
+NOHWD   mv      a2, a4
 NOHWD   fld     fa0, (sp)
 NOHWD   addi    sp, sp, 16
 #endif
-NOHWD   mv       a2, a3
 1:
         vsetvli  t0, a2, e64, m8, ta, ma
         vle64.v  v16, (a1)
