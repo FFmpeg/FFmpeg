@@ -63,7 +63,7 @@ int image_get_linesize(int width, int plane,
     if (width < 0)
         return AVERROR(EINVAL);
     s = (max_step_comp == 1 || max_step_comp == 2) ? desc->log2_chroma_w : 0;
-    shifted_w = ((width + (1 << s) - 1)) >> s;
+    shifted_w = AV_CEIL_RSHIFT(width, s);
     if (shifted_w && max_step > INT_MAX / shifted_w)
         return AVERROR(EINVAL);
     linesize = max_step * shifted_w;
@@ -133,7 +133,7 @@ int av_image_fill_plane_sizes(size_t sizes[4], enum AVPixelFormat pix_fmt,
 
     for (i = 1; i < 4 && has_plane[i]; i++) {
         int h, s = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
-        h = (height + (1 << s) - 1) >> s;
+        h = AV_CEIL_RSHIFT(height, s);
         if (linesizes[i] > SIZE_MAX / h)
             return AVERROR(EINVAL);
         sizes[i] = (size_t)h * linesizes[i];
@@ -523,7 +523,7 @@ int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
     for (i = 0; i < nb_planes; i++) {
         int h, shift = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
         const uint8_t *src = src_data[i];
-        h = (height + (1 << shift) - 1) >> shift;
+        h = AV_CEIL_RSHIFT(height, shift);
 
         for (j = 0; j < h; j++) {
             memcpy(dst, src, linesize[i]);
@@ -646,7 +646,7 @@ int av_image_fill_color(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
         size_t bytewidth = plane_line_bytes[plane];
         uint8_t *data = dst_data[plane];
         int chroma_div = plane == 1 || plane == 2 ? desc->log2_chroma_h : 0;
-        int plane_h = ((height + ( 1 << chroma_div) - 1)) >> chroma_div;
+        int plane_h = AV_CEIL_RSHIFT(height, chroma_div);
 
         for (; plane_h > 0; plane_h--) {
             memset_bytes(data, bytewidth, &clear_block[plane][0], clear_block_size[plane]);
