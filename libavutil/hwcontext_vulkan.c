@@ -3016,7 +3016,8 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
                                        VK_IMAGE_USAGE_SAMPLED_BIT);
 
     if (p->vkctx.extensions & FF_VK_EXT_HOST_IMAGE_COPY &&
-        !(p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY))
+        !(p->dprops.driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY) &&
+        !(p->dprops.driverID == VK_DRIVER_ID_MOLTENVK))
         hwctx->usage |= supported_usage & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
 
     /* Enables encoding of images, if supported by format and extensions */
