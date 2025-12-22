@@ -39,7 +39,9 @@ static inline AVRational ff_sws_pixel_expand(SwsPixelType from, SwsPixelType to)
 
 static inline void ff_sws_pack_op_decode(const SwsOp *op, uint64_t mask[4], int shift[4])
 {
-    const int size = ff_sws_pixel_type_size(op->type) * 8;
+    int size = 0;
+    for (int i = 0; i < 4; i++)
+        size += op->pack.pattern[i];
     for (int i = 0; i < 4; i++) {
         const int bits = op->pack.pattern[i];
         mask[i] = (UINT64_C(1) << bits) - 1;

@@ -109,6 +109,10 @@ typedef struct SwsReadWriteOp {
 } SwsReadWriteOp;
 
 typedef struct SwsPackOp {
+    /**
+     * Packed bits are assumed to be LSB-aligned within the underlying
+     * integer type; i.e. (msb) 0 ... X Y Z W (lsb).
+     */
     uint8_t pattern[4]; /* bit depth pattern, from MSB to LSB */
 } SwsPackOp;
 
