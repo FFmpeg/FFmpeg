@@ -294,6 +294,8 @@ static av_cold void dilate_uninit(AVFilterContext *ctx)
     OCVContext *s = ctx->priv;
     DilateContext *dilate = s->priv;
 
+    if (!dilate)
+        return;
     cvReleaseStructuringElement(&dilate->kernel);
 }
 
