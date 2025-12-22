@@ -22,18 +22,6 @@
 
 #if (__riscv_xlen == 64)
 
-const fail_s_reg
-        .asciz  "callee-saved integer register clobbered"
-endconst
-
-const fail_fs_reg
-        .asciz  "callee-saved floating-point register clobbered"
-endconst
-
-const fail_rsvd_reg
-        .asciz  "unallocatable register clobbered"
-endconst
-
         .section .tbss, "waT"
         .align  3
         .hidden checked_func
@@ -74,6 +62,15 @@ func checkasm_get_wrapper, v
         ld      fp,  (sp)
         addi    sp, sp, 16
         ret
+
+        .pushsection ".rodata", "a"
+.Lfail_s_reg:
+        .asciz  "callee-saved integer register S%d clobbered"
+.Lfail_fs_reg:
+        .asciz  "callee-saved floating-point register FS%d clobbered"
+.Lfail_rsvd_reg:
+        .asciz  "unallocatable register %cP clobbered"
+        .popsection
 
         .option norvc
         .align  2
@@ -125,21 +122,25 @@ func checkasm_get_wrapper, v
         /* Check special register values */
         la.tls.ie t0, saved_regs
         add     t0, tp, t0
-        ld      t1,  8(t0)
-        bne     t1, sp, 5f
-        ld      t1, 16(t0)
-        bne     t1, gp, 5f
-        ld      t1, 24(t0) // If TP was corrupted, we probably will have...
-        bne     t1, tp, 5f // ...already crashed before we even get here.
+        ld      t2,  8(t0) // SP
+        ld      t3, 16(t0) // GP
+        ld      t4, 24(t0) // TP
+        li      t1, 'S'
+        bne     t2, sp, .Lfail_xp
+        li      t1, 'G'
+        bne     t3, gp, .Lfail_xp
+        li      t1, 'T'
+        bne     t4, tp, .Lfail_xp
 
         /* Check value of saved registers */
         li      t0, 0xdeadbeef1badf00d
         .irp    n, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
-        bne     t0, s\n, 6f
+        li      t1, \n
+        bne     t0, s\n, .Lfail_s
 #ifdef __riscv_float_abi_double
         /* TODO: check float ABI single too */
-        fmv.x.d t1, fs\n
-        bne     t0, t1, 7f
+        fmv.x.d t2, fs\n
+        bne     t0, t2, .Lfail_fs
 #endif
         .endr
 
@@ -154,22 +155,25 @@ func checkasm_get_wrapper, v
         .endr
         ret
 
-5:
+.Lfail_xp:
         # checkasm_fail_func() needs valid SP, GP and TP. Restore them.
         ld      sp,  8(t0)
         ld      gp, 16(t0)
         ld      tp, 24(t0)
-        lla     a0, fail_rsvd_reg
+        lla     a0, .Lfail_rsvd_reg
+        mv      a1, t1
         call    checkasm_fail_func
         j       4b
 
-6:
-        lla     a0, fail_s_reg
+.Lfail_s:
+        lla     a0, .Lfail_s_reg
+        mv      a1, t1
         call    checkasm_fail_func
         j       4b
 
-7:
-        lla     a0, fail_fs_reg
+.Lfail_fs:
+        lla     a0, .Lfail_fs_reg
+        mv      a1, t1
         call    checkasm_fail_func
         j       4b
 
