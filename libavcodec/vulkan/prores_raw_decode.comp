@@ -20,9 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define U8(x) (uint8_t(x))
-#define I16(x) (int16_t(x))
-
 #define COMP_ID (gl_LocalInvocationID.x)
 
 GetBitContext gb;

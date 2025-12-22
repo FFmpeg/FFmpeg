@@ -50,6 +50,16 @@ layout(buffer_reference, buffer_reference_align = 8) buffer u64buf {
     uint64_t v;
 };
 
+#define U8(x)  uint8_t(x)
+#define U16(x) uint16_t(x)
+#define U32(x) uint32_t(x)
+#define U64(x) uint64_t(x)
+
+#define I8(x)  int8_t(x)
+#define I16(x) int16_t(x)
+#define I32(x) int32_t(x)
+#define I64(x) int64_t(x)
+
 #define OFFBUF(type, b, l) \
     type(uint64_t(b) + uint64_t(l))
 

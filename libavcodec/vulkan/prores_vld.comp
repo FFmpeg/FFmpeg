@@ -16,9 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define U8(x)  (uint8_t (x))
-#define U16(x) (uint16_t(x))
-
 /**
  * Table 9, encoded as (last_rice_q << 0) | (krice or kexp << 4) | ((kexp or kexp + 1) << 8)
  * According to the SMPTE document, abs(prev_dc_diff) should be used
