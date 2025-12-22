@@ -352,6 +352,15 @@ means auto (seekable for normal files, non-seekable for named pipes).
 Many demuxers handle seekable and non-seekable resources differently,
 overriding this might speed up opening certain files at the cost of losing some
 features (e.g. accurate seeking).
+
+@item pkt_size
+Set the maximum packet size used for file I/O.
+
+For writing, this sets the size of each write operation. The default is
+262144 bytes.
+For reading, if explicitly set, it overrides the default internal buffer size
+(32768 bytes) and limits the maximum amount of data read per operation.
+Setting a smaller value may reduce memory usage when reading files sequentially.
 @end table
 
 @section ftp
