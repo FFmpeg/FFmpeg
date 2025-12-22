@@ -1263,6 +1263,11 @@ ff_jpeg2000_decode_htj2k(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c
     cblk->zbp = S_blk - 1;
     pLSB  = 30 - S_blk;
 
+    if (pLSB <= 1 || pLSB >= 31) {
+        avpriv_request_sample(s->avctx, "pLSB %d", pLSB);
+        return AVERROR_PATCHWELCOME;
+    }
+
     Scup = (Dcup[Lcup - 1] << 4) + (Dcup[Lcup - 2] & 0x0F);
 
     if (Scup < 2 || Scup > Lcup || Scup > 4079) {
