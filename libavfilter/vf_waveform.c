@@ -77,7 +77,7 @@ enum GraticuleType {
 };
 
 typedef struct GraticuleLine {
-    const char *name;
+    char name[6];
     uint16_t pos;
 } GraticuleLine;
 
