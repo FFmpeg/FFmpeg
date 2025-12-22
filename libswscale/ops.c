@@ -236,6 +236,7 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
         case SWS_OP_READ:
         case SWS_OP_LINEAR:
         case SWS_OP_SWAP_BYTES:
+        case SWS_OP_UNPACK:
             break; /* special cases, handled below */
         default:
             memcpy(op->comps.min, prev.min, sizeof(prev.min));
@@ -302,9 +303,13 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             break;
         case SWS_OP_UNPACK:
             for (int i = 0; i < 4; i++) {
-                if (op->pack.pattern[i])
+                const int pattern = op->pack.pattern[i];
+                if (pattern) {
+                    av_assert1(pattern < 32);
                     op->comps.flags[i] = prev.flags[0];
-                else
+                    op->comps.min[i]   = Q(0);
+                    op->comps.max[i]   = Q((1ULL << pattern) - 1);
+                } else
                     op->comps.flags[i] = SWS_COMP_GARBAGE;
             }
             break;
