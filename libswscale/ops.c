@@ -232,14 +232,15 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
     for (int n = 0; n < ops->num_ops; n++) {
         SwsOp *op = &ops->ops[n];
 
-        /* Prefill min/max values automatically; may have to be fixed in
-         * special cases */
-        memcpy(op->comps.min, prev.min, sizeof(prev.min));
-        memcpy(op->comps.max, prev.max, sizeof(prev.max));
-
-        if (op->op != SWS_OP_SWAP_BYTES) {
-            ff_sws_apply_op_q(op, op->comps.min);
-            ff_sws_apply_op_q(op, op->comps.max);
+        if (op->op != SWS_OP_READ) {
+            /* Prefill min/max values automatically; may have to be fixed in
+             * special cases */
+            memcpy(op->comps.min, prev.min, sizeof(prev.min));
+            memcpy(op->comps.max, prev.max, sizeof(prev.max));
+            if (op->op != SWS_OP_SWAP_BYTES) {
+                ff_sws_apply_op_q(op, op->comps.min);
+                ff_sws_apply_op_q(op, op->comps.max);
+            }
         }
 
         switch (op->op) {
@@ -260,13 +261,18 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
                         }
                     }
 
-                    op->comps.flags[i] = SWS_COMP_EXACT;
-                    op->comps.min[i] = Q(0);
-                    op->comps.max[i] = Q((1ULL << bits) - 1);
+                    op->comps.flags[i] |= SWS_COMP_EXACT;
+                    op->comps.min[i] = av_max_q(Q(0), op->comps.min[i]);
+                    op->comps.max[i] = av_min_q(Q((1ULL << bits) - 1), op->comps.max[i]);
                 }
             }
-            for (int i = op->rw.elems; i < 4; i++)
+
+            /* Explicitly strip flags and min/max range data for unread comps */
+            for (int i = op->rw.elems; i < 4; i++) {
                 op->comps.flags[i] = prev.flags[i];
+                op->comps.min[i]   = prev.min[i];
+                op->comps.max[i]   = prev.max[i];
+            }
             break;
         case SWS_OP_WRITE:
             for (int i = 0; i < op->rw.elems; i++)

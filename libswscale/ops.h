@@ -195,7 +195,20 @@ typedef struct SwsOp {
         SwsConst        c;
     };
 
-    /* For use internal use inside ff_sws_*() functions */
+    /**
+     * Metadata about the operation's input/output components.
+     *
+     * For SWS_OP_READ, this is informative; and lets the optimizer know
+     * additional information about the value range and/or pixel data to expect.
+     * The default value of {0} is safe to pass in the case that no additional
+     * information is known.
+     *
+     * For every other operation, this metadata is discarded and regenerated
+     * automatically by `ff_sws_op_list_update_comps()`.
+     *
+     * Note that backends may rely on the presence and accuracy of this
+     * metadata for all operations, during ff_sws_ops_compile().
+     */
     SwsComps comps;
 } SwsOp;
 
