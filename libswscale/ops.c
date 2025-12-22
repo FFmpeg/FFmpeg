@@ -232,15 +232,17 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
     for (int n = 0; n < ops->num_ops; n++) {
         SwsOp *op = &ops->ops[n];
 
-        if (op->op != SWS_OP_READ) {
-            /* Prefill min/max values automatically; may have to be fixed in
-             * special cases */
+        switch (op->op) {
+        case SWS_OP_READ:
+        case SWS_OP_LINEAR:
+        case SWS_OP_SWAP_BYTES:
+            break; /* special cases, handled below */
+        default:
             memcpy(op->comps.min, prev.min, sizeof(prev.min));
             memcpy(op->comps.max, prev.max, sizeof(prev.max));
-            if (op->op != SWS_OP_SWAP_BYTES) {
-                ff_sws_apply_op_q(op, op->comps.min);
-                ff_sws_apply_op_q(op, op->comps.max);
-            }
+            ff_sws_apply_op_q(op, op->comps.min);
+            ff_sws_apply_op_q(op, op->comps.max);
+            break;
         }
 
         switch (op->op) {
@@ -275,8 +277,11 @@ void ff_sws_op_list_update_comps(SwsOpList *ops)
             }
             break;
         case SWS_OP_SWAP_BYTES:
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++) {
                 op->comps.flags[i] = prev.flags[i] ^ SWS_COMP_SWAPPED;
+                op->comps.min[i]   = prev.min[i];
+                op->comps.max[i]   = prev.max[i];
+            }
             break;
         case SWS_OP_WRITE:
             for (int i = 0; i < op->rw.elems; i++)
