@@ -24,23 +24,23 @@
 #define BLOCK_ID (gl_LocalInvocationID.y)
 #define ROW_ID (gl_LocalInvocationID.x)
 
-const ivec2 scan[64] = {
-    ivec2( 0,  0), ivec2( 4,  0), ivec2( 0,  2), ivec2( 4,  2),
-    ivec2( 0,  8), ivec2( 4,  8), ivec2( 6,  8), ivec2( 2, 10),
-    ivec2( 2,  0), ivec2( 6,  0), ivec2( 2,  2), ivec2( 6,  2),
-    ivec2( 2,  8), ivec2( 8,  8), ivec2( 0, 10), ivec2( 4, 10),
-    ivec2( 8,  0), ivec2(12,  0), ivec2( 8,  2), ivec2(12,  2),
-    ivec2(10,  8), ivec2(14,  8), ivec2( 6, 10), ivec2( 2, 12),
-    ivec2(10,  0), ivec2(14,  0), ivec2(10,  2), ivec2(14,  2),
-    ivec2(12,  8), ivec2( 8, 10), ivec2( 0, 12), ivec2( 4, 12),
-    ivec2( 0,  4), ivec2( 4,  4), ivec2( 6,  4), ivec2( 2,  6),
-    ivec2(10, 10), ivec2(14, 10), ivec2( 6, 12), ivec2( 2, 14),
-    ivec2( 2,  4), ivec2( 8,  4), ivec2( 0,  6), ivec2( 4,  6),
-    ivec2(12, 10), ivec2( 8, 12), ivec2( 0, 14), ivec2( 4, 14),
-    ivec2(10,  4), ivec2(14,  4), ivec2( 6,  6), ivec2(12,  6),
-    ivec2(10, 12), ivec2(14, 12), ivec2( 6, 14), ivec2(12, 14),
-    ivec2(12,  4), ivec2( 8,  6), ivec2(10,  6), ivec2(14,  6),
-    ivec2(12, 12), ivec2( 8, 14), ivec2(10, 14), ivec2(14, 14),
+const u8vec2 scan[64] = {
+    u8vec2( 0,  0), u8vec2( 4,  0), u8vec2( 0,  2), u8vec2( 4,  2),
+    u8vec2( 0,  8), u8vec2( 4,  8), u8vec2( 6,  8), u8vec2( 2, 10),
+    u8vec2( 2,  0), u8vec2( 6,  0), u8vec2( 2,  2), u8vec2( 6,  2),
+    u8vec2( 2,  8), u8vec2( 8,  8), u8vec2( 0, 10), u8vec2( 4, 10),
+    u8vec2( 8,  0), u8vec2(12,  0), u8vec2( 8,  2), u8vec2(12,  2),
+    u8vec2(10,  8), u8vec2(14,  8), u8vec2( 6, 10), u8vec2( 2, 12),
+    u8vec2(10,  0), u8vec2(14,  0), u8vec2(10,  2), u8vec2(14,  2),
+    u8vec2(12,  8), u8vec2( 8, 10), u8vec2( 0, 12), u8vec2( 4, 12),
+    u8vec2( 0,  4), u8vec2( 4,  4), u8vec2( 6,  4), u8vec2( 2,  6),
+    u8vec2(10, 10), u8vec2(14, 10), u8vec2( 6, 12), u8vec2( 2, 14),
+    u8vec2( 2,  4), u8vec2( 8,  4), u8vec2( 0,  6), u8vec2( 4,  6),
+    u8vec2(12, 10), u8vec2( 8, 12), u8vec2( 0, 14), u8vec2( 4, 14),
+    u8vec2(10,  4), u8vec2(14,  4), u8vec2( 6,  6), u8vec2(12,  6),
+    u8vec2(10, 12), u8vec2(14, 12), u8vec2( 6, 14), u8vec2(12, 14),
+    u8vec2(12,  4), u8vec2( 8,  6), u8vec2(10,  6), u8vec2(14,  6),
+    u8vec2(12, 12), u8vec2( 8, 14), u8vec2(10, 14), u8vec2(14, 14),
 };
 
 void main(void)
