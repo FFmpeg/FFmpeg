@@ -26,6 +26,7 @@
 #include "config.h"
 #include <opencv2/core/core_c.h>
 #include <opencv2/imgproc/imgproc_c.h>
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
 #include "libavutil/file.h"
@@ -44,7 +45,7 @@ static void fill_iplimage_from_frame(IplImage **_img, const AVFrame *frame, enum
     if      (pixfmt == AV_PIX_FMT_GRAY8) { depth = IPL_DEPTH_8U;  channels_nb = 1; }
     else if (pixfmt == AV_PIX_FMT_BGRA)  { depth = IPL_DEPTH_8U;  channels_nb = 4; }
     else if (pixfmt == AV_PIX_FMT_BGR24) { depth = IPL_DEPTH_8U;  channels_nb = 3; }
-    else return;
+    else av_unreachable("unsupported pix fmt");
 
     *_img = img = cvCreateImageHeader((CvSize){frame->width, frame->height}, depth, channels_nb);
     img->imageData = img->imageDataOrigin = frame->data[0];
