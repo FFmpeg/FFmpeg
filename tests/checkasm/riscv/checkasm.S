@@ -79,20 +79,7 @@ func checkasm_get_wrapper, v
         .align  2
 2:      /* <-- Entry point with the Vector extension --> */
         lpad    0
-        /* Clobber the vectors */
-        vsetvli t0, zero, e32, m8, ta, ma
-        li      t0, 0xdeadbeef
-        vmv.v.x v0, t0
-        vmv.v.x v8, t0
-        vmv.v.x v16, t0
-        vmv.v.x v24, t0
-
-        /* Clobber the vector configuration */
-        li      t0, 0        /* Vector length: zero */
-        li      t2, -4       /* Vector type:   illegal */
-        vsetvl  zero, t0, t2
-        csrwi   vxrm, 3      /* Rounding mode: round-to-odd */
-        csrwi   vxsat, 1     /* Saturation:    encountered */
+        jal     t0, .Lclobber_v
 
         .align  2
 3:      /* <-- Entry point without the Vector extension --> */
@@ -181,5 +168,21 @@ func checkasm_get_wrapper, v
         lla     a0, fail_fs_reg
         call    checkasm_fail_func
         j       4b
+
+.Lclobber_v:
+        # Clobber the vector registers
+        vsetvli t1, zero, e32, m8, ta, ma
+        li      t1, -0xdeadbeef
+        vmv.v.x v0, t1
+        vmv.v.x v8, t1
+        vmv.v.x v16, t1
+        vmv.v.x v24, t1
+        # Clobber the vector configuration
+        li      t1, 0        /* Vector length: zero */
+        li      t3, -4       /* Vector type:   illegal */
+        vsetvl  zero, t1, t3
+        csrwi   vxrm, 3      /* Rounding mode: round-to-odd */
+        csrwi   vxsat, 1     /* Saturation:    encountered */
+        jr      t0
 endfunc
 #endif
