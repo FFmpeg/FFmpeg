@@ -2513,9 +2513,9 @@ yuv2gbrp16_full_X_c(SwsInternal *c, const int16_t *lumFilter,
         G = V * c->yuv2rgb_v2g_coeff + U * c->yuv2rgb_u2g_coeff;
         B =                            U * c->yuv2rgb_u2b_coeff;
 
-        dest16[2][i] = av_clip_uintp2(((Y + R) >> 14) + (1<<15), 16);
-        dest16[0][i] = av_clip_uintp2(((Y + G) >> 14) + (1<<15), 16);
-        dest16[1][i] = av_clip_uintp2(((Y + B) >> 14) + (1<<15), 16);
+        dest16[2][i] = av_clip_uintp2(((Y + (int64_t)R) >> 14) + (1<<15), 16);
+        dest16[0][i] = av_clip_uintp2(((Y + (int64_t)G) >> 14) + (1<<15), 16);
+        dest16[1][i] = av_clip_uintp2(((Y + (int64_t)B) >> 14) + (1<<15), 16);
 
         if (hasAlpha)
             dest16[3][i] = av_clip_uintp2(A, 30) >> 14;
