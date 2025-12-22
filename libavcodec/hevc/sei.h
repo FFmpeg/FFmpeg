@@ -87,9 +87,9 @@ typedef struct HEVCSEITDRDI {
     uint16_t left_view_id[32];
     uint16_t right_view_id[32];
     uint8_t exponent_ref_display_width[32];
-    uint8_t mantissa_ref_display_width[32];
+    uint64_t mantissa_ref_display_width[32];
     uint8_t exponent_ref_viewing_distance[32];
-    uint8_t mantissa_ref_viewing_distance[32];
+    uint64_t mantissa_ref_viewing_distance[32];
     uint8_t additional_shift_present_flag[32];
     int16_t num_sample_shift[32];
     uint8_t three_dimensional_reference_displays_extension_flag;

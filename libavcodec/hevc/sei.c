@@ -195,7 +195,7 @@ static int decode_nal_sei_3d_reference_displays_info(HEVCSEITDRDI *s, GetBitCont
         else
             length = FFMAX(0, (int)s->exponent_ref_display_width[i] +
                               (int)s->prec_ref_display_width - 31);
-        s->mantissa_ref_display_width[i] = get_bits_long(gb, length);
+        s->mantissa_ref_display_width[i] = get_bits64(gb, length);
         if (s->ref_viewing_distance_flag) {
             s->exponent_ref_viewing_distance[i] = get_bits(gb, 6);
             if (s->exponent_ref_viewing_distance[i] > 62)
@@ -205,7 +205,7 @@ static int decode_nal_sei_3d_reference_displays_info(HEVCSEITDRDI *s, GetBitCont
             else
                 length = FFMAX(0, (int)s->exponent_ref_viewing_distance[i] +
                                   (int)s->prec_ref_viewing_dist - 31);
-            s->mantissa_ref_viewing_distance[i] = get_bits_long(gb, length);
+            s->mantissa_ref_viewing_distance[i] = get_bits64(gb, length);
         }
         s->additional_shift_present_flag[i] = get_bits1(gb);
         if (s->additional_shift_present_flag[i]) {
